@@ -399,59 +399,6 @@ public partial class Node2DGame : Node2D
 	private PackedScene levelupMenuScene = ResourceLoader.Load<PackedScene>("res://scenes/LevelUpMenu.tscn");
 	private PackedScene gameOverScene = ResourceLoader.Load<PackedScene>("res://scenes/GameOverScreen.tscn");
 
-	private static readonly (string Id, string Path)[] SpellbookResources = new[]
-	{
-		("magic_missile", "res://SpellData.tres"),
-		("arcane_explosion", "res://SpellData_ArcaneExplosion.tres"),
-		("spiritual_weapon", "res://SpellData_SpiritualWeapon.tres"),
-		("fireball", "res://SpellData_Fireball.tres"),
-		("cinderbreath", "res://SpellData_Cinderbreath.tres"),
-		("mirefoot", "res://SpellData_Mirefoot.tres"),
-		("kindled_ward", "res://SpellData_KindledWard.tres"),
-		("gravewell", "res://SpellData_Gravewell.tres"),
-		("hollow_star", "res://SpellData_HollowStar.tres"),
-		("starfall", "res://SpellData_Starfall.tres"),
-		("familiar", "res://SpellData_Familiar.tres"),
-		("stormsweep", "res://SpellData_Stormsweep.tres"),
-		("sleet_runes", "res://SpellData_SleetRunes.tres"),
-		("iron_palisade", "res://SpellData_IronPalisade.tres"),
-		("contagion", "res://SpellData_Contagion.tres"),
-		("bramble_seed", "res://SpellData_BrambleSeed.tres"),
-		("frost_shard", "res://SpellData_FrostShard.tres"),
-		("riptide", "res://SpellData_Riptide.tres"),
-		("shadow_bolt", "res://SpellData_ShadowBolt.tres"),
-		("thorn_vine", "res://SpellData_ThornVine.tres"),
-		("gale_blade", "res://SpellData_GaleBlade.tres"),
-		("solar_flare", "res://SpellData_SolarFlare.tres"),
-		("molten_shard", "res://SpellData_MoltenShard.tres"),
-		("chain_lightning", "res://SpellData_ChainLightning.tres"),
-		("toxic_spore_burst", "res://SpellData_ToxicSporeBurst.tres"),
-		("obsidian_spike", "res://SpellData_ObsidianSpike.tres"),
-		("cyclone_slash", "res://SpellData_CycloneSlash.tres"),
-		("void_lance", "res://SpellData_VoidLance.tres"),
-		("glacial_spike", "res://SpellData_GlacialSpike.tres"),
-		("black_tentacles", "res://SpellData_BlackTentacles.tres"),
-		("cone_of_cold", "res://SpellData_ConeOfCold.tres"),
-		("scorching_ray", "res://SpellData_ScorchingRay.tres"),
-		("meteor_swarm", "res://SpellData_MeteorSwarm.tres"),
-		("hunters_draw", "res://SpellData_HuntersDraw.tres")
-	};
-
-	private static readonly (string Id, string DisplayName, string Description, string Elements)[] PassiveSpellbookEntries = new[]
-	{
-		("aegis_ward", "Aegis Ward", "Periodically grants an absorbing shield.", "Metal, Light"),
-		("thornmail_barrier", "Thornmail Barrier", "Retaliates against nearby enemies when hit.", "Earth, Grass"),
-		("frozen_bulwark", "Frozen Bulwark", "Chance to freeze nearby attackers when hit.", "Ice x2"),
-		("stormguard_aura", "Stormguard Aura", "Strikes the nearest enemy with lightning when hit.", "Lightning, Metal"),
-		("venom_cloak", "Venom Cloak", "Periodically poisons nearby enemies.", "Poison, Darkness"),
-		("guardian_vines", "Guardian Vines", "Periodically roots nearby enemies.", "Grass x2"),
-		("tidal_barrier", "Tidal Barrier", "Periodically knocks back and slows nearby enemies.", "Water, Wind"),
-		("stone_bulwark", "Stone Bulwark", "Grants armor that reduces incoming damage.", "Earth, Metal"),
-		("blur", "Blur", "Chance to avoid incoming hits entirely.", "Arcane, Wind"),
-		("fortunes_favor", "Fortune's Favor", "Passively boosts Luck.", "Arcane, Light"),
-		("haste", "Haste", "Periodically grants attack-speed and move-speed surges.", "Wind, Lightning")
-	};
-
 	private static readonly Texture2D FallbackSpellHudIcon = GD.Load<Texture2D>("res://assets/bonelight/ui/spells/unknown.png");
 
 	private enum DungeonTileRole
@@ -3800,22 +3747,19 @@ public partial class Node2DGame : Node2D
 		// bordered box and a header label on every two buttons, which is most of what made the
 		// menu read as busy. The tab that is open is underlined in gold, so the pane needs no title
 		// of its own - it had one, "Run Details", saying again what the tab said.
-		// Four across on a PC; two rows of two on a phone, where four Cinzel captions do not fit a
-		// quarter of its width each ("Spell Index" is the long one).
-		var tabs = new GridContainer { Columns = ResponsiveLayout.IsNarrow(this) ? 2 : 4 };
+		// Three across on both canvases. There was a fourth, the Spell Index - every spell in the game
+		// and where to find the rest - until Eric's playtest (2026-10-30, "remove spell index from the
+		// pause menu"): mid-run it answered a question nobody pauses to ask, and the main menu keeps it.
+		var tabs = new GridContainer { Columns = 3 };
 		tabs.AddThemeConstantOverride("h_separation", 4);
 		tabs.AddThemeConstantOverride("v_separation", 4);
 		var tabGroup = new ButtonGroup();
-		// The catalogue tab is the Spell Index, as on the main menu, and not "Spells": the player read
-		// "Spells" as the spells held this run, which is the Run tab's list. This one is every spell
-		// in the game and where to find the rest.
 		tabs.AddChild(MakeEscapeTabButton(EscapeRunTitle, "Run", ShowEscapeRunOverview, tabGroup));
-		tabs.AddChild(MakeEscapeTabButton(CodexRows.SpellIndexTitle, CodexRows.SpellIndexTitle, ShowEscapeSpellbook, tabGroup));
 		tabs.AddChild(MakeEscapeTabButton(CodexRows.UnlocksTitle, CodexRows.UnlocksTitle, ShowEscapeAchievements, tabGroup));
 		tabs.AddChild(MakeEscapeTabButton("Options", "Options", ShowEscapeOptions, tabGroup));
 		root.AddChild(tabs);
 		// Down from Resume is the Run tab. Left to geometry it was whichever tab sat under Resume's
-		// centre - Spell Index on a PC - which is not the first thing on the line.
+		// centre, which is not the first thing on the line.
 		if (escapeTabButtons.TryGetValue(EscapeRunTitle, out Button runTab))
 			escapeResumeButton.FocusNeighborBottom = escapeResumeButton.GetPathTo(runTab);
 
@@ -3938,7 +3882,7 @@ public partial class Node2DGame : Node2D
 	{
 		var button = new Button
 		{
-			// Named so _UiShot --press-late=EscapeTabSpellIndex (or Unlocks, Run, Options) can open a tab.
+			// Named so _UiShot --press-late=EscapeTabAchievements (or Run, Options) can open a tab.
 			Name = "EscapeTab" + caption.Replace(" ", string.Empty),
 			Text = caption,
 			ToggleMode = true,
@@ -4307,6 +4251,14 @@ public partial class Node2DGame : Node2D
 		level.SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd;
 		titleRow.AddChild(level);
 		box.AddChild(titleRow);
+		// What it has become: the level 4 mutation, the level 8 Ascension and the Apotheosis, each the
+		// branch's own picture and name in its milestone's colour - the results screen's line
+		// (GameOverScreen.Milestone), so a spell's evolutions read the same here, on the HUD's rims and
+		// at the end. Eric's playtest (2026-10-30): "In the pause menu, we should show the mutation you
+		// selected for the spells. we should also show the ascension." Not behind Show details: which
+		// way a spell went is the first thing a player pauses to check.
+		foreach (Control milestone in BuildSpellMilestones(spell))
+			box.AddChild(milestone);
 		string description = string.IsNullOrWhiteSpace(spell.Description) ? "No description." : spell.Description;
 		box.AddChild(BuildDetailLabel(description, PauseInk.InkSoft));
 
@@ -4339,6 +4291,22 @@ public partial class Node2DGame : Node2D
 
 		return BuildInfoFrame(row, PauseInk.Face, PauseInk.Edge, focusStop: true);
 	}
+
+	// The milestones a held spell has passed, in the order they were taken, by SpellData.CollectActive's
+	// rule - the mutation from level 4, the Ascension from level 8, the Apotheosis whenever it is held -
+	// so the pause screen lists exactly the milestones the spell's numbers are reading.
+	private static IEnumerable<Control> BuildSpellMilestones(SpellData spell)
+	{
+		if (spell.CurrentLevel >= 4 && spell.SelectedLevel4Evolution is SpellEvolutionOption mutation)
+			yield return GameOverScreen.Milestone("Mutation", MilestoneName(mutation), GameOverScreen.MutationMark, mutation.Id);
+		if (spell.CurrentLevel >= 8 && spell.SelectedLevel8Evolution is SpellEvolutionOption ascension)
+			yield return GameOverScreen.Milestone("Ascension", MilestoneName(ascension), GameOverScreen.AscensionMark, ascension.Id);
+		if (spell.SelectedApotheosis is SpellEvolutionOption apotheosis)
+			yield return GameOverScreen.Milestone("Apotheosis", MilestoneName(apotheosis), GameOverScreen.ApotheosisMark, apotheosis.Id);
+	}
+
+	private static string MilestoneName(SpellEvolutionOption option) =>
+		string.IsNullOrWhiteSpace(option.DisplayName) ? option.Id : option.DisplayName;
 
 	// The boons the run has taken. Until this section the pause screen listed every spell and no
 	// boon at all, so once picked a boon was never seen again. Each relic is shown through BoonAura,
@@ -4701,100 +4669,6 @@ public partial class Node2DGame : Node2D
 		Label label = CodexRows.MakeText(text, role, color);
 		label.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 		return label;
-	}
-
-	// The Spell Index and Unlocks tabs are the main menu's two lists in the stone register, built by
-	// the same CodexRows so the pause screen cannot word them a third way. They used to: every spell
-	// carried a "Classification: Targeting NearestEnemy | Shape ProjectileHit | Scaling ..." line in
-	// the engine's own enum names and no description at all, and every row was a box in a box.
-	private void ShowEscapeSpellbook()
-	{
-		SaveData data = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
-		ShowStructuredEscapeDetail(CodexRows.SpellIndexTitle, sections =>
-		{
-			var attacks = new List<Control>();
-			var passives = new List<Control>();
-			var missing = new List<(string Id, Texture2D Icon, bool Passive)>();
-			int attackTotal = 0;
-
-			foreach (var (id, path) in SpellbookResources)
-			{
-				SpellData spell = ResourceLoader.Load<SpellData>(path);
-				if (spell == null)
-					continue;
-				attackTotal++;
-				var elements = CodexRows.FromWeights(spell.GetElementWeights());
-				if (GlobalStatsManager.IsSpellUnlockedForLevelUp(data, id))
-					attacks.Add(BuildPauseSpellRow(id, spell.Name, spell.Description, spell.Icon, elements, data));
-				else
-					missing.Add((id, spell.Icon, false));
-			}
-
-			foreach (var passive in PassiveSpellbookEntries)
-			{
-				var elements = CodexRows.ParseElements(passive.Elements);
-				if (GlobalStatsManager.IsSpellUnlockedForLevelUp(data, passive.Id))
-					passives.Add(BuildPauseSpellRow(passive.Id, passive.DisplayName, passive.Description, null, elements, data));
-				else
-					missing.Add((passive.Id, null, true));
-			}
-
-			int columns = CodexRows.ColumnsFor(this);
-			var list = CodexRows.BuildList();
-			// The subtitle leads, so the tab says what it is before it says how much of it there is:
-			// every spell in the game, not the ones in hand (those are on the Run tab).
-			list.AddChild(CodexRows.BuildSummary(
-				CodexRows.SpellIndexSubtitle + "\n"
-				+ $"{attacks.Count} of {attackTotal} attacks and {passives.Count} of {PassiveSpellbookEntries.Length} passives can be offered at level-up.",
-				CodexRows.Stone));
-			if (attacks.Count > 0)
-				CodexRows.AddSection(list, "Attacks", $"{attacks.Count} found", CodexRows.Stone, columns, attacks);
-			if (passives.Count > 0)
-				CodexRows.AddSection(list, "Passives", $"{passives.Count} found", CodexRows.Stone, columns, passives);
-			if (missing.Count > 0)
-				CodexRows.AddSection(list, "Still to find", $"{missing.Count} spells", CodexRows.Stone, columns,
-					CodexRows.GroupMissing(missing, m => m.Passive, m => UnlockCatalog.GetLockedHint(m.Id, UnlockKind.Spell))
-						.Select(g => BuildPauseMissingRow(g.First.Id, g.First.Icon, g.First.Passive, g.Count)));
-			sections.AddChild(list);
-		});
-	}
-
-	private Control BuildPauseSpellRow(string id, string name, string description, Texture2D icon,
-		List<(Element Element, int Weight)> elements, SaveData data)
-	{
-		bool removed = GlobalStatsManager.IsSpellRemovedFromPool(data, id);
-		return CodexRows.BuildRow(new CodexRows.Entry
-		{
-			Title = name,
-			Body = string.IsNullOrWhiteSpace(description) ? string.Empty : description,
-			Icon = icon ?? FallbackSpellHudIcon,
-			Elements = elements,
-			ChipNote = elements.Count == 1 ? "Attuned" : string.Empty,
-			// Curated out on the main menu: said here, because "why is it never offered" is
-			// exactly the question a player pauses to answer.
-			Tag = removed ? "Set aside" : string.Empty,
-			Quiet = removed,
-			// A stop for the stick, as on the main menu: the pad scrolls the list by moving the
-			// selection through it, and B still closes the pause from any row (MenuBackListener).
-			FocusStop = true,
-		}, CodexRows.Stone);
-	}
-
-	private Control BuildPauseMissingRow(string id, Texture2D icon, bool passive, int count)
-	{
-		return CodexRows.BuildRow(new CodexRows.Entry
-		{
-			Title = CodexRows.UnknownTitle(passive, count),
-			Icon = icon ?? FallbackSpellHudIcon,
-			IconSilhouette = true,
-			Meta = UnlockCatalog.GetLockedHint(id, UnlockKind.Spell),
-			// The main menu's glyph: a vault's spell is led by the secret's glint, the rest by the lock.
-			MetaGlyph = CodexRows.SpellHintGlyph(id),
-			Quiet = true,
-			// A stop for the stick, as on the main menu: the pad scrolls the list by moving the
-			// selection through it, and B still closes the pause from any row (MenuBackListener).
-			FocusStop = true,
-		}, CodexRows.Stone);
 	}
 
 	// The achievements page over a run (.ai/achievements-and-secrets.md 4.6): the main menu's page,
