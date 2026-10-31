@@ -19,23 +19,30 @@ namespace WizardSurvivors.scripts;
 //
 // THE SHAPE. A wide flat band beside him: from his hand out to the arc's reach, and HalfBand above and
 // below his centre. One arc is three beats - it LEAPS out along the top edge of the band to full
-// length, SWEEPS down across the whole band (its far end leading), and LINGERS, flickering, while the
-// afterglow of where it swept fades. Damage lands during the sweep, on each enemy at the moment the
-// drawn arc passes across it: an enemy is struck when, at its distance along the arc, the arc's across
-// position moved past its centre this frame (plus RiptideWave.BodyAllowance for the body it stands in).
-// So the band is struck by being swept, top to bottom, and nothing outside what was swept is touched.
-// No ring, no box, no preview: the arc and its afterglow are the hit area (.ai/art-direction.md 3).
+// length, SWEEPS down across the whole band, and LINGERS, flickering, while the afterglow of where it
+// swept fades. Damage lands during the sweep, on each enemy at the moment the drawn arc passes across
+// it: an enemy is struck when, at its distance along the arc, the arc's across position moved past its
+// centre this frame (plus RiptideWave.BodyAllowance for the body it stands in). So the band is struck by
+// being swept, top to bottom, and nothing outside what was swept is touched. No ring, no box, no
+// preview: the arc and its afterglow are the hit area (.ai/art-direction.md 3).
 //
 // THE WHIP (2026-10-28). "stormsweep looks robotic. it should be shaped and animated more like a
-// whip." The beats and the hit test above are unchanged to the frame; what changed is the picture. The
-// arc is drawn as a lash of storm-light (scenes/shaders/stormsweep_lash.gdshader), thick at the hand and
-// thinning to a one-pixel tip, laid out fresh every frame (Pose): in the LEAP it unfurls along the
-// band's top edge with a loop rolling out from the hand to the tip, and snaps straight - the CRACK, a
-// white-hot tip and sparks no wider than a body; in the SWEEP it lies on exactly the curve the hit test
-// sweeps, tip leading, with a ripple running down it and a smear of the ground just struck behind it;
-// in the LINGER it goes slack and springs back toward the hand, cooling and dissolving while the smear
-// of the swept band fades. It is still storm-light, not leather (no lash or whip in its name, card or
-// icon - .ai/spell-roster.md, "The facing family"): the developer asked for the motion.
+// whip." The arc is drawn as a lash of storm-light (scenes/shaders/stormsweep_lash.gdshader), thick at
+// the hand and thinning to a one-pixel tip, laid out fresh every frame (Pose). It is still storm-light,
+// not leather (no lash or whip in its name or card - .ai/spell-roster.md, "The facing family"): the
+// developer asked for the motion.
+//
+// THE CRACK (2026-10-31). "the electric whip spell should look more like a whip crack." The first whip
+// swept with its far end LEADING and cracked at the START of the sweep, which is a stick slapped down,
+// not a whip. Now the sweep is a whip stroke (WhipStroke, shared with Thorned Vine): in the LEAP the lash
+// is thrown out along the band's starting edge; in the SWEEP the HAND leads down to the far edge while
+// the lash beyond still lies on the near one, and the bend between them, with a loop in it, rolls out
+// along the band to the tip; the tip, last to move and fastest, lands at the far corner and CRACKS - a
+// white-hot snap, a star, a ring of shock a few pixels wide and sparks thrown the way it was going, none
+// of it wider than a body. In the LINGER it goes slack and springs back toward the hand.
+// The hit test is WhipStroke.Front on the band (BandAcross): the same curve the lash is drawn on, the
+// same band, every enemy in it struck once a pass as before - only the ORDER across the band changed
+// (the hand's end first, the far end last, as the wave rolls out). The beats' timing is unchanged.
 //
 // AMOUNT is more sweeps, in sequence, ArcGap apart: the second goes to the OPPOSITE side, the third to
 // the facing side again, and so on - the genre's rule for this shape. Area grows the band both ways
@@ -121,9 +128,16 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 	private const int MaxArcs = 32;
 	private const int MaxHitsPerPass = 64;
 	private const int MaxBursts = 48;
-	// The arc is laid out as this many segments, hand to far end. stormsweep_lash.gdshader's PTS is this
-	// plus one and its arrays are sized for MaxDrawn lashes: change them together.
-	private const int Points = 16;
+	// The lash's own segments, hand to far end (WhipStroke.Samples less one); with the loop spliced in it is
+	// WhipStroke.Points points, which is stormsweep_lash.gdshader's PTS: change them together.
+	private const int Points = WhipStroke.Samples - 1;
+	// The whip: the hand lands a third of the way through the sweep, the lash beyond the bend lies on the
+	// edge the pass started from until the bend reaches it, and the bend is three tenths of the band long -
+	// about as long as the band is tall, so the step down it is a diagonal and the loop sits in its elbow.
+	// stormsweep_lash.gdshader's `whip` repeats these four numbers for the smear.
+	private static readonly WhipStroke.Shape Whip = new(lag: 1f, handEnd: 0.35f, waveStart: 0.05f, bend: 0.3f);
+	// The loop's radius, px, at most: under half the band's height, so it turns inside the band.
+	private const float LoopRadius = 10f;
 	// Hit sparks drawn for one pass, at most - the rest of the crowd it struck still flinches (Enemy's
 	// own hit flash), but forty sparks on one frame is noise, not information.
 	private const int SparksPerPass = 6;
@@ -187,6 +201,7 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 		public Vector2 At;       // world
 		public float Age;
 		public float Radius;
+		public float Heading;    // a crack's: the way the tip was travelling, which its sparks are thrown
 		public uint Seed;
 		public BurstKind Kind;
 		public bool Live;
@@ -227,13 +242,15 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 	// Storm at three sweeps a cast has about twelve arcs alive, and Forked Lightning draws each arc's
 	// two outer tongues as lashes of their own; past this, the newest wait a frame or two for a slot.
 	private const int MaxDrawn = 32;
-	private const int LashPoints = Points + 1;
+	private const int LashPoints = WhipStroke.Points;
 	// Half the lash's width at the hand (x the square root of Area, 4-8 px) and at the tip.
 	private const float HandleHalfWidth = 5f;
 	private const float TipHalfWidth = 1.2f;
-	// How long the tip stays white after the crack, and how long the crack's flash lasts.
+	// How long the tip stays white after the crack, how long the crack's flash lasts, and how far into the
+	// sweep the tip starts to glow as it whips toward it.
 	private const float CrackSeconds = 0.05f;
 	private const float CrackFlashSeconds = 0.08f;
+	private const float TipHeatFrom = 0.75f;
 	// How far beyond the band a lash's quad reaches: its width, its crackle and the crack on its tip.
 	private const float QuadPad = 10f;
 
@@ -241,7 +258,7 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 	// Variant of a packed array allocates a finalizable disposer on the C# side: five arrays a frame was
 	// 0.3 KB a frame in the profiler. A float image of DataTexels x MaxDrawn, rewritten in place from one
 	// byte buffer and pushed with ImageTexture.Update, crosses as native data and allocates nothing.
-	// Row d is lash d; its texels are the points two to a texel (0-8), then shape, frame, smear and fx
+	// Row d is lash d; its texels are the points two to a texel (0-15), then shape, frame, smear and fx
 	// (stormsweep_lash.gdshader reads them by these numbers).
 	private const int PointTexels = (LashPoints + 1) / 2;
 	private const int ShapeTexel = PointTexels;
@@ -263,6 +280,7 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 	private static readonly StringName ParamSparkHot = "spark_hot";
 	private static readonly StringName ParamSparkMid = "spark_mid";
 	private static readonly StringName ParamTint = "tint";
+	private static readonly StringName ParamWhip = "whip";
 
 	// The four arms of the crack's star, then the four of its diagonal turn.
 	private static readonly Vector2[] CrackArms =
@@ -270,6 +288,10 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 		new(1f, 0f), new(0f, 1f), new(-1f, 0f), new(0f, -1f),
 		new(0.7071f, 0.7071f), new(-0.7071f, 0.7071f), new(-0.7071f, -0.7071f), new(0.7071f, -0.7071f),
 	};
+
+	// One whip's samples and its lash in stroke space (WhipStroke), reused by every arc every frame.
+	private readonly float[] wave = new float[WhipStroke.Samples];
+	private readonly Vector2[] stroke = new Vector2[WhipStroke.Points];
 
 	private Node2D lashLayer;
 	private ShaderMaterial lashMaterial;
@@ -287,8 +309,8 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 
 	public override void _Ready()
 	{
-		// Over the bodies it strikes and the status marks on them (3), under the HUD's own layer: in the
-		// air (DrawLayers), with the balls of Ball Lightning it throws.
+		// A lash in the air, over the bodies it strikes and the status marks on them (DrawLayers), with the
+		// balls of Ball Lightning it throws.
 		ZAsRelative = false;
 		ZIndex = DrawLayers.Air;
 
@@ -498,14 +520,6 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 				l.Sparks = 0;
 				if (k > 0)
 					SfxPlayer.Instance?.PlayAt(SfxCatalog.SpellStormsweep, ArcWorld(l, l.Reach * 0.5f, 0f), 0.06f, SfxCatalog.SpellStormsweep, SoundGapMs);
-				// The crack: the lash has snapped straight at full reach and its tip goes off - sparks
-				// no wider than a body, round the tip on the edge this pass starts from. A picture, not
-				// a hit: nothing is struck here that the sweep does not cross.
-				Vector2 tip = ArcWorld(l, l.Reach, PassAcross(l, k, 0f, 1f));
-				AddBurst(tip, Body, BurstKind.Crack);
-				// Ball Lightning: the crack throws off a ball that rolls on out along the arc.
-				if (l.Balls)
-					ThrowBall(tip, l.Dir, l.Area, l.Damage);
 			}
 			float c = Mathf.Clamp((l.Age - PassStart(k)) / SweepSeconds, 0f, 1f);
 			// Only ground the arc moved across this frame. Once it has reached the far edge it strikes
@@ -526,14 +540,14 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 			l.Live = false;
 	}
 
-	// Where pass k's arc lies across the band at fraction s along it, c of the way through the pass.
-	// The far end leads and the hand follows, so a sweeping arc, not a falling bar; at c = 0 the whole
-	// arc is on the edge it starts from, at c = 1 on the far one.
-	private static float PassAcross(in Arc l, int k, float c, float s)
+	// Where pass k's lash lies across the band at fraction s along it, c of the way through the pass: the
+	// whip's front (WhipStroke.Front), the one curve both the hit test and the drawing read. The hand's end
+	// leads and the bend rolls out to the tip; at c = 0 the whole lash is on the edge the pass starts
+	// from, at c = 1 on the far one.
+	private static float BandAcross(in Arc l, int k, float c, float s)
 	{
-		float from = k % 2 == 0 ? -l.HalfBand : l.HalfBand;
-		float lead = Smooth(Mathf.Clamp(c * 1.35f - (1f - s) * 0.35f, 0f, 1f));
-		return from + (-from - from) * lead;
+		float from = PassFrom(l, k);
+		return from - 2f * from * WhipStroke.Front(c, s, Whip);
 	}
 
 	// Strikes everything whose centre the arc crossed between progress c0 and c1 of pass k: at the
@@ -559,8 +573,8 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 			if (along < HandReach - Body || along > l.Reach + Body)
 				continue;
 			float s = Mathf.Clamp((along - HandReach) / span, 0f, 1f);
-			float a0 = PassAcross(l, k, c0, s);
-			float a1 = PassAcross(l, k, c1, s);
+			float a0 = BandAcross(l, k, c0, s);
+			float a1 = BandAcross(l, k, c1, s);
 			float across = offset.Dot(l.Across);
 			float lo = MathF.Min(a0, a1) - Body;
 			float hi = MathF.Max(a0, a1) + Body;
@@ -599,11 +613,17 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 
 	private void EndOfPass(in Arc l, int k)
 	{
-		// A single pass ends quietly now: its discharge is the crack at the start of the pass, where the
-		// lash snaps straight (Tick), and the lash springs back from here.
+		// The crack: the tip has landed on the far corner, the fastest thing in the stroke. Its snap and
+		// sparks reach no wider than a body round the tip, all of it inside the band and its allowance - a
+		// picture, not a hit: nothing is struck here that the sweep did not cross.
+		Vector2 end = ArcWorld(l, l.Reach, -PassFrom(l, k));
+		Vector2 travel = l.Across * (k % 2 == 0 ? 1f : -1f);
+		AddBurst(end, Body, BurstKind.Crack, travel.Angle());
+		// Ball Lightning: the crack throws off a ball that rolls on out along the arc.
+		if (l.Balls)
+			ThrowBall(end, l.Dir, l.Area, l.Damage);
 		if (l.Passes < 2)
 			return;
-		Vector2 end = ArcWorld(l, l.Reach, PassAcross(l, k, 1f, 1f));
 
 		// Thunderclap: the arc's end bursts, and everything within ThunderRadius x Area takes a share of
 		// the sweep. The burst is ImpactDebris thrown out to exactly the radius it tested.
@@ -626,7 +646,7 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 		nearBuffer.Clear();
 	}
 
-	private void AddBurst(Vector2 at, float radius, BurstKind kind)
+	private void AddBurst(Vector2 at, float radius, BurstKind kind, float heading = 0f)
 	{
 		int slot = -1;
 		for (int b = 0; b < MaxBursts; b++)
@@ -641,7 +661,7 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 		if (slot < 0)
 			slot = nextBurst;
 		nextBurst = (slot + 1) % MaxBursts;
-		bursts[slot] = new Burst { At = at, Radius = radius, Seed = ++seedClock, Kind = kind, Live = true };
+		bursts[slot] = new Burst { At = at, Radius = radius, Heading = heading, Seed = ++seedClock, Kind = kind, Live = true };
 	}
 
 	// How far the outer tongues have fanned at fraction s along the arc: nothing before the fork, all of
@@ -762,6 +782,7 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 		lashMaterial.SetShaderParameter(ParamSparkHot, spark.Hot);
 		lashMaterial.SetShaderParameter(ParamSparkMid, spark.Mid);
 		lashMaterial.SetShaderParameter(ParamTint, tint);
+		lashMaterial.SetShaderParameter(ParamWhip, new Vector4(Whip.Lag, Whip.HandEnd, Whip.WaveStart, Whip.Bend));
 	}
 
 	private void LayOutLashes()
@@ -807,7 +828,7 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 
 		if (age < LeapSeconds)
 		{
-			Unfurl(l, age / LeapSeconds, span, flicker);
+			Fling(l, age / LeapSeconds, span, flicker);
 		}
 		else if (age < sweepsEnd)
 		{
@@ -819,13 +840,16 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 			}
 			float since = age - PassStart(k);
 			float c = Mathf.Clamp(since / SweepSeconds, 0f, 1f);
-			// On exactly the curve the hit test sweeps, a ripple running down it as it goes.
-			LayAlongBand(l, k, c, span, flicker, 2.5f * (1f - 0.6f * c), age);
+			// On exactly the curve the hit test sweeps, the loop rolling out along it.
+			Lash(l, k, c, span, flicker);
 			// Behind it, the band it has just crossed; in Thunderclap's pause at the far edge, all of it.
 			smear = since < SweepSeconds
-				? new Vector4(PassFrom(l, k), c, MathF.Max(0f, c - 0.55f), 1f)
+				? new Vector4(PassFrom(l, k), c, MathF.Max(0f, c - 0.45f), 1f)
 				: new Vector4(PassFrom(l, k), 1f, 0f, 0.5f);
-			crack = Mathf.Clamp(1f - since / CrackSeconds, 0f, 1f);
+			// The tip heats as it whips toward the crack, and stays white a moment after it.
+			crack = since < SweepSeconds
+				? Mathf.Clamp((c - TipHeatFrom) / (1f - TipHeatFrom), 0f, 1f)
+				: Mathf.Clamp(1f - (since - SweepSeconds) / CrackSeconds, 0f, 1f);
 		}
 		else
 		{
@@ -836,6 +860,7 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 			dissolve = Smooth((v - 0.45f) / 0.55f);
 			float fade = 1f - v;
 			smear = new Vector4(PassFrom(l, last), 1f, 0f, 0.7f * fade * fade);
+			crack = Mathf.Clamp(1f - (age - sweepsEnd) / CrackSeconds, 0f, 1f);
 		}
 
 		for (int x = 0; x < PointTexels; x++)
@@ -861,10 +886,11 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 	}
 
 	// One of Forked Lightning's outer tongues, into row d: from the fork point on the arc out to its own
-	// tip, fanned `sign` of the way off the arc by ForkSpread of the band at the tip - the same offset
-	// the hit test shifts the swept band by (Sweep), so the tongue strikes what it is seen to cross. It
-	// sweeps with the arc and recoils with it, folding back onto it as it goes slack. Its smear is the
-	// band it swept, shifted the same way (the shader's fork texel).
+	// tip, fanned `sign` of the way off the arc by ForkSpread of the band at the tip - the same offset the
+	// hit test shifts the swept band by (Sweep), so the tongue strikes what it is seen to cross. It lies on
+	// the whip's front (BandAcross, the curve the hit test reads) with no loop of its own - a fork of
+	// lightning off the lash, not a second whip - and recoils with the lash, folding back onto it as it
+	// goes slack. Its smear is the band it swept, shifted the same way (the shader's fork texel).
 	private void PoseTongue(in Arc l, int d, float sign)
 	{
 		float span = MathF.Max(1f, l.Reach - HandReach);
@@ -891,18 +917,14 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 			}
 			float since = age - PassStart(k);
 			float c = Mathf.Clamp(since / SweepSeconds, 0f, 1f);
-			float ripple = 2.5f * (1f - 0.6f * c);
 			for (int p = 0; p <= Points; p++)
 			{
 				float t = ForkAt + (1f - ForkAt) * p / Points;
-				float across = OffTheHand(l, PassAcross(l, k, c, t), t)
-					+ spread * ForkFan(t)
-					+ WanderAt(seed, flicker, p)
-					+ ripple * MathF.Sin(Mathf.Tau * (t * 1.6f - age * 9f)) * MathF.Sin(Mathf.Pi * t);
+				float across = OffTheHand(l, BandAcross(l, k, c, t), t) + spread * ForkFan(t) + TongueWander(seed, flicker, p);
 				lashPts[p] = l.Dir * (HandReach + span * t) + l.Across * across;
 			}
 			smear = since < SweepSeconds
-				? new Vector4(PassFrom(l, k), c, MathF.Max(0f, c - 0.55f), 1f)
+				? new Vector4(PassFrom(l, k), c, MathF.Max(0f, c - 0.45f), 1f)
 				: new Vector4(PassFrom(l, k), 1f, 0f, 0.5f);
 		}
 		else
@@ -919,7 +941,7 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 				float sag = MathF.Sin(Mathf.Pi * t) * slack;
 				float wave = MathF.Abs(MathF.Sin(Mathf.Tau * (t * 1.3f + v * 2.2f))) * 3f * (1f - v) * t;
 				float across = OffTheHand(l, far, length * t) + into * (sag + wave)
-					+ spread * ForkFan(t) * (1f - v) + WanderAt(seed, flicker, p) * (1f - v);
+					+ spread * ForkFan(t) * (1f - v) + TongueWander(seed, flicker, p) * (1f - v);
 				lashPts[p] = l.Dir * along + l.Across * across;
 			}
 			heat = 1f - 0.85f * v;
@@ -928,6 +950,7 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 			float fade = 1f - v;
 			smear = new Vector4(PassFrom(l, last), 1f, 0f, 0.7f * fade * fade);
 		}
+		TipHoldsTheLoop();
 
 		for (int x = 0; x < PointTexels; x++)
 		{
@@ -952,60 +975,49 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 		lashQuads[q + 3] = l.Dir * a0 + l.Across * hi;
 	}
 
-	// THE LEAP: the lash leaves the hand along the band's starting edge and unrolls. A loop rolls out
-	// from the hand to the tip - the part past it folded back toward the hand, a radius into the band -
-	// and shrinks as it goes, so at the end of the leap the whole lash lies straight along the edge:
-	// exactly the pose the sweep starts from, and the moment the tip cracks.
-	private void Unfurl(in Arc l, float u, float span, uint flicker)
+	// A tongue's own crackle: the lash's wander on a seed of its own, so the two tongues never move as one.
+	private static float TongueWander(uint seed, uint flicker, int p)
+	{
+		if (p <= 0 || p >= Points)
+			return 0f;
+		return (Hash(seed + flicker * 131u, p) - 0.5f) * 2f * Jag * MathF.Sqrt(MathF.Sin(Mathf.Pi * p / Points));
+	}
+
+	// THE LEAP: the lash is thrown out along the band's starting edge, its tip leading and a ripple running
+	// out ahead of the hand into the band, so at the end of the leap it lies straight along the edge -
+	// exactly the pose the stroke starts from. The warning: the whole reach is shown before anything is
+	// struck. No loop yet; that is the stroke's (a loop rolled out here before 2026-10-31, and the crack
+	// came at the START of the sweep, and the two together read as a flick, not a whip).
+	private void Fling(in Arc l, float u, float span, uint flicker)
 	{
 		float edge = PassFrom(l, 0);
 		float into = edge < 0f ? 1f : -1f;
-		// Its loop is at most a little over half the band across, so it never leaves the band.
-		float unrolled = 0.15f + 0.85f * (1f - (1f - u) * (1f - u));
-		float rho = MathF.Min(l.HalfBand * 0.6f, 13f) * (1f - unrolled) + 2f;
-		float straight = unrolled * span;
-		float loop = MathF.Min(MathF.PI * rho, MathF.Max(0f, span - straight));
-		float back = MathF.Max(0f, MathF.Min(span - straight - loop, straight));
-		float total = MathF.Max(1f, straight + loop + back);
-		float cx = HandReach + straight;
-		float cy = OffTheHand(l, edge, unrolled) + into * rho;
-		for (int p = 0; p <= Points; p++)
-		{
-			float sigma = total * p / Points;
-			float along, across;
-			if (sigma <= straight)
-			{
-				along = HandReach + sigma;
-				across = OffTheHand(l, edge, sigma / span);
-			}
-			else if (sigma <= straight + loop)
-			{
-				float theta = (sigma - straight) / rho;
-				along = cx + rho * MathF.Sin(theta);
-				across = cy - into * rho * MathF.Cos(theta);
-			}
-			else
-			{
-				along = cx - (sigma - straight - loop);
-				across = OffTheHand(l, edge, (along - HandReach) / span) + into * 2f * rho;
-			}
-			across += Wander(l, flicker, p) * 0.6f;
-			lashPts[p] = l.Dir * along + l.Across * across;
-		}
-	}
-
-	// THE SWEEP: the lash on PassAcross itself - the curve the hit test sweeps, tip leading - with a
-	// ripple of a couple of px running down it. The ripple and the wander stay well inside the body
-	// allowance the hit is measured with.
-	private void LayAlongBand(in Arc l, int k, float c, float span, uint flicker, float ripple, float phase)
-	{
+		float out_ = 0.3f + 0.7f * (1f - (1f - u) * (1f - u));
 		for (int p = 0; p <= Points; p++)
 		{
 			float t = p / (float)Points;
-			float across = OffTheHand(l, PassAcross(l, k, c, t), t)
-				+ Wander(l, flicker, p)
-				+ ripple * MathF.Sin(Mathf.Tau * (t * 1.6f - phase * 9f)) * MathF.Sin(Mathf.Pi * t);
-			lashPts[p] = l.Dir * (HandReach + span * t) + l.Across * across;
+			float ripple = MathF.Abs(MathF.Sin(Mathf.Tau * (t * 1.2f - u * 1.5f))) * 3f * (1f - u) * MathF.Sin(Mathf.Pi * t);
+			float across = OffTheHand(l, edge, out_ * t) + into * ripple + WanderAt(l, flicker, t) * 0.6f;
+			lashPts[p] = l.Dir * (HandReach + span * out_ * t) + l.Across * across;
+		}
+		TipHoldsTheLoop();
+	}
+
+	// THE SWEEP: the whip stroke. The lash on BandAcross itself - the curve the hit test sweeps - with the
+	// loop spliced in at the bend (WhipStroke.Splice), which only ever turns over band already swept. The
+	// wander stays well inside the body allowance the hit is measured with.
+	private void Lash(in Arc l, int k, float c, float span, uint flicker)
+	{
+		WhipStroke.Lay(c, Whip, wave);
+		WhipStroke.Loop(c, Whip, out float at, out float size);
+		float radius = size * MathF.Min(LoopRadius, l.HalfBand * 0.45f);
+		WhipStroke.Splice(wave, at, radius, span, 2f * l.HalfBand, false, 0f, stroke);
+		float from = PassFrom(l, k);
+		for (int p = 0; p < LashPoints; p++)
+		{
+			float s = stroke[p].X;
+			float across = OffTheHand(l, from - 2f * from * stroke[p].Y, s) + WanderAt(l, flicker, s);
+			lashPts[p] = l.Dir * (HandReach + span * s) + l.Across * across;
 		}
 	}
 
@@ -1023,27 +1035,34 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 			float along = HandReach + span * length * t;
 			float sag = MathF.Sin(Mathf.Pi * t) * slack;
 			float wave = MathF.Abs(MathF.Sin(Mathf.Tau * (t * 1.3f + v * 2.2f))) * 3f * (1f - v) * t;
-			float across = OffTheHand(l, far, length * t) + into * (sag + wave) + Wander(l, flicker, p) * (1f - v);
+			float across = OffTheHand(l, far, length * t) + into * (sag + wave) + WanderAt(l, flicker, t) * (1f - v);
 			lashPts[p] = l.Dir * along + l.Across * across;
 		}
+		TipHoldsTheLoop();
 	}
 
-	// The across position of the edge pass k starts from (PassAcross at c = 0).
+	// Outside the stroke there is no loop: its points wait, folded to nothing, on the tip.
+	private void TipHoldsTheLoop()
+	{
+		for (int p = Points + 1; p < LashPoints; p++)
+			lashPts[p] = lashPts[Points];
+	}
+
+	// The across position of the edge pass k starts from (BandAcross at c = 0).
 	private static float PassFrom(in Arc l, int k) => k % 2 == 0 ? -l.HalfBand : l.HalfBand;
 
 	// Off the hand and onto the band over the first sixth of the arc's reach (t is along it, 0..1).
 	private static float OffTheHand(in Arc l, float band, float t) =>
 		l.HandAcross + (band - l.HandAcross) * Smooth(t * 6f);
 
-	// Lightning wanders: a fresh offset every flicker, none at the hand or the tip, most in the middle.
-	private static float Wander(in Arc l, uint flicker, int p) => WanderAt(l.Seed, flicker, p);
-
-	private static float WanderAt(uint seed, uint flicker, int p)
+	// Lightning wanders: a fresh offset every flicker for each of the lash's own segments, none at the
+	// hand or the tip, most in the middle - the loop takes the offset of where it is on the lash.
+	private static float WanderAt(in Arc l, uint flicker, float t)
 	{
+		int p = (int)MathF.Round(Mathf.Clamp(t, 0f, 1f) * Points);
 		if (p <= 0 || p >= Points)
 			return 0f;
-		float t = p / (float)Points;
-		return (Hash(seed + flicker * 131u, p) - 0.5f) * 2f * Jag * MathF.Sqrt(MathF.Sin(Mathf.Pi * t));
+		return (Hash(l.Seed + flicker * 131u, p) - 0.5f) * 2f * Jag * MathF.Sqrt(MathF.Sin(Mathf.Pi * p / Points));
 	}
 
 	// One quad per lash, carrying its row in the UV; the shader draws the lash, its crackle and its
@@ -1188,24 +1207,41 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 		}
 	}
 
-	// The crack at the tip: a white-hot star of four arms - square or diagonal by the burst's seed - that
-	// shrinks over CrackFlashSeconds, and sparks thrown out to the burst's radius (a body), which is all
-	// the reach the tip's flash may claim.
+	// The crack at the tip, the moment it lands: a white-hot snap - a square heart and a star of four arms,
+	// square or diagonal by the burst's seed, the other four short - that shrinks over CrackFlashSeconds; a
+	// ring of shock a few pixels wide going out from it, broken, and gone with the flash; and sparks thrown
+	// the way the tip was travelling. All of it inside the burst's radius (a body), which is all the reach
+	// the tip's flash may claim.
 	private void DrawCrack(Vector2 at, in Burst burst)
 	{
-		ImpactDebris.Draw(this, at, burst.Radius, burst.Age, burst.Seed, spark, 8, tint);
+		ImpactDebris.Draw(this, at, burst.Radius, burst.Age, burst.Seed, spark, 10, tint,
+			burst.Heading - 1.3f, 2.6f);
 		if (burst.Age >= CrackFlashSeconds)
 			return;
+		float g = WhipLimb.Grid;
 		float u = burst.Age / CrackFlashSeconds;
 		DrawRect(WhipLimb.Cell(at, u < 0.35f ? 8f : 4f), Ink(spark.Core, 1f));
-		float arm = MathF.Min(burst.Radius - WhipLimb.Grid, u < 0.5f ? 10f : 6f);
+		float arm = MathF.Min(burst.Radius - g, u < 0.4f ? 11f : 6f);
 		int first = (burst.Seed & 1u) == 1u ? 4 : 0;
 		Color hot = Ink(u < 0.5f ? spark.Core : spark.Hot, 1f);
 		for (int a = 0; a < 4; a++)
 		{
 			Vector2 dir = CrackArms[first + a];
-			for (float r = 4f; r <= arm; r += WhipLimb.Grid)
-				DrawRect(WhipLimb.Cell(at + dir * r, WhipLimb.Grid), hot);
+			for (float r = 4f; r <= arm; r += g)
+				DrawRect(WhipLimb.Cell(at + dir * r, g), hot);
+			if (u < 0.5f)
+				DrawRect(WhipLimb.Cell(at + CrackArms[(first + 4 + a) % 8] * 4f, g), Ink(spark.Hot, 1f));
+		}
+		// The shock: eight beats of light on a ring that opens from the heart to just inside the radius,
+		// every other one dropping out halfway.
+		float ring = Mathf.Lerp(5f, burst.Radius - g, u);
+		Color shock = Ink(u < 0.5f ? spark.Hot : spark.Mid, 1f);
+		for (int a = 0; a < 8; a++)
+		{
+			if (u > 0.5f && a % 2 == 1)
+				continue;
+			float ang = burst.Heading + a * Mathf.Tau / 8f + 0.39f;
+			DrawRect(WhipLimb.Cell(at + new Vector2(MathF.Cos(ang), MathF.Sin(ang)) * ring, g), shock);
 		}
 	}
 

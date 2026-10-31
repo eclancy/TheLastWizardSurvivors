@@ -62,6 +62,58 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 	private const float LanceBeatSeconds = 0.09f;
 	public int LanceStep { get; set; }
 
+	// --- PHASE 2 (.ai/spell-roster.md section 2h). Three cards that moved only numbers now each change
+	// what the eruption does; their ids never moved (the Geomancer's path names two of them).
+	//
+	// SPLINTER FIELD (obsidian_spike_splinter_field, the Geomancer's level 4; once "35% wider"): the
+	// eruption splinters through the ground - as its cracks run out, a splinter of glass punches up
+	// under each of the SplinterCount nearest enemies just past its rim (out to SplinterReach radii),
+	// one after another, striking what stands over it for SplinterShare of the spike.
+	public const string SplinterFieldId = "obsidian_spike_splinter_field";
+	public const int SplinterCount = 4;
+	public const float SplinterReach = 2.0f;
+	public const float SplinterShare = 0.5f;
+	private const float SplinterHitShare = 0.4f;   // of the radius: a splinter's own reach round its spot
+	private const float SplinterBeatSeconds = 0.035f;
+	// DEEP STRATA (obsidian_spike_deep_strata; once +45% damage and a longer cast range): driven up from
+	// far deeper, the spike throws everything it breaks out under up into the air (Enemy.ApplyLaunch):
+	// LaunchSeconds aloft, doing nothing, and down where it went up. A miniboss, elite or boss is too
+	// heavy to throw and reels instead (ApplyShock, LaunchStaggerSeconds).
+	public const string DeepStrataId = "obsidian_spike_deep_strata";
+	public const float LaunchSeconds = 0.6f;
+	private const float LaunchHeight = 40f;
+	private const float LaunchStaggerSeconds = 0.3f;
+	private const int MaxLaunched = 16;
+	// TECTONIC UPRISING (obsidian_spike_tectonic_uprising, the Geomancer's level 8; once +120% damage and
+	// +60% area): where the spike broke out the ground stays open - a vent, its cracks smouldering - for
+	// VentSeconds, and every VentBeatSeconds it throws up a fresh spike of glass under the nearest enemy
+	// within VentReach radii, striking everything at that spot for VentShare of the spike.
+	public const string TectonicId = "obsidian_spike_tectonic_uprising";
+	public const float VentSeconds = 3f;
+	public const float VentBeatSeconds = 0.5f;
+	public const float VentReach = 1.6f;
+	public const float VentShare = 0.6f;
+	private const float VentHitShare = 0.5f;       // of the radius: a vent's spike's reach round its spot
+	private const int MaxVentSpikes = 4;
+
+	private bool splinterField;
+	private bool deepStrata;
+	private bool tectonic;
+	// A spike thrown up by a vent or a splinter field is drawn from the sheet's splinter row, at a spot
+	// from this node, from the age it broke out. Shared by both: neither card can be on the other's spot.
+	private const int MaxShards = SplinterCount + MaxVentSpikes;
+	private readonly Vector2[] shardAt = new Vector2[MaxShards];
+	private readonly float[] shardFrom = new float[MaxShards];
+	private readonly bool[] shardStruck = new bool[MaxShards];
+	private readonly Enemy[] shardTarget = new Enemy[MaxShards];
+	private readonly float[] shardShare = new float[MaxShards];
+	private readonly float[] shardReach = new float[MaxShards];
+	private int shardCount;          // splinters, laid at the eruption; vent spikes cycle after them
+	private int nextVentShard;
+	private float nextVentAt;
+	private readonly Enemy[] launched = new Enemy[MaxLaunched];
+	private static readonly System.Collections.Generic.List<Enemy> nearBuffer = new(64);
+
 	// --- the sheet ---------------------------------------------------------------------------------
 	private const float CellPx = 96f;           // a 48 px cell at x2
 	private const float AnchorX = 50f;          // the cluster's foot, across the cell (art x 25)
@@ -156,7 +208,12 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 
 	public void CastAt(Vector2 position)
 	{
-		GlobalPosition = position;
+		// On the world's 2-unit grid (the pixel-art pass, 2026-10-29), as Black Tentacles' rift stands: every
+		// square this draws - the cracks, the chips, the shadows - is snapped in the node's own frame, so a
+		// node off the grid put all of them a fraction of an art pixel off everything round them. The hit
+		// is measured from the same snapped point, so what is drawn is still what is struck.
+		GlobalPosition = new Vector2(MathF.Round(position.X / WhipLimb.Grid) * WhipLimb.Grid,
+			MathF.Round(position.Y / WhipLimb.Grid) * WhipLimb.Grid);
 		age = 0f;
 		erupted = false;
 
@@ -187,13 +244,16 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 		age += (float)delta;
 		if (!erupted && age >= TelegraphDuration)
 			Erupt();
+		if (erupted)
+			TickShards();
 		if (age >= lifeSeconds)
 		{
 			QueueFree();
 			return;
 		}
 		QueueRedraw();
-		fissures.QueueRedraw();
+		if (FissuresChanged())
+			fissures.QueueRedraw();
 	}
 
 	private void Erupt()
@@ -204,12 +264,25 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 
 		// The group, like every AoE (CLAUDE.md) - see the same fix in ConeBlast. CurrentScene's children
 		// are the enemies only when the run IS the scene, so under the balance harness this hit nothing.
-		var enemies = EnemyRegistry.Snapshot.OfType<Node2D>();
 		var player = PlayerRef as Player;
-		foreach (var e in enemies)
+		int thrown = 0;
+		foreach (Node node in EnemyRegistry.Snapshot)
 		{
-			if (GlobalPosition.DistanceTo(e.GlobalPosition) <= explosionRadius)
-				player?.DealDamageToEnemy(e, damage, source: SpellData);
+			if (node is not Node2D e || GlobalPosition.DistanceTo(e.GlobalPosition) > explosionRadius)
+				continue;
+			player?.DealDamageToEnemy(e, damage, source: SpellData);
+			// Deep Strata: what it broke out under goes up with it.
+			if (deepStrata && e is Enemy body && IsInstanceValid(body) && !body.IsDying)
+			{
+				if (body.IsMiniBoss)
+					body.ApplyShock(LaunchStaggerSeconds);
+				else if (!body.IsAirborne)
+				{
+					body.ApplyLaunch(LaunchHeight, LaunchSeconds);
+					if (thrown < MaxLaunched)
+						launched[thrown++] = body;
+				}
+			}
 		}
 
 		// The element's dust, thrown out to exactly the radius it hit (the shared burst, art-direction
@@ -217,8 +290,110 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 		if (GetParent() is Node2D arena)
 			ImpactDebrisLayer.Spawn(arena, GlobalPosition + new Vector2(0f, FootOffset), explosionRadius, ramp, glowTint);
 
+		if (splinterField)
+			LaySplinters();
+		if (tectonic)
+			nextVentAt = age + VentBeatSeconds;
+
 		if (LanceStep == 0 && SpellData != null && SpellData.HasEvolution(BasaltLanceId))
 			DriveLance();
+	}
+
+	// Splinter Field: the nearest enemies past the rim, each with a splinter of glass coming up under it
+	// a beat after the last, as the cracks reach out.
+	private void LaySplinters()
+	{
+		float reach = explosionRadius * SplinterReach;
+		EnemyRegistry.CollectNear(GlobalPosition, reach, nearBuffer);
+		shardCount = 0;
+		// Nearest first, one at a time: SplinterCount passes over a short list, no sort and no allocation.
+		float floor = explosionRadius;
+		for (int n = 0; n < SplinterCount; n++)
+		{
+			Enemy best = null;
+			float bestD = reach;
+			foreach (Enemy e in nearBuffer)
+			{
+				if (e == null || !IsInstanceValid(e) || e.IsDying)
+					continue;
+				float d = GlobalPosition.DistanceTo(e.GlobalPosition);
+				if (d > floor && d < bestD && Array.IndexOf(shardTarget, e, 0, shardCount) < 0)
+				{
+					bestD = d;
+					best = e;
+				}
+			}
+			if (best == null)
+				break;
+			shardTarget[shardCount] = best;
+			shardAt[shardCount] = best.GlobalPosition - GlobalPosition;
+			shardFrom[shardCount] = age + CrackRunSeconds + SplinterBeatSeconds * shardCount;
+			shardStruck[shardCount] = false;
+			shardShare[shardCount] = SplinterShare;
+			shardReach[shardCount] = explosionRadius * SplinterHitShare;
+			shardCount++;
+		}
+		nearBuffer.Clear();
+		nextVentShard = shardCount;
+	}
+
+	// The splinters and the vent's spikes: each strikes when it breaks the surface, under the enemy it
+	// was laid for if that one is still standing (it walks a step in a beat), and a vent picks its next
+	// enemy on its beat.
+	private void TickShards()
+	{
+		var player = PlayerRef as Player;
+		for (int i = 0; i < MaxShards; i++)
+		{
+			if (shardStruck[i] || shardFrom[i] <= 0f || age < shardFrom[i])
+				continue;
+			shardStruck[i] = true;
+			Enemy target = shardTarget[i];
+			if (target != null && IsInstanceValid(target) && !target.IsDying)
+				shardAt[i] = target.GlobalPosition - GlobalPosition;
+			shardTarget[i] = null;
+			Vector2 at = GlobalPosition + shardAt[i];
+			int hit = Math.Max(1, Mathf.RoundToInt(damage * shardShare[i]));
+			float r2 = shardReach[i] * shardReach[i];
+			foreach (Node node in EnemyRegistry.Snapshot)
+			{
+				if (node is Node2D e && e.GlobalPosition.DistanceSquaredTo(at) <= r2)
+					player?.DealDamageToEnemy(e, hit, source: SpellData);
+			}
+		}
+
+		// Tectonic Uprising: the vent's beat, while it is open.
+		if (tectonic && age >= nextVentAt && age < TelegraphDuration + VentSeconds)
+		{
+			nextVentAt += VentBeatSeconds;
+			float reach = explosionRadius * VentReach;
+			EnemyRegistry.CollectNear(GlobalPosition, reach, nearBuffer);
+			Enemy best = null;
+			float bestD = reach * reach;
+			foreach (Enemy e in nearBuffer)
+			{
+				if (e == null || !IsInstanceValid(e) || e.IsDying)
+					continue;
+				float d = GlobalPosition.DistanceSquaredTo(e.GlobalPosition);
+				if (d < bestD)
+				{
+					bestD = d;
+					best = e;
+				}
+			}
+			nearBuffer.Clear();
+			if (best != null)
+			{
+				int slot = nextVentShard;
+				nextVentShard = shardCount + (nextVentShard - shardCount + 1) % MaxVentSpikes;
+				shardTarget[slot] = best;
+				shardAt[slot] = best.GlobalPosition - GlobalPosition;
+				shardFrom[slot] = age + 0.06f;
+				shardStruck[slot] = false;
+				shardShare[slot] = VentShare;
+				shardReach[slot] = explosionRadius * VentHitShare;
+			}
+		}
 	}
 
 	private void DriveLance()
@@ -270,6 +445,9 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 	{
 		damage = Math.Max(1, Mathf.RoundToInt((SpellData?.GetDamageAtLevel(CurrentLevel) ?? 6) * DamageMultiplier));
 		explosionRadius = MathF.Max(4f, BaseExplosionRadius * AreaMultiplier);
+		splinterField = SpellData?.HasEvolution(SplinterFieldId) ?? false;
+		deepStrata = SpellData?.HasEvolution(DeepStrataId) ?? false;
+		tectonic = SpellData?.HasEvolution(TectonicId) ?? false;
 	}
 
 	// --- layout, once per cast -----------------------------------------------------------------------
@@ -334,6 +512,15 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 
 		lifeSeconds = TelegraphDuration + MathF.Max(MathF.Max(FrameSeconds * (ClusterFrames - 3), HotSeconds + CoolSeconds + FadeSeconds),
 			ImpactDebris.LifeSeconds);
+		// Phase 2: the node outlives its eruption for whatever it set going - the last splinter's rise,
+		// the thrown bodies' fall (their shadows are drawn here), the vent's last spike and its cooling.
+		float shardSeconds = SplinterFrames * SplinterFrameSeconds;
+		if (splinterField)
+			lifeSeconds = MathF.Max(lifeSeconds, TelegraphDuration + CrackRunSeconds + SplinterBeatSeconds * SplinterCount + shardSeconds);
+		if (deepStrata)
+			lifeSeconds = MathF.Max(lifeSeconds, TelegraphDuration + LaunchSeconds + 0.05f);
+		if (tectonic)
+			lifeSeconds = MathF.Max(lifeSeconds, TelegraphDuration + VentSeconds + 0.06f + shardSeconds + FadeSeconds);
 	}
 
 	// One crack (or fork) of CrackPoints points from `from` along `dir` for `length`, each bend pushed
@@ -373,6 +560,16 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 			if (splinterAt[i].Y >= 0f)
 				DrawSplinter(i, foot);
 
+		// Splinter Field's splinters and the vent's spikes, each at the feet of what it came up under.
+		for (int i = 0; i < MaxShards; i++)
+		{
+			if (shardFrom[i] <= 0f || age < shardFrom[i])
+				continue;
+			int shardFrame = (int)((age - shardFrom[i]) / SplinterFrameSeconds);
+			if (shardFrame < SplinterFrames)
+				DrawSheetFrame(foot + shardAt[i], shardFrame, 1 + rowOffset);
+		}
+
 		// The chips in the air, and lying where they landed until they go.
 		if (sinceHit >= 0f)
 		{
@@ -399,7 +596,10 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 	private void DrawSheetFrame(Vector2 foot, int frame, int row)
 	{
 		var src = new Rect2(frame * CellPx, row * CellPx, CellPx, CellPx);
-		var dst = new Rect2(MathF.Round(foot.X - AnchorX), MathF.Round(foot.Y - GroundY), CellPx, CellPx);
+		// The sheet is drawn at x2, so its art pixels are the world's 2-unit cells only when it is placed on
+		// an even unit: a splinter rounded to an odd one sat half an art pixel off the cluster beside it.
+		float g = WhipLimb.Grid;
+		var dst = new Rect2(MathF.Round((foot.X - AnchorX) / g) * g, MathF.Round((foot.Y - GroundY) / g) * g, CellPx, CellPx);
 		DrawTextureRectRegion(Sheet, dst, src, glassTint);
 	}
 
@@ -416,7 +616,8 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 
 	private void DrawChip(int i, Vector2 foot, float since, float fade)
 	{
-		if (since <= 0f)
+		// Going, they go one at a time, whole: a chip is never drawn see-through (the pixel-art pass).
+		if (since <= 0f || (fade < 1f && (i * 0.618034f) % 1f >= fade))
 			return;
 		float u = Mathf.Clamp(since / ChipFlightSeconds, 0f, 1f);
 		float eased = 1f - (1f - u) * (1f - u) * (1f - u);
@@ -430,66 +631,177 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 		int face = u < 1f ? (int)(since / 0.04f + i) & 3 : 0;
 		Color lit = (u < 1f && face == 1 ? Spec : face == 3 ? GlassLit : GlassHi) * glassTint;
 		Color dark = (face == 2 ? GlassShade : GlassLit) * glassTint;
-		lit.A = fade;
-		dark.A = fade;
 		Rect2 body = WhipLimb.Cell(at, size);
 		DrawRect(body, dark);
 		DrawRect(new Rect2(body.Position, new Vector2(WhipLimb.Grid, WhipLimb.Grid)), lit);
 	}
 
-	// The ground layer (CraterGround.GroundZ): the cracks, and the chips' shadows under them in flight.
+	// The cracks' state at this age: how far out they have run, how many stops down the ramp they have
+	// cooled, how much of them is left (1 whole, 0 gone - a Bayer threshold, never an alpha), and whether
+	// anything drawn on this layer is still moving (the tell growing, a chip's shadow, a thrown body's).
+	private void FissureState(out float front, out int shift, out float left, out bool moving)
+	{
+		if (age < TelegraphDuration)
+		{
+			float share = age / MathF.Max(0.001f, TelegraphDuration);
+			front = MathF.Min(explosionRadius * 0.3f, 6f + 10f * share);
+			shift = share < 0.5f ? 2 : 1;
+			left = 1f;
+			moving = true;
+			return;
+		}
+		float sinceHit = age - TelegraphDuration;
+		front = explosionRadius * Ease(sinceHit / CrackRunSeconds);
+		float cool = Mathf.Clamp((sinceHit - HotSeconds) / CoolSeconds, 0f, 1f);
+		left = Mathf.Clamp(1f - (sinceHit - HotSeconds - CoolSeconds) / FadeSeconds, 0f, 1f);
+		shift = (int)(cool * 3f);
+		// Tectonic Uprising: the vent's cracks do not go out - they smoulder at the ramp's mid, throbbing,
+		// until it closes, and then go as the eruption's did.
+		if (tectonic && cool >= 1f)
+		{
+			float ventLeft = VentSeconds - sinceHit;
+			float smoulder = (0.55f + 0.25f * MathF.Sin(age * 9f)) * Mathf.Clamp((ventLeft + FadeSeconds) / FadeSeconds, 0f, 1f);
+			if (smoulder > left)
+			{
+				left = smoulder;
+				shift = 1;
+			}
+		}
+		moving = sinceHit < ChipFlightSeconds + 0.04f;
+		for (int i = 0; i < MaxLaunched && deepStrata && !moving; i++)
+		{
+			Enemy e = launched[i];
+			if (e == null)
+				break;
+			moving = IsInstanceValid(e) && e.IsAirborne;
+		}
+	}
+
+	// The ground layer is stamped in a few hundred cells a spike, and for most of its life nothing in it
+	// changes, so it is drawn again only when something has: the front a cell further out, a stop cooler,
+	// a sixteenth more of it gone, or a shadow on the move (_Process).
+	private int fissureKey = int.MinValue;
+
+	private bool FissuresChanged()
+	{
+		FissureState(out float front, out int shift, out float left, out bool moving);
+		int key = ((int)(front / WhipLimb.Grid) * 8 + shift) * 32 + (int)(left * 16f);
+		if (!moving && key == fissureKey)
+			return false;
+		fissureKey = key;
+		return true;
+	}
+
+	// The ground layer (CraterGround.GroundZ): the cracks, and the shadows of what is in the air over them.
+	// All of it in whole art pixels on the world's grid (the node stands on it, CastAt) and all of it
+	// opaque: the pixel-art pass (2026-10-29) replaced DrawLine strokes at fractional alpha - thin vector
+	// lines at any angle and any width, off the grid and fading see-through - with cells stamped along
+	// each crack, which go out cell by cell on a Bayer pattern instead of fading.
 	private void DrawFissures()
 	{
 		Vector2 foot = new Vector2(0f, FootOffset);
-		if (age < TelegraphDuration)
+		FissureState(out float front, out int shift, out float left, out _);
+		bool tell = age < TelegraphDuration;
+		if (!tell)
+			DrawLaunchedShadows();
+		if (left <= 0f)
+			return;
+		// The tell: the ground starting to split at the feet, the first few cracks a short way out and
+		// brightening as the glass comes - small, and at the spot. No lip yet.
+		int cracks = tell ? Math.Min(crackCount, 2 + (int)(age / MathF.Max(0.001f, TelegraphDuration) * 3f)) : crackCount;
+		int forks = tell ? 0 : forkCount;
+		// Pass by pass over every crack - the lip, then the glow, then the split - so no crack's glow is
+		// stamped over another's split where they meet at the mouth.
+		for (int pass = tell ? 1 : 0; pass < 3; pass++)
 		{
-			// The tell: the ground starting to split at the feet, the first few cracks a short way out
-			// and brightening as the glass comes - small, and at the spot.
-			float share = age / MathF.Max(0.001f, TelegraphDuration);
-			float reach = MathF.Min(explosionRadius * 0.3f, 6f + 10f * share);
-			int shown = Math.Min(crackCount, 2 + (int)(share * 3f));
-			for (int k = 0; k < shown; k++)
-				DrawCrack(k, foot, reach, share < 0.5f ? 2 : 1, 1f, false);
-			return;
+			for (int k = 0; k < cracks; k++)
+				DrawCrack(k, foot, front, shift, left, pass);
+			for (int f = 0; f < forks; f++)
+				DrawCrack(MaxCracks + f, foot, front, shift, left, pass);
 		}
-
-		float sinceHit = age - TelegraphDuration;
-		float front = explosionRadius * Ease(sinceHit / CrackRunSeconds);
-		float cool = Mathf.Clamp((sinceHit - HotSeconds) / CoolSeconds, 0f, 1f);
-		float alpha = Mathf.Clamp(1f - (sinceHit - HotSeconds - CoolSeconds) / FadeSeconds, 0f, 1f);
-		if (alpha <= 0f)
+		if (tell)
 			return;
-		int shift = (int)(cool * 3f);
-		for (int k = 0; k < crackCount; k++)
-			DrawCrack(k, foot, front, shift, alpha, true);
-		for (int f = 0; f < forkCount; f++)
-			DrawCrack(MaxCracks + f, foot, front, shift, alpha, true);
 
-		// A chip in the air throws a speck of shadow on the ground under it (the flyer's detached occ).
+		// A chip in the air throws a speck of shadow on the ground under it (the flyer's detached occ): two
+		// cells of occ on the diagonal of a 2x2, the dither a shadow is drawn with here.
+		float sinceHit = age - TelegraphDuration;
+		float g = WhipLimb.Grid;
 		for (int i = 0; i < chipCount; i++)
 		{
 			float since = sinceHit - chipDelay[i];
 			if (since <= 0f || since >= ChipFlightSeconds)
 				continue;
 			float eased = Ease(since / ChipFlightSeconds);
-			Vector2 ground = foot + chipDir[i] * chipReach[i] * eased;
-			fissures.DrawRect(WhipLimb.Cell(ground, WhipLimb.Grid * 2f), new Color(Occ, 0.55f));
+			Rect2 speck = WhipLimb.Cell(foot + chipDir[i] * chipReach[i] * eased, g * 2f);
+			fissures.DrawRect(new Rect2(speck.Position, g, g), Occ);
+			fissures.DrawRect(new Rect2(speck.Position + new Vector2(g, g), g, g), Occ);
 		}
 	}
 
-	// One crack drawn out to `front` (a distance from the feet): white-hot to hot near the mouth, mid,
-	// then edge toward its end, every stop pushed `shift` further down the ramp as it cools. It is two
-	// flat strokes - a wide one a stop cooler, the glow in the ground either side of the split, and the
-	// split itself over it - widest at the mouth and thinning to a single art pixel at the radius. Near
-	// the mouth it has a lip of occlusion under it, so it reads as the ground opened, not a line on it.
-	private void DrawCrack(int index, Vector2 foot, float front, int shift, float alpha, bool lip)
+	// Deep Strata: a body thrown up leaves its shadow on the ground under it - smaller and sparser the
+	// higher it is - which is what says it is in the air and not simply drawn higher.
+	private void DrawLaunchedShadows()
+	{
+		if (!deepStrata)
+			return;
+		for (int i = 0; i < MaxLaunched; i++)
+		{
+			Enemy e = launched[i];
+			if (e == null)
+				break;
+			if (!IsInstanceValid(e) || e.IsDying || !e.IsAirborne)
+				continue;
+			Transform2D xf = e.GlobalTransform;
+			Vector2 feet = xf.Origin + new Vector2(0f, e.StatusFxGeometry.FeetY * xf.X.Length()) - GlobalPosition;
+			float lift = e.AirborneLift / LaunchHeight;
+			DrawAirShadow(fissures, feet, 12f - 5f * lift, 0.6f - 0.25f * lift);
+		}
+	}
+
+	/// <summary>
+	/// The occ shadow under something in the air (a thrown or launched body): a flat oval of occ cells on
+	/// the world's 2-unit grid, <paramref name="halfWidth"/> wide either side of <paramref name="feet"/>
+	/// (in <paramref name="canvas"/>'s frame, which must stand on the grid), dithered on a Bayer pattern to
+	/// <paramref name="density"/> - how dark it is - and never drawn see-through. Shared with Black
+	/// Tentacles' Fling.
+	/// </summary>
+	public static void DrawAirShadow(CanvasItem canvas, Vector2 feet, float halfWidth, float density)
+	{
+		float g = WhipLimb.Grid;
+		int half = Math.Max(2, (int)MathF.Round(halfWidth / g));
+		int cx = (int)MathF.Round(feet.X / g);
+		int cy = (int)MathF.Round(feet.Y / g);
+		// Four rows of cells: the middle two the full width, the outer two two cells in at each end.
+		for (int row = -2; row < 2; row++)
+		{
+			int reach = row == -2 || row == 1 ? half - 2 : half;
+			for (int col = -reach; col < reach; col++)
+			{
+				int x = cx + col, y = cy + row;
+				if (PixelInk.Bayer(x, y) < density)
+					canvas.DrawRect(new Rect2(x * g, y * g, g, g), Occ);
+			}
+		}
+	}
+
+	// One crack drawn out to `front` (a distance from the feet), one pass of it: white-hot to hot near the
+	// mouth, mid, then edge toward its end, every stop pushed `shift` further down the ramp as it cools.
+	// Pass 0 is the lip of occlusion under it near the mouth, so it reads as the ground opened and not a
+	// line on it; pass 1 the glow in the ground either side of the split, a stop cooler and wide - three
+	// art pixels at the mouth, two further out, none at the radius; pass 2 the split itself over it, two
+	// art pixels at the mouth thinning to one. Each is a run of square cells stamped along the crack a
+	// cell apart; `left` below 1 drops cells on a Bayer pattern, so a crack goes out rather than fades.
+	private void DrawCrack(int index, Vector2 foot, float front, int shift, float left, int pass)
 	{
 		int baseIndex = index * CrackPoints;
 		float segment = crackSegment[index];
 		float start = crackStart[index];
 		if (front <= start)
 			return;
+		float g = WhipLimb.Grid;
 		float total = explosionRadius;
+		bool lip = pass == 0;
+		var lipDrop = new Vector2(0f, g * 1.5f);
 		for (int j = 0; j < CrackPoints - 1; j++)
 		{
 			float d0 = start + segment * j;
@@ -504,24 +816,45 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 				d1 = front;
 			}
 			float share = (d0 + d1) * 0.5f / total;
-			// Hot most of the way out: the cluster stands over the inner third, so what shows of a crack
-			// is its outer run, and an outer run in the ramp's edge was a brown line on a teal floor.
-			int stop = Math.Min(3, (share < 0.22f ? 0 : share < 0.58f ? 1 : share < 0.88f ? 2 : 3) + shift);
-			float wide = share < 0.5f ? WhipLimb.Grid * 3f : share < 0.9f ? WhipLimb.Grid * 2f : 0f;
-			if (lip && share < 0.45f)
-				fissures.DrawLine(a + new Vector2(0f, WhipLimb.Grid * 1.5f), b + new Vector2(0f, WhipLimb.Grid * 1.5f), new Color(Occ, alpha * 0.8f), WhipLimb.Grid * 2f);
-			if (wide > 0f)
-				fissures.DrawLine(a, b, Stop(Math.Min(3, stop + 1), alpha), wide);
-			fissures.DrawLine(a, b, Stop(stop, alpha), share < 0.25f ? WhipLimb.Grid * 1.5f : WhipLimb.Grid);
+			float size;
+			Color colour;
+			if (lip)
+			{
+				if (share >= 0.45f)
+					continue;
+				size = g * 2f;
+				colour = Occ;
+			}
+			else
+			{
+				// Hot most of the way out: the cluster stands over the inner third, so what shows of a crack
+				// is its outer run, and an outer run in the ramp's edge was a brown line on a teal floor.
+				int stop = Math.Min(3, (share < 0.22f ? 0 : share < 0.58f ? 1 : share < 0.88f ? 2 : 3) + shift);
+				if (pass == 1)
+				{
+					size = share < 0.5f ? g * 3f : share < 0.9f ? g * 2f : 0f;
+					stop = Math.Min(3, stop + 1);
+				}
+				else
+					size = share < 0.25f ? g * 2f : g;
+				if (size <= 0f)
+					continue;
+				colour = Stop(stop);
+			}
+			int steps = Math.Max(1, (int)MathF.Ceiling(a.DistanceTo(b) / g));
+			for (int s = 0; s < steps; s++)
+			{
+				Vector2 at = a.Lerp(b, (float)s / steps);
+				Rect2 cell = WhipLimb.Cell(lip ? at + lipDrop : at, size);
+				if (left < 1f && PixelInk.Bayer((int)MathF.Round(cell.Position.X / g), (int)MathF.Round(cell.Position.Y / g)) >= left)
+					continue;
+				fissures.DrawRect(cell, colour);
+			}
 		}
 	}
 
-	private Color Stop(int stop, float alpha)
-	{
-		Color c = (stop == 0 ? ramp.Core : stop == 1 ? ramp.Hot : stop == 2 ? ramp.Mid : ramp.Edge) * glowTint;
-		c.A = alpha;
-		return c;
-	}
+	private Color Stop(int stop) =>
+		(stop == 0 ? ramp.Core : stop == 1 ? ramp.Hot : stop == 2 ? ramp.Mid : ramp.Edge) * glowTint;
 
 	// xorshift32 to 0..1: the layout's dice (see LayOut).
 	private float NextRandom()

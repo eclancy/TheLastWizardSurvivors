@@ -242,7 +242,12 @@ public partial class Player : CharacterBody2D
 	public Familiar.Grants FamiliarGrants => familiarGrants;
 	private float areaMultiplier = 1.0f;
 	private float durationMultiplier = 1.0f;
+	// The player-wide Amount: the Arcane Codex's Twinstar Sigil and the Split Lens. Read only through
+	// AmountFor, never at a cast site directly - that is what lets the lens charge exactly the spells it pays.
 	private int amountBonus = 0;
+	// The Split Lens (ChestItemCatalog.CrackedPrism) is held: GetSpellDamageMultiplier charges its cost.
+	private bool splitLensHeld;
+	private readonly HashSet<string> undeclaredAmountReaders = new(StringComparer.OrdinalIgnoreCase);
 	// Reused by the magic missile volley so picking targets does not allocate on every cast.
 	private readonly List<Node2D> magicMissileTargets = new();
 	private float growthMultiplier = 1.0f;
@@ -1672,7 +1677,49 @@ public partial class Player : CharacterBody2D
 	/// spell's attunement folded in. Every cast site uses this rather than <c>damageMultiplier</c>
 	/// directly, so attunement cannot be forgotten on a new spell.
 	/// </summary>
-	private float GetSpellDamageMultiplier(SpellData spell) => damageMultiplier * GetAttunementMultiplier(spell);
+	private float GetSpellDamageMultiplier(SpellData spell) =>
+		damageMultiplier * GetAttunementMultiplier(spell) * GetSplitLensMultiplier(spell);
+
+	// The Split Lens's cost: -25% damage - charged only to a spell its +1 projectile reaches (Eric, 0.9.3:
+	// "it should only reduce damage of spells that are affected by the projectile count"). It was a cut to
+	// the global multiplier, so Hollow Star, Fireball, Cinderbreath and every other spell that never reads
+	// Amount paid for a projectile it never got. Which spells read it is EvolutionStat.Amount on each
+	// one's EvolutionStatReaders row, the same row AmountFor pays out by.
+	public const float SplitLensDamageMultiplier = 0.75f;
+
+	private float GetSplitLensMultiplier(SpellData spell) =>
+		splitLensHeld && EvolutionStatReaders.ReadsAmount(spell) ? SplitLensDamageMultiplier : 1f;
+
+	/// <summary>
+	/// The damage multiplier a cast of this spell is handed now, and the projectiles Amount adds to it.
+	/// For RegressionChecks.ValidateAmountReaders, which holds a Player that never enters a tree.
+	/// </summary>
+	public (float Damage, int Amount) DebugCastTerms(SpellData spell) =>
+		(GetSpellDamageMultiplier(spell), EvolutionStatReaders.ReadsAmount(spell) ? AmountFor(spell) : 0);
+
+	/// <summary>A relic's effect taken as a chest gives it, without the pickup's log line or signal. For RegressionChecks.</summary>
+	public void DebugTakeChestItem(string itemId)
+	{
+		if (ownedChestItems.Add(itemId))
+			ApplyChestItemEffect(itemId);
+	}
+
+	/// <summary>
+	/// The extra projectiles the player-wide Amount gives this spell's cast: all of it for a spell whose
+	/// EvolutionStatReaders row says it reads Amount (and holds no milestone that drops it), none for any
+	/// other. Every cast site that adds Amount to a count asks here, so one row decides both whether the
+	/// Split Lens pays a spell and whether it charges it. A spell that asks without its row saying so gets
+	/// nothing and is reported, once: add EvolutionStat.Amount to its row.
+	/// </summary>
+	private int AmountFor(SpellData spell)
+	{
+		if (EvolutionStatReaders.ReadsAmount(spell))
+			return amountBonus;
+		if (spell != null && undeclaredAmountReaders.Add(spell.Id ?? string.Empty))
+			GD.PushError($"Player: '{spell.Id}' adds Amount to its count, but its EvolutionStatReaders row does not say so (EvolutionStat.Amount): "
+				+ "it gets none, and the Split Lens never charges it. Add Amount to its row.");
+		return 0;
+	}
 
 	// Returns the highest threshold (0, 2, 4, or 6) met by the given element's current instance count.
 	public int GetElementTier(Element element)
@@ -2499,16 +2546,69 @@ public partial class Player : CharacterBody2D
 	/// </remarks>
 	public void OnEnemyDiedAt(Vector2 where)
 	{
-		if (shatterInProgress)
-			return;
-
 		SpellData frost = equippedSpells.FirstOrDefault(
 			s => s != null && s.Id.Equals("frost_shard", StringComparison.OrdinalIgnoreCase));
 		if (frost == null)
 			return;
 
+		// Killed by a shatter: one level only (below), except that Avalanche shatters it a beat later, a
+		// generation deeper (FrostShatter.KilledInShatter).
+		if (shatterInProgress)
+		{
+			FrostShatter.For(GetParent(), frost, this)?.KilledInShatter(where);
+			return;
+		}
+		ShatterAt(where, frost, 1f, 0);
+	}
+
+	/// <summary>True while a Frost Shard shatter is striking: what it kills does not shatter again.</summary>
+	public bool ShatterGuarded => shatterInProgress;
+
+	/// <summary>
+	/// A shatter that is not a death's own: an Ice Statue breaking (a share of the shatter) or one of
+	/// Avalanche's (generation 1 and on). Both go through the guard as every shatter does.
+	/// </summary>
+	public void ShatterFromFrost(Vector2 where, float damageShare, int generation)
+	{
+		if (shatterInProgress)
+			return;
+		SpellData frost = equippedSpells.FirstOrDefault(
+			s => s != null && s.Id.Equals("frost_shard", StringComparison.OrdinalIgnoreCase));
+		if (frost != null)
+			ShatterAt(where, frost, damageShare, generation);
+	}
+
+	/// <summary>
+	/// One of Ice Flurry's flung shards landing, after the shatter that threw it: struck inside the guard,
+	/// as the shatter's own hits are, so what it kills does not shatter (but Avalanche may take it).
+	/// </summary>
+	public void FrostHit(Enemy target, int damage, float slowMultiplier, float slowSeconds, int generation)
+	{
+		if (target == null || !IsInstanceValid(target) || target.IsDying || shatterInProgress)
+			return;
+		SpellData frost = equippedSpells.FirstOrDefault(
+			s => s != null && s.Id.Equals("frost_shard", StringComparison.OrdinalIgnoreCase));
+		if (frost == null)
+			return;
+		FrostShatter layer = FrostShatter.For(GetParent(), frost, this);
+		shatterInProgress = true;
+		if (layer != null)
+			layer.Generation = generation;
+		try
+		{
+			DealDamageToEnemy(target, damage, source: frost);
+			target.ApplySlow(slowMultiplier, slowSeconds);
+		}
+		finally
+		{
+			shatterInProgress = false;
+		}
+	}
+
+	private void ShatterAt(Vector2 where, SpellData frost, float damageShare, int generation)
+	{
 		int shardDamage = Math.Max(1, Mathf.RoundToInt(
-			frost.GetDamageAtLevel(frost.CurrentLevel) * GetSpellDamageMultiplier(frost)));
+			frost.GetDamageAtLevel(frost.CurrentLevel) * GetSpellDamageMultiplier(frost) * damageShare));
 		float radius = MathF.Max(24f, frost.GetRangeAtLevel(frost.CurrentLevel) * GetEffectiveAreaMultiplier()
 			* frost.GetAreaMultiplierAtLevel(frost.CurrentLevel)
 			* (1f + frost.GetEffectValueAtLevel(SpellEffect.AreaSize, frost.CurrentLevel)));
@@ -2525,8 +2625,11 @@ public partial class Player : CharacterBody2D
 
 		// One level only. A shatter that kills re-enters this method, and on a dense screen an
 		// uncapped cascade is both a frame spike and an instant clear - the flag keeps it a burst
-		// rather than a chain reaction.
+		// rather than a chain reaction. (Avalanche takes those kills a beat later, to a fixed depth.)
+		FrostShatter frostLayer = FrostShatter.For(GetParent(), frost, this);
 		shatterInProgress = true;
+		if (frostLayer != null)
+			frostLayer.Generation = generation;
 		try
 		{
 			foreach (Node node in EnemyRegistry.Snapshot)
@@ -2548,8 +2651,11 @@ public partial class Player : CharacterBody2D
 					node.Call("ApplySlow", slowMultiplier, slowSeconds);
 			}
 
+			// Ice Flurry's shards fly from here to what they strike (FrostShatter.Fling); Meltwater's pools
+			// in reach freeze and burst, inside this guard.
 			if (flung > 0)
-				FlingShatterShards(where, radius, flung, shardDamage, slowMultiplier, slowSeconds, frost);
+				frostLayer?.Fling(where, radius, flung, shardDamage, slowMultiplier, slowSeconds);
+			frostLayer?.FreezePools(where, radius, shardDamage, slowMultiplier, slowSeconds);
 		}
 		finally
 		{
@@ -2557,6 +2663,10 @@ public partial class Player : CharacterBody2D
 		}
 
 		SpawnShatter(where, radius, frost);
+		// Meltwater: the corpse melts into a pool for a later shatter to freeze. Only a death's own shatter
+		// leaves one: an Avalanche or a statue breaking leaves no second corpse.
+		if (generation == 0 && damageShare >= 1f)
+			frostLayer?.LayPool(where, radius);
 	}
 
 	// Ice thrown out of the corpse to exactly the radius that was hit, on the arena's pooled debris
@@ -2568,47 +2678,8 @@ public partial class Player : CharacterBody2D
 			GetSpellVisualTint(frost));
 	}
 
-	// Ice Flurry and Blizzard Engine: shards thrown out of the corpse, one each at the nearest enemies
-	// past the burst and within ShardReach bursts of it. Each lands for the shatter's damage and slow on
-	// one enemy, drawn as a small burst where it lands. Inside the shatter guard, so a shard kill does
-	// not shatter again.
-	private const float ShardReach = 2.5f;
-	private readonly List<Node2D> shardTargets = new();
-
-	private void FlingShatterShards(Vector2 where, float radius, int count, int damage, float slowMultiplier, float slowSeconds, SpellData frost)
-	{
-		shardTargets.Clear();
-		float reach = radius * ShardReach;
-		foreach (Node node in EnemyRegistry.Snapshot)
-		{
-			if (node is not Node2D enemy || !IsInstanceValid(enemy))
-				continue;
-			float d = where.DistanceTo(enemy.GlobalPosition);
-			if (d <= radius || d > reach)
-				continue;
-			// Kept sorted and no longer than the volley by insertion: this runs on deaths, which on a
-			// dense screen is every frame, so no sort closure and no growing list.
-			int at = shardTargets.Count;
-			while (at > 0 && where.DistanceTo(shardTargets[at - 1].GlobalPosition) > d)
-				at--;
-			if (at >= count)
-				continue;
-			shardTargets.Insert(at, enemy);
-			if (shardTargets.Count > count)
-				shardTargets.RemoveAt(count);
-		}
-		Node2D arena = GetParent<Node2D>();
-		int hits = shardTargets.Count;
-		for (int i = 0; i < hits; i++)
-		{
-			Node2D target = shardTargets[i];
-			DealDamageToEnemy(target, damage, source: frost);
-			if (target is Enemy chilled)
-				chilled.ApplySlow(slowMultiplier, slowSeconds);
-			ImpactDebrisLayer.Spawn(arena, target.GlobalPosition, 14f, ElementColors.GetRamp(Element.Ice), GetSpellVisualTint(frost));
-		}
-		shardTargets.Clear();
-	}
+	// Ice Flurry's shards (projectiles past the first) are FrostShatter.Fling's since 2026-10-29: they fly
+	// from the corpse to what they strike, where they used to strike the instant the shatter went off.
 
 	private bool shatterInProgress = false;
 	private const float ShatterSlowMultiplier = 0.45f;
@@ -2994,9 +3065,11 @@ public partial class Player : CharacterBody2D
 			case ChestItemCatalog.CrackedPrism:
 				// A genuine trade rather than an upgrade, and the only item in the game that makes
 				// a number go DOWN. More shots that each hit softer is better for wide spells and
-				// worse for single heavy ones, so it is a decision instead of a pickup.
+				// worse for single heavy ones, so it is a decision instead of a pickup. The cost is
+				// charged per spell, to the ones the shot reaches (GetSplitLensMultiplier) - it was the
+				// whole damage multiplier until 0.9.3.
 				amountBonus += 1;
-				damageMultiplier *= 0.75f;
+				splitLensHeld = true;
 				break;
 			case ChestItemCatalog.DuellistsChalk:
 				break; // Read in DealDamageToEnemy - it depends on the target, not on the player.
@@ -3667,7 +3740,7 @@ public partial class Player : CharacterBody2D
 					// Ask the resource for the count rather than hardcoding 1: evolutions and
 					// level upgrades can both grant projectiles, and the old literal meant any
 					// that did were silently ignored for this spell alone.
-					int projectileCount = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + amountBonus);
+					int projectileCount = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
 					float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
 					EnemyTargeting.CollectNearest(GetTree(), GlobalPosition, projectileCount, magicMissileTargets, castRange);
 					outcome = CastOutcome.NoTarget;
@@ -3831,7 +3904,7 @@ public partial class Player : CharacterBody2D
 				else if (spell.Id.Equals("gale_blade", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, GaleBladeScene);
 				else if (spell.Id.Equals("molten_shard", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, MoltenShardScene, BoltAim.RandomInRange);
 				else if (spell.Id.Equals("chain_lightning", StringComparison.OrdinalIgnoreCase)) outcome = FireChainLightningSpell(spell, ChainLightningScene);
-				else if (spell.Id.Equals("void_lance", StringComparison.OrdinalIgnoreCase)) outcome = FireVoidLanceSpell(spell, VoidLanceScene);
+				else if (spell.Id.Equals("void_lance", StringComparison.OrdinalIgnoreCase)) outcome = FireVoidLanceSpell(spell, VoidLanceScene, interval);
 				else if (spell.Id.Equals("glacial_spike", StringComparison.OrdinalIgnoreCase)) outcome = FireIceSpikes(spell, GlacialSpikeScene);
 				else if (spell.Id.Equals("solar_flare", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshElementalPulse(spell, SolarFlareScene);
 				else if (spell.Id.Equals("toxic_spore_burst", StringComparison.OrdinalIgnoreCase)) outcome = FireSporeMushrooms(spell, ToxicSporeBurstScene);
@@ -4053,7 +4126,7 @@ public partial class Player : CharacterBody2D
 		if (aim == Vector2.Zero)
 			aim = Vector2.Right;
 
-		int arrows = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + amountBonus);
+		int arrows = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
 		float chargeDamage = Mathf.Lerp(HuntersDrawMinDamageMultiplier, HuntersDrawMaxDamageMultiplier, charge);
 		float chargeSpeed = Mathf.Lerp(HuntersDrawMinSpeedMultiplier, 1f, charge);
 		int chargePierce = fullDraw ? HuntersDrawFullDrawPierceBonus : 0;
@@ -4276,7 +4349,7 @@ public partial class Player : CharacterBody2D
 				chainLightning.DamageMultiplier = GetSpellDamageMultiplier(spell);
 				chainLightning.AreaMultiplier = areaMultiplier;
 				chainLightning.DurationMultiplier = durationMultiplier;
-				chainLightning.ProjectileCountBonus = amountBonus;
+				chainLightning.ProjectileCountBonus = AmountFor(spell);
 				chainLightning.SetSpellLevel(spell.CurrentLevel);
 				chainLightning.PlayerRef = this;
 			}
@@ -4408,7 +4481,7 @@ public partial class Player : CharacterBody2D
 			chainLightning.DamageMultiplier = GetSpellDamageMultiplier(spell);
 			chainLightning.AreaMultiplier = areaMultiplier;
 			chainLightning.DurationMultiplier = durationMultiplier;
-			chainLightning.ProjectileCountBonus = amountBonus;
+			chainLightning.ProjectileCountBonus = AmountFor(spell);
 			chainLightning.SetSpellLevel(spell.CurrentLevel);
 			chainLightning.PlayerRef = this;
 		}
@@ -4419,7 +4492,12 @@ public partial class Player : CharacterBody2D
 		return CastOutcome.Fired;
 	}
 
-	private CastOutcome FireVoidLanceSpell(SpellData spell, PackedScene scene)
+	// Void Lance's Witching Hour (.ai/spell-roster.md 2h): one lance that never withdraws, turning round
+	// the wizard. A cast that finds an enemy in reach keeps it out (and refreshes its stats) rather than
+	// thrusting a new one; with nothing in reach for a while it withdraws on its own.
+	private VoidLance witchingHand;
+
+	private CastOutcome FireVoidLanceSpell(SpellData spell, PackedScene scene, float interval)
 	{
 		if (scene == null) return CastOutcome.NoTarget;
 		FindNearestEnemy(out var nearest, out var minDist);
@@ -4427,6 +4505,18 @@ public partial class Player : CharacterBody2D
 
 		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
 		if (minDist > castRange) return CastOutcome.NoTarget;
+
+		bool clockwork = spell.HasEvolution(VoidLance.WitchingHourId);
+		if (clockwork && witchingHand != null && IsInstanceValid(witchingHand) && witchingHand.IsInsideTree() && !witchingHand.IsQueuedForDeletion())
+		{
+			witchingHand.SpellData = spell;
+			witchingHand.DamageMultiplier = GetSpellDamageMultiplier(spell);
+			witchingHand.AreaMultiplier = areaMultiplier;
+			witchingHand.DurationMultiplier = durationMultiplier;
+			witchingHand.SetSpellLevel(spell.CurrentLevel);
+			witchingHand.KeepAlive(interval * VoidLance.WitchingKeepCooldowns);
+			return CastOutcome.Maintained;
+		}
 
 		var lance = scene.Instantiate<Area2D>();
 		lance.Position = Vector2.Zero;
@@ -4443,6 +4533,12 @@ public partial class Player : CharacterBody2D
 		GetParent().AddChild(lance);
 		ApplyLegendaryVisual(lance, spell);
 		(lance as VoidLance)?.CastFromPlayer(this, nearest.GlobalPosition);
+		if (clockwork && lance is VoidLance hand)
+		{
+			hand.MakeClockwork(this);
+			hand.KeepAlive(interval * VoidLance.WitchingKeepCooldowns);
+			witchingHand = hand;
+		}
 		return CastOutcome.Fired;
 	}
 
@@ -4545,7 +4641,7 @@ public partial class Player : CharacterBody2D
 		Node2D arena = GetParent<Node2D>();
 		if (arena == null) return CastOutcome.NoTarget;
 
-		int cap = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + amountBonus);
+		int cap = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
 		int alive = arena.GetChildren().OfType<KindledWard>()
 			.Count(w => IsInstanceValid(w) && w.SpellData != null
 				&& w.SpellData.Id.Equals(spell.Id, StringComparison.OrdinalIgnoreCase));
@@ -4631,7 +4727,7 @@ public partial class Player : CharacterBody2D
 			arena.AddChild(starfallRain);
 		}
 
-		int stars = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + amountBonus);
+		int stars = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
 		// The node draws itself out of the radius it hits and repaints its own element path, so it takes
 		// only a Legendary's gold from the visual tint, never a node scale.
 		starfallRain.Cloudburst(spell, stars, interval, GetEffectiveAreaMultiplier(), GetSpellDamageMultiplier(spell),
@@ -4726,7 +4822,7 @@ public partial class Player : CharacterBody2D
 			stormsweep.PlayerRef = this;
 			AddChild(stormsweep);
 		}
-		int sweeps = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + amountBonus);
+		int sweeps = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
 		// It draws itself out of the band it sweeps and repaints its own element path, so it takes only
 		// a Legendary's gold from the visual tint, never a node scale.
 		stormsweep.Cast(spell, sweeps, FacingSide, GetEffectiveAreaMultiplier(), GetSpellDamageMultiplier(spell),
@@ -4746,7 +4842,7 @@ public partial class Player : CharacterBody2D
 			sleetRunes.PlayerRef = this;
 			arena.AddChild(sleetRunes);
 		}
-		int runes = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + amountBonus);
+		int runes = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
 		sleetRunes.Cast(spell, runes, GetSpellDamageMultiplier(spell), GetSpellVisualTint(spell));
 		return CastOutcome.Maintained;
 	}
@@ -4774,7 +4870,9 @@ public partial class Player : CharacterBody2D
 		if (nearest == null || minDist > range) return CastOutcome.NoTarget;
 
 		bool mass = spell.HasEvolution(GravewellTrap.MassGraveId);
-		int count = mass ? 1 : Math.Clamp(spell.GetProjectileCountAtLevel(spell.CurrentLevel) + amountBonus, 1, GravewellTrap.MaxPerCast);
+		// Mass Grave digs one grave whatever the count, so it never asks for Amount - and its row says so
+		// (EvolutionStatReaders, ExceptAmountUnder), so the Split Lens does not charge it either.
+		int count = mass ? 1 : Math.Clamp(spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell), 1, GravewellTrap.MaxPerCast);
 		GravewellTrap.Setup setup = GravewellTrap.For(spell, GetEffectiveAreaMultiplier(),
 			GetSpellDamageMultiplier(spell), durationMultiplier);
 		// A great grave opens under the front of the swarm itself; it is wide enough to take what follows.
@@ -4906,6 +5004,12 @@ public partial class Player : CharacterBody2D
 
 	// Hollow Star (issue #64). Opened on the densest pack in range - a pull centred on one straggler
 	// gathers one straggler - and only when something is in range at all, like every aimed spell.
+	//
+	// Never on the wizard (Eric, 0.9.2: "hollow star should never be centered on the player, so the
+	// enemies are not dragged into the player"): a pack within a reach of him is not where the well
+	// opens but what it is aimed THROUGH - HollowStar.OpenSpot pushes the well out along the line from him
+	// until the rim of its pull clears him, so that pack is on its near side and is dragged away. Before,
+	// a swarm pressed round him was the densest pack in range, and the well opened on his feet.
 	private CastOutcome FireHollowStar(SpellData spell, PackedScene scene)
 	{
 		if (scene == null) return CastOutcome.NoTarget;
@@ -4928,23 +5032,33 @@ public partial class Player : CharacterBody2D
 		// TwinMostApartReaches reaches off, so the two can drift together within one pull (HollowStar).
 		bool twins = spell.HasEvolution(HollowStar.TwinStarsId);
 		int wells = Math.Clamp(spell.GetProjectileCountAtLevel(spell.CurrentLevel), 1, HollowStar.MaxPerCast);
-		sporeSpots[0] = centre.GlobalPosition;
+		// Every well of the cast pulls at this reach, so it is what each is cleared of the wizard by and
+		// spaced by (it was the area alone, without the level 3 reach or the Spirit Mirror's).
+		float reach = HollowStarReach(spell);
+		sporeSpots[0] = HollowStar.OpenSpot(GlobalPosition, centre.GlobalPosition, reach);
 		int opened = 1;
-		float apart = HollowStar.DefaultPullRadius * GetEffectiveAreaMultiplier() * spell.GetAreaMultiplierAtLevel(spell.CurrentLevel);
+		float apart = reach;
 		float mostApart = apart * HollowStar.TwinMostApartReaches;
 		for (int tries = 0; opened < wells && tries < wells * 6; tries++)
 		{
 			Node2D pick = FindRandomEnemy(castRange);
 			if (pick == null)
 				break;
-			if (SporeSpotCrowded(pick.GlobalPosition, opened, apart * apart))
+			Vector2 spot = HollowStar.OpenSpot(GlobalPosition, pick.GlobalPosition, reach);
+			if (SporeSpotCrowded(spot, opened, apart * apart))
 				continue;
 			// A twin too far from its partner to meet it is drawn again, for the first two-thirds of the
-			// tries; after that any pack will do, and the pair simply closes what it can.
-			if (twins && opened % 2 == 1 && tries < wells * 4
-				&& sporeSpots[opened - 1].DistanceSquaredTo(pick.GlobalPosition) > mostApart * mostApart)
-				continue;
-			sporeSpots[opened++] = pick.GlobalPosition;
+			// tries; after that any pack will do, and the pair simply closes what it can. So is one whose
+			// pair would meet on the wizard - opened either side of him, the two would drift together onto
+			// him (HollowStar.DriftToPartner stops each short of him, but then the knots never meet).
+			if (twins && opened % 2 == 1 && tries < wells * 4)
+			{
+				Vector2 partner = sporeSpots[opened - 1];
+				if (partner.DistanceSquaredTo(spot) > mostApart * mostApart
+					|| !HollowStar.IsClearOf(GlobalPosition, (partner + spot) * 0.5f, reach))
+					continue;
+			}
+			sporeSpots[opened++] = spot;
 		}
 
 		HollowStar previous = null;
@@ -4966,25 +5080,18 @@ public partial class Player : CharacterBody2D
 		var well = scene.Instantiate<Node2D>();
 		if (well is HollowStar script)
 		{
-			// The evolutions' area belongs in the radius the well pulls and hits at - Bramble Seed's
-			// bug again (.ai/gameplay-design.md): Amplified Impact's +30% and Titan Cataclysm's +100%
-			// grew nothing, while Titan's x2 visual scale drew the well twice as wide as it pulled.
-			// Found putting John Dee's Apotheosis path through Titan Cataclysm.
-			float area = GetEffectiveAreaMultiplier() * spell.GetAreaMultiplierAtLevel(spell.CurrentLevel);
-			if (spell.IsApotheosis)
-				area *= HollowStar.SpiritMirrorReach;
-			float reachBonus = spell.GetEffectValueAtLevel(SpellEffect.AreaSize, spell.CurrentLevel);
 			script.SpellData = spell;
 			script.PlayerRef = this;
 			script.Damage = Math.Max(1, Mathf.RoundToInt(
 				spell.GetDamageAtLevel(spell.CurrentLevel) * GetSpellDamageMultiplier(spell)));
 			// Reach and collapse grow together, so a wider pull still closes on what it gathered.
-			float reachScale = (script.PullRadius + reachBonus) / MathF.Max(1f, script.PullRadius);
-			script.PullRadius = (script.PullRadius + reachBonus) * area;
-			script.CollapseRadius *= reachScale * area;
-			// 240 px/s for 1.6 s already carries the rim of a Titan well (about 390 px) to the knot, so
-			// only the Spirit Mirror - half as wide again - drags harder. Hyper Acceleration's Speed
-			// drags harder too: the knot it closes on is tighter, which is the spell's whole payload.
+			float reach = HollowStarReach(spell);
+			script.CollapseRadius *= reach / MathF.Max(1f, script.PullRadius);
+			script.PullRadius = reach;
+			// 120 px/s (0.9.3, halved) brings the rim of a Black Sun well (about 260 px) within its
+			// collapse in about a second, so only the Spirit Mirror - half as wide again - drags harder.
+			// Twin Stars' Speed drags harder too: the knot it closes on is tighter, which is the spell's
+			// whole payload.
 			script.PullSpeed *= MathF.Max(0.25f, spell.GetSpeedMultiplier());
 			if (spell.IsApotheosis)
 				script.PullSpeed *= HollowStar.SpiritMirrorPullSpeed;
@@ -5001,6 +5108,21 @@ public partial class Player : CharacterBody2D
 		// The well draws its own radius, so the evolutions' visual scale stays out of it (Bramble Seed).
 		well.Scale = Vector2.One;
 		return well as HollowStar;
+	}
+
+	// The reach a Hollow Star well of this spell pulls at. The evolutions' area belongs in it - Bramble
+	// Seed's bug again (.ai/gameplay-design.md): Amplified Impact's +30% and Titan Cataclysm's +100% once
+	// grew nothing, while Titan's x2 visual scale drew the well twice as wide as it pulled (found putting
+	// John Dee's Apotheosis path through Titan Cataclysm). The level 3 reach is pixels on the scene's 150,
+	// and the Spirit Mirror opens half again as wide. FireHollowStar clears the wizard by this before any
+	// well exists; OpenHollowStar sizes the well by it.
+	private float HollowStarReach(SpellData spell)
+	{
+		float area = GetEffectiveAreaMultiplier() * spell.GetAreaMultiplierAtLevel(spell.CurrentLevel);
+		if (spell.IsApotheosis)
+			area *= HollowStar.SpiritMirrorReach;
+		float reachBonus = spell.GetEffectValueAtLevel(SpellEffect.AreaSize, spell.CurrentLevel);
+		return (HollowStar.DefaultPullRadius + reachBonus) * area;
 	}
 
 	private int ScaledSpellDamage(SpellData spell) =>
@@ -5358,7 +5480,7 @@ public partial class Player : CharacterBody2D
 		Node2D arena = GetParent<Node2D>();
 		if (arena == null) return CastOutcome.NoTarget;
 
-		int count = Math.Clamp(spell.GetProjectileCountAtLevel(spell.CurrentLevel) + amountBonus, 1, MaxSporeMushrooms);
+		int count = Math.Clamp(spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell), 1, MaxSporeMushrooms);
 		SporeMushroom.Sowing sowing = SporeMushroom.For(spell, GetEffectiveAreaMultiplier(),
 			GetSpellDamageMultiplier(spell), durationMultiplier, count);
 
@@ -5468,7 +5590,7 @@ public partial class Player : CharacterBody2D
 		bool spire = spell.HasEvolution(IceSpike.FrozenSpireId);
 		Vector2 target = nearest.GlobalPosition;
 
-		int spikeCount = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + amountBonus);
+		int spikeCount = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
 		IceSpike first = MakeIceSpike(spell, scene);
 		float radius = first?.HitRadius ?? 56f;
 
@@ -5490,14 +5612,8 @@ public partial class Player : CharacterBody2D
 		}
 		else
 		{
-			const float scatterRadius = 70f;
 			spots = Math.Min(iceSpots.Length, spikeCount);
-			for (int i = 0; i < spots; i++)
-			{
-				iceSpots[i] = i == 0 ? target
-					: target + new Vector2(combatRng.RandfRange(-scatterRadius, scatterRadius), combatRng.RandfRange(-scatterRadius, scatterRadius));
-				iceDelays[i] = 0f;
-			}
+			PlaceExtraIceSpikes(nearest, target, spots, radius);
 			underTarget = 0;
 		}
 
@@ -5557,6 +5673,62 @@ public partial class Player : CharacterBody2D
 		return CastOutcome.Fired;
 	}
 
+	// Where a cast's spikes after the first rise (2026-10-30). They used to land at random within 70 of
+	// the target, so with a lone enemy the second spike erupted on empty ground beside it - Eric: "a
+	// second spike ... hovers nearby, even when there's a single enemy". Now each goes under another
+	// enemy near the target, nearest first and never inside a spike already placed, so it lands on
+	// someone; when there are fewer enemies than spikes, the rest rise under the target again, one after
+	// another, and read as repeated strikes on it rather than strays.
+	private const float IceExtraReach = 220f;
+	private const float IceRepeatSeconds = 0.18f;
+	private readonly List<Enemy> iceNear = new(48);
+
+	private void PlaceExtraIceSpikes(Node2D target, Vector2 at, int spots, float radius)
+	{
+		iceSpots[0] = at;
+		iceDelays[0] = 0f;
+		int placed = 1;
+		if (spots > 1)
+			EnemyRegistry.CollectNear(at, IceExtraReach, iceNear);
+		while (placed < spots)
+		{
+			Enemy best = null;
+			float bestSq = IceExtraReach * IceExtraReach;
+			foreach (Enemy enemy in iceNear)
+			{
+				if (enemy == target || !IsInstanceValid(enemy) || enemy.IsDying)
+					continue;
+				Vector2 p = enemy.GlobalPosition;
+				float sq = p.DistanceSquaredTo(at);
+				if (sq >= bestSq || IceSpotTaken(p, placed, radius))
+					continue;
+				best = enemy;
+				bestSq = sq;
+			}
+			if (best == null)
+				break;
+			iceSpots[placed] = best.GlobalPosition;
+			iceDelays[placed] = 0f;
+			placed++;
+		}
+		for (int repeat = 1; placed < spots; repeat++, placed++)
+		{
+			iceSpots[placed] = at;
+			iceDelays[placed] = repeat * IceRepeatSeconds;
+		}
+		iceNear.Clear();
+	}
+
+	private bool IceSpotTaken(Vector2 spot, int placed, float radius)
+	{
+		for (int i = 0; i < placed; i++)
+		{
+			if (iceSpots[i].DistanceSquaredTo(spot) < radius * radius)
+				return true;
+		}
+		return false;
+	}
+
 	private IceSpike MakeIceSpike(SpellData spell, PackedScene scene)
 	{
 		if (scene.Instantiate() is not IceSpike spike)
@@ -5611,7 +5783,7 @@ public partial class Player : CharacterBody2D
 		// finished runs at half the other wizards' damage. Distinct targets rather than Glacial Spike's
 		// scatter around one: the ground opens under the front rank of the swarm, which is the hold-
 		// the-line identity, and it keeps the two spike spells reading differently.
-		int spikeCount = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + amountBonus);
+		int spikeCount = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
 		EnemyTargeting.CollectNearest(GetTree(), GlobalPosition, spikeCount, magicMissileTargets, castRange);
 		if (magicMissileTargets.Count == 0)
 			magicMissileTargets.Add(nearest);
@@ -5661,7 +5833,7 @@ public partial class Player : CharacterBody2D
 				script.DamageMultiplier = GetSpellDamageMultiplier(spell);
 				script.AreaMultiplier = GetEffectiveAreaMultiplier();
 				script.AttackSpeedMultiplier = EffectiveAttackSpeed;
-				script.ProjectileCountBonus = amountBonus;
+				script.ProjectileCountBonus = AmountFor(spell);
 				script.SetSpellLevel(spell.CurrentLevel);
 				script.PlayerRef = this;
 			}
@@ -5674,7 +5846,7 @@ public partial class Player : CharacterBody2D
 			existing.DamageMultiplier = GetSpellDamageMultiplier(spell);
 			existing.AreaMultiplier = GetEffectiveAreaMultiplier();
 			existing.AttackSpeedMultiplier = EffectiveAttackSpeed;
-			existing.ProjectileCountBonus = amountBonus;
+			existing.ProjectileCountBonus = AmountFor(spell);
 			existing.SetSpellLevel(spell.CurrentLevel);
 		}
 		// Kept current, nothing new cast: see CastOutcome.Maintained.
@@ -5766,7 +5938,7 @@ public partial class Player : CharacterBody2D
 			script.AreaMultiplier = GetEffectiveAreaMultiplier() * spell.GetAreaMultiplierAtLevel(spell.CurrentLevel);
 			script.DurationMultiplier = durationMultiplier;
 			// Amount is more tentacles.
-			script.TentacleBonus = amountBonus;
+			script.TentacleBonus = AmountFor(spell);
 			script.SetSpellLevel(spell.CurrentLevel);
 			script.PlayerRef = this;
 		}
@@ -5967,7 +6139,7 @@ public partial class Player : CharacterBody2D
 
 		// Scales target count with level so the ray fans out to more enemies as it levels.
 		int levelTargetBonus = (spell.CurrentLevel - 1) / 2;
-		int rayCount = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + amountBonus + levelTargetBonus);
+		int rayCount = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell) + levelTargetBonus);
 
 		// The held first (hottest first), then the nearest. `enemies` is nearest first.
 		scorchTargets.Clear();
@@ -6070,7 +6242,7 @@ public partial class Player : CharacterBody2D
 		// round the player's own feet as it used to.
 		if (minDist > castRange) return CastOutcome.NoTarget;
 
-		int count = Math.Clamp(spell.GetProjectileCountAtLevel(spell.CurrentLevel) + amountBonus, 1, MaxMeteorsPerVolley);
+		int count = Math.Clamp(spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell), 1, MaxMeteorsPerVolley);
 		float stagger = MathF.Min(MeteorStagger, MeteorVolleySeconds / count);
 		float damageMultiplier = GetSpellDamageMultiplier(spell);
 		// The evolutions' area belongs in the blast (Bramble Seed's bug again): Meteor Cluster's +30%

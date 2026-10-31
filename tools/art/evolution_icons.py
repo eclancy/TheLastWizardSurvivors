@@ -1213,7 +1213,7 @@ SPELLS = {
     "familiar_dog":      dict(paint=image(lambda: familiar.portrait()), travel=(1, 0), tip=(27, 19), rows=()),
     "familiar_crow":     dict(paint=image(lambda: familiar.crow_portrait()), travel=(1, 0), tip=(30, 17), rows=()),
     "familiar_cat":      dict(paint=image(lambda: familiar.cat_portrait()), travel=None, tip=(16, 19), rows=()),
-    "stormsweep":        dict(paint=lambda: si.stormsweep(sky=False), travel=None, tip=(25, 20), rows=("lightning",)),
+    "stormsweep":        dict(paint=lambda: si.stormsweep(sky=False), travel=None, tip=(26, 20), rows=("lightning",)),
     "sleet_runes":       dict(paint=lambda: si.sleet_runes(sky=False), travel=(0.83, -0.56), tip=(22, 11), rows=("ice", "wind")),
 }
 
@@ -1790,36 +1790,73 @@ def event_horizon():
     return c
 
 
-def singularity_core():
-    """Singularity Core: the missile become a gravitational orb, the dart's trail still behind it."""
+def arcane_orb():
+    """Arcane Orb (2h, was Singularity Core): the missile loosed as a great slow orb of arcane light,
+    lit from the upper left with motes turning in it, rolling over two marks - the pack it grinds - with
+    the dart's streak still behind it. No vortex: the pull is Hollow Star's."""
     c = _cv()
     a = E["arcane"]
-    d = E["darkness"]
-    for (y, x0) in ((14, 2), (17, 4), (20, 7)):
-        c.hline(x0, 13, y, a[3])
-        c.hline(x0 + 5, 13, y, a[2])
-    c.disc(19, 16, 9.0, 9.0, d[3])
-    c.disc(19, 16, 7.5, 7.5, a[3])
-    c.ring(19, 16, 6.5, 6.5, a[1])
-    c.disc(19, 16, 5.5, 5.5, OCC)
-    c.set(16, 13, a[0])
-    c.set(17, 13, a[1])
+    for (y, x0) in ((13, 2), (16, 1), (19, 3)):
+        c.hline(x0, 9, y, a[3])
+        c.hline(x0 + 4, 9, y, a[2])
+    for (mx, my) in ((14, 25), (24, 26)):
+        c.disc(mx, my, 2.6, 2.6, a[3])
+        c.disc(mx, my, 1.6, 1.6, OCC)
+    c.disc(19, 16, 10.0, 10.0, OCC)
+    c.disc(19, 16, 9.0, 9.0, a[3])
+    c.disc(18, 15, 7.0, 7.0, a[2])
+    c.disc(17, 14, 4.2, 4.2, a[1])
+    c.disc(16, 13, 1.8, 1.8, a[0])
+    for (x, y) in ((23, 12), (24, 19), (19, 22), (13, 18)):
+        c.set(x, y, a[0])
     return c
 
 
-def annihilation_beam():
-    """Annihilation Beam: the lance become a death ray, twice as long and twice as wide."""
+def _blade(c, x0, y0, x1, y1, w0):
+    """A lance blade of the void from (x0, y0) to its point at (x1, y1): widest a third of the way."""
+    d = E["darkness"]
+    a = E["arcane"]
+    dx, dy = x1 - x0, y1 - y0
+    n = math.hypot(dx, dy) or 1.0
+    px, py = -dy / n, dx / n
+    for (w, tone) in ((w0, d[3]), (w0 * 0.72, a[3]), (w0 * 0.45, a[2]), (w0 * 0.2, a[1])):
+        mx, my = x0 + dx * 0.35, y0 + dy * 0.35
+        c.poly([(x0, y0), (mx + px * w, my + py * w), (x1, y1), (mx - px * w, my - py * w)], tone)
+    c.line(x0 + dx * 0.2, y0 + dy * 0.2, x1 - dx * 0.08, y1 - dy * 0.08, a[0])
+
+
+def witching_hour():
+    """Witching Hour (2h, was Annihilation Beam): the lance as the hand of a clock - a dial of twelve
+    ticks round the disc, the blade from its centre out past one o'clock, and the dotted sweep of the
+    turn it has made behind it."""
     c = _cv()
     d = E["darkness"]
     a = E["arcane"]
+    for k in range(12):
+        t = math.radians(k * 30 - 90)
+        r0 = 10.5 if k % 3 else 9.5
+        c.line(16 + math.cos(t) * r0, 16 + math.sin(t) * r0, 16 + math.cos(t) * 12.5, 16 + math.sin(t) * 12.5,
+               a[2] if k % 3 else a[1])
+    for deg in range(150, 290, 10):
+        t = math.radians(deg)
+        c.set(16 + math.cos(t) * 7.5, 16 + math.sin(t) * 7.5, d[2] if deg < 220 else d[1])
+    _blade(c, 16, 16, 27, 4, 2.6)
+    c.disc(16, 16, 2.6, 2.6, a[3])
+    c.disc(16, 16, 1.5, 1.5, a[1])
+    c.set(16, 16, a[0])
+    return c
 
-    def quad(w):
-        k = w * 0.707
-        return [(1 - k, 31 - k), (31 - k, 1 - k), (31 + k, 1 + k), (1 + k, 31 + k)]
-    for (w, tone) in ((6.0, d[3]), (4.6, a[3]), (3.2, a[2]), (1.8, a[1]), (0.7, a[0])):
-        c.poly(quad(w), tone)
-    c.disc(4, 28, 4.0, 4.0, a[2])
-    c.disc(4, 28, 2.2, 2.2, a[0])
+
+def void_glaive():
+    """Void Glaive (2h, was Rift Blade): the lance run out of both hands - a blade to the upper right and
+    a shorter one to the lower left, the grip of void between them."""
+    c = _cv()
+    a = E["arcane"]
+    _blade(c, 15, 17, 29, 3, 2.8)
+    _blade(c, 17, 15, 6, 26, 2.4)
+    c.disc(16, 16, 2.4, 2.4, OCC)
+    c.disc(16, 16, 1.5, 1.5, a[2])
+    c.set(16, 16, a[0])
     return c
 
 
@@ -1847,6 +1884,32 @@ def cardinal_storm():
             c.set(C0 + math.cos(mid_a) * r, C0 + math.sin(mid_a) * r, mid)
     c.ring(C0, C0, 3.2, 3.2, mid)
     c.disc(C0, C0, 1.6, 1.6, core)
+    return c
+
+
+def twin_gyres():
+    """Twin Gyres: two rings of wind, an outer one turning one way and an inner one the other, each a
+    swept trail brightening to its blade - so the two ways round read at a glance."""
+    c = _cv()
+    core, hot, mid, edge = E["wind"]
+
+    def gyre(r, head, sweep, sign, blade):
+        n = int(sweep / 4)
+        for i in range(n + 1):
+            t = i / float(n)
+            a = math.radians(head - sign * sweep * (1.0 - t))
+            tone = edge if t < 0.35 else (mid if t < 0.75 else hot)
+            c.set(C0 + math.cos(a) * r, C0 + math.sin(a) * r, tone)
+            if t > 0.5:
+                c.set(C0 + math.cos(a) * (r - 1), C0 + math.sin(a) * (r - 1), mid)
+        a = math.radians(head)
+        c.disc(C0 + math.cos(a) * r, C0 + math.sin(a) * r, blade, blade, hot)
+        c.set(C0 + math.cos(a) * r, C0 + math.sin(a) * r, core)
+
+    gyre(12.0, -40.0, 150.0, 1, 2.2)
+    gyre(12.0, 140.0, 150.0, 1, 2.2)
+    gyre(6.5, 60.0, 140.0, -1, 1.6)
+    gyre(6.5, 240.0, 140.0, -1, 1.6)
     return c
 
 
@@ -2190,10 +2253,28 @@ def _(sp, c):
 
 @card("tentacles_abyssal_spread")
 def _(sp, c):
-    """Abyssal Spread: a wider rift with more arms."""
+    """Fling (phase 2, 2026-10-29; once Abyssal Spread): the arms throw what they catch - the pit low
+    on the left, one of the swarm flung up out of it in an arc, and the rot burst where it lands on
+    another (BlackTentacles.Throw)."""
     reset(sp)
-    sp.place = Place(1.3, sy=0.9, dy=2)
-    O(sp, lambda cv, x: m_chevrons(cv, E["poison"], (C0, 24.0), 12))
+    sp.place = Place(0.74, at=(11.0, 20.0))
+
+    def fling(cv, x):
+        p = E["poison"]
+        d = E["darkness"]
+        # The arc it has flown, from the pit's arms up and over to where it hangs, brightening toward it.
+        prev = None
+        for k in range(0, 9):
+            t = k / 8.0
+            pt = (9.0 + 11.0 * t, 11.0 - 14.0 * t * (1.6 - t))
+            if prev:
+                cv.line(prev[0], prev[1], pt[0], pt[1], d[2] if k < 5 else d[1])
+            prev = pt
+        foe(cv, 22.0, 6.0, 0.9)
+        # Where it comes down: the rot's burst, on another of them.
+        m_blast(cv, p, 24.0, 20.5, 5.0)
+        foe(cv, 24.0, 21.0, 0.7)
+    O(sp, fling)
 
 
 @card("tentacles_soul_drain")
@@ -2370,44 +2451,95 @@ def _(sp, c):
     O(sp, lambda cv, x: m_chain(cv, E["water"], (14, 11), [(5, 19), (27, 21)], 1.4))
 
 
+def _marks(cv, ramp, points, lit=True):
+    """Enemies, as the bolt cards draw them: dark rings with a point of the arc's light in each."""
+    for (mx, my) in points:
+        cv.disc(mx, my, 2.6, 2.6, ramp[3])
+        cv.disc(mx, my, 1.6, 1.6, OCC)
+        if lit:
+            cv.set(mx, my, ramp[0])
+
+
 @card("chain_lightning_storm_reach")
 def _(sp, c):
-    """Storm Reach: more hops, a wider jump - the arc going on to three more."""
+    """Storm Reach (2h): the chain leaps long - long arcs from rim to rim of the disc, passing over the
+    near marks it skips (left dark) to the farthest ones."""
     reset(sp)
-    sp.place = Place(0.82, dx=-3, dy=-1)
-    O(sp, lambda cv, x: m_chain(cv, E["lightning"], x.tip, [(27, 14), (28, 25)], 1.8))
+    sp.place = Place(0.62, at=(8.0, 8.5))
+
+    def leaps(cv, x):
+        l = E["lightning"]
+        far = [(25, 9), (7, 25), (27, 25)]
+        _marks(cv, l, [(15, 13), (12, 19), (19, 20)], lit=False)
+        zig(cv, (11, 11), far[0], l[1], 1.4, 5, l[0])
+        zig(cv, far[0], far[1], l[1], 1.6, 6, l[0])
+        zig(cv, far[1], far[2], l[1], 1.4, 5, l[0])
+        _marks(cv, l, far)
+    O(sp, leaps)
 
 
 @card("chain_lightning_dense_current")
 def _(sp, c):
-    """Dense Current: no more chaining - one heavier bolt that crits, struck twice as thick."""
+    """Return Stroke (2h, was Dense Current): the chain out to its end and the stroke running back along
+    it - the outbound arc in the bolt's yellow, the return beside it white, chevrons pointing home."""
     reset(sp)
-    sp.place = Place(1.1)
-    sp.copies = [Place(1.1, dx=2.0, dy=0.0), Place(1.1, dx=-2.0, dy=1.0, darken=1)]
-    U(sp, lambda cv, x: m_rays(cv, E["lightning"], x.centre, 9.0, 14.5, 8))
-    O(sp, v_glint(4, at=(24, 8)))
+    sp.place = Place(0.6, at=(7.5, 9.0))
+
+    def stroke(cv, x):
+        l = E["lightning"]
+        pts = [(11, 12), (18, 14), (16, 22), (25, 25)]
+        for i in range(len(pts) - 1):
+            zig(cv, pts[i], pts[i + 1], l[2], 1.0, 3)
+            a = (pts[i][0] + 1, pts[i][1] - 2)
+            b = (pts[i + 1][0] + 1, pts[i + 1][1] - 2)
+            zig(cv, b, a, l[0], 1.0, 3, l[0])
+        _marks(cv, l, pts[1:])
+        for (hx, hy) in ((14, 10), (20, 17)):
+            cv.set(hx, hy, l[0])
+            cv.set(hx + 1, hy - 1, l[1])
+            cv.set(hx + 1, hy + 1, l[1])
+    O(sp, stroke)
 
 
 @card("chain_lightning_cascade")
 def _(sp, c):
-    """Cascade: every hop splits again and reaches further."""
+    """Cascade (2h): the chain runs on through what it kills - a long chain winding through the marks,
+    the ones it killed flashing, and on past them."""
     reset(sp)
-    sp.place = Place(0.9, dx=-2)
+    sp.place = Place(0.6, at=(7.5, 8.5))
 
-    def tree(cv, x):
+    def run(cv, x):
         l = E["lightning"]
-        m_chain(cv, l, (14, 11), [(24, 7), (4, 21)], 1.4)
-        m_chain(cv, l, (18, 22), [(27, 18), (26, 27)], 1.4)
-    O(sp, tree)
+        pts = [(11, 11), (20, 9), (26, 16), (17, 19), (9, 24), (22, 27)]
+        for i in range(len(pts) - 1):
+            zig(cv, pts[i], pts[i + 1], l[1], 1.1, 3, l[0])
+        _marks(cv, l, pts[1:])
+        for (bx, by) in (pts[2], pts[4]):
+            m_blast(cv, l, bx, by, 3.6)
+    O(sp, run)
 
 
 @card("chain_lightning_thunderhead")
 def _(sp, c):
-    """Thunderhead: one arc, twice the force - a single great bolt out of a storm cloud."""
+    """Electrocution (2h, was Thunderhead): the first enemy held in the current - the bolt striking a
+    mark that arcs crawl round and over."""
     reset(sp)
-    sp.place = Place(1.08, dy=3)
-    O(sp, lambda cv, x: m_cloud(cv, 8.0))
-    O(sp, lambda cv, x: m_blast(cv, E["lightning"], x.tip[0], min(27.0, x.tip[1]), 4.0))
+    sp.place = Place(0.62, at=(8.0, 8.5))
+
+    def held(cv, x):
+        l = E["lightning"]
+        cx, cy = 20, 19
+        zig(cv, (11, 11), (cx - 2, cy - 2), l[1], 1.2, 4, l[0])
+        for k in range(5):
+            a0 = math.radians(k * 72 + 10)
+            a1 = a0 + math.radians(50)
+            zig(cv, (cx + math.cos(a0) * 7.5, cy + math.sin(a0) * 7.5),
+                (cx + math.cos(a1) * 7.5, cy + math.sin(a1) * 7.5), l[1 if k % 2 else 0], 1.3, 2)
+        cv.disc(cx, cy, 3.4, 3.4, l[3])
+        cv.disc(cx, cy, 2.3, 2.3, OCC)
+        cv.set(cx, cy, l[0])
+        cv.set(cx - 1, cy, l[1])
+    O(sp, held)
 
 
 @card("chain_lightning_lattice")
@@ -2534,11 +2666,12 @@ def _(sp, c):
 
 @card("cone_zero_point_wave")
 def _(sp, c):
-    """Zero Point Shockwave: a freezing blast reaching far further."""
+    """Zero Point Shockwave (phase 2, 2026-10-29): the cone, the star of ice gathered at its tip, and
+    the second cone thrown on from that star (ConeBlast's relay) - the blast going on past its end."""
     reset(sp)
-    sp.place = Place(1.0, sy=1.2, dx=-4)
-    U(sp, lambda cv, x: m_shockwave(cv, E["ice"], (4, 16), 21.0, 2))
-    U(sp, lambda cv, x: m_speed(cv, E["ice"], (1, 0), (2, 8, 30, 24), 4, 6))
+    sp.place = Place(0.58, at=(10.0, 17.0))
+    sp.copies = [Place(0.4, at=(25.5, 17.0), darken=1)]
+    O(sp, lambda cv, x: m_glint(cv, 19.0, 17.0, 3, E["ice"]))
 
 
 @card("cone_glacier_tide")
@@ -2652,12 +2785,10 @@ def _(sp, c):
 
 @card("cyclone_slash_dual_blades")
 def _(sp, c):
-    """Dual Windblades: three blades on the wind's wheel, spinning faster."""
+    """Twin Gyres (phase 2, 2026-10-29; once Dual Windblades): two rings of wind, one inside the other,
+    turning opposite ways - the spell's own sweep, and a smaller one mirrored inside it."""
     reset(sp)
-    places = ring_of(3, 0.62, 8.0, 0.0, 0.0)
-    sp.copies = places[1:]
-    sp.place = places[0]
-    O(sp, lambda cv, x: m_glint(cv, C0, C0, 2, E["wind"]))
+    sp.subject = twin_gyres
 
 
 @card("cyclone_slash_razor_gale")
@@ -2668,10 +2799,27 @@ def _(sp, c):
 
 @card("cyclone_slash_tailwind_surge")
 def _(sp, c):
+    """Wind Shear (phase 2, 2026-10-29; once Tailwind Surge): the sweep shedding crescents of its wind,
+    flung off its horns and flying on past it with a streak behind each."""
     reset(sp)
-    sp.place = Place(0.95, dx=2)
-    U(sp, v_speed(5))
-    U(sp, v_ghosts((3, 6)))
+    sp.place = Place(0.72, at=(10.0, C0))
+
+    def shear(cv, x):
+        w = E["wind"]
+        for (cx, cy, heading) in ((22.5, 8.0, -25.0), (26.0, 21.5, 25.0)):
+            h = math.radians(heading)
+            ux, uy = math.cos(h), math.sin(h)
+            # The sickle: a thick arc bowed the way it flies, its horns trailing, white-hot at the belly.
+            for deg in range(-72, 74, 4):
+                a = h + math.radians(deg)
+                for (rr, tone) in ((4.6, w[2]), (3.8, w[1]), (3.0, w[0] if abs(deg) < 35 else w[1])):
+                    cv.set(cx - ux * 3.0 + math.cos(a) * rr, cy - uy * 3.0 + math.sin(a) * rr, tone)
+            # Two thin streaks behind its horns.
+            px, py = -uy, ux
+            for side in (-1.0, 1.0):
+                for k in range(3, 7):
+                    cv.set(cx - ux * k + px * side * 2.5, cy - uy * k + py * side * 2.5, w[3])
+    O(sp, shear)
 
 
 @card("cyclone_slash_typhoon_core")
@@ -2993,20 +3141,31 @@ def _(sp, c):
 
 # --- Frost Shard -----------------------------------------------------------------------------------
 
+def ice_statue():
+    """Ice Statues (2h, was Glacial Spike): a body of the dead frozen standing - a hooded shape in ice,
+    lit from the upper left, cracked through, ice chips at its feet where it is starting to break."""
+    c = _cv()
+    i = E["ice"]
+    body = [(10, 27), (11, 15), (12, 10), (15, 6), (18, 6), (21, 10), (22, 15), (23, 27)]
+    c.poly([(x, y + 1) for (x, y) in body], OCC)
+    c.poly(body, i[3])
+    c.poly([(12, 26), (13, 15), (14, 11), (16, 8), (18, 8), (19, 11), (17, 15), (16, 26)], i[2])
+    c.poly([(14, 13), (16, 9), (17, 11), (15, 16)], i[1])
+    c.disc(17.5, 12.5, 1.6, 1.4, OCC)
+    for (a, b) in (((18, 7), (16, 14)), ((16, 14), (19, 19)), ((19, 19), (17, 26)), ((16, 14), (12, 18))):
+        c.line(a[0], a[1], b[0], b[1], i[0])
+    for (x, y) in ((7, 27), (9, 25), (25, 26), (27, 24), (24, 28)):
+        c.set(x, y, i[1])
+        c.set(x + 1, y, i[2])
+    c.hline(8, 25, 28, i[3])
+    return c
+
+
 @card("frost_shard_glacial_spike")
 def _(sp, c):
-    """Glacial Spike: deeper cold, a harder slow - a spike of ice standing up out of the shatter."""
+    """Ice Statues: the dead freeze where they fall."""
     reset(sp)
-    sp.place = Place(0.9, dy=3)
-
-    def spike(cv, x):
-        i = E["ice"]
-        cv.poly([(12.5, 21), (16, 5), (19.5, 21)], i[3])
-        cv.poly([(14.5, 21), (16, 7), (17.5, 21)], i[2])
-        cv.line(16, 7, 16, 20, i[1])
-        cv.set(16, 5, i[0])
-        cv.set(16, 6, i[0])
-    O(sp, spike)
+    sp.subject = ice_statue
 
 
 @card("frost_shard_ice_flurry")
@@ -3035,23 +3194,40 @@ def _(sp, c):
 
 @card("frost_shard_absolute_zero")
 def _(sp, c):
+    """Avalanche (2h, was Absolute Zero): one death rolling out through the pack - the shatter three
+    times over, small to large from the lower left, each a beat after the last, rings of thrown ice
+    between them."""
     reset(sp)
-    colossal(sp, 1.18)
-    O(sp, lambda cv, x: m_glint(cv, C0, C0, 4, E["ice"]))
+    sp.copies = [Place(0.42, at=(8.0, 23.0), darken=1), Place(0.58, at=(14.5, 16.5), darken=0)]
+    sp.place = Place(0.8, at=(21.0, 10.5))
+
+    def ripples(cv, x):
+        i = E["ice"]
+        for (cx, cy, r, tone) in ((8, 23, 5.5, i[3]), (14.5, 16.5, 7.5, i[2]), (21, 10.5, 10.0, i[1])):
+            for d in range(0, 360, 20):
+                t = math.radians(d)
+                cv.set(cx + math.cos(t) * r, cy + math.sin(t) * r, tone)
+    U(sp, ripples)
 
 
 @card("frost_shard_blizzard_engine")
 def _(sp, c):
-    """Blizzard Engine: sleet out of every corpse."""
+    """Meltwater (2h, was Blizzard Engine): the corpse melted into a pool of water, and the next
+    shatter freezing it - ice spikes standing up out of the pool's far side, the shatter above."""
     reset(sp)
-    sp.place = Place(0.74, dy=-3)
+    sp.place = Place(0.62, at=(16.0, 9.5))
 
-    def sleet(cv, x):
+    def pool(cv, x):
         w = E["water"]
-        for (sx, sy) in ((4, 8), (9, 4), (24, 5), (27, 11), (6, 16), (26, 18), (12, 20), (20, 19)):
-            cv.line(sx, sy, sx - 2, sy + 4, w[2])
-            cv.set(sx, sy, w[0])
-    O(sp, sleet)
+        i = E["ice"]
+        cv.disc(16, 24, 12.0, 4.5, w[3])
+        cv.disc(15, 24, 9.5, 3.2, w[2])
+        cv.hline(8, 13, 22, w[1])
+        for (fx, h) in ((17, 7), (20, 10), (23, 6), (25, 4)):
+            cv.poly([(fx - 2, 25), (fx, 25 - h), (fx + 2, 25)], i[3])
+            cv.line(fx, 25 - h + 1, fx, 24, i[1])
+            cv.set(fx, 25 - h, i[0])
+    U(sp, pool)
 
 
 # --- Gale Blade ------------------------------------------------------------------------------------
@@ -3713,17 +3889,25 @@ def _(sp, c):
 
 @card("magic_missile_piercing_needle")
 def _(sp, c):
-    """Piercing Stardust: one long needle on through three more."""
+    """Threaded Needle (2h, was Piercing Stardust): the dart turns on each enemy in turn - a thread of
+    stardust stitched from mark to mark in a zigzag, and the dart at its head, turned for the next."""
     reset(sp)
-    sp.place = Place(1.0, sy=0.55, dx=1)
+    sp.place = Place(0.62, rot=-62.0, at=(22.5, 10.5))
 
-    def skewered(cv, x):
+    def thread(cv, x):
         a = E["arcane"]
-        for px in (8, 16, 24):
-            cv.disc(px, 16, 3.2, 3.2, a[2])
-            cv.disc(px, 16, 2.2, 2.2, OCC)
-    U(sp, skewered)
-    O(sp, lambda cv, x: [m_glint(cv, px, py, 1, E["arcane"]) for (px, py) in ((8, 8), (24, 24), (13, 25), (22, 7))])
+        marks = [(7, 23), (12, 13), (18, 23)]
+        pts = [(4, 28), (7, 23), (8, 17), (12, 13), (16, 16), (18, 23), (21, 18), (22, 13)]
+        for (mx, my) in marks:
+            cv.disc(mx, my, 3.4, 3.4, a[2])
+            cv.disc(mx, my, 2.2, 2.2, OCC)
+        for i in range(len(pts) - 1):
+            cv.line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], a[1] if i < 5 else a[0])
+        for (mx, my) in marks:
+            cv.set(mx, my, a[0])
+        for (sx, sy) in ((5, 20), (10, 19), (15, 20), (21, 25), (14, 9)):
+            cv.set(sx, sy, a[1])
+    U(sp, thread)
 
 
 @card("magic_missile_unstable_shard")
@@ -3737,20 +3921,30 @@ def _(sp, c):
 
 @card("magic_missile_gatling_barrage")
 def _(sp, c):
-    """Arcane Gatling Barrage: a stream of darts."""
+    """Overcharge (2h, was Arcane Gatling Barrage): the darts' static on what they strike - three
+    sparks crackling round a mark - and the overload, lightning bursting out of it, the dart that
+    set it off coming in from the left."""
     reset(sp)
-    sp.copies = [Place(0.5, at=(9.0, 9.5), darken=1), Place(0.5, at=(7.0, 22.5), darken=1),
-                 Place(0.56, at=(14.0, 16.0), darken=0)]
-    sp.place = Place(0.62, at=(21.0, 12.0))
-    sp.copies.append(Place(0.6, at=(22.0, 21.0)))
-    U(sp, v_speed(5, 6))
+    sp.place = Place(0.56, at=(10.5, 20.5), rot=-25.0)
+
+    def overload(cv, x):
+        l = E["lightning"]
+        cx, cy = 20, 14
+        for (ex, ey) in ((29, 6), (30, 17), (24, 27), (11, 5), (21, 3)):
+            zig(cv, (cx, cy), (ex, ey), l[2], 1.2, 3, l[1])
+        cv.disc(cx, cy, 3.4, 3.4, l[3])
+        cv.disc(cx, cy, 2.3, 2.3, OCC)
+        cv.set(cx, cy, l[0])
+        for (sx, sy) in ((15, 18), (25, 11), (16, 9)):
+            zig(cv, (sx - 1, sy + 1), (sx + 1, sy - 1), l[1], 0.8, 2, l[0])
+    O(sp, overload)
 
 
 @card("magic_missile_singularity_core")
 def _(sp, c):
+    """Arcane Orb (2h, was Singularity Core): the dart swells into a great slow orb."""
     reset(sp)
-    sp.subject = singularity_core
-    U(sp, lambda cv, x: m_vortex(cv, E["arcane"], (19, 16), 13.0, 3, 2.6))
+    sp.subject = arcane_orb
 
 
 # --- Meteor Swarm ----------------------------------------------------------------------------------
@@ -3960,19 +4154,23 @@ def _(sp, c):
 
 @card("obsidian_spike_splinter_field")
 def _(sp, c):
-    """Splinter Field: the eruption bursts wider - the cracks run further and splinters of glass come
-    up where they end, as the spell draws it (GroundSpike's splinters)."""
+    """Splinter Field (phase 2, 2026-10-29): the eruption splinters through the ground - its cracks run
+    out to the crowd round it, and a splinter of glass punches up under each of the nearest, striking
+    it (GroundSpike.LaySplinters). The skulls are the swarm the splinters come up under."""
     reset(sp)
-    sp.place = Place(0.66, at=(C0, 14.0))
+    sp.place = Place(0.5, at=(C0, 12.0))
 
     def field(cv, x):
         e = E["earth"]
-        for path in ([(15, 24), (11, 26), (6, 26)], [(17, 24), (21, 26), (26, 26)],
-                     [(15, 25), (12, 28), (9, 29)], [(17, 25), (20, 28), (23, 29)]):
+        for path in ([(15, 19), (11, 21), (7, 22)], [(17, 19), (21, 21), (25, 22)],
+                     [(16, 20), (15, 25), (16, 28)]):
             glass.crack(cv, path, e)
-        for (apex, fl, fr, rd, gy) in (((4, 20), 4, 9, 6, 27), ((28, 20), 23, 28, 26, 27),
-                                      ((8, 24), 7, 12, 9, 30), ((24, 24), 20, 25, 22, 30)):
-            glass.blade(cv, apex, fl, fr, rd, gy, heat=0.8, ramp=e, band=False, ripples=False, spec=0.6)
+        # Three of the swarm round it, each with its splinter punched up through its feet.
+        for (fx, fy) in ((7.0, 15.5), (25.0, 15.5), (16.0, 22.5)):
+            foe(cv, fx, fy, 0.75)
+        for (apex, fl, fr, rd, gy) in (((7, 17), 5, 9, 7, 24), ((25, 17), 23, 27, 25, 24),
+                                      ((16, 24), 14, 18, 16, 30)):
+            glass.blade(cv, apex, fl, fr, rd, gy, heat=0.9, ramp=e, band=False, ripples=False, spec=0.6)
     O(sp, field)
 
 
@@ -3984,25 +4182,43 @@ def _(sp, c):
 
 @card("obsidian_spike_deep_strata")
 def _(sp, c):
-    """Deep Strata: driven from far deeper, reaching further - the spikes tall and narrow, up out of
-    the layered ground."""
+    """Deep Strata (phase 2, 2026-10-29): driven up from far deeper, the spike throws what it breaks
+    out under into the air (Enemy.ApplyLaunch) - the glass up out of the layered ground, one of the
+    swarm tossed high over its point, its shadow left on the ground below."""
     reset(sp)
-    sp.place = Place(0.72, sy=1.0, dy=-3)
+    sp.place = Place(0.66, at=(13.0, 18.0))
 
     def strata(cv, x):
         e = E["earth"]
-        for (y, tone) in ((26, e[3]), (28, e[2]), (30, e[3])):
+        for (y, tone) in ((27, e[3]), (29, e[2])):
             cv.hline(3, 28, y, tone)
-        cv.line(16, 26, 16, 30, e[1])
+        # The shadow it left, and what threw it: dust going up in a column.
+        cv.hline(21, 26, 27, OCC)
+        for (px, py) in ((23, 22), (24, 18), (22, 15)):
+            cv.set(px, py, e[2])
+        foe(cv, 24.0, 8.5, 0.95)
+        for (px, py) in ((20, 6), (28, 6), (19, 10), (29, 10)):
+            cv.set(px, py, e[1])
     O(sp, strata)
 
 
 @card("obsidian_spike_tectonic_uprising")
 def _(sp, c):
+    """Tectonic Uprising (phase 2, 2026-10-29): the ground does not close - a vent smoulders where the
+    spike broke out and keeps throwing up fresh spikes under whatever comes near (GroundSpike's vent).
+    The spike in the middle, its cracks still glowing round it, and two more breaking out beside it."""
     reset(sp)
-    colossal(sp, 1.22)
-    sp.place = Place(1.22, dy=-1)
-    O(sp, lambda cv, x: m_crack(cv, E["earth"], 26))
+    sp.place = Place(0.8, at=(C0, 14.5))
+
+    def vent(cv, x):
+        e = E["earth"]
+        f = E["fire"]
+        for path in ([(15, 24), (9, 26), (4, 25)], [(17, 24), (23, 26), (28, 25)],
+                     [(16, 25), (14, 29)], [(16, 25), (19, 29)]):
+            glass.crack(cv, path, f)
+        for (apex, fl, fr, rd, gy) in (((6, 19), 4, 9, 6, 26), ((26, 18), 23, 29, 26, 26)):
+            glass.blade(cv, apex, fl, fr, rd, gy, heat=1.0, ramp=f, band=False, ripples=False, spec=0.6)
+    O(sp, vent)
 
 
 @card("obsidian_spike_basalt_lance")
@@ -4475,18 +4691,66 @@ def _(sp, c):
 
 # --- Solar Flare -----------------------------------------------------------------------------------
 
+def lob(cv, ramp, a, b, h, steps=18, thick=2):
+    """A loop thrown from a to b, rising h pixels at its middle: the tail cooling down the ramp, the
+    head white-hot, `thick` pixels across. Solar Prominence's loops of fire; anything else lobbed."""
+    core, hot, mid, edge = ramp
+    for k in range(steps + 1):
+        u = k / float(steps)
+        x = a[0] + (b[0] - a[0]) * u
+        y = a[1] + (b[1] - a[1]) * u - math.sin(math.pi * u) * h
+        tone = core if u > 0.84 else hot if u > 0.55 else mid if u > 0.25 else edge
+        for t in range(thick):
+            cv.set(x, y + t, tone if t == 0 else (mid if u > 0.55 else edge))
+
+
+def mock_sun(cv, ramp, x, y):
+    """A sun dog: a small sun with short rays up and down, standing on the line through the sun."""
+    core, hot, mid, edge = ramp
+    cv.disc(x, y, 3.4, 3.4, OCC)
+    cv.disc(x, y, 2.6, 2.6, mid)
+    cv.disc(x, y, 1.7, 1.7, hot)
+    cv.set(x, y, core)
+    cv.set(x - 1, y, core)
+    for dy in (-1, 1):
+        cv.set(x, y + dy * 4, hot)
+        cv.set(x, y + dy * 5, edge)
+
+
 @card("solar_flare_radiance")
 def _(sp, c):
+    """Sun Dogs: two mock suns abreast of the flare, on the line through it, flaring with it."""
     reset(sp)
-    sp.place = Place(1.12)
-    U(sp, v_cycle())
+    sp.place = Place(0.56)
+
+    def line(cv, x):
+        l = E["light"]
+        for px in range(3, 29):
+            cv.set(px, C0, l[3] if px % 2 else l[2])
+    U(sp, line)
+
+    def dogs(cv, x):
+        l = E["light"]
+        mock_sun(cv, l, C0 - 10.5, C0)
+        mock_sun(cv, l, C0 + 10.5, C0)
+    O(sp, dogs)
 
 
 @card("solar_flare_scorching_heat")
 def _(sp, c):
-    """Scorching Heat: the flare runs hot - into Fire."""
-    sp.recolour = "fire"
-    sp.keep_core = True
+    """Solar Prominence: loops of fire thrown off the flare, coming down past its edge."""
+    reset(sp)
+    sp.back = "fire"
+    sp.accent = None
+    sp.place = Place(0.56, dy=4)
+
+    def loops(cv, x):
+        f = E["fire"]
+        lob(cv, f, (C0 - 3, C0 + 1), (C0 - 12, C0 + 9), 11)
+        lob(cv, f, (C0 + 3, C0 + 1), (C0 + 12, C0 + 8), 13)
+        for (bx, by) in ((C0 - 12, C0 + 9), (C0 + 12, C0 + 8)):
+            m_blast(cv, f, bx, by, 2.6)
+    O(sp, loops)
 
 
 @card("solar_flare_blinding_flash")
@@ -4654,30 +4918,36 @@ def _(sp, c):
 
 @card("spiritual_weapon_sword_twin_blades")
 def _(sp, c):
-    """Twin Blades: two swords crossed."""
+    """Twin Blades (2026-10-30): the sword and its off-hand dagger, crossed - one sword, one smaller blade,
+    never two swords (the levels give those)."""
     reset(sp)
-    sp.subject = weapons([("sword", -125.0, (24.0, 26.0), 0.62), ("sword", -55.0, (8.0, 26.0), 0.62)], box=27.0)
-    sp.why = "a second sword"
+    sp.subject = weapons([("sword", -125.0, (24.0, 26.0), 0.62), ("dagger", -50.0, (9.0, 27.0), 0.5)], box=27.0)
+    sp.why = "a dagger beside the sword"
 
 
 @card("spiritual_weapon_sword_riposte")
 def _(sp, c):
-    """Riposte: a dark bolt struck back off the blade as a bright one."""
+    """Deflection (Riposte's id, 2026-10-30): a dark bolt broken on the blade, its pieces knocked aside down
+    across its path - never struck back, which is the Endless Chase's verb."""
     reset(sp)
     sp.subject = weapon("sword", box=24.0, angle=-80.0)
     sp.place = Place(1.0, dx=3.0)
 
-    def bounce(cv, x):
+    def swat(cv, x):
         d, a = E["darkness"], E["arcane"]
-        cv.line(2, 22, 13, 17, d[2])
-        cv.line(2, 23, 13, 18, d[3])
-        cv.set(13, 17, d[1])
-        cv.line(15, 15, 5, 5, a[1])
-        cv.line(15, 16, 5, 6, a[2])
-        cv.set(5, 5, a[0])
-        m_glint(cv, 15, 16, 2, E["light"])
-    O(sp, bounce)
-    sp.why = "parries strike back"
+        # The bolt coming in along its path...
+        cv.line(2, 15, 12, 15, d[2])
+        cv.line(4, 16, 12, 16, d[3])
+        cv.line(9, 15, 12, 15, d[1])
+        # ...broken on the blade, its pieces thrown aside across the path, not back along it.
+        for (px, py, k) in ((13, 19, 1), (12, 21, 1), (15, 21, 2), (13, 24, 2), (11, 25, 1), (16, 24, 2)):
+            cv.set(px, py, d[k])
+        cv.set(14, 20, a[0])
+        cv.set(12, 22, a[1])
+        cv.set(15, 23, a[1])
+        m_glint(cv, 14, 15, 2, E["light"])
+    O(sp, swat)
+    sp.why = "swats bolts aside"
 
 
 @card("spiritual_weapon_sword_soul_siphon")
@@ -5078,38 +5348,57 @@ def _(sp, c):
 
 @card("void_lance_abyssal_pierce")
 def _(sp, c):
-    """Abyssal Pierce: the lance hangs open, cutting what walks into it."""
+    """Abyssal Scar (2h, was Abyssal Pierce): the lance withdrawing, drawn back up and smaller, and the
+    scar it tore into the ground below along its line - a jagged black crack lit violet at the lips."""
     reset(sp)
-    sp.place = Place(0.86, dx=1, dy=-3)
-    U(sp, lambda cv, x: m_pool(cv, E["darkness"], 26.0, 12.0, 3.4))
-    U(sp, lambda cv, x: zig(cv, (6, 26), (26, 26), E["arcane"][1], 0.8, 6, E["arcane"][0]))
+    sp.place = Place(0.5, at=(21.0, 9.5))
+
+    def scar(cv, x):
+        d = E["darkness"]
+        pts = [(3, 25), (7, 22), (9, 24), (13, 20), (16, 22), (20, 18), (23, 21), (28, 17)]
+        for i in range(len(pts) - 1):
+            (x0, y0), (x1, y1) = pts[i], pts[i + 1]
+            for o in (-2, 2):
+                cv.line(x0, y0 + o, x1, y1 + o, d[1] if o < 0 else d[2])
+        for i in range(len(pts) - 1):
+            (x0, y0), (x1, y1) = pts[i], pts[i + 1]
+            for o in (-1, 0, 1):
+                cv.line(x0, y0 + o, x1, y1 + o, OCC)
+        for (sx, sy) in pts[1:-1:2]:
+            cv.set(sx, sy - 2, d[0])
+    U(sp, scar)
 
 
 @card("void_lance_rift_blade")
 def _(sp, c):
-    """Rift Blade: a longer, wider lance cleaving wide paths."""
+    """Void Glaive (2h, was Rift Blade): blades out of both hands."""
     reset(sp)
-    sp.place = Place(1.25)
-
-    def cleave(cv, x):
-        a = E["arcane"]
-        for d in range(120, 330, 4):
-            t = math.radians(d)
-            cv.set(16 + math.cos(t) * 14, 16 + math.sin(t) * 14, a[2] if d < 250 else a[1])
-    U(sp, cleave)
+    sp.subject = void_glaive
 
 
 @card("void_lance_gravity_spike")
 def _(sp, c):
+    """Dread (2h, was Gravity Spike - no more vortex: the pull is Hollow Star's): the lance through the
+    pack, and three marks either side of it fleeing away from it, the dash of their flight behind them."""
     reset(sp)
     sp.place = Place(0.92)
-    U(sp, v_vortex(3, 2.8))
+
+    def flee(cv, x):
+        d = E["darkness"]
+        for (mx, my, fx, fy) in ((8, 13, -1, -1), (14, 7, -1, -1), (22, 24, 1, 1), (26, 18, 1, 1)):
+            for k in range(1, 4):
+                cv.set(mx - fx * (k + 2), my - fy * (k + 2), d[2] if k < 3 else d[3])
+            cv.disc(mx, my, 2.4, 2.4, d[3])
+            cv.disc(mx, my, 1.4, 1.4, OCC)
+            cv.set(mx + fx, my + fy, d[0])
+    O(sp, flee)
 
 
 @card("void_lance_annihilation_beam")
 def _(sp, c):
+    """Witching Hour (2h, was Annihilation Beam): the lance as a clock hand."""
     reset(sp)
-    sp.subject = annihilation_beam
+    sp.subject = witching_hour
 
 
 @card("void_lance_cosmic_collapse")

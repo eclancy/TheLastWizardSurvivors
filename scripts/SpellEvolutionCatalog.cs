@@ -178,12 +178,19 @@ public static class SpellEvolutionCatalog
 		}
 	}
 
+	// Magic Missile: a homing violet dart at the nearest enemy, the starter's spell. EVERY CARD ITS OWN
+	// (.ai/spell-roster.md section 2h, phase 2, 2026-10-29): Piercing Stardust (+3 pierce) and Arcane Gatling
+	// Barrage (+2 darts, a shorter cooldown, +5 pierce) only moved numbers, and Singularity Core pulled -
+	// Hollow Star's verb. Each now changes what the dart does where it can be seen, out of what a dart that
+	// never misses is: it forks, it threads the pack, it bursts, it leaves static, it swells into an orb.
+	// The ids and each card's element gain are the ones they always were, so saves carry over; the
+	// behaviour is switched on by id (MagicMissile.ThreadedNeedleId and the rest, StaticCharges).
 	private static void SetupMagicMissileEvolutions(SpellData spell)
 	{
 		// Level 4 (3 choices)
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "magic_missile_twin_volley",
+			Id = MagicMissile.TwinVolleyId,
 			DisplayName = "Twin Volley",
 			Description = "The missile forks on its first hit, spraying two shards straight out to either side for 30% damage.",
 			MilestoneLevel = 4,
@@ -200,25 +207,28 @@ public static class SpellEvolutionCatalog
 			SynergyDescription = "Synergizes with raw damage and attack speed - the shards fly straight, so they pay off against a line or a wall of enemies."
 		});
 
+		// Was Piercing Stardust, +3 pierce: the dart flew on in a straight line, and in a crowd that thins as
+		// it is fought a straight line mostly met air. Now it turns on the next enemy itself.
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "magic_missile_piercing_needle",
-			DisplayName = "Piercing Stardust",
-			Description = "Missiles pierce through 3 more enemies.",
+			Id = MagicMissile.ThreadedNeedleId,
+			DisplayName = "Threaded Needle",
+			Description = $"The missile threads the pack: after each hit it turns on the nearest enemy it has not struck and flies on, {MagicMissile.ThreadStrikes} more times, stitching a thread of stardust through them.",
 			MilestoneLevel = 4,
-			PierceBonus = 3,
-			VisualTag = "PiercingNeedle",
-			ModulateColor = new Color(0.35f, 0.95f, 1.0f),
-			SynergyTag = "Arcane / Pierce",
-			SynergyDescription = "Synergizes with dense enemy hordes and projectile buffs."
+			VisualTag = "ThreadedNeedle",
+			ModulateColor = new Color(0.86f, 0.94f, 1.0f),
+			SynergyTag = "Arcane / Multi-target",
+			SynergyDescription = "One dart, four enemies: it pays most where the pack is loose and a straight line would miss."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "magic_missile_unstable_shard",
+			Id = MagicMissile.UnstableId,
 			BonusElementWeights = new() { { "Arcane", 1 } },
 			DisplayName = "Unstable Detonation",
-			Description = "Missiles detonate on hit in a small arcane splash that deals 60% damage to everything caught in it.",
+			// Kept (2026-10-29): it always changed the hit into a splash, but drew nothing; the burst now
+			// throws arcane sparks out to the reach it strikes.
+			Description = "Missiles detonate where they hit: an arcane burst throws sparks out round the impact, hitting everything in it for 60% damage.",
 			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 4,
 			Effect = SpellEffect.ExplosionOnHit,
@@ -231,39 +241,36 @@ public static class SpellEvolutionCatalog
 		});
 
 		// Level 8 (2 choices)
+		// Was Arcane Gatling Barrage: +2 darts, -44% cooldown, +5 pierce, +25% - more of the same dart. The
+		// cadence rides along; what is new is what the darts leave on what they strike.
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "magic_missile_gatling_barrage",
+			Id = MagicMissile.OverchargeId,
 			BonusElementWeights = new() { { "Lightning", 1 } },
-			DisplayName = "Arcane Gatling Barrage",
-			Description = "Fires a rapid stream of comet darts (+2 Projectiles, -44% Cooldown, +5 Pierce, +25% Damage).",
+			DisplayName = "Overcharge",
+			Description = $"Every missile leaves a spark of static crackling round what it hits, and an enemy carrying {MagicMissile.OverchargeSparks} overloads: lightning bursts out of it, striking it and everything round it for {MagicMissile.OverchargeShare:0}x a missile. Missiles loosed 40% faster.",
 			MilestoneLevel = 8,
-			ProjectileCountBonus = 2,
-			CooldownMultiplier = 0.560f,
-			PierceBonus = 5,
-			DamageMultiplier = 1.25f,
-			ScaleMultiplier = 1.2f,
-			VisualTag = "GatlingBarrage",
-			ModulateColor = new Color(0.45f, 0.85f, 1.0f),
-			SynergyTag = "Arcane / Wind",
-			SynergyDescription = "Ascension: Overwhelming single-target and line DPS."
+			CooldownMultiplier = 0.6f,
+			VisualTag = "Overcharge",
+			ModulateColor = new Color(0.86f, 0.94f, 1.0f),
+			SynergyTag = "Lightning / Burst",
+			SynergyDescription = "Ascension: the darts keep finding the nearest, so an elite or a boss overloads again and again - and a crowd goes off in bursts."
 		});
 
+		// Was Singularity Core, orbs that pulled the crowd in: the pull is Hollow Star's (2e). The orb stays,
+		// as something that grinds through the pack rather than drags it.
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "magic_missile_singularity_core",
-			DisplayName = "Singularity Core",
-			Description = "Fires massive gravitational orbs (+120% Area, +100% Damage) that pull in and crush enemies.",
+			Id = MagicMissile.ArcaneOrbId,
+			DisplayName = "Arcane Orb",
+			Description = $"Every missile is loosed as a great slow orb of arcane light that rolls straight through the pack, striking everything under it {1f / MagicMissile.OrbTickSeconds:0} times a second, and bursts where its flight ends for {MagicMissile.OrbBurstShare * 100f:0}% of a missile. +{(MagicMissile.OrbDamage - 1f) * 100f:0}% damage, {(MagicMissile.OrbCooldown - 1f) * 100f:0}% longer cooldown.",
 			MilestoneLevel = 8,
-			DamageMultiplier = 2.0f,
-			AreaMultiplier = 2.2f,
-			ScaleMultiplier = 1.85f,
-			Effect = SpellEffect.VortexPull,
-			EffectValue = 120f,
-			VisualTag = "SingularityCore",
-			ModulateColor = new Color(0.75f, 0.2f, 1.0f),
-			SynergyTag = "Arcane / Darkness",
-			SynergyDescription = "Ascension: Colossal zone control and mass vortex pull."
+			CooldownMultiplier = MagicMissile.OrbCooldown,
+			DamageMultiplier = MagicMissile.OrbDamage,
+			VisualTag = "ArcaneOrb",
+			ModulateColor = new Color(0.94f, 0.88f, 1.0f),
+			SynergyTag = "Arcane / Zone",
+			SynergyDescription = "Ascension: slow and heavy - each orb holds a lane of the pack under it for two seconds."
 		});
 	}
 
@@ -564,26 +571,34 @@ public static class SpellEvolutionCatalog
 		{
 			Id = SpiritualWeapon.TwinBladesId,
 			DisplayName = "Twin Blades",
-			Description = "A second sword joins the first and hunts its own quarry. Every sword strikes 10% softer.",
+			// SpiritualWeapon.TickDagger and Stab: one dagger however many swords, on the main-hand sword's
+			// quarry from its other flank, in the gap after each of its cuts, for DaggerShare of a blow (2026-10-30,
+			// Eric: "Twin sword mutation should create a second smaller dagger, and be capped at two blades").
+			// It was one more sword at -10% each, which the levels already give; no number on the card is a
+			// SpellData stat now, so EvolutionStatReaders has nothing to route.
+			Description = "A small dagger of light fights beside your sword. After each of the sword's cuts it darts in "
+				+ $"from the other side and stabs the same enemy for {SpiritualWeapon.DaggerShare * 100f:0}% of a cut. "
+				+ "Only ever one dagger, however many swords you have.",
 			MilestoneLevel = 4,
-			ProjectileCountBonus = 1,
-			DamageMultiplier = 0.9f,
 			VisualTag = "SpiritTwinBlades",
-			SynergyTag = "Arcane / More swords",
-			SynergyDescription = "Two duels at once."
+			SynergyTag = "Arcane / Off-hand",
+			SynergyDescription = "Sword and dagger on one enemy."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
+			// Keeps Riposte's id (saves and the catalog hold it). SpiritualWeapon.Intercept: a free sword
+			// breaks off for a bolt coming at the wizard and swats it aside, then rests DeflectRest (2026-10-30,
+			// Eric: "Riposte description is confusing. Replace with the ability to deflect projectiles"). Not
+			// a damage card: Riposte's +30% and its strike on every parry are gone, and nothing is sent back.
 			Id = SpiritualWeapon.RiposteId,
-			DisplayName = "Riposte",
-			// SpiritualWeapon.ParryBolts: RiposteGuard x the guard, and a parry hands the sword a swing.
-			Description = "Each sword's guard reaches 60% further, and every bolt it parries hands it a strike at once. Strikes hit 30% harder.",
+			DisplayName = "Deflection",
+			Description = "Your swords fly out to knock enemy bolts out of the air before they reach you. "
+				+ "Each sword can deflect about once a second.",
 			MilestoneLevel = 4,
-			DamageMultiplier = 1.3f,
 			VisualTag = "SpiritRiposte",
-			SynergyTag = "Arcane / Parry",
-			SynergyDescription = "The archers feed it."
+			SynergyTag = "Arcane / Deflect",
+			SynergyDescription = "Bolts swatted aside before they land."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
@@ -733,29 +748,37 @@ public static class SpellEvolutionCatalog
 		// what a shatter has is a burst radius, a slow, and the corpse it comes out of. These five cards
 		// were written for a bolt - pierce, projectile speed, cooldown - and not one of their numbers
 		// reached the shatter until 2026-10-26. Each now changes one of the three, and says which.
-		// Glacial Spike has no cooldown price for its tag: the shatter has no cooldown to pay it with.
+		// Ice Statues has no cooldown price for its tag: the shatter has no cooldown to pay it with.
+		//
+		// EVERY CARD ITS OWN (.ai/spell-roster.md section 2h, phase 2, 2026-10-29): three of the five were
+		// still numbers on the burst - a harder slow, a bigger burst, more shards. Each now changes what a
+		// death does where you can see it: the dead stand as ice and break again, shards fly from the
+		// corpse, the crowd freezes, the kills roll on through the pack, the corpses melt and refreeze. The
+		// ids and the element each gains are the ones they always were; the behaviour is FrostShatter's.
 		// Level 4 (3 choices)
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = "frost_shard_glacial_spike",
 			BonusElementWeights = new() { { "Ice", 1 } },
-			DisplayName = "Glacial Spike",
-			// SlowMagnitudeBonus is a share of the shatter's potency: 0.45 of their speed to 0.29.
-			Description = "Deeper cold: the shatter's slow is 30% stronger, and +1 Ice tag.",
+			DisplayName = "Ice Statues",
+			// Was Glacial Spike - a 30% harder slow, and the name of another spell. Now the dead themselves
+			// show the cold (FrostShatter, on Player.EnemyKilled: a body a shatter killed is not frozen).
+			Description = $"The dead freeze where they fall: each stands a moment as a statue of ice, then breaks, shattering a second time for {FrostShatter.StatueShare * 100f:0}%. +1 Ice tag.",
 			MilestoneLevel = 4,
-			SlowMagnitudeBonus = 0.3f,
-			VisualTag = "GlacialSpike",
-			ModulateColor = new Color(0.45f, 0.85f, 1.0f),
-			SynergyTag = "Ice / Control",
-			SynergyDescription = "The crowd round every corpse is left wading."
+			VisualTag = "IceStatues",
+			ModulateColor = new Color(0.9f, 0.97f, 1.0f),
+			SynergyTag = "Ice / Burst",
+			SynergyDescription = "Every kill hits twice - once as it falls, once as its statue breaks a second later."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "frost_shard_ice_flurry",
+			Id = FrostShatter.IceFlurryId,
 			DisplayName = "Ice Flurry",
-			// Player.FlingShatterShards: each projectile past the first is a shard at an enemy beyond the burst.
-			Description = "Every shatter flings 2 shards at enemies just beyond it, each hitting and chilling one.",
+			// Kept (2026-10-29): it always threw something - but struck its enemies the instant the shatter
+			// went off, drawn as a puff where they stood. The shards now fly there (FrostShatter.Fling): each
+			// projectile past the first is one.
+			Description = "Every shatter flings 2 shards of ice out at the enemies just beyond it; each flies to its enemy and strikes and chills it.",
 			MilestoneLevel = 4,
 			ProjectileCountBonus = 2,
 			VisualTag = "IceFlurry",
@@ -781,35 +804,36 @@ public static class SpellEvolutionCatalog
 		});
 
 		// Level 8 (2 choices)
+		// Was Absolute Zero, +100% damage and +30% area: the same burst, bigger. Now the burst carries on -
+		// the one card that lets a shatter's kills shatter, to a fixed depth (FrostShatter.KilledInShatter).
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "frost_shard_absolute_zero",
-			DisplayName = "Absolute Zero",
-			Description = "Every corpse bursts harder and wider: +100% Damage and +30% Area.",
+			Id = FrostShatter.AvalancheId,
+			DisplayName = "Avalanche",
+			// Reworded 2026-10-30 (Eric: "hard to read"). The same card; the words say it in order.
+			Description = $"Enemies killed by a shatter shatter too, a moment later - up to {FrostShatter.AvalancheDepth} times in a row - so one kill ripples out through the whole pack. +60% damage.",
 			MilestoneLevel = 8,
-			DamageMultiplier = 2.0f,
-			AreaMultiplier = 1.3f,
-			VisualTag = "AbsoluteZero",
-			ModulateColor = new Color(0.85f, 0.95f, 1.0f),
-			SynergyTag = "Ice / Destruction",
-			SynergyDescription = "Ascension: the burst that the crowd kills itself with."
+			DamageMultiplier = 1.6f,
+			VisualTag = "Avalanche",
+			ModulateColor = new Color(0.9f, 0.97f, 1.0f),
+			SynergyTag = "Ice / Chain reaction",
+			SynergyDescription = "Ascension: the horde kills itself - the denser the pack, the further each death rolls."
 		});
 
+		// Was Blizzard Engine, three more flung shards and +150%: Ice Flurry again, bigger. Now the spell's two
+		// halves, Water and Ice, meet on the ground: the corpse melts, the next death freezes it.
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "frost_shard_blizzard_engine",
+			Id = FrostShatter.MeltwaterId,
 			BonusElementWeights = new() { { "Water", 1 } },
-			DisplayName = "Blizzard Engine",
-			// Its -50% cooldown went with the rest: the shatter has none. The damage took its place.
-			// +150%, not +50%: measured x2.56 of the shatter at level 7 after (2026-10-26, --enemy-hp=10).
-			Description = "Sleet out of every corpse: 3 more flung shards, +150% damage, and +1 Water tag.",
+			DisplayName = "Meltwater",
+			Description = $"Every corpse melts into a pool of meltwater for {FrostShatter.MeltSeconds:0}s, and the next shatter to reach a pool freezes it: it bursts into spikes of ice under whatever stands in it, for {FrostShatter.MeltShare * 100f:0}% of a shatter. +100% damage, and +1 Water tag.",
 			MilestoneLevel = 8,
-			DamageMultiplier = 2.5f,
-			ProjectileCountBonus = 3,
-			VisualTag = "BlizzardEngine",
-			ModulateColor = new Color(0.6f, 0.85f, 1.0f),
+			DamageMultiplier = 2f,
+			VisualTag = "Meltwater",
+			ModulateColor = new Color(0.86f, 0.95f, 1.0f),
 			SynergyTag = "Ice / Water",
-			SynergyDescription = "Ascension: Relentless blizzard barrage."
+			SynergyDescription = "Ascension: where the fighting has been, the ground is waiting for the next death to freeze it."
 		});
 	}
 
@@ -819,7 +843,12 @@ public static class SpellEvolutionCatalog
 	// choice is a real fork rather than a strictly better version of the spell.
 	//
 	// Level 4 is also its element choice: Storm Reach deepens Lightning (and is the Stormcaller's
-	// Apotheosis path), Storm Surge branches into Water, Dense Current stays as it is.
+	// Apotheosis path), Storm Surge branches into Water, Return Stroke stays as it is.
+	//
+	// EVERY CARD ITS OWN (.ai/spell-roster.md section 2h, phase 2, 2026-10-29): the chain leaps long, it
+	// comes back, it runs on through its kills, it holds what it strikes. The ids, the element each gains
+	// and the Stormcaller's path (Storm Reach, then Cascade) are the ones they always were; the behaviour
+	// is ChainLightning's, switched on by these ids (StormReachId and the rest), and Electrocutions'.
 	private static void SetupChainLightningEvolutions(SpellData spell)
 	{
 		// Level 4 (3 choices)
@@ -831,7 +860,8 @@ public static class SpellEvolutionCatalog
 		{
 			Id = "chain_lightning_forked_surge",
 			DisplayName = "Storm Surge",
-			Description = "The arc forks through falling rain: it splits three ways at every hop for 30% less each, +1 Water tag, and "
+			// The Water tag stays named: RegressionChecks requires an element path's card to say it.
+			Description = $"The arc splits three ways at every hop for 30% less, up to {ChainLightning.MaxArcsPerCast} arcs a cast. +1 Water tag, and "
 				+ ElementPaths.Describe(ElementRider.Slow, surgeDrag, surgeSeconds) + ".",
 			MilestoneLevel = 4,
 			ChainBranchBonus = 2,
@@ -846,72 +876,72 @@ public static class SpellEvolutionCatalog
 			SynergyDescription = "Branches into Water. Turns a single heavy bolt into a net that drags the crowd. Wants area and cooldown, not raw damage."
 		});
 
+		// Storm Reach (the Stormcaller's level 4, so its id, its Lightning and its numbers stay): it was
+		// three more hops and a wider jump - the same short hops, more of them. Now the hops are long.
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "chain_lightning_storm_reach",
+			Id = ChainLightning.StormReachId,
 			BonusElementWeights = new() { { "Lightning", 1 } },
 			DisplayName = "Storm Reach",
-			Description = "+3 chain arcs and a wider jump, for 15% less damage per hop.",
+			Description = "The chain leaps long: every hop jumps to the farthest enemy it can reach instead of the nearest, so the arc sprawls across the whole pack. 3 more hops and a 35% longer leap, for 15% less a hop.",
 			MilestoneLevel = 4,
 			ChainArcBonus = 3,
 			DamageMultiplier = 0.85f,
 			AreaMultiplier = 1.35f,
 			VisualTag = "StormReach",
-			ModulateColor = new Color(0.65f, 0.88f, 1.0f),
+			ModulateColor = new Color(0.86f, 0.94f, 1.0f),
 			SynergyTag = "Lightning / Reach",
-			SynergyDescription = "Longer rather than wider - one arc that crosses the whole crowd."
+			SynergyDescription = "Wider rather than heavier - one arc that crosses the crowd from side to side."
 		});
 
+		// Was Dense Current, +40% and crits: the same bolt, harder. Now the bolt comes back.
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "chain_lightning_dense_current",
-			DisplayName = "Dense Current",
-			Description = "No extra chaining. The bolt simply hits 40% harder and crits more often.",
+			Id = ChainLightning.ReturnStrokeId,
+			DisplayName = "Return Stroke",
+			Description = $"Where the chain ends, the stroke runs back along it to your hand, striking every enemy on the way again for {ChainLightning.ReturnShare * 100f:0}%. +30% damage.",
 			MilestoneLevel = 4,
-			DamageMultiplier = 1.4f,
-			Effect = SpellEffect.CritChance,
-			EffectValue = 0.15f,
-			VisualTag = "DenseCurrent",
-			ModulateColor = new Color(1.0f, 0.97f, 0.62f),
+			DamageMultiplier = 1.3f,
+			VisualTag = "ReturnStroke",
+			ModulateColor = new Color(1.0f, 0.98f, 0.86f),
 			SynergyTag = "Lightning / Single target",
-			SynergyDescription = "The option that keeps the spell what it already is. Good against elites and bosses."
+			SynergyDescription = "Every enemy in the chain is struck twice, the nearest included: the option that keeps the spell short and heavy."
 		});
 
 		// Level 8 (2 choices)
+		// Cascade (the Stormcaller's Ascension: id, Lightning and reach kept). It split every hop three ways
+		// again - a net of short arcs. Now the chain runs on through what it kills.
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "chain_lightning_cascade",
+			Id = ChainLightning.CascadeId,
 			BonusElementWeights = new() { { "Lightning", 1 } },
 			DisplayName = "Cascade",
-			// Ascensions double their spell (.ai/spell-roster.md, "Every Ascension doubles its spell"):
-			// at x0.6 a hop this measured x0.98 of the spell at level 7 - more arcs, no more harm.
-			Description = "Every hop splits again and reaches further, and each hop hits 20% harder.",
+			Description = $"Every enemy a hop kills throws {ChainLightning.CascadeForks} more arcs, up to {ChainLightning.CascadeMaxHops + 1} arcs a cast. +50% damage.",
 			MilestoneLevel = 8,
-			ChainBranchBonus = 3,
-			ChainArcBonus = 2,
-			DamageMultiplier = 1.2f,
+			ChainArcBonus = 1,
+			DamageMultiplier = 1.5f,
 			AreaMultiplier = 1.3f,
 			VisualTag = "Cascade",
-			ModulateColor = new Color(0.72f, 0.94f, 1.0f),
+			ModulateColor = new Color(0.86f, 0.94f, 1.0f),
 			SynergyTag = "Lightning / Saturation",
-			SynergyDescription = "Ascension: the arc stops being a bolt and becomes weather. Pairs with anything that adds damage back."
+			SynergyDescription = "Ascension: in a crowd it can kill, one cast runs on through the pack until it stops killing."
 		});
 
+		// Was Thunderhead (x2 and a hop - a name Gale Blade's stroke from the sky has since taken). Still the
+		// anti-elite answer, now one you can see: the bolt holds what it strikes.
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "chain_lightning_thunderhead",
+			Id = ChainLightning.ElectrocutionId,
 			BonusElementWeights = new() { { "Lightning", 1 } },
-			DisplayName = "Thunderhead",
-			// It never touched the per-hop falloff (0.9 for every Chain Lightning), so it no longer says so.
-			Description = "One arc, twice the force, and one hop further.",
+			DisplayName = "Electrocution",
+			Description = $"The first enemy the bolt strikes is held in the current for {ChainLightning.ElectrocuteSeconds:0.#}s, convulsing as arcs crawl over it, struck again every {ChainLightning.ElectrocuteTickSeconds:0.#}s for {ChainLightning.ElectrocuteShare * 100f:0}% of the bolt; if it dies held, the current leaps to the nearest enemy and holds that. +50% damage and one more hop.",
 			MilestoneLevel = 8,
-			DamageMultiplier = 2.0f,
+			DamageMultiplier = 1.5f,
 			ChainArcBonus = 1,
-			ScaleMultiplier = 1.5f,
-			VisualTag = "Thunderhead",
-			ModulateColor = new Color(1.0f, 0.95f, 0.5f),
+			VisualTag = "Electrocution",
+			ModulateColor = new Color(1.0f, 0.98f, 0.86f),
 			SynergyTag = "Lightning / Single target",
-			SynergyDescription = "Ascension: the anti-elite answer. Everything the spell has, pointed at one thing."
+			SynergyDescription = "Ascension: the anti-elite answer - whatever walks at you first is held and burned while the chain goes on."
 		});
 	}
 
@@ -966,7 +996,10 @@ public static class SpellEvolutionCatalog
 		{
 			Id = "shadow_bolt_spreading_dark",
 			DisplayName = "Spreading Dark",
-			Description = "The curse forks at every jump - two arcs leave each enemy it reaches - and runs two hops further. No extra damage.",
+			// The cap is named on the card (ChainLightning.MaxArcsPerCast, 2026-10-31): with the fork a cast runs
+			// into it within two or three jumps, so "two hops further" is only the whole truth beside it. One
+			// sentence, the one number (the designer, 2026-10-31: "Overall keep text minimal").
+			Description = $"The curse forks at every jump and runs two hops further, up to {ChainLightning.MaxArcsPerCast} arcs a curse.",
 			MilestoneLevel = 4,
 			ChainBranchBonus = 1,
 			ChainArcBonus = 2,
@@ -985,7 +1018,9 @@ public static class SpellEvolutionCatalog
 			// a single element, which only a pure spell may do.
 			DisplayName = "Anathema",
 			// +45% damage of its own as well (2026-10-26): x2.76 of the spell at level 7 with it, at --enemy-hp=10.
-			Description = $"Where the curse ends, night falls: a pall of darkness hangs over the last enemy it reached for {ChainLightning.PallSeconds:0}s, cursing and striking everything under it every half second. +20% damage taken, two hops further, and the curse bites 45% harder.",
+			// Cut to what it does and one number (2026-10-31, "keep text minimal"); the +20% damage taken and
+			// the two hops still ride along, as the numbers below.
+			Description = $"Where the curse ends, a pall of night hangs for {ChainLightning.PallSeconds:0}s, cursing and striking everything under it.",
 			DamageMultiplier = 1.45f,
 			MilestoneLevel = 8,
 			Effect = SpellEffect.Vulnerability,
@@ -1004,7 +1039,7 @@ public static class SpellEvolutionCatalog
 			// here as well would let a player who took the matching level 4 option reach three of
 			// a single element, which only a pure spell may do.
 			DisplayName = "Threefold Curse",
-			Description = $"{ChainLightning.ThreefoldCurses} curses leave the staff at once, each at its own enemy and each chaining on its own, and the rot they carry does real damage. +20% damage.",
+			Description = $"{ChainLightning.ThreefoldCurses} curses leave the staff at once, each chaining on its own for up to {ChainLightning.MaxArcsPerCast} arcs.",
 			MilestoneLevel = 8,
 			PoisonTickBonus = 8,
 			DamageMultiplier = 1.2f,
@@ -1413,82 +1448,84 @@ public static class SpellEvolutionCatalog
 		});
 	}
 
+	// Void Lance: a short-lived lance of shadow thrust out of the wizard's hands at the nearest enemy, where
+	// his position is the aim. EVERY CARD ITS OWN (.ai/spell-roster.md section 2h, phase 2, 2026-10-29):
+	// Abyssal Pierce (open 0.5 s longer), Rift Blade (+50% size) and Annihilation Beam (x2 size, +200%) only
+	// moved numbers, and Gravity Spike dragged the crowd onto the lance - Hollow Star's pull. Each now
+	// changes the lance where it can be seen: it scars the ground, it runs out behind you too, it frightens
+	// what it pierces, it turns round you like a clock hand, it ends in a black hole. The ids and the element
+	// each gains are the ones they always were; the behaviour is VoidLance's, by id, and VoidScars'.
 	private static void SetupVoidLanceEvolutions(SpellData spell)
 	{
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "void_lance_abyssal_pierce",
-			DisplayName = "Abyssal Pierce",
-			// The lance already cuts everything along it, so +4 pierce reached nothing, and the trail was
-			// never built: the option paid nothing at all. It now holds the lance open longer (Effect
-			// ZoneDuration, which VoidLance reads), so what walks into it after the cast is cut too
-			// (2026-10-26). 0.5 s takes a 0.72 s lance to 1.22, past its 0.75 s damage pulse.
-			Description = "The lance hangs open 0.5s longer, cutting whatever walks into it, and pulses once more.",
+			Id = VoidLance.ScarId,
+			DisplayName = "Abyssal Scar",
+			// Was Abyssal Pierce, the lance held open 0.5 s longer (Effect ZoneDuration): the same lance,
+			// lingering. What lingers now is left on the ground, apart from the lance.
+			Description = $"As the lance withdraws it tears a scar of void into the ground along its line that stays {VoidLance.ScarSeconds:0}s, cutting whatever stands on it for {VoidLance.ScarShare * 100f:0}% of the lance every {VoidLance.ScarTickSeconds:0.#}s.",
 			MilestoneLevel = 4,
-			Effect = SpellEffect.ZoneDuration,
-			EffectValue = 0.5f,
-			VisualTag = "AbyssalPierce",
-			ModulateColor = new Color(0.6f, 0.2f, 0.95f),
-			SynergyTag = "Darkness / Pierce",
-			SynergyDescription = "Pierces deep enemy lines."
+			VisualTag = "AbyssalScar",
+			ModulateColor = new Color(0.92f, 0.86f, 1.0f),
+			SynergyTag = "Darkness / Ground",
+			SynergyDescription = "Every cast leaves a line the pack has to cross to reach you."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "void_lance_rift_blade",
-			DisplayName = "Rift Blade",
-			// The size is the ScaleMultiplier, which VoidLance hits at since 2026-10-26 (it drew x1.4 and
-			// hit x1). 1.5 so the card's +50% is true; the AreaMultiplier beside it was read by nothing.
-			Description = "+50% lance length and width, cleaving wide paths.",
+			Id = VoidLance.GlaiveId,
+			DisplayName = "Void Glaive",
+			// Was Rift Blade, +50% length and width (ScaleMultiplier 1.5): a bigger lance. Now a second blade.
+			Description = $"The lance runs out of both hands: with every cast a second blade, {VoidLance.GlaiveBackShare * 100f:0}% as long, thrusts out behind you along the same line.",
 			MilestoneLevel = 4,
-			ScaleMultiplier = 1.5f,
-			VisualTag = "RiftBlade",
-			ModulateColor = new Color(0.8f, 0.3f, 1.0f),
-			SynergyTag = "Darkness / Area",
-			SynergyDescription = "Massive beam profile."
+			VisualTag = "VoidGlaive",
+			ModulateColor = new Color(0.92f, 0.86f, 1.0f),
+			SynergyTag = "Darkness / Position",
+			SynergyDescription = "Whatever closes on your back is cut by the same thrust that goes for the nearest."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "void_lance_gravity_spike",
+			Id = VoidLance.DreadId,
 			BonusElementWeights = new() { { "Darkness", 1 } },
-			DisplayName = "Gravity Spike",
-			// VoidLance.PullOntoLance, since 2026-10-26.
-			Description = "Enemies near the lance are dragged onto it as it strikes, and +1 Darkness tag.",
+			DisplayName = "Dread",
+			// Was Gravity Spike, which dragged the crowd onto the lance - the pull is Hollow Star's (2e).
+			// Darkness's other verb is fear (Player.TryFrighten, a chance on every Darkness hit): the lance
+			// makes it certain, through Enemy.ApplyFear and its immunities.
+			Description = $"Everything the lance runs through is struck with dread and turns and runs from you for {VoidLance.DreadSeconds:0.#}s (elites and bosses stand firm). +20% damage, and +1 Darkness tag.",
 			CooldownMultiplier = 1.12f,
+			DamageMultiplier = 1.2f,
 			MilestoneLevel = 4,
-			Effect = SpellEffect.VortexPull,
-			EffectValue = 80f,
-			VisualTag = "GravitySpike",
-			ModulateColor = new Color(0.45f, 0.15f, 0.8f),
-			SynergyTag = "Darkness / Pull",
-			SynergyDescription = "Drags enemy clusters."
+			VisualTag = "Dread",
+			ModulateColor = new Color(0.86f, 0.78f, 1.0f),
+			SynergyTag = "Darkness / Fear",
+			SynergyDescription = "The defensive choice: a lane of the pack scattered away from you with every cast."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "void_lance_annihilation_beam",
+			Id = VoidLance.WitchingHourId,
 			BonusElementWeights = new() { { "Arcane", 1 } },
-			DisplayName = "Annihilation Beam",
-			// The lance cuts all it crosses already; PierceBonus 99 reached nothing and went. Its x2 scale
-			// is the size, and is hit at since 2026-10-26.
-			Description = "A death ray twice the lance's length and width: +200% Damage, and +1 Arcane tag.",
+			DisplayName = "Witching Hour",
+			// Was Annihilation Beam, the lance twice as long and wide for +200%: the same thrust, bigger. The
+			// roster's own plan for the spell (section 2, "fixed, slowly rotating - position, not aim") is
+			// the Ascension: one lance that never withdraws.
+			Description = $"The lance no longer withdraws: it stays in your hands and turns round you like the hand of a clock, once every {VoidLance.WitchingTurnSeconds:0.#}s, cutting everything it sweeps across. +1 Arcane tag.",
 			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 8,
-			DamageMultiplier = 3.0f,
-			ScaleMultiplier = 2.0f,
-			VisualTag = "AnnihilationBeam",
-			ModulateColor = new Color(0.9f, 0.2f, 1.0f),
-			SynergyTag = "Darkness / Ultimate",
-			SynergyDescription = "Ascension: Infinite pierce screen-long death beam."
+			VisualTag = "WitchingHour",
+			ModulateColor = new Color(0.94f, 0.86f, 1.0f),
+			SynergyTag = "Arcane / Position",
+			SynergyDescription = "Ascension: no aim at all - stand where the hand will sweep the most of them."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "void_lance_cosmic_collapse",
+			Id = VoidLance.CollapseId,
 			DisplayName = "Cosmic Collapse",
-			// VoidLance.CollapseAtTerminus, since 2026-10-26: a 60 px burst times this Area (132 px).
-			Description = "Lance ends in a void burst at its terminus (+140% Damage, +120% Area).",
+			// VoidLance.CollapseAtTerminus, since 2026-10-26: a 60 px burst times this Area (132 px). Kept in
+			// phase 2 (2026-10-29), its hole drawn: a disc of void that swells and caves in at the tip.
+			Description = "The lance ends in a black hole: at its tip a disc of void swells and caves in on itself, bursting over everything round it (+140% Damage, +120% Area).",
 			MilestoneLevel = 8,
 			DamageMultiplier = 2.4f,
 			AreaMultiplier = 2.2f,
@@ -1504,16 +1541,22 @@ public static class SpellEvolutionCatalog
 	{
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "cyclone_slash_dual_blades",
-			DisplayName = "Dual Windblades",
-			Description = "+2 orbiting cyclone blades with +30% rotation speed.",
+			Id = OrbitingBlade.TwinGyresId,
+			// Phase 2 (.ai/spell-roster.md section 2h): once Dual Windblades, +2 blades and +30% spin on the
+			// one ring. A second ring now (OrbitingBlade's inner ring); the id stays. The outer ring keeps one
+			// of the two blades: with none, against a crowd that lives, the card measured 374-385 a second at
+			// level 7 to Dual Windblades' 425 - an inner ring cuts only what gets through the outer one.
+			DisplayName = "Twin Gyres",
+			Description = $"A second, inner ring of {OrbitingBlade.InnerBlades} blades whirls the other way round you, holding tight "
+				+ "whatever the gust does: when you run and the outer ring swings wide, what slips through the gap still meets "
+				+ "a blade. +1 blade on the outer ring, which spins 30% faster.",
 			MilestoneLevel = 4,
-			ProjectileCountBonus = 2,
+			ProjectileCountBonus = 1,
 			SpeedMultiplier = 1.3f,
-			VisualTag = "DualWindblades",
+			VisualTag = "TwinGyres",
 			ModulateColor = new Color(0.5f, 1.0f, 0.8f),
-			SynergyTag = "Wind / Orbit",
-			SynergyDescription = "Expands orbiting strike coverage."
+			SynergyTag = "Wind / Two rings",
+			SynergyDescription = "A wide ring for the crowd and a tight one for whatever reaches you."
 		});
 
 		// The element path (ElementPaths): Wind's branch into Metal. The crescents it promised were
@@ -1539,18 +1582,21 @@ public static class SpellEvolutionCatalog
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "cyclone_slash_tailwind_surge",
+			Id = OrbitingBlade.WindShearId,
 			BonusElementWeights = new() { { "Wind", 1 } },
-			DisplayName = "Tailwind Surge",
-			// Its SpeedMultiplier was meant for the caster's feet, which nothing reads; OrbitingBlade reads
-			// it as the spin (2026-10-26), so that is what the card says now. Wind's tag is the deepening.
-			Description = "The wind picks up: the blades spin 25% faster, and +1 Wind tag.",
+			// Phase 2: once Tailwind Surge, "the blades spin 25% faster" - a number. Now a full gust throws
+			// crescents off the ring (OrbitingBlade.ShedCrescents). Laelaps' required level 4: the id and
+			// Wind's tag stay, and so does the spin, which his Endless Chase was measured on.
+			DisplayName = "Wind Shear",
+			Description = $"At a full gust the blades shed crescents of wind: in turn, each flings one off along its spin every "
+				+ $"{OrbitingBlade.ShearSeconds:0.#} s, and it flies on past the ring, cutting everything it crosses for "
+				+ $"{OrbitingBlade.ShearShare * 100f:0}% of a cut. Stop and it stops. The blades spin 25% faster.",
 			MilestoneLevel = 4,
 			SpeedMultiplier = 1.25f,
-			VisualTag = "TailwindSurge",
+			VisualTag = "WindShear",
 			ModulateColor = new Color(0.6f, 0.95f, 1.0f),
-			SynergyTag = "Wind / Mobility",
-			SynergyDescription = "High mobility kiting advantage."
+			SynergyTag = "Wind / Crescents",
+			SynergyDescription = "Deepens Wind. The whirlwind's reach, thrown past the ring while you keep running."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
@@ -1561,7 +1607,9 @@ public static class SpellEvolutionCatalog
 			// The Area reaches the orbit and the blades since 2026-10-26 (OrbitingBlade.RefreshComputedStats).
 			// "Permanent" is literal since the whirlwind became a running one (issue #68, 2026-10-28): it
 			// never collapses when you stop (OrbitingBlade.TyphoonEvolutionId).
-			Description = "A permanent hurricane: it no longer collapses when you stop. +150% Area, +100% damage.",
+			// Phase 2 (section 2h): visible as it was - it stays wide when you stop - and the words say so first.
+			Description = "A permanent hurricane: the ring never falls in when you stop, it stands at its widest round you, and it "
+				+ "is two and a half times the size. +100% damage.",
 			MilestoneLevel = 8,
 			DamageMultiplier = 2.0f,
 			AreaMultiplier = 2.5f,
@@ -1575,7 +1623,8 @@ public static class SpellEvolutionCatalog
 		{
 			Id = "cyclone_slash_vortex_reaper",
 			DisplayName = "Vortex Reaper",
-			Description = "The blades drag enemies in to the circle and cut harder (+150% Damage).",
+			// Phase 2 (section 2h): kept - it is visible - but flagged: its drag is the pull, Hollow Star's verb.
+			Description = "The whirlwind drags the crowd round it in to the blades, and they cut harder. +150% damage.",
 			MilestoneLevel = 8,
 			DamageMultiplier = 2.5f,
 			Effect = SpellEffect.VortexPull,
@@ -1591,42 +1640,42 @@ public static class SpellEvolutionCatalog
 	{
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "solar_flare_radiance",
-			DisplayName = "Radiant Glow",
-			Description = "+40% Area and pulses 25% faster.",
+			Id = ElementalPulse.SunDogsId,
+			DisplayName = "Sun Dogs",
+			Description = $"Two mock suns hang either side of you and flare with every pulse, each {ElementalPulse.SunDogReach * 100f:0}% as wide as the flare, "
+				+ $"for {ElementalPulse.SunDogDamageShare * 100f:0}% of its damage - and as the flare builds while you stand still they drift farther out. Pulses 20% faster.",
 			MilestoneLevel = 4,
-			AreaMultiplier = 1.4f,
-			CooldownMultiplier = 0.75f,
-			VisualTag = "RadiantGlow",
-			ModulateColor = new Color(1.0f, 0.95f, 0.5f),
-			SynergyTag = "Light / Speed",
-			SynergyDescription = "Faster pulses and larger aura."
+			CooldownMultiplier = 0.8f,
+			VisualTag = "SunDogs",
+			ModulateColor = new Color(1.0f, 0.97f, 0.82f),
+			SynergyTag = "Light / Width",
+			SynergyDescription = "Three suns abreast: the flare reaches the packs at your sides."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "solar_flare_scorching_heat",
+			Id = ElementalPulse.ProminenceId,
 			BonusElementWeights = new() { { "Fire", 1 } },
-			DisplayName = "Scorching Heat",
-			// It promised to ignite, with an Effect Burn of 4 that nothing read: the game has no burn
-			// status (.ai/gameplay-design.md, "Status effects"), and Fire carries no rider - its path is
-			// raw damage. So the card says what it pays, and the burn's share went into the damage
-			// (x1.25 to x1.45) rather than vanishing with it (2026-10-26).
-			Description = "The flare runs hot: +45% damage and +1 Fire tag, for 12% slower pulses.",
+			DisplayName = "Solar Prominence",
+			// Was Scorching Heat: +45% damage and the tag. The game has no burn status, so the heat is now a
+			// thing the flare throws (ElementalPulse.HurlProminences).
+			Description = $"Every pulse hurls {ElementalPulse.ProminenceLoops} loops of fire off the flare's rim - one more at half charge, another at full - that arc over "
+				+ $"and come down on the nearest enemies past its edge, each bursting for {ElementalPulse.ProminenceShare * 100f:0}% of the pulse. +1 Fire tag, +15% damage, 12% slower pulses.",
 			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 4,
-			DamageMultiplier = 1.45f,
-			VisualTag = "ScorchingHeat",
-			ModulateColor = new Color(1.0f, 0.65f, 0.2f),
+			DamageMultiplier = 1.15f,
+			VisualTag = "SolarProminence",
+			ModulateColor = new Color(1.0f, 0.85f, 0.6f),
 			SynergyTag = "Light / Fire",
-			SynergyDescription = "Combines Light and Fire elemental synergy."
+			SynergyDescription = "Deepens Fire. The close spell reaches the rank that hangs back from it."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = "solar_flare_blinding_flash",
 			DisplayName = "Blinding Flash",
-			Description = "Pulses have a 30% chance to stun and knock back enemies.",
+			Description = $"Some of what the flare catches reels away blind: {ElementalPulse.BlindingFlashChance * 100f:0}% of it is staggered "
+				+ $"{ElementalPulse.BlindingFlashStunSeconds:0.#} s and thrown back out of the light.",
 			MilestoneLevel = 4,
 			KnockbackBonus = 50f,
 			VisualTag = "BlindingFlash",
@@ -1683,10 +1732,13 @@ public static class SpellEvolutionCatalog
 	{
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "tentacles_constriction",
+			Id = BlackTentacles.CrushingGripId,
 			BonusElementWeights = new() { { "Earth", 1 } },
 			DisplayName = "Crushing Grip",
-			Description = "+50% slap damage, and every slap roots its target for 2 seconds.",
+			// Phase 2 (.ai/spell-roster.md section 2h): the root was always there; the coil that shows it is
+			// new (BlackTentacles.DrawCoils), so the card leads with what is seen.
+			Description = "The tentacles hold what they hit: every slap leaves a coil wound round its target's legs that roots it "
+				+ "for 2 seconds. +50% slap damage.",
 			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.5f,
@@ -1699,25 +1751,30 @@ public static class SpellEvolutionCatalog
 			SynergyDescription = "The tentacles hold what they hit."
 		});
 
+		// Fling (phase 2, .ai/spell-roster.md section 2h): once Abyssal Spread, +60% rift and +2 tentacles -
+		// numbers on the same pit. Now the arms throw what they catch (BlackTentacles.Throw); the id stays.
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "tentacles_abyssal_spread",
-			DisplayName = "Abyssal Spread",
-			Description = "+60% rift size and +2 tentacles.",
+			Id = BlackTentacles.FlingId,
+			DisplayName = "Fling",
+			Description = "The tentacles throw what they catch: a slap that lands picks its target up and hurls it across the pit "
+				+ $"at the enemy furthest from it, and where it comes down it and everything round it take {BlackTentacles.FlingShare * 100f:0}% "
+				+ "of a slap. Elites and bosses are too heavy to throw. +1 tentacle, the rift 20% wider.",
 			MilestoneLevel = 4,
-			AreaMultiplier = 1.6f,
-			ProjectileCountBonus = 2,
-			VisualTag = "AbyssalSpread",
+			ProjectileCountBonus = 1,
+			AreaMultiplier = 1.2f,
+			VisualTag = "Fling",
 			ModulateColor = new Color(0.4f, 0.15f, 0.6f),
-			SynergyTag = "Poison / Area",
-			SynergyDescription = "A wider rift to slow in, and more arms to reach across it."
+			SynergyTag = "Tentacles / Throw",
+			SynergyDescription = "Every slap lands twice: once on what it caught, and again on whatever that lands on."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = "tentacles_soul_drain",
 			DisplayName = "Soul Drain",
-			Description = $"Every {BlackTentacles.SoulDrainEvery}th slap that lands heals you 1 HP, up to {BlackTentacles.SoulDrainCap} HP a cast.",
+			Description = $"Every {BlackTentacles.SoulDrainEvery}th slap that lands tears a wisp of life out of what it struck; "
+				+ $"it flies to you and heals 1 HP as it arrives, up to {BlackTentacles.SoulDrainCap} HP a cast.",
 			MilestoneLevel = 4,
 			Effect = SpellEffect.Lifesteal,
 			EffectValue = 1f,
@@ -1751,7 +1808,9 @@ public static class SpellEvolutionCatalog
 			Id = "tentacles_shadow_forest",
 			BonusElementWeights = new() { { "Poison", 1 } },
 			DisplayName = "Shadow Forest",
-			Description = "The rift opens over a wider field (+50% size), 44% sooner, and its tentacles slap for +120% damage.",
+			// Phase 2: the words lead with the forest it draws (BlackTentacles' seven pools), as they did not.
+			Description = "The rift breaks into a forest of seven small pits over a field half again as wide, each with its own arms. "
+				+ "It opens 44% sooner, and its tentacles slap for +120% damage.",
 			MilestoneLevel = 8,
 			DamageMultiplier = 2.2f,
 			// 1.5, not 2.5: see the Maw. The drawing it replaced was x1.7 of 90 px.
@@ -1866,11 +1925,13 @@ public static class SpellEvolutionCatalog
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "cone_wide_angle",
+			Id = ConeBlast.ArcticBlastId,
 			DisplayName = "Arctic Blast",
 			// The 180 degrees is ConeBlast.HalfAngleRad, since 2026-10-26. x1.4 and no RangeBonus, so the
-			// range is the +40% the card says; x1.5 on top of +50 px was +79%.
-			Description = "Expands cone arc to 180 degrees with +40% range.",
+			// range is the +40% the card says; x1.5 on top of +50 px was +79%. Kept in phase 2 (section 2h):
+			// a cone's angle is its shape, and a half-moon is a different weapon from a 60-degree cone.
+			Description = $"The cone opens into a half-moon: the ice sprays {ConeBlast.ArcticBlastDegrees:0} degrees across the front of you "
+				+ "instead of 60, and reaches 40% farther.",
 			MilestoneLevel = 4,
 			AreaMultiplier = 1.4f,
 			VisualTag = "ArcticBlast",
@@ -1905,12 +1966,16 @@ public static class SpellEvolutionCatalog
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "cone_zero_point_wave",
+			Id = ConeBlast.ZeroPointId,
 			BonusElementWeights = new() { { "Ice", 1 } },
 			DisplayName = "Zero Point Shockwave",
-			Description = "A freezing blast that reaches far further: +150% Damage, +40% reach.",
+			// Phase 2 (.ai/spell-roster.md section 2h): it was +150% damage and +40% reach on the same spray.
+			// Now the blast goes on past its own end - ConeBlast's relay - and the numbers ride along.
+			Description = $"The cold gathers at the tip of the cone into a star of ice and bursts on: a second cone, as wide and "
+				+ $"{ConeBlast.RelayLength * 100f:0}% as long, is thrown on from that point into what stood behind the front. "
+				+ "The cone reaches 40% farther, +120% damage.",
 			MilestoneLevel = 8,
-			DamageMultiplier = 2.5f,
+			DamageMultiplier = 2.2f,
 			// 1.4, not the 2.2 it promised and never delivered: a 260 px cone at x2.2 reaches 572 px,
 			// most of the screen. x1.4 is 364 px and about twice the area, which is the gap the
 			// Frostweaver measured below the other wizards. The spray is drawn out of the cone's own
@@ -1921,15 +1986,15 @@ public static class SpellEvolutionCatalog
 			AreaMultiplier = 1.4f,
 			VisualTag = "ZeroPointWave",
 			ModulateColor = new Color(0.85f, 0.95f, 1.0f),
-			SynergyTag = "Ice / FullBurst",
-			SynergyDescription = "Ascension: Omnidirectional 360-degree shatter nova."
+			SynergyTag = "Ice / Relay",
+			SynergyDescription = "Ascension: deepens Ice. One blast that goes on through the front rank into the pack behind it."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
 			Id = "cone_glacier_tide",
 			DisplayName = "Glacier Tide",
-			Description = "+100% damage, and the blast throws everything it hits away from you.",
+			Description = "The blast goes out as a wall of ice that throws everything it hits away from you. +100% damage.",
 			MilestoneLevel = 8,
 			DamageMultiplier = 2.0f,
 			KnockbackBonus = 120f,
@@ -2028,20 +2093,23 @@ public static class SpellEvolutionCatalog
 		// Level 4 (3 choices)
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "obsidian_spike_splinter_field",
+			Id = GroundSpike.SplinterFieldId,
 			DisplayName = "Splinter Field",
-			Description = "The eruption bursts 35% wider.",
+			// Phase 2 (.ai/spell-roster.md section 2h): it was "the eruption bursts 35% wider" - a number on
+			// the same disc. Now the eruption splinters through the ground (GroundSpike.LaySplinters). It
+			// is the Geomancer's required level 4, so its id and its Earth stay.
+			Description = $"The eruption splinters through the ground: as its cracks run out, a splinter of glass punches up under "
+				+ $"each of the {GroundSpike.SplinterCount} nearest enemies just past its rim, one after another, striking what "
+				+ $"stands over it for {GroundSpike.SplinterShare * 100f:0}% of the spike. The eruption 15% wider.",
 			MilestoneLevel = 4,
 			BonusElementWeights = new() { { "Earth", 1 } },
-			// The shatter IS the wider eruption. It used to also carry ExplosionOnHit, which only
-			// Magic Missile reads, so the required branch for the Geomancer's form did nothing at all.
-			// No ScaleMultiplier since 2026-10-28: the spike draws its cracks, chips and splinters out
-			// of the radius it hits (GroundSpike), so the area alone is drawn as wide as it hurts.
-			AreaMultiplier = 1.35f,
+			// No ScaleMultiplier since 2026-10-28: the spike draws its cracks, chips and splinters out of
+			// the radius it hits (GroundSpike), so the area is drawn as wide as it hurts.
+			AreaMultiplier = 1.15f,
 			VisualTag = "SplinterField",
 			ModulateColor = new Color(0.55f, 0.48f, 0.42f),
-			SynergyTag = "Earth / Shatter",
-			SynergyDescription = "Deepens Earth. A wider eruption catches more of the crowd round its target."
+			SynergyTag = "Earth / Splinters",
+			SynergyDescription = "Deepens Earth. One eruption reaches the ring of the crowd round its target."
 		});
 
 		// The element path (ElementPaths). Its shadow bleed was a DotDamage effect, which GroundSpike
@@ -2068,36 +2136,44 @@ public static class SpellEvolutionCatalog
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "obsidian_spike_deep_strata",
+			Id = GroundSpike.DeepStrataId,
 			DisplayName = "Deep Strata",
-			Description = "The spike is driven from far deeper: +45% damage and a longer reach.",
+			// Phase 2: it was +45% damage and a longer cast range. Now what the spike breaks out under goes up
+			// with it (Enemy.ApplyLaunch, through GroundSpike.Erupt); the reach and some damage ride along.
+			Description = $"The spike is driven up from far deeper and throws everything it breaks out under up into the air: "
+				+ $"for {GroundSpike.LaunchSeconds:0.#} s they hang there and do nothing, then drop where they were. Elites and "
+				+ "bosses are too heavy to throw and reel instead. +40% damage, and it reaches farther.",
 			MilestoneLevel = 4,
-			DamageMultiplier = 1.45f,
+			// +40%: at +30% it measured 460 a second at level 7 against the old card's 532 (+45%, thirty
+			// times health); what is in the air is not on the wizard, which the number does not show.
+			DamageMultiplier = 1.4f,
 			RangeBonus = 120f,
 			VisualTag = "DeepStrata",
 			ModulateColor = new Color(0.42f, 0.40f, 0.44f),
-			SynergyTag = "Earth / Power",
-			SynergyDescription = "No new element. Straight power for a build that is already where it wants to be."
+			SynergyTag = "Earth / Upheaval",
+			SynergyDescription = "No new element. The front rank spends half its life in the air instead of on you."
 		});
 
 		// Level 8 (2 choices)
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "obsidian_spike_tectonic_uprising",
+			Id = GroundSpike.TectonicId,
 			DisplayName = "Tectonic Uprising",
-			Description = "The ground tears open wider beneath the target (+120% Damage, +60% Area).",
+			// Phase 2: it was +120% damage and +60% area on the same eruption. Now the ground it broke stays
+			// open and keeps erupting (GroundSpike's vent). The Geomancer's required level 8, so the id and
+			// its Earth stay; Sundering raises its ring on top of it as before.
+			Description = $"The ground does not close: where each spike broke out a vent stays open for {GroundSpike.VentSeconds:0} s, "
+				+ $"its cracks smouldering, and every {GroundSpike.VentBeatSeconds:0.#} s it throws up a fresh spike of glass under "
+				+ $"the nearest enemy that comes near it, for {GroundSpike.VentShare * 100f:0}% of the spike. +80% damage, the eruption 30% wider.",
 			MilestoneLevel = 8,
 			BonusElementWeights = new() { { "Earth", 1 } },
-			DamageMultiplier = 2.2f,
-			// 1.6, not the 2.5 it promised and never delivered: with Splinter Field that is a 97 px
-			// eruption, about the Frostweaver's cone in area x damage. 2.5 would be 152 px, eleven
-			// times the base disc. KnockbackBonus 140 is gone too - nothing reads it. No ScaleMultiplier,
-			// as for Splinter Field: the area is what is drawn.
-			AreaMultiplier = 1.6f,
+			DamageMultiplier = 1.8f,
+			// No ScaleMultiplier, as for Splinter Field: the area is what is drawn.
+			AreaMultiplier = 1.3f,
 			VisualTag = "TectonicUprising",
 			ModulateColor = new Color(0.36f, 0.33f, 0.36f),
-			SynergyTag = "Earth / Cataclysm",
-			SynergyDescription = "Ascension: a third Earth instance, and the ground goes with it."
+			SynergyTag = "Earth / Vents",
+			SynergyDescription = "Ascension: deepens Earth. Where the swarm stood, the ground goes on breaking under whatever walks there next."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
@@ -2454,11 +2530,16 @@ public static class SpellEvolutionCatalog
 				+ $"up to +{HollowStar.CrushPerBody * HollowStar.CrushMostBodies * 100f:0}% at {HollowStar.CrushMostBodies}. The core swells as the knot fills.",
 			"Knot / Power", "Pull a pack in tight and every body in it hits the rest harder.",
 			o => { o.DisplayName = "Crush"; o.VisualTag = "Crush"; o.ModulateColor = Colors.White; }));
+		// +30% damage since 0.9.3. Crush gains a Darkness, which lifts a pure Hollow Star to Darkness tier 2
+		// and its attunement (x1.2); Twin Stars gains nothing, and its twin cannot open across the wizard
+		// (two wells either side of him would drift together onto him, HollowStar.DriftToPartner). At the
+		// same footing Crush's path measured 1.5-1.9 times this one's, and when the spell came down into the
+		// level 4 band (40-60) this path fell under it. The +30% puts the two cards near each other again.
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.HyperAcceleration,
 			"Two wells open on two packs at once and drift together as they pull, tethered, dragging both knots into one "
-				+ "for both collapses to land on. Each drags 15% harder.",
+				+ "for both collapses to land on. Each drags 15% harder, +30% damage.",
 			"Twin / Pull", "Two packs become one knot, and it is hit twice.",
-			o => { o.DisplayName = "Twin Stars"; o.VisualTag = "TwinStars"; o.ModulateColor = Colors.White; o.ProjectileCountBonus = 1; o.SpeedMultiplier = 1.15f; }));
+			o => { o.DisplayName = "Twin Stars"; o.VisualTag = "TwinStars"; o.ModulateColor = Colors.White; o.ProjectileCountBonus = 1; o.SpeedMultiplier = 1.15f; o.DamageMultiplier = 1.3f; }));
 		AddElementPath(spell);
 		// +60%: at +30% it measured x1.5 of the spell at level 7 against a crowd it was still clearing; at
 		// +60%, x2.30 against one it could not (2026-10-29, --enemy-hp=30; the Titan it replaced, x2.63).
@@ -3122,9 +3203,9 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Starfall.SkippingStarsId,
 			DisplayName = "Skipping Stars",
-			Description = $"Every star lands at its slant and skips on {TimesWord(Starfall.SkipCount)}, like a stone across water: "
-				+ $"the first skip lands {Starfall.SkipDamage[0] * 100f:0}% as hard and {Starfall.SkipRadius[0] * 100f:0}% as wide, "
-				+ $"the second {Starfall.SkipDamage[1] * 100f:0}% and {Starfall.SkipRadius[1] * 100f:0}%.",
+			// One sentence, the one number (2026-10-31, "keep text minimal"): the skips' shares of damage and
+			// size (Starfall.SkipDamage, SkipRadius) are the spell's, not the card's.
+			Description = $"Every star skips on {TimesWord(Starfall.SkipCount)} like a stone across water, each skip veering up to {Starfall.SkipTurnDegrees:0} degrees.",
 			MilestoneLevel = 4,
 			VisualTag = "SkippingStars",
 			SynergyTag = "Reach / Coverage",
@@ -3320,9 +3401,10 @@ public static class SpellEvolutionCatalog
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = Familiar.RavenId,
-			DisplayName = "Raven",
-			Description = $"It grows into a raven of your light: +{(ravenDamage - 1f) * 100f:0}% damage, and its beak "
-				+ $"strikes {(ravenBeak - 1f) * 100f:0}% wider, taking what stands beside its quarry. +1 Arcane tag.",
+			// 2026-10-30, Eric: "'Raven of your light' doesn't make sense. Rename this and describe it differently."
+			DisplayName = "Great Raven",
+			Description = $"Your crow grows into a great raven. It hits {(ravenDamage - 1f) * 100f:0}% harder, and its beak "
+				+ $"strikes {(ravenBeak - 1f) * 100f:0}% wider, catching enemies beside its target. +1 Arcane tag.",
 			MilestoneLevel = 4,
 			DamageMultiplier = ravenDamage,
 			AreaMultiplier = ravenBeak,

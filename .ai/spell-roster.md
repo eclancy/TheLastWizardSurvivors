@@ -120,6 +120,48 @@ so its own hit is modest and most of its value is what the knot does for the are
 Verified headless: twelve still enemies in a ring went from a mean 101 px to 45 px from the centre
 and all ended inside the collapse; with no well they moved 3 px.
 
+**0.9.3: Eric's playtest of 0.9.2** (2026-10-30): *"hollow star should never be centered on the player,
+so the enemies are not dragged into the player. reduce the cooldown on hollow star, it's very powerful.
+hollow star should pull the enemies in slower. enemies should take more damage the closer they are to
+the center."*
+
+- **Never on the wizard.** A swarm pressed round him was the densest pack in range, so the well opened
+  on his feet and dragged it onto him. Now a well opens with the rim of its pull 40 px past him
+  (`HollowStar.OpenSpot`, Iron Ring's clearance): a pack within a reach of him is aimed *through* - the
+  well goes out along the line to it, the pack ends on its near side and is dragged away. Every well of
+  a cast is cleared by its exact reach (the level 3 reach and the Spirit Mirror's half again included);
+  a spot pushed onto water or a wall turns up to 30 degrees round him for open ground. Twin Stars' twin
+  is drawn again if the pair would meet on him, and its drift never steps a well nearer him than that;
+  Nova Seed's wells land by the same rule (re-cleared where he stands when they land). A well he walks
+  into himself leaves alone any enemy whose road to the centre passes within 30 px of him, so it never
+  drags one onto him. With the widest wells (Black Sun with the Spirit Mirror, about 470 px) a pack on
+  him is knotted some 500 px off - near the edge of the screen.
+- **Slower pull:** 240 -> 120 px/s and the ease 4.5 -> 2.2, so the rim of a plain well takes 0.8 s to
+  come within 55 px and the swarm drifts in over the whole pull rather than snapping in half a second.
+- **More at the core:** the collapse deals its whole damage at the centre, falling straight to 35% at
+  its edge (`HollowStar.ShareAt`), drawn as the well's heat (art-replacement-manifest section 9).
+- **"Reduce the cooldown ... it's very powerful" was read as fire less often:** a shorter cooldown would
+  have made a spell he called too strong stronger. 4.5 -> 6.0 s (5.1 at level 8, was 3.6).
+- **The numbers.** In the 8-minute bot the spell kills everything it catches, so its damage a second
+  follows its hit, not its cooldown (the longer cooldown only let more gather - the first pass, with the
+  cooldown alone and the core at x1.5, measured *higher*). Damage 18 / +5 / +6 / +8 -> 8 / +2 / +3 / +8;
+  Crush 6% a body (up to +90%) -> 2% (up to +30%); Twin Stars +30% damage, because Crush's Darkness lifts
+  the spell to tier 2 attunement (x1.2) and Twin Stars' gains nothing, and at the same footing the Crush
+  path read 1.5-1.9 times the Twin path's.
+
+Eight minutes, normal health (`--minutes=8 --timescale=2 --all-unlocked --immortal --character=0
+--seed=11 --spell=hollow_star --solo --upgrade-chance=1 --force-ascension`), damage a second, before ->
+after, against the peer bands 40-60 / 70-130 / 331-465. Read levels 4 and 6 as bands: each is 15-55
+seconds of play, two to nine casts.
+
+| path | L4 | L6 | L8 |
+|---|---|---|---|
+| Crush, Black Sun (John Dee's path) | 113 -> 40 | 250 -> 100 | 758 -> 506 |
+| Twin Stars, Nova Seed | 82 -> 56 | 174 -> 67 | 509 -> 361 |
+
+Black Sun's 506 is its own +60% on the strongest base path, past the band by 9%: an Ascension number,
+left for the level 8 audit, as is whether Black Sun's 60% re-pulls still knot enough at half the drag.
+
 ### Starfall - the weather spell (2026-10-25)
 
 The developer: *"lets add a falling star spell of some kind. maybe a meteor ascension, or a rain ability
@@ -156,9 +198,10 @@ empty field as in a full one - it is weather. It falls whether or not anything i
   landed star stays where it fell. Stars are slots in fixed arrays drawn in one `_Draw` on the 2 px
   grid; a twinkle's arms are a few snapped bars rather than a square per step, and a trail is three
   lines. Nothing is instanced or allocated per star. The table (written out in full in the `.tres`):
-  4 stars of 4 damage every 1.0 s, 28 px landings over a 190 px rain; every level +1 damage, even
-  levels the cooldown step and a star (2, 6, 8) or 20 px more rain (4), odd levels +3 px a landing.
-  Level 8: 7 stars of 12 every 0.68 s (10.3 a second), 37 px landings over 210 px.
+  4 stars of 4 damage every 1.0 s, 28 px landings over a 240 px rain; every level +1 damage, even
+  levels the cooldown step and a star (2, 6, 8) or 30 px more rain (4), odd levels +3 px a landing.
+  Level 8: 7 stars of 12 every 0.68 s (10.3 a second), 37 px landings over 270 px. (The rain was
+  190 px and 210 at level 8 until 2026-10-31; see the note under the table.)
 - **The animation is the hit area.** The landing burst is `ImpactDebris`, whose front stops on the
   radius tested; the twinkle's arms stop at 70% of it. No ring, no ground marker before it lands.
 - **A star is drawn at projectile size, not mote size.** The first build drew a 4 px head with a
@@ -171,9 +214,36 @@ empty field as in a full one - it is weather. It falls whether or not anything i
 |---|---|---|---|
 | level 4 | **Shooting Stars** (was Clear Night, +2 stars and +15%, until phase 2 - section 2h) | Light 2 | every third star streaks across the whole rain, rim to rim, a line that strikes what it crosses for 80% of a star; +10% damage |
 | level 4 | **Frostfall** (the element path) | Light 1, Ice 1 | +20% damage; every hit slows 30% for 1.5 s; every star falls, twinkles and bursts in Ice's ramp |
-| level 4 | **Skipping Stars** (was Downpour, a faster, finer rain, until phase 2 - section 2h) | unchanged | every star skips on twice to the right, like a stone across water: landings 75% and 55% as wide, for 55% and 35% |
+| level 4 | **Skipping Stars** (was Downpour, a faster, finer rain, until phase 2 - section 2h) | unchanged | every star skips on twice like a stone across water, each skip glancing off the way it came by up to 80 degrees either side (to the right only, within 23 degrees, until 2026-10-31): landings 75% and 55% as wide, for 55% and 35% |
 | level 8 | **Starburst** | Light +1 | every star is heavy: it lands, swells for 0.3 s and explodes 120% wider for +110% damage, throwing 3 sparks that arc out past its rim and land as small stars (40% damage, 40% of its radius; a white flash and a small burst, no twinkle); stars fall half as often |
 | level 8 | **Constellation** | unchanged; gated on the spell's current tags | every star stays lit where it fell for 2.5 s (x Duration), joined to the nearest lit star within 140 px by a line of light; every 0.5 s the lines strike everything they touch for 55% of a star's damage, once per enemy however many lines it stands across; +1 star |
+
+**2026-10-31, the designer's playtest:** *"Starfall should cover a wider area overall, and the skipping
+effect should skip in more varied directions so it doesn't just spread in a single direction."* Two
+changes, nothing else moved:
+
+- **The rain is wider**: `BaseRange` 190 to 240, level 4's `RangeBonus` 20 to 30, so 270 at level 8
+  (was 210) - 1.6 times the ground (1.65 at level 8). The stars, their damage and their landing radius
+  are what they were, so the damage budget is the one it was, spread wider: a crowd that fills the rain
+  takes what it did, any one spot is struck about 0.6 times as often, and the rim reaches 50-60 px
+  further into the ring closing on the wizard. A Shooting Stars streak crosses the whole rain, so it is
+  29% longer and cuts more of a full crowd; Constellation's lit stars sit further apart (about 51 px to
+  the nearest at level 8, from 38), still well inside its 140 px link.
+- **Every skip picks its own heading**: the way it came (a fallen star's slant, to the right; a skip's
+  own hop) turned by a uniform draw of up to `Starfall.SkipTurnDegrees` (80) either side, so the first
+  skip fans across the right half and the second can come back across the rain. It was a turn of 0.4
+  rad (23 degrees) off due right for both. Still aimed at nothing - a skip toward the nearest enemy was
+  the other offer, and would have made the one weather spell aim. The card, cut to one sentence
+  (the designer: *"Overall keep text minimal"*), names the 80 from the constant; the skips' shares of
+  damage and size are unchanged and no longer on it.
+
+Band run after (`_BalanceHarness --minutes=8 --timescale=2 --immortal --all-unlocked --character=0
+--seed=11 --solo --upgrade-chance=1 --force-ascension --spell=starfall --branch4=starfall_downpour
+--branch8=starfall_starburst`, load 13-14): **36 / 56 / 74 at levels 4-6 and 403 at level 8**, against
+53 / 64 / 97 / 405 for the same cards on the narrower rain (section 2h). Level 8 is where it was; levels
+4-6 sit lower but inside the factor-of-two swing those columns show between runs of one build. Not
+re-run for the other paths. Captures: `sf_skip*.png` (level 8, Skipping Stars + Starburst, zoom 1.6) and
+`sf_wide*.png` (Skipping Stars alone, zoom 1.0, the rain's width and the skips' headings).
 
 Ice for the path because of the fiction (the cold light of stars) and because Ice has three spell
 carriers. Kindled Ward's path is also Ice; both of Light's pure spells going cold is a reading of the
@@ -449,7 +519,8 @@ more like a whip".* The first build drew a uniform zigzag polyline that slid dow
 and left five even lines behind it. The beats, their timing and the hit test above did not change; the
 picture did. Every frame the node poses each arc as a 17-point lash and
 `scenes/shaders/stormsweep_lash.gdshader` draws it as pixel art on the world's 2 px grid, half-width 4-8
-px at the hand (with the square root of Area) thinning fast to one art pixel at the tip:
+px at the hand (with the square root of Area) thinning fast to one art pixel at the tip. As first built
+(the leap and the sweep were redone on 2026-10-31 - "A whip crack, not a flick", below):
 
 - **Leap** - it unfurls along the band's starting edge: a loop rolls out from the hand to the tip, the
   part past it folded back a radius into the band (never out of it), shrinking until the lash lies
@@ -468,9 +539,35 @@ The colours are the arc's ramp (Lightning, or Metal on Iron Current), the crackl
 a Legendary's gold multiplies all of it. Iron Current keeps its look as a lash: beads of iron, long and
 square by turns with an `occ` seam between them, strung along it and thinning with it, with the storm
 crawling over them. Thunderclap's second pass, Cardinal Storm's cross and Amount's alternating sides are
-unchanged. Nothing is allocated per frame: every lash is one row of a 13 x 16 float image written in
+unchanged. Nothing is allocated per frame: every lash is one row of a 20 x 16 float image written in
 place and pushed with `ImageTexture.Update` (handing the shader uniform arrays every frame allocated a
 finalizable disposer per array on the C# side, 0.3 KB a frame - measured), and one quad per lash.
+
+**A whip crack, not a flick** (2026-10-31). Eric: *"the electric whip spell should look more like a whip
+crack as well."* The first whip swept with its far end LEADING and cracked at the START of the sweep -
+a stick slapped down, then a spark. The sweep is now a real whip stroke, from `scripts/WhipStroke.cs`, the
+motion model it shares with Thorned Vine: in the **leap** the lash is thrown out straight along the
+band's starting edge (no loop yet); in the **sweep** the HAND leads down to the far edge while the lash
+beyond still lies on the near one, and the bend between them - a diagonal across the band with a loop in
+its elbow - rolls out along the band to the tip; the tip, the last part to move and the fastest, lands on
+the far corner and **cracks** at the END of the pass: a white heart, a four-armed star with short
+diagonals, a broken ring of shock opening to just inside `BodyAllowance`, and sparks thrown the way the
+tip was travelling. The tip glows as it whips in (the last quarter of the pass) and stays white for
+`CrackSeconds` after. The **linger** is unchanged. Thunderclap cracks at the end of both passes (its clap
+lands on the crack); Cardinal Storm's four arms each roll a loop out and crack. The lash is 31 points
+now (17 of its own and the loop's 14), so the shader measures a point's place along it by run length.
+
+**What it hits did not change.** The hit test is `WhipStroke.Front` mapped onto the band
+(`Stormsweep.BandAcross`), the same curve the lash is drawn on, and it still covers exactly the band and
+its body allowance once a pass: every enemy in it is struck once a pass, as before. Only the ORDER across
+the band changed - the hand's end first, the far end last, as the wave rolls out - and the loop is drawn
+only over band the front has already crossed (`WhipStroke.Splice` holds it there). The beats' timing
+(0.07 / 0.08 / 0.16 s, Thunderclap's 0.05 s pause, `ArcGap`) and the cooldown are unchanged, so the
+loop rolls out over about five frames at 60 fps - visible in a frame sequence and at the game's own zoom
+on both canvases, but quick; if a playtest wants it slower, `SweepSeconds` is the knob, and it moves when
+the damage lands within the arc. Cost, the same harness flags as the 2026-10-28 whip row below (Iron
+Current + Cardinal Storm, seed 11): the `stormsweep` section 74-293 us a frame before and 99-175 after
+over minutes 2.4-6 - no change beyond the spread; attributed damage 68,925 before, 70,657 after.
 
 | milestone | branch | tags after | what it does |
 |---|---|---|---|
@@ -523,8 +620,10 @@ hold back. Two new catalog spells would close the final chapter on a save that h
 main's Familiar, the same kind of grant, and the two can be folded into one step); steps 10, 12 and 14
 leave them out of their counts (`SpellsAddedAtSchema16`).
 
-**Art:** card icons `stormsweep-lightning` (an arc of lightning swept a quarter-turn round a glowing sigil,
-two afterglow arcs inside it, on violet night - pale yellow vanished on the cream card) and
+**Art:** card icons `stormsweep-lightning` (since 2026-10-31 the whip crack the game draws: out of the
+glowing sigil the lash lies low, steps up through a loop to its high far part, and the far end snaps down
+into a white-hot star, speed lines beside the snap and streaks of the swept band under it, on violet
+night - pale yellow vanished on the cream card; it was an arc swept a quarter-turn round the sigil) and
 `sleet-runes-ice` (three of the game's own runes in flight on the wool row's night), both in
 `tools/art/spell_icons.py`; the rune sheet `assets/bonelight/effects/sleet-rune.png`. The arc draws itself
 (`scenes/shaders/stormsweep_lash.gdshader`, "Drawn as a whip" above).
@@ -798,6 +897,40 @@ the thing at the game's 2 px art grid, out of the number that decides what it hi
   evolutions keep their ids, numbers and element gains and are re-worded for a vine (reach, snag
   count, tempo, more vines).
 
+  **A whip, not a stick (2026-10-31).** Eric: *"its animation just rotates, I want it to look more like
+  the real arc of a whip."* The lash was one limb turned about its root with a curl riding on it. It is
+  now a whip stroke from `scripts/WhipStroke.cs` (shared with Stormsweep): the root swings through the
+  arc first while the vine beyond trails about a radian behind; the bend between them, with a LOOP in
+  it, rolls out along the vine; the tip, last and fastest, whips round the end of the arc and **cracks**
+  - a white-hot star of grass-light, a ring of shock and a spit of poison thrown the way it went, inside
+  `BodyTolerance` - and the vine goes slack, springs back a little and withers. Three speed lines along
+  the rim show the arc the tip just cut (they replaced a dithered smear, which under Hydra Vine's three
+  heads closed into dotted arcs). **A snag no longer just stops it:** the vine out to the enemy it caught
+  on holds where it was, the rest of it WRAPS round that enemy (inside `BodyTolerance` of its centre,
+  pulling its own tail in) and the tip cracks on it - so in a dense pack, where most strokes snag, the
+  crack still comes. Snapback's return is a second stroke with its own loop and crack (it tears free of
+  a wrap first); Hydra Vine's heads each whip their own third; Thicket lays its brambles on the arc the
+  first stroke swept; Entangle's coils are unchanged. The vine is drawn on `DrawLayers.Air` and the soil
+  it tore on `DrawLayers.Ground` (it was all at relative z 1). **What it hits:** an enemy is struck when
+  the stroke's front - where the vine lies at the enemy's distance from the root, `WhipStroke.Front` -
+  has passed it, plus `BodyTolerance`; the vine is drawn from the same front and its loop only turns over
+  ground the front has crossed. The area an unsnagged stroke sweeps is the same fan as before (170
+  degrees, 130 a Hydra head, out to the vine's reach plus `BodyTolerance`), and a snagging stroke still
+  cuts exactly pierce + 1; only the order inside the fan changed (near the root first, the rim last), and
+  with it which enemies a snagging stroke reaches. Damage per cast is unchanged; the beats (0.22 grow,
+  0.14 coil, 0.20 lash, 0.14 hold, 0.10 Snapback recoil, 0.35 wither) and the cooldown are unchanged.
+  Icon (`thorn-vine-grass`, `tools/art/spell_icons_core.py`): the vine up out of torn ground, a loop in
+  it, the tip hooked over and cracking, speed lines under the hook - it was a straight barbed runner.
+  Cost: the FrameProfiler's new `vine` section (every vine's `_Process`, its strikes' damage included),
+  `_BalanceHarness --minutes=6 --timescale=2 --immortal --all-unlocked --character=0 --spell=thorn_vine
+  --solo --upgrade-chance=1 --branch4=thorn_vine_hyper_acceleration --branch8=thorn_vine_infinite_horizon
+  --force-ascension --seed=11 --profile=10`, Hydra Vine from 2.4 min in both runs, about seven vines
+  alive a frame: the turning limb 91-228 us a frame, the whip 135-255 us - about 9 us more a vine a frame
+  (the per-frame lash texture and the stroke's arithmetic; the shader parameters that hold still are now
+  set only when they change, which paid back most of it). Allocation unchanged, 0.2-0.7 KB a frame, the
+  damage path's. Attributed damage 57,802 before, 59,560 after. GPU fill is not measured: the quad is now
+  the vine's bounding box rather than the square of its reach, but each fragment walks 30 segments, not 12.
+
 Measured with the balance harness (`--spell=ID` and `--solo`, new) - see the commit for the tables.
 
 Cinderbreath was the counter-example and is worth remembering as one: it drew itself at first and had to be rebuilt around a real sprite sheet, because a procedurally filled cone reads as a lit area and never as fire. Drawing your own shape is the right default for a zone, a ward or a trap - something that occupies ground. It is the wrong default for anything the player is supposed to watch travel.
@@ -1070,7 +1203,7 @@ which deals nothing and bursts in the guard's element:
 | **Familiar - the crow** (section 2g) | a bolt inside 320 px, met within 230: taken on the wing | rests 1.5 s | 254-264 caught (Enchanted Forest, 8 min, seed 11 - the dog 401 there) |
 | **Familiar - the cat** (section 2g) | a bolt inside 170 px, met within 110: batted away right at his feet | rests 1.0 s - the most often, the closest in | 273 caught (the same run) |
 | **Spiritual Weapon** (base spell; the orbiting blades until 2026-10-28) | any bolt a circling blade passes through | only while the blades are out, only what they touch | 164 parried |
-| **Spirit Sword** (the form, section 2f) | any bolt that touches a sword's blade - hanging at his shoulder, hunting or swinging | only where the swords are; Riposte widens the guard 60% and every parry is a strike | see 2f |
+| **Spirit Sword** (the form, section 2f) | any bolt that touches a sword's blade (or Twin Blades' dagger's) - hanging at his shoulder, hunting or swinging | only where the swords are; Deflection (Riposte's id, 2026-10-30) sends a free sword out to swat a bolt aimed at him, each sword about once a second | see 2f |
 | **Spirit Hammer** (the form) | every bolt inside a slam's shockwave | only where and when a slam lands | see 2f |
 | **Solar Flare - Daybreak Avatar** (Ascension) | every bolt inside the flare's reach this moment, between pulses too - the garlic | only inside the flare | 202 burned |
 
@@ -1245,6 +1378,8 @@ the numbers on the card ride the stat fields `EvolutionStatReaders` lists for it
 on a `DrawLayers` layer: what flies or clings in `Air`, what lies on the ground under the bodies.
 
 - **Hollow Star** (`HollowStar.cs`, `Player.FireHollowStar`). Built as proposed - the pull is its own.
+  (0.9.3 changed Crush to 2% a body and gave Twin Stars +30% damage: "Hollow Star - the spell that moves
+  the swarm", above.)
   - **Crush** (L4, was +35% damage and +30% area): the collapse hits +6% harder for every body in it,
     up to +90% at fifteen; the core swells a third wider as the knot fills and throws more debris.
   - **Twin Stars** (L4, was -30% cooldown and a 25% harder drag): two wells a cast, the twin on a pack
@@ -1456,6 +1591,50 @@ trail - and stay the debuff half of the chain pair (section 3):
 Black Sigil is broken only by the loadout: when Shadow Bolt's own next cast broke it, a lone Shadow Bolt
 became a damage spell (x3.8 of Withering Mark at level 7), which is the one thing section 3 says it is
 not. Solo, then, it is Withering Mark's exposure and nothing else.
+
+**2026-10-31, a cast is capped** (the designer's playtest: *"Shadow bolt has the capability to break the
+game with the number of arcs it can generate. Should we not allow a single cast to hit the same enemy more
+than once? Put caps or reduce the number of times they can bounce?"*). Every enemy a curse reaches forks
+`1 + ChainBranchBonus` ways - two with Spreading Dark, three from level 7, five at level 12 - and the hops
+came from the projectile count, the Chain lines, Spreading Dark and Anathema, so a cast grew as
+branches^depth; and each branch copied its own set of what it had struck, so siblings struck the same
+bodies again and again. `CastState.HopsLeft` was `int.MaxValue` for everything but Cascade. Measured with
+`_UiShot` and `--profile` (a crowd of sixty at 40 times health, under xvfb - 1280x720 for the level 8 run
+before, 640x360 for the rest - on a machine at load 13, so read the frame times as a band and the counts
+as exact; headless `_UiShot` never applies its demo state): **Spreading Dark + Anathema at level 8**, one
+cast made 9,841 arcs - the full three-way tree, 1 + 3 + ... + 3^8 - with 8,757 chain nodes alive at once
+and frames of 3.4, 19.0 and 4.1 s, the chain section alone 17.2 s of the worst; at **level 12 with the
+Split Lens** 6,458 arcs and an 8.0 s frame (it stopped there only because the crowd was dead); **level 12,
+Spreading Dark + Threefold Curse** 9,200 arcs from one cast and a 20.2 s frame. Chain Lightning's Storm
+Surge forks three ways too, so it would have run away the same way (not measured before).
+
+Two rules now hold for every cast of both spells (`ChainLightning.cs`). **No enemy is struck twice by one
+cast**: `CastState.Struck` is one set shared by every branch, and by Threefold Curse's three curses, which
+therefore never cross. **A cast makes at most `ChainLightning.MaxArcsPerCast` = 20 arcs**, its first
+strike included - each of Threefold's curses has its own 20; Cascade keeps its 36 hops (37 arcs), its
+card's storm. When the allowance runs short, what is left is shared evenly across every branch waiting to
+hop (`CastState.Tips`) instead of going to whichever hops first, so the cap ends as a fan: at level 8 with
+Spreading Dark the strike, 3, 8 and 8; at level 12 the strike, 5, 9 and 5. Twenty is the middle of the
+16-24 asked for, and the `sb_cap` captures (level 8, zoom 1.6) show it fanning across a 14-strong pack,
+and `sb_cap40` (level 12) covering about half of a 40-strong one. After, on the same footings: **20 arcs a curse, at most 16 chain
+nodes alive (42 under Threefold, 60 arcs a cast), the chain section 0.1-0.6 ms a frame averaged over 2 s
+(0.4-1.6 under Threefold) and 9-12 ms on the frame a generation spawns** (19-27 ms on the first cast,
+which pays the JIT; one Threefold frame read 124 ms on the loaded machine and is not explained). Chain
+Lightning, Storm Surge + Electrocution, 20 arcs and 16 nodes; Storm Surge + Cascade, 37 and 24. A hop no
+longer allocates a set or an array - only its node, and Return Stroke's road home. Spreading Dark,
+Threefold Curse, Storm Surge and Cascade name the cap from the constant, and every card touched was cut
+to a sentence or two (the designer, the same day: *"Overall keep text minimal"*) - Anathema now says only
+what it does; its +20% damage taken, two hops and +45% still ride along. Return Stroke still strikes each
+body twice: that is its card, not a hop.
+
+Band run after (the footing below, `--branch4=shadow_bolt_spreading_dark --branch8=shadow_bolt_anathema
+--profile=10`, one Godot at a time on a machine at load 13-14): all damage 61 / 106 / 77 at levels 4-6
+and **380 at level 8**, inside the 331-465 band (attributed 14 / 28 / 25 / 290); the old cards' Spreading
+Dark + Anathema read 37 / 57 / 85 / 356 at 75a66a6, a different tree, so not a same-footing comparison.
+The chain section averaged 0.02-1.2 ms a frame over each 10 s window. Three frames in the eight minutes
+spent 86-149 ms inside it (all on physics-spiral frames, no GC, little of it damage) and one under
+Threefold at 124 ms; that is not explained and is worth a look - the per-arc node (`Instantiate` and
+`AddChild` of an `Area2D` scene) is the obvious suspect, and pooling the arcs the obvious fix.
 
 **Measured** (`_BalanceHarness -- --timescale=2 --all-unlocked --immortal --character=0 --seed=11 --solo
 --upgrade-chance=1`, before = the tree at 75a66a6, after = these cards). Two kinds of run, as in "Every
@@ -1677,7 +1856,7 @@ colossal new drawing on the boss cell, twice the size, whose reach doubles with 
 |---|---|---|---|---|---|
 | **Axe** | **Broadaxe**: cleave 25% wider, +10% | **Headsman**: goes for the wounded; double on an enemy under half health | **Dawnsplitter**: Weakens what it cleaves (-30%, 3 s) | **Executioner's Greataxe**: double-bitted, x2 size and cleave, knockback doubled | **Whirling Axes**: two more axes, spinning end over end between blows |
 | **Hammer** | **Aftershock**: 0.4 s later a second wave, 40% wider, 60% damage, slows again | **Earthshaker**: slam 35% wider, slows 15% harder | **Hallowed Ground**: the slam leaves holy ground 2.5 s that Weakens and slows | **Titan's Maul**: x2 size and slam, +20%, freezes 0.5 s (a boss takes a hard slow) | **Hammerfall**: two more hammers, falling in turn, +15% |
-| **Sword** | **Twin Blades**: one more sword, each 10% softer | **Riposte**: guard 60% longer, a parry is a strike at once, +30% | **Soul Siphon**: 1 HP a strike, at most 3 a second | **Celestial Greatsword**: x2 size, cuts every enemy along the blade as it falls, +30% | **Thousand Cuts**: every swing a flurry of three cuts at 85%; a cut whose quarry has fallen goes to the nearest enemy |
+| **Sword** | **Twin Blades**: one off-hand dagger that stabs the main sword's quarry after each cut, 70% of a cut (was: one more sword, each 10% softer; see "2026-10-30" below) | **Deflection** (Riposte's id): free swords fly out and swat bolts aimed at the wizard, each about once a second; no damage (was Riposte: guard 60% longer, a parry is a strike at once, +30%) | **Soul Siphon**: 1 HP a strike, at most 3 a second | **Celestial Greatsword**: x2 size, cuts every enemy along the blade as it falls, +30% | **Thousand Cuts**: every swing a flurry of three cuts at 85%; a cut whose quarry has fallen goes to the nearest enemy |
 
 **The drawing.** `tools/art/spirit_weapons.py` models the six weapons as signed-distance parts,
 supersampled: the striking part (bit, face, blade) is conjured light on Arcane's emissive ramp,
@@ -1699,8 +1878,8 @@ spell's own icon is the three crossed (`tools/art/spell_icons.py`); fifteen evol
 stack; `spell_summon` when the weapon first appears. The hits are the Arcane hit.
 
 **Guards** (section 2d-bis): the old orbit's parry stays with the **sword**, the form that fights at a
-blade's length - along the blade, hanging or swinging, and Riposte widens the guard and turns a parry
-into a strike. The **hammer** crushes what is inside its slam: a guard that works only where and when
+blade's length - along the blade, hanging or swinging; Deflection (Riposte's id since 2026-10-30, when
+Riposte's wider guard and strike-on-parry went) sends a free sword out to swat a bolt aimed at him. The **hammer** crushes what is inside its slam: a guard that works only where and when
 it lands. The axe has none; it throws enemies back instead.
 
 **Measured** (`_BalanceHarness --minutes=8 --timescale=2 --immortal --all-unlocked --character=0
@@ -1750,6 +1929,69 @@ Levels 4-6 swing by a factor of two between runs of one build (section 3, Toxic 
 them as a band. The harness exits with a teardown crash after writing its report on this branch and
 on the Familiar's alike; the reports are whole.
 
+### 2026-10-30: the feel pass after 0.9.2 (`wip/spiritual-weapon-feel`)
+
+Eric, playing 0.9.2: *"Spiritual weapons should hover a little bit further away from the player and
+have a small hover animation to make them appear to be actually floating in space"*; of the sword,
+first a three-strike combo and then, *"nevermind the sword animation striking 3 times, the ascension
+flurry handles that. instead, just make sure the animation for the sword resets cleanly, and doesn't
+look goofy if it's repeatedly striking too fast"*; *"spiritual weapon, when you have multiples, should
+always target enemies that are a certain distance away from each other. multiple weapons can target the
+same miniboss or boss, but the sprites should not stack on top of each other when targeting"*; and of
+the cards, *"Riposte description is confusing. Replace with the ability to deflect projectiles. Twin
+sword mutation should create a second smaller dagger, and be capped at two blades ... the twin sword
+mutation should be more impactful or unique as leveling up already gives you more swords."*
+
+- **Further out, and floating** (every form). At rest the weapons hang 70 px from his middle, nearly
+  level with him (72 degrees off straight up, behind the way he faces; was 46 px at 38 degrees, where a
+  weapon sat on his shoulder and a fan of three arced over his hat), the fan down his back side at up to
+  26 degrees a weapon and never wider than 100 in all. Waiting - at his side or beside a quarry - each
+  rises and falls three art pixels, drifts one side to side at half the rate and rocks 7 degrees with the
+  drift (one heading cell at the ends), at its own rate (x0.85-1.15 of a 2.4 s breath) from its own
+  phase. The offset is whole art pixels, so the drawing steps on the 2-unit grid and never swims.
+- **The sword at speed.** Its swing took a fixed 0.25 s (0.45 s under Thousand Cuts) whatever the
+  cooldown, so at level 8 with cooldown boons the swings queued back to back: a dead stop at the top of
+  every bounce and a jerk into the next wind-up, a raise dropped half-drawn when its quarry died, and the
+  last slash wiped the moment the next strike began. Now the whole swing is fitted inside 80% of the
+  interval - wind-ups and recovery shorten by a pace, the cuts by its square root, at most x2.5; a swing
+  already due starts once the recovery is 55% of the way up, still rising; every wind-up starts from
+  wherever the blade is, the short way round; a raise whose quarry falls re-aims at the enemy nearest
+  where it was going; the last slash finishes its fade under the new one; and the afterimages are drawn
+  at the grips they had. At any ordinary cooldown the pace is 1 and the swing is the one it was. The axe
+  and the hammer swing well inside their cooldowns and are untouched.
+- **Spread out** (every form). A weapon choosing a quarry passes over any enemy within 96 px (a
+  weapon's width) of another weapon's quarry while anything clear of them all is in reach; an elite,
+  miniboss or boss is exempt and may be shared. Weapons that end up on one quarry (or, with nothing else
+  in reach, on neighbours) take stations: alternate sides, each pair further out and higher, so their
+  drawings never lie on one another.
+- **Twin Blades** is one dagger (`spirit-dagger.png`, the sword's make on the 32 cell), never one per
+  sword: the fan from levelling stays. It rests on his other side, in front where the swords are behind;
+  in a fight it keeps to the far flank of the main-hand sword's quarry and, in the gap after each of that
+  sword's cuts, darts in and stabs it for 70% of a cut. "Capped at two blades" is read as sword plus
+  dagger: the pair is the main-hand sword and the dagger, however wide the fan of swords grows.
+- **Deflection** keeps Riposte's id. A sword at rest or hunting watches the bolts coming at the wizard
+  inside 260 px of him and breaks off for one whose meeting point is within 220 px of its blade: it darts
+  there in 0.16 s, blade across the bolt's path, and swats it - broken, its pieces thrown on across the
+  path, never sent back (that is the Endless Chase's verb). Then that sword rests 0.8 s. Riposte's +30%
+  and its strike on every parry are gone: it is a guard card, not a damage card.
+
+**Measured** (the 2f command, `--minutes=8 --timescale=2 --immortal --all-unlocked --character=0 --solo
+--upgrade-chance=1 --force-ascension`, two Godots at once), damage a second by level:
+
+| build | L4 | L5 | L6 | L8 | note |
+|---|---|---|---|---|---|
+| Soul Siphon + Thousand Cuts, before | 38.3 | 61.7 | 63.6 | 260.8 | the control: no card on it changed |
+| Soul Siphon + Thousand Cuts, after | 39.1 | 54.0 | 63.8 | 268.6 | same level clock; swing pace reached x1.31 at level 8 |
+| Twin Blades (the dagger) + Thousand Cuts | 45.9 | 67.5 | 85.1 | 357.1 | 585 stabs; the old extra sword measured 52 / 71 / 94 / 362 |
+| Deflection + Celestial Greatsword | 47.5 | 59.6 | 67.8 | 535 | 647 bolts deflected, 2,715 cut in all (Riposte's run: 1,361) |
+
+The control moved within run-to-run noise, so the hover, the spreading out and the swing at speed
+cost no damage; the level 8 flurry gained a little where its swing used to overrun its cooldown. The
+dagger sits in every band. The Deflection run is not a comparison of damage or safety: its bot was dealt
+boon cards in 8 of 16 hands (Riposte's in 1 of 19), stayed at spell level 6 for 139 s and reached level 8
+three minutes later than Riposte's, against a later, denser crowd - rerun it at another seed before
+reading its health lost (10,425 against Riposte's 780) as the card's.
+
 ## 2g. The Familiar - the dog, the crow and the cat (2026-10-28)
 
 Eric: *"when you FIRST take familiar, you should be able to select your familiar. each has it's own
@@ -1786,7 +2028,7 @@ spell gives the wizard rather than the enemy.
 | | level 4 (+Arcane) | level 4 (element path, +20% and the rider) | level 4 | level 8 (+Arcane) | level 8 |
 |---|---|---|---|---|---|
 | **Dog** | **Great Hound**: +20%, jaws 40% wider | **Rimehound** (+Ice): bites slow 30% for 1.5 s; frost breath, jaws 40% wider | **Littermates**: +1 hound, each 15% softer | **Cerberus**: three heads, three bites a leap, +10% | **Hound of Annwn**: white and red-eared, +120% and jaws 50% wider; goes for an elite or a boss near the wizard first and bites one double |
-| **Crow** | **Raven**: +30%, beak 80% wider | **Stormcrow** (+Lightning): every peck staggers (0.2 s) | **Murder of Crows**: +1 crow, each 10% softer | **The Morrigan**: a peck on an ordinary enemy under 30% of its health kills it; double on an elite or a boss there; +100% | **Griffin** (the dog's, before forms): a swoop through its quarry and on past it along a line, +20%, 30% less often |
+| **Crow** | **Great Raven** (the card was "Raven" until 2026-10-30, when Eric found "a raven of your light" made no sense; same id, `familiar_crow_raven`, same numbers): +30%, beak 80% wider, catching enemies beside its target | **Stormcrow** (+Lightning): every peck staggers (0.2 s) | **Murder of Crows**: +1 crow, each 10% softer | **The Morrigan**: a peck on an ordinary enemy under 30% of its health kills it; double on an elite or a boss there; +100% | **Griffin** (the dog's, before forms): a swoop through its quarry and on past it along a line, +20%, 30% less often |
 | **Cat** | **Grimalkin**: every grant x1.4 | **Cait Sith** (+Darkness): what it claws takes 25% more from every spell for 3 s | **Purr**: 0.8 HP a second while it is out | **Cath Palug**: every grant x1.5 again, swipes 60% wider and 50% harder | **Nine Lives**: +1 life - when he would fall he stands back up with half his health |
 
 The Darkness rider is Vulnerable, which is the cat's way of fighting: through his spells. After an
@@ -1903,13 +2145,494 @@ rarely meets a tarn; `_BalanceHarness --stage=10 --spell=familiar --solo --immor
 Strikes and catches per hound-frame are unchanged within the runs' own spread (0.0129 / 0.0124 a frame
 walking south, 0.0138 / 0.0168 exploring), so the forms' numbers above stand.
 
-## 2h. Phase 2
+## 2h. Phase 2 - the rest of the roster's evolutions (2026-10-29)
 
-Eric, 2026-10-29: *"lets make all mutations more unique per spell"*. Phase 1 (2e) rebuilt sixteen
-spells' cards; phase 2 takes the spells 2e did not, to the same rule: **every evolution card says, in
-its name and its first line, a change the player can SEE on that spell** - a new shape, a new
-behaviour, or something left behind - drawn from what the spell already is. Numbers ride along; they
-are never the card.
+Eric: *"lets make all mutations more unique per spell"*. Phase 1 (2e) rebuilt sixteen spells; phase 2 is
+the rest, split between sessions by spell. The rule is 2e's: **every card says, in its name and its first
+line, a change the player can SEE on that spell** - a new shape, a new behaviour, or something left
+behind - drawn from what the spell already is. Numbers ride along; they are never the card. Each card is
+audited first: **visible** (it already changes how the spell looks or behaves - it stays, its words may
+be sharpened and its icon redrawn) or **numbers** (redesigned). What does not move: the ids (saves,
+`SeenAscensionIds`, the Ascension browser and the Apotheosis gates are keyed by them), the element each
+card gains, and every wizard's Apotheosis path.
+
+### Magic Missile, Frost Shard, Chain Lightning and Void Lance
+
+The four that fly on `ElementalBolt` and `ChainLightning` and were left out of 2e. `ElementalBolt` itself
+did not change (Frost Shard has not flown on it since it became a shatter), and neither did anything
+Shadow Bolt runs: every Chain Lightning hook is switched on by a Chain Lightning id.
+
+**The audit.** Of twenty cards, five were visible, fifteen moved numbers - or, in two cases, used the
+pull, which is Hollow Star's (2e):
+
+| spell | card (id) | audit | becomes |
+|---|---|---|---|
+| Magic Missile | Twin Volley (`_twin_volley`) | visible: forks into two shards | stays |
+| | Piercing Stardust (`_piercing_needle`) | numbers: +3 pierce | **Threaded Needle** |
+| | Unstable Detonation (`_unstable_shard`, +Arcane) | a splash, but nothing drawn | stays; the burst is drawn |
+| | Arcane Gatling Barrage (`_gatling_barrage`, +Lightning) | numbers: +2 darts, -44% cooldown, +5 pierce | **Overcharge** |
+| | Singularity Core (`_singularity_core`) | big orbs that pull - Hollow Star's verb | **Arcane Orb** |
+| Frost Shard | Glacial Spike (`_glacial_spike`, +Ice) | numbers: 30% harder slow (and another spell's name) | **Ice Statues** |
+| | Ice Flurry (`_ice_flurry`) | visible: shards at enemies past the burst - but struck at once, a puff where they stood | stays; the shards fly |
+| | Frost Nova Burst (`_frost_nova`) | visible: the shatter freezes | stays |
+| | Absolute Zero (`_absolute_zero`) | numbers: +100% damage, +30% area | **Avalanche** |
+| | Blizzard Engine (`_blizzard_engine`, +Water) | numbers: 3 more shards, +150% | **Meltwater** |
+| Chain Lightning | Storm Surge (`_forked_surge`, +Water) | the element path | stays |
+| | Storm Reach (`_storm_reach`, +Lightning, the Stormcaller's) | numbers: +3 hops, a wider jump | **Storm Reach**: the hops leap long |
+| | Dense Current (`_dense_current`) | numbers: +40%, crits | **Return Stroke** |
+| | Cascade (`_cascade`, +Lightning, the Stormcaller's) | numbers: splits three ways again | **Cascade**: it comes apart on its kills |
+| | Thunderhead (`_thunderhead`, +Lightning) | numbers: x2 and a hop (and Gale Blade's name since 2e) | **Electrocution** |
+| Void Lance | Abyssal Pierce (`_abyssal_pierce`) | numbers: open 0.5 s longer | **Abyssal Scar** |
+| | Rift Blade (`_rift_blade`) | numbers: +50% length and width | **Void Glaive** |
+| | Gravity Spike (`_gravity_spike`, +Darkness) | drags onto the lance - Hollow Star's verb | **Dread** |
+| | Annihilation Beam (`_annihilation_beam`, +Arcane) | numbers: x2 size, +200% | **Witching Hour** |
+| | Cosmic Collapse (`_cosmic_collapse`) | visible: a burst at the tip | stays; the black hole is drawn |
+
+Verbs held clear of: the pull (Hollow Star), the Apotheoses' burn, stop, link, hold, flood, swarm, pull and
+reflect, and the 2e cards - no slag or rot path, no sky strike (Thunderhead, Rain of Arrows), no ring of
+forged shards (Forge Swarm), no lance that sweeps from target to target (Sunlance).
+
+#### Magic Missile - a homing violet dart that never misses
+
+`MagicMissile.cs` (ids and numbers as constants there), `StaticCharges.cs`. The starter's spell, the
+Apprentice's and the Test Wizard's; neither has an Apotheosis on it.
+
+| card | was | now: what the player sees |
+|---|---|---|
+| Twin Volley (L4) | unchanged | the dart forks on its first hit, two shards flung straight out either side |
+| **Threaded Needle** (L4) | Piercing Stardust: +3 pierce | after each hit the dart turns on the nearest enemy it has not struck (within 220) and flies on, 3 more times, stitching a fading thread of stardust through them. No numbers |
+| Unstable Detonation (L4, +Arcane) | the same splash, drawn nothing | the burst throws arcane sparks out to the 60 it strikes |
+| **Overcharge** (L8, +Lightning) | Arcane Gatling Barrage | every dart leaves a spark of static crackling round what it hits; an enemy carrying 3 overloads - lightning bursts out of it to 64 (x Area), striking it and everything round it for 3x a dart. A spark no dart renews goes out after 2.5 s. -40% cooldown |
+| **Arcane Orb** (L8) | Singularity Core: x2.2 area, +100%, a pull | every dart is loosed as a great slow orb (radius 26 x Area, a third of a dart's speed, no homing) that rolls straight through the pack, striking everything under it five times a second for 1.8 s, and bursts where its flight ends (72 x Area) for 2x. +50% damage, +50% cooldown. With Unstable Detonation the end burst reaches 30% further; with Twin Volley the orb forks at its first contact |
+
+Departures and why: **Threaded Needle is the genre's ricochet**, a payload the roster lacked
+(`.ai/spell-variety.md` section 2) - it is not a chain: the dart flies to each enemy, so it takes time and
+can be outrun, and it strikes only what it reaches. **Overcharge** keeps the old card's cadence (-40%) and
+spends the rest of it on a stacking burst that the spell's nearest-first aim feeds on its own against an
+elite or a boss. **Arcane Orb** started at 2.2 times a dart's radius, homing, every 0.45 s: the first
+screenshot buried the wizard under six opaque orbs that had settled on their targets beside him. It now
+rolls straight on, translucent but for its core, from in front of him, half as often. The dart's sprite
+particles used to be made per dart and are untouched; the thread, the sparks and the orb draw from fixed
+arrays (no allocation per hit), the burst on `ImpactDebrisLayer`.
+
+**Measured** (seed 11, solo Test Wizard, `--upgrade-chance=1`; the before runs on the tree at 2959dba,
+the after runs on this one; three of these sessions' runs and other agents' shared four cores at load
+8-57, so read every figure as a band):
+
+| path | before L4 / L5 / L6, L8 | after L4 / L5 / L6, L8 |
+|---|---|---|
+| Piercing Stardust + Gatling -> Threaded Needle + Overcharge | 50 / 56 / 93, 427 | 43 / 62 / 127, 441 |
+| Twin Volley + Singularity Core -> Twin Volley + Arcane Orb | 35 / 73 / 82, 450 | 66 / 155 / 220, 494 (Twin Volley is unchanged; this run's levels came late - the first Orb tune read 45 / 102 / 105) |
+
+Doubling (`--minutes=4 --xp-first=1 --xp-step=1 --enemy-hp=10`, level 7 against the Ascension forced):
+before, Piercing Stardust's level 7 302 -> Gatling 592 (x1.96) and Singularity Core 653 (x2.16), both still
+clearing the field (55 and 72 alive at the end: floors); after, Threaded Needle's level 7 238-254 ->
+Overcharge 647 (x2.6-2.7, 64 alive: a floor) and Arcane Orb 586 (x2.3). The first Arcane Orb (radius 22,
+0.55 of a dart's speed, 1.6 s, no damage) read 192 (x0.8) and 265 at level 8: an orb crossing a body in a
+fifth of a second struck it once. It was slowed to a third, given 1.8 s, five strikes a second, a 2x burst
+and +50%.
+
+**Still needs eyes:** the thread at the game's zoom (it is two pixels wide), the overload bursts in a
+dense pack (seven bolts each - how many at once before it is noise), and the orb over a crowd on a
+phone.
+
+#### Chain Lightning - a heavy bolt that hops close and hard
+
+`ChainLightning.cs` (ids and numbers as constants beside Shadow Bolt's), `Electrocutions.cs`. The
+Stormcaller's spell: his Apotheosis, the Lattice, needs Storm Reach and then Cascade, and links whatever
+the chain strikes - so both cards keep their ids, their Lightning and their numbers, and only what the
+chain does with them changed. Storm Surge, the Water element path, is as it was.
+
+| card | was | now: what the player sees |
+|---|---|---|
+| **Storm Reach** (L4, +Lightning, the Stormcaller's) | +3 hops, a 35% wider jump, -15% | the chain leaps long: every hop jumps to the **farthest** enemy it can reach instead of the nearest, so the arc sprawls across the pack from side to side. The numbers ride along unchanged |
+| **Return Stroke** (L4) | Dense Current: +40%, +15% crit | where the chain ends, the stroke runs back along it to the wizard's hand a hop every 0.05 s, white-hot, striking every enemy on the way again for 80% (a body that fell is passed through). +30% |
+| **Cascade** (L8, +Lightning, the Stormcaller's) | splits three ways at every hop, +2 hops, +20%, 30% wider | the chain comes apart on what it kills: every enemy a hop kills flashes and throws 2 more arcs out of its body (up to 12 a cast, 36 hops in all), and the chain goes a hop further from it. +1 hop, +50%, 30% wider |
+| **Electrocution** (L8, +Lightning) | Thunderhead: x2 and a hop (Gale Blade's name since 2e) | the first enemy the bolt strikes is held in the current for 1.2 s, convulsing as arcs crawl over it (`Enemy.ApplyShock` renewed), struck again every 0.2 s for 40% of the bolt; if it dies held, the current leaps to the nearest enemy within 110 and holds that. +50%, +1 hop |
+
+Why these: the hop is the spell, so each card changes the hop - its length, its direction home, what a
+kill does to it, how long it lasts. **Cascade** first fed kills more hops (two a kill, +20%): one chain
+still, and it measured 166 at level 8 against the old net's 400 - at normal health the old card's three-way
+split at every hop simply hit everything in reach. Forking where it kills brings the split back only where
+the chain is winning, which is what a cascade is, and it reads: a chain that bursts into a branching storm
+when it starts killing. **Electrocution** first let go of a body that died held; in a crowd that dies
+under the first strike it gave nothing, so the current now leaps on. Electrocution is not a chain: the
+Lattice's link is between bodies the web holds; this is one body at a time, and it is the anti-elite card
+the old one was - the nearest-first aim holds whatever walks at the wizard, an elite every cast.
+
+**2026-10-31:** every cast of the chain - this spell's and Shadow Bolt's - now strikes no enemy twice and
+makes at most `ChainLightning.MaxArcsPerCast` (20) arcs; Cascade keeps its own 36 hops, and its card (cut
+to two sentences with Storm Surge's, "keep text minimal") says up to 37 arcs a cast. A single chain (Storm Reach and Electrocution, the longest without the fork)
+runs 8 hops plus Amount - 13 with the shop's four and the Split Lens, 17 if every found level went to
+Amount too - inside the 19 hops the cap leaves after the first strike, so only Storm Surge's three-way
+fork meets the cap, and its card names it. Why, and what it measured: Shadow Bolt's section, "a cast is capped".
+
+The chain's candidate search no longer sorts the whole registry with LINQ every hop: it reads the enemy
+grid's near set (`EnemyRegistry.CollectNear`) and picks the nearest - or Storm Reach's farthest - by hand.
+Shadow Bolt picks exactly what it picked before. Every new drawing is in the air (the held crawl, the
+leap, the kill flash on `ImpactDebrisLayer`); nothing is allocated per frame.
+
+**Measured** (seed 11 unless marked, solo Test Wizard, the same footings as Magic Missile above):
+
+| path | before L4 / L5 / L6, L8 | after L4 / L5 / L6, L8 |
+|---|---|---|
+| Storm Reach + Cascade | 49 / 61 / 76, 400 (27 alive: the net cleared the field) | 42 / 56 / 75, 437 (45 alive) |
+| Dense Current + Thunderhead -> Return Stroke + Electrocution | 43 / 73 / 96, 276 | 42 / 57 / 93, 326 (the first build, the stroke back at 60% with no damage of its own and an Electrocution that let go of the dead, read 29 / 45 / 70, 166) |
+
+Doubling at x10 enemy health, Storm Reach's level 7 the baseline: before 92 -> Cascade 793 (x8.6, 41
+alive: it cleared the field, a floor) and Thunderhead 203 (x2.2); after 104 -> Cascade 358 (x3.4) and
+Electrocution 253 (x2.4). Kill-fed cards are weakest exactly where this footing puts them - a crowd the
+spell cannot clear - and both still double; the first Cascade read x1.57 there and the first Electrocution
+x2.07.
+
+**The Stormcaller's Apotheosis** (`--character=3 --seek-apotheosis --minutes=20`, the path Storm Reach then
+Cascade, the Lattice offered at player level 23): it still arrives and still links - the report shows the
+Lattice taken after Cascade, and Chain Lightning carrying the run.
+
+| seed | before: the Lattice at, Chain Lightning's share | after |
+|---|---|---|
+| 11 | 13.0 min, 405,645 (84%) | 10.8 min, 444,706 (81%) |
+| 12 | 12.3 min, 441,173 (88%) | 11.8 min, 425,370 (83%) |
+
+The form is gated on player level 23 (`ApotheosisCatalog.MinimumPlayerLevel`), and both runs reached it a
+little sooner - half a minute and two - because the new path kills more of what reaches the wizard, so the
+run levels faster. Both are inside what one seed against another moves (the first, kill-fed Cascade read
+9.4 on seed 11), but if the Stormcaller's form starts arriving early in play, this is where to look.
+
+**Still needs eyes:** Storm Reach's long arcs at the game's zoom (they leave the screen at a close zoom),
+whether Cascade's storm is readable or a scribble in a big pack, the return stroke (it is 0.05 s a hop), and
+the held crawl on small enemies.
+
+#### Void Lance - a short-lived lance of shadow, where position is the aim
+
+`VoidLance.cs` (ids and numbers as constants there), `VoidScars.cs`, `Player.FireVoidLanceSpell`. No wizard
+starts with it.
+
+| card | was | now: what the player sees |
+|---|---|---|
+| **Abyssal Scar** (L4) | Abyssal Pierce: the lance open 0.5 s longer | as the lance withdraws it tears a scar of void into the ground along its line - a jagged black crack lit violet at the lips, on `DrawLayers.Ground` - that stays 2 s and cuts whatever stands on it for 40% of the lance every 0.4 s. It stops short of water and walls |
+| **Void Glaive** (L4) | Rift Blade: +50% length and width | the lance runs out of both hands: with every cast a second blade, 75% as long, thrusts out behind the wizard along the same line |
+| **Dread** (L4, +Darkness) | Gravity Spike: dragged what was near onto the lance - the pull | everything the lance runs through is struck with dread and turns and runs from the wizard for 1.6 s (`Enemy.ApplyFear`; elites and bosses stand firm, nothing twice in 4 s). +20% |
+| **Witching Hour** (L8, +Arcane) | Annihilation Beam: twice the length and width, +200% | the lance no longer withdraws: one hand of void stays in the wizard's hands and turns round him once every 2.6 s, cutting everything it sweeps across - struck again each time the hand comes round. It goes out a few cooldowns after nothing is left in reach |
+| Cosmic Collapse (L8) | unchanged in what it strikes | the hole is drawn: a disc of void at the tip that swells to the reach it struck and caves in on itself, its rim brightest as it closes (it was a spray of debris) |
+
+Why these: Void Lance's row in the grid (section 2) was always "fixed, slowly rotating - position, not aim",
+and the spell never got there; Witching Hour is that, as the Ascension. It is not Cyclone Slash's orbit (a
+ring that hits on contact round him) nor Sunlance's sweep (a ray swinging from target to target): it is one
+long spoke, and the player's only decision is where to stand. **Dread** takes the other Darkness verb -
+fear, which every Darkness hit already has a chance of (`Player.TryFrighten`) - and makes it certain along
+the lance: the defensive choice of the three, a lane of the pack scattering away. The first Witching Hour
+struck each body once in the hand's life (the thrust's enter-hit bookkeeping never let go of a body), and
+read 207 at level 8; a hand that never withdraws now lets go of what leaves it, and forgets the dead once
+a cast. The lance's motes were a Sprite2D and a Tween each, forty a second; a hand that never withdraws
+would have kept that up for the run, so the lance draws them itself (now in its shader, below).
+
+**Measured** (seed 11, the same footings):
+
+| path | before L4 / L5 / L6, L8 | after L4 / L5 / L6, L8 |
+|---|---|---|
+| Abyssal Pierce + Annihilation Beam -> Abyssal Scar + Witching Hour | 31 / 48 / 81, 463 | 36 / 64 / 99, 354 (a turn in 3.6 s: 26 / 40 / 64, 313; the first, which struck each body once: 35 / 47 / 82, 207) |
+| Rift Blade + Cosmic Collapse -> Void Glaive + Cosmic Collapse | 33 / 47 / 79, 411 | 34 / 44 / 99, 420 |
+| Gravity Spike + Cosmic Collapse -> Dread + Cosmic Collapse | 37 / 52 / 81, 410 | 31 / 54 / 71, 402 |
+| Void Glaive + Witching Hour (new: the hand both ways) | - | 60 / 87 / 124, 383 |
+
+Doubling at x10, the level 4 card AI's id at level 7: before 239 -> Annihilation Beam 632 (x2.6) and Cosmic
+Collapse 659 (x2.75); after 262-266 -> Cosmic Collapse 608 (x2.3) and Witching Hour 579 (x2.2). Turning once in
+3.6 s it read 503 (x1.9), and the first build 216 (x0.8). Witching Hour sits under the old Annihilation
+Beam at normal health (354 against 463, which was the top of the band): a hand that turns past everything
+in reach is limited by how often it comes round, not by what each cut deals.
+
+**Void Lance's look** (2026-10-29, Eric: "make sure void lance had its art updated to our most modern
+pixel art standards"). It had not been: the lance was an antialiased `Line2D` with a smooth violet
+gradient under a translucent `Polygon2D`, Witching Hour's hand a soft smear, the scar three antialiased
+polylines, and the hole and motes smooth `DrawCircle`/`DrawArc`/`DrawRect` calls - off the contract at
+every angle but four. Now every part is pixel art on the world's 2-unit cell, in the manner of
+`riptide_wave.gdshader` and `stormsweep_lash.gdshader`: each fragment snaps to the cell and is then
+measured in the lance's own frame, so the art pixels stay square and upright however the lance points or
+Witching Hour turns it.
+
+- **One quad, one shader for the lance** (`scenes/shaders/void_lance.gdshader`, drawn by `VoidLance`
+  itself; the scene's `Line2D` is gone). A blade of void - robe violet's deep and occlusion, dithered
+  up to the Darkness edge at its lips - with a seam of Arcane light down its spine that pulses from the
+  hands to a white-hot tip, the lip on the key's side lit Darkness-hot. It flashes white-hot for a
+  tenth of a second as it is thrust out and dissolves through the Bayer matrix as it withdraws. The motes
+  are specks peeling off the lips inside the body's allowance. Void Glaive's blade behind is the same
+  blade mirrored; Witching Hour's hand adds a smear of streaks behind each blade (the ground just swept,
+  as Stormsweep's), and flares only when first thrust out. Cosmic Collapse's hole is a disc of void wound
+  into turning arms, its key-side lip lit, swelling to the burst's radius and brightening to white-hot
+  as it caves in.
+- **One quad a scar** (`scenes/shaders/void_scar.gdshader`, a fixed pool of twelve in `VoidScars`): a
+  kinked crack in the ground in `tentacle_rift.gdshader`'s manner, a key-lit lip, the dark inside with
+  flecks of the lance's light rising out, and hairline fissures running off it.
+- **Drawn equals hit.** Every length is the hit test's own, in world px: the blade's length is
+  `HitLength`, Void Glaive's is the `Butt`, its full width runs the whole blade and its motes never pass
+  `HitRadius`; the hole is the collapse's radius; the scar's crack stays inside `HalfWidth` and its
+  fissures inside `HalfWidth + BodyAllowance`, what `VoidScars.Cut` measures. The old blade pulsed
+  between 0.55 and 1.35 of its width while the hit stood still; it no longer breathes. No ring or disc
+  marks a reach: the smear is the one thing drawn outside the line, and it is motion.
+- **Colour:** opaque Arcane and Darkness ramps, robe violet's deep, occlusion and (for a Legendary's
+  gilded lip) gold - nothing else, no translucency, Bayer dithering the only gradient. The node's
+  modulate is overridden as `tentacle_rift` does: Cosmic Collapse's card tint (0.3, 0.1, 0.7) multiplied
+  over a ramp only muddies it.
+- **Nothing allocated per frame:** one `SetShaderParameter` a uniform a frame on cached `StringName`s,
+  and the quad is redrawn only when its size changes. The spell icon (`void-lance-darkness.png`) already
+  shows a violet blade with a light seam and a white tip, and was left alone.
+
+Dread has no tell on the lance: the fear is the enemies' own look and walk (`Enemy`'s feared state),
+which this spell does not draw.
+
+**Still needs eyes:** the scars on a busy floor (several at once at a short cooldown), the hand turning
+over the wizard's own sprite, whether Witching Hour's smear reads as motion rather than as a fan, the
+Collapse hole at its full 132 px over a real crowd, a Legendary's gold lip (not photographed), and whether
+Dread's scatter helps a player or pushes the pack out of his other spells.
+
+#### Frost Shard - every death shatters
+
+`FrostShatter.cs` (ids and numbers as constants there) and `Player.OnEnemyDiedAt` / `ShatterAt`, which
+keep the shatter itself. No wizard starts with it.
+
+| card | was | now: what the player sees |
+|---|---|---|
+| **Ice Statues** (L4, +Ice) | Glacial Spike: the shatter's slow 30% stronger (and another spell's name) | the dead freeze where they fall: the corpse's own sprite, frosted blue-white, stands a second as a statue, cracks, flashes and breaks - shattering a second time for 60%. Only a body the player's hit killed outright (`Player.EnemyKilled`), never one a shatter killed; elites and bosses fall as they did |
+| Ice Flurry (L4) | the 2 shards struck the instant the shatter went off, a puff where they stood | the shards fly from the corpse to their enemies (560 a second) and strike and chill them when they arrive |
+| Frost Nova Burst (L4) | unchanged | the shatter freezes what it catches |
+| **Avalanche** (L8) | Absolute Zero: +100%, +30% area | what a shatter kills shatters in its turn 0.15 s later, up to 3 deep, so one death in a crowd rolls out through the pack in waves of ice. +60% |
+| **Meltwater** (L8, +Water) | Blizzard Engine: 3 more shards, +150% | every corpse melts into a pool of meltwater on the ground for 4 s (never on water or a wall); the next shatter to reach a pool freezes it, and it bursts into a ring of ice spikes under whatever stands in it (the pool is 85% of a shatter across), for 150% of a shatter. +100% |
+
+Why these: a shatter has a corpse, a burst and a slow; the cards change the corpse (a statue, a pool), the
+burst (it rolls on), and what flies out of it. **The shatter guard stays the rule** - a shatter's kills do
+not shatter (`Player.ShatterGuarded`), so a dense screen is a burst and not a chain reaction - and every
+delayed hit (a shard landing, a statue breaking, a pool freezing) strikes inside it. Avalanche is the one
+card that breaks the rule, on purpose, to a fixed depth and a beat apart, so it reads as waves rather than
+an instant clear. Meltwater is the hybrid's two halves meeting: water left by one death, frozen by the
+next. Nothing here pulls or roots; the Long Winter (the Frostweaver's Apotheosis, Cone of Cold) is the
+freeze that spreads, and none of these freezes anything.
+
+**Measured** (Frost Shard needs something else to kill: `--partner=magic_missile`, as section "Every
+Ascension doubles" says):
+
+| path | before L4 / L5 / L6, L8 | after L4 / L5 / L6, L8 |
+|---|---|---|
+| Glacial Spike + Absolute Zero -> Ice Statues + Avalanche | 24 / 43 / 63, 190 | 91 / 106 / 148, 360 (seed 11: the spell's levels came late in this run, into a bigger crowd); seed 13: 22 / 55 / 60, 272 |
+| Ice Flurry + Blizzard Engine -> Ice Flurry + Meltwater | 36 / 51 / 85, 196 | 38 / 63 / 91, 200; seed 13: 37 / 55 / 67, 190 |
+
+Doubling at x10, the level 4 card AI's id at level 7: before 81 -> Absolute Zero 114 (x1.4) and Blizzard
+Engine 136 (x1.7) - the only two Ascensions in the roster that measured under x1.9 after 2026-10-26; after
+88 (Ice Statues) -> Avalanche 212 (x2.4). A second batch read base 94, Avalanche 160 (x1.7) and
+Meltwater 168 (x1.8), so read both as about x2 with a wide error on a shared machine. Meltwater took
+three tunings: a full shatter at +80% read x1.9 and at +100% x1.4 (a pool rarely sat under a crowd
+when the next shatter came), so the pool grew to 85% of a shatter across and its burst to 150%.
+It lands at about the old Blizzard Engine, not above it, and is the card to raise first if the
+Frost Shard hybrid feels weak in play.
+
+**Still needs eyes:** statues of every chapter's cast (a statue is the corpse's frame copied - a sprite
+with an unusual offset would stand off its feet), the meltwater pools under a dense fight, the flying shards
+at the game's zoom, and whether Avalanche's waves read as waves.
+
+### Obsidian Spike, Cyclone Slash, Black Tentacles and Cone of Cold
+
+**The audit.** Each card was read against the code that reads it and put in one of three classes:
+*visible* (it already changes how the spell looks or behaves: it stays, its words may be sharpened),
+*numbers* (it only moves numbers: redesigned), and *element path* (a pure spell's branch into a second
+element, 2b: it stays). **No id moved**, so the three wizards whose Apotheosis paths name these cards -
+the Frostweaver (Deep Freeze, Zero Point Shockwave), the Geomancer (Splinter Field, Tectonic Uprising)
+and Laelaps (Tailwind Surge, Typhoon Core) - keep their gates, and `SeenAscensionIds` and the browser
+carry over. Every hook reads its card by id in the spell's script (`HasEvolution`); every number on a
+card rides a field `EvolutionStatReaders` lists for it; every changed card has a new icon.
+
+**Verbs avoided:** the pull (Hollow Star's), every Apotheosis verb (`ApotheosisCatalog`: burn, stop, link,
+hold, flood, swarm, pull, reflect), and every phase 1 card's. **Two cards that stay carry a pull**, and
+are flagged rather than changed, because both are visible and the rule keeps a visible card: Cyclone
+Slash's Vortex Reaper (the whole card is a drag to the ring) and Black Tentacles' Elder God Maw (the
+maw is the card; its drag toward the teeth rides along). Each is a decision for Eric - keep, or give it
+another verb.
+
+**Measured** the way 2e's batches were: the *band* run (`_BalanceHarness --minutes=8 --timescale=2
+--immortal --all-unlocked --character=0 --seed=11 --solo --upgrade-chance=1 --force-ascension
+--branch4= --branch8=`, Cyclone Slash with `--circle=160`), damage a second at levels 4 / 5 / 6 and at
+the Ascension against the peer bands (40-60 / 70-130 at level 6 / 331-465); and the *ratio* run
+("Every Ascension doubles its spell": `--minutes=4 --timescale=3 --xp-first=1 --xp-step=1
+--enemy-hp=N`, the level 7 baseline against the Ascension forced). Before is the tree at 2959dba in a
+worktree of its own, after is this one, same seed, same day. Other agents were measuring on the same
+four cores (load 20-50), so read levels 4-6 as a band. The Apotheosis check is `--seek-apotheosis
+--character=N --minutes=20 --timescale=2 --immortal --all-unlocked --seed=11`.
+
+#### Cone of Cold (`ConeBlast`)
+
+What it is: a spray of ice thrown in a 60-degree cone at the nearest enemy, every 1.8 s, slowing what
+it hits; its reach is the spray's (2c).
+
+| card (id) | class | what the player sees now |
+|---|---|---|
+| Deep Freeze (`cone_deep_freeze`, +Ice, the Frostweaver's) | visible | stays: everything the cone hits is frozen solid, white with frost, for 1.2 s |
+| Arctic Blast (`cone_wide_angle`) | visible | stays: a cone's angle is its shape, and a 180-degree half-moon is a different weapon from a 60-degree cone. Words sharpened ("opens into a half-moon") |
+| Frost Shrapnel (`cone_ice_shards`, +Water) | element path | stays |
+| **Zero Point Shockwave** (`cone_zero_point_wave`, +Ice, the Frostweaver's) | numbers (+150% damage, +40% reach) | **the blast goes on past its end**: the cold that reaches the tip gathers there into a star of ice (0.16 s, `ConeBlast.RelaySeconds`) and bursts on into a second cone thrown from that point the same way, as wide and half as long (`RelayLength`), into what stood behind the front. The +40% reach stays (the Long Winter's ring is measured on it); +120% damage, from +150% |
+| Glacier Tide (`cone_glacier_tide`) | visible | stays: the blast throws everything it hits away from you. Words lead with it now |
+
+The relay never strikes what the first cone struck: any point of a cone at most 90 degrees wide thrown
+from the tip lies further from the caster than the tip does. It keeps the cone's own angle under the
+Long Winter, so the form's full ring carries an aimed relay out past it - the Apotheosis arrives on top
+of it and does more. Not a ring (the Long Winter's) and not a shatter (Frost Shard's, the form's).
+
+| | before | after |
+|---|---|---|
+| band, Deep Freeze + Zero Point, L4 / L5 / L6 / L8 | 37 / 35 / 60 / 302 | 42 / 67 / 89 / 302 (Deep Freeze is unchanged: its levels are run-to-run spread) |
+| ratio, `--enemy-hp=10`: level 7 (Deep Freeze) 93 -> Zero Point | 387 (x4.2) | 356 (x3.8) |
+| the Frostweaver, `--seek-apotheosis`: The Long Winter offered at | 11.8 min | 10.7 min |
+| ... Cone of Cold's damage over the 20 minutes (its share) | 352,320 (69%) | 366,819 (66%) |
+
+**Needs eyes:** the cone's spray is a scatter of small ice squares and the relay is drawn the same way
+(a little denser, `ImpactDebris` from the tip), so whether a second fan reads at the game's zoom in a
+crowd - the star is the tell - is for a playtest. At level 8 the relay reaches about 550 from the
+wizard, past a phone's half-width when he aims sideways.
+
+#### Black Tentacles (`BlackTentacles`)
+
+What it is: a rift torn open on the densest pack; everything in it is slowed, and tentacles burst up
+and slap what is inside, a slap hitting its target and what stands round it. Poison + Earth.
+
+| card (id) | class | what the player sees now |
+|---|---|---|
+| Crushing Grip (`tentacles_constriction`, +Earth) | visible, but not drawn | stays, and now SHOWS: the root it always gave read only as the freeze tint every root wears; the slapping tentacle now leaves two turns of its coil wound round the target's legs, suckers out, for as long as it holds (2 s), loosening at the end (`DrawCoils`). Numbers unchanged |
+| **Fling** (`tentacles_abyssal_spread`) | numbers (Abyssal Spread: +60% rift, +2 tentacles) | **the arms throw what they catch**: a slap that lands picks its target up and hurls it across the pit at the enemy in the rift furthest from it (within 1.25 radii); it flies in an arc over everything (`Enemy.ApplyLaunch` and a shove), a violet trail behind it and its shadow on the ground under it, and where it comes down it and everything round it take 45% of a slap (`FlingShare`). Elites and bosses are too heavy to throw. +1 tentacle, the rift 20% wider |
+| Soul Drain (`tentacles_soul_drain`) | behaviour, unseen | stays, and now SHOWS: every fourth slap tears a wisp of rot-light out of what it struck, which flies to the wizard; the hit point lands when it arrives (the cap, 3 a cast, is unchanged) |
+| Elder God Maw (`tentacles_elder_god_maw`) | visible | stays (the maw breaking up through the earth, 2026-10-28). Its drag toward the teeth is a pull - flagged above. A flung body is never dragged mid-air |
+| Shadow Forest (`tentacles_shadow_forest`, +Poison) | visible | stays: it was always drawn as seven small pits over the field; the words now say so first |
+
+**The throw is new to the game** (`Enemy.ApplyLaunch`, shared with Obsidian Spike's Deep Strata below):
+the body's sprite rides an arc over the body, which stays on the ground for collision and contact; in
+the air it chooses nothing (no step, no wind-up, no shot), it is drawn over everything in the air
+(`DrawLayers.Air + 1`) so the crowd and the arm that threw it cannot hide it, and a knockback given
+with it still carries it. A body already up cannot be thrown again until it lands; a miniboss never
+is. Killed in the air it drops.
+
+| | before | after |
+|---|---|---|
+| band, Abyssal Spread / Fling + Shadow Forest, L4 / L5 / L6 / L8 | 53 / 68 / 98 / 366 | 29 / 41 / 61 / 374 |
+| band, Abyssal Spread / Fling + Elder God Maw (Fling at 100%) | 35 / 42 / 62 / 406 | 33 / 46 / 61 / 380 |
+| level 7, `--enemy-hp=10` (the level 4 card's own worth against a crowd that lives) | Abyssal Spread 149; Crushing Grip 188 and Soul Drain 159 (both unchanged) | Fling 236 (at 100%: 316; at 70%: 264) |
+
+Fling is a card for a crowd that lives: at normal health the first slap usually kills and nothing is
+thrown, so its band runs sit at or under the card it replaced (whose own two runs read 53 and 35 at level
+4), while against ten times the health every slap lands twice, and at a full slap it doubled the old
+card. It went 100% -> 70% -> 45%, where it sits a quarter over Crushing Grip, its sibling, at level 7
+and under the level 4 band floor at normal health - the first knob either way.
+
+**Needs eyes:** in a still frame of a packed knot a thrown body is hard to pick out even drawn over
+everything, so the arc's trail is what carries it - whether it reads in motion, at the game's zoom, is
+the first thing to check. The coil sits on the legs over the freeze tint every root shows, which is ice
+blue on a tentacle's grip (the status look is shared, not the spell's). The wisps are drawn as big as
+a head; whether three a cast are noticed at all is for a playtest.
+
+#### Obsidian Spike (`GroundSpike`)
+
+What it is: black volcanic glass erupting, with no travel, under each of the nearest enemies after a
+0.22 s tell - cracks running out to the radius it hits, chips thrown, the glass glinting, fracturing and
+falling back into the ground (2026-10-28). The Geomancer's spell: the ground opens under the front rank.
+
+| card (id) | class | what the player sees now |
+|---|---|---|
+| **Splinter Field** (`obsidian_spike_splinter_field`, +Earth, the Geomancer's) | numbers ("bursts 35% wider") | **the eruption splinters through the ground**: as its cracks run out, a splinter of glass punches up under each of the 4 nearest enemies just past its rim (out to 2 radii), one after another, striking what stands over it for 50% (`LaySplinters`, the sheet's splinter row). The eruption 15% wider rides along |
+| Umbral Vein (`obsidian_spike_umbral_vein`, +Darkness) | element path | stays |
+| **Deep Strata** (`obsidian_spike_deep_strata`) | numbers (+45% damage, a longer cast range) | **the spike throws what it breaks out under into the air**: everything it hits is thrown up (`Enemy.ApplyLaunch`, 40 high) and hangs there 0.6 s doing nothing, its shadow on the ground under it, then drops where it was; an elite or boss reels instead (`ApplyShock`, 0.3 s). +40% damage and the longer reach ride along |
+| **Tectonic Uprising** (`obsidian_spike_tectonic_uprising`, +Earth, the Geomancer's) | numbers (+120% damage, +60% area) | **the ground does not close**: where each spike broke out a vent stays open 3 s, its cracks smouldering, and every 0.5 s it throws up a fresh spike of glass under the nearest enemy within 1.6 radii, for 60% of the spike. +80% damage, the eruption 30% wider |
+| Basalt Lance (`obsidian_spike_basalt_lance`) | visible | stays: a column of three more spikes driving on through the crowd behind the target (2026-10-26) - the spell's line. Glacial Spike's Spike Run keeps the line ACROSS the front, as phase 1 split them |
+
+Not taken: a ring of glass round the wizard (Sundering's - the Geomancer's form, "hold", raises one
+every cast on top of all of this and is unchanged), a ring round the target (Glacier Crown's), shards
+flung out flying (Shatter's), glass left lying to walk on (Caltrops'), a lodged core that erupts later
+(Magma Core's). The splinters and the vent's spikes come up out of the ground under a body, as the spell
+always has, and every one is under an enemy, so never on blocked ground.
+
+| | before | after |
+|---|---|---|
+| band, Splinter Field + Tectonic Uprising, L4 / L5 / L6 / L8 | 31 / 58 / 81 / 461 | 39 / 69 / 106 / 430 |
+| band, Splinter Field + Basalt Lance (each follower splinters too) | 41 / 77 / 107 / 524 | 70 / 72 / 128 / 490 (level 4 over a 20 s sample) |
+| band, Deep Strata + Basalt Lance | 34 / 48 / 79 / 489 | 34 / 52 / 83 / 501 (at +30%: 26 / 43 / 94 / 488) |
+| level 7, `--enemy-hp=30`: Splinter Field / Deep Strata | 723 / 532 | 748 / 502 (Deep Strata at +30% read 460, and went to +40%) |
+| Tectonic Uprising at `--enemy-hp=30` (over Splinter Field's level 7) | 2,468 (x3.4) | 2,449 (x3.3) |
+| the Geomancer, `--seek-apotheosis`: Sundering offered at | 10.0 min | 10.1 min |
+| ... Obsidian Spike's damage over the 20 minutes (its share) | 461,658 (86%) | 544,525 (93%) |
+
+The Geomancer comes out a sixth stronger on that seed: his path's two cards now reach the ring of the
+crowd round each eruption and then keep erupting under it, where they only widened the disc. He was the
+wizard the spell's history calls the weakest; if he proves too strong in play, the vent's 60% is the
+knob.
+
+**Needs eyes:** the vents smoulder in the earth ramp and throw up spikes for 3 s after every eruption,
+so a level 8 Geomancer leaves a field of glass popping behind the front rank - whether that reads as the
+ground breaking or as clutter, on a phone above all. Deep Strata's throw is hidden behind its own glass
+at the moment it happens (the body is drawn over the glass, but the glass is as tall as the throw).
+
+#### Cyclone Slash (`OrbitingBlade`)
+
+What it is: a running whirlwind (issue #68, section 3) - blades on a ring round the wizard that widens
+and spins faster while he keeps moving and falls in when he stops. Laelaps' spell: his Apotheosis, The
+Endless Chase, catches every enemy bolt that enters the ring and throws it back.
+
+| card (id) | class | what the player sees now |
+|---|---|---|
+| **Twin Gyres** (`cyclone_slash_dual_blades`) | numbers (Dual Windblades: +2 blades, +30% spin, on the one ring) | **a second, inner ring turning the other way**: 3 blades whirl round the wizard at half the orbit, the opposite way, and hold there whatever the gust does - when he runs and the outer ring swings wide, what slips through the gap still meets a blade. +1 blade on the outer ring and its +30% spin ride along |
+| Razor Gale (`cyclone_slash_razor_gale`, +Metal) | element path | stays |
+| **Wind Shear** (`cyclone_slash_tailwind_surge`, +Wind, Laelaps') | numbers (Tailwind Surge: the blades spin 25% faster) | **a full gust sheds crescents**: at 80% gust and over (always, under Typhoon Core) the blades in turn fling a sickle of wind off along their spin and a little outward, one a blade every 0.6 s; it flies 170 on past the ring, cutting everything it crosses (up to six) once for 60% of a cut, and stops at a maze wall. Stop running and it stops. The +25% spin stays: his Endless Chase was measured on it |
+| Typhoon Core (`cyclone_slash_typhoon_core`, +Wind, Laelaps') | visible | stays: the ring never falls in when he stops and stands at its widest, two and a half times the size. Words lead with it now |
+| Vortex Reaper (`cyclone_slash_vortex_reaper`) | visible | stays - and flagged above: the whole card is a drag to the ring, which is the pull |
+
+Not taken: the sweep the way he faces (Stormsweep's), a trail left where he ran (Mirefoot's), a release
+when he stops (Hunter's Draw's - Wind Shear is spent by stopping, never paid for it), and the throw back
+(the Endless Chase's "reflect": a crescent is the wind's own edge, at no target). Laelaps' path is Wind
+Shear, then Typhoon Core - which holds the gust at full, so under it the crescents never stop - then the
+Endless Chase.
+
+| | before | after |
+|---|---|---|
+| band, Dual Windblades / Twin Gyres + Vortex Reaper, L4 / L5 / L6 / L8 | 72 / 102 / 156 / 375 | 46 / 57 / 103 / 372 (two inner blades and no outer one: 45 / 83 / 151 / 393) |
+| band, Tailwind Surge / Wind Shear + Typhoon Core | 50 / 63 / 106 / 349 | 91 / 129 / 218 / 418, and again 52 / 56 / 161 / 438 |
+| level 7, `--enemy-hp=10 --circle=160`: Dual Windblades / Twin Gyres | 425 | 418 (with no outer blade: 374 with two inner, 385 with three) |
+| level 7, the same: Tailwind Surge / Wind Shear | 364 | 413 |
+| Laelaps, `--seek-apotheosis`: the Endless Chase offered at | 10.0 min | 10.2 min, and 10.5 on the merged tree |
+| ... Cyclone Slash's damage over the 20 minutes (its share); bolts thrown back | 398,910 (69%); 824 | 413,068 (72%); 638, and 406,993 (73%); 713 |
+
+The Wind Shear band runs swing by a factor of two at levels 4-6 between two runs of one build (the
+first spent 71 s at level 1 where the second spent 26, and met a different crowd); the ten-times-health
+run, a sixth over Tailwind Surge, is the steadier figure. Fewer bolts came back to Laelaps' Endless
+Chase on that seed: the crescents reach some of the shooters first. Twin Gyres reads level with Dual
+Windblades against the crowd that lives (418 to 425) and a third under it at levels 4-6 in one band run,
+whose before spent 72 s at level 3 and met a thicker crowd at 4; levels 4-6 are the column to watch.
+
+**The look, redone as pixel art (2026-10-29).** Eric, of a level 8 screenshot of Twin Gyres and Wind
+Shear: *"does not look up to our typical visual fidelity"* - smooth see-through arc bands, soft white
+discs for blades, plain stroked arcs, all antialiased `DrawArc`/`DrawCircle` at fractional alpha. The
+whirlwind is now one quad over its reach drawn by `scenes/shaders/cyclone_whirl.gdshader` on the world's
+2 px grid, as `stormsweep_lash` and `riptide_wave` are: every colour opaque from the element ramp (Wind's
+white-hot core and teal edge; Razor Gale's Metal, which the persistent node never wore before because
+the card's tint only reached a node made at level 1), Bayer dithering the only gradient. A **blade** is a
+sickle of wind filling the front of exactly its hit circle (`bladeNow`, on `radiusNow` - the numbers its
+`CircleShape2D` is placed with each frame), outlined in the ramp's edge on the hit circle itself and
+white-hot inside it, occlusion along the inside of the cut, a glint flashing off its point. The outline
+is the art direction's cold-element rule: a white rim alone vanished on the Sketchbook's paper. Behind it
+the **wake** of cut air fills the blade's width for a third of the trail, dithering away, its sides in
+the edge, then breaks into **streaks** in three lanes riding with the blade, never white.
+**Twin Gyres'** inner ring is the same drawing a stop cooler, turning the other way. The gust's
+**eddies** are short broken one-pixel streaks inside the ring turning against the spin; **Typhoon Core**
+adds three arms of a hurricane winding in toward an empty eye on the wizard; **Vortex Reaper** draws
+streaks of air spiralling in from as far as its drag reaches (2.2 rings) to the ring, moving in - the
+wind showing the drag's reach, no ring drawn for it. **Wind Shear's crescents** and the **Endless Chase's**
+throws fly loose of the ring, so they are stamped by the node in whole world-grid cells: a sickle as big
+as the crescent's hit radius, outlined in the edge, white-hot at the belly and breaking up cell by cell
+over its last third; a line of the wind from the catch to what it struck, the head a white heart in the
+edge. Layers (`DrawLayers.Air`) and
+every behaviour are unchanged; the quad is redrawn only when the reach moves a cell, the uniforms are
+set each frame from cached names, and nothing allocates per frame.
+
+**Needs eyes:** the crescents are drawn as big as a blade's own wind and fade over their last third;
+whether they read as thrown off the ring or as more ring at the game's zoom, and whether Twin Gyres'
+inner ring (dimmer, so the outer one still reads as the whirlwind) clutters the wizard on a phone. The
+new look's streaks are one art pixel wide: on a phone, whether the whirlwind still reads as a ring at a
+glance at level 1, when the gust is low and the trail short.
+
+### Starfall, Stormsweep, Sleet Runes and Aegis Ward
 
 Each spell below was audited card by card: **visible** (it already changes how the spell looks or
 behaves - it stays, its words may be sharpened) or **numbers** (it only moves numbers - redesigned).
@@ -1928,7 +2651,7 @@ Three other agents were measuring on the same four cores (load 12-52); every rep
 1.00, but levels 4-6 swing by up to a factor of two between runs of one build (3, Toxic Spore Burst),
 so read them as a band and the level 8 column as the firmer number.
 
-### Starfall
+#### Starfall
 
 | card | audit | now |
 |---|---|---|
@@ -1950,7 +2673,9 @@ so read them as a band and the level 8 column as the firmer number.
   the way every star slants in, the key light behind it - like a stone across water: a low hop two landings
   wide, then a landing 75% as wide for 55% of the first, a second hop and a landing 55% as wide for 35%. A
   heavy Starburst star bursts and still skips (what comes out of the burst is a star its size); the skips
-  kindle no Constellation star. No number rides along.
+  kindle no Constellation star. No number rides along. **Since 2026-10-31** each skip glances off the way
+  it came by up to 80 degrees either side rather than running right, and the rain is 270 px at level 8,
+  not 210 - the Starfall section above, under its milestone table.
 
 Departures from a first thought: a ring of rain at the rim ("halo") was Sundering's and the Kindling
 Flock's shape; a comet or a squall line crossing the rain would have been the same line as Shooting Stars;
@@ -1984,6 +2709,32 @@ already put Constellation on anything but Clear Night.
 **What still needs eyes:** whether a streak reads as a star and not as a beam at the game's own zoom, and
 on the phone; whether the skips read as hops in a crowd (a still frame shows the twinkles stepping right,
 not the arc); the streak's line over a bright floor. Screenshots: `sky_shoot*.png`, `sky_skip*.png`.
+
+### The blasts: Arcane Explosion, Fireball, Meteor Swarm and Solar Flare (2026-10-29)
+
+None of the four is a wizard's starting spell (the Pyromancer opens on Cinderbreath, not Fireball), and
+no Apotheosis path names any of their ids (`ApotheosisCatalog`), so no form's gate moves with them.
+Verbs avoided because another card or form owns them: the pull (Hollow Star - which is why Event Horizon
+lost its own), a second shockwave (the Spirit Hammer's Aftershock - which is why Dual Shockwave did not
+simply become the two rings its name promised), thrown shards (Shatter, Bone Spikes), a delayed eruption
+in the target (Magma Core), a wall or ring of fire (Dragon's Breath), radial beams (Corona Discharge,
+which stays), a chain hop (Chain Lightning), a drizzle round the wizard (Starfall), an orbit that looses
+(Forge Swarm), and the Apotheosis verbs (burn, stop, link, hold, flood, swarm, pull, reflect).
+
+#### Solar Flare - a sun round the wizard that grows while he stands still
+
+| card (id) | audit | now: what the player sees |
+|---|---|---|
+| level 4 (`solar_flare_radiance`) | **numbers**: Radiant Glow, +40% area and 25% faster pulses | **Sun Dogs**: two mock suns hang either side of him on the line through his middle and flare with every pulse, each 60% as wide as the flare for 60% of its damage (and its Weaken). They hang 1.6 flare-reaches out, so they drift outward as the flare builds while he stands still. Pulses 20% faster |
+| level 4 (`solar_flare_scorching_heat`, +Fire) | **numbers**: Scorching Heat, +45% damage and the tag | **Solar Prominence**: every pulse hurls two loops of fire off the flare's rim - a third at half charge, a fourth at full - at the nearest enemies just past its edge (out to 2.4 reaches); each arcs over and comes down in a burst 0.4 reaches across, for 80% of the pulse. +1 Fire at the hybrid's price, +15% damage |
+| level 4 (`solar_flare_blinding_flash`) | **visible**: some of what it catches reels back, staggered | unchanged; reworded to say it |
+| Ascension (`solar_flare_daybreak`, +Light) | **visible**: burns away every enemy bolt inside the flare (2d-bis) | unchanged |
+| Ascension (`solar_flare_corona_discharge`) | **visible**: eight sunbeams past the flare (section 3) | unchanged |
+
+Built in `ElementalPulse` by id (`SunDogsId`, `ProminenceId`). The mock suns and the loops are in the air
+(`DrawLayers.Air`): the suns on a child of the flare, each with its own `SolarFlareVisual` for its burst;
+the loops on a `TopLevel` canvas with a fixed pool of sixteen, so a loop in flight stays where it was
+thrown. The prominences land on enemies, so nothing is placed on blocked ground.
 
 ## 3. The changes that matter most
 
