@@ -42,6 +42,8 @@ public partial class SetAssembledMoment : CanvasLayer
 		public string Effect = string.Empty;
 		public string Note = string.Empty;
 		public string Sound = SfxCatalog.SpellEvolve;
+		// A set's name is short and stands at Display; "Achievement - The Library at Mortlake" a step down.
+		public ResponsiveLayout.TextRole TitleRole = ResponsiveLayout.TextRole.Display;
 	}
 
 	private const int MomentLayer = 7;
@@ -68,7 +70,7 @@ public partial class SetAssembledMoment : CanvasLayer
 	private const float NarrowHudBand = 150f;
 	private const float PlayerHeadroom = 56f;
 	private const float PlateGap = 18f;
-	private const float WidePlateWidth = 480f;
+	private const float WidePlateWidth = 540f;
 	private const float NarrowPlateMaxWidth = 560f;
 	private const float SideMargin = 32f;
 
@@ -130,6 +132,8 @@ public partial class SetAssembledMoment : CanvasLayer
 		kicker = MakeLine(ResponsiveLayout.TextRole.Label, CodexRows.Stone.Reward);
 		lines.AddChild(kicker);
 		title = MakeLine(ResponsiveLayout.TextRole.Display, Gold);
+		// "Achievement - The Library at Mortlake" is longer than a set's name: it wraps rather than overflow.
+		title.AutowrapMode = TextServer.AutowrapMode.WordSmart;
 		lines.AddChild(title);
 		effect = MakeLine(ResponsiveLayout.TextRole.Body, CodexRows.Stone.Ink);
 		effect.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -171,8 +175,11 @@ public partial class SetAssembledMoment : CanvasLayer
 		Enqueue(new Moment
 		{
 			Object = reward,
-			Kicker = "Achievement",
-			Title = deed.DisplayName,
+			// Kind first, name after, as every reward line reads now: "Achievement - Survivor", then what
+			// it pays, "Spell recovered - Hollow Star". No kicker above it: the title already says what it is.
+			// A no-break space keeps "Achievement -" together, so a long name wraps after the dash, not at it.
+			Title = $"Achievement\u00A0- {deed.DisplayName}",
+			TitleRole = ResponsiveLayout.TextRole.Title,
 			Effect = string.IsNullOrWhiteSpace(rewardLine) ? deed.Description : rewardLine,
 			Note = note ?? string.Empty,
 			// The sound of the save changing (SfxCatalog.MetaUnlock), not of a spell evolving.
@@ -206,7 +213,9 @@ public partial class SetAssembledMoment : CanvasLayer
 
 		objectIcon.Texture = showing.Object;
 		kicker.Text = showing.Kicker;
+		kicker.Visible = showing.Kicker.Length > 0;
 		title.Text = showing.Title;
+		ResponsiveLayout.SetFont(title, showing.TitleRole);
 		effect.Text = showing.Effect;
 		note.Text = showing.Note;
 		note.Visible = showing.Note.Length > 0;
@@ -265,6 +274,7 @@ public partial class SetAssembledMoment : CanvasLayer
 			: MathF.Min(WidePlateWidth, view.X - objectSize - PlateGap - SideMargin * 2f);
 		plate.CustomMinimumSize = new Vector2(plateWidth, 0f);
 		effect.CustomMinimumSize = new Vector2(plateWidth - 44f, 0f);
+		title.CustomMinimumSize = new Vector2(plateWidth - 44f, 0f);
 		float plateHeight = plate.GetCombinedMinimumSize().Y;
 
 		// Under the HUD, which SafeArea has already brought down under a phone's camera hole.

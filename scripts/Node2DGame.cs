@@ -6717,6 +6717,30 @@ public partial class Node2DGame : Node2D
 		}
 	}
 
+	private static SpellData SpellById(string id) => ContentValidator.LoadAllSpells()
+		.FirstOrDefault(s => s.Id.Equals(id ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+
+	// What a deed pays, kind first and name after, as a side event's and a vault's lines read
+	// (SideEvent.Succeed, SecretDirector.Found): "Spell recovered - Hollow Star", "Boon found - Rimebriar",
+	// "Wizard freed - John Dee", "Arcane Energy - 300". Two things paid are two lines.
+	private static string PaidLine(AchievementDefinition deed, SaveData data)
+	{
+		var parts = new List<string>();
+		if (!string.IsNullOrWhiteSpace(deed.SpellUnlockId))
+		{
+			string name = SpellById(deed.SpellUnlockId)?.Name ?? deed.SpellUnlockId;
+			parts.Add(GlobalStatsManager.IsSpellUnlockedForLevelUp(data, deed.SpellUnlockId)
+				? $"Spell already known - {name}" : $"Spell recovered - {name}");
+		}
+		if (!string.IsNullOrWhiteSpace(deed.BoonUnlockId))
+			parts.Add($"Boon found - {BoonCatalog.GetById(deed.BoonUnlockId)?.Name ?? deed.BoonUnlockId}");
+		if (!string.IsNullOrWhiteSpace(deed.CharacterUnlockId))
+			parts.Add($"Wizard freed - {CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(deed.CharacterUnlockId, StringComparison.OrdinalIgnoreCase))?.Name ?? deed.CharacterUnlockId}");
+		if (deed.CurrencyReward > 0)
+			parts.Add($"Arcane Energy - {deed.CurrencyReward}");
+		return parts.Count > 0 ? string.Join("\n", parts) : deed.RewardText;
+	}
+
 	private static List<AchievementDefinition> BuildAchievementWatch(SaveData data)
 	{
 		AchievementContext before = AchievementContext.ForSave(data);
@@ -6730,10 +6754,8 @@ public partial class Node2DGame : Node2D
 
 	private void AnnounceAchievement(AchievementDefinition deed, SaveData data)
 	{
-		Texture2D reward = CodexRows.RewardGlyph(deed, id => ContentValidator.LoadAllSpells()
-			.FirstOrDefault(s => s.Id.Equals(id ?? string.Empty, StringComparison.OrdinalIgnoreCase))?.Icon);
-		string line = CodexRows.OwnedRewardLine(deed, data) ?? deed.RewardText;
-		EnsureMoment().PlayAchievement(deed, reward, line, "Yours when the run ends");
+		Texture2D reward = CodexRows.RewardGlyph(deed, id => SpellById(id)?.Icon);
+		EnsureMoment().PlayAchievement(deed, reward, PaidLine(deed, data), string.Empty);
 		GD.Print($"Node2DGame: achievement met this run - {deed.Id} at {FormatTime(timeElapsed)}");
 	}
 

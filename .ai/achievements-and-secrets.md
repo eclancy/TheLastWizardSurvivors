@@ -477,8 +477,9 @@ where a player checks whether the strange crystal was a thing.
   equipment set does"). `Node2DGame.TickAchievementWatch` reads the run once a second of play as its
   end will read it (`AchievementContext.Projected` over `SnapshotRunResult` - the pause tab's own
   reading), and each deed it completes plays `SetAssembledMoment.PlayAchievement`: the glow, the
-  flash, the reward's glyph at a whole multiple of its size, a plate ("Achievement", the deed's name,
-  its reward line, "Yours when the run ends"), `meta_unlock`. One queue with the sets, so several met
+  flash, the reward's glyph at a whole multiple of its size, a plate in the kind-first form every
+  reward line takes ("Achievement - Survivor", then "Spell recovered - Hollow Star", "Boon found - X",
+  "Wizard freed - X" or "Arcane Energy - 300"; nothing else, Eric: "keep text minimal"), `meta_unlock`. One queue with the sets, so several met
   by one kill play in turn; nothing pauses; the band sits under the HUD and below the safe area's top
   inset. Watched: what the save has not done, listed, not already met when the run began, and not a
   deed completed in the run (events and secrets have their own beat). **Nothing is recorded there**: a
