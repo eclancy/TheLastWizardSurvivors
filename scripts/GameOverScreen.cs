@@ -47,10 +47,10 @@ public partial class GameOverScreen : CanvasLayer
 	private static readonly Color BandRule = new(0.541f, 0.416f, 0.118f);
 	// The milestone marks take the loadout strip's rims (LoadoutHud), so a spell wears the same
 	// colour on the HUD and here: gold mutated, cyan ascended, fire at its Apotheosis. Solid, with
-	// near-black words on them (9.3, 8.8 and 6.6:1).
-	private static readonly Color MutationMark = new(0.847f, 0.690f, 0.290f);
-	private static readonly Color AscensionMark = new(0.416f, 0.722f, 0.910f);
-	private static readonly Color ApotheosisMark = new(0.910f, 0.478f, 0.102f);
+	// near-black words on them (9.3, 8.8 and 6.6:1). Internal: the pause screen's Run tab wears them too.
+	internal static readonly Color MutationMark = new(0.847f, 0.690f, 0.290f);
+	internal static readonly Color AscensionMark = new(0.416f, 0.722f, 0.910f);
+	internal static readonly Color ApotheosisMark = new(0.910f, 0.478f, 0.102f);
 	private static readonly Color HeldRim = new(0.416f, 0.494f, 0.596f);
 	private static readonly Color MarkInk = new(0.06f, 0.06f, 0.07f);
 	// A new unlock's card is edged in gold lit, two pixels, where an ordinary row has stone hi.
@@ -901,7 +901,9 @@ public partial class GameOverScreen : CanvasLayer
 	// "[Ascension] (icon) Titan Cataclysm": the milestone as a solid mark in its rim colour, the
 	// branch's own picture at 32 (EvolutionIcons; exactly half its 64, so it stays on whole pixels),
 	// and the branch taken in the row's ink after it. A branch with no picture is the words alone.
-	private static Control Milestone(string word, string branch, Color mark, string branchId)
+	// Internal: the pause screen's Run tab lists each held spell's milestones with this same line
+	// (Node2DGame.BuildSpellRow), so the two screens cannot word or colour them two ways.
+	internal static Control Milestone(string word, string branch, Color mark, string branchId)
 	{
 		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		line.AddThemeConstantOverride("separation", 8);

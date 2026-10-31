@@ -700,9 +700,19 @@ described in `.ai/achievements-and-secrets.md` section 4.
 Each list carries a one-line subtitle under its heading, in the panel's soft ink, saying what
 kind of page it is before the counts do ("Every spell, and how to find the ones you have not.";
 "Finish one to earn its reward - a new spell, a boon or Arcane Energy."). On the pause screen
-the same line leads the summary. The pause tab is called Spell Index too, not "Spells": the
-player read "Spells" as the spells held this run, which is the Run tab's list - now headed
-"Your attacks this run" and "Your passives this run" so the two cannot be confused.
+the same line leads the summary. The pause screen had a Spell Index tab too (called that, not
+"Spells", because the player read "Spells" as the spells held this run, which is the Run tab's list -
+headed "Your attacks this run" and "Your passives this run"). **It was removed on 2026-10-30** (Eric:
+"remove spell index from the pause menu"): every spell in the game is not what a player pauses a run
+to read, and the main menu keeps it. The pause screen's tabs are Run, Achievements and Options, three
+across on both canvases.
+
+**Each held spell on the Run tab shows what it has become**: under its name, its level 4 mutation, its
+level 8 Ascension and its Apotheosis once reached, each as the results screen draws a milestone
+(`GameOverScreen.Milestone`): a solid pill in the milestone's colour (the loadout strip's rims - gold,
+cyan, fire), the branch's own 32-pixel picture (`EvolutionIcons`) and its name. Eric: "In the pause
+menu, we should show the mutation you selected for the spells. we should also show the ascension."
+They are not behind Show details: which way a spell went is the first thing a player pauses to check.
 
 The Run tab says the rest of what the run holds, too. **Spell details are closed by default**
 behind one Show details / Hide details toggle at the right of each spell section's heading (one
@@ -1108,8 +1118,9 @@ hand of three.
 
   The level 4 mutation page is photographed through `_UiShot --show-mutation`, and the level 8
   Ascension page through `--show-ascension`; both reach the private page builder by reflection.
-  `--open-pause` opens the in-run pause screen, and `--press-late=EscapeTabSpellIndex` (or
-  `EscapeTabAchievements`, `EscapeTabRun`, `EscapeTabOptions`) then opens one of its tabs. The menu's own
+  `--open-pause` opens the in-run pause screen, and `--press-late=EscapeTabAchievements` (or
+  `EscapeTabRun`, `EscapeTabOptions`) then opens one of its tabs; `--demo-evolutions=id,id` with
+  `--demo-spell-level=N` gives the first spell a mutation, an Ascension or an Apotheosis to show. The menu's own
   lists are `--scene=res://scenes/TitleScreen.tscn --open-menu --press-late=SpellIndexButton` (or
   `UnlocksButton` - it opens Achievements, the panel's name since 2026-10-30 - or `ArcaneUpgradesButton`
   for the shop); `--press-late=UnlocksButton,AchievementsTabSecrets` opens one of the achievements

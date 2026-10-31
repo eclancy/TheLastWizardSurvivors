@@ -418,11 +418,11 @@ public static class AchievementsPage
 		public RunLens(SaveData save, global::RunResult run)
 		{
 			lifetime = AchievementContext.ForSave(save);
-			// A copy through the save's own serialisation, so a measure that reads any of it - found
-			// secrets, owned spells - reads what the real save holds. No migration runs on it.
-			SaveData copy = SaveData.FromVariant(save.ToGodotDictionary());
-			copy.Lifetime.Absorb(run);
-			projected = AchievementContext.ForRun(copy, run);
+			// The save's lifetime with this run folded in, the rest of the save read as it is (found
+			// secrets, owned spells): AchievementContext.Projected, the same reading the mid-run
+			// achievement moment fires on (Node2DGame.TickAchievementWatch), so the tab's "This run" and
+			// the moment can never disagree. It copied the whole save here once; only the lifetime moves.
+			projected = AchievementContext.Projected(save, run);
 			var alone = new SaveData();
 			alone.Lifetime.Absorb(run);
 			runOnly = AchievementContext.ForRun(alone, run);
@@ -554,9 +554,16 @@ public static class AchievementsPage
 	private static void BuildPause(VBoxContainer list, PageModel page, Result result, int columns, string stageId)
 	{
 		bool narrow = ResponsiveLayout.IsNarrow(list);
-		// The subtitle leads, so the tab says what it is before it says how much of it there is.
-		list.AddChild(CodexRows.BuildSummary(CodexRows.UnlocksSubtitle + "\n" + SummaryLine(result, narrow),
-			CodexRows.Stone, result.Total > 0 ? result.Earned / (float)result.Total : 0f));
+		// The subtitle leads, so the tab says what it is before it says how much of it there is. The
+		// count goes up as the run meets deeds (Eric, 2026-10-30: "achievements should count up during a
+		// run"): "0 of 41 earned" stood still all run while the rows below said "This run", because a
+		// deed met on this run's numbers is paid when it ends. It says so, and the bar takes them in.
+		int metThisRun = page.Items.Count(i => i.MetThisRun && !i.Done);
+		string summary = SummaryLine(result, narrow);
+		if (metThisRun > 0)
+			summary += $"{(narrow ? "\n" : "  ·  ")}{metThisRun} more this run";
+		list.AddChild(CodexRows.BuildSummary(CodexRows.UnlocksSubtitle + "\n" + summary,
+			CodexRows.Stone, result.Total > 0 ? (result.Earned + metThisRun) / (float)result.Total : 0f));
 
 		StageDefinition stage = StageCatalog.GetById(stageId);
 		var here = page.Items.Where(i => !i.Done && !i.IsFeat && stage != null && SameStage(i.StageId, stage.Id)).ToList();
@@ -612,12 +619,16 @@ public static class AchievementsPage
 		!string.IsNullOrEmpty(a) && !string.IsNullOrEmpty(b) && a.Equals(b, StringComparison.OrdinalIgnoreCase);
 
 	// Closest to done first (CodexRows.OrderInProgress); a seen secret has no numbers, so it falls in
-	// with the yes/no deeds after the countable ones, in the order they are listed.
+	// with the yes/no deeds after the countable ones, in the order they are listed. Over a run, what this
+	// run has met leads (stable, so in that order among themselves): First Blood met by the first kill is
+	// a yes/no deed, and sorted as one it sat under every bar, out of sight of a player pausing to see it.
 	private static List<Item> OrderOpen(List<Item> items)
 	{
 		var byDeed = items.ToDictionary(i => i.Deed);
 		return CodexRows.OrderInProgress(items.Select(i => (i.Deed, i.Progress)))
-			.Select(p => byDeed[p.Deed]).ToList();
+			.Select(p => byDeed[p.Deed])
+			.OrderByDescending(i => i.MetThisRun)
+			.ToList();
 	}
 
 	// The not-yet-found section of the All tab: each open chapter's sealed count, then each sealed wizard.
