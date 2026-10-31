@@ -37,7 +37,8 @@ namespace WizardSurvivors.scripts;
 //   Frostfall      (level 4, the element path) - repaints every star in Ice's ramp
 //                   (IPaintsElementPath); its slow is the rider Player.DealDamageToEnemy applies.
 //   Skipping Stars (level 4) - every star lands at its slant and skips on, twice, like a stone across
-//                   water: two more landings, each smaller and softer, carried on the way it fell.
+//                   water: two more landings, each smaller and softer, each glancing off the way it came
+//                   by up to SkipTurnDegrees either side, so the skips scatter rather than run one way.
 //   Starburst      (level 8, +1 Light) - every star is heavy: it lands, swells for FuseSeconds and
 //                   bursts on its (much wider) radius, throwing SparksPerBurst sparks that arc out past
 //                   the rim and land as small stars of their own.
@@ -99,11 +100,17 @@ public partial class Starfall : Node2D, IPaintsElementPath
 	private const float StreakFadeSeconds = 0.22f;
 
 	// --- Skipping Stars ---------------------------------------------------------------------------
-	// Each landing skips on along the slant the star fell at (to the right, the key light behind it),
-	// SkipCount times, each hop SkipHop of the landing it left, each landing a share of the first.
+	// Each landing skips on SkipCount times, each hop SkipHop of the landing it left, each landing a share
+	// of the first. Every skip glances off the way it came at a turn of its own, up to SkipTurnDegrees
+	// either side: the first off the slant the star fell at (to the right, the key light behind it), the
+	// second off the first skip's line. They all ran right within 23 degrees until 2026-10-31 (the
+	// designer's playtest: "the skipping effect should skip in more varied directions so it doesn't just
+	// spread in a single direction"), so a rain of skips smeared one way; now it scatters, and a second
+	// skip can come back across the rain. Still aimed at nothing.
 	public const int SkipCount = 2;
 	public static readonly float[] SkipDamage = { 0.55f, 0.35f };
 	public static readonly float[] SkipRadius = { 0.75f, 0.55f };
+	public const float SkipTurnDegrees = 80f;
 	private const float SkipHop = 2.0f;
 	private const float SkipSeconds = 0.24f;
 	private const float SkipArcHeight = 26f;
@@ -188,7 +195,7 @@ public partial class Starfall : Node2D, IPaintsElementPath
 	// The sky as of the last cloudburst. Every star takes its numbers when it appears.
 	private int damage = 5;
 	private float starRadius = 28f;
-	private float rainRadius = 190f;
+	private float rainRadius = 240f;
 	private bool bursting;
 	private bool linking;
 	private bool shooting;
@@ -274,7 +281,11 @@ public partial class Starfall : Node2D, IPaintsElementPath
 		damage = Math.Max(1, Mathf.RoundToInt(spell.GetDamageAtLevel(level) * damageMultiplier));
 		// Every area term once, here: the levels' AreaSize lines (px), the player's Area, and every
 		// milestone's AreaMultiplier through the collector. The rain's own width is the spell's range,
-		// which only its levels move - Area makes each star bigger, not the rain thinner.
+		// which only its levels move - Area makes each star bigger, not the rain thinner. It was 190 (210 at
+		// level 8) until 2026-10-31 and is 240 (270), from the designer's playtest ("Starfall should cover a
+		// wider area overall"): the same stars of the same damage and size, spread over 1.6 times the
+		// ground, so a crowd that fills the rain takes what it did and the ring closing on the wizard is
+		// reached sooner - SpellData_Starfall.tres says what that does to the rate on any one spot.
 		starRadius = MathF.Max(8f, (BaseStarRadius + spell.GetEffectValueAtLevel(SpellEffect.AreaSize, level))
 			* playerArea * spell.GetAreaMultiplierAtLevel(level));
 		rainRadius = MathF.Max(60f, spell.GetRangeAtLevel(level));
@@ -483,10 +494,11 @@ public partial class Starfall : Node2D, IPaintsElementPath
 			ThrowSkip(s);
 	}
 
-	// Skipping Stars: the landing skips on to the right - the way every star slants in - a hop of
-	// SkipHop landings, a little off the line each time, and comes down as a smaller star. The share
-	// of damage and size is taken from the FIRST landing, so the chain is 1, 0.55, 0.35 whatever kind of
-	// star began it.
+	// Skipping Stars: the landing skips on - a hop of SkipHop landings, glancing off the way it came by a
+	// turn of its own up to SkipTurnDegrees either side - and comes down as a smaller star. A fallen star
+	// came in on its slant, to the right on the ground (the height it fell is the screen's down, not
+	// ground it crossed); a skip came along the hop it made. The share of damage and size is taken from
+	// the FIRST landing, so the chain is 1, 0.55, 0.35 whatever kind of star began it.
 	private void ThrowSkip(in Star from)
 	{
 		if (pendingCount >= MaxPendingSparks)
@@ -495,7 +507,9 @@ public partial class Starfall : Node2D, IPaintsElementPath
 		float firstRadius = n == 0 ? from.Radius : from.Radius / SkipRadius[n - 1];
 		float firstDamage = n == 0 ? from.Damage : from.Damage / SkipDamage[n - 1];
 		float radius = MathF.Max(8f, firstRadius * SkipRadius[n]);
-		float turn = rng.RandfRange(-0.4f, 0.4f);
+		Vector2 came = from.Kind == StarKind.Skip ? from.Land - from.Origin : Vector2.Right;
+		float maxTurn = Mathf.DegToRad(SkipTurnDegrees);
+		float turn = came.Angle() + rng.RandfRange(-maxTurn, maxTurn);
 		Vector2 hop = new Vector2(MathF.Cos(turn), MathF.Sin(turn)) * MathF.Max(36f, from.Radius * SkipHop);
 		pendingSparks[pendingCount++] = new Star
 		{
