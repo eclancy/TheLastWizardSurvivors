@@ -2153,7 +2153,7 @@ cerberus. same goes for the other ascension. the main cerberus itself should be 
 wear the one look the spell resolved to. Now the first is the main hound and wears it (`Familiar.LookAt`);
 the rest wear `ResolvePackLook`: with **Littermates**, two **pups** (`familiar.pup`, the 32 cell - a big head
 and short legs on a round body, no hat), the fawn hound's before level 8, a one-headed hellpup under Cerberus
-and a white pup under the Hound of Annwn; **without it**, the level 3 hound under an Ascension is a one-headed
+and under the Hound of Annwn - the white dog - two pups drawn as **Pancho**, Eric's dog (*"the two puppies pixel art should be styled like my dog pancho"*; `familiar.PANCHO`: the plume curled over the back, the long cream coat, buff ears dipped Annwn's red, dark round eyes, the underbite, a dark collar with a silver tag); **without it**, the level 3 hound under an Ascension is a one-headed
 hound of the Ascension at the hound's own 48 cell (`hellhound`, `annwn-hound`, and `-rime` after the Ice
 path). Every one still bites with the Ascension's power (three bites, double on an elite) - only the drawing
 differs, so no number moved. **Cerberus is on the 96 cell at 2.5** (was the 64 at 1.72), the one form on the
