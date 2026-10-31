@@ -2129,28 +2129,53 @@ def _(sp, c):
 
 @card("aegis_ward_quick_bastion")
 def _(sp, c):
-    """Quick Bastion: the shield recharging sooner - arrows going round it."""
+    """Rampart: the ward stands off him as a dome, and enemy bolts break on it - the dome lit where they
+    strike it, the bolts bursting there instead of reaching the shield."""
     reset(sp)
-    sp.place = Place(0.86)
-    U(sp, lambda cv, x: m_cycle(cv, E["light"], (C0, C0), 13.0))
+    sp.place = Place(0.66)
+
+    def dome(cv, x):
+        core, hot, mid, edge = E["light"]
+        dk = E["darkness"]
+        # The dome: a curve of light round the upper right, brightest where the bolts hit it.
+        for d in range(-150, 31, 3):
+            t = math.radians(d)
+            hit = min(abs(d + 45), abs(d + 100))
+            tone = core if hit < 8 else (hot if hit < 22 else mid)
+            cv.set(C0 + math.cos(t) * 12.5, C0 + math.sin(t) * 12.5, tone)
+            if hit < 22:
+                cv.set(C0 + math.cos(t) * 11.5, C0 + math.sin(t) * 11.5, mid)
+        # Two enemy bolts, broken on it: a dark tail in from outside, a burst on the curve.
+        for d in (-45, -100):
+            t = math.radians(d)
+            bx, by = C0 + math.cos(t) * 12.5, C0 + math.sin(t) * 12.5
+            ox, oy = C0 + math.cos(t) * 17.5, C0 + math.sin(t) * 17.5
+            cv.line(ox, oy, bx + math.cos(t) * 1.5, by + math.sin(t) * 1.5, dk[2])
+            m_glint(cv, bx, by, 2, E["light"])
+    O(sp, dome)
+    sp.why = "bolts breaking on a dome"
 
 
 @card("aegis_ward_fortified")
 def _(sp, c):
-    """Fortified Aegis: the ward forged in metal - a bigger shield, banded and riveted."""
+    """Reforged: the ward forged out of the air - iron shards flying in to it from all round."""
     reset(sp)
-    sp.place = Place(1.12)
-    sp.ramp = "metal"
-    U(sp, v_rays(9.0, 8))
+    sp.place = Place(0.72)
 
-    def banded(cv, x):
-        m = E["metal"]
-        for (px, py) in ((9, 9), (22, 9), (8, 19), (23, 19), (15.5, 26)):
-            cv.set(px, py, m[0])
-            cv.set(px + 1, py + 1, m[3])
-        cv.hline(7, 24, 22, m[3])
-        cv.hline(7, 24, 21, m[1])
-    O(sp, banded)
+    def shards(cv, x):
+        m, l = E["metal"], E["light"]
+        for k in range(8):
+            t = math.radians(22.5 + 45 * k)
+            ux, uy = math.cos(t), math.sin(t)
+            tip = (C0 + ux * 10.5, C0 + uy * 10.5)
+            tail = (C0 + ux * 14.5, C0 + uy * 14.5)
+            px, py = -uy * 1.3, ux * 1.3
+            cv.poly([(tip[0], tip[1]), ((tip[0] + tail[0]) / 2 + px, (tip[1] + tail[1]) / 2 + py), (tail[0], tail[1]),
+                     ((tip[0] + tail[0]) / 2 - px, (tip[1] + tail[1]) / 2 - py)], m[2])
+            cv.line(tip[0], tip[1], tail[0], tail[1], m[1])
+            cv.set(tip[0], tip[1], l[0])
+    O(sp, shards)
+    sp.why = "iron shards flying in"
 
 
 @card("aegis_ward_sun_aegis")

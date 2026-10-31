@@ -1135,15 +1135,24 @@ public static class SpellEvolutionCatalog
 	}
 
 
+	// Aegis Ward: a shield pool that absorbs, breaks and comes back on its cooldown (Player, the aegis_ward
+	// branch); what its cards add is run and drawn by scripts/AegisWard.cs. Phase 2 (.ai/spell-roster.md
+	// section 2h): Quick Bastion (-40% recharge) and Fortified Aegis (+50% shield) only moved numbers and
+	// are the Rampart (the spell's bolt guard, made visible) and Reforged; the other three already did
+	// something and only lead with it now. Ids unchanged.
 	private static void SetupAegisWardEvolutions(SpellData spell)
 	{
+		const float rampartCooldown = 0.8f;
+		const float reforgedShield = 1.2f;
+
 		// Level 4 (3 choices)
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "aegis_ward_reflective",
+			Id = AegisWard.ReflectiveId,
 			DisplayName = "Reflective Plating",
-			// Player.TryReflectAbsorbed, since 2026-10-26 (it was +15 shield and nothing else).
-			Description = "+15 shield, and whatever the shield absorbs, the nearest enemy takes back at 150%.",
+			// Player.TryReflectAbsorbed, since 2026-10-26 (it was +15 shield and nothing else); drawn as a
+			// shaft of light to the one struck since phase 2 (AegisWard.ShowReflect).
+			Description = "What the shield absorbs flies back at the nearest enemy as a shaft of light, at 150%. +15 shield.",
 			MilestoneLevel = 4,
 			DamageBonus = 15,
 			VisualTag = "ReflectivePlating",
@@ -1154,33 +1163,32 @@ public static class SpellEvolutionCatalog
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "aegis_ward_quick_bastion",
-			DisplayName = "Quick Bastion",
-			Description = "Reduces shield recharge delay by 40%.",
+			Id = AegisWard.RampartId,
+			DisplayName = "Rampart",
+			Description = $"The ward stands off you as a dome: enemy bolts break on it, costing the shield {AegisWard.RampartCost * 100f:0}%. "
+				+ $"{(1f - rampartCooldown) * 100f:0}% shorter recharge.",
 			MilestoneLevel = 4,
-			CooldownMultiplier = 0.6f,
-			VisualTag = "QuickBastion",
+			CooldownMultiplier = rampartCooldown,
+			VisualTag = "Rampart",
 			ModulateColor = new Color(0.5f, 0.85f, 1.0f),
-			SynergyTag = "Water / Defense",
-			SynergyDescription = "Rapid shield regeneration for sustained combat."
+			SynergyTag = "Guard / Bolts",
+			SynergyDescription = "Against shooters the shield lasts twice as long, and you see what it stops."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "aegis_ward_fortified",
+			Id = AegisWard.ReforgedId,
 			BonusElementWeights = new() { { "Metal", 1 } },
-			DisplayName = "Fortified Aegis",
-			// The +50% was an EffectValue of 50 with no Effect, and the armour was never built. The
-			// spell's damage IS the shield (Player, the aegis_ward branch), so the capacity is a damage
-			// multiplier and the card says only that (2026-10-26). Metal's tag is the attunement.
-			Description = "The ward is forged in metal: +50% max shield capacity and +1 Metal tag, for 12% slower recharge.",
-			CooldownMultiplier = 1.12f,
+			DisplayName = "Reforged",
+			Description = "Each time the ward comes back, iron shards fly in to you from all round, cutting what they pass. "
+				+ $"+{(reforgedShield - 1f) * 100f:0}% shield, +1 Metal tag, 12% slower recharge.",
+			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
-			DamageMultiplier = 1.5f,
-			VisualTag = "FortifiedAegis",
+			DamageMultiplier = reforgedShield,
+			VisualTag = "Reforged",
 			ModulateColor = new Color(0.9f, 0.75f, 0.5f),
-			SynergyTag = "Earth / Metal",
-			SynergyDescription = "Heavy defensive fortification against big hits."
+			SynergyTag = "Metal / Recharge",
+			SynergyDescription = "Deepens Metal. The ward comes back as a blow."
 		});
 
 		// Level 8 (2 choices)
@@ -1190,7 +1198,7 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Light", 1 } },
 			DisplayName = "Sun Aegis",
 			// Player.SunAegisFlash, since 2026-10-26. The beams while charged were never built and went.
-			Description = "Double shield capacity and +1 Light tag; a breaking shield flashes, staggering and weakening everything close.",
+			Description = "A breaking shield flashes like the sun, staggering and weakening everything close. Double shield, +1 Light tag.",
 			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 8,
 			DamageMultiplier = 2.0f,
@@ -1206,7 +1214,7 @@ public static class SpellEvolutionCatalog
 			DisplayName = "Thorn Crystal Shell",
 			// Built 2026-10-26 (Player.CrystalShellBurst): the break bursts for twice the shield's size on
 			// everything within reach. The PierceBonus of 8 went - a burst reaches all it touches anyway.
-			Description = "+40 shield, and a breaking shield bursts into crystal shards that cut everything close for twice its size.",
+			Description = "A breaking shield bursts into crystal shards that cut everything close for twice its size. +40 shield.",
 			MilestoneLevel = 8,
 			DamageBonus = 40,
 			VisualTag = "ThornCrystal",
@@ -3569,9 +3577,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Stormsweep.BallLightningId,
 			DisplayName = "Ball Lightning",
-			Description = "The crack at the tip of every sweep throws off a ball of lightning that rolls on away from you "
-				+ $"along the sweep's line for {Stormsweep.BallSeconds:0.#}s, zapping everything it passes for "
-				+ $"{Stormsweep.BallDamageFraction * 100f:0}% of the sweep, {1f / Stormsweep.BallTickSeconds:0} times a second. "
+			Description = "The crack at the tip throws off a ball of lightning that rolls on, zapping what it passes. "
 				+ $"+{(ballDamage - 1f) * 100f:0}% damage, +1 Lightning tag.",
 			MilestoneLevel = 4,
 			DamageMultiplier = ballDamage,
@@ -3593,8 +3599,8 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Stormsweep.ForkedLightningId,
 			DisplayName = "Forked Lightning",
-			Description = $"Past its middle the sweep forks into three tongues that fan out as they go, so its far end sweeps a band "
-				+ $"{Stormsweep.ForkSpread * 100f:0}% taller each side. {(1f - forkCooldown) * 100f:0}% shorter cooldown.",
+			Description = "Past its middle the sweep forks into three tongues, sweeping a taller band at its far end. "
+				+ $"{(1f - forkCooldown) * 100f:0}% shorter cooldown.",
 			MilestoneLevel = 4,
 			CooldownMultiplier = forkCooldown,
 			VisualTag = "ForkedLightning",
@@ -3645,7 +3651,7 @@ public static class SpellEvolutionCatalog
 		const float greatDamage = 1.25f;
 		const int braidRunes = 2;
 		const float partingSpeed = 1.2f;
-		const float partingRange = 60f;
+		const float partingRange = 76f;
 		const float partingDamage = 1.1f;
 		const int fanRunes = 3;
 		const int fanPierce = 1;
@@ -3656,10 +3662,8 @@ public static class SpellEvolutionCatalog
 		{
 			Id = SleetRunes.GreatRuneId,
 			DisplayName = "Great Rune",
-			Description = $"Every {OrdinalWord(SleetRunes.GreatEvery)} rune is cut deep: a great rune twice the size that flies slower, "
-				+ $"passes through everything in its line for {SleetRunes.GreatDamage * 100f:0}% of a rune, and slows what it strikes "
-				+ $"{(1f - SleetRunes.GreatSlow) * 100f:0}% for {SleetRunes.GreatSlowSeconds:0.#}s. "
-				+ $"+{(greatDamage - 1f) * 100f:0}% damage, +1 Ice tag.",
+			Description = $"Every {OrdinalWord(SleetRunes.GreatEvery)} rune is a great rune: twice the size, through everything in its line, "
+				+ $"slowing what it strikes. +{(greatDamage - 1f) * 100f:0}% damage, +1 Ice tag.",
 			MilestoneLevel = 4,
 			DamageMultiplier = greatDamage,
 			BonusElementWeights = new() { { "Ice", 1 } },
@@ -3673,8 +3677,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = SleetRunes.BraidedWindId,
 			DisplayName = "Braided Wind",
-			Description = "The wind weaves the stream: every rune snakes from side to side as it flies, each out of step with "
-				+ $"the last, so the stream braids across a band three bodies wide. +{braidRunes} runes every cast.",
+			Description = $"The runes weave side to side, out of step, braiding a wider stream. +{braidRunes} runes every cast.",
 			MilestoneLevel = 4,
 			ProjectileCountBonus = braidRunes,
 			VisualTag = "BraidedWind",
@@ -3687,9 +3690,8 @@ public static class SpellEvolutionCatalog
 			Id = SleetRunes.PartingWindId,
 			DisplayName = "Parting Wind",
 			// A percentage of the rune's own flight, never a pixel count (2026-10-28, "never mention px").
-			Description = "The wind behind the runes parts the crowd: what a rune strikes is thrown aside, off its line, so "
-				+ $"the stream cuts a lane through the pack. Runes fly {(partingSpeed - 1f) * 100f:0}% faster and "
-				+ $"{(spell.BaseRange > 0f ? partingRange / spell.BaseRange * 100f : 0f):0}% farther, +{(partingDamage - 1f) * 100f:0}% damage.",
+			Description = "What a rune strikes is thrown aside, cutting a lane through the pack. "
+				+ $"Runes fly {(partingSpeed - 1f) * 100f:0}% faster and farther, +{(partingDamage - 1f) * 100f:0}% damage.",
 			MilestoneLevel = 4,
 			DamageMultiplier = partingDamage,
 			SpeedMultiplier = partingSpeed,

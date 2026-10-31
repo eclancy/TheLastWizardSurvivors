@@ -2755,6 +2755,8 @@ public partial class _BalanceHarness : Node
 					+ $"{OrbitingBlade.StatBoltsReflected} thrown back by the Endless Chase" : "",
 			// Swings and how many each reaches: the axe's cleave and the hammer's slam are measured, not assumed.
 			SpiritualWeapon.StatSwings > 0 ? "  " + SpiritualWeapon.StatsLine() : "",
+			// Aegis Ward (2026-10-29): the bolts its Rampart broke, its Reforged shards and the strikes it reflected.
+			AegisWard.HasStats ? "  " + AegisWard.StatsLine() : "",
 			$"  stage        : {Global.SelectedStageIdx}; spawned " + string.Join(", ", spawnedByType.Select(p => $"{p.Key} {p.Value}")),
 		};
 		lines.AddRange(DropLedger());
