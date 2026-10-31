@@ -1512,10 +1512,16 @@ public partial class Enemy : CharacterBody2D
 	/// </remarks>
 	public int ScaleOutgoingDamage(int amount)
 	{
-		if (amount <= 0 || weakenTimeRemaining <= 0f || weakenFraction <= 0f)
+		if (amount <= 0)
+			return amount;
+		// The chapter's damage (ChapterDifficulty.EnemyDamage, .ai/difficulty-curve.md), at least 1, and
+		// rounded the same stochastic way: at 1.25 a quarter of the one-damage touches land for two.
+		float chapter = Node2DGame.Current is Node2DGame run && IsInstanceValid(run) ? run.EnemyDamageScale : 1f;
+		bool weakened = weakenTimeRemaining > 0f && weakenFraction > 0f;
+		if (!weakened && chapter <= 1f)
 			return amount;
 
-		float scaled = amount * (1f - weakenFraction);
+		float scaled = amount * chapter * (weakened ? 1f - weakenFraction : 1f);
 		int whole = Mathf.FloorToInt(scaled);
 		return rng.Randf() < scaled - whole ? whole + 1 : whole;
 	}

@@ -39,8 +39,9 @@ public static class ElementPassiveDescriptions
 			Element.Ice => tier switch { 6 => "35% slow for 2s on hit", 4 => "20% slow for 2s on hit", _ => "10% slow for 2s on hit" },
 			Element.Arcane => tier switch { 6 => "+35% XP gained", 4 => "+20% XP gained", _ => "+10% XP gained" },
 			Element.Darkness => tier switch { 6 => "20% chance to evade a hit", 4 => "12% chance to evade a hit", _ => "6% chance to evade a hit" },
-			Element.Light => tier switch { 6 => "Heal 10% of damage dealt", 4 => "Heal 6% of damage dealt", _ => "Heal 3% of damage dealt" },
-			Element.Grass => tier switch { 6 => "+4 HP/sec regeneration", 4 => "+2 HP/sec regeneration", _ => "+1 HP/sec regeneration" },
+			// The healing budget's numbers (Player, .ai/difficulty-curve.md section 5), read rather than copied.
+			Element.Light => $"Heal {(tier >= 6 ? Player.LightHealTier6 : tier >= 4 ? Player.LightHealTier4 : Player.LightHealTier2) * 100f:0.#}% of damage dealt, at most {Player.LightHealPerSecondCap} HP a second",
+			Element.Grass => $"+{(tier >= 6 ? Player.GrassRegenTier6 : tier >= 4 ? Player.GrassRegenTier4 : Player.GrassRegenTier2) * 60f:0} HP regeneration a minute",
 			Element.Earth => tier switch { 6 => "+100 max HP", 4 => "+50 max HP", _ => "+20 max HP" },
 			Element.Wind => tier switch { 6 => "+35% move speed", 4 => "+20% move speed", _ => "+10% move speed" },
 			Element.Lightning => tier switch { 6 => "Every 2nd cast from your single target spells will be empowered, bouncing to a nearby enemy for 60% damage.", 4 => "Every 4th cast from your single target spells will be empowered, bouncing to a nearby enemy for 45% damage.", _ => "Every 6th cast from your single target spells will be empowered, bouncing to a nearby enemy for 30% damage." },

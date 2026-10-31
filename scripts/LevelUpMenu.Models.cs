@@ -192,6 +192,8 @@ public enum AscensionRequirementKind
 	SpellLevel,
 	Element,
 	PlayerLevel,
+	/// <summary>The campaign's gate: the save has not been taught the Ascension yet (Player.AscensionLearned).</summary>
+	Learned,
 }
 
 /// <summary>One gate on an ascension, with how far along the player is.</summary>

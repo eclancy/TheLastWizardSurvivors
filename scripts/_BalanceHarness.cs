@@ -80,7 +80,27 @@ public partial class _BalanceHarness : Node
 	[Export] public bool FullShop { get; set; }
 	// --all-unlocked: own everything, in memory, with saving switched off for the run.
 	[Export] public bool AllUnlocked { get; set; }
+	// --fresh-save: starters only, nothing bought. Since the difficulty curve (.ai/difficulty-curve.md)
+	// it also records the bosses of the chapters BEFORE --stage as beaten - nothing they pay, only the
+	// kill and the chapter opened - because no real save could stand in that chapter without them, and
+	// the Ascension's teaching (Player.HasLearnedAscension) reads that record.
 	[Export] public bool FreshSave { get; set; }
+	// --farmed: a save as a player who has farmed sensibly up to --stage would have it. Every chapter
+	// before it beaten, every Feat done, every Road deed and secret of those chapters found (so their
+	// spells and boons are in the pool), and Arcane Energy spent on Powers (StageFarmedSave). The
+	// budget is --arcane=N, or by default FarmedArcanePerChapter for each chapter behind it.
+	[Export] public bool Farmed { get; set; }
+	[Export] public int FarmedArcane { get; set; } = -1;
+	// --stop-need=X: with --survivor --immortal, end the run the moment X times the wizard's health
+	// would already have died (the health ledger, NeedMultiple). A hopeless run on a full field is the
+	// slowest a run gets - 1-5 fps here - and past X its answer is already "fails".
+	[Export] public float StopNeed { get; set; }
+	// --stop-overrun=S: end the run once swarm pressure has held at OverrunPressure for S game seconds.
+	// That is the swarm's verdict that the build has fallen behind for good (.ai/run-pacing.md 10.4:
+	// at full pressure every dodger down to f 0.03 died within a few minutes), and a field at the cap
+	// is the slowest thing the machine runs. The report says "overrun" and when.
+	[Export] public float StopOverrunSeconds { get; set; }
+	private const float OverrunPressure = 0.9f;
 	// --immortal: held at full health. The bot dies in a couple of minutes on its own, which ends a
 	// measurement of the late game before it starts. XP comes from kills, so this does not move the
 	// clock the card arrives on - it only lets the run reach it.
@@ -335,6 +355,10 @@ public partial class _BalanceHarness : Node
 			// the chapter hints (StageHintDirector) play on their pace schedule - an --all-unlocked
 			// save owns them all and hears none. The bot never meets the event without --explore.
 			else if (arg == "--fresh-save") FreshSave = true;
+			else if (arg == "--farmed") Farmed = true;
+			else if (arg.StartsWith("--arcane=")) FarmedArcane = int.Parse(arg.Substring(9));
+			else if (arg.StartsWith("--stop-need=")) StopNeed = float.Parse(arg.Substring(12), System.Globalization.CultureInfo.InvariantCulture);
+			else if (arg.StartsWith("--stop-overrun=")) StopOverrunSeconds = float.Parse(arg.Substring(15), System.Globalization.CultureInfo.InvariantCulture);
 			// A Boss Rush (issue #12) instead of a chapter: the run picks its own arena
 			// (BossRushCatalog), so --stage is ignored. Give it --minutes past the finale - the clock
 			// the bot reads is real time, and every fight adds to it. Each arrival and fall is logged
@@ -347,6 +371,7 @@ public partial class _BalanceHarness : Node
 		ProcessMode = ProcessModeEnum.Always;
 		StatusEffectLayer.MeasureCost = true;
 		StatusEffectLayer.ResetPerf();
+		GameStats.TrackHealing = true;
 
 		GD.Print($"HARNESS minutes={Minutes} timescale={TimeScale} character={CharacterIndex} seed={Seed}");
 
@@ -382,6 +407,8 @@ public partial class _BalanceHarness : Node
 				// shop argues with the roll, and a measurement that does not is measuring a new save.
 				data.ArcaneUpgradeLevels["rerolls"] = 5;
 				data.ArcaneUpgradeLevels["bans"] = 3;
+				// Owning everything includes having been taught the Ascension (Player.AscensionLearned).
+				data.AscensionLearned = true;
 				// --full-shop: the rest of the Arcane Codex too, at the caps MainMenu.BuildUpgradeDefinitions
 				// registers. Sage Spiral (growth) is the one that moves the level clock.
 				if (FullShop)
@@ -393,10 +420,12 @@ public partial class _BalanceHarness : Node
 			}
 		}
 
-		if (FreshSave && !AllUnlocked && GetNodeOrNull<SaveManager>("/root/SaveManager") is SaveManager fresh)
+		if ((FreshSave || Farmed) && !AllUnlocked && GetNodeOrNull<SaveManager>("/root/SaveManager") is SaveManager fresh)
 		{
 			SaveManager.WritesDisabled = true;
-			fresh.ReplaceInMemory(new SaveData());
+			var data = new SaveData();
+			StageRoadBehind(data, Farmed);
+			fresh.ReplaceInMemory(data);
 		}
 
 		if (Explore || giveRelics.Length > 0 || grantBoons.Length > 0)
@@ -501,6 +530,7 @@ public partial class _BalanceHarness : Node
 		MazeNavigation.BuildOnOpenStages = true;
 		StatusEffectLayer.Disabled = false;
 		StatusEffectLayer.MeasureCost = false;
+		GameStats.TrackHealing = false;
 		foreach (string a in MoveActions)
 			Input.ActionRelease(a);
 	}
@@ -523,6 +553,7 @@ public partial class _BalanceHarness : Node
 			&& (survivorPhysicsStep++ & 1) == 0)
 			DriveSurvivor();
 		LedgerStandStill((float)delta);
+		TickHealthLedger((float)delta);
 		SampleCap();
 		if (!float.IsNaN(WalkBearingDegrees))
 			MeasureCrowd((float)delta);
@@ -856,6 +887,7 @@ public partial class _BalanceHarness : Node
 			if (LogHits)
 				player.DamageTaken += LogHit;
 			shadowBaseHp = player.MaxHP;
+			needBaseHp = player.MaxHP;
 			if (HpScale > 0f && Math.Abs(HpScale - 1f) > 0.001f)
 			{
 				player.MaxHP = Math.Max(1, Mathf.RoundToInt(player.MaxHP * HpScale));
@@ -934,11 +966,302 @@ public partial class _BalanceHarness : Node
 		DriveMovement();
 		// A fallen boss opens the way home and the run ends when the player steps in (Node2DGame's
 		// victory portal); the bot steps in at once, so a run that wins still ends as it always did.
+		// The run ends there too: what the clock would add after a victory is a field standing still.
 		if (game is Node2DGame won && won.VictoryPortalOpen)
+		{
+			if (bossDownAt < 0f)
+			{
+				bossDownAt = elapsed;
+				GD.Print($"HARNESS boss down at t={elapsed:0}s ({elapsed / 60f:0.0} min), level {player.CurrentLevel}");
+			}
 			won.EnterVictoryPortal();
+			Finish("beat the boss");
+			return;
+		}
 
-		if (elapsed >= Minutes * 60f || player.IsDead)
+		if (StopOverrunSeconds > 0f && overrunAt < 0f)
+		{
+			if (SwarmStat<float>("SwarmPressure") >= OverrunPressure)
+			{
+				if (overrunSince < 0f)
+					overrunSince = elapsed;
+				else if (elapsed - overrunSince >= StopOverrunSeconds)
+				{
+					overrunAt = overrunSince;
+					GD.Print($"HARNESS overrun: pressure at {OverrunPressure:0.0}+ since t={overrunSince:0}s, level {player.CurrentLevel}; ending the run");
+				}
+			}
+			else
+				overrunSince = -1f;
+		}
+
+		if (overrunAt >= 0f)
+			Finish($"overrun (swarm pressure full from {overrunAt / 60f:0.0} min)");
+		else if (hopelessAt >= 0f)
+			Finish($"hopeless (x{StopNeed:0.#} health would have died)");
+		else if (elapsed >= Minutes * 60f || player.IsDead)
 			Finish(player.IsDead ? "died" : "reached the clock");
+	}
+
+	// --- the difficulty curve: staged saves, the health ledger, the boss (.ai/difficulty-curve.md) ---
+	//
+	// Three questions every chapter is asked, fresh and farmed: does the bot live to the boss, does it
+	// beat the boss, and how much health would it have needed. The last is the one number that ranks
+	// the chapters: --survivor dodges, but far worse than a person (.ai/run-pacing.md 10.4), so its
+	// own deaths say little; --survivor --immortal plays the whole run and the ledger below says what
+	// health multiple it would have needed to live through it, boss included.
+
+	// What a sensible farmer spends Arcane Energy on, and the shop's prices for it (BaseCost, CostPerLevel,
+	// cap) - mirrored from MainMenu.BuildUpgradeDefinitions, which has no catalog of its own to read. The
+	// level-up charges, Avarice Seal, Luck and crit are left out: the ordinary policy spends no charge,
+	// Avarice is currency, and the last two are what a player buys once the rest is full.
+	private static readonly (string Id, int Base, int Step, int Cap)[] FarmedPowers =
+	{
+		("damage", 30, 20, 8), ("vitality", 25, 20, 10), ("recovery", 15, 10, 8), ("cooldowns", 35, 25, 8),
+		("attack_speed", 35, 25, 8), ("area", 30, 20, 7), ("amount", 60, 40, 4), ("movespeed", 20, 15, 8),
+		("magnet", 25, 20, 7), ("growth", 30, 20, 6), ("extra_lives", 120, 80, 3), ("duration", 25, 20, 6),
+	};
+
+	// Arcane Energy a player has to spend by the time he stands in a chapter: a little for the first (two
+	// failed runs), then one clear and two failures of every chapter behind it - a clear pays about 200
+	// and its boss's bonus (150-400), a failure at minute eight about 130 (Node2DGame.CalculateArcaneReward).
+	public const int FarmedArcaneOpening = 300;
+	public const int FarmedArcanePerChapter = 650;
+
+	private string metaLabel = "-";
+
+	/// <summary>
+	/// The save a player standing in this chapter has: every playable chapter before it in the campaign
+	/// beaten (the boss in the lifetime record, the chapter opened). Farmed, also what those chapters and
+	/// the Feats pay, and Powers bought with the budget.
+	/// </summary>
+	private void StageRoadBehind(SaveData data, bool farmed)
+	{
+		StageDefinition stage = StageCatalog.GetByIndex(Global.SelectedStageIdx);
+		int position = StageCatalog.CampaignPositionOf(stage.Id);
+		var behind = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		for (int i = 0; i < position; i++)
+		{
+			StageDefinition earlier = StageCatalog.Campaign[i];
+			if (!earlier.IsPlayable)
+				continue;
+			behind.Add(earlier.Id);
+			if (!data.UnlockedStageIds.Contains(earlier.Id))
+				data.UnlockedStageIds.Add(earlier.Id);
+			if (BossCatalog.ForStageIndex(earlier.Index) is BossDefinition boss && !data.Lifetime.BossesDefeated.Contains(boss.Id))
+				data.Lifetime.BossesDefeated.Add(boss.Id);
+		}
+		if (position >= 0 && !data.UnlockedStageIds.Contains(stage.Id))
+			data.UnlockedStageIds.Add(stage.Id);
+
+		if (!farmed)
+		{
+			metaLabel = $"fresh(road {behind.Count})";
+			GD.Print($"HARNESS fresh save at {stage.DisplayName}: {behind.Count} chapters behind it beaten, nothing they pay, nothing bought");
+			return;
+		}
+
+		int spells = 0, boons = 0;
+		foreach (AchievementDefinition deed in AchievementDefinitions.All)
+		{
+			bool earned = deed.Kind == AchievementKind.Feat
+				|| ((deed.Kind == AchievementKind.Road || deed.Kind == AchievementKind.Secret) && behind.Contains(deed.StageId ?? ""));
+			if (!earned)
+				continue;
+			if (!data.UnlockedAchievementIds.Contains(deed.Id))
+				data.UnlockedAchievementIds.Add(deed.Id);
+			if (!string.IsNullOrEmpty(deed.SpellUnlockId) && GlobalStatsManager.UnlockSpell(data, deed.SpellUnlockId))
+				spells++;
+			if (!string.IsNullOrEmpty(deed.BoonUnlockId) && GlobalStatsManager.UnlockBoon(data, deed.BoonUnlockId))
+				boons++;
+		}
+
+		int budget = FarmedArcane >= 0 ? FarmedArcane : FarmedArcaneOpening + FarmedArcanePerChapter * behind.Count;
+		int left = budget;
+		// The cheapest next level among the Powers above, again and again: a player spreads his Arcane
+		// rather than finishing one line, because every line's next level costs more than its last.
+		while (true)
+		{
+			int bestIndex = -1, bestCost = int.MaxValue;
+			for (int i = 0; i < FarmedPowers.Length; i++)
+			{
+				var (id, baseCost, step, cap) = FarmedPowers[i];
+				int level = data.ArcaneUpgradeLevels.TryGetValue(id, out int l) ? l : 0;
+				if (level >= cap)
+					continue;
+				int cost = baseCost + level * step;
+				if (cost <= left && cost < bestCost)
+				{
+					bestCost = cost;
+					bestIndex = i;
+				}
+			}
+			if (bestIndex < 0)
+				break;
+			string bought = FarmedPowers[bestIndex].Id;
+			data.ArcaneUpgradeLevels[bought] = (data.ArcaneUpgradeLevels.TryGetValue(bought, out int had) ? had : 0) + 1;
+			left -= bestCost;
+		}
+		metaLabel = $"farmed(road {behind.Count},arcane {budget})";
+		GD.Print($"HARNESS farmed save at {stage.DisplayName}: {behind.Count} chapters behind it, {spells} spells and {boons} boons from deeds,"
+			+ $" {budget - left} of {budget} Arcane on Powers: "
+			+ string.Join(", ", FarmedPowers.Select(p => $"{p.Id} {(data.ArcaneUpgradeLevels.TryGetValue(p.Id, out int n) ? n : 0)}")));
+	}
+
+	// THE HEALTH LEDGER: real health lost (after armour and shields, GameStats.RunHpLost) and the regen
+	// the player actually had (Player.RegenPerSecondNow - Emberheart, Grass, relics), in five-second
+	// buckets, so NeedMultiple can say what health a run needed. The shadow ledger above it uses raw
+	// damage and base regen only, and stays as it was so older reports compare.
+	private const float NeedBucketSeconds = 5f;
+	private readonly List<(float Lost, float Regen, float At)> needBuckets = new();
+	private float needBucketTime, needBucketRegen;
+	private int needLastHpLost, needLastHealed, needBaseHp, needLives = -1;
+	private readonly SortedDictionary<string, float> regenBySource = new();
+
+	// The healing ledger, for the report: regen by source (integrated in TickHealthLedger) and every
+	// Heal call by caller (GameStats.HealingBySource), per minute of play.
+	private IEnumerable<string> HealingLedgerLines()
+	{
+		float minutes = Math.Max(0.01f, elapsed / 60f);
+		yield return $"  healing      : offered, per minute of play ({GameStats.RunHealingOffered / minutes:0.0} from heals,"
+			+ $" {regenBySource.Values.Sum() / minutes:0.0} from regen; {GameStats.RunHpLost / minutes:0.0} HP lost a minute)";
+		foreach (var pair in regenBySource.Where(p => p.Value > 0.01f))
+			yield return $"    {pair.Key,-44} {pair.Value / minutes,7:0.0}/min";
+		foreach (var pair in GameStats.HealingBySource.OrderByDescending(p => p.Value))
+			yield return $"    {"heal: " + pair.Key,-44} {pair.Value / minutes,7:0.0}/min";
+	}
+
+	private string HealingSummary()
+	{
+		float minutes = Math.Max(0.01f, elapsed / 60f);
+		return $" healPerMin={GameStats.RunHealingOffered / minutes:0.0} regenPerMin={regenBySource.Values.Sum() / minutes:0.0}"
+			+ $" lostPerMin={GameStats.RunHpLost / minutes:0.0} baseHp={needBaseHp}";
+	}
+	private float bossArrivedAt = -1f, bossDownAt = -1f, bossFractionAtEnd = -1f;
+	private float hopelessAt = -1f;
+	private float overrunSince = -1f, overrunAt = -1f;
+
+	private void TickHealthLedger(float delta)
+	{
+		if (finished || player == null || !IsInstanceValid(player) || GetTree().Paused || delta <= 0f)
+			return;
+		if (needLives < 0)
+			needLives = player.ExtraLivesRemaining;
+		needBucketTime += delta;
+		needBucketRegen += player.RegenPerSecondNow * delta;
+		foreach (var (source, perSecond) in player.RegenBreakdown())
+			regenBySource[source] = (regenBySource.TryGetValue(source, out float had) ? had : 0f) + perSecond * delta;
+		if (needBucketTime >= NeedBucketSeconds)
+			FlushHealthBucket();
+		if (bossArrivedAt < 0f && Node2DGame.Current is Node2DGame g && g.BossFightActive)
+		{
+			bossArrivedAt = elapsed;
+			GD.Print($"HARNESS boss arrived at t={elapsed:0}s ({elapsed / 60f:0.0} min), level {player.CurrentLevel}");
+		}
+	}
+
+	private void FlushHealthBucket()
+	{
+		int lost = GameStats.RunHpLost - needLastHpLost;
+		needLastHpLost = GameStats.RunHpLost;
+		// Every heal offered in the bucket - pickups, lifesteal, relics, Marginalia - on top of the regen.
+		// Under --immortal the bar is always full, so the regen tick itself never calls Heal and is not
+		// counted twice.
+		int healed = GameStats.RunHealingOffered - needLastHealed;
+		needLastHealed = GameStats.RunHealingOffered;
+		needBuckets.Add((lost, needBucketRegen + healed, elapsed));
+		needBucketTime = 0f;
+		needBucketRegen = 0f;
+		if (StopNeed > 0f && Survivor && Immortal && hopelessAt < 0f && DiesAt(StopNeed) >= 0f)
+		{
+			hopelessAt = elapsed;
+			GD.Print($"HARNESS hopeless: x{StopNeed:0.#} health would have died by t={elapsed:0}s; ending the run");
+		}
+	}
+
+	/// <summary>Game seconds at which a player with <paramref name="multiple"/> times the wizard's health dies, or -1.</summary>
+	private float DiesAt(float multiple)
+	{
+		if (needBaseHp <= 0)
+			return -1f;
+		float full = needBaseHp * multiple;
+		float hp = full;
+		int lives = Math.Max(0, needLives);
+		foreach (var (lost, regen, at) in needBuckets)
+		{
+			hp -= lost;
+			if (hp <= 0f)
+			{
+				if (lives <= 0)
+					return at;
+				lives--;
+				hp = full * 0.5f;
+			}
+			hp = Math.Min(full, hp + regen);
+		}
+		return -1f;
+	}
+
+	/// <summary>
+	/// The least multiple of the wizard's starting health (Vitality included) that lives through the
+	/// whole run as played, revives included. Survival only grows with health, so a bisection finds it.
+	/// </summary>
+	private float NeedMultiple()
+	{
+		if (needBaseHp <= 0 || needBuckets.Count == 0)
+			return 0f;
+		if (DiesAt(0.05f) < 0f)
+			return 0.05f;
+		float lo = 0.05f, hi = 400f;
+		if (DiesAt(hi) >= 0f)
+			return hi;
+		for (int i = 0; i < 40; i++)
+		{
+			float mid = 0.5f * (lo + hi);
+			if (DiesAt(mid) >= 0f) lo = mid; else hi = mid;
+		}
+		return hi;
+	}
+
+	private static readonly float[] NeedLadder = { 2f, 4f, 8f, 16f };
+
+	private string HealthLedgerSummary()
+	{
+		if (!Survivor || !Immortal || needBuckets.Count == 0)
+			return "";
+		string Cell(float k)
+		{
+			float at = DiesAt(k);
+			if (at < 0f)
+				return $"x{k:0}:-";
+			int level = levelReachedAt.Where(p => p.Value <= at).Select(p => p.Key).DefaultIfEmpty(1).Max();
+			return $"x{k:0}:{at / 60f:0.0}/L{level}";
+		}
+		return $" need=x{NeedMultiple():0.0} dies=[{string.Join(",", NeedLadder.Select(Cell))}]";
+	}
+
+	private string BossSummary()
+	{
+		if (bossDownAt >= 0f)
+			return $"down@{bossDownAt / 60f:0.0}";
+		if (bossArrivedAt < 0f)
+			return "-";
+		return $"up{(bossFractionAtEnd >= 0f ? bossFractionAtEnd : 1f):0.00}";
+	}
+
+	private float BossFractionNow()
+	{
+		float sum = 0f;
+		int n = 0;
+		foreach (Node node in EnemyRegistry.Snapshot)
+		{
+			if (node is BossEnemy boss && IsInstanceValid(boss))
+			{
+				sum += boss.BossHealthFraction;
+				n++;
+			}
+		}
+		return n == 0 ? -1f : sum / n;
 	}
 
 	// --- the pace ledger: one row per game minute --------------------------------------
@@ -2096,6 +2419,9 @@ public partial class _BalanceHarness : Node
 	private const string BanAction = "!ban:";
 	private const string SkipAction = "!skip";
 	private int rerollsUsed, bansUsed;
+	// Rerolls are the run's pool now (Player.RerollsRemaining): the planned policies spend at most this
+	// many on one level-up, so ten do not all go on the first hand that disappoints.
+	private const int PlannedRerollsPerLevelUp = 2;
 	// Counted here as well as read from the bar, so a bar that is not refreshed after a use can
 	// never make the bot spend a charge the game will refuse, forever.
 	private int rerollsThisLevel;
@@ -2326,6 +2652,10 @@ public partial class _BalanceHarness : Node
 			+ $" maxFrameMs={(paceLedger.Count > 0 ? paceLedger.Max(r => r.FrameMs) : 0f):0}"
 			+ $" maxPressure={(paceLedger.Count > 0 ? paceLedger.Max(r => r.Pressure) : 0f):0.00}"
 			+ $" folds={paceLedger.Sum(r => r.Folds)} round={paceLedger.Sum(r => r.SentRound)}{ShadowSummary()}"
+			+ $" meta={metaLabel} boss={BossSummary()} overrun={(overrunAt < 0f ? "-" : $"{overrunAt / 60f:0.0}")}"
+			+ $" at15={(levelReachedAt.Count == 0 ? 0 : levelReachedAt.Where(p => p.Value <= 900f).Select(p => p.Key).DefaultIfEmpty(1).Max())}"
+			+ $"{HealthLedgerSummary()}{HealingSummary()}"
+			+ $" ascOffered={(ascensionFirstOfferedAt.Count == 0 ? "-" : $"{ascensionFirstOfferedAt.Values.Min() / 60f:0.0}")}"
 			+ $" ascensions={ascensionsTaken.Count} at=[{string.Join(",", ascensionsTaken.Select(a => $"{a.At / 60f:0.0}"))}]"
 			+ $" apotheosis={(apotheosisTakenAt < 0f ? "-" : $"{apotheosisTakenAt / 60f:0.0}")}"
 			+ $" level={player?.CurrentLevel ?? 0} L10={Level(10)} L17={Level(17)} L20={Level(20)} L23={Level(23)} L26={Level(26)} L29={Level(29)}"
@@ -2569,7 +2899,7 @@ public partial class _BalanceHarness : Node
 		if (!player.IsSpellBookFull && best.IsNewUnlock && !best.IsBoon && bestValue >= 105)
 			return Choose(best);
 		if (finishing != null && charges != null && charges.Rerolls > 0
-			&& rerollsThisLevel < Math.Max(1, player.RerollsPerLevelUp)
+			&& rerollsThisLevel < PlannedRerollsPerLevelUp
 			&& (player.UpgradesOnOfferThisLevelUp || player.IsSpellBookFull))
 		{
 			rerollsThisLevel++;
@@ -2588,7 +2918,7 @@ public partial class _BalanceHarness : Node
 				if (offPlan != null)
 					return BanAction + offPlan.SpellId;
 			}
-			if (charges.Rerolls > 0 && rerollsThisLevel < Math.Max(1, player.RerollsPerLevelUp))
+			if (charges.Rerolls > 0 && rerollsThisLevel < PlannedRerollsPerLevelUp)
 			{
 				rerollsThisLevel++;
 				return RerollAction;
@@ -2713,6 +3043,9 @@ public partial class _BalanceHarness : Node
 
 	private void Finish(string why)
 	{
+		if (needBucketTime > 0f && player != null && IsInstanceValid(player))
+			FlushHealthBucket();
+		bossFractionAtEnd = BossFractionNow();
 		finished = true;
 		foreach (string a in MoveActions)
 			Input.ActionRelease(a);
@@ -2758,6 +3091,7 @@ public partial class _BalanceHarness : Node
 			$"  stage        : {Global.SelectedStageIdx}; spawned " + string.Join(", ", spawnedByType.Select(p => $"{p.Key} {p.Value}")),
 		};
 		lines.AddRange(DropLedger());
+		lines.AddRange(HealingLedgerLines());
 		if (PickEvery > 1)
 			lines.Add($"  weak picks   : took one level-up in {PickEvery}; skipped {weakSkips} of {weakLevelUpsSeen}");
 		lines.AddRange(PaceLedgerLines());

@@ -852,12 +852,13 @@ bought in the shop, so a player who buys none sees exactly the screen the game s
 
 | charge | scope | what it does |
 |---|---|---|
-| Reroll (*Fate Fracture*) | **per level-up** | new cards |
+| Reroll (*Fate Fracture*) | **per run** (2 a level, 10 at the cap) | new cards |
 | Ban (*Proscription*) | per run | strikes a spell from the offer pool for the rest of the run |
 
-**Rerolls refill every level-up; bans do not.** That is the whole reason they feel different. A
-reroll costs nothing to hold, so it is a tactical button. A ban comes out of a pool that never comes
-back, so spending one is a decision about the run.
+**Both are a pool for the run since 2026-10-31** (Eric: "rerolls/bans/etc should be per run, not per
+level up"). Rerolls used to refill at every level-up - about 160 a run at the cap, no limit at all; now
+a reroll is a decision about the run, as a ban always was. Prices and the refund of what was bought:
+`.ai/difficulty-curve.md`, section 7. **Skip pays half the XP bar** (section 8 there).
 
 - **A ban does not cost the player their pick.** The struck spell leaves the pool and the offer is
   rebuilt, so they still choose from a full set of cards that level. Banning the same spell twice

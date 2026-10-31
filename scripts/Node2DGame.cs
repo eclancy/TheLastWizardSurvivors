@@ -369,7 +369,6 @@ public partial class Node2DGame : Node2D
 	private const float HealthHudHeight = 44f;
 	private ProgressBar? healthHudBar;
 	private ProgressBar? shieldHudBar;
-	private Label? healthHudLabel;
 
 	// Boss phase. The run timer stops at TimerVictorySeconds and the stage's boss walks in; killing
 	// it is what wins the level. Stages with no BossCatalog entry still end on the timer instead.
@@ -519,6 +518,7 @@ public partial class Node2DGame : Node2D
 		// Before anything is placed: the terrain, the side event and the secrets all ask hook 3.
 		CreateChapterRules();
 		ApplyBalancePresetFromSave();
+		ApplyChapterDifficulty();
 		// After the preset, which scales the burst window itself, so the two compose.
 		MaxEnemies = Mathf.RoundToInt(MaxEnemies * WideViewEnemyCapScale);
 		MaxSpawnsPerBurstWindow = Mathf.RoundToInt(MaxSpawnsPerBurstWindow * WideViewEnemyCapScale);
@@ -881,20 +881,10 @@ public partial class Node2DGame : Node2D
 		shieldHudBar.AddThemeStyleboxOverride("fill", new StyleBoxFlat { BgColor = new Color(0.722f, 0.784f, 0.863f, 1f) });
 		root.AddChild(shieldHudBar);
 
-		healthHudLabel = new Label
-		{
-			Name = "HealthLabel",
-			HorizontalAlignment = HorizontalAlignment.Center,
-			VerticalAlignment = VerticalAlignment.Center,
-			MouseFilter = Control.MouseFilterEnum.Ignore
-		};
-		healthHudLabel.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		ResponsiveLayout.SetFont(healthHudLabel, ResponsiveLayout.TextRole.Micro);
-		healthHudLabel.AddThemeColorOverride("font_color", new Color(1f, 0.94f, 0.86f));
-		healthHudLabel.AddThemeColorOverride("font_outline_color", new Color(0f, 0f, 0f, 0.9f));
-		healthHudLabel.AddThemeConstantOverride("outline_size", 5);
-		root.AddChild(healthHudLabel);
-
+		// No number on the bar (Eric, 2026-10-31: "remove number from health bar"). It read "17 / 20" and
+		// made health a sum to keep; the bar alone makes it a quantity to watch, which is what it is now
+		// that most damage stays taken (.ai/difficulty-curve.md, section 5). The shield strip keeps its
+		// own length. Phone and PC share this one HUD.
 		UpdatePlayerHealthHud();
 	}
 
@@ -911,15 +901,6 @@ public partial class Node2DGame : Node2D
 			shieldHudBar.Visible = shield > 0;
 			shieldHudBar.MaxValue = Math.Max(1, player.MaxHP);
 			shieldHudBar.Value = Mathf.Clamp(shield, 0, player.MaxHP);
-		}
-		if (healthHudLabel != null)
-		{
-			// Called every frame, so the label is only touched when a number moved.
-			string text = shield > 0
-				? $"{Math.Max(0, player.CurrentHP)} / {player.MaxHP}  +{shield} shield"
-				: $"{Math.Max(0, player.CurrentHP)} / {player.MaxHP}";
-			if (healthHudLabel.Text != text)
-				healthHudLabel.Text = text;
 		}
 	}
 
@@ -3520,7 +3501,9 @@ public partial class Node2DGame : Node2D
 		{
 			// Show the menu first
 			levelUpMenu.Show();
-			rerollsRemainingForCurrentLevelUp = player?.RerollsPerLevelUp ?? 0;
+			// Rerolls are the run's pool now (Player.RerollsRemaining), not refilled here: Eric, 2026-10-31,
+			// "rerolls/bans/etc should be per run, not per level up" (.ai/difficulty-curve.md, section 7).
+			rerollsRemainingForCurrentLevelUp = player?.RerollsRemaining ?? 0;
 
 			int optionCount = player?.IsPlaytestModeEnabled == true ? 4 : 3;
 			// Once per level-up, here and never in ReofferLevelUpOptions: whether upgrades to held
@@ -3554,10 +3537,10 @@ public partial class Node2DGame : Node2D
 		if (player == null || levelUpMenu is not LevelUpMenu typedMenu)
 			return;
 
-		if (rerollsRemainingForCurrentLevelUp <= 0)
+		if (!player.TrySpendReroll())
 			return;
 
-		rerollsRemainingForCurrentLevelUp--;
+		rerollsRemainingForCurrentLevelUp = player.RerollsRemaining;
 		GameStats.RecordRerollUsed();
 		ReofferLevelUpOptions();
 	}
@@ -3668,10 +3651,14 @@ public partial class Node2DGame : Node2D
 		CloseLevelUpMenu();
 	}
 
+	// A skip pays half the bar the player has just started (Eric, 2026-10-31: "skip should give you 50% of
+	// your exp bar when you choose it"). Closed first: if the half fills the bar, the next level-up then
+	// opens as any level-up does, rather than queueing behind the one being skipped.
 	private void OnSkipRequested()
 	{
 		GameStats.RecordSkipUsed();
 		CloseLevelUpMenu();
+		player?.GrantXpBarFraction(Player.SkipXpBarFraction);
 	}
 
 	private static int GetSpellLevel(Player owner, string spellId)
@@ -5550,7 +5537,7 @@ public partial class Node2DGame : Node2D
 			typedEnemy.IsMiniBoss = selection.IsElite;
 			if (selection.IsElite)
 			{
-				typedEnemy.Health = Mathf.RoundToInt(typedEnemy.Health * EliteHealthMultiplier * presetElitePowerScale);
+				typedEnemy.Health = Mathf.RoundToInt(typedEnemy.Health * EliteHealthMultiplier * presetElitePowerScale * chapterElitePowerScale);
 				typedEnemy.Speed *= EliteSpeedMultiplier * Mathf.Lerp(1.0f, presetElitePowerScale, 0.55f);
 				typedEnemy.Scale *= EliteScaleMultiplier;
 				typedEnemy.IsMiniBoss = true;
@@ -5674,7 +5661,7 @@ public partial class Node2DGame : Node2D
 			// Scales with run length the same way ordinary spawns do, so a late Warden is still
 			// a threat rather than a speed bump.
 			float minutesElapsed = PaceMinutes;
-			typedWarden.Health = Mathf.RoundToInt(typedWarden.Health * (1f + minutesElapsed * 0.22f) * presetElitePowerScale);
+			typedWarden.Health = Mathf.RoundToInt(typedWarden.Health * (1f + minutesElapsed * 0.22f) * presetElitePowerScale * chapterElitePowerScale);
 			// The run's recurring miniboss always carries a chest: four a run, at 5:15, 8:00, 10:45
 			// and 13:30. (Rockem in the Sketchbook, the same slot.)
 			typedWarden.ChestSource = ChestSourceWarden;
@@ -6304,7 +6291,7 @@ public partial class Node2DGame : Node2D
 		{
 			RunEvents.RecordChestOpened();
 			RunEvents.RecordChestItem(itemId);
-			player.Heal(4);
+			// A chest no longer heals 4 (.ai/difficulty-curve.md, section 5): what is in it is the reward.
 			// Vaultguard's set bonus keys off a chest actually being opened, so it fires here
 			// rather than once when the set completed. Called after AddChestItem so the chest
 			// that finishes the set also pays out.
@@ -6673,6 +6660,29 @@ public partial class Node2DGame : Node2D
 		return interval * presetEliteIntervalScale;
 	}
 
+	// THE CHAPTER'S DIFFICULTY (.ai/difficulty-curve.md, section 4): ChapterDifficultyCatalog's row,
+	// multiplied into what the preset set, so a hardcore Emberdeep is both. Health and the elite cadence
+	// ride the preset's own fields, so every reader of those already sees it; elite power and enemy
+	// damage have readers of their own (chapterElitePowerScale, EnemyDamageScale). The boss is
+	// BossCatalog's. A Boss Rush plays its own tuning (BossRushHealthScale) and is left alone.
+	private float chapterElitePowerScale = 1f;
+
+	/// <summary>Every hit an enemy lands is multiplied by this (Enemy.ScaleOutgoingDamage). 1 outside a chapter.</summary>
+	public float EnemyDamageScale { get; private set; } = 1f;
+
+	private void ApplyChapterDifficulty()
+	{
+		if (Global.BossRush)
+			return;
+		ChapterDifficulty chapter = ChapterDifficultyCatalog.For(StageCatalog.GetByIndex(Global.SelectedStageIdx)?.Id);
+		presetSpawnHealthScale *= chapter.EnemyHealth;
+		presetEliteIntervalScale *= chapter.EliteInterval;
+		chapterElitePowerScale = chapter.ElitePower;
+		EnemyDamageScale = Mathf.Max(1f, chapter.EnemyDamage);
+		GD.Print($"Chapter difficulty: health x{chapter.EnemyHealth:0.00}, damage x{EnemyDamageScale:0.00},"
+			+ $" elite interval x{chapter.EliteInterval:0.00}, elite power x{chapter.ElitePower:0.00}");
+	}
+
 	private void ApplyBalancePresetFromSave()
 	{
 		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
@@ -6868,6 +6878,19 @@ public partial class Node2DGame : Node2D
 			// totals earned, then what the boss opened, then the paths the run revealed.
 			runUnlocks.Entries.InsertRange(0, runDiscoveryEntries);
 			ApplyBossVictoryUnlocks(saveManager.Data, result, runUnlocks);
+			// The run that teaches the Ascension says so (.ai/difficulty-curve.md, section 6): the player
+			// started it unlearned, and the save is learned now - the Hayward has fallen.
+			if (player != null && IsInstanceValid(player) && !player.AscensionLearned
+				&& GlobalStatsManager.HasLearnedAscension(saveManager.Data))
+			{
+				runUnlocks.Entries.Add(new RunUnlockEntry
+				{
+					Kind = RunUnlockKind.Ascension,
+					Id = "ascension_learned",
+					Name = "Ascension",
+					Source = "A spell at level 7 may now ascend",
+				});
+			}
 			runUnlocks.Entries.AddRange(runRevealedAscensions);
 			RecordBossRush(saveManager.Data, outcome);
 			saveManager.SaveGame();

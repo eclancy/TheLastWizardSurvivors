@@ -164,9 +164,33 @@ public partial class Player : CharacterBody2D
 	// spells, so there is only one group left to share the draw.)
 	[Export] public float UpgradeOfferShare { get; set; } = 0.75f;
 
-	[Export] public int MaxHP { get; set; } = 20;
-	[Export] public int CurrentHP { get; set; } = 20;
-	[Export] public float BaseHealthRegenPerSecond { get; set; } = 0.25f;
+	// THE HEALING BUDGET (.ai/difficulty-curve.md, section 5). Eric, 2026-10-31: "player should have more
+	// health, but there should be a lot less sources of getting health back. the game is too easy to
+	// survive because damage is so impermanent right now." Measured, a fresh Forest run was offered three
+	// times the health it lost, and a farmed Emberdeep run 200 HP a minute against none. So the bar is
+	// two and a half times longer (20 -> 50), nothing heals by itself any more (the base 0.25 a second is
+	// gone), and every source a player takes - Grass, Light, Emberheart, relics, a boon, a flask - pays a
+	// fraction of what it did. Every number is one of the constants below, so the cards that state them
+	// (ElementPassiveDescriptions, ChestItemCatalog, BoonCatalog, the shop) read the same ones.
+	[Export] public int MaxHP { get; set; } = 50;
+	[Export] public int CurrentHP { get; set; } = 50;
+	[Export] public float BaseHealthRegenPerSecond { get; set; } = 0f;
+	/// <summary>Emberheart, the shop's regeneration: HP a second per level (it was 0.4).</summary>
+	public const float EmberheartRegenPerLevel = 0.05f;
+	/// <summary>The Frostweaver's starting passive, "health_regen_0_5" by its old id (it was 0.5 a second).</summary>
+	public const float FrostweaverRegenPerSecond = 0.15f;
+	/// <summary>Grass's tier bonus, HP a second at tier 2 / 4 / 6 (it was 1 / 2 / 4).</summary>
+	public const float GrassRegenTier2 = 0.1f, GrassRegenTier4 = 0.2f, GrassRegenTier6 = 0.4f;
+	/// <summary>Light's tier bonus, the share of spell damage healed at tier 2 / 4 / 6 (it was 3 / 6 / 10%).</summary>
+	public const float LightHealTier2 = 0.005f, LightHealTier4 = 0.01f, LightHealTier6 = 0.015f;
+	/// <summary>Light heals at most this much a second, whatever it hits: 3% of 30,000 damage a minute was 900.</summary>
+	public const int LightHealPerSecondCap = 1;
+	/// <summary>The Heart of Renewal relic, HP a second (it was 0.8).</summary>
+	public const float HeartOfRenewalRegenPerSecond = 0.15f;
+	/// <summary>The Essence Chalice heals 1 for each of this run's first N kills (it was 50).</summary>
+	public const int EssenceChaliceKillHeals = 15;
+	/// <summary>The Tithe Chalice set heals 1 HP every Nth kill (it was every kill).</summary>
+	public const int LifeDrainKillsPerHeal = 15;
 	private Dictionary<Node, float> enemyDamageCooldowns = new Dictionary<Node, float>();
 	private const float DamageCooldownSeconds = 0.2f; // 12 frames at 60fps
 	private HashSet<Node> overlappingEnemies = new HashSet<Node>();
@@ -303,12 +327,56 @@ public partial class Player : CharacterBody2D
 	private float buffTimeRemaining = 0f;
 	private int magnetBonus = 0;
 	private int extraLives = 0;
-	public int RerollsPerLevelUp { get; private set; } = 0;
+	/// <summary>Revives left this run (Phoenix Oath, relics). Read by the balance harness's health ledger.</summary>
+	public int ExtraLivesRemaining => extraLives;
 
-	// Level-up charges (see scripts/LevelUpCharges.cs). Rerolls refill every level-up; bans are spent
-	// from a pool that lasts the whole run, which is what makes using one a decision. (Save and Augury
-	// were removed on 2026-10-28 and their shop levels refunded, SaveData schema 18.)
+	/// <summary>
+	/// Every health-per-second source at this moment: base, the shop's Emberheart, Grass, passives,
+	/// relics, the Familiar's grant and the stance. One sum, so the tick that heals and the balance
+	/// harness's health ledger (.ai/difficulty-curve.md) cannot disagree about it.
+	/// </summary>
+	public float RegenPerSecondNow => BaseHealthRegenPerSecond + recoveryPerSecond + GetGrassRegenPerSecond()
+		+ GetPassiveSpellRegenPerSecond() + chestRegenPerSecond + familiarGrants.RegenPerSecond + GetStanceRegenPerSecond();
+	// Level-up charges (see scripts/LevelUpCharges.cs). Both are a pool for the whole run since 2026-10-31
+	// (Eric: "rerolls/bans/etc should be per run, not per level up"); rerolls used to refill at every
+	// level-up, five at the shop's cap, which was no limit at all. (Save and Augury were removed on
+	// 2026-10-28 and their shop levels refunded, SaveData schema 18.)
+	public int RerollsRemaining { get; private set; } = 0;
 	public int BansRemaining { get; private set; } = 0;
+
+	/// <summary>Rerolls a run gains for each level of Fate Fracture (the shop's "rerolls").</summary>
+	public const int RerollsPerFateFractureLevel = 2;
+
+	/// <summary>Spends one reroll from the run's pool. False when it is empty.</summary>
+	public bool TrySpendReroll()
+	{
+		if (RerollsRemaining <= 0)
+			return false;
+		RerollsRemaining--;
+		return true;
+	}
+
+	/// <summary>
+	/// Whether this save has been taught the Ascension (GlobalStatsManager.HasLearnedAscension, read when
+	/// the run starts). Until then no spell is offered its level 8 milestone, and so no Apotheosis either.
+	/// True without a save (the tool scenes that build a player bare).
+	/// </summary>
+	public bool AscensionLearned { get; private set; } = true;
+
+	/// <summary>The share of the XP bar a skipped level-up pays (Node2DGame.OnSkipRequested).</summary>
+	public const float SkipXpBarFraction = 0.5f;
+
+	/// <summary>
+	/// Pays <paramref name="fraction"/> of the bar the player is filling, straight into it: a share of the
+	/// bar rather than XP, so no XP multiplier touches it. Levels up at most once, as AddXp does.
+	/// </summary>
+	public void GrantXpBarFraction(float fraction)
+	{
+		int amount = Mathf.RoundToInt(CalculateXPForLevel(CurrentLevel) * Mathf.Clamp(fraction, 0f, 1f));
+		if (amount <= 0)
+			return;
+		BankXp(amount);
+	}
 
 	// Spells the player has struck off for the rest of the run.
 	private readonly HashSet<string> bannedSpellIds = new(StringComparer.OrdinalIgnoreCase);
@@ -447,7 +515,6 @@ public partial class Player : CharacterBody2D
 
 	// Vaultguard: "opening a chest grants a shield and heal" - granted per chest, not once.
 	[Export] public int VaultguardChestShield { get; set; } = 6;
-	[Export] public int VaultguardChestHeal { get; set; } = 6;
 
 	// The Brazier (set id "emberline"): a brazier burns hotter the longer it is tended. While the
 	// player stands still (TickStandStill) its heat climbs from cold to full over
@@ -715,7 +782,8 @@ public partial class Player : CharacterBody2D
 				damageMultiplier *= 1.10f;
 				return true;
 			case "health_regen_0_5":
-				recoveryPerSecond += 0.5f;
+				// The id is the save's and the character file's; the amount is the healing budget's.
+				recoveryPerSecond += FrostweaverRegenPerSecond;
 				return true;
 			case "armor_10":
 				characterArmorPercent += 0.10f;
@@ -773,7 +841,7 @@ public partial class Player : CharacterBody2D
 		IsPlaytestModeEnabled = saveManager.Data.PlaytestModeEnabled;
 
 		damageMultiplier = 1.0f + (damageLevel * 0.08f);
-		recoveryPerSecond = recoveryLevel * 0.4f;
+		recoveryPerSecond = recoveryLevel * EmberheartRegenPerLevel;
 		cooldownMultiplier = MathF.Max(0.35f, 1.0f - (cooldownLevel * 0.05f));
 		areaMultiplier = 1.0f + (areaLevel * 0.08f);
 		attackSpeedMultiplier = 1.0f + (attackSpeedLevel * 0.06f);
@@ -784,10 +852,12 @@ public partial class Player : CharacterBody2D
 			growthMultiplier *= 1.75f;
 		magnetBonus = magnetLevel * 20;
 		extraLives = extraLivesLevel;
-		RerollsPerLevelUp = rerollsLevel + (IsPlaytestModeEnabled ? 1 : 0);
+		// The run's pools, filled once here and never refilled (.ai/difficulty-curve.md, section 7).
+		RerollsRemaining = rerollsLevel * RerollsPerFateFractureLevel + (IsPlaytestModeEnabled ? RerollsPerFateFractureLevel : 0);
 
 		saveManager.Data.ArcaneUpgradeLevels.TryGetValue("bans", out int bansLevel);
 		BansRemaining = bansLevel;
+		AscensionLearned = GlobalStatsManager.HasLearnedAscension(saveManager.Data);
 
 		float moveSpeedMultiplier = 1.0f + (moveSpeedLevel * 0.05f);
 		Speed *= moveSpeedMultiplier;
@@ -818,7 +888,7 @@ public partial class Player : CharacterBody2D
 				CurrentHP += 5;
 				break;
 			case "recovery":
-				recoveryPerSecond += 0.4f;
+				recoveryPerSecond += EmberheartRegenPerLevel;
 				break;
 			case "magnet":
 				magnetBonus += 20;
@@ -1766,12 +1836,18 @@ public partial class Player : CharacterBody2D
 	{
 		return GetElementTier(Element.Light) switch
 		{
-			6 => 0.10f,
-			4 => 0.06f,
-			2 => 0.03f,
+			6 => LightHealTier6,
+			4 => LightHealTier4,
+			2 => LightHealTier2,
 			_ => 0.0f
 		};
 	}
+
+	// Light's heal, banked so a small share of a small hit still counts, and paid at most
+	// LightHealPerSecondCap a second: a build dealing 30,000 a minute was healed 900 a minute at 3%.
+	private float lightHealBank;
+	private float lightHealCooldown;
+	private int lifeDrainKills;
 
 	// Called by damage-dealing spells after they hit an enemy, so the Light element can heal
 	// the player for a percentage of damage dealt (see issue #16).
@@ -1784,9 +1860,13 @@ public partial class Player : CharacterBody2D
 		if (healPercent <= 0.0f)
 			return;
 
-		int healAmount = Mathf.RoundToInt(damageDealt * healPercent);
-		if (healAmount > 0)
-			Heal(healAmount);
+		lightHealBank = Mathf.Min(lightHealBank + damageDealt * healPercent, LightHealPerSecondCap);
+		if (lightHealCooldown > 0f || lightHealBank < 1f)
+			return;
+		int healAmount = Math.Min(LightHealPerSecondCap, Mathf.FloorToInt(lightHealBank));
+		lightHealBank -= healAmount;
+		lightHealCooldown = 1f;
+		Heal(healAmount);
 	}
 
 	// --- Remaining elemental tier bonuses (issue #16), self-contained (no on-hit hook needed) ---
@@ -1879,9 +1959,9 @@ public partial class Player : CharacterBody2D
 	{
 		return GetElementTier(Element.Grass) switch
 		{
-			6 => 4.0f,
-			4 => 2.0f,
-			2 => 1.0f,
+			6 => GrassRegenTier6,
+			4 => GrassRegenTier4,
+			2 => GrassRegenTier2,
 			_ => 0.0f
 		};
 	}
@@ -2832,6 +2912,8 @@ public partial class Player : CharacterBody2D
 	public void Heal(int amount)
 	{
 		int adjustedAmount = Math.Max(0, Mathf.RoundToInt(amount * (1.0f + chestHealingBonusPercent)));
+		if (GameStats.TrackHealing)
+			GameStats.RecordHealing(HealCallerName(), adjustedAmount);
 		int headroom = Math.Max(0, MaxHP - CurrentHP);
 		int applied = Math.Min(headroom, adjustedAmount);
 		CurrentHP += applied;
@@ -2843,6 +2925,39 @@ public partial class Player : CharacterBody2D
 		if (wasted > 0 && ownedChestItems.Contains(ChestItemCatalog.VialOfVitality))
 			AddOverhealShield(wasted);
 
+	}
+
+	// The first frame above Heal that is not the engine's interop: "HealthPickup._OnBodyEntered",
+	// "Player.TakeMarginalia". Harness-only (GameStats.TrackHealing) - a stack walk per heal is no cost
+	// a game should pay.
+	private static string HealCallerName()
+	{
+		var trace = new System.Diagnostics.StackTrace(2, false);
+		foreach (System.Diagnostics.StackFrame frame in trace.GetFrames())
+		{
+			System.Reflection.MethodBase method = frame.GetMethod();
+			Type type = method?.DeclaringType;
+			if (type == null || (type.Namespace ?? string.Empty).StartsWith("Godot", StringComparison.Ordinal))
+				continue;
+			// Lambdas and iterators sit in compiler-made nested types; name their outer class.
+			while (type.DeclaringType != null && type.Name.Contains('<'))
+				type = type.DeclaringType;
+			string name = method.Name.Contains('<') ? method.Name.Split('>')[0].TrimStart('<') : method.Name;
+			return $"{type.Name}.{name}";
+		}
+		return "unknown";
+	}
+
+	/// <summary>Each source of health per second right now, for the harness's healing ledger.</summary>
+	public IEnumerable<(string Source, float PerSecond)> RegenBreakdown()
+	{
+		yield return ("regen: base", BaseHealthRegenPerSecond);
+		yield return ("regen: Emberheart, boons, found levels", recoveryPerSecond);
+		yield return ("regen: Grass tier", GetGrassRegenPerSecond());
+		yield return ("regen: passive spells", GetPassiveSpellRegenPerSecond());
+		yield return ("regen: relics", chestRegenPerSecond);
+		yield return ("regen: the Familiar's grant (Purr)", familiarGrants.RegenPerSecond);
+		yield return ("regen: Taproot stance", GetStanceRegenPerSecond());
 	}
 
 	// Overheal ADDS to the pool, up to OverhealShieldCap - unlike AddShield, which refreshes the pool
@@ -3013,7 +3128,7 @@ public partial class Player : CharacterBody2D
 			case ChestItemCatalog.HeartOfRenewal:
 				// Regeneration only. Aegis Crown is the maximum-health item; this one used to be
 				// that as well, which left the pair indistinguishable except by size.
-				chestRegenPerSecond += 0.8f;
+				chestRegenPerSecond += HeartOfRenewalRegenPerSecond;
 				break;
 			case ChestItemCatalog.Phylactery:
 				chestPhylacteryActive = true;
@@ -3246,8 +3361,9 @@ public partial class Player : CharacterBody2D
 		if (!completedChestSets.Contains(ChestItemCatalog.VaultguardSetId))
 			return;
 
+		// The shield only since the healing budget (.ai/difficulty-curve.md, section 5): it healed 6 a
+		// chest as well, and a shield is the set's own word for keeping damage off.
 		AddShield(VaultguardChestShield);
-		Heal(VaultguardChestHeal);
 	}
 
 	// --- Standing still ---------------------------------------------------------------------
@@ -3413,13 +3529,14 @@ public partial class Player : CharacterBody2D
 
 	private void OnChestEnemyKilled()
 	{
-		if (ownedChestItems.Contains(ChestItemCatalog.EssenceChalice) && chestEssenceChaliceKills < 50)
+		if (ownedChestItems.Contains(ChestItemCatalog.EssenceChalice) && chestEssenceChaliceKills < EssenceChaliceKillHeals)
 		{
 			chestEssenceChaliceKills++;
 			Heal(1);
 		}
 
-		if (completedChestSets.Contains(ChestItemCatalog.LifeDrainSetId))
+		// Every kill used to heal: 80 HP a minute in the one measured run that assembled it.
+		if (completedChestSets.Contains(ChestItemCatalog.LifeDrainSetId) && ++lifeDrainKills % LifeDrainKillsPerHeal == 0)
 			Heal(1);
 	}
 
@@ -3614,6 +3731,8 @@ public partial class Player : CharacterBody2D
 
 		if (boonReactionCooldownRemaining > 0f)
 			boonReactionCooldownRemaining = Mathf.Max(0f, boonReactionCooldownRemaining - (float)delta);
+		if (lightHealCooldown > 0f)
+			lightHealCooldown -= (float)delta;
 
 		TickDistinctRelics((float)delta);
 
@@ -3653,8 +3772,7 @@ public partial class Player : CharacterBody2D
 			}
 		}
 
-		float effectiveRegenPerSecond = BaseHealthRegenPerSecond + recoveryPerSecond + GetGrassRegenPerSecond() + GetPassiveSpellRegenPerSecond() + chestRegenPerSecond + familiarGrants.RegenPerSecond
-			+ GetStanceRegenPerSecond();
+		float effectiveRegenPerSecond = RegenPerSecondNow;
 		if (effectiveRegenPerSecond > 0.0f && CurrentHP > 0 && CurrentHP < MaxHP)
 		{
 			recoveryAccumulator += effectiveRegenPerSecond * (float)delta;
@@ -6387,6 +6505,13 @@ public partial class Player : CharacterBody2D
 		xpFraction -= amount;
 		if (amount <= 0)
 			return;
+		BankXp(amount);
+	}
+
+	// Whole points into the bar, and the level-up they pay for: AddXp after its multipliers, and a skipped
+	// level-up's half bar (GrantXpBarFraction) as it is.
+	private void BankXp(int amount)
+	{
 		CurrentXP += amount;
 		RunXpGathered += amount;
 		if (CurrentXP >= XPToNextLevel)
@@ -6785,6 +6910,9 @@ public partial class Player : CharacterBody2D
 			if (spell.CurrentLevel != CardLevelCap(spell) || spell.CurrentLevel >= spell.MaxLevel)
 				continue;
 			if (CurrentLevel < AscensionMinimumPlayerLevel)
+				continue;
+			// Not until the Hayward has taught it (.ai/difficulty-curve.md, section 6).
+			if (!AscensionLearned)
 				continue;
 
 			var option = new LevelUpOption
@@ -7386,6 +7514,15 @@ public partial class Player : CharacterBody2D
 			});
 			if (CurrentLevel < AscensionMinimumPlayerLevel)
 				info.UnmetRequirements.Add($"Player level {AscensionMinimumPlayerLevel} ({CurrentLevel}/{AscensionMinimumPlayerLevel})");
+
+			// The campaign's gate, before any of the run's: a new save learns the Ascension from the
+			// Hayward (GlobalStatsManager.HasLearnedAscension). Listed only while unmet, so a save that
+			// has learned it never sees the line again.
+			if (!AscensionLearned)
+			{
+				info.Requirements.Insert(0, new AscensionRequirement { Kind = AscensionRequirementKind.Learned, Have = 0, Need = 1 });
+				info.UnmetRequirements.Insert(0, GlobalStatsManager.AscensionTeacherLine);
+			}
 
 			previews.Add(info);
 		}

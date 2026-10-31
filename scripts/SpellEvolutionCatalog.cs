@@ -607,7 +607,7 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Light", 1 } },
 			DisplayName = "Soul Siphon",
 			// SpiritualWeapon.Siphon, capped per second (SiphonPerSecond) the way Soul Drain is per cast.
-			Description = "Every strike heals you 1 HP, at most 3 HP a second.",
+			Description = $"Every strike heals you 1 HP, at most {SpiritualWeapon.SiphonPerSecond} HP a second.",
 			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
 			Effect = SpellEffect.Lifesteal,

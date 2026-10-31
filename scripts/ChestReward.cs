@@ -174,7 +174,7 @@ public partial class ChestReward : PickupBase
 			{
 				if (!string.IsNullOrWhiteSpace(ItemId))
 					player.AddChestItem(ItemId);
-				player.Heal(4);
+				// No heal on opening since the healing budget (.ai/difficulty-curve.md, section 5).
 				// Mirrors Node2DGame.OnChestItemSelected: this is the no-menu fallback path, and
 				// Vaultguard should pay out on either.
 				player.OnChestOpened();

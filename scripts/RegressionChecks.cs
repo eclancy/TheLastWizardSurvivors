@@ -59,6 +59,8 @@ public static class RegressionChecks
 		ValidateGateReachability(warnings);
 		ValidateAchievementMigration(warnings);
 		ValidateRetiredChargeRefund(warnings);
+		ValidateDifficultyMigration(warnings);
+		ValidateChapterDifficulty(warnings);
 		ValidateNoPixelsInText(warnings);
 		ValidateAudio(warnings);
 		ValidateMusic(warnings);
@@ -2347,6 +2349,86 @@ public static class RegressionChecks
 		none.Migrate(log: false);
 		if (none.TotalCurrency != 50)
 			warnings.Add($"Migration: schema 18 paid {none.TotalCurrency - 50} to a save that bought no retired charge.");
+	}
+
+	// Schema 20 (.ai/difficulty-curve.md, section 9), on sample saves:
+	//   - a save that has played runs keeps the Ascension (AscensionLearned), and one that never played
+	//     starts sealed like a new save;
+	//   - a save past the Fields is learned by the campaign alone, with no flag;
+	//   - Fate Fracture 5 and Emberheart 3 are refunded the price difference (425 + 75) and keep their levels;
+	//   - a second migration changes nothing.
+	private static void ValidateDifficultyMigration(List<string> warnings)
+	{
+		var played = new SaveData { SchemaVersion = 19, TotalCurrency = 10 };
+		played.Lifetime.TotalRuns = 3;
+		played.ArcaneUpgradeLevels["rerolls"] = 5;
+		played.ArcaneUpgradeLevels["recovery"] = 3;
+		played.Migrate(log: false);
+		// rerolls: sum over n<5 of (75+50n)-(40+25n) = 5x35 + 25x10 = 425; recovery: sum over n<3 of (30+20n)-(15+10n) = 45 + 30 = 75.
+		const int expected = 425 + 75;
+		if (!played.AscensionLearned || !GlobalStatsManager.HasLearnedAscension(played))
+			warnings.Add("Migration: schema 20 should keep the Ascension for a save that has played a run.");
+		if (played.TotalCurrency != 10 + expected || played.ArcaneUpgradeLevels["rerolls"] != 5 || played.ArcaneUpgradeLevels["recovery"] != 3)
+			warnings.Add($"Migration: schema 20 should refund {expected} for Fate Fracture 5 and Emberheart 3 and keep both levels;"
+				+ $" the purse is {played.TotalCurrency} (from 10).");
+		int purse = played.TotalCurrency;
+		played.Migrate(log: false);
+		if (played.TotalCurrency != purse)
+			warnings.Add("Migration: a second schema 20 migration paid the refund again.");
+
+		var unplayed = new SaveData { SchemaVersion = 19 };
+		unplayed.Migrate(log: false);
+		if (unplayed.AscensionLearned || GlobalStatsManager.HasLearnedAscension(unplayed))
+			warnings.Add("Migration: a save that never played a run should start with the Ascension sealed, as a new save does.");
+		if (GlobalStatsManager.HasLearnedAscension(new SaveData()))
+			warnings.Add("Ascension: a brand-new save has already learned it; the Hayward should teach it.");
+
+		var pastFields = new SaveData();
+		pastFields.UnlockedStageIds.Add("stage_2");
+		if (!GlobalStatsManager.HasLearnedAscension(pastFields))
+			warnings.Add("Ascension: a save with the Sunken Cave open has not learned it - a save past the Fields must have.");
+		var beatHayward = new SaveData();
+		StageDefinition teacher = StageCatalog.GetById(GlobalStatsManager.AscensionTeacherStageId);
+		BossDefinition hayward = teacher != null ? BossCatalog.ForStageIndex(teacher.Index) : null;
+		if (hayward == null)
+			warnings.Add($"Ascension: the teaching chapter {GlobalStatsManager.AscensionTeacherStageId} has no boss to teach it.");
+		else
+		{
+			beatHayward.Lifetime.BossesDefeated.Add(hayward.Id);
+			if (!GlobalStatsManager.HasLearnedAscension(beatHayward))
+				warnings.Add($"Ascension: beating {hayward.DisplayName} does not teach it.");
+		}
+	}
+
+	// The difficulty curve's table (.ai/difficulty-curve.md, section 4): every playable road chapter has a
+	// row; every multiplier is positive; enemy damage is never under 1 (under it a touch can roll nothing
+	// and read as a dodge) and never eases along the road; the first chapter is the easiest by health.
+	private static void ValidateChapterDifficulty(List<string> warnings)
+	{
+		float lastDamage = 1f;
+		ChapterDifficulty first = null;
+		foreach (StageDefinition stage in StageCatalog.Campaign)
+		{
+			if (!stage.IsPlayable)
+				continue;
+			ChapterDifficulty row = ChapterDifficultyCatalog.For(stage.Id);
+			if (ReferenceEquals(row, ChapterDifficultyCatalog.Neutral))
+			{
+				warnings.Add($"Difficulty: {stage.DisplayName} has no row in ChapterDifficultyCatalog.");
+				continue;
+			}
+			if (row.EnemyHealth <= 0f || row.EliteInterval <= 0f || row.ElitePower <= 0f)
+				warnings.Add($"Difficulty: {stage.DisplayName} has a multiplier at or under zero.");
+			if (row.EnemyDamage < 1f)
+				warnings.Add($"Difficulty: {stage.DisplayName}'s EnemyDamage {row.EnemyDamage} is under 1.");
+			if (row.EnemyDamage < lastDamage)
+				warnings.Add($"Difficulty: {stage.DisplayName}'s EnemyDamage {row.EnemyDamage} is under the chapter before it ({lastDamage}).");
+			lastDamage = Math.Max(lastDamage, row.EnemyDamage);
+			if (first == null)
+				first = row;
+			else if (row.EnemyHealth < first.EnemyHealth)
+				warnings.Add($"Difficulty: {stage.DisplayName}'s EnemyHealth is under the first chapter's.");
+		}
 	}
 
 	private static void ValidateCampaignMigration(List<string> warnings)

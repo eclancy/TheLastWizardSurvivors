@@ -55,7 +55,7 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 1. The seven vaults, then `main-ff86ni` into `main` and a release.
 2. The castle, by `.ai/endgame-castle.md` section 9.2: the Bridge's and the Court's casts (C6),
    the bosses (C5), the Throne (C4, after the Court's reader), the Dungeon's move into the castle
-   (C2, schema 20; it ships in the same release as the Bridge's flip), the world map's new places
+   (C2, schema 21 - the difficulty curve took 20; it ships in the same release as the Bridge's flip), the world map's new places
    (C8) and the castle's secrets (C9). Each chapter's `IsPlayable` flips last.
 3. The rest of the secrets catalogue, `.ai/achievements-and-secrets.md` section 8.
 
