@@ -1903,6 +1903,22 @@ rarely meets a tarn; `_BalanceHarness --stage=10 --spell=familiar --solo --immor
 Strikes and catches per hound-frame are unchanged within the runs' own spread (0.0129 / 0.0124 a frame
 walking south, 0.0138 / 0.0168 exploring), so the forms' numbers above stand.
 
+**The pack under an Ascension, and the pups (2026-10-30, 0.9.3).** Eric, of 0.9.2: *"when ascending hound
+familiar, it should only make the main hound into the full size legendary creature. littermates should
+produce two puppies instead of 2 of the same dog. The two puppies should also be affected by the ascension,
+but the sprite should just look like a similar-styled hellhound with one head, instead of the 3 headed
+cerberus. same goes for the other ascension. the main cerberus itself should be bigger."* Every hound used to
+wear the one look the spell resolved to. Now the first is the main hound and wears it (`Familiar.LookAt`);
+the rest wear `ResolvePackLook`: with **Littermates**, two **pups** (`familiar.pup`, the 32 cell - a big head
+and short legs on a round body, no hat), the fawn hound's before level 8, a one-headed hellpup under Cerberus
+and a white pup under the Hound of Annwn; **without it**, the level 3 hound under an Ascension is a one-headed
+hound of the Ascension at the hound's own 48 cell (`hellhound`, `annwn-hound`, and `-rime` after the Ice
+path). Every one still bites with the Ascension's power (three bites, double on an elite) - only the drawing
+differs, so no number moved. **Cerberus is on the 96 cell at 2.5** (was the 64 at 1.72), the one form on the
+boss cell, with two-pixel eyes, nostrils, fangs and claws and ember-tipped hackles drawn for that size
+(`Skin.detail`, `Skin.mane`); it heels half a cell further back and its jaws are 72 px out. The crow and the cat
+are unchanged.
+
 ## 2h. Phase 2 - the rest of the roster's evolutions (2026-10-29)
 
 Eric: *"lets make all mutations more unique per spell"*. Phase 1 (2e) rebuilt sixteen spells; phase 2 is
