@@ -1071,6 +1071,7 @@ public partial class LevelUpMenu
 			AscensionRequirementKind.Element => met
 				? string.Empty
 				: $"Needs {missing} more {requirement.Element} {(missing == 1 ? "tag" : "tags")}",
+			AscensionRequirementKind.Learned => met ? string.Empty : GlobalStatsManager.AscensionTeacherLine,
 			_ => string.Empty,
 		};
 

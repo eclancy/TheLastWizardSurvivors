@@ -7,7 +7,8 @@ using WizardSurvivors.scripts;
 // Light's warm ramp and rising rather than thrown outward (PickupFlourish.Kind.Mend).
 public partial class HealthPickup : PickupBase
 {
-	[Export] public int HealAmount { get; set; } = 10;
+	// 8 since the healing budget (.ai/difficulty-curve.md, section 5): it was 10 against a 20 HP bar.
+	[Export] public int HealAmount { get; set; } = 8;
 
 	protected override void OnPickedUp(Node player)
 	{

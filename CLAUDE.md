@@ -32,6 +32,14 @@ Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like)
   burst window); and the recipe, with worked 20- and 15-minute examples, for changing the run
   length. **Read it before changing the run length, the XP curve, the enemy cap, spawn rates or
   the Apotheosis/Ascension gates.**
+- `.ai/difficulty-curve.md` — how hard each chapter is and why: the per-chapter enemy health and
+  damage multipliers (`ChapterDifficulty`), boss health, the healing budget (50 max HP, no base
+  regen, every heal source cut and capped), the Ascension sealed until the Hayward is beaten, and
+  the harness flags (`--farmed`, `--stop-overrun`) that measured it. **Read it before adding a heal,
+  changing enemy or boss health, or moving the Ascension gate.**
+- `.ai/prologue.md` — the story-mode prologue: six generated panels (`tools/art/prologue.py`)
+  played before the first Start Run and from Options by `scripts/Prologue.cs`, gated by
+  `SaveData.HasSeenPrologue`. Read it before changing the story's opening or the Dark Wizard's look.
 - `.ai/terrain.md` — the three tile layers and why every cell carries a ground tile even under
   an overlay (it is what lets a shoreline fade into whatever surrounds it), the independent
   `hazard` and `blocking` flags, the four places that have to agree about a blocking terrain,
@@ -212,7 +220,7 @@ four disagreeing copies (`StageSelection`, `GameOverScreen`, two switches in `No
 `StageEnvironmentCatalog.GetForStageIndex`). Chapters with `IsPlayable = false` are listed but not
 enterable; flipping that is the last step of building one, not the first.
 
-`SaveData.CurrentSchemaVersion` is 19 and **`SaveData.Migrate()` is now real** — it runs from
+`SaveData.CurrentSchemaVersion` is 20 and **`SaveData.Migrate()` is now real** — it runs from
 `SaveManager.LoadGame`. Before 8 there was no migration at all. Any change that narrows what a save
 implicitly grants must add a migration step, or it silently confiscates content from existing
 players. Schema 11 added `SeenAscensionIds` — the ascension paths whose requirements the player
@@ -226,8 +234,10 @@ with the shop's in `Player.ApplyArcaneUpgrades`) and credits nothing; 18 refunds
 bought of the removed Save and Augury charges (`MigrateRetiredLevelUpCharges`); 19 moves every
 unlock onto achievements (`MigrateToAchievementUnlocks`: `GlimpsedSecretIds`, `LifetimeStats.EventsWon`,
 event deeds seeded from what the save owns, every done deed reconciled, the Emberdeep kept open for a
-save that met the old gate). Steps 8-16 read frozen schema-18 lists, never the live catalog, and
-`ValidateAchievementMigration` runs sample saves through all of it.
+save that met the old gate); 20 is the difficulty curve's (`AscensionLearned` for any save with a
+run on record, the re-priced Fate Fracture and Emberheart levels refunded,
+`ValidateDifficultyMigration`). The castle's planned Dungeon move takes 21. Steps 8-16 read frozen
+schema-18 lists, never the live catalog, and `ValidateAchievementMigration` runs sample saves through all of it.
 
 **A branch with a schema bump migrates the developer's REAL save the moment any Godot run in it
 loads it** - the MainMenu validator run included - and `SaveManager` writes the migrated save

@@ -71,13 +71,43 @@ public static class BoltEvolutions
 	public const float GroundswellStart = 0.6f;
 	public const float GroundswellEnd = 1.8f;
 
-	/// <summary>Tidal Wall: today's titanic wave, renamed (RiptideWave.TitanEvolutionId). Tituba's level 8.</summary>
+	/// <summary>Tidal Wall: the titanic wave (RiptideWave.TitanEvolutionId). Tituba's level 8.</summary>
+	/// <remarks>
+	/// "tidal wall starts too big, it should start small and grow as it moves away from you. it's also
+	/// firing far too fast" (Eric, 0.9.2). It was a wall three times a level 8 wave's width from the hand
+	/// on, every 1.25 s - three of them on the screen at once, the wizard under the nearest (measured
+	/// 2026-10-30: 47% of a PC screen at the peak, a third on average, his sprite covered 59% of the time).
+	/// Now it leaves the hand at the size a wave would be without the card (1 / TidalWallScale of its
+	/// full height) and rises to its full height by the end of its run, hit and drawing alike (the node's
+	/// scale is both, ElementalBolt.Growth), and the sea takes TidalWallCooldown times as long to gather:
+	/// one wall at a time, an event rather than a stream. Its damage a hit stayed at +60%: the three walls
+	/// were overkilling one pack, and at normal enemy health a wall this wide is limited by how many enemies
+	/// reach it, not by its hit - x1.6, x1.7 and x2.2 measured 491, 495 and 518 a second at level 8, against
+	/// the old wall's 552 the same day (.ai/spell-roster.md, 2i).
+	/// </remarks>
 	public const string TidalWallId = "riptide_titan_cataclysm";
+	/// <summary>The card's ScaleMultiplier: how many times a wave's width the wall is when it has risen.</summary>
+	public const float TidalWallScale = 3.0f;
+	/// <summary>The card's CooldownMultiplier: how much longer the sea takes to gather between walls.</summary>
+	public const float TidalWallCooldown = 3.0f;
+	/// <summary>The card's DamageMultiplier.</summary>
+	public const float TidalWallDamage = 1.6f;
 
 	/// <summary>Trident: three waves fanned from the hand at once, the middle one on the aim.</summary>
 	public const string TridentId = "riptide_infinite_horizon";
 	/// <summary>Degrees between neighbouring waves of the fan.</summary>
 	public const float TridentSpreadDegrees = 24f;
+	/// <remarks>
+	/// THE FAN, SCALED BACK (the Ascension audit, 2026-10-30, .ai/spell-roster.md 2i). Three waves each 40%
+	/// bigger every 0.625 s stood two fans on the screen at once: 34% of a PC screen at the peak and a
+	/// quarter on average, the wizard under the waves 61% of the time - the one Ascension past the audit's
+	/// line once Tidal Wall rose. Each wave is now the size a wave is (Breaker's 30% still grows it) and the
+	/// fan comes TridentCooldown of the cooldown rather than half, so one fan is out at a time; the hit
+	/// carries the difference.
+	/// </remarks>
+	public const float TridentScale = 1.0f;
+	public const float TridentCooldown = 0.7f;
+	public const float TridentDamage = 1.9f;
 
 	// --- Hunter's Draw: charge while moving, loose a volley when you stop ---
 

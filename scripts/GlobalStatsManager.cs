@@ -436,6 +436,47 @@ public static class GlobalStatsManager
 	/// opened list, which the schema 19 step writes for every save that had met the old gate, and being
 	/// past it - and takes <see cref="IsGateMet"/> in place of rule 3: its previous boss AND the wizards.
 	/// </remarks>
+	/// <summary>
+	/// The chapter whose boss teaches the Ascension: the Fallow Fields, the Hayward (.ai/difficulty-curve.md,
+	/// section 6). Eric: "ascensions shouldn't be easy to unlock at first".
+	/// </summary>
+	public const string AscensionTeacherStageId = "stage_9";
+
+	/// <summary>What the ascension browser says while the Ascension is not learned.</summary>
+	public static string AscensionTeacherLine
+	{
+		get
+		{
+			StageDefinition teacher = StageCatalog.GetById(AscensionTeacherStageId);
+			BossDefinition boss = teacher != null ? BossCatalog.ForStageIndex(teacher.Index) : null;
+			string name = boss?.DisplayName ?? "the Hayward";
+			if (name.StartsWith("The ", StringComparison.Ordinal))
+				name = "the " + name.Substring(4);
+			return $"Learned by defeating {name}";
+		}
+	}
+
+	/// <summary>
+	/// Whether the save has been taught the Ascension: it carries <see cref="SaveData.AscensionLearned"/>
+	/// (schema 20 sets it for every save with a run on record), or the chapter the teacher's boss opens is
+	/// earned - the boss beaten, that chapter written open, or a chapter past it opened. Derived rather
+	/// than written at the kill, so a save already past the Fields (some came past before the Fields
+	/// existed) is learned without a step of its own. Null (no save) is learned: tools build players bare.
+	/// </summary>
+	public static bool HasLearnedAscension(SaveData data)
+	{
+		if (data == null || data.AscensionLearned)
+			return true;
+		StageDefinition teacher = StageCatalog.GetById(AscensionTeacherStageId);
+		if (teacher == null || !teacher.IsPlayable)
+			return true;
+		StageDefinition next = StageCatalog.ChapterOpenedBy(teacher.Id);
+		if (next != null && IsStageEarned(data, next))
+			return true;
+		BossDefinition boss = BossCatalog.ForStageIndex(teacher.Index);
+		return boss != null && data.Lifetime != null && data.Lifetime.HasDefeatedBoss(boss.Id);
+	}
+
 	public static bool IsStageEarned(SaveData data, StageDefinition stage)
 	{
 		if (stage == null)

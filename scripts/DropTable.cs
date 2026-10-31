@@ -30,8 +30,10 @@ public static class DropTable
 	/// <summary>The bonus orb is the kill's orb times this: 2 x 8 = 16 XP, a medium orb.</summary>
 	public const int BonusOrbMultiplier = 8;
 
-	/// <summary>Per-kill chance of a health flask (10 HP), before Luck. Was a third of 3%.</summary>
-	public const float HealthFlaskChance = 0.004f;
+	/// <summary>Per-kill chance of a health flask (8 HP), before Luck. Was a third of 3%, then 0.4% until
+	/// the healing budget halved it (.ai/difficulty-curve.md, section 5): the flask is now the main thing a
+	/// run finds that heals, so it is a find, not an income.</summary>
+	public const float HealthFlaskChance = 0.002f;
 
 	/// <summary>
 	/// Per-kill chance of a speed potion, before Luck. Was a third of 3% - 52 in a measured run. About ten

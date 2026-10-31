@@ -955,7 +955,7 @@ public partial class MainMenu
 		return id switch
 		{
 			"damage" => ("Spell damage", Times(1f + l * 0.08f)),
-			"recovery" => ("Regen", $"{l * 0.4f:0.0} HP/sec"),
+			"recovery" => ("Regen", $"{l * Player.EmberheartRegenPerLevel * 60f:0} HP a minute"),
 			"cooldowns" => ("Cooldowns", Times(MathF.Max(0.35f, 1f - l * 0.05f))),
 			"area" => ("Area and range", Times(1f + l * 0.08f)),
 			"attack_speed" => ("Attack speed", Times(1f + l * 0.06f)),
@@ -966,7 +966,7 @@ public partial class MainMenu
 			"growth" => ("XP gain", Times(1f + l * 0.10f)),
 			"greed" => ("Arcane Energy", Times(1f + l * 0.10f)),
 			"extra_lives" => ("Revives per run", $"{l}"),
-			"rerolls" => ("Rerolls per level-up", $"{l}"),
+			"rerolls" => ("Rerolls per run", $"{l * Player.RerollsPerFateFractureLevel}"),
 			"bans" => ("Bans per run", $"{l}"),
 			"vitality" => ("Max HP", $"+{l * 5}"),
 			"luck" => ("Luck", $"+{l}"),

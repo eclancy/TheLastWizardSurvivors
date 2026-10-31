@@ -73,7 +73,7 @@ What the move costs, and how each cost is met:
 | cost | where it is resolved |
 |---|---|
 | the new order, and who opens what | 1.4 |
-| saves that had reached or passed the Dungeon | 1.5, schema 20 |
+| saves that had reached or passed the Dungeon | 1.5, schema 21 |
 | Tituba is freed there, and the final gate counts wizards | 1.6 |
 | the Dungeon's content in a castle | section 4 |
 | the hole at fifth place | 1.7 |
@@ -114,10 +114,12 @@ New and changed lines (`StageDefinition.CorruptionText`, under ten words; `Flavo
 - The Court: *"A court with no one left in it."*
 - The Throne: *"He is here."*
 
-### 1.5 The save: schema 20
+### 1.5 The save: schema 21
 
-A1 (`.ai/achievements-and-secrets.md`, section 3) takes schema 19. This is the next step,
-**`MigrateDungeonIntoCastle`, schema 20**. Whichever lands second renumbers and keeps both
+A1 (`.ai/achievements-and-secrets.md`, section 3) takes schema 19 and the difficulty curve
+(`.ai/difficulty-curve.md`, section 9: the Ascension taught by the Hayward, two Powers re-priced) takes
+20, because it shipped first and steps run in order. This is the next step,
+**`MigrateDungeonIntoCastle`, schema 21**. Whichever lands second renumbers and keeps both
 (`.ai/campaign.md`, decision 5).
 
 **Why a migration is needed at all.** The gate's three rules (`GlobalStatsManager.IsStageEarned`)
@@ -171,7 +173,7 @@ chapter opened on the road does put the save past everything before it, which is
 
 **What each kind of save gets:**
 
-| at schema 19 | after schema 20 |
+| at schema 19 | after schema 21 |
 |---|---|
 | reached the Cave, not the Dungeon | unchanged. The Choir now opens the Swamp |
 | **had the Dungeon open** (the Choir beaten), not the Gaoler | keeps the Dungeon (grandfathered), and **gains the Swamp**: the Choir opens it now, and the Dungeon is no longer in the way. Chapters 1 to 4 written down |
@@ -183,7 +185,7 @@ chapter opened on the road does put the save past everything before it, which is
 no sample short of the Emberdeep can enter any castle chapter after migrating; a win in a
 grandfathered Dungeon writes nothing to `UnlockedStageIds`; every chapter a sample could enter
 before, it can enter after; and a second migration changes nothing. `ValidateCampaignMigration`'s
-schema-12 samples are re-run through every step to 20 with their expectations updated for the move.
+schema-12 samples are re-run through every step to 21 with their expectations updated for the move.
 
 **Tool runs migrate the real save.** Pass `-- --no-save-writes` on every Godot run on these branches.
 
@@ -316,7 +318,7 @@ was. The Dungeon's move itself is C2's (section 9).
   one line and writes one file of its own. This is what keeps four agents out of `Node2DGame.cs`.
 - **`MusicCatalog`**: three planned sets with stand-ins (the Emberdeep's). The Dungeon keeps its own.
 - **`SideEventDirector`**: `null` lines for the three new chapters. The Dungeon keeps the Gaoler's key.
-- **Saves**: the new ids need no migration (they only add). The move needs schema 20 (1.5).
+- **Saves**: the new ids need no migration (they only add). The move needs schema 21 (1.5).
 
 ---
 
@@ -978,7 +980,7 @@ its own worktree**, each creating files and editing only blocks already marked a
 |---|---|---|---|
 | **C0 Plumbing** | 1.9 entire: the three new `StageCatalog` entries and their place in the order, `GateChapter`, the validator's campaign rule, `BossRushCatalog.Arena`, `BossCatalog` `[11]`-`[13]` on stand-ins, the Bridge's and the Court's rosters, environment and palette blocks, the two topology partials as stubs, per-chapter wall art lookup, `ChapterRules` and its seven hooks in `Node2DGame`, `ChapterRulesCatalog`, music and side-event stubs, and the Throne's wizard gate value | `StageCatalog.cs` (new entries), `BossCatalog.cs` (new blocks), `BossRushCatalog.cs` (`Arena`), `StageBestiary.Bridge.cs`, `StageBestiary.Court.cs`, `StageEnvironmentCatalog.cs`, `LevelGenerator.cs` (+ partial stubs), `LevelTilePainter.cs` (wall lookup only), `Node2DGame.cs` (hook calls only), `ChapterRules.cs`, `ChapterRulesCatalog.cs`, `MusicCatalog.cs`, `SideEventDirector.cs`, `RegressionChecks.cs` (campaign rules) | **A1 merged** (the gate kind, per gate chapter) |
 | **C1 The Last Bridge** | section 3: the `Band` topology, `BridgeRules` (front, spawns, boss point, gate, objective line), `BridgeCollapseFront`, `BridgeBackdrop`, the bridge's art | `LevelGenerator.Band.cs`, `BridgeRules.cs`, `BridgeCollapseFront.cs`, `BridgeBackdrop.cs`; `terrain_bridge.py`, `props_bridge.py`, `detail_bridge.py`, `bridge_backdrop.py`; **the `abyss` block in `water.py`**; its environment block; its line in `ChapterRulesCatalog` | C0 |
-| **C2 The Dungeon moves in** | 1.4-1.8 and section 4: the Dungeon's line moved in `CampaignOrder`; schema 20 and `GrandfatheredStageIds` (1.5); the road rules in `IsStageEarned`/`IsStageAvailable`; the victory guard; Boss Rush held (`RoadOrder`, `IsOpen`, `BossRushHealth`); the Gaoler's retune; the Dungeon's text and the stair prop; the locked hints that name who is missing; `ValidateDungeonMove` and `ValidateCampaignMigration`'s updated expectations | `StageCatalog.cs` (the order's `stage_1` line, the `stage_1` entry's text, `LockedHintFor`), `GlobalStatsManager.cs` (stage rules), `SaveData.cs` (the schema 20 step and field), `BossRushCatalog.cs` (`RoadOrder`, `IsOpen`), `BossCatalog.cs` (the `[1]` block, `BossRushHealth`), `Node2DGame.cs` (`ApplyBossVictoryUnlocks` only), `RegressionChecks.cs` (its two validators), `tools/art/props_dungeon.py` (new: the stair) | C0 and A1 merged. **Merges in the same release as the Bridge's flip**, and after V2 (and ideally V1) |
+| **C2 The Dungeon moves in** | 1.4-1.8 and section 4: the Dungeon's line moved in `CampaignOrder`; schema 21 and `GrandfatheredStageIds` (1.5); the road rules in `IsStageEarned`/`IsStageAvailable`; the victory guard; Boss Rush held (`RoadOrder`, `IsOpen`, `BossRushHealth`); the Gaoler's retune; the Dungeon's text and the stair prop; the locked hints that name who is missing; `ValidateDungeonMove` and `ValidateCampaignMigration`'s updated expectations | `StageCatalog.cs` (the order's `stage_1` line, the `stage_1` entry's text, `LockedHintFor`), `GlobalStatsManager.cs` (stage rules), `SaveData.cs` (the schema 21 step and field), `BossRushCatalog.cs` (`RoadOrder`, `IsOpen`), `BossCatalog.cs` (the `[1]` block, `BossRushHealth`), `Node2DGame.cs` (`ApplyBossVictoryUnlocks` only), `RegressionChecks.cs` (its two validators), `tools/art/props_dungeon.py` (new: the stair) | C0 and A1 merged. **Merges in the same release as the Bridge's flip**, and after V2 (and ideally V1) |
 | **C3 The Court** | 5.1-5.5, 5.8-5.9: the layout generator and its JSON, the `Authored` reader, `CourtRules`, `CourtRooms`, `CourtLayout` (rooms near a point, for 5.6), its art | `court_layout.py`, `LevelGenerator.Authored.cs`, `CourtRules.cs`, `CourtRooms.cs`, `CourtLayout.cs`; `terrain_court.py`, `court_walls.py`, `props_court.py`; its blocks | C0 |
 | **C4 The Throne** | 6.1-6.3, 6.5: the hall's layout, `ThroneRules` (the Muster, the procession, the pinned clock), the procession's data, the level-up screen's Muster heading and short arming pause | `throne_room.py`, `ThroneRules.cs`, `ThroneProcession.cs`; **`LevelUpMenu.cs`** (the heading and the guard only) | C0, and C3's `Authored` reader |
 | **C5 The bosses** | one agent each: the Constable (3.6), the Seneschal (5.6), the dark wizard (6.4, **with the `Player` seal and its `LoadoutHud` mark**). The Gaoler's retune is C2's | `<Boss>.cs`, `<Boss>.tscn`, `tools/art/boss_<name>.py`, its frames; the shared edit named | C0; the Seneschal after C3, the dark wizard after C4 |

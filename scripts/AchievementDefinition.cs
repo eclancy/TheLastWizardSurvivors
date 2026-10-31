@@ -381,7 +381,8 @@ public static class AchievementDefinitions
 		// The two early chapters (.ai/campaign.md) pay in boons, for the reason the Frozen Waste and
 		// the Sands do. Both boons were sold-but-never-sold (the shop registers no boons), so until then
 		// no new save could ever be dealt them. Listed only once their chapter is playable.
-		BossClearBoon("fields_hurdled", "Round the Hurdle", "fields_hayward", "the Fallow Fields", "thornseed", "Thornseed"),
+		BossClearBoon("fields_hurdled", "Round the Hurdle", "fields_hayward", "the Fallow Fields", "thornseed", "Thornseed",
+			alsoReward: "teaches Ascension"),
 		BossClearBoon("circle_unclosed", "Out of the Ring", "heath_ninth_stone", "the Broken Circle", "shadegrease", "Shadegrease"),
 		// Pays in currency rather than content, and that is the point: the Sketchbook is a bonus
 		// chapter, so putting a spell or a wizard behind it would make an optional chapter
@@ -691,12 +692,15 @@ public static class AchievementDefinitions
 	// shop's stock is the same finite pool the achievement track draws from, and moving all seven
 	// boss rewards onto spells would have left four spells in it. A boon is a real reward and the
 	// Frozen Waste handing over Rimebriar is a better fit than any spell left unclaimed was.
-	private static AchievementDefinition BossClearBoon(string id, string name, string bossId, string place, string boonId, string boonName) => new()
+	// alsoReward: a second thing the kill pays that is not an item, said on the same line - the Hayward
+	// teaches the Ascension (GlobalStatsManager.AscensionTeacherStageId, .ai/difficulty-curve.md section 6).
+	private static AchievementDefinition BossClearBoon(string id, string name, string bossId, string place, string boonId, string boonName,
+		string alsoReward = "") => new()
 	{
 		Id = id,
 		DisplayName = name,
 		Description = $"Defeat the boss of {place}.",
-		RewardText = $"Unlocks {boonName}",
+		RewardText = $"Unlocks {boonName}{(string.IsNullOrEmpty(alsoReward) ? "" : " and " + alsoReward)}",
 		BoonUnlockId = boonId,
 		Category = AchievementCategory.Exploration,
 		Kind = AchievementKind.Road,

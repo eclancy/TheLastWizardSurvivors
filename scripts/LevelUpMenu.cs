@@ -236,6 +236,8 @@ public partial class LevelUpMenu : CanvasLayer
 		{
 			skipButton.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
 			skipButton.Pressed += OnSkipPressed;
+			// A skip pays half a bar now (Node2DGame.OnSkipRequested), and the button says so.
+			skipButton.Text = $"Skip (+{Player.SkipXpBarFraction * 100f:0}% XP)";
 		}
 
 		BuildChargeRow();
