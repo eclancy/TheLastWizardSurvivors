@@ -158,6 +158,12 @@ class Fig(object):
         # A coat with a pattern in it (the cat's): (ramp, "stripes" | "spots"). The marks are keyed to each
         # part's own coordinates, as the lay of the fur is, so they ride with the body. None: plain.
         self.pattern = None
+        # The ordered dither's strength (tone_of). The sprites keep the renderer's; a card icon (ICON_DITHER)
+        # takes far less, because at 16 to 32 pixels a dithered plane is speckle, not a turning form.
+        self.dither = 0.18
+        # The lay of the coat (render): broken darker strokes through the lit stops. Off on a card icon, where
+        # at its size they were the speckle that made a fawn head read as a brown smudge.
+        self.lay = True
 
     # --- painting ------------------------------------------------------------------------------
     def _put(self, x, y, ramp, tone, lx, ly, kind, far=False):
@@ -191,7 +197,7 @@ class Fig(object):
                 nz = math.sqrt(max(0.0, 1.0 - d2))
                 wx, wy = rot(nx, ny, angle)
                 inten = wx * LIGHT[0] + wy * LIGHT[1] + nz * LIGHT[2]
-                self._put(x, y, ramp, self.tone_of(inten, bias + self.deeper.get(id(ramp), 0.0), x, y), int(round(dx)), int(round(dy)), kind, bias >= 0.6)
+                self._put(x, y, ramp, self.tone_of(inten, bias + self.deeper.get(id(ramp), 0.0), x, y, self.dither), int(round(dx)), int(round(dy)), kind, bias >= 0.6)
 
     def limb(self, pts, radii, ramp, bias=0.0, kind="body"):
         """A tapered capsule through `pts`: legs, necks, tails. Lit across its own width."""
@@ -225,7 +231,7 @@ class Fig(object):
                     nx, ny = 0.0, 0.0
                 nz = math.sqrt(max(0.0, 1.0 - q * q))
                 inten = nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]
-                self._put(x, y, ramp, self.tone_of(inten, bias + self.deeper.get(id(ramp), 0.0), x, y), int(round(px - ax0)), int(round(py - ay0)), kind, bias >= 0.6)
+                self._put(x, y, ramp, self.tone_of(inten, bias + self.deeper.get(id(ramp), 0.0), x, y, self.dither), int(round(px - ax0)), int(round(py - ay0)), kind, bias >= 0.6)
 
     def poly(self, pts, ramp, bias=0.0, kind="cloth", lean=(0.0, -0.35)):
         """A flat-ish form (a hat cone, a wing, a mantle): lit across each row like a cylinder."""
@@ -255,7 +261,7 @@ class Fig(object):
                     ny = lean[1]
                     nz = math.sqrt(max(0.05, 1.0 - min(0.95, nx * nx + ny * ny)))
                     inten = nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]
-                    self._put(x, y, ramp, self.tone_of(inten, bias + self.deeper.get(id(ramp), 0.0), x, y), int(round(xc - ax0)), int(round(yc - ay0)), kind, bias >= 0.6)
+                    self._put(x, y, ramp, self.tone_of(inten, bias + self.deeper.get(id(ramp), 0.0), x, y, self.dither), int(round(xc - ax0)), int(round(yc - ay0)), kind, bias >= 0.6)
 
     def dot(self, x, y, colour, kind="detail"):
         """One unlit pixel: an eye, a nose, a star. Never separated, never rimmed."""
@@ -290,7 +296,7 @@ class Fig(object):
                 out[(x, y)] = tone
                 continue
             t = tone
-            if kind in ("fur", "far") and t in (1, 2):
+            if kind in ("fur", "far") and t in (1, 2) and self.lay:
                 # The lay of the coat: short broken strokes running back and down the body.
                 if (lx * 2 + ly * 3) % 7 == 0 and hsh(lx, ly, 3) < 0.7:
                     t += 1
@@ -1805,6 +1811,18 @@ class _Frame(object):
         return v * self.s
 
 
+# THE CARD ICONS (Eric, 2026-10-30: "familiar icons are very muted and hard to read. remake them, keeping the
+# theme"). The portraits below were drawn with the sprites' own depth and dither, which is right for a figure
+# lit among the bodies on a dark floor and wrong for a card: a fawn coat sitting in its base and shade stops,
+# speckled by the dither, on a night of the same value, came out as a brown smudge under an indigo smudge at
+# the size a card is read. A portrait now sits ICON_LIFT higher in its ramps - the lit and base stops, the
+# shade kept for the turn of the form - with almost no dither, so each plane is one clean tone; the hat is
+# lit, so its cone reads against the night; and spell_icons._familiar_card hangs a moon behind the head, so
+# every silhouette - the hat's point, the crow's beak, the cat's ears - has a pale ground to read against.
+ICON_LIFT = 0.3
+ICON_DITHER = 0.05
+
+
 def calm_eye(eye):
     """The two colours a portrait's eye is drawn in, from a skin's eye (its hot point and its colour).
 
@@ -1831,10 +1849,12 @@ def portrait(skin=HOUND, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None):
     as it is on the sprite. `s` and `at` draw it smaller and elsewhere, `into` into a Fig already begun
     (trio). Rendered with the actor finish, as the sprites are, so the family matches."""
     g = into or Fig(cell)
+    g.dither = ICON_DITHER
+    g.lay = False
     F = _Frame(s, at)
     P, r = F.P, F.r
     fur = skin.fur
-    g.deeper[id(fur)] = FUR_DEPTH
+    g.deeper[id(fur)] = FUR_DEPTH - ICON_LIFT
     # Neck and chest, out of the bottom of the frame.
     g.limb([P(13.0, 22.0), P(10.0, 27.0), P(8.0, 33.0)], [r(4.6), r(5.6), r(6.6)], fur, 0.1, "fur")
     # The ear hangs back, clear of the skull, a stop darker.
@@ -1864,9 +1884,9 @@ def portrait(skin=HOUND, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None):
     g.dot(*P(13, 30), colour=GOLD[1])
     if hat:
         # The hat, tipped back, its tip swept down behind.
-        g.poly([P(5.0, 11.0), P(20.0, 11.0), P(15.0, 5.0), P(10.0, 1.5), P(5.0, 1.0), P(2.0, 3.0), P(6.0, 4.5)], WOOL, 0.3,
+        g.poly([P(5.0, 11.0), P(20.0, 11.0), P(15.0, 5.0), P(10.0, 1.5), P(5.0, 1.0), P(2.0, 3.0), P(6.0, 4.5)], WOOL, -0.1,
                "cloth", lean=(0.0, -0.35))
-        g.limb([P(3.0, 11.5), P(21.0, 11.5)], [r(1.4), r(1.4)], WOOL, 0.2, "body")
+        g.limb([P(3.0, 11.5), P(21.0, 11.5)], [r(1.4), r(1.4)], WOOL, -0.05, "body")
         g.limb([P(6.0, 9.6), P(18.0, 9.6)], [r(0.9), r(0.9)], GOLD, -0.4, "norim")
         g.dot(*P(11, 6), colour=GOLD[0])
         g.dot(*P(12, 6), colour=LIGHT_E[0])
@@ -1885,10 +1905,12 @@ def crow_portrait(bird=CROW, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None)
     beak in amber, a warm eye under a dark brow, the gold collar and star - and the hat, set back on the
     crown. The shoulder of a wing comes up behind, edged in gold (or lightning, for the Stormcrow)."""
     g = into or Fig(cell)
+    g.dither = ICON_DITHER
+    g.lay = False
     F = _Frame(s, at)
     P, r = F.P, F.r
     fe = bird.feather
-    g.deeper[id(fe)] = bird.depth
+    g.deeper[id(fe)] = bird.depth - ICON_LIFT
     # The wing's shoulder, behind the breast, its primaries out of the frame at the lower left.
     g.poly([P(1.0, 33.0), P(2.0, 22.0), P(8.0, 17.0), P(14.0, 19.0), P(12.0, 27.0), P(8.0, 33.0)], fe, 0.35, "cloth",
            lean=(-0.15, -0.45))
@@ -1924,9 +1946,9 @@ def crow_portrait(bird=CROW, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None)
         for (x, y, t) in ((29, 10, 0), (30, 12, 1), (27, 8, 1), (3, 18, 1)):
             g.dot(*P(x, y), colour=LT[t], kind="glow")
     if hat:
-        g.poly([P(6.0, 9.0), P(19.0, 9.0), P(15.0, 3.6), P(10.0, 0.6), P(5.0, 0.4), P(2.4, 2.4), P(6.4, 3.8)], WOOL, 0.3,
+        g.poly([P(6.0, 9.0), P(19.0, 9.0), P(15.0, 3.6), P(10.0, 0.6), P(5.0, 0.4), P(2.4, 2.4), P(6.4, 3.8)], WOOL, -0.1,
                "cloth", lean=(0.0, -0.35))
-        g.limb([P(4.4, 9.4), P(20.4, 9.4)], [r(1.3), r(1.3)], WOOL, 0.2, "body")
+        g.limb([P(4.4, 9.4), P(20.4, 9.4)], [r(1.3), r(1.3)], WOOL, -0.05, "body")
         g.limb([P(7.0, 7.8), P(17.6, 7.8)], [r(0.85), r(0.85)], GOLD, -0.4, "norim")
         g.dot(*P(11, 5), colour=GOLD[0])
         g.dot(*P(12, 5), colour=LIGHT_E[0])
@@ -1940,10 +1962,12 @@ def cat_portrait(skin=CAT, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None, m
     bands in its coat, the collar and star - and the hat sat on its crown between the ears. Face on
     because a cat is read from two ears and two eyes; in profile at 32 pixels its short face was a lump."""
     g = into or Fig(cell)
+    g.dither = ICON_DITHER
+    g.lay = False
     F = _Frame(s, at)
     P, r = F.P, F.r
     fur = skin.fur
-    g.deeper[id(fur)] = FUR_DEPTH if skin.depth == FUR_DEPTH else skin.depth
+    g.deeper[id(fur)] = (FUR_DEPTH if skin.depth == FUR_DEPTH else skin.depth) - ICON_LIFT
     if skin.pattern:
         g.pattern = (fur, skin.pattern)
     ear = skin.ear or fur
@@ -1990,9 +2014,9 @@ def cat_portrait(skin=CAT, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None, m
         g.dot(*P(x, y), colour=EMBER[0] if not skin.glow_eye else ear[1])
     if hat:
         # On the crown between the ears, tipped back and swept to the left, its brim across the brow.
-        g.poly([P(8.4, 10.6), P(22.6, 10.6), P(18.6, 5.0), P(13.0, 1.4), P(8.0, 0.6), P(5.4, 2.4), P(9.6, 4.6)], WOOL, 0.3,
+        g.poly([P(8.4, 10.6), P(22.6, 10.6), P(18.6, 5.0), P(13.0, 1.4), P(8.0, 0.6), P(5.4, 2.4), P(9.6, 4.6)], WOOL, -0.1,
                "cloth", lean=(0.0, -0.35))
-        g.limb([P(7.4, 11.0), P(23.6, 11.0)], [r(1.2), r(1.2)], WOOL, 0.2, "body")
+        g.limb([P(7.4, 11.0), P(23.6, 11.0)], [r(1.2), r(1.2)], WOOL, -0.05, "body")
         g.limb([P(9.4, 9.2), P(21.6, 9.2)], [r(0.8), r(0.8)], GOLD, -0.4, "norim")
         g.dot(*P(14, 5), colour=GOLD[0])
         g.dot(*P(15, 5), colour=LIGHT_E[0])
@@ -2006,6 +2030,8 @@ def trio(cell=32):
     and bare-headed so three hats do not crowd 32 pixels - each drawn by its own portrait into one Fig, so
     the passes separate one from another."""
     g = Fig(cell)
+    g.dither = ICON_DITHER
+    g.lay = False
     crow_portrait(CROW, hat=False, s=0.5, at=(16.5, 1.5), into=g)
     cat_portrait(CAT, hat=False, s=0.5, at=(17.0, 15.5), into=g)
     portrait(HOUND, s=0.78, at=(-1.0, 6.5), into=g)
