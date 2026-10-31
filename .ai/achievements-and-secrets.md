@@ -472,6 +472,21 @@ where a player checks whether the strange crystal was a thing.
   time ever it plays `meta_unlock`, after that `event_reward` (as `SecretDirector.Found` does).
 - A secret **seen** for the first time makes the soft shimmer `.ai/stage-secrets.md` 7.7 asks for
   (still to generate) and nothing else: no toast, no text, which would be a pointer.
+- **Any other achievement met during the run plays the full-set moment's beat** (Eric, 2026-10-30:
+  "when you succeed one, it should show up on top of the screen in the same way that finishing an
+  equipment set does"). `Node2DGame.TickAchievementWatch` reads the run once a second of play as its
+  end will read it (`AchievementContext.Projected` over `SnapshotRunResult` - the pause tab's own
+  reading), and each deed it completes plays `SetAssembledMoment.PlayAchievement`: the glow, the
+  flash, the reward's glyph at a whole multiple of its size, a plate ("Achievement", the deed's name,
+  its reward line, "Yours when the run ends"), `meta_unlock`. One queue with the sets, so several met
+  by one kill play in turn; nothing pauses; the band sits under the HUD and below the safe area's top
+  inset. Watched: what the save has not done, listed, not already met when the run began, and not a
+  deed completed in the run (events and secrets have their own beat). **Nothing is recorded there**: a
+  deed met on the run's numbers is paid by the run's end, as the tab's "This run" tag has always said.
+  A run quit from the pause screen pays nothing, so a quit after the moment forfeits it.
+- **From the boss's fall the snapshot is the victory** (`SnapshotRunResult`): a run whose boss has
+  fallen ends as a win however it ends, so the chapter's deed and Veteran read "This run" on the tab,
+  and play the moment, during the walk to the portal - they used to read "to do" until the results.
 - The results screen lists everything completed in the run, as now.
 
 ### 4.10 One builder

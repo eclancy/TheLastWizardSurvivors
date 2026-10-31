@@ -21,9 +21,29 @@ using WizardSurvivors.scripts;
 /// so a set completed by picking a relic waits, hidden, until the chest menu closes and the run
 /// resumes, and a level-up that opens mid-moment freezes it under the menu instead of letting it
 /// play out unseen. Two sets completed by one relic play one after the other.
+///
+/// AN ACHIEVEMENT EARNED MID-RUN plays here too (<see cref="PlayAchievement"/>; Eric, 2026-10-30: "when
+/// you succeed one, it should show up on top of the screen in the same way that finishing an equipment
+/// set does"). The same light, flash and plate; the object is what the deed pays (its spell, boon,
+/// wizard or the Arcane Energy glyph, CodexRows.RewardGlyph) and there are no pieces to gather, so the
+/// glow closes on nothing and the reward appears in the flash. One queue for both, so a set and an
+/// achievement - or three achievements met by one kill - play one after another and never on top of
+/// each other. The plate stands clear of the phone's camera hole (SafeArea.Insets) as well as the HUD.
 /// </remarks>
 public partial class SetAssembledMoment : CanvasLayer
 {
+	/// <summary>One moment to play: the object, the pieces that gather into it, and its plate.</summary>
+	private sealed class Moment
+	{
+		public Texture2D? Object;
+		public readonly List<Texture2D> Pieces = new();
+		public string Kicker = string.Empty;
+		public string Title = string.Empty;
+		public string Effect = string.Empty;
+		public string Note = string.Empty;
+		public string Sound = SfxCatalog.SpellEvolve;
+	}
+
 	private const int MomentLayer = 7;
 
 	// The timeline, in seconds from the start of a moment.
@@ -55,8 +75,8 @@ public partial class SetAssembledMoment : CanvasLayer
 	private static readonly Color Gold = CodexRows.Stone.Heading;
 	private static readonly Color GoldDeep = CodexRows.Stone.Reward;
 
-	private readonly Queue<ChestSetDefinition> pending = new();
-	private ChestSetDefinition? showing;
+	private readonly Queue<Moment> pending = new();
+	private Moment? showing;
 	private float clock;
 	private bool flashed;
 
@@ -69,6 +89,9 @@ public partial class SetAssembledMoment : CanvasLayer
 	private Label kicker = null!;
 	private Label title = null!;
 	private Label effect = null!;
+	private Label note = null!;
+	// The safe area's top inset when this moment started, in canvas units: zero on desktop.
+	private float insetTop;
 
 	public override void _Ready()
 	{
@@ -105,13 +128,16 @@ public partial class SetAssembledMoment : CanvasLayer
 		plate.AddChild(lines);
 
 		kicker = MakeLine(ResponsiveLayout.TextRole.Label, CodexRows.Stone.Reward);
-		kicker.Text = "Full Set Enchantment";
 		lines.AddChild(kicker);
 		title = MakeLine(ResponsiveLayout.TextRole.Display, Gold);
 		lines.AddChild(title);
 		effect = MakeLine(ResponsiveLayout.TextRole.Body, CodexRows.Stone.Ink);
 		effect.AutowrapMode = TextServer.AutowrapMode.WordSmart;
 		lines.AddChild(effect);
+		// A quiet last line, for what the plate must not let the player assume (an achievement's).
+		note = MakeLine(ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
+		note.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+		lines.AddChild(note);
 
 		SetProcess(false);
 	}
@@ -121,7 +147,45 @@ public partial class SetAssembledMoment : CanvasLayer
 	{
 		if (set == null)
 			return;
-		pending.Enqueue(set);
+		var moment = new Moment
+		{
+			Object = BonelightSkin.LoadTextureSafe(set.IconPath),
+			Kicker = "Full Set Enchantment",
+			Title = set.Name,
+			Effect = set.Description,
+		};
+		foreach (string itemId in set.RequiredItemIds)
+			moment.Pieces.Add(BonelightSkin.LoadTextureSafe(ChestItemCatalog.GetIconPath(itemId)));
+		Enqueue(moment);
+	}
+
+	/// <summary>
+	/// Plays an achievement met during the run, after anything already queued: what it pays, its name,
+	/// its reward line. <paramref name="reward"/> is the object (CodexRows.RewardGlyph); <paramref name="note"/>
+	/// a quiet last line, or empty.
+	/// </summary>
+	public void PlayAchievement(AchievementDefinition deed, Texture2D? reward, string? rewardLine, string? note)
+	{
+		if (deed == null)
+			return;
+		Enqueue(new Moment
+		{
+			Object = reward,
+			Kicker = "Achievement",
+			Title = deed.DisplayName,
+			Effect = string.IsNullOrWhiteSpace(rewardLine) ? deed.Description : rewardLine,
+			Note = note ?? string.Empty,
+			// The sound of the save changing (SfxCatalog.MetaUnlock), not of a spell evolving.
+			Sound = SfxCatalog.MetaUnlock,
+		});
+	}
+
+	/// <summary>True while a moment is playing or waiting. For the harness.</summary>
+	public bool IsBusy => showing != null || pending.Count > 0;
+
+	private void Enqueue(Moment moment)
+	{
+		pending.Enqueue(moment);
 		if (showing == null)
 			StartNext();
 	}
@@ -140,20 +204,24 @@ public partial class SetAssembledMoment : CanvasLayer
 		clock = 0f;
 		flashed = false;
 
-		objectIcon.Texture = BonelightSkin.LoadTextureSafe(showing.IconPath);
-		title.Text = showing.Name;
-		effect.Text = showing.Description;
+		objectIcon.Texture = showing.Object;
+		kicker.Text = showing.Kicker;
+		title.Text = showing.Title;
+		effect.Text = showing.Effect;
+		note.Text = showing.Note;
+		note.Visible = showing.Note.Length > 0;
 
 		foreach (TextureRect old in pieces)
 			old.QueueFree();
 		pieces.Clear();
-		foreach (string itemId in showing.RequiredItemIds)
+		foreach (Texture2D texture in showing.Pieces)
 		{
 			TextureRect piece = MakeIcon(PieceScale);
-			piece.Texture = BonelightSkin.LoadTextureSafe(ChestItemCatalog.GetIconPath(itemId));
+			piece.Texture = texture;
 			root.AddChild(piece);
 			pieces.Add(piece);
 		}
+		insetTop = SafeArea.Insets(GetViewport()).Top;
 
 		// Shown on the first frame the run is actually running, not now: a set is completed by
 		// picking a relic, and at that moment the chest menu is still up over a paused tree.
@@ -173,7 +241,7 @@ public partial class SetAssembledMoment : CanvasLayer
 		if (!flashed && clock >= GatherSeconds)
 		{
 			flashed = true;
-			SfxPlayer.Global(SfxCatalog.SpellEvolve);
+			SfxPlayer.Global(showing.Sound);
 		}
 
 		float fade = clock <= HoldUntil ? 1f : Mathf.Clamp(1f - (clock - HoldUntil) / FadeSeconds, 0f, 1f);
@@ -188,7 +256,8 @@ public partial class SetAssembledMoment : CanvasLayer
 	{
 		Vector2 view = root.Size;
 		bool narrow = ResponsiveLayout.IsNarrow(root);
-		float objectSize = IconSource * ObjectScale;
+		Vector2 objectBox = ObjectBox(showing?.Object);
+		float objectSize = MathF.Max(objectBox.X, objectBox.Y);
 		float pieceSize = IconSource * PieceScale;
 
 		float plateWidth = narrow
@@ -198,7 +267,8 @@ public partial class SetAssembledMoment : CanvasLayer
 		effect.CustomMinimumSize = new Vector2(plateWidth - 44f, 0f);
 		float plateHeight = plate.GetCombinedMinimumSize().Y;
 
-		float bandTop = narrow ? NarrowHudBand : WideHudBand;
+		// Under the HUD, which SafeArea has already brought down under a phone's camera hole.
+		float bandTop = (narrow ? NarrowHudBand : WideHudBand) + insetTop;
 		float bandBottom = view.Y * 0.5f - PlayerHeadroom;
 		Vector2 centre;
 		Vector2 plateAt;
@@ -241,7 +311,7 @@ public partial class SetAssembledMoment : CanvasLayer
 		objectIcon.Visible = sinceFlash >= 0f;
 		float pop = sinceFlash < 0f ? 0f : Mathf.Clamp(sinceFlash / PopSeconds, 0f, 1f);
 		float objectScale = Mathf.Lerp(1.25f, 1f, pop * pop);
-		objectIcon.Size = new Vector2(objectSize, objectSize);
+		objectIcon.Size = objectBox;
 		objectIcon.PivotOffset = objectIcon.Size * 0.5f;
 		objectIcon.Scale = new Vector2(objectScale, objectScale);
 		// It rises a little as it goes, so the fade reads as the object lifting away.
@@ -261,6 +331,20 @@ public partial class SetAssembledMoment : CanvasLayer
 		plate.Position = plateAt - new Vector2(0f, lift);
 		float textIn = sinceFlash < 0f ? 0f : Mathf.Clamp(sinceFlash / TextInSeconds, 0f, 1f);
 		plate.Modulate = new Color(1f, 1f, 1f, textIn);
+	}
+
+	// The object at the largest whole multiple of its own size that fits the 64-at-x3 box: a 64-pixel
+	// icon at x3 as before, the 24-pixel Arcane Energy glyph at x8, a portrait at its own whole step -
+	// never a fractional scale on pixel art.
+	private static Vector2 ObjectBox(Texture2D? texture)
+	{
+		float box = IconSource * ObjectScale;
+		if (texture == null)
+			return new Vector2(box, box);
+		Vector2 size = texture.GetSize();
+		float largest = MathF.Max(1f, MathF.Max(size.X, size.Y));
+		float scale = MathF.Max(1f, MathF.Floor(box / largest));
+		return size * scale;
 	}
 
 	private static TextureRect MakeIcon(float scale)

@@ -3272,6 +3272,7 @@ public partial class Node2DGame : Node2D
 		LogHandheldPerformance(d);
 		UpdateLowHealthWarning();
 		UpdateOnboardingTips(d);
+		TickAchievementWatch(d);
 		UpdateDebugOverlay(d);
 		fireTimer += d; // Updated fireTimer calculation
 		spawnTimer += d;
@@ -6661,12 +6662,75 @@ public partial class Node2DGame : Node2D
 			GD.PrintErr($"Node2DGame: a set completed that the catalog does not know: '{setId}'");
 			return;
 		}
+		EnsureMoment().Play(set);
+	}
+
+	private SetAssembledMoment EnsureMoment()
+	{
 		if (setAssembledMoment == null || !IsInstanceValid(setAssembledMoment))
 		{
 			setAssembledMoment = new SetAssembledMoment { Name = "SetAssembledMoment" };
 			AddChild(setAssembledMoment);
 		}
-		setAssembledMoment.Play(set);
+		return setAssembledMoment;
+	}
+
+	// --- Achievements met during the run --------------------------------------------------------
+	// Eric's playtest (2026-10-30): "when you succeed one, it should show up on top of the screen in the
+	// same way that finishing an equipment set does". Every second of play the run so far is read the
+	// way its end will read it (AchievementContext.Projected over SnapshotRunResult - the pause tab's own
+	// reading), and each deed it completes plays the set moment's beat (SetAssembledMoment.PlayAchievement):
+	// one queue with the sets, nothing paused, under every menu. Nothing is recorded here. A deed met on
+	// the run's numbers is paid by the run's end, as the pause tab has always said ("This run"), so the
+	// plate says when it is paid.
+	//
+	// Watched: what the save has not done, is listed (never a sealed or hidden name), was not already met
+	// before the run began, and is not one of the deeds completed in the run (a side event's, a secret's -
+	// those have their own beat, SecretToast and the event's). A deed fires once a run.
+	private const float AchievementWatchSeconds = 1f;
+	private List<AchievementDefinition>? achievementWatch;
+	private float achievementWatchClock;
+
+	private void TickAchievementWatch(float delta)
+	{
+		achievementWatchClock += delta;
+		if (achievementWatchClock < AchievementWatchSeconds)
+			return;
+		achievementWatchClock = 0f;
+		if (GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is not SaveData data)
+			return;
+		achievementWatch ??= BuildAchievementWatch(data);
+		if (achievementWatch.Count == 0)
+			return;
+		AchievementContext projected = AchievementContext.Projected(data, SnapshotRunResult());
+		for (int i = 0; i < achievementWatch.Count; i++)
+		{
+			AchievementDefinition deed = achievementWatch[i];
+			if (!deed.IsComplete(projected))
+				continue;
+			achievementWatch.RemoveAt(i--);
+			AnnounceAchievement(deed, data);
+		}
+	}
+
+	private static List<AchievementDefinition> BuildAchievementWatch(SaveData data)
+	{
+		AchievementContext before = AchievementContext.ForSave(data);
+		return AchievementDefinitions.All
+			.Where(deed => !deed.CompletesInRun
+				&& !GlobalStatsManager.IsAchievementUnlocked(data, deed.Id)
+				&& AchievementDefinitions.IsListed(deed, data)
+				&& !deed.IsComplete(before))
+			.ToList();
+	}
+
+	private void AnnounceAchievement(AchievementDefinition deed, SaveData data)
+	{
+		Texture2D reward = CodexRows.RewardGlyph(deed, id => ContentValidator.LoadAllSpells()
+			.FirstOrDefault(s => s.Id.Equals(id ?? string.Empty, StringComparison.OrdinalIgnoreCase))?.Icon);
+		string line = CodexRows.OwnedRewardLine(deed, data) ?? deed.RewardText;
+		EnsureMoment().PlayAchievement(deed, reward, line, "Yours when the run ends");
+		GD.Print($"Node2DGame: achievement met this run - {deed.Id} at {FormatTime(timeElapsed)}");
 	}
 
 	private void OnPlayerDamageTaken(int amount)
@@ -6828,14 +6892,19 @@ public partial class Node2DGame : Node2D
 	/// run shows this run (.ai/achievements-and-secrets.md 4.4).
 	/// </summary>
 	/// <remarks>
-	/// A defeat with no boss, on purpose: a snapshot is not a victory and has beaten no one, so it can
-	/// never make a chapter's deed or Veteran read as done before the run has earned it. Nothing is
-	/// written - FinishRunAndReward records the loadout's element counts as a last peak before it reads
-	/// them, and a snapshot folds them into its own copy instead.
+	/// A defeat with no boss until the boss falls: a snapshot before then has beaten no one, so it can
+	/// never make a chapter's deed or Veteran read as done before the run has earned it. Once the boss
+	/// has fallen the run IS won - dying on the way to the portal still ends it as the victory it is
+	/// (OnPlayerDied) - so from then the snapshot is that victory, and the pause tab and the mid-run
+	/// achievement moment show the chapter's deed as this run's; it used to say "still to do" all the
+	/// way to the portal. Nothing is written - FinishRunAndReward records the loadout's element counts as
+	/// a last peak before it reads them, and a snapshot folds them into its own copy instead.
 	/// </remarks>
 	private RunResult SnapshotRunResult()
 	{
-		RunResult snapshot = BuildRunResult(RunOutcome.Defeat, string.Empty);
+		RunResult snapshot = bossVictoryPending
+			? BuildRunResult(RunOutcome.Victory, victoryBossId)
+			: BuildRunResult(RunOutcome.Defeat, string.Empty);
 		GameStats.ApplyTelemetryToRunResult(snapshot);
 		RunEvents.ApplyToRunResult(snapshot, timeElapsed);
 		foreach (KeyValuePair<string, int> held in snapshot.ElementCounts)

@@ -16,11 +16,28 @@ public sealed class AchievementContext
 	public global::RunResult Run { get; init; }
 	public SaveData Save { get; init; }
 
-	public LifetimeStats Lifetime => Save?.Lifetime ?? EmptyLifetime;
+	public LifetimeStats Lifetime => lifetimeOverride ?? Save?.Lifetime ?? EmptyLifetime;
 	private static readonly LifetimeStats EmptyLifetime = new();
+	// A projection's lifetime: the save's with the run folded in (Projected). Null otherwise.
+	private LifetimeStats lifetimeOverride;
 
 	public static AchievementContext ForSave(SaveData save) => new() { Save = save };
 	public static AchievementContext ForRun(SaveData save, global::RunResult run) => new() { Save = save, Run = run };
+
+	/// <summary>
+	/// Where every deed would stand if the run ended now: the save's lifetime stats copied and the run
+	/// so far folded into the copy, the way the run's end folds it in (<see cref="LifetimeStats.Absorb"/>,
+	/// before <see cref="AchievementManager.ApplyRunAchievements"/> evaluates). Read-only to the save: the
+	/// copy goes through the save's own serialisation, so it holds every field the save would. The
+	/// pause tab's bars (AchievementsPage) and the mid-run achievement moment (Node2DGame) both read it,
+	/// so the moment fires exactly when the tab starts to say "This run".
+	/// </summary>
+	public static AchievementContext Projected(SaveData save, global::RunResult run)
+	{
+		LifetimeStats lifetime = LifetimeStats.FromDictionary(save?.Lifetime?.ToGodotDictionary());
+		lifetime.Absorb(run);
+		return new AchievementContext { Save = save, Run = run, lifetimeOverride = lifetime };
+	}
 }
 
 public sealed class AchievementProgress

@@ -245,6 +245,11 @@ public partial class _UiShot : Node
 	// pause action runs (Node2DGame.ToggleEscapeMenu, private, so reached through reflection).
 	[Export] public bool OpenPause { get; set; } = false;
 	private bool pauseOpened;
+	// --announce-achievements=id,id,id: a quarter of the way in, those deeds are announced on one frame
+	// through the mid-run watcher's own call (Node2DGame.AnnounceAchievement), so the achievement moment
+	// and its queue can be photographed without waiting for a run to earn three at once. Records nothing.
+	private string[] announceAchievements = System.Array.Empty<string>();
+	private bool achievementsAnnounced;
 	// --pad-y: inject a pad Y press after the warmup (see the late press). Once it is sent, _Input
 	// lets Y through; it otherwise drops every real button press.
 	private bool padY;
@@ -1017,6 +1022,8 @@ public partial class _UiShot : Node
 				if (burst.Length > 1)
 					burstGap = System.Math.Max(1, int.Parse(burst[1]));
 			}
+			else if (arg.StartsWith("--announce-achievements="))
+				announceAchievements = arg.Substring("--announce-achievements=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries);
 			else if (arg.StartsWith("--ripen-every="))
 				ripenEvery = int.Parse(arg.Substring("--ripen-every=".Length));
 			// Photographing a RUN rather than a menu needs the two selections a real run would
@@ -2542,6 +2549,23 @@ public partial class _UiShot : Node
 			if (!reportFilled && (reportName != null || reportText != null || reportSend || reportBack)
 				&& FindNodeOfType<ReportBugScreen>(GetTree().Root) is ReportBugScreen report && report.Visible)
 				FillReport(report);
+			if (announceAchievements.Length > 0 && !achievementsAnnounced && frames >= WarmupFrames / 4
+				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame announcer
+				&& GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is SaveData announceSave)
+			{
+				// All on one frame, as one kill completing three deeds would: the moment's queue plays
+				// them in turn (Node2DGame.AnnounceAchievement, private, the watcher's own call).
+				achievementsAnnounced = true;
+				System.Reflection.MethodInfo announce = typeof(Node2DGame).GetMethod("AnnounceAchievement",
+					System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+				foreach (string id in announceAchievements)
+				{
+					if (AchievementDefinitions.GetById(id.Trim()) is AchievementDefinition deed)
+						announce?.Invoke(announcer, new object[] { deed, announceSave });
+					else
+						GD.PrintErr($"_UiShot: no achievement '{id}' to announce");
+				}
+			}
 			if (OpenPause && !pauseOpened && frames >= WarmupFrames / 2
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame pausable)
 			{
