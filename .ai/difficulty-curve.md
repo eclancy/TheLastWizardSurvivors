@@ -83,39 +83,44 @@ cell differ by a level or two and a minute of siege.
 
 ## 2. Before: the curve as it was
 
-First measured on `main-ff86ni` at 92e9063 (the harness changes only; six slots; the Ascension at
-player level 17 with no meta gate), Stormcaller, seed 1234. **Being re-measured on 6352ebe** (the
-Gleaning Bell and Spiritual Weapon merged since), with the healing ledger: the first cells already
-differ - a fresh Forest with no siege at level 36, a fresh Circle overrun at 11.5 - so section 10
-compares against that re-measure, not this table.
+On `main-ff86ni` at 6352ebe (the Gleaning Bell and Spiritual Weapon in) with only the harness changes:
+six slots, the Ascension at player level 17 with no meta gate, the old healing. Stormcaller, seed 1234;
+the Frostweaver rows are seed 77. Times are game minutes; the boss arrives at 15.0.
 
-| # | chapter | fresh: over | siege | boss | need | L15 | asc (offered) | farmed: over | siege | boss | need | L15 | asc (offered) |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | Enchanted Forest | - | **9** | 16.5 | x32 | 24 | 1 (14.5) | - | 5 | 15.3 | x43 | 28 | 2 (12.7) |
-| 2 | The Fallow Fields | - | **9** | 18.7 | x44 | 22 | 1 (13.0) | - | 0 | 15.3 | x0.6 | 32 | 3 (7.1) |
-| 3 | The Broken Circle | - | 7 | 15.6 | x36 | 24 | 1 (12.0) | - | 0 | 15.0 | x0.1 | 35 | 3 (7.7) |
-| 4 | Sunken Cave | - | 2 | 15.2 | x8 | 28 | 1 (9.5) | - | 1 | 15.1 | x0.3 | 38 | 3 (8.9) |
-| 5 | Cursed Dungeon | - | 4 | 15.1 | x4 | 28 | 2 (10.7) | - | 0 | 15.4 | x0.2 | 36 | 3 (8.9) |
-| 6 | Blighted Swamp | - | 7 | 16.5 | x173 | 25 | 1 (15.5) | - | 0 | 15.3 | x0.1 | 33 | 3 (6.3) |
-| 10 | The Emberdeep | **11.0** | 7 | - | x49 | (16) | 0 | - | 0 | 15.0 | x0.1 | 35 | 4 (8.0) |
+| # | chapter | fresh: over | siege | boss | L15 | asc (first offered) | farmed: over | siege | boss | L15 | asc (first offered) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Enchanted Forest | - | 0 | 15.2 | 36 | 3 (8.8) | - | 0 | 15.0 | 33 | 2 (11.5) |
+| 1 | ... the Frostweaver | **10.3** | 9 | - | 14 | 0 | | | | | |
+| 2 | The Fallow Fields | - | 3 | 16.8 | 35 | 2 (11.6) | - | 8 | 17.4 | 27 | 1 (14.1) |
+| 3 | The Broken Circle | **11.5** | 9 | - | 14 | 0 | - | 0 | 15.1 | 34 | 3 (6.1) |
+| 3 | ... the Frostweaver | **8.6** | 6 | - | 10 | 0 | | | | | |
+| 4 | Sunken Cave | - | 0 | 15.4 | 30 | 1 (10.6) | - | 0 | 15.5 | 36 | 2 (5.9) |
+| 5 | Cursed Dungeon | - | 7 | 16.6 | 27 | 1 (11.3) | - | 0 | 15.1 | 35 | 3 (8.3) |
+| 6 | Blighted Swamp | **10.4** | 8 | - | 14 | 0 | - | 0 | 15.0 | 34 | 3 (6.1) |
+| 7 | Mystic Ruins | - | 3 | 15.6 | 33 | 3 (10.8) | - | 0 | 15.1 | 38 | 4 (6.9) |
+| 8 | Frozen Waste | **11.8** | 9 | - | 16 | 0 | - | 0 | 15.3 | 36 | 3 (5.4) |
+| 9 | Scorched Sands | - | 6 | 15.6 | 29 | 2 (12.8) | - | 0 | 15.3 | 42 | 3 (5.4) |
+| 10 | The Emberdeep | **8.0** | 6 | - | 8 | 0 | - | 0 | 15.1 | 37 | 4 (6.4) |
+| 10 | ... the Frostweaver | | | | | | - | 0 | 15.1 | 40 | 4 (7.5) |
+
+(A first pass on 92e9063, before the Gleaning Bell, read the same way: fresh saves under a 7-9 minute
+siege from the Forest on, the Emberdeep the only overrun, every farmed boss dead in seconds.)
 
 ### 2.1 What it says
 
-1. **The curve was flat by chapter and steep by save.** A fresh save sat under a seven-to-nine-minute
-   siege in the first three chapters - **the Forest was among the hardest of them** - and had an easier
-   time in the Cave (2) and the Dungeon (4). Only the Emberdeep overran it. Eric's chapter 1 was not
-   easy for a new player; his chapter 3 was no wall.
-2. **A farmed save trivialised everything from chapter 2 on.** No siege, need under one bar, every boss
-   dead within seconds of arriving - the Ninth Stone, the Hollow Choir and the Warden of the Deep in
-   under five. Boss health was set for a build that no longer arrives: a farmed build's single-target
-   damage at 15:00 deletes 11,000 HP before its telegraph finishes.
-3. **The farmed Forest is the fresh Forest** (300 Arcane, no deeds behind it): the column only starts to
-   mean "farmed" at chapter 2.
-4. **Ascensions came to everyone**: one a run on a fresh save from the first chapter, three or four on a
-   farmed one, the first offered at minute 6-9.
-5. **The need column is enormous on fresh saves** - x30-x170 of a 19-HP wizard - and almost all of it
-   is the siege, minutes 3-13, when a field of 130 bodies stands round a build that cannot clear it.
-   Section 5 says what healed it back.
+1. **The curve was noise by chapter and a cliff by save.** A fresh save cleared the Forest, the Fields,
+   the Cave, the Dungeon, the Ruins and the Sands and was overrun in the Circle, the Swamp, the Frozen
+   Waste and the Emberdeep - with no order to it, and the Frostweaver overrun in the Forest itself.
+   Which runs fall behind is decided in minutes 3-5: a build that is not clearing the field by the time
+   it fills stops reaching its orbs, stops levelling, and the swarm closes. Eric's chapter 1 was not
+   reliably easy; his chapter 3 was a coin toss rather than a wall.
+2. **A farmed save trivialised all of it.** No siege anywhere but one Fields run, every boss dead within
+   thirty seconds of arriving and most within ten. Boss health was set for a build that no longer
+   arrives: measured, a farmed build at 15:00 took the Warden of the Deep's 11,000 in about two seconds.
+3. **Ascensions came to everyone**: one to three on a fresh save that kept up, from the first chapter;
+   three or four on a farmed one, the first offered at minute 5-8.
+4. **Healing outran damage** (section 5): a fresh Forest run was offered 130 HP a minute against 43 lost,
+   and Light's share of spell damage healed a farmed Ruins run 2,957 a minute.
 
 ---
 
@@ -167,31 +172,49 @@ survivors of a siege carry out of it, which section 5 makes permanent. Spawn pre
 window, the interval) is **not** used: it is the XP ceiling (`.ai/run-pacing.md` 3.3), so raising it
 would pay the player for the difficulty it added. The XP curve is not moved for the same reason.
 
-### 4.2 The proposal (first values; section 10 has what shipped)
+### 4.2 What shipped, and how it got there
 
 | # | chapter | EnemyHealth | EnemyDamage | EliteInterval | ElitePower | boss health (was) |
 |---|---|---|---|---|---|---|
-| 1 | Enchanted Forest | 0.85 | 1.0 | 1.15 | 0.9 | 3,800 (4,200) |
-| 2 | The Fallow Fields | 1.0 | 1.0 | 1.0 | 1.0 | 6,500 (4,500) |
-| 3 | The Broken Circle | 1.4 | 1.1 | 0.9 | 1.25 | 16,000 (5,000) |
-| 4 | Sunken Cave | 1.9 | 1.1 | 0.9 | 1.3 | 3 x 6,000 (3 x 1,900) |
-| 5 | Cursed Dungeon | 1.7 | 1.15 | 0.85 | 1.35 | 20,000 (6,200) |
-| 6 | Blighted Swamp | 1.9 | 1.15 | 0.85 | 1.4 | 22,000 (6,800) |
-| 7 | Mystic Ruins | 1.9 | 1.2 | 0.8 | 1.45 | 24,000 (7,200) |
-| 8 | Frozen Waste | 2.3 | 1.25 | 0.8 | 1.5 | 26,000 (7,800) |
-| 9 | Scorched Sands | 2.5 | 1.25 | 0.8 | 1.55 | 28,000 (8,200) |
-| 10 | The Emberdeep | 2.3 | 1.35 | 0.75 | 1.65 | 36,000 (11,000) |
+| 1 | Enchanted Forest | **0.65** | 1.00 | **0.85** | **0.80** | 3,800 (4,200) |
+| 2 | The Fallow Fields | **0.75** | 1.00 | 0.95 | 0.90 | 6,500 (4,500) |
+| 3 | The Broken Circle | **1.80** | 1.10 | 0.90 | 1.25 | 20,000 (5,000) |
+| 4 | Sunken Cave | 2.60 | 1.10 | 0.90 | 1.30 | 3 x 20,000 (3 x 1,900) |
+| 5 | Cursed Dungeon | 2.40 | 1.15 | 0.85 | 1.35 | 70,000 (6,200) |
+| 6 | Blighted Swamp | 3.00 | 1.15 | 0.85 | 1.40 | 80,000 (6,800) |
+| 7 | Mystic Ruins | 3.00 | 1.20 | 0.80 | 1.45 | 90,000 (7,200) |
+| 8 | Frozen Waste | 3.80 | 1.25 | 0.80 | 1.50 | 110,000 (7,800) |
+| 9 | Scorched Sands | 4.00 | 1.25 | 0.80 | 1.55 | 130,000 (8,200) |
+| 10 | The Emberdeep | 3.80 | **1.35** | **0.75** | **1.65** | **200,000** (11,000) |
 
-The tables are not flat underneath (the Ruins' mean health multiplier is 1.41, the Cave's 1.00, the
-Dungeon's 1.35 - `.ai/campaign.md`), so the column is not monotonic: it is set so the *outcome* climbs,
-and `RegressionChecks.ValidateChapterDifficulty` holds the outcome's proxy - EnemyHealth times the
-table mean - to a road that never falls. Boss health roughly triples from the Circle on: a farmed
-build's single-target damage at 15:00 is about 1,000 a second, and a wall's boss should take one to three
-minutes of it while it hits back. The castle chapters inherit the Emberdeep's row until their builders
-tune them; the Sketchbook, outside the campaign, plays at 1.
+Four rounds, each a handful of runs (section 10 has the last of each cell):
 
-**The Boss Rush** reads `BossCatalog` health (scaled by `BossRushHealthScale`), so its bosses grow with
-these numbers. Not re-tuned here; it is a playtest item.
+1. **The first values** (0.85 / 1.0 / 1.4 ... 2.3 at the Emberdeep, bosses about x3) left every farmed
+   save untouched - no siege, the Warden of the Deep's 36,000 gone in seven seconds - while the Forest
+   still sieged a fresh save for seven minutes and the Fields overran one.
+2. **Lighter early spawns did not help the Forest** (0.65: siege 5-8). A fresh build is swamped at minute
+   four by the *number* that arrive, and at that point it kills a body in one hit whatever its health.
+   The walls rose to 1.8-3.6 and the bosses to what a farmed build's damage takes a minute or two to
+   remove (the Ninth Stone's 20,000 in 1.6 minutes, the Warden of the Deep's 200,000 in 2.0).
+3. **The Forest's and the Fields' elites come more often and weaker** (0.85 / 0.80, 0.95 / 0.90). Each
+   elite carries a chest, and the relics and 50 XP are what let a starters-only build break out of the
+   crowd: the Forest's siege went to none on both seeds. The late walls rose again, to 3.0-4.4.
+4. **4.4 overran the farmed Emberdeep at minute 12** - the farmed build sat at the cap from minute 4 and
+   never ascended - where 3.6 had left it untouched. The step between is narrow (the build either keeps
+   the field or loses it), so the Emberdeep came back to **3.8**, the hardest pass the farmed bot makes.
+
+**The column is not monotonic, on purpose.** The spawn tables underneath are not flat - the Ruins' mean
+health multiplier is 1.41, the Sands' 1.09, the Emberdeep's 1.28 (`.ai/campaign.md`) - so a lower number
+can be a harder chapter: the Emberdeep at 3.8 is 4.9 in effect, the Sands at 4.0 is 4.4. What
+`RegressionChecks.ValidateChapterDifficulty` holds is what does not depend on the table: a row for every
+playable road chapter, every multiplier positive, `EnemyDamage` never under 1 and never easing along the
+road, and no chapter lighter than the first. The castle chapters carry the Emberdeep's row until their
+builders tune them (their bosses, on the Warden of the Deep's scene as a stand-in, keep their own first
+guesses of 11,800-18,000, now far under the Warden's 200,000 - the castle's to retune); the Sketchbook,
+outside the campaign, plays at 1.
+
+**The Boss Rush** reads `BossCatalog` health (scaled by `BossRushHealthScale`), so its bosses grew with
+these numbers - several-fold for the late ones. Not re-tuned here; it is a playtest item.
 
 ---
 
@@ -209,15 +232,15 @@ from the code at a typical holding.
 | base regeneration | `Player.BaseHealthRegenPerSecond` | 0.25 a second, every run | **15**, always | **removed** (0) |
 | Emberheart (shop `recovery`) | `ApplyArcaneUpgrades` | +0.4 a second a level, 8 levels | **72** farmed at the Circle (3 levels), **168** at the Emberdeep (7) | **+0.05 a level** (3 a minute a level), re-priced 15 + 10 a level and refunded |
 | Grass tier | `GetGrassRegenPerSecond` | 1 / 2 / 4 a second at tier 2 / 4 / 6 | 60 / 120 / 240 | **0.1 / 0.2 / 0.4** (6 / 12 / 24) |
-| Light tier | `NotifySpellDamageDealt` | 3 / 6 / 10% of every point of spell damage dealt | at 20,000-40,000 damage a minute, 600-4,000 offered: the bar refills as fast as it empties | **0.5 / 1 / 1.5%**, and **at most 1 HP a second** |
+| Light tier | `NotifySpellDamageDealt` | 3 / 6 / 10% of every point of spell damage dealt | **402** (a fresh Ruins run), **649** (farmed Cave), **2,957** (farmed Ruins): the bar refilled as fast as it emptied | **0.5 / 1 / 1.5%**, banked, and **at most 1 HP a second** (60) |
 | health flask | `HealthPickup`, `DropTable` | 10 HP, a rare drop | **9-19** | **8 HP**, half as often |
 | Essence Chalice relic | `OnChestEnemyKilled` | 1 HP a kill, first 50 kills | 50 a run | **first 15 kills** |
 | Life Drain set | `OnChestEnemyKilled` | 1 HP a kill, unlimited | **80** in the Forest run that held it | **1 HP every 15th kill** (about 15) |
 | Heart of Renewal relic | `chestRegenPerSecond` | 0.8 a second | 48 while held (11 averaged over its run) | **0.15** (9) |
-| the 0.5-regen chest line (`health_regen_0_5`) | `ApplyChestItem` | 0.5 a second | 30 | **0.1** (6) |
-| Mossgrown regen boon (`BoonEffect.Regen`) | `BoonCatalog` | 0.6 a second | 36 | **0.15** (9) |
+| the Frostweaver's passive (`health_regen_0_5`) | `ApplyCharacterPassiveBonus` | 0.5 a second | 30, every Frostweaver run | **0.15** (9) |
+| Tidewater Flask boon (`BoonEffect.Regen`) | `BoonCatalog` | 0.6 a second | 36 | **0.15** (9) |
 | opening a chest | `ChestReward`, `Node2DGame` | 4 HP | **5** | **removed** |
-| Vaultguard set | `OnChestOpenedVaultguard` | shield and heal per chest | under 5 | heal removed, shield kept |
+| the Reliquary set (`vaultguard`) | `Player` | a 6-point shield and 6 HP per chest | under 5 | heal removed, shield kept |
 | Spiritual Weapon's Soul Siphon | `SpiritualWeapon.Siphon` | up to 3 a second | up to 180 | **1 a second** |
 | Black Tentacles' wisps | `BlackTentacles.TearWisp` | 1 HP a wisp | spell-bound, small | unchanged |
 | Taproot stance | `GetStanceRegenPerSecond` | while rooted | small | unchanged |
@@ -321,10 +344,12 @@ rows read slightly kinder if re-run.
 
 ---
 
-## 9. The save: schema 21
+## 9. The save: schema 20
 
-**Schema 20 is reserved** for the Cursed Dungeon's move into the castle (`.ai/endgame-castle.md`), so
-this is **21**: one field and one step, `MigrateToLearnedAscensionsAndRepricedPowers`.
+**Schema 20**, one field and one step, `MigrateToLearnedAscensionsAndRepricedPowers`. It was planned as
+21, with 20 held for the castle's Dungeon move (C2, not built); since steps run in order, a save
+migrated to 21 first would skip a 20 that landed later, so this took 20 and **C2 is now 21**
+(`.ai/endgame-castle.md` 1.5, `.ai/in-flight.md`).
 
 1. **`AscensionLearned`**, set for every save with a run on record (`Lifetime.TotalRuns`, or the
    telemetry ring). Every such save had the Ascension in every run it played; taking it away until the
@@ -334,18 +359,105 @@ this is **21**: one field and one step, `MigrateToLearnedAscensionsAndRepricedPo
    Fracture and of Emberheart (section 5) is refunded the difference between what it cost and what it
    costs now. The levels stay; what each pays is the new rule.
 
-If the Dungeon's 20 lands after this, its step must still run on a save already at 21: the integrator
-orders the two steps, or 20 renumbers past 21. Held by `RegressionChecks.ValidateDifficultyMigration`
-on sample saves.
+Held by `RegressionChecks.ValidateDifficultyMigration` on sample saves: a played save keeps the
+Ascension and is paid 425 for Fate Fracture 5 and 75 for Emberheart 3 with its levels kept, a second
+migration pays nothing, an unplayed save and a new save start sealed, and a save past the Fields or
+with the Hayward beaten is learned with no flag.
 
 ---
 
 ## 10. After
 
-PENDING-AFTER
+Same protocol as section 2, on the shipped values (4626b18), Stormcaller seed 1234 unless marked:
+`s99` is seed 99, `F` the Frostweaver (seed 77). **need** is now in units of a 48-HP wizard (it was 19),
+so a need of x10 is 480 HP. Cells marked (r1) were measured on the first round: the fresh Dungeon at
+1.7 (it shipped at 2.4, so it is at least that hard) and the farmed Fields at 1.0 (it shipped at 0.75).
+
+| # | chapter | fresh: over | siege | boss | L15 | need | farmed: over | siege | boss | L15 | need | asc |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Enchanted Forest | - | 0 | 16.2 | 34 | x2.3 | | | | | | |
+| 1 | ... s99 / F | - / - | 0 / 4 | 15.6 / 16.1 | 34 / 29 | x7.8 / x10.8 | | | | | | |
+| 2 | The Fallow Fields | - | 1 | 16.8 | 32 | x6.9 | - (r1) | 0 | 16.7 | 38 | x2.3 | 0 |
+| 2 | ... s99 / F | - / - | 3 / 1 | 18.0 / 17.0 | 31 / 31 | x16.9 / x11.4 | | | | | | |
+| 3 | The Broken Circle | **7.8** | 5 | - | 9 | - | - | 0 | 16.6 | 38 | x3.9 | 4 |
+| 3 | ... F | | | | | | - | 4 | 15.7 | 38 | x3.4 | 4 |
+| 4 | Sunken Cave | **8.9** | 6 | - | 13 | - | - | 0 | 15.1 | 34 | x0.4 | 3 |
+| 5 | Cursed Dungeon | **10.8** (r1) | 7 | - | 14 | - | - | 3 | 16.3 | 38 | x1.3 | 4 |
+| 6 | Blighted Swamp | | | | | | - | 0 | 15.6 | 36 | x4.0 | 4 |
+| 7 | Mystic Ruins | | | | | | - | 0 | 17.1 | 49 | x10.1 | 6 |
+| 8 | Frozen Waste | | | | | | - | 2 | 17.4 | 38 | x0.3 | 2 |
+| 9 | Scorched Sands | **2.9** | 2 | - | 2 | - | - | 0 | 15.9 | 46 | x0.1 | 5 |
+| 10 | The Emberdeep | | | | | | - | 0 | 16.2 | 35 | x1.7 | 3 |
+| 10 | ... s99 / F | | | | | | - / - | 0 / 0 | 17.2 / 16.1 | 39 / 44 | x0.7 / x0.1 | 3 / 5 |
+
+Fresh cells left empty were not re-run: each overran or nearly did at the old values (section 2), and
+every lever on them only rose. The farmed Forest is the fresh Forest (300 Arcane, nothing behind it).
+
+### 10.1 Against the target
+
+| target | before | after |
+|---|---|---|
+| chapter 1 easy on a fresh save | cleared by the Stormcaller with no siege, **overrun at 10.3 for the Frostweaver** | cleared on all three runs, siege 0-4, boss down in 0.6-1.2 minutes |
+| chapter 2 harder, still a fresh save's | cleared, siege 3 | cleared on all three, siege 1-3 - and harder than the Forest by the boss (1.8-3.0 minutes against 0.6-1.2) and the health it costs (x7-17 against x2-11) |
+| walls from chapter 3: a fresh save fails | the Circle, the Swamp, the Frozen Waste and the Emberdeep overran; the Cave, the Dungeon, the Ruins and the Sands were cleared | every wall measured overruns: the Circle at 7.8, the Cave at 8.9, the Dungeon at 10.8, the Sands at 2.9 |
+| a farmed save passes | every chapter, no siege, every boss dead in seconds | every chapter, siege 0-4, bosses 0.1-2.4 minutes (the Ninth Stone 1.6, the Warden of the Deep 1.1-2.2) |
+| the Emberdeep the hardest | overran a fresh save at 8.0; untouched farmed | 3.8 is one step under the 4.4 that overran the farmed bot; its boss the longest fight |
+| Ascensions not easy at first | 1-3 on a fresh save from the Forest on | **none in chapters 1-2 on a new save**, then 2-6 on a farmed one |
+
+### 10.2 Healing, before and after (HP a minute)
+
+| run | heals offered | regeneration | lost |
+|---|---|---|---|
+| fresh Forest, before / after | 104 / 14-46 | 26 / 3-9 | 43 / 8-41 |
+| farmed Cave, before / after | 649 / 5 | 111 / 30 | 2 / 7 |
+| farmed Ruins, before / after | 2,957 / 16 | 135 / 32 | 0.1 / 85 |
+| farmed Emberdeep, before / after | 18 / 5-10 | 183 / 24-30 | 0.1 / 21 |
+
+The farmed Emberdeep now loses health it does not get back (21 a minute against about 30 offered,
+where it was offered 200 against nothing), and a fresh Forest is offered roughly what it loses rather
+than three times it.
+
+### 10.3 What it did not reach
+
+- **The farmed walls are mostly passes without a siege.** The farmed bot either keeps the field or loses
+  it - the step between is a few tenths of `EnemyHealth` (the Emberdeep: untouched at 3.6, overrun at
+  4.4) - so "works for it" shows in the boss fight and the health it costs, not in a long siege. A real
+  farmer with less behind him than this generous profile meets the wall nearer the edge.
+- **The Hollow Choir still dies in seconds** to a farmed build (3 x 20,000 in six seconds: its voices fall
+  together to area damage). Its health was not raised again.
+- **Ascensions on a farmed save run 2-6** (the Ruins 6, at level 49). The seal answers "at first"; the count
+  once learned is the economy's (`.ai/gameplay-design.md`, "How many Ascensions a run gets") and above its
+  "up to 4" with this profile's XP (Sage Spiral, the Gleaning Bell). Not changed here.
+- **Noise.** A cell is one or two runs; which side of the crowd a fresh build lands on at minute four is
+  close to a coin in the chapters near the edge. Four of about sixty runs crashed in the engine ("Caller
+  thread can't call this function in this node (/root)", `propagate_notification`), before and after
+  alike, and were re-run or left out.
 
 ---
 
 ## 11. What needs a human playtest
 
-PENDING-PLAYTEST
+Everything above is one bot on one machine; these are what only playing answers.
+
+1. **A new save through the first three chapters.** The Forest should be cleared in a try or two, the
+   Fields should feel harder (its boss above all), and the Broken Circle should stop the player - and the
+   Ascension's absence in the first two should read as something to earn, not a bug. The browser's
+   "Learned by defeating the Hayward" line, and the results screen the first time he falls.
+2. **Living on 50 HP with almost nothing back.** The bot's need column says the Forest costs a fresh build
+   two to eleven of its own bars over a run; a person dodges far better, but no human margin was measured.
+   If chapter 1 kills new players through attrition rather than a siege, the first thing to give back is a
+   little base regeneration (`Player.BaseHealthRegenPerSecond`), not the old numbers.
+3. **The walls after farming.** Fail the Circle on a new save, farm the Forest and the Fields a few times,
+   buy Powers, and see whether it opens - the farmed profile here is generous (every Feat), so a real
+   farmer meets it harder.
+4. **The new boss health, for every wizard.** Only the Stormcaller and the Frostweaver fought them. 20,000
+   to 200,000 is one to two minutes of a farmed Stormcaller; a wizard with less single-target damage, or a
+   fight whose mechanic hides the boss (the Long Coil, the Archivist), may run long. Read each fight for
+   length and readability; `_BossProbe` can drive them headless.
+5. **The Boss Rush**, which reads the same health: much longer now.
+6. **Skip (+50% XP)** and **ten rerolls a run**: whether a skip is ever worth it, and whether the reroll pool
+   feels like a decision.
+7. **The phone.** The health bar was photographed without its number on the 540x1212 canvas and at
+   1280x720 (`_UiShot`); nothing else on the phone was checked.
+8. **A real save's first load** at schema 20: the Ascension kept, and the Fate Fracture and Emberheart
+   refunds arriving as Arcane Energy.
