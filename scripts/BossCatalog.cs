@@ -77,7 +77,7 @@ public static class BossCatalog
 			// (.ai/campaign.md), after the Choir's 3 x 1900. Retuned for the slot as campaign.md
 			// decision 3 proposed - between the Choir's 5700 / 190 and Mother Rot's 6800 / 210 - so
 			// boss health climbs with the order again instead of dipping at the maze.
-			Health = 20000, // 6200 before the difficulty curve
+			Health = 70000, // 6200 before the difficulty curve
 			ArcaneVictoryBonus = 200
 		},
 		[2] = new BossDefinition
@@ -88,7 +88,7 @@ public static class BossCatalog
 			ScenePath = "res://scenes/HollowChoirBoss.tscn",
 			// A third each. Node2DGame sets this on the voice it spawns and that voice hands the
 			// same number to the two it calls up, so the fight is three times what is written here.
-			Health = 6000, // 1900 before the difficulty curve
+			Health = 20000, // 1900 before the difficulty curve
 			ArcaneVictoryBonus = 190
 		},
 		[3] = new BossDefinition
@@ -97,7 +97,7 @@ public static class BossCatalog
 			DisplayName = "Mother Rot",
 			Tagline = "She heals from everything she sheds. Clear the spawn or the bar goes backwards.",
 			ScenePath = "res://scenes/MotherRotBoss.tscn",
-			Health = 22000, // 6800 before the difficulty curve
+			Health = 80000, // 6800 before the difficulty curve
 			ArcaneVictoryBonus = 210
 		},
 		[4] = new BossDefinition
@@ -106,7 +106,7 @@ public static class BossCatalog
 			DisplayName = "The Archivist",
 			Tagline = "It never moves and its beam never stops. Keep orbiting, and watch where it surfaces.",
 			ScenePath = "res://scenes/ArchivistBoss.tscn",
-			Health = 24000, // 7200 before the difficulty curve
+			Health = 90000, // 7200 before the difficulty curve
 			ArcaneVictoryBonus = 230
 		},
 		[5] = new BossDefinition
@@ -115,7 +115,7 @@ public static class BossCatalog
 			DisplayName = "The Still Warden",
 			Tagline = "Frozen in place, and the arena does the chasing. The safe ground is not where it is.",
 			ScenePath = "res://scenes/StillWardenBoss.tscn",
-			Health = 26000, // 7800 before the difficulty curve
+			Health = 110000, // 7800 before the difficulty curve
 			ArcaneVictoryBonus = 250
 		},
 		[6] = new BossDefinition
@@ -124,7 +124,7 @@ public static class BossCatalog
 			DisplayName = "The Long Coil",
 			Tagline = "Only killable while it is above the sand. Bring something that spikes.",
 			ScenePath = "res://scenes/LongCoilBoss.tscn",
-			Health = 28000, // 8200 before the difficulty curve
+			Health = 130000, // 8200 before the difficulty curve
 			ArcaneVictoryBonus = 270
 		},
 		[7] = new BossDefinition
@@ -133,7 +133,7 @@ public static class BossCatalog
 			DisplayName = "The Warden of the Deep",
 			Tagline = "Every fight you have already won, in sequence, with nothing in between.",
 			ScenePath = "res://scenes/DeepWardenBoss.tscn",
-			Health = 36000, // 11000 before the difficulty curve
+			Health = 200000, // 11000 before the difficulty curve
 			ArcaneVictoryBonus = 400
 		},
 		[8] = new BossDefinition
@@ -168,7 +168,7 @@ public static class BossCatalog
 			Tagline = "It closes the circle on you. Find the gap and get out before the middle falls.",
 			ScenePath = "res://scenes/NinthStoneBoss.tscn",
 			StandInScenePath = "res://scenes/ForestTreantBoss.tscn",
-			Health = 16000, // 5000 before the difficulty curve
+			Health = 20000, // 5000 before the difficulty curve
 			ArcaneVictoryBonus = 175
 		},
 		// THE CASTLE'S BOSSES (.ai/endgame-castle.md 3.6, 5.6, 6.4). Designed, not built: each fights as

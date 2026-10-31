@@ -49,25 +49,28 @@ public static class ChapterDifficultyCatalog
 	// holds every playable road chapter to an entry and the damage to a road that never eases.
 	private static readonly ChapterDifficulty[] Table =
 	{
-		// 1. Easy: a new save clears it within a try or two.
-		new() { StageId = "stage_0", EnemyHealth = 0.85f, EnemyDamage = 1.00f, EliteInterval = 1.15f, ElitePower = 0.90f },
+		// 1. Easy: a new save clears it within a try or two. Lighter spawns did not do it alone - a fresh
+		// build is swamped at minute four by the NUMBER that arrive, not their health - so its elites
+		// come more often and weaker: each carries a chest, and the relics and 50 XP they pay are what
+		// let a starters-only build break out of the crowd (measured: siege 7-8 minutes to none).
+		new() { StageId = "stage_0", EnemyHealth = 0.65f, EnemyDamage = 1.00f, EliteInterval = 0.85f, ElitePower = 0.80f },
 		// 2. Clearly harder, still a fresh save's to clear - and its boss teaches the Ascension.
-		new() { StageId = "stage_9", EnemyHealth = 1.00f, EnemyDamage = 1.00f, EliteInterval = 1.00f, ElitePower = 1.00f },
+		new() { StageId = "stage_9", EnemyHealth = 0.75f, EnemyDamage = 1.00f, EliteInterval = 0.95f, ElitePower = 0.90f },
 		// 3 on: walls. A fresh save is overrun; a farmed one passes and has to work for it.
-		new() { StageId = "stage_10", EnemyHealth = 1.40f, EnemyDamage = 1.10f, EliteInterval = 0.90f, ElitePower = 1.25f },
-		new() { StageId = "stage_2", EnemyHealth = 1.90f, EnemyDamage = 1.10f, EliteInterval = 0.90f, ElitePower = 1.30f },
-		new() { StageId = "stage_1", EnemyHealth = 1.70f, EnemyDamage = 1.15f, EliteInterval = 0.85f, ElitePower = 1.35f },
-		new() { StageId = "stage_3", EnemyHealth = 1.90f, EnemyDamage = 1.15f, EliteInterval = 0.85f, ElitePower = 1.40f },
-		new() { StageId = "stage_4", EnemyHealth = 1.90f, EnemyDamage = 1.20f, EliteInterval = 0.80f, ElitePower = 1.45f },
-		new() { StageId = "stage_5", EnemyHealth = 2.30f, EnemyDamage = 1.25f, EliteInterval = 0.80f, ElitePower = 1.50f },
-		new() { StageId = "stage_6", EnemyHealth = 2.50f, EnemyDamage = 1.25f, EliteInterval = 0.80f, ElitePower = 1.55f },
+		new() { StageId = "stage_10", EnemyHealth = 1.80f, EnemyDamage = 1.10f, EliteInterval = 0.90f, ElitePower = 1.25f },
+		new() { StageId = "stage_2", EnemyHealth = 2.60f, EnemyDamage = 1.10f, EliteInterval = 0.90f, ElitePower = 1.30f },
+		new() { StageId = "stage_1", EnemyHealth = 2.40f, EnemyDamage = 1.15f, EliteInterval = 0.85f, ElitePower = 1.35f },
+		new() { StageId = "stage_3", EnemyHealth = 3.00f, EnemyDamage = 1.15f, EliteInterval = 0.85f, ElitePower = 1.40f },
+		new() { StageId = "stage_4", EnemyHealth = 3.00f, EnemyDamage = 1.20f, EliteInterval = 0.80f, ElitePower = 1.45f },
+		new() { StageId = "stage_5", EnemyHealth = 3.80f, EnemyDamage = 1.25f, EliteInterval = 0.80f, ElitePower = 1.50f },
+		new() { StageId = "stage_6", EnemyHealth = 4.00f, EnemyDamage = 1.25f, EliteInterval = 0.80f, ElitePower = 1.55f },
 		// 10. The hardest pass on the road.
-		new() { StageId = "stage_7", EnemyHealth = 2.30f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
+		new() { StageId = "stage_7", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
 		// The castle (.ai/endgame-castle.md), not playable yet: the Emberdeep's row until its builders tune
 		// their own, so a chapter flipped playable never starts easier than the road behind it.
-		new() { StageId = "stage_11", EnemyHealth = 2.30f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
-		new() { StageId = "stage_12", EnemyHealth = 2.30f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
-		new() { StageId = "stage_13", EnemyHealth = 2.30f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
+		new() { StageId = "stage_11", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
+		new() { StageId = "stage_12", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
+		new() { StageId = "stage_13", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
 	};
 
 	public static IReadOnlyList<ChapterDifficulty> All => Table;
