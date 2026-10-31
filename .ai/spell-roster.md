@@ -1807,6 +1807,9 @@ Breaker's shove helps Tituba's flood or fights it.
 
 ## 2f. Spiritual Weapon - the axe, the hammer and the sword (2026-10-28)
 
+*Since 2026-10-31 the hammer's Titan's Maul (same id) is **Mjolnir**: its own drawing, lightning on every
+slam, and Light traded for Lightning - section 2i.*
+
 Eric: *"spiritual weapon should be able to select one of 3 weapons when you initially pick it, they
 each have different advantages. axe is heavier but more damage, hammer is aoe that shakes ground and
 slows enemies, and sword is the most direct damage to single targets, faster swings. they should each
@@ -2735,6 +2738,183 @@ Built in `ElementalPulse` by id (`SunDogsId`, `ProminenceId`). The mock suns and
 (`DrawLayers.Air`): the suns on a child of the flare, each with its own `SolarFlareVisual` for its burst;
 the loops on a `TopLevel` canvas with a fixed pool of sixteen, so a loop in flight stays where it was
 thrown. The prominences land on enemies, so nothing is placed on blocked ground.
+
+## 2i. The Ascension audit (2026-10-30)
+
+Eric, playing 0.9.2: *"tidal wall starts too big, it should start small and grow as it moves away from
+you. it's also firing far too fast. make sure no ascensions are too overpowered or take up too much of the
+screen to see what's going on."* Then: *"every ascension should respect the mutations"*, the Sun Dogs off a
+phone's screen and popping home, Doomcap drawn side-on, *"fix the tidal wave so it can't get so large that
+it breaks the game"*, and the giant hammer redrawn with a Mjolnir crossover. Branch `wip/ascension-audit`.
+
+**How it was measured.**
+
+- **Power**: the level 8 band (331-465 a second, the 8-minute solo run of section 2e) from the tables of
+  2e-2h, re-run only where a card changed or a number sat well over. Today's machine (load 10-15, shared)
+  reads about 10% high: the old Tidal Wall made 552 the same day the doc had 497. The doubling (x2.5 of
+  level 7, "Every Ascension doubles") is listed but not cut on: every spell over it there has a weak level 7
+  on one target, and that rule is a floor.
+- **Screen**: `_UiShot --cover=14` (new): a ring of immortal skeletons round a still wizard, no level-ups;
+  every burst frame rendered twice, the second time paused with the spell's nodes hidden, and the pixels that
+  differ are the spell. 24 frames 1/6 s apart, after an 8 s warm-up, level 8, at half resolution on both
+  canvases (PC 1280x720 at the game's zoom, the phone's 540x1212 `--portrait --safe-area`); the share is a
+  fraction, so it carries. It also measures how much of the wizard's sprite box the spell covers. Frames over
+  90% are the hurt flash landing on the second render and are dropped (Event Horizon's three). Facing
+  spells walk a second first; Hunter's Draw and Mirefoot walk and stop; on-kill spells use
+  `--cover-mortal` (and Frost Shard and Arcane Explosion a Magic Missile partner, whose darts count).
+- **Threshold**, from the data (all but four Ascensions cover under 10% at their peak): **too much is over
+  30% of the screen at the peak or 20% on average on either canvas, for art drawn over the bodies**
+  (`DrawLayers.Air`); ground art (the bog, a lane, a thicket) is held to a third and a quarter, because
+  telegraphs draw above the ground (`GroundTell`) and it cannot hide one. The wizard's own sprite covered
+  by air art more than half the time is too much.
+
+**The table** (L4 card used for the screen in brackets; screen as peak / mean %, PC then phone; wizard =
+his sprite box covered on average, PC):
+
+| spell | Ascension | L8 a second | screen PC; phone | wizard | verdict |
+|---|---|---|---|---|---|
+| Riptide (Breaker) | **Tidal Wall** | 552 before; **491** after (Groundswell 444) | 39/27; 43/29 -> **11/6; 16/8** (full res) | 60% -> **9%** | **fixed** (below) |
+| | **Trident** | 519 -> **524** | 34/24; 24/19 -> **17/11; 13/9** | 61% -> **42%** | **fixed** (below) |
+| Riptide, worst case | Tidal Wall + Spring Tide, Area x2.6 | - | 67/47 -> **26/20** (full res) | 56% -> **15%** | **ceiling** (below) |
+| Magic Missile (Unstable) | Overcharge | 441 | 1.4/0.6; 1.2/0.6 | 4% | ok |
+| | Arcane Orb | 494; **534** today with Threaded Needle | 2.2/1.4; 1.7/1.1 | 6% | ok, top edge; Threaded Needle **fixed** |
+| Arcane Explosion (Rift) | Supernova | - | 5.9/2.2; 4.7/1.8 | 24% | ok (another session's) |
+| | Event Horizon | - | 5.0/1.4; 4.0/1.1 | 27% | ok (another session's) |
+| Black Tentacles (Fling) | Elder God Maw | 380 | 6.7/6.0; 5.5/4.9 | 15% | ok |
+| | Shadow Forest | 374 | 4.7/3.7; 3.4/2.4 | 7% | ok |
+| Bramble Seed (Burrs) | Bramble Keep | 735 (`--stand-still`, its ceiling) | 5.4/3.5; 4.4/2.8 | 26% (ground) | ok; over only standing still |
+| | Thornstorm | 490 (`--stand-still`) | 2.3/1.6; 2.2/1.3 | 44% | ok |
+| Chain Lightning (Storm Reach) | Cascade | 437 | 3.2/1.3; 2.3/1.0 | 1% | ok |
+| | Electrocution | 326 | 0.9/0.5; 0.7/0.4 | 1% | ok |
+| Cinderbreath (Backdraft) | Dragon's Breath | 439 | 3.1/2.1; 2.6/1.7 | 17% | ok |
+| | Fire Fan | 412 | 1.9/1.3; 1.5/1.0 | 26% | ok |
+| Cone of Cold (Arctic Blast) | Zero Point Shockwave | 302 | 0.5/0.2; 0.5/0.2 | 1% | ok (a flash between samples) |
+| | Glacier Tide | - | 0.9/0.3; 0.6/0.2 | 1% | ok |
+| Contagion (Fever Burst) | Pandemic | 476 | 2.3/1.3; 5.1/3.2 | 1% | ok |
+| | Plague Wind | 438 | 6.5/5.3; 4.8/3.6 | 6% | ok |
+| Cyclone Slash (Twin Gyres, walking) | Typhoon Core | 418-438 | 10.0/2.5; 1.5/1.3 | 1% | ok |
+| | Vortex Reaper | 372 | 7.8/7.0; 7.7/6.7 | 13% | ok |
+| Familiar: cat (Grimalkin) | Cath Palug | 60-76 (grants +36% cast speed) | 1.3/0.6; 1.1/0.4 | 1% | ok |
+| | Nine Lives | - | 1.4/0.5; 1.1/0.4 | 1% | ok |
+| Familiar: crow (Raven) | The Morrigan | 380-424 | 1.3/0.7; 1.1/0.6 | 1% | ok |
+| | Griffin | 376-421 | 1.9/0.9; 1.5/0.7 | 3% | ok |
+| Familiar: dog (Great Hound) | Cerberus | 426-480 | 1.7/0.9; 1.3/0.7 | 16% | ok |
+| | Hound of Annwn | 360-478 | 1.8/0.9; 1.3/0.7 | 5% | ok |
+| Fireball (Cluster) | Hellfire Nova | - | 12/1.5; 12/1.3 | 12% (99% at a blast) | ok (another session's) |
+| | Armageddon Sun | - | 13/1.4; 12/1.3 | 15% | ok (another session's) |
+| Frost Shard (Ice Flurry) | Avalanche | 272-360 | 1.5/0.8; 1.0/0.6 | 1% | ok |
+| | Meltwater | 190-200 | 1.9/1.5; 1.9/1.5 | 1% | ok, low |
+| Gale Blade (Eddy) | Thunderhead | 406 | 1.3/0.7; 1.0/0.5 | 5% | ok |
+| | Squall | 325-371 | 1.6/0.7; 1.1/0.5 | 6% | ok |
+| Glacial Spike (Shatter) | Glacier Crown | 368-465 | 2.3/1.1; 1.7/0.9 | 1% | ok |
+| | Frozen Spire | 368-465 | 2.1/1.3; 1.3/1.1 | 1% | ok |
+| Gravewell (Bone Spikes) | Mass Grave | 415-431 | 2.5/1.6; 1.8/1.2 | 5% | ok |
+| | Grave Line | 415-431 | 4.1/3.2; 3.4/2.6 | 19% | ok |
+| Hollow Star (Crush) | Black Sun | 771 (2e); **505** today | 2.0/1.1; 1.5/0.9 | 1% | ok, top edge (re-measured) |
+| | Nova Seed | 434 | 1.6/1.2; 1.3/0.9 | 3% | ok |
+| Hunter's Draw (Heavy Draw) | Rain of Arrows | 403 | 1.1/0.3; 0.4/0.1 | 1% | ok |
+| | Hunter's Mark | 351-357 | 1.3/0.4; 0.5/0.2 | 1% | ok |
+| Iron Palisade (Spiked Rail) | Iron Ring | 563 | 2.6/1.3; 1.9/1.1 | 14% | ok, over the band by a fifth |
+| | Rolling Wall | 429-486 | 2.2/0.8; 1.7/0.7 | 1% | ok |
+| Kindled Ward (Flare) | Pyre | 480-501; 534 today | 4.4/2.6; 4.2/2.1 | 32% | ok, top edge |
+| | Kindling Flock | 416 | 2.1/1.3; 1.6/1.0 | 12% | ok |
+| Meteor Swarm (Shower) | Extinction Event | - | **26/10; 20/8** | 32% | **watch** (another session's) |
+| | Orbital Bombardment | - | 9.2/8.3; 7.9/6.8 | 7% | ok (another session's) |
+| Mirefoot (Broad Wake, walk and stop) | Great Bog | 330-466 | 21/18; 14/13 (ground) | 57% (ground) | ok: ground, under the threshold for ground |
+| | Will-o'-Wisps | 330-466 | 5.1/4.7; 3.6/3.3 | 73% (ground) | ok |
+| Molten Shard (Slag Trail) | Caldera | 267-279 | 3.6/2.9; 3.1/2.2 | 11% | ok |
+| | Forge Swarm | 376 | 3.9/3.4; 3.2/2.7 | 36% (the ring round him) | ok |
+| Obsidian Spike (Splinter Field) | Tectonic Uprising | 430 | 2.9/2.3; 2.3/1.8 | 3% | ok |
+| | Basalt Lance | 490-501 | 4.3/3.1; 3.5/2.5 | 1% | ok, top edge |
+| Scorching Ray (Flashpoint) | Prism | 530; 508 today | 4.6/0.7; 3.8/0.6 | 5% | ok, top edge |
+| | Sunlance | 391-426 | 5.0/2.8; 3.8/2.1 | 50% (the beam's root) | watch |
+| Shadow Bolt (Creeping Rot) | Anathema | 387 | 6.3/4.0; 4.7/3.2 | 1% | ok |
+| | Threefold Curse | 371 | 5.2/4.0; 4.1/3.2 | 8% | ok |
+| Sleet Runes (Rune Flurry, facing) | Sigil Fan | 330 | 1.7/0.7; 1.2/0.5 | 2% | ok (another session's) |
+| | Turning Gale | - | 1.5/0.8; 1.2/0.5 | 5% | ok (another session's) |
+| Solar Flare (Sun Dogs) | Daybreak Avatar | - | 5.7/1.7; 4.5/1.3 | 24% | ok; Sun Dogs **fixed** for the phone |
+| | Corona Discharge | - | 6.1/1.6; 4.9/1.3 | 22% | ok |
+| Spiritual Weapon: axe (Broadaxe) | Executioner's Greataxe | 469-475 | 1.8/0.9; 1.2/0.7 | 7% | ok |
+| | Whirling Axes | 312-444 | 1.0/0.6; 0.8/0.5 | 13% | ok |
+| hammer (Earthshaker) | Titan's Maul -> **Mjolnir** | 405-426 -> **428** | 15/3.9; 10/2.9 | 11% | **rebuilt** (below) |
+| | Hammerfall | 418 | 7.8/4.0; 8.8/3.1 | 12% | ok |
+| sword (Twin Blades) | Celestial Greatsword | 389-446 | 2.3/1.7; 1.8/1.4 | 20% | ok |
+| | Thousand Cuts | 362 | 1.6/0.8; 1.2/0.6 | 10% | ok |
+| Starfall (Skipping Stars) | Starburst | 353-413 | 1.1/0.7; 0.9/0.6 | 3% | ok |
+| | Constellation | 340-391 | 1.2/0.9; 0.9/0.7 | 6% | ok |
+| Stormsweep (High Voltage, facing) | Thunderclap | 391 | 1.6/0.6; 1.4/0.5 | 7% | ok (another session's) |
+| | Cardinal Storm | 386 | 1.7/0.7; 1.3/0.5 | 14% | ok (another session's) |
+| Thorned Vine (Barbed Lash) | Thicket | 248-352 | 2.0/1.5; 1.8/1.3 | 3% | ok |
+| | Hydra Vine | 248-352 | 1.3/0.8; 1.0/0.7 | 5% | ok |
+| Toxic Spore Burst (Giant Caps) | Doomcap | 465 | 3.5/0.8; 2.6/0.6 | 1% | ok; **redrawn** from above |
+| | Mycelial Bloom | 388-411 | 9.0/3.2; 7.6/2.5 | 14% | ok |
+| Void Lance (Void Glaive) | Witching Hour | 354-383 | 1.9/1.7; 1.5/1.3 | 19% | ok |
+| | Cosmic Collapse | 402-420 | 6.2/3.9; 5.3/3.2 | 26% | ok |
+| Aegis Ward (Fortified) | Sun Aegis | by eye (a shield) | 1.3/0.3; 1.0/0.3 | 8% | ok (another session's) |
+| | Thorn Crystal Shell | by eye | 1.2/0.3; 1.0/0.3 | 8% | ok (another session's) |
+
+The Apotheoses on their wizards' paths, screen only: Cataclysm 6.4/5.2; 5.9/4.8. The Long Winter 0.8/0.1.
+The Lattice 2.9/1.3; 2.3/1.0. Sundering 3.3/2.8; 2.8/2.2. **Spring Tide 22/13; 23/13** before the ceiling
+(the cap now holds its wave to 760 px). Wildwood 5.4/4.1; 4.8/3.8. The Spirit Mirror 2.6/1.8; 2.8/2.0. The
+Endless Chase 1.3/1.1; 0.8/0.8. Tituba's Spring Tide is still offered and taken at 10.7 minutes (player
+level 23, Water tier 6, `--seek-apotheosis --character=5`).
+
+Over the doubling (x2.5 of level 7), flagged and not cut, for the reason "Every Ascension doubles" gives:
+Molten Shard (x7-11), Gravewell (x6.6-6.8), Thorned Vine (x3.4-4.8), Cone of Cold (x3.8), Frozen Spire
+(x3.6), Shadow Bolt (x3.3-3.5), Tectonic Uprising (x3.3), Iron Ring (x3.0), Kindled Ward (x2.8-3.0). Under
+x2 at 10x enemy health: Tidal Wall x1.29 (x1.4 before), Trident x1.63 (x1.5 before) - Riptide's level 7
+already sweeps the field (224 px waves since 2026-10-27).
+
+**What changed.**
+
+- **Tidal Wall** (`BoltEvolutions.TidalWall*`, `ElementalBolt.Growth`): leaves the hand at the size a wave
+  would be without the card and rises to x3 by the end of its run - hit and drawing together, from the first
+  frame; the card's cooldown is x3 (0.8 casts a second at level 8 on the Test Wizard, about 1.3 for a Tituba
+  at Water 6 with attack speed, now a third of that): one wall at a time. Damage a hit unchanged (+60%): the
+  three walls were overkilling one pack, and at x1.6, x1.7 and x2.2 the band read 491, 495 and 518. With
+  Groundswell it rises from Groundswell's 60% but no higher than the wall (Groundswell over it stood a 5.4x
+  wave). Spring Tide's lane widens with its wave (`SpringTideLane.StartHalfWidth`, `GrowLength`).
+- **The ceiling** (`RiptideWave.MaxSwathHalfWidth`, `ElementalBolt.CapCrest`): no crest is wider than 380 px
+  either side of its line, nine tenths of the 847 px short side of both canvases' views, however it is grown
+  (worst case: Breaker x Tidal Wall x Spring Tide x Area x2.6 - eleven shop levels with the found ones,
+  Thornseed, the Inferno Core, Vainamoinen's passive - was a 2,000 px swath). Pierce capped at 150 (the field
+  holds 140), splashes at 24 a wave. Draw calls 92-100 -> 82-85; the frame under the shared software
+  renderer was 250-450 ms before and after, so this machine cannot show what the size cost a GPU.
+- **Trident**: each wave a wave's size (Breaker still 30%), -30% cooldown not -50%, +90% not +40%.
+- **Arcane Orb + Threaded Needle** - the one dead pairing the level 4 x level 8 audit found: the orb struck
+  through its grind and never threaded. It now turns on a fresh enemy each time its path runs clear, three
+  times in its one roll, straight (never homing), stitching its thread.
+- **Sun Dogs** (`ElementalPulse`): on the screen's long axis (above and below him on a phone), never past
+  72% of the half view, and gliding home over about half a second when he moves.
+- **Mjolnir** (Titan's Maul's id): a new drawing - a steel block of a head rune-cut in Lightning's ramp, a
+  short leather-wound haft, an iron pommel and a wrist loop (`spirit_weapons.py`, `mjolnir()`); the size and
+  the stop kept; every full slam calls a stroke onto where it landed and onto the 3 nearest enemies past its
+  edge for half the slam (`SpiritualWeapon.CallThunder`). It **trades Light for Lightning** (`ReplacesElement`,
+  as Ember Caps does): a spell may never name more than two elements, and +1 Lightning on Arcane + Light
+  failed `RegressionChecks`. Band 428 (Titan's Maul 423-426).
+- **Doomcap** (`spore_mushrooms.py`): the titan drawn from above in the game's three-quarter view - the cap's
+  top a foreshortened dome with its spots, the front edge showing its thickness, a sliver of gills, a short
+  stem, a dithered ground shadow. The small caps keep their side view; they never share the ground with it.
+- **Not changed, re-measured**: Black Sun, the one figure well over the band in the tables (771 in 2e), read
+  505 today on the same footing (John Dee's path, Crush + Black Sun) - the band's top edge with Pyre (534),
+  Threaded Needle + Arcane Orb (534) and Prism (508). Nothing in the roster measured well over the band, so
+  no damage was cut; the top edge is listed for a playtest.
+- Every card written or reworded here is one line (the designer: "keep text minimal").
+
+**Every level 4 card under every Ascension** (the 70 pairings were read in each spell's code): one was dead,
+Arcane Orb + Threaded Needle (fixed). Partial, and kept: under Tidal Wall Groundswell gives its narrower start,
+speed and cooldown but not its 180% end (the wall is the ceiling); under Mass Grave and Grave Line Quickset
+arms the grave at once but the Ascension places it; under Rain of Arrows Heavy Draw staggers and hits harder
+but does not shove; under Doomcap Giant Caps' wider, harder burst reaches the titan, while its two fewer caps
+lower the titan's per-cap bonus. Reported for the sessions that own them: under Event Horizon, Arcane
+Explosion's Dual Shockwave pulls 70% harder instead of throwing (its words are wrong there).
+
+**Needs eyes.** In motion: the wall rising (does it read as a wave growing, or a sprite scaling?), one wall at
+a time on Tituba with attack speed, Spring Tide's wedge, the ceiling reached early with Area boons; the
+Trident fan; the Sun Dogs gliding; Mjolnir's strokes on the pack's edge (the staged knot was packed inside
+the slam, so the edge strikes were not photographed); the Doomcap at the size it grows to under a real crowd.
+On a phone: the wall crossing a 720-wide screen, the dogs above and below him, Extinction Event (26% at its
+peak, another session's).
 
 ## 3. The changes that matter most
 

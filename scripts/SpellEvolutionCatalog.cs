@@ -400,6 +400,8 @@ public static class SpellEvolutionCatalog
 
 	private static readonly Color SpiritArcaneTint = new Color(0.86f, 0.78f, 1.0f);
 	private static readonly Color SpiritLightTint = new Color(1.0f, 0.95f, 0.76f);
+	// Mjolnir's: the slam's quake and debris in the pale yellow of a lightning stroke (the hammer draws itself).
+	private static readonly Color SpiritLightningTint = new Color(1.0f, 0.97f, 0.62f);
 
 	// THE AXE: heavy and slow; a blow cleaves everything within reach of its quarry and throws it back.
 	private static void SetupSpiritAxeEvolutions(SpellData spell)
@@ -533,18 +535,28 @@ public static class SpellEvolutionCatalog
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
 			Id = SpiritualWeapon.TitansMaulId,
-			DisplayName = "Titan's Maul",
-			// The colossal form, twice the hammer's size: the slam is twice as wide by its Scale. The stop
-			// is a freeze (SpellData.GetFreezeSecondsAtLevel); a boss takes a hard slow instead (Enemy.ApplySlow).
-			Description = "The hammer becomes a colossal maul, twice the size: its slam reaches twice as wide, hits 20% harder and stops what it hits dead for 0.5 s.",
+			// MJOLNIR since 2026-10-31 (it was Titan's Maul, a giant of the spirit hammer; the id stays). Eric:
+			// "the sprite should be entirely different and more detailed" and "a Mjolnir reference ... a
+			// lightning tag crossover". The thunder-god's hammer: its own drawing (tools/art/spirit_weapons.py,
+			// mjolnir()), the colossal size and the stop kept, and the lightning every slam calls down
+			// (SpiritualWeapon.CallThunder). Its Lightning is a TRADE for the hammer's Light, as Ember Caps
+			// trades Poison for Fire: a spell may never name more than two elements (RegressionChecks), and the
+			// hammer is Arcane + Light. It pays the attunement price Hallowed Ground and Hammerfall pay. The stop
+			// is a freeze (SpellData.GetFreezeSecondsAtLevel); a boss takes a hard slow (Enemy.ApplySlow).
+			ReplacesElement = "Light",
+			BonusElementWeights = new() { { "Lightning", 1 } },
+			ModulateColor = SpiritLightningTint,
+			DisplayName = "Mjolnir",
+			Description = $"A giant hammer whose slam stops what it hits and calls lightning onto the {SpiritualWeapon.MjolnirStrikes} nearest enemies past it. Trades Light for Lightning.",
+			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 8,
 			ScaleMultiplier = 2.0f,
 			DamageMultiplier = 1.2f,
 			Effect = SpellEffect.Freeze,
 			EffectValue = 0.5f,
 			VisualTag = "SpiritTitansMaul",
-			SynergyTag = "Light / Colossal",
-			SynergyDescription = "Ascension: the ground stops them where they stand."
+			SynergyTag = "Lightning / Colossal",
+			SynergyDescription = "Ascension: stops the knot; lightning takes the edge."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
@@ -2751,18 +2763,25 @@ public static class SpellEvolutionCatalog
 		AddElementPath(spell);
 		// A TIDAL WAVE (2026-10-27, "riptide size should end up being a huge portion of the screen per
 		// shot"), named for what it is since 2026-10-29: Tidal Wall. x3 of a level 8 wave (224 px) is about
-		// 620 px across, 800 with Breaker's 30% - most of a phone's width and most of a PC's height. The
-		// width multiplies what it hits, so the damage is the smaller half of the doubling, and a wave that
-		// size is not spent on the first ranks it meets. Its look is RiptideWave's titanic sea.
+		// 620 px across, 800 with Breaker's 30% - most of a phone's width and most of a PC's height. A wave
+		// that size is not spent on the first ranks it meets. Its look is RiptideWave's titanic sea.
+		// RISES, AND COMES SELDOM (2026-10-30, "tidal wall starts too big, it should start small and grow
+		// as it moves away from you. it's also firing far too fast"): it leaves the hand a wave's size and
+		// rises to that height by the end of its run (ElementalBolt.Growth), and the sea takes three times
+		// as long to gather - one wall on the screen, not three. Its damage a hit is what it was: three walls
+		// at once were overkilling the same pack, and one measures where three did (BoltEvolutions.TidalWall*,
+		// .ai/spell-roster.md 2i).
 		spell.Level8Options.Add(Branch(spell, DefaultBranch.TitanCataclysm,
-			"The wave rises into a wall of water three times as wide, +60% damage, and it breaks through 40 more before it is spent.",
-			"Ascension / Water", "Ascension: the sea comes in.",
-			o => { Renamed(o, "Tidal Wall", "TidalWall", sea); o.DamageMultiplier = 1.6f; o.ScaleMultiplier = 3.0f; o.PierceBonus = 40; }));
+			$"The wave swells as it rolls out into a wall {BoltEvolutions.TidalWallScale:0} times as wide, but comes a third as often.",
+			"Ascension / Water", "Ascension: one great wall at a time.",
+			o => { Renamed(o, "Tidal Wall", "TidalWall", sea); o.DamageMultiplier = BoltEvolutions.TidalWallDamage; o.ScaleMultiplier = BoltEvolutions.TidalWallScale; o.CooldownMultiplier = BoltEvolutions.TidalWallCooldown; o.PierceBonus = 40; }));
 		// Not "Spring Tide", as 2e first proposed: that is Tituba's Apotheosis's name.
 		spell.Level8Options.Add(Branch(spell, DefaultBranch.InfiniteHorizon,
-			$"Three waves fan out from your hand at once, the middle one on your aim and the others {BoltEvolutions.TridentSpreadDegrees:0} degrees to either side. -50% cooldown, and each wave 40% bigger, 40% harder and tearing through 4 more.",
+			$"Three waves fan out from your hand at once, each {(BoltEvolutions.TridentDamage - 1f) * 100f:0}% harder.",
 			"Ascension / Water", "Ascension: a wedge of sea in front of you every cast.",
-			o => { Renamed(o, "Trident", "Trident", sea); o.DamageMultiplier = 1.4f; o.CooldownMultiplier = 0.5f; o.ProjectileCountBonus = 2; o.PierceBonus = 4; o.ScaleMultiplier = 1.4f; }));
+			// Scaled back in the Ascension audit (2026-10-30): waves 40% bigger at half the cooldown stood two
+			// fans on the screen at once (BoltEvolutions.TridentScale).
+			o => { Renamed(o, "Trident", "Trident", sea); o.DamageMultiplier = BoltEvolutions.TridentDamage; o.CooldownMultiplier = BoltEvolutions.TridentCooldown; o.ProjectileCountBonus = 2; o.PierceBonus = 4; o.ScaleMultiplier = BoltEvolutions.TridentScale; }));
 	}
 
 	// Molten Shard: a homing shard at a random enemy in range that burns away a share of its health
