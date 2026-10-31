@@ -280,13 +280,13 @@ public static class ChestItemCatalog
 			ElementTags = new[] { ("Metal", 1), ("Earth", 1) },
 			Name = "The Reliquary",
 			RequiredItemIds = new[] { RelicKey, VialOfVitality, Phylactery },
-			Description = "Take 12% less damage, and every chest you open heals 6 HP and raises a 6-point shield.",
+			// The heal on a chest went with the healing budget (.ai/difficulty-curve.md, section 5); the shield stays.
+			Description = "Take 12% less damage, and every chest you open raises a 6-point shield.",
 			IconPath = SetIconRoot + "vaultguard.png",
 			Effects = new[]
 			{
 				new ChestSetEffect { Label = "Damage taken", Value = "-12%" },
 				new ChestSetEffect { Label = "Shield on opening a chest", Value = "6 points" },
-				new ChestSetEffect { Label = "Heal on opening a chest", Value = "+6 HP" }
 			}
 		},
 		new ChestSetDefinition
@@ -385,11 +385,11 @@ public static class ChestItemCatalog
 			ElementTags = new[] { ("Darkness", 1), ("Water", 1) },
 			Name = "The Tithe Chalice",
 			RequiredItemIds = new[] { EssenceChalice, HeartOfRenewal, WormwoodTithe },
-			Description = "Every kill heals 1 HP.",
+			Description = $"Every {Player.LifeDrainKillsPerHeal}th kill heals 1 HP.",
 			IconPath = SetIconRoot + "life_drain.png",
 			Effects = new[]
 			{
-				new ChestSetEffect { Label = "Heal per kill", Value = "+1 HP" }
+				new ChestSetEffect { Label = $"Heal every {Player.LifeDrainKillsPerHeal}th kill", Value = "+1 HP" }
 			}
 		},
 		new ChestSetDefinition
@@ -569,9 +569,10 @@ public static class ChestItemCatalog
 			IronhideCloak => "+20% defense while above 80% health.",
 			ProtectiveWard => "+15% defense while a shield holds.",
 			VialOfVitality => OverhealDescription,
-			HeartOfRenewal => "+0.8 health per second.",
+			HeartOfRenewal => $"+{Player.HeartOfRenewalRegenPerSecond * 60f:0} health regeneration a minute.",
 			Phylactery => "One revive per stage, at 25% health.",
-			EssenceChalice => "+1 maximum health per kill, up to +50.",
+			// It said "+1 maximum health per kill, up to +50", and has only ever healed (Player.OnChestEnemyKilled).
+			EssenceChalice => $"Each of the run's first {Player.EssenceChaliceKillHeals} kills heals 1 HP.",
 			QuicksilverPendant => "+15% movement speed.",
 			HasteRune => "+12% attack speed.",
 			CompassRose => "+15% XP.",

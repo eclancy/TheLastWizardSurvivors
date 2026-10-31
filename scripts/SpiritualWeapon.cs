@@ -194,8 +194,9 @@ public partial class SpiritualWeapon : Node2D
 	// while anything farther out is in reach; about the width of a weapon's drawing.
 	private const float TargetSpacing = 96f;
 
-	// Soul Siphon: at most this much healed a second, whatever the swords land.
-	public const int SiphonPerSecond = 3;
+	// Soul Siphon: at most this much healed a second, whatever the swords land. 1 since the healing
+	// budget (.ai/difficulty-curve.md, section 5); it was 3, 180 HP a minute against a 20 HP bar.
+	public const int SiphonPerSecond = 1;
 
 	// --- the drawings (tools/art/spirit_weapons.py), in world pixels at x2 ---------------------------------
 	private const int Headings = 32;

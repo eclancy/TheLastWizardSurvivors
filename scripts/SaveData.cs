@@ -17,7 +17,10 @@ public class SaveData
 	// the retired level-up charges. 19 makes every spell an achievement's (.ai/achievements-and-secrets.md
 	// section 3): GlimpsedSecretIds and LifetimeStats.EventsWon, the event deeds seeded from what the save
 	// owns, moved rewards reconciled, and the Emberdeep kept open for anyone who had met the old gate.
-	public const int CurrentSchemaVersion = 19;
+	// 20 is the difficulty curve's (.ai/difficulty-curve.md, section 9): AscensionLearned for every save
+	// that has played a run, and the levels bought of the re-priced Powers (Fate Fracture, Emberheart)
+	// paid back the difference. The castle's Dungeon move (.ai/endgame-castle.md, C2) takes 21.
+	public const int CurrentSchemaVersion = 20;
 	public const int CampaignSchemaVersion = 8;
 	private const int MaxTelemetryHistory = 25;
 
@@ -126,6 +129,13 @@ public class SaveData
 	/// <summary>Enemies throw their damage numbers when hit (DisplaySettings). No schema bump: an older
 	/// save simply has the key missing and keeps the default, on.</summary>
 	public bool ShowDamageNumbers { get; set; } = true;
+
+	/// <summary>
+	/// Taught the Ascension outside the campaign's own record (GlobalStatsManager.HasLearnedAscension):
+	/// set by schema 20 for every save that had already played a run, all of which had the Ascension in
+	/// every run they played. A new save learns it from the Hayward, which the campaign records anyway.
+	/// </summary>
+	public bool AscensionLearned { get; set; } = false;
 
 	/// <summary>The key a seen ascension is stored under.</summary>
 	public static string AscensionKey(string spellId, string branchId)
@@ -242,6 +252,9 @@ public class SaveData
 
 		if (SchemaVersion < 19)
 			MigrateToAchievementUnlocks();
+
+		if (SchemaVersion < 20)
+			MigrateToLearnedAscensionsAndRepricedPowers();
 
 		if (log)
 			GD.Print($"SaveData: migrated schema {from} -> {CurrentSchemaVersion}; " +
@@ -551,6 +564,44 @@ public class SaveData
 	}
 
 	/// <summary>
+	/// The Powers whose price came down with what a level pays (.ai/difficulty-curve.md): (base cost, cost
+	/// per level) as the shop priced them before and after. Frozen here, as RetiredLevelUpCharges is, so
+	/// the refund never moves with a later price.
+	/// </summary>
+	internal static readonly IReadOnlyDictionary<string, (int OldBase, int OldPerLevel, int NewBase, int NewPerLevel)> RepricedPowers =
+		new Dictionary<string, (int, int, int, int)>
+		{
+			// Fate Fracture: +1 reroll at every level-up became +2 rerolls per run.
+			["rerolls"] = (75, 50, 40, 25),
+			// Emberheart: +0.4 HP a second a level became +0.05 (the healing budget).
+			["recovery"] = (30, 20, 15, 10),
+		};
+
+	/// <summary>
+	/// Schema 20 (.ai/difficulty-curve.md, section 9). Nothing anybody had is taken away:
+	///   1. AscensionLearned for every save that has played a run - each had the Ascension in every run
+	///      it played, and a new save now learns it from the Hayward;
+	///   2. every level bought of a re-priced Power is paid back what it cost less what it costs now.
+	///      The levels stay; what a level pays is the new rule. Returns the refund, for the validator.
+	/// </summary>
+	internal int MigrateToLearnedAscensionsAndRepricedPowers()
+	{
+		if ((Lifetime?.TotalRuns ?? 0) > 0 || (RunTelemetryHistory?.Count ?? 0) > 0)
+			AscensionLearned = true;
+
+		int refund = 0;
+		foreach (var (id, price) in RepricedPowers)
+		{
+			if (!ArcaneUpgradeLevels.TryGetValue(id, out int levels))
+				continue;
+			for (int n = 0; n < levels; n++)
+				refund += (price.OldBase + n * price.OldPerLevel) - (price.NewBase + n * price.NewPerLevel);
+		}
+		TotalCurrency += refund;
+		return refund;
+	}
+
+	/// <summary>
 	/// Schema 19: every spell that is not a starter is an achievement's (.ai/achievements-and-secrets.md
 	/// section 3). It only adds: nothing anybody owns is taken away, and no Arcane Energy changes hands.
 	/// </summary>
@@ -834,6 +885,7 @@ public class SaveData
 			["SfxVolume"] = SfxVolume,
 			["AudioMuted"] = AudioMuted,
 			["ShowDamageNumbers"] = ShowDamageNumbers,
+			["AscensionLearned"] = AscensionLearned,
 			["BalancePresetId"] = BalancePresetId,
 			["PlaytestChecklistState"] = playtestChecklistState
 		};
@@ -1065,6 +1117,8 @@ public class SaveData
 
 		if (root.ContainsKey("ShowDamageNumbers"))
 			result.ShowDamageNumbers = root["ShowDamageNumbers"].AsBool();
+		if (root.ContainsKey("AscensionLearned"))
+			result.AscensionLearned = root["AscensionLearned"].AsBool();
 
 		if (root.ContainsKey("BalancePresetId"))
 			result.BalancePresetId = GlobalStatsManager.NormalizeBalancePresetId(root["BalancePresetId"].AsString());

@@ -1718,7 +1718,9 @@ public partial class MainMenu : Control
 	{
 		upgradeDefinitions.Clear();
 		RegisterUpgrade("damage", "Runes of Ruin", "+8% spell damage", 30, 20, 8);
-		RegisterUpgrade("recovery", "Emberheart", "+0.4 HP/sec regen", 30, 20, 8);
+		// Re-priced with what a level pays (.ai/difficulty-curve.md, section 5; SaveData.RepricedPowers
+		// refunds the difference to levels bought before).
+		RegisterUpgrade("recovery", "Emberheart", $"+{Player.EmberheartRegenPerLevel * 60f:0} HP regen a minute", 15, 10, 8);
 		RegisterUpgrade("cooldowns", "Chronoweave", "-5% cooldown time", 35, 25, 8);
 		RegisterUpgrade("area", "Aether Bloom", "+8% area and range", 30, 20, 7);
 		RegisterUpgrade("attack_speed", "Tempest Rhythm", "+6% attack speed", 35, 25, 8);
@@ -1729,9 +1731,12 @@ public partial class MainMenu : Control
 		RegisterUpgrade("growth", "Sage Spiral", "+10% XP gain", 30, 20, 6);
 		RegisterUpgrade("greed", "Avarice Seal", "+10% Arcane Energy gain", 35, 25, 8);
 		RegisterUpgrade("extra_lives", "Phoenix Oath", "+1 revive in every run", 120, 80, 3);
-		RegisterUpgrade("rerolls", "Fate Fracture", "+1 reroll at every level-up", 75, 50, 5);
-		// The run-scoped level-up charge. Priced above rerolls because a reroll refills at every level-up
-		// and a ban does not - one purchase buys one use for the whole run. Hoarded Insight (Save) and
+		// Rerolls are a pool for the run since 2026-10-31 (.ai/difficulty-curve.md, section 7): +2 a level,
+		// ten at the cap, priced down from 75 + 50 with what a level buys (SaveData.RepricedPowers refunds
+		// the difference).
+		RegisterUpgrade("rerolls", "Fate Fracture", $"+{Player.RerollsPerFateFractureLevel} rerolls in every run", 40, 25, 5);
+		// The other run-scoped level-up charge. Priced above rerolls because a ban strikes a spell for the
+		// rest of the run where a reroll only re-deals one hand. Hoarded Insight (Save) and
 		// Augury sold beside it until 2026-10-28 ("remove save and augury mechanics"); what was bought
 		// of them is refunded by SaveData.MigrateRetiredLevelUpCharges.
 		RegisterUpgrade("bans", "Proscription", "+1 ban per run: strike a spell from that run's level-ups", 90, 70, 3);

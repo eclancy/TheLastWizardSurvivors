@@ -407,6 +407,8 @@ public partial class _BalanceHarness : Node
 				// shop argues with the roll, and a measurement that does not is measuring a new save.
 				data.ArcaneUpgradeLevels["rerolls"] = 5;
 				data.ArcaneUpgradeLevels["bans"] = 3;
+				// Owning everything includes having been taught the Ascension (Player.AscensionLearned).
+				data.AscensionLearned = true;
 				// --full-shop: the rest of the Arcane Codex too, at the caps MainMenu.BuildUpgradeDefinitions
 				// registers. Sage Spiral (growth) is the one that moves the level clock.
 				if (FullShop)
@@ -1015,7 +1017,7 @@ public partial class _BalanceHarness : Node
 	// Avarice is currency, and the last two are what a player buys once the rest is full.
 	private static readonly (string Id, int Base, int Step, int Cap)[] FarmedPowers =
 	{
-		("damage", 30, 20, 8), ("vitality", 25, 20, 10), ("recovery", 30, 20, 8), ("cooldowns", 35, 25, 8),
+		("damage", 30, 20, 8), ("vitality", 25, 20, 10), ("recovery", 15, 10, 8), ("cooldowns", 35, 25, 8),
 		("attack_speed", 35, 25, 8), ("area", 30, 20, 7), ("amount", 60, 40, 4), ("movespeed", 20, 15, 8),
 		("magnet", 25, 20, 7), ("growth", 30, 20, 6), ("extra_lives", 120, 80, 3), ("duration", 25, 20, 6),
 	};
@@ -2417,6 +2419,9 @@ public partial class _BalanceHarness : Node
 	private const string BanAction = "!ban:";
 	private const string SkipAction = "!skip";
 	private int rerollsUsed, bansUsed;
+	// Rerolls are the run's pool now (Player.RerollsRemaining): the planned policies spend at most this
+	// many on one level-up, so ten do not all go on the first hand that disappoints.
+	private const int PlannedRerollsPerLevelUp = 2;
 	// Counted here as well as read from the bar, so a bar that is not refreshed after a use can
 	// never make the bot spend a charge the game will refuse, forever.
 	private int rerollsThisLevel;
@@ -2894,7 +2899,7 @@ public partial class _BalanceHarness : Node
 		if (!player.IsSpellBookFull && best.IsNewUnlock && !best.IsBoon && bestValue >= 105)
 			return Choose(best);
 		if (finishing != null && charges != null && charges.Rerolls > 0
-			&& rerollsThisLevel < Math.Max(1, player.RerollsPerLevelUp)
+			&& rerollsThisLevel < PlannedRerollsPerLevelUp
 			&& (player.UpgradesOnOfferThisLevelUp || player.IsSpellBookFull))
 		{
 			rerollsThisLevel++;
@@ -2913,7 +2918,7 @@ public partial class _BalanceHarness : Node
 				if (offPlan != null)
 					return BanAction + offPlan.SpellId;
 			}
-			if (charges.Rerolls > 0 && rerollsThisLevel < Math.Max(1, player.RerollsPerLevelUp))
+			if (charges.Rerolls > 0 && rerollsThisLevel < PlannedRerollsPerLevelUp)
 			{
 				rerollsThisLevel++;
 				return RerollAction;

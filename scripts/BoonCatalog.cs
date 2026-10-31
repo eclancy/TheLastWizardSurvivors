@@ -142,7 +142,8 @@ public static class BoonCatalog
 			Id = "tidewater_flask", Name = "Tidewater Flask",
 			Description = "Salt water that closes what it is poured on.",
 			ElementWeights = new[] { ("Water", 1), ("Ice", 1) },
-			Effect = BoonEffect.Regen, Magnitude = 0.6f,
+			// 0.6 a second (36 a minute) until the healing budget (.ai/difficulty-curve.md, section 5).
+			Effect = BoonEffect.Regen, Magnitude = 0.15f,
 		},
 		// Was a third +8% Armor boon, alongside Iron Rivets and Sunsteel Filament. That redundancy
 		// was an artifact of unifying damage reduction: the three used to sit on three different
