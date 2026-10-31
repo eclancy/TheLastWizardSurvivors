@@ -112,12 +112,32 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 	public const float ElectrocuteShare = 0.4f;
 	public const float ElectrocuteJumpReach = 110f;
 
-	// One cast's shared reckoning across every branch: the arcs Cascade's kills may still throw, and the
-	// hops the whole cast may still make once it has started throwing them.
+	// THE CAST'S LIMITS (2026-10-31, from the designer's playtest: "Shadow bolt has the capability to break
+	// the game with the number of arcs it can generate. Should we not allow a single cast to hit the same
+	// enemy more than once?"). A fork at every hop grows a cast as branches^depth, and every branch carried
+	// its own copy of what it had struck, so siblings struck the same bodies over and over: Spreading Dark
+	// and Anathema at level 8 made 9,841 arcs from one cast and a 19 s frame in a crowd of sixty, and at
+	// level 12 with Threefold Curse one cast made 9,200 and a 20 s frame. Two rules now hold for every cast of
+	// both spells. No enemy is struck twice by one cast: CastState.Struck is one set shared by every branch,
+	// and by Threefold Curse's three curses. And a cast makes at most MaxArcsPerCast arcs, its first strike
+	// included - Cascade keeps its own, larger allowance (CascadeMaxHops), which is its card's promise.
+	// Twenty is the middle of the 16-24 asked for: a level 12 Shadow Bolt with Spreading Dark forks five
+	// ways, so it is the strike, its five forks and fourteen more spread over the next two jumps - a fan
+	// across the front of a pack, not the whole screen; a level 8 one (three ways) is the strike, 3, 8 and
+	// 8. Measured after (crowd of sixty, 40x health): 20 arcs a curse and at most 16 chain nodes alive, 42
+	// under Threefold Curse, against 9,841 arcs and 8,757 nodes before. Every card that promises a fork or
+	// more hops names the cap from this constant.
+	public const int MaxArcsPerCast = 20;
+
+	// One cast's shared reckoning across every branch: what it has struck, the arcs Cascade's kills may still
+	// throw, the hops the whole cast may still make, and the branches waiting to hop (Tips), so the last of
+	// the allowance is shared out across a generation rather than spent by whichever branch hops first.
 	private sealed class CastState
 	{
+		public HashSet<Node2D> Struck;
 		public int CascadeLeft;
 		public int HopsLeft;
+		public int Tips;
 	}
 
 	// Cascade: this hop killed what it struck, so the arcs out of it fork.
@@ -133,10 +153,18 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 
 	private static readonly List<Enemy> nearScratch = new(64);
 	private static readonly List<Node2D> picked = new(8);
+	// The picks, copied out before any branch strikes (a strike can kill, and nothing after it may read
+	// picked or nearScratch). A second fixed list rather than an array a hop, so a hop allocates nothing
+	// but its node; only SpawnBranches writes it, and SpawnBranches runs from _Process alone.
+	private static readonly List<Node2D> spawning = new(8);
 	private static readonly ElementColors.Ramp LightningRamp = ElementColors.GetRamp(Element.Lightning);
 
 	// A curse the cast threw beside its first (Threefold Curse), which throws no more of its own.
 	private bool volleyChild;
+	// Threefold Curse: the first curse's Struck, handed to the others so no two of them strike one enemy.
+	private HashSet<Node2D> sharedStruck;
+	// True while this branch is counted in its cast's Tips (it has hops left and has not taken them).
+	private bool countedTip;
 
 	private ArcStroke arcStroke;
 	// The ramp the arc and its glow are drawn in: Lightning, Shadow Bolt's Darkness, or an element path's.
@@ -144,7 +172,6 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 	private Node2D originNode;
 	private Node2D activeSource;
 	private Node2D activeTarget;
-	private HashSet<Node2D> visitedTargets = new HashSet<Node2D>();
 	private int remainingArcDepth = 0;
 	private int chainHopIndex = 0;
 	private float stateTimer = 0f;
@@ -194,24 +221,33 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 			return;
 		}
 
+		// A volley's other curses are cast inside the first one's span, so only the first is timed.
+		var perfStart = volleyChild ? default : FrameProfiler.Begin();
 		originNode = playerNode;
-		if (SpellData != null)
+		// Every cast has its budget, not only Cascade's: the first strike spends one arc of it. One state and
+		// one set a cast (a curse of Threefold's shares the first curse's set but has its own budget).
+		bool cascade = SpellData?.HasEvolution(CascadeId) == true;
+		cast = new CastState
 		{
-			bool cascade = SpellData.HasEvolution(CascadeId);
-			cast = new CastState { CascadeLeft = cascade ? CascadeMaxForks : 0, HopsLeft = cascade ? CascadeMaxHops : int.MaxValue };
-			if (SpellData.HasEvolution(ReturnStrokeId))
-			{
-				path = new List<Node2D> { playerNode };
-				pathAt = new List<Vector2> { playerNode.GlobalPosition };
-			}
+			Struck = sharedStruck ?? new HashSet<Node2D>(),
+			CascadeLeft = cascade ? CascadeMaxForks : 0,
+			HopsLeft = cascade ? CascadeMaxHops : MaxArcsPerCast - 1,
+		};
+		if (SpellData?.HasEvolution(ReturnStrokeId) == true)
+		{
+			path = new List<Node2D> { playerNode };
+			pathAt = new List<Vector2> { playerNode.GlobalPosition };
 		}
-		StartArc(playerNode, firstTarget, GetInitialArcDepth(), 0, new HashSet<Node2D> { playerNode });
+		StartArc(playerNode, firstTarget, GetInitialArcDepth(), 0);
 		if (!volleyChild && SpellData?.HasEvolution(ThreefoldId) == true)
 			ThrowVolley(playerNode, firstTarget);
+		FrameProfiler.End(FrameProfiler.Section.Chain, perfStart);
 	}
 
 	// Threefold Curse: the cast's other curses, each at the next nearest enemy in reach of the wizard,
 	// each chaining on its own from there. Once a cast, so the scan and the instances are a cast's cost.
+	// Each curse has its own MaxArcsPerCast, but all three share one Struck: a body one curse has reached
+	// is never another's target, so the three spread across the pack instead of crossing each other.
 	private void ThrowVolley(Node2D playerNode, Node2D firstTarget)
 	{
 		Node parent = GetParent();
@@ -227,7 +263,7 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 			float best = range * range;
 			foreach (Enemy enemy in EnemyRegistry.Snapshot)
 			{
-				if (!IsInstanceValid(enemy) || enemy.IsDying || enemy == firstTarget || enemy == previous)
+				if (!IsInstanceValid(enemy) || enemy.IsDying || enemy == firstTarget || enemy == previous || cast.Struck.Contains(enemy))
 					continue;
 				float d = from.DistanceSquaredTo(enemy.GlobalPosition);
 				if (d < best && (n == 1 || d >= from.DistanceSquaredTo(previous.GlobalPosition)))
@@ -250,6 +286,7 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 			curse.PlayerRef = PlayerRef;
 			curse.Scale = Scale;
 			curse.volleyChild = true;
+			curse.sharedStruck = cast.Struck;
 			curse.SetSpellLevel(CurrentLevel);
 			parent.AddChild(curse);
 			curse.CastFromPlayer(playerNode, next);
@@ -266,6 +303,7 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 
 		if (HasInvalidArcEndpoints())
 		{
+			LeaveTips();
 			QueueFree();
 			return;
 		}
@@ -293,14 +331,29 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 			return;
 
 		waitingToBranch = false;
+		var perfStart = FrameProfiler.Begin();
 		if (!CanContinueChain())
 		{
+			LeaveTips();
 			if (!ChainEnds())
 				QueueFree();
-			return;
 		}
-		if (SpawnBranches() || !ChainEnds())
+		else if (SpawnBranches() || !ChainEnds())
 			QueueFree();
+		FrameProfiler.End(FrameProfiler.Section.Chain, perfStart);
+	}
+
+	public override void _ExitTree()
+	{
+		LeaveTips();
+	}
+
+	private void LeaveTips()
+	{
+		if (!countedTip)
+			return;
+		countedTip = false;
+		cast.Tips--;
 	}
 
 	// The chain has ended on activeTarget. True while this node lives on to carry the stroke home.
@@ -366,15 +419,15 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 		return activeTarget == null || !IsInstanceValid(activeTarget) || activeSource == null || !IsInstanceValid(activeSource);
 	}
 
-	private void StartArc(Node2D source, Node2D target, int remainingDepth, int hopIndex, HashSet<Node2D> visited)
+	// The cast is set before this runs (CastFromPlayer, or SpawnBranches for a branch).
+	private void StartArc(Node2D source, Node2D target, int remainingDepth, int hopIndex)
 	{
 		activeSource = source;
 		activeTarget = target;
 		remainingArcDepth = Math.Max(0, remainingDepth);
 		chainHopIndex = Math.Max(0, hopIndex);
-		visitedTargets = visited ?? new HashSet<Node2D>();
-		visitedTargets.Add(source);
-		visitedTargets.Add(target);
+		cast.Struck.Add(source);
+		cast.Struck.Add(target);
 		GlobalPosition = Vector2.Zero;
 
 		RenderBolt(activeSource.GlobalPosition, activeTarget.GlobalPosition);
@@ -386,6 +439,12 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 		ApplyImpactShock(activeTarget);
 		LeaveCurse(activeSource, activeTarget);
 		FeedOnKill(activeTarget);
+		// After FeedOnKill, which can give a branch at the end of its depth one more hop.
+		if (remainingArcDepth > 0 && !countedTip)
+		{
+			countedTip = true;
+			cast.Tips++;
+		}
 		showingArc = true;
 		waitingToBranch = false;
 		stateTimer = ArcDuration;
@@ -432,6 +491,11 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 	// True when the chain went on from here; false when it ended on this target.
 	private bool SpawnBranches()
 	{
+		// This branch's share of the hops the cast has left: an even split across every branch still
+		// waiting to hop, itself included, so when the allowance runs short the last of it fans out across
+		// the generation instead of going to whichever branch hops first. Never more than is left.
+		int share = cast.Tips > 0 ? (cast.HopsLeft + cast.Tips - 1) / cast.Tips : cast.HopsLeft;
+		LeaveTips();
 		if (remainingArcDepth <= 0 || activeTarget == null || !IsInstanceValid(activeTarget))
 			return false;
 
@@ -441,20 +505,19 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 		float jumpRadius = ChainRadius * (SpellData?.GetAreaMultiplierAtLevel(CurrentLevel) ?? 1f);
 		// The nearest enemies in the jump, one per branch - or, with Storm Reach, the farthest: the chain
 		// leaps the whole jump every time and sprawls across the pack instead of hopping through its edge.
-		// Picked from the grid's near set by hand rather than a sorted query, so a hop allocates nothing
-		// but its picks.
+		// Picked from the grid's near set by hand rather than a sorted query, and never anything the cast
+		// has struck, so a hop allocates nothing but its branch nodes (and Return Stroke's road home).
 		bool leapFar = SpellData?.HasEvolution(StormReachId) == true;
 		Vector2 from = activeTarget.GlobalPosition;
 		float reach2 = jumpRadius * jumpRadius;
 		int want = GetBranchCount();
 		int forks = 0;
-		if (forkOnKill && cast != null)
+		if (forkOnKill)
 		{
 			forks = Math.Min(CascadeForks, cast.CascadeLeft);
 			want += forks;
 		}
-		if (cast != null)
-			want = Math.Min(want, cast.HopsLeft);
+		want = Math.Min(want, share);
 		if (want <= 0)
 			return false;
 		EnemyRegistry.CollectNear(from, jumpRadius, nearScratch);
@@ -465,7 +528,7 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 			float bestD = leapFar ? -1f : float.MaxValue;
 			foreach (Enemy enemy in nearScratch)
 			{
-				if (!IsInstanceValid(enemy) || enemy.IsDying || enemy == activeTarget || visitedTargets.Contains(enemy) || picked.Contains(enemy))
+				if (!IsInstanceValid(enemy) || enemy.IsDying || enemy == activeTarget || cast.Struck.Contains(enemy) || picked.Contains(enemy))
 					continue;
 				float d = from.DistanceSquaredTo(enemy.GlobalPosition);
 				if (d > reach2)
@@ -483,31 +546,26 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 		nearScratch.Clear();
 		if (picked.Count == 0)
 			return false;
-		if (cast != null)
-		{
-			cast.HopsLeft -= picked.Count;
-			// Only the arcs the kill actually threw are spent from Cascade's allowance.
-			cast.CascadeLeft -= Math.Max(0, Math.Min(forks, picked.Count - GetBranchCount()));
-		}
-		// Copied out before any branch strikes: a strike can kill, and nothing below may read the shared
-		// lists after it.
-		Node2D[] candidates = picked.ToArray();
+		cast.HopsLeft -= picked.Count;
+		// Only the arcs the kill actually threw are spent from Cascade's allowance.
+		cast.CascadeLeft -= Math.Max(0, Math.Min(forks, picked.Count - GetBranchCount()));
+		spawning.Clear();
+		spawning.AddRange(picked);
 		picked.Clear();
 
 		string scenePath = SceneFilePath;
-		if (string.IsNullOrEmpty(scenePath))
-			return false;
-
 		Node parent = GetParent();
-		if (parent == null || !IsInstanceValid(parent))
-			return false;
-
-		var packed = ResourceLoader.Load<PackedScene>(scenePath);
+		var packed = string.IsNullOrEmpty(scenePath) || parent == null || !IsInstanceValid(parent)
+			? null : ResourceLoader.Load<PackedScene>(scenePath);
 		if (packed == null)
-			return false;
-
-		foreach (Node2D next in candidates)
 		{
+			spawning.Clear();
+			return false;
+		}
+
+		for (int i = 0; i < spawning.Count; i++)
+		{
+			Node2D next = spawning[i];
 			var branchNode = packed.Instantiate<Area2D>();
 			if (branchNode is ChainLightning branch)
 			{
@@ -536,8 +594,9 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 
 			parent.AddChild(branchNode);
 			if (branchNode is ChainLightning branchLightning)
-				branchLightning.StartArc(activeTarget, next, remainingArcDepth - 1, chainHopIndex + 1, new HashSet<Node2D>(visitedTargets));
+				branchLightning.StartArc(activeTarget, next, remainingArcDepth - 1, chainHopIndex + 1);
 		}
+		spawning.Clear();
 		return true;
 	}
 
