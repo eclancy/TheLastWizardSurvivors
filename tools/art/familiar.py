@@ -26,11 +26,16 @@ THE FORMS. Every one is posed from one skeleton per body plan and drawn by the s
   hound          48 cell   the base familiar
   greathound     64 cell   level 4, Great Hound: heavier, a mantle over the shoulders, bigger jaws
   rimehound      48 cell   level 4, Rimehound (the Ice path): frost-blue fur and a ruff of ice
-  cerberus       64 cell   level 8, Cerberus: three heads on one great body, the hat on the top one -
+  cerberus       96 cell   level 8, Cerberus: three heads on one great body, the hat on the top one -
                            and the hellhound's hide: near-black, lit blood red, six ember eyes, embers
-                           in the coat and on the breath (HELL)
-  cerberus-rime  64 cell   the same in frost, after the Ice path: a stop darker than the Rimehound,
+                           in the coat and on the breath (HELL). The one form on the boss cell, with
+                           hackles and two-pixel features drawn for it (2026-10-30, "bigger")
+  cerberus-rime  96 cell   the same in frost, after the Ice path: a stop darker than the Rimehound,
                            eyes lit ice (RIME_DEEP)
+  hellhound,     48 cell   the rest of the pack under an Ascension, without Littermates: the hound's
+  annwn-hound              size, one head, the Ascension's coat (and -rime after the Ice path)
+  pup, hell-pup, 32 cell   Littermates' two pups: the fawn hound's, and under each Ascension a one-headed
+  annwn-pup                pup in its coat (pup(), a body plan of its own; THE PACK below)
   griffin        64 cell   level 8, Griffin: eagle head, the wizard's indigo wings, a lion's quarters;
                            it flies, so its shadow sits detached below it (section 4's Flyer row)
   griffin-rime   64 cell   the same, after the Ice path
@@ -153,6 +158,12 @@ class Fig(object):
         # A coat with a pattern in it (the cat's): (ramp, "stripes" | "spots"). The marks are keyed to each
         # part's own coordinates, as the lay of the fur is, so they ride with the body. None: plain.
         self.pattern = None
+        # The ordered dither's strength (tone_of). The sprites keep the renderer's; a card icon (ICON_DITHER)
+        # takes far less, because at 16 to 32 pixels a dithered plane is speckle, not a turning form.
+        self.dither = 0.18
+        # The lay of the coat (render): broken darker strokes through the lit stops. Off on a card icon, where
+        # at its size they were the speckle that made a fawn head read as a brown smudge.
+        self.lay = True
 
     # --- painting ------------------------------------------------------------------------------
     def _put(self, x, y, ramp, tone, lx, ly, kind, far=False):
@@ -186,7 +197,7 @@ class Fig(object):
                 nz = math.sqrt(max(0.0, 1.0 - d2))
                 wx, wy = rot(nx, ny, angle)
                 inten = wx * LIGHT[0] + wy * LIGHT[1] + nz * LIGHT[2]
-                self._put(x, y, ramp, self.tone_of(inten, bias + self.deeper.get(id(ramp), 0.0), x, y), int(round(dx)), int(round(dy)), kind, bias >= 0.6)
+                self._put(x, y, ramp, self.tone_of(inten, bias + self.deeper.get(id(ramp), 0.0), x, y, self.dither), int(round(dx)), int(round(dy)), kind, bias >= 0.6)
 
     def limb(self, pts, radii, ramp, bias=0.0, kind="body"):
         """A tapered capsule through `pts`: legs, necks, tails. Lit across its own width."""
@@ -220,7 +231,7 @@ class Fig(object):
                     nx, ny = 0.0, 0.0
                 nz = math.sqrt(max(0.0, 1.0 - q * q))
                 inten = nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]
-                self._put(x, y, ramp, self.tone_of(inten, bias + self.deeper.get(id(ramp), 0.0), x, y), int(round(px - ax0)), int(round(py - ay0)), kind, bias >= 0.6)
+                self._put(x, y, ramp, self.tone_of(inten, bias + self.deeper.get(id(ramp), 0.0), x, y, self.dither), int(round(px - ax0)), int(round(py - ay0)), kind, bias >= 0.6)
 
     def poly(self, pts, ramp, bias=0.0, kind="cloth", lean=(0.0, -0.35)):
         """A flat-ish form (a hat cone, a wing, a mantle): lit across each row like a cylinder."""
@@ -250,7 +261,7 @@ class Fig(object):
                     ny = lean[1]
                     nz = math.sqrt(max(0.05, 1.0 - min(0.95, nx * nx + ny * ny)))
                     inten = nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]
-                    self._put(x, y, ramp, self.tone_of(inten, bias + self.deeper.get(id(ramp), 0.0), x, y), int(round(xc - ax0)), int(round(yc - ay0)), kind, bias >= 0.6)
+                    self._put(x, y, ramp, self.tone_of(inten, bias + self.deeper.get(id(ramp), 0.0), x, y, self.dither), int(round(xc - ax0)), int(round(yc - ay0)), kind, bias >= 0.6)
 
     def dot(self, x, y, colour, kind="detail"):
         """One unlit pixel: an eye, a nose, a star. Never separated, never rimmed."""
@@ -258,6 +269,12 @@ class Fig(object):
         x, y = int(round(x)), int(round(y))
         if 0 <= x < self.cell and 0 <= y < self.cell:
             self.cells[(x, y)] = (None, colour, self.part, 0, 0, kind)
+
+    def block(self, x, y, colour, n=1, kind="detail"):
+        """An n x n block of one unlit colour: a dot, at a form's own detail size (Skin.detail)."""
+        for dy in range(n):
+            for dx in range(n):
+                self.dot(int(round(x)) + dx, int(round(y)) + dy, colour, kind)
 
     def contact(self, x0, x1, row=None):
         row = self.cell - 1 if row is None else row
@@ -279,7 +296,7 @@ class Fig(object):
                 out[(x, y)] = tone
                 continue
             t = tone
-            if kind in ("fur", "far") and t in (1, 2):
+            if kind in ("fur", "far") and t in (1, 2) and self.lay:
                 # The lay of the coat: short broken strokes running back and down the body.
                 if (lx * 2 + ly * 3) % 7 == 0 and hsh(lx, ly, 3) < 0.7:
                     t += 1
@@ -356,7 +373,8 @@ class Skin(object):
 
     def __init__(self, fur, eye=(AMBER[0], AMBER[1]), frost=False, mantle=False, heavy=0.0, heads=None,
                  head_scale=1.0, leap=1.0, depth=FUR_DEPTH, glow_eye=False, embers=False, ear=None,
-                 feline=False, pattern=None, star=None, breath=None, paws=None, collar_star=True, calm=False):
+                 feline=False, pattern=None, star=None, breath=None, paws=None, collar_star=True, calm=False,
+                 detail=1, mane=False):
         self.fur = fur
         self.eye = eye
         self.frost = frost
@@ -392,6 +410,14 @@ class Skin(object):
         # The calm eye (calm_eye) on the sprite as well as the portrait: no dark socket pixel. For a
         # figure that is also its own portrait (a playable character, shown at x5 on the select).
         self.calm = calm
+        # How many pixels a "one pixel" feature is - an eye, a nostril, a tooth, a claw. 1 for every form
+        # drawn on the 48 and 64 cells; 2 for Cerberus on its own 96 cell (Eric, 2026-10-30: "the main
+        # cerberus itself should be bigger"), where a one-pixel eye on a head twice the size read as a
+        # pinprick - the form is DRAWN for the bigger cell, never the smaller one scaled up.
+        self.detail = detail
+        # Hackles: ragged spikes of the coat along the spine and the backs of the necks, ember-tipped on a
+        # smouldering coat. Cerberus at 96 only - at 64 they were a pixel each and read as noise.
+        self.mane = mane
 
 
 # The head a little large for the body: at 48 pixels the face is what says "dog" under the hat.
@@ -404,14 +430,23 @@ _THREE = [(-0.6, -7.6, -0.3, 0.35, True), (2.6, -1.2, 0.05, 0.15, False), (4.0, 
 # Cerberus is the hellhound: the HELL hide, six eyes lit ember red, embers in the coat and on its breath.
 # Deep enough that a plane square to the viewer never dithers up into the reds: at the hound's depth
 # the blood red checkered right across the body and the whole beast read crimson, not black.
+#
+# BIGGER (Eric, 2026-10-30, of 0.9.2: "the main cerberus itself should be bigger"). It was the 64 cell at
+# 1.72, the Great Hound's size, and a three-headed beast no bigger than the hound it grew from read as the
+# same dog with extras. It is now the 96 cell - the contract's boss cell, the one size up - drawn at 2.5:
+# the renderer lays every part at that size, so the coat's lay, the folds of the mantle and the light are
+# drawn at 96, not a 64 frame scaled up. What a bigger head needs that a small one did not is the detail
+# block (two-pixel eyes, nostrils, teeth and claws) and the hackles, ember-tipped, along the spine and the
+# backs of the three necks. Only the MAIN hound is this: the rest of the pack stays the hound's size
+# (HELL_PACK, the pups), so the legendary creature is one, and the biggest thing at his side.
 CERB = Skin(HELL, eye=(EMBER[0], EMBER[1]), mantle=True, heavy=1.4, heads=_THREE, head_scale=0.82, leap=0.45,
-            depth=0.6, glow_eye=True, embers=True)
+            depth=0.6, glow_eye=True, embers=True, detail=2, mane=True)
 # After the Ice path it stays frost - azure fur, the ruff, frost breath - but a whole stop down the
 # azure row from the Rimehound (its hi is the Rimehound's lit, its deep wool's navy), to stand beside
 # the hellhound as the same beast; and its eyes are lit ice.
 RIME_DEEP = [FROST[1], FROST[2], FROST[3], FROST[4], WOOL[4]]
 CERB_RIME = Skin(RIME_DEEP, eye=(ICE[0], ICE[1]), frost=True, mantle=True, heavy=1.4, heads=_THREE,
-                 head_scale=0.82, leap=0.45, glow_eye=True)
+                 head_scale=0.82, leap=0.45, glow_eye=True, detail=2, mane=True)
 
 
 def _pose(**kw):
@@ -528,6 +563,8 @@ def hound(cell, skin, p, s=1.0):
         # The foot: toes forward on the ground, curled under as the pastern folds back.
         fx, fy = rot(0.7, 0.1, fold * 1.5)
         g.blob(pw[0] + R(fx), pw[1] + R(fy), R(1.5 + heavy * 0.2), R(0.85), skin.paws or fur, bias + 0.4, "body", angle=fold * 1.5)
+        if skin.detail > 1 and bias < 0.6:
+            _claws(g, pw, R, skin.detail)
         return pw
 
     def hind_leg(k, bias):
@@ -543,6 +580,8 @@ def hound(cell, skin, p, s=1.0):
         g.limb([T(*hip), T(*knee)], [R(2.6 + heavy * 0.6), R(1.5 + heavy * 0.3)], fur, bias, "fur")
         g.limb([T(*knee), T(*hock), pw], [R(1.4 + heavy * 0.3), R(1.0 + heavy * 0.2), R(1.0)], fur, bias + 0.15, "fur")
         g.blob(pw[0] + R(0.7), pw[1] + R(0.1), R(1.5 + heavy * 0.2), R(0.85), skin.paws or fur, bias + 0.4, "body")
+        if skin.detail > 1 and bias < 0.6:
+            _claws(g, pw, R, skin.detail)
         return pw
 
     paws = []
@@ -572,6 +611,14 @@ def hound(cell, skin, p, s=1.0):
     g.limb([T(hx + 1.0, hy - 0.6), T(*mid), T(cx - 1.0, cy - 0.4)],
            [R((3.6 + heavy * 0.7) * lean), R((2.7 + heavy * 0.8) * (lean + (0.08 if skin.feline else 0.0))), R((3.9 + heavy * 0.7) * lean)], fur, 0.0, "fur")
     g.blob(*T(cx, cy), rx=R((5.0 + heavy * 0.9) * lean), ry=R((4.8 + breathe * 0.3 + heavy * 0.8) * lean), ramp=fur, bias=-0.1, kind="fur")
+    if skin.mane:
+        # Hackles along the spine, from the haunch to the withers, raised and swept back.
+        back = []
+        for k, t in enumerate((0.05, 0.3, 0.55, 0.8)):
+            bx = hx + (cx - hx) * t
+            by = (hy - 4.2 - heavy * 0.6) * (1.0 - t) + (cy - 4.8 - heavy * 0.8) * t + 0.6
+            back.append((bx, by, -2.25 - 0.1 * (k % 2), 1.5 + 0.5 * ((k + 1) % 2)))
+        _hackles(g, T, R, back, fur, 0.05, skin.embers)
     if skin.star:
         # The Cait Sith's white star on its breast, low on the near side of the chest.
         sx, sy = T(cx + 3.0, cy + 1.2)
@@ -598,6 +645,17 @@ def hound(cell, skin, p, s=1.0):
         if skin.feline:
             # A cat's head sits close on a short thick neck, forward of the shoulders and lower.
             hci = (cx + 4.4 + hdx * 0.8, cy - 5.4 + hdy * 0.8)
+        if skin.mane:
+            # Hackles down the back of this neck, behind it, so the neck stands in front of their roots.
+            nx, ny = hci[0] - neck0[0], hci[1] - neck0[1]
+            ln = math.sqrt(nx * nx + ny * ny) or 1.0
+            px, py = ny / ln, -nx / ln
+            if px > 0:
+                px, py = -px, -py
+            ridge = [(neck0[0] + nx * t + px * (2.2 + heavy * 0.3), neck0[1] + ny * t + py * (2.2 + heavy * 0.3),
+                      math.atan2(py, px) - 0.5, 1.6 + 0.4 * (k % 2))
+                     for k, t in enumerate((0.15, 0.45, 0.75))]
+            _hackles(g, T, R, ridge, fur, nbias + 0.05, skin.embers)
         g.limb([T(*neck0), T((neck0[0] + hci[0]) / 2.0 + 0.4, (neck0[1] + hci[1]) / 2.0), T(hci[0] - 0.6, hci[1] + 0.6)],
                [R(3.0 + heavy * 0.5), R(2.4 + heavy * 0.35), R(2.1 + heavy * 0.25)], fur, nbias - 0.05, "fur")
         # THE COLLAR at the base of each neck, with the gold star hanging from it.
@@ -665,6 +723,14 @@ def _head(g, T, R, hc, ha, p, skin, hat=True, bias=0.0):
         g.dot(*H(j0[0] + jx - 0.4, j0[1] + jy - 0.6), colour=BONE[1])
     g.blob(*H(0.0, 0.0), rx=R(3.0), ry=R(2.6), ramp=fur, bias=b - 0.1, kind="fur", angle=ha)
     g.limb([H(1.6, -0.2), H(3.6, 0.3), H(5.0, 0.9)], [R(1.85), R(1.5), R(1.05)], fur, b, "fur")
+    if skin.detail > 1:
+        breath = _big_face(g, H, skin, jaw, fur)
+        if p.get("breath") and breath:
+            for (dx, dy), c in zip(((6.6, 0.4), (7.6, -0.4), (8.4, 0.6), (9.0, -0.6)), breath + breath[:1]):
+                g.dot(*H(dx, dy), colour=c, kind="glow")
+        if hat:
+            _hat(g, H, R, p)
+        return
     g.dot(*H(5.4, 0.7), colour=OCC)
     # The eye: a warm point in a dark socket, under a brow. Amber is the player's light; the
     # enemies' eyes are the cold mark, and this is the one place the difference is spelled out.
@@ -719,6 +785,72 @@ def _hat(g, H, R, p):
     g.dot(sx, sy, GOLD[0])
     g.dot(sx + 1, sy, LIGHT_E[1])
     g.dot(sx, sy - 1, GOLD[1])
+
+
+def _big_face(g, H, skin, jaw, fur):
+    """The face of a form drawn on the 96 cell (Skin.detail 2): the nose, the brow, the lit eye and the
+    teeth at two pixels a feature, where _head's one-pixel dots on a head this size read as pinpricks."""
+    n = skin.detail
+    nx, ny = H(5.0, 0.3)
+    g.block(nx - 1, ny, OCC, n)
+    g.dot(nx + 1, ny + 1, OCC)
+    # The brow: a dark ridge over the eye, two pixels deep at the front.
+    for (dx, dy) in ((0.2, -1.7), (0.9, -1.8), (1.6, -1.7), (2.3, -1.5)):
+        g.dot(*H(dx, dy), colour=fur[4])
+    bx, by = H(2.3, -1.5)
+    g.dot(bx, by + 1, fur[3])
+    ex, ey = H(0.8, -0.9)
+    if skin.glow_eye:
+        g.block(ex, ey, skin.eye[1], n, "glow")
+        g.dot(ex + n, ey + 1, skin.eye[0], kind="glow")
+    else:
+        warm, dark = calm_eye(skin.eye)
+        g.block(ex, ey, dark, n)
+        g.dot(ex + n, ey + 1, warm)
+    # The line of the lip back from the nose, and the cheek under the eye.
+    for dx in (2.2, 3.0, 3.8):
+        g.dot(*H(dx, 1.0), colour=fur[4])
+    g.dot(*H(1.4, 0.5), colour=fur[4])
+    if jaw > 0.25:
+        # Fangs: the upper two-pixel canine at the front of the jaw, smaller teeth behind it, and the lower
+        # canine standing up off the dropped jaw.
+        jx, jy = rot(3.6, 0.6, jaw * 0.75)
+        fx, fy = H(4.2, 1.2)
+        g.dot(fx, fy, BONE[0])
+        g.dot(fx, fy + 1, BONE[1])
+        for dx in (2.6, 3.4):
+            g.dot(*H(dx, 1.3), colour=BONE[1])
+        lx, ly = H(0.6 + jx * 0.85, 1.4 + jy * 0.85 - 0.6)
+        g.dot(lx, ly, BONE[0])
+        g.dot(lx, ly - 1, BONE[1])
+    # What it breathes when its mouth is open (_head draws it): frost, sparks, or its skin's own.
+    breath = None
+    if skin.frost:
+        breath = (ICE[0], ICE[1], ICE[0])
+    elif skin.embers:
+        breath = (EMBER[1], EMBER[0], EMBER[2])
+    elif skin.breath:
+        breath = skin.breath
+    return breath
+
+
+def _claws(g, pw, R, n):
+    """Claws at the front of a paw, on a form drawn on the 96 cell (Skin.detail): bone, two of them."""
+    x, y = pw[0] + R(1.7), pw[1] + R(0.5)
+    g.dot(x, y, BONE[1])
+    g.dot(x - 2, y, BONE[2])
+
+
+def _hackles(g, T, R, pts, fur, bias, embers):
+    """Ragged spikes of the coat standing off a ridge (Skin.mane): (x, y, angle, length) in the hound's
+    design units. On a smouldering coat every other tip is an ember, as the coat's own flecks are."""
+    for k, (x, y, a, ln) in enumerate(pts):
+        tip = (x + math.cos(a) * ln, y + math.sin(a) * ln)
+        ox, oy = -math.sin(a) * 0.75, math.cos(a) * 0.75
+        g.poly([T(x - ox, y - oy), T(x + ox, y + oy), T(*tip)], fur, bias, "fur", lean=(-0.2, -0.5))
+        if embers and k % 2 == 0:
+            tx, ty = T(*tip)
+            g.dot(tx, ty, EMBER[2], kind="glow")
 
 
 def _cat_head(g, T, R, hc, ha, p, skin, hat=True, bias=0.0):
@@ -1322,6 +1454,309 @@ ANNWN_RIME = Skin(ANNWN_FUR, ear=[ICE[1], ICE[2], ICE[3], FROST[3], FROST[4]], e
                   heavy=0.5, leap=0.6, head_scale=1.05, depth=0.1, frost=True)
 
 
+# =============================================================================================
+# THE PACK UNDER AN ASCENSION, AND THE PUPS. Eric, 2026-10-30, of 0.9.2: "when ascending hound familiar,
+# it should only make the main hound into the full size legendary creature. littermates should produce
+# two puppies instead of 2 of the same dog. The two puppies should also be affected by the ascension, but
+# the sprite should just look like a similar-styled hellhound with one head, instead of the 3 headed
+# cerberus. same goes for the other ascension."
+#
+# Every hound used to wear the one look the spell resolved to, so a Littermates pack that took Cerberus
+# was three Cerberuses. Now the FIRST hound is the main one (scripts/Familiar.cs, Hound.Look) and wears
+# the full form; the others wear the PACK look:
+#
+#   with Littermates  - two PUPS: younger, smaller hounds on the 32 cell, a big head on a round body and
+#                       short legs, with no hat (the hat is the main hound's). Before level 8 they are the
+#                       fawn hound's pups; under Cerberus a one-headed HELLPUP in its hide, lit eyes and
+#                       embers; under the Hound of Annwn a white pup with red ears.
+#   without it        - the second hound (the level 3 one) is the hound at its own 48-cell size in the
+#                       Ascension's look with ONE head: a hellhound, or a white red-eared hound, in frost
+#                       after the Ice path. It keeps the hat - it is still the wizard's hound, just not the
+#                       legendary one.
+#
+# Every one of them bites with the Ascension's power - Cerberus's three bites, Annwn's double on an elite -
+# because those are the pack's (Familiar.Summon reads them once for every hound); only the drawing differs.
+# =============================================================================================
+
+# The second hound, adult and one-headed, under an Ascension: the hound's proportions (48 cell, 1.3), the
+# legendary's coat.
+HELL_PACK = Skin(HELL, eye=(EMBER[0], EMBER[1]), leap=0.85, head_scale=1.15, depth=0.6, glow_eye=True, embers=True)
+HELL_PACK_RIME = Skin(RIME_DEEP, eye=(ICE[0], ICE[1]), frost=True, leap=0.85, head_scale=1.15, glow_eye=True)
+ANNWN_PACK = Skin(ANNWN_FUR, ear=ANNWN_EAR, eye=(EMBER[0], EMBER[1]), glow_eye=True, leap=0.85, head_scale=1.15,
+                  depth=0.1, breath=(EMBER[1], EMBER[0], EMBER[2]))
+ANNWN_PACK_RIME = Skin(ANNWN_FUR, ear=[ICE[1], ICE[2], ICE[3], FROST[3], FROST[4]], eye=(ICE[0], ICE[1]), glow_eye=True,
+                       leap=0.85, head_scale=1.15, depth=0.1, frost=True)
+
+
+class Pup(object):
+    """What a pup is made of. Drawn by pup(), a body plan of its own: a puppy is not the hound scaled down
+    (that is a small sighthound), it is a big head and big paws on a round body with short legs."""
+
+    def __init__(self, fur, ear=None, eye=(AMBER[0], AMBER[1]), glow_eye=False, embers=False, depth=FUR_DEPTH,
+                 breath=None, ear_tip=None, collar="star", shaggy=False):
+        self.fur = fur
+        # The ears' ramp, where it is not the coat's; and a colour for the last pixel of each ear (Annwn's red).
+        self.ear = ear
+        self.ear_tip = ear_tip
+        self.eye = eye
+        self.glow_eye = glow_eye
+        self.embers = embers
+        self.depth = depth
+        self.breath = breath
+        # "star": the gold collar and the wizard's star, as every familiar wears. "tag": a dark collar with a
+        # round silver tag on it - Pancho's own (PANCHO).
+        self.collar = collar
+        # Pancho's body plan over the pup's (PANCHO): a long coat falling to the ground, a plumed tail curled
+        # over the back, a shaggy face with a fringe over the eyes and a beard over the muzzle, dark round
+        # eyes, long fringed ears and the underbite with its teeth showing.
+        self.shaggy = shaggy
+
+
+PUP = Pup(FAWN)
+HELL_PUP = Pup(HELL, eye=(EMBER[0], EMBER[1]), glow_eye=True, embers=True, depth=0.55,
+               breath=(EMBER[1], EMBER[0], EMBER[2]))
+
+# PANCHO (Eric, 2026-10-30: "when you use littermates, and then select the white dog option, the two puppies
+# pixel art should be styled like my dog pancho"). The white dog option is the Hound of Annwn - "a white hound
+# of the otherworld, red-eared" - so Littermates and then Annwn makes the two pups Pancho: a small long-haired
+# white-and-cream dog of the Shih Tzu / Lhasa kind, from Eric's photo. What says Pancho at 32 pixels, in the
+# order the eye takes it: the PLUME of a tail curled up over his back (the silhouette - no hound or pup has
+# one), the LONG COAT falling nearly to the ground with the paws peeping out under its hem, the big round
+# shaggy head with a fringe over the eyes and a beard over the muzzle, the long floppy EARS in buff, the dark
+# ROUND EYES and the black nose, the UNDERBITE - the lower jaw out past the nose with two teeth showing - and
+# the dark collar with its round silver tag. His coat is cream, lit white where the cold key falls on it, its
+# shadows turning toward indigo as the contract asks (bone's cool lower stops), never a grey cream.
+#
+# THE ASCENSION'S TOUCH: the Hound of Annwn is white and red-eared, so Pancho keeps his buff ears with their
+# fringes dipped red at the ends, and breathes the hound's embers when he bites and howls. His eyes stay his
+# own - dark and round - because they are the most Pancho thing about his face; the main hound carries the
+# lit eyes.
+PANCHO_FUR = [BONE[0], FAWN[0], FAWN[0], BONE[2], BONE[3]]
+PANCHO_EAR = [FAWN[0], FAWN[0], FAWN[1], FAWN[2], FAWN[3]]
+PANCHO = Pup(PANCHO_FUR, ear=PANCHO_EAR, ear_tip=EMBER[2], eye=(OCC, M["violet"][4]), depth=0.05,
+             breath=(EMBER[1], EMBER[0], EMBER[2]), collar="tag", shaggy=True)
+ANNWN_PUP = PANCHO
+
+
+def pup(cell, skin, p):
+    """One pup frame on the 32 cell, facing right, paws on row 30. p: a _pose - the pups play the hound's
+    own poses (HOUND_ANIMS), so a pup's leap, bite and howl land on the frames Familiar.cs sets."""
+    g = Fig(cell)
+    g.deeper[id(skin.fur)] = skin.depth
+    if skin.embers:
+        g.embers = skin.fur
+    G = 30.0
+    ox = (cell - 32.0) / 2.0
+    gy = cell - 2.0
+
+    def T(x, y):
+        return (x + ox, y - G + gy)
+
+    fur = skin.fur
+    # A pup leaps lower than the hound and bobs less: a short body has less to throw.
+    air = p["air"] * 0.7
+    rise = air + p["bob"] * 0.8 - p["crouch"] * 0.8
+    sit = p["sit"]
+    st = p["stretch"] * 0.6
+    hx, hy = 11.0 - st * 0.5 + sit * 1.2, 23.0 - rise + sit * 2.6
+    cx, cy = 17.2 + st * 0.5, 22.4 - rise - sit * 1.6
+    sw, li = p["swing"], p["lift"]
+
+    def front_leg(k, bias):
+        sh = (cx + 1.2, cy + 1.4)
+        reach = sw[k] * (3.0 if sw[k] > 0 else 2.0)
+        paw = (sh[0] + 0.3 + reach, G - li[k] * 0.8 - max(0.0, air - 1.5) * 0.5)
+        if sit:
+            paw = (sh[0] - 0.2, G)
+        d = math.hypot(paw[0] - sh[0], paw[1] - sh[1])
+        elbow = ik(sh, paw, d * 0.5 + 0.4, d * 0.5 + 0.4, 1)
+        pw = T(*paw)
+        g.limb([T(*sh), T(*elbow), pw], [1.9, 1.45, 1.2], fur, bias, "fur")
+        g.blob(pw[0] + 0.6, pw[1] + 0.1, 1.7, 1.0, fur, bias + 0.4, "body")
+        return pw
+
+    def hind_leg(k, bias):
+        hip = (hx - 0.3, hy + 1.4)
+        paw = (hip[0] - 0.2 + sw[k] * 2.6, G - li[k] * 0.8 - max(0.0, air - 1.5) * 0.5)
+        hock = (paw[0] - 1.0, paw[1] - 1.9)
+        if sit:
+            paw = (hip[0] + 2.6, G)
+            hock = (hip[0] - 0.9, G - 0.6)
+        knee = ik(hip, hock, 2.9, 2.5, 1)
+        pw = T(*paw)
+        g.limb([T(*hip), T(*knee)], [2.3, 1.5], fur, bias, "fur")
+        g.limb([T(*knee), T(*hock), pw], [1.4, 1.15, 1.05], fur, bias + 0.15, "fur")
+        g.blob(pw[0] + 0.6, pw[1] + 0.1, 1.7, 1.0, fur, bias + 0.4, "body")
+        return pw
+
+    paws = []
+    # FAR SIDE first: a short tail carried up, the far legs a stop darker. (Pancho's plume is drawn over
+    # his back, after the body.)
+    ta = p["tail"]
+    if not skin.shaggy:
+        tp = [(hx - 3.4, hy - 1.6)]
+        for i, (dx, dy) in enumerate(((-1.5, -1.5), (-0.7, -1.8), (0.2, -1.5))):
+            rx, ry = rot(dx, dy, ta * (0.5 + i * 0.3))
+            tp.append((tp[-1][0] + rx, tp[-1][1] + ry))
+        g.limb([T(*q) for q in tp], [1.4, 1.15, 0.9, 0.6], fur, 0.2, "fur")
+    paws.append(hind_leg(3, 1.25))
+    paws.append(front_leg(1, 1.25))
+
+    # THE BODY: round - a haunch, a short barrel, a deep chest.
+    breathe = p["breathe"]
+    g.blob(*T(hx, hy), rx=4.2, ry=3.9, ramp=fur, bias=0.0, kind="fur")
+    g.limb([T(hx + 1.0, hy - 0.3), T((hx + cx) / 2.0, (hy + cy) / 2.0 - 0.4), T(cx - 1.0, cy - 0.2)],
+           [3.7, 3.4, 3.8], fur, 0.0, "fur")
+    g.blob(*T(cx, cy), rx=4.2, ry=4.1 + breathe * 0.3, ramp=fur, bias=-0.1, kind="fur")
+    paws.append(hind_leg(2, 0.0))
+    if skin.shaggy:
+        # THE PLUME: up off the rump and curled forward over the back, widest where it turns - long hair,
+        # so a fat tapering capsule rather than a tail. It wags about its root.
+        root = (hx - 3.0, hy - 2.4)
+        path = [root]
+        for i, (dx, dy) in enumerate(((-1.6, -2.6), (0.6, -2.8), (2.6, -1.0), (2.4, 1.2))):
+            rx, ry = rot(dx, dy, ta * 0.18 * (1 + i))
+            path.append((path[-1][0] + rx, path[-1][1] + ry))
+        g.limb([T(*q) for q in path], [1.3, 2.1, 2.7, 2.5, 1.8], fur, -0.15, "fur")
+
+    # THE HEAD, big for the body and carried up, on a short neck.
+    hdx, hdy, ha = p["head"]
+    hc = (cx + 4.2 + hdx * 0.7, cy - 6.4 + hdy * 0.7)
+    neck0 = (cx + 1.2, cy - 2.2)
+    g.limb([T(*neck0), T(hc[0] - 1.2, hc[1] + 2.0)], [2.9, 2.6], fur, -0.05, "fur")
+    _pup_collar(g, T, neck0, hc, skin)
+    _pup_head(g, T, hc, ha, p, skin)
+    paws.append(front_leg(0, 0.0))
+    if skin.shaggy:
+        # THE LONG COAT, falling from the barrel nearly to the ground over the tops of the legs, its hem
+        # ragged, swinging back as he runs: the paws peep out under it.
+        sway = st * 0.6 + air * 0.25
+        top = [(cx + 3.4, cy + 0.6), ((hx + cx) / 2.0, (hy + cy) / 2.0 + 1.0), (hx - 3.8, hy + 0.2)]
+        hem = []
+        x0, x1 = hx - 4.4 - sway, cx + 3.0 - sway * 0.5
+        n = 8
+        for k in range(n + 1):
+            x = x0 + (x1 - x0) * k / float(n)
+            hem.append((x, min(G - 1.4, (hy + cy) / 2.0 + 5.4) - (0.9 if k % 2 else 0.0) - air * 0.3))
+        g.poly([T(*q) for q in top + hem], fur, 0.1, "fur", lean=(-0.1, -0.6))
+
+    xs = [q[0] for q in paws]
+    lo, hi = min(xs) - 1.0, max(xs) + 2.0
+    if air > 0.5:
+        mid_x = (lo + hi) / 2.0
+        half = (hi - lo) / 2.0 * max(0.4, 1.0 - air * 0.1)
+        lo, hi = mid_x - half, mid_x + half
+    g.contact(lo, hi)
+    return g
+
+
+def _pup_collar(g, T, neck0, hc, skin):
+    col0 = (neck0[0] + 0.1 + (hc[0] - neck0[0]) * 0.2, neck0[1] - 0.5 + (hc[1] - neck0[1]) * 0.2)
+    col1 = (col0[0] + 1.6, col0[1] + 0.9)
+    if skin.collar == "tag":
+        # Pancho's: a dark collar, and the round silver tag hanging off it - two pixels of steel, lit on top.
+        g.limb([T(*col0), T(*col1)], [0.8, 0.75], WOOL, 0.9, "norim")
+        sx, sy = T(col1[0] + 0.1, col1[1] + 1.1)
+        g.dot(sx, sy, M["steel"][0])
+        g.dot(sx, sy + 1, M["steel"][2])
+        return
+    g.limb([T(*col0), T(*col1)], [0.8, 0.75], GOLD, -0.2, "body")
+    sx, sy = T(col1[0] + 0.1, col1[1] + 1.3)
+    g.dot(sx, sy, GOLD[0])
+
+
+def _pup_head(g, T, hc, ha, p, skin):
+    """A pup's head: a round skull big for its body, a short muzzle, a floppy ear, the eye low and forward."""
+    fur = skin.fur
+    jaw = p["jaw"]
+
+    def H(dx, dy):
+        rx, ry = rot(dx, dy, ha)
+        return T(hc[0] + rx, hc[1] + ry)
+
+    if skin.shaggy:
+        # Pancho's head is big and round with hair, and lit high: a white face in shade went dirty grey.
+        g.blob(*H(0.0, -0.2), rx=5.5, ry=5.0, ramp=fur, bias=-0.3, kind="fur", angle=ha)
+        _pancho_face(g, H, p, skin)
+        return
+    # The lower jaw, dropping to open.
+    jx, jy = rot(2.8, 0.4, jaw * 0.8)
+    g.limb([H(1.0, 2.0), H(1.0 + jx, 2.0 + jy)], [1.0, 0.75], fur, 0.5, "fur")
+    if jaw > 0.25:
+        g.dot(*H(2.6, 2.1), colour=EMBER[1])
+        g.dot(*H(3.6, 1.7), colour=BONE[0])
+    g.blob(*H(0.0, 0.0), rx=4.8, ry=4.4, ramp=fur, bias=-0.1, kind="fur", angle=ha)
+    # The muzzle: short and round.
+    g.blob(*H(3.5, 1.3), rx=2.0, ry=1.6, ramp=fur, bias=-0.05, kind="fur", angle=ha)
+    g.dot(*H(4.9, 0.9), colour=OCC)
+    g.dot(*H(3.0, 2.5), colour=fur[4])
+    # The ear, hanging over the back of the skull on the near side - a pup's ear flops, where the hound's
+    # stands back under its hat - a stop darker than the skull, so the head reads as skull and ear.
+    ea = p["ear"] * 0.4
+    ex, ey = rot(-0.6, 4.6, ea)
+    ear = skin.ear or fur
+    g.limb([H(-1.2, -3.2), H(-1.6 + ex * 0.5, -3.0 + ey * 0.5), H(-1.4 + ex, -3.0 + ey)], [1.6, 1.9, 1.4], ear, 0.35, "fur")
+    if skin.ear_tip:
+        tx, ty = H(-1.4 + ex, -3.0 + ey + 0.9)
+        g.dot(tx, ty, skin.ear_tip)
+        g.dot(tx + 1, ty, skin.ear_tip)
+    # The eye: low and forward on a pup's face, under a soft brow.
+    g.dot(*H(1.6, -1.7), colour=fur[3])
+    g.dot(*H(2.4, -1.6), colour=fur[3])
+    if skin.glow_eye:
+        g.dot(*H(1.6, -0.6), colour=skin.eye[1], kind="glow")
+        g.dot(*H(2.4, -0.6), colour=skin.eye[0], kind="glow")
+    else:
+        g.dot(*H(1.6, -0.6), colour=OCC)
+        g.dot(*H(2.4, -0.6), colour=calm_eye(skin.eye)[0])
+    if p.get("breath") and skin.breath:
+        for (dx, dy), c in zip(((6.8, 0.8), (7.8, 0.0), (8.4, 1.0)), skin.breath):
+            g.dot(*H(dx, dy), colour=c, kind="glow")
+
+
+def _pancho_face(g, H, p, skin):
+    """Pancho's face over the skull pup() has laid (PANCHO): the long buff ear, the short flat muzzle, the
+    underbite with its teeth, the beard, the fringe over a dark round eye, the black nose."""
+    fur = skin.fur
+    jaw = p["jaw"]
+    # The ear: long, hanging from the crown to below the jaw line, buff, its fringe dipped red (Annwn's).
+    ea = p["ear"] * 0.4
+    ex, ey = rot(-0.6, 6.4, ea)
+    g.limb([H(-1.2, -3.6), H(-1.9 + ex * 0.5, -3.4 + ey * 0.5), H(-1.7 + ex, -3.4 + ey)], [1.7, 2.3, 2.0],
+           skin.ear, 0.15, "fur")
+    tx, ty = H(-1.7 + ex, -3.4 + ey + 1.4)
+    for k, dx in enumerate((-1, 0, 1)):
+        g.dot(tx + dx, ty - (k % 2), skin.ear_tip or skin.ear[2])
+    # The muzzle: short and flat-faced, under the hair.
+    g.blob(*H(3.5, 1.3), rx=2.2, ry=1.9, ramp=fur, bias=-0.3, kind="fur")
+    # THE UNDERBITE: the lower jaw out a pixel past the nose, dropping when he bites or howls.
+    jx, jy = rot(3.6, -0.2, jaw * 0.8)
+    g.limb([H(1.8, 2.8), H(1.8 + jx, 2.8 + jy)], [1.1, 0.95], fur, 0.35, "fur")
+    if jaw > 0.25:
+        g.dot(*H(3.2, 2.2), colour=EMBER[1])
+    # The beard over the muzzle and chin, hanging below the jaw.
+    g.limb([H(1.8, 2.2), H(2.1, 4.6)], [1.4, 0.9], fur, -0.05, "fur")
+    # The fringe falling over the brow.
+    g.limb([H(-0.8, -3.9), H(1.0, -3.3), H(2.6, -2.4)], [1.5, 1.3, 0.9], fur, -0.3, "fur")
+    # The eye: dark and round, two by two, under the fringe, with the faintest glint.
+    ex0, ey0 = H(0.9, -1.4)
+    ex0, ey0 = int(round(ex0)), int(round(ey0))
+    g.block(ex0, ey0, OCC, 2)
+    g.dot(ex0 + 1, ey0 + 1, skin.eye[1])
+    g.dot(ex0, ey0, BONE[2])
+    # The black nose at the front of the flat muzzle, and under it the lower teeth on the jutting jaw.
+    nx, ny = H(5.1, 0.1)
+    nx, ny = int(round(nx)), int(round(ny))
+    g.block(nx - 1, ny, OCC, 2)
+    tx, ty = H(1.8 + jx, 2.8 + jy)
+    tx, ty = int(round(tx)), int(round(ty))
+    g.dot(tx - 1, ty - 1, BONE[0])
+    g.dot(tx - 2, ty - 1, BONE[1])
+    if p.get("breath") and skin.breath:
+        for (dx, dy), c in zip(((6.6, 1.0), (7.6, 0.2), (8.2, 1.2)), skin.breath):
+            g.dot(*H(dx, dy), colour=c, kind="glow")
+
+
 FORMS = [
     # name, cell, skin, scale
     # The hound, the crow and the cat are on the 48 cell, the elite row - the hound at 1.3: on the 32 cell
@@ -1331,10 +1766,19 @@ FORMS = [
     ("hound", 48, HOUND, 1.3),
     ("rimehound", 48, RIME, 1.3),
     ("greathound", 64, GREAT, 1.78),
-    ("cerberus", 64, CERB, 1.72),
-    ("cerberus-rime", 64, CERB_RIME, 1.72),
+    # The main hound's Cerberus is the one form on the 96 cell (CERB, "bigger").
+    ("cerberus", 96, CERB, 2.5),
+    ("cerberus-rime", 96, CERB_RIME, 2.5),
     ("annwn", 64, ANNWN, 1.72),
     ("annwn-rime", 64, ANNWN_RIME, 1.72),
+    # The rest of the pack under an Ascension (HELL_PACK, the pups): one head, the hound's size or a pup's.
+    ("hellhound", 48, HELL_PACK, 1.3),
+    ("hellhound-rime", 48, HELL_PACK_RIME, 1.3),
+    ("annwn-hound", 48, ANNWN_PACK, 1.3),
+    ("annwn-hound-rime", 48, ANNWN_PACK_RIME, 1.3),
+    ("pup", 32, PUP, 1.0),
+    ("hell-pup", 32, HELL_PUP, 1.0),
+    ("annwn-pup", 32, ANNWN_PUP, 1.0),
     # the crow's
     ("crow", 48, CROW, 1.0),
     ("stormcrow", 48, STORMCROW, 1.0),
@@ -1367,6 +1811,18 @@ class _Frame(object):
         return v * self.s
 
 
+# THE CARD ICONS (Eric, 2026-10-30: "familiar icons are very muted and hard to read. remake them, keeping the
+# theme"). The portraits below were drawn with the sprites' own depth and dither, which is right for a figure
+# lit among the bodies on a dark floor and wrong for a card: a fawn coat sitting in its base and shade stops,
+# speckled by the dither, on a night of the same value, came out as a brown smudge under an indigo smudge at
+# the size a card is read. A portrait now sits ICON_LIFT higher in its ramps - the lit and base stops, the
+# shade kept for the turn of the form - with almost no dither, so each plane is one clean tone; the hat is
+# lit, so its cone reads against the night; and spell_icons._familiar_card hangs a moon behind the head, so
+# every silhouette - the hat's point, the crow's beak, the cat's ears - has a pale ground to read against.
+ICON_LIFT = 0.3
+ICON_DITHER = 0.05
+
+
 def calm_eye(eye):
     """The two colours a portrait's eye is drawn in, from a skin's eye (its hot point and its colour).
 
@@ -1393,10 +1849,12 @@ def portrait(skin=HOUND, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None):
     as it is on the sprite. `s` and `at` draw it smaller and elsewhere, `into` into a Fig already begun
     (trio). Rendered with the actor finish, as the sprites are, so the family matches."""
     g = into or Fig(cell)
+    g.dither = ICON_DITHER
+    g.lay = False
     F = _Frame(s, at)
     P, r = F.P, F.r
     fur = skin.fur
-    g.deeper[id(fur)] = FUR_DEPTH
+    g.deeper[id(fur)] = FUR_DEPTH - ICON_LIFT
     # Neck and chest, out of the bottom of the frame.
     g.limb([P(13.0, 22.0), P(10.0, 27.0), P(8.0, 33.0)], [r(4.6), r(5.6), r(6.6)], fur, 0.1, "fur")
     # The ear hangs back, clear of the skull, a stop darker.
@@ -1426,9 +1884,9 @@ def portrait(skin=HOUND, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None):
     g.dot(*P(13, 30), colour=GOLD[1])
     if hat:
         # The hat, tipped back, its tip swept down behind.
-        g.poly([P(5.0, 11.0), P(20.0, 11.0), P(15.0, 5.0), P(10.0, 1.5), P(5.0, 1.0), P(2.0, 3.0), P(6.0, 4.5)], WOOL, 0.3,
+        g.poly([P(5.0, 11.0), P(20.0, 11.0), P(15.0, 5.0), P(10.0, 1.5), P(5.0, 1.0), P(2.0, 3.0), P(6.0, 4.5)], WOOL, -0.1,
                "cloth", lean=(0.0, -0.35))
-        g.limb([P(3.0, 11.5), P(21.0, 11.5)], [r(1.4), r(1.4)], WOOL, 0.2, "body")
+        g.limb([P(3.0, 11.5), P(21.0, 11.5)], [r(1.4), r(1.4)], WOOL, -0.05, "body")
         g.limb([P(6.0, 9.6), P(18.0, 9.6)], [r(0.9), r(0.9)], GOLD, -0.4, "norim")
         g.dot(*P(11, 6), colour=GOLD[0])
         g.dot(*P(12, 6), colour=LIGHT_E[0])
@@ -1447,10 +1905,12 @@ def crow_portrait(bird=CROW, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None)
     beak in amber, a warm eye under a dark brow, the gold collar and star - and the hat, set back on the
     crown. The shoulder of a wing comes up behind, edged in gold (or lightning, for the Stormcrow)."""
     g = into or Fig(cell)
+    g.dither = ICON_DITHER
+    g.lay = False
     F = _Frame(s, at)
     P, r = F.P, F.r
     fe = bird.feather
-    g.deeper[id(fe)] = bird.depth
+    g.deeper[id(fe)] = bird.depth - ICON_LIFT
     # The wing's shoulder, behind the breast, its primaries out of the frame at the lower left.
     g.poly([P(1.0, 33.0), P(2.0, 22.0), P(8.0, 17.0), P(14.0, 19.0), P(12.0, 27.0), P(8.0, 33.0)], fe, 0.35, "cloth",
            lean=(-0.15, -0.45))
@@ -1486,9 +1946,9 @@ def crow_portrait(bird=CROW, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None)
         for (x, y, t) in ((29, 10, 0), (30, 12, 1), (27, 8, 1), (3, 18, 1)):
             g.dot(*P(x, y), colour=LT[t], kind="glow")
     if hat:
-        g.poly([P(6.0, 9.0), P(19.0, 9.0), P(15.0, 3.6), P(10.0, 0.6), P(5.0, 0.4), P(2.4, 2.4), P(6.4, 3.8)], WOOL, 0.3,
+        g.poly([P(6.0, 9.0), P(19.0, 9.0), P(15.0, 3.6), P(10.0, 0.6), P(5.0, 0.4), P(2.4, 2.4), P(6.4, 3.8)], WOOL, -0.1,
                "cloth", lean=(0.0, -0.35))
-        g.limb([P(4.4, 9.4), P(20.4, 9.4)], [r(1.3), r(1.3)], WOOL, 0.2, "body")
+        g.limb([P(4.4, 9.4), P(20.4, 9.4)], [r(1.3), r(1.3)], WOOL, -0.05, "body")
         g.limb([P(7.0, 7.8), P(17.6, 7.8)], [r(0.85), r(0.85)], GOLD, -0.4, "norim")
         g.dot(*P(11, 5), colour=GOLD[0])
         g.dot(*P(12, 5), colour=LIGHT_E[0])
@@ -1502,10 +1962,12 @@ def cat_portrait(skin=CAT, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None, m
     bands in its coat, the collar and star - and the hat sat on its crown between the ears. Face on
     because a cat is read from two ears and two eyes; in profile at 32 pixels its short face was a lump."""
     g = into or Fig(cell)
+    g.dither = ICON_DITHER
+    g.lay = False
     F = _Frame(s, at)
     P, r = F.P, F.r
     fur = skin.fur
-    g.deeper[id(fur)] = FUR_DEPTH if skin.depth == FUR_DEPTH else skin.depth
+    g.deeper[id(fur)] = (FUR_DEPTH if skin.depth == FUR_DEPTH else skin.depth) - ICON_LIFT
     if skin.pattern:
         g.pattern = (fur, skin.pattern)
     ear = skin.ear or fur
@@ -1552,9 +2014,9 @@ def cat_portrait(skin=CAT, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None, m
         g.dot(*P(x, y), colour=EMBER[0] if not skin.glow_eye else ear[1])
     if hat:
         # On the crown between the ears, tipped back and swept to the left, its brim across the brow.
-        g.poly([P(8.4, 10.6), P(22.6, 10.6), P(18.6, 5.0), P(13.0, 1.4), P(8.0, 0.6), P(5.4, 2.4), P(9.6, 4.6)], WOOL, 0.3,
+        g.poly([P(8.4, 10.6), P(22.6, 10.6), P(18.6, 5.0), P(13.0, 1.4), P(8.0, 0.6), P(5.4, 2.4), P(9.6, 4.6)], WOOL, -0.1,
                "cloth", lean=(0.0, -0.35))
-        g.limb([P(7.4, 11.0), P(23.6, 11.0)], [r(1.2), r(1.2)], WOOL, 0.2, "body")
+        g.limb([P(7.4, 11.0), P(23.6, 11.0)], [r(1.2), r(1.2)], WOOL, -0.05, "body")
         g.limb([P(9.4, 9.2), P(21.6, 9.2)], [r(0.8), r(0.8)], GOLD, -0.4, "norim")
         g.dot(*P(14, 5), colour=GOLD[0])
         g.dot(*P(15, 5), colour=LIGHT_E[0])
@@ -1568,6 +2030,8 @@ def trio(cell=32):
     and bare-headed so three hats do not crowd 32 pixels - each drawn by its own portrait into one Fig, so
     the passes separate one from another."""
     g = Fig(cell)
+    g.dither = ICON_DITHER
+    g.lay = False
     crow_portrait(CROW, hat=False, s=0.5, at=(16.5, 1.5), into=g)
     cat_portrait(CAT, hat=False, s=0.5, at=(17.0, 15.5), into=g)
     portrait(HOUND, s=0.78, at=(-1.0, 6.5), into=g)
@@ -1583,6 +2047,11 @@ def frames_for(cell, skin, scale):
     if isinstance(skin, Bird):
         for anim, poses, loop, speed in CROW_ANIMS:
             out.append((anim, [crow(cell, skin, p).render(finish=True) for p in poses], loop, speed))
+        return out
+    if isinstance(skin, Pup):
+        # The hound's own strips and timing: a pup runs, leaps, bites and howls on the frames Familiar.cs sets.
+        for anim, poses, loop, speed in HOUND_ANIMS:
+            out.append((anim, [pup(cell, skin, p).render(finish=True) for p in poses], loop, speed))
         return out
     anims = CAT_ANIMS if skin.feline else HOUND_ANIMS
     for anim, poses, loop, speed in anims:

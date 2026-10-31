@@ -5319,7 +5319,25 @@ def spec_for(card_data):
     fix = OVERRIDES.get(card_data["id"])
     if fix:
         fix(sp, card_data)
+    if subject_of(card_data).startswith("familiar"):
+        familiar_frame(sp, card_data)
     return sp
+
+
+def familiar_frame(sp, card):
+    """The Familiar's cards, made to read small (Eric, 2026-10-30: "familiar icons are very muted and hard to
+    read. remake them, keeping the theme"). Its portraits filled the whole cell and ran out over the frame, so
+    no silhouette had night round it, and at 24 pixels a card was a brown or indigo mass inside a ring. Every
+    familiar subject drawn at full size is now drawn at 0.82 inside the disc, so the head, the hat and the
+    ears stand clear of the night round them; and the dark ones - the crow's forms and the black Cait Sith -
+    have the moon behind them (spell_icons.moon), as the spell's own cards do, so a dark head reads against a
+    pale one instead of against a dark night."""
+    p = sp.place
+    if p.sx >= 0.95 and p.sy >= 0.95 and abs(p.rot) < 0.01:
+        sp.place = Place(0.82, at=p.at or (C0 + p.dx, C0 + 1.0 + p.dy), mirror=p.mirror, darken=p.darken)
+    dark = subject_of(card) == "familiar_crow" or card["id"] == "familiar_cat_cait_sith"
+    if dark and sp.subject is not griffin_form:
+        sp.under.insert(0, lambda cv, x: si.moon(cv, 21.5, 10.0, 6.5))
 
 
 # =============================================================================================

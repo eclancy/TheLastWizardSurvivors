@@ -244,11 +244,14 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	private static readonly StringName AnimHowl = "howl";
 
 	// Every drawing the familiar has, one SpriteFrames each (tools/art/familiar.py). In FormNames order.
+	// The last seven are the dog's PACK under an Ascension and Littermates (ResolvePackLook): the hounds
+	// after the first wear them, so only the main hound is the legendary creature.
 	private enum Look
 	{
 		Hound, Rimehound, GreatHound, Cerberus, CerberusRime, Annwn, AnnwnRime,
 		Crow, Stormcrow, Raven, Morrigan, MorriganStorm, Griffin, GriffinStorm,
 		Cat, CaitSith, Grimalkin, CathPalug, CathPalugSith,
+		Hellhound, HellhoundRime, AnnwnHound, AnnwnHoundRime, Pup, HellPup, AnnwnPup,
 	}
 
 	private enum State : byte { Heel, Chase, Crouch, Leap, Bite, Howl, BlinkOut, BlinkIn, Swoop, Catch }
@@ -259,6 +262,9 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	private sealed class Hound
 	{
 		public AnimatedSprite2D Sprite;
+		// What this creature is drawn as: the main hound's look for the first, the pack's for the rest
+		// (Familiar.LookAt). Its cell and where its jaws are come from it.
+		public Look Look;
 		// The animation this creature's sprite is showing, kept here: reading AnimatedSprite2D.Animation
 		// back builds a new managed StringName every call, and Show runs for every creature every frame.
 		public StringName Anim;
@@ -320,6 +326,9 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	// The familiar as of the last cooldown.
 	private Kind kind = Kind.Dog;
 	private Look look = Look.Hound;
+	// What every creature after the first is drawn as (ResolvePackLook): the main look, but for the dog's
+	// pups and its pack under an Ascension.
+	private Look packLook = Look.Hound;
 	private bool lookSet;
 	private int lastLevel = -1;
 	private int damage = 12;
@@ -461,8 +470,10 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		tint = visualTint;
 
 		Look wanted = ResolveLook(spell);
-		bool changed = !lookSet || wanted != look;
+		Look wantedPack = ResolvePackLook(spell, wanted);
+		bool changed = !lookSet || wanted != look || wantedPack != packLook;
 		look = wanted;
+		packLook = wantedPack;
 
 		count = Math.Clamp(count, 1, MaxHounds);
 		int live = 0;
@@ -482,11 +493,14 @@ public partial class Familiar : Node2D, IPaintsElementPath
 			live--;
 		}
 
-		if (changed)
+		// Every creature in the look its place in the pack asks for: the first the main look, the rest the
+		// pack's. Taking Littermates turns the level 3 hound into a pup; an Ascension makes only the first
+		// the legendary creature.
+		for (int i = 0; i < hounds.Count; i++)
 		{
-			SpriteFrames frames = LoadFrames(look);
-			foreach (Hound h in hounds)
-				ApplyFrames(h, frames);
+			Look l = LookAt(i);
+			if (hounds[i].Look != l || hounds[i].Sprite?.SpriteFrames == null)
+				ApplyFrames(hounds[i], l);
 		}
 		// A new level or a new form is greeted with a howl; the first summoning arrives with one.
 		if (lookSet && (changed || level != lastLevel))
@@ -544,6 +558,37 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		}
 	}
 
+	// THE PACK (Eric, 2026-10-30, of 0.9.2: "when ascending hound familiar, it should only make the main
+	// hound into the full size legendary creature. littermates should produce two puppies instead of 2 of
+	// the same dog. The two puppies should also be affected by the ascension, but the sprite should just look
+	// like a similar-styled hellhound with one head, instead of the 3 headed cerberus. same goes for the
+	// other ascension."). The first creature is the main one and wears ResolveLook; every other wears this.
+	// With Littermates they are PUPS - the fawn hound's, a one-headed hellpup under Cerberus, a white
+	// red-eared pup under the Hound of Annwn. Without it, the level 3 hound under an Ascension is a hound
+	// of its own size in the Ascension's coat with one head. Only the drawing differs: every creature bites
+	// with the Ascension's power, which Summon reads once for the whole pack (threeHeads, annwn). The crow
+	// and the cat are unchanged - their pack wears their main look.
+	private static Look ResolvePackLook(SpellData spell, Look main)
+	{
+		if (FormOf(spell) != Kind.Dog)
+			return main;
+		bool rime = spell.HasEvolution(RimehoundId);
+		bool cerberus = spell.HasEvolution(CerberusId);
+		bool hunt = spell.HasEvolution(AnnwnId);
+		// Littermates and the Rimehound are both level 4 cards, so a pup is never a frost one.
+		if (spell.HasEvolution(LittermatesId))
+			return cerberus ? Look.HellPup : hunt ? Look.AnnwnPup : Look.Pup;
+		if (cerberus)
+			return rime ? Look.HellhoundRime : Look.Hellhound;
+		if (hunt)
+			return rime ? Look.AnnwnHoundRime : Look.AnnwnHound;
+		return main;
+	}
+
+	// The look of the creature at `index` in the pack: the main look for the first, the pack's for the rest.
+	// Creatures leave from the end of the list (Summon), so the first is the first summoned for the whole run.
+	private Look LookAt(int index) => index == 0 ? look : packLook;
+
 	/// <summary>The SpriteFrames each look loads, by the name tools/art/familiar.py writes.</summary>
 	public static string FramesPath(string lookName) => $"res://scenes/resources/Familiar{lookName}Frames.tres";
 
@@ -553,13 +598,18 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		"Hound", "Rimehound", "Greathound", "Cerberus", "CerberusRime", "Annwn", "AnnwnRime",
 		"Crow", "Stormcrow", "Raven", "Morrigan", "MorriganStorm", "Griffin", "GriffinStorm",
 		"Cat", "CaitSith", "Grimalkin", "CathPalug", "CathPalugSith",
+		"Hellhound", "HellhoundRime", "AnnwnHound", "AnnwnHoundRime", "Pup", "HellPup", "AnnwnPup",
 	};
 
-	// The cell each look is drawn on (tools/art/familiar.py FORMS): the hound, the crow and the cat on the
-	// elite row, every larger look on the 64 cell.
+	// The cell each look is drawn on (tools/art/familiar.py FORMS): the hound, the crow, the cat and the
+	// one-headed pack on the elite row, the pups on the basic row, Cerberus alone on the 96 (it is the
+	// biggest thing at his side: "the main cerberus itself should be bigger"), every other larger look on 64.
 	private static int CellOf(Look l) => l switch
 	{
 		Look.Hound or Look.Rimehound or Look.Crow or Look.Stormcrow or Look.Cat or Look.CaitSith => 48,
+		Look.Hellhound or Look.HellhoundRime or Look.AnnwnHound or Look.AnnwnHoundRime => 48,
+		_ when IsPup(l) => 32,
+		Look.Cerberus or Look.CerberusRime => 96,
 		_ => 64,
 	};
 
@@ -567,10 +617,12 @@ public partial class Familiar : Node2D, IPaintsElementPath
 
 	// How far in front of its feet a creature's jaws (or claws) are, in world pixels: where to stand so the
 	// strike lands on the quarry. Read off the drawings at x2. The crow strikes from above, on the quarry.
-	private float JawReach => look switch
+	private float JawReachOf(Look l) => l switch
 	{
 		Look.GreatHound or Look.Annwn or Look.AnnwnRime => 46f,
-		Look.Cerberus or Look.CerberusRime => 50f,
+		// Cerberus on the 96 cell at 2.5 (it was 50 on the 64 at 1.72): its jaws 2.5 / 1.72 as far out.
+		Look.Cerberus or Look.CerberusRime => 72f,
+		_ when IsPup(l) => 20f,
 		Look.Cat or Look.CaitSith => 22f,
 		Look.Grimalkin => 28f,
 		Look.CathPalug or Look.CathPalugSith => 40f,
@@ -616,7 +668,7 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		h.Sprite.Position = at;
 		AddChild(h.Sprite);
 		hounds.Add(h);
-		ApplyFrames(h, LoadFrames(look));
+		ApplyFrames(h, LookAt(hounds.Count - 1));
 		if (arriving)
 		{
 			h.State = State.BlinkIn;
@@ -626,11 +678,13 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		}
 	}
 
-	private void ApplyFrames(Hound h, SpriteFrames frames)
+	private void ApplyFrames(Hound h, Look l)
 	{
+		h.Look = l;
+		SpriteFrames frames = LoadFrames(l);
 		if (h.Sprite == null || frames == null)
 			return;
-		int cell = CellOf(look);
+		int cell = CellOf(l);
 		h.Sprite.SpriteFrames = frames;
 		// The feet row (cell - 2) sits on the node's origin, which is the creature's ground point (a
 		// flier's is its shadow's, drawn on the bottom rows of its cell).
@@ -963,7 +1017,7 @@ public partial class Familiar : Node2D, IPaintsElementPath
 			return e.GlobalPosition + new Vector2(0f, GroundBelowCentre);
 		float dx = e.GlobalPosition.X - h.Pos.X;
 		float side = dx > 6f ? -1f : dx < -6f ? 1f : -h.Facing;
-		return e.GlobalPosition + new Vector2(side * JawReach, GroundBelowCentre);
+		return e.GlobalPosition + new Vector2(side * JawReachOf(h.Look), GroundBelowCentre);
 	}
 
 	private static bool LeapClear(Vector2 from, Vector2 to, MazeNavigation nav) =>
@@ -1015,9 +1069,21 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		Vector2 feet = PlayerRef.FootPosition;
 		float behind = kind == Kind.Cat ? CatHeelBehind : HeelBehind;
 		float beside = kind == Kind.Cat ? CatHeelSide : HeelSide;
-		Vector2 side = new Vector2(-heelDir.Y, heelDir.X) * ((index % 2 == 0) ? 1f : -1f);
+		// Cerberus on its 96 cell is half again the size of the 64-cell forms: at their heel it stood in the
+		// wizard's robe, so it heels the extra half a cell further back.
+		int cell = CellOf(LookAt(index));
+		if (cell > 64)
+			behind += cell - 64;
+		Vector2 side = new Vector2(-heelDir.Y, heelDir.X);
+		// The pups trail together on the side away from the main hound, the second a pace behind the first:
+		// on the main hound's side the third creature stood inside its legs, and a Cerberus hid it outright.
+		if (index >= 2 && IsPup(LookAt(index)))
+			return feet + heelDir * (behind + 26f * (index - 1)) - side * (beside + 18f * (index - 1));
+		side *= (index % 2 == 0) ? 1f : -1f;
 		return feet + heelDir * (behind + 10f * (index / 2)) + side * (beside + 14f * (index / 2));
 	}
+
+	private static bool IsPup(Look l) => l is Look.Pup or Look.HellPup or Look.AnnwnPup;
 
 	// A heel spot on open ground: the creature's own, or the first of eight round the wizard that is.
 	private Vector2 FreeHeelSpot(int index, MazeNavigation nav)
@@ -1164,7 +1230,7 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		if (PlayerRef == null || SpellData == null)
 			return;
 		Enemy quarry = Alive(h.Target) && InJaws(h, h.Target) ? h.Target : null;
-		Vector2 centre = quarry?.GlobalPosition ?? h.Pos + new Vector2(h.Facing * JawReach, -GroundBelowCentre);
+		Vector2 centre = quarry?.GlobalPosition ?? h.Pos + new Vector2(h.Facing * JawReachOf(h.Look), -GroundBelowCentre);
 		StatBites++;
 		BiteAt(centre, quarry, h.Facing);
 		if (threeHeads)
@@ -1475,7 +1541,7 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		while (h.EmitClock >= 0.07f)
 		{
 			h.EmitClock -= 0.07f;
-			float head = CellOf(look) * 0.8f;
+			float head = CellOf(h.Look) * 0.8f;
 			Vector2 at = h.Pos + new Vector2(h.Facing * rng.RandfRange(4f, 14f), -head - rng.RandfRange(0f, 8f));
 			AddMote(at, new Vector2(h.Facing * rng.RandfRange(6f, 18f), -rng.RandfRange(40f, 70f)), 0.5f,
 				rng.Randf() < 0.5f ? ramp.Core : ramp.Hot, rng.Randf() < 0.3f ? 4f : 2f);

@@ -1222,6 +1222,12 @@ public partial class LevelUpMenu : CanvasLayer
 	// are dark, so the icon goes on as drawn: deepening it there would sink it into the glass.
 	private Color IconTint(LevelUpOption option)
 	{
+		// The Familiar's icons are portraits, lit in their own colours (tools/art/familiar.py) - a fawn hound,
+		// an indigo crow, a tabby, under a moon - not a shape drawn in an element's light. Multiplied by
+		// Arcane's violet on the page they went a muddy purple, half of what Eric meant by "familiar icons are
+		// very muted and hard to read" (2026-10-30), so they are drawn untinted, as on a dark card.
+		if (option.SpellId.StartsWith("familiar", StringComparison.Ordinal))
+			return Colors.White;
 		return CardFamilyArt.IsDark(FamilyOf(option))
 			? Colors.White
 			: GetDominantElementColor(option).Lerp(Ink, 0.28f);

@@ -3352,8 +3352,10 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.LittermatesId,
 			DisplayName = "Littermates",
-			Description = $"Another hound answers the call: +{littermates} hound, each with its own quarry; "
-				+ $"every hound bites {(1f - litterDamage) * 100f:0}% softer.",
+			// Since 2026-10-30 every hound after the first is a pup (Familiar.ResolvePackLook): taken at level 4,
+			// with the level 3 hound already out, that is the main hound and two pups.
+			Description = $"Its littermates answer the call: +{littermates} hound, and every hound after the first is "
+				+ $"a pup with its own quarry; every hound bites {(1f - litterDamage) * 100f:0}% softer.",
 			MilestoneLevel = 4,
 			ProjectileCountBonus = littermates,
 			DamageMultiplier = litterDamage,

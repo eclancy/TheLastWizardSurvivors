@@ -558,16 +558,33 @@ def starfall(sky=True):
     return c
 
 
-def _familiar_card(head, sky=True, motes=((26, 7, 1), (28, 12, 2), (24, 4, 2), (5, 9, 2), (7, 5, 1), (27, 24, 2))):
-    """A familiar's head on a patch of night, the Arcane motes round it. The night is Starfall's: the
-    darkest cold material row with a lit rim, because a fawn head on the level-up card's cream page would
-    vanish into it. `sky=False` leaves the night off, for tools/art/evolution_icons.py, which lays its own."""
+def moon(c, cx, cy, r):
+    """A full moon, in bone (the contract's moon row), lit from the upper left: the pale disc, a brighter
+    crown on the key's side, the shaded limb opposite, and three craters. Hung behind a familiar's head on
+    its card (2026-10-30, "familiar icons are very muted and hard to read"), so the hat's point, the crow's
+    beak and the cat's ears are dark shapes on a pale ground rather than dark shapes on a dark one."""
+    bone = bl.MATERIALS["skin"]
+    c.disc(cx, cy, r, r, bone[2])
+    c.disc(cx - 0.6, cy - 0.6, r - 0.9, r - 0.9, bone[1])
+    c.disc(cx - r * 0.35, cy - r * 0.35, r * 0.45, r * 0.45, bone[0])
+    for (dx, dy, k) in ((0.35, 0.2, 1.1), (-0.15, 0.5, 0.8), (0.4, -0.35, 0.7)):
+        c.disc(cx + dx * r, cy + dy * r, k, k, bone[2])
+
+
+def _familiar_card(head, sky=True, motes=((26, 7, 1), (28, 12, 2), (24, 4, 2), (5, 9, 2), (7, 5, 1), (27, 24, 2)),
+                   moon_at=None):
+    """A familiar's head on a patch of night, the Arcane motes round it, and (moon_at: x, y, r) a moon behind
+    the head. The night is Starfall's: the darkest cold material row with a lit rim, because a fawn head on
+    the level-up card's cream page would vanish into it. `sky=False` leaves the night and the moon off, for
+    tools/art/evolution_icons.py, which lays its own."""
     c = raster.Canvas(CELL, CELL, None)
     if sky:
         sky_deep = bl.tone("arcane", "deep")
         sky_rim = bl.tone("arcane", "shade")
         c.disc(15.5, 15.5, 15.0, 15.0, sky_rim)
         c.disc(15.5, 15.5, 14.0, 14.0, sky_deep)
+        if moon_at:
+            moon(c, *moon_at)
     c.blit(head.img, 0, 0)
     arc = bl.ELEMENTS["arcane"]
     for (x, y, t) in motes:
@@ -584,28 +601,30 @@ def familiar_icon(sky=True):
     heel. The eyes are the calm ones (familiar.calm_eye; Eric, 2026-10-28: "it looks a little creepy,
     the eye is too prominent")."""
     import familiar
-    return _familiar_card(familiar.trio(), sky, motes=((27, 3, 1), (29, 8, 2), (3, 4, 2), (2, 9, 1)))
+    return _familiar_card(familiar.trio(), sky, motes=((27, 3, 1), (29, 8, 2), (3, 4, 2), (2, 9, 1)), moon_at=(10.0, 8.5, 7.0))
 
 
 def familiar_dog_icon(sky=True):
     """The Familiar taken as a dog (SpellVariant.Icon): the hound's head in the wizard's hat, its collar
     star lit - a good dog: the calm eye and a closed, easy mouth (familiar.portrait)."""
     import familiar
-    return _familiar_card(familiar.portrait(), sky)
+    return _familiar_card(familiar.portrait(), sky, moon_at=(21.0, 8.5, 7.5))
 
 
 def familiar_crow_icon(sky=True):
     """The Familiar taken as a crow: its head and shoulder in the hat, the beak out to the right, a wing's
     gold edge behind it (familiar.crow_portrait)."""
     import familiar
-    return _familiar_card(familiar.crow_portrait(), sky, motes=((27, 5, 1), (5, 10, 2), (28, 25, 2), (24, 2, 2)))
+    return _familiar_card(familiar.crow_portrait(), sky, motes=((27, 5, 1), (5, 10, 2), (28, 25, 2), (24, 2, 2)),
+                          moon_at=(21.0, 9.0, 8.0))
 
 
 def familiar_cat_icon(sky=True):
     """The Familiar taken as a cat: its round face three-quarter on, ears up through the hat's brim, a
     content eye (familiar.cat_portrait)."""
     import familiar
-    return _familiar_card(familiar.cat_portrait(), sky, motes=((27, 6, 1), (28, 12, 2), (26, 26, 2), (4, 8, 2)))
+    return _familiar_card(familiar.cat_portrait(), sky, motes=((27, 6, 1), (28, 12, 2), (26, 26, 2), (4, 8, 2)),
+                          moon_at=(25.0, 7.0, 6.0))
 
 
 def _over(c, k):

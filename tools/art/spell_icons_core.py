@@ -338,20 +338,79 @@ def gale_blade():
 
 
 def molten_shard():
-    """A splinter of iron still glowing from the forge. Metal body, fire at the edges."""
+    """A splinter of steel torn off white-hot, flying point first - the shard the game throws.
+
+    Redrawn 2026-10-30 (Eric: "molten shard icon is confusing, it's hard to tell what it is"). It was a
+    dark steel slab with a few orange dots down one edge: on the card it read as a grey leaf, and nothing
+    in it said molten. Now it is drawn from the same shape and the same rules as the shard in flight
+    (scenes/shaders/molten_shard.gdshader): a long diamond widest a little behind its middle, so it reads
+    as a point leading a torn end; pale steel in the Metal ramp, its edge lit on the key's side and dark on
+    the other; a seam of molten metal down its spine; the point white-hot; the torn end still glowing where
+    it broke off; a pixel of heat round all of it, which keeps pale steel off a pale card; and behind it a
+    streak of cooling slag and the sparks it sheds - the one direction it is going. At 16 pixels it is a
+    bright splinter with a hot tip and a fiery tail.
+    """
     c = raster.Canvas(CELL, CELL, None)
     f = E("fire")
-    iron = bl.tone("steel", "shade")
-    iron_lit = bl.tone("steel", "lit")
-    body = [(5, 22), (13, 12), (20, 6), (27, 4), (25, 12), (18, 19), (9, 26), (5, 22)]
-    c.poly(body, iron)
-    c.line(6, 22, 26, 5, iron_lit)
-    # Heat, concentrated along the cutting edge rather than washed over the whole splinter.
-    for (x, y) in [(24, 6), (21, 9), (18, 12), (15, 15), (12, 18), (9, 22)]:
-        c.set(x, y, f[2])
-    for (x, y) in [(23, 7), (17, 13), (11, 20)]:
-        c.set(x, y, f[1])
-    spray(c, [(29, 3), (4, 27)], f, 0)
+    m = E("metal")
+    # The shard's axis, torn end at the lower left, point at the upper right.
+    (x0, y0), (x1, y1) = (6.0, 25.0), (27.5, 3.5)
+    cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+    ln = math.hypot(x1 - x0, y1 - y0)
+    ux, uy = (x1 - x0) / ln, (y1 - y0) / ln
+    nx, ny = -uy, ux                       # across it: positive is the lower right, away from the key
+    half_len = ln / 2.0
+    half_w = 3.7
+    waist = -0.2 * half_len
+
+    def frame(x, y):
+        px, py = x + 0.5 - cx, y + 0.5 - cy
+        qx = px * ux + py * uy
+        qy = px * nx + py * ny
+        if qx > waist:
+            w = half_w * (half_len - qx) / (half_len - waist)
+        else:
+            w = half_w * (qx + half_len) / (waist + half_len)
+        return qx, qy, w
+
+    # The heat round it first, a pixel out from the steel all the way round.
+    for y in range(CELL):
+        for x in range(CELL):
+            qx, qy, w = frame(x, y)
+            if abs(qx) <= half_len + 1.0 and abs(qy) <= max(w, 0.0) + 1.1 and w > -1.2:
+                c.set(x, y, f[3])
+    # The steel, the seam, the point and the torn end.
+    for y in range(CELL):
+        for x in range(CELL):
+            qx, qy, w = frame(x, y)
+            if abs(qx) > half_len or abs(qy) > w or w <= 0.0:
+                continue
+            t = (qx + half_len) / (2.0 * half_len)        # 0 torn end .. 1 point
+            col = m[2]
+            if w - abs(qy) < 1.0:
+                col = m[1] if qy < 0 else m[3]           # the rim: lit on the key's side
+            if abs(qy) <= 0.9 and w - abs(qy) >= 0.9:
+                # The molten seam, two pixels on the diagonal: the Fire ramp's mid at the torn end, hot along
+                # the body, whitening toward the point.
+                col = f[2] if t < 0.3 else (f[1] if t < 0.66 else f[0])
+            if t > 0.84:
+                col = f[0]
+            elif t < 0.17:
+                col = f[3] if (t < 0.08 or (x + y) % 2) else f[2]
+            c.set(x, y, col)
+    # The key's glint on the lit edge, two-thirds of the way to the point.
+    gx, gy = cx + ux * half_len * 0.35 - nx * (half_w * 0.6), cy + uy * half_len * 0.35 - ny * (half_w * 0.6)
+    c.set(gx, gy, m[0])
+    # Behind it along its flight: a streak of slag a pixel wide, cooling as it trails off, then broken.
+    for i in range(1, 9):
+        sx, sy = x0 - ux * i * 0.95, y0 - uy * i * 0.95
+        if i > 5 and i % 2 == 0:
+            continue
+        c.set(sx, sy, f[1] if i < 3 else (f[2] if i < 6 else f[3]))
+    # The sparks it sheds, falling back off the torn end and the flanks.
+    for (x, y, k) in ((9, 29, 1), (3, 26, 2), (12, 27, 2), (4, 22, 3), (14, 23, 3), (2, 30, 3)):
+        c.set(x, y, f[k - 1] if k == 1 else f[k])
+    c.set(29, 1, f[1])
     return c
 
 
@@ -735,12 +794,16 @@ ICONS = [
 ]
 
 
-def main():
+def main(only=None):
+    """`only`: icon names to write (--only=molten-shard-metal), so one icon can be redrawn without rewriting
+    the rest - an unchanged painter re-run under another Python can still move a pixel."""
     if not os.path.isdir(OUT_DIR):
         os.makedirs(OUT_DIR)
 
     ok = True
     for name, fn in ICONS:
+        if only and name not in only:
+            continue
         canvas = fn()
         bad = canvas.audit()
         if bad:
@@ -760,4 +823,5 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    _only = [a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")]
+    sys.exit(main(only=_only[0].split(",") if _only else None))
