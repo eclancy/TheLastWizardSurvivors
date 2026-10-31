@@ -289,6 +289,129 @@ def black_hare():
     return g.rows()
 
 
+# THE HARE'S RUN (Eric, of 0.9.2: "the black hares enemy should have a running animation"). Its `moving`
+# strip was the one pose above bobbed and sheared (anim_sets.moving), so a hare - the fastest thing on the
+# heath - slid across it with its legs locked. A hare runs in BOUNDS: the hind feet drive it off, it flies
+# stretched out, lands on its forefeet, folds - the hind feet swinging up past the forefeet to land AHEAD of
+# them, the back arched - and drives off again. Eight frames of that, each drawn from the same masses as the
+# pose (haunch, barrel, chest, head, the ears laid back and the scut), the legs placed for the moment. Its
+# attack, hurt and death are still derived from the pose, and the pose is unchanged.
+#
+# One key per frame: (stretch, rise, arch, hind foot x, hind lift, fore foot x, fore lift). Stretch spreads
+# haunch and chest apart (+) or folds them together (-); rise lifts the whole body; arch lifts the barrel
+# into the gathered hump; a foot with no lift is planted on the feet row.
+HARE_RUN = [
+    (1.5, 0.5, 0.0, 6.0, 0.0, 29.0, 2.0),     # the hinds drive off, the forelegs reaching
+    (2.0, 2.0, 0.0, 4.0, 2.0, 29.5, 1.5),     # flying, stretched out
+    (1.0, 1.0, 0.5, 6.0, 3.0, 27.0, 0.0),     # the forefeet land
+    (-1.0, 0.0, 1.5, 12.0, 3.0, 24.0, 0.0),   # folding over them, the hinds swinging through
+    (-2.5, 0.0, 2.5, 20.0, 0.0, 18.5, 2.0),   # gathered: the hinds land ahead of the forefeet
+    (-1.0, 0.5, 1.5, 15.0, 0.0, 25.0, 2.5),   # the hinds drive, the forelegs reaching out
+    (0.5, 1.0, 0.5, 9.0, 0.0, 28.0, 2.0),     # extending
+    (1.5, 1.5, 0.0, 6.0, 1.0, 29.5, 2.0),     # leaving the ground
+]
+
+
+def _hare_hind(g, hip, x, lift, tones):
+    """A hare's hind leg: a heavy thigh to the hock, which points back, a thin shank, and the long foot
+    lying flat along the ground (or trailing, lifted)."""
+    mid, lit, dark = tones
+    heel = (x - 1.0, FEET - 0.5 - lift)
+    toe = (x + 2.0, FEET - lift)
+    hock = ((heel[0] + hip[0]) * 0.5 - 2.0, heel[1] - 2.5)
+    _limb(g, hip[0], hip[1], hock[0], hock[1], 1.7, mid, lit, dark)
+    _limb(g, hock[0], hock[1], heel[0], heel[1], 0.9, mid, lit, dark)
+    g.line(heel[0], heel[1], toe[0], toe[1], dark)
+    g.set(heel[0], heel[1], mid)
+    return toe if lift == 0 else None
+
+
+def _hare_fore(g, shoulder, x, lift, tones):
+    """A foreleg: shoulder to wrist, the short pastern, the paw."""
+    mid, lit, dark = tones
+    paw = (x, FEET - lift)
+    wrist = (paw[0] - (1.0 if lift else 0.5), paw[1] - 2.6)
+    _limb(g, shoulder[0], shoulder[1], wrist[0], wrist[1], 1.1, mid, lit, dark)
+    twig(g, [wrist, paw], lit, dark)
+    g.span(paw[1], paw[0] - 1, paw[0] + 1, dark)
+    g.set(paw[0] - 1, paw[1], lit)
+    return paw if lift == 0 else None
+
+
+def black_hare_run(t):
+    """One frame of the hare's bounding run at phase t (0..1): HARE_RUN, the pose's own masses and tones."""
+    s, r, a, hind_x, hind_lift, fore_x, fore_lift = HARE_RUN[int(round(t * len(HARE_RUN))) % len(HARE_RUN)]
+    g = G(CELL)
+    hcx, hcy = 11.0 - s * 0.7, 20.5 - r - a * 0.3
+    bcx, bcy = 17.5 - s * 0.2, 20.0 - r - a * 0.8
+    ccx, ccy = 22.5 + s * 0.3, 20.5 - r
+    hx, hy = 26.0 + s * 0.3, 18.5 - r + a * 0.3
+    planted = []
+    # THE FAR LIMBS, a stop darker, a beat out of step with the near ones.
+    far = ("N", "p", "j")
+    planted.append(_hare_hind(g, (hcx + 1.0, hcy + 2.5), hind_x + 1.5, hind_lift, far))
+    planted.append(_hare_fore(g, (ccx - 0.5, ccy + 2.5), fore_x - 1.5, fore_lift * 0.6, far))
+    # THE MASSES: haunch, barrel, chest - each lit on its upper left.
+    blob(g, hcx, hcy, 5.0, 4.0, "p", "m", "N", deep="j")
+    blob(g, bcx, bcy, 5.0 - min(0.0, s) * 0.2, 3.0, "p", "m", "N", deep="j")
+    blob(g, ccx, ccy, 2.8, 2.8, "p", "m", "N", deep="j")
+    # The pale belly under the barrel and the chest.
+    for x in range(int(hcx) + 1, int(ccx) + 3):
+        col = [y for y in range(10, 27) if inside(g, x, y)]
+        if len(col) > 4:
+            g.set(x, col[-1], "E")
+            g.set(x, col[-2], "l" if x % 4 == 1 else "e")
+    # Fur laid back by the run, riding the barrel.
+    dx, dy = bcx - 17.5, bcy - 20.0
+    for (x0, y0, x1, y1) in ((9, 20, 13, 21), (14, 19, 19, 19), (17, 21, 21, 22), (8, 22, 11, 23)):
+        g.line(x0 + dx, y0 + dy, x1 + dx, y1 + dy, "N")
+        g.line(x0 + 1 + dx, y0 - 1 + dy, x1 - 1 + dx, y1 - 1 + dy, "P")
+    for (x, y) in ((12, 17), (16, 17), (9, 18)):
+        g.set(x + dx, y + dy, "n")
+    # THE SCUT, cocked off the rump, flicking up as the hinds fold under.
+    sx, sy = hcx - 5.0, hcy - 2.5 - a * 0.4
+    for (ox, oy, ch) in ((0, 0, "l"), (-1, 1, "e"), (0, 1, "L"), (1, 0, "e")):
+        g.set(sx + ox, sy + oy, ch)
+    # THE HEAD, low and forward, the muzzle blunt.
+    blob(g, hx, hy, 3.0, 2.4, "p", "m", "N")
+    ox, oy = int(round(hx - 26.0)), int(round(hy - 18.5))
+    for (x, y, ch) in ((29, 19, "p"), (29, 20, "N"), (30, 19, "N"), (28, 21, "j"), (27, 21, "N"),
+                       (26, 20, "e"), (27, 20, "E")):
+        g.set(x + ox, y + oy, ch)
+    g.set(30 + ox, 18 + oy, "k")
+    # THE EARS laid back along the spine, their tips out past the scut, lifting a little in the air.
+    for (bx, by, tx, ty, top, body, inner) in ((hx - 2.0, hy - 2.5, hcx - 7.0, hcy - 6.5 - r * 0.5, "P", "p", "n"),
+                                               (hx - 3.0, hy - 1.5, hcx - 4.0, hcy - 4.5 - r * 0.4, "p", "N", "j")):
+        n = int(round(bx - tx))
+        for i in range(n + 1):
+            u = i / float(max(1, n))
+            x = bx - i
+            y = by + (ty - by) * u
+            g.set(x, y, top)
+            if u < 0.82:
+                g.set(x, y + 1, inner if (i % 4 and u > 0.2) else body)
+            if u > 0.88:
+                g.set(x, y, "J")
+    rim(g, 8, 24, skip="o")
+    # THE NEAR LIMBS, after the rim so they are not doubled into white wires.
+    near = ("p", "P", "N")
+    planted.append(_hare_hind(g, (hcx - 1.0, hcy + 2.5), hind_x, hind_lift, near))
+    planted.append(_hare_fore(g, (ccx + 0.5, ccy + 1.5), fore_x, fore_lift, near))
+    # The contact under whatever is on the ground; in the air, a shorter one under the body.
+    xs = [p[0] for p in planted if p is not None]
+    if xs:
+        contact(g, int(round(min(xs) - 2)), int(round(max(xs) + 1)))
+    else:
+        contact(g, int(round(hcx)), int(round(ccx)))
+    eyes(g, 18 + oy, 26 + ox, 27 + ox, "y", "Y")
+    return g.rows()
+
+
+# bestiary_kit draws the hare's `moving` from this instead of bobbing the pose (bestiary_kit.write_creature).
+black_hare.cycle = black_hare_run
+black_hare.cycle_fps = 14.0
+
+
 def waller():
     """HEAVY. A dry-stone waller carrying a section of his wall on a frame before him.
 
