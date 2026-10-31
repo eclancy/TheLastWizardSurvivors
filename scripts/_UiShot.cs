@@ -1333,7 +1333,20 @@ public partial class _UiShot : Node
 					if (boss != null && !all.Lifetime.HasDefeatedBoss(boss.Id))
 						all.Lifetime.BossesDefeated.Add(boss.Id);
 				}
+				// And every boss on the road, as a finished campaign has beaten them: the world map only
+				// shows a chapter whose previous boss has fallen (GlobalStatsManager.IsChapterRevealed).
+				foreach (StageDefinition chapter in StageCatalog.Campaign.Where(s => s.IsPlayable))
+				{
+					BossDefinition boss = BossCatalog.ForStageIndex(chapter.Index);
+					if (boss != null && !all.Lifetime.HasDefeatedBoss(boss.Id))
+						all.Lifetime.BossesDefeated.Add(boss.Id);
+				}
 			}
+			// --map-shown-before=stop,stop: the world's stops as an earlier visit this session showed them,
+			// so a stop revealed since is drawn back out of the dark (WorldMap.LastShownStops).
+			else if (arg.StartsWith("--map-shown-before="))
+				WorldMap.LastShownStops = new System.Collections.Generic.HashSet<string>(
+					arg.Substring("--map-shown-before=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries));
 			else if (arg == "--unlock-wizards")
 			{
 				if (GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is SaveData owned)

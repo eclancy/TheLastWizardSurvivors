@@ -558,6 +558,25 @@ public static class RegressionChecks
 				warnings.Add($"World map: {stage.DisplayName} is outside the campaign but the road reaches it before the campaign's end.");
 		}
 
+		// The map unrolls as the campaign is won (GlobalStatsManager.IsChapterRevealed): a new save is shown
+		// the first chapter and nothing past it, and no chapter a save can enter is ever hidden from it -
+		// checked on the new save and on one with every chapter opened.
+		var fresh = new SaveData();
+		var opened = new SaveData();
+		foreach (StageDefinition stage in StageCatalog.Campaign)
+			GlobalStatsManager.UnlockStage(opened, stage.Id);
+		foreach (StageDefinition stage in StageCatalog.Campaign)
+		{
+			bool first = StageCatalog.CampaignPositionOf(stage.Id) == 0;
+			if (GlobalStatsManager.IsChapterRevealed(fresh, stage) != first)
+				warnings.Add($"World map: on a new save {stage.DisplayName} is {(first ? "hidden" : "shown")}; only the first chapter should be.");
+			foreach (SaveData save in new[] { fresh, opened })
+			{
+				if (GlobalStatsManager.IsStageAvailable(save, stage) && !GlobalStatsManager.IsChapterRevealed(save, stage))
+					warnings.Add($"World map: {stage.DisplayName} can be entered but is hidden on the map.");
+			}
+		}
+
 		// The page: its sheet drawn, the wizard's stand on the paper, the kids' drawings on the sheet.
 		if (StageCatalog.All.Any(s => s.AfterCampaign && s.IsPlayable))
 		{

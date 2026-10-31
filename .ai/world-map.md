@@ -61,6 +61,23 @@ his lanterns in the swamp (arcane), the Emberdeep's lava (fire), the seat (darkn
 
 ## 2. Locked places: on the map, visitable, never startable
 
+**Superseded 2026-10-31** (Eric: *"you should only unlock the map as you defeat the previous level"*):
+**the map unrolls as the campaign is won.** A campaign chapter is a stop, a compass mark and lit on the
+map only once it is revealed (`GlobalStatsManager.IsChapterRevealed`): the first chapter; any chapter
+the save has earned (`IsStageEarned` - so nothing a save can enter is ever hidden from it); and a gate
+chapter whose previous boss has fallen, shown under its mist and lock with its "Still held: N wizards"
+line until the wizards are free. Everything else is covered by the screen's ground colour
+(`WorldMapView.BuildMask`): whatever lies nearer the unrevealed road and places than the revealed ones,
+with a dithered edge on the art's 2-pixel grain - so a new save sees the Forest's land and the first
+yards of road fading into the dark, and a finished campaign is lit everywhere. Unrevealed places are
+not on the compass at all, so none is named; "Chapter N of 10" still counts the whole road. The rule is
+read from the save's beaten bosses and opened list, so it needs no schema step and closes nothing.
+**A place revealed since the last visit this session** (`WorldMap.LastShownStops`) is drawn back out of
+the dark over about two seconds when the map opens - the beat of coming back after the boss that opened
+it. On a cold start the map simply opens as far as it reaches. `ValidateWorldMap` holds a new save to
+the first chapter alone and every enterable chapter to being shown. The rest of this section is the
+first build's design, kept for the gate chapter and the unbuilt ones it still describes.
+
 **Every chapter is drawn and every chapter is a stop**, open or not. The stage list hid closed
 chapters entirely, and the cost it wrote down was real: the Emberdeep's gate - *every spell recovered
 and every wizard freed* - was said nowhere until it opened. A map shows the places anyway, so letting
@@ -342,9 +359,9 @@ and the camera are this doc's own, from Eric's description.
 
 ## 15. Decisions left to Eric
 
-1. **Is the cursor right to visit locked places?** (Section 2.) The alternative is the classic
-   overworld - the road stops at the first closed place - which reads as progress but hides the
-   Emberdeep's goal again.
+1. ~~Is the cursor right to visit locked places?~~ Decided 2026-10-31: no - the classic overworld, the
+   road revealed as each boss falls (section 2). The Emberdeep's goal is still said, on its card, once
+   the Long Coil has fallen and the gate is the next thing on the road.
 2. **Should a locked chapter's card show what it holds?** It does (as silhouettes, a secret wizard
    sealed): it is the reason to open it. Hiding it is one line.
 3. ~~The Sketchbook as a page off the edge of the world~~ - decided 2026-10-30: its own page, off the

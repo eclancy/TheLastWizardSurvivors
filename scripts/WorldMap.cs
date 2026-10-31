@@ -41,6 +41,11 @@ public partial class WorldMap : Control
 	/// </summary>
 	public static bool OnPage { get; set; }
 
+	// The world's stops shown at its last opening this session, for the reveal of a new one. Null on a
+	// cold start: then nothing is animated, the map simply opens as far as it reaches.
+	// Public for the harness (_UiShot --map-shown-before), which stands in for an earlier visit.
+	public static HashSet<string> LastShownStops { get; set; }
+
 	private const float CardWidth = 404f;
 	// Room for the longest card - a two-line lock, the finale's "Still held" line and a row of five
 	// slots - at the phone's type sizes; what is left over goes to the map.
@@ -126,9 +131,17 @@ public partial class WorldMap : Control
 		}
 		else
 		{
+			// The stops shown last time the world was open this session: a stop new since then is
+			// revealed with the dark drawing back to it (WorldMapView), once.
+			float revealFrom = -1f;
+			if (LastShownStops != null && stops.Any(s => !LastShownStops.Contains(s.Id)))
+				revealFrom = stops.Where(s => LastShownStops.Contains(s.Id)).Select(s => s.Layout.ArcLength).DefaultIfEmpty(0f).Max();
+			LastShownStops = new HashSet<string>(stops.Select(s => s.Id));
 			view.Setup(layout, stops.Select(s => new WorldMapView.ViewStop { Layout = s.Layout, Look = s.Look }).ToList(),
-				character, selected);
+				character, selected, revealFrom);
 			compass.SetMarks(stops.Select(MarkFor));
+			// A fresh save has one place shown and nowhere to step to.
+			leftArrow.Visible = rightArrow.Visible = stops.Count > 1;
 			compass.SetState(selected, selected);
 		}
 		RebuildCard();
@@ -178,6 +191,11 @@ public partial class WorldMap : Control
 
 		foreach (var (stage, rush) in order)
 		{
+			// The map unrolls as the campaign is won (Eric, 2026-10-31: "you should only unlock the map as
+			// you defeat the previous level"): a chapter is not a stop, not on the compass and not lit on
+			// the map until its previous boss has fallen (GlobalStatsManager.IsChapterRevealed).
+			if (!rush && StageCatalog.IsInCampaign(stage) && !GlobalStatsManager.IsChapterRevealed(save, stage))
+				continue;
 			WorldMapStop placed = layout.Get(rush ? WorldMapLayout.BossRushId : stage.Id);
 			if (placed == null)
 			{
@@ -502,7 +520,7 @@ public partial class WorldMap : Control
 		// "of" the chapters the map shows: every chapter is a stop once drawn, and a chapter not drawn
 		// yet (the castle's, until piece C8) is not one to count - "Chapter 1 of 13" over ten places
 		// would name three the player cannot find.
-		int chapters = stops.Count(s => !s.IsBossRush && StageCatalog.IsInCampaign(s.Stage));
+		int chapters = StageCatalog.Campaign.Count(s => layout.Get(s.Id) != null);
 		string where = stop.IsBossRush ? "The seat, at the summit"
 			: position >= 0 ? $"Chapter {position + 1} of {chapters}"
 			: "Beyond the map";

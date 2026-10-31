@@ -339,6 +339,25 @@ public static class GlobalStatsManager
 	}
 
 	/// <summary>
+	/// Whether the world map shows a campaign chapter at all (Eric, 2026-10-31: "you should only unlock
+	/// the map as you defeat the previous level"). The first chapter; any chapter the save has earned
+	/// (<see cref="IsStageEarned"/> - so nothing a save can enter is ever hidden from it); and a gate
+	/// chapter whose previous boss has fallen, shown sealed until its wizards are free. Read from what
+	/// the save already holds - beaten bosses and the opened list - so it needs no field of its own.
+	/// </summary>
+	public static bool IsChapterRevealed(SaveData data, StageDefinition stage)
+	{
+		if (stage == null)
+			return false;
+		int position = StageCatalog.CampaignPositionOf(stage.Id);
+		if (position < 0)
+			return false;
+		return position == 0
+			|| IsStageEarned(data, stage)
+			|| (stage.Gate == StageGate.PreviousBossAndWizards && HasClearedPreviousChapter(data, stage));
+	}
+
+	/// <summary>
 	/// The campaign is finished: the boss of its last playable chapter has fallen there
 	/// (<see cref="StageCatalog.LastPlayableChapter"/> - the Warden of the Deep today). What opens the
 	/// Sketchbook's page (Eric, 2026-10-30: "Once you beat the whole campaign, you should be able to
