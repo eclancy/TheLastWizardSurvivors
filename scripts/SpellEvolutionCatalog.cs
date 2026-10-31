@@ -860,7 +860,8 @@ public static class SpellEvolutionCatalog
 		{
 			Id = "chain_lightning_forked_surge",
 			DisplayName = "Storm Surge",
-			Description = "The arc forks through falling rain: it splits three ways at every hop for 30% less each, +1 Water tag, and "
+			// The Water tag stays named: RegressionChecks requires an element path's card to say it.
+			Description = $"The arc splits three ways at every hop for 30% less, up to {ChainLightning.MaxArcsPerCast} arcs a cast. +1 Water tag, and "
 				+ ElementPaths.Describe(ElementRider.Slow, surgeDrag, surgeSeconds) + ".",
 			MilestoneLevel = 4,
 			ChainBranchBonus = 2,
@@ -915,7 +916,7 @@ public static class SpellEvolutionCatalog
 			Id = ChainLightning.CascadeId,
 			BonusElementWeights = new() { { "Lightning", 1 } },
 			DisplayName = "Cascade",
-			Description = $"The chain comes apart on what it kills: every enemy a hop kills flashes and throws {ChainLightning.CascadeForks} more arcs out of its body, up to {ChainLightning.CascadeMaxForks} a cast, so a pack it can kill is torn through by a branching storm. Hops leap 30% further and hit 50% harder.",
+			Description = $"Every enemy a hop kills throws {ChainLightning.CascadeForks} more arcs, up to {ChainLightning.CascadeMaxHops + 1} arcs a cast. +50% damage.",
 			MilestoneLevel = 8,
 			ChainArcBonus = 1,
 			DamageMultiplier = 1.5f,
@@ -995,7 +996,10 @@ public static class SpellEvolutionCatalog
 		{
 			Id = "shadow_bolt_spreading_dark",
 			DisplayName = "Spreading Dark",
-			Description = "The curse forks at every jump - two arcs leave each enemy it reaches - and runs two hops further. No extra damage.",
+			// The cap is named on the card (ChainLightning.MaxArcsPerCast, 2026-10-31): with the fork a cast runs
+			// into it within two or three jumps, so "two hops further" is only the whole truth beside it. One
+			// sentence, the one number (the designer, 2026-10-31: "Overall keep text minimal").
+			Description = $"The curse forks at every jump and runs two hops further, up to {ChainLightning.MaxArcsPerCast} arcs a curse.",
 			MilestoneLevel = 4,
 			ChainBranchBonus = 1,
 			ChainArcBonus = 2,
@@ -1014,7 +1018,9 @@ public static class SpellEvolutionCatalog
 			// a single element, which only a pure spell may do.
 			DisplayName = "Anathema",
 			// +45% damage of its own as well (2026-10-26): x2.76 of the spell at level 7 with it, at --enemy-hp=10.
-			Description = $"Where the curse ends, night falls: a pall of darkness hangs over the last enemy it reached for {ChainLightning.PallSeconds:0}s, cursing and striking everything under it every half second. +20% damage taken, two hops further, and the curse bites 45% harder.",
+			// Cut to what it does and one number (2026-10-31, "keep text minimal"); the +20% damage taken and
+			// the two hops still ride along, as the numbers below.
+			Description = $"Where the curse ends, a pall of night hangs for {ChainLightning.PallSeconds:0}s, cursing and striking everything under it.",
 			DamageMultiplier = 1.45f,
 			MilestoneLevel = 8,
 			Effect = SpellEffect.Vulnerability,
@@ -1033,7 +1039,7 @@ public static class SpellEvolutionCatalog
 			// here as well would let a player who took the matching level 4 option reach three of
 			// a single element, which only a pure spell may do.
 			DisplayName = "Threefold Curse",
-			Description = $"{ChainLightning.ThreefoldCurses} curses leave the staff at once, each at its own enemy and each chaining on its own, and the rot they carry does real damage. +20% damage.",
+			Description = $"{ChainLightning.ThreefoldCurses} curses leave the staff at once, each chaining on its own for up to {ChainLightning.MaxArcsPerCast} arcs.",
 			MilestoneLevel = 8,
 			PoisonTickBonus = 8,
 			DamageMultiplier = 1.2f,
@@ -3197,9 +3203,9 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Starfall.SkippingStarsId,
 			DisplayName = "Skipping Stars",
-			Description = $"Every star lands at its slant and skips on {TimesWord(Starfall.SkipCount)}, like a stone across water: "
-				+ $"the first skip lands {Starfall.SkipDamage[0] * 100f:0}% as hard and {Starfall.SkipRadius[0] * 100f:0}% as wide, "
-				+ $"the second {Starfall.SkipDamage[1] * 100f:0}% and {Starfall.SkipRadius[1] * 100f:0}%.",
+			// One sentence, the one number (2026-10-31, "keep text minimal"): the skips' shares of damage and
+			// size (Starfall.SkipDamage, SkipRadius) are the spell's, not the card's.
+			Description = $"Every star skips on {TimesWord(Starfall.SkipCount)} like a stone across water, each skip veering up to {Starfall.SkipTurnDegrees:0} degrees.",
 			MilestoneLevel = 4,
 			VisualTag = "SkippingStars",
 			SynergyTag = "Reach / Coverage",

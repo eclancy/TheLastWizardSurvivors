@@ -198,9 +198,10 @@ empty field as in a full one - it is weather. It falls whether or not anything i
   landed star stays where it fell. Stars are slots in fixed arrays drawn in one `_Draw` on the 2 px
   grid; a twinkle's arms are a few snapped bars rather than a square per step, and a trail is three
   lines. Nothing is instanced or allocated per star. The table (written out in full in the `.tres`):
-  4 stars of 4 damage every 1.0 s, 28 px landings over a 190 px rain; every level +1 damage, even
-  levels the cooldown step and a star (2, 6, 8) or 20 px more rain (4), odd levels +3 px a landing.
-  Level 8: 7 stars of 12 every 0.68 s (10.3 a second), 37 px landings over 210 px.
+  4 stars of 4 damage every 1.0 s, 28 px landings over a 240 px rain; every level +1 damage, even
+  levels the cooldown step and a star (2, 6, 8) or 30 px more rain (4), odd levels +3 px a landing.
+  Level 8: 7 stars of 12 every 0.68 s (10.3 a second), 37 px landings over 270 px. (The rain was
+  190 px and 210 at level 8 until 2026-10-31; see the note under the table.)
 - **The animation is the hit area.** The landing burst is `ImpactDebris`, whose front stops on the
   radius tested; the twinkle's arms stop at 70% of it. No ring, no ground marker before it lands.
 - **A star is drawn at projectile size, not mote size.** The first build drew a 4 px head with a
@@ -213,9 +214,36 @@ empty field as in a full one - it is weather. It falls whether or not anything i
 |---|---|---|---|
 | level 4 | **Shooting Stars** (was Clear Night, +2 stars and +15%, until phase 2 - section 2h) | Light 2 | every third star streaks across the whole rain, rim to rim, a line that strikes what it crosses for 80% of a star; +10% damage |
 | level 4 | **Frostfall** (the element path) | Light 1, Ice 1 | +20% damage; every hit slows 30% for 1.5 s; every star falls, twinkles and bursts in Ice's ramp |
-| level 4 | **Skipping Stars** (was Downpour, a faster, finer rain, until phase 2 - section 2h) | unchanged | every star skips on twice to the right, like a stone across water: landings 75% and 55% as wide, for 55% and 35% |
+| level 4 | **Skipping Stars** (was Downpour, a faster, finer rain, until phase 2 - section 2h) | unchanged | every star skips on twice like a stone across water, each skip glancing off the way it came by up to 80 degrees either side (to the right only, within 23 degrees, until 2026-10-31): landings 75% and 55% as wide, for 55% and 35% |
 | level 8 | **Starburst** | Light +1 | every star is heavy: it lands, swells for 0.3 s and explodes 120% wider for +110% damage, throwing 3 sparks that arc out past its rim and land as small stars (40% damage, 40% of its radius; a white flash and a small burst, no twinkle); stars fall half as often |
 | level 8 | **Constellation** | unchanged; gated on the spell's current tags | every star stays lit where it fell for 2.5 s (x Duration), joined to the nearest lit star within 140 px by a line of light; every 0.5 s the lines strike everything they touch for 55% of a star's damage, once per enemy however many lines it stands across; +1 star |
+
+**2026-10-31, the designer's playtest:** *"Starfall should cover a wider area overall, and the skipping
+effect should skip in more varied directions so it doesn't just spread in a single direction."* Two
+changes, nothing else moved:
+
+- **The rain is wider**: `BaseRange` 190 to 240, level 4's `RangeBonus` 20 to 30, so 270 at level 8
+  (was 210) - 1.6 times the ground (1.65 at level 8). The stars, their damage and their landing radius
+  are what they were, so the damage budget is the one it was, spread wider: a crowd that fills the rain
+  takes what it did, any one spot is struck about 0.6 times as often, and the rim reaches 50-60 px
+  further into the ring closing on the wizard. A Shooting Stars streak crosses the whole rain, so it is
+  29% longer and cuts more of a full crowd; Constellation's lit stars sit further apart (about 51 px to
+  the nearest at level 8, from 38), still well inside its 140 px link.
+- **Every skip picks its own heading**: the way it came (a fallen star's slant, to the right; a skip's
+  own hop) turned by a uniform draw of up to `Starfall.SkipTurnDegrees` (80) either side, so the first
+  skip fans across the right half and the second can come back across the rain. It was a turn of 0.4
+  rad (23 degrees) off due right for both. Still aimed at nothing - a skip toward the nearest enemy was
+  the other offer, and would have made the one weather spell aim. The card, cut to one sentence
+  (the designer: *"Overall keep text minimal"*), names the 80 from the constant; the skips' shares of
+  damage and size are unchanged and no longer on it.
+
+Band run after (`_BalanceHarness --minutes=8 --timescale=2 --immortal --all-unlocked --character=0
+--seed=11 --solo --upgrade-chance=1 --force-ascension --spell=starfall --branch4=starfall_downpour
+--branch8=starfall_starburst`, load 13-14): **36 / 56 / 74 at levels 4-6 and 403 at level 8**, against
+53 / 64 / 97 / 405 for the same cards on the narrower rain (section 2h). Level 8 is where it was; levels
+4-6 sit lower but inside the factor-of-two swing those columns show between runs of one build. Not
+re-run for the other paths. Captures: `sf_skip*.png` (level 8, Skipping Stars + Starburst, zoom 1.6) and
+`sf_wide*.png` (Skipping Stars alone, zoom 1.0, the rain's width and the skips' headings).
 
 Ice for the path because of the fiction (the cold light of stars) and because Ice has three spell
 carriers. Kindled Ward's path is also Ice; both of Light's pure spells going cold is a reading of the
@@ -1501,6 +1529,50 @@ Black Sigil is broken only by the loadout: when Shadow Bolt's own next cast brok
 became a damage spell (x3.8 of Withering Mark at level 7), which is the one thing section 3 says it is
 not. Solo, then, it is Withering Mark's exposure and nothing else.
 
+**2026-10-31, a cast is capped** (the designer's playtest: *"Shadow bolt has the capability to break the
+game with the number of arcs it can generate. Should we not allow a single cast to hit the same enemy more
+than once? Put caps or reduce the number of times they can bounce?"*). Every enemy a curse reaches forks
+`1 + ChainBranchBonus` ways - two with Spreading Dark, three from level 7, five at level 12 - and the hops
+came from the projectile count, the Chain lines, Spreading Dark and Anathema, so a cast grew as
+branches^depth; and each branch copied its own set of what it had struck, so siblings struck the same
+bodies again and again. `CastState.HopsLeft` was `int.MaxValue` for everything but Cascade. Measured with
+`_UiShot` and `--profile` (a crowd of sixty at 40 times health, under xvfb - 1280x720 for the level 8 run
+before, 640x360 for the rest - on a machine at load 13, so read the frame times as a band and the counts
+as exact; headless `_UiShot` never applies its demo state): **Spreading Dark + Anathema at level 8**, one
+cast made 9,841 arcs - the full three-way tree, 1 + 3 + ... + 3^8 - with 8,757 chain nodes alive at once
+and frames of 3.4, 19.0 and 4.1 s, the chain section alone 17.2 s of the worst; at **level 12 with the
+Split Lens** 6,458 arcs and an 8.0 s frame (it stopped there only because the crowd was dead); **level 12,
+Spreading Dark + Threefold Curse** 9,200 arcs from one cast and a 20.2 s frame. Chain Lightning's Storm
+Surge forks three ways too, so it would have run away the same way (not measured before).
+
+Two rules now hold for every cast of both spells (`ChainLightning.cs`). **No enemy is struck twice by one
+cast**: `CastState.Struck` is one set shared by every branch, and by Threefold Curse's three curses, which
+therefore never cross. **A cast makes at most `ChainLightning.MaxArcsPerCast` = 20 arcs**, its first
+strike included - each of Threefold's curses has its own 20; Cascade keeps its 36 hops (37 arcs), its
+card's storm. When the allowance runs short, what is left is shared evenly across every branch waiting to
+hop (`CastState.Tips`) instead of going to whichever hops first, so the cap ends as a fan: at level 8 with
+Spreading Dark the strike, 3, 8 and 8; at level 12 the strike, 5, 9 and 5. Twenty is the middle of the
+16-24 asked for, and the `sb_cap` captures (level 8, zoom 1.6) show it fanning across a 14-strong pack,
+and `sb_cap40` (level 12) covering about half of a 40-strong one. After, on the same footings: **20 arcs a curse, at most 16 chain
+nodes alive (42 under Threefold, 60 arcs a cast), the chain section 0.1-0.6 ms a frame averaged over 2 s
+(0.4-1.6 under Threefold) and 9-12 ms on the frame a generation spawns** (19-27 ms on the first cast,
+which pays the JIT; one Threefold frame read 124 ms on the loaded machine and is not explained). Chain
+Lightning, Storm Surge + Electrocution, 20 arcs and 16 nodes; Storm Surge + Cascade, 37 and 24. A hop no
+longer allocates a set or an array - only its node, and Return Stroke's road home. Spreading Dark,
+Threefold Curse, Storm Surge and Cascade name the cap from the constant, and every card touched was cut
+to a sentence or two (the designer, the same day: *"Overall keep text minimal"*) - Anathema now says only
+what it does; its +20% damage taken, two hops and +45% still ride along. Return Stroke still strikes each
+body twice: that is its card, not a hop.
+
+Band run after (the footing below, `--branch4=shadow_bolt_spreading_dark --branch8=shadow_bolt_anathema
+--profile=10`, one Godot at a time on a machine at load 13-14): all damage 61 / 106 / 77 at levels 4-6
+and **380 at level 8**, inside the 331-465 band (attributed 14 / 28 / 25 / 290); the old cards' Spreading
+Dark + Anathema read 37 / 57 / 85 / 356 at 75a66a6, a different tree, so not a same-footing comparison.
+The chain section averaged 0.02-1.2 ms a frame over each 10 s window. Three frames in the eight minutes
+spent 86-149 ms inside it (all on physics-spiral frames, no GC, little of it damage) and one under
+Threefold at 124 ms; that is not explained and is worth a look - the per-arc node (`Instantiate` and
+`AddChild` of an `Area2D` scene) is the obvious suspect, and pooling the arcs the obvious fix.
+
 **Measured** (`_BalanceHarness -- --timescale=2 --all-unlocked --immortal --character=0 --seed=11 --solo
 --upgrade-chance=1`, before = the tree at 75a66a6, after = these cards). Two kinds of run, as in "Every
 Ascension doubles its spell": the **ratio** runs are four minutes with `--xp-first=1 --xp-step=1
@@ -2125,6 +2197,13 @@ under the first strike it gave nothing, so the current now leaps on. Electrocuti
 Lattice's link is between bodies the web holds; this is one body at a time, and it is the anti-elite card
 the old one was - the nearest-first aim holds whatever walks at the wizard, an elite every cast.
 
+**2026-10-31:** every cast of the chain - this spell's and Shadow Bolt's - now strikes no enemy twice and
+makes at most `ChainLightning.MaxArcsPerCast` (20) arcs; Cascade keeps its own 36 hops, and its card (cut
+to two sentences with Storm Surge's, "keep text minimal") says up to 37 arcs a cast. A single chain (Storm Reach and Electrocution, the longest without the fork)
+runs 8 hops plus Amount - 13 with the shop's four and the Split Lens, 17 if every found level went to
+Amount too - inside the 19 hops the cap leaves after the first strike, so only Storm Surge's three-way
+fork meets the cap, and its card names it. Why, and what it measured: Shadow Bolt's section, "a cast is capped".
+
 The chain's candidate search no longer sorts the whole registry with LINQ every hop: it reads the enemy
 grid's near set (`EnemyRegistry.CollectNear`) and picks the nearest - or Storm Reach's farthest - by hand.
 Shadow Bolt picks exactly what it picked before. Every new drawing is in the air (the held crawl, the
@@ -2531,7 +2610,9 @@ so read them as a band and the level 8 column as the firmer number.
   the way every star slants in, the key light behind it - like a stone across water: a low hop two landings
   wide, then a landing 75% as wide for 55% of the first, a second hop and a landing 55% as wide for 35%. A
   heavy Starburst star bursts and still skips (what comes out of the burst is a star its size); the skips
-  kindle no Constellation star. No number rides along.
+  kindle no Constellation star. No number rides along. **Since 2026-10-31** each skip glances off the way
+  it came by up to 80 degrees either side rather than running right, and the rain is 270 px at level 8,
+  not 210 - the Starfall section above, under its milestone table.
 
 Departures from a first thought: a ring of rain at the rim ("halo") was Sundering's and the Kindling
 Flock's shape; a comet or a squall line crossing the rain would have been the same line as Shooting Stars;
