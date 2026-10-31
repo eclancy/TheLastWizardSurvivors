@@ -15,7 +15,13 @@
 ; Written out in full so Player.EnsureRelevantLevelUps generates nothing of its own: every level adds
 ; 1 damage, even levels take the cooldown step every spell gets and add a star (2, 6, 8) or widen the
 ; rain (4), odd levels widen each landing by 3 px. Level 8: 12 damage, 7 stars every 0.68 s (10.3 a
-; second), 37 px landings over a 210 px rain.
+; second), 37 px landings over a 270 px rain.
+;
+; The rain was 190 px (210 at level 8) until 2026-10-31 and is 240 (270): the designer's playtest asked
+; for it to cover a wider area. Nothing else moved - the same stars, the same damage, the same landing -
+; so the damage budget is the one it was, spread over 1.6 times the ground (1.65 at level 8): a crowd
+; that fills the rain takes what it did, any one spot is struck about 0.6 times as often, and the rim
+; reaches 50-60 px further into the ring of enemies closing on the wizard.
 
 [sub_resource type="Resource" id="Resource_starfall_lvl2"]
 script = ExtResource("2")
@@ -36,7 +42,7 @@ script = ExtResource("2")
 Level = 4
 DamageBonus = 1
 CooldownBonus = -0.08
-RangeBonus = 20.0
+RangeBonus = 30.0
 
 [sub_resource type="Resource" id="Resource_starfall_lvl5"]
 script = ExtResource("2")
@@ -75,7 +81,7 @@ MaxLevel = 8
 BaseDamage = 4
 BaseCooldown = 1.0
 BaseProjectileCount = 4
-BaseRange = 190.0
+BaseRange = 240.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_starfall_lvl2"), SubResource("Resource_starfall_lvl3"), SubResource("Resource_starfall_lvl4"), SubResource("Resource_starfall_lvl5"), SubResource("Resource_starfall_lvl6"), SubResource("Resource_starfall_lvl7"), SubResource("Resource_starfall_lvl8")])
 Description = "A drizzle of falling stars over the ground around you, aimed at nothing. Each lands with a small burst that hits everything inside it - walk the rain into the crowd."
 Icon = ExtResource("3_icon")

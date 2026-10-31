@@ -571,26 +571,34 @@ public static class SpellEvolutionCatalog
 		{
 			Id = SpiritualWeapon.TwinBladesId,
 			DisplayName = "Twin Blades",
-			Description = "A second sword joins the first and hunts its own quarry. Every sword strikes 10% softer.",
+			// SpiritualWeapon.TickDagger and Stab: one dagger however many swords, on the main-hand sword's
+			// quarry from its other flank, in the gap after each of its cuts, for DaggerShare of a blow (2026-10-30,
+			// Eric: "Twin sword mutation should create a second smaller dagger, and be capped at two blades").
+			// It was one more sword at -10% each, which the levels already give; no number on the card is a
+			// SpellData stat now, so EvolutionStatReaders has nothing to route.
+			Description = "A small dagger of light fights beside your sword. After each of the sword's cuts it darts in "
+				+ $"from the other side and stabs the same enemy for {SpiritualWeapon.DaggerShare * 100f:0}% of a cut. "
+				+ "Only ever one dagger, however many swords you have.",
 			MilestoneLevel = 4,
-			ProjectileCountBonus = 1,
-			DamageMultiplier = 0.9f,
 			VisualTag = "SpiritTwinBlades",
-			SynergyTag = "Arcane / More swords",
-			SynergyDescription = "Two duels at once."
+			SynergyTag = "Arcane / Off-hand",
+			SynergyDescription = "Sword and dagger on one enemy."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
+			// Keeps Riposte's id (saves and the catalog hold it). SpiritualWeapon.Intercept: a free sword
+			// breaks off for a bolt coming at the wizard and swats it aside, then rests DeflectRest (2026-10-30,
+			// Eric: "Riposte description is confusing. Replace with the ability to deflect projectiles"). Not
+			// a damage card: Riposte's +30% and its strike on every parry are gone, and nothing is sent back.
 			Id = SpiritualWeapon.RiposteId,
-			DisplayName = "Riposte",
-			// SpiritualWeapon.ParryBolts: RiposteGuard x the guard, and a parry hands the sword a swing.
-			Description = "Each sword's guard reaches 60% further, and every bolt it parries hands it a strike at once. Strikes hit 30% harder.",
+			DisplayName = "Deflection",
+			Description = "Your swords fly out to knock enemy bolts out of the air before they reach you. "
+				+ "Each sword can deflect about once a second.",
 			MilestoneLevel = 4,
-			DamageMultiplier = 1.3f,
 			VisualTag = "SpiritRiposte",
-			SynergyTag = "Arcane / Parry",
-			SynergyDescription = "The archers feed it."
+			SynergyTag = "Arcane / Deflect",
+			SynergyDescription = "Bolts swatted aside before they land."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
@@ -852,7 +860,8 @@ public static class SpellEvolutionCatalog
 		{
 			Id = "chain_lightning_forked_surge",
 			DisplayName = "Storm Surge",
-			Description = "The arc forks through falling rain: it splits three ways at every hop for 30% less each, +1 Water tag, and "
+			// The Water tag stays named: RegressionChecks requires an element path's card to say it.
+			Description = $"The arc splits three ways at every hop for 30% less, up to {ChainLightning.MaxArcsPerCast} arcs a cast. +1 Water tag, and "
 				+ ElementPaths.Describe(ElementRider.Slow, surgeDrag, surgeSeconds) + ".",
 			MilestoneLevel = 4,
 			ChainBranchBonus = 2,
@@ -907,7 +916,7 @@ public static class SpellEvolutionCatalog
 			Id = ChainLightning.CascadeId,
 			BonusElementWeights = new() { { "Lightning", 1 } },
 			DisplayName = "Cascade",
-			Description = $"The chain comes apart on what it kills: every enemy a hop kills flashes and throws {ChainLightning.CascadeForks} more arcs out of its body, up to {ChainLightning.CascadeMaxForks} a cast, so a pack it can kill is torn through by a branching storm. Hops leap 30% further and hit 50% harder.",
+			Description = $"Every enemy a hop kills throws {ChainLightning.CascadeForks} more arcs, up to {ChainLightning.CascadeMaxHops + 1} arcs a cast. +50% damage.",
 			MilestoneLevel = 8,
 			ChainArcBonus = 1,
 			DamageMultiplier = 1.5f,
@@ -987,7 +996,10 @@ public static class SpellEvolutionCatalog
 		{
 			Id = "shadow_bolt_spreading_dark",
 			DisplayName = "Spreading Dark",
-			Description = "The curse forks at every jump - two arcs leave each enemy it reaches - and runs two hops further. No extra damage.",
+			// The cap is named on the card (ChainLightning.MaxArcsPerCast, 2026-10-31): with the fork a cast runs
+			// into it within two or three jumps, so "two hops further" is only the whole truth beside it. One
+			// sentence, the one number (the designer, 2026-10-31: "Overall keep text minimal").
+			Description = $"The curse forks at every jump and runs two hops further, up to {ChainLightning.MaxArcsPerCast} arcs a curse.",
 			MilestoneLevel = 4,
 			ChainBranchBonus = 1,
 			ChainArcBonus = 2,
@@ -1006,7 +1018,9 @@ public static class SpellEvolutionCatalog
 			// a single element, which only a pure spell may do.
 			DisplayName = "Anathema",
 			// +45% damage of its own as well (2026-10-26): x2.76 of the spell at level 7 with it, at --enemy-hp=10.
-			Description = $"Where the curse ends, night falls: a pall of darkness hangs over the last enemy it reached for {ChainLightning.PallSeconds:0}s, cursing and striking everything under it every half second. +20% damage taken, two hops further, and the curse bites 45% harder.",
+			// Cut to what it does and one number (2026-10-31, "keep text minimal"); the +20% damage taken and
+			// the two hops still ride along, as the numbers below.
+			Description = $"Where the curse ends, a pall of night hangs for {ChainLightning.PallSeconds:0}s, cursing and striking everything under it.",
 			DamageMultiplier = 1.45f,
 			MilestoneLevel = 8,
 			Effect = SpellEffect.Vulnerability,
@@ -1025,7 +1039,7 @@ public static class SpellEvolutionCatalog
 			// here as well would let a player who took the matching level 4 option reach three of
 			// a single element, which only a pure spell may do.
 			DisplayName = "Threefold Curse",
-			Description = $"{ChainLightning.ThreefoldCurses} curses leave the staff at once, each at its own enemy and each chaining on its own, and the rot they carry does real damage. +20% damage.",
+			Description = $"{ChainLightning.ThreefoldCurses} curses leave the staff at once, each chaining on its own for up to {ChainLightning.MaxArcsPerCast} arcs.",
 			MilestoneLevel = 8,
 			PoisonTickBonus = 8,
 			DamageMultiplier = 1.2f,
@@ -2516,11 +2530,16 @@ public static class SpellEvolutionCatalog
 				+ $"up to +{HollowStar.CrushPerBody * HollowStar.CrushMostBodies * 100f:0}% at {HollowStar.CrushMostBodies}. The core swells as the knot fills.",
 			"Knot / Power", "Pull a pack in tight and every body in it hits the rest harder.",
 			o => { o.DisplayName = "Crush"; o.VisualTag = "Crush"; o.ModulateColor = Colors.White; }));
+		// +30% damage since 0.9.3. Crush gains a Darkness, which lifts a pure Hollow Star to Darkness tier 2
+		// and its attunement (x1.2); Twin Stars gains nothing, and its twin cannot open across the wizard
+		// (two wells either side of him would drift together onto him, HollowStar.DriftToPartner). At the
+		// same footing Crush's path measured 1.5-1.9 times this one's, and when the spell came down into the
+		// level 4 band (40-60) this path fell under it. The +30% puts the two cards near each other again.
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.HyperAcceleration,
 			"Two wells open on two packs at once and drift together as they pull, tethered, dragging both knots into one "
-				+ "for both collapses to land on. Each drags 15% harder.",
+				+ "for both collapses to land on. Each drags 15% harder, +30% damage.",
 			"Twin / Pull", "Two packs become one knot, and it is hit twice.",
-			o => { o.DisplayName = "Twin Stars"; o.VisualTag = "TwinStars"; o.ModulateColor = Colors.White; o.ProjectileCountBonus = 1; o.SpeedMultiplier = 1.15f; }));
+			o => { o.DisplayName = "Twin Stars"; o.VisualTag = "TwinStars"; o.ModulateColor = Colors.White; o.ProjectileCountBonus = 1; o.SpeedMultiplier = 1.15f; o.DamageMultiplier = 1.3f; }));
 		AddElementPath(spell);
 		// +60%: at +30% it measured x1.5 of the spell at level 7 against a crowd it was still clearing; at
 		// +60%, x2.30 against one it could not (2026-10-29, --enemy-hp=30; the Titan it replaced, x2.63).
@@ -3184,9 +3203,9 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Starfall.SkippingStarsId,
 			DisplayName = "Skipping Stars",
-			Description = $"Every star lands at its slant and skips on {TimesWord(Starfall.SkipCount)}, like a stone across water: "
-				+ $"the first skip lands {Starfall.SkipDamage[0] * 100f:0}% as hard and {Starfall.SkipRadius[0] * 100f:0}% as wide, "
-				+ $"the second {Starfall.SkipDamage[1] * 100f:0}% and {Starfall.SkipRadius[1] * 100f:0}%.",
+			// One sentence, the one number (2026-10-31, "keep text minimal"): the skips' shares of damage and
+			// size (Starfall.SkipDamage, SkipRadius) are the spell's, not the card's.
+			Description = $"Every star skips on {TimesWord(Starfall.SkipCount)} like a stone across water, each skip veering up to {Starfall.SkipTurnDegrees:0} degrees.",
 			MilestoneLevel = 4,
 			VisualTag = "SkippingStars",
 			SynergyTag = "Reach / Coverage",
@@ -3382,9 +3401,10 @@ public static class SpellEvolutionCatalog
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = Familiar.RavenId,
-			DisplayName = "Raven",
-			Description = $"It grows into a raven of your light: +{(ravenDamage - 1f) * 100f:0}% damage, and its beak "
-				+ $"strikes {(ravenBeak - 1f) * 100f:0}% wider, taking what stands beside its quarry. +1 Arcane tag.",
+			// 2026-10-30, Eric: "'Raven of your light' doesn't make sense. Rename this and describe it differently."
+			DisplayName = "Great Raven",
+			Description = $"Your crow grows into a great raven. It hits {(ravenDamage - 1f) * 100f:0}% harder, and its beak "
+				+ $"strikes {(ravenBeak - 1f) * 100f:0}% wider, catching enemies beside its target. +1 Arcane tag.",
 			MilestoneLevel = 4,
 			DamageMultiplier = ravenDamage,
 			AreaMultiplier = ravenBeak,
