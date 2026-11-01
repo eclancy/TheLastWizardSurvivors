@@ -95,10 +95,12 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 
 The castle agents (`wip/boss-dark-wizard`, `wip/dungeon-move`, `wip/castle-preflip`) were cut off by the
 usage limit mid-work; their worktrees keep what they did. They resume after these. Done: bosses excluded
-from executes (e6f7dfd), Blank Folio offer weight 0.02 (63be6da).
+from executes (e6f7dfd), Blank Folio offer weight 0.02 (63be6da), a short level-up hand keeps a
+three-card hand's card size (dd5cc6a).
 
 1. **Boss cinematics** (`wip/boss-cinematics`, in flight): no movement while a boss arrives; letterbox
-   bars, zoom, screen shake, a flare; shake in boss animations where it helps.
+   bars, zoom, screen shake, a flare; shake in boss animations where it helps; **bosses always draw
+   above the player's spells**.
 2. **Spell visuals** (`wip/spell-visuals`, in flight): Cone of Cold hard to see; Solar Flare rises from
    under the player and the enemies; Stormsweep's crack slower at first, quicker with level; Scorching
    Ray's icon a thinner ray into the ground; Iron Palisade's rolling walls dig up dirt; **familiar icons
