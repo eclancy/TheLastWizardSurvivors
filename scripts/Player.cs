@@ -572,7 +572,15 @@ public partial class Player : CharacterBody2D
 		ConfigureEntityCollision();
 		bodySprite = GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
 		if (bodySprite != null)
+		{
 			bodySprite.AnimationFinished += OnBodyAnimationFinished;
+			// "The player and bosses should always be rendered on top of spells and effects so they can
+			// always be seen" (Eric, 2026-11-01). The body sprite alone, not this node: the spells parented
+			// to him (auras, the jet, the orbit) and his ground marks (StanceGlow, HasteTrail at -1) keep
+			// the layers they picked. On the bosses' layer, so he and a boss still sort by where they stand.
+			bodySprite.ZAsRelative = false;
+			bodySprite.ZIndex = DrawLayers.Foremost;
+		}
 		_velocity = Vector2.Zero;
 		ApplyArcaneUpgrades();
 		spellFireTimers.Clear();

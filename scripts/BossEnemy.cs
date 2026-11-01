@@ -112,9 +112,30 @@ public partial class BossEnemy : Enemy
 		// where Enemy builds the marker.
 		IsMiniBoss = true;
 		base._Ready();
+		LiftBodyOverSpells();
 		slam = BuildSlam();
 		phaseThresholds = BuildPhaseThresholds() ?? Array.Empty<float>();
 		BeginEntrance();
+	}
+
+	// "Bosses should always appear over your spells so you can see the bosses" (Eric, 2026-11-01). The
+	// whole node goes up to DrawLayers.Foremost, absolute, so everything that IS the body comes with it -
+	// the sprite, what a boss draws in its own _Draw (the Long Coil's segments, the Choir's revive arc), and
+	// both stages, arrival and fall, which cut their pieces from it as children. What is NOT the body was
+	// already on an absolute layer and stays put: the floor tells (Enemy's GroundTells, GroundTell), the
+	// icon over a wind-up (AttackIcon, still over the body), the stages' ground (-15). The one relative
+	// child that belongs on the floor is the gold ring, which is put back under the body here.
+	// A boss that must stand among the bodies for a while sets its own ZIndex back to Bodies and up again
+	// (BridgeConstableBoss on the wall-walk, sorted behind the parapet).
+	private void LiftBodyOverSpells()
+	{
+		ZAsRelative = false;
+		ZIndex = DrawLayers.Foremost;
+		if (GetNodeOrNull<CanvasItem>("EliteMarker") is CanvasItem ring)
+		{
+			ring.ZAsRelative = false;
+			ring.ZIndex = DrawLayers.GroundTell;
+		}
 	}
 
 	/// <summary>How many thresholds this boss's fight has. For _BossProbe.</summary>

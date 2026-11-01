@@ -169,6 +169,9 @@ public partial class BridgeConstableBoss : BossEnemy
 		GlobalPosition = wallSpot;
 		base._Ready();
 		post = Post.Wall;
+		// Among the bodies while he is on the wall-walk, so the parapet in front of him hides his boots;
+		// over every spell (BossEnemy's DrawLayers.Foremost) from the leap down until he climbs back.
+		ZIndex = DrawLayers.Bodies;
 		pourLeft = 0f;
 		foreach (string problem in TuningProblems())
 			GD.PushError("BridgeConstableBoss: " + problem);
@@ -281,7 +284,7 @@ public partial class BridgeConstableBoss : BossEnemy
 	{
 		wallHeld = true;
 		post = Post.Wall;
-		ZIndex = 0;
+		ZIndex = DrawLayers.Bodies;
 		holdSeconds = 0f;
 		pourLeft = GatePourTellSeconds;
 		volleyLeft = GatePourTellSeconds + 0.5f;
@@ -435,13 +438,13 @@ public partial class BridgeConstableBoss : BossEnemy
 		if (leapT < rise)
 		{
 			GlobalPosition = leapFrom.Lerp(leapApex, BossDeath.EaseOut(leapT / rise));
-			ZIndex = 0;
+			ZIndex = DrawLayers.Bodies;
 		}
 		else
 		{
 			float u = Mathf.Clamp((leapT - rise) / (1f - rise), 0f, 1f);
 			GlobalPosition = leapApex.Lerp(leapTo, u * u) - new Vector2(0f, LeapHop * 4f * u * (1f - u));
-			ZIndex = DrawLayers.Air;
+			ZIndex = DrawLayers.Foremost;
 		}
 		Velocity = Vector2.Zero;
 		if (leapT >= 1f)
@@ -451,7 +454,7 @@ public partial class BridgeConstableBoss : BossEnemy
 	private void Land()
 	{
 		GlobalPosition = leapTo;
-		ZIndex = 0;
+		ZIndex = DrawLayers.Foremost;
 		post = Post.Yard;
 		wallHeld = false;
 		yardLeft = YardSeconds;
@@ -492,12 +495,12 @@ public partial class BridgeConstableBoss : BossEnemy
 		{
 			float u = leapT / over;
 			GlobalPosition = leapFrom.Lerp(leapApex, BossDeath.EaseOut(u)) - new Vector2(0f, LeapHop * 4f * u * (1f - u));
-			ZIndex = DrawLayers.Air;
+			ZIndex = DrawLayers.Foremost;
 		}
 		else
 		{
 			GlobalPosition = leapApex.Lerp(leapTo, BossDeath.EaseIn(Mathf.Clamp((leapT - over) / (1f - over), 0f, 1f)));
-			ZIndex = 0;
+			ZIndex = DrawLayers.Bodies;
 		}
 		Velocity = Vector2.Zero;
 		if (leapT >= 1f)

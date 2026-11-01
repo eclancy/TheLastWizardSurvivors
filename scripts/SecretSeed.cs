@@ -57,7 +57,7 @@ public partial class SecretSeed : Node2D
 			Director.Carried = this;
 			hits = 0;
 			Listen(true);
-			ZIndex = 8; // over his hat
+			ZIndex = DrawLayers.ForemostAir; // over his hat, which is over every effect (DrawLayers.Foremost)
 			SfxPlayer.Global(SfxCatalog.PickupMagnet);
 		}
 

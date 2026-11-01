@@ -179,11 +179,15 @@ public partial class BossDeath : Node2D
 		bodyLayer = new Node2D { Name = "Body" };
 		air = new Node2D { Name = "Air" };
 		light = new Node2D { Name = "Light", Material = additive };
+		// The body's pieces ride the boss's own layer (BossEnemy lifts the node to DrawLayers.Foremost), and
+		// a fall's air and light, relative to it, follow them up in tree order. An arrival's go one higher,
+		// absolute, so they are over the body even while a boss stands among the bodies (the Constable's
+		// wall-walk) - over every body, since an arrival happens in a crowd.
 		if (IsEntrance)
 		{
-			air.ZIndex = DrawLayers.Air;
+			air.ZIndex = DrawLayers.ForemostAir;
 			air.ZAsRelative = false;
-			light.ZIndex = DrawLayers.Air;
+			light.ZIndex = DrawLayers.ForemostAir;
 			light.ZAsRelative = false;
 		}
 		AddChild(ground);

@@ -39,6 +39,21 @@ public static class DrawLayers
 	public const int Air = 6;
 
 	/// <summary>
+	/// The two bodies that must never be lost under an effect - the wizard's (Player's body sprite) and a
+	/// boss's (the whole BossEnemy node) - over every spell, every bolt, a launched body (7) and the
+	/// lantern-tender's dark and light (7, 8). 2026-11-01: "Bosses should always appear over your spells so
+	/// you can see the bosses", then "the player and bosses should always be rendered on top of spells and
+	/// effects so they can always be seen." Only the bodies: their floor marks stay on the floor (the boss's
+	/// tells on GroundTell and its ring under it, the wizard's stance glow and trail at -1), and an ordinary
+	/// enemy stays a body among the bodies. Both share this one layer under the y-sorted arena, so between
+	/// themselves they still sort by where they stand: a wizard in front of a boss is drawn in front of it.
+	/// </summary>
+	public const int Foremost = 10;
+
+	/// <summary>What is drawn over those bodies: a boss's arrival dust and light and status marks, the bow at the wizard's shoulder.</summary>
+	public const int ForemostAir = 11;
+
+	/// <summary>
 	/// The icon an enemy shows over its head while it winds up an attack (TelegraphIcon): over every body,
 	/// every projectile and the lantern-tender's dark (7) and light (8), so a wind-up stays findable in a
 	/// packed swarm; under the floating numbers.
