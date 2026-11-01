@@ -659,6 +659,17 @@ than before, exactly when the lash is seen to cross it. Damage, reach, band and 
 | Burrs | **Failed.** Antialiased crossed lines and a bark square at fractional alpha | A stamped ball of bark bristling with four thorns and four diagonals; letting go it sheds the diagonals, then the thorns |
 | Ironbriar | The same parts in Metal's ramp (`living_*`, `thorn_tip`) | Unchanged in kind |
 
+
+**2026-11-01, from playing 0.10.0.** Eric: "Bramble seed, instead of shrinking when it finishes, should just
+quickly wither", and "vines have a thick brown base that abruptly change to a thin green". The roots,
+runners and hedge no longer draw back into the ground (`retract` stays 1): over the same last 0.6 s (0.55 s
+when pushed out) a `wither` uniform browns the thicket cell by cell, curls the roots over at their tips,
+drops the thorns and buds first, and dissolves it through the Bayer matrix from the tips back to the seed.
+It browns only once it has stopped hurting. A root's width now tapers evenly from the seed to the tip (half
+an art pixel at a time) instead of three runs that stepped at s 0.4 and 0.7, and the bark greens through a
+dithered band three times as long (s 0.22 to 0.72). Reach, lifetime and when it stops hurting unchanged.
+Shots `sv_a_bs_*` against `sv_b_bs_*` in `_shots/spell-visuals/` beside the repo.
+
 ### Contagion
 
 | Part | Audit | Now |
