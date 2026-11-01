@@ -1136,6 +1136,10 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--variant-hand")
 				variantHandOnly = true;
+			// --purr-soon: the cat's first Purr heal comes due a second and a half after Purr is taken, not twenty,
+			// so its heart can be photographed (Familiar.DebugPurrSoon).
+			else if (arg == "--purr-soon")
+				Familiar.DebugPurrSoon = true;
 			else if (arg == "--show-mutation")
 			{
 				ShowMutation = true;

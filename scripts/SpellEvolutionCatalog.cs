@@ -3422,75 +3422,97 @@ public static class SpellEvolutionCatalog
 		});
 	}
 
-	// THE CAT: the weakest attack and the most help. Its own swipe is a fraction of a bite; its worth is what
-	// it grants while it is out - every spell casting faster, and more hits slipped - which its levels raise
-	// (the Cast speed and Evasion lines in SpellData_Familiar.tres, read through Familiar.GrantsOf). Its
-	// milestones raise those grants, mark what it claws for every other spell, mend the wizard, and at the
-	// last either make the cat the great beast of the tale or have it give a life for his.
+	// THE CAT: the support familiar (2026-10-31, Eric: "rebalance cat to not attack enemies, but instead wander
+	// around nearby, debuffing enemies and wandering back to the player to provide buffs"). It deals no damage:
+	// its pounce Weakens and slows (Familiar.Mark) and its visits give the wizard its grants (Familiar.GrantsOf,
+	// the Cast speed and Evasion lines in SpellData_Familiar.tres). Every number on these cards is Familiar's
+	// own constant, so a tune there cannot leave a card lying. Four level 4 cards since Nine Lives moved down
+	// from level 8 to make room for the Black Cat; the mutation page counts its branches.
 	private static void SetupFamiliarCatEvolutions(SpellData spell)
 	{
-		const float palugDamage = 1.5f;
-		const float palugClaws = 1.6f;
+		// Cath Palug's pounce: its claws' reach (Familiar.CatClawRadius, before the player's Area) this many
+		// times over, so a pounce marks the knot it lands in.
+		const float palugReach = 2.5f;
 
-		// Level 4 (3 choices)
+		// Level 4 (4 choices)
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = Familiar.GrimalkinId,
 			DisplayName = "Grimalkin",
-			Description = $"It grows old and wise, a witch's cat: everything it grants you is "
-				+ $"{(Familiar.GrimalkinGrants - 1f) * 100f:0}% stronger. +1 Arcane tag.",
+			Description = $"Its cast speed and evasion x{Familiar.GrimalkinGrants:0.#}, and its Weaken lasts "
+				+ $"{Familiar.CatWeakenSeconds * Familiar.GrimalkinGrants:0.#} s. +1 Arcane tag.",
 			MilestoneLevel = 4,
 			BonusElementWeights = new() { { "Arcane", 1 } },
 			VisualTag = "Grimalkin",
 			SynergyTag = "Arcane / Grants",
-			SynergyDescription = "Deepens Arcane. More cast speed and more evasion, for every spell you hold."
+			SynergyDescription = "Deepens Arcane. More from every visit."
 		});
 
 		// The element path. Darkness because the Cait Sith is the fairy cat, black with a white star on its
-		// breast; and because Darkness's rider is Vulnerable - what the cat claws takes more from every
-		// spell the wizard owns, which is the cat's way of fighting: through his. It repaints itself black.
-		spell.Level4Options.Add(ElementPathOption(spell, "cat_cait_sith", "Cait Sith", Element.Darkness, 0.25f, 3f,
+		// breast, and its rider is Vulnerable: what the cat pounces on takes more from every spell he owns.
+		// The path's usual +20% damage has nothing to act on - the cat deals none - so this path is the tag and
+		// the rider alone, said in one line.
+		SpellEvolutionOption sith = ElementPathOption(spell, "cat_cait_sith", "Cait Sith", Element.Darkness,
+			Familiar.CaitSithVulnerable, Familiar.CaitSithVulnerableSeconds,
 			"The cat comes back from the fairy hills",
-			"What it claws, every spell you own hits harder."));
+			"What it pounces on, every spell you own hits harder.");
+		sith.DamageMultiplier = 1f;
+		sith.Description = $"What it pounces on takes {Familiar.CaitSithVulnerable * 100f:0}% more from every spell for "
+			+ $"{Familiar.CaitSithVulnerableSeconds:0} s. +1 Darkness tag.";
+		spell.Level4Options.Add(sith);
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = Familiar.PurrId,
 			DisplayName = "Purr",
-			Description = $"It purrs at your heel: you mend {Familiar.PurrRegenPerSecond:0.#} HP a second while it is out.",
+			Description = $"Every {Familiar.PurrSeconds:0} s it runs to you and heals {Familiar.PurrHeal} HP.",
 			MilestoneLevel = 4,
 			VisualTag = "Purr",
 			SynergyTag = "Grants / Healing",
-			SynergyDescription = "No new element. Health back for standing your ground."
+			SynergyDescription = "No new element. A little health back."
+		});
+
+		// One more life, given once, the moment it is taken (Player.FireFamiliar), spent the ordinary way. A level
+		// 4 card since 2026-10-31 (it was the level 8 the Black Cat took); the id is unchanged.
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Familiar.NineLivesId,
+			DisplayName = "Nine Lives",
+			Description = "+1 life: when you would fall, you stand back up with half your health.",
+			MilestoneLevel = 4,
+			VisualTag = "NineLives",
+			SynergyTag = "Lives",
+			SynergyDescription = "No new element. A run that does not end the first time."
 		});
 
 		// Level 8 (2 choices)
-		// Cath Palug, the monstrous cat of the Welsh tale that Kay went out to fight. Its grants are read by id
-		// (Familiar.GrantsOf, CathPalugGrants); its swipe is the claws and damage below.
+		// Cath Palug, the monstrous cat of the Welsh tale. Its grants are read by id (Familiar.GrantsOf,
+		// CathPalugGrants); its reach is the AreaMultiplier, which sizes the pounce (Familiar.Summon).
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
 			Id = Familiar.CathPalugId,
 			DisplayName = "Cath Palug",
-			Description = $"The monstrous cat of the old tale: all it grants is {(Familiar.CathPalugGrants - 1f) * 100f:0}% stronger, its swipes {(palugClaws - 1f) * 100f:0}% wider and {(palugDamage - 1f) * 100f:0}% harder.",
+			Description = $"Its cast speed and evasion x{Familiar.CathPalugGrants:0.#} again, and its pounce marks everything "
+				+ $"in a reach {palugReach:0.#}x as wide. +1 Arcane tag.",
 			MilestoneLevel = 8,
-			DamageMultiplier = palugDamage,
-			AreaMultiplier = palugClaws,
+			AreaMultiplier = palugReach,
 			BonusElementWeights = new() { { "Arcane", 1 } },
 			VisualTag = "CathPalug",
 			SynergyTag = "Ascension / Arcane",
-			SynergyDescription = "Ascension: deepens Arcane. The most the cat can give every other spell."
+			SynergyDescription = "Ascension: deepens Arcane. The most the cat can give."
 		});
 
-		// One more life, given once, the moment it is taken (Player.FireFamiliar), spent the ordinary way.
+		// The Black Cat casts one of the wizard's attack spells from where it stands (Player.CastFromFamiliar,
+		// which says which spells qualify and how the origin is moved).
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = Familiar.NineLivesId,
-			DisplayName = "Nine Lives",
-			Description = "The cat gives one of its lives for yours: +1 life. When you would fall, you stand back up with half your health.",
+			Id = Familiar.BlackCatId,
+			DisplayName = "Black Cat",
+			Description = $"Every {Familiar.BlackCatSeconds:0} s it casts one of your attack spells at random, from where it stands.",
 			MilestoneLevel = 8,
-			VisualTag = "NineLives",
-			SynergyTag = "Ascension / Lives",
-			SynergyDescription = "Ascension: no new element. A run that does not end the first time."
+			VisualTag = "BlackCat",
+			SynergyTag = "Ascension / Casting",
+			SynergyDescription = "Ascension: no new element. A second caster at your side."
 		});
 	}
 

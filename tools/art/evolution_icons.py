@@ -3105,6 +3105,26 @@ def _(sp, c):
     U(sp, v_shock(2))
 
 
+@image
+def black_cat_head():
+    """The Black Cat: blue-black, gold-eyed, no star - never the violet Cait Sith (familiar.BLACK_CAT)."""
+    return familiar.cat_portrait(familiar.BLACK_CAT)
+
+
+@card("familiar_cat_black_cat")
+def _(sp, c):
+    """Black Cat (2026-10-31): the witch's cat that casts your spells - the black cat on the moon, three of the
+    wizard's spells sparking off it in three elements' light."""
+    reset(sp)
+    sp.subject = black_cat_head
+    sp.glow = E["light"][3]
+
+    def sparks(cv, x):
+        for (px, py, el) in ((5, 8, "fire"), (27, 9, "ice"), (26, 24, "lightning"), (6, 23, "arcane")):
+            m_glint(cv, px, py, 1, E[el])
+    O(sp, sparks)
+
+
 @card("familiar_cat_nine_lives")
 def _(sp, c):
     """Nine Lives: the cat gives one of its lives for yours."""

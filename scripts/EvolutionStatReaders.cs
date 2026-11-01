@@ -238,11 +238,13 @@ public static class EvolutionStatReaders
 		["familiar_crow"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Rider,
 			"Familiar.Summon, StartStoop, Bite and Strike (the crows are the projectile count; Area sizes the beak and a griffin's swath; the Morrigan and the Griffin by id)",
 			SpellEffect.CritDamage),
-		// The cat's level lines are what it grants the wizard (Familiar.GrantsOf, folded in by Player): Cast
-		// speed and Evasion. Grimalkin, Purr, Cath Palug's grants and Nine Lives are read by id.
-		["familiar_cat"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Rider,
-			"Familiar.Summon, Bite and Strike (Area sizes the claws), and Familiar.GrantsOf through Player (cast speed, evasion, regen)",
-			SpellEffect.CastSpeed, SpellEffect.Evasion, SpellEffect.CritDamage),
+		// The cat deals no damage (2026-10-31): its level lines are its pounce rate (cooldown), how far from him
+		// it pounces (range) and what a visit grants him (Familiar.GrantsOf through LiveGrants and Player: Cast
+		// speed and Evasion). Area sizes the pounce (Cath Palug's reach). Grimalkin, Purr, Nine Lives, Cath
+		// Palug's grants and the Black Cat are read by id; the Cait Sith's rider is Familiar.Mark's Vulnerable.
+		["familiar_cat"] = R(EvolutionStat.Cooldown | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Rider,
+			"Familiar.Summon, CatPounce and Mark (Area sizes the pounce; the rider is Mark's Vulnerable), and Familiar.LiveGrants through Player (cast speed, evasion)",
+			SpellEffect.CastSpeed, SpellEffect.Evasion),
 		// The facing family (.ai/spell-roster.md). Neither reads Scale: the arc is drawn out of the band
 		// it sweeps, and the rune sheet is drawn at one size.
 		["stormsweep"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
