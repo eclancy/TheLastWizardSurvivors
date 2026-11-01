@@ -575,17 +575,10 @@ public partial class WorldMap : Control
 		}
 		else if (!open)
 		{
-			cardBox.AddChild(GlyphLine("lock", stage.LockedHint, InkFlag, "CardState"));
-			if (stage.Gate == StageGate.PreviousBossAndWizards && stage.IsPlayable)
-			{
-				// A gate chapter: the one gate the player cannot open by beating one thing, and the one
-				// place it is written down with its count. It counts wizards since schema 19, not spells
-				// (.ai/achievements-and-secrets.md 2.5) - only those freed before this chapter.
-				int wizards = GlobalStatsManager.RemainingGateWizardCount(save, stage);
-				if (wizards > 0)
-					cardBox.AddChild(MakeText($"Still held: {Plural(wizards, "wizard")}",
-						ResponsiveLayout.TextRole.Label, InkSoft, "CardGoal"));
-			}
+			// A gate chapter's lock says who it still waits on, by epithet (StageCatalog.LockedHintFor with the
+			// save; .ai/endgame-castle.md 1.6): the one gate the player cannot open by beating one thing. It
+			// counts wizards since schema 19, not spells - only those freed before this chapter.
+			cardBox.AddChild(GlyphLine("lock", StageCatalog.LockedHintFor(stage, save), InkFlag, "CardState"));
 		}
 		else
 		{
@@ -607,7 +600,7 @@ public partial class WorldMap : Control
 		startButton.Text = stop.IsBossRush ? "Begin the Boss Rush"
 			: open ? $"Enter {WithArticle(stage.DisplayName)}"
 			: "Locked";
-		startButton.TooltipText = open || stop.IsBossRush ? string.Empty : stage.LockedHint;
+		startButton.TooltipText = open || stop.IsBossRush ? string.Empty : StageCatalog.LockedHintFor(stage, save);
 	}
 
 	private void AddRewards(StageDefinition stage)
@@ -736,8 +729,6 @@ public partial class WorldMap : Control
 		int whole = Mathf.Max(0, Mathf.RoundToInt(seconds));
 		return $"{whole / 60}:{whole % 60:00}";
 	}
-
-	private static string Plural(int n, string word) => n == 1 ? $"1 {word}" : $"{n} {word}s";
 
 	// "Enter the Fallow Fields", "Enter Enchanted Forest": a name's own article, lower-cased mid-sentence.
 	private static string WithArticle(string name) =>
