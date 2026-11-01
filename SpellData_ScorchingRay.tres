@@ -17,6 +17,7 @@ EffectValue = 0.15
 
 [resource]
 script = ExtResource("1")
+Tagline = "Beams that heat up on one target."
 Id = "scorching_ray"
 Name = "Scorching Ray"
 CurrentLevel = 1

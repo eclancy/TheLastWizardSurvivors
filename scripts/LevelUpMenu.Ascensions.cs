@@ -90,11 +90,12 @@ public partial class LevelUpMenu
 		SetNormalViewVisible(false);
 		RemoveAscensionRoot();
 
-		// Same register as the evolution screen: this is reading ABOUT magic, so it is a page.
-		ShowVellumPage(true);
-
+		// On the plate's stone, like the evolution pages: every tree's node is a parchment card, and a
+		// vellum page under them was the same background twice (LevelUpMenu.PageInset's remarks). So
+		// what is written on the ground - heading, rule, section heads, the quiet line - is in the
+		// stone inks; the node keeps CodexRows.Vellum (BuildTreeNode).
 		bool narrow = ResponsiveLayout.IsNarrow(this);
-		CodexRows.Palette ink = CodexRows.Vellum;
+		CodexRows.Palette ink = CodexRows.Stone;
 
 		var root = new VBoxContainer { Name = AscensionRootName, MouseFilter = Control.MouseFilterEnum.Ignore };
 		root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
@@ -105,16 +106,7 @@ public partial class LevelUpMenu
 		root.AddThemeConstantOverride("separation", 14);
 		panel.AddChild(root);
 
-		var title = new Label
-		{
-			Text = "★ Ascensions",
-			HorizontalAlignment = HorizontalAlignment.Center,
-			AutowrapMode = TextServer.AutowrapMode.WordSmart,
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-		};
-		ResponsiveLayout.SetFont(title, ResponsiveLayout.TextRole.Display);
-		title.AddThemeColorOverride("font_color", InkGold);
-		root.AddChild(title);
+		root.AddChild(BuildPageHeading("★ Ascensions"));
 
 		// The rule, once. What a sealed path is, each sealed plate says for itself (SealedLine), so the
 		// summary stays one line on a PC.
@@ -194,7 +186,8 @@ public partial class LevelUpMenu
 				parts.Add($"{string.Join(", ", passives)} {(passives.Count == 1 ? "is a passive" : "are passives")} and {(passives.Count == 1 ? "does" : "do")} not ascend.");
 			if (unwritten.Count > 0)
 				parts.Add($"No ascension is written yet for {string.Join(", ", unwritten)}.");
-			list.AddChild(CodexRows.MakeText(string.Join(" ", parts), ResponsiveLayout.TextRole.Label, ink.InkMeta));
+			// InkSoft, not InkMeta: on the plate's brightest stone the meta ink is 3.8:1.
+			list.AddChild(CodexRows.MakeText(string.Join(" ", parts), ResponsiveLayout.TextRole.Label, ink.InkSoft));
 		}
 
 		var backButton = new Button
@@ -679,7 +672,7 @@ public partial class LevelUpMenu
 	/// phone it takes the full width, which is the scarce axis there.
 	/// </summary>
 	private Control BuildTree(string name, Control node, List<(Control Outer, Control Plate)> cards, List<bool> open,
-		bool narrow, bool sideBySide)
+		bool narrow, bool sideBySide, bool spotlight = false)
 	{
 		var tree = new VBoxContainer
 		{
@@ -732,6 +725,9 @@ public partial class LevelUpMenu
 			if (cards.Count == 1)
 				row.AddChild(Spacer(0.25f));
 			tree.AddChild(row);
+			// The level 8 fork's plates are choices: the ones the selection is not on step down.
+			if (spotlight)
+				FocusSpotlight.Attach(row);
 		}
 		else
 		{
@@ -747,6 +743,8 @@ public partial class LevelUpMenu
 			column.AddThemeConstantOverride("separation", 14);
 			foreach ((Control outer, Control _) in cards)
 				column.AddChild(outer);
+			if (spotlight)
+				FocusSpotlight.Attach(column);
 			// So the spine has length before its first turn.
 			var drop = new MarginContainer
 			{
@@ -858,42 +856,27 @@ public partial class LevelUpMenu
 		SetNormalViewVisible(false);
 		// A viewport resize re-invokes this while the view is already up (OnViewportSizeChanged).
 		RemoveEvolutionRoot();
-		ShowVellumPage(true);
 
+		// On the plate's stone, not a vellum page: the node is parchment, and a page on a page was the
+		// same background twice (LevelUpMenu.PageInset's remarks).
 		bool narrow = ResponsiveLayout.IsNarrow(this);
 		var root = new VBoxContainer { Name = EvolutionRootName };
 		root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		root.OffsetLeft = 24;
-		root.OffsetTop = PageInset + 6f;
-		root.OffsetRight = -24;
+		root.OffsetLeft = narrow ? PageInset : 24;
+		root.OffsetTop = narrow ? 16f : 26f;
+		root.OffsetRight = narrow ? -PageInset : -24;
 		root.OffsetBottom = -PageInset;
 		root.AddThemeConstantOverride("separation", 6);
 		panel.AddChild(root);
 
-		var title = new Label
-		{
-			Text = "★ ASCENSION (Level 8) ★",
-			HorizontalAlignment = HorizontalAlignment.Center,
-			AutowrapMode = TextServer.AutowrapMode.WordSmart,
-		};
-		ResponsiveLayout.SetFont(title, narrow ? ResponsiveLayout.TextRole.Title : ResponsiveLayout.TextRole.Display);
-		title.AddThemeColorOverride("font_color", HeadingInkFor(CardFamily.Ascension));
-		root.AddChild(title);
+		root.AddChild(BuildPageHeading("★ ASCENSION (Level 8) ★"));
 
 		// Counted, never asserted (the old page said "1 of 3" to a two-branch spell). The stakes in
 		// the same breath: level 8 is reached only through one of these, so the other is gone.
 		int count = option.EvolutionChoices?.Count ?? 0;
-		var subtitle = new Label
-		{
-			Text = count == 1
-				? $"One path ascends {option.DisplayName} to level 8."
-				: $"Choose 1 of {count} paths. {option.DisplayName} takes only one, for the rest of this run.",
-			HorizontalAlignment = HorizontalAlignment.Center,
-			AutowrapMode = TextServer.AutowrapMode.WordSmart,
-		};
-		ResponsiveLayout.SetFont(subtitle, ResponsiveLayout.TextRole.Label);
-		subtitle.AddThemeColorOverride("font_color", InkSoft);
-		root.AddChild(subtitle);
+		root.AddChild(BuildPageSubtitle(count == 1
+			? $"One path ascends {option.DisplayName} to level 8."
+			: $"Choose 1 of {count}. {option.DisplayName} takes one, for good."));
 
 		// A scroll, as before: on a 1280x720 PC a long description can still outgrow the band. Not
 		// FollowFocus on a PC - focus moves sideways between plates there, and following it opened a
@@ -940,7 +923,7 @@ public partial class LevelUpMenu
 			if (!locked)
 				firstOpen ??= button;
 		}
-		inner.AddChild(BuildTree($"AscensionTree_{option.SpellId}", node, cards, open, narrow, sideBySide));
+		inner.AddChild(BuildTree($"AscensionTree_{option.SpellId}", node, cards, open, narrow, sideBySide, spotlight: true));
 
 		var backButton = new Button
 		{

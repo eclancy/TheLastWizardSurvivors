@@ -11,6 +11,7 @@ DamageBonus = 2
 
 [resource]
 script = ExtResource("1")
+Tagline = "Kills burst into shards of ice."
 Id = "frost_shard"
 Name = "Frost Shard"
 CurrentLevel = 1

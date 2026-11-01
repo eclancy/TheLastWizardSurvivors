@@ -34,6 +34,7 @@ EffectValue = 30.0
 
 [resource]
 script = ExtResource("1_43iml")
+Tagline = "Charges as you cast, then bursts."
 Id = "arcane_explosion"
 Name = "Arcane Explosion"
 CurrentLevel = 1

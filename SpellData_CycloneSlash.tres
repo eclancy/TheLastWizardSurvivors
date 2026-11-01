@@ -11,6 +11,7 @@ ProjectileCountBonus = 1
 
 [resource]
 script = ExtResource("1")
+Tagline = "Blades whirl wider as you move."
 Id = "cyclone_slash"
 Name = "Cyclone Slash"
 CurrentLevel = 1

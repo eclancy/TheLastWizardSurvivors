@@ -42,6 +42,7 @@ CooldownBonus = -0.15
 
 [resource]
 script = ExtResource("1")
+Tagline = "Your trail becomes slowing bog."
 Id = "mirefoot"
 Name = "Mirefoot"
 CurrentLevel = 1

@@ -9,6 +9,15 @@ public partial class SpellEvolutionOption : Resource
 	[Export] public string Id { get; set; } = string.Empty;
 	[Export] public string DisplayName { get; set; } = string.Empty;
 	[Export(PropertyHint.MultilineText)] public string Description { get; set; } = string.Empty;
+
+	/// <summary>
+	/// The most a branch's <see cref="Description"/> may say, in characters as shown: one or two short
+	/// sentences. The mutation page, the level 8 fork and the Apotheosis page never scroll (2026-10-31,
+	/// Eric: "Overall keep text minimal"), and this is the text that sized them - three branches of it
+	/// fit a 1280x720 PC and a phone with room to spare. RegressionChecks.ValidateCardTextBudget holds
+	/// every branch to it.
+	/// </summary>
+	public const int DescriptionBudget = 130;
 	[Export] public int MilestoneLevel { get; set; } = 4; // 4 or 8
 	[Export] public string SynergyTag { get; set; } = string.Empty; // e.g. "Arcane / Pierce"
 	[Export] public string SynergyDescription { get; set; } = string.Empty;

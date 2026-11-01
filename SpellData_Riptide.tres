@@ -68,6 +68,7 @@ EffectValue = 20.0
 
 [resource]
 script = ExtResource("1")
+Tagline = "A wave that drags a line of foes."
 Id = "riptide"
 Name = "Riptide"
 CurrentLevel = 1

@@ -49,6 +49,7 @@ CooldownBonus = -0.5
 
 [resource]
 script = ExtResource("1")
+Tagline = "Pulls a crowd in, then implodes."
 Id = "hollow_star"
 Name = "Hollow Star"
 CurrentLevel = 1

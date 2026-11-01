@@ -11,6 +11,7 @@ DamageBonus = 3
 
 [resource]
 script = ExtResource("1")
+Tagline = "A shadow lance through a crowd."
 Id = "void_lance"
 Name = "Void Lance"
 CurrentLevel = 1

@@ -43,11 +43,14 @@ public partial class AscensionForkArrows : Control
 		Spine,
 	}
 
-	// gold base, gold lit, gold hi; flesh shade (CodexRows.Vellum.InkMeta).
-	public static readonly Color OpenLine = new Color(0.541f, 0.416f, 0.118f);
-	public static readonly Color OpenGlow = new Color(0.847f, 0.690f, 0.290f);
+	// gold lit, gold hi, gold hi; skin base (CodexRows.Stone.InkMeta). The fork is drawn on the plate's
+	// stone since the vellum page under the trees went (2026-10-31), so the line is a step lighter than
+	// the gold base it was on parchment - gold base on stone base is under 3:1 as a graphic.
+	// COPIED into tools/art/ui_contrast.py: change one, change both.
+	public static readonly Color OpenLine = new Color(0.847f, 0.690f, 0.290f);
+	public static readonly Color OpenGlow = new Color(1.0f, 0.941f, 0.753f);
 	public static readonly Color SparkCore = new Color(1.0f, 0.941f, 0.753f);
-	public static readonly Color ClosedLine = new Color(0.431f, 0.267f, 0.314f);
+	public static readonly Color ClosedLine = new Color(0.604f, 0.643f, 0.722f);
 
 	private const float OpenWidth = 3f;
 	private const float ClosedWidth = 2f;

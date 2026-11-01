@@ -31,6 +31,7 @@ public static class RegressionChecks
 		ValidateElementTags(warnings);
 		ValidateElementPaths(warnings);
 		ValidateEvolutionReaders(warnings);
+		ValidateCardTextBudget(warnings);
 		ValidateLevelUpReaders(warnings);
 		ValidateAmountReaders(warnings);
 		ValidateStarfall(warnings);
@@ -712,8 +713,9 @@ public static class RegressionChecks
 				new[] { Familiar.CerberusId, Familiar.AnnwnId }),
 			[Familiar.CrowId] = (new[] { Familiar.RavenId, Familiar.StormcrowId, Familiar.MurderId },
 				new[] { Familiar.MorriganId, Familiar.GriffinId }),
-			[Familiar.CatId] = (new[] { Familiar.GrimalkinId, Familiar.CaitSithId, Familiar.PurrId },
-				new[] { Familiar.CathPalugId, Familiar.NineLivesId }),
+			// The cat's four level 4 cards: Nine Lives moved down from level 8 for the Black Cat (2026-10-31).
+			[Familiar.CatId] = (new[] { Familiar.GrimalkinId, Familiar.CaitSithId, Familiar.PurrId, Familiar.NineLivesId },
+				new[] { Familiar.CathPalugId, Familiar.BlackCatId }),
 		};
 		var everyMilestone = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var (variantId, (four, eight)) in expected)
@@ -866,7 +868,8 @@ public static class RegressionChecks
 						warnings.Add($"Spell forms: '{vid}' has a level-up out of order or outside 2..{template.MaxLevel}.");
 					previous = upgrade?.Level ?? previous;
 				}
-				if (variant.BaseCooldown <= 0f || variant.BaseProjectileCount < 1 || variant.BaseDamage < 1)
+				// The Familiar's cat deals no damage by design (2026-10-31: it debuffs and buffs); every other form must.
+				if (variant.BaseCooldown <= 0f || variant.BaseProjectileCount < 1 || (variant.BaseDamage < 1 && vid != Familiar.CatId))
 					warnings.Add($"Spell forms: '{vid}' needs a positive damage, cooldown and count.");
 
 				if (!formsById.TryGetValue(vid, out SpellData form))
@@ -880,8 +883,11 @@ public static class RegressionChecks
 				var formTags = form.GetElementWeights();
 				if (baseTags.Count != formTags.Count || baseTags.Any(p => !formTags.TryGetValue(p.Key, out int w) || w != p.Value))
 					warnings.Add($"Spell forms: '{vid}' changes '{id}'s element tags; a form is a way of playing the spell, never a different carrier.");
-				if ((form.Level4Options?.Count ?? 0) != 3 || (form.Level8Options?.Count ?? 0) != 2)
-					warnings.Add($"Spell forms: '{vid}' has {form.Level4Options?.Count ?? 0} level 4 and {form.Level8Options?.Count ?? 0} level 8 milestones; every form has 3 and 2 of its own.");
+				// Three level 4 cards a form, but the Familiar's cat: Nine Lives moved down from level 8 to make room for
+				// the Black Cat (2026-10-31), and the mutation page counts its branches (LevelUpMenu).
+				int fours = vid == Familiar.CatId ? 4 : 3;
+				if ((form.Level4Options?.Count ?? 0) != fours || (form.Level8Options?.Count ?? 0) != 2)
+					warnings.Add($"Spell forms: '{vid}' has {form.Level4Options?.Count ?? 0} level 4 and {form.Level8Options?.Count ?? 0} level 8 milestones; every form has {fours} and 2 of its own.");
 				foreach (SpellEvolutionOption option in (form.Level4Options ?? new()).Concat(form.Level8Options ?? new()))
 				{
 					if (option == null)
@@ -4975,6 +4981,43 @@ public static class RegressionChecks
 		}
 		foreach (string itemId in ChestItemCatalog.AllItemIds)
 			Check($"relic {itemId}", ChestItemCatalog.GetDescription(itemId));
+	}
+
+	/// <summary>
+	/// Every level 4, level 8 and Apotheosis branch says what it does within
+	/// <see cref="SpellEvolutionOption.DescriptionBudget"/> characters, as the card shows it.
+	/// </summary>
+	/// <remarks>
+	/// The level-up, mutation and Ascension screens never scroll (2026-10-31, Eric: "Overall keep text
+	/// minimal"; .ai/level-up-screen.md section 3b). Their cards size to their words, so a branch written
+	/// at length is a page that scrolls on a 1280x720 PC or a phone - and the old catalog ran to 385.
+	/// </remarks>
+	private static void ValidateCardTextBudget(List<string> warnings)
+	{
+		var reported = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (SpellData spell in ContentValidator.LoadAllSpellForms())
+		{
+			if (spell == null || string.IsNullOrWhiteSpace(spell.Id))
+				continue;
+			SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
+			var options = new List<SpellEvolutionOption>();
+			if (spell.Level4Options != null)
+				options.AddRange(spell.Level4Options);
+			if (spell.Level8Options != null)
+				options.AddRange(spell.Level8Options);
+			foreach (ApotheosisDefinition definition in ApotheosisCatalog.All)
+			{
+				if (definition.Form != null && definition.SpellId.Equals(spell.Id, StringComparison.OrdinalIgnoreCase))
+					options.Add(definition.Form);
+			}
+			foreach (SpellEvolutionOption option in options)
+			{
+				int length = option?.Description?.Length ?? 0;
+				if (length > SpellEvolutionOption.DescriptionBudget && reported.Add($"{spell.Id}:{option.Id}"))
+					warnings.Add($"Branch '{option.Id}' of '{spell.Id}' is {length} characters; a card holds " +
+						$"{SpellEvolutionOption.DescriptionBudget} without scrolling: \"{option.Description}\"");
+			}
+		}
 	}
 
 	private static void ValidateEvolutionReaders(List<string> warnings)

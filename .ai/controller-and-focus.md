@@ -151,6 +151,17 @@ Two things were settled by photographing it with `_UiShot` rather than by argume
   thick, so it never sits on the word. `_UiShot --frames=120 --force-levelup --keep-levelup
   --mixed-deal --focus-card=N` photographs it on each card family (`--frames` matters: the default
   10-frame warmup ends before `--focus-card` fires).
+- **Corner brackets and a spotlight (2026-10-31).** Still not enough on the level-up screen: "make
+  it easier to see what i have highlighted when using keyboard or controller". A card (120 or more
+  on both sides) gets a 6-unit band and four gold L-brackets standing 4 to 7 off its corners in the
+  gap - nothing else on these screens has that shape - and `FocusSpotlight`, a node beside a row of
+  cards, dims every other card in the row to 78% (`Dimmed`, measured in `ui_contrast.py`). It keeps
+  the three rules above: it polls the focus owner and writes only `Modulate`, so it never takes
+  focus or scrolls; it is off whenever `PointerActive` is (the mouse drops it, exactly as the ring
+  stops drawing for focus); and when a stacked screen holds the selection the owner is no longer in
+  its row, so every card goes back to full light. Attached to the level-up hand, the mutation page
+  and the level 8 fork (`LevelUpMenu`), not to other menus. On a phone it shows on a fresh level-up
+  until the first touch, as the ring always has - worth a look on the device.
 
 **Where it is allowed to live.** Children draw after their parent, so the ring is parented to what
 it rings — but a card is built as an invisible overlay `Button` first and its visible content after,

@@ -306,7 +306,7 @@ class Fig(object):
                 if self.pattern[1] == "stripes":
                     if (lx * 3 + ly) % 9 in (0, 1) and hsh(lx // 2, ly, 5) < 0.8:
                         t = min(4, t + 2)
-                elif hsh(lx // 2, ly // 2, 7) < 0.16 and (lx + ly) % 2 == 0:
+                elif self.pattern[1] == "spots" and hsh(lx // 2, ly // 2, 7) < 0.16 and (lx + ly) % 2 == 0:
                     t = 4
             elif kind == "cloth" and t in (1, 2, 3):
                 # A fold every few columns, a dark stop beside a light one (section 4b).
@@ -320,6 +320,15 @@ class Fig(object):
                     if n is not None and n[2] > part and n[5] not in ("detail", "glow"):
                         t = 4 if t >= 2 else 3
                         break
+            if kind in ("fur", "far") and self.pattern is not None and ramp is self.pattern[0] and self.pattern[1] == "calico":
+                # A calico's coat: white, with patches of ginger and of black - each patch keyed to the part's
+                # own coordinates, as the lay is, so the patches ride with the body - at the same tone, so the
+                # light turns the form through them (pattern: (white, "calico", ginger, black)).
+                v = hsh((lx + 40) // 5, (ly + 40) // 4, 13 + part * 3)
+                if v < 0.33:
+                    ramp = self.pattern[2]
+                elif v < 0.5:
+                    ramp = self.pattern[3]
             t = min(4, max(0, t))
             out[(x, y)] = ramp[t]
             if kind != "glow":
@@ -476,7 +485,7 @@ def hound(cell, skin, p, s=1.0):
     if skin.embers:
         g.embers = skin.fur
     if skin.pattern:
-        g.pattern = (skin.fur, skin.pattern)
+        g.pattern = coat_pattern(skin)
     # A cat stands lower on shorter legs, its body longer and leaner than a hound's.
     low = 3.2 if skin.feline else 0.0
     lean = 0.86 if skin.feline else 1.0
@@ -1383,7 +1392,22 @@ GRIFF_STORM = dict(fur=FAWN, feather=[LT[0], LT[1], AMBER[1], AMBER[2], AMBER[3]
 # =============================================================================================
 
 CAT_BREATH = (EMBER[0], BONE[0], EMBER[1])
-CAT = Skin(FAWN, feline=True, pattern="stripes", leap=1.0, head_scale=1.45, breath=None)
+# THE CALICO (Eric, 2026-10-31: the cat "is calico: white with orange and black patches"). White over a cream
+# base, its shadows in bone's cool stops; ginger patches from the gold and amber rows - an orange that is still
+# warm in the shade, not the ember red the hellhound wears - and black ones in stone, so the cat is the one
+# familiar with three colours in its coat and reads as a calico at 48 pixels.
+CALICO_WHITE = [M["skin"][0], FAWN[0], M["skin"][1], M["skin"][2], M["skin"][3]]
+CALICO_GINGER = [FAWN[0], AMBER[2], AMBER[2], AMBER[3], AMBER[4]]
+CALICO_BLACK = [STONE[0], STONE[1], STONE[2], STONE[3], STONE[4]]
+CAT = Skin(CALICO_WHITE, feline=True, pattern="calico", leap=1.0, head_scale=1.45, breath=None, depth=0.05,
+           eye=(AMBER[0], AMBER[1]))
+
+
+def coat_pattern(skin):
+    """A Fig's pattern for a skin's coat: (ramp, kind) - and for a calico its two patch ramps after."""
+    if skin.pattern == "calico":
+        return (skin.fur, "calico", CALICO_GINGER, CALICO_BLACK)
+    return (skin.fur, skin.pattern)
 # The Cait Sith: the fairy cat, black with a white star on its breast, its eyes lit with Darkness.
 DK = E["darkness"]
 SITH_FUR = [VIOLET[1], VIOLET[2], VIOLET[3], VIOLET[4], WOOL[4]]
@@ -1397,6 +1421,16 @@ GRIMALKIN = Skin(GRIM_FUR, feline=True, pattern="stripes", mantle=True, heavy=0.
 PALUG_FUR = [GOLD[1], GOLD[2], FAWN[2], GOLD[3], GOLD[4]]
 CATH_PALUG = Skin(PALUG_FUR, feline=True, pattern="spots", mantle=True, heavy=1.1, leap=0.6, head_scale=1.2,
                   eye=(EMBER[0], EMBER[1]), glow_eye=True, depth=0.25, breath=(EMBER[1], EMBER[0], EMBER[2]))
+# THE BLACK CAT (2026-10-31, the cat's Ascension in place of Nine Lives): the witch's black cat, which casts
+# the wizard's own spells from where it stands. It must never read as the Cait Sith, which is black too, so
+# it is everything the fairy cat is not: blue-black in stone's row where the Cait Sith is violet, no white star,
+# eyes lit GOLD where the Cait Sith's are lit violet, and grown - on the 64 cell, an Ascension's size, lean and
+# long like the cat and not heavy like Cath Palug. After the Cait Sith it keeps the fairy cat's star and eyes
+# on the bigger body, so the Darkness path still shows (and still marks: Familiar.Mark).
+BLACK_CAT = Skin(CALICO_BLACK, feline=True, leap=0.9, head_scale=1.3, heavy=0.3, depth=0.0,
+                 eye=(GOLD[0], GOLD[1]), glow_eye=True, breath=(GOLD[0], LIGHT_E[1], GOLD[1]))
+BLACK_CAT_SITH = Skin(SITH_FUR, feline=True, leap=0.9, head_scale=1.3, heavy=0.3, depth=0.25, eye=(DK[0], DK[1]),
+                      glow_eye=True, star=BONE[0], breath=(DK[1], DK[2], DK[0]))
 CATH_PALUG_SITH = Skin(SITH_FUR, feline=True, mantle=True, heavy=1.1, leap=0.6, head_scale=1.2, eye=(DK[0], DK[1]),
                        glow_eye=True, star=BONE[0], depth=0.3, breath=(DK[1], DK[2], DK[0]))
 
@@ -1793,6 +1827,8 @@ FORMS = [
     ("grimalkin", 64, GRIMALKIN, 1.7),
     ("cath-palug", 64, CATH_PALUG, 1.85),
     ("cath-palug-sith", 64, CATH_PALUG_SITH, 1.85),
+    ("black-cat", 64, BLACK_CAT, 1.75),
+    ("black-cat-sith", 64, BLACK_CAT_SITH, 1.75),
 ]
 
 
@@ -1969,7 +2005,7 @@ def cat_portrait(skin=CAT, cell=32, hat=True, s=1.0, at=(0.0, 0.0), into=None, m
     fur = skin.fur
     g.deeper[id(fur)] = (FUR_DEPTH if skin.depth == FUR_DEPTH else skin.depth) - ICON_LIFT
     if skin.pattern:
-        g.pattern = (fur, skin.pattern)
+        g.pattern = coat_pattern(skin)
     ear = skin.ear or fur
     # Shoulders and chest out of the bottom of the frame.
     g.blob(*P(15.5, 31.0), rx=r(10.0), ry=r(5.6), ramp=fur, bias=0.15, kind="fur")

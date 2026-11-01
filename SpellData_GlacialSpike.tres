@@ -43,6 +43,7 @@ DamageBonus = 5
 
 [resource]
 script = ExtResource("1")
+Tagline = "Ice spikes erupt under enemies."
 Id = "glacial_spike"
 Name = "Glacial Spike"
 CurrentLevel = 1

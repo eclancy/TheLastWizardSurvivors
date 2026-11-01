@@ -3508,15 +3508,17 @@ public partial class Node2DGame : Node2D
 		typedMenu.SetOptions(player.GetLevelUpOptions(optionCount), rerollsRemainingForCurrentLevelUp, BuildEquippedInfo(), BuildBaselineElementCounts(), player.BuildCharges(rerollsRemainingForCurrentLevelUp));
 	}
 
-	// A ban does not cost the player their pick: the struck spell is removed from the pool and the
-	// offer is rebuilt, so they still choose from a full set of cards this level.
+	// A ban IS the level-up's choice (Eric, 2026-10-31: "once they select a spell to ban, they dont
+	// continue to level up, that is what they used the level up for"). It used to re-deal a full hand,
+	// so a ban cost nothing but the charge. Now the struck spell leaves the pool and the screen closes,
+	// paying no XP: OnSkipRequested's half bar is the Skip's, and a ban does not go through it.
 	private void OnBanRequested(string spellId)
 	{
 		if (player == null || levelUpMenu is not LevelUpMenu)
 			return;
 
-		// A refused ban (already struck, or the Marginalia card) still has to put the cards back: the
-		// menu left them for the ban picker and only a refresh from here returns to them.
+		// A refused ban (already struck, or the Marginalia card) spends nothing, so the level-up is not
+		// spent either: the same cards go back up and the screen stays.
 		if (!player.TryBanSpell(spellId))
 		{
 			if (levelUpMenu is LevelUpMenu refused)
@@ -3525,7 +3527,7 @@ public partial class Node2DGame : Node2D
 		}
 
 		GameStats.RecordBanUsed();
-		ReofferLevelUpOptions();
+		CloseLevelUpMenu();
 	}
 
 	// Projects the player's currently-equipped spells into the lightweight EquippedSpellInfo shape

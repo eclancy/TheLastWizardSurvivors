@@ -38,6 +38,7 @@ CooldownBonus = -0.5
 
 [resource]
 script = ExtResource("1")
+Tagline = "Grows a thorn patch at your feet."
 Id = "bramble_seed"
 Name = "Bramble Seed"
 CurrentLevel = 1

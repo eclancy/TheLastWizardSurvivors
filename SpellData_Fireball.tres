@@ -44,6 +44,7 @@ DamageBonus = 9
 
 [resource]
 script = ExtResource("1")
+Tagline = "A slow fireball with a wide blast."
 Id = "fireball"
 Name = "Fireball"
 CurrentLevel = 1
