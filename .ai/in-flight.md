@@ -12,11 +12,12 @@ release keystore and the Android SDK live there; `.ai/releasing.md`).
 
 ## 2. Where the branches stand
 
-- **`main` is at 048fe79** and releasable as 0.10.0 (achievements for every spell, schema 19, the
-  nine vaults, castle groundwork). It has **not** been moved since.
-- **`main-ff86ni` is the development branch** and is far ahead. Every merge into it was built,
-  validated (0 errors, 6 warnings: five castle to-dos and the Test Wizard) and pushed. **Hold it
-  out of `main` until Eric has played the difficulty curve**: it changes how the whole game feels.
+- **`main` and `main-ff86ni` are level** (2026-11-01): Eric asked to release, so `main` was
+  fast-forwarded to everything below for **0.10.0**, to be released from the Windows PC with
+  `bash tools/release/release.sh 0.10.0 "..."` (the keystore and Inno Setup live there only).
+  Check `git tag` for `v0.10.0` to see whether that has happened.
+- **`main-ff86ni` stays the development branch.** Every merge into it was built, validated
+  (0 errors, 6 warnings: five castle to-dos and the Test Wizard) and pushed.
 
 Merged into `main-ff86ni` since `main`:
 
@@ -87,7 +88,7 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 
 ## 5. What comes after
 
-1. Land the three branches above, then a playtest, then `main-ff86ni` into `main` and 0.10.0.
+1. Release 0.10.0 from `main` on the Windows PC, then playtest it (section 4).
 2. The castle, by `.ai/endgame-castle.md` section 9.2: C6, C5, C4, C2 (**schema 21**), C8, C9;
    each chapter's `IsPlayable` flips last.
 3. The rest of the secrets catalogue, `.ai/achievements-and-secrets.md` section 8.
