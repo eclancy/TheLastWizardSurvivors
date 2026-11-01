@@ -6374,6 +6374,12 @@ public partial class Player : CharacterBody2D
 		// and Extinction Event's x3 once grew only the drawing.
 		float area = GetEffectiveAreaMultiplier() * spell.GetAreaMultiplierAtLevel(spell.CurrentLevel);
 
+		// Creeping Barrage and Extinction Event aim at the thickest pack in reach (2h).
+		bool barrage = spell.HasEvolution(MeteorImpact.BarrageId);
+		bool finale = spell.HasEvolution(MeteorImpact.ExtinctionId);
+		Node2D densest = barrage || finale ? FindDensestEnemy(castRange) ?? nearest : null;
+		float blast = MeteorImpact.BaseRadiusFor(spell) * area;
+
 		CollectEnemiesInRange(castRange);
 		if (aimCandidates.Count == 0)
 			aimCandidates.Add(nearest);
@@ -6384,6 +6390,8 @@ public partial class Player : CharacterBody2D
 			var script = impact as MeteorImpact;
 			float delay = i * stagger;
 			Vector2 at = target.GlobalPosition;
+			if (barrage)
+				at = BarrageSpot(nearest.GlobalPosition, densest.GlobalPosition, blast, castRange, i);
 			if (script != null)
 			{
 				script.SpellData = spell;
@@ -6393,11 +6401,12 @@ public partial class Player : CharacterBody2D
 				script.PlayerRef = this;
 				// Led by where the enemy is walking, for as long as this meteor takes to land - the later
 				// meteors of a volley would otherwise land behind the pack. Never more than most of the
-				// way to the player, so a lead cannot carry a meteor past him.
-				if (target is CharacterBody2D body)
+				// way to the player, so a lead cannot carry a meteor past him. The barrage walks its own line.
+				if (!barrage && target is CharacterBody2D body)
 					at += (body.Velocity * (delay + script.FallSeconds)).LimitLength(at.DistanceTo(GlobalPosition) * 0.75f);
 			}
-			at += new Vector2(combatRng.RandfRange(-MeteorScatter.X, MeteorScatter.X), combatRng.RandfRange(-MeteorScatter.Y, MeteorScatter.Y));
+			if (!barrage)
+				at += new Vector2(combatRng.RandfRange(-MeteorScatter.X, MeteorScatter.X), combatRng.RandfRange(-MeteorScatter.Y, MeteorScatter.Y));
 			GetParent().AddChild(impact);
 			ApplyLegendaryVisual(impact, spell);
 			// The meteor is drawn out of the radius it hits, so the evolutions' visual scale stays out of it.
@@ -6405,7 +6414,56 @@ public partial class Player : CharacterBody2D
 			script?.CastAt(at, delay);
 		}
 		aimCandidates.Clear();
+
+		// EXTINCTION EVENT (2h): the volley ends in one colossal meteor on the thickest pack in reach, a beat
+		// after the last of the others - MeteorImpact.FinaleArea times the blast, FinaleDamage times the hit.
+		if (finale && densest != null && IsInstanceValid(densest))
+		{
+			var big = scene.Instantiate<Node2D>();
+			if (big is MeteorImpact last)
+			{
+				last.Finale = true;
+				last.SpellData = spell;
+				last.DamageMultiplier = damageMultiplier;
+				last.AreaMultiplier = area;
+				last.SetSpellLevel(spell.CurrentLevel);
+				last.PlayerRef = this;
+				GetParent().AddChild(big);
+				ApplyLegendaryVisual(big, spell);
+				big.Scale = Vector2.One;
+				last.CastAt(densest.GlobalPosition, count * stagger + 0.2f);
+			}
+			else
+				big.QueueFree();
+		}
 		return CastOutcome.Fired;
+	}
+
+	// CREEPING BARRAGE (meteor_orbital_bombardment's id, 2h): the volley walks. The first meteor comes down
+	// on the nearest enemy and each after it a step further on along the line from there through the
+	// thickest pack, two abreast and staggered, a blast apart, to a step and a half past the pack's heart
+	// (never past the spell's reach); then the next line walks beside it, one side and then the other. A
+	// line that ran on to the end of the reach dropped half the volley on empty ground behind the pack.
+	// A spot on blocked ground is moved on along the line.
+	private Vector2 BarrageSpot(Vector2 from, Vector2 toward, float blast, float castRange, int i)
+	{
+		Vector2 dir = toward - from;
+		float toHeart = dir.Length();
+		if (toHeart < blast)
+			dir = from - GlobalPosition;
+		dir = dir.LengthSquared() > 0.01f ? dir.Normalized() : Vector2.Right;
+		Vector2 side = new Vector2(-dir.Y, dir.X);
+		float step = blast * 0.9f;
+		float length = Math.Min(Math.Max(blast * 2f, toHeart + blast * 1.5f), Math.Max(blast * 2f, castRange * 1.1f - GlobalPosition.DistanceTo(from)));
+		int perLine = Math.Max(2, ((int)(length / step) + 1) * 2);
+		int line = i / perLine;
+		int k = i % perLine;
+		float beside = (line + 1) / 2 * (line % 2 == 1 ? 1.1f : -1.1f);
+		Vector2 at = from + dir * step * (k / 2) + side * blast * ((k % 2 == 0 ? -0.45f : 0.45f) + beside);
+		MazeNavigation nav = MazeNavigation.Active;
+		for (int tries = 0; nav != null && tries < 3 && nav.IsBlockedAt(at); tries++)
+			at += dir * step * 0.5f;
+		return at;
 	}
 
 	// delta drives the stand-still clock (TickStandStill) and the feet's replay (ConstrainToGround).

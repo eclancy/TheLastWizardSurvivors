@@ -68,6 +68,56 @@ public partial class MeteorImpact : Node2D
 
 	private static readonly ElementColors.Ramp FireRamp = ElementColors.GetRamp(Element.Fire);
 
+
+	// PHASE 2 (.ai/spell-roster.md 2h, 2026-10-31). Three cards change what one meteor does, read by id when
+	// it is cast: Breakup breaks it apart in the sky into fragments that land round its mark; Skipstone
+	// glances off the ground and bounds on to land again; Extinction Event's finale (Finale, set by
+	// Player.FireMeteorSwarm) is one colossal meteor at the end of the volley. A meteor's landing spots
+	// are a few fixed slots (offsets from its node), so one node draws and hits all of them.
+	public const string BreakupId = "meteor_cluster";
+	public const string SkipstoneId = "meteor_starcrash";
+	public const string ExtinctionId = "meteor_extinction_event";
+	public const string BarrageId = "meteor_orbital_bombardment";
+
+	/// <summary>Breakup: fragments a meteor breaks into, how far from its mark they land (blast radii), each one's share of the blast and of the damage.</summary>
+	public const int BreakupFragments = 3;
+	public const float BreakupSpread = 0.8f;
+	public const float BreakupRadiusShare = 0.65f;
+	public const float BreakupDamageShare = 0.8f;
+	// The share of the fall at which it breaks apart.
+	private const float BreakupAt = 0.55f;
+
+	/// <summary>Skipstone: how far the stone bounds on (blast radii), how long it is in the air, and the second landing's share of the damage and the blast.</summary>
+	public const float SkipDistance = 1.5f;
+	public const float SkipSeconds = 0.3f;
+	public const float SkipDamageShare = 0.9f;
+	public const float SkipRadiusShare = 0.9f;
+
+	/// <summary>Extinction Event's finale: its blast and damage against a volley meteor's, and its fall.</summary>
+	public const float FinaleArea = 2.5f;
+	public const float FinaleDamage = 3f;
+	private const float FinaleFallSeconds = 0.75f;
+
+	/// <summary>Set before the meteor enters the tree: the colossal last meteor of an Extinction Event volley.</summary>
+	public bool Finale { get; set; }
+
+	/// <summary>The blast radius this meteor hits at (before a fragment's or a skip's share).</summary>
+	public float Radius => explosionRadius;
+
+	/// <summary>A volley meteor's blast before any Area: the scene's base radius (60) with the level table's Area line.</summary>
+	public static float BaseRadiusFor(SpellData spell) =>
+		60f * (1f + (spell?.GetEffectValueAtLevel(SpellEffect.AreaSize, spell.CurrentLevel) ?? 0f));
+
+	private const int MaxPoints = BreakupFragments;
+	private readonly Vector2[] points = new Vector2[MaxPoints];
+	private int pointCount = 1;
+	private float pointRadius;
+	private int pointDamage;
+	private bool skips;
+	private bool skipped;
+	private Vector2 skipTo;
+	private float skipRadius;
+
 	private int damage = 8;
 	private float explosionRadius = 60f;
 	private float meteorScale = 1f;
@@ -121,8 +171,44 @@ public partial class MeteorImpact : Node2D
 		GlobalPosition = position;
 		age = -MathF.Max(0f, delay);
 		impacted = false;
+		skipped = false;
 		sinceImpact = 0f;
+		RefreshComputedStats();
+		LayOutPoints(position);
 		QueueRedraw();
+	}
+
+	// Where this meteor comes down: its mark, or Breakup's fragments round it (none on blocked ground -
+	// a fragment over water goes to the mark instead); and where Skipstone's bound will land, if it can.
+	private void LayOutPoints(Vector2 at)
+	{
+		pointCount = 1;
+		points[0] = Vector2.Zero;
+		pointRadius = explosionRadius;
+		pointDamage = damage;
+		MazeNavigation nav = MazeNavigation.Active;
+		if (!Finale && SpellData != null && SpellData.HasEvolution(BreakupId))
+		{
+			pointCount = BreakupFragments;
+			pointRadius = explosionRadius * BreakupRadiusShare;
+			pointDamage = Math.Max(1, Mathf.RoundToInt(damage * BreakupDamageShare));
+			float spin = (float)(GetInstanceId() % 360) * 0.0174533f;
+			for (int k = 0; k < BreakupFragments; k++)
+			{
+				float a = spin + Mathf.Tau * k / BreakupFragments;
+				Vector2 off = new Vector2(MathF.Cos(a), MathF.Sin(a) * CraterGround.Squash) * explosionRadius * BreakupSpread;
+				points[k] = nav != null && nav.IsBlockedAt(at + off) ? Vector2.Zero : off;
+			}
+		}
+		skips = !Finale && SpellData != null && SpellData.HasEvolution(SkipstoneId);
+		if (skips)
+		{
+			// On along the fall, the way a stone thrown in at a slant goes on.
+			skipTo = -FallFrom.Normalized() * explosionRadius * SkipDistance;
+			skipRadius = explosionRadius * SkipRadiusShare;
+			if (nav != null && nav.IsBlockedAt(at + skipTo))
+				skips = false;
+		}
 	}
 
 	public override void _Process(double delta)
@@ -146,18 +232,21 @@ public partial class MeteorImpact : Node2D
 			if (burnTick <= 0f)
 			{
 				burnTick += MagmaTickSeconds;
-				HitWithin(burnDamage);
+				for (int k = 0; k < pointCount; k++)
+					HitWithin(points[k], pointRadius, burnDamage);
 			}
 		}
+		if (skips && !skipped && sinceImpact >= SkipSeconds)
+			Skip();
 
 		if (sinceImpact >= lifeAfterImpact)
 		{
 			QueueFree();
 			return;
 		}
-		// Past the debris there is nothing of this node's left to draw; a Magma Crater's node stays only
-		// to tick its burn.
-		if (sinceImpact - dt < ImpactDebris.LifeSeconds)
+		// Past the debris and the bound there is nothing of this node's left to draw; a Magma Crater's node
+		// stays only to tick its burn.
+		if (sinceImpact - dt < ImpactDebris.LifeSeconds + (skips ? SkipSeconds : 0f))
 			QueueRedraw();
 	}
 
@@ -166,24 +255,56 @@ public partial class MeteorImpact : Node2D
 		if (!impacted)
 		{
 			if (age >= 0f)
-				DrawStreak(Mathf.Clamp(age / MathF.Max(0.05f, FallSeconds), 0f, 1f));
+				DrawFall(Mathf.Clamp(age / MathF.Max(0.05f, FallSeconds), 0f, 1f));
 			return;
 		}
 
-		// Burning rock thrown out of the impact to exactly explosionRadius - the reach that was hit.
-		ImpactDebris.Draw(this, Vector2.Zero, explosionRadius, sinceImpact, (uint)(GetInstanceId() % 9973),
-			FireRamp, ImpactDebris.CountFor(explosionRadius), drawTint);
+		// Burning rock thrown out of each landing to exactly the radius it hit.
+		uint seed = (uint)(GetInstanceId() % 9973);
+		for (int k = 0; k < pointCount; k++)
+			ImpactDebris.Draw(this, points[k], pointRadius, sinceImpact, seed + (uint)k * 31u,
+				FireRamp, ImpactDebris.CountFor(pointRadius), drawTint);
+		if (!skips)
+			return;
+		if (!skipped)
+		{
+			// The stone bounding on: a lob from the crater to where it lands, the head and a short tail.
+			float k = Mathf.Clamp(sinceImpact / SkipSeconds, 0f, 1f);
+			Vector2 head = skipTo * k + new Vector2(0f, -MathF.Sin(MathF.PI * k) * explosionRadius * 0.45f);
+			Vector2 back = (-skipTo).Normalized() * TrailSpacing * TrailScale * 0.8f;
+			DrawStreakAt(head, back, 0.8f);
+		}
+		else
+			ImpactDebris.Draw(this, skipTo, skipRadius, sinceImpact - SkipSeconds, seed + 97u,
+				FireRamp, ImpactDebris.CountFor(skipRadius), drawTint);
 	}
 
-	// The demo's meteor: the head at k of the way down the path, three squares behind it stepping back
-	// up the path, cooling down the ramp. Linear, as the demo's is - a streak does not ease in.
-	private void DrawStreak(float k)
+	// The fall: the demo's streak down to the mark, or - for Breakup - down to where it breaks apart, and
+	// then a smaller streak to each fragment's spot, diverging from that point.
+	private void DrawFall(float k)
 	{
-		// A bigger rock, not a longer fall: the path is the same on screen whatever the blast, so
-		// Extinction Event's meteor still enters in view.
-		float unit = TrailScale * meteorScale;
-		Vector2 head = FallFrom * PixelScale * (1f - k);
-		Vector2 up = FallFrom.Normalized() * TrailSpacing * unit;
+		Vector2 up = FallFrom.Normalized() * TrailSpacing * TrailScale * meteorScale;
+		if (pointCount <= 1 || k < BreakupAt)
+		{
+			DrawStreakAt(FallFrom * PixelScale * (1f - k), up, meteorScale);
+			return;
+		}
+		Vector2 split = FallFrom * PixelScale * (1f - BreakupAt);
+		float u = (k - BreakupAt) / (1f - BreakupAt);
+		for (int p = 0; p < pointCount; p++)
+		{
+			Vector2 dir = points[p] - split;
+			Vector2 back = -dir.Normalized() * TrailSpacing * TrailScale * 0.7f;
+			DrawStreakAt(split + dir * u, back, 0.7f);
+		}
+	}
+
+	// The demo's meteor at `head`: three squares behind it stepping back along `back`, cooling down the
+	// ramp. A bigger rock, not a longer fall: the path is the same on screen whatever the blast.
+	private void DrawStreakAt(Vector2 head, Vector2 back, float scale)
+	{
+		float unit = TrailScale * scale;
+		Vector2 step = back.Normalized() * TrailSpacing * unit;
 		for (int i = TrailSizes.Length - 1; i >= 0; i--)
 		{
 			// The head stays white-hot whatever the evolution: the tint is identity, and identity lives in
@@ -191,7 +312,7 @@ public partial class MeteorImpact : Node2D
 			Color c = i switch { 0 => FireRamp.Core, 1 => FireRamp.Hot * drawTint, 2 => FireRamp.Mid * drawTint, _ => FireRamp.Edge * drawTint };
 			// Whole art pixels, rounded up: the demo's 4 and 3 stay two different sizes at any scale.
 			float size = MathF.Max(WhipLimb.Grid, MathF.Ceiling(TrailSizes[i] * unit / WhipLimb.Grid) * WhipLimb.Grid);
-			DrawRect(WhipLimb.Cell(head + up * i, size), c);
+			DrawRect(WhipLimb.Cell(head + step * i, size), c);
 		}
 	}
 
@@ -202,29 +323,42 @@ public partial class MeteorImpact : Node2D
 		impacted = true;
 		sinceImpact = 0f;
 		burnTick = MagmaTickSeconds;
-		lifeAfterImpact = MathF.Max(ImpactDebris.LifeSeconds, burnSeconds) + 0.02f;
+		lifeAfterImpact = MathF.Max(ImpactDebris.LifeSeconds + (skips ? SkipSeconds : 0f), burnSeconds) + 0.02f;
 
 		// The group, like every AoE (CLAUDE.md), read through EnemyRegistry - the group without the
 		// native array (.ai/performance.md). Under the balance harness the scene's direct children are
 		// not the enemies, which is why it once hit nothing.
-		HitWithin(damage, knockbackSpeed);
+		for (int k = 0; k < pointCount; k++)
+			HitWithin(points[k], pointRadius, pointDamage, knockbackSpeed);
 
 		// The crater, on the ground under the actors, sized from the same radius: its ejecta stops short
 		// of it, and a Magma Crater's fire fills it for as long as the burn ticks. This node's modulate is
 		// the evolution's or a Legendary's tint (Player.ApplyLegendaryVisual), taken off it at the cast
 		// (TakeTint); the layer softens it for the fire and keeps it off the ground.
 		if (GetParent() is Node2D arena)
-			CraterLayer.Open(arena, GlobalPosition, explosionRadius, burnSeconds, spellTint);
+		{
+			for (int k = 0; k < pointCount; k++)
+				CraterLayer.Open(arena, GlobalPosition + points[k], pointRadius, burnSeconds, spellTint);
+		}
 	}
 
-	// knockbackSpeed is the impact's shockwave (Cosmic Impact's KnockbackBonus, read since
-	// 2026-10-26); the crater's burn ticks pass 0 and only hurt.
-	private void HitWithin(int amount, float knockbackSpeed = 0f)
+	// Skipstone's second landing: a smaller crater a bound further on, no burn of its own.
+	private void Skip()
+	{
+		skipped = true;
+		HitWithin(skipTo, skipRadius, Math.Max(1, Mathf.RoundToInt(damage * SkipDamageShare)), knockbackSpeed);
+		if (GetParent() is Node2D arena)
+			CraterLayer.Open(arena, GlobalPosition + skipTo, skipRadius, 0f, spellTint);
+	}
+
+	// knockbackSpeed is the impact's shockwave (the level table's and any card's KnockbackBonus); the
+	// crater's burn ticks pass 0 and only hurt. `offset` is from this node.
+	private void HitWithin(Vector2 offset, float radius, int amount, float knockbackSpeed = 0f)
 	{
 		if (PlayerRef is not Player player || !IsInstanceValid(player))
 			return;
-		Vector2 at = GlobalPosition;
-		float r2 = explosionRadius * explosionRadius;
+		Vector2 at = GlobalPosition + offset;
+		float r2 = radius * radius;
 		foreach (var enemy in EnemyRegistry.Snapshot)
 		{
 			if (!IsInstanceValid(enemy) || at.DistanceSquaredTo(enemy.GlobalPosition) > r2)
@@ -240,13 +374,15 @@ public partial class MeteorImpact : Node2D
 
 	private void RefreshComputedStats()
 	{
-		damage = Math.Max(1, Mathf.RoundToInt((SpellData?.GetDamageAtLevel(CurrentLevel) ?? 8) * DamageMultiplier));
+		damage = Math.Max(1, Mathf.RoundToInt((SpellData?.GetDamageAtLevel(CurrentLevel) ?? 8) * DamageMultiplier * (Finale ? FinaleDamage : 1f)));
 		// Level 3's "Area +0.16" is a fraction of the blast, as Glacial Spike reads it. Nothing read it here.
 		float areaBonus = SpellData?.GetEffectValueAtLevel(SpellEffect.AreaSize, CurrentLevel) ?? 0f;
-		explosionRadius = MathF.Max(8f, BaseExplosionRadius * (1f + areaBonus) * AreaMultiplier);
-		// A wider blast is a bigger rock - Extinction Event's x3 is a visibly heavier meteor - but by the
-		// square root, so the streak stays a streak.
-		meteorScale = Mathf.Clamp(MathF.Sqrt(explosionRadius / MathF.Max(1f, BaseExplosionRadius)), 1f, 2.2f);
+		explosionRadius = MathF.Max(8f, BaseExplosionRadius * (1f + areaBonus) * AreaMultiplier * (Finale ? FinaleArea : 1f));
+		// A wider blast is a bigger rock - the finale is a visibly heavier meteor - but by the square root,
+		// so the streak stays a streak.
+		meteorScale = Mathf.Clamp(MathF.Sqrt(explosionRadius / MathF.Max(1f, BaseExplosionRadius)), 1f, Finale ? 3f : 2.2f);
+		if (Finale)
+			FallSeconds = FinaleFallSeconds;
 		burnSeconds = SpellData?.GetEffectValueAtLevel(SpellEffect.Burn, CurrentLevel) ?? 0f;
 		burnDamage = Math.Max(1, Mathf.RoundToInt(damage * MagmaTickShare));
 		knockbackSpeed = SpellData?.GetKnockbackSpeedAtLevel(CurrentLevel) ?? 0f;

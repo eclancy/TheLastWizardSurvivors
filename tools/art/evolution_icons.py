@@ -4029,12 +4029,85 @@ def _(sp, c):
 
 # --- Meteor Swarm ----------------------------------------------------------------------------------
 
+# The meteor cards draw their own picture: the spell's three-meteor painter, shrunk, became thin lines
+# that read as nothing at 24 pixels. A meteor here is the game's streak - a white-hot head and a
+# stepped trail cooling up and to the left - and a crater is a dark pit with a glowing floor.
+
+def meteor_head(c, hx, hy, k=1.0):
+    """The game's meteor at (hx, hy): its head and three squares stepping back up the fall."""
+    f = E["fire"]
+    ux, uy = -0.45, -0.89
+    for (i, r, tone) in ((3, 0.6, f[3]), (2, 0.8, f[2]), (1, 1.1, f[1])):
+        rr = max(0.6, r * k)
+        c.disc(hx + ux * 2.8 * k * i, hy + uy * 2.8 * k * i, rr, rr, tone)
+    c.disc(hx, hy, 1.7 * k, 1.7 * k, f[1])
+    c.disc(hx - 0.3 * k, hy - 0.3 * k, 1.0 * k, 1.0 * k, f[0])
+
+
+def pit(c, x, y, rx):
+    """A crater: a bowl whose rim catches the glow of its floor."""
+    f = E["fire"]
+    ry = rx * 0.45
+    c.disc(x, y, rx, ry, f[3])
+    c.disc(x, y + 0.4, rx - 1.2, max(0.8, ry - 0.9), OCC)
+    c.disc(x, y + 0.6, rx * 0.5, max(0.6, ry * 0.45), f[2])
+    c.set(x, y + 0.6, f[1])
+
+
+def breakup_icon():
+    c = _cv()
+    f = E["fire"]
+    for (tx, ty) in ((7, 25), (16, 27), (25, 22)):
+        pit(c, tx, ty, 4.4)
+    for (tx, ty) in ((8, 21), (16, 23), (24, 18)):
+        for k in range(1, 7):
+            u = k / 7.0
+            c.set(14 + (tx - 14) * u, 12 + (ty - 12) * u, f[2] if k < 4 else f[1])
+        meteor_head(c, tx, ty, 0.6)
+    meteor_head(c, 14, 11, 1.0)
+    return c
+
+
+def skipstone_icon():
+    c = _cv()
+    f = E["fire"]
+    pit(c, 11, 22, 5.5)
+    pit(c, 25, 27, 4.2)
+    for k in range(2, 13):
+        u = k / 13.0
+        if k % 2 == 0:
+            c.set(12 + 12 * u, 20 + 6 * u - math.sin(math.pi * u) * 9, f[2])
+    meteor_head(c, 19, 13, 0.7)
+    meteor_head(c, 10, 18, 1.0)
+    return c
+
+
+def extinction_icon():
+    c = _cv()
+    pit(c, 16, 26, 11.0)
+    meteor_head(c, 25, 9, 0.55)
+    meteor_head(c, 28, 16, 0.5)
+    meteor_head(c, 13, 17, 2.4)
+    return c
+
+
+def barrage_icon():
+    c = _cv()
+    for i in range(5):
+        x, y = 6 + i * 4.6, 27 - i * 3.6
+        pit(c, x - 1.5, y, 3.2)
+        pit(c, x + 1.5, y + 2.6, 3.0)
+    meteor_head(c, 27, 8, 0.6)
+    meteor_head(c, 22, 6, 0.5)
+    return c
+
+
 @card("meteor_cluster")
 def _(sp, c):
-    """Meteor Shower: more meteors a volley."""
+    """Breakup (Meteor Shower's id): one meteor breaking apart in the sky, three stones coming down round
+    its mark into three small craters."""
     reset(sp)
-    sp.place = Place(0.7, at=(17.0, 17.0))
-    sp.copies = [Place(0.55, at=(9.0, 9.0), darken=1), Place(0.5, at=(24.0, 8.0), darken=1)]
+    sp.subject = breakup_icon
 
 
 @card("meteor_magma_crater")
@@ -4046,44 +4119,27 @@ def _(sp, c):
 
 @card("meteor_starcrash")
 def _(sp, c):
-    """Cosmic Impact: one meteor hitting hard enough to throw the crowd back."""
+    """Skipstone (Cosmic Impact's id): the meteor glancing off the ground and bounding on - two craters,
+    one a bound behind the other."""
     reset(sp)
-    sp.place = Place(0.62, at=(12.0, 11.0))
     sp.accent = None
-
-    def impact(cv, x):
-        m_blast(cv, E["fire"], 20, 22, 7.0)
-        m_chevrons(cv, E["earth"], (20, 22), 9)
-        acc_earth(cv, x.r, False)
-    O(sp, impact)
+    sp.subject = skipstone_icon
 
 
 @card("meteor_extinction_event")
 def _(sp, c):
-    """Extinction Event: every meteor a colossal impact."""
+    """Extinction Event: the volley's small meteors, and then the colossal one over its crater."""
     reset(sp)
-    sp.place = Place(0.9, at=(11.0, 11.0))
-
-    def big(cv, x):
-        f = E["fire"]
-        cv.disc(17, 17, 9.0, 9.0, f[3])
-        cv.disc(16, 16, 7.0, 7.0, f[2])
-        cv.disc(15, 15, 4.5, 4.5, f[1])
-        cv.disc(14, 14, 2.2, 2.2, f[0])
-        for k in range(4):
-            cv.line(9 - k, 9 - k * 0.5, 3 - k, 3 - k * 0.5, f[3])
-    O(sp, big)
-    U(sp, v_shock(2))
+    sp.accent = None
+    sp.subject = extinction_icon
 
 
 @card("meteor_orbital_bombardment")
 def _(sp, c):
-    """Orbital Bombardment: a non-stop rain of burning stars."""
+    """Creeping Barrage (Orbital Bombardment's id): the volley walking - craters two abreast in a line out
+    through the pack, the next meteors coming down at its head."""
     reset(sp)
-    sp.place = Place(0.5, at=(20.0, 20.0))
-    sp.copies = [Place(0.45, at=(10.0, 8.0), darken=1), Place(0.45, at=(22.0, 7.0), darken=1),
-                 Place(0.45, at=(8.0, 21.0), darken=1), Place(0.45, at=(15.0, 14.0))]
-    U(sp, lambda cv, x: m_speed(cv, E["fire"], (1, 1), (4, 4, 28, 28), 5, 8))
+    sp.subject = barrage_icon
 
 
 # --- Mirefoot --------------------------------------------------------------------------------------

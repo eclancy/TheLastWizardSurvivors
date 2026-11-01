@@ -1664,10 +1664,9 @@ public static class SpellEvolutionCatalog
 		{
 			Id = ElementalPulse.SunDogsId,
 			DisplayName = "Sun Dogs",
-			Description = $"Two mock suns hang either side of you and flare with every pulse, each {ElementalPulse.SunDogReach * 100f:0}% as wide as the flare, "
-				+ $"for {ElementalPulse.SunDogDamageShare * 100f:0}% of its damage - and as the flare builds while you stand still they drift farther out. Pulses 20% faster.",
+			Description = $"Two mock suns hang beside you and flare with every pulse, each {ElementalPulse.SunDogReach * 100f:0}% as wide for {ElementalPulse.SunDogDamageShare * 100f:0}% of its damage. Pulses 25% faster.",
 			MilestoneLevel = 4,
-			CooldownMultiplier = 0.8f,
+			CooldownMultiplier = 0.75f,
 			VisualTag = "SunDogs",
 			ModulateColor = new Color(1.0f, 0.97f, 0.82f),
 			SynergyTag = "Light / Width",
@@ -1681,8 +1680,7 @@ public static class SpellEvolutionCatalog
 			DisplayName = "Solar Prominence",
 			// Was Scorching Heat: +45% damage and the tag. The game has no burn status, so the heat is now a
 			// thing the flare throws (ElementalPulse.HurlProminences).
-			Description = $"Every pulse hurls {ElementalPulse.ProminenceLoops} loops of fire off the flare's rim - one more at half charge, another at full - that arc over "
-				+ $"and come down on the nearest enemies past its edge, each bursting for {ElementalPulse.ProminenceShare * 100f:0}% of the pulse. +1 Fire tag, +15% damage, 12% slower pulses.",
+			Description = "Every pulse hurls loops of fire that arc out and burst on the nearest enemies past its edge, more as it builds. +1 Fire tag, +15% damage.",
 			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.15f,
@@ -1696,8 +1694,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = "solar_flare_blinding_flash",
 			DisplayName = "Blinding Flash",
-			Description = $"Some of what the flare catches reels away blind: {ElementalPulse.BlindingFlashChance * 100f:0}% of it is staggered "
-				+ $"{ElementalPulse.BlindingFlashStunSeconds:0.#} s and thrown back out of the light.",
+			Description = $"{ElementalPulse.BlindingFlashChance * 100f:0}% of what the flare catches is staggered and thrown back out of the light.",
 			MilestoneLevel = 4,
 			KnockbackBonus = 50f,
 			VisualTag = "BlindingFlash",
@@ -1715,6 +1712,9 @@ public static class SpellEvolutionCatalog
 			Description = "A flare that fills the clearing and burns away every enemy bolt that enters it: +100% Area, +100% Damage, for 12% slower pulses.",
 			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 8,
+			// 267-286 a second at level 8 on the band run of 2026-10-31 (357-375 on 10-29), under the band, and
+			// x2.5 read the same 286: the flare kills what is inside it in one pulse, so its number is how fast
+			// the crowd walks in, not its damage. Left at x2.0 for that reason (2h).
 			DamageMultiplier = 2.0f,
 			// x2.0, not the x2.5 it promised and never delivered (ElementalPulse read only the player's
 			// area until 2026-10-26). On top of Radiant Glow's x1.4 that is a 250 px flare against a
@@ -1736,6 +1736,8 @@ public static class SpellEvolutionCatalog
 			// ElementalPulse.FireCoronaBeams, since 2026-10-26 (afternoon).
 			Description = $"Every pulse throws {ElementalPulse.CoronaBeams} sunbeams far past the flare, each cutting everything along it, and +140% damage.",
 			MilestoneLevel = 8,
+			// 304 a second at level 8 on 2026-10-31 at x2.4 and 299 at x2.9 - limited by the crowd's flow into
+			// the flare, as Daybreak is - so left at x2.4 (2h).
 			DamageMultiplier = 2.4f,
 			VisualTag = "CoronaDischarge",
 			ModulateColor = new Color(1.0f, 0.85f, 0.2f),
@@ -2027,20 +2029,27 @@ public static class SpellEvolutionCatalog
 		});
 	}
 
+	// Meteor Swarm (scripts/MeteorImpact.cs, Player.FireMeteorSwarm): a volley of meteors, each on a random
+	// enemy in reach. PHASE 2 (.ai/spell-roster.md 2h, 2026-10-31): four of its five cards only moved numbers
+	// (more meteors, a bigger blast, a shove, a faster volley). Each is now something a meteor does - it
+	// breaks up in the sky, it skips on, the volley ends in a colossal one, the volley walks - read by id in
+	// MeteorImpact (BreakupId, SkipstoneId, Finale) and Player.FireMeteorSwarm (BarrageSpot). The ids and
+	// the element gains (Earth on Skipstone, Fire on Extinction Event, each at the hybrid's price) stay.
 	private static void SetupMeteorSwarmEvolutions(SpellData spell)
 	{
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "meteor_cluster",
-			DisplayName = "Meteor Shower",
-			Description = "Spawns +3 meteors per volley with +30% impact area.",
+			Id = MeteorImpact.BreakupId,
+			DisplayName = "Breakup",
+			Description = $"Every meteor breaks apart as it falls and comes down as {MeteorImpact.BreakupFragments} smaller stones round its mark. +30% damage.",
 			MilestoneLevel = 4,
-			ProjectileCountBonus = 3,
-			AreaMultiplier = 1.3f,
-			VisualTag = "MeteorShower",
-			ModulateColor = new Color(1.0f, 0.55f, 0.2f),
-			SynergyTag = "Fire / Multishot",
-			SynergyDescription = "High carpet-bombing saturation."
+			// x1.3: at x1.1 and x1.2 its levels 4-6 measured 30-35 / 36-39 / 45-50 (Meteor Shower 43 / 66 / 89), at
+			// x1.4 72 / 86 / 131 - a run-to-run swing, so the middle.
+			DamageMultiplier = 1.3f,
+			VisualTag = "Breakup",
+			ModulateColor = new Color(1.0f, 0.75f, 0.45f),
+			SynergyTag = "Fire / Spread",
+			SynergyDescription = "Each meteor covers a knot instead of a body."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
@@ -2059,51 +2068,50 @@ public static class SpellEvolutionCatalog
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "meteor_starcrash",
+			Id = MeteorImpact.SkipstoneId,
 			BonusElementWeights = new() { { "Earth", 1 } },
-			DisplayName = "Cosmic Impact",
-			// The shockwave's KnockbackBonus is read by MeteorImpact since 2026-10-26.
-			Description = "Increases direct impact damage by +75%, and the impact throws enemies back.",
-			CooldownMultiplier = 1.12f,
+			DisplayName = "Skipstone",
+			Description = $"Every meteor glances off the ground and bounds on to land again, for {MeteorImpact.SkipDamageShare * 100f:0}% more. +35% damage.",
+			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
-			DamageMultiplier = 1.75f,
-			KnockbackBonus = 80f,
-			VisualTag = "CosmicImpact",
-			ModulateColor = new Color(1.0f, 0.8f, 0.3f),
-			SynergyTag = "Earth / Force",
-			SynergyDescription = "Massive single-impact burst."
+			DamageMultiplier = 1.35f,
+			VisualTag = "Skipstone",
+			ModulateColor = new Color(1.0f, 0.85f, 0.55f),
+			SynergyTag = "Earth / Bounce",
+			SynergyDescription = "Deepens Earth. Two craters a meteor, one behind the other."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "meteor_extinction_event",
+			Id = MeteorImpact.ExtinctionId,
 			BonusElementWeights = new() { { "Fire", 1 } },
 			DisplayName = "Extinction Event",
-			// The whole volley still falls (Player.FireMeteorSwarm); there is no single asteroid, so the
-			// card says what each meteor becomes (2026-10-26).
-			Description = "Every meteor is a colossal impact: +250% Damage and three times the blast.",
-			CooldownMultiplier = 1.12f,
+			Description = $"Every volley ends in one colossal meteor on the thickest pack, {MeteorImpact.FinaleArea:0.#} times as wide and {MeteorImpact.FinaleDamage:0} times as hard. +25% damage.",
+			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 8,
-			DamageMultiplier = 3.5f,
-			AreaMultiplier = 3.0f,
+			// x1.25: at x1.5 over Breakup's x1.2 it measured 433-452 a second at level 8, at x1.3 over x1.4 496.
+			DamageMultiplier = 1.25f,
 			VisualTag = "ExtinctionEvent",
-			ModulateColor = new Color(1.0f, 0.2f, 0.05f),
+			ModulateColor = new Color(1.0f, 0.55f, 0.35f),
 			SynergyTag = "Fire / Cataclysm",
-			SynergyDescription = "Ascension: a volley of craters that overlap into one."
+			SynergyDescription = "Ascension: deepens Fire. The barrage, and then the big one."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "meteor_orbital_bombardment",
-			DisplayName = "Orbital Bombardment",
-			Description = "Continuous non-stop rain of burning stars (-60% Cooldown, +6 Meteors).",
+			Id = MeteorImpact.BarrageId,
+			DisplayName = "Creeping Barrage",
+			Description = "The volley walks: meteors land two abreast in a line from the nearest enemy out through the thickest pack. +8 meteors, -55% cooldown, +60% damage.",
 			MilestoneLevel = 8,
-			CooldownMultiplier = 0.4f,
-			ProjectileCountBonus = 6,
-			VisualTag = "OrbitalBombardment",
-			ModulateColor = new Color(1.0f, 0.7f, 0.15f),
-			SynergyTag = "Fire / Storm",
-			SynergyDescription = "Ascension: Continuous unending meteor rain."
+			// At +6, -50% and no damage it measured 257 a second at level 8, at +8, -55% and +20% 297 (band
+			// 331-465; the old card 306).
+			CooldownMultiplier = 0.45f,
+			ProjectileCountBonus = 8,
+			DamageMultiplier = 1.6f,
+			VisualTag = "CreepingBarrage",
+			ModulateColor = new Color(1.0f, 0.75f, 0.35f),
+			SynergyTag = "Fire / Barrage",
+			SynergyDescription = "Ascension: a carpet of craters through the middle of the swarm."
 		});
 	}
 

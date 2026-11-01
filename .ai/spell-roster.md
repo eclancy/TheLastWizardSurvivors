@@ -2889,6 +2889,75 @@ Built in `ElementalPulse` by id (`SunDogsId`, `ProminenceId`). The mock suns and
 the loops on a `TopLevel` canvas with a fixed pool of sixteen, so a loop in flight stays where it was
 thrown. The prominences land on enemies, so nothing is placed on blocked ground.
 
+#### Fireball - the sniper round of the fire spells (2026-10-31)
+
+| card (id) | audit | now: what the player sees |
+|---|---|---|
+| level 4 (`fireball_pyroclasm`, +Fire) | **visible**: a pool of magma left where it burst | unchanged |
+| level 4 (`fireball_cluster`) | **visible**: three bomblets burst past the blast's edge | unchanged |
+| level 4 (`fireball_comet`, +Metal) | element path | unchanged |
+| Ascension (`fireball_hellfire_nova`, +Fire) | **numbers**: Hellfire Nova, the blast x2.5 wide and x2 hard | **Brimstone**: each blast leaves a lump of burning brimstone that spits a small fireball at the nearest enemy (within 1.6 blasts) every 0.4 s for 3 s, each bursting for 35% of the hit in 0.3 of the blast. +10% damage |
+| Ascension (`fireball_armageddon_sun`) | **numbers**: a slower, bigger ball that burst harder | **Armageddon Sun**: the slow swollen sun no longer bursts on the first body - it ploughs through the pack, searing everything its drawn body touches once for 50%, and bursts 0.6 blasts past where its target stood. +30% damage, 60% wider blast |
+
+`BrimstoneLayer` (one node per arena, eight stones and 32 spits in fixed slots): the stone lies on the
+ground at the fire's z, never on blocked ground; a spit is a small streak in the air and bursts through
+`FireburstLayer` in Hellfire's red rows. The sear is `Fireball.Sear`, a scan of the sun's own radius at
+the node's scale, so what it is seen to touch is what it burns. Not a second shockwave (the Spirit
+Hammer's Aftershock), not a pool (Pyroclasm), not a delayed eruption in the target (Magma Core).
+
+#### Arcane Explosion - the blast the other spells set off (2026-10-31)
+
+| card (id) | audit | now: what the player sees |
+|---|---|---|
+| level 4 (`arcane_explosion_dual_shockwave`) | **numbers**: Dual Shockwave, +35% damage and a 70% longer throw | **Sympathetic Blast**: each blast goes off in the element of the spell that set it off - repainted in its ramp (`arcane_blast.gdshader`, `mimic`) - and lays that element's status (ice and water slow, lightning staggers, poison poisons, darkness exposes, light weakens, metal withers); fire, earth, grass, wind and arcane hit 30% harder instead. +20% damage |
+| level 4 (`arcane_explosion_static_nova`, +Lightning) | element path | unchanged |
+| level 4 (`arcane_explosion_lingering_rift`, +Arcane) | **visible**: a rift left on the ground | unchanged |
+| Ascension (`arcane_explosion_supernova`) | **numbers**: Supernova, the blast x2.5 wide | **Resonance**: every blast goes off again, in full, wherever each of the wizard's other spells last struck (in the last 2.5 s, up to five, not on top of the blast round him), each drawn by a copy of its own front. +180% damage |
+| Ascension (`arcane_explosion_event_horizon`, +Arcane) | **visible, but its half was the pull** - Hollow Star's verb | **Event Horizon**: no pull. Where the blast goes off time stops for 2.5 s - a sphere drawn on the ground as motes of the force hung still over a dark floor - and what the blast caught, and whatever walks in, hangs frozen until it closes (a boss only slows). Nothing is thrown. +190% damage, 80% wider |
+
+The element is the charger's strongest that is not Arcane (Magic Missile's Lightning, Spiritual
+Weapon's Light; Arcane only for a pure Arcane spell), handed in by `Player.NotifyArcaneCharge` through
+`TriggerNow(caster)`. Resonance listens to `Player.EnemyDamagedAt` only while the card is held, one slot
+a spell. **The pairing the 2i audit reported is gone with the pull**: under Event Horizon, Dual
+Shockwave's +70% throw turned into a 70% harder pull; the card is Sympathetic Blast now (no throw), and
+Event Horizon throws nothing either way, so every level 4 card means the same under it.
+
+#### Meteor Swarm - the artillery (2026-10-31)
+
+| card (id) | audit | now: what the player sees |
+|---|---|---|
+| level 4 (`meteor_cluster`) | **numbers**: Meteor Shower, +3 meteors and +30% area | **Breakup**: every meteor breaks apart half way down and comes down as three smaller stones round its mark - the streak splits into three - each 0.65 of the blast for 80% of the hit, three small craters. +20% damage |
+| level 4 (`meteor_magma_crater`) | **visible**: the craters burn | unchanged |
+| level 4 (`meteor_starcrash`, +Earth) | **numbers**: Cosmic Impact, +75% damage and a shove | **Skipstone**: every meteor glances off the ground and bounds on along its fall (1.5 blasts, 0.3 s, a lob drawn between) to land again for 90%, a second crater; a bound that would land on water or a wall sinks instead. +35% damage |
+| Ascension (`meteor_extinction_event`, +Fire) | **numbers**: every meteor x3 wide and x3.5 hard | **Extinction Event**: the volley ends, a beat after its last meteor, in one colossal meteor on the thickest pack in reach - a heavier streak falling for 0.75 s, 2.5 times the blast, 3 times the hit. +50% damage |
+| Ascension (`meteor_orbital_bombardment`) | **numbers**: -60% cooldown, +6 meteors | **Creeping Barrage**: the volley walks - meteors land two abreast in a line from the nearest enemy out through the thickest pack, a blast apart, a second line beside the first when it reaches the end of the spell's reach. +8 meteors, -55% cooldown, +20% damage |
+
+`MeteorImpact` keeps a meteor's landing spots as a few slots (offsets from its node), so one node draws
+the split streaks, hits each spot and opens each crater; Breakup's fragments over blocked ground fall on
+the mark instead. The finale is a `MeteorImpact` with `Finale` set by `Player.FireMeteorSwarm`, which
+also lays out the barrage (`BarrageSpot`, moved on along the line off blocked ground). The crater shader,
+`CraterGround` and `CraterFire` are untouched (the Warden of the Deep's death and `BossDeath` use them).
+Not a split on hit (Molten Shard's), not a chain hop, not a ring of impacts round the wizard, and the
+creeping line goes INTO the pack, where Spike Run's runs across its front.
+
+**Measured** (2026-10-31, the 8-minute band run of 2e: `--minutes=8 --timescale=2 --all-unlocked
+--immortal --character=0 --seed=11 --solo --upgrade-chance=1 --force-ascension`, Arcane Explosion with
+`--partner=magic_missile`; the old cards on the merged tree the same day). Damage a second at levels
+4 / 5 / 6 and at the Ascension (band 40-60 / - / 70-130 / 331-465):
+
+| spell | cards | before | after |
+|---|---|---|---|
+| Fireball | Cluster + Hellfire Nova -> Brimstone | 90 / 121 / 155, **913** | 82 / 133 / 184, **453** |
+| | Cluster + Armageddon Sun | 93 / 132 / 144, **922** | 89 / 132 / 156, **438** |
+| Arcane Explosion | Dual Shockwave + Supernova -> Sympathetic Blast + Resonance | 23 / 46 / 56, **372** | ARC1 |
+| | Lingering Rift + Event Horizon | 32 / 45 / 60, **315** | ARC2 |
+| Meteor Swarm | Meteor Shower + Extinction Event -> Breakup + finale | 43 / 66 / 89, **445** | MET1 |
+| | Cosmic Impact + Orbital Bombardment -> Skipstone + Creeping Barrage | 51 / 88 / 97, **306** | MET2 |
+
+Fireball's old Ascensions sat at twice the band's top (its levels 4-6 sit over the band too, untouched
+here); the new ones were set into it - Brimstone at +50% measured 570 and Armageddon Sun at +80% 592, so
+they went to +10% and +30%.
+
 ## 2i. The Ascension audit (2026-10-30)
 
 Eric, playing 0.9.2: *"tidal wall starts too big, it should start small and grow as it moves away from

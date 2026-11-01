@@ -221,7 +221,7 @@ public static class EvolutionStatReaders
 			SpellEffect.AreaSize, SpellEffect.CritDamage),
 		["meteor_swarm"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Knockback | EvolutionStat.Rider
 				| EvolutionStat.Amount,
-			"MeteorImpact.cs and Player.FireMeteorSwarm (the volley is the projectile count plus Amount; drops the visual scale)",
+			"MeteorImpact.cs and Player.FireMeteorSwarm (the volley is the projectile count plus Amount; drops the visual scale; Breakup, Skipstone, Extinction Event's finale and Creeping Barrage by id)",
 			SpellEffect.Burn, SpellEffect.AreaSize, SpellEffect.CritDamage),
 		["starfall"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Rider
 				| EvolutionStat.Amount,
