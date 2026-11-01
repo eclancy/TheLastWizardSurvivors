@@ -1,4 +1,6 @@
 using Godot;
+using System;
+using System.Text.Json;
 using WizardSurvivors.scripts;
 
 /// <summary>
@@ -23,6 +25,11 @@ using WizardSurvivors.scripts;
 /// allows: every pixel is the old panel's or the new one's, never a blend. The drift moves layers by
 /// whole screen pixels. Only the caption and the skip prompt fade - type on its own layer, as the
 /// title's prompt does.</para>
+///
+/// <para><b>One panel moves</b> (the hiding, "missed"): a box of its mid layer is swapped frame by frame
+/// on a clock from an atlas, <c>&lt;name&gt;-anim.png</c>, by the timeline in <c>&lt;name&gt;-anim.json</c>
+/// (<see cref="AnimSpec"/>) - the title's frame-swap, never a tint. Any panel the generator gives the
+/// pair to animates the same way.</para>
 /// </remarks>
 public partial class Prologue : Control
 {
@@ -85,8 +92,9 @@ public partial class Prologue : Control
 		new("tide", 4.6f, null, new Vector2(-3f, 0f), new Vector2(-14f, 4f), new Vector2(-22f, 0f)),
 		// The wizards led away to his tower, their light drawn out of them.
 		new("taken", 5.2f, "He took them all.", new Vector2(2f, 0f), new Vector2(14f, -2f), new Vector2(-20f, 0f)),
-		// The title's picture, as story: the one he missed.
-		new("missed", 5.4f, "You are the one he missed.", new Vector2(-4f, 0f), new Vector2(0f, -2f), new Vector2(18f, 0f)),
+		// The one he missed, hiding among the stones while his creatures search (its box animates). The back
+		// and the mid drift as one, so the searchers never slide on the ground they walk.
+		new("missed", 5.4f, "You are the one he missed.", new Vector2(-4f, 0f), new Vector2(-4f, 0f), new Vector2(14f, 0f)),
 		// The road to all of it.
 		new("road", 4.8f, null, new Vector2(0f, 2f), new Vector2(8f, -10f), new Vector2(0f, 16f)),
 	};
@@ -130,6 +138,34 @@ void fragment() {
 		public TextureRect[] Layers;
 		public ShaderMaterial Material;
 		public float Elapsed;
+		// The animated box, when the panel has one: its frames, its own copy of the dissolve (its UVs are
+		// the atlas's, not the frame's), and the atlas frame on screen.
+		public AnimSpec Anim;
+		public AtlasTexture AnimAtlas;
+		public ShaderMaterial AnimMaterial;
+		public int AnimFrame = -1;
+	}
+
+	/// <summary>
+	/// A panel's animated box (tools/art/prologue.py, write_anim): where it sits on the frame and its size,
+	/// in art pixels; how many frames a row of the atlas holds; the clock; and the atlas frame for each
+	/// tick, so a held frame is stored once. Every number is a multiple of 8, so the dissolve's Bayer
+	/// threshold, taken from the atlas's own pixel, matches the mid layer's under it pixel for pixel.
+	/// </summary>
+	private sealed class AnimSpec
+	{
+		public int X, Y, Width, Height, Columns;
+		public float Fps;
+		public int[] Timeline = Array.Empty<int>();
+
+		public Rect2 Region(int frame) =>
+			new(frame % Columns * Width, frame / Columns * Height, Width, Height);
+
+		public int FrameAt(float seconds)
+		{
+			int tick = Mathf.Clamp((int)(seconds * Fps), 0, Timeline.Length - 1);
+			return Timeline[tick];
+		}
 	}
 
 	private readonly PanelView[] views = new PanelView[Beats.Length];
@@ -266,6 +302,41 @@ void fragment() {
 
 	// --- panels -----------------------------------------------------------------------------
 	private static string LayerPath(string beat, string layer) => $"{ArtFolder}{beat}-{layer}.png";
+	private static string AnimManifestPath(string beat) => $"{ArtFolder}{beat}-anim.json";
+
+	/// <summary>The panel's animated box, or null: most panels have none. Malformed is an error, not a still.</summary>
+	private static AnimSpec LoadAnim(string beat)
+	{
+		string path = AnimManifestPath(beat);
+		if (!FileAccess.FileExists(path))
+			return null;
+		try
+		{
+			using JsonDocument doc = JsonDocument.Parse(FileAccess.GetFileAsString(path));
+			JsonElement root = doc.RootElement;
+			var spec = new AnimSpec
+			{
+				X = root.GetProperty("x").GetInt32(),
+				Y = root.GetProperty("y").GetInt32(),
+				Width = root.GetProperty("width").GetInt32(),
+				Height = root.GetProperty("height").GetInt32(),
+				Columns = root.GetProperty("columns").GetInt32(),
+				Fps = root.GetProperty("fps").GetSingle(),
+			};
+			var timeline = new System.Collections.Generic.List<int>();
+			foreach (JsonElement frame in root.GetProperty("timeline").EnumerateArray())
+				timeline.Add(frame.GetInt32());
+			spec.Timeline = timeline.ToArray();
+			if (spec.Columns <= 0 || spec.Width <= 0 || spec.Height <= 0 || spec.Fps <= 0f || spec.Timeline.Length == 0)
+				throw new FormatException("an empty box, clock or timeline");
+			return spec;
+		}
+		catch (Exception e) when (e is JsonException or FormatException or InvalidOperationException or System.Collections.Generic.KeyNotFoundException)
+		{
+			GD.PushError($"Prologue: {path} is malformed ({e.Message}). Run: python tools/art/prologue.py, then import.");
+			return null;
+		}
+	}
 
 	/// <summary>Starts loading a panel's three layers on a worker thread, a panel ahead.</summary>
 	private static void RequestPanel(int index)
@@ -278,6 +349,9 @@ void fragment() {
 			if (ResourceLoader.Exists(path))
 				ResourceLoader.LoadThreadedRequest(path, "Texture2D");
 		}
+		string anim = LayerPath(Beats[index].Name, "anim");
+		if (ResourceLoader.Exists(anim))
+			ResourceLoader.LoadThreadedRequest(anim, "Texture2D");
 	}
 
 	private static Texture2D TakeLayer(string path)
@@ -333,9 +407,64 @@ void fragment() {
 			};
 			root.AddChild(layers[i]);
 		}
+		var view = new PanelView { Root = root, Layers = layers, Material = material };
+		AttachAnim(view, beat.Name);
 		stage.AddChild(root);
-		views[index] = new PanelView { Root = root, Layers = layers, Material = material };
+		views[index] = view;
 		ApplyDrift(index);
+	}
+
+	// The animated box, laid over the mid layer as its child: it drifts with the mid layer, draws over it
+	// and under the fore, and dissolves with the panel through its own copy of the shader.
+	private void AttachAnim(PanelView view, string beat)
+	{
+		AnimSpec spec = LoadAnim(beat);
+		if (spec == null)
+			return;
+		Texture2D atlas = TakeLayer(LayerPath(beat, "anim"));
+		if (atlas == null)
+			return;
+		var material = new ShaderMaterial { Shader = dissolveShader };
+		material.SetShaderParameter("progress", 0f);
+		material.SetShaderParameter("art_size", atlas.GetSize());
+		int first = spec.FrameAt(0f);
+		var frames = new AtlasTexture { Atlas = atlas, Region = spec.Region(first) };
+		var rect = new TextureRect
+		{
+			Name = "anim",
+			Texture = frames,
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+			StretchMode = TextureRect.StretchModeEnum.Scale,
+			TextureFilter = TextureFilterEnum.Nearest,
+			MouseFilter = MouseFilterEnum.Ignore,
+			Material = material,
+			Position = new Vector2(spec.X, spec.Y) * ArtScale,
+			Size = new Vector2(spec.Width, spec.Height) * ArtScale,
+		};
+		view.Layers[1].AddChild(rect);
+		view.Anim = spec;
+		view.AnimAtlas = frames;
+		view.AnimMaterial = material;
+		view.AnimFrame = first;
+	}
+
+	private static void SetProgress(PanelView view, float progress)
+	{
+		view.Material.SetShaderParameter("progress", progress);
+		view.AnimMaterial?.SetShaderParameter("progress", progress);
+	}
+
+	// The frame for the panel's own clock: it starts with the panel's dissolve in, so the beat it shows
+	// is timed against the hold, and the last frame holds if the panel outstays it.
+	private static void StepAnim(PanelView view)
+	{
+		if (view.Anim == null)
+			return;
+		int frame = view.Anim.FrameAt(view.Elapsed);
+		if (frame == view.AnimFrame)
+			return;
+		view.AnimFrame = frame;
+		view.AnimAtlas.Region = view.Anim.Region(frame);
 	}
 
 	private void ApplyDrift(int index)
@@ -372,12 +501,13 @@ void fragment() {
 				continue;
 			views[i].Elapsed += dt;
 			ApplyDrift(i);
+			StepAnim(views[i]);
 		}
 
 		PanelView now = views[current];
 		Beat beat = Beats[current];
 		if (!endingOut)
-			now.Material.SetShaderParameter("progress", Mathf.Clamp(now.Elapsed / DissolveSeconds, 0f, 1f));
+			SetProgress(now, Mathf.Clamp(now.Elapsed / DissolveSeconds, 0f, 1f));
 
 		int nextIndex = current + 1;
 		if (nextIndex < Beats.Length)
@@ -392,7 +522,7 @@ void fragment() {
 			PanelView incoming = views[nextIndex];
 			if (incoming != null)
 			{
-				incoming.Material.SetShaderParameter("progress", Mathf.Clamp(incoming.Elapsed / DissolveSeconds, 0f, 1f));
+				SetProgress(incoming, Mathf.Clamp(incoming.Elapsed / DissolveSeconds, 0f, 1f));
 				if (incoming.Elapsed >= DissolveSeconds)
 				{
 					now.Root.QueueFree();
@@ -406,7 +536,7 @@ void fragment() {
 			// The last panel dissolves out to the ground, and then story mode.
 			endingOut = true;
 			float progress = 1f - (now.Elapsed - beat.Seconds) / DissolveSeconds;
-			now.Material.SetShaderParameter("progress", Mathf.Clamp(progress, 0f, 1f));
+			SetProgress(now, Mathf.Clamp(progress, 0f, 1f));
 			if (progress <= 0f)
 				Finish();
 		}
