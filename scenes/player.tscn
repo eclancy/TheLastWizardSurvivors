@@ -138,11 +138,13 @@ sprite_frames = SubResource("SpriteFrames_4vejd")
 animation = &"idle"
 frame_progress = 0.782167
 
+; The shield pool's ring (Aegis Ward, Protective Ward, Vaultguard; tools/art/props_fx.py shield_aura).
+; Drawn as its sheet's opaque Arcane stops: it was multiplied by (0.75, 0.95, 1) at 85% alpha, a
+; translucent tint that put every pixel of it off its ramp (the pixel-art pass, 2026-11-01).
 [node name="ShieldAura" type="AnimatedSprite2D" parent="."]
 visible = false
 position = Vector2(-2, 4)
 scale = Vector2(1, 1)
-modulate = Color(0.75, 0.95, 1, 0.85)
 sprite_frames = ExtResource("23_shieldaura")
 animation = &"active"
 autoplay = "active"

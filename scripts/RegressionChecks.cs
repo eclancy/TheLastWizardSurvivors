@@ -1018,6 +1018,14 @@ public static class RegressionChecks
 			runes.Free();
 		}
 
+		// Aegis Ward's Reforged shards are drawn from their own pre-rotated sheet (tools/art/aegis_ward.py),
+		// loaded by path because the node is made in code; without it they would cut unseen.
+		Texture2D shardSheet = GD.Load<Texture2D>(AegisWard.ShardSheetPath);
+		if (shardSheet == null)
+			warnings.Add($"Aegis Ward: {AegisWard.ShardSheetPath} did not load (not imported?); Reforged's shards would cut unseen.");
+		else if (shardSheet.GetWidth() != shardSheet.GetHeight() * AegisWard.ShardDirections)
+			warnings.Add($"Aegis Ward: the shard sheet is {shardSheet.GetWidth()}x{shardSheet.GetHeight()}, not {AegisWard.ShardDirections} square cells in a row; every shard would be drawn at the wrong heading.");
+
 		SceneState player = GD.Load<PackedScene>("res://scenes/player.tscn")?.GetState();
 		foreach (string export in new[] { "StormsweepScene", "SleetRunesScene" })
 		{
