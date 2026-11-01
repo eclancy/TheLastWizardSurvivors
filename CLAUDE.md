@@ -262,6 +262,8 @@ session**, the validator run below included.
 3. Register alongside the existing ten via `CreateDefensiveSpellData(...)` / `RefreshPassiveSpellInstance<T>()` around `scripts/Player.cs:408`.
 4. Check the effect against the `TakeDamage` ordering above so it triggers at the intended stage.
 
+**New rescuable wizard or playable chapter:** a wizard needs an epithet in `QuestLog.Prisoners` (a locked wizard is never named anywhere - quest log, HUD, notes), and a chapter needs a note in `ChapterNotes`; the validator reports both (`.ai/quests-and-notes.md`). Anything shown over a run leaves the **lower-left corner** to `QuestTracker`.
+
 **New enemy:** every chapter has its own cast (Eric: "each stage should have it's unique set of creatures"), so an enemy belongs to one chapter's roster in `scripts/StageBestiary.<Chapter>.cs`, never to a shared table, and every spawn site (trickle, elites, Wardens, side events, swarm folding) asks the roster for a role. Follow the recipe in `.ai/bestiary.md`: the scene lives at the path the roster already names, keeps its stand-in's numbers, and `RegressionChecks.ValidateBestiary` reports what is still shared. The Sketchbook's cast is the kids' art and is never redrawn.
 
 ## Validation

@@ -1,4 +1,4 @@
-# Work in flight (snapshot, 2026-11-01 early)
+# Work in flight (snapshot, 2026-11-01)
 
 A handoff from the cloud session that ran 2026-10-30 to 11-01. Eric moved the work to a local Claude
 Code session. **A snapshot, not a source of truth:** check `git log` and the branches before acting
@@ -52,29 +52,29 @@ Merged into `main-ff86ni` since `main`:
 
 ## 3. Branches unfinished at handoff
 
-The cloud agents on these were told to commit their work in progress and push, then carry on. If
-the cloud container was reclaimed first, the branch holds whatever was last pushed. Read the
-branch's own doc section for what is left; **nothing here is merged**.
-
 | branch | what | state |
 |---|---|---|
-| `wip/boss-entrances` | spells stop firing while a boss makes a themed entrance; every boss gets at least two phases; fights a few minutes longer; Boss Rush scaling | measuring. Farmed fight lengths so far: Gaoler 3.7 min (was 1.3), Ninth Stone 2.4 (1.6), Hollow Choir 6.0 (0.1; its health can come back down), Mother Rot 3.0 (0.6), Archivist 5.2 (2.1), Long Coil 4.2 (0.9); Forest fresh 2.9 (1.2). Two runs had weak bots, so a same-code baseline was planned. Still to do: Still Warden, Warden of the Deep, Boss Rush, entrance screenshots. Status in `.ai/enemy-behaviour.md` |
-| `wip/quests-notes` | chapter notes in the wizard's voice (held wizard by epithet, never by name), a journal, a quest log, tracked quests on the HUD, the default quest always "free the next wizard", big spell-animated text at run start shrinking into the corner | built and validated (0/6); screenshots were next. `.ai/quests-and-notes.md` |
-| `wip/evolutions2-blasts` | phase 2 cards for Arcane Explosion, Fireball, Meteor Swarm; also the Event Horizon card, which is wrong under Dual Shockwave (it pulls rather than throws) | Arcane Explosion partly done (08ba52b and after). `.ai/spell-roster.md` 2h |
+| `wip/boss-entrances` | spells stop firing while a boss makes a themed entrance; every boss gets at least two phases; fights a few minutes longer; Boss Rush scaling | measuring. Farmed fight lengths so far: Gaoler 3.7 min (was 1.3), Ninth Stone 2.4 (1.6), Hollow Choir 6.0 (0.1; its health can come back down), Mother Rot 3.0 (0.6), Archivist 5.2 (2.1), Long Coil 4.2 (0.9); Forest fresh 2.9 (1.2). Two runs had weak bots, so a same-code baseline was being run. Still to do: Still Warden, Warden of the Deep, Boss Rush, entrance screenshots. Status in `.ai/enemy-behaviour.md` on the branch. **Not merged.** |
 
+Also merged since the first version of this note: **`wip/evolutions2-blasts`** (Fireball's Brimstone and
+Armageddon Sun, Arcane Explosion's Sympathetic Blast, Resonance and an Event Horizon that stops time,
+Meteor Swarm's Breakup, Skipstone, Extinction Event and Creeping Barrage; `.ai/spell-roster.md` 2h) and
+**`wip/quests-notes`** (chapter notes, the journal as a pause tab and a world-map button, the quest log
+with three tracked quests in the lower-left HUD corner, the run-start flourish; `.ai/quests-and-notes.md`).
 Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 
 ## 4. Waiting on Eric
 
 - **Play the difficulty curve** (50 HP, scarce healing, tougher chapters and bosses) before
   `main-ff86ni` goes into `main`.
-- An achievement banner shows mid-run, but quitting from the pause screen forfeits the deed (only
-  the run's end pays it). Record it on the spot instead? One line.
-- The Sketchbook stays open for saves that already played it. Hide it until the campaign is
-  finished for everyone? One line.
-- The prologue shows the Dark Wizard once, unnamed; `.ai/world-and-tone.md` tone rule 5 says he is
-  never on screen until he is. Amend the rule or change the panel.
-- Thorned Vine wraps and cracks on the enemy it catches in a dense pack. Keep?
+- **Decided 2026-11-01:** achievements count the moment they are met (done: `Node2DGame.RecordAchievementNow`);
+  the Sketchbook stays open for saves that already played it (no change); the Dark Wizard is a
+  silhouette only in the prologue (done, `tools/art/prologue.py`); Thorned Vine stays as it is until
+  Eric playtests it.
+- Two calls from the quests work: should a chapter's first-visit note replace its banner (it does
+  now), and is the HUD's quest corner fine as outlined text with no plate behind it?
+- Creeping Barrage sits at the foot of the damage band, and Solar Flare's two Ascensions measured
+  under it (267-304) because the flare kills everything in one pulse; worth a playtest.
 - 104 mutation and Ascension descriptions were rewritten to fit 130 characters; worth reading for
   tone. Some numbers left the cards (Anathema's, Threefold Curse's, Cascade's).
 - Needs eyes in motion: the ban tear (rip, not crack?), Mjolnir's chained strikes, the cat's return
