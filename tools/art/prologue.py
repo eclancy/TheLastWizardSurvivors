@@ -336,11 +336,11 @@ def standing_stone(c, x, yb, w, h, seed, lean=0.0, ramp=None, warm=None, toward=
 # at whatever size the panel needs - filled flat, rimmed by the light of the panel, and lit only at
 # the staff or the hand that carries his light in the game.
 #
-# WHICH OF THEM: only the wizards whose silhouette a fresh save already shows - the four disciplines
-# and John Dee, whose locked card is a silhouette from the first day. Tituba, Vainamoinen and Laelaps
-# are secret until their chapters open (UnlockCatalog's secretUntilStage; .ai/side-events.md, "Secret
-# wizards"), and a prologue that drew their shapes would print the answer before the question. Every
-# wizard drawn here is one a player can already see, so none of them gives a rescue away.
+# WHICH OF THEM: the moot and the fall show the wizards a fresh save already sees - the four
+# disciplines and John Dee. The procession ("He took them all") shows every one of them, the secret
+# three as well: Tituba, Vainamoinen and Laelaps are secret on the character select until their
+# chapters open (UnlockCatalog's secretUntilStage), and Eric chose to show them here anyway (2026-11-01,
+# "Show them") - "all" has to mean all, and a dark shape on a ridge names nobody.
 CHARS = os.path.join(ROOT, "assets", "bonelight", "characters")
 CELL = 48
 # The rows a wizard stands in on his cell: feet on row 46, the contact line on 47, the hat near row 2.
@@ -355,6 +355,12 @@ STORM = ("stormcaller", "lightning", "lightning")
 GEO = ("geomancer", "earth", "earth")
 DEE = ("dee", "darkness", "arcane")
 ROSTER = [PYRO, FROST, STORM, GEO, DEE]
+# The three the player frees, for the procession only (above). Tituba's staff head is her water,
+# Vainamoinen's his grass; Laelaps carries no light of his own, so his falls back to his middle unless
+# the gold of his collar star is found.
+TITUBA = ("tituba", "water", "water")
+VAINAMOINEN = ("vainamoinen", "grass", "grass")
+LAELAPS = ("laelaps", "light", "wind")
 
 _CELLS = {}
 
@@ -1141,7 +1147,7 @@ def p_tide():
 def p_taken():
     """4. "He took them all." The game's wizards led away along a ridge against his light, bound
     wrist to wrist by his chain, their staves dark, their light drawn out of them toward the tower.
-    Silhouettes only, and only of wizards a fresh save already sees (ROSTER): no secret one."""
+    Silhouettes only, of every wizard in the game, the three the player frees included (Eric)."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 560, [OCC, S[4], V[4], V[3], V[3], V[2]])
     stars(back, (0, 0, FW, 300), 140, 13, colors=[K[2], V[0]])
@@ -1161,10 +1167,13 @@ def p_taken():
             mid.set(x, y, OCC if (y - top) > 3 or dith(x, y, 0.7) else S[4])
         if ridge(x + 1) < ridge(x - 1):
             mid.set(x, top, V[4])
-    order = [("knight", 0), ("wiz", 0), ("bruiser", 0), ("wiz", 1), ("shielder", 0), ("wiz", 2),
-             ("caster", 0), ("wiz", 3), ("swarmer", 0), ("runner", 0)]
-    # Four of the game's wizards, walking (each a different frame of his own walk), staves dark.
-    taken = [(FROST, 1), (DEE, 5), (PYRO, 3), (STORM, 7)]
+    order = [("knight", 0), ("wiz", 0), ("wiz", 1), ("bruiser", 0), ("wiz", 2), ("wiz", 3), ("shielder", 0),
+             ("wiz", 4), ("wiz", 5), ("caster", 0), ("wiz", 6), ("runner", 0)]
+    # Seven of the game's wizards, walking (each a different frame of his own walk), staves dark,
+    # Tituba, Vainamoinen and Laelaps among the first four. Twelve figures where there were ten, so they
+    # walk a little closer together; and the wizards walk near the head of the line, by the tower,
+    # because the phone's canvas crops the panel's sides and shows the head of it, not the tail.
+    taken = [(TITUBA, 2), (FROST, 1), (VAINAMOINEN, 6), (LAELAPS, 4), (DEE, 5), (PYRO, 3), (STORM, 7)]
     x = 600
     rng = random.Random(17)
     wrists = []
@@ -1183,7 +1192,7 @@ def p_taken():
         else:
             hgt = {"bruiser": 74, "knight": 86, "shielder": 66, "caster": 78, "swarmer": 56, "runner": 58}[kind]
             creature(mid, kind, x, yb, hgt, facing=1, body=[OCC, S[4]], rim=DK[3], seed=700 + i)
-        x -= 52 + rng.random() * 12
+        x -= 44 + rng.random() * 10
     # the chain that binds them, one line of his light from wrist to wrist
     for a, b in zip(wrists, wrists[1:]):
         for k in range(48):
