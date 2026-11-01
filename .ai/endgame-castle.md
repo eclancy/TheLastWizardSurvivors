@@ -713,6 +713,44 @@ Follow."*
 - Needs the Court's layout to name rooms near a point (`CourtLayout.RoomsNear`), so it is built after
   5.1. `_BossProbe --stage=12`.
 
+**Built (C5, 2026-11-01, `wip/boss-seneschal`).** `scripts/CourtSeneschalBoss.cs`, `scenes/CourtSeneschalBoss.tscn`,
+his art in `tools/art/boss_seneschal.py` (a tall steward in the house's linen under its red, the gold
+chain of office, a sugarloaf cap and the white staff beside him - nothing in his household stands beside
+an upright staff). What it settled that the paragraph above did not:
+
+- **The rank is drawn, not spawned.** Five guards (seven after the second flight) from `CourtGuard`'s
+  sheet walk a marked lane at the player at 380 px/s, faster than the wizard, so the answer is the
+  sidestep, not the run; the band they stand in is a `GroundSlamAttack` Line, so the wall touches only
+  the lane that was drawn. Bodies that walked a scripted line would have needed a new primitive in
+  `Enemy`; an attack did not. The lane stops at the room's wall.
+- **No hit crosses two thresholds** (`AdjustIncomingDamage`): a blow that would carry him past one stops
+  there, and he takes nothing from then until he is found - no burst skips a flight, no poison bleeds
+  him through the walls. A tool's kill (more than his whole health) still fells him.
+- **Where he goes**: of `RoomsNear` him, the nearest two he has not held, not the room he left nor the
+  one the player stands in, never the Solar, the Keepsake Doors' corridor or the Minstrels' Gallery (up
+  the back stair). He comes out on the side nearest where he left, well in from its walls: across a wall,
+  a short line and a long walk. **Found** is the player in that room, or within 300 px of him with
+  nothing between.
+- **The household comes in at the room's doors** (`AuthoredLayout.Doors`), 8, 11 and 14 bodies, the
+  table's roles and the charger at the table's health, never past 130 on the field.
+- **He waits as a shade** (translucent, cooler) so a body the spells will not touch reads as one; a pair
+  of panelled oak doors opens behind him to leave and in the new room to arrive - the same doors as his
+  arrival.
+- **A player he has lost, he comes to.** Between flights, out of his sight and further than 760 px for
+  12 s, he takes a door to 380 px from the player and fights on (no household, no waiting). Without it
+  two measured runs in three stalled: a boss is never recycled to the spawn ring as an ordinary body is,
+  and one that cannot route to the player (past the flow field's 64-tile horizon, say) walks into a
+  wall for the rest of the run. In one of them the bot stood six minutes with its feet in a cell the
+  grid calls wall (119, 145, the Map Room's north wall), and neither the boss nor the two bodies left
+  ever reached it - worth a look by whoever owns the Court's walls (C3).
+- **Hook 4 changed** (`CourtRules.BossSpawnPoint`): he now arrives on the near side of the chosen room,
+  not its middle. The rooms run to 2,700 px, and an arrival at the middle of one was off screen.
+- **Health 440,000**, not 13,000: measured with the bot (`.ai/enemy-behaviour.md`, "The Seneschal"),
+  about three minutes for a decent farmed build, pursuits included. Set before the Constable had a
+  number, so the two are to be read against each other at the merge.
+- The tools follow him: `_BossProbe` walks the building's grid to his room, `_BalanceHarness` its maze
+  route, and `_UiShot --boss-bleed=F,K --rush-after=N` photographs a flight.
+
 ### 5.7 The cast: the household
 
 | role | creature | scene | what it is | attachment that reads | stand-in |

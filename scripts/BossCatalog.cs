@@ -200,7 +200,7 @@ public static class BossCatalog
 			Tagline = "He leaves when it suits him. Follow.",
 			ScenePath = "res://scenes/CourtSeneschalBoss.tscn",
 			StandInScenePath = "res://scenes/DeepWardenBoss.tscn",
-			Health = 400000, // 13000 the doc's first guess (5.6), before the fights were lengthened
+			Health = 440000, // 13000 the doc's first guess (5.6), before the fights were lengthened
 			ArcaneVictoryBonus = 390
 		},
 		// Never named on screen (.ai/endgame-castle.md 6.4): "the dark wizard" is what he is, not a name,
