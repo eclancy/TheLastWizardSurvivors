@@ -1553,6 +1553,9 @@ public partial class Enemy : CharacterBody2D
 	/// <remarks>Read by the Hollow Choir: a voice held while it sings a fallen one back pauses the song.</remarks>
 	public bool IsHeldByCrowdControl => IsFrozen || (shockTimeRemaining > 0f && !shockShakeOnly);
 
+	/// <summary>How much of its own pace this body has now: 0 while held, a slow's multiplier, else 1.</summary>
+	public float PaceShare => IsHeldByCrowdControl ? 0f : slowMultiplier;
+
 	/// <summary>The floor ApplySlow holds this body above: its scene's, raised to BossSlowFloor on a boss.</summary>
 	private float SlowFloor => Mathf.Clamp(CapsCrowdControl ? Mathf.Max(MinSlowMultiplier, BossSlowFloor) : MinSlowMultiplier, 0f, 1f);
 
@@ -2138,10 +2141,22 @@ public partial class Enemy : CharacterBody2D
 		marker.Play("active");
 	}
 
+	/// <summary>
+	/// True while a subclass is showing a pose of its own that a flinch or a swing must not cut short:
+	/// the Hollow Choir singing a note or a fallen voice back, or going under. Its sprite is its own then.
+	/// </summary>
+	protected virtual bool HoldsOwnPose => false;
+
+	/// <summary>
+	/// For a subclass taking its sprite over to show its own frames: whatever one-shot was playing will
+	/// not finish (a held frame emits no AnimationFinished), so it must not go on blocking the next.
+	/// </summary>
+	protected void TakeOverSprite() => oneShotAnimationPlaying = false;
+
 	private void PlayOneShotAnimation(StringName animation)
 	{
 		// Never override the death animation: a corpse mid-collapse must not flinch.
-		if (isDying || oneShotAnimationPlaying || animatedSprite?.SpriteFrames == null)
+		if (isDying || oneShotAnimationPlaying || HoldsOwnPose || animatedSprite?.SpriteFrames == null)
 			return;
 		if (!animatedSprite.SpriteFrames.HasAnimation(animation))
 			return;

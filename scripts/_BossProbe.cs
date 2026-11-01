@@ -62,6 +62,7 @@ public partial class _BossProbe : Node
 	// the nearest body came, when it first came within CcReachPx, the attacks begun, and the share of
 	// body-time held still.
 	private string CrowdControl = "";
+	private bool drainGiven;
 	private bool CrowdControlTest => CrowdControl.Length > 0;
 	private const float CcWindowSeconds = 45f;
 	private const float CcReachPx = 150f;
@@ -102,7 +103,7 @@ public partial class _BossProbe : Node
 		{
 			if (arg.StartsWith("--stage=")) StageIndex = int.Parse(arg.Substring(8));
 			else if (arg.StartsWith("--timescale=")) TimeScale = float.Parse(arg.Substring(12));
-			else if (arg.StartsWith("--drain=")) DrainSeconds = float.Parse(arg.Substring(8));
+			else if (arg.StartsWith("--drain=")) { DrainSeconds = float.Parse(arg.Substring(8)); drainGiven = true; }
 			else if (arg.StartsWith("--drain-interval=")) DrainInterval = float.Parse(arg.Substring(17));
 			else if (arg == "--focus") FocusOneBody = true;
 			else if (arg == "--no-skirt") Enemy.TerrainSkirting = false;
@@ -129,7 +130,9 @@ public partial class _BossProbe : Node
 		{
 			// The fight has to outlast the window, so the drain is slowed to a trickle that still walks
 			// the thresholds eventually.
-			DrainSeconds = Math.Max(DrainSeconds, 600f);
+			// (unless --drain says otherwise: the Choir's revive under a freeze wants a voice down).
+			if (!drainGiven)
+				DrainSeconds = Math.Max(DrainSeconds, 600f);
 			GiveUpSeconds = Math.Min(GiveUpSeconds, CcWindowSeconds + 40f);
 		}
 
@@ -398,6 +401,8 @@ public partial class _BossProbe : Node
 			heldClock = 0f;
 		}
 
+		TrackChoir(delta);
+
 		foreach (BossEnemy body in bodies)
 		{
 			if (!body.IsTargetable)
@@ -502,6 +507,49 @@ public partial class _BossProbe : Node
 			if (d <= CcReachPx && ccReachedAt < 0f)
 				ccReachedAt = since;
 		}
+	}
+
+	// THE HOLLOW CHOIR (2026-11-01): a fallen voice lies until another walks over and sings it back, a
+	// voice far from its place or stuck dips under and comes up there. Counted: each fall and each rise
+	// with the time between, the dips, and the song's seconds paused by crowd control on the singer.
+	private readonly Dictionary<HollowChoirBoss, float> choirFellAt = new();
+	private readonly List<float> choirDownTimes = new();
+	private int choirFalls;
+	private readonly Dictionary<ulong, (int Dips, float Held)> choirVoices = new();
+
+	private void TrackChoir(float delta)
+	{
+		foreach (BossEnemy body in bodies)
+		{
+			if (body is not HollowChoirBoss voice)
+				continue;
+			choirVoices[voice.GetInstanceId()] = (voice.DipsTaken, voice.SongHeldSeconds);
+			bool fallen = voice.IsFallen;
+			bool was = choirFellAt.ContainsKey(voice);
+			if (fallen && !was)
+			{
+				choirFellAt[voice] = elapsed;
+				choirFalls++;
+				notes.Add($"a voice fell at {elapsed:0.0}s");
+			}
+			else if (!fallen && was)
+			{
+				choirDownTimes.Add(elapsed - choirFellAt[voice]);
+				choirFellAt.Remove(voice);
+				notes.Add($"a voice was sung back up at {elapsed:0.0}s");
+			}
+		}
+	}
+
+	private string ChoirSummary()
+	{
+		if (choirVoices.Count == 0)
+			return null;
+		int dips = choirVoices.Values.Sum(v => v.Dips);
+		float held = choirVoices.Values.Sum(v => v.Held);
+		string times = choirDownTimes.Count > 0 ? string.Join(", ", choirDownTimes.Select(t => t.ToString("0.0"))) + " s" : "none";
+		return $"{choirFalls} falls, {choirDownTimes.Count} sung back up (down for {times}); {dips} dips;"
+			+ $" song paused {held:0.0} s by crowd control on its singer";
 	}
 
 	// When the last body stopped being a fight, and how long its fall may take before the probe calls
@@ -803,6 +851,8 @@ public partial class _BossProbe : Node
 		GD.Print($"  in wall/water  : {bodyFramesInGround} of {bodyFrames} body-frames out of the ground");
 		GD.Print($"  held           : {heldWindows} of {heldEligible} body-windows ({HeldWindow:0} s) asked to walk, covered under 0.15 of it and touched something"
 			+ $" (ground {heldOnGround}, a prop {heldOnProp}, a body {heldOnBody}); {heldTouchingNothing} more touched nothing");
+		if (ChoirSummary() is string choir)
+			GD.Print($"  the choir      : {choir}");
 		foreach (string note in notes)
 			GD.Print($"  note           : {note}");
 		foreach (var (id, phases) in processionPhases)

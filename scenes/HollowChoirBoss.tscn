@@ -27,7 +27,7 @@ SlamRadius = 118.0
 SlamDamage = 3
 VoiceCount = 3
 ChoirSpreadRadius = 210.0
-ReviveSeconds = 6.0
+ReviveSeconds = 7.0
 ReviveHealthFraction = 0.35
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
