@@ -1190,7 +1190,7 @@ public static class SpellEvolutionCatalog
 			Id = AegisWard.ReforgedId,
 			BonusElementWeights = new() { { "Metal", 1 } },
 			DisplayName = "Reforged",
-			Description = "Each time the ward comes back, iron shards fly in to you from all round, cutting what they pass. "
+			Description = "Each time the ward returns, iron shards fly in to you, cutting what they pass. "
 				+ $"+{(reforgedShield - 1f) * 100f:0}% shield, +1 Metal tag, 12% slower recharge.",
 			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
@@ -3292,8 +3292,8 @@ public static class SpellEvolutionCatalog
 			DisplayName = "Littermates",
 			// Since 2026-10-30 every hound after the first is a pup (Familiar.ResolvePackLook): taken at level 4,
 			// with the level 3 hound already out, that is the main hound and two pups.
-			Description = $"Its littermates answer the call: +{littermates} hound, and every hound after the first is "
-				+ $"a pup with its own quarry; every hound bites {(1f - litterDamage) * 100f:0}% softer.",
+			Description = $"+{littermates} hound; every hound after the first is a pup with its own quarry. "
+				+ $"Every hound bites {(1f - litterDamage) * 100f:0}% softer.",
 			MilestoneLevel = 4,
 			ProjectileCountBonus = littermates,
 			DamageMultiplier = litterDamage,
@@ -3600,7 +3600,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = SleetRunes.GreatRuneId,
 			DisplayName = "Great Rune",
-			Description = $"Every {OrdinalWord(SleetRunes.GreatEvery)} rune is a great rune: twice the size, through everything in its line, "
+			Description = $"Every {OrdinalWord(SleetRunes.GreatEvery)} rune is great: twice the size, through everything in its line, "
 				+ $"slowing what it strikes. +{(greatDamage - 1f) * 100f:0}% damage, +1 Ice tag.",
 			MilestoneLevel = 4,
 			DamageMultiplier = greatDamage,
