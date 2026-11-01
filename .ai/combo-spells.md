@@ -19,6 +19,8 @@ collisions), `.ai/spell-variety.md` section 6 (what to take from the genre), `.a
 
 ## 0. Decisions
 
+**Approved by Eric, 2026-11-01** ("All else approved"): the plan as recommended, with the rule below.
+
 **Decided by Eric, 2026-11-01: every recipe names one specific Ascension on each parent.** Both parents
 must be fully ascended (level 8) and must have taken those two Ascensions. A recipe never accepts "any
 Ascension". Each recipe below names its two by display name and id, from `SpellEvolutionCatalog`.
