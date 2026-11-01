@@ -628,6 +628,13 @@ With a fourth agent, split Group A: the Forest and the Cave (20), the Swamp (11)
   granite stones carried wide and low, and the thunder rod is a two-pixel rod with a crown, so
   nothing echoes the Ninth Stone's slab; the fleece bale faces left like its stand-in.
 - The Sketchbook: complete (the kids'), not part of Phase 2.
+- The Court: drawn (`tools/art/cast_court.py`, 11 of 11; `.ai/endgame-castle.md` 5.7). One row per
+  job - servants in linen, the guard in steel behind a red kite, the hunt in lichen green and a red
+  coat, the courtiers in wool and violet, the hound in bone, the built three in polished steel, black
+  iron and brass with fire in them - each carried a stop or two above the runner it walks on. No
+  upright staff: the Usher swings his rod overhead and the Chamberlain holds keys, not the
+  Seneschal's. The Falconer throws the Cursed Dungeon's arcane bolt (the hawk is taken); the Censer
+  faces left like its stand-in.
 
 ## 10. Decisions for the developer
 
