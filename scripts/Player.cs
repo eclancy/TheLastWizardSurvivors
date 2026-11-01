@@ -2270,7 +2270,10 @@ public partial class Player : CharacterBody2D
 		{
 			if (targetEnemy.HealthFraction <= 0.5f && ownedChestItems.Contains(ChestItemCatalog.SpectralFang))
 				finalDamage = Mathf.RoundToInt(finalDamage * 1.15f);
-			if (targetEnemy.HealthFraction <= chestExecuteThresholdPercent / 100.0f)
+			// Never a boss (Eric, 2026-11-01: "Bosses should be excluded from execution abilities"): the
+			// boss work made every fight minutes long on purpose, and a Reaper's Scythe cut the last 30%
+			// off all of them. Elites still fall to it; the Morrigan's peck already spares both.
+			if (targetEnemy.HealthFraction <= chestExecuteThresholdPercent / 100.0f && targetEnemy is not BossEnemy)
 				finalDamage = Math.Max(finalDamage, targetEnemy.Health);
 		}
 

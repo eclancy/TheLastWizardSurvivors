@@ -95,15 +95,17 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 
 - **Playtest 0.10.0** (50 HP, scarce healing, tougher chapters and bosses). Fixes from it come
   before the castle.
-- **The Throne's departures from 6.x** (C4 agent, merged as built, each a constant to change): the
+- **REMIND ERIC once he has played the Throne:** he kept all five of these (2026-11-01) and asked to
+  be reminded to check them again after testing.
+  **The Throne's departures from 6.x** (C4 agent, merged as built, each a constant to change): the
   guard stands down while a pair fights (with it, auto-aim spent the spells on the swarm and no boss
   health worked); the Muster is 18 levels, not 17 (at 17 the bot never reached the Apotheosis); elites
   and the miniboss clock are off there, chests fixed at 2 + 1 + 1; a pair's banner is the two names,
   his is his tagline, a 4 s beat before him. Its `ChapterDifficulty` row is still the Emberdeep's
   stand-in and was measured with one build: a tuning pass across wizards is wanted before the flip.
-- **The Deathbringer set executes bosses.** Its execute (`Player.cs`, `chestExecuteThresholdPercent`
-  30) kills any enemy at or under 30% health, bosses included, so with that set every boss fight loses
-  its last 30% - against the longer fights the boss work just bought. Keep it, or exclude bosses?
+- **Decided 2026-11-01: bosses are excluded from execution abilities** (done: the Reaper's Scythe's
+  execute skips a `BossEnemy`; the Morrigan's peck already spared elites and bosses; the Greataxe's
+  Headsman only doubles damage, so it is not an execute). A new execute must skip bosses too.
 - From 2026-11-01's pieces: whether the Court Falconer's hawk reads as a bird and the Huntsman's horn
   as a horn at game size (the Falconer throws a bolt, not the hawk: a hawk would be a new projectile
   scene); whether the Constable's many 12 s yard visits feel repetitive.

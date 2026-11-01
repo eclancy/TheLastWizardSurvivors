@@ -506,7 +506,7 @@ with its numbers**:
 | The Brazier | Stand still: heat builds over 4 s to +30% spell damage and +15% spell area. Moving cools it over 3 s. (Was a per-cast ramp to +18% / +12% - see "The Brazier burns while you stand still", below.) |
 | The Lightning Rod | +10% crit chance. Every critical hit arcs to the nearest enemy within 170 for half its damage, and you move 10% faster while shielded. |
 | The Thorned Buckler | Take 15% less damage. While you are below 30% HP, every hit that hurts you strikes all enemies within 120 for 8 damage + 3 per player level. |
-| The Reaper's Scythe | +25% spell damage, and any hit on an enemy below 30% health kills it outright. |
+| The Reaper's Scythe | +25% spell damage, and any hit on an enemy below 30% health kills it outright. Not bosses (Eric, 2026-11-01). |
 | The Barrow Harness | +80 max HP, and take 18% less damage. |
 | The Tithe Chalice | Every kill heals 1 HP. |
 | The Jewelled Crown | Fire, Ice, Lightning and Poison tier bonuses +40%. Every hit slows 20% more for 40% longer. Lightning chains reach 50% farther and trigger 1 hit sooner. |
