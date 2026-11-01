@@ -33,6 +33,9 @@ public sealed class ExplorePlacer
 	{
 		/// <summary>True if a footprint of this radius round this point is open ground the player can reach.</summary>
 		public Func<Vector2, float, bool> IsClear { get; init; }
+		/// <summary>IsClear, and every point of the disc open too - for a site that draws over its whole
+		/// footprint (the thaw's lake). Null falls back to IsClear.</summary>
+		public Func<Vector2, float, bool> IsClearDense { get; init; }
 		/// <summary>The run's start: distances and bearings are measured from here.</summary>
 		public Vector2 Origin { get; init; }
 		/// <summary>World pixels in one terrain chunk (TerrainStreamer.ChunkTiles x tile size): the unit the bands are in.</summary>
@@ -73,14 +76,15 @@ public sealed class ExplorePlacer
 	/// nearest open footprint to that spot. Its bearing is remembered, so the wayfinder can be put
 	/// somewhere else.
 	/// </summary>
-	public Vector2 EventSite(float footprint)
+	public Vector2 EventSite(float footprint, bool dense = false)
 	{
 		float bearing = NextFloat() * Mathf.Tau;
 		float distance = Mathf.Lerp(EventMinChunks, EventMaxChunks, NextFloat()) * ground.ChunkPixels;
 		float searchFrom = NextFloat() * Mathf.Tau;
 		if (float.IsNaN(EventBearing))
 			EventBearing = bearing;
-		return Search(ground.Origin + Direction(bearing) * distance, footprint, searchFrom);
+		return Search(ground.Origin + Direction(bearing) * distance, footprint, searchFrom,
+			test: dense ? ground.IsClearDense ?? ground.IsClear : null);
 	}
 
 	/// <summary>A site on a given bearing, at a seeded distance between two bands (chunks from the start).</summary>
@@ -143,10 +147,12 @@ public sealed class ExplorePlacer
 	private const float SearchStep = 96f;
 	private const float SearchReach = 1600f;
 
-	private Vector2 Search(Vector2 candidate, float footprint, float startAngle, IReadOnlyList<Vector2> avoid = null, float spacing = 0f)
+	private Vector2 Search(Vector2 candidate, float footprint, float startAngle, IReadOnlyList<Vector2> avoid = null, float spacing = 0f,
+		Func<Vector2, float, bool> test = null)
 	{
+		test ??= ground.IsClear;
 		Vector2 first = Snap(candidate);
-		if (Spaced(first, avoid, spacing) && ground.IsClear(first, footprint))
+		if (Spaced(first, avoid, spacing) && test(first, footprint))
 			return Keep(first, footprint);
 
 		float step = ground.MazeCellPixels > 0f ? ground.MazeCellPixels : SearchStep;
@@ -156,7 +162,7 @@ public sealed class ExplorePlacer
 			for (int k = 0; k < around; k++)
 			{
 				Vector2 p = Snap(candidate + Direction(startAngle + k * Mathf.Tau / around) * r);
-				if (Spaced(p, avoid, spacing) && ground.IsClear(p, footprint))
+				if (Spaced(p, avoid, spacing) && test(p, footprint))
 					return Keep(p, footprint);
 			}
 		}

@@ -5398,6 +5398,7 @@ public partial class Node2DGame : Node2D
 		return new ExplorePlacer(terrainSeed, Global.SelectedStageIdx, stream, new ExplorePlacer.Ground
 		{
 			IsClear = IsExploreGroundClear,
+			IsClearDense = IsExploreGroundClearDense,
 			Origin = stageOrigin,
 			ChunkPixels = TerrainStreamer.ChunkTiles * ProceduralTilePixels,
 			// A maze corridor block plus its wall strip: cell centres are this far apart, and the
@@ -5439,6 +5440,35 @@ public partial class Node2DGame : Node2D
 		}
 		// The maze is connected by construction (.ai/terrain.md section 7); open ground is asked.
 		return MazeNavigation.Active is { IsMaze: true } || CanWalkAwayFrom(centre);
+	}
+
+	/// <summary>
+	/// <see cref="IsExploreGroundClear"/>, and the whole disc open as well: rings every
+	/// <see cref="ExploreDenseStep"/> out to its edge, a point every ExploreDenseStep round each. For a
+	/// site that DRAWS over its footprint - the thaw's lake, 360 px - where eight points on a ring are
+	/// 280 px apart and a pond drawn over by walkable ice would be a wall nobody can see. Opt-in
+	/// (ExplorePlacer.EventSite's dense), so every site placed before is placed exactly as it was.
+	/// </summary>
+	public bool IsExploreGroundClearDense(Vector2 centre, float radius) =>
+		IsExploreGroundClear(centre, radius) && IsExploreFootprintOpenDense(centre, radius);
+
+	private const float ExploreDenseStep = 80f;
+
+	private bool IsExploreFootprintOpenDense(Vector2 centre, float radius)
+	{
+		int rings = Mathf.CeilToInt(radius / ExploreDenseStep);
+		for (int i = 1; i <= rings; i++)
+		{
+			float r = radius * i / rings;
+			int around = Mathf.Max(ExploreRingPoints, Mathf.CeilToInt(Mathf.Tau * r / ExploreDenseStep));
+			for (int k = 0; k < around; k++)
+			{
+				float angle = (k + 0.5f * (i % 2)) * Mathf.Tau / around;
+				if (!IsExploreSpotOpen(centre + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * r))
+					return false;
+			}
+		}
+		return true;
 	}
 
 	private bool IsExploreSpotOpen(Vector2 p) =>
