@@ -1266,6 +1266,7 @@ class Spec(object):
         self.subject = None      # a hand-drawn subject (a painter, or an image()), replacing the spell's
         self.rows = None         # the rows recolour() re-lights, if not the spell's
         self.ramp = None         # the verbs' element (default: the subject's own after any re-light)
+        self.moonlit = False     # the Familiar's: a full moon on the night, its portraits outlined
         self.why = ""            # one line for the sheet
 
 
@@ -1325,6 +1326,28 @@ def draw_subject(spec, info, place):
 
 
 def compose(card, spec):
+    if not spec.moonlit:
+        return _compose(card, spec)
+    # The Familiar's moonlit cards (familiar_frame): every familiar.py portrait the card draws - its own
+    # head or a hand-drawn form's - comes back with a line of occlusion round it while the card composes.
+    # An outline grows a picture by a pixel all round, so no subject's anchor (its middle) moves.
+    saved = (familiar.portrait, familiar.crow_portrait, familiar.cat_portrait)
+
+    def outlined(fn):
+        def inner(*a, **k):
+            g = fn(*a, **k)
+            return g if k.get("into") is not None else si.outlined(g)
+        return inner
+    ANCHORS.clear()
+    try:
+        familiar.portrait, familiar.crow_portrait, familiar.cat_portrait = [outlined(f) for f in saved]
+        return _compose(card, spec)
+    finally:
+        familiar.portrait, familiar.crow_portrait, familiar.cat_portrait = saved
+        ANCHORS.clear()
+
+
+def _compose(card, spec):
     info = SPELLS[subject_of(card)]
     tier = card["milestone"]
     r = DISC_R[tier]
@@ -1334,8 +1357,10 @@ def compose(card, spec):
     if tier >= 9:
         sunburst(c, E[spec.back])
 
-    # 2. The night, and (an Ascension's, an Apotheosis's) its grain.
+    # 2. The night, and (an Ascension's, an Apotheosis's) its grain - and the Familiar's full moon on it.
     night(c, spec.back, r)
+    if spec.moonlit:
+        si.full_moon(c, C0, C0 - 0.5, r - 2.4, clip=si.in_disc(r - 1.5, C0, C0))
     if spec.grain or (spec.grain is None and tier >= 8):
         g = _Real(CELL, CELL, None)
         GRAINS[spec.back](g)
@@ -5611,15 +5636,17 @@ def familiar_frame(sp, card):
     read. remake them, keeping the theme"). Its portraits filled the whole cell and ran out over the frame, so
     no silhouette had night round it, and at 24 pixels a card was a brown or indigo mass inside a ring. Every
     familiar subject drawn at full size is now drawn at 0.82 inside the disc, so the head, the hat and the
-    ears stand clear of the night round them; and the dark ones - the crow's forms and the black Cait Sith -
-    have the moon behind them (spell_icons.moon), as the spell's own cards do, so a dark head reads against a
-    pale one instead of against a dark night."""
+    ears stand clear of the night round them.
+
+    MOONLIT (2026-11-01). Still "a bit too difficult to read" in 0.10.0; of four treatments Eric picked B,
+    the moonlit one (spell_icons, THE MOONLIT CARDS). Every card now has a full moon filling its night
+    (compose, `moonlit`), and every portrait on it an occlusion outline, so each silhouette - hat, ear, beak,
+    muzzle - lands on pale bone. That replaces the small moon the dark ones (the crow's forms, the black Cait
+    Sith) used to hang behind their heads."""
     p = sp.place
     if p.sx >= 0.95 and p.sy >= 0.95 and abs(p.rot) < 0.01:
         sp.place = Place(0.82, at=p.at or (C0 + p.dx, C0 + 1.0 + p.dy), mirror=p.mirror, darken=p.darken)
-    dark = subject_of(card) == "familiar_crow" or card["id"] == "familiar_cat_cait_sith"
-    if dark and sp.subject is not griffin_form:
-        sp.under.insert(0, lambda cv, x: si.moon(cv, 21.5, 10.0, 6.5))
+    sp.moonlit = True
 
 
 # =============================================================================================

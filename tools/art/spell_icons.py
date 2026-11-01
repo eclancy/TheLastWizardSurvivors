@@ -615,21 +615,105 @@ def moon(c, cx, cy, r):
         c.disc(cx + dx * r, cy + dy * r, k, k, bone[2])
 
 
-def _familiar_card(head, sky=True, motes=((26, 7, 1), (28, 12, 2), (24, 4, 2), (5, 9, 2), (7, 5, 1), (27, 24, 2)),
-                   moon_at=None):
-    """A familiar's head on a patch of night, the Arcane motes round it, and (moon_at: x, y, r) a moon behind
-    the head. The night is Starfall's: the darkest cold material row with a lit rim, because a fawn head on
-    the level-up card's cream page would vanish into it. `sky=False` leaves the night and the moon off, for
-    tools/art/evolution_icons.py, which lays its own."""
+# THE MOONLIT CARDS (2026-11-01). Eric, playing 0.10.0: the Familiar's icons were "a bit too difficult to
+# read". Four treatments were drawn side by side (A close-up, B moonlit, C at heel, D lantern ground) and he
+# picked B: "Familiar moonlit looks good". The head is the same portrait, drawn a little smaller (0.84, the
+# evolution cards' size) so the whole silhouette sits INSIDE a full moon that fills the card, with a line of
+# occlusion round it - every edge of hat, ear, beak and muzzle lands on pale bone instead of on the night,
+# which is what the dark heads (the crow, the black cats) and the indigo hat were lost against. The cards'
+# evolutions take the same moon and outline (evolution_icons.familiar_frame).
+
+def full_moon(c, cx, cy, r, clip=None):
+    """moon() big enough to back a whole head, with its shaded limb dithered in on the lower right so a moon
+    that size still turns. `clip(x, y)` keeps it inside a disc."""
+    tmp = raster.Canvas(CELL, CELL, None)
+    moon(tmp, cx, cy, r)
+    shade = bl.MATERIALS["skin"][3]
+    bayer = raster.BAYER8
+    for y in range(CELL):
+        for x in range(CELL):
+            if not tmp.get(x, y)[3]:
+                continue
+            d = ((x - cx) * 0.7071 + (y - cy) * 0.7071) / r
+            if d > 0.55 and bayer[y % 8][x % 8] / 64.0 < (d - 0.55) * 2.2:
+                tmp.set(x, y, shade)
+    for y in range(CELL):
+        for x in range(CELL):
+            px = tmp.get(x, y)
+            if px[3] and (clip is None or clip(x, y)):
+                c.set(x, y, px)
+
+
+def in_disc(r, cx=15.5, cy=15.5):
+    return lambda x, y: (x - cx) ** 2 + (y - cy) ** 2 <= r * r
+
+
+def outlined(cv, colour=OCC):
+    """A copy of `cv` with a one-pixel ring of `colour` round everything opaque (4-neighbour), on the
+    transparent side: what holds a dark head's silhouette against a pale moon."""
+    out = raster.Canvas(cv.w, cv.h, None)
+    for y in range(cv.h):
+        for x in range(cv.w):
+            p = cv.get(x, y)
+            if p[3]:
+                out.set(x, y, p)
+                continue
+            for (ox, oy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                if cv.get(x + ox, y + oy)[3]:
+                    out.set(x, y, colour)
+                    break
+    return out
+
+
+def shrunk(cv, s, at):
+    """A finished picture drawn at `s` (under 1) round its own middle, put at `at`, by vote: every block of
+    source pixels becomes its commonest opaque colour (the brighter on a tie), and a block more than half
+    empty stays empty - evolution_icons.place_image's shrink, which this cannot import without a cycle."""
+    xs, ys = [], []
+    for y in range(cv.h):
+        for x in range(cv.w):
+            if cv.get(x, y)[3]:
+                xs.append(x)
+                ys.append(y)
+    out = raster.Canvas(CELL, CELL, None)
+    if not xs:
+        return out
+    ax, ay = (min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0
+    votes, total = {}, {}
+    for y in range(cv.h):
+        for x in range(cv.w):
+            X, Y = at[0] + (x - ax) * s, at[1] + (y - ay) * s
+            k = (int(math.floor(X + 0.5)), int(math.floor(Y + 0.5)))
+            total[k] = total.get(k, 0) + 1
+            p = cv.get(x, y)
+            if p[3]:
+                v = votes.setdefault(k, {})
+                v[p] = v.get(p, 0) + 1
+    for k, v in votes.items():
+        if sum(v.values()) * 2 < total[k]:
+            continue
+        best = max(v.items(), key=lambda kv: (kv[1], raster._lum(kv[0])))[0]
+        out.set(k[0], k[1], best)
+    return out
+
+
+def _familiar_card(head, sky=True, motes=((26, 7, 1), (28, 12, 2), (24, 4, 2), (5, 9, 2), (7, 5, 1), (27, 24, 2))):
+    """A familiar's head as a cameo on a full moon (THE MOONLIT CARDS, above): Starfall's patch of night -
+    the darkest cold material row with a lit rim, because a fawn head on the level-up card's cream page
+    would vanish into it - a full moon filling it, the head outlined in occlusion and drawn at 0.84 inside
+    the moon, and the Arcane motes round it. `sky=False` leaves the night and the moon off."""
     c = raster.Canvas(CELL, CELL, None)
     if sky:
-        sky_deep = bl.tone("arcane", "deep")
-        sky_rim = bl.tone("arcane", "shade")
-        c.disc(15.5, 15.5, 15.0, 15.0, sky_rim)
-        c.disc(15.5, 15.5, 14.0, 14.0, sky_deep)
-        if moon_at:
-            moon(c, *moon_at)
-    c.blit(head.img, 0, 0)
+        c.disc(15.5, 15.5, 15.0, 15.0, bl.tone("arcane", "shade"))
+        c.disc(15.5, 15.5, 14.0, 14.0, bl.tone("arcane", "deep"))
+        full_moon(c, 15.5, 15.0, 12.6, clip=in_disc(13.5))
+    inside = in_disc(14.5)
+    small = shrunk(outlined(head), 0.84, (15.5, 16.0))
+    for y in range(CELL):
+        for x in range(CELL):
+            p = small.get(x, y)
+            if p[3] and inside(x, y):
+                c.set(x, y, p)
     arc = bl.ELEMENTS["arcane"]
     for (x, y, t) in motes:
         c.set(x, y, arc[t])
@@ -640,35 +724,33 @@ def _familiar_card(head, sky=True, motes=((26, 7, 1), (28, 12, 2), (24, 4, 2), (
 
 def familiar_icon(sky=True):
     """The Familiar, before its form is chosen: the three it can be taken as, together - the cat, the
-    hound and the crow, each in the wizard's hat - on a patch of night (familiar.trio). Each is drawn by
+    hound and the crow, each in the wizard's hat - on the moon (familiar.trio). Each is drawn by
     tools/art/familiar.py's own renderer, so the card shows the creatures the player will see at his
     heel. The eyes are the calm ones (familiar.calm_eye; Eric, 2026-10-28: "it looks a little creepy,
     the eye is too prominent")."""
     import familiar
-    return _familiar_card(familiar.trio(), sky, motes=((27, 3, 1), (29, 8, 2), (3, 4, 2), (2, 9, 1)), moon_at=(10.0, 8.5, 7.0))
+    return _familiar_card(familiar.trio(), sky, motes=((27, 3, 1), (29, 8, 2), (3, 4, 2), (2, 9, 1)))
 
 
 def familiar_dog_icon(sky=True):
     """The Familiar taken as a dog (SpellVariant.Icon): the hound's head in the wizard's hat, its collar
     star lit - a good dog: the calm eye and a closed, easy mouth (familiar.portrait)."""
     import familiar
-    return _familiar_card(familiar.portrait(), sky, moon_at=(21.0, 8.5, 7.5))
+    return _familiar_card(familiar.portrait(), sky, motes=((26, 4, 1), (28, 26, 2), (4, 26, 2), (29, 11, 2)))
 
 
 def familiar_crow_icon(sky=True):
     """The Familiar taken as a crow: its head and shoulder in the hat, the beak out to the right, a wing's
     gold edge behind it (familiar.crow_portrait)."""
     import familiar
-    return _familiar_card(familiar.crow_portrait(), sky, motes=((27, 5, 1), (5, 10, 2), (28, 25, 2), (24, 2, 2)),
-                          moon_at=(21.0, 9.0, 8.0))
+    return _familiar_card(familiar.crow_portrait(), sky, motes=((27, 4, 1), (4, 26, 2), (28, 26, 2), (3, 12, 2)))
 
 
 def familiar_cat_icon(sky=True):
     """The Familiar taken as a cat: its round face three-quarter on, ears up through the hat's brim, a
     content eye (familiar.cat_portrait)."""
     import familiar
-    return _familiar_card(familiar.cat_portrait(), sky, motes=((27, 6, 1), (28, 12, 2), (26, 26, 2), (4, 8, 2)),
-                          moon_at=(25.0, 7.0, 6.0))
+    return _familiar_card(familiar.cat_portrait(), sky, motes=((28, 4, 1), (29, 11, 2), (3, 26, 2), (28, 26, 2)))
 
 
 def _over(c, k):
