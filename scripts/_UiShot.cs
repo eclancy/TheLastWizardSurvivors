@@ -320,6 +320,13 @@ public partial class _UiShot : Node
 	private Vector2 gotoOffset = new Vector2(0f, 170f);
 	private bool forceHint;
 	private bool hintForced;
+	// --hint-preview=STAGE_ID[,DEG]: that chapter's hint - sound, cue and line - played fxLead frames
+	// before the shutter on whatever stage is running, from a point 3000 px away at DEG degrees
+	// (0 = east, 90 = south; default 20), so its line can be photographed on grounds no hint plays on:
+	// the Fallow Fields' pale field (--stage=9), the Sketchbook's paper (--stage=8). StageHintDirector.Preview.
+	private string hintPreview;
+	private float hintPreviewBearing = 20f;
+	private bool hintPreviewed;
 	private bool takeWayfinder;
 	private bool wayfinderTaken;
 	private bool arriveEvent;
@@ -1583,6 +1590,13 @@ public partial class _UiShot : Node
 				takeWayfinder = true;
 			else if (arg == "--force-hint")
 				forceHint = true;
+			else if (arg.StartsWith("--hint-preview="))
+			{
+				string[] parts = arg.Substring("--hint-preview=".Length).Split(',');
+				hintPreview = parts[0];
+				if (parts.Length > 1)
+					hintPreviewBearing = float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture);
+			}
 			else if (arg == "--arrive")
 				arriveEvent = true;
 			// --zoom=Z: the run camera's zoom (player.tscn's is 0.85), for a map-like view of a stretch
@@ -2638,6 +2652,27 @@ public partial class _UiShot : Node
 				GD.Print(played
 					? "_UiShot: hint forced"
 					: $"_UiShot: stage {Global.SelectedStageIdx} played no hint (no hint for it, the place is found, or this save owns its discovery - try --fresh-save)");
+			}
+			if (hintPreview != null && !hintPreviewed && frames >= WarmupFrames - fxLead
+				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame previewGame && previewGame.RunPlayer != null)
+			{
+				hintPreviewed = true;
+				StageHint previewHint = StageHintCatalog.ForStage(hintPreview);
+				var previewEntry = SideEventDirector.ForStage(hintPreview);
+				if (previewHint == null || previewEntry == null)
+				{
+					GD.PrintErr($"_UiShot: --hint-preview={hintPreview}: no hint for that chapter");
+				}
+				else
+				{
+					SideEvent colourOf = previewEntry.Value.Create();
+					Color tell = colourOf.FarTellColor;
+					colourOf.Free();
+					float bearing = Mathf.DegToRad(hintPreviewBearing);
+					Vector2 from = previewGame.RunPlayer.GlobalPosition;
+					StageHintDirector.Preview(previewGame, previewHint, from + new Vector2(Mathf.Cos(bearing), Mathf.Sin(bearing)) * 3000f, tell);
+					GD.Print($"_UiShot: hint preview {hintPreview} at {hintPreviewBearing} degrees");
+				}
 			}
 			if (takeWayfinder && !wayfinderTaken && frames >= WarmupFrames / 3
 				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector finder)
