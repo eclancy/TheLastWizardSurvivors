@@ -3,7 +3,7 @@
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
-**Status: a proposal. Nothing here is built or decided.** Eric picks from it first. It covers the ten
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below); nothing is built yet. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Sketchbook, the Last Bridge and the
 Court. Tituba (Cursed Dungeon), Väinämöinen (Frozen Waste), Laelaps (Broken Circle) and Merlin (the
@@ -16,6 +16,18 @@ achievement), `.ai/decisions/2026-10-10-apotheosis.md` (one verb per form).
 ---
 
 ## 0. What Eric must decide first
+
+**Decided by Eric, 2026-11-01.** "Only default starting wizards that are unlocked on a new save file need
+to have mono element spells. Unlockable wizards can have multi-element starting spells." So question 1
+is settled that way: the one-element rule binds only the starters a new save holds; a rescued wizard
+may open on a two-element spell, and may share an element with another wizard when their starting
+spells differ (`ValidateStartingCharacters` is relaxed to match when the first of these is built).
+Question 4: **the Sketchbook's wizard is Ma Liang** (the kids' boss there is now Elim, below). "All else
+approved": questions 2, 3, 5 and 6 as recommended - the new wizards count only at the Throne's gate, a
+second side event where a chapter already has one, Baba Yaga and Medea drawn serious, Nostradamus takes
+Starfall and Merlin the sword.
+
+The questions as they were put:
 
 | # | question | options | recommended |
 |---|---|---|---|
