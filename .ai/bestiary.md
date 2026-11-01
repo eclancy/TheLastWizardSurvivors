@@ -627,6 +627,14 @@ With a fourth agent, split Group A: the Forest and the Cave (20), the Swamp (11)
   heather-and-peat floor every body sits a stop or two up its ramp. The waller's wall is many pale
   granite stones carried wide and low, and the thunder rod is a two-pixel rod with a crown, so
   nothing echoes the Ninth Stone's slab; the fleece bale faces left like its stand-in.
+- The Last Bridge: drawn (`tools/art/cast_bridge.py`, 11 of 11; `.ai/endgame-castle.md` 3.5). Rows by
+  job, so the four table bodies share none (wool pikeman, flesh hound, linen pavise, wood ram); the
+  gargoyle and the pitch barrel are built and burn, everything else stares arcane. Nothing echoes the
+  Constable: the pikeman is short and quilted, the knight crouched with his lance level, and the
+  Porter's windlass key is a crank, not a key. The pitch barrel lies on its side, faces left like its
+  stand-in, and is bellied both ways (flat-topped and hooped, it was a treasure chest). The
+  crossbowman's bolt is arcane (`#C08CFF` / `#FFF0FF`), the castle's cold fire: section 6 has no
+  castle row yet.
 - The Sketchbook: complete (the kids'), not part of Phase 2.
 
 ## 10. Decisions for the developer
