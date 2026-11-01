@@ -639,6 +639,14 @@ Checked in frame sequences (consecutive frames, `_UiShot --burst=N,1 --spell-sta
 level 8 with both Ascensions of each, on the PC canvas at 1.0-1.6x and the phone canvas at the game's own
 zoom; not checked on the Sketchbook's paper or on a real phone.
 
+
+**2026-11-01, Stormsweep's stroke quickens with level.** Eric: "animation starts too fast. Slow it down at
+first and let it speed up with level up." `Stormsweep.LevelPace`: the stroke's tempo starts at 0.4 at level 1
+and climbs evenly to 1 at level 8 (then Speed multiplies it as before), so a level 1 leap and sweep take
+0.375 s instead of 0.15 and level 8 is unchanged. The hit is tested on the same tempo-scaled clock as the
+drawing (`WhipStroke.Front`), so it moved with it: at level 1 a body is struck up to a quarter second later
+than before, exactly when the lash is seen to cross it. Damage, reach, band and cooldown unchanged.
+
 ### Bramble Seed
 
 | Part | Audit | Now |
