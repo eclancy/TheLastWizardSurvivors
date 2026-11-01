@@ -144,8 +144,8 @@ public static class BossCatalog
 		[8] = new BossDefinition
 		{
 			Id = "kid_wizard",
-			// Named for Elim, one of the kids whose drawings are the Sketchbook (Eric, 2026-11-01: "The boss of
-			// sketchbook can be called Elim").
+			// Named for Elim, who drew him (Eric, 2026-11-01: "Wizard dude is elims drawing. The boss can be
+			// named after elim").
 			// Only the name changed: the id, the scene and every save key are the Wizard Dude's still.
 			DisplayName = "Elim",
 			Tagline = "Throws a fan of missiles down the wedge he shows you. Leave the wedge.",
