@@ -57,10 +57,17 @@ Merged into `main-ff86ni` before that:
 
 ## 3. Branches in flight
 
-Three agents, each in its own worktree from 9a854b5 (2026-11-01): **`wip/boss-constable`** (C5, the
-Constable, `ws-wip-boss-constable`), **`wip/boss-seneschal`** (C5, the Seneschal, `ws-wip-boss-seneschal`)
-and **`wip/throne`** (C4: the hall, the Muster, the procession, `ws-wip-throne`). None flips `IsPlayable`
-or touches the world map. Expect conflicts in `BossCatalog.cs`, `RegressionChecks.ValidateBossPattern`
+Merged since the release (2026-11-01): the shield ring recoloured (Eric: Metal ring, Light motes;
+elite markers read gold), **the Seneschal** (440,000; flees at 75/50/25% and is followed; a door
+"hop" when unreachable for 12 s, beyond 5.6) and **the Constable** (400,000; holds the gate from the
+wall). Both bosses' chapters now miss only their world-map stop.
+
+Three agents in flight: **`wip/throne`** (C4: the hall, the Muster, the procession, `ws-wip-throne`, from
+9a854b5); **`wip/dungeon-move`** (C2, schema 21, `ws-wip-dungeon-move`, from 412df99; held, to land with
+the Bridge's flip and C8); **`wip/castle-preflip`** (`ws-wip-castle-preflip`, from 412df99: the Constable
+off the top of the PC screen, the bridge's XP far above the Emberdeep's, `BridgeRules`' unseeded spawns,
+a Court wall cell the player stands in). None flips `IsPlayable` or touches the world map. Expect
+conflicts in `BossCatalog.cs`, `RegressionChecks.ValidateBossPattern`
 and `.ai/enemy-behaviour.md`'s boss tables (keep both sides), and in the generated `tiles.json`,
 `detail.json` and atlas (take either side, re-run `tiles.py` and `ground_detail.py`).
 
@@ -83,10 +90,12 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 
 - **Playtest 0.10.0** (50 HP, scarce healing, tougher chapters and bosses). Fixes from it come
   before the castle.
-- From 2026-11-01's pieces: the shield ring (`ShieldAura`, shared by Aegis Ward, Protective Ward and
-  Vaultguard) is still Arcane violet though Aegis is Light and Metal, and is opaque now - recolour it?
-  Whether the Court Falconer's hawk reads as a bird and the Huntsman's horn as a horn at game size
-  (the Falconer throws a bolt, not the hawk: a hawk would be a new projectile scene).
+- **The Deathbringer set executes bosses.** Its execute (`Player.cs`, `chestExecuteThresholdPercent`
+  30) kills any enemy at or under 30% health, bosses included, so with that set every boss fight loses
+  its last 30% - against the longer fights the boss work just bought. Keep it, or exclude bosses?
+- From 2026-11-01's pieces: whether the Court Falconer's hawk reads as a bird and the Huntsman's horn
+  as a horn at game size (the Falconer throws a bolt, not the hawk: a hawk would be a new projectile
+  scene); whether the Constable's many 12 s yard visits feel repetitive.
 - **Decided 2026-11-01:** achievements count the moment they are met (done: `Node2DGame.RecordAchievementNow`);
   the Sketchbook stays open for saves that already played it (no change); the Dark Wizard is a
   silhouette only in the prologue (done, `tools/art/prologue.py`); Thorned Vine stays as it is until
@@ -106,10 +115,10 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 In this order. Fixes from the 0.10.0 playtest come before anything below.
 
 1. ~~The pixel-art pass on Sleet Runes and Aegis Ward~~ and ~~C6~~: done, in 0.10.0.
-2. The castle, by `.ai/endgame-castle.md` section 9.2: C5 (the Constable and the Seneschal in flight;
-   the dark wizard after C4), C4 (in flight), C2 (**schema 21**), C8, C9; each chapter's `IsPlayable`
-   flips last. The bridge's flip needs C2, the Constable and C8 (a playable chapter with no map stop
-   is a validator fault), so those three land together.
+2. The castle, by `.ai/endgame-castle.md` section 9.2: C5 (~~the Constable~~, ~~the Seneschal~~; the
+   dark wizard after C4), C4 (in flight), C2 (**schema 21**, in flight), C8, C9; each chapter's
+   `IsPlayable` flips last. The bridge's flip needs C2, the pre-flip fixes and C8 (a playable chapter
+   with no map stop is a validator fault), so those land together.
 3. The rest of the secrets catalogue, `.ai/achievements-and-secrets.md` section 8.
 
 ## 6. How the cloud session worked
