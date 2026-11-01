@@ -884,10 +884,12 @@ the thing at the game's 2 px art grid, out of the number that decides what it hi
   bodies, with their shadows on the ground and dust blown after them; the maw rises out of the hole,
   teeth growing out of the dark, and tips the ground up round it into a torn rim of slabs that the
   thrown earth lands on and lies on until it closes. Same 0.8 s, same slow - only its curve is eased
-  out, because the cracks are the slow's edge and have to run ahead. **Two maws never overlap**
-  ("they should never overlap"): a new one opens only where its full radius clears every open maw's
-  by 8 px; if the pack is under a maw it opens beside it, on the stragglers, and if nowhere in range
-  would catch anything the cast waits (`Player.TryPlaceMaw`, `BlackTentacles.MawFits`).
+  out, because the cracks are the slow's edge and have to run ahead. **Two rifts never overlap**:
+  the maws first ("they should never overlap"), then every face (Eric, 2026-11-01: "Black tentacles
+  should never be able to stack on top of each other"). A new rift opens only where its full radius
+  clears every open rift's by 8 px; if the pack is under a rift it opens beside it, on the stragglers,
+  and if nowhere in range would catch anything the cast waits (`Player.TryPlaceRift`,
+  `BlackTentacles.RiftFits`).
 - **Thorned Vine** keeps id `thorn_vine` and every save key; only the name changed. One vine bursts
   from the ground on the player's side of the densest pack, coils, lashes across it in a 170 degree
   sweep and withers. It strikes enemies in the order its drawn line reaches them, cuts through

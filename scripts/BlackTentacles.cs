@@ -51,10 +51,12 @@ namespace WizardSurvivors.scripts;
 // CurrentRadius on the frame it is drawn. Only what is in the AIR is drawn above its spot on the
 // ground (over the actors, AirZIndex) - and its shadow, on the ground, is inside the radius.
 //
-// **Two maws never overlap** ("they should never overlap"): every open maw is in liveMaws, and
-// Player.FireBlackTentacles places a new one only where its full radius, plus MawGap, is clear of
-// every live maw's full radius (MawFits) - the size each one is drawn to, held for its whole life,
-// closing included. See Player.TryPlaceMaw for what it does when the pack is already under a maw.
+// **Two rifts never overlap.** First the maws (2026-10-28: "they should never overlap"), then every
+// face (Eric, 2026-11-01: "Black tentacles should never be able to stack on top of each other"): every
+// open rift is in liveRifts, and Player.FireBlackTentacles places a new one only where its full radius,
+// plus RiftGap, is clear of every live rift's full radius (RiftFits) - the size each one is drawn to,
+// held for its whole life, closing included. See Player.TryPlaceRift for what it does when the pack is
+// already under a rift.
 public partial class BlackTentacles : Node2D
 {
 	// The pit, on the ground layer with the craters (DrawLayers.Ground): at -50 it was under the grass
@@ -118,7 +120,7 @@ public partial class BlackTentacles : Node2D
 	private const float MawDome = 0.62f;
 	/// <summary>Clear ground kept between two maws' rims, in px. Four art pixels, which also absorbs
 	/// CastAt's snap to the art grid (at most 1.5 px), so two rims can never touch.</summary>
-	public const float MawGap = 8f;
+	public const float RiftGap = 8f;
 	private const int MaxSlabs = 18;
 	private const int MaxClods = 26;
 	private const int MaxDebris = MaxSlabs + MaxClods;
@@ -225,25 +227,25 @@ public partial class BlackTentacles : Node2D
 	/// </summary>
 	public float DrawnRadius => radius;
 
-	// --- two maws never overlap -----------------------------------------------------------------
+	// --- two rifts never overlap ----------------------------------------------------------------
 
-	// Every Elder God Maw in the world, from its cast until it leaves the tree. Static, because a maw
-	// must know about every other maw whoever cast it; emptied as they free, so it cannot outlive a run.
-	private static readonly List<BlackTentacles> liveMaws = new List<BlackTentacles>();
-	private bool registeredMaw;
+	// Every rift in the world, of every face, from its cast until it leaves the tree. Static, because a
+	// rift must know about every other whoever cast it; emptied as they free, so it cannot outlive a run.
+	private static readonly List<BlackTentacles> liveRifts = new List<BlackTentacles>();
+	private bool registeredRift;
 
-	public static int LiveMawCount => liveMaws.Count;
+	public static int LiveRiftCount => liveRifts.Count;
 
 	/// <summary>
-	/// Whether a maw of <paramref name="mawRadius"/> opened at <paramref name="at"/> would keep
-	/// MawGap of clear ground from every live maw - measured by full radii, so a maw still opening
+	/// Whether a rift of <paramref name="mawRadius"/> opened at <paramref name="at"/> would keep
+	/// RiftGap of clear ground from every live rift - measured by full radii, so a rift still opening
 	/// or already closing holds its whole ground.
 	/// </summary>
-	public static bool MawFits(Vector2 at, float mawRadius)
+	public static bool RiftFits(Vector2 at, float mawRadius)
 	{
-		foreach (BlackTentacles maw in liveMaws)
+		foreach (BlackTentacles maw in liveRifts)
 		{
-			float clear = maw.radius + mawRadius + MawGap;
+			float clear = maw.radius + mawRadius + RiftGap;
 			if (at.DistanceSquaredTo(maw.GlobalPosition) < clear * clear)
 				return false;
 		}
@@ -251,18 +253,18 @@ public partial class BlackTentacles : Node2D
 	}
 
 	/// <summary>
-	/// Moves <paramref name="at"/> straight out from the centre of each live maw it would overlap
-	/// until the two rims are MawGap apart. False if it cannot be cleared: it sits on a maw's exact
-	/// centre (no "out"), or clearing one maw puts it on another.
+	/// Moves <paramref name="at"/> straight out from the centre of each live rift it would overlap
+	/// until the two rims are RiftGap apart. False if it cannot be cleared: it sits on a rift's exact
+	/// centre (no "out"), or clearing one rift puts it on another.
 	/// </summary>
-	public static bool PushClearOfMaws(ref Vector2 at, float mawRadius)
+	public static bool PushClearOfRifts(ref Vector2 at, float mawRadius)
 	{
-		for (int pass = 0; pass <= liveMaws.Count; pass++)
+		for (int pass = 0; pass <= liveRifts.Count; pass++)
 		{
 			BlackTentacles blocking = null;
-			foreach (BlackTentacles maw in liveMaws)
+			foreach (BlackTentacles maw in liveRifts)
 			{
-				float clear = maw.radius + mawRadius + MawGap;
+				float clear = maw.radius + mawRadius + RiftGap;
 				if (at.DistanceSquaredTo(maw.GlobalPosition) < clear * clear)
 				{
 					blocking = maw;
@@ -274,23 +276,23 @@ public partial class BlackTentacles : Node2D
 			Vector2 away = at - blocking.GlobalPosition;
 			if (away.LengthSquared() < 1f)
 				return false;
-			at = blocking.GlobalPosition + away.Normalized() * (blocking.radius + mawRadius + MawGap);
+			at = blocking.GlobalPosition + away.Normalized() * (blocking.radius + mawRadius + RiftGap);
 		}
-		return MawFits(at, mawRadius);
+		return RiftFits(at, mawRadius);
 	}
 
 	/// <summary>
 	/// The closest any two live maws' rims come, in px (negative is an overlap); float.MaxValue with
 	/// fewer than two. For _UiShot, which prints it through a burst of maws.
 	/// </summary>
-	public static float ClosestMawGap()
+	public static float ClosestRiftGap()
 	{
 		float closest = float.MaxValue;
-		for (int i = 0; i < liveMaws.Count; i++)
+		for (int i = 0; i < liveRifts.Count; i++)
 		{
-			for (int j = i + 1; j < liveMaws.Count; j++)
+			for (int j = i + 1; j < liveRifts.Count; j++)
 			{
-				float gap = liveMaws[i].GlobalPosition.DistanceTo(liveMaws[j].GlobalPosition) - liveMaws[i].radius - liveMaws[j].radius;
+				float gap = liveRifts[i].GlobalPosition.DistanceTo(liveRifts[j].GlobalPosition) - liveRifts[i].radius - liveRifts[j].radius;
 				closest = MathF.Min(closest, gap);
 			}
 		}
@@ -299,10 +301,10 @@ public partial class BlackTentacles : Node2D
 
 	public override void _ExitTree()
 	{
-		if (registeredMaw)
+		if (registeredRift)
 		{
-			liveMaws.Remove(this);
-			registeredMaw = false;
+			liveRifts.Remove(this);
+			registeredRift = false;
 		}
 	}
 
@@ -479,16 +481,16 @@ public partial class BlackTentacles : Node2D
 			AddChild(spirits);
 		}
 		LayOutTentacles();
+		if (!registeredRift)
+		{
+			// Placement is Player.TryPlaceRift's; this only says so loudly if anything ever skips it.
+			if (!RiftFits(GlobalPosition, radius - RiftGap))
+				GD.PushError($"BlackTentacles: a rift opened over another at {GlobalPosition} (radius {radius})");
+			liveRifts.Add(this);
+			registeredRift = true;
+		}
 		if (face == Face.ElderGodMaw)
 		{
-			if (!registeredMaw)
-			{
-				// Placement is Player.TryPlaceMaw's; this only says so loudly if anything ever skips it.
-				if (!MawFits(GlobalPosition, radius - MawGap))
-					GD.PushError($"BlackTentacles: an Elder God Maw opened over another at {GlobalPosition} (radius {radius})");
-				liveMaws.Add(this);
-				registeredMaw = true;
-			}
 			if (air == null)
 			{
 				// Rubble draws after the rift in its own z (-50), so on the ground and under every body;

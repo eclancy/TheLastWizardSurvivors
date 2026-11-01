@@ -6167,14 +6167,16 @@ public partial class Player : CharacterBody2D
 		}
 
 		Vector2 at;
-		if (script != null && script.IsMaw && BlackTentacles.LiveMawCount > 0)
+		if (script != null && BlackTentacles.LiveRiftCount > 0)
 		{
-			// Never over another maw. Nowhere to open: the cast stays ready and looks again shortly,
-			// rather than every frame (each look instances the scene to learn the new maw's radius).
-			if (!TryPlaceMaw(castRange, script.DrawnRadius, out at))
+			// Never over another rift, of any face (Eric, 2026-11-01: "Black tentacles should never be able
+			// to stack on top of each other"; the maws first, 2026-10-28). Nowhere to open: the cast stays
+			// ready and looks again shortly, rather than every frame (each look instances the scene to
+			// learn the new rift's radius).
+			if (!TryPlaceRift(castRange, script.DrawnRadius, out at))
 			{
 				zone.Free();
-				spellFireTimers[spell.Id] = MathF.Max(0f, interval - MawRetrySeconds);
+				spellFireTimers[spell.Id] = MathF.Max(0f, interval - RiftRetrySeconds);
 				return CastOutcome.NoTarget;
 			}
 		}
@@ -6189,20 +6191,19 @@ public partial class Player : CharacterBody2D
 		return CastOutcome.Fired;
 	}
 
-	// How long an Elder God Maw with nowhere clear to open waits before it looks again.
-	private const float MawRetrySeconds = 0.25f;
+	// How long a rift with nowhere clear to open waits before it looks again.
+	private const float RiftRetrySeconds = 0.25f;
 
-	// Where an Elder God Maw opens while another is open (2026-10-28: "they should never overlap").
-	// Clear means BlackTentacles.MawFits: rim to rim by both maws' full radii - what each is drawn to
-	// and slows - plus MawGap.
+	// Where a rift opens while another is open. Clear means BlackTentacles.RiftFits: rim to rim by both
+	// rifts' full radii - what each is drawn to and slows - plus RiftGap.
 	//
 	// 1. The densest pack that is already clear, scored exactly as FindDensestEnemy scores it.
-	// 2. Otherwise - the usual case, since an open maw drags the pack to its teeth - beside the maw in
-	//    the way: each candidate pushed straight out from that maw's centre until the rims are the gap
-	//    apart (BlackTentacles.PushClearOfMaws), kept if it is still in cast range, and scored by how
-	//    many enemies it would catch. So the new maw opens on the stragglers still coming in.
+	// 2. Otherwise - the usual case, since a rift holds the pack in it (and a maw drags it to its teeth) -
+	//    beside the rift in the way: each candidate pushed straight out from that rift's centre until the
+	//    rims are the gap apart (BlackTentacles.PushClearOfRifts), kept if it is still in cast range, and
+	//    scored by how many enemies it would catch. So the new rift opens on the stragglers still coming in.
 	// 3. Nowhere in range would catch anything: false, and the cast waits.
-	private bool TryPlaceMaw(float castRange, float mawRadius, out Vector2 at)
+	private bool TryPlaceRift(float castRange, float mawRadius, out Vector2 at)
 	{
 		at = Vector2.Zero;
 		CollectEnemiesInRange(castRange);
@@ -6212,7 +6213,7 @@ public partial class Player : CharacterBody2D
 		for (int i = 0; i < scored; i++)
 		{
 			Vector2 here = aimCandidates[i].GlobalPosition;
-			if (!BlackTentacles.MawFits(here, mawRadius))
+			if (!BlackTentacles.RiftFits(here, mawRadius))
 				continue;
 			int count = CountAimCandidatesWithin(here, clusterRadiusSquared);
 			if (count > bestCount) { bestCount = count; at = here; }
@@ -6225,7 +6226,7 @@ public partial class Player : CharacterBody2D
 			for (int i = 0; i < scored; i++)
 			{
 				Vector2 spot = aimCandidates[i].GlobalPosition;
-				if (!BlackTentacles.PushClearOfMaws(ref spot, mawRadius) || GlobalPosition.DistanceSquaredTo(spot) > rangeSquared)
+				if (!BlackTentacles.PushClearOfRifts(ref spot, mawRadius) || GlobalPosition.DistanceSquaredTo(spot) > rangeSquared)
 					continue;
 				int count = CountAimCandidatesWithin(spot, catchSquared);
 				if (count > bestCount) { bestCount = count; at = spot; }

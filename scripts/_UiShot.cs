@@ -2544,8 +2544,8 @@ public partial class _UiShot : Node
 				}
 				if (ripenEvery > 0)
 				{
-					float gap = BlackTentacles.ClosestMawGap();
-					GD.Print($"_UiShot: frame {burstTaken}: {BlackTentacles.LiveMawCount} maw(s) open"
+					float gap = BlackTentacles.ClosestRiftGap();
+					GD.Print($"_UiShot: frame {burstTaken}: {BlackTentacles.LiveRiftCount} rift(s) open"
 						+ (gap < float.MaxValue ? $", closest rims {gap:0.0} px apart" : string.Empty));
 				}
 				SaveBurstFrame();
