@@ -30,6 +30,7 @@ public partial class Prologue : Control
 	private const string ArtFolder = "res://assets/bonelight/ui/prologue/";
 	private const string CharacterSelectionPath = "res://scenes/CharacterSelection.tscn";
 	private const string TitleScreenPath = "res://scenes/TitleScreen.tscn";
+	private const string WorldMapPath = "res://scenes/WorldMap.tscn";
 
 	// The frame, in art pixels, and its whole render scale. tools/art/prologue.py FW/FH.
 	private static readonly Vector2 ArtSize = new(960f, 840f);
@@ -43,6 +44,11 @@ public partial class Prologue : Control
 		Story,
 		/// <summary>Back to the main menu it was opened from (Options, Watch the Prologue).</summary>
 		Menu,
+		/// <summary>
+		/// Back to the world map. TEMPORARY, for Eric's testing: only WorldMap's replay button opens it, and
+		/// both go before the game ships for good. Never marks the prologue seen (<see cref="Finish"/>).
+		/// </summary>
+		Map,
 	}
 
 	// Static because the prologue is a scene of its own: whoever opens it says where it goes next.
@@ -473,13 +479,19 @@ void fragment() {
 		if (finished)
 			return;
 		finished = true;
-		MarkSeen();
 		After then = next;
 		next = After.Story;
+		// A replay from the map is a test, not the player meeting the story: the flag is left as it was.
+		if (then != After.Map)
+			MarkSeen();
 		if (then == After.Menu)
 		{
 			Global.OpenMenuImmediately = true;
 			GetTree().ChangeSceneToFile(TitleScreenPath);
+		}
+		else if (then == After.Map)
+		{
+			GetTree().ChangeSceneToFile(WorldMapPath);
 		}
 		else
 		{
