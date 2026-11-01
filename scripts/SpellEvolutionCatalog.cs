@@ -718,33 +718,33 @@ public static class SpellEvolutionCatalog
 			SynergyDescription = "Branches into Metal. The blast burns a share of everything's health away - worth most against elites and bosses."
 		});
 
-		// Level 8 (2 choices)
+		// Level 8 (2 choices). PHASE 2 (.ai/spell-roster.md 2h, 2026-10-31): both Ascensions were the same
+		// blast bigger. Brimstone (Hellfire Nova's id, its Fire gain kept) leaves a stone that keeps firing
+		// (BrimstoneLayer); Armageddon Sun ploughs through the pack before it bursts (Fireball.Sear).
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "fireball_hellfire_nova",
+			Id = Fireball.HellfireNovaId,
 			BonusElementWeights = new() { { "Fire", 1 } },
-			DisplayName = "Hellfire Nova",
-			Description = "Detonates in a colossal flame shockwave (+150% Area, +100% Damage).",
+			DisplayName = "Brimstone",
+			Description = $"Each blast leaves a lump of burning brimstone that spits small fireballs at the nearest enemies for {BrimstoneLayer.StoneSeconds:0}s. +10% damage.",
 			MilestoneLevel = 8,
-			DamageMultiplier = 2.0f,
-			AreaMultiplier = 2.5f,
-			ScaleMultiplier = 2.2f,
-			VisualTag = "HellfireNova",
-			ModulateColor = new Color(1.0f, 0.2f, 0.05f),
-			SynergyTag = "Fire / AOE",
-			SynergyDescription = "Ascension: Screen-wide incendiary destruction."
+			// x1.1: at x1.5 it measured 570 a second at level 8 (band 331-465); the old Hellfire Nova 913.
+			DamageMultiplier = 1.1f,
+			VisualTag = "Brimstone",
+			ModulateColor = new Color(1.0f, 0.55f, 0.4f),
+			SynergyTag = "Fire / Turret",
+			SynergyDescription = "Ascension: deepens Fire. Every blast keeps firing at what walks back in."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "fireball_armageddon_sun",
+			Id = Fireball.ArmageddonSunId,
 			DisplayName = "Armageddon Sun",
-			// It flies at 0.7 and bursts at x2 since 2026-10-26; a sun that scorched as it drifted was
-			// never built, so the card no longer says it does.
-			Description = "A slow, swollen sun that bursts for +150% Damage and +100% Area.",
+			Description = $"A slow, swollen sun that ploughs through the pack, searing everything it touches, and bursts beyond it. +30% damage, 60% wider blast.",
 			MilestoneLevel = 8,
-			DamageMultiplier = 2.5f,
-			AreaMultiplier = 2.0f,
+			// x1.3: at x1.8 it measured 592 a second at level 8 (band 331-465); the old card 922.
+			DamageMultiplier = 1.3f,
+			AreaMultiplier = 1.6f,
 			SpeedMultiplier = 0.7f,
 			ScaleMultiplier = 2.0f,
 			VisualTag = "ArmageddonSun",

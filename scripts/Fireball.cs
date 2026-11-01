@@ -133,6 +133,9 @@ public partial class Fireball : Area2D
 		spawnPosition = from;
 		lifetime = 0f;
 		exploded = false;
+		ploughing = SpellData?.HasEvolution(ArmageddonSunId) ?? false;
+		ploughTo = from.DistanceTo(to) + explosionRadius * PloughOvershoot;
+		searedCount = 0;
 	}
 
 	public override void _Process(double delta)
@@ -144,7 +147,17 @@ public partial class Fireball : Area2D
 		material?.SetShaderParameter(ParamTime, drawTime);
 		Position += direction * speed * (float)delta;
 		lifetime += (float)delta;
-		if ((duration > 0 && lifetime > duration) || (GlobalPosition - spawnPosition).Length() > range)
+		float flown = (GlobalPosition - spawnPosition).Length();
+		if (ploughing)
+		{
+			Sear();
+			if (flown >= ploughTo)
+			{
+				Explode();
+				return;
+			}
+		}
+		if ((duration > 0 && lifetime > duration) || flown > range)
 		{
 			Explode();
 		}
@@ -152,14 +165,58 @@ public partial class Fireball : Area2D
 
 	private void OnAreaEntered(Area2D area)
 	{
-		if (!exploded && area.IsInGroup("enemies") && area.HasMethod("TakeDamage"))
+		if (!exploded && !ploughing && area.IsInGroup("enemies") && area.HasMethod("TakeDamage"))
 			Explode();
 	}
 
 	private void OnBodyEntered(Node body)
 	{
-		if (!exploded && body.IsInGroup("enemies") && body.HasMethod("TakeDamage"))
+		if (!exploded && !ploughing && body.IsInGroup("enemies") && body.HasMethod("TakeDamage"))
 			Explode();
+	}
+
+	// ARMAGEDDON SUN PLOUGHS THROUGH (2h, 2026-10-31). The card was a slower, bigger ball that burst for
+	// more - the same shot, larger. Now the sun does not stop at the first body: it rolls on through the
+	// pack at its slow drift, searing everything its body touches once (SearShare of the hit), and bursts
+	// PloughOvershoot of its blast past where its target stood - in the pack behind the front rank, not
+	// on it. The sear reaches the drawn sun (its body radius at the node's scale), so what it is seen to
+	// touch is what it burns.
+	private const float PloughOvershoot = 0.6f;
+	public const float SearShare = 0.5f;
+	private const int MaxSeared = 64;
+	private bool ploughing;
+	private float ploughTo;
+	private readonly ulong[] seared = new ulong[MaxSeared];
+	private int searedCount;
+
+	private void Sear()
+	{
+		if (PlayerRef is not Player player || !IsInstanceValid(player))
+			return;
+		float reach = visualRadius * 0.8f * MathF.Abs(GlobalScale.X);
+		float r2 = reach * reach;
+		int searDamage = Math.Max(1, Mathf.RoundToInt(damage * SearShare));
+		Vector2 at = GlobalPosition;
+		foreach (Enemy e in EnemyRegistry.Snapshot)
+		{
+			if (!IsInstanceValid(e) || e.IsDying || e.GlobalPosition.DistanceSquaredTo(at) > r2)
+				continue;
+			ulong id = e.GetInstanceId();
+			bool done = false;
+			for (int i = 0; i < searedCount; i++)
+			{
+				if (seared[i] == id)
+				{
+					done = true;
+					break;
+				}
+			}
+			if (done)
+				continue;
+			if (searedCount < MaxSeared)
+				seared[searedCount++] = id;
+			player.DealDamageToEnemy(e, searDamage, source: SpellData);
+		}
 	}
 
 	private void Explode()
@@ -199,6 +256,9 @@ public partial class Fireball : Area2D
 
 		LeaveMagmaPool();
 		ScatterClusterBombs();
+		// Brimstone (Hellfire Nova's id, BrimstoneLayer): a lump of it left burning in the blast.
+		if (SpellData?.HasEvolution(HellfireNovaId) == true && PlayerRef is Player stoneOwner && GetParent() is Node2D stoneArena)
+			BrimstoneLayer.Lay(stoneArena, stoneOwner, SpellData, GlobalPosition, explosionRadius, damage);
 
 		var timer = GetTree().CreateTimer(0.4);
 		timer.Timeout += () => { if (IsInstanceValid(this)) QueueFree(); };

@@ -176,7 +176,7 @@ public static class EvolutionStatReaders
 			SpellEffect.CritChance, SpellEffect.Lifesteal, SpellEffect.CritDamage),
 		["fireball"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Scale | EvolutionStat.Rider,
-			"Fireball.RefreshComputedStats, LeaveMagmaPool and ScatterClusterBombs (one ball; projectiles past the first are bomblets)",
+			"Fireball.RefreshComputedStats, LeaveMagmaPool and ScatterClusterBombs (one ball; projectiles past the first are bomblets; Brimstone and Armageddon Sun's plough by id, through BrimstoneLayer and Fireball.Sear)",
 			SpellEffect.AreaSize, SpellEffect.Burn, SpellEffect.CritDamage),
 		["frost_shard"] = R(EvolutionStat.Damage | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Slow
 				| EvolutionStat.Rider,

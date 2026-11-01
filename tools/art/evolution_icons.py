@@ -3140,28 +3140,54 @@ def _(sp, c):
 
 @card("fireball_hellfire_nova")
 def _(sp, c):
-    """Hellfire Nova: it detonates in a colossal ring of flame."""
+    """Brimstone (Hellfire Nova's id): a lump of burning brimstone left in the blast, spitting small
+    fireballs out at the pack."""
     reset(sp)
-    sp.place = Place(0.8)
-    U(sp, lambda cv, x: m_shockwave(cv, E["fire"], (C0, C0), 12.5, 2))
-    U(sp, lambda cv, x: m_rays(cv, E["fire"], (C0, C0), 8.0, 14.0, 16))
+    sp.accent = None
+    sp.place = Place(0.5, at=(9.0, 9.0))
+
+    def stone(cv, x):
+        f = E["fire"]
+        red_hi, red_lit, red_deep = M["red"][0], M["red"][1], M["red"][4]
+        cv.disc(17, 25, 9.0, 3.6, f[2])
+        cv.disc(17, 25, 6.5, 2.4, f[1])
+        rows = ((-4, 2), (-3, 4), (-2, 5), (-1, 5), (0, 5), (1, 4))
+        for (dy, half) in rows:
+            for dx in range(-half, half):
+                tone = red_hi if dy <= -3 else (red_deep if dy >= 1 else red_lit)
+                if (dx * 7 + dy * 13) % 4 == 0 and dy > -4:
+                    tone = f[0] if dy < -1 else f[1]
+                cv.set(17 + dx, 24 + dy, tone)
+        cv.set(16, 20, f[0])
+        cv.set(17, 20, f[0])
+    U(sp, stone)
+
+    def spits(cv, x):
+        f = E["fire"]
+        lob(cv, f, (15, 19), (6, 22), 5, steps=10, thick=1)
+        lob(cv, f, (19, 19), (27, 15), 6, steps=10, thick=1)
+        for (bx, by) in ((6, 22), (27, 15)):
+            m_blast(cv, f, bx, by, 2.8)
+    O(sp, spits)
 
 
 @card("fireball_armageddon_sun")
 def _(sp, c):
-    """Armageddon Sun: a slow, swollen sun."""
+    """Armageddon Sun: a slow, swollen sun ploughing through the pack, searing what it passes."""
     reset(sp)
-    sp.place = Place(1.3)
+    sp.place = Place(1.0, at=(20.0, 15.0))
 
-    def spots(cv, x):
+    def seared(cv, x):
         f = E["fire"]
-        for (sx, sy, r) in ((12, 13, 1.6), (19, 20, 1.2), (21, 11, 1.0)):
-            cv.disc(sx, sy, r, r, f[3])
-        for (a0, ln) in ((300, 5), (40, 4), (150, 5)):
-            t = math.radians(a0)
-            for k in range(ln):
-                cv.set(C0 + math.cos(t) * (13 + k * 0.3), C0 + math.sin(t) * (13 - k * 0.2) - k * 0.3, f[1] if k < 2 else f[2])
-    O(sp, spots)
+        for (qx, qy) in ((5, 12), (8, 21)):
+            quarry(cv, qx, qy, 3.2)
+            cv.set(qx - 1, qy - 4, f[1])
+            cv.set(qx, qy - 5, f[0])
+            cv.set(qx + 1, qy - 4, f[2])
+        for px in range(3, 13, 2):
+            cv.set(px, 27, f[3])
+            cv.set(px + 1, 27, f[2])
+    U(sp, seared)
 
 
 # --- Frost Shard -----------------------------------------------------------------------------------
