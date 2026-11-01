@@ -2878,7 +2878,7 @@ which stays), a chain hop (Chain Lightning), a drizzle round the wizard (Starfal
 
 | card (id) | audit | now: what the player sees |
 |---|---|---|
-| level 4 (`solar_flare_radiance`) | **numbers**: Radiant Glow, +40% area and 25% faster pulses | **Sun Dogs**: two mock suns hang either side of him on the line through his middle and flare with every pulse, each 60% as wide as the flare for 60% of its damage (and its Weaken). They hang 1.6 flare-reaches out, so they drift outward as the flare builds while he stands still. Pulses 20% faster |
+| level 4 (`solar_flare_radiance`) | **numbers**: Radiant Glow, +40% area and 25% faster pulses | **Sun Dogs**: two mock suns hang either side of him on the line through his middle and flare with every pulse, each 60% as wide as the flare for 80% of its damage (and its Weaken). They hang 1.6 flare-reaches out, so they drift outward as the flare builds while he stands still. Pulses 25% faster |
 | level 4 (`solar_flare_scorching_heat`, +Fire) | **numbers**: Scorching Heat, +45% damage and the tag | **Solar Prominence**: every pulse hurls two loops of fire off the flare's rim - a third at half charge, a fourth at full - at the nearest enemies just past its edge (out to 2.4 reaches); each arcs over and comes down in a burst 0.4 reaches across, for 80% of the pulse. +1 Fire at the hybrid's price, +15% damage |
 | level 4 (`solar_flare_blinding_flash`) | **visible**: some of what it catches reels back, staggered | unchanged; reworded to say it |
 | Ascension (`solar_flare_daybreak`, +Light) | **visible**: burns away every enemy bolt inside the flare (2d-bis) | unchanged |
@@ -2926,11 +2926,11 @@ Event Horizon throws nothing either way, so every level 4 card means the same un
 
 | card (id) | audit | now: what the player sees |
 |---|---|---|
-| level 4 (`meteor_cluster`) | **numbers**: Meteor Shower, +3 meteors and +30% area | **Breakup**: every meteor breaks apart half way down and comes down as three smaller stones round its mark - the streak splits into three - each 0.65 of the blast for 80% of the hit, three small craters. +20% damage |
+| level 4 (`meteor_cluster`) | **numbers**: Meteor Shower, +3 meteors and +30% area | **Breakup**: every meteor breaks apart half way down and comes down as three smaller stones round its mark - the streak splits into three - each 0.65 of the blast for 80% of the hit, three small craters. +30% damage |
 | level 4 (`meteor_magma_crater`) | **visible**: the craters burn | unchanged |
 | level 4 (`meteor_starcrash`, +Earth) | **numbers**: Cosmic Impact, +75% damage and a shove | **Skipstone**: every meteor glances off the ground and bounds on along its fall (1.5 blasts, 0.3 s, a lob drawn between) to land again for 90%, a second crater; a bound that would land on water or a wall sinks instead. +35% damage |
-| Ascension (`meteor_extinction_event`, +Fire) | **numbers**: every meteor x3 wide and x3.5 hard | **Extinction Event**: the volley ends, a beat after its last meteor, in one colossal meteor on the thickest pack in reach - a heavier streak falling for 0.75 s, 2.5 times the blast, 3 times the hit. +50% damage |
-| Ascension (`meteor_orbital_bombardment`) | **numbers**: -60% cooldown, +6 meteors | **Creeping Barrage**: the volley walks - meteors land two abreast in a line from the nearest enemy out through the thickest pack, a blast apart, a second line beside the first when it reaches the end of the spell's reach. +8 meteors, -55% cooldown, +20% damage |
+| Ascension (`meteor_extinction_event`, +Fire) | **numbers**: every meteor x3 wide and x3.5 hard | **Extinction Event**: the volley ends, a beat after its last meteor, in one colossal meteor on the thickest pack in reach - a heavier streak falling for 0.75 s, 2.5 times the blast, 3 times the hit. +25% damage |
+| Ascension (`meteor_orbital_bombardment`) | **numbers**: -60% cooldown, +6 meteors | **Creeping Barrage**: the volley walks - meteors land two abreast in a line from the nearest enemy out through the thickest pack, a blast apart, to a step and a half past its heart; the next line walks beside the first, one side and then the other. +8 meteors, -55% cooldown, +60% damage |
 
 `MeteorImpact` keeps a meteor's landing spots as a few slots (offsets from its node), so one node draws
 the split streaks, hits each spot and opens each crater; Breakup's fragments over blocked ground fall on
@@ -2949,14 +2949,47 @@ creeping line goes INTO the pack, where Spike Run's runs across its front.
 |---|---|---|---|
 | Fireball | Cluster + Hellfire Nova -> Brimstone | 90 / 121 / 155, **913** | 82 / 133 / 184, **453** |
 | | Cluster + Armageddon Sun | 93 / 132 / 144, **922** | 89 / 132 / 156, **438** |
-| Arcane Explosion | Dual Shockwave + Supernova -> Sympathetic Blast + Resonance | 23 / 46 / 56, **372** | ARC1 |
-| | Lingering Rift + Event Horizon | 32 / 45 / 60, **315** | ARC2 |
-| Meteor Swarm | Meteor Shower + Extinction Event -> Breakup + finale | 43 / 66 / 89, **445** | MET1 |
-| | Cosmic Impact + Orbital Bombardment -> Skipstone + Creeping Barrage | 51 / 88 / 97, **306** | MET2 |
+| Arcane Explosion | Dual Shockwave + Supernova -> Sympathetic Blast + Resonance | 23 / 46 / 56, **372** | 21-38 / 32-42 / 40-86, **361** (244 at x1.6 with echoes at 75%, 285 at x2.2) |
+| | Lingering Rift + Event Horizon | 32 / 45 / 60, **315** | 21-40 / 39-58 / 49-73, **366** (300 at x2.2, 309 at x2.5) |
+| Meteor Swarm | Meteor Shower + Extinction Event -> Breakup + finale | 43 / 66 / 89, **445** | 30-72 / 36-86 / 45-131, **420** (433-452 at x1.2 + x1.5, 496 at x1.4 + x1.3) |
+| | Cosmic Impact + Orbital Bombardment -> Skipstone + Creeping Barrage | 51 / 88 / 97, **306** | 42-58 / 57-70 / 69-102, **297-333** (257 at +6, -50%, x1) |
 
 Fireball's old Ascensions sat at twice the band's top (its levels 4-6 sit over the band too, untouched
 here); the new ones were set into it - Brimstone at +50% measured 570 and Armageddon Sun at +80% 592, so
 they went to +10% and +30%.
+
+Levels 4-6 swing by a factor of two between runs of one build here (Breakup's level 6 read 50 and 131 on
+the same numbers but a different day's load), so read them as a band. Arcane Explosion's levels 4-6 are
+its partner's: a Magic Missile held at level 1 is what charges it.
+
+- **Creeping Barrage sits at the band's floor** (289-333 over three runs, the old card 306). Raising its
+  damage barely moved it (x1.2 -> x1.6 read 257 -> 270 before the line was bounded to the pack): the bot
+  stands in a ring of the swarm, and a line through one side of it meets a share of the crowd however hard
+  it hits. Against a pack coming at the wizard from one side - the case it is for - it covers all of it.
+  First knob if it reads weak in play: meteors (+8 now).
+- **Solar Flare's Ascensions read under the band today** (Sun Dogs + Daybreak 267-286, Prominence +
+  Corona 299-304; on 2026-10-29 they read 357-391 with the old level 4 cards). Daybreak at x2.5 and
+  Corona at x2.9 read the same as at x2.0 and x2.4, so the number is not their damage: the flare kills what
+  is inside it in one pulse, and its band figure is how fast the crowd walks into it. They were left at
+  their numbers. The level 4 cards: Sun Dogs 22-30 at level 4 (now 80% of the flare and 25% faster pulses,
+  from 60% and 20%), Solar Prominence 29-38.
+
+**Screenshots** (`_UiShot` at 1280x720, `--spell-stage` or `--crowd`, staged knots, PC canvas only):
+Brimstone's stone and its spits, Armageddon Sun rolling through a knot, Sympathetic Blast in Lightning and
+Ice (Magic Missile and Cone of Cold charging it), Resonance's echo, Event Horizon's sphere with the frozen
+pack in it, Breakup's streak splitting in three, Extinction Event's finale, Skipstone's second crater, and
+Creeping Barrage's lines across the pack.
+
+**State of this work (2026-11-01).** Built, measured and pushed on `wip/evolutions2-blasts`: Solar Flare
+(4efa17c, merged; texts shortened and Sun Dogs raised since), Fireball (1de919d), Arcane Explosion
+(08ba52b) and Meteor Swarm (132b9fa and after). Every card's id, element gain and Apotheosis gate is
+unchanged (none of the four is on a wizard's path); `dotnet build` clean; the validator 0 errors, 6
+warnings (the baseline); every changed card has its icon. **Left, and needs eyes:** all of it in play and
+on a phone - the phone canvas was not photographed (Event Horizon's sphere and Resonance's echoes cover
+the most of the screen of these; neither was put through 2i's `--cover`); whether Sympathetic Blast's
+colour reads at a glance in a crowd; Skipstone's bound (0.3 s, small) is seen more as a second crater
+than as a stone bounding; Creeping Barrage's floor (above); Solar Flare's Ascensions under the band
+(above).
 
 ## 2i. The Ascension audit (2026-10-30)
 
