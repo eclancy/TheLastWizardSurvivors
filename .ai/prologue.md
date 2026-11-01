@@ -13,7 +13,7 @@ choice below comes from it.
 | # | Panel (`name`) | Line | What it is |
 |---|---|---|---|
 | 1 | The moot (`moot`) | - | The Broken Circle before (`.ai/campaign.md` chapter 3): a ring of standing stones on the heath at night, a warded fire in the middle, and round it seven wizards, each staff burning a different element. The only frame with more than one warm light in it - every light the world had is still in it. |
-| 2 | He comes (`throne`) | *He came here first.* | The same circle under him: his first full look. A tall cowled figure inside a collar of points, one arm raised with the wizards' light streaming into his hand, keys at his belt, an eclipse of his own dark light behind his head. The stones are down, the wizards are on the ground, and the shadow running out of his hem has eyes in it. |
+| 2 | He comes (`throne`) | *He came here first.* | The same circle under him, and **only his silhouette**: a tall cowled shape inside a collar of points, one arm raised with the wizards' light streaming into his hand, rimmed by an eclipse of his own dark light behind his head. No face, folds, trim or keys. The stones are down, the wizards are on the ground, and the shadow running out of his hem has eyes in it. |
 | 3 | The tide (`tide`) | - | His shadows over the land: a village at the foot of a hill, still lit, and coming over the crest from the tower on the horizon a flood of the things he raised, every one with his mark in its eyes. One of them, horned, in the foreground. |
 | 4 | Taken (`taken`) | *He took them all.* | The wizards led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
 | 5 | The one he missed (`missed`) | *You are the one he missed.* | The title screen's picture told as story: the player in the warded circle, in the broken ring at night, his eyes on the horizon beyond the stones. |
@@ -40,12 +40,15 @@ title card, no narration, nothing an image is already saying (`world-and-tone.md
   (`.ai/side-events.md`, "Secret wizards"), so nothing here may let a player tell one from another.
 - **The player is the light.** The last two panels have one warm light each, and it is his.
 
-**One tension, decided in favour of the request.** `world-and-tone.md` tone rule 5 says *"He is never
-on screen until he is."* Eric asked for the prologue to introduce him, so panel 2 does - once, before
-the first run, and then not again until the Throne. He is never named (the Throne's banner does not
-name him either), and his look here is the reference for whoever builds `ThroneDarkWizardBoss`'s
-sprite (`.ai/endgame-castle.md` 6.4): no hat brim and no staff, which are the player's; the cowl and
-the collar of points; the raised hand that takes; the keys.
+**One tension, and how Eric settled it (2026-11-01).** `world-and-tone.md` tone rule 5 says *"He is
+never on screen until he is."* Eric asked for the prologue to introduce him, then ruled: *"The dark
+wizard should be shown in at most a silhouette in the prologue."* So panel 2 shows his shape once,
+filled flat with occlusion and lit only at the rim (`dark_wizard` in `tools/art/prologue.py` still cuts
+every part - cowl, collar, sleeve, circlet, fingers, key ring - then flattens them), and his inside is
+the Throne's to reveal. He is never named (the Throne's banner does not name him either). The shape is
+the reference for whoever builds `ThroneDarkWizardBoss`'s sprite (`.ai/endgame-castle.md` 6.4): no hat
+brim and no staff, which are the player's; the cowl and the collar of points; the raised hand that
+takes. A later prologue panel may never show more of him than this one does.
 
 ## The art
 

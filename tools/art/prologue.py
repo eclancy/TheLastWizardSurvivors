@@ -513,7 +513,8 @@ def light_up(s, lx, ly, radius, ladder, power=1.4, seed=0):
 
 
 def dark_wizard(c, cx, yb, h):
-    """His first full look, and the only figure in the game allowed to SHED dark light: the
+    """His first look, as a silhouette only (Eric, 2026-11-01), and the only figure in the game
+    allowed to SHED dark light: the
     darkness ramp as emission is his alone (.ai/world-and-tone.md, "The dark wizard is the
     exception that proves it").
 
@@ -640,11 +641,18 @@ def dark_wizard(c, cx, yb, h):
         s.vline(x0, ry_ + 1.0 * u, ry_ + ln * u, ST[3])
         s.hline(x0, x0 + 0.9 * u, ry_ + ln * u, ST[3])
         s.hline(x0, x0 + 0.6 * u, ry_ + (ln - 1.1) * u, ST[3])
-    # --- light ------------------------------------------------------------------------
-    # The orb lights the cloth near it a stop up. Not the face: the face is far enough inside
-    # the cowl that only its edge sees the orb, and lifting it read as a grey mask.
+    # --- a silhouette only -------------------------------------------------------------
+    # Eric, 2026-11-01: "The dark wizard should be shown in at most a silhouette in the
+    # prologue." Everything above now only cuts his shape - cowl, collar points, sleeve, the
+    # circlet's points, the long fingers, the key ring - and this flattens all of it to one
+    # dark, so no face, fold, gold edge or bone reads. His inside is the final fight's to show.
+    # The orb no longer lights his cloth for the same reason; the rims below are all that say
+    # where his edges are against the black sun.
+    for yy in range(s.h):
+        for xx in range(s.w):
+            if s.px[xx, yy][3]:
+                s.set(xx, yy, OCC)
     orb = (hx - 0.2 * u, hy - 4.6 * u)
-    light_up(s, orb[0], orb[1], 22 * u, [(V[4], V[3]), (V[3], V[2]), (OCC, V[4])], power=1.8)
     shoulder = int(oy - 44 * u)
     edge_light(s, DK[1], (0, -1), box=(0, 0, s.w, shoulder + 2 * u), inner=DK[3])
     edge_light(s, DK[2], (-1, 0), box=(0, 0, ox + 1 * u, oy - 30 * u))
