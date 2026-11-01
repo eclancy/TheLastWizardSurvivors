@@ -821,7 +821,42 @@ included, on top of the arrival curve). Ten fights of three to five minutes woul
 bosses in a mode built as a run a little longer than a chapter; each rush fight keeps its whole shape
 (thresholds are fractions) at about the length a chapter's fight had before.
 
-MEASURED_PLACEHOLDER
+**Measured** (`_BalanceHarness --survivor --immortal --policy=ordinary --stop-overrun=60
+--minutes=21`, `--fixed-fps 30 --timescale=1`, Stormcaller, seed 1234; fight = boss down minus
+15:00, the arrival included). "Was" is `.ai/difficulty-curve.md` section 10, measured on older code:
+on this branch's base the bot reached the boss weaker in some chapters (level 28 at the Ruins against
+49 there), so a same-code baseline is being run to replace that column.
+
+| # | chapter | save | L15 | fight, min | was | health measured at | health now |
+|---|---|---|---|---|---|---|---|
+| 1 | Forest | fresh | 29 | 2.9 | 1.2 | 9,500 | 9,500 |
+| 2 | Fields | fresh | 18 | over 6 (boss at half when the run ended; a sieged, weak build) | 1.8 | 12,000 | 10,000 |
+| 3 | Circle | farmed | 34 | 2.4 | 1.6 | 38,000 | 46,000 |
+| 4 | Cave (Choir) | farmed | 32 | 6.0 | 0.1 | 3 x 26,000 | 3 x 18,000 |
+| 5 | Dungeon (Gaoler) | farmed | 37 | 3.7 | 1.3 | 150,000 | 150,000 |
+| 6 | Swamp (Mother Rot) | farmed | 39 | 3.0 | 0.6 | 170,000 | 170,000 |
+| 7 | Ruins (Archivist) | farmed | 28 | 5.2 | 2.1 | 160,000 | 140,000 |
+| 8 | Frozen (Still Warden) | farmed | 37 | 1.9 | 2.4 | 190,000 | 300,000 |
+| 9 | Sands (Long Coil) | farmed | 36 | 4.2 | 0.9 | 300,000 | 300,000 |
+| 10 | Emberdeep (Warden of the Deep) | farmed | 43 | 3.1 | 1.1-2.2 | 420,000 | 600,000 |
+
+`_BossProbe` on every chapter (0-10, the Choir with and without `--focus`): every boss arrives, holds
+the field for its arrival (spells held, the player unhurt, both released the frame after), reaches
+every phase and falls cleanly. The Hayward's probe runs out of clock before the drain kills him -
+his hurdle cuts the probe's own drain to x0.2 from in front, as it did before.
+
+**Status (2026-11-01), for whoever picks this up:**
+
+- Done: the arrivals (all eleven, photographed at 1280x720 and 540x1212 portrait), the field hold,
+  the phases, the health above, the Boss Rush share, the validators (0 errors, 6 warnings, as at base).
+- Unfinished: the "health now" column for the Fields, the Circle, the Choir, the Ruins, the Frozen
+  Waste and the Emberdeep was set from the runs above and **not re-measured**; the same-code baseline
+  (base commit, chapters 0, 2, 4, 5); one Boss Rush run to check its length at the 0.35 share; a merge
+  of `main-ff86ni`.
+- Needs a human eye: every arrival in play (the photographs were taken with the boss stood in front
+  of the wizard, with no crowd); whether a 2.5-4 s hold reads as a beat or a wait; the Choir's new
+  spacing (voices hold places 230 px round the player, step in to sing in turn); Mother Rot's
+  percentage regeneration; the Still Warden's whiteout ring.
 
 ### What not to take
 
