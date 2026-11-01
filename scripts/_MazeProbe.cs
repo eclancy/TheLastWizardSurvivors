@@ -15,6 +15,9 @@ using WizardSurvivors.scripts;
 //       --seconds=180 --bot=circle --bot-speed=0.5 --stress-swarm --no-save-writes
 //                                     (the crowd, at the game's own step: a full swarm, the player
 //                                      circling at its pace - the jam measurement, see FlowWindowFrames)
+//   ... --stage=12 --seconds=130 --timescale=2 --bot=corners --check-walls --no-save-writes
+//                                     (the Court: every room's four corners walked into, and every cell
+//                                      round each checked - wall flag, collision, layout - see CheckWalls)
 //
 // WHY THIS EXISTS. The Cursed Dungeon was reported as "enemies trapped in other corridors most of
 // the time". A screenshot shows that it happens but not how often, and a fix judged by eye from two
@@ -50,6 +53,19 @@ public partial class _MazeProbe : Node
 	// --bot=circle walks a circle of this radius (--circle=R): a player kiting round in arcs.
 	[Export] public float CircleRadius { get; set; } = 260f;
 	private float circleAngle;
+
+	// --check-walls: do the places that must agree about a wall (.ai/terrain.md section 2) agree? Every
+	// physics step it asks whether the player's feet stand in a cell the chunk data calls wall, and every
+	// sample it walks the painted chunks round him cell by cell: the chunk's wall flag (what navigation and
+	// placement read) against the ground's collision at the cell's centre (what the feet meet), and on an
+	// Authored chapter against the layout's own grid (what the Court's rooms, its boss and the tools route
+	// on). Built for the Court, whose Seneschal probe found the bot's feet in a cell the grid calls wall.
+	// The roam bot walks into every wall it meets, which is the case to test.
+	[Export] public bool CheckWalls { get; set; }
+	private long wallFeetFrames, wallFeetInWall, wallCellsChecked, wallNoCollision, wallStrayCollision, wallFloorBodies, wallLayoutDisagrees;
+	private readonly List<string> wallReports = new();
+	private readonly HashSet<Vector2I> wallChunksSeen = new();
+	private PhysicsPointQueryParameters2D groundPoint;
 
 	private const float SampleEvery = 5f;
 	private const float StallWindow = 3f;
@@ -120,6 +136,7 @@ public partial class _MazeProbe : Node
 			else if (arg.StartsWith("--bot-speed=")) BotSpeed = float.Parse(arg.Substring(12), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg.StartsWith("--circle=")) CircleRadius = float.Parse(arg.Substring(9), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg == "--no-open-routing") MazeNavigation.OpenStageRouting = false;
+			else if (arg == "--check-walls") CheckWalls = true;
 		}
 
 		ProcessMode = ProcessModeEnum.Always;
@@ -167,6 +184,8 @@ public partial class _MazeProbe : Node
 			Roam(d);
 		else if (Bot == "circle")
 			Circle(d);
+		else if (Bot == "corners")
+			Corners(d);
 
 		sinceSample += d;
 		if (sinceSample >= SampleEvery)
@@ -184,6 +203,8 @@ public partial class _MazeProbe : Node
 	// nothing, so it drops every record rather than timing a window that spans it.
 	public override void _PhysicsProcess(double delta)
 	{
+		if (CheckWalls && !finished && player != null && IsInstanceValid(player) && !GetTree().Paused)
+			CheckFeetInWall();
 		if (finished || player == null || !IsInstanceValid(player) || elapsed < WarmupSeconds)
 			return;
 		if (GetTree().Paused)
@@ -291,6 +312,9 @@ public partial class _MazeProbe : Node
 		// What one whole recompute costs, in one go. In play it is built a slice a frame
 		// (MazeNavigation.FieldCellsPerFrame), at most five times a second and not at all while the
 		// player holds one cell, so this is the total a field costs rather than what any frame pays.
+		if (CheckWalls)
+			CheckWallCells();
+
 		var watch = System.Diagnostics.Stopwatch.StartNew();
 		nav.RecomputeNow(player.FootPosition);
 		watch.Stop();
@@ -395,6 +419,105 @@ public partial class _MazeProbe : Node
 		return false;
 	}
 
+	// --- --check-walls -----------------------------------------------------------------------------
+
+	private void CheckFeetInWall()
+	{
+		if (Node2DGame.Current?.Terrain is not TerrainStreamer t)
+			return;
+		wallFeetFrames++;
+		Vector2 foot = player.FootPosition;
+		if (!t.IsWallAtWorld(foot))
+			return;
+		wallFeetInWall++;
+		if (wallFeetInWall <= 5)
+			ReportWall($"feet in a wall cell at t={elapsed:0.0}s: footprint ({foot.X:0},{foot.Y:0}), {DescribeCell(t.CellOfWorld(foot))}");
+	}
+
+	// The painted chunks round the player, every cell: flag against collision, and flag against the layout.
+	private void CheckWallCells()
+	{
+		if (Node2DGame.Current is not Node2DGame run || run.Terrain is not TerrainStreamer t)
+			return;
+		PhysicsDirectSpaceState2D space = player.GetWorld2D().DirectSpaceState;
+		groundPoint ??= new PhysicsPointQueryParameters2D
+		{
+			CollisionMask = 1u << (LevelTilePainter.TerrainCollisionLayer - 1),
+			CollideWithBodies = true,
+			CollideWithAreas = false,
+		};
+		AuthoredLayout layout = AuthoredLayout.For(StageEnvironmentCatalog.GetForStageIndex(StageIndex).Kind);
+		Vector2I centre = t.ChunkOfWorld(player.GlobalPosition);
+		float half = run.ProceduralTilePixels * 0.5f;
+		for (int cy = centre.Y - 2; cy <= centre.Y + 2; cy++)
+		{
+			for (int cx = centre.X - 2; cx <= centre.X + 2; cx++)
+			{
+				TerrainChunk chunk = t.DataFor(new Vector2I(cx, cy));
+				if (!chunk.Painted)
+					continue;
+				wallChunksSeen.Add(chunk.Coord);
+				for (int y = 0; y < TerrainStreamer.ChunkTiles; y++)
+				{
+					for (int x = 0; x < TerrainStreamer.ChunkTiles; x++)
+					{
+						var cell = new Vector2I(chunk.MinCell.X + x, chunk.MinCell.Y + y);
+						bool wall = (chunk.Flags[x + y * TerrainStreamer.ChunkTiles] & TerrainStreamer.FlagWall) != 0;
+						groundPoint.Position = t.CellOriginWorld(cell) + new Vector2(half, half);
+						bool ground = false, body = false;
+						foreach (Godot.Collections.Dictionary hit in space.IntersectPoint(groundPoint, 4))
+						{
+							if (hit["collider"].AsGodotObject() is TileMapLayer)
+								ground = true;
+							else
+								body = true;
+						}
+						wallCellsChecked++;
+						if (wall && !ground)
+						{
+							wallNoCollision++;
+							if (wallNoCollision <= 5)
+								ReportWall($"a wall cell with no collision: {DescribeCell(cell)}");
+						}
+						else if (!wall && ground && !t.IsBlockedAtWorld(groundPoint.Position))
+						{
+							wallStrayCollision++;
+							if (wallStrayCollision <= 5)
+								ReportWall($"wall collision on a floor cell: {DescribeCell(cell)}");
+						}
+						if (!wall && body)
+							wallFloorBodies++;
+						if (layout != null && layout.IsWalkable(layout.CellOfWorldTile(cell)) == wall)
+						{
+							wallLayoutDisagrees++;
+							if (wallLayoutDisagrees <= 5)
+								ReportWall($"the layout and the chunk disagree: {DescribeCell(cell)}, chunk {(wall ? "wall" : "floor")}");
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// A world cell, and on an Authored chapter the layout's cell it is and what the layout says of it.
+	private string DescribeCell(Vector2I cell)
+	{
+		string s = $"world cell {cell}";
+		AuthoredLayout layout = AuthoredLayout.For(StageEnvironmentCatalog.GetForStageIndex(StageIndex).Kind);
+		if (layout != null)
+		{
+			Vector2I g = layout.CellOfWorldTile(cell);
+			s += $" = layout cell {g} ({(layout.IsWalkable(g) ? "floor" : "wall")}{(layout.RoomAt(g) is AuthoredLayout.Room r ? ", " + r.Id : "")})";
+		}
+		return s;
+	}
+
+	private void ReportWall(string line)
+	{
+		wallReports.Add(line);
+		GD.Print($"MAZEPROBE WALLS {line}");
+	}
+
 	// Walk one way until a wall stops it, then turn - a crude corridor crawler, which is all it needs
 	// to be: the subject is whether the horde keeps up, not where the player goes.
 	private void Roam(float delta)
@@ -418,6 +541,77 @@ public partial class _MazeProbe : Node
 
 		Press("move_right", "move_left", heading.X * BotSpeed);
 		Press("move_down", "move_up", heading.Y * BotSpeed);
+	}
+
+	// --bot=corners (an Authored chapter, with --check-walls): every room of the layout in turn, set down a
+	// cell and a half inside each of its four corners and walking hard into the corner for a second - the
+	// inner corner of two walls is where a footprint can be squeezed between two bodies' shapes. It sees the
+	// whole building, where the roam bot sees what it happens to walk into; each visit also lets the cell
+	// scan (--check-walls) read the chunks round that room.
+	private readonly List<(Vector2 Start, Vector2 Push, string Name)> cornerVisits = new();
+	private int cornerIndex = -1;
+	private float cornerClock;
+	private int cornerBodyInWall;
+	private const float CornerPushSeconds = 1.2f;
+
+	private void Corners(float delta)
+	{
+		if (cornerIndex < 0)
+		{
+			cornerIndex = 0;
+			AuthoredLayout layout = AuthoredLayout.For(StageEnvironmentCatalog.GetForStageIndex(StageIndex).Kind);
+			if (layout == null || Node2DGame.Current is not Node2DGame run)
+			{
+				GD.Print("MAZEPROBE --bot=corners needs an Authored chapter (the Court); standing still.");
+				return;
+			}
+			float tile = run.ProceduralTilePixels;
+			foreach (AuthoredLayout.Room room in layout.Rooms)
+			{
+				Rect2I r = room.Rect;
+				var corners = new (Vector2I Cell, Vector2 Push, string Name)[]
+				{
+					(new Vector2I(r.Position.X, r.Position.Y), new Vector2(-1f, -1f), "NW"),
+					(new Vector2I(r.End.X - 1, r.Position.Y), new Vector2(1f, -1f), "NE"),
+					(new Vector2I(r.Position.X, r.End.Y - 1), new Vector2(-1f, 1f), "SW"),
+					(new Vector2I(r.End.X - 1, r.End.Y - 1), new Vector2(1f, 1f), "SE"),
+				};
+				foreach (var (cell, push, name) in corners)
+				{
+					if (!layout.IsWalkable(cell))
+						continue;
+					// The corner cell's centre, a cell and a half back from the corner.
+					Vector2 centre = run.StageOrigin + ((Vector2)layout.WorldTileOf(cell) + new Vector2(0.5f, 0.5f)) * tile;
+					cornerVisits.Add((centre - push * tile * 1.5f, push.Normalized(), $"{room.Id} {name}"));
+				}
+			}
+			GD.Print($"MAZEPROBE --bot=corners: {cornerVisits.Count} corners in {layout.Rooms.Count} rooms");
+			cornerClock = CornerPushSeconds;
+		}
+		if (cornerVisits.Count == 0)
+			return;
+		cornerClock += delta;
+		if (cornerClock >= CornerPushSeconds)
+		{
+			cornerClock = 0f;
+			// Where the push ended: the feet on the floor (CheckFeetInWall says if not), and the body's
+			// centre, 36 px above them, often in the wall the feet stopped at - which is a cell the grid
+			// calls wall, and is not where he stands. Read a cell from FootPosition, never GlobalPosition.
+			if (cornerIndex > 0 && cornerIndex <= cornerVisits.Count && Node2DGame.Current?.Terrain is TerrainStreamer t
+				&& t.IsWallAtWorld(player.GlobalPosition) && !t.IsWallAtWorld(player.FootPosition) && (++cornerBodyInWall <= 2 || cornerVisits[cornerIndex - 1].Name.StartsWith("map_room")))
+				GD.Print($"MAZEPROBE corners: at {cornerVisits[cornerIndex - 1].Name} the feet stand on {DescribeCell(t.CellOfWorld(player.FootPosition))} "
+					+ $"and the body's centre is over {DescribeCell(t.CellOfWorld(player.GlobalPosition))}");
+			var (start, _, name) = cornerVisits[cornerIndex % cornerVisits.Count];
+			cornerIndex++;
+			// Set down by the feet, which are what the walls meet.
+			player.GlobalPosition = start - (player.FootPosition - player.GlobalPosition);
+			player.Velocity = Vector2.Zero;
+			if (cornerIndex <= cornerVisits.Count && cornerIndex % 8 == 1)
+				GD.Print($"MAZEPROBE corners: {cornerIndex}/{cornerVisits.Count} ({name})");
+		}
+		Vector2 h = cornerVisits[(cornerIndex - 1 + cornerVisits.Count) % cornerVisits.Count].Push * BotSpeed;
+		Press("move_right", "move_left", h.X);
+		Press("move_down", "move_up", h.Y);
 	}
 
 	// Round and round at a steady turn, whatever is in the way: the subject is the crowd that follows.
@@ -483,6 +677,11 @@ public partial class _MazeProbe : Node
 			GD.Print($"  stacked : {100.0 * flowStacked / flowBodies:0.0}%  (centre within {StackDistance:0} px of another)");
 		if (contactSamples > 0)
 			GD.Print($"  contact : {contactSum / contactSamples:0.00} enemies touching the player");
+		if (CheckWalls)
+		{
+			GD.Print($"MAZEPROBE WALLS SUMMARY stage={StageIndex} feetInWall={wallFeetInWall}/{wallFeetFrames} frames, cells={wallCellsChecked} in {wallChunksSeen.Count} chunks "
+				+ $"wallNoCollision={wallNoCollision} collisionOnFloor={wallStrayCollision} bodiesOnFloor={wallFloorBodies} layoutDisagrees={wallLayoutDisagrees}");
+		}
 		GD.Print($"MAZEPROBE SUMMARY stage={StageIndex} bot={Bot} reach={(samples > 0 ? sumReach / samples : 0):0.0} detour={(samples > 0 ? sumDetour / samples : 0):0.00} stalled={(samples > 0 ? sumStalled / samples : 0):0.0} close={(samples > 0 ? sumClose / samples : 0):0.0} speed={(flowFar > 0 ? flowRatioSum / flowFar : 0):0.00} jammed={(flowFar > 0 ? 100.0 * flowJammed / flowFar : 0):0.0} onbody={(flowFar > 0 ? 100.0 * flowJammedOnBody / flowFar : 0):0.0} closing={(flowFar > 0 ? flowClosingSum / flowFar : 0):0.00} stacked={(flowBodies > 0 ? 100.0 * flowStacked / flowBodies : 0):0.0} contact={(contactSamples > 0 ? contactSum / contactSamples : 0):0.00} alive={(samples > 0 ? sumAlive / samples : 0):0}");
 
 		player = null;

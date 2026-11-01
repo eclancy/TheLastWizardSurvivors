@@ -774,7 +774,16 @@ an upright staff). What it settled that the paragraph above did not:
   and one that cannot route to the player (past the flow field's 64-tile horizon, say) walks into a
   wall for the rest of the run. In one of them the bot stood six minutes with its feet in a cell the
   grid calls wall (119, 145, the Map Room's north wall), and neither the boss nor the two bodies left
-  ever reached it - worth a look by whoever owns the Court's walls (C3).
+  ever reached it - worth a look by whoever owns the Court's walls (C3). **Looked at before the flip
+  (2026-11-01, `wip/castle-preflip`): the walls agree, and that cell is where the bot's body stood, not
+  its feet.** `_MazeProbe --stage=12 --bot=corners --check-walls` sets the wizard down inside every
+  room's four corners (60) and walks him into each, and scans every painted cell round him (all 36 of
+  the building's chunks and the rock round them, 640,000 cell reads): no wall cell without collision,
+  no collision on a floor cell, the chunk data and `court_layout.json` agree on every cell, and his feet
+  were never in a wall cell. Pressed into the Map Room's north-east corner his feet stand on (119, 146)
+  and his body's centre, 36 px above them, is over (119, 145) - the cell reported. Read a cell from
+  `Player.FootPosition`, never `GlobalPosition`; every Court reader of the player's cell already does.
+  The stall itself was the flow field's horizon, which the hop answers.
 - **Hook 4 changed** (`CourtRules.BossSpawnPoint`): he now arrives on the near side of the chosen room,
   not its middle. The rooms run to 2,700 px, and an arrival at the middle of one was off screen.
 - **Health 440,000**, not 13,000: measured with the bot (`.ai/enemy-behaviour.md`, "The Seneschal"),
