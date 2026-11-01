@@ -130,6 +130,11 @@ builds to 120 and seven.
 8. **Ground per chapter**: every chapter's ground should read as its place; "Emberdeep doesn't look like
    cracked volcanic earth." A ground pass through `tools/art/tiles.py` and the chapters' terrain
    modules (`.ai/terrain.md` first), the Emberdeep first.
+9. **Make the Apotheosis visible** ("make it clearer that apotheosis is an option, showing in
+   'ascensions', etc"). Today the Ascensions browser never mentions it (`LevelUpMenu.Ascensions.cs` does not
+   read `ApotheosisCatalog`); a player meets it only when the strip offers it. Show the wizard's own
+   Apotheosis in the browser with its four requirements and their progress, and name it where the
+   wizard is chosen and where the starting spell's evolutions are shown.
 
 ## 4. Waiting on Eric
 
