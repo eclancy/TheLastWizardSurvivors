@@ -246,7 +246,11 @@ public partial class BossDeath : Node2D
 			if (!entranceHandedBack)
 				Boss.TickEntrance(this, t, dt);
 			if (Crossed(Boss.EntranceRoarSeconds))
+			{
 				Boss.RoarOnArrival();
+				// The climax: the run's cinematic flares, jolts and shakes on it (Node2DGame.BossEntrance.cs).
+				Node2DGame.Current?.OnBossClimax(Boss, Boss.EntranceClimaxWeight, Boss.EntranceFlareElement);
+			}
 		}
 		else
 			Boss.TickDeath(this, t, dt);
@@ -353,6 +357,15 @@ public partial class BossDeath : Node2D
 		if (Boss != null && IsInstanceValid(Boss))
 			Boss.OnEntranceEnd(this);
 	}
+
+	// --- The run's cues -----------------------------------------------------------------------------
+
+	/// <summary>
+	/// A beat of this arrival or fall that the ground feels - a landing, a burst, a grate swinging open: the
+	/// run shakes the screen for it, <paramref name="weight"/> 1 as hard as a roar. Call it inside the
+	/// <see cref="Crossed"/> block that throws the debris, so the jolt and the dust are one frame.
+	/// </summary>
+	public void Impact(float weight) => Node2DGame.Current?.OnBossImpact(Boss, weight);
 
 	// --- Clock helpers ------------------------------------------------------------------------------
 

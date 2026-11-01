@@ -651,6 +651,8 @@ public partial class BridgeConstableBoss : BossEnemy
 	// the butt of the halberd down on the walk with a ring of iron that shakes grit and dust off the merlons
 	// in front of him. He is on the wall: the arrival plays where he will fight from.
 	protected internal override float EntranceSeconds => 3.2f;
+	// The climax (BossDeath calls it on the roar): up on the wall, away from the player; the halberd grounding is its own beat.
+	protected internal override float EntranceClimaxWeight => 0.7f;
 
 	private BossDeath.Piece climbing;
 	private const float FlamesFrom = 0.2f;
@@ -688,6 +690,7 @@ public partial class BridgeConstableBoss : BossEnemy
 		Vector2 parapet = foot - new Vector2(0f, ParapetOverFeet);
 		if (stage.Crossed(Grounds))
 		{
+			stage.Impact(0.8f);
 			// The butt of the halberd on the walk: grit off the merlons in front of him, and dust.
 			stage.EmitAt(new BossDeath.Throw
 			{
@@ -787,6 +790,7 @@ public partial class BridgeConstableBoss : BossEnemy
 
 		if (death.Crossed(HalberdLands))
 		{
+			death.Impact(0.6f);
 			// The whole length of it on the setts: dust along it, a spark of iron where the head lands.
 			for (int k = 0; k < 4; k++)
 			{

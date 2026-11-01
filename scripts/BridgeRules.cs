@@ -304,10 +304,7 @@ public partial class BridgeRules : ChapterRules
 	private Vector2 VisibleHalfExtents()
 	{
 		Vector2 viewport = GetViewport().GetVisibleRect().Size;
-		float zoom = 1f;
-		var camera = Game.RunPlayer?.GetNodeOrNull<Camera2D>("Camera2D");
-		if (camera != null && camera.Zoom.X > 0.01f)
-			zoom = camera.Zoom.X;
+		float zoom = Node2DGame.GameplayZoomOf(Game.RunPlayer?.GetNodeOrNull<Camera2D>("Camera2D"));
 		return viewport / (2f * zoom);
 	}
 

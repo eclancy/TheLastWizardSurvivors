@@ -359,6 +359,14 @@ public partial class BossEnemy : Enemy
 	/// <summary>Bodies of any boss still arriving. Node2DGame holds the field while it is above zero.</summary>
 	public static int EnteringCount { get; private set; }
 
+	private static readonly System.Collections.Generic.List<BossEnemy> arriving = new();
+
+	/// <summary>
+	/// The bodies counted in <see cref="EnteringCount"/>, in the order they began: what the arrival's camera
+	/// looks at (Node2DGame.BossEntrance.cs). The Throne's pairs and the Choir's three voices are all here.
+	/// </summary>
+	public static System.Collections.Generic.IReadOnlyList<BossEnemy> Arriving => arriving;
+
 	/// <summary>True from the frame the boss is added until its arrival has played.</summary>
 	public bool IsEntering { get; private set; }
 
@@ -380,6 +388,20 @@ public partial class BossEnemy : Enemy
 	/// <summary>True for a boss whose own <c>_Draw</c> is part of its arrival (the Long Coil's body).</summary>
 	protected internal virtual bool RedrawsWhileEntering => false;
 
+	// THE CINEMATIC'S CUES (2026-11-01: "Show black bars like movie trailers, use zoom, screenshake, and
+	// dramatic cinematic flare"). The run frames the arrival - bars, the push-in, the hold on the player's
+	// feet - and needs only two things from the boss, both said by the boss because only it knows its own
+	// timeline: how hard its climax lands (the roar, BossDeath calls it), and the other beats worth a jolt,
+	// which a boss marks from inside its own TickEntrance / TickDeath with BossDeath.Impact(weight) on the
+	// frame they happen - a landing, a burst, a grate swinging open. Weight 1 is a roar's; a whisper of a
+	// boss (the Choir, the kids' wizard) is lighter, a forge catching fire heavier.
+
+	/// <summary>How hard the arrival's climax shakes the screen, 1 being a roar. 0 for none.</summary>
+	protected internal virtual float EntranceClimaxWeight => 1f;
+
+	/// <summary>Whose light the climax's flare is drawn in (the letterbox edges catch it): the mark's, by default.</summary>
+	protected internal virtual Element EntranceFlareElement => Element.Arcane;
+
 	private void BeginEntrance()
 	{
 		if (EntranceSeconds <= 0f)
@@ -387,6 +409,7 @@ public partial class BossEnemy : Enemy
 		IsEntering = true;
 		countedAsEntering = true;
 		EnteringCount++;
+		arriving.Add(this);
 		SetTargetable(false);
 		SetPhysicsProcess(false);
 		SetTellsVisible(false);
@@ -444,6 +467,7 @@ public partial class BossEnemy : Enemy
 			return;
 		countedAsEntering = false;
 		EnteringCount = Math.Max(0, EnteringCount - 1);
+		arriving.Remove(this);
 	}
 
 	public override void _ExitTree()
@@ -487,6 +511,7 @@ public partial class BossEnemy : Enemy
 		Vector2 foot = stage.Foot;
 		if (stage.Crossed(SeedLands))
 		{
+			stage.Impact(0.25f);
 			stage.DustRing(foot, 30f, 6, new Color(0.40f, 0.34f, 0.26f, 0.7f), 0.7f, 12f);
 			stage.PuffAt(foot, 6f, 30f, 0.5f, new Color(arcane.Mid, 0.7f), 0f, 0f, true);
 		}
@@ -698,6 +723,7 @@ public partial class BossEnemy : Enemy
 
 		if (death.Crossed(FellLand))
 		{
+			death.Impact(0.9f);
 			// Each half lands on its crown: bark off the trunk, the leaves still on it shaken loose, dust.
 			foreach (BossDeath.Piece half in new[] { fellLeft, fellRight })
 			{

@@ -491,7 +491,9 @@ public partial class ThroneRules : ChapterRules
 			return false;
 		Viewport viewport = GetViewport();
 		Camera2D camera = viewport?.GetCamera2D();
-		float zoom = Mathf.Max(0.01f, camera?.Zoom.X ?? 1f);
+		// The run's zoom, not a boss arrival's push-in (Node2DGame.GameplayZoomOf): a procession's pair arrives
+		// while the household guard keeps coming.
+		float zoom = Node2DGame.GameplayZoomOf(camera);
 		Vector2 half = (viewport?.GetVisibleRect().Size ?? new Vector2(1280f, 720f)) / zoom * 0.5f;
 		Vector2 seen = camera?.GetScreenCenterPosition() ?? playerPosition;
 		var view = new Rect2(seen - half - Vector2.One * 24f, half * 2f + Vector2.One * 48f);

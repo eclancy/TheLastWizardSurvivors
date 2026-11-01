@@ -418,6 +418,9 @@ public partial class HollowChoirBoss : BossEnemy
 	// second, then the third, a beat apart. Only the first roars: three at once would be one sound
 	// three times over (boss_roar is a once-a-run cue, .ai/audio-direction.md).
 	protected internal override float EntranceSeconds => 3.0f;
+	// The climax (BossDeath calls it on the roar): a song, not a landing: the screen trembles rather than jumps.
+	protected internal override float EntranceClimaxWeight => 0.45f;
+	protected internal override Element EntranceFlareElement => Element.Water;
 	protected internal override float EntranceDelaySeconds => voiceOrder * 0.35f;
 	protected internal override float EntranceRoarSeconds => IsEcho ? -1f : 2.3f;
 
@@ -440,6 +443,9 @@ public partial class HollowChoirBoss : BossEnemy
 		robe.Offset = new Vector2(0f, 10f * (1f - form) * stage.ArtScale.Y);
 		float flare = BossDeath.Span(t, Formed - 0.1f, Formed) * (1f - BossDeath.Span(t, Formed, EntranceSeconds));
 		robe.Glow = new Color(ChoirColor, 0.7f * flare);
+		// An echo forms without a roar (only the first voice has one): a lighter beat of its own.
+		if (IsEcho && stage.Crossed(Formed))
+			stage.Impact(0.2f);
 		if (stage.Crossed(Formed))
 			stage.PuffAt(stage.ArtToLocal(new Vector2(48f, 30f)), 8f, 46f, 0.6f, new Color(ChoirColor, 0.6f), 6f, 0f, true);
 	}

@@ -6455,14 +6455,12 @@ public partial class Node2DGame : Node2D
 		return (toEdge * SwarmEdgeMargin) + spawnRng.RandfRange(0f, SwarmEdgeDepth);
 	}
 
-	// Half the visible world rectangle, which is the viewport scaled by the gameplay zoom.
+	// Half the visible world rectangle, which is the viewport scaled by the gameplay zoom - without a boss
+	// arrival's push-in (GameplayZoomOf), or the ring would close in while the camera is pushed in.
 	private Vector2 GetVisibleHalfExtents()
 	{
 		Vector2 viewport = GetViewport().GetVisibleRect().Size;
-		float zoom = 1f;
-		var camera = player?.GetNodeOrNull<Camera2D>("Camera2D");
-		if (camera != null && camera.Zoom.X > 0.01f)
-			zoom = camera.Zoom.X;
+		float zoom = GameplayZoomOf(player?.GetNodeOrNull<Camera2D>("Camera2D"));
 
 		return viewport / (2f * zoom);
 	}

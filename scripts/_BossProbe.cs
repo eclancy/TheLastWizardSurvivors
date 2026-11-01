@@ -62,6 +62,12 @@ public partial class _BossProbe : Node
 	private float entranceSeenAt = -1f, entranceEndedAt = -1f;
 	private int hpAtEntrance, phaseCountSeen;
 	private bool sawSpellsHeld, hurtDuringEntrance, releaseChecked;
+	// The cinematic (2026-11-01): the wizard stands while the bot pushes, the bars come in, the camera pushes
+	// in; and once it lets go he walks again. Measured from the frame the arrival is first seen.
+	private Vector2 entranceStartPosition, releasedAt;
+	private float driftDuringEntrance, peakCinematicZoom = 1f, releaseSeenAt = -1f;
+	private int pushedFramesDuringEntrance;
+	private bool sawBarsIn, walkChecked;
 	private float bossArrivedAt;
 	private readonly List<string> notes = new();
 
@@ -270,9 +276,19 @@ public partial class _BossProbe : Node
 			{
 				entranceSeenAt = elapsed;
 				hpAtEntrance = wizard?.CurrentHP ?? 0;
+				entranceStartPosition = player.GlobalPosition;
 			}
 			if (wizard != null && wizard.HeldForBossEntrance)
 				sawSpellsHeld = true;
+			// The bot keeps kiting through the arrival (DriveMovement), so a wizard who stands is one held.
+			driftDuringEntrance = Math.Max(driftDuringEntrance, player.GlobalPosition.DistanceTo(entranceStartPosition));
+			if (MoveActions.Any(a => Input.IsActionPressed(a)))
+				pushedFramesDuringEntrance++;
+			if (Node2DGame.Current is Node2DGame filming)
+			{
+				sawBarsIn |= filming.LetterboxShown >= 0.999f;
+				peakCinematicZoom = Math.Max(peakCinematicZoom, filming.CinematicZoomFactor);
+			}
 			if (wizard != null && wizard.CurrentHP < hpAtEntrance)
 				hurtDuringEntrance = true;
 			return;
@@ -286,6 +302,19 @@ public partial class _BossProbe : Node
 			Player wizard = player as Player;
 			notes.Add($"arrival held the field {entranceEndedAt - entranceSeenAt:0.0}s; spells held: {sawSpellsHeld}; "
 				+ $"hurt during it: {hurtDuringEntrance}; still held a frame after: spells {wizard?.HeldForBossEntrance}, field {(Node2DGame.Current?.BossEntranceHeld ?? false)}");
+			notes.Add($"cinematic: the wizard moved {driftDuringEntrance:0.0} px during it with the bot pushing on {pushedFramesDuringEntrance} frames; "
+				+ $"bars all the way in: {sawBarsIn}; push-in peak x{peakCinematicZoom:0.00}");
+			releasedAt = player.GlobalPosition;
+			releaseSeenAt = elapsed;
+		}
+		else if (releaseChecked && !walkChecked && elapsed - releaseSeenAt >= 0.5f)
+		{
+			// Half a second (of the probe's scaled clock) after the hold let go: free to walk again, the bars
+			// gone and the camera back at the run's own zoom.
+			walkChecked = true;
+			Node2DGame filming = Node2DGame.Current;
+			notes.Add($"after the arrival: walked {player.GlobalPosition.DistanceTo(releasedAt):0} px in 0.5 s; "
+				+ $"bars {(filming?.LetterboxShown ?? 0f):0.00}, push-in x{(filming?.CinematicZoomFactor ?? 1f):0.00}");
 		}
 
 		foreach (BossEnemy body in bodies)
