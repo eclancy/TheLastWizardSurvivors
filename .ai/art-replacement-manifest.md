@@ -1394,6 +1394,17 @@ the gold and orange edges carry it. Photographed before (`vis_blasts_b_*sf*`) an
 (`vis_blasts_a*_sf*`). Still needs eyes: Daybreak's full-screen flare on a phone, where a dithered front
 of that size is the most fragments this pass draws in one quad.
 
+
+**2026-11-01, from underneath.** Eric: Solar Flare "should animate from underneath the player and the
+enemies". The burst quad moved from `DrawLayers.Air` to `DrawLayers.GroundTell`, under every body, so the
+kernel goes off beneath him and the rays, front and Corona's beams run across the floor between the bodies'
+feet (Sun Dogs' bursts too). And it rises: under him, and under each body the burst strikes the moment its
+front passes under it, `SolarFlareVisual.RiseUnder` erupts a flare from the ground at the feet (the feet and
+head from `Enemy.StatusFxGeometry`) - a pool of white-hot light lying flat and five tongues of Light shooting
+up past the head, cooling to Fire at their tips, then lifting off and going out by dither. Drawn under the
+body, so the body stands in it lit from below. 32 slots, rects a colour band tall. What is hit and when is
+unchanged. Shots `sv_a_sf_*` against `sv_b_sf_*` in `_shots/spell-visuals/` beside the repo.
+
 ### Fireball
 
 Audited from `_UiShot` bursts against a `--spell-stage` crowd: the base spell and level 8 with Pyroclasm +
