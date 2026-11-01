@@ -82,7 +82,13 @@ public partial class BridgeRules : ChapterRules
 
 	// --- Lifetime -----------------------------------------------------------------------------------
 
+	// Every roll the bridge makes that changes the run - where each spawn lands (hook 2), where the
+	// murder-holes and the volleys fall - comes from this, seeded from the run's seed in RunStarted as the
+	// furniture's variants are (LevelGenerator.Hash of Game.TerrainSeed), so a run given its seed
+	// (--terrain-seed, or the harness's --seed) places its garrison the same way twice. It was Randomize()d,
+	// and one harness seed reached level 46 on one bridge run and 22 on the next (.ai/endgame-castle.md 3.3).
 	private readonly RandomNumberGenerator rng = new();
+	private const int SaltRules = 0xB21D;
 	private BridgeCollapseFront front;
 	private BridgeBackdrop backdrop;
 	private BridgeFurniture furniture;
@@ -95,7 +101,6 @@ public partial class BridgeRules : ChapterRules
 
 	public override void _Ready()
 	{
-		rng.Randomize();
 		// No scattered props on the bridge. Node2DGame scatters its curated set per chunk later in its
 		// _Ready (BuildCuratedProps), and an empty theme list there means every theme, not none; everything
 		// that stands on the bridge is the furniture below, which the front takes with the deck. A brazier
@@ -115,6 +120,9 @@ public partial class BridgeRules : ChapterRules
 
 	public override void RunStarted()
 	{
+		// Here, not in _Ready: the rules are added before the terrain, and the seed is the terrain's. Nothing
+		// rolls before this - the first spawn and the first murder-hole come on a frame after _Ready.
+		rng.Seed = LevelGenerator.Hash(Game.TerrainSeed, 0, 0, SaltRules);
 		front = new BridgeCollapseFront { Name = "BridgeCollapseFront", Rules = this };
 		Game.AddChild(front);
 		backdrop = new BridgeBackdrop { Name = "BridgeBackdrop", Rules = this };

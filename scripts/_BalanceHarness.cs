@@ -432,6 +432,13 @@ public partial class _BalanceHarness : Node
 			SaveManager.WritesDisabled = true;
 
 		game = ResourceLoader.Load<PackedScene>("res://scenes/node_2d_game.tscn").Instantiate();
+		// --seed is the run's seed too: the ground, the side event, the secrets and a chapter's own rules
+		// (the bridge's spawn points) all hash from it (Node2DGame.TerrainSeed), so one seed is one place
+		// and one garrison. It used to seed only the chests, and two bridge runs on one seed differed by
+		// half the level clock. A --terrain-seed on the command line still wins. The spawner's own picks
+		// and the level-up roll are still Randomize()d (Node2DGame.spawnRng, Player), so two runs on one
+		// seed agree to within the noise of those, not to the frame.
+		game.Set("ProceduralSeed", (long)Seed);
 		// --xp-growth=X and --no-swarm: set by name, so the flag is simply refused (and said so) on a
 		// tree from before the property existed rather than failing to build there.
 		foreach (var (name, value) in gameOverrides)
