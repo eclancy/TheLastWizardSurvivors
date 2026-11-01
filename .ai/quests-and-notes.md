@@ -183,35 +183,40 @@ The note is fully written by about frame 330.
 
 ## 8. Status
 
-**Done and checked:**
+**Done and checked** (2026-11-01, after merging `origin/main-ff86ni`):
 
 - `dotnet build` is clean.
 - The validator reports 0 errors and 6 warnings, the baseline. The new check passes.
-- PC (1280x720) screenshots are looked at:
-  - the opening mid-gather, at the hold, mid-flight and landed;
-  - the Forest note fully written, beside the tracker.
-- The name audit passes on a fresh save in the run.
-
-**Fixed after those shots, not yet re-shot:**
-
-- The tracker's step line did not draw: the label had `MaxLinesVisible` and `TrimEllipsis`, and both are
-  now removed.
-- The flight now curves round the player; the first shots show it crossing him.
-- The last letter's glint now settles by the hold.
+- Screenshots were looked at on both canvases. PC is 1280x720; phone is
+  `540x1212 --portrait --safe-area`.
+  - **The opening**:
+    - PC: mid-gather, at the hold, in flight and landed.
+    - Phone: at the hold and in flight, curving round the player.
+  - **Notes**:
+    - PC: the Forest, written in fully in the lower right.
+    - Phone: the Frozen Waste under the HUD band, with "Someone is singing under the ice."
+  - **The HUD**:
+    - PC: two tracked quests with the live "0 / 30".
+    - Phone: the next wizard has moved on to "Free the singer under the ice" on a save that freed Tituba.
+  - **The pause Journal tab**:
+    - PC: both pages.
+    - Phone: two-by-two tabs, Tracked, Wizards (Next, the scholar 0/30, the hound in the stone).
+  - **The world map Journal**:
+    - PC: Quests.
+    - Phone: Notes.
+- **The name audit passes on every one of those shots.** It runs on:
+  - a fresh save;
+  - a mid-campaign save (Dungeon open, nobody freed);
+  - a late save (Tituba freed).
 
 **Not done (pick up here):**
 
-- Phone shots (`--resolution 540x1212 --portrait --safe-area`) of everything.
-- PC shots of:
-  - the pause Journal tab, both pages;
-  - the world map Journal button and screen;
-  - the HUD with two tracked quests and their step lines.
-- The name audit on a mid-campaign save with the journal open, for example
-  `--open-stages=stage_9,stage_10,stage_2,stage_1 --beaten=stage_0,stage_9,stage_10,stage_2`.
-- Pad and touch walks of the journal on the pause screen and on the map: the inner tabs, Track, Back,
-  and the selection returning to the Journal button.
+- Pad and touch walks of the journal, on the pause screen and on the map: the inner tabs, Track, Back,
+  and the selection returning to the Journal button. These are reasoned from `MenuNavigator`, not driven.
+- The Sketchbook's slate note has never been photographed (`--stage=8 --notes-unseen --frames=330`).
+- The "3 at most" refusal has never been pressed.
 - No sound is wired to the opening (`.ai/audio-direction.md` would decide one).
 - The `StageHintCaption`, which floats near the player, does not read `HudKeepOut`.
 - The castle chapters need notes when they are built.
-- Merging `origin/main-ff86ni`. It has moved on: the level-up `FocusSpotlight`, the Familiar rework and
-  the map reveal. Merge, do not rebase.
+- A judgement call for Eric: on a first visit the note replaces the chapter banner, and the HUD corner
+  has no backing plate, only outlined text.
