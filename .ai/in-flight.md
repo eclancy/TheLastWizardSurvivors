@@ -91,6 +91,33 @@ Meteor Swarm's Breakup, Skipstone, Extinction Event and Creeping Barrage; `.ai/s
 with three tracked quests in the lower-left HUD corner, the run-start flourish; `.ai/quests-and-notes.md`).
 Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 
+## 3a. The 0.10.0 playtest fixes (Eric, 2026-11-01) - before any castle work
+
+The castle agents (`wip/boss-dark-wizard`, `wip/dungeon-move`, `wip/castle-preflip`) were cut off by the
+usage limit mid-work; their worktrees keep what they did. They resume after these. Done: bosses excluded
+from executes (e6f7dfd), Blank Folio offer weight 0.02 (63be6da).
+
+1. **Boss cinematics** (`wip/boss-cinematics`, in flight): no movement while a boss arrives; letterbox
+   bars, zoom, screen shake, a flare; shake in boss animations where it helps.
+2. **Spell visuals** (`wip/spell-visuals`, in flight): Cone of Cold hard to see; Solar Flare rises from
+   under the player and the enemies; Stormsweep's crack slower at first, quicker with level; Scorching
+   Ray's icon a thinner ray into the ground; Iron Palisade's rolling walls dig up dirt; **familiar icons
+   too hard to read - three or four options for Eric to pick from**.
+3. **Enemy pathing** (`wip/enemy-pathing`, in flight): every enemy sticks on terrain; an efficient fix.
+4. **The Hollow Choir** (after 3): pathing sticks; their ranged attack needs a launched attack, not a
+   circle and arrow; one too far from the player dips into the ground and reappears; a longer revive,
+   with the voices visibly walking to a fallen one to raise it, so the player sees to stop it; freezing
+   and other crowd control pause the revive.
+5. **The prologue**: wizard silhouettes look goofy - use the in-game characters' silhouettes; "You are
+   the one he missed" animates creatures searching for the wizard while he hides cleverly; a button on
+   the world map to replay the intro, **for testing, to be removed later**. And **Laelaps wears the
+   wizard outfit** (the familiar hound's hat, mantle and star collar, `tools/art/laelaps.py`).
+6. **Wizard clues and the ice lake**: every wizard's hint becomes a cue in the world from its direction
+   (the singer: musical notes drifting in from his side, and his singing heard), its line fading in on
+   screen as a hint rather than in a speech bubble; all wizards' clues this way. The wizard trapped in
+   ice sits in the centre of a large, magically animated lake (the current art reads corny).
+7. **Music**: the menu's music should give way to more interesting, thematic battle music for each level.
+
 ## 4. Waiting on Eric
 
 - **Playtest 0.10.0** (50 HP, scarce healing, tougher chapters and bosses). Fixes from it come
