@@ -60,10 +60,15 @@ Merged into `main-ff86ni` before that:
 Merged since the release (2026-11-01): the shield ring recoloured (Eric: Metal ring, Light motes;
 elite markers read gold), **the Seneschal** (440,000; flees at 75/50/25% and is followed; a door
 "hop" when unreachable for 12 s, beyond 5.6) and **the Constable** (400,000; holds the gate from the
-wall). Both bosses' chapters now miss only their world-map stop.
+wall). Both bosses' chapters now miss only their world-map stop. Then **the Throne** (C4, 66235ac):
+the hall (`throne_room.py`, `throne_walls.py`), the Muster (hook 8 `LevelUpOpening`, `GrantLevelUps`;
+**18 levels**, moved by measurement), the procession (`ThroneProcession`, `SendBoss`; the guard stands
+down while a pair fights), its own roster (`StageBestiary.Throne.cs`). Its line misses only his boss and
+the map. Eyes: the pillars read squat, the south wall is a void, the doors are not drawn, the throne
+reads small, a pair overlaps on the player; a Throne defeat shows "Boss at 0:01" on the results.
 
-Three agents in flight: **`wip/throne`** (C4: the hall, the Muster, the procession, `ws-wip-throne`, from
-9a854b5); **`wip/dungeon-move`** (C2, schema 21, `ws-wip-dungeon-move`, from 412df99; held, to land with
+Three agents in flight: **`wip/boss-dark-wizard`** (C5, him and the ending, `ws-wip-boss-dark-wizard`,
+from 66235ac); **`wip/dungeon-move`** (C2, schema 21, `ws-wip-dungeon-move`, from 412df99; held, to land with
 the Bridge's flip and C8); **`wip/castle-preflip`** (`ws-wip-castle-preflip`, from 412df99: the Constable
 off the top of the PC screen, the bridge's XP far above the Emberdeep's, `BridgeRules`' unseeded spawns,
 a Court wall cell the player stands in). None flips `IsPlayable` or touches the world map. Expect
@@ -90,6 +95,12 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 
 - **Playtest 0.10.0** (50 HP, scarce healing, tougher chapters and bosses). Fixes from it come
   before the castle.
+- **The Throne's departures from 6.x** (C4 agent, merged as built, each a constant to change): the
+  guard stands down while a pair fights (with it, auto-aim spent the spells on the swarm and no boss
+  health worked); the Muster is 18 levels, not 17 (at 17 the bot never reached the Apotheosis); elites
+  and the miniboss clock are off there, chests fixed at 2 + 1 + 1; a pair's banner is the two names,
+  his is his tagline, a 4 s beat before him. Its `ChapterDifficulty` row is still the Emberdeep's
+  stand-in and was measured with one build: a tuning pass across wizards is wanted before the flip.
 - **The Deathbringer set executes bosses.** Its execute (`Player.cs`, `chestExecuteThresholdPercent`
   30) kills any enemy at or under 30% health, bosses included, so with that set every boss fight loses
   its last 30% - against the longer fights the boss work just bought. Keep it, or exclude bosses?
