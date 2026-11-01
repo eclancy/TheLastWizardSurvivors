@@ -77,6 +77,8 @@ public partial class _BossProbe : Node
 			else if (arg.StartsWith("--drain-interval=")) DrainInterval = float.Parse(arg.Substring(17));
 			else if (arg == "--focus") FocusOneBody = true;
 			else if (arg == "--approach") Approach = true;
+			// For a fight drained slowly (--drain) to stand in for a build's damage, longer than 140 s.
+			else if (arg.StartsWith("--give-up=")) GiveUpSeconds = float.Parse(arg.Substring(10), System.Globalization.CultureInfo.InvariantCulture);
 		}
 
 		// Immune to the pause, or the first level-up stops the probe dead.

@@ -190,7 +190,10 @@ public static class BossCatalog
 			Tagline = "He holds the gate from the wall. Get to the gate.",
 			ScenePath = "res://scenes/BridgeConstableBoss.tscn",
 			StandInScenePath = "res://scenes/DeepWardenBoss.tscn",
-			Health = 11800,
+			// From the runs (.ai/enemy-behaviour.md, "The Constable, measured"): he is in reach about two
+			// thirds of the fight, and the bridge's median survivor build (L36) takes about five minutes,
+			// the Warden of the Deep's length for the same class of build. 11800 was the doc's first guess.
+			Health = 400000,
 			ArcaneVictoryBonus = 360
 		},
 		[12] = new BossDefinition

@@ -302,10 +302,30 @@ public partial class BridgeConstableBoss : BossEnemy
 		Node2D target = TargetPlayer;
 		if (target == null || !IsInstanceValid(target))
 			return;
+		NoteWhereTheWizardIs(target, dt);
 		bool atTheGate = target.GlobalPosition.DistanceTo(gateFoot) <= DropZoneRadius;
 		holdSeconds = atTheGate ? holdSeconds + dt : Mathf.Max(0f, holdSeconds - dt);
 		if (holdSeconds >= DropHoldSeconds)
 			BeginLeapDown(target.GlobalPosition);
+	}
+
+	// Debug builds (every probe, harness and photograph): every 20 s he holds the wall, where the wizard
+	// is from the gate's foot - so a balance run that never brings him down says why.
+	private float untilWhereabouts = 20f;
+
+	private void NoteWhereTheWizardIs(Node2D wizard, float dt)
+	{
+		if (!OS.IsDebugBuild())
+			return;
+		untilWhereabouts -= dt;
+		if (untilWhereabouts > 0f)
+			return;
+		untilWhereabouts = 20f;
+		Vector2 p = wizard.GlobalPosition;
+		string where = bridge != null
+			? $" ({bridge.AlongOf(p) - bridge.AlongOf(gateFoot):0} px along, {bridge.AcrossOf(p):0} across)"
+			: "";
+		Note($"holds the wall; the wizard is {p.DistanceTo(gateFoot):0} px from the gate's foot{where}, the hold at {holdSeconds:0.0}s,");
 	}
 
 	private void TickVolleys(float dt)
