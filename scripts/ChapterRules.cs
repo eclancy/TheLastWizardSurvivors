@@ -33,6 +33,13 @@ using WizardSurvivors.scripts;
 //                          survival clock and the boss's arrival still read real time (timeElapsed).
 //   7. CreateObjective     once, after RunStarted: a control for the objective line under the run timer,
 //                          in the slot a side event's line uses - no castle chapter has a side event.
+//   8. LevelUpOpening      OnPlayerLevelGained, every level-up screen, before it enters the tree (the
+//                          Throne's Muster heading and its shorter arming pause; added by piece C4).
+//
+// Beside the hooks, two ways IN that a chapter's rules call rather than answer (piece C4): GrantLevelUps
+// (Node2DGame.GrantedLevels.cs: levels granted outright, each through the ordinary screen and its queue)
+// and SendBoss (Node2DGame.ChapterBosses.cs: a boss on the chapter's own schedule, outside the boss phase,
+// so the clock and the trickle run on; the one sent as a finale wins the run when it falls).
 //
 // What the hooks are NOT for: a chapter's tuning (pace, XP, the enemy cap: .ai/run-pacing.md is the
 // authority and the castle's map chapters are ordinary runs), its art (its own generators and files) or its
@@ -100,6 +107,16 @@ public abstract partial class ChapterRules : Node
 	/// style).
 	/// </summary>
 	public virtual Control CreateObjective() => null;
+
+	/// <summary>
+	/// Hook 8, A LEVEL-UP SCREEN OPENING (piece C4, the Throne's Muster, .ai/endgame-castle.md 6.2): called
+	/// by Node2DGame.OnPlayerLevelGained with the screen built but not yet in the tree, so what is set
+	/// here - its heading, its arming pause (LevelUpMenu.HeadingOverride, ArmingSeconds) - is what its
+	/// _Ready lays out. <paramref name="granted"/> is true for a level the chapter granted outright
+	/// (Node2DGame.GrantLevelUps) rather than one the player earned. Added because the Muster is a run of
+	/// ordinary level-ups that must still say they are the Muster, and none of hooks 1-7 sees a screen.
+	/// </summary>
+	public virtual void LevelUpOpening(LevelUpMenu menu, bool granted) { }
 
 	/// <summary>The objective line's slot, under the boss bar's (44-78), as a side event's line sits.</summary>
 	public const float ObjectiveTop = 84f;

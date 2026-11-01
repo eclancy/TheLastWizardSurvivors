@@ -846,17 +846,41 @@ public partial class _UiShot : Node
 		}
 	}
 
+	// --dismiss-levelups=N: take the first card of the first N level-ups and keep the next one on screen
+	// (implies --keep-levelup). The Throne's Muster opens seventeen at the start (.ai/endgame-castle.md
+	// 6.2): --stage=13 --dismiss-levelups=4 photographs "The Muster - 5 of 17".
+	private int dismissLevelUps;
+	private int levelUpsDismissed;
+	// A chest screen the RUN opened (the Muster's two relic chests) is claimed like a level-up is
+	// dismissed, unless the shot is of a chest (--open-chest). Its first relic of an honest offer.
+	private readonly ChestOfferMemory dismissChestMemory = new();
+
 	private void DismissLevelUpMenus(Node root)
 	{
 		// The menu-queue probe opens and closes level-ups itself.
-		if (KeepLevelUp || menuQueueProbeStarted)
+		if (menuQueueProbeStarted)
 			return;
 
 		if (root is LevelUpMenu menu && menu.Visible)
 		{
+			if (menu.IsQueuedForDeletion() || (KeepLevelUp && levelUpsDismissed >= dismissLevelUps))
+				return;
 			System.Collections.Generic.IReadOnlyList<LevelUpOption> options = menu.GetOfferedOptions();
 			if (options != null && options.Count > 0)
+			{
 				menu.EmitSignal(LevelUpMenu.SignalName.WeaponSelected, options[0].AutoChoice());
+				levelUpsDismissed++;
+			}
+			return;
+		}
+		if (root is ChestItemSelectionMenu chest)
+		{
+			if (OpenChest || chest.IsQueuedForDeletion() || FindNodeOfType<Player>(GetTree().Root) is not Player owner)
+				return;
+			System.Collections.Generic.List<string> offer = ChestItemCatalog.GetChestItemOptions(owner.GetOwnedChestItems(), null, 3,
+				new[] { ChestItemCatalog.ScribesPenknife }, dismissChestMemory);
+			if (offer.Count > 0)
+				chest.EmitSignal(ChestItemSelectionMenu.SignalName.ItemSelected, offer[0]);
 			return;
 		}
 
@@ -947,6 +971,11 @@ public partial class _UiShot : Node
 				PressButton = arg.Substring("--press=".Length);
 			else if (arg == "--keep-levelup")
 				KeepLevelUp = true;
+			else if (arg.StartsWith("--dismiss-levelups="))
+			{
+				dismissLevelUps = int.Parse(arg.Substring("--dismiss-levelups=".Length));
+				KeepLevelUp = true;
+			}
 			else if (arg == "--force-levelup")
 				ForceLevelUp = true;
 			else if (arg == "--focus-boon")

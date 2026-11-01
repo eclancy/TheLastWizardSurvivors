@@ -3377,7 +3377,9 @@ public static class RegressionChecks
 				}
 				todo.Add($"{slot.Role} {creature.DisplayName} ({ShortScenePath(creature.ScenePath)})");
 			}
-			else if (!IsHome(creature, chapter))
+			// A chapter whose cast is borrowed by design (the Throne's household guard) says so once, in its
+			// roster, instead of carrying a to-do that asks for art it must never have.
+			else if (!IsHome(creature, chapter) && string.IsNullOrWhiteSpace(chapter.BorrowedCastBecause))
 			{
 				todo.Add($"{slot.Role} is {creature.DisplayName}, borrowed from {HomeName(creature)}");
 			}

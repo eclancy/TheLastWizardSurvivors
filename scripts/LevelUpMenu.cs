@@ -57,9 +57,26 @@ public partial class LevelUpMenu : CanvasLayer
 	/// <summary>True once the arming pause is over and a press will choose.</summary>
 	public bool IsArmed => Time.GetTicksMsec() >= armedAtMsec;
 
+	// THE MUSTER (.ai/endgame-castle.md 6.2, piece C4): the Throne grants its first levels at once (18,
+	// ThroneProcession.MusterLevels), each through this screen. Its rules (ChapterRules hook 8,
+	// ThroneRules) set these two before the screen enters the tree, so _Ready lays out what they say. The
+	// heading reads "The Muster - 5 of 18", and the arming pause is InputGuardSeconds on the first screen
+	// and MusterArmingSeconds on the rest: long enough that the click closing one cannot choose the next,
+	// short enough that eighteen screens are not fifteen seconds of waiting. Every other screen leaves both
+	// alone.
+
+	/// <summary>Words for the heading in place of "Level Up!"; null or empty for the usual.</summary>
+	public string HeadingOverride { get; set; }
+
+	/// <summary>This screen's arming pause, real seconds. <see cref="InputGuardSeconds"/> unless a run asks otherwise.</summary>
+	public float ArmingSeconds { get; set; } = InputGuardSeconds;
+
+	/// <summary>The Muster's pause on every screen after its first (6.2).</summary>
+	public const float MusterArmingSeconds = 0.3f;
+
 	private void Disarm()
 	{
-		armedAtMsec = Time.GetTicksMsec() + (ulong)(InputGuardSeconds * 1000f);
+		armedAtMsec = Time.GetTicksMsec() + (ulong)(ArmingSeconds * 1000f);
 	}
 
 	private static bool IsChoosingPress(InputEvent @event) =>
@@ -435,7 +452,8 @@ public partial class LevelUpMenu : CanvasLayer
 
 		bool narrow = ResponsiveLayout.IsNarrow(this);
 		heading.LabelSettings = null;
-		heading.Text = narrow ? "Level Up!" : "Level Up! Choose a Spell";
+		heading.Text = !string.IsNullOrEmpty(HeadingOverride) ? HeadingOverride
+			: narrow ? "Level Up!" : "Level Up! Choose a Spell";
 		heading.HorizontalAlignment = narrow ? HorizontalAlignment.Left : HorizontalAlignment.Center;
 		heading.VerticalAlignment = VerticalAlignment.Center;
 		heading.CustomMinimumSize = new Vector2(0f, ResponsiveLayout.MinTouchTarget + 8f);
@@ -495,7 +513,7 @@ public partial class LevelUpMenu : CanvasLayer
 			// cards are readable from the start and look ready only when they are.
 			panel.Modulate = new Color(1f, 1f, 1f, 0f);
 			tween.TweenProperty(panel, "modulate:a", ArmingAlpha, 0.16f).SetDelay(0.05f);
-			tween.Chain().TweenProperty(panel, "modulate:a", 1f, 0.14f).SetDelay(InputGuardSeconds - 0.35f);
+			tween.Chain().TweenProperty(panel, "modulate:a", 1f, 0.14f).SetDelay(Mathf.Max(0f, ArmingSeconds - 0.35f));
 		}
 	}
 
@@ -511,7 +529,7 @@ public partial class LevelUpMenu : CanvasLayer
 			return;
 		panel.Modulate = new Color(1f, 1f, 1f, ArmingAlpha);
 		var tween = CreateTween();
-		tween.TweenProperty(panel, "modulate:a", 1f, 0.14f).SetDelay(InputGuardSeconds - 0.14f);
+		tween.TweenProperty(panel, "modulate:a", 1f, 0.14f).SetDelay(Mathf.Max(0f, ArmingSeconds - 0.14f));
 	}
 
 	private void ApplyMenuSkin()
