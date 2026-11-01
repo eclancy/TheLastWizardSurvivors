@@ -676,8 +676,9 @@ public static class RegressionChecks
 				new[] { Familiar.CerberusId, Familiar.AnnwnId }),
 			[Familiar.CrowId] = (new[] { Familiar.RavenId, Familiar.StormcrowId, Familiar.MurderId },
 				new[] { Familiar.MorriganId, Familiar.GriffinId }),
-			[Familiar.CatId] = (new[] { Familiar.GrimalkinId, Familiar.CaitSithId, Familiar.PurrId },
-				new[] { Familiar.CathPalugId, Familiar.NineLivesId }),
+			// The cat's four level 4 cards: Nine Lives moved down from level 8 for the Black Cat (2026-10-31).
+			[Familiar.CatId] = (new[] { Familiar.GrimalkinId, Familiar.CaitSithId, Familiar.PurrId, Familiar.NineLivesId },
+				new[] { Familiar.CathPalugId, Familiar.BlackCatId }),
 		};
 		var everyMilestone = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var (variantId, (four, eight)) in expected)
@@ -830,7 +831,8 @@ public static class RegressionChecks
 						warnings.Add($"Spell forms: '{vid}' has a level-up out of order or outside 2..{template.MaxLevel}.");
 					previous = upgrade?.Level ?? previous;
 				}
-				if (variant.BaseCooldown <= 0f || variant.BaseProjectileCount < 1 || variant.BaseDamage < 1)
+				// The Familiar's cat deals no damage by design (2026-10-31: it debuffs and buffs); every other form must.
+				if (variant.BaseCooldown <= 0f || variant.BaseProjectileCount < 1 || (variant.BaseDamage < 1 && vid != Familiar.CatId))
 					warnings.Add($"Spell forms: '{vid}' needs a positive damage, cooldown and count.");
 
 				if (!formsById.TryGetValue(vid, out SpellData form))
@@ -844,8 +846,11 @@ public static class RegressionChecks
 				var formTags = form.GetElementWeights();
 				if (baseTags.Count != formTags.Count || baseTags.Any(p => !formTags.TryGetValue(p.Key, out int w) || w != p.Value))
 					warnings.Add($"Spell forms: '{vid}' changes '{id}'s element tags; a form is a way of playing the spell, never a different carrier.");
-				if ((form.Level4Options?.Count ?? 0) != 3 || (form.Level8Options?.Count ?? 0) != 2)
-					warnings.Add($"Spell forms: '{vid}' has {form.Level4Options?.Count ?? 0} level 4 and {form.Level8Options?.Count ?? 0} level 8 milestones; every form has 3 and 2 of its own.");
+				// Three level 4 cards a form, but the Familiar's cat: Nine Lives moved down from level 8 to make room for
+				// the Black Cat (2026-10-31), and the mutation page counts its branches (LevelUpMenu).
+				int fours = vid == Familiar.CatId ? 4 : 3;
+				if ((form.Level4Options?.Count ?? 0) != fours || (form.Level8Options?.Count ?? 0) != 2)
+					warnings.Add($"Spell forms: '{vid}' has {form.Level4Options?.Count ?? 0} level 4 and {form.Level8Options?.Count ?? 0} level 8 milestones; every form has {fours} and 2 of its own.");
 				foreach (SpellEvolutionOption option in (form.Level4Options ?? new()).Concat(form.Level8Options ?? new()))
 				{
 					if (option == null)

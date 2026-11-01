@@ -2032,7 +2032,7 @@ spell gives the wizard rather than the enemy.
 |---|---|---|---|---|---|
 | **Dog** | **Great Hound**: +20%, jaws 40% wider | **Rimehound** (+Ice): bites slow 30% for 1.5 s; frost breath, jaws 40% wider | **Littermates**: +1 hound, each 15% softer | **Cerberus**: three heads, three bites a leap, +10% | **Hound of Annwn**: white and red-eared, +120% and jaws 50% wider; goes for an elite or a boss near the wizard first and bites one double |
 | **Crow** | **Great Raven** (the card was "Raven" until 2026-10-30, when Eric found "a raven of your light" made no sense; same id, `familiar_crow_raven`, same numbers): +30%, beak 80% wider, catching enemies beside its target | **Stormcrow** (+Lightning): every peck staggers (0.2 s) | **Murder of Crows**: +1 crow, each 10% softer | **The Morrigan**: a peck on an ordinary enemy under 30% of its health kills it; double on an elite or a boss there; +100% | **Griffin** (the dog's, before forms): a swoop through its quarry and on past it along a line, +20%, 30% less often |
-| **Cat** | **Grimalkin**: every grant x1.4 | **Cait Sith** (+Darkness): what it claws takes 25% more from every spell for 3 s | **Purr**: 0.8 HP a second while it is out | **Cath Palug**: every grant x1.5 again, swipes 60% wider and 50% harder | **Nine Lives**: +1 life - when he would fall he stands back up with half his health |
+| **Cat** (since 2026-10-31: no damage) | **Grimalkin**: grants x1.4, Weaken lasts 5.6 s | **Cait Sith** (+Darkness): what it pounces on takes 25% more from every spell for 3 s | **Purr**: every 20 s it runs to him and heals 3 HP; **Nine Lives** (moved down from level 8): +1 life | **Cath Palug**: grants x1.5 again, its pounce 2.5x as wide | **Black Cat**: every 3 s it casts one of his attack spells from where it stands |
 
 The Darkness rider is Vulnerable, which is the cat's way of fighting: through his spells. After an
 element path the level 8 looks are drawn in that element (Cerberus and the Hound of Annwn in frost,
@@ -2163,6 +2163,38 @@ differs, so no number moved. **Cerberus is on the 96 cell at 2.5** (was the 64 a
 boss cell, with two-pixel eyes, nostrils, fangs and claws and ember-tipped hackles drawn for that size
 (`Skin.detail`, `Skin.mane`); it heels half a cell further back and its jaws are 72 px out. The crow and the cat
 are unchanged.
+
+**Each form its own way of moving; the cat is the support familiar (2026-10-31).** Eric: the dog *"heels at the
+wizard's side when not attacking and tries to stay close; its attack runs are short and it comes straight back
+to heel"*; the crow *"flies around, mostly patrolling a loose ring near the wizard, and divebombs enemies"*; and
+*"rebalance cat to not attack enemies, but instead wander around nearby, debuffing enemies and wandering back to
+the player to provide buffs"*, a calico. Every form now leaves the wizard only with a strike in hand and lets go
+of its quarry after it (`Familiar.Tick`):
+
+- **The dog** heels BESIDE him (`DogHeelSide` 34, `DogHeelBehind` 10; the first hound one side, the second the
+  other, Cerberus a half-cell wider, the pups trailing), runs out with a bite, and comes straight back.
+- **The crow** rides a loose ring round him (`Patrol`: 110 px, wobbling 18, two crows the opposite ways); with a
+  peck in hand it flies at its quarry, CLIMBS (0.1 s, pulled up and back, wings raised), STOOPS, pecks and RISES
+  back toward the ring (`State.Rise`). The griffin still swoops. The patrol and the climb and rise cost a third
+  of its pecks (Raven + Morrigan, the bot: 1,352 pecks and 254 a second at level 8, against 2,008 and 380), so a
+  peck is half again what it was - 14, +3 a level, 37 at level 8 - and it measures 84 at level 4 and **416** at
+  level 8, in the bands. The dog with Great Hound + Cerberus, heeling and coming back after every bite: **456**
+  (was 480).
+- **The cat deals no damage.** Its cooldown is a pounce: it rears back (0.3 s), pounces and lands Weaken 30% for
+  4 s and a 30% slow for 1 s on what is under its paws (`Familiar.Mark`; Cait Sith adds Vulnerable 25% for 3 s),
+  then trots back to his feet - the VISIT gives him its grants (cast speed, evasion) for 8 s (`LiveGrants`). With
+  nothing to pounce on it wanders 40-95 px from him and comes back before the grants lapse. **Purr** is a visit
+  every 20 s that heals 3 HP and pops a pixel heart over him: 9 HP a minute, the healing budget's rate for a relic
+  or a boon (`.ai/difficulty-curve.md` 5.1; it was 0.8 a second, 48 a minute, and up to 100 with Grimalkin and Cath
+  Palug). **Nine Lives** moved to level 4 (same id; a save's seen-Ascension key for it is read by nothing now), so
+  the cat offers four level 4 cards - the mutation page counts its branches, and `ValidateSpellVariants` allows the
+  cat four. **Black Cat** is the new Ascension: every 3 s the cat casts one of his attack spells at random from
+  where it stands (`Player.CastFromFamiliar`: the cast runs `CastSpellNow`, the code his own cast runs, with him
+  set down at the cat for the call and put back before it returns; only spells that put something into the arena
+  qualify, `Player.BlackCatCastable`; his own cooldown is untouched). It is blue-black with gold eyes on the 64
+  cell, so it never reads as the violet, star-breasted Cait Sith; after the Cait Sith it keeps her star and eyes.
+- **The calico** (`familiar.CAT`): white over cream, patches of ginger (gold and amber) and black (stone), keyed
+  to each part like the coat's lay.
 
 ## 2h. Phase 2 - the rest of the roster's evolutions (2026-10-29)
 
