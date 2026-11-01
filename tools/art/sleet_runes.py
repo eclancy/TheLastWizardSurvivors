@@ -3,8 +3,9 @@
 
 One rune of rime carried on the wind, drawn at 32 headings, written to assets/bonelight/effects/:
 
-  sleet-rune.png     32x32 cell, 32 cells in one strip: cell i points at i x 11.25 degrees, measured
-                     the way Godot measures an angle (0 = +X, clockwise on screen, since y is down)
+  sleet-rune.png        40x40 cell, 32 cells in one strip: cell i points at i x 11.25 degrees, measured
+                        the way Godot measures an angle (0 = +X, clockwise on screen, since y is down)
+  sleet-rune-great.png  72x72 cell, the same at GREAT_SCALE (Great Rune)
 
 The cell count is an API: scripts/SleetRunes.cs reads it as Directions and picks the cell nearest a
 rune's heading. A rune is a true projectile that flies the way the player faces - a keyboard gives
@@ -24,6 +25,17 @@ projectile cell): 64 px in the world, the frame 14 art px long - about a skeleto
 The frame's lit edge faces the key light (upper left, section 2), computed per heading, and the whole
 rune is ringed in occlusion: a pale blue sigil on a deep blue floor is the cold-element case section 3
 warns about.
+
+THE WIND THAT CARRIES IT (the pixel-art pass, 2026-11-01, .ai/art-replacement-manifest.md section 9).
+Two streaks of wind either side of the sleet tail, one long and one short, each a gust broken once and
+cooling from Wind's mid to its edge as it trails. They were two DrawLines in SleetRunes.cs at 55% and
+40% alpha - a translucent wash, and a rotated quad at every heading but the four square ones. Now they
+are part of the sheet, walked pixel by pixel per heading on the rune's own grid, opaque - which is why
+the cell grew from 32 to 40 (72 for the great rune): the streaks reach 17 art pixels behind the centre,
+and 32 at the great rune's scale. They take no occlusion: ringed in it, two one-pixel streaks read as
+a fork of twigs at every diagonal heading. Wind's edge stop is dark enough to hold on the Sketchbook's
+paper without it. The rune itself is the same pixels it was. rune() leaves the wind off unless asked,
+so the card icons that paint it (evolution_icons.py) are unchanged.
 """
 
 import math
@@ -40,7 +52,7 @@ OUT_DIR = os.path.join(ROOT, "assets", "bonelight", "effects")
 
 TAU = math.pi * 2.0
 OCC = bl.OCC
-CELL = 32
+CELL = 40
 DIRECTIONS = 32
 
 ICE_CORE, ICE_HOT, ICE_MID, ICE_EDGE = bl.ELEMENTS["ice"]
@@ -58,6 +70,65 @@ TAIL_HALF = 2.4
 
 SUB = 4                      # 4x4 samples a pixel
 COVER = 0.45                 # a pixel is in if this much of it is
+
+# The wind: (v, gusts), each gust (u from, u to, part) running back from the frame, Wind's mid nearest
+# the rune and its edge trailing. Where the old DrawLines were (20 world px behind the node, 4 across,
+# 14 and 9 long), on the art grid. Each gust is a stroke walked pixel by pixel between its two ends
+# (Bresenham), not an area sampled for coverage: a line one pixel wide sampled for coverage breaks into
+# scattered dots at every heading between the square ones.
+WIND_STREAKS = (
+    (3.5, ((-7.0, -10.5, "wmid"), (-12.0, -16.5, "wedge"))),
+    (-3.5, ((-9.0, -11.5, "wmid"), (-13.0, -14.5, "wedge"))),
+)
+
+
+def _stroke(x0, y0, x1, y1):
+    """The pixels of a one-pixel line between two pixels, ends included."""
+    pts = []
+    dx, dy = abs(x1 - x0), abs(y1 - y0)
+    sx = 1 if x0 < x1 else -1
+    sy = 1 if y0 < y1 else -1
+    err = dx - dy
+    x, y = x0, y0
+    while True:
+        pts.append((x, y))
+        if x == x1 and y == y1:
+            return pts
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x += sx
+        if e2 < dx:
+            err += dx
+            y += sy
+
+
+def wind_pixels(ca, sa, cx, cy, scale):
+    """[(pixel, part)] of the streaks for a rune along (ca, sa) centred on (cx, cy). At the great rune's
+    scale each stroke is doubled one pixel across, so its wind is cut as deep as it is."""
+    out = []
+    thick = 2 if scale > 1.5 else 1
+
+    def at(u, v):
+        x = (u * ca - v * sa) * scale + cx
+        y = (u * sa + v * ca) * scale + cy
+        return int(math.floor(x)), int(math.floor(y))
+
+    for (sv, gusts) in WIND_STREAKS:
+        # The doubled pixel goes one step outward, away from the rune's own line, along whichever
+        # screen axis is nearest the outward normal.
+        nx, ny = -sa * sv, ca * sv
+        if abs(nx) >= abs(ny):
+            out_step = (1 if nx > 0 else -1, 0)
+        else:
+            out_step = (0, 1 if ny > 0 else -1)
+        for (u0, u1, part) in gusts:
+            a, b = at(u0, sv), at(u1, sv)
+            for (x, y) in _stroke(a[0], a[1], b[0], b[1]):
+                out.append(((x, y), part))
+                if thick == 2:
+                    out.append(((x + out_step[0], y + out_step[1]), part))
+    return out
 
 
 def part_at(u, v):
@@ -101,18 +172,24 @@ def colour_for(part, u, v, side_lit):
         if t > 0.6:
             return ICE_MID if band else WIND_MID
         return ICE_EDGE if band else WIND_EDGE
+    if part == "wmid":
+        return WIND_MID
+    if part == "wedge":
+        return WIND_EDGE
     return None
 
 
-def rune(angle, scale=1.0, size=CELL, centre=None):
+def rune(angle, scale=1.0, size=CELL, centre=None, wind=False):
     """One rune flying along `angle` (radians, Godot's convention), on a size x size canvas. scale
-    shrinks it (the card icon draws smaller ones behind the first); centre places it."""
+    shrinks it (the card icon draws smaller ones behind the first); centre places it; wind adds the
+    streaks the game's sheet carries."""
     c = raster.Canvas(size, size, None)
     ca, sa = math.cos(angle), math.sin(angle)
     # The across axis, +90 degrees from the heading (screen: clockwise, since y is down).
     na = (-sa, ca)
     cx, cy = centre if centre else (size / 2.0, size / 2.0)
     filled = {}
+    windy = set()
     for py in range(size):
         for px in range(size):
             votes = {}
@@ -145,8 +222,18 @@ def rune(angle, scale=1.0, size=CELL, centre=None):
             side_lit = normal[0] * KEY[0] + normal[1] * KEY[1] > 0.0
             filled[(px, py)] = colour_for(part, u, v, side_lit)
 
-    # Occlusion first, one pixel round everything, so the rune holds on any floor.
+    if wind:
+        for (q, part) in wind_pixels(ca, sa, cx, cy, scale):
+            if q in filled or not (0 <= q[0] < size and 0 <= q[1] < size):
+                continue
+            filled[q] = colour_for(part, 0.0, 0.0, False)
+            windy.add(q)
+
+    # Occlusion first, one pixel round the rune, so it holds on any floor. Not round the wind: a ring of
+    # it round two one-pixel streaks turned them into a fork of twigs at every diagonal heading.
     for (px, py) in filled:
+        if (px, py) in windy:
+            continue
         for dy in (-1, 0, 1):
             for dx in (-1, 0, 1):
                 q = (px + dx, py + dy)
@@ -158,16 +245,17 @@ def rune(angle, scale=1.0, size=CELL, centre=None):
 
 
 # The Great Rune (Sleet Runes' level 4 card, spell-roster.md section 2h): every fourth rune is cut deep,
-# twice the size. Drawn again at its own size on a 64 cell - rasterised at scale, never the small sheet
+# twice the size. Drawn again at its own size on a 72 cell - rasterised at scale, never the small sheet
 # blown up, so its pixels are the same 2 px world pixels as every other rune's (art-direction.md 1).
-GREAT_CELL = 64
+# Its wind scales with it: thicker streaks, twice as far back, as the old lines were drawn behind it.
+GREAT_CELL = 72
 GREAT_SCALE = 1.9
 
 
 def strip(cell=CELL, scale=1.0):
     sheet = raster.Canvas(cell * DIRECTIONS, cell, None)
     for i in range(DIRECTIONS):
-        k = rune(i * TAU / DIRECTIONS, scale=scale, size=cell)
+        k = rune(i * TAU / DIRECTIONS, scale=scale, size=cell, wind=True)
         for y in range(cell):
             for x in range(cell):
                 p = k.get(x, y)

@@ -47,9 +47,19 @@ public partial class AegisWard : Node2D
 	private const float ShardHalfWidth = 4f;
 	private const int MaxShards = 24;
 	private const int MaxHitsPerShard = 16;
+	// The shard's sheet (tools/art/aegis_ward.py): ShardDirections square cells in one strip, cell i
+	// pointing at i x 11.25 degrees. An API: change both.
+	public const string ShardSheetPath = "res://assets/bonelight/effects/aegis-shard.png";
+	public const int ShardDirections = 32;
 
 	// --- Reflective Plating ---------------------------------------------------------------------------
 	private const float ShaftSeconds = 0.14f;
+	// How the shaft is drawn (visual only - the strike is dealt the frame it is shown): shot out from him
+	// over ShaftShootSeconds, held whole to ShaftHoldSeconds, dissolving to ShaftSeconds; leaving him
+	// ShaftLeaves out from his centre, at the edge of his body.
+	private const float ShaftShootSeconds = 0.035f;
+	private const float ShaftHoldSeconds = 0.05f;
+	private const float ShaftLeaves = 14f;
 	private const int MaxShafts = 8;
 	private const int MaxFlashes = 12;
 
@@ -98,7 +108,6 @@ public partial class AegisWard : Node2D
 	private readonly ulong[] shardHits = new ulong[MaxShards * MaxHitsPerShard];
 	private readonly Shaft[] shafts = new Shaft[MaxShafts];
 	private readonly List<Enemy> nearBuffer = new();
-	private readonly Vector2[] diamond = new Vector2[4];
 	private readonly ElementColors.Ramp light = ElementColors.GetRamp(Element.Light);
 	private readonly ElementColors.Ramp metal = ElementColors.GetRamp(Element.Metal);
 	private float reach = ReforgeReach;
@@ -107,11 +116,17 @@ public partial class AegisWard : Node2D
 	private int nextShaft;
 	private uint seedClock;
 	private bool drewLastFrame;
+	private Texture2D shardSheet;
 
 	public override void _Ready()
 	{
 		ZAsRelative = false;
 		ZIndex = DrawLayers.Air;
+		// Every fade a dissolve on the world's 2 px cell: an alpha drawn here is coverage (see "drawing").
+		Material = SpellInk.DitherByCell;
+		shardSheet = GD.Load<Texture2D>(ShardSheetPath);
+		if (shardSheet == null)
+			GD.PushError($"AegisWard: {ShardSheetPath} did not load (not imported?); Reforged's shards would cut unseen.");
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -324,100 +339,139 @@ public partial class AegisWard : Node2D
 	}
 
 	// --- drawing ---------------------------------------------------------------------------------
+	//
+	// THE PIXEL-ART PASS (2026-11-01, .ai/art-replacement-manifest.md section 9). All three were DrawLine
+	// and DrawColoredPolygon: smooth rotated quads, a translucent 6 px wash under every line, every part
+	// fading by alpha. Now every part is whole art pixels on the world's 2 px grid in opaque ramp stops -
+	// the dome's flash and the shaft stamped cell by cell (PixelInk), the shard a region of a pre-rotated
+	// sheet (tools/art/aegis_ward.py) - and every fade is a dissolve: the node draws through
+	// SpellInk.DitherByCell, so an alpha is coverage. Nothing allocated; the numbers each part is drawn
+	// from are the ones its hit reads (RampartRadius, the shard's line, the struck enemy).
 
 	public override void _Draw()
 	{
 		Transform2D toLocal = GlobalTransform.AffineInverse();
 		Vector2 centre = PlayerRef != null && IsInstanceValid(PlayerRef) ? toLocal * PlayerRef.GlobalPosition : Vector2.Zero;
 		DrawFlashes(centre);
-		DrawShards(toLocal, centre);
+		DrawShards(centre);
 		DrawShafts(toLocal);
 	}
-
-	private static Color Fade(Color c, float alpha) => new Color(c.R, c.G, c.B, c.A * alpha);
 
 	private static Vector2 Snap(Vector2 p) =>
 		new Vector2(MathF.Round(p.X / WhipLimb.Grid) * WhipLimb.Grid, MathF.Round(p.Y / WhipLimb.Grid) * WhipLimb.Grid);
 
-	// Where a bolt broke, the dome lights: a stretch of its curve either side of the break, white-hot at
-	// the break and cooling along it, with a ripple of plates inside it - the dome is there, it is struck.
+	// Where a bolt broke, the dome lights: a stretch of its curve either side of the break, one art pixel
+	// on RampartRadius - the radius a bolt is stopped at - white-hot at the break and cooling down Light's
+	// ramp along it, thickened at the break, with a contour of Light's gold edge just outside it (what
+	// holds it on a pale floor) and a band of Metal plates just inside, broken at their seams, lit on the
+	// side the key reaches. It opens out from the break and dissolves from its ends in, the break last:
+	// the dome is there, it is struck, and it is gone in a quarter of a second.
 	private void DrawFlashes(Vector2 centre)
 	{
+		const float g = WhipLimb.Grid;
 		for (int i = 0; i < MaxFlashes; i++)
 		{
 			if (!flashes[i].Live)
 				continue;
 			Flash f = flashes[i];
 			float u = f.Age / DomeFlashSeconds;
-			float alpha = 1f - u * u;
 			float spread = DomeFlashHalfArc * (0.6f + 0.4f * u);
-			const int steps = 7;
-			Vector2 prev = Vector2.Zero;
+			// A step of under one art pixel along the curve, so it is walked without a gap.
+			int steps = Math.Max(4, (int)MathF.Ceiling(2f * spread * RampartRadius / g));
 			for (int k = 0; k <= steps; k++)
 			{
 				float t = -1f + 2f * k / steps;
 				float a = f.Angle + t * spread;
-				Vector2 p = centre + new Vector2(MathF.Cos(a), MathF.Sin(a)) * RampartRadius;
-				if (k > 0)
+				var dir = new Vector2(MathF.Cos(a), MathF.Sin(a));
+				float heat = 1f - MathF.Abs(t);
+				// Whole until its dissolve begins - at 15% of the flash at the ends, 60% at the break -
+				// then thinning to nothing at the end of it.
+				float from = 0.15f + 0.45f * heat;
+				float cover = u <= from ? 1f : 1f - (u - from) / (1f - from);
+				if (cover <= 0f)
+					continue;
+				Color c = heat > 0.75f ? light.Core : heat > 0.45f ? light.Hot : heat > 0.2f ? light.Mid : light.Edge;
+				if (heat > 0.2f)
+					PixelInk.Cell(this, centre + dir * (RampartRadius + g), light.Edge, cover);
+				PixelInk.Cell(this, centre + dir * RampartRadius, c, cover);
+				if (heat > 0.7f)
+					PixelInk.Cell(this, centre + dir * (RampartRadius - g), light.Hot, cover);
+				// The plates: a band three cells in, broken at a seam every 0.4 of the arc.
+				float seam = MathF.Abs(t * 2.5f - MathF.Round(t * 2.5f));
+				if (MathF.Abs(t) < 0.85f && seam > 0.12f)
 				{
-					float heat = 1f - MathF.Abs(t);
-					Color c = heat > 0.6f ? light.Core : heat > 0.25f ? light.Hot : light.Mid;
-					DrawLine(Snap(prev), Snap(p), Fade(light.Mid, 0.45f * alpha), 6f);
-					DrawLine(Snap(prev), Snap(p), Fade(c, alpha), 2f);
+					// Lit where the dome's surface faces the key (upper left).
+					bool lit = dir.X + dir.Y < 0f;
+					PixelInk.Cell(this, centre + dir * (RampartRadius - 3f * g), lit ? metal.Hot : metal.Mid, cover * 0.95f);
 				}
-				prev = p;
-			}
-			// The plates: three short chords just inside the curve, the dome's panels.
-			for (int k = -1; k <= 1; k++)
-			{
-				float a = f.Angle + k * spread * 0.55f;
-				Vector2 at = centre + new Vector2(MathF.Cos(a), MathF.Sin(a)) * (RampartRadius - 6f);
-				Vector2 along = new Vector2(-MathF.Sin(a), MathF.Cos(a)) * 5f;
-				DrawLine(Snap(at - along), Snap(at + along), Fade(light.Hot, 0.7f * alpha), 2f);
 			}
 		}
 	}
 
-	// A shard of iron flying in: a long diamond along its line, lit on the side the key light reaches,
-	// with a short streak behind it in Light's ramp - the ward's light, the plate's metal.
-	private void DrawShards(Transform2D toLocal, Vector2 centre)
+	// A shard of iron flying in: a region of the 32-heading sheet, the one nearest its line in to him -
+	// a splinter of Metal lit on the key's side with a white-hot point and a streak of the ward's Light
+	// behind it. It dissolves in its last 0.06 s, inside his body, as it is set into the ward.
+	private void DrawShards(Vector2 centre)
 	{
+		if (shardSheet == null)
+			return;
+		float cell = shardSheet.GetHeight();
 		for (int i = 0; i < MaxShards; i++)
 		{
 			if (!shards[i].Live)
 				continue;
 			Shard s = shards[i];
-			float out_ = ShardOut(s.Age);
-			Vector2 at = centre + s.Dir * out_;
-			Vector2 inward = -s.Dir;
-			Vector2 side = new Vector2(-inward.Y, inward.X);
-			float alpha = Mathf.Clamp((ReforgeSeconds - s.Age) / 0.06f, 0f, 1f);
-			Vector2 tip = at + inward * 6f;
-			Vector2 tail = at - inward * 6f;
-			DrawLine(Snap(tail), Snap(tail - inward * 12f), Fade(light.Mid, 0.6f * alpha), 2f);
-			diamond[0] = Snap(tip);
-			diamond[1] = Snap(at + side * 3f);
-			diamond[2] = Snap(tail);
-			diamond[3] = Snap(at - side * 3f);
-			DrawColoredPolygon(diamond, Fade(metal.Mid, alpha));
-			DrawLine(Snap(tip), Snap(tail), Fade(metal.Hot, alpha), 2f);
-			DrawRect(WhipLimb.Cell(tip, 2f), Fade(light.Core, alpha));
+			Vector2 at = centre + s.Dir * ShardOut(s.Age);
+			float coverage = Mathf.Clamp((ReforgeSeconds - s.Age) / 0.06f, 0f, 1f);
+			float heading = (-s.Dir).Angle();
+			int cellIndex = ((int)MathF.Round(heading / Mathf.Tau * ShardDirections) % ShardDirections + ShardDirections) % ShardDirections;
+			Vector2 corner = Snap(at - new Vector2(cell * 0.5f, cell * 0.5f));
+			DrawTextureRectRegion(shardSheet, new Rect2(corner, new Vector2(cell, cell)),
+				new Rect2(cellIndex * cell, 0f, cell, cell), new Color(1f, 1f, 1f, coverage));
 		}
 	}
 
+	// Reflective Plating: a shaft of light from the edge of his body to the enemy that takes the strike
+	// back - a white-hot spine one art pixel wide in a body of Light's hot, in a dithered glow of its gold
+	// edge - shot out in its first few frames, then dissolving, the spine last; and where it lands, a
+	// sparkle of whole cells. It ends on the struck enemy, the one body it hurts: not an area.
 	private void DrawShafts(Transform2D toLocal)
 	{
+		const float g = WhipLimb.Grid;
 		for (int i = 0; i < MaxShafts; i++)
 		{
 			if (!shafts[i].Live)
 				continue;
 			Shaft s = shafts[i];
-			float alpha = 1f - s.Age / ShaftSeconds;
-			Vector2 a = Snap(toLocal * s.From);
-			Vector2 b = Snap(toLocal * s.To);
-			DrawLine(a, b, Fade(light.Mid, 0.5f * alpha), 6f);
-			DrawLine(a, b, Fade(light.Core, alpha), 2f);
-			DrawRect(WhipLimb.Cell(b, 6f), Fade(light.Core, alpha));
+			Vector2 a = toLocal * s.From;
+			Vector2 b = toLocal * s.To;
+			Vector2 path = b - a;
+			float length = path.Length();
+			if (length < g)
+				continue;
+			Vector2 dir = path / length;
+			// From the edge of his body, not across his sprite, when there is room.
+			if (length > 2f * ShaftLeaves)
+				a += dir * ShaftLeaves;
+			float reach = Mathf.Clamp(s.Age / ShaftShootSeconds, 0f, 1f);
+			Vector2 head = a + (b - a) * reach;
+			float cover = s.Age < ShaftHoldSeconds ? 1f : 1f - (s.Age - ShaftHoldSeconds) / (ShaftSeconds - ShaftHoldSeconds);
+			PixelInk.Line(this, a, head, light.Edge, 5, cover * 0.45f);
+			PixelInk.Line(this, a, head, light.Hot, 3, cover);
+			PixelInk.Line(this, a, head, light.Core, 1, cover * 1.6f);
+			if (reach < 1f)
+				continue;
+			// The sparkle where it lands: a white heart, hot arms two cells long, mid at the tips.
+			PixelInk.Cell(this, b, light.Core, MathF.Min(1f, cover * 1.6f));
+			for (int d = 1; d <= 2; d++)
+			{
+				Color c = d == 2 ? light.Mid : light.Hot;
+				float cd = Mathf.Clamp(cover * (1.5f - 0.25f * d), 0f, 1f);
+				PixelInk.Cell(this, b + new Vector2(d * g, 0f), c, cd);
+				PixelInk.Cell(this, b - new Vector2(d * g, 0f), c, cd);
+				PixelInk.Cell(this, b + new Vector2(0f, d * g), c, cd);
+				PixelInk.Cell(this, b - new Vector2(0f, d * g), c, cd);
+			}
 		}
 	}
 }
