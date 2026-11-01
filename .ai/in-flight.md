@@ -107,8 +107,8 @@ builds to 120 and seven.
    under the player and the enemies; Stormsweep's crack slower at first, quicker with level; Scorching
    Ray's icon a thinner ray into the ground; Iron Palisade's rolling walls dig up dirt; Bramble Seed withers quickly at its end instead of shrinking; its vines taper smoothly from the woody base to
    the green (no abrupt step); a better Mirefoot icon (a stray black line at its foot); **familiar icons
-   too hard to read - three or four options for Eric to pick from**.
-3. **Enemy pathing** (`wip/enemy-pathing`, in flight): every enemy sticks on terrain; an efficient fix.
+   too hard to read**: Eric picked option B, Moonlit (`wip/familiar-icons`, in flight).
+3. **Enemy pathing** (merged, a70cb11: `Enemy.Skirt`, prop clusters in the nav grid; bodies stuck 6 s+ fell from 24 to 3 across ten runs; open: crowds queuing in Cave and Dungeon passages are crowd spacing, Eric's call): every enemy sticks on terrain; an efficient fix.
 4. **Boss crowd control, and the Hollow Choir** (after 3, which owns `Enemy.cs` movement). Bosses are
    immune to any crowd control that would stop them ever reaching the player (freeze and root, pulls,
    knockback, time-stop, walls): they always keep a way to put the player in danger. The Choir's
@@ -137,7 +137,9 @@ builds to 120 and seven.
    wizard is chosen and where the starting spell's evolutions are shown.
 10. **Design, in flight** (`wip/design-wizards-combos`, docs only): a wizard to free in every chapter
    (`.ai/chapter-wizards.md`), and combination spells beginning with Sagittarius = Hunter's Draw +
-   Starfall/Constellation (`.ai/combo-spells.md`). Eric chooses before anything is built.
+   Starfall/Constellation (`.ai/combo-spells.md`), merged 25843fd. Eric chooses before anything is built.
+   **Decided:** a combination needs both parents fully ascended, each through one specific named
+   Ascension (revision of the doc in flight).
 
 ## 4. Waiting on Eric
 
