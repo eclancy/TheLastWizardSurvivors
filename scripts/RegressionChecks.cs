@@ -3849,6 +3849,12 @@ public static class RegressionChecks
 				warnings.AddRange(stone.TuningProblems());
 				break;
 
+			// So does the Seneschal (CourtSeneschalBoss.TuningProblems): the rank's lane marked and not
+			// outrun, a door each way, a household behind him when he goes, the guards' sheet present.
+			case CourtSeneschalBoss seneschal:
+				warnings.AddRange(seneschal.TuningProblems());
+				break;
+
 			case GaolerBoss gaoler:
 				// Below 0 there is no planted tell before the charge; at 1 the charge never
 				// happens, because the wind-up ends before it starts moving.
