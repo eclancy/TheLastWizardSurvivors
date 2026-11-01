@@ -133,7 +133,9 @@ public partial class BlackTentacles : Node2D
 	[Export] public SpellData SpellData { get; set; }
 	[Export] public int CurrentLevel { get; set; } = 1;
 	[Export] public float ZoneDuration { get; set; } = 3.0f;
-	[Export] public float BaseRadius { get; set; } = 90f;
+	// The rift at level 1. It was 90; Eric (2026-11-01) wanted it to "start smaller with less tentacles and
+	// build", so it opens at 60 and the level table (SpellData_BlackTentacles.tres) widens it to 120 by level 8.
+	[Export] public float BaseRadius { get; set; } = 60f;
 	// Speed multiplier inside the rift before level bonuses: 0.45 is a 55% slow.
 	[Export] public float SlowMultiplier { get; set; } = 0.45f;
 	// Seconds between one tentacle's slaps, before the player's cooldown reduction.
@@ -157,7 +159,7 @@ public partial class BlackTentacles : Node2D
 
 	private Face face = Face.Pool;
 	private int damage = 2;
-	private float radius = 90f;
+	private float radius = 60f;
 	private float duration = 3f;
 	private int tentacles = 3;
 	private float slapInterval = 0.8f;

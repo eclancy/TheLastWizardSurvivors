@@ -872,8 +872,10 @@ the thing at the game's 2 px art grid, out of the number that decides what it hi
   up, each picks the nearest unclaimed enemy inside, winds up, lashes to it and lands: the target and
   anything within 40 px of the landing take one slap. **`CurrentRadius` is the one hit authority** and
   the shader draws to it; the old version grew the DRAWING by the ascensions' x2 / x1.7 scale while
-  their area never reached the hit. Levels add tentacles (even), rift size and slow (odd), +1 slap
-  damage every level - written out in full in the `.tres`. Amount adds tentacles. All five evolutions
+  their area never reached the hit. It starts small and builds (Eric, 2026-11-01): 60 px and two
+  tentacles at level 1, 10 px wider at every level but 6 and a tentacle at 2, 4, 5, 6 and 8, so 120 px
+  and seven at level 8 as before; the slow deepens on odd levels, +1 slap damage every level - written
+  out in full in the `.tres`. Amount adds tentacles. All five evolutions
   now do what their card says (Soul Drain and the Maw's vortex had no reader at all) and the cards
   were rewritten to say only that. **Elder God Maw** was redrawn: a lip of torn earth and wet flesh,
   three rings of teeth of uneven length turning against each other and sinking into black, a ring of
