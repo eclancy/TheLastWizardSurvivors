@@ -99,15 +99,18 @@ from executes (e6f7dfd), Blank Folio offer weight 0.02 (63be6da), a short level-
 three-card hand's card size (dd5cc6a), no two Black Tentacles rifts ever overlap, of any face (fc28f95).
 
 1. **Boss cinematics** (`wip/boss-cinematics`, in flight): no movement while a boss arrives; letterbox
-   bars, zoom, screen shake, a flare; shake in boss animations where it helps; **bosses always draw
-   above the player's spells**.
+   bars, zoom, screen shake, a flare; shake in boss animations where it helps; **the player and bosses
+   always draw above every spell and effect**.
 2. **Spell visuals** (`wip/spell-visuals`, in flight): Cone of Cold hard to see; Solar Flare rises from
    under the player and the enemies; Stormsweep's crack slower at first, quicker with level; Scorching
    Ray's icon a thinner ray into the ground; Iron Palisade's rolling walls dig up dirt; Bramble Seed withers quickly at its end instead of shrinking; its vines taper smoothly from the woody base to
    the green (no abrupt step); a better Mirefoot icon (a stray black line at its foot); **familiar icons
    too hard to read - three or four options for Eric to pick from**.
 3. **Enemy pathing** (`wip/enemy-pathing`, in flight): every enemy sticks on terrain; an efficient fix.
-4. **The Hollow Choir** (after 3): pathing sticks; their ranged attack needs a launched attack, not a
+4. **Boss crowd control, and the Hollow Choir** (after 3, which owns `Enemy.cs` movement). Bosses are
+   immune to any crowd control that would stop them ever reaching the player (freeze and root, pulls,
+   knockback, time-stop, walls): they always keep a way to put the player in danger. The Choir's
+   freeze-pauses-revive below must still work. Then the Choir: pathing sticks; their ranged attack needs a launched attack, not a
    circle and arrow; one too far from the player dips into the ground and reappears; a longer revive,
    with the voices visibly walking to a fallen one to raise it, so the player sees to stop it; freezing
    and other crowd control pause the revive.
