@@ -72,6 +72,8 @@ public partial class WorldMap : Control
 	private Button startButton;
 	// The world's way to the page: in the top bar once the page is open to the save, never before.
 	private Button pageButton;
+	// The journal: the quest log and the chapter notes (JournalScreen, .ai/quests-and-notes.md).
+	private Button journalButton;
 	// This screen's sheet, and whether the page is open to the save at all.
 	private bool onPage;
 	private bool pageOpen;
@@ -151,6 +153,34 @@ public partial class WorldMap : Control
 		// Clear of the phone's rounded corners and camera hole; nothing on desktop.
 		SafeArea.Apply(this);
 		MenuNavigator.Attach(this, startButton);
+	}
+
+	// The Journal button: the quest log and the notes over the map (Eric, 2026-10-31: "User should be able
+	// to track specific quests"). In the top bar, by Back, on the world and on the page alike; the selection
+	// comes back to it when the journal closes.
+	private Button BuildJournalButton()
+	{
+		journalButton = new Button
+		{
+			Name = "JournalButton",
+			Text = "Journal",
+			TooltipText = "Quests to track, and the notes you have written",
+			CustomMinimumSize = new Vector2(narrow ? 0f : 140f, 0f),
+			SizeFlagsVertical = SizeFlags.Fill,
+		};
+		ResponsiveLayout.SetFont(journalButton, narrow ? ResponsiveLayout.TextRole.Label : ResponsiveLayout.TextRole.Body);
+		BonelightSkin.StyleButton(journalButton, BonelightSkin.Emphasis.Normal);
+		journalButton.Pressed += () =>
+		{
+			if (JournalScreen.IsOpen)
+				return;
+			JournalScreen.Open(this, () =>
+			{
+				if (IsInstanceValid(journalButton))
+					journalButton.GrabFocus();
+			});
+		};
+		return journalButton;
 	}
 
 	private void FallBack() => SceneTransition.ChangeScene(this, "res://scenes/StageSelection.tscn");
@@ -392,6 +422,7 @@ public partial class WorldMap : Control
 			ResponsiveLayout.SetBodyText(caption, ResponsiveLayout.TextRole.Label);
 			caption.AddThemeColorOverride("font_color", InkPlace);
 			bar.AddChild(caption);
+			bar.AddChild(BuildJournalButton());
 			return;
 		}
 
@@ -403,6 +434,7 @@ public partial class WorldMap : Control
 		};
 		compass.MarkPressed += SelectStop;
 		bar.AddChild(compass);
+		bar.AddChild(BuildJournalButton());
 
 		// The way to the page, at the far end of the road's strip and apart from it: only once the
 		// campaign is finished (or the save has been there), so it never sits in the road's flow and
@@ -483,6 +515,8 @@ public partial class WorldMap : Control
 		var ring = new List<Button> { startButton };
 		if (pageButton != null)
 			ring.Add(pageButton);
+		if (journalButton != null)
+			ring.Add(journalButton);
 		ring.Add(backButton);
 		for (int i = 0; i < ring.Count; i++)
 		{
@@ -764,7 +798,8 @@ public partial class WorldMap : Control
 
 	public override void _Input(InputEvent @event)
 	{
-		if (view == null || !IsVisibleInTree())
+		// The journal over the map has the keys while it is open: its tabs, not the road.
+		if (view == null || !IsVisibleInTree() || JournalScreen.IsOpen)
 			return;
 		// Heard before Godot's own focus step, and consumed, so left and right move the map and never
 		// the selection. Echoes included: a held arrow key walks on at the keyboard's own repeat.
@@ -782,7 +817,7 @@ public partial class WorldMap : Control
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		if ((view != null || pageView != null) && @event.IsActionPressed("ui_cancel"))
+		if ((view != null || pageView != null) && !JournalScreen.IsOpen && @event.IsActionPressed("ui_cancel"))
 		{
 			GetViewport().SetInputAsHandled();
 			OnBack();
@@ -792,7 +827,7 @@ public partial class WorldMap : Control
 	public override void _Notification(int what)
 	{
 		// Android's back button.
-		if (what == NotificationWMGoBackRequest && (view != null || pageView != null))
+		if (what == NotificationWMGoBackRequest && (view != null || pageView != null) && !JournalScreen.IsOpen)
 			OnBack();
 	}
 
@@ -801,7 +836,8 @@ public partial class WorldMap : Control
 		if (view == null)
 			return;
 		compass.SetState(selected, view.WizardStopProgress);
-		UpdateRepeat((float)delta);
+		if (!JournalScreen.IsOpen)
+			UpdateRepeat((float)delta);
 	}
 
 	private void UpdateRepeat(float delta)

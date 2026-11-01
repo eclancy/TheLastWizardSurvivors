@@ -120,6 +120,23 @@ public class SaveData
 	/// when writes are on, so no tool scene or --no-save-writes run ever sets it.
 	/// </summary>
 	public bool HasSeenPrologue { get; set; } = false;
+
+	/// <summary>
+	/// The quests the player has chosen to see on screen during a run (QuestLog, .ai/quests-and-notes.md):
+	/// achievement ids, and <see cref="QuestLog.NextWizardId"/> for "free the next wizard", which resolves to
+	/// whoever is next each time it is read. No schema bump: it only adds, and a save without the key keeps
+	/// this default, so every save - new or old - starts tracking the next wizard. An empty list is the
+	/// player's own choice (everything untracked), which is why the default lives here and not in a reader.
+	/// </summary>
+	public List<string> TrackedQuestIds { get; set; } = new() { QuestLog.NextWizardId };
+
+	/// <summary>
+	/// The chapters whose note (ChapterNotes) has been shown, as stage ids: a note shows on the first entry
+	/// to its chapter and then only in the journal. No schema bump - additive, empty by default - so an
+	/// existing save reads each chapter's note once, on its next run there, as it did the prologue.
+	/// </summary>
+	public List<string> SeenChapterNoteIds { get; set; } = new();
+
 	public bool EnableGameplayOnboardingTips { get; set; } = true;
 	public bool HasToggledOnboardingTipsAtLeastOnce { get; set; } = false;
 	public bool PlaytestModeEnabled { get; set; } = false;
@@ -833,6 +850,18 @@ public class SaveData
 			glimpsedSecretIds.Add(id);
 		}
 
+		var trackedQuestIds = new Godot.Collections.Array<string>();
+		foreach (string id in TrackedQuestIds)
+		{
+			trackedQuestIds.Add(id);
+		}
+
+		var seenChapterNoteIds = new Godot.Collections.Array<string>();
+		foreach (string id in SeenChapterNoteIds)
+		{
+			seenChapterNoteIds.Add(id);
+		}
+
 		var foundUpgradeLevels = new Godot.Collections.Dictionary<string, int>();
 		foreach (KeyValuePair<string, int> entry in FoundUpgradeLevels)
 		{
@@ -885,6 +914,8 @@ public class SaveData
 			["Lifetime"] = Lifetime.ToGodotDictionary(),
 			["HasSeenGameplayOnboarding"] = HasSeenGameplayOnboarding,
 			["HasSeenPrologue"] = HasSeenPrologue,
+			["TrackedQuestIds"] = trackedQuestIds,
+			["SeenChapterNoteIds"] = seenChapterNoteIds,
 			["EnableGameplayOnboardingTips"] = EnableGameplayOnboardingTips,
 			["HasToggledOnboardingTipsAtLeastOnce"] = HasToggledOnboardingTipsAtLeastOnce,
 			["PlaytestModeEnabled"] = PlaytestModeEnabled,
@@ -1098,6 +1129,29 @@ public class SaveData
 
 		if (root.ContainsKey("HasSeenPrologue"))
 			result.HasSeenPrologue = root["HasSeenPrologue"].AsBool();
+
+		// Both additive (no schema bump): a save without the key keeps the defaults - the next wizard
+		// tracked, no note seen. A present key replaces the default, so an empty list stays empty.
+		if (root.ContainsKey("TrackedQuestIds") && root["TrackedQuestIds"].VariantType == Variant.Type.Array)
+		{
+			result.TrackedQuestIds.Clear();
+			foreach (Variant value in root["TrackedQuestIds"].AsGodotArray())
+			{
+				string id = value.AsString();
+				if (!string.IsNullOrWhiteSpace(id) && !result.TrackedQuestIds.Contains(id))
+					result.TrackedQuestIds.Add(id);
+			}
+		}
+
+		if (root.ContainsKey("SeenChapterNoteIds") && root["SeenChapterNoteIds"].VariantType == Variant.Type.Array)
+		{
+			foreach (Variant value in root["SeenChapterNoteIds"].AsGodotArray())
+			{
+				string id = value.AsString();
+				if (!string.IsNullOrWhiteSpace(id) && !result.SeenChapterNoteIds.Contains(id))
+					result.SeenChapterNoteIds.Add(id);
+			}
+		}
 
 		if (root.ContainsKey("EnableGameplayOnboardingTips"))
 			result.EnableGameplayOnboardingTips = root["EnableGameplayOnboardingTips"].AsBool();

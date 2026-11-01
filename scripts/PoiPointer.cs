@@ -88,7 +88,7 @@ public partial class PoiPointer : Control
 			Vector2 direction = (onScreen - centre).Normalized();
 			float scaleX = direction.X != 0f ? (inner.Size.X * 0.5f) / Mathf.Abs(direction.X) : float.MaxValue;
 			float scaleY = direction.Y != 0f ? (inner.Size.Y * 0.5f) / Mathf.Abs(direction.Y) : float.MaxValue;
-			Vector2 at = (centre + direction * Mathf.Min(scaleX, scaleY)).Round();
+			Vector2 at = HudKeepOut.Avoid((centre + direction * Mathf.Min(scaleX, scaleY)).Round(), inner, BadgeHalf + TailLength);
 			DrawBadge(at, direction, point, pulse);
 			wasDrawing = true;
 		}

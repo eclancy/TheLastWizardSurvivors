@@ -788,9 +788,16 @@ public static class CodexRows
 	/// never naming him - "The Open Cell" frees Tituba, "The Coursing" Laelaps. With no save in hand (the
 	/// results screen's closest deed) he counts as locked, so nothing is ever named by accident.
 	/// </summary>
+	/// <remarks>
+	/// Every locked wizard, not only the secret ones (2026-10-31, .ai/quests-and-notes.md): John Dee is not
+	/// secret - his deed is listed from the first run - and this row said "Frees John Dee" on a new save while
+	/// the character select called him "???". The rule is that a locked wizard's name is his reward; whether
+	/// his chapter is open only decides whether his row is shown at all (IsSealed).
+	/// </remarks>
 	public static bool HidesWizard(AchievementDefinition deed, SaveData save) =>
 		deed != null && !string.IsNullOrEmpty(deed.CharacterUnlockId)
-		&& UnlockCatalog.GetCharacter(deed.CharacterUnlockId)?.IsSecret == true
+		&& UnlockCatalog.GetCharacter(deed.CharacterUnlockId) != null
+		&& !UnlockCatalog.IsStarter(deed.CharacterUnlockId, UnlockKind.Character)
 		&& !GlobalStatsManager.IsCharacterUnlocked(save, deed.CharacterUnlockId);
 
 	/// <summary>A deed as a row. See <see cref="DeedEntry"/>.</summary>

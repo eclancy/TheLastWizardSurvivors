@@ -73,6 +73,7 @@ public partial class ChestPointer : Control
 			float scaleX = direction.X != 0f ? (inner.Size.X * 0.5f) / Mathf.Abs(direction.X) : float.MaxValue;
 			float scaleY = direction.Y != 0f ? (inner.Size.Y * 0.5f) / Mathf.Abs(direction.Y) : float.MaxValue;
 			Vector2 at = centre + direction * Mathf.Min(scaleX, scaleY);
+			at = WizardSurvivors.scripts.HudKeepOut.Avoid(at, inner, 34f);
 			DrawBubble(at, direction, pulse);
 			wasDrawing = true;
 		}

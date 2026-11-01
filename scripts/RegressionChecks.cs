@@ -47,6 +47,7 @@ public static class RegressionChecks
 		ValidateFacingFamily(warnings);
 		ValidateSpawnFormations(warnings);
 		ValidateSwarmPressure(warnings);
+		ValidateQuestsAndNotes(warnings);
 		ValidateBoonSources(warnings);
 		ValidateBoonPresentation(warnings);
 		ValidateChestRarity(warnings);
@@ -5654,6 +5655,128 @@ public static class RegressionChecks
 			warnings.Add($"Spending every Redaction removed {removed} of {unlocked} spells, leaving fewer than "
 				+ $"the {GlobalStatsManager.MinimumOfferablePool} the floor promises.");
 		}
+	}
+
+	// THE QUEST LOG AND THE CHAPTER NOTES (.ai/quests-and-notes.md). What dotnet build cannot see: a
+	// playable chapter with no note, a note too long for its card, a rescued character with no epithet to be
+	// named by while he is held - and, above all, any line the log, the HUD, the run's opening or a note can
+	// show that carries the name of a wizard the save has not freed. His name is his reward
+	// (.ai/side-events.md, "Secret wizards"). Read on four saves: new, early (the Circle open), mid-campaign
+	// (the Dungeon open, nobody freed), and late (one freed, one still held).
+	private static void ValidateQuestsAndNotes(List<string> warnings)
+	{
+		foreach (StageDefinition stage in StageCatalog.All.Where(s => s.IsPlayable))
+		{
+			if (!ChapterNotes.Has(stage.Id))
+				warnings.Add($"Chapter notes: {stage.DisplayName} ({stage.Id}) is playable and has no note (ChapterNotes).");
+		}
+		foreach (string id in ChapterNotes.WrittenFor)
+		{
+			if (StageCatalog.GetById(id) == null)
+				warnings.Add($"Chapter notes: a note is written for '{id}', which StageCatalog does not define.");
+		}
+
+		var rescued = UnlockCatalog.AllCharacterIds.Where(id => !UnlockCatalog.IsStarter(id, UnlockKind.Character)).ToList();
+		foreach (string id in rescued)
+		{
+			if (QuestLog.PrisonerOf(id) == null)
+				warnings.Add($"Quests: '{id}' can be freed and has no epithet (QuestLog.Prisoners), so the log would call him 'a wizard'.");
+		}
+		foreach (QuestLog.Prisoner prisoner in QuestLog.Prisoners)
+		{
+			if (UnlockCatalog.GetCharacter(prisoner.CharacterId) == null)
+				warnings.Add($"Quests: QuestLog.Prisoners names '{prisoner.CharacterId}', which UnlockCatalog does not.");
+			if (!prisoner.FreedLine.Contains("{0}"))
+				warnings.Add($"Quests: {prisoner.CharacterId}'s freed line does not name him.");
+		}
+
+		var saves = new List<(string Name, SaveData Save)> { ("a new save", new SaveData()) };
+		var early = new SaveData();
+		OpenThrough(early, "stage_10");
+		saves.Add(("an early save", early));
+		var middle = new SaveData();
+		OpenThrough(middle, "stage_1");
+		saves.Add(("a mid-campaign save", middle));
+		var late = new SaveData();
+		OpenThrough(late, "stage_5");
+		GlobalStatsManager.UnlockCharacter(late, "tituba");
+		saves.Add(("a late save", late));
+
+		foreach (var (name, save) in saves)
+		{
+			var locked = rescued.Where(id => !GlobalStatsManager.IsCharacterUnlocked(save, id))
+				.Select(id => (Id: id, Name: QuestLog.NameOf(id))).ToList();
+			IEnumerable<string> text = QuestLog.AllText(save)
+				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.LinesFor(s.Id, save)));
+			foreach (string line in text.Where(t => !string.IsNullOrEmpty(t)))
+			{
+				foreach (var who in locked)
+				{
+					if (NamesWizard(line, who.Name))
+						warnings.Add($"Quests: on {name}, '{line}' names {who.Id}, who is not free yet.");
+				}
+			}
+			foreach (StageDefinition stage in StageCatalog.All.Where(s => s.IsPlayable && ChapterNotes.Has(s.Id)))
+			{
+				List<string> lines = ChapterNotes.LinesFor(stage.Id, save);
+				if (lines.Count > ChapterNotes.MaxLines)
+					warnings.Add($"Chapter notes: {stage.DisplayName}'s note is {lines.Count} lines on {name}; at most {ChapterNotes.MaxLines}.");
+				foreach (string line in lines.Where(l => l.Length > ChapterNotes.MaxLineLength))
+					warnings.Add($"Chapter notes: '{line}' is {line.Length} characters; at most {ChapterNotes.MaxLineLength}.");
+			}
+		}
+
+		// The default: a new save tracks the next wizard, and he is somebody; a save that frees everyone has none.
+		if (!new SaveData().TrackedQuestIds.Contains(QuestLog.NextWizardId))
+			warnings.Add("Quests: a new save does not track the next wizard.");
+		if (QuestLog.Resolve(QuestLog.NextWizardId, new SaveData(), null) == null)
+			warnings.Add("Quests: a new save has no next wizard to free.");
+		var everyone = new SaveData();
+		foreach (string id in rescued)
+			GlobalStatsManager.UnlockCharacter(everyone, id);
+		if (QuestLog.NextWizard(everyone) != null)
+			warnings.Add("Quests: with every wizard free, the next wizard is still somebody.");
+
+		// Additive save fields: a save written before them keeps the defaults; an empty list stays empty.
+		var old = new Godot.Collections.Dictionary { ["SchemaVersion"] = SaveData.CurrentSchemaVersion };
+		SaveData read = SaveData.FromVariant(old);
+		if (!read.TrackedQuestIds.Contains(QuestLog.NextWizardId) || read.SeenChapterNoteIds.Count != 0)
+			warnings.Add("Quests: a save without the quest keys does not read as tracking the next wizard with no note seen.");
+		var cleared = new SaveData();
+		cleared.TrackedQuestIds.Clear();
+		cleared.SeenChapterNoteIds.Add("stage_0");
+		SaveData back = SaveData.FromVariant(cleared.ToGodotDictionary());
+		if (back.TrackedQuestIds.Count != 0 || !back.SeenChapterNoteIds.Contains("stage_0"))
+			warnings.Add("Quests: the tracked quests or the notes seen do not survive a save and load.");
+	}
+
+	// Opens every campaign chapter up to and including this one, with the boss of each one before it
+	// beaten, as playing the road there does.
+	private static void OpenThrough(SaveData save, string stageId)
+	{
+		foreach (StageDefinition stage in StageCatalog.Campaign.Where(s => s.IsPlayable))
+		{
+			GlobalStatsManager.UnlockStage(save, stage.Id);
+			if (stage.Id.Equals(stageId, StringComparison.OrdinalIgnoreCase))
+				return;
+			BossDefinition boss = BossCatalog.ForStageIndex(stage.Index);
+			if (boss != null)
+				save.Lifetime.BossesDefeated.Add(boss.Id);
+		}
+	}
+
+	/// <summary>
+	/// Whether a line carries a name, with its diacritics or without - "Vainamoinen" is how a hand-written
+	/// hint would spell it. Public for _UiShot's name audit, which reads a whole screen the same way.
+	/// </summary>
+	public static bool NamesWizard(string line, string name)
+	{
+		if (string.IsNullOrWhiteSpace(name) || string.IsNullOrEmpty(line))
+			return false;
+		string plain = new string(name.Normalize(System.Text.NormalizationForm.FormD)
+			.Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
+			.ToArray());
+		return line.Contains(name, StringComparison.OrdinalIgnoreCase) || line.Contains(plain, StringComparison.OrdinalIgnoreCase);
 	}
 
 	private static void ValidateSaveDefaults(List<string> warnings)
