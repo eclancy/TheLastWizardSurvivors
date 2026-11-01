@@ -369,8 +369,10 @@ public partial class BridgeConstableBoss : BossEnemy
 			Vector2 start = at - down * back + across * offset;
 			if (!OnDeck(start + down * back, 0f))
 				continue;
+			// The reticle (Shot), not the Line's own Leap: these are bolts loosed down the lane, not his charge,
+			// whose lane shows Leap and is warm iron where these are his cold fire.
 			TelegraphedGroundHit.Place(arena, start, BoltTellSeconds + 0.08f * k, back + BoltLaneOvershoot, damage,
-				BoltColor, TelegraphShape.Line, down);
+				BoltColor, TelegraphShape.Line, down, TelegraphGlyph.Shot);
 		}
 	}
 
