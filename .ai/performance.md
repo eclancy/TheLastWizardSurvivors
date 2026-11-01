@@ -215,6 +215,37 @@ activities | grep topResumed` before anything that could).
 - **Spell scans** read the registry now, but most still test every enemy each time (at 140 that is
   140 position reads); `CollectNear` is there for the ones that become hot.
 
+### Terrain: the slide, the skirt and prop clusters (2026-11-01)
+
+"All enemies tend to get stuck on terrain" (`.ai/enemy-behaviour.md` section 8, item 13). Three
+changes, chosen for what they cost as much as for what they fix:
+
+- **`WallMinSlideAngle` 0** on every enemy: a physics setting, no code per frame.
+- **The skirt** (`Enemy.Skirt`): a body walking freely pays one subtraction and one compare against
+  a position it has already read. Only a body that covered under a third of its step asks the engine
+  `IsOnWall` and `GetWallNormal`, which return values and allocate nothing.
+- **Prop clusters** (`Node2DGame.StampPropClusters`): once per chunk, when its furnishing finishes,
+  never per frame. Forest, `_BalanceHarness --walk=30 --terrain-log`, 149 chunks: 16 props a chunk,
+  9 of its 1,024 cells closed, **0.15 ms** mean and 0.9 ms worst (the first chunk, JIT included),
+  debug build. A walking player furnishes a few chunks a crossing, each in its own frame. The field
+  itself costs the same: the window has as many cells, a few more of them solid.
+
+Measured, desktop debug build, headless, full swarm (140), `--timescale=1`, two minutes each, the
+same build with `--no-skirt` for the before, one Godot of ours at a time (another session's Godot was
+running during the first pair):
+
+    "$GODOT_BIN" --headless --path . scenes/_BalanceHarness.tscn -- --minutes=2 --character=1 --immortal --timescale=1 --stress-swarm --profile=10 --stage=0 --seed=11 [--no-skirt] --no-save-writes
+
+| before / after | frame mean | p95 | phys a frame | enemy section a call | `MoveAndSlide` a call | nav steering a physics frame |
+|---|---|---|---|---|---|---|
+| Forest (open) | 7.44 / 7.31 ms | 20.1 / 19.9 | 1.32 / 1.16 ms | 8.7 / 7.8 us | 4.1 / 3.7 us | 21 / 19 us |
+| Cursed Dungeon (maze) | 7.27 / 7.31 ms | 20.1 / 20.8 | 1.41 / 1.50 ms | 7.6 / 8.1 us | 4.2 / 4.5 us | 29 / 31 us |
+| Sunken Cave (caverns) | 8.41 / 7.30 ms | 22.3 / 19.4 | 1.90 / 1.14 ms | 11.9 / 8.3 us | 6.1 / 4.3 us | 37 / 37 us |
+
+No cost shows above the run-to-run noise (20-30% on this laptop, section 5). On the Cave the
+before was the slower run, plausibly bodies pressed on rock re-resolving their contacts every step,
+but one pair cannot say so. **Not measured on the phone.**
+
 ## 8. Rules for new code
 
 - **Never `GetTree().GetNodesInGroup("enemies")` in anything that runs per frame or per hit.** Read

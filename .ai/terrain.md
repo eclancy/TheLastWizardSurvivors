@@ -1017,14 +1017,23 @@ costs nothing; routing it into the half of a cell that is water is the wedge thi
 prevent. The water's collision on layer 4 is built from the same flags and never leaves the
 cells they mark (section 3), so the grid and the bodies cannot disagree.
 
-**Props are not in the grid; a garden fence is.** Tree trunks, rocks and fallen logs are small
-`StaticBody2D`s that a body slides off. Stamping them in would mean the furnishing code writing
-into navigation, and a thicket that walls off a gap is the one case that would need it; trees
-keep a minimum spacing for that reason (section 10). The flower pen's fence is the exception: a
-576 px wall of rails is not something a body slides off, so its cells are `FlagFence`, solid in
-the grid, stamped with the chunk's data (section 8). Ghosts (`IgnoresDecorCollision`)
-ignore decor only, so they route like everyone else. An enemy that clears its layer-4 mask
-(`Enemy.FollowsTerrain`) ignores the field and is never recycled for walking distance.
+**A lone prop is not in the grid; a cluster is, and so is a garden fence.** Tree trunks, rocks and
+fallen logs are small `StaticBody2D`s that a body slides off - since 2026-11-01 at any angle
+(`WallMinSlideAngle` 0) and, met square, by turning along them (`Enemy.Skirt`). Two of them closer
+than a body is wide are a notch it wedges in, and on 0.10.0 that was nearly every enemy trapped on the
+Forest ("All enemies tend to get stuck on terrain"). So when a chunk is furnished,
+`Node2DGame.StampPropClusters` reads its blocking props' bodies and stamps `TerrainStreamer.FlagProp`
+on every one within `PropClusters.Gap` (48 px) of another or of water, a wall or a fence, with the
+cells between them. `FillNavigation` is the only reader: placement, painting and water never see it,
+except that nothing is spawned on a closed cell, since `IsReachable` reads the same grid. Its own
+chunk's cells only; a cluster split by a chunk border is left to the skirt. Trees still keep a minimum
+spacing (section 10), so a stand of them is rarely a cluster. The flower pen's fence was the first
+exception: a 576 px wall of rails is not something a body slides off, so its cells are `FlagFence`,
+stamped with the chunk's data (section 8). Ghosts (`IgnoresDecorCollision`) ignore decor only, so they
+route like everyone else round water and walls, but their line test crosses a cell closed only by a
+prop cluster (`HasClearWalk` with `throughProps`), since they pass through the props. An enemy that clears its layer-4 mask (`Enemy.FollowsTerrain`) ignores the
+field and is never recycled for walking distance. The measurement is in `.ai/enemy-behaviour.md`
+section 8, item 13.
 
 ### Who reads it, and when
 
@@ -1212,11 +1221,12 @@ little nearer their feet than his do; for a basic enemy the error is about 6 px.
   squeezing through a thicket of small solid bodies wedges on them; one wading through knee-high
   shrubs looks right and plays like open ground. The y-sort still draws a bush over the legs of
   anything standing behind it.
-- **Trunks are not in the navigation grid.** At 12-28 px a body slides off one. What stops a
+- **A lone trunk is not in the navigation grid.** At 12-28 px a body slides off one. What stops a
   stand of trees becoming a wall is spacing: a trunk keeps `MatureTreeSpacing` (120 px) from the
   others of its set in its chunk, a young tree `YoungTreeSpacing` (72 px), and trees keep 3 cells
   from a garden. Measured below with `_MazeProbe`, whose new `snagged` line counts stalled
-  enemies whose last slide was a decor body or a fence.
+  enemies whose last slide was a decor body or a fence. A trunk within a tile of a rock, another
+  set's trunk or a shore is a cluster and is in the grid (section 9, 2026-11-01).
 
 ### The crown thins when he is behind it
 
