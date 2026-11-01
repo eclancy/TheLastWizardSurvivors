@@ -105,6 +105,10 @@ or three goes further, and agents should keep tool output short.
 
 ## 7. Loose ends
 
+- **The pixel-art pass never reached Sleet Runes or Aegis Ward.** They were held for the sky agent,
+  whose phase 2 drew only the Great Rune sheet and the evolution icons; neither spell has a section
+  in `.ai/art-replacement-manifest.md` 9. Every other spell has one (Stormsweep's came with the whips).
+
 - The pause screen numbers chapters by stage index (the Fallow Fields shows "Chapter 10"); the map
   says "Chapter 2 of 10". `Node2DGame.cs`, around the pause screen's chapter line.
 - `ImpactDebris` still fades by alpha in its last 30%, and Ice's first two ramp colours vanish on
