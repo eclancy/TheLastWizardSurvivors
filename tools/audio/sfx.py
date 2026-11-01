@@ -928,38 +928,71 @@ def hint_lantern_flare():
     return S.dc_block(_far(out, low=120.0, high=2600.0, size=0.75, mix=0.38, damp=0.6))
 
 
-def hint_ice_song():
-    """The Frozen Waste: the ice groans, and under it, faintly, someone is singing.
+# The sung line of hint_ice_song: (onset s, length s, semitones from A4, vowel). StageHintCue puts a
+# note on screen at each onset (IceSongNotes in scripts/StageHintCue.cs) - change one, change both.
+_ICE_SONG = [
+    (0.20, 0.34, -12, "oh"),    # A3
+    (0.50, 0.31, -14, "ah"),    # G3
+    (0.78, 0.31, -16, "eh"),    # F3
+    (1.06, 0.31, -14, "oh"),    # G3
+    (1.34, 0.36, -17, "ah"),    # E3
+    (1.66, 0.78, -19, "oh"),    # D3, held
+]
 
-    The groan is stick-slip friction: a buzz whose period wanders like a slab grinding, through
-    two resonances sliding down, and one dry crack in it. Under that a man's voice, very low and
-    muffled through the ice (lowpassed at 1.1 kHz), two notes of a slow song on "oh". The singer
-    of the Kalevala; the caption does not name him, and neither does this."""
-    gdur = 1.5
+# A man's vowels: (F1, F2) and their gains. "eh" keeps its F2 low enough to survive the ice.
+_SUNG_VOWELS = {
+    "oh": [(450.0, 3.5, 1.0), (800.0, 5.0, 0.55), (2500.0, 8.0, 0.08)],
+    "ah": [(700.0, 3.5, 1.0), (1150.0, 5.0, 0.6), (2600.0, 8.0, 0.08)],
+    "eh": [(530.0, 3.5, 1.0), (1500.0, 5.0, 0.45), (2500.0, 8.0, 0.08)],
+}
+
+
+def hint_ice_song():
+    """The Frozen Waste: the ice groans, and under it someone is singing.
+
+    Reported from 0.10.0: the hint should be heard as SINGING. The first version was two notes on
+    "oh" at 0.42 under a groan at full level, lowpassed at 1.1 kHz - it read as the ice making a
+    noise. Now the song is the sound and the ice is its frame: a short groan and one crack to say
+    where he is, then a man's voice singing a line - six notes falling through a D minor pentachord
+    (A G F G E D), the shape of a runo line of the Kalevala, legato, each note gliding up or down
+    from the last, the vowels changing under it (oh, ah, eh) the way sung words do, a singer's
+    vibrato that blooms late on the held last note. Still muffled (lowpassed at 1.6 kHz, through
+    the far room), because he is under the ice. The singer of the Kalevala; the caption does not
+    name him, and neither does this. The notes are _ICE_SONG, which the screen follows."""
+    gdur = 0.7
     gn = S.n_samples(gdur)
     rng = __import__("random").Random(701)
     walk, f = [], 118.0
-    for _ in xrange(60):
+    for _ in xrange(32):
         f = max(96.0, min(150.0, f + rng.uniform(-9.0, 9.0)))
         walk.append(f)
     buzz = S.osc("saw", S.resample(walk, gn), gdur)
-    groan = S.mix(S.bandpass(buzz, S.sweep(gdur, 520.0, 300.0), 6.0),
-                  S.gain(S.bandpass(buzz, S.sweep(gdur, 940.0, 700.0), 8.0), 0.5))
-    groan = S.env_mul(groan, S.ramp(S.n_samples(0.3), 0.0, 1.0, 0.8) + S.decay(gn - S.n_samples(0.3), 1.3))
+    groan = S.mix(S.bandpass(buzz, S.sweep(gdur, 520.0, 320.0), 6.0),
+                  S.gain(S.bandpass(buzz, S.sweep(gdur, 940.0, 720.0), 8.0), 0.5))
+    groan = S.env_mul(groan, S.ramp(S.n_samples(0.2), 0.0, 1.0, 0.8) + S.decay(gn - S.n_samples(0.2), 1.6))
     crack = S.lowpass(S.bandpass(S.osc("noise", 0, 0.06, seed=703), 1700.0, 2.0), 2600.0)
     crack = S.env_mul(crack, S.decay(S.n_samples(0.06), 6.0))
 
-    oh = [(420.0, 3.5, 1.0), (800.0, 5.0, 0.5)]
-    d3 = _vowel(_hz(-19), 0.7, oh, vibrato=0.01, rate=4.8, attack=0.12, release=0.2, seed=11)
-    f3 = _vowel(_hz(-16), 0.75, oh, vibrato=0.012, rate=4.8, attack=0.1, release=0.3, seed=13)
-    song = S.lowpass(S.layer([(d3, 0.0, 1.0), (f3, 0.62, 1.0)]), 1100.0)
+    notes = []
+    prev = _hz(_ICE_SONG[0][2] - 2)
+    for i, (t0, dur, semis, vowel) in enumerate(_ICE_SONG):
+        target = _hz(semis)
+        n = S.n_samples(dur)
+        glide = S.n_samples(0.07)
+        f0 = S.ramp(glide, prev, target, 0.7) + [target] * (n - glide)
+        held = i == len(_ICE_SONG) - 1
+        # Vibrato blooms on the held note, as a singer's does; the moving notes are nearly straight.
+        notes.append((_vowel(f0, dur, _SUNG_VOWELS[vowel], vibrato=0.016 if held else 0.006,
+                             rate=5.2, attack=0.06, release=0.35 if held else 0.07, seed=11 + i), t0, 1.0))
+        prev = target
+    song = S.lowpass(S.layer(notes), 1600.0)
 
     out = S.pad(S.layer([
-        (groan, 0.0, 1.0),
-        (crack, 0.52, 0.55),
-        (song, 0.55, 0.42),
-    ]), 2.45)
-    return S.dc_block(_far(out, low=95.0, high=2000.0, size=0.85, mix=0.42, damp=0.6))
+        (groan, 0.0, 0.55),
+        (crack, 0.08, 0.45),
+        (song, 0.0, 1.0),
+    ]), 2.58)
+    return S.dc_block(_far(out, low=105.0, high=2200.0, size=0.8, mix=0.4, damp=0.6))
 
 
 def _camel_bell(freq, dur, seed):
