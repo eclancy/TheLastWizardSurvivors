@@ -96,14 +96,15 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 The castle agents (`wip/boss-dark-wizard`, `wip/dungeon-move`, `wip/castle-preflip`) were cut off by the
 usage limit mid-work; their worktrees keep what they did. They resume after these. Done: bosses excluded
 from executes (e6f7dfd), Blank Folio offer weight 0.02 (63be6da), a short level-up hand keeps a
-three-card hand's card size (dd5cc6a).
+three-card hand's card size (dd5cc6a), no two Black Tentacles rifts ever overlap, of any face (fc28f95).
 
 1. **Boss cinematics** (`wip/boss-cinematics`, in flight): no movement while a boss arrives; letterbox
    bars, zoom, screen shake, a flare; shake in boss animations where it helps; **bosses always draw
    above the player's spells**.
 2. **Spell visuals** (`wip/spell-visuals`, in flight): Cone of Cold hard to see; Solar Flare rises from
    under the player and the enemies; Stormsweep's crack slower at first, quicker with level; Scorching
-   Ray's icon a thinner ray into the ground; Iron Palisade's rolling walls dig up dirt; Bramble Seed withers quickly at its end instead of shrinking; **familiar icons
+   Ray's icon a thinner ray into the ground; Iron Palisade's rolling walls dig up dirt; Bramble Seed withers quickly at its end instead of shrinking; its vines taper smoothly from the woody base to
+   the green (no abrupt step); a better Mirefoot icon (a stray black line at its foot); **familiar icons
    too hard to read - three or four options for Eric to pick from**.
 3. **Enemy pathing** (`wip/enemy-pathing`, in flight): every enemy sticks on terrain; an efficient fix.
 4. **The Hollow Choir** (after 3): pathing sticks; their ranged attack needs a launched attack, not a
@@ -119,6 +120,8 @@ three-card hand's card size (dd5cc6a).
    screen as a hint rather than in a speech bubble; all wizards' clues this way. The wizard trapped in
    ice sits in the centre of a large, magically animated lake (the current art reads corny).
 7. **Music**: the menu's music should give way to more interesting, thematic battle music for each level.
+   And **the Elder God Maw opens with a deep, scary crash** (a new generated sound, by
+   `.ai/audio-direction.md`).
 8. **Ground per chapter**: every chapter's ground should read as its place; "Emberdeep doesn't look like
    cracked volcanic earth." A ground pass through `tools/art/tiles.py` and the chapters' terrain
    modules (`.ai/terrain.md` first), the Emberdeep first.
