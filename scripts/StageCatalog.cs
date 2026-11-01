@@ -87,12 +87,16 @@ public static class StageCatalog
 			EnvironmentKind = StageEnvironmentKind.Forest,
 			Gate = StageGate.Open,
 		},
+		// Since piece C2 (.ai/endgame-castle.md 1.3, section 4) the cells under his castle: the castle's second
+		// chapter, between the Last Bridge and the Court, by its line in CampaignOrder. Its id stays stage_1 -
+		// a chapter moves by its place in the order, never by renumbering. The corruption line is unchanged
+		// and stronger here: they are his own cells now.
 		new()
 		{
 			Id = "stage_1", Index = 1,
 			DisplayName = "Cursed Dungeon",
 			TerrainCategory = "Dungeon stone",
-			FlavorText = "Stone corridors and crumbling keeps make this a grim choke-point of ruin and shadow.",
+			FlavorText = "The cells under his castle: stone corridors, and a wizard behind one of the doors.",
 			CorruptionText = "He keeps a wizard in one of these cells.",
 			EnvironmentKind = StageEnvironmentKind.Castle,
 			Gate = StageGate.PreviousBoss,
@@ -268,31 +272,33 @@ public static class StageCatalog
 	// opens which chapter, the locked hint, the stage select's order and the deeds' order are all
 	// read from it.
 	//
-	// The Cursed Dungeon is fifth, after four open chapters (.ai/campaign.md): a maze is a harder
-	// ask than an open field, and as the second chapter it was also the second-toughest spawn table
-	// in the game. The Emberdeep is the first gate chapter (PreviousBossAndWizards): its previous boss
-	// AND the wizards freed before it. The castle comes after it (.ai/endgame-castle.md), boss-gated,
-	// and ends on a second gate chapter, the Throne; the last chapter is always a gate. Chapters
-	// outside the campaign (the Sketchbook) are not listed; they must be Open.
+	// The road is eight chapters before the Emberdeep, the first gate chapter (PreviousBossAndWizards):
+	// its previous boss AND the wizards freed before it. The castle comes after it (.ai/endgame-castle.md),
+	// boss-gated, and ends on a second gate chapter, the Throne; the last chapter is always a gate.
+	// Chapters outside the campaign (the Sketchbook) are not listed; they must be Open.
 	//
-	// The castle's lines are written now and skipped until each chapter is playable. The Dungeon's
-	// own line moves between the Last Bridge and the Court in piece C2 (.ai/endgame-castle.md 1.3),
-	// which is why the castle's three are kept a line apart below: C2's edit lands on a line of its
-	// own and never on one of theirs.
+	// THE CURSED DUNGEON MOVED INTO THE CASTLE (piece C2, .ai/endgame-castle.md 1.3-1.8). It was fifth,
+	// after four open chapters (.ai/campaign.md); it is the castle's second chapter now, the cells under
+	// his house, and nothing replaces it at fifth place (1.7). Saves that had reached it keep it
+	// grandfathered - SaveData.GrandfatheredStageIds, schema 21 - which lets them in and is evidence of
+	// nothing on the road (GlobalStatsManager.IsStageEarned). Until the bridge is playable the Warden of
+	// the Deep opens it directly, since a closed chapter is skipped.
+	//
+	// The castle's lines are skipped until each chapter is playable, and kept a line apart so that each
+	// piece's edit lands on a line of its own.
 	private static readonly string[] CampaignOrder =
 	{
 		"stage_0",  // 1  Enchanted Forest - Elderbark
-		"stage_9",  // 2  The Fallow Fields - the Hayward (Phase 2)
-		"stage_10", // 3  The Broken Circle - the Ninth Stone (Phase 2)
+		"stage_9",  // 2  The Fallow Fields - the Hayward
+		"stage_10", // 3  The Broken Circle - the Ninth Stone
 		"stage_2",  // 4  Sunken Cave - the Hollow Choir
-		"stage_1",  // 5  Cursed Dungeon - the Gaoler
-		"stage_3",  // 6  Blighted Swamp - Mother Rot
-		"stage_4",  // 7  Mystic Ruins - the Archivist
-		"stage_5",  // 8  Frozen Waste - the Still Warden
-		"stage_6",  // 9  Scorched Sands - the Long Coil
-		"stage_7",  // 10 The Emberdeep - the Warden of the Deep (the Long Coil and every wizard on the road first)
-		"stage_11", // 11 The Last Bridge - the Constable (castle, not yet playable)
-		// (the Cursed Dungeon's line comes here when C2 moves it into the castle)
+		"stage_3",  // 5  Blighted Swamp - Mother Rot
+		"stage_4",  // 6  Mystic Ruins - the Archivist
+		"stage_5",  // 7  Frozen Waste - the Still Warden
+		"stage_6",  // 8  Scorched Sands - the Long Coil
+		"stage_7",  // 9  The Emberdeep - the Warden of the Deep (the Long Coil and every wizard on the road first)
+		"stage_11", // 10 The Last Bridge - the Constable (castle, not yet playable)
+		"stage_1",  // 11 Cursed Dungeon - the Gaoler (castle; it was fifth until C2)
 		"stage_12", // 12 The Court - the Seneschal (castle, not yet playable)
 		"stage_13", // 13 The Throne - the procession, then him (the Seneschal and every wizard first; not yet playable)
 	};
@@ -445,6 +451,22 @@ public static class StageCatalog
 			default:
 				return string.Empty;
 		}
+	}
+
+	/// <summary>
+	/// The lock line with what only the save knows: for a gate chapter, WHO is still held
+	/// (.ai/endgame-castle.md 1.6, "each naming those still held"), so the one gate that is not a single
+	/// fight says what is missing. Named by epithet, never by name - a locked wizard's name is his reward
+	/// (QuestLog, "A LOCKED WIZARD'S NAME IS HIS REWARD") - and a wizard not yet revealed is only "a wizard"
+	/// (GlobalStatsManager.HeldGateWizards). Without a save, or for any other chapter, the line above.
+	/// </summary>
+	public static string LockedHintFor(StageDefinition stage, SaveData save)
+	{
+		string hint = LockedHintFor(stage);
+		if (save == null || stage == null || !stage.IsPlayable || stage.Gate != StageGate.PreviousBossAndWizards)
+			return hint;
+		List<string> held = GlobalStatsManager.HeldGateWizards(save, stage);
+		return held.Count == 0 ? hint : $"{hint}. Still held: {string.Join(", ", held)}";
 	}
 
 	// "the The Emberdeep" is what a hint built from a name that already carries its article reads as.
