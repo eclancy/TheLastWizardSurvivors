@@ -67,8 +67,47 @@ public partial class LongCoilBoss : BossEnemy
 	protected override GroundSlamAttack BuildSlam() =>
 		new(SlamIntervalSeconds, SlamTelegraphSeconds, SlamRadius, SlamDamage, SandColor);
 
+	// TWO PHASES (2026-10-31; it had the one stock enrage). At SprayHealthFraction it comes up throwing
+	// sand: every surfacing marks a lane of spurts from where it broke the ground toward the player, a
+	// beat apart, so the window to hit it opens with something to step out of. At EnrageHealthFraction
+	// the stock enrage, spent as before on a longer window and a quicker dive.
+	[Export] public float SprayHealthFraction { get; set; } = 0.66f;
+	[Export] public int SpraySpurts { get; set; } = 4;
+	[Export] public float SprayTellSeconds { get; set; } = 0.8f;
+	[Export] public float SprayStaggerSeconds { get; set; } = 0.18f;
+	[Export] public float SprayRadius { get; set; } = 58f;
+	[Export] public int SprayDamage { get; set; } = 4;
+
+	private bool spraying;
+
+	protected override float[] BuildPhaseThresholds() => new[] { SprayHealthFraction, EnrageHealthFraction };
+
+	private void Spray()
+	{
+		Node2D target = TargetPlayer;
+		Node arena = GetParent();
+		if (!spraying || target == null || !IsInstanceValid(target) || arena == null || !IsInstanceValid(arena))
+			return;
+		Vector2 toward = target.GlobalPosition - GlobalPosition;
+		float reach = toward.Length() + SprayRadius;
+		Vector2 along = toward / Mathf.Max(1f, toward.Length());
+		int count = Mathf.Max(2, SpraySpurts);
+		int damage = ScaleOutgoingDamage(SprayDamage);
+		for (int i = 0; i < count; i++)
+		{
+			Vector2 at = GlobalPosition + along * reach * (i + 1) / count;
+			TelegraphedGroundHit.Place(arena, at, SprayTellSeconds + SprayStaggerSeconds * i, SprayRadius, damage, SandColor);
+		}
+	}
+
 	protected override void OnPhaseEntered(int phase)
 	{
+		if (phase == 1)
+		{
+			spraying = true;
+			SetBaseModulate(new Color(1.0f, 0.86f, 0.62f));
+			return;
+		}
 		ApplyEnrage();
 		// A longer window rather than a shorter one. The interesting knob on this fight is how much
 		// of it the player gets to spend attacking, and the enrage spends it the generous way on
@@ -110,6 +149,7 @@ public partial class LongCoilBoss : BossEnemy
 				GlobalPosition = dive.Destination;
 				SetTargetable(true);
 				untilDive = SurfacedSeconds;
+				Spray();
 				return;
 		}
 	}
@@ -151,6 +191,10 @@ public partial class LongCoilBoss : BossEnemy
 	public override void _Draw()
 	{
 		base._Draw();
+		// While it arrives its body is the arrival's to draw (DrawEntranceAir): the trail is still a
+		// single point under the head.
+		if (IsEntering)
+			return;
 
 		bool under = dive.IsUnder;
 		int segments = Mathf.Max(2, BodySegments);
@@ -199,6 +243,121 @@ public partial class LongCoilBoss : BossEnemy
 			local += new Vector2(Mathf.Sin(deathT * 29f + i * 0.9f), Mathf.Cos(deathT * 23f + i * 1.3f)) * thrash;
 		}
 		return local;
+	}
+
+	// --- The arrival (BossDeath, entrance) ---------------------------------------------------------
+	//
+	// IT BREAKS THE SAND - its fall run the other way. A ridge races in under the sand toward where it
+	// will stand; the ground funnels; the head bursts straight up out of the funnel in a spout of sand
+	// and comes down; and the body surfaces behind it a segment at a time, each out of its own puff.
+	protected internal override float EntranceSeconds => 3.0f;
+	protected internal override float EntranceRoarSeconds => HeadBursts + 0.1f;
+
+	private BossDeath.Piece head;
+	private Vector2 entranceBack = Vector2.Right;
+	private const float RidgeArrives = 1.05f;
+	private const float HeadBursts = 1.2f;
+	private const float HeadLands = 1.95f;
+	private const float SegmentsFrom = 1.7f;
+	private const float SegmentStep = 0.09f;
+
+	protected internal override void OnEntranceBegin(BossDeath stage)
+	{
+		head = stage.CutWhole();
+		RiseFromGround(stage, head, 0f);
+		// Across the wizard's line of sight, not along it: a body lying straight away from him reads as a
+		// post, not a coil. The side nearer horizontal, so on either canvas it lies across the screen.
+		Node2D target = TargetPlayer;
+		if (target != null && IsInstanceValid(target) && GlobalPosition.DistanceTo(target.GlobalPosition) > 1f)
+		{
+			Vector2 away = (GlobalPosition - target.GlobalPosition).Normalized();
+			entranceBack = new Vector2(-away.Y, away.X);
+			if (entranceBack.X < 0f)
+				entranceBack = -entranceBack;
+		}
+	}
+
+	protected internal override void TickEntrance(BossDeath stage, float t, float dt)
+	{
+		if (head == null)
+			return;
+		RiseFromGround(stage, head, BossDeath.EaseOut(BossDeath.Span(t, HeadBursts, HeadBursts + 0.25f)));
+		float hop = 70f * Mathf.Sin(Mathf.Pi * BossDeath.Span(t, HeadBursts, HeadLands));
+		head.Offset = new Vector2(0f, head.Offset.Y - hop);
+
+		Vector2 foot = stage.Foot;
+		var sand = new Color(SandColor, 0.75f);
+		if (stage.Crossed(HeadBursts))
+		{
+			stage.EmitAt(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.Clod, Color = SandColor, ColorB = new Color(0.7f, 0.52f, 0.28f),
+				SpeedMin = 30f, SpeedMax = 120f, UpMin = 220f, UpMax = 380f, Spin = 6f, Bounce = 0.1f, Life = 1.6f, Fade = 0.4f,
+			}, 16, foot, 4f, 14f);
+			for (int k = 0; k < 4; k++)
+				stage.PuffAt(foot - new Vector2(0f, 20f + 26f * k), 10f, 30f, 0.7f, sand, 30f, 0.05f * k);
+		}
+		if (stage.Crossed(HeadLands))
+			stage.DustRing(foot, 54f, 8, sand, 0.7f, 14f);
+		for (int i = 1; i <= Mathf.Max(2, BodySegments); i++)
+		{
+			if (stage.Crossed(SegmentsFrom + SegmentStep * i))
+				stage.PuffAt(foot + entranceBack * SegmentSpacing * i * 1.1f, 6f, 18f, 0.45f, sand, 8f);
+		}
+	}
+
+	// The ridge racing in, the funnel, and the body surfacing behind the head - on the ground, under the
+	// head, which is what the body is in play (drawn first, under the sprite).
+	protected internal override void DrawEntranceGround(BossDeath stage, CanvasItem canvas, float t)
+	{
+		Vector2 foot = stage.Foot;
+		float fade = 1f - BossDeath.Span(t, EntranceSeconds - 0.3f, EntranceSeconds + 0.6f);
+		float run = BossDeath.EaseOut(BossDeath.Span(t, 0f, RidgeArrives));
+		if (fade > 0f && t < HeadBursts + 0.5f)
+		{
+			// In along a bend on the ground, from the side its body will lie on.
+			var mound = new Color(SandColor.R * 0.86f, SandColor.G * 0.72f, SandColor.B * 0.5f, 0.55f * fade);
+			var bend = new Vector2(-entranceBack.Y, entranceBack.X);
+			for (float s = 1f; s >= 1f - run; s -= 0.05f)
+				BossDeath.Disc(canvas, foot + entranceBack * 240f * s + bend * 60f * Mathf.Sin(Mathf.Pi * s), 16f, 7f, mound);
+		}
+		float funnel = BossDeath.Span(t, RidgeArrives - 0.2f, HeadBursts) * fade;
+		if (funnel > 0f)
+		{
+			BossDeath.Disc(canvas, foot, 50f * funnel, 20f * funnel, new Color(SandColor.R * 0.7f, SandColor.G * 0.55f, SandColor.B * 0.35f, 0.75f * funnel));
+			BossDeath.Disc(canvas, foot, 24f * funnel, 9f * funnel, new Color(0.18f, 0.12f, 0.06f, 0.8f * funnel));
+		}
+
+		// The body, surfacing segment by segment along the line it will lie on when the fight starts.
+		Vector2 bodyOrigin = Vector2.Zero;
+		int segments = Mathf.Max(2, BodySegments);
+		for (int i = 1; i <= segments; i++)
+		{
+			float up = BossDeath.EaseOut(BossDeath.Span(t, SegmentsFrom + SegmentStep * i, SegmentsFrom + SegmentStep * i + 0.25f));
+			if (up <= 0f)
+				continue;
+			float taper = 1f - 0.62f * (i / (float)segments);
+			float radius = SegmentSpacing * taper * up;
+			Vector2 local = bodyOrigin + entranceBack * SegmentSpacing * i;
+			var body = new Color(SandColor.R * 0.58f, SandColor.G * 0.42f, SandColor.B * 0.26f, 0.92f * taper);
+			canvas.DrawCircle(local, radius, body);
+			canvas.DrawArc(local, radius, 0f, Mathf.Tau, 16, new Color(0.05f, 0.03f, 0.05f, 0.75f), 2f, true);
+		}
+	}
+
+	// The body lies where the arrival drew it: the trail is laid along that line, so the first frame of
+	// the fight draws it exactly there and it unrolls from it as the head moves.
+	protected internal override void OnEntranceEnd(BossDeath stage)
+	{
+		if (trail == null)
+			return;
+		for (int k = 0; k < trail.Length; k++)
+		{
+			int index = (trailHead - k + trail.Length * 2) % trail.Length;
+			trail[index] = GlobalPosition + entranceBack * SegmentSpacing * k / TrailSamplesPerSegment;
+		}
+		trailFilled = trail.Length;
+		QueueRedraw();
 	}
 
 	// --- The fall (BossDeath) ---------------------------------------------------------------------

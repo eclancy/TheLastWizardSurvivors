@@ -2783,7 +2783,9 @@ public partial class _UiShot : Node
 				rushPlayer.CurrentHP = rushPlayer.MaxHP;
 			if (bossDeathOffset is Vector2 bossAt && FindNodeOfType<Player>(GetTree().Root) is Player bossWitness)
 				PlaceBossBodies(bossWitness, bossAt);
+			// Never mid-arrival (BossEnemy's entrance): a step then would fell a boss that has not landed.
 			if (rushStepsDone < rushSteps && frames >= WarmupFrames / 4 && frames >= rushNextStepFrame
+				&& BossEnemy.EnteringCount == 0
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame rush)
 			{
 				// In a chapter the same steps bring its boss and then fell it, which opens the way home.

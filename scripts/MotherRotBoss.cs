@@ -31,6 +31,17 @@ public partial class MotherRotBoss : BossEnemy
 	/// <summary>Health per second she pulls back while at least one spawn is alive.</summary>
 	[Export] public float RegenPerSecond { get; set; } = 26f;
 
+	/// <summary>
+	/// The same, as a share of her health a second; the larger of the two is what she pulls back.
+	/// </summary>
+	/// <remarks>
+	/// 2026-10-31. Her 26 a second was set against 6,800 health; at the difficulty curve's 80,000 and
+	/// more it was a third of a percent a minute and the whole decision the fight poses - kill the
+	/// spawn or watch the bar go backwards - had quietly gone. Read as a share, it scales with whatever
+	/// her health is: at 0.35% a second a living spawn undoes about a fifth of her bar a minute.
+	/// </remarks>
+	[Export] public float RegenFractionPerSecond { get; set; } = 0.0035f;
+
 	/// <summary>Hard ceiling on live spawn, for the same reason the Summoner has one: frame budget.</summary>
 	[Export] public int MaxLiveSpawn { get; set; } = 8;
 
@@ -91,7 +102,7 @@ public partial class MotherRotBoss : BossEnemy
 			return;
 		}
 
-		regenCarry += RegenPerSecond * delta;
+		regenCarry += Mathf.Max(RegenPerSecond, MaxHealth * RegenFractionPerSecond) * delta;
 		int whole = Mathf.FloorToInt(regenCarry);
 		if (whole <= 0)
 			return;
@@ -155,6 +166,79 @@ public partial class MotherRotBoss : BossEnemy
 	}
 
 	private const float RegenRingRadius = 30f;
+
+	// --- The arrival (BossDeath, entrance) ---------------------------------------------------------
+	//
+	// UP OUT OF THE BOG. A stain of black water spreads across the ground, bubbling; she heaves up out
+	// of it back first, slick, the sacs on her back swelling as she clears the surface, and settles with
+	// a slap that throws muck. The stain soaks away under her as the fight starts.
+	protected internal override float EntranceSeconds => 3.3f;
+
+	private BossDeath.Piece rising;
+	private const float Surfaces = 0.9f;
+	private const float Clears = 2.5f;
+	private static readonly Color BogWater = new(0.10f, 0.13f, 0.07f, 0.9f);
+
+	protected internal override void OnEntranceBegin(BossDeath stage)
+	{
+		rising = stage.CutWhole();
+		RiseFromGround(stage, rising, 0f);
+	}
+
+	protected internal override void TickEntrance(BossDeath stage, float t, float dt)
+	{
+		if (rising == null)
+			return;
+		float up = BossDeath.EaseOut(BossDeath.Span(t, Surfaces, Clears));
+		RiseFromGround(stage, rising, up);
+		// A heave as she clears the surface: taller, then wider, then herself.
+		float heave = Mathf.Sin(Mathf.Pi * BossDeath.Span(t, Clears - 0.3f, Clears + 0.4f));
+		rising.Scale = new Vector2(1f - 0.05f * heave, 1f + 0.08f * heave);
+		// Wet as she comes up: darker and greener, drying to her own colour.
+		rising.Color = new Color(0.55f, 0.7f, 0.5f).Lerp(Colors.White, BossDeath.Span(t, Clears - 0.4f, EntranceSeconds));
+
+		Vector2 foot = stage.Foot;
+		for (int k = 0; k < 6; k++)
+		{
+			// Bubbles through the stain while she is under it.
+			if (stage.Crossed(0.25f + k * 0.22f))
+			{
+				Vector2 at = foot + new Vector2(stage.Rand(-50f, 50f), stage.Rand(-14f, 14f));
+				stage.PuffAt(at, 3f, 12f, 0.35f, new Color(RotColor, 0.7f), 4f);
+			}
+		}
+		if (stage.Crossed(Surfaces))
+		{
+			stage.EmitAt(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.Gob, Variants = 1, Color = RotColor, ColorB = new Color(0.3f, 0.4f, 0.2f),
+				SpeedMin = 40f, SpeedMax = 130f, UpMin = 120f, UpMax = 240f, Bounce = 0f, Friction = 20f, Life = 1.4f, Fade = 0.4f,
+			}, 12, foot, 6f, 30f);
+		}
+		if (stage.Crossed(Clears + 0.15f))
+		{
+			stage.DustRing(foot, 60f, 9, new Color(0.24f, 0.32f, 0.18f, 0.6f), 0.7f, 14f);
+			stage.EmitAt(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.Gob, Color = RotColor, ColorB = new Color(0.3f, 0.4f, 0.2f),
+				SpeedMin = 60f, SpeedMax = 170f, UpMin = 60f, UpMax = 150f, Bounce = 0f, Friction = 20f, Life = 1.2f, Fade = 0.4f,
+			}, 10, foot, 10f, 40f);
+		}
+	}
+
+	protected internal override void DrawEntranceGround(BossDeath stage, CanvasItem canvas, float t)
+	{
+		float spread = BossDeath.EaseOut(BossDeath.Span(t, 0f, 1.1f));
+		float fade = 1f - BossDeath.Span(t, EntranceSeconds - 0.2f, EntranceSeconds + 1.1f);
+		if (spread <= 0f || fade <= 0f)
+			return;
+		Vector2 foot = stage.Foot;
+		// Uneven, never a ring: three overlapping blots.
+		BossDeath.Disc(canvas, foot, 74f * spread, 30f * spread, new Color(BogWater, BogWater.A * fade));
+		BossDeath.Disc(canvas, foot + new Vector2(-30f, 8f), 46f * spread, 18f * spread, new Color(BogWater, BogWater.A * fade));
+		BossDeath.Disc(canvas, foot + new Vector2(34f, -6f), 40f * spread, 16f * spread, new Color(BogWater, BogWater.A * fade));
+		BossDeath.Disc(canvas, foot, 40f * spread, 15f * spread, new Color(RotColor.R * 0.3f, RotColor.G * 0.35f, RotColor.B * 0.2f, 0.7f * fade));
+	}
 
 	// --- The fall (BossDeath) ---------------------------------------------------------------------
 	//

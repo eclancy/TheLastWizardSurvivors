@@ -96,7 +96,15 @@ public partial class HaywardBoss : BossEnemy
 			HalfAngleDegrees = ShoveHalfAngleDegrees,
 		};
 
-	protected override float[] BuildPhaseThresholds() => new[] { PhaseTwoHealthFraction };
+	/// <summary>
+	/// Where he loses his temper (2026-10-31: every boss has at least two phases). He turns faster still,
+	/// swings every other attack instead of every third, and comes on quicker - the same two answers,
+	/// asked with less time to give them.
+	/// </summary>
+	[Export] public float PhaseThreeHealthFraction { get; set; } = 0.28f;
+	[Export] public float PhaseThreeTurnDegreesPerSecond { get; set; } = 92f;
+
+	protected override float[] BuildPhaseThresholds() => new[] { PhaseTwoHealthFraction, PhaseThreeHealthFraction };
 
 	public override void _Ready()
 	{
@@ -121,8 +129,16 @@ public partial class HaywardBoss : BossEnemy
 
 	protected override void OnPhaseEntered(int phase)
 	{
-		if (phase != 1)
+		if (phase >= 2)
+		{
+			turnRate = PhaseThreeTurnDegreesPerSecond;
+			SwingEvery = Mathf.Max(2, SwingEvery - 1);
+			Speed *= 1.25f;
+			SlamIntervalSeconds *= 0.75f;
+			Slam.IntervalSeconds = SlamIntervalSeconds;
+			SetBaseModulate(new Color(1.0f, 0.72f, 0.60f));
 			return;
+		}
 		phaseTwo = true;
 		turnRate = PhaseTwoTurnDegreesPerSecond;
 		// Warmer: the change has a cause on screen, as every boss's does (BossEnemy.ApplyEnrage).
@@ -288,6 +304,84 @@ public partial class HaywardBoss : BossEnemy
 	// A point on the guard's ellipse at world angle a, scaled out by k.
 	private static Vector2 OnGround(float a, float k) =>
 		GuardArcCentre + new Vector2(Mathf.Cos(a) * GuardArcRadiusX, Mathf.Sin(a) * GuardArcRadiusY) * k;
+
+	// --- The arrival (BossDeath, entrance) ---------------------------------------------------------
+	//
+	// OUT OF A DUST DEVIL. The stubble lifts: a whirl of straw and chaff spins up off the field, thick
+	// enough to hide what is in it; he takes shape inside it; then he drives his hurdle down into the
+	// ground with a thud that throws the straw out flat, and the whirl is gone.
+	protected internal override float EntranceSeconds => 3.1f;
+
+	private BossDeath.Piece hayward;
+	private const float WhirlUp = 1.2f;
+	private const float Planted = 2.35f;
+	private static readonly Color Chaff = new(0.86f, 0.74f, 0.46f);
+
+	protected internal override void OnEntranceBegin(BossDeath stage)
+	{
+		hayward = stage.CutWhole();
+		hayward.Color = new Color(1f, 1f, 1f, 0f);
+	}
+
+	protected internal override void TickEntrance(BossDeath stage, float t, float dt)
+	{
+		if (hayward == null)
+			return;
+		float shape = BossDeath.Span(t, WhirlUp - 0.2f, Planted - 0.4f);
+		hayward.Color = new Color(0.55f, 0.5f, 0.4f, shape).Lerp(Colors.White, BossDeath.Span(t, Planted - 0.3f, Planted));
+		// Lifted a little in the whirl, then driven down onto the hurdle's foot.
+		float lift = 16f * BossDeath.Span(t, WhirlUp, Planted - 0.35f) * (1f - BossDeath.EaseIn(BossDeath.Span(t, Planted - 0.35f, Planted)));
+		hayward.Offset = new Vector2(0f, -lift);
+
+		Vector2 foot = stage.Foot;
+		for (int k = 0; k < 8; k++)
+		{
+			// The straw going up in the whirl: thrown nearly straight up, fluttering, a few at a time.
+			if (stage.Crossed(0.1f + k * 0.2f))
+			{
+				stage.EmitAt(new BossDeath.Throw
+				{
+					Cell = BossDeath.Cell.StrawA, Variants = 3, Angle = 0f, Spread = Mathf.Tau, SpeedMin = 40f, SpeedMax = 90f,
+					UpMin = 260f, UpMax = 360f, Gravity = 300f, Terminal = 60f, Drag = 1.2f, Flutter = 14f, FlutterHz = 2.2f,
+					Bounce = 0f, Friction = 10f, Life = 2.2f, Fade = 0.5f, Spin = 6f,
+				}, 4, foot, 2f, 40f);
+			}
+		}
+		if (stage.Crossed(Planted))
+		{
+			stage.DustRing(foot, 74f, 10, new Color(0.62f, 0.54f, 0.36f, 0.6f), 0.8f, 16f);
+			stage.EmitAt(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.StrawA, Variants = 3, SpeedMin = 120f, SpeedMax = 240f, UpMin = 40f, UpMax = 110f,
+				Spin = 6f, Bounce = 0.1f, Friction = 8f, Life = 1.4f, Fade = 0.4f,
+			}, 14, foot, 4f, 20f);
+			stage.EmitAt(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.Withy, SpeedMin = 60f, SpeedMax = 140f, UpMin = 60f, UpMax = 140f,
+				Spin = 6f, Bounce = 0.2f, Life = 1.4f, Fade = 0.4f,
+			}, 3, foot, 4f, 12f);
+		}
+	}
+
+	// The whirl itself: a column of chaff turning, drawn on the art grid round and over him, thinning
+	// as he takes shape and gone when the hurdle lands.
+	protected internal override void DrawEntranceAir(BossDeath stage, CanvasItem canvas, float t)
+	{
+		float thick = BossDeath.Span(t, 0f, WhirlUp) * (1f - BossDeath.Span(t, Planted - 0.5f, Planted));
+		if (thick <= 0f)
+			return;
+		Vector2 foot = stage.Foot;
+		for (int k = 0; k < 70; k++)
+		{
+			float h = 200f * BossDeath.Hash(83u, k);
+			float width = 22f + h * 0.32f;
+			float a = Mathf.Tau * BossDeath.Hash(89u, k) + t * (7f + 3f * BossDeath.Hash(97u, k));
+			Vector2 at = BossDeath.Snap(foot + new Vector2(Mathf.Cos(a) * width, Mathf.Sin(a) * width * 0.3f - h));
+			bool front = Mathf.Sin(a) > 0f;
+			var c = new Color(Chaff * (front ? 1f : 0.7f), (front ? 0.9f : 0.6f) * thick);
+			canvas.DrawRect(new Rect2(at, new Vector2(BossDeath.Px * 2f, BossDeath.Px)), c);
+		}
+	}
 
 	// --- The fall (BossDeath) ---------------------------------------------------------------------
 	//

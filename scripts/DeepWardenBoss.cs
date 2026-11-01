@@ -324,6 +324,101 @@ public partial class DeepWardenBoss : BossEnemy
 		floor.DrawArc(Vector2.Zero, 38f * swell, 0f, Mathf.Tau, 24, soil, 2.5f, true);
 	}
 
+	// --- The arrival (BossDeath, entrance) ---------------------------------------------------------
+	//
+	// THE FORGE IS LIT - its fall run the other way, and the longest arrival, as it is the longest
+	// fall. The floor glows and gives way into a pool of melt; the armour rises out of it cold and black,
+	// slag running off it; it stands; then the heart catches - one flare - fire runs out along every
+	// seam of the plate, embers burst up, and it is lit for the fight.
+	protected internal override float EntranceSeconds => 3.8f;
+	protected internal override float EntranceRoarSeconds => Ignites + 0.05f;
+
+	private BossDeath.Piece forged;
+	private Vector2[][] forgeSeams;
+	private const float PoolOpens = 0.7f;
+	private const float RiseFrom = 0.8f;
+	private const float RiseTo = 2.3f;
+	private const float Ignites = 2.65f;
+	private static readonly Vector2 HeartArt = new(47.5f, 40f);
+
+	protected internal override void OnEntranceBegin(BossDeath stage)
+	{
+		forged = stage.CutWhole();
+		RiseFromGround(stage, forged, 0f);
+		float[] headings = { -2.4f, -0.7f, 0.4f, 1.1f, 2.0f, 2.7f, -1.57f, Mathf.Pi * 0.5f };
+		forgeSeams = new Vector2[headings.Length][];
+		for (int i = 0; i < headings.Length; i++)
+			forgeSeams[i] = stage.CrackPath((uint)(i * 23 + 5), HeartArt, headings[i], 18, 3f);
+	}
+
+	protected internal override void TickEntrance(BossDeath stage, float t, float dt)
+	{
+		if (forged == null)
+			return;
+		ElementColors.Ramp fire = ElementColors.GetRamp(Element.Fire);
+		RiseFromGround(stage, forged, BossDeath.EaseInOut(BossDeath.Span(t, RiseFrom, RiseTo)));
+		// Cold iron until the heart catches, then its own colour, lit.
+		float lit = BossDeath.Span(t, Ignites, Ignites + 0.5f);
+		forged.Color = new Color(0.28f, 0.24f, 0.24f).Lerp(Colors.White, lit);
+		float flare = BossDeath.Span(t, Ignites - 0.05f, Ignites + 0.05f) * (1f - BossDeath.Span(t, Ignites + 0.2f, EntranceSeconds));
+		forged.Glow = new Color(fire.Core, 0.8f * flare);
+
+		Vector2 foot = stage.Foot;
+		if (stage.Crossed(RiseFrom + 0.3f))
+		{
+			stage.EmitAt(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.Slag, SpeedMin = 40f, SpeedMax = 130f, UpMin = 100f, UpMax = 220f,
+				Spin = 6f, Bounce = 0.2f, Life = 1.5f, Fade = 0.4f,
+			}, 10, foot, 10f, 30f);
+		}
+		if (stage.Crossed(Ignites))
+		{
+			Vector2 heart = stage.ArtToLocal(HeartArt);
+			stage.PuffAt(heart, 16f, 70f, 0.35f, new Color(fire.Hot, 0.8f), 0f, 0f, true);
+			stage.PuffAt(heart, 10f, 50f, 0.35f, new Color(fire.Core, 0.9f), 0f, 0f, true);
+			stage.Emit(new BossDeath.Throw
+			{
+				Size = 4f, Color = fire.Core, ColorB = fire.Mid, Light = true, NoLand = true,
+				SpeedMin = 60f, SpeedMax = 220f, UpMin = 80f, UpMax = 260f, Gravity = 160f, Drag = 1.2f,
+				Life = 1.3f, Fade = 0.6f,
+			}, 30, HeartArt, new Vector2(8f, 8f), 0f, 0.01f);
+			stage.DustRing(foot, 70f, 10, new Color(0.30f, 0.20f, 0.16f, 0.6f), 0.8f, 16f);
+		}
+	}
+
+	// The melt: the floor glowing, then a pool under it, cooling to a dark scar as the fight starts.
+	protected internal override void DrawEntranceGround(BossDeath stage, CanvasItem canvas, float t)
+	{
+		ElementColors.Ramp fire = ElementColors.GetRamp(Element.Fire);
+		Vector2 foot = stage.Foot;
+		float open = BossDeath.EaseOut(BossDeath.Span(t, 0.1f, PoolOpens + 0.3f));
+		float cool = BossDeath.Span(t, Ignites, EntranceSeconds + 1.1f);
+		if (open <= 0f || cool >= 1f)
+			return;
+		var crust = new Color(0.14f, 0.07f, 0.05f, 0.85f * (1f - cool));
+		var melt = new Color(fire.Mid, 0.85f * (1f - cool));
+		var core = new Color(fire.Core, 0.9f * (1f - cool));
+		BossDeath.Disc(canvas, foot, 92f * open, 36f * open, crust);
+		BossDeath.Disc(canvas, foot + new Vector2(4f, 2f), 70f * open, 26f * open, melt);
+		BossDeath.Disc(canvas, foot + new Vector2(-6f, 0f), 40f * open, 14f * open, core);
+	}
+
+	// Fire running out of the heart along every seam as it catches, and the pool's own light under it.
+	protected internal override void DrawEntranceLight(BossDeath stage, CanvasItem canvas, float t)
+	{
+		ElementColors.Ramp fire = ElementColors.GetRamp(Element.Fire);
+		float pool = BossDeath.Span(t, 0.1f, PoolOpens) * (1f - BossDeath.Span(t, Ignites, EntranceSeconds));
+		if (pool > 0f)
+			BossDeath.Disc(canvas, stage.Foot, 60f, 22f, new Color(fire.Mid, 0.35f * pool));
+		float run = BossDeath.EaseOut(BossDeath.Span(t, Ignites, Ignites + 0.45f));
+		float fade = 1f - BossDeath.Span(t, Ignites + 0.6f, EntranceSeconds + 0.2f);
+		if (run <= 0f || fade <= 0f || forgeSeams == null)
+			return;
+		foreach (Vector2[] seam in forgeSeams)
+			stage.DrawCrack(canvas, forged, seam, run, new Color(fire.Hot, fade), new Color(fire.Core, 0.6f * fade));
+	}
+
 	// --- The fall (BossDeath) ---------------------------------------------------------------------
 	//
 	// THE FORGE GOES COLD. Every other boss was taken; this one was BUILT, in his seat, and it burns

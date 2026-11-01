@@ -64,12 +64,61 @@ public partial class StillWardenBoss : BossEnemy
 	protected override GroundSlamAttack BuildSlam() =>
 		new(SlamIntervalSeconds, SlamTelegraphSeconds, SlamRadius, SlamDamage, RimeColor);
 
+	// TWO PHASES (2026-10-31; it had the one stock enrage). At ColdHealthFraction the cold closes in:
+	// heavier volleys, and the guards come back sooner and one more of them. At EnrageHealthFraction,
+	// WHITEOUT: the stock enrage, and every few seconds a ring of ice is marked round the Warden at
+	// WhiteoutRadius - outside its claim - so the ground between the wide and the near is no longer
+	// safe and the place to be is at its feet, which is the thing this fight asks.
+	[Export] public float ColdHealthFraction { get; set; } = 0.66f;
+	[Export] public float WhiteoutIntervalSeconds { get; set; } = 6.5f;
+	[Export] public float WhiteoutRadius { get; set; } = 250f;
+	[Export] public int WhiteoutShards { get; set; } = 12;
+	[Export] public float WhiteoutTellSeconds { get; set; } = 1.3f;
+
+	private bool whiteout;
+	private float untilWhiteout;
+
+	protected override float[] BuildPhaseThresholds() => new[] { ColdHealthFraction, EnrageHealthFraction };
+
 	protected override void OnPhaseEntered(int phase)
 	{
+		if (phase == 1)
+		{
+			IceVolleyIntervalSeconds *= 0.75f;
+			ShardsPerVolley += 1;
+			GuardCount += 1;
+			GuardRepostSeconds *= 0.7f;
+			untilRepost = Mathf.Min(untilRepost, 1.0f);
+			SetBaseModulate(new Color(0.84f, 0.95f, 1.0f));
+			return;
+		}
+
 		ApplyEnrage();
 		// The enrage has to land somewhere other than movement speed on a boss that never moves.
-		IceVolleyIntervalSeconds *= 0.6f;
-		ShardsPerVolley += 2;
+		IceVolleyIntervalSeconds *= 0.8f;
+		ShardsPerVolley += 1;
+		whiteout = true;
+		untilWhiteout = 1.5f;
+	}
+
+	private void TickWhiteout(float delta)
+	{
+		if (!whiteout || IsDying)
+			return;
+		untilWhiteout -= delta;
+		if (untilWhiteout > 0f)
+			return;
+		untilWhiteout = WhiteoutIntervalSeconds;
+		Node arena = GetParent();
+		if (arena == null || !IsInstanceValid(arena))
+			return;
+		int count = Mathf.Max(3, WhiteoutShards);
+		float turn = GD.Randf() * Mathf.Tau;
+		for (int i = 0; i < count; i++)
+		{
+			Vector2 at = GlobalPosition + Vector2.FromAngle(turn + Mathf.Tau * i / count) * WhiteoutRadius;
+			TelegraphedGroundHit.Place(arena, at, WhiteoutTellSeconds, IceShardRadius, ScaleOutgoingDamage(IceShardDamage), RimeColor);
+		}
 	}
 
 	// Frozen in. It has no chase and no drift, and returning Zero also keeps the separation nudge
@@ -80,6 +129,7 @@ public partial class StillWardenBoss : BossEnemy
 	{
 		base._PhysicsProcess(delta);
 		TickIce((float)delta);
+		TickWhiteout((float)delta);
 		TickGuards((float)delta);
 	}
 
@@ -163,6 +213,97 @@ public partial class StillWardenBoss : BossEnemy
 			floor.DrawArc(Vector2.Zero, GuardPostRadius, 0f, Mathf.Tau, 40, claim, 2f, true);
 		}
 		base.DrawGroundTells(floor);
+	}
+
+	// --- The arrival (BossDeath, entrance) ---------------------------------------------------------
+	//
+	// THAWED OUT OF A BLOCK OF ICE - its fall run the other way. Frost spreads over the ground; a pillar
+	// of ice grows up out of it with something dark inside; cracks run through the pillar, and it
+	// bursts, shards everywhere, leaving the Warden standing in the rime it brought, cold-white until
+	// the frost on it settles.
+	protected internal override float EntranceSeconds => 3.3f;
+
+	private BossDeath.Piece frozen;
+	private const float PillarUp = 1.4f;
+	private const float Bursts = 2.3f;
+	private Vector2[][] pillarCracks;
+
+	protected internal override void OnEntranceBegin(BossDeath stage)
+	{
+		frozen = stage.CutWhole();
+		frozen.Color = new Color(0.4f, 0.5f, 0.6f, 0f);
+		pillarCracks = new Vector2[5][];
+		for (int k = 0; k < pillarCracks.Length; k++)
+			pillarCracks[k] = stage.CrackPath(211u + (uint)k, new Vector2(48f, 50f), Mathf.Tau * k / pillarCracks.Length, 10, 6f);
+	}
+
+	protected internal override void TickEntrance(BossDeath stage, float t, float dt)
+	{
+		if (frozen == null)
+			return;
+		// Inside the ice: a dark shape, cold. Out of it: white with frost, warming to its own colour.
+		float seen = BossDeath.Span(t, 0.4f, PillarUp);
+		bool free = t >= Bursts;
+		frozen.Color = free
+			? new Color(1.5f, 1.6f, 1.7f).Lerp(Colors.White, BossDeath.Span(t, Bursts, EntranceSeconds))
+			: new Color(0.4f, 0.5f, 0.6f, 0.85f * seen);
+		frozen.Glow = new Color(RimeColor, free ? 0.6f * (1f - BossDeath.Span(t, Bursts, Bursts + 0.6f)) : 0f);
+		frozen.Offset = new Vector2(t < Bursts ? BossDeath.Shudder(t, BossDeath.Span(t, Bursts - 0.5f, Bursts), 22f) * stage.ArtScale.X : 0f, 0f);
+
+		if (stage.Crossed(Bursts))
+		{
+			// The pillar goes: long shards and chunks thrown wide, glinting where they land.
+			stage.Emit(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.ShardLong, Variants = 3, SpeedMin = 90f, SpeedMax = 230f, UpMin = 80f, UpMax = 220f,
+				Spin = 7f, Bounce = 0.35f, Life = 1.7f, Fade = 0.45f, Glint = new Color(0.9f, 0.97f, 1f, 0.9f), DepthJitter = 20f,
+			}, 22, new Vector2(48f, 48f), new Vector2(26f, 36f));
+			stage.Emit(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.IceChunk, SpeedMin = 50f, SpeedMax = 140f, UpMin = 60f, UpMax = 160f,
+				Spin = 5f, Bounce = 0.3f, Life = 1.6f, Fade = 0.4f, Glint = new Color(0.9f, 0.97f, 1f, 0.9f),
+			}, 8, new Vector2(48f, 70f), new Vector2(20f, 16f));
+			stage.DustRing(stage.Foot, 60f, 9, new Color(0.85f, 0.94f, 1f, 0.55f), 0.8f, 16f);
+		}
+	}
+
+	private static readonly Color Rime = new(0.78f, 0.90f, 0.98f, 0.8f);
+
+	protected internal override void DrawEntranceGround(BossDeath stage, CanvasItem canvas, float t)
+	{
+		float spread = BossDeath.EaseOut(BossDeath.Span(t, 0f, 1.0f));
+		float fade = 1f - BossDeath.Span(t, EntranceSeconds, EntranceSeconds + 1.1f);
+		if (spread <= 0f || fade <= 0f)
+			return;
+		Vector2 foot = stage.Foot;
+		BossDeath.Disc(canvas, foot, 80f * spread, 32f * spread, new Color(Rime, 0.45f * fade));
+		BossDeath.Disc(canvas, foot + new Vector2(26f, 6f), 50f * spread, 18f * spread, new Color(Rime, 0.35f * fade));
+		BossDeath.Disc(canvas, foot + new Vector2(-34f, -4f), 44f * spread, 16f * spread, new Color(Rime, 0.35f * fade));
+	}
+
+	// The pillar: a column of pale ice over the body, grown from the ground, cracking, gone at the burst.
+	protected internal override void DrawEntranceAir(BossDeath stage, CanvasItem canvas, float t)
+	{
+		if (t >= Bursts)
+			return;
+		float grown = BossDeath.EaseOut(BossDeath.Span(t, 0.2f, PillarUp));
+		if (grown <= 0f)
+			return;
+		Vector2 foot = stage.Foot;
+		float height = 190f * grown;
+		float half = 58f;
+		// Thin enough that the dark shape held in it shows through.
+		var ice = new Color(0.72f, 0.88f, 0.98f, 0.38f);
+		canvas.DrawRect(new Rect2(BossDeath.Snap(new Vector2(foot.X - half, foot.Y - height)), new Vector2(half * 2f, height)), ice);
+		canvas.DrawRect(new Rect2(BossDeath.Snap(new Vector2(foot.X - half + 8f, foot.Y - height + 6f)), new Vector2(BossDeath.Px * 3f, height - 12f)),
+			new Color(1f, 1f, 1f, 0.5f));
+		BossDeath.Disc(canvas, new Vector2(foot.X, foot.Y - height), half, 14f, new Color(0.86f, 0.95f, 1f, 0.75f));
+		float crack = BossDeath.Span(t, Bursts - 0.7f, Bursts);
+		if (crack > 0f && pillarCracks != null)
+		{
+			foreach (Vector2[] path in pillarCracks)
+				stage.DrawCrack(canvas, null, path, crack, new Color(1f, 1f, 1f, 0.95f), new Color(RimeColor, 0.6f));
+		}
 	}
 
 	// --- The fall (BossDeath) ---------------------------------------------------------------------

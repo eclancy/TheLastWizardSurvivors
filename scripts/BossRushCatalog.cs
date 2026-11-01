@@ -46,6 +46,20 @@ public static class BossRushCatalog
 	/// </summary>
 	public const float MinHealthScale = 0.2f;
 
+	/// <summary>
+	/// Of a chapter's boss health, the share every rush boss brings, the finale included - on top of
+	/// the arrival curve above.
+	/// </summary>
+	/// <remarks>
+	/// 2026-10-31: a chapter's boss fight was made to last three to five minutes (.ai/enemy-behaviour.md,
+	/// "Boss entrances and longer fights"), by phases and by health. Ten of those back to back would be
+	/// forty minutes of bosses in a mode built as a run a few minutes longer than an ordinary one, so
+	/// the rush keeps every phase (thresholds are fractions, so each fight still turns at the same
+	/// points) and brings about a third of the health: each fight its whole shape, at about the length
+	/// a chapter's fight had before.
+	/// </remarks>
+	public const float FightHealthShare = 0.35f;
+
 	/// <summary>Of each felled boss's ArcaneVictoryBonus, the share the rush pays.</summary>
 	/// <remarks>
 	/// Half: a full clear pays about twice what the finale pays on its own, for a run a few minutes

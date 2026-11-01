@@ -754,6 +754,120 @@ to 1.2 - 3.5 s and checks the debris atlas covers every cell `BossDeath.Cell` na
 stands the boss in front of the camera (`--boss-death=X,Y` moves it), holds the wizard still, and
 fells every body of it two frames before the shutter. Under `xvfb-run` with `--fixed-fps 60`.
 
+### Boss entrances and longer fights (2026-10-31)
+
+> "Whenever a boss spawns, all of the players spells should stop firing, and you should see an
+> animation of the boss spawning, such as bursting up from the ground, growing from a seed, whatever
+> fits its theme. The boss should also have much more health so the fight lasts longer, some even
+> having phases, etc. To make the boss fight last a few minutes more on average and feel a lot more
+> tense." (Eric; and "overall keep text minimal" - no new words on screen.)
+
+**The arrival is the fall run forwards.** `BossDeath` plays it in its entrance mode
+(`ConfigureEntrance`), dispatching to `BossEnemy.OnEntranceBegin` / `TickEntrance` / `DrawEntrance*`,
+from the boss's own sheet, with the same debris atlas, puffs and three layers; the air and the light
+sit on `DrawLayers.Air`. `BossEnemy._Ready` starts it on every spawn path (chapter, Boss Rush, tools).
+For `EntranceSeconds` (2.5 - 4 s, `ValidateBossPatterns`) the boss is untargetable and its physics is
+off - no step, wind-up, phase or summon - and its tells are hidden; then `FinishEntrance` hands the
+body back and the fight starts. `boss_roar` plays once, at the climax (`EntranceRoarSeconds`). The
+boss bar fills with the arrival.
+
+**The field holds while any body arrives** (`BossEnemy.EnteringCount`, `Node2DGame.BossEntrance.cs`):
+the player's spells are silent with their timers **held, not reset** (`Player.HeldForBossEntrance`,
+read inside the one `spellFireTimers` loop); every ordinary body is **held still and takes no damage**
+(`Enemy.SetHeld`: process off); and the player cannot be hurt. Chosen over pushing the swarm back:
+holding is the only answer that gives nobody a free hit either way, and the fight then starts exactly
+where the field stood. The camera leans toward the boss (its `Position`, not `Offset`, which is the
+screen shake's) and eases back.
+
+| Boss | Its arrival |
+|---|---|
+| Elderbark | A seed of the mark's cold light falls into the ground; roots crack out; the tree grows up out of the soil, overshoots and settles; the eyes open |
+| The Gaoler | A grate in the floor; chains pay out into the pit; the bars swing open; it rides up out of the oubliette rearing and lands among its keys |
+| The Hollow Choir | Each voice where it will stand, a beat apart: a pool of dark, motes winding in, the robe forming as the dark thins, the hood flaring into song. Only the first roars |
+| Mother Rot | A bog stain spreads and bubbles; she heaves up out of it, wet, and settles with a slap of muck |
+| The Archivist | Pages blow in and fold down; the slab binds upward along a seam of light; every line flares |
+| The Still Warden | Frost spreads; a pillar of ice grows with a dark shape in it; it cracks and bursts |
+| The Long Coil | A ridge races in under the sand; the ground funnels; the head bursts up and comes down; the body surfaces behind it a segment at a time |
+| The Warden of the Deep | The floor melts into a pool; the armour rises out of it cold and black; the heart catches and fire runs along every seam. The longest, as its fall is |
+| The Hayward | A dust devil of straw spins up; he takes shape in it and drives his hurdle down with a thud |
+| The Ninth Stone | A thread of his light comes down into the heath; the ground cracks; the stone heaves up and the mark runs down its split |
+| Wizard Dude | **The kids' frame is never cut**: sparks of his colour wind in, a puff, and his own sprite pops up from small with one bounce (scale, height, alpha only) |
+
+**Every boss has at least two phases** (`ValidateBossPatterns` holds two or more thresholds, each
+inside 0-1 and below the last). Thresholds are read off `BossHealthFraction`, so the Choir's three
+voices change together.
+
+| Boss | Phases (threshold: what changes) |
+|---|---|
+| Elderbark | 0.66 roots: a line of marked roots races from the tree through the player, each a beat after the last - sidestep it. 0.34 the enrage, roots quicker |
+| The Gaoler | unchanged: 0.5 dismount (the cone at half the distance), 0.34 enrage |
+| The Hollow Choir | Now each voice **holds its own third of the circle** round the player at 230 px and steps in to sing in turn - they no longer converge and die to one blast. 0.7 (one voice down is enough) the round: the places turn, and each voice in turn marks a note where the player stands. 0.33 the last verse: quicker notes, a faster turn, revived voices stronger |
+| Mother Rot | unchanged thresholds; her regeneration is now **0.35% of her health a second** while a spawn lives (it was a flat 26, nothing at 80,000) |
+| The Archivist | 0.66 a second beam on its back, half a turn round. 0.34 enrage: both turn faster, it dives more often |
+| The Still Warden | 0.66 the cold closes in: heavier volleys, one more guard, sooner. 0.34 whiteout: enrage, and a marked ring of ice falls round it outside its claim every 6.5 s - be at its feet |
+| The Long Coil | 0.66 it surfaces throwing a lane of sand spurts toward the player. 0.34 enrage (longer window, quicker dive) |
+| The Warden of the Deep | unchanged: charge, sweep, burrow, cataclysm |
+| The Hayward | 0.5 the swing (unchanged). 0.28 temper: turns 92 deg/s, swings every other attack, quicker |
+| The Ninth Stone | 0.6 the double close (was 0.5). 0.28 the circle tightens: closes every 6.2 s and stray marked stones fall on the player between them |
+| Wizard Dude | 0.66 every fan is cast twice down the same wedge. 0.34 enrage, wider fan |
+
+**Health, second** (`BossCatalog`; the value before is on each line): Elderbark 9,500, the Hayward
+10,000, the Ninth Stone 46,000, the Choir 3 x 26,000, the Gaoler 150,000, Mother Rot 170,000, the
+Archivist 140,000, the Still Warden 400,000, the Long Coil 300,000, the Warden of the Deep 500,000,
+Wizard Dude 9,000.
+
+**The Boss Rush scales every boss to a third** (`BossRushCatalog.FightHealthShare` = 0.35, the finale
+included, on top of the arrival curve). Ten fights of three to five minutes would be forty minutes of
+bosses in a mode built as a run a little longer than a chapter; each rush fight keeps its whole shape
+(thresholds are fractions) at about the length a chapter's fight had before.
+
+**Measured** (`_BalanceHarness --survivor --immortal --policy=ordinary --stop-overrun=60
+--minutes=21`, `--fixed-fps 30 --timescale=1`, Stormcaller, seed 1234; fight = boss down minus
+15:00, the arrival included). "Was (doc)" is `.ai/difficulty-curve.md` section 10, on older code;
+"base" is the same protocol on this branch's base commit (09aad67), the same code but for this work.
+**One run a cell, and the cells swing hard with the build the bot happens to reach the boss with**
+(L15, level at 15:00): the same chapter and seed reached the Choir at L32 on one run and L40 on
+another, and a fight's length moves four- to eightfold across that range. Read the table as a
+direction, and the health as set between the strong and the weak runs.
+
+| # | chapter | save | base: L15, fight | after: L15, fight (health) | after the merge of main: L15, fight (health) | was (doc) | health now |
+|---|---|---|---|---|---|---|---|
+| 1 | Forest | fresh | 29, 0.3 | 29, **2.9** (9,500) | | 1.2 | 9,500 |
+| 2 | Fields | fresh | | 18, over 6: half left at the cap (12,000; a sieged, weak build) | | 1.8 | 10,000 |
+| 3 | Circle | farmed | | 34, **2.4** (38,000) | | 1.6 | 46,000 |
+| 4 | Cave (Choir) | farmed | 40, 0.7 | 32, **6.0** (3 x 26,000) | 39, **1.0** (3 x 18,000) | 0.1 | 3 x 26,000 |
+| 5 | Dungeon (Gaoler) | farmed | | 37, **3.7** (150,000) | | 1.3 | 150,000 |
+| 6 | Swamp (Mother Rot) | farmed | | 39, **3.0** (170,000) | | 0.6 | 170,000 |
+| 7 | Ruins (Archivist) | farmed | 48, 1.1 | 28, **5.2** (160,000) | | 2.1 | 140,000 |
+| 8 | Frozen (Still Warden) | farmed | 41, 0.4 | 37, **1.9** (190,000) | 45, **0.7** (300,000) | 2.4 | 400,000 |
+| 9 | Sands (Long Coil) | farmed | | 36, **4.2** (300,000) | | 0.9 | 300,000 |
+| 10 | Emberdeep (Warden of the Deep) | farmed | | 43, **3.1** (420,000) | 33, over 6: 56% left at the cap (600,000) | 1.1-2.2 | 500,000 |
+
+**The Boss Rush** (`--boss-rush --farmed --stage=7`, after the merge): all ten fell, each fight 9 s
+(Elderbark, at the curve's floor) to 1.7 min (the Still Warden), 9.5 minutes of fights in a 24.5
+minute run.
+
+`_BossProbe` on every chapter (0-10, the Choir with and without `--focus`): every boss arrives, holds
+the field for its arrival (spells held, the player unhurt, both released the frame after), reaches
+every phase and falls cleanly. The Hayward's probe runs out of clock before the drain kills him -
+his hurdle cuts the probe's own drain to x0.2 from in front, as it did before.
+
+**Status (2026-11-01), for whoever picks this up:**
+
+- Done: the arrivals (all eleven, photographed at 1280x720 and 540x1212 portrait, before and after
+  the merge of `main-ff86ni`), the field hold, the phases, the health above, the Boss Rush share
+  (measured once), a same-code baseline for four chapters, the validators (0 errors, 6 warnings, as
+  at base).
+- Unfinished: "health now" for the Fields, the Circle, the Ruins, the Frozen Waste and the Emberdeep
+  is set from the runs above and **not re-measured at that value**. The spread by build is the real
+  open question: the Still Warden (a target that never moves, so every spell lands) and the Choir are
+  the most build-sensitive. If a strong build still melts the Still Warden, a phase that spends time
+  (an untargetable shell, as the burrowers have) is the lever, not more health.
+- Needs a human eye: every arrival in play (the photographs were taken with the boss stood in front
+  of the wizard, with no crowd); whether a 2.5-4 s hold reads as a beat or a wait; the Choir's new
+  spacing (voices hold places 230 px round the player, step in to sing in turn); Mother Rot's
+  percentage regeneration; the Still Warden's whiteout ring.
+
 ### What not to take
 
 - **Their stage length.** Thirty minutes to a Lord is a structure built around their meta and their

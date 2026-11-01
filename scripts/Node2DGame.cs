@@ -3310,6 +3310,7 @@ public partial class Node2DGame : Node2D
 			MazeNavigation.Active.Update(player.FootPosition, d);
 		FrameProfiler.End(FrameProfiler.Section.Navigation, navStart);
 		UpdateBossHud();
+		TickBossEntrance(d);
 		TickVictoryPortalAndPointers();
 		TickBossRush(d);
 		if (TickBossPhaseStart())
@@ -5649,7 +5650,8 @@ public partial class Node2DGame : Node2D
 		// A Boss Rush ends on its own last boss (BossRushCatalog.Roster), which in its arena is the
 		// same one - but the rush is the authority on it, and on which of how many it is.
 		activeBossDefinition = IsBossRush ? BeginBossRushFinale() : BossCatalog.ForStageIndex(Global.SelectedStageIdx);
-		if (activeBossDefinition == null || !SpawnBoss(activeBossDefinition))
+		// A rush's finale comes at its share of the chapter's health, as every rush boss does.
+		if (activeBossDefinition == null || !SpawnBoss(activeBossDefinition, IsBossRush ? BossRushCatalog.FightHealthShare : 1f))
 		{
 			activeBossDefinition = null;
 			FinishRunAndReward(RunOutcome.Victory);
@@ -5738,6 +5740,8 @@ public partial class Node2DGame : Node2D
 		bossInstance = boss;
 		totalEnemiesSpawned++;
 		ConfigureBossHud(definition);
+		// The boss is arriving (BossEnemy's entrance): the field holds until it has landed.
+		BeginBossEntranceHold();
 		return true;
 	}
 
@@ -5809,7 +5813,8 @@ public partial class Node2DGame : Node2D
 			Name = "BossHealthFill",
 			MinValue = 0,
 			MaxValue = 1000,
-			Value = 1000,
+			// Empty: it fills as the boss arrives (UpdateBossHud, BossEnemy.EntranceProgress).
+			Value = 0,
 			ShowPercentage = false,
 			MouseFilter = Control.MouseFilterEnum.Ignore
 		};
@@ -5856,8 +5861,9 @@ public partial class Node2DGame : Node2D
 			return;
 		}
 
+		// The bar fills as the boss arrives, and from the frame it lands it is the fight's.
 		if (bossHudBar != null)
-			bossHudBar.Value = bossHudBar.MaxValue * bossInstance.BossHealthFraction;
+			bossHudBar.Value = bossHudBar.MaxValue * bossInstance.BossHealthFraction * bossInstance.EntranceProgress;
 	}
 
 	private void ShowBossBanner(BossDefinition definition)

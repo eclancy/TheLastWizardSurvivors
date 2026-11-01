@@ -2436,6 +2436,16 @@ public partial class Player : CharacterBody2D
 
 	public bool IsInvincible => invincibilityTimeRemaining > 0f;
 
+	/// <summary>
+	/// True while a boss arrives (Node2DGame holds it for BossEnemy's entrance): every spell's timer is
+	/// HELD where it was - not reset, so each spell goes off when the fight starts exactly as far into
+	/// its cooldown as it was when the boss appeared - and nothing hurts him. No whitening, unlike the
+	/// post-menu grace: he is not the one being shown, the boss is.
+	/// </summary>
+	public bool HeldForBossEntrance { get; private set; }
+
+	public void SetHeldForBossEntrance(bool held) => HeldForBossEntrance = held && !IsDead;
+
 	private void TickInvincibility(float delta)
 	{
 		if (invincibilityTimeRemaining > 0f)
@@ -2526,8 +2536,9 @@ public partial class Player : CharacterBody2D
 		if (IsDead)
 			return;
 
-		// Post-menu grace period: ignore everything, including hazards and contact damage.
-		if (invincibilityTimeRemaining > 0f)
+		// Post-menu grace period: ignore everything, including hazards and contact damage. A boss's
+		// arrival is the same - the spells are held, so nothing may land on him either.
+		if (invincibilityTimeRemaining > 0f || HeldForBossEntrance)
 			return;
 
 		if (amount > 0)
@@ -3861,6 +3872,10 @@ public partial class Player : CharacterBody2D
 
 			if (!spellFireTimers.ContainsKey(spell.Id))
 				spellFireTimers[spell.Id] = 0f;
+
+			// A boss is arriving: every spell is silent, its timer held where it stands (never reset).
+			if (HeldForBossEntrance)
+				continue;
 
 			float interval = (spell.GetCooldownAtLevel(spell.CurrentLevel) * cooldownMultiplier * GetWaterCooldownMultiplier()) / EffectiveAttackSpeed;
 			interval = MathF.Max(0.05f, interval);

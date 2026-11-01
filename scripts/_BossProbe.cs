@@ -47,6 +47,9 @@ public partial class _BossProbe : Node
 	private bool sawRetargetable;
 	private int peakPhase;
 	private int drainTicks;
+	private float entranceSeenAt = -1f, entranceEndedAt = -1f;
+	private int hpAtEntrance, phaseCountSeen;
+	private bool sawSpellsHeld, hurtDuringEntrance, releaseChecked;
 	private float bossArrivedAt;
 	private readonly List<string> notes = new();
 
@@ -159,7 +162,37 @@ public partial class _BossProbe : Node
 			sawBoss = true;
 			bossArrivedAt = elapsed;
 			boss = bodies[0];
+			phaseCountSeen = boss.PhaseCount;
 			notes.Add($"{bodies.Count} bodies arrived at {elapsed:0.0}s with {bodies[0].Health} HP each");
+		}
+
+		// The arrival (2026-10-31): every body untargetable and still, the field held, the wizard's spells
+		// silent and nothing hurting him, until the last body has landed. Timed, and nothing drained
+		// until it is over - an arrival is not part of the fight it opens.
+		bool anyEntering = bodies.Any(b => b.IsEntering);
+		if (anyEntering)
+		{
+			Player wizard = player as Player;
+			if (entranceSeenAt < 0f)
+			{
+				entranceSeenAt = elapsed;
+				hpAtEntrance = wizard?.CurrentHP ?? 0;
+			}
+			if (wizard != null && wizard.HeldForBossEntrance)
+				sawSpellsHeld = true;
+			if (wizard != null && wizard.CurrentHP < hpAtEntrance)
+				hurtDuringEntrance = true;
+			return;
+		}
+		if (entranceSeenAt >= 0f && entranceEndedAt < 0f)
+			entranceEndedAt = elapsed;
+		else if (entranceEndedAt >= 0f && !releaseChecked)
+		{
+			// A frame after the last body landed: the run lets go in its own _Process, after this one's.
+			releaseChecked = true;
+			Player wizard = player as Player;
+			notes.Add($"arrival held the field {entranceEndedAt - entranceSeenAt:0.0}s; spells held: {sawSpellsHeld}; "
+				+ $"hurt during it: {hurtDuringEntrance}; still held a frame after: spells {wizard?.HeldForBossEntrance}, field {(Node2DGame.Current?.BossEntranceHeld ?? false)}");
 		}
 
 		foreach (BossEnemy body in bodies)
@@ -314,7 +347,7 @@ public partial class _BossProbe : Node
 		GD.Print($"  outcome        : {why} at {elapsed:0.0}s");
 		GD.Print($"  boss arrived   : {(sawBoss ? $"yes, at {bossArrivedAt:0.0}s" : "NO - the fight never started")}");
 		GD.Print($"  bodies left    : {bodies.Count}");
-		GD.Print($"  phases entered : {peakPhase}");
+		GD.Print($"  phases entered : {peakPhase} of {phaseCountSeen}");
 		GD.Print($"  peak size      : x{peakScaleGrowth:0.00} of its arrival size");
 		GD.Print($"  drain ticks    : {drainTicks}");
 		GD.Print($"  went untargetable / came back : {sawUntargetable} / {sawRetargetable}");

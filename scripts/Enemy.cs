@@ -1590,7 +1590,7 @@ public partial class Enemy : CharacterBody2D
 
 	public void TakeDamage(int amount, bool isCrit = false)
 	{
-		if (isDying)
+		if (isDying || IsHeld)
 			return;
 
 		amount = AdjustIncomingDamage(amount);
@@ -1642,6 +1642,49 @@ public partial class Enemy : CharacterBody2D
 	/// group; calling this with true on a corpse would put a dead thing back in it, so isDying
 	/// short-circuits the whole method.
 	/// </remarks>
+	/// <summary>
+	/// Shows or hides what this body paints on the floor and over its head (its telegraphs, a guard, a
+	/// claim). Hidden while a boss arrives: a warning drawn before the thing that makes it has landed
+	/// would be a promise of a hit that cannot come.
+	/// </summary>
+	protected void SetTellsVisible(bool visible)
+	{
+		if (groundTells != null)
+		{
+			groundTells.Visible = visible;
+			if (visible)
+				groundTells.QueueRedraw();
+		}
+		if (attackIcon != null)
+			attackIcon.Visible = visible;
+	}
+
+	/// <summary>True while the field is held for a boss's arrival (<see cref="SetHeld"/>).</summary>
+	public bool IsHeld { get; private set; }
+
+	/// <summary>
+	/// Holds the body exactly where it is, or lets it go: no step, no wind-up, no shot, no animation,
+	/// and no damage taken. Node2DGame holds every ordinary body while a boss arrives (BossEnemy's
+	/// entrance) - the player's spells are silent then, and a swarm that kept walking would collect a
+	/// free hit on him the moment they came back. The whole field holds its breath instead.
+	/// </summary>
+	public void SetHeld(bool held)
+	{
+		if (isDying || IsHeld == held)
+			return;
+		IsHeld = held;
+		if (held)
+		{
+			modeBeforeHeld = ProcessMode;
+			ProcessMode = ProcessModeEnum.Disabled;
+			Velocity = Vector2.Zero;
+		}
+		else
+			ProcessMode = modeBeforeHeld;
+	}
+
+	private ProcessModeEnum modeBeforeHeld = ProcessModeEnum.Inherit;
+
 	public void SetTargetable(bool targetable)
 	{
 		if (isDying || IsTargetable == targetable)

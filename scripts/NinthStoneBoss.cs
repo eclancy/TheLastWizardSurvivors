@@ -109,15 +109,55 @@ public partial class NinthStoneBoss : BossEnemy
 	protected override GroundSlamAttack BuildSlam() =>
 		new(SlamIntervalSeconds, SlamTelegraphSeconds, SlamRadius, SlamDamage, SlamColor);
 
-	protected override float[] BuildPhaseThresholds() => new[] { EnrageHealthFraction };
+	/// <summary>Where every close becomes two (it was the single enrage threshold until 2026-10-31).</summary>
+	[Export] public float DoubleCloseHealthFraction { get; set; } = 0.6f;
+
+	/// <summary>
+	/// Below this the circle tightens: the double closes come sooner, and between them single stones
+	/// fall where the player stands, marked - so the walk between two reads is not a rest.
+	/// </summary>
+	[Export] public float PhaseThreeCloseIntervalSeconds { get; set; } = 6.2f;
+	[Export] public float StrayStoneIntervalSeconds { get; set; } = 2.4f;
+	[Export] public float StrayStoneTellSeconds { get; set; } = 1.0f;
+
+	private bool strayStones;
+	private float untilStray;
+
+	protected override float[] BuildPhaseThresholds() => new[] { DoubleCloseHealthFraction, EnrageHealthFraction };
 
 	// Not the stock enrage. A stone that suddenly ran would be a different fight; this one reads
-	// twice instead, which is the same lesson asked harder.
+	// twice instead, which is the same lesson asked harder - and then with less room between.
 	protected override void OnPhaseEntered(int phase)
 	{
+		if (phase >= 2)
+		{
+			CloseIntervalSeconds = PhaseThreeCloseIntervalSeconds;
+			untilClose = Mathf.Min(untilClose, CloseIntervalSeconds);
+			strayStones = true;
+			untilStray = StrayStoneIntervalSeconds;
+			SetBaseModulate(new Color(0.80f, 0.78f, 1.0f));
+			return;
+		}
 		doubleClose = true;
 		CloseIntervalSeconds = PhaseTwoCloseIntervalSeconds;
 		SetBaseModulate(new Color(0.88f, 0.86f, 1.0f));
+	}
+
+	// A single stone marked where he stands - only while no close is on the ground, so a stray never
+	// lands inside a circle the player is reading.
+	private void TickStrayStones(float delta)
+	{
+		if (!strayStones || closes.Count > 0)
+			return;
+		untilStray -= delta;
+		if (untilStray > 0f)
+			return;
+		untilStray = StrayStoneIntervalSeconds;
+		Node2D target = TargetPlayer;
+		Node arena = GetParent();
+		if (target == null || !IsInstanceValid(target) || arena == null || !IsInstanceValid(arena))
+			return;
+		TelegraphedGroundHit.Place(arena, target.GlobalPosition, StrayStoneTellSeconds, StoneHitRadius, ScaleOutgoingDamage(StoneDamage), StoneFallColor);
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -127,6 +167,7 @@ public partial class NinthStoneBoss : BossEnemy
 			return;
 		float dt = (float)delta;
 		TickCloses(dt);
+		TickStrayStones(dt);
 
 		untilClose -= dt;
 		if (untilClose > 0f)
@@ -303,6 +344,117 @@ public partial class NinthStoneBoss : BossEnemy
 			yield return $"a close every {CloseIntervalSeconds}s starts before the last one's stones have gone.";
 		if (PhaseTwoCloseIntervalSeconds <= 2f * MiddleTellSeconds + StoneLingerSeconds)
 			yield return $"a double close every {PhaseTwoCloseIntervalSeconds}s starts before the last pair has finished.";
+		if (PhaseThreeCloseIntervalSeconds <= 2f * MiddleTellSeconds + StoneLingerSeconds)
+			yield return $"a phase three double close every {PhaseThreeCloseIntervalSeconds}s starts before the last pair has finished.";
+		if (DoubleCloseHealthFraction <= EnrageHealthFraction)
+			yield return $"the double close comes at {DoubleCloseHealthFraction} and the tightening at {EnrageHealthFraction}; the double close has to come first.";
+		if (StrayStoneTellSeconds <= 0f)
+			yield return "a stray stone with no tell lands where the player stands unseen.";
+	}
+
+	// --- The arrival (BossDeath, entrance) ---------------------------------------------------------
+	//
+	// TORN UP OUT OF THE HEATH - its fall run the other way. A thread of his cold light comes down out
+	// of the sky into the ground; the heath cracks out from where it went in and shudders; the stone
+	// heaves up out of the earth, shedding chips, clods and heather, and stands; then the mark comes
+	// into the split and runs down it, and it walks.
+	protected internal override float EntranceSeconds => 3.3f;
+
+	private BossDeath.Piece rousing;
+	private const float ThreadLands = 0.45f;
+	private const float HeavesFrom = 0.95f;
+	private const float Stands = 2.3f;
+
+	protected internal override void OnEntranceBegin(BossDeath stage)
+	{
+		rousing = stage.CutWhole();
+		RiseFromGround(stage, rousing, 0f);
+	}
+
+	protected internal override void TickEntrance(BossDeath stage, float t, float dt)
+	{
+		if (rousing == null)
+			return;
+		float s = stage.ArtScale.X;
+		RiseFromGround(stage, rousing, BossDeath.EaseInOut(BossDeath.Span(t, HeavesFrom, Stands)));
+		float shake = t < Stands ? BossDeath.Shudder(t, BossDeath.Span(t, ThreadLands, HeavesFrom + 0.3f), 16f) * s : 0f;
+		rousing.Offset = new Vector2(shake, rousing.Offset.Y);
+
+		Vector2 foot = stage.Foot;
+		if (stage.Crossed(HeavesFrom))
+		{
+			stage.EmitAt(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.Clod, SpeedMin = 40f, SpeedMax = 150f, UpMin = 120f, UpMax = 260f,
+				Spin = 6f, Bounce = 0.25f, Life = 1.6f, Fade = 0.4f,
+			}, 10, foot, 4f, 30f);
+			stage.EmitAt(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.Heather, SpeedMin = 30f, SpeedMax = 120f, UpMin = 100f, UpMax = 220f,
+				Spin = 4f, Bounce = 0.1f, Life = 1.7f, Fade = 0.4f,
+			}, 8, foot, 4f, 34f);
+		}
+		if (stage.Crossed(HeavesFrom + 0.6f))
+		{
+			stage.Emit(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.ChipA, Variants = 3, SpeedMin = 40f, SpeedMax = 130f, UpMin = 60f, UpMax = 160f,
+				Spin = 7f, Bounce = 0.3f, Life = 1.4f, Fade = 0.4f,
+			}, 8, new Vector2(48f, 40f), new Vector2(18f, 26f));
+		}
+		if (stage.Crossed(Stands))
+			stage.DustRing(foot, 66f, 10, HeathDust, 0.8f, 16f);
+	}
+
+	// The heath cracking out from where the thread went in, and closing again as the fight starts.
+	protected internal override void DrawEntranceGround(BossDeath stage, CanvasItem canvas, float t)
+	{
+		float grow = BossDeath.EaseOut(BossDeath.Span(t, ThreadLands, HeavesFrom + 0.2f));
+		float fade = 1f - BossDeath.Span(t, EntranceSeconds, EntranceSeconds + 1.1f);
+		if (grow <= 0f || fade <= 0f)
+			return;
+		Vector2 foot = stage.Foot;
+		BossDeath.Disc(canvas, foot, 20f + 36f * grow, 8f + 14f * grow, new Color(0.14f, 0.12f, 0.12f, 0.75f * fade));
+		var crack = new Color(0.10f, 0.09f, 0.10f, 0.9f * fade);
+		for (int k = 0; k < 6; k++)
+		{
+			float a = Mathf.Tau * k / 6f + (BossDeath.Hash(131u, k) - 0.5f) * 0.6f;
+			float length = (60f + 50f * BossDeath.Hash(137u, k)) * grow;
+			var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a) * 0.42f);
+			Vector2 bend = foot + dir * length * 0.5f + new Vector2(0f, (BossDeath.Hash(139u, k) - 0.5f) * 10f);
+			BossDeath.Line(canvas, foot, bend, crack, BossDeath.Px * 2f);
+			BossDeath.Line(canvas, bend, foot + dir * length, crack);
+		}
+	}
+
+	// The thread coming down, and the mark running down the split once it stands.
+	protected internal override void DrawEntranceLight(BossDeath stage, CanvasItem canvas, float t)
+	{
+		ElementColors.Ramp arcane = ElementColors.GetRamp(Element.Arcane);
+		Vector2 foot = stage.Foot;
+		if (t < ThreadLands + 0.3f)
+		{
+			float fall = BossDeath.EaseIn(BossDeath.Span(t, 0f, ThreadLands));
+			float gone = 1f - BossDeath.Span(t, ThreadLands, ThreadLands + 0.3f);
+			Vector2 tip = foot - new Vector2(0f, 260f * (1f - fall));
+			BossDeath.Line(canvas, tip - new Vector2(0f, 90f), tip, new Color(arcane.Mid, 0.6f * gone), BossDeath.Px * 2f);
+			BossDeath.Line(canvas, tip - new Vector2(0f, 90f), tip, new Color(arcane.Core, 0.95f * gone));
+		}
+		if (rousing == null || t < Stands)
+			return;
+		float run = BossDeath.EaseOut(BossDeath.Span(t, Stands + 0.1f, Stands + 0.45f));
+		float fade = 1f - BossDeath.Span(t, Stands + 0.6f, EntranceSeconds + 0.3f);
+		float reach = run * (Split.Length - 1);
+		for (int i = 0; i < Split.Length - 1 && i < reach; i++)
+		{
+			float part = Mathf.Min(1f, reach - i);
+			Vector2 a = stage.PieceToLocal(rousing, Split[i]);
+			Vector2 b = stage.PieceToLocal(rousing, Split[i].Lerp(Split[i + 1], part));
+			BossDeath.Line(canvas, a, b, new Color(arcane.Mid, 0.6f * fade), BossDeath.Px * 2f);
+			BossDeath.Line(canvas, a, b, new Color(arcane.Core, 0.95f * fade));
+		}
+		float flare = BossDeath.Span(t, Stands + 0.4f, Stands + 0.5f) * fade;
+		BossDeath.Disc(canvas, stage.PieceToLocal(rousing, Mark), 9f, 9f, new Color(arcane.Hot, 0.85f * flare));
 	}
 
 	// --- The fall (BossDeath) ---------------------------------------------------------------------
