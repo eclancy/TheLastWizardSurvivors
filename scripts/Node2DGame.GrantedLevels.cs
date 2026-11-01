@@ -3,7 +3,7 @@ using Godot;
 // LEVELS A CHAPTER GRANTS OUTRIGHT (piece C4, the Throne's Muster, .ai/endgame-castle.md 6.2 and 11.5).
 //
 // The seven ChapterRules hooks let a chapter ANSWER the run. The Muster needs to TELL it something: "the
-// player has seventeen levels, now". That is machinery any chapter could use, so it lives here, in the run,
+// player has eighteen levels, now". That is machinery any chapter could use, so it lives here, in the run,
 // and the Throne's numbers stay in ThroneProcession.cs. Nothing here names a chapter.
 //
 // Granted levels go through the queue every level-up already uses (ResumeOrOpenNextMenu): one screen at a

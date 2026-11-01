@@ -3310,6 +3310,8 @@ public partial class Node2DGame : Node2D
 			MazeNavigation.Active.Update(player.FootPosition, d);
 		FrameProfiler.End(FrameProfiler.Section.Navigation, navStart);
 		UpdateBossHud();
+		// Bosses a chapter's rules sent on its own schedule (Node2DGame.ChapterBosses.cs, the Throne).
+		UpdateSentBosses();
 		TickBossEntrance(d);
 		TickVictoryPortalAndPointers();
 		TickBossRush(d);

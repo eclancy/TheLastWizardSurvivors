@@ -113,7 +113,7 @@ public abstract partial class ChapterRules : Node
 	/// by Node2DGame.OnPlayerLevelGained with the screen built but not yet in the tree, so what is set
 	/// here - its heading, its arming pause (LevelUpMenu.HeadingOverride, ArmingSeconds) - is what its
 	/// _Ready lays out. <paramref name="granted"/> is true for a level the chapter granted outright
-	/// (Node2DGame.GrantLevelUps) rather than one the player earned. Added because the Muster is seventeen
+	/// (Node2DGame.GrantLevelUps) rather than one the player earned. Added because the Muster is a run of
 	/// ordinary level-ups that must still say they are the Muster, and none of hooks 1-7 sees a screen.
 	/// </summary>
 	public virtual void LevelUpOpening(LevelUpMenu menu, bool granted) { }

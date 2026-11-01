@@ -1057,9 +1057,9 @@ work, so the wait is spent reading. The panel comes in at 72% and rises to full 
 the "not yet". The same pause re-arms when a mutation or Apotheosis card swaps the cards for its
 paths, so a double click cannot pick a path unread. A reroll does not re-arm: its button does not move.
 
-**The Muster (the Throne, `.ai/endgame-castle.md` 6.2)** opens seventeen of these in a row. Its rules set
-two properties before each screen enters the tree (`ChapterRules.LevelUpOpening`, hook 8):
-`HeadingOverride` ("The Muster - 5 of 17") and `ArmingSeconds` - the full 0.8 s on the first screen,
+**The Muster (the Throne, `.ai/endgame-castle.md` 6.2)** opens eighteen of these in a row (6.2 said
+seventeen; moved by measurement, `ThroneProcession.MusterLevels`). Its rules set two properties before each
+screen enters the tree (`ChapterRules.LevelUpOpening`, hook 8): `HeadingOverride` ("The Muster - 5 of 18") and `ArmingSeconds` - the full 0.8 s on the first screen,
 `MusterArmingSeconds` (0.3 s) on the rest, long enough that the click closing one cannot choose the
 next. The fade to full brightness follows `ArmingSeconds`. Every other screen leaves both alone.
 `_UiShot --stage=13 --dismiss-levelups=4` photographs the fifth.

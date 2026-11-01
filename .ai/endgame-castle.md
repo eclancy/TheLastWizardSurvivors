@@ -1244,3 +1244,64 @@ boss class.
 - **Not run:** any castle chapter as the real thing (they are open fields on stand-ins); `_BossProbe
   --stage=11..13` (the stand-in is the Warden of the Deep); the world map with castle stops (C8). No
   chapter has rules yet, so no hook has run with an answer - the first real test of each is its chapter's.
+
+---
+
+## 12. What C4 built (2026-11-01, `wip/throne`)
+
+Sections 6.1-6.3 and 6.5, on stand-ins where C5 has not built him. `IsPlayable` is still false and the
+Throne is not on the world map (C8); its campaign to-do line names only those two and his boss scene.
+
+| piece | where |
+|---|---|
+| the hall | `tools/art/throne_room.py` -> `assets/bonelight/layouts/throne_room.json` (44 x 44 cells: a 40 x 40 floor in walls two thick, two rows of four 2 x 2 pillars, the Court's red runner up the nave, its marble for the dais, the start at the runner's foot by the south doors) and `world/throne/throne.png`. It checks itself as `court_layout.py` does |
+| the walls | `tools/art/throne_walls.py`, the `throne_wall` set through `tiles.py`: great unlit blocks, sconces burning the `darkness` ramp as emission (the only place it is spent), banners with no device, empty niches |
+| the rules | `ThroneRules.cs`: hook 6 pins the pace at 900 s; `RunStarted` sets `TimerVictorySeconds` 0, turns off the miniboss clock and the elites (a pinned pace would fire every elite of a run at once, and each carries a chest; the Throne's chests are counted); hook 2 spawns on the hall's floor out of sight; hook 3 closes the throne's footprint; hook 5 is the foot of the great doors behind the throne (the Court's `throne-doors` sprite, which opens when he falls) |
+| the Muster | `ThroneRules` + `Node2DGame.GrantedLevels.cs` (`GrantLevelUps`: each level gained as its own ordinary screen opens, through the menu queue) + hook 8 (`ChapterRules.LevelUpOpening`, before the screen enters the tree) + `LevelUpMenu.HeadingOverride` / `ArmingSeconds` (0.8 s first, `MusterArmingSeconds` 0.3 s after); the two relic chests are queued behind the last screen through `OpenChestSelectionMenu` |
+| the procession | `ThroneProcession.cs` (the data) + `Node2DGame.ChapterBosses.cs` (`SendBoss`: a boss outside the boss phase, its own bar side by side in the boss bar's slot, its own edge badge, the field held for its arrival; the one sent as the finale wins through `CompleteBossVictory`) |
+| the cast | `StageBestiary.Throne.cs`: the Court's Household Guard (Bulk and Heavy), Empty Armour and Falconer, and the bridge's Gate Knight, all `Own`; the rest absent; the Chamberlain in the miniboss slot the validator requires (his clock is off). `ChapterBestiary.BorrowedCastBecause` says the borrowing is by design, so `ValidateBestiary` writes no to-do for it (11.5) |
+
+**Four things the measurements changed** (`_BalanceHarness --stage=13 --all-unlocked --seek-apotheosis
+--immortal`, the Pyromancer, seed 1234; the THRONE lines log every arrival and fall and each boss's health every
+20 s):
+
+1. **The guard stands down while a pair stands** (`ThroneProcession.GuardStandsDownForFights`), and the
+   field drains to the fight as it does for every boss. With the end-of-run guard arriving throughout (6.6's
+   assumption), a level-18 build's auto-aimed spells went to the swarm: about 110 HP/s reached Mother Rot,
+   who walks in, and about 14 HP/s the Archivist, who stands off, so no health served both a bot and a player
+   who walks up to it. The guard comes in the warm-up and the breathers (after the breather's first 6 s).
+2. **The pairs' health is the Throne's own** (the road's fights were lengthened to 10,000-400,000 since 6.3
+   was written), set so each pair falls together in about two minutes: the Hayward 9,000 and the Gaoler
+   30,000 (the bot put 50 HP/s into him behind his hurdle and 265 into the Gaoler), Mother Rot 30,000 and the
+   Archivist 12,000, the Still Warden and the Long Coil 17,000 each. Measured (Muster 18): the pairs fell in
+   98, 135 and 95 s, and he arrived 7.0 minutes into the procession at level 23. **One build, not a range**: the
+   Stormcaller (`--character=3 --seed=77`, the same policy) killed 4 of the guard in the warm-up, was
+   overrun by it, and took 515 s over the first pair and 336 s over the Archivist (about 80 HP/s to the
+   Pyromancer's 265). The Throne's `ChapterDifficulty` row is still the Emberdeep's stand-in (`EnemyHealth`
+   3.8, against a table of 1.70 - the guard is about 1,300 HP); a level-18 build meeting it is 6.3's premise,
+   but how hard is a tuning pass across several wizards that this piece did not make.
+3. **The Long Coil surfaces on open ground** (`LongCoilBoss.SurfacingPoint`, the Archivist's rule): in the
+   closed hall about one surfacing in ten came up inside a pillar or the wall. Unchanged on open ground.
+4. **The Muster is 18 levels, not 17** (decision 8's "moved by measurement", 6.6's rule). With the guard
+   standing down, 17 left the planned build at level 22 when he fell - no Apotheosis (one earlier run, in which
+   the guard leaked into the fights, had it 20 s into his). 18 puts it 56 s into the third wave, level 23 at
+   6.2 minutes. The Ascension is still taken inside the Muster (level 18, on its second-last screen). Before the
+   guard stood down, 17 put it in the first wave (3.2 minutes). Every save that reaches the Throne has beaten
+   the Hayward, so the Ascension is learned (`--all-unlocked` sets it too).
+
+The guard's stand-down is renewed every frame of a fight with a one-second hold: a quarter of a second let
+it through in the harness's crowded, scaled frames.
+
+**Verified:** `dotnet build`; the validator (0 errors, the same 4 warnings, the Throne's to-do line down to
+his boss scene and the map); `_BossProbe --stage=13` walks the whole procession (every arrival held the
+field, every boss through every phase, the way home open, no warden in a wall - his stand-in, the Warden of
+the Deep, still surfaces in one); the harness above; `_UiShot` of the Muster and of a pair at both canvases.
+Tool arguments: `--throne-wave=N` starts at wave N two seconds after the Muster, `--throne-muster=N` sizes
+the Muster, `_UiShot --dismiss-levelups=N` keeps the N+1th level-up on screen, and `_UiShot`, `_BossProbe`
+and `_BalanceHarness` claim a chest screen the run opens.
+
+**Not done, for later pieces:** him (C5: `ThroneDarkWizardBoss`, his health, his music handover; the
+Throne's set plays throughout today because the run never enters its boss phase); the doors he came in by
+are drawn as wall (the south wall shows only its top); the results screen's time tile reads "Boss at 0:01"
+on a Throne defeat, because `TimerVictorySeconds` is 0 (6.5's best time is C5's or the flip's); the map
+(C8); the flip.

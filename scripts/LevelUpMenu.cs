@@ -57,12 +57,13 @@ public partial class LevelUpMenu : CanvasLayer
 	/// <summary>True once the arming pause is over and a press will choose.</summary>
 	public bool IsArmed => Time.GetTicksMsec() >= armedAtMsec;
 
-	// THE MUSTER (.ai/endgame-castle.md 6.2, piece C4): the Throne grants seventeen levels at once, each
-	// through this screen. Its rules (ChapterRules hook 8, ThroneRules) set these two before the screen
-	// enters the tree, so _Ready lays out what they say. The heading reads "The Muster - 5 of 17", and
-	// the arming pause is InputGuardSeconds on the first screen and MusterArmingSeconds on the rest: long
-	// enough that the click closing one cannot choose the next, short enough that seventeen screens are
-	// not fourteen seconds of waiting. Every other screen leaves both alone.
+	// THE MUSTER (.ai/endgame-castle.md 6.2, piece C4): the Throne grants its first levels at once (18,
+	// ThroneProcession.MusterLevels), each through this screen. Its rules (ChapterRules hook 8,
+	// ThroneRules) set these two before the screen enters the tree, so _Ready lays out what they say. The
+	// heading reads "The Muster - 5 of 18", and the arming pause is InputGuardSeconds on the first screen
+	// and MusterArmingSeconds on the rest: long enough that the click closing one cannot choose the next,
+	// short enough that eighteen screens are not fifteen seconds of waiting. Every other screen leaves both
+	// alone.
 
 	/// <summary>Words for the heading in place of "Level Up!"; null or empty for the usual.</summary>
 	public string HeadingOverride { get; set; }

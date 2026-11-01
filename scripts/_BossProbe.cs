@@ -112,11 +112,79 @@ public partial class _BossProbe : Node
 		}
 
 		AutoPickLevelUp();
+		AutoPickChest();
 		DriveMovement();
+		if (procession == null && Node2DGame.Current is Node2DGame run)
+		{
+			// The Throne (.ai/endgame-castle.md 6.3): a procession of pairs and then him, sent by its rules,
+			// not one boss on the clock. Its fights are drained like any other; the probe waits for the way
+			// home instead of stopping at the first fall.
+			procession = run.Rules is ThroneRules;
+			if (procession == true)
+			{
+				GiveUpSeconds = Math.Max(GiveUpSeconds, ProcessionGiveUpSeconds);
+				GD.Print("BOSSPROBE the Throne: walking the whole procession");
+			}
+		}
+		if (procession == true)
+		{
+			// The procession is fought in the end-of-run swarm (the pace is pinned at 15:00), which kills
+			// the kiting bot long before the last pair: the probe is about the bosses, so the wizard is kept
+			// standing, as the balance harness's --immortal keeps him.
+			if (player is Player wizard)
+			{
+				wizard.MaxHP = Math.Max(wizard.MaxHP, 100000);
+				wizard.CurrentHP = wizard.MaxHP;
+			}
+			TrackProcession();
+		}
 		TrackBoss((float)delta);
 
 		if (elapsed >= GiveUpSeconds)
 			Finish("ran out of clock");
+	}
+
+	// --- the Throne's procession -------------------------------------------------------------------
+	// Null until the run exists; true for a chapter whose rules send its bosses (ThroneRules).
+	private bool? procession;
+	private const float ProcessionGiveUpSeconds = 900f;
+	private int processionWave;
+	private readonly HashSet<ulong> processionSeen = new();
+	private readonly Dictionary<string, (int Peak, int Of)> processionPhases = new();
+	private readonly Dictionary<string, int> processionInGround = new();
+
+	// Each wave as it arrives, each boss's deepest phase, and the way home when he falls.
+	private void TrackProcession()
+	{
+		var standing = new List<BossEnemy>();
+		CollectBosses(game, standing);
+		var arrivals = standing.Where(b => processionSeen.Add(b.GetInstanceId())).ToList();
+		if (arrivals.Count > 0)
+		{
+			processionWave++;
+			notes.Add($"wave {processionWave} at {elapsed:0.0}s: " + string.Join(", ", arrivals.Select(b => $"{b.BossId} {b.Health} HP")));
+		}
+		foreach (BossEnemy b in standing)
+		{
+			processionPhases.TryGetValue(b.BossId, out var seen);
+			processionPhases[b.BossId] = (Math.Max(seen.Peak, b.BossPhase), b.PhaseCount);
+		}
+	}
+
+	// A chest screen the run opened (the Throne's Muster opens two): take the first relic of an honest
+	// offer, as the balance bot deals its own (no menu reports what it shows).
+	private readonly ChestOfferMemory chestMemory = new();
+	private readonly RandomNumberGenerator chestRng = new();
+
+	private void AutoPickChest()
+	{
+		ChestItemSelectionMenu menu = FindNode<ChestItemSelectionMenu>(game);
+		if (menu == null || menu.IsQueuedForDeletion() || player is not Player wizard)
+			return;
+		List<string> offer = ChestItemCatalog.GetChestItemOptions(wizard.GetOwnedChestItems(), chestRng, 3,
+			new[] { ChestItemCatalog.ScribesPenknife }, chestMemory);
+		if (offer.Count > 0)
+			menu.EmitSignal(ChestItemSelectionMenu.SignalName.ItemSelected, offer[0]);
 	}
 
 	// EVERY boss body on the field, not just the first one found. The Hollow Choir is three of
@@ -141,6 +209,12 @@ public partial class _BossProbe : Node
 			// They were here and now they are not: that is the win, and the only clean way out - once
 			// the fall has played and freed the body (BossDeath). A fall that never ends would leave a
 			// corpse per boss in the tree, ten of them in a Boss Rush, so it is waited for and timed.
+			// In a procession a wave falling is not the end: the next comes, and the end is the way home.
+			if (sawBoss && procession == true && !(Node2DGame.Current?.VictoryPortalOpen ?? false))
+			{
+				fellAt = -1f;
+				return;
+			}
 			if (sawBoss)
 			{
 				if (fellAt < 0f)
@@ -210,7 +284,12 @@ public partial class _BossProbe : Node
 			{
 				bodyFrames++;
 				if (ground.IsWallAtWorld(body.GlobalPosition) || ground.IsBlockedAtWorld(body.GlobalPosition))
+				{
 					bodyFramesInGround++;
+					// In a procession, whose: a closed hall is where a lane, a dive or an orbit meets a wall.
+					if (procession == true)
+						processionInGround[body.BossId] = processionInGround.GetValueOrDefault(body.BossId) + 1;
+				}
 			}
 			if (!arrivalScale.TryGetValue(body, out float arrived))
 				arrivalScale[body] = arrived = Mathf.Abs(body.Scale.X);
@@ -323,7 +402,7 @@ public partial class _BossProbe : Node
 	private void AutoPickLevelUp()
 	{
 		LevelUpMenu menu = FindNode<LevelUpMenu>(game);
-		if (menu == null || !menu.Visible)
+		if (menu == null || !menu.Visible || menu.IsQueuedForDeletion())
 			return;
 
 		IReadOnlyList<LevelUpOption> options = menu.GetOfferedOptions();
@@ -354,6 +433,11 @@ public partial class _BossProbe : Node
 		GD.Print($"  in wall/water  : {bodyFramesInGround} of {bodyFrames} body-frames out of the ground");
 		foreach (string note in notes)
 			GD.Print($"  note           : {note}");
+		foreach (var (id, phases) in processionPhases)
+			GD.Print($"  procession     : {id} entered {phases.Peak} of {phases.Of} phases; "
+				+ $"{processionInGround.GetValueOrDefault(id)} frames in a wall");
+		if (procession == true)
+			GD.Print($"  way home open  : {Node2DGame.Current?.VictoryPortalOpen ?? false}");
 
 		// The one hard failure. Everything else is reported and judged by a person; a boss that
 		// never arrives is a stage that cannot be completed, and that is worth an exit code.

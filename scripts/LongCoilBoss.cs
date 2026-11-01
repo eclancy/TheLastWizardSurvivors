@@ -164,7 +164,7 @@ public partial class LongCoilBoss : BossEnemy
 		}
 
 		float angle = GD.Randf() * Mathf.Tau;
-		Vector2 destination = target.GlobalPosition + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * ResurfaceDistance;
+		Vector2 destination = SurfacingPoint(target.GlobalPosition, angle);
 		dive.Begin(GlobalPosition, destination);
 
 		// Marked before it arrives, and the mark is the whole reason the dive is fair: the ridge
@@ -172,6 +172,25 @@ public partial class LongCoilBoss : BossEnemy
 		TelegraphedGroundHit.Place(GetParent(), destination,
 			Mathf.Max(0.2f, Mathf.Min(ResurfaceTellSeconds, DiveTravelSeconds - 0.1f)),
 			ResurfaceRadius, ScaleOutgoingDamage(ResurfaceDamage), SandColor);
+	}
+
+	// Where it comes up: ResurfaceDistance from the player at the rolled bearing - or, where the ground has
+	// walls, the nearest bearing round the player that is ground it could stand on (the Archivist's rule,
+	// ArchivistBoss.SurfacingPoint). The Sands are open, but the Throne's procession brings it into a closed
+	// hall with pillars (.ai/endgame-castle.md 6.3), where a bearing at random came up inside the stone about
+	// one surfacing in ten (_BossProbe --stage=13). Searched twelve steps either way; if none is open, the
+	// spot it dived from.
+	private Vector2 SurfacingPoint(Vector2 around, float angle)
+	{
+		MazeNavigation nav = MazeNavigation.Active;
+		for (int step = 0; step < 24; step++)
+		{
+			float turn = (step + 1) / 2 * (Mathf.Tau / 24f) * (step % 2 == 0 ? 1f : -1f);
+			Vector2 at = around + Vector2.FromAngle(angle + turn) * ResurfaceDistance;
+			if (nav == null || nav.IsReachable(at))
+				return at;
+		}
+		return GlobalPosition;
 	}
 
 	private void RecordTrail()
