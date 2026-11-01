@@ -1216,9 +1216,10 @@ boss class.
   (`TimerVictorySeconds = 0` in `RunStarted`). C4 should propose the extra hooks rather than edit
   `Node2DGame` freely.
 - **Boss Rush's roster is still derived** (C2's `RoadOrder` is not built). The day a castle boss's own
-  scene lands before C2 merges, the rush would gain it after the Warden of the Deep; `ValidateBossRush`
-  already says so ("the roster ends on ..., not the arena's boss"), so a C5 piece that lands first must
-  wait for C2 or say so.
+  scene lands before C2 merges, the rush would have gained it after the Warden of the Deep
+  (`ValidateBossRush`: "the roster ends on ..., not the arena's boss"). Since 2026-11-01 the derivation
+  takes playable chapters only (`BossRushCatalog.Roster`), so a C5 boss can merge before C2 and the rush
+  stays the road's ten until `RoadOrder` replaces it.
 - **The way home is a point** (hook 5). The arcane portal opens there. If the bridge's gate or the Court's
   doors must replace the ring rather than stand behind it, that is an eighth hook.
 

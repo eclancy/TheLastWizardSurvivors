@@ -78,10 +78,14 @@ public static class BossRushCatalog
 	/// <summary>
 	/// Every campaign boss that has a scene of its own, in campaign order; the final chapter's is
 	/// last. A chapter whose boss still fights as a stand-in is left out - the rush would be Elderbark
-	/// three times - and joins by itself the day its scene exists.
+	/// three times - and joins by itself the day its scene exists. So is a chapter nobody can enter
+	/// yet: a castle boss's scene lands before its chapter flips (.ai/endgame-castle.md 9.2, C5 before
+	/// C2), and without this the rush would gain him after the Warden of the Deep in a released build.
+	/// C2's RoadOrder replaces this derivation.
 	/// </summary>
 	public static IReadOnlyList<BossDefinition> Roster =>
 		StageCatalog.Campaign
+			.Where(stage => stage.IsPlayable)
 			.Select(stage => BossCatalog.ForStageIndex(stage.Index))
 			.Where(boss => boss != null && !boss.IsOnStandIn)
 			.ToList();
