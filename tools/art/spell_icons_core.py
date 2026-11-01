@@ -444,9 +444,10 @@ def solar_flare():
 
 
 # Where the ray comes from and where it strikes the ground: evolution_icons.py places its Scorching Ray
-# cards on these two points, so they move together.
-RAY_FROM = (3.0, -1.0)
-RAY_STRIKE = (20.0, 22.0)
+# cards on these two points, so they move together. The strike is left of the middle so the loadout
+# strip's level numeral, in the slot's lower right corner, never covers the splash.
+RAY_FROM = (-2.0, -1.0)
+RAY_STRIKE = (15.0, 22.0)
 
 
 def scorching_ray():
@@ -474,8 +475,8 @@ def scorching_ray():
     # The ground it strikes: char flat on the floor, a ragged edge, cracks running out of it that
     # still glow, nearest the strike first.
     c.disc(sx + 0.5, sy + 0.5, 10.5, 3.9, OCC)
-    for (px, py) in ((10, 25), (31, 24), (13, 27), (28, 27), (24, 21)):
-        c.set(px, py, OCC)
+    for (ox, oy) in ((-10, 1.5), (11, 0.5), (-7, 3.5), (8, 3.5), (4, -2.5)):
+        c.set(sx + ox, sy + oy, OCC)
     for (ax, ay, bx, by) in ((sx - 3, sy + 1, sx - 8, sy + 2), (sx + 3, sy + 1, sx + 9, sy + 1),
                              (sx + 1, sy + 2, sx + 4, sy + 4), (sx - 1, sy + 2, sx - 4, sy + 4)):
         c.line(ax, ay, bx, by, f[3])
