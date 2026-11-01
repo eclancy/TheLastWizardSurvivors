@@ -100,10 +100,10 @@ three-card hand's card size (dd5cc6a), no two Black Tentacles rifts ever overlap
 draws (0175bab: the Fallow Fields' was missing), Black Tentacles starts at 60 px and two tentacles and
 builds to 120 and seven.
 
-1. **Boss cinematics** (`wip/boss-cinematics`, in flight): no movement while a boss arrives; letterbox
+1. **Boss cinematics** (merged, 83ef1d2; open: props under the lifted bodies, a reduce-motion option): no movement while a boss arrives; letterbox
    bars, zoom, screen shake, a flare; shake in boss animations where it helps; **the player and bosses
    always draw above every spell and effect**.
-2. **Spell visuals** (`wip/spell-visuals`, in flight): Cone of Cold hard to see; Solar Flare rises from
+2. **Spell visuals** (merged, 77394d4; Stormsweep's level 1 hits land up to 0.22 s later with the slower lash; the familiar icon options sheet is with Eric): Cone of Cold hard to see; Solar Flare rises from
    under the player and the enemies; Stormsweep's crack slower at first, quicker with level; Scorching
    Ray's icon a thinner ray into the ground; Iron Palisade's rolling walls dig up dirt; Bramble Seed withers quickly at its end instead of shrinking; its vines taper smoothly from the woody base to
    the green (no abrupt step); a better Mirefoot icon (a stray black line at its foot); **familiar icons
@@ -116,7 +116,7 @@ builds to 120 and seven.
    circle and arrow; one too far from the player dips into the ground and reappears; a longer revive,
    with the voices visibly walking to a fallen one to raise it, so the player sees to stop it; freezing
    and other crowd control pause the revive.
-5. **The prologue**: wizard silhouettes look goofy - use the in-game characters' silhouettes; "You are
+5. **The prologue** (`wip/prologue-laelaps`, in flight): wizard silhouettes look goofy - use the in-game characters' silhouettes; "You are
    the one he missed" animates creatures searching for the wizard while he hides cleverly; a button on
    the world map to replay the intro, **for testing, to be removed later**. And **Laelaps wears the
    wizard outfit** (the familiar hound's hat, mantle and star collar, `tools/art/laelaps.py`).
@@ -135,6 +135,9 @@ builds to 120 and seven.
    read `ApotheosisCatalog`); a player meets it only when the strip offers it. Show the wizard's own
    Apotheosis in the browser with its four requirements and their progress, and name it where the
    wizard is chosen and where the starting spell's evolutions are shown.
+10. **Design, in flight** (`wip/design-wizards-combos`, docs only): a wizard to free in every chapter
+   (`.ai/chapter-wizards.md`), and combination spells beginning with Sagittarius = Hunter's Draw +
+   Starfall/Constellation (`.ai/combo-spells.md`). Eric chooses before anything is built.
 
 ## 4. Waiting on Eric
 
