@@ -12,18 +12,33 @@ one - the one who is not a wizard, which is why he is outside the final chapter'
 
 WHAT HE LOOKS LIKE, and why. Drawn by tools/art/familiar.py's hound renderer - the same skeleton, light,
 passes and matte finish as the Familiar's hound (Fig.render(finish=True)) - so the two dogs in the game
-are one family of drawing, and told apart at a glance by three things:
+are one family of drawing.
 
-  - NO HAT. The hat is the wizard's mark on HIS creatures; Laelaps belongs to no one.
+THE WIZARD OUTFIT (Eric, 2026-11-01: "When playing Laelaps, you should have the wizard outfit."). He
+wears what the familiar wears, as the familiar wears it: the small pointed hat in the wizard's indigo
+wool with its gold band and star, the mantle over the shoulders with its gold hem (the Great Hound's),
+and the gold star on the collar. He was first drawn bare - the hat read as the wizard's mark on the
+wizard's creatures, and Laelaps belonged to no one. But once he is played he is on the player's side,
+and the outfit is how the game says so: it is the silhouette-breaking attachment art-direction.md
+section 4 asks for, and the player has to find himself at a glance in a swarm that holds four kinds of
+dark dog (the Dire Wolf, the Bog Hound, the Sled Hound, the Chainhound). Filled solid black, a hound in
+a pointed hat is still the player's, and no enemy wears one. The legend survives the costume: his
+story is the chase, and the outfit is only whose side he runs on now.
+
+What still tells him from the familiar at a glance:
+
   - A BRONZE COAT. Warm - the player's cast is the one thing allowed to be bright - but a saturated
     bronze, not the familiar's pale fawn: amber and flesh in the light, the gold row's dark stops in
     the shade (never its light ones, which the matte finish treats as a light source and would leave
     glinting on a coat).
   - STONE FEET. His paws are still the bone-grey of the stone he was held in.
+  - THE MANTLE. The base familiar runs bare-shouldered; only its level 4 Great Hound wears one, and
+    that is a heavier dog on the 64 cell.
 
-His collar is plain bronze with a disc, not the familiar's gold star. His eye is the calm eye
-(familiar.calm_eye; Eric, 2026-10-28, of the familiar's icon: "the eye is too prominent"), because his
-first frame is also his portrait on the character select, shown at x5.
+His eye is the calm eye (familiar.calm_eye; Eric, 2026-10-28, of the familiar's icon: "the eye is too
+prominent"), because his first frame is also his portrait on the character select, shown at x5. When
+he turns to stone at the end of his death, the outfit turns with him (Skin.outfit): a wool hat left on
+a grey statue would read as something set on it afterwards.
 
 THE CELL. The player is drawn on the 48 cell (world-and-tone.md, "The player at 48x48"); a hound fills
 it lengthwise, at the familiar hound's 1.3, paws on the contract's feet row. He faces right, as the
@@ -63,15 +78,15 @@ BRONZE = [M["flesh"][1], M["amber"][2], M["amber"][3], M["gold"][3], M["gold"][4
 # The stone he was held in, still on his feet, and all of him as he dies.
 STONE_FEET = [M["skin"][1], M["skin"][2], M["skin"][3], M["stone"][0], M["stone"][2]]
 
-# No hat: one head that wears none. Lean and long-legged like the familiar hound, a little deeper in the
-# chest; the eye calm; the collar plain.
-_ONE_HEAD = [(0.0, 0.0, 0.0, 0.0, False)]
-LAELAPS = F.Skin(BRONZE, heads=_ONE_HEAD, leap=0.85, head_scale=1.15, heavy=0.2, paws=STONE_FEET,
-                 collar_star=False, calm=True, depth=0.4)
-# Turning to stone: the same hound in the stone's grey.
+# The outfit: one head, wearing the hat; the mantle; the star on the collar. Lean and long-legged like the
+# familiar hound, a little deeper in the chest; the eye calm.
+LAELAPS = F.Skin(BRONZE, leap=0.85, head_scale=1.15, heavy=0.2, paws=STONE_FEET, mantle=True,
+                 collar_star=True, calm=True, depth=0.4)
+# Turning to stone: the same hound in the stone's grey, and the outfit with him.
 # Its eye is stone too: a lit eye left in a grey head reads as something still looking out of it.
-STONE = F.Skin(STONE_FEET, eye=(M["stone"][2], M["stone"][3]), heads=_ONE_HEAD, leap=0.85, head_scale=1.15, heavy=0.2,
-               collar_star=False, calm=True, depth=0.2)
+STONE = F.Skin(STONE_FEET, eye=(M["stone"][2], M["stone"][3]), leap=0.85, head_scale=1.15, heavy=0.2,
+               mantle=True, collar_star=True, calm=True, depth=0.2,
+               outfit=(STONE_FEET, STONE_FEET, STONE_FEET[1]))
 
 P = F._pose
 
@@ -80,11 +95,13 @@ def _gallop8():
     return [F.gallop(k, 8) for k in range(8)]
 
 
-IDLE = [P(tail=0.1, breathe=0.0), P(tail=0.3, breathe=0.6, ear=0.1), P(tail=0.45, breathe=1.0, ear=0.2),
-        P(tail=0.3, breathe=0.5, ear=0.1)]
+# The hat sits back a little, as the familiar's does, and lifts with the breath; the mantle stirs (flap).
+IDLE = [P(tail=0.1, breathe=0.0, hat=-0.08), P(tail=0.3, breathe=0.6, ear=0.1, hat=-0.08, flap=0.6),
+        P(tail=0.45, breathe=1.0, ear=0.2, hat=-0.06, flap=1.2), P(tail=0.3, breathe=0.5, ear=0.1, hat=-0.08, flap=0.6)]
 # Struck: he flinches down and away, head pulled back - then half recovers.
-HURT = [P(crouch=1.6, head=(-0.6, 0.6, -0.25), jaw=0.3, tail=-0.4, ear=-0.6, swing=(-0.3, -0.2, 0.3, 0.2)),
-        P(crouch=0.7, head=(-0.3, 0.3, -0.1), jaw=0.1, tail=-0.1, ear=-0.3)]
+HURT = [P(crouch=1.6, head=(-0.6, 0.6, -0.25), jaw=0.3, tail=-0.4, ear=-0.6, swing=(-0.3, -0.2, 0.3, 0.2), hat=-0.3,
+          flap=1.0),
+        P(crouch=0.7, head=(-0.3, 0.3, -0.1), jaw=0.1, tail=-0.1, ear=-0.3, hat=-0.15, flap=0.5)]
 # Falling: he folds down onto his legs, lays his head down - and the stone comes back over him.
 DEATH = [P(crouch=1.4, head=(0.2, 1.4, 0.2), tail=-0.3, ear=-0.4),
          P(crouch=3.2, head=(0.4, 2.8, 0.35), tail=-0.5, ear=-0.6),

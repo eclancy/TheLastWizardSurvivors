@@ -383,7 +383,7 @@ class Skin(object):
     def __init__(self, fur, eye=(AMBER[0], AMBER[1]), frost=False, mantle=False, heavy=0.0, heads=None,
                  head_scale=1.0, leap=1.0, depth=FUR_DEPTH, glow_eye=False, embers=False, ear=None,
                  feline=False, pattern=None, star=None, breath=None, paws=None, collar_star=True, calm=False,
-                 detail=1, mane=False):
+                 detail=1, mane=False, outfit=None):
         self.fur = fur
         self.eye = eye
         self.frost = frost
@@ -413,8 +413,9 @@ class Skin(object):
         self.breath = breath
         # Feet of another ramp (Laelaps's, still stone from the hill he was held in). None: the coat.
         self.paws = paws
-        # The gold star on the collar is the wizard's mark: a familiar wears it, a hound of its own
-        # (Laelaps, tools/art/laelaps.py) wears a plain disc.
+        # The gold star on the collar is the wizard's mark. Every hound on the player's side wears it -
+        # the familiar, and Laelaps since he wears the outfit (tools/art/laelaps.py); False hangs a
+        # plain disc, for a hound that belongs to no one.
         self.collar_star = collar_star
         # The calm eye (calm_eye) on the sprite as well as the portrait: no dark socket pixel. For a
         # figure that is also its own portrait (a playable character, shown at x5 on the select).
@@ -427,6 +428,10 @@ class Skin(object):
         # Hackles: ragged spikes of the coat along the spine and the backs of the necks, ember-tipped on a
         # smouldering coat. Cerberus at 96 only - at 64 they were a pixel each and read as noise.
         self.mane = mane
+        # What the hat, the mantle and the collar are made of: (cloth ramp, trim ramp, the star's glint).
+        # None is the wizard's own indigo wool and gold. Laelaps turning to stone (laelaps.STONE) turns
+        # his outfit to stone with him, rather than leaving a wool hat on a grey statue.
+        self.outfit = outfit
 
 
 # The head a little large for the body: at 48 pixels the face is what says "dog" under the hat.
@@ -645,7 +650,7 @@ def hound(cell, skin, p, s=1.0):
     for i, (ndx, ndy, nda, nbias, hat) in enumerate(heads):
         if i == len(heads) - 1:
             if skin.mantle:
-                _mantle(g, T, R, hx, hy, cx, cy, p)
+                _mantle(g, T, R, hx, hy, cx, cy, p, skin.outfit)
             if skin.frost:
                 _frost_ruff(g, T, R, hx, hy, cx, cy, (cx + 5.4 + hdx, cy - 8.6 + hdy))
         spread = p.get("spread", 0.0)
@@ -670,14 +675,15 @@ def hound(cell, skin, p, s=1.0):
         # THE COLLAR at the base of each neck, with the gold star hanging from it.
         col0 = (neck0[0] + 0.2 + (hci[0] - neck0[0]) * 0.18, neck0[1] - 0.6 + (hci[1] - neck0[1]) * 0.18)
         col1 = (col0[0] + 1.8, col0[1] + 0.8)
-        g.limb([T(*col0), T(*col1)], [R(0.9), R(0.8)], GOLD, nbias - 0.2, "body")
+        _cloth, trim, glint = _outfit(skin.outfit)
+        g.limb([T(*col0), T(*col1)], [R(0.9), R(0.8)], trim, nbias - 0.2, "body")
         star = T(col1[0] + 0.1, col1[1] + 1.5)
         if skin.collar_star:
-            g.dot(star[0], star[1], GOLD[0])
-            g.dot(star[0], star[1] + 1, LIGHT_E[0] if not skin.frost else ICE[0])
+            g.dot(star[0], star[1], trim[0])
+            g.dot(star[0], star[1] + 1, (LIGHT_E[0] if not skin.frost else ICE[0]) if skin.outfit is None else glint)
         else:
-            g.dot(star[0], star[1], GOLD[1])
-            g.dot(star[0], star[1] + 1, GOLD[2])
+            g.dot(star[0], star[1], trim[1])
+            g.dot(star[0], star[1] + 1, trim[2])
         if skin.feline:
             _cat_head(g, T, R, hci, ha * 0.8, p, skin, hat=hat, bias=nbias)
         else:
@@ -738,7 +744,7 @@ def _head(g, T, R, hc, ha, p, skin, hat=True, bias=0.0):
             for (dx, dy), c in zip(((6.6, 0.4), (7.6, -0.4), (8.4, 0.6), (9.0, -0.6)), breath + breath[:1]):
                 g.dot(*H(dx, dy), colour=c, kind="glow")
         if hat:
-            _hat(g, H, R, p)
+            _hat(g, H, R, p, skin.outfit)
         return
     g.dot(*H(5.4, 0.7), colour=OCC)
     # The eye: a warm point in a dark socket, under a brow. Amber is the player's light; the
@@ -768,11 +774,17 @@ def _head(g, T, R, hc, ha, p, skin, hat=True, bias=0.0):
         for (dx, dy), c in zip(((6.6, 0.4), (7.6, -0.4), (8.4, 0.6)), skin.breath):
             g.dot(*H(dx, dy), colour=c, kind="glow")
     if hat:
-        _hat(g, H, R, p)
+        _hat(g, H, R, p, skin.outfit)
 
 
-def _hat(g, H, R, p):
+def _outfit(outfit):
+    """(cloth, trim, glint) for a Skin's outfit: the wizard's indigo wool and gold unless it says otherwise."""
+    return outfit or (WOOL, GOLD, LIGHT_E[1])
+
+
+def _hat(g, H, R, p, outfit=None):
     """The wizard's own hat, small: indigo wool, a gold band, a gold star, the tip swept back."""
+    cloth, trim, glint = _outfit(outfit)
     tilt = p["hat"]
 
     # Seated on the crown, clear of the brow, so the eye shows under the brim.
@@ -783,17 +795,17 @@ def _hat(g, H, R, p):
     flap = math.sin(p.get("flap", 0.0)) * 0.6
     cone = [Hh(-2.6, 0.2), Hh(2.4, 0.2), Hh(1.0, -3.4), Hh(-0.6 - flap, -6.4), Hh(-2.6 - flap * 1.5, -7.6),
             Hh(-3.4 - flap * 1.6, -6.6), Hh(-1.9, -4.2)]
-    g.poly(cone, WOOL, 0.35, "cloth", lean=(0.0, -0.35))
+    g.poly(cone, cloth, 0.35, "cloth", lean=(0.0, -0.35))
     # The brim, wider than the cone and flat.
     b0 = Hh(-3.6, 0.6)
     b1 = Hh(3.3, 0.6)
-    g.limb([b0, b1], [R(0.8), R(0.8)], WOOL, 0.25, "body")
+    g.limb([b0, b1], [R(0.8), R(0.8)], cloth, 0.25, "body")
     # The band and the star.
-    g.limb([Hh(-2.2, -0.5), Hh(2.0, -0.5)], [R(0.55), R(0.55)], GOLD, -0.4, "norim")
+    g.limb([Hh(-2.2, -0.5), Hh(2.0, -0.5)], [R(0.55), R(0.55)], trim, -0.4, "norim")
     sx, sy = Hh(-0.4, -2.4)
-    g.dot(sx, sy, GOLD[0])
-    g.dot(sx + 1, sy, LIGHT_E[1])
-    g.dot(sx, sy - 1, GOLD[1])
+    g.dot(sx, sy, trim[0])
+    g.dot(sx + 1, sy, glint)
+    g.dot(sx, sy - 1, trim[1])
 
 
 def _big_face(g, H, skin, jaw, fur):
@@ -928,14 +940,15 @@ def _cat_head(g, T, R, hc, ha, p, skin, hat=True, bias=0.0):
     g.dot(*H(1.1, -3.6), colour=EMBER[1] if not skin.glow_eye else ear[2])
 
 
-def _mantle(g, T, R, hx, hy, cx, cy, p):
+def _mantle(g, T, R, hx, hy, cx, cy, p, outfit=None):
     """The Great Hound's mantle: indigo wool over the shoulders, gold at the hem, flaring back."""
+    cloth, trim, _glint = _outfit(outfit)
     flare = p.get("flare", 0.0)
     pts = [T(cx + 2.6, cy - 4.4), T(cx + 3.4, cy - 1.0), T(cx + 0.4, cy + 2.0), T(hx + 3.0, hy + 0.8 + flare * 0.5),
            T(hx - 1.6 - flare, hy - 1.2 - flare * 0.6), T(hx + 1.2, hy - 4.0), T(cx - 1.4, cy - 5.0)]
-    g.poly(pts, WOOL, 0.15, "cloth", lean=(-0.1, -0.5))
+    g.poly(pts, cloth, 0.15, "cloth", lean=(-0.1, -0.5))
     g.limb([T(cx + 0.4, cy + 2.0), T(hx + 3.0, hy + 0.8 + flare * 0.5), T(hx - 1.6 - flare, hy - 1.2 - flare * 0.6)],
-           [R(0.55), R(0.55), R(0.5)], GOLD, -0.2, "norim")
+           [R(0.55), R(0.55), R(0.5)], trim, -0.2, "norim")
 
 
 def _frost_ruff(g, T, R, hx, hy, cx, cy, hc):
