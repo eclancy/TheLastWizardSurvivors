@@ -383,6 +383,7 @@ public partial class NinthStoneBoss : BossEnemy
 		Vector2 foot = stage.Foot;
 		if (stage.Crossed(HeavesFrom))
 		{
+			stage.Impact(0.4f);
 			stage.EmitAt(new BossDeath.Throw
 			{
 				Cell = BossDeath.Cell.Clod, SpeedMin = 40f, SpeedMax = 150f, UpMin = 120f, UpMax = 260f,
@@ -403,7 +404,10 @@ public partial class NinthStoneBoss : BossEnemy
 			}, 8, new Vector2(48f, 40f), new Vector2(18f, 26f));
 		}
 		if (stage.Crossed(Stands))
+		{
+			stage.Impact(0.9f);
 			stage.DustRing(foot, 66f, 10, HeathDust, 0.8f, 16f);
+		}
 	}
 
 	// The heath cracking out from where the thread went in, and closing again as the fight starts.
@@ -534,6 +538,7 @@ public partial class NinthStoneBoss : BossEnemy
 
 		if (death.Crossed(StoneLands))
 		{
+			death.Impact(1.0f);
 			// Where the crown came down.
 			Vector2 crown = death.PieceToLocal(deathStone, new Vector2(48f, 30f));
 			var thud = new Vector2(crown.X, death.Foot.Y - 6f);

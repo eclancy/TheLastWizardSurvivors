@@ -767,8 +767,9 @@ fells every body of it two frames before the shutter. Under `xvfb-run` with `--f
 
 **The arrival is the fall run forwards.** `BossDeath` plays it in its entrance mode
 (`ConfigureEntrance`), dispatching to `BossEnemy.OnEntranceBegin` / `TickEntrance` / `DrawEntrance*`,
-from the boss's own sheet, with the same debris atlas, puffs and three layers; the air and the light
-sit on `DrawLayers.Air`. `BossEnemy._Ready` starts it on every spawn path (chapter, Boss Rush, tools).
+from the boss's own sheet, with the same debris atlas, puffs and three layers; the body rides the
+boss's `DrawLayers.Foremost` and the air and the light sit on `ForemostAir`, over it.
+`BossEnemy._Ready` starts it on every spawn path (chapter, Boss Rush, tools).
 For `EntranceSeconds` (2.5 - 4 s, `ValidateBossPatterns`) the boss is untargetable and its physics is
 off - no step, wind-up, phase or summon - and its tells are hidden; then `FinishEntrance` hands the
 body back and the fight starts. `boss_roar` plays once, at the climax (`EntranceRoarSeconds`). The
@@ -777,10 +778,25 @@ boss bar fills with the arrival.
 **The field holds while any body arrives** (`BossEnemy.EnteringCount`, `Node2DGame.BossEntrance.cs`):
 the player's spells are silent with their timers **held, not reset** (`Player.HeldForBossEntrance`,
 read inside the one `spellFireTimers` loop); every ordinary body is **held still and takes no damage**
-(`Enemy.SetHeld`: process off); and the player cannot be hurt. Chosen over pushing the swarm back:
-holding is the only answer that gives nobody a free hit either way, and the fight then starts exactly
-where the field stood. The camera leans toward the boss (its `Position`, not `Offset`, which is the
-screen shake's) and eases back.
+(`Enemy.SetHeld`: process off); and the player cannot be hurt **or walk** (`MovePlayer` drops keys, pad
+and touch stick alike while `HeldForBossEntrance` is set; pause and menus are untouched). Chosen over
+pushing the swarm back: holding is the only answer that gives nobody a free hit either way, and the
+fight then starts exactly where the field stood.
+
+**It is shot as a cinematic** (2026-11-01: "Show black bars like movie trailers, use zoom, screenshake,
+and dramatic cinematic flare"). Letterbox bars (11% of the canvas height each, 9% on the tall phone
+canvas, plus the phone's safe inset; canvas layer 4, over the HUD and under the touch pad and every menu)
+slide in over the HUD's edges and out when the hold lets go - the boss bar fills under them. The camera
+leans toward the middle of every arriving body (`BossEnemy.Arriving`: a procession's pair is one shot)
+through its `Position` and pushes in through its `Zoom`, at most x1.28 and never past what keeps each body
+(150/160 px round it, for its first tell) and the wizard inside the picture between the bars - pulling
+out instead, to x0.88 at most, when the bodies are spread wider than that (the Choir, a pair). Spawn rings
+read `Node2DGame.GameplayZoomOf`, so the push-in never pulls the swarm on screen. The screen shakes
+(`ScreenShake`, the camera's `Offset`) on the beats each boss marks in its own timeline - the roar is the
+climax (`EntranceClimaxWeight`, 0.3 the kids' wizard to 1.3 the Warden of the Deep), and landings and
+bursts call `BossDeath.Impact(weight)`, in falls too. On the climax the bars jolt in, the push-in kicks,
+and their inner edges catch the boss's light (`EntranceFlareElement`): a line stepping down the element's
+ramp, core to edge, and a Bayer-dithered spill into the picture, gone in 0.34 s. There is no screen-shake or reduced-motion option yet; `ScreenShake` is where one would be read.
 
 | Boss | Its arrival |
 |---|---|

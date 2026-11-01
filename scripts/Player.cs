@@ -572,7 +572,15 @@ public partial class Player : CharacterBody2D
 		ConfigureEntityCollision();
 		bodySprite = GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
 		if (bodySprite != null)
+		{
 			bodySprite.AnimationFinished += OnBodyAnimationFinished;
+			// "The player and bosses should always be rendered on top of spells and effects so they can
+			// always be seen" (Eric, 2026-11-01). The body sprite alone, not this node: the spells parented
+			// to him (auras, the jet, the orbit) and his ground marks (StanceGlow, HasteTrail at -1) keep
+			// the layers they picked. On the bosses' layer, so he and a boss still sort by where they stand.
+			bodySprite.ZAsRelative = false;
+			bodySprite.ZIndex = DrawLayers.Foremost;
+		}
 		_velocity = Vector2.Zero;
 		ApplyArcaneUpgrades();
 		spellFireTimers.Clear();
@@ -2443,7 +2451,7 @@ public partial class Player : CharacterBody2D
 	/// True while a boss arrives (Node2DGame holds it for BossEnemy's entrance): every spell's timer is
 	/// HELD where it was - not reset, so each spell goes off when the fight starts exactly as far into
 	/// its cooldown as it was when the boss appeared - and nothing hurts him. No whitening, unlike the
-	/// post-menu grace: he is not the one being shown, the boss is.
+	/// post-menu grace: he is not the one being shown, the boss is. He cannot walk, either (MovePlayer).
 	/// </summary>
 	public bool HeldForBossEntrance { get; private set; }
 
@@ -6583,6 +6591,13 @@ public partial class Player : CharacterBody2D
 		Vector2 touchInput = TouchControls.MoveVector;
 		if (touchInput != Vector2.Zero)
 			input = touchInput;
+
+		// A boss arriving (2026-11-01: "Player should not be able to move when bosses are spawning"): every
+		// device's push is dropped here, the one place keys, pad and the touch stick all meet, so he stands
+		// where the arrival found him - facing as he was - until the frame it ends. Only walking: the pause,
+		// the menus and the stick's own drawing never come through here.
+		if (HeldForBossEntrance)
+			input = Vector2.Zero;
 
 		if (input.X > 0.01f)
 			lastHorizontalFacing = 1;

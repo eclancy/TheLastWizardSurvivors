@@ -178,6 +178,8 @@ public partial class KidWizardBoss : BossEnemy
 	// single frame, untouched, popping up from small with a little bounce, the way a wizard turns up in
 	// a story. Only the sprite's size, height and alpha move; the effect round it is ours.
 	protected internal override float EntranceSeconds => 2.6f;
+	// The climax (BossDeath calls it on the roar): a pop, not a landing.
+	protected internal override float EntranceClimaxWeight => 0.3f;
 	protected internal override float EntranceRoarSeconds => PopAt + 0.05f;
 
 	private const float PopAt = 1.1f;

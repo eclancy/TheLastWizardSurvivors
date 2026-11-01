@@ -524,8 +524,9 @@ public partial class CourtRules : ChapterRules
 			return false;
 		Viewport viewport = GetViewport();
 		Camera2D camera = viewport?.GetCamera2D();
-		Vector2 zoom = camera?.Zoom ?? Vector2.One;
-		Vector2 half = (viewport?.GetVisibleRect().Size ?? new Vector2(1280f, 720f)) / new Vector2(Mathf.Max(0.01f, zoom.X), Mathf.Max(0.01f, zoom.Y)) * 0.5f;
+		// The run's zoom, not a boss arrival's push-in (Node2DGame.GameplayZoomOf).
+		float zoom = Node2DGame.GameplayZoomOf(camera);
+		Vector2 half = (viewport?.GetVisibleRect().Size ?? new Vector2(1280f, 720f)) / zoom * 0.5f;
 		float angle = rng.Randf() * Mathf.Tau;
 		var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
 		float toEdge = Mathf.Min(half.X / Mathf.Max(0.0001f, Mathf.Abs(dir.X)), half.Y / Mathf.Max(0.0001f, Mathf.Abs(dir.Y)));

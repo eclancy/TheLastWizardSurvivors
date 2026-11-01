@@ -270,6 +270,8 @@ public partial class LongCoilBoss : BossEnemy
 	// will stand; the ground funnels; the head bursts straight up out of the funnel in a spout of sand
 	// and comes down; and the body surfaces behind it a segment at a time, each out of its own puff.
 	protected internal override float EntranceSeconds => 3.0f;
+	protected internal override float EntranceClimaxWeight => 1.0f;
+	protected internal override Element EntranceFlareElement => Element.Earth;
 	protected internal override float EntranceRoarSeconds => HeadBursts + 0.1f;
 
 	private BossDeath.Piece head;
@@ -317,7 +319,10 @@ public partial class LongCoilBoss : BossEnemy
 				stage.PuffAt(foot - new Vector2(0f, 20f + 26f * k), 10f, 30f, 0.7f, sand, 30f, 0.05f * k);
 		}
 		if (stage.Crossed(HeadLands))
+		{
+			stage.Impact(0.8f);
 			stage.DustRing(foot, 54f, 8, sand, 0.7f, 14f);
+		}
 		for (int i = 1; i <= Mathf.Max(2, BodySegments); i++)
 		{
 			if (stage.Crossed(SegmentsFrom + SegmentStep * i))
@@ -439,6 +444,7 @@ public partial class LongCoilBoss : BossEnemy
 
 		if (death.Crossed(0.15f))
 		{
+			death.Impact(0.5f);
 			// Scales off it as it thrashes.
 			death.Emit(new BossDeath.Throw
 			{
