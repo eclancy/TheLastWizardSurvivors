@@ -431,6 +431,13 @@ the mid, as the element rule says. Turrets are built and throw fire everywhere (
 | Frozen Waste | ice | `#7FDCF8` (0.498, 0.863, 0.973) | `#F4FEFF` (0.957, 0.996, 1) |
 | Scorched Sands | wind | `#B4EEE0` (0.706, 0.933, 0.878) | `#FFFFFF` |
 | The Emberdeep | fire | `#E87A1A` (0.910, 0.478, 0.102) | `#FFF4D0` (1, 0.957, 0.816) |
+| The Last Bridge | arcane, his cold fire | `#C08CFF` (the Ruins' pair) | `#FFF0FF` |
+| The Court | arcane, his cold fire | as the Dungeon (0.55, 0.24, 0.86) | (0.85, 0.62, 1.0) |
+
+The castle is his house, lit by the arcane row (`court_walls.py`), so both its casts throw arcane;
+the two agents of C6 chose it apart (2026-11-01). Arcane also keeps a castle bolt clear of the
+Gargoyle's and the Candelabrum's fire volleys. The Falconer throws a bolt, not his hawk: a hawk would
+be a new projectile scene, which C6's brief ruled out.
 
 **Check every one against its floor with eyes.** The cold elements on the Cave's and the Frozen
 Waste's floors are the one place Bonelight can fail (`art-direction.md`, "Bonelight-specific
