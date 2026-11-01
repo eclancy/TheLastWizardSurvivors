@@ -68,6 +68,7 @@ ProjectileCountBonus = 1
 
 [resource]
 script = ExtResource("1")
+Tagline = "Meteors rain on enemies in range."
 Id = "meteor_swarm"
 Name = "Meteor Swarm"
 CurrentLevel = 1

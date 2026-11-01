@@ -11,6 +11,7 @@ DamageBonus = 2
 
 [resource]
 script = ExtResource("1")
+Tagline = "A shard that melts max health."
 Id = "molten_shard"
 Name = "Molten Shard"
 CurrentLevel = 1

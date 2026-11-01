@@ -2345,8 +2345,9 @@ public partial class _BalanceHarness : Node
 		menu.EmitSignal(LevelUpMenu.SignalName.SkipRequested);
 	}
 
-	// Charges are not picks: the menu stays open and re-deals (reroll, ban), and the next frame decides
-	// again. (The Save and Augury charges were removed on 2026-10-28.)
+	// A reroll is not a pick: the menu stays open and re-deals, and the next frame decides again. A ban
+	// IS the level-up's pick since 2026-10-31 - the spell is struck and the screen closes with no XP
+	// (Node2DGame.OnBanRequested). (The Save and Augury charges were removed on 2026-10-28.)
 	private void Act(LevelUpMenu menu, string choice)
 	{
 		if (choice == RerollAction)
@@ -2359,6 +2360,8 @@ public partial class _BalanceHarness : Node
 		if (choice.StartsWith(BanAction))
 		{
 			bansUsed++;
+			// The ban ends this level-up, as a pick does.
+			rerollsThisLevel = 0;
 			menu.EmitSignal(LevelUpMenu.SignalName.BanRequested, choice.Substring(BanAction.Length));
 			return;
 		}

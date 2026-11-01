@@ -61,6 +61,10 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 	// completes it - the pieces row and the count still say how close it is.
 	private bool fiveAbreast;
 
+	// Five abreast on a PC, or four or more stacked on a phone: a set box shows its full tier only
+	// when this claim completes it, and the header art is 64. Set where fiveAbreast is.
+	private bool crowded;
+
 	// Wider than this and three pages become banners: a wide monitor gets keep_height's extra
 	// width (DisplayProfile), and a 600px-wide relic card is harder to read, not easier.
 	private const float MaxPanelWidth = 1400f;
@@ -251,6 +255,10 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 		// take the phone's tighter header rather than wrapping every line twice.
 		fourRelics = itemIds.Count >= 4;
 		fiveAbreast = !narrow && itemIds.Count >= 5;
+		// Four or five stacked on a phone scrolled (by about 90 and 250): this screen never scrolls now
+		// (2026-10-31, "no scrolling, ever"), so they take five abreast's rule - a set's full tier only
+		// when the claim completes it - and the 64 header art.
+		crowded = fiveAbreast || (narrow && itemIds.Count >= 4);
 		bool compact = narrow || fourRelics;
 		foreach (string itemId in itemIds)
 			cardsRow.AddChild(BuildOptionCard(itemId, ownedItems, compact));
@@ -341,12 +349,14 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 		int sideMargin = fiveAbreast ? 12 : 18;
 		margin.AddThemeConstantOverride("margin_left", sideMargin);
 		margin.AddThemeConstantOverride("margin_right", sideMargin);
-		margin.AddThemeConstantOverride("margin_top", 14);
-		margin.AddThemeConstantOverride("margin_bottom", 14);
+		// Crowded, every page gives back a little air so a claim that completes a set (its full tier
+		// shown after all) still fits five stacked on a phone without a scroll.
+		margin.AddThemeConstantOverride("margin_top", crowded ? 10 : 14);
+		margin.AddThemeConstantOverride("margin_bottom", crowded ? 10 : 14);
 		root.AddChild(margin);
 
 		var body = new VBoxContainer();
-		body.AddThemeConstantOverride("separation", 8);
+		body.AddThemeConstantOverride("separation", crowded ? 6 : 8);
 		margin.AddChild(body);
 
 		// Art, then name and rarity beside it; the effect runs the full width of the page under them,
@@ -354,7 +364,7 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 		// page a third of the screen wide it wrapped to two or three words a line and came out
 		// taller.) On a phone the Claim plate rides on the right of the header row, because there
 		// the height is what is short.
-		body.AddChild(BuildHeader(itemId, fiveAbreast ? 48f : compact && !narrow ? 64f : 96f));
+		body.AddChild(BuildHeader(itemId, fiveAbreast ? 48f : crowded || (compact && !narrow) ? 64f : 96f));
 		body.AddChild(BuildEffectList(itemId));
 
 		bool alreadyOwned = ownedItems.Contains(itemId, StringComparer.OrdinalIgnoreCase);
@@ -814,8 +824,9 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 		if (set.ElementTags != null && set.ElementTags.Length > 0)
 			fullText += " " + string.Join(", ", set.ElementTags.Select(t => $"+{t.Weight} {t.Element}")) + ".";
 		string fullTier = hasPartial ? $"All {total}" : $"Both";
-		// Five abreast, the full tier is the news only when this claim is what completes it.
-		if (fiveAbreast && !completes)
+		// Five abreast, or four or more stacked on a phone, the full tier is the news only when this
+		// claim is what completes it.
+		if (crowded && !completes)
 			return box;
 		column.AddChild(completes
 			? BuildTierLine(fullTier + ", now:", fullText, InkGain, Ink)

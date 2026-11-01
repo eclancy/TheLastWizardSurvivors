@@ -65,6 +65,7 @@ ChainBranchBonus = 2
 
 [resource]
 script = ExtResource("1")
+Tagline = "Arcs that poison, slow and expose."
 Id = "shadow_bolt"
 Name = "Shadow Bolt"
 CurrentLevel = 1

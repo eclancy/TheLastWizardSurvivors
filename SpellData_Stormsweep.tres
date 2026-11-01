@@ -67,6 +67,7 @@ ProjectileCountBonus = 1
 
 [resource]
 script = ExtResource("1")
+Tagline = "Lightning sweeps where you face."
 Id = "stormsweep"
 Name = "Stormsweep"
 CurrentLevel = 1

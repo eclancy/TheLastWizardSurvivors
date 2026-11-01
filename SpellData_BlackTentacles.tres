@@ -91,6 +91,7 @@ ProjectileCountBonus = 1
 
 [resource]
 script = ExtResource("1")
+Tagline = "Slows a pack in a lashing rift."
 Id = "black_tentacles"
 Name = "Black Tentacles"
 CurrentLevel = 1

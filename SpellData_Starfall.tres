@@ -74,6 +74,7 @@ ProjectileCountBonus = 1
 
 [resource]
 script = ExtResource("1")
+Tagline = "Stars rain down all around you."
 Id = "starfall"
 Name = "Starfall"
 CurrentLevel = 1

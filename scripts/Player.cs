@@ -7197,6 +7197,8 @@ public partial class Player : CharacterBody2D
 			SpellId = template.Id,
 			DisplayName = template.Name,
 			Description = template.Description,
+			// What the spell does, in a line, over its stats (LevelUpMenu.BuildOptionTagline).
+			Tagline = template.Tagline,
 			StatSummary = BuildSpellStatSummary(template),
 			NextLevel = 1,
 			MaxLevel = CardLevelCap(template),

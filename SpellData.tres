@@ -29,6 +29,7 @@ EffectValue = 120.0
 
 [resource]
 script = ExtResource("1_43iml")
+Tagline = "Darts at the nearest enemy."
 Id = "magic_missile"
 Name = "Magic Missile"
 CurrentLevel = 1

@@ -238,6 +238,7 @@ LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_cat_2"), SubResou
 
 [resource]
 script = ExtResource("1")
+Tagline = "A companion that fights for you."
 Id = "familiar"
 Name = "Familiar"
 CurrentLevel = 1

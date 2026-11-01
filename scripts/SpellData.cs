@@ -18,6 +18,20 @@ public partial class SpellData : Resource
     [Export] public Godot.Collections.Array<SpellLevelUpgrade> LevelUpgrades { get; set; } = new();
     [Export(PropertyHint.MultilineText)] public string Description { get; set; } = string.Empty;
 
+    // What the spell does, in one short line - its aim and its payload ("A bolt that leaps enemy to
+    // enemy."). A new spell's level-up card prints it where "Attack" was (LevelUpMenu.BuildOptionTagline):
+    // "choosing a spell should have a description of the spell on level up" (Eric, 2026-10-31), and the
+    // Description above is a paragraph a paused fight will not read. ContentValidator requires one on
+    // every spell and holds it to TaglineMaxLength.
+    [Export] public string Tagline { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The longest a <see cref="Tagline"/> may be: one line on a three-across 1280x720 card. The tightest
+    /// hand there (four stat lines, the Ascension strip and the charge row) had 2 units to spare before
+    /// the line existed, so it may take the type line's place and no more.
+    /// </summary>
+    public const int TaglineMaxLength = 34;
+
     // Explicit spell classification for behavior-aware UI/balancing.
     [Export] public SpellTargetingMode TargetingMode { get; set; } = SpellTargetingMode.Auto;
     [Export] public SpellDamageShape DamageShape { get; set; } = SpellDamageShape.Auto;

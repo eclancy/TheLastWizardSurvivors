@@ -27,6 +27,7 @@ EffectValue = 12.0
 
 [resource]
 script = ExtResource("1")
+Tagline = "A poisoning vine lashes a pack."
 Id = "thorn_vine"
 Name = "Thorned Vine"
 CurrentLevel = 1

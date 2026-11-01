@@ -31,6 +31,7 @@ public static class RegressionChecks
 		ValidateElementTags(warnings);
 		ValidateElementPaths(warnings);
 		ValidateEvolutionReaders(warnings);
+		ValidateCardTextBudget(warnings);
 		ValidateLevelUpReaders(warnings);
 		ValidateAmountReaders(warnings);
 		ValidateStarfall(warnings);
@@ -4928,6 +4929,43 @@ public static class RegressionChecks
 		}
 		foreach (string itemId in ChestItemCatalog.AllItemIds)
 			Check($"relic {itemId}", ChestItemCatalog.GetDescription(itemId));
+	}
+
+	/// <summary>
+	/// Every level 4, level 8 and Apotheosis branch says what it does within
+	/// <see cref="SpellEvolutionOption.DescriptionBudget"/> characters, as the card shows it.
+	/// </summary>
+	/// <remarks>
+	/// The level-up, mutation and Ascension screens never scroll (2026-10-31, Eric: "Overall keep text
+	/// minimal"; .ai/level-up-screen.md section 3b). Their cards size to their words, so a branch written
+	/// at length is a page that scrolls on a 1280x720 PC or a phone - and the old catalog ran to 385.
+	/// </remarks>
+	private static void ValidateCardTextBudget(List<string> warnings)
+	{
+		var reported = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (SpellData spell in ContentValidator.LoadAllSpellForms())
+		{
+			if (spell == null || string.IsNullOrWhiteSpace(spell.Id))
+				continue;
+			SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
+			var options = new List<SpellEvolutionOption>();
+			if (spell.Level4Options != null)
+				options.AddRange(spell.Level4Options);
+			if (spell.Level8Options != null)
+				options.AddRange(spell.Level8Options);
+			foreach (ApotheosisDefinition definition in ApotheosisCatalog.All)
+			{
+				if (definition.Form != null && definition.SpellId.Equals(spell.Id, StringComparison.OrdinalIgnoreCase))
+					options.Add(definition.Form);
+			}
+			foreach (SpellEvolutionOption option in options)
+			{
+				int length = option?.Description?.Length ?? 0;
+				if (length > SpellEvolutionOption.DescriptionBudget && reported.Add($"{spell.Id}:{option.Id}"))
+					warnings.Add($"Branch '{option.Id}' of '{spell.Id}' is {length} characters; a card holds " +
+						$"{SpellEvolutionOption.DescriptionBudget} without scrolling: \"{option.Description}\"");
+			}
+		}
 	}
 
 	private static void ValidateEvolutionReaders(List<string> warnings)
