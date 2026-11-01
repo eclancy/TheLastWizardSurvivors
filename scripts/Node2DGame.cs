@@ -3424,6 +3424,9 @@ public partial class Node2DGame : Node2D
 			OnPlayerLevelGained();
 			return;
 		}
+		// Levels a chapter granted outright (the Throne's Muster), after any the player earned.
+		if (OpenNextGrantedLevelUp())
+			return;
 		GetTree().Paused = false;
 	}
 
@@ -3442,6 +3445,9 @@ public partial class Node2DGame : Node2D
 		{
 			levelUpMenu = levelupMenuScene.Instantiate<CanvasLayer>();
 			levelUpMenu.ProcessMode = ProcessModeEnum.WhenPaused;
+			// Hook 8: the chapter's word on the screen before it lays itself out (the Throne's Muster).
+			if (levelUpMenu is LevelUpMenu opening)
+				chapterRules?.LevelUpOpening(opening, openingGrantedLevelUp);
 			AddChild(levelUpMenu);
 			// Connect to WeaponSelected signal
 			var menuScript = levelUpMenu as Node;
