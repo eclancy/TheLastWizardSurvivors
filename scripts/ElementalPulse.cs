@@ -144,9 +144,13 @@ public partial class ElementalPulse : Area2D
 		{
 			if (node is not Node2D e || !IsInstanceValid(e))
 				continue;
-			if (GlobalPosition.DistanceTo(e.GlobalPosition) > reach)
+			float distance = GlobalPosition.DistanceTo(e.GlobalPosition);
+			if (distance > reach)
 				continue;
 
+			// Solar Flare rises out of the ground under what it strikes, as its front passes under it
+			// (SolarFlareVisual, FROM UNDERNEATH) - before the hit, so a body it kills still stands in it.
+			(customVisual as SolarFlareVisual)?.RiseUnder(e, distance, reach);
 			player?.DealDamageToEnemy(e, hit, source: SpellData);
 			if (GuaranteedPoison && e.HasMethod("ApplyPoison"))
 				e.Call("ApplyPoison", PoisonDamagePerTick, PoisonDuration);
@@ -175,6 +179,8 @@ public partial class ElementalPulse : Area2D
 			// A bespoke visual owns its own animation and timing, so the generic ring tween below
 			// (and the ringPulseActive state it drives) is skipped entirely for those spells.
 			customVisual.Burst(reach);
+			// And under him: the flare goes off beneath his boots.
+			(customVisual as SolarFlareVisual)?.RiseUnder(PlayerRef, 0f, reach);
 			return;
 		}
 
@@ -367,10 +373,15 @@ public partial class ElementalPulse : Area2D
 		{
 			Vector2 offset = sunDogAxis * (side == 0 ? -distance : distance);
 			Vector2 centre = GlobalPosition + offset;
+			SolarFlareVisual dogBurst = sunDogBursts[side];
 			foreach (Enemy e in EnemyRegistry.Snapshot)
 			{
-				if (!IsInstanceValid(e) || e.GlobalPosition.DistanceSquaredTo(centre) > r2)
+				float d2 = IsInstanceValid(e) ? e.GlobalPosition.DistanceSquaredTo(centre) : float.MaxValue;
+				if (d2 > r2)
 					continue;
+				// Rising under what this mock sun strikes, as the flare's own burst does.
+				if (dogBurst != null && IsInstanceValid(dogBurst))
+					dogBurst.RiseUnder(e, MathF.Sqrt(d2), dogReach);
 				player?.DealDamageToEnemy(e, dogDamage, source: SpellData);
 				if (WeakenFraction > 0f)
 					e.ApplyWeaken(WeakenFraction, WeakenDuration * DurationMultiplier);

@@ -99,6 +99,17 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 	public const float ResweepPause = 0.05f;
 	public const float LingerSeconds = 0.16f;
 
+	// THE STROKE QUICKENS WITH LEVEL (2026-11-01). Eric, playing 0.10.0: "animation starts too fast. Slow it
+	// down at first and let it speed up with level up." At tempo 1 a whole stroke - leap and sweep - is
+	// 0.15 s, nine frames, and at level 1 that read as a flicker. So the stroke's tempo starts at
+	// LevelOnePace and climbs evenly to 1 at MaxLevel: a level 1 stroke takes 2.5 times as long (the leap
+	// and sweep 0.375 s), level 8 is the stroke it always was. THE HIT MOVES WITH IT, on purpose: every beat
+	// - the leap, the sweep the hit is tested on (WhipStroke.Front), the linger, the gap between sweeps - runs
+	// on the one tempo-scaled clock (Tick), so what is struck is still struck exactly when the drawn lash
+	// crosses it; at level 1 that is up to a quarter second later than before. Damage, reach, band and
+	// cooldown are untouched.
+	public const float LevelOnePace = 0.4f;
+
 	// --- Thunderclap --------------------------------------------------------------------------------
 	public const float ThunderRadius = 56f;
 	public const float ThunderDamageFraction = 0.8f;
@@ -358,7 +369,7 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 		area = MathF.Max(0.1f, playerArea * spell.GetAreaMultiplierAtLevel(level));
 		reach = MathF.Max(HandReach + 40f, spell.GetRangeAtLevel(level) * area);
 		halfBand = MathF.Max(8f, (BaseHalfBand + spell.GetEffectValueAtLevel(SpellEffect.AreaSize, level)) * area);
-		tempo = Mathf.Clamp(spell.GetSpeedMultiplier(), 0.25f, 4f);
+		tempo = Mathf.Clamp(spell.GetSpeedMultiplier() * LevelPace(level, spell.MaxLevel), 0.25f, 4f);
 		thunder = spell.HasEvolution(ThunderclapId);
 		cardinal = spell.HasEvolution(CardinalStormId);
 		forked = spell.HasEvolution(ForkedLightningId);
@@ -389,6 +400,10 @@ public partial class Stormsweep : Node2D, IPaintsElementPath
 			}
 		}
 	}
+
+	/// <summary>The stroke's tempo at a level, before Speed: LevelOnePace at level 1, 1 at the spell's max.</summary>
+	public static float LevelPace(int level, int maxLevel) =>
+		Mathf.Lerp(LevelOnePace, 1f, Mathf.Clamp((level - 1) / (float)Math.Max(1, maxLevel - 1), 0f, 1f));
 
 	private void Queue(Vector2 dir, float delay)
 	{

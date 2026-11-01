@@ -1181,7 +1181,7 @@ SPELLS = {
     "molten_shard":      dict(paint=sc.molten_shard, travel=(1, -0.8), tip=(27, 4), rows=("fire",), dark=True),
     "cone_of_cold":      dict(paint=sc.cone_of_cold, travel=(1, 0), tip=(29, 16), rows=("ice",)),
     "solar_flare":       dict(paint=sc.solar_flare, travel=None, tip=(16, 16), rows=("light",)),
-    "scorching_ray":     dict(paint=sc.scorching_ray, travel=(1, -1), tip=(28, 3), rows=("fire",)),
+    "scorching_ray":     dict(paint=sc.scorching_ray, travel=(17, 23), tip=sc.RAY_STRIKE, rows=("fire",)),
     "obsidian_spike":    dict(paint=sc.obsidian_spike, travel=(0, -1), tip=(21, 1), rows=("earth",), dark=True),
     "cyclone_slash":     dict(paint=sc.cyclone_slash, travel=(1, 0), tip=(24, 16), rows=("wind",)),
     "void_lance":        dict(paint=sc.void_lance, travel=(1, -1), tip=(30, 1), rows=("darkness", "arcane")),
@@ -4522,91 +4522,104 @@ def _(sp, c):
 @card("scorching_ray_amplified_impact")
 def _(sp, c):
     """Flashpoint (2e): the burst grows with the ray's heat, and a target held to full heat flashes
-    over - the ray drawn back, a white-hot blast where it strikes, rays thrown out of it."""
+    over - the ray drawn back, a white-hot blast where it strikes, rays thrown out of it.
+
+    Since 2026-11-01 the spell's icon is a thin ray coming down into the ground (sc.scorching_ray), so
+    every card below finds the ray's ends through the placed map (sc.RAY_FROM, sc.RAY_STRIKE) rather
+    than at fixed pixels: the blast sits on the strike wherever the subject is put."""
     reset(sp)
-    sp.place = Place(0.74, dx=-5, dy=5)
+    anchor = anchor_of(SPELLS["scorching_ray"]["paint"])
+    sp.place = Place(0.74, dx=-3, dy=-4)
 
     def flashover(cv, x):
         f = E["fire"]
-        m_rays(cv, f, (21.0, 11.0), 6.0, 11.5, 12)
-        m_blast(cv, f, 21.0, 11.0, 7.0)
-        cv.disc(21.0, 11.0, 2.6, 2.6, f[0])
-        m_glint(cv, 21, 11, 4, E["light"])
+        bx, by = sp.place.mapper(anchor)(*sc.RAY_STRIKE)
+        m_rays(cv, f, (bx, by), 5.5, 10.5, 12)
+        m_blast(cv, f, bx, by, 6.5)
+        cv.disc(bx, by, 2.4, 2.4, f[0])
+        m_glint(cv, bx, by, 4, E["light"])
     O(sp, flashover)
 
 
 @card("scorching_ray_hyper_acceleration")
 def _(sp, c):
-    """Handoff (2e): a ray whose target falls swings on to the next - the ray it was, faded, up to a
-    fallen mark; the ray it is, bright, on the next; and the swing between them."""
+    """Handoff (2e): a ray whose target falls swings on to the next - the ray it was, faded, down to a
+    fallen mark on the ground; the ray it is, bright, on the next; and the swing along the ground
+    between them."""
     reset(sp)
     anchor = anchor_of(SPELLS["scorching_ray"]["paint"])
-    sp.place = Place(0.66, at=(17.0, 18.0))
-    tip = SPELLS["scorching_ray"]["tip"]
+    sp.place = Place(0.7, at=(20.0, 15.0))
 
     def was(cv, x):
         f = E["fire"]
         m = sp.place.mapper(anchor)
-        ox, oy = m(5.0, 26.0)
-        fx, fy = ox - 1.0, oy - 20.0
-        # The ray it was: dull, up to where its target fell.
-        cv.line(ox, oy, fx, fy, f[3])
-        cv.line(ox + 1, oy, fx + 1, fy, f[3])
-        cv.disc(fx, fy, 2.4, 2.4, OCC)
+        ox, oy = m(*sc.RAY_FROM)
+        bx, by = m(*sc.RAY_STRIKE)
+        fx, fy = bx - 12.0, by + 1.0
+        # The ray it was: dull, down to where its target fell.
+        cv.line(ox - 3, oy, fx - 1, fy, f[3])
+        cv.line(ox - 1, oy, fx + 1, fy, f[3])
+        cv.line(ox - 2, oy, fx, fy, f[2])
+        cv.disc(fx, fy, 3.0, 2.0, OCC)
         cv.line(fx - 2, fy - 2, fx + 2, fy + 2, f[3])
         cv.line(fx - 2, fy + 2, fx + 2, fy - 2, f[3])
-        # The swing, from the fallen round to where the ray burns now.
-        bx, by = m(*tip)
-        cx, cy = (fx + bx) / 2.0 + 3.0, (fy + by) / 2.0 - 4.0
-        prev = (fx + 2.0, fy)
+        # The swing, along the ground from the fallen mark to where the ray burns now.
+        cx, cy = (fx + bx) / 2.0, max(fy, by) + 5.0
+        prev = (fx + 2.0, fy + 1.0)
         for i in range(1, 13):
             t = i / 12.0
-            px = (1 - t) * (1 - t) * (fx + 2.0) + 2 * (1 - t) * t * cx + t * t * (bx - 1.0)
-            py = (1 - t) * (1 - t) * fy + 2 * (1 - t) * t * cy + t * t * (by - 2.0)
+            px = (1 - t) * (1 - t) * (fx + 2.0) + 2 * (1 - t) * t * cx + t * t * (bx - 2.0)
+            py = (1 - t) * (1 - t) * (fy + 1.0) + 2 * (1 - t) * t * cy + t * t * (by + 2.0)
             cv.line(prev[0], prev[1], px, py, f[2] if t < 0.6 else f[1])
             prev = (px, py)
     U(sp, was)
 
     def now(cv, x):
         f = E["fire"]
-        bx, by = sp.place.mapper(anchor)(*tip)
-        cv.disc(bx, by, 2.6, 2.6, f[2])
-        cv.disc(bx, by, 1.4, 1.4, f[1])
+        bx, by = sp.place.mapper(anchor)(*sc.RAY_STRIKE)
+        cv.disc(bx, by + 1, 2.6, 1.6, f[2])
+        cv.disc(bx, by + 1, 1.4, 1.0, f[1])
         cv.set(bx, by, f[0])
     O(sp, now)
 
 
 @card("scorching_ray_reactive_catalyst")
 def _(sp, c):
-    """Burn Through (2e): the beam runs on through its target to the edge of the screen - one long
-    ray right across the disc, rim to rim, with every mark on its line burned through."""
+    """Burn Through (2e): the beam runs on through its target - the ray down to the ground with every
+    mark on its line burned through, each a hole of char with the ray's white-hot core still running
+    through it."""
     reset(sp)
-    sp.place = Place(0.5, at=(8.5, 23.5))
+    anchor = anchor_of(SPELLS["scorching_ray"]["paint"])
+    sp.place = Place(0.9, dx=-1, dy=0)
 
     def through(cv, x):
         f = E["fire"]
-        cv.line(6, 26, 29, 3, f[2])
-        cv.line(7, 26, 30, 3, f[3])
-        cv.line(6, 25, 28, 3, f[1])
-        for (px, py) in ((14, 18), (20, 12), (26, 6)):
-            cv.disc(px, py, 2.0, 2.0, OCC)
-            cv.ring(px, py, 2.4, 2.4, f[3])
-            cv.set(px, py, f[1])
-            cv.set(px + 1, py - 1, f[0])
+        m = sp.place.mapper(anchor)
+        ox, oy = m(*sc.RAY_FROM)
+        bx, by = m(*sc.RAY_STRIKE)
+        for t in (0.42, 0.68):
+            px, py = ox + (bx - ox) * t, oy + (by - oy) * t
+            cv.disc(px, py, 2.6, 2.6, OCC)
+            cv.ring(px, py, 3.0, 3.0, f[3])
+            cv.set(px, py - 1, f[0])
+            cv.set(px, py, f[0])
+            cv.set(px, py + 1, f[1])
+            cv.set(px + 2, py - 2, f[2])
     O(sp, through)
 
 
 @card("scorching_ray_titan_cataclysm")
 def _(sp, c):
-    """Prism (2e): the ray splits where it strikes into four - the ray drawn short up to a hard white
-    point, and four thinner rays fanned out of it, edged in the Arcane it took."""
+    """Prism (2e): the ray splits where it strikes into four - the ray drawn short down to a hard white
+    point, and four thinner rays fanned out of it away from where it came, edged in the Arcane it took."""
     reset(sp)
-    sp.place = Place(0.6, at=(9.5, 22.5))
+    anchor = anchor_of(SPELLS["scorching_ray"]["paint"])
+    sp.place = Place(0.6, at=(11.0, 9.5))
 
     def prism(cv, x):
         f, a = E["fire"], E["arcane"]
-        px, py = 15.0, 16.0
-        for (ex, ey) in ((22.0, 4.0), (28.5, 9.0), (29.0, 18.0), (24.0, 26.0)):
+        px, py = sp.place.mapper(anchor)(*sc.RAY_STRIKE)
+        for (ex, ey) in ((29.0, 12.0), (28.0, 21.0), (22.0, 28.0), (12.0, 28.0)):
             cv.line(px, py, ex, ey, a[2])
             cv.line(px + 1, py, ex + 1, ey, a[3])
             cv.line(px, py - 1, ex, ey - 1, f[1])
@@ -4619,25 +4632,26 @@ def _(sp, c):
 
 @card("scorching_ray_infinite_horizon")
 def _(sp, c):
-    """Sunlance (2e): the ray widens into a lance that sweeps on from target to target - one broad
-    beam, the sweep it has made behind it as fading afterimages, and a sun at the staff."""
+    """Sunlance (2e): the ray widens into a lance that sweeps on from target to target - the beam, the
+    sweep it has made behind it as fading afterimages along the ground, the furrow of heat its strike
+    has burned between them, and a sun at the staff."""
     reset(sp)
     anchor = anchor_of(SPELLS["scorching_ray"]["paint"])
-    pivot = (5.0, 26.0)
-    sp.copies = [about(pivot, 36.0, anchor, 0.7, 2), about(pivot, 18.0, anchor, 0.74, 1),
-                 about(pivot, 0.0, anchor, 0.82)]
-    sp.place = Place(0.82, rot=0.0, at=(about(pivot, 0.0, anchor, 0.82).at[0] + 1.2, about(pivot, 0.0, anchor, 0.82).at[1] + 1.2))
+    sp.copies = [Place(0.8, dx=-9.0, dy=1.0, darken=2), Place(0.8, dx=-4.5, dy=0.5, darken=1)]
+    sp.place = Place(0.8, dx=1.0, dy=0.0)
 
     def sweep(cv, x):
         f = E["fire"]
-        # The sweep the lance has made: an arc of heat across where its tip has been.
-        for i in range(22):
-            t = i / 21.0
-            a = math.radians(-44 + 40 * t)
-            r = 22.0
-            cv.set(pivot[0] + math.cos(a) * r, pivot[1] + math.sin(a) * r, f[1] if t < 0.35 else f[2])
-            cv.set(pivot[0] + math.cos(a) * (r + 1), pivot[1] + math.sin(a) * (r + 1), f[3])
-        m_glint(cv, 6, 25, 4, E["light"])
+        # The furrow its strike has burned across the ground, hottest nearest the lance.
+        x0, y0 = sp.copies[0].mapper(anchor)(*sc.RAY_STRIKE)
+        x1, y1 = sp.place.mapper(anchor)(*sc.RAY_STRIKE)
+        n = int(x1 - x0)
+        for i in range(n + 1):
+            t = i / float(max(1, n))
+            gx, gy = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t + 1.5
+            cv.set(gx, gy, f[1] if t > 0.66 else (f[2] if t > 0.33 else f[3]))
+            cv.set(gx, gy + 1, f[3])
+        m_glint(cv, 6, 5, 4, E["light"])
     O(sp, sweep)
 
 

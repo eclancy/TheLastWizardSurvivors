@@ -176,50 +176,94 @@ def cinderbreath():
 
 
 
-def mirefoot():
-    """A pool of bog with scum on it and two reeds standing out of it.
+def _ellipse(cx, cy, rx, ry, angle, n=20):
+    """A turned ellipse as a polygon (raster.Canvas.disc only lies along the axes)."""
+    ca, sa = math.cos(angle), math.sin(angle)
+    pts = []
+    for k in range(n):
+        t = 2.0 * math.pi * k / n
+        u, v = math.cos(t) * rx, math.sin(t) * ry
+        pts.append((cx + u * ca - v * sa, cy + u * sa + v * ca))
+    return pts
 
-    Read from the top down, like the game is. The trick at 32 pixels is that standing water is only
-    legible if something BREAKS it - a flat ellipse of dark blue is a hole, not a puddle. So the
-    reeds and the scum are not decoration, they are what tells the eye which way is up.
+
+def _bog_print(c, cx, cy, size, angle, fresh):
+    """One footprint welled up with bog, seen from above: a sole and a heel behind it along `angle`
+    (the way he walked), each a hole with a lip of mud round it - the lip lit on its upper left by the
+    key, the water dark at the bottom of the hole - and, in a fresh one, scum and a bubble on it."""
+    mud_lit = bl.tone("gold", "base")
+    mud = bl.tone("gold", "shade")
+    mud_deep = bl.tone("gold", "deep")
+    water = bl.tone("azure", "shade")
+    water_deep = bl.tone("azure", "deep")
+    water_lit = bl.tone("azure", "base")
+    shine = bl.tone("azure", "lit")
+    dx, dy = math.cos(angle), math.sin(angle)
+    heel = (cx - dx * size * 1.25, cy - dy * size * 1.25)
+    sole = (cx + dx * size * 0.45, cy + dy * size * 0.45)
+    parts = ((sole, size * 0.98, size * 0.68), (heel, size * 0.52, size * 0.5))
+    # The lip of mud: occlusion outside it, then the mud, lit toward the key.
+    for (at, rx, ry) in parts:
+        c.poly(_ellipse(at[0], at[1] + 0.6, rx + 1.4, ry + 1.4, angle), OCC)
+    for (at, rx, ry) in parts:
+        c.poly(_ellipse(at[0], at[1], rx + 1.0, ry + 1.0, angle), mud)
+    for (at, rx, ry) in parts:
+        c.poly(_ellipse(at[0] - 0.7, at[1] - 0.7, rx + 0.6, ry + 0.6, angle), mud_lit)
+        c.poly(_ellipse(at[0] + 0.3, at[1] + 0.3, rx + 0.4, ry + 0.4, angle), mud)
+    # The bog in the hole: dark at the bottom, the far wall (lower right) catching the key.
+    for (at, rx, ry) in parts:
+        c.poly(_ellipse(at[0], at[1], rx, ry, angle), mud_deep)
+        c.poly(_ellipse(at[0] + 0.4, at[1] + 0.4, rx - 0.6, ry - 0.6, angle), water_lit if fresh else water)
+        c.poly(_ellipse(at[0] - 0.3, at[1] - 0.3, rx - 1.0, ry - 1.0, angle), water)
+        if rx > 2.5:
+            c.poly(_ellipse(at[0] - 0.6, at[1] - 0.6, rx - 2.0, ry - 2.0, angle), water_deep)
+    if fresh:
+        # A bubble welling up in the sole, and a glint of sky on the water beside it.
+        bx, by = int(round(sole[0] + dx * 1.5)), int(round(sole[1] + dy * 1.5 - 1))
+        for (ox, oy) in ((0, -1), (-1, 0), (1, 0), (0, 1)):
+            c.set(bx + ox, by + oy, shine)
+        c.set(bx - 1, by - 1, bl.tone("azure", "hi"))
+        c.set(int(round(sole[0] - dx * 2.5 - 1)), int(round(sole[1] - dy * 2.5 + 1)), shine)
+
+
+def mirefoot():
+    """Bog welling up in his footprints: two prints of a stride, the older one small up the way he came,
+    the fresh one big and brimming, with scum on it and a reed standing out of it.
+
+    Redrawn 2026-11-01 (Eric, playing 0.10.0: "Mirefoot icon has a random black line at the bottom.
+    Make a better icon for it."). The line was a contact shadow, a row of occlusion run under the pool
+    at the foot of the cell - a ground line under a hole in the ground, which said nothing. And the
+    pool was a dark blue blob on a dark slot: a hole, not a puddle, and nothing in it said "footprint".
+    Now the subject is the spell's own sentence - "bog wells up in your footprints" - and every print
+    has a lip of mud lit by the key from the upper left (the gold row's soil, Gravewell's bank), so the
+    hole reads on the dark loadout slot and on the pale page alike. Read from the top down, as the game is.
     """
     c = raster.Canvas(CELL, CELL, None)
+    # He walked up the cell: the toes point the way he went, the other foot's print behind and beside.
+    stride = math.radians(-78.0)
+    # The older print, the other foot, smaller and gone still and dark.
+    _bog_print(c, 8.0, 22.0, 3.4, stride, False)
+    # The fresh one, brimming, low in the cell where the cards put their bog (evolution_icons.py tip).
+    _bog_print(c, 19.0, 15.5, 6.0, stride, True)
 
-    water_deep = bl.tone("azure", "deep")
-    water = bl.tone("azure", "shade")
-    water_lit = bl.tone("azure", "base")
+    # Scum on the fresh one: broken patches, never a ring, or it reads as a tyre.
     scum = bl.tone("lichen", "base")
     scum_lit = bl.tone("lichen", "lit")
-    reed = bl.tone("verdant", "shade")
-    reed_lit = bl.tone("verdant", "lit")
-
-    # The pool: a lopsided blob, wider than tall, sitting low in the cell.
-    pool = [(4, 20), (9, 15), (17, 13), (25, 15), (29, 20), (26, 26), (17, 29), (8, 26), (4, 20)]
-    c.poly(pool, water)
-
-    inner = [(7, 20), (12, 17), (18, 16), (24, 18), (26, 21), (23, 25), (16, 27), (9, 24), (7, 20)]
-    c.poly(inner, water_deep)
-
-    # Key light from the upper left catches the near rim only.
-    for (x, y) in [(6, 19), (8, 17), (11, 15), (15, 14), (19, 14)]:
-        c.set(x, y, water_lit)
-
-    # Scum: broken patches, never a ring, or it reads as a tyre.
-    for (x, y) in [(10, 21), (11, 22), (14, 24), (15, 24), (20, 20), (21, 21), (22, 19)]:
+    for (x, y) in ((22, 15), (23, 15), (22, 16), (17, 23), (18, 23), (17, 11)):
         c.set(x, y, scum)
-    for (x, y) in [(11, 21), (15, 23), (21, 20)]:
+    for (x, y) in ((23, 14), (18, 22)):
         c.set(x, y, scum_lit)
 
-    # Two reeds. Different heights, or they read as a gate.
-    c.vline(12, 4, 16, reed)
-    c.set(12, 5, reed_lit)
-    c.set(13, 8, reed)
-    c.vline(23, 8, 18, reed)
-    c.set(23, 9, reed_lit)
-    c.set(22, 12, reed)
-
-    c.hline(6, 26, 30, OCC)
-
+    # A reed standing beside the fresh print, a leaf off it.
+    reed = bl.tone("verdant", "shade")
+    reed_lit = bl.tone("verdant", "lit")
+    reed_base = bl.tone("verdant", "base")
+    c.vline(28, 13, 25, reed)
+    c.vline(29, 16, 25, reed_base)
+    c.set(28, 13, reed_lit)
+    c.set(28, 14, reed_lit)
+    c.set(27, 17, reed)
+    c.set(26, 16, reed_base)
     return c
 
 

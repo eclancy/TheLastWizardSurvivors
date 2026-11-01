@@ -639,6 +639,14 @@ Checked in frame sequences (consecutive frames, `_UiShot --burst=N,1 --spell-sta
 level 8 with both Ascensions of each, on the PC canvas at 1.0-1.6x and the phone canvas at the game's own
 zoom; not checked on the Sketchbook's paper or on a real phone.
 
+
+**2026-11-01, Stormsweep's stroke quickens with level.** Eric: "animation starts too fast. Slow it down at
+first and let it speed up with level up." `Stormsweep.LevelPace`: the stroke's tempo starts at 0.4 at level 1
+and climbs evenly to 1 at level 8 (then Speed multiplies it as before), so a level 1 leap and sweep take
+0.375 s instead of 0.15 and level 8 is unchanged. The hit is tested on the same tempo-scaled clock as the
+drawing (`WhipStroke.Front`), so it moved with it: at level 1 a body is struck up to a quarter second later
+than before, exactly when the lash is seen to cross it. Damage, reach, band and cooldown unchanged.
+
 ### Bramble Seed
 
 | Part | Audit | Now |
@@ -650,6 +658,17 @@ zoom; not checked on the Sketchbook's paper or on a real phone.
 | Thornstorm's volley | **Failed.** Antialiased `DrawLine` darts that faded in alpha | Stamped darts on the world's grid, outlined, tip in the ramp's core; spent, a dart falls away from its tail forward |
 | Burrs | **Failed.** Antialiased crossed lines and a bark square at fractional alpha | A stamped ball of bark bristling with four thorns and four diagonals; letting go it sheds the diagonals, then the thorns |
 | Ironbriar | The same parts in Metal's ramp (`living_*`, `thorn_tip`) | Unchanged in kind |
+
+
+**2026-11-01, from playing 0.10.0.** Eric: "Bramble seed, instead of shrinking when it finishes, should just
+quickly wither", and "vines have a thick brown base that abruptly change to a thin green". The roots,
+runners and hedge no longer draw back into the ground (`retract` stays 1): over the same last 0.6 s (0.55 s
+when pushed out) a `wither` uniform browns the thicket cell by cell, curls the roots over at their tips,
+drops the thorns and buds first, and dissolves it through the Bayer matrix from the tips back to the seed.
+It browns only once it has stopped hurting. A root's width now tapers evenly from the seed to the tip (half
+an art pixel at a time) instead of three runs that stepped at s 0.4 and 0.7, and the bark greens through a
+dithered band three times as long (s 0.22 to 0.72). Reach, lifetime and when it stops hurting unchanged.
+Shots `sv_a_bs_*` against `sv_b_bs_*` in `_shots/spell-visuals/` beside the repo.
 
 ### Contagion
 
@@ -680,6 +699,14 @@ zoom; not checked on the Sketchbook's paper or on a real phone.
 | Fen Gas | **Failed.** A scatter of 4-unit squares - two art pixels each, coarser than everything round it - picked by hash rather than dithered, in two tones | The shared pixel gas (`GasCloud`, `spore_cloud.gdshader`, Contagion's): lobes whose outer edges are the radius it poisons, lit and shaded, thinning away by dither; one quad a cloud, all of them in one batch |
 | Will-o'-Wisps (`WispSwarm`) | Mote, halo and tail on the grid in opaque Grass stops, but the whole wisp faded in alpha over its last 0.4 s and its tail was drawn at 80% | Redrawn by the traps-and-stars pass (its commit 9725348, "Mirefoot's wisps fade by dither"), so not touched here |
 | `TrailWeaver`, `GravePath` | Draw nothing (`GravePath` is Gravewell's remembered path) | - |
+
+
+**The icon, 2026-11-01.** Eric: "Mirefoot icon has a random black line at the bottom. Make a better icon for
+it." The line was `c.hline(6, 26, 30, OCC)` in `tools/art/spell_icons.py` `mirefoot` - a contact shadow under
+a hole in the ground - and the pool was a dark blue blob on a dark slot. Redrawn as the spell's sentence: two
+boot prints of a stride, welled up with bog (`_bog_print`), each with a lip of mud in the gold row lit on the
+key side so it holds on the dark loadout slot and the pale page, a bubble and scum in the fresh one and a reed
+beside it. Its five evolution cards were regenerated on it (`evolution_icons.py --only=mirefoot`).
 
 ### LingeringZone's own pool - Pyroclasm's magma and the Lingering Rift
 
@@ -794,6 +821,16 @@ Photographed before (`vis_beams_b_*`) and after (`vis_beams_a_*`) with `_UiShot 
 --cast-on-stage`: the base ray and Flashpoint + Prism, Handoff + Sunlance and Burn Through + Prism (every
 card), at `--zoom=1.6` on the Cursed Dungeon and at the game's zoom on the Scorched Sands; after shots
 also at `--zoom=3` and on the Sketchbook's paper, the brightest floor.
+
+
+**The icon, 2026-11-01.** Eric: the icon "should show a thinner ray blasting into the ground". It was an
+eight-pixel beam running up from a flare in the lower left to the top right. Now (`spell_icons_core.py`
+`scorching_ray`) a ray three pixels wide - white-hot core, Fire's orange, its red at the edges - comes down
+steeply out of the top left and strikes the floor: a pool of molten light lying flat, char with glowing
+cracks round it, a crown of droplets and a glint on the strike. `RAY_FROM` and `RAY_STRIKE` are the two
+points the five evolution cards are now placed on (`evolution_icons.py`, regenerated with
+`--only=scorching_ray`): Flashpoint's blast, Handoff's fallen mark and swing along the ground, Burn Through's
+marks burned on the beam, Prism's fan out of the strike, Sunlance's afterimages and furrow of heat.
 
 ### Riptide
 
@@ -945,6 +982,17 @@ icon (`spell_icons_core.glacial_spike`) is unchanged and still the same one tall
 | Caltrops | **Failed**: four smooth lines each over a translucent disc, faded with alpha | A caltrop of seven art pixels, lit and shaded, occlusion under it, alternate ones mirrored; dissolve by dither |
 | Bleeding | **Failed**: a red at 95% in no palette, rotated cells | The ember row's base and shade, world-aligned, dissolving by dither |
 | Lightning Rod's sparks | **Failed**: smooth lines | Four art pixels zig-zagging off the point, the element's core and hot |
+
+
+**2026-11-01, Rolling Wall digs up the dirt.** Eric: the rolling walls "should dig up the dirt as it moves".
+`scenes/shaders/palisade_furrow.gdshader` on a child quad on `DrawLayers.Ground`: a groove ploughed behind
+each stake along the march (deep at the bottom, the wall facing the key lit, the other in shade), the earth
+between turned over in lumps, ragged at its sides, from just behind the stakes back to where the march began;
+each cell dissolves by dither as it ages (1.6 s), so it is a wake that closes behind the wall, and all of it
+over 0.5 s once the wall falls. Clods are kicked off the stakes' feet every 0.04 s and thrown back over the
+furrow in a short arc with an occlusion shadow under them, then crumble by dither (28 slots, nothing
+allocated). The tones are the floor's where it is earth or stone (`IronPalisade.SoilFor`: turf and soil,
+rubble, snow, sand, mud, graphite on the paper), all from the contract's rows. Nothing it draws is a hit.
 
 ### Hollow Star
 
@@ -1249,6 +1297,18 @@ and Ice's core and hot are the paper's own colour; only the mid and the edge, as
 That is the shared burst's palette and every cold spell that throws one has it; it wants a lit and
 shaded shard (an edge on the lower right) in `ImpactDebris` itself rather than a fork for one spell.
 
+
+**2026-11-01, made visible.** Eric: Cone of Cold "is very hard to see". At the game's zoom the spray was
+specks, and on the paper and the snow most of it was the floor's colour. Now `scenes/shaders/cone_of_cold.gdshader`
+draws the gust on a child quad behind the spray: a wall of jagged frost crystals leaving his hand across
+exactly the cone's angle and coasting out to exactly its reach in 0.15 s, then breaking up there by dither -
+from its leading edge back a cell of the Frostweaver's azure (the outline that carries it on pale floors), a
+cell of Ice's white-hot core (what carries it on dark ones), hot, mid and a dithered edge; streaks of wind
+racing out behind it; a puff at his hand; rime motes left as it breaks. Zero Point's relay is the same gust
+from the tip. And the hit is drawn: every body struck (up to 24) flashes with a star of frost the moment the
+front reaches it, white at its heart and azure at its tips, dissolving by dither. Hit, damage, reach and
+timing unchanged. Shots `sv_a_coc_*` against `sv_b_coc_*` in `_shots/spell-visuals/` beside the repo (Frozen Waste, Sketchbook).
+
 ### Spiritual Weapon
 
 **Audit.**
@@ -1363,6 +1423,17 @@ the cards' tints are pale yellows over a white and gold ramp. On the paper the L
 the gold and orange edges carry it. Photographed before (`vis_blasts_b_*sf*`) and after
 (`vis_blasts_a*_sf*`). Still needs eyes: Daybreak's full-screen flare on a phone, where a dithered front
 of that size is the most fragments this pass draws in one quad.
+
+
+**2026-11-01, from underneath.** Eric: Solar Flare "should animate from underneath the player and the
+enemies". The burst quad moved from `DrawLayers.Air` to `DrawLayers.GroundTell`, under every body, so the
+kernel goes off beneath him and the rays, front and Corona's beams run across the floor between the bodies'
+feet (Sun Dogs' bursts too). And it rises: under him, and under each body the burst strikes the moment its
+front passes under it, `SolarFlareVisual.RiseUnder` erupts a flare from the ground at the feet (the feet and
+head from `Enemy.StatusFxGeometry`) - a pool of white-hot light lying flat and five tongues of Light shooting
+up past the head, cooling to Fire at their tips, then lifting off and going out by dither. Drawn under the
+body, so the body stands in it lit from below. 32 slots, rects a colour band tall. What is hit and when is
+unchanged. Shots `sv_a_sf_*` against `sv_b_sf_*` in `_shots/spell-visuals/` beside the repo.
 
 ### Fireball
 
