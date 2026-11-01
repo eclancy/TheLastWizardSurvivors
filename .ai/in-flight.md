@@ -88,10 +88,15 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 
 ## 5. What comes after
 
-1. Release 0.10.0 from `main` on the Windows PC, then playtest it (section 4).
-2. The castle, by `.ai/endgame-castle.md` section 9.2: C6, C5, C4, C2 (**schema 21**), C8, C9;
+In this order; items 2-4 are the open work a new session should carry on with.
+
+1. Release 0.10.0 from `main` on the Windows PC, then playtest it (section 4). Fixes from that
+   playtest come before anything below.
+2. The pixel-art pass on Sleet Runes and Aegis Ward (section 7), to the Bonelight contract in
+   `.ai/art-direction.md`, written up in `.ai/art-replacement-manifest.md` 9 like the others.
+3. The castle, by `.ai/endgame-castle.md` section 9.2: C6, C5, C4, C2 (**schema 21**), C8, C9;
    each chapter's `IsPlayable` flips last.
-3. The rest of the secrets catalogue, `.ai/achievements-and-secrets.md` section 8.
+4. The rest of the secrets catalogue, `.ai/achievements-and-secrets.md` section 8.
 
 ## 6. How the cloud session worked
 
