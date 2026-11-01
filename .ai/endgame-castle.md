@@ -500,6 +500,14 @@ and a hoop: the halberd's blade over his head, the ring of keys at his hip). Wha
 - **The wall-walk is measured off the gate's art** (`props_bridge.py` `gate_shut`: merlon tops 172 px
   over the gate's foot on its middle column): his boots stand 128 px over it, he is sorted behind the
   gate sprite, and the parapet hides his legs. His arrival plays there.
+- **The camera leans up to him while he holds the wall** (hook 8, `BridgeRules.CameraLean`, added before
+  the flip). A wizard at the gate's foot stands about 460 px under the top of the halberd; a 1280x720
+  canvas shows 423 px over its centre, the top 150 of them under the boss bar and the bridge's strip, so
+  on a PC he stood at the very top edge, partly under the bar. The lean is as much as it takes to put
+  his whole figure under the HUD (about 190 px at the gate), never more than 0.6 of the half-height,
+  taken back for a player too far down the yard to show the wall at all, and nothing in the yard with
+  him or on a phone (753 px over the centre). Photographed at both canvases,
+  `_UiShot --stage=11 --teleport=<gate's foot> --hold --rush-after=190 --rush-steps=1 --frames=340`.
 - **"Lines of bolts across the yard" are files down it at the player**: lanes from the gate's end, one
   through where he stands and the rest beside it 150 px apart, so the way forward is a sidestep. The
   pitch is a ring on him and rings ahead of him toward the gate. They alternate; in the last phase every
@@ -1182,7 +1190,7 @@ exactly as it did. The Cursed Dungeon has not moved (C2).
 | side events | `SideEventDirector.ForStage` | `"stage_11" => null`, `"stage_12" => null`, `"stage_13" => null`, a comment apart |
 | traps | `RegressionChecks` | the Court and the Throne are indoor chapters and all three built ones, so a chapter may set vents or spikes in its own profile without editing the validator |
 
-### 11.2 The seven hooks
+### 11.2 The hooks
 
 `ChapterRules` is an abstract `Node`. A chapter subclasses it in a file of its own; `Node2DGame` creates one
 per run from `ChapterRulesCatalog.ForStage`, sets `Game` and `Stage`, and adds it as a child **before**
@@ -1200,8 +1208,9 @@ chapter with no line in the catalog gets no rules object at all. Each call site 
 | 5 | `VictoryPortalPoint(fellAt)` | `OpenVictoryPortal` | the castle gate, the throne room doors. The arcane portal still opens at the point and walking in still wins |
 | 6 | `PinnedPaceSeconds` | `PaceSeconds` | the Throne's end state from the first second. The survival clock and the boss's arrival read `timeElapsed`, not this |
 | 7 | `CreateObjective()` | once, after `RunStarted` | the line under the run timer: `Node2DGame` anchors the control across the HUD at `ObjectiveTop`-`ObjectiveBottom` (84-112, the side event's slot), insets it with `SafeArea.ApplyTo` and frees it with the run. `ChapterRules.ObjectiveLabel(text)` makes a text one in the side event's style |
+| 8 | `CameraLean(player)` | every frame, `TickBossEntranceCamera` (`Node2DGame.BossEntrance.cs`) | world px to hold the camera off the player, eased in and out with the boss arrival's own ease (an arriving boss's lean wins while the field is held). The camera's `Position`, never its `Offset` (the screen shake's). Added before the bridge's flip (`wip/castle-preflip`): the bridge's, up toward the Constable on the wall |
 
-A chapter that needs an eighth hook adds it to `ChapterRules` with a no-op default and one call in
+A chapter that needs another hook adds it to `ChapterRules` with a no-op default and one call in
 `Node2DGame`, in one commit that says why - never a branch on the stage id in `Node2DGame`.
 
 ### 11.3 How a chapter agent plugs in

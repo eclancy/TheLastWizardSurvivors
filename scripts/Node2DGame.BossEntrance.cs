@@ -96,18 +96,22 @@ public partial class Node2DGame
 	}
 
 	// The camera is the player's child (player.tscn), so leaning it is moving it off his centre and
-	// easing it back. Position, not Offset: Offset is the screen shake's (SpiritualWeapon).
+	// easing it back. Position, not Offset: Offset is the screen shake's (SpiritualWeapon). The same ease
+	// carries a chapter's own lean (hook 8, ChapterRules.CameraLean - the bridge's, toward the Constable on
+	// the wall), which an arriving boss's lean overrides while the field is held.
 	private void TickBossEntranceCamera(float delta)
 	{
-		if (!bossEntranceHeld && !entranceCameraMoved)
-			return;
 		if (player == null || !IsInstanceValid(player))
+			return;
+		// Hook 8: a chapter's lean of the camera.
+		Vector2 chapterLean = chapterRules?.CameraLean(player) ?? Vector2.Zero;
+		if (!bossEntranceHeld && !entranceCameraMoved && chapterLean == Vector2.Zero)
 			return;
 		entranceCamera ??= player.GetNodeOrNull<Camera2D>(CameraPath);
 		if (entranceCamera == null)
 			return;
 
-		Vector2 want = Vector2.Zero;
+		Vector2 want = chapterLean;
 		if (bossEntranceHeld && bossInstance != null && IsInstanceValid(bossInstance))
 		{
 			want = (bossInstance.GlobalPosition - player.GlobalPosition) * BossEntranceCameraShare;
@@ -116,7 +120,7 @@ public partial class Node2DGame
 		}
 		Vector2 now = entranceCamera.Position;
 		now = now.Lerp(want, 1f - Mathf.Exp(-BossEntranceCameraEase * delta));
-		if (!bossEntranceHeld && now.Length() < 0.5f)
+		if (!bossEntranceHeld && chapterLean == Vector2.Zero && now.Length() < 0.5f)
 		{
 			now = Vector2.Zero;
 			entranceCameraMoved = false;

@@ -20,6 +20,8 @@ using WizardSurvivors.scripts;
 //   4. BossSpawnPoint      the gate's foot.
 //   5. VictoryPortalPoint  the gate itself.
 //   7. CreateObjective     the strip under the run timer: the fall, the player and the gate on one line.
+//   8. CameraLean          up, while the Constable holds the wall over the gate, as far as a short screen
+//                          (1280x720) needs to show him whole under the HUD.
 // and, on its own clock: the murder-holes in each gatehouse passage, and the archers' volleys over the gate
 // yard before 15:00 (3.8).
 //
@@ -309,14 +311,12 @@ public partial class BridgeRules : ChapterRules
 
 	// Half the visible world rectangle: the viewport over the gameplay zoom (Node2DGame does the same for
 	// its own ring, privately).
-	private Vector2 VisibleHalfExtents()
+	private Vector2 VisibleHalfExtents() => GetViewport().GetVisibleRect().Size / (2f * CameraZoom());
+
+	private float CameraZoom()
 	{
-		Vector2 viewport = GetViewport().GetVisibleRect().Size;
-		float zoom = 1f;
 		var camera = Game.RunPlayer?.GetNodeOrNull<Camera2D>("Camera2D");
-		if (camera != null && camera.Zoom.X > 0.01f)
-			zoom = camera.Zoom.X;
-		return viewport / (2f * zoom);
+		return camera != null && camera.Zoom.X > 0.01f ? camera.Zoom.X : 1f;
 	}
 
 	// --- Hooks 3, 4, 5 ------------------------------------------------------------------------------
@@ -329,6 +329,44 @@ public partial class BridgeRules : ChapterRules
 
 	/// <summary>The gate in the castle wall: walking in ends the run (3.3).</summary>
 	public override Vector2? VictoryPortalPoint(Vector2 bossFellAt) => WorldAt(BridgeBand.GateS - 40f, 0f);
+
+	// --- Hook 8: the camera, while the Constable holds the wall --------------------------------------
+
+	/// <summary>The Constable, once he has come (he says so as he reads the gate). Read for the camera's lean.</summary>
+	public BridgeConstableBoss Constable { get; set; }
+
+	// The HUD over the top of the view - the boss bar (44-78) and the strip under it, down to ObjectiveBottom -
+	// and a little air, in canvas px.
+	private const float HudBandCanvas = ObjectiveBottom + 16f;
+	// The lean never takes the player further than this share of the view's half-height off its centre.
+	private const float MaxLeanShare = 0.6f;
+
+	/// <summary>
+	/// Up, while the Constable holds the wall and the player is in the gate yard, by as much as it takes to
+	/// have his whole figure under the HUD. A wizard at the gate's foot stands about 450 px under the top of
+	/// the Constable's halberd, and a 1280x720 canvas shows 423 px above its centre, the top 150 of them
+	/// under the boss bar and the bridge's strip: he stood at the very top edge, partly under the bar. The
+	/// phone's canvas shows 753, so there the lean is nothing. Only as far as the player stays well on
+	/// screen; and a player too far down the yard to show the wall at all gets the lean taken back as he goes
+	/// rather than a view pushed up at nothing. Down the yard (in it with him) there is no lean.
+	/// </summary>
+	public override Vector2 CameraLean(Player player)
+	{
+		BridgeConstableBoss constable = Constable;
+		if (constable == null || !IsInstanceValid(constable) || constable.IsDying || constable.IsInYard
+			|| player == null || AlongOf(player.GlobalPosition) < BridgeBand.GateYardMouth)
+			return Vector2.Zero;
+		float zoom = CameraZoom();
+		float halfHeight = GetViewport().GetVisibleRect().Size.Y / (2f * zoom);
+		// The first world row under the HUD with the camera on him, and how far his figure's top is above it.
+		float clearTop = player.GlobalPosition.Y - halfHeight + HudBandCanvas / zoom;
+		float need = clearTop - constable.FigureTop;
+		if (need <= 0f)
+			return Vector2.Zero;
+		float most = halfHeight * MaxLeanShare;
+		float lean = need <= most ? need : Mathf.Max(0f, 2f * most - need);
+		return new Vector2(0f, -lean);
+	}
 
 	// --- The murder-holes and the volleys (3.8) ----------------------------------------------------
 

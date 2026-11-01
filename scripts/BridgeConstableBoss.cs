@@ -159,6 +159,8 @@ public partial class BridgeConstableBoss : BossEnemy
 	public bool IsInYard => post == Post.Yard;
 	/// <summary>The middle of the gate's foot, where the hold counts.</summary>
 	public Vector2 GateFoot => gateFoot;
+	/// <summary>World y of the top of his figure, the halberd's blade: the 96 cell at x2, centred on the node.</summary>
+	public float FigureTop => GlobalPosition.Y - 96f;
 
 	// --- Lifetime ----------------------------------------------------------------------------------------
 
@@ -187,6 +189,8 @@ public partial class BridgeConstableBoss : BossEnemy
 		bridge = Node2DGame.Current?.Rules as BridgeRules;
 		if (bridge != null)
 		{
+			// The bridge leans the camera toward him while he is up there (hook 8, BridgeRules.CameraLean).
+			bridge.Constable = this;
 			gateFoot = bridge.VictoryPortalPoint(spawnedAt) ?? spawnedAt;
 			// The gate's art stands on the lattice line past the gate yard's last row of deck
 			// (BridgeFurniture.CastleWall: x - y = e * 48 for e the first row of water).
