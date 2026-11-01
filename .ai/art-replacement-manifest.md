@@ -1267,6 +1267,18 @@ and Ice's core and hot are the paper's own colour; only the mid and the edge, as
 That is the shared burst's palette and every cold spell that throws one has it; it wants a lit and
 shaded shard (an edge on the lower right) in `ImpactDebris` itself rather than a fork for one spell.
 
+
+**2026-11-01, made visible.** Eric: Cone of Cold "is very hard to see". At the game's zoom the spray was
+specks, and on the paper and the snow most of it was the floor's colour. Now `scenes/shaders/cone_of_cold.gdshader`
+draws the gust on a child quad behind the spray: a wall of jagged frost crystals leaving his hand across
+exactly the cone's angle and coasting out to exactly its reach in 0.15 s, then breaking up there by dither -
+from its leading edge back a cell of the Frostweaver's azure (the outline that carries it on pale floors), a
+cell of Ice's white-hot core (what carries it on dark ones), hot, mid and a dithered edge; streaks of wind
+racing out behind it; a puff at his hand; rime motes left as it breaks. Zero Point's relay is the same gust
+from the tip. And the hit is drawn: every body struck (up to 24) flashes with a star of frost the moment the
+front reaches it, white at its heart and azure at its tips, dissolving by dither. Hit, damage, reach and
+timing unchanged. Shots `sv_a_coc_*` against `sv_b_coc_*` in `_shots/spell-visuals/` beside the repo (Frozen Waste, Sketchbook).
+
 ### Spiritual Weapon
 
 **Audit.**

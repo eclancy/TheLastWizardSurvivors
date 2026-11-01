@@ -60,6 +60,41 @@ public partial class ConeBlast : Node2D
 	private float relayRange;
 	private float relayHalfAngle;
 
+	// THE GUST AND THE FROST (2026-11-01). Eric, playing 0.10.0: Cone of Cold "is very hard to see". The
+	// spray of ice below was all it drew - a few dozen single art pixels, specks at the game's zoom, and on
+	// the pale floors most of them the floor's own colour. Now the cast is drawn by
+	// scenes/shaders/cone_of_cold.gdshader on a child quad (`gust`): a wall of frost crystals that leaves
+	// his hand across exactly the cone's angle and lands on exactly its reach, outlined in the Frostweaver's
+	// azure so it holds on paper and snow, white-hot at its leading edge so it holds on a dark floor, with
+	// streaks of wind racing out behind it. And the HIT is drawn: every body the cone strikes flashes with a
+	// star of frost the moment the front reaches it (frostAt), so what was caught reads in a crowd. The
+	// spray still flies over both. Nothing here changes what is hit or when the damage lands.
+	public const string GustShaderPath = "res://scenes/shaders/cone_of_cold.gdshader";
+	// The gust's front reaches the radius in GustTravelSeconds on a cubic ease out (the shader's TRAVEL).
+	public const float GustTravelSeconds = 0.15f;
+	private static Shader gustShader;
+	private static readonly StringName ParamRadius = "radius";
+	private static readonly StringName ParamHalfAngle = "half_angle";
+	private static readonly StringName ParamHeading = "heading";
+	private static readonly StringName ParamCastPoint = "cast_point";
+	private static readonly StringName ParamAge = "age";
+	private static readonly StringName ParamSeed = "seed";
+	private static readonly StringName ParamRelayAge = "relay_age";
+	private static readonly StringName ParamRelayTip = "relay_tip";
+	private static readonly StringName ParamRelayRadius = "relay_radius";
+	private static readonly StringName ParamRelayHalf = "relay_half";
+	private Node2D gust;
+	private ShaderMaterial gustMaterial;
+
+	// The frost on what was struck: the body, and the age at which the front reached it. A fixed array,
+	// filled by Strike; past MaxFrost the rest are still struck, only not starred.
+	private const int MaxFrost = 24;
+	private const float FrostSeconds = 0.32f;
+	private static readonly Color AzureShade = new Color(0.102f, 0.243f, 0.541f);   // azure shade #1A3E8A
+	private readonly Node2D[] frostOn = new Node2D[MaxFrost];
+	private readonly float[] frostAt = new float[MaxFrost];
+	private int frostCount;
+
 	public override void _Ready()
 	{
 		// The spray of ice is thrown through the air, over the bodies it hits (DrawLayers).
@@ -69,7 +104,19 @@ public partial class ConeBlast : Node2D
 		// alpha is coverage, so a shard dissolves cell by cell on the world's grid instead of going
 		// see-through over the floor (the pixel-art pass, 2026-10-29).
 		Material = SpellInk.DitherByCell;
+		// The gust: one quad through its own shader, behind this node's spray and frost stars.
+		gustShader ??= GD.Load<Shader>(GustShaderPath);
+		gustMaterial = new ShaderMaterial { Shader = gustShader };
+		gust = new Node2D { Name = "Gust", ShowBehindParent = true, Material = gustMaterial };
+		AddChild(gust);
+		gust.Draw += DrawGust;
 		RefreshComputedStats();
+	}
+
+	public override void _ExitTree()
+	{
+		if (gust != null && IsInstanceValid(gust))
+			gust.Draw -= DrawGust;
 	}
 
 	public void SetSpellLevel(int level)
@@ -93,7 +140,7 @@ public partial class ConeBlast : Node2D
 
 		Vector2 dirNorm = direction.LengthSquared() > 0.0001f ? direction.Normalized() : Vector2.Right;
 		heading = dirNorm.Angle();
-		Strike(origin, dirNorm, range, HalfAngleRad);
+		Strike(origin, dirNorm, range, HalfAngleRad, 0f);
 
 		// Zero Point: the relay is resolved RelaySeconds later, from the tip as it was at the cast (the
 		// node stays where it was cast; it does not follow the caster).
@@ -107,14 +154,30 @@ public partial class ConeBlast : Node2D
 		}
 
 		waveTime = 0f;
+		if (gustMaterial != null)
+		{
+			gustMaterial.SetShaderParameter(ParamRadius, range);
+			gustMaterial.SetShaderParameter(ParamHalfAngle, HalfAngleRad);
+			gustMaterial.SetShaderParameter(ParamHeading, heading);
+			gustMaterial.SetShaderParameter(ParamCastPoint, castPoint);
+			gustMaterial.SetShaderParameter(ParamSeed, (float)(GetInstanceId() % 97));
+			gustMaterial.SetShaderParameter(ParamAge, 0f);
+			gustMaterial.SetShaderParameter(ParamRelayAge, -1f);
+			// The relay's tip, from this node; its reach is 0 (nothing drawn) unless Zero Point throws one.
+			gustMaterial.SetShaderParameter(ParamRelayTip, castPoint + dirNorm * range);
+			gustMaterial.SetShaderParameter(ParamRelayRadius, relayPending ? relayRange : 0f);
+			gustMaterial.SetShaderParameter(ParamRelayHalf, relayHalfAngle);
+		}
 		QueueRedraw();
+		gust?.QueueRedraw();
 
 		var timer = GetTree().CreateTimer(WaveDuration + (relayPending ? RelaySeconds : 0f));
 		timer.Timeout += () => { if (IsInstanceValid(this)) QueueFree(); };
 	}
 
 	// One spray's hit: everything within `reach` of `from` and inside `halfAngleRad` of `heading`.
-	private void Strike(Vector2 from, Vector2 heading, float reach, float halfAngleRad)
+	// `at` is this spray's age on the node's clock (0 the cast, RelaySeconds the relay), for the frost.
+	private void Strike(Vector2 from, Vector2 heading, float reach, float halfAngleRad, float at)
 	{
 		var player = PlayerRef as Player;
 		// Deep Freeze (the level 4 the Long Winter requires) freezes for its own seconds; the Long
@@ -153,6 +216,14 @@ public partial class ConeBlast : Node2D
 				// Glacier Tide: the wall of ice shoves what it hits straight away from the caster.
 				if (knockbackSpeed > 0f && e is Enemy shoved)
 					shoved.ApplyKnockback(toEnemy / dist * knockbackSpeed);
+				// Its frost flashes as the drawn front reaches it: the front's own ease, inverted.
+				if (frostCount < MaxFrost)
+				{
+					float reached = 1f - MathF.Cbrt(1f - MathF.Min(1f, dist / reach));
+					frostOn[frostCount] = e;
+					frostAt[frostCount] = at + reached * GustTravelSeconds;
+					frostCount++;
+				}
 			}
 		}
 	}
@@ -166,9 +237,15 @@ public partial class ConeBlast : Node2D
 		{
 			relayPending = false;
 			relayFired = true;
-			Strike(relayTip, relayDirection, relayRange, relayHalfAngle);
+			Strike(relayTip, relayDirection, relayRange, relayHalfAngle, RelaySeconds);
+		}
+		if (gustMaterial != null)
+		{
+			gustMaterial.SetShaderParameter(ParamAge, waveTime);
+			gustMaterial.SetShaderParameter(ParamRelayAge, relayFired ? waveTime - RelaySeconds : -1f);
 		}
 		QueueRedraw();
+		gust?.QueueRedraw();
 	}
 
 	private bool relayFired;
@@ -194,6 +271,62 @@ public partial class ConeBlast : Node2D
 
 		if (relayPending || relayFired)
 			DrawRelay();
+		DrawFrost();
+	}
+
+	// The gust's quad: a square over the cone's reach round the cast point, and over the relay's round
+	// the tip. The shader decides every pixel and discards the rest.
+	private void DrawGust()
+	{
+		if (waveTime < 0f || waveTime >= WaveDuration + RelaySeconds)
+			return;
+		var box = new Rect2(castPoint - new Vector2(range, range), new Vector2(range, range) * 2f);
+		if (relayPending || relayFired)
+		{
+			var tip = castPoint + new Vector2(MathF.Cos(heading), MathF.Sin(heading)) * range;
+			float rr = range * RelayLength;
+			box = box.Merge(new Rect2(tip - new Vector2(rr, rr), new Vector2(rr, rr) * 2f));
+		}
+		gust.DrawRect(box.Grow(WhipLimb.Grid * 2f), Colors.White);
+	}
+
+	// The frost on each body struck, the moment the front reaches it: a star of whole art pixels that
+	// flares out and draws back in, white-hot at its heart, the azure outline at its tips so it holds on
+	// a pale floor, dissolving by dither (this node's material) over its last third. Upright on the
+	// world's grid, over the body, following it.
+	private void DrawFrost()
+	{
+		float g = WhipLimb.Grid;
+		for (int i = 0; i < frostCount; i++)
+		{
+			float s = (waveTime - frostAt[i]) / FrostSeconds;
+			if (s < 0f || s >= 1f)
+				continue;
+			Node2D body = frostOn[i];
+			if (body == null || !IsInstanceValid(body))
+				continue;
+			Vector2 at = body.GlobalPosition - GlobalPosition;
+			float cover = s < 0.65f ? 1f : (1f - s) / 0.35f;
+			int arm = s < 0.2f ? 4 : (s < 0.45f ? 5 : (s < 0.7f ? 4 : 3));
+			for (int d = 1; d <= arm; d++)
+			{
+				Color c = new Color(d == arm ? AzureShade : (d <= 2 ? IceRamp.Hot : IceRamp.Mid), cover);
+				DrawRect(WhipLimb.Cell(at + new Vector2(d * g, 0f), g), c);
+				DrawRect(WhipLimb.Cell(at - new Vector2(d * g, 0f), g), c);
+				DrawRect(WhipLimb.Cell(at + new Vector2(0f, d * g), g), c);
+				DrawRect(WhipLimb.Cell(at - new Vector2(0f, d * g), g), c);
+			}
+			int diag = arm / 2;
+			for (int d = 1; d <= diag; d++)
+			{
+				Color c = new Color(d == diag ? IceRamp.Edge : IceRamp.Mid, cover);
+				DrawRect(WhipLimb.Cell(at + new Vector2(d * g, d * g), g), c);
+				DrawRect(WhipLimb.Cell(at + new Vector2(-d * g, d * g), g), c);
+				DrawRect(WhipLimb.Cell(at + new Vector2(d * g, -d * g), g), c);
+				DrawRect(WhipLimb.Cell(at + new Vector2(-d * g, -d * g), g), c);
+			}
+			DrawRect(WhipLimb.Cell(at, g * 2f), new Color(IceRamp.Core, cover));
+		}
 	}
 
 	// Zero Point: the star of ice gathering at the cone's tip while the spray is still in flight, flaring
