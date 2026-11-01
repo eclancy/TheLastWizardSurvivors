@@ -39,7 +39,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 import bonelight as bl
 import hero
@@ -327,65 +327,178 @@ def standing_stone(c, x, yb, w, h, seed, lean=0.0, ramp=None, warm=None, toward=
 
 
 # --------------------------------------------------------------------------- people
-def wizard_figure(c, cx, yb, h, body, seed, staff=0, orb=None, warm=None, toward=None,
-                  bound=False, hat_lean=0.0, dim_orb=False):
-    """A wizard of the land, far off: robe, brimmed hat, staff. Deliberately anonymous - no face,
-    no beard, no colour of his own - because the rescued wizards are people whose names are the
-    reward (.ai/side-events.md, "Secret wizards") and a portrait here would give them away.
+# THE WIZARDS ARE THE GAME'S OWN (Eric, 2026-11-01, of the anonymous robe-and-hat figure that stood
+# here: "In the intro, the wizard silhouettes look goofy. Use the silhouettes of the characters in the
+# game."). Each one is cut from the sprite the player sees on the character select and in a run - the
+# 48 cell's own pixels, its contact line and loose sparks dropped, smoothed onto the panel's art grid
+# at whatever size the panel needs - filled flat, rimmed by the light of the panel, and lit only at
+# the staff or the hand that carries his light in the game.
+#
+# WHICH OF THEM: only the wizards whose silhouette a fresh save already shows - the four disciplines
+# and John Dee, whose locked card is a silhouette from the first day. Tituba, Vainamoinen and Laelaps
+# are secret until their chapters open (UnlockCatalog's secretUntilStage; .ai/side-events.md, "Secret
+# wizards"), and a prologue that drew their shapes would print the answer before the question. Every
+# wizard drawn here is one a player can already see, so none of them gives a rescue away.
+CHARS = os.path.join(ROOT, "assets", "bonelight", "characters")
+CELL = 48
+# The rows a wizard stands in on his cell: feet on row 46, the contact line on 47, the hat near row 2.
+CELL_STAND = 46.0
 
-    staff: -1 left, +1 right, 0 none. orb: an element ramp lit on the staff head. bound: hands
-    together in front and no staff - a prisoner."""
-    rng = random.Random(seed)
-    u = h / 30.0
-    s = Cv(int(26 * u) + 8, int(34 * u) + 8)
-    ox, oy = s.w // 2, int(31 * u) + 4
-    j = lambda a: (rng.random() - 0.5) * a * u
-    hem = [(ox - 5.2 * u + j(0.6), oy), (ox - 2.4 * u, oy + 0.4 * u), (ox + 1.0 * u, oy - 0.2 * u),
-           (ox + 5.0 * u + j(0.6), oy)]
-    robe = hem[::-1] + [(ox + 2.7 * u, oy - 15 * u), (ox + 3.2 * u, oy - 17 * u),
-                        (ox - 3.2 * u, oy - 17 * u), (ox - 2.7 * u, oy - 15 * u)]
-    s.poly(robe, body[0])
-    s.poly([(ox + 0.6 * u, oy - 15.5 * u), (ox + 2.7 * u, oy - 15 * u), (ox + 5.0 * u, oy),
-            (ox + 1.6 * u, oy)], body[1])
-    for k in (-1.4, 0.4, 2.2):
-        s.line(ox + k * u * 0.6, oy - 13 * u, ox + k * u * 1.3, oy - 0.5 * u, body[1])
-    s.disc(ox, oy - 18.6 * u, 1.7 * u, 1.9 * u, body[1])                    # head under the brim
-    s.poly([(ox - 5.4 * u, oy - 20.4 * u), (ox + 5.4 * u, oy - 20.6 * u),
-            (ox + 3.2 * u, oy - 21.8 * u), (ox - 3.2 * u, oy - 21.6 * u)], body[0])
-    tip = (ox + (1.6 + hat_lean) * u, oy - 30.5 * u)
-    s.poly([(ox - 2.8 * u, oy - 21.5 * u), (ox + 2.6 * u, oy - 21.7 * u),
-            (ox + 1.4 * u + hat_lean * 0.5 * u, oy - 26 * u), tip,
-            (ox - 0.4 * u + hat_lean * 0.4 * u, oy - 26.5 * u)], body[0])
-    if bound:
-        s.poly([(ox - 2.4 * u, oy - 16 * u), (ox + 2.6 * u, oy - 16 * u),
-                (ox + 1.6 * u, oy - 10 * u), (ox - 1.2 * u, oy - 10 * u)], body[1])
-        s.disc(ox + 0.2 * u, oy - 9.6 * u, 1.3 * u, 0.9 * u, body[0])
-    elif staff:
-        sx = ox + staff * 5.6 * u
-        s.poly([(ox + staff * 2.2 * u, oy - 16.4 * u), (sx, oy - 14.6 * u),
-                (sx + staff * 0.6 * u, oy - 12.6 * u), (ox + staff * 2.6 * u, oy - 12 * u)], body[0])
-        for i in range(max(1, int(round(0.7 * u)))):
-            s.vline(int(sx) + i, oy - 27 * u, oy, body[0])
+# (sprite prefix, the ramp his light is in the sprite, the ramp it burns here). Dee's orb is the
+# darkness ramp in the game, but in the prologue that ramp as light is the dark wizard's alone
+# (.ai/prologue.md, rules), so here Dee burns arcane.
+PYRO = ("pyromancer", "fire", "fire")
+FROST = ("frostweaver", "ice", "ice")
+STORM = ("stormcaller", "lightning", "lightning")
+GEO = ("geomancer", "earth", "earth")
+DEE = ("dee", "darkness", "arcane")
+ROSTER = [PYRO, FROST, STORM, GEO, DEE]
+
+_CELLS = {}
+
+
+def _sprite_cell(prefix, strip, frame):
+    key = (prefix, strip, frame)
+    if key not in _CELLS:
+        img = Image.open(os.path.join(CHARS, "%s-%s.png" % (prefix, strip))).convert("RGBA")
+        _CELLS[key] = img.crop((frame * CELL, 0, frame * CELL + CELL, CELL))
+    return _CELLS[key]
+
+
+def silhouette(prefix, strip="idle", frame=0, carried=None):
+    """A wizard's shape from his sprite, and where his light is on it.
+
+    Returns (pixels, anchor): the set of the cell's opaque pixels, less the contact line under his
+    feet (occlusion, on the last row) and any loose cluster under four pixels (the sparks round a
+    hand, which at panel size are noise); and the centre of the topmost cluster of his own ramp's
+    pixels (the lantern, the trident's head, the raised fork, the orb), or None."""
+    img = _sprite_cell(prefix, strip, frame)
+    px = img.load()
+    occ = rgb(OCC)[:3]
+    on = set()
+    for y in range(CELL):
+        for x in range(CELL):
+            p = px[x, y]
+            if p[3] and not (y == CELL - 1 and p[:3] == occ):
+                on.add((x, y))
+    keep = set()
+    seen = set()
+    for p0 in sorted(on):
+        if p0 in seen:
+            continue
+        comp = [p0]
+        seen.add(p0)
+        i = 0
+        while i < len(comp):
+            x, y = comp[i]
+            i += 1
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    q = (x + dx, y + dy)
+                    if q in on and q not in seen:
+                        seen.add(q)
+                        comp.append(q)
+        if len(comp) >= 4:
+            keep.update(comp)
+    anchor = None
+    if carried:
+        ramp = set(rgb(c)[:3] for c in E[carried])
+        pts = [(x, y) for (x, y) in keep if px[x, y][:3] in ramp]
+        if pts:
+            top = min(y for (_x, y) in pts)
+            cl = [(x, y) for (x, y) in pts if y <= top + 5]
+            anchor = (sum(x for x, _y in cl) / float(len(cl)) + 0.5, sum(y for _x, y in cl) / float(len(cl)) + 0.5)
+    return keep, anchor
+
+
+def _mask_at(pixels, k, facing):
+    """The cell's pixels as a mask at k panel pixels per sprite pixel: blown up x8, its corners
+    rounded a little, and brought down to size by area. A sprite scaled by a fraction with nearest
+    neighbour is a staircase of uneven steps; this keeps the shape and gives it a clean edge."""
+    m = Image.new("L", (CELL, CELL), 0)
+    mp = m.load()
+    for (x, y) in pixels:
+        mp[x, y] = 255
+    if facing < 0:
+        m = m.transpose(Image.FLIP_LEFT_RIGHT)
+    big = m.resize((CELL * 8, CELL * 8), Image.NEAREST).filter(ImageFilter.GaussianBlur(2.5))
+    n = max(1, int(round(CELL * k)))
+    return big.resize((n, n), Image.ANTIALIAS)
+
+
+def roster_figure(c, who, cx, yb, h, body, strip="idle", frame=0, facing=1, lit=True, dim=False,
+                  warm=None, toward=None):
+    """One of the game's wizards as a silhouette, his feet on (cx, yb), h tall if he stood upright.
+
+    who: a ROSTER entry. strip/frame: which of his frames - idle to stand, moving to walk, the death's
+    third to be brought to his knees. body: [fill, unused]. lit: his light burns at its anchor in its
+    own ramp; dim: it is out, a dull stone where it was. warm: a ramp to dither a little of onto him
+    (the fire in the moot). toward: (dx, dy[, colour]) to rim the edges facing a light.
+    Returns (light, front): where his light is, and the front of him at his waist (where a chain
+    would hold him), in frame pixels; either may be None."""
+    prefix, carried, burns = who
+    k = h / CELL_STAND
+    pixels, anchor = silhouette(prefix, strip, frame, carried)
+    m = _mask_at(pixels, k, facing)
+    mw, mh = m.size
+    mp = m.load()
+    s = Cv(mw + 4, mh + 4)
+    for y in range(mh):
+        for x in range(mw):
+            if mp[x, y] >= 112:
+                s.set(x + 2, y + 2, body[0])
     if toward:
         edge_light(s, toward[2] if len(toward) > 2 else (warm[2] if warm else G[2]), toward)
     if warm:
-        wr = warm
+        lit_edge = rgb(toward[2] if toward and len(toward) > 2 else warm[2])
         for y in range(s.h):
             for x in range(s.w):
                 p = s.px[x, y]
-                if p[3] and p != rgb(wr[2]) and dith(x, y, 0.22):
-                    s.set(x, y, wr[4])
-    s.hline(ox - 5.4 * u, ox + 5.2 * u, oy, OCC)
-    over(c, s, cx - ox, yb - oy)
-    if orb and staff and not bound:
-        sx = cx + staff * 5.6 * u + 0.35 * u
-        oy2 = yb - 27.6 * u
-        if dim_orb:
-            c.disc(sx, oy2, 1.4 * u, 1.4 * u, ST[3])
-            c.set(sx - 0.4 * u, oy2 - 0.4 * u, ST[2])
-        else:
-            c.radial(sx, oy2, 4.4 * u, 4.4 * u, [orb[3], orb[3], None])
-            c.radial(sx, oy2, 1.6 * u, 1.6 * u, [orb[0], orb[1], orb[2], orb[3]])
+                if p[3] and p != lit_edge and dith(x, y, 0.22):
+                    s.set(x, y, warm[4])
+    left = int(round(cx - (CELL / 2.0) * k)) - 2
+    top = int(round(yb - (CELL - 1) * k)) - 2
+    # The contact line: what of him touches the ground, on the ground row, in occlusion.
+    feet = [x for x in range(s.w) for y in range(max(0, s.h - 4 - int(k)), s.h) if s.px[x, y][3]]
+    over(c, s, left, top)
+    if feet:
+        c.hline(left + min(feet) - 1, left + max(feet) + 1, yb, OCC)
+    light = None
+    if anchor:
+        ax = cx + (anchor[0] - CELL / 2.0) * k * facing
+        ay = yb + (anchor[1] - (CELL - 1)) * k
+        light = (ax, ay)
+        ramp = E[burns]
+        if dim:
+            c.disc(ax, ay, 1.1 * k, 1.1 * k, ST[3])
+            c.set(ax - 0.4 * k, ay - 0.4 * k, ST[2])
+        elif lit:
+            c.radial(ax, ay, 3.6 * k, 3.6 * k, [ramp[3], ramp[3], None])
+            c.radial(ax, ay, 1.4 * k, 1.4 * k, [ramp[0], ramp[1], ramp[2], ramp[3]])
+    # His front at the waist: the furthest opaque pixel the way he faces.
+    wy = int(round(yb - 0.42 * h)) - top
+    row = [x for x in range(s.w) if 0 <= wy < s.h and s.px[x, wy][3]]
+    front = None
+    if row:
+        fx = (max(row) if facing > 0 else min(row)) + left
+        front = (fx, yb - 0.42 * h)
+    return light, front
+
+
+def light_at(who, cx, yb, h, strip="idle", frame=0, facing=1):
+    """Where roster_figure would put his light, without drawing him (for what is drawn before him)."""
+    prefix, carried, _burns = who
+    k = h / CELL_STAND
+    _pixels, anchor = silhouette(prefix, strip, frame, carried)
+    if not anchor:
+        return (cx, yb - h * 0.6)
+    return (cx + (anchor[0] - CELL / 2.0) * k * facing, yb + (anchor[1] - (CELL - 1)) * k)
+
+
+# In the moot, before the fall, each wears the deep end of his own colour - the only time the prologue
+# lets them have one - so the circle reads as five different people at a glance, not five shadows.
+ROBE = {"pyromancer": R[4], "frostweaver": M["azure"][4], "stormcaller": G[4], "geomancer": M["verdant"][4],
+        "dee": ST[4]}
 
 
 EYE = (AR[0], AR[1])
@@ -833,13 +946,12 @@ def p_moot():
         y = fy - 4 + math.sin(a) * 60
         depth = (y - (fy - 64)) / 128.0
         items.append((y, "stone", x, depth, 900 + i))
-    robes = [[V[4], OCC], [W[4], OCC], [L[4], OCC], [ST[4], OCC], [S[4], OCC], [R[4], OCC], [V[4], OCC]]
-    lights = [E["fire"], E["ice"], E["lightning"], E["grass"], E["water"], E["earth"], E["arcane"]]
-    for i in range(7):
-        a = i * 6.28318 / 7.0 + 0.5
-        x = fx + math.cos(a) * 112
-        y = fy + math.sin(a) * 30
-        items.append((y, "wizard", x, i, 0))
+    # Five of the game's wizards round the fire, each staff burning his own element. None stands at the
+    # front centre, where he would cover the fire; the one behind it holds his light up over it.
+    for i, (a, who) in enumerate([(0.85, PYRO), (2.2, FROST), (3.25, STORM), (4.71, DEE), (5.55, GEO)]):
+        x = fx + math.cos(a) * 128
+        y = fy + math.sin(a) * 32
+        items.append((y, "wizard", x, who, 0))
     items.sort(key=lambda it: it[0])
     for (y, kind, x, d, seed) in items:
         if kind == "stone":
@@ -851,14 +963,12 @@ def p_moot():
                            ramp=S if far else [S[3], S[4], S[4], OCC, OCC],
                            toward=None if far else (1 if x < fx else -1, -0.6, G[3]))
         else:
-            i = d
+            who = d
             hgt = 42 + (y - fy + 30) * 0.28
-            side = -1 if x > fx else 1
             facing_fire = (fx - x, fy - y)
             n = math.hypot(*facing_fire) or 1
-            wizard_figure(mid, x, y, hgt, robes[i], 300 + i, staff=side, orb=lights[i],
-                          warm=G, toward=(facing_fire[0] / n, facing_fire[1] / n),
-                          hat_lean=(i % 3 - 1) * 0.6)
+            roster_figure(mid, who, x, y, hgt, [ROBE[who[0]], OCC], facing=1 if x <= fx else -1,
+                          warm=G, toward=(facing_fire[0] / n, facing_fire[1] / n))
     sk.flame(mid, fx, fy + 1, 30, LT, seed=17, halo=G)
     sk.flame(mid, fx - 7, fy + 3, 19, LT, seed=29, halo=G)
     sk.flame(mid, fx + 8, fy + 2, 22, LT, seed=31, halo=G)
@@ -904,17 +1014,20 @@ def p_throne():
     hx, hy, u = dark_wizard(mid, 480, 584, 290)
     black_sun(mid, hx, hy, 1.7 * u)
     # the wizards at his feet, their light going out of them and up into his hand
-    victims = [(352, 574, -1, 0.0), (404, 590, 1, 0.5), (572, 586, -1, -0.4), (630, 570, 1, 0.3), (318, 630, 1, 0.2),
-               (660, 634, -1, -0.5)]
-    lights = [E["fire"], E["ice"], E["lightning"], E["grass"], E["water"], E["earth"]]
-    for i, (x, y, side, lean) in enumerate(victims):
+    # Going down: the second frame of each one's own fall (his death strip), facing him, either side
+    # of his hem - over it, a figure in near-black was lost in his - and above row 600, where the PC's
+    # view ends, clear of the caption's columns. Back to front.
+    victims = [(322, 544, GEO), (646, 548, STORM), (380, 568, PYRO), (606, 588, DEE), (350, 592, FROST)]
+    for i, (x, y, who) in enumerate(victims):
+        hgt = 50 + (y - 590) * 0.2
+        face = 1 if x < 480 else -1
         # The streams from his right pass BEHIND him to the raised hand: in front they ran across
         # his face.
-        motes(fore if x < 480 else back, (x + side * 13, y - 34), (hx, hy), 150, 400 + i, [lights[i]],
-              spread=18, bow=40 + i * 6)
-    for i, (x, y, side, lean) in enumerate(victims):
-        wizard_figure(fore, x, y, 44 + (y - 590) * 0.3, [OCC, S[4]], 500 + i, staff=side,
-                      orb=lights[i], dim_orb=True, hat_lean=lean, toward=(0, -1, DK[3]))
+        motes(fore if x < 480 else back, light_at(who, x, y, hgt, "death", 1, face), (hx, hy), 150, 400 + i,
+              [E[who[2]]], spread=18, bow=40 + i * 6)
+    for i, (x, y, who) in enumerate(victims):
+        roster_figure(fore, who, x, y, 50 + (y - 590) * 0.2, [OCC, S[4]], strip="death", frame=1,
+                      facing=1 if x < 480 else -1, dim=True, toward=(0, -1, DK[3]))
     # shadow running out of his hem across the ground: what he leaves becomes what serves him
     rng = random.Random(91)
     for i in range(26):
@@ -1024,9 +1137,9 @@ def p_tide():
 
 
 def p_taken():
-    """4. "He took them all." The wizards led away along a ridge against his light, bound, their
-    staves gone, their light drawn out of them toward the tower. Silhouettes only: no faces, no
-    names, nothing that tells one of the rescued from another."""
+    """4. "He took them all." The game's wizards led away along a ridge against his light, bound
+    wrist to wrist by his chain, their staves dark, their light drawn out of them toward the tower.
+    Silhouettes only, and only of wizards a fresh save already sees (ROSTER): no secret one."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 560, [OCC, S[4], V[4], V[3], V[3], V[2]])
     stars(back, (0, 0, FW, 300), 140, 13, colors=[K[2], V[0]])
@@ -1048,7 +1161,8 @@ def p_taken():
             mid.set(x, top, V[4])
     order = [("knight", 0), ("wiz", 0), ("bruiser", 0), ("wiz", 1), ("shielder", 0), ("wiz", 2),
              ("caster", 0), ("wiz", 3), ("swarmer", 0), ("runner", 0)]
-    lights = [E["fire"], E["ice"], E["lightning"], E["grass"]]
+    # Four of the game's wizards, walking (each a different frame of his own walk), staves dark.
+    taken = [(FROST, 1), (DEE, 5), (PYRO, 3), (STORM, 7)]
     x = 600
     rng = random.Random(17)
     wrists = []
@@ -1056,13 +1170,14 @@ def p_taken():
         yb = ridge(x) + 1
         if kind == "wiz":
             hgt = 88 - k * 3
-            motes(back, (x, yb - hgt * 0.6), (sx_, sy_), 170, 640 + k, [lights[k]], spread=12,
-                  bow=40 + k * 20)
+            who, step = taken[k]
+            motes(back, light_at(who, x, yb, hgt, "moving", step), (sx_, sy_), 170, 640 + k, [E[who[2]]],
+                  spread=12, bow=40 + k * 20)
             # rimmed from his light, up and to the right, so the robe reads against the hills and
             # not only the hat against the sky
-            wizard_figure(mid, x, yb, hgt, [OCC, S[4]], 610 + k, bound=True, hat_lean=1.4 + k * 0.3,
-                          toward=(0.7, -0.7, DK[3]))
-            wrists.append((x + 1, yb - hgt * 9.8 / 30.0))
+            _light, front = roster_figure(mid, who, x, yb, hgt, [OCC, S[4]], strip="moving", frame=step,
+                                          dim=True, toward=(0.7, -0.7, DK[3]))
+            wrists.append(front or (x + 1, yb - hgt * 0.42))
         else:
             hgt = {"bruiser": 74, "knight": 86, "shielder": 66, "caster": 78, "swarmer": 56, "runner": 58}[kind]
             creature(mid, kind, x, yb, hgt, facing=1, body=[OCC, S[4]], rim=DK[3], seed=700 + i)
