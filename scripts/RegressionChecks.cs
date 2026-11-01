@@ -1302,6 +1302,77 @@ public static class RegressionChecks
 			warnings.Add("Navigation: open ground connected to the player counts as unreachable.");
 		if (whole.IsWallAt(behind) || !whole.HasLineOfSight(behind, player))
 			warnings.Add("Navigation: water is stopping shots - only maze walls should.");
+
+		ValidateSkirtTurn(warnings);
+		ValidatePropClusters(warnings);
+	}
+
+	// Node2DGame.StampPropClusters' geometry (PropClusters, .ai/terrain.md section 9 "Props"): two props
+	// a body cannot pass between close their cells and a four-connected way between them, so the grid has
+	// no diagonal gap a body does not fit; two it can pass between close nothing, and neither does a lone
+	// one; one a hand's width off water closes itself and the gap to the shore.
+	private static void ValidatePropClusters(List<string> warnings)
+	{
+		const float tile = 48f;
+		var closed = new HashSet<Vector2I>();
+		var shore = new Vector2I(1, 6);
+		var props = new List<Rect2>
+		{
+			new(new Vector2(60f, 60f), new Vector2(27f, 15f)),    // cell (1, 1)
+			new(new Vector2(120f, 100f), new Vector2(27f, 15f)),  // cell (2, 2): 41 px off the first, diagonally
+			new(new Vector2(400f, 60f), new Vector2(27f, 15f)),   // cell (8, 1)
+			new(new Vector2(500f, 60f), new Vector2(27f, 15f)),   // cell (10, 1): 73 px off the last - a body fits
+			new(new Vector2(10f, 300f), new Vector2(27f, 15f)),   // cell (0, 6): 11 px off the water at (1, 6)
+			new(new Vector2(700f, 700f), new Vector2(12f, 12f)),  // a lone trunk
+		};
+		PropClusters.Collect(props, Vector2.Zero, tile, cell => cell == shore, cell => closed.Add(cell));
+
+		if (!closed.Contains(new Vector2I(1, 1)) || !closed.Contains(new Vector2I(2, 2)))
+			warnings.Add("Prop clusters: two rocks 41 px apart are not in the navigation grid - the swarm would wedge between them.");
+		else if (!closed.Contains(new Vector2I(2, 1)) && !closed.Contains(new Vector2I(1, 2)))
+			warnings.Add("Prop clusters: two rocks on a diagonal leave the corner between them open in the grid.");
+		if (closed.Contains(new Vector2I(8, 1)) || closed.Contains(new Vector2I(10, 1)) || closed.Contains(new Vector2I(9, 1)))
+			warnings.Add("Prop clusters: two props a body can walk between (73 px) were closed.");
+		if (closed.Contains(new Vector2I(14, 14)))
+			warnings.Add("Prop clusters: a lone trunk was closed - the skirt goes round it, the grid need not.");
+		if (!closed.Contains(new Vector2I(0, 6)))
+			warnings.Add("Prop clusters: a rock 11 px off the water is not in the grid - the swarm would wedge in the gap.");
+	}
+
+	// Enemy.Skirt's geometry (.ai/enemy-behaviour.md section 8 item 13): a body that walks square into
+	// something turns along it, keeps pressing on it so it follows it round, and goes the way it already
+	// leant; one brushing along a wall is left alone. Every heading a skirt can produce must also carry
+	// the body along the surface, never back off it or to a stop.
+	private static void ValidateSkirtTurn(List<string> warnings)
+	{
+		Vector2 normal = Vector2.Up;            // a surface facing north; the body walks south into it
+		Vector2 square = Vector2.Down;
+		if (!SkirtTurn.IsFacingInto(square, normal, 0.5f))
+			warnings.Add("Skirting: a body walking square into a surface does not count as held by it.");
+		if (SkirtTurn.IsFacingInto(new Vector2(1f, 0.3f).Normalized(), normal, 0.5f))
+			warnings.Add("Skirting: a body brushing along a wall counts as walking into it - corridors would skirt.");
+
+		Vector2 leaning = new Vector2(-0.3f, 1f).Normalized();
+		float hand = SkirtTurn.ChooseHand(leaning, normal, 1f);
+		if (SkirtTurn.Along(normal, hand).X > -0.5f)
+			warnings.Add("Skirting: a body leaning west into a surface turns east - against its own lean.");
+		if (Mathf.Abs(SkirtTurn.ChooseHand(square, normal, -1f)) != 1f || SkirtTurn.ChooseHand(square, normal, -1f) != -1f)
+			warnings.Add("Skirting: a dead-square body does not take its own tie side.");
+
+		for (int a = 0; a < 360; a += 15)
+		{
+			Vector2 heading = Vector2.FromAngle(Mathf.DegToRad(a));
+			foreach (float side in new[] { -1f, 1f })
+			{
+				Vector2 along = SkirtTurn.Along(normal, side);
+				Vector2 turn = SkirtTurn.Blend(along, heading, 0.5f);
+				if (!turn.IsNormalized() || turn.Dot(along) < 0.3f)
+				{
+					warnings.Add($"Skirting: the turn for heading {heading} on hand {side} is {turn}, which does not carry the body along the surface.");
+					return;
+				}
+			}
+		}
 	}
 
 	// Stage hazards on the maze stand in the middle of a hallway or a hall (.ai/terrain.md section 6,

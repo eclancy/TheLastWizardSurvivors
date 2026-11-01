@@ -72,6 +72,14 @@ public partial class Enemy : CharacterBody2D
 	// re-tested with the aim rather than every frame. Only an enemy whose way is blocked reads the
 	// flow field; one with a clear run keeps its lead and its slot on the ring.
 	private bool walkBlocked = false;
+	/// <summary>
+	/// The speed this body asked for on its last physics step, px/s, before the ground had its say:
+	/// zero while planted, stunned, knocked back or airborne. With <see cref="IsFollowingFlow"/>, what
+	/// _MazeProbe's stuck count reads - a body that wants to walk and does not is held by something.
+	/// </summary>
+	public float IntendedSpeed { get; private set; }
+	/// <summary>True while this body steers by the navigation field rather than straight at the player.</summary>
+	public bool IsFollowingFlow => walkBlocked;
 	// The player measured velocity - actual displacement per second, not the velocity it intended.
 	//
 	// CharacterBody2D.Velocity is what the player asked for, and it keeps reporting full speed while
@@ -836,6 +844,16 @@ public partial class Enemy : CharacterBody2D
 		// (floor_block_on_wall). Measured alone it was not what jammed the crowd (the masks were), but
 		// it is still a platformer's rules on every contact left: the player's body, trunks, walls.
 		MotionMode = MotionModeEnum.Floating;
+		// Slide on every contact, however square. Floating mode's default (15 degrees) stops a body
+		// dead when it meets a surface within that of head-on, and the chase's whole wander is inside
+		// it (PathNoiseStrength 0.24 bends a heading 13.5 degrees at most): a body walking at the
+		// player through a tree trunk or into a wall's face stood still for the rest of the fight,
+		// "moved 0 px" in _MazeProbe's stuck log. At 0 the first slide keeps the step's full length
+		// along the surface, so any sideways lean at all carries it round. Nothing reads a stop at a
+		// wall - no charge ends on one - so a boss's own movement is untouched (.ai/enemy-behaviour.md,
+		// section 8 item 13).
+		if (TerrainSkirting)
+			WallMinSlideAngle = 0f;
 		SetCollisionLayerValue(2, true);
 		SetCollisionMaskValue(1, true);
 		SetCollisionMaskValue(2, false);
@@ -997,6 +1015,10 @@ public partial class Enemy : CharacterBody2D
 		// Whether this body is choosing where it goes this frame, which is what a yield needs (see
 		// ComputePlayerShove). Only the chase branch below can make it true.
 		bool canYield = false;
+		IntendedSpeed = 0f;
+		// What the chase asked of the last step, for Skirt; any other branch asks for nothing.
+		float skirtWantedLastStep = skirtWanted;
+		skirtWanted = 0f;
 		if (shocked)
 		{
 			shockTimeRemaining = Math.Max(0f, shockTimeRemaining - (float)delta);
@@ -1085,7 +1107,7 @@ public partial class Enemy : CharacterBody2D
 				{
 					long navStart = MazeNavigation.MeasureSteering ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
 					if (reaim)
-						walkBlocked = nav.IsMaze || !nav.HasClearWalk(here, playerPosition);
+						walkBlocked = nav.IsMaze || !nav.HasClearWalk(here, playerPosition, throughProps: IgnoresDecorCollision);
 					if (walkBlocked)
 					{
 						Vector2 flow = nav.FlowDirectionAt(here);
@@ -1097,6 +1119,10 @@ public partial class Enemy : CharacterBody2D
 				}
 
 				float step = (float)delta;
+				// Round whatever small thing the field cannot see and the slide could not get it past.
+				// Before the wander and AdjustSteering, like the flow: a lunger's dash and a planted
+				// wind-up still have the last word.
+				primaryDir = Skirt(primaryDir, here, distanceToPlayer, skirtWantedLastStep, step);
 				speedDriftPhase += step * speedDriftFreq;
 				currentSpeedDrift = 1f + (Mathf.Sin(speedDriftPhase) * SpeedDriftAmount);
 				wanderPhaseA += step * wanderFreqA;
@@ -1180,6 +1206,9 @@ public partial class Enemy : CharacterBody2D
 					Velocity = steeringSpeed > 1.05f
 						? desiredVelocity
 						: Velocity.Lerp(desiredVelocity, 1f - Mathf.Exp(-turnResponse * step));
+					IntendedSpeed = steeringSpeed * EffectiveSpeed;
+					skirtFrom = here;
+					skirtWanted = IntendedSpeed * step;
 				}
 			}
 		}
@@ -1314,6 +1343,101 @@ public partial class Enemy : CharacterBody2D
 	/// still, which also suppresses the separation nudge so the hold is exact.
 	/// </remarks>
 	protected virtual Vector2 AdjustSteering(Vector2 chaseDirection, float distanceToPlayer) => chaseDirection;
+
+	// SKIRTING (Eric, playing 0.10.0: "All enemies tend to get stuck on terrain. Find an efficient way
+	// to have them path better"). The flow field (MazeNavigation) routes round what is in its grid -
+	// walls, water, a garden's fence, a cluster of props (TerrainStreamer.FlagProp) - and the slide
+	// (WallMinSlideAngle 0, ConfigureEntityCollision) carries a body past anything it meets at an angle.
+	// What is left is a body that meets something square, or wedges where two surfaces meet: a lone
+	// trunk or rock, a door, furniture, a wall's corner, a shore's inlet - too small for the grid's
+	// 48 px cells to see, or between two of them.
+	//
+	// So a body that asked to walk and covered under SkirtHeldShare of it, while touching something,
+	// turns along what it touched for SkirtSeconds. It keeps the hand it chose while it keeps meeting
+	// things (SkirtHandMemorySeconds) and, held again mid-turn, turns along the new surface on the same
+	// hand: a wall-follower, which is what walks out of a wedge - into its corner, then along the other
+	// face and out. Held SkirtFlipAfter times running, it is a dead end that way and turns round. Most
+	// bodies walk freely, and for them this is one subtraction and one comparison against a position
+	// already read; only a held body asks the engine what it touched (IsOnWall / GetWallNormal, neither
+	// allocates).
+	private const float SkirtHeldShare = 0.35f;
+	// Within about 60 degrees of head-on. Brushing along a corridor wall is not being held by it.
+	private const float SkirtFacingDot = 0.5f;
+	private const float SkirtSeconds = 0.45f;
+	// A turn has this long to get going before being held again counts against it.
+	private const float SkirtGraceSeconds = 0.12f;
+	private const int SkirtFlipAfter = 3;
+	private const float SkirtHandMemorySeconds = 2.5f;
+	// How much of the chase stays in the heading while skirting: enough to keep the body pressed to
+	// the surface (so it follows it round), little enough that the slide along it is most of the step.
+	private const float SkirtGoalShare = 0.5f;
+	// Near the player a body touching something is touching him, or the crowd round him: that is
+	// arriving, not being held.
+	private const float SkirtMinPlayerDistance = 120f;
+	/// <summary>
+	/// Off only for an A/B measurement (_MazeProbe, _BalanceHarness and _BossProbe --no-skirt): every
+	/// body then keeps floating mode's 15-degree stop and never skirts, and no prop is stamped into the
+	/// navigation grid - exactly as before. Read when a body configures its collision and when a chunk
+	/// is furnished, so set it before the run starts.
+	/// </summary>
+	public static bool TerrainSkirting { get; set; } = true;
+	private Vector2 skirtFrom;
+	private float skirtWanted;
+	private Vector2 skirtHeading = Vector2.Zero;
+	private float skirtTimeRemaining;
+	private float skirtHand = 1f;
+	private float skirtHandMemory;
+	private int skirtHeldTurns;
+
+	/// <summary>True while this body is turned along something it walked into (see SKIRTING).</summary>
+	public bool IsSkirting => skirtTimeRemaining > 0f;
+
+	private Vector2 Skirt(Vector2 heading, Vector2 here, float distanceToPlayer, float wantedLastStep, float delta)
+	{
+		if (!TerrainSkirting)
+			return heading;
+		if (skirtHandMemory > 0f)
+			skirtHandMemory -= delta;
+		bool held = wantedLastStep > 0f && distanceToPlayer >= SkirtMinPlayerDistance
+			&& (here - skirtFrom).LengthSquared() < wantedLastStep * wantedLastStep * SkirtHeldShare * SkirtHeldShare;
+
+		if (skirtTimeRemaining > 0f)
+		{
+			skirtTimeRemaining -= delta;
+			if (!held || SkirtSeconds - skirtTimeRemaining < SkirtGraceSeconds || !IsOnWall())
+				return SkirtTurn.Blend(skirtHeading, heading, SkirtGoalShare);
+			// Held mid-turn: along whatever it has met now, on the same hand - or, held that way too
+			// often running, the other way round.
+			if (++skirtHeldTurns >= SkirtFlipAfter)
+			{
+				skirtHand = -skirtHand;
+				skirtHeldTurns = 0;
+			}
+			skirtHandMemory = SkirtHandMemorySeconds;
+			skirtHeading = SkirtTurn.Along(GetWallNormal(), skirtHand);
+			skirtTimeRemaining = SkirtSeconds;
+			return SkirtTurn.Blend(skirtHeading, heading, SkirtGoalShare);
+		}
+
+		if (!held || !IsOnWall())
+		{
+			if (skirtHandMemory <= 0f)
+				skirtHeldTurns = 0;
+			return heading;
+		}
+
+		Vector2 normal = GetWallNormal();
+		// Held by something the last contact does not name - the far face of a wedge, say: step square
+		// to its own heading instead, which the same hand keeps doing until it is out.
+		if (!SkirtTurn.IsFacingInto(heading, normal, SkirtFacingDot))
+			normal = -heading;
+		if (skirtHandMemory <= 0f)
+			skirtHand = SkirtTurn.ChooseHand(heading, normal, shoveTieSide);
+		skirtHandMemory = SkirtHandMemorySeconds;
+		skirtHeading = SkirtTurn.Along(normal, skirtHand);
+		skirtTimeRemaining = SkirtSeconds;
+		return SkirtTurn.Blend(skirtHeading, heading, SkirtGoalShare);
+	}
 
 	/// <summary>
 	/// True if this body is stopped by walls and water (it masks LevelTilePainter.TerrainCollisionLayer,
@@ -2071,6 +2195,11 @@ public partial class Enemy : CharacterBody2D
 		RollMovementVariation();
 		hasLastPlayerPosition = false;
 		measuredPlayerVelocity = Vector2.Zero;
+		// Nor round whatever the old body was skirting, a spawn ring away.
+		skirtWanted = 0f;
+		skirtTimeRemaining = 0f;
+		skirtHandMemory = 0f;
+		skirtHeldTurns = 0;
 		// A recycled enemy is a fresh enemy as far as the player can tell, so it must not arrive
 		// still carrying the debuffs of the body it used to be - least of all a permanent Wither,
 		// which would otherwise follow it round the ring for the rest of the run.

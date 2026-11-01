@@ -9,6 +9,8 @@ using WizardSurvivors.scripts;
 // Run:
 //   "$GODOT_BIN" --headless --path . scenes/_BossProbe.tscn -- --stage=1
 //   "$GODOT_BIN" --headless --path . scenes/_BossProbe.tscn -- --stage=all
+//   ... --stage=2 --no-skirt   (the before of the slide, the skirt and the prop clusters - the A/B for
+//                              the "held" line, .ai/enemy-behaviour.md section 8 item 13)
 //
 // WHY THIS EXISTS. A boss is thirty minutes into a run, so every one of these fights had been
 // written, compiled, and validated without anybody watching it move. dotnet build sees none of it
@@ -82,6 +84,7 @@ public partial class _BossProbe : Node
 			else if (arg.StartsWith("--drain=")) DrainSeconds = float.Parse(arg.Substring(8));
 			else if (arg.StartsWith("--drain-interval=")) DrainInterval = float.Parse(arg.Substring(17));
 			else if (arg == "--focus") FocusOneBody = true;
+			else if (arg == "--no-skirt") Enemy.TerrainSkirting = false;
 			else if (arg == "--approach") Approach = true;
 			// For a fight drained slowly (--drain) to stand in for a build's damage, longer than 140 s.
 			else if (arg.StartsWith("--give-up=")) GiveUpSeconds = float.Parse(arg.Substring(10), System.Globalization.CultureInfo.InvariantCulture);
@@ -223,6 +226,15 @@ public partial class _BossProbe : Node
 	private float peakScaleGrowth = 1f;
 	// Frames a targetable body spent, summed over the bodies, and how many of them on a wall or water cell.
 	private int bodyFrames, bodyFramesInGround;
+	// HELD: a body that asked to walk (Enemy.IntendedSpeed, at least 0.4 of its speed), covered under
+	// 0.15 of that walk in a two-second window and is touching something - the boss's share of
+	// _MazeProbe's stuck count, split by what it touches. "The Hollow Choir pathing can get stuck"
+	// (Eric, 0.10.0) is this number. A body that covered little and touches nothing is easing onto a
+	// point it has nearly reached (a Choir voice on its standing place), not held, and is counted apart.
+	private const float HeldWindow = 2f;
+	private float heldClock;
+	private readonly Dictionary<BossEnemy, Vector2> heldLast = new();
+	private int heldEligible, heldWindows, heldOnGround, heldOnProp, heldOnBody, heldTouchingNothing;
 
 	private void TrackBoss(float delta)
 	{
@@ -315,6 +327,39 @@ public partial class _BossProbe : Node
 			Node2DGame filming = Node2DGame.Current;
 			notes.Add($"after the arrival: walked {player.GlobalPosition.DistanceTo(releasedAt):0} px in 0.5 s; "
 				+ $"bars {(filming?.LetterboxShown ?? 0f):0.00}, push-in x{(filming?.CinematicZoomFactor ?? 1f):0.00}");
+		}
+
+		heldClock += delta;
+		if (heldClock >= HeldWindow)
+		{
+			foreach (BossEnemy body in bodies)
+			{
+				Vector2 at = body.GlobalPosition;
+				float walk = body.Speed * body.SwarmSpeedScale;
+				if (heldLast.TryGetValue(body, out Vector2 was) && body.IsTargetable && walk > 1f
+					&& body.IntendedSpeed >= walk * 0.4f)
+				{
+					heldEligible++;
+					if (at.DistanceTo(was) < walk * heldClock * 0.15f)
+					{
+						GodotObject touching = body.GetSlideCollisionCount() > 0 ? body.GetSlideCollision(0).GetCollider() : null;
+						if (touching == null)
+							heldTouchingNothing++;
+						else
+						{
+							heldWindows++;
+							if (touching is TileMapLayer or WaterSurface)
+								heldOnGround++;
+							else if (touching is StaticBody2D)
+								heldOnProp++;
+							else
+								heldOnBody++;
+						}
+					}
+				}
+				heldLast[body] = at;
+			}
+			heldClock = 0f;
 		}
 
 		foreach (BossEnemy body in bodies)
@@ -662,6 +707,8 @@ public partial class _BossProbe : Node
 		GD.Print($"  drain ticks    : {drainTicks}");
 		GD.Print($"  went untargetable / came back : {sawUntargetable} / {sawRetargetable}");
 		GD.Print($"  in wall/water  : {bodyFramesInGround} of {bodyFrames} body-frames out of the ground");
+		GD.Print($"  held           : {heldWindows} of {heldEligible} body-windows ({HeldWindow:0} s) asked to walk, covered under 0.15 of it and touched something"
+			+ $" (ground {heldOnGround}, a prop {heldOnProp}, a body {heldOnBody}); {heldTouchingNothing} more touched nothing");
 		foreach (string note in notes)
 			GD.Print($"  note           : {note}");
 		foreach (var (id, phases) in processionPhases)

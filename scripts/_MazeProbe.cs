@@ -11,6 +11,11 @@ using WizardSurvivors.scripts;
 //   "$GODOT_BIN" --headless --path . scenes/_MazeProbe.tscn -- --stage=1 --seconds=240 --bot=roam
 //   ... --stage=3 --no-open-routing   (Swamp, enemies chasing in a straight line as they did before
 //                                      open stages had routing: the A/B for it)
+//   "$GODOT_BIN" --headless --path . --fixed-fps 60 scenes/_MazeProbe.tscn -- --stage=0 --seed=4242
+//       --seconds=180 --timescale=2 --bot=roam --bot-speed=0.6 --stress-swarm --stuck-log [--no-skirt]
+//                                     (the stuck count - see StuckWindow - with every stuck body
+//                                      logged; --no-skirt is the before of the slide, the skirt and the
+//                                      prop clusters, .ai/enemy-behaviour.md section 8 item 13)
 //   "$GODOT_BIN" --headless --path . --fixed-fps 60 scenes/_MazeProbe.tscn -- --timescale=1 --stage=0
 //       --seconds=180 --bot=circle --bot-speed=0.5 --stress-swarm --no-save-writes
 //                                     (the crowd, at the game's own step: a full swarm, the player
@@ -65,7 +70,7 @@ public partial class _MazeProbe : Node
 	private readonly List<float> detours = new();
 	private readonly List<float> recomputeMs = new();
 	private int samples;
-	private double sumReach, sumStalled, sumPinned, sumSnagged, sumClose, sumDetour, sumAlive;
+	private double sumReach, sumStalled, sumPinned, sumSnagged, sumClose, sumDetour, sumAlive, sumRouted;
 
 	// FLOW: is a body on its way to the player moving freely, or held up by the bodies around it?
 	// ("enemies shouldn't get stuck on each other, they appear to be having a hard time chasing
@@ -99,6 +104,34 @@ public partial class _MazeProbe : Node
 	private double flowRatioSum, flowClosingSum, contactSum;
 	private Area2D hurtBox;
 
+	// STUCK ("All enemies tend to get stuck on terrain. Find an efficient way to have them path
+	// better", Eric, playing 0.10.0). Stalled above is measured in walking distance, so it counts a
+	// queue behind the front rank as much as a body wedged on a rock. This counts only the second: a
+	// body that ASKED to walk (Enemy.IntendedSpeed, at least StuckWantShare of its speed) for a whole
+	// StuckWindow and covered under StuckMoveShare of that walk, standing StuckNear to StuckFar from
+	// the player at both ends - out of the crowd pressed on him, and inside the ground he can see.
+	// What it last slid against says what held it: the ground (a wall or water), a prop's body (a
+	// trunk, a rock, a fence, a door, furniture), another body (a blocker or the player), or nothing
+	// at all (a dead flow cell, or two cells pointing at each other). --stuck-log prints where.
+	private const float StuckWindow = 2f;
+	private const float StuckNear = 160f;
+	private const float StuckFar = 900f;
+	private const float StuckMoveShare = 0.15f;
+	private const float StuckWantShare = 0.4f;
+	private float stuckClock;
+	private bool stuckLog;
+	private int stuckLogged;
+	private readonly Dictionary<ulong, (Vector2 Pos, float Dist, int Run)> stuckLast = new();
+	private readonly HashSet<ulong> stuckSeen = new();
+	private long stuckEligible, stuckCount, stuckOnGround, stuckOnProp, stuckOnBody, stuckOnCrowd, stuckOnNothing, stuckRouted, stuckTrapped, stuckSamples;
+	// A body stuck this many windows running (6 s) is TRAPPED: the one a player sees standing against
+	// a tree for the rest of the fight, rather than one held for a moment.
+	private const int TrappedWindows = 3;
+	// "Nothing" in the last slide with this many others within CrowdRadius is the crowd holding it
+	// (the soft crowd's push, a queue in a corridor), not the ground.
+	private const int CrowdNeighbours = 2;
+	private const float CrowdRadius = 60f;
+
 	// Roam state.
 	private Vector2 heading = Vector2.Right;
 	private Vector2 lastPos;
@@ -120,6 +153,8 @@ public partial class _MazeProbe : Node
 			else if (arg.StartsWith("--bot-speed=")) BotSpeed = float.Parse(arg.Substring(12), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg.StartsWith("--circle=")) CircleRadius = float.Parse(arg.Substring(9), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg == "--no-open-routing") MazeNavigation.OpenStageRouting = false;
+			else if (arg == "--stuck-log") stuckLog = true;
+			else if (arg == "--no-skirt") Enemy.TerrainSkirting = false;
 		}
 
 		ProcessMode = ProcessModeEnum.Always;
@@ -189,7 +224,15 @@ public partial class _MazeProbe : Node
 		if (GetTree().Paused)
 		{
 			flowLast.Clear();
+			stuckLast.Clear();
+			stuckClock = 0f;
 			return;
+		}
+		stuckClock += (float)delta;
+		if (stuckClock >= StuckWindow)
+		{
+			SampleStuck(stuckClock);
+			stuckClock = 0f;
 		}
 		flowFrame++;
 		if (flowFrame % FlowWindowFrames != 0)
@@ -266,6 +309,140 @@ public partial class _MazeProbe : Node
 		}
 	}
 
+	// See StuckWindow. Every body that walks by itself (not a boss: its movement is its own) and that
+	// meets the ground (Enemy masks layer 4), sampled at both ends of a window.
+	private void SampleStuck(float window)
+	{
+		Vector2 p = player.GlobalPosition;
+		stuckSeen.Clear();
+		stuckSamples++;
+		foreach (Enemy e in EnemyRegistry.Snapshot)
+		{
+			if (!IsInstanceValid(e) || e is BossEnemy || e.IsDying || !e.IsTargetable
+				|| !e.GetCollisionMaskValue(LevelTilePainter.TerrainCollisionLayer))
+				continue;
+			ulong id = e.GetInstanceId();
+			stuckSeen.Add(id);
+			Vector2 pos = e.GlobalPosition;
+			float dist = pos.DistanceTo(p);
+			int run = 0;
+			if (stuckLast.TryGetValue(id, out var prev)
+				&& prev.Dist >= StuckNear && prev.Dist <= StuckFar && dist >= StuckNear && dist <= StuckFar)
+			{
+				float walk = e.Speed * e.SwarmSpeedScale;
+				if (walk > 1f && e.IntendedSpeed >= walk * StuckWantShare)
+				{
+					stuckEligible++;
+					float moved = pos.DistanceTo(prev.Pos);
+					if (moved < walk * window * StuckMoveShare)
+					{
+						stuckCount++;
+						run = prev.Run + 1;
+						if (run == TrappedWindows)
+							stuckTrapped++;
+						if (e.IsFollowingFlow)
+							stuckRouted++;
+						string against = LastSlideKind(e, out string what);
+						if (against == "none" && CountNear(pos, CrowdRadius) >= CrowdNeighbours)
+							against = "crowd";
+						switch (against)
+						{
+							case "ground": stuckOnGround++; break;
+							case "prop": stuckOnProp++; break;
+							case "body": stuckOnBody++; break;
+							case "crowd": stuckOnCrowd++; break;
+							default: stuckOnNothing++; break;
+						}
+						if (stuckLog && stuckLogged < 400)
+						{
+							stuckLogged++;
+							MazeNavigation nav = MazeNavigation.Active;
+							Vector2 flow = nav?.FlowDirectionAt(pos) ?? Vector2.Zero;
+							float path = nav?.PathTilesAt(pos) ?? -1f;
+							GD.Print($"MAZEPROBE stuck t={elapsed:0} {e.EnemyType} at ({pos.X:0},{pos.Y:0}) dist={dist:0} moved={moved:0} want={e.IntendedSpeed:0} routed={e.IsFollowingFlow} against={against}:{what} flow=({flow.X:0.00},{flow.Y:0.00}) path={path:0.0} clear={(nav == null || nav.HasClearWalk(pos, p))}");
+							// The second window running: what the physics says about it, to see why.
+							if (run >= 1)
+								GD.Print($"MAZEPROBE   detail run={run} onWall={e.IsOnWall()} normal={e.GetWallNormal()} vel={e.Velocity} skirting={e.IsSkirting} slideMin={e.WallMinSlideAngle:0.000} slides={e.GetSlideCollisionCount()} toPlayer={(p - pos).Normalized()} {DescribeContacts(e)}");
+						}
+					}
+				}
+			}
+			stuckLast[id] = (pos, dist, run);
+		}
+		foreach (ulong stale in stuckLast.Keys.Where(k => !stuckSeen.Contains(k)).ToList())
+			stuckLast.Remove(stale);
+	}
+
+	// Every collider in the last slide: its kind, where it stands, its shape and the contact normal.
+	private static string DescribeContacts(Enemy e)
+	{
+		var sb = new System.Text.StringBuilder();
+		for (int i = 0; i < e.GetSlideCollisionCount(); i++)
+		{
+			KinematicCollision2D c = e.GetSlideCollision(i);
+			GodotObject o = c.GetCollider();
+			string shape = "";
+			if (o is CollisionObject2D co)
+			{
+				foreach (Node child in co.GetChildren())
+					if (child is CollisionShape2D cs && cs.Shape is RectangleShape2D r)
+					{
+						// How far the body's circle is inside the rectangle: positive is overlap.
+						Vector2 local = e.GlobalPosition - cs.GlobalPosition;
+						Vector2 outside = new Vector2(Mathf.Max(0f, Mathf.Abs(local.X) - r.Size.X / 2f), Mathf.Max(0f, Mathf.Abs(local.Y) - r.Size.Y / 2f));
+						float radius = e.GetNodeOrNull<CollisionShape2D>("CollisionShape2D")?.Shape is CircleShape2D own ? own.Radius * Mathf.Abs(e.Scale.X) : 20f;
+						shape += $" rect {r.Size} at {cs.GlobalPosition} overlap={radius - outside.Length():0.0}";
+					}
+					else if (child is CollisionShape2D cs2 && cs2.Shape is CircleShape2D ci)
+						shape += $" circle {ci.Radius:0} at {cs2.GlobalPosition}";
+			}
+			sb.Append($"[{o?.GetType().Name} {(o as Node)?.Name} n={c.GetNormal()} at={c.GetPosition()} travel={c.GetTravel()} rem={c.GetRemainder()}{shape}]");
+		}
+		return sb.ToString();
+	}
+
+	private static int CountNear(Vector2 at, float radius)
+	{
+		int n = 0;
+		float r2 = radius * radius;
+		foreach (Enemy other in EnemyRegistry.Snapshot)
+		{
+			if (IsInstanceValid(other) && other.GlobalPosition.DistanceSquaredTo(at) < r2)
+				n++;
+		}
+		return n - 1;
+	}
+
+	// What a body last slid against: "ground" (a maze wall or water), "prop" (any other static body - a
+	// trunk, a rock, a fence, a door, furniture), "body" (a blocker, or the player) or "none".
+	private static string LastSlideKind(Enemy e, out string what)
+	{
+		string kind = "none";
+		what = "";
+		for (int i = 0; i < e.GetSlideCollisionCount(); i++)
+		{
+			GodotObject c = e.GetSlideCollision(i).GetCollider();
+			if (c is TileMapLayer or WaterSurface)
+			{
+				what = c.GetType().Name;
+				return "ground";
+			}
+			if (c is StaticBody2D body)
+			{
+				kind = "prop";
+				what = body.GetParent() is Landmark ? "fence" : body.IsInGroup("decor_props") ? "decor" : body.Name;
+			}
+			else if (c is CharacterBody2D other && kind == "none")
+			{
+				kind = "body";
+				what = other is Player ? "player" : other.Name;
+			}
+			else if (c != null && kind == "none")
+				what = c.GetType().Name;
+		}
+		return kind;
+	}
+
 	// Another body - an enemy, or the player - in the last slide: held up by the crowd rather than
 	// by the ground.
 	private static bool LastSlideHitBody(Enemy e)
@@ -296,7 +473,7 @@ public partial class _MazeProbe : Node
 		watch.Stop();
 		recomputeMs.Add((float)watch.Elapsed.TotalMilliseconds);
 
-		int alive = 0, reach = 0, stalled = 0, eligible = 0, close = 0, pinned = 0, snagged = 0;
+		int alive = 0, reach = 0, stalled = 0, eligible = 0, close = 0, pinned = 0, snagged = 0, routed = 0;
 		detours.Clear();
 		Vector2 p = player.GlobalPosition;
 		var seen = new HashSet<ulong>();
@@ -305,6 +482,8 @@ public partial class _MazeProbe : Node
 			if (n is not Enemy e || !IsInstanceValid(e) || e is BossEnemy)
 				continue;
 			alive++;
+			if (e.IsFollowingFlow)
+				routed++;
 			ulong id = e.GetInstanceId();
 			seen.Add(id);
 			float path = nav.PathTilesAt(e.GlobalPosition);
@@ -364,6 +543,7 @@ public partial class _MazeProbe : Node
 			sumSnagged += snagPct;
 			sumClose += closePct;
 			sumDetour += medianDetour;
+			sumRouted += 100.0 * routed / alive;
 		}
 	}
 
@@ -472,6 +652,7 @@ public partial class _MazeProbe : Node
 			recomputeMs.Sort();
 			GD.Print($"  recompute: median {recomputeMs[recomputeMs.Count / 2]:0.00} ms, worst {recomputeMs[^1]:0.00} ms (desktop)");
 			GD.Print($"  close   : {sumClose / samples:0.0}%");
+			GD.Print($"  routed  : {sumRouted / samples:0.0}%  (following the field rather than the straight chase)");
 		}
 		if (flowFar > 0)
 		{
@@ -483,7 +664,15 @@ public partial class _MazeProbe : Node
 			GD.Print($"  stacked : {100.0 * flowStacked / flowBodies:0.0}%  (centre within {StackDistance:0} px of another)");
 		if (contactSamples > 0)
 			GD.Print($"  contact : {contactSum / contactSamples:0.00} enemies touching the player");
-		GD.Print($"MAZEPROBE SUMMARY stage={StageIndex} bot={Bot} reach={(samples > 0 ? sumReach / samples : 0):0.0} detour={(samples > 0 ? sumDetour / samples : 0):0.00} stalled={(samples > 0 ? sumStalled / samples : 0):0.0} close={(samples > 0 ? sumClose / samples : 0):0.0} speed={(flowFar > 0 ? flowRatioSum / flowFar : 0):0.00} jammed={(flowFar > 0 ? 100.0 * flowJammed / flowFar : 0):0.0} onbody={(flowFar > 0 ? 100.0 * flowJammedOnBody / flowFar : 0):0.0} closing={(flowFar > 0 ? flowClosingSum / flowFar : 0):0.00} stacked={(flowBodies > 0 ? 100.0 * flowStacked / flowBodies : 0):0.0} contact={(contactSamples > 0 ? contactSum / contactSamples : 0):0.00} alive={(samples > 0 ? sumAlive / samples : 0):0}");
+		if (stuckEligible > 0)
+		{
+			double share(long n) => 100.0 * n / stuckEligible;
+			GD.Print($"  stuck   : {share(stuckCount):0.00}%  (wanted to walk, covered under {StuckMoveShare:0.00} of it in {StuckWindow:0}s, {StuckNear:0}-{StuckFar:0} px out; {stuckEligible} body-windows)");
+			GD.Print($"            against ground {share(stuckOnGround):0.00}%, a prop {share(stuckOnProp):0.00}%, a body {share(stuckOnBody):0.00}%, the crowd {share(stuckOnCrowd):0.00}%, nothing {share(stuckOnNothing):0.00}%; following the field {share(stuckRouted):0.00}%");
+			GD.Print($"            {(double)stuckCount / Math.Max(1, stuckSamples):0.00} stuck in view at a time; {stuckTrapped} trapped ({TrappedWindows * StuckWindow:0} s or more), {60.0 * stuckTrapped / Math.Max(1f, stuckSamples * StuckWindow):0.0} a minute");
+		}
+		GD.Print($"MAZEPROBE STUCK stage={StageIndex} bot={Bot} stuck={(stuckEligible > 0 ? 100.0 * stuckCount / stuckEligible : 0):0.00} ground={(stuckEligible > 0 ? 100.0 * stuckOnGround / stuckEligible : 0):0.00} prop={(stuckEligible > 0 ? 100.0 * stuckOnProp / stuckEligible : 0):0.00} body={(stuckEligible > 0 ? 100.0 * stuckOnBody / stuckEligible : 0):0.00} crowd={(stuckEligible > 0 ? 100.0 * stuckOnCrowd / stuckEligible : 0):0.00} nothing={(stuckEligible > 0 ? 100.0 * stuckOnNothing / stuckEligible : 0):0.00} routed={(stuckEligible > 0 ? 100.0 * stuckRouted / stuckEligible : 0):0.00} inview={(double)stuckCount / Math.Max(1, stuckSamples):0.00} trapped={stuckTrapped} trapped/min={60.0 * stuckTrapped / Math.Max(1f, stuckSamples * StuckWindow):0.0} windows={stuckEligible}");
+		GD.Print($"MAZEPROBE SUMMARY stage={StageIndex} bot={Bot} reach={(samples > 0 ? sumReach / samples : 0):0.0} detour={(samples > 0 ? sumDetour / samples : 0):0.00} stalled={(samples > 0 ? sumStalled / samples : 0):0.0} close={(samples > 0 ? sumClose / samples : 0):0.0} speed={(flowFar > 0 ? flowRatioSum / flowFar : 0):0.00} jammed={(flowFar > 0 ? 100.0 * flowJammed / flowFar : 0):0.0} onbody={(flowFar > 0 ? 100.0 * flowJammedOnBody / flowFar : 0):0.0} closing={(flowFar > 0 ? flowClosingSum / flowFar : 0):0.00} stacked={(flowBodies > 0 ? 100.0 * flowStacked / flowBodies : 0):0.0} contact={(contactSamples > 0 ? contactSum / contactSamples : 0):0.00} routed={(samples > 0 ? sumRouted / samples : 0):0.0} alive={(samples > 0 ? sumAlive / samples : 0):0}");
 
 		player = null;
 		game = null;
