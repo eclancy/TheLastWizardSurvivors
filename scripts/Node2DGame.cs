@@ -886,21 +886,25 @@ public partial class Node2DGame : Node2D
 	}
 
 	// ---- run music -------------------------------------------------------------------------
-	// The chapter's three stems play locked together (MusicPlayer) and this decides which are up.
-	// Bed always. Pulse once the arena has filled. Lead for an elite, and for the last third of
-	// the run. Then the boss loop replaces the set, and everything fades at the end. Thresholds
-	// have hysteresis and the lead a hold, because a layer that flickers in and out with every
-	// wave is worse than one that never comes. See .ai/audio-direction.md section 11.
+	// The chapter's stems play locked together (MusicPlayer) and this decides which are up.
+	// Battle music from the first second (2026-11-01, Eric on 0.10.0: "the music on the menu should
+	// give way to more interesting, thematic battle music for each level"): the bed and the pulse -
+	// the chapter's drums and driving bass - land together on the run's first downbeat and stay. It
+	// used to be the bed alone, the menu theme's own strings and drone a dB under it, until 28
+	// enemies were alive, which the headless Forest run reached at 1:15 and lost again at 1:35. The
+	// lead states the chapter's hook as the run opens, rests, and comes back for an elite and from
+	// pace minute 5 for good. Then the boss layer lands over all three (or, for a set without one,
+	// the shared boss loop replaces the set), and everything fades at the end. The lead has a hold,
+	// because a layer that flickers in and out with every wave is worse than one that never comes.
+	// See .ai/audio-direction.md section 11.
 
-	/// <summary>Pulse comes in at this share of MaxEnemies alive (28 of 140)...</summary>
-	private const float MusicPulseOnShare = 0.20f;
-	/// <summary>...and goes out only once the arena has thinned to this (14 of 140).</summary>
-	private const float MusicPulseOffShare = 0.10f;
-	/// <summary>The last third of the run, on the pace clock, brings the lead in for good.</summary>
-	private const float MusicLeadLateRunPaceMinutes = 10f;
+	/// <summary>Real seconds the hook plays as the run opens before it first rests - about one pass of a chapter's 24-30 s loop.</summary>
+	private const float MusicOpeningLeadSeconds = 24f;
+	/// <summary>From here on the pace clock (a third of the way in) the lead is in for good. It was 10.</summary>
+	private const float MusicLeadLateRunPaceMinutes = 5f;
 	/// <summary>Real seconds the lead stays after the elite that called it has gone - about one phrase of the tune.</summary>
 	private const float MusicLeadHoldSeconds = 30f;
-	/// <summary>How often the intensity is sampled. Counting enemies every frame buys nothing a 4 s fade can show.</summary>
+	/// <summary>How often the intensity is sampled. Checking every frame buys nothing a 4 s fade can show.</summary>
 	private const float MusicSampleSeconds = 0.25f;
 
 	private MusicPlayer? runMusic;
@@ -910,8 +914,8 @@ public partial class Node2DGame : Node2D
 	// flag set in a scene is not the same as being sent as a set-piece: when the Boo was still 2.5%
 	// of the opening spawns the first headless run had the tune in ten seconds on one ghost.
 	private readonly List<Node2D> musicLeadCallers = new();
-	private bool musicPulseOn;
-	private float musicLeadHeldUntil = -1f;
+	// The opening statement is a hold like an elite's, from the run's first second.
+	private float musicLeadHeldUntil = MusicOpeningLeadSeconds;
 	private float musicSampleTimer;
 
 	private void PlayRunMusic()
@@ -919,7 +923,8 @@ public partial class Node2DGame : Node2D
 		runMusic = GetNodeOrNull<MusicPlayer>("/root/MusicPlayer");
 		// Which set is MusicCatalog's decision, not this scene's - the branch belongs in the table.
 		runMusicSet = MusicCatalog.RunSetForStage(Global.SelectedStageIdx);
-		runMusic?.PlaySet(runMusicSet, MusicPlayer.RunFadeInSeconds, 0f, 0f);
+		// Bed, pulse and the hook together on the first downbeat; the theme out of their way.
+		runMusic?.PlaySet(runMusicSet, MusicPlayer.RunFadeInSeconds, 1f, 1f, MusicPlayer.MenuHandoverSeconds);
 	}
 
 	private void UpdateRunMusic(float delta)
@@ -932,12 +937,6 @@ public partial class Node2DGame : Node2D
 		if (musicSampleTimer > 0f)
 			return;
 		musicSampleTimer = MusicSampleSeconds;
-
-		int alive = EnemyRegistry.Count;
-		if (alive >= MaxEnemies * MusicPulseOnShare)
-			musicPulseOn = true;
-		else if (alive <= MaxEnemies * MusicPulseOffShare)
-			musicPulseOn = false;
 
 		for (int i = musicLeadCallers.Count - 1; i >= 0; i--)
 		{
@@ -953,14 +952,21 @@ public partial class Node2DGame : Node2D
 			musicLeadHeldUntil = timeElapsed + MusicLeadHoldSeconds;
 		bool leadOn = leadCalled || timeElapsed < musicLeadHeldUntil;
 
-		// The tune never plays without the rhythm under it.
-		runMusic.SetLayerTargets(musicPulseOn || leadOn ? 1f : 0f, leadOn ? 1f : 0f);
+		// The pulse is the chapter's battle percussion and never leaves while the run is in play.
+		runMusic.SetLayerTargets(1f, leadOn ? 1f : 0f);
 	}
 
 	private void PlayBossMusic()
 	{
 		if (runMusic == null || runMusicSet == null)
 			return;
+		// The chapter's own fight: its boss layer lands on the set, which keeps playing, so the
+		// boss is met in the chapter's key and tempo. UpdateRunMusic stands aside from here on.
+		if (runMusicSet.HasBossLayer && runMusic.CurrentSetId == runMusicSet.Id && runMusic.CurrentSetHasBossLayer)
+		{
+			runMusic.SetLayerTargets(1f, 1f, 1f);
+			return;
+		}
 		var stream = ResourceLoader.Load<AudioStream>(runMusicSet.Boss);
 		if (stream == null)
 		{
