@@ -91,9 +91,9 @@ public static class BossCatalog
 			ScenePath = "res://scenes/HollowChoirBoss.tscn",
 			// A third each. Node2DGame sets this on the voice it spawns and that voice hands the
 			// same number to the two it calls up, so the fight is three times what is written here.
-			// Lower than before, not higher: the voices now hold their places apart, so one blast no
-			// longer takes the set, and that alone took the fight from seconds to six minutes at 26,000.
-			Health = 18000, // 20000 before the fights were lengthened, 1900 before the difficulty curve
+			// The voices now hold their places apart, so one blast no longer takes the set: at this health
+			// a level 32 build took six minutes, and 18,000 let a level 39 one through in one.
+			Health = 26000, // 20000 before the fights were lengthened, 1900 before the difficulty curve
 			ArcaneVictoryBonus = 190
 		},
 		[3] = new BossDefinition
@@ -120,7 +120,7 @@ public static class BossCatalog
 			DisplayName = "The Still Warden",
 			Tagline = "Frozen in place, and the arena does the chasing. The safe ground is not where it is.",
 			ScenePath = "res://scenes/StillWardenBoss.tscn",
-			Health = 300000, // 110000 before the fights were lengthened, 7800 before the difficulty curve
+			Health = 400000, // 110000 before the fights were lengthened, 7800 before the difficulty curve
 			ArcaneVictoryBonus = 250
 		},
 		[6] = new BossDefinition
@@ -138,7 +138,7 @@ public static class BossCatalog
 			DisplayName = "The Warden of the Deep",
 			Tagline = "Every fight you have already won, in sequence, with nothing in between.",
 			ScenePath = "res://scenes/DeepWardenBoss.tscn",
-			Health = 600000, // 200000 before the fights were lengthened, 11000 before the difficulty curve
+			Health = 500000, // 200000 before the fights were lengthened, 11000 before the difficulty curve
 			ArcaneVictoryBonus = 400
 		},
 		[8] = new BossDefinition

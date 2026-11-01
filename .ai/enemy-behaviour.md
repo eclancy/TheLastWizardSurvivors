@@ -812,8 +812,8 @@ voices change together.
 | Wizard Dude | 0.66 every fan is cast twice down the same wedge. 0.34 enrage, wider fan |
 
 **Health, second** (`BossCatalog`; the value before is on each line): Elderbark 9,500, the Hayward
-12,000, the Ninth Stone 38,000, the Choir 3 x 26,000, the Gaoler 150,000, Mother Rot 170,000, the
-Archivist 160,000, the Still Warden 190,000, the Long Coil 300,000, the Warden of the Deep 420,000,
+10,000, the Ninth Stone 46,000, the Choir 3 x 26,000, the Gaoler 150,000, Mother Rot 170,000, the
+Archivist 140,000, the Still Warden 400,000, the Long Coil 300,000, the Warden of the Deep 500,000,
 Wizard Dude 9,000.
 
 **The Boss Rush scales every boss to a third** (`BossRushCatalog.FightHealthShare` = 0.35, the finale
@@ -823,22 +823,29 @@ bosses in a mode built as a run a little longer than a chapter; each rush fight 
 
 **Measured** (`_BalanceHarness --survivor --immortal --policy=ordinary --stop-overrun=60
 --minutes=21`, `--fixed-fps 30 --timescale=1`, Stormcaller, seed 1234; fight = boss down minus
-15:00, the arrival included). "Was" is `.ai/difficulty-curve.md` section 10, measured on older code:
-on this branch's base the bot reached the boss weaker in some chapters (level 28 at the Ruins against
-49 there), so a same-code baseline is being run to replace that column.
+15:00, the arrival included). "Was (doc)" is `.ai/difficulty-curve.md` section 10, on older code;
+"base" is the same protocol on this branch's base commit (09aad67), the same code but for this work.
+**One run a cell, and the cells swing hard with the build the bot happens to reach the boss with**
+(L15, level at 15:00): the same chapter and seed reached the Choir at L32 on one run and L40 on
+another, and a fight's length moves four- to eightfold across that range. Read the table as a
+direction, and the health as set between the strong and the weak runs.
 
-| # | chapter | save | L15 | fight, min | was | health measured at | health now |
+| # | chapter | save | base: L15, fight | after: L15, fight (health) | after the merge of main: L15, fight (health) | was (doc) | health now |
 |---|---|---|---|---|---|---|---|
-| 1 | Forest | fresh | 29 | 2.9 | 1.2 | 9,500 | 9,500 |
-| 2 | Fields | fresh | 18 | over 6 (boss at half when the run ended; a sieged, weak build) | 1.8 | 12,000 | 10,000 |
-| 3 | Circle | farmed | 34 | 2.4 | 1.6 | 38,000 | 46,000 |
-| 4 | Cave (Choir) | farmed | 32 | 6.0 | 0.1 | 3 x 26,000 | 3 x 18,000 |
-| 5 | Dungeon (Gaoler) | farmed | 37 | 3.7 | 1.3 | 150,000 | 150,000 |
-| 6 | Swamp (Mother Rot) | farmed | 39 | 3.0 | 0.6 | 170,000 | 170,000 |
-| 7 | Ruins (Archivist) | farmed | 28 | 5.2 | 2.1 | 160,000 | 140,000 |
-| 8 | Frozen (Still Warden) | farmed | 37 | 1.9 | 2.4 | 190,000 | 300,000 |
-| 9 | Sands (Long Coil) | farmed | 36 | 4.2 | 0.9 | 300,000 | 300,000 |
-| 10 | Emberdeep (Warden of the Deep) | farmed | 43 | 3.1 | 1.1-2.2 | 420,000 | 600,000 |
+| 1 | Forest | fresh | 29, 0.3 | 29, **2.9** (9,500) | | 1.2 | 9,500 |
+| 2 | Fields | fresh | | 18, over 6: half left at the cap (12,000; a sieged, weak build) | | 1.8 | 10,000 |
+| 3 | Circle | farmed | | 34, **2.4** (38,000) | | 1.6 | 46,000 |
+| 4 | Cave (Choir) | farmed | 40, 0.7 | 32, **6.0** (3 x 26,000) | 39, **1.0** (3 x 18,000) | 0.1 | 3 x 26,000 |
+| 5 | Dungeon (Gaoler) | farmed | | 37, **3.7** (150,000) | | 1.3 | 150,000 |
+| 6 | Swamp (Mother Rot) | farmed | | 39, **3.0** (170,000) | | 0.6 | 170,000 |
+| 7 | Ruins (Archivist) | farmed | 48, 1.1 | 28, **5.2** (160,000) | | 2.1 | 140,000 |
+| 8 | Frozen (Still Warden) | farmed | 41, 0.4 | 37, **1.9** (190,000) | 45, **0.7** (300,000) | 2.4 | 400,000 |
+| 9 | Sands (Long Coil) | farmed | | 36, **4.2** (300,000) | | 0.9 | 300,000 |
+| 10 | Emberdeep (Warden of the Deep) | farmed | | 43, **3.1** (420,000) | 33, over 6: 56% left at the cap (600,000) | 1.1-2.2 | 500,000 |
+
+**The Boss Rush** (`--boss-rush --farmed --stage=7`, after the merge): all ten fell, each fight 9 s
+(Elderbark, at the curve's floor) to 1.7 min (the Still Warden), 9.5 minutes of fights in a 24.5
+minute run.
 
 `_BossProbe` on every chapter (0-10, the Choir with and without `--focus`): every boss arrives, holds
 the field for its arrival (spells held, the player unhurt, both released the frame after), reaches
@@ -847,12 +854,15 @@ his hurdle cuts the probe's own drain to x0.2 from in front, as it did before.
 
 **Status (2026-11-01), for whoever picks this up:**
 
-- Done: the arrivals (all eleven, photographed at 1280x720 and 540x1212 portrait), the field hold,
-  the phases, the health above, the Boss Rush share, the validators (0 errors, 6 warnings, as at base).
-- Unfinished: the "health now" column for the Fields, the Circle, the Choir, the Ruins, the Frozen
-  Waste and the Emberdeep was set from the runs above and **not re-measured**; the same-code baseline
-  (base commit, chapters 0, 2, 4, 5); one Boss Rush run to check its length at the 0.35 share; a merge
-  of `main-ff86ni`.
+- Done: the arrivals (all eleven, photographed at 1280x720 and 540x1212 portrait, before and after
+  the merge of `main-ff86ni`), the field hold, the phases, the health above, the Boss Rush share
+  (measured once), a same-code baseline for four chapters, the validators (0 errors, 6 warnings, as
+  at base).
+- Unfinished: "health now" for the Fields, the Circle, the Ruins, the Frozen Waste and the Emberdeep
+  is set from the runs above and **not re-measured at that value**. The spread by build is the real
+  open question: the Still Warden (a target that never moves, so every spell lands) and the Choir are
+  the most build-sensitive. If a strong build still melts the Still Warden, a phase that spends time
+  (an untargetable shell, as the burrowers have) is the lever, not more health.
 - Needs a human eye: every arrival in play (the photographs were taken with the boss stood in front
   of the wizard, with no crowd); whether a 2.5-4 s hold reads as a beat or a wait; the Choir's new
   spacing (voices hold places 230 px round the player, step in to sing in turn); Mother Rot's
