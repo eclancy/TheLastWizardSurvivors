@@ -103,7 +103,7 @@ three-card hand's card size (dd5cc6a).
    above the player's spells**.
 2. **Spell visuals** (`wip/spell-visuals`, in flight): Cone of Cold hard to see; Solar Flare rises from
    under the player and the enemies; Stormsweep's crack slower at first, quicker with level; Scorching
-   Ray's icon a thinner ray into the ground; Iron Palisade's rolling walls dig up dirt; **familiar icons
+   Ray's icon a thinner ray into the ground; Iron Palisade's rolling walls dig up dirt; Bramble Seed withers quickly at its end instead of shrinking; **familiar icons
    too hard to read - three or four options for Eric to pick from**.
 3. **Enemy pathing** (`wip/enemy-pathing`, in flight): every enemy sticks on terrain; an efficient fix.
 4. **The Hollow Choir** (after 3): pathing sticks; their ranged attack needs a launched attack, not a
