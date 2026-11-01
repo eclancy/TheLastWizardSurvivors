@@ -142,16 +142,23 @@ public partial class CharacterSelection : Control
 				: GlobalStatsManager.IsCharacterRevealed(saveManager?.Data, character.Id) ? CardState.Locked
 				: CardState.Secret;
 
+			// The state is kept for every roster index, a hidden one included, because cardStates is read
+			// by roster index (ShowDetail) and the cards carry theirs.
 			cardStates.Add(state);
+			if (IsHiddenFromSelection(character))
+				continue;
 			grid.AddChild(wideLayout ? BuildCompactCard(character, i, state) : BuildCard(character, i, state));
 		}
+
+		// Global.SelectedCharacterIdx starts at 0, which is the Test Wizard, so a fresh launch would open
+		// the detail pane on a wizard who has no card.
+		if (!IsSelectable(Global.SelectedCharacterIdx))
+			Global.SelectedCharacterIdx = FirstSelectableIndex();
 
 		if (wideLayout)
 		{
 			BuildDetailPane();
-			int first = Global.SelectedCharacterIdx >= 0 && Global.SelectedCharacterIdx < characters.Count
-				? Global.SelectedCharacterIdx : 0;
-			ShowDetail(first);
+			ShowDetail(Global.SelectedCharacterIdx);
 		}
 
 		var backButton = GetNodeOrNull<Button>("BackButton");
@@ -599,6 +606,31 @@ public partial class CharacterSelection : Control
 		ResponsiveLayout.SetFont(label, ResponsiveLayout.TextRole.Label);
 		label.Modulate = new Color(0.85f, 0.85f, 0.9f);
 		return label;
+	}
+
+	// The Test Wizard is a developer's tool, not a wizard (Eric, 2026-11-01: "Remove the test wizard from
+	// character selection"). He stays first in CharacterRoster, so every tool that asks for --character=0
+	// still gets him; only this screen leaves him out.
+	private static bool IsHiddenFromSelection(CharacterData character) =>
+		string.Equals(character?.Id, "test_wizard", System.StringComparison.OrdinalIgnoreCase);
+
+	private bool IsSelectable(int idx) =>
+		idx >= 0 && idx < characters.Count && !IsHiddenFromSelection(characters[idx]);
+
+	// The first wizard on the screen the save can play; the first on the screen at all if it can play none.
+	private int FirstSelectableIndex()
+	{
+		int firstShown = -1;
+		for (int i = 0; i < characters.Count; i++)
+		{
+			if (!IsSelectable(i))
+				continue;
+			if (cardStates[i] == CardState.Unlocked)
+				return i;
+			if (firstShown < 0)
+				firstShown = i;
+		}
+		return Math.Max(0, firstShown);
 	}
 
 	private void OnCharButtonPressed(int idx)
