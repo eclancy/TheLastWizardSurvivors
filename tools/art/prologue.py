@@ -1544,9 +1544,10 @@ def write_anim(name, frames):
     for i, img in enumerate(unique):
         atlas.paste(img, ((i % cols) * w, (i // cols) * h))
     atlas.save(os.path.join(OUT, "%s-anim.png" % name))
-    with open(os.path.join(OUT, "%s-anim.json" % name), "w") as fh:
-        fh.write(json.dumps({"x": x0, "y": y0, "width": w, "height": h, "columns": cols, "fps": MISSED_FPS,
-                             "timeline": timeline}, sort_keys=True) + "\n")
+    # Binary, so it is LF on Windows too (the repo's line endings), whichever Python writes it.
+    with open(os.path.join(OUT, "%s-anim.json" % name), "wb") as fh:
+        fh.write((json.dumps({"x": x0, "y": y0, "width": w, "height": h, "columns": cols, "fps": MISSED_FPS,
+                              "timeline": timeline}, sort_keys=True) + "\n").encode("ascii"))
     return len(unique)
 
 
