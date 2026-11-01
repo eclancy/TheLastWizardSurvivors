@@ -511,6 +511,16 @@ def armour():
     for (x, y) in ((14, 8), (17, 8), (14, 9)):
         g.set(x, y, "q")                                # breaths
     g.span(10, 14, 17, "R")
+    # UNDER THE SHOULDERS, A STOP DOWN. Drawn whole in steel's base and lit, the suit was the
+    # brightest body in a swarm it is a third of (the Wall band) and read as the player's light, not
+    # his (art-direction.md 4c). The helm and the pauldrons keep the polish; everything they
+    # overhang - arms, breastplate, faulds, legs - is in their shadow, steel's shade and base.
+    down = {"T": "t", "t": "r", "r": "R", "R": "q"}
+    for y in range(15, FEET + 1):
+        for x in range(CELL):
+            ch = g.get(x, y)
+            if ch in down and not (y < 17 and (x < 9 or x > 22)):
+                g.set(x, y, down[ch])
     rim(g, 2, 29, skip="o")
     contact(g, 8, 23)
     mark(g, 14, 6)
