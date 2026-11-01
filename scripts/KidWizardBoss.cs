@@ -58,8 +58,36 @@ public partial class KidWizardBoss : BossEnemy
 			GlyphOverride = TelegraphGlyph.Shot,
 		};
 
+	// TWO PHASES (2026-10-31; he had the one stock enrage). At EchoHealthFraction every fan is cast
+	// twice - the same wedge, a second fan a beat after the first - so the step out of the wedge has
+	// to be a real one rather than a lean. At EnrageHealthFraction the stock enrage, spent as before
+	// on a wider fan rather than a faster one.
+	[Export] public float EchoHealthFraction { get; set; } = 0.66f;
+	[Export] public float EchoVolleyDelaySeconds { get; set; } = 0.4f;
+
+	private bool echoVolley;
+	private float echoVolleyIn = -1f;
+	private Vector2 echoAim;
+
+	protected override float[] BuildPhaseThresholds() => new[] { EchoHealthFraction, EnrageHealthFraction };
+
+	public override void _PhysicsProcess(double delta)
+	{
+		base._PhysicsProcess(delta);
+		if (echoVolleyIn < 0f || IsDying)
+			return;
+		echoVolleyIn -= (float)delta;
+		if (echoVolleyIn < 0f)
+			FireFan(echoAim);
+	}
+
 	protected override void OnPhaseEntered(int phase)
 	{
+		if (phase == 1)
+		{
+			echoVolley = true;
+			return;
+		}
 		ApplyEnrage();
 		// The enrage buys more of the thing the fight is about. A wider fan rather than a faster
 		// one: faster would out-run the tell, and the tell is the only warning the player gets.
@@ -103,6 +131,21 @@ public partial class KidWizardBoss : BossEnemy
 		if (aim.LengthSquared() <= 0.0001f)
 			aim = Vector2.Right;
 
+		FireFan(aim);
+		// The echo: the same fan down the same wedge, a beat later (phase 1 on).
+		if (echoVolley)
+		{
+			echoAim = aim;
+			echoVolleyIn = EchoVolleyDelaySeconds;
+		}
+	}
+
+	private void FireFan(Vector2 aim)
+	{
+		Node arena = GetParent();
+		if (missileScene == null || arena == null || !IsInstanceValid(arena))
+			return;
+
 		SfxPlayer.AtPosition(SfxCatalog.EnemyShoot, GlobalPosition, 0.07f);
 
 		int count = Mathf.Max(1, MissilesPerVolley);
@@ -125,6 +168,102 @@ public partial class KidWizardBoss : BossEnemy
 			// Parented to the arena, not to him: killing the caster must not delete missiles that
 			// are already the player's problem.
 			arena.CallDeferred("add_child", missile);
+		}
+	}
+
+	// --- The arrival (BossDeath, entrance) ---------------------------------------------------------
+	//
+	// THE KIDS' DRAWING IS NEVER CUT, TURNED OR REDRAWN, so his arrival is his fall's rule run the other
+	// way: sparks of his spell's colour wind in to one spot, a puff goes off, and he is there - his own
+	// single frame, untouched, popping up from small with a little bounce, the way a wizard turns up in
+	// a story. Only the sprite's size, height and alpha move; the effect round it is ours.
+	protected internal override float EntranceSeconds => 2.6f;
+	protected internal override float EntranceRoarSeconds => PopAt + 0.05f;
+
+	private const float PopAt = 1.1f;
+	private Vector2 restScale = Vector2.One;
+	private Vector2 restPosition;
+	private Color restModulate = Colors.White;
+	private bool restCaptured;
+
+	protected internal override void OnEntranceBegin(BossDeath stage)
+	{
+		AnimatedSprite2D drawing = stage.BodySprite;
+		if (drawing == null || !IsInstanceValid(drawing))
+			return;
+		restScale = drawing.Scale;
+		restPosition = drawing.Position;
+		restModulate = drawing.Modulate;
+		restCaptured = true;
+		drawing.Visible = false;
+	}
+
+	protected internal override void TickEntrance(BossDeath stage, float t, float dt)
+	{
+		AnimatedSprite2D drawing = stage.BodySprite;
+		if (!restCaptured || drawing == null || !IsInstanceValid(drawing))
+			return;
+		drawing.Visible = t >= PopAt;
+		float u = BossDeath.Span(t, PopAt, PopAt + 0.5f);
+		// From a fifth of his size to a little over, and back: a pop with one bounce.
+		float k = u < 0.6f
+			? Mathf.Lerp(0.2f, 1.12f, BossDeath.EaseOut(u / 0.6f))
+			: Mathf.Lerp(1.12f, 1f, BossDeath.EaseInOut((u - 0.6f) / 0.4f));
+		drawing.Scale = restScale * k;
+		float hop = 18f * Mathf.Sin(Mathf.Pi * BossDeath.Span(t, PopAt, PopAt + 0.45f));
+		drawing.Position = restPosition - new Vector2(0f, hop);
+		drawing.Modulate = new Color(restModulate, restModulate.A * Mathf.Min(1f, u * 3f));
+
+		if (stage.Crossed(PopAt))
+		{
+			Vector2 centre = stage.ArtToLocal(stage.FrameSize * 0.5f);
+			float reach = stage.FrameSize.X * stage.ArtScale.X * 0.5f;
+			for (int i = 0; i < 9; i++)
+			{
+				float a = Mathf.Tau * i / 9f + stage.Rand(-0.25f, 0.25f);
+				Vector2 at = centre + new Vector2(Mathf.Cos(a), Mathf.Sin(a) * 0.8f) * reach * stage.Rand(0.3f, 0.7f);
+				stage.PuffAt(at, 10f, stage.Rand(30f, 44f), stage.Rand(0.6f, 0.9f), new Color(SpellColor, 0.6f), stage.Rand(8f, 20f), stage.Rand(0f, 0.1f));
+			}
+			stage.PuffAt(centre, 10f, 56f, 0.3f, new Color(SpellColor, 0.85f), 0f, 0f, true);
+			stage.Emit(new BossDeath.Throw
+			{
+				Size = 4f, Color = SpellColor, ColorB = Colors.White, Light = true, NoLand = true,
+				SpeedMin = 40f, SpeedMax = 130f, UpMin = 40f, UpMax = 140f, Gravity = -30f, Drag = 1.4f,
+				Flutter = 5f, Life = 1.3f, Fade = 0.7f,
+			}, 20, stage.FrameSize * 0.5f, stage.FrameSize * 0.3f, 0f, 0.02f);
+		}
+	}
+
+	// His sprite back exactly as it was, however the arrival ended.
+	protected internal override void OnEntranceEnd(BossDeath stage)
+	{
+		AnimatedSprite2D drawing = stage.BodySprite;
+		if (!restCaptured || drawing == null || !IsInstanceValid(drawing))
+			return;
+		drawing.Scale = restScale;
+		drawing.Position = restPosition;
+		drawing.Modulate = restModulate;
+	}
+
+	// The sparks winding in before the pop: four-point twinkles on the art grid, closing on him.
+	protected internal override void DrawEntranceLight(BossDeath stage, CanvasItem canvas, float t)
+	{
+		if (t >= PopAt)
+			return;
+		Vector2 centre = stage.ArtToLocal(stage.FrameSize * 0.5f);
+		for (int k = 0; k < 10; k++)
+		{
+			float born = 0.5f * BossDeath.Hash(71u, k);
+			float u = BossDeath.Span(t, born, PopAt);
+			if (u <= 0f)
+				continue;
+			float a = Mathf.Tau * BossDeath.Hash(73u, k) + 4f * u;
+			float r = (90f + 60f * BossDeath.Hash(79u, k)) * (1f - BossDeath.EaseIn(u));
+			Vector2 at = BossDeath.Snap(centre + new Vector2(Mathf.Cos(a) * r, Mathf.Sin(a) * r * 0.8f));
+			float arm = BossDeath.Px * 2f;
+			canvas.DrawRect(new Rect2(at.X - arm, at.Y, arm * 2f + BossDeath.Px, BossDeath.Px), new Color(SpellColor, 0.8f));
+			canvas.DrawRect(new Rect2(at.X, at.Y - arm, BossDeath.Px, arm * 2f + BossDeath.Px), new Color(SpellColor, 0.8f));
+			canvas.DrawRect(new Rect2(at, new Vector2(BossDeath.Px, BossDeath.Px)), Colors.White);
 		}
 	}
 

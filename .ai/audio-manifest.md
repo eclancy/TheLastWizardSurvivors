@@ -91,6 +91,13 @@ below is still a **proposal** rather than a description of behaviour.
 Note that `elite_spawn` and `boss_roar` are wired in the tier table but have no trigger site
 yet, so their ducking is defined and untested.
 
+**2026-10-31: `boss_roar` has its trigger site** - once per boss arrival, at the climax of its
+entrance (`BossEnemy.RoarOnArrival`, timed by `EntranceRoarSeconds`; only the Hollow Choir's first
+voice roars). It is once a run (once a boss in a Boss Rush, minutes apart), so it keeps its −4 dBFS
+peak. The manifest's other proposal for it, the phase change, is left unwired: two to four phase
+changes a fight would play a once-a-run sound once a minute, and the loudness table would want a
+quieter variant from `tools/audio/sfx.py` first.
+
 Lengths and peak levels are generated. Do not retype them:
 
 ```

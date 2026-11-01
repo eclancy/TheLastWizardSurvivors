@@ -165,6 +165,100 @@ public partial class GaolerBoss : BossEnemy
 		return distanceToPlayer >= SlamRadius * 0.25f && distanceToPlayer <= SlamRadius * 1.3f;
 	}
 
+	// --- The arrival (BossDeath, entrance) ---------------------------------------------------------
+	//
+	// UP FROM THE OUBLIETTE. A grate is in the floor where it will stand; chains rattle down into the
+	// dark under it, the bars swing apart, and the Gaoler rides up out of the pit already rearing,
+	// keys swinging at its hand - it comes down on all four with a crash of dust and keys on the stone.
+	protected internal override float EntranceSeconds => 3.1f;
+
+	private BossDeath.Piece rider;
+	private const float GrateOpens = 0.55f;
+	private const float RideUp = 0.9f;
+	private const float RideTop = 2.2f;
+	private const float Lands = 2.55f;
+	private static readonly Color PitDark = new(0.05f, 0.03f, 0.07f, 0.92f);
+	private static readonly Color GrateIron = new(0.30f, 0.28f, 0.34f, 1f);
+
+	protected internal override void OnEntranceBegin(BossDeath stage)
+	{
+		rider = stage.CutWhole();
+		RiseFromGround(stage, rider, 0f);
+	}
+
+	protected internal override void TickEntrance(BossDeath stage, float t, float dt)
+	{
+		if (rider == null)
+			return;
+		float s = stage.ArtScale.X;
+		RiseFromGround(stage, rider, BossDeath.EaseOut(BossDeath.Span(t, RideUp, RideTop)));
+		// Rearing at the top of the ramp, then down on its forelegs.
+		float rear = BossDeath.Span(t, RideTop - 0.5f, RideTop) * (1f - BossDeath.EaseIn(BossDeath.Span(t, RideTop, Lands)));
+		rider.Rotation = -0.2f * rear;
+		float up = 26f * Mathf.Sin(Mathf.Pi * BossDeath.Span(t, RideTop - 0.2f, Lands));
+		rider.Offset = new Vector2(0f, rider.Offset.Y - up);
+		rider.Color = new Color(0.55f, 0.5f, 0.62f).Lerp(Colors.White, BossDeath.Span(t, RideUp, RideTop));
+
+		Vector2 foot = stage.Foot;
+		if (stage.Crossed(0.1f))
+		{
+			// The chains it was hung by, paid out into the pit.
+			stage.EmitAt(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.LinkFlat, Variants = 2, SpeedMin = 10f, SpeedMax = 40f, UpMin = -40f, UpMax = 0f,
+				Spin = 8f, Bounce = 0.2f, Life = 0.6f, Fade = 0.3f,
+			}, 8, foot, 220f, 26f, 0f, 0.04f);
+		}
+		if (stage.Crossed(Lands))
+		{
+			stage.DustRing(foot, 70f, 10, new Color(0.42f, 0.38f, 0.46f, 0.6f), 0.8f, 16f);
+			stage.EmitAt(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.KeyShort, Variants = 2, SpeedMin = 60f, SpeedMax = 160f, UpMin = 90f, UpMax = 200f,
+				Spin = 9f, Bounce = 0.4f, Friction = 6f, Life = 1.6f, Fade = 0.4f, Glint = new Color(1f, 0.92f, 0.7f, 0.9f),
+			}, 5, foot + new Vector2(0f, -4f), 30f * s, 10f);
+		}
+	}
+
+	// The pit and its grate, on the floor under everything: two halves of iron bars over a hole, which
+	// swing open and stay open until the fight starts, then close over the dark as it fades.
+	protected internal override void DrawEntranceGround(BossDeath stage, CanvasItem canvas, float t)
+	{
+		Vector2 foot = stage.Foot;
+		float shown = BossDeath.Span(t, 0f, 0.25f) * (1f - BossDeath.Span(t, EntranceSeconds, EntranceSeconds + 0.8f));
+		if (shown <= 0f)
+			return;
+		const float halfW = 64f, halfH = 26f;
+		BossDeath.Disc(canvas, foot, halfW, halfH, new Color(PitDark, PitDark.A * shown));
+		float open = BossDeath.EaseOut(BossDeath.Span(t, GrateOpens, RideUp));
+		float close = BossDeath.Span(t, Lands + 0.2f, EntranceSeconds);
+		open *= 1f - close;
+		var iron = new Color(GrateIron, shown);
+		for (int side = -1; side <= 1; side += 2)
+		{
+			// Each half is hinged at its own edge and folds flat toward it.
+			float hinge = foot.X + side * halfW;
+			float width = halfW * (1f - 0.85f * open);
+			for (int bar = 0; bar < 5; bar++)
+			{
+				float x = hinge - side * width * (bar + 0.5f) / 5f;
+				BossDeath.Line(canvas, new Vector2(x, foot.Y - halfH * 0.8f), new Vector2(x, foot.Y + halfH * 0.8f), iron, BossDeath.Px * 2f);
+			}
+			BossDeath.Line(canvas, new Vector2(hinge, foot.Y), new Vector2(hinge - side * width, foot.Y), iron, BossDeath.Px * 2f);
+		}
+	}
+
+	// A cold glow up out of the pit while it is open.
+	protected internal override void DrawEntranceLight(BossDeath stage, CanvasItem canvas, float t)
+	{
+		float glow = BossDeath.Span(t, GrateOpens, RideUp) * (1f - BossDeath.Span(t, RideTop, Lands + 0.3f));
+		if (glow <= 0f)
+			return;
+		var violet = new Color(0.74f, 0.30f, 0.86f);
+		BossDeath.Disc(canvas, stage.Foot, 54f, 20f, new Color(violet, 0.35f * glow));
+		BossDeath.Disc(canvas, stage.Foot, 30f, 11f, new Color(violet, 0.5f * glow));
+	}
+
 	// --- The fall (BossDeath) ---------------------------------------------------------------------
 	//
 	// THE KEYS SCATTER. It is the jailer of the place where a wizard is held, and the one thing it

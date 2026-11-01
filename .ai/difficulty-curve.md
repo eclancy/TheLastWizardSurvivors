@@ -216,6 +216,11 @@ outside the campaign, plays at 1.
 **The Boss Rush** reads `BossCatalog` health (scaled by `BossRushHealthScale`), so its bosses grew with
 these numbers - several-fold for the late ones. Not re-tuned here; it is a playtest item.
 
+**2026-10-31: the boss column above is superseded.** Boss fights were lengthened to three to five
+minutes - phases first, health second - and the Boss Rush now brings a third of each boss
+(`BossRushCatalog.FightHealthShare`). The numbers, the phases and the measured lengths are in
+`.ai/enemy-behaviour.md`, "Boss entrances and longer fights".
+
 ---
 
 ## 5. Healing: damage that stays taken

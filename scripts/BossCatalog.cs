@@ -64,7 +64,10 @@ public static class BossCatalog
 			// first chapter's boss a little lighter, the second's heavier, and from the first wall on about
 			// three times what it was - measured, a farmed build's single-target damage at 15:00 killed
 			// every boss of the road within seconds of its arrival. 4200 until then.
-			Health = 3800,
+			// 2026-10-31: every boss fight made to last three to five minutes, by phases first and health
+			// second (.ai/enemy-behaviour.md, "Boss entrances and longer fights"). The value before is kept
+			// on each line.
+			Health = 9500, // 3800 before the fights were lengthened
 			ArcaneVictoryBonus = 150
 		},
 		[1] = new BossDefinition
@@ -77,7 +80,7 @@ public static class BossCatalog
 			// (.ai/campaign.md), after the Choir's 3 x 1900. Retuned for the slot as campaign.md
 			// decision 3 proposed - between the Choir's 5700 / 190 and Mother Rot's 6800 / 210 - so
 			// boss health climbs with the order again instead of dipping at the maze.
-			Health = 70000, // 6200 before the difficulty curve
+			Health = 150000, // 70000 before the fights were lengthened, 6200 before the difficulty curve
 			ArcaneVictoryBonus = 200
 		},
 		[2] = new BossDefinition
@@ -88,7 +91,9 @@ public static class BossCatalog
 			ScenePath = "res://scenes/HollowChoirBoss.tscn",
 			// A third each. Node2DGame sets this on the voice it spawns and that voice hands the
 			// same number to the two it calls up, so the fight is three times what is written here.
-			Health = 20000, // 1900 before the difficulty curve
+			// Lower than before, not higher: the voices now hold their places apart, so one blast no
+			// longer takes the set, and that alone took the fight from seconds to six minutes at 26,000.
+			Health = 18000, // 20000 before the fights were lengthened, 1900 before the difficulty curve
 			ArcaneVictoryBonus = 190
 		},
 		[3] = new BossDefinition
@@ -97,7 +102,7 @@ public static class BossCatalog
 			DisplayName = "Mother Rot",
 			Tagline = "She heals from everything she sheds. Clear the spawn or the bar goes backwards.",
 			ScenePath = "res://scenes/MotherRotBoss.tscn",
-			Health = 80000, // 6800 before the difficulty curve
+			Health = 170000, // 80000 before the fights were lengthened, 6800 before the difficulty curve
 			ArcaneVictoryBonus = 210
 		},
 		[4] = new BossDefinition
@@ -106,7 +111,7 @@ public static class BossCatalog
 			DisplayName = "The Archivist",
 			Tagline = "It never moves and its beam never stops. Keep orbiting, and watch where it surfaces.",
 			ScenePath = "res://scenes/ArchivistBoss.tscn",
-			Health = 90000, // 7200 before the difficulty curve
+			Health = 140000, // 90000 before the fights were lengthened, 7200 before the difficulty curve
 			ArcaneVictoryBonus = 230
 		},
 		[5] = new BossDefinition
@@ -115,7 +120,7 @@ public static class BossCatalog
 			DisplayName = "The Still Warden",
 			Tagline = "Frozen in place, and the arena does the chasing. The safe ground is not where it is.",
 			ScenePath = "res://scenes/StillWardenBoss.tscn",
-			Health = 110000, // 7800 before the difficulty curve
+			Health = 300000, // 110000 before the fights were lengthened, 7800 before the difficulty curve
 			ArcaneVictoryBonus = 250
 		},
 		[6] = new BossDefinition
@@ -124,7 +129,7 @@ public static class BossCatalog
 			DisplayName = "The Long Coil",
 			Tagline = "Only killable while it is above the sand. Bring something that spikes.",
 			ScenePath = "res://scenes/LongCoilBoss.tscn",
-			Health = 130000, // 8200 before the difficulty curve
+			Health = 300000, // 130000 before the fights were lengthened, 8200 before the difficulty curve
 			ArcaneVictoryBonus = 270
 		},
 		[7] = new BossDefinition
@@ -133,7 +138,7 @@ public static class BossCatalog
 			DisplayName = "The Warden of the Deep",
 			Tagline = "Every fight you have already won, in sequence, with nothing in between.",
 			ScenePath = "res://scenes/DeepWardenBoss.tscn",
-			Health = 200000, // 11000 before the difficulty curve
+			Health = 600000, // 200000 before the fights were lengthened, 11000 before the difficulty curve
 			ArcaneVictoryBonus = 400
 		},
 		[8] = new BossDefinition
@@ -142,7 +147,7 @@ public static class BossCatalog
 			DisplayName = "Wizard Dude",
 			Tagline = "Throws a fan of missiles down the wedge he shows you. Leave the wedge.",
 			ScenePath = "res://scenes/KidWizardBoss.tscn",
-			Health = 4600,
+			Health = 9000, // 4600 before the fights were lengthened
 			// Opens nothing: the Sketchbook is outside the campaign order (StageCatalog), so
 			// ChapterOpenedBy has no next chapter for it - beating it is never on the critical path.
 			ArcaneVictoryBonus = 200
@@ -158,7 +163,7 @@ public static class BossCatalog
 			Tagline = "He keeps his hurdle between you and him. Go round to his back.",
 			ScenePath = "res://scenes/HaywardBoss.tscn",
 			StandInScenePath = "res://scenes/ForestTreantBoss.tscn",
-			Health = 6500, // 4500 before the difficulty curve
+			Health = 10000, // 6500 before the fights were lengthened, 4500 before the difficulty curve
 			ArcaneVictoryBonus = 160
 		},
 		[10] = new BossDefinition
@@ -168,7 +173,7 @@ public static class BossCatalog
 			Tagline = "It closes the circle on you. Find the gap and get out before the middle falls.",
 			ScenePath = "res://scenes/NinthStoneBoss.tscn",
 			StandInScenePath = "res://scenes/ForestTreantBoss.tscn",
-			Health = 20000, // 5000 before the difficulty curve
+			Health = 46000, // 20000 before the fights were lengthened, 5000 before the difficulty curve
 			ArcaneVictoryBonus = 175
 		},
 		// THE CASTLE'S BOSSES (.ai/endgame-castle.md 3.6, 5.6, 6.4). Designed, not built: each fights as

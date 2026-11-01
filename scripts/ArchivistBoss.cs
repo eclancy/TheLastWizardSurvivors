@@ -72,12 +72,49 @@ public partial class ArchivistBoss : BossEnemy
 			GlyphOverride = TelegraphGlyph.Alert,
 		};
 
+	// TWO PHASES (2026-10-31; it had the one stock enrage). At SecondBeamHealthFraction it opens a
+	// SECOND wedge on its back, so the orbit that kept the player off one beam now has to fit between
+	// two, half a turn apart - the same verb, with half the room. At EnrageHealthFraction the stock
+	// enrage: both beams turn faster, and it dives more often.
+	[Export] public float SecondBeamHealthFraction { get; set; } = 0.66f;
+
+	protected override float[] BuildPhaseThresholds() => new[] { SecondBeamHealthFraction, EnrageHealthFraction };
+
+	// The back beam: a second telegraph, always facing directly away from the first. Its own clock, so
+	// its discharges fall between the front's.
+	private GroundSlamAttack backBeam;
+
 	protected override void OnPhaseEntered(int phase)
 	{
+		if (phase == 1)
+		{
+			backBeam = new GroundSlamAttack(SlamIntervalSeconds, SlamTelegraphSeconds, SlamRadius, SlamDamage, ArchiveColor)
+			{
+				Shape = TelegraphShape.Cone,
+				HalfAngleDegrees = SweepHalfAngle,
+				GlyphOverride = TelegraphGlyph.Alert,
+				Facing = -Slam.Facing,
+			};
+			SetBaseModulate(new Color(0.9f, 0.8f, 1.0f));
+			return;
+		}
+
 		ApplyEnrage();
 		// Enrage on a boss that does not chase would be half wasted, so it buys the thing that
-		// actually matters here: the beam turns faster, and the orbit gets tighter.
+		// actually matters here: the beams turn faster, the orbit gets tighter, and it moves more.
 		SweepDegreesPerSecond *= 1.4f;
+		BurrowIntervalSeconds *= 0.7f;
+	}
+
+	private void TickBackBeam(float delta)
+	{
+		if (backBeam == null || IsDying || Slam == null)
+			return;
+		backBeam.Facing = -Slam.Facing;
+		Node2D target = TargetPlayer;
+		bool valid = target != null && IsInstanceValid(target);
+		if (backBeam.Tick(delta, valid && !burrow.IsUnder) == AttackTelegraph.Beat.Resolved && valid)
+			backBeam.ResolveAgainst(this, target);
 	}
 
 	// It is a fixture. Nothing it does involves walking, and returning Zero also suppresses the
@@ -96,6 +133,7 @@ public partial class ArchivistBoss : BossEnemy
 	{
 		base._PhysicsProcess(delta);
 		TickSweep((float)delta);
+		TickBackBeam((float)delta);
 		TickBurrow((float)delta);
 	}
 
@@ -190,6 +228,8 @@ public partial class ArchivistBoss : BossEnemy
 	protected override void DrawGroundTells(CanvasItem floor)
 	{
 		base.DrawGroundTells(floor);
+		if (!IsDying && !burrow.IsUnder)
+			backBeam?.Draw(floor);
 
 		if (!burrow.IsUnder)
 			return;
@@ -200,6 +240,82 @@ public partial class ArchivistBoss : BossEnemy
 		float swell = 1f + 0.18f * Mathf.Sin(burrow.Progress * Mathf.Tau * 3f);
 		floor.DrawCircle(Vector2.Zero, 26f * swell, soil);
 		floor.DrawArc(Vector2.Zero, 34f * swell, 0f, Mathf.Tau, 24, soil, 2.5f, true);
+	}
+
+	// --- The arrival (BossDeath, entrance) ---------------------------------------------------------
+	//
+	// BOUND FROM ITS PAGES - its fall run the other way. Loose pages blow in from every side and fold
+	// down onto one spot; the slab binds upward out of them along a seam of light, a line of writing at
+	// a time; then every line of it flares once, and it is reading.
+	protected internal override float EntranceSeconds => 3.3f;
+
+	private BossDeath.Piece slab;
+	private const float BindStart = 0.9f;
+	private const float BindEnd = 2.5f;
+
+	protected internal override void OnEntranceBegin(BossDeath stage)
+	{
+		slab = stage.CutWhole();
+		slab.VisibleTop = stage.FrameSize.Y;
+	}
+
+	protected internal override void TickEntrance(BossDeath stage, float t, float dt)
+	{
+		if (slab == null)
+			return;
+		float bound = BossDeath.EaseInOut(BossDeath.Span(t, BindStart, BindEnd));
+		slab.VisibleTop = stage.FrameSize.Y * (1f - bound);
+		float flare = BossDeath.Span(t, BindEnd, BindEnd + 0.12f) * (1f - BossDeath.Span(t, BindEnd + 0.2f, EntranceSeconds));
+		slab.Glow = new Color(ArchiveColor, 0.75f * flare);
+		if (stage.Crossed(BindEnd))
+		{
+			stage.Emit(new BossDeath.Throw
+			{
+				Cell = BossDeath.Cell.Page, Frames = 4, Fps = 6f, SpeedMin = 20f, SpeedMax = 80f, UpMin = 60f, UpMax = 150f,
+				Gravity = 200f, Terminal = 40f, Drag = 1.5f, Flutter = 6f, FlutterHz = 1.2f, Bounce = 0f, Life = 1.8f, Fade = 0.5f,
+			}, 8, new Vector2(48f, 10f), new Vector2(30f, 6f), 0f, 0.03f);
+		}
+	}
+
+	private static readonly Color PageColor = new(0.86f, 0.82f, 0.70f);
+
+	// The pages blowing in: drawn rather than thrown, since they fly inward to one spot, which nothing
+	// thrown does. Small pale leaves on the art grid, tumbling as they come.
+	protected internal override void DrawEntranceAir(BossDeath stage, CanvasItem canvas, float t)
+	{
+		if (t > BindEnd)
+			return;
+		Vector2 foot = stage.Foot;
+		for (int k = 0; k < 16; k++)
+		{
+			float born = 1.4f * BossDeath.Hash(53u, k);
+			float u = BossDeath.Span(t, born, born + 1.0f);
+			if (u <= 0f || u >= 1f)
+				continue;
+			float a = Mathf.Tau * BossDeath.Hash(59u, k) + 1.8f * u;
+			float r = (120f + 90f * BossDeath.Hash(61u, k)) * (1f - BossDeath.EaseIn(u));
+			float lift = 60f * Mathf.Sin(Mathf.Pi * u) + 20f;
+			Vector2 at = BossDeath.Snap(foot + new Vector2(Mathf.Cos(a) * r, Mathf.Sin(a) * r * 0.45f - lift));
+			bool edge = ((int)(t * 10f) + k) % 2 == 0;
+			var size = edge ? new Vector2(BossDeath.Px * 4f, BossDeath.Px) : new Vector2(BossDeath.Px * 3f, BossDeath.Px * 4f);
+			canvas.DrawRect(new Rect2(at, size), new Color(PageColor, 0.95f));
+		}
+	}
+
+	// The seam of light the slab binds along, at the line it has reached.
+	protected internal override void DrawEntranceLight(BossDeath stage, CanvasItem canvas, float t)
+	{
+		if (slab == null || t < BindStart || t > BindEnd + 0.1f)
+			return;
+		float row = slab.VisibleTop;
+		for (float x = 18f; x <= 78f; x += 2f)
+		{
+			if (!stage.Solid(new Vector2(x, row)) && !stage.Solid(new Vector2(x, row + 2f)))
+				continue;
+			Vector2 at = stage.ArtToLocal(new Vector2(x, row));
+			canvas.DrawRect(WhipLimb.Cell(at, BossDeath.Px * 2f), new Color(ArchiveColor, 0.7f));
+			canvas.DrawRect(WhipLimb.Cell(at, BossDeath.Px), new Color(Colors.White, 0.9f));
+		}
 	}
 
 	// --- The fall (BossDeath) ---------------------------------------------------------------------

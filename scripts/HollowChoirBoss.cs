@@ -42,7 +42,33 @@ public partial class HollowChoirBoss : BossEnemy
 
 	[Export] public Color ChoirColor { get; set; } = new Color(0.45f, 0.86f, 0.92f);
 
+	// THE VOICES KEEP THEIR PLACES (2026-10-31). The Choir died in six seconds to a farmed build because
+	// all three chased the wizard and arrived on top of each other, where one blast caught the whole
+	// set and the linked health never came into it. Now each voice holds its own bearing round him at
+	// StandRadius - the three stand a triangle apart - and only steps in to sing. Spreading damage is
+	// the fight's question again, rather than something a crowd answers by standing still.
+	[Export] public float StandRadius { get; set; } = 230f;
+
+	/// <summary>Degrees a second the voices' places turn round the wizard from phase 1 on.</summary>
+	[Export] public float RoundDegreesPerSecond { get; set; } = 16f;
+
+	// PHASES, on the whole Choir's health (BossHealthFraction): at RoundHealthFraction the voices begin
+	// to turn round him and to sing a ROUND - each in turn marks a note on the ground where he stands,
+	// a beat apart, so the three come as a sequence to walk through; at LastVerseHealthFraction the
+	// round quickens and a fallen voice is sung back sooner and stronger, so the window to silence all
+	// three narrows just as the fight is nearly won.
+	[Export] public float RoundHealthFraction { get; set; } = 0.7f;
+	[Export] public float LastVerseHealthFraction { get; set; } = 0.33f;
+	[Export] public float NoteIntervalSeconds { get; set; } = 4.8f;
+	[Export] public float NoteTellSeconds { get; set; } = 1.1f;
+	[Export] public float NoteRadius { get; set; } = 70f;
+	[Export] public int NoteDamage { get; set; } = 4;
+
 	private readonly List<HollowChoirBoss> voices = new();
+	// This voice's place in the Choir: 0 the one the run spawned, then the echoes in the order called.
+	private int voiceOrder;
+	private bool singingRound;
+	private float untilNote;
 	private float downedRemaining = -1f;
 
 	private bool IsDowned => downedRemaining >= 0f;
@@ -105,6 +131,7 @@ public partial class HollowChoirBoss : BossEnemy
 			}
 
 			echo.IsEcho = true;
+			echo.voiceOrder = i + 1;
 			echo.Health = Health;
 			echo.BossId = BossId;
 			echo.BossDisplayName = BossDisplayName;
@@ -135,9 +162,99 @@ public partial class HollowChoirBoss : BossEnemy
 	protected override GroundSlamAttack BuildSlam() =>
 		new(SlamIntervalSeconds, SlamTelegraphSeconds, SlamRadius, SlamDamage, ChoirColor);
 
-	// The Choir has no enrage. Three bodies that all sped up at once would be a difficulty cliff
-	// nobody could read, and the fight already escalates on its own every time a revive lands.
-	protected override float[] BuildPhaseThresholds() => System.Array.Empty<float>();
+	// No enrage - three bodies that all sped up at once would be a cliff nobody could read - but two
+	// verses, read off the whole Choir's bar so the three change on one frame (BossEnemy.TickPhases).
+	protected override float[] BuildPhaseThresholds() => new[] { RoundHealthFraction, LastVerseHealthFraction };
+
+	protected override void OnPhaseEntered(int phase)
+	{
+		if (phase == 1)
+		{
+			// The round: each voice's first note a third of the interval after the one before it.
+			singingRound = true;
+			untilNote = 1.2f + voiceOrder * NoteIntervalSeconds / Mathf.Max(1, VoiceCount);
+			SetBaseModulate(new Color(0.62f, 0.96f, 1.0f));
+			return;
+		}
+		NoteIntervalSeconds *= 0.72f;
+		RoundDegreesPerSecond *= 1.6f;
+		ReviveHealthFraction = Mathf.Min(0.6f, ReviveHealthFraction + 0.12f);
+		SetBaseModulate(new Color(0.80f, 1.0f, 1.0f));
+	}
+
+	// Where this voice stands: its third of the circle round the wizard, turned by the round.
+	private float firstBearing = float.NaN;
+	private float roundTurn;
+	private bool steppingIn;
+	private float stepInLeft;
+	private float untilStepIn = -1f;
+	private const float StepInIntervalSeconds = 6.6f;
+	private const float StepInHoldSeconds = 3.2f;
+
+	private Vector2? StandingPlace(Node2D target)
+	{
+		if (target == null || !IsInstanceValid(target))
+			return null;
+		if (float.IsNaN(firstBearing))
+		{
+			HollowChoirBoss first = voices.Count > 0 && IsInstanceValid(voices[0]) ? voices[0] : this;
+			firstBearing = (first.GlobalPosition - target.GlobalPosition).Angle();
+		}
+		float bearing = firstBearing + voiceOrder * Mathf.Tau / Mathf.Max(1, VoiceCount) + roundTurn;
+		float radius = steppingIn ? SlamRadius * 0.55f : StandRadius;
+		return target.GlobalPosition + Vector2.FromAngle(bearing) * radius;
+	}
+
+	// The voices take turns to step in and sing at him, a third of the interval apart, and go back to
+	// their places when the note has landed.
+	private void TickPlaces(float delta)
+	{
+		if (IsDowned || IsDying)
+			return;
+		if (untilStepIn < 0f)
+			untilStepIn = 2.0f + voiceOrder * StepInIntervalSeconds / Mathf.Max(1, VoiceCount);
+		if (singingRound)
+			roundTurn += Mathf.DegToRad(RoundDegreesPerSecond) * delta;
+		if (steppingIn)
+		{
+			stepInLeft -= delta;
+			if (stepInLeft <= 0f)
+				steppingIn = false;
+		}
+		else
+		{
+			untilStepIn -= delta;
+			if (untilStepIn <= 0f)
+			{
+				steppingIn = true;
+				stepInLeft = StepInHoldSeconds;
+				untilStepIn = StepInIntervalSeconds;
+			}
+		}
+	}
+
+	private void TickRound(float delta)
+	{
+		if (!singingRound || IsDowned || IsDying)
+			return;
+		untilNote -= delta;
+		if (untilNote > 0f)
+			return;
+		untilNote = NoteIntervalSeconds;
+		Node2D target = TargetPlayer;
+		Node arena = GetParent();
+		if (target == null || !IsInstanceValid(target) || arena == null || !IsInstanceValid(arena))
+			return;
+		// Where he stands now: a note is read and stepped out of, and the next voice's comes a beat later.
+		TelegraphedGroundHit.Place(arena, target.GlobalPosition, NoteTellSeconds, NoteRadius, ScaleOutgoingDamage(NoteDamage), ChoirColor);
+		PlayAttackAnimation();
+	}
+
+	protected override void OnAttackResolved(Node2D target)
+	{
+		base.OnAttackResolved(target);
+		steppingIn = false;
+	}
 
 	/// <summary>
 	/// The health bar shows the whole Choir, not whichever third the run happens to hold a
@@ -165,6 +282,8 @@ public partial class HollowChoirBoss : BossEnemy
 	public override void _PhysicsProcess(double delta)
 	{
 		base._PhysicsProcess(delta);
+		TickPlaces((float)delta);
+		TickRound((float)delta);
 
 		if (!IsDowned)
 			return;
@@ -174,11 +293,24 @@ public partial class HollowChoirBoss : BossEnemy
 			Rise();
 	}
 
-	protected override Vector2 AdjustSteering(Vector2 chaseDirection, float distanceToPlayer) =>
-		IsDowned ? Vector2.Zero : base.AdjustSteering(chaseDirection, distanceToPlayer);
+	// To its place, not at him: planted through its own wind-up (the base's rule), still while down.
+	protected override Vector2 AdjustSteering(Vector2 chaseDirection, float distanceToPlayer)
+	{
+		if (IsDowned || (Slam != null && Slam.IsWindingUp))
+			return Vector2.Zero;
+		if (StandingPlace(TargetPlayer) is not Vector2 place)
+			return base.AdjustSteering(chaseDirection, distanceToPlayer);
+		Vector2 to = place - GlobalPosition;
+		float d = to.Length();
+		if (d < 10f)
+			return Vector2.Zero;
+		// Eases in over the last forty pixels rather than overshooting and hunting round the spot.
+		return to / d * Mathf.Min(1.5f, 0.25f + d / 50f);
+	}
 
+	// Only a voice that has stepped in sings at him; the others hold their places.
 	protected override bool WantsToAttack(Node2D target, float distanceToPlayer) =>
-		!IsDowned && base.WantsToAttack(target, distanceToPlayer);
+		!IsDowned && steppingIn && distanceToPlayer <= SlamRadius * 1.25f;
 
 	/// <summary>
 	/// Falling, not dying. Overriding <c>StartDeath</c> rather than intercepting damage is what
@@ -277,6 +409,89 @@ public partial class HollowChoirBoss : BossEnemy
 	}
 
 	private const float DownedRingRadius = 40f;
+
+	// --- The arrival (BossDeath, entrance) ---------------------------------------------------------
+	//
+	// OUT OF THE DARK, ONE VOICE AT A TIME. Where each voice will stand the cave goes darker than dark;
+	// motes of its colour drift in out of the air and wind down into it; the robe forms inside the
+	// dark as the dark thins; and the hood flares as it finds its note - the first voice, then the
+	// second, then the third, a beat apart. Only the first roars: three at once would be one sound
+	// three times over (boss_roar is a once-a-run cue, .ai/audio-direction.md).
+	protected internal override float EntranceSeconds => 3.0f;
+	protected internal override float EntranceDelaySeconds => voiceOrder * 0.35f;
+	protected internal override float EntranceRoarSeconds => IsEcho ? -1f : 2.3f;
+
+	private BossDeath.Piece robe;
+	private const float Forms = 0.9f;
+	private const float Formed = 2.3f;
+
+	protected internal override void OnEntranceBegin(BossDeath stage)
+	{
+		robe = stage.CutWhole();
+		robe.Color = new Color(0.05f, 0.08f, 0.10f, 0f);
+	}
+
+	protected internal override void TickEntrance(BossDeath stage, float t, float dt)
+	{
+		if (robe == null)
+			return;
+		float form = BossDeath.EaseInOut(BossDeath.Span(t, Forms, Formed));
+		robe.Color = new Color(0.05f, 0.08f, 0.10f, 0f).Lerp(Colors.White, form);
+		robe.Offset = new Vector2(0f, 10f * (1f - form) * stage.ArtScale.Y);
+		float flare = BossDeath.Span(t, Formed - 0.1f, Formed) * (1f - BossDeath.Span(t, Formed, EntranceSeconds));
+		robe.Glow = new Color(ChoirColor, 0.7f * flare);
+		if (stage.Crossed(Formed))
+			stage.PuffAt(stage.ArtToLocal(new Vector2(48f, 30f)), 8f, 46f, 0.6f, new Color(ChoirColor, 0.6f), 6f, 0f, true);
+	}
+
+	// The dark it forms in: a pool of night over and round the body, thinning as the robe forms.
+	protected internal override void DrawEntranceAir(BossDeath stage, CanvasItem canvas, float t)
+	{
+		float dark = BossDeath.Span(t, 0f, 0.5f) * (1f - BossDeath.Span(t, Forms + 0.4f, Formed + 0.2f));
+		if (dark <= 0f)
+			return;
+		Vector2 centre = stage.ArtToLocal(new Vector2(48f, 54f));
+		var night = new Color(0.01f, 0.02f, 0.04f, 0.55f * dark);
+		BossDeath.Disc(canvas, centre, 70f, 84f, night);
+		BossDeath.Disc(canvas, centre + new Vector2(0f, 10f), 46f, 58f, night);
+	}
+
+	// The motes winding in, and after the flare the song: short arcs lifting off the hood.
+	protected internal override void DrawEntranceLight(BossDeath stage, CanvasItem canvas, float t)
+	{
+		Vector2 centre = stage.ArtToLocal(new Vector2(48f, 46f));
+		float gather = BossDeath.Span(t, 0f, Formed);
+		if (gather < 1f)
+		{
+			for (int k = 0; k < 12; k++)
+			{
+				float born = 0.9f * BossDeath.Hash(31u, k);
+				float u = BossDeath.Span(t, born, born + 1.3f);
+				if (u <= 0f || u >= 1f)
+					continue;
+				float a = Mathf.Tau * BossDeath.Hash(37u, k) + 3.2f * u;
+				float r = (70f + 70f * BossDeath.Hash(41u, k)) * (1f - BossDeath.EaseIn(u));
+				Vector2 at = BossDeath.Snap(centre + new Vector2(Mathf.Cos(a) * r, Mathf.Sin(a) * r * 0.8f));
+				float alpha = Mathf.Min(1f, 4f * (1f - u)) * Mathf.Min(1f, 5f * u);
+				canvas.DrawRect(new Rect2(at - new Vector2(BossDeath.Px, BossDeath.Px), new Vector2(BossDeath.Px * 3f, BossDeath.Px * 3f)), new Color(ChoirColor, 0.35f * alpha));
+				canvas.DrawRect(new Rect2(at, new Vector2(BossDeath.Px, BossDeath.Px)), new Color(Colors.White, 0.9f * alpha));
+			}
+		}
+		float song = BossDeath.Span(t, Formed, Formed + 0.9f);
+		if (song > 0f && song < 1f)
+		{
+			Vector2 hood = stage.ArtToLocal(new Vector2(48f, 18f));
+			for (int k = 0; k < 3; k++)
+			{
+				float u = Mathf.Clamp(song * 1.4f - k * 0.2f, 0f, 1f);
+				if (u <= 0f || u >= 1f)
+					continue;
+				float rx = 14f + 26f * u;
+				BossDeath.Arc(canvas, hood - new Vector2(0f, 30f * u), rx, rx * 0.45f, Mathf.Pi * 1.15f, Mathf.Pi * 1.85f,
+					new Color(ChoirColor, 0.8f * (1f - u)));
+			}
+		}
+	}
 
 	// --- The fall (BossDeath) ---------------------------------------------------------------------
 	//

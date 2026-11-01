@@ -29,7 +29,7 @@ SlamIntervalSeconds = 3.2
 SlamTelegraphSeconds = 0.9
 SlamRadius = 96.0
 SlamDamage = 5
-EnrageHealthFraction = 0.5
+EnrageHealthFraction = 0.28
 SlamEngageRadiusMultiplier = 1.3
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]

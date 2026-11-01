@@ -3740,6 +3740,24 @@ public static class RegressionChecks
 			if (probe.DeathSeconds < 1.2f || probe.DeathSeconds + probe.DeathDelaySeconds > 3.5f)
 				warnings.Add($"Boss '{boss.Id}' falls for {probe.DeathSeconds}s after {probe.DeathDelaySeconds}s; outside 1.2-3.5 s it either vanishes or holds the arena for a corpse.");
 
+			// THE ARRIVAL (2026-10-31). The player's spells and the whole field are held while it plays
+			// (Node2DGame.BossEntrance), so it must be long enough to be seen and short enough that the
+			// hold is a beat, not a cutscene. The Choir's last voice waits two turns of its delay.
+			float arrival = probe.EntranceSeconds + probe.EntranceDelaySeconds;
+			if (probe.EntranceSeconds < 2.5f || arrival > 4.0f)
+				warnings.Add($"Boss '{boss.Id}' arrives over {probe.EntranceSeconds}s after {probe.EntranceDelaySeconds}s; outside 2.5-4 s the field is held for too little to see it or too long to bear.");
+
+			// AT LEAST TWO PHASES, each a fraction strictly inside 0-1 and below the one before: a
+			// threshold out of order is crossed on the same frame as its neighbour and its change is lost.
+			float[] thresholds = probe.DesignedPhaseThresholds;
+			if (thresholds.Length < 2)
+				warnings.Add($"Boss '{boss.Id}' has {thresholds.Length} phase threshold(s); every boss changes what its fight asks at least twice.");
+			for (int i = 0; i < thresholds.Length; i++)
+			{
+				if (thresholds[i] <= 0f || thresholds[i] >= 1f || (i > 0 && thresholds[i] >= thresholds[i - 1]))
+					warnings.Add($"Boss '{boss.Id}' phase threshold {i + 1} is {thresholds[i]}; thresholds must fall strictly inside 0-1, each below the last.");
+			}
+
 			ValidateBossPattern(warnings, probe);
 			probe.Free();
 		}
@@ -3758,6 +3776,10 @@ public static class RegressionChecks
 	// number that would silently switch that idea off.
 	private static void ValidateBossPattern(List<string> warnings, BossEnemy probe)
 	{
+		// Elderbark's roots (bare BossEnemy): marked, and each a beat after the last, or the line lands at once.
+		if (probe.GetType() == typeof(BossEnemy) && (probe.RootTellSeconds <= 0f || probe.RootStaggerSeconds < 0f || probe.RootsPerLine < 2))
+			warnings.Add($"Elderbark's roots ({probe.RootsPerLine} at {probe.RootTellSeconds}s, {probe.RootStaggerSeconds}s apart) land unseen or all at once.");
+
 		switch (probe)
 		{
 			// The Ninth Stone holds its own geometry to the player's walk (the gap walkable, the rest
@@ -3778,6 +3800,12 @@ public static class RegressionChecks
 				break;
 
 			case HollowChoirBoss choir:
+				// The voices stand apart so one blast cannot take the set (2026-10-31); a place inside
+				// their own reach puts them back on top of the wizard and of each other.
+				if (choir.StandRadius <= choir.SlamRadius)
+					warnings.Add($"Hollow Choir voices stand {choir.StandRadius} px out with a {choir.SlamRadius} px reach, so they crowd him and one blast takes all three.");
+				if (choir.NoteTellSeconds <= 0f)
+					warnings.Add("Hollow Choir's round marks its notes for no time at all, so they land where he stands unseen.");
 				if (choir.VoiceCount < 2)
 					warnings.Add($"Hollow Choir has {choir.VoiceCount} voices, so nothing can revive anything and the linked-health fight is an ordinary boss.");
 				if (choir.ReviveSeconds <= 0f)
@@ -3809,6 +3837,10 @@ public static class RegressionChecks
 				break;
 
 			case StillWardenBoss warden:
+				// The whiteout's ring has to lie outside the claim, or it falls on the ground the fight
+				// tells the player to hold.
+				if (warden.WhiteoutTellSeconds <= 0f || warden.WhiteoutRadius - warden.IceShardRadius <= warden.GuardPostRadius * 0.6f)
+					warnings.Add($"The Still Warden's whiteout ring ({warden.WhiteoutRadius} px, {warden.WhiteoutTellSeconds}s) falls on its own claim or unseen.");
 				if (warden.ShardsPerVolley <= 0 || warden.IceVolleyIntervalSeconds <= 0f)
 					warnings.Add("The Still Warden drops no ice, so a boss that cannot chase has no pressure at all.");
 				if (warden.IceScatterRadius <= warden.IceShardRadius)
@@ -3818,6 +3850,8 @@ public static class RegressionChecks
 				break;
 
 			case LongCoilBoss coil:
+				if (coil.SprayTellSeconds <= 0f)
+					warnings.Add("The Long Coil's sand spray is marked for no time, so it lands unseen.");
 				if (coil.SurfacedSeconds <= 0f)
 					warnings.Add("The Long Coil is never above ground, so it can never be damaged and the fight cannot end.");
 				if (coil.ResurfaceTellSeconds >= coil.DiveTravelSeconds)

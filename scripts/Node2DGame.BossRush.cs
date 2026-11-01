@@ -67,14 +67,16 @@ public partial class Node2DGame
 	/// <summary>
 	/// How much of its catalog health a rush boss arriving at <paramref name="arrivalPaceSeconds"/>
 	/// brings: the swarm's own health curve (UpdateSpawnScaling) at that point over its value at the
-	/// ordinary boss time, which is where every boss's health was tuned. Floored at
-	/// BossRushCatalog.MinHealthScale, and 1 for the finale.
+	/// ordinary boss time, which is where every boss's health was tuned, floored at
+	/// BossRushCatalog.MinHealthScale - and then the rush's share of a chapter fight
+	/// (BossRushCatalog.FightHealthShare), which the finale gets too.
 	/// </summary>
 	private float BossRushHealthScale(float arrivalPaceSeconds)
 	{
 		float end = SpawnHealthAtPaceMinutes(ReferenceRunSeconds / 60f);
 		float at = SpawnHealthAtPaceMinutes(arrivalPaceSeconds / 60f);
-		return end <= 0f ? 1f : Mathf.Clamp(at / end, BossRushCatalog.MinHealthScale, 1f);
+		float curve = end <= 0f ? 1f : Mathf.Clamp(at / end, BossRushCatalog.MinHealthScale, 1f);
+		return curve * BossRushCatalog.FightHealthShare;
 	}
 
 	// UpdateSpawnScaling's curve without the preset, which the boss gets through presetElitePowerScale.

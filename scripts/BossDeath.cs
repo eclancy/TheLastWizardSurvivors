@@ -31,6 +31,16 @@ using WizardSurvivors.scripts;
 // COST. One boss dies at a time, and a Boss Rush fells ten in a run but never two at once. Every
 // array here is allocated when the fall begins and nothing after it; the bits are a fixed pool of
 // structs integrated in place. No Tween, no scene, no per-frame string.
+//
+// THE SAME STAGE PLAYS THE ARRIVAL (2026-10-31: "whenever a boss spawns ... you should see an
+// animation of the boss spawning, such as bursting up from the ground, growing from a seed"). An
+// arrival is a fall run forwards - the body cut from its own sheet, debris, puffs, the three layers -
+// so it is this node with IsEntrance set (ConfigureEntrance), dispatching to BossEnemy's entrance
+// hooks (OnEntranceBegin / TickEntrance / DrawEntrance*) instead of the death's. What differs: the
+// body is cut even though its sprite is hidden (an arriving boss is untargetable, which hides it);
+// the air and the light sit on DrawLayers.Air, over every body, since an arrival happens in a crowd;
+// and at the end it hands the body back (BossEnemy.FinishEntrance) instead of freeing it, lingering
+// only until its last debris has landed.
 public partial class BossDeath : Node2D
 {
 	/// <summary>The debris atlas, written by tools/art/boss_deaths.py.</summary>
@@ -115,6 +125,23 @@ public partial class BossDeath : Node2D
 	private int pieceCount;
 	private readonly RandomNumberGenerator rng = new();
 
+	/// <summary>True when this stage plays the boss's arrival rather than its fall.</summary>
+	public bool IsEntrance { get; private set; }
+
+	/// <summary>Seconds an arrival stays on after it hands the body back, for its debris to land.</summary>
+	private const float EntranceLingerSeconds = 1.2f;
+	private bool entranceHandedBack;
+
+	/// <summary>Called by BossEnemy.BeginEntrance: the same stage, played forwards (see the header).</summary>
+	public void ConfigureEntrance(BossEnemy boss, AnimatedSprite2D bodySprite, Vector2 bodyRest, float delay, float seconds, Vector2? witness)
+	{
+		IsEntrance = true;
+		Configure(boss, bodySprite, bodyRest, delay, seconds, witness);
+	}
+
+	/// <summary>0 to 1 through the arrival's own clock (0 while it waits its turn).</summary>
+	public float Progress => Mathf.Clamp(T / Mathf.Max(0.01f, Seconds), 0f, 1f);
+
 	/// <summary>Called by BossEnemy.BeginOwnDeath, before the node is added under the corpse.</summary>
 	public void Configure(BossEnemy boss, AnimatedSprite2D bodySprite, Vector2 bodyRest, float delay, float seconds, Vector2? witness)
 	{
@@ -139,7 +166,7 @@ public partial class BossDeath : Node2D
 
 	public override void _Ready()
 	{
-		Name = "BossDeath";
+		Name = IsEntrance ? "BossEntrance" : "BossDeath";
 		debrisAtlas ??= ResourceLoader.Exists(DebrisAtlasPath) ? GD.Load<Texture2D>(DebrisAtlasPath) : null;
 		if (debrisAtlas == null)
 			GD.PushError($"BossDeath: no debris atlas at '{DebrisAtlasPath}' - re-run tools/art/boss_deaths.py and import. The falls will throw nothing.");
@@ -152,6 +179,13 @@ public partial class BossDeath : Node2D
 		bodyLayer = new Node2D { Name = "Body" };
 		air = new Node2D { Name = "Air" };
 		light = new Node2D { Name = "Light", Material = additive };
+		if (IsEntrance)
+		{
+			air.ZIndex = DrawLayers.Air;
+			air.ZAsRelative = false;
+			light.ZIndex = DrawLayers.Air;
+			light.ZAsRelative = false;
+		}
 		AddChild(ground);
 		AddChild(bodyLayer);
 		AddChild(air);
@@ -162,7 +196,12 @@ public partial class BossDeath : Node2D
 
 		eliteMarker = Boss?.GetNodeOrNull<CanvasItem>("EliteMarker");
 		if (eliteMarker != null)
+		{
 			eliteMarkerRest = eliteMarker.Modulate;
+			// An arrival earns the ring only as it lands - not even while it waits its turn.
+			if (IsEntrance)
+				eliteMarker.Modulate = new Color(eliteMarkerRest, 0f);
+		}
 	}
 
 	public override void _ExitTree()
@@ -191,24 +230,57 @@ public partial class BossDeath : Node2D
 			begun = true;
 			previousT = 0f;
 			CaptureFrame();
-			Boss.OnDeathBegin(this);
+			if (IsEntrance)
+				Boss.OnEntranceBegin(this);
+			else
+				Boss.OnDeathBegin(this);
 		}
 
 		float t = T;
-		Boss.TickDeath(this, t, dt);
+		if (IsEntrance)
+		{
+			if (!entranceHandedBack)
+				Boss.TickEntrance(this, t, dt);
+			if (Crossed(Boss.EntranceRoarSeconds))
+				Boss.RoarOnArrival();
+		}
+		else
+			Boss.TickDeath(this, t, dt);
 		StepBits(t, dt);
 		for (int i = 0; i < pieceCount; i++)
 			pieces[i].Apply(this);
 
-		// The gold ring under an elite says "this one is worth chasing". A corpse is not.
+		// The gold ring under an elite says "this one is worth chasing". A corpse is not - and an
+		// arrival earns it only as it lands.
 		if (eliteMarker != null && IsInstanceValid(eliteMarker))
-			eliteMarker.Modulate = new Color(eliteMarkerRest, eliteMarkerRest.A * (1f - Span(t, 0f, 0.3f)));
+		{
+			float shown = IsEntrance ? Span(t, Seconds - 0.4f, Seconds) : 1f - Span(t, 0f, 0.3f);
+			eliteMarker.Modulate = new Color(eliteMarkerRest, eliteMarkerRest.A * shown);
+		}
 
 		ground.QueueRedraw();
 		air.QueueRedraw();
 		light.QueueRedraw();
-		if (Boss.RedrawsWhileDying)
+		if (IsEntrance ? Boss.RedrawsWhileEntering : Boss.RedrawsWhileDying)
 			Boss.QueueRedraw();
+
+		if (IsEntrance)
+		{
+			// The body goes back to the boss on the last frame of the arrival; the stage stays only
+			// for what is still in the air.
+			if (!entranceHandedBack && t >= Seconds)
+			{
+				entranceHandedBack = true;
+				ReleaseBody();
+				Boss.FinishEntrance();
+			}
+			if (t >= Seconds + EntranceLingerSeconds)
+			{
+				freed = true;
+				QueueFree();
+			}
+			return;
+		}
 
 		if (t >= Seconds)
 		{
@@ -248,12 +320,35 @@ public partial class BossDeath : Node2D
 		ArtScale = sprite.Scale.Abs();
 		Mirrored = sprite.FlipH;
 		Tint = sprite.Modulate;
-		BodyWasVisible = sprite.Visible && sheet != null;
+		// An arriving boss is untargetable, which hides its sprite - but its body is still there to cut.
+		BodyWasVisible = (sprite.Visible || IsEntrance) && sheet != null;
 		Vector2 topLeft = (sprite.Centered ? -FrameSize * 0.5f : Vector2.Zero) + sprite.Offset;
 		frameOrigin = spriteRest + topLeft * ArtScale;
 	}
 
 	private static readonly StringName MovingAnimation = "moving";
+
+	/// <summary>
+	/// An arrival's last frame, or one cut short (the boss felled while still arriving): every piece
+	/// hidden, the boss's own sprite shown and walking again, the elite ring back at rest.
+	/// </summary>
+	public void ReleaseBody()
+	{
+		for (int i = 0; i < pieceCount; i++)
+		{
+			pieces[i].Visible = false;
+			pieces[i].Apply(this);
+		}
+		if (sprite != null && IsInstanceValid(sprite))
+		{
+			sprite.Visible = true;
+			sprite.Play();
+		}
+		if (eliteMarker != null && IsInstanceValid(eliteMarker))
+			eliteMarker.Modulate = eliteMarkerRest;
+		if (Boss != null && IsInstanceValid(Boss))
+			Boss.OnEntranceEnd(this);
+	}
 
 	// --- Clock helpers ------------------------------------------------------------------------------
 
@@ -799,7 +894,10 @@ public partial class BossDeath : Node2D
 	{
 		if (!begun || Boss == null || !IsInstanceValid(Boss))
 			return;
-		Boss.DrawDeathGround(this, ground, T);
+		if (IsEntrance)
+			Boss.DrawEntranceGround(this, ground, T);
+		else
+			Boss.DrawDeathGround(this, ground, T);
 		DrawBits(ground, true, false);
 	}
 
@@ -807,7 +905,10 @@ public partial class BossDeath : Node2D
 	{
 		if (!begun || Boss == null || !IsInstanceValid(Boss))
 			return;
-		Boss.DrawDeathAir(this, air, T);
+		if (IsEntrance)
+			Boss.DrawEntranceAir(this, air, T);
+		else
+			Boss.DrawDeathAir(this, air, T);
 		DrawPuffs(air, false);
 		DrawBits(air, false, false);
 	}
@@ -816,7 +917,10 @@ public partial class BossDeath : Node2D
 	{
 		if (!begun || Boss == null || !IsInstanceValid(Boss))
 			return;
-		Boss.DrawDeathLight(this, light, T);
+		if (IsEntrance)
+			Boss.DrawEntranceLight(this, light, T);
+		else
+			Boss.DrawDeathLight(this, light, T);
 		DrawPuffs(light, true);
 		DrawBits(light, false, true);
 		DrawGlints(light);
