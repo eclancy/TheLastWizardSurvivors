@@ -116,7 +116,10 @@ builds to 120 and seven.
    circle and arrow; one too far from the player dips into the ground and reappears; a longer revive,
    with the voices visibly walking to a fallen one to raise it, so the player sees to stop it; freezing
    and other crowd control pause the revive.
-5. **The prologue** (`wip/prologue-laelaps`, in flight): wizard silhouettes look goofy - use the in-game characters' silhouettes; "You are
+5. **The prologue** (merged: the taken wizards cut from real sprites, the one he missed animated with a
+   hound sniffing past him, a TEMPORARY "Replay intro" button bottom-left on the world map, Laelaps in hat,
+   mantle and star collar; open for Eric: show Tituba, Väinämöinen and Laelaps in "He took them all"
+   though secret? the hider is the title wizard, not the chosen one; keep the mantle?): wizard silhouettes look goofy - use the in-game characters' silhouettes; "You are
    the one he missed" animates creatures searching for the wizard while he hides cleverly; a button on
    the world map to replay the intro, **for testing, to be removed later**. And **Laelaps wears the
    wizard outfit** (the familiar hound's hat, mantle and star collar, `tools/art/laelaps.py`).
