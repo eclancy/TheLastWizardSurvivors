@@ -980,12 +980,21 @@ public partial class LevelUpMenu : CanvasLayer
 			return;
 		}
 
+		// A hand of one or two keeps a three-card hand's card size (Eric, 2026-11-01: "we should not expand
+		// the size of each choice to fill the menu"). Each card used to take its share of the whole row, so
+		// two cards came out half as wide again and a lone one spanned the book. On a PC the short hand is a
+		// centred row of three-across columns; on a phone each card keeps a third's height
+		// (NarrowCardHeight) and the rows stop expanding, so two cards sit together rather than spread.
+		bool narrow = ResponsiveLayout.IsNarrow(this);
+		bool shortHand = options.Count < 3;
 		if (container is GridContainer grid)
 		{
 			grid.Columns = GetResponsiveColumnCount(options.Count);
+			grid.SizeFlagsHorizontal = shortHand && !narrow ? Control.SizeFlags.ShrinkCenter : Control.SizeFlags.ExpandFill;
 		}
 		wideCardsBuiltTight = WideCardsTight();
 		narrowBuiltHeight = NarrowCardHeight();
+		float threeAcross = ThreeAcrossColumnWidth();
 
 		for (int i = 0; i < options.Count; i++)
 		{
@@ -994,7 +1003,9 @@ public partial class LevelUpMenu : CanvasLayer
 			column.AddThemeConstantOverride("separation", 10);
 			column.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 			// Vertical too, or a wide card sits at its 468 minimum with dead panel under it.
-			column.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
+			column.SizeFlagsVertical = shortHand && narrow ? Control.SizeFlags.ShrinkBegin : Control.SizeFlags.ExpandFill;
+			if (shortHand && !narrow)
+				column.CustomMinimumSize = new Vector2(threeAcross, 0f);
 
 			// The element notes that used to sit here, and then inside the card, are gone
 			// entirely: the tag chips carry the count and the effect text now, which is one row
@@ -1605,7 +1616,8 @@ public partial class LevelUpMenu : CanvasLayer
 	/// </remarks>
 	private float NarrowCardHeight()
 	{
-		int count = Math.Max(1, shownCount > 0 ? shownCount : currentOptions?.Count ?? 3);
+		// Never fewer than three shares: a short hand keeps a full hand's card height (BuildButtonsFrom).
+		int count = Math.Max(3, shownCount > 0 ? shownCount : currentOptions?.Count ?? 3);
 		float available = ResponsiveLayout.ViewportSize(this).Y - HudSafeTop - NarrowChromeAllowance;
 		// The rows a level-up can add above and below the cards: the Ascension strip (its 30 of clear
 		// air, a 56-tall button and the column's gap) and the charge row. Left out, a phone hand with
@@ -1623,6 +1635,20 @@ public partial class LevelUpMenu : CanvasLayer
 		float perCard = (available - NarrowCardSeparation * (count - 1)) / count;
 		return MathF.Max(NarrowRowMinHeight, perCard);
 	}
+
+	// A PC card's width in a hand of three: the book's row (the panel less the column's 16 a side, as
+	// LevelUpMenu.tscn sets them) shared three ways across the grid's 8 of gap. Read from the panel's size
+	// rather than measured, for the reason NarrowCardHeight gives; never under CardWidth.
+	private float ThreeAcrossColumnWidth()
+	{
+		float panel = GetNodeOrNull<Control>("Panel")?.CustomMinimumSize.X ?? 0f;
+		if (panel <= 0f)
+			return CardWidth;
+		return MathF.Max(CardWidth, (panel - WideRowInsets - WideCardGap * 2f) / 3f);
+	}
+
+	private const float WideRowInsets = 16f * 2f;
+	private const float WideCardGap = 8f;
 
 	private const float NarrowCardSeparation = 12f;
 	private const float NarrowStripAllowance = 96f;

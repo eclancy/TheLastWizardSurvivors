@@ -456,6 +456,13 @@ the cards are built before that container has a size; a deferred second pass wou
 visibly resettle. The scroll container is still there as a last resort, but nothing should reach
 it: the allowance is 284 (section 7) and `_UiShot`'s card report says "fits" or "SCROLLS".
 
+**A short hand keeps a full hand's card size** (Eric, 2026-11-01: "we should not expand the size of
+each choice to fill the menu"). With one or two choices the cards used to take the whole row or
+column between them. Now a phone card's height is a third's however few there are (`NarrowCardHeight`
+counts at least three; the rows stop expanding, so two cards sit together at the top), and a PC card
+is as wide as it is three across (`ThreeAcrossColumnWidth`, from the panel's size), in a centred row.
+`_UiShot --tall-deal=1` / `=2` photographs it.
+
 ## 3a. Level 8 is not a card: the Ascension strip
 
 **Level-up cards stop at level 7, with every pip full.** The Ascension to level 8, and a
