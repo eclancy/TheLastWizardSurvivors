@@ -26,11 +26,13 @@ meets the scene's black ground invisibly. Nothing is ever stretched to fit.
 
 LAYERS. Each panel is back (opaque) + mid + fore (transparent), so Prologue.cs can drift them at
 different rates. The drift is a few art pixels over the whole panel; every layer is drawn out to
-the frame edge so a drift never uncovers anything.
+the frame edge so a drift never uncovers anything. A panel may also have one animated box of its
+mid layer, <name>-anim.png and <name>-anim.json (write_anim; only "missed" does).
 """
 
 from __future__ import division, print_function
 
+import json
 import math
 import os
 import random
@@ -39,7 +41,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 import bonelight as bl
 import hero
@@ -327,65 +329,178 @@ def standing_stone(c, x, yb, w, h, seed, lean=0.0, ramp=None, warm=None, toward=
 
 
 # --------------------------------------------------------------------------- people
-def wizard_figure(c, cx, yb, h, body, seed, staff=0, orb=None, warm=None, toward=None,
-                  bound=False, hat_lean=0.0, dim_orb=False):
-    """A wizard of the land, far off: robe, brimmed hat, staff. Deliberately anonymous - no face,
-    no beard, no colour of his own - because the rescued wizards are people whose names are the
-    reward (.ai/side-events.md, "Secret wizards") and a portrait here would give them away.
+# THE WIZARDS ARE THE GAME'S OWN (Eric, 2026-11-01, of the anonymous robe-and-hat figure that stood
+# here: "In the intro, the wizard silhouettes look goofy. Use the silhouettes of the characters in the
+# game."). Each one is cut from the sprite the player sees on the character select and in a run - the
+# 48 cell's own pixels, its contact line and loose sparks dropped, smoothed onto the panel's art grid
+# at whatever size the panel needs - filled flat, rimmed by the light of the panel, and lit only at
+# the staff or the hand that carries his light in the game.
+#
+# WHICH OF THEM: only the wizards whose silhouette a fresh save already shows - the four disciplines
+# and John Dee, whose locked card is a silhouette from the first day. Tituba, Vainamoinen and Laelaps
+# are secret until their chapters open (UnlockCatalog's secretUntilStage; .ai/side-events.md, "Secret
+# wizards"), and a prologue that drew their shapes would print the answer before the question. Every
+# wizard drawn here is one a player can already see, so none of them gives a rescue away.
+CHARS = os.path.join(ROOT, "assets", "bonelight", "characters")
+CELL = 48
+# The rows a wizard stands in on his cell: feet on row 46, the contact line on 47, the hat near row 2.
+CELL_STAND = 46.0
 
-    staff: -1 left, +1 right, 0 none. orb: an element ramp lit on the staff head. bound: hands
-    together in front and no staff - a prisoner."""
-    rng = random.Random(seed)
-    u = h / 30.0
-    s = Cv(int(26 * u) + 8, int(34 * u) + 8)
-    ox, oy = s.w // 2, int(31 * u) + 4
-    j = lambda a: (rng.random() - 0.5) * a * u
-    hem = [(ox - 5.2 * u + j(0.6), oy), (ox - 2.4 * u, oy + 0.4 * u), (ox + 1.0 * u, oy - 0.2 * u),
-           (ox + 5.0 * u + j(0.6), oy)]
-    robe = hem[::-1] + [(ox + 2.7 * u, oy - 15 * u), (ox + 3.2 * u, oy - 17 * u),
-                        (ox - 3.2 * u, oy - 17 * u), (ox - 2.7 * u, oy - 15 * u)]
-    s.poly(robe, body[0])
-    s.poly([(ox + 0.6 * u, oy - 15.5 * u), (ox + 2.7 * u, oy - 15 * u), (ox + 5.0 * u, oy),
-            (ox + 1.6 * u, oy)], body[1])
-    for k in (-1.4, 0.4, 2.2):
-        s.line(ox + k * u * 0.6, oy - 13 * u, ox + k * u * 1.3, oy - 0.5 * u, body[1])
-    s.disc(ox, oy - 18.6 * u, 1.7 * u, 1.9 * u, body[1])                    # head under the brim
-    s.poly([(ox - 5.4 * u, oy - 20.4 * u), (ox + 5.4 * u, oy - 20.6 * u),
-            (ox + 3.2 * u, oy - 21.8 * u), (ox - 3.2 * u, oy - 21.6 * u)], body[0])
-    tip = (ox + (1.6 + hat_lean) * u, oy - 30.5 * u)
-    s.poly([(ox - 2.8 * u, oy - 21.5 * u), (ox + 2.6 * u, oy - 21.7 * u),
-            (ox + 1.4 * u + hat_lean * 0.5 * u, oy - 26 * u), tip,
-            (ox - 0.4 * u + hat_lean * 0.4 * u, oy - 26.5 * u)], body[0])
-    if bound:
-        s.poly([(ox - 2.4 * u, oy - 16 * u), (ox + 2.6 * u, oy - 16 * u),
-                (ox + 1.6 * u, oy - 10 * u), (ox - 1.2 * u, oy - 10 * u)], body[1])
-        s.disc(ox + 0.2 * u, oy - 9.6 * u, 1.3 * u, 0.9 * u, body[0])
-    elif staff:
-        sx = ox + staff * 5.6 * u
-        s.poly([(ox + staff * 2.2 * u, oy - 16.4 * u), (sx, oy - 14.6 * u),
-                (sx + staff * 0.6 * u, oy - 12.6 * u), (ox + staff * 2.6 * u, oy - 12 * u)], body[0])
-        for i in range(max(1, int(round(0.7 * u)))):
-            s.vline(int(sx) + i, oy - 27 * u, oy, body[0])
+# (sprite prefix, the ramp his light is in the sprite, the ramp it burns here). Dee's orb is the
+# darkness ramp in the game, but in the prologue that ramp as light is the dark wizard's alone
+# (.ai/prologue.md, rules), so here Dee burns arcane.
+PYRO = ("pyromancer", "fire", "fire")
+FROST = ("frostweaver", "ice", "ice")
+STORM = ("stormcaller", "lightning", "lightning")
+GEO = ("geomancer", "earth", "earth")
+DEE = ("dee", "darkness", "arcane")
+ROSTER = [PYRO, FROST, STORM, GEO, DEE]
+
+_CELLS = {}
+
+
+def _sprite_cell(prefix, strip, frame):
+    key = (prefix, strip, frame)
+    if key not in _CELLS:
+        img = Image.open(os.path.join(CHARS, "%s-%s.png" % (prefix, strip))).convert("RGBA")
+        _CELLS[key] = img.crop((frame * CELL, 0, frame * CELL + CELL, CELL))
+    return _CELLS[key]
+
+
+def silhouette(prefix, strip="idle", frame=0, carried=None):
+    """A wizard's shape from his sprite, and where his light is on it.
+
+    Returns (pixels, anchor): the set of the cell's opaque pixels, less the contact line under his
+    feet (occlusion, on the last row) and any loose cluster under four pixels (the sparks round a
+    hand, which at panel size are noise); and the centre of the topmost cluster of his own ramp's
+    pixels (the lantern, the trident's head, the raised fork, the orb), or None."""
+    img = _sprite_cell(prefix, strip, frame)
+    px = img.load()
+    occ = rgb(OCC)[:3]
+    on = set()
+    for y in range(CELL):
+        for x in range(CELL):
+            p = px[x, y]
+            if p[3] and not (y == CELL - 1 and p[:3] == occ):
+                on.add((x, y))
+    keep = set()
+    seen = set()
+    for p0 in sorted(on):
+        if p0 in seen:
+            continue
+        comp = [p0]
+        seen.add(p0)
+        i = 0
+        while i < len(comp):
+            x, y = comp[i]
+            i += 1
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    q = (x + dx, y + dy)
+                    if q in on and q not in seen:
+                        seen.add(q)
+                        comp.append(q)
+        if len(comp) >= 4:
+            keep.update(comp)
+    anchor = None
+    if carried:
+        ramp = set(rgb(c)[:3] for c in E[carried])
+        pts = [(x, y) for (x, y) in keep if px[x, y][:3] in ramp]
+        if pts:
+            top = min(y for (_x, y) in pts)
+            cl = [(x, y) for (x, y) in pts if y <= top + 5]
+            anchor = (sum(x for x, _y in cl) / float(len(cl)) + 0.5, sum(y for _x, y in cl) / float(len(cl)) + 0.5)
+    return keep, anchor
+
+
+def _mask_at(pixels, k, facing):
+    """The cell's pixels as a mask at k panel pixels per sprite pixel: blown up x8, its corners
+    rounded a little, and brought down to size by area. A sprite scaled by a fraction with nearest
+    neighbour is a staircase of uneven steps; this keeps the shape and gives it a clean edge."""
+    m = Image.new("L", (CELL, CELL), 0)
+    mp = m.load()
+    for (x, y) in pixels:
+        mp[x, y] = 255
+    if facing < 0:
+        m = m.transpose(Image.FLIP_LEFT_RIGHT)
+    big = m.resize((CELL * 8, CELL * 8), Image.NEAREST).filter(ImageFilter.GaussianBlur(2.5))
+    n = max(1, int(round(CELL * k)))
+    return big.resize((n, n), Image.ANTIALIAS)
+
+
+def roster_figure(c, who, cx, yb, h, body, strip="idle", frame=0, facing=1, lit=True, dim=False,
+                  warm=None, toward=None):
+    """One of the game's wizards as a silhouette, his feet on (cx, yb), h tall if he stood upright.
+
+    who: a ROSTER entry. strip/frame: which of his frames - idle to stand, moving to walk, the death's
+    third to be brought to his knees. body: [fill, unused]. lit: his light burns at its anchor in its
+    own ramp; dim: it is out, a dull stone where it was. warm: a ramp to dither a little of onto him
+    (the fire in the moot). toward: (dx, dy[, colour]) to rim the edges facing a light.
+    Returns (light, front): where his light is, and the front of him at his waist (where a chain
+    would hold him), in frame pixels; either may be None."""
+    prefix, carried, burns = who
+    k = h / CELL_STAND
+    pixels, anchor = silhouette(prefix, strip, frame, carried)
+    m = _mask_at(pixels, k, facing)
+    mw, mh = m.size
+    mp = m.load()
+    s = Cv(mw + 4, mh + 4)
+    for y in range(mh):
+        for x in range(mw):
+            if mp[x, y] >= 112:
+                s.set(x + 2, y + 2, body[0])
     if toward:
         edge_light(s, toward[2] if len(toward) > 2 else (warm[2] if warm else G[2]), toward)
     if warm:
-        wr = warm
+        lit_edge = rgb(toward[2] if toward and len(toward) > 2 else warm[2])
         for y in range(s.h):
             for x in range(s.w):
                 p = s.px[x, y]
-                if p[3] and p != rgb(wr[2]) and dith(x, y, 0.22):
-                    s.set(x, y, wr[4])
-    s.hline(ox - 5.4 * u, ox + 5.2 * u, oy, OCC)
-    over(c, s, cx - ox, yb - oy)
-    if orb and staff and not bound:
-        sx = cx + staff * 5.6 * u + 0.35 * u
-        oy2 = yb - 27.6 * u
-        if dim_orb:
-            c.disc(sx, oy2, 1.4 * u, 1.4 * u, ST[3])
-            c.set(sx - 0.4 * u, oy2 - 0.4 * u, ST[2])
-        else:
-            c.radial(sx, oy2, 4.4 * u, 4.4 * u, [orb[3], orb[3], None])
-            c.radial(sx, oy2, 1.6 * u, 1.6 * u, [orb[0], orb[1], orb[2], orb[3]])
+                if p[3] and p != lit_edge and dith(x, y, 0.22):
+                    s.set(x, y, warm[4])
+    left = int(round(cx - (CELL / 2.0) * k)) - 2
+    top = int(round(yb - (CELL - 1) * k)) - 2
+    # The contact line: what of him touches the ground, on the ground row, in occlusion.
+    feet = [x for x in range(s.w) for y in range(max(0, s.h - 4 - int(k)), s.h) if s.px[x, y][3]]
+    over(c, s, left, top)
+    if feet:
+        c.hline(left + min(feet) - 1, left + max(feet) + 1, yb, OCC)
+    light = None
+    if anchor:
+        ax = cx + (anchor[0] - CELL / 2.0) * k * facing
+        ay = yb + (anchor[1] - (CELL - 1)) * k
+        light = (ax, ay)
+        ramp = E[burns]
+        if dim:
+            c.disc(ax, ay, 1.1 * k, 1.1 * k, ST[3])
+            c.set(ax - 0.4 * k, ay - 0.4 * k, ST[2])
+        elif lit:
+            c.radial(ax, ay, 3.6 * k, 3.6 * k, [ramp[3], ramp[3], None])
+            c.radial(ax, ay, 1.4 * k, 1.4 * k, [ramp[0], ramp[1], ramp[2], ramp[3]])
+    # His front at the waist: the furthest opaque pixel the way he faces.
+    wy = int(round(yb - 0.42 * h)) - top
+    row = [x for x in range(s.w) if 0 <= wy < s.h and s.px[x, wy][3]]
+    front = None
+    if row:
+        fx = (max(row) if facing > 0 else min(row)) + left
+        front = (fx, yb - 0.42 * h)
+    return light, front
+
+
+def light_at(who, cx, yb, h, strip="idle", frame=0, facing=1):
+    """Where roster_figure would put his light, without drawing him (for what is drawn before him)."""
+    prefix, carried, _burns = who
+    k = h / CELL_STAND
+    _pixels, anchor = silhouette(prefix, strip, frame, carried)
+    if not anchor:
+        return (cx, yb - h * 0.6)
+    return (cx + (anchor[0] - CELL / 2.0) * k * facing, yb + (anchor[1] - (CELL - 1)) * k)
+
+
+# In the moot, before the fall, each wears the deep end of his own colour - the only time the prologue
+# lets them have one - so the circle reads as five different people at a glance, not five shadows.
+ROBE = {"pyromancer": R[4], "frostweaver": M["azure"][4], "stormcaller": G[4], "geomancer": M["verdant"][4],
+        "dee": ST[4]}
 
 
 EYE = (AR[0], AR[1])
@@ -833,13 +948,12 @@ def p_moot():
         y = fy - 4 + math.sin(a) * 60
         depth = (y - (fy - 64)) / 128.0
         items.append((y, "stone", x, depth, 900 + i))
-    robes = [[V[4], OCC], [W[4], OCC], [L[4], OCC], [ST[4], OCC], [S[4], OCC], [R[4], OCC], [V[4], OCC]]
-    lights = [E["fire"], E["ice"], E["lightning"], E["grass"], E["water"], E["earth"], E["arcane"]]
-    for i in range(7):
-        a = i * 6.28318 / 7.0 + 0.5
-        x = fx + math.cos(a) * 112
-        y = fy + math.sin(a) * 30
-        items.append((y, "wizard", x, i, 0))
+    # Five of the game's wizards round the fire, each staff burning his own element. None stands at the
+    # front centre, where he would cover the fire; the one behind it holds his light up over it.
+    for i, (a, who) in enumerate([(0.85, PYRO), (2.2, FROST), (3.25, STORM), (4.71, DEE), (5.55, GEO)]):
+        x = fx + math.cos(a) * 128
+        y = fy + math.sin(a) * 32
+        items.append((y, "wizard", x, who, 0))
     items.sort(key=lambda it: it[0])
     for (y, kind, x, d, seed) in items:
         if kind == "stone":
@@ -851,14 +965,12 @@ def p_moot():
                            ramp=S if far else [S[3], S[4], S[4], OCC, OCC],
                            toward=None if far else (1 if x < fx else -1, -0.6, G[3]))
         else:
-            i = d
+            who = d
             hgt = 42 + (y - fy + 30) * 0.28
-            side = -1 if x > fx else 1
             facing_fire = (fx - x, fy - y)
             n = math.hypot(*facing_fire) or 1
-            wizard_figure(mid, x, y, hgt, robes[i], 300 + i, staff=side, orb=lights[i],
-                          warm=G, toward=(facing_fire[0] / n, facing_fire[1] / n),
-                          hat_lean=(i % 3 - 1) * 0.6)
+            roster_figure(mid, who, x, y, hgt, [ROBE[who[0]], OCC], facing=1 if x <= fx else -1,
+                          warm=G, toward=(facing_fire[0] / n, facing_fire[1] / n))
     sk.flame(mid, fx, fy + 1, 30, LT, seed=17, halo=G)
     sk.flame(mid, fx - 7, fy + 3, 19, LT, seed=29, halo=G)
     sk.flame(mid, fx + 8, fy + 2, 22, LT, seed=31, halo=G)
@@ -904,17 +1016,20 @@ def p_throne():
     hx, hy, u = dark_wizard(mid, 480, 584, 290)
     black_sun(mid, hx, hy, 1.7 * u)
     # the wizards at his feet, their light going out of them and up into his hand
-    victims = [(352, 574, -1, 0.0), (404, 590, 1, 0.5), (572, 586, -1, -0.4), (630, 570, 1, 0.3), (318, 630, 1, 0.2),
-               (660, 634, -1, -0.5)]
-    lights = [E["fire"], E["ice"], E["lightning"], E["grass"], E["water"], E["earth"]]
-    for i, (x, y, side, lean) in enumerate(victims):
+    # Going down: the second frame of each one's own fall (his death strip), facing him, either side
+    # of his hem - over it, a figure in near-black was lost in his - and above row 600, where the PC's
+    # view ends, clear of the caption's columns. Back to front.
+    victims = [(322, 544, GEO), (646, 548, STORM), (380, 568, PYRO), (606, 588, DEE), (350, 592, FROST)]
+    for i, (x, y, who) in enumerate(victims):
+        hgt = 50 + (y - 590) * 0.2
+        face = 1 if x < 480 else -1
         # The streams from his right pass BEHIND him to the raised hand: in front they ran across
         # his face.
-        motes(fore if x < 480 else back, (x + side * 13, y - 34), (hx, hy), 150, 400 + i, [lights[i]],
-              spread=18, bow=40 + i * 6)
-    for i, (x, y, side, lean) in enumerate(victims):
-        wizard_figure(fore, x, y, 44 + (y - 590) * 0.3, [OCC, S[4]], 500 + i, staff=side,
-                      orb=lights[i], dim_orb=True, hat_lean=lean, toward=(0, -1, DK[3]))
+        motes(fore if x < 480 else back, light_at(who, x, y, hgt, "death", 1, face), (hx, hy), 150, 400 + i,
+              [E[who[2]]], spread=18, bow=40 + i * 6)
+    for i, (x, y, who) in enumerate(victims):
+        roster_figure(fore, who, x, y, 50 + (y - 590) * 0.2, [OCC, S[4]], strip="death", frame=1,
+                      facing=1 if x < 480 else -1, dim=True, toward=(0, -1, DK[3]))
     # shadow running out of his hem across the ground: what he leaves becomes what serves him
     rng = random.Random(91)
     for i in range(26):
@@ -1024,9 +1139,9 @@ def p_tide():
 
 
 def p_taken():
-    """4. "He took them all." The wizards led away along a ridge against his light, bound, their
-    staves gone, their light drawn out of them toward the tower. Silhouettes only: no faces, no
-    names, nothing that tells one of the rescued from another."""
+    """4. "He took them all." The game's wizards led away along a ridge against his light, bound
+    wrist to wrist by his chain, their staves dark, their light drawn out of them toward the tower.
+    Silhouettes only, and only of wizards a fresh save already sees (ROSTER): no secret one."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 560, [OCC, S[4], V[4], V[3], V[3], V[2]])
     stars(back, (0, 0, FW, 300), 140, 13, colors=[K[2], V[0]])
@@ -1048,7 +1163,8 @@ def p_taken():
             mid.set(x, top, V[4])
     order = [("knight", 0), ("wiz", 0), ("bruiser", 0), ("wiz", 1), ("shielder", 0), ("wiz", 2),
              ("caster", 0), ("wiz", 3), ("swarmer", 0), ("runner", 0)]
-    lights = [E["fire"], E["ice"], E["lightning"], E["grass"]]
+    # Four of the game's wizards, walking (each a different frame of his own walk), staves dark.
+    taken = [(FROST, 1), (DEE, 5), (PYRO, 3), (STORM, 7)]
     x = 600
     rng = random.Random(17)
     wrists = []
@@ -1056,13 +1172,14 @@ def p_taken():
         yb = ridge(x) + 1
         if kind == "wiz":
             hgt = 88 - k * 3
-            motes(back, (x, yb - hgt * 0.6), (sx_, sy_), 170, 640 + k, [lights[k]], spread=12,
-                  bow=40 + k * 20)
+            who, step = taken[k]
+            motes(back, light_at(who, x, yb, hgt, "moving", step), (sx_, sy_), 170, 640 + k, [E[who[2]]],
+                  spread=12, bow=40 + k * 20)
             # rimmed from his light, up and to the right, so the robe reads against the hills and
             # not only the hat against the sky
-            wizard_figure(mid, x, yb, hgt, [OCC, S[4]], 610 + k, bound=True, hat_lean=1.4 + k * 0.3,
-                          toward=(0.7, -0.7, DK[3]))
-            wrists.append((x + 1, yb - hgt * 9.8 / 30.0))
+            _light, front = roster_figure(mid, who, x, yb, hgt, [OCC, S[4]], strip="moving", frame=step,
+                                          dim=True, toward=(0.7, -0.7, DK[3]))
+            wrists.append(front or (x + 1, yb - hgt * 0.42))
         else:
             hgt = {"bruiser": 74, "knight": 86, "shielder": 66, "caster": 78, "swarmer": 56, "runner": 58}[kind]
             creature(mid, kind, x, yb, hgt, facing=1, body=[OCC, S[4]], rim=DK[3], seed=700 + i)
@@ -1081,54 +1198,236 @@ def p_taken():
     return layers
 
 
+# THE ONE ANIMATED PANEL (Eric, 2026-11-01: "'You are the one he missed' should show an animation of
+# creatures looking for the wizard, but he's cleverly hiding."). Its moving part is a strip of frames
+# over one box of the mid layer, swapped on a clock (Prologue.cs, "<name>-anim"): the title's way
+# (.ai/title-screen.md, "Animate by frame, never by tint"), so every pixel on screen is still one
+# frame's, opaque, in contract colours. Each frame is the WHOLE mid layer inside the box - the
+# searchers and everything that stands in front of them - so a frame laid over the still mid layer
+# shows exactly the scene at that moment; outside the box nothing moves.
+#
+# Every edge of the box is a multiple of 8, and so is its width and height: the dissolve's Bayer
+# threshold is taken from the atlas's own pixel, and on that grid it matches the threshold of the
+# same frame pixel in the mid layer, so the box dissolves in and out with the panel, pixel for pixel.
+MISSED_BOX = (296, 400, 664, 512)
+MISSED_FPS = 8
+# The panel's hold in Prologue.cs (Beats, "missed"); the frames cover it, the last held after.
+MISSED_SECONDS = 5.4
+MISSED_COLUMNS = 4
+
+
+def sniffing_hound(c, x, yb, h, facing, head, stride, twitch=0.0, rim=None):
+    """His hound, the tide's (creature "hound") posed to search: head is -1 with its nose to the
+    ground, 0 level, +1 lifted to the air; stride swings the legs; twitch nudges the nose."""
+    u = h / 20.0
+    s = Cv(int(34 * u) + 8, int(28 * u) + 8)
+    ox, oy = s.w // 2, int(25 * u) + 3
+    f = facing
+
+    def Q(px_, py_):
+        return (ox + f * px_ * u, oy + py_ * u)
+
+    def limb(a, b, a2, b2, r0, r1):
+        sk._stroke(s, ox + f * a * u, oy + b * u, ox + f * a2 * u, oy + b2 * u, max(0.5, r0 * u),
+                   max(0.5, r1 * u), OCC)
+    limb(-5.6, -6.4, -6.6 - stride * 0.5, 0, 1.0, 0.7)
+    limb(-3.4, -6.4, -3.0 + stride * 0.5, 0, 1.0, 0.7)
+    limb(3.6, -7.0, 2.6 + stride * 0.5, 0, 1.0, 0.7)
+    limb(5.4, -7.0, 6.4 - stride * 0.5, 0, 1.0, 0.7)
+    s.poly([Q(*q) for q in [(-7.4, -6.0), (-5.6, -9.4), (3.6, -10.2), (6.6, -11.4), (7.6, -9.6), (6.6, -6.6),
+                            (-5.6, -5.0)]], OCC)
+    # The tail hangs while it works the ground and comes up when it has something.
+    ta = 0.5 if head < 0 else (-0.3 if head > 0 else 0.0)
+    tail = [(-7.4, -6.0)] + [(-7.4 + rx, -6.0 + ry) for (rx, ry) in
+                             [rot(-4.2, -3.6, ta), rot(0.2, -2.0, ta)]]
+    s.poly([Q(*q) for q in tail], OCC)
+    # The head turns about the top of the neck: down to the ground, up to the air.
+    pivot = (6.8, -10.4)
+    ang = 0.95 if head < 0 else (-0.4 if head > 0 else 0.0)
+    drop = 2.6 if head < 0 else 0.0
+
+    def Hd(px_, py_):
+        rx, ry = rot(px_ - pivot[0], py_ - pivot[1], ang)
+        return Q(pivot[0] + rx + twitch, pivot[1] + ry + drop)
+    limb(5.6, -9.8, pivot[0] + 0.4, pivot[1] + drop * 0.7, 1.6, 1.3)
+    s.poly([Hd(*q) for q in [(6.4, -12.0), (10.6, -11.6), (11.2, -10.2), (8.2, -9.2), (6.2, -9.6)]], OCC)
+    s.poly([Hd(*q) for q in [(6.8, -12.0), (7.8, -14.4), (8.2, -11.6)]], OCC)
+    if rim:
+        edge_light(s, rim, (-0.7, -0.7))
+    ex, ey = Hd(8.9, -11.0)
+    s.set(ex, ey, EYE[0])
+    s.set(ex + f, ey, EYE[1])
+    over(c, s, x - ox, yb - oy)
+
+
+def rot(x, y, a):
+    """(x, y) turned by a radians, clockwise on screen."""
+    return (x * math.cos(a) - y * math.sin(a), x * math.sin(a) + y * math.cos(a))
+
+
+def _hound_at(t):
+    """The hound's one walk past him, as (x, head, stride, twitch). It trots in from the right,
+    nose down, stops at his shoulder, lifts its head and works the air beside him - and goes on."""
+    walk = lambda d: math.sin(d * 2 * math.pi / 13.0) * 2.4
+    stop = 556.0
+    if t < 1.3:
+        x = 630 - (630 - stop) / 1.3 * t
+        return x, -1, walk(630 - x), 0.0
+    if t < 1.55:
+        return stop, 0, 0.0, 0.0
+    if t < 2.95:
+        # Working the air: the nose twitches every other frame; he does not move.
+        return stop, 1, 0.0, (0.35 if int(t * MISSED_FPS) % 2 else -0.15)
+    if t < 3.15:
+        return stop, 0, 0.0, 0.0
+    x = stop - 80 * (t - 3.15)
+    return x, -1, walk(stop - x), 0.0
+
+
+def _shade_down(steps, keep=(), more=None):
+    """Every pigment colour mapped `steps` stops down its own row (past the deep end, occlusion),
+    the rims to bone, and the colours in `keep` left alone - for a figure standing in the dark.
+    more: {row: extra stops} for a row that would still shine (his staff's gold)."""
+    held = set(rgb(c) for c in keep)
+    m = {}
+    for name, ramp in sorted(M.items()):
+        n = steps + (more or {}).get(name, 0)
+        for i, col in enumerate(ramp):
+            key = rgb(col)
+            if key in m or key in held:
+                continue
+            m[key] = rgb(ramp[i + n]) if i + n < len(ramp) else rgb(OCC)
+    m[rgb(bl.RIM)] = rgb(K[2])
+    m[rgb(RIM_SOFT)] = rgb(K[3])
+    return m
+
+
+def _facing_at(t, flips, first):
+    f = first
+    for at in flips:
+        if t >= at:
+            f = -f
+    return f
+
+
+def _ember_at(t):
+    """His light, banked. He lets it go out as the hound comes, and does not breathe on it again
+    until the hound has gone past."""
+    if t < 1.0 or t >= 3.7:
+        return 1.0
+    if t < 1.35 or t >= 3.3:
+        return 0.5
+    return 0.0
+
+
 def p_missed():
-    """5. "You are the one he missed." The title's picture, told as story: the player from
-    behind in the warded circle, alone in the broken circle at night, with the eyes in the dark
-    beyond the stones. The only warm light left on screen."""
+    """5. "You are the one he missed." The hiding (Eric, 2026-11-01). The broken ring at night, its
+    near stones in a row across the heath, and in the row, between two of them, the player - the
+    title's own figure, facing us, still as a stone, his light put out to an ember. From where they
+    stand he is one more dark standing shape with a point on top; from where we stand he is
+    plainly the wizard. Beyond the row his creatures search: a hound trots along it nose down,
+    stops at his shoulder, lifts its head to the air beside him - he lets his ember go out - and
+    goes on; a caster in the gap watches it; two small ones turn their heads; and out in the dark,
+    pair by pair, the eyes turn away and back, a sweep of looks across the heath. They never find
+    him. No new words: the line is the premise's."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 420, [OCC, OCC, S[4], V[4], V[3]])
     stars(back, (0, 0, FW, 340), 260, 21)
-    tower(back, 694, 404, 34, seed=6)
-    hills(back, ridge_fn(398, 12, 51), [V[4], S[4], OCC], 40, lit=V[3])
-    back.vramp(404, FH - 1, [S[4], S[4], OCC, OCC])
-    heath(back, 404, 840, 1800, 31, [(OCC, S[4]), (OCC, V[4])])
-    cx, cy = 480, 548
-    back.radial(cx, cy, 300, 90, [G[3], G[3], G[4], G[4], None])
-    for i, (x, y, w, h, lean, br) in enumerate([(232, 450, 18, 46, -0.4, True), (316, 432, 14, 36, 0.1, False),
-                                                (402, 424, 12, 30, -0.1, True), (560, 424, 13, 34, 0.2, False),
-                                                (646, 432, 15, 40, -0.3, True), (734, 452, 19, 50, 0.45, False)]):
-        standing_stone(back, x, y, w, h, 800 + i, lean=lean, broken=br, ramp=[S[2], S[3], S[4], OCC, OCC],
-                       warm=(G, 0.4), toward=None)
+    tower(back, 694, 396, 34, seed=6)
+    hills(back, ridge_fn(392, 12, 51), [V[4], S[4], OCC], 40, lit=V[3])
+    back.vramp(398, FH - 1, [S[4], S[4], OCC, OCC])
+    heath(back, 398, 840, 1800, 31, [(OCC, S[4]), (OCC, V[4])])
+    cx, base = 482, 538
+    # The ring's ground under the moon: cold, so the shapes on it read against it.
+    back.radial(cx, base - 30, 330, 86, [S[3], S[3], S[4], S[4], None])
+    # The far side of the ring, small, over the heath.
+    for i, (x, y, w, h, lean, br) in enumerate([(232, 430, 18, 46, -0.4, True), (316, 418, 14, 34, 0.1, False),
+                                                (646, 418, 15, 38, -0.3, True), (734, 436, 19, 48, 0.45, False)]):
+        standing_stone(back, x, y, w, h, 800 + i, lean=lean, broken=br, ramp=[S[2], S[3], S[4], OCC, OCC])
+    # Eyes out in the dark on either side, where the PC sees past the box: still ones.
     rng = random.Random(83)
-    placed = []
-    for _ in range(14):                                # his, at the edge of the light
-        for _try in range(30):
-            x = 180 + rng.random() * 600
-            y = 404 + rng.random() * 46
-            if all(abs(x - a) > 26 or abs(y - b) > 14 for (a, b) in placed) and abs(x - 480) > 40:
-                break
-        placed.append((x, y))
+    for _ in range(10):
+        x = 170 + rng.random() * 120 if rng.random() < 0.5 else 672 + rng.random() * 120
+        y = 402 + rng.random() * 30
         gap = 3 + ri(rng, 0, 2)
-        back.set(x, y, EYE[0])
-        back.set(x + gap, y, EYE[0])
-        back.set(x + 1, y, EYE[1])
-        back.set(x + gap - 1, y, EYE[1])
-    star = ward(mid, cx, cy, 150, 40)
-    hero.wizard_hero(mid, cx, cy, h=150, staff_ramp=LT, under_ramp=LT)
-    rm = random.Random(509)
-    for _ in range(46):
-        a = rm.random() * 6.28318
-        d = 0.8 + rm.random() * 0.32
-        mid.set(cx + math.cos(a) * 150 * d, cy + math.sin(a) * 40 * d - rm.random() ** 1.7 * 52,
-                pick(rm, [LT[0], LT[1], LT[2], LT[3]]))
-    heath(fore, 600, 840, 900, 37, [(OCC, OCC), (OCC, S[4])], scale=1.7,
-          keep_out=lambda x, y: ((x - cx) / 172.0) ** 2 + ((y - cy) / 70.0) ** 2 < 1.0)
-    standing_stone(fore, 186, 640, 64, 170, 91, lean=0.06, broken=True, ramp=[S[4], S[4], OCC, OCC, OCC],
-                   toward=(1, -0.4, G[4]))
-    standing_stone(fore, 790, 650, 74, 200, 93, lean=-0.04, ramp=[S[4], S[4], OCC, OCC, OCC],
-                   toward=(-1, -0.4, G[4]))
+        for (gx, col) in ((0, EYE[0]), (1, EYE[1]), (gap - 1, EYE[1]), (gap, EYE[0])):
+            back.set(x + gx, y, col)
+
+    # THE ROW: two stones of the ring either side of him, and two more out at the PC's edges, and
+    # him in it as one of them. Drawn once per state of his ember; the frames lay it over the
+    # searchers, and the mid layer carries it whole.
+    def row(ember):
+        c = Cv(FW, FH)
+        for (x, yb, w, h, sd, lean, br) in [(232, 548, 58, 132, 911, 0.05, True), (366, 540, 50, 112, 913, -0.03, False),
+                                            (598, 544, 54, 120, 917, 0.04, False), (734, 552, 62, 140, 919, -0.05, True)]:
+            standing_stone(c, x, yb, w, h, sd, lean=lean, broken=br, ramp=[S[2], S[3], S[4], OCC, OCC],
+                           toward=(-1, -0.6, S[1]))
+        # He stands in the dark: the title's figure a stop down every pigment row, the key's rim
+        # softened to bone - plainly him to us, one more dark upright shape to them. Only the ember,
+        # which is light and not pigment, keeps its own colours.
+        him = Cv(FW, FH)
+        hero.wizard_hero(him, cx, base, h=112, staff_ramp=LT, under_ramp=None, snuffed=ember)
+        down = _shade_down(1, keep=LT, more={"gold": 1})
+        hp = him.px
+        for y in range(int(base - 140), int(base + 30)):
+            for x in range(int(cx - 70), int(cx + 90)):
+                q = hp[x, y]
+                if q[3] and q in down:
+                    hp[x, y] = down[q]
+        over(c, him)
+        return c
+    rows = dict((e, row(e)) for e in (1.0, 0.5, 0.0))
+    over(mid, rows[1.0])
+
+    # The eyes in the dark beyond the row, inside the box: each pair a head that turns away (its
+    # eyes go) and back, the turning passing across the heath from one side to the other.
+    re = random.Random(97)
+    eyes = []
+    for _ in range(40):
+        if len(eyes) >= 11:
+            break
+        x = 306 + re.random() * 346
+        y = 404 + re.random() * 16
+        if abs(x - cx) < 40 or any(abs(x - a) < 22 and abs(y - b) < 8 for (a, b, _g) in eyes):
+            continue
+        eyes.append((x, y, 3 + ri(re, 0, 2)))
+
+    def searchers(c, t):
+        for (x, y, gap) in eyes:
+            ph = (t * 0.9 - (x - 300) / 420.0) % 1.4
+            if ph < 0.22:
+                continue                                  # turned away
+            look = -1 if ph < 0.8 else 1
+            for (gx, col) in ((0, EYE[0]), (1, EYE[1]), (gap - 1, EYE[1]), (gap, EYE[0])):
+                c.set(x + gx + look, y, col)
+        # In scale with him, by how far behind the row each one stands (the ground runs from the
+        # horizon at 392 to his feet at 538): the two small ones far back, the caster in the gap, the
+        # hound a few strides behind him.
+        creature(c, "swarmer", 318, 458, 30, facing=_facing_at(t, [0.7, 2.4, 4.0], 1), body=[OCC, S[4]],
+                 rim=S[2], seed=31)
+        creature(c, "swarmer", 648, 452, 28, facing=_facing_at(t, [1.5, 3.0, 4.5], -1), body=[OCC, S[4]],
+                 rim=S[2], seed=37)
+        creature(c, "caster", 414, 502, 58, facing=_facing_at(t, [1.1, 3.3], -1), body=[OCC, S[4]],
+                 rim=S[1], seed=41)
+        hx, head, stride, twitch = _hound_at(t)
+        sniffing_hound(c, hx, 510, 54, -1, head, stride, twitch, rim=S[0])
+
+    t_of = frame_t(0.9, CY + 60)
+    x0, y0, x1, y1 = MISSED_BOX
+    frames = []
+    ticks = int(math.ceil(MISSED_SECONDS * MISSED_FPS))
+    for k in range(ticks):
+        t = (k + 0.5) / MISSED_FPS
+        c = Cv(FW, FH)
+        searchers(c, t)
+        over(c, rows[_ember_at(t)])
+        darken(c, t_of, [S[4], OCC], box=MISSED_BOX)
+        frames.append(c.img.crop((x0, y0, x1, y1)))
+
+    heath(fore, 600, 840, 900, 37, [(OCC, OCC), (OCC, S[4])], scale=1.7)
     layers = dict(back=back, mid=mid, fore=fore)
     finish(layers, 0.9, cy=CY + 60)
+    layers["anim"] = frames
     return layers
 
 
@@ -1204,11 +1503,11 @@ PANELS = [("moot", p_moot), ("throne", p_throne), ("tide", p_tide), ("taken", p_
 
 
 # =========================================================================== output
-def audit(layers):
+def audit(layers, extra=()):
     ok = raster.allowed()
     bad = {}
-    for c in layers.values():
-        for (n, col) in c.img.getcolors(1 << 20) or []:
+    for img in [c.img for c in layers.values()] + list(extra):
+        for (n, col) in img.getcolors(1 << 20) or []:
             if col[3] == 0:
                 continue
             h = "#%02X%02X%02X" % col[:3]
@@ -1222,6 +1521,52 @@ def composite(layers):
     for n in ("mid", "fore"):
         flat.paste(layers[n].img, (0, 0), layers[n].img)
     return flat
+
+
+def write_anim(name, frames):
+    """The frames as one atlas, MISSED_COLUMNS wide, and its manifest: where the box sits in the
+    frame, its size, the clock, and the timeline - one atlas index per tick, so a frame that does not
+    change from one tick to the next is stored once and held. Prologue.cs reads both."""
+    unique, timeline, seen = [], [], {}
+    for img in frames:
+        key = img.tobytes()
+        if key not in seen:
+            seen[key] = len(unique)
+            unique.append(img)
+        timeline.append(seen[key])
+    x0, y0, x1, y1 = MISSED_BOX
+    w, h = x1 - x0, y1 - y0
+    for v in (x0, y0, w, h):
+        assert v % 8 == 0, "the anim box must sit on the 8-pixel Bayer grid"
+    cols = min(MISSED_COLUMNS, len(unique))
+    rows = (len(unique) + cols - 1) // cols
+    atlas = Image.new("RGBA", (cols * w, rows * h), (0, 0, 0, 0))
+    for i, img in enumerate(unique):
+        atlas.paste(img, ((i % cols) * w, (i // cols) * h))
+    atlas.save(os.path.join(OUT, "%s-anim.png" % name))
+    # Binary, so it is LF on Windows too (the repo's line endings), whichever Python writes it.
+    with open(os.path.join(OUT, "%s-anim.json" % name), "wb") as fh:
+        fh.write((json.dumps({"x": x0, "y": y0, "width": w, "height": h, "columns": cols, "fps": MISSED_FPS,
+                              "timeline": timeline}, sort_keys=True) + "\n").encode("ascii"))
+    return len(unique)
+
+
+def preview_anim(name, layers, frames, ticks):
+    """A few ticks of the animated panel, the PC's view, one above the other."""
+    flat = composite(layers)
+    shots = []
+    for k in ticks:
+        im = flat.copy()
+        im.paste(frames[k], MISSED_BOX[:2], frames[k])
+        for n in ("fore",):
+            im.paste(layers[n].img, (0, 0), layers[n].img)
+        shots.append(im.crop((VIEW_TALL[0], 360, VIEW_TALL[2], 600)))
+    w, h = shots[0].size
+    sheet = Image.new("RGBA", (w * len(shots) + 6 * (len(shots) - 1), h), (40, 40, 40, 255))
+    for i, im in enumerate(shots):
+        sheet.paste(im, (i * (w + 6), 0))
+    sheet = sheet.resize((sheet.size[0] * 2, sheet.size[1] * 2), Image.NEAREST)
+    sheet.save(os.path.join(PREVIEW, name + "-anim.png"))
 
 
 def preview(name, layers):
@@ -1247,12 +1592,18 @@ def main(argv):
         if want and name not in want:
             continue
         layers = fn()
-        bad = audit(layers)
+        frames = layers.pop("anim", None)
+        bad = audit(layers, frames or ())
         total_bad += sum(bad.values())
         for ln, c in layers.items():
             c.img.save(os.path.join(OUT, "%s-%s.png" % (name, ln)))
+        if frames:
+            n = write_anim(name, frames)
+            print("%-7s %d ticks, %d frames in %s-anim.png" % (name, len(frames), n, name))
         if do_preview:
             preview(name, layers)
+            if frames:
+                preview_anim(name, layers, frames, [4, 12, 18, 22, 30, 38])
         print("%-7s %d off-contract pixels%s" % (name, sum(bad.values()),
                                                    (" " + str(sorted(bad.items())[:4])) if bad else ""))
     return 1 if total_bad else 0

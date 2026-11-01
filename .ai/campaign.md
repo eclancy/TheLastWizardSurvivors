@@ -400,7 +400,9 @@ best run kept in `LifetimeStats.BestHaresCoursed`).
   every save that had opened it (section 4's reason for paying relics here). So no schema step: no save
   loses anything, and none can have done the deed before the count existed.
 - **Who he is in play** (`CharacterData_Laelaps.tres`, `tools/art/laelaps.py`): drawn by the
-  Familiar's hound renderer with no hat, a bronze coat and paws still the grey of the stone; health
+  Familiar's hound renderer, a bronze coat and paws still the grey of the stone, wearing the familiar's
+  wizard outfit - hat, mantle and star collar - since Eric's 2026-11-01 playtest ("When playing Laelaps,
+  you should have the wizard outfit"; the docstring says why); health
   0.9, speed 1.12, the fastest on his feet. He opens on **Cyclone Slash** - the whirlwind of a hound
   that never stops running - on Wind, which no wizard opens on. His passive, *Fated to Catch*: one in
   four enemy bolts that reach him is caught in his jaws (`Player.TryCatchBolt`, no hit at all, like a
