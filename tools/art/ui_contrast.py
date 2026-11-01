@@ -149,7 +149,9 @@ VELLUM_INK_META = h2rgb(f2h(0.431, 0.267, 0.314))
 VELLUM_REWARD = h2rgb(f2h(0.329, 0.247, 0.063))
 VELLUM_FLAG = h2rgb(f2h(0.416, 0.125, 0.157))
 VELLUM_PILL_HOVER = h2rgb(f2h(0.847 * 0.35 + 0.949 * 0.65, 0.643 * 0.35 + 0.863 * 0.65, 0.518 * 0.35 + 0.769 * 0.65))
+VELLUM_FACE_RGB = h2rgb(f2h(0.949, 0.863, 0.769))
 STONE_FACE = h2rgb(f2h(0.118, 0.149, 0.204))
+STONE_HEADING = h2rgb(f2h(1.0, 0.941, 0.753))
 STONE_INK = h2rgb(f2h(1.0, 0.95, 0.86))
 STONE_INK_SOFT = h2rgb(f2h(0.831, 0.863, 0.918))
 STONE_INK_META = h2rgb(f2h(0.604, 0.643, 0.722))
@@ -276,15 +278,18 @@ def ascension_pairs(add, vellum_ground):
 # it multiplies the ground and never the ink) and AscensionForkArrows.OpenLine / ClosedLine.
 PATH_SEEN_DIM = (0.78, 0.78, 0.84)
 PATH_SEALED_DIM = (0.56, 0.56, 0.64)
-FORK_OPEN = h2rgb(f2h(0.541, 0.416, 0.118))         # gold base
-FORK_CLOSED = h2rgb(f2h(0.431, 0.267, 0.314))       # flesh shade, CodexRows.Vellum.InkMeta
+# FocusSpotlight.Dimmed: every card but the selected one, while a stick or the keys are in use.
+SPOTLIGHT_DIM = (0.78, 0.78, 0.82)
+# Drawn on the plate's stone since the vellum page under the trees went (2026-10-31).
+FORK_OPEN = h2rgb(f2h(0.847, 0.690, 0.290))         # gold lit
+FORK_CLOSED = h2rgb(f2h(0.604, 0.643, 0.722))       # skin base, CodexRows.Stone.InkMeta
 
 
 def multiply(rgb, factors):
     return tuple(int(round(c * f)) for c, f in zip(rgb, factors))
 
 
-def tree_pairs(add, rev, vellum_ground):
+def tree_pairs(add, rev, vellum_ground, floors):
     """The paths are obsidian plates: lit when ready, resting and dimmed when seen but out of reach,
     dimmer still when sealed. The dim is a SelfModulate on the frame, so only the ground darkens.
     The node is the page with a dark edge (gold face when ready); the fork is a graphic (3:1)."""
@@ -297,13 +302,14 @@ def tree_pairs(add, rev, vellum_ground):
         add(name, ground, "Ink (what it does)", ASC_INK, BODY)
         add(name, ground, "Soft (sealed line, element)", ASC_SOFT, BODY)
         add(name, ground, "Advice (gold lit)", ASC_ADVICE, BODY)
-    add("tree node (vellum page)", vellum_ground, "Ink (spell name)", VELLUM_INK, BODY)
-    add("tree node (vellum page)", vellum_ground, "edge (Ink, graphic)", VELLUM_INK, GRAPHIC)
+    add("tree node (parchment face)", vellum_ground, "Ink (spell name)", VELLUM_INK, BODY)
     add("tree node, ready (gold face)", ASC_READY_FACE, "edge (InkGold, graphic)", INK_GOLD, GRAPHIC)
     add("tree node, ready (gold face)", ASC_READY_FACE, "pip ring (gold base)", PIP_GOLD_BASE, GRAPHIC)
-    add("tree node (vellum page)", vellum_ground, "pip ring (gold base)", PIP_GOLD_BASE, GRAPHIC)
-    add("tree fork (vellum page)", vellum_ground, "open line (gold base)", FORK_OPEN, GRAPHIC)
-    add("tree fork (vellum page)", vellum_ground, "closed line (meta, dashed)", FORK_CLOSED, GRAPHIC)
+    add("tree node (parchment face)", vellum_ground, "pip ring (gold base)", PIP_GOLD_BASE, GRAPHIC)
+    for floor_name, floor in floors:
+        add("tree fork (%s)" % floor_name, floor, "open line (gold lit)", FORK_OPEN, GRAPHIC)
+        add("tree fork (%s)" % floor_name, floor, "closed line (skin base, dashed)", FORK_CLOSED, GRAPHIC)
+        add("tree node on the floor (%s)" % floor_name, floor, "node face (parchment, graphic)", VELLUM_FACE_RGB, GRAPHIC)
     add("tree fork, sealed glyph on plate", multiply(resting, PATH_SEALED_DIM), "glyph gold lit", ASC_ADVICE, GRAPHIC)
 
 
@@ -328,17 +334,14 @@ UPGRADE_RULE = h2rgb(f2h(0.416, 0.125, 0.157))     # red lit: the upgrade page's
 # pixel, lichen hi, is a soft edge at 2.9:1 and is not the mark; the line it hugs is.)
 MUTATION_RULE = h2rgb(f2h(0.227, 0.392, 0.439))
 MUTATION_CHIP = h2rgb(f2h(0.165, 0.306, 0.345))    # lichen base
-MUTATION_HEADING = h2rgb(f2h(0.086, 0.157, 0.180)) # lichen deep
 ASC_TITLE = h2rgb(f2h(1.0, 0.941, 0.753))
 ASC_INK = h2rgb(f2h(0.933, 0.949, 0.980))
 ASC_SOFT = h2rgb(f2h(0.416, 0.722, 0.910))         # arcane lit
 ASC_ADVICE = h2rgb(f2h(0.847, 0.690, 0.290))       # gold lit
 ASC_CHIP = h2rgb(f2h(0.090, 0.255, 0.369))         # arcane shade
-ASC_HEADING = h2rgb(f2h(0.043, 0.141, 0.212))      # arcane deep
 APO_TITLE = h2rgb(f2h(1.0, 0.784, 0.282))          # fire hot
 APO_SOFT = h2rgb(f2h(0.910, 0.478, 0.102))         # fire mid
 APO_CHIP = h2rgb(f2h(0.165, 0.055, 0.078))         # red shade
-APO_HEADING = h2rgb(f2h(0.416, 0.125, 0.157))      # red lit
 CHIP_INK = h2rgb(f2h(0.933, 0.949, 0.980))
 LOCK_BAND = h2rgb(f2h(0.416, 0.125, 0.157))
 LOCK_INK = h2rgb(f2h(0.933, 0.949, 0.980))
@@ -355,7 +358,7 @@ def blend(ink, ground, alpha):
     return tuple(int(round(g + (i - g) * alpha)) for i, g in zip(ink, ground))
 
 
-def family_pairs(add, rev):
+def family_pairs(add, rev, floors):
     """Each family's inks on its own frame, in both states (the frame's centre is the face, and the
     face is the same in both - this proves it), the marks round the upgrade and mutation pages as
     graphics, the evolution page's headings on the vellum page, the strip, the lock stamp, the
@@ -388,10 +391,32 @@ def family_pairs(add, rev):
     add("synergy chip, ascension", ASC_CHIP, "ChipInk", CHIP_INK, BODY)
     add("synergy chip, apotheosis", APO_CHIP, "ChipInk", CHIP_INK, BODY)
     add("lock stamp band", LOCK_BAND, "LockInk", LOCK_INK, BODY)
-    add("evolution page heading (vellum)", vellum_page, "mutation heading", MUTATION_HEADING, LARGE)
-    add("evolution page heading (vellum)", vellum_page, "ascension heading", ASC_HEADING, LARGE)
-    add("evolution page heading (vellum)", vellum_page, "apotheosis heading", APO_HEADING, LARGE)
-    add("evolution page subtitle (vellum)", vellum_page, "InkSoft", INK_SOFT, BODY)
+    # The evolution pages, the fork and the browser are written on the plate's stone (2026-10-31):
+    # the heading on the level-up band, the subtitle and the browser's own lines in the stone inks.
+    add("evolution page heading (band)", BAND, "Heading", HEADING, LARGE)
+    for floor_name, floor in floors:
+        add("evolution page subtitle (%s)" % floor_name, floor, "Stone.InkSoft (and the browser's quiet line)", STONE_INK_SOFT, BODY)
+        add("browser text (%s)" % floor_name, floor, "Stone.Ink (summary)", STONE_INK, BODY)
+        add("browser text (%s)" % floor_name, floor, "Stone.Heading (section)", STONE_HEADING, BODY)
+    # FocusSpotlight dims the cards the selection is not on: Modulate multiplies ink and ground alike.
+    boon_rest = load(UI + "ui-boon-plaque.png", rev)
+    bw, bh = boon_rest.size
+    boon_ground = dominant(boon_rest, (bw // 4, bh // 4, 3 * bw // 4, 3 * bh // 4))
+    for name, g, inks in (("new spell page", page, ((INK, "Ink"), (INK_SOFT, "InkSoft"))),
+                          ("upgrade page", centre(load(UI + "ui-spell-page-upgrade.png", rev)),
+                           ((INK, "Ink"), (RUBRIC, "Rubric"), (INK_GOLD, "InkGold"))),
+                          ("mutation page", centre(load(UI + "ui-spell-page-mutation.png", rev)),
+                           ((INK, "Ink"), (INK_SOFT, "InkSoft"), (INK_GOLD, "InkGold"))),
+                          ("boon plaque", boon_ground,
+                           ((BOON_GOLD_SOFT, "BoonInkGoldSoft"), (BOON_INK, "BoonInk"))),
+                          ("obsidian plate", centre(load(UI + "ui-obsidian-plate.png", rev)),
+                           ((ASC_INK, "Ink"), (ASC_SOFT, "Soft"), (ASC_ADVICE, "Advice"))),
+                          # Not the ember plate: the Apotheosis page has no spotlight (its Fire-mid
+                          # element line would dim to 4.4:1), and it holds one form in any case.
+                          ):
+        for ink, ink_name in inks:
+            add("spotlight-dimmed %s" % name, multiply(g, SPOTLIGHT_DIM), ink_name + " (dimmed)",
+                multiply(ink, SPOTLIGHT_DIM), BODY)
     held = centre(load(UI + "ui-spell-page-upgrade.png", rev))
     add("penknife: protected spell (upgrade page, 0.7)", held, "Ink faded", blend(INK, held, 0.7), BODY)
     add("penknife: held spell (upgrade page)", held, "InkSoft (level, elements)", INK_SOFT, BODY)
@@ -580,14 +605,17 @@ def measure(rev=None):
     add("stone button", centre(button), "button text", BUTTON_TEXT, BODY)
     add("stone panel", centre(panel), "button text", BUTTON_TEXT, BODY)
 
+    # The floor the evolution pages and the browser are written on, typical and brightest stone.
+    floors = (("floor, typical stone", dominant(plate, (8, 80, pw - 8, ph - 8))),
+              ("floor, brightest stone", brightest(plate, (8, 80, pw - 8, ph - 8))))
     if not rev:
         codex_pairs(add, centre(vellum), centre(panel))
         menu_pairs(add, centre(panel), centre(vellum), rev)
         ascension_pairs(add, centre(vellum))
         report_pairs(add, centre(panel))
-        family_pairs(add, rev)
+        family_pairs(add, rev, floors)
         hud_pairs(add)
-        tree_pairs(add, rev, centre(vellum))
+        tree_pairs(add, rev, centre(vellum), floors)
         shop_pairs(add, rev)
         results_pairs(add, centre(panel))
     else:

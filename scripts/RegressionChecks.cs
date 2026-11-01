@@ -31,6 +31,7 @@ public static class RegressionChecks
 		ValidateElementTags(warnings);
 		ValidateElementPaths(warnings);
 		ValidateEvolutionReaders(warnings);
+		ValidateCardTextBudget(warnings);
 		ValidateLevelUpReaders(warnings);
 		ValidateAmountReaders(warnings);
 		ValidateStarfall(warnings);
@@ -504,9 +505,9 @@ public static class RegressionChecks
 	// THE WORLD MAP'S GEOMETRY is generated (tools/art/world_map.py -> worldmap.json), so a chapter
 	// added to StageCatalog is on no map until somebody places it - and the screen would quietly leave
 	// it out. Every chapter and the Boss Rush must have a stop; the road must visit the campaign in its
-	// order, the seat after the last chapter, and the chapters outside the campaign after everything;
-	// the Sketchbook lies off the world picture (.ai/world-map.md, section 4); and every picture the
-	// screen draws must exist.
+	// order and the seat after the last chapter; a chapter held until the campaign is finished (the
+	// Sketchbook) is on its own page and never on the road (.ai/world-map.md, section 4); and every
+	// picture the screen draws must exist.
 	private static void ValidateWorldMap(List<string> warnings)
 	{
 		WorldMapLayout map = WorldMapLayout.Load(out string problem);
@@ -519,10 +520,11 @@ public static class RegressionChecks
 		// is its own piece (C8), and drawing the castle waits on the Dungeon's move. Its missing stop is
 		// then an item on that chapter's campaign to-do line (ValidateCampaignToDo), and the screen leaves
 		// it out quietly (WorldMap.BuildStops). A PLAYABLE chapter with no stop is a fault, as always, so
-		// none can flip with its place undrawn.
+		// none can flip with its place undrawn - except one held until the campaign is finished, whose
+		// place is the page.
 		foreach (StageDefinition stage in StageCatalog.All)
 		{
-			if (map.Get(stage.Id) == null && stage.IsPlayable)
+			if (map.Get(stage.Id) == null && stage.IsPlayable && !stage.AfterCampaign)
 				warnings.Add($"World map: {stage.DisplayName} ({stage.Id}) has no place on the map - add it to PLACES in tools/art/world_map.py and draw its landmark.");
 		}
 		WorldMapStop rush = map.Get(WorldMapLayout.BossRushId);
@@ -547,12 +549,44 @@ public static class RegressionChecks
 		foreach (StageDefinition stage in StageCatalog.All.Where(s => !StageCatalog.IsInCampaign(s)))
 		{
 			WorldMapStop stop = map.Get(stage.Id);
-			if (stop == null)
+			// Eric, 2026-10-30: "sketchbook level should not be attached to the map ... it shows up as its
+			// own separate map". A stop for it would put it back in the road's flow and on the compass.
+			if (stage.AfterCampaign)
+			{
+				if (stop != null)
+					warnings.Add($"World map: {stage.DisplayName} is held until the campaign is finished and belongs on its own page, but it stands on the road (remove it from PLACES in tools/art/world_map.py).");
 				continue;
-			if (stop.ArcLength <= beyond)
+			}
+			if (stop != null && stop.ArcLength <= beyond)
 				warnings.Add($"World map: {stage.DisplayName} is outside the campaign but the road reaches it before the campaign's end.");
-			if (stop.OnMap)
-				warnings.Add($"World map: {stage.DisplayName} is outside the campaign and must lie off the world picture.");
+		}
+
+		// The map unrolls as the campaign is won (GlobalStatsManager.IsChapterRevealed): a new save is shown
+		// the first chapter and nothing past it, and no chapter a save can enter is ever hidden from it -
+		// checked on the new save and on one with every chapter opened.
+		var fresh = new SaveData();
+		var opened = new SaveData();
+		foreach (StageDefinition stage in StageCatalog.Campaign)
+			GlobalStatsManager.UnlockStage(opened, stage.Id);
+		foreach (StageDefinition stage in StageCatalog.Campaign)
+		{
+			bool first = StageCatalog.CampaignPositionOf(stage.Id) == 0;
+			if (GlobalStatsManager.IsChapterRevealed(fresh, stage) != first)
+				warnings.Add($"World map: on a new save {stage.DisplayName} is {(first ? "hidden" : "shown")}; only the first chapter should be.");
+			foreach (SaveData save in new[] { fresh, opened })
+			{
+				if (GlobalStatsManager.IsStageAvailable(save, stage) && !GlobalStatsManager.IsChapterRevealed(save, stage))
+					warnings.Add($"World map: {stage.DisplayName} can be entered but is hidden on the map.");
+			}
+		}
+
+		// The page: its sheet drawn, the wizard's stand on the paper, the kids' drawings on the sheet.
+		if (StageCatalog.All.Any(s => s.AfterCampaign && s.IsPlayable))
+		{
+			if (string.IsNullOrEmpty(map.PageImage) || map.PageSize.X <= 0f || map.PageSize.Y <= 0f)
+				warnings.Add("World map: a chapter is held for the page, but worldmap.json has no page to show it on.");
+			else if (!map.PageRect.HasPoint(map.PageStand))
+				warnings.Add($"World map: the wizard's stand on the page ({map.PageStand}) is off the paper ({map.PageRect}).");
 		}
 
 		var pictures = new List<string> { "world.png", map.PageImage, "ring-open.png", "ring-locked.png", "ring-current.png",
@@ -569,10 +603,12 @@ public static class RegressionChecks
 			if (!ResourceLoader.Exists(WorldMapLayout.Directory + picture))
 				warnings.Add($"World map: {WorldMapLayout.Directory + picture} is missing or not imported.");
 		}
-		foreach (var (texture, _) in map.PageDrawings)
+		foreach (var (texture, at) in map.PageDrawings)
 		{
 			if (!ResourceLoader.Exists(texture))
 				warnings.Add($"World map: the page's drawing {texture} is missing.");
+			else if (!map.PageRect.HasPoint(at))
+				warnings.Add($"World map: the page's drawing {texture} is placed off the paper, at {at}.");
 		}
 	}
 
@@ -676,8 +712,9 @@ public static class RegressionChecks
 				new[] { Familiar.CerberusId, Familiar.AnnwnId }),
 			[Familiar.CrowId] = (new[] { Familiar.RavenId, Familiar.StormcrowId, Familiar.MurderId },
 				new[] { Familiar.MorriganId, Familiar.GriffinId }),
-			[Familiar.CatId] = (new[] { Familiar.GrimalkinId, Familiar.CaitSithId, Familiar.PurrId },
-				new[] { Familiar.CathPalugId, Familiar.NineLivesId }),
+			// The cat's four level 4 cards: Nine Lives moved down from level 8 for the Black Cat (2026-10-31).
+			[Familiar.CatId] = (new[] { Familiar.GrimalkinId, Familiar.CaitSithId, Familiar.PurrId, Familiar.NineLivesId },
+				new[] { Familiar.CathPalugId, Familiar.BlackCatId }),
 		};
 		var everyMilestone = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var (variantId, (four, eight)) in expected)
@@ -830,7 +867,8 @@ public static class RegressionChecks
 						warnings.Add($"Spell forms: '{vid}' has a level-up out of order or outside 2..{template.MaxLevel}.");
 					previous = upgrade?.Level ?? previous;
 				}
-				if (variant.BaseCooldown <= 0f || variant.BaseProjectileCount < 1 || variant.BaseDamage < 1)
+				// The Familiar's cat deals no damage by design (2026-10-31: it debuffs and buffs); every other form must.
+				if (variant.BaseCooldown <= 0f || variant.BaseProjectileCount < 1 || (variant.BaseDamage < 1 && vid != Familiar.CatId))
 					warnings.Add($"Spell forms: '{vid}' needs a positive damage, cooldown and count.");
 
 				if (!formsById.TryGetValue(vid, out SpellData form))
@@ -844,8 +882,11 @@ public static class RegressionChecks
 				var formTags = form.GetElementWeights();
 				if (baseTags.Count != formTags.Count || baseTags.Any(p => !formTags.TryGetValue(p.Key, out int w) || w != p.Value))
 					warnings.Add($"Spell forms: '{vid}' changes '{id}'s element tags; a form is a way of playing the spell, never a different carrier.");
-				if ((form.Level4Options?.Count ?? 0) != 3 || (form.Level8Options?.Count ?? 0) != 2)
-					warnings.Add($"Spell forms: '{vid}' has {form.Level4Options?.Count ?? 0} level 4 and {form.Level8Options?.Count ?? 0} level 8 milestones; every form has 3 and 2 of its own.");
+				// Three level 4 cards a form, but the Familiar's cat: Nine Lives moved down from level 8 to make room for
+				// the Black Cat (2026-10-31), and the mutation page counts its branches (LevelUpMenu).
+				int fours = vid == Familiar.CatId ? 4 : 3;
+				if ((form.Level4Options?.Count ?? 0) != fours || (form.Level8Options?.Count ?? 0) != 2)
+					warnings.Add($"Spell forms: '{vid}' has {form.Level4Options?.Count ?? 0} level 4 and {form.Level8Options?.Count ?? 0} level 8 milestones; every form has {fours} and 2 of its own.");
 				foreach (SpellEvolutionOption option in (form.Level4Options ?? new()).Concat(form.Level8Options ?? new()))
 				{
 					if (option == null)
@@ -966,6 +1007,13 @@ public static class RegressionChecks
 				warnings.Add("Sleet Runes: the scene has no RuneSheet (or assets/bonelight/effects/sleet-rune.png is not imported); runes would fly invisible.");
 			else if (sheet.GetWidth() != sheet.GetHeight() * SleetRunes.Directions)
 				warnings.Add($"Sleet Runes: the rune sheet is {sheet.GetWidth()}x{sheet.GetHeight()}, not {SleetRunes.Directions} square cells in a row; every rune would be drawn at the wrong heading.");
+			// Great Rune draws from its own sheet, drawn again at twice the size; without it a great rune
+			// would be drawn as a small one and hit twice as wide as it looks.
+			Texture2D greatSheet = runes.GreatRuneSheet;
+			if (greatSheet == null)
+				warnings.Add("Sleet Runes: the scene has no GreatRuneSheet (or assets/bonelight/effects/sleet-rune-great.png is not imported); a great rune would be drawn small.");
+			else if (greatSheet.GetWidth() != greatSheet.GetHeight() * SleetRunes.Directions)
+				warnings.Add($"Sleet Runes: the great rune sheet is {greatSheet.GetWidth()}x{greatSheet.GetHeight()}, not {SleetRunes.Directions} square cells in a row.");
 			runes.Free();
 		}
 
@@ -980,10 +1028,10 @@ public static class RegressionChecks
 		}
 
 		CheckOptionIds(warnings, "stormsweep",
-			new[] { Stormsweep.HighVoltageId, Stormsweep.IronCurrentId, Stormsweep.RapidDischargeId },
+			new[] { Stormsweep.BallLightningId, Stormsweep.IronCurrentId, Stormsweep.ForkedLightningId },
 			new[] { Stormsweep.ThunderclapId, Stormsweep.CardinalStormId });
 		CheckOptionIds(warnings, "sleet_runes",
-			new[] { SleetRunes.DeepRimeId, SleetRunes.RuneFlurryId, SleetRunes.FarWindId },
+			new[] { SleetRunes.GreatRuneId, SleetRunes.BraidedWindId, SleetRunes.PartingWindId },
 			new[] { SleetRunes.SigilFanId, SleetRunes.TurningGaleId });
 	}
 
@@ -2153,6 +2201,10 @@ public static class RegressionChecks
 				warnings.Add($"Campaign: {stage.DisplayName} ({stage.Id}) is outside the order but gated {stage.Gate}, so nothing could ever open it.");
 			if (inCampaign && stage.Gate == StageGate.Open && StageCatalog.CampaignPositionOf(stage.Id) > 0)
 				warnings.Add($"Campaign: {stage.DisplayName} is in the middle of the order but always open, so the chapters before it gate nothing.");
+			// Reached once the campaign is finished (the Sketchbook's page, .ai/world-map.md section 4): it
+			// must stand outside the road, or the road would have to be finished to walk it.
+			if (stage.AfterCampaign && (inCampaign || stage.Gate != StageGate.Open))
+				warnings.Add($"Campaign: {stage.DisplayName} is held until the campaign is finished, so it must be outside the order and gated Open.");
 		}
 
 		for (int i = 0; i < campaign.Count; i++)
@@ -2559,7 +2611,7 @@ public static class RegressionChecks
 				if (string.IsNullOrWhiteSpace(stageId))
 					return true;
 				int position = StageCatalog.CampaignPositionOf(stageId);
-				return position < 0 ? StageCatalog.GetById(stageId)?.Gate == StageGate.Open : position < gatePosition;
+				return position < 0 ? StageCatalog.IsOpenFromStart(StageCatalog.GetById(stageId)) : position < gatePosition;
 			}
 
 			// On paper.
@@ -4545,7 +4597,7 @@ public static class RegressionChecks
 		StageDefinition gate = StageCatalog.GateChapter;
 		int position = StageCatalog.CampaignPositionOf(stageId);
 		if (position < 0)
-			return StageCatalog.GetById(stageId)?.Gate == StageGate.Open;
+			return StageCatalog.IsOpenFromStart(StageCatalog.GetById(stageId));
 		return gate == null || position < StageCatalog.CampaignPositionOf(gate.Id);
 	}
 
@@ -4962,6 +5014,43 @@ public static class RegressionChecks
 		}
 		foreach (string itemId in ChestItemCatalog.AllItemIds)
 			Check($"relic {itemId}", ChestItemCatalog.GetDescription(itemId));
+	}
+
+	/// <summary>
+	/// Every level 4, level 8 and Apotheosis branch says what it does within
+	/// <see cref="SpellEvolutionOption.DescriptionBudget"/> characters, as the card shows it.
+	/// </summary>
+	/// <remarks>
+	/// The level-up, mutation and Ascension screens never scroll (2026-10-31, Eric: "Overall keep text
+	/// minimal"; .ai/level-up-screen.md section 3b). Their cards size to their words, so a branch written
+	/// at length is a page that scrolls on a 1280x720 PC or a phone - and the old catalog ran to 385.
+	/// </remarks>
+	private static void ValidateCardTextBudget(List<string> warnings)
+	{
+		var reported = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (SpellData spell in ContentValidator.LoadAllSpellForms())
+		{
+			if (spell == null || string.IsNullOrWhiteSpace(spell.Id))
+				continue;
+			SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
+			var options = new List<SpellEvolutionOption>();
+			if (spell.Level4Options != null)
+				options.AddRange(spell.Level4Options);
+			if (spell.Level8Options != null)
+				options.AddRange(spell.Level8Options);
+			foreach (ApotheosisDefinition definition in ApotheosisCatalog.All)
+			{
+				if (definition.Form != null && definition.SpellId.Equals(spell.Id, StringComparison.OrdinalIgnoreCase))
+					options.Add(definition.Form);
+			}
+			foreach (SpellEvolutionOption option in options)
+			{
+				int length = option?.Description?.Length ?? 0;
+				if (length > SpellEvolutionOption.DescriptionBudget && reported.Add($"{spell.Id}:{option.Id}"))
+					warnings.Add($"Branch '{option.Id}' of '{spell.Id}' is {length} characters; a card holds " +
+						$"{SpellEvolutionOption.DescriptionBudget} without scrolling: \"{option.Description}\"");
+			}
+		}
 	}
 
 	private static void ValidateEvolutionReaders(List<string> warnings)
@@ -5424,11 +5513,11 @@ public static class RegressionChecks
 			foreach (StageDefinition gate in StageCatalog.GateChapters)
 			{
 				if (GlobalStatsManager.CountsTowardGate(definition.Id, gate)
-					&& (revealAt < 0 ? stage.Gate != StageGate.Open : revealAt >= StageCatalog.CampaignPositionOf(gate.Id)))
+					&& (revealAt < 0 ? !StageCatalog.IsOpenFromStart(stage) : revealAt >= StageCatalog.CampaignPositionOf(gate.Id)))
 					warnings.Add($"Secret '{definition.Id}' is counted by {gate.DisplayName}'s gate but revealed by '{stage.DisplayName}', which is not before it - he would stay sealed until after he was needed.");
 			}
 		}
-		if (GlobalStatsManager.IsCharacterRevealed(new SaveData(), definition.Id) && stage.Gate != StageGate.Open)
+		if (GlobalStatsManager.IsCharacterRevealed(new SaveData(), definition.Id) && !StageCatalog.IsOpenFromStart(stage))
 			warnings.Add($"Secret '{definition.Id}' reads as revealed on a brand-new save although '{stage.DisplayName}' is closed on one; IsCharacterRevealed has stopped honouring the reveal.");
 
 		// A wizard found at a side event is revealed by the chapter that holds him: the place the

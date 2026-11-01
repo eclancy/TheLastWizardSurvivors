@@ -4,8 +4,9 @@ using System.Collections.Generic;
 using WizardSurvivors.scripts;
 
 /// <summary>
-/// The drawn world on the world map: the picture, the page off its edge, the fog over held places,
-/// the stand-point rings, and the selected wizard walking the road, under a camera that leads him.
+/// The drawn world on the world map: the picture, the fog over held places, the stand-point rings,
+/// and the selected wizard walking the road, under a camera that leads him. The Sketchbook's page is
+/// not on it: that is a sheet of its own (<see cref="WorldMapPage"/>, .ai/world-map.md section 4).
 /// </summary>
 /// <remarks>
 /// WHOLE SCREEN PIXELS (.ai/art-direction.md 6a). Everything here is drawn by this one control at a
@@ -54,20 +55,13 @@ public partial class WorldMapView : Control
 	private ViewStop[] stops = Array.Empty<ViewStop>();
 	private Texture2D[] shrouds = Array.Empty<Texture2D>();
 	private Texture2D world;
-	private Texture2D page;
 	private Texture2D ringOpen;
 	private Texture2D ringLocked;
 	private Texture2D ringCurrent;
 	private Texture2D shadow;
 	private Texture2D lockGlyph;
-	private readonly List<(Texture2D Texture, Vector2 At)> drawings = new();
 
-	private Texture2D[] idleFrames = Array.Empty<Texture2D>();
-	private Texture2D[] movingFrames = Array.Empty<Texture2D>();
-	private float idleFps = 6f;
-	private float movingFps = 10f;
-	private bool sheetFacesLeft;
-	private Color tint = Colors.White;
+	private Figure figure = new();
 
 	private int selected;
 	private float wizardS;
@@ -100,7 +94,12 @@ public partial class WorldMapView : Control
 		MouseFilter = MouseFilterEnum.Stop;
 	}
 
-	public void Setup(WorldMapLayout map, IReadOnlyList<ViewStop> viewStops, CharacterData character, int startIndex)
+	/// <param name="revealFromArc">
+	/// Where the lit road ended at the last visit, when a stop has been revealed since; the dark then draws
+	/// back from there to the new frontier (<see cref="RevealSeconds"/>). Below zero: no reveal.
+	/// </param>
+	public void Setup(WorldMapLayout map, IReadOnlyList<ViewStop> viewStops, CharacterData character, int startIndex,
+		float revealFromArc = -1f)
 	{
 		layout = map;
 		stops = new ViewStop[viewStops.Count];
@@ -112,31 +111,23 @@ public partial class WorldMapView : Control
 			shrouds[i] = string.IsNullOrEmpty(image) ? null : Load(WorldMapLayout.Directory + image);
 		}
 		world = Load(WorldMapLayout.Directory + "world.png");
-		page = Load(WorldMapLayout.Directory + map.PageImage);
 		ringOpen = Load(WorldMapLayout.Directory + "ring-open.png");
 		ringLocked = Load(WorldMapLayout.Directory + "ring-locked.png");
 		ringCurrent = Load(WorldMapLayout.Directory + "ring-current.png");
 		shadow = Load(WorldMapLayout.Directory + "shadow.png");
 		lockGlyph = StatIcons.Load("lock");
-		drawings.Clear();
-		foreach (var (path, at) in map.PageDrawings)
-		{
-			// The kids' drawings, from their own files, untouched (.ai/world-map.md, section 4).
-			Texture2D drawing = Load(path);
-			if (drawing != null)
-				drawings.Add((drawing, at));
-		}
-		SetCharacter(character);
+		figure = Figure.Of(character);
 
 		selected = Mathf.Clamp(startIndex, 0, Math.Max(0, stops.Length - 1));
 		wizardS = targetS = stops.Length > 0 ? stops[selected].Layout.ArcLength : 0f;
 		lastWizardPosition = map.PointAt(wizardS);
 		camera = stops.Length > 0 ? stops[selected].Layout.Focus : map.Size / 2f;
+		BuildRevealMasks(revealFromArc);
 		// Placed, not walked: the wizard opens standing at his stop and the camera on it.
 		CallDeferred(nameof(SnapCamera));
 	}
 
-	private static Texture2D Load(string path)
+	internal static Texture2D Load(string path)
 	{
 		if (string.IsNullOrEmpty(path) || !ResourceLoader.Exists(path))
 		{
@@ -146,42 +137,61 @@ public partial class WorldMapView : Control
 		return GD.Load<Texture2D>(path);
 	}
 
-	private void SetCharacter(CharacterData character)
+	/// <summary>
+	/// The selected wizard as the map draws him: his idle and moving frames, their speeds, his tint and
+	/// which way his sheet faces. Shared with the Sketchbook's page (<see cref="WorldMapPage"/>), where he
+	/// stands on the paper.
+	/// </summary>
+	internal sealed class Figure
 	{
-		tint = CharacterVisuals.GetCharacterTint(character?.Id);
-		sheetFacesLeft = CharacterVisuals.SpriteFacesLeft(character?.Id);
-		SpriteFrames frames = character?.Frames;
-		if (frames != null && frames.HasAnimation("idle"))
-		{
-			idleFrames = FramesOf(frames, "idle");
-			idleFps = (float)frames.GetAnimationSpeed("idle");
-			if (frames.HasAnimation("moving"))
-			{
-				movingFrames = FramesOf(frames, "moving");
-				movingFps = (float)frames.GetAnimationSpeed("moving");
-			}
-		}
-		else
-		{
-			// No sheet of his own (the Test Wizard, whose sprite is Eric's drawing and is never derived):
-			// the idle built from the portrait, played quicker while he walks.
-			idleFrames = CharacterVisuals.GetIdleFrames(character?.Portrait).ToArray();
-			idleFps = CharacterVisuals.IdleFramesPerSecond;
-		}
-		if (movingFrames.Length == 0)
-		{
-			movingFrames = idleFrames;
-			movingFps = idleFps * 2f;
-		}
-	}
+		public Texture2D[] Idle = Array.Empty<Texture2D>();
+		public Texture2D[] Moving = Array.Empty<Texture2D>();
+		public float IdleFps = 6f;
+		public float MovingFps = 10f;
+		public bool SheetFacesLeft;
+		public Color Tint = Colors.White;
 
-	private static Texture2D[] FramesOf(SpriteFrames frames, string animation)
-	{
-		int count = frames.GetFrameCount(animation);
-		var result = new Texture2D[count];
-		for (int i = 0; i < count; i++)
-			result[i] = frames.GetFrameTexture(animation, i);
-		return result;
+		public static Figure Of(CharacterData character)
+		{
+			var f = new Figure
+			{
+				Tint = CharacterVisuals.GetCharacterTint(character?.Id),
+				SheetFacesLeft = CharacterVisuals.SpriteFacesLeft(character?.Id),
+			};
+			SpriteFrames frames = character?.Frames;
+			if (frames != null && frames.HasAnimation("idle"))
+			{
+				f.Idle = FramesOf(frames, "idle");
+				f.IdleFps = (float)frames.GetAnimationSpeed("idle");
+				if (frames.HasAnimation("moving"))
+				{
+					f.Moving = FramesOf(frames, "moving");
+					f.MovingFps = (float)frames.GetAnimationSpeed("moving");
+				}
+			}
+			else if (character != null)
+			{
+				// No sheet of his own (the Test Wizard, whose sprite is Eric's drawing and is never derived):
+				// the idle built from the portrait, played quicker while he walks.
+				f.Idle = CharacterVisuals.GetIdleFrames(character.Portrait).ToArray();
+				f.IdleFps = CharacterVisuals.IdleFramesPerSecond;
+			}
+			if (f.Moving.Length == 0)
+			{
+				f.Moving = f.Idle;
+				f.MovingFps = f.IdleFps * 2f;
+			}
+			return f;
+		}
+
+		private static Texture2D[] FramesOf(SpriteFrames frames, string animation)
+		{
+			int count = frames.GetFrameCount(animation);
+			var result = new Texture2D[count];
+			for (int i = 0; i < count; i++)
+				result[i] = frames.GetFrameTexture(animation, i);
+			return result;
+		}
 	}
 
 	public void SetLook(int index, StopLook look)
@@ -264,6 +274,15 @@ public partial class WorldMapView : Control
 		camera = Constrain(camera);
 		if (refuseClock > 0f)
 			refuseClock = Mathf.Max(0f, refuseClock - dt);
+		if (revealClock >= 0f)
+		{
+			revealClock += dt;
+			if (revealClock >= RevealDelay + RevealSeconds)
+			{
+				revealClock = -1f;
+				maskBefore = null;
+			}
+		}
 
 		QueueRedraw();
 	}
@@ -281,7 +300,7 @@ public partial class WorldMapView : Control
 		if (layout == null)
 			return at;
 		Vector2 half = HalfViewInArt();
-		// Inside the drawn world: the picture, and the page past its east edge.
+		// Inside the drawn world.
 		float minX = half.X;
 		float maxX = layout.RightEdge - half.X;
 		at.X = minX > maxX ? layout.RightEdge / 2f : Mathf.Clamp(at.X, minX, maxX);
@@ -339,9 +358,14 @@ public partial class WorldMapView : Control
 		}
 
 		DrawTextureRect(world, new Rect2(origin, world.GetSize() * u), false);
-		Blit(page, layout.PageOrigin);
-		foreach (var (texture, at) in drawings)
-			Blit(texture, at);
+		// The dark over everything past the revealed road; during a reveal, the old dark fading off it.
+		if (mask != null)
+			DrawTextureRect(mask, new Rect2(origin, world.GetSize() * u), false);
+		if (maskBefore != null && revealClock >= 0f)
+		{
+			float t = Mathf.Clamp((revealClock - RevealDelay) / RevealSeconds, 0f, 1f);
+			DrawTextureRect(maskBefore, new Rect2(origin, world.GetSize() * u), false, new Color(1f, 1f, 1f, 1f - t * t * (3f - 2f * t)));
+		}
 
 		// His fog over the places he still holds, and the lock above each. UI icons are saved x2, so
 		// a 24-pixel glyph is 12 art pixels.
@@ -372,31 +396,168 @@ public partial class WorldMapView : Control
 		Vector2 feet = layout.PointAt(wizardS);
 		if (shadow != null)
 			Blit(shadow, feet - new Vector2(shadow.GetWidth() / 2f, 3f));
-		Texture2D[] frames = IsWalking ? movingFrames : idleFrames;
-		float fps = IsWalking ? movingFps : idleFps;
-		if (frames.Length > 0)
+		Texture2D[] frames = IsWalking ? figure.Moving : figure.Idle;
+		float fps = IsWalking ? figure.MovingFps : figure.IdleFps;
+		DrawFigure(this, frames, fps, animClock, figure, facingLeft, feet, origin, u, toScreen, fromScreen);
+	}
+
+	/// <summary>
+	/// The wizard with his feet at <paramref name="feetArt"/> - row cell-2, the contract's anchor
+	/// (.ai/art-direction.md, section 5) - drawn from <paramref name="origin"/> at <paramref name="u"/>
+	/// canvas units per art pixel, his top-left snapped to a screen pixel, mirrored when he faces
+	/// against his sheet. No allocation: the map draws him every frame.
+	/// </summary>
+	internal static void DrawFigure(CanvasItem canvas, Texture2D[] frames, float fps, double clock, Figure figure,
+		bool facingLeft, Vector2 feetArt, Vector2 origin, float u, Transform2D toScreen, Transform2D fromScreen)
+	{
+		if (frames.Length == 0)
+			return;
+		Texture2D sprite = frames[(int)(clock * Math.Max(1f, fps)) % frames.Length];
+		if (sprite == null)
+			return;
+		Vector2 cell = sprite.GetSize();
+		Vector2 topLeftArt = feetArt - new Vector2(cell.X / 2f, cell.Y - 2f);
+		Vector2 topLeft = fromScreen * (toScreen * (origin + topLeftArt * u)).Round();
+		Vector2 drawn = cell * u;
+		if (facingLeft != figure.SheetFacesLeft)
 		{
-			int frame = (int)(animClock * Math.Max(1f, fps)) % frames.Length;
-			Texture2D sprite = frames[frame];
-			if (sprite != null)
+			canvas.DrawSetTransform(topLeft + new Vector2(drawn.X, 0f), 0f, new Vector2(-1f, 1f));
+			canvas.DrawTextureRect(sprite, new Rect2(Vector2.Zero, drawn), false, figure.Tint);
+			canvas.DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
+		}
+		else
+		{
+			canvas.DrawTextureRect(sprite, new Rect2(topLeft, drawn), false, figure.Tint);
+		}
+	}
+
+	// --- the dark past the revealed road ---------------------------------------------------------
+	// Eric, 2026-10-31: "you should only unlock the map as you defeat the previous level." The world
+	// picture has every place and the whole road in it, so what is not yet revealed is covered: the
+	// screen's own ground colour over whatever lies nearer the unrevealed road and places than the
+	// revealed ones (BuildMask). Its edge is dithered on the art's
+	// own 2-pixel grain, the generator's edge falloff in reverse. Built once when the map opens - a
+	// coarse distance field, then a half-resolution mask - and drawn over the world at its scale.
+	private const float RevealDelay = 0.5f;
+	private const float RevealSeconds = 1.4f;
+	// Art pixels of "how much nearer the unrevealed is": fully lit below Inner, fully dark past Outer,
+	// dithered between - a band about thirty pixels wide where the two meet.
+	private const float RevealInner = -12f;
+	private const float RevealOuter = 28f;
+	private const float PlaceRadiusFloor = 64f;
+	private static readonly Color Dark = new("#05070C");
+	private static readonly float[] Bayer4 =
+	{
+		0f / 16f, 8f / 16f, 2f / 16f, 10f / 16f,
+		12f / 16f, 4f / 16f, 14f / 16f, 6f / 16f,
+		3f / 16f, 11f / 16f, 1f / 16f, 9f / 16f,
+		15f / 16f, 7f / 16f, 13f / 16f, 5f / 16f,
+	};
+
+	private ImageTexture mask;
+	private ImageTexture maskBefore;
+	private float revealClock = -1f;
+
+	/// <summary>True while the dark is drawing back from a newly revealed place. For the harness.</summary>
+	public bool IsRevealing => revealClock >= 0f;
+
+	private void BuildRevealMasks(float revealFromArc)
+	{
+		mask = null;
+		maskBefore = null;
+		revealClock = -1f;
+		if (layout == null || stops.Length == 0)
+			return;
+		float frontier = 0f;
+		foreach (ViewStop stop in stops)
+			frontier = Mathf.Max(frontier, stop.Layout.ArcLength);
+		mask = BuildMask(frontier);
+		if (revealFromArc >= 0f && revealFromArc < frontier - 0.5f)
+		{
+			maskBefore = BuildMask(revealFromArc);
+			revealClock = 0f;
+		}
+	}
+
+	// The mask for a road lit as far as frontier. The land is split between what is revealed - the road
+	// up to the frontier and the places at or before it - and what is not - the road past it and every
+	// place past it, shown or not - and a point is dark when it lies nearer the second than the first. So
+	// a finished campaign is lit everywhere, a fresh one only round the Forest, and the road always
+	// darkens just past the last place shown.
+	private ImageTexture BuildMask(float frontier)
+	{
+		const int cell = 8;
+		int gw = (int)Mathf.Ceil(layout.Size.X / cell) + 1;
+		int gh = (int)Mathf.Ceil(layout.Size.Y / cell) + 1;
+		var litRoad = new List<Vector2>();
+		var darkRoad = new List<Vector2>();
+		for (int i = 0; i < layout.Route.Length; i += 2)
+			(layout.Arc[i] <= frontier + 0.5f ? litRoad : darkRoad).Add(layout.Route[i]);
+		var litPlaces = new List<(Vector2 At, float Radius)>();
+		var darkPlaces = new List<(Vector2 At, float Radius)>();
+		foreach (WorldMapStop stop in layout.Stops)
+		{
+			float radius = Mathf.Max(PlaceRadiusFloor, Mathf.Max(stop.Shroud.X, stop.Shroud.Y));
+			(stop.ArcLength <= frontier + 0.5f ? litPlaces : darkPlaces).Add((stop.Focus, radius));
+		}
+		if (darkRoad.Count == 0 && darkPlaces.Count == 0)
+			return null;
+
+		// How much nearer the unrevealed is than the revealed, at each coarse node, in art pixels.
+		var field = new float[gw * gh];
+		for (int y = 0; y < gh; y++)
+		{
+			for (int x = 0; x < gw; x++)
 			{
-				Vector2 cell = sprite.GetSize();
-				// Feet on row cell-2, the contract's anchor (.ai/art-direction.md, section 5).
-				Vector2 topLeft = At(feet - new Vector2(cell.X / 2f, cell.Y - 2f));
-				Vector2 drawn = cell * u;
-				bool flip = facingLeft != sheetFacesLeft;
-				if (flip)
-				{
-					DrawSetTransform(topLeft + new Vector2(drawn.X, 0f), 0f, new Vector2(-1f, 1f));
-					DrawTextureRect(sprite, new Rect2(Vector2.Zero, drawn), false, tint);
-					DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
-				}
-				else
-				{
-					DrawTextureRect(sprite, new Rect2(topLeft, drawn), false, tint);
-				}
+				var p = new Vector2(x * cell, y * cell);
+				field[y * gw + x] = Nearest(p, litRoad, litPlaces) - Nearest(p, darkRoad, darkPlaces);
 			}
 		}
+
+		// The mask at half the art's resolution: each texel is two art pixels, the map's grain.
+		int mw = (int)layout.Size.X / 2;
+		int mh = (int)layout.Size.Y / 2;
+		var bytes = new byte[mw * mh * 4];
+		byte r8 = (byte)Mathf.RoundToInt(Dark.R * 255f), g8 = (byte)Mathf.RoundToInt(Dark.G * 255f), b8 = (byte)Mathf.RoundToInt(Dark.B * 255f);
+		for (int y = 0; y < mh; y++)
+		{
+			float fy = (y * 2f + 1f) / cell;
+			int y0 = Math.Min(gh - 2, (int)fy);
+			float ty = fy - y0;
+			for (int x = 0; x < mw; x++)
+			{
+				float fx = (x * 2f + 1f) / cell;
+				int x0 = Math.Min(gw - 2, (int)fx);
+				float tx = fx - x0;
+				float top = Mathf.Lerp(field[y0 * gw + x0], field[y0 * gw + x0 + 1], tx);
+				float bottom = Mathf.Lerp(field[(y0 + 1) * gw + x0], field[(y0 + 1) * gw + x0 + 1], tx);
+				float t = (Mathf.Lerp(top, bottom, ty) - RevealInner) / (RevealOuter - RevealInner);
+				if (t <= 0f || t < Bayer4[(y & 3) * 4 + (x & 3)])
+					continue;
+				int o = (y * mw + x) * 4;
+				bytes[o] = r8;
+				bytes[o + 1] = g8;
+				bytes[o + 2] = b8;
+				bytes[o + 3] = 255;
+			}
+		}
+		return ImageTexture.CreateFromImage(Image.CreateFromData(mw, mh, false, Image.Format.Rgba8, bytes));
+	}
+
+	// The distance from p to the nearest of a road's samples or a place's ring (negative inside it).
+	private static float Nearest(Vector2 p, List<Vector2> road, List<(Vector2 At, float Radius)> places)
+	{
+		float best = float.MaxValue;
+		foreach (Vector2 r in road)
+		{
+			float d = p.DistanceSquaredTo(r);
+			if (d < best)
+				best = d;
+		}
+		best = best == float.MaxValue ? 1e6f : Mathf.Sqrt(best);
+		foreach (var (at, radius) in places)
+			best = Mathf.Min(best, p.DistanceTo(at) - radius);
+		return best;
 	}
 
 	/// <summary>The stop under a point of this control, or -1.</summary>

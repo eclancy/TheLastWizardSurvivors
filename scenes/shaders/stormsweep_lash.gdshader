@@ -25,7 +25,9 @@
 //   texel 17    frame: xy the arc's direction (unit, node-local), z its reach, w its half band
 //   texel 18    smear, the swept ground behind the lash: x the across position of the pass's
 //               starting edge, y the pass's progress at the head (the lash), z at the tail, w strength
-//   texel 19    fx: x dissolve 0..1, y the crack's white heat on the tip 0..1
+//   texel 19    fx: x dissolve 0..1, y the crack's white heat on the tip 0..1, and for one of Forked
+//               Lightning's outer tongues z its fan at the tip (signed, px across) and w where along the
+//               arc it splits off (0..1) - its smear is the band shifted by that fan, past the split only
 shader_type canvas_item;
 render_mode unshaded;
 
@@ -47,7 +49,7 @@ uniform vec4 tint : source_color = vec4(1.0);
 // The whip's shape (Stormsweep.Whip, a WhipStroke.Shape): lag, hand end, wave start, bend.
 uniform vec4 whip = vec4(1.0, 0.35, 0.05, 0.3);
 
-const int MAX_DRAWN = 16;
+const int MAX_DRAWN = 32;
 const int PTS = 31;
 const int POINT_TEXELS = 16;
 const float GRID = 2.0;
@@ -183,9 +185,15 @@ void fragment() {
 		float along = dot(p, dir);
 		float across = dot(p, acr);
 		float s = (along - hand_reach) / max(1.0, fr.z - hand_reach);
-		if (s >= 0.0 && s <= 1.0) {
-			float ah = pass_across(sm.x, sm.y, s);
-			float at = pass_across(sm.x, sm.z, s);
+		// A forked tongue smears only the stretch past its split, shifted by how far it has fanned there
+		// (Stormsweep.ForkFan).
+		float shift = 0.0;
+		bool tongue = abs(f.z) > 0.001;
+		if (tongue)
+			shift = s <= f.w ? 0.0 : f.z * smooth01((s - f.w) / max(0.001, 1.0 - f.w));
+		if (s >= (tongue ? f.w : 0.0) && s <= 1.0) {
+			float ah = pass_across(sm.x, sm.y, s) + shift;
+			float at = pass_across(sm.x, sm.z, s) + shift;
 			float lo = min(ah, at);
 			float hi = max(ah, at);
 			if (across >= lo && across <= hi && hi - lo > 0.5) {

@@ -38,6 +38,7 @@ CooldownBonus = -0.2
 ; 30-minute economy - the Geomancer finished level 18 at a third of the other wizards' damage.
 [resource]
 script = ExtResource("1")
+Tagline = "A spike under the nearest enemy."
 Id = "obsidian_spike"
 Name = "Obsidian Spike"
 CurrentLevel = 1

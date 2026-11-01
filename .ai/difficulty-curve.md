@@ -252,7 +252,7 @@ from the code at a typical holding.
 | Marginalia | `TakeMarginalia` | 30% of max HP, only into an otherwise empty hand | rare | unchanged: a dead pick's consolation |
 | the grove, the first tree, the Court's fowl | side events and secrets | one heal each | once a run at most | unchanged |
 | Phoenix Oath revives | `TakeDamage` | half the bar, per revive | - | unchanged |
-| **the Familiar's Purr** | `familiarGrants.RegenPerSecond` | the cat's regen | not met by this bot | **left to the Familiar agent** (being reworked into a periodic heal) |
+| **the Familiar's Purr** | `Familiar.Visit` | 0.8 HP a second (48 a minute; up to 100 with Grimalkin and Cath Palug) | not met by this bot | **3 HP every 20 s**, the cat running to him with a heart over his head (9; Grimalkin and Cath Palug no longer scale it) |
 
 The Gleaning Bell pays XP, not health.
 

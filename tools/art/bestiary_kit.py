@@ -105,8 +105,13 @@ def check_names(stem, sheet, cell):
         raise ValueError("%r is on a %d cell; creatures are 32 (basic) or 48 (miniboss)" % (stem, cell))
 
 
-def write_creature(stem, rows, cell, feel, sheet, palette, root=ROOT):
-    """Writes one creature's four strips and its SpriteFrames. Returns (frame count, anchor problems)."""
+def write_creature(stem, rows, cell, feel, sheet, palette, root=ROOT, cycle=None, cycle_fps=10.0):
+    """Writes one creature's four strips and its SpriteFrames. Returns (frame count, anchor problems).
+
+    `cycle`: a function of a stride phase (0..1) returning rows, for a creature whose `moving` must be DRAWN
+    rather than derived - the Black Hare's bounds, where a bobbed pose slid across the heath with its legs
+    locked. Its eight frames replace the derived `moving` at `cycle_fps`, and are anchor-checked like the
+    pose, since the drawing places every foot. A pose function carries one as `pose_fn.cycle`."""
     check_names(stem, sheet, cell)
     # THE POSE is anchored, not the derived frames. anim_sets lifts the whole figure on the bob
     # frames of `moving` and collapses it through `death`, so every derived enemy set "fails"
@@ -116,6 +121,10 @@ def write_creature(stem, rows, cell, feel, sheet, palette, root=ROOT):
     problems = P.check_anchor("%s pose" % stem, [rows], cell)
     lean, reach, knock = feel
     anims = anim_sets.full_set(rows, lean=lean, reach=reach, knock=knock)
+    if cycle is not None:
+        run = [cycle(i / 8.0) for i in range(8)]
+        problems += P.check_anchor("%s moving" % stem, run, cell)
+        anims = [("moving", run, True, cycle_fps) if a[0] == "moving" else a for a in anims]
     out_dir = os.path.join(root, OUT_ENEMIES)
     spec = []
     for anim, frames, loop, speed in anims:
@@ -136,7 +145,8 @@ def build_cast(cast, palette=None, root=ROOT):
         if stem in seen:
             raise ValueError("stem %r appears twice in one cast" % stem)
         seen.add(stem)
-        n, p = write_creature(stem, pose_fn(), cell, feel, sheet, palette, root)
+        n, p = write_creature(stem, pose_fn(), cell, feel, sheet, palette, root,
+                              getattr(pose_fn, "cycle", None), getattr(pose_fn, "cycle_fps", 10.0))
         made.append((stem, n, sheet))
         problems += p
     return made, problems

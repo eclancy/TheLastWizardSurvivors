@@ -98,49 +98,52 @@ LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_dog_2"), SubResou
 ; --- THE CROW: the fastest. It flies - over water, walls and the crowd - ranges half again as far as a
 ; hound, goes for whatever shoots first, stoops, pecks and rises off, and is on the next quarry before a
 ; hound has turned. Less in a peck than a hound puts in a bite, and a shorter cooldown. One crow; the
-; second joins at level 3. Level 8: 24 a peck every 0.39 s from two crows, hunting 375 round him.
+; second joins at level 3. Level 8: 37 a peck every 0.39 s from two crows, hunting 375 round him. (It was
+; 9 + 2 a level, 24 at level 8, until 2026-10-31: since then it patrols a ring round him between dives and
+; climbs and rises round every peck, which cost a third of its pecks - 254 a second at level 8 with Raven
+; and the Morrigan against 380 - so a peck is half again what it was: 416 a second at level 8 now.)
 
 [sub_resource type="Resource" id="Resource_crow_2"]
 script = ExtResource("2")
 Level = 2
-DamageBonus = 2
+DamageBonus = 3
 CooldownBonus = -0.04
 
 [sub_resource type="Resource" id="Resource_crow_3"]
 script = ExtResource("2")
 Level = 3
-DamageBonus = 2
+DamageBonus = 3
 ProjectileCountBonus = 1
 RangeBonus = 25.0
 
 [sub_resource type="Resource" id="Resource_crow_4"]
 script = ExtResource("2")
 Level = 4
-DamageBonus = 2
+DamageBonus = 3
 CooldownBonus = -0.04
 
 [sub_resource type="Resource" id="Resource_crow_5"]
 script = ExtResource("2")
 Level = 5
-DamageBonus = 2
+DamageBonus = 3
 RangeBonus = 25.0
 
 [sub_resource type="Resource" id="Resource_crow_6"]
 script = ExtResource("2")
 Level = 6
-DamageBonus = 2
+DamageBonus = 3
 CooldownBonus = -0.04
 
 [sub_resource type="Resource" id="Resource_crow_7"]
 script = ExtResource("2")
 Level = 7
-DamageBonus = 2
+DamageBonus = 3
 RangeBonus = 25.0
 
 [sub_resource type="Resource" id="Resource_crow_8"]
 script = ExtResource("2")
 Level = 8
-DamageBonus = 3
+DamageBonus = 5
 CooldownBonus = -0.04
 
 [sub_resource type="Resource" id="Variant_crow"]
@@ -152,23 +155,22 @@ Description = "A crow of your own light rides the air over you. It ranges far an
 Traits = "Speed: the fastest, and it flies   Range: hunts farthest from you   Least damage a hit, most hits"
 Icon = ExtResource("6_crow")
 CountNoun = "Crows"
-BaseDamage = 9
+BaseDamage = 14
 BaseCooldown = 0.55
 BaseProjectileCount = 1
 BaseRange = 300.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_crow_2"), SubResource("Resource_crow_3"), SubResource("Resource_crow_4"), SubResource("Resource_crow_5"), SubResource("Resource_crow_6"), SubResource("Resource_crow_7"), SubResource("Resource_crow_8")])
 
-; --- THE CAT: the weakest attack and the most help. It stays underfoot, swipes at what comes right up to
-; the wizard and bats bolts away from him, and while it is out every spell he casts runs faster and he
-; slips more hits: 8% cast speed and 4% evasion at level 1 (Familiar.CatCastSpeed, CatEvasion), and its
-; levels add to them (Effect 21 is Cast speed, 22 Evasion - SpellEffect; Player folds them in, live,
-; through Familiar.GrantsOf). Its swipe gets a point a level. One cat, always. Level 8: 14 a swipe every
-; 0.8 s, and 17% cast speed and 10% evasion for the wizard.
+; --- THE CAT: the support familiar (2026-10-31). It deals no damage: its pounce Weakens and slows what it
+; lands on (Familiar.Mark), and between pounces it comes back to the wizard and the visit gives him its
+; grants for 8 s - 8% cast speed and 4% evasion at level 1 (Familiar.CatCastSpeed, CatEvasion), which its
+; levels add to (Effect 21 is Cast speed, 22 Evasion - SpellEffect; Player holds them through
+; Familiar.LiveGrants). Its cooldown is its pounce rate; its range, how far from him it will pounce. One cat,
+; always. Level 8: a pounce every 0.8 s, and 17% cast speed and 10% evasion for the wizard.
 
 [sub_resource type="Resource" id="Resource_cat_2"]
 script = ExtResource("2")
 Level = 2
-DamageBonus = 1
 CooldownBonus = -0.05
 Effect = 21
 EffectValue = 0.02
@@ -176,7 +178,6 @@ EffectValue = 0.02
 [sub_resource type="Resource" id="Resource_cat_3"]
 script = ExtResource("2")
 Level = 3
-DamageBonus = 1
 RangeBonus = 10.0
 Effect = 22
 EffectValue = 0.02
@@ -184,7 +185,6 @@ EffectValue = 0.02
 [sub_resource type="Resource" id="Resource_cat_4"]
 script = ExtResource("2")
 Level = 4
-DamageBonus = 1
 CooldownBonus = -0.05
 Effect = 21
 EffectValue = 0.02
@@ -192,7 +192,6 @@ EffectValue = 0.02
 [sub_resource type="Resource" id="Resource_cat_5"]
 script = ExtResource("2")
 Level = 5
-DamageBonus = 1
 RangeBonus = 10.0
 Effect = 22
 EffectValue = 0.02
@@ -200,7 +199,6 @@ EffectValue = 0.02
 [sub_resource type="Resource" id="Resource_cat_6"]
 script = ExtResource("2")
 Level = 6
-DamageBonus = 1
 CooldownBonus = -0.05
 Effect = 21
 EffectValue = 0.02
@@ -208,7 +206,6 @@ EffectValue = 0.02
 [sub_resource type="Resource" id="Resource_cat_7"]
 script = ExtResource("2")
 Level = 7
-DamageBonus = 1
 RangeBonus = 10.0
 Effect = 22
 EffectValue = 0.02
@@ -216,7 +213,6 @@ EffectValue = 0.02
 [sub_resource type="Resource" id="Resource_cat_8"]
 script = ExtResource("2")
 Level = 8
-DamageBonus = 2
 CooldownBonus = -0.05
 Effect = 21
 EffectValue = 0.03
@@ -226,11 +222,11 @@ script = ExtResource("4_variant")
 Id = "familiar_cat"
 DisplayName = "Cat Familiar"
 ShortName = "Cat"
-Description = "A cat of your own light keeps close at your heel, and while it is out every spell you cast runs faster and you slip more hits. It swipes at whatever comes right up to you and bats enemy bolts out of the air - but it is no hunter."
-Traits = "Cast speed +8% for every spell you hold   Evasion +4%: you slip hits   Weakest attack: it stays at your heel"
+Description = "A cat of your own light that never fights. It pounces on what comes near you to weaken it, then comes back to you: while it keeps visiting, every spell you cast runs faster and you slip more hits."
+Traits = "Cast speed +8% for every spell you hold   Evasion +4%: you slip hits   No damage: its pounce weakens"
 Icon = ExtResource("7_cat")
 CountNoun = "Cats"
-BaseDamage = 6
+BaseDamage = 0
 BaseCooldown = 1.0
 BaseProjectileCount = 1
 BaseRange = 120.0
@@ -238,6 +234,7 @@ LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_cat_2"), SubResou
 
 [resource]
 script = ExtResource("1")
+Tagline = "A companion that fights for you."
 Id = "familiar"
 Name = "Familiar"
 CurrentLevel = 1

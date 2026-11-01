@@ -238,20 +238,22 @@ public static class EvolutionStatReaders
 		["familiar_crow"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Rider,
 			"Familiar.Summon, StartStoop, Bite and Strike (the crows are the projectile count; Area sizes the beak and a griffin's swath; the Morrigan and the Griffin by id)",
 			SpellEffect.CritDamage),
-		// The cat's level lines are what it grants the wizard (Familiar.GrantsOf, folded in by Player): Cast
-		// speed and Evasion. Grimalkin, Purr, Cath Palug's grants and Nine Lives are read by id.
-		["familiar_cat"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Rider,
-			"Familiar.Summon, Bite and Strike (Area sizes the claws), and Familiar.GrantsOf through Player (cast speed, evasion, regen)",
-			SpellEffect.CastSpeed, SpellEffect.Evasion, SpellEffect.CritDamage),
+		// The cat deals no damage (2026-10-31): its level lines are its pounce rate (cooldown), how far from him
+		// it pounces (range) and what a visit grants him (Familiar.GrantsOf through LiveGrants and Player: Cast
+		// speed and Evasion). Area sizes the pounce (Cath Palug's reach). Grimalkin, Purr, Nine Lives, Cath
+		// Palug's grants and the Black Cat are read by id; the Cait Sith's rider is Familiar.Mark's Vulnerable.
+		["familiar_cat"] = R(EvolutionStat.Cooldown | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Rider,
+			"Familiar.Summon, CatPounce and Mark (Area sizes the pounce; the rider is Mark's Vulnerable), and Familiar.LiveGrants through Player (cast speed, evasion)",
+			SpellEffect.CastSpeed, SpellEffect.Evasion),
 		// The facing family (.ai/spell-roster.md). Neither reads Scale: the arc is drawn out of the band
 		// it sweeps, and the rune sheet is drawn at one size.
 		["stormsweep"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider | EvolutionStat.Amount,
-			"Stormsweep.Cast and the fire loop (sweeps are the projectile count plus Amount; Range is the arc's length, Area its length and band, Speed its tempo)",
+			"Stormsweep.Cast and the fire loop (sweeps are the projectile count plus Amount; Range is the arc's length, Area its length and band and a ball's reach, Speed its tempo; Ball Lightning, Forked Lightning, Thunderclap and Cardinal Storm by id)",
 			SpellEffect.AreaSize, SpellEffect.CritDamage),
 		["sleet_runes"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Pierce | EvolutionStat.Speed
 				| EvolutionStat.Rider | EvolutionStat.Amount,
-			"SleetRunes.Cast and the fire loop (runes are the projectile count plus Amount; Range is how far one flies, Speed scales its speed)",
+			"SleetRunes.Cast and the fire loop (runes are the projectile count plus Amount; Range is how far one flies, Speed scales its speed; Great Rune, Braided Wind, Parting Wind, Sigil Fan and Turning Gale by id)",
 			SpellEffect.ProjectileSpeed, SpellEffect.Pierce, SpellEffect.CritDamage),
 		["toxic_spore_burst"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.PoisonTick | EvolutionStat.Rider | EvolutionStat.Amount,

@@ -175,7 +175,10 @@ public partial class LevelUpMenu : CanvasLayer
 	private static readonly Vector2 IconFrameSize = new Vector2(0, 112);
 	private static readonly Vector2 IconSize = new Vector2(88, 88);
 	// Four across: the icon steps down a size so the name's second line fits (BuildWideOptionCard).
-	private static readonly Vector2 CompactIconFrameSize = new Vector2(0, 88);
+	// 76, not 88 (2026-10-31): six of air round the 64 icon rather than twelve paid for a new spell's
+	// line (BuildOptionTagline), which wraps to two on a four-across card - the four-card hand with the
+	// strip and the charge row was 11 over a 1280x720 panel with it.
+	private static readonly Vector2 CompactIconFrameSize = new Vector2(0, 76);
 	private static readonly Vector2 CompactIconSize = new Vector2(64, 64);
 	// A stacked card is a row, not a poster. In portrait every card is the full width of the
 	// screen, so the desktop layout - a small icon floating in the middle above a thin centred
@@ -199,7 +202,10 @@ public partial class LevelUpMenu : CanvasLayer
 	// the Reroll/Skip bar, and the paddings between them. Measured against the shipping scene
 	// rather than derived - the alternative is reading the ScrollContainer's height after layout,
 	// which is not known at the moment the cards are built and would need a second pass.
-	private const float NarrowChromeAllowance = 268f;
+	// 284, not 268: at 268 a phone's three-card hand with the strip and the charge row scrolled by 12
+	// (and before the strip and charges were counted, by 40), and these screens never scroll now
+	// (2026-10-31, "no scrolling, ever"). The 16 comes off the cards, which centre their text.
+	private const float NarrowChromeAllowance = 284f;
 	// Clears the in-run HUD in portrait: the health frame (6 + 44), the XP bar under it, and the
 	// element chip row below that, plus a little air. Node2DGame owns those; this only has to
 	// stay out of their way now that the menu is see-through.
@@ -657,12 +663,9 @@ public partial class LevelUpMenu : CanvasLayer
 			// A new canvas, the same choice: the forms are laid out again without re-arming.
 			BuildVariantSelectionButtons(pendingVariantOption, rearm: false);
 		}
-		else if (pendingBanSelection)
-		{
-			BuildBanSelectionButtons();
-		}
 		else
 		{
+			// Ban mode survives a resize: BuildButtonsFrom lays the tears back over the new cards.
 			BuildButtonsFrom(currentOptions);
 		}
 		UpdateRerollState(currentRerollsRemaining);
@@ -671,6 +674,15 @@ public partial class LevelUpMenu : CanvasLayer
 
 	private void OnOptionChosen(LevelUpOption option)
 	{
+		// In ban mode the same cards are the ban's choices (SetBanMode): taking one strikes it.
+		if (pendingBanSelection)
+		{
+			if (IsBannable(option))
+				OnBanChoiceChosen(option);
+			else
+				SfxPlayer.Global(SfxCatalog.UiBack);
+			return;
+		}
 		SfxPlayer.Global(SfxCatalog.CardSelect);
 		// A spell with forms opens a page of them; the spell is taken from there, in one
 		// (LevelUpMenu.Variants.cs).
@@ -717,6 +729,8 @@ public partial class LevelUpMenu : CanvasLayer
 		chargeRow.AddThemeConstantOverride("separation", 8);
 
 		banButton = MakeChargeButton("Ban", () => OnBanPressed());
+		// Named so _UiShot --press-late=BanButton can photograph ban mode.
+		banButton.Name = "BanButton";
 		chargeRow.AddChild(banButton);
 
 		vbox.AddChild(chargeRow);
@@ -746,89 +760,81 @@ public partial class LevelUpMenu : CanvasLayer
 		// can never use again is a permanent piece of dead furniture on a screen that is already
 		// dense; the reroll button is disabled instead because it comes back every level.
 		banButton.Visible = currentCharges.Bans > 0;
-		banButton.Text = $"Ban ({currentCharges.Bans})";
+		// While the tears are on the cards the same button takes them off again: the only other change
+		// ban mode makes to the screen (SetBanMode).
+		banButton.Text = pendingBanSelection ? "Cancel Ban" : $"Ban ({currentCharges.Bans})";
 
-		// Hidden entirely while the picker is open, so the player cannot start a second charge action
-		// on top of an unfinished one.
-		chargeRow.Visible = banButton.Visible && !pendingBanSelection && pendingEvolutionOption == null
-			&& pendingVariantOption == null;
+		chargeRow.Visible = banButton.Visible && pendingEvolutionOption == null && pendingVariantOption == null;
 	}
 
 	private void OnBanPressed()
 	{
-		SfxPlayer.Global(SfxCatalog.UiOpen);
-		pendingBanSelection = true;
-		BuildBanSelectionButtons();
+		SfxPlayer.Global(pendingBanSelection ? SfxCatalog.UiBack : SfxCatalog.UiOpen);
+		SetBanMode(!pendingBanSelection);
+	}
+
+	// BAN MODE CHANGES NOTHING BUT THE TEARS (2026-10-31). Eric: "ban should not change the ui other than
+	// placing a 'ripping' effect over the spells that are showing up on the screen to identify that the
+	// player can select one of the spells to ban." It used to swap the hand for a heading and a list of
+	// name buttons. Now the hand stays as dealt - the same cards, the same layout, the same selection -
+	// and each card it can strike wears a BanTear; taking a card then bans it (OnOptionChosen) instead
+	// of picking it. The Ban button reads "Cancel Ban" while the tears are up and takes them off.
+	//
+	// Bans are chosen from the cards on screen, not from the whole catalog: banning something you
+	// cannot see would be a spreadsheet exercise; banning the card that keeps crowding out the one you
+	// want is the thing players actually want to do.
+	private void SetBanMode(bool on)
+	{
+		pendingBanSelection = on;
+		ApplyBanTears();
 		UpdateChargeRow();
 	}
 
-	// Bans are chosen from the three cards on screen, not from the whole catalog. Banning something
-	// you cannot see would be a spreadsheet exercise; banning the card that keeps crowding out the
-	// one you want is the actual thing players want to do.
-	private void BuildBanSelectionButtons()
+	// Marginalia is what a full book holds when there is nothing else to deal, and striking it would
+	// strike nothing (Player.TryBanSpell refuses it), so it wears no tear and a press on it does nothing.
+	private static bool IsBannable(LevelUpOption option) =>
+		option != null && !string.IsNullOrEmpty(option.SpellId) && option.SpellId != Player.MarginaliaId;
+
+	/// <summary>Lays a tear over every bannable card in the hand while ban mode is on, and takes them off when not.</summary>
+	private void ApplyBanTears()
 	{
-		ClearButtons();
 		var container = GetOptionsContainer();
 		if (container == null)
 			return;
 
-		var label = new Label
+		int index = 0;
+		foreach (Node child in container.GetChildren())
 		{
-			Text = "Strike a spell from the rest of the run:",
-			AutowrapMode = TextServer.AutowrapMode.WordSmart,
-		};
-		container.AddChild(label);
+			// One column per option, in deal order (BuildButtonsFrom); a column being freed is skipped.
+			if (child is not Control column || column.IsQueuedForDeletion())
+				continue;
+			LevelUpOption option = index < currentOptions.Count ? currentOptions[index] : null;
+			index++;
+			if (column.GetChildCount() == 0 || column.GetChild(0) is not Control cardRoot)
+				continue;
 
-		if (container is GridContainer grid)
-			grid.Columns = GetResponsiveColumnCount(currentOptions.Count + 1);
+			cardRoot.GetNodeOrNull<BanTear>(BanTear.NodeName)?.QueueFree();
+			if (!pendingBanSelection || !IsBannable(option))
+				continue;
 
-		foreach (LevelUpOption option in currentOptions)
-		{
-			LevelUpOption captured = option;
-			var btn = new Button
-			{
-				Text = captured.DisplayName,
-				AutowrapMode = TextServer.AutowrapMode.WordSmart,
-				CustomMinimumSize = new Vector2(160, 52),
-				SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-			};
-			btn.Pressed += () => OnBanChoiceChosen(captured);
-			BonelightSkin.ApplyButtonSet(new[] { btn }, 17);
-			if (captured.IsBoon)
-				ApplyBoonFrameToButton(btn);
-			container.AddChild(btn);
+			// The wide card IS its button; the phone card is a PanelContainer whose first child is.
+			BaseButton button = cardRoot as BaseButton ?? cardRoot.GetChildOrNull<BaseButton>(0);
+			var tear = new BanTear { Name = BanTear.NodeName, Card = button, Seed = option.SpellId };
+			cardRoot.AddChild(tear);
+			// Under the focus ring, which has to stay the topmost thing on the card.
+			if (cardRoot.GetNodeOrNull<MenuFocusHighlight>(MenuFocusHighlight.NodeName) is MenuFocusHighlight ring)
+				cardRoot.MoveChild(ring, cardRoot.GetChildCount() - 1);
 		}
-
-		container.AddChild(MakeCancelButton(() =>
-		{
-			pendingBanSelection = false;
-			BuildButtonsFrom(currentOptions);
-			UpdateChargeRow();
-		}));
 	}
 
-	private Button MakeCancelButton(System.Action onPressed)
-	{
-		var cancel = new Button
-		{
-			Text = "Back",
-			CustomMinimumSize = new Vector2(120, 40),
-			SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
-		};
-		cancel.Pressed += () =>
-		{
-			SfxPlayer.Global(SfxCatalog.UiBack);
-			onPressed();
-		};
-		BonelightSkin.ApplyButtonSet(new[] { cancel }, 16);
-		return cancel;
-	}
-
+	// A ban IS this level-up's choice (Eric, 2026-10-31: "once they select a spell to ban, they dont
+	// continue to level up, that is what they used the level up for"). Node2DGame.OnBanRequested closes
+	// the screen and pays nothing - a ban is not a Skip, and does not take the half bar a Skip pays. A
+	// refused ban (already struck) puts the same cards back through RefreshCharges and the screen stays.
 	private void OnBanChoiceChosen(LevelUpOption option)
 	{
 		pendingBanSelection = false;
 		SfxPlayer.Global(SfxCatalog.CardSelect);
-		// The menu stays open: a ban is not a pick. Node2DGame re-rolls the offer and calls back in.
 		EmitSignal(nameof(BanRequested), option.SpellId);
 	}
 
@@ -858,7 +864,11 @@ public partial class LevelUpMenu : CanvasLayer
 	{
 		var container = GetOptionsContainer();
 		if (container == null) return;
-		foreach (Node c in container.GetChildren()) c.QueueFree();
+		// The spotlight belongs to the row, not to a hand: it outlives every re-deal (FocusSpotlight).
+		foreach (Node c in container.GetChildren())
+			if (c is not FocusSpotlight)
+				c.QueueFree();
+		FocusSpotlight.Attach(container);
 	}
 
 	// Drops a ScrollContainer between the panel's VBox and the Options grid on a phone.
@@ -977,10 +987,15 @@ public partial class LevelUpMenu : CanvasLayer
 			container.AddChild(column);
 		}
 
-		// The cards the pad was selecting have just been freed - by a level, a reroll or a ban - so
-		// hand the selection to the new first card rather than leaving the screen inert. The
-		// secondary flows (evolution, ban) build their own buttons and are picked up by the
-		// navigator's own rescan a few frames later.
+		// Ban mode is a coat over the hand, so a hand rebuilt under it (a resize, Back from a page) gets
+		// its tears back.
+		if (pendingBanSelection)
+			ApplyBanTears();
+
+		// The cards the pad was selecting have just been freed - by a level or a reroll - so hand the
+		// selection to the new first card rather than leaving the screen inert. The secondary flows
+		// (evolution, forms) build their own buttons and are picked up by the navigator's own rescan
+		// a few frames later.
 		MenuNavigator.Attach(this);
 	}
 
@@ -1029,6 +1044,10 @@ public partial class LevelUpMenu : CanvasLayer
 		// two lines; the icon gives back the 24 that costs rather than pushing the chips into the
 		// frame. So does a hand with less height than a roomy card needs (WideCardsTight).
 		bool fourAcross = (shownCount > 0 ? shownCount : currentOptions?.Count ?? 3) >= 4 || WideCardsTight();
+		// Four across AND tight - Playtest Mode's hand under the strip and the charge row - closes the
+		// rows up by two as well: with a new spell's line wrapping on a 274-wide card it was 5 over.
+		if (fourAcross && (shownCount > 0 ? shownCount : currentOptions?.Count ?? 3) >= 4 && WideCardsTight())
+			content.AddThemeConstantOverride("separation", 5);
 		var iconFrame = new CenterContainer
 		{
 			CustomMinimumSize = fourAcross ? CompactIconFrameSize : IconFrameSize,
@@ -1047,7 +1066,10 @@ public partial class LevelUpMenu : CanvasLayer
 			content.AddChild(levelPips);
 		}
 
-		content.AddChild(BuildOptionTypeLabel(option, HorizontalAlignment.Center));
+		// A new spell says what it does where it said "Attack" (BuildOptionTagline): the line that tells
+		// a bolt from a trap is worth more than the word, and the tightest hand has no room for both.
+		Label tagline = BuildOptionTagline(option, HorizontalAlignment.Center);
+		content.AddChild(tagline ?? BuildOptionTypeLabel(option, HorizontalAlignment.Center));
 
 		// Flavour text is gone from the card by design - three paragraphs of prose is not something
 		// a player reads while paused mid-fight, and it pushed the numbers they DO read off the
@@ -1147,10 +1169,20 @@ public partial class LevelUpMenu : CanvasLayer
 			pips.SizeFlagsHorizontal = Control.SizeFlags.ShrinkBegin;
 			metaRow.AddChild(pips);
 		}
-		metaRow.AddChild(BuildOptionTypeLabel(option, HorizontalAlignment.Left));
-		text.AddChild(metaRow);
+		// A new spell's line says what it does in place of "Attack" (BuildWideOptionCard).
+		Label narrowTagline = BuildOptionTagline(option, HorizontalAlignment.Left);
+		if (narrowTagline != null)
+		{
+			metaRow.QueueFree();
+			text.AddChild(narrowTagline);
+		}
+		else
+		{
+			metaRow.AddChild(BuildOptionTypeLabel(option, HorizontalAlignment.Left));
+			text.AddChild(metaRow);
+		}
 
-		Control wideStatLine = BuildOptionStatLine(option, HorizontalAlignment.Left);
+		Control wideStatLine = BuildNarrowStatGrid(option) ?? BuildOptionStatLine(option, HorizontalAlignment.Left);
 		if (wideStatLine != null)
 			text.AddChild(wideStatLine);
 
@@ -1222,6 +1254,12 @@ public partial class LevelUpMenu : CanvasLayer
 	// are dark, so the icon goes on as drawn: deepening it there would sink it into the glass.
 	private Color IconTint(LevelUpOption option)
 	{
+		// The Familiar's icons are portraits, lit in their own colours (tools/art/familiar.py) - a fawn hound,
+		// an indigo crow, a tabby, under a moon - not a shape drawn in an element's light. Multiplied by
+		// Arcane's violet on the page they went a muddy purple, half of what Eric meant by "familiar icons are
+		// very muted and hard to read" (2026-10-30), so they are drawn untinted, as on a dark card.
+		if (option.SpellId.StartsWith("familiar", StringComparison.Ordinal))
+			return Colors.White;
 		return CardFamilyArt.IsDark(FamilyOf(option))
 			? Colors.White
 			: GetDominantElementColor(option).Lerp(Ink, 0.28f);
@@ -1270,6 +1308,31 @@ public partial class LevelUpMenu : CanvasLayer
 		return typeLabel;
 	}
 
+	// WHAT A NEW SPELL DOES, IN ONE LINE (2026-10-31). Eric: "choosing a spell should have a description
+	// of the spell on level up." The card had only the spell's numbers, and a name and a sword glyph do
+	// not say whether it is a bolt, a trap or a whirlwind. SpellData.Tagline is that line - its aim and
+	// its payload, one line (SpellData.TaglineMaxLength, held by ContentValidator) - not the Description,
+	// the paragraph the card dropped because nobody reads prose on a paused fight. It takes the type
+	// line's place ("Attack"), which is what lets the tightest 1280x720 hand still fit. Only a new spell:
+	// an upgrade's card says what the level does, and a boon has its effect line. Ink, at the Label role.
+	private Label BuildOptionTagline(LevelUpOption option, HorizontalAlignment alignment)
+	{
+		if (option == null || !option.IsNewUnlock || option.IsBoon || string.IsNullOrWhiteSpace(option.Tagline))
+			return null;
+
+		var line = new Label
+		{
+			Name = "Tagline",
+			Text = option.Tagline,
+			HorizontalAlignment = alignment,
+			AutowrapMode = TextServer.AutowrapMode.WordSmart,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+		};
+		ResponsiveLayout.SetFont(line, ResponsiveLayout.TextRole.Label);
+		line.AddThemeColorOverride("font_color", BodyInk(FamilyOf(option)));
+		return line;
+	}
+
 	private static string TypeLabelText(LevelUpOption option)
 	{
 		if (option.IsBoon)
@@ -1301,6 +1364,27 @@ public partial class LevelUpMenu : CanvasLayer
 
 		return StatIcons.BuildList(option.StatSummary, BodyInk(FamilyOf(option)),
 			ResponsiveLayout.TextRole.Body, centred: alignment == HorizontalAlignment.Center);
+	}
+
+	// A phone's four-card hand (Playtest Mode) sets a new spell's stats in two columns. Four rows of a
+	// name, a line, three stats and a chip are taller than a 720x1616 screen has for them, and this
+	// screen never scrolls (2026-10-31); the four-card icon column is narrow enough that "Cooldown 1.5s"
+	// still stands unwrapped in half the text. Null everywhere else, for BuildOptionStatLine.
+	private Control BuildNarrowStatGrid(LevelUpOption option)
+	{
+		if ((shownCount > 0 ? shownCount : currentOptions?.Count ?? 3) < 4
+			|| !option.IsNewUnlock || string.IsNullOrWhiteSpace(option.StatSummary))
+			return null;
+		List<string> parts = StatIcons.Split(option.StatSummary);
+		if (parts.Count < 3)
+			return null;
+
+		var grid = new GridContainer { Columns = 2, MouseFilter = Control.MouseFilterEnum.Ignore };
+		grid.AddThemeConstantOverride("h_separation", 12);
+		grid.AddThemeConstantOverride("v_separation", 4);
+		foreach (string part in parts)
+			grid.AddChild(StatIcons.BuildLine(part, BodyInk(FamilyOf(option)), ResponsiveLayout.TextRole.Body, wrap: false));
+		return grid;
 	}
 
 	// The bordered "Level Up" box listing what this pick changes. Null for a brand-new spell,
@@ -1652,8 +1736,6 @@ public partial class LevelUpMenu : CanvasLayer
 	private StyleBoxTexture footerStyleLit;
 	private StyleBoxTexture boonStyleResting;
 	private StyleBoxTexture boonStyleLit;
-	private StyleBoxTexture boonButtonStyleResting;
-	private StyleBoxTexture boonButtonStyleLit;
 	private StyleBoxTexture boonWindowStyle;
 
 	private void EnsureCardStyles()
@@ -1667,9 +1749,6 @@ public partial class LevelUpMenu : CanvasLayer
 		// authored margin is 24 drawn, not the page's 20 - the bezel and the studs live in it.
 		boonStyleResting ??= BuildBoonStyleBox(GD.Load<Texture2D>(BoonCardTexturePath), CardContentMargin);
 		boonStyleLit ??= BuildBoonStyleBox(GD.Load<Texture2D>(BoonCardLitTexturePath), CardContentMargin);
-		// The ban picker is one line of text, not a card of content.
-		boonButtonStyleResting ??= BuildBoonStyleBox(GD.Load<Texture2D>(BoonCardTexturePath), 12);
-		boonButtonStyleLit ??= BuildBoonStyleBox(GD.Load<Texture2D>(BoonCardLitTexturePath), 12);
 		if (boonWindowStyle == null)
 		{
 			boonWindowStyle = new StyleBoxTexture { Texture = GD.Load<Texture2D>(BoonWindowTexturePath) };
@@ -1691,21 +1770,6 @@ public partial class LevelUpMenu : CanvasLayer
 		style.SetTextureMarginAll(BoonPatchMargin);
 		style.SetContentMarginAll(contentMargin);
 		return style;
-	}
-
-	// A boon in the ban picker wears the plaque too, so the rare card is the same object
-	// wherever the player meets it - a stone button there would say a boon was furniture.
-	private void ApplyBoonFrameToButton(Button button)
-	{
-		EnsureCardStyles();
-		button.AddThemeStyleboxOverride("normal", boonButtonStyleResting);
-		button.AddThemeStyleboxOverride("hover", boonButtonStyleLit);
-		button.AddThemeStyleboxOverride("pressed", boonButtonStyleLit);
-		button.AddThemeStyleboxOverride("focus", boonButtonStyleLit);
-		button.AddThemeColorOverride("font_color", BoonInkGold);
-		button.AddThemeColorOverride("font_hover_color", BoonInkGold);
-		button.AddThemeColorOverride("font_pressed_color", BoonInkGold);
-		button.AddThemeColorOverride("font_focus_color", BoonInkGold);
 	}
 
 	// Same frame, tighter inside: a footer button is one line of text, not a card of content.
@@ -1979,20 +2043,16 @@ public partial class LevelUpMenu : CanvasLayer
 		bool isAscension = option.MilestoneLevel >= 8;
 		bool isApotheosis = option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
 
-		// THE PANEL BECOMES A PAGE. This is the one screen in a run where the player is reading
-		// about what their magic is turning into rather than picking the next number to go up, so
-		// it is the screen the manuscript register exists for.
-		ShowVellumPage(true);
-
+		// Written straight onto the plate's stone, as the hand is: the mutation cards are pages, and a
+		// page on a bigger page was the same background twice (PageInset's remarks).
+		bool narrow = ResponsiveLayout.IsNarrow(this);
 		var root = new VBoxContainer { Name = EvolutionRootName };
 		root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
 		// Tight vertical margins: on a 720-high PC canvas every pixel here is a line of a branch's
-		// description that otherwise needs scrolling to (BuildEvolutionOptionCard).
-		root.OffsetLeft = 24;
-		// Inside the vellum page (inset PageInset), not across its edge: at 14 the heading's top sat
-		// on the page's torn rim and the stone outside it, which the ink report measured at 3.2:1.
-		root.OffsetTop = PageInset + 6f;
-		root.OffsetRight = -24;
+		// description (BuildEvolutionOptionCard). The column starts where the hand's does.
+		root.OffsetLeft = narrow ? PageInset : 24;
+		root.OffsetTop = narrow ? 16f : 26f;
+		root.OffsetRight = narrow ? -PageInset : -24;
 		root.OffsetBottom = -PageInset;
 		root.AddThemeConstantOverride("separation", 6);
 		panel.AddChild(root);
@@ -2003,40 +2063,19 @@ public partial class LevelUpMenu : CanvasLayer
 		headerBox.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 		headerBox.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
 
-		bool narrow = ResponsiveLayout.IsNarrow(this);
-
-		var title = new Label();
 		// Level 8 was "ULTIMATE ASCENSION", which collided with the tier above it (#59): two things
 		// called ultimate one step apart. Level 8 is the ascension; the final form is the Apotheosis.
-		title.Text = isApotheosis ? "✶ APOTHEOSIS ✶"
-			: isAscension ? "★ ASCENSION (Level 8) ★" : "✦ SPELL MUTATION (Level 4) ✦";
-		title.HorizontalAlignment = HorizontalAlignment.Center;
-		title.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-		// The Title role on a phone, Display on a PC: at the phone's Display size (40, bold) the
-		// heading broke as "(LEVEL / 4) ✦" over two lines, which reads as two headings.
-		ResponsiveLayout.SetFont(title, narrow ? ResponsiveLayout.TextRole.Title : ResponsiveLayout.TextRole.Display);
-		// In the family's darkest tone - teal-black, glass-black, ember red - not the gold-brown that
-		// made the level 8 heading the muddiest thing on a tan page.
-		CardFamily pageFamily = EvolutionFamilyOf(option);
-		title.AddThemeColorOverride("font_color", HeadingInkFor(pageFamily));
-		headerBox.AddChild(title);
+		headerBox.AddChild(BuildPageHeading(isApotheosis ? "✶ APOTHEOSIS ✶"
+			: isAscension ? "★ ASCENSION (Level 8) ★" : "✦ MUTATION (Level 4) ✦"));
 
-		var subtitle = new Label();
 		// COUNT THE BRANCHES, do not assert a number. These read "1 of 2" and "1 of 3" as
 		// literals, so a milestone offering a different number of branches - which the catalog is
 		// free to do - told the player something false at the exact moment they were being asked
-		// to compare what was on screen. Caught by measuring this screen with a two-branch sample
-		// and reading back "Choose 1 of 3".
+		// to compare what was on screen. One short line: the heading says what kind of page it is.
 		int branchCount = option?.EvolutionChoices?.Count ?? 0;
-		// One short line, at the Label role: the heading already says what kind of page this is.
-		subtitle.Text = isApotheosis
+		headerBox.AddChild(BuildPageSubtitle(isApotheosis
 			? $"{option.DisplayName}'s final form."
-			: $"Choose 1 of {branchCount}. {option.DisplayName} keeps it for the rest of this run.";
-		subtitle.HorizontalAlignment = HorizontalAlignment.Center;
-		subtitle.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-		ResponsiveLayout.SetFont(subtitle, ResponsiveLayout.TextRole.Label);
-		subtitle.AddThemeColorOverride("font_color", InkSoft);
-		headerBox.AddChild(subtitle);
+			: $"Choose 1 of {branchCount}. {option.DisplayName} keeps it all run."));
 
 		root.AddChild(headerBox);
 
@@ -2073,6 +2112,8 @@ public partial class LevelUpMenu : CanvasLayer
 				card.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 				cardsColumn.AddChild(card);
 			}
+			if (!isApotheosis)
+				FocusSpotlight.Attach(cardsColumn);
 		}
 		else
 		{
@@ -2115,6 +2156,9 @@ public partial class LevelUpMenu : CanvasLayer
 				card.SizeFlagsStretchRatio = 1f;
 				cardsRow.AddChild(card);
 			}
+			// Not on the Apotheosis: one form, and its ember plate's element line would dim below 4.5:1.
+			if (!isApotheosis)
+				FocusSpotlight.Attach(cardsRow);
 		}
 
 		// Small, centered, pinned under the cards.
@@ -2148,48 +2192,59 @@ public partial class LevelUpMenu : CanvasLayer
 	// which owns the rule, so the browser cannot drift out of agreement with the screen that
 	// actually offers the choice.
 
-	// THE PAGE HAS TO GO ON TOP OF THE PLATE, NOT UNDER IT.
+	// NO PAGE UNDER THE PAGES (2026-10-31). The mutation page, the level 8 fork, the Apotheosis page
+	// and the ascension browser each laid a vellum page inside the stone plate (ShowVellumPage), and
+	// the torn-page cards and the tree's parchment node sat on it - parchment on parchment, a page on
+	// a bigger page. Eric: "They shouldn't use the same background style twice." So every one of them
+	// is written straight onto the plate's stone, as the level-up hand always was, and the cards are
+	// the only pages on the screen. Anything drawn on the ground itself - the heading, the subtitle,
+	// the browser's section heads, the closed arrows - takes the stone inks (BuildPageHeading,
+	// BuildPageSubtitle, CodexRows.Stone), never a parchment one.
 	//
-	// This is why the level 4 screen was unreadable. Both overlays asked for the manuscript register
-	// with BonelightSkin.ApplyPanel, and on a plain Control that helper inserts its backdrop as
-	// child ZERO - which on this scene is underneath "Plate", an opaque nine-patch of stone brick.
-	// The vellum was drawn on every one of those screens and never once seen, so every ink colour
-	// on them was landing on stonework instead of on parchment. Darkening the text alone would have
-	// made it worse.
-	//
-	// Inset inside the plate rather than filling it, so the stone stays the outer edge and the page
-	// is laid on it - which is the rule the whole UI runs on: manuscript inside stone.
-	private const string PageBackdropName = "VellumPage";
+	// The content still stands this far in from the panel's edge: the plate's carved border is 16.
 	private const float PageInset = 18f;
 
-	private void ShowVellumPage(bool visible)
+	/// <summary>
+	/// The heading of a page laid over the hand (the mutation, the level 8 fork, the Apotheosis, the
+	/// browser): the level-up heading's own band, bone on the darkest stone, so it reads the same here.
+	/// </summary>
+	private Label BuildPageHeading(string text)
 	{
-		var panel = GetNodeOrNull<Control>("Panel");
-		if (panel == null)
-			return;
-
-		var page = panel.GetNodeOrNull<Panel>(PageBackdropName);
-		if (page == null)
+		bool narrow = ResponsiveLayout.IsNarrow(this);
+		var title = new Label
 		{
-			if (!visible)
-				return;
+			Text = text,
+			HorizontalAlignment = HorizontalAlignment.Center,
+			VerticalAlignment = VerticalAlignment.Center,
+			AutowrapMode = TextServer.AutowrapMode.WordSmart,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+			CustomMinimumSize = new Vector2(0f, ResponsiveLayout.MinTouchTarget + 8f),
+		};
+		// The Title role on a phone, Display on a PC: at the phone's Display size (40, bold) the
+		// heading broke as "(LEVEL / 4) ✦" over two lines, which reads as two headings.
+		ResponsiveLayout.SetFont(title, narrow ? ResponsiveLayout.TextRole.Title : ResponsiveLayout.TextRole.Display);
+		title.AddThemeColorOverride("font_color", HeadingInk);
+		title.AddThemeConstantOverride("outline_size", 0);
+		// No room kept for the Ascensions button: these pages hide it.
+		StyleBoxFlat band = BuildHeadingBand(narrow);
+		band.ContentMarginRight = band.ContentMarginLeft;
+		title.AddThemeStyleboxOverride("normal", band);
+		return title;
+	}
 
-			page = new Panel { Name = PageBackdropName, MouseFilter = Control.MouseFilterEnum.Ignore };
-			page.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-			page.OffsetLeft = PageInset;
-			page.OffsetTop = PageInset;
-			page.OffsetRight = -PageInset;
-			page.OffsetBottom = -PageInset;
-			page.AddThemeStyleboxOverride("panel", BonelightSkin.PanelStyle(BonelightSkin.Register.Vellum));
-			panel.AddChild(page);
-
-			// Directly after the plate. Anything added later - the overlay's own content - is
-			// appended after this and so draws on the page rather than under it.
-			int plateIndex = panel.GetNodeOrNull<Control>("Plate")?.GetIndex() ?? -1;
-			panel.MoveChild(page, plateIndex + 1);
-		}
-
-		page.Visible = visible;
+	/// <summary>One line under a page heading, in bone on the stone (CodexRows.Stone.InkSoft).</summary>
+	private static Label BuildPageSubtitle(string text)
+	{
+		var subtitle = new Label
+		{
+			Text = text,
+			HorizontalAlignment = HorizontalAlignment.Center,
+			AutowrapMode = TextServer.AutowrapMode.WordSmart,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+		};
+		ResponsiveLayout.SetFont(subtitle, ResponsiveLayout.TextRole.Label);
+		subtitle.AddThemeColorOverride("font_color", CodexRows.Stone.InkSoft);
+		return subtitle;
 	}
 
 	private const string AscensionRootName = "AscensionBrowser";
@@ -2333,7 +2388,6 @@ public partial class LevelUpMenu : CanvasLayer
 		{
 			RemoveEvolutionRoot();
 			RemoveAscensionRoot();
-			ShowVellumPage(false);
 		}
 	}
 

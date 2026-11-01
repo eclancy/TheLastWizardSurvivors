@@ -269,16 +269,25 @@ public partial class MenuFocusHighlight : Control
 	/// Built per draw rather than held in a static. A StyleBox is RefCounted and a static C#
 	/// reference to one outlives the engine's own, which trips gchandle.is_released() in a
 	/// finalizer - see the BonelightSkin remarks. Only the one visible ring redraws per frame.
+	///
+	/// AND, ON A CARD, CORNER BRACKETS (2026-10-31). The ring above still read as one more gilded frame
+	/// among the level-up screen's gilded frames: "make it easier to see what i have highlighted when
+	/// using keyboard or controller". A card (anything at least <see cref="CardControl"/> on both sides)
+	/// gets a band half as thick again and four gold brackets standing off its corners in the dark gap
+	/// round it, drifting out and back with the breath - the shape every game uses for "this one", and
+	/// nothing else on these screens has it. The brackets sit outside the rect, in the gap every card
+	/// row leaves, so they cover no word; FocusSpotlight dims the cards the selection is not on.
 	/// </remarks>
 	public override void _Draw()
 	{
 		float breath = 0.5f - 0.5f * Mathf.Cos(Time.GetTicksMsec() / 1000f * Mathf.Tau / PulsePeriod);
 		Color band = Gold.Lerp(GoldHot, breath);
 
-		// The full ring is 2 + 4 + 2 units a side; a chip or a small button gets 1 + 2 + 1.
+		// The full ring is 2 + 4 + 2 units a side, a card's 2 + 6 + 2; a chip or a small button gets 1 + 2 + 1.
 		bool small = Size.X < SmallControl || Size.Y < SmallControl;
+		bool cardSized = Size.X >= CardControl && Size.Y >= CardControl;
 		int edge = small ? 1 : 2;
-		int width = small ? 2 : 4;
+		int width = small ? 2 : cardSized ? 6 : 4;
 
 		StyleBoxFlat Stroke(Color colour, int border, int radius, float fill = 0f)
 		{
@@ -297,7 +306,7 @@ public partial class MenuFocusHighlight : Control
 			new Rect2(by, by, Mathf.Max(0f, Size.X - by * 2f), Mathf.Max(0f, Size.Y - by * 2f));
 
 		// The glow first, so the ring's own outline is drawn over its inner edge.
-		int[] glow = small ? new[] { 2, 4 } : new[] { 2, 4, 6 };
+		int[] glow = small ? GlowSmall : GlowFull;
 		for (int i = 0; i < glow.Length; i++)
 		{
 			float alpha = Mathf.Lerp(0.55f, 0.85f, breath) * (1f - i / (float)glow.Length);
@@ -306,7 +315,51 @@ public partial class MenuFocusHighlight : Control
 		DrawStyleBox(Stroke(Outline, edge, CornerRadius, Mathf.Lerp(0.0f, 0.05f, breath)), Inset(0f));
 		DrawStyleBox(Stroke(band, width, CornerRadius - edge), Inset(edge));
 		DrawStyleBox(Stroke(new Color(Outline, 0.75f), edge, CornerRadius - edge - width), Inset(edge + width));
+
+		if (cardSized)
+			DrawCornerBrackets(band, breath);
 	}
+
+	private static readonly int[] GlowSmall = { 2, 4 };
+	private static readonly int[] GlowFull = { 2, 4, 6 };
+
+	/// <summary>A control at least this big on both sides is a card, and gets the brackets.</summary>
+	private const float CardControl = 120f;
+
+	/// <summary>
+	/// Four L-shaped brackets off the corners, a dark keyline under each gold arm, standing
+	/// <see cref="BracketGap"/> to BracketGap + 3 outside the rect with the breath. Whole units, so the
+	/// pixel art they frame does not shimmer.
+	/// </summary>
+	private void DrawCornerBrackets(Color band, float breath)
+	{
+		float off = BracketGap + Mathf.Round(breath * 3f);
+		float arm = Mathf.Clamp(Mathf.Min(Size.X, Size.Y) * 0.16f, 18f, 34f);
+		const float thick = 4f;
+		for (int corner = 0; corner < 4; corner++)
+		{
+			bool right = corner == 1 || corner == 2;
+			bool bottom = corner >= 2;
+			float x = right ? Size.X + off : -off;
+			float y = bottom ? Size.Y + off : -off;
+			float sx = right ? -1f : 1f;
+			float sy = bottom ? -1f : 1f;
+			// The corner square, then the two arms running back along the card's edges.
+			Rect2 horizontal = Span(x, y, sx * arm, sy * thick);
+			Rect2 vertical = Span(x, y, sx * thick, sy * arm);
+			DrawRect(horizontal.Grow(1f), Outline);
+			DrawRect(vertical.Grow(1f), Outline);
+			DrawRect(horizontal, band);
+			DrawRect(vertical, band);
+		}
+	}
+
+	/// <summary>How far outside the card the brackets stand at the bottom of the breath.</summary>
+	private const float BracketGap = 4f;
+
+	// A rect from a corner point and a signed extent, so each corner can be drawn by the same lines.
+	private static Rect2 Span(float x, float y, float w, float h) =>
+		new Rect2(Mathf.Min(x, x + w), Mathf.Min(y, y + h), Mathf.Abs(w), Mathf.Abs(h));
 
 	public override void _Notification(int what)
 	{

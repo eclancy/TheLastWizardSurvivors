@@ -32,6 +32,7 @@ CooldownBonus = -1.5
 
 [resource]
 script = ExtResource("1")
+Tagline = "Soaks hits; recharges once broken."
 Id = "aegis_ward"
 Name = "Aegis Ward"
 CurrentLevel = 1

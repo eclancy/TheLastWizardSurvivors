@@ -11,6 +11,7 @@ DamageBonus = 2
 
 [resource]
 script = ExtResource("1")
+Tagline = "A flare that builds as you stand."
 Id = "solar_flare"
 Name = "Solar Flare"
 CurrentLevel = 1

@@ -53,6 +53,7 @@ RangeBonus = 25.0
 
 [resource]
 script = ExtResource("1")
+Tagline = "Breathes fire in a wide arc."
 Id = "cinderbreath"
 Name = "Cinderbreath"
 CurrentLevel = 1

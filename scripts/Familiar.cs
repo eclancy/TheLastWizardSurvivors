@@ -11,8 +11,9 @@ namespace WizardSurvivors.scripts;
 //   the DOG  - a hound at his heel: the most direct damage. It goes for what nears him, leaps and bites.
 //   the CROW - a crow on the air over him: the fastest. It ranges far, stoops on its quarry, pecks and is
 //              gone, and is back on the next one before a hound would have turned round.
-//   the CAT  - a cat underfoot: the weakest attack and the most help. While it is out every spell he
-//              casts runs faster and he slips more hits (Familiar.GrantsOf, read by Player).
+//   the CAT  - a calico near him that never deals damage (2026-10-31): its pounce WEAKENS what it lands on,
+//              and each visit back to him gives him its grants - every spell faster, more hits slipped
+//              (Familiar.LiveGrants, read by Player).
 //
 // Eric, 2026-10-28: "when you FIRST take familiar, you should be able to select your familiar. each has
 // it's own advantages - crow moves faster, cat gives passive bonuses, dog does the most direct damage.
@@ -30,7 +31,7 @@ namespace WizardSurvivors.scripts;
 //         it fights where he stands; a pounce and a bite - one quarry and whatever is in its jaws.
 //   crow: an enemy that shoots first, else the one nearest the crow, inside a wider range; a peck per
 //         crow per cooldown, at a shorter cooldown; none; a stoop and a peck on one enemy.
-//   cat:  what comes right up to him; a swipe per cooldown; it stays at his heel; a pounce and a swipe.
+//   cat:  what comes near him; a pounce per cooldown; it wanders near him and comes back; a debuff, no damage.
 //
 // THE BODY. Each creature is plain state in this node plus one AnimatedSprite2D, a child of this node,
 // which is y-sorted with the arena so it stands in front of or behind the bodies round it - or, for a
@@ -49,8 +50,9 @@ namespace WizardSurvivors.scripts;
 //         Cerberus (L8, +Arcane - three heads), Hound of Annwn (L8 - elites first, and bites them double)
 //   crow: Raven (L4, +Arcane), Stormcrow (L4, the Lightning path), Murder of Crows (L4) /
 //         The Morrigan (L8, +Arcane - a peck on the nearly dead kills), Griffin (L8 - the swoop through a line)
-//   cat:  Grimalkin (L4, +Arcane - its grants grow), Cait Sith (L4, the Darkness path), Purr (L4 - you mend) /
-//         Cath Palug (L8, +Arcane - the great cat), Nine Lives (L8 - it gives a life for yours)
+//   cat:  Grimalkin (L4, +Arcane - its grants grow), Cait Sith (L4, the Darkness path), Purr (L4 - a heal a
+//         visit), Nine Lives (L4 - a life for yours) / Cath Palug (L8, +Arcane - the great cat), Black Cat (L8 -
+//         it casts his spells)
 // After an element path the level 8 looks are drawn in that element.
 //
 // NO MARKERS (art-direction.md section 3): the bite's reach is the jaws snapping shut on the bite radius
@@ -92,7 +94,11 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	public const string CaitSithId = "familiar_cat_cait_sith";
 	public const string PurrId = "familiar_cat_purr";
 	public const string CathPalugId = "familiar_cat_cath_palug";
+	// A level 4 card since 2026-10-31 (it was the level 8 the Black Cat took). Same id: the life is given by
+	// id at whatever milestone it is taken (Player.FireFamiliar), and a save that saw it as an Ascension
+	// (SaveData.SeenAscensionIds) only holds a seen key no level 8 option names any more - read by nothing.
 	public const string NineLivesId = "familiar_cat_nine_lives";
+	public const string BlackCatId = "familiar_cat_black_cat";
 
 	/// <summary>
 	/// The two Ascensions the hound pack offered before it had forms, and what each is now. A seen
@@ -141,8 +147,45 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	public const float GrimalkinGrants = 1.4f;
 	/// <summary>Cath Palug: every grant this many times over again.</summary>
 	public const float CathPalugGrants = 1.5f;
-	/// <summary>Purr: health a second while the cat is out (before Grimalkin and Cath Palug).</summary>
-	public const float PurrRegenPerSecond = 0.8f;
+
+	// THE CAT IS THE SUPPORT FAMILIAR (Eric, 2026-10-31: "rebalance cat to not attack enemies, but instead
+	// wander around nearby, debuffing enemies and wandering back to the player to provide buffs"). It deals
+	// no damage. Its cooldown hands it a pounce: it picks an enemy near the wizard, rears back, pounces and
+	// lands a DEBUFF - Weaken, so what it marked hits the wizard softer, and a moment's slow (Enemy.Apply*,
+	// stacking-resistant) - then trots back to his feet, and the visit is what gives him its grants for the
+	// next CatBuffSeconds. With nothing to pounce on it wanders near him and comes back before the grants lapse.
+	/// <summary>Weaken from a pounce: what it lands on deals this much less damage.</summary>
+	public const float CatWeakenFraction = 0.3f;
+	/// <summary>...for this long (Grimalkin: GrimalkinGrants times longer).</summary>
+	public const float CatWeakenSeconds = 4f;
+	/// <summary>The pounce also checks the quarry's stride: this speed multiplier, for CatSlowSeconds.</summary>
+	public const float CatSlowMultiplier = 0.7f;
+	public const float CatSlowSeconds = 1f;
+	/// <summary>The Cait Sith's rider (the Darkness path): Vulnerable, so every spell hits what it marked harder.</summary>
+	public const float CaitSithVulnerable = 0.25f;
+	public const float CaitSithVulnerableSeconds = 3f;
+	/// <summary>How long one visit to the wizard keeps the cat's grants (cast speed, evasion) on him.</summary>
+	public const float CatBuffSeconds = 8f;
+	// Within this of his feet, a visit lands; with this little of the grants left, the cat comes home anyway.
+	private const float CatTouch = 44f;
+	private const float CatBuffLow = 2f;
+	// Where it wanders when there is nothing to pounce on: this near him, picking a new spot this often.
+	private const float CatWanderMin = 40f;
+	private const float CatWanderMax = 95f;
+	private const float CatWanderSeconds = 2.2f;
+	// The rear-back before a pounce: longer than a hound's crouch, the cat's wiggle.
+	private const float CatRearSeconds = 0.3f;
+
+	/// <summary>Purr: every PurrSeconds the cat runs to the wizard and heals PurrHeal - 9 HP a minute, the
+	/// healing budget's rate for a relic or a boon (.ai/difficulty-curve.md section 5).</summary>
+	public const float PurrSeconds = 20f;
+	/// <summary>Tools only (_UiShot --purr-soon): the first Purr heal comes due 1.5 s after the card, to photograph.</summary>
+	public static bool DebugPurrSoon { get; set; }
+	public const int PurrHeal = 3;
+
+	/// <summary>Black Cat (the cat's Ascension): every this many seconds it casts one of the wizard's attack
+	/// spells, chosen at random, from where it stands (Player.CastFromFamiliar).</summary>
+	public const float BlackCatSeconds = 3f;
 
 	// --- the hunt (tuned in scenes/Familiar.tscn; the dog's) ---------------------------------------------
 	[Export] public float RunSpeed { get; set; } = 330f;
@@ -179,17 +222,34 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	private const float CrowBlinkDistance = 640f;
 	// The griffin, the crow's Ascension, keeps most of the crow's pace.
 	private const float GriffinFlyFactor = 0.85f;
+	// THE CROW'S PATROL AND DIVE (Eric, 2026-10-31: the crow "flies around, mostly patrolling a loose ring near
+	// the wizard, and divebombs enemies"). With no peck in hand it rides a loose ring round him - two crows the
+	// opposite ways round. With one, it flies at its quarry, CLIMBS (pulls up and back, wings raised), STOOPS,
+	// pecks, and RISES off it back toward the ring.
+	private const float CrowPatrolRadius = 110f;
+	private const float CrowPatrolWobble = 18f;
+	private const float CrowPatrolTurn = 1.3f;
+	private const float CrowClimbSeconds = 0.1f;
+	private const float CrowClimbBack = 28f;
+	private const float CrowRiseSeconds = 0.16f;
+	private const float CrowRiseSpeed = 420f;
 
 	// THE CAT. It stays underfoot - its range is short and its heel is close - and its pounce is short and
 	// quick, with the wiggle before it a cat makes.
 	private const float CatRunSpeed = 300f;
-	private const float CatClawRadius = 16f;
+	public const float CatClawRadius = 16f;
 	private const float CatLeapFraction = 0.5f;
-	private const float CatCrouchSeconds = 0.12f;
 	private const float CatLeapSeconds = 0.16f;
 	private const float CatSwipeSeconds = 0.12f;
 	private const float CatHeelBehind = 34f;
 	private const float CatHeelSide = 16f;
+	// THE DOG AT HEEL (Eric, 2026-10-31: the dog "heels at the wizard's side when not attacking and tries to
+	// stay close; its attack runs are short and it comes straight back to heel"). Its heel is BESIDE him on
+	// screen - left or right of him, a hound's half-width clear of his robe - and it only leaves it with a bite
+	// in hand; after the bite it comes straight back. (Beside him along his walk put it above or below him, and
+	// the one below stood over his legs.)
+	private const float DogHeelSide = 52f;
+	private const float DogHeelDrop = 4f;
 
 	// CATCHING BOLTS (2026-10-28, Eric: "a few spells should help guard you from projectiles, like
 	// familiar being able to catch projectiles"). A familiar at heel or on the hunt watches the bolts in
@@ -244,14 +304,18 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	private static readonly StringName AnimHowl = "howl";
 
 	// Every drawing the familiar has, one SpriteFrames each (tools/art/familiar.py). In FormNames order.
+	// The last seven are the dog's PACK under an Ascension and Littermates (ResolvePackLook): the hounds
+	// after the first wear them, so only the main hound is the legendary creature.
 	private enum Look
 	{
 		Hound, Rimehound, GreatHound, Cerberus, CerberusRime, Annwn, AnnwnRime,
 		Crow, Stormcrow, Raven, Morrigan, MorriganStorm, Griffin, GriffinStorm,
 		Cat, CaitSith, Grimalkin, CathPalug, CathPalugSith,
+		Hellhound, HellhoundRime, AnnwnHound, AnnwnHoundRime, Pup, HellPup, AnnwnPup,
+		BlackCat, BlackCatSith,
 	}
 
-	private enum State : byte { Heel, Chase, Crouch, Leap, Bite, Howl, BlinkOut, BlinkIn, Swoop, Catch }
+	private enum State : byte { Heel, Chase, Crouch, Leap, Bite, Howl, BlinkOut, BlinkIn, Swoop, Catch, Rise }
 	private enum BlinkWhy : byte { Arrive, Stuck, Leash, Inside, Dismiss }
 	// What a strike leaves on the air for a moment: a hound's jaws, a cat's claws, a crow's beak.
 	private enum SnapKind : byte { Jaws, Claws, Peck }
@@ -259,6 +323,9 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	private sealed class Hound
 	{
 		public AnimatedSprite2D Sprite;
+		// What this creature is drawn as: the main hound's look for the first, the pack's for the rest
+		// (Familiar.LookAt). Its cell and where its jaws are come from it.
+		public Look Look;
 		// The animation this creature's sprite is showing, kept here: reading AnimatedSprite2D.Animation
 		// back builds a new managed StringName every call, and Show runs for every creature every frame.
 		public StringName Anim;
@@ -282,6 +349,12 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		// The bolt it has gone for (State.Catch), and how long until it may go for another.
 		public EnemyProjectile Bolt;
 		public float CatchRest;
+		// The cat: bound for the wizard's feet (after a pounce, for Purr, or with its grants running low),
+		// and where it is wandering to meanwhile. The crow: where it is on its patrol ring.
+		public bool Returning;
+		public Vector2 WanderAt;
+		public float WanderClock;
+		public float Orbit;
 	}
 
 	private struct Mote
@@ -320,6 +393,9 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	// The familiar as of the last cooldown.
 	private Kind kind = Kind.Dog;
 	private Look look = Look.Hound;
+	// What every creature after the first is drawn as (ResolvePackLook): the main look, but for the dog's
+	// pups and its pack under an Ascension.
+	private Look packLook = Look.Hound;
 	private bool lookSet;
 	private int lastLevel = -1;
 	private int damage = 12;
@@ -332,6 +408,18 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	private bool griffin;
 	private bool annwn;
 	private bool morrigan;
+	// The cat's milestones as of the last cooldown, and its clocks (TickCat).
+	private bool grimalkin;
+	private bool caitSith;
+	private bool purr;
+	private bool blackCat;
+	private float buffLeft;
+	private float purrClock;
+	private bool purrDue;
+	private float blackCatClock;
+	// Purr's heart over the wizard: its age (negative when none is showing) and where it rises from.
+	private float heartAge = -1f;
+	private Vector2 heartAt;
 	private ElementColors.Ramp ramp = ElementColors.GetRamp(Element.Arcane);
 	private Color tint = Colors.White;
 	private Vector2 heelDir = new(-1f, 0.35f);
@@ -343,6 +431,12 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	public static int StatCatches { get; private set; }
 	public static int StatExecutions { get; private set; }
 	public static int StatHaresCoursed { get; private set; }
+	// The cat's work, which the strike counts above do not see: pounces landed (each a debuff), visits to the
+	// wizard (each refreshing its grants), Purr's heals and the Black Cat's casts.
+	public static int StatPounces { get; private set; }
+	public static int StatVisits { get; private set; }
+	public static int StatPurrHeals { get; private set; }
+	public static int StatBlackCatCasts { get; private set; }
 	public static int StatBlinksStuck { get; private set; }
 	public static int StatBlinksLeash { get; private set; }
 	public static int StatBlinksInside { get; private set; }
@@ -360,7 +454,8 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	/// <summary>One line for the balance report: is it striking, and did any creature get stuck.</summary>
 	public static string StatsLine() =>
 		$"familiar     : the {statForm}; {StatBites} strikes from {StatLeaps} leaps, {StatSwoops} swoops, {StatCatches} bolts caught, "
-		+ $"{StatExecutions} executed, {StatHaresCoursed} Black Hares coursed; blinks home - stuck {StatBlinksStuck}, "
+		+ $"{StatExecutions} executed, {StatHaresCoursed} Black Hares coursed; cat: {StatPounces} pounces, {StatVisits} visits, "
+		+ $"{StatPurrHeals} Purr heals, {StatBlackCatCasts} Black Cat casts; blinks home - stuck {StatBlinksStuck}, "
 		+ $"left behind {StatBlinksLeash}, on solid ground {StatBlinksInside}; worst stall {StatWorstStuck:0.00} s; "
 		+ $"{StatFramesOnSolid} of {StatHoundFrames} walker-frames standing on water or a wall by the navigation "
 		+ $"(present on {StatNavFrames}), {StatFramesOnSolidTerrain} by the terrain itself";
@@ -371,10 +466,14 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	/// Player.FireFamiliar every cooldown and held there as the live value - never added to a stored stat
 	/// - so a grant can never be counted twice, and is gone the moment the spell is.
 	/// </summary>
-	public readonly record struct Grants(float CastSpeed, float Evasion, float RegenPerSecond)
+	public readonly record struct Grants(float CastSpeed, float Evasion)
 	{
-		public bool Any => CastSpeed > 0f || Evasion > 0f || RegenPerSecond > 0f;
+		public bool Any => CastSpeed > 0f || Evasion > 0f;
 	}
+
+	/// <summary>The grants the wizard has NOW: the cat's, while a visit's CatBuffSeconds last, else none.
+	/// Player.FireFamiliar holds this every cooldown.</summary>
+	public Grants LiveGrants(SpellData spell) => buffLeft > 0f ? GrantsOf(spell) : default;
 
 	public static Grants GrantsOf(SpellData spell)
 	{
@@ -388,8 +487,7 @@ public partial class Familiar : Node2D, IPaintsElementPath
 			scale *= CathPalugGrants;
 		float cast = (CatCastSpeed + spell.GetEffectValueAtLevel(SpellEffect.CastSpeed, level)) * scale;
 		float evasion = (CatEvasion + spell.GetEffectValueAtLevel(SpellEffect.Evasion, level)) * scale;
-		float regen = spell.HasEvolution(PurrId) ? PurrRegenPerSecond * scale : 0f;
-		return new Grants(MathF.Max(0f, cast), MathF.Max(0f, evasion), regen);
+		return new Grants(MathF.Max(0f, cast), MathF.Max(0f, evasion));
 	}
 
 	/// <summary>The grants as stat lines, for the pause screen's spell row (Node2DGame.BuildSpellRow).</summary>
@@ -400,8 +498,8 @@ public partial class Familiar : Node2D, IPaintsElementPath
 			yield return $"Cast speed +{Mathf.RoundToInt(g.CastSpeed * 100f)}%";
 		if (g.Evasion > 0f)
 			yield return $"Evasion +{Mathf.RoundToInt(g.Evasion * 100f)}%";
-		if (g.RegenPerSecond > 0f)
-			yield return $"Regen +{g.RegenPerSecond:0.#} HP per second";
+		if (spell != null && FormOf(spell) == Kind.Cat && spell.HasEvolution(PurrId))
+			yield return $"Heal {PurrHeal} HP every {PurrSeconds:0} s";
 	}
 
 	public override void _Ready()
@@ -453,6 +551,18 @@ public partial class Familiar : Node2D, IPaintsElementPath
 			_ => huntRange * LeapReachFraction,
 		};
 		threeHeads = kind == Kind.Dog && spell.HasEvolution(CerberusId);
+		grimalkin = kind == Kind.Cat && spell.HasEvolution(GrimalkinId);
+		caitSith = kind == Kind.Cat && spell.HasEvolution(CaitSithId);
+		bool hadPurr = purr;
+		purr = kind == Kind.Cat && spell.HasEvolution(PurrId);
+		// Tools only (_UiShot --purr-soon): the first heal a second and a half after Purr is taken.
+		if (purr && !hadPurr && DebugPurrSoon)
+			purrClock = PurrSeconds - 1.5f;
+		blackCat = kind == Kind.Cat && spell.HasEvolution(BlackCatId);
+		// The cat arrives at his heel, so it arrives giving its grants.
+		if (kind == Kind.Cat && !lookSet)
+			buffLeft = CatBuffSeconds;
+
 		annwn = kind == Kind.Dog && spell.HasEvolution(AnnwnId);
 		griffin = kind == Kind.Crow && spell.HasEvolution(GriffinId);
 		morrigan = kind == Kind.Crow && spell.HasEvolution(MorriganId);
@@ -461,8 +571,10 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		tint = visualTint;
 
 		Look wanted = ResolveLook(spell);
-		bool changed = !lookSet || wanted != look;
+		Look wantedPack = ResolvePackLook(spell, wanted);
+		bool changed = !lookSet || wanted != look || wantedPack != packLook;
 		look = wanted;
+		packLook = wantedPack;
 
 		count = Math.Clamp(count, 1, MaxHounds);
 		int live = 0;
@@ -482,11 +594,14 @@ public partial class Familiar : Node2D, IPaintsElementPath
 			live--;
 		}
 
-		if (changed)
+		// Every creature in the look its place in the pack asks for: the first the main look, the rest the
+		// pack's. Taking Littermates turns the level 3 hound into a pup; an Ascension makes only the first
+		// the legendary creature.
+		for (int i = 0; i < hounds.Count; i++)
 		{
-			SpriteFrames frames = LoadFrames(look);
-			foreach (Hound h in hounds)
-				ApplyFrames(h, frames);
+			Look l = LookAt(i);
+			if (hounds[i].Look != l || hounds[i].Sprite?.SpriteFrames == null)
+				ApplyFrames(hounds[i], l);
 		}
 		// A new level or a new form is greeted with a howl; the first summoning arrives with one.
 		if (lookSet && (changed || level != lastLevel))
@@ -526,6 +641,8 @@ public partial class Familiar : Node2D, IPaintsElementPath
 				bool sith = spell.HasEvolution(CaitSithId);
 				if (spell.HasEvolution(CathPalugId))
 					return sith ? Look.CathPalugSith : Look.CathPalug;
+				if (spell.HasEvolution(BlackCatId))
+					return sith ? Look.BlackCatSith : Look.BlackCat;
 				if (spell.HasEvolution(GrimalkinId))
 					return Look.Grimalkin;
 				return sith ? Look.CaitSith : Look.Cat;
@@ -544,6 +661,37 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		}
 	}
 
+	// THE PACK (Eric, 2026-10-30, of 0.9.2: "when ascending hound familiar, it should only make the main
+	// hound into the full size legendary creature. littermates should produce two puppies instead of 2 of
+	// the same dog. The two puppies should also be affected by the ascension, but the sprite should just look
+	// like a similar-styled hellhound with one head, instead of the 3 headed cerberus. same goes for the
+	// other ascension."). The first creature is the main one and wears ResolveLook; every other wears this.
+	// With Littermates they are PUPS - the fawn hound's, a one-headed hellpup under Cerberus, a white
+	// red-eared pup under the Hound of Annwn. Without it, the level 3 hound under an Ascension is a hound
+	// of its own size in the Ascension's coat with one head. Only the drawing differs: every creature bites
+	// with the Ascension's power, which Summon reads once for the whole pack (threeHeads, annwn). The crow
+	// and the cat are unchanged - their pack wears their main look.
+	private static Look ResolvePackLook(SpellData spell, Look main)
+	{
+		if (FormOf(spell) != Kind.Dog)
+			return main;
+		bool rime = spell.HasEvolution(RimehoundId);
+		bool cerberus = spell.HasEvolution(CerberusId);
+		bool hunt = spell.HasEvolution(AnnwnId);
+		// Littermates and the Rimehound are both level 4 cards, so a pup is never a frost one.
+		if (spell.HasEvolution(LittermatesId))
+			return cerberus ? Look.HellPup : hunt ? Look.AnnwnPup : Look.Pup;
+		if (cerberus)
+			return rime ? Look.HellhoundRime : Look.Hellhound;
+		if (hunt)
+			return rime ? Look.AnnwnHoundRime : Look.AnnwnHound;
+		return main;
+	}
+
+	// The look of the creature at `index` in the pack: the main look for the first, the pack's for the rest.
+	// Creatures leave from the end of the list (Summon), so the first is the first summoned for the whole run.
+	private Look LookAt(int index) => index == 0 ? look : packLook;
+
 	/// <summary>The SpriteFrames each look loads, by the name tools/art/familiar.py writes.</summary>
 	public static string FramesPath(string lookName) => $"res://scenes/resources/Familiar{lookName}Frames.tres";
 
@@ -553,13 +701,19 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		"Hound", "Rimehound", "Greathound", "Cerberus", "CerberusRime", "Annwn", "AnnwnRime",
 		"Crow", "Stormcrow", "Raven", "Morrigan", "MorriganStorm", "Griffin", "GriffinStorm",
 		"Cat", "CaitSith", "Grimalkin", "CathPalug", "CathPalugSith",
+		"Hellhound", "HellhoundRime", "AnnwnHound", "AnnwnHoundRime", "Pup", "HellPup", "AnnwnPup",
+		"BlackCat", "BlackCatSith",
 	};
 
-	// The cell each look is drawn on (tools/art/familiar.py FORMS): the hound, the crow and the cat on the
-	// elite row, every larger look on the 64 cell.
+	// The cell each look is drawn on (tools/art/familiar.py FORMS): the hound, the crow, the cat and the
+	// one-headed pack on the elite row, the pups on the basic row, Cerberus alone on the 96 (it is the
+	// biggest thing at his side: "the main cerberus itself should be bigger"), every other larger look on 64.
 	private static int CellOf(Look l) => l switch
 	{
 		Look.Hound or Look.Rimehound or Look.Crow or Look.Stormcrow or Look.Cat or Look.CaitSith => 48,
+		Look.Hellhound or Look.HellhoundRime or Look.AnnwnHound or Look.AnnwnHoundRime => 48,
+		_ when IsPup(l) => 32,
+		Look.Cerberus or Look.CerberusRime => 96,
 		_ => 64,
 	};
 
@@ -567,12 +721,15 @@ public partial class Familiar : Node2D, IPaintsElementPath
 
 	// How far in front of its feet a creature's jaws (or claws) are, in world pixels: where to stand so the
 	// strike lands on the quarry. Read off the drawings at x2. The crow strikes from above, on the quarry.
-	private float JawReach => look switch
+	private float JawReachOf(Look l) => l switch
 	{
 		Look.GreatHound or Look.Annwn or Look.AnnwnRime => 46f,
-		Look.Cerberus or Look.CerberusRime => 50f,
+		// Cerberus on the 96 cell at 2.5 (it was 50 on the 64 at 1.72): its jaws 2.5 / 1.72 as far out.
+		Look.Cerberus or Look.CerberusRime => 72f,
+		_ when IsPup(l) => 20f,
 		Look.Cat or Look.CaitSith => 22f,
 		Look.Grimalkin => 28f,
+		Look.BlackCat or Look.BlackCatSith => 30f,
 		Look.CathPalug or Look.CathPalugSith => 40f,
 		_ when flies => 0f,
 		_ => 34f,
@@ -581,7 +738,12 @@ public partial class Familiar : Node2D, IPaintsElementPath
 
 	private float WalkSpeed => kind == Kind.Cat ? CatRunSpeed : RunSpeed;
 	private float AirSpeed => griffin ? CrowFlySpeed * GriffinFlyFactor : flies ? CrowFlySpeed : FlySpeed;
-	private float Crouch => kind == Kind.Cat ? CatCrouchSeconds : CrouchSeconds;
+	private float Crouch => kind switch
+	{
+		Kind.Cat => CatRearSeconds,
+		Kind.Crow => CrowClimbSeconds,
+		_ => CrouchSeconds,
+	};
 	private float LeapTime => kind == Kind.Cat ? CatLeapSeconds : LeapSeconds;
 	private float StrikeSeconds => kind switch
 	{
@@ -614,9 +776,11 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		Vector2 at = PlayerRef != null ? FreeHeelSpot(hounds.Count, MazeNavigation.Active) : Vector2.Zero;
 		h.Pos = at;
 		h.Sprite.Position = at;
+		// Crows patrol from opposite sides of the ring.
+		h.Orbit = hounds.Count * MathF.PI + 2.4f;
 		AddChild(h.Sprite);
 		hounds.Add(h);
-		ApplyFrames(h, LoadFrames(look));
+		ApplyFrames(h, LookAt(hounds.Count - 1));
 		if (arriving)
 		{
 			h.State = State.BlinkIn;
@@ -626,11 +790,13 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		}
 	}
 
-	private void ApplyFrames(Hound h, SpriteFrames frames)
+	private void ApplyFrames(Hound h, Look l)
 	{
+		h.Look = l;
+		SpriteFrames frames = LoadFrames(l);
 		if (h.Sprite == null || frames == null)
 			return;
-		int cell = CellOf(look);
+		int cell = CellOf(l);
 		h.Sprite.SpriteFrames = frames;
 		// The feet row (cell - 2) sits on the node's origin, which is the creature's ground point (a
 		// flier's is its shadow's, drawn on the bottom rows of its cell).
@@ -654,6 +820,9 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		Vector2 v = PlayerRef.Velocity;
 		if (v.LengthSquared() > 900f)
 			heelDir = heelDir.Lerp(-v.Normalized(), MathF.Min(1f, dt * 4f)).Normalized();
+
+		if (kind == Kind.Cat)
+			TickCat(dt);
 
 		for (int i = hounds.Count - 1; i >= 0; i--)
 		{
@@ -735,11 +904,25 @@ public partial class Familiar : Node2D, IPaintsElementPath
 				return;
 			case State.Crouch:
 				Show(h, AnimPounce, 0, 1f);
+				if (flies && Alive(h.Target))
+				{
+					// The crow's CLIMB: wings raised, it pulls up and back off its quarry before the stoop.
+					Vector2 off = h.Pos - (h.Target.GlobalPosition + new Vector2(0f, GroundBelowCentre));
+					if (off.LengthSquared() > 1f)
+						h.Pos += off.Normalized() * (CrowClimbBack / CrowClimbSeconds) * dt;
+				}
 				if (h.T >= Crouch)
 				{
 					if (!Alive(h.Target))
 					{
 						Settle(h);
+						return;
+					}
+					if (flies)
+					{
+						float rest = h.T - Crouch;
+						StartStoop(h, h.Target);
+						h.T = rest;
 						return;
 					}
 					h.From = h.Pos;
@@ -772,8 +955,27 @@ public partial class Familiar : Node2D, IPaintsElementPath
 			case State.Bite:
 				Show(h, AnimPounce, h.T < StrikeSeconds * 0.5f ? 4 : 5, 1f);
 				if (h.T >= StrikeSeconds)
+				{
+					if (flies && !griffin)
+					{
+						h.State = State.Rise;
+						h.T -= StrikeSeconds;
+						return;
+					}
+					Settle(h);
+				}
+				return;
+			case State.Rise:
+			{
+				// The crow RISES off its quarry, back up toward its ring round him.
+				Vector2 out0 = h.Pos - feet;
+				Vector2 ring = feet + (out0.LengthSquared() > 1f ? out0.Normalized() : new Vector2(-h.Facing, 0f)) * CrowPatrolRadius;
+				Fly(h, ring, CrowRiseSpeed, dt);
+				Show(h, AnimPounce, 5, 1f);
+				if (h.T >= CrowRiseSeconds)
 					Settle(h);
 				return;
+			}
 			case State.Swoop:
 				TickSwoop(h, dt);
 				return;
@@ -818,8 +1020,17 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		if (h.CatchRest <= 0f && TryGoForBolt(h, player, nav))
 			return;
 
+		// The cat's visits come before anything: after a pounce, for Purr, or with its grants running low.
+		if (kind == Kind.Cat && TickCatHome(h, feet, dt, nav))
+			return;
+
+		// Every form leaves his side only with a strike in hand (2026-10-31): the hound's run is short and it
+		// comes straight back to heel, the crow patrols until it has a peck to dive with, the cat wanders until
+		// it has a pounce. Without one there is no quarry.
 		h.Retarget -= dt;
-		if (h.Retarget <= 0f || !Alive(h.Target) || h.Target.GlobalPosition.DistanceTo(player) > huntRange * 1.3f)
+		if (!h.HasBite)
+			h.Target = null;
+		else if (h.Retarget <= 0f || !Alive(h.Target) || h.Target.GlobalPosition.DistanceTo(player) > huntRange * 1.3f)
 		{
 			h.Retarget = RetargetSeconds;
 			h.Target = Acquire(h, player, nav);
@@ -828,16 +1039,27 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		if (h.Target == null)
 		{
 			h.State = State.Heel;
-			Vector2 heel = flies ? HeelSpot(index) + new Vector2(0f, 6f) : HeelSpot(index);
-			float speed = flies ? AirSpeed : fromFeet > 160f ? SprintSpeed : WalkSpeed;
-			bool arrived = flies ? Fly(h, heel, speed, dt) : Walk(h, heel, speed, dt, nav, homeward: true);
-			if (arrived)
+			if (flies)
 			{
-				// At heel: face the way the wizard faces, or the nearest trouble.
+				Patrol(h, index, feet, dt);
+				return;
+			}
+			if (kind == Kind.Cat)
+			{
+				Wander(h, index, feet, dt, nav);
+				return;
+			}
+			Vector2 heel = HeelSpot(index);
+			float speed = fromFeet > 160f ? SprintSpeed : WalkSpeed;
+			if (Walk(h, heel, speed, dt, nav, homeward: true))
+			{
+				// At heel: face the way the wizard faces.
+				if (PlayerRef.Velocity.LengthSquared() > 900f)
+					h.Facing = PlayerRef.Velocity.X >= 0f ? 1f : -1f;
 				Show(h, AnimIdle, -1, 1f);
 			}
 			else
-				Show(h, AnimRun, -1, flies ? 1f : Mathf.Clamp(speed / WalkSpeed, 0.8f, 1.5f));
+				Show(h, AnimRun, -1, Mathf.Clamp(speed / WalkSpeed, 0.8f, 1.5f));
 			return;
 		}
 
@@ -854,7 +1076,10 @@ public partial class Familiar : Node2D, IPaintsElementPath
 			}
 			if (h.HasBite && !griffin && dist <= leapReach)
 			{
-				StartStoop(h, quarry);
+				// In reach: the CLIMB first (State.Crouch), then the stoop.
+				h.Facing = ground.X >= h.Pos.X ? 1f : -1f;
+				h.State = State.Crouch;
+				h.T = 0f;
 				return;
 			}
 			float holdOff = griffin ? leapReach * 1.6f : CrowHoldDistance;
@@ -963,7 +1188,7 @@ public partial class Familiar : Node2D, IPaintsElementPath
 			return e.GlobalPosition + new Vector2(0f, GroundBelowCentre);
 		float dx = e.GlobalPosition.X - h.Pos.X;
 		float side = dx > 6f ? -1f : dx < -6f ? 1f : -h.Facing;
-		return e.GlobalPosition + new Vector2(side * JawReach, GroundBelowCentre);
+		return e.GlobalPosition + new Vector2(side * JawReachOf(h.Look), GroundBelowCentre);
 	}
 
 	private static bool LeapClear(Vector2 from, Vector2 to, MazeNavigation nav) =>
@@ -1013,11 +1238,26 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	private Vector2 HeelSpot(int index)
 	{
 		Vector2 feet = PlayerRef.FootPosition;
+		Vector2 side = new Vector2(-heelDir.Y, heelDir.X);
+		if (kind == Kind.Dog)
+		{
+			// THE DOG HEELS AT HIS SIDE (2026-10-31): the first hound on the side behind him as he walks, the
+			// second on the other, each further out by its own bulk (Cerberus on its 96 cell stands half a cell
+			// wider). The pups trail together outside the second hound, a pace further out and lower.
+			float bulk = MathF.Max(0f, (CellOf(LookAt(index)) - 48) * 0.5f);
+			float behindSide = heelDir.X <= 0f ? -1f : 1f;
+			if (index >= 2 && IsPup(LookAt(index)))
+				return feet + new Vector2(-behindSide * (DogHeelSide + 26f * (index - 1)), DogHeelDrop + 12f * (index - 1));
+			float sign = index % 2 == 0 ? behindSide : -behindSide;
+			return feet + new Vector2(sign * (DogHeelSide + bulk + 18f * (index / 2)), DogHeelDrop + 10f * (index / 2));
+		}
 		float behind = kind == Kind.Cat ? CatHeelBehind : HeelBehind;
 		float beside = kind == Kind.Cat ? CatHeelSide : HeelSide;
-		Vector2 side = new Vector2(-heelDir.Y, heelDir.X) * ((index % 2 == 0) ? 1f : -1f);
+		side *= (index % 2 == 0) ? 1f : -1f;
 		return feet + heelDir * (behind + 10f * (index / 2)) + side * (beside + 14f * (index / 2));
 	}
+
+	private static bool IsPup(Look l) => l is Look.Pup or Look.HellPup or Look.AnnwnPup;
 
 	// A heel spot on open ground: the creature's own, or the first of eight round the wizard that is.
 	private Vector2 FreeHeelSpot(int index, MazeNavigation nav)
@@ -1160,11 +1400,16 @@ public partial class Familiar : Node2D, IPaintsElementPath
 
 	private void Bite(Hound h)
 	{
+		if (kind == Kind.Cat)
+		{
+			CatPounce(h);
+			return;
+		}
 		h.HasBite = false;
 		if (PlayerRef == null || SpellData == null)
 			return;
 		Enemy quarry = Alive(h.Target) && InJaws(h, h.Target) ? h.Target : null;
-		Vector2 centre = quarry?.GlobalPosition ?? h.Pos + new Vector2(h.Facing * JawReach, -GroundBelowCentre);
+		Vector2 centre = quarry?.GlobalPosition ?? h.Pos + new Vector2(h.Facing * JawReachOf(h.Look), -GroundBelowCentre);
 		StatBites++;
 		BiteAt(centre, quarry, h.Facing);
 		if (threeHeads)
@@ -1198,6 +1443,192 @@ public partial class Familiar : Node2D, IPaintsElementPath
 				BiteAt(third.GlobalPosition, third, h.Facing);
 		}
 		SfxPlayer.Instance?.PlayAt(SfxCatalog.SpellFamiliarBite, centre, 0.08f, SfxCatalog.SpellFamiliarBite, SoundGapMs);
+		// The strike done, it lets go of its quarry: a hound comes straight back to heel and a crow rises back
+		// to its ring, and each takes a new quarry with its next strike.
+		h.Target = null;
+	}
+
+	// --- the cat (2026-10-31): it never deals damage --------------------------------------------------
+
+	// The pounce lands a DEBUFF, not a blow: the quarry and whatever else is under the cat's paws (its claws'
+	// radius - Cath Palug's is wide) are Weakened and checked in their stride, and after the Cait Sith made
+	// Vulnerable. Then it trots back to the wizard (Returning) to give him its grants.
+	private void CatPounce(Hound h)
+	{
+		h.HasBite = false;
+		if (PlayerRef == null || SpellData == null)
+			return;
+		Enemy quarry = Alive(h.Target) && InJaws(h, h.Target) ? h.Target : null;
+		Vector2 centre = quarry?.GlobalPosition ?? h.Pos + new Vector2(h.Facing * JawReachOf(h.Look), -GroundBelowCentre);
+		StatPounces++;
+		if (quarry != null)
+			Mark(quarry);
+		float r2 = biteRadius * biteRadius;
+		EnemyRegistry.CollectNear(centre, biteRadius, nearBuffer);
+		foreach (Enemy e in nearBuffer)
+			if (e != quarry && Alive(e) && e.GlobalPosition.DistanceSquaredTo(centre) <= r2)
+				Mark(e);
+		nearBuffer.Clear();
+		// The mark: the cat's light thrown out from where it landed, to the edge of what it marked.
+		for (int i = 0; i < 10; i++)
+		{
+			float a = i * Mathf.Tau / 10f;
+			var dir = new Vector2(MathF.Cos(a), MathF.Sin(a) * 0.7f);
+			AddMote(centre + dir * 4f, dir * biteRadius / 0.3f, 0.3f, i % 2 == 0 ? ramp.Core : ramp.Mid, 2f);
+		}
+		h.Target = null;
+		h.Returning = true;
+	}
+
+	private void Mark(Enemy e)
+	{
+		e.ApplyWeaken(CatWeakenFraction, CatWeakenSeconds * (grimalkin ? GrimalkinGrants : 1f));
+		e.ApplySlow(CatSlowMultiplier, CatSlowSeconds);
+		if (caitSith)
+			e.ApplyVulnerable(CaitSithVulnerable, CaitSithVulnerableSeconds);
+	}
+
+	// Home to his feet when a visit is due; true while it is going (nothing else this frame).
+	private bool TickCatHome(Hound h, Vector2 feet, float dt, MazeNavigation nav)
+	{
+		if (buffLeft < CatBuffLow || purrDue)
+			h.Returning = true;
+		if (!h.Returning)
+			return false;
+		h.Target = null;
+		h.State = State.Heel;
+		if (h.Pos.DistanceTo(feet) <= CatTouch)
+		{
+			Visit(h);
+			Show(h, AnimIdle, -1, 1f);
+			return true;
+		}
+		if (Walk(h, feet + heelDir * 16f, CatRunSpeed, dt, nav, homeward: true))
+			Visit(h);
+		Show(h, AnimRun, -1, 1.1f);
+		return true;
+	}
+
+	// A visit: the grants on him for CatBuffSeconds, a few motes of its light round him - and, when Purr's
+	// heal is due, the heal and a heart over his head.
+	private void Visit(Hound h)
+	{
+		h.Returning = false;
+		buffLeft = CatBuffSeconds;
+		StatVisits++;
+		Vector2 head = PlayerRef.GlobalPosition + new Vector2(0f, -26f);
+		for (int i = 0; i < 6; i++)
+		{
+			float a = -MathF.PI * (i + 0.5f) / 6f;
+			var dir = new Vector2(MathF.Cos(a), MathF.Sin(a));
+			AddMote(head + dir * 10f, dir * 34f, 0.4f, i % 2 == 0 ? ramp.Core : ramp.Hot, 2f);
+		}
+		if (purrDue)
+		{
+			purrDue = false;
+			purrClock = 0f;
+			PlayerRef.Heal(PurrHeal);
+			StatPurrHeals++;
+			heartAge = 0f;
+		}
+	}
+
+	// Nothing to pounce on: it wanders near him, a new spot every couple of seconds.
+	private void Wander(Hound h, int index, Vector2 feet, float dt, MazeNavigation nav)
+	{
+		h.WanderClock -= dt;
+		if (h.WanderClock <= 0f || h.WanderAt.DistanceTo(feet) > CatWanderMax * 1.4f)
+		{
+			h.WanderClock = CatWanderSeconds * rng.RandfRange(0.7f, 1.3f);
+			float a = rng.Randf() * Mathf.Tau;
+			h.WanderAt = feet + new Vector2(MathF.Cos(a), MathF.Sin(a) * 0.7f) * rng.RandfRange(CatWanderMin, CatWanderMax);
+			if (nav != null && nav.IsBlockedAt(h.WanderAt))
+				h.WanderAt = FreeHeelSpot(index, nav);
+		}
+		float speed = h.Pos.DistanceTo(feet) > CatWanderMax * 1.6f ? CatRunSpeed : CatRunSpeed * 0.45f;
+		if (Walk(h, h.WanderAt, speed, dt, nav, homeward: false))
+			Show(h, AnimIdle, -1, 1f);
+		else
+			Show(h, AnimRun, -1, speed < CatRunSpeed ? 0.8f : 1.1f);
+	}
+
+	// The crow with no peck in hand: a loose ring round him, two crows the opposite ways round.
+	private void Patrol(Hound h, int index, Vector2 feet, float dt)
+	{
+		h.Orbit += dt * CrowPatrolTurn * (index % 2 == 0 ? 1f : -1f);
+		float r = CrowPatrolRadius + CrowPatrolWobble * MathF.Sin(h.Orbit * 1.7f + index * 2f);
+		Vector2 at = feet + new Vector2(MathF.Cos(h.Orbit), MathF.Sin(h.Orbit) * 0.7f) * r;
+		Fly(h, at, AirSpeed * 0.6f, dt);
+		Show(h, AnimRun, -1, 1f);
+	}
+
+	// The cat's clocks: its grants running down, Purr's heal coming due, the Black Cat's next cast.
+	private void TickCat(float dt)
+	{
+		buffLeft = MathF.Max(0f, buffLeft - dt);
+		if (heartAge >= 0f)
+		{
+			heartAge += dt;
+			if (heartAge >= HeartSeconds)
+				heartAge = -1f;
+		}
+		if (purr && !purrDue)
+		{
+			purrClock += dt;
+			if (purrClock >= PurrSeconds)
+				purrDue = true;
+		}
+		if (!blackCat || hounds.Count == 0)
+			return;
+		blackCatClock += dt;
+		if (blackCatClock < BlackCatSeconds)
+			return;
+		Hound cat = hounds[0];
+		if (cat.State is State.BlinkOut or State.BlinkIn || PlayerRef.IsDead)
+			return;
+		SpellData cast = PlayerRef.PickBlackCatSpell(rng);
+		// The wizard's spells aim and spawn from his body's centre, the cat stands on its feet: the same offset.
+		Vector2 origin = cat.Pos + (PlayerRef.GlobalPosition - PlayerRef.FootPosition);
+		if (cast != null && PlayerRef.CastFromFamiliar(cast, origin))
+		{
+			blackCatClock = 0f;
+			StatBlackCatCasts++;
+			for (int i = 0; i < 8; i++)
+			{
+				float a = -MathF.PI * (i + 0.5f) / 8f;
+				var dir = new Vector2(MathF.Cos(a), MathF.Sin(a));
+				AddMote(cat.Pos + new Vector2(0f, -20f) + dir * 6f, dir * 40f, 0.35f, i % 2 == 0 ? ramp.Core : ramp.Hot, 2f);
+			}
+		}
+		else
+			// Nothing it could cast at (no spell in reach): try again shortly rather than a whole interval on.
+			blackCatClock = BlackCatSeconds - 0.4f;
+	}
+
+	// PURR'S HEART: a small pixel heart that pops over the wizard's head when the heal lands, rises and fades.
+	private const float HeartSeconds = 0.9f;
+	private static readonly string[] HeartRows = { ".##.##.", "#######", "#######", ".#####.", "..###..", "...#..." };
+
+	private void DrawHeart()
+	{
+		if (heartAge < 0f || PlayerRef == null)
+			return;
+		float t = heartAge / HeartSeconds;
+		// It pops: one cell larger for the first tenth of a second, then its own size, rising as it fades.
+		float cell = t < 0.12f ? 3f : 2f;
+		float alpha = t < 0.6f ? 1f : (1f - t) / 0.4f;
+		Vector2 origin = PlayerRef.GlobalPosition + new Vector2(0f, -54f - 16f * t);
+		Color body = new(0.847f, 0.141f, 0.180f, alpha);   // ember base #D8242E: the wizard's own red
+		Color hi = new(1f, 0.753f, 0.659f, alpha);          // ember hi #FFC0A8
+		Color dark = new(0.541f, 0.071f, 0.125f, alpha);    // ember shade #8A1220
+		for (int r = 0; r < HeartRows.Length; r++)
+			for (int c = 0; c < HeartRows[r].Length; c++)
+			{
+				if (HeartRows[r][c] != '#')
+					continue;
+				Color col = (r == 1 && c == 1) ? hi : (r >= 3 && c >= 4 ? dark : body);
+				fx.DrawRect(new Rect2(origin + new Vector2((c - 3.5f) * cell, (r - 3f) * cell), new Vector2(cell, cell)), col);
+			}
 	}
 
 	// One strike landing at `centre`: the quarry, and everything else whose centre is inside the jaws.
@@ -1475,7 +1906,7 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		while (h.EmitClock >= 0.07f)
 		{
 			h.EmitClock -= 0.07f;
-			float head = CellOf(look) * 0.8f;
+			float head = CellOf(h.Look) * 0.8f;
 			Vector2 at = h.Pos + new Vector2(h.Facing * rng.RandfRange(4f, 14f), -head - rng.RandfRange(0f, 8f));
 			AddMote(at, new Vector2(h.Facing * rng.RandfRange(6f, 18f), -rng.RandfRange(40f, 70f)), 0.5f,
 				rng.Randf() < 0.5f ? ramp.Core : ramp.Hot, rng.Randf() < 0.3f ? 4f : 2f);
@@ -1525,6 +1956,7 @@ public partial class Familiar : Node2D, IPaintsElementPath
 
 	private void DrawFx()
 	{
+		DrawHeart();
 		for (int i = 0; i < MaxMotes; i++)
 		{
 			ref Mote m = ref motes[i];

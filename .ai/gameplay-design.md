@@ -860,10 +860,12 @@ level up"). Rerolls used to refill at every level-up - about 160 a run at the ca
 a reroll is a decision about the run, as a ban always was. Prices and the refund of what was bought:
 `.ai/difficulty-curve.md`, section 7. **Skip pays half the XP bar** (section 8 there).
 
-- **A ban does not cost the player their pick.** The struck spell leaves the pool and the offer is
-  rebuilt, so they still choose from a full set of cards that level. Banning the same spell twice
-  fails without spending a charge, and a refused ban puts the same cards back
-  (`LevelUpMenu.RefreshCharges`) rather than re-dealing them.
+- **A ban is the level-up's pick** (Eric, 2026-10-31: "once they select a spell to ban, they dont
+  continue to level up, that is what they used the level up for"). It used to rebuild the offer, so
+  a ban cost only the charge. Now the struck spell leaves the pool and the screen closes, paying no
+  XP - not the Skip's half bar. Banning the same spell twice fails without spending a charge, and a
+  refused ban puts the same cards back (`LevelUpMenu.RefreshCharges`). Ban mode is a tear over the
+  hand, not a list (`.ai/level-up-screen.md`, section 7).
 
 **Save and Augury were removed (2026-10-28: "remove save and augury mechanics").** There were four
 charges: *Hoarded Insight* deferred a level-up for two picks at the next, and *Augury* named a spell

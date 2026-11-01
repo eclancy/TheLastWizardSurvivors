@@ -43,6 +43,7 @@ CooldownBonus = -0.1
 
 [resource]
 script = ExtResource("1")
+Tagline = "A blade thrown out and back."
 Id = "gale_blade"
 Name = "Gale Blade"
 CurrentLevel = 1

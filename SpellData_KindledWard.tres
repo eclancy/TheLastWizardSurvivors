@@ -64,6 +64,7 @@ EffectValue = 0.28
 
 [resource]
 script = ExtResource("1")
+Tagline = "A light that drifts and burns."
 Id = "kindled_ward"
 Name = "Kindled Ward"
 CurrentLevel = 1

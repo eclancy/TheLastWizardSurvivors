@@ -44,6 +44,7 @@ RangeBonus = 120.0
 
 [resource]
 script = ExtResource("1")
+Tagline = "Run to draw; stand still to loose."
 Id = "hunters_draw"
 Name = "Hunter's Draw"
 CurrentLevel = 1

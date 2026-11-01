@@ -199,6 +199,8 @@ public partial class Player : CharacterBody2D
 	// with no chance to react. While this is > 0 the player ignores all incoming damage.
 	[Export] public float PostMenuInvincibilitySeconds { get; set; } = 2.0f;
 	private float invincibilityTimeRemaining = 0f;
+	// How much longer he is drawn white: only a grace that asked for it (GrantInvincibility's whiten).
+	private float whiteTimeRemaining = 0f;
 	private static readonly Shader InvincibilityShader =
 		ResourceLoader.Load<Shader>("res://scenes/shaders/invincibility_white.gdshader");
 	private ShaderMaterial? invincibilityMaterial;
@@ -336,7 +338,7 @@ public partial class Player : CharacterBody2D
 	/// harness's health ledger (.ai/difficulty-curve.md) cannot disagree about it.
 	/// </summary>
 	public float RegenPerSecondNow => BaseHealthRegenPerSecond + recoveryPerSecond + GetGrassRegenPerSecond()
-		+ GetPassiveSpellRegenPerSecond() + chestRegenPerSecond + familiarGrants.RegenPerSecond + GetStanceRegenPerSecond();
+		+ GetPassiveSpellRegenPerSecond() + chestRegenPerSecond + GetStanceRegenPerSecond();
 	// Level-up charges (see scripts/LevelUpCharges.cs). Both are a pool for the whole run since 2026-10-31
 	// (Eric: "rerolls/bans/etc should be per run, not per level up"); rerolls used to refill at every
 	// level-up, five at the shop's cap, which was no limit at all. (Save and Augury were removed on
@@ -1292,6 +1294,11 @@ public partial class Player : CharacterBody2D
 			spell.ScalingTagsMask = (int)tags;
 	}
 
+	// A spell (or a spell's form) whose readers take no damage - the Familiar's cat, which never deals any
+	// (2026-10-31) - is not given a "+1 damage" line it would never use.
+	private static bool ReadsDamage(SpellData spell) =>
+		!EvolutionStatReaders.TryGet(spell, out SpellStatReaders readers) || (readers.Stats & EvolutionStat.Damage) != 0;
+
 	private static bool ReadsCooldown(SpellData spell) =>
 		!EvolutionStatReaders.TryGet(spell, out SpellStatReaders readers) || (readers.Stats & EvolutionStat.Cooldown) != 0;
 
@@ -1306,7 +1313,7 @@ public partial class Player : CharacterBody2D
 		for (int level = 2; level <= maxLevel; level++)
 		{
 			bool hasDamageBonus = spell.LevelUpgrades.Any(u => u != null && u.Level == level && u.DamageBonus != 0);
-			if (!hasDamageBonus)
+			if (!hasDamageBonus && ReadsDamage(spell))
 			{
 				spell.LevelUpgrades.Add(new SpellLevelUpgrade
 				{
@@ -2406,14 +2413,24 @@ public partial class Player : CharacterBody2D
 		earthMaxHpBonusApplied = currentBonus;
 	}
 
-	// Starts (or extends) the post-menu grace period. Never shortens an active one, so closing a
-	// chest menu immediately after a level-up cannot cut the first window short.
-	public void GrantInvincibility(float seconds)
+	// Starts (or extends) a grace period. Never shortens an active one, so closing a chest menu
+	// immediately after a level-up cannot cut the first window short.
+	//
+	// whiten: whether he is drawn flat white while it lasts. Not after a pick (Eric, 2026-10-30: "when
+	// the player selects a spell from level up / item from a chest and is invulnerable for a second,
+	// remove the white coloring from the player") - the grace after a menu is a courtesy, not an event,
+	// and a white figure on every pick read as something happening to him. The boss's fall still
+	// whitens him: there it says the fight is over and nothing can touch him. The white has its own
+	// clock, so a quiet grace that outlasts a white one does not keep him white.
+	public void GrantInvincibility(float seconds, bool whiten = true)
 	{
 		if (IsDead || seconds <= 0f)
 			return;
 
 		invincibilityTimeRemaining = Mathf.Max(invincibilityTimeRemaining, seconds);
+		if (!whiten)
+			return;
+		whiteTimeRemaining = Mathf.Max(whiteTimeRemaining, seconds);
 		SetInvincibilityVisual(true);
 	}
 
@@ -2431,11 +2448,13 @@ public partial class Player : CharacterBody2D
 
 	private void TickInvincibility(float delta)
 	{
-		if (invincibilityTimeRemaining <= 0f)
+		if (invincibilityTimeRemaining > 0f)
+			invincibilityTimeRemaining = Mathf.Max(0f, invincibilityTimeRemaining - delta);
+		if (whiteTimeRemaining <= 0f)
 			return;
 
-		invincibilityTimeRemaining = Mathf.Max(0f, invincibilityTimeRemaining - delta);
-		if (invincibilityTimeRemaining <= 0f)
+		whiteTimeRemaining = Mathf.Max(0f, whiteTimeRemaining - delta);
+		if (whiteTimeRemaining <= 0f)
 			SetInvincibilityVisual(false);
 	}
 
@@ -2569,20 +2588,7 @@ public partial class Player : CharacterBody2D
 			mitigated = Math.Max(1, Mathf.RoundToInt(mitigated * (1.0f - armor)));
 		}
 		if (shieldPoints > 0 && mitigated > 0)
-		{
-			int absorbed = Math.Min(shieldPoints, mitigated);
-			shieldPoints -= absorbed;
-			mitigated -= absorbed;
-			// Bright and metallic so it reads as "that was not HP". The break is a separate,
-			// louder sound because losing the pool is what the player has to notice.
-			SfxPlayer.Global(shieldPoints > 0 ? SfxCatalog.PlayerShieldAbsorb : SfxCatalog.PlayerShieldBreak);
-			// Drop the ring on the same hit that empties the pool, so the player sees the shield
-			// break rather than discovering it silently later.
-			RefreshShieldAura();
-			TryReflectAbsorbed(absorbed);
-			if (shieldPoints <= 0)
-				TryCrystalShellBurst();
-		}
+			mitigated -= SpendShield(mitigated);
 		GameStats.RecordHpLost(Math.Min(mitigated, CurrentHP));
 		CurrentHP = Math.Max(0, CurrentHP - mitigated);
 		// Keyed off the HP that actually left, not off the DamageTaken signal, which carries the
@@ -2967,7 +2973,6 @@ public partial class Player : CharacterBody2D
 		yield return ("regen: Grass tier", GetGrassRegenPerSecond());
 		yield return ("regen: passive spells", GetPassiveSpellRegenPerSecond());
 		yield return ("regen: relics", chestRegenPerSecond);
-		yield return ("regen: the Familiar's grant (Purr)", familiarGrants.RegenPerSecond);
 		yield return ("regen: Taproot stance", GetStanceRegenPerSecond());
 	}
 
@@ -3561,6 +3566,47 @@ public partial class Player : CharacterBody2D
 		RefreshShieldAura();
 	}
 
+	/// <summary>
+	/// Spends up to <paramref name="amount"/> of the shield pool and returns what it absorbed: the sound,
+	/// the ring dropped on the hit that empties it, Reflective Plating's strike back and the break's
+	/// bursts. TakeDamage's step 6, and Aegis Ward's Rampart paying for a bolt broken on its dome
+	/// (AegisWard.GuardBolts) - a bolt it stops is never a hit on him, so it goes through no other step.
+	/// </summary>
+	public int SpendShield(int amount)
+	{
+		if (shieldPoints <= 0 || amount <= 0)
+			return 0;
+		int absorbed = Math.Min(shieldPoints, amount);
+		shieldPoints -= absorbed;
+		// Bright and metallic so it reads as "that was not HP". The break is a separate,
+		// louder sound because losing the pool is what the player has to notice.
+		SfxPlayer.Global(shieldPoints > 0 ? SfxCatalog.PlayerShieldAbsorb : SfxCatalog.PlayerShieldBreak);
+		// Drop the ring on the same hit that empties the pool, so the player sees the shield
+		// break rather than discovering it silently later.
+		RefreshShieldAura();
+		TryReflectAbsorbed(absorbed);
+		if (shieldPoints <= 0)
+			TryCrystalShellBurst();
+		return absorbed;
+	}
+
+	// Aegis Ward's milestones that show (scripts/AegisWard.cs): the Rampart's bolt guard, the Reforged
+	// shards and Reflective Plating's shaft. Made with the spell's first cast, in the arena.
+	private AegisWard? aegisWard;
+
+	private AegisWard? EnsureAegisWard(SpellData aegis)
+	{
+		if (aegisWard == null || !IsInstanceValid(aegisWard))
+		{
+			if (GetParent() is not Node2D arena)
+				return null;
+			aegisWard = new AegisWard { Name = "AegisWard", PlayerRef = this };
+			arena.AddChild(aegisWard);
+		}
+		aegisWard.SpellData = aegis;
+		return aegisWard;
+	}
+
 	// Thorn Crystal Shell (aegis_ward_crystal_spikes): the breaking shield bursts into crystal and
 	// cuts everything close. The card promised "12 piercing crystal shards" since the spell was
 	// written and Aegis Ward fired nothing; built 2026-10-26 as a ring burst at the break - every
@@ -3647,7 +3693,11 @@ public partial class Player : CharacterBody2D
 				}
 			}
 			if (nearest != null)
+			{
+				// Seen: a shaft of light from him to the one that takes it back (AegisWard).
+				EnsureAegisWard(aegis)?.ShowReflect(GlobalPosition, nearest.GlobalPosition);
 				DealDamageToEnemy(nearest, damage, source: aegis);
+			}
 		}).CallDeferred();
 	}
 
@@ -3835,188 +3885,7 @@ public partial class Player : CharacterBody2D
 				// What the cast actually did decides the cue, the cooldown and the cast counters -
 				// see CastOutcome. A spell with no branch below is Maintained: that is Frost Shard,
 				// whose whole spell is OnEnemyDiedAt and which casts nothing on its cooldown.
-				CastOutcome outcome = CastOutcome.Maintained;
-				if (spell.Id.Equals("magic_missile", StringComparison.OrdinalIgnoreCase))
-				{
-					// Ask the resource for the count rather than hardcoding 1: evolutions and
-					// level upgrades can both grant projectiles, and the old literal meant any
-					// that did were silently ignored for this spell alone.
-					int projectileCount = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
-					float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
-					EnemyTargeting.CollectNearest(GetTree(), GlobalPosition, projectileCount, magicMissileTargets, castRange);
-					outcome = CastOutcome.NoTarget;
-
-					for (int p = 0; p < projectileCount && magicMissileTargets.Count > 0; p++)
-					{
-						// One missile per enemy, nearest first. These home, so fanning them by
-						// angle would only bend them back onto the same body - spreading the
-						// volley across targets is what actually makes extra missiles count.
-						// Wraps when the crowd is thinner than the volley.
-						Node2D shotTarget = magicMissileTargets[p % magicMissileTargets.Count];
-						if (!IsInstanceValid(shotTarget))
-							continue;
-
-						var missile = MagicMissileScene.Instantiate<Area2D>();
-						missile.Position = GlobalPosition;
-						var script = missile as MagicMissile;
-						if (script != null)
-						{
-							script.SpellData = spell;
-							script.DamageMultiplier = GetSpellDamageMultiplier(spell);
-							script.AreaMultiplier = GetEffectiveAreaMultiplier();
-							script.DurationMultiplier = durationMultiplier;
-							script.SetSpellLevel(spell.CurrentLevel);
-							script.PlayerRef = this;
-						}
-						GetParent().AddChild(missile);
-						ApplyLegendaryVisual(missile, spell);
-						var shootMethod = missile.GetType().GetMethod("Shoot");
-						if (shootMethod != null)
-						{
-							shootMethod.Invoke(missile, new object[] { GlobalPosition, shotTarget.GlobalPosition, shotTarget });
-						}
-						outcome = CastOutcome.Fired;
-					}
-				}
-				else if (spell.Id.Equals("aegis_ward", StringComparison.OrdinalIgnoreCase))
-				{
-					// (Thorn Crystal Shell's burst on the break is TryCrystalShellBurst, from TakeDamage.)
-					// The whole spell. Its cooldown is the recharge, AddShield refreshes the pool to
-					// the stronger value, and Player.TakeDamage already spends and breaks it - so a
-					// shield that absorbs, breaks, and comes back needs no node and no new state.
-					// Only a recharge that restored something is heard; topping up a full pool is
-					// Maintained, so the recharge clock still runs exactly as it did.
-					int shieldBefore = shieldPoints;
-					AddShield(spell.GetDamageAtLevel(spell.CurrentLevel));
-					outcome = shieldPoints > shieldBefore ? CastOutcome.Fired : CastOutcome.Maintained;
-				}
-				else if (spell.Id.Equals("arcane_explosion", StringComparison.OrdinalIgnoreCase))
-				{
-					// Ensure only one ArcaneExplosion follows this player. If not present, create and attach to player.
-					bool hasExplosion = GetChildren().OfType<Node>().Any(n => n is ArcaneExplosion);
-					if (!hasExplosion)
-					{
-						var explosion = ArcaneExplosionScene.Instantiate<Area2D>();
-						// Attach to player so it follows automatically; set local position to origin
-						explosion.Position = Vector2.Zero;
-						var script = explosion as ArcaneExplosion;
-						if (script != null)
-						{
-							script.SpellData = spell;
-							script.DamageMultiplier = GetSpellDamageMultiplier(spell);
-							script.AreaMultiplier = GetEffectiveAreaMultiplier();
-							script.CooldownMultiplier = cooldownMultiplier / EffectiveAttackSpeed;
-							script.DurationMultiplier = durationMultiplier;
-							script.SetSpellLevel(spell.CurrentLevel);
-							// Make the explosion follow the player and persist (TotalLifetime = 0 means infinite)
-							script.PlayerRef = this;
-							script.TotalLifetime = 0f;
-						}
-						AddChild(explosion);
-						ApplyLegendaryVisual(explosion, spell);
-						// It detonates once in its own _Ready, so the first cast is a real one.
-						outcome = CastOutcome.Fired;
-					}
-					else
-					{
-						// Charge-driven: after the first, its own cooldown only keeps the stats
-						// current, and it goes off from NotifyArcaneCharge, not from here.
-						var existing = GetChildren().OfType<ArcaneExplosion>().FirstOrDefault();
-						if (existing != null)
-						{
-							existing.SpellData = spell;
-							existing.DamageMultiplier = GetSpellDamageMultiplier(spell);
-							existing.AreaMultiplier = GetEffectiveAreaMultiplier();
-							existing.CooldownMultiplier = cooldownMultiplier / EffectiveAttackSpeed;
-							existing.DurationMultiplier = durationMultiplier;
-							existing.SetSpellLevel(spell.CurrentLevel);
-						}
-					}
-
-				}
-				else if (spell.Id.Equals("spiritual_weapon", StringComparison.OrdinalIgnoreCase))
-					outcome = FireSpiritualWeapon(spell, SpiritualWeaponScene, interval);
-				else if (spell.Id.Equals("fireball", StringComparison.OrdinalIgnoreCase) && FireballScene != null)
-				{
-					outcome = CastOutcome.NoTarget;
-					var enemies = EnemyRegistry.Snapshot;
-					if (enemies.Length > 0)
-					{
-						Node2D nearest = null;
-						float minDist = float.MaxValue;
-						foreach (var e in enemies)
-						{
-							if (e is Node2D n2d)
-							{
-								float dist = GlobalPosition.DistanceTo(n2d.GlobalPosition);
-								if (dist < minDist)
-								{
-									minDist = dist;
-									nearest = n2d;
-								}
-							}
-						}
-						if (nearest != null)
-						{
-							float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
-							if (minDist <= castRange)
-							{
-								var fireball = FireballScene.Instantiate<Area2D>();
-								fireball.Position = GlobalPosition;
-								var script2 = fireball as Fireball;
-								if (script2 != null)
-								{
-									script2.SpellData = spell;
-									script2.DamageMultiplier = GetSpellDamageMultiplier(spell);
-									script2.AreaMultiplier = areaMultiplier;
-									script2.DurationMultiplier = durationMultiplier;
-									script2.SetSpellLevel(spell.CurrentLevel);
-									script2.PlayerRef = this;
-								}
-								GetParent().AddChild(fireball);
-								ApplyLegendaryVisual(fireball, spell);
-								script2?.Shoot(GlobalPosition, nearest.GlobalPosition);
-								outcome = CastOutcome.Fired;
-							}
-						}
-					}
-				}
-				else if (spell.Id.Equals("mirefoot", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshTrailWeaver(spell, MirefootScene);
-				else if (spell.Id.Equals("kindled_ward", StringComparison.OrdinalIgnoreCase)) outcome = FireKindledWard(spell, KindledWardScene);
-				else if (spell.Id.Equals("starfall", StringComparison.OrdinalIgnoreCase)) outcome = FireStarfall(spell, StarfallScene, interval);
-				else if (spell.Id.Equals("familiar", StringComparison.OrdinalIgnoreCase)) outcome = FireFamiliar(spell, FamiliarScene);
-				else if (spell.Id.Equals("stormsweep", StringComparison.OrdinalIgnoreCase)) outcome = FireStormsweep(spell, StormsweepScene);
-				else if (spell.Id.Equals("sleet_runes", StringComparison.OrdinalIgnoreCase)) outcome = FireSleetRunes(spell, SleetRunesScene);
-				else if (spell.Id.Equals("gravewell", StringComparison.OrdinalIgnoreCase)) outcome = FireGravewellTrap(spell, GravewellScene);
-				else if (spell.Id.Equals("hollow_star", StringComparison.OrdinalIgnoreCase)) outcome = FireHollowStar(spell, HollowStarScene);
-				else if (spell.Id.Equals("iron_palisade", StringComparison.OrdinalIgnoreCase)) outcome = FireIronPalisade(spell, IronPalisadeScene);
-				else if (spell.Id.Equals("contagion", StringComparison.OrdinalIgnoreCase)) outcome = FireContagion(spell, ContagionScene);
-				else if (spell.Id.Equals("bramble_seed", StringComparison.OrdinalIgnoreCase)) outcome = FireBrambleSeed(spell, BrambleSeedScene);
-				else if (spell.Id.Equals("cinderbreath", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshFlamethrower(spell, CinderbreathScene);
-				else if (spell.Id.Equals("riptide", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, RiptideScene);
-				else if (spell.Id.Equals("shadow_bolt", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, ShadowBoltScene);
-				else if (spell.Id.Equals("thorn_vine", StringComparison.OrdinalIgnoreCase)) outcome = FireThornVine(spell, ThornVineScene);
-				else if (spell.Id.Equals("gale_blade", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, GaleBladeScene);
-				else if (spell.Id.Equals("molten_shard", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, MoltenShardScene, BoltAim.RandomInRange);
-				else if (spell.Id.Equals("chain_lightning", StringComparison.OrdinalIgnoreCase)) outcome = FireChainLightningSpell(spell, ChainLightningScene);
-				else if (spell.Id.Equals("void_lance", StringComparison.OrdinalIgnoreCase)) outcome = FireVoidLanceSpell(spell, VoidLanceScene, interval);
-				else if (spell.Id.Equals("glacial_spike", StringComparison.OrdinalIgnoreCase)) outcome = FireIceSpikes(spell, GlacialSpikeScene);
-				else if (spell.Id.Equals("solar_flare", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshElementalPulse(spell, SolarFlareScene);
-				else if (spell.Id.Equals("toxic_spore_burst", StringComparison.OrdinalIgnoreCase)) outcome = FireSporeMushrooms(spell, ToxicSporeBurstScene);
-				else if (spell.Id.Equals("obsidian_spike", StringComparison.OrdinalIgnoreCase)) outcome = FireGroundSpike(spell, ObsidianSpikeScene);
-				else if (spell.Id.Equals("cyclone_slash", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshOrbitingBlade(spell, CycloneSlashScene);
-				else if (spell.Id.Equals("black_tentacles", StringComparison.OrdinalIgnoreCase)) outcome = FireBlackTentacles(spell, BlackTentaclesScene, interval);
-				else if (spell.Id.Equals("cone_of_cold", StringComparison.OrdinalIgnoreCase)) outcome = FireConeBlast(spell, ConeOfColdScene);
-				else if (spell.Id.Equals("scorching_ray", StringComparison.OrdinalIgnoreCase)) outcome = FireScorchingRay(spell, ScorchingRayScene);
-				else if (spell.Id.Equals("meteor_swarm", StringComparison.OrdinalIgnoreCase)) outcome = FireMeteorSwarm(spell, MeteorImpactScene);
-				else if (spell.Id.Equals("hunters_draw", StringComparison.OrdinalIgnoreCase))
-				{
-					// Movement decides when this looses, not the cooldown. Reaching the interval
-					// only means an arrow is nocked; TickHuntersDraw returns false while the shot
-					// is still being drawn, and NoTarget leaves the timer above the interval so
-					// the draw keeps running next frame instead of restarting the cooldown.
-					outcome = TickHuntersDraw(spell, (float)delta) ? CastOutcome.Fired : CastOutcome.NoTarget;
-				}
+				CastOutcome outcome = CastSpellNow(spell, interval, delta);
 
 				// Nothing in reach: the spell stays ready rather than spending its cooldown on empty
 				// air, so it goes off the frame something walks into range instead of up to a whole
@@ -4038,6 +3907,253 @@ public partial class Player : CharacterBody2D
 			}
 		}
 		FrameProfiler.End(FrameProfiler.Section.PlayerSpells, spellsStart);
+	}
+
+	// THE BLACK CAT (the Familiar's cat Ascension, 2026-10-31): every Familiar.BlackCatSeconds the cat casts one
+	// of the wizard's attack spells, chosen at random, from where it stands. HOW, honestly: the cast runs
+	// CastSpellNow - exactly the code his own cast runs - with the wizard set down at the cat for the length
+	// of the call and put back before it returns (no physics step happens in between), so whatever a spell
+	// aims, spawns or measures from him it does from the cat. Only spells that put something into the arena
+	// and leave it there qualify: a spell held on the wizard (an orbit, a breath, a sun, the weapons, a held
+	// beam or cone, the Familiar itself) would be re-anchored or refreshed, not cast; a passive casts nothing.
+	// It is an extra cast: his own cooldown on the spell is untouched, and it does not charge Arcane Explosion.
+	public static readonly HashSet<string> BlackCatCastable = new(StringComparer.OrdinalIgnoreCase)
+	{
+		"magic_missile", "fireball", "riptide", "shadow_bolt", "gale_blade", "molten_shard", "chain_lightning",
+		"void_lance", "glacial_spike", "obsidian_spike", "meteor_swarm", "thorn_vine", "toxic_spore_burst",
+		"black_tentacles", "contagion", "bramble_seed", "gravewell", "iron_palisade", "hollow_star", "kindled_ward",
+		"sleet_runes",
+	};
+
+	private readonly List<SpellData> blackCatChoices = new(8);
+
+	/// <summary>One of the wizard's equipped spells the Black Cat can cast, at random; null when he holds none.</summary>
+	public SpellData PickBlackCatSpell(RandomNumberGenerator rng)
+	{
+		blackCatChoices.Clear();
+		foreach (SpellData spell in equippedSpells)
+			if (spell != null && !spell.IsPassive && BlackCatCastable.Contains(spell.Id))
+				blackCatChoices.Add(spell);
+		return blackCatChoices.Count == 0 ? null : blackCatChoices[rng.RandiRange(0, blackCatChoices.Count - 1)];
+	}
+
+	/// <summary>Casts <paramref name="spell"/> from <paramref name="origin"/> (the Black Cat's). True if it put
+	/// something into the world.</summary>
+	public bool CastFromFamiliar(SpellData spell, Vector2 origin)
+	{
+		if (spell == null || IsDead || !BlackCatCastable.Contains(spell.Id) || !equippedSpells.Contains(spell))
+			return false;
+		float interval = MathF.Max(0.05f, (spell.GetCooldownAtLevel(spell.CurrentLevel) * cooldownMultiplier * GetWaterCooldownMultiplier()) / EffectiveAttackSpeed);
+		Vector2 home = GlobalPosition;
+		CastOutcome outcome;
+		GlobalPosition = origin;
+		try
+		{
+			outcome = CastSpellNow(spell, interval, 0.0);
+		}
+		finally
+		{
+			GlobalPosition = home;
+		}
+		if (outcome == CastOutcome.Fired)
+			SfxPlayer.Cast(SfxCatalog.DominantElement(spell), origin);
+		return outcome == CastOutcome.Fired;
+	}
+
+	// THE CAST ITSELF: what one spell puts into the world when its cooldown comes round, from where the wizard
+	// stands. Lifted out of the fire loop (2026-10-31) so the Familiar's Black Cat can cast one of his spells
+	// from where the cat stands (CastFromFamiliar) through exactly the code his own cast runs.
+	private CastOutcome CastSpellNow(SpellData spell, float interval, double delta)
+	{
+		CastOutcome outcome = CastOutcome.Maintained;
+		if (spell.Id.Equals("magic_missile", StringComparison.OrdinalIgnoreCase))
+		{
+			// Ask the resource for the count rather than hardcoding 1: evolutions and
+			// level upgrades can both grant projectiles, and the old literal meant any
+			// that did were silently ignored for this spell alone.
+			int projectileCount = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
+			float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+			EnemyTargeting.CollectNearest(GetTree(), GlobalPosition, projectileCount, magicMissileTargets, castRange);
+			outcome = CastOutcome.NoTarget;
+
+			for (int p = 0; p < projectileCount && magicMissileTargets.Count > 0; p++)
+			{
+				// One missile per enemy, nearest first. These home, so fanning them by
+				// angle would only bend them back onto the same body - spreading the
+				// volley across targets is what actually makes extra missiles count.
+				// Wraps when the crowd is thinner than the volley.
+				Node2D shotTarget = magicMissileTargets[p % magicMissileTargets.Count];
+				if (!IsInstanceValid(shotTarget))
+					continue;
+
+				var missile = MagicMissileScene.Instantiate<Area2D>();
+				missile.Position = GlobalPosition;
+				var script = missile as MagicMissile;
+				if (script != null)
+				{
+					script.SpellData = spell;
+					script.DamageMultiplier = GetSpellDamageMultiplier(spell);
+					script.AreaMultiplier = GetEffectiveAreaMultiplier();
+					script.DurationMultiplier = durationMultiplier;
+					script.SetSpellLevel(spell.CurrentLevel);
+					script.PlayerRef = this;
+				}
+				GetParent().AddChild(missile);
+				ApplyLegendaryVisual(missile, spell);
+				var shootMethod = missile.GetType().GetMethod("Shoot");
+				if (shootMethod != null)
+				{
+					shootMethod.Invoke(missile, new object[] { GlobalPosition, shotTarget.GlobalPosition, shotTarget });
+				}
+				outcome = CastOutcome.Fired;
+			}
+		}
+		else if (spell.Id.Equals("aegis_ward", StringComparison.OrdinalIgnoreCase))
+		{
+			// (Thorn Crystal Shell's burst on the break is TryCrystalShellBurst, from TakeDamage.)
+			// The whole spell. Its cooldown is the recharge, AddShield refreshes the pool to
+			// the stronger value, and Player.TakeDamage already spends and breaks it - so a
+			// shield that absorbs, breaks, and comes back needs no node and no new state.
+			// Only a recharge that restored something is heard; topping up a full pool is
+			// Maintained, so the recharge clock still runs exactly as it did.
+			int shieldBefore = shieldPoints;
+			AddShield(spell.GetDamageAtLevel(spell.CurrentLevel));
+			outcome = shieldPoints > shieldBefore ? CastOutcome.Fired : CastOutcome.Maintained;
+			// The node that runs and draws its milestones (the Rampart, Reforged, the reflect's
+			// shaft); Reforged's shards fly in only when the ward actually came back.
+			AegisWard? ward = EnsureAegisWard(spell);
+			if (outcome == CastOutcome.Fired)
+				ward?.Reforge(Mathf.RoundToInt(spell.GetDamageAtLevel(spell.CurrentLevel) * GetSpellDamageMultiplier(spell)),
+					GetEffectiveAreaMultiplier());
+		}
+		else if (spell.Id.Equals("arcane_explosion", StringComparison.OrdinalIgnoreCase))
+		{
+			// Ensure only one ArcaneExplosion follows this player. If not present, create and attach to player.
+			bool hasExplosion = GetChildren().OfType<Node>().Any(n => n is ArcaneExplosion);
+			if (!hasExplosion)
+			{
+				var explosion = ArcaneExplosionScene.Instantiate<Area2D>();
+				// Attach to player so it follows automatically; set local position to origin
+				explosion.Position = Vector2.Zero;
+				var script = explosion as ArcaneExplosion;
+				if (script != null)
+				{
+					script.SpellData = spell;
+					script.DamageMultiplier = GetSpellDamageMultiplier(spell);
+					script.AreaMultiplier = GetEffectiveAreaMultiplier();
+					script.CooldownMultiplier = cooldownMultiplier / EffectiveAttackSpeed;
+					script.DurationMultiplier = durationMultiplier;
+					script.SetSpellLevel(spell.CurrentLevel);
+					// Make the explosion follow the player and persist (TotalLifetime = 0 means infinite)
+					script.PlayerRef = this;
+					script.TotalLifetime = 0f;
+				}
+				AddChild(explosion);
+				ApplyLegendaryVisual(explosion, spell);
+				// It detonates once in its own _Ready, so the first cast is a real one.
+				outcome = CastOutcome.Fired;
+			}
+			else
+			{
+				// Charge-driven: after the first, its own cooldown only keeps the stats
+				// current, and it goes off from NotifyArcaneCharge, not from here.
+				var existing = GetChildren().OfType<ArcaneExplosion>().FirstOrDefault();
+				if (existing != null)
+				{
+					existing.SpellData = spell;
+					existing.DamageMultiplier = GetSpellDamageMultiplier(spell);
+					existing.AreaMultiplier = GetEffectiveAreaMultiplier();
+					existing.CooldownMultiplier = cooldownMultiplier / EffectiveAttackSpeed;
+					existing.DurationMultiplier = durationMultiplier;
+					existing.SetSpellLevel(spell.CurrentLevel);
+				}
+			}
+
+		}
+		else if (spell.Id.Equals("spiritual_weapon", StringComparison.OrdinalIgnoreCase))
+			outcome = FireSpiritualWeapon(spell, SpiritualWeaponScene, interval);
+		else if (spell.Id.Equals("fireball", StringComparison.OrdinalIgnoreCase) && FireballScene != null)
+		{
+			outcome = CastOutcome.NoTarget;
+			var enemies = EnemyRegistry.Snapshot;
+			if (enemies.Length > 0)
+			{
+				Node2D nearest = null;
+				float minDist = float.MaxValue;
+				foreach (var e in enemies)
+				{
+					if (e is Node2D n2d)
+					{
+						float dist = GlobalPosition.DistanceTo(n2d.GlobalPosition);
+						if (dist < minDist)
+						{
+							minDist = dist;
+							nearest = n2d;
+						}
+					}
+				}
+				if (nearest != null)
+				{
+					float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+					if (minDist <= castRange)
+					{
+						var fireball = FireballScene.Instantiate<Area2D>();
+						fireball.Position = GlobalPosition;
+						var script2 = fireball as Fireball;
+						if (script2 != null)
+						{
+							script2.SpellData = spell;
+							script2.DamageMultiplier = GetSpellDamageMultiplier(spell);
+							script2.AreaMultiplier = areaMultiplier;
+							script2.DurationMultiplier = durationMultiplier;
+							script2.SetSpellLevel(spell.CurrentLevel);
+							script2.PlayerRef = this;
+						}
+						GetParent().AddChild(fireball);
+						ApplyLegendaryVisual(fireball, spell);
+						script2?.Shoot(GlobalPosition, nearest.GlobalPosition);
+						outcome = CastOutcome.Fired;
+					}
+				}
+			}
+		}
+		else if (spell.Id.Equals("mirefoot", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshTrailWeaver(spell, MirefootScene);
+		else if (spell.Id.Equals("kindled_ward", StringComparison.OrdinalIgnoreCase)) outcome = FireKindledWard(spell, KindledWardScene);
+		else if (spell.Id.Equals("starfall", StringComparison.OrdinalIgnoreCase)) outcome = FireStarfall(spell, StarfallScene, interval);
+		else if (spell.Id.Equals("familiar", StringComparison.OrdinalIgnoreCase)) outcome = FireFamiliar(spell, FamiliarScene);
+		else if (spell.Id.Equals("stormsweep", StringComparison.OrdinalIgnoreCase)) outcome = FireStormsweep(spell, StormsweepScene);
+		else if (spell.Id.Equals("sleet_runes", StringComparison.OrdinalIgnoreCase)) outcome = FireSleetRunes(spell, SleetRunesScene);
+		else if (spell.Id.Equals("gravewell", StringComparison.OrdinalIgnoreCase)) outcome = FireGravewellTrap(spell, GravewellScene);
+		else if (spell.Id.Equals("hollow_star", StringComparison.OrdinalIgnoreCase)) outcome = FireHollowStar(spell, HollowStarScene);
+		else if (spell.Id.Equals("iron_palisade", StringComparison.OrdinalIgnoreCase)) outcome = FireIronPalisade(spell, IronPalisadeScene);
+		else if (spell.Id.Equals("contagion", StringComparison.OrdinalIgnoreCase)) outcome = FireContagion(spell, ContagionScene);
+		else if (spell.Id.Equals("bramble_seed", StringComparison.OrdinalIgnoreCase)) outcome = FireBrambleSeed(spell, BrambleSeedScene);
+		else if (spell.Id.Equals("cinderbreath", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshFlamethrower(spell, CinderbreathScene);
+		else if (spell.Id.Equals("riptide", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, RiptideScene);
+		else if (spell.Id.Equals("shadow_bolt", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, ShadowBoltScene);
+		else if (spell.Id.Equals("thorn_vine", StringComparison.OrdinalIgnoreCase)) outcome = FireThornVine(spell, ThornVineScene);
+		else if (spell.Id.Equals("gale_blade", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, GaleBladeScene);
+		else if (spell.Id.Equals("molten_shard", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, MoltenShardScene, BoltAim.RandomInRange);
+		else if (spell.Id.Equals("chain_lightning", StringComparison.OrdinalIgnoreCase)) outcome = FireChainLightningSpell(spell, ChainLightningScene);
+		else if (spell.Id.Equals("void_lance", StringComparison.OrdinalIgnoreCase)) outcome = FireVoidLanceSpell(spell, VoidLanceScene, interval);
+		else if (spell.Id.Equals("glacial_spike", StringComparison.OrdinalIgnoreCase)) outcome = FireIceSpikes(spell, GlacialSpikeScene);
+		else if (spell.Id.Equals("solar_flare", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshElementalPulse(spell, SolarFlareScene);
+		else if (spell.Id.Equals("toxic_spore_burst", StringComparison.OrdinalIgnoreCase)) outcome = FireSporeMushrooms(spell, ToxicSporeBurstScene);
+		else if (spell.Id.Equals("obsidian_spike", StringComparison.OrdinalIgnoreCase)) outcome = FireGroundSpike(spell, ObsidianSpikeScene);
+		else if (spell.Id.Equals("cyclone_slash", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshOrbitingBlade(spell, CycloneSlashScene);
+		else if (spell.Id.Equals("black_tentacles", StringComparison.OrdinalIgnoreCase)) outcome = FireBlackTentacles(spell, BlackTentaclesScene, interval);
+		else if (spell.Id.Equals("cone_of_cold", StringComparison.OrdinalIgnoreCase)) outcome = FireConeBlast(spell, ConeOfColdScene);
+		else if (spell.Id.Equals("scorching_ray", StringComparison.OrdinalIgnoreCase)) outcome = FireScorchingRay(spell, ScorchingRayScene);
+		else if (spell.Id.Equals("meteor_swarm", StringComparison.OrdinalIgnoreCase)) outcome = FireMeteorSwarm(spell, MeteorImpactScene);
+		else if (spell.Id.Equals("hunters_draw", StringComparison.OrdinalIgnoreCase))
+		{
+			// Movement decides when this looses, not the cooldown. Reaching the interval
+			// only means an arrow is nocked; TickHuntersDraw returns false while the shot
+			// is still being drawn, and NoTarget leaves the timer above the interval so
+			// the draw keeps running next frame instead of restarting the cooldown.
+			outcome = TickHuntersDraw(spell, (float)delta) ? CastOutcome.Fired : CastOutcome.NoTarget;
+		}
+		return outcome;
 	}
 
 	private float GetPassiveSpellRegenPerSecond()
@@ -4864,8 +4980,10 @@ public partial class Player : CharacterBody2D
 		// themselves, so they take only a Legendary's gold from the visual tint, never a node scale.
 		familiarPack.Summon(spell, hounds, GetEffectiveAreaMultiplier(), GetSpellDamageMultiplier(spell),
 			GetSpellVisualTint(spell, paintsOwnPath: true));
-		// The cat's grants, whole, as of this cooldown (a level or a milestone moves them; nothing adds up).
-		familiarGrants = Familiar.GrantsOf(spell);
+		// The cat's grants, whole, as of this cooldown (a level or a milestone moves them; nothing adds up) - and
+		// only while a visit's grants last (Familiar.LiveGrants, 2026-10-31: the cat gives them by coming back
+		// to him between pounces). Purr is no longer a regen: the cat heals him on a visit (Familiar.Visit).
+		familiarGrants = familiarPack.LiveGrants(spell);
 		if (!nineLivesGiven && spell.HasEvolution(Familiar.NineLivesId))
 		{
 			// The cat gives one of its lives for his: one more life, once a run, spent the ordinary way
@@ -7212,6 +7330,8 @@ public partial class Player : CharacterBody2D
 			SpellId = template.Id,
 			DisplayName = template.Name,
 			Description = template.Description,
+			// What the spell does, in a line, over its stats (LevelUpMenu.BuildOptionTagline).
+			Tagline = template.Tagline,
 			StatSummary = BuildSpellStatSummary(template),
 			NextLevel = 1,
 			MaxLevel = CardLevelCap(template),
@@ -7282,7 +7402,11 @@ public partial class Player : CharacterBody2D
 	/// </summary>
 	private static string BuildVariantStatSummary(SpellData form, SpellVariant variant)
 	{
-		var parts = new List<string> { $"DMG {form.GetDamageAtLevel(1)}", $"CD {form.GetCooldownAtLevel(1):0.0#}s" };
+		// A form that deals no damage (the Familiar's cat, 2026-10-31) shows none rather than "DMG 0".
+		var parts = new List<string>();
+		if (form.GetDamageAtLevel(1) > 0)
+			parts.Add($"DMG {form.GetDamageAtLevel(1)}");
+		parts.Add($"CD {form.GetCooldownAtLevel(1):0.0#}s");
 		int count = form.GetProjectileCountAtLevel(1);
 		if (count > 1)
 			parts.Add($"{ProjectileNoun(form) ?? "Projectiles"} {count}");

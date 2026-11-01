@@ -91,8 +91,6 @@ public static class CardFamilyArt
 	public static readonly Color MutationRule = new Color(0.227f, 0.392f, 0.439f);
 	// The synergy tag on a mutation is a solid teal chip with bone ink, 8.0:1.
 	public static readonly Color MutationChip = new Color(0.165f, 0.306f, 0.345f);   // lichen base #2A4E58
-	/// <summary>lichen deep #16282E: the mutation heading on the page, 11.4:1.</summary>
-	public static readonly Color MutationHeading = new Color(0.086f, 0.157f, 0.180f);
 
 	// THE OBSIDIAN PLATE: gold hi for the name (14.0:1), bone hi for what it does (14.2:1), arcane lit
 	// for the quiet lines (7.3:1), gold lit for the advice (7.8:1). Tag chip: arcane shade, 9.6:1.
@@ -101,16 +99,12 @@ public static class CardFamilyArt
 	public static readonly Color AscensionSoft = new Color(0.416f, 0.722f, 0.910f);  // arcane lit #6AB8E8
 	public static readonly Color AscensionAdvice = new Color(0.847f, 0.690f, 0.290f); // gold lit
 	public static readonly Color AscensionChip = new Color(0.090f, 0.255f, 0.369f);  // arcane shade #17415E
-	/// <summary>arcane deep: the Ascension heading on the page, 12.0:1.</summary>
-	public static readonly Color AscensionHeading = new Color(0.043f, 0.141f, 0.212f);
 
 	// THE EMBER PLATE: Fire hot for the name (12.8:1), bone hi (17.6:1), Fire mid for the quiet lines
 	// (6.8:1), gold lit for the advice (9.6:1). Tag chip: red shade.
 	public static readonly Color ApotheosisTitle = new Color(1.0f, 0.784f, 0.282f);  // fire hot #FFC848
 	public static readonly Color ApotheosisSoft = new Color(0.910f, 0.478f, 0.102f); // fire mid #E87A1A
 	public static readonly Color ApotheosisChip = new Color(0.165f, 0.055f, 0.078f); // red shade #2A0E14
-	/// <summary>red lit: the Apotheosis heading on the page, 8.5:1.</summary>
-	public static readonly Color ApotheosisHeading = new Color(0.416f, 0.125f, 0.157f);
 
 	/// <summary>Light ink for a chip filled with one of the dark chip colours above (bone hi).</summary>
 	public static readonly Color ChipInk = new Color(0.933f, 0.949f, 0.980f);

@@ -8,6 +8,9 @@ public sealed class LevelUpOption
 	public string SpellId { get; set; } = string.Empty;
 	public string DisplayName { get; set; } = string.Empty;
 	public string Description { get; set; } = string.Empty;
+
+	/// <summary>A new spell's one line on what it does (SpellData.Tagline). Empty on every other card.</summary>
+	public string Tagline { get; set; } = string.Empty;
 	public string UpgradeSummary { get; set; } = string.Empty;
 
 	/// <summary>The spell's stats as it would arrive, for a card with no previous level to diff.</summary>

@@ -2032,7 +2032,7 @@ spell gives the wizard rather than the enemy.
 |---|---|---|---|---|---|
 | **Dog** | **Great Hound**: +20%, jaws 40% wider | **Rimehound** (+Ice): bites slow 30% for 1.5 s; frost breath, jaws 40% wider | **Littermates**: +1 hound, each 15% softer | **Cerberus**: three heads, three bites a leap, +10% | **Hound of Annwn**: white and red-eared, +120% and jaws 50% wider; goes for an elite or a boss near the wizard first and bites one double |
 | **Crow** | **Great Raven** (the card was "Raven" until 2026-10-30, when Eric found "a raven of your light" made no sense; same id, `familiar_crow_raven`, same numbers): +30%, beak 80% wider, catching enemies beside its target | **Stormcrow** (+Lightning): every peck staggers (0.2 s) | **Murder of Crows**: +1 crow, each 10% softer | **The Morrigan**: a peck on an ordinary enemy under 30% of its health kills it; double on an elite or a boss there; +100% | **Griffin** (the dog's, before forms): a swoop through its quarry and on past it along a line, +20%, 30% less often |
-| **Cat** | **Grimalkin**: every grant x1.4 | **Cait Sith** (+Darkness): what it claws takes 25% more from every spell for 3 s | **Purr**: 0.8 HP a second while it is out | **Cath Palug**: every grant x1.5 again, swipes 60% wider and 50% harder | **Nine Lives**: +1 life - when he would fall he stands back up with half his health |
+| **Cat** (since 2026-10-31: no damage) | **Grimalkin**: grants x1.4, Weaken lasts 5.6 s | **Cait Sith** (+Darkness): what it pounces on takes 25% more from every spell for 3 s | **Purr**: every 20 s it runs to him and heals 3 HP; **Nine Lives** (moved down from level 8): +1 life | **Cath Palug**: grants x1.5 again, its pounce 2.5x as wide | **Black Cat**: every 3 s it casts one of his attack spells from where it stands |
 
 The Darkness rider is Vulnerable, which is the cat's way of fighting: through his spells. After an
 element path the level 8 looks are drawn in that element (Cerberus and the Hound of Annwn in frost,
@@ -2147,6 +2147,54 @@ rarely meets a tarn; `_BalanceHarness --stage=10 --spell=familiar --solo --immor
 
 Strikes and catches per hound-frame are unchanged within the runs' own spread (0.0129 / 0.0124 a frame
 walking south, 0.0138 / 0.0168 exploring), so the forms' numbers above stand.
+
+**The pack under an Ascension, and the pups (2026-10-30, 0.9.3).** Eric, of 0.9.2: *"when ascending hound
+familiar, it should only make the main hound into the full size legendary creature. littermates should
+produce two puppies instead of 2 of the same dog. The two puppies should also be affected by the ascension,
+but the sprite should just look like a similar-styled hellhound with one head, instead of the 3 headed
+cerberus. same goes for the other ascension. the main cerberus itself should be bigger."* Every hound used to
+wear the one look the spell resolved to. Now the first is the main hound and wears it (`Familiar.LookAt`);
+the rest wear `ResolvePackLook`: with **Littermates**, two **pups** (`familiar.pup`, the 32 cell - a big head
+and short legs on a round body, no hat), the fawn hound's before level 8, a one-headed hellpup under Cerberus
+and under the Hound of Annwn - the white dog - two pups drawn as **Pancho**, Eric's dog (*"the two puppies pixel art should be styled like my dog pancho"*; `familiar.PANCHO`: the plume curled over the back, the long cream coat, buff ears dipped Annwn's red, dark round eyes, the underbite, a dark collar with a silver tag); **without it**, the level 3 hound under an Ascension is a one-headed
+hound of the Ascension at the hound's own 48 cell (`hellhound`, `annwn-hound`, and `-rime` after the Ice
+path). Every one still bites with the Ascension's power (three bites, double on an elite) - only the drawing
+differs, so no number moved. **Cerberus is on the 96 cell at 2.5** (was the 64 at 1.72), the one form on the
+boss cell, with two-pixel eyes, nostrils, fangs and claws and ember-tipped hackles drawn for that size
+(`Skin.detail`, `Skin.mane`); it heels half a cell further back and its jaws are 72 px out. The crow and the cat
+are unchanged.
+
+**Each form its own way of moving; the cat is the support familiar (2026-10-31).** Eric: the dog *"heels at the
+wizard's side when not attacking and tries to stay close; its attack runs are short and it comes straight back
+to heel"*; the crow *"flies around, mostly patrolling a loose ring near the wizard, and divebombs enemies"*; and
+*"rebalance cat to not attack enemies, but instead wander around nearby, debuffing enemies and wandering back to
+the player to provide buffs"*, a calico. Every form now leaves the wizard only with a strike in hand and lets go
+of its quarry after it (`Familiar.Tick`):
+
+- **The dog** heels BESIDE him (`DogHeelSide` 34, `DogHeelBehind` 10; the first hound one side, the second the
+  other, Cerberus a half-cell wider, the pups trailing), runs out with a bite, and comes straight back.
+- **The crow** rides a loose ring round him (`Patrol`: 110 px, wobbling 18, two crows the opposite ways); with a
+  peck in hand it flies at its quarry, CLIMBS (0.1 s, pulled up and back, wings raised), STOOPS, pecks and RISES
+  back toward the ring (`State.Rise`). The griffin still swoops. The patrol and the climb and rise cost a third
+  of its pecks (Raven + Morrigan, the bot: 1,352 pecks and 254 a second at level 8, against 2,008 and 380), so a
+  peck is half again what it was - 14, +3 a level, 37 at level 8 - and it measures 84 at level 4 and **416** at
+  level 8, in the bands. The dog with Great Hound + Cerberus, heeling and coming back after every bite: **456**
+  (was 480).
+- **The cat deals no damage.** Its cooldown is a pounce: it rears back (0.3 s), pounces and lands Weaken 30% for
+  4 s and a 30% slow for 1 s on what is under its paws (`Familiar.Mark`; Cait Sith adds Vulnerable 25% for 3 s),
+  then trots back to his feet - the VISIT gives him its grants (cast speed, evasion) for 8 s (`LiveGrants`). With
+  nothing to pounce on it wanders 40-95 px from him and comes back before the grants lapse. **Purr** is a visit
+  every 20 s that heals 3 HP and pops a pixel heart over him: 9 HP a minute, the healing budget's rate for a relic
+  or a boon (`.ai/difficulty-curve.md` 5.1; it was 0.8 a second, 48 a minute, and up to 100 with Grimalkin and Cath
+  Palug). **Nine Lives** moved to level 4 (same id; a save's seen-Ascension key for it is read by nothing now), so
+  the cat offers four level 4 cards - the mutation page counts its branches, and `ValidateSpellVariants` allows the
+  cat four. **Black Cat** is the new Ascension: every 3 s the cat casts one of his attack spells at random from
+  where it stands (`Player.CastFromFamiliar`: the cast runs `CastSpellNow`, the code his own cast runs, with him
+  set down at the cat for the call and put back before it returns; only spells that put something into the arena
+  qualify, `Player.BlackCatCastable`; his own cooldown is untouched). It is blue-black with gold eyes on the 64
+  cell, so it never reads as the violet, star-breasted Cait Sith; after the Cait Sith it keeps her star and eyes.
+- **The calico** (`familiar.CAT`): white over cream, patches of ginger (gold and amber) and black (stone), keyed
+  to each part like the coat's lay.
 
 ## 2h. Phase 2 - the rest of the roster's evolutions (2026-10-29)
 
@@ -2712,6 +2760,140 @@ already put Constellation on anything but Clear Night.
 **What still needs eyes:** whether a streak reads as a star and not as a beam at the game's own zoom, and
 on the phone; whether the skips read as hops in a crowd (a still frame shows the twinkles stepping right,
 not the arc); the streak's line over a bright floor. Screenshots: `sky_shoot*.png`, `sky_skip*.png`.
+
+None of the four is a wizard's starting spell (`CharacterData_*.tres`), so no Apotheosis path names any
+of their ids and no form's gate moves with them.
+
+#### Stormsweep
+
+| card | audit | now |
+|---|---|---|
+| L4 High Voltage (+Lightning) | numbers: +30% damage, 20% further and wider | **Ball Lightning** |
+| L4 Iron Current (element path) | visible (beads of iron, Wither) | unchanged |
+| L4 Rapid Discharge | numbers: -30% cooldown, 25% faster | **Forked Lightning** |
+| L8 Thunderclap | visible: two passes, a clap at the far end | unchanged |
+| L8 Cardinal Storm | visible: all four ways at once | unchanged |
+
+Built on the whip stroke (`WhipStroke`, merged from wip/whips on 2026-10-31): the hand leads, the loop
+rolls out, the tip cracks at the END of each pass.
+
+- **Ball Lightning** (`stormsweep_high_voltage`, +Lightning): the crack throws off a ball of lightning
+  that rolls on out along the arc's line (95 a second for 1.4 s, a maze wall ends it) and five times a
+  second zaps everything within 34 (x the square root of Area) for 50% of the sweep, a jagged bolt drawn
+  to each it zaps. +25%. With Thunderclap, a ball off each pass; with Cardinal Storm, one off each arm.
+- **Forked Lightning** (`stormsweep_rapid_discharge`): past 45% of its length the arc splits into three
+  tongues; the outer two fan out to 75% of the band's half-height at the tip. They lie on the whip's
+  front (`BandAcross`, the curve the hit test reads), shifted out, and the hit test shifts the swept
+  band by the same fan, once a pass however many tongues cross a body. Drawn as two more lash rows from
+  the fork (no loop of their own - a fork of lightning off the lash), with their own smear (the shader's
+  fork texel). -20% cooldown.
+
+Departures: a crack that strikes was Thunderclap's; ground left charged where it swept was Ember Wake's;
+a sweep that drags its quarry was the pull; a back-sweep was Thunderclap's and Snapback's.
+
+| run | L4 | L5 | L6 | L8 |
+|---|---|---|---|---|
+| before: High Voltage + Thunderclap (two runs) | 50-52 | 65-74 | 115-116 | 370-398 |
+| before: Rapid Discharge + Cardinal Storm | 30 | 54 | 67 | 349 |
+| Ball Lightning (balls at 35%, +10%) + Thunderclap | 38 | 54 | 74 | 311 |
+| Ball Lightning (50%, +25%) + Thunderclap | 36 | 62 | 72 | 369 |
+| Ball Lightning (50%, +25%) + Cardinal Storm | 31 | 54 | 75 | 376 |
+| Forked Lightning (-15%) + Thunderclap | 31 | 52 | 71 | 359 |
+| Forked Lightning (-20%) + Cardinal Storm | 39 | 49 | 70 | 363 |
+| **Ball Lightning, shipped (95 for 1.4 s), on the whip + Thunderclap** | **42** | **60** | **72** | **334** |
+
+(Attributed damage. All but the last row before the whip merge; the shipped ball rolls slower and longer -
+95 for 1.4 s, not 125 for 1.2 - so it stays longer in the crowd at the tip.) Every path sits in the level
+8 band, Ball Lightning at its foot. It sits under High Voltage at levels 5-6: the balls start at the far
+corner of the band and roll away from the wizard, and the immortal bot's crowd is round him; in play the
+crowd comes from the way he faces, which is where they roll. If it reads weak in play, the ball's 50% is
+the knob.
+
+#### Sleet Runes
+
+| card | audit | now |
+|---|---|---|
+| L4 Deep Rime (+Ice) | numbers: +35%, +1 pierce | **Great Rune** |
+| L4 Rune Flurry | numbers: +2 runes | **Braided Wind** |
+| L4 Far Wind | numbers: 30% faster, 120 farther | **Parting Wind** |
+| L8 Sigil Fan | visible: the cast fanned across 50 degrees | unchanged |
+| L8 Turning Gale (+Wind) | visible: runes turned back at the end of flight | unchanged |
+
+- **Great Rune** (`sleet_runes_deep_rime`, +Ice, 12% cooldown): every fourth rune let go (counted across
+  casts) is cut deep - drawn from its own sheet (`sleet-rune-great.png`, the rune rasterised again at
+  1.9x on a 64 cell by `tools/art/sleet_runes.py`, so its pixels are the world's), hit 2.2 times as wide,
+  flying at 70%, striking for 150% of a rune through everything in its line (its hit list, 32), and
+  slowing what it strikes 30% for 1.5 s. +25%.
+- **Braided Wind** (`sleet_runes_rune_flurry`): every rune snakes 18 either side of its line once every
+  170 of flight, each rune half a wave out of step with the last, so two cross twice a wave - a braid.
+  Range is measured along the line; a great rune does not weave; a Turning Gale rune comes home straight.
+  +2 runes.
+- **Parting Wind** (`sleet_runes_far_wind`): what a rune strikes is thrown off its line to the side it
+  stands on (knockback 190, a boss's resistance scales it), the rime flakes flying the same way - the
+  stream cuts a lane. Runes fly 20% faster and farther, +10%.
+
+Departures: frost left on the ground was Rimefoot's; a rune hanging at the end of its flight was Eddy's;
+a split was Splitting Shard's; a ricochet would have been a second bounce beside Skipping Stars.
+
+| run | L4 | L5 | L6 | L8 |
+|---|---|---|---|---|
+| before: Deep Rime + Turning Gale | 42 | 60 | 85 | 383 |
+| before: Far Wind + Turning Gale | 26 | 51 | 113 | 293 |
+| before: Rune Flurry + Sigil Fan | 54 | 77 | 81 | 339 |
+| Great Rune (+15%) + Turning Gale | 29 | 61 | 71 | 332 |
+| Braided Wind (+1 rune) + Sigil Fan | 27 | 40 | 88 | 316 |
+| Parting Wind (no damage line) + Turning Gale | 43 | 73 | 122 | 279 |
+| **Great Rune, shipped (+25%) + Turning Gale** | **21** | **73** | **71** | **363** |
+
+Each first build sat under the card it replaced at level 8; Great Rune went to +25%, Braided Wind to +2
+runes (Rune Flurry's count) and Parting Wind took +10% and 20% farther. Great Rune on the shipped numbers
+is back in the band (363, the old Deep Rime 383); its level 4 cell is one run's 37 s on a thin crowd. The
+other two were not re-measured (the account's usage limit), so read their shipped level 8 as an estimate
+from the first build: about 330-350 and 300 - Parting Wind at the foot of the band, where Far Wind was.
+
+#### Aegis Ward
+
+| card | audit | now |
+|---|---|---|
+| L4 Reflective Plating | visible in behaviour (the nearest enemy takes back 150% of what is absorbed), but nothing drawn | sharpened: drawn as a shaft of light to the one struck |
+| L4 Quick Bastion | numbers: -40% recharge | **Rampart** |
+| L4 Fortified Aegis (+Metal) | numbers: +50% shield | **Reforged** |
+| L8 Sun Aegis (+Light) | visible: the break flashes, staggers and weakens | words lead with the flash |
+| L8 Thorn Crystal Shell | visible: the break bursts into crystal | words lead with the burst |
+
+All of it is one node, `scripts/AegisWard.cs`, in the arena on `DrawLayers.Air`; the shield itself is
+still Player's pool, spent through `Player.SpendShield` (TakeDamage's step 6, factored out).
+
+- **Rampart** (`aegis_ward_quick_bastion`): the projectile guard (2d-bis) made visible. While the shield
+  holds, an enemy bolt that comes within 52 of him breaks on a dome there - the dome lit only where it is
+  struck, a stretch of curve and its panels - and the shield pays half the bolt. A bolt it stops is never
+  a hit on him, so no DamageTaken and no reaction, as for every guard. -20% recharge. Distinct from
+  Daybreak's garlic: it is paid for out of the shield and only while there is one.
+- **Reforged** (`aegis_ward_fortified`, +Metal, 12% recharge): every time the ward comes back, eight iron
+  shards fly in to him from 140 (x the square root of Area) and cut what their paths cross for 60% of the
+  shield's size. +20% shield.
+
+| run (Cursed Dungeon, Magic Missile partner at 4) | damage taken | HP lost | bolts broken |
+|---|---|---|---|
+| before: Quick Bastion + Thorn Crystal Shell | 6,977 in 5,991 hits | 2,270 | (not counted) |
+| before: Fortified Aegis + Sun Aegis | 11,786 in 9,769 hits | 7,690 | (not counted) |
+| **Rampart + Thorn Crystal Shell** | **3,593 in 3,140 hits** | **1,620** | **357** |
+
+The Rampart broke 357 bolts in eight minutes, about 45 a minute, and the bot took half the hits it took
+with Quick Bastion; the runs are not otherwise alike (the two reached the Ascension at different times),
+so read the bolt count as the firm number. Reforged was not re-measured.
+
+A finding, not changed: Thorn Crystal Shell attributes 600 a second at level 8 on that run - a bot that
+stands in the crowd breaks the shield on every recharge, and every break is twice the shield on
+everything within 150. Over the band; Aegis Ward is measured by eye (section 3), but it is the knob if
+a playtest finds the shield a damage spell.
+
+**What still needs eyes** (all four): Ball Lightning's ball among the crowd at the game's zoom; the fork's
+tongues against the whip's loop; the great rune's size in a crowd; whether the braid reads as a braid in
+motion and the parted lane as a lane; the Rampart's dome flash against real bolts (no capture caught a
+bolt - `_UiShot`'s crowd has no shooters); Reforged's shards against a bright floor. Captures:
+`p2_sweep_ball*.png`, `p2_sweep_fork*.png`, `p2_aegis_reforged*.png`, `p2_aegis_rampart*.png`,
+`sky_great*.png`, `sky_braid*.png`, `sky_part*.png`.
 
 ### The blasts: Arcane Explosion, Fireball, Meteor Swarm and Solar Flare (2026-10-29)
 

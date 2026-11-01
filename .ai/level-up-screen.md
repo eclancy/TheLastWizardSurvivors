@@ -7,10 +7,10 @@ at the end of a run follows the same rules and is section 6.
 ## 1. Two registers, and the trap that hid one of them
 
 The screen follows the rule in `art-direction.md`: **stone outside, manuscript inside**. The panel
-frame, the Reroll and Skip buttons and the Ascensions button are carved stone. The evolution page
-and the ascension browser are parchment; the cards on them, and the three level-up cards, are each
-marked for their kind (section 2c) - every spell card is a parchment page, and only the boon and
-the level 8 plates are objects of their own.
+frame, the Reroll and Skip buttons and the Ascensions button are carved stone, and so is the ground
+of every page laid over the hand (section 7). The cards are each marked for their kind (section 2c) -
+every spell card is a parchment page, and only the boon and the level 8 plates are objects of their
+own. **The same background never appears twice on one screen**: a page never lies on a page.
 
 **`Panel` is a plain `Control` with an opaque nine-patch called `Plate` as its first child.** That
 one fact caused the bug that made the level 4 screen unreadable for as long as it existed. Both
@@ -20,11 +20,12 @@ vellum was drawn on every one of those screens and never once seen, so every ink
 landing on stone brick. Darkening the text, which is the obvious fix when a screen is hard to read,
 would have made it strictly worse.
 
-`LevelUpMenu.ShowVellumPage` replaces that call. It inserts the page **immediately after the
-plate**, inset by 18px, so the stone stays the outer edge and the page is laid inside it. Anything
-added afterwards — the overlay's own content — is appended after the page and draws on it.
-
-If you add another overlay to this screen, call `ShowVellumPage(true)`, not `ApplyPanel`.
+`LevelUpMenu.ShowVellumPage` replaced that call, laying the page inside the plate - and is itself
+gone (2026-10-31, section 7): **no page lies under the cards any more.** The mutation page, the
+level 8 fork, the Apotheosis page and the browser are written straight onto the plate's stone, as
+the hand always was, so the cards are the only pages. If you add another overlay to this screen,
+put it on the stone too: heading through `BuildPageHeading`, a line under it through
+`BuildPageSubtitle`, anything else in `CodexRows.Stone`'s inks. Never `ApplyPanel`.
 
 ## 2. The cards are torn pages
 
@@ -117,11 +118,9 @@ from the edge, and on a gold outer edge the ring would land on gold and vanish, 
 section 4 of `controller-and-focus.md` already paid for once.
 
 **Everywhere a boon appears as a choice.** The level-up cards (`BuildWideOptionCard`,
-`BuildNarrowOptionCard`, both through `ApplyOptionCardStyle` and `BuildFramedOptionIcon`), and
-the picker that lists boons as plain buttons - **Ban** (and **Augury**, until it was removed on
-2026-10-28) - where a boon entry
-wears the plaque as a button (`ApplyBoonFrameToButton`) rather than stone, so the rare card is the
-same object wherever the player meets it.
+`BuildNarrowOptionCard`, both through `ApplyOptionCardStyle` and `BuildFramedOptionIcon`). The Ban
+picker that listed boons as plaque buttons (`ApplyBoonFrameToButton`) is gone: ban mode is a tear
+over the same cards (section 7).
 
 To photograph it on demand: `_UiShot --force-boon` (implies `--force-levelup --keep-levelup`)
 sets `Player.ForceBoonOnNextOffer`, because boons are rare now (see `passives-and-items.md`, "How
@@ -172,8 +171,7 @@ yet; if one is added, it should hold `BoonAura` on frame 0 at full breath.
 **Where else.** The pause screen's Run Details has a **Boons** section (`Node2DGame
 .BuildBoonListSection`) - before it, a boon taken was never shown again - with each relic at x1
 through `BoonAura` at `Intensity` 0.7, so it reads as magic without pulling the eye off the row.
-The Ban picker lists names only, for spells and boons alike, so there is no picture
-there to enchant; they keep the plaque button.
+Ban mode is the hand itself under a tear (section 7), so a boon there is its own card.
 
 To photograph the motion: `_UiShot ... --focus-boon --burst=3,20` takes three frames twenty
 frames apart from one run (separate runs deal different cards). The pause section:
@@ -250,10 +248,9 @@ Why these, and the calls that were not obvious:
   If a reduced-motion setting is added it should hold still at the top of the breath with no
   glints or motes. 7 is less than half the 14 between a PC row's cards, so it never lies on a
   neighbour. Photograph it with `--burst=3,45`.
-- **The ascension is the darkest card on the lightest page.** The biggest decision in a run is
-  the thing with the most contrast on its screen. Glass, not stone, so it is never furniture.
-  The page heading takes the family's darkest tone (teal-black, glass-black, ember red) instead
-  of the gold-brown `InkGold` that was the muddiest thing on the tan page.
+- **The ascension is glass, not stone, so it is never furniture.** It was the darkest card on the
+  lightest page; since the vellum went (section 7) it lies on the stone with its gold bevel and
+  rune band to lift it, and the tree's parchment node is the only light thing on the fork.
 - **Synergy tags are solid chips** in the family's dark tone with bone ink (8.0 to 16:1), not a
   one-pixel outline round violet ink. On a PC branch card the icon shares the tag's row instead of
   having a row of its own - with the cards framed and inset inside the page, that row was the two
@@ -262,9 +259,9 @@ Why these, and the calls that were not obvious:
   `Rubric` label anchored over the card, which the phone card's `PanelContainer` laid out like
   any other child - centred over the description - and on a plate a solid band there would have
   hidden the words it explained (`_UiShot --show-ascension --lock-branch`).
-- **The evolution page's content sits inside the vellum page.** It started at 14, inside the
-  page's 18 inset, so the heading's top lay on the page's rim: the ink report measured the level 8
-  heading at 2.3:1 against it.
+- **The evolution page's content sat inside the vellum page** (it started at 14, on the page's rim,
+  and the ink report measured the level 8 heading at 2.3:1). The vellum page is gone (section 7):
+  the heading now sits on the hand's own band, 17.3:1.
 - **The ASCEND strip button is about 7 taller** than the stone one: its words sit clear of the
   rune band and the gilt inside it (content margin 18), which at 12 and 16 the photograph measured
   at 4.3:1. Section 3a's known overflow on a 1280x720 PC is that much worse while one is on offer.
@@ -367,8 +364,8 @@ Nothing overflows that did not before: the tightest three-card PC hand (`--tall-
 lines, two chips, a two-line name) fits with the same 2 to spare; **the four-card hand now fits
 too** - `GetResponsiveColumnCount` deals four across, where three put the fourth card on a second
 row with the heading and the footer off the screen, and a four-across card steps its icon down to
-64 so a two-word name's second line fits. A phone's three-card hand still scrolls by the 40 it
-always did.
+64 so a two-word name's second line fits. A phone's three-card hand scrolled by the 40 it always
+had until 2026-10-31, when these screens stopped scrolling altogether (section 7).
 
 The gap is read from the photograph by a script outside the repo and from the geometry by
 `_UiShot`'s card report (section 5), which prints every card's frame, rect and lowest content.
@@ -456,8 +453,8 @@ only when the answer is too small to read. The icon column scales with it.
 
 It is derived from the viewport rather than measured from the laid-out `ScrollContainer`, because
 the cards are built before that container has a size; a deferred second pass would make the screen
-visibly resettle. If the allowance is a little off the scroll absorbs it, which is the failure mode
-worth having.
+visibly resettle. The scroll container is still there as a last resort, but nothing should reach
+it: the allowance is 284 (section 7) and `_UiShot`'s card report says "fits" or "SCROLLS".
 
 ## 3a. Level 8 is not a card: the Ascension strip
 
@@ -468,7 +465,7 @@ level-up from the moment it is earned until it is taken. Earned includes a playe
 an Ascension (`Player.AscensionMinimumPlayerLevel`), 23 for an Apotheosis
 (`ApotheosisCatalog.MinimumPlayerLevel`) - see `.ai/gameplay-design.md`, "The Apotheosis". The
 ascension browser names the Ascension's level among its requirements; nothing yet names the
-Apotheosis's. Rerolls and bans re-deal the cards and leave it alone. Pressing an ASCEND button
+Apotheosis's. A reroll re-deals the cards and leaves it alone (a ban now ends the level-up, section 7). Pressing an ASCEND button
 opens the level 8 **fork** (section 4e: the spell on top, an arrow down to each path plate, and
 only the plates are pressable); an APOTHEOSIS button opens the ember evolution page as before.
 Choosing a path spends the pick.
@@ -700,9 +697,19 @@ described in `.ai/achievements-and-secrets.md` section 4.
 Each list carries a one-line subtitle under its heading, in the panel's soft ink, saying what
 kind of page it is before the counts do ("Every spell, and how to find the ones you have not.";
 "Finish one to earn its reward - a new spell, a boon or Arcane Energy."). On the pause screen
-the same line leads the summary. The pause tab is called Spell Index too, not "Spells": the
-player read "Spells" as the spells held this run, which is the Run tab's list - now headed
-"Your attacks this run" and "Your passives this run" so the two cannot be confused.
+the same line leads the summary. The pause screen had a Spell Index tab too (called that, not
+"Spells", because the player read "Spells" as the spells held this run, which is the Run tab's list -
+headed "Your attacks this run" and "Your passives this run"). **It was removed on 2026-10-30** (Eric:
+"remove spell index from the pause menu"): every spell in the game is not what a player pauses a run
+to read, and the main menu keeps it. The pause screen's tabs are Run, Achievements and Options, three
+across on both canvases.
+
+**Each held spell on the Run tab shows what it has become**: under its name, its level 4 mutation, its
+level 8 Ascension and its Apotheosis once reached, each as the results screen draws a milestone
+(`GameOverScreen.Milestone`): a solid pill in the milestone's colour (the loadout strip's rims - gold,
+cyan, fire), the branch's own 32-pixel picture (`EvolutionIcons`) and its name. Eric: "In the pause
+menu, we should show the mutation you selected for the spells. we should also show the ascension."
+They are not behind Show details: which way a spell went is the first thing a player pauses to check.
 
 The Run tab says the rest of what the run holds, too. **Spell details are closed by default**
 behind one Show details / Hide details toggle at the right of each spell section's heading (one
@@ -1108,8 +1115,9 @@ hand of three.
 
   The level 4 mutation page is photographed through `_UiShot --show-mutation`, and the level 8
   Ascension page through `--show-ascension`; both reach the private page builder by reflection.
-  `--open-pause` opens the in-run pause screen, and `--press-late=EscapeTabSpellIndex` (or
-  `EscapeTabAchievements`, `EscapeTabRun`, `EscapeTabOptions`) then opens one of its tabs. The menu's own
+  `--open-pause` opens the in-run pause screen, and `--press-late=EscapeTabAchievements` (or
+  `EscapeTabRun`, `EscapeTabOptions`) then opens one of its tabs; `--demo-evolutions=id,id` with
+  `--demo-spell-level=N` gives the first spell a mutation, an Ascension or an Apotheosis to show. The menu's own
   lists are `--scene=res://scenes/TitleScreen.tscn --open-menu --press-late=SpellIndexButton` (or
   `UnlocksButton` - it opens Achievements, the panel's name since 2026-10-30 - or `ArcaneUpgradesButton`
   for the shop); `--press-late=UnlocksButton,AchievementsTabSecrets` opens one of the achievements
@@ -1266,3 +1274,48 @@ every kind to the screen's report (the save is untouched) so all of them can be 
 --grant-boons=iron_rivets,lantern_oil`. `--ink-report` covers the screen. Two of its flags are the
 sampler, not the ink: the hidden pause menu's labels are walked and measured against the results'
 pixels, and the chosen tab is declared in its resting ink while it draws in the pressed gold.
+
+## 7. Less text, one ground, no scroll (2026-10-31)
+
+Six asks from Eric, under one rule: "Overall keep text minimal."
+
+1. **Never the same background twice** ("spell pages on top of a larger spell page"). The vellum page
+   under the mutation page, the level 8 fork, the Apotheosis page and the browser is gone
+   (`ShowVellumPage`); they are written on the plate's stone like the hand. Headings take the hand's
+   band (`BuildPageHeading`), the line under it bone (`BuildPageSubtitle`), the browser `CodexRows.Stone`
+   (its quiet line in `InkSoft`: `InkMeta` is 3.8:1 on the brightest stone), and the fork's lines step
+   up to gold lit and skin base (`AscensionForkArrows`). The tree node keeps its parchment face and is
+   now the one light thing on the fork. No art changed. The chest and the hand were already pages on
+   stone. `ui_contrast.py` measures the floor (typical and brightest stone): 0 of 324 below target.
+2. **No scrolling, ever**, on the hand, the mutation and Ascension pages and the chest, both canvases.
+   - Every level 4, level 8 and Apotheosis branch is at most `SpellEvolutionOption.DescriptionBudget`
+     (130) characters as shown, one or two short sentences; `RegressionChecks.ValidateCardTextBudget`
+     warns on any over it. 104 were (the longest 279) and were rewritten, numbers kept. "+1 X tag" went
+     from most of them - the element chip says it - except an element path, whose description must
+     name its element (`ValidateElementPaths`).
+   - The phone hand's `NarrowChromeAllowance` is 284 (was 268; the strip-and-charges hand was 12
+     over). A phone's four-card hand sets a new spell's stats in two columns (`BuildNarrowStatGrid`); a
+     PC's compact icon frame is 76 (was 88), and a four-across tight hand closes its rows to 5.
+   - The chest: four or more stacked on a phone are `crowded`, as five abreast on a PC already were - a
+     set's full tier only when the claim completes it, 64 header art, 10 of page margin.
+   - Measured with `_UiShot`'s card report: `--tall-deal=3` and `4` with `--with-strip --with-charges`,
+     `--show-mutation --character=0 --start-spell=obsidian_spike`, `--show-ascension`, and a five-relic
+     chest (`--character=7 --give-relics=relic_key,lodestone --open-chest`), each at both canvases -
+     every one fits. The four-card PC hand under both rows ends exactly on the panel's foot (648 of 648).
+3. **The highlight is unmistakable.** On a card (120 or more on both sides) `MenuFocusHighlight` draws
+   a 6-unit band and four gold corner brackets standing off the corners, breathing out by 3; and
+   `FocusSpotlight` dims every other card of the row to 78% while the stick or the keys are in use.
+   On the hand, the mutation page and the level 8 fork; not the Apotheosis (one form, and its Fire-mid
+   line would dim to 4.4:1). `ui_contrast.py`'s "spotlight-dimmed" rows hold every dimmed ink to 4.5:1.
+   `.ai/controller-and-focus.md` section 4 has the rules it keeps.
+4. **A new spell says what it does.** `SpellData.Tagline`, one line of aim and payload ("A bolt that
+   leaps enemy to enemy."), at most 34 characters so it stays one line on a three-across 1280x720
+   card; it takes the type line's place ("Attack"). `ContentValidator` errors on a spell without one.
+5. **Ban is a tear, and it is the pick.** Ban mode keeps the hand exactly as dealt and lays a `BanTear`
+   over each card it can strike (not Marginalia): a ragged split with the stone through it, which rips
+   in over a third of a second and opens wider on the card under the selection or the pointer. The Ban
+   button reads "Cancel Ban" meanwhile. Taking a card bans it and **ends the level-up** -
+   `Node2DGame.OnBanRequested` closes the screen and pays no XP (not the Skip's half bar); a refused ban
+   puts the same cards back. Ban counts are unchanged. Photograph it with `--mixed-deal --with-charges
+   --press-late=BanButton --burst=2,40` (the first frame is taken before the rip has run).
+6. This section.

@@ -11,6 +11,7 @@ DamageBonus = 2
 
 [resource]
 script = ExtResource("1")
+Tagline = "A freezing cone that slows."
 Id = "cone_of_cold"
 Name = "Cone of Cold"
 CurrentLevel = 1

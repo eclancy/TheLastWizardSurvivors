@@ -38,6 +38,7 @@ CooldownBonus = -0.4
 
 [resource]
 script = ExtResource("1")
+Tagline = "A plague that spreads on death."
 Id = "contagion"
 Name = "Contagion"
 CurrentLevel = 1

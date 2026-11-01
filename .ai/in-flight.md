@@ -1,83 +1,115 @@
-# Work in flight (snapshot, 2026-10-30 evening)
+# Work in flight (snapshot, 2026-11-01 early)
 
-A handoff from the cloud session that ran 2026-10-28 to 10-30. Eric moved the work to a Claude Code
-session on his PC; every cloud agent was stopped and its work pushed. **A snapshot, not a source of
-truth:** check `git log` and the branches before acting on it, and delete this file once everything
-below has landed or been dropped.
+A handoff from the cloud session that ran 2026-10-30 to 11-01. Eric moved the work to a local Claude
+Code session. **A snapshot, not a source of truth:** check `git log` and the branches before acting
+on it, and delete this file once everything below has landed or been dropped.
 
 ## 1. Released
 
-**0.9.2 is released** (`Release v0.9.2`, 614ad5e, tag `v0.9.2`): the world map, the pixel-art pass,
-the new evolutions, fullscreen on PC and the pity bonus removed. The next release is 0.9.3 or 0.10.0
+**0.9.2 is released** (`Release v0.9.2`, 614ad5e, tag `v0.9.2`). The next release is 0.10.0
 (`bash tools/release/release.sh X.Y.Z "..."`, on the Windows PC only: Inno Setup, the Android
-release keystore and the Android SDK live there; `.ai/releasing.md`). The CS0162 "unreachable code"
-warnings during its build are old and harmless.
+release keystore and the Android SDK live there; `.ai/releasing.md`).
 
-## 2. `main` now carries everything (2026-10-31)
+## 2. Where the branches stand
 
-All nine spell vaults are built, so `main-ff86ni` was merged into `main` (048fe79) and **`main` is
-releasable as 0.10.0**. Since 0.9.2 it adds:
+- **`main` is at 048fe79** and releasable as 0.10.0 (achievements for every spell, schema 19, the
+  nine vaults, castle groundwork). It has **not** been moved since.
+- **`main-ff86ni` is the development branch** and is far ahead. Every merge into it was built,
+  validated (0 errors, 6 warnings: five castle to-dos and the Test Wizard) and pushed. **Hold it
+  out of `main` until Eric has played the difficulty curve**: it changes how the whole game feels.
 
-- **Achievements for every spell (A1-A4), schema 19:** every non-starter spell earned through a
-  feat, a chapter deed or one of the nine secret vaults; the achievements page; the shop sells no
-  spells; the gate on wizards (fixes the Emberdeep being unreachable on a new save).
-- **The nine vaults:** the Pale Hart, the Pinfold, the Fallen Star, the Geode Heart, the Cold Forge,
-  the Swallow-Hole, the Broken Ward, the Buried Runes and the Fulgurite.
-- **Variety:** the Sunken Cave's caverns and the Mystic Ruins' broken walls.
-- **Castle groundwork:** the Last Bridge and the Court are built but not playable (`IsPlayable =
-  false`); the Throne is a stub; their music is wired.
-- **Playtest fixes:** Glacial Spike's extra spikes land on enemies; Avalanche reworded; Spiritual
-  Weapon hovers and bobs, swings cleanly at speed, spreads its targets, and has the off-hand
-  dagger (Twin Blades) and Deflection (Riposte); the crow's Great Raven; enemy wind-ups shown by an
-  animated icon over the attacker, with danger areas as opaque dashed outlines; the Gleaning Bell
-  (a rare pickup that calls every XP orb in); Hollow Star never opens on the wizard, pulls slower,
-  hits hardest at its core and fires less often; Split Lens charges only the spells it feeds.
+Merged into `main-ff86ni` since `main`:
 
-`main-ff86ni` stays the development branch: merge each finished branch into it, verify, then
-fast-forward `main`.
+- **Difficulty curve, schema 20** (`.ai/difficulty-curve.md`): `ChapterDifficulty` per-chapter
+  enemy health and damage; boss health 3,800 (Elderbark) up to 200,000; max HP 50, no base regen,
+  every heal cut and capped, chest heals gone, no number on the health bar; the Ascension sealed
+  until the Hayward is beaten (saves with a run keep it); rerolls a per-run pool (Fate Fracture +2
+  a level, cap 10), Skip pays half an XP bar; Fate Fracture and Emberheart re-priced and refunded.
+  **Six spell slots kept** (Eric reverted the four-slot idea).
+- **Ascension audit** (`.ai/spell-roster.md` 2i): Tidal Wall starts small, swells, fires a third as
+  often and can never be wider than the screen; Trident tamed; Sun Dogs above and below on a phone;
+  Arcane Orb's Threaded Needle retargets; **Mjolnir replaces Titan's Maul** (trades Light for
+  Lightning, calls lightning on each slam); Doomcap drawn from above.
+- **Spell caps:** a Shadow Bolt or Chain Lightning cast makes at most 20 arcs and never strikes an
+  enemy twice (Cascade 37). Starfall rains 1.6x wider and its skips scatter up to 80 degrees.
+- **Whips** (`WhipStroke.cs`): Thorned Vine and Stormsweep crack like whips; the vine wraps and
+  cracks on the enemy it catches; new icons.
+- **Prologue** (`.ai/prologue.md`): six generated panels before the first Start Run, replay from
+  Options, `SaveData.HasSeenPrologue` (no schema bump).
+- **Level-up screens** (`.ai/level-up-screen.md` section 7): one background per screen (no page on
+  page), no scrolling (130-character cap, validator warns), `FocusSpotlight` for keys and pad, a
+  `Tagline` on every spell for its new-spell card, ban as a tear that spends the level-up with no XP.
+- **Familiars:** hounds (only the first ascends, pups, Pancho under Annwn, a 96-pixel Cerberus);
+  the cat never attacks (pounce weakens and slows, returns to buff; Purr 3 HP every 20 s with a
+  heart; Nine Lives at level 4; **Black Cat** Ascension casts a random spell of yours every 3 s);
+  the crow circles and dives; the dog heels.
+- **Stormsweep, Sleet Runes, Aegis Ward** phase 2 evolutions (Ball Lightning, Forked Lightning,
+  Great Rune, Braided Wind, Parting Wind, Rampart, Reforged).
+- **World map reveal:** a chapter appears only once the boss before it falls; the Sketchbook has
+  its own page off the road. Pause screen shows each spell's evolutions; achievements count up live
+  with a kind-first banner; no white flash after a pick.
+- Reward lines read kind first ("Spell recovered - Bramble Seed"); clipped bush and Sands art fixed.
 
-## 3. Branches still running or unfinished
+## 3. Branches unfinished at handoff
 
-| branch | what | base |
+The cloud agents on these were told to commit their work in progress and push, then carry on. If
+the cloud container was reclaimed first, the branch holds whatever was last pushed. Read the
+branch's own doc section for what is left; **nothing here is merged**.
+
+| branch | what | state |
 |---|---|---|
-| `wip/difficulty-curve` | the difficulty curve; Ascensions earned; 4 spell slots by default; rerolls and bans per run; Skip gives half an XP bar | `main-ff86ni` |
-| `wip/ascension-audit` | Tidal Wall starts small and grows, fires less; every Ascension checked for power and screen share; Ascensions keep the mutation working; Sun Dogs glide back and stay on screen with Daybreak | `main` |
-| `wip/fix-clipped-art` | the bushes and Scorched Sands art cut off at their boxes, and a scan of all world art | `main` |
-| `wip/hounds-icons-hares` | the hound Ascension (main hound only, a bigger Cerberus; Littermates as two one-headed pups; Pancho pups), Familiar and Molten Shard icons, the hares' run cycle | `main` |
-| `wip/pause-toasts-sketchbook` | the pause screen shows mutations and Ascensions, no Spell Index there, live achievements, the achievement banner, no white flash after a level-up, the Sketchbook as its own map | `main-ff86ni` |
-| `wip/evolutions2-sky` | phase 2 cards for Stormsweep, Sleet Runes, Aegis Ward, and their pixel-art pass | **WIP d8048b3** from 10-29 |
-| `wip/evolutions2-blasts` | phase 2 cards for Arcane Explosion, Fireball, Meteor Swarm | not started (Solar Flare landed) |
+| `wip/boss-entrances` | spells stop firing while a boss makes a themed entrance; every boss gets at least two phases; fights a few minutes longer; Boss Rush scaling | measuring. Farmed fight lengths so far: Gaoler 3.7 min (was 1.3), Ninth Stone 2.4 (1.6), Hollow Choir 6.0 (0.1; its health can come back down), Mother Rot 3.0 (0.6), Archivist 5.2 (2.1), Long Coil 4.2 (0.9); Forest fresh 2.9 (1.2). Two runs had weak bots, so a same-code baseline was planned. Still to do: Still Warden, Warden of the Deep, Boss Rush, entrance screenshots. Status in `.ai/enemy-behaviour.md` |
+| `wip/quests-notes` | chapter notes in the wizard's voice (held wizard by epithet, never by name), a journal, a quest log, tracked quests on the HUD, the default quest always "free the next wizard", big spell-animated text at run start shrinking into the corner | built and validated (0/6); screenshots were next. `.ai/quests-and-notes.md` |
+| `wip/evolutions2-blasts` | phase 2 cards for Arcane Explosion, Fireball, Meteor Swarm; also the Event Horizon card, which is wrong under Dual Shockwave (it pulls rather than throws) | Arcane Explosion partly done (08ba52b and after). `.ai/spell-roster.md` 2h |
 
 Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 
-## 4. What comes after
+## 4. Waiting on Eric
 
-1. The seven vaults, then `main-ff86ni` into `main` and a release.
-2. The castle, by `.ai/endgame-castle.md` section 9.2: the Bridge's and the Court's casts (C6),
-   the bosses (C5), the Throne (C4, after the Court's reader), the Dungeon's move into the castle
-   (C2, schema 21 - the difficulty curve took 20; it ships in the same release as the Bridge's flip), the world map's new places
-   (C8) and the castle's secrets (C9). Each chapter's `IsPlayable` flips last.
+- **Play the difficulty curve** (50 HP, scarce healing, tougher chapters and bosses) before
+  `main-ff86ni` goes into `main`.
+- An achievement banner shows mid-run, but quitting from the pause screen forfeits the deed (only
+  the run's end pays it). Record it on the spot instead? One line.
+- The Sketchbook stays open for saves that already played it. Hide it until the campaign is
+  finished for everyone? One line.
+- The prologue shows the Dark Wizard once, unnamed; `.ai/world-and-tone.md` tone rule 5 says he is
+  never on screen until he is. Amend the rule or change the panel.
+- Thorned Vine wraps and cracks on the enemy it catches in a dense pack. Keep?
+- 104 mutation and Ascension descriptions were rewritten to fit 130 characters; worth reading for
+  tone. Some numbers left the cards (Anathema's, Threefold Curse's, Cascade's).
+- Needs eyes in motion: the ban tear (rip, not crack?), Mjolnir's chained strikes, the cat's return
+  and the Purr heart on a phone, Black Cat's casts, the Rampart dome, the whip loops, the map
+  reveal's darkness edge on a phone.
+
+## 5. What comes after
+
+1. Land the three branches above, then a playtest, then `main-ff86ni` into `main` and 0.10.0.
+2. The castle, by `.ai/endgame-castle.md` section 9.2: C6, C5, C4, C2 (**schema 21**), C8, C9;
+   each chapter's `IsPlayable` flips last.
 3. The rest of the secrets catalogue, `.ai/achievements-and-secrets.md` section 8.
 
-## 5. How the cloud session worked
+## 6. How the cloud session worked
 
-One agent per piece, each in its own worktree on a `wip/*` branch, briefed with the design
-section and the files it alone may touch; the integrator merged each finished piece into
-`main-ff86ni` with a merge commit, then built, ran the validator and looked at screenshots before
-pushing. Shared docs (`.ai/art-replacement-manifest.md` section 9, `.ai/spell-roster.md` 2h) collect
-one section per agent and conflict on every merge: keep both sides. **Running five to eight agents
-at once used the account's 5-hour limit within a few hours each time;** one or two at a time goes
-further.
+One agent per piece, each in its own worktree on a `wip/*` branch, briefed with the design section
+and the files it alone may touch; the integrator merged each finished piece into `main-ff86ni` with
+a `--no-ff` merge commit, then built, ran the validator, ran `--import` for new art and looked at
+screenshots before pushing. Shared docs (`.ai/spell-roster.md`, `.ai/art-replacement-manifest.md`
+section 9, `scripts/FrameProfiler.cs` sections, `scripts/SpellEvolutionCatalog.cs`) conflict on
+most merges: keep both sides. **Five agents at once hit the 5-hour limit within a few hours;** two
+or three goes further, and agents should keep tool output short.
 
-## 6. Loose ends
+## 7. Loose ends
 
 - The pause screen numbers chapters by stage index (the Fallow Fields shows "Chapter 10"); the map
   says "Chapter 2 of 10". `Node2DGame.cs`, around the pause screen's chapter line.
-- `ImpactDebris`, the burst about thirty spells share, still fades by alpha in its last 30%, and
-  Ice's first two ramp colours vanish on the Sketchbook's paper. One fix there covers every cold
-  spell.
-- `lingering_pool.gdshader` has no caller since Fireball and Arcane Explosion draw their own pools.
-- CLAUDE.md says only Python 2.7 is installed; the cloud container had Python 3.13, and the art and
-  audio generators were made to run on both.
-- An intermittent "1 resources still in use at exit" line appears on some validator runs and not
-  on reruns; never tied to a code path.
+- `ImpactDebris` still fades by alpha in its last 30%, and Ice's first two ramp colours vanish on
+  the Sketchbook's paper.
+- `lingering_pool.gdshader` has no caller.
+- CLAUDE.md says only Python 2.7 is installed; the cloud container had Python 3.13, and the
+  generators run on both.
+- About 4 of 60 balance-bot runs crashed in the engine with "Caller thread can't call this function
+  in this node (/root)", before and after the difficulty change alike.
+- A chain cast still has rare 86-149 ms spikes inside the chain code; pooling the arc nodes is the
+  suspected fix (`.ai/spell-roster.md`, Shadow Bolt).
+- Thorn Crystal Shell does about 600 damage a second at level 8, over the 331-465 band.
+- Extinction Event covers 26% of the screen at its peak; worth watching.

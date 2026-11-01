@@ -78,14 +78,6 @@ public partial class LevelUpMenu
 		_ => CardFamilyArt.MutationChip,
 	};
 
-	/// <summary>The evolution page's heading, in the family's darkest tone, on the vellum page.</summary>
-	private static Color HeadingInkFor(CardFamily family) => family switch
-	{
-		CardFamily.Ascension => CardFamilyArt.AscensionHeading,
-		CardFamily.Apotheosis => CardFamilyArt.ApotheosisHeading,
-		_ => CardFamilyArt.MutationHeading,
-	};
-
 	// The family frames, one resting and one lit per family, built once per menu and shared by every
 	// card (instance fields, never static - see EnsureCardStyles). Two content margins: the level-up
 	// card's and the evolution card's, which has always sat a little tighter.

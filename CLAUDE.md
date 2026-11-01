@@ -249,7 +249,7 @@ session**, the validator run below included.
 ## Adding content
 
 **New active spell:**
-1. `SpellData_<Name>.tres` at the **repo root** (that is where they all live), with element weights and level-up data.
+1. `SpellData_<Name>.tres` at the **repo root** (that is where they all live), with element weights and level-up data, and a `Tagline` of at most 34 characters (what a new spell's level-up card says it does; the validator errors without one). Put it **after** the `script =` line: a property listed before it is silently dropped.
 2. `scenes/<Name>.tscn` + `scripts/<Name>.cs`. Put each part on a `DrawLayers` layer with `ZAsRelative = false` - what flies or strikes in `Air`, what lies on the floor under the bodies - never left at z 0, where the arena's y-sort mixes it in among them (`.ai/godot-engine.md`, "Draw layers").
 3. Wire firing into `Player`'s existing `spellFireTimers` loop — do **not** add a parallel timer system.
 4. **Mandatory:** add `"res://SpellData_<Name>.tres"` to the hardcoded `SpellResourcePaths` array in `scripts/ContentValidator.cs:11`. A resource missing from that allowlist is silently never validated.

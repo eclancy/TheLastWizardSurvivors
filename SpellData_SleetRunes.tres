@@ -67,6 +67,7 @@ ProjectileCountBonus = 1
 
 [resource]
 script = ExtResource("1")
+Tagline = "Runes fly the way you last moved."
 Id = "sleet_runes"
 Name = "Sleet Runes"
 CurrentLevel = 1
