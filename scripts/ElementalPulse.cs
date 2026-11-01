@@ -280,7 +280,7 @@ public partial class ElementalPulse : Area2D
 	public const string SunDogsId = "solar_flare_radiance";
 	public const float SunDogOffset = 1.6f;
 	public const float SunDogReach = 0.6f;
-	public const float SunDogDamageShare = 0.6f;
+	public const float SunDogDamageShare = 0.8f;
 	private Node2D sunDogGlow;
 	private readonly SolarFlareVisual[] sunDogBursts = new SolarFlareVisual[2];
 	private float sunDogClock;

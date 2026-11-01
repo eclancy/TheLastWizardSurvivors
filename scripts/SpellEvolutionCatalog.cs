@@ -277,19 +277,22 @@ public static class SpellEvolutionCatalog
 	private static void SetupArcaneExplosionEvolutions(SpellData spell)
 	{
 		// Level 4 (3 choices)
+		// PHASE 2 (.ai/spell-roster.md 2h, 2026-10-31): Dual Shockwave (+35% damage, a longer throw) and
+		// Supernova (the blast bigger) only moved numbers, and Event Horizon's visible half was a pull - Hollow
+		// Star's verb. Each is now something the blast does because it is set off by the other spells: it
+		// takes the element of the one that set it off (Sympathetic Blast), it goes off again where they
+		// struck (Resonance), and it stops time where it went off (Event Horizon). Read by id in ArcaneExplosion.
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "arcane_explosion_dual_shockwave",
-			DisplayName = "Dual Shockwave",
-			// "Two rapid concentric shockwaves" was never built; the knockback is, since 2026-10-26.
-			Description = "The blast hits 35% harder and throws enemies 70% further.",
+			Id = ArcaneExplosion.SympatheticBlastId,
+			DisplayName = "Sympathetic Blast",
+			Description = "Each blast takes on the spell that set it off: ice slows, lightning staggers, poison poisons, fire hits harder. +20% damage.",
 			MilestoneLevel = 4,
-			KnockbackBonus = 70f,
-			DamageMultiplier = 1.35f,
-			VisualTag = "DualShockwave",
-			ModulateColor = new Color(0.4f, 0.85f, 1.0f),
-			SynergyTag = "Arcane / Force",
-			SynergyDescription = "Repels fast swarming enemies with double blast waves."
+			DamageMultiplier = 1.2f,
+			VisualTag = "SympatheticBlast",
+			ModulateColor = Colors.White,
+			SynergyTag = "Arcane / Loadout",
+			SynergyDescription = "The blast wears whichever spell you cast most."
 		});
 
 		// The element path (ElementPaths): Arcane's branch into Lightning. Its three chain sparks were
@@ -332,38 +335,37 @@ public static class SpellEvolutionCatalog
 		// Level 8 (2 choices)
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "arcane_explosion_supernova",
-			DisplayName = "Supernova",
-			// The "incinerating" was an Effect Burn of 5 that nothing read - there is no burn status
-			// (.ai/gameplay-design.md, "Status effects"). Its share went into the damage, x2.0 to x2.2.
-			Description = "A massive blast: +150% Area and +120% Damage.",
+			Id = ArcaneExplosion.ResonanceId,
+			DisplayName = "Resonance",
+			Description = "Every blast goes off again wherever each of your other spells last struck. +180% damage.",
 			MilestoneLevel = 8,
-			AreaMultiplier = 2.5f,
-			DamageMultiplier = 2.2f,
-			VisualTag = "Supernova",
-			ModulateColor = new Color(1.0f, 0.4f, 0.12f),
-			SynergyTag = "Arcane / Fire",
-			SynergyDescription = "Ascension: Decimates massive waves with burning cataclysm."
+			// x2.8, echoes at full: at x1.6 and echoes at 75% it measured 244 a second at level 8 with one
+			// partner spell, at x2.2 285 (band 331-465; the old Supernova 372). One partner is one echo.
+			DamageMultiplier = 2.8f,
+			VisualTag = "Resonance",
+			ModulateColor = Colors.White,
+			SynergyTag = "Ascension / Loadout",
+			SynergyDescription = "Ascension: one blast round you, and one wherever your spells are working."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "arcane_explosion_event_horizon",
+			Id = ArcaneExplosion.EventHorizonId,
 			BonusElementWeights = new() { { "Arcane", 1 } },
 			DisplayName = "Event Horizon",
-			// ArcaneExplosion reads the freeze, and a freezing blast pulls inward (2026-10-26). The
-			// SlowMagnitudeBonus of 1.0 that restated the freeze as a slow went: nothing read it.
-			// x2.2, not x1.5: measured x2.58 of the spell at level 7 after (2026-10-26, --enemy-hp=10).
-			Description = "Cosmic singularity pulls enemies inward and freezes them for 2.5 seconds (+80% Area, +120% Damage).",
+			// No pull since 2h: the pull is Hollow Star's, and it turned Dual Shockwave's throw inward.
+			Description = "Time stops for 2.5s where the blast goes off: everything caught, and whatever walks in, freezes. +190% damage, 80% wider.",
 			MilestoneLevel = 8,
 			AreaMultiplier = 1.8f,
-			DamageMultiplier = 2.2f,
+			// x2.9: at x2.2 and x2.5 it measured 300 and 309 a second at level 8 (band 331-465; the old card,
+			// pull and all, 315).
+			DamageMultiplier = 2.9f,
 			Effect = SpellEffect.Freeze,
 			EffectValue = 2.5f,
 			VisualTag = "EventHorizon",
-			ModulateColor = new Color(0.35f, 0.65f, 1.0f),
-			SynergyTag = "Arcane / Gravity",
-			SynergyDescription = "Ascension: Locks down entire screen with freezing gravitational pull."
+			ModulateColor = Colors.White,
+			SynergyTag = "Arcane / Stasis",
+			SynergyDescription = "Ascension: deepens Arcane. A sphere of stopped time the pack walks into and does not leave."
 		});
 	}
 
@@ -716,33 +718,33 @@ public static class SpellEvolutionCatalog
 			SynergyDescription = "Branches into Metal. The blast burns a share of everything's health away - worth most against elites and bosses."
 		});
 
-		// Level 8 (2 choices)
+		// Level 8 (2 choices). PHASE 2 (.ai/spell-roster.md 2h, 2026-10-31): both Ascensions were the same
+		// blast bigger. Brimstone (Hellfire Nova's id, its Fire gain kept) leaves a stone that keeps firing
+		// (BrimstoneLayer); Armageddon Sun ploughs through the pack before it bursts (Fireball.Sear).
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "fireball_hellfire_nova",
+			Id = Fireball.HellfireNovaId,
 			BonusElementWeights = new() { { "Fire", 1 } },
-			DisplayName = "Hellfire Nova",
-			Description = "Detonates in a colossal flame shockwave (+150% Area, +100% Damage).",
+			DisplayName = "Brimstone",
+			Description = $"Each blast leaves a lump of burning brimstone that spits small fireballs at the nearest enemies for {BrimstoneLayer.StoneSeconds:0}s. +10% damage.",
 			MilestoneLevel = 8,
-			DamageMultiplier = 2.0f,
-			AreaMultiplier = 2.5f,
-			ScaleMultiplier = 2.2f,
-			VisualTag = "HellfireNova",
-			ModulateColor = new Color(1.0f, 0.2f, 0.05f),
-			SynergyTag = "Fire / AOE",
-			SynergyDescription = "Ascension: Screen-wide incendiary destruction."
+			// x1.1: at x1.5 it measured 570 a second at level 8 (band 331-465); the old Hellfire Nova 913.
+			DamageMultiplier = 1.1f,
+			VisualTag = "Brimstone",
+			ModulateColor = new Color(1.0f, 0.55f, 0.4f),
+			SynergyTag = "Fire / Turret",
+			SynergyDescription = "Ascension: deepens Fire. Every blast keeps firing at what walks back in."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "fireball_armageddon_sun",
+			Id = Fireball.ArmageddonSunId,
 			DisplayName = "Armageddon Sun",
-			// It flies at 0.7 and bursts at x2 since 2026-10-26; a sun that scorched as it drifted was
-			// never built, so the card no longer says it does.
-			Description = "A slow, swollen sun that bursts for +150% Damage and +100% Area.",
+			Description = $"A slow, swollen sun ploughs through the pack, searing all it touches, and bursts beyond it. +30% damage, 60% wider blast.",
 			MilestoneLevel = 8,
-			DamageMultiplier = 2.5f,
-			AreaMultiplier = 2.0f,
+			// x1.3: at x1.8 it measured 592 a second at level 8 (band 331-465); the old card 922.
+			DamageMultiplier = 1.3f,
+			AreaMultiplier = 1.6f,
 			SpeedMultiplier = 0.7f,
 			ScaleMultiplier = 2.0f,
 			VisualTag = "ArmageddonSun",
@@ -1655,9 +1657,9 @@ public static class SpellEvolutionCatalog
 		{
 			Id = ElementalPulse.SunDogsId,
 			DisplayName = "Sun Dogs",
-			Description = $"Two mock suns flank you and flare with each pulse for {ElementalPulse.SunDogDamageShare * 100f:0}% of it, drifting out as it builds. Pulses 20% faster.",
+			Description = $"Two mock suns hang beside you and flare with every pulse, each {ElementalPulse.SunDogReach * 100f:0}% as wide for {ElementalPulse.SunDogDamageShare * 100f:0}% of its damage. Pulses 25% faster.",
 			MilestoneLevel = 4,
-			CooldownMultiplier = 0.8f,
+			CooldownMultiplier = 0.75f,
 			VisualTag = "SunDogs",
 			ModulateColor = new Color(1.0f, 0.97f, 0.82f),
 			SynergyTag = "Light / Width",
@@ -1671,7 +1673,7 @@ public static class SpellEvolutionCatalog
 			DisplayName = "Solar Prominence",
 			// Was Scorching Heat: +45% damage and the tag. The game has no burn status, so the heat is now a
 			// thing the flare throws (ElementalPulse.HurlProminences).
-			Description = $"Each pulse hurls {ElementalPulse.ProminenceLoops} loops of fire onto the nearest enemies past its rim, more as it builds. +15% damage, 12% slower.",
+			Description = $"Each pulse hurls {ElementalPulse.ProminenceLoops} loops of fire onto the nearest enemies past its rim, more as it builds. +1 Fire tag, +15% damage, 12% slower.",
 			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.15f,
@@ -1685,8 +1687,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = "solar_flare_blinding_flash",
 			DisplayName = "Blinding Flash",
-			Description = $"Some of what the flare catches reels away blind: {ElementalPulse.BlindingFlashChance * 100f:0}% of it is staggered "
-				+ $"{ElementalPulse.BlindingFlashStunSeconds:0.#} s and thrown back out of the light.",
+			Description = $"{ElementalPulse.BlindingFlashChance * 100f:0}% of what the flare catches is staggered and thrown back out of the light.",
 			MilestoneLevel = 4,
 			KnockbackBonus = 50f,
 			VisualTag = "BlindingFlash",
@@ -1704,6 +1705,9 @@ public static class SpellEvolutionCatalog
 			Description = "A flare that fills the clearing and burns away every enemy bolt that enters it: +100% Area, +100% Damage, for 12% slower pulses.",
 			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 8,
+			// 267-286 a second at level 8 on the band run of 2026-10-31 (357-375 on 10-29), under the band, and
+			// x2.5 read the same 286: the flare kills what is inside it in one pulse, so its number is how fast
+			// the crowd walks in, not its damage. Left at x2.0 for that reason (2h).
 			DamageMultiplier = 2.0f,
 			// x2.0, not the x2.5 it promised and never delivered (ElementalPulse read only the player's
 			// area until 2026-10-26). On top of Radiant Glow's x1.4 that is a 250 px flare against a
@@ -1725,6 +1729,8 @@ public static class SpellEvolutionCatalog
 			// ElementalPulse.FireCoronaBeams, since 2026-10-26 (afternoon).
 			Description = $"Every pulse throws {ElementalPulse.CoronaBeams} sunbeams far past the flare, each cutting everything along it, and +140% damage.",
 			MilestoneLevel = 8,
+			// 304 a second at level 8 on 2026-10-31 at x2.4 and 299 at x2.9 - limited by the crowd's flow into
+			// the flare, as Daybreak is - so left at x2.4 (2h).
 			DamageMultiplier = 2.4f,
 			VisualTag = "CoronaDischarge",
 			ModulateColor = new Color(1.0f, 0.85f, 0.2f),
@@ -2003,20 +2009,27 @@ public static class SpellEvolutionCatalog
 		});
 	}
 
+	// Meteor Swarm (scripts/MeteorImpact.cs, Player.FireMeteorSwarm): a volley of meteors, each on a random
+	// enemy in reach. PHASE 2 (.ai/spell-roster.md 2h, 2026-10-31): four of its five cards only moved numbers
+	// (more meteors, a bigger blast, a shove, a faster volley). Each is now something a meteor does - it
+	// breaks up in the sky, it skips on, the volley ends in a colossal one, the volley walks - read by id in
+	// MeteorImpact (BreakupId, SkipstoneId, Finale) and Player.FireMeteorSwarm (BarrageSpot). The ids and
+	// the element gains (Earth on Skipstone, Fire on Extinction Event, each at the hybrid's price) stay.
 	private static void SetupMeteorSwarmEvolutions(SpellData spell)
 	{
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "meteor_cluster",
-			DisplayName = "Meteor Shower",
-			Description = "Spawns +3 meteors per volley with +30% impact area.",
+			Id = MeteorImpact.BreakupId,
+			DisplayName = "Breakup",
+			Description = $"Every meteor breaks apart as it falls and comes down as {MeteorImpact.BreakupFragments} smaller stones round its mark. +30% damage.",
 			MilestoneLevel = 4,
-			ProjectileCountBonus = 3,
-			AreaMultiplier = 1.3f,
-			VisualTag = "MeteorShower",
-			ModulateColor = new Color(1.0f, 0.55f, 0.2f),
-			SynergyTag = "Fire / Multishot",
-			SynergyDescription = "High carpet-bombing saturation."
+			// x1.3: at x1.1 and x1.2 its levels 4-6 measured 30-35 / 36-39 / 45-50 (Meteor Shower 43 / 66 / 89), at
+			// x1.4 72 / 86 / 131 - a run-to-run swing, so the middle.
+			DamageMultiplier = 1.3f,
+			VisualTag = "Breakup",
+			ModulateColor = new Color(1.0f, 0.75f, 0.45f),
+			SynergyTag = "Fire / Spread",
+			SynergyDescription = "Each meteor covers a knot instead of a body."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
@@ -2035,51 +2048,50 @@ public static class SpellEvolutionCatalog
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "meteor_starcrash",
+			Id = MeteorImpact.SkipstoneId,
 			BonusElementWeights = new() { { "Earth", 1 } },
-			DisplayName = "Cosmic Impact",
-			// The shockwave's KnockbackBonus is read by MeteorImpact since 2026-10-26.
-			Description = "Increases direct impact damage by +75%, and the impact throws enemies back.",
-			CooldownMultiplier = 1.12f,
+			DisplayName = "Skipstone",
+			Description = $"Every meteor glances off the ground and bounds on to land again, for {MeteorImpact.SkipDamageShare * 100f:0}% more. +35% damage.",
+			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
-			DamageMultiplier = 1.75f,
-			KnockbackBonus = 80f,
-			VisualTag = "CosmicImpact",
-			ModulateColor = new Color(1.0f, 0.8f, 0.3f),
-			SynergyTag = "Earth / Force",
-			SynergyDescription = "Massive single-impact burst."
+			DamageMultiplier = 1.35f,
+			VisualTag = "Skipstone",
+			ModulateColor = new Color(1.0f, 0.85f, 0.55f),
+			SynergyTag = "Earth / Bounce",
+			SynergyDescription = "Deepens Earth. Two craters a meteor, one behind the other."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "meteor_extinction_event",
+			Id = MeteorImpact.ExtinctionId,
 			BonusElementWeights = new() { { "Fire", 1 } },
 			DisplayName = "Extinction Event",
-			// The whole volley still falls (Player.FireMeteorSwarm); there is no single asteroid, so the
-			// card says what each meteor becomes (2026-10-26).
-			Description = "Every meteor is a colossal impact: +250% Damage and three times the blast.",
-			CooldownMultiplier = 1.12f,
+			Description = $"Every volley ends in one colossal meteor on the thickest pack, {MeteorImpact.FinaleArea:0.#} times as wide and {MeteorImpact.FinaleDamage:0} times as hard. +25% damage.",
+			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 8,
-			DamageMultiplier = 3.5f,
-			AreaMultiplier = 3.0f,
+			// x1.25: at x1.5 over Breakup's x1.2 it measured 433-452 a second at level 8, at x1.3 over x1.4 496.
+			DamageMultiplier = 1.25f,
 			VisualTag = "ExtinctionEvent",
-			ModulateColor = new Color(1.0f, 0.2f, 0.05f),
+			ModulateColor = new Color(1.0f, 0.55f, 0.35f),
 			SynergyTag = "Fire / Cataclysm",
-			SynergyDescription = "Ascension: a volley of craters that overlap into one."
+			SynergyDescription = "Ascension: deepens Fire. The barrage, and then the big one."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "meteor_orbital_bombardment",
-			DisplayName = "Orbital Bombardment",
-			Description = "Continuous non-stop rain of burning stars (-60% Cooldown, +6 Meteors).",
+			Id = MeteorImpact.BarrageId,
+			DisplayName = "Creeping Barrage",
+			Description = "The volley walks in lines from the nearest enemy through the thickest pack. +8 meteors, -55% cooldown, +60% damage.",
 			MilestoneLevel = 8,
-			CooldownMultiplier = 0.4f,
-			ProjectileCountBonus = 6,
-			VisualTag = "OrbitalBombardment",
-			ModulateColor = new Color(1.0f, 0.7f, 0.15f),
-			SynergyTag = "Fire / Storm",
-			SynergyDescription = "Ascension: Continuous unending meteor rain."
+			// At +6, -50% and no damage it measured 257 a second at level 8, at +8, -55% and +20% 297 (band
+			// 331-465; the old card 306).
+			CooldownMultiplier = 0.45f,
+			ProjectileCountBonus = 8,
+			DamageMultiplier = 1.6f,
+			VisualTag = "CreepingBarrage",
+			ModulateColor = new Color(1.0f, 0.75f, 0.35f),
+			SynergyTag = "Fire / Barrage",
+			SynergyDescription = "Ascension: a carpet of craters through the middle of the swarm."
 		});
 	}
 

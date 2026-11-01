@@ -153,7 +153,7 @@ public static class EvolutionStatReaders
 			SpellEffect.ProjectileSpeed, SpellEffect.AreaSize, SpellEffect.ExplosionOnHit, SpellEffect.SplitOnHit,
 			SpellEffect.Pierce, SpellEffect.CritChance, SpellEffect.CritDamage),
 		["arcane_explosion"] = R(EvolutionStat.Damage | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Knockback | EvolutionStat.Rider,
-			"ArcaneExplosion.RefreshComputedStats, TriggerExplosion and OpenLingeringRift; charge-driven and persistent, so no cooldown and no visual scale",
+			"ArcaneExplosion.RefreshComputedStats, TriggerExplosion and OpenLingeringRift; charge-driven and persistent, so no cooldown and no visual scale (Sympathetic Blast, Resonance and Event Horizon's stasis by id)",
 			SpellEffect.VortexPull, SpellEffect.Knockback, SpellEffect.Freeze, SpellEffect.ZoneDuration, SpellEffect.AreaSize, SpellEffect.CritDamage),
 		// Spiritual Weapon is read by FORM (SpellData.Variants): one script, but what reaches a blow differs by
 		// weapon, so each form has its own row and TryGet(SpellData) takes the form's before the spell's. The
@@ -176,7 +176,7 @@ public static class EvolutionStatReaders
 			SpellEffect.CritChance, SpellEffect.Lifesteal, SpellEffect.CritDamage),
 		["fireball"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Scale | EvolutionStat.Rider,
-			"Fireball.RefreshComputedStats, LeaveMagmaPool and ScatterClusterBombs (one ball; projectiles past the first are bomblets)",
+			"Fireball.RefreshComputedStats, LeaveMagmaPool and ScatterClusterBombs (one ball; projectiles past the first are bomblets; Brimstone and Armageddon Sun's plough by id, through BrimstoneLayer and Fireball.Sear)",
 			SpellEffect.AreaSize, SpellEffect.Burn, SpellEffect.CritDamage),
 		["frost_shard"] = R(EvolutionStat.Damage | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Slow
 				| EvolutionStat.Rider,
@@ -221,7 +221,7 @@ public static class EvolutionStatReaders
 			SpellEffect.AreaSize, SpellEffect.CritDamage),
 		["meteor_swarm"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Knockback | EvolutionStat.Rider
 				| EvolutionStat.Amount,
-			"MeteorImpact.cs and Player.FireMeteorSwarm (the volley is the projectile count plus Amount; drops the visual scale)",
+			"MeteorImpact.cs and Player.FireMeteorSwarm (the volley is the projectile count plus Amount; drops the visual scale; Breakup, Skipstone, Extinction Event's finale and Creeping Barrage by id)",
 			SpellEffect.Burn, SpellEffect.AreaSize, SpellEffect.CritDamage),
 		["starfall"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Rider
 				| EvolutionStat.Amount,
