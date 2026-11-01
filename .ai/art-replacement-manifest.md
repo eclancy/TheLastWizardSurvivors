@@ -795,6 +795,16 @@ Photographed before (`vis_beams_b_*`) and after (`vis_beams_a_*`) with `_UiShot 
 card), at `--zoom=1.6` on the Cursed Dungeon and at the game's zoom on the Scorched Sands; after shots
 also at `--zoom=3` and on the Sketchbook's paper, the brightest floor.
 
+
+**The icon, 2026-11-01.** Eric: the icon "should show a thinner ray blasting into the ground". It was an
+eight-pixel beam running up from a flare in the lower left to the top right. Now (`spell_icons_core.py`
+`scorching_ray`) a ray three pixels wide - white-hot core, Fire's orange, its red at the edges - comes down
+steeply out of the top left and strikes the floor: a pool of molten light lying flat, char with glowing
+cracks round it, a crown of droplets and a glint on the strike. `RAY_FROM` and `RAY_STRIKE` are the two
+points the five evolution cards are now placed on (`evolution_icons.py`, regenerated with
+`--only=scorching_ray`): Flashpoint's blast, Handoff's fallen mark and swing along the ground, Burn Through's
+marks burned on the beam, Prism's fan out of the strike, Sunlance's afterimages and furrow of heat.
+
 ### Riptide
 
 Audited from `_UiShot` bursts against a `--spell-stage` crowd: the base spell, level 8 with all six level
