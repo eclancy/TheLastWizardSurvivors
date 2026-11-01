@@ -83,8 +83,9 @@ public partial class Node2DGame
 	/// <summary>World pixels a weight-1 beat shakes the screen; a climax shakes a little harder.</summary>
 	private const float ImpactShakePx = 6f;
 	private const float ClimaxShakePx = 8f;
-	/// <summary>Canvas pixels the bars jump in at a weight-1 climax.</summary>
+	/// <summary>Canvas pixels the bars jump in at a weight-1 climax, and the most they ever jump.</summary>
 	private const float ClimaxBarJolt = 8f;
+	private const float MaxBarJolt = 12f;
 	/// <summary>The push-in's kick at a weight-1 climax, on the zoom factor.</summary>
 	private const float ClimaxZoomPunch = 0.05f;
 	private const float FlareSeconds = 0.34f;
@@ -150,7 +151,7 @@ public partial class Node2DGame
 			return;
 		ShakeScreen(ImpactShakePx * weight, 0.25f + 0.3f * weight);
 		if (letterboxShown > 0f)
-			letterboxJolt = Mathf.Max(letterboxJolt, ClimaxBarJolt * 0.4f * weight);
+			letterboxJolt = Mathf.Clamp(ClimaxBarJolt * 0.4f * weight, letterboxJolt, MaxBarJolt);
 	}
 
 	/// <summary>
@@ -164,7 +165,7 @@ public partial class Node2DGame
 		if (!bossEntranceHeld && letterboxShown <= 0f)
 			return;
 		float w = Mathf.Max(0.3f, weight);
-		letterboxJolt = Mathf.Max(letterboxJolt, ClimaxBarJolt * w);
+		letterboxJolt = Mathf.Clamp(ClimaxBarJolt * w, letterboxJolt, MaxBarJolt);
 		cinematicZoomPunch = Mathf.Max(cinematicZoomPunch, ClimaxZoomPunch * w);
 		flareRamp = ElementColors.GetRamp(element);
 		flareAge = 0f;
@@ -374,6 +375,19 @@ public partial class Node2DGame
 			letterbox.QueueRedraw();
 	}
 
+	/// <summary>
+	/// The canvas y a banner must start below to be clear of the top bar while an arrival is filmed: the bar
+	/// at full height, its deepest jolt, and the climax's spill into the picture. 0 when nothing is filmed.
+	/// ShowRunBanner reads it, so the boss's name is never under the bar it is announced beneath.
+	/// </summary>
+	private float LetterboxBannerFloor()
+	{
+		if (!bossEntranceHeld && letterboxShown <= 0f)
+			return 0f;
+		var (top, _) = LetterboxBarHeights(GetViewport().GetVisibleRect().Size);
+		return top + MaxBarJolt + FlareDepth + 6f;
+	}
+
 	// Each bar at full height, in canvas units: a share of the canvas, plus the safe inset on its own edge
 	// on a phone (the camera hole and the rounded corners), so the bar seen below the hole matches the other.
 	private (float Top, float Bottom) LetterboxBarHeights(Vector2 canvas)
@@ -433,6 +447,8 @@ public partial class Node2DGame
 	// The spill's strips, outward from the edge, by ramp stop (0 hot, 1 mid, 2 edge), and their height.
 	private static readonly int[] FlareSpill = { 0, 1, 1, 2 };
 	private const float FlareStrip = 6f;
+	/// <summary>How far the flare reaches into the picture past a bar's edge, line and spill.</summary>
+	private static float FlareDepth => 4f + FlareSpill.Length * FlareStrip;
 
 	private static Texture2D[] BayerTiles()
 	{

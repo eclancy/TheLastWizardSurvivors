@@ -5906,6 +5906,10 @@ public partial class Node2DGame : Node2D
 			// row's foot too, wherever the cutout has put it.
 			if (ResponsiveLayout.IsNarrow(panel) && GetNodeOrNull<Control>("UIOverlay/LoadoutHud") is Control loadout)
 				top = Mathf.Max(top, loadout.GetGlobalRect().End.Y + 8f);
+			// And inside the picture while a boss's arrival is filmed: the letterbox's top bar is drawn over
+			// the HUD, and this banner is the arrival's one line of words - the boss's name - so it goes
+			// below the bar at its deepest (Node2DGame.BossEntrance.cs, LetterboxBannerFloor).
+			top = Mathf.Max(top, LetterboxBannerFloor());
 			panel.OffsetBottom = top + (panel.OffsetBottom - panel.OffsetTop);
 			panel.OffsetTop = top;
 		}
