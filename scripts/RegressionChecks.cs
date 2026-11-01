@@ -3855,6 +3855,13 @@ public static class RegressionChecks
 				warnings.AddRange(seneschal.TuningProblems());
 				break;
 
+			// The Constable holds his own tuning to the player's walk and to the fight's shape (the gate's
+			// pour walkable, the files' gaps wide enough, the yard visit long enough to swing twice);
+			// BridgeConstableBoss.TuningProblems says what broke.
+			case BridgeConstableBoss constable:
+				warnings.AddRange(constable.TuningProblems());
+				break;
+
 			case GaolerBoss gaoler:
 				// Below 0 there is no planted tell before the charge; at 1 the charge never
 				// happens, because the wind-up ends before it starts moving.

@@ -34,6 +34,18 @@ public partial class _BossProbe : Node
 	[Export] public float GiveUpSeconds { get; set; } = 140f;
 	[Export] public bool FocusOneBody { get; set; }
 
+	// --approach: for a boss that comes down only to a wizard who has reached a place - the Constable
+	// (.ai/endgame-castle.md 3.6) holds the gate from the wall until the wizard stands at its foot. The
+	// probe's clock brings the boss in seconds, long before a bot could walk a chapter to it, so on the
+	// first frame the wizard is set down ApproachStartPx short of the chapter's boss point (ChapterRules
+	// hook 4) - the probe does not walk the bridge, it starts where the walk ends - and from then on he
+	// walks to that point and holds it, leaning away from what is close. He is kept whole, because
+	// walking into the fire is the point, and the drain bites only a body that is in reach (IsTargetable),
+	// so a boss out of reach is not walked through its phases by the probe's clock.
+	[Export] public bool Approach { get; set; }
+	private const float ApproachStartPx = 900f;
+	private Vector2? approachTo;
+
 	private Node game;
 	private Node2D player;
 	private BossEnemy boss;
@@ -64,6 +76,9 @@ public partial class _BossProbe : Node
 			else if (arg.StartsWith("--drain=")) DrainSeconds = float.Parse(arg.Substring(8));
 			else if (arg.StartsWith("--drain-interval=")) DrainInterval = float.Parse(arg.Substring(17));
 			else if (arg == "--focus") FocusOneBody = true;
+			else if (arg == "--approach") Approach = true;
+			// For a fight drained slowly (--drain) to stand in for a build's damage, longer than 140 s.
+			else if (arg.StartsWith("--give-up=")) GiveUpSeconds = float.Parse(arg.Substring(10), System.Globalization.CultureInfo.InvariantCulture);
 		}
 
 		// Immune to the pause, or the first level-up stops the probe dead.
@@ -109,11 +124,15 @@ public partial class _BossProbe : Node
 			player = FindNode<Player>(game);
 			if (player == null)
 				return;
+			if (Approach)
+				PlaceForApproach();
 		}
 
 		AutoPickLevelUp();
 		DriveMovement();
 		TrackBoss((float)delta);
+		if (Approach && player is Player kept && !kept.IsDead)
+			kept.CurrentHP = kept.MaxHP;
 
 		if (elapsed >= GiveUpSeconds)
 			Finish("ran out of clock");
@@ -231,7 +250,7 @@ public partial class _BossProbe : Node
 		// and the probe reports a fight it did not actually test.
 		foreach (BossEnemy body in FocusOneBody ? bodies.Take(1) : bodies)
 		{
-			if (!IsInstanceValid(body))
+			if (!IsInstanceValid(body) || (Approach && !body.IsTargetable))
 				continue;
 			int bite = Mathf.Max(1, Mathf.RoundToInt(body.MaxHealth * DrainInterval / Mathf.Max(0.5f, DrainSeconds)));
 			body.TakeDamage(bite);
@@ -295,6 +314,14 @@ public partial class _BossProbe : Node
 		Vector2 desired = counted > 0
 			? away.Normalized() + toCentre.Normalized() * 0.45f
 			: toCentre.Normalized();
+		if (approachTo is Vector2 hold)
+		{
+			// --approach: the place, not the middle of the arena, and the place first - a wizard walking
+			// into the fire leans away from what is close but does not give the ground up to it.
+			Vector2 toPlace = hold - player.GlobalPosition;
+			desired = (toPlace.Length() > 60f ? toPlace.Normalized() : Vector2.Zero)
+				+ (counted > 0 ? away.Normalized() * 0.35f : Vector2.Zero);
+		}
 
 		if (desired.LengthSquared() > 0.0001f)
 			desired = desired.Normalized();
@@ -457,6 +484,23 @@ public partial class _BossProbe : Node
 			}
 		}
 		return best;
+	}
+
+	// --approach, on the first frame the wizard exists: set him down short of the boss point, on the side
+	// he started from, and give him the point to walk to.
+	private void PlaceForApproach()
+	{
+		BossDefinition definition = BossCatalog.ForStageIndex(StageIndex);
+		if (Node2DGame.Current?.Rules?.BossSpawnPoint(definition) is not Vector2 point)
+		{
+			notes.Add("--approach: the chapter names no boss point (hook 4), so the wizard kites as usual");
+			return;
+		}
+		Vector2 back = player.GlobalPosition - point;
+		back = back.LengthSquared() > 1f ? back.Normalized() : Vector2.Down;
+		player.GlobalPosition = point + back * ApproachStartPx;
+		approachTo = point;
+		notes.Add($"--approach: wizard set down {ApproachStartPx:0} px short of the boss point {point.Round()} and walked to it");
 	}
 
 	private static void Press(string positive, string negative, float axis)

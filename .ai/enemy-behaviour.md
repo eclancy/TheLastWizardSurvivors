@@ -633,6 +633,7 @@ rather than from its own machinery.
 | 8 | The Emberdeep | **The Warden of the Deep** | All four of the above, in sequence, with no break. | `DeepWardenBoss` |
 | 9 | The Fallow Fields | **The Hayward** | Can you go round it? Its hurdle cuts what lands from in front to x0.2 (`Enemy.AdjustIncomingDamage`). | `HaywardBoss` |
 | 10 | The Broken Circle | **The Ninth Stone** | Can you find the way out of a closing ring, read from the ground in under a second? | `NinthStoneBoss` |
+| 11 | The Last Bridge (castle, not yet playable) | **The Constable** | Can you advance under fire? He holds the gate from the wall, untargetable, and comes down into the yard only to a wizard who has reached the gate's foot (`.ai/endgame-castle.md` 3.6). | `BridgeConstableBoss` |
 
 Two of them deliberately take opposite halves of the same idea. The Archivist is the **stationary
 sweep** with burrowing as punctuation; the Long Coil is the **burrow** as the whole fight. Reusing
@@ -741,6 +742,7 @@ fall is the default.
 | The Warden of the Deep | Built, not taken, so it fails like a furnace: the heart flares, fire runs along every seam, it bursts, the pauldrons are thrown off, and it slumps into a molten crater (`CraterGround`) as the last of his fire goes out. The longest fall: the finale |
 | The Hayward | The hurdle topples away from him flat onto the stubble, bursting straw; his hat spins off behind him, the crook drops, and he folds to his knees |
 | The Ninth Stone | The mark burns down its split and then leaves, a thread of light streaming up and away; what is left is granite, and it falls whole, away from the wizard, with a thud of dust, chips and heather |
+| The Constable | The gate given up: the mark gutters in the slit, the halberd goes over off his open hand and rings on the setts, he goes down on his knees, the ring of the gate's keys drops from his belt into a heap (not thrown - the Gaoler's burst and skitter), his head bows and the plate goes dark |
 | The Seneschal | **His staff is broken**, as a steward broke his white staff over his lord's grave: it snaps where his hand holds it in a burst of white splinters, the top half spins away and the foot tips across his front; his cap goes off behind him; he sinks to his knees and the gown pools; the chain of office slides off and its gilt links skitter; the mark goes out |
 | Wizard Dude | **The kids' drawing is never cut, turned or redrawn.** His one frame stays untouched and only FADES, inside a puff of his own spell's colour with sparks rising - an effect of ours round their pixels, nothing in their style |
 
@@ -792,6 +794,7 @@ screen shake's) and eases back.
 | The Warden of the Deep | The floor melts into a pool; the armour rises out of it cold and black; the heart catches and fire runs along every seam. The longest, as its fall is |
 | The Hayward | A dust devil of straw spins up; he takes shape in it and drives his hurdle down with a thud |
 | The Ninth Stone | A thread of his light comes down into the heath; the ground cracks; the stone heaves up and the mark runs down its split |
+| The Constable | On the wall-walk over the gate, where he fights from: his cold fire runs along the battlements merlon by merlon from the towers in; the halberd's head comes over the parapet, then the sallet with the mark lit, then the whole of him, climbing the stair in heaves; he grounds the halberd with a jolt that shakes grit and dust off the merlons |
 | The Seneschal | A pair of panelled oak doors stands where there was none and swings open on the dark; he steps out of it, the light finding him as he comes; the doors shut behind him with a thud of dust; he lifts his staff of office and brings it down on the floor, and the mark opens. It is how he leaves, three times, and how he is found |
 | Wizard Dude | **The kids' frame is never cut**: sparks of his colour wind in, a puff, and his own sprite pops up from small with one bounce (scale, height, alpha only) |
 
@@ -811,14 +814,15 @@ voices change together.
 | The Warden of the Deep | unchanged: charge, sweep, burrow, cataclysm |
 | The Hayward | 0.5 the swing (unchanged). 0.28 temper: turns 92 deg/s, swings every other attack, quicker |
 | The Ninth Stone | 0.6 the double close (was 0.5). 0.28 the circle tightens: closes every 6.2 s and stray marked stones fall on the player between them |
+| The Constable | 0.66 and 0.33: each sends him back up the wall at once (he finishes the swing he is in) and thickens the volleys - files of bolts 2, 3, 4 a volley, rings of pitch 1, 2, 3, the interval x1, x0.85, x0.72, and in the last both at every volley - so the gate is taken three times. Every return to the wall pours pitch over the gate's whole foot first |
 | The Seneschal | Opens with the staff (a ring) and **the rank** (5 household guards called down a marked lane at the player, a wall that walks at 380 px/s: step out of it sideways), and in the Great Hall the chandeliers. **0.75, 0.5 and 0.25 are flights**: no hit carries him past one; he steps through a servants' door, untargetable and taking nothing, travels through the walls (one `BurrowMove`) to a room one or two away that he has not held, and the room he left fills with his household at its doors (8, 11, 14). He waits there, a shade, until the player reaches the room. Found after 1: ranks every 6.4 s. After 2: every 5.4 s, seven abreast. After 3: the enrage |
 | Wizard Dude | 0.66 every fan is cast twice down the same wedge. 0.34 enrage, wider fan |
 
 **Health, second** (`BossCatalog`; the value before is on each line): Elderbark 9,500, the Hayward
 10,000, the Ninth Stone 46,000, the Choir 3 x 26,000, the Gaoler 150,000, Mother Rot 170,000, the
 Archivist 140,000, the Still Warden 400,000, the Long Coil 300,000, the Warden of the Deep 500,000,
-Wizard Dude 9,000; and the castle's first, the Seneschal, 440,000 (13,000, the castle doc's guess;
-measured below).
+Wizard Dude 9,000; and the castle's two, the Constable 400,000 (11,800, the castle doc's first guess)
+and the Seneschal 440,000 (13,000, its guess), each measured below under its own protocol.
 
 **The Boss Rush scales every boss to a third** (`BossRushCatalog.FightHealthShare` = 0.35, the finale
 included, on top of the arrival curve). Ten fights of three to five minutes would be forty minutes of
@@ -850,6 +854,32 @@ direction, and the health as set between the strong and the weak runs.
 **The Boss Rush** (`--boss-rush --farmed --stage=7`, after the merge): all ten fell, each fight 9 s
 (Elderbark, at the curve's floor) to 1.7 min (the Still Warden), 9.5 minutes of fights in a 24.5
 minute run.
+
+**The Constable, measured** (2026-11-01, `wip/boss-constable`). No harness bot can walk to a point and
+hold it: `--walk=315` reaches the castle wall and paces it corner to corner, crossing the gate's foot
+in under the 1.5 s hold, and `--survivor` stays down the yard. So the yard fight was measured with one
+experimental, uncommitted change - the hold's radius widened to 1,200 px in the scene, so a bot
+anywhere at the gate end brings him down - and the wall's cost from `_BossProbe --approach --drain=150
+--give-up=900` (a wizard who holds the gate: each 12 s visit costs about 4.5 s of pour, hold and
+leaps, so he is in reach about two thirds of the fight; a player crossing the yard after each pour
+spends longer). Farmed Stormcaller, `--fixed-fps 30 --timescale=1`, `--policy=ordinary --immortal`,
+stage 11; L15 is the level at 15:00, DPS is damage a second while he is in reach.
+
+| bot, seed | L15 | health | what happened | DPS in reach |
+|---|---|---|---|---|
+| `--survivor`, 1234 | 46 | 400,000 | felled 41 s after his arrival, three visits | ~20,000 |
+| `--survivor`, 77 | 36 | 1,500,000 | 30% off in 5.9 min (cap) | ~1,900 |
+| `--survivor`, 1234 (again) | 22 | 1,500,000 | never came within 1,200 px of the gate | - |
+| `--walk=315`, 77 | 34 | 400,000 | 62% off in 5.3 min (cap), fighting from a corner of the wall | ~1,100 |
+| `--walk=315`, 1234 | 25 | 400,000 | 20% off in 5.7 min (cap) | ~330 |
+| Warden of the Deep, `--survivor`, 1234, Emberdeep | 34 | 500,000 | felled in 5.9 min | (1,400 over the fight) |
+
+The same seed reached L46 and L22 on two bridge runs (`BridgeRules` spawns from an unseeded RNG), so
+read the rows as a spread. **400,000** puts the median bridge build (L36, ~1,900 a second) at about
+five minutes - the Warden of the Deep's length for the same class of build today - with a strong one
+done in under a minute and a weak one not done at all. The bridge's survivor reached L46 and L36 where
+the Emberdeep's reached 34: the travel chapter pays more XP than the road's last, which is the bridge's
+to look at (C1), not the boss's.
 
 `_BossProbe` on every chapter (0-10, the Choir with and without `--focus`): every boss arrives, holds
 the field for its arrival (spells held, the player unhurt, both released the frame after), reaches

@@ -475,8 +475,8 @@ may echo the Constable (a tall armoured figure with a ring of keys and a halberd
 
 ### 3.6 The boss: the Constable
 
-`BridgeConstableBoss`, `bridge_constable`, health about 11,800 (first guess, after the Warden's
-11,000). *"He holds the gate from the wall. Get to the gate."*
+`BridgeConstableBoss`, `bridge_constable`, health from measured runs (below; the first guess was
+11,800, after the Warden's 11,000). *"He holds the gate from the wall. Get to the gate."*
 
 - **The verb no other boss asks: advance under fire.** He fights from the wall-walk above the gate,
   untargetable (`Enemy.SetTargetable(false)`), directing volleys onto the yard: lines of crossbow
@@ -489,6 +489,38 @@ may echo the Constable (a tall armoured figure with a ring of keys and a halberd
 - **Where he appears** is the gate (`ChapterRules.BossSpawnPoint`), not near the player.
 - Primitives only: `SetTargetable`, `TelegraphedGroundHit`, `GroundSlamAttack` `Line` and `Cone`. No
   shared edit. `_BossProbe --stage=11`.
+
+**Built (C5, 2026-11-01, `wip/boss-constable`).** `scripts/BridgeConstableBoss.cs`,
+`scenes/BridgeConstableBoss.tscn`, his sheet from `tools/art/boss_constable.py` (a tall post with a flag
+and a hoop: the halberd's blade over his head, the ring of keys at his hip). What the build decided:
+
+- **The gate's foot is hook 5's gate** (`BridgeRules.VictoryPortalPoint`, 190 px in front of the castle
+  wall), not hook 4's spawn point (410 px out): a player who walks up to the gate door must be on it,
+  and with the hold centred 410 px out he was not. He spawns at hook 4 and goes straight up the wall.
+- **The wall-walk is measured off the gate's art** (`props_bridge.py` `gate_shut`: merlon tops 172 px
+  over the gate's foot on its middle column): his boots stand 128 px over it, he is sorted behind the
+  gate sprite, and the parapet hides his legs. His arrival plays there.
+- **"Lines of bolts across the yard" are files down it at the player**: lanes from the gate's end, one
+  through where he stands and the rest beside it 150 px apart, so the way forward is a sidestep. The
+  pitch is a ring on him and rings ahead of him toward the gate. They alternate; in the last phase every
+  volley is both. Thickening: files 2/3/4, rings 1/2/3, the interval 3.0 s x1/x0.85/x0.72.
+- **The gate has to be retaken.** Every time he reaches the wall (the first time too) the gate pours pitch
+  over its whole foot (one ring, 280 px, 1.7 s), and the hold only counts once it has landed. Without it
+  a player who stood his ground at the gate through the yard fight had him back down 1.5 s after he
+  climbed, and the yard was crossed once.
+- He finishes the swing he is in before a threshold sends him up; he lands at least 180 px from the
+  player and waits 0.7 s before his first swing; the charge bills the run-over once, as the Gaoler's does.
+- `TuningProblems()` holds the numbers to the player's walk (the pour walkable, the files' gaps wide
+  enough, the yard visit two swings long); `RegressionChecks.ValidateBossPattern` runs it.
+- `_BossProbe --stage=11 --approach` is the probe for him: the wizard set down 900 px short of the gate
+  and walking to it, kept whole, the drain biting only while he is in reach. Without `--approach` the
+  drain fells him on the wall and the fight is never tested. `--give-up=S` lets a slow `--drain` stand
+  in for a build's damage over a whole fight.
+- **Health 400,000**, from the runs in `.ai/enemy-behaviour.md` ("The Constable, measured"): in reach
+  about two thirds of the fight, about five minutes for the bridge's median build (L36), the Warden of
+  the Deep's length for that class of build. The harness has no bot that walks to a point and holds it,
+  so the yard was measured with the hold widened in an uncommitted scene; a `--goto`-style mover in
+  `_BalanceHarness` would measure him end to end.
 
 ### 3.7 Terrain and art
 
