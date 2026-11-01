@@ -130,6 +130,9 @@ builds to 120 and seven.
 8. **Ground per chapter**: every chapter's ground should read as its place; "Emberdeep doesn't look like
    cracked volcanic earth." A ground pass through `tools/art/tiles.py` and the chapters' terrain
    modules (`.ai/terrain.md` first), the Emberdeep first.
+11. **Done:** the Test Wizard is off character selection (69986af); the Sketchbook's boss is **Elim**
+   (b3695cf). **Waiting on Eric:** Elim's "it's wizarding time" drawing, to show when he arrives - it is
+   not in the repo or this PC's Downloads or Pictures.
 9. **Make the Apotheosis visible** ("make it clearer that apotheosis is an option, showing in
    'ascensions', etc"). Today the Ascensions browser never mentions it (`LevelUpMenu.Ascensions.cs` does not
    read `ApotheosisCatalog`); a player meets it only when the strip offers it. Show the wizard's own
@@ -137,7 +140,8 @@ builds to 120 and seven.
    wizard is chosen and where the starting spell's evolutions are shown.
 10. **Design, in flight** (`wip/design-wizards-combos`, docs only): a wizard to free in every chapter
    (`.ai/chapter-wizards.md`), and combination spells beginning with Sagittarius = Hunter's Draw +
-   Starfall/Constellation (`.ai/combo-spells.md`), merged 25843fd. Eric chooses before anything is built.
+   Starfall/Constellation (`.ai/combo-spells.md`). **Both approved by Eric, 2026-11-01** (only the starters
+   a new save holds must open on one element; Ma Liang for the Sketchbook); nothing built yet.
    **Decided:** a combination needs both parents fully ascended, each through one specific named
    Ascension (revision of the doc in flight).
 
