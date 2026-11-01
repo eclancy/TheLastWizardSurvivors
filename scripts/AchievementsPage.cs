@@ -665,7 +665,8 @@ public static class AchievementsPage
 		{
 			if (item.MetThisRun)
 			{
-				// Met on this run's numbers: the run's end pays it, whichever way the run ends.
+				// Met on this run's numbers and not yet recorded: the watcher records a deed within a second of
+				// meeting it (Node2DGame.RecordAchievementNow), so this tag is only ever briefly seen.
 				entry.Tag = "This run";
 				entry.TagGlyph = StatIcons.Load("done");
 				entry.TagIsDone = true;

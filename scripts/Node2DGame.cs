@@ -6696,9 +6696,14 @@ public partial class Node2DGame : Node2D
 	// same way that finishing an equipment set does". Every second of play the run so far is read the
 	// way its end will read it (AchievementContext.Projected over SnapshotRunResult - the pause tab's own
 	// reading), and each deed it completes plays the set moment's beat (SetAssembledMoment.PlayAchievement):
-	// one queue with the sets, nothing paused, under every menu. Nothing is recorded here. A deed met on
-	// the run's numbers is paid by the run's end, as the pause tab has always said ("This run"), so the
-	// plate says when it is paid.
+	// one queue with the sets, nothing paused, under every menu.
+	//
+	// And it is recorded on the spot (Eric, 2026-11-01: "Achievements should count as soon as you get
+	// it"): RecordAchievementNow pays it through AchievementManager.CompleteNow, the path a secret and a
+	// side event already take, so quitting or restarting from the pause screen no longer forfeits a deed
+	// the banner announced, and a spell it grants joins the level-up pool from the next level-up. The run's
+	// end then finds it already done and pays nothing twice (UnlockAchievement refuses a second time);
+	// the results screen still lists it, from runDiscoveryEntries.
 	//
 	// Watched: what the save has not done, is listed (never a sealed or hidden name), was not already met
 	// before the run began, and is not one of the deeds completed in the run (a side event's, a secret's -
@@ -6767,8 +6772,46 @@ public partial class Node2DGame : Node2D
 	private void AnnounceAchievement(AchievementDefinition deed, SaveData data)
 	{
 		Texture2D reward = CodexRows.RewardGlyph(deed, id => SpellById(id)?.Icon);
-		EnsureMoment().PlayAchievement(deed, reward, PaidLine(deed, data), string.Empty);
+		// The line is read before the deed is paid, or a spell it grants would say "already known".
+		string paid = PaidLine(deed, data);
+		EnsureMoment().PlayAchievement(deed, reward, paid, string.Empty);
+		RecordAchievementNow(deed);
 		GD.Print($"Node2DGame: achievement met this run - {deed.Id} at {FormatTime(timeElapsed)}");
+	}
+
+	// Deeds recorded mid-run, for the results screen: their names and the Arcane Energy they paid, which
+	// CompleteNow adds to the save but not to any summary.
+	private readonly List<string> runAchievementNames = new();
+	private int runAchievementCurrency;
+
+	private void RecordAchievementNow(AchievementDefinition deed)
+	{
+		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (saveManager?.Data == null)
+			return;
+		// Watched deeds are never done before the run (BuildAchievementWatch), so this is the first time
+		// and CompleteNow pays its Arcane Energy; it also saves.
+		List<RunUnlockEntry> granted = AchievementManager.CompleteNow(saveManager, deed.Id);
+		runAchievementNames.Add(deed.DisplayName);
+		runAchievementCurrency += Math.Max(0, deed.CurrencyReward);
+		// The results screen shows the thing earned with the deed as how (as ApplyRunAchievements does);
+		// a deed that granted no thing is a card of its own.
+		foreach (RunUnlockEntry entry in granted)
+		{
+			(entry.Kind == RunUnlockKind.Wizard ? runDiscoveredWizards : runDiscoveredSpells).Add(entry.Name);
+			runDiscoveryEntries.Add(entry);
+		}
+		if (granted.Count == 0)
+		{
+			runDiscoveryEntries.Add(new RunUnlockEntry
+			{
+				Kind = RunUnlockKind.Deed,
+				Id = deed.Id,
+				Name = deed.DisplayName,
+				Source = deed.Description,
+				Currency = deed.CurrencyReward,
+			});
+		}
 	}
 
 	private void OnPlayerDamageTaken(int amount)
@@ -6835,6 +6878,9 @@ public partial class Node2DGame : Node2D
 			saveManager.Data.RecordRunTelemetry(result);
 			saveManager.Data.HasSeenGameplayOnboarding = true;
 			runUnlocks = AchievementManager.ApplyRunAchievements(saveManager.Data, result);
+			// Deeds already paid mid-run (RecordAchievementNow) are not re-paid above, so they are added here.
+			runUnlocks.AchievementNames.InsertRange(0, runAchievementNames);
+			runUnlocks.CurrencyAwarded += runAchievementCurrency;
 			runUnlocks.SpellNames.AddRange(runDiscoveredSpells);
 			runUnlocks.WizardNames.AddRange(runDiscoveredWizards);
 			// Found in the world first - they happened before the run ended - then what the run's
