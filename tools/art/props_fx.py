@@ -500,9 +500,15 @@ def shield_aura(i, n):
 
     Sparse on purpose: it sits on top of the player for as long as the shield lasts, and a solid
     disc would hide the character it is protecting.
+
+    Aegis Ward's two elements, Metal for the ring and Light for the motes, as its Rampart dome is
+    gold over Metal plates. It was Arcane, which no shield source carries; once the pixel pass made
+    the ring opaque it read as a violet halo on every robe (Eric, 2026-11-01: recolour). Protective
+    Ward and Vaultguard share it: the ring means "shielded", whoever granted it.
     """
     c = raster.Canvas(AURA_CELL, AURA_CELL, None)
-    a = bl.ELEMENTS["arcane"]
+    a = bl.ELEMENTS["metal"]
+    glow = bl.ELEMENTS["light"]
     cx = cy = AURA_CELL / 2.0 - 0.5
     spin = i / float(n) * TAU
     r = 20.0 + math.sin(spin * 2.0) * 1.2
@@ -523,8 +529,8 @@ def shield_aura(i, n):
         ang = spin * 1.6 + k * TAU / 6.0
         mx = cx + math.cos(ang) * r
         my = cy + math.sin(ang) * r * 0.9
-        c.disc(mx, my, 1.8, 1.8, a[2])
-        c.set(mx, my, a[0])
+        c.disc(mx, my, 1.8, 1.8, glow[3])
+        c.set(mx, my, glow[0])
     return c
 
 

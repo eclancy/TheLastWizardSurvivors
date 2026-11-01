@@ -1505,6 +1505,15 @@ opaque Arcane ring it was drawn as. Everything else is `scripts/AegisWard.cs`, w
 No radius, cost, reach, damage or timing changed; the shaft's drawing has its own short clock inside the
 0.14 s it always lasted.
 
+**The ring recoloured** (Eric, 2026-11-01): opaque, the Arcane ring read as a violet halo on every robe,
+and no shield source is Arcane. `props_fx.shield_aura` now draws the ring in Metal's ramp and its six motes
+in Light's gold with a white-hot centre, Aegis Ward's two elements, as the Rampart dome is gold over Metal
+plates. It still means "shielded" whoever granted it. The elite marker multiplies the same sheet by its gold
+tint, so it now reads gold rather than the brown that tint made of violet. Photographed with `_UiShot
+--scene=res://scenes/node_2d_game.tscn --character=0 --start-spell=aegis_ward --stage=1 --spell-stage=1
+--cast-on-stage --zoom=2` at both canvases. Re-running `props_fx.py` here also re-rolls the flame vent
+(Python 2.7's `randint` differs from the 3.13 the cloud drew it with), so only the ring was committed.
+
 Photographed before (`psa_b_aegis_*`) and after (`psa_a_aegis_*`) with `_UiShot --start-spell=aegis_ward`:
 the base ward with a crowd held off; Reflective Plating + Sun Aegis and Reforged + Sun Aegis against a
 crowd stood on him (`--spell-stage=8,30,0`, `--ripen-every=3` so the ward keeps coming back); Rampart +
