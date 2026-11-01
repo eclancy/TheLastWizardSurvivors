@@ -28,8 +28,8 @@ namespace WizardSurvivors.scripts;
 //
 // ONE NODE, EVERY RUNE. The node lives in the arena at the origin and draws in world space; runes,
 // their hit lists and their sparks are slots in fixed arrays, and a rune is one region of a pre-rotated
-// sheet (tools/art/sleet_runes.py, 32 headings) drawn in one call - nothing instanced or allocated per
-// rune, which is what lets a level 8 stream of dozens fly on a phone.
+// sheet (tools/art/sleet_runes.py, 32 headings, the wind that carries it included) drawn in one call -
+// nothing instanced or allocated per rune, which is what lets a level 8 stream of dozens fly on a phone.
 //
 // THE ANIMATION IS THE HIT AREA. A rune is its own hit: the glyph, and the body width it is tested at.
 // Where it strikes, rime flakes are thrown out to exactly that width; where it is spent or runs out of
@@ -208,6 +208,10 @@ public partial class SleetRunes : Node2D
 		// the air (DrawLayers).
 		ZAsRelative = false;
 		ZIndex = DrawLayers.Air;
+		// Every fade is a dissolve on the world's 2 px cell (the pixel-art pass, 2026-11-01): the alpha the
+		// flakes and the strike's sparkle go out with is read as coverage, never as a translucent wash.
+		// A rune drawn from its sheet is opaque and passes through unchanged.
+		Material = SpellInk.DitherByCell;
 	}
 
 	/// <summary>
@@ -575,8 +579,6 @@ public partial class SleetRunes : Node2D
 
 	private void DrawRunes(Transform2D toLocal)
 	{
-		Color windMid = Ink(wind.Mid, 0.55f);
-		Color windEdge = Ink(wind.Edge, 0.4f);
 		for (int i = 0; i < MaxRunes; i++)
 		{
 			if (!runes[i].Live)
@@ -585,14 +587,9 @@ public partial class SleetRunes : Node2D
 			Vector2 at = toLocal * k.Pos;
 			Vector2 heading = k.Vel.LengthSquared() > 0.0001f ? k.Vel.Normalized() : Vector2.Right;
 
-			// The wind that carries it: two thin streaks behind its sleet tail, a step cooler than the rune
-			// (twice as far back and apart behind a great rune).
-			float size = k.Great ? 2f : 1f;
-			Vector2 across = new Vector2(-heading.Y, heading.X);
-			Vector2 tail = at - heading * 20f * size;
-			DrawLine(Snap(tail + across * 4f * size), Snap(tail + across * 4f * size - heading * 14f * size), windMid, 2f);
-			DrawLine(Snap(tail - across * 4f * size), Snap(tail - across * 4f * size - heading * 9f * size), windEdge, 2f);
-
+			// The wind that carries it - two streaks either side of its sleet tail, a step cooler than the
+			// rune - is in the sheet, rasterised per heading with the rest of it (tools/art/sleet_runes.py).
+			// It was two DrawLines here at 55% and 40% alpha: a translucent wash on a rotated quad.
 			Texture2D sheet = k.Great && GreatRuneSheet != null ? GreatRuneSheet : RuneSheet;
 			if (sheet == null)
 				continue;
@@ -605,7 +602,9 @@ public partial class SleetRunes : Node2D
 	}
 
 	// A strike throws rime flakes forward through the body, out to exactly the width the rune was tested
-	// at; a rune at the end of its flight dissolves into a puff of sleet in Wind's ramp.
+	// at, from a white-hot sparkle where it struck; a rune at the end of its flight dissolves into a puff
+	// of sleet in Wind's ramp. The node draws through SpellInk.DitherByCell, so every alpha here is
+	// coverage: the flakes' last third and the sparkle thin out cell by cell.
 	private void DrawSparks(Transform2D toLocal)
 	{
 		for (int s = 0; s < MaxSparks; s++)
@@ -623,8 +622,33 @@ public partial class SleetRunes : Node2D
 			}
 			ImpactDebris.Draw(this, at, reach, spark.Age, spark.Seed, ice, 7, tint,
 				startAngle: spark.Heading.Angle() - 1.1f, sweep: 2.2f, life: SparkSeconds);
-			if (spark.Age < 0.06f)
-				DrawRect(WhipLimb.Cell(at, 6f), Ink(ice.Core, 1f - spark.Age / 0.06f));
+			if (spark.Age < FlashSeconds)
+				DrawSparkle(at, spark.Great, spark.Age / FlashSeconds);
+		}
+	}
+
+	// The strike's flash: a four-pointed sparkle of whole art pixels on the grid - a white-hot heart, Ice's
+	// hot in its arms and the mid at their tips (a great rune's arms a cell longer) - held a frame, then
+	// dissolving. It was a 6 px square fading by alpha. Every cell of it is well inside the width the rune
+	// is tested at (HitRadius + the body), so it never reads as the reach.
+	private const float FlashSeconds = 0.08f;
+
+	private void DrawSparkle(Vector2 at, bool greatRune, float t)
+	{
+		float coverage = t < 0.35f ? 1f : 1f - (t - 0.35f) / 0.65f;
+		const float g = WhipLimb.Grid;
+		int arm = greatRune ? 3 : 2;
+		Vector2 heart = new Vector2(MathF.Floor(at.X / g) * g, MathF.Floor(at.Y / g) * g);
+		// The heart outlasts the arms: they go first, tips before roots.
+		DrawRect(new Rect2(heart, new Vector2(g, g)), Ink(ice.Core, MathF.Min(1f, coverage * 1.6f)));
+		for (int d = 1; d <= arm; d++)
+		{
+			Color c = Ink(d == arm ? ice.Mid : ice.Hot, Mathf.Clamp(coverage * (1.5f - 0.25f * d), 0f, 1f));
+			float o = d * g;
+			DrawRect(new Rect2(heart + new Vector2(o, 0f), new Vector2(g, g)), c);
+			DrawRect(new Rect2(heart - new Vector2(o, 0f), new Vector2(g, g)), c);
+			DrawRect(new Rect2(heart + new Vector2(0f, o), new Vector2(g, g)), c);
+			DrawRect(new Rect2(heart - new Vector2(0f, o), new Vector2(g, g)), c);
 		}
 	}
 
