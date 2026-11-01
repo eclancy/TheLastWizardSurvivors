@@ -293,6 +293,9 @@ def build_bosses():
         pose = fn()
         lean, reach, knock = BOSS_FEEL[name]
         anims = anim_sets.full_set(pose, lean=lean, reach=reach, knock=knock)
+        # Beyond the contract's four: the Choir's song, fall and dip (sprite_bosses.EXTRA_ANIMS).
+        if name in sprite_bosses.EXTRA_ANIMS:
+            anims += sprite_bosses.EXTRA_ANIMS[name](pose)
         spec = []
         for anim, frames, loop, speed in anims:
             png = "%s-%s.png" % (name, anim)

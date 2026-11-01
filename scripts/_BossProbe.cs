@@ -11,6 +11,10 @@ using WizardSurvivors.scripts;
 //   "$GODOT_BIN" --headless --path . scenes/_BossProbe.tscn -- --stage=all
 //   ... --stage=2 --no-skirt   (the before of the slide, the skirt and the prop clusters - the A/B for
 //                              the "held" line, .ai/enemy-behaviour.md section 8 item 13)
+//   ... --stage=2 --cc=all     (the bosses' crowd-control rule, Enemy "Bosses and crowd control": the
+//                              wizard stands still and every body is frozen, staggered and pulled
+//                              away from him on every frame - does it still reach him and attack?
+//                              --no-cc-cap is the before, in the same build)
 //
 // WHY THIS EXISTS. A boss is thirty minutes into a run, so every one of these fights had been
 // written, compiled, and validated without anybody watching it move. dotnet build sees none of it
@@ -48,6 +52,24 @@ public partial class _BossProbe : Node
 	private const float ApproachStartPx = 900f;
 	private Vector2? approachTo;
 
+	// --cc=KIND: the bosses' crowd-control rule (Eric, 0.10.0: "Bosses should also be immune to CC that
+	// would make it impossible for them to ever get to the player"). Once the arrival is over the wizard
+	// stands where he is, kept whole, and every boss body is given KIND on every frame, harder than any
+	// spell gives it: freeze (ApplySlow 0, Event Horizon's stopped time is the same call), slow (a 0.05
+	// slow), stagger (ApplyShock 1 s), pull (ApplyKnockback 900 px/s straight AWAY from him - every pull,
+	// drag and wall is this call, and away is the worst a pull can do), all (every one at once), or none,
+	// the baseline. The drain is slowed so the fight lasts the window. It reports, per run, how close
+	// the nearest body came, when it first came within CcReachPx, the attacks begun, and the share of
+	// body-time held still.
+	private string CrowdControl = "";
+	private bool drainGiven;
+	private bool CrowdControlTest => CrowdControl.Length > 0;
+	private const float CcWindowSeconds = 45f;
+	private const float CcReachPx = 150f;
+	private float ccStartedAt = -1f, ccStartDistance = -1f, ccClosest = float.MaxValue, ccReachedAt = -1f;
+	private int ccAttacksAtStart, ccHeldFrames, ccBodyFrames;
+	private Vector2 ccStand;
+
 	private Node game;
 	private Node2D player;
 	private BossEnemy boss;
@@ -81,11 +103,13 @@ public partial class _BossProbe : Node
 		{
 			if (arg.StartsWith("--stage=")) StageIndex = int.Parse(arg.Substring(8));
 			else if (arg.StartsWith("--timescale=")) TimeScale = float.Parse(arg.Substring(12));
-			else if (arg.StartsWith("--drain=")) DrainSeconds = float.Parse(arg.Substring(8));
+			else if (arg.StartsWith("--drain=")) { DrainSeconds = float.Parse(arg.Substring(8)); drainGiven = true; }
 			else if (arg.StartsWith("--drain-interval=")) DrainInterval = float.Parse(arg.Substring(17));
 			else if (arg == "--focus") FocusOneBody = true;
 			else if (arg == "--no-skirt") Enemy.TerrainSkirting = false;
 			else if (arg == "--approach") Approach = true;
+			else if (arg.StartsWith("--cc=")) CrowdControl = arg.Substring(5);
+			else if (arg == "--no-cc-cap") Enemy.CrowdControlCapping = false;
 			// For a fight drained slowly (--drain) to stand in for a build's damage, longer than 140 s.
 			else if (arg.StartsWith("--give-up=")) GiveUpSeconds = float.Parse(arg.Substring(10), System.Globalization.CultureInfo.InvariantCulture);
 		}
@@ -100,6 +124,16 @@ public partial class _BossProbe : Node
 			GD.Print("BOSSPROBE no boss for that stage - nothing to drive.");
 			GetTree().Quit();
 			return;
+		}
+
+		if (CrowdControlTest)
+		{
+			// The fight has to outlast the window, so the drain is slowed to a trickle that still walks
+			// the thresholds eventually.
+			// (unless --drain says otherwise: the Choir's revive under a freeze wants a voice down).
+			if (!drainGiven)
+				DrainSeconds = Math.Max(DrainSeconds, 600f);
+			GiveUpSeconds = Math.Min(GiveUpSeconds, CcWindowSeconds + 40f);
 		}
 
 		Global.SelectedCharacterIdx = 1;
@@ -139,7 +173,10 @@ public partial class _BossProbe : Node
 
 		AutoPickLevelUp();
 		AutoPickChest();
-		DriveMovement();
+		if (CrowdControlTest && entranceEndedAt >= 0f)
+			HoldStillForCrowdControl();
+		else
+			DriveMovement();
 		if (procession == null && Node2DGame.Current is Node2DGame run)
 		{
 			// The Throne (.ai/endgame-castle.md 6.3): a procession of pairs and then him, sent by its rules,
@@ -165,6 +202,8 @@ public partial class _BossProbe : Node
 			TrackProcession();
 		}
 		TrackBoss((float)delta);
+		if (CrowdControlTest)
+			TickCrowdControlTest();
 		if (Approach && player is Player kept && !kept.IsDead)
 			kept.CurrentHP = kept.MaxHP;
 
@@ -362,6 +401,8 @@ public partial class _BossProbe : Node
 			heldClock = 0f;
 		}
 
+		TrackChoir(delta);
+
 		foreach (BossEnemy body in bodies)
 		{
 			if (!body.IsTargetable)
@@ -408,6 +449,107 @@ public partial class _BossProbe : Node
 			int bite = Mathf.Max(1, Mathf.RoundToInt(body.MaxHealth * DrainInterval / Mathf.Max(0.5f, DrainSeconds)));
 			body.TakeDamage(bite);
 		}
+	}
+
+	// --cc: the wizard stands where the arrival left him (no keys), and is kept whole - the question is
+	// whether the boss comes, not whether he survives it.
+	private void HoldStillForCrowdControl()
+	{
+		foreach (string a in MoveActions)
+			Input.ActionRelease(a);
+		if (player is Player wizard && !wizard.IsDead)
+			wizard.CurrentHP = wizard.MaxHP;
+	}
+
+	private void TickCrowdControlTest()
+	{
+		if (entranceEndedAt < 0f || bodies.Count == 0 || player == null)
+			return;
+		if (ccStartedAt < 0f)
+		{
+			ccStartedAt = elapsed;
+			ccStand = player.GlobalPosition;
+			ccStartDistance = bodies.Min(b => b.GlobalPosition.DistanceTo(ccStand));
+			ccAttacksAtStart = bodies.Sum(b => b.AttacksBegun);
+		}
+		float since = elapsed - ccStartedAt;
+		if (since > CcWindowSeconds)
+		{
+			int attacks = bodies.Sum(b => b.AttacksBegun) - ccAttacksAtStart;
+			notes.Add($"--cc={CrowdControl}: started {ccStartDistance:0} px away; closest {ccClosest:0} px; "
+				+ $"within {CcReachPx:0} px {(ccReachedAt >= 0f ? $"after {ccReachedAt:0.0}s" : "NEVER")}; "
+				+ $"{attacks} attacks begun in {CcWindowSeconds:0}s; held still {(ccBodyFrames > 0 ? 100f * ccHeldFrames / ccBodyFrames : 0f):0}% of body-frames");
+			Finish($"crowd-control test ({CrowdControl}) complete");
+			return;
+		}
+
+		bool all = CrowdControl == "all";
+		foreach (BossEnemy body in bodies)
+		{
+			if (!IsInstanceValid(body) || !body.IsTargetable)
+				continue;
+			if (all || CrowdControl == "freeze")
+				body.ApplySlow(0f, 2f);
+			if (all || CrowdControl == "slow")
+				body.ApplySlow(0.05f, 2f);
+			if (all || CrowdControl == "stagger")
+				body.ApplyShock(1f);
+			if (all || CrowdControl == "pull")
+			{
+				Vector2 away = body.GlobalPosition - ccStand;
+				body.ApplyKnockback((away.LengthSquared() > 1f ? away.Normalized() : Vector2.Right) * 900f);
+			}
+			ccBodyFrames++;
+			if (body.IsHeldByCrowdControl)
+				ccHeldFrames++;
+			float d = body.GlobalPosition.DistanceTo(ccStand);
+			ccClosest = Math.Min(ccClosest, d);
+			if (d <= CcReachPx && ccReachedAt < 0f)
+				ccReachedAt = since;
+		}
+	}
+
+	// THE HOLLOW CHOIR (2026-11-01): a fallen voice lies until another walks over and sings it back, a
+	// voice far from its place or stuck dips under and comes up there. Counted: each fall and each rise
+	// with the time between, the dips, and the song's seconds paused by crowd control on the singer.
+	private readonly Dictionary<HollowChoirBoss, float> choirFellAt = new();
+	private readonly List<float> choirDownTimes = new();
+	private int choirFalls;
+	private readonly Dictionary<ulong, (int Dips, float Held)> choirVoices = new();
+
+	private void TrackChoir(float delta)
+	{
+		foreach (BossEnemy body in bodies)
+		{
+			if (body is not HollowChoirBoss voice)
+				continue;
+			choirVoices[voice.GetInstanceId()] = (voice.DipsTaken, voice.SongHeldSeconds);
+			bool fallen = voice.IsFallen;
+			bool was = choirFellAt.ContainsKey(voice);
+			if (fallen && !was)
+			{
+				choirFellAt[voice] = elapsed;
+				choirFalls++;
+				notes.Add($"a voice fell at {elapsed:0.0}s");
+			}
+			else if (!fallen && was)
+			{
+				choirDownTimes.Add(elapsed - choirFellAt[voice]);
+				choirFellAt.Remove(voice);
+				notes.Add($"a voice was sung back up at {elapsed:0.0}s");
+			}
+		}
+	}
+
+	private string ChoirSummary()
+	{
+		if (choirVoices.Count == 0)
+			return null;
+		int dips = choirVoices.Values.Sum(v => v.Dips);
+		float held = choirVoices.Values.Sum(v => v.Held);
+		string times = choirDownTimes.Count > 0 ? string.Join(", ", choirDownTimes.Select(t => t.ToString("0.0"))) + " s" : "none";
+		return $"{choirFalls} falls, {choirDownTimes.Count} sung back up (down for {times}); {dips} dips;"
+			+ $" song paused {held:0.0} s by crowd control on its singer";
 	}
 
 	// When the last body stopped being a fight, and how long its fall may take before the probe calls
@@ -709,6 +851,8 @@ public partial class _BossProbe : Node
 		GD.Print($"  in wall/water  : {bodyFramesInGround} of {bodyFrames} body-frames out of the ground");
 		GD.Print($"  held           : {heldWindows} of {heldEligible} body-windows ({HeldWindow:0} s) asked to walk, covered under 0.15 of it and touched something"
 			+ $" (ground {heldOnGround}, a prop {heldOnProp}, a body {heldOnBody}); {heldTouchingNothing} more touched nothing");
+		if (ChoirSummary() is string choir)
+			GD.Print($"  the choir      : {choir}");
 		foreach (string note in notes)
 			GD.Print($"  note           : {note}");
 		foreach (var (id, phases) in processionPhases)

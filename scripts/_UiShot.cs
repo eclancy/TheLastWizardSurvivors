@@ -234,6 +234,15 @@ public partial class _UiShot : Node
 	// that holds its thresholds (CourtSeneschalBoss) stops the blow at the first one.
 	private float bossBleedTo = -1f;
 	private int bossBleedAfter = 30;
+	// --choir=note|dip|revive[,K] (with --rush-steps=1 on the Sunken Cave): K frames (default 30) after the
+	// Hollow Choir has landed, one of the three things Eric asked of it (2026-11-01) is made to happen, so
+	// a --burst can follow it: NOTE, the three voices sing a note at him in turn (the gesture, then the
+	// note crossing to him); DIP, the voice nearest him goes under and comes up on his far side; REVIVE,
+	// one voice is struck down and the nearest of the other two walks over and sings it back. The frame it
+	// happened on is printed, to set --frames by.
+	private string choirScene;
+	private int choirSceneAfter = 30;
+	private bool choirSceneDone;
 	// --rush-after=N: the first rush step waits for frame N as well as a quarter of the warmup, so a
 	// --teleport (at a third of it) can put the wizard in a room before the boss is brought to him.
 	private int rushAfter;
@@ -1260,6 +1269,13 @@ public partial class _UiShot : Node
 				bossBleedTo = float.Parse(bleed[0], System.Globalization.CultureInfo.InvariantCulture);
 				if (bleed.Length > 1)
 					bossBleedAfter = int.Parse(bleed[1]);
+			}
+			else if (arg.StartsWith("--choir="))
+			{
+				string[] scene = arg.Substring("--choir=".Length).Split(',');
+				choirScene = scene[0];
+				if (scene.Length > 1)
+					choirSceneAfter = int.Parse(scene[1]);
 			}
 			else if (arg.StartsWith("--rush-after="))
 				rushAfter = int.Parse(arg.Substring("--rush-after=".Length));
@@ -2394,6 +2410,40 @@ public partial class _UiShot : Node
 		return null;
 	}
 
+	// --choir: see choirScene.
+	private void StageChoirScene()
+	{
+		var bodies = new System.Collections.Generic.List<BossEnemy>();
+		CollectBossBodies(GetTree().Root, bodies);
+		var voices = bodies.OfType<HollowChoirBoss>().Where(v => !v.IsDying).ToList();
+		Player wizard = FindNodeOfType<Player>(GetTree().Root);
+		if (voices.Count == 0 || wizard == null)
+		{
+			GD.Print("_UiShot: --choir found no Hollow Choir to stage");
+			return;
+		}
+		voices.Sort((a, b) => a.GlobalPosition.DistanceSquaredTo(wizard.GlobalPosition).CompareTo(b.GlobalPosition.DistanceSquaredTo(wizard.GlobalPosition)));
+		switch (choirScene)
+		{
+			case "note":
+				for (int i = 0; i < voices.Count; i++)
+					voices[i].DebugSingNote(i * 0.7f);
+				break;
+			case "dip":
+				// The nearest that is not mid-swing: a forced dip out of a wind-up would leave the slam to land.
+				foreach (HollowChoirBoss voice in voices)
+					if (voice.DebugDip())
+						break;
+				break;
+			case "revive":
+				// The one furthest from him falls, so its singer's walk crosses the picture.
+				HollowChoirBoss struck = voices[voices.Count - 1];
+				struck.TakeDamage(System.Math.Max(1, struck.Health) + 1, false);
+				break;
+		}
+		GD.Print($"_UiShot: --choir={choirScene} staged at frame {frames}");
+	}
+
 	// --boss-death: the bodies of the boss being fought, stood in front of the camera as they arrive.
 	private void PlaceBossBodies(Player witness, Vector2 offset)
 	{
@@ -2846,6 +2896,17 @@ public partial class _UiShot : Node
 						if (!body.IsDying)
 							body.TakeDamage(System.Math.Max(1, body.Health - Mathf.FloorToInt(body.MaxHealth * bossBleedTo)), false);
 					GD.Print($"_UiShot: bled {bleeding.Count} boss bod{(bleeding.Count == 1 ? "y" : "ies")} toward {bossBleedTo:P0}");
+				}
+			}
+			if (choirScene != null && !choirSceneDone && rushStepsDone > 0 && BossEnemy.EnteringCount == 0
+				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame { BossFightActive: true })
+			{
+				if (bossLandedFrame < 0)
+					bossLandedFrame = frames;
+				else if (frames - bossLandedFrame >= choirSceneAfter)
+				{
+					choirSceneDone = true;
+					StageChoirScene();
 				}
 			}
 			// Never mid-arrival (BossEnemy's entrance): a step then would fell a boss that has not landed.

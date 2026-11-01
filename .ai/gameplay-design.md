@@ -64,6 +64,19 @@ multiply into an execute. (Fear goes further: it is never extended at all - see 
 | **Wither** | `Enemy.ApplyWither(fraction)` | **burns away a share of max HP, permanently** | Molten Shard (Metal), 12% |
 | **Fear** | `Enemy.ApplyFear(seconds)` | **the target turns and runs from the player** | every hit of a Darkness-tagged spell, 8% for 1.5 s |
 
+#### Bosses and crowd control (2026-11-01)
+
+"Bosses should also be immune to CC that would make it impossible for them to ever get to the
+player" (Eric, 0.10.0). On a boss (`Enemy.CapsCrowdControl`, set by `BossEnemy`) every kind still
+lands and is seen to, and none can hold it off him: **slows** stop at 0.5 (`BossSlowFloor`, or the
+scene's own floor if higher); a **freeze, root, time stop or stagger** stops it for 0.75 s at most
+(`BossHoldMaxSeconds`), then nothing holds it for 2.5 times as long - a freeze lands as the floor slow,
+a stagger as a shake - so it is held at most 2 seconds in 7; **knockback, pulls, drags and walls** ride
+on top of its own walk instead of replacing it, capped at 0.4 of that walk (`BossShoveShare`). Fear and
+the throw were already immune. `Enemy.IsHeldByCrowdControl` says when a hold is on (the Hollow Choir's
+revive pauses for it). Elites and minibosses are untouched. `.ai/enemy-behaviour.md`, "Bosses and crowd
+control", has the before and after.
+
 #### What a debuff looks like on an enemy (`StatusEffectLayer`)
 
 Every debuff wears a small animated mark, with its own **shape and direction of motion** so it reads

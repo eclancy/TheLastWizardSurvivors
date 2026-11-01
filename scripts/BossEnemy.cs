@@ -85,6 +85,13 @@ public partial class BossEnemy : Enemy
 	public int BossPhase => CurrentPhase;
 
 	/// <summary>
+	/// Attacks this body has begun: its own wind-ups, and whatever else a subclass counts as one (the
+	/// Choir's launched notes). For _BossProbe's crowd-control test, which asks whether a boss under
+	/// every kind of crowd control still puts the player in danger.
+	/// </summary>
+	public int AttacksBegun { get; protected set; }
+
+	/// <summary>
 	/// What the boss health bar shows, 0 to 1. Its own health for every ordinary boss, and the
 	/// whole set for a boss that is more than one body.
 	/// </summary>
@@ -103,6 +110,9 @@ public partial class BossEnemy : Enemy
 	{
 		MaxWitherFraction = 0.08f;
 		MaxWeakenFraction = 0.25f;
+		// No freeze, stagger, pull or wall keeps a boss from the player for good (Enemy, "Bosses and
+		// crowd control"): each still lands and is seen to, capped.
+		CapsCrowdControl = true;
 	}
 
 	public override void _Ready()
@@ -290,6 +300,7 @@ public partial class BossEnemy : Enemy
 		switch (slam.Tick(delta, valid && WantsToAttack(target, distance)))
 		{
 			case AttackTelegraph.Beat.Started:
+				AttacksBegun++;
 				OnAttackStarted(target);
 				break;
 			case AttackTelegraph.Beat.Resolved:

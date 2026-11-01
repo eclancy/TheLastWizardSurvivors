@@ -3952,9 +3952,13 @@ public static class RegressionChecks
 				if (choir.StandRadius <= choir.SlamRadius)
 					warnings.Add($"Hollow Choir voices stand {choir.StandRadius} px out with a {choir.SlamRadius} px reach, so they crowd him and one blast takes all three.");
 				if (choir.NoteTellSeconds <= 0f)
-					warnings.Add("Hollow Choir's round marks its notes for no time at all, so they land where he stands unseen.");
+					warnings.Add("Hollow Choir's round sings its notes with no gesture at all, so they leave the voice unseen.");
 				if (choir.VoiceCount < 2)
 					warnings.Add($"Hollow Choir has {choir.VoiceCount} voices, so nothing can revive anything and the linked-health fight is an ordinary boss.");
+				if (choir.NoteSpeed <= 0f || choir.NoteRadius <= 0f)
+					warnings.Add($"Hollow Choir's notes fly at {choir.NoteSpeed} px/s with a {choir.NoteRadius} px reach, so the round hits nothing.");
+				if (choir.ReviveReach <= 0f)
+					warnings.Add("Hollow Choir's singer can never stand close enough to a fallen voice to sing it back, so a fallen voice never rises.");
 				if (choir.ReviveSeconds <= 0f)
 					warnings.Add("Hollow Choir revives instantly, so the window to drop all three at once does not exist.");
 				if (choir.ReviveHealthFraction <= 0f || choir.ReviveHealthFraction >= 1f)

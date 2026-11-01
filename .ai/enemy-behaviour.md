@@ -520,6 +520,13 @@ Every line below is load-bearing, and most were learned by getting them wrong.
     boss (0, 1, 3-10) is held in 0 or 1 of its walking windows, and falls (the Hayward runs out of
     clock, as before).
 
+    **Done (2026-11-01, "The Hollow Choir, played" below):** a voice now routes to where it is going
+    along the field (`WalkToward`: the flow while `HasClearWalk` to the goal is false, the chase's
+    heading while the skirt has it turning), keeps a place off the rock within its own third of the
+    circle (`OpenGroundNear`), and dips under when it is held two windows running. Held: `--stage=2`
+    2 of 40 and 6 of 40 (10%), `--stage=2 --focus` 13 of 85 and 0 of 90 (7%) - from 37%. Nothing in
+    rock or water in any run.
+
     **What it costs:** see `.ai/performance.md` section 7.
 
     **Still needs eyes:** whether a body turning along a trunk reads as walking round it on the
@@ -918,7 +925,7 @@ voices change together.
 |---|---|
 | Elderbark | 0.66 roots: a line of marked roots races from the tree through the player, each a beat after the last - sidestep it. 0.34 the enrage, roots quicker |
 | The Gaoler | unchanged: 0.5 dismount (the cone at half the distance), 0.34 enrage |
-| The Hollow Choir | Now each voice **holds its own third of the circle** round the player at 230 px and steps in to sing in turn - they no longer converge and die to one blast. 0.7 (one voice down is enough) the round: the places turn, and each voice in turn marks a note where the player stands. 0.33 the last verse: quicker notes, a faster turn, revived voices stronger |
+| The Hollow Choir | Now each voice **holds its own third of the circle** round the player at 230 px and steps in to sing in turn - they no longer converge and die to one blast. 0.7 (one voice down is enough) the round: the places turn, and each voice in turn sings a note at where the player stands - since 2026-11-01 a launched one (`ChoirNote`, "The Hollow Choir, played" below), not a mark on the floor. 0.33 the last verse: quicker notes, a faster turn, revived voices stronger and sung back in three quarters of the time |
 | Mother Rot | unchanged thresholds; her regeneration is now **0.35% of her health a second** while a spawn lives (it was a flat 26, nothing at 80,000) |
 | The Archivist | 0.66 a second beam on its back, half a turn round. 0.34 enrage: both turn faster, it dives more often |
 | The Still Warden | 0.66 the cold closes in: heavier volleys, one more guard, sooner. 0.34 whiteout: enrage, and a marked ring of ice falls round it outside its claim every 6.5 s - be at its feet |
@@ -1043,6 +1050,106 @@ and holds the field 2.3-2.9 s, flees at each threshold to a room 740-3,600 px of
 later, and falls in 2.4-2.9 s, the body freed. Six runs in a row clean; before them the probe's
 wizard twice died to the household it walked through and twice stuck on a route that hugged a jamb,
 which keeping it whole, the route's wall clearance and a sidestep fixed.
+
+### The Hollow Choir, played (2026-11-01)
+
+Eric, on 0.10.0: "pathing can get stuck"; "Their ranged attacks don't appear to have an animation
+coming from them. Instead of a circle and arrow, show some sort of attack that they launch"; "If one of
+the hollow choir gets too far from the player, they should dip into the ground and reappear. The time
+between them respawning unless they're killed at the same time should be larger and they should visibly
+walk over to their falling comrade and revive each other. So it's obvious to the player that they need
+to stop them from reviving each other. CC like freezing them should pause the revival mechanic."
+
+- **The walk** goes round the cave, not into it (section 8 item 13 has the numbers: held 37% to 7-10%).
+- **The note is sung and sent.** The round's notes were `TelegraphedGroundHit`s - a dashed ring and the
+  arrow glyph at his feet with nothing joining them to a voice. Now the voice plants for `NoteTellSeconds`
+  (0.55 s) and plays `sing` (its six mouths light from the hem up, a rising scale, the cowl flares, the
+  note swelling at the mouths), and a `ChoirNote` leaves the mouths for where he stood: a crescent of
+  three arcs of the song, 26 px across the hit, 230 px/s, so a sidestep clears it. It is an
+  `EnemyProjectile`, so every guard against a bolt takes it and cave stone stops it. It leaves the
+  mouths, not the cowl: the cowl stands 44 px above the body's floor position, inside the rock against a
+  cave wall, and the first notes died there on their first frame.
+- **A fallen voice lies where it fell** (`fall`, then `downed`: a heap of wet cloth with the mark still
+  lit in it), out of reach, and **is walked to and sung back**: the nearest standing voice not already
+  singing (`ChooseReviver`) walks - or dips - to its side, stands `ReviveReach` (96 px) off and plays
+  `chant`, every mouth lit, and arcs of song cross to the heap while the clock round the heap fills. The
+  song runs only while the singer is in reach and not held (`Enemy.IsHeldByCrowdControl`): a freeze,
+  root, stagger or stopped time on the singer pauses it, the arcs stop, its `chant` freezes - and under
+  the bosses' rule (below) no hold lasts. `ReviveSeconds` is 7 s of song (it was 6 s down, on a clock)
+  plus the walk; 0.75 of it in the last verse. Measured (`--focus`): down 7.7-9.9 s, every one raised;
+  with the singer frozen on every frame (`--focus --cc=freeze --drain=16`) down 14.2 s, the song paused
+  2.0 s, and staggered 16.4 s, paused 2.4 s - and raised all the same.
+  With two down the one left raises them in turn, and the first raised goes to the second. A voice
+  struck down mid wind-up lands nothing (its ring and icon go with it). Killing the singer is the other
+  answer; the song so far is kept for the next one.
+- **The dip.** Further than `DipDistance` (560 px) from where it is going - its place, or a fallen
+  voice's side - or held two 1.5 s windows running, a voice sinks into a pool of black water (`dip`),
+  goes under (`SetTargetable(false)`, one `BurrowMove`, 1.2 s, a dark swell and ripples on the floor
+  where it travels and where it will rise) and comes up there (`dip` backwards) - led, when it is going
+  to its place, by most of the wizard's own walk over the 1.7 s it is under (`LeadDip`, 0.6 of it, at
+  most 300 px; led the whole way it came up ahead of a wizard who then turned, and dipped again): the
+  first photographs of a kiting wizard had all three surfacing in a line behind him. 2.2 s out of reach;
+  4 s before it may dip again. Not mid wind-up, mid note, or while singing one back.
+- **Art** (`tools/art/sprite_bosses.py`, `choir_extra_anims`; `python tools/art/sprite_bosses.py --choir`
+  writes these five strips and the `.tres` alone, and `build.py` appends them as it builds the sheet):
+  `sing` 6, `chant` 4, `fall` 6, `downed` 4, `dip` 6, derived from the one pose as the contract's four
+  are. The song is WATER (the cave's, and `ChoirColor`'s family); the arcane mark stays the body's one
+  emissive pair. The Choir plays these on its own clocks, frame by frame, and `Enemy.HoldsOwnPose`
+  keeps a flinch from cutting a song short or waking a heap.
+- **Photographed:** `_UiShot --stage=2 --rush-steps=1 --rush-after=175 --choir=note|dip|revive,200
+  --frames=612 --burst=12,8` (`--choir` stages each a fixed time after the Choir lands; the revive wants
+  `--burst=16,40`). Still needs eyes in play: whether the note's crescent reads at speed in a swarm,
+  whether 7 s of song is the right length, and whether players find the singer to stop.
+
+### Bosses and crowd control (2026-11-01)
+
+"Bosses should also be immune to CC that would make it impossible for them to ever get to the player.
+They should always have a way to put the player in danger." (Eric, 0.10.0.) Every way a spell stops an
+enemy arrives through `Enemy.ApplySlow` (and at 0, a freeze, a root, Event Horizon's stopped time),
+`ApplyShock` (a stagger) or `ApplyKnockback` (a blast's throw, and every pull, drag and wall: Gravewell,
+Hollow Star, the Elder God Maw, Vortex Reaper, Spring Tide, Iron Palisade, Broken Ward), so the rule is
+one place in `Enemy` ("Bosses and crowd control"), on for every `BossEnemy` (`CapsCrowdControl`), and
+no spell changed:
+
+| kind | on a boss before | on a boss now |
+|---|---|---|
+| slow | the scene's floor, 0.3-0.45 | the floor is at least 0.5 (`BossSlowFloor`) |
+| freeze, root, time stop | the scene's floor (a slow) | **stops it** - the ice, the frozen look, `IsHeldByCrowdControl` - for 0.75 s at most, then nothing holds it for 2.5x as long: the rest lands as the floor slow |
+| stagger | stopped for as long as it was renewed | the same hold, capped; while it shrugs one off a stagger only shakes it |
+| knockback, pull, drag, wall | REPLACED its step for 0.45 s at a time: renewed every tick, it held it; at resistance 1 (the Archivist, Still Warden, Ninth Stone) it stood dead still | rides on top of its own walk, scaled by its resistance, capped at 0.4 of that walk (`BossShoveShare`): it leans into a well, is set back by a blast, shoulders through a wall, and comes on |
+| fear, the throw | immune | immune |
+
+Held at most 2 seconds in 7, never 0.75 s on end; the worst everything-at-once can do is about a fifth
+of its walk, straight at him. Elites and minibosses are not bosses here. Measured with `_BossProbe
+--cc=all` (the wizard stands still; every body is frozen, staggered, slowed to 0.05 and pulled away from
+him at 900 px/s on every frame, past any spell; `--no-cc-cap` is the before in the same build), within
+150 px of him inside 45 s / attacks begun:
+
+| boss | no crowd control | all of it, before | all of it, now |
+|---|---|---|---|
+| Elderbark | 5.7 s / 8 | never (360 px) / 0 | 21.9 s / 8 |
+| the Gaoler | 13.9 s / 4 | never / 6 | 11.9 s / 6 |
+| the Hollow Choir | 0.7 s / 14 | never (245 px) / 0 | at once / 9 |
+| Mother Rot | 5.8 s / 8 | never / 8 | 31.6 s / 8 |
+| the Warden of the Deep | 2.2 s / 6 | never / 8 | 8.6 s / 5 |
+| the Hayward | 1.7 s / 10 | never / 0 | 17.5 s / 8 |
+| the Ninth Stone | 3.2 s / 10 | never / 0 | 9.4 s / 9 |
+
+The Archivist (dives round him; 25 attacks all three ways), the Still Warden and Wizard Dude (neither
+walks in at a wizard who stands off), the Long Coil (burrows to him either way) and the Constable (on
+his wall) do not walk in as the test asks, and were unchanged by it. The Seneschal arrives 1,700 px off
+in his own rooms and came no nearer than where he arrived (380 px) in 45 s under all of it, before and
+now - his walk through the doors is long, his danger is his household, and the test's wizard does not
+go to him as that fight asks. Elderbark's and Mother Rot's 20-30 s is the worst case
+stacked.
+
+Per kind, on Elderbark (each on every frame; within 150 px is a poor test here, because a wizard who
+stands still gathers the swarm's elites round him and a boss, a blocker, cannot walk through them - the
+held windows say "a body" - so read the attacks): freeze, before 7 attacks / now 8, held 0% / 30%;
+stagger 0 / 8, held 100% / 33%; pull away 0 / 8 (before, 304 px off the whole 45 s); slow 8. With none,
+8. The Gaoler's own probe (the bot kiting, no `--cc`) is held against a body in 40-48% of its walking
+windows with `--no-cc-cap` and 52-80% now: a boss pushed by the bot's spells is now still asking to walk,
+which the old knockback branch hid, and it falls in the same time.
 
 ### What not to take
 
