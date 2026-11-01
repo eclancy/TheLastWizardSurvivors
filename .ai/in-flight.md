@@ -119,6 +119,9 @@ three-card hand's card size (dd5cc6a).
    screen as a hint rather than in a speech bubble; all wizards' clues this way. The wizard trapped in
    ice sits in the centre of a large, magically animated lake (the current art reads corny).
 7. **Music**: the menu's music should give way to more interesting, thematic battle music for each level.
+8. **Ground per chapter**: every chapter's ground should read as its place; "Emberdeep doesn't look like
+   cracked volcanic earth." A ground pass through `tools/art/tiles.py` and the chapters' terrain
+   modules (`.ai/terrain.md` first), the Emberdeep first.
 
 ## 4. Waiting on Eric
 
