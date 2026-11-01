@@ -72,6 +72,11 @@ belongs to the thumb. It goes after about ten seconds, or earlier on a click or 
 A, Enter or Space. **In the Sketchbook it is a slate of floor stone, not paper**: that chapter's ground
 is already paper, and the note must not repeat the material it sits on.
 
+**Its torn outline must triangulate.** `DrawColoredPolygon` draws nothing for one that does not, without a
+word, so the Fallow Fields' note showed only its rim, dark ink on bare stubble (2026-11-01). The corners
+are never bitten, repeated points are dropped, and `BuildOutline` checks with `Geometry2D.TriangulatePolygon`,
+tearing again from the next seed and in the end falling back to the plain rectangle.
+
 **The journal** keeps every note read, plus every chapter the save has played. It is one sheet of paper
 on the stone panel, not a card per note, so the material is not repeated.
 

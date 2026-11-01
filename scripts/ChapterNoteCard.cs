@@ -223,13 +223,38 @@ public partial class ChapterNoteCard : CanvasLayer
 	// A torn scrap: the rectangle's edges walked in short steps, each pulled in by a pixel or two, on the
 	// whole-pixel grain the rest of the art is drawn on. Seeded by the chapter, so a note is always the
 	// same scrap.
+	//
+	// Every outline must triangulate, or DrawColoredPolygon draws NO paper and says nothing - only the
+	// rim's polyline is left, round dark ink on the bare ground. That is what the Fallow Fields' note did
+	// (Eric, 2026-11-01: "unreadable because of no background"): its seed bit a corner so that the walk
+	// doubled back on itself, while the Forest's seed happened to come out clean. So the corners stay on
+	// the corners, a point the rounding repeats is dropped, and an outline that still will not triangulate
+	// is torn again from the next seed, and in the end left as the plain rectangle.
 	private void BuildOutline()
 	{
 		outline.Clear();
 		Vector2 size = page.Size;
 		if (size.X < 4f || size.Y < 4f)
 			return;
-		var rng = new RandomNumberGenerator { Seed = (ulong)(stage.Index * 131 + 17) };
+		for (int attempt = 0; attempt < OutlineAttempts; attempt++)
+		{
+			TearOutline(size, (ulong)(stage.Index * 131 + 17 + attempt * 7919));
+			if (Geometry2D.TriangulatePolygon(outline.ToArray()).Length > 0)
+				return;
+		}
+		outline.Clear();
+		outline.Add(Vector2.Zero);
+		outline.Add(new Vector2(size.X, 0f));
+		outline.Add(size);
+		outline.Add(new Vector2(0f, size.Y));
+	}
+
+	private const int OutlineAttempts = 4;
+
+	private void TearOutline(Vector2 size, ulong seed)
+	{
+		outline.Clear();
+		var rng = new RandomNumberGenerator { Seed = seed };
 		const float Step = 8f;
 		void Walk(Vector2 from, Vector2 to, Vector2 inward, bool torn)
 		{
@@ -237,8 +262,11 @@ public partial class ChapterNoteCard : CanvasLayer
 			Vector2 along = (to - from).Normalized();
 			for (float d = 0f; d < length; d += Step)
 			{
-				float bite = torn ? rng.RandiRange(0, 3) : rng.RandiRange(0, 1);
-				outline.Add((from + along * d + inward * bite).Round());
+				// The corner itself is never bitten: a bitten corner is where the walk folded over.
+				float bite = d == 0f ? 0f : torn ? rng.RandiRange(0, 3) : rng.RandiRange(0, 1);
+				Vector2 point = (from + along * d + inward * bite).Round();
+				if (outline.Count == 0 || outline[^1] != point)
+					outline.Add(point);
 			}
 		}
 		// The top edge is the torn one, as a leaf torn from a book; the other three only uneven.
@@ -246,6 +274,8 @@ public partial class ChapterNoteCard : CanvasLayer
 		Walk(new Vector2(size.X, 0f), new Vector2(size.X, size.Y), Vector2.Left, false);
 		Walk(new Vector2(size.X, size.Y), new Vector2(0f, size.Y), Vector2.Up, false);
 		Walk(new Vector2(0f, size.Y), new Vector2(0f, 0f), Vector2.Right, false);
+		if (outline.Count > 1 && outline[^1] == outline[0])
+			outline.RemoveAt(outline.Count - 1);
 	}
 
 	private void PaintPage()
