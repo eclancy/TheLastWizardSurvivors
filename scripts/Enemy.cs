@@ -1019,13 +1019,22 @@ public partial class Enemy : CharacterBody2D
 		// What the chase asked of the last step, for Skirt; any other branch asks for nothing.
 		float skirtWantedLastStep = skirtWanted;
 		skirtWanted = 0f;
+		// A boss is held for a capped time at most, then shrugs it off (TickCrowdControlCap); a stagger
+		// that lands on it while it is shrugging only shakes it.
+		if (CapsCrowdControl)
+		{
+			TickCrowdControlCap((float)delta);
+			shocked = shockTimeRemaining > 0f && !shockShakeOnly;
+		}
 		if (shocked)
 		{
 			shockTimeRemaining = Math.Max(0f, shockTimeRemaining - (float)delta);
 			Velocity = Vector2.Zero;
 			UpdateShockVisual((float)delta);
 		}
-		else if (knockbackTime > 0f)
+		// A boss is never carried by a shove instead of walking: its knockback rides on top of its own
+		// step, below (BossKnockbackStep).
+		else if (knockbackTime > 0f && !CapsCrowdControl)
 		{
 			float decayThreshold = KnockbackDuration * 0.3f;
 			if (knockbackTime > decayThreshold)
@@ -1217,6 +1226,8 @@ public partial class Enemy : CharacterBody2D
 		// would compound - at a turn rate of 9 the steady state is about seven times the shove.
 		// The shove is a displacement he causes, not momentum the enemy owns.
 		Vector2 shove = ComputePlayerShove(canYield);
+		if (CapsCrowdControl && knockbackTime > 0f)
+			shove += BossKnockbackStep((float)delta, shocked);
 		Vector2 steered = Velocity;
 		if (shove != Vector2.Zero)
 			Velocity = steered + shove;
@@ -1226,7 +1237,12 @@ public partial class Enemy : CharacterBody2D
 		if (shove != Vector2.Zero)
 			Velocity = steered;
 		if (!shocked)
+		{
+			// A boss's shrugged-off stagger runs its clock here, where the shake is drawn.
+			if (shockShakeOnly && shockTimeRemaining > 0f)
+				shockTimeRemaining = Math.Max(0f, shockTimeRemaining - (float)delta);
 			UpdateShockVisual((float)delta);
+		}
 
 		if (slowTimeRemaining > 0f)
 		{
@@ -1471,6 +1487,128 @@ public partial class Enemy : CharacterBody2D
 		if (sprite != null)
 			sprite.FlipH = flip;
 	}
+	// --- Bosses and crowd control (2026-11-01) ----------------------------------------------------
+	//
+	// "Bosses should also be immune to CC that would make it impossible for them to ever get to the
+	// player. They should always have a way to put the player in danger." (Eric, playing 0.10.0.)
+	//
+	// Every way the player stops an enemy already arrives here, through four methods - ApplySlow (a
+	// slow, and at 0 a freeze, a root or Event Horizon's stopped time), ApplyShock (a stagger),
+	// ApplyKnockback (a blast's throw, and every pull, drag and wall: Gravewell, Hollow Star, the Elder
+	// God Maw, Vortex Reaper, Spring Tide, Iron Palisade, Broken Ward), and ApplyLaunch/ApplyFear, which
+	// a boss was already immune to. So the rule is one place, and no spell changed. Three ways it failed:
+	//   - a knockback REPLACED the body's step for 0.45 s, so a pull or a wall re-applied every tick held
+	//     a boss for as long as it lasted - and a boss at KnockbackResistance 1 (the Archivist, the Still
+	//     Warden, the Ninth Stone) stood dead still under it, its whole step thrown away for nothing;
+	//   - a stagger re-applied every hop (Electrocutions, a chain) stopped one for good;
+	//   - a slow floor of 0.3 crawled.
+	// On a boss (CapsCrowdControl, BossEnemy) each is still seen to land, and none can keep it off him:
+	//   - SLOWS stop at BossSlowFloor (or the scene's own floor, if higher);
+	//   - a FREEZE, a ROOT, a TIME STOP or a STAGGER really does stop it - the ice, the shake, the Choir's
+	//     revive pausing (IsHeldByCrowdControl) - for BossHoldMaxSeconds at most at a stretch, and then
+	//     nothing holds it for BossHoldImmunityRatio times as long as it was held: a freeze lands as a
+	//     slow at the floor, a stagger as a shake. Held at most 2 seconds in 7, never more than 0.75 s on end;
+	//   - KNOCKBACK, pulls, drags and walls ride ON TOP of its own walk instead of replacing it, scaled by
+	//     its resistance as before and then capped at BossShoveShare of the walk it has, so it leans into a
+	//     well, is set back a step by a blast and shoulders through a wall - and still comes on.
+	// Elites and minibosses are not bosses here: an elite that a well holds is the well working.
+
+	/// <summary>True on a boss: no crowd control may keep it from reaching the player (see above).</summary>
+	public bool CapsCrowdControl
+	{
+		get => capsCrowdControl && CrowdControlCapping;
+		protected set => capsCrowdControl = value;
+	}
+
+	private bool capsCrowdControl;
+
+	/// <summary>
+	/// Off only for _BossProbe's <c>--no-cc-cap</c>, the before of this rule in the same build (as
+	/// <see cref="TerrainSkirting"/> is the skirt's): every boss takes crowd control as an ordinary body does.
+	/// </summary>
+	public static bool CrowdControlCapping { get; set; } = true;
+
+	/// <summary>The deepest slow a boss takes, whatever its scene says (a higher scene floor wins).</summary>
+	public const float BossSlowFloor = 0.5f;
+
+	/// <summary>The longest a boss is held still by a freeze, root, time stop or stagger, at a stretch.</summary>
+	public const float BossHoldMaxSeconds = 0.75f;
+
+	/// <summary>After a hold, nothing holds a boss again for this many times as long as it was held.</summary>
+	public const float BossHoldImmunityRatio = 2.5f;
+
+	/// <summary>The most a shove, pull, drag or wall moves a boss, as a share of its own walk.</summary>
+	public const float BossShoveShare = 0.4f;
+
+	// How long the hold now on this boss has lasted; how long before another can land; and a stagger
+	// that landed while it could not, which shakes it without stopping it.
+	private float holdElapsed;
+	private float holdImmuneRemaining;
+	private bool shockShakeOnly;
+
+	/// <summary>
+	/// True while a freeze, root, time stop or stagger has this body stopped where it stands. On a boss
+	/// it is never true for more than <see cref="BossHoldMaxSeconds"/> at a stretch.
+	/// </summary>
+	/// <remarks>Read by the Hollow Choir: a voice held while it sings a fallen one back pauses the song.</remarks>
+	public bool IsHeldByCrowdControl => IsFrozen || (shockTimeRemaining > 0f && !shockShakeOnly);
+
+	/// <summary>The floor ApplySlow holds this body above: its scene's, raised to BossSlowFloor on a boss.</summary>
+	private float SlowFloor => Mathf.Clamp(CapsCrowdControl ? Mathf.Max(MinSlowMultiplier, BossSlowFloor) : MinSlowMultiplier, 0f, 1f);
+
+	// Each step on a boss, before it moves: count the hold, end it at the cap, and run the immunity after.
+	private void TickCrowdControlCap(float delta)
+	{
+		if (IsHeldByCrowdControl)
+		{
+			holdElapsed += delta;
+			if (holdElapsed >= BossHoldMaxSeconds)
+				EndBossHold();
+			return;
+		}
+		if (holdElapsed > 0f)
+		{
+			// It ran out on its own: the immunity is earned all the same.
+			holdImmuneRemaining = holdElapsed * BossHoldImmunityRatio;
+			holdElapsed = 0f;
+			return;
+		}
+		if (holdImmuneRemaining > 0f)
+			holdImmuneRemaining = Math.Max(0f, holdImmuneRemaining - delta);
+	}
+
+	// The cap: the rest of a freeze goes on as a slow at the floor (it is still chilled, and still reads
+	// so), the rest of a stagger as a shake.
+	private void EndBossHold()
+	{
+		holdImmuneRemaining = holdElapsed * BossHoldImmunityRatio;
+		holdElapsed = 0f;
+		if (slowTimeRemaining > 0f && slowMultiplier <= 0.001f)
+			slowMultiplier = SlowFloor;
+		if (shockTimeRemaining > 0f)
+			shockShakeOnly = true;
+		RefreshStatusLook();
+	}
+
+	// A boss's knockback for this step, added to its own walk (Enemy._PhysicsProcess) rather than put in
+	// its place. The same profile as anyone's - flat for 70% of KnockbackDuration, easing out over the
+	// rest - capped at BossShoveShare of the walk it has now, and nothing while it is held, when it has none.
+	private Vector2 BossKnockbackStep(float delta, bool held)
+	{
+		float decayThreshold = KnockbackDuration * 0.3f;
+		Vector2 push = knockbackTime > decayThreshold ? knockbackVelocity : knockbackVelocity * (knockbackTime / decayThreshold);
+		knockbackTime -= delta;
+		if (knockbackTime <= 0f)
+		{
+			knockbackVelocity = Vector2.Zero;
+			knockbackTime = 0f;
+		}
+		float walk = held || IsFrozen ? 0f : Speed * slowMultiplier * SwarmSpeedScale;
+		float cap = BossShoveShare * walk;
+		float length = push.Length();
+		return length > cap && length > 0f ? push * (cap / length) : push;
+	}
+
 	public void ApplyKnockback(Vector2 force)
 	{
 		if (isDying)
@@ -1485,6 +1623,13 @@ public partial class Enemy : CharacterBody2D
 		if (isDying)
 			return;
 
+		// A boss shrugging off its last hold only shakes; one that can be held is, until the cap.
+		if (CapsCrowdControl && duration > 0f)
+		{
+			bool canHold = holdImmuneRemaining <= 0f;
+			if (canHold || shockTimeRemaining <= 0f)
+				shockShakeOnly = !canHold;
+		}
 		shockTimeRemaining = Math.Max(shockTimeRemaining, duration);
 		shockAmplitude = Math.Max(0.5f, shakeAmplitude);
 		shockFrequency = Math.Max(1f, shakeFrequency);
@@ -1536,7 +1681,12 @@ public partial class Enemy : CharacterBody2D
 		if (isDying)
 			return;
 
-		multiplier = Mathf.Clamp(multiplier, Mathf.Clamp(MinSlowMultiplier, 0f, 1f), 1f);
+		// On a boss a freeze (multiplier 0) still stops it - for BossHoldMaxSeconds, after which the cap
+		// lifts it to the floor (EndBossHold) - unless it is shrugging off the last one, when it lands as
+		// the floor at once. A scene floor of 1 (the Archivist, the Still Warden) is never slowed at all.
+		float floor = SlowFloor;
+		bool bossHold = CapsCrowdControl && multiplier <= 0.001f && floor < 1f && holdImmuneRemaining <= 0f;
+		multiplier = bossHold ? 0f : Mathf.Clamp(multiplier, floor, 1f);
 		if (slowTimeRemaining <= 0f || multiplier < slowMultiplier)
 			slowMultiplier = multiplier;
 		slowTimeRemaining = Mathf.Max(slowTimeRemaining, duration);
@@ -2205,6 +2355,9 @@ public partial class Enemy : CharacterBody2D
 		// which would otherwise follow it round the ring for the rest of the run.
 		slowMultiplier = 1f;
 		slowTimeRemaining = 0f;
+		holdElapsed = 0f;
+		holdImmuneRemaining = 0f;
+		shockShakeOnly = false;
 		vulnerableBonus = 0f;
 		vulnerableTimeRemaining = 0f;
 		fearTimeRemaining = 0f;

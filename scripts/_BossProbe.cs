@@ -11,6 +11,10 @@ using WizardSurvivors.scripts;
 //   "$GODOT_BIN" --headless --path . scenes/_BossProbe.tscn -- --stage=all
 //   ... --stage=2 --no-skirt   (the before of the slide, the skirt and the prop clusters - the A/B for
 //                              the "held" line, .ai/enemy-behaviour.md section 8 item 13)
+//   ... --stage=2 --cc=all     (the bosses' crowd-control rule, Enemy "Bosses and crowd control": the
+//                              wizard stands still and every body is frozen, staggered and pulled
+//                              away from him on every frame - does it still reach him and attack?
+//                              --no-cc-cap is the before, in the same build)
 //
 // WHY THIS EXISTS. A boss is thirty minutes into a run, so every one of these fights had been
 // written, compiled, and validated without anybody watching it move. dotnet build sees none of it
@@ -47,6 +51,23 @@ public partial class _BossProbe : Node
 	[Export] public bool Approach { get; set; }
 	private const float ApproachStartPx = 900f;
 	private Vector2? approachTo;
+
+	// --cc=KIND: the bosses' crowd-control rule (Eric, 0.10.0: "Bosses should also be immune to CC that
+	// would make it impossible for them to ever get to the player"). Once the arrival is over the wizard
+	// stands where he is, kept whole, and every boss body is given KIND on every frame, harder than any
+	// spell gives it: freeze (ApplySlow 0, Event Horizon's stopped time is the same call), slow (a 0.05
+	// slow), stagger (ApplyShock 1 s), pull (ApplyKnockback 900 px/s straight AWAY from him - every pull,
+	// drag and wall is this call, and away is the worst a pull can do), all (every one at once), or none,
+	// the baseline. The drain is slowed so the fight lasts the window. It reports, per run, how close
+	// the nearest body came, when it first came within CcReachPx, the attacks begun, and the share of
+	// body-time held still.
+	private string CrowdControl = "";
+	private bool CrowdControlTest => CrowdControl.Length > 0;
+	private const float CcWindowSeconds = 45f;
+	private const float CcReachPx = 150f;
+	private float ccStartedAt = -1f, ccStartDistance = -1f, ccClosest = float.MaxValue, ccReachedAt = -1f;
+	private int ccAttacksAtStart, ccHeldFrames, ccBodyFrames;
+	private Vector2 ccStand;
 
 	private Node game;
 	private Node2D player;
@@ -86,6 +107,8 @@ public partial class _BossProbe : Node
 			else if (arg == "--focus") FocusOneBody = true;
 			else if (arg == "--no-skirt") Enemy.TerrainSkirting = false;
 			else if (arg == "--approach") Approach = true;
+			else if (arg.StartsWith("--cc=")) CrowdControl = arg.Substring(5);
+			else if (arg == "--no-cc-cap") Enemy.CrowdControlCapping = false;
 			// For a fight drained slowly (--drain) to stand in for a build's damage, longer than 140 s.
 			else if (arg.StartsWith("--give-up=")) GiveUpSeconds = float.Parse(arg.Substring(10), System.Globalization.CultureInfo.InvariantCulture);
 		}
@@ -100,6 +123,14 @@ public partial class _BossProbe : Node
 			GD.Print("BOSSPROBE no boss for that stage - nothing to drive.");
 			GetTree().Quit();
 			return;
+		}
+
+		if (CrowdControlTest)
+		{
+			// The fight has to outlast the window, so the drain is slowed to a trickle that still walks
+			// the thresholds eventually.
+			DrainSeconds = Math.Max(DrainSeconds, 600f);
+			GiveUpSeconds = Math.Min(GiveUpSeconds, CcWindowSeconds + 40f);
 		}
 
 		Global.SelectedCharacterIdx = 1;
@@ -139,7 +170,10 @@ public partial class _BossProbe : Node
 
 		AutoPickLevelUp();
 		AutoPickChest();
-		DriveMovement();
+		if (CrowdControlTest && entranceEndedAt >= 0f)
+			HoldStillForCrowdControl();
+		else
+			DriveMovement();
 		if (procession == null && Node2DGame.Current is Node2DGame run)
 		{
 			// The Throne (.ai/endgame-castle.md 6.3): a procession of pairs and then him, sent by its rules,
@@ -165,6 +199,8 @@ public partial class _BossProbe : Node
 			TrackProcession();
 		}
 		TrackBoss((float)delta);
+		if (CrowdControlTest)
+			TickCrowdControlTest();
 		if (Approach && player is Player kept && !kept.IsDead)
 			kept.CurrentHP = kept.MaxHP;
 
@@ -407,6 +443,64 @@ public partial class _BossProbe : Node
 				continue;
 			int bite = Mathf.Max(1, Mathf.RoundToInt(body.MaxHealth * DrainInterval / Mathf.Max(0.5f, DrainSeconds)));
 			body.TakeDamage(bite);
+		}
+	}
+
+	// --cc: the wizard stands where the arrival left him (no keys), and is kept whole - the question is
+	// whether the boss comes, not whether he survives it.
+	private void HoldStillForCrowdControl()
+	{
+		foreach (string a in MoveActions)
+			Input.ActionRelease(a);
+		if (player is Player wizard && !wizard.IsDead)
+			wizard.CurrentHP = wizard.MaxHP;
+	}
+
+	private void TickCrowdControlTest()
+	{
+		if (entranceEndedAt < 0f || bodies.Count == 0 || player == null)
+			return;
+		if (ccStartedAt < 0f)
+		{
+			ccStartedAt = elapsed;
+			ccStand = player.GlobalPosition;
+			ccStartDistance = bodies.Min(b => b.GlobalPosition.DistanceTo(ccStand));
+			ccAttacksAtStart = bodies.Sum(b => b.AttacksBegun);
+		}
+		float since = elapsed - ccStartedAt;
+		if (since > CcWindowSeconds)
+		{
+			int attacks = bodies.Sum(b => b.AttacksBegun) - ccAttacksAtStart;
+			notes.Add($"--cc={CrowdControl}: started {ccStartDistance:0} px away; closest {ccClosest:0} px; "
+				+ $"within {CcReachPx:0} px {(ccReachedAt >= 0f ? $"after {ccReachedAt:0.0}s" : "NEVER")}; "
+				+ $"{attacks} attacks begun in {CcWindowSeconds:0}s; held still {(ccBodyFrames > 0 ? 100f * ccHeldFrames / ccBodyFrames : 0f):0}% of body-frames");
+			Finish($"crowd-control test ({CrowdControl}) complete");
+			return;
+		}
+
+		bool all = CrowdControl == "all";
+		foreach (BossEnemy body in bodies)
+		{
+			if (!IsInstanceValid(body) || !body.IsTargetable)
+				continue;
+			if (all || CrowdControl == "freeze")
+				body.ApplySlow(0f, 2f);
+			if (all || CrowdControl == "slow")
+				body.ApplySlow(0.05f, 2f);
+			if (all || CrowdControl == "stagger")
+				body.ApplyShock(1f);
+			if (all || CrowdControl == "pull")
+			{
+				Vector2 away = body.GlobalPosition - ccStand;
+				body.ApplyKnockback((away.LengthSquared() > 1f ? away.Normalized() : Vector2.Right) * 900f);
+			}
+			ccBodyFrames++;
+			if (body.IsHeldByCrowdControl)
+				ccHeldFrames++;
+			float d = body.GlobalPosition.DistanceTo(ccStand);
+			ccClosest = Math.Min(ccClosest, d);
+			if (d <= CcReachPx && ccReachedAt < 0f)
+				ccReachedAt = since;
 		}
 	}
 
