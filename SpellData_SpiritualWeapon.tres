@@ -233,6 +233,7 @@ ScalingTagsMask = 275
 
 [resource]
 script = ExtResource("1_43iml")
+Tagline = "A light-weapon that strikes down."
 Id = "spiritual_weapon"
 Name = "Spiritual Weapon"
 CurrentLevel = 1

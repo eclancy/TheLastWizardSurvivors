@@ -38,6 +38,7 @@ CooldownBonus = -0.5
 
 [resource]
 script = ExtResource("1")
+Tagline = "A wall of stakes against a pack."
 Id = "iron_palisade"
 Name = "Iron Palisade"
 CurrentLevel = 1

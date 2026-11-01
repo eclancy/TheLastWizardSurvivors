@@ -76,6 +76,7 @@ ProjectileCountBonus = 1
 
 [resource]
 script = ExtResource("1")
+Tagline = "Mushrooms burst in poison spores."
 Id = "toxic_spore_burst"
 Name = "Toxic Spore Burst"
 CurrentLevel = 1

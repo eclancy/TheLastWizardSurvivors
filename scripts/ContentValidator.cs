@@ -160,6 +160,12 @@ public static class ContentValidator
 			if (string.IsNullOrWhiteSpace(spell.Name))
 				summary.Errors.Add($"Spell '{spell.Id}' at {path} has empty Name.");
 
+			// A new spell's card says what the spell does in this one line (LevelUpMenu.BuildOptionTagline).
+			if (string.IsNullOrWhiteSpace(spell.Tagline))
+				summary.Errors.Add($"Spell '{spell.Id}' at {path} has no Tagline: its level-up card would not say what it does.");
+			else if (spell.Tagline.Length > SpellData.TaglineMaxLength)
+				summary.Errors.Add($"Spell '{spell.Id}' Tagline is {spell.Tagline.Length} characters; the card holds {SpellData.TaglineMaxLength}.");
+
 			if (spell.MaxLevel < 1)
 				summary.Errors.Add($"Spell '{spell.Id}' has MaxLevel < 1.");
 

@@ -46,6 +46,7 @@ CooldownBonus = -0.4
 
 [resource]
 script = ExtResource("1")
+Tagline = "A grave trap that caves in."
 Id = "gravewell"
 Name = "Gravewell"
 CurrentLevel = 1
