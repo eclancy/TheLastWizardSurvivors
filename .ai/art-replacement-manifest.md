@@ -972,6 +972,17 @@ icon (`spell_icons_core.glacial_spike`) is unchanged and still the same one tall
 | Bleeding | **Failed**: a red at 95% in no palette, rotated cells | The ember row's base and shade, world-aligned, dissolving by dither |
 | Lightning Rod's sparks | **Failed**: smooth lines | Four art pixels zig-zagging off the point, the element's core and hot |
 
+
+**2026-11-01, Rolling Wall digs up the dirt.** Eric: the rolling walls "should dig up the dirt as it moves".
+`scenes/shaders/palisade_furrow.gdshader` on a child quad on `DrawLayers.Ground`: a groove ploughed behind
+each stake along the march (deep at the bottom, the wall facing the key lit, the other in shade), the earth
+between turned over in lumps, ragged at its sides, from just behind the stakes back to where the march began;
+each cell dissolves by dither as it ages (1.6 s), so it is a wake that closes behind the wall, and all of it
+over 0.5 s once the wall falls. Clods are kicked off the stakes' feet every 0.04 s and thrown back over the
+furrow in a short arc with an occlusion shadow under them, then crumble by dither (28 slots, nothing
+allocated). The tones are the floor's where it is earth or stone (`IronPalisade.SoilFor`: turf and soil,
+rubble, snow, sand, mud, graphite on the paper), all from the contract's rows. Nothing it draws is a hit.
+
 ### Hollow Star
 
 | Part | Audit | Now |
