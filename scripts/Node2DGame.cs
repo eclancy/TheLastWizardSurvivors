@@ -546,6 +546,10 @@ public partial class Node2DGame : Node2D
 			// elementHudGrid and selectedSpellHudRow stay declared and stay null - the old builders
 			// below are dead, and every refresh path already early-returns on null.
 			uiOverlay.AddChild(new LoadoutHud { Name = "LoadoutHud", Holder = player });
+			// The tracked quests, in the lower left (QuestTracker, .ai/quests-and-notes.md). Before the
+			// SafeArea pass below, so it is moved in from a phone's corner with the rest of the HUD.
+			questTracker = new QuestTracker { Name = "QuestTracker" };
+			uiOverlay.AddChild(questTracker);
 
 			var runTimerPanel = new PanelContainer
 			{
@@ -692,7 +696,7 @@ public partial class Node2DGame : Node2D
 		// After all three: on an endless stage they only recorded what to scatter, and this is where
 		// the first chunks are painted and furnished with it.
 		LoadInitialTerrain();
-		ShowStageIntroLabel();
+		StartRunOpening();
 		UpdateSpawnScaling();
 		StartChapterRules();
 	}
@@ -3740,11 +3744,14 @@ public partial class Node2DGame : Node2D
 		// Three across on both canvases. There was a fourth, the Spell Index - every spell in the game
 		// and where to find the rest - until Eric's playtest (2026-10-30, "remove spell index from the
 		// pause menu"): mid-run it answered a question nobody pauses to ask, and the main menu keeps it.
-		var tabs = new GridContainer { Columns = 3 };
+		// Four since the journal (.ai/quests-and-notes.md): two rows of two on a phone, where four Cinzel
+		// captions across 672 units would not fit "Achievements".
+		var tabs = new GridContainer { Columns = ResponsiveLayout.IsNarrow(this) ? 2 : 4 };
 		tabs.AddThemeConstantOverride("h_separation", 4);
 		tabs.AddThemeConstantOverride("v_separation", 4);
 		var tabGroup = new ButtonGroup();
 		tabs.AddChild(MakeEscapeTabButton(EscapeRunTitle, "Run", ShowEscapeRunOverview, tabGroup));
+		tabs.AddChild(MakeEscapeTabButton(EscapeJournalTitle, EscapeJournalTitle, ShowEscapeJournal, tabGroup));
 		tabs.AddChild(MakeEscapeTabButton(CodexRows.UnlocksTitle, CodexRows.UnlocksTitle, ShowEscapeAchievements, tabGroup));
 		tabs.AddChild(MakeEscapeTabButton("Options", "Options", ShowEscapeOptions, tabGroup));
 		root.AddChild(tabs);
@@ -4669,6 +4676,35 @@ public partial class Node2DGame : Node2D
 	// STOP control cannot take the tab's taps.
 	private AchievementsPage.Result escapeAchievements;
 	private bool escapeAchievementsPadYWired;
+
+	// THE JOURNAL TAB (.ai/quests-and-notes.md): the quest log, with Track on every row, and the chapter
+	// notes - the page the world map's Journal button opens (JournalPage). Measured with this run folded in,
+	// the achievements tab's reading, so a count here is the one the corner shows; tracking a quest here
+	// puts it in the corner the moment the pause closes.
+	private const string EscapeJournalTitle = "Journal";
+
+	private void ShowEscapeJournal()
+	{
+		SaveData data = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
+		ShowStructuredEscapeDetail(EscapeJournalTitle, sections =>
+		{
+			var list = CodexRows.BuildList("JournalHost");
+			sections.AddChild(list);
+			RunResult snapshot = SnapshotRunResult();
+			JournalPage.Build(list, data, AchievementContext.Projected(data ?? new SaveData(), snapshot),
+				snapshot.StageId, RebuildEscapeJournal, RefreshQuestTracker);
+		});
+	}
+
+	// A Track press or a page turn rebuilds the pane where it stands - the scroll put back - rather than
+	// reopening the tab at its top; the selection goes back to the button (JournalPage).
+	private void RebuildEscapeJournal()
+	{
+		int scroll = escapeDetailScroll?.ScrollVertical ?? 0;
+		ShowEscapeJournal();
+		if (escapeDetailScroll != null)
+			Callable.From(() => { if (IsInstanceValid(escapeDetailScroll)) escapeDetailScroll.ScrollVertical = scroll; }).CallDeferred();
+	}
 
 	private void ShowEscapeAchievements()
 	{
@@ -6670,6 +6706,65 @@ public partial class Node2DGame : Node2D
 	// none; it holds any that complete together and plays them in turn.
 	private SetAssembledMoment? setAssembledMoment;
 
+	// --- The tracked quests and the run's opening (.ai/quests-and-notes.md) -----------------------------
+	private QuestTracker? questTracker;
+
+	private SaveData? CurrentSaveData() => GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
+
+	/// <summary>The corner's quests read again now, from the save and this run so far.</summary>
+	private void RefreshQuestTracker()
+	{
+		if (questTracker == null || !IsInstanceValid(questTracker) || CurrentSaveData() is not SaveData data)
+			return;
+		questTracker.Refresh(data, AchievementContext.Projected(data, SnapshotRunResult()));
+	}
+
+	// The run's first seconds: the tracked quests written in big and flown to their corner (QuestIntro),
+	// then - the first time the player is in this chapter - his note about it (ChapterNoteCard), which then
+	// stands in for the chapter's banner: one piece of writing about the place, not two ("keep text minimal").
+	// Otherwise the banner, after the quests rather than under them. Nothing here pauses the run.
+	private void StartRunOpening()
+	{
+		SaveData? data = CurrentSaveData();
+		StageDefinition? stage = StageCatalog.GetByIndex(Global.SelectedStageIdx);
+		if (IsBossRush || data == null)
+		{
+			if (questTracker != null)
+				questTracker.Visible = false;
+			ShowStageIntroLabel();
+			return;
+		}
+
+		QuestLog.Prune(data);
+		questTracker?.Refresh(data, AchievementContext.ForSave(data));
+		float opening = 0f;
+		if (questTracker != null && questTracker.Count > 0)
+		{
+			opening = QuestIntro.Duration;
+			AddChild(new QuestIntro { Name = "QuestIntro", Tracker = questTracker });
+		}
+
+		bool note = stage != null && ChapterNotes.Has(stage.Id) && !ChapterNotes.IsSeen(data, stage.Id);
+		if (note)
+		{
+			// Marked as it is shown, and saved now: a run quit from the pause screen still read it.
+			ChapterNotes.MarkSeen(data, stage!.Id);
+			GetNodeOrNull<SaveManager>("/root/SaveManager")?.SaveGame();
+		}
+		Action next = note ? () => ChapterNoteCard.Show(this, stage!, data) : ShowStageIntroLabel;
+		if (opening <= 0f)
+		{
+			next();
+			return;
+		}
+		// A pausable timer: a level-up in the first two seconds holds the note back with everything else.
+		GetTree().CreateTimer(opening + (note ? 0.15f : 0f), false).Timeout += () =>
+		{
+			if (IsInstanceValid(this))
+				next();
+		};
+	}
+
 	private void OnChestSetCompleted(string setId)
 	{
 		ChestSetDefinition? set = ChestItemCatalog.Sets.FirstOrDefault(s => s.Id == setId);
@@ -6721,9 +6816,15 @@ public partial class Node2DGame : Node2D
 		if (GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is not SaveData data)
 			return;
 		achievementWatch ??= BuildAchievementWatch(data);
-		if (achievementWatch.Count == 0)
+		bool tracking = questTracker != null && IsInstanceValid(questTracker) && questTracker.Visible;
+		if (achievementWatch.Count == 0 && !tracking)
 			return;
 		AchievementContext projected = AchievementContext.Projected(data, SnapshotRunResult());
+		// The corner's counts move on the same one-second reading the achievement moment fires on.
+		if (tracking)
+			questTracker!.Refresh(data, projected);
+		if (achievementWatch.Count == 0)
+			return;
 		for (int i = 0; i < achievementWatch.Count; i++)
 		{
 			AchievementDefinition deed = achievementWatch[i];

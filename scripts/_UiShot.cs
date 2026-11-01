@@ -1274,6 +1274,38 @@ public partial class _UiShot : Node
 			// secret - can be shot on demand without touching the player's real save.
 			else if (arg == "--fresh-save")
 				ReplaceSave(new SaveData());
+			// THE QUESTS AND THE NOTES (.ai/quests-and-notes.md), in memory only:
+			//   --track=a,b       : the tracked quests, in order (achievement ids, next_wizard), replacing the list.
+			//   --notes-seen=all  : every chapter's note already read (or a list of stage ids), so none shows.
+			//   --notes-unseen    : none read, so this chapter's shows.
+			//   --beaten=a,b      : those chapters' bosses beaten (stage ids), which is what the road reads.
+			//   --name-audit      : at the shutter, every word on screen read for a locked wizard's name.
+			else if (arg.StartsWith("--track="))
+			{
+				SaveData save = CurrentSave();
+				save.TrackedQuestIds.Clear();
+				save.TrackedQuestIds.AddRange(arg.Substring("--track=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries));
+			}
+			else if (arg.StartsWith("--notes-seen="))
+			{
+				string ids = arg.Substring("--notes-seen=".Length);
+				foreach (string id in ids == "all" ? ChapterNotes.WrittenFor : ids.Split(',', System.StringSplitOptions.RemoveEmptyEntries))
+					ChapterNotes.MarkSeen(CurrentSave(), id.Trim());
+			}
+			else if (arg == "--notes-unseen")
+				CurrentSave().SeenChapterNoteIds.Clear();
+			else if (arg.StartsWith("--beaten="))
+			{
+				foreach (string id in arg.Substring("--beaten=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries))
+				{
+					StageDefinition beaten = StageCatalog.GetById(id.Trim());
+					BossDefinition boss = beaten != null ? BossCatalog.ForStageIndex(beaten.Index) : null;
+					if (boss != null && !CurrentSave().Lifetime.HasDefeatedBoss(boss.Id))
+						CurrentSave().Lifetime.BossesDefeated.Add(boss.Id);
+				}
+			}
+			else if (arg == "--name-audit")
+				nameAudit = true;
 			// THE WORLD MAP (.ai/world-map.md). --map-at=<stop> opens it with the wizard standing at
 			// that stop (a stage id, or boss_rush); --character=N is who stands there (the roster index,
 			// as the character select hands it); --all-unlocked owns, finds and beats everything in an
@@ -1695,6 +1727,57 @@ public partial class _UiShot : Node
 				GetTree().Quit(1);
 			}
 		}
+	}
+
+	private bool nameAudit;
+
+	// --name-audit: every word on screen - every Label, Button and RichTextLabel in the tree, and the words
+	// the chapter note and the run's opening draw - read for the name of a wizard the save has not freed
+	// (RegressionChecks.NamesWizard, the validator's reading). PASS or FAIL with each offending line.
+	private void RunNameAudit()
+	{
+		SaveData save = CurrentSave();
+		var locked = UnlockCatalog.AllCharacterIds
+			.Where(id => !UnlockCatalog.IsStarter(id, UnlockKind.Character) && !GlobalStatsManager.IsCharacterUnlocked(save, id))
+			.Select(id => (Id: id, Name: QuestLog.NameOf(id)))
+			.ToList();
+		var words = new System.Collections.Generic.List<string>();
+		void Walk(Node node)
+		{
+			switch (node)
+			{
+				case Label label when label.IsVisibleInTree():
+					words.Add(label.Text);
+					break;
+				case Button button when button.IsVisibleInTree():
+					words.Add(button.Text);
+					break;
+				case RichTextLabel rich when rich.IsVisibleInTree():
+					words.Add(rich.GetParsedText());
+					break;
+				case ChapterNoteCard note:
+					words.AddRange(note.Words);
+					break;
+				case QuestTracker tracker:
+					foreach (Quest quest in tracker.Quests)
+					{
+						words.Add(quest.Title);
+						words.Add(QuestTracker.StepLine(quest));
+					}
+					break;
+			}
+			foreach (Node child in node.GetChildren())
+				Walk(child);
+		}
+		Walk(GetTree().Root);
+		var hits = words.Where(w => !string.IsNullOrEmpty(w))
+			.SelectMany(w => locked.Where(l => RegressionChecks.NamesWizard(w, l.Name)).Select(l => $"'{w.Replace("\n", " / ")}' names {l.Id}"))
+			.Distinct()
+			.ToList();
+		GD.Print($"_UiShot: name audit {(hits.Count == 0 ? "PASS" : "FAIL")}: {words.Count} lines read, locked: "
+			+ (locked.Count == 0 ? "nobody" : string.Join(", ", locked.Select(l => l.Id))));
+		foreach (string hit in hits)
+			GD.Print($"_UiShot: name audit: {hit}");
 	}
 
 	// The save the --fresh-save / --open-stages / --free-wizards flags edit. Writes are off from the
@@ -3061,6 +3144,8 @@ public partial class _UiShot : Node
 
 		captured = true;
 
+		if (nameAudit)
+			RunNameAudit();
 		if (layerCensus)
 			ReportLayers();
 		if (statusShowcase)
