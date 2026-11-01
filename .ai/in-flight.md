@@ -96,7 +96,9 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 The castle agents (`wip/boss-dark-wizard`, `wip/dungeon-move`, `wip/castle-preflip`) were cut off by the
 usage limit mid-work; their worktrees keep what they did. They resume after these. Done: bosses excluded
 from executes (e6f7dfd), Blank Folio offer weight 0.02 (63be6da), a short level-up hand keeps a
-three-card hand's card size (dd5cc6a), no two Black Tentacles rifts ever overlap, of any face (fc28f95).
+three-card hand's card size (dd5cc6a), no two Black Tentacles rifts ever overlap, of any face (fc28f95), the chapter note's paper always
+draws (0175bab: the Fallow Fields' was missing), Black Tentacles starts at 60 px and two tentacles and
+builds to 120 and seven.
 
 1. **Boss cinematics** (`wip/boss-cinematics`, in flight): no movement while a boss arrives; letterbox
    bars, zoom, screen shake, a flare; shake in boss animations where it helps; **the player and bosses
