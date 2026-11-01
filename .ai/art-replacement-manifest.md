@@ -1428,3 +1428,92 @@ arrow and the bow already carried (the old outline's job) holds them, so nothing
 
 Not changed, and why: `spell_fx.py` still draws `hunters-arrow.png` (shared generator); nothing loads it.
 The loosed arrow is now the bow's own 52 px arrow rather than the old sprite's 81 at a scale of 1.5.
+
+### Sleet Runes
+
+**Audit.**
+
+| Part | Verdict |
+|---|---|
+| The rune and the great rune (`sleet-rune.png`, `sleet-rune-great.png`) | **Passed.** Pre-rotated sheets of 32 headings from `tools/art/sleet_runes.py`, rasterised on their own grid and shown at x2: opaque Ice stops, a white-hot heart, ringed in occlusion; the great rune drawn again at its scale, never the small one blown up. Kept pixel for pixel |
+| The wind that carries it | **Failed.** Two `DrawLine`s behind every rune at 55% and 40% alpha - a translucent wash, and with snapped ends still a rotated quad at every heading but the four square ones (twice as far back behind a great rune) |
+| The strike's flakes (`ImpactDebris`, Ice, a fan thrown forward through the body - aside, under Parting Wind - out to `HitRadius` plus the body) | **Passed** - the shared burst - except that its last third faded in alpha on this node |
+| The strike's flash | **Failed.** A 6 px square of Ice's core fading by alpha over 0.06 s |
+| The puff of sleet where a rune runs out of range (`ImpactDebris`, Wind) | **Passed**, with the same alpha fade |
+| Great Rune, Braided Wind, Parting Wind, Sigil Fan, Turning Gale | Nothing drawn of their own beyond the runes, the strike and the puff (a bigger rune, a weave, a shove, a fan, a return) |
+
+**New look.** The wind is in the sheet: two streaks either side of the sleet tail, one long and one short,
+each a gust broken once and cooling from Wind's mid to its edge as it trails, where the old lines were
+(20 world px behind the rune, 4 across). Each gust is walked pixel by pixel per heading (Bresenham on the
+rune's own grid) rather than sampled for coverage - a one-pixel line sampled for coverage broke into
+scattered dots at every diagonal heading - and takes no occlusion: ringed in it, the two streaks read as a
+fork of twigs. Wind's edge stop holds them on the Sketchbook's paper without it. At the great rune's scale
+each streak is doubled one pixel outward. The cells grew to hold them, 32 to 40 and 64 to 72 art px (the
+code reads the cell from the sheet's height, and `RegressionChecks` only asks for square cells); the rune
+itself is the same pixels it was, checked cell by cell against the old sheet, and `rune()` leaves the wind
+off unless asked, so the evolution cards that paint it are unchanged. Under Braided Wind a rune's cell
+follows its velocity, so its wind swings with the weave as before. The node draws through
+`SpellInk.DitherByCell`, so the flakes' last third and the puff thin out cell by cell instead of going
+see-through, and the strike's flash is a four-pointed sparkle of whole cells - a white-hot heart, Ice's hot
+in its arms and its mid at their tips, a cell longer on a great rune - held a frame and dissolving, every
+cell well inside the width the rune is tested at. No speed, range, `HitRadius`, pierce or timing changed.
+
+Photographed before (`psa_b_sleet_*`) and after (`psa_a_sleet_*`) with `_UiShot --spell-stage
+--cast-on-stage --start-spell=sleet_runes`: the base spell, and at level 8 Great Rune + Turning Gale,
+Braided Wind + Sigil Fan and Parting Wind + Turning Gale (every card), at `--zoom=1.6` on the Cursed
+Dungeon; Great Rune + Sigil Fan on the phone canvas (`540x1212 --portrait --safe-area`) at the game's zoom
+on the Frozen Waste; Great Rune + Turning Gale at `--zoom=3`; after shots also on the Sketchbook's paper.
+Still needs eyes: a level 8 stream at speed on a phone, where every rune now carries its streaks - Sigil
+Fan's wall of them reads as feathered, and it wants judging in motion rather than in a still.
+
+### Aegis Ward
+
+**Audit.**
+
+| Part | Verdict |
+|---|---|
+| The shield's ring (`ShieldAura` on `player.tscn`: `shield-aura.png` from `tools/art/props_fx.py`, shared by Protective Ward and Vaultguard's per-chest shield) | The sheet **passed**: one art pixel of Arcane stops at x2, sparse so it never hides him, and a state rather than an area (as the stand-still glow is). The node **failed**: its modulate (0.75, 0.95, 1, 0.85) laid the ring translucent over him and multiplied every stop off its ramp |
+| Rampart's dome, lit where a bolt breaks on it | **Failed.** Seven `DrawLine` segments of its curve, each a 6 px wash of Light's mid at 45% under a 2 px line, and three short chords inside, all fading by alpha |
+| The bolt breaking on the dome (`EnemyProjectile.Destroy`, `ImpactDebrisLayer` in Light) | **Passed** - the shared burst |
+| Reforged's shards | **Failed.** A `DrawColoredPolygon` diamond and a `DrawLine` spine on a rotated grid, a streak of Light at 60%, the lot fading by alpha |
+| Reflective Plating's shaft | **Failed.** A 6 px `DrawLine` wash at 50% under a 2 px line, a 6 px square at the struck end, fading by alpha |
+| Sun Aegis's flash and Thorn Crystal Shell's burst on a break (`Player.SunAegisFlash`, `CrystalShellBurst`) | **Passed** - the shared `ImpactDebrisLayer`, in Light and in Metal |
+
+The same ring sheet marks elites (`Enemy.ConfigureEliteMarker`, squashed under the body with Linear
+filtering); that is not this spell's drawing and was left as it was.
+
+**New look.** The ring is drawn as its sheet is: the modulate is gone from `player.tscn`, so it is the
+opaque Arcane ring it was drawn as. Everything else is `scripts/AegisWard.cs`, which now draws through
+`SpellInk.DitherByCell` - every fade a dissolve - and stamps whole art pixels on the world's grid:
+
+- **Rampart's dome** is one art pixel on `RampartRadius`, the radius `GuardBolts` stops a bolt at, either
+  side of where it broke: white-hot at the break and cooling down Light's ramp along the curve, a cell
+  thicker at the break, with a contour of Light's gold edge just outside (what holds it on a pale floor) and
+  a band of Metal plates three cells inside, broken at their seams and lit on the side the key reaches. It
+  opens out from the break as before, holds, and dissolves from its ends in, the break last.
+- **Reforged's shards** are a new sheet, `assets/bonelight/effects/aegis-shard.png`, drawn by
+  `tools/art/aegis_ward.py` at 32 headings as the rune is: a splinter of iron in Metal's ramp - its hot on
+  the flank the key reaches, a ridge of its mid, its edge on the far flank - with a white-hot point, ringed in
+  occlusion, and a bare streak of the ward's Light behind it. Drawn centred on the point its strike is swept
+  from, 18 world px long and 7 wide (the old diamond was 12 by 6), inside the swath it cuts. The node is made
+  in code, so it loads the sheet by path; `RegressionChecks` reports a sheet that is missing or not 32
+  square cells.
+- **The reflected shaft** runs from the edge of his body (14 px out) to the enemy that takes the strike: a
+  white-hot spine one art pixel wide in a body of Light's hot, in a dithered glow of its gold edge, shot out
+  over its first two frames and dissolving, the spine last, with a sparkle of whole cells where it lands.
+
+No radius, cost, reach, damage or timing changed; the shaft's drawing has its own short clock inside the
+0.14 s it always lasted.
+
+Photographed before (`psa_b_aegis_*`) and after (`psa_a_aegis_*`) with `_UiShot --start-spell=aegis_ward`:
+the base ward with a crowd held off; Reflective Plating + Sun Aegis and Reforged + Sun Aegis against a
+crowd stood on him (`--spell-stage=8,30,0`, `--ripen-every=3` so the ward keeps coming back); Rampart +
+Thorn Crystal Shell against `--tells`, whose caster's bolts break on the dome, in bursts at every third
+frame and every frame - all at `--zoom=1.6` on the Cursed Dungeon - and Reflective Plating on the phone
+canvas at the game's zoom on the Frozen Waste; after shots also of Reforged + Sun Aegis on the phone,
+Reflective Plating at `--zoom=3` and Reforged on the Sketchbook's paper. Still needs eyes: the dome's flash in a real fight
+against shooters (the harness cannot time a bolt and caught it in about one frame in three); the shards'
+Light streak, which vanishes on the Sketchbook's paper as Light's pale stops do (the iron and its
+occlusion hold); and the ring, now opaque Arcane violet, over each wizard's robe - the Test Wizard's is
+violet too. It stays Arcane although Aegis Ward is Light and Metal, because Protective Ward and
+Vaultguard's shields wear it as well.
