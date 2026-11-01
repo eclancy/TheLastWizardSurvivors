@@ -228,6 +228,17 @@ public partial class _UiShot : Node
 	private int rushStepsDone;
 	private int rushNextStepFrame = -1;
 	private const int RushStepFrames = 40;
+	// --boss-bleed=F,K (with --rush-steps): K frames after the boss has landed, every body of it is
+	// struck down to fraction F of its health in one blow - what a phase threshold does is then on
+	// screen without a build to cause it (the Seneschal's flight: the door, the room filling). A boss
+	// that holds its thresholds (CourtSeneschalBoss) stops the blow at the first one.
+	private float bossBleedTo = -1f;
+	private int bossBleedAfter = 30;
+	// --rush-after=N: the first rush step waits for frame N as well as a quarter of the warmup, so a
+	// --teleport (at a third of it) can put the wizard in a room before the boss is brought to him.
+	private int rushAfter;
+	private int bossLandedFrame = -1;
+	private bool bossBled;
 	// --demo-unlocks: once the results screen is up, one card of every kind is added to what the run
 	// really earned (a wizard, a spell, a boon, a chapter, an ascension path, an Unlocks entry with
 	// Arcane Energy) and the screen rebuilt, so every reward card can be judged on one screen. The
@@ -1214,6 +1225,15 @@ public partial class _UiShot : Node
 			}
 			else if (arg.StartsWith("--rush-steps="))
 				rushSteps = int.Parse(arg.Substring("--rush-steps=".Length));
+			else if (arg.StartsWith("--boss-bleed="))
+			{
+				string[] bleed = arg.Substring("--boss-bleed=".Length).Split(',');
+				bossBleedTo = float.Parse(bleed[0], System.Globalization.CultureInfo.InvariantCulture);
+				if (bleed.Length > 1)
+					bossBleedAfter = int.Parse(bleed[1]);
+			}
+			else if (arg.StartsWith("--rush-after="))
+				rushAfter = int.Parse(arg.Substring("--rush-after=".Length));
 			else if (arg.StartsWith("--found-secrets="))
 			{
 				SaveManager.WritesDisabled = true;
@@ -2783,8 +2803,24 @@ public partial class _UiShot : Node
 				rushPlayer.CurrentHP = rushPlayer.MaxHP;
 			if (bossDeathOffset is Vector2 bossAt && FindNodeOfType<Player>(GetTree().Root) is Player bossWitness)
 				PlaceBossBodies(bossWitness, bossAt);
+			if (bossBleedTo >= 0f && !bossBled && rushStepsDone > 0 && BossEnemy.EnteringCount == 0
+				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame { BossFightActive: true })
+			{
+				if (bossLandedFrame < 0)
+					bossLandedFrame = frames;
+				else if (frames - bossLandedFrame >= bossBleedAfter)
+				{
+					bossBled = true;
+					var bleeding = new System.Collections.Generic.List<BossEnemy>();
+					CollectBossBodies(GetTree().Root, bleeding);
+					foreach (BossEnemy body in bleeding)
+						if (!body.IsDying)
+							body.TakeDamage(System.Math.Max(1, body.Health - Mathf.FloorToInt(body.MaxHealth * bossBleedTo)), false);
+					GD.Print($"_UiShot: bled {bleeding.Count} boss bod{(bleeding.Count == 1 ? "y" : "ies")} toward {bossBleedTo:P0}");
+				}
+			}
 			// Never mid-arrival (BossEnemy's entrance): a step then would fell a boss that has not landed.
-			if (rushStepsDone < rushSteps && frames >= WarmupFrames / 4 && frames >= rushNextStepFrame
+			if (rushStepsDone < rushSteps && frames >= WarmupFrames / 4 && frames >= rushAfter && frames >= rushNextStepFrame
 				&& BossEnemy.EnteringCount == 0
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame rush)
 			{

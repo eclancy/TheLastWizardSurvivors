@@ -572,18 +572,31 @@ public partial class CourtRules : ChapterRules
 	/// In a room near the player - never in a hall, and never the room he is standing in - so the fight
 	/// opens across a threshold. The Seneschal's own agent (C5, 5.6) decides what he does from there.
 	/// </summary>
+	/// <remarks>
+	/// On the side of the room nearest the player, well in from its walls, rather than at its middle
+	/// (C5): the rooms run to 2,700 px across, and a boss arriving in the middle of one is an arrival the
+	/// player hears and never sees - the camera leans only 230 px toward it (Node2DGame.BossEntrance).
+	/// Not the balcony up the back stair either: a first sight of him should not ask for the house's
+	/// one hidden way up.
+	/// </remarks>
 	public override Vector2? BossSpawnPoint(BossDefinition boss)
 	{
 		Player player = Game?.RunPlayer;
 		if (Layout == null || player == null)
 			return null;
-		foreach (CourtLayout.Room room in Layout.RoomsNear(player.FootPosition, 3200f))
+		Vector2 feet = player.FootPosition;
+		foreach (CourtLayout.Room room in Layout.RoomsNear(feet, 3200f))
 		{
-			if (room == CurrentRoom?.Place || room.Kind == "keepsake")
+			if (room == CurrentRoom?.Place || room.Kind is "keepsake" or "minstrels")
 				continue;
-			if (CourtLayout.DistanceTo(room.World, player.FootPosition) < 300f)
+			if (CourtLayout.DistanceTo(room.World, feet) < 300f)
 				continue;
-			return room.Centre;
+			Rect2 floor = room.World;
+			float insetX = Mathf.Min(200f, floor.Size.X * 0.3f);
+			float insetY = Mathf.Min(200f, floor.Size.Y * 0.3f);
+			var near = new Vector2(Mathf.Clamp(feet.X, floor.Position.X + insetX, floor.End.X - insetX),
+				Mathf.Clamp(feet.Y, floor.Position.Y + insetY, floor.End.Y - insetY));
+			return Layout.IsFloor(near) ? near : room.Centre;
 		}
 		return null;
 	}

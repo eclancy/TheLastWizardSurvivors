@@ -1,0 +1,44 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/CourtSeneschalBoss.cs" id="1"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/CourtSeneschalFrames.tres" id="2_frames"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_seneschal"]
+radius = 34.0
+
+; The Court's boss (.ai/endgame-castle.md 5.6): the steward of the house with his white staff of
+; office. He fights with the staff (a ring) and his household (a rank called across the room), and at
+; 75%, 50% and 25% he leaves through a servants' door for another room, to be found
+; (CourtSeneschalBoss.cs). A tall man, not a brute: narrower than the Warden of the Deep, a walk a
+; little quicker than Elderbark's so a player who runs from him is followed. Health and the Arcane
+; bonus are BossCatalog's [12] block.
+[node name="CourtSeneschalBoss" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 3
+script = ExtResource("1")
+Speed = 76
+Health = 13000
+EnemyType = "Boss"
+IsMiniBoss = true
+ContactDamage = 4
+KnockbackResistance = 0.9
+MinSlowMultiplier = 0.4
+EnemySpacingRadius = 96.0
+MinPlayerSeparation = 36.0
+BossId = "court_seneschal"
+BossDisplayName = "The Seneschal"
+SlamIntervalSeconds = 3.8
+SlamTelegraphSeconds = 0.9
+SlamRadius = 170.0
+SlamDamage = 6
+EnrageHealthFraction = 0.25
+SlamEngageRadiusMultiplier = 1.2
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(2, 2)
+sprite_frames = ExtResource("2_frames")
+animation = &"moving"
+autoplay = "moving"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_seneschal")

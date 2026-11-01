@@ -741,6 +741,7 @@ fall is the default.
 | The Warden of the Deep | Built, not taken, so it fails like a furnace: the heart flares, fire runs along every seam, it bursts, the pauldrons are thrown off, and it slumps into a molten crater (`CraterGround`) as the last of his fire goes out. The longest fall: the finale |
 | The Hayward | The hurdle topples away from him flat onto the stubble, bursting straw; his hat spins off behind him, the crook drops, and he folds to his knees |
 | The Ninth Stone | The mark burns down its split and then leaves, a thread of light streaming up and away; what is left is granite, and it falls whole, away from the wizard, with a thud of dust, chips and heather |
+| The Seneschal | **His staff is broken**, as a steward broke his white staff over his lord's grave: it snaps where his hand holds it in a burst of white splinters, the top half spins away and the foot tips across his front; his cap goes off behind him; he sinks to his knees and the gown pools; the chain of office slides off and its gilt links skitter; the mark goes out |
 | Wizard Dude | **The kids' drawing is never cut, turned or redrawn.** His one frame stays untouched and only FADES, inside a puff of his own spell's colour with sparks rising - an effect of ours round their pixels, nothing in their style |
 
 **Rules a new fall keeps.** Draw on the 2 px art grid (`BossDeath.Disc`, `Line`, `Arc`), never an
@@ -791,6 +792,7 @@ screen shake's) and eases back.
 | The Warden of the Deep | The floor melts into a pool; the armour rises out of it cold and black; the heart catches and fire runs along every seam. The longest, as its fall is |
 | The Hayward | A dust devil of straw spins up; he takes shape in it and drives his hurdle down with a thud |
 | The Ninth Stone | A thread of his light comes down into the heath; the ground cracks; the stone heaves up and the mark runs down its split |
+| The Seneschal | A pair of panelled oak doors stands where there was none and swings open on the dark; he steps out of it, the light finding him as he comes; the doors shut behind him with a thud of dust; he lifts his staff of office and brings it down on the floor, and the mark opens. It is how he leaves, three times, and how he is found |
 | Wizard Dude | **The kids' frame is never cut**: sparks of his colour wind in, a puff, and his own sprite pops up from small with one bounce (scale, height, alpha only) |
 
 **Every boss has at least two phases** (`ValidateBossPatterns` holds two or more thresholds, each
@@ -809,12 +811,14 @@ voices change together.
 | The Warden of the Deep | unchanged: charge, sweep, burrow, cataclysm |
 | The Hayward | 0.5 the swing (unchanged). 0.28 temper: turns 92 deg/s, swings every other attack, quicker |
 | The Ninth Stone | 0.6 the double close (was 0.5). 0.28 the circle tightens: closes every 6.2 s and stray marked stones fall on the player between them |
+| The Seneschal | Opens with the staff (a ring) and **the rank** (5 household guards called down a marked lane at the player, a wall that walks at 380 px/s: step out of it sideways), and in the Great Hall the chandeliers. **0.75, 0.5 and 0.25 are flights**: no hit carries him past one; he steps through a servants' door, untargetable and taking nothing, travels through the walls (one `BurrowMove`) to a room one or two away that he has not held, and the room he left fills with his household at its doors (8, 11, 14). He waits there, a shade, until the player reaches the room. Found after 1: ranks every 6.4 s. After 2: every 5.4 s, seven abreast. After 3: the enrage |
 | Wizard Dude | 0.66 every fan is cast twice down the same wedge. 0.34 enrage, wider fan |
 
 **Health, second** (`BossCatalog`; the value before is on each line): Elderbark 9,500, the Hayward
 10,000, the Ninth Stone 46,000, the Choir 3 x 26,000, the Gaoler 150,000, Mother Rot 170,000, the
 Archivist 140,000, the Still Warden 400,000, the Long Coil 300,000, the Warden of the Deep 500,000,
-Wizard Dude 9,000.
+Wizard Dude 9,000; and the castle's first, the Seneschal, 440,000 (13,000, the castle doc's guess;
+measured below).
 
 **The Boss Rush scales every boss to a third** (`BossRushCatalog.FightHealthShare` = 0.35, the finale
 included, on top of the arrival curve). Ten fights of three to five minutes would be forty minutes of
@@ -867,6 +871,36 @@ his hurdle cuts the probe's own drain to x0.2 from in front, as it did before.
   of the wizard, with no crowd); whether a 2.5-4 s hold reads as a beat or a wait; the Choir's new
   spacing (voices hold places 230 px round the player, step in to sing in turn); Mother Rot's
   percentage regeneration; the Still Warden's whiteout ring.
+
+**The Seneschal (C5, 2026-11-01).** The same protocol on the Court (`--stage=12 --farmed`, Arcane
+6,800), three wizards at the seeds above (Stormcaller 1234, Frostweaver 77, Pyromancer 1234), run in
+batches of two or three. Fight = boss down minus 15:00, the arrival and the three pursuits included;
+pursuit = the three findings summed (the bot walks the maze route to him, as a player who knows the
+house). The **hop** (a lost player is come to by a door, 12 s) was added after batch c, where two runs
+in three stalled: the boss could not route to the bot and stood at full health for six minutes.
+
+| batch | health | Stormcaller: L15, fight (pursuit) | Frostweaver | Pyromancer |
+|---|---|---|---|---|
+| a | 520,000 | 40, **5.9** (40 s) | 42, **4.1** (32 s; the chest set's execute takes the last quarter) | |
+| b | 460,000 | 39, over 6: 35% left | 41, over 6: 54% left | 42, **2.0** (25 s) |
+| c | 400,000 | 45, **1.3** | stalled 5.7 min, then 62% left | stalled: 100% left |
+| d | 400,000, the hop | 44, **5.1** (32 s) | 48, **1.6** (20 s) | 43, **2.8** (27 s) |
+| e | **440,000**, the hop | 40, over 6: fled the third time at 20:56 | 48, **2.8** (27 s) | 42, **2.7** (23 s) |
+
+Read it as the other chapters' table is read: the build the bot reaches the boss with decides the cell
+(L15 39-41 runs out of clock at any of these values; 45-48 is under two minutes at 400,000). 440,000
+puts a decent farmed build (L42-48) at about three minutes and the slower Stormcaller builds at five
+or past six, which is the Warden of the Deep's spread a step on. **Not anchored to the Constable**:
+his number did not exist when this was set; the rule was "after him on the curve", and since the
+Seneschal's fight carries half a minute of pursuit and his household per flight, his health may
+sit at or under the Constable's and his fight still come out the longer. The bot never steps out of
+the rank's lane (it reached him in most calls) - it is immortal here, and a person will do better.
+
+`_BossProbe --stage=12` (it walks to his room, and keeps its wizard whole for this fight): he arrives
+and holds the field 2.3-2.9 s, flees at each threshold to a room 740-3,600 px off, is found 10-53 s
+later, and falls in 2.4-2.9 s, the body freed. Six runs in a row clean; before them the probe's
+wizard twice died to the household it walked through and twice stuck on a route that hugged a jamb,
+which keeping it whole, the route's wall clearance and a sidestep fixed.
 
 ### What not to take
 

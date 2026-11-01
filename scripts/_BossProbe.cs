@@ -272,6 +272,8 @@ public partial class _BossProbe : Node
 	// the boss has something to chase and something to aim at.
 	private void DriveMovement()
 	{
+		if (PursueSeneschal())
+			return;
 		Vector2 away = Vector2.Zero;
 		int counted = 0;
 
@@ -299,6 +301,162 @@ public partial class _BossProbe : Node
 
 		Press("move_right", "move_left", desired.X);
 		Press("move_down", "move_up", desired.Y);
+	}
+
+	// THE SENESCHAL (.ai/endgame-castle.md 5.6): he leaves at each threshold and the fight resumes only
+	// when the player reaches the room he went to, so a bot that kites would never find him and the
+	// probe would report a fight it never finished. While he is away the bot walks to him through the
+	// Court's halls - a breadth-first search over the building's own grid (CourtLayout), cell to cell,
+	// from where he will be - and the probe notes each flight and how long the finding took.
+	private int seneschalFlightsSeen;
+	private float seneschalLeftAt = -1f;
+	private int[] courtSteps;
+	private Vector2I courtGoal = new(-1, -1);
+
+	private bool PursueSeneschal()
+	{
+		if (boss is not CourtSeneschalBoss seneschal || !IsInstanceValid(seneschal) || seneschal.IsDying)
+			return false;
+		// Kept whole for this fight: the question is whether he can be followed and finished, and a
+		// probe wizard at its level dies to the household it walks through on the way, which says
+		// nothing about either.
+		if (player is Player kept && !kept.IsDead)
+			kept.CurrentHP = kept.MaxHP;
+		if (seneschal.FlightsTaken > seneschalFlightsSeen)
+		{
+			seneschalFlightsSeen = seneschal.FlightsTaken;
+			seneschalLeftAt = elapsed;
+			notes.Add($"flight {seneschalFlightsSeen} at {elapsed:0.0}s, {seneschal.BossHealthFraction:P0} health, to "
+				+ $"{(seneschal.RefugeName.Length > 0 ? seneschal.RefugeName : "the open")}, {player.GlobalPosition.DistanceTo(seneschal.PursuitTarget):0} px from the bot; "
+				+ $"household so far {seneschal.HouseholdCalled}");
+		}
+		if (!seneschal.AwaitingPursuit)
+		{
+			if (seneschalLeftAt >= 0f)
+			{
+				notes.Add($"found him in {(seneschal.RefugeName.Length > 0 ? seneschal.RefugeName : "the open")} {elapsed - seneschalLeftAt:0.0}s after he left; "
+					+ $"household {seneschal.HouseholdCalled}, ranks {seneschal.RanksCalled} ({seneschal.RankHits} reached the bot)");
+				seneschalLeftAt = -1f;
+			}
+			return false;
+		}
+
+		Vector2 feet = player is Player wizard ? wizard.FootPosition : player.GlobalPosition;
+		Vector2 to = seneschal.PursuitTarget - feet;
+		CourtLayout layout = (Node2DGame.Current?.Rules as CourtRules)?.Layout;
+		if (layout != null)
+		{
+			Vector2I goal = layout.WorldToCell(seneschal.PursuitTarget + new Vector2(0f, 80f));
+			if (goal != courtGoal || courtSteps == null)
+				courtSteps = CourtStepsTo(layout, courtGoal = goal);
+			Vector2I at = layout.WorldToCell(feet);
+			// Three cells down the gradient, so the feet round a door's jamb rather than catch on it.
+			Vector2I next = at;
+			for (int k = 0; k < 3; k++)
+				next = DownHill(layout, next);
+			if (next != at)
+				to = layout.CellToWorld(new Vector2(next.X + 0.5f, next.Y + 0.5f)) - feet;
+		}
+		if (to.LengthSquared() > 1f)
+			to = to.Normalized();
+		// The grid knows the walls, not what stands in a hall (a blocker, a prop): not having moved for
+		// half a second, step sideways for a moment, alternating sides, as the balance bot does.
+		if (elapsed < sidestepUntil)
+			to = (new Vector2(-to.Y, to.X) * sidestepSide + to * 0.3f).Normalized();
+		else if (elapsed - stuckCheckAt >= 0.5f)
+		{
+			if (feet.DistanceTo(stuckCheckFrom) < 8f)
+			{
+				sidestepSide = -sidestepSide;
+				sidestepUntil = elapsed + 0.7f;
+			}
+			stuckCheckAt = elapsed;
+			stuckCheckFrom = feet;
+		}
+		Press("move_right", "move_left", to.X);
+		Press("move_down", "move_up", to.Y);
+		return true;
+	}
+
+	private float sidestepUntil, stuckCheckAt;
+	private float sidestepSide = 1f;
+	private Vector2 stuckCheckFrom;
+
+	private static readonly Vector2I[] Neighbours = { new(1, 0), new(-1, 0), new(0, 1), new(0, -1) };
+
+	private int[] CourtStepsTo(CourtLayout layout, Vector2I goal)
+	{
+		int w = layout.Grid.Width, h = layout.Grid.Height;
+		var steps = new int[w * h];
+		Array.Fill(steps, int.MaxValue);
+		if (!layout.Grid.Contains(goal))
+			return steps;
+		var queue = new Queue<Vector2I>();
+		steps[goal.X + goal.Y * w] = 0;
+		queue.Enqueue(goal);
+		while (queue.Count > 0)
+		{
+			Vector2I c = queue.Dequeue();
+			int here = steps[c.X + c.Y * w];
+			foreach (Vector2I d in Neighbours)
+			{
+				Vector2I n = c + d;
+				// A cell's width clear of every wall, so the route keeps the feet off the jambs: a
+				// shortest path hugs each corner it turns, and the feet collider snags on the first.
+				if (!layout.Grid.Contains(n) || !Clear(layout, n) || steps[n.X + n.Y * w] != int.MaxValue)
+					continue;
+				steps[n.X + n.Y * w] = here + 1;
+				queue.Enqueue(n);
+			}
+		}
+		// Then the floor along the walls, each cell one more than a neighbour already reached, so a bot
+		// standing against a wall (where the run starts) still has a way down into the clear.
+		for (int y = 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+				if (steps[x + y * w] != int.MaxValue)
+					queue.Enqueue(new Vector2I(x, y));
+		while (queue.Count > 0)
+		{
+			Vector2I c = queue.Dequeue();
+			int here = steps[c.X + c.Y * w];
+			foreach (Vector2I d in Neighbours)
+			{
+				Vector2I n = c + d;
+				if (!layout.Grid.Contains(n) || !layout.Grid.IsWalkable(n) || steps[n.X + n.Y * w] != int.MaxValue)
+					continue;
+				steps[n.X + n.Y * w] = here + 1;
+				queue.Enqueue(n);
+			}
+		}
+		return steps;
+	}
+
+	private static bool Clear(CourtLayout layout, Vector2I cell)
+	{
+		for (int dy = -1; dy <= 1; dy++)
+			for (int dx = -1; dx <= 1; dx++)
+				if (!layout.Grid.IsWalkable(cell + new Vector2I(dx, dy)))
+					return false;
+		return true;
+	}
+
+	private Vector2I DownHill(CourtLayout layout, Vector2I at)
+	{
+		int w = layout.Grid.Width;
+		if (courtSteps == null || !layout.Grid.Contains(at))
+			return at;
+		Vector2I best = at;
+		int bestSteps = courtSteps[at.X + at.Y * w];
+		foreach (Vector2I d in Neighbours)
+		{
+			Vector2I n = at + d;
+			if (layout.Grid.Contains(n) && courtSteps[n.X + n.Y * w] < bestSteps)
+			{
+				best = n;
+				bestSteps = courtSteps[n.X + n.Y * w];
+			}
+		}
+		return best;
 	}
 
 	private static void Press(string positive, string negative, float axis)
