@@ -681,6 +681,14 @@ zoom; not checked on the Sketchbook's paper or on a real phone.
 | Will-o'-Wisps (`WispSwarm`) | Mote, halo and tail on the grid in opaque Grass stops, but the whole wisp faded in alpha over its last 0.4 s and its tail was drawn at 80% | Redrawn by the traps-and-stars pass (its commit 9725348, "Mirefoot's wisps fade by dither"), so not touched here |
 | `TrailWeaver`, `GravePath` | Draw nothing (`GravePath` is Gravewell's remembered path) | - |
 
+
+**The icon, 2026-11-01.** Eric: "Mirefoot icon has a random black line at the bottom. Make a better icon for
+it." The line was `c.hline(6, 26, 30, OCC)` in `tools/art/spell_icons.py` `mirefoot` - a contact shadow under
+a hole in the ground - and the pool was a dark blue blob on a dark slot. Redrawn as the spell's sentence: two
+boot prints of a stride, welled up with bog (`_bog_print`), each with a lip of mud in the gold row lit on the
+key side so it holds on the dark loadout slot and the pale page, a bubble and scum in the fresh one and a reed
+beside it. Its five evolution cards were regenerated on it (`evolution_icons.py --only=mirefoot`).
+
 ### LingeringZone's own pool - Pyroclasm's magma and the Lingering Rift
 
 Mirefoot's pools never draw themselves (MireSurface does), but a `LingeringZone` that does is what
