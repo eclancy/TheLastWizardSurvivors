@@ -1584,6 +1584,9 @@ public partial class _BalanceHarness : Node
 			return;
 		}
 
+		if (Immortal && PursueFledBoss())
+			return;
+
 		if (Immortal)
 		{
 			// ...except to pick up XP. A long-range spell kills where the bot is not, and a bot that
@@ -1763,8 +1766,55 @@ public partial class _BalanceHarness : Node
 	private static Vector2 SurvivorHeading(int i) =>
 		Vector2.FromAngle(i * Mathf.Tau / SurvivorHeadings);
 
+	// THE SENESCHAL (.ai/endgame-castle.md 5.6) leaves at each threshold for another room, and the fight
+	// resumes only when the player reaches it - so a bot that only kites never finds him, and a Court run
+	// would measure the first quarter of a fight. While he is away the bot walks to him, round the walls
+	// (WalkBearing's maze route), as a player who knows the house would. Nothing else reads this.
+	private int seneschalFlightsLogged;
+	private float seneschalLeftAt = -1f;
+
+	private bool PursueFledBoss()
+	{
+		if (Node2DGame.Current is not Node2DGame run || !run.BossFightActive)
+			return false;
+		CourtSeneschalBoss seneschal = null;
+		foreach (Node node in run.GetChildren())
+		{
+			if (node is CourtSeneschalBoss found && IsInstanceValid(found) && !found.IsDying)
+			{
+				seneschal = found;
+				break;
+			}
+		}
+		if (seneschal == null)
+			return false;
+		if (seneschal.FlightsTaken > seneschalFlightsLogged)
+		{
+			seneschalFlightsLogged = seneschal.FlightsTaken;
+			seneschalLeftAt = elapsed;
+			GD.Print($"HARNESS seneschal flight {seneschalFlightsLogged} at t={elapsed:0}s ({seneschal.BossHealthFraction:P0}) to "
+				+ $"{(seneschal.RefugeName.Length > 0 ? seneschal.RefugeName : "the open")}, {player.GlobalPosition.DistanceTo(seneschal.PursuitTarget):0} px off");
+		}
+		if (!seneschal.AwaitingPursuit)
+		{
+			if (seneschalLeftAt >= 0f)
+			{
+				GD.Print($"HARNESS seneschal found after {elapsed - seneschalLeftAt:0}s (household {seneschal.HouseholdCalled}, "
+					+ $"ranks {seneschal.RanksCalled}, {seneschal.RankHits} reached)");
+				seneschalLeftAt = -1f;
+			}
+			return false;
+		}
+		Vector2 target = seneschal.PursuitTarget + new Vector2(0f, 80f);
+		Vector2 bearing = target - player.FootPosition;
+		WalkBearing(bearing.LengthSquared() > 1f ? bearing.Normalized() : Vector2.Right, target);
+		return true;
+	}
+
 	private void DriveSurvivor()
 	{
+		if (PursueFledBoss())
+			return;
 		Vector2 p = player.GlobalPosition;
 		Array.Clear(survivorDanger);
 		survivorNearby.Clear();
