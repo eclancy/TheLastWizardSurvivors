@@ -1,4 +1,4 @@
-# Work in flight (snapshot, 2026-11-01)
+# Work in flight (snapshot, 2026-11-01, updated after the 0.10.0 release)
 
 A handoff from the cloud session that ran 2026-10-30 to 11-01. Eric moved the work to a local Claude
 Code session. **A snapshot, not a source of truth:** check `git log` and the branches before acting
@@ -6,20 +6,24 @@ on it, and delete this file once everything below has landed or been dropped.
 
 ## 1. Released
 
-**0.9.2 is released** (`Release v0.9.2`, 614ad5e, tag `v0.9.2`). The next release is 0.10.0
-(`bash tools/release/release.sh X.Y.Z "..."`, on the Windows PC only: Inno Setup, the Android
-release keystore and the Android SDK live there; `.ai/releasing.md`).
+**0.10.0 is released** (`Release v0.10.0`, 6b3af6e, tag `v0.10.0`, 2026-11-01, from the Windows PC
+by the local session at Eric's request; dry run first; `ecec.dev/wizard-survivors/version.json` serves
+it). Releases need this PC: Inno Setup, the Android release keystore and the Android SDK live here
+(`.ai/releasing.md`).
 
 ## 2. Where the branches stand
 
-- **`main` and `main-ff86ni` are level** (2026-11-01): Eric asked to release, so `main` was
-  fast-forwarded to everything below for **0.10.0**, to be released from the Windows PC with
-  `bash tools/release/release.sh 0.10.0 "..."` (the keystore and Inno Setup live there only).
-  Check `git tag` for `v0.10.0` to see whether that has happened.
-- **`main-ff86ni` stays the development branch.** Every merge into it was built, validated
-  (0 errors, 6 warnings: five castle to-dos and the Test Wizard) and pushed.
+- **`main` and `main-ff86ni` were level at the release** (6b3af6e). `main-ff86ni` stays the
+  development branch; every merge into it is built, validated and pushed. The validator now ends
+  **0 errors, 4 warnings**: the Test Wizard and the three castle chapters' campaign to-do lines.
 
-Merged into `main-ff86ni` since `main`:
+In 0.10.0, on top of the 0.9.2 work the local session added (2026-11-01): **C6, both castle casts**
+(`tools/art/cast_bridge.py`, `cast_court.py`; their bolts arcane, `.ai/bestiary.md` 6), **the pixel
+pass on Sleet Runes and Aegis Ward** (`.ai/art-replacement-manifest.md` 9; the shield ring is opaque
+now), and **`BossRushCatalog.Roster` takes playable chapters only**, so a castle boss can merge before
+C2 without joining the rush.
+
+Merged into `main-ff86ni` before that:
 
 - **Difficulty curve, schema 20** (`.ai/difficulty-curve.md`): `ChapterDifficulty` per-chapter
   enemy health and damage; boss health 3,800 (Elderbark) up to 200,000; max HP 50, no base regen,
@@ -51,9 +55,16 @@ Merged into `main-ff86ni` since `main`:
   with a kind-first banner; no white flash after a pick.
 - Reward lines read kind first ("Spell recovered - Bramble Seed"); clipped bush and Sands art fixed.
 
-## 3. Branches unfinished at handoff
+## 3. Branches in flight
 
-**None.** `wip/boss-entrances` was merged last (every boss makes a themed 2.5-4 s arrival with the field
+Three agents, each in its own worktree from 9a854b5 (2026-11-01): **`wip/boss-constable`** (C5, the
+Constable, `ws-wip-boss-constable`), **`wip/boss-seneschal`** (C5, the Seneschal, `ws-wip-boss-seneschal`)
+and **`wip/throne`** (C4: the hall, the Muster, the procession, `ws-wip-throne`). None flips `IsPlayable`
+or touches the world map. Expect conflicts in `BossCatalog.cs`, `RegressionChecks.ValidateBossPattern`
+and `.ai/enemy-behaviour.md`'s boss tables (keep both sides), and in the generated `tiles.json`,
+`detail.json` and atlas (take either side, re-run `tiles.py` and `ground_detail.py`).
+
+At the first handoff there were none: `wip/boss-entrances` was merged last (every boss makes a themed 2.5-4 s arrival with the field
 held and the player's spells silent; every boss has at least two phases; fights run about 2-6 minutes
 on the harness, against 0.3-1.1 before on the same code; Boss Rush at 35% health). The final health
 values for the Fields, Circle, Archivist, Still Warden and Warden of the Deep were set from single runs
@@ -70,8 +81,12 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 
 ## 4. Waiting on Eric
 
-- **Play the difficulty curve** (50 HP, scarce healing, tougher chapters and bosses) before
-  `main-ff86ni` goes into `main`.
+- **Playtest 0.10.0** (50 HP, scarce healing, tougher chapters and bosses). Fixes from it come
+  before the castle.
+- From 2026-11-01's pieces: the shield ring (`ShieldAura`, shared by Aegis Ward, Protective Ward and
+  Vaultguard) is still Arcane violet though Aegis is Light and Metal, and is opaque now - recolour it?
+  Whether the Court Falconer's hawk reads as a bird and the Huntsman's horn as a horn at game size
+  (the Falconer throws a bolt, not the hawk: a hawk would be a new projectile scene).
 - **Decided 2026-11-01:** achievements count the moment they are met (done: `Node2DGame.RecordAchievementNow`);
   the Sketchbook stays open for saves that already played it (no change); the Dark Wizard is a
   silhouette only in the prologue (done, `tools/art/prologue.py`); Thorned Vine stays as it is until
@@ -88,15 +103,14 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 
 ## 5. What comes after
 
-In this order; items 2-4 are the open work a new session should carry on with.
+In this order. Fixes from the 0.10.0 playtest come before anything below.
 
-1. Release 0.10.0 from `main` on the Windows PC, then playtest it (section 4). Fixes from that
-   playtest come before anything below.
-2. The pixel-art pass on Sleet Runes and Aegis Ward (section 7), to the Bonelight contract in
-   `.ai/art-direction.md`, written up in `.ai/art-replacement-manifest.md` 9 like the others.
-3. The castle, by `.ai/endgame-castle.md` section 9.2: C6, C5, C4, C2 (**schema 21**), C8, C9;
-   each chapter's `IsPlayable` flips last.
-4. The rest of the secrets catalogue, `.ai/achievements-and-secrets.md` section 8.
+1. ~~The pixel-art pass on Sleet Runes and Aegis Ward~~ and ~~C6~~: done, in 0.10.0.
+2. The castle, by `.ai/endgame-castle.md` section 9.2: C5 (the Constable and the Seneschal in flight;
+   the dark wizard after C4), C4 (in flight), C2 (**schema 21**), C8, C9; each chapter's `IsPlayable`
+   flips last. The bridge's flip needs C2, the Constable and C8 (a playable chapter with no map stop
+   is a validator fault), so those three land together.
+3. The rest of the secrets catalogue, `.ai/achievements-and-secrets.md` section 8.
 
 ## 6. How the cloud session worked
 
@@ -110,10 +124,10 @@ or three goes further, and agents should keep tool output short.
 
 ## 7. Loose ends
 
-- **The pixel-art pass never reached Sleet Runes or Aegis Ward.** They were held for the sky agent,
-  whose phase 2 drew only the Great Rune sheet and the evolution icons; neither spell has a section
-  in `.ai/art-replacement-manifest.md` 9. Every other spell has one (Stormsweep's came with the whips).
-
+- On this PC the headless `--import` often finishes its work and then never exits: judge it by its
+  log reaching "post-reimport operations", and run it under `timeout`.
+- `scripts/_BossProbe.cs`'s header promises `--stage=all`, but line 62 `int.Parse`s it and the probe
+  throws in `_Ready` and idles. Pass one stage at a time (the Choir is stage 2, not 3).
 - The pause screen numbers chapters by stage index (the Fallow Fields shows "Chapter 10"); the map
   says "Chapter 2 of 10". `Node2DGame.cs`, around the pause screen's chapter line.
 - `ImpactDebris` still fades by alpha in its last 30%, and Ice's first two ramp colours vanish on
