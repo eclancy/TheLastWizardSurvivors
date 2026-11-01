@@ -144,7 +144,10 @@ public static class BossCatalog
 		[8] = new BossDefinition
 		{
 			Id = "kid_wizard",
-			DisplayName = "Wizard Dude",
+			// Named for Elim, one of the kids whose drawings are the Sketchbook (Eric, 2026-11-01: "The boss of
+			// sketchbook can be called Elim").
+			// Only the name changed: the id, the scene and every save key are the Wizard Dude's still.
+			DisplayName = "Elim",
 			Tagline = "Throws a fan of missiles down the wedge he shows you. Leave the wedge.",
 			ScenePath = "res://scenes/KidWizardBoss.tscn",
 			Health = 9000, // 4600 before the fights were lengthened

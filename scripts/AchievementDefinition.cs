@@ -390,7 +390,7 @@ public static class AchievementDefinitions
 		new()
 		{
 			Id = "sketchbook_cleared", DisplayName = "Best Drawing",
-			Description = "Defeat Wizard Dude in the Sketchbook.",
+			Description = "Defeat Elim in the Sketchbook.",
 			RewardText = "400 Arcane Energy", CurrencyReward = 400,
 			Category = AchievementCategory.Exploration,
 			Kind = AchievementKind.Road,
