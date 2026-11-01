@@ -52,9 +52,13 @@ Merged into `main-ff86ni` since `main`:
 
 ## 3. Branches unfinished at handoff
 
-| branch | what | state |
-|---|---|---|
-| `wip/boss-entrances` | spells stop firing while a boss makes a themed entrance; every boss gets at least two phases; fights a few minutes longer; Boss Rush scaling | measuring. Farmed fight lengths so far: Gaoler 3.7 min (was 1.3), Ninth Stone 2.4 (1.6), Hollow Choir 6.0 (0.1; its health can come back down), Mother Rot 3.0 (0.6), Archivist 5.2 (2.1), Long Coil 4.2 (0.9); Forest fresh 2.9 (1.2). Two runs had weak bots, so a same-code baseline was being run. Still to do: Still Warden, Warden of the Deep, Boss Rush, entrance screenshots. Status in `.ai/enemy-behaviour.md` on the branch. **Not merged.** |
+**None.** `wip/boss-entrances` was merged last (every boss makes a themed 2.5-4 s arrival with the field
+held and the player's spells silent; every boss has at least two phases; fights run about 2-6 minutes
+on the harness, against 0.3-1.1 before on the same code; Boss Rush at 35% health). The final health
+values for the Fields, Circle, Archivist, Still Warden and Warden of the Deep were set from single runs
+and not re-measured; see `.ai/enemy-behaviour.md`, "Boss entrances and longer fights". Needs eyes: every
+arrival in real play, whether a 3-4 s hold feels like a beat or a wait, the Choir's spacing, Mother Rot's
+healing, the Still Warden's ice ring.
 
 Also merged since the first version of this note: **`wip/evolutions2-blasts`** (Fireball's Brimstone and
 Armageddon Sun, Arcane Explosion's Sympathetic Blast, Resonance and an Event Horizon that stops time,
