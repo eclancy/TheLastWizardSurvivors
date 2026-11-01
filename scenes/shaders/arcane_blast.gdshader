@@ -31,6 +31,13 @@ uniform bool static_nova = false;
 uniform bool supernova = false;
 uniform bool event_horizon = false;
 uniform bool gilded = false;
+// Sympathetic Blast (2h): the blast goes off in the element of the spell that set it off, its four
+// stops handed in from ElementColors (ArcaneExplosion.StartBlast) in place of Arcane's.
+uniform bool mimic = false;
+uniform vec3 m_core = vec3(1.0);
+uniform vec3 m_hot = vec3(1.0);
+uniform vec3 m_mid = vec3(0.5);
+uniform vec3 m_edge = vec3(0.25);
 
 const vec3 OCC = vec3(0.020, 0.027, 0.047);          // #05070C
 const vec3 ARC_CORE = vec3(1.000, 0.941, 1.000);     // arcane core #FFF0FF
@@ -99,6 +106,8 @@ vec3 band(float x, float cool, float b) {
 		return lvl < 0.2 ? ARC_CORE : (lvl < 0.45 ? FIRE_HOT : (lvl < 0.7 ? FIRE_MID : FIRE_EDGE));
 	if (gilded)
 		return lvl < 0.2 ? ARC_CORE : (lvl < 0.45 ? GOLD_HI : (lvl < 0.7 ? GOLD_LIT : GOLD_BASE));
+	if (mimic)
+		return lvl < 0.2 ? m_core : (lvl < 0.45 ? m_hot : (lvl < 0.7 ? m_mid : m_edge));
 	return lvl < 0.2 ? ARC_CORE : (lvl < 0.45 ? ARC_HOT : (lvl < 0.7 ? ARC_MID : ARC_EDGE));
 }
 
@@ -183,6 +192,8 @@ void fragment() {
 		vec2 sp = vec2(cos(ac), sin(ac)) * at;
 		if (all(equal(floor((sp + c0) / GRID), cell)) && hash11(sector + 7.7) > 0.35) {
 			col = t < 0.3 ? ARC_CORE : (t < 0.6 ? (supernova ? FIRE_HOT : ARC_HOT) : (supernova ? FIRE_MID : ARC_MID));
+			if (mimic)
+				col = t < 0.3 ? m_core : (t < 0.6 ? m_hot : m_mid);
 			if (static_nova && h > 0.5)
 				col = BOLT_MID;
 			hit = true;
@@ -192,7 +203,7 @@ void fragment() {
 	// Behind the front the middle clears, but a few motes of the force hang just inside it and wink out:
 	// only just inside it, so the middle is clear and the motes are the front's wake, not a field of noise.
 	if (!hit && !event_horizon && d < edge - thick && d > edge - thick * 3.0 && hash12(cell + flicker) < 0.05 * (1.0 - t)) {
-		col = supernova ? FIRE_EDGE : ARC_EDGE;
+		col = supernova ? FIRE_EDGE : (mimic ? m_edge : ARC_EDGE);
 		hit = true;
 	}
 
@@ -218,7 +229,7 @@ void fragment() {
 			col = ARC_CORE;
 			hit = true;
 		} else if (d < fr * 1.6 && b < 0.55 * flash) {
-			col = supernova ? FIRE_HOT : ARC_HOT;
+			col = supernova ? FIRE_HOT : (mimic ? m_hot : ARC_HOT);
 			hit = true;
 		}
 	}

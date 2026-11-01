@@ -4704,7 +4704,8 @@ public partial class Player : CharacterBody2D
 
 		arcaneCharge = 0;
 		ArcaneExplosion live = GetChildren().OfType<ArcaneExplosion>().FirstOrDefault();
-		live?.TriggerNow();
+		// The cast that filled the charge: Sympathetic Blast goes off in its element.
+		live?.TriggerNow(caster);
 	}
 
 	// Levelling the spell makes it come due sooner rather than hit harder-per-second, which keeps

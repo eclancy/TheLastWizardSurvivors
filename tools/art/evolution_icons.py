@@ -2210,11 +2210,19 @@ def _(sp, c):
 
 @card("arcane_explosion_dual_shockwave")
 def _(sp, c):
-    """Dual Shockwave: two rings, and the crowd thrown clear of them."""
+    """Sympathetic Blast (Dual Shockwave's id): the blast wearing the element of the spell that set it
+    off - its ring broken into three arcs, each in another spell's light."""
     reset(sp)
-    sp.place = Place(0.8)
-    U(sp, v_shock(2))
-    O(sp, v_chevrons(10))
+    sp.place = Place(0.62)
+
+    def arcs(cv, x):
+        for (el, a0, a1) in (("lightning", -150, -40), ("ice", -20, 90), ("poison", 110, 200)):
+            ramp = E[el]
+            for d in range(a0, a1, 4):
+                t = math.radians(d)
+                for (rr, tone) in ((13.0, ramp[2]), (12.0, ramp[1]), (11.0, ramp[0] if d % 12 == 0 else ramp[1])):
+                    cv.set(C0 + math.cos(t) * rr, C0 + math.sin(t) * rr, tone)
+    O(sp, arcs)
 
 
 @card("arcane_explosion_static_nova")
@@ -2239,20 +2247,41 @@ def _(sp, c):
 
 @card("arcane_explosion_supernova")
 def _(sp, c):
-    """Supernova: the blast become a star going off, burning through Arcane into Fire."""
+    """Resonance (Supernova's id): the blast round the wizard, and its echoes going off where his other
+    spells struck."""
     reset(sp)
-    sp.place = Place(1.18)
-    sp.ramp = "fire"
-    U(sp, lambda cv, x: m_rays(cv, E["fire"], (C0, C0), 7.0, 14.5, 16))
-    O(sp, lambda cv, x: m_blast(cv, E["fire"], C0, C0, 6.0))
+    sp.place = Place(0.5, at=(10.5, 19.5))
+    sp.copies = [Place(0.36, at=(22.0, 9.0)), Place(0.32, at=(24.5, 23.5))]
+
+    def threads(cv, x):
+        a = E["arcane"]
+        for (tx, ty) in ((22.0, 9.0), (24.5, 23.5)):
+            for k in range(2, 9):
+                u = k / 10.0
+                if k % 2 == 0:
+                    cv.set(10.5 + (tx - 10.5) * u, 19.5 + (ty - 19.5) * u, a[2])
+    U(sp, threads)
 
 
 @card("arcane_explosion_event_horizon")
 def _(sp, c):
-    """Event Horizon: a singularity that pulls in and freezes."""
+    """Event Horizon: a sphere of stopped time where the blast went off - motes hung still in it, and
+    what walked in frozen."""
     reset(sp)
-    sp.subject = event_horizon
-    U(sp, v_vortex(3, 2.6))
+    sp.place = Place(0.55)
+
+    def sphere(cv, x):
+        a = E["arcane"]
+        cv.disc(C0, C0, 13.0, 11.0, M["violet"][4])
+        for d in range(0, 360, 12):
+            t = math.radians(d)
+            cv.set(C0 + math.cos(t) * 13.0, C0 + math.sin(t) * 11.0, a[1] if d % 36 == 0 else a[3])
+        for k in range(18):
+            h1 = (k * 0.6180339) % 1.0
+            h2 = (k * 0.7548777) % 1.0
+            rr = math.sqrt(h2) * 11.0
+            cv.set(C0 + math.cos(h1 * TAU) * rr, C0 + math.sin(h1 * TAU) * rr * 0.85, a[0] if k % 4 == 0 else a[1])
+    U(sp, sphere)
     O(sp, lambda cv, x: m_freeze(cv, (C0, C0 + 1), 10.5))
 
 

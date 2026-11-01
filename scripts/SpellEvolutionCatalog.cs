@@ -277,19 +277,22 @@ public static class SpellEvolutionCatalog
 	private static void SetupArcaneExplosionEvolutions(SpellData spell)
 	{
 		// Level 4 (3 choices)
+		// PHASE 2 (.ai/spell-roster.md 2h, 2026-10-31): Dual Shockwave (+35% damage, a longer throw) and
+		// Supernova (the blast bigger) only moved numbers, and Event Horizon's visible half was a pull - Hollow
+		// Star's verb. Each is now something the blast does because it is set off by the other spells: it
+		// takes the element of the one that set it off (Sympathetic Blast), it goes off again where they
+		// struck (Resonance), and it stops time where it went off (Event Horizon). Read by id in ArcaneExplosion.
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
-			Id = "arcane_explosion_dual_shockwave",
-			DisplayName = "Dual Shockwave",
-			// "Two rapid concentric shockwaves" was never built; the knockback is, since 2026-10-26.
-			Description = "The blast hits 35% harder and throws enemies 70% further.",
+			Id = ArcaneExplosion.SympatheticBlastId,
+			DisplayName = "Sympathetic Blast",
+			Description = "Each blast takes the element of the spell that set it off: its colour, and its touch - ice slows, lightning staggers, poison poisons, fire hits harder. +20% damage.",
 			MilestoneLevel = 4,
-			KnockbackBonus = 70f,
-			DamageMultiplier = 1.35f,
-			VisualTag = "DualShockwave",
-			ModulateColor = new Color(0.4f, 0.85f, 1.0f),
-			SynergyTag = "Arcane / Force",
-			SynergyDescription = "Repels fast swarming enemies with double blast waves."
+			DamageMultiplier = 1.2f,
+			VisualTag = "SympatheticBlast",
+			ModulateColor = Colors.White,
+			SynergyTag = "Arcane / Loadout",
+			SynergyDescription = "The blast wears whichever spell you cast most."
 		});
 
 		// The element path (ElementPaths): Arcane's branch into Lightning. Its three chain sparks were
@@ -332,38 +335,37 @@ public static class SpellEvolutionCatalog
 		// Level 8 (2 choices)
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "arcane_explosion_supernova",
-			DisplayName = "Supernova",
-			// The "incinerating" was an Effect Burn of 5 that nothing read - there is no burn status
-			// (.ai/gameplay-design.md, "Status effects"). Its share went into the damage, x2.0 to x2.2.
-			Description = "A massive blast: +150% Area and +120% Damage.",
+			Id = ArcaneExplosion.ResonanceId,
+			DisplayName = "Resonance",
+			Description = "Every blast goes off again wherever each of your other spells last struck. +180% damage.",
 			MilestoneLevel = 8,
-			AreaMultiplier = 2.5f,
-			DamageMultiplier = 2.2f,
-			VisualTag = "Supernova",
-			ModulateColor = new Color(1.0f, 0.4f, 0.12f),
-			SynergyTag = "Arcane / Fire",
-			SynergyDescription = "Ascension: Decimates massive waves with burning cataclysm."
+			// x2.8, echoes at full: at x1.6 and echoes at 75% it measured 244 a second at level 8 with one
+			// partner spell, at x2.2 285 (band 331-465; the old Supernova 372). One partner is one echo.
+			DamageMultiplier = 2.8f,
+			VisualTag = "Resonance",
+			ModulateColor = Colors.White,
+			SynergyTag = "Ascension / Loadout",
+			SynergyDescription = "Ascension: one blast round you, and one wherever your spells are working."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
-			Id = "arcane_explosion_event_horizon",
+			Id = ArcaneExplosion.EventHorizonId,
 			BonusElementWeights = new() { { "Arcane", 1 } },
 			DisplayName = "Event Horizon",
-			// ArcaneExplosion reads the freeze, and a freezing blast pulls inward (2026-10-26). The
-			// SlowMagnitudeBonus of 1.0 that restated the freeze as a slow went: nothing read it.
-			// x2.2, not x1.5: measured x2.58 of the spell at level 7 after (2026-10-26, --enemy-hp=10).
-			Description = "Cosmic singularity pulls enemies inward and freezes them for 2.5 seconds (+80% Area, +120% Damage).",
+			// No pull since 2h: the pull is Hollow Star's, and it turned Dual Shockwave's throw inward.
+			Description = "Where the blast goes off, time stops for 2.5s: everything caught hangs frozen, and whatever walks in freezes too. +190% damage, 80% wider.",
 			MilestoneLevel = 8,
 			AreaMultiplier = 1.8f,
-			DamageMultiplier = 2.2f,
+			// x2.9: at x2.2 and x2.5 it measured 300 and 309 a second at level 8 (band 331-465; the old card,
+			// pull and all, 315).
+			DamageMultiplier = 2.9f,
 			Effect = SpellEffect.Freeze,
 			EffectValue = 2.5f,
 			VisualTag = "EventHorizon",
-			ModulateColor = new Color(0.35f, 0.65f, 1.0f),
-			SynergyTag = "Arcane / Gravity",
-			SynergyDescription = "Ascension: Locks down entire screen with freezing gravitational pull."
+			ModulateColor = Colors.White,
+			SynergyTag = "Arcane / Stasis",
+			SynergyDescription = "Ascension: deepens Arcane. A sphere of stopped time the pack walks into and does not leave."
 		});
 	}
 
