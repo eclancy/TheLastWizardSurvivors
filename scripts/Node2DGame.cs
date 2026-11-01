@@ -2453,7 +2453,72 @@ public partial class Node2DGame : Node2D
 		}
 
 		FurnishStageHazards(chunk, parent, rect, chunkPixels);
+		StampPropClusters(chunk, parent);
 		return true;
+	}
+
+	// PROPS IN THE NAVIGATION GRID (Eric, 0.10.0: "All enemies tend to get stuck on terrain. Find an
+	// efficient way to have them path better"). A lone trunk or rock is something a body slides round
+	// (Enemy, SKIRTING). Two closer than a body is wide are a notch it walks into and wedges in, and
+	// _MazeProbe's stuck log found the Forest's trapped bodies in exactly those: between two rocks 29 px
+	// apart, in a channel between a trunk and a rock. So once a chunk is furnished, every blocking prop
+	// standing within PropClusters.Gap of another, or of water, a wall or a fence, is stamped into the
+	// chunk's flags (TerrainStreamer.FlagProp) together with the cells between them, and the flow field
+	// routes the swarm round the cluster as it routes it round a pond: an open-ground body whose straight
+	// walk crosses one follows the field until it is past. Its own chunk's cells only - a neighbour's
+	// data is not this chunk's to write, and a cluster split by a chunk border is left to the skirt.
+	// Read once per chunk, from the bodies themselves, so whatever furnishing places is what is stamped.
+	// The geometry is PropClusters' (MazeNavigation.cs), where RegressionChecks can hold it.
+	private readonly List<Rect2> clusterRects = new();
+
+	private void StampPropClusters(TerrainChunk chunk, Node2D holder)
+	{
+		if (terrainStreamer == null || !Enemy.TerrainSkirting)
+			return;
+		long started = System.Diagnostics.Stopwatch.GetTimestamp();
+		for (int i = 0; i < chunk.Flags.Length; i++)
+			chunk.Flags[i] &= unchecked((byte)~TerrainStreamer.FlagProp);
+
+		clusterRects.Clear();
+		uint meets = 1u | (1u << (LevelTilePainter.TerrainCollisionLayer - 1));
+		foreach (Node child in holder.GetChildren())
+		{
+			if (child is not StaticBody2D body || (body.CollisionLayer & meets) == 0)
+				continue;
+			foreach (Node part in body.GetChildren())
+			{
+				if (part is CollisionShape2D shape && !shape.Disabled && shape.Shape is RectangleShape2D box)
+				{
+					Vector2 size = box.Size * shape.GlobalScale.Abs();
+					clusterRects.Add(new Rect2(shape.GlobalPosition - size * 0.5f, size));
+				}
+			}
+		}
+		if (clusterRects.Count == 0)
+			return;
+
+		TerrainStreamer ground = terrainStreamer;
+		PropClusters.Collect(clusterRects, ground.CellOriginWorld(Vector2I.Zero), ProceduralTilePixels,
+			cell => ground.IsSolidCell(cell.X, cell.Y),
+			cell => StampPropCell(chunk, cell.X, cell.Y));
+		if (TerrainStreamer.LogTimings)
+		{
+			int closed = 0;
+			foreach (byte f in chunk.Flags)
+				if ((f & TerrainStreamer.FlagProp) != 0)
+					closed++;
+			double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - started) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+			GD.Print($"TERRAIN prop clusters {chunk.Coord}: {clusterRects.Count} props, {closed} cells closed, {ms:0.000} ms");
+		}
+	}
+
+	private static void StampPropCell(TerrainChunk chunk, int cx, int cy)
+	{
+		int n = TerrainStreamer.ChunkTiles;
+		int lx = cx - chunk.MinCell.X;
+		int ly = cy - chunk.MinCell.Y;
+		if (lx >= 0 && lx < n && ly >= 0 && ly < n)
+			chunk.Flags[lx + ly * n] |= TerrainStreamer.FlagProp;
 	}
 
 	// --- Ground detail and landmarks (.ai/terrain.md section 8) -----------------------------------
