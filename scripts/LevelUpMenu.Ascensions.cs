@@ -958,8 +958,14 @@ public partial class LevelUpMenu
 			previousPaths = paths.Count > 0 ? paths : previousPaths;
 		}
 		if (previousPaths != null && after != null)
+		{
 			foreach (Control stop in previousPaths)
 				Link(stop, after, Side.Bottom);
+			// And back up into the page, to the stop just above Back in reading order. Left to geometry,
+			// up from Back landed on whatever plate was on screen - with the list at its top, the
+			// Apotheosis's - and skipped every tree in between, as the level 8 fork's Back once did.
+			Link(after, previousPaths[0], Side.Top);
+		}
 	}
 
 	// ---- the level 8 choice: one spell's fork ---------------------------------------------------
