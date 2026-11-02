@@ -579,8 +579,9 @@ public partial class EvolutionCodex
 		style.SetCornerRadiusAll(4);
 		style.ContentMarginLeft = glyph != null ? 2 : 8;
 		style.ContentMarginRight = 8;
-		style.ContentMarginTop = 1;
-		style.ContentMarginBottom = 1;
+		// 2 above and below: at 1 the pill's rim sat inside the word's box, and measured as its ground.
+		style.ContentMarginTop = 2;
+		style.ContentMarginBottom = 2;
 		pill.AddThemeStyleboxOverride("panel", style);
 		var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		row.AddThemeConstantOverride("separation", 2);

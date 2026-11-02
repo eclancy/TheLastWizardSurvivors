@@ -546,7 +546,9 @@ public partial class EvolutionCodex : CanvasLayer
 			CustomMinimumSize = new Vector2(CellWidth, 0f),
 			MouseFilter = Control.MouseFilterEnum.Ignore,
 		};
-		cell.AddThemeConstantOverride("separation", 4);
+		// 8: clear of a ready cell's breathing ring (AscensionReadyGlow, 6 outside the frame), which under the
+		// name measured as its ground.
+		cell.AddThemeConstantOverride("separation", 8);
 
 		var frame = new PanelContainer
 		{
