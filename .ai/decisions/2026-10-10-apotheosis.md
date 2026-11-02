@@ -1,6 +1,8 @@
 # ADR: The Apotheosis - a wizard's ultimate is the final form of its starting spell
 
-**Date:** 2026-10-10 · **Issues:** #59 (design), #60 (systems), #61 (forms) · **Status:** accepted, built
+**Date:** 2026-10-10 · **Issues:** #59 (design), #60 (systems), #61 (forms) · **Status:** accepted, built;
+**amended 2026-11-02** - the gate is now the spell at max level, ascended and not combined (see the
+amendment at the end). Items 2 and 3 below are history.
 
 ## Decision
 
@@ -68,7 +70,8 @@ form pulls the loot in with the swarm - `.ai/passives-and-items.md` section 8.)
 
 - **The element rug-pull.** A form only adds +1 to the wizard's own element (validated), so
   accepting it can never drop the player out of the tier that qualified them.
-- **The two-element ceiling.** The validator counts base, path and form together.
+- **The two-element ceiling.** The validator counts base, path and form together - over every level 4 x
+  level 8 pairing since the 2026-11-02 amendment, when any path can come before the form.
 - **A dead offer.** It sits in the strip above the cards on every level-up once earned, and the
   strip also guarantees the level 8 Ascension the path needs can never be skipped by levelling fast. Whether tier 6 is
   reachable at all was measured, not assumed (below).
@@ -81,3 +84,67 @@ form pulls the loot in with the swarm - `.ai/passives-and-items.md` section 8.)
 
 See `.ai/gameplay-design.md`, "The Apotheosis", for the clock times the harness recorded
 (`_BalanceHarness --seek-apotheosis --all-unlocked --immortal`).
+
+## Amendment (2026-11-02): max level, ascended, not combined
+
+Eric: "Apotheosis should require the spell to be at Max level, not combined with another spell, and
+ascended."
+
+The form is offered when, on the wizard's own starting spell (item 4 above is unchanged):
+
+1. it is at its max level (8);
+2. it is **ascended** - it took a level 8 Ascension, **any** of them;
+3. it was **not combined** with another spell - it never went into a Conjunction (`ComboCatalog`), and
+   a Conjunction's own spell is never eligible;
+
+and the player is at level 21 (`ApotheosisCatalog.MinimumPlayerLevel`, below; it was 23). The named level 4 and
+level 8 paths (item 2 of the decision) and the element at tier 6 (item 3) are gone, with the fields
+that carried them (`RequiredLevel4EvolutionId`, `RequiredLevel8EvolutionId`, `RequiredTier`);
+`RequiredElement` is now `Element`, the element the form deepens, which only the validator reads.
+`ApotheosisCatalog.SpellMeetsGate` is the predicate; `Player.TryBuildApotheosisOffer` adds the level.
+
+**Why.** A named path made the form something one click could lose for the rest of the run: take the
+other mutation at level 4 and the final form was gone, minutes before a player could know it existed.
+Tier 6 asked for a whole book of one element on top of the Ascension's own element gate, and it is
+what put two wizards' forms in the last minutes of the before-runs below. Now every route through the
+spell's tree ends in its form, and the decisions at level 4 and level 8 are about the spell again.
+
+**What moved with it.**
+
+- **"Every required path never leads away from the wizard's own element"** (the departure above)
+  retired with the paths. What it protected is held another way: no level 4 or level 8 option on a
+  wizard's spell may trade his element away (`ReplacesElement`) - the form would put it back as a
+  third - and the two-element ceiling is checked over every pairing with the form on top.
+- **Not combined is guaranteed twice.** A wizard's own spell is never a Conjunction ingredient for him
+  (`ComboCatalog.Evaluate`, `ComboSeal.OwnSpell`), so today it is never fused. The gate asks anyway, so
+  a change to that rule cannot hand a fused spell its form. `ValidateApotheosisCatalog` checks both,
+  and that the gate opens at max level down every Ascension and stays shut a level short, unascended,
+  or fused.
+- **On screen:** the Codex's Apotheosis node reads **Spell 8**, **Ascended**, **Not combined** and
+  **You 21** (in a run, measured: "Spell 7/8", "You 19/21"); the L4/L8 path chips and the element chip
+  are gone. The ember line runs along every open route into the form, not one named path.
+- **A branched spell keeps its branch's colour under the form** (`SpellData.GetModulateColor`): the
+  form can now follow an element path, and the element the player chose should not vanish.
+
+**A player level stays, at 21 rather than 23.** Eric did not name it, and it was to go unless the form
+then came before the floor (7.5 minutes for the bot, `.ai/gameplay-design.md`). It does: the spell's
+half of the gate is met when the spell ascends, the form would come on the next level-up, and the
+Ascension's own gate (level 17) puts that at 6.5-8.0 minutes. With the level now the only thing
+setting when, it was re-tuned to the floor by the run-pacing recipe (the lowest level whose fastest
+arrival clears it): level 20 came as early as 7.8, 21 at 8.6 at the earliest, 23 at 9.5-12.1 - the
+economy has slowed since 23 was set against a 7.8-9.1 arrival. `.ai/run-pacing.md` section 11 has the
+runs; in short (`_BalanceHarness --seek-apotheosis --all-unlocked --immortal --minutes=15`,
+`--fixed-fps 30 --timescale=1`, the Forest, minutes the form was taken):
+
+| wizard | before (named path, tier 6, level 23) | after (max level, ascended, not combined, level 21) |
+|---|---|---|
+| Pyromancer | 10.3 | 8.7 |
+| Frostweaver | 14.3 | 10.8 |
+| Stormcaller | 13.7 | 14.2 (his spell ascended at 13.3 under both: the upgrade roll) |
+| Geomancer | 10.6 | 8.6 |
+| Tituba | - | 8.6 |
+| Väinämöinen | - | 9.0 |
+| Seimei | 10.5 | 8.7 |
+| Pyromancer, planned bot | 10.1 | 9.0 |
+
+With no level gate at all, six of the eight would have taken it at 6.5-8.0, five under the floor.

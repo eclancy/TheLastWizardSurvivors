@@ -116,7 +116,7 @@ fragile:
 
 - **The level clock.** XP comes from kills, and the kill rate in the middle and late run is
   pinned by the spawn burst window in real seconds. The Ascension (level 17) and the Apotheosis
-  (level 23) land where they land because of that. Anything that hands out XP or levels moves
+  (level 21, 23 until 2026-11-02) land where they land because of that. Anything that hands out XP or levels moves
   them directly.
 - **The Apotheosis floor.** Decided 2026-10-11: an ultimate must not be reachable early, even by a
   skilled player. The bot with every shop charge at its cap is the case to beat, and its floor is

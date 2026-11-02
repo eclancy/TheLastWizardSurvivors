@@ -46,7 +46,7 @@ The questions as they were put:
 |---|---|---|
 | Starters are disciplines; the rescued are named historic or legendary magic-workers | `world-and-tone.md` | every proposal is a person |
 | Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect**; reserved for Merlin: **rewind**. Unclaimed in the ADR: banish, contagion, displace |
-| A required path never leads away from the wizard's element | `CheckRequiredPath` | a hybrid opener claims one of its two elements; his path deepens it at one milestone and takes the untagged branch at the other. The check accepts that today |
+| No path on his spell trades his element away | `ValidateApotheosisCatalog` | since 2026-11-02 the form names no path - the spell at max level, ascended down any branch, never combined - so every level 4 and level 8 option on a wizard's spell leads to it, and none may trade away the element the form deepens (it would come back as a third). The old rule, a required path that never leads away (`CheckRequiredPath`), went with the named paths |
 | A secret never pays a wizard | `achievements-and-secrets.md` 6.2 | every rescue below is a **side event** (a Road deed), never a secret |
 | One side event per chapter | `SideEventDirector.ForStage` | question 3, and plumbing piece P2 |
 | A secret wizard is revealed by the chapter whose event frees him | `ValidateSecret` | the Forest and the Sketchbook are open on a new save, so their wizards **cannot be secret**: a silhouette from the first run |

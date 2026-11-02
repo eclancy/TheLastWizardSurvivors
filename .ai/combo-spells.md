@@ -87,9 +87,10 @@ A combination names two or more elements, so it is never attuned; the 1.2 target
 attunement a pure parent loses.
 
 **The Apotheosis.** A wizard's own starting spell is never an ingredient for him: its final form is his
-Apotheosis. Any other wizard may fuse it. Where a named Ascension is also on some wizard's Apotheosis path
-(Tidal Wall is Tituba's, Black Sun is John Dee's, Dragon's Breath the Pyromancer's), that wizard simply
-cannot make that recipe.
+Apotheosis. Any other wizard may fuse it. A recipe that names a wizard's own spell (Tidal Wall on Tituba's
+Riptide, Black Sun on John Dee's Hollow Star, Dragon's Breath on the Pyromancer's Cinderbreath) is simply
+not his to make. Since 2026-11-02 the Apotheosis itself asks that the spell was "not combined with another
+spell" (`ApotheosisCatalog.SpellMeetsGate`), so this rule is what keeps every wizard's form reachable.
 
 **The economy.** A combination needs two Ascended spells that are not the wizard's own: sixteen picks
 (eight per Ascension), and two forms chosen for it. At `XpCostPerLevel` 45 the planned bot
