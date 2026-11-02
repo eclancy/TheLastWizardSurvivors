@@ -138,6 +138,42 @@ else
 	echo "Wizard Survivors $CURRENT -> $VERSION"
 fi
 
+# --- The story epoch ------------------------------------------------------------------------
+# SaveData.CurrentProgressEpoch says which telling of the story this build is. version.json carries
+# it as "progressEpoch", and a copy that finds it above its own warns before the download: Windows
+# asks (UpdateScreen), Android says so on its strip (UpdateBanner). Raising it resets every player's
+# progress the first time the new version runs, so it is compared with the last release's here and
+# a raise is announced before the long export starts, while Ctrl+C is still free. A tag from before
+# epochs existed reads as epoch 1, the first telling (SaveData.FirstProgressEpoch). See
+# .ai/releasing.md, "Releasing a story reset".
+epoch_in() { sed -n 's/^[[:space:]]*public const int CurrentProgressEpoch = \([0-9][0-9]*\);.*$/\1/p'; }
+EPOCH=$(epoch_in < scripts/SaveData.cs)
+[ -n "$EPOCH" ] || { echo "scripts/SaveData.cs has no 'public const int CurrentProgressEpoch = N;' line" >&2; exit 1; }
+LAST_TAG=$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || true)
+LAST_EPOCH=""
+[ -n "$LAST_TAG" ] && LAST_EPOCH=$(git show "$LAST_TAG:scripts/SaveData.cs" 2>/dev/null | epoch_in || true)
+LAST_EPOCH="${LAST_EPOCH:-1}"
+if [ "$EPOCH" -lt "$LAST_EPOCH" ]; then
+	echo "CurrentProgressEpoch is $EPOCH but ${LAST_TAG:-the last release} shipped $LAST_EPOCH - the story epoch never goes down" >&2
+	exit 1
+fi
+STORY_RESET=false
+[ "$EPOCH" -gt "$LAST_EPOCH" ] && STORY_RESET=true
+story_reset_banner() {
+	echo "################################################################################"
+	echo "##  STORY RESET: progressEpoch $LAST_EPOCH -> $EPOCH (last release: ${LAST_TAG:-none})."
+	echo "##  Every player's progress restarts the first time v$VERSION runs. Their old save"
+	echo "##  is kept as savegame.before-epoch-$EPOCH.json; their settings are kept."
+	echo "##  Windows asks before updating, Android warns on the update strip."
+	echo "################################################################################"
+}
+if $STORY_RESET; then
+	story_reset_banner
+	echo "(Ctrl+C now if this release is not meant to restart the story.)"
+else
+	echo "Story epoch $EPOCH, unchanged since ${LAST_TAG:-the first release}: nobody's progress is reset."
+fi
+
 # Until the release commit exists, any way out of this script - a failed export, Ctrl+C, the end
 # of a dry run - puts the two version files back, so a failure never leaves a half-bumped tree
 # (which the next attempt would refuse as "uncommitted changes").
@@ -166,7 +202,9 @@ timeout 900 "$GODOT_BIN" --headless --path . --export-release "Linux" build/linu
 	> build/export-linux.log 2>&1 || { tail -20 build/export-linux.log; echo "Linux export failed - see build/export-linux.log" >&2; exit 1; }
 [ -f build/linux/WizardSurvivors.pck ] || { echo "Linux export produced no .pck - see build/export-linux.log" >&2; exit 1; }
 
-python tools/release/package.py "$VERSION"
+python tools/release/package.py "$VERSION" "--progress-epoch=$EPOCH"
+grep -qE "\"progressEpoch\": $EPOCH([^0-9]|\$)" build/release/version.json \
+	|| { echo "build/release/version.json does not carry progressEpoch $EPOCH" >&2; exit 1; }
 # The installer: build/release/WizardSurvivors-Setup.exe, from the same export. The MSYS
 # variables stop Git Bash rewriting ISCC's /Q and /D switches into Windows paths (ISCC would
 # then see extra script names). DrawFight and Wizard Wars call it the same way.
@@ -251,6 +289,10 @@ cp "$APK" build/release/WizardSurvivors-android.apk
 printf '%-30s %6.1f MB  (versionCode %s, signer SHA-256 %s)\n' WizardSurvivors-android.apk \
 	"$(awk "BEGIN { print $(stat -c %s "$APK") / 1048576 }")" "$VERSION_CODE" "$APK_CERT"
 
+echo "build/release/version.json:"
+sed 's/^/    /' build/release/version.json
+if $STORY_RESET; then story_reset_banner; fi
+
 if $DRY_RUN; then
 	echo "Dry run complete: build/release/ holds every file v$VERSION would publish. Nothing was committed, tagged, pushed or released; project.godot and export_presets.cfg are put back."
 	exit 0
@@ -260,6 +302,13 @@ git diff --quiet project.godot export_presets.cfg || git commit -q -m "Release v
 COMMITTED=true
 git tag "v$VERSION"
 git push -q origin HEAD "v$VERSION"
+
+# A story reset says so first in the notes too, which is what "What's new" on ecec.dev shows.
+if $STORY_RESET; then
+	CHANGES="This version restarts the story: everyone's progress starts again from the beginning. Your settings and a copy of your old save are kept.${CHANGES:+
+
+$CHANGES}"
+fi
 
 gh release create "v$VERSION" --repo eclancy/WizardSurvivors \
 	build/release/WizardSurvivors-Setup.exe build/release/WizardSurvivors-windows.zip \
