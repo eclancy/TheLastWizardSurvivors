@@ -6,7 +6,8 @@ spell. Let's start making plans and theory craft some good, thematic combo spell
 the first draft: *"combination spells should require two fully ascended other spells, using specific
 ascensions."*
 
-**Status: a proposal, with one rule decided (below). Nothing is built.** There is no spell called
+**Status: sections 0, 2 and 3 are built (2026-11-01, `wip/combo-sagittarius`) - the system and
+Sagittarius; section 6 says how. Section 4's nine are still proposals.** There is no spell called
 Constellation: it is one of **Starfall's** two level 8 Ascensions (the stars stay lit where they fell,
 joined by lines of light that cut). So Sagittarius is **Hunter's Draw + Starfall**, and its recipe names
 Constellation.
@@ -354,3 +355,85 @@ browser row sealed and open, and the spell in a crowd at both canvases. **What n
 whether a combination reads at a glance as its two parents, whether a player sees the mark on the level 8
 card and plans for it, and whether two or three minutes of a combination before the boss feels like
 enough.
+
+---
+
+## 6. Built (2026-11-01)
+
+Sections 0, 2 and 3, as written. Where to look:
+
+- **`scripts/ComboCatalog.cs`** is the one authority, as `ApotheosisCatalog` is: each recipe names one
+  level 8 Ascension per parent (and the parents' and Ascensions' names, held to the resources by the
+  validator, so the derived Feat needs no resource loaded). `ComboCatalog.Evaluate` says where a recipe
+  stands against a loadout - each parent met, sealed by its other Ascension, the wizard's own starting
+  spell (never the Test Wizard's), or a pair naming four elements - and the strip offers exactly what it
+  calls `Ready`. `MilestoneLevel` 10 tells a combination's offer from the Apotheosis's 9; every screen
+  asks `ComboCatalog.IsComboOption` first.
+- **The strip and the fusion** (`scripts/Player.Combinations.cs`): `GetAscensionOffers` adds the offer
+  after every spell's own, "✶ CONJUNCTION  Sagittarius" on the **conjunction plate** - bronze glass, runes
+  of starlight (`CardFamily.Conjunction`, `tools/art/ui_frames.py`, inks measured in `ui_contrast.py`) -
+  opening a one-card page ("Hunter's Draw and Starfall become one spell. One slot is freed."). The
+  selection is `sagittarius:sagittarius`; `TryAddOrLevelSpell` hands a combination's id to `TryFuse`,
+  which re-checks the recipe, freezes both parents (`SpellData.ComboParents`, a plain C# array - an
+  exported `Array<SpellData>` on `SpellData` held its own script past teardown), sums their current
+  weights onto the combination, puts it in the first parent's slot, frees the second, and adds both to
+  `WasFusedAway`, which `GetLevelUpOptions` reads. A combination is never in the spell catalog and has no
+  milestones (`SpellEvolutionCatalog.EnsureEvolutionCoverage` returns early for one).
+- **The Feat** (`AchievementDefinitions.CombinationDeeds`, `AchievementVisibility.Recipe`): "Conjunction:
+  Sagittarius", completed through `CompleteNow` by `Node2DGame.RecordCombinationsMet` the first time the
+  strip offers the recipe - before the browser reads the save - with the moment's banner, granting the
+  spell there and then. Its measure is its own record: no schema bump. Not on the Achievements page until
+  the save owns both parents; then "Conjunction: ???" / "Unlocks ???" (`CodexRows.DeedEntry`) until made.
+  `UnlockCatalog.FromCombination` is the spell's entry; the Spell Index hides the name as it does every
+  page not found.
+- **The browser** (`LevelUpMenu.Ascensions.cs`, `BuildConjunctionTree`): a "✶ Conjunctions" section after
+  the spells' own trees, one tree per recipe the save knows or this run holds - the two parents on the
+  node, each named Ascension ticked when held, "took the other path: sealed this run", a lock line for
+  the wizard's own spell or a fourth element - and the result on the conjunction plate, "???" until made
+  or offered. A level 8 path a known recipe names carries **two linked rings** (`stat-conjunction`) and
+  "Joins Starfall - Constellation", on the fork and on the browser's plate; the result is not named.
+- **The validator**, `RegressionChecks.ValidateComboCatalog`, holds every line of section 2's list, plus:
+  the resource is terminal (one level, no level-ups, no milestones), its tags are the parents' base tags
+  summed, and a spell paid by a Conjunction Feat has a recipe. `ValidateElementTags` and
+  `ValidateElementPaths` leave combinations to it; `ValidateAchievements` knows a combination's Feat waits
+  and completes in the run.
+- **`_BalanceHarness --seek-combo=ID`** and **`_UiShot --demo-combo=ID[:fuse]`** (the scripts' headers say
+  how). `--seek-combo` switches on `--seek-ascensions`, keeps slots for the parents, fishes for their
+  cards, keeps their level 4 inside three elements and never takes the other Ascension; the summary line
+  carries `combo=`, `comboOffered=`, `comboTaken=` and `comboDps=`.
+
+**Sagittarius** (`scripts/Sagittarius.cs`, `scenes/Sagittarius.tscn`, `SpellData_Sagittarius.tres`): a
+Starfall on the frozen Starfall, credited to the combination (`Starfall.DamageSource`), so its stars,
+Constellation's lines and its level 4 (Shooting Stars, Skipping Stars) fall as they did. Hunter's Draw's
+draw runs in the node off the player's own tunables; while the bow is drawn every star that lands is held
+lit (`Starfall.HoldKindled`, `MaxLitStars` 16, the oldest out first). The loose - stopping, or the arms
+giving out at a held full draw, as Hunter's Draw's do - sends one of the frozen Hunter's Draw's arrows from
+every lit star (`ArrowShare` 0.8 of its hit, scaled by the draw, its pierce and Hunter's Mark's size, its
+level 4 riding on it: Heavy Draw's stagger, Barbed's bleed) at the mark, or at the enemy nearest the
+wizard; a full draw marks the strongest in reach (Vulnerable +25%, 5 s, `HuntersMark`). The arrows are
+gilded (`HuntersArrowLook`); every star flares and goes out (`Starfall.Flare`) and the lines flash once; a
+thin arc pulls taut between the two lit stars furthest apart as the draw fills. One sound a loose,
+`spell_sagittarius` (a bowstring, then a G major chord rolled upward in glass partials, -11 dBFS). Held,
+never loosed, while a boss arrives. Running Shot does not carry: it fires from the wizard.
+
+**Measured (2026-11-01): the recipe did not land inside a 15-minute run.** `_BalanceHarness
+--seek-combo=sagittarius --all-unlocked --immortal --circle=180`, Laelaps (Cyclone Slash, so neither parent
+is his own), timescale 2-3:
+
+| run | Hunter's Draw down Hunter's Mark | Starfall down Constellation | offered |
+|---|---|---|---|
+| seed 1234 | 12.6 min (player level 24) | level 2 at 15:00 | - |
+| seed 1234 (the circle bot stuck from 1.5 min - why `--circle` now re-lays itself) | level 5 at 15:00 | 12.0 min (level 17) | - |
+| seed 7, `--full-shop` | 5.9 min (level 17) | level 7, ready, at 15:00 | - |
+
+Section 2's "a planned run reaches one recipe at about minute 10 to 13" did not hold for the bot. What held
+it back was never a gate but the cards: fourteen upgrades across two spells that are not the wizard's own,
+on a roll that deals held spells' upgrades only some level-ups (`Player.UpgradeOfferChance`), with ten
+rerolls a run to fish with. The circle bot also leaves the XP it does not pass over, so it levels more
+slowly than a player who walks to orbs. Whether that is too late is the pacing question section 2 already
+names (`.ai/run-pacing.md`), not a reason to loosen the recipe. The whole path - the strip offering it, the
+Feat's banner ("Achievement - Conjunction: Sagittarius / Spell recovered - Sagittarius"), the page, the
+fusion and the spell firing - was taken through the menu by pad presses in `_UiShot --demo-combo=sagittarius
+--force-levelup --keep-levelup --pad=release,a,a`. Its damage against the parents' (section 3's 1.2 target)
+is unmeasured: no harness run reached it, and `ArrowShare` 0.8 and `MaxLitStars` 16 are still section 3's
+first guesses.
