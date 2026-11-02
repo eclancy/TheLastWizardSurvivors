@@ -217,6 +217,7 @@ public partial class EvolutionCodex : CanvasLayer
 			root.AddChild(BuildSheet());
 
 		keyboard = new CodexKeyboard { Name = "CodexKeyboard", Visible = false };
+		keyboard.Place(narrow);
 		keyboard.Typed += OnKeyboardTyped;
 		keyboard.Erased += OnKeyboardErased;
 		keyboard.Cleared += OnKeyboardCleared;

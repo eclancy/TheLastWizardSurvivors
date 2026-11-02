@@ -3357,6 +3357,11 @@ public partial class _UiShot : Node
 				"a" => JoyButton.A,
 				"b" => JoyButton.B,
 				"y" => JoyButton.Y,
+				// The Codex's: X clears a search, the shoulders cycle its filters, Start closes its keyboard.
+				"x" => JoyButton.X,
+				"lb" => JoyButton.LeftShoulder,
+				"rb" => JoyButton.RightShoulder,
+				"start" => JoyButton.Start,
 				_ => null,
 			};
 			GD.Print($"_UiShot: pad {step} from {FocusName()}");
@@ -3366,7 +3371,7 @@ public partial class _UiShot : Node
 				Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = pressed, Pressed = false });
 			}
 			else
-				GD.PrintErr($"_UiShot: --pad step '{step}' is not up, down, left, right, a, b, y or release");
+				GD.PrintErr($"_UiShot: --pad step '{step}' is not up, down, left, right, a, b, x, y, lb, rb, start or release");
 			frames = 0;
 			return;
 		}

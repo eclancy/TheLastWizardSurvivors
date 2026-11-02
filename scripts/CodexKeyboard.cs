@@ -60,6 +60,25 @@ public partial class CodexKeyboard : PanelContainer
 		Visible = false;
 	}
 
+	/// <summary>
+	/// Anchored to the foot of the screen, so the grid it filters stays in sight above it. Called as the Codex
+	/// builds, BEFORE SafeArea.Apply: the safe area insets a control once (it marks it), so anchors set later
+	/// would never be pulled in from a phone's rounded corners.
+	/// </summary>
+	public void Place(bool narrowLayout)
+	{
+		AnchorLeft = narrowLayout ? 0f : 0.5f;
+		AnchorRight = narrowLayout ? 1f : 0.5f;
+		AnchorTop = 1f;
+		AnchorBottom = 1f;
+		const float halfWidth = 330f;
+		OffsetLeft = narrowLayout ? 16f : -halfWidth;
+		OffsetRight = narrowLayout ? -16f : halfWidth;
+		OffsetBottom = narrowLayout ? -24f : -18f;
+		OffsetTop = OffsetBottom;
+		GrowVertical = GrowDirection.Begin;
+	}
+
 	private void Build(bool narrowLayout)
 	{
 		foreach (Node child in GetChildren())
@@ -72,18 +91,6 @@ public partial class CodexKeyboard : PanelContainer
 		narrow = narrowLayout;
 		built = true;
 		MouseFilter = MouseFilterEnum.Stop;
-
-		// Anchored to the foot of the screen: the grid it filters stays in sight above it.
-		AnchorLeft = narrow ? 0f : 0.5f;
-		AnchorRight = narrow ? 1f : 0.5f;
-		AnchorTop = 1f;
-		AnchorBottom = 1f;
-		float halfWidth = 330f;
-		OffsetLeft = narrow ? 16f : -halfWidth;
-		OffsetRight = narrow ? -16f : halfWidth;
-		OffsetBottom = narrow ? -24f : -18f;
-		OffsetTop = OffsetBottom;
-		GrowVertical = GrowDirection.Begin;
 
 		var style = new StyleBoxFlat { BgColor = CodexInk.StoneDeep, BorderColor = CodexInk.BandRule };
 		style.SetBorderWidthAll(2);
