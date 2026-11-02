@@ -42,7 +42,8 @@ Seven files: four made from the export in `build/windows/`, two from the export 
   "Android" below.
 - **`version.json`**: the version, the Godot version it was built with, and the URLs of both
   zips, the installer (`"installer"`; the game itself does not read that one) and the APK
-  (`"android"`, read only by the Android copy), and under `"linux"` the Linux pair. Adding a
+  (`"android"`, read only by the Android copy), under `"linux"` the Linux pair, and
+  `"progressEpoch"`, the story epoch the release was built at (see "Releasing a story reset"). Adding a
   field is safe: `UpdateScreen` reads the fields it names with `GetProperty`/`TryGetProperty` and
   ignores the rest, so every Windows copy already out there carries on as before.
 
@@ -94,7 +95,9 @@ not check again.
 1. It fetches `version.json` (5-second timeout) and compares versions number by number, so
    0.10.0 beats 0.9.0. The game's own version is `application/config/version` in
    `project.godot`, which the release script sets.
-2. If the release was built with the same Godot version as this copy, it downloads the patch;
+2. If the release restarts the story (its `progressEpoch` is above this copy's), it asks first -
+   Update or Not now; see "Releasing a story reset". Otherwise it never asks anything.
+   If the release was built with the same Godot version as this copy, it downloads the patch;
    otherwise the full zip. It unpacks to `user://update/`.
 3. Windows will not let a running program overwrite its own files. So the game writes
    `apply.cmd`, starts it, and quits. The script waits for the game to close, `robocopy`s the new
@@ -229,8 +232,9 @@ tells the player. `scripts/UpdateBanner.cs`, laid over the title screen by `Titl
   arrives;
 - if the version is newer *and* the release has an `"android"` URL, shows a strip across the top:
   "Version X is available", **Download** (opens the APK URL in the browser with `OS.ShellOpen`)
-  and **Later** (hides it until the next launch). Every failure, and a release with no APK, shows
-  nothing;
+  and **Later** (hides it until the next launch), and under them, when the release restarts the
+  story, the warning line (see "Releasing a story reset"). Every failure, and a release with no APK,
+  shows nothing;
 - never installs anything itself. The browser downloads, Android's installer asks, and because
   the new APK has the same signature and a higher version code, it installs over the old one and
   **the save survives**.
@@ -242,7 +246,7 @@ buttons take taps and clicks only and attach no `MenuNavigator`, on purpose: on 
 A tap on the strip does not count as the title's "press any button".
 
 To look at it on a desktop: `--update-banner=9.9.9` shows it with that version, no network, in
-any build. With `_UiShot`: `"$GODOT_BIN" --path . --resolution 540x1212 scenes/_UiShot.tscn --
+any build; `--update-banner=9.9.9:2` makes that release story epoch 2, which adds the warning. With `_UiShot`: `"$GODOT_BIN" --path . --resolution 540x1212 scenes/_UiShot.tscn --
 --portrait --safe-area --scene=res://scenes/TitleScreen.tscn --update-banner=0.9.9 --shot=banner`
 (add `--open-menu` for the menu over it). `WIZARDSURVIVORS_UPDATE_URL` points the real check at a
 test server, as on Windows.
@@ -329,6 +333,61 @@ template found" until they are there.
 Run any build with `--no-update` to skip the check entirely. The exported exe prints to stdout
 when started from a shell; `user://logs/` is shared with every other copy and editor session on
 the machine, so do not trust it for this.
+
+## Releasing a story reset
+
+Decided 2026-11-02 (`.ai/decisions/2026-11-02-story-resets.md`): a release that changes the story
+restarts every player's progress, and they are warned before they download it. The game is in
+active development, and a save earned under a story that no longer exists is better started again
+than migrated into states nobody designed.
+
+**How to do it.** Raise `SaveData.CurrentProgressEpoch` in `scripts/SaveData.cs` by one, commit it
+with the story change, and release as usual. That one constant is the whole switch. `release.sh`
+reads it, compares it with the last tag's, and when it has risen prints a `STORY RESET` banner
+before the export (Ctrl+C is still free then) and again after packaging; it writes it into
+`version.json` as `"progressEpoch"` and puts a line saying so at the head of the release notes. It
+refuses an epoch lower than the last release's. Rehearse with `--dry-run` - the banner and the
+`version.json` it built are both printed. **Never raise it to avoid writing a migration:** a change
+to how progress is stored still needs a schema step in `SaveData.Migrate`.
+
+**What players see.**
+
+- *Before downloading.* A Windows or Linux copy asks before it installs: "This update restarts the
+  story: your progress will be reset. Your current save is kept as a backup." **Update** (selected,
+  A or Enter) installs it; **Not now** (B or Escape too) plays the installed version and asks again
+  at the next launch. An Android copy shows the same line under its update strip; Download still
+  opens the APK. A release with no epoch change looks exactly as before.
+- *The first time the new version runs.* The save from the earlier epoch is copied, unchanged, to
+  `savegame.before-epoch-<n>.json` beside it (`%APPDATA%\Godot\app_userdata\Wizard Survivors\` on
+  Windows; `-2`, `-3` if the name is taken), then replaced by a new save that keeps only the
+  settings (`SaveData.SettingsKeys`: the Options screen's sound, damage numbers, tips switch,
+  playtest toolkit and difficulty preset). Everything else - Arcane Energy, unlocks, chapters,
+  achievements, shop and found levels, secrets, quests, seen flags, the prologue - starts again. If
+  the backup cannot be written, nothing is reset and the next launch tries again.
+- *On the title,* once: "The story has been rebuilt. Your progress starts again from the beginning.
+  Your old save is kept." with Continue. It is cleared when Continue is pressed, so quitting before
+  reading it shows it again.
+
+**Not covered by the game:** a player who downloads the new APK or installer from the download page
+rather than through the update check sees no warning before it. That page (ecec.dev, in the
+EricClancyEngineeringAndCrafts repository) should read `progressEpoch` from `version.json` and say it
+beside the buttons when it has risen since the previous release.
+
+**Looking at it without a release** (no network, nothing downloaded, writes off):
+
+```sh
+# the Windows question - Update and Not now; drop ":2" for an ordinary update, which asks nothing
+"$GODOT_BIN" --path . --resolution 1280x720 scenes/_UiShot.tscn -- --scene=res://scenes/TitleScreen.tscn --update-screen=0.11.0:2 --frames=90 --shot=question
+# the Android strip with the warning
+"$GODOT_BIN" --path . --resolution 540x1212 scenes/_UiShot.tscn -- --portrait --safe-area --scene=res://scenes/TitleScreen.tscn --update-banner=0.11.0:2 --shot=strip
+# the title's notice, over an in-memory reset of the save
+"$GODOT_BIN" --path . --resolution 1280x720 scenes/_UiShot.tscn -- --story-reset --scene=res://scenes/TitleScreen.tscn --frames=150 --shot=notice
+```
+
+`--update-screen` works in any build, so a whole exported copy can be walked through the question
+too; Update then goes to the title instead of downloading. Add `--pad=a` or `--pad=b` to answer it.
+The reset itself is checked at every startup by `RegressionChecks.ValidateStoryReset`, in debug
+builds against a scratch file in `user://story-reset-check-<pid>/`, never the real save.
 
 ## Bug reports
 
