@@ -64,7 +64,7 @@ public partial class FivePointedSealEvent : SideEvent
 	protected override string Announcement => "Someone kneels inside a seal cut in the floor.";
 	protected override string ChestLine => "The seal is broken - a chest was left inside it";
 	protected override string Objective => $"Turn the four stones to face the seal  ({Aligned} of {StoneCount})";
-	// The plate of the nearest stone still turned away; the chevron hangs above where he stands on it.
+	// The plate of the nearest stone still turned away; the chevron hangs above it.
 	protected override Vector2? PointerTarget => NextPlate();
 	protected override string SiteGlyph => "seal";
 	// The courtyard and the plates outside it, and a little more: placement wants all of it open (no wall
@@ -88,8 +88,8 @@ public partial class FivePointedSealEvent : SideEvent
 	/// <summary>Plates stepped on so far this run. For the probe.</summary>
 	public int Steps => steps;
 
-	/// <summary>Where the player stands to step on stone <paramref name="i"/>'s plate: his node, not his feet.</summary>
-	public Vector2 PlateStand(int i) => Plate(i) - new Vector2(0f, FeetBelow);
+	/// <summary>Stone <paramref name="i"/>'s plate, in the world. For the probe.</summary>
+	public Vector2 PlateAt(int i) => Plate(i);
 
 	public bool IsFacing(int i) => facing[i] == Inward(i);
 
@@ -103,10 +103,13 @@ public partial class FivePointedSealEvent : SideEvent
 	/// <summary>
 	/// The seal on open ground over its whole disc, as the thaw's lake is (the courtyard is about as wide),
 	/// then each stone's starting arrow from the seed: one to three quarters short of the seal, never on it.
+	/// On the Ruins' lattice a disc that wide fits only in a court, one block in eight, so the placer sweeps
+	/// the whole event band for one (ExplorePlacer.EventSiteInBand) rather than giving up near the roll and
+	/// laying the courtyard across the walls.
 	/// </summary>
 	public override void PlaceSites(ExplorePlacer placer)
 	{
-		AddSite(placer.EventSite(SiteFootprint, dense: true));
+		AddSite(placer.EventSiteInBand(SiteFootprint, dense: true));
 		centre = MainSite;
 		for (int i = 0; i < StoneCount; i++)
 		{
@@ -137,6 +140,8 @@ public partial class FivePointedSealEvent : SideEvent
 	private readonly Sprite2D[] plateSprites = new Sprite2D[StoneCount];
 	private Sprite2D seimei;
 	private float seimeiClock;
+	// Seconds since he was freed: his own clock, not the win line's, which waits its turn behind a note.
+	private float freedFor;
 
 	protected override void OnPlaced()
 	{
@@ -230,7 +235,8 @@ public partial class FivePointedSealEvent : SideEvent
 		for (int i = 0; i < StoneCount; i++)
 		{
 			if (stoneSprites[i] != null)
-				stoneSprites[i].Frame = facing[i] + (IsFacing(i) || Succeeded ? StoneCount : 0);
+				// Broken, every arrow faces in and is lit (a win always gets there; a photograph's shortcut does not).
+				stoneSprites[i].Frame = Succeeded ? Inward(i) + StoneCount : facing[i] + (IsFacing(i) ? StoneCount : 0);
 			if (plateSprites[i] != null)
 				plateSprites[i].Frame = !armed[i] ? 1 : 0;
 		}
@@ -242,6 +248,9 @@ public partial class FivePointedSealEvent : SideEvent
 	{
 		base._Process(delta);
 		float dt = (float)delta;
+		// Every frame, not only from Tick: a win that does not come through Tick (_UiShot --win-event) still
+		// breaks the floor and lights the stones.
+		RefreshSprites();
 		if (seimei != null && IsInstanceValid(seimei))
 		{
 			// He breathes, slowly; once he is free he rises into the column of light and is gone.
@@ -249,7 +258,8 @@ public partial class FivePointedSealEvent : SideEvent
 			seimei.Frame = (int)(seimeiClock * 2.5f) % 4;
 			if (Succeeded)
 			{
-				float a = Mathf.Clamp(1f - SecondsSinceResolved / 1.2f, 0f, 1f);
+				freedFor += dt;
+				float a = Mathf.Clamp(1f - freedFor / 1.2f, 0f, 1f);
 				seimei.Modulate = new Color(1f, 1f, 1f, a);
 				if (a <= 0f)
 				{
@@ -271,8 +281,16 @@ public partial class FivePointedSealEvent : SideEvent
 		RefreshSprites();
 	}
 
-	private bool OnPlate(int i, float radius) =>
-		Player != null && (Player.GlobalPosition + new Vector2(0f, FeetBelow)).DistanceTo(Plate(i)) <= radius;
+	// On it with his feet or his middle: walking up from the north his boots arrive first, from the south
+	// his body does, and either is a step. Measured to both, so the plate is as wide as it is drawn.
+	private bool OnPlate(int i, float radius)
+	{
+		if (Player == null)
+			return false;
+		Vector2 at = Player.GlobalPosition;
+		Vector2 plate = Plate(i);
+		return at.DistanceTo(plate) <= radius || (at + new Vector2(0f, FeetBelow)).DistanceTo(plate) <= radius;
+	}
 
 	protected override void Tick(float delta)
 	{
@@ -334,11 +352,11 @@ public partial class FivePointedSealEvent : SideEvent
 		{
 			if (IsFacing(i))
 				continue;
-			float d = Player.GlobalPosition.DistanceSquaredTo(PlateStand(i));
+			float d = Player.GlobalPosition.DistanceSquaredTo(Plate(i));
 			if (d < best)
 			{
 				best = d;
-				target = PlateStand(i);
+				target = Plate(i);
 			}
 		}
 		return target;
