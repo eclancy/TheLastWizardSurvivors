@@ -180,10 +180,17 @@ public partial class MainMenu
 	/// <summary>Opens Options on its first row (the master volume), at the top of the list.</summary>
 	private void FocusFirstOption()
 	{
-		if (optionsPanel?.FindChild("OptionsScroll", true, false) is ScrollContainer scroll)
-			scroll.ScrollVertical = 0;
 		if (optionsLeftRows.Count > 0 && optionsLeftRows[0][0].IsVisibleInTree())
 			optionsLeftRows[0][0].GrabFocus();
+		// After the grab, and deferred: the panel has only just been shown, so FollowFocus measures the
+		// slider before the list is laid out and scrolled the headings 14 units off the top. Initial
+		// focus must not scroll (.ai/controller-and-focus.md); the first row is in view at 0 anyway.
+		if (optionsPanel?.FindChild("OptionsScroll", true, false) is ScrollContainer scroll)
+			Callable.From(() =>
+			{
+				if (IsInstanceValid(scroll))
+					scroll.ScrollVertical = 0;
+			}).CallDeferred();
 	}
 
 	// Reset Progress lives INSIDE Options, not on the main menu, and last in it: the end of a settings
