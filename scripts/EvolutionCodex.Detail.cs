@@ -929,8 +929,10 @@ public partial class EvolutionCodex
 			treeLines.Add(new List<Control> { StopOf(result) });
 		}
 
+		// A set's two tiers, each ticked once this run holds enough of it (the chest page's "now").
+		bool partialOn = recipe.PartialCount > 0 && recipe.HeldCount >= recipe.PartialCount;
 		if (!string.IsNullOrEmpty(recipe.Partial))
-			detail.AddChild(GlyphLine(StatIcons.Load("generic"), recipe.Partial, CodexRows.Stone.InkSoft));
+			detail.AddChild(GlyphLine(StatIcons.Load(partialOn ? "done" : "todo"), recipe.Partial, partialOn ? CodexRows.Stone.Ink : CodexRows.Stone.InkSoft));
 		if (string.IsNullOrEmpty(heading))
 		{
 			detail.AddChild(BuildReading());
@@ -940,7 +942,7 @@ public partial class EvolutionCodex
 		else if (recipe.Result.Revealed)
 		{
 			// Under an item, the enchantment's bonus is said outright: there is no reading box for a set inside an item.
-			detail.AddChild(GlyphLine(StatIcons.Load("done"), recipe.Result.Line, CodexRows.Stone.Ink));
+			detail.AddChild(GlyphLine(StatIcons.Load(recipe.Made ? "done" : "todo"), recipe.Result.Line, CodexRows.Stone.Ink));
 		}
 	}
 

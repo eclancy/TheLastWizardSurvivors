@@ -150,6 +150,9 @@ public sealed class CodexRecipe
 	public CodexNode Result = new();
 	/// <summary>A set's partial tier ("2 of 3: Damage taken -5%"); empty for a combination.</summary>
 	public string Partial = string.Empty;
+	/// <summary>A set's pieces for the partial tier, and how many this run holds.</summary>
+	public int PartialCount;
+	public int HeldCount;
 	/// <summary>Made (a combination's Feat done, or this run) / every piece held this run.</summary>
 	public bool Made;
 	/// <summary>The strip can make it now (in-run).</summary>
@@ -1072,7 +1075,7 @@ public sealed class CodexModel
 				var held = context.HeldRelics ?? Array.Empty<string>();
 				int heldCount = set.RequiredItemIds.Count(id => held.Contains(id, StringComparer.OrdinalIgnoreCase));
 				bool complete = inRun && heldCount >= set.RequiredItemIds.Length;
-				var card = new CodexRecipe { Id = set.Id, Kind = CodexKind.FullSet, Made = complete };
+				var card = new CodexRecipe { Id = set.Id, Kind = CodexKind.FullSet, Made = complete, PartialCount = set.PartialItemCount, HeldCount = heldCount };
 				bool anySeen = false;
 				foreach (string id in set.RequiredItemIds)
 				{
