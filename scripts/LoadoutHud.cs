@@ -1,4 +1,5 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 using WizardSurvivors.scripts;
 
@@ -97,7 +98,29 @@ public partial class LoadoutHud : BoxContainer
 		public StyleBoxFlat Style = null!;
 		public TextureRect Icon = null!;
 		public Label Level = null!;
+		// The Sovereign Rite's marks (.ai/sovereign-spell.md section 5): a crown over the anointed slot, a
+		// closed seal across a silenced one. Drawn, one Control a slot, redrawn only when the slot is filled.
+		public Control Mark = null!;
+		public SlotMark MarkKind;
 	}
+
+	private enum SlotMark { None, Sovereign, Silenced }
+
+	// The anointed slot's gold crown frame, the conjunction plate's gold lit (#D8B04A) and its light hot
+	// for the crown's points; the fuel is written in the same gold. A silenced slot's icon is greyed to the
+	// steel shade and sealed with the dark wizard's wax red (.ai/endgame-castle.md 6.4's seal).
+	private static readonly Color SovereignRim = new(0.847f, 0.690f, 0.290f, 1f);
+	private static readonly Color SovereignHot = new(1.0f, 0.973f, 0.847f, 1f);
+	private static readonly Color FuelInk = new(1.0f, 0.86f, 0.42f);
+	private static readonly Color SilencedIcon = new(0.42f, 0.44f, 0.50f, 1f);
+	private static readonly Color SilencedRim = new(0.25f, 0.27f, 0.32f, 1f);
+	private static readonly Color SealWax = new(0.545f, 0.157f, 0.157f, 1f);
+	private static readonly Color SealWaxLit = new(0.765f, 0.290f, 0.235f, 1f);
+	private static readonly Color SealBand = new(0.12f, 0.10f, 0.12f, 1f);
+
+	// Whether the silenced icons have flown into the anointed slot yet: once a run, on the first redraw
+	// after the Rite (the menu closes and play resumes, so it plays over the game and pauses nothing).
+	private bool sovereignArrived;
 
 	private sealed class ChipView
 	{
@@ -267,7 +290,49 @@ public partial class LoadoutHud : BoxContainer
 		level.AddThemeColorOverride("font_outline_color", NumeralOutline);
 		level.AddThemeConstantOverride("outline_size", NumeralOutlineSize);
 
-		return new SlotView { Frame = frame, Style = style, Icon = icon, Level = level };
+		var view = new SlotView { Frame = frame, Style = style, Icon = icon, Level = level };
+		var mark = new Control
+		{
+			Name = "SovereignMark",
+			MouseFilter = MouseFilterEnum.Ignore,
+		};
+		mark.SetAnchorsPreset(LayoutPreset.FullRect);
+		mark.Draw += () => DrawMark(mark, view.MarkKind);
+		frame.AddChild(mark);
+		// Under the numeral, so the level (or the fuel) still reads over the seal.
+		frame.MoveChild(mark, level.GetIndex());
+		view.Mark = mark;
+		return view;
+	}
+
+	// The crown: three points of gilt standing on the slot's top edge, the middle one tallest, each tipped in
+	// the light hot. The seal: a dark band across the icon's middle and a small round of wax on it, pressed
+	// with a bar - closed, and small enough that the greyed icon still says which spell it was.
+	// In whole canvas units, two to an art pixel, so it reads as part of the 32-unit icon's grid.
+	private static void DrawMark(Control mark, SlotMark kind)
+	{
+		Vector2 size = mark.Size;
+		if (kind == SlotMark.Sovereign)
+		{
+			float mid = MathF.Round(size.X / 2f);
+			for (int i = -1; i <= 1; i++)
+			{
+				float x = mid + i * 8f;
+				float tall = i == 0 ? 8f : 6f;
+				mark.DrawRect(new Rect2(x - 2f, -tall, 4f, tall), SovereignRim);
+				mark.DrawRect(new Rect2(x - 1f, -tall - 2f, 2f, 2f), SovereignHot);
+			}
+			mark.DrawRect(new Rect2(mid - 12f, -2f, 24f, 2f), SovereignRim);
+		}
+		else if (kind == SlotMark.Silenced)
+		{
+			Vector2 c = (size / 2f).Round();
+			mark.DrawRect(new Rect2(2f, c.Y - 2f, size.X - 4f, 4f), SealBand);
+			mark.DrawRect(new Rect2(c.X - 3f, c.Y - 5f, 6f, 10f), SealWax);
+			mark.DrawRect(new Rect2(c.X - 5f, c.Y - 3f, 10f, 6f), SealWax);
+			mark.DrawRect(new Rect2(c.X - 3f, c.Y - 3f, 2f, 2f), SealWaxLit);
+			mark.DrawRect(new Rect2(c.X - 2f, c.Y, 4f, 1f), SealBand);
+		}
 	}
 
 	private ChipView BuildChip(Element element)
@@ -355,10 +420,24 @@ public partial class LoadoutHud : BoxContainer
 
 		IReadOnlyList<SpellData> spells = Holder.GetEquippedSpells();
 		int open = Mathf.Clamp(Holder.SpellSlots, 0, MaxSlots);
+		SpellData? sovereign = Holder.SovereignSpell;
+		int anointedSlot = -1;
 		for (int i = 0; i < MaxSlots; i++)
 		{
 			SpellData? spell = i < spells.Count ? spells[i] : null;
 			FillSlot(slots[i], spell, visible: spell != null || i < open);
+			SlotMark kind = spell == null ? SlotMark.None
+				: ReferenceEquals(spell, sovereign) ? SlotMark.Sovereign
+				: Holder.IsSilenced(spell) ? SlotMark.Silenced
+				: SlotMark.None;
+			MarkSlot(slots[i], kind, Holder.SovereignFuel);
+			if (kind == SlotMark.Sovereign)
+				anointedSlot = i;
+		}
+		if (sovereign != null && anointedSlot >= 0 && !sovereignArrived)
+		{
+			sovereignArrived = true;
+			FlyIntoSovereign(anointedSlot);
 		}
 
 		// Most tags first, the way the old badges and every element list in the menus order them.
@@ -403,6 +482,78 @@ public partial class LoadoutHud : BoxContainer
 		// at the same 32 canvas units, one per art pixel.
 		view.Icon.Texture = EvolutionIcons.Current(spell);
 		view.Level.Text = spell.CurrentLevel.ToString();
+	}
+
+	// The anointed slot: the gold crown frame and its fuel where the level was. A silenced slot: greyed,
+	// its rim the steel shade, sealed. Anything else as FillSlot left it.
+	private static void MarkSlot(SlotView view, SlotMark kind, int fuel)
+	{
+		if (kind == SlotMark.Sovereign)
+		{
+			view.Style.BorderColor = SovereignRim;
+			view.Style.SetBorderWidthAll(2);
+			view.Style.BgColor = SlotBacking.Lerp(new Color(SovereignRim, SlotBacking.A), 0.30f);
+			view.Level.Text = fuel.ToString();
+			view.Level.AddThemeColorOverride("font_color", FuelInk);
+			view.Icon.Modulate = Colors.White;
+		}
+		else
+		{
+			view.Style.SetBorderWidthAll((int)SlotRim);
+			view.Level.AddThemeColorOverride("font_color", NumeralInk);
+			view.Icon.Modulate = kind == SlotMark.Silenced ? SilencedIcon : Colors.White;
+			if (kind == SlotMark.Silenced)
+			{
+				view.Style.BorderColor = SilencedRim;
+				view.Style.BgColor = SlotBacking;
+			}
+		}
+		if (view.MarkKind != kind)
+		{
+			view.MarkKind = kind;
+			view.Mark.QueueRedraw();
+		}
+	}
+
+	// THE MOMENT IT IS TAKEN (section 5): every silenced icon lifts off its slot and flies into the anointed
+	// one, the last arriving as the slot flares. A tween on copies laid over the overlay; nothing pauses.
+	private void FlyIntoSovereign(int anointedSlot)
+	{
+		// The overlay is the run's UI canvas layer; a control's global position is a position on it.
+		if (GetParent() is not Node overlay)
+			return;
+		SlotView target = slots[anointedSlot];
+		Vector2 to = target.Frame.GlobalPosition + new Vector2(SlotRim, SlotRim);
+		float delay = 0f;
+		for (int i = 0; i < MaxSlots; i++)
+		{
+			SlotView from = slots[i];
+			if (from.MarkKind != SlotMark.Silenced || from.Icon.Texture == null)
+				continue;
+			var ghost = new TextureRect
+			{
+				Name = "SovereignGhost",
+				Texture = from.Icon.Texture,
+				ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+				StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+				TextureFilter = TextureFilterEnum.Nearest,
+				MouseFilter = MouseFilterEnum.Ignore,
+				Size = new Vector2(IconSize, IconSize),
+				Position = from.Frame.GlobalPosition + new Vector2(SlotRim, SlotRim),
+			};
+			overlay.AddChild(ghost);
+			Tween fly = ghost.CreateTween();
+			fly.TweenInterval(delay);
+			fly.TweenProperty(ghost, "position", to, 0.55f).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.In);
+			fly.Parallel().TweenProperty(ghost, "modulate", new Color(1f, 0.9f, 0.55f, 1f), 0.55f);
+			fly.TweenCallback(Callable.From(ghost.QueueFree));
+			delay += 0.12f;
+		}
+		// The slot flares as the last one lands: its frame lit to the light hot and back.
+		Tween flare = target.Frame.CreateTween();
+		flare.TweenInterval(delay + 0.43f);
+		flare.TweenProperty(target.Frame, "modulate", new Color(1.8f, 1.6f, 1.1f, 1f), 0.08f);
+		flare.TweenProperty(target.Frame, "modulate", Colors.White, 0.35f);
 	}
 
 	private static Color MilestoneRim(SpellData spell)

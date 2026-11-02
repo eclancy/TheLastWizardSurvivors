@@ -77,6 +77,17 @@ public partial class _BalanceHarness : Node
 	// ascended, when the recipe was first offered and when taken, and the damage a second of the two parents
 	// before the fusion against the combination's after it. Hunter's Draw's recipe wants --circle=R.
 	[Export] public string SeekCombo { get; set; } = "";
+	// --seek-sovereign (.ai/sovereign-spell.md section 6; pair with --all-unlocked --immortal): a planned
+	// build (it switches on --seek-ascensions; with --policy=ordinary, the ordinary build) that takes the Sovereign Rite once the spell it wants is open.
+	// --anoint=top (the default) wants the spell that dealt the most in the last minute, =own the wizard's
+	// starting spell, =ID that spell; it waits up to --anoint-wait for that one, then takes the best open. Reports when the strip first offered the Rite, when it was taken and at
+	// what player level and fuel, and the loadout's damage a second over the 60 s before against the 60 s
+	// after (the doc's target: about 1.3).
+	[Export] public bool SeekSovereign { get; set; }
+	[Export] public string AnointPolicy { get; set; } = "top";
+	// --anoint-wait=S: seconds of run time the planner waits after the first offer for the spell it wants to
+	// open (its fuel to reach the gate) before taking the best spell that is open. Default 240.
+	[Export] public float AnointWaitSeconds { get; set; } = 240f;
 	// --policy=ordinary: the GOOD ORDINARY policy (PickOrdinary) - fill the book, leaning toward the
 	// element it already holds most of, then level its strongest spells; takes every Ascension the
 	// moment it is offered; argues with no roll. The default policy below is not this: it levels the
@@ -325,6 +336,9 @@ public partial class _BalanceHarness : Node
 			else if (arg == "--seek-apotheosis") SeekApotheosis = true;
 			else if (arg == "--seek-ascensions") SeekAscensions = true;
 			else if (arg.StartsWith("--seek-combo=")) { SeekCombo = arg.Substring(13).Trim(); SeekAscensions = true; }
+			else if (arg == "--seek-sovereign") SeekSovereign = true;
+			else if (arg.StartsWith("--anoint=")) AnointPolicy = arg.Substring(9).Trim();
+			else if (arg.StartsWith("--anoint-wait=")) AnointWaitSeconds = float.Parse(arg.Substring(14));
 			else if (arg == "--policy=ordinary") OrdinaryPolicy = true;
 			else if (arg == "--full-shop") FullShop = true;
 			else if (arg == "--all-unlocked") AllUnlocked = true;
@@ -380,6 +394,9 @@ public partial class _BalanceHarness : Node
 			// as a BOSS RUSH line by the run itself.
 			else if (arg == "--boss-rush") Global.BossRush = true;
 		}
+		// --seek-sovereign plans as --seek-ascensions does, unless --policy=ordinary asks for the ordinary build.
+		if (SeekSovereign && !OrdinaryPolicy)
+			SeekAscensions = true;
 
 		// Immune to the pause. A level-up pauses the tree, and a driver that pauses with it can
 		// never make the choice that would unpause it.
@@ -992,6 +1009,7 @@ public partial class _BalanceHarness : Node
 		if (Immortal) { player.MaxHP = Math.Max(player.MaxHP, 100000); player.CurrentHP = player.MaxHP; }
 		if (SeekApotheosis || SeekAscensions) TrackTier();
 		if (!string.IsNullOrEmpty(SeekCombo)) TrackCombo();
+		if (SeekSovereign) TrackSovereign();
 		TrackSpellLevel((float)delta);
 		TrackAscensions();
 		TickPaceLedger();
@@ -2371,6 +2389,17 @@ public partial class _BalanceHarness : Node
 			}
 		}
 
+		// --seek-sovereign: the Rite once the spell it wants is open; everything else as planned.
+		if (SeekSovereign && PickSovereign(ascensions) is string rite)
+		{
+			Act(menu, rite);
+			return;
+		}
+		// No other policy takes the Rite: a planner waiting for its spell would otherwise have it taken for
+		// him by the policy below, and a run without --seek-sovereign plays as it did before the Rite existed.
+		if (ascensions.Any(o => o.ComboId == SovereignRite.SpellId))
+			ascensions = ascensions.Where(o => o.ComboId != SovereignRite.SpellId).ToList();
+
 		// --seek-combo first: its parents' Ascensions and the combination are its own to choose.
 		if (!string.IsNullOrEmpty(SeekCombo) && ComboTarget() != null)
 		{
@@ -2791,7 +2820,7 @@ public partial class _BalanceHarness : Node
 			+ $" apotheosis={(apotheosisTakenAt < 0f ? "-" : $"{apotheosisTakenAt / 60f:0.0}")}"
 			+ $" level={player?.CurrentLevel ?? 0} L10={Level(10)} L17={Level(17)} L20={Level(20)} L23={Level(23)} L26={Level(26)} L29={Level(29)}"
 			+ $" atCap={reachedCardCapAt.Count} slots={player?.GetEquippedSpells().Count ?? 0}/{player?.SpellSlots ?? Player.MaxSpellSlots}"
-			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}";
+			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}{SovereignSummary()}";
 	}
 
 	// --- the GOOD ORDINARY policy (--policy=ordinary) ------------------------------------------
@@ -3060,6 +3089,118 @@ public partial class _BalanceHarness : Node
 			}
 		}
 		return Choose(best);
+	}
+
+	// --- --seek-sovereign (.ai/sovereign-spell.md section 6) ------------------------------------------------
+
+	private float sovereignOfferedAt = -1f;
+	private float sovereignTakenAt = -1f;
+	private int sovereignOfferedLevel = -1;
+	private string sovereignTarget = string.Empty;
+	private int sovereignFuelAtTaking;
+	private string sovereignLoadoutAtTaking = string.Empty;
+	private float nextSovereignSample;
+	// A sample a second: the run's spell damage, in total and by spell, for the rate before and after.
+	private readonly List<(float At, long Total, Dictionary<string, long> BySpell)> sovereignSamples = new();
+
+	// The Rite on the strip: logged the first time, taken at once, pointed by --anoint.
+	private string PickSovereign(IReadOnlyList<LevelUpOption> ascensions)
+	{
+		LevelUpOption rite = ascensions.FirstOrDefault(o => o.ComboId == SovereignRite.SpellId);
+		if (rite == null || player == null)
+			return null;
+		if (sovereignOfferedAt < 0f)
+		{
+			sovereignOfferedAt = elapsed;
+			sovereignOfferedLevel = player.CurrentLevel;
+			GD.Print($"HARNESS SOVEREIGN RITE first offered at t={elapsed:0}s ({elapsed / 60f:0.0} min), player level {player.CurrentLevel}, "
+				+ $"loadout {string.Join(",", player.GetEquippedSpells().Select(s => $"{s.Id}@{s.CurrentLevel}"))}");
+		}
+		var open = rite.EvolutionChoices.Where(c => !rite.EvolutionLockReason.ContainsKey(c.Id)).Select(c => c.Id).ToList();
+		// The spell the plan wants, locked or not: a planner who wants his best spell anointed waits for the fuel
+		// behind it (the gate counts the OTHER spells' levels, so the strongest is often the last to open). A
+		// spell the Rite refuses outright is never the wish.
+		var wishable = rite.EvolutionChoices.Select(c => c.Id)
+			.Where(id => SovereignRite.RefusalFor(player.GetEquippedSpells().FirstOrDefault(s => s.Id == id)) == null).ToList();
+		string wish = AnointPolicy switch
+		{
+			"own" => wishable.FirstOrDefault(id => id == player.SelectedCharacter?.StartingSpellResource?.Id),
+			"top" => wishable.Count > 0 ? TopSpellLastMinute(wishable) : null,
+			_ => wishable.FirstOrDefault(id => id == AnointPolicy),
+		};
+		string target = wish != null && open.Contains(wish) ? wish : null;
+		// --anoint-wait: how long the planner holds out for it before taking the best that is open.
+		if (target == null && elapsed - sovereignOfferedAt >= AnointWaitSeconds && open.Count > 0)
+			target = TopSpellLastMinute(open);
+		if (target == null)
+			return null;
+		sovereignTarget = target;
+		sovereignTakenAt = elapsed;
+		sovereignFuelAtTaking = SovereignRite.FuelFor(player.GetEquippedSpells().FirstOrDefault(s => s.Id == target), player.GetEquippedSpells());
+		sovereignLoadoutAtTaking = string.Join(",", player.GetEquippedSpells().Select(s => $"{s.Id}@{s.CurrentLevel}"));
+		GD.Print($"HARNESS SOVEREIGN RITE taken at t={elapsed:0}s ({elapsed / 60f:0.0} min), player level {player.CurrentLevel}: {target} anointed, fuel {sovereignFuelAtTaking}");
+		return $"{SovereignRite.SpellId}:{target}";
+	}
+
+	// The open choice that dealt the most over the last minute (or the run so far).
+	private string TopSpellLastMinute(List<string> open)
+	{
+		if (sovereignSamples.Count == 0)
+			return open[0];
+		var last = sovereignSamples[^1];
+		var from = sovereignSamples.LastOrDefault(s => s.At <= last.At - 60f);
+		if (from.BySpell == null)
+			from = sovereignSamples[0];
+		return open.OrderByDescending(id => (last.BySpell.TryGetValue(id, out long b) ? b : 0)
+			- (from.BySpell.TryGetValue(id, out long a) ? a : 0)).First();
+	}
+
+	private void TrackSovereign()
+	{
+		if (player == null || elapsed < nextSovereignSample)
+			return;
+		nextSovereignSample = elapsed + 1f;
+		var bySpell = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+		long total = 0;
+		foreach (SpellData spell in player.GetEquippedSpells())
+		{
+			if (spell == null || bySpell.ContainsKey(spell.Id))
+				continue;
+			GameStats.DamageBySource.TryGetValue(spell.Id, out int dealt);
+			bySpell[spell.Id] = dealt;
+			total += dealt;
+		}
+		// Every source the run has credited, whether or not it is still held (a spell cut, a relic, the boons).
+		long all = GameStats.DamageBySource.Values.Sum(v => (long)v);
+		sovereignSamples.Add((elapsed, all, bySpell));
+	}
+
+	private string SovereignSummary()
+	{
+		if (!SeekSovereign)
+			return string.Empty;
+		string At(float t) => t < 0f ? "-" : $"{t / 60f:0.0}";
+		string rates = "-";
+		if (sovereignTakenAt >= 0f && sovereignSamples.Count > 2)
+		{
+			float Rate(float from, float to)
+			{
+				var span = sovereignSamples.Where(s => s.At >= from && s.At <= to).ToList();
+				return span.Count > 1 ? (span[^1].Total - span[0].Total) / Math.Max(1f, span[^1].At - span[0].At) : 0f;
+			}
+			float before = Rate(sovereignTakenAt - 60f, sovereignTakenAt);
+			float after = Rate(sovereignTakenAt + 1f, sovereignTakenAt + 61f);
+			// The anointed spell's own share of the minute before: what it gained alone is after / (share x before).
+			var window = sovereignSamples.Where(s => s.At >= sovereignTakenAt - 60f && s.At <= sovereignTakenAt).ToList();
+			float share = 0f;
+			if (window.Count > 1 && window[^1].Total > window[0].Total)
+				share = ((window[^1].BySpell.TryGetValue(sovereignTarget, out long b1) ? b1 : 0)
+					- (window[0].BySpell.TryGetValue(sovereignTarget, out long a1) ? a1 : 0)) / (float)(window[^1].Total - window[0].Total);
+			rates = $"{before:0}/s->{after:0}/s(x{(before > 0f ? after / before : 0f):0.00}) share={share:0.00}";
+		}
+		return $" sovereign={AnointPolicy} sovOffered={At(sovereignOfferedAt)}@L{sovereignOfferedLevel} sovTaken={At(sovereignTakenAt)}"
+			+ $" anointed={(string.IsNullOrEmpty(sovereignTarget) ? "-" : sovereignTarget)} fuel={sovereignFuelAtTaking}->{player?.SovereignFuel ?? 0}"
+			+ $" sovDps={rates} sovLoadout=[{sovereignLoadoutAtTaking}]";
 	}
 
 	// --- --seek-combo (.ai/combo-spells.md section 2: "Measure with _BalanceHarness --seek-combo=<id>") -------

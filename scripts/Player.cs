@@ -2106,6 +2106,9 @@ public partial class Player : CharacterBody2D
 		{
 			node2D.Scale *= scaleMultiplier;
 		}
+
+		// The anointed spell's casts are crowned (.ai/sovereign-spell.md section 5; Player.Sovereign.cs).
+		CrownIfSovereign(visual, spell);
 	}
 
 	// --- Bonus Drop Table (issue #25) ---
@@ -2256,6 +2259,9 @@ public partial class Player : CharacterBody2D
 			// Throttled per element inside SfxPlayer, so an AoE landing on forty enemies makes
 			// one sound rather than forty.
 			SfxPlayer.Impact(SfxCatalog.DominantElement(source), impactTarget.GlobalPosition);
+			// The anointed spell's strikes are crowned where they land (Player.Sovereign.cs, SovereignHits).
+			if (sovereignSpell != null && IsSovereignSource(source))
+				MarkSovereignHit(impactTarget.GlobalPosition);
 		}
 		if (enemy == null || !IsInstanceValid(enemy) || baseDamage <= 0 || !(enemy is Enemy || enemy.HasMethod(TakeDamageMethod)))
 			return 0;
@@ -2695,7 +2701,8 @@ public partial class Player : CharacterBody2D
 	{
 		SpellData frost = equippedSpells.FirstOrDefault(
 			s => s != null && s.Id.Equals("frost_shard", StringComparison.OrdinalIgnoreCase));
-		if (frost == null)
+		// Silenced by the Sovereign Rite: a death shatters nothing.
+		if (frost == null || IsSilenced(frost))
 			return;
 
 		// Killed by a shatter: one level only (below), except that Avalanche shatters it a beat later, a
@@ -2721,7 +2728,7 @@ public partial class Player : CharacterBody2D
 			return;
 		SpellData frost = equippedSpells.FirstOrDefault(
 			s => s != null && s.Id.Equals("frost_shard", StringComparison.OrdinalIgnoreCase));
-		if (frost != null)
+		if (frost != null && !IsSilenced(frost))
 			ShatterAt(where, frost, damageShare, generation);
 	}
 
@@ -2735,7 +2742,8 @@ public partial class Player : CharacterBody2D
 			return;
 		SpellData frost = equippedSpells.FirstOrDefault(
 			s => s != null && s.Id.Equals("frost_shard", StringComparison.OrdinalIgnoreCase));
-		if (frost == null)
+		// Silenced by the Sovereign Rite: a death shatters nothing.
+		if (frost == null || IsSilenced(frost))
 			return;
 		FrostShatter layer = FrostShatter.For(GetParent(), frost, this);
 		shatterInProgress = true;
@@ -3085,8 +3093,10 @@ public partial class Player : CharacterBody2D
 	/// <summary>The held spells the knife may cut: all of them but the wizard's own.</summary>
 	public List<SpellData> GetCuttableSpells()
 	{
+		// Nor the spell the Sovereign Rite anointed: the Rite never undoes.
 		return equippedSpells
-			.Where(s => s != null && !s.Id.Equals(signatureSpellId, StringComparison.OrdinalIgnoreCase))
+			.Where(s => s != null && !s.Id.Equals(signatureSpellId, StringComparison.OrdinalIgnoreCase)
+				&& !ReferenceEquals(s, sovereignSpell))
 			.ToList();
 	}
 
@@ -3914,6 +3924,11 @@ public partial class Player : CharacterBody2D
 			if (HeldForBossEntrance)
 				continue;
 
+			// The Sovereign Rite silenced it for the rest of the run (Player.Sovereign.cs): its levels are the
+			// anointed spell's fuel, and it never fires again.
+			if (spell.SilencedBySovereign)
+				continue;
+
 			float interval = (spell.GetCooldownAtLevel(spell.CurrentLevel) * cooldownMultiplier * GetWaterCooldownMultiplier()) / EffectiveAttackSpeed;
 			interval = MathF.Max(0.05f, interval);
 			spellFireTimers[spell.Id] += (float)delta;
@@ -3969,7 +3984,7 @@ public partial class Player : CharacterBody2D
 	{
 		blackCatChoices.Clear();
 		foreach (SpellData spell in equippedSpells)
-			if (spell != null && !spell.IsPassive && BlackCatCastable.Contains(spell.Id))
+			if (spell != null && !spell.IsPassive && !IsSilenced(spell) && BlackCatCastable.Contains(spell.Id))
 				blackCatChoices.Add(spell);
 		return blackCatChoices.Count == 0 ? null : blackCatChoices[rng.RandiRange(0, blackCatChoices.Count - 1)];
 	}
@@ -3978,7 +3993,7 @@ public partial class Player : CharacterBody2D
 	/// something into the world.</summary>
 	public bool CastFromFamiliar(SpellData spell, Vector2 origin)
 	{
-		if (spell == null || IsDead || !BlackCatCastable.Contains(spell.Id) || !equippedSpells.Contains(spell))
+		if (spell == null || IsDead || IsSilenced(spell) || !BlackCatCastable.Contains(spell.Id) || !equippedSpells.Contains(spell))
 			return false;
 		float interval = MathF.Max(0.05f, (spell.GetCooldownAtLevel(spell.CurrentLevel) * cooldownMultiplier * GetWaterCooldownMultiplier()) / EffectiveAttackSpeed);
 		Vector2 home = GlobalPosition;
@@ -6801,8 +6816,10 @@ public partial class Player : CharacterBody2D
 
 		// A combination is not in the spell catalog - it is never a card - and is made only by fusing its
 		// two parents, from the strip (Player.Combinations.cs, ComboCatalog).
+		// The Sovereign Rite is a Conjunction too, but its second half names the spell it anoints
+		// ("sovereign_rite:fireball", Player.Sovereign.cs), and nothing is fused.
 		if (ComboCatalog.ForId(spellId) is ComboDefinition combination)
-			return TryFuse(combination);
+			return combination.IsRite ? TryAnoint(evolutionId) : TryFuse(combination);
 
 		SpellData spellTemplate = ResolveSpellTemplate(spellId);
 		if (spellTemplate == null)
@@ -6855,6 +6872,7 @@ public partial class Player : CharacterBody2D
 			equippedSpells.Add(runtimeSpell);
 			spellFireTimers[runtimeSpell.Id] = 0f;
 			GD.Print($"Equipped spell {runtimeSpell.Name} at level {runtimeSpell.CurrentLevel}");
+			SilenceIfLate(runtimeSpell);
 			RefreshPersistentSpellInstance(runtimeSpell);
 			RefreshElementalMaxHp();
 			RaiseLoadoutChanged();
@@ -6915,6 +6933,8 @@ public partial class Player : CharacterBody2D
 
 		spellFireTimers[existing.Id] = 0f;
 		GD.Print($"Spell {existing.Name} leveled up to {existing.CurrentLevel}");
+		// A silenced spell's level is one more level of the anointed spell's fuel.
+		RefreshSovereignFuel();
 		RefreshPersistentSpellInstance(existing);
 		RaiseLoadoutChanged();
 		return true;
@@ -6949,6 +6969,7 @@ public partial class Player : CharacterBody2D
 		}
 
 		GD.Print($"Removed spell {existing.Name} from loadout.");
+		RefreshSovereignFuel();
 		RefreshElementalMaxHp();
 		RaiseLoadoutChanged();
 		return true;
@@ -7215,6 +7236,9 @@ public partial class Player : CharacterBody2D
 	{
 		if (spell == null)
 			return 1;
+		// Silenced by the Sovereign Rite: no Ascension to wait for, so the cards take it all the way (Player.Sovereign.cs).
+		if (spell.SilencedBySovereign)
+			return spell.MaxLevel;
 		SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
 		bool hasAscension = spell.Level8Options != null && spell.Level8Options.Count > 0
 			&& spell.MaxLevel >= AscensionSpellLevel;
@@ -7231,7 +7255,9 @@ public partial class Player : CharacterBody2D
 		var counts = GetElementInstanceCounts();
 		foreach (SpellData spell in equippedSpells)
 		{
-			if (spell == null)
+			// A spell the Sovereign Rite silenced levels to 8 on plain cards (CardLevelCap) and is offered no
+			// Ascension or Apotheosis: it never fires again, so a form would change nothing but its name.
+			if (spell == null || spell.SilencedBySovereign)
 				continue;
 
 			if (TryBuildApotheosisOffer(spell, counts) is LevelUpOption apotheosis)
@@ -7274,6 +7300,9 @@ public partial class Player : CharacterBody2D
 		// The combinations whose recipes this loadout meets (ComboCatalog, Player.Combinations.cs): after
 		// every spell's own, since both parents are already at level 8 and offer nothing of their own.
 		offers.AddRange(BuildComboOffers());
+		// The Sovereign Rite, on the same plate, once the save owns it and the run meets its gate (Player.Sovereign.cs).
+		if (TryBuildSovereignOffer() is LevelUpOption rite)
+			offers.Add(rite);
 		return offers;
 	}
 
@@ -7335,6 +7364,9 @@ public partial class Player : CharacterBody2D
 					continue;
 
 				LevelUpOption option = BuildNewSpellOption(template, baselineElementCounts);
+				// After the Sovereign Rite a new spell arrives silenced: it is one level of fuel, and says so.
+				if (sovereignSpell != null && !SovereignRite.IsPassiveForRite(template))
+					DressAsFuel(option);
 				candidates.Add(option);
 				weights.Add(GetOfferWeight(option));
 				continue;
@@ -7378,6 +7410,8 @@ public partial class Player : CharacterBody2D
 				}
 
 				ApplyElementPreview(option, equipped, baselineElementCounts, isNewUnlock: false);
+				if (equipped.SilencedBySovereign)
+					DressAsFuel(option);
 				heldUpgrades.Add(option);
 				heldUpgradeWeights.Add(GetOfferWeight(option));
 			}

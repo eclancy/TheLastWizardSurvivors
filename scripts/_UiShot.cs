@@ -931,6 +931,12 @@ public partial class _UiShot : Node
 	// through the same entry point the strip uses (Player.TryAddOrLevelSpell), for a photograph of it firing.
 	private string demoCombo;
 	private bool demoComboFuse;
+	// --demo-sovereign[=SPELL]: the Sovereign Rite's gate met (.ai/sovereign-spell.md section 3) - the Rite
+	// owned in the in-memory save, the player at its level, and every held spell raised to
+	// --demo-spell-level (6 if unset) - so a level-up offers it on the strip; with =SPELL, that held spell is
+	// anointed at once through the strip's own entry point ("sovereign_rite:SPELL"), for the HUD and the
+	// crowned casts. Hold the spells with --demo-spells.
+	private string demoSovereign;
 	private bool demoApplied;
 	// --seen-ascensions=a,b,...: which ascension paths the in-memory save has SEEN (AscensionSightings),
 	// so the browser and the level 8 page can be photographed with a path sealed, seen but out of
@@ -986,6 +992,8 @@ public partial class _UiShot : Node
 				demoCombo = combo[0].Trim();
 				demoComboFuse = combo.Length > 1 && combo[1].Trim() == "fuse";
 			}
+			else if (arg == "--demo-sovereign" || arg.StartsWith("--demo-sovereign="))
+				demoSovereign = arg.Contains('=') ? arg.Substring(arg.IndexOf('=') + 1).Trim() : string.Empty;
 			else if (arg.StartsWith("--demo-spell-level="))
 				demoSpellLevel = int.Parse(arg.Substring("--demo-spell-level=".Length));
 			else if (arg.StartsWith("--seen-ascensions="))
@@ -3068,7 +3076,7 @@ public partial class _UiShot : Node
 				scrolled = true;
 				ScrollAll(GetTree().Root);
 			}
-			if ((demoPlayerLevel > 0 || demoSpellLevel > 0 || demoSpells.Length > 0 || demoEvolutions.Length > 0 || demoCombo != null) && !demoApplied && frames >= WarmupFrames / 4
+			if ((demoPlayerLevel > 0 || demoSpellLevel > 0 || demoSpells.Length > 0 || demoEvolutions.Length > 0 || demoCombo != null || demoSovereign != null) && !demoApplied && frames >= WarmupFrames / 4
 				&& FindNodeOfType<Player>(GetTree().Root) is Player demo && demo.GetEquippedSpells().Count > 0)
 			{
 				demoApplied = true;
@@ -3088,6 +3096,8 @@ public partial class _UiShot : Node
 						GD.PrintErr($"_UiShot: could not add spell '{id}'");
 				if (demoCombo != null)
 					ApplyDemoCombo(demo);
+				if (demoSovereign != null)
+					ApplyDemoSovereign(demo);
 				GD.Print($"_UiShot: demo state - player level {demo.CurrentLevel}, {demo.GetEquippedSpells()[0].Name} level {demo.GetEquippedSpells()[0].CurrentLevel}");
 			}
 			// After the demo state (same frame, so --demo-spells are held by now), before the level-up.
@@ -4060,6 +4070,19 @@ public partial class _UiShot : Node
 		if (castOnStage)
 			p.DebugRipenSpells();
 		GD.Print($"_UiShot: spell stage of {stageCrowd.Count} placed at {centre}, player at {p.GlobalPosition}, facing {p.FacingDirection} (side {p.FacingSide})");
+	}
+
+	private void ApplyDemoSovereign(Player player)
+	{
+		if (GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is SaveData save)
+			GlobalStatsManager.UnlockSpell(save, SovereignRite.SpellId);
+		player.CurrentLevel = System.Math.Max(player.CurrentLevel, SovereignRite.MinimumPlayerLevel);
+		int level = demoSpellLevel > 0 ? demoSpellLevel : 6;
+		foreach (SpellData spell in player.GetEquippedSpells())
+			spell.CurrentLevel = System.Math.Min(spell.MaxLevel, System.Math.Max(spell.CurrentLevel, level));
+		GD.Print($"_UiShot: Sovereign Rite gate - player level {player.CurrentLevel}, {player.GetEquippedSpells().Count} spells at level {level}");
+		if (!string.IsNullOrEmpty(demoSovereign))
+			GD.Print($"_UiShot: Sovereign Rite on {demoSovereign} {(player.TryAddOrLevelSpell($"{SovereignRite.SpellId}:{demoSovereign}") ? "taken" : "REFUSED")}");
 	}
 
 	private void ApplyDemoCombo(Player player)

@@ -438,3 +438,8 @@ fusion and the spell firing - was taken through the menu by pad presses in `_UiS
 --force-levelup --keep-levelup --pad=release,a,a`. Its damage against the parents' (section 3's 1.2 target)
 is unmeasured: no harness run reached it, and `ArrowShare` 0.8 and `MaxLitStars` 16 are still section 3's
 first guesses.
+
+**The Sovereign Rite is in `ComboCatalog` too** (2026-11-02, `.ai/sovereign-spell.md` section 8): a recipe with
+`IsRite`, whose first ingredient is the Rite and whose second is `AnyActiveSpell` ("any active spell you
+hold"). `Evaluate` never calls it Ready and `Fusions` leaves it out; `Player.TryBuildSovereignOffer` is its
+strip offer, on the same plate. After it is taken nothing fuses.

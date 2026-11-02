@@ -103,7 +103,9 @@ public static class ContentValidator
 		"res://SpellData_MeteorSwarm.tres",
 		"res://SpellData_HuntersDraw.tres",
 		// The combinations (ComboCatalog): never in the level-up pool, made only by fusing two ascended spells.
-		"res://SpellData_Sagittarius.tres"
+		"res://SpellData_Sagittarius.tres",
+		// The Sovereign Rite (ComboCatalog's rite, SovereignRite): never held, never a card; its name, line and picture.
+		"res://SpellData_SovereignRite.tres"
 	};
 
 	public static void ValidateAtStartup(Node context)
@@ -194,7 +196,8 @@ public static class ContentValidator
 					iconsByPath[iconPath] = spell.Id;
 			}
 
-			if (spell.ElementWeights == null || spell.ElementWeights.Count == 0)
+			// The Sovereign Rite names no element: it is held by no slot, and the spell it anoints keeps its own.
+			if ((spell.ElementWeights == null || spell.ElementWeights.Count == 0) && ComboCatalog.ForId(spell.Id)?.IsRite != true)
 				summary.Warnings.Add($"Spell '{spell.Id}' has no element weights.");
 			else
 			{

@@ -220,6 +220,11 @@ public static class UnlockCatalog
 		// out so this list stays the one place every spell's source is read from; RegressionChecks holds the
 		// two lists together.
 		FromCombination("sagittarius"),
+		// THE SOVEREIGN RITE (.ai/sovereign-spell.md section 3): the one Conjunction that is not paid by its own
+		// Feat. It is the reward of the end of the road - beating the Warden of the Deep, the Emberdeep's boss -
+		// so nothing on a new save reaches it early; its Feat ("Conjunction: Sovereign Rite") is the recipe's row
+		// and pays Arcane Energy. Not counted by The Grimoire Restored: it is a combination (GrimoireSpellIds).
+		FromAchievement(SovereignRite.SpellId, "emberdeep_ended", "Defeat the Warden of the Deep, at the end of the road."),
 
 		// Boons fill the shop that passive spells used to. Priced by how much a run changes when
 		// one turns up: a stat nudge is cheap, a whole defensive layer is not. The three boons are
