@@ -9,8 +9,9 @@ namespace WizardSurvivors.scripts;
 // own - BridgeRules.cs, CourtRules.cs, ThroneRules.cs - and never edits Node2DGame.
 //
 // The lines are a comment apart, so two agents' edits are never on adjacent lines (what git calls a
-// conflict). A chapter not listed has no rules, which is every chapter of the road: the Cursed Dungeon
-// moves into the castle with none, because its maze, its key and its portal are the road's own.
+// conflict). A chapter not listed has no rules, which is every chapter of the road. The Cursed Dungeon
+// moved into the castle (C2) with its maze, its key and its portal, which are the road's own, and one rule:
+// the stair at the start (DungeonRules.cs).
 public static class ChapterRulesCatalog
 {
 	/// <summary>A new rules object for one run of the chapter, or null for a chapter with none.</summary>
@@ -19,6 +20,9 @@ public static class ChapterRulesCatalog
 		// The Last Bridge (piece C1): the collapsing front, the spawns on the band, the Constable at the
 		// gate, the gate as the way home, the strip under the timer (BridgeRules.cs).
 		"stage_11" => () => new BridgeRules(),
+		// (the Dungeon's line is below; leave this one as it is)
+		// The Cursed Dungeon (piece C2): the stair foot in the spawn clearing, the way down from the bridge.
+		"stage_1" => () => new DungeonRules(),
 		// (the Court's line is below; leave this one as it is)
 		// The Court (piece C3): its rooms, the boss in a room near the player, the throne room doors as the
 		// way home (CourtRules.cs).

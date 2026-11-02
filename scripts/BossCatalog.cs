@@ -35,6 +35,14 @@ public sealed class BossDefinition
 	/// <summary>Flat Arcane Energy added on top of the usual run reward for the kill.</summary>
 	public int ArcaneVictoryBonus { get; init; } = 120;
 
+	/// <summary>
+	/// The health the Boss Rush scales this boss from, when it is not <see cref="Health"/>; 0 for "the
+	/// same". For a boss whose chapter moved and was retuned for its new place while the rush, held as it
+	/// was (.ai/endgame-castle.md 1.8), still meets him at the old one: the Gaoler. Read only through
+	/// BossRushCatalog.HealthOf.
+	/// </summary>
+	public int BossRushHealth { get; init; }
+
 	/// <summary>True while the boss's own scene does not exist and its stand-in fights instead.</summary>
 	public bool IsOnStandIn =>
 		!string.IsNullOrEmpty(StandInScenePath)
@@ -76,12 +84,18 @@ public static class BossCatalog
 			DisplayName = "The Gaoler",
 			Tagline = "It charges down a lane it shows you first. Step sideways, never back.",
 			ScenePath = "res://scenes/GaolerBoss.tscn",
-			// Tuned as chapter 2 (5200, 170); chapter 5 since the campaign order moved it
-			// (.ai/campaign.md), after the Choir's 3 x 1900. Retuned for the slot as campaign.md
-			// decision 3 proposed - between the Choir's 5700 / 190 and Mother Rot's 6800 / 210 - so
-			// boss health climbs with the order again instead of dipping at the maze.
-			Health = 150000, // 70000 before the fights were lengthened, 6200 before the difficulty curve
-			ArcaneVictoryBonus = 200
+			// Tuned as chapter 2 (5200, 170), then chapter 5 (.ai/campaign.md) at 150000 / 200 - and since
+			// piece C2 the castle's eleventh chapter, the cells under his house (.ai/endgame-castle.md 4.3).
+			// The bonus sits between the Constable's 360 and the Seneschal's 390; the health does not, because
+			// it is set by the fight's length: he charges the player down a lane and stands in every area spell,
+			// so he takes damage about twice as fast for his health as the Seneschal. Between them (420000) he
+			// fell in a minute and a half; at 900000 the median farmed build takes about 2.3 minutes. The fight
+			// is unchanged: the lane shown and run, dismounted at half, the enrage. Measured in
+			// .ai/enemy-behaviour.md, "The Gaoler in the castle, measured".
+			Health = 900000, // 420000 then 700000 measured first (fights 0.6-2.8 and 0.8-1.8 min); 150000 at chapter five, 70000 before the fights were lengthened, 6200 before the difficulty curve
+			ArcaneVictoryBonus = 375, // 200 at chapter five
+			// The Boss Rush is held as it was, the Gaoler fifth (1.8): it meets him at his chapter-five health.
+			BossRushHealth = 150000,
 		},
 		[2] = new BossDefinition
 		{

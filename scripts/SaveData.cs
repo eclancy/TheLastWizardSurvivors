@@ -19,15 +19,37 @@ public class SaveData
 	// owns, moved rewards reconciled, and the Emberdeep kept open for anyone who had met the old gate.
 	// 20 is the difficulty curve's (.ai/difficulty-curve.md, section 9): AscensionLearned for every save
 	// that has played a run, and the levels bought of the re-priced Powers (Fate Fracture, Emberheart)
-	// paid back the difference. The castle's Dungeon move (.ai/endgame-castle.md, C2) takes 21.
-	public const int CurrentSchemaVersion = 20;
+	// paid back the difference. 21 is the castle's (.ai/endgame-castle.md 1.5, piece C2): the Cursed
+	// Dungeon moved from fifth into the castle, so what each save could enter is written down under the
+	// old order, and the Dungeon itself is kept in GrandfatheredStageIds - entry, and evidence of nothing.
+	public const int CurrentSchemaVersion = 21;
 	public const int CampaignSchemaVersion = 8;
 	private const int MaxTelemetryHistory = 25;
 
 	public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 	public int TotalCurrency { get; set; } = 0;
 	public List<string> UnlockedCharacterIds { get; set; } = new();
+	/// <summary>
+	/// The chapters opened ON THE ROAD: what a boss victory writes, and what the road's rules read
+	/// (GlobalStatsManager.IsStageEarned - rule 1, and rule 2's "a later chapter is opened").
+	/// </summary>
 	public List<string> UnlockedStageIds { get; set; } = new();
+
+	/// <summary>
+	/// Chapters this save may enter because an OLDER campaign order opened them (schema 21,
+	/// .ai/endgame-castle.md 1.5): the Cursed Dungeon, for every save that had reached it as chapter five
+	/// before it moved into the castle. Entry and nothing else (GlobalStatsManager.IsGrandfathered): never
+	/// evidence for the road's rules, and a victory in a chapter held only this way opens nothing. Only the
+	/// schema 21 step writes it; nothing ever removes from it, so nobody loses a chapter they could play.
+	/// </summary>
+	public List<string> GrandfatheredStageIds { get; set; } = new();
+
+	/// <summary>
+	/// The Boss Rush was open to this save before schema 21 - its finale, the Warden of the Deep, had fallen -
+	/// so it stays open whatever BossRushCatalog.IsOpen asks now ("every boss on its roster beaten", since
+	/// the Gaoler moved behind the Warden). Written only by the schema 21 step.
+	/// </summary>
+	public bool BossRushGrandfathered { get; set; } = false;
 	public List<string> UnlockedSpellIds { get; set; } = new();
 
 	/// <summary>Boons the player has earned or bought. Starter boons are not listed; they are free.</summary>
@@ -380,6 +402,9 @@ public class SaveData
 		if (SchemaVersion < 20)
 			MigrateToLearnedAscensionsAndRepricedPowers();
 
+		if (SchemaVersion < 21)
+			MigrateDungeonIntoCastle();
+
 		if (log)
 			GD.Print($"SaveData: migrated schema {from} -> {CurrentSchemaVersion}; " +
 				$"{UnlockedSpellIds.Count} spells, {UnlockedBoonIds.Count} boons, {UnlockedCharacterIds.Count} wizards, " +
@@ -474,6 +499,11 @@ public class SaveData
 	/// only had the Dungeon, and the two early chapters will open by themselves for everyone past
 	/// them the day they become playable - no second migration then), and a chapter whose previous
 	/// boss is in the lifetime record is open.
+	///
+	/// "What each opens now" is FROZEN since schema 21 (<see cref="OpenedAtSchema19"/>): this step read the
+	/// live order until the Dungeon moved into the castle, and the live order would now have the Gaoler
+	/// open nothing (or the Court, once it is built) and the Choir open the Swamp - not what schema 13
+	/// meant, and the schema 21 step reads the save in the terms this step wrote it in.
 	/// </remarks>
 	private void MigrateToCampaignOrder()
 	{
@@ -497,10 +527,9 @@ public class SaveData
 
 		foreach (string bossId in beaten)
 		{
-			BossDefinition boss = BossCatalog.GetById(bossId);
-			StageDefinition opened = boss != null ? BossCatalog.ChapterOpenedBy(boss) : null;
+			string opened = OpenedAtSchema19(bossId);
 			if (opened != null)
-				GlobalStatsManager.UnlockStage(this, opened.Id);
+				GlobalStatsManager.UnlockStage(this, opened);
 		}
 	}
 
@@ -726,6 +755,139 @@ public class SaveData
 	}
 
 	/// <summary>
+	/// Schema 21 (.ai/endgame-castle.md 1.5): the Cursed Dungeon moved from fifth into the castle, between
+	/// the Last Bridge and the Court. Nothing anybody could enter is closed, and the Dungeon's old place is
+	/// evidence of nothing on the new road.
+	/// </summary>
+	/// <remarks>
+	/// Why a step at all. The road's three rules (GlobalStatsManager.IsStageEarned) each read the Dungeon's
+	/// old place as evidence: its id in the opened list; rule 2, which with the Dungeon eleventh would put a
+	/// save that reached the old chapter five past the Swamp, the Sands and the bridge; and rule 3, under
+	/// which every old Gaoler kill would open the Court. Taking the id out instead would close a chapter a
+	/// save could enter. So the old evidence is kept, filed where it means only what it meant:
+	///   1. write down what the save could enter under the order and rules as they stood until now, frozen
+	///      (<see cref="ChaptersEnterableAtSchema19"/>) - every chapter but the Dungeon. That keeps rule 2's
+	///      old gifts: the early chapters a save had BECAUSE the Dungeon stood fifth;
+	///   2. if it could enter the Dungeon, the Dungeon leaves UnlockedStageIds for
+	///      <see cref="GrandfatheredStageIds"/>: entry, and nothing else;
+	///   3. nothing for the castle - no save can have been past it;
+	///   4. the Boss Rush, which now waits on the Gaoler too (BossRushCatalog.IsOpen): a save that had it
+	///      open (the Warden of the Deep beaten) keeps it, <see cref="BossRushGrandfathered"/>.
+	/// Internal for RegressionChecks.ValidateDungeonMove, which runs it a second time on a migrated save to
+	/// prove it changes nothing then.
+	/// </remarks>
+	internal void MigrateDungeonIntoCastle()
+	{
+		UnlockedStageIds ??= new List<string>();
+		GrandfatheredStageIds ??= new List<string>();
+
+		// Read before anything is written: the save as the old order saw it.
+		List<string> enterable = ChaptersEnterableAtSchema19();
+		foreach (string stageId in enterable)
+		{
+			if (!stageId.Equals(DungeonStageId, System.StringComparison.OrdinalIgnoreCase))
+				GlobalStatsManager.UnlockStage(this, stageId);
+		}
+		if (enterable.Contains(DungeonStageId, System.StringComparer.OrdinalIgnoreCase))
+		{
+			UnlockedStageIds.RemoveAll(id => id.Equals(DungeonStageId, System.StringComparison.OrdinalIgnoreCase));
+			if (!GrandfatheredStageIds.Contains(DungeonStageId, System.StringComparer.OrdinalIgnoreCase))
+				GrandfatheredStageIds.Add(DungeonStageId);
+		}
+
+		if (Lifetime != null && Lifetime.HasDefeatedBoss(FinaleBossAtSchema19))
+			BossRushGrandfathered = true;
+	}
+
+	/// <summary>The chapter that moved.</summary>
+	private const string DungeonStageId = "stage_1";
+
+	/// <summary>
+	/// The campaign from schema 19 to 20 (13 to 20 but for the gate's kind): each chapter and the boss that
+	/// is the evidence for the next. Every one was playable. The last is the gate chapter (its previous boss
+	/// and <see cref="WizardsAtSchema18"/>, the seven A1 left the gate counting); every other after the first
+	/// is opened by its previous boss. Frozen, so steps 13 and 21 read a save in the terms it was written
+	/// in, whatever StageCatalog's order becomes.
+	/// </summary>
+	private static readonly (string StageId, string BossId)[] CampaignOrderAtSchema19 =
+	{
+		("stage_0", "forest_treant"),
+		("stage_9", "fields_hayward"),
+		("stage_10", "heath_ninth_stone"),
+		("stage_2", "cave_choir"),
+		("stage_1", "castle_warden"),
+		("stage_3", "swamp_mother"),
+		("stage_4", "ruins_sentinel"),
+		("stage_5", "frost_warden"),
+		("stage_6", "sands_coil"),
+		("stage_7", "emberdeep_warden"),
+	};
+
+	/// <summary>The chapter held until that campaign was finished: the Sketchbook.</summary>
+	private const string AfterCampaignAtSchema19 = "stage_8";
+
+	/// <summary>That campaign's last boss: his fall finished it and opened the Boss Rush.</summary>
+	private const string FinaleBossAtSchema19 = "emberdeep_warden";
+
+	/// <summary>
+	/// What beating <paramref name="bossId"/> opened under <see cref="CampaignOrderAtSchema19"/>: the next
+	/// chapter, unless that is the gate (a victory never writes a gate open). Null for anything else.
+	/// </summary>
+	private static string OpenedAtSchema19(string bossId)
+	{
+		for (int i = 0; i < CampaignOrderAtSchema19.Length - 2; i++)
+		{
+			if (CampaignOrderAtSchema19[i].BossId.Equals(bossId ?? string.Empty, System.StringComparison.OrdinalIgnoreCase))
+				return CampaignOrderAtSchema19[i + 1].StageId;
+		}
+		return null;
+	}
+
+	/// <summary>
+	/// Every chapter this save could enter under <see cref="CampaignOrderAtSchema19"/> and the rules of 19
+	/// and 20, frozen: the first chapter always; another by its id stored (rule 1), a later boss-gated
+	/// chapter stored (rule 2) or its previous boss beaten (rule 3); the gate by rules 1 and 2 or its
+	/// previous boss AND the seven wizards; the Sketchbook once stored, played, or the campaign finished.
+	/// </summary>
+	/// <remarks>
+	/// "Stored" includes <see cref="GrandfatheredStageIds"/>: empty on the first pass, and on a second it
+	/// holds the Dungeon that was stored when the first ran - so a second pass reads the same save the
+	/// first did, and finds nothing to do. Internal for the validator.
+	/// </remarks>
+	internal List<string> ChaptersEnterableAtSchema19()
+	{
+		var stored = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+		foreach (string id in UnlockedStageIds ?? new List<string>())
+			stored.Add(id);
+		foreach (string id in GrandfatheredStageIds ?? new List<string>())
+			stored.Add(id);
+		bool Beaten(string bossId) => Lifetime != null && Lifetime.HasDefeatedBoss(bossId);
+
+		var enterable = new List<string>();
+		int gate = CampaignOrderAtSchema19.Length - 1;
+		for (int i = 0; i < CampaignOrderAtSchema19.Length; i++)
+		{
+			string stageId = CampaignOrderAtSchema19[i].StageId;
+			bool earned = i == 0 || stored.Contains(stageId);
+			// Rule 2 counted only boss-gated chapters past this one, never the gate itself.
+			for (int later = i + 1; !earned && later < gate; later++)
+				earned = stored.Contains(CampaignOrderAtSchema19[later].StageId);
+			if (!earned && i > 0)
+			{
+				bool previousBeaten = Beaten(CampaignOrderAtSchema19[i - 1].BossId);
+				earned = i == gate ? previousBeaten && WizardsAtSchema18.All(HadWizardAtSchema18) : previousBeaten;
+			}
+			if (earned)
+				enterable.Add(stageId);
+		}
+
+		if (stored.Contains(AfterCampaignAtSchema19) || Beaten(FinaleBossAtSchema19)
+			|| (Lifetime != null && Lifetime.BestTimeOnStage(AfterCampaignAtSchema19) > 0f))
+			enterable.Add(AfterCampaignAtSchema19);
+		return enterable;
+	}
+
+	/// <summary>
 	/// Schema 19: every spell that is not a starter is an achievement's (.ai/achievements-and-secrets.md
 	/// section 3). It only adds: nothing anybody owns is taken away, and no Arcane Energy changes hands.
 	/// </summary>
@@ -908,6 +1070,12 @@ public class SaveData
 			stageIds.Add(id);
 		}
 
+		var grandfatheredStageIds = new Godot.Collections.Array<string>();
+		foreach (string id in GrandfatheredStageIds)
+		{
+			grandfatheredStageIds.Add(id);
+		}
+
 		var spellIds = new Godot.Collections.Array<string>();
 		foreach (string id in UnlockedSpellIds)
 		{
@@ -1004,6 +1172,8 @@ public class SaveData
 			["TotalCurrency"] = TotalCurrency,
 			["UnlockedCharacterIds"] = characterIds,
 			["UnlockedStageIds"] = stageIds,
+			["GrandfatheredStageIds"] = grandfatheredStageIds,
+			["BossRushGrandfathered"] = BossRushGrandfathered,
 			["UnlockedSpellIds"] = spellIds,
 			["UnlockedBoonIds"] = boonIds,
 			["UnlockedAchievementIds"] = achievementIds,
@@ -1093,6 +1263,21 @@ public class SaveData
 				}
 			}
 		}
+
+		if (root.ContainsKey("GrandfatheredStageIds"))
+		{
+			foreach (Variant value in root["GrandfatheredStageIds"].AsGodotArray())
+			{
+				string id = value.AsString();
+				if (!string.IsNullOrWhiteSpace(id))
+				{
+					result.GrandfatheredStageIds.Add(id);
+				}
+			}
+		}
+
+		if (root.ContainsKey("BossRushGrandfathered"))
+			result.BossRushGrandfathered = root["BossRushGrandfathered"].AsBool();
 
 		if (root.ContainsKey("UnlockedSpellIds"))
 		{

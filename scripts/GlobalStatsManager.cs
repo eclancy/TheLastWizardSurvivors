@@ -309,6 +309,18 @@ public static class GlobalStatsManager
 		GateWizardIds(gate).Count(id => !IsCharacterUnlocked(data, id));
 
 	/// <summary>
+	/// Who a gate is still waiting on, for its lock line (StageCatalog.LockedHintFor with a save): each
+	/// wizard it counts that this save has not freed, by his epithet (QuestLog.EpithetOf, "the accused") -
+	/// never his name, which is his reward - or only "a wizard" while his card is still sealed
+	/// (<see cref="IsCharacterRevealed"/>), so a gate never says who a secret is before his chapter does.
+	/// </summary>
+	public static List<string> HeldGateWizards(SaveData data, StageDefinition gate) =>
+		GateWizardIds(gate)
+			.Where(id => !IsCharacterUnlocked(data, id))
+			.Select(id => IsCharacterRevealed(data, id) ? QuestLog.EpithetOf(id) : "a wizard")
+			.ToList();
+
+	/// <summary>
 	/// Whether a gate chapter's gate is met live: its previous chapter's boss beaten (the lifetime record)
 	/// and every wizard it counts free. False for a chapter that is not a gate chapter.
 	/// </summary>
@@ -349,9 +361,10 @@ public static class GlobalStatsManager
 	/// <summary>
 	/// Whether the world map shows a campaign chapter at all (Eric, 2026-10-31: "you should only unlock
 	/// the map as you defeat the previous level"). The first chapter; any chapter the save has earned
-	/// (<see cref="IsStageEarned"/> - so nothing a save can enter is ever hidden from it); and a gate
-	/// chapter whose previous boss has fallen, shown sealed until its wizards are free. Read from what
-	/// the save already holds - beaten bosses and the opened list - so it needs no field of its own.
+	/// (<see cref="IsStageEarned"/>) or keeps from an older order (<see cref="IsGrandfathered"/>) - so
+	/// nothing a save can enter is ever hidden from it; and a gate chapter whose previous boss has fallen,
+	/// shown sealed until its wizards are free. Read from what the save already holds - beaten bosses and
+	/// the two opened lists - so it needs no field of its own.
 	/// </summary>
 	public static bool IsChapterRevealed(SaveData data, StageDefinition stage)
 	{
@@ -362,20 +375,27 @@ public static class GlobalStatsManager
 			return false;
 		return position == 0
 			|| IsStageEarned(data, stage)
+			|| IsGrandfathered(data, stage)
 			|| (stage.Gate == StageGate.PreviousBossAndWizards && HasClearedPreviousChapter(data, stage));
 	}
 
 	/// <summary>
-	/// The campaign is finished: the boss of its last playable chapter has fallen there
-	/// (<see cref="StageCatalog.LastPlayableChapter"/> - the Warden of the Deep today). What opens the
-	/// Sketchbook's page (Eric, 2026-10-30: "Once you beat the whole campaign, you should be able to
-	/// navigate to it").
+	/// The campaign is finished: the boss of its last playable chapter has fallen there, and that chapter is
+	/// on the save's road (<see cref="StageCatalog.LastPlayableChapter"/>: the Cursed Dungeon while the
+	/// castle's other chapters are unbuilt, the Throne once it is). What opens the Sketchbook's page (Eric,
+	/// 2026-10-30: "Once you beat the whole campaign, you should be able to navigate to it").
 	/// </summary>
+	/// <remarks>
+	/// On the road (.ai/endgame-castle.md 1.5): a Gaoler beaten in a grandfathered Dungeon - every save that
+	/// won it as chapter five - finished nothing. A save that had finished the old campaign keeps the
+	/// Sketchbook because the schema 21 step wrote it into the opened list (SaveData.MigrateDungeonIntoCastle).
+	/// </remarks>
 	public static bool HasFinishedCampaign(SaveData data)
 	{
 		StageDefinition last = StageCatalog.LastPlayableChapter;
 		BossDefinition boss = last != null ? BossCatalog.ForStageIndex(last.Index) : null;
-		return boss != null && data?.Lifetime != null && data.Lifetime.HasDefeatedBoss(boss.Id);
+		return boss != null && data?.Lifetime != null && data.Lifetime.HasDefeatedBoss(boss.Id)
+			&& IsStageEarned(data, last);
 	}
 
 	/// <summary>
@@ -409,41 +429,44 @@ public static class GlobalStatsManager
 	}
 
 	/// <summary>
-	/// Whether a chapter can be entered, resolving its <see cref="StageGate"/>. The gate chapters are
-	/// the reason this is not just a lookup in the unlocked-stages list.
+	/// Whether a chapter can be entered: it is built, and the save has earned it on the road
+	/// (<see cref="IsStageEarned"/>) or keeps it from an older order (<see cref="IsGrandfathered"/>).
+	/// The gate chapters are the reason this is not just a lookup in the unlocked-stages list.
 	/// </summary>
 	public static bool IsStageAvailable(SaveData data, StageDefinition stage)
 	{
 		if (stage == null || !stage.IsPlayable)
 			return false;
 
-		return IsStageEarned(data, stage);
+		return IsStageEarned(data, stage) || IsGrandfathered(data, stage);
 	}
 
 	/// <summary>
-	/// Whether the save has earned a chapter, whether or not it is built yet. What
-	/// <see cref="IsStageAvailable"/> answers once the chapter is playable.
+	/// The save may enter this chapter because an older campaign order opened it
+	/// (<see cref="SaveData.GrandfatheredStageIds"/>, schema 21): the Cursed Dungeon, for every save that had
+	/// reached it as chapter five before it moved into the castle (.ai/endgame-castle.md 1.5). Entry and
+	/// nothing else: never read by the road's rules (<see cref="IsStageEarned"/>), and a victory in a chapter
+	/// held only this way opens nothing (<see cref="ChapterOpenedByVictory"/>).
 	/// </summary>
-	/// <remarks>
-	/// A boss-gated chapter is earned three ways, and any one is enough (.ai/campaign.md, "The gate"):
-	///
-	///   1. Its id is in the save's opened list - what a boss victory writes, and what every save
-	///      before the campaign order already holds.
-	///   2. The save has opened a chapter LATER in the campaign. The campaign is one road, so being
-	///      past a chapter is having been through it. This is what keeps the order free to change:
-	///      the two early chapters, inserted before the Cave, open by themselves for a save that is
-	///      already at the Cave or beyond - now, and the day they become playable - with no
-	///      migration then, and nobody is ever stopped by a chapter that was added behind them.
-	///   3. The boss of the chapter before it in the order has been beaten (LifetimeStats, which
-	///      every save has kept since schema 8). Same purpose: a reorder re-derives what a recorded
-	///      kill opens instead of trusting what the old order wrote.
-	///
-	/// Nothing here ever closes a chapter a save could already enter: each rule only adds.
-	///
-	/// A gate chapter (<see cref="StageGate.PreviousBossAndWizards"/>) keeps rules 1 and 2 - the
-	/// opened list, which the schema 19 step writes for every save that had met the old gate, and being
-	/// past it - and takes <see cref="IsGateMet"/> in place of rule 3: its previous boss AND the wizards.
-	/// </remarks>
+	public static bool IsGrandfathered(SaveData data, StageDefinition stage) =>
+		stage != null && data?.GrandfatheredStageIds != null
+		&& data.GrandfatheredStageIds.Any(id => id.Equals(stage.Id, StringComparison.OrdinalIgnoreCase));
+
+	/// <summary>
+	/// The chapter a boss victory writes open (Node2DGame.ApplyBossVictoryUnlocks): what the order says the
+	/// boss opens (<see cref="BossCatalog.ChapterOpenedBy"/>), but only when the chapter it was won in is
+	/// on the save's road (<see cref="IsStageEarned"/>). Null otherwise - a win in a chapter held only by
+	/// <see cref="IsGrandfathered"/> still pays its deed, its event, its vault and the lifetime record, and
+	/// opens nothing (.ai/endgame-castle.md 1.5): an old Gaoler kill can never open the Court.
+	/// </summary>
+	public static StageDefinition ChapterOpenedByVictory(SaveData data, BossDefinition boss)
+	{
+		int index = BossCatalog.StageIndexOf(boss);
+		if (index < 0 || !IsStageEarned(data, StageCatalog.GetByIndex(index)))
+			return null;
+		return BossCatalog.ChapterOpenedBy(boss);
+	}
+
 	/// <summary>
 	/// The chapter whose boss teaches the Ascension: the Fallow Fields, the Hayward (.ai/difficulty-curve.md,
 	/// section 6). Eric: "ascensions shouldn't be easy to unlock at first".
@@ -485,6 +508,35 @@ public static class GlobalStatsManager
 		return boss != null && data.Lifetime != null && data.Lifetime.HasDefeatedBoss(boss.Id);
 	}
 
+	/// <summary>
+	/// Whether the save has earned a chapter ON THE ROAD, whether or not it is built yet. What
+	/// <see cref="IsStageAvailable"/> answers once the chapter is playable, together with the
+	/// grandfathered list, which this never reads.
+	/// </summary>
+	/// <remarks>
+	/// A boss-gated chapter is earned three ways, and any one is enough (.ai/campaign.md, "The gate"):
+	///
+	///   1. Its id is in the save's opened list - what a boss victory writes, and what every save
+	///      before the campaign order already holds.
+	///   2. The save has opened a chapter LATER in the campaign. The campaign is one road, so being
+	///      past a chapter is having been through it. This is what keeps the order free to change:
+	///      the two early chapters, inserted before the Cave, open by themselves for a save that is
+	///      already at the Cave or beyond - now, and the day they become playable - with no
+	///      migration then, and nobody is ever stopped by a chapter that was added behind them.
+	///   3. The boss of the chapter before it in the order has been beaten (LifetimeStats, which
+	///      every save has kept since schema 8). Same purpose: a reorder re-derives what a recorded
+	///      kill opens instead of trusting what the old order wrote. PAST THE FIRST GATE THE ROAD IS A
+	///      CHAIN (<see cref="HasClearedPreviousChapter"/>): rule 3 counts there only when the previous
+	///      chapter is itself earned, so a Gaoler beaten as chapter five, in a Dungeon a save now keeps
+	///      only grandfathered, can never open the Court (.ai/endgame-castle.md 1.5).
+	///
+	/// Nothing here ever closes a chapter a save could already enter: each rule only adds, and the one
+	/// chapter whose evidence moved (the Dungeon) is kept enterable by the schema 21 step instead.
+	///
+	/// A gate chapter (<see cref="StageGate.PreviousBossAndWizards"/>) keeps rules 1 and 2 - the
+	/// opened list, which the schema 19 step writes for every save that had met the old gate, and being
+	/// past it - and takes <see cref="IsGateMet"/> in place of rule 3: its previous boss AND the wizards.
+	/// </remarks>
 	public static bool IsStageEarned(SaveData data, StageDefinition stage)
 	{
 		if (stage == null)
@@ -522,12 +574,34 @@ public static class GlobalStatsManager
 		return false;
 	}
 
-	/// <summary>Rule 3 of <see cref="IsStageEarned"/>: the previous playable chapter's boss is beaten.</summary>
+	/// <summary>
+	/// Rule 3 of <see cref="IsStageEarned"/>, and the boss half of a gate (<see cref="IsGateMet"/>): the
+	/// previous playable chapter's boss is beaten - and, for a chapter past the first gate, that chapter is
+	/// itself on the road.
+	/// </summary>
+	/// <remarks>
+	/// The chain (.ai/endgame-castle.md 1.5). Before the gate a kill is enough, unchanged: the road there
+	/// has always re-derived what a recorded kill opens. Past it, the Cursed Dungeon stands in the castle
+	/// and every save that won it as chapter five has the Gaoler in its lifetime record; without the chain
+	/// that kill would open the Court (and, until the Court is built, half the Throne's gate). With it, the
+	/// kill counts once the Dungeon is on the road, and it does then: a save that finished the old campaign
+	/// takes the Court the day the Constable falls - a generous skip of one fight it has already won,
+	/// accepted in the doc. Recursive down the castle to the gate, which is never chained.
+	/// </remarks>
 	public static bool HasClearedPreviousChapter(SaveData data, StageDefinition stage)
 	{
 		StageDefinition previous = StageCatalog.PreviousChapter(stage);
 		BossDefinition boss = previous != null ? BossCatalog.ForStageIndex(previous.Index) : null;
-		return boss != null && data?.Lifetime != null && data.Lifetime.HasDefeatedBoss(boss.Id);
+		if (boss == null || data?.Lifetime == null || !data.Lifetime.HasDefeatedBoss(boss.Id))
+			return false;
+		return !IsPastFirstGate(stage) || IsStageEarned(data, previous);
+	}
+
+	/// <summary>A campaign chapter after the first gate chapter (the castle's, and the Dungeon since C2).</summary>
+	private static bool IsPastFirstGate(StageDefinition stage)
+	{
+		StageDefinition gate = StageCatalog.GateChapter;
+		return gate != null && StageCatalog.CampaignPositionOf(stage.Id) > StageCatalog.CampaignPositionOf(gate.Id);
 	}
 
 	/// <param name="parts">

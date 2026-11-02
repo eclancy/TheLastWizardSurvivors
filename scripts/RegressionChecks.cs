@@ -61,6 +61,7 @@ public static class RegressionChecks
 		ValidateStageCatalog(warnings);
 		ValidateCampaign(warnings);
 		ValidateCampaignMigration(warnings);
+		ValidateDungeonMove(warnings);
 		ValidateGateReachability(warnings);
 		ValidateAchievementMigration(warnings);
 		ValidateRetiredChargeRefund(warnings);
@@ -413,6 +414,57 @@ public static class RegressionChecks
 				warnings.Add($"Boss Rush: '{boss.Id}' is not a campaign chapter's boss.");
 		}
 
+		// HELD AS IT WAS (.ai/endgame-castle.md 1.8): RoadOrder is an explicit list, so every id must name a
+		// playable chapter whose boss has its own scene - a stand-in would be the Warden of the Deep twice -
+		// and nothing derived from the campaign order may creep back in.
+		foreach (string stageId in BossRushCatalog.RoadOrder)
+		{
+			StageDefinition stage = StageCatalog.GetById(stageId);
+			BossDefinition boss = stage != null ? BossCatalog.ForStageIndex(stage.Index) : null;
+			if (stage == null || boss == null)
+				warnings.Add($"Boss Rush: RoadOrder names '{stageId}', which has no boss in BossCatalog.");
+			else if (!stage.IsPlayable)
+				warnings.Add($"Boss Rush: RoadOrder names {stage.DisplayName}, which is not playable.");
+			else if (boss.IsOnStandIn || !ResourceLoader.Exists(boss.ScenePath))
+				warnings.Add($"Boss Rush: {boss.DisplayName} ({stageId}) has no scene of its own at '{boss.ScenePath}'.");
+		}
+		if (roster.Count != BossRushCatalog.RoadOrder.Count)
+			warnings.Add($"Boss Rush: RoadOrder names {BossRushCatalog.RoadOrder.Count} chapters and the roster has {roster.Count} bosses.");
+
+		// A rush health is read only for a boss the rush sends; elsewhere it is a number nothing reads. And the
+		// Gaoler moved: the rush must meet him at a health of its own, not his castle one.
+		foreach (BossDefinition boss in BossCatalog.All.Where(b => b.BossRushHealth > 0))
+		{
+			if (!roster.Contains(boss))
+				warnings.Add($"Boss Rush: {boss.DisplayName} has a BossRushHealth but is not in the rush.");
+		}
+		StageDefinition gate = StageCatalog.GateChapter;
+		foreach (BossDefinition boss in roster)
+		{
+			StageDefinition home = StageCatalog.GetByIndex(BossCatalog.StageIndexOf(boss));
+			if (gate != null && StageCatalog.CampaignPositionOf(home.Id) > StageCatalog.CampaignPositionOf(gate.Id)
+				&& boss.BossRushHealth <= 0)
+				warnings.Add($"Boss Rush: {boss.DisplayName} now guards a chapter past the gate, so his catalog health is a castle boss's; give him a BossRushHealth to meet him at the road's.");
+		}
+
+		// Who it opens to: every boss on the roster beaten (.ai/endgame-castle.md 10.2 item 3), or a save that
+		// had it before schema 21. The Warden alone is no longer enough - the Gaoler is behind him now.
+		var everyone = new SaveData();
+		foreach (BossDefinition boss in roster)
+			everyone.Lifetime.BossesDefeated.Add(boss.Id);
+		if (!BossRushCatalog.IsOpen(everyone))
+			warnings.Add("Boss Rush: a save with every boss on its roster beaten cannot open it.");
+		if (BossRushCatalog.IsOpen(new SaveData()))
+			warnings.Add("Boss Rush: a brand-new save can open it.");
+		foreach (BossDefinition missing in roster)
+		{
+			var oneShort = new SaveData();
+			foreach (BossDefinition boss in roster.Where(b => !ReferenceEquals(b, missing)))
+				oneShort.Lifetime.BossesDefeated.Add(boss.Id);
+			if (BossRushCatalog.IsOpen(oneShort))
+				warnings.Add($"Boss Rush: it opens with {missing.DisplayName} never beaten, so he would be met there first.");
+		}
+
 		float previous = 0f;
 		for (int i = 0; i < roster.Count; i++)
 		{
@@ -649,34 +701,32 @@ public static class RegressionChecks
 		if (rush == null)
 			warnings.Add("World map: the Boss Rush has no place on the map.");
 
+		// THE STOP-ORDER RULE (WorldMap.RoadOrder, .ai/endgame-castle.md 8): the road reaches every stop in
+		// its order - the campaign to its gate chapter, the Boss Rush on the gate's summit, the castle across
+		// the water, then anything outside the campaign - so the wizard never walks back from the tower to
+		// the summit, and a chapter outside the campaign stands past its end.
 		float last = -1f;
-		foreach (StageDefinition stage in StageCatalog.Campaign)
+		string lastName = "the start of the road";
+		foreach (var (stage, isRush) in WorldMap.RoadOrder(withRush: true))
 		{
-			WorldMapStop stop = map.Get(stage.Id);
+			WorldMapStop stop = map.Get(isRush ? WorldMapLayout.BossRushId : stage.Id);
 			if (stop == null)
 				continue;
+			string name = isRush ? "the Boss Rush's seat" : stage.DisplayName;
 			if (stop.ArcLength <= last)
-				warnings.Add($"World map: the road reaches {stage.DisplayName} out of campaign order.");
+				warnings.Add($"World map: the road reaches {name} before {lastName}, against the stop order (WorldMap.RoadOrder) - reorder PLACES in tools/art/world_map.py.");
 			last = Math.Max(last, stop.ArcLength);
-			if (!stop.OnMap || stop.Focus.X < 0 || stop.Focus.Y < 0 || stop.Focus.X > map.Size.X || stop.Focus.Y > map.Size.Y)
+			lastName = name;
+			if (!isRush && StageCatalog.IsInCampaign(stage)
+				&& (!stop.OnMap || stop.Focus.X < 0 || stop.Focus.Y < 0 || stop.Focus.X > map.Size.X || stop.Focus.Y > map.Size.Y))
 				warnings.Add($"World map: {stage.DisplayName} is a campaign chapter but stands off the world picture.");
 		}
-		if (rush != null && rush.ArcLength <= last)
-			warnings.Add("World map: the road reaches the Boss Rush's seat before the last chapter.");
-		float beyond = Math.Max(last, rush?.ArcLength ?? last);
-		foreach (StageDefinition stage in StageCatalog.All.Where(s => !StageCatalog.IsInCampaign(s)))
+		// Eric, 2026-10-30: "sketchbook level should not be attached to the map ... it shows up as its own
+		// separate map". A stop for it would put it back in the road's flow and on the compass.
+		foreach (StageDefinition stage in StageCatalog.All.Where(s => !StageCatalog.IsInCampaign(s) && s.AfterCampaign))
 		{
-			WorldMapStop stop = map.Get(stage.Id);
-			// Eric, 2026-10-30: "sketchbook level should not be attached to the map ... it shows up as its
-			// own separate map". A stop for it would put it back in the road's flow and on the compass.
-			if (stage.AfterCampaign)
-			{
-				if (stop != null)
-					warnings.Add($"World map: {stage.DisplayName} is held until the campaign is finished and belongs on its own page, but it stands on the road (remove it from PLACES in tools/art/world_map.py).");
-				continue;
-			}
-			if (stop != null && stop.ArcLength <= beyond)
-				warnings.Add($"World map: {stage.DisplayName} is outside the campaign but the road reaches it before the campaign's end.");
+			if (map.Get(stage.Id) != null)
+				warnings.Add($"World map: {stage.DisplayName} is held until the campaign is finished and belongs on its own page, but it stands on the road (remove it from PLACES in tools/art/world_map.py).");
 		}
 
 		// The map unrolls as the campaign is won (GlobalStatsManager.IsChapterRevealed): a new save is shown
@@ -2888,18 +2938,36 @@ public static class RegressionChecks
 		if (!save.Migrate(log: false))
 			warnings.Add($"Migration ({label}): a schema-12 save was not migrated.");
 
-		// Nobody loses anything: every chapter the save had opened is still there and still enterable.
+		// Nobody loses anything: every chapter the save had opened is still there and still enterable - in
+		// the opened list, or, for the Cursed Dungeon since schema 21, kept grandfathered.
 		foreach (string id in stored)
 		{
 			StageDefinition had = StageCatalog.GetById(id);
-			if (!save.UnlockedStageIds.Contains(id) || (had != null && had.IsPlayable && !GlobalStatsManager.IsStageAvailable(save, had)))
+			bool kept = save.UnlockedStageIds.Contains(id) || save.GrandfatheredStageIds.Contains(id);
+			if (!kept || (had != null && had.IsPlayable && !GlobalStatsManager.IsStageAvailable(save, had)))
 				warnings.Add($"Migration ({label}): the save lost {had?.DisplayName ?? id}.");
 		}
 		foreach (string id in open)
 		{
 			StageDefinition stage = StageCatalog.GetById(id);
 			if (stage != null && stage.IsPlayable && !GlobalStatsManager.IsStageAvailable(save, stage))
-				warnings.Add($"Migration ({label}): {stage.DisplayName} should be open after schema 13 and is not.");
+				warnings.Add($"Migration ({label}): {stage.DisplayName} should be open after every step and is not.");
+		}
+
+		// Schema 21 (.ai/endgame-castle.md 1.5): none of these saves is past the gate, so the Dungeon it reached
+		// as an early chapter is kept grandfathered, out of the opened list, and earns it nothing in the castle.
+		StageDefinition dungeon = StageCatalog.GetById("stage_1");
+		if (dungeon != null && stored.Contains("stage_1"))
+		{
+			if (!save.GrandfatheredStageIds.Contains("stage_1") || save.UnlockedStageIds.Contains("stage_1"))
+				warnings.Add($"Migration ({label}): the save had the Cursed Dungeon from the old order and it was not moved to the grandfathered list.");
+			if (GlobalStatsManager.IsStageEarned(save, dungeon))
+				warnings.Add($"Migration ({label}): the Cursed Dungeon from the old order counts as earned on the castle road.");
+		}
+		foreach (StageDefinition castle in ChaptersPastGate())
+		{
+			if (GlobalStatsManager.IsStageEarned(save, castle))
+				warnings.Add($"Migration ({label}): the save earns {castle.DisplayName}, past the gate, from what it did before it.");
 		}
 		foreach (string id in closed)
 		{
@@ -2922,6 +2990,218 @@ public static class RegressionChecks
 		int before = save.UnlockedStageIds.Count;
 		if (save.Migrate(log: false) || save.UnlockedStageIds.Count != before)
 			warnings.Add($"Migration ({label}): migrating twice changed the save again.");
+	}
+
+	// Every campaign chapter after the first gate: the castle's, and the Cursed Dungeon since C2.
+	private static IEnumerable<StageDefinition> ChaptersPastGate()
+	{
+		StageDefinition gate = StageCatalog.GateChapter;
+		return gate == null ? Enumerable.Empty<StageDefinition>()
+			: StageCatalog.Campaign.Skip(StageCatalog.CampaignPositionOf(gate.Id) + 1);
+	}
+
+	// THE CURSED DUNGEON MOVES INTO THE CASTLE (SaveData.MigrateDungeonIntoCastle, schema 21;
+	// .ai/endgame-castle.md 1.5). One save per row of 1.5's table, as schema 19 or 20 wrote it, migrated in
+	// memory. The rules being held:
+	//   - what it could enter before (worked by hand here, and the step's frozen rules must agree) it can
+	//     enter after; the Dungeon is kept grandfathered, out of the opened list, exactly when it had it;
+	//   - a save short of the Emberdeep earns nothing past the gate - not the castle, not the Dungeon;
+	//   - a win in a grandfathered Dungeon writes nothing to the opened list, and still pays the deed;
+	//   - a save that finished the old campaign keeps the Sketchbook and the Boss Rush, and its Dungeon joins
+	//     the road when its previous chapter's boss is down (the Warden today, the Constable once the bridge
+	//     is built), the Court with it;
+	//   - a second migration changes nothing.
+	private static void ValidateDungeonMove(List<string> warnings)
+	{
+		StageDefinition dungeon = StageCatalog.GetById("stage_1");
+		StageDefinition gate = StageCatalog.GateChapter;
+		BossDefinition gaoler = dungeon != null ? BossCatalog.ForStageIndex(dungeon.Index) : null;
+		if (dungeon == null || gate == null || gaoler == null)
+		{
+			warnings.Add("Dungeon move: the Cursed Dungeon, its boss or the gate chapter is missing.");
+			return;
+		}
+		if (StageCatalog.CampaignPositionOf(dungeon.Id) <= StageCatalog.CampaignPositionOf(gate.Id))
+			warnings.Add($"Dungeon move: the Cursed Dungeon stands before {gate.DisplayName} in the order; it belongs in the castle.");
+		BossDefinition finale = BossCatalog.ForStageIndex(gate.Index);
+		StageDefinition court = StageCatalog.GetById("stage_12");
+		string[] road = { "forest_treant", "fields_hayward", "heath_ninth_stone" };
+
+		SaveData Sample(string label, int schema, string[] stored, string[] beaten, string[] wizards, string[] couldEnter,
+			Action<SaveData> check)
+		{
+			var save = new SaveData { SchemaVersion = schema };
+			save.UnlockedStageIds.AddRange(stored);
+			save.Lifetime.BossesDefeated.AddRange(beaten);
+			save.UnlockedCharacterIds.AddRange(wizards);
+
+			List<string> frozen = save.ChaptersEnterableAtSchema19();
+			if (!frozen.OrderBy(id => id).SequenceEqual(couldEnter.OrderBy(id => id)))
+				warnings.Add($"Dungeon move ({label}): the step's frozen schema 19 rules say it could enter [{string.Join(", ", frozen)}]; by hand, [{string.Join(", ", couldEnter)}].");
+
+			if (!save.Migrate(log: false))
+				warnings.Add($"Dungeon move ({label}): a schema-{schema} save was not migrated.");
+			foreach (string id in couldEnter)
+			{
+				StageDefinition had = StageCatalog.GetById(id);
+				if (had != null && had.IsPlayable && !GlobalStatsManager.IsStageAvailable(save, had))
+					warnings.Add($"Dungeon move ({label}): the save could enter {had.DisplayName} before and cannot now.");
+			}
+			bool hadDungeon = couldEnter.Contains(dungeon.Id);
+			if (hadDungeon != GlobalStatsManager.IsGrandfathered(save, dungeon))
+				warnings.Add($"Dungeon move ({label}): the Cursed Dungeon is {(hadDungeon ? "not " : "")}grandfathered, though the save {(hadDungeon ? "could" : "could not")} enter it.");
+			if (save.UnlockedStageIds.Contains(dungeon.Id, StringComparer.OrdinalIgnoreCase))
+				warnings.Add($"Dungeon move ({label}): the Cursed Dungeon is still in the opened list, where rule 2 reads it as being past the road.");
+			if (finale != null && !save.Lifetime.HasDefeatedBoss(finale.Id))
+			{
+				foreach (StageDefinition past in ChaptersPastGate())
+				{
+					if (GlobalStatsManager.IsStageEarned(save, past))
+						warnings.Add($"Dungeon move ({label}): a save short of {gate.DisplayName} earns {past.DisplayName}.");
+				}
+			}
+			check(save);
+
+			// Twice: the step again on the migrated save, and Migrate, change nothing.
+			string once = Json.Stringify(save.ToGodotDictionary());
+			save.MigrateDungeonIntoCastle();
+			if (save.Migrate(log: false) || Json.Stringify(save.ToGodotDictionary()) != once)
+				warnings.Add($"Dungeon move ({label}): migrating twice changed the save again.");
+			return save;
+		}
+
+		// A Gaoler beaten where the save keeps the Dungeon only grandfathered: everything but the road pays.
+		void WinGrandfathered(string label, SaveData save)
+		{
+			var before = save.UnlockedStageIds.ToList();
+			var result = new global::RunResult { Outcome = global::RunOutcome.Victory, BossId = gaoler.Id, StageId = dungeon.Id };
+			AchievementManager.ApplyRunAchievements(save, result);
+			StageDefinition opened = GlobalStatsManager.ChapterOpenedByVictory(save, gaoler);
+			if (opened != null)
+				GlobalStatsManager.UnlockStage(save, opened.Id);
+			GlobalStatsManager.RecordFinishedCampaign(save);
+			if (!save.UnlockedStageIds.SequenceEqual(before))
+				warnings.Add($"Dungeon move ({label}): a win in the grandfathered Dungeon wrote [{string.Join(", ", save.UnlockedStageIds.Except(before))}] into the opened list.");
+			if (!save.Lifetime.HasDefeatedBoss(gaoler.Id))
+				warnings.Add($"Dungeon move ({label}): a win in the grandfathered Dungeon is not in the lifetime record.");
+			if (!AchievementDefinitions.All.Any(d => d.Kind == AchievementKind.Road && d.BossId == gaoler.Id
+				&& GlobalStatsManager.IsAchievementUnlocked(save, d.Id)))
+				warnings.Add($"Dungeon move ({label}): a win in the grandfathered Dungeon did not pay {gaoler.DisplayName}'s deed.");
+			if (GlobalStatsManager.IsStageEarned(save, dungeon) || (court != null && GlobalStatsManager.IsStageEarned(save, court)))
+				warnings.Add($"Dungeon move ({label}): after a win in the grandfathered Dungeon, the castle road counts it.");
+			if (GlobalStatsManager.HasFinishedCampaign(save))
+				warnings.Add($"Dungeon move ({label}): a win in the grandfathered Dungeon finished the campaign.");
+		}
+
+		Sample("reached the Cave, not the Dungeon", 19,
+			stored: new[] { "stage_9", "stage_10", "stage_2" }, beaten: road, wizards: new string[0],
+			couldEnter: new[] { "stage_0", "stage_9", "stage_10", "stage_2" }, s =>
+		{
+			if (GlobalStatsManager.IsStageAvailable(s, dungeon) || GlobalStatsManager.IsStageAvailable(s, StageCatalog.GetById("stage_3")))
+				warnings.Add("Dungeon move (reached the Cave): the Dungeon or the Swamp opened before the Choir fell.");
+		});
+
+		SaveData atDungeon = Sample("had the Dungeon open, not the Gaoler", 19,
+			stored: new[] { "stage_9", "stage_10", "stage_2", "stage_1" }, beaten: road.Append("cave_choir").ToArray(),
+			wizards: new string[0], couldEnter: new[] { "stage_0", "stage_9", "stage_10", "stage_2", "stage_1" }, s =>
+		{
+			if (!GlobalStatsManager.IsStageAvailable(s, StageCatalog.GetById("stage_3")))
+				warnings.Add("Dungeon move (had the Dungeon): the Choir is beaten and the Swamp is still closed; the Choir opens it now.");
+			if (GlobalStatsManager.IsStageAvailable(s, StageCatalog.GetById("stage_4")))
+				warnings.Add("Dungeon move (had the Dungeon): the Mystic Ruins opened, though Mother Rot is unbeaten.");
+			foreach (string id in new[] { "stage_9", "stage_10", "stage_2" })
+			{
+				if (!s.UnlockedStageIds.Contains(id))
+					warnings.Add($"Dungeon move (had the Dungeon): {StageCatalog.DisplayNameFor(id)}, which it had by rule 2 from the Dungeon, was not written down.");
+			}
+		});
+		WinGrandfathered("had the Dungeon open, then beat the Gaoler there", atDungeon);
+
+		SaveData wentOn = Sample("beat the Gaoler and went on to the Waste", 19,
+			stored: new[] { "stage_9", "stage_10", "stage_2", "stage_1", "stage_3", "stage_4", "stage_5" },
+			beaten: road.Concat(new[] { "cave_choir", "castle_warden", "swamp_mother", "ruins_sentinel" }).ToArray(),
+			wizards: new[] { "tituba" },
+			couldEnter: new[] { "stage_0", "stage_9", "stage_10", "stage_2", "stage_1", "stage_3", "stage_4", "stage_5" }, s =>
+		{
+			if (GlobalStatsManager.IsStageAvailable(s, StageCatalog.GetById("stage_6")))
+				warnings.Add("Dungeon move (went on to the Waste): the Scorched Sands opened, though the Still Warden is unbeaten.");
+			if (BossRushCatalog.IsOpen(s))
+				warnings.Add("Dungeon move (went on to the Waste): the Boss Rush opened.");
+		});
+		WinGrandfathered("beat the Gaoler again in the grandfathered Dungeon", wentOn);
+
+		// The developer's own shape (schema 20): the Swamp and the Ruins open from the order before 13, the
+		// Gaoler never beaten, Tituba freed.
+		Sample("the Swamp and the Ruins from the oldest order, the Gaoler never beaten", 20,
+			stored: new[] { "stage_1", "stage_3", "stage_4", "stage_10", "stage_9", "stage_2" },
+			beaten: road.Concat(new[] { "cave_choir", "swamp_mother" }).ToArray(), wizards: new[] { "tituba", "john_dee" },
+			couldEnter: new[] { "stage_0", "stage_9", "stage_10", "stage_2", "stage_1", "stage_3", "stage_4" }, s =>
+		{
+			if (GlobalStatsManager.IsStageAvailable(s, StageCatalog.GetById("stage_5")))
+				warnings.Add("Dungeon move (the oldest order): the Frozen Waste opened, though the Archivist is unbeaten.");
+		});
+
+		string[] allTen = { "forest_treant", "fields_hayward", "heath_ninth_stone", "cave_choir", "castle_warden",
+			"swamp_mother", "ruins_sentinel", "frost_warden", "sands_coil", "emberdeep_warden" };
+		Sample("finished the old campaign", 19,
+			stored: new[] { "stage_9", "stage_10", "stage_2", "stage_1", "stage_3", "stage_4", "stage_5", "stage_6", "stage_7" },
+			beaten: allTen, wizards: new[] { "tituba", "vainamoinen", "john_dee" },
+			couldEnter: new[] { "stage_0", "stage_9", "stage_10", "stage_2", "stage_1", "stage_3", "stage_4", "stage_5", "stage_6", "stage_7", "stage_8" }, s =>
+		{
+			if (!s.UnlockedStageIds.Contains("stage_8"))
+				warnings.Add("Dungeon move (finished the old campaign): the Sketchbook was not written down, so it would close until the castle is finished.");
+			if (!BossRushCatalog.IsOpen(s) || !s.BossRushGrandfathered)
+				warnings.Add("Dungeon move (finished the old campaign): the Boss Rush is not kept open.");
+			StageDefinition bridge = StageCatalog.GetById("stage_11");
+			if (bridge != null && !GlobalStatsManager.IsStageEarned(s, bridge))
+				warnings.Add("Dungeon move (finished the old campaign): the Last Bridge is not earned; the Warden of the Deep opens it.");
+			// The Dungeon joins the road when the chapter before it in the castle has fallen: the Warden of the
+			// Deep while the bridge is unbuilt (it is skipped), the Constable once it is - so here, exactly when
+			// that boss is in the record.
+			StageDefinition before = StageCatalog.PreviousChapter(dungeon);
+			bool beforeBeaten = before != null && s.Lifetime.HasDefeatedBoss(BossCatalog.ForStageIndex(before.Index)?.Id ?? "");
+			if (GlobalStatsManager.IsStageEarned(s, dungeon) != beforeBeaten)
+				warnings.Add($"Dungeon move (finished the old campaign): the Dungeon is {(beforeBeaten ? "not " : "")}on the road with {before?.DisplayName}'s boss {(beforeBeaten ? "" : "un")}beaten.");
+			if (court != null && GlobalStatsManager.IsStageEarned(s, court) != GlobalStatsManager.IsStageEarned(s, dungeon))
+				warnings.Add("Dungeon move (finished the old campaign): the old Gaoler kill should open the Court exactly when the Dungeon is on the road.");
+		});
+
+		Sample("a new save", 19, stored: new string[0], beaten: new string[0], wizards: new string[0],
+			couldEnter: new[] { "stage_0" }, s =>
+		{
+			if (s.UnlockedStageIds.Count + s.GrandfatheredStageIds.Count > 0 || s.BossRushGrandfathered)
+				warnings.Add("Dungeon move (a new save): it was written a chapter or the Boss Rush.");
+		});
+
+		// The guard itself, where the order still has something to open: a chapter held only grandfathered (the
+		// Swamp, for the test) opens nothing when its boss falls, though its boss opens the Ruins on the road.
+		var held = new SaveData();
+		StageDefinition swamp = StageCatalog.GetById("stage_3");
+		BossDefinition rot = swamp != null ? BossCatalog.ForStageIndex(swamp.Index) : null;
+		held.GrandfatheredStageIds.Add("stage_3");
+		if (rot != null && BossCatalog.ChapterOpenedBy(rot) != null)
+		{
+			if (!GlobalStatsManager.IsStageAvailable(held, swamp))
+				warnings.Add("Dungeon move: a grandfathered chapter cannot be entered.");
+			held.Lifetime.BossesDefeated.Add(rot.Id);
+			if (GlobalStatsManager.ChapterOpenedByVictory(held, rot) != null)
+				warnings.Add($"Dungeon move: a win in a chapter held only grandfathered opens {BossCatalog.ChapterOpenedBy(rot).DisplayName}.");
+		}
+
+		// The gates' lock lines say who is still held (.ai/endgame-castle.md 1.6) - by epithet, never by name,
+		// which is a locked wizard's reward (QuestLog). On a save that has freed nobody, every one is held.
+		var nobodyFree = new SaveData();
+		foreach (StageDefinition sealedGate in StageCatalog.GateChapters.Where(g => g.IsPlayable))
+		{
+			string hint = StageCatalog.LockedHintFor(sealedGate, nobodyFree);
+			foreach (string id in GlobalStatsManager.GateWizardIds(sealedGate).Where(id => !UnlockCatalog.IsStarter(id, UnlockKind.Character)))
+			{
+				if (hint.Contains(QuestLog.NameOf(id), StringComparison.OrdinalIgnoreCase))
+					warnings.Add($"Dungeon move: {sealedGate.DisplayName}'s lock line names '{id}', who is still held: \"{hint}\".");
+			}
+			if (GlobalStatsManager.HeldGateWizards(nobodyFree, sealedGate).Count != GlobalStatsManager.RemainingGateWizardCount(nobodyFree, sealedGate))
+				warnings.Add($"Dungeon move: {sealedGate.DisplayName}'s lock line does not account for every wizard it waits on.");
+		}
 	}
 
 	// GATE REACHABILITY (.ai/achievements-and-secrets.md 2.6; .ai/endgame-castle.md 1.6). The rule the

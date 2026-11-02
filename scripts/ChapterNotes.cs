@@ -63,10 +63,13 @@ public static class ChapterNotes
 			"Water dripping everywhere, and my light the only light.",
 			"Cold, wet stone. It smells like old coins.",
 		},
-		// 5 Cursed Dungeon - "He keeps a wizard in one of these cells."
+		// 11 Cursed Dungeon (fifth until piece C2 moved it into the castle) - "He keeps a wizard in one of
+		// these cells." His own cells now: the second line says whose house it is, and that the stair at the
+		// start is the way down from the bridge's gate (.ai/endgame-castle.md 4.1).
 		["stage_1"] = new[]
 		{
 			"Rust, damp straw and old fear. Every door is locked.",
+			"Under his own house. The stair behind me goes up to the gate.",
 		},
 		// 6 Blighted Swamp - "The lanterns still burn. Nothing living lights them."
 		["stage_3"] = new[]
@@ -91,11 +94,18 @@ public static class ChapterNotes
 			"Heat off cracked ground, and no water anywhere.",
 			"Hot dust and old salt. The dead still walk the road.",
 		},
-		// 10 The Emberdeep - "His seat, and the end of the road."
+		// 10 The Emberdeep - "His forge, at the end of the road." ("His seat", until the castle was drawn across the water.)
 		["stage_7"] = new[]
 		{
 			"Sulphur, and stone too hot to touch.",
 			"The end of the road. His seat is close.",
+		},
+		// 10 The Last Bridge - "His seat is across the water." Written with the move (C2), ready for the flip:
+		// a playable chapter with no note is a validator fault, and it was the one the bridge's flip still had.
+		["stage_11"] = new[]
+		{
+			"Wind off the dark sea, and his rock at the far end.",
+			"Salt and old mortar. The span falls in behind me.",
 		},
 		// The Sketchbook - outside the campaign; nothing here is his doing (StageCatalog).
 		["stage_8"] = new[]
@@ -125,7 +135,7 @@ public static class ChapterNotes
 	/// <summary>The site clues, for the validator.</summary>
 	public static IReadOnlyDictionary<string, string> SiteClueLines => SiteClues;
 
-	/// <summary>Whether a chapter has a note written. The castle's chapters get theirs when they are built.</summary>
+	/// <summary>Whether a chapter has a note written. The castle's chapters get theirs when they are built (the Last Bridge has its own already).</summary>
 	public static bool Has(string stageId) => !string.IsNullOrWhiteSpace(stageId) && Lines.ContainsKey(stageId);
 
 	/// <summary>The stage ids a note is written for, for the validator.</summary>

@@ -642,6 +642,10 @@ back*, in corridors where back is the only obvious way. What changes is his numb
 | Arcane Energy bonus | 200 | **375** |
 | Boss Rush health | (his catalog health) | **6,200, frozen** (`BossRushHealth`, 1.8) |
 
+*Since the difficulty curve and the longer fights, every number in that table is a different size: at
+chapter five he had 150,000, the rush keeps that (`BossRushHealth` 150,000, then the rush's own 35% share),
+and at chapter eleven he was measured to **900,000** (section 13). The bonus stayed 375.*
+
 Measure with `_BossProbe --stage=1` and a balance-bot run. If at 12,500 the fight is long rather than
 hard, add a third phase at a third of his health - two lanes in a row, the second at right angles, a
 maze corner - in `GaolerBoss.BuildPhaseThresholds`/`OnPhaseEntered`. Measure first.
@@ -1492,3 +1496,87 @@ its orb, the dark and its lanes, an echo, the fall and the end, at 1280x720 and 
 the right pull; whether the dark reads as his on a phone's small pools; the lanes' white blink over the dark;
 the storm of motes in motion; the ending's pace (the row, then 18 s of credits); whether the credits say
 what Eric wants them to; his art at game size beside the player.
+
+## 14. What C2 and C8 built (2026-11-02, `wip/dungeon-move`)
+
+The Dungeon's move (1.4-1.8, section 4) and the world map (section 8), together, held for the bridge's
+flip (9.2 step 6). **No `IsPlayable` is flipped.** C2 was begun by an agent that was cut off; what it had
+done is kept, reviewed, and finished here.
+
+### 13.1 C2, the move
+
+| what | where |
+|---|---|
+| the order | `StageCatalog.CampaignOrder`: `stage_1` between the Last Bridge and the Court; its flavour line is the castle's cells; its corruption line stays |
+| schema 21 | `SaveData.MigrateDungeonIntoCastle`, exactly 1.5: what a save could enter under the schema-19 order and rules (frozen, `CampaignOrderAtSchema19`) is written into `UnlockedStageIds`, except the Dungeon, which goes to the new `GrandfatheredStageIds`; nothing is written for the castle. Schema 13 reads the same frozen table. A save that had the Boss Rush keeps it (`BossRushGrandfathered`). **Its number and contents are stable**: the slow start takes 22 |
+| the road's rules | `GlobalStatsManager`: `IsStageAvailable` = earned or grandfathered; `IsStageEarned` never reads the grandfathered list; past the first gate rule 3 is a chain (`HasClearedPreviousChapter`), so an old Gaoler kill never opens the Court; `HasFinishedCampaign` wants the last chapter on the road; `IsChapterRevealed` shows a grandfathered chapter |
+| the victory guard | `GlobalStatsManager.ChapterOpenedByVictory`, the one condition `Node2DGame.ApplyBossVictoryUnlocks` reads: a win in a chapter held only by the grandfathered list opens nothing, and still pays the deed, the event, the vault and the record |
+| Boss Rush held | `BossRushCatalog.RoadOrder` (the road's ten in the old order, the Gaoler fifth), `IsOpen` = every roster boss beaten, `BossDefinition.BossRushHealth` (150,000) read through `BossRushCatalog.HealthOf` |
+| the locked hints | `StageCatalog.LockedHintFor(stage, save)`: a gate chapter's lock names who is still held, by epithet ("Still held: the singer under the ice"), and only "a wizard" while one is still sealed |
+| the stair | `DungeonRules.cs` (hook 1 stands it just north of the start, inside the clearing the maze opens; hook 3 keeps every placement off it; its back and cheek walls block on layer 1, as the old decor props do) and `tools/art/props_dungeon.py` -> `assets/bonelight/world/dungeon/stair.png` and `stair.json`, its one line in `ChapterRulesCatalog` |
+| the notes | `ChapterNotes`: the Dungeon's second line says whose house it is and that the stair goes up to the gate; **the Last Bridge's note** (two lines), because a playable chapter with no note is the one fault the bridge's flip still raised |
+| the harness | `_UiShot --as-schema=N` migrates the in-memory save built by the flags before it as a load of schema N would, and prints what it opened and grandfathered; a forced victory prints what the win wrote |
+| the validators | `ValidateDungeonMove` (one sample schema-19 save per row of 1.5's table, plus: no sample short of the Emberdeep enters a castle chapter, a grandfathered win writes nothing to `UnlockedStageIds`, nothing a sample could enter is lost, a second migration changes nothing, the lock lines); `ValidateCampaignMigration`'s schema-12 samples with the move's expectations; `ValidateBossRush`'s `RoadOrder`, rush health and opening rule |
+
+**The Gaoler at chapter eleven: 900,000, bonus 375.** 4.3's "about 12,500, between the Constable and the
+Seneschal" was a place on a curve that the difficulty pass and the longer fights have since rewritten (the
+Constable is 400,000, the Seneschal 440,000). Placed between them, at 420,000, the bot killed him in 0.6 to
+2.8 minutes over six farmed runs, median 1.4: he charges at the player down a lane and stands in every
+area spell, so he takes damage about twice as fast for his health as the Seneschal, who leaves. The fight
+is unchanged, so 4.3's lever - a third phase if he measured long rather than hard - was not pulled; he
+measured short. The health is set by the length of the fight, as the Seneschal's was ("not anchored to the
+Constable"):
+
+Eleven farmed runs at 420,000, 700,000 and 900,000 (the table is `.ai/enemy-behaviour.md`, "The Gaoler in
+the castle, measured"): his fight runs 0.11 to 0.67 minutes per 100,000 of health with the build the bot
+reaches him with, median 0.26. **At 900,000 the median build takes him in about 2.3 minutes, the fastest
+(Frostweaver, L51) in 1.2, the slowest seen about six** - the spread the Constable and the Seneschal have.
+Two of the three 900,000 runs finished; the Stormcaller's stalled in a corridor (a harness fault).
+
+`_BossProbe --stage=1 --timescale=2` at 900,000: he arrives at 6.2 s, holds the field 3.0 s (spells held,
+the player unhurt, both released the frame after), enters both phases and falls cleanly (the body freed
+2.7 s after). The Throne's procession meets him at its own 30,000 (`ThroneProcession`) and the rush at
+150,000, so neither moved.
+
+`_BalanceHarness --boss-rush --farmed --stage=7 --immortal` (Stormcaller, seed 1234, `--fixed-fps 30`): in
+the Emberdeep, the same ten in the same order - Elderbark, the Hayward, the Ninth Stone, the Choir, **the
+Gaoler fifth**, Mother Rot, the Archivist, the Still Warden, the Long Coil, the Warden of the Deep - and all
+ten fell, the last at 37.3 minutes. The Gaoler came at 29,129 (his 150,000 at the arrival curve's x0.19,
+which already holds the rush's 35% share) and fell in 83 s. (1.8 froze him at 6,200, before the
+difficulty curve; 150,000 is the same Gaoler on today's numbers.)
+
+### 13.2 C8, the map
+
+Section 8 as written, with the coordinates chosen: `.ai/world-map.md` section 18 is the record.
+`WorldMap.RoadOrder` is the stop-order rule (the campaign to the gate, the rush, the castle, the rest),
+read by `BuildStops` and by `ValidateWorldMap`, which holds `PLACES` to it. The keep is off the river's
+crag; the Last Bridge, the cells, the Court and the tower are drawn on a rock in the dark sea past the
+Emberdeep's black cliffs, the world 2112 wide. The dark light moved to the tower, and **the Emberdeep's
+corruption line is now "His forge, at the end of the road"** (1.4; C0 left it for the bridge's flip, 11.4
+decision 5 - it is changed here because the map now draws the seat across the water). **A grandfathered
+Dungeon is lit as an island** (`WorldMapView.ViewStop.OffRoad`): one reveal frontier carried out to it would
+have lit every place between, shown or not.
+
+### 13.3 What the bridge's flip needs now
+
+Rehearsed by flipping `stage_11` in a scratch build (not committed) and running the validator:
+
+- **Before the note** the flip raised one line: *"Chapter notes: The Last Bridge (stage_11) is playable and
+  has no note (ChapterNotes)."* That note is written (13.1).
+- **With it, the flip raises nothing new**: the run ends 0 errors and the same warnings as without the flip -
+  the Test Wizard's missing passive and the Throne's to-do line (his boss scene), neither the bridge's.
+- So the flip is the one line in `StageCatalog`, landed with this branch and the pre-flip fixes. The Court's
+  to-do line is gone too (it waited only on its map stop); its own flip would raise its chapter note the
+  same way.
+
+### 13.4 What still needs eyes
+
+- **The Gaoler as chapter eleven** in a person's hands: whether 900,000 is a fight or a wait in the maze,
+  and whether a strong build (the bot's fastest, a minute) still makes it a formality - if so, 4.3's third
+  phase is the lever, not more health.
+- **The stair** at both canvases in play: it reads as a stair into a dark arch in the start's photograph,
+  small against the maze; whether the wizard should start a step further from its foot; and whether its
+  walls, which the navigation grid does not know, ever catch a body coming down the corridor from the north.
+- **The castle on the map** (`.ai/world-map.md` 18): seen only in photographs. Until the Bridge, the Court
+  and the Throne are playable, every save sees them under the unbuilt double mist.
+- **An old save's map**: the island-lit Dungeon past a dark road (the schema-19 photograph), on a phone.

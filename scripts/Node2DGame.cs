@@ -5964,8 +5964,10 @@ public partial class Node2DGame : Node2D
 		boss.BossId = definition.Id;
 		boss.BossDisplayName = definition.DisplayName;
 		// Health rides the balance preset the same way elites do, so hardcore keeps its teeth and
-		// casual does not turn the fight into a ten-minute chore.
-		boss.Health = Mathf.RoundToInt(definition.Health * presetElitePowerScale * healthScale);
+		// casual does not turn the fight into a ten-minute chore. A Boss Rush scales the health it meets
+		// each boss at (BossRushCatalog.HealthOf: the Gaoler's chapter-five number, not his castle one).
+		int baseHealth = IsBossRush ? BossRushCatalog.HealthOf(definition) : definition.Health;
+		boss.Health = Mathf.RoundToInt(baseHealth * presetElitePowerScale * healthScale);
 		// Hook 4: a chapter whose boss has a place of its own (the bridge's gate).
 		boss.Position = chapterRules?.BossSpawnPoint(definition) ?? FindBossSpawnPosition();
 		boss.Connect(BossEnemy.SignalName.BossDefeated, new Callable(this, nameof(OnBossDefeated)));
@@ -7364,6 +7366,10 @@ public partial class Node2DGame : Node2D
 	// rewriting four of them in step. The chapter is the boss's own, so a victory recorded against
 	// a boss from another chapter (a stand-in fight in a chapter still being built) opens what its
 	// own chapter opens.
+	//
+	// And only from a chapter on the save's road (GlobalStatsManager.ChapterOpenedByVictory): a win in the
+	// Cursed Dungeon a save keeps only grandfathered, from when it stood fifth, opens nothing - its deed,
+	// key event, vault and lifetime record all still pay (.ai/endgame-castle.md 1.5).
 	private static void ApplyBossVictoryUnlocks(SaveData data, RunResult result, RunUnlockSummary summary)
 	{
 		if (data == null || result == null || result.Outcome != RunOutcome.Victory)
@@ -7375,7 +7381,7 @@ public partial class Node2DGame : Node2D
 
 		// Only a chapter this victory actually opened is a reward; beating the same boss again
 		// opens nothing, and saying "Unlocked" every time was the old screen's one untrue line.
-		StageDefinition opened = BossCatalog.ChapterOpenedBy(defeatedBoss);
+		StageDefinition opened = GlobalStatsManager.ChapterOpenedByVictory(data, defeatedBoss);
 		if (opened != null && GlobalStatsManager.UnlockStage(data, opened.Id))
 		{
 			summary?.Entries.Add(new RunUnlockEntry

@@ -5,8 +5,8 @@ namespace WizardSurvivors.scripts;
 
 /// <summary>
 /// BOSS RUSH (issue #12, "the ultimate endgame mode with sequential boss encounters";
-/// .ai/boss-levels-design.md, "Boss Rush"). One run in which every warden of the campaign comes for
-/// the player in the order the campaign meets them, and the last is the Warden of the Deep.
+/// .ai/boss-levels-design.md, "Boss Rush"). One run in which every warden of the road comes for
+/// the player in the order the road met them, and the last is the Warden of the Deep.
 /// </summary>
 /// <remarks>
 /// It is an ordinary run with its bosses spread through it rather than one at the end, and the
@@ -25,11 +25,16 @@ namespace WizardSurvivors.scripts;
 ///   - Felling one pays a chest where it fell and half its chapter bonus in Arcane Energy; the run
 ///     is won only when the last falls.
 ///
-/// It opens only once the Warden of the Deep has fallen in his own chapter, so nobody meets a boss
-/// here before they have beaten it where it lives, and so the rush records nothing about chapters:
-/// it opens none, grants no chapter deed and writes no boss to the save's defeated list
+/// It opens only once every boss on its roster has fallen in his own chapter (<see cref="IsOpen"/>), so
+/// nobody meets a boss here before they have beaten it where it lives, and so the rush records nothing
+/// about chapters: it opens none, grants no chapter deed and writes no boss to the save's defeated list
 /// (Node2DGame.BuildRunResult). Its own records are SaveData.BossRushBestFelled and
 /// BossRushBestClearSeconds.
+///
+/// HELD AS IT WAS when the Cursed Dungeon moved into the castle (.ai/endgame-castle.md 1.8, Eric: "Boss Rush
+/// unchanged"): the road's ten in the order the road met them, the Gaoler fifth (<see cref="RoadOrder"/>),
+/// on the Emberdeep (<see cref="Arena"/>), meeting the Gaoler at the health it always did
+/// (<see cref="HealthOf"/>).
 /// </remarks>
 public static class BossRushCatalog
 {
@@ -76,28 +81,65 @@ public static class BossRushCatalog
 	public static StageDefinition Arena => StageCatalog.GateChapter;
 
 	/// <summary>
-	/// Every campaign boss that has a scene of its own, in campaign order; the final chapter's is
-	/// last. A chapter whose boss still fights as a stand-in is left out - the rush would be Elderbark
-	/// three times - and joins by itself the day its scene exists. So is a chapter nobody can enter
-	/// yet: a castle boss's scene lands before its chapter flips (.ai/endgame-castle.md 9.2, C5 before
-	/// C2), and without this the rush would gain him after the Warden of the Deep in a released build.
-	/// C2's RoadOrder replaces this derivation.
+	/// The rush's chapters, in the order it sends their bosses: the road's ten as the road met them before
+	/// the Cursed Dungeon moved into the castle, the Gaoler fifth, the arena's own boss last. A list of its
+	/// own, never derived from StageCatalog's campaign order - which now puts the Gaoler after the Warden of
+	/// the Deep and the castle's bosses after him - so no later reordering can change the rush.
+	/// RegressionChecks.ValidateBossRush holds every id to a playable chapter whose boss has its own scene.
 	/// </summary>
+	public static readonly IReadOnlyList<string> RoadOrder = new[]
+	{
+		"stage_0",  // Elderbark
+		"stage_9",  // the Hayward
+		"stage_10", // the Ninth Stone
+		"stage_2",  // the Hollow Choir
+		"stage_1",  // the Gaoler (chapter five when the rush was made; the castle's eleventh since C2)
+		"stage_3",  // Mother Rot
+		"stage_4",  // the Archivist
+		"stage_5",  // the Still Warden
+		"stage_6",  // the Long Coil
+		"stage_7",  // the Warden of the Deep, the finale
+	};
+
+	/// <summary>Every boss of <see cref="RoadOrder"/>, in its order; the arena's is last.</summary>
 	public static IReadOnlyList<BossDefinition> Roster =>
-		StageCatalog.Campaign
-			.Where(stage => stage.IsPlayable)
-			.Select(stage => BossCatalog.ForStageIndex(stage.Index))
-			.Where(boss => boss != null && !boss.IsOnStandIn)
+		RoadOrder
+			.Select(StageCatalog.GetById)
+			.Select(stage => stage != null ? BossCatalog.ForStageIndex(stage.Index) : null)
+			.Where(boss => boss != null)
 			.ToList();
 
-	/// <summary>The rush's last boss: the final chapter's.</summary>
+	/// <summary>The rush's last boss: the arena's.</summary>
 	public static BossDefinition Finale => Arena == null ? null : BossCatalog.ForStageIndex(Arena.Index);
 
-	/// <summary>Whether the save has opened the rush: the final chapter's boss has fallen there.</summary>
+	/// <summary>
+	/// The health a rush boss is scaled from (Node2DGame.SpawnBoss, before the arrival curve and
+	/// <see cref="FightHealthShare"/>): <see cref="BossDefinition.BossRushHealth"/> where a boss has one - the
+	/// Gaoler, whose catalog health is his castle chapter's now - and his catalog health otherwise.
+	/// </summary>
+	public static int HealthOf(BossDefinition boss) =>
+		boss == null ? 0 : boss.BossRushHealth > 0 ? boss.BossRushHealth : boss.Health;
+
+	/// <summary>
+	/// Whether the save has opened the rush: every boss on its roster has fallen in his own chapter (the
+	/// lifetime record), or it was open to the save before schema 21 (SaveData.BossRushGrandfathered).
+	/// </summary>
+	/// <remarks>
+	/// It was "the Warden of the Deep has fallen", which meant the same thing while he was the road's last:
+	/// nobody meets a boss here before they have beaten it where it lives. With the Gaoler behind the
+	/// Emberdeep, a new save meets the Warden first, so the rule is now said in full (.ai/endgame-castle.md
+	/// 1.8, 10.2 item 3): on a new save the rush opens once the castle's Dungeon falls. Every save that had
+	/// it open keeps it through the schema 21 step, whatever it skipped on the way (the early chapters
+	/// were passed, never fought, by saves already beyond them when they were built).
+	/// </remarks>
 	public static bool IsOpen(SaveData data)
 	{
-		BossDefinition finale = Finale;
-		return data != null && finale != null && data.Lifetime != null && data.Lifetime.HasDefeatedBoss(finale.Id);
+		if (data == null)
+			return false;
+		if (data.BossRushGrandfathered)
+			return true;
+		IReadOnlyList<BossDefinition> roster = Roster;
+		return roster.Count > 0 && data.Lifetime != null && roster.All(boss => data.Lifetime.HasDefeatedBoss(boss.Id));
 	}
 
 	/// <summary>

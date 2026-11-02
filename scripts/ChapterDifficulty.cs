@@ -59,16 +59,19 @@ public static class ChapterDifficultyCatalog
 		// 3 on: walls. A fresh save is overrun; a farmed one passes and has to work for it.
 		new() { StageId = "stage_10", EnemyHealth = 1.80f, EnemyDamage = 1.10f, EliteInterval = 0.90f, ElitePower = 1.25f },
 		new() { StageId = "stage_2", EnemyHealth = 2.60f, EnemyDamage = 1.10f, EliteInterval = 0.90f, ElitePower = 1.30f },
-		new() { StageId = "stage_1", EnemyHealth = 2.40f, EnemyDamage = 1.15f, EliteInterval = 0.85f, ElitePower = 1.35f },
 		new() { StageId = "stage_3", EnemyHealth = 3.00f, EnemyDamage = 1.15f, EliteInterval = 0.85f, ElitePower = 1.40f },
 		new() { StageId = "stage_4", EnemyHealth = 3.00f, EnemyDamage = 1.20f, EliteInterval = 0.80f, ElitePower = 1.45f },
 		new() { StageId = "stage_5", EnemyHealth = 3.80f, EnemyDamage = 1.25f, EliteInterval = 0.80f, ElitePower = 1.50f },
 		new() { StageId = "stage_6", EnemyHealth = 4.00f, EnemyDamage = 1.25f, EliteInterval = 0.80f, ElitePower = 1.55f },
-		// 10. The hardest pass on the road.
+		// 9. The hardest pass on the road (the tenth until the Cursed Dungeon moved into the castle).
 		new() { StageId = "stage_7", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
 		// The castle (.ai/endgame-castle.md), not playable yet: the Emberdeep's row until its builders tune
 		// their own, so a chapter flipped playable never starts easier than the road behind it.
 		new() { StageId = "stage_11", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
+		// 11. The Cursed Dungeon, moved into the castle (.ai/endgame-castle.md, C2): 2.40 / 1.15 / 0.85 / 1.35 at
+		// chapter five. The Emberdeep's row here, as the castle's are, so it never plays easier than the road
+		// behind it; its own table (mean 1.35, above the Emberdeep's 1.28) makes it the harder of the two.
+		new() { StageId = "stage_1", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
 		new() { StageId = "stage_12", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
 		new() { StageId = "stage_13", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
 	};
