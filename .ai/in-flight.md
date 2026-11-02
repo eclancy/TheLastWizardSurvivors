@@ -183,9 +183,18 @@ builds to 120 and seven.
 - **No Godot logo while loading** (`boot_splash/show_image=false`, black).
 - **The Evolution Codex** proposed and wireframed from Amy's emailed feedback (`.ai/evolution-codex.md`,
   https://claude.ai/artifact/NEHkx6sJQXjwqYrdMtuie9); six questions in its section 9.
-- **In flight:** `wip/wizard-seimei` (the first chapter wizard and P1's rules), `wip/progress-reset` (a
-  story-changing release resets progress, backs the old save up, and warns before the download; built
-  with the epoch unchanged, so it resets nobody until a release bumps it).
+- **Merged:** Abe no Seimei (Mystic Ruins, the pilot chapter wizard, P1's rules); **story resets**
+  (`SaveData.CurrentProgressEpoch`, still 1: raising it on a release copies each save to
+  `savegame.before-epoch-<n>.json`, keeps only `SettingsKeys`, shows a one-time notice; the Windows updater
+  asks first and the Android strip warns; `.ai/decisions/2026-11-02-story-resets.md`, `.ai/releasing.md`).
+  Open for Eric: keep all Options settings on a reset? make Options' Reset Progress back up too? the first
+  reset must come one normal release after this ships, since 0.10.0 copies don't know to ask. **CLAUDE.md
+  should gain a line** on the reset as the one sanctioned way to take progress away (the integrator left
+  CLAUDE.md for Eric). The ecec.dev download page needs the same warning, in its own repo.
+- **Approved and queued:** the Evolution Codex (building, `wip/evolution-codex`); the Sovereign Rite, a
+  Conjunction you point at a spell (`.ai/sovereign-spell.md`, to build); Seimei's coupled puzzle and the
+  Ruins vault on open ground (`wip/seimei-puzzle`, building); a batch of new items (designing,
+  `wip/design-items`).
 
 ## 4. Waiting on Eric
 
