@@ -998,7 +998,7 @@ read the rows as a spread. **400,000** puts the median bridge build (L36, ~1,900
 five minutes - the Warden of the Deep's length for the same class of build today - with a strong one
 done in under a minute and a weak one not done at all. The bridge's survivor reached L46 and L36 where
 the Emberdeep's reached 34: the travel chapter pays more XP than the road's last, which is the bridge's
-to look at (C1), not the boss's.
+to look at (C1), not the boss's. (Looked at before the flip: on the same seeds the gap is about three levels, all of it orb XP the bridge's corridor lets him gather, at the same kill rate; `.ai/endgame-castle.md` 3.3, "Measured".)
 
 `_BossProbe` on every chapter (0-10, the Choir with and without `--focus`): every boss arrives, holds
 the field for its arrival (spells held, the player unhurt, both released the frame after), reaches

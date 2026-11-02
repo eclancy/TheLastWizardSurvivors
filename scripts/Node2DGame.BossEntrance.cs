@@ -234,13 +234,25 @@ public partial class Node2DGame
 
 	// The camera is the player's child (player.tscn), so leaning it is moving it off his centre and
 	// easing it back. Position for the lean and Zoom for the push-in; never Offset, which is the shake's.
+	// A chapter may hold a lean of its own (hook 9, ChapterRules.CameraLean - the bridge's, up to the
+	// Constable on the wall). Out of an arrival that is the camera's whole lean, eased the same way; through
+	// one the cinematic owns the camera, and eases out to the chapter's lean rather than to the centre.
 	private void TickBossEntranceCamera(float delta)
 	{
 		if (player == null || !IsInstanceValid(player))
 			return;
-		entranceCamera ??= player.GetNodeOrNull<Camera2D>(CameraPath);
-		if (entranceCamera == null || (!bossEntranceHeld && !cinematicCameraActive))
+		// Hook 9: a chapter's lean of the camera.
+		Vector2 chapterLean = chapterRules?.CameraLean(player) ?? Vector2.Zero;
+		if (!bossEntranceHeld && !cinematicCameraActive && chapterLean == Vector2.Zero && !chapterLeanMoved)
 			return;
+		entranceCamera ??= player.GetNodeOrNull<Camera2D>(CameraPath);
+		if (entranceCamera == null)
+			return;
+		if (!bossEntranceHeld && !cinematicCameraActive)
+		{
+			TickChapterCameraLean(chapterLean, delta);
+			return;
+		}
 		if (!cinematicCameraActive)
 		{
 			// The zoom the run was at when the arrival began: what the cinematic pushes in from and
@@ -250,7 +262,7 @@ public partial class Node2DGame
 			cinematicZoom = 1f;
 		}
 
-		Vector2 want = Vector2.Zero;
+		Vector2 want = chapterLean;
 		float wantZoom = 1f;
 		if (bossEntranceHeld && TryArrivalFocus(out Vector2 focus))
 		{
@@ -263,20 +275,39 @@ public partial class Node2DGame
 		cinematicZoom = Mathf.Lerp(cinematicZoom, wantZoom, 1f - Mathf.Exp(-(bossEntranceHeld ? ZoomInEase : ZoomOutEase) * delta));
 		cinematicZoomPunch *= Mathf.Exp(-9f * delta);
 
-		if (!bossEntranceHeld && now.Length() < 0.5f && Mathf.Abs(cinematicZoom - 1f) < 0.002f && cinematicZoomPunch < 0.001f)
+		if (!bossEntranceHeld && now.DistanceTo(chapterLean) < 0.5f && Mathf.Abs(cinematicZoom - 1f) < 0.002f && cinematicZoomPunch < 0.001f)
 		{
-			// At rest: exactly where the run had it, and the cinematic lets go of the camera.
-			entranceCamera.Position = Vector2.Zero;
+			// At rest: exactly where the run had it (or on the chapter's lean), and the cinematic lets go of
+			// the camera.
+			entranceCamera.Position = chapterLean;
 			entranceCamera.Zoom = cinematicBaseZoom;
 			cinematicZoom = 1f;
 			cinematicZoomPunch = 0f;
 			appliedZoomFactor = 1f;
 			cinematicCameraActive = false;
+			chapterLeanMoved = chapterLean != Vector2.Zero;
 			return;
 		}
 		entranceCamera.Position = now;
 		appliedZoomFactor = cinematicZoom + cinematicZoomPunch;
 		entranceCamera.Zoom = cinematicBaseZoom * appliedZoomFactor;
+	}
+
+	// Hook 9 out of an arrival: the camera's Position eased to the chapter's lean and back to the centre,
+	// at the arrival's own ease. The zoom is never touched here.
+	private bool chapterLeanMoved;
+
+	private void TickChapterCameraLean(Vector2 lean, float delta)
+	{
+		Vector2 now = entranceCamera!.Position.Lerp(lean, 1f - Mathf.Exp(-BossEntranceCameraEase * delta));
+		if (lean == Vector2.Zero && now.Length() < 0.5f)
+		{
+			entranceCamera.Position = Vector2.Zero;
+			chapterLeanMoved = false;
+			return;
+		}
+		entranceCamera.Position = now;
+		chapterLeanMoved = true;
 	}
 
 	// The middle of every body still arriving; the chapter's boss if the count names none (a tool's).

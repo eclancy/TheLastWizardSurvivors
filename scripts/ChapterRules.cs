@@ -7,7 +7,7 @@ using WizardSurvivors.scripts;
 // walk into the portal. The castle's are not - the bridge is travelled under a collapsing span, the Court
 // is explored, the Throne is a build and a procession - and each of those needs Node2DGame to ask the
 // chapter something at a few fixed points. Writing each chapter's answer into Node2DGame would put four
-// agents in one 7,000-line file. So Node2DGame asks THIS, at seven hook points, and a chapter answers by
+// agents in one 7,000-line file. So Node2DGame asks THIS, at nine hook points, and a chapter answers by
 // subclassing it in a file of its own (BridgeRules.cs, CourtRules.cs, ThroneRules.cs) and filling in its
 // one line in ChapterRulesCatalog.
 //
@@ -19,7 +19,7 @@ using WizardSurvivors.scripts;
 // (the bridge's collapsing front, the Court's rooms) and free them with the run. Its _Ready runs then,
 // with nothing built yet; the RUN START hook is the one that runs once the stage exists.
 //
-// THE SEVEN HOOKS, and where Node2DGame asks each:
+// THE NINE HOOKS, and where Node2DGame asks each:
 //   1. RunStarted          the end of _Ready: the terrain's first chunks are loaded, the HUD is built.
 //   2. TryPickSpawnPoint   every candidate spawn point (GetRandomSpawnPositionAroundPlayer): the trickle,
 //                          elites, the miniboss, recycled enemies, and a formation member that misses.
@@ -35,6 +35,9 @@ using WizardSurvivors.scripts;
 //                          in the slot a side event's line uses - no castle chapter has a side event.
 //   8. LevelUpOpening      OnPlayerLevelGained, every level-up screen, before it enters the tree (the
 //                          Throne's Muster heading and its shorter arming pause; added by piece C4).
+//   9. CameraLean          every frame (TickBossEntranceCamera): how far to hold the camera off the player,
+//                          eased in and out - the bridge's, so the Constable on the wall is on a PC screen.
+//                          A boss arrival's cinematic owns the camera while it plays.
 //
 // Beside the hooks, two ways IN that a chapter's rules call rather than answer (piece C4): GrantLevelUps
 // (Node2DGame.GrantedLevels.cs: levels granted outright, each through the ordinary screen and its queue)
@@ -43,7 +46,7 @@ using WizardSurvivors.scripts;
 //
 // What the hooks are NOT for: a chapter's tuning (pace, XP, the enemy cap: .ai/run-pacing.md is the
 // authority and the castle's map chapters are ordinary runs), its art (its own generators and files) or its
-// cast (StageBestiary.<Chapter>.cs). If a chapter needs an eighth hook, add it here with a no-op default and
+// cast (StageBestiary.<Chapter>.cs). If a chapter needs another hook, add it here with a no-op default and
 // one call in Node2DGame, in one commit that says why - never a branch on the stage id in Node2DGame.
 public abstract partial class ChapterRules : Node
 {
@@ -117,6 +120,16 @@ public abstract partial class ChapterRules : Node
 	/// ordinary level-ups that must still say they are the Muster, and none of hooks 1-7 sees a screen.
 	/// </summary>
 	public virtual void LevelUpOpening(LevelUpMenu menu, bool granted) { }
+
+	/// <summary>
+	/// Hook 9, A LEAN OF THE CAMERA: world px to hold the camera off the player's centre (the bridge, while
+	/// the Constable holds the wall over the gate: on a 1280x720 canvas a wizard at the gate's foot had him
+	/// at the very top edge, under the boss bar), or zero for none. Asked every frame, so return something
+	/// cheap. Node2DGame eases toward it and back with the boss arrival's own ease, and an arriving boss's
+	/// cinematic owns the camera while it plays. It moves the camera's Position, never its Offset, which is the
+	/// screen shake's.
+	/// </summary>
+	public virtual Vector2 CameraLean(Player player) => Vector2.Zero;
 
 	/// <summary>The objective line's slot, under the boss bar's (44-78), as a side event's line sits.</summary>
 	public const float ObjectiveTop = 84f;

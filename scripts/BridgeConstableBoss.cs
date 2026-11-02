@@ -159,6 +159,8 @@ public partial class BridgeConstableBoss : BossEnemy
 	public bool IsInYard => post == Post.Yard;
 	/// <summary>The middle of the gate's foot, where the hold counts.</summary>
 	public Vector2 GateFoot => gateFoot;
+	/// <summary>World y of the top of his figure, the halberd's blade: the 96 cell at x2, centred on the node.</summary>
+	public float FigureTop => GlobalPosition.Y - 96f;
 
 	// --- Lifetime ----------------------------------------------------------------------------------------
 
@@ -190,6 +192,8 @@ public partial class BridgeConstableBoss : BossEnemy
 		bridge = Node2DGame.Current?.Rules as BridgeRules;
 		if (bridge != null)
 		{
+			// The bridge leans the camera toward him while he is up there (hook 9, BridgeRules.CameraLean).
+			bridge.Constable = this;
 			gateFoot = bridge.VictoryPortalPoint(spawnedAt) ?? spawnedAt;
 			// The gate's art stands on the lattice line past the gate yard's last row of deck
 			// (BridgeFurniture.CastleWall: x - y = e * 48 for e the first row of water).
@@ -368,8 +372,10 @@ public partial class BridgeConstableBoss : BossEnemy
 			Vector2 start = at - down * back + across * offset;
 			if (!OnDeck(start + down * back, 0f))
 				continue;
+			// The reticle (Shot), not the Line's own Leap: these are bolts loosed down the lane, not his charge,
+			// whose lane shows Leap and is warm iron where these are his cold fire.
 			TelegraphedGroundHit.Place(arena, start, BoltTellSeconds + 0.08f * k, back + BoltLaneOvershoot, damage,
-				BoltColor, TelegraphShape.Line, down);
+				BoltColor, TelegraphShape.Line, down, TelegraphGlyph.Shot);
 		}
 	}
 

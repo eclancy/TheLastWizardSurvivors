@@ -641,6 +641,17 @@ public partial class Player : CharacterBody2D
 	public Vector2 FootPosition => feetShape != null ? feetShape.GlobalPosition : GlobalPosition;
 
 	/// <summary>
+	/// Seeds the level-up roll and the combat roll (crits, dodges, catches) from the run's seed, which
+	/// Node2DGame knows only once it builds the ground - after this _Ready has Randomize()d both. So a run
+	/// given its seed deals the same offers in the same order.
+	/// </summary>
+	public void SeedRunRandomness(ulong runSeed)
+	{
+		levelUpRng.Seed = LevelGenerator.Hash(runSeed, 0, 0, 0x1E7E);
+		combatRng.Seed = LevelGenerator.Hash(runSeed, 0, 0, 0xC0BA);
+	}
+
+	/// <summary>
 	/// True if his footprint - the boots, the same capsule the ground stops - overlaps
 	/// <paramref name="shape"/> placed at <paramref name="shapeTransform"/>. For things that hurt you
 	/// for standing on them: a stage hazard's plate or grate is drawn on the floor, and it is the boots

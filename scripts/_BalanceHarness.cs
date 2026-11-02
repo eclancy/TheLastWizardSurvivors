@@ -435,6 +435,13 @@ public partial class _BalanceHarness : Node
 			SaveManager.WritesDisabled = true;
 
 		game = ResourceLoader.Load<PackedScene>("res://scenes/node_2d_game.tscn").Instantiate();
+		// --seed is the run's seed too: the ground, the side event, the secrets and a chapter's own rules
+		// (the bridge's spawn points) all hash from it (Node2DGame.TerrainSeed), so one seed is one place
+		// and one garrison. It used to seed only the chests, and two bridge runs on one seed differed by
+		// half the level clock. A --terrain-seed on the command line still wins. The spawner's own picks
+		// and the level-up roll are still Randomize()d (Node2DGame.spawnRng, Player), so two runs on one
+		// seed agree to within the noise of those, not to the frame.
+		game.Set("ProceduralSeed", (long)Seed);
 		// --xp-growth=X and --no-swarm: set by name, so the flag is simply refused (and said so) on a
 		// tree from before the property existed rather than failing to build there.
 		foreach (var (name, value) in gameOverrides)
@@ -489,7 +496,18 @@ public partial class _BalanceHarness : Node
 		if (kind == null)
 			return;
 		if (node is XPOrb counted)
+		{
 			xpDropped += counted.Value;
+			// Gathered, not folded: an orb that leaves the tree at the wizard went into his bar (XPOrb picks
+			// up on touching him); one that leaves anywhere else was folded into a bank (the far sweep, the
+			// bridge's front), whose whole value is counted when the bank itself is picked up.
+			counted.TreeExiting += () =>
+			{
+				if (!finished && player != null && IsInstanceValid(player)
+					&& counted.GlobalPosition.DistanceSquaredTo(player.GlobalPosition) < 90f * 90f)
+					ledgerXpGathered += counted.Value;
+			};
+		}
 		if (node is ChestReward chest)
 		{
 			string source = string.IsNullOrEmpty(chest.Source) ? "unlabelled" : chest.Source;
@@ -1273,6 +1291,19 @@ public partial class _BalanceHarness : Node
 	// level every 16 s at minute 5, every 50 s at minute 14") and a falling-behind run's crowd are
 	// numbers rather than impressions (.ai/run-pacing.md, section 10). XP is what the player has
 	// banked - every level's cost plus the bar - so it is XP collected, after every multiplier.
+	// Player.AddXp's multiplier before the pace clock's: growth x Arcane tier x (1 + chest relics). Read by
+	// reflection (all three are private to Player); 0 on a tree without them.
+	private float XpMultiplierBesidesPace()
+	{
+		const System.Reflection.BindingFlags Private = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+		if (player == null || !IsInstanceValid(player))
+			return 0f;
+		object growth = typeof(Player).GetField("growthMultiplier", Private)?.GetValue(player);
+		object chest = typeof(Player).GetField("chestXpBonusPercent", Private)?.GetValue(player);
+		object arcane = typeof(Player).GetMethod("GetArcaneXpBonusMultiplier", Private)?.Invoke(player, null);
+		return growth is float g && chest is float c && arcane is float a ? g * a * (1f + c) : 0f;
+	}
+
 	private sealed class LedgerRow
 	{
 		public int Minute, Level, LevelUps, Kills, Spawned, Alive, Near, DamageTaken, Hp, MaxHp, Folds, SentRound;
@@ -1293,6 +1324,11 @@ public partial class _BalanceHarness : Node
 
 	private readonly List<LedgerRow> paceLedger = new();
 	private int ledgerKills, ledgerSpawned;
+	// The XP economy split in two, for the MINUTE line: orb value dropped and orb value gathered this minute
+	// (both before any multiplier), and the multiplier the wizard banks it at besides the pace clock's -
+	// Sage Spiral, the Arcane tier and the chest relics (Player.AddXp). Two chapters with one kill rate
+	// that level differently differ in one of these.
+	private long ledgerXpGathered, ledgerLastXpGathered, ledgerLastXpDropped;
 	private int ledgerLastKills, ledgerLastSpawned, ledgerLastDamage, ledgerLastLevel = 1;
 	private long ledgerLastXp;
 	private ulong ledgerLastPhysicsFrames;
@@ -1406,7 +1442,10 @@ public partial class _BalanceHarness : Node
 		ledgerLastDamage = GameStats.RunDamageTaken;
 		GD.Print($"HARNESS MINUTE m={row.Minute} level={row.Level} ups={row.LevelUps} xp={row.Xp} +xp={row.XpGained}"
 			+ $" kills={row.Kills} spawned={row.Spawned} alive={row.Alive} near={row.Near} dmg={row.DamageTaken}"
-			+ $" hp={row.Hp}/{row.MaxHp} atCap={row.AtCap:0.00} pressure={row.Pressure:0.00} choked={row.Choked:0.00} folds={row.Folds} round={row.SentRound} clock={row.Clock:0.00} frameMs={row.FrameMs:0} fps={Engine.GetFramesPerSecond()}");
+			+ $" hp={row.Hp}/{row.MaxHp} atCap={row.AtCap:0.00} pressure={row.Pressure:0.00} choked={row.Choked:0.00} folds={row.Folds} round={row.SentRound} clock={row.Clock:0.00} frameMs={row.FrameMs:0} fps={Engine.GetFramesPerSecond()}"
+			+ $" dropXp={xpDropped - ledgerLastXpDropped} gotXp={ledgerXpGathered - ledgerLastXpGathered} xpMult={XpMultiplierBesidesPace():0.00}");
+		ledgerLastXpDropped = xpDropped;
+		ledgerLastXpGathered = ledgerXpGathered;
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger
