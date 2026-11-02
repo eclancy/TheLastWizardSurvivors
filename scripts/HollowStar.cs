@@ -604,7 +604,7 @@ public partial class HollowStar : Node2D, IPaintsElementPath
 			seed.OpenSeconds = OpenSeconds * 0.5f;
 			seed.HoldSeconds = HoldSeconds;
 			seed.Modulate = Modulate;
-			arena.AddChild(seed);
+			arena.AddChild(Player.TagSpell(seed));
 			// Cleared of the wizard again where he stands now: he may have walked toward it while it flew.
 			seed.GlobalPosition = PlayerRef != null && IsInstanceValid(PlayerRef)
 				? OpenSpot(PlayerRef.GlobalPosition, shardTo[i], seed.PullRadius)

@@ -623,7 +623,7 @@ public partial class ElementalBolt : Area2D
 			child.Generation = Generation + 1;
 			child.OverrideDamage = share;
 			child.SetSpellLevel(CurrentLevel);
-			arena.AddChild(child);
+			arena.AddChild(Player.TagSpell(child));
 			child.Modulate = Modulate;
 			child.Scale = shotScale;
 			child.LaunchHomeward(GlobalPosition, bend);
@@ -912,7 +912,7 @@ public partial class ElementalBolt : Area2D
 			half.OverrideDamage = order.Share;
 			half.BasePierce = BoltEvolutions.SplitPierce;
 			half.SetSpellLevel(order.Level);
-			order.Arena.AddChild(half);
+			order.Arena.AddChild(Player.TagSpell(half));
 			half.Modulate = order.Tint;
 			half.Scale = order.Scale * BoltEvolutions.SplitScale;
 			// The halves leave the split apart: each turns onto its own target from a fork (they home),
@@ -1037,7 +1037,7 @@ public partial class ElementalBolt : Area2D
 				bolt.OverrideDamage = nextDamage;
 				bolt.SetSpellLevel(level);
 			}
-			parent.AddChild(boltNode);
+			parent.AddChild(Player.TagSpell(boltNode));
 			(boltNode as ElementalBolt)?.Shoot(from, next.GlobalPosition, next);
 		};
 	}

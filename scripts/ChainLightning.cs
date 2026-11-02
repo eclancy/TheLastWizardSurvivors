@@ -288,7 +288,7 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 			curse.volleyChild = true;
 			curse.sharedStruck = cast.Struck;
 			curse.SetSpellLevel(CurrentLevel);
-			parent.AddChild(curse);
+			parent.AddChild(Player.TagSpell(curse));
 			curse.CastFromPlayer(playerNode, next);
 		}
 	}
@@ -592,7 +592,7 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 				}
 			}
 
-			parent.AddChild(branchNode);
+			parent.AddChild(Player.TagSpell(branchNode));
 			if (branchNode is ChainLightning branchLightning)
 				branchLightning.StartArc(activeTarget, next, remainingArcDepth - 1, chainHopIndex + 1);
 		}
@@ -808,7 +808,7 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 			if (arena == null || !IsInstanceValid(arena))
 				return null;
 			current = new Afterglow { Name = "ArcAfterglow" };
-			arena.AddChild(current);
+			arena.AddChild(Player.TagSpell(current));
 			return current;
 		}
 

@@ -660,7 +660,7 @@ public partial class MagicMissile : Area2D
 				shard.Free();
 				return;
 			}
-			parent.AddChild(shard);
+			parent.AddChild(Player.TagSpell(shard));
 			// Null target: Shoot only locks on when handed an enemy, so passing none is what makes
 			// the shard fly straight instead of curving into whatever is nearest.
 			(shard as MagicMissile)?.Shoot(from, from + shardDirection, null);

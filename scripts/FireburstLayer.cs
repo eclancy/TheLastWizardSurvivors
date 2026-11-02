@@ -63,7 +63,7 @@ public partial class FireburstLayer : Node2D
 		if (current == null || !IsInstanceValid(current) || !current.IsInsideTree() || current.GetParent() != arena)
 		{
 			current = new FireburstLayer { Name = "Firebursts" };
-			arena.AddChild(current);
+			arena.AddChild(Player.TagSpell(current));
 		}
 		current.Add(globalAt, radius, style);
 	}

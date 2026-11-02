@@ -128,7 +128,7 @@ public partial class ShadowCurse : Node2D
 		if (arena == null || !IsInstanceValid(arena))
 			return null;
 		current = new ShadowCurse { Name = "ShadowCurse", SpellData = spell, PlayerRef = player };
-		arena.AddChild(current);
+		arena.AddChild(Player.TagSpell(current));
 		return current;
 	}
 

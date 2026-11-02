@@ -39,7 +39,7 @@ public partial class ThunderStrike : Node2D
 		if (arena == null || !IsInstanceValid(arena))
 			return;
 		var strike = new ThunderStrike { Name = "ThunderStrike", reach = reach };
-		arena.AddChild(strike);
+		arena.AddChild(Player.TagSpell(strike));
 		strike.GlobalPosition = at;
 	}
 

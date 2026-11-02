@@ -63,7 +63,7 @@ public partial class WardWisps : Node2D
 		if (current != null && IsInstanceValid(current) && current.GetParent() == arena && current.SpellData == spell)
 			return current;
 		current = new WardWisps { Name = "WardWisps", SpellData = spell, PlayerRef = player };
-		arena.AddChild(current);
+		arena.AddChild(Player.TagSpell(current));
 		return current;
 	}
 

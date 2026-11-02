@@ -92,7 +92,7 @@ public partial class BrimstoneLayer : Node2D
 		if (current == null || !IsInstanceValid(current) || !current.IsInsideTree() || current.GetParent() != arena)
 		{
 			current = new BrimstoneLayer { Name = "Brimstone" };
-			arena.AddChild(current);
+			arena.AddChild(Player.TagSpell(current));
 		}
 		current.player = player;
 		current.source = source;

@@ -199,7 +199,7 @@ public partial class Flamethrower : Node2D
 		if (PlayerRef?.GetParent() is not Node2D arena)
 			return null;
 		cinderGround = new CinderGround { PlayerRef = PlayerRef, SpellData = SpellData };
-		arena.AddChild(cinderGround);
+		arena.AddChild(Player.TagSpell(cinderGround));
 		cinderGround.PathMaterial = pathMaterial;
 		return cinderGround;
 	}
@@ -390,7 +390,7 @@ public partial class Flamethrower : Node2D
 			}
 		}
 
-		arena.AddChild(puff);
+		arena.AddChild(Player.TagSpell(puff));
 		puff.GlobalPosition = GlobalPosition;
 		puff.Rotation = angle;
 		// The evolutions' width is drawn as well as hit. (The player's own Area still grows only the

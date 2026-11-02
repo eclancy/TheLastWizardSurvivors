@@ -280,7 +280,7 @@ public partial class Sagittarius : Node2D
 			arrow.Homing = marked != null;
 			arrow.SetSpellLevel(bow.CurrentLevel);
 			arrow.PlayerRef = PlayerRef;
-			arena.AddChild(arrow);
+			arena.AddChild(Player.TagSpell(arrow));
 			// Hunter's Mark's size. The arrow paints itself (HuntersArrowLook), gilded - a gold head with a
 			// white point - because its hits are the combination's.
 			PlayerRef.ApplySpellVisual(arrow, bow);

@@ -52,7 +52,7 @@ public partial class SovereignHits : Node2D
 			ZIndex = DrawLayers.Air + 1,
 			TextureFilter = TextureFilterEnum.Nearest,
 		};
-		arena.AddChild(layer);
+		arena.AddChild(Player.TagSpell(layer));
 		return layer;
 	}
 

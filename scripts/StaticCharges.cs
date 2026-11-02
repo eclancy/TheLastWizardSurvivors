@@ -79,7 +79,7 @@ public partial class StaticCharges : Node2D
 		if (arena == null || !IsInstanceValid(arena) || player == null)
 			return null;
 		current = new StaticCharges { Name = "StaticCharges", SpellData = spell, PlayerRef = player };
-		arena.AddChild(current);
+		arena.AddChild(Player.TagSpell(current));
 		return current;
 	}
 

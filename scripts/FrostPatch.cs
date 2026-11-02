@@ -39,7 +39,7 @@ public partial class FrostPatch : Node2D
 		if (arena == null || radius < 4f)
 			return;
 		var patch = new FrostPatch { Radius = radius };
-		arena.AddChild(patch);
+		arena.AddChild(Player.TagSpell(patch));
 		patch.GlobalPosition = at;
 		patch.Configure(at);
 	}

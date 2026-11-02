@@ -594,7 +594,7 @@ namespace WizardSurvivors.scripts
 			// A tear in the ground with the force wound out of it to the zone's radius, not a translucent
 			// disc (scenes/shaders/arcane_rift.gdshader).
 			BlastPoolSurface.Attach(rift, BlastPoolSurface.Kind.ArcaneRift);
-			parent.AddChild(rift);
+			parent.AddChild(Player.TagSpell(rift));
 			rift.GlobalPosition = GlobalPosition;
 		}
 

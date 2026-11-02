@@ -74,7 +74,7 @@ public partial class LodgedArrows : Node2D
 		if (current == null || !IsInstanceValid(current) || current.GetParent() != arena)
 		{
 			current = new LodgedArrows { Name = "LodgedArrows" };
-			arena.AddChild(current);
+			arena.AddChild(Player.TagSpell(current));
 		}
 		current.player = player;
 		current.material?.SetShaderParameter(ParamGilded, spell?.IsLegendary ?? false);

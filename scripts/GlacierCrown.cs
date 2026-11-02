@@ -49,7 +49,7 @@ public partial class GlacierCrown : Node2D
 	public static GlacierCrown Raise(Node2D arena, Vector2 centre, float ringRadius, float wallHalf)
 	{
 		var crown = new GlacierCrown { ringRadius = ringRadius, wallHalf = wallHalf };
-		arena.AddChild(crown);
+		arena.AddChild(Player.TagSpell(crown));
 		crown.GlobalPosition = centre;
 		return crown;
 	}

@@ -2509,6 +2509,21 @@ public partial class Player : CharacterBody2D
 	/// its cooldown as it was when the boss appeared - and nothing hurts him. No whitening, unlike the
 	/// post-menu grace: he is not the one being shown, the boss is. He cannot walk, either (MovePlayer).
 	/// </summary>
+	/// <summary>
+	/// The group every node a player's spell puts in the world joins (TagSpell): the casts, the persistent
+	/// spells (the Familiar, the Spiritual Weapon, wards, rifts, mushrooms) and what they leave behind. A boss's
+	/// arrival freezes the whole group (Node2DGame.FreezePlayerSpells) - Eric, 2026-11-02: "I'm still seeing
+	/// spells firing on cutscenes". Holding the fire loop stopped new casts; this stops the ones already out.
+	/// </summary>
+	public const string SpellGroup = "player_spells";
+
+	/// <summary>Marks a node a spell made, for the cutscene freeze. Returns it, so it wraps an AddChild argument.</summary>
+	public static T TagSpell<T>(T node) where T : Node
+	{
+		node?.AddToGroup(SpellGroup);
+		return node;
+	}
+
 	public bool HeldForBossEntrance { get; private set; }
 
 	public void SetHeldForBossEntrance(bool held) => HeldForBossEntrance = held && !IsDead;
@@ -3701,7 +3716,7 @@ public partial class Player : CharacterBody2D
 			if (GetParent() is not Node2D arena)
 				return null;
 			aegisWard = new AegisWard { Name = "AegisWard", PlayerRef = this };
-			arena.AddChild(aegisWard);
+			arena.AddChild(TagSpell(aegisWard));
 		}
 		aegisWard.SpellData = aegis;
 		return aegisWard;
@@ -4117,7 +4132,7 @@ public partial class Player : CharacterBody2D
 					script.SetSpellLevel(spell.CurrentLevel);
 					script.PlayerRef = this;
 				}
-				GetParent().AddChild(missile);
+				GetParent().AddChild(TagSpell(missile));
 				ApplyLegendaryVisual(missile, spell);
 				var shootMethod = missile.GetType().GetMethod("Shoot");
 				if (shootMethod != null)
@@ -4167,7 +4182,7 @@ public partial class Player : CharacterBody2D
 					script.PlayerRef = this;
 					script.TotalLifetime = 0f;
 				}
-				AddChild(explosion);
+				AddChild(TagSpell(explosion));
 				ApplyLegendaryVisual(explosion, spell);
 				// It detonates once in its own _Ready, so the first cast is a real one.
 				outcome = CastOutcome.Fired;
@@ -4228,7 +4243,7 @@ public partial class Player : CharacterBody2D
 							script2.SetSpellLevel(spell.CurrentLevel);
 							script2.PlayerRef = this;
 						}
-						GetParent().AddChild(fireball);
+						GetParent().AddChild(TagSpell(fireball));
 						ApplyLegendaryVisual(fireball, spell);
 						script2?.Shoot(GlobalPosition, nearest.GlobalPosition);
 						outcome = CastOutcome.Fired;
@@ -4380,7 +4395,7 @@ public partial class Player : CharacterBody2D
 		if (huntersDrawBow == null || !IsInstanceValid(huntersDrawBow))
 		{
 			huntersDrawBow = new BowDrawVisual { Name = "BowDrawVisual" };
-			AddChild(huntersDrawBow);
+			AddChild(TagSpell(huntersDrawBow));
 		}
 
 		// Hunter's Mark: once fully drawn, the bow swings onto the quarry it will mark.
@@ -4446,7 +4461,7 @@ public partial class Player : CharacterBody2D
 				if (huntersMark == null || !IsInstanceValid(huntersMark))
 				{
 					huntersMark = new HuntersMark { Name = "HuntersMark" };
-					AddChild(huntersMark);
+					AddChild(TagSpell(huntersMark));
 				}
 				huntersMark.Mark(quarry, BoltEvolutions.MarkSeconds);
 			}
@@ -4506,7 +4521,7 @@ public partial class Player : CharacterBody2D
 				bolt.SetSpellLevel(spell.CurrentLevel);
 				bolt.PlayerRef = this;
 			}
-			GetParent().AddChild(arrow);
+			GetParent().AddChild(TagSpell(arrow));
 			ApplyLegendaryVisual(arrow, spell);
 			if (heavy)
 				arrow.Scale *= BoltEvolutions.HeavyArrowScale;
@@ -4556,7 +4571,7 @@ public partial class Player : CharacterBody2D
 			bolt.SetSpellLevel(spell.CurrentLevel);
 			bolt.PlayerRef = this;
 		}
-		GetParent().AddChild(arrow);
+		GetParent().AddChild(TagSpell(arrow));
 		ApplyLegendaryVisual(arrow, spell);
 		(arrow as ElementalBolt)?.Shoot(origin, origin + aim * 400f, null);
 		SfxPlayer.Cast(SfxCatalog.DominantElement(spell), origin);
@@ -4693,7 +4708,7 @@ public partial class Player : CharacterBody2D
 				eb.SetSpellLevel(spell.CurrentLevel);
 				eb.PlayerRef = this;
 			}
-			GetParent().AddChild(bolt);
+			GetParent().AddChild(TagSpell(bolt));
 			ApplyLegendaryVisual(bolt, spell);
 			// Riptide draws each of its forms itself (RiptideWave). An evolution's tint is a stand-in for
 			// spells that do not - and Titan Cataclysm's is fire orange, which turned the sea to mud.
@@ -4730,7 +4745,7 @@ public partial class Player : CharacterBody2D
 					// The water fills behind the crest at the crest's own pace, not ahead of it.
 					FloodSpeed = (bolt as ElementalBolt)?.Speed ?? 0f,
 				};
-				GetParent().AddChild(lane);
+				GetParent().AddChild(TagSpell(lane));
 				lane.GlobalPosition = GlobalPosition;
 			}
 
@@ -4766,7 +4781,7 @@ public partial class Player : CharacterBody2D
 			bolt.DurationMultiplier = durationMultiplier;
 			bolt.SetSpellLevel(spell.CurrentLevel);
 			bolt.PlayerRef = this;
-			GetParent().AddChild(bolt);
+			GetParent().AddChild(TagSpell(bolt));
 			ApplyLegendaryVisual(bolt, spell);
 			bolt.BeginForging(this, forgedShards.Count, BoltEvolutions.ForgeVolley);
 			forgedShards.Add(bolt);
@@ -4823,7 +4838,7 @@ public partial class Player : CharacterBody2D
 			chainLightning.PlayerRef = this;
 		}
 
-		GetParent().AddChild(chain);
+		GetParent().AddChild(TagSpell(chain));
 		ApplyLegendaryVisual(chain, spell);
 		(chain as ChainLightning)?.CastFromPlayer(this, nearest);
 		return CastOutcome.Fired;
@@ -4867,7 +4882,7 @@ public partial class Player : CharacterBody2D
 			voidLance.PlayerRef = this;
 		}
 
-		GetParent().AddChild(lance);
+		GetParent().AddChild(TagSpell(lance));
 		ApplyLegendaryVisual(lance, spell);
 		(lance as VoidLance)?.CastFromPlayer(this, nearest.GlobalPosition);
 		if (clockwork && lance is VoidLance hand)
@@ -4954,7 +4969,7 @@ public partial class Player : CharacterBody2D
 				script.CooldownMultiplier = cooldownMultiplier / EffectiveAttackSpeed;
 				script.SetSpellLevel(spell.CurrentLevel);
 			}
-			AddChild(weaver);
+			AddChild(TagSpell(weaver));
 			return CastOutcome.Fired;
 		}
 		else
@@ -5016,7 +5031,7 @@ public partial class Player : CharacterBody2D
 			}
 		}
 
-		arena.AddChild(ward);
+		arena.AddChild(TagSpell(ward));
 		ward.GlobalPosition = GlobalPosition;
 		ApplyLegendaryVisual(ward, spell);
 		// The ward's flare is drawn out of StrikeRadius, so the evolutions' visual scale stays out of it.
@@ -5062,7 +5077,7 @@ public partial class Player : CharacterBody2D
 		{
 			starfallRain = scene.Instantiate<Starfall>();
 			starfallRain.PlayerRef = this;
-			arena.AddChild(starfallRain);
+			arena.AddChild(TagSpell(starfallRain));
 		}
 
 		int stars = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
@@ -5088,7 +5103,7 @@ public partial class Player : CharacterBody2D
 		{
 			familiarPack = scene.Instantiate<Familiar>();
 			familiarPack.PlayerRef = this;
-			arena.AddChild(familiarPack);
+			arena.AddChild(TagSpell(familiarPack));
 		}
 
 		// One hound to start; the second is the level 3 upgrade (SpellData_Familiar.tres), a third is
@@ -5130,7 +5145,7 @@ public partial class Player : CharacterBody2D
 		{
 			spiritWeapons = scene.Instantiate<SpiritualWeapon>();
 			spiritWeapons.PlayerRef = this;
-			arena.AddChild(spiritWeapons);
+			arena.AddChild(TagSpell(spiritWeapons));
 		}
 		// The weapons are the spell's own count - its levels and milestones. Amount (the shop's, a relic's)
 		// adds none: a weapon is a whole second attacker, the Familiar's rule for a hound, and added from
@@ -5160,7 +5175,7 @@ public partial class Player : CharacterBody2D
 		{
 			stormsweep = scene.Instantiate<Stormsweep>();
 			stormsweep.PlayerRef = this;
-			AddChild(stormsweep);
+			AddChild(TagSpell(stormsweep));
 		}
 		int sweeps = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
 		// It draws itself out of the band it sweeps and repaints its own element path, so it takes only
@@ -5180,7 +5195,7 @@ public partial class Player : CharacterBody2D
 		{
 			sleetRunes = scene.Instantiate<SleetRunes>();
 			sleetRunes.PlayerRef = this;
-			arena.AddChild(sleetRunes);
+			arena.AddChild(TagSpell(sleetRunes));
 		}
 		int runes = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
 		sleetRunes.Cast(spell, runes, GetSpellDamageMultiplier(spell), GetSpellVisualTint(spell));
@@ -5283,7 +5298,7 @@ public partial class Player : CharacterBody2D
 		{
 			var trap = scene.Instantiate<GravewellTrap>();
 			trap.Configure(spell, this, setup);
-			arena.AddChild(trap);
+			arena.AddChild(TagSpell(trap));
 			trap.GlobalPosition = sporeSpots[i];
 			ApplyLegendaryVisual(trap, spell);
 			// The pit is drawn at its trigger and the collapse out of its blast radius, so an
@@ -5307,7 +5322,7 @@ public partial class Player : CharacterBody2D
 		if (path == null)
 		{
 			path = new GravePath();
-			AddChild(path);
+			AddChild(TagSpell(path));
 		}
 		count = Math.Min(count, sporeSpots.Length);
 		int behind = path.Behind(GlobalPosition, GravewellTrap.MinFromPlayer, GravewellTrap.Spacing, count, sporeSpots);
@@ -5442,7 +5457,7 @@ public partial class Player : CharacterBody2D
 			script.HoldSeconds = spell.GetEffectValueAtLevel(SpellEffect.RootDuration, spell.CurrentLevel);
 		}
 
-		arena.AddChild(well);
+		arena.AddChild(TagSpell(well));
 		well.GlobalPosition = where;
 		ApplyLegendaryVisual(well, spell);
 		// The well draws its own radius, so the evolutions' visual scale stays out of it (Bramble Seed).
@@ -5564,7 +5579,7 @@ public partial class Player : CharacterBody2D
 			if (spell.HasEvolution(IronPalisade.IronRingId))
 				script.RingRadius = script.HalfLength * IronPalisade.RingRadiusShare;
 		}
-		arena.AddChild(wall);
+		arena.AddChild(TagSpell(wall));
 		if (wall is IronPalisade { RingRadius: > 0f } ring)
 			wall.GlobalPosition = RingCentre(toward.GlobalPosition, ring.RingRadius);
 		else
@@ -5638,7 +5653,7 @@ public partial class Player : CharacterBody2D
 			// A card's Speed: the same dose of poison, delivered faster (none carries one since 2026-10-29).
 			script.PoisonRate = MathF.Max(0.25f, spell.GetSpeedMultiplier());
 		}
-		arena.AddChild(plague);
+		arena.AddChild(TagSpell(plague));
 		(plague as Contagion)?.InfectFirst(carrier);
 		ApplyLegendaryVisual(plague, spell);
 		// It draws its marks and jumps where they are in the world, so it must never be scaled.
@@ -5714,7 +5729,7 @@ public partial class Player : CharacterBody2D
 				- spell.GetEffectValueAtLevel(SpellEffect.SlowPower, spell.CurrentLevel));
 			script.SlowLingerSeconds = spell.GetEffectValueAtLevel(SpellEffect.SlowDuration, spell.CurrentLevel);
 		}
-		arena.AddChild(seed);
+		arena.AddChild(TagSpell(seed));
 		seed.GlobalPosition = GlobalPosition;
 		ApplyLegendaryVisual(seed, spell);
 		// The patch draws its own radius, so the evolution's visual scale stays out of it: Titan
@@ -5745,7 +5760,7 @@ public partial class Player : CharacterBody2D
 				script.SetSpellLevel(spell.CurrentLevel);
 				script.PlayerRef = this;
 			}
-			AddChild(flame);
+			AddChild(TagSpell(flame));
 			ApplyLegendaryVisual(flame, spell);
 			// Maintained, not Fired: the emitter plays its own cue each time a burn lights, the
 			// first one from its _Ready, so a Fired here would play the creation cue twice.
@@ -5782,7 +5797,7 @@ public partial class Player : CharacterBody2D
 				script.PlayerRef = this;
 				script.TotalLifetime = 0f;
 			}
-			AddChild(pulse);
+			AddChild(TagSpell(pulse));
 			ApplyLegendaryVisual(pulse, spell);
 			// Maintained, not Fired: the pulse plays its own cue every time it goes off, the first
 			// one from its _Ready, so a Fired here would play the creation cue twice.
@@ -5889,7 +5904,7 @@ public partial class Player : CharacterBody2D
 	{
 		var mushroom = scene.Instantiate<SporeMushroom>();
 		mushroom.Configure(spell, this, sowing);
-		arena.AddChild(mushroom);
+		arena.AddChild(TagSpell(mushroom));
 		mushroom.GlobalPosition = where;
 		ApplyLegendaryVisual(mushroom, spell);
 		// The mushroom draws its own radius, so an evolution's visual scale stays out of it (Bramble
@@ -6085,7 +6100,7 @@ public partial class Player : CharacterBody2D
 
 	private void LaunchIceSpike(Node2D arena, IceSpike spike, SpellData spell, Vector2 at)
 	{
-		arena.AddChild(spike);
+		arena.AddChild(TagSpell(spike));
 		// What a spike of the cast is (SizeScale, Spire) reaches its numbers and its drawing here.
 		spike.SetSpellLevel(spell.CurrentLevel);
 		ApplyLegendaryVisual(spike, spell);
@@ -6146,7 +6161,7 @@ public partial class Player : CharacterBody2D
 				script.SetSpellLevel(spell.CurrentLevel);
 				script.PlayerRef = this;
 			}
-			GetParent().AddChild(spike);
+			GetParent().AddChild(TagSpell(spike));
 			ApplyLegendaryVisual(spike, spell);
 			// The spike draws its reach out of the radius it hits (GroundSpike: the cracks, the chips and
 			// the splinters end on it), so a visual scale would only draw it wider than it hurts.
@@ -6177,7 +6192,7 @@ public partial class Player : CharacterBody2D
 				script.SetSpellLevel(spell.CurrentLevel);
 				script.PlayerRef = this;
 			}
-			AddChild(orbit);
+			AddChild(TagSpell(orbit));
 			ApplyLegendaryVisual(orbit, spell);
 			return CastOutcome.Fired;
 		}
@@ -6302,7 +6317,7 @@ public partial class Player : CharacterBody2D
 			// A root zone dropped on one skeleton holds one skeleton (.ai/spell-roster.md, row 24).
 			at = (FindDensestEnemy(castRange) ?? nearest).GlobalPosition;
 		}
-		GetParent().AddChild(zone);
+		GetParent().AddChild(TagSpell(zone));
 		ApplyLegendaryVisual(zone, spell);
 		script?.CastAt(at);
 		return CastOutcome.Fired;
@@ -6403,7 +6418,7 @@ public partial class Player : CharacterBody2D
 					vine.SetSpellLevel(spell.CurrentLevel);
 					vine.PlayerRef = this;
 				}
-				GetParent().AddChild(node);
+				GetParent().AddChild(TagSpell(node));
 				ApplyLegendaryVisual(node, spell);
 				if (heads > 1)
 					vine?.LaunchHead(target.GlobalPosition, firstHead + h * Mathf.Tau / heads);
@@ -6436,7 +6451,7 @@ public partial class Player : CharacterBody2D
 			script.SetSpellLevel(spell.CurrentLevel);
 			script.PlayerRef = this;
 		}
-		GetParent().AddChild(cone);
+		GetParent().AddChild(TagSpell(cone));
 		ApplyLegendaryVisual(cone, spell);
 		// The spray is drawn out of the cone's range, which already carries the evolutions' area: a
 		// visual scale on top (Zero Point Shockwave's x2) drew it twice as far as it froze.
@@ -6529,7 +6544,7 @@ public partial class Player : CharacterBody2D
 				beam.SetSpellLevel(spell.CurrentLevel);
 				beam.PlayerRef = this;
 			}
-			GetParent().AddChild(ray);
+			GetParent().AddChild(TagSpell(ray));
 			ApplyLegendaryVisual(ray, spell);
 			// The beam strikes one point and its burst is drawn out of the radius it hits, so a visual
 			// scale would only thicken the line past anything it does.
@@ -6623,7 +6638,7 @@ public partial class Player : CharacterBody2D
 			}
 			if (!barrage)
 				at += new Vector2(combatRng.RandfRange(-MeteorScatter.X, MeteorScatter.X), combatRng.RandfRange(-MeteorScatter.Y, MeteorScatter.Y));
-			GetParent().AddChild(impact);
+			GetParent().AddChild(TagSpell(impact));
 			ApplyLegendaryVisual(impact, spell);
 			// The meteor is drawn out of the radius it hits, so the evolutions' visual scale stays out of it.
 			impact.Scale = Vector2.One;
@@ -6644,7 +6659,7 @@ public partial class Player : CharacterBody2D
 				last.AreaMultiplier = area;
 				last.SetSpellLevel(spell.CurrentLevel);
 				last.PlayerRef = this;
-				GetParent().AddChild(big);
+				GetParent().AddChild(TagSpell(big));
 				ApplyLegendaryVisual(big, spell);
 				big.Scale = Vector2.One;
 				last.CastAt(densest.GlobalPosition, count * stagger + 0.2f);
@@ -7163,13 +7178,13 @@ public partial class Player : CharacterBody2D
 		switch (spell.Id)
 		{
 			case "cinderbreath":
-				arena.AddChild(new CataclysmField { Name = "CataclysmField", PlayerRef = this, SpellData = spell });
+				arena.AddChild(TagSpell(new CataclysmField { Name = "CataclysmField", PlayerRef = this, SpellData = spell }));
 				break;
 			case "cone_of_cold":
-				arena.AddChild(new LongWinterField { Name = "LongWinterField", PlayerRef = this, SpellData = spell });
+				arena.AddChild(TagSpell(new LongWinterField { Name = "LongWinterField", PlayerRef = this, SpellData = spell }));
 				break;
 			case "chain_lightning":
-				arena.AddChild(new LatticeField { Name = "LatticeField", PlayerRef = this, SpellData = spell });
+				arena.AddChild(TagSpell(new LatticeField { Name = "LatticeField", PlayerRef = this, SpellData = spell }));
 				break;
 		}
 	}

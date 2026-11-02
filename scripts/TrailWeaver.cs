@@ -224,7 +224,7 @@ public partial class TrailWeaver : Node2D
 			active.Add(zone);
 		}
 
-		arena.AddChild(pool);
+		arena.AddChild(Player.TagSpell(pool));
 		pool.GlobalPosition = where;
 		if (pool is LingeringZone laid && !laid.DrawsItself)
 			Surface(arena).Add(laid, where);
@@ -283,7 +283,7 @@ public partial class TrailWeaver : Node2D
 		if (surface == null || !IsInstanceValid(surface))
 		{
 			surface = new MireSurface();
-			arena.AddChild(surface);
+			arena.AddChild(Player.TagSpell(surface));
 		}
 		return surface;
 	}

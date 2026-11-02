@@ -48,7 +48,7 @@ public partial class SunderingRing : Node2D
 		if (Active != null && IsInstanceValid(Active))
 			Active.QueueFree();
 		var ring = new SunderingRing { PlayerRef = player, SpellData = spell };
-		arena.AddChild(ring);
+		arena.AddChild(Player.TagSpell(ring));
 		ring.GlobalPosition = centre;
 		Active = ring;
 		ring.Shove();

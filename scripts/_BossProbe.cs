@@ -97,6 +97,9 @@ public partial class _BossProbe : Node
 	private Vector2 camLast;
 	private bool camSeen;
 	private float panBeganAt = -1f, peakCamSpeed, peakCamSpeedAt;
+	// The player's spell nodes through the arrival (Player.SpellGroup): the most seen at once, and the most
+	// of those still processing on any frame of it - which should be none.
+	private int spellNodesSeen, spellNodesLive, bossEntranceFramesSeen;
 	private float bossArrivedAt;
 	private readonly List<string> notes = new();
 
@@ -142,6 +145,15 @@ public partial class _BossProbe : Node
 		}
 
 		Global.SelectedCharacterIdx = 1;
+		// --character=N --start-spell=ID (with 0, the Test Wizard): another loadout through the arrival - the
+		// cutscene freeze (Player.SpellGroup) wants a spell that stays out, the Familiar or the Spiritual Weapon.
+		foreach (string arg in OS.GetCmdlineUserArgs())
+		{
+			if (arg.StartsWith("--character=") && int.TryParse(arg.Substring("--character=".Length), out int who))
+				Global.SelectedCharacterIdx = who;
+			else if (arg.StartsWith("--start-spell="))
+				Global.TestWizardStartingSpellId = arg.Substring("--start-spell=".Length);
+		}
 		Global.SelectedStageIdx = StageIndex;
 		Engine.TimeScale = TimeScale;
 		GameStats.ResetRunTelemetry();
@@ -345,6 +357,16 @@ public partial class _BossProbe : Node
 				sawBarsIn |= filming.LetterboxShown >= 0.999f;
 				peakCinematicZoom = Math.Max(peakCinematicZoom, filming.CinematicZoomFactor);
 			}
+			int seen = 0, live = 0;
+			foreach (Node spellNode in GetTree().GetNodesInGroup(Player.SpellGroup))
+			{
+				seen++;
+				if (spellNode.CanProcess())
+					live++;
+			}
+			spellNodesSeen = Math.Max(spellNodesSeen, seen);
+			if (bossEntranceFramesSeen++ > 2)
+				spellNodesLive = Math.Max(spellNodesLive, live);
 			if (player.GetNodeOrNull<Camera2D>("Camera2D") is Camera2D cam && delta > 0.0001f)
 			{
 				Vector2 at = cam.Position;
@@ -379,6 +401,12 @@ public partial class _BossProbe : Node
 				+ $"bars all the way in: {sawBarsIn}; push-in peak x{peakCinematicZoom:0.00}");
 			notes.Add($"camera: the pan began {(panBeganAt < 0f ? "never" : $"{panBeganAt:0.00}s")} into the arrival; "
 				+ $"fastest {peakCamSpeed:0} px/s at {peakCamSpeedAt:0.00}s");
+			int frozenAfter = 0;
+			foreach (Node spellNode in GetTree().GetNodesInGroup(Player.SpellGroup))
+				if (!spellNode.CanProcess())
+					frozenAfter++;
+			notes.Add($"spells: {spellNodesSeen} spell nodes out during it, at most {spellNodesLive} still processing; "
+				+ $"{frozenAfter} still frozen a frame after");
 			releasedAt = player.GlobalPosition;
 			releaseSeenAt = elapsed;
 		}

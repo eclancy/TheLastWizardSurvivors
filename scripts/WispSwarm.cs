@@ -64,7 +64,7 @@ public partial class WispSwarm : Node2D
 		if (live != null && IsInstanceValid(live) && live.GetParent() == arena)
 			return live;
 		live = new WispSwarm();
-		arena.AddChild(live);
+		arena.AddChild(Player.TagSpell(live));
 		return live;
 	}
 

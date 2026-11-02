@@ -459,7 +459,7 @@ public partial class BrambleSeed : Node2D, IPaintsElementPath
 			child.GrowSeconds = GrowSeconds;
 			child.SlowMultiplier = SlowMultiplier;
 			child.SlowLingerSeconds = SlowLingerSeconds;
-			parent.AddChild(child);
+			parent.AddChild(Player.TagSpell(child));
 			float a = turn + i * Mathf.Tau / WildwoodSeeds;
 			child.GlobalPosition = GlobalPosition + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * MaxRadius * 1.6f;
 		}

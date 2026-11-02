@@ -113,7 +113,7 @@ public partial class ThornThicket : Node2D
 		}
 		while (standing.Count >= MaxStanding)
 			standing[0].Wither();
-		arena.AddChild(thicket);
+		arena.AddChild(Player.TagSpell(thicket));
 		thicket.GlobalPosition = root;
 		thicket.LayStems();
 		standing.Add(thicket);

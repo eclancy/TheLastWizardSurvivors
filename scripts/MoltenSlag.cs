@@ -84,7 +84,7 @@ public partial class MoltenSlag : Node2D
 			life = BoltEvolutions.SlagSeconds,
 			tickSeconds = BoltEvolutions.SlagTickSeconds,
 		};
-		arena.AddChild(slag);
+		arena.AddChild(Player.TagSpell(slag));
 		return slag;
 	}
 
@@ -106,7 +106,7 @@ public partial class MoltenSlag : Node2D
 		var rng = new RandomNumberGenerator();
 		rng.Randomize();
 		pool.poolSeed = rng.RandfRange(0f, 100f);
-		arena.AddChild(pool);
+		arena.AddChild(Player.TagSpell(pool));
 		return pool;
 	}
 

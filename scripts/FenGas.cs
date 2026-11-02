@@ -54,7 +54,7 @@ public partial class FenGas : Node2D
 		if (live != null && IsInstanceValid(live) && live.GetParent() == arena)
 			return live;
 		live = new FenGas();
-		arena.AddChild(live);
+		arena.AddChild(Player.TagSpell(live));
 		return live;
 	}
 

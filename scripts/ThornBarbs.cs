@@ -74,7 +74,7 @@ public partial class ThornBarbs : Node2D
 		if (live != null && IsInstanceValid(live) && live.GetParent() == arena)
 			return live;
 		live = new ThornBarbs();
-		arena.AddChild(live);
+		arena.AddChild(Player.TagSpell(live));
 		return live;
 	}
 

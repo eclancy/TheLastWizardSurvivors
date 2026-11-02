@@ -88,7 +88,7 @@ public partial class ArrowRain : Node2D
 		}
 		rain.fallDirection = (-FallFrom).Normalized();
 		rain.Name = "ArrowRain";
-		arena.AddChild(rain);
+		arena.AddChild(Player.TagSpell(rain));
 		return rain;
 	}
 

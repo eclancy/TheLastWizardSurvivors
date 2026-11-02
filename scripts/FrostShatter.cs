@@ -153,7 +153,7 @@ public partial class FrostShatter : Node2D
 		if (arena == null || !IsInstanceValid(arena) || player == null)
 			return null;
 		current = new FrostShatter { Name = "FrostShatter", SpellData = spell, PlayerRef = player };
-		arena.AddChild(current);
+		arena.AddChild(Player.TagSpell(current));
 		return current;
 	}
 

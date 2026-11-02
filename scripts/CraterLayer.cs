@@ -65,7 +65,7 @@ public partial class CraterLayer : Node2D
 		if (current == null || !IsInstanceValid(current) || !current.IsInsideTree() || current.GetParent() != arena)
 		{
 			current = new CraterLayer { Name = "Craters" };
-			arena.AddChild(current);
+			arena.AddChild(Player.TagSpell(current));
 		}
 		current.Add(globalAt, radius, burnSeconds, tint);
 	}

@@ -74,7 +74,7 @@ public partial class VoidScars : Node2D
 		if (arena == null || !IsInstanceValid(arena) || player == null)
 			return null;
 		current = new VoidScars { Name = "VoidScars", SpellData = spell, PlayerRef = player };
-		arena.AddChild(current);
+		arena.AddChild(Player.TagSpell(current));
 		return current;
 	}
 

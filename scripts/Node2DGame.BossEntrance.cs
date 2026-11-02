@@ -196,6 +196,7 @@ public partial class Node2DGame
 		bossEntranceHeldSeconds = 0f;
 		player?.SetHeldForBossEntrance(true);
 		HoldOrdinaryBodies();
+		FreezePlayerSpells(true);
 		EnsureLetterbox();
 	}
 
@@ -231,6 +232,34 @@ public partial class Node2DGame
 				body.SetHeld(false);
 		}
 		heldForBossEntrance.Clear();
+		FreezePlayerSpells(false);
+	}
+
+	// What the player's spells already put in the world stands still for the arrival (Player.SpellGroup):
+	// holding the fire loop stopped new casts, but the Familiar kept biting, the Spiritual Weapon kept
+	// swinging and bolts already out kept flying (Eric, 2026-11-02: "I'm still seeing spells firing on
+	// cutscenes"). Disabled, not freed: each takes up again exactly where it stood, at the mode it had.
+	private readonly List<(Node Node, ProcessModeEnum Mode)> frozenSpells = new();
+
+	private void FreezePlayerSpells(bool freeze)
+	{
+		if (freeze)
+		{
+			foreach (Node node in GetTree().GetNodesInGroup(Player.SpellGroup))
+			{
+				if (!IsInstanceValid(node) || node.ProcessMode == ProcessModeEnum.Disabled)
+					continue;
+				frozenSpells.Add((node, node.ProcessMode));
+				node.ProcessMode = ProcessModeEnum.Disabled;
+			}
+			return;
+		}
+		foreach ((Node node, ProcessModeEnum mode) in frozenSpells)
+		{
+			if (IsInstanceValid(node))
+				node.ProcessMode = mode;
+		}
+		frozenSpells.Clear();
 	}
 
 	private void HoldOrdinaryBodies()

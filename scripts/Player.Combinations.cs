@@ -250,7 +250,7 @@ public partial class Player
 		{
 			sagittarius = SagittariusScene.Instantiate<Sagittarius>();
 			sagittarius.PlayerRef = this;
-			arena.AddChild(sagittarius);
+			arena.AddChild(TagSpell(sagittarius));
 		}
 		int stars = Math.Max(1, rain.GetProjectileCountAtLevel(rain.CurrentLevel) + AmountFor(spell));
 		// The nock is Hunter's Draw's own cooldown, under every cooldown term the loop just put on the rain's.

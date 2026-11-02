@@ -435,7 +435,7 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 					spike.Scale = scale;
 					spike.Modulate = modulate;
 				}
-				parent.AddChild(follower);
+				parent.AddChild(Player.TagSpell(follower));
 				(follower as GroundSpike)?.CastAt(at);
 			};
 		}
