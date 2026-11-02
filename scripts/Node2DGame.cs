@@ -3692,6 +3692,25 @@ public partial class Node2DGame : Node2D
 		};
 	}
 
+	/// <summary>
+	/// Opens the Evolution Codex in its in-run mode, over whichever screen asked (the level-up's Codex button,
+	/// the pause screen's Run tab). The tree is already paused by that screen; the Codex is its own layer above.
+	/// </summary>
+	/// <param name="select">An entry or an evolution to open on; by default the held spell with something ready.</param>
+	public EvolutionCodex OpenEvolutionCodex(string select = null, CodexFilter filter = CodexFilter.All, Action onClosed = null)
+	{
+		if (EvolutionCodex.IsOpen)
+			return null;
+		CodexContext context = BuildCodexContext();
+		if (string.IsNullOrWhiteSpace(select))
+		{
+			// The spell the player most likely came for: one with an Ascension or the Apotheosis waiting.
+			CodexModel preview = CodexModel.Build(context);
+			select = preview.Filtered(CodexFilter.Spells).FirstOrDefault(e => e.Held)?.Id;
+		}
+		return EvolutionCodex.Open(this, context, select, filter, onClosed);
+	}
+
 	// The player's true current element instance counts (issue #16), keyed by Element name, used as
 	// the baseline for LevelUpMenu's elemental tag section.
 	private Dictionary<string, int> BuildBaselineElementCounts()

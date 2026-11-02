@@ -828,7 +828,7 @@ public sealed class CodexModel
 			{
 				CharacterData wizard = CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(definition.CharacterId, StringComparison.OrdinalIgnoreCase));
 				if (wizard != null)
-					node.Note = $"{wizard.Name}'s Apotheosis";
+					node.Note = $"{wizard.Name}'s";
 			}
 			return node;
 		}

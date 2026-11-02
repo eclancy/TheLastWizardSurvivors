@@ -145,9 +145,14 @@ public class SaveData
 	/// </summary>
 	public List<string> SeenItemIds { get; set; } = new();
 
+	/// <summary>
+	/// Met: recorded here, or claimed in an earlier run - LifetimeStats.ChestItemsCollected, which every save
+	/// has kept since before this record existed, so a returning player's relics are not all "???".
+	/// </summary>
 	public bool IsItemSeen(string itemId) =>
 		!string.IsNullOrWhiteSpace(itemId)
-		&& SeenItemIds.Any(id => id.Equals(itemId.Trim(), System.StringComparison.OrdinalIgnoreCase));
+		&& (SeenItemIds.Any(id => id.Equals(itemId.Trim(), System.StringComparison.OrdinalIgnoreCase))
+			|| (Lifetime?.ChestItemsCollected?.Any(id => id.Equals(itemId.Trim(), System.StringComparison.OrdinalIgnoreCase)) ?? false));
 
 	/// <summary>Records an item as met. True when it was not before (the caller saves).</summary>
 	public bool MarkItemSeen(string itemId)
