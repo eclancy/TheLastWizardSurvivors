@@ -208,7 +208,8 @@ public static class QuestLog
 			Id = NextWizardId,
 			IsNextWizard = true,
 			OnTheRoad = true,
-			Title = "Free the next wizard",
+			// "Free the wizard", not "the next": Eric, 2026-11-02.
+			Title = "Free the wizard",
 			Step = clear != null ? clear.Description : "Further down the road.",
 			StageId = frontier?.Id ?? string.Empty,
 			Deed = clear,

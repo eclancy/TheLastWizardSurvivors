@@ -21,7 +21,7 @@ name is his reward) first.
 **Nothing names a wizard the player has not freed.** A quest that frees someone is titled by his epithet
 ("Free the accused"); a note says who is held there by the same epithet; once he is free both use his
 name. While the next wizard's chapter is not open yet, the quest does not even say who - only where the
-road goes next ("Free the next wizard - Defeat the boss of the Fallow Fields"), because an unrevealed
+road goes next ("Free the wizard - Defeat the boss of the Fallow Fields"; "the next" was dropped from the title, Eric 2026-11-02), because an unrevealed
 chapter is not on the world map either.
 
 | wizard | epithet | held line (in his chapter's note) | freed line |
