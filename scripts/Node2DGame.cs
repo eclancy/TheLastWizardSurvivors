@@ -5590,6 +5590,9 @@ public partial class Node2DGame : Node2D
 	/// <summary>Keeps decor, props and stage hazards out of a circle for the rest of the run.</summary>
 	public void ReserveExploreGround(Vector2 centre, float radius) => exploreReserves.Add((centre, radius));
 
+	/// <summary>Every footprint reserved so far this run (the event's, the wayfinder's, earlier secrets').</summary>
+	public IReadOnlyList<(Vector2 Centre, float Radius)> ExploreReserves => exploreReserves;
+
 	private bool IsInExploreReserve(Vector2 position, float margin = 0f)
 	{
 		foreach (var (centre, radius) in exploreReserves)

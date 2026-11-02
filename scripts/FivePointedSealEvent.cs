@@ -7,14 +7,26 @@ using WizardSurvivors.scripts;
 // the dark wizard turned a ward on its maker: the onmyoji kneels in the middle of his own five-pointed
 // seal, a star cut into a courtyard floor and full of the dark wizard's cold light. Four guardian stones
 // stand at its quarters, each cut with one arrow. Stepping on a stone's plate turns it a quarter,
-// clockwise. When all four face the seal, it breaks, and he is free.
+// clockwise - AND THE TWO STONES BESIDE IT, the ones the ring of the seal runs to from it. When all four
+// face the seal, it breaks, and he is free.
 //
-// What it asks: SOLVE. Every other event is a place, a target, a carry or a fight; this one is a state
-// to put right, and the horde is what makes walking the four plates cost something. It is the one
-// rescue that can be done without killing anything, and the one that can be ruined by nothing - a
-// stone turned past the seal comes round again, so a wrong step costs three more and never locks
-// (the event rules, side-events.md). The stones start a seeded one to three quarters off the seal, so
-// the whole thing is four to twelve steps; about twelve, the doc's guess, is the worst a seed deals.
+// What it asks: SOLVE. Every other event is a place, a target, a carry or a fight; this one is a puzzle
+// (Eric, 2026-11-01: "Yes I like including actual puzzles in the game"), and the horde is what makes
+// walking the plates cost something. It is the one rescue that can be done without killing anything, and
+// one that nothing can ruin: pressing a plate four times is no press at all, so every state can be undone
+// and none locks (the event rules, side-events.md).
+//
+// THE PUZZLE IS ALWAYS SOLVABLE, AND NEVER SHORT. A press adds a quarter to its own stone and its two
+// neighbours: over Z4 that is the circulant matrix (1 1 0 1), whose determinant is -3, a unit mod 4, so
+// every one of the 256 states has exactly one answer in press counts 0-3 a plate, and that answer is the
+// fewest presses (presses commute, and four of one cancel). The start is MADE from the answer: the seed
+// rolls how many times each plate must be pressed (at least MinPresses in all, so never fewer than six),
+// and the stones are turned back from the solved seal by legal presses until that is what it takes.
+// RegressionChecks.ValidateSealPuzzle walks all 256 states from the solved seal to prove the first half,
+// and the generator over a thousand roll sets to prove the second.
+//
+// THE TELL. One press shows the rule: the three stones turn on the same beat and flare, and the seal's
+// light runs out along its ring from the pressed stone to the two it moves, and not to the one opposite.
 //
 // NOT THE BROKEN WARD. The Ruins' spell vault (BrokenWard) is an ORDER: five tall notched stones touched
 // one after another. This is a STATE: four low square blocks, each turned to face the middle, in any
@@ -47,6 +59,13 @@ public partial class FivePointedSealEvent : SideEvent
 	/// <summary>How far below the player's node his feet are (player.tscn's Feet, WorldSprites.SortLift).</summary>
 	private const float FeetBelow = 36f;
 
+	/// <summary>The fewest presses any seed's start can take: a puzzle, never a formality.</summary>
+	public const int MinPresses = 6;
+
+	// How long the light runs along the ring after a press, and how long it takes to reach the neighbours.
+	private const float PressTellSeconds = 1.4f;
+	private const float PressRunSeconds = 0.35f;
+
 	[Export] public float GuardIntervalSeconds { get; set; } = 6f;
 
 	// North, east, south, west: the order of the stones round the seal, of the arrow frames in the sheet,
@@ -57,6 +76,7 @@ public partial class FivePointedSealEvent : SideEvent
 	private readonly int[] facing = new int[StoneCount];
 	private readonly bool[] armed = { true, true, true, true };
 	private readonly float[] turnedAt = { -10f, -10f, -10f, -10f };
+	private readonly float[] pressedAt = { -10f, -10f, -10f, -10f };
 	private bool laidOut;
 	private float guardTimer;
 	private int steps;
@@ -64,8 +84,10 @@ public partial class FivePointedSealEvent : SideEvent
 	protected override string Announcement => "Someone kneels inside a seal cut in the floor.";
 	protected override string ChestLine => "The seal is broken - a chest was left inside it";
 	protected override string Objective => $"Turn the four stones to face the seal  ({Aligned} of {StoneCount})";
-	// The plate of the nearest stone still turned away; the chevron hangs above it.
-	protected override Vector2? PointerTarget => NextPlate();
+	// To the courtyard while he is away from it; nothing once he is in it. Pointing at a plate would be
+	// solving the puzzle for him, and the plates are in plain sight.
+	protected override Vector2? PointerTarget =>
+		IsResolved || Player == null || PlayerWithin(centre, PlateDistance + 120f) ? null : centre;
 	protected override string SiteGlyph => "seal";
 	// The courtyard and the plates outside it, and a little more: placement wants all of it open (no wall
 	// of the ruins through the star), and the furnishing keeps off it.
@@ -85,8 +107,34 @@ public partial class FivePointedSealEvent : SideEvent
 		}
 	}
 
-	/// <summary>Plates stepped on so far this run. For the probe.</summary>
+	/// <summary>Plates pressed so far this run. For the probe.</summary>
 	public int Steps => steps;
+
+	/// <summary>The fewest presses that would break the seal from here. For the probe.</summary>
+	public int PressesLeft => Sum(Solve(Offsets()));
+
+	/// <summary>
+	/// A plate an answer still needs pressed, nearest the player first; -1 once the seal faces in. For the
+	/// probe, which has to solve it rather than walk to an arrow.
+	/// </summary>
+	public int NextPress()
+	{
+		int[] answer = Solve(Offsets());
+		int best = -1;
+		float bestD = float.MaxValue;
+		for (int j = 0; j < StoneCount; j++)
+		{
+			if (answer == null || answer[j] == 0)
+				continue;
+			float d = Player != null ? Player.GlobalPosition.DistanceSquaredTo(Plate(j)) : j;
+			if (d < bestD)
+			{
+				bestD = d;
+				best = j;
+			}
+		}
+		return best;
+	}
 
 	/// <summary>Stone <paramref name="i"/>'s plate, in the world. For the probe.</summary>
 	public Vector2 PlateAt(int i) => Plate(i);
@@ -100,9 +148,88 @@ public partial class FivePointedSealEvent : SideEvent
 
 	private Vector2 Plate(int i) => centre + Quarters[i] * PlateDistance;
 
+	// --- the puzzle, as pure functions (RegressionChecks.ValidateSealPuzzle proves them) -----------------
+	// A state is each stone's OFFSET: quarters clockwise past facing the seal, 0 to 3. Solved is all zero.
+
+	/// <summary>The stones a press of <paramref name="plate"/> turns: its own, and the two beside it on the ring.</summary>
+	public static int[] TurnedBy(int plate) =>
+		new[] { plate, (plate + 1) % StoneCount, (plate + StoneCount - 1) % StoneCount };
+
+	/// <summary>The state after one press of <paramref name="plate"/>.</summary>
+	public static int[] Press(int[] offsets, int plate)
+	{
+		var next = (int[])offsets.Clone();
+		foreach (int i in TurnedBy(plate))
+			next[i] = (next[i] + 1) % StoneCount;
+		return next;
+	}
+
+	/// <summary>
+	/// How many times each plate must be pressed to face every stone in, 0-3 each; the fewest presses there
+	/// are (presses commute, and four of one are none). Null if none - which ValidateSealPuzzle proves never.
+	/// </summary>
+	public static int[] Solve(int[] offsets)
+	{
+		for (int code = 0; code < 256; code++)
+		{
+			var n = new int[StoneCount];
+			for (int j = 0; j < StoneCount; j++)
+				n[j] = (code >> (2 * j)) & 3;
+			bool solves = true;
+			for (int i = 0; i < StoneCount && solves; i++)
+				solves = (offsets[i] + n[i] + n[(i + 1) % StoneCount] + n[(i + StoneCount - 1) % StoneCount]) % StoneCount == 0;
+			if (solves)
+				return n;
+		}
+		return null;
+	}
+
+	public static int Sum(int[] n)
+	{
+		if (n == null)
+			return -1;
+		int total = 0;
+		foreach (int k in n)
+			total += k;
+		return total;
+	}
+
+	/// <summary>
+	/// The seed's start, made from its answer: four rolls say how many times each plate must be pressed (0-3),
+	/// raised one at a time on the plate that needs fewest until there are at least <see cref="MinPresses"/>;
+	/// then, from the solved seal, each plate is pressed the rest of the way round to four - legal presses
+	/// only - which leaves the stones exactly that answer away.
+	/// </summary>
+	public static int[] StartFromRolls(float[] rolls)
+	{
+		var answer = new int[StoneCount];
+		for (int j = 0; j < StoneCount; j++)
+			answer[j] = Mathf.Clamp((int)(rolls[j] * 4f), 0, 3);
+		while (Sum(answer) < MinPresses)
+		{
+			int low = 0;
+			for (int j = 1; j < StoneCount; j++)
+				if (answer[j] < answer[low]) low = j;
+			answer[low]++;
+		}
+		var offsets = new int[StoneCount];
+		for (int j = 0; j < StoneCount; j++)
+			for (int k = 0; k < (StoneCount - answer[j]) % StoneCount; k++)
+				offsets = Press(offsets, j);
+		return offsets;
+	}
+
+	private int[] Offsets()
+	{
+		var o = new int[StoneCount];
+		for (int i = 0; i < StoneCount; i++)
+			o[i] = (facing[i] - Inward(i) + StoneCount) % StoneCount;
+		return o;
+	}
+
 	/// <summary>
 	/// The seal on open ground over its whole disc, as the thaw's lake is (the courtyard is about as wide),
-	/// then each stone's starting arrow from the seed: one to three quarters short of the seal, never on it.
+	/// then the stones' start from the seed (<see cref="StartFromRolls"/>): six to twelve presses away.
 	/// On the Ruins' lattice a disc that wide fits only in a court, one block in eight, so the placer sweeps
 	/// the whole event band for one (ExplorePlacer.EventSiteInBand) rather than giving up near the roll and
 	/// laying the courtyard across the walls.
@@ -111,11 +238,10 @@ public partial class FivePointedSealEvent : SideEvent
 	{
 		AddSite(placer.EventSiteInBand(SiteFootprint, dense: true));
 		centre = MainSite;
-		for (int i = 0; i < StoneCount; i++)
-		{
-			int short_ = 1 + Mathf.Min(2, (int)(placer.NextFloat() * 3f));
-			facing[i] = ((Inward(i) - short_) % StoneCount + StoneCount) % StoneCount;
-		}
+		var rolls = new float[StoneCount];
+		for (int j = 0; j < StoneCount; j++)
+			rolls[j] = placer.NextFloat();
+		SetOffsets(StartFromRolls(rolls));
 		laidOut = true;
 	}
 
@@ -147,10 +273,9 @@ public partial class FivePointedSealEvent : SideEvent
 	{
 		if (!laidOut)
 		{
-			// Placed without the director (nothing in play does that): the plain layout, one turn each.
+			// Placed without the director (nothing in play does that): a fixed start, still a puzzle.
 			centre = MainSite;
-			for (int i = 0; i < StoneCount; i++)
-				facing[i] = (Inward(i) + StoneCount - 1) % StoneCount;
+			SetOffsets(StartFromRolls(new[] { 0.1f, 0.6f, 0.35f, 0.85f }));
 			laidOut = true;
 		}
 
@@ -222,6 +347,12 @@ public partial class FivePointedSealEvent : SideEvent
 			Position = new Vector2(Mathf.Round(ground.X), Mathf.Round(ground.Y - WorldSprites.SortLift)),
 			Offset = new Vector2(-anchorX, WorldSprites.SortLift / 2f - footRow),
 		};
+	}
+
+	private void SetOffsets(int[] offsets)
+	{
+		for (int i = 0; i < StoneCount; i++)
+			facing[i] = (Inward(i) + offsets[i]) % StoneCount;
 	}
 
 	private static Texture2D Load(string file)
@@ -301,7 +432,7 @@ public partial class FivePointedSealEvent : SideEvent
 				if (OnPlate(i, PlateRadius))
 				{
 					armed[i] = false;
-					Turn(i);
+					PressPlate(i);
 				}
 			}
 			else if (!OnPlate(i, RearmRadius))
@@ -331,35 +462,22 @@ public partial class FivePointedSealEvent : SideEvent
 		}
 	}
 
-	private void Turn(int i)
+	// One press: the plate's stone and the two beside it turn a quarter together, on one beat.
+	private void PressPlate(int plate)
 	{
-		facing[i] = (facing[i] + 1) % StoneCount;
-		turnedAt[i] = Clock;
+		pressedAt[plate] = Clock;
 		steps++;
-		// Stone grinding on stone; and the cut filling with his light when it comes to face the seal.
-		SfxPlayer.Impact(Element.Earth, Stone(i));
-		if (IsFacing(i))
-			SfxPlayer.Cast(Element.Arcane, Stone(i));
-	}
-
-	private Vector2? NextPlate()
-	{
-		if (IsResolved || Player == null)
-			return null;
-		float best = float.MaxValue;
-		Vector2? target = null;
-		for (int i = 0; i < StoneCount; i++)
+		bool anyFacing = false;
+		foreach (int i in TurnedBy(plate))
 		{
-			if (IsFacing(i))
-				continue;
-			float d = Player.GlobalPosition.DistanceSquaredTo(Plate(i));
-			if (d < best)
-			{
-				best = d;
-				target = Plate(i);
-			}
+			facing[i] = (facing[i] + 1) % StoneCount;
+			turnedAt[i] = Clock;
+			anyFacing |= IsFacing(i);
 		}
-		return target;
+		// Stone grinding on stone; and a cut filling with his light when one comes to face the seal.
+		SfxPlayer.Impact(Element.Earth, Stone(plate));
+		if (anyFacing)
+			SfxPlayer.Cast(Element.Arcane, Stone(plate));
 	}
 
 	// --- drawing -------------------------------------------------------------------------------------
@@ -378,7 +496,8 @@ public partial class FivePointedSealEvent : SideEvent
 	}
 
 	// The far tell while nobody has come (how the courtyard is found). Then the seal's light: a slow breath
-	// over the star, a pool round him, a glow over every arrow that faces it, and a flare as a stone turns.
+	// over the star, a pool round him, a glow over every arrow that faces it, a flare as a stone turns - and
+	// after a press, the light running out along the ring from the pressed stone to the two it moved.
 	protected override void DrawLight(CanvasItem light)
 	{
 		if (IsDormant)
@@ -394,10 +513,31 @@ public partial class FivePointedSealEvent : SideEvent
 		{
 			Vector2 s = ToLocal(Stone(i)) - new Vector2(0f, 20f);
 			float since = Clock - turnedAt[i];
-			if (since < 0.5f)
-				ExploreArt.DrawGlow(light, s, 70f, new Color(ColdEdge, 0.4f * (1f - since / 0.5f)));
+			if (since < 0.8f)
+				ExploreArt.DrawGlow(light, s, 70f, new Color(ColdEdge, 0.45f * (1f - since / 0.8f)));
 			if (IsFacing(i))
 				ExploreArt.DrawGlow(light, s, 40f, new Color(Cold, 0.24f * Flicker(i)));
+		}
+		for (int plate = 0; plate < StoneCount; plate++)
+		{
+			float since = Clock - pressedAt[plate];
+			if (since >= PressTellSeconds)
+				continue;
+			// Out from the pressed stone both ways round the ring, a quarter of it each way, in the first
+			// PressRunSeconds; then the whole lit run fades. The stone opposite is never reached.
+			float reach = Mathf.Clamp(since / PressRunSeconds, 0f, 1f) * Mathf.Pi / 2f;
+			float fade = 1f - Mathf.Clamp((since - PressRunSeconds) / (PressTellSeconds - PressRunSeconds), 0f, 1f);
+			float from = Mathf.Atan2(Quarters[plate].Y, Quarters[plate].X);
+			const float r = StoneDistance - 6f;
+			for (int k = 0; k < 2; k++)
+			{
+				float to = from + (k == 0 ? -reach : reach);
+				light.DrawArc(c, r, Mathf.Min(from, to), Mathf.Max(from, to), 24, new Color(ColdEdge, 0.55f * fade), 10f);
+				light.DrawArc(c, r, Mathf.Min(from, to), Mathf.Max(from, to), 24, new Color(Cold, 0.85f * fade), 4f);
+				// The head of the run: a bright point travelling to the neighbour.
+				Vector2 head = c + Vector2.FromAngle(to) * r;
+				ExploreArt.DrawGlow(light, head, 26f, new Color(Cold, 0.6f * fade));
+			}
 		}
 	}
 }

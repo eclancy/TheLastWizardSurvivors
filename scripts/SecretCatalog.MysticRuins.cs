@@ -25,6 +25,9 @@ public static partial class SecretCatalog
 				found: "A ward broken from the inside. Touched in the order of their notches, its stones stood again, and its light came to you.") with
 			{
 				IsBuilt = true,
+				// Its ring of stones and the wall it raises want a court on the Ruins' lattice, not a corridor
+				// with walls through it (Eric, 2026-11-01: "The vault should be in open area").
+				OpenRadius = global::BrokenWard.WardRadius + 46f,
 				CreateSite = () => new global::BrokenWard(),
 				RepeatReward = "The ward stands again for a while, and gives up a chest",
 			},

@@ -158,19 +158,34 @@ public partial class ColdForge : SecretVault
 					if (Math.Max(Math.Abs(i), Math.Abs(j)) != r)
 						continue;
 					Vector2 cell = start + new Vector2(i, j) * pitch;
-					for (int k = 0; k < 4; k++)
-					{
-						Vector2 post = cell + new Vector2(k % 2 == 0 ? -half : half, k < 2 ? -half : half);
-						if (game.Terrain == null || !IsHall(game, post) || !game.IsExploreGroundClear(post, HallClearance))
-							continue;
-						Position = post + HallToRing;
-						InHall = true;
-						placer.Reserve(Position, SecretCatalog.VaultFootprint);
-						return;
-					}
+					if (HallBeside(game, cell) is not Vector2 post)
+						continue;
+					Position = post + HallToRing;
+					InHall = true;
+					placer.Reserve(Position, SecretCatalog.VaultFootprint);
+					return;
 				}
 			}
 		}
+	}
+
+	/// <summary>
+	/// The middle of a hall room at one of this maze cell's four corners, or null. What the director's band
+	/// sweep asks of every cell it tries (SecretDefinition.RoomAt), so the forge is placed beside a hall and
+	/// never left standing in a corridor because none was within reach of where the placer happened to roll.
+	/// </summary>
+	public static Vector2? HallBeside(Node2DGame game, Vector2 cell)
+	{
+		if (game?.Terrain == null)
+			return null;
+		float half = LevelGenerator.MazeCellTiles * game.ProceduralTilePixels * 0.5f;
+		for (int k = 0; k < 4; k++)
+		{
+			Vector2 post = cell + new Vector2(k % 2 == 0 ? -half : half, k < 2 ? -half : half);
+			if (IsHall(game, post) && game.IsExploreGroundClear(post, HallClearance))
+				return post;
+		}
+		return null;
 	}
 
 	// A hall: no wall anywhere on two circles round the post, at 290 and 200 px - a 672 px room's inside

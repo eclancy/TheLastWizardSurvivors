@@ -211,6 +211,17 @@ never disagree with what is painted.
 - **On the maze** (Cursed Dungeon) a site snaps to a cell centre, preferring hall rooms. The
   endless maze is connected (every block is connected inside and to all four neighbours), so
   any cell is reachable; nothing needs the navigation window to be consulted at placement.
+- **On walled ground a vault is swept for the room it needs** (2026-11-01, Eric: "The vault should
+  be in open area"). A survey of every playable chapter on four seeds found three vaults placed
+  "anyway" across walls: the Broken Ward (Ruins), the Geode Heart (Cave) and the Cold Forge
+  (Dungeon). `SecretDefinition.OpenRadius` is the room a site lays itself out in, tested open over
+  its whole disc (260 px for the first two; the decor is still kept off the full 420), and
+  `SecretDefinition.RoomAt` a spot test of its own (the Cold Forge: a hall at a corner of the cell,
+  `ColdForge.HallBeside`); either makes the director use `ExplorePlacer.AtBearingInBand`, which
+  sweeps the whole band when the search near the roll finds nothing, and keeps off ground already
+  reserved (the Five-Pointed Seal's court). Seeds 4242, 31, 7, 1001, 99 and 2026: no fallback, every
+  ward and heart on open ground, every forge in a hall. `--explore-log` says where each ended up and
+  whether its room is open.
 
 ### Distance bands
 

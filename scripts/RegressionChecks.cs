@@ -82,6 +82,7 @@ public static class RegressionChecks
 		ValidateSpellClassificationText(warnings);
 		ValidateExploreArt(warnings);
 		ValidateStageHints(warnings);
+		ValidateSealPuzzle(warnings);
 		ValidateThawArt(warnings);
 		ValidateGravewell(warnings);
 		ValidateCraters(warnings);
@@ -163,6 +164,77 @@ public static class RegressionChecks
 				}
 			}
 		}
+	}
+
+	// THE COUPLED SEAL (FivePointedSealEvent): a press turns its stone and the two beside it. Proved here rather
+	// than argued: every one of the 256 states is reached from the solved seal by presses (so every start can
+	// be solved - a press is undone by three more of it), the solver's answer is the fewest presses for every
+	// state (its press counts sum to the breadth-first distance to solving it), and the seeded start is at least MinPresses
+	// away on a thousand roll sets, the extremes included. A puzzle with an unreachable state would be a rescue
+	// that can never be made, and nothing in a run would say so.
+	private static void ValidateSealPuzzle(List<string> warnings)
+	{
+		const int n = FivePointedSealEvent.StoneCount;
+		static int Code(int[] o) => o[0] | (o[1] << 2) | (o[2] << 4) | (o[3] << 6);
+		static int[] Decode(int code) => new[] { code & 3, (code >> 2) & 3, (code >> 4) & 3, (code >> 6) & 3 };
+
+		for (int plate = 0; plate < n; plate++)
+		{
+			int[] turned = FivePointedSealEvent.TurnedBy(plate);
+			var set = new HashSet<int>(turned);
+			if (turned.Length != 3 || !set.Contains(plate) || !set.Contains((plate + 1) % n) || !set.Contains((plate + n - 1) % n))
+				warnings.Add($"Seal puzzle: plate {plate} turns stones {string.Join(",", turned)}, not its own and the two beside it.");
+		}
+
+		var distance = new int[256];
+		Array.Fill(distance, -1);
+		var queue = new Queue<int>();
+		distance[0] = 0;
+		queue.Enqueue(0);
+		while (queue.Count > 0)
+		{
+			int code = queue.Dequeue();
+			for (int plate = 0; plate < n; plate++)
+			{
+				int next = Code(FivePointedSealEvent.Press(Decode(code), plate));
+				if (distance[next] >= 0)
+					continue;
+				distance[next] = distance[code] + 1;
+				queue.Enqueue(next);
+			}
+		}
+		int unreached = distance.Count(d => d < 0);
+		if (unreached > 0)
+			warnings.Add($"Seal puzzle: {unreached} of 256 states cannot be reached from the solved seal, so a start there can never be solved.");
+		// Presses only ever add, so the presses that SOLVE a state are the ones that reach its negation from the
+		// solved seal (a state plus them is zero): the breadth-first distance to -s is the fewest for s.
+		for (int code = 0; code < 256; code++)
+		{
+			int[] state = Decode(code);
+			int back = Code(new[] { (n - state[0]) % n, (n - state[1]) % n, (n - state[2]) % n, (n - state[3]) % n });
+			if (distance[back] < 0)
+				continue;
+			int presses = FivePointedSealEvent.Sum(FivePointedSealEvent.Solve(state));
+			if (presses != distance[back])
+			{
+				warnings.Add($"Seal puzzle: state {string.Join(",", state)} takes {distance[back]} presses to solve, but the solver says {presses}.");
+				break;
+			}
+		}
+
+		var rng = new Random(20261101);
+		int fewest = int.MaxValue, most = 0;
+		for (int t = 0; t < 1000 + 16; t++)
+		{
+			float[] rolls = t < 16
+				? new[] { (t & 1) * 0.99f, ((t >> 1) & 1) * 0.99f, ((t >> 2) & 1) * 0.99f, ((t >> 3) & 1) * 0.99f }
+				: new[] { (float)rng.NextDouble(), (float)rng.NextDouble(), (float)rng.NextDouble(), (float)rng.NextDouble() };
+			int presses = FivePointedSealEvent.Sum(FivePointedSealEvent.Solve(FivePointedSealEvent.StartFromRolls(rolls)));
+			fewest = Math.Min(fewest, presses);
+			most = Math.Max(most, presses);
+		}
+		if (fewest < FivePointedSealEvent.MinPresses || most > 3 * n)
+			warnings.Add($"Seal puzzle: seeded starts take {fewest} to {most} presses; every one should take {FivePointedSealEvent.MinPresses} to {3 * n}.");
 	}
 
 	// The thaw's lake and block (tools/art/thaw_lake.py, ThawLake, ThawEvent): four textures the shader

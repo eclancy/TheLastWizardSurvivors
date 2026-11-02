@@ -253,8 +253,17 @@ event, so `SideEventDirector.ForStage("stage_4")` simply gained its line.
   ring cut in flagstones, full of the arcane ramp's violet - with him kneeling in it a ramp step into
   shadow; four low square stones at its quarters, each with one arrow on its top; a plate outside each.
   A step ONTO a plate turns its stone a quarter clockwise; standing does nothing more until he steps off
-  (52 px). The seed starts each stone one to three quarters short, so four to twelve steps; nothing
-  fails. A ring of four of the chapter's enemies every 6 s while he is in the courtyard. The courtyard is
+  (52 px). **Coupled since 2026-11-01** (Eric: "Yes I like including actual puzzles in the game"): a press
+  also turns the two stones beside it on the ring. Over Z4 that is the circulant (1 1 0 1), determinant
+  -3, a unit mod 4, so every one of the 256 states has exactly one answer in press counts 0-3 a plate,
+  and that answer is the fewest presses. The start is made from the answer - four seeded rolls say how
+  often each plate must be pressed, raised to at least six, and the stones are turned back from the
+  solved seal by legal presses - so every seed is six to twelve presses away. `ValidateSealPuzzle` proves
+  it (all 256 states reachable, the solver equal to the breadth-first distance, 1,016 roll sets in
+  range). The tell: the three stones turn and flare on one beat and the seal's light runs along its
+  ring from the pressed stone to the two it moved; the objective counts "n of 4" facing, and the arrow
+  points at the courtyard only while he is away from it. Nothing fails or locks: four presses of one
+  plate are none. A ring of four of the chapter's enemies every 6 s while he is in the courtyard. The courtyard is
   the event's sibling and stays, broken and lit, after the win. It needs 290 px of open ground, which on
   the Ruins' lattice is only a court: `ExplorePlacer.EventSiteInBand` sweeps the whole band for one.
 - **His unlock** is the site's derived Road deed, "The Seal Broken", secret until `stage_4`; the locked
@@ -273,7 +282,8 @@ event, so `SideEventDirector.ForStage("stage_4")` simply gained its line.
   24 a ward at most.
 
 **Verified:** build; the validator (0 errors, main's 4 warnings); `_ExploreProbe --stage=4` on four seeds
-(won in 7 to 11 steps, him freed in memory); `_BalanceHarness --character=9 --all-unlocked
+(won in 7 to 11 steps, him freed in memory; coupled, on six seeds, solved by the probe itself in 6 or 9
+presses); `_BalanceHarness --character=9 --all-unlocked
 --seek-apotheosis --immortal` (form offered and taken at 9.9 minutes, player level 23); `_UiShot` of the
 prison, the broken seal, the three card states, the hint and the form, at both canvases. **Not
 verified:** whether the stones are fun or the courtyard reads at a glance mid-fight; the sound, which was

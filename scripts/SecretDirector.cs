@@ -202,10 +202,23 @@ public partial class SecretDirector : Node
 		bool beside = !string.IsNullOrEmpty(PlaceBesideSpawn) && PlaceBesideSpawn.Equals(secret.Id, StringComparison.OrdinalIgnoreCase);
 		if (beside)
 			at = placer.AtBearing(0f, BesideSpawnChunks, BesideSpawnChunks, Mathf.Min(secret.Footprint, 160f));
+		else if (secret.OpenRadius > 0f || secret.RoomAt != null)
+		{
+			// Swept for the room it needs (SecretDefinition.OpenRadius, RoomAt) rather than placed anyway.
+			float room = secret.OpenRadius > 0f ? secret.OpenRadius : secret.Footprint;
+			Func<Vector2, bool> also = secret.RoomAt == null ? null : p => secret.RoomAt(Game, p);
+			at = avoid.Count == 0
+				? placer.EventSiteInBand(room, dense: secret.OpenRadius > 0f, keepOff: Game.ExploreReserves, also: also)
+				: placer.AtBearingInBand(PickBearing(placer, avoid), minChunks, maxChunks, room, dense: secret.OpenRadius > 0f,
+					keepOff: Game.ExploreReserves, also: also);
+		}
 		else if (avoid.Count == 0)
 			at = placer.EventSite(secret.Footprint);
 		else
 			at = placer.AtBearing(PickBearing(placer, avoid), minChunks, maxChunks, secret.Footprint);
+		// Placed by the room it needs; the decor is still kept off its whole footprint.
+		if (secret.OpenRadius > 0f && secret.Footprint > secret.OpenRadius)
+			placer.Reserve(at, secret.Footprint);
 
 		SecretSite site = secret.CreateSite();
 		site.Name = ToPascal(secret.Id);
@@ -213,6 +226,9 @@ public partial class SecretDirector : Node
 		site.SecretId = secret.Id;
 		site.Position = at;
 		site.LayOut(placer);
+		// Measured before the site stamps its own solid parts into the ground, which the test would then see.
+		float roomRadius = secret.OpenRadius > 0f ? secret.OpenRadius : secret.Footprint;
+		bool roomOpen = logPlacement && Game.IsExploreGroundClearDense(site.Position, roomRadius);
 		foreach (var (centre, radius) in placer.Reserved)
 			Game.ReserveExploreGround(centre, radius);
 		foreach (var (centre, radius) in site.SolidFootprints)
@@ -221,8 +237,10 @@ public partial class SecretDirector : Node
 		placed.Add(site);
 
 		if (logPlacement || beside)
-			GD.Print($"SECRETS stage {StageId}: {secret.DisplayName} ({secret.Placement}) at ({at.X:0},{at.Y:0}), "
-				+ $"{at.DistanceTo(Game.StageOrigin) / 1536f:0.0} chunks out, bearing {Mathf.RadToDeg(BearingOf(at)):0} deg"
+			GD.Print($"SECRETS stage {StageId}: {secret.DisplayName} ({secret.Placement}) at ({site.Position.X:0},{site.Position.Y:0}), "
+				+ $"{site.Position.DistanceTo(Game.StageOrigin) / 1536f:0.0} chunks out, bearing {Mathf.RadToDeg(BearingOf(site.Position)):0} deg"
+				+ (site.Position.DistanceTo(at) > 1f ? $" (placed at ({at.X:0},{at.Y:0}), moved by its layout)" : "")
+				+ $", ground {(roomOpen ? "open" : "NOT open")} over {roomRadius:0} px"
 				+ (beside ? " - beside the spawn (--secret)" : ""));
 		return site;
 	}
