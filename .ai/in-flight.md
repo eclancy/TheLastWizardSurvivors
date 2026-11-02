@@ -130,8 +130,7 @@ builds to 120 and seven.
    (the singer: musical notes drifting in from his side, and his singing heard), its line fading in on
    screen as a hint rather than in a speech bubble; all wizards' clues this way. The wizard trapped in
    ice sits in the centre of a large, magically animated lake (the current art reads corny).
-7. **Music** (built on `wip/battle-music`, HELD until Eric has listened, per `.ai/audio-direction.md`'s
-   unheard-render rule; reels sent 2026-11-01): drums and bass from bar one in each chapter's own rhythm, the
+7. **Music** (merged: Eric listened and said "Merge it", 2026-11-01): drums and bass from bar one in each chapter's own rhythm, the
    melody back at pace minute 5, a boss layer per chapter, a 1 s menu handover; +2.6 MB per release zip.
    Open: the melody leaves at 0:24 until minute 5; no melody under the boss layer; the castle's stems
    left for their flip. The menu's music should give way to more interesting, thematic battle music for each level.
