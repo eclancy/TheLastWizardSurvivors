@@ -271,6 +271,103 @@ def spell_summon():
     return S.dc_block(S.reverb(S.drive(out, 2.0), size=0.6, mix=0.2))
 
 
+# Where the crash lands inside spell_maw_open, in seconds from the start of the file.
+# BlackTentacles.MawCrashLeadSeconds must match it: the file is started that long before the breach
+# (MawBreach of MawOpenSeconds), so the crash lands on the frame the plates are thrown.
+MAW_CRASH_AT = 0.20
+
+
+def spell_maw_open():
+    """Elder God Maw breaking up through the earth (BlackTentacles, the maw's summon; Eric, 0.10.0:
+    "should make a deep, scary crashing sound when it opens"). It replaces spell_summon for the maw's
+    cast and is timed to its three beats, which the shader and BlackTentacles share:
+
+      0.00-0.20 s  the heave: the ground swelling under the slow, a rumble growing out of nothing
+                   with two strain cracks in it - stone giving before it goes
+      0.20 s       the breach: the CRACK (a band of split stone over a thump falling 110 to 46 Hz)
+                   and the rubble thrown up after it, irregularly gated and decimated, as boss_death's
+                   collapse is, but a third of a second
+      0.26-0.76 s  something huge rising: stone grinding as the maw pushes up, its cutoff climbing,
+                   over a sub swelling 40 to 64 Hz - grinding, never a voice (a growl is boss_roar's)
+      0.56-1.06 s  the slabs landing on the rim (BlackTentacles' debris flies 0.36-0.5 s): four heavy
+                   plates one after another and a bounce, so the envelope steps down in blows
+      to 1.5 s     the dust settling, short and low, in a big room
+
+    Deep, so it goes under 80 Hz, which the budget keeps for the explosion, the boss and earth - and
+    this is earth breaking. It earns it the way spell_explosion does: it is not a swarm sound (one
+    maw every three to four seconds at most, BaseCooldown 4.0), and above 160 Hz it is lowpassed
+    hard, so the crack is the only thing in it that reaches the casts' band."""
+    rng = __import__("random").Random(811)
+    dur = 1.5
+    crash = MAW_CRASH_AT
+
+    # The heave: lowpassed noise and a low sine swelling into the breach.
+    hd = crash + 0.04
+    hn = S.n_samples(hd)
+    heave = S.lowpass(S.osc("noise", 0, hd, seed=813), 160.0, 0.9)
+    heave = S.mix(heave, S.gain(S.osc("sine", S.sweep(hd, 38.0, 56.0, 1.0), hd), 0.7))
+    heave = S.env_mul(heave, S.ramp(hn, 0.0, 1.0, 2.2))
+    strain = []
+    for k, (t, f) in enumerate(((0.07, 900.0), (0.15, 1200.0))):
+        tn = S.n_samples(0.03)
+        tick = S.bandpass(S.osc("noise", 0, 0.03, seed=817 + k), f, 2.2)
+        strain.append((S.env_mul(S.lowpass(tick, 2400.0), S.decay(tn, 5.0)), t, 0.35 + 0.15 * k))
+
+    # The breach: split stone over the thump. Both short - the crash is one blow, not a swell.
+    sd = 0.12
+    sn = S.n_samples(sd)
+    split = S.bandpass(S.osc("noise", 0, sd, seed=821), S.sweep(sd, 2000.0, 450.0, 0.6), 0.8)
+    split = S.env_mul(S.lowpass(split, 3200.0), S.decay(sn, 3.0))
+    thump_dur = 0.45
+    tn = S.n_samples(thump_dur)
+    thump = S.osc("sine", S.sweep(thump_dur, 110.0, 46.0, 0.35), thump_dur)
+    thump = S.env_mul(thump, S.expdecay(tn, 5.5))
+    rubble_dur = 0.3
+    rn = S.n_samples(rubble_dur)
+    rubble = S.gate(S.decimate(S.lowpass(S.osc("noise", 0, rubble_dur, seed=823), 1200.0), 4),
+                    28.0, 0.6, seed=827)
+    rubble = S.env_mul(rubble, S.decay(rn, 2.2))
+
+    # The rise: stone grinding as the maw pushes up through it - low noise chopped irregularly, its
+    # cutoff climbing out of the hole, over a sub swelling 40 to 64 Hz. Not a voice: a growl is
+    # boss_roar's construct, and the first draft's FM groan measured 0.077 from it.
+    gd = 0.28
+    gn = S.n_samples(gd)
+    grind = S.lowpass(S.osc("noise", 0, gd, seed=829), S.sweep(gd, 120.0, 420.0, 0.8), 1.2)
+    grind = S.gate(grind, 22.0, 0.7, seed=833)
+    swell = S.osc("sine", S.sweep(gd, 40.0, 64.0, 1.0), gd)
+    rise = S.env_mul(S.mix(grind, S.gain(swell, 0.6)), S.ad(gd, 0.06, 1.4, hold=0.08))
+
+    # The slabs: four heavy plates landing one after another on the rim, then a bounce - each its
+    # own blow, so the envelope steps down in impacts where every other low sound in the set decays.
+    slabs = []
+    for k, (t, g) in enumerate(((0.36, 0.95), (0.43, 0.85), (0.5, 0.8), (0.6, 0.55), (0.75, 0.35))):
+        ld = 0.13
+        ln = S.n_samples(ld)
+        body = S.env_mul(S.osc("sine", S.sweep(ld, 130.0, 62.0, 0.5), ld), S.expdecay(ln, 8.0))
+        grit = S.env_mul(S.lowpass(S.osc("noise", 0, ld, seed=831 + k), 800.0), S.expdecay(ln, 16.0))
+        slabs.append((S.mix(body, S.gain(grit, 0.7)), crash + t + rng.uniform(0.0, 0.02), g))
+
+    # The tail: the dust settling, short and low.
+    td = 0.7
+    tail = S.lowpass(S.osc("noise", 0, td, seed=837), S.sweep(td, 200.0, 80.0, 0.8), 0.9)
+    tail = S.env_mul(tail, S.ad(td, 0.05, 3.2))
+
+    out = S.layer(strain + slabs + [
+        (heave, 0.0, 0.35),
+        (split, crash, 1.0),
+        (thump, crash, 1.0),
+        (rubble, crash + 0.012, 0.6),
+        (rise, crash + 0.04, 0.45),
+        (tail, crash + 0.95, 0.25),
+    ])
+    # Driven for weight as the explosion is, and lowpassed after the drive (a drive left last is a
+    # hiss, audio-direction 6); the highpass at 34 Hz keeps the sub a felt floor, not a DC shove.
+    out = S.lowpass(S.drive(S.pad(out, dur), 2.4), 3600.0, 0.707)
+    out = S.highpass(out, 34.0, 0.707)
+    return S.dc_block(S.reverb(out, size=0.88, damp=0.5, mix=0.3))
+
+
 def spell_bow_draw():
     """HuntersDraw wind-up. Deliberately 0.45 s so it can telegraph the release.
 
@@ -1217,6 +1314,10 @@ REGISTRY += [
     ("spell_stormsweep",    "spell",  -14.0, spell_stormsweep,    False),
     ("spell_sleet_rune",    "spell",  -22.0, spell_sleet_rune,    False),
     ("spell_summon",        "spell",  -9.0,  spell_summon,        False),
+    # Elder God Maw's open: the maw's summon cue in place of spell_summon, so the same slot and the
+    # same level - one maw every three to four seconds, between the once-a-second and once-a-minute
+    # rows, at the summon's -9.
+    ("spell_maw_open",      "spell",  -9.0,  spell_maw_open,      False),
     ("spell_bow_draw",      "spell",  -15.0, spell_bow_draw,      False),
     ("spell_bow_release",   "spell",  -10.0, spell_bow_release,   False),
 

@@ -118,6 +118,10 @@ public partial class BlackTentacles : Node2D
 	private const float MawRim = 0.86f;
 	// Of the slow's reach at the moment: how far out the heaving dome reaches.
 	private const float MawDome = 0.62f;
+	// Seconds into spell_maw_open at which its crash lands (MAW_CRASH_AT in tools/audio/sfx.py, and
+	// the two must move together): the file starts this long before the breach, so the stone splits
+	// in the ear on the frame the plates are thrown, with the heave before it already rumbling.
+	private const float MawCrashLeadSeconds = 0.20f;
 	/// <summary>Clear ground kept between two maws' rims, in px. Four art pixels, which also absorbs
 	/// CastAt's snap to the art grid (at most 1.5 px), so two rims can never touch.</summary>
 	public const float RiftGap = 8f;
@@ -197,6 +201,8 @@ public partial class BlackTentacles : Node2D
 	private int healed;
 	private float seed;
 	private bool cast;
+	// The maw's crash is still to play (CastAt arms it; _Process plays it on the breach's beat).
+	private bool mawOpenPending;
 	private readonly List<Enemy> inside = new List<Enemy>();
 
 	private float OpenTime => face == Face.ElderGodMaw ? MawOpenSeconds : OpenSeconds;
@@ -516,7 +522,12 @@ public partial class BlackTentacles : Node2D
 		UpdateGround();
 		ground.QueueRedraw();
 
-		SfxPlayer.AtPosition(SfxCatalog.SpellSummon, GlobalPosition);
+		// The maw's open is its own sound (Eric, 0.10.0: "a deep, scary crashing sound when it opens"),
+		// timed to the breach in _Process; it replaces the summon cue rather than stacking a second
+		// loud sound on the same cast.
+		mawOpenPending = face == Face.ElderGodMaw;
+		if (!mawOpenPending)
+			SfxPlayer.AtPosition(SfxCatalog.SpellSummon, GlobalPosition);
 	}
 
 	public override void _Process(double delta)
@@ -525,6 +536,11 @@ public partial class BlackTentacles : Node2D
 			return;
 		float dt = (float)delta;
 		age += dt;
+		if (mawOpenPending && age >= MawBreach * MawOpenSeconds - MawCrashLeadSeconds)
+		{
+			mawOpenPending = false;
+			SfxPlayer.AtPosition(SfxCatalog.SpellMawOpen, GlobalPosition);
+		}
 		TickFlings();
 		TickWisps();
 		if (age >= CloseAt + CloseSeconds)

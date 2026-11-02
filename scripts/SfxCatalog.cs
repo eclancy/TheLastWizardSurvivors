@@ -28,6 +28,9 @@ public static class SfxCatalog
 	public const string SpellBeamEnd = "spell_beam_end";
 	public const string SpellOrbit = "spell_orbit";
 	public const string SpellSummon = "spell_summon";
+	// Elder God Maw breaking up through the earth (BlackTentacles, timed to the breach): the maw's
+	// summon cue, in place of SpellSummon. Normal tier - one maw every three to four seconds.
+	public const string SpellMawOpen = "spell_maw_open";
 	public const string SpellBowDraw = "spell_bow_draw";
 	public const string SpellBowRelease = "spell_bow_release";
 	// One Starfall star landing (Starfall.Land): a small glass twinkle. It plays for every star, hit
@@ -120,7 +123,7 @@ public static class SfxCatalog
 	private static readonly string[] NonElementNames =
 	{
 		SpellExplosion, SpellBeamStart, SpellBeamLoop, SpellBeamEnd,
-		SpellOrbit, SpellSummon, SpellBowDraw, SpellBowRelease, SpellStarfall, SpellStormsweep, SpellSleetRune,
+		SpellOrbit, SpellSummon, SpellMawOpen, SpellBowDraw, SpellBowRelease, SpellStarfall, SpellStormsweep, SpellSleetRune,
 		SpellFamiliarBite,
 		PlayerHurt, PlayerDodge, PlayerHeal, PlayerShieldAbsorb,
 		PlayerShieldBreak, PlayerDeath, PlayerLowHealth,
@@ -141,8 +144,8 @@ public static class SfxCatalog
 
 	private static string[] allNames;
 
-	// Every sound the game expects to exist: the 57 named above, the three hurt variants, and
-	// the twelve casts and twelve impacts derived from the element enum. 84 in total, which is
+	// Every sound the game expects to exist: the 58 named above, the three hurt variants, and
+	// the twelve casts and twelve impacts derived from the element enum. 85 in total, which is
 	// exactly what tools/audio/build.py reports writing.
 	public static string[] AllNames
 	{
@@ -182,7 +185,7 @@ public static class SfxCatalog
 		Critical,
 	}
 
-	// Critical is deliberately tiny - eleven of eighty-four. player_hurt is loud and important and is
+	// Critical is deliberately tiny - eleven of eighty-five. player_hurt is loud and important and is
 	// NOT here: while the player is being swarmed it fires several times a second, and a duck
 	// that retriggers before it releases turns the mix into a pump and removes hit feedback at
 	// the exact moment the player is dying. The Geode Heart's shatter is: once a run at most, a
