@@ -15,7 +15,9 @@ written and this list wins.
    be parts of one object, but a relic may now be no set's piece at all.
 2. **Yes**: build two boons now, Waywiser (a starter) and Bone Rattle (a chapter deed), and the
    other three later from the sources proposed.
-3. **No nudge.** *"Chests shouldn't lean toward sets you're already working on, but you can use
+3. **No nudge** (reversed later the same day: after the chest simulation showed wave 1 costing every set about
+   a third of its completions, Eric took a **2x lean** toward started sets - `ChestItemCatalog.StartedSetLean`,
+   `.ai/passives-and-items.md` 8j - so this answer stands only for the rerolls and bans it added). *"Chests shouldn't lean toward sets you're already working on, but you can use
    rerolls on chests as well as level ups. You can also ban items."* So instead: **the run's
    rerolls and bans work on the chest screen too** (the same `RerollsRemaining`/`BansRemaining`
    pools the level-up screen spends): a reroll re-deals the chest's relics, a ban takes a relic

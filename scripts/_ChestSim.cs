@@ -33,8 +33,8 @@ using WizardSurvivors.scripts;
 //   random - any card but the Penknife: a player who does not read the sets.
 //   rarest - the balance bot's ordinary policy (_BalanceHarness.PickChestOrdinary).
 //   chaser - finishes a set when it can, else advances the set it is furthest into, else starts one,
-//            rarest first on a tie: the ceiling for a player who plays for sets, with no lean in the
-//            offer (Eric, 2026-11-02: "Chests shouldn't lean toward sets you're already working on").
+//            rarest first on a tie: the ceiling for a player who plays for sets. The offer leans toward a
+//            started set by ChestItemCatalog.StartedSetLean (2 in the game since 2026-11-02; --lean=X overrides).
 // "chaser+rN" is the one named option with charges: the chaser spends up to N of the run's rerolls on a
 // chest that offers nothing for a set it has begun (.ai/new-items.md, answer 3: rerolls work on chests).
 // --chest-rerolls=0 drops it.

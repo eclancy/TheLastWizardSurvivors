@@ -859,11 +859,13 @@ public static class ChestItemCatalog
 
 	/// <summary>
 	/// How much more often a chest offers an unowned piece of a set the player has started and not finished:
-	/// a multiplier on its offer weight. 1 is no lean - Eric's rule since 2026-11-02 ("Chests shouldn't lean
-	/// toward sets you're already working on") - and the game ships at 1. A static rather than a constant so
-	/// _ChestSim can measure a lean (--lean=X) before anyone decides to have one (#44, .ai/passives-and-items.md 8j).
+	/// a multiplier on its offer weight. 2 since 2026-11-02 (#44): Eric first ruled a lean out ("Chests
+	/// shouldn't lean toward sets you're already working on"), then, with wave 1's six relics costing every set
+	/// about a third of its completions, asked for one ("Lean we can implement"). At 2 a run that picks at
+	/// random completes a set 88.7% of the time, against 82.5% with none and 92.1% before wave 1
+	/// (.ai/passives-and-items.md 8j). A static so _ChestSim can measure others (--lean=X).
 	/// </summary>
-	public static float StartedSetLean { get; set; } = 1f;
+	public static float StartedSetLean { get; set; } = 2f;
 
 	public static List<string> GetChestItemOptions(IReadOnlyCollection<string> ownedItems, RandomNumberGenerator rng = null, int count = 3,
 		IReadOnlyCollection<string> unavailable = null, ChestOfferMemory memory = null)

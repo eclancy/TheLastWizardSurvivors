@@ -1236,7 +1236,8 @@ piece of a set the player holds a piece of and has not finished; the game ships 
 | 2 | 88.7% | 91.7% | 2.07 | 12 | 7.9% | 22.4% |
 | 3 | 91.1% | 94.3% | 2.31 | 11 | 10.1% | 23.8% |
 
-A lean of 2-3 puts set completion back where it was before wave 1 (92.1% random). It does little for the
+**Eric chose the lean, at 2 (2026-11-02: "Lean we can implement") - in the game now; the Crown's
+restructure and the Relic weight were not taken.** A lean of 2-3 puts set completion back where it was before wave 1 (92.1% random). It does little for the
 sets with a Relic-tier piece - the Crown, the Reliquary, the Regalia, the Brazier, the Tithe Chalice -
 whose piece is simply rarely offered (Relic weight 0.08), so a lean on it has little to multiply; those need
 the Relic weight (proposal 2) or the Crown's restructure (proposal 1).
