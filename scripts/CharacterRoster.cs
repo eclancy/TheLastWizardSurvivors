@@ -35,6 +35,9 @@ public static class CharacterRoster
 		"res://CharacterData_Laelaps.tres",
 		// The chapter wizards (.ai/chapter-wizards.md), appended so every saved index keeps its wizard.
 		"res://CharacterData_Seimei.tres",
+		// Taken on the hardest road (.ai/dark-wizard-playable.md): the dark wizard himself. Appended, as everyone
+		// after the four is, so every saved index keeps its wizard (index 10).
+		"res://CharacterData_DarkWizard.tres",
 	};
 
 	// Loaded once and held. Every call used to load all seven again, and each load hands back a

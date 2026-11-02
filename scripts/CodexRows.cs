@@ -778,8 +778,12 @@ public static class CodexRows
 				// His name is his reward (.ai/side-events.md, "Secret wizards"): until he is free the
 				// row says only that someone is, and shows his shape - the character select's card.
 				entry.Meta = "Frees someone";
-				Texture2D portrait = WizardPortrait(deed.CharacterUnlockId);
-				entry.MetaGlyph = portrait != null ? BuildSilhouette(portrait, palette ?? Stone) : entry.MetaGlyph;
+				// One sealed until he is free (the dark wizard) shows the seal, never his shape.
+				Texture2D portrait = UnlockCatalog.GetCharacter(deed.CharacterUnlockId)?.SealedUntilFreed == true
+					? null : WizardPortrait(deed.CharacterUnlockId);
+				entry.MetaGlyph = portrait != null ? BuildSilhouette(portrait, palette ?? Stone)
+					: UnlockCatalog.GetCharacter(deed.CharacterUnlockId)?.SealedUntilFreed == true
+						? StatIcons.Load("sealed") ?? entry.MetaGlyph : entry.MetaGlyph;
 			}
 			else if (OwnedRewardLine(deed, save) is string owned)
 				entry.Meta = owned;

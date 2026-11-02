@@ -231,6 +231,22 @@ public static class AchievementDefinitions
 
 	public static string SecretDeedId(string secretId) => SecretDeedPrefix + (secretId ?? string.Empty).Trim();
 
+	/// <summary>The deed that takes the dark wizard: the Throne won on Hardcore (.ai/dark-wizard-playable.md).</summary>
+	public const string TakerTakenId = "the_taker_taken";
+
+	/// <summary>The Throne's boss, the dark wizard (BossCatalog).</summary>
+	public const string ThroneBossId = "throne_dark_wizard";
+
+	/// <summary>
+	/// A run won over the dark wizard on the Hardcore difficulty: the victory's boss is his and the run was
+	/// played on <see cref="GlobalStatsManager.BalancePresetHardcore"/> (Node2DGame.BuildRunResult reads the
+	/// preset the run was set up with). False with no run - nothing else records the difficulty a boss fell on.
+	/// </summary>
+	public static bool WonTheThroneOnHardcore(global::RunResult run) =>
+		run != null && run.Outcome == global::RunOutcome.Victory
+		&& string.Equals(run.BossId, ThroneBossId, StringComparison.OrdinalIgnoreCase)
+		&& GlobalStatsManager.NormalizeBalancePresetId(run.BalancePresetId) == GlobalStatsManager.BalancePresetHardcore;
+
 	/// <summary>The Grimoire Restored: every spell recovered, now the collection rather than the final gate's key.</summary>
 	public const string GrimoireRestoredId = "grimoire_restored";
 
@@ -423,6 +439,27 @@ public static class AchievementDefinitions
 		BossClearArcane("bridge_crossed", "Across the Water", "bridge_constable", "the Last Bridge", 350),
 		BossClearArcane("court_emptied", "No One Left", "court_seneschal", "the Court", 400),
 		BossClearArcane("throne_taken_back", "Taken Back", "throne_dark_wizard", "the Throne", 1000),
+		// THE TAKER TAKEN (.ai/dark-wizard-playable.md, Eric 2026-11-02: "the dark wizard should be unlockable if
+		// you beat the whole game on hard mode"). The Throne is the end of the road and its gate asks for all of it,
+		// so beating him there on Hardcore is beating the whole game on Hardcore. Measured on the run that ends -
+		// the save keeps which bosses fell but never on which difficulty - and kept once done (UnlockedAchievementIds),
+		// so no field and no schema step. No BossId: the chapter's clear is Taken Back, and a second deed naming
+		// the boss would be read as the Throne's warden deed (StageRewards.WardenDeed). Pays him and his spell; he
+		// is never named while locked (CodexRows.HidesWizard: "Frees someone").
+		new()
+		{
+			Id = TakerTakenId, DisplayName = "The Taker Taken",
+			Description = "Defeat the boss of the Throne on Hardcore.",
+			RewardText = "Unlocks The Dark Wizard and The Taking",
+			CharacterUnlockId = "dark_wizard",
+			SpellUnlockId = "the_taking",
+			Category = AchievementCategory.Challenge,
+			Kind = AchievementKind.Road,
+			Visibility = AchievementVisibility.ChapterOpen,
+			StageId = StageOfBoss(ThroneBossId),
+			Measure = c => WonTheThroneOnHardcore(c.Run) ? 1f : 0f,
+			Target = 1,
+		},
 		// The two early chapters (.ai/campaign.md) pay in boons, for the reason the Frozen Waste and
 		// the Sands do. Both boons were sold-but-never-sold (the shop registers no boons), so until then
 		// no new save could ever be dealt them. Listed only once their chapter is playable.

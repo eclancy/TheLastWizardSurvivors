@@ -197,7 +197,9 @@ public static class JournalPage
 	{
 		if (string.IsNullOrEmpty(quest.WizardId))
 			return null;
-		if (quest.OnTheRoad)
+		// On the road, or one sealed until he is free (the dark wizard, UnlockDefinition.SealedUntilFreed): the seal.
+		if (quest.OnTheRoad || (UnlockCatalog.GetCharacter(quest.WizardId)?.SealedUntilFreed == true
+			&& !GlobalStatsManager.IsCharacterUnlocked(save, quest.WizardId)))
 			return BonelightSkin.LoadTextureSafe("res://assets/bonelight/characters/sealed-portrait.png");
 		Texture2D portrait = CodexRows.WizardPortrait(quest.WizardId);
 		if (portrait == null)

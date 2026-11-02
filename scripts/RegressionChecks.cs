@@ -58,6 +58,7 @@ public static partial class RegressionChecks
 		ValidateElementReachability(warnings);
 		ValidateUnlockCatalog(warnings);
 		ValidateAchievements(warnings);
+		ValidateTakerTaken(warnings);
 		ValidateStageCatalog(warnings);
 		ValidateCampaign(warnings);
 		ValidateCampaignMigration(warnings);
@@ -3342,6 +3343,76 @@ public static partial class RegressionChecks
 					warnings.Add($"Gate reachability: {gate.DisplayName} opens with '{missing}' still held.");
 			}
 		}
+	}
+
+	// THE TAKER TAKEN (.ai/dark-wizard-playable.md): the dark wizard and The Taking are earned by beating him in
+	// the Throne on Hardcore, and by nothing short of it. On paper, since the Throne is not playable yet: four
+	// runs ended on sample saves - the Throne won on Default, lost on Hardcore, another chapter won on Hardcore,
+	// and the Throne won on Hardcore - and only the last may pay. Then what keeps him outside everything else:
+	// no gate counts him (the Throne cannot wait on the man in it), The Grimoire Restored does not count his
+	// spell, and the Throne's card lists both.
+	private static void ValidateTakerTaken(List<string> warnings)
+	{
+		const string wizard = "dark_wizard";
+		BossDefinition throneBoss = BossCatalog.GetById(AchievementDefinitions.ThroneBossId);
+		StageDefinition throne = throneBoss != null ? StageCatalog.GetByIndex(BossCatalog.StageIndexOf(throneBoss)) : null;
+		if (throne == null)
+		{
+			warnings.Add($"The Taker Taken: the boss '{AchievementDefinitions.ThroneBossId}' has no chapter, so the dark wizard can never be earned.");
+			return;
+		}
+		bool Pays(string preset, global::RunOutcome outcome, string bossId)
+		{
+			var save = new SaveData { BalancePresetId = preset };
+			AchievementManager.ApplyRunAchievements(save, new global::RunResult
+			{
+				Outcome = outcome,
+				BalancePresetId = preset,
+				BossId = outcome == global::RunOutcome.Victory ? bossId : string.Empty,
+				StageId = throne.Id,
+			});
+			return GlobalStatsManager.IsCharacterUnlocked(save, wizard) || GlobalStatsManager.IsSpellUnlockedForLevelUp(save, TheTaking.SpellId);
+		}
+		if (Pays(GlobalStatsManager.BalancePresetDefault, global::RunOutcome.Victory, throneBoss.Id))
+			warnings.Add("The Taker Taken: a Default win in the Throne pays the dark wizard; only Hardcore may.");
+		if (Pays(GlobalStatsManager.BalancePresetHardcore, global::RunOutcome.Defeat, throneBoss.Id))
+			warnings.Add("The Taker Taken: a Hardcore defeat in the Throne pays the dark wizard.");
+		if (Pays(GlobalStatsManager.BalancePresetHardcore, global::RunOutcome.Victory, "forest_treant"))
+			warnings.Add("The Taker Taken: a Hardcore win over another chapter's boss pays the dark wizard.");
+
+		var won = new SaveData { BalancePresetId = GlobalStatsManager.BalancePresetHardcore };
+		AchievementManager.ApplyRunAchievements(won, new global::RunResult
+		{
+			Outcome = global::RunOutcome.Victory,
+			BalancePresetId = GlobalStatsManager.BalancePresetHardcore,
+			BossId = throneBoss.Id,
+			StageId = throne.Id,
+		});
+		if (!GlobalStatsManager.IsCharacterUnlocked(won, wizard) || !GlobalStatsManager.IsSpellUnlockedForLevelUp(won, TheTaking.SpellId))
+			warnings.Add("The Taker Taken: a Hardcore win in the Throne does not pay the dark wizard and The Taking, so neither can be earned.");
+
+		if (UnlockCatalog.AllWizardIds.Contains(wizard, StringComparer.OrdinalIgnoreCase))
+			warnings.Add("The Taker Taken: the dark wizard is counted as an imprisoned wizard; he must be outside the campaign gate (OutsideCampaignGate).");
+		foreach (StageDefinition gate in StageCatalog.GateChapters)
+		{
+			if (GlobalStatsManager.CountsTowardGate(wizard, gate))
+				warnings.Add($"The Taker Taken: {gate.DisplayName}'s gate counts the dark wizard, who is earned only past it.");
+		}
+		if (UnlockCatalog.GrimoireSpellIds.Contains(TheTaking.SpellId, StringComparer.OrdinalIgnoreCase))
+			warnings.Add("The Taker Taken: The Grimoire Restored counts The Taking, which would put the collection behind a Hardcore win.");
+		if (UnlockCatalog.GetCharacter(wizard)?.SealedUntilFreed != true)
+			warnings.Add("The Taker Taken: the dark wizard is not SealedUntilFreed, so his shape shows before he is taken.");
+		foreach (string id in new[] { wizard, TheTaking.SpellId })
+		{
+			if (!StageRewards.ForStage(throne.Id).Any(r => r.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
+				warnings.Add($"The Taker Taken: the Throne's card does not list '{id}'.");
+		}
+		var locked = new SaveData();
+		AchievementDefinition deed = AchievementDefinitions.GetById(AchievementDefinitions.TakerTakenId);
+		if (deed == null || !CodexRows.HidesWizard(deed, locked))
+			warnings.Add("The Taker Taken: his deed's row names him while he is locked.");
+		if (!StageRewards.ForStage(throne.Id).Where(r => r.Id.Equals(wizard, StringComparison.OrdinalIgnoreCase)).All(r => StageRewards.IsSealed(locked, r)))
+			warnings.Add("The Taker Taken: the Throne's card shows the dark wizard's shape before he is taken.");
 	}
 
 	// A boss victory as the end of a run records it: the run's achievements (ApplyRunAchievements folds

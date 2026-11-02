@@ -8,6 +8,8 @@ chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Su
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Sketchbook, the Last Bridge and the
 Court. Tituba (Cursed Dungeon), Väinämöinen (Frozen Waste), Laelaps (Broken Circle) and Merlin (the
 Throne, `.ai/endgame-castle.md` 10.1 item 11) are spoken for. John Dee comes from chests, not a place.
+The dark wizard himself is playable too, held nowhere and earned by beating him in the Throne on Hardcore:
+`.ai/dark-wizard-playable.md` (he claims the verb **take**).
 
 Read first: `.ai/world-and-tone.md` (why the rescued are named people), `.ai/side-events.md` (the
 five events, hints, secret wizards), `.ai/achievements-and-secrets.md` (every unlock is one

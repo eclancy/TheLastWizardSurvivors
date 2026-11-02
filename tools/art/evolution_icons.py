@@ -1206,6 +1206,8 @@ SPELLS = {
     "contagion":         dict(paint=si.contagion, travel=None, tip=(16, 16), rows=("poison",)),
     "bramble_seed":      dict(paint=si.bramble_seed, travel=(0, -1), tip=(16, 4), rows=("grass",)),
     "hollow_star":       dict(paint=si.hollow_star, travel=None, tip=(16, 16), rows=("darkness",)),
+    # The dark wizard's own (.ai/dark-wizard-playable.md): the hand closing on the mote he takes.
+    "the_taking":        dict(paint=si.the_taking, travel=(1, -1), tip=(20, 10), rows=("darkness", "light")),
     "starfall":          dict(paint=lambda: si.starfall(sky=False), travel=(0.75, 1), tip=(21, 22), rows=("light",)),
     "familiar":          dict(paint=image(lambda: familiar.portrait()), travel=(1, 0), tip=(27, 19), rows=()),
     # The Familiar is taken in a form too (a dog, a crow or a cat), each its own subject, drawn by
@@ -3923,6 +3925,33 @@ def _(sp, c):
                 for d in range(-2, 3):
                     cv.set(ox + (2 - abs(d)), y + 2 + d, m[1] if k == 0 else m[2])
     U(sp, march)
+
+
+# --- The Taking (the dark wizard's own, .ai/dark-wizard-playable.md) ------------------------------------
+
+@card("the_taking_reactive_catalyst")
+def _(sp, c):
+    """Eightfold Cross: a caught light throws four lanes, not two - a star of his dark light behind the hand
+    and its mote, eight arms reaching the rim."""
+    reset(sp)
+    sp.place = Place(0.74)
+
+    def star(cv, x):
+        d = E["darkness"]
+        for k in range(8):
+            a = TAU * k / 8.0 + 0.39
+            for r in range(5, 15):
+                cv.set(C0 + math.cos(a) * r, C0 + math.sin(a) * r, d[1] if r < 10 else d[2])
+            cv.set(C0 + math.cos(a) * 14.5, C0 + math.sin(a) * 14.5, d[0])
+    U(sp, star)
+
+
+@card("the_taking_hyper_acceleration")
+def _(sp, c):
+    """Long Reach: the hand flies faster - the hand smaller and ahead, speed lines of his light behind it."""
+    reset(sp)
+    sp.place = Place(0.66, at=(20.0, 12.0))
+    U(sp, lambda cv, x: m_speed(cv, E["darkness"], (1, -1), (4, 12, 18, 28), n=4, length=9))
 
 
 # --- Kindled Ward ----------------------------------------------------------------------------------

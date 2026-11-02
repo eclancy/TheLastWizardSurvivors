@@ -536,6 +536,65 @@ def hollow_star():
     return c
 
 
+def the_taking():
+    """The dark wizard's own (.ai/dark-wizard-playable.md): a hand of his dark light closing on a warm mote.
+
+    Three things the spell is, in the order the eye takes them: the mote - the light ramp, the one warm
+    thing on the plate, what he took - then the hand round it, long fingers of the darkness ramp's lit end
+    reaching in from the lower left (on a near-black plate the dark end vanishes, as Hollow Star found),
+    and behind both two thin lanes of his light crossing where the mote sits: what catching it throws.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    dcore, dhot, dmid, dedge = bl.ELEMENTS["darkness"]
+    lcore, lhot, lmid, ledge = bl.ELEMENTS["light"]
+    mx, my = 20.0, 10.5
+
+    # The lanes, first and faint: a cross through the mote, one along the arm's line and one across it.
+    for i in range(-13, 14):
+        for (dx, dy) in ((0.71, -0.71), (0.71, 0.71)):
+            x, y = mx + dx * i, my + dy * i
+            if abs(i) > 5:
+                c.set(x, y, dedge if abs(i) > 9 else dmid)
+
+    # The arm: a sleeve of his violet coming in from the lower left corner, lit along its upper edge.
+    for i in range(0, 10):
+        x, y = 3.0 + i * 0.9, 29.5 - i * 0.95
+        c.disc(x, y, 2.8, 2.8, bl.tone("violet", "shade"))
+    for i in range(0, 10):
+        x, y = 3.0 + i * 0.9, 29.5 - i * 0.95
+        c.set(x - 2, y - 1, bl.tone("violet", "lit"))
+        c.set(x + 1, y + 2, bl.tone("violet", "deep"))
+    # the wrist, pale bone, out of the cuff
+    for i in range(0, 3):
+        c.set(11.5 + i * 0.8, 20.5 - i * 0.9, bl.tone("skin", "base"))
+        c.set(12.5 + i * 0.8, 20.5 - i * 0.9, bl.tone("skin", "shade"))
+
+    # The palm under the mote, dark, with his ramp at its rim.
+    c.disc(15.5, 15.5, 3.4, 3.4, dmid)
+    c.disc(15.5, 15.5, 2.4, 2.4, OCC)
+    c.set(13, 14, dhot)
+    c.set(14, 13, dhot)
+
+    # The mote he is taking: amber halo, light ramp heart, core to the upper left.
+    c.disc(mx, my, 4.4, 4.4, bl.tone("amber", "deep"))
+    c.disc(mx, my, 3.4, 3.4, ledge)
+    c.disc(mx, my, 2.4, 2.4, lmid)
+    c.disc(mx - 0.5, my - 0.5, 1.4, 1.4, lhot)
+    c.set(mx - 1, my - 1, lcore)
+    c.set(mx, my - 1, lcore)
+
+    # Four long fingers and a thumb curling round it from the palm, tipped with his light's core.
+    fingers = [((14, 12), (14, 7), (17, 4)), ((16, 12), (19, 5), (22, 4)),
+               ((17, 14), (24, 9), (25, 12)), ((18, 16), (24, 14), (25, 15))]
+    for (a, b, tip) in fingers:
+        c.line(a[0], a[1], b[0], b[1], dhot)
+        c.line(b[0], b[1], tip[0], tip[1], dmid)
+        c.set(tip[0], tip[1], dcore)
+    c.line(17, 18, 21, 19, dhot)
+    c.set(21, 19, dcore)
+    return c
+
+
 def _falling_star(c, x, y, trail, light, glint=1):
     """One falling star: a white head with a glint, and a thin trail back up to the upper left,
     cooling down the Light ramp as it goes. The slant is the one the stars fall at in the game."""
@@ -1025,6 +1084,7 @@ ICONS = [
     ("cinderbreath-fire", cinderbreath, CELL),
     ("mirefoot-bog", mirefoot, CELL),
     ("kindled-ward-light", kindled_ward, CELL),
+    ("the-taking-dark", the_taking, CELL),
     ("gravewell-pit", gravewell, CELL),
     ("unknown", unknown, CELL),
 ]
