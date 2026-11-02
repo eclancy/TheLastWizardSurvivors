@@ -1475,6 +1475,13 @@ the player unhurt, both released the frame after), enters both phases and falls 
 2.7 s after). The Throne's procession meets him at its own 30,000 (`ThroneProcession`) and the rush at
 150,000, so neither moved.
 
+`_BalanceHarness --boss-rush --farmed --stage=7 --immortal` (Stormcaller, seed 1234, `--fixed-fps 30`): in
+the Emberdeep, the same ten in the same order - Elderbark, the Hayward, the Ninth Stone, the Choir, **the
+Gaoler fifth**, Mother Rot, the Archivist, the Still Warden, the Long Coil, the Warden of the Deep - and all
+ten fell, the last at 37.3 minutes. The Gaoler came at 29,129 (his 150,000 at the arrival curve's x0.19,
+which already holds the rush's 35% share) and fell in 83 s. (1.8 froze him at 6,200, before the
+difficulty curve; 150,000 is the same Gaoler on today's numbers.)
+
 ### 13.2 C8, the map
 
 Section 8 as written, with the coordinates chosen: `.ai/world-map.md` section 18 is the record.
