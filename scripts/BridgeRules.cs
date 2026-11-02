@@ -116,6 +116,18 @@ public partial class BridgeRules : ChapterRules
 					&& float.TryParse(arg.Substring("--bridge-front=".Length), System.Globalization.NumberStyles.Float,
 						System.Globalization.CultureInfo.InvariantCulture, out float lead))
 					debugFrontLead = lead;
+				if (arg.StartsWith("--bridge-split="))
+				{
+					string[] parts = arg.Substring("--bridge-split=".Length).Split(',');
+					if (parts.Length == 2
+						&& float.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float ahead)
+						&& float.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float behind))
+					{
+						aheadShare = Mathf.Clamp(ahead, 0f, 1f);
+						behindShare = Mathf.Clamp(behind, 0f, 1f - aheadShare);
+						GD.Print($"BRIDGE: --bridge-split: {aheadShare:0.00} ahead, {behindShare:0.00} behind, {1f - aheadShare - behindShare:0.00} at the parapets");
+					}
+				}
 			}
 		}
 	}
@@ -204,6 +216,9 @@ public partial class BridgeRules : ChapterRules
 	// Shares of 3.3: ahead, behind (but ahead of the front), at the parapets.
 	private const float AheadShare = 0.65f;
 	private const float BehindShare = 0.15f;
+	// What TryPickSpawnPoint rolls against: the shares above, or --bridge-split=AHEAD,BEHIND (debug builds;
+	// the parapets take the rest), so a balance batch can try another split from one build.
+	private float aheadShare = AheadShare, behindShare = BehindShare;
 	// Kept off the shore by about a body, so a spawn never stands with its feet over the drop.
 	private const float SpawnShoreMargin = 70f;
 	// And this far ahead of the front, so nothing appears on ground about to fall.
@@ -216,7 +231,7 @@ public partial class BridgeRules : ChapterRules
 		// Straight along the axis the screen's edge is the nearer of its two half-sizes over cos 45.
 		float edge = Mathf.Min(half.X, half.Y) * 1.41421356f;
 		float roll = rng.Randf();
-		int first = roll < AheadShare ? 0 : roll < AheadShare + BehindShare ? 1 : 2;
+		int first = roll < aheadShare ? 0 : roll < aheadShare + behindShare ? 1 : 2;
 		for (int k = 0; k < 3; k++)
 		{
 			int kind = (first + k) % 3;

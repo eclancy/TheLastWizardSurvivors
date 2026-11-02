@@ -426,6 +426,40 @@ points (`ChapterRules.TryPickSpawnPoint`), off screen as always: **65% ahead** a
 come from his castle), **15% behind** but ahead of the front, **20% at the parapets** (climbing over).
 The budget, the pace curve and the cast are unchanged; only where they appear is the bridge's.
 
+**Measured (2026-11-01, `wip/castle-preflip`), the bridge against the Emberdeep.** Farmed Stormcaller,
+`_BalanceHarness --survivor --immortal --policy=ordinary --farmed --minutes=15.2`, `--fixed-fps 30
+--timescale=1`; L15 is the level at 15:00, and the share is the orb XP gathered of the orb XP dropped
+(the ledger's `gotXp` / `dropXp`). The C5 boss runs had read L46 and L36 here against the Emberdeep's 34,
+on other trees and one Emberdeep run. On the same seeds:
+
+| tree | seed | bridge 65/15/20 | bridge 45/25/30 | bridge 50/10/40 | Emberdeep |
+|---|---|---|---|---|---|
+| before: the spawner and the level-up roll unseeded | 1234 | 46; 43 (97%); 35 | | | 41; 42 (83%) |
+| before | 77 | 44; 45 (97%) | | | 43; 41 (89%) |
+| before | 4242 | 45 | | | 32 (the bot stood pinned five minutes) |
+| after the merge, every run roll seeded | 1234 | **42 (100%); 42 (98%)**, the same seed twice | 41 (100%) | 42 (99%) | **41 (94%)** |
+| after | 77 | **49 (99%)** | 46 (98%) | | **40 (77%)** |
+
+- **The kill rate is the same on both chapters, and so is the XP dropped**: about 5,100 kills and
+  12,000-13,100 points of orb XP in fifteen minutes on every run of either. Both sit on the spawn
+  supply's ceiling (`.ai/run-pacing.md` 3.3): the band neither starves it nor feeds it, and no split can
+  move it - the budget is the same wherever the bodies appear.
+- **The whole difference is what is picked up.** On the bridge the wizard gathers 97-100% of what drops:
+  the deck is one corridor walked end to end, every kill lies on the way, the front folds what is left
+  behind into one orb at its edge, and there is no lava to keep the bot off an orb. On the Emberdeep the
+  same bot leaves 6-23% on the ground. About 15% more XP is about three levels at 15:00: the bridge's
+  median 44-45 against the Emberdeep's 41.
+- **The split does not reach it**: 45/25/30 and 50/10/40 gathered 98-100% too, at the same kill rate,
+  and their levels (41, 46, 42) are inside a seed's spread. **65/15/20 stays.** A person gathers more on
+  the Emberdeep than the bot does, so the real gap is likely under the bot's three levels. If it is still
+  too much, the lever is collection (what the front does with the orbs it overtakes), not the spawner and
+  not the XP curve - a design call, left open.
+- **Runs reproduce now**: the bridge's rolls, the spawner's and the wizard's level-up and combat rolls
+  all hash from the run's seed, and the harness's `--seed` is the run's. Seed 1234 ended at L42 both
+  times (one seed had read 46 and 22). Spells and enemies keep their own generators, so two runs agree
+  to a level or so, not to the frame. `--bridge-split=AHEAD,BEHIND` (debug builds) tries another split
+  from one build.
+
 **The end.** The front stops at the gate yard's mouth at 15:00, so at 15:00 the player is in the
 yard, wherever he dawdled. The clock stops, the Constable comes (3.6). When he falls the gate opens:
 it is the way home (`ChapterRules.VictoryPortalPoint`, in place of the arcane portal), and walking in
@@ -507,7 +541,7 @@ and a hoop: the halberd's blade over his head, the ring of keys at his hip). Wha
   his whole figure under the HUD (about 190 px at the gate), never more than 0.6 of the half-height,
   taken back for a player too far down the yard to show the wall at all, and nothing in the yard with
   him or on a phone (753 px over the centre). Photographed at both canvases,
-  `_UiShot --stage=11 --teleport=<gate's foot> --hold --rush-after=190 --rush-steps=1 --frames=340`.
+  `_UiShot --stage=11 --teleport=<gate's foot> --hold --rush-after=190 --rush-steps=1 --frames=560` (after the arrival's cinematic, which owns the camera while it plays and eases out to the lean).
 - **"Lines of bolts across the yard" are files down it at the player**: lanes from the gate's end, one
   through where he stands and the rest beside it 150 px apart, so the way forward is a sidestep. The
   pitch is a ring on him and rings ahead of him toward the gate. They alternate; in the last phase every
