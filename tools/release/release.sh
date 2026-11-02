@@ -193,13 +193,25 @@ dotnet build WizardSurvivors.sln -nologo -v q
 rm -rf build/windows build/linux build/release build/android
 mkdir -p build/windows build/linux build/android
 # Godot does not create the export folder itself, and on an export error it can sit there
-# instead of exiting - hence the timeout.
-timeout 900 "$GODOT_BIN" --headless --path . --export-release "Windows Desktop" build/windows/WizardSurvivors.exe \
-	> build/export.log 2>&1 || { tail -20 build/export.log; echo "export failed - see build/export.log" >&2; exit 1; }
+# instead of exiting - hence the timeout. It can also finish the export, print its savepack DONE
+# line and then never exit (seen 2026-11-02 on the Linux export, and on every headless import that
+# night), so a timeout (124) after that line is a finished export, judged by its log and its .pck
+# like the Android export below. Any other failure still stops the release.
+export_desktop() { # preset, output file, log
+	local rc=0
+	timeout 900 "$GODOT_BIN" --headless --path . --export-release "$1" "$2" > "$3" 2>&1 || rc=$?
+	if [ "$rc" -ne 0 ]; then
+		if [ "$rc" -eq 124 ] && grep -q "DONE.*savepack" "$3"; then
+			echo "$1 export finished but Godot did not exit; judged by its log and .pck"
+		else
+			tail -20 "$3"; echo "$1 export failed - see $3" >&2; exit 1
+		fi
+	fi
+}
+export_desktop "Windows Desktop" build/windows/WizardSurvivors.exe build/export.log
 [ -f build/windows/WizardSurvivors.pck ] || { echo "export produced no .pck - see build/export.log" >&2; exit 1; }
 # The same game for Linux. Needs the linux_* export templates (see .ai/releasing.md).
-timeout 900 "$GODOT_BIN" --headless --path . --export-release "Linux" build/linux/WizardSurvivors.x86_64 \
-	> build/export-linux.log 2>&1 || { tail -20 build/export-linux.log; echo "Linux export failed - see build/export-linux.log" >&2; exit 1; }
+export_desktop "Linux" build/linux/WizardSurvivors.x86_64 build/export-linux.log
 [ -f build/linux/WizardSurvivors.pck ] || { echo "Linux export produced no .pck - see build/export-linux.log" >&2; exit 1; }
 
 python tools/release/package.py "$VERSION" "--progress-epoch=$EPOCH"

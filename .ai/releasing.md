@@ -443,6 +443,11 @@ permission by itself only when remote debugging, so without it the phone build c
 
 ## Things to know
 
+- **A desktop export can finish and not exit.** On 2026-11-02 the Linux export wrote its .pck,
+  printed its `savepack` DONE line and then sat until the 900 s timeout, which failed the dry run.
+  `release.sh` (`export_desktop`) now treats a timeout after that line as a finished export, judged
+  by the log and the .pck as the Android export always was. It costs the full timeout when it
+  happens, so a release can take 15 minutes longer than it should.
 - **Windows SmartScreen** warns "Windows protected your PC" the first time, because neither the
   setup nor the exe is code-signed. `How to play.txt` and the download page tell people to click "More info", then
   "Run anyway".
