@@ -149,6 +149,44 @@ public sealed class EquippedSpellInfo
 	/// keeps the two probe scenes that call that method compiling unchanged.
 	/// </remarks>
 	public List<AscensionInfo> Ascensions { get; set; } = new();
+
+	/// <summary>
+	/// The wizard's Apotheosis, on the one spell it is the final form of; null on every other spell
+	/// and for a wizard with none (the Test Wizard). Filled by Player.BuildApotheosisPreview.
+	/// </summary>
+	public ApotheosisPreview Apotheosis { get; set; }
+}
+
+/// <summary>
+/// A wizard's Apotheosis as the ascension browser and the pause screen show it: the form, every gate
+/// with how far along the run is, and where it stands. It reports, it never grants - the strip's
+/// offer (Player.GetAscensionOffers) is still the only way to take it.
+/// </summary>
+/// <remarks>
+/// From Eric's playtest (2026-11-01): "Let's make it clearer that apotheosis is an option, showing in
+/// 'ascensions', etc." Until then a player met it only when the strip offered it, at level 23.
+/// </remarks>
+public sealed class ApotheosisPreview
+{
+	public string SpellId { get; set; } = string.Empty;
+	public string SpellName { get; set; } = string.Empty;
+	public string FormId { get; set; } = string.Empty;
+	public string FormName { get; set; } = string.Empty;
+	public string Description { get; set; } = string.Empty;
+	/// <summary>The form's own picture (EvolutionIcons), or the spell's.</summary>
+	public Texture2D Icon { get; set; }
+
+	/// <summary>Every gate, met or not: the level 4 and level 8 paths, the element, your level (and the Hayward's, unlearned).</summary>
+	public List<AscensionRequirement> Requirements { get; set; } = new();
+
+	/// <summary>In the strip now: Player.TryBuildApotheosisOffer's own answer, never a second copy of the gate.</summary>
+	public bool Offered { get; set; }
+
+	/// <summary>The spell has taken its final form.</summary>
+	public bool Taken { get; set; }
+
+	/// <summary>The spell's level 4 or level 8 went down another path, so the form is out of reach this run.</summary>
+	public bool Closed { get; set; }
 }
 
 /// <summary>One level 8 branch, as the ascension browser needs to show it.</summary>
@@ -197,6 +235,11 @@ public enum AscensionRequirementKind
 	PlayerLevel,
 	/// <summary>The campaign's gate: the save has not been taught the Ascension yet (Player.AscensionLearned).</summary>
 	Learned,
+	/// <summary>
+	/// An Apotheosis gate: the named level 4 or level 8 path taken (<see cref="AscensionRequirement.MilestoneLevel"/>,
+	/// <see cref="AscensionRequirement.PathId"/>). Have 1 when it was.
+	/// </summary>
+	Path,
 }
 
 /// <summary>One gate on an ascension, with how far along the player is.</summary>
@@ -213,6 +256,12 @@ public sealed class AscensionRequirement
 	/// </summary>
 	public WizardSurvivors.scripts.Element? Element { get; set; }
 	public List<WizardSurvivors.scripts.Element> AnyOf { get; set; } = new();
+
+	/// <summary>For a Path gate: the milestone (4 or 8), the path it names, and whether another was taken instead.</summary>
+	public int MilestoneLevel { get; set; }
+	public string PathId { get; set; } = string.Empty;
+	public string PathName { get; set; } = string.Empty;
+	public bool Closed { get; set; }
 
 	public bool Met => Have >= Need;
 	public int Missing => System.Math.Max(0, Need - Have);

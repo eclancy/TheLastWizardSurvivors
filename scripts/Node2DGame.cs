@@ -3621,7 +3621,9 @@ public partial class Node2DGame : Node2D
 				ElementWeights = s.GetElementWeights().ToDictionary(p => p.Key.ToString(), p => p.Value),
 				IsPassive = s.IsPassive,
 				Icon = s.Icon,
-				Ascensions = player.BuildAscensionPreview(s)
+				Ascensions = player.BuildAscensionPreview(s),
+				// The wizard's final form, on his own spell only; the browser's entry at the top.
+				Apotheosis = player.BuildApotheosisPreview(s),
 			})
 			.ToList();
 	}
