@@ -857,6 +857,14 @@ public static class ChestItemCatalog
 	/// </remarks>
 	public const float ShownOfferFade = 0.5f;
 
+	/// <summary>
+	/// How much more often a chest offers an unowned piece of a set the player has started and not finished:
+	/// a multiplier on its offer weight. 1 is no lean - Eric's rule since 2026-11-02 ("Chests shouldn't lean
+	/// toward sets you're already working on") - and the game ships at 1. A static rather than a constant so
+	/// _ChestSim can measure a lean (--lean=X) before anyone decides to have one (#44, .ai/passives-and-items.md 8j).
+	/// </summary>
+	public static float StartedSetLean { get; set; } = 1f;
+
 	public static List<string> GetChestItemOptions(IReadOnlyCollection<string> ownedItems, RandomNumberGenerator rng = null, int count = 3,
 		IReadOnlyCollection<string> unavailable = null, ChestOfferMemory memory = null)
 	{
@@ -877,10 +885,13 @@ public static class ChestItemCatalog
 		// Each candidate draws a key of rng^(1/weight) and the highest keys win - weighted sampling
 		// without replacement, so one roll cannot offer the same item twice and a low-weight item is
 		// rare rather than impossible.
-		// A card already shown this run and passed over counts for less each time (ShownOfferFade).
+		// A card already shown this run and passed over counts for less each time (ShownOfferFade). A piece
+		// of a set already started counts for StartedSetLean times as much (1 in the game: no lean).
+		HashSet<string> leaned = StartedSetLean == 1f ? null : StartedSetPieces(ownedSet);
 		var pool = unowned
 			.OrderByDescending(id => MathF.Pow(MathF.Max(0.0001f, rng.Randf()),
-				1f / (OfferWeightOf(id) * MathF.Pow(ShownOfferFade, memory?.TimesShown(id) ?? 0))))
+				1f / (OfferWeightOf(id) * MathF.Pow(ShownOfferFade, memory?.TimesShown(id) ?? 0)
+					* (leaned != null && leaned.Contains(id) ? StartedSetLean : 1f))))
 			.ToList();
 
 		// Padding with owned relics once the pool runs dry. Never a tome relic: an owned Folio adds no
@@ -896,6 +907,21 @@ public static class ChestItemCatalog
 		List<string> offer = pool.Take(count).ToList();
 		memory?.Record(offer);
 		return offer;
+	}
+
+	// The unowned pieces of every set the player holds at least one piece of and has not completed.
+	private static HashSet<string> StartedSetPieces(HashSet<string> owned)
+	{
+		var pieces = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (ChestSetDefinition set in Sets)
+		{
+			if (!set.RequiredItemIds.Any(owned.Contains) || set.RequiredItemIds.All(owned.Contains))
+				continue;
+			foreach (string id in set.RequiredItemIds)
+				if (!owned.Contains(id))
+					pieces.Add(id);
+		}
+		return pieces;
 	}
 
 	// The no-menu fallback's roll (ChestReward). Never a tome relic: they only do anything through

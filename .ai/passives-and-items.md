@@ -1224,6 +1224,23 @@ the Poppet's Wither and Vulnerable show in the kills where they never show as da
   it). The Cabinet does nothing for a fight, which is its design (8d): it pays in chests - the
   collector relics are why the simulation's runs average 19 chests against 16.7 from carriers alone.
 
+**A lean toward started sets, measured (Eric, the same day: "Maybe we should implement higher likelihood
+for set pieces to show up?").** `ChestItemCatalog.StartedSetLean` multiplies the offer weight of an unowned
+piece of a set the player holds a piece of and has not finished; the game ships at 1 (no lean) and
+`_ChestSim --lean=X` measures it. 10,000 runs each, today's pool:
+
+| lean | any set, random | any set, rarest | sets a run (random) | first set (random, chest) | Crown, chaser | Reliquary, chaser |
+|---|---|---|---|---|---|---|
+| 1 (today) | 82.5% | 85.9% | 1.72 | 13 | 5.6% | 19.4% |
+| 1.5 | 85.9% | 89.5% | 1.89 | 12 | 6.7% | 20.9% |
+| 2 | 88.7% | 91.7% | 2.07 | 12 | 7.9% | 22.4% |
+| 3 | 91.1% | 94.3% | 2.31 | 11 | 10.1% | 23.8% |
+
+A lean of 2-3 puts set completion back where it was before wave 1 (92.1% random). It does little for the
+sets with a Relic-tier piece - the Crown, the Reliquary, the Regalia, the Brazier, the Tithe Chalice -
+whose piece is simply rarely offered (Relic weight 0.08), so a lean on it has little to multiply; those need
+the Relic weight (proposal 2) or the Crown's restructure (proposal 1).
+
 **Proposed, for Eric - nothing here is applied:**
 
 1. **The Jewelled Crown in three pieces, not four**: drop the Prism Jewel (Arcane - the one jewel the

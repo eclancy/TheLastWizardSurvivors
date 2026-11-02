@@ -110,6 +110,8 @@ public partial class _ChestSim : Node
 			else if (arg.StartsWith("--extra-offers=")) extraOffers = int.Parse(arg.Substring(15));
 			else if (arg.StartsWith("--chest-rerolls=")) chestRerolls = int.Parse(arg.Substring(16));
 			else if (arg.StartsWith("--out=")) outPath = arg.Substring(6);
+			// --lean=X: a chest offers a piece of a set already started X times as often (ChestItemCatalog.StartedSetLean).
+			else if (arg.StartsWith("--lean=")) ChestItemCatalog.StartedSetLean = float.Parse(arg.Substring(7), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg.StartsWith("--set=") && arg.Contains(':'))
 				setOverrides[arg.Substring(6, arg.IndexOf(':') - 6)] = arg.Substring(arg.IndexOf(':') + 1).Split(',', StringSplitOptions.RemoveEmptyEntries);
 		}
