@@ -197,9 +197,10 @@ public static class JournalPage
 	{
 		if (string.IsNullOrEmpty(quest.WizardId))
 			return null;
-		// On the road, or one sealed until he is free (the dark wizard, UnlockDefinition.SealedUntilFreed): the seal.
-		if (quest.OnTheRoad || (UnlockCatalog.GetCharacter(quest.WizardId)?.SealedUntilFreed == true
-			&& !GlobalStatsManager.IsCharacterUnlocked(save, quest.WizardId)))
+		// One sealed until he is free (the dark wizard, UnlockDefinition.SealedUntilFreed): the seal. Everyone
+		// else not yet free, on the road or not, shows his silhouette (Eric, 2026-11-02).
+		if (UnlockCatalog.GetCharacter(quest.WizardId)?.SealedUntilFreed == true
+			&& !GlobalStatsManager.IsCharacterUnlocked(save, quest.WizardId))
 			return BonelightSkin.LoadTextureSafe("res://assets/bonelight/characters/sealed-portrait.png");
 		Texture2D portrait = CodexRows.WizardPortrait(quest.WizardId);
 		if (portrait == null)

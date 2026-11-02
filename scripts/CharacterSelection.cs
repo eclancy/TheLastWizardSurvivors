@@ -164,7 +164,11 @@ public partial class CharacterSelection : Control
 			// The state is kept for every roster index, a hidden one included, because cardStates is read
 			// by roster index (ShowDetail) and the cards carry theirs.
 			cardStates.Add(state);
-			if (IsHiddenFromSelection(character))
+			// The dark wizard is not on the roster at all until he is free - no card, no seal, no shape
+			// (Eric, 2026-11-02: "the dark wizard shouldn't show up, even in silhouette, until he's unlocked").
+			if (!unlocked && UnlockCatalog.GetCharacter(character.Id)?.SealedUntilFreed == true)
+				hiddenUntilFreed.Add(i);
+			if (IsHiddenFromSelection(character) || hiddenUntilFreed.Contains(i))
 				continue;
 			grid.AddChild(wideLayout ? BuildCompactCard(character, i, state) : BuildCard(character, i, state));
 		}
@@ -661,10 +665,12 @@ public partial class CharacterSelection : Control
 		// what keeps it sharp on a big or fractionally-scaled window. It used to go through a
 		// SubViewport at canvas resolution, which filtered it bilinearly and was then stretched by
 		// the window: the blur the user saw full screen (PixelArtRect's remarks).
+		// Every wizard not yet free is his silhouette, a secret one included (Eric, 2026-11-02: "always show
+		// silhouettes of characters not unlocked yet"); a secret keeps only his "Not yet discovered" line.
+		// The wax seal (SealedPortraitPath) is no longer drawn here.
 		List<Texture2D> frames = state switch
 		{
-			CardState.Secret => new List<Texture2D> { GD.Load<Texture2D>(SealedPortraitPath) },
-			CardState.Locked => CharacterVisuals.BuildSilhouetteFrames(CharacterVisuals.GetIdleFrames(portrait)),
+			CardState.Secret or CardState.Locked => CharacterVisuals.BuildSilhouetteFrames(CharacterVisuals.GetIdleFrames(portrait)),
 			_ => CharacterVisuals.GetIdleFrames(portrait),
 		};
 		return new PixelArtRect(frames, scale, box)
@@ -682,8 +688,11 @@ public partial class CharacterSelection : Control
 	private static bool IsHiddenFromSelection(CharacterData character) =>
 		string.Equals(character?.Id, "test_wizard", System.StringComparison.OrdinalIgnoreCase);
 
+	// Roster indices held off the screen until they are free (the dark wizard): never selectable either.
+	private readonly HashSet<int> hiddenUntilFreed = new();
+
 	private bool IsSelectable(int idx) =>
-		idx >= 0 && idx < characters.Count && !IsHiddenFromSelection(characters[idx]);
+		idx >= 0 && idx < characters.Count && !IsHiddenFromSelection(characters[idx]) && !hiddenUntilFreed.Contains(idx);
 
 	// The first wizard on the screen the save can play; the first on the screen at all if it can play none.
 	private int FirstSelectableIndex()

@@ -739,10 +739,19 @@ public static class AchievementsPage
 			// RegressionChecks (A1) holds every sealable deed to having this line.
 			Title = item.Deed.SealedLine,
 			Meta = "Sealed until you reach it",
-			MetaGlyph = BonelightSkin.LoadTextureSafe("res://assets/bonelight/characters/sealed-portrait.png"),
+			// His silhouette (Eric, 2026-11-02: "always show silhouettes of characters not unlocked yet");
+			// the seal only for one sealed until he is free (the dark wizard), whose shape is never shown.
+			MetaGlyph = SealedWizardGlyph(item.Deed.CharacterUnlockId),
 			Quiet = true,
 			FocusStop = true,
 		}, CodexRows.Stone);
+	}
+
+	private static Texture2D SealedWizardGlyph(string wizardId)
+	{
+		Texture2D portrait = UnlockCatalog.GetCharacter(wizardId)?.SealedUntilFreed == true ? null : CodexRows.WizardPortrait(wizardId);
+		return portrait != null ? CodexRows.BuildSilhouette(portrait, CodexRows.Stone)
+			: BonelightSkin.LoadTextureSafe("res://assets/bonelight/characters/sealed-portrait.png");
 	}
 
 	// A spell's own icon, from the spell resources (the world map reads them the same way).

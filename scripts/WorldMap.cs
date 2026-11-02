@@ -724,10 +724,15 @@ public partial class WorldMap : Control
 		switch (reward.Kind)
 		{
 			case StageRewardKind.Wizard:
-				if (StageRewards.IsSealed(save, reward))
+				// A wizard not yet free shows his silhouette (Eric, 2026-11-02: "always show silhouettes of
+				// characters not unlocked yet"). Only the dark wizard keeps the seal: his shape is never shown
+				// before he is free.
+				if (UnlockCatalog.GetCharacter(reward.Id)?.SealedUntilFreed == true && StageRewards.IsSealed(save, reward))
 					return new List<Texture2D> { GD.Load<Texture2D>("res://assets/bonelight/characters/sealed-portrait.png") };
 				CharacterData who = CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(reward.Id, StringComparison.OrdinalIgnoreCase));
 				art = CharacterVisuals.GetIdleFrames(who?.Portrait);
+				if (StageRewards.IsSealed(save, reward))
+					return CharacterVisuals.BuildSilhouetteFrames(art);
 				break;
 			case StageRewardKind.Boon:
 				art = new List<Texture2D> { BonelightSkin.LoadTextureSafe(BoonCatalog.GetById(reward.Id)?.IconPath) };
