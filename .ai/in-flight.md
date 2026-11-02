@@ -146,7 +146,8 @@ builds to 120 and seven.
    lightest floor): every chapter's ground should read as its place; "Emberdeep doesn't look like
    cracked volcanic earth." A ground pass through `tools/art/tiles.py` and the chapters' terrain
    modules (`.ai/terrain.md` first), the Emberdeep first.
-12. **Queued** (Eric, 2026-11-01): the title screen's eyes in the dark "don't always look like eyes. they
+12. **Done** (Eric, 2026-11-01; eyes merged: round 4 px pairs placed by `tools/art/title_eyes.py`, each
+   blinking on its own clock by frames, the 24 whole-screen eye layers removed): the title screen's eyes in the dark "don't always look like eyes. they
    should all be circular and blink, and be randomly spread out rather than some being on top of each
    other" (`.ai/title-screen.md`, "The eyes in the dark blink" was already on its not-done list); and
    **announcements must never stack** (the Forest's opening under First Blood) - with the clues agent.
