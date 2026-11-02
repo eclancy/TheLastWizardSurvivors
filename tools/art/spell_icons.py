@@ -671,6 +671,72 @@ def sagittarius(sky=True):
     return c
 
 
+def sovereign_rite(sky=True):
+    """The Sovereign Rite (.ai/sovereign-spell.md): every spell's power poured into one.
+
+    Five sparks round the rim of a dark plate, each in a different element's ramp, and from each a thin
+    trail drawn INWARD to one white-hot point at the heart - the anointed spell - with a small gilt crown
+    standing over it. Sagittarius's lines converge on a quarry; these converge on a spell, so the trails are
+    the elements' own colours and the heart is light, not a target. The crown is the gold every crown in the
+    game is drawn in (the conjunction plate's), and the only material on the card: the rest is effect.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    gold = bl.MATERIALS["gold"]
+
+    if sky:
+        rim = bl.tone("violet", "shade") if "violet" in bl.MATERIALS else bl.tone("arcane", "shade")
+        deep = bl.tone("arcane", "deep")
+        c.disc(15.5, 15.5, 15.0, 15.0, rim)
+        c.disc(15.5, 15.5, 14.0, 14.0, deep)
+
+    cx, cy = 16, 18
+    # Five of the twelve, round the lower wheel - the top is the crown's - so no two neighbours share a hue.
+    sparks = [("fire", -15), ("ice", 40), ("lightning", 90), ("grass", 140), ("arcane", 195)]
+    for name, deg in sparks:
+        core, hot, mid, edge = bl.ELEMENTS[name]
+        a = math.radians(deg)
+        sx, sy = cx + math.cos(a) * 12.5, cy + math.sin(a) * 11.0
+        # The trail: the element cooling from its hot stop to its edge as it nears the heart, dotted past
+        # half way so the six read as six and do not fill the middle.
+        n = 9
+        for k in range(1, n):
+            t = k / float(n)
+            px, py = sx + (cx - sx) * t, sy + (cy - sy) * t
+            if t > 0.55 and k % 2:
+                continue
+            c.set(int(round(px)), int(round(py)), hot if t < 0.3 else (mid if t < 0.6 else edge))
+        # The spark itself: a white heart and its hot stop round it.
+        ix, iy = int(round(sx)), int(round(sy))
+        for (dx, dy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            c.set(ix + dx, iy + dy, hot)
+        c.set(ix, iy, core)
+
+    # The heart: the anointed spell, white-hot, with the Light ramp round it.
+    lcore, lhot, lmid, ledge = bl.ELEMENTS["light"]
+    c.disc(cx, cy, 3.4, 3.4, lmid)
+    c.disc(cx, cy, 2.4, 2.4, lhot)
+    c.disc(cx, cy, 1.3, 1.3, lcore)
+
+    # The crown over it: a gilt band and three points, the middle one tallest, tipped in the light hot,
+    # with the occlusion line under the band so it stands off the plate.
+    bx0, bx1, by = cx - 5, cx + 5, cy - 6
+    for x in range(bx0, bx1 + 1):
+        c.set(x, by, gold[1])
+        c.set(x, by + 1, gold[2])
+        c.set(x, by + 2, OCC)
+    for (px, h) in ((bx0, 3), (cx, 5), (bx1, 3)):
+        for k in range(1, h + 1):
+            c.set(px, by - k, gold[1] if k < h else gold[0])
+            if k < h - 1:
+                c.set(px + (1 if px < cx else -1 if px > cx else 1), by - k, gold[2])
+        c.set(px, by - h - 1, lcore)
+    for x in (bx0 + 2, cx - 2, cx + 2, bx1 - 2):
+        c.set(x, by - 1, gold[2])
+    c.set(cx - 1, by, gold[0])
+    c.set(cx + 1, by, gold[0])
+    return c
+
+
 def moon(c, cx, cy, r):
     """A full moon, in bone (the contract's moon row), lit from the upper left: the pale disc, a brighter
     crown on the key's side, the shaded limb opposite, and three craters. Hung behind a familiar's head on
@@ -950,6 +1016,7 @@ ICONS = [
     ("sleet-runes-ice", sleet_runes, CELL),
     ("starfall-light", starfall, CELL),
     ("sagittarius-light", sagittarius, CELL),
+    ("sovereign-rite-light", sovereign_rite, CELL),
     ("riptide-water", riptide, CELL),
     ("hollow-star-dark", hollow_star, CELL),
     ("iron-palisade-metal", iron_palisade, CELL),

@@ -440,4 +440,27 @@ public partial class SfxPlayer : Node
 		float pitch = Mathf.Min(1.0f + 0.03f * self.xpStreak, XpStreakMaxPitch);
 		self.PlayAtPitch(SfxCatalog.PickupXp, position, pitch);
 	}
+
+	/// <summary>The most a tally tick is pitched up, at the end of the count: four semitones.</summary>
+	public const float TallyTopPitch = 1.26f;
+
+	/// <summary>
+	/// One step of the results screen's Arcane Energy count (GameOverScreen's tally), pitched up the
+	/// count: <paramref name="progress"/> 0 is the first coin, 1 the last. The XP orb's ladder, for the
+	/// same reason - one file, the climb made at play time - and with no position, since the screen
+	/// is not in the world. tally_tick rings for 0.22 s and the count steps it about fourteen times a
+	/// second, so three or four overlap at most: within the eight global voices, and nothing else is
+	/// playing on a results screen.
+	/// </summary>
+	public static void TallyTick(float progress)
+	{
+		var self = Get();
+		if (self == null || !self.streams.TryGetValue(SfxCatalog.TallyTick, out var stream))
+			return;
+		var voice = self.TakeGlobal();
+		voice.Bus = self.bedBus;
+		voice.Stream = stream;
+		voice.PitchScale = Mathf.Lerp(1.0f, TallyTopPitch, Mathf.Clamp(progress, 0f, 1f));
+		voice.Play();
+	}
 }

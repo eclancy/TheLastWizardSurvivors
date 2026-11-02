@@ -30,6 +30,7 @@ public static class SettingsRows
 	public const string Gameplay = "Gameplay";
 	public const string Story = "Story";
 	public const string Testing = "Testing";
+	public const string Feedback = "Feedback";
 
 	/// <summary>
 	/// Whether this copy shows the tester's knobs (Playtest Mode, the run logs) and honours Playtest Mode at

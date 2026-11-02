@@ -164,6 +164,8 @@ public partial class _TouchProbe : Node
 			case Phase.Settling:
 				if (frames < SettleFrames)
 					return;
+				if (ForceDeath && !ResultsReady())
+					return;
 				if (!string.IsNullOrEmpty(PressButton))
 				{
 					Button opener = FindAll<Button>(GetTree().Root).FirstOrDefault(b => b.Name == PressButton);
@@ -320,6 +322,31 @@ public partial class _TouchProbe : Node
 	// Window coordinates, which is what a touch driver reports: the viewport undoes its own stretch
 	// on the way in, so an event placed in canvas units would land in the wrong place on any window
 	// that is not exactly the canvas size.
+	// A death is held back by the defeat until a press (DefeatSequence): tap through it the way a finger
+	// does, at the middle of the screen, once it is armed - which with mouse emulation on is a touch AND
+	// a mouse press - and then wait for the results' count to land, while the screen swallows every tap.
+	// With --manual the finger is a real one.
+	private bool defeatTapped;
+
+	private bool ResultsReady()
+	{
+		Node2DGame run = FindAll<Node2DGame>(GetTree().Root).FirstOrDefault();
+		if (run?.Defeat is DefeatSequence defeat && IsInstanceValid(defeat) && !defeat.Continued)
+		{
+			if (defeat.Armed && !defeatTapped && !Manual)
+			{
+				defeatTapped = true;
+				Vector2 middle = GetViewport().GetVisibleRect().Size * 0.5f;
+				InjectTouch(middle, true);
+				InjectTouch(middle, false);
+				GD.Print($"_TouchProbe: tapped through the defeat at {defeat.Elapsed:0.00}s");
+			}
+			return false;
+		}
+		GameOverScreen results = FindAll<GameOverScreen>(GetTree().Root).FirstOrDefault();
+		return results != null && !results.Counting;
+	}
+
 	private Vector2 ToWindow(Vector2 viewportPoint)
 	{
 		return GetViewport().GetFinalTransform() * viewportPoint;

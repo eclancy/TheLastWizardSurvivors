@@ -614,8 +614,9 @@ STONE_EDGE = h2rgb(f2h(0.227, 0.275, 0.345))         # CodexRows.Stone.Edge / Ru
 def results_pairs(add, panel_ground):
     """The outcome word and its line on the band; every row ink on the row face (headline tiles,
     reward cards, spell rows, stat tiles, damage rows, pills) and on the bare panel (section and
-    group headings, the tabs, the quiet lines); the milestone marks; and the graphics - a new
-    card's gold edge, the icon wells' rims, the bars - at 3:1."""
+    group headings, the quiet lines); the folded summary's section rows, at rest and hovered; the
+    defeat's card; the milestone marks; and the graphics - a new card's gold edge, the icon wells'
+    rims, the bars - at 3:1."""
     add("results band (stone deep)", BAND, "Victory (34px)", RESULT_VICTORY, LARGE)
     add("results band (stone deep)", BAND, "Defeat (34px)", RESULT_DEFEAT, LARGE)
     add("results band (stone deep)", BAND, "InkSoft (chapter, wizard)", STONE_INK_SOFT, BODY)
@@ -623,13 +624,23 @@ def results_pairs(add, panel_ground):
                           ("InkMeta (tile labels)", STONE_INK_META), ("Reward (kind line, energy, max)", STONE_REWARD),
                           ("Flag (New seal)", STONE_FLAG)):
         add("results row (stone face)", STONE_FACE, ink_name, ink, BODY)
-    add("results breakdown toggle, hovered", blend(h2rgb("#D8B04A"), STONE_FACE, 0.08), "Ink", STONE_INK, BODY)
-    for ink_name, ink, target in (("Heading (Rewards, group titles)", STONE_HEADING, LARGE),
-                                  ("Heading (chosen tab)", STONE_HEADING, LARGE),
-                                  ("InkMeta (other tab, 26px)", STONE_INK_META, LARGE),
+    # The folded summary's section rows (2026-11-02): the name in the heading ink, the line of what is
+    # inside in InkSoft, the chevron in InkMeta - at rest, and under the card overlay's gold hover wash
+    # (BonelightSkin.MakeCardClickOverlay, 16%), which is also its focus wash.
+    hovered = blend(h2rgb(f2h(0.85, 0.69, 0.29)), STONE_FACE, 0.16)
+    for ground_name, ground in (("results section row (stone face)", STONE_FACE),
+                                ("results section row, hovered", hovered)):
+        add(ground_name, ground, "Heading (section name, 26px)", STONE_HEADING, LARGE)
+        add(ground_name, ground, "InkSoft (what is inside)", STONE_INK_SOFT, BODY)
+        add(ground_name, ground, "InkMeta (chevron, 26px)", STONE_INK_META, LARGE)
+    for ink_name, ink, target in (("Heading (section title, group titles)", STONE_HEADING, LARGE),
                                   ("InkMeta (quiet lines, counts)", STONE_INK_META, BODY),
                                   ("Flag (N new)", STONE_FLAG, BODY)):
         add("results on the stone panel", panel_ground, ink_name, ink, target)
+    # The defeat's card (scripts/DefeatSequence.cs): the results band's stone deep, full bleed, the word
+    # at 96px in the Defeat ink and the prompt under it in InkMeta.
+    add("defeat card band (stone deep)", BAND, "Defeat (96px)", RESULT_DEFEAT, LARGE)
+    add("defeat card band (stone deep)", BAND, "InkMeta (prompt)", STONE_INK_META, BODY)
     for mark_name, mark in (("Mutation", RESULT_MUTATION), ("Ascension", RESULT_ASCENSION),
                             ("Apotheosis", RESULT_APOTHEOSIS)):
         add("results milestone mark (%s)" % mark_name, mark, "MarkInk", RESULT_MARK_INK, BODY)

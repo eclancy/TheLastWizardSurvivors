@@ -217,6 +217,16 @@ public partial class _UiShot : Node
 	// Several hits, because a run can carry an extra life that revives at half health.
 	[Export] public bool ForceDeath { get; set; } = false;
 	private bool deathForced;
+	// The defeat (DefeatSequence) holds the results back until a press. With --force-death the harness
+	// presses for the player as soon as the card is armed - a real injected event, through the same
+	// door a player's comes in by, so the swallowing of its release and of a tap's emulated mouse twin is
+	// on the path being photographed. --defeat-press=mouse|touch|pad|key picks the device (mouse);
+	// --defeat-press=none never presses, to photograph DEFEAT waiting. --defeat-hold=SECONDS stops the
+	// sequence's clock at that moment (DefeatSequence.DebugHoldAt) so the zoom or the fall can be shot
+	// exactly; --death-at=N kills on frame N instead of halfway, so a short shutter can follow it.
+	private string defeatPress = "mouse";
+	private bool defeatPressed;
+	private int deathAtFrame = -1;
 	// --force-victory: the other ending, through the real path - Node2DGame.FinishRunAndReward with
 	// Victory and the chapter's boss, halfway through the warmup - so the boss bonus, the chapter it
 	// opens and the gold headline are photographed as a win would pay them (writes are off).
@@ -931,6 +941,12 @@ public partial class _UiShot : Node
 	// through the same entry point the strip uses (Player.TryAddOrLevelSpell), for a photograph of it firing.
 	private string demoCombo;
 	private bool demoComboFuse;
+	// --demo-sovereign[=SPELL]: the Sovereign Rite's gate met (.ai/sovereign-spell.md section 3) - the Rite
+	// owned in the in-memory save, the player at its level, and every held spell raised to
+	// --demo-spell-level (6 if unset) - so a level-up offers it on the strip; with =SPELL, that held spell is
+	// anointed at once through the strip's own entry point ("sovereign_rite:SPELL"), for the HUD and the
+	// crowned casts. Hold the spells with --demo-spells.
+	private string demoSovereign;
 	private bool demoApplied;
 	// --seen-ascensions=a,b,...: which ascension paths the in-memory save has SEEN (AscensionSightings),
 	// so the browser and the level 8 page can be photographed with a path sealed, seen but out of
@@ -986,6 +1002,8 @@ public partial class _UiShot : Node
 				demoCombo = combo[0].Trim();
 				demoComboFuse = combo.Length > 1 && combo[1].Trim() == "fuse";
 			}
+			else if (arg == "--demo-sovereign" || arg.StartsWith("--demo-sovereign="))
+				demoSovereign = arg.Contains('=') ? arg.Substring(arg.IndexOf('=') + 1).Trim() : string.Empty;
 			else if (arg.StartsWith("--demo-spell-level="))
 				demoSpellLevel = int.Parse(arg.Substring("--demo-spell-level=".Length));
 			else if (arg.StartsWith("--seen-ascensions="))
@@ -1201,6 +1219,12 @@ public partial class _UiShot : Node
 				// one, since this harness runs against it. Photographing a screen must not do that.
 				SaveManager.WritesDisabled = true;
 			}
+			else if (arg.StartsWith("--defeat-press="))
+				defeatPress = arg.Substring("--defeat-press=".Length);
+			else if (arg.StartsWith("--defeat-hold="))
+				DefeatSequence.DebugHoldAt = float.Parse(arg.Substring("--defeat-hold=".Length), System.Globalization.CultureInfo.InvariantCulture);
+			else if (arg.StartsWith("--death-at="))
+				deathAtFrame = int.Parse(arg.Substring("--death-at=".Length));
 			else if (arg == "--force-victory")
 			{
 				forceVictory = true;
@@ -1713,6 +1737,12 @@ public partial class _UiShot : Node
 			return;
 		}
 
+		// This root processes through a pause (above), and a scene under it inherits that - so the run's
+		// world, which a pause stops in play, kept moving here. The defeat's freeze IS the pause
+		// (DefeatSequence), so a death is photographed with the scene pausable, as it is under the tree's
+		// root in the game. Only then: other shots were taken the old way and are left comparable.
+		if (ForceDeath)
+			instance.ProcessMode = ProcessModeEnum.Pausable;
 		AddChild(instance);
 		MoveChild(instance, 0);
 
@@ -2663,6 +2693,8 @@ public partial class _UiShot : Node
 	{
 		if (layerCensus && FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame censusArena)
 			CensusLayers(censusArena);
+		if (deathForced && ForceDeath && !defeatPressed)
+			PressThroughDefeat();
 		// --cover: the second half of a measured frame - the same paused moment, the spell hidden.
 		if (coverPhase == 1)
 		{
@@ -2996,12 +3028,15 @@ public partial class _UiShot : Node
 					boonCard.GrabFocus();
 				}
 			}
-			if (ForceDeath && !deathForced && frames >= WarmupFrames / 2
+			if (ForceDeath && !deathForced && frames >= (deathAtFrame >= 0 ? deathAtFrame : WarmupFrames / 2)
 				&& FindNodeOfType<Player>(GetTree().Root) is Player victim)
 			{
 				deathForced = true;
 				for (int i = 0; i < 6 && !victim.IsDead; i++)
 					victim.TakeDamage(System.Math.Max(1, victim.MaxHP * 10));
+				// The defeat is filmed at the speed a player sees it, whatever --timescale played the run up to it.
+				Engine.TimeScale = 1.0;
+				GD.Print($"_UiShot: forced death on frame {frames}, dead: {victim.IsDead}");
 			}
 			if (forceVictory && !deathForced && frames >= WarmupFrames / 2
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame winner)
@@ -3068,7 +3103,7 @@ public partial class _UiShot : Node
 				scrolled = true;
 				ScrollAll(GetTree().Root);
 			}
-			if ((demoPlayerLevel > 0 || demoSpellLevel > 0 || demoSpells.Length > 0 || demoEvolutions.Length > 0 || demoCombo != null) && !demoApplied && frames >= WarmupFrames / 4
+			if ((demoPlayerLevel > 0 || demoSpellLevel > 0 || demoSpells.Length > 0 || demoEvolutions.Length > 0 || demoCombo != null || demoSovereign != null) && !demoApplied && frames >= WarmupFrames / 4
 				&& FindNodeOfType<Player>(GetTree().Root) is Player demo && demo.GetEquippedSpells().Count > 0)
 			{
 				demoApplied = true;
@@ -3088,6 +3123,8 @@ public partial class _UiShot : Node
 						GD.PrintErr($"_UiShot: could not add spell '{id}'");
 				if (demoCombo != null)
 					ApplyDemoCombo(demo);
+				if (demoSovereign != null)
+					ApplyDemoSovereign(demo);
 				GD.Print($"_UiShot: demo state - player level {demo.CurrentLevel}, {demo.GetEquippedSpells()[0].Name} level {demo.GetEquippedSpells()[0].CurrentLevel}");
 			}
 			// After the demo state (same frame, so --demo-spells are held by now), before the level-up.
@@ -3519,6 +3556,33 @@ public partial class _UiShot : Node
 			scribe.TryAddBoon(boon.Id);
 		}
 		GD.Print($"_UiShot: every spell at its card cap, {scribe.GetOwnedBoonIds().Count} boons held");
+	}
+
+	// The press at the end of the defeat, once its card is armed (see defeatPress): a press and its
+	// release, injected through Input like a real device's, at the middle of the screen.
+	private void PressThroughDefeat()
+	{
+		if (defeatPress == "none" || DefeatSequence.DebugHoldAt != null)
+			return;
+		if (FindNodeOfType<Node2DGame>(GetTree().Root) is not Node2DGame run
+			|| run.Defeat is not DefeatSequence defeat || !IsInstanceValid(defeat) || !defeat.Armed)
+			return;
+		defeatPressed = true;
+		// In window pixels, as a device reports them (_TouchProbe.ToWindow).
+		Vector2 middle = GetViewport().GetFinalTransform() * (GetViewport().GetVisibleRect().Size * 0.5f);
+		foreach (bool down in new[] { true, false })
+		{
+			InputEvent press = defeatPress switch
+			{
+				"touch" => new InputEventScreenTouch { Index = 0, Pressed = down, Position = middle },
+				"pad" => new InputEventJoypadButton { Device = 0, ButtonIndex = JoyButton.A, Pressed = down },
+				"key" => new InputEventKey { Keycode = Key.Space, PhysicalKeycode = Key.Space, Pressed = down },
+				_ => new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = down, Position = middle, GlobalPosition = middle },
+			};
+			Input.ParseInputEvent(press);
+			Input.FlushBufferedEvents();
+		}
+		GD.Print($"_UiShot: pressed through the defeat ({defeatPress}) at {defeat.Elapsed:0.00}s");
 	}
 
 	// --demo-unlocks: one results card of every kind, added to the report the screen was built from.
@@ -4060,6 +4124,19 @@ public partial class _UiShot : Node
 		if (castOnStage)
 			p.DebugRipenSpells();
 		GD.Print($"_UiShot: spell stage of {stageCrowd.Count} placed at {centre}, player at {p.GlobalPosition}, facing {p.FacingDirection} (side {p.FacingSide})");
+	}
+
+	private void ApplyDemoSovereign(Player player)
+	{
+		if (GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is SaveData save)
+			GlobalStatsManager.UnlockSpell(save, SovereignRite.SpellId);
+		player.CurrentLevel = System.Math.Max(player.CurrentLevel, SovereignRite.MinimumPlayerLevel);
+		int level = demoSpellLevel > 0 ? demoSpellLevel : 6;
+		foreach (SpellData spell in player.GetEquippedSpells())
+			spell.CurrentLevel = System.Math.Min(spell.MaxLevel, System.Math.Max(spell.CurrentLevel, level));
+		GD.Print($"_UiShot: Sovereign Rite gate - player level {player.CurrentLevel}, {player.GetEquippedSpells().Count} spells at level {level}");
+		if (!string.IsNullOrEmpty(demoSovereign))
+			GD.Print($"_UiShot: Sovereign Rite on {demoSovereign} {(player.TryAddOrLevelSpell($"{SovereignRite.SpellId}:{demoSovereign}") ? "taken" : "REFUSED")}");
 	}
 
 	private void ApplyDemoCombo(Player player)

@@ -887,6 +887,105 @@ def game_over():
     return S.dc_block(S.reverb(out, size=0.9, damp=0.35, mix=0.36))
 
 
+# ---------------------------------------------------------------------------
+# the defeat and the payout (2026-11-02, Eric: "Defeat should have a dramatic animation where
+# the game freezes, then crash zooms onto the wizard and they fall, then it says defeat ... It
+# then tallys up the reward with a satisfying payout sound.")
+# ---------------------------------------------------------------------------
+
+def player_fall():
+    """The wizard reaching the ground at the end of his fall (DefeatSequence, the landing beat),
+    about a second and a half after player_death has carried the killing blow. The defeat's one
+    body sound: cloth and a staff on the ground, not stone breaking.
+
+    TWO impacts, not one: the knees, then the body 130 ms later and heavier - the double hit is
+    the fall's whole shape, and the first draft (one thump under a noise sweep) measured 0.098 from
+    player_hurt, which is one thump under a noise sweep. Each thump stops above 85 Hz (the sub band
+    belongs to the boss and the explosions, audio-direction 6). Then a scatter of grit, one dry
+    wooden knock as the staff lands after him, and the dust settling. Lowpassed under 3 kHz
+    throughout. Once a run."""
+    kd = 0.16
+    knees = S.env_mul(S.osc("sine", S.sweep(kd, 190, 120, 0.5), kd), S.expdecay(S.n_samples(kd), 14.0))
+    bd = 0.34
+    body = S.env_mul(S.osc("sine", S.sweep(bd, 150, 86, 0.5), bd), S.expdecay(S.n_samples(bd), 9.0))
+    gd = 0.3
+    grit = S.gate(S.lowpass(S.bandpass(S.osc("mnoise", 2200, gd, seed=547), 1500, 2.5), 2800, 0.707),
+                  34.0, 0.45, seed=557)
+    grit = S.env_mul(grit, S.decay(S.n_samples(gd), 2.4))
+    sd = 0.09
+    staff = S.lowpass(S.env_mul(S.osc("tri", S.sweep(sd, 520, 410, 0.6), sd), S.expdecay(S.n_samples(sd), 7.0)),
+                      1800, 0.707)
+    dd = 0.5
+    dust = S.lowpass(S.osc("noise", 0, dd, seed=541), 1100, 0.707)
+    dust = S.env_mul(dust, S.adsr(dd, 0.06, 0.1, 0.5, 0.3))
+    out = S.layer([
+        (knees, 0.0, 0.7),
+        (body, 0.13, 1.0),
+        (grit, 0.15, 0.3),
+        (staff, 0.24, 0.42),
+        (dust, 0.16, 0.12),
+    ])
+    return S.dc_block(S.reverb(S.lowpass(out, 3000, 0.707), size=0.55, damp=0.5, mix=0.16))
+
+
+def _coin(freq, dur, seed):
+    """One small struck coin: two inharmonic partials over a 3 ms grain. Shared by the tally's tick
+    and the payout's spill, so the spill is heard as the same coins the count was counting."""
+    n = S.n_samples(dur)
+    ring = S.partials(freq, [1.0, 2.41, 3.17], dur, amps=[1.0, 0.42, 0.18], decays=[5.0, 7.0, 9.0])
+    grain = S.lowpass(S.bandpass(S.osc("noise", 0, dur, seed=seed), 2100, 1.6), 3200, 0.707)
+    return S.mix(S.env_mul(ring, S.ad(dur, 0.0015, 1.0)), S.gain(S.env_mul(grain, S.expdecay(n, 30.0)), 0.5))
+
+
+def tally_tick():
+    """One step of the Arcane Energy count on the results screen (GameOverScreen's tally): up to
+    eighteen a second for a second and a half, and pitched up the count at PLAY time
+    (SfxPlayer.TallyTick, 1.0 to 1.26 - four semitones), so it is built like the orb: short, one
+    narrow band, no tail. A coin, not pickup_xp's sine sweep: the count is money, the orb is
+    experience. A coin landing on the heap: struck, and struck again 22 ms later as it settles,
+    and left RINGING - no noise grain, and a slow linear decay where a click falls away at once.
+    Three drafts were a click: one strike over the grain (0.051 from ui_click, which is exactly a
+    noise tick over a short tone), a short double strike on a 1.1 kHz coin (0.069 from ui_click),
+    and the same rung at 1.5 kHz (0.022 from ui_hover, whose tone sweeps through that octave).
+    What a click does not have is the ring, so this one rings for 0.22 s on A5 (the score's key)
+    with one inharmonic partial at 2.76 - 0.40 from every interface sound. Under 3.8 kHz before
+    the ladder lifts it (the ceiling, audio-direction 6)."""
+    dur = 0.22
+    ring = S.partials(_hz(12), [1.0, 2.76], dur, amps=[1.0, 0.25], decays=[2.0, 4.0])
+    hit = S.env_mul(ring, S.ad(dur, 0.0015, 1.0))
+    out = S.layer([(hit, 0.0, 1.0), (hit, 0.022, 0.55)])
+    return S.lowpass(out, 3800, 0.707)
+
+
+def tally_payout():
+    """The count landing on its figure (GameOverScreen's tally): the run's Arcane Energy banked.
+
+    Three layers in about 1.4 s: a purse set down (a short thump, 160 to 95 Hz, above the sub
+    band), a spill of eleven of tally_tick's coins over 0.3 s - each a little lower and quieter, a
+    heap settling - and over them one struck MAJOR chord, C E G and the C above, all at once.
+    Every other reward in the set is a bell RUN (level_up, chest_open, stage_clear) or a swell
+    (meta_unlock); a chord struck together is the difference between "something arrived" and "it
+    is yours". C major is A minor's relative, so it sits in the score's key and still resolves
+    game_over's descent. Lowpassed under 4 kHz."""
+    rng = __import__("random").Random(571)
+    spill = []
+    for i in range(11):
+        at = 0.012 + 0.30 * ((i / 10.0) ** 1.6) + rng.uniform(-0.008, 0.008)
+        freq = 1260.0 - 32.0 * i + rng.uniform(-40.0, 40.0)
+        spill.append((_coin(freq, 0.14, 577 + i), max(0.0, at), 0.78 - 0.045 * i))
+    hold = 1.25
+    chord = S.mix(_bell(_hz(3), hold), S.gain(_bell(_hz(7), hold), 0.8),
+                  S.gain(_bell(_hz(10), hold), 0.7), S.gain(_bell(_hz(15), hold), 0.42))
+    td = 0.26
+    thump = S.env_mul(S.osc("sine", S.sweep(td, 160, 95, 0.5), td), S.expdecay(S.n_samples(td), 9.0))
+    out = S.layer([
+        (thump, 0.0, 0.75),
+        (S.layer(spill), 0.0, 0.62),
+        (chord, 0.035, 0.85),
+    ])
+    return S.dc_block(S.reverb(S.lowpass(out, 4000, 0.707), size=0.75, damp=0.4, mix=0.28))
+
+
 def meta_unlock():
     """A character or stage unlocked on the save file - the one sound that means the SAVE
     changed, not the run.
@@ -1471,6 +1570,15 @@ REGISTRY += [
     ("game_over",           "meta",   -5.0,  game_over,           False),
     ("meta_unlock",         "meta",   -4.0,  meta_unlock,         False),
     ("wave_warning",        "meta",   -7.0,  wave_warning,        False),
+
+    # The defeat and its payout (DefeatSequence, GameOverScreen's tally). The fall lands under
+    # player_death's tail and over nothing else - once a run, a body sound, a step under
+    # player_hurt. The tick plays up to eighteen times a second for a second and a half: the
+    # many-times-a-second row, a few dB over the orb because nothing else is playing then. The
+    # payout is once a run and the screen's climax.
+    ("player_fall",         "player", -7.0,  player_fall,         False),
+    ("tally_tick",          "ui",     -20.0, tally_tick,          False),
+    ("tally_payout",        "meta",   -6.0,  tally_payout,        False),
 
     # Four a run at most, and far away: the quiet end of the once-a-minute band. The game plays
     # them positionally a few hundred pixels toward their source, which takes another 3-4 dB off.
