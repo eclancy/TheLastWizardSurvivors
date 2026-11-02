@@ -277,8 +277,11 @@ public partial class _UiShot : Node
 	//                         30 s), so the photograph is the Done or the failure state.
 	//   --report-back       : presses Back instead, and logs where focus went and whether the tree
 	//                         is still paused - from the pause screen it must be EscapeRoot and yes.
+	//   --report-no-shot    : unticks "Include a screenshot" (through ButtonPressed, so its Toggled
+	//                         handler runs as for a click), before any Send.
 	// Point it at a local server with WIZARDSURVIVORS_INTAKE_URL; never at the real one.
 	private bool reportBack;
+	private bool reportNoShot;
 	private string reportName;
 	private string reportText;
 	private bool reportSend;
@@ -1128,6 +1131,8 @@ public partial class _UiShot : Node
 				reportSend = true;
 			else if (arg == "--report-back")
 				reportBack = true;
+			else if (arg == "--report-no-shot")
+				reportNoShot = true;
 			else if (arg.StartsWith("--show-variant="))
 			{
 				showVariant = arg.Substring("--show-variant=".Length).Trim();
@@ -2839,8 +2844,8 @@ public partial class _UiShot : Node
 					if (!holder.TryAddBoon(id))
 						GD.PrintErr($"_UiShot: could not grant boon '{id}'");
 			}
-			if (!reportFilled && (reportName != null || reportText != null || reportSend || reportBack)
-				&& FindNodeOfType<ReportBugScreen>(GetTree().Root) is ReportBugScreen report && report.Visible)
+			if (!reportFilled && (reportName != null || reportText != null || reportSend || reportBack || reportNoShot)
+				&& FindNodeOfType<ReportBugScreen>(GetTree().Root) is ReportBugScreen report && report.Visible && !report.IsTakingScreenshot)
 				FillReport(report);
 			if (announceAchievements.Length > 0 && !achievementsAnnounced && frames >= WarmupFrames / 4
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame announcer
@@ -3197,6 +3202,13 @@ public partial class _UiShot : Node
 			text.EmitSignal(TextEdit.SignalName.TextChanged);
 		}
 		GD.Print($"_UiShot: filled the report ({reportText?.Length ?? 0} characters)");
+		if (reportNoShot)
+		{
+			if (report.FindChild("ReportBugShotToggle", true, false) is CheckButton shotToggle)
+				shotToggle.ButtonPressed = false;
+			else
+				GD.PrintErr("_UiShot: no ReportBugShotToggle");
+		}
 		if (reportBack && FindButton(report, "ReportBugBack") is Button back)
 		{
 			back.EmitSignal(BaseButton.SignalName.Pressed);
