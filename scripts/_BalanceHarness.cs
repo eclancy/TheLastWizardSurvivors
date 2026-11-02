@@ -69,6 +69,14 @@ public partial class _BalanceHarness : Node
 	// Ascensions as the run allows (see PickTowardAscensions). The ceiling a player who plans for
 	// them can reach, as --seek-apotheosis is the floor for the final form.
 	[Export] public bool SeekAscensions { get; set; }
+	// --seek-combo=ID: a planner who wants one combination (.ai/combo-spells.md section 2, "The economy";
+	// ComboCatalog): both parents into the book, each walked to level 7 down level 4 paths that never bring
+	// the pair a fourth element, each ascended down its NAMED Ascension and never the other, and the
+	// combination taken the moment the strip offers it. Everything else plans as --seek-ascensions does
+	// (which it switches on), with the focus moved onto the parents' gates. Reports when each parent
+	// ascended, when the recipe was first offered and when taken, and the damage a second of the two parents
+	// before the fusion against the combination's after it. Hunter's Draw's recipe wants --circle=R.
+	[Export] public string SeekCombo { get; set; } = "";
 	// --policy=ordinary: the GOOD ORDINARY policy (PickOrdinary) - fill the book, leaning toward the
 	// element it already holds most of, then level its strongest spells; takes every Ascension the
 	// moment it is offered; argues with no roll. The default policy below is not this: it levels the
@@ -246,6 +254,9 @@ public partial class _BalanceHarness : Node
 	[Export] public float CircleRadius { get; set; }
 	private Vector2 circleCentre;
 	private bool circleCentred;
+	private float circleCheckAt;
+	private Vector2 circleCheckFrom;
+	private int circleRelaid;
 	// --survivor: a MORTAL bot that plays the way a careful person does (DriveSurvivor) - steps away
 	// from whatever is closing, walks to XP orbs and chests when the way is clear. The old mortal
 	// kite bot fled in a straight line, collected nothing and died at level 2 in its second minute,
@@ -313,6 +324,7 @@ public partial class _BalanceHarness : Node
 			else if (arg.StartsWith("--out=")) OutPath = arg.Substring(6);
 			else if (arg == "--seek-apotheosis") SeekApotheosis = true;
 			else if (arg == "--seek-ascensions") SeekAscensions = true;
+			else if (arg.StartsWith("--seek-combo=")) { SeekCombo = arg.Substring(13).Trim(); SeekAscensions = true; }
 			else if (arg == "--policy=ordinary") OrdinaryPolicy = true;
 			else if (arg == "--full-shop") FullShop = true;
 			else if (arg == "--all-unlocked") AllUnlocked = true;
@@ -979,6 +991,7 @@ public partial class _BalanceHarness : Node
 		// calls, and a surrounded bot could drain a normal pool in between.
 		if (Immortal) { player.MaxHP = Math.Max(player.MaxHP, 100000); player.CurrentHP = player.MaxHP; }
 		if (SeekApotheosis || SeekAscensions) TrackTier();
+		if (!string.IsNullOrEmpty(SeekCombo)) TrackCombo();
 		TrackSpellLevel((float)delta);
 		TrackAscensions();
 		TickPaceLedger();
@@ -1715,6 +1728,21 @@ public partial class _BalanceHarness : Node
 		{
 			circleCentre = player.GlobalPosition + Vector2.Left * CircleRadius;
 			circleCentred = true;
+			circleCheckAt = elapsed + 1f;
+			circleCheckFrom = player.GlobalPosition;
+		}
+		// A circle that runs into a lake or a tree trunk holds him against it for the rest of the run - a
+		// --seek-combo run stood at one spot from minute 1.5 to 15 and never drew the bow. Under a body's
+		// width walked in a second, the circle is laid again with him on its far side.
+		if (elapsed >= circleCheckAt)
+		{
+			if (player.GlobalPosition.DistanceTo(circleCheckFrom) < 24f)
+			{
+				circleCentre = player.GlobalPosition + (player.GlobalPosition - circleCentre).Normalized().Rotated(Mathf.Pi * 0.5f) * CircleRadius;
+				circleRelaid++;
+			}
+			circleCheckAt = elapsed + 1f;
+			circleCheckFrom = player.GlobalPosition;
 		}
 		Vector2 offset = player.GlobalPosition - circleCentre;
 		float distance = offset.Length();
@@ -2343,6 +2371,13 @@ public partial class _BalanceHarness : Node
 			}
 		}
 
+		// --seek-combo first: its parents' Ascensions and the combination are its own to choose.
+		if (!string.IsNullOrEmpty(SeekCombo) && ComboTarget() != null)
+		{
+			Act(menu, PickTowardCombo(options, ascensions, menu.Charges));
+			return;
+		}
+
 		// The planned policy reads the strip itself: which branch, and the Apotheosis first.
 		if (SeekAscensions)
 		{
@@ -2738,7 +2773,7 @@ public partial class _BalanceHarness : Node
 	{
 		string policy = SeekAscensions ? "planned" : OrdinaryPolicy ? "ordinary" : SeekApotheosis ? "seek-apotheosis" : "default";
 		string Level(int l) => levelReachedAt.TryGetValue(l, out float t) ? $"{t / 60f:0.0}" : "-";
-		string mover = Survivor ? (NoOrbs ? "survivor-no-orbs" : "survivor") : Immortal ? (CircleRadius > 0f ? $"immortal-circle{CircleRadius:0}" : "immortal") : "kite";
+		string mover = Survivor ? (NoOrbs ? "survivor-no-orbs" : "survivor") : Immortal ? (CircleRadius > 0f ? $"immortal-circle{CircleRadius:0}{(circleRelaid > 0 ? $"-relaid{circleRelaid}" : "")}" : "immortal") : "kite";
 		return $"HARNESS SUMMARY character={CharacterIndex} policy={policy}{(FullShop ? "+shop" : "")}{(PickEvery > 1 ? $"+pick1in{PickEvery}" : "")} seed={Seed}"
 			+ $" stage={Global.SelectedStageIdx} mover={mover} end={(player != null && player.IsDead ? "died" : "clock")}@{elapsed / 60f:0.0}"
 			+ $" xp={player?.XpFirstLevelCost ?? 0}+{player?.XpCostPerLevel ?? 0} growth={SwarmStat<float>("XpGrowthPerPaceMinute"):0.000}"
@@ -2756,7 +2791,7 @@ public partial class _BalanceHarness : Node
 			+ $" apotheosis={(apotheosisTakenAt < 0f ? "-" : $"{apotheosisTakenAt / 60f:0.0}")}"
 			+ $" level={player?.CurrentLevel ?? 0} L10={Level(10)} L17={Level(17)} L20={Level(20)} L23={Level(23)} L26={Level(26)} L29={Level(29)}"
 			+ $" atCap={reachedCardCapAt.Count} slots={player?.GetEquippedSpells().Count ?? 0}/{player?.SpellSlots ?? Player.MaxSpellSlots}"
-			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}";
+			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}";
 	}
 
 	// --- the GOOD ORDINARY policy (--policy=ordinary) ------------------------------------------
@@ -2846,6 +2881,10 @@ public partial class _BalanceHarness : Node
 
 	private Element PlanFocus()
 	{
+		// --seek-combo: the parents' own gates first - the element the next unascended parent's named
+		// Ascension asks for, and the one it is closest in when it takes either of two.
+		if (ComboFocus() is Element comboFocus)
+			return comboFocus;
 		ApotheosisDefinition target = SeekTarget();
 		if (target != null)
 			return target.RequiredElement;
@@ -3021,6 +3060,209 @@ public partial class _BalanceHarness : Node
 			}
 		}
 		return Choose(best);
+	}
+
+	// --- --seek-combo (.ai/combo-spells.md section 2: "Measure with _BalanceHarness --seek-combo=<id>") -------
+
+	private ComboDefinition comboTarget;
+	private bool comboTargetResolved;
+	private float comboFirstOfferedAt = -1f;
+	private float comboTakenAt = -1f;
+	private float bothParentsAscendedAt = -1f;
+	private readonly Dictionary<string, float> comboParentAscendedAt = new(StringComparer.OrdinalIgnoreCase);
+	// The run's damage by source, a sample a second: the parents' rate before the fusion and the
+	// combination's after it are read off this.
+	private readonly List<(float At, long Parents, long Combo)> comboDamageSamples = new();
+	private float nextComboSample;
+
+	private ComboDefinition ComboTarget()
+	{
+		if (!comboTargetResolved)
+		{
+			comboTargetResolved = true;
+			comboTarget = ComboCatalog.ForId(SeekCombo);
+			GD.Print(comboTarget != null
+				? $"HARNESS seeking the combination {comboTarget.Name}: {comboTarget.First.Label} + {comboTarget.Second.Label}"
+				: $"HARNESS NO COMBINATION '{SeekCombo}' in ComboCatalog - planning as --seek-ascensions");
+		}
+		return comboTarget;
+	}
+
+	private Element? ComboFocus()
+	{
+		ComboDefinition recipe = string.IsNullOrEmpty(SeekCombo) ? null : ComboTarget();
+		if (recipe == null || player == null || comboTakenAt >= 0f)
+			return null;
+		Dictionary<Element, int> counts = player.GetElementInstanceCounts();
+		foreach (ComboIngredient ingredient in recipe.Ingredients)
+		{
+			SpellData held = player.GetEquippedSpells().FirstOrDefault(s => s != null && s.Id.Equals(ingredient.SpellId, StringComparison.OrdinalIgnoreCase));
+			if (held != null && !string.IsNullOrEmpty(held.SelectedLevel8EvolutionId))
+				continue;
+			SpellData template = held ?? ContentValidator.LoadAllSpells().FirstOrDefault(s => s.Id.Equals(ingredient.SpellId, StringComparison.OrdinalIgnoreCase));
+			SpellEvolutionOption named = ComboCatalog.Level8OptionsOf(template, ingredient).FirstOrDefault(o => o.Id == ingredient.AscensionId);
+			IEnumerable<string> gate = named?.BonusElementWeights?.Count > 0
+				? named.BonusElementWeights.Keys
+				: (held ?? template)?.GetElementWeights().Keys.Select(e => e.ToString()) ?? Enumerable.Empty<string>();
+			Element? best = null;
+			int bestHeld = -1;
+			foreach (string name in gate)
+			{
+				if (!Enum.TryParse(name, true, out Element e))
+					continue;
+				int n = counts.TryGetValue(e, out int c) ? c : 0;
+				if (n >= Player.AscensionElementRequirement)
+				{
+					best = null;
+					bestHeld = int.MaxValue;
+					break;
+				}
+				if (n > bestHeld)
+				{
+					bestHeld = n;
+					best = e;
+				}
+			}
+			if (best != null)
+				return best;
+		}
+		return null;
+	}
+
+	// The combination, then a parent's named Ascension, then a parent's card; otherwise the planner.
+	private string PickTowardCombo(IReadOnlyList<LevelUpOption> options, IReadOnlyList<LevelUpOption> ascensions, LevelUpCharges charges)
+	{
+		ComboDefinition recipe = ComboTarget();
+		LevelUpOption made = ascensions.FirstOrDefault(o => o.ComboId == recipe.Id);
+		if (made != null)
+		{
+			if (comboFirstOfferedAt < 0f)
+				comboFirstOfferedAt = elapsed;
+			comboTakenAt = elapsed;
+			GD.Print($"HARNESS COMBINATION {recipe.Name} offered and taken at t={elapsed:0}s ({elapsed / 60f:0.0} min), player level {player.CurrentLevel}");
+			return $"{made.SpellId}:{made.EvolutionChoices[0].Id}";
+		}
+
+		var parentIds = new HashSet<string>(recipe.Ingredients.Select(i => i.SpellId), StringComparer.OrdinalIgnoreCase);
+		foreach (ComboIngredient ingredient in recipe.Ingredients)
+		{
+			LevelUpOption up = ascensions.FirstOrDefault(o => o.SpellId.Equals(ingredient.SpellId, StringComparison.OrdinalIgnoreCase)
+				&& o.MilestoneLevel == Player.AscensionSpellLevel);
+			if (up != null && up.EvolutionChoices.Any(e => e.Id == ingredient.AscensionId) && !up.EvolutionLockReason.ContainsKey(ingredient.AscensionId))
+				return $"{up.SpellId}:{ingredient.AscensionId}";
+		}
+		// The parents' other Ascensions are never taken: the planner below only sees the rest of the strip.
+		var otherAscensions = ascensions.Where(o => !parentIds.Contains(o.SpellId) && !ComboCatalog.IsComboOption(o)).ToList();
+
+		// A parent's card: into the book first, then toward its cap. Its mutation keeps the pair inside three
+		// elements - a deepening, or the untagged path - never an element path that would bring a fourth.
+		LevelUpOption parentCard = options
+			.Where(o => parentIds.Contains(o.SpellId) && !o.IsBoon && (!o.IsNewUnlock || !player.IsSpellBookFull))
+			.OrderByDescending(o => o.IsNewUnlock)
+			.ThenByDescending(o => o.NextLevel)
+			.FirstOrDefault();
+		if (parentCard != null)
+		{
+			if (!parentCard.IsEvolutionMilestone || parentCard.EvolutionChoices == null || parentCard.EvolutionChoices.Count == 0)
+				return parentCard.AutoChoice(Variant);
+			var pairElements = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			foreach (string id in parentIds)
+			{
+				SpellData known = ContentValidator.LoadAllSpells().FirstOrDefault(s => s.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+				foreach (var pair in known?.ElementWeights ?? new Godot.Collections.Dictionary<string, int>())
+					pairElements.Add(pair.Key);
+			}
+			SpellEvolutionOption keeps = parentCard.EvolutionChoices
+				.Where(e => e.BonusElementWeights == null || e.BonusElementWeights.Keys.All(pairElements.Contains))
+				.OrderByDescending(e => e.BonusElementWeights?.Count ?? 0)
+				.FirstOrDefault() ?? parentCard.EvolutionChoices[0];
+			return $"{parentCard.SpellId}:{keeps.Id}";
+		}
+		// A parent still short of its card cap is the spell being finished: a planner fishes for its card with
+		// the run's rerolls rather than spending the level on something else (PickTowardAscensions' rule, with
+		// the parents put ahead of the wizard's own spell - the recipe is the plan).
+		bool parentUnfinished = recipe.Ingredients.Any(i => player.GetEquippedSpells().FirstOrDefault(s => s != null
+			&& s.Id.Equals(i.SpellId, StringComparison.OrdinalIgnoreCase)) is SpellData p && p.CurrentLevel < Player.CardLevelCap(p));
+		int missing = recipe.Ingredients.Count(i => !player.GetEquippedSpells().Any(s => s != null && s.Id.Equals(i.SpellId, StringComparison.OrdinalIgnoreCase)));
+		int free = player.SpellSlots - player.GetEquippedSpells().Count;
+		// A parent not in the book yet is fished for too, while there is a slot for it.
+		bool fishing = (parentUnfinished && (player.UpgradesOnOfferThisLevelUp || player.IsSpellBookFull))
+			|| (missing > 0 && free > 0);
+		if (fishing && charges != null && charges.Rerolls > 0 && rerollsThisLevel < PlannedRerollsPerLevelUp)
+		{
+			rerollsThisLevel++;
+			return RerollAction;
+		}
+
+		// Slots are kept for the parents still to come: no other new spell while the free slots are only
+		// enough for them.
+		IReadOnlyList<LevelUpOption> pool = options;
+		if (missing > 0 && free <= missing)
+		{
+			pool = options.Where(o => !o.IsNewUnlock || o.IsBoon || o.SpellId == Player.MarginaliaId).ToList();
+			if (pool.Count == 0)
+				return SkipAction;
+		}
+		return PickTowardAscensions(pool, otherAscensions, charges);
+	}
+
+	private void TrackCombo()
+	{
+		ComboDefinition recipe = ComboTarget();
+		if (recipe == null || player == null)
+			return;
+		foreach (ComboIngredient ingredient in recipe.Ingredients)
+		{
+			SpellData held = player.GetEquippedSpells().FirstOrDefault(s => s != null && s.Id.Equals(ingredient.SpellId, StringComparison.OrdinalIgnoreCase));
+			if (held == null || string.IsNullOrEmpty(held.SelectedLevel8EvolutionId) || comboParentAscendedAt.ContainsKey(ingredient.SpellId))
+				continue;
+			comboParentAscendedAt[ingredient.SpellId] = elapsed;
+			bool named = held.SelectedLevel8EvolutionId == ingredient.AscensionId;
+			GD.Print($"HARNESS COMBO parent {ingredient.SpellId} ascended {(named ? "down" : "AWAY FROM")} {ingredient.AscensionName} at t={elapsed:0}s ({elapsed / 60f:0.0} min)");
+			if (comboParentAscendedAt.Count == 2 && bothParentsAscendedAt < 0f)
+				bothParentsAscendedAt = elapsed;
+		}
+		// The strip's own rule (ComboCatalog.Evaluate), not a strip built every frame.
+		if (comboFirstOfferedAt < 0f && player.EvaluateCombo(recipe).Ready)
+		{
+			comboFirstOfferedAt = elapsed;
+			GD.Print($"HARNESS COMBINATION {recipe.Name} first offered at t={elapsed:0}s ({elapsed / 60f:0.0} min)");
+		}
+		if (elapsed >= nextComboSample)
+		{
+			nextComboSample = elapsed + 1f;
+			GameStats.DamageBySource.TryGetValue(recipe.First.SpellId, out int first);
+			GameStats.DamageBySource.TryGetValue(recipe.Second.SpellId, out int second);
+			GameStats.DamageBySource.TryGetValue(recipe.Id, out int combo);
+			comboDamageSamples.Add((elapsed, (long)first + second, combo));
+		}
+	}
+
+	// "the minute the recipe was met, and damage a second against the two parents' sum" (section 5).
+	private string ComboSummary()
+	{
+		if (string.IsNullOrEmpty(SeekCombo))
+			return string.Empty;
+		ComboDefinition recipe = ComboTarget();
+		string At(float t) => t < 0f ? "-" : $"{t / 60f:0.0}";
+		string parents = recipe == null ? "-" : string.Join(",", recipe.Ingredients.Select(i =>
+			comboParentAscendedAt.TryGetValue(i.SpellId, out float t) ? $"{i.SpellId}@{t / 60f:0.0}" : $"{i.SpellId}@-"));
+		string rates = "-";
+		if (comboTakenAt >= 0f && comboDamageSamples.Count > 2)
+		{
+			// The parents over the last minute before the fusion (or since both ascended, if that was longer
+			// ago than ten seconds), the combination over everything after it.
+			float from = Math.Max(comboTakenAt - 60f, bothParentsAscendedAt >= 0f && comboTakenAt - bothParentsAscendedAt >= 10f ? bothParentsAscendedAt : comboTakenAt - 60f);
+			var before = comboDamageSamples.Where(s => s.At >= from && s.At <= comboTakenAt).ToList();
+			var after = comboDamageSamples.Where(s => s.At >= comboTakenAt).ToList();
+			if (before.Count > 1 && after.Count > 1)
+			{
+				float parentRate = (before[^1].Parents - before[0].Parents) / Math.Max(1f, before[^1].At - before[0].At);
+				float comboRate = (after[^1].Combo - after[0].Combo) / Math.Max(1f, after[^1].At - after[0].At);
+				rates = $"{parentRate:0}/s->{comboRate:0}/s(x{(parentRate > 0f ? comboRate / parentRate : 0f):0.00})";
+			}
+		}
+		return $" combo={SeekCombo} parents=[{parents}] comboOffered={At(comboFirstOfferedAt)} comboTaken={At(comboTakenAt)} comboDps={rates}";
 	}
 
 	// --- chests --------------------------------------------------------------------------------

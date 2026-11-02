@@ -204,6 +204,13 @@ public static class UnlockCatalog
 		FromSecret("sleet_runes", "buried_runes", "Hidden somewhere in the Frozen Waste."),
 		FromSecret("stormsweep", "fulgurite", "Hidden somewhere in the Scorched Sands."),
 
+		// THE COMBINATIONS (.ai/combo-spells.md, ComboCatalog): each is the reward of the Feat derived from its
+		// recipe, "Conjunction: Name", completed the first time a run meets the recipe - which grants the
+		// spell there and then, so the strip offers it on that same level-up. One entry per recipe, written
+		// out so this list stays the one place every spell's source is read from; RegressionChecks holds the
+		// two lists together.
+		FromCombination("sagittarius"),
+
 		// Boons fill the shop that passive spells used to. Priced by how much a run changes when
 		// one turns up: a stat nudge is cheap, a whole defensive layer is not. The three boons are
 		// all the shop still sells of the catalog (piece A3 decides where they sit).
@@ -343,6 +350,19 @@ public static class UnlockCatalog
 		Source = UnlockSource.Achievement,
 		SourceId = AchievementDefinitions.SecretDeedPrefix + secretId,
 		LockedHint = hint,
+	};
+
+	/// <summary>
+	/// A combination (ComboCatalog): the reward of its recipe's derived Feat (<see cref="ComboCatalog.FeatId"/>).
+	/// The hint names no name - that is the Spell Index's rule for a page not found - only how it is made.
+	/// </summary>
+	private static UnlockDefinition FromCombination(string comboId) => new()
+	{
+		Id = comboId,
+		Kind = UnlockKind.Spell,
+		Source = UnlockSource.Achievement,
+		SourceId = ComboCatalog.FeatId(comboId),
+		LockedHint = "Made, not found: two spells, each ascended down the path its recipe names, joined into one.",
 	};
 
 	/// <summary>

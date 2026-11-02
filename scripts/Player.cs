@@ -40,6 +40,9 @@ public partial class Player : CharacterBody2D
 	[Export] public PackedScene HollowStarScene { get; set; }
 	// Starfall: one node in the arena that carries the whole rain (scripts/Starfall.cs).
 	[Export] public PackedScene StarfallScene { get; set; }
+	// Sagittarius, the first combination (scripts/Sagittarius.cs, Player.Combinations.cs): one node in the
+	// arena that carries the rain it borrowed from Starfall, the draw it borrowed from Hunter's Draw, and the loose.
+	[Export] public PackedScene SagittariusScene { get; set; }
 	// The Familiar: one pack node in the arena that carries every hound (scripts/Familiar.cs).
 	[Export] public PackedScene FamiliarScene { get; set; }
 	// The facing family (.ai/spell-roster.md): two spells that go the way the player faces.
@@ -4142,6 +4145,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals("mirefoot", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshTrailWeaver(spell, MirefootScene);
 		else if (spell.Id.Equals("kindled_ward", StringComparison.OrdinalIgnoreCase)) outcome = FireKindledWard(spell, KindledWardScene);
 		else if (spell.Id.Equals("starfall", StringComparison.OrdinalIgnoreCase)) outcome = FireStarfall(spell, StarfallScene, interval);
+		else if (spell.Id.Equals(Sagittarius.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireSagittarius(spell, interval);
 		else if (spell.Id.Equals("familiar", StringComparison.OrdinalIgnoreCase)) outcome = FireFamiliar(spell, FamiliarScene);
 		else if (spell.Id.Equals("stormsweep", StringComparison.OrdinalIgnoreCase)) outcome = FireStormsweep(spell, StormsweepScene);
 		else if (spell.Id.Equals("sleet_runes", StringComparison.OrdinalIgnoreCase)) outcome = FireSleetRunes(spell, SleetRunesScene);
@@ -6783,6 +6787,11 @@ public partial class Player : CharacterBody2D
 			evolutionId = parts[1];
 		}
 
+		// A combination is not in the spell catalog - it is never a card - and is made only by fusing its
+		// two parents, from the strip (Player.Combinations.cs, ComboCatalog).
+		if (ComboCatalog.ForId(spellId) is ComboDefinition combination)
+			return TryFuse(combination);
+
 		SpellData spellTemplate = ResolveSpellTemplate(spellId);
 		if (spellTemplate == null)
 		{
@@ -6959,6 +6968,14 @@ public partial class Player : CharacterBody2D
 			if (IsInstanceValid(starfallRain))
 				starfallRain.QueueFree();
 			starfallRain = null;
+		}
+
+		// Sagittarius's node lives in the arena, with the rain, the mark and the draw it carries.
+		if (spell.Id.Equals(Sagittarius.SpellId, StringComparison.OrdinalIgnoreCase) && sagittarius != null)
+		{
+			if (IsInstanceValid(sagittarius))
+				sagittarius.QueueFree();
+			sagittarius = null;
 		}
 
 		// The pack lives in the arena too - and what the cat granted goes with it.
@@ -7242,6 +7259,9 @@ public partial class Player : CharacterBody2D
 			ApplyElementPreview(option, spell, counts, isNewUnlock: false);
 			offers.Add(option);
 		}
+		// The combinations whose recipes this loadout meets (ComboCatalog, Player.Combinations.cs): after
+		// every spell's own, since both parents are already at level 8 and offer nothing of their own.
+		offers.AddRange(BuildComboOffers());
 		return offers;
 	}
 
@@ -7281,6 +7301,10 @@ public partial class Player : CharacterBody2D
 				// spell at all. The only ways to change it now are relics (the Scribe's Penknife cuts
 				// one out, the Blank Folio adds a page) - .ai/gameplay-design.md, "Spells are permanent".
 				if (loadoutFull)
+					continue;
+
+				// A spell that went into a combination this run is never offered again (.ai/combo-spells.md).
+				if (WasFusedAway(template.Id))
 					continue;
 
 				// The character's own starting spell is always offerable, unlocked or not. A rescued

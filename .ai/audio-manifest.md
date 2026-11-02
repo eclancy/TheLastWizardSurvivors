@@ -223,6 +223,7 @@ element.
 | `spell_summon.wav` | 0.75 s | −9.0 dBFS | no | **wired** (2026-10-23): `BlackTentacles.CastAt` as the rift opens (every face but the Elder God Maw, since 2026-11-01), `ThornVine.Launch` as the vine breaks ground, `SporeMushroom` as a Doomcap breaks ground (the titan only - an ordinary sowing is covered by the cast cue). No slap/lash sound exists; the Darkness/Grass impacts play through `DealDamageToEnemy` as for every hit, and a dedicated wet slap would be the one addition worth generating |
 | `spell_bow_draw.wav` | 0.45 s | −15.0 dBFS | no | `BowDrawVisual.cs` wind-up start |
 | `spell_bow_release.wav` | 0.30 s | −10.0 dBFS | no | `HuntersArrow` spawn |
+| `spell_sagittarius.wav` | 0.60 s | −11.0 dBFS | no | **wired** (2026-11-01), `Sagittarius.Loose`: once a loose, at the wizard, never once an arrow (`.ai/combo-spells.md` section 3), throttled at 120 ms. A bowstring - a dry snap over a string falling 250 to 120 Hz - then a G major chord (G5, B5, D6) rolled upward 22 ms apart in glass partials (a sine and its 2.76), Light's register, all under 4 kHz. Not among the spell category's closest five pairs (`analyse.py --confuse`) |
 
 ## The player
 

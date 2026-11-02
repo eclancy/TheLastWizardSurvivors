@@ -390,6 +390,34 @@ def spell_bow_release():
     return S.mix(out, S.gain(_whoosh(dur, 800, 2400, 2.4, seed=61), 0.35))
 
 
+def spell_sagittarius():
+    """Sagittarius's loose (Sagittarius.Loose, .ai/combo-spells.md section 3): every lit star lets fly at
+    once, and it is heard ONCE - a bowstring and a glass chord, Light's voice - never once an arrow.
+
+    A loose comes every second or two at most, so it is built for the once-a-second row: short enough,
+    no long tail. Two parents in one envelope, the way the spell is two spells in one: the string first, a
+    dry snap over a low string falling (Hunter's Draw's release, shorter and without its whoosh, so the
+    two are never twins), then 30 ms after it a chord ROLLED upward - G5, B5, D6, 22 ms apart - in glass
+    partials (a sine and its inharmonic 2.76), Light's register. cast_light is one bell stack struck at once
+    on G5 with a fifth; a rolled major triad after a string is an envelope nothing else in the set has.
+    Everything under 4 kHz: a chord of pure high tones is the trap section 6 warns about."""
+    dur = 0.6
+    snap_dur = 0.05
+    snap = S.lowpass(S.highpass(S.osc("noise", 0, snap_dur, seed=211), 1200), 4200, 0.707)
+    snap = S.env_mul(snap, S.expdecay(S.n_samples(snap_dur), 30.0))
+    string_dur = 0.2
+    string = S.osc("tri", S.sweep(string_dur, 250, 120, 0.5), string_dur)
+    string = S.env_mul(string, S.expdecay(S.n_samples(string_dur), 13.0))
+    items = [(snap, 0.0, 0.75), (string, 0.0, 0.55)]
+    for k, semis in enumerate((10, 14, 17)):
+        start = 0.03 + k * 0.022
+        glass_dur = dur - start
+        glass = S.partials(_hz(semis), [1.0, 2.76], glass_dur, amps=[1.0, 0.28], decays=[5.5, 10.0])
+        glass = S.env_mul(glass, S.ad(glass_dur, 0.003, 1.0))
+        items.append((glass, start, (0.5, 0.42, 0.38)[k]))
+    return S.lowpass(S.pad(S.layer(items), dur), 4000, 0.707)
+
+
 # ---------------------------------------------------------------------------
 # the player
 # ---------------------------------------------------------------------------
@@ -1353,6 +1381,9 @@ REGISTRY += [
     ("spell_maw_open",      "spell",  -9.0,  spell_maw_open,      False),
     ("spell_bow_draw",      "spell",  -15.0, spell_bow_draw,      False),
     ("spell_bow_release",   "spell",  -10.0, spell_bow_release,   False),
+    # Sagittarius's loose: one a loose, every second or two at most - the once-a-second row, a step under
+    # the bow's own release, which it follows in the same run only if both parents were never fused.
+    ("spell_sagittarius",   "spell",  -11.0, spell_sagittarius,   False),
 
     ("player_hurt",         "player", -6.0,  player_hurt,         False),
     ("player_dodge",        "player", -13.0, player_dodge,        False),

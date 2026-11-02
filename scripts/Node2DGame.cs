@@ -3567,6 +3567,12 @@ public partial class Node2DGame : Node2D
 				List<EquippedSpellInfo> equippedInfo = BuildEquippedInfo();
 				List<LevelUpOption> ascensionOffers = player.GetAscensionOffers();
 				typedMenu.SetOptions(player.GetLevelUpOptions(optionCount), rerollsRemainingForCurrentLevelUp, equippedInfo, BuildBaselineElementCounts(), player.BuildCharges(rerollsRemainingForCurrentLevelUp));
+				// A combination's Feat is met the first time its recipe is (.ai/combo-spells.md section 2): the strip
+				// offering it is that moment, and the Feat grants the spell there and then - before the browser's
+				// previews are read, so the recipe the strip offers is never "???" beside it.
+				RecordCombinationsMet(ascensionOffers);
+				// The recipes the save knows, for the ascension browser and the level 8 page's mark (ComboCatalog).
+				typedMenu.SetCombinations(player.BuildComboPreviews(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data));
 				// The Ascension strip: level 8 and the Apotheosis, offered above the cards (Player.GetAscensionOffers).
 				typedMenu.SetAscensions(ascensionOffers);
 				// A path met on this level-up is revealed in the browser from now on, in every run
@@ -4404,6 +4410,13 @@ public partial class Node2DGame : Node2D
 			yield return GameOverScreen.Milestone("Ascension", MilestoneName(ascension), GameOverScreen.AscensionMark, ascension.Id);
 		if (spell.SelectedApotheosis is SpellEvolutionOption apotheosis)
 			yield return GameOverScreen.Milestone("Apotheosis", MilestoneName(apotheosis), GameOverScreen.ApotheosisMark, apotheosis.Id);
+		// A combination (ComboCatalog) has no milestones of its own: it lists the two Ascensions it was made
+		// of, from the parents it carries frozen.
+		foreach (SpellData parent in spell.ComboParents)
+		{
+			if (parent?.SelectedLevel8Evolution is SpellEvolutionOption made)
+				yield return GameOverScreen.Milestone("Conjunction", $"{parent.Name} - {MilestoneName(made)}", GameOverScreen.AscensionMark, made.Id);
+		}
 	}
 
 	private static string MilestoneName(SpellEvolutionOption option) =>
@@ -7076,6 +7089,24 @@ public partial class Node2DGame : Node2D
 		EnsureMoment().PlayAchievement(deed, reward, paid, string.Empty);
 		RecordAchievementNow(deed);
 		GD.Print($"Node2DGame: achievement met this run - {deed.Id} at {FormatTime(timeElapsed)}");
+	}
+
+	// THE CONJUNCTION FEAT (ComboCatalog.FeatId). Not watched by TickAchievementWatch - it is completed in the run,
+	// as a secret is - but here, the first time the strip offers the recipe: the moment plays (the result's name
+	// is what it reveals) and RecordAchievementNow pays it, so the combination is the save's from that level-up.
+	private void RecordCombinationsMet(List<LevelUpOption> offers)
+	{
+		if (offers == null || GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is not SaveData data)
+			return;
+		foreach (LevelUpOption offer in offers)
+		{
+			if (!ComboCatalog.IsComboOption(offer))
+				continue;
+			string featId = ComboCatalog.FeatId(offer.ComboId);
+			if (GlobalStatsManager.IsAchievementUnlocked(data, featId) || AchievementDefinitions.GetById(featId) is not AchievementDefinition deed)
+				continue;
+			AnnounceAchievement(deed, data);
+		}
 	}
 
 	// Deeds recorded mid-run, for the results screen: their names and the Arcane Energy they paid, which

@@ -913,6 +913,12 @@ public partial class _UiShot : Node
 	// --demo-spells=id,id: spells added to the tome with the demo state, so the browser has more than
 	// the starting spell to list.
 	private string[] demoSpells = System.Array.Empty<string>();
+	// --demo-combo=ID[:fuse]: both parents of a combination (ComboCatalog) put in the book at level 8 down
+	// their named Ascensions (each with a level 4 that keeps the pair inside three elements), so a level-up
+	// offers the combination in the strip and the browser lists the recipe ready; with ":fuse", made at once,
+	// through the same entry point the strip uses (Player.TryAddOrLevelSpell), for a photograph of it firing.
+	private string demoCombo;
+	private bool demoComboFuse;
 	private bool demoApplied;
 	// --seen-ascensions=a,b,...: which ascension paths the in-memory save has SEEN (AscensionSightings),
 	// so the browser and the level 8 page can be photographed with a path sealed, seen but out of
@@ -962,6 +968,12 @@ public partial class _UiShot : Node
 				demoPlayerLevel = int.Parse(arg.Substring("--demo-level=".Length));
 			else if (arg.StartsWith("--demo-spells="))
 				demoSpells = arg.Substring("--demo-spells=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+			else if (arg.StartsWith("--demo-combo="))
+			{
+				string[] combo = arg.Substring("--demo-combo=".Length).Split(':');
+				demoCombo = combo[0].Trim();
+				demoComboFuse = combo.Length > 1 && combo[1].Trim() == "fuse";
+			}
 			else if (arg.StartsWith("--demo-spell-level="))
 				demoSpellLevel = int.Parse(arg.Substring("--demo-spell-level=".Length));
 			else if (arg.StartsWith("--seen-ascensions="))
@@ -2975,7 +2987,7 @@ public partial class _UiShot : Node
 				scrolled = true;
 				ScrollAll(GetTree().Root);
 			}
-			if ((demoPlayerLevel > 0 || demoSpellLevel > 0 || demoSpells.Length > 0 || demoEvolutions.Length > 0) && !demoApplied && frames >= WarmupFrames / 4
+			if ((demoPlayerLevel > 0 || demoSpellLevel > 0 || demoSpells.Length > 0 || demoEvolutions.Length > 0 || demoCombo != null) && !demoApplied && frames >= WarmupFrames / 4
 				&& FindNodeOfType<Player>(GetTree().Root) is Player demo && demo.GetEquippedSpells().Count > 0)
 			{
 				demoApplied = true;
@@ -2993,6 +3005,8 @@ public partial class _UiShot : Node
 				foreach (string id in demoSpells)
 					if (!demo.TryAddOrLevelSpell(id.Trim()))
 						GD.PrintErr($"_UiShot: could not add spell '{id}'");
+				if (demoCombo != null)
+					ApplyDemoCombo(demo);
 				GD.Print($"_UiShot: demo state - player level {demo.CurrentLevel}, {demo.GetEquippedSpells()[0].Name} level {demo.GetEquippedSpells()[0].CurrentLevel}");
 			}
 			// After the demo state (same frame, so --demo-spells are held by now), before the level-up.
@@ -3943,6 +3957,42 @@ public partial class _UiShot : Node
 		if (castOnStage)
 			p.DebugRipenSpells();
 		GD.Print($"_UiShot: spell stage of {stageCrowd.Count} placed at {centre}, player at {p.GlobalPosition}, facing {p.FacingDirection} (side {p.FacingSide})");
+	}
+
+	private void ApplyDemoCombo(Player player)
+	{
+		ComboDefinition recipe = ComboCatalog.ForId(demoCombo);
+		if (recipe == null)
+		{
+			GD.PrintErr($"_UiShot: no combination '{demoCombo}' in ComboCatalog");
+			return;
+		}
+		foreach (ComboIngredient ingredient in recipe.Ingredients)
+		{
+			SpellData held = player.GetEquippedSpells().FirstOrDefault(s => s != null && s.Id == ingredient.SpellId);
+			if (held == null && player.TryAddOrLevelSpell(SpellVariants.Selection(ingredient.SpellId, ingredient.VariantId)))
+				held = player.GetEquippedSpells().FirstOrDefault(s => s != null && s.Id == ingredient.SpellId);
+			if (held == null)
+			{
+				GD.PrintErr($"_UiShot: could not put '{ingredient.SpellId}' in the book (is it full?)");
+				return;
+			}
+			SpellEvolutionCatalog.EnsureEvolutionCoverage(held);
+			// A level 4 that deepens one of the spell's own elements - never an element path, which could
+			// bring the pair a fourth (Frostfall) and seal the recipe.
+			SpellEvolutionOption mutation = held.Level4Options.FirstOrDefault(o => o.BonusElementWeights != null
+					&& o.BonusElementWeights.Count > 0 && o.BonusElementWeights.Keys.All(k => held.ElementWeights.ContainsKey(k)))
+				?? held.Level4Options.FirstOrDefault(o => o.BonusElementWeights == null || o.BonusElementWeights.Count == 0);
+			if (mutation != null && string.IsNullOrEmpty(held.SelectedLevel4EvolutionId))
+				held.ApplyEvolution(mutation);
+			SpellEvolutionOption named = held.Level8Options.FirstOrDefault(o => o.Id == ingredient.AscensionId);
+			held.CurrentLevel = held.MaxLevel;
+			if (named != null)
+				held.ApplyEvolution(named);
+			GD.Print($"_UiShot: {held.Id} at level {held.CurrentLevel}, {mutation?.DisplayName ?? "no mutation"} then {named?.DisplayName ?? "NO ASCENSION"}");
+		}
+		if (demoComboFuse)
+			GD.Print($"_UiShot: {recipe.Name} {(player.TryAddOrLevelSpell(recipe.Id) ? "made" : "REFUSED")}");
 	}
 
 	private void ApplyDemoEvolutions(Player player, SpellData spell)

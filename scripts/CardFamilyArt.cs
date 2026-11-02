@@ -31,6 +31,8 @@ public enum CardFamily
 	Ascension,
 	/// <summary>A wizard's final form: the same plate, its runes in the Fire ramp.</summary>
 	Apotheosis,
+	/// <summary>A combination (ComboCatalog): the same plate in bronze glass, its runes starlight.</summary>
+	Conjunction,
 }
 
 /// <summary>
@@ -60,6 +62,8 @@ public static class CardFamilyArt
 	public const string ObsidianLitPath = Ui + "ui-obsidian-plate-lit.png";
 	public const string EmberPath = Ui + "ui-ember-plate.png";
 	public const string EmberLitPath = Ui + "ui-ember-plate-lit.png";
+	public const string ConjunctionPath = Ui + "ui-conjunction-plate.png";
+	public const string ConjunctionLitPath = Ui + "ui-conjunction-plate-lit.png";
 
 	// Every family frame is 48 authored (96 drawn) with a 12-pixel corner block - 24 drawn. The torn
 	// page too: it was sliced at 20, which tiled four pixels of its corner blocks (the gold leaf's
@@ -73,6 +77,8 @@ public static class CardFamilyArt
 	public static readonly Color ObsidianFace = new Color(0.043f, 0.141f, 0.212f);
 	/// <summary>red deep #16070A - the ember plate.</summary>
 	public static readonly Color EmberFace = new Color(0.086f, 0.027f, 0.039f);
+	/// <summary>gold deep #2E2208 - the conjunction plate's bronze glass.</summary>
+	public static readonly Color ConjunctionFace = new Color(0.180f, 0.133f, 0.031f);
 
 	// --- the inks ------------------------------------------------------------------------------
 	// EVERY PAGE writes in the parchment's dark inks, whatever its mark. LevelUpMenu keeps its own
@@ -106,6 +112,13 @@ public static class CardFamilyArt
 	public static readonly Color ApotheosisSoft = new Color(0.910f, 0.478f, 0.102f); // fire mid #E87A1A
 	public static readonly Color ApotheosisChip = new Color(0.165f, 0.055f, 0.078f); // red shade #2A0E14
 
+	// THE CONJUNCTION PLATE (a combination): Light's core-warm hot for the name, bone hi for what it does,
+	// gold lit for the quiet lines and the advice, a gold shade chip. Measured on the bronze face in
+	// tools/art/ui_contrast.py ("conjunction"): 14.6:1, 13.9:1, 7.6:1, chip ink 8.9:1.
+	public static readonly Color ConjunctionTitle = new Color(1.0f, 0.973f, 0.847f);  // light hot #FFF8D8
+	public static readonly Color ConjunctionSoft = new Color(0.847f, 0.690f, 0.290f); // gold lit #D8B04A
+	public static readonly Color ConjunctionChip = new Color(0.329f, 0.247f, 0.063f); // gold shade #543F10
+
 	/// <summary>Light ink for a chip filled with one of the dark chip colours above (bone hi).</summary>
 	public static readonly Color ChipInk = new Color(0.933f, 0.949f, 0.980f);
 
@@ -121,12 +134,13 @@ public static class CardFamilyArt
 		CardFamily.Boon => new Color(0.133f, 0.110f, 0.200f),
 		CardFamily.Ascension => ObsidianFace,
 		CardFamily.Apotheosis => EmberFace,
+		CardFamily.Conjunction => ConjunctionFace,
 		_ => PageFace,
 	};
 
 	/// <summary>Whether the family's face is dark, so it writes in light inks. Every page is light.</summary>
 	public static bool IsDark(CardFamily family) => family is CardFamily.Boon
-		or CardFamily.Ascension or CardFamily.Apotheosis;
+		or CardFamily.Ascension or CardFamily.Apotheosis or CardFamily.Conjunction;
 
 	/// <summary>
 	/// How far in from a card's edge its frame ends, in drawn pixels: the first row inside the
@@ -136,7 +150,7 @@ public static class CardFamilyArt
 	public static int InnerBorder(CardFamily family) => family switch
 	{
 		CardFamily.Boon => 16,
-		CardFamily.Ascension or CardFamily.Apotheosis => 18,
+		CardFamily.Ascension or CardFamily.Apotheosis or CardFamily.Conjunction => 18,
 		_ => 14,
 	};
 
@@ -163,6 +177,7 @@ public static class CardFamilyArt
 			CardFamily.Upgrade => lit ? UpgradePageLitPath : UpgradePagePath,
 			CardFamily.Mutation => lit ? MutationPageLitPath : MutationPagePath,
 			CardFamily.Apotheosis => lit ? EmberLitPath : EmberPath,
+			CardFamily.Conjunction => lit ? ConjunctionLitPath : ConjunctionPath,
 			_ => lit ? ObsidianLitPath : ObsidianPath,
 		};
 		var style = new StyleBoxTexture

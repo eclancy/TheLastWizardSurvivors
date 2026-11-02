@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/Sagittarius.cs" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/Starfall.tscn" id="2_rain"]
+[ext_resource type="PackedScene" path="res://scenes/HuntersArrow.tscn" id="3_arrow"]
+
+; Sagittarius, the first combination (scripts/Sagittarius.cs, .ai/combo-spells.md section 3): one node in the
+; arena at its origin that carries the rain it borrowed from Starfall (a Starfall instanced under it), the draw
+; it borrowed from Hunter's Draw, the mark, and the loose. No sprite and no collision shape: the stars test
+; their own radii and the arrows are Hunter's Draw's own scene.
+;
+; ArrowShare and StarShare are the combination's own multipliers on its parents' numbers; MaxLitStars is the
+; most stars the draw holds lit, so the most arrows one loose can carry. Section 3's first guesses: 0.8, 1.0, 16.
+[node name="Sagittarius" type="Node2D"]
+script = ExtResource("1")
+ArrowShare = 0.8
+StarShare = 1.0
+MaxLitStars = 16
+RainScene = ExtResource("2_rain")
+ArrowScene = ExtResource("3_arrow")

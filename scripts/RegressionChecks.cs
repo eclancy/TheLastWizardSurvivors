@@ -17,6 +17,7 @@ public static class RegressionChecks
 		ValidatePresetRewardOrdering(warnings);
 		ValidateSpellEvolutionCoverage(warnings);
 		ValidateApotheosisCatalog(warnings);
+		ValidateComboCatalog(warnings);
 		ValidateChestSetPresentation(warnings);
 		ValidateFullSetObjects(warnings);
 		ValidateTomeRelics(warnings);
@@ -4369,6 +4370,132 @@ public static class RegressionChecks
 		}
 	}
 
+	// THE COMBINATIONS (.ai/combo-spells.md section 2, ComboCatalog): what `dotnet build` cannot see. Both
+	// parents exist and are distinct; each names exactly one Ascension, and that id is one of the parent's level
+	// 8 options (for a spell taken in forms, the named form's); no two recipes share a pair and both Ascensions;
+	// no recipe names more than three elements with its named Ascensions; every verb is unique across the
+	// combinations and the Apotheoses; and every combination has its derived Feat, its UnlockCatalog entry from
+	// that Feat, its ContentValidator.SpellResourcePaths entry and an EvolutionStatReaders row. Its own resource
+	// is terminal (one level, no level-ups, no milestones), and the names the recipe writes out for the Feat
+	// are the resources' own.
+	private static void ValidateComboCatalog(List<string> warnings)
+	{
+		var spells = ContentValidator.LoadAllSpells();
+		var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var seenRecipes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var verbs = new HashSet<string>(ApotheosisCatalog.All.Select(a => a.Verb), StringComparer.OrdinalIgnoreCase);
+		foreach (ComboDefinition recipe in ComboCatalog.All)
+		{
+			string label = $"Combination '{recipe.Id}'";
+			if (!seenIds.Add(recipe.Id))
+				warnings.Add($"{label} is defined twice in ComboCatalog.");
+			if (string.IsNullOrWhiteSpace(recipe.Verb) || !verbs.Add(recipe.Verb))
+				warnings.Add($"{label}: verb '{recipe.Verb}' is empty or already claimed by an Apotheosis or another combination. Each owns one (.ai/combo-spells.md section 4).");
+			if (recipe.First == null || recipe.Second == null)
+			{
+				warnings.Add($"{label} does not name two parents.");
+				continue;
+			}
+			if (recipe.First.SpellId.Equals(recipe.Second.SpellId, StringComparison.OrdinalIgnoreCase))
+				warnings.Add($"{label} names '{recipe.First.SpellId}' as both parents; a combination is two distinct spells.");
+
+			// The same pair with the same two Ascensions, in either order, is one recipe.
+			string a = $"{recipe.First.SpellId}:{recipe.First.VariantId}:{recipe.First.AscensionId}";
+			string b = $"{recipe.Second.SpellId}:{recipe.Second.VariantId}:{recipe.Second.AscensionId}";
+			string pair = string.CompareOrdinal(a, b) < 0 ? $"{a}+{b}" : $"{b}+{a}";
+			if (!seenRecipes.Add(pair))
+				warnings.Add($"{label} shares its pair and both named Ascensions with another recipe.");
+
+			var elements = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var baseSum = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+			foreach (ComboIngredient ingredient in recipe.Ingredients)
+			{
+				string part = $"{label}'s parent '{ingredient.SpellId}'";
+				if (ComboCatalog.IsCombination(ingredient.SpellId))
+					warnings.Add($"{part} is itself a combination; a combination is terminal and never fused again.");
+				SpellData template = spells.FirstOrDefault(s => s.Id.Equals(ingredient.SpellId, StringComparison.OrdinalIgnoreCase));
+				if (template == null)
+				{
+					warnings.Add($"{part} is not in ContentValidator.SpellResourcePaths.");
+					continue;
+				}
+				if (!template.Name.Equals(ingredient.SpellName, StringComparison.Ordinal))
+					warnings.Add($"{part} is written '{ingredient.SpellName}' in ComboCatalog but its resource names it '{template.Name}'.");
+				if (!string.IsNullOrEmpty(ingredient.VariantId) && template.FindVariant(ingredient.VariantId) == null)
+					warnings.Add($"{part} names form '{ingredient.VariantId}', which the spell does not have.");
+				if (template.HasVariants && string.IsNullOrEmpty(ingredient.VariantId))
+					warnings.Add($"{part} is taken in a form; the recipe must name the form whose Ascension it names (VariantId).");
+
+				IReadOnlyList<SpellEvolutionOption> level8 = ComboCatalog.Level8OptionsOf(template, ingredient);
+				SpellEvolutionOption named = level8.FirstOrDefault(o => o != null && o.Id.Equals(ingredient.AscensionId, StringComparison.OrdinalIgnoreCase));
+				if (string.IsNullOrWhiteSpace(ingredient.AscensionId) || named == null)
+				{
+					warnings.Add($"{part} names Ascension '{ingredient.AscensionId}', which is not one of its level 8 options ({string.Join(", ", level8.Select(o => o.Id))}). A recipe names exactly one, never any.");
+					continue;
+				}
+				if (named.MilestoneLevel != Player.AscensionSpellLevel)
+					warnings.Add($"{part}'s named Ascension '{named.Id}' is a milestone {named.MilestoneLevel}, not the level 8 one.");
+				if (!named.DisplayName.Equals(ingredient.AscensionName, StringComparison.Ordinal))
+					warnings.Add($"{part}'s Ascension is written '{ingredient.AscensionName}' in ComboCatalog but is called '{named.DisplayName}'.");
+				foreach (var weight in template.ElementWeights)
+				{
+					elements.Add(weight.Key);
+					baseSum[weight.Key] = (baseSum.TryGetValue(weight.Key, out int had) ? had : 0) + weight.Value;
+				}
+				foreach (var weight in named.BonusElementWeights)
+					elements.Add(weight.Key);
+			}
+			if (elements.Count > ComboCatalog.MaxElements)
+				warnings.Add($"{label} names {elements.Count} elements with its named Ascensions ({string.Join(", ", elements)}); a combination may name {ComboCatalog.MaxElements}, never four.");
+
+			// Its own spell: registered, terminal, named as the recipe says, carrying the parents' tags summed.
+			SpellData combo = spells.FirstOrDefault(s => s.Id.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase));
+			if (combo == null)
+			{
+				warnings.Add($"{label} has no SpellData in ContentValidator.SpellResourcePaths ({recipe.ResourcePath}).");
+			}
+			else
+			{
+				if (!combo.ResourcePath.Equals(recipe.ResourcePath, StringComparison.OrdinalIgnoreCase))
+					warnings.Add($"{label}'s resource is {combo.ResourcePath}, but ComboCatalog names {recipe.ResourcePath}.");
+				if (!combo.Name.Equals(recipe.Name, StringComparison.Ordinal))
+					warnings.Add($"{label} is written '{recipe.Name}' in ComboCatalog but its resource names it '{combo.Name}'.");
+				if (combo.MaxLevel != 1 || (combo.LevelUpgrades?.Count ?? 0) > 0)
+					warnings.Add($"{label} has MaxLevel {combo.MaxLevel} and {combo.LevelUpgrades?.Count ?? 0} level-ups; a combination is terminal - one level, none to take.");
+				SpellData probe = (SpellData)combo.Duplicate(true);
+				SpellEvolutionCatalog.EnsureEvolutionCoverage(probe);
+				if ((probe.Level4Options?.Count ?? 0) > 0 || (probe.Level8Options?.Count ?? 0) > 0)
+					warnings.Add($"{label} has milestone options; a combination never mutates or ascends again.");
+				bool sameTags = combo.ElementWeights.Count == baseSum.Count
+					&& baseSum.All(p => combo.ElementWeights.TryGetValue(p.Key, out int w) && w == p.Value);
+				if (!sameTags)
+					warnings.Add($"{label}'s resource tags ({string.Join(", ", combo.ElementWeights.Select(p => $"{p.Key} {p.Value}"))}) are not its parents' base tags summed ({string.Join(", ", baseSum.Select(p => $"{p.Key} {p.Value}"))}).");
+			}
+			if (!EvolutionStatReaders.HasRow(recipe.Id))
+				warnings.Add($"{label} has no EvolutionStatReaders row.");
+
+			// Its Feat, and the unlock it grants.
+			AchievementDefinition feat = AchievementDefinitions.GetById(ComboCatalog.FeatId(recipe.Id));
+			if (feat == null)
+				warnings.Add($"{label} has no derived Feat '{ComboCatalog.FeatId(recipe.Id)}'.");
+			else if (!feat.SpellUnlockId.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase) || !feat.CompletesInRun
+				|| feat.Visibility != AchievementVisibility.Recipe)
+				warnings.Add($"{label}'s Feat must grant it, complete in the run and be listed as a recipe.");
+			UnlockDefinition unlock = UnlockCatalog.GetSpell(recipe.Id);
+			if (unlock == null || unlock.Source != UnlockSource.Achievement
+				|| !unlock.SourceId.Equals(ComboCatalog.FeatId(recipe.Id), StringComparison.OrdinalIgnoreCase))
+				warnings.Add($"{label} is not in UnlockCatalog as the reward of its Feat '{ComboCatalog.FeatId(recipe.Id)}'.");
+		}
+
+		// Every combination resource is in a recipe: one with none could never be made.
+		foreach (SpellData spell in spells)
+		{
+			if (UnlockCatalog.GetSpell(spell.Id)?.SourceId?.StartsWith(ComboCatalog.FeatPrefix, StringComparison.OrdinalIgnoreCase) == true
+				&& ComboCatalog.ForId(spell.Id) == null)
+				warnings.Add($"Spell '{spell.Id}' is unlocked by a Conjunction Feat but has no recipe in ComboCatalog.");
+		}
+	}
+
 	private static void CheckRequiredPath(List<string> warnings, string label, string element,
 		Godot.Collections.Array<SpellEvolutionOption> options, string requiredId, int milestone)
 	{
@@ -4896,6 +5023,11 @@ public static class RegressionChecks
 					warnings.Add($"Spell '{spell.Id}' declares {pair.Key} with weight {pair.Value}; base element weights are capped at 1 per element, and depth comes from evolutions instead.");
 			}
 
+			// A combination has no milestones and is the one spell allowed three elements, never four:
+			// ValidateComboCatalog holds its ceiling.
+			if (ComboCatalog.IsCombination(spell.Id))
+				continue;
+
 			SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
 
 			var baseWeights = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -5037,6 +5169,10 @@ public static class RegressionChecks
 		foreach (SpellData spell in ContentValidator.LoadAllSpellForms())
 		{
 			if (spell?.ElementWeights == null || string.IsNullOrWhiteSpace(spell.Id))
+				continue;
+
+			// A combination never mutates or ascends: it has no element path to offer (ComboCatalog).
+			if (ComboCatalog.IsCombination(spell.Id))
 				continue;
 
 			var baseElements = new HashSet<string>(spell.ElementWeights.Keys, StringComparer.OrdinalIgnoreCase);
@@ -5788,7 +5924,9 @@ public static class RegressionChecks
 		{
 			case AchievementKind.Feat:
 			case AchievementKind.Collection:
-				if (deed.Visibility != AchievementVisibility.Always)
+				// A combination's Feat is the one Feat that waits: listed once the save owns both parents (Recipe).
+				if (deed.Visibility != AchievementVisibility.Always
+					&& !(deed.Kind == AchievementKind.Feat && deed.Visibility == AchievementVisibility.Recipe && !string.IsNullOrEmpty(deed.ComboId)))
 					warnings.Add($"Achievement '{id}' is a {deed.Kind} shown {deed.Visibility}; a {deed.Kind} is listed from the first run.");
 				break;
 			case AchievementKind.Road:
@@ -5813,7 +5951,9 @@ public static class RegressionChecks
 		if (AchievementDefinitions.IsSealed(deed, new SaveData()) && string.IsNullOrWhiteSpace(deed.SealedLine))
 			warnings.Add($"Achievement '{id}' frees a secret wizard but has no sealed line for the row it shows before his chapter opens.");
 
-		bool mirrors = !string.IsNullOrWhiteSpace(deed.SiteId) || !string.IsNullOrWhiteSpace(deed.SecretId);
+		// A combination's Feat is completed in the run too, the first time its recipe is met (ComboCatalog).
+		bool mirrors = !string.IsNullOrWhiteSpace(deed.SiteId) || !string.IsNullOrWhiteSpace(deed.SecretId)
+			|| !string.IsNullOrWhiteSpace(deed.ComboId);
 		if (deed.CompletesInRun != mirrors)
 			warnings.Add($"Achievement '{id}' {(deed.CompletesInRun ? "completes in the run but mirrors no site or secret" : "mirrors a site or a secret but is not completed in the run")}.");
 		if (!string.IsNullOrWhiteSpace(deed.SiteId)

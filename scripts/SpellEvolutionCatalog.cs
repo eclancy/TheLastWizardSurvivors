@@ -41,6 +41,11 @@ public static class SpellEvolutionCatalog
 		if (spell == null || string.IsNullOrWhiteSpace(spell.Id))
 			return;
 
+		// A combination (ComboCatalog) is terminal: no level 4, no level 8, no milestone of its own. Given the
+		// default archetype it would read as a spell with an Ascension still ahead of it.
+		if (ComboCatalog.IsCombination(spell.Id))
+			return;
+
 		// If options are already loaded/configured on the resource, do not overwrite unless empty
 		if (spell.Level4Options != null && spell.Level4Options.Count >= 3 &&
 			spell.Level8Options != null && spell.Level8Options.Count >= 2)

@@ -62,6 +62,13 @@ public sealed class LevelUpOption
 	public string SynergyTag { get; set; } = string.Empty;
 	public string SynergyDescription { get; set; } = string.Empty;
 
+	/// <summary>
+	/// A combination's strip offer (ComboCatalog): the recipe's id, which is also the combination's spell
+	/// id. Empty on every other option. Its MilestoneLevel is ComboCatalog.MilestoneLevel, past the
+	/// Apotheosis's, so every screen that tells an Apotheosis by its milestone asks this first.
+	/// </summary>
+	public string ComboId { get; set; } = string.Empty;
+
 	// --- Forms (SpellData.Variants; .ai/decisions/2026-10-28-spell-variants.md) -----------------------
 
 	/// <summary>
@@ -189,6 +196,42 @@ public sealed class ApotheosisPreview
 	public bool Closed { get; set; }
 }
 
+/// <summary>
+/// One combination recipe the save knows (ComboCatalog), as the ascension browser shows it: the two
+/// parents with their named Ascensions, each marked when this run holds it, and the result - sealed
+/// until the save has made it once. It reports, it never grants: the strip's offer
+/// (Player.GetAscensionOffers) is the only way to make it.
+/// </summary>
+public sealed class ComboPreview
+{
+	public string Id { get; set; } = string.Empty;
+	/// <summary>"Hunter's Draw + Starfall": what the tree's node is called.</summary>
+	public string ParentsName { get; set; } = string.Empty;
+	/// <summary>The first parent's icon, for the node.</summary>
+	public Texture2D ParentIcon { get; set; }
+	public string Name { get; set; } = string.Empty;
+	public string Description { get; set; } = string.Empty;
+	public Texture2D Icon { get; set; }
+
+	/// <summary>One Ingredient gate per parent, then any seal (OwnSpell, ElementCeiling).</summary>
+	public List<AscensionRequirement> Requirements { get; set; } = new();
+
+	/// <summary>The save has made it once (its Feat is done): the name, line and picture may be shown.</summary>
+	public bool Revealed { get; set; }
+
+	/// <summary>In the strip now: ComboStanding.Ready, the strip's own answer.</summary>
+	public bool Offered { get; set; }
+
+	/// <summary>Made this run.</summary>
+	public bool Taken { get; set; }
+
+	/// <summary>Out of reach this run: a parent took the other Ascension, is the wizard's own, or the pair names four.</summary>
+	public bool Sealed { get; set; }
+
+	/// <summary>The recipe's two parent ids and named Ascensions, for the level 8 page's mark.</summary>
+	public List<(string SpellId, string AscensionId)> Names { get; set; } = new();
+}
+
 /// <summary>One level 8 branch, as the ascension browser needs to show it.</summary>
 public sealed class AscensionInfo
 {
@@ -240,6 +283,15 @@ public enum AscensionRequirementKind
 	/// <see cref="AscensionRequirement.PathId"/>). Have 1 when it was.
 	/// </summary>
 	Path,
+	/// <summary>
+	/// A combination's parent (ComboCatalog): <see cref="AscensionRequirement.SpellName"/> at level 8 down the
+	/// Ascension <see cref="AscensionRequirement.PathName"/>. Have 1 when held so; Closed when it took the other.
+	/// </summary>
+	Ingredient,
+	/// <summary>A combination whose parent is the wizard's own starting spell: never his to make. Always Closed.</summary>
+	OwnSpell,
+	/// <summary>A combination whose parents name four elements between them: never offered. Always Closed.</summary>
+	ElementCeiling,
 }
 
 /// <summary>One gate on an ascension, with how far along the player is.</summary>
@@ -262,6 +314,9 @@ public sealed class AscensionRequirement
 	public string PathId { get; set; } = string.Empty;
 	public string PathName { get; set; } = string.Empty;
 	public bool Closed { get; set; }
+
+	/// <summary>For a combination's gates: the parent spell's name ("Hunter's Draw"), or the path that brought a fourth element.</summary>
+	public string SpellName { get; set; } = string.Empty;
 
 	public bool Met => Have >= Need;
 	public int Missing => System.Math.Max(0, Need - Have);

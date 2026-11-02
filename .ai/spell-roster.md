@@ -96,6 +96,17 @@ because the grid had an empty row - an archetype the genre uses constantly and w
 | 31 | Stormsweep | Lightning | **the side the player faces** | timer, every cooldown whatever is there | **face the crowd** | **a band beside him, swept** | close |
 | 32 | Sleet Runes | Ice+Wind | **the way the player faces** | fast timer, a stream | **walk to aim** | **true projectiles: pierce and speed** | mid-long |
 
+### The combinations (2026-11-01)
+
+Two fully ascended spells made into one (`.ai/combo-spells.md`, `ComboCatalog`): never a level-up card,
+offered in the Ascension strip once both parents are at level 8 down the Ascensions the recipe names, and
+terminal. Each owns a verb no Apotheosis or other combination has; its elements are its parents' current
+weights summed - the one kind of spell allowed three, never four.
+
+| # | spell | element | aim | cadence | demand | payload | band |
+|---|---|---|---|---|---|---|---|
+| 33 | **Sagittarius** (Hunter's Draw - Hunter's Mark + Starfall - Constellation; `scripts/Sagittarius.cs`) | Metal+Wind+Light | **from the ground he has walked, inward, on the mark** (a full draw marks the strongest in reach; unmarked, the enemy nearest him) | the rain falls as always; **every star landing while the bow is drawn stays lit** (16 at most); **the loose when he stops** | **walk the rain round the crowd, then stop** | **a converging volley** - one piercing arrow from every lit star - with Constellation's lines while he walks | long |
+
 ### Hollow Star - the spell that moves the swarm (issue #64)
 
 Every other spell takes the enemies where it finds them. Hollow Star opens a well on the densest pack

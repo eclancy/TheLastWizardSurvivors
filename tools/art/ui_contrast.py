@@ -342,12 +342,17 @@ ASC_CHIP = h2rgb(f2h(0.090, 0.255, 0.369))         # arcane shade
 APO_TITLE = h2rgb(f2h(1.0, 0.784, 0.282))          # fire hot
 APO_SOFT = h2rgb(f2h(0.910, 0.478, 0.102))         # fire mid
 APO_CHIP = h2rgb(f2h(0.165, 0.055, 0.078))         # red shade
+# The conjunction plate (a combination, CardFamilyArt.Conjunction*): bronze glass, starlight runes.
+CON_TITLE = h2rgb(f2h(1.0, 0.973, 0.847))          # light hot
+CON_SOFT = h2rgb(f2h(0.847, 0.690, 0.290))         # gold lit
+CON_CHIP = h2rgb(f2h(0.329, 0.247, 0.063))         # gold shade
 CHIP_INK = h2rgb(f2h(0.933, 0.949, 0.980))
 LOCK_BAND = h2rgb(f2h(0.416, 0.125, 0.157))
 LOCK_INK = h2rgb(f2h(0.933, 0.949, 0.980))
 # The Ascend strip's button inks (LevelUpMenu.BuildAscendStrip).
 STRIP_GOLD = h2rgb(f2h(1.0, 0.88, 0.50))
 STRIP_EMBER = h2rgb(f2h(1.0, 0.70, 0.42))
+STRIP_STAR = h2rgb(f2h(1.0, 0.973, 0.847))
 # LevelPips: ring and held fill, on the upgrade page only. A graphic, so 3:1 (WCAG 1.4.11).
 PIP_GOLD_BASE = h2rgb(f2h(0.541, 0.416, 0.118))
 PIP_OLD = h2rgb(f2h(0.72, 0.54, 0.12))             # the gold leaf the pips used before
@@ -379,17 +384,19 @@ def family_pairs(add, rev, floors):
         g = centre(load(UI + "ui-spell-page-mutation%s.png" % lit, rev))
         add("mutation page%s" % (", lit" if lit else ""), g, "teal rule, stained tear (lichen lit)", MUTATION_RULE, GRAPHIC)
         for plate, title, soft, label in (("obsidian", ASC_TITLE, ASC_SOFT, "ascension"),
-                                          ("ember", APO_TITLE, APO_SOFT, "apotheosis")):
+                                          ("ember", APO_TITLE, APO_SOFT, "apotheosis"),
+                                          ("conjunction", CON_TITLE, CON_SOFT, "conjunction")):
             g = centre(load(UI + "ui-%s-plate%s.png" % (plate, lit), rev))
             name = "%s plate%s" % (label, ", lit" if lit else "")
             add(name, g, "Title (name)", title, BODY)
             add(name, g, "Ink (description)", ASC_INK, BODY)
             add(name, g, "Soft (element line)", soft, BODY)
             add(name, g, "Advice (gold lit)", ASC_ADVICE, BODY)
-            add(name, g, "strip button text", STRIP_GOLD if plate == "obsidian" else STRIP_EMBER, BODY)
+            add(name, g, "strip button text", STRIP_GOLD if plate == "obsidian" else STRIP_EMBER if plate == "ember" else STRIP_STAR, BODY)
     add("synergy chip, mutation", MUTATION_CHIP, "ChipInk", CHIP_INK, BODY)
     add("synergy chip, ascension", ASC_CHIP, "ChipInk", CHIP_INK, BODY)
     add("synergy chip, apotheosis", APO_CHIP, "ChipInk", CHIP_INK, BODY)
+    add("synergy chip, conjunction", CON_CHIP, "ChipInk", CHIP_INK, BODY)
     add("lock stamp band", LOCK_BAND, "LockInk", LOCK_INK, BODY)
     # The evolution pages, the fork and the browser are written on the plate's stone (2026-10-31):
     # the heading on the level-up band, the subtitle and the browser's own lines in the stone inks.

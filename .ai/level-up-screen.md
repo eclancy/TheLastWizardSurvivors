@@ -596,6 +596,14 @@ spell**:
   outlined while it is still ahead (`GameOverScreen.Milestone`, `pending`). Photograph it with
   `--character=1 --press-late=AscensionsButton --seen-ascensions=none`, adding `--demo-level`,
   `--demo-spell-level` and `--demo-evolutions=cinderbreath_amplified_impact,...` for the states.
+- **The combinations come after every spell's own tree** (2026-11-01, `.ai/combo-spells.md` section 6):
+  a "✶ Conjunctions" section, one tree per recipe the save knows (`Player.BuildComboPreviews`), drawn as
+  the Apotheosis's is - the two parents on the node, a line per named Ascension, the result on the
+  **conjunction plate** (bronze glass, starlight runes, `CardFamily.Conjunction`), "???" until made or
+  offered. In the strip a combination is "✶ CONJUNCTION  Name" on the same plate, opening a one-card
+  page; a level 8 path a known recipe names carries two linked rings (`stat-conjunction`) and the partner
+  it joins. Photograph them with `--character=8 --demo-combo=sagittarius --force-levelup --keep-levelup`
+  (add `--press-late=AscensionsButton --scroll=100000`, or `--press-late=Ascend_sagittarius` for the page).
 - **It still only reports.** Nothing on the page is pressable: the node's chips (or a focus-only
   overlay) and one overlay per plate are a pad's stops, wired spell → left path → right path → next
   spell (`WireTreeFocus`, explicit, because from a node centred over two plates Godot's geometric

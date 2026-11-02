@@ -81,6 +81,13 @@ public partial class ElementalBolt : Area2D
 	public int OverrideDamage { get; set; } = -1;
 
 	/// <summary>
+	/// What this bolt's hits are credited to, when it is not <see cref="SpellData"/>: a combination's
+	/// arrow flies on a parent's numbers (Sagittarius flies Hunter's Draw's, frozen at the fusion) and
+	/// is the combination's (.ai/combo-spells.md). Null for every other bolt.
+	/// </summary>
+	public SpellData DamageSource { get; set; }
+
+	/// <summary>
 	/// 0 for a bolt the player cast; 1 for one an evolution made out of another - a split shard's
 	/// half, a squall's extra blade. Only a cast's own bolt splits, turns in an eddy, strikes lightning
 	/// or bursts, so a half never splits again and a squall never multiplies.
@@ -719,7 +726,7 @@ public partial class ElementalBolt : Area2D
 
 		var player = PlayerRef as Player;
 		float critBonus = SpellData?.GetEffectValueAtLevel(SpellEffect.CritChance, CurrentLevel) ?? 0f;
-		player?.DealDamageToEnemy(enemy, damage, critBonus, source: SpellData);
+		player?.DealDamageToEnemy(enemy, damage, critBonus, source: DamageSource ?? SpellData);
 		ApplyGuaranteedEffects(enemy);
 		if (enemy is Node2D struckNode)
 			Struck?.Invoke(struckNode);
@@ -792,7 +799,7 @@ public partial class ElementalBolt : Area2D
 		{
 			// Barbed: the arrow that stops in an enemy stays in it, and bleeds it.
 			if (barbed && enemy is Enemy host && player != null)
-				LodgedArrows.Lodge(GetParent() as Node2D, host, direction, damage, SpellData, player);
+				LodgedArrows.Lodge(GetParent() as Node2D, host, direction, damage, DamageSource ?? SpellData, player);
 			QueueFree();
 		}
 		if (keepAliveForVisual)

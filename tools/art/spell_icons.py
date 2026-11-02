@@ -602,6 +602,75 @@ def starfall(sky=True):
     return c
 
 
+def sagittarius(sky=True):
+    """Sagittarius - Hunter's Draw + Starfall, the first combination (.ai/combo-spells.md section 3).
+
+    The archer's figure in lit stars round the rim of Starfall's night, joined by Constellation's faint
+    lines, and from every star a gold arrow with a white head flying INWARD, all of them converging on one
+    quarry at the heart. The verb is converge, so this is the one icon in the set whose every line runs
+    toward its middle: Starfall's falls across the card, Hunter's Draw's arrow flies out of it. The
+    combination reads as its two parents - the same night and stars, the same arrow - put to one use.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    light = bl.ELEMENTS["light"]
+    core, hot, mid, edge = light
+    gold = bl.MATERIALS["gold"]
+
+    if sky:
+        sky_deep = bl.tone("arcane", "deep")
+        sky_rim = bl.tone("arcane", "shade")
+        c.disc(15.5, 15.5, 15.0, 15.0, sky_rim)
+        c.disc(15.5, 15.5, 14.0, 14.0, sky_deep)
+
+    cx, cy = 16, 16
+    # The figure: six lit stars round the rim, not evenly - an archer is not a clock face.
+    stars = [(6, 8), (13, 4), (24, 6), (28, 17), (21, 27), (7, 23)]
+
+    # Constellation's lines between neighbours, dotted in the ramp's edge: there, and quieter than the arrows.
+    for i in range(len(stars)):
+        (x0, y0), (x1, y1) = stars[i], stars[(i + 1) % len(stars)]
+        steps = int(max(abs(x1 - x0), abs(y1 - y0)))
+        for k in range(2, steps - 1):
+            if k % 3:
+                continue
+            t = k / float(steps)
+            c.set(int(round(x0 + (x1 - x0) * t)), int(round(y0 + (y1 - y0) * t)), edge)
+
+    # From every star an arrow to the quarry: a gold shaft, brightening toward the head, and a white head with
+    # two barbs that stops short of the heart, so the six points ring it rather than pile on it.
+    for (sx, sy) in stars:
+        dx, dy = cx - sx, cy - sy
+        length = math.sqrt(dx * dx + dy * dy)
+        ux, uy = dx / length, dy / length
+        stop = length - 4.0
+        n = int(stop)
+        for k in range(2, n):
+            px, py = sx + ux * k, sy + uy * k
+            f = k / float(n)
+            c.set(int(round(px)), int(round(py)), gold[0] if f > 0.7 else gold[1] if f > 0.3 else gold[2])
+        hx, hy = sx + ux * stop, sy + uy * stop
+        for side in (-1, 1):
+            c.set(int(round(hx - ux * 2 - uy * side * 1.4)), int(round(hy - uy * 2 + ux * side * 1.4)), hot)
+        c.set(int(round(hx - ux)), int(round(hy - uy)), core)
+        c.set(int(round(hx)), int(round(hy)), core)
+
+    # The quarry, marked: a hot point the six white heads close on.
+    for (dx, dy) in ((0, 0), (1, 0), (0, 1), (1, 1)):
+        c.set(cx - 1 + dx, cy - 1 + dy, hot)
+    c.set(cx - 1, cy - 1, core)
+
+    # The stars last, over their lines: a white heart and four short arms, the brightest thing on the card.
+    for (sx, sy) in stars:
+        for (dx, dy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            c.set(sx + dx, sy + dy, hot)
+        c.set(sx, sy, core)
+    # Two of them twinkle: the long arms of a landing star.
+    for (sx, sy) in (stars[1], stars[3]):
+        for (dx, dy) in ((2, 0), (-2, 0), (0, 2), (0, -2)):
+            c.set(sx + dx, sy + dy, mid)
+    return c
+
+
 def moon(c, cx, cy, r):
     """A full moon, in bone (the contract's moon row), lit from the upper left: the pale disc, a brighter
     crown on the key's side, the shaded limb opposite, and three craters. Hung behind a familiar's head on
@@ -880,6 +949,7 @@ ICONS = [
     ("stormsweep-lightning", stormsweep, CELL),
     ("sleet-runes-ice", sleet_runes, CELL),
     ("starfall-light", starfall, CELL),
+    ("sagittarius-light", sagittarius, CELL),
     ("riptide-water", riptide, CELL),
     ("hollow-star-dark", hollow_star, CELL),
     ("iron-palisade-metal", iron_palisade, CELL),
