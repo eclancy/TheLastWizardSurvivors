@@ -29,6 +29,8 @@ public static partial class SecretCatalog
 				// the nearest hall and reserves the vault's footprint there. Asked for the vault's 420 px here it
 				// could never fit a corridor, and the placer fell back and warned on every seed.
 				Footprint = CorridorFootprint,
+				// ...and only at a cell with a hall beside it, so that move is one step and never fails.
+				RoomAt = (game, at) => global::ColdForge.HallBeside(game, at) != null,
 				CreateSite = () => new global::ColdForge(),
 				RepeatReward = "It roared again, and gave up a chest",
 			},

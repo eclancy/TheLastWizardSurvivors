@@ -202,10 +202,18 @@ public partial class SecretDirector : Node
 		bool beside = !string.IsNullOrEmpty(PlaceBesideSpawn) && PlaceBesideSpawn.Equals(secret.Id, StringComparison.OrdinalIgnoreCase);
 		if (beside)
 			at = placer.AtBearing(0f, BesideSpawnChunks, BesideSpawnChunks, Mathf.Min(secret.Footprint, 160f));
+		else if (secret.OpenRadius > 0f || secret.RoomAt != null)
+		{
+			// Swept for the room it needs (SecretDefinition.OpenRadius, RoomAt) rather than placed anyway.
+			float room = secret.OpenRadius > 0f ? secret.OpenRadius : secret.Footprint;
+			Func<Vector2, bool> also = secret.RoomAt == null ? null : p => secret.RoomAt(Game, p);
+			at = avoid.Count == 0
+				? placer.EventSiteInBand(room, dense: secret.OpenRadius > 0f, keepOff: Game.ExploreReserves, also: also)
+				: placer.AtBearingInBand(PickBearing(placer, avoid), minChunks, maxChunks, room, dense: secret.OpenRadius > 0f,
+					keepOff: Game.ExploreReserves, also: also);
+		}
 		else if (avoid.Count == 0)
-			at = secret.OpenRadius > 0f ? placer.EventSiteInBand(secret.OpenRadius, dense: true, keepOff: Game.ExploreReserves) : placer.EventSite(secret.Footprint);
-		else if (secret.OpenRadius > 0f)
-			at = placer.AtBearingInBand(PickBearing(placer, avoid), minChunks, maxChunks, secret.OpenRadius, dense: true, keepOff: Game.ExploreReserves);
+			at = placer.EventSite(secret.Footprint);
 		else
 			at = placer.AtBearing(PickBearing(placer, avoid), minChunks, maxChunks, secret.Footprint);
 		// Placed by the room it needs; the decor is still kept off its whole footprint.

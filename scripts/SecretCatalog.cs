@@ -139,6 +139,11 @@ public sealed record SecretDefinition
 	/// </summary>
 	public float OpenRadius { get; init; }
 	/// <summary>
+	/// When set, the site is placed only at a spot where this holds - the room it moves itself into is beside
+	/// it (the Cold Forge's hall) - and the director sweeps its whole band for one (ExplorePlacer.AtBearingInBand).
+	/// </summary>
+	public Func<global::Node2DGame, Godot.Vector2, bool> RoomAt { get; init; }
+	/// <summary>
 	/// The node an Anchor, Keepsake or Vault is, made once a run: the director sets its id, its director
 	/// and its position, hands it the placer to lay out anything else it needs (a path, a set of shards)
 	/// and adds it to the run. Never called outside a run, so the validators never build a node.

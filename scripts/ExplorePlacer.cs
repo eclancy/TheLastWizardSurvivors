@@ -194,7 +194,7 @@ public sealed class ExplorePlacer
 	/// fallback. Opt-in: every site placed before is placed exactly as it was.
 	/// </summary>
 	public Vector2 EventSiteInBand(float footprint, bool dense = false,
-		IReadOnlyList<(Vector2 Centre, float Radius)> keepOff = null)
+		IReadOnlyList<(Vector2 Centre, float Radius)> keepOff = null, Func<Vector2, bool> also = null)
 	{
 		float bearing = NextFloat() * Mathf.Tau;
 		float distance = Mathf.Lerp(EventMinChunks, EventMaxChunks, NextFloat()) * ground.ChunkPixels;
@@ -202,6 +202,11 @@ public sealed class ExplorePlacer
 		if (float.IsNaN(EventBearing))
 			EventBearing = bearing;
 		Func<Vector2, float, bool> test = KeepingOff(dense ? ground.IsClearDense ?? ground.IsClear : ground.IsClear, keepOff);
+		if (also != null)
+		{
+			Func<Vector2, float, bool> inner = test;
+			test = (p, f) => inner(p, f) && also(p);
+		}
 		Vector2 candidate = ground.Origin + Direction(bearing) * distance;
 		if (TrySearch(candidate, footprint, searchFrom, null, 0f, test, out Vector2 found))
 			return Keep(found, footprint);
@@ -223,11 +228,16 @@ public sealed class ExplorePlacer
 	/// finds ground and the test is not dense, the site is exactly the one AtBearing gives.
 	/// </summary>
 	public Vector2 AtBearingInBand(float bearing, float minChunks, float maxChunks, float footprint, bool dense = false,
-		IReadOnlyList<(Vector2 Centre, float Radius)> keepOff = null)
+		IReadOnlyList<(Vector2 Centre, float Radius)> keepOff = null, Func<Vector2, bool> also = null)
 	{
 		float distance = Mathf.Lerp(minChunks, maxChunks, NextFloat()) * ground.ChunkPixels;
 		float searchFrom = NextFloat() * Mathf.Tau;
 		Func<Vector2, float, bool> test = KeepingOff(dense ? ground.IsClearDense ?? ground.IsClear : ground.IsClear, keepOff);
+		if (also != null)
+		{
+			Func<Vector2, float, bool> inner = test;
+			test = (p, f) => inner(p, f) && also(p);
+		}
 		Vector2 candidate = ground.Origin + Direction(bearing) * distance;
 		if (TrySearch(candidate, footprint, searchFrom, null, 0f, test, out Vector2 found))
 			return Keep(found, footprint);
