@@ -885,6 +885,15 @@ a reroll is a decision about the run, as a ban always was. Prices and the refund
   XP - not the Skip's half bar. Banning the same spell twice fails without spending a charge, and a
   refused ban puts the same cards back (`LevelUpMenu.RefreshCharges`). Ban mode is a tear over the
   hand, not a list (`.ai/level-up-screen.md`, section 7).
+- **The same two pools are spent on a chest** (Eric, 2026-11-02: "you can use rerolls on chests as
+  well as level ups. You can also ban items"; `.ai/new-items.md`, answer 3). Reroll re-deals the
+  chest's relics through `ChestItemCatalog.GetChestItemOptions` and the run's `ChestOfferMemory`, so
+  the first hand sits the second out and is faded. Ban strikes a relic from the run's chest pool
+  (`Player.TryBanRelic`; `Player.GetChestUnavailableItems` is what every chest deals around) and,
+  as on the level-up, **is the chest's pick**: the chest closes with no relic, though it still counts
+  as opened (the Reliquary's shield, a Hidden Drawer's chest). The two sit on the heading band on a
+  PC, at the foot on a phone, and on the band again for a crowded phone chest (four or five pages),
+  where the title steps down a face (`ChestItemSelectionMenu.PlaceCharges`). Hidden while empty.
 
 **Save and Augury were removed (2026-10-28: "remove save and augury mechanics").** There were four
 charges: *Hoarded Insight* deferred a level-up for two picks at the next, and *Augury* named a spell

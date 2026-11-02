@@ -349,7 +349,22 @@ public static class AchievementDefinitions
 
 		// --- Exploration: chapters, bosses and relics ------------------------------------------
 		BossClear("forest_cleared", "Forest Cleared", "forest_treant", "the Enchanted Forest", "thorn_vine", "Thorned Vine"),
-		BossClear("castle_conqueror", "Dungeon Conqueror", "castle_warden", "the Cursed Dungeon", "shadow_bolt", "Shadow Bolt"),
+		// Two things since the first wave of new items (.ai/new-items.md section 7): Shadow Bolt, and Bone
+		// Rattle - a jailer carries a rattle.
+		new()
+		{
+			Id = "castle_conqueror", DisplayName = "Dungeon Conqueror",
+			Description = "Defeat the boss of the Cursed Dungeon.",
+			RewardText = "Unlocks Shadow Bolt and Bone Rattle",
+			SpellUnlockId = "shadow_bolt", BoonUnlockId = "bone_rattle",
+			Category = AchievementCategory.Exploration,
+			Kind = AchievementKind.Road,
+			Visibility = AchievementVisibility.ChapterOpen,
+			StageId = StageOfBoss("castle_warden"),
+			BossId = "castle_warden",
+			Measure = c => c.Lifetime.HasDefeatedBoss("castle_warden") ? 1f : 0f,
+			Target = 1,
+		},
 		BossClear("cave_choir_silenced", "Silence in the Deep", "cave_choir", "the Sunken Cave", "riptide", "Riptide"),
 		BossClear("swamp_cleansed", "Cut the Rot Out", "swamp_mother", "the Blighted Swamp", "mirefoot", "Mirefoot"),
 		BossClear("ruins_delver", "Ruins Delver", "ruins_sentinel", "the Mystic Ruins", "spiritual_weapon", "Spiritual Weapon"),

@@ -308,6 +308,23 @@ public partial class Enemy : CharacterBody2D
 	/// <summary>Whether Wither has burned away part of this enemy's max HP.</summary>
 	public bool IsWithered => witherFraction > 0f;
 
+	/// <summary>Whether a poison is ticking on this enemy (by its clock, as the status mark reads it).</summary>
+	public bool IsPoisoned => poisonTimeRemaining > 0f;
+
+	/// <summary>
+	/// How much longer the player's debuffs last: the Poppet set (.ai/new-items.md section 3), 1 without it.
+	/// Read by ApplySlow, ApplyPoison, ApplyVulnerable and ApplyWeaken - never Fear, which is never
+	/// extended, and never a stagger. Only the player's side debuffs an enemy, so one number for the arena
+	/// is safe; Player sets it from RefreshChestSetEffects and puts it back to 1 when a run starts and ends.
+	/// The boss clamps act after it (a hold still ends at BossHoldMaxSeconds).
+	/// </summary>
+	public static float DebuffDurationScale { get; set; } = 1f;
+
+	// The Fede Hoop (.ai/new-items.md section 4): the last of the pair's two spells to hit this enemy,
+	// and when, on the player's combat clock. Two fields and a compare per hit; cleared on respawn.
+	public string PairHitSpellId { get; set; }
+	public double PairHitAt { get; set; } = double.NegativeInfinity;
+
 	/// <summary>Every debuff on this enemy, as StatusEffectLayer draws them. A freeze is Freeze, not Slow.</summary>
 	/// <remarks>
 	/// Poison counts by its clock, not its tick damage, so a zero-damage poison (the harness's
@@ -1690,6 +1707,7 @@ public partial class Enemy : CharacterBody2D
 		float floor = SlowFloor;
 		bool bossHold = CapsCrowdControl && multiplier <= 0.001f && floor < 1f && holdImmuneRemaining <= 0f;
 		multiplier = bossHold ? 0f : Mathf.Clamp(multiplier, floor, 1f);
+		duration *= DebuffDurationScale;
 		if (slowTimeRemaining <= 0f || multiplier < slowMultiplier)
 			slowMultiplier = multiplier;
 		slowTimeRemaining = Mathf.Max(slowTimeRemaining, duration);
@@ -1716,7 +1734,7 @@ public partial class Enemy : CharacterBody2D
 		if (vulnerableTimeRemaining <= 0f || bonus > vulnerableBonus)
 			vulnerableBonus = bonus;
 
-		vulnerableTimeRemaining = Mathf.Max(vulnerableTimeRemaining, duration);
+		vulnerableTimeRemaining = Mathf.Max(vulnerableTimeRemaining, duration * DebuffDurationScale);
 		if (vulnerableTimeRemaining > 0f)
 			OnStatusApplied();
 	}
@@ -1764,7 +1782,7 @@ public partial class Enemy : CharacterBody2D
 		if (weakenTimeRemaining <= 0f || fraction > weakenFraction)
 			weakenFraction = fraction;
 
-		weakenTimeRemaining = Mathf.Max(weakenTimeRemaining, duration);
+		weakenTimeRemaining = Mathf.Max(weakenTimeRemaining, duration * DebuffDurationScale);
 		if (weakenTimeRemaining > 0f)
 			OnStatusApplied();
 	}
@@ -1837,7 +1855,7 @@ public partial class Enemy : CharacterBody2D
 			return;
 
 		poisonDamagePerTick = Math.Max(poisonDamagePerTick, damagePerTick);
-		poisonTimeRemaining = Mathf.Max(poisonTimeRemaining, duration);
+		poisonTimeRemaining = Mathf.Max(poisonTimeRemaining, duration * DebuffDurationScale);
 		if (poisonTimeRemaining > 0f)
 			OnStatusApplied();
 	}
@@ -2387,6 +2405,8 @@ public partial class Enemy : CharacterBody2D
 		witherFraction = 0f;
 		poisonDamagePerTick = 0;
 		poisonTimeRemaining = 0f;
+		PairHitSpellId = null;
+		PairHitAt = double.NegativeInfinity;
 		// And none of its marks, tint or slowed walk either.
 		StatusEffectLayer.Current?.Untrack(this);
 		RefreshStatusLook();

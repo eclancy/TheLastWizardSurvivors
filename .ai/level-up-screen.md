@@ -715,6 +715,19 @@ section 8d has the photographs' setup.
 `--give-relics=a,b` and `--chest-offer=a,b,c` on `_UiShot --open-chest` pin what the player holds
 and what the chest deals, so a before and an after show the same three cards.
 
+**Reroll and Ban on a chest (2026-11-02).** The run's two pools are spent here too
+(`.ai/gameplay-design.md`, "Level-up charges"), presented as on the level-up: "Reroll (N)", "Ban (N)"
+that turns to "Cancel Ban" and lays a `BanTear` over every page, each hidden while its pool is empty.
+Where they sit is the height budget again. A row at the foot cost a PC 58 of its 720 and pushed the
+Claim plates under the fold (the Fede Hoop's page needed 574 of 531), so on a PC they ride the heading
+band, Ban left and Reroll right, in fixed slots that keep the title centred. A phone's three stacked
+pages leave ~170 spare, so there they take a row at the foot, under the thumb; a crowded phone chest
+(four or five) has nothing spare and moves them onto the band, where the title steps down from the
+Display face to Title to fit (`PlaceCharges`). The first page, not the band, takes the initial focus.
+Photograph with `--chest-charges=R,B` (added to the pools before `--open-chest`) and
+`--press-late=ChestReroll` or `ChestBan`. A five-page phone chest holding three Gimmel Ring pieces
+(their cards run three lines) needs 1440 of 1346 and scrolls, with or without the charges.
+
 ## 4c. The Spell Index and Unlocks lists: whitespace is the hierarchy
 
 **The Spell Index is gone (2026-11-02):** its menu slot opens the Evolution Codex's collection mode

@@ -28,9 +28,9 @@ public partial class ChestItemIntegrationTest : Node
 		var allItems = ChestItemCatalog.AllItemIds;
 		GD.Print($"  Items in catalog: {allItems.Count}");
 		
-		if (allItems.Count != 34)
+		if (allItems.Count != 40)
 		{
-			throw new InvalidOperationException($"Expected 34 items, got {allItems.Count}");
+			throw new InvalidOperationException($"Expected 40 items, got {allItems.Count}");
 		}
 
 		foreach (var itemId in allItems)
@@ -56,7 +56,7 @@ public partial class ChestItemIntegrationTest : Node
 			GD.Print($"  ✓ {name} ({itemId})");
 		}
 
-		GD.Print("  PASSED: All 34 items have names and icons");
+		GD.Print("  PASSED: All 40 items have names and icons");
 	}
 
 	private void TestSetDefinitions()
@@ -66,9 +66,9 @@ public partial class ChestItemIntegrationTest : Node
 		var sets = ChestItemCatalog.Sets;
 		GD.Print($"  Sets in catalog: {sets.Count}");
 
-		if (sets.Count != 11)
+		if (sets.Count != 13)
 		{
-			throw new InvalidOperationException($"Expected 11 sets, got {sets.Count}");
+			throw new InvalidOperationException($"Expected 13 sets, got {sets.Count}");
 		}
 
 		foreach (var set in sets)
@@ -85,7 +85,7 @@ public partial class ChestItemIntegrationTest : Node
 			GD.Print($"  ✓ {set.Name} requires {set.RequiredItemIds.Length} items");
 		}
 
-		GD.Print("  PASSED: All 11 sets have valid definitions");
+		GD.Print("  PASSED: All 13 sets have valid definitions");
 	}
 
 	private void TestItemStatMapping()

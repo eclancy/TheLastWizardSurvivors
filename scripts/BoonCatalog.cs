@@ -54,6 +54,20 @@ public enum BoonEffect
 
 	/// <summary>Health per second while the player has stood still for <see cref="BoonCatalog.StanceSeconds"/>. Magnitude is HP per second.</summary>
 	StanceRegen,
+
+	// --- The first wave of .ai/new-items.md (section 7) ------------------------------------
+
+	/// <summary>
+	/// While the player walks, whichever spell is furthest from ready recharges faster - Taproot's mirror:
+	/// a stand pays one, a kite pays the other. Magnitude is the extra rate (0.5 = 50% faster).
+	/// </summary>
+	WalkingRecharge,
+
+	/// <summary>
+	/// The third reaction: frightens every ordinary enemy near the player when he is struck, on the
+	/// reactions' shared pulse and radius. Magnitude is the fright's seconds (Player.FearSeconds).
+	/// </summary>
+	Frighten,
 }
 
 public sealed class BoonDefinition
@@ -261,6 +275,33 @@ public static class BoonCatalog
 			ElementWeights = new[] { ("Earth", 1), ("Grass", 1) },
 			Effect = BoonEffect.StanceRegen, Magnitude = TaprootRegenPerSecond,
 		},
+
+		// --- Wind: the walk -----------------------------------------------------------
+		//
+		// Walking is the one condition nothing paid (.ai/new-items.md section 7): Taproot pays a stand, this
+		// pays a kite, and holding both means whichever you are doing pays. It winds ONE spell - the one
+		// furthest from ready - so it suits a build with one big slow spell (Meteor Swarm, Starfall). A
+		// starter because Lightning has the thinnest floor in the game. Wind first: its light is the wheel's.
+		new()
+		{
+			Id = "waywiser", Name = "Waywiser",
+			Description = "A wheel that counts the road, and pays out for every turn.",
+			ElementWeights = new[] { ("Wind", 1), ("Lightning", 1) },
+			Effect = BoonEffect.WalkingRecharge, Magnitude = 0.5f,
+		},
+
+		// --- Darkness: the third reaction ----------------------------------------------
+		//
+		// Saltbound Chain hurts, Rimebriar slows and this scatters: a reactive build gets three answers on
+		// one pulse. It gives #69's Fear a carrier that is not a Darkness spell. The Gaoler's deed pays it,
+		// since a jailer carries a rattle.
+		new()
+		{
+			Id = "bone_rattle", Name = "Bone Rattle",
+			Description = "Shake it, and whatever is close remembers it is afraid.",
+			ElementWeights = new[] { ("Darkness", 1), ("Lightning", 1) },
+			Effect = BoonEffect.Frighten, Magnitude = Player.FearSeconds,
+		},
 	};
 
 	/// <summary>How long the player must stand still before a stance boon takes hold.</summary>
@@ -317,6 +358,8 @@ public static class BoonCatalog
 			BoonEffect.Retaliate => $"When you are hit, every enemy close around you takes {m:0} damage (at most {once}).",
 			BoonEffect.Chill => $"When you are hit, every enemy close around you is slowed to {m * 100f:0}% speed for {Player.BoonChillDurationSeconds:0.#}\u00A0s (at most {once}).",
 			BoonEffect.StanceRegen => $"Stand still for {StanceSeconds:0.#}\u00A0s and you heal {m:0.0} health every second until you move.",
+			BoonEffect.WalkingRecharge => $"While you walk, whichever of your spells is furthest from ready recharges {m * 100f:0}% faster.",
+			BoonEffect.Frighten => $"When you are struck, every enemy close around you is frightened (at most {once}).",
 			_ => string.Empty,
 		};
 	}
@@ -352,6 +395,10 @@ public static class BoonCatalog
 			// the part that makes this a different card from Tidewater Flask; and a no-break space
 			// keeps "1.5 s" on one line wherever the card wraps.
 			BoonEffect.StanceRegen => $"Stand still {StanceSeconds:0.#}\u00A0s: +{m:0.0} HP per second",
+			// "cooldown" picks the cooldown glyph (StatIcons.KeyFor); the condition leads, as Taproot's does.
+			BoonEffect.WalkingRecharge => $"Walking: slowest spell's cooldown {m * 100f:0}% faster",
+			// "when struck" picks the reactions' glyph, as Saltbound Chain's and Rimebriar's lines do.
+			BoonEffect.Frighten => "Frightens nearby enemies when struck",
 			_ => string.Empty,
 		};
 	}

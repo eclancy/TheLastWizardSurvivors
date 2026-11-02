@@ -4364,15 +4364,18 @@ public static class RegressionChecks
 	// new set being added without its presentation data filled in.
 	// Issue #63: every Full Set Enchantment is the pieces of one object, and a piece may belong to
 	// more than one (The Crown is in the Jewelled Crown and the Regalia). What that needs checked:
-	// every relic is a piece of something, every piece is a relic that can actually drop, nothing is
-	// listed twice in one set, and a set's partial threshold is below its size - a "two-piece taste"
-	// on a two-piece set would be paid at the same moment as the full effect and mean nothing.
-	// Nested sets can never block each other here because relics are never consumed: holding The
-	// Crown for one set is holding it for the other.
+	// every piece is a relic that can actually drop, nothing is listed twice in one set, and a set's
+	// partial threshold is below its size - a "two-piece taste" on a two-piece set would be paid at the
+	// same moment as the full effect and mean nothing. Nested sets can never block each other here
+	// because relics are never consumed: holding The Crown for one set is holding it for the other.
+	//
+	// A RELIC MAY STAND ALONE (Eric, 2026-11-02: "Every relic does not need to belong to a set";
+	// .ai/new-items.md, answer 1). This used to warn on any relic that was a piece of no set. The rule
+	// that still holds runs the other way - a set's pieces are the parts of one object, each named as
+	// its part, so two of them tell you the third - and it lives in the names, which no check can read.
 	private static void ValidateFullSetObjects(List<string> warnings)
 	{
 		var pool = new HashSet<string>(ChestItemCatalog.AllItemIds, StringComparer.OrdinalIgnoreCase);
-		var pieces = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var set in ChestItemCatalog.Sets)
 		{
 			if (set.RequiredItemIds == null || set.RequiredItemIds.Length < 2)
@@ -4387,20 +4390,12 @@ public static class RegressionChecks
 					warnings.Add($"Full Set Enchantment '{set.Id}' lists '{id}' twice.");
 				if (!pool.Contains(id))
 					warnings.Add($"Full Set Enchantment '{set.Id}' needs '{id}', which is not in ChestItemCatalog.AllItemIds, so it can never drop and the set can never complete.");
-				pieces.Add(id);
 			}
 			if (set.PartialItemCount > 0 && set.PartialItemCount >= set.RequiredItemIds.Length)
 				warnings.Add($"Full Set Enchantment '{set.Id}' pays its partial at {set.PartialItemCount} of {set.RequiredItemIds.Length} pieces, the same moment as the full effect.");
 		}
-		foreach (string id in ChestItemCatalog.AllItemIds)
-		{
-			// The tome relics are the one exception, and the opposite rule holds for them: they must
-			// be in NO set (ChestItemCatalog.TomeRelicIds says why). ValidateTomeRelics checks that.
-			if (ChestItemCatalog.IsTomeRelic(id))
-				continue;
-			if (!pieces.Contains(id))
-				warnings.Add($"Relic '{id}' ({ChestItemCatalog.GetDisplayName(id)}) is a piece of no Full Set Enchantment. Every relic is part of an object (#63).");
-		}
+		// The tome relics keep the opposite rule - they must be in NO set (ChestItemCatalog.TomeRelicIds
+		// says why) - and ValidateTomeRelics checks it.
 	}
 
 	// The two relics that act on the spell book (.ai/passives-and-items.md, section 4b). Spells are

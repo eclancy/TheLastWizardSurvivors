@@ -573,6 +573,7 @@ public partial class Player : CharacterBody2D
 	public override void _Ready()
 	{
 		AddToGroup("player");
+		ResetItemRules();
 		feetBody = GetNodeOrNull<CharacterBody2D>("Feet");
 		feetShape = feetBody?.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
 		ConfigureEntityCollision();
@@ -1602,6 +1603,13 @@ public partial class Player : CharacterBody2D
 				boonStanceRegenPerSecond += definition.Magnitude;
 				EnsureStanceGlow();
 				break;
+			// Read where they act: the firing loop (TickWaywiser) and the reaction (TriggerBoonReactions).
+			case BoonEffect.WalkingRecharge:
+				boonWalkingRecharge = Mathf.Max(boonWalkingRecharge, definition.Magnitude);
+				break;
+			case BoonEffect.Frighten:
+				boonFrightenSeconds = Mathf.Max(boonFrightenSeconds, definition.Magnitude);
+				break;
 		}
 
 	}
@@ -2292,10 +2300,17 @@ public partial class Player : CharacterBody2D
 			finalDamage = Mathf.RoundToInt(finalDamage * 1.30f);
 		}
 
+		// The whole Poppet: two debuffs make a third, before the hit reads it (Player.ItemRules.cs).
+		if (enemy is Enemy cursed)
+			ApplyPoppetMark(cursed);
+
 		// The Vulnerable debuff. Applied here so EVERY source benefits - the whole point of it is
 		// that Shadow Bolt makes the rest of the loadout hit harder rather than hitting hard itself.
 		if (enemy is Enemy exposed && exposed.IsVulnerable)
 			finalDamage = Mathf.RoundToInt(finalDamage * (1.0f + exposed.VulnerabilityBonus));
+
+		// The Gimmel Ring and the Fede Hoop: the pair's own damage (Player.ItemRules.cs).
+		finalDamage = ApplyPairDamage(enemy as Enemy, source, finalDamage);
 
 		if (enemy is Enemy targetEnemy)
 		{
@@ -2321,7 +2336,12 @@ public partial class Player : CharacterBody2D
 		finalDamage = Math.Max(1, finalDamage);
 
 		if (enemy is Enemy struck)
+		{
 			struck.TakeDamage(finalDamage, isCrit);
+			// The Pricking Pin marks what a crit struck - after it lands, so the crit is not raised.
+			if (isCrit)
+				PrickOnCrit(struck);
+		}
 		else
 			enemy.Call(TakeDamageMethod, finalDamage, isCrit);
 		if (EnemyDamagedAt != null && enemy is Node2D damagedNode)
@@ -2333,7 +2353,10 @@ public partial class Player : CharacterBody2D
 				EnemyKilled?.Invoke(hitEnemy, hitEnemy.GlobalPosition, source);
 		}
 		if (targetWasAlive && enemy is Enemy defeatedEnemy && defeatedEnemy.Health <= 0)
+		{
 			OnChestEnemyKilled();
+			SpreadSingedLock(defeatedEnemy.GlobalPosition);
+		}
 		// Spells deliberately do not knock enemies back. This used to push every enemy on every
 		// spell hit, which shoved the swarm around constantly and made positioning unreadable.
 		// The player's own movement still shoves enemies aside (see MovePlayer).
@@ -2402,6 +2425,7 @@ public partial class Player : CharacterBody2D
 	private void RaiseLoadoutChanged()
 	{
 		darknessCarriersDirty = true;
+		pairDirty = true;
 		EmitSignal(SignalName.LoadoutChanged);
 	}
 
@@ -2867,7 +2891,9 @@ public partial class Player : CharacterBody2D
 	{
 		bool retaliates = boonRetaliateDamage > 0;
 		bool chills = boonChillMultiplier < 1f;
-		if (!retaliates && !chills)
+		// Bone Rattle (.ai/new-items.md section 7), the third reaction on the same pulse and radius.
+		bool frightens = boonFrightenSeconds > 0f;
+		if (!retaliates && !chills && !frightens)
 			return;
 
 		if (boonReactionCooldownRemaining > 0f)
@@ -2888,15 +2914,21 @@ public partial class Player : CharacterBody2D
 
 			if (chills && node.HasMethod("ApplySlow"))
 				node.Call("ApplySlow", boonChillMultiplier, BoonChillDurationSeconds);
+
+			// Fear keeps its own three rules inside ApplyFear: elites, minibosses and bosses are immune,
+			// a fright is never extended, and four seconds of immunity follow it.
+			if (frightens && node is Enemy rattled)
+				rattled.ApplyFear(boonFrightenSeconds);
 		}
 
 		// Retaliation reads as damage numbers on its own; a slow does not read as anything, so the
 		// burst is the only thing telling the player the boon they bought is working. Steel shards for
-		// the chain's retaliation (Metal), frost for the briar's chill, the chain's when both fired,
-		// because the damage is the part that needs to be attributed. Thrown out to exactly the radius
-		// that was hit; it used to be a ring there that grew past it as it faded.
+		// the chain's retaliation (Metal), frost for the briar's chill, shadow for the rattle's fright;
+		// the chain's when it fired with another, because the damage is the part that needs to be
+		// attributed, then the briar's. Thrown out to exactly the radius that was hit; it used to be a
+		// ring there that grew past it as it faded.
 		ImpactDebrisLayer.Spawn(GetParent<Node2D>(), GlobalPosition, BoonReactionRadius,
-			ElementColors.GetRamp(retaliates ? Element.Metal : Element.Ice), Colors.White);
+			ElementColors.GetRamp(retaliates ? Element.Metal : chills ? Element.Ice : Element.Darkness), Colors.White);
 	}
 
 	private void TriggerBastionRetaliation()
@@ -3268,6 +3300,16 @@ public partial class Player : CharacterBody2D
 			// knife does its whole job in TryCutSpellWithPenknife and never comes through here.
 			case ChestItemCatalog.BlankFolio:
 				break;
+
+			// The Poppet and the Gimmel Ring: rules read at their moment (Player.ItemRules.cs).
+			case ChestItemCatalog.PrickingPin:
+			case ChestItemCatalog.BindingThread:
+			case ChestItemCatalog.SingedLock:
+			case ChestItemCatalog.BetrothalHoop:
+			case ChestItemCatalog.FedeHoop:
+			case ChestItemCatalog.GarnetBezel:
+				TakeItemRuleRelic(itemId.Trim());
+				break;
 		}
 	}
 
@@ -3313,6 +3355,10 @@ public partial class Player : CharacterBody2D
 				break;
 			case ChestItemCatalog.CabinetOfCuriositiesSetId:
 				chestMagnetBonus += CabinetPartialPickupRadius;
+				break;
+			case ChestItemCatalog.PoppetSetId:
+			case ChestItemCatalog.GimmelRingSetId:
+				ApplyItemRulePartial(setId);
 				break;
 		}
 
@@ -3401,6 +3447,10 @@ public partial class Player : CharacterBody2D
 					case ChestItemCatalog.CabinetOfCuriositiesSetId:
 						// Every elite's chest is read live in GetEliteChestChance.
 						chestMagnetBonus += CabinetFullPickupRadius;
+						break;
+					case ChestItemCatalog.PoppetSetId:
+					case ChestItemCatalog.GimmelRingSetId:
+						ApplyItemRuleSet(set.Id);
 						break;
 				}
 			}
@@ -3861,6 +3911,8 @@ public partial class Player : CharacterBody2D
 				// A weakened enemy can roll 0 (Enemy.ScaleOutgoingDamage, issue #66). It still swings;
 				// the touch just lands like a dodge, with no on-hurt reactions.
 				int contactDamage = GetEnemyContactDamage(enemy);
+				// The Binding Thread weakens the toucher before its touch is scaled.
+				BindToucher(enemy);
 				if (enemy is Enemy toucher)
 					contactDamage = toucher.ScaleOutgoingDamage(contactDamage);
 				if (contactDamage > 0)
@@ -3869,6 +3921,8 @@ public partial class Player : CharacterBody2D
 				enemyDamageCooldowns[enemy] = 0f;
 			}
 		}
+
+		TickItemRules(delta);
 
 		float effectiveRegenPerSecond = RegenPerSecondNow;
 		if (effectiveRegenPerSecond > 0.0f && CurrentHP > 0 && CurrentHP < MaxHP)
@@ -3902,6 +3956,9 @@ public partial class Player : CharacterBody2D
 		}
 
 		var spellsStart = FrameProfiler.Begin();
+		// The Waywiser's spell: whichever is furthest from ready this frame (TickWaywiser, after the loop).
+		SpellData furthestFromReady = null;
+		float furthestRemaining = float.MinValue;
 		foreach (var spell in equippedSpells)
 		{
 			if (spell == null || string.IsNullOrWhiteSpace(spell.Id))
@@ -3917,6 +3974,12 @@ public partial class Player : CharacterBody2D
 			float interval = (spell.GetCooldownAtLevel(spell.CurrentLevel) * cooldownMultiplier * GetWaterCooldownMultiplier()) / EffectiveAttackSpeed;
 			interval = MathF.Max(0.05f, interval);
 			spellFireTimers[spell.Id] += (float)delta;
+			float remaining = interval - spellFireTimers[spell.Id];
+			if (remaining > furthestRemaining)
+			{
+				furthestRemaining = remaining;
+				furthestFromReady = spell;
+			}
 			if (spellFireTimers[spell.Id] >= interval)
 			{
 				// What the cast actually did decides the cue, the cooldown and the cast counters -
@@ -3941,8 +4004,11 @@ public partial class Player : CharacterBody2D
 					SfxPlayer.Cast(SfxCatalog.DominantElement(spell), GlobalPosition);
 				spellFireTimers[spell.Id] = 0f;
 				NotifyArcaneCharge(spell);
+				// The Garnet Bezel: a cast of one of the pair winds the other (Player.ItemRules.cs).
+				TickGarnetBezel(spell, interval);
 			}
 		}
+		TickWaywiser(furthestFromReady, delta);
 		FrameProfiler.End(FrameProfiler.Section.PlayerSpells, spellsStart);
 	}
 
@@ -7445,6 +7511,8 @@ public partial class Player : CharacterBody2D
 		RemoveBanned(candidates, weights);
 		RemoveBanned(heldUpgrades, heldUpgradeWeights);
 		RemoveBanned(boonCandidates, boonWeights);
+		// The Betrothal Hoop leans the upgrade group toward the pair (Player.ItemRules.cs).
+		WeightPairUpgrades(heldUpgrades, heldUpgradeWeights);
 
 		// A browse (GetDealableCandidates) lists every boon as well as every new spell.
 		if (browseAll)
@@ -8195,7 +8263,15 @@ public partial class Player : CharacterBody2D
 			// Optionally, apply damage immediately
 			if (!enemyDamageCooldowns.ContainsKey(body) || enemyDamageCooldowns[body] >= DamageCooldownSeconds)
 			{
-				TakeDamage(GetEnemyContactDamage(body));
+				// The first touch, the same as every touch after it in the contact loop: the Binding
+				// Thread binds first, then Weaken and the chapter's damage scale it. It used to go straight
+				// to TakeDamage, so the first touch of every enemy skipped ScaleOutgoingDamage.
+				BindToucher(body);
+				int contactDamage = GetEnemyContactDamage(body);
+				if (body is Enemy toucher)
+					contactDamage = toucher.ScaleOutgoingDamage(contactDamage);
+				if (contactDamage > 0)
+					TakeDamage(contactDamage);
 				PlayEnemyAttackAnimation(body);
 				enemyDamageCooldowns[body] = 0f;
 			}

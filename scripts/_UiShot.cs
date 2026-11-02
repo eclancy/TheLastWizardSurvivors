@@ -193,6 +193,11 @@ public partial class _UiShot : Node
 	private string[] giveRelics = System.Array.Empty<string>();
 	private string[] chestOffer = System.Array.Empty<string>();
 	private bool relicsGiven;
+	// --chest-charges=R,B: R rerolls and B bans added to the run's pools before --open-chest, so the
+	// chest screen's Reroll and Ban show (both are hidden while their pool is empty). Press them with
+	// --press-late=ChestReroll (a re-deal) or --press-late=ChestBan (the tears).
+	private int chestRerolls;
+	private int chestBans;
 
 	// --fill-book: a quarter of the way in, every empty slot in the spell book is filled with spells
 	// in catalog order, so a full book can be photographed - the level-up that offers no new spell,
@@ -1176,6 +1181,12 @@ public partial class _UiShot : Node
 			}
 			else if (arg.StartsWith("--chest-offer="))
 				chestOffer = arg.Substring("--chest-offer=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+			else if (arg.StartsWith("--chest-charges="))
+			{
+				string[] rb = arg.Substring("--chest-charges=".Length).Split(',');
+				chestRerolls = int.Parse(rb[0]);
+				chestBans = rb.Length > 1 ? int.Parse(rb[1]) : 0;
+			}
 			else if (arg.StartsWith("--gleaning-bell="))
 			{
 				string[] xy = arg.Substring("--gleaning-bell=".Length).Split(',');
@@ -3265,6 +3276,8 @@ public partial class _UiShot : Node
 			{
 				chestOpened = true;
 				Player relicHolder = FindNodeOfType<Player>(GetTree().Root);
+				if ((chestRerolls > 0 || chestBans > 0) && relicHolder != null)
+					relicHolder.AddLevelUpCharges(chestRerolls, chestBans);
 				game.OpenChestSelectionMenu();
 				// Re-deal the menu the game just built, through the same public call it used.
 				if (chestOffer.Length > 0 && relicHolder != null
