@@ -933,13 +933,9 @@ public partial class EvolutionCodex
 		bool partialOn = recipe.PartialCount > 0 && recipe.HeldCount >= recipe.PartialCount;
 		if (!string.IsNullOrEmpty(recipe.Partial))
 			detail.AddChild(GlyphLine(StatIcons.Load(partialOn ? "done" : "todo"), recipe.Partial, partialOn ? CodexRows.Stone.Ink : CodexRows.Stone.InkSoft));
-		if (string.IsNullOrEmpty(heading))
-		{
-			detail.AddChild(BuildReading());
-			CodexNode first = recipe.Ingredients.FirstOrDefault(n => !string.IsNullOrEmpty(litNodeId) && n.Id.Equals(litNodeId, StringComparison.OrdinalIgnoreCase));
-			ShowReading(first ?? recipe.Result);
-		}
-		else if (recipe.Result.Revealed)
+		// A recipe's own page needs no reading box: the head says what the result does, and each ingredient
+		// opens its own spell or relic (A, or a click), which is where what it does is written.
+		if (!string.IsNullOrEmpty(heading) && recipe.Result.Revealed)
 		{
 			// Under an item, the enchantment's bonus is said outright: there is no reading box for a set inside an item.
 			detail.AddChild(GlyphLine(StatIcons.Load(recipe.Made ? "done" : "todo"), recipe.Result.Line, CodexRows.Stone.Ink));
