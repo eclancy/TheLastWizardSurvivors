@@ -1006,7 +1006,7 @@ chests) is undersold here, and one that pays at once is oversold.
   Barrow Harness's) or its chest heal to a share of max HP, and the Lightning Rod's speed
   unconditional. **Eric chose, 2026-11-02 (issue #44): the Reliquary to -18%, the Lightning Rod's
   speed unconditional, and run the chest simulation** - applied; the re-run of this sweep at the
-  difficulty curve's 50 HP, with the Poppet and the Gimmel Ring, and the simulation are queued.
+  difficulty curve's 50 HP, with the Poppet and the Gimmel Ring, and the simulation are in 8j.
 - **The defensive sets were invisible until this pass** - see the fixes below.
 
 **What it fixed:**
@@ -1046,10 +1046,207 @@ chests) is undersold here, and one that pays at once is oversold.
 5. If a set's numbers moved: this section's sweep (`--give-relics`, both bots, two seeds) and its
    table updated; `ChestSetEffect` labels match `RefreshChestSetEffects` by hand - no check reads
    both.
+6. If the pool, a rarity, an offer weight or a set's pieces moved: `_ChestSim` (8j), and its
+   per-set table compared with 8j's.
 
 **To play by hand:** whether the Reliquary feels like anything (it is the candidate for a buff);
 whether the Regalia's levels feel earned or handed over; whether the set's moment interrupts at a
 bad time in a crowd (it takes no input, but it covers the top of the screen for 4 s).
+
+### 8j. The chest simulation, and the sweep at 50 HP (issue #44, 2026-11-02)
+
+What 8g left queued after Eric's two changes (the Reliquary to -18%, the Lightning Rod's speed always
+on): the chest simulation `.ai/new-items.md` section 10 planned, and 8g's sweep again under the
+difficulty curve (50 max HP, no chest heal: `.ai/difficulty-curve.md` section 5) with the Poppet and
+the Gimmel Ring added. **Nothing was retuned here**; what is proposed is at the end, for Eric.
+
+**Chests per run, measured first.** 8b's "about fifteen" (1 + 15 x 65% + 4) was set before each
+chapter got its own elite cadence (`ChapterDifficulty.EliteInterval`, x0.85 in the Forest), which
+brings more elites. Measured: Pyromancer, Forest, seed 1234, `_BalanceHarness --fixed-fps 30 --
+--minutes=15 --survivor --immortal --policy=ordinary --all-unlocked --timescale=1`: **23 carriers
+killed - 19 elites and 4 Wardens - and 19 chests** (15 from elites, 4 from Wardens), the bot holding
+the Curio Ledger from its third chest. So a full run is about 19 chests today, not 15; the
+simulation's default is the first elite and 18 more, 16.7 chests before any relic raises it.
+
+**The simulation** - `scenes/_ChestSim.tscn` (`scripts/_ChestSim.cs`), a tool scene, 10,000 runs a
+configuration in about five seconds each:
+
+```
+"$GODOT_BIN" --headless --path . scenes/_ChestSim.tscn -- --runs=10000 --out=<file.md>
+```
+
+Every chest is dealt by the game's own `GetChestItemOptions` with a `ChestOfferMemory` per run, so the
+rarity weights, the fade and the last chest's cards sitting out are the shipped ones (8h's was a Python
+copy). Around the deal it models 8b's carriers from the same constants the game reads - the elite
+chance, the Curio Ledger's +25%, the whole Cabinet's every elite, the Hidden Drawer's chest in a chest,
+the Relic Key's fourth card. It does not model side-event and secret chests, John Dee's fifth card
+(`--extra-offers=1`) or bans; the Penknife is dealt and never claimed. There is **no lean toward a
+started set** (Eric, answer 3). Three pickers, because who chooses decides most of it:
+
+- **random** - any card: a player who does not read the sets (the floor);
+- **rarest** - the balance bot's ordinary policy (`PickChestOrdinary`);
+- **chaser** - finishes a set when it can, else advances the one it is furthest into, else starts one:
+  a player who plays for sets (the ceiling). The one named option with charges, **chaser+r3**, also
+  spends three of the run's rerolls on chests that offer nothing for a set it has begun.
+
+Each runs on today's 40 relics and on the 34 before wave 1 (the Poppet's and the Gimmel Ring's six
+passed as unavailable). Seed 1; the minute column places the elites evenly from 2:15 to 14:30, so read
+it as approximate.
+
+| pool, picker | chests a run | any set | 0 / 1 / 2 / 3+ sets | sets a run | first set at chest (median, quartiles) | about minute | one by chest 5 / 10 / 15 |
+|---|---|---|---|---|---|---|---|
+| today, random | 19.0 | **83%** | 17 / 33 / 26 / 23% | 1.72 | 13 (10-16) | 10.8 | 4 / 24 / 61% |
+| today, rarest | 20.2 | **86%** | 14 / 29 / 26 / 31% | 2.03 | 14 (11-17) | 10.8 | 2 / 19 / 57% |
+| today, chaser | 20.0 | **99.9%** | 0 / 1 / 8 / 91% | 4.89 | 7 (5-9) | 7.0 | 30 / 89 / 99.8% |
+| today, chaser+r3 | 19.9 | 99.9% | 0 / 1 / 7 / 91% | 4.90 | 6 (4-8) | 6.3 | 40 / 91 / 99.8% |
+| before wave 1, random | 19.5 | 92% | 8 / 22 / 26 / 44% | 2.60 | 12 (9-15) | 10.4 | 5 / 33 / 76% |
+| before wave 1, rarest | 21.0 | 95% | 5 / 16 / 22 / 57% | 3.20 | 13 (10-15) | 10.4 | 3 / 26 / 72% |
+| before wave 1, chaser | 20.9 | 100% | 0 / 0 / 3 / 97% | 5.92 | 6 (5-8) | 6.3 | 39 / 95 / 100% |
+
+Each set, completed in a run (in brackets: the partial or better, for a set that has one):
+
+| set | pieces | today: random | rarest | chaser | before wave 1: random | rarest | chaser |
+|---|---|---|---|---|---|---|---|
+| The Seven-League Boots | C U | **37%** | 9% | **90%** | 51% | 22% | 95% |
+| The Barrow Harness | C U U | 21% (65%) | 6% (44%) | 43% (59%) | 33% (78%) | 18% (67%) | 62% (74%) |
+| The Cabinet of Curiosities | C U R | 16% (52%) | 7% (46%) | 38% (53%) | 26% (66%) | 18% (64%) | 54% (65%) |
+| The Thorned Buckler | U C R | 16% (57%) | 7% (50%) | 39% (58%) | 27% (71%) | 19% (73%) | 59% (73%) |
+| The Poppet | U U R | 13% (51%) | 27% (72%) | 46% (66%) | - | - | - |
+| The Gimmel Ring | U U R | 13% (51%) | 28% (71%) | 47% (68%) | - | - | - |
+| The Reaper's Scythe | R U U | 13% (51%) | 27% (71%) | 47% (68%) | 24% (68%) | 51% (87%) | 67% (81%) |
+| The Reliquary | C C Relic | 11% (54%) | 1% (18%) | 19% (33%) | 21% (68%) | 7% (39%) | 38% (52%) |
+| The Regalia | Relic C C | 10% (53%) | 1% (16%) | 18% (33%) | 20% (69%) | 7% (37%) | 38% (55%) |
+| The Lightning Rod | R R U | 10% (44%) | 34% (76%) | 43% (66%) | 20% (61%) | 58% (91%) | 64% (80%) |
+| The Brazier | C R Relic | 6% (38%) | 7% (46%) | 24% (46%) | 16% (56%) | 20% (71%) | 45% (64%) |
+| The Tithe Chalice | R U Relic | 6% (35%) | 26% (68%) | 29% (56%) | 14% (52%) | 52% (86%) | 52% (73%) |
+| The Jewelled Crown | Relic R R R | **2%** (44%) | 24% (88%) | **6%** (19%) | 7% (65%) | 51% (97%) | 17% (37%) |
+
+**How often each relic is seen** (runs in which a chest showed it at least once, random picker; the
+full 40-row table is in the tool's output): every Common in 99.9% of runs (about 2.1 showings each),
+every Uncommon in 98-99% (1.9), every Rare in 87-89% (1.3; the Hidden Drawer 87%), every Relic-tier
+piece in **60-62% (0.8) - 81% (1.2) before wave 1** - and the Blank Folio in **25% (45% before)**.
+
+**The run's length** (random / chaser, today's pool): a run lost at minute ten (`--until=10`) has had
+about 11 chests - **31% / 90%** complete a set (0.35 / 1.7 sets); 8b's fifteen elites after the first
+(`--elites=15`, 16.4 chests) give 69% / 99.6% (1.1 / 3.8); the measured eighteen give 83% / 99.9%
+(1.7 / 4.9).
+
+**What it says:**
+
+- **A completed set is the usual run, not the lucky one.** At about 19 chests even a player who never
+  reads the sets finishes one in five runs out of six, and one who plays for them finishes about five,
+  the first at the seventh chest (about 7:00). 8g's "the third piece of a set comes late, if at all,
+  from about fifteen chests" undersold it on both counts: the run has 19 chests, and 13 sets to fall
+  into.
+- **Wave 1 cost the old sets about a third of their completions** (random: 2.6 sets a run to 1.7; any
+  set 92% to 83%), and the five sets with a Relic-tier piece half or more: with six more cards in
+  the pool, the Relic tier - the last thing the fade reaches - is shown in 61% of runs instead of
+  81%. The two new sets landed among the easiest to finish (U U R, with the Scythe).
+- **The Jewelled Crown is dead by rarity**: four pieces, a Relic and three Rares - 2% of random runs
+  and 6% of runs that chase sets. Only the rarest-first bot finishes it (24%), because it hoards
+  Rares; its two-piece partial is common. Not a power problem (8g: x1.33 dealt) - nobody gets there.
+- **The Seven-League Boots are the set a run is likeliest to finish** (37% random, 90% chasing):
+  two pieces, C and U. Not mandatory: among the plainest to hold, in 8g and below (x1.02 dealt).
+- **Rerolls do not buy sets.** Three spent on chests bring the chaser's first set one chest earlier
+  and no more sets: it almost always already has a card for a set it has begun, and a reroll fades
+  the cards it throws back. Answer 3's rerolls are a tempo tool; nothing here needs the lean Eric
+  ruled out.
+- **The Blank Folio is seen in a quarter of full runs**, not the 7% its weight was chosen for: that
+  figure is ten-chest runs, and holds there (6.6% at eleven chests). Late in a run the fade has halved
+  most of the pool several times over, down near the Folio's 0.02, so the last chests reach it. Still
+  absent from three runs in four - "absent from most runs", as asked - so a note, not a change.
+
+**The sweep at 50 HP.** 8g's protocol - the Pyromancer, the Forest, seeds 11 and 23, each set handed
+over whole at 0:00 against the same run holding nothing, `--immortal` for 8 minutes and the mortal
+`--survivor` for 12, the mean of the two seeds - with two changes to the measuring only:
+`--fixed-fps 30 --timescale=1` (`.ai/run-pacing.md` 10.5) and `--all-unlocked`, so no run reads the
+real save. 56 runs, two at a time:
+
+```
+"$GODOT_BIN" --headless --fixed-fps 30 --path . scenes/_BalanceHarness.tscn -- --minutes=8 --immortal
+    --character=1 --seed=11 --timescale=1 --all-unlocked --give-relics=<the pieces> --no-save-writes
+```
+
+Compare ratios with 8g's, not counts: its baseline killed 1,501 in eight minutes and this one 2,256,
+the fidelity gap 10.5 describes.
+
+| set | dealt (immortal) | HP lost | kills | level at 8:00 | survivor: died at (min) |
+|---|---|---|---|---|---|
+| nothing | 73,588 | 2,951 | 2,256 | 19.5 | 3.2, 3.4 |
+| The Tithe Chalice | x1.24 | x0.44 | x1.19 | 26.5 | 5.0, 4.0 |
+| The Brazier | x1.17 | x0.39 | x1.01 | 20.0 | 5.0, 4.7 |
+| The Reaper's Scythe | x1.12 | x0.38 | x1.01 | 20.5 | 4.7, 4.5 |
+| The Gimmel Ring | x1.11 | x0.62 | x1.02 | 20.5 | 4.3, 3.8 |
+| The Regalia | x1.07 | x0.35 | x0.99 | **29.5** | 5.4, 4.4 |
+| The Lightning Rod | x1.07 | x0.45 | x1.00 | 20.0 | 4.3, 4.8 |
+| The Thorned Buckler | x1.05 | x0.57 | x0.99 | 20.0 | **6.5**, 4.1 |
+| The Reliquary | x1.04 | x0.83 | x1.01 | 20.0 | 4.0, 3.5 |
+| The Seven-League Boots | x1.02 | x0.74 | x0.99 | 20.0 | 5.2, 4.2 |
+| The Barrow Harness | x1.01 | x0.77 | x1.00 | 20.5 | 4.9, 4.6 |
+| The Jewelled Crown | x0.98 | x0.50 | x1.01 | 21.5 | 4.5, 5.1 |
+| The Poppet | x0.98 | x0.50 | x1.03 | 20.5 | 3.9, 3.6 |
+| The Cabinet of Curiosities | x0.97 | x1.35 | x0.97 | 20.0 | 3.3, 3.5 |
+
+The Poppet is a debuff build's set and the Pyromancer carries few debuffs (wave 1 said so), so it was
+also run on the **Frostweaver** (`--character=2`, the same seeds and bots): holding nothing 60,386
+dealt, 6,335 HP lost, 1,797 kills, level 18.0, died at 3.4 and 2.7; holding the Poppet **x1.02 dealt,
+x0.54 HP lost, x1.12 kills**, level 19.0, died at 3.7 and 3.7. A slower killer is not kill-capped, so
+the Poppet's Wither and Vulnerable show in the kills where they never show as damage dealt.
+
+**What it says:**
+
+- **No set is mandatory, and none keeps the bot alive any more.** At 50 HP with no heal, the mortal
+  bot dies at 3.2-3.4 minutes holding nothing and by 6.5 holding anything; in 8g the Scythe and the
+  Regalia lived all twelve. Most sets buy it a minute to a minute and a half (the Thorned Buckler
+  two), the Reliquary and the Poppet half a minute, the Cabinet nothing. The bot dodges far worse than
+  a person (`.ai/difficulty-curve.md` 1.1): read this column as a ranking.
+- **The Forest no longer separates the damage sets.** Kills are x0.97-1.03 for every set but the Tithe
+  Chalice, whose curse spawns 39% more (x1.19 kills, and so the top of the dealt column): at the
+  Forest's enemy health (x0.65) the immortal bot kills everything that spawns, and a damage set shows
+  only as overkill. The dealt spread narrowed from 8g's x0.90-1.40 to x0.97-1.24. Read it as a floor;
+  a harder chapter would separate them again.
+- **HP lost is mostly the bot's footwork.** The immortal bot walks to orbs and is hit while it
+  stands: holding nothing it stood still 5% and 29% of the two runs, and the Cabinet's +75 pickup
+  brings the orbs to it, so it stood 51% and 54% and lost x1.35. The flat cuts read true - the Barrow
+  Harness and the Reliquary, both -18%, lost x0.77 and x0.83.
+- **The two retuned sets.** The Lightning Rod, its speed always on, now outlives nothing (4.3 and 4.8
+  against 3.2 and 3.4; in 8g 3.5 and 3.8 against 3.4 and 4.2): mid-pack, fixed. The Reliquary at -18%
+  also outlives nothing now (8g: 2.8 and 3.1, below it), but is still the weakest set that is not the
+  Cabinet; its 6-point shield a chest cannot show on a bot that opens four or five chests in eight
+  minutes.
+- **The Gimmel Ring sits in the middle** (x1.11, third in the dealt column), as wave 1 measured.
+- **The Poppet is weak, not dead**: last in the dealt column on the Pyromancer, but on a Frostweaver
+  it kills 12% more and loses half the HP. It is a set for a debuff build, and the playtest should
+  meet it in one.
+- **The Regalia is still the outlier**: ten levels ahead at 8:00, the Tithe Chalice seven. Strong as a
+  capstone should be, and the simulation finishes it in 10% of random runs and 18% of set-chasing ones.
+- **Two sets are dead, neither by power alone.** The Jewelled Crown by rarity (above: nobody finishes
+  it). The Cabinet does nothing for a fight, which is its design (8d): it pays in chests - the
+  collector relics are why the simulation's runs average 19 chests against 16.7 from carriers alone.
+
+**Proposed, for Eric - nothing here is applied:**
+
+1. **The Jewelled Crown in three pieces, not four**: drop the Prism Jewel (Arcane - the one jewel the
+   set's effect never names) and let it stand alone, as answer 1 allows. Simulated
+   (`--set=elemental_mastery:aegis_crown,frozen_tear,thunderstone`): finished in **27%** of
+   set-chasing runs instead of 6% (random 4% instead of 2%, rarest-first 31% instead of 24%), level
+   with the Brazier and the Tithe Chalice, the other sets with a Relic-tier piece; no other set moves.
+   The cost is the object: a crown with two jewels, and its set icon redrawn.
+2. **Optional - only if the playtest finds the old Relic-piece sets rare: the Relic offer weight 0.08
+   to 0.16** (`ChestItemCatalog.OfferWeightFor`). Simulated with the change made and reverted: a
+   Relic-tier piece shown in 79% of runs (61% now, 81% before wave 1), and the Reliquary, the
+   Brazier, the Tithe Chalice and the Regalia finished in 26-36% of set-chasing runs (18-29% now,
+   38-52% before). It does not restore them fully - before wave 1 there were also two fewer sets
+   competing for the picks - and it spends element budget, since every Relic-tier piece carries two
+   tags. The Blank Folio has its own weight and does not move. 0.12 gives 72% and 22-34%.
+3. **The Reliquary, if the playtest agrees it is flat**: its chest shield 6 points to 15 (from a
+   eighth of the 50-point bar to nearly a third), so the set's own verb - a chest opened - is felt.
+   Not measured: re-run this sweep with it before shipping.
+4. **Nothing for the Blank Folio** (above), the Boots (the easiest to finish, and plain to hold) or
+   the Poppet beyond the Frostweaver note.
+
+What remains is Eric's playtest (#44's last box): whether a set feels like a moment, and whether the
+Reliquary and the Poppet feel like anything.
 
 ### 8h. A card passed over fades (2026-10-28)
 
