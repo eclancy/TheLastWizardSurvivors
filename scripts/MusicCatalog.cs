@@ -10,7 +10,7 @@ namespace WizardSurvivors.scripts;
 /// <c>AudioStreamSynchronized</c>, which is what lets the run fade one in and out without it ever
 /// drifting off the beat. Bed and pulse play from the first downbeat (the pulse is the chapter's
 /// battle percussion, 2026-11-01); the lead states the hook as the run opens and comes back for
-/// elites and from pace minute 5; the boss layer lands on all three when the boss arrives. See
+/// elites and from pace minute 5; the boss layer lands on the bed and pulse, the lead resting, when the boss arrives. See
 /// <c>.ai/audio-direction.md</c> section 11.
 /// </remarks>
 public sealed class MusicSet

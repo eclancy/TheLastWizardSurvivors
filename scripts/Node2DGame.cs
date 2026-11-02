@@ -893,7 +893,7 @@ public partial class Node2DGame : Node2D
 	// used to be the bed alone, the menu theme's own strings and drone a dB under it, until 28
 	// enemies were alive, which the headless Forest run reached at 1:15 and lost again at 1:35. The
 	// lead states the chapter's hook as the run opens, rests, and comes back for an elite and from
-	// pace minute 5 for good. Then the boss layer lands over all three (or, for a set without one,
+	// pace minute 5 for good. Then the boss layer lands on the bed and pulse as the hook rests (or, for a set without one,
 	// the shared boss loop replaces the set), and everything fades at the end. The lead has a hold,
 	// because a layer that flickers in and out with every wave is worse than one that never comes.
 	// See .ai/audio-direction.md section 11.
@@ -916,6 +916,7 @@ public partial class Node2DGame : Node2D
 	private readonly List<Node2D> musicLeadCallers = new();
 	// The opening statement is a hold like an elite's, from the run's first second.
 	private float musicLeadHeldUntil = MusicOpeningLeadSeconds;
+	private bool musicLeadWasOn = true;
 	private float musicSampleTimer;
 
 	private void PlayRunMusic()
@@ -951,6 +952,13 @@ public partial class Node2DGame : Node2D
 		if (leadCalled)
 			musicLeadHeldUntil = timeElapsed + MusicLeadHoldSeconds;
 		bool leadOn = leadCalled || timeElapsed < musicLeadHeldUntil;
+		if (leadOn != musicLeadWasOn)
+		{
+			// A handful of lines a run: when the hook comes and goes, so a headless log can show the
+			// opening statement ending on time and the pace clock bringing it back.
+			musicLeadWasOn = leadOn;
+			GD.Print($"Node2DGame: run music lead {(leadOn ? "in" : "out")} at {FormatTime(timeElapsed)} (pace minute {PaceMinutes:0.0}, {musicLeadCallers.Count} callers)");
+		}
 
 		// The pulse is the chapter's battle percussion and never leaves while the run is in play.
 		runMusic.SetLayerTargets(1f, leadOn ? 1f : 0f);
@@ -961,10 +969,13 @@ public partial class Node2DGame : Node2D
 		if (runMusic == null || runMusicSet == null)
 			return;
 		// The chapter's own fight: its boss layer lands on the set, which keeps playing, so the
-		// boss is met in the chapter's key and tempo. UpdateRunMusic stands aside from here on.
+		// boss is met in the chapter's key and tempo. The hook rests while it plays - the fight is
+		// the drums, the stabs and the motor - which also keeps the music where the late game has
+		// it: all four together measured 2 dB over the shared loop and cost a median cast 3.3 dB of
+		// its headroom over the music (mixsim.py --music). UpdateRunMusic stands aside from here on.
 		if (runMusicSet.HasBossLayer && runMusic.CurrentSetId == runMusicSet.Id && runMusic.CurrentSetHasBossLayer)
 		{
-			runMusic.SetLayerTargets(1f, 1f, 1f);
+			runMusic.SetLayerTargets(1f, 0f, 1f);
 			return;
 		}
 		var stream = ResourceLoader.Load<AudioStream>(runMusicSet.Boss);

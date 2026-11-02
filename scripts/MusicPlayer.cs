@@ -8,7 +8,7 @@ using WizardSurvivors.scripts;
 //     rendered, the boss layer) through one AudioStreamSynchronized, so they are sample-locked by
 //     the engine rather than by players that happened to start on the same frame. Each stem's level
 //     is a fader here; the run raises and lowers them (Node2DGame.UpdateRunMusic), and the boss
-//     brings its layer in over the other three (Node2DGame.PlayBossMusic).
+//     brings its layer in over the bed and pulse (Node2DGame.PlayBossMusic).
 //   * two SOLO players play one loop each - the menu theme, or the boss fight - and crossfade
 //     against the set. There are two so that one solo loop can hand over to another: quitting
 //     from a boss fight to the title fades the boss loop out on one player while the theme fades
