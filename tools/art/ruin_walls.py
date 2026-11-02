@@ -12,7 +12,7 @@ UNDER THE OPEN SKY, SO THE ORDER OF VALUES TURNS OVER. The jail and the cave are
 top of a wall is the darkest thing on screen. A ruin stands outdoors, and the flat top of a wall is the
 one surface that faces the key light full on: so here the TOP is the lightest stone (the stone row's
 base, its edges lit), the FACE in the row's shade under a lit coping, and the floor (the Ruins'
-`graystone`, on the row's shade with its deep in it) below both, with the wall's shadow thrown across it
+`ruinstone` flags, on the row's shade with its deep in the joints) below both, with the wall's shadow thrown across it
 (jail_walls.shadow, shared by every wall). Still two stops either side of the floor at most, and never
 `hi` as a plane: the ground stays the quietest thing on screen.
 

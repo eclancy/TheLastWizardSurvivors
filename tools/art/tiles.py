@@ -1043,6 +1043,147 @@ def snow(c, seed):
                 c.set(x + k * 2, y - j - (k % 2), ln[3] if j else ln[4])
 
 
+def paving(c, seed):
+    """The Mystic Ruins' floor: a plaza of laid flags, old and broken.
+
+    It stood on `graystone`, the `natural` slate every stone chapter shared, and a player crossing it
+    could not have said a city had been built there (Eric, 2026-11-02: "redraw the Mystic Ruins'
+    floor as broken paving"). Same value as the slate it replaces - the stone row's shade, mortar in
+    its deep, a lit lip where a flag catches the key light - so the ruin walls' tops stay the lightest
+    stone on screen and a skeleton on it reads exactly as before.
+
+    THE SAME EDGE RULES AS THE DUNGEON'S FLAGS (flagstone above). Courses are 24 px and sit on the
+    same rows in every variant; only the joints between flags move. A joint is never within five
+    pixels of a side edge, so where two variants meet the flag across the edge is merely long, never
+    a two-pixel sliver. Everything broken - a hole, a crack, weeds in a joint, a chipped corner -
+    stays eight pixels inside the tile, where no neighbour can cut it.
+
+    BROKEN, NOT RUBBLE. One variant in six has a flag broken out to the earth under it; most have a
+    crack; corners are knocked off; the mortar is worn away in stretches. A whole plaza of perfect flags reads as new, and a
+    hole in every cell is the 48 px pattern this file keeps re-learning, so the six variants each
+    carry a different kind of damage.
+    """
+    st = ramp("stone")
+    ln = ramp("linen")
+    fl = ramp("flesh")
+    g = ramp("lichen")
+    c.rect(0, 0, SIZE - 1, SIZE - 1, st[3])
+    clumps(c, 7, 1, 3, st[4], 3600 + seed, fill=0.22)
+    clumps(c, 4, 1, 2, st[2], 3610 + seed, fill=0.18)
+    specks(c, 0.005, st[2], 3620 + seed)
+    specks(c, 0.004, OCC, 3622 + seed)
+
+    joints = []
+    flags = []
+    for row in range(2):
+        top = row * 24
+        # The bed joint: worn flush in stretches, but always laid at the two ends, which are what
+        # meets the neighbour.
+        for x in range(SIZE):
+            if 3 <= x <= SIZE - 4 and hashed(x // 3, row, 3630 + seed) < 0.22:
+                continue
+            c.set(x, top, st[4])
+            if hashed(x, row, 3631 + seed) < 0.55:
+                c.set(x, top + 1, st[2])
+        # The flags of this course: joints 14-24 apart, none nearer an edge than five pixels.
+        xs = []
+        x = 5 + int(hashed(row, seed, 3632) * 12)
+        while x <= SIZE - 6:
+            xs.append(x)
+            x += 14 + int(hashed(x, row, 3633 + seed) * 11)
+        for jx in xs:
+            joints.append((jx, top))
+            for y in range(top + 1, top + 24):
+                if 4 <= y <= SIZE - 5 and hashed(jx, y // 3, 3634 + seed) < 0.15:
+                    continue
+                c.set(jx, y, st[4])
+                if y > top + 1:
+                    c.set(jx + 1, y, st[2])
+        # A flag wholly inside the tile may be a shade off its neighbours - one weathered paler, one
+        # stained - which is most of what keeps a plaza from reading as a printed grid. A flag that
+        # crosses a side edge stays plain: the variant beside it would cut a tone change in two.
+        for a, b in zip(xs, xs[1:]):
+            flags.append((a, b, top))
+    for (a, b, top) in flags:
+        v = hashed(a, top, 3635 + seed)
+        if v > 0.6:
+            continue
+        tone = st[2] if v < 0.3 else st[4]
+        for y in range(top + 2, top + 23):
+            for x in range(a + 2, b):
+                if hashed(x, y, 3636 + seed) < 0.2:
+                    c.set(x, y, tone)
+
+    def chip(jx, jy):
+        # A corner knocked off where a joint meets a bed: earth in the angle, lit on its far side.
+        if not (8 <= jx <= SIZE - 10 and 8 <= jy <= SIZE - 10):
+            return
+        for dy in range(1, 4):
+            for dx in range(1, 5 - dy):
+                c.set(jx + dx, jy + dy, ln[4])
+        c.set(jx + 1, jy + 1, OCC)
+        c.set(jx + 2, jy + 1, OCC)
+        c.set(jx + 4, jy + 2, st[1])
+        c.set(jx + 3, jy + 3, st[1])
+
+    def hole(cx, cy, rx, ry, salt):
+        # A flag broken out to the earth it was laid on. The upper-left rim of the hole lies in the
+        # shadow of the flag beside it; the broken face on its far side looks at the key light.
+        inside_hole = set()
+        for y in range(cy - ry - 2, cy + ry + 3):
+            for x in range(cx - rx - 2, cx + rx + 3):
+                d = ((x - cx) / float(rx)) ** 2 + ((y - cy) / float(ry)) ** 2
+                if d < 1.0 + (hashed(x, y, salt) - 0.5) * 0.7:
+                    inside_hole.add((x, y))
+        for (x, y) in inside_hole:
+            v = hashed(x, y, salt + 1)
+            tone = fl[4] if v < 0.2 else (ln[3] if v > 0.72 else ln[4])
+            if (x - 1, y) not in inside_hole or (x, y - 1) not in inside_hole:
+                tone = OCC
+            c.set(x, y, tone)
+        for (x, y) in inside_hole:
+            for (nx, ny) in ((x + 1, y), (x, y + 1)):
+                if (nx, ny) not in inside_hole and hashed(nx, ny, salt + 2) < 0.7:
+                    c.set(nx, ny, st[1])
+        # A shard of the flag still lying in it.
+        sx, sy = cx + int((hashed(cx, cy, salt + 3) - 0.5) * rx), cy + 1
+        c.set(sx, sy, st[2])
+        c.set(sx + 1, sy, st[3])
+        c.set(sx + 1, sy + 1, OCC)
+
+    kind = seed % 6
+    cx = 14 + int(hashed(seed, 1, 3640) * (SIZE - 28))
+    cy = 14 + int(hashed(seed, 2, 3641) * (SIZE - 28))
+    if kind == 4:
+        hole(cx, cy, 7, 5, 3650 + seed)
+    if kind == 1:
+        crack(c, cx, cy, 8, st[4], 3652 + seed)
+    if kind in (0, 2, 4):
+        # A crack across a flag, and a branch off it.
+        crack(c, cx, cy, 13 + int(hashed(seed, 3, 3642) * 6), OCC, 3660 + seed)
+        crack(c, cx + 2, cy + 1, 7, st[4], 3664 + seed)
+    if kind == 0:
+        crack(c, inside(seed, 3661, 10), inside(seed + 1, 3662, 10), 9, OCC, 3663 + seed)
+    if kind in (2, 5):
+        # Weeds in a joint: a stretch of the middle bed taken by moss, a tuft where it is thickest.
+        top = 24
+        x0 = 9 + int(hashed(seed, 5, 3671) * 18)
+        for x in range(x0, x0 + 8 + int(hashed(seed, 6, 3672) * 8)):
+            c.set(x, top, g[4])
+            if hashed(x, top, 3673 + seed) < 0.6:
+                c.set(x, top - 1, g[3])
+            if hashed(x, top, 3674 + seed) < 0.3:
+                c.set(x, top + 1, g[3])
+        tuft(c, x0 + 3, top, g[4], g[3], g[2])
+        tuft(c, x0 + 7, top + 1, g[4], g[3], g[2])
+    if kind == 3:
+        # A flag cracked clean through, one half settled a little lower than the other.
+        crack(c, cx - 3, cy, 12, OCC, 3680 + seed)
+    for (jx, jy) in joints:
+        if hashed(jx, jy, 3690 + seed) < (0.7 if kind == 1 else 0.3):
+            chip(jx, jy)
+
+
 def floor_variant(mat, style, seed, accent=None):
     def draw():
         global VARIANT
@@ -1063,6 +1204,9 @@ def floor_variant(mat, style, seed, accent=None):
             return c
         if style == "snow":
             snow(c, seed)
+            return c
+        if style == "paving":
+            paving(c, seed)
             return c
         if style == "natural":
             natural(c, r, seed, accent, 4 if mat == "gold" else 3)
@@ -1297,6 +1441,8 @@ MATERIALS = [
     ("sand", "gold", "natural", 6, "flesh"),
     ("stonetile", "stone", "flagstone", 6, None),
     ("graystone", "stone", "natural", 6, None),
+    # Mystic Ruins ground: a plaza of laid flags, broken (paving() above). It stood on `graystone`.
+    ("ruinstone", "stone", "paving", 6, None),
     # Swamp ground: grey-green peat with darker hollows. Was `darktile`, a near-black square grid.
     ("mud", "linen", "natural", 6, "flesh"),
     # Emberdeep ground: basalt plates split by seams that smoulder (basalt() above). Was `darktile`,

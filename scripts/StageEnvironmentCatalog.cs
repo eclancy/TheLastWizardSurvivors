@@ -259,7 +259,7 @@ public static class StageEnvironmentCatalog
 			StageEnvironmentKind.Ruins,
 			"ruins",
 			"Ruins",
-			"res://assets/bonelight/tiles/floor_graystone_0.png",
+			"res://assets/bonelight/tiles/floor_ruinstone_0.png",
 			new Rect2(),
 			string.Empty,
 			new Rect2(),

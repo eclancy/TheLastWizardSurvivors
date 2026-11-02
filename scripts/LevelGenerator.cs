@@ -171,9 +171,11 @@ public sealed partial class LevelGenerator
 		// stands the Dungeon's maze on this floor at the rates that broke it, with gaps, fallen pillars,
 		// courts and colonnades. The blobs lie between the walls. No pits since the walls: cut by them
 		// into the lattice's lines they were ruler-cut holes, and one across a corridor closed it.
+		// The floor is `ruinstone`, a plaza of broken flags (tiles.py paving(), Eric 2026-11-02); it stood
+		// on `graystone`, the slate every stone chapter shared, which said nothing had been built here.
 		[StageEnvironmentKind.Ruins] = new Palette
 		{
-			GroundMaterial = "graystone",
+			GroundMaterial = "ruinstone",
 			Blobs = new[]
 			{
 				new BlobSpec("cobble", 2.2f, 2.0f, 3.4f),
