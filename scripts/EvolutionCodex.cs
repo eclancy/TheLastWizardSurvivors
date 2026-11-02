@@ -168,53 +168,11 @@ public partial class EvolutionCodex : CanvasLayer
 		dim.SetAnchorsPreset(Control.LayoutPreset.FullRect);
 		root.AddChild(dim);
 
-		panel = new PanelContainer { Name = "CodexPanel", MouseFilter = Control.MouseFilterEnum.Ignore };
-		panel.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		panel.OffsetLeft = 12f;
-		panel.OffsetRight = -12f;
-		panel.OffsetTop = 12f;
-		panel.OffsetBottom = -12f;
-		panel.AddThemeStyleboxOverride("panel", BonelightSkin.PanelStyle(BonelightSkin.Register.Stone));
-		root.AddChild(panel);
-
-		var column = new VBoxContainer { Name = "CodexColumn", MouseFilter = Control.MouseFilterEnum.Ignore };
-		column.AddThemeConstantOverride("separation", narrow ? 10 : 8);
-		panel.AddChild(column);
-
-		column.AddChild(BuildHeader());
+		// The arrangement, one builder per canvas (EvolutionCodex.Layout.cs): everything else is shared.
 		if (narrow)
-			column.AddChild(BuildSearchField(expand: true));
-		column.AddChild(BuildFilterRow());
-
-		gridList = new VBoxContainer { Name = "CodexGrid", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
-		gridList.AddThemeConstantOverride("separation", 14);
-		gridScroll = new ScrollContainer
-		{
-			Name = "CodexGridScroll",
-			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-			HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
-			FollowFocus = true,
-		};
-		gridScroll.AddChild(CodexRows.WithGutter(gridList));
-
-		if (narrow)
-		{
-			gridScroll.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-			column.AddChild(gridScroll);
-			column.AddChild(BuildPhoneFoot());
-		}
+			BuildPhoneLayout();
 		else
-		{
-			var body = new HBoxContainer { Name = "CodexBody", SizeFlagsVertical = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
-			body.AddThemeConstantOverride("separation", 14);
-			column.AddChild(body);
-			gridScroll.CustomMinimumSize = new Vector2(GridWidth(), 0f);
-			body.AddChild(gridScroll);
-			body.AddChild(BuildDetailPanel());
-		}
-
-		if (narrow)
-			root.AddChild(BuildSheet());
+			BuildPcLayout();
 
 		keyboard = new CodexKeyboard { Name = "CodexKeyboard", Visible = false };
 		keyboard.Place(narrow);
@@ -237,15 +195,41 @@ public partial class EvolutionCodex : CanvasLayer
 		Callable.From(ScrollToSelected).CallDeferred();
 	}
 
-	// The grid's width on a PC: six cells and their gaps, the scroll gutter, a little air.
-	private float GridWidth() => 6f * CellWidth + 5f * CellGap + 24f;
 
-	// A phone: five across inside the 720 canvas less the safe area, the panel margins and the gutter.
-	private float CellWidth => narrow ? 108f : 80f;
-	private float FrameSide => narrow ? 88f : 76f;
-	private const float CellGap = 6f;
+	/// <summary>The stone panel and the column inside it, which every arrangement fills.</summary>
+	private VBoxContainer BuildPanel()
+	{
+		panel = new PanelContainer { Name = "CodexPanel", MouseFilter = Control.MouseFilterEnum.Ignore };
+		panel.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+		panel.OffsetLeft = 12f;
+		panel.OffsetRight = -12f;
+		panel.OffsetTop = 12f;
+		panel.OffsetBottom = -12f;
+		panel.AddThemeStyleboxOverride("panel", BonelightSkin.PanelStyle(BonelightSkin.Register.Stone));
+		root.AddChild(panel);
+		var column = new VBoxContainer { Name = "CodexColumn", MouseFilter = Control.MouseFilterEnum.Ignore };
+		column.AddThemeConstantOverride("separation", narrow ? 10 : 8);
+		panel.AddChild(column);
+		return column;
+	}
 
-	private Control BuildHeader()
+	/// <summary>The grid's list and its scroll: the only thing on the screen that scrolls.</summary>
+	private void BuildGridScroll()
+	{
+		gridList = new VBoxContainer { Name = "CodexGrid", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
+		gridList.AddThemeConstantOverride("separation", 14);
+		gridScroll = new ScrollContainer
+		{
+			Name = "CodexGridScroll",
+			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+			HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+			FollowFocus = true,
+		};
+		gridScroll.AddChild(CodexRows.WithGutter(gridList));
+	}
+
+	/// <summary>The heading band: the title and the count, and - where the arrangement puts them there - the search and Back.</summary>
+	private Control BuildHeader(bool withSearch, bool withBack)
 	{
 		// The heading band every stone screen wears (the pause screen's, JournalScreen's): stone deep, a gold rule.
 		var band = new PanelContainer { Name = "CodexHeader", MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -267,13 +251,13 @@ public partial class EvolutionCodex : CanvasLayer
 			Text = Title,
 			VerticalAlignment = VerticalAlignment.Center,
 			CustomMinimumSize = new Vector2(0f, ResponsiveLayout.MinTouchTarget),
-			SizeFlagsHorizontal = narrow ? Control.SizeFlags.ExpandFill : Control.SizeFlags.ShrinkBegin,
+			SizeFlagsHorizontal = withSearch ? Control.SizeFlags.ShrinkBegin : Control.SizeFlags.ExpandFill,
 		};
 		ResponsiveLayout.SetFont(title, narrow ? ResponsiveLayout.TextRole.Title : ResponsiveLayout.TextRole.Display);
 		title.AddThemeColorOverride("font_color", CodexRows.Stone.Heading);
 		row.AddChild(title);
 
-		if (!narrow)
+		if (withSearch)
 			row.AddChild(BuildSearchField(expand: true));
 
 		countLabel = new Label
@@ -286,7 +270,7 @@ public partial class EvolutionCodex : CanvasLayer
 		countLabel.AddThemeColorOverride("font_color", CodexRows.Stone.InkSoft);
 		row.AddChild(countLabel);
 
-		if (!narrow)
+		if (withBack)
 		{
 			backButton = BuildBackButton();
 			row.AddChild(backButton);
@@ -512,7 +496,7 @@ public partial class EvolutionCodex : CanvasLayer
 			none.Name = "CodexEmpty";
 			gridList.AddChild(none);
 		}
-		int columns = narrow ? 5 : 6;
+		int columns = GridColumns;
 		foreach (IGrouping<CodexFilter, CodexEntry> group in shown.GroupBy(e => e.Group))
 		{
 			List<CodexEntry> all = model.Entries.Where(e => e.Group == group.Key).ToList();

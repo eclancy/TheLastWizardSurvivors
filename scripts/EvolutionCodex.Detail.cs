@@ -292,84 +292,6 @@ public partial class EvolutionCodex
 		return row;
 	}
 
-	/// <summary>The PC's tree: four columns, left to right, an arrow bus between each.</summary>
-	private Control BuildTreeColumns(CodexEntry entry, CodexForm form)
-	{
-		var row = new HBoxContainer { Name = "CodexTree", MouseFilter = Control.MouseFilterEnum.Ignore };
-		row.AddThemeConstantOverride("separation", 0);
-
-		Control baseNode = BuildBaseNode(entry, form, wide: false);
-		row.AddChild(Column("Base", null, new List<Control> { baseNode }, fixedWidth: 56f));
-		treeLines.Add(new List<Control> { StopOf(baseNode) });
-
-		void AddColumn(string label, List<CodexChip> gates, List<CodexNode> nodes)
-		{
-			if (nodes.Count == 0)
-				return;
-			var controls = nodes.Select(n => BuildNode(n, wide: false)).ToList();
-			var arrows = new AscensionForkArrows
-			{
-				Name = $"Arrows{label.Replace(" ", "")}",
-				Shape = AscensionForkArrows.Layout.Spine,
-				CustomMinimumSize = new Vector2(22f, 0f),
-			};
-			for (int i = 0; i < nodes.Count; i++)
-				arrows.AddTarget(controls[i], IsLive(nodes[i]));
-			row.AddChild(arrows);
-			row.AddChild(Column(label, gates, controls, fixedWidth: 0f));
-			treeLines.Add(controls.Select(StopOf).ToList());
-		}
-
-		AddColumn("Level 4", form.MutationGates, form.Mutations);
-		AddColumn("Level 8", form.AscensionGates, form.Ascensions);
-		AddColumn("Apotheosis", new List<CodexChip>(), form.Finals);
-		return row;
-	}
-
-	/// <summary>The phone's tree: rows, top to bottom, a fork down into each.</summary>
-	private Control BuildTreeRows(CodexEntry entry, CodexForm form)
-	{
-		var tree = new VBoxContainer { Name = "CodexTree", MouseFilter = Control.MouseFilterEnum.Ignore };
-		tree.AddThemeConstantOverride("separation", 4);
-		Control baseNode = BuildBaseNode(entry, form, wide: true);
-		tree.AddChild(baseNode);
-		treeLines.Add(new List<Control> { StopOf(baseNode) });
-		Control source = baseNode;
-
-		void AddRow(string label, List<CodexChip> gates, List<CodexNode> nodes)
-		{
-			if (nodes.Count == 0)
-				return;
-			var controls = nodes.Select(n => BuildNode(n, wide: true)).ToList();
-			var arrows = new AscensionForkArrows
-			{
-				Name = $"Arrows{label.Replace(" ", "")}",
-				Shape = AscensionForkArrows.Layout.Fork,
-				Source = source,
-				CustomMinimumSize = new Vector2(0f, 34f),
-			};
-			for (int i = 0; i < nodes.Count; i++)
-				arrows.AddTarget(controls[i], IsLive(nodes[i]));
-			tree.AddChild(ColumnHeader(label, gates));
-			tree.AddChild(arrows);
-			var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-			row.AddThemeConstantOverride("separation", 10);
-			foreach (Control control in controls)
-			{
-				control.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-				row.AddChild(control);
-			}
-			tree.AddChild(row);
-			treeLines.Add(controls.Select(StopOf).ToList());
-			source = row;
-		}
-
-		AddRow("Level 4", form.MutationGates, form.Mutations);
-		AddRow("Level 8", form.AscensionGates, form.Ascensions);
-		AddRow("Apotheosis", new List<CodexChip>(), form.Finals);
-		return tree;
-	}
-
 	// An arrow is gold into what is open now or was taken, dashed into everything else.
 	private static bool IsLive(CodexNode node) => node.State is CodexNodeState.Ready or CodexNodeState.Taken;
 
@@ -861,73 +783,10 @@ public partial class EvolutionCodex
 			detail.AddChild(head);
 		}
 
-		var ingredients = recipe.Ingredients.Select(n => BuildNode(n, wide: narrow)).ToList();
-		Control result = BuildNode(recipe.Result, wide: narrow);
-		bool open = recipe.Made || recipe.Offered;
-
 		if (narrow)
-		{
-			var tree = new VBoxContainer { Name = $"CodexRecipe_{recipe.Id}", MouseFilter = Control.MouseFilterEnum.Ignore };
-			tree.AddThemeConstantOverride("separation", 4);
-			var parts = new GridContainer { Columns = Math.Min(2, Math.Max(1, ingredients.Count)), MouseFilter = Control.MouseFilterEnum.Ignore };
-			parts.AddThemeConstantOverride("h_separation", 10);
-			parts.AddThemeConstantOverride("v_separation", 10);
-			foreach (Control part in ingredients)
-			{
-				part.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-				parts.AddChild(part);
-			}
-			tree.AddChild(parts);
-			var arrows = new AscensionForkArrows
-			{
-				Shape = AscensionForkArrows.Layout.Fork,
-				Source = parts,
-				CustomMinimumSize = new Vector2(0f, 34f),
-			};
-			arrows.AddTarget(result, open);
-			tree.AddChild(arrows);
-			var centre = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-			centre.AddChild(Spacer());
-			result.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-			result.SizeFlagsStretchRatio = 2f;
-			centre.AddChild(result);
-			centre.AddChild(Spacer());
-			tree.AddChild(centre);
-			detail.AddChild(tree);
-			treeLines.Add(ingredients.Select(StopOf).ToList());
-			treeLines.Add(new List<Control> { StopOf(result) });
-		}
+			BuildRecipePhone(recipe);
 		else
-		{
-			var row = new HBoxContainer { Name = $"CodexRecipe_{recipe.Id}", MouseFilter = Control.MouseFilterEnum.Ignore };
-			row.AddThemeConstantOverride("separation", 6);
-			var column = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1.6f, MouseFilter = Control.MouseFilterEnum.Ignore };
-			column.AddThemeConstantOverride("separation", 6);
-			for (int i = 0; i < ingredients.Count; i++)
-			{
-				if (i > 0 && recipe.Kind == CodexKind.Combination)
-				{
-					Label plus = CodexRows.MakeText("+", ResponsiveLayout.TextRole.Title, CodexRows.Stone.Heading);
-					plus.HorizontalAlignment = HorizontalAlignment.Center;
-					column.AddChild(plus);
-				}
-				column.AddChild(ingredients[i]);
-			}
-			row.AddChild(column);
-			var arrows = new AscensionForkArrows
-			{
-				Shape = AscensionForkArrows.Layout.Spine,
-				CustomMinimumSize = new Vector2(30f, 0f),
-			};
-			arrows.AddTarget(result, open);
-			row.AddChild(arrows);
-			var resultColumn = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
-			resultColumn.AddChild(result);
-			row.AddChild(resultColumn);
-			detail.AddChild(row);
-			treeLines.Add(ingredients.Select(StopOf).ToList());
-			treeLines.Add(new List<Control> { StopOf(result) });
-		}
+			BuildRecipePc(recipe);
 
 		// A set's two tiers, each ticked once this run holds enough of it (the chest page's "now").
 		bool partialOn = recipe.PartialCount > 0 && recipe.HeldCount >= recipe.PartialCount;
