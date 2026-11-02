@@ -425,6 +425,7 @@ is his own), timescale 2-3:
 | seed 1234 | 12.6 min (player level 24) | level 2 at 15:00 | - |
 | seed 1234 (the circle bot stuck from 1.5 min - why `--circle` now re-lays itself) | level 5 at 15:00 | 12.0 min (level 17) | - |
 | seed 7, `--full-shop` | 5.9 min (level 17) | level 7, ready, at 15:00 | - |
+| seed 7, `--full-shop --upgrade-chance=1` (left at 6.5 min: the orbs the circle bot leaves had it at 1 fps) | not yet in the book | 6.5 min (level 17) | - |
 
 Section 2's "a planned run reaches one recipe at about minute 10 to 13" did not hold for the bot. What held
 it back was never a gate but the cards: fourteen upgrades across two spells that are not the wizard's own,
