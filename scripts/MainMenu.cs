@@ -120,7 +120,6 @@ public partial class MainMenu : Control
 		// After every GetNode above, never before: this moves the button stack out of the scene's
 		// container tree, and the paths have to resolve against the scene as it was authored.
 		LayoutAroundTitleArt();
-		EnsureReportBugButton();
 		LayoutUtilityRow();
 		BuildOptions();
 		ApplyMenuSkin();
@@ -662,38 +661,23 @@ public partial class MainMenu : Control
 		control.OffsetBottom = bottomRow - ArtHalfHeight;
 	}
 
-	// Report a bug: the same quiet stone as the Spell Index, at the foot of the screen with the
-	// other utilities - it is a deliberate destination, like Options, and must not compete with
-	// the stack above it. Placed by LayoutUtilityRow.
-	private void EnsureReportBugButton()
-	{
-		reportBugButton = new Button
-		{
-			Name = "ReportBugButton",
-			Text = "Report a bug",
-		};
-		AddChild(reportBugButton);
-		BonelightSkin.StyleButton(reportBugButton, BonelightSkin.Emphasis.Quiet);
-		ResponsiveLayout.SetFont(reportBugButton, ResponsiveLayout.TextRole.Label);
-		reportBugButton.Pressed += OnReportBugPressed;
-	}
-
-	// The foot of the screen: Options in its corner, then the Spell Index, then Report a bug - the
-	// three things on this screen that are not about the next run - and the preset readout.
+	// The foot of the screen: Options in its corner, then the Evolution Codex - the two things on this
+	// screen that are not about the next run - and the difficulty readout. Report a bug stood third in
+	// this row until 2026-11-02; it is in Options now (MainMenu.Options.cs).
 	//
 	// On a PC they are one row on the dark grass under the menu column, left to right from the
 	// OPTIONS_BOX corner, and the preset keeps DETAIL_BOX in the opposite corner. The two quiet
 	// buttons end at core x 318, which keeps them clear of the ward circle's left rim and its
 	// flame at about x 320 and rows 245-285.
 	//
-	// On a phone the three share one row across the grass (rows 1168-1232), each 208 wide and
+	// On a phone the two share one row across the grass (rows 1168-1232), each 316 wide and
 	// 64 tall - comfortably over the 48-unit touch floor. That row used to hold Options on the left
 	// and the preset readout on the right, with Report a bug squeezed under Options; the readout now
 	// goes under the row where a tall phone (the Pixel 9: rows to about 1410) has open ground, or
 	// above it on a 16:9 phone, whose canvas ends at row 1280, between the row and the circle's rim.
 	private void LayoutUtilityRow()
 	{
-		foreach (Button button in new[] { optionsButton, spellIndexButton, reportBugButton })
+		foreach (Button button in new[] { optionsButton, spellIndexButton })
 		{
 			if (button == null)
 				continue;
@@ -706,8 +690,7 @@ public partial class MainMenu : Control
 		if (!DisplayProfile.IsPortrait)
 		{
 			PinToWideArt(optionsButton, 12f, 292f, 126f, 324f);
-			PinToWideArt(spellIndexButton, 134f, 296f, 222f, 320f);
-			PinToWideArt(reportBugButton, 230f, 296f, 318f, 320f);
+			PinToWideArt(spellIndexButton, 134f, 296f, 236f, 320f);
 			if (rootDetailLabel != null)
 				PinToWideArt(rootDetailLabel, 470f, 312f, 632f, 352f);
 			return;
@@ -717,8 +700,8 @@ public partial class MainMenu : Control
 		const float RowBottom = 592f;  // composition row 1232
 		const float Half = 320f;
 		const float Gap = 8f;
-		float width = (Half * 2f - Gap * 2f) / 3f;
-		Button[] row = { optionsButton, spellIndexButton, reportBugButton };
+		Button[] row = { optionsButton, spellIndexButton };
+		float width = (Half * 2f - Gap * (row.Length - 1)) / row.Length;
 		for (int i = 0; i < row.Length; i++)
 		{
 			if (row[i] == null)
@@ -798,7 +781,8 @@ public partial class MainMenu : Control
 		// it had just opened, over that panel's own Back button. A corner control that belongs to
 		// the main screen leaves with the main screen.
 		bool atRoot = panelToShow == mainPanel;
-		foreach (Control utility in new Control[] { optionsButton, spellIndexButton, reportBugButton })
+		// Report a bug is not one of these any more: it lives inside Options, and hiding it here hid it there.
+		foreach (Control utility in new Control[] { optionsButton, spellIndexButton })
 		{
 			if (utility != null)
 				utility.Visible = atRoot;

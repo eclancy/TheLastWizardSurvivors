@@ -91,6 +91,13 @@ public partial class MainMenu
 		CodexRows.AddSection(left, SettingsRows.Audio, null, ink, 1, audio);
 		CodexRows.AddSection(left, SettingsRows.Display, null, ink, 1, display);
 
+		// FEEDBACK: Report a bug, which stood at the foot of the main menu beside Options and the Codex
+		// until Eric moved it here (2026-11-02: "Report a bug can be in options").
+		reportBugButton = SettingsRows.BuildActionButton("Report a bug", "ReportBugButton");
+		reportBugButton.Pressed += OnReportBugPressed;
+		var feedback = new List<Control> { SettingsRows.BuildButtonRow(reportBugButton) };
+		CodexRows.AddSection(left, SettingsRows.Feedback, null, ink, 1, feedback);
+
 		// GAMEPLAY: what changes how a run plays. The difficulty was a dropdown called "Run Difficulty
 		// Curve", which the root menu's corner called "Preset" - one name now, the one a player would use.
 		// The Gameplay Tips switch is gone (Eric, 2026-11-02): it only ever mattered until the onboarding
@@ -129,7 +136,7 @@ public partial class MainMenu
 
 		list.AddChild(BuildResetProgress(ink));
 
-		optionsLeftRows = audio.Concat(display).Select(FocusStopsIn).Where(row => row.Count > 0).ToList();
+		optionsLeftRows = audio.Concat(display).Concat(feedback).Select(FocusStopsIn).Where(row => row.Count > 0).ToList();
 		optionsRightRows = gameplay.Concat(story).Concat(testing).Select(FocusStopsIn).Where(row => row.Count > 0).ToList();
 		ChainOptionsFocus();
 	}
