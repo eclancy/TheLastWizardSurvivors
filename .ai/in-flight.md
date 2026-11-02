@@ -247,6 +247,15 @@ builds to 120 and seven.
   (C2 + C8, `wip/dungeon-move`, schema **21**; nothing flips `IsPlayable` without Eric). **Queued as
   slots free:** #44's 10,000-run chest simulation and a fresh relic sweep at 50 HP with the new sets;
   the rest of the secrets catalogue with the castle's (C9).
+- **Later the same night:** boss arrivals hold the camera through the bars, then spring-pan; and every
+  spell already out freezes for the arrival (`Player.SpellGroup` / `TagSpell`, `FreezePlayerSpells`).
+  **Merged: the dark wizard (C5)** - the taking and its seal, his light, all he took, the ending
+  (`.ai/endgame-castle.md` 13; health 30,000). **Held, ready: `wip/dungeon-move` (C2 + C8)** - the
+  Dungeon in the castle (schema 21, the Gaoler at 900,000), the castle on the world map; flipping the
+  Last Bridge's `IsPlayable` is then one line and raises no validator line. Per 9.2 the move and the
+  flip land together: **waiting on Eric's OK**. **Open for Eric:** the Apotheosis now lands in the
+  Throne's first wave (the gate at 21 under an 18-level Muster sized for 23) - cut the Muster or put
+  the gate back to 23; the ending's credits say "drawn by Eric's kids" - check the wording.
 - **The defeat sequence** (Eric, 2026-11-02): *"Defeat should have a dramatic animation where the game
   freezes, then crash zooms onto the wizard and they fall, then it says defeat, and when the player
   clicks, the defeat screen covers up. It then tallys up the reward with a satisfying payout sound. The
