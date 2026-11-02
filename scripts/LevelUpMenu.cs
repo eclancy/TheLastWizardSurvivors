@@ -799,7 +799,8 @@ public partial class LevelUpMenu : CanvasLayer
 
 		// A charge with nothing left is hidden rather than disabled. A greyed-out button the player
 		// can never use again is a permanent piece of dead furniture on a screen that is already
-		// dense; the reroll button is disabled instead because it comes back every level.
+		// dense - and since rerolls became a pool for the run, that is Reroll at zero too
+		// (UpdateRerollState, .ai/slow-start.md Q7).
 		banButton.Visible = currentCharges.Bans > 0;
 		// While the tears are on the cards the same button takes them off again: the only other change
 		// ban mode makes to the screen (SetBanMode).
@@ -897,8 +898,12 @@ public partial class LevelUpMenu : CanvasLayer
 		if (rerollButton == null)
 			return;
 
+		// Hidden while the run has none, as Ban is (Eric's Q7, .ai/slow-start.md): a new save owns no rerolls
+		// until it buys Fate Fracture, and "Reroll (0)" on every level-up of its first runs was a button it
+		// could never press. Not while a spell's forms page has the footer (LevelUpMenu.Variants.cs).
 		rerollButton.Text = $"Reroll ({rerollsRemaining})";
 		rerollButton.Disabled = rerollsRemaining <= 0;
+		rerollButton.Visible = rerollsRemaining > 0 && pendingVariantOption == null;
 	}
 
 	private void ClearButtons()

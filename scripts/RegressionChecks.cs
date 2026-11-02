@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using WizardSurvivors.scripts;
 
-public static class RegressionChecks
+public static partial class RegressionChecks
 {
 	public static List<string> RunAll()
 	{
@@ -66,6 +66,9 @@ public static class RegressionChecks
 		ValidateAchievementMigration(warnings);
 		ValidateRetiredChargeRefund(warnings);
 		ValidateDifficultyMigration(warnings);
+		ValidateSpellBook(warnings);
+		ValidateTeachers(warnings);
+		ValidateSlowStartMigration(warnings);
 		ValidateStoryReset(warnings);
 		ValidateChapterDifficulty(warnings);
 		ValidateNoPixelsInText(warnings);
@@ -2808,9 +2811,11 @@ public static class RegressionChecks
 	// Schema 20 (.ai/difficulty-curve.md, section 9), on sample saves:
 	//   - a save that has played runs keeps the Ascension (AscensionLearned), and one that never played
 	//     starts sealed like a new save;
-	//   - a save past the Fields is learned by the campaign alone, with no flag;
 	//   - Fate Fracture 5 and Emberheart 3 are refunded the price difference (425 + 75) and keep their levels;
 	//   - a second migration changes nothing.
+	// "A save past the Fields is learned by the campaign alone" went with the slow start: a landmark teaches
+	// the Ascension now (Teachings), and schema 22 keeps it for every save that had it that way
+	// (ValidateSlowStartMigration).
 	private static void ValidateDifficultyMigration(List<string> warnings)
 	{
 		var played = new SaveData { SchemaVersion = 19, TotalCurrency = 10 };
@@ -2820,7 +2825,7 @@ public static class RegressionChecks
 		played.Migrate(log: false);
 		// rerolls: sum over n<5 of (75+50n)-(40+25n) = 5x35 + 25x10 = 425; recovery: sum over n<3 of (30+20n)-(15+10n) = 45 + 30 = 75.
 		const int expected = 425 + 75;
-		if (!played.AscensionLearned || !GlobalStatsManager.HasLearnedAscension(played))
+		if (!played.AscensionLearned || !Teachings.HasLearned(played, Teaching.Ascension))
 			warnings.Add("Migration: schema 20 should keep the Ascension for a save that has played a run.");
 		if (played.TotalCurrency != 10 + expected || played.ArcaneUpgradeLevels["rerolls"] != 5 || played.ArcaneUpgradeLevels["recovery"] != 3)
 			warnings.Add($"Migration: schema 20 should refund {expected} for Fate Fracture 5 and Emberheart 3 and keep both levels;"
@@ -2832,26 +2837,10 @@ public static class RegressionChecks
 
 		var unplayed = new SaveData { SchemaVersion = 19 };
 		unplayed.Migrate(log: false);
-		if (unplayed.AscensionLearned || GlobalStatsManager.HasLearnedAscension(unplayed))
+		if (unplayed.AscensionLearned || Teachings.HasLearned(unplayed, Teaching.Ascension))
 			warnings.Add("Migration: a save that never played a run should start with the Ascension sealed, as a new save does.");
-		if (GlobalStatsManager.HasLearnedAscension(new SaveData()))
-			warnings.Add("Ascension: a brand-new save has already learned it; the Hayward should teach it.");
-
-		var pastFields = new SaveData();
-		pastFields.UnlockedStageIds.Add("stage_2");
-		if (!GlobalStatsManager.HasLearnedAscension(pastFields))
-			warnings.Add("Ascension: a save with the Sunken Cave open has not learned it - a save past the Fields must have.");
-		var beatHayward = new SaveData();
-		StageDefinition teacher = StageCatalog.GetById(GlobalStatsManager.AscensionTeacherStageId);
-		BossDefinition hayward = teacher != null ? BossCatalog.ForStageIndex(teacher.Index) : null;
-		if (hayward == null)
-			warnings.Add($"Ascension: the teaching chapter {GlobalStatsManager.AscensionTeacherStageId} has no boss to teach it.");
-		else
-		{
-			beatHayward.Lifetime.BossesDefeated.Add(hayward.Id);
-			if (!GlobalStatsManager.HasLearnedAscension(beatHayward))
-				warnings.Add($"Ascension: beating {hayward.DisplayName} does not teach it.");
-		}
+		if (Teachings.HasLearned(new SaveData(), Teaching.Ascension))
+			warnings.Add("Ascension: a brand-new save has already learned it; a landmark should teach it (Teachings).");
 	}
 
 	// The difficulty curve's table (.ai/difficulty-curve.md, section 4): every playable road chapter has a
@@ -5002,11 +4991,22 @@ public static class RegressionChecks
 			expected.Add((boon.Id, CodexKind.Boon));
 		foreach (ChestSetDefinition set in ChestItemCatalog.Sets)
 			expected.Add((set.Id, CodexKind.FullSet));
+		// One locked thing on show at a time (Teachings.IsShown, .ai/slow-start.md Q8): a fresh save is shown no
+		// combination, so every recipe - the Rite's included - is looked for on a save that has learned the
+		// Ascension and the Apotheosis and owns the Rite, where each must be.
+		var taught = new SaveData();
+		Teachings.Teach(taught, Teachings.Get(Teaching.Ascension));
+		Teachings.Teach(taught, Teachings.Get(Teaching.Apotheosis));
+		taught.UnlockedSpellIds.Add(SovereignRite.SpellId);
+		CodexModel shown = CodexModel.Build(CodexContext.ForSave(taught));
 		foreach ((string id, CodexKind kind) in expected)
 		{
-			if (!fresh.Entries.Any(e => e.Kind == kind && e.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
+			CodexModel model = kind == CodexKind.Combination ? shown : fresh;
+			if (!model.Entries.Any(e => e.Kind == kind && e.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
 				warnings.Add($"Codex: {kind} '{id}' is missing from the Evolution Codex (CodexModel.Build).");
 		}
+		if (fresh.Entries.Any(e => e.Kind == CodexKind.Combination))
+			warnings.Add("Codex: a fresh save is shown a combination; Conjunctions are shown only once the Apotheosis is learned (Teachings.IsShown).");
 		foreach (IGrouping<string, CodexEntry> twice in fresh.Entries.GroupBy(e => e.Id, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1))
 			warnings.Add($"Codex: the id '{twice.Key}' names {twice.Count()} entries ({string.Join(", ", twice.Select(e => e.Kind))}); the Codex selects by id, so only the first can be opened.");
 

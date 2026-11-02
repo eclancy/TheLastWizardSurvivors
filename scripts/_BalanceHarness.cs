@@ -316,6 +316,12 @@ public partial class _BalanceHarness : Node
 	private int levelUpsHandled;
 	// Level-ups that offered nothing at all - should always be zero (see AutoPickLevelUp).
 	private int deadLevelUps;
+	// The slow start (.ai/slow-start.md section 8): the book the run began with, when a page opened mid-run
+	// (Survivor's), and the first level-up that found the book full - from then on a hand has no new spell.
+	private int bookPagesAtStart = -1;
+	private float pageOpenedAt = -1f;
+	private float bookFirstFullAt = -1f;
+	private int bookFirstFullLevel;
 	private float lastProgressLog;
 	private int windowFrames;
 	private double windowProcessMs, windowPhysicsMs, windowWorstMs;
@@ -384,6 +390,9 @@ public partial class _BalanceHarness : Node
 			// the chapter hints (StageHintDirector) play on their pace schedule - an --all-unlocked
 			// save owns them all and hears none. The bot never meets the event without --explore.
 			else if (arg == "--fresh-save") FreshSave = true;
+			// --slots=N: every run's book holds N pages, whatever the save has earned (SpellBook.ToolOverride) -
+			// the A/B of .ai/slow-start.md section 8 on one tree. No page opens mid-run under it.
+			else if (arg.StartsWith("--slots=")) SpellBook.ToolOverride = int.Parse(arg.Substring(8));
 			else if (arg == "--farmed") Farmed = true;
 			else if (arg.StartsWith("--arcane=")) FarmedArcane = int.Parse(arg.Substring(9));
 			else if (arg.StartsWith("--stop-need=")) StopNeed = float.Parse(arg.Substring(12), System.Globalization.CultureInfo.InvariantCulture);
@@ -439,8 +448,12 @@ public partial class _BalanceHarness : Node
 				// shop argues with the roll, and a measurement that does not is measuring a new save.
 				data.ArcaneUpgradeLevels["rerolls"] = 5;
 				data.ArcaneUpgradeLevels["bans"] = 3;
-				// Owning everything includes having been taught the Ascension (Player.AscensionLearned).
+				// Owning everything includes having been taught every system (Teachings) and the full book
+				// (SpellBook), as a save from before the slow start keeps them.
 				data.AscensionLearned = true;
+				foreach (Teachings.Lesson lesson in Teachings.All)
+					Teachings.Teach(data, lesson);
+				data.FullBookKept = true;
 				// --full-shop: the rest of the Arcane Codex too, at the caps MainMenu.BuildUpgradeDefinitions
 				// registers. Sage Spiral (growth) is the one that moves the level clock.
 				if (FullShop)
@@ -1109,8 +1122,16 @@ public partial class _BalanceHarness : Node
 
 		if (!farmed)
 		{
+			// Whoever stands past the Forest has survived ten minutes in it: Survivor is done, so the book holds
+			// its page and Hollow Star is in the pool (.ai/slow-start.md section 8, cell C).
+			if (behind.Count > 0)
+			{
+				data.UnlockedAchievementIds.Add("survivor");
+				GlobalStatsManager.UnlockSpell(data, "hollow_star");
+			}
 			metaLabel = $"fresh(road {behind.Count})";
-			GD.Print($"HARNESS fresh save at {stage.DisplayName}: {behind.Count} chapters behind it beaten, nothing they pay, nothing bought");
+			GD.Print($"HARNESS fresh save at {stage.DisplayName}: {behind.Count} chapters behind it beaten, nothing they pay, nothing bought;"
+				+ $" the book holds {SpellBook.PagesFor(data)}");
 			return;
 		}
 
@@ -1131,6 +1152,15 @@ public partial class _BalanceHarness : Node
 
 		int budget = FarmedArcane >= 0 ? FarmedArcane : FarmedArcaneOpening + FarmedArcanePerChapter * behind.Count;
 		int left = budget;
+		// Bound Pages before any Power (.ai/slow-start.md section 8): the shop's top card, and the first buy.
+		for (int level = SpellBook.BoughtPages(data); level < SpellBook.ShopLevels; level++)
+		{
+			int cost = SpellBook.ShopBaseCost + level * SpellBook.ShopCostPerLevel;
+			if (cost > left)
+				break;
+			data.ArcaneUpgradeLevels[SpellBook.ShopUpgradeId] = level + 1;
+			left -= cost;
+		}
 		// The cheapest next level among the Powers above, again and again: a player spreads his Arcane
 		// rather than finishing one line, because every line's next level costs more than its last.
 		while (true)
@@ -1155,7 +1185,7 @@ public partial class _BalanceHarness : Node
 			data.ArcaneUpgradeLevels[bought] = (data.ArcaneUpgradeLevels.TryGetValue(bought, out int had) ? had : 0) + 1;
 			left -= bestCost;
 		}
-		metaLabel = $"farmed(road {behind.Count},arcane {budget})";
+		metaLabel = $"farmed(road {behind.Count},arcane {budget},book {SpellBook.PagesFor(data)})";
 		GD.Print($"HARNESS farmed save at {stage.DisplayName}: {behind.Count} chapters behind it, {spells} spells and {boons} boons from deeds,"
 			+ $" {budget - left} of {budget} Arcane on Powers: "
 			+ string.Join(", ", FarmedPowers.Select(p => $"{p.Id} {(data.ArcaneUpgradeLevels.TryGetValue(p.Id, out int n) ? n : 0)}")));
@@ -2374,6 +2404,18 @@ public partial class _BalanceHarness : Node
 
 		CountHand(options);
 		NoteAscensionOffers(ascensions);
+		if (player != null)
+		{
+			if (bookPagesAtStart < 0)
+				bookPagesAtStart = player.BookPages;
+			if (pageOpenedAt < 0f && player.BookPages > bookPagesAtStart)
+				pageOpenedAt = elapsed;
+			if (bookFirstFullAt < 0f && player.IsSpellBookFull)
+			{
+				bookFirstFullAt = elapsed;
+				bookFirstFullLevel = player.CurrentLevel;
+			}
+		}
 
 		// --pick-every=N: decided once per menu (a reroll re-deals into the same one), and the skipped
 		// ones are skipped outright - no reroll, no bank - so the build simply stops keeping pace.
@@ -3564,6 +3606,11 @@ public partial class _BalanceHarness : Node
 			$"  timescale    : {TimeScale}x   seed: {Seed}",
 			$"  player level : {player?.CurrentLevel ?? 0}   level-ups taken: {levelUpsHandled}",
 			$"  dead level-ups: {deadLevelUps}   marginalia taken: {player?.MarginaliaTaken ?? 0}   spell slots: {player?.SpellSlots ?? Player.MaxSpellSlots}",
+			// The slow start's measure (.ai/slow-start.md section 8). The bot never takes the Penknife (it is
+			// kept out of every chest it deals), so "Penknife taken" is always 0 here and is not printed.
+			$"  spell book   : started {(bookPagesAtStart < 0 ? player?.BookPages ?? 0 : bookPagesAtStart)}"
+				+ (pageOpenedAt >= 0f ? $", page opened at {pageOpenedAt / 60f:0.0} min" : ", no page opened")
+				+ (bookFirstFullAt >= 0f ? $", first full at {bookFirstFullAt / 60f:0.0} min (level {bookFirstFullLevel})" : ", never full"),
 			SeekApotheosis || SeekAscensions ? $"  charges used : {rerollsUsed} rerolls, {bansUsed} bans" : "",
 			$"  apotheosis   : {(apotheosisTakenAt < 0f ? "never taken" : $"taken at {apotheosisTakenAt:0}s ({apotheosisTakenAt / 60f:0.0} min)")}"
 				+ (SeekApotheosis || SeekAscensions ? $"; peak element tier {peakTier}" : ""),

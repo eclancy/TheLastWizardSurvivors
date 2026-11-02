@@ -81,6 +81,11 @@ public partial class LoadoutHud : BoxContainer
 	private static readonly Color HeldRim = new(0.416f, 0.494f, 0.596f, 1f);          // steel base #6A7E98
 	private static readonly Color EmptyBacking = new(0.043f, 0.059f, 0.094f, 0.28f);
 	private static readonly Color EmptyRim = new(0.604f, 0.643f, 0.722f, 0.30f);      // bone base #9AA4B8, faint
+	// A page the book does not have yet (SpellBook, .ai/slow-start.md): quieter than an empty one, the
+	// backing half as dense and the rim a ghost, and a small lock in the middle that says why.
+	private static readonly Color LockedBacking = new(0.043f, 0.059f, 0.094f, 0.16f);
+	private static readonly Color LockedRim = new(0.604f, 0.643f, 0.722f, 0.14f);
+	private static readonly Color LockedInk = new(0.604f, 0.643f, 0.722f, 0.34f);
 	// The three milestones keep the hue their level-up family is drawn in (.ai/level-up-screen.md 2c):
 	// the mutation's gilt, the ascension's arcane glass, the apotheosis's fire.
 	private static readonly Color MutatedRim = new(0.847f, 0.690f, 0.290f, 1f);       // gold lit #D8B04A
@@ -108,7 +113,7 @@ public partial class LoadoutHud : BoxContainer
 		public bool WasSealed;
 	}
 
-	private enum SlotMark { None, Sovereign, Silenced }
+	private enum SlotMark { None, Sovereign, Silenced, Locked }
 
 	// The anointed slot's gold crown frame, the conjunction plate's gold lit (#D8B04A) and its light hot
 	// for the crown's points; the fuel is written in the same gold. A silenced slot's icon is greyed to the
@@ -378,6 +383,15 @@ public partial class LoadoutHud : BoxContainer
 					mark.DrawRect(new Rect2(2f, c.Y + 3f, width, 2f), SealWaxLit);
 			}
 		}
+		else if (kind == SlotMark.Locked)
+		{
+			// A padlock, eight units by ten, in the ghost ink: the shackle's two legs and bow, then the body.
+			Vector2 c = (size / 2f).Round();
+			mark.DrawRect(new Rect2(c.X - 3f, c.Y - 5f, 1f, 4f), LockedInk);
+			mark.DrawRect(new Rect2(c.X + 2f, c.Y - 5f, 1f, 4f), LockedInk);
+			mark.DrawRect(new Rect2(c.X - 2f, c.Y - 6f, 4f, 1f), LockedInk);
+			mark.DrawRect(new Rect2(c.X - 4f, c.Y - 1f, 8f, 6f), LockedInk);
+		}
 	}
 
 	private ChipView BuildChip(Element element)
@@ -470,11 +484,16 @@ public partial class LoadoutHud : BoxContainer
 		for (int i = 0; i < MaxSlots; i++)
 		{
 			SpellData? spell = i < spells.Count ? spells[i] : null;
-			FillSlot(slots[i], spell, visible: spell != null || i < open);
+			// The pages a full book has and this one does not yet, shown quietly so the strip says the book
+			// can grow (.ai/slow-start.md 7): Survivor's page opens one of them mid-run. The Folio's seventh
+			// is never shown locked - it is a relic, not a page to earn.
+			bool locked = spell == null && i >= open && i < Player.MaxSpellSlots;
+			FillSlot(slots[i], spell, visible: spell != null || i < open || locked);
 			// The dark wizard's seal is the Rite's seal (.ai/endgame-castle.md 6.4): one mark for "this spell is
 			// not firing", whoever closed it.
 			bool sealedByHim = spell != null && Holder.IsSlotSealed(i);
-			SlotMark kind = spell == null ? SlotMark.None
+			SlotMark kind = locked ? SlotMark.Locked
+				: spell == null ? SlotMark.None
 				: ReferenceEquals(spell, sovereign) ? SlotMark.Sovereign
 				: Holder.IsSilenced(spell) || sealedByHim ? SlotMark.Silenced
 				: SlotMark.None;
@@ -564,6 +583,11 @@ public partial class LoadoutHud : BoxContainer
 			view.Style.SetBorderWidthAll((int)SlotRim);
 			view.Level.AddThemeColorOverride("font_color", NumeralInk);
 			view.Icon.Modulate = kind == SlotMark.Silenced ? SilencedIcon : Colors.White;
+			if (kind == SlotMark.Locked)
+			{
+				view.Style.BorderColor = LockedRim;
+				view.Style.BgColor = LockedBacking;
+			}
 			if (kind == SlotMark.Silenced)
 			{
 				view.Style.BorderColor = SilencedRim;

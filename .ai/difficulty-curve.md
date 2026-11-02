@@ -277,6 +277,12 @@ the lever for it.
 
 ## 6. The Ascension is learned: the Hayward teaches it
 
+> **Superseded by the slow start (2026-11-02, `.ai/slow-start.md` section 10).** The Ascension is still
+> learned, and still around chapter 2, but a landmark teaches it now - the Pinfold, the Fields' spell vault,
+> or whichever of the three teaching vaults a save finds first - and it is learned through a lesson reel
+> after that run (`Teachings`). The Hayward teaches nothing. What follows is the reasoning for a gate at
+> all, which stands.
+
 ### 6.1 The four ways it could have been made hard at first
 
 | option | what it does | verdict |

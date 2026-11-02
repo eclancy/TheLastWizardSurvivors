@@ -142,6 +142,7 @@ public partial class CharacterSelection : Control
 			child.Free();
 
 		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+		apotheosisShown = Teachings.IsShown(saveManager?.Data, Teaching.Apotheosis);
 
 		for (int i = 0; i < characters.Count; i++)
 		{
@@ -331,6 +332,9 @@ public partial class CharacterSelection : Control
 	/// Cold", "Passive Bonus: +9 HP regeneration a minute"), each wrapping wherever its card ran out, so
 	/// no two started in the same place. A wizard not yet freed shows how he is found instead.
 	/// </summary>
+	// Whether the cards may name a wizard's Apotheosis (Teachings.IsShown), read once per build of the roster.
+	private static bool apotheosisShown = true;
+
 	private static Control BuildFacts(CharacterData character, CardState state)
 	{
 		if (state != CardState.Unlocked)
@@ -363,8 +367,10 @@ public partial class CharacterSelection : Control
 		// that apotheosis is an option"), in the ember register the strip's button and the ascension
 		// browser's entry wear. The name only: what the form does stays sealed until a run first offers
 		// it (.ai/level-up-screen.md 4e). None for a wizard without one - the Test Wizard.
+		// Not before the Ascension is learned (Teachings.IsShown, Eric's Q8 - one locked thing on show at a time):
+		// a final form named to a save that has not met the Ascension it needs is two systems at once.
 		ApotheosisDefinition apotheosis = ApotheosisCatalog.ForCharacter(character.Id);
-		if (apotheosis?.Form != null)
+		if (apotheosis?.Form != null && apotheosisShown)
 			Add("Apotheosis", CodexRows.MakeText($"\u2736 {apotheosis.Form.DisplayName}", ResponsiveLayout.TextRole.Body, CardFamilyArt.ApotheosisTitle));
 		if (!string.IsNullOrWhiteSpace(character.StartingPassiveDescription))
 			Add("Passive", StatIcons.BuildLine(character.StartingPassiveDescription, CodexRows.Stone.Ink, ResponsiveLayout.TextRole.Body, expand: false));

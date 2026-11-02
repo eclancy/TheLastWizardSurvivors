@@ -362,11 +362,21 @@ public partial class Player : CharacterBody2D
 	}
 
 	/// <summary>
-	/// Whether this save has been taught the Ascension (GlobalStatsManager.HasLearnedAscension, read when
-	/// the run starts). Until then no spell is offered its level 8 milestone, and so no Apotheosis either.
-	/// True without a save (the tool scenes that build a player bare).
+	/// Whether this save has been taught the Ascension (Teachings.HasLearned, read when the run starts, so a
+	/// lesson owed by this run's find is taught at its end). Until then no spell is offered its level 8
+	/// milestone, and so no Apotheosis either. True without a save (the tool scenes that build a player bare).
 	/// </summary>
 	public bool AscensionLearned { get; private set; } = true;
+
+	/// <summary>Taught the Apotheosis (Teachings): until then the wizard's final form is never offered.</summary>
+	public bool ApotheosisLearned { get; private set; } = true;
+
+	/// <summary>Taught Conjunctions (Teachings): until then no recipe is offered, previewed or marked.</summary>
+	public bool ConjunctionsLearned { get; private set; } = true;
+
+	/// <summary>What a sealed system's gate says it waits for (Teachings.SealedLine), from the live save.</summary>
+	private string TeachingSealedLine(Teaching system) =>
+		Teachings.SealedLine(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data, system);
 
 	/// <summary>The share of the XP bar a skipped level-up pays (Node2DGame.OnSkipRequested).</summary>
 	public const float SkipXpBarFraction = 0.5f;
@@ -448,18 +458,47 @@ public partial class Player : CharacterBody2D
 	/// </summary>
 	public int FacingSide => lastHorizontalFacing >= 0 ? 1 : -1;
 
-	// Maximum number of spells the player can have equipped at once (issue #10). The BASE book: the
-	// Blank Folio adds a page for its run, so anything asking "is the book full" reads SpellSlots.
-	// What stays on this constant is what must not move with a relic the player may never find -
-	// the element reachability floor (RegressionChecks) and the "carry six spells" deed.
+	// Maximum number of spells the player can have equipped at once (issue #10): the FULL book. A save
+	// earns its way to it (SpellBook, .ai/slow-start.md: three on a new save, the 4th from Survivor, the 5th
+	// and 6th bought), and the Blank Folio adds a page for its run, so anything asking "is the book full"
+	// reads SpellSlots. What stays on this constant is what must not move with what a save has earned -
+	// the element reachability floor (RegressionChecks), the "carry six spells" deed and the HUD's strip.
 	public const int MaxSpellSlots = 6;
+
+	/// <summary>The pages a brand-new save's book holds (SpellBook.NewSavePages).</summary>
+	public const int NewSaveSpellSlots = SpellBook.NewSavePages;
 
 	/// <summary>Pages the Blank Folio binds into the book.</summary>
 	public const int BlankFolioExtraSlots = 1;
 
-	/// <summary>How many spells this run's book holds: six, seven with the Blank Folio.</summary>
-	public int SpellSlots => MaxSpellSlots
+	// The save's book for this run (SpellBook.PagesFor): read when the run starts, and again when a deed
+	// that pays a page completes mid-run (RefreshSpellBook). The full book without a save - tools.
+	private int bookPages = MaxSpellSlots;
+
+	/// <summary>The pages the save's book holds this run, before the Blank Folio.</summary>
+	public int BookPages => bookPages;
+
+	/// <summary>How many spells this run's book holds: the save's pages, one more with the Blank Folio.</summary>
+	public int SpellSlots => bookPages
 		+ (ownedChestItems.Contains(ChestItemCatalog.BlankFolio) ? BlankFolioExtraSlots : 0);
+
+	/// <summary>
+	/// Re-reads the save's book: Survivor's page opens at 10:00 of the run that earns it (Node2DGame,
+	/// RecordAchievementNow), so the next level-up can deal a new spell. Only ever grows in a run. True when
+	/// it grew; the strip is redrawn.
+	/// </summary>
+	public bool RefreshSpellBook()
+	{
+		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (saveManager?.Data == null)
+			return false;
+		int pages = SpellBook.PagesFor(saveManager.Data);
+		if (pages <= bookPages)
+			return false;
+		bookPages = pages;
+		RaiseLoadoutChanged();
+		return true;
+	}
 
 	/// <summary>Every slot holds a spell. From here on a level-up offers no new spells.</summary>
 	public bool IsSpellBookFull => equippedSpells.Count >= SpellSlots;
@@ -891,7 +930,12 @@ public partial class Player : CharacterBody2D
 
 		saveManager.Data.ArcaneUpgradeLevels.TryGetValue("bans", out int bansLevel);
 		BansRemaining = bansLevel;
-		AscensionLearned = GlobalStatsManager.HasLearnedAscension(saveManager.Data);
+		// What the save has been taught (Teachings) and the book it holds (SpellBook), once, at the start: a
+		// lesson found in this run is taught when it ends, and only a page can open mid-run (RefreshSpellBook).
+		AscensionLearned = Teachings.HasLearned(saveManager.Data, Teaching.Ascension);
+		ApotheosisLearned = Teachings.HasLearned(saveManager.Data, Teaching.Apotheosis);
+		ConjunctionsLearned = Teachings.HasLearned(saveManager.Data, Teaching.Conjunctions);
+		bookPages = SpellBook.PagesFor(saveManager.Data);
 
 		float moveSpeedMultiplier = 1.0f + (moveSpeedLevel * 0.05f);
 		Speed *= moveSpeedMultiplier;
@@ -7213,6 +7257,9 @@ public partial class Player : CharacterBody2D
 	/// </summary>
 	private LevelUpOption TryBuildApotheosisOffer(SpellData spell, Dictionary<Element, int> baselineElementCounts)
 	{
+		// Not until a landmark has taught it (Teachings, .ai/slow-start.md section 3).
+		if (!ApotheosisLearned)
+			return null;
 		// By spell as well as wizard: a wizard who opens on a spell with forms may have one per form.
 		ApotheosisDefinition definition = ApotheosisCatalog.ForSpell(selectedCharacter?.Id, spell);
 		if (!ApotheosisCatalog.SpellMeetsGate(definition, spell, WasFusedAway(spell?.Id)))
@@ -7253,6 +7300,10 @@ public partial class Player : CharacterBody2D
 	/// </remarks>
 	public ApotheosisPreview BuildApotheosisPreview(SpellData spell)
 	{
+		// One locked thing on show at a time (Teachings.IsShown, Eric's Q8): the Apotheosis is not shown,
+		// sealed or otherwise, until the Ascension it needs has been learned.
+		if (!AscensionLearned)
+			return null;
 		ApotheosisDefinition definition = ApotheosisCatalog.ForSpell(selectedCharacter?.Id, spell);
 		if (definition?.Form == null)
 			return null;
@@ -7273,8 +7324,11 @@ public partial class Player : CharacterBody2D
 			Closed = !spell.IsApotheosis && combined,
 		};
 
-		if (!AscensionLearned)
-			preview.Requirements.Add(new AscensionRequirement { Kind = AscensionRequirementKind.Learned, Have = 0, Need = 1 });
+		// Its own lesson, after the Ascension's: until the Ascension is learned it is not shown at all (the
+		// guard at the top), and until its own is, it is shown sealed with where it is learned (Teachings).
+		if (!ApotheosisLearned)
+			preview.Requirements.Add(new AscensionRequirement { Kind = AscensionRequirementKind.Learned, Have = 0, Need = 1,
+				Line = TeachingSealedLine(Teaching.Apotheosis) });
 		preview.Requirements.Add(new AscensionRequirement
 		{
 			Kind = AscensionRequirementKind.SpellLevel,
@@ -7351,7 +7405,7 @@ public partial class Player : CharacterBody2D
 				continue;
 			if (CurrentLevel < AscensionMinimumPlayerLevel)
 				continue;
-			// Not until the Hayward has taught it (.ai/difficulty-curve.md, section 6).
+			// Not until a landmark has taught it (Teachings, .ai/slow-start.md section 3).
 			if (!AscensionLearned)
 				continue;
 
@@ -7978,13 +8032,13 @@ public partial class Player : CharacterBody2D
 			if (CurrentLevel < AscensionMinimumPlayerLevel)
 				info.UnmetRequirements.Add($"Player level {AscensionMinimumPlayerLevel} ({CurrentLevel}/{AscensionMinimumPlayerLevel})");
 
-			// The campaign's gate, before any of the run's: a new save learns the Ascension from the
-			// Hayward (GlobalStatsManager.HasLearnedAscension). Listed only while unmet, so a save that
-			// has learned it never sees the line again.
+			// The campaign's gate, before any of the run's: a new save learns the Ascension from a landmark
+			// (Teachings). Listed only while unmet, so a save that has learned it never sees the line again.
 			if (!AscensionLearned)
 			{
-				info.Requirements.Insert(0, new AscensionRequirement { Kind = AscensionRequirementKind.Learned, Have = 0, Need = 1 });
-				info.UnmetRequirements.Insert(0, GlobalStatsManager.AscensionTeacherLine);
+				string teacher = TeachingSealedLine(Teaching.Ascension);
+				info.Requirements.Insert(0, new AscensionRequirement { Kind = AscensionRequirementKind.Learned, Have = 0, Need = 1, Line = teacher });
+				info.UnmetRequirements.Insert(0, teacher);
 			}
 
 			previews.Add(info);

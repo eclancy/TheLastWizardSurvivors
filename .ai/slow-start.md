@@ -7,8 +7,8 @@ Eric, 2026-11-01:
 > increase that, like additional spell pages in the shop. In addition, we can unlock combination spells
 > and ascension via achievements or story progression. Let's plan out a good pace."
 
-**Status: answered by Eric (2026-11-02), to build.** His answers, which win over the table below
-where they differ:
+**Status: answered by Eric (2026-11-02), built on `wip/slow-start` (section 10).** His answers, which win
+over the table below where they differ:
 
 - **New systems are unlocked by an achievement and taught in a post-run cutscene.** *"I think new
   systems should be unlocked in a post-run cutscene, after fulfilling an achievement, like finding a
@@ -29,6 +29,26 @@ where they differ:
   still). The 0.10.0 updater does not know to warn before it downloads (`.ai/releasing.md`); the
   backup is still written on first launch.
 - **Questions 1, 3, 6, 7, 8, 9 and 10: yes, as recommended.**
+
+### Systems, and what teaches each (chosen by the integrator for Eric's review, 2026-11-02)
+
+Built on `wip/slow-start` (section 10). One line each, with why:
+
+| system | taught by | chapter | why |
+|---|---|---|---|
+| **the Ascension** | **the Pinfold** (`secret_pinfold`, the Fields' spell vault, pays the Familiar) | 2, the Fallow Fields | A landmark, as Eric's example asked: in every run of the chapter, five to seven chunks out, with a far tell (`achievements-and-secrets.md` 6.4) - findable by design, and the chapter the doc already gave the Ascension. The Hayward's pound: the first thing he kept from us. |
+| **the Apotheosis** | **the Fallen Star** (`secret_fallen_star`, the Circle's vault, pays Starfall) | 3, the Broken Circle | The circle where the wizards met, and a star that fell there: a wizard's final form is learned where the wizards were last whole. The doc's chapter for it. |
+| **Conjunctions** | **the Geode Heart** (`secret_geode_heart`, the Cave's vault, pays Frost Shard) | 4, the Sunken Cave | A crystal grown round a light: two things grown into one stone. The doc's chapter for it, and the first chapter with no side event, so the vault is the chapter's one find. |
+| **the Sovereign Rite** | **the Warden of the Deep** (`emberdeep_ended`), unchanged | 10, the Emberdeep | Eric's instruction: it keeps its deed, and gets its lesson reel. |
+
+**The three are a ladder, not three fixed pairs.** Whichever teacher a save finds first teaches the
+Ascension, the second the Apotheosis, the third Conjunctions (`Teachings.Owed`). In campaign order - the
+common path - each landmark teaches its own row above. Out of order (he walked past the Pinfold and
+found the Fallen Star) the find teaches the lowest system not yet learned, so nobody is taught a system
+he cannot use yet (the Apotheosis needs an ascended spell, a Conjunction two) and nobody is taught two
+at once. The achievement cards say "Frees X and teaches a lesson" for that reason, and the sealed line
+names the chapter of the next teacher not yet found ("Learned from a secret of the Fallow Fields"),
+never the secret, which is sealed until seen.
 
 On 2026-10-31 he asked for four slots as a difficulty
 lever and withdrew it ("let's stick with 6 spells available to select", `.ai/difficulty-curve.md`). This
@@ -355,3 +375,98 @@ For the agent who does. Each line is where the change lives, not how.
   Conjunctions' teachers playable and in that campaign order); `ValidateSlowStartMigration`.
 - `dotnet build` sees none of the wiring. The validator run, the harness cells and `_UiShot` of the
   results card, the shop's top section and the three-page strip (both canvases) are the checks.
+
+---
+
+## 10. What was built (2026-11-02, `wip/slow-start`)
+
+### 10.1 Where it lives
+
+| piece | where |
+|---|---|
+| **the book** | `scripts/SpellBook.cs`, the one authority: 3 (`NewSavePages`), plus every done deed's `AchievementDefinition.PageReward` (Survivor's 1), plus the Bound Pages levels, capped at `Player.MaxSpellSlots` (still 6, still the full book); 6 for a kept book or no save. `Player.SpellSlots` = `BookPages` + the Folio; `BookPages` is read in `ApplyArcaneUpgrades` and grown mid-run by `Player.RefreshSpellBook`, which `Node2DGame.RecordAchievementNow` calls when a page deed completes. |
+| **the shop** | `MainMenu.BuildUpgradeDefinitions` registers `pages`, "Bound Pages", 200 + 200, 2 levels, in a first "Spell book" section of Powers (`MainMenu.Shop.cs`). Its stat line is the save's book ("Spells held 3 -> 4", Survivor's page included). A kept book reads complete at no charge (`SpellBook.ShopLevelShown`). Icon: `pages()` in `tools/art/upgrade_icons.py`. |
+| **what is taught** | `scripts/Teachings.cs`, the one authority on "has learned X" (`HasLearned`), what may be shown (`IsShown`, Q8), what is owed (`Owed`) and where a sealed system says it is learned (`SealedLine`). `GlobalStatsManager.HasLearnedAscension` and its Hayward rule are gone. `Player` reads `AscensionLearned`, `ApotheosisLearned`, `ConjunctionsLearned` once, at the run's start. |
+| **where it is enforced** | the Ascension offer and preview (as before, `Player.GetAscensionOffers` / `BuildAscensionPreview`); the Apotheosis offer (`TryBuildApotheosisOffer`) and preview (`BuildApotheosisPreview`: null until the Ascension is learned, sealed until its own); the Conjunction offers (`TryBuildComboOffer`) and previews (`BuildComboPreviews`: empty until the Apotheosis is learned, so no linked rings on a level 8 page either); the Codex (`CodexModel`: the finals, the recipes, the Rite and the "Joins" line, each by `Teachings.IsShown`; a sealed system's chip names where it is learned); character select's Apotheosis line. |
+| **the lessons** | `scripts/Prologue.cs` plays reels now: the prologue and one two-panel reel per system (`Prologue.Reels`), from `assets/bonelight/ui/lessons/`, drawn by `tools/art/lessons.py` on the prologue's frame and pieces. `Node2DGame.Lessons.cs` gathers what the run's end owes (`GatherOwedLessons`, also a results card, `RunUnlockKind.Lesson` "Learned") and plays each over the paused run before the results (`ShowGameOver` asks first; the defeat's own sequence plays before it), embedded on canvas layer 60 (`Prologue.CreateEmbedded`). The save learns it when the reel ends, played through or skipped. Headless runs teach without the reel. Options > Story lists "Lesson: <name>" for every lesson the save has been given, beside Watch the Prologue. |
+| **telling the player** | Survivor's achievement plate gains "Spell page - your book holds 4"; a teacher's secret toast gains "Lesson - The Ascension, when this run ends". Both are the plates' own lines, so they wait in the `Announcements` queue with them and are never on screen beside another message. The results list "New spell page" and "Learned". The HUD's strip shows the pages the full book has and this one lacks as ghost frames with a small lock (`LoadoutHud`, `SlotMark.Locked`). |
+| **Q7** | Reroll is hidden while the run has none, on the level-up (`LevelUpMenu.UpdateRerollState`) as on the chest screen (which already hid it). The 5:00 reroll tip is skipped for a run with none to spend. |
+| **Q9** | `ChestItemCatalog.TeachingNamedBy` reads a relic's name, line and sets for a system's name; `Player.GetChestUnavailableItems` keeps any that names an untaught one out of the chest. No relic names one today, so it holds nothing back yet. |
+| **the Blank Folio** | its card reads "+1 spell slot for this run." |
+| **schema 22** | `SaveData.MigrateToSlowStart`: `FullBookKept` for every save with a run on record; the three ladder lessons learned (no reels) for every save that had the Ascension by the old rule (the flag, the Hayward beaten, or a chapter past the Fields opened, read from frozen lists); the Rite's lesson for a save that owns it. Written as the step after 21, which is `wip/dungeon-move`'s and not on this branch: 21 must merge before a build carrying 22 ships, or a save migrated here skips it. |
+| **validators** | `RegressionChecks.SlowStart.cs`: `ValidateSpellBook` (3 + deed pages + Bound Pages = 6; a page deed is a Feat or a Road deed before the first gate; the Folio's card), `ValidateTeachers` (each rung's teacher a built vault in a playable chapter, in campaign order; every reel's panels on disk with a one-line caption; the Rite still the Warden's; the ladder's out-of-order rule on paper), `ValidateSlowStartMigration` (sample saves at 21). `ValidateDifficultyMigration` lost its two Hayward checks; `ValidateCodex` looks for the recipes on a save that may be shown them, and checks a fresh one is shown none. |
+| **tools** | `_BalanceHarness`: `--slots=N` (`SpellBook.ToolOverride`), `--fresh-save` past the Forest marks Survivor done, `--farmed` buys Bound Pages first, `--all-unlocked` owns the full book and every lesson, and the report's "spell book" line (the book it started with, when a page opened, when it was first full). `_UiShot`: `--learned=a,b|all`, `--reel=<id>` (with `--scene=res://scenes/Prologue.tscn`), `--find-secret=<id>`; the own-everything save owns every lesson and the full book. |
+
+### 10.2 Where it departs from this doc
+
+- **The teachers are landmarks, not bosses** (Eric's answer), and a ladder rather than fixed pairs (the
+  table at the top). The Hayward no longer teaches anything; his deed reads "Unlocks Thornseed".
+- **A system is learned when its reel plays, not when its teacher is found.** The run that found it is
+  played as it began, so nothing is usable before it has been explained; a run that is quit owes the
+  lesson to the end of the next.
+- **Locked pages are shown on the strip** (the brief's "locked slots show quietly"), where section 7 said
+  never to draw them.
+- **The world map card (`StageRewards`) does not list the page or the lessons.** The teachers are secrets,
+  which the card does not name either.
+- **The Codex's Recipes tab is still there on a fresh save**: it holds the Full Set Enchantments too,
+  which are open from run 1 (Q6). Only its combinations wait for the Apotheosis.
+- **The Penknife is never taken by the harness bot** (it is kept out of every chest the bot deals), so the
+  section 8 count of it is not measured.
+
+### 10.3 Checked, and not
+
+- `dotnet build` clean; the validator: 0 errors and 4 warnings, the same four as before.
+- `_UiShot`, both canvases: the three-page strip (one held, two empty, three locked), the shop's Spell
+  book section, a panel of each reel, Survivor's plate with the page line and the strip grown to four, the
+  Pinfold's toast with the lesson line, the Codex fresh (the Ascension sealed "Learned from a secret of
+  the Fallow Fields", no Apotheosis) and with the Ascension learned (the Apotheosis sealed), character
+  select without and with the Apotheosis line, the level-up with no Reroll and the Ascension strip only
+  once learned, and a forced victory after the Pinfold: the reel over the run, then the results.
+- **Needs eyes:** the eight panels at full size on a real screen (they are generated, and judged here only
+  in screenshots); whether a ghost lock on the strip reads as "more to come" or as clutter; whether the
+  Survivor page lands as a moment on a phone. No pad has skipped a lesson; the hold is the prologue's.
+
+### 10.4 The measurement (section 8's protocol)
+
+`--fixed-fps 30 --stage=0 --minutes=19 --fresh-save --survivor --immortal --policy=ordinary --stop-overrun=60`,
+two Godots at a time. "Boss" is minutes from the boss's arrival at 15:00 to his fall; "siege" the minutes
+at the cap at least half the time; "Marg" the Marginalia taken (the heal-only card); "full" the first
+level-up that found the book full. **No run overran and no run had a dead level-up.**
+
+| cell | wizard, seed | boss | siege | Marg | full | page opened |
+|---|---|---|---|---|---|---|
+| A (3, the 4th at 10:00) | Pyromancer 1234 | 0.87 | 0 | 0 | 1.0 min (L4) | 10.4 |
+| A | Frostweaver 1234 | 1.26 | 0 | 0 | 1.1 (L4) | 10.7 |
+| A | Stormcaller 1234 | 0.54 | 0 | 3 | 1.2 (L4) | 10.1 |
+| A | Geomancer 1234 | 0.94 | 0 | 0 | 1.2 (L4) | 10.2 |
+| A | Frostweaver 99 | 0.75 | 2 | 0 | 1.3 (L4) | 10.4 |
+| A | Stormcaller 99 | **2.27** | 0 | 0 | 1.2 (L4) | 10.2 |
+| A0 (`--slots=6`) | Pyromancer 1234 | 0.53 | 0 | 0 | 3.1 (L8) | - |
+| A0 | Frostweaver 1234 | 0.86 | 2 | 0 | 3.1 (L8) | - |
+| A0 | Stormcaller 1234 | 0.50 | 0 | 0 | 3.7 (L8) | - |
+| A0 | Geomancer 1234 | **2.00** | 0 | 0 | 3.0 (L8) | - |
+| A0 | Frostweaver 99 | **2.87** | **10** | 0 | 2.8 (L7) | - |
+| A0 | Stormcaller 99 | 1.09 | 1 | 0 | 2.8 (L7) | - |
+| B (`--slots=4`) | Stormcaller 99 | 0.47 | 0 | 0 | 1.7 (L5) | - |
+| B | Stormcaller 1234 | **1.62** | 0 | 1 | 1.7 (L5) | - |
+| C (Fields, 4: Survivor done) | Frostweaver 1234 | 2.32 | 0 | 6 | 1.7 (L5) | - |
+| C | Stormcaller 1234 | 2.68 | 0 | 1 | 1.7 (L5) | - |
+
+**Against the rules:**
+
+1. **A meets chapter 1's target on five of six; Marginalia are 3 or fewer on all six.** The one miss
+   (Stormcaller at 99, the boss down in 2.27) is the boss fight's spread, not the book's: the six-page
+   book misses on two of the same six (the Geomancer at 2.00; the Frostweaver at 99 with a ten-minute
+   siege, the worst run measured), and B, four pages, passes the Stormcaller at 99 (0.47) and misses him
+   at 1234 (1.62), where three pages took 0.54. Rule 1 asks for B on a miss and for four pages if B
+   passes; B does not pass any better than A, so **a new save stays on three**. Eric's call if the spread
+   says otherwise to a person: section 8's "only a person can answer".
+2. **C does not overrun** (boss inside 3 on both; siege 0, under the 4-8 target, which section 8 calls
+   fine). Bound Pages stays 200 / 400. The Frostweaver's six Marginalia are the Fields without the
+   Ascension: a fresh save that walked past the Pinfold has every spell stopped at 7 by minute 12.
+3. and 4. (the farmed Circle, D and E) were not run.
+
+**What three pages does to the hand:** the book is full at the fourth level-up, about a minute in,
+against about three minutes on six. From there to the page at 10:00 every hand is upgrades of the three
+held spells and boons, which lasted on five of the six runs (Marginalia 0; the harness does not say
+when the Stormcaller's three came). The page opened at 10.1-10.7, at the next level-up after 10:00.

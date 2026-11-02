@@ -427,18 +427,20 @@ public partial class Node2DGame : Node2D
 		[DungeonTileRole.Detail] = new Vector2I(1, 1)
 	};
 
-	private static readonly (float Time, string Text)[] OnboardingTips = new[]
+	// NeedsRerolls: shown only to a run that has rerolls to spend (.ai/slow-start.md section 3) - a new save
+	// owns none until it buys Fate Fracture, and a tip about a button it cannot see is noise.
+	private static readonly (float Time, string Text, bool NeedsRerolls)[] OnboardingTips = new[]
 	{
-		(0f, "Tip: Stay moving and kite enemies. Standing still is lethal."),
-		(30f, "Tip: Prioritize one or two core spells before spreading upgrades."),
+		(0f, "Tip: Stay moving and kite enemies. Standing still is lethal.", false),
+		(30f, "Tip: Prioritize one or two core spells before spreading upgrades.", false),
 		// The chapter's event no longer comes to the player (.ai/side-events.md, "Finding the event"):
 		// the first run has to be told that walking is worth something.
-		(60f, "Tip: Explore. A light at the edge of the screen that is not yours marks something worth finding."),
-		(90f, "Tip: Element tags stack. Hitting 2/4/6 grants stronger passive thresholds."),
+		(60f, "Tip: Explore. A light at the edge of the screen that is not yours marks something worth finding.", false),
+		(90f, "Tip: Element tags stack. Hitting 2/4/6 grants stronger passive thresholds.", false),
 		// Was "swap low-impact spells", from before spells became permanent. Chests are carried now
 		// (DropCarriedChest), and the first elite arrives at about 2:15 - so this is when to say so.
-		(180f, "Tip: Gold-ringed elites often carry a chest, and Wardens always do."),
-		(300f, "Tip: If you're behind, use rerolls to force stronger options.")
+		(180f, "Tip: Gold-ringed elites often carry a chest, and Wardens always do.", false),
+		(300f, "Tip: If you're behind, use rerolls to force stronger options.", true)
 	};
 
 	/// <summary>The run in progress, if any. Read by CursorVisibility to know a run is being played.</summary>
@@ -7180,6 +7182,10 @@ public partial class Node2DGame : Node2D
 			parts.Add($"Wizard freed - {CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(deed.CharacterUnlockId, StringComparison.OrdinalIgnoreCase))?.Name ?? deed.CharacterUnlockId}");
 		if (deed.CurrencyReward > 0)
 			parts.Add($"Arcane Energy - {deed.CurrencyReward}");
+		// Survivor's page (SpellBook): said only where it grows the book - a kept or bought-out book is full.
+		int pages = SpellBook.PagesFor(data);
+		if (deed.PageReward > 0 && pages < Player.MaxSpellSlots)
+			parts.Add($"Spell page - your book holds {Math.Min(Player.MaxSpellSlots, pages + deed.PageReward)}");
 		return parts.Count > 0 ? string.Join("\n", parts) : deed.RewardText;
 	}
 
@@ -7234,9 +7240,23 @@ public partial class Node2DGame : Node2D
 			return;
 		// Watched deeds are never done before the run (BuildAchievementWatch), so this is the first time
 		// and CompleteNow pays its Arcane Energy; it also saves.
+		int pagesBefore = player != null && IsInstanceValid(player) ? player.BookPages : 0;
 		List<RunUnlockEntry> granted = AchievementManager.CompleteNow(saveManager, deed.Id);
 		runAchievementNames.Add(deed.DisplayName);
 		runAchievementCurrency += Math.Max(0, deed.CurrencyReward);
+		// A page opens now, in the run that earned it (.ai/slow-start.md 2.1): the next level-up may deal a
+		// new spell, and the strip draws the empty frame. On the results it is a card of its own.
+		if (deed.PageReward > 0 && player != null && IsInstanceValid(player) && player.RefreshSpellBook())
+		{
+			runDiscoveryEntries.Add(new RunUnlockEntry
+			{
+				Kind = RunUnlockKind.Page,
+				Id = deed.Id + ":page",
+				Name = "Spell page",
+				Source = $"Your book holds {player.BookPages} spells",
+			});
+			GD.Print($"Node2DGame: the book grew from {pagesBefore} to {player.BookPages} pages at {FormatTime(timeElapsed)}");
+		}
 		// The results screen shows the thing earned with the deed as how (as ApplyRunAchievements does);
 		// a deed that granted no thing is a card of its own.
 		foreach (RunUnlockEntry entry in granted)
@@ -7330,19 +7350,9 @@ public partial class Node2DGame : Node2D
 			// totals earned, then what the boss opened, then the paths the run revealed.
 			runUnlocks.Entries.InsertRange(0, runDiscoveryEntries);
 			ApplyBossVictoryUnlocks(saveManager.Data, result, runUnlocks);
-			// The run that teaches the Ascension says so (.ai/difficulty-curve.md, section 6): the player
-			// started it unlearned, and the save is learned now - the Hayward has fallen.
-			if (player != null && IsInstanceValid(player) && !player.AscensionLearned
-				&& GlobalStatsManager.HasLearnedAscension(saveManager.Data))
-			{
-				runUnlocks.Entries.Add(new RunUnlockEntry
-				{
-					Kind = RunUnlockKind.Ascension,
-					Id = "ascension_learned",
-					Name = "Ascension",
-					Source = "A spell at level 7 may now ascend",
-				});
-			}
+			// The lessons this run owes (Teachings, Node2DGame.Lessons.cs): a teacher found in it, or the Rite
+			// owned now. Listed here; taught by their reel, which plays before the results.
+			GatherOwedLessons(saveManager.Data, runUnlocks);
 			runUnlocks.Entries.AddRange(runRevealedAscensions);
 			RecordBossRush(saveManager.Data, outcome);
 			saveManager.SaveGame();
@@ -7513,6 +7523,13 @@ public partial class Node2DGame : Node2D
 		if (!force && timeElapsed < OnboardingTips[onboardingTipIndex].Time)
 			return;
 
+		// A reroll tip for a run with none to spend is skipped, and the next is considered on its own clock.
+		if (OnboardingTips[onboardingTipIndex].NeedsRerolls && (player?.RerollsRemaining ?? 0) <= 0)
+		{
+			onboardingTipIndex++;
+			return;
+		}
+
 		onboardingTipLabel.Text = OnboardingTips[onboardingTipIndex].Text;
 		onboardingTipLabel.Visible = true;
 		onboardingTipTimer = 0f;
@@ -7657,6 +7674,9 @@ public partial class Node2DGame : Node2D
 	// covers the field from below and the defeat's sting has already played (GameOverScreen.CoversFromBelow).
 	private void ShowGameOver(RunReport report, bool afterDefeat = false)
 	{
+		// A lesson owed plays first, after the defeat's sequence and before the results (Node2DGame.Lessons.cs).
+		if (PlayOwedLessonsThen(() => ShowGameOver(report, afterDefeat)))
+			return;
 		if (gameOverScene == null)
 		{
 			GD.PrintErr("GameOverScreen scene could not be loaded.");

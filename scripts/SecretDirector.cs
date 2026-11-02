@@ -500,6 +500,9 @@ public partial class SecretDirector : Node
 		}
 
 		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+		// A teacher's find may owe a lesson (Teachings), and finding it is what owes it: read before the find
+		// is recorded, and again after its deed, so the toast can say so.
+		List<Teachings.Lesson> owedBefore = Teachings.Owed(saveManager?.Data);
 		bool firstEver = saveManager != null && saveManager.Data.RecordSecretFound(secretId);
 		string paid = "";
 		if (firstEver)
@@ -522,6 +525,7 @@ public partial class SecretDirector : Node
 		List<RunUnlockEntry> granted = saveManager != null
 			? AchievementManager.CompleteNow(saveManager, AchievementDefinitions.SecretDeedId(secretId))
 			: new List<RunUnlockEntry>();
+		string lessonLine = Node2DGame.OwedLessonLine(owedBefore, Teachings.Owed(saveManager?.Data));
 		string line = firstEver || string.IsNullOrEmpty(secret.RepeatReward) ? secret.RunReward : secret.RepeatReward;
 		foreach (RunUnlockEntry entry in granted.Where(e => e.Kind == RunUnlockKind.Spell))
 		{
@@ -536,6 +540,9 @@ public partial class SecretDirector : Node
 			paid = $"Spell already known - {secret.SpellName}";
 			line = "";
 		}
+		// The lesson it owes, on the same plate: one more line, never a second message beside it.
+		if (lessonLine.Length > 0)
+			paid = paid.Length > 0 ? $"{paid}\n{lessonLine}" : lessonLine;
 
 		// Waits its turn like the achievement plate it sits beside (Announcements, Eric 2026-11-02: "make
 		// sure we can't show two announcements at the same time"): a secret found during the opening or

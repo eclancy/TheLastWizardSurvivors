@@ -794,8 +794,46 @@ def curation():
     return c
 
 
+def pages():
+    """Bound Pages: a spell book, and a new page being stitched into its spine with gold thread. +1 spell
+    slot (.ai/slow-start.md, the shop's 5th and 6th pages)."""
+    c = raster.Canvas(CELL, CELL, None)
+    p_hi, p_lit, p_base, p_shade, p_deep = _ramp("flesh")
+    r_hi, r_lit, r_base, r_shade, r_deep = _ramp("violet")
+    g_lit, g_base = T("gold", "lit"), T("gold", "base")
+    # The book, closed and standing a little turned: its cover, then the block of pages showing at the fore-edge.
+    c.poly([(7, 7), (23, 5), (25, 26), (9, 28)], r_base)
+    c.line(7, 7, 23, 5, r_lit)
+    c.line(7, 7, 9, 28, r_lit)
+    c.line(23, 5, 25, 26, r_shade)
+    c.line(9, 28, 25, 26, r_deep)
+    c.poly([(24, 6), (27, 8), (28, 27), (25, 26)], p_lit)
+    for y in range(9, 27, 2):
+        c.set(26, y, p_base)
+    c.line(25, 26, 28, 27, p_shade)
+    # The spine's bands, and the gold thread stitched through them.
+    for y in (11, 17, 23):
+        c.line(7, y, 10, y - 0, r_shade)
+    for (x, y) in ((8, 9), (8, 13), (8, 15), (9, 19), (9, 21), (9, 25)):
+        c.set(x, y, g_lit)
+    # A sigil tooled on the cover.
+    c.ring(16, 16, 4, 4, g_base, 1)
+    c.set(16, 16, E("arcane", "hot"))
+    # The new page, still loose, held up against the spine: the thread runs from it into the binding.
+    c.poly([(2, 3), (11, 1), (13, 12), (4, 14)], p_hi)
+    c.line(4, 14, 13, 12, p_base)
+    c.line(11, 1, 13, 12, p_lit)
+    for (x0, y0, x1, y1) in ((4, 5, 10, 4), (4, 8, 11, 7), (5, 11, 11, 10)):
+        c.line(x0, y0, x1, y1, T("violet", "lit"))
+    c.line(6, 13, 8, 16, g_lit)
+    c.set(8, 17, g_base)
+    _glint(c, 11, 2, "arcane")
+    return c
+
+
 # The shop's order (MainMenu.BuildUpgradeDefinitions), which is also the preview sheet's.
 ICONS = [
+    ("pages", pages),
     ("damage", damage),
     ("recovery", recovery),
     ("cooldowns", cooldowns),

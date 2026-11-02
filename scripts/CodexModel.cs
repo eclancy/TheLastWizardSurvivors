@@ -738,6 +738,9 @@ public sealed class CodexModel
 			if (options.Count == 0)
 				return;
 			int cap = Player.CardLevelCap(spell);
+			// Not yet taught (Teachings): where it is learned, first, as the run's own gate list has it.
+			if (!Teachings.HasLearned(save, Teaching.Ascension))
+				tree.AscensionGates.Add(new CodexChip { Text = Teachings.SealedLine(save, Teaching.Ascension), Met = false });
 			tree.AscensionGates.Add(new CodexChip { Text = $"Spell {cap}", Need = cap });
 			tree.AscensionGates.Add(new CodexChip { Text = $"You {Player.AscensionMinimumPlayerLevel}", Need = Player.AscensionMinimumPlayerLevel });
 			// The element gate is the path's own when it carries one, else any of the spell's; written once on
@@ -759,9 +762,12 @@ public sealed class CodexModel
 			}
 		}
 
-		// "Joins Starfall: Constellation" when a recipe the save knows names this path.
+		// "Joins Starfall: Constellation" when a recipe the save knows names this path. Not before Conjunctions
+		// may be shown (Teachings.IsShown): the line names a system the save has not met.
 		private string JoinsLine(string spellId, string ascensionId)
 		{
+			if (!Teachings.IsShown(save, Teaching.Conjunctions))
+				return null;
 			foreach (ComboDefinition recipe in ComboCatalog.Naming(spellId, ascensionId))
 			{
 				if (!ComboCatalog.IsKnown(recipe, save))
@@ -775,6 +781,10 @@ public sealed class CodexModel
 
 		private void BuildFinals(CodexForm tree, SpellData form, SpellData held, EquippedSpellInfo preview)
 		{
+			// One locked thing on show at a time (Teachings.IsShown, Eric's Q8): no final form, sealed or not,
+			// until the Ascension it needs has been learned.
+			if (!Teachings.IsShown(save, Teaching.Apotheosis))
+				return;
 			if (inRun)
 			{
 				// The wizard's own, on his own spell only (Player.BuildApotheosisPreview).
@@ -848,6 +858,9 @@ public sealed class CodexModel
 			};
 			// The gate as ApotheosisCatalog.SpellMeetsGate states it (Eric, 2026-11-02): no path and no element
 			// are named, so nothing here can give a sealed Ascension away.
+			// Not yet taught (Teachings): where it is learned comes first, as the run's own gate list has it.
+			if (!Teachings.HasLearned(save, Teaching.Apotheosis))
+				node.Chips.Add(new CodexChip { Text = Teachings.SealedLine(save, Teaching.Apotheosis), Met = false });
 			node.Chips.Add(new CodexChip { Text = $"Spell {form.MaxLevel}", Need = form.MaxLevel });
 			node.Chips.Add(new CodexChip { Text = AscendedChip });
 			node.Chips.Add(new CodexChip { Text = NotCombinedChip });
@@ -877,8 +890,9 @@ public sealed class CodexModel
 					chips.AddRange(ElementChips(gate, measured: true));
 					break;
 				case AscensionRequirementKind.Learned:
+					// Where it is learned (Teachings.SealedLine), when the gate says.
 					if (!gate.Met)
-						chips.Add(new CodexChip { Text = "Not yet learned", Met = false });
+						chips.Add(new CodexChip { Text = string.IsNullOrEmpty(gate.Line) ? "Not yet learned" : gate.Line, Met = false });
 					break;
 				case AscensionRequirementKind.Ascended:
 					chips.Add(new CodexChip { Text = AscendedChip, Met = gate.Met });
@@ -992,11 +1006,16 @@ public sealed class CodexModel
 		{
 			foreach (ComboDefinition recipe in ComboCatalog.All)
 			{
+				// One locked thing on show at a time (Teachings.IsShown, Eric's Q8): the Rite once it is owned or
+				// Conjunctions are learned, and the recipes once the Apotheosis is.
 				if (recipe.IsRite)
 				{
-					yield return RiteEntry(recipe);
+					if (Teachings.IsShown(save, Teaching.SovereignRite))
+						yield return RiteEntry(recipe);
 					continue;
 				}
+				if (!Teachings.IsShown(save, Teaching.Conjunctions))
+					continue;
 				SpellData template = ComboCatalog.Template(recipe);
 				ComboPreview preview = context.Combos?.FirstOrDefault(c => c != null && c.Id.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase));
 				bool known = ComboCatalog.IsKnown(recipe, save) || preview != null;

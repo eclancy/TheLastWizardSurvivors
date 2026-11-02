@@ -310,16 +310,31 @@ public partial class Player
 	public IReadOnlyCollection<string> GetBannedRelicIds() => bannedRelicIds;
 
 	/// <summary>
-	/// The relics a chest must not deal now, owned or not: every relic struck this run, and the Scribe's
-	/// Penknife while it has nothing to cut (CanUsePenknife). Built per chest, never per frame.
+	/// The relics a chest must not deal now, owned or not: every relic struck this run, the Scribe's
+	/// Penknife while it has nothing to cut (CanUsePenknife), and any relic whose card names a system this
+	/// run has not been taught (ChestItemCatalog.TeachingNamedBy, Eric's Q9). Built per chest, never per frame.
 	/// </summary>
 	public List<string> GetChestUnavailableItems()
 	{
 		var unavailable = new List<string>(bannedRelicIds);
 		if (!CanUsePenknife)
 			unavailable.Add(ChestItemCatalog.ScribesPenknife);
+		foreach (string id in ChestItemCatalog.AllItemIds)
+		{
+			if (ChestItemCatalog.TeachingNamedBy(id) is Teaching named && !HasLearnedForRun(named))
+				unavailable.Add(id);
+		}
 		return unavailable;
 	}
+
+	// What this run was taught, by the flags read at its start (the Rite by ownership, live, as its offer is).
+	private bool HasLearnedForRun(Teaching system) => system switch
+	{
+		Teaching.Ascension => AscensionLearned,
+		Teaching.Apotheosis => ApotheosisLearned,
+		Teaching.Conjunctions => ConjunctionsLearned,
+		_ => Teachings.HasLearned(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data, Teaching.SovereignRite),
+	};
 
 	/// <summary>Adds to the run's reroll and ban pools. Tools (_UiShot --chest-charges) and, later, the Bone Dice.</summary>
 	public void AddLevelUpCharges(int rerolls, int bans)
