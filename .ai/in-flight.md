@@ -219,7 +219,7 @@ builds to 120 and seven.
   0.5% damage a fuel, gate level 28, offered at minutes 10.4-12.2; `.ai/sovereign-spell.md` 8), the
   defeat sequence and folded results (`DefeatSequence.cs`, `Node2DGame.Defeat.cs`; three generated
   sounds nobody has listened to yet), Report a bug moved into Options, Testing hidden in release
-  builds. **Building:** the Codex as layout **B, the book** (Eric: "build the one you think makes the
+  builds. **Merged since:** the Codex as layout **B, the book** (index grouped in `Element` enum order - there is no element wheel) (Eric: "build the one you think makes the
   most sense and is easiest to read on phone", revisit when votes come in; it must also stop showing
   "L8" on the Rite's recipe), the first item wave. **Votes:** Eric wants them posted through the bug intake, so the vote page is
   being built on ecec.dev (branch `spell-index-vote` in the website repo, worktree `../ecec-spell-vote`;
