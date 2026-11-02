@@ -126,7 +126,11 @@ builds to 120 and seven.
    the one he missed" animates creatures searching for the wizard while he hides cleverly; a button on
    the world map to replay the intro, **for testing, to be removed later**. And **Laelaps wears the
    wizard outfit** (the familiar hound's hat, mantle and star collar, `tools/art/laelaps.py`).
-6. **Wizard clues and the ice lake**: every wizard's hint becomes a cue in the world from its direction
+6. **Wizard clues and the ice lake** (merged: a cue in each site's language from its direction, the line
+   fading in on a dithered capsule clear of the quest tracker, Vainamoinen in a block at the centre of a
+   640 px living lake, clue lines in italics under each chapter note's intro (the intro now upright), and
+   **`Announcements`: one message on screen at a time**, the boss banner never waiting; First Blood in
+   the opening now waits about 11 s, one constant. Open for Eric: keep the vague vault clue?): every wizard's hint becomes a cue in the world from its direction
    (the singer: musical notes drifting in from his side, and his singing heard), its line fading in on
    screen as a hint rather than in a speech bubble; all wizards' clues this way. The wizard trapped in
    ice sits in the centre of a large, magically animated lake (the current art reads corny).
@@ -212,6 +216,11 @@ most merges: keep both sides. **Five agents at once hit the 5-hour limit within 
 or three goes further, and agents should keep tool output short.
 
 ## 7. Loose ends
+
+- **`_BossProbe` drops drain ticks on a loaded machine**: at its default `--timescale=8` a slow frame's
+  delta covers several 0.25 s ticks but `sinceDrain = 0` grants one, so a fight measures longer under
+  load (Elderbark 118 s with three agents' Godots running, 40.7 s at `--timescale=2`). Subtract the
+  interval instead of zeroing, or read fight lengths at `--timescale=2` when other Godots are running.
 
 - **An intermittent `InvalidOperationException: Handle is not initialized`** (a freed Godot object used
   from C#): seen 2026-11-01 in `SpawnEnemy` (a Throne run), inside `RegressionChecks.ValidateFear` (a phone
