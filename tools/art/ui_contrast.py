@@ -376,6 +376,33 @@ def report_pairs(add, stone_ground):
         add("report a bug field (stone face)", STONE_FACE, ink_name, ink, BODY)
 
 
+DANGER_INK = h2rgb(f2h(0.949, 0.541, 0.502))   # MainMenu.Options.cs DangerInk
+APOTHEOSIS_TITLE = h2rgb(f2h(1.0, 0.784, 0.282))  # CardFamilyArt.ApotheosisTitle, fire hot
+
+
+def options_pairs(add, stone_ground, rev):
+    """The settings screens (SettingsRows, MainMenu.Options.cs): every row writes in the stone inks on
+    the bare stone panel; the difficulty choice writes on the stone button frames - the soft ink on
+    the unlit frame it rests on, the heading gold on the pressed frame of the chosen one - and Reset
+    Progress writes in the danger red on the unlit frame and on the lit one it wears when selected."""
+    add("settings row (stone panel)", stone_ground, "Ink (setting name)", STONE_INK, BODY)
+    add("settings row (stone panel)", stone_ground, "InkMeta (run log status)", STONE_INK_META, BODY)
+    quiet = centre(load(UI + "ui-button-disabled.png", rev))
+    pressed = centre(load(UI + "ui-button-pressed.png", rev))
+    lit = centre(load(UI + "ui-button-hover.png", rev))
+    add("choice, resting (unlit frame)", quiet, "InkSoft (choice)", STONE_INK_SOFT, BODY)
+    add("choice, chosen (pressed frame)", pressed, "Heading (chosen)", STONE_HEADING, BODY)
+    add("reset progress (unlit frame)", quiet, "danger red", DANGER_INK, BODY)
+    add("reset progress (lit frame)", lit, "danger red", DANGER_INK, BODY)
+    # The character select (CharacterSelection.BuildFacts): the facts table on a card's stone face
+    # and on the detail pane's stone panel. Its keys and values are CodexRows inks; the apotheosis
+    # name is CardFamilyArt.ApotheosisTitle.
+    for name, g in (("wizard card (stone face)", STONE_FACE), ("wizard detail (stone panel)", stone_ground)):
+        add(name, g, "InkMeta (Spell, Passive)", STONE_INK_META, BODY)
+        add(name, g, "Ink (spell, passive)", STONE_INK, BODY)
+        add(name, g, "ApotheosisTitle (form)", APOTHEOSIS_TITLE, BODY)
+
+
 # --- the card families (scripts/CardFamilyArt.cs, .ai/level-up-screen.md "The card families") ----
 # Copied from CardFamilyArt: change one there, change it here.
 # Every spell card is the parchment page and writes in the page's inks (INK, INK_SOFT, RUBRIC,
@@ -672,6 +699,7 @@ def measure(rev=None):
         ascension_pairs(add, centre(vellum))
         report_pairs(add, centre(panel))
         evolution_codex_pairs(add, centre(panel))
+        options_pairs(add, centre(panel), rev)
         family_pairs(add, rev, floors)
         hud_pairs(add)
         tree_pairs(add, rev, centre(vellum), floors)

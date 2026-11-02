@@ -45,30 +45,8 @@ public partial class MainMenu : Control
 	private ColorRect scrim;
 	private Control achievementsPanel = null!;
 	private Control arcaneUpgradesPanel = null!;
+	// The Options panel's rows are built and kept in MainMenu.Options.cs.
 	private Control optionsPanel = null!;
-	private HSlider masterVolumeSlider = null!;
-	private HSlider musicVolumeSlider = null!;
-	private HSlider sfxVolumeSlider = null!;
-	private CheckButton muteToggle = null!;
-	private CheckButton onboardingTipsToggle = null!;
-	private CheckButton damageNumbersToggle = null!;
-	private CheckButton reduceShakeToggle = null!;
-	private CheckButton playtestModeToggle = null!;
-	private OptionButton balancePresetOption = null!;
-	private Button openLatestPlaytestLogButton = null!;
-	private Button openPlaytestLogFolderButton = null!;
-	private Label playtestChecklistStatusLabel = null!;
-	private bool isInitializingPlaytestChecklist;
-	private static readonly (string Id, string Label)[] PlaytestChecklistItems =
-	{
-		("run_default", "Run one game on Default preset"),
-		("run_casual", "Run one game on Casual preset"),
-		("run_hardcore", "Run one game on Hardcore preset"),
-		("tips_toggle", "Verify onboarding tips toggle behavior"),
-		("reward_diff", "Verify reward multipliers differ by preset")
-	};
-	private readonly List<CheckButton> playtestChecklistBoxes = new();
-	private readonly Dictionary<string, CheckButton> playtestChecklistById = new();
 	private VBoxContainer achievementList = null!;
 	private VBoxContainer achievementSummary = null!;
 	// The shop's list: a column of sections, each a grid of cards (MainMenu.Shop.cs).
@@ -119,7 +97,6 @@ public partial class MainMenu : Control
 		optionsPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/OptionsPanel");
 		EnsureUnlocksUi();
 		EnsureShopHeader();
-		EnsureResetProgressUi();
 
 		startRunButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/MainPanel/MenuButtons/StartRunButton");
 		arcaneUpgradesButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/MainPanel/MenuButtons/ProgressionRow/ShopColumn/ArcaneUpgradesButton");
@@ -139,27 +116,14 @@ public partial class MainMenu : Control
 		backFromArcaneButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel/ArcaneUpgradesVBox/BackFromArcaneButton");
 		backFromAchievementsButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/AchievementsPanel/AchievementsVBox/BackFromAchievementsButton");
 		backFromOptionsButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/BackFromOptionsButton");
-		masterVolumeSlider = GetNodeOrNull<HSlider>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/MasterRow/MasterVolumeSlider") ?? EnsureMasterVolumeSlider();
-		musicVolumeSlider = GetNodeOrNull<HSlider>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/MusicRow/MusicVolumeSlider") ?? EnsureMusicVolumeSlider();
-		sfxVolumeSlider = GetNodeOrNull<HSlider>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/SfxRow/SfxVolumeSlider") ?? EnsureSfxVolumeSlider();
-		muteToggle = GetNode<CheckButton>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/MuteToggle");
 
 		// After every GetNode above, never before: this moves the button stack out of the scene's
 		// container tree, and the paths have to resolve against the scene as it was authored.
 		LayoutAroundTitleArt();
 		EnsureReportBugButton();
 		LayoutUtilityRow();
-		onboardingTipsToggle = GetNodeOrNull<CheckButton>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/OnboardingTipsToggle") ?? EnsureOnboardingTipsToggle();
-		// Before EnsureOptionsScroll wraps the list, like every row added here.
-		damageNumbersToggle = EnsureDamageNumbersToggle();
-		reduceShakeToggle = EnsureReduceShakeToggle();
-		EnsureWatchPrologueButton();
-		playtestModeToggle = GetNodeOrNull<CheckButton>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/PlaytestModeToggle") ?? EnsurePlaytestModeToggle();
-		balancePresetOption = GetNodeOrNull<OptionButton>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/BalancePresetRow/BalancePresetOption") ?? EnsureBalancePresetOption();
-		EnsurePlaytestToolkitUi();
-		EnsureOptionsScroll();
+		BuildOptions();
 		ApplyMenuSkin();
-		ApplyOptionsSolidBackground();
 
 		// The shop needs its definitions before its cards; the boons' pages read BoonCatalog, not these
 		// entries (the shop's spell pages did, until it stopped selling spells).
@@ -175,26 +139,10 @@ public partial class MainMenu : Control
 		backFromArcaneButton.Pressed += ShowMainPanel;
 		backFromAchievementsButton.Pressed += ShowMainPanel;
 		backFromOptionsButton.Pressed += ShowMainPanel;
-		masterVolumeSlider.ValueChanged += OnMasterVolumeChanged;
-		musicVolumeSlider.ValueChanged += OnMusicVolumeChanged;
-		sfxVolumeSlider.ValueChanged += OnSfxVolumeChanged;
-		muteToggle.Toggled += OnMuteToggled;
-		onboardingTipsToggle.Toggled += OnOnboardingTipsToggled;
-		damageNumbersToggle.Toggled += pressed => DisplaySettings.StoreDamageNumbers(this, pressed);
-		reduceShakeToggle.Toggled += pressed => DisplaySettings.StoreReduceShake(this, pressed);
-		playtestModeToggle.Toggled += OnPlaytestModeToggled;
-		balancePresetOption.ItemSelected += OnBalancePresetSelected;
-		openLatestPlaytestLogButton.Pressed += OnOpenLatestPlaytestLogPressed;
-		openPlaytestLogFolderButton.Pressed += OnOpenPlaytestLogFolderPressed;
-		foreach (CheckButton checkbox in playtestChecklistBoxes)
-			checkbox.Toggled += _ => UpdatePlaytestChecklistStatus();
-		foreach (CheckButton checkbox in playtestChecklistBoxes)
-			checkbox.Toggled += _ => PersistPlaytestChecklistState();
 
 		RefreshArcaneEnergy();
 		RefreshUpgradeControls();
 		RefreshAchievementCards();
-		InitializeOptionsState();
 		ShowMainPanel();
 		PlayMenuMusic();
 
@@ -260,15 +208,13 @@ public partial class MainMenu : Control
 		// A reference, not a destination: the quiet frame Report a bug wears, at the same size.
 		StyleMenuTier(spellIndexButton, MenuTier.Tertiary);
 		ResponsiveLayout.SetFont(spellIndexButton, ResponsiveLayout.TextRole.Label);
-		if (resetProgressButton != null)
-			StyleMenuTier(resetProgressButton, MenuTier.Tertiary);
 
 		BonelightSkin.StyleButton(backFromArcaneButton);
+		// In the carved face, as the other panels' Back is: the scene gave this one a size and the
+		// prose face, so Powers was the one panel whose Back read differently (menu pass, 2026-11-01).
+		ResponsiveLayout.SetFont(backFromArcaneButton, ResponsiveLayout.TextRole.Title);
 		BonelightSkin.StyleButton(backFromAchievementsButton);
 		BonelightSkin.StyleButton(backFromOptionsButton);
-
-		BonelightSkin.StyleButton(openLatestPlaytestLogButton);
-		BonelightSkin.StyleButton(openPlaytestLogFolderButton);
 	}
 
 	private enum MenuTier { Primary, Secondary, Tertiary }
@@ -298,40 +244,6 @@ public partial class MainMenu : Control
 		});
 	}
 
-	// Solid dark backer so the options text stays readable over the busy fantasy backdrop.
-	private void ApplyOptionsSolidBackground()
-	{
-		if (optionsPanel == null || optionsPanel.GetNodeOrNull<Panel>("OptionsSolidBackground") != null)
-			return;
-
-		var bg = new Panel
-		{
-			Name = "OptionsSolidBackground",
-			MouseFilter = Control.MouseFilterEnum.Ignore
-		};
-		bg.AnchorLeft = 0.5f;
-		bg.AnchorRight = 0.5f;
-		bg.AnchorTop = 0f;
-		bg.AnchorBottom = 1f;
-		bg.OffsetLeft = -300f;
-		bg.OffsetRight = 300f;
-		bg.OffsetTop = 8f;
-		bg.OffsetBottom = -8f;
-
-		var style = new StyleBoxFlat
-		{
-			BgColor = new Color(0.06f, 0.07f, 0.10f, 0.97f),
-			BorderColor = new Color(0.45f, 0.38f, 0.22f, 0.9f)
-		};
-		style.SetBorderWidthAll(2);
-		style.SetCornerRadiusAll(12);
-		style.SetContentMarginAll(12);
-		bg.AddThemeStyleboxOverride("panel", style);
-
-		optionsPanel.AddChild(bg);
-		optionsPanel.MoveChild(bg, 0);
-	}
-
 	private void PlayMenuMusic()
 	{
 		// Through the catalog rather than by path, via the one helper the title also uses. There
@@ -340,136 +252,6 @@ public partial class MainMenu : Control
 		GetNodeOrNull<MusicPlayer>("/root/MusicPlayer")?.PlayMenuMusic();
 	}
 
-	// Two-press reset, no dialog: the first press arms it and relabels, the second wipes. A confirm
-	// dialog would be better, but this is a development affordance and an accidental single click
-	// must never be able to destroy a save.
-	private Button resetProgressButton;
-	private bool resetArmed;
-
-	// Reset Progress lives INSIDE Options, not on the main menu.
-	//
-	// It used to sit in the bottom row of the menu stack next to Options, at the same size and in
-	// nearly the same style - one press away from wiping a save, presented as a peer of the button
-	// that opens the volume sliders. Two presses are still required to confirm, but the press that
-	// arms it should not be one the player can reach by accident on the way to Start Run.
-	//
-	// It goes at the END of the options list, after the sliders and before Back, because the last
-	// thing in a settings panel is where destructive actions are expected to be.
-	private void EnsureResetProgressUi()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>(
-			"MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null || optionsVBox.GetNodeOrNull<Button>("ResetProgressButton") != null)
-			return;
-
-		resetProgressButton = new Button
-		{
-			Name = "ResetProgressButton",
-			Text = "Reset Progress",
-			CustomMinimumSize = new Vector2(220, 50)
-		};
-		ResponsiveLayout.SetFont(resetProgressButton, ResponsiveLayout.TextRole.Label);
-		resetProgressButton.AddThemeColorOverride("font_color", new Color(0.86f, 0.56f, 0.56f));
-		resetProgressButton.Pressed += OnResetProgressPressed;
-		optionsVBox.AddChild(resetProgressButton);
-	}
-
-	/// <summary>
-	/// Puts everything between the title and Back into a vertical-only ScrollContainer.
-	/// </summary>
-	/// <remarks>
-	/// Options was the one panel in the game with no scroll, and it has since grown a playtest
-	/// toolkit and an eight-item checklist - so the bottom of the list simply ran off the panel,
-	/// with Reset Progress and Back among the things that could be pushed out of reach.
-	///
-	/// Done in code, after every Ensure* helper has added its row, rather than in the scene: the
-	/// helpers add to OptionsVBox by path, so a scroll sitting in the scene between them and it
-	/// would have to be threaded through every one of them. Inserting it last costs one reparenting
-	/// loop and leaves those paths alone - every path lookup into OptionsVBox happens earlier in
-	/// _Ready than this, and none of them runs again.
-	///
-	/// The title and Back stay OUTSIDE the scroll, pinned. A Back button that scrolls away is a
-	/// dead end.
-	/// </remarks>
-	private void EnsureOptionsScroll()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>(
-			"MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null || optionsVBox.GetNodeOrNull<ScrollContainer>("OptionsScroll") != null)
-			return;
-
-		var scroll = new ScrollContainer
-		{
-			Name = "OptionsScroll",
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-			HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
-			FollowFocus = true
-		};
-		var inner = new VBoxContainer
-		{
-			Name = "OptionsScrollBox",
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-		};
-		inner.AddThemeConstantOverride("separation", 12);
-		scroll.AddChild(inner);
-
-		// Collect first, then reparent: moving children while iterating the live list skips half
-		// of them.
-		var movable = new List<Node>();
-		foreach (Node child in optionsVBox.GetChildren())
-		{
-			if (child.Name == "OptionsTitle" || child.Name == "BackFromOptionsButton"
-				|| child.Name == "OptionsSolidBackground")
-				continue;
-			movable.Add(child);
-		}
-		foreach (Node child in movable)
-		{
-			optionsVBox.RemoveChild(child);
-			inner.AddChild(child);
-		}
-
-		optionsVBox.AddChild(scroll);
-		Button back = optionsVBox.GetNodeOrNull<Button>("BackFromOptionsButton");
-		optionsVBox.MoveChild(scroll, back != null ? back.GetIndex() : optionsVBox.GetChildCount() - 1);
-
-		// Reset Progress goes last, HERE, rather than earlier against OptionsVBox. Ordering it
-		// before this point does not survive: the toggles, the preset row and the toolkit are each
-		// added by their own Ensure* helper which appends and then repositions itself relative to
-		// Back, so anything placed "last" beforehand gets stepped over by the next helper to run.
-		// This is the only moment the list is complete and nothing else will touch it.
-		if (resetProgressButton != null && resetProgressButton.GetParent() == inner)
-			inner.MoveChild(resetProgressButton, inner.GetChildCount() - 1);
-	}
-
-	private void OnResetProgressPressed()
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null || resetProgressButton == null)
-			return;
-
-		if (!resetArmed)
-		{
-			resetArmed = true;
-			resetProgressButton.Text = "Reset Progress — press again to confirm";
-			return;
-		}
-
-		resetArmed = false;
-		if (!saveManager.ResetProgress())
-		{
-			// The old save could not be kept, so nothing was reset (SaveManager.ResetProgress).
-			resetProgressButton.Text = "Reset Progress — could not back up the save";
-			return;
-		}
-		resetProgressButton.Text = "Reset Progress";
-
-		// Everything on this screen is a view over the save, so all of it is now stale.
-		RefreshArcaneEnergy();
-		RefreshUpgradeControls();
-		RefreshAchievementCards();
-	}
 
 	// Achievements (once Unlocks, once Deeds; .ai/achievements-and-secrets.md section 4): every
 	// achievement in the game, listed or revealed as the player plays. Every entry pays something - a
@@ -656,7 +438,9 @@ public partial class MainMenu : Control
 			rootDetailLabel.AddThemeConstantOverride("outline_size", 5);
 			// "\n", not Environment.NewLine: on Windows that is "\r\n", which a Label draws as two
 			// breaks, and the two lines stood a blank line apart.
-			rootDetailLabel.Text = $"Preset: {presetName}" + (detailOnOneLine ? " - " : "\n")
+			// "Difficulty", the word Options uses for the same choice (it said "Preset" here and "Run
+			// Difficulty Curve" there until the menu pass of 2026-11-01).
+			rootDetailLabel.Text = $"Difficulty: {presetName}" + (detailOnOneLine ? " - " : "\n")
 				+ $"Next run gain x{nextRunPreview:0.00} ({streakTag})";
 		}
 	}
@@ -671,31 +455,6 @@ public partial class MainMenu : Control
 			return;
 		}
 		GetTree().ChangeSceneToFile("res://scenes/CharacterSelection.tscn");
-	}
-
-	// Watch the Prologue, in Options: the story again, on demand, and back to this menu after.
-	private Button EnsureWatchPrologueButton()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return null;
-
-		var button = new Button
-		{
-			Name = "WatchPrologueButton",
-			Text = "Watch the Prologue",
-			CustomMinimumSize = new Vector2(220, 50)
-		};
-		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
-		BonelightSkin.StyleButton(button);
-		button.Pressed += () => Prologue.Play(this, Prologue.After.Menu);
-		optionsVBox.AddChild(button);
-		// Under the display toggles, above the playtest toolkit: with the things a player sets, not
-		// with the ones a tester does.
-		Node after = optionsVBox.GetNodeOrNull("ReduceShakeToggle") ?? optionsVBox.GetNodeOrNull("DamageNumbersToggle")
-			?? optionsVBox.GetNodeOrNull("MuteToggle");
-		optionsVBox.MoveChild(button, after != null ? after.GetIndex() + 1 : Math.Max(0, optionsVBox.GetChildCount() - 2));
-		return button;
 	}
 
 	// The shop is one button again, Powers, over the purse it spends. From 2026-10-28 to 2026-10-30 it
@@ -764,6 +523,12 @@ public partial class MainMenu : Control
 
 	private void OnViewportSizeChanged()
 	{
+		// Options' two columns of sections fold to one as the codex lists do (MainMenu.Options.cs).
+		if (optionsColumns != null && optionsColumns.Columns != CodexRows.ColumnsFor(this))
+		{
+			optionsColumns.Columns = CodexRows.ColumnsFor(this);
+			ChainOptionsFocus();
+		}
 		// The shop keeps its own count: it is rebuilt only when ITS columns are wrong, or every resize
 		// event of a window being dragged would rebuild it and throw the selection back to the top.
 		if (arcaneUpgradesPanel.Visible && CodexRows.ColumnsFor(this) != shopColumnsBuilt)
@@ -803,9 +568,9 @@ public partial class MainMenu : Control
 
 	private void OnOptionsPressed()
 	{
-		AutoUpdatePlaytestChecklistFromTelemetry();
-		UpdatePlaytestChecklistStatus();
+		DisarmReset();
 		ShowPanel(optionsPanel);
+		FocusFirstOption();
 	}
 
 	// The title artwork is 720x1680 drawn at a whole x2 and centred on the canvas, and the canvas
@@ -1030,7 +795,8 @@ public partial class MainMenu : Control
 		ShowMainPanel();
 	}
 
-	private const float OptionsColumnHalfWidth = 420f;
+	// Two columns of settings since the menu pass of 2026-11-01 (MainMenu.Options.cs); it was one, 840 wide.
+	private const float OptionsColumnHalfWidth = 560f;
 
 	private void ShowPanel(Control panelToShow)
 	{
@@ -1068,651 +834,29 @@ public partial class MainMenu : Control
 		if (GetNodeOrNull<Control>("MarginContainer/VBoxContainer/Spacer") is Control spacer)
 			spacer.Visible = atRoot;
 
-		// Options is a column of sliders and toggles; on a PC's landscape canvas a full-width panel
-		// stretched every slider across 1180 units. A centred column instead. The phone keeps the width.
+		// Options is two columns of sliders and switches; on a PC's landscape canvas a full-width panel
+		// stretched every slider across 1180 units. A centred block instead. The phone keeps the width.
 		if (!ResponsiveLayout.IsNarrow(this))
 		{
 			optionsPanel.AnchorLeft = 0.5f;
 			optionsPanel.AnchorRight = 0.5f;
-			optionsPanel.OffsetLeft = -OptionsColumnHalfWidth;
-			optionsPanel.OffsetRight = OptionsColumnHalfWidth;
+			// Never past the menu's own margin (40 a side), which a 4:3 monitor's 960 would be.
+			float half = Mathf.Min(OptionsColumnHalfWidth, (ResponsiveLayout.ViewportSize(this).X - 80f) / 2f);
+			optionsPanel.OffsetLeft = -half;
+			optionsPanel.OffsetRight = half;
+		}
+		else
+		{
+			// On a phone it reaches into the menu's margin as the codex panels do (ApplyCodexPanelWidth):
+			// width is the scarce axis there, and a slider row wants every unit of it.
+			optionsPanel.OffsetLeft = -24f;
+			optionsPanel.OffsetRight = 24f;
 		}
 		ApplyCodexPanelWidth();
 
 		achievementsPanel.Visible = panelToShow == achievementsPanel;
 		arcaneUpgradesPanel.Visible = panelToShow == arcaneUpgradesPanel;
 		optionsPanel.Visible = panelToShow == optionsPanel;
-	}
-
-	private void InitializeOptionsState()
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager != null)
-		{
-			onboardingTipsToggle.ButtonPressed = saveManager.Data.EnableGameplayOnboardingTips;
-			damageNumbersToggle.SetPressedNoSignal(saveManager.Data.ShowDamageNumbers);
-			reduceShakeToggle.SetPressedNoSignal(saveManager.Data.ReduceScreenShake);
-			playtestModeToggle.ButtonPressed = saveManager.Data.PlaytestModeEnabled;
-			SetBalancePresetSelection(GlobalStatsManager.NormalizeBalancePresetId(saveManager.Data.BalancePresetId));
-			ApplyPlaytestChecklistState(saveManager.Data.PlaytestChecklistState);
-			AutoUpdatePlaytestChecklistFromTelemetry();
-		}
-		UpdatePlaytestChecklistStatus();
-
-		int masterBus = AudioServer.GetBusIndex("Master");
-		if (masterBus >= 0)
-		{
-			masterVolumeSlider.Value = Mathf.DbToLinear(AudioServer.GetBusVolumeDb(masterBus));
-			muteToggle.ButtonPressed = AudioServer.IsBusMute(masterBus);
-		}
-
-		int musicBus = AudioServer.GetBusIndex(MusicPlayer.ResolveMusicBusName());
-		if (musicBus >= 0)
-		{
-			musicVolumeSlider.Value = Mathf.DbToLinear(AudioServer.GetBusVolumeDb(musicBus));
-		}
-
-		sfxVolumeSlider.Value = AudioSettings.GetBusLinear(SfxPlayer.ResolveSfxBusName());
-	}
-
-	// All three of these go through AudioSettings rather than touching AudioServer directly, so
-	// that a slider move is also written to the save file. They used to set the bus and stop,
-	// which is why every launch came back at full volume.
-	private void OnMasterVolumeChanged(double value)
-	{
-		AudioSettings.Store(this, AudioSettings.MasterBus, (float)value);
-	}
-
-	private void OnMusicVolumeChanged(double value)
-	{
-		AudioSettings.Store(this, MusicPlayer.ResolveMusicBusName(), (float)value);
-	}
-
-	private void OnSfxVolumeChanged(double value)
-	{
-		AudioSettings.Store(this, SfxPlayer.ResolveSfxBusName(), (float)value);
-	}
-
-	private void OnMuteToggled(bool pressed)
-	{
-		AudioSettings.StoreMute(this, pressed);
-	}
-
-	private void OnOnboardingTipsToggled(bool enabled)
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null)
-			return;
-
-		saveManager.Data.EnableGameplayOnboardingTips = enabled;
-		saveManager.Data.HasToggledOnboardingTipsAtLeastOnce = true;
-		saveManager.SaveGame();
-		AutoUpdatePlaytestChecklistFromTelemetry();
-		UpdatePlaytestChecklistStatus();
-	}
-
-	private void OnPlaytestModeToggled(bool enabled)
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null)
-			return;
-
-		saveManager.Data.PlaytestModeEnabled = enabled;
-		saveManager.SaveGame();
-	}
-
-	private void OnBalancePresetSelected(long index)
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null)
-			return;
-
-		string preset = index switch
-		{
-			0 => GlobalStatsManager.BalancePresetCasual,
-			2 => GlobalStatsManager.BalancePresetHardcore,
-			_ => GlobalStatsManager.BalancePresetDefault
-		};
-
-		saveManager.Data.BalancePresetId = preset;
-		saveManager.SaveGame();
-		RefreshArcaneEnergy();
-	}
-
-	private HSlider EnsureMasterVolumeSlider()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new HSlider();
-
-		var row = optionsVBox.GetNodeOrNull<VBoxContainer>("MasterRow");
-		if (row == null)
-		{
-			row = new VBoxContainer { Name = "MasterRow" };
-			row.AddThemeConstantOverride("separation", 6);
-			var label = new Label { Text = "Master Volume" };
-			row.AddChild(label);
-			var masterSlider = new HSlider
-			{
-				Name = "MasterVolumeSlider",
-				MinValue = 0.01f,
-				MaxValue = 1.0f,
-				Step = 0.05f,
-				Value = 1.0f,
-				SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-			};
-			row.AddChild(masterSlider);
-			optionsVBox.AddChild(row);
-			optionsVBox.MoveChild(row, 1);
-			return masterSlider;
-		}
-
-		var existingSlider = row.GetNodeOrNull<HSlider>("MasterVolumeSlider");
-		if (existingSlider != null)
-			return existingSlider;
-
-		var createdMasterSlider = new HSlider
-		{
-			Name = "MasterVolumeSlider",
-			MinValue = 0.01f,
-			MaxValue = 1.0f,
-			Step = 0.05f,
-			Value = 1.0f,
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-		};
-		row.AddChild(createdMasterSlider);
-		return createdMasterSlider;
-	}
-
-	private HSlider EnsureMusicVolumeSlider()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new HSlider();
-
-		var row = optionsVBox.GetNodeOrNull<VBoxContainer>("MusicRow");
-		if (row == null)
-		{
-			row = new VBoxContainer { Name = "MusicRow" };
-			row.AddThemeConstantOverride("separation", 6);
-			var label = new Label { Text = "Music Volume" };
-			row.AddChild(label);
-			var musicSlider = new HSlider
-			{
-				Name = "MusicVolumeSlider",
-				MinValue = 0.01f,
-				MaxValue = 1.0f,
-				Step = 0.05f,
-				Value = 1.0f,
-				SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-			};
-			row.AddChild(musicSlider);
-			optionsVBox.AddChild(row);
-			optionsVBox.MoveChild(row, 2);
-			return musicSlider;
-		}
-
-		var existingSlider = row.GetNodeOrNull<HSlider>("MusicVolumeSlider");
-		if (existingSlider != null)
-			return existingSlider;
-
-		var createdMusicSlider = new HSlider
-		{
-			Name = "MusicVolumeSlider",
-			MinValue = 0.01f,
-			MaxValue = 1.0f,
-			Step = 0.05f,
-			Value = 1.0f,
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-		};
-		row.AddChild(createdMusicSlider);
-		return createdMusicSlider;
-	}
-
-	// Cloned from EnsureMusicVolumeSlider. The options panel is built in the .tscn for the rows
-	// that have always existed and patched up in code for the ones added later; SFX is the third,
-	// so it follows the same pattern rather than inventing a fourth.
-	private HSlider EnsureSfxVolumeSlider()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new HSlider();
-
-		var row = optionsVBox.GetNodeOrNull<VBoxContainer>("SfxRow");
-		if (row == null)
-		{
-			row = new VBoxContainer { Name = "SfxRow" };
-			row.AddThemeConstantOverride("separation", 6);
-			row.AddChild(new Label { Text = "Sound Effects Volume" });
-			var slider = new HSlider
-			{
-				Name = "SfxVolumeSlider",
-				MinValue = 0.01f,
-				MaxValue = 1.0f,
-				Step = 0.05f,
-				Value = 1.0f,
-				SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-			};
-			row.AddChild(slider);
-			optionsVBox.AddChild(row);
-			optionsVBox.MoveChild(row, 3);   // directly under MusicRow, which sits at 2
-			return slider;
-		}
-
-		var existing = row.GetNodeOrNull<HSlider>("SfxVolumeSlider");
-		if (existing != null)
-			return existing;
-
-		var created = new HSlider
-		{
-			Name = "SfxVolumeSlider",
-			MinValue = 0.01f,
-			MaxValue = 1.0f,
-			Step = 0.05f,
-			Value = 1.0f,
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-		};
-		row.AddChild(created);
-		return created;
-	}
-
-	private CheckButton EnsureOnboardingTipsToggle()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new CheckButton();
-
-		var toggle = new CheckButton
-		{
-			Name = "OnboardingTipsToggle",
-			Text = "Show Gameplay Tips During Early Runs",
-			ButtonPressed = true
-		};
-		ResponsiveLayout.SetFont(toggle, ResponsiveLayout.TextRole.Label);
-		optionsVBox.AddChild(toggle);
-		optionsVBox.MoveChild(toggle, Math.Max(0, optionsVBox.GetChildCount() - 2));
-		return toggle;
-	}
-
-	// Beside the mute switch (2026-10-28: "add way to remove damage numbers from enemies"). The pause
-	// screen carries the same switch (Node2DGame's Display section), so it can be flipped mid-run.
-	private CheckButton EnsureDamageNumbersToggle()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new CheckButton();
-
-		var toggle = new CheckButton
-		{
-			Name = "DamageNumbersToggle",
-			Text = "Show Damage Numbers",
-			ButtonPressed = DisplaySettings.DamageNumbers,
-		};
-		ResponsiveLayout.SetFont(toggle, ResponsiveLayout.TextRole.Label);
-		optionsVBox.AddChild(toggle);
-		Node mute = optionsVBox.GetNodeOrNull("MuteToggle");
-		optionsVBox.MoveChild(toggle, mute != null ? mute.GetIndex() + 1 : Math.Max(0, optionsVBox.GetChildCount() - 2));
-		return toggle;
-	}
-
-	// Under the damage numbers (2026-11-02, "reduce screen shake"); the pause screen's Display section
-	// carries it too.
-	private CheckButton EnsureReduceShakeToggle()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new CheckButton();
-
-		var toggle = new CheckButton
-		{
-			Name = "ReduceShakeToggle",
-			Text = "Reduce Screen Shake",
-			ButtonPressed = DisplaySettings.ReduceShake,
-		};
-		ResponsiveLayout.SetFont(toggle, ResponsiveLayout.TextRole.Label);
-		optionsVBox.AddChild(toggle);
-		Node numbers = optionsVBox.GetNodeOrNull("DamageNumbersToggle");
-		optionsVBox.MoveChild(toggle, numbers != null ? numbers.GetIndex() + 1 : Math.Max(0, optionsVBox.GetChildCount() - 2));
-		return toggle;
-	}
-
-	private OptionButton EnsureBalancePresetOption()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new OptionButton();
-
-		var row = new HBoxContainer
-		{
-			Name = "BalancePresetRow"
-		};
-		row.AddThemeConstantOverride("separation", 10);
-
-		var label = new Label
-		{
-			Text = "Run Difficulty Curve"
-		};
-		ResponsiveLayout.SetFont(label, ResponsiveLayout.TextRole.Label);
-		row.AddChild(label);
-
-		var option = new OptionButton
-		{
-			Name = "BalancePresetOption",
-			CustomMinimumSize = new Vector2(180, 48)
-		};
-		option.AddItem("Casual", 0);
-		option.AddItem("Default", 1);
-		option.AddItem("Hardcore", 2);
-		row.AddChild(option);
-
-		optionsVBox.AddChild(row);
-		optionsVBox.MoveChild(row, Math.Max(0, optionsVBox.GetChildCount() - 2));
-		return option;
-	}
-
-	private CheckButton EnsurePlaytestModeToggle()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new CheckButton();
-
-		var toggle = new CheckButton
-		{
-			Name = "PlaytestModeToggle",
-			Text = "Enable Playtest Mode (faster XP + 4 options per level-up)",
-			ButtonPressed = false
-		};
-		ResponsiveLayout.SetFont(toggle, ResponsiveLayout.TextRole.Label);
-		optionsVBox.AddChild(toggle);
-		optionsVBox.MoveChild(toggle, Math.Max(0, optionsVBox.GetChildCount() - 2));
-		return toggle;
-	}
-
-	private void SetBalancePresetSelection(string presetId)
-	{
-		if (balancePresetOption == null)
-			return;
-
-		int index = GlobalStatsManager.NormalizeBalancePresetId(presetId) switch
-		{
-			GlobalStatsManager.BalancePresetCasual => 0,
-			GlobalStatsManager.BalancePresetHardcore => 2,
-			_ => 1
-		};
-		balancePresetOption.Select(index);
-	}
-
-	private void EnsurePlaytestToolkitUi()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return;
-
-		var existingSection = optionsVBox.GetNodeOrNull<VBoxContainer>("PlaytestToolsSection");
-		if (existingSection != null)
-		{
-			openLatestPlaytestLogButton = existingSection.GetNodeOrNull<Button>("OpenLatestPlaytestLogButton") ?? new Button();
-			openPlaytestLogFolderButton = existingSection.GetNodeOrNull<Button>("OpenPlaytestLogFolderButton") ?? new Button();
-			playtestChecklistStatusLabel = existingSection.GetNodeOrNull<Label>("PlaytestChecklistStatus") ?? new Label();
-			playtestChecklistBoxes.Clear();
-			playtestChecklistById.Clear();
-			foreach (Node child in existingSection.GetChildren())
-			{
-				if (child is CheckButton box && box.Name.ToString().StartsWith("PlaytestCheck"))
-				{
-					playtestChecklistBoxes.Add(box);
-					string itemId = box.GetMeta("checklist_id", string.Empty).AsString();
-					if (!string.IsNullOrWhiteSpace(itemId))
-						playtestChecklistById[itemId] = box;
-				}
-			}
-			return;
-		}
-
-		var section = new VBoxContainer
-		{
-			Name = "PlaytestToolsSection"
-		};
-		section.AddThemeConstantOverride("separation", 6);
-
-		var title = new Label
-		{
-			Text = "Playtest Toolkit"
-		};
-		ResponsiveLayout.SetFont(title, ResponsiveLayout.TextRole.Body);
-		section.AddChild(title);
-
-		var buttonRow = new HBoxContainer();
-		buttonRow.AddThemeConstantOverride("separation", 8);
-		section.AddChild(buttonRow);
-
-		openLatestPlaytestLogButton = new Button
-		{
-			Name = "OpenLatestPlaytestLogButton",
-			Text = "Open Latest Run Log",
-			CustomMinimumSize = new Vector2(220, 48)
-		};
-		buttonRow.AddChild(openLatestPlaytestLogButton);
-
-		openPlaytestLogFolderButton = new Button
-		{
-			Name = "OpenPlaytestLogFolderButton",
-			Text = "Open Log Folder",
-			CustomMinimumSize = new Vector2(180, 48)
-		};
-		buttonRow.AddChild(openPlaytestLogFolderButton);
-
-		var checklistTitle = new Label
-		{
-			Text = "First Session Checklist"
-		};
-		ResponsiveLayout.SetFont(checklistTitle, ResponsiveLayout.TextRole.Label);
-		section.AddChild(checklistTitle);
-
-		playtestChecklistBoxes.Clear();
-		playtestChecklistById.Clear();
-		for (int i = 0; i < PlaytestChecklistItems.Length; i++)
-		{
-			(string itemId, string itemLabel) = PlaytestChecklistItems[i];
-			var checkbox = new CheckButton
-			{
-				Name = $"PlaytestCheck{i + 1}",
-				Text = itemLabel
-			};
-			checkbox.SetMeta("checklist_id", itemId);
-			playtestChecklistBoxes.Add(checkbox);
-			playtestChecklistById[itemId] = checkbox;
-			section.AddChild(checkbox);
-		}
-
-		playtestChecklistStatusLabel = new Label
-		{
-			Name = "PlaytestChecklistStatus",
-			Text = "Checklist 0/0 complete"
-		};
-		playtestChecklistStatusLabel.Modulate = new Color(0.84f, 0.92f, 1.0f, 0.95f);
-		section.AddChild(playtestChecklistStatusLabel);
-
-		optionsVBox.AddChild(section);
-		optionsVBox.MoveChild(section, Math.Max(0, optionsVBox.GetChildCount() - 2));
-	}
-
-	private void OnOpenLatestPlaytestLogPressed()
-	{
-		string logsDir = ProjectSettings.GlobalizePath("user://playtest_logs");
-		if (!Directory.Exists(logsDir))
-		{
-			playtestChecklistStatusLabel.Text = "No playtest logs yet. Complete a run first.";
-			return;
-		}
-
-		string latestLogPath = Directory.GetFiles(logsDir, "run_*.txt")
-			.OrderByDescending(File.GetLastWriteTimeUtc)
-			.FirstOrDefault();
-
-		if (string.IsNullOrWhiteSpace(latestLogPath))
-		{
-			playtestChecklistStatusLabel.Text = "No run log files found yet.";
-			return;
-		}
-
-		OS.ShellOpen($"file:///{latestLogPath.Replace('\\', '/')}");
-		playtestChecklistStatusLabel.Text = $"Opened: {Path.GetFileName(latestLogPath)}";
-	}
-
-	private void OnOpenPlaytestLogFolderPressed()
-	{
-		string logsDir = ProjectSettings.GlobalizePath("user://playtest_logs");
-		Directory.CreateDirectory(logsDir);
-		OS.ShellOpen($"file:///{logsDir.Replace('\\', '/')}");
-		playtestChecklistStatusLabel.Text = "Opened playtest log folder.";
-	}
-
-	private void UpdatePlaytestChecklistStatus()
-	{
-		if (playtestChecklistStatusLabel == null)
-			return;
-
-		int checkedCount = playtestChecklistBoxes.Count(box => box != null && box.ButtonPressed);
-		int totalCount = playtestChecklistBoxes.Count;
-		int runCount = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data?.RunTelemetryHistory?.Count ?? 0;
-		playtestChecklistStatusLabel.Text = $"Checklist {checkedCount}/{totalCount} complete | Recorded runs: {runCount}";
-	}
-
-	private void ApplyPlaytestChecklistState(Dictionary<string, bool> state)
-	{
-		isInitializingPlaytestChecklist = true;
-		foreach ((string itemId, string _) in PlaytestChecklistItems)
-		{
-			if (!playtestChecklistById.TryGetValue(itemId, out CheckButton checkbox) || checkbox == null)
-				continue;
-
-			checkbox.ButtonPressed = state != null && state.TryGetValue(itemId, out bool isChecked) && isChecked;
-		}
-		isInitializingPlaytestChecklist = false;
-	}
-
-	private void PersistPlaytestChecklistState()
-	{
-		if (isInitializingPlaytestChecklist)
-			return;
-
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null)
-			return;
-
-		foreach ((string itemId, string _) in PlaytestChecklistItems)
-		{
-			if (!playtestChecklistById.TryGetValue(itemId, out CheckButton checkbox) || checkbox == null)
-				continue;
-
-			saveManager.Data.PlaytestChecklistState[itemId] = checkbox.ButtonPressed;
-		}
-
-		saveManager.SaveGame();
-	}
-
-	private void AutoUpdatePlaytestChecklistFromTelemetry()
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null)
-			return;
-
-		List<RunTelemetryRecord> history = saveManager.Data.RunTelemetryHistory ?? new List<RunTelemetryRecord>();
-		bool hasDefaultRun = HasPresetRun(history, GlobalStatsManager.BalancePresetDefault);
-		bool hasCasualRun = HasPresetRun(history, GlobalStatsManager.BalancePresetCasual);
-		bool hasHardcoreRun = HasPresetRun(history, GlobalStatsManager.BalancePresetHardcore);
-		bool rewardOrderingVerified = HasPresetRewardOrderingEvidence(history);
-		bool tipsToggleVerified = saveManager.Data.HasToggledOnboardingTipsAtLeastOnce;
-
-		isInitializingPlaytestChecklist = true;
-		bool changed = false;
-		changed |= SetChecklistItemIfTrue("run_default", hasDefaultRun);
-		changed |= SetChecklistItemIfTrue("run_casual", hasCasualRun);
-		changed |= SetChecklistItemIfTrue("run_hardcore", hasHardcoreRun);
-		changed |= SetChecklistItemIfTrue("tips_toggle", tipsToggleVerified);
-		changed |= SetChecklistItemIfTrue("reward_diff", rewardOrderingVerified);
-		isInitializingPlaytestChecklist = false;
-
-		if (changed)
-			PersistPlaytestChecklistState();
-	}
-
-	private bool SetChecklistItemIfTrue(string itemId, bool shouldBeChecked)
-	{
-		if (!shouldBeChecked)
-			return false;
-
-		if (!playtestChecklistById.TryGetValue(itemId, out CheckButton checkbox) || checkbox == null)
-			return false;
-
-		if (checkbox.ButtonPressed)
-			return false;
-
-		checkbox.ButtonPressed = true;
-		return true;
-	}
-
-	private static bool HasPresetRun(IEnumerable<RunTelemetryRecord> history, string presetId)
-	{
-		if (history == null)
-			return false;
-
-		string normalizedTarget = GlobalStatsManager.NormalizeBalancePresetId(presetId);
-		foreach (RunTelemetryRecord run in history)
-		{
-			if (run == null)
-				continue;
-
-			if (string.Equals(GlobalStatsManager.NormalizeBalancePresetId(run.BalancePresetId), normalizedTarget, StringComparison.OrdinalIgnoreCase))
-				return true;
-		}
-
-		return false;
-	}
-
-	private static bool HasPresetRewardOrderingEvidence(IEnumerable<RunTelemetryRecord> history)
-	{
-		if (history == null)
-			return false;
-
-		float casualTotal = 0f;
-		int casualCount = 0;
-		float defaultTotal = 0f;
-		int defaultCount = 0;
-		float hardcoreTotal = 0f;
-		int hardcoreCount = 0;
-
-		foreach (RunTelemetryRecord run in history)
-		{
-			if (run == null)
-				continue;
-
-			string preset = GlobalStatsManager.NormalizeBalancePresetId(run.BalancePresetId);
-			if (string.Equals(preset, GlobalStatsManager.BalancePresetCasual, StringComparison.OrdinalIgnoreCase))
-			{
-				casualTotal += run.ArcaneRewardMultiplier;
-				casualCount++;
-			}
-			else if (string.Equals(preset, GlobalStatsManager.BalancePresetHardcore, StringComparison.OrdinalIgnoreCase))
-			{
-				hardcoreTotal += run.ArcaneRewardMultiplier;
-				hardcoreCount++;
-			}
-			else
-			{
-				defaultTotal += run.ArcaneRewardMultiplier;
-				defaultCount++;
-			}
-		}
-
-		if (casualCount == 0 || defaultCount == 0 || hardcoreCount == 0)
-			return false;
-
-		float casualAvg = casualTotal / casualCount;
-		float defaultAvg = defaultTotal / defaultCount;
-		float hardcoreAvg = hardcoreTotal / hardcoreCount;
-		return casualAvg < defaultAvg && defaultAvg < hardcoreAvg;
 	}
 
 	private void BuildUpgradeDefinitions()
