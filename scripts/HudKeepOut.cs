@@ -6,7 +6,8 @@ namespace WizardSurvivors.scripts;
 /// <summary>
 /// Screen rectangles the edge pointers (WorldPointer, ChestPointer, SideEventPointer, PoiPointer) slide
 /// out of: the tracked quests in their corner (QuestTracker) and the chapter note while it is up
-/// (ChapterNoteCard). Canvas units, the same space a pointer measures the visible rect in.
+/// (ChapterNoteCard). Canvas units, the same space a pointer measures the visible rect in. The chapter
+/// hint's line and cue keep off them too (SlideOff).
 /// </summary>
 /// <remarks>
 /// Every pointer rides a ring a fixed inset in from the screen's edge, so anything kept in a corner
@@ -52,5 +53,47 @@ public static class HudKeepOut
 				at.X = grown.GetCenter().X > centre.X ? grown.Position.X : grown.End.X;
 		}
 		return at;
+	}
+
+	/// <summary>
+	/// <paramref name="rect"/> moved off every keep-out zone (grown by <paramref name="margin"/>) along one
+	/// screen axis, toward <paramref name="middle"/>: the badges' slide, for something that is not a badge -
+	/// the chapter hint's line and the marks of its cue (StageHintCaption, StageHintCue), which came in over
+	/// the tracked quests in the lower left. <paramref name="alongY"/>: it lies along a left or right edge,
+	/// so it slides up or down; otherwise it slides across. Allocates nothing.
+	/// </summary>
+	public static Rect2 SlideOff(Rect2 rect, bool alongY, Vector2 middle, float margin)
+	{
+		if (Zones.Count == 0)
+			return rect;
+		// A slide off one zone can land on another; two passes cover the two there are.
+		for (int pass = 0; pass < 2; pass++)
+		{
+			bool moved = false;
+			foreach (Rect2 zone in Zones.Values)
+			{
+				Rect2 grown = zone.Grow(margin);
+				if (!grown.Intersects(rect))
+					continue;
+				rect.Position = alongY
+					? new Vector2(rect.Position.X, grown.GetCenter().Y > middle.Y ? grown.Position.Y - rect.Size.Y : grown.End.Y)
+					: new Vector2(grown.GetCenter().X > middle.X ? grown.Position.X - rect.Size.X : grown.End.X, rect.Position.Y);
+				moved = true;
+			}
+			if (!moved)
+				break;
+		}
+		return rect;
+	}
+
+	/// <summary>True if <paramref name="rect"/> touches a keep-out zone.</summary>
+	public static bool Touches(Rect2 rect)
+	{
+		foreach (Rect2 zone in Zones.Values)
+		{
+			if (zone.Intersects(rect))
+				return true;
+		}
+		return false;
 	}
 }

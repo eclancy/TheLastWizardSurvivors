@@ -40,6 +40,8 @@ public partial class StageHintCue : Node2D
 	// x3, the attack icons' size: at x2 a 16 px mark was a speck on the phone.
 	private const float DrawScale = 3f;
 	private const float Half = Cell * DrawScale * 0.5f;
+	// A mark's half-size on the canvas, for keeping it off the HUD's corners.
+	private static readonly Vector2 MarkHalf = new(Half, Half);
 	private const int MaxMarks = 24;
 
 	// The song's notes: onset (s), the note's glyph (sheet column), and its pitch in semitones from A4.
@@ -85,6 +87,10 @@ public partial class StageHintCue : Node2D
 	private float clock = -1f;
 	private int nextBeat;
 	private int bellSlot = -1;
+	// Where the marks come in, moved along the edge off the tracked quests and the chapter note
+	// (HudKeepOut), worked out once a play (LayLane), and which way that edge runs.
+	private Vector2 laneShift;
+	private bool alongY;
 	private readonly Random random = new();
 
 	/// <summary>True while a cue is coming in or any of its marks is still up.</summary>
@@ -141,7 +147,48 @@ public partial class StageHintCue : Node2D
 		clock = 0f;
 		nextBeat = 0;
 		bellSlot = -1;
+		LayLane();
 		Beat(0f);
+	}
+
+	// How far either way along the edge a cue's marks start, and how far in they drift.
+	private static float SpreadOf(HintCue kind) => kind switch
+	{
+		HintCue.Song => 132f,
+		HintCue.Leaves => 126f,
+		HintCue.Wisp => 96f,
+		HintCue.Bell => 72f,
+		_ => 8f,
+	};
+
+	// The tracked quests sit in the lower left and the chapter note, while it is up, in the lower right
+	// (the top on a phone): both on the edge strip the marks come in on. So the whole spread of a cue -
+	// a row of six notes, a drift of leaves - is slid along the edge off them in one piece, the way the
+	// edge pointers slide (HudKeepOut), rather than each mark piling up at the zone's end.
+	private void LayLane()
+	{
+		laneShift = Vector2.Zero;
+		var (edge, side, d, safe) = Band();
+		alongY = edge.X <= safe.Position.X + 1f || edge.X >= safe.End.X - 1f;
+		float spread = SpreadOf(cue);
+		Rect2 reach = new Rect2(ClampTo(edge - side * spread, safe), Vector2.Zero)
+			.Expand(ClampTo(edge + side * spread, safe))
+			.Expand(ClampTo(edge - d * 60f, safe))
+			.Grow(Half);
+		laneShift = HudKeepOut.SlideOff(reach, alongY, safe.GetCenter(), 6f).Position - reach.Position;
+	}
+
+	// The band the marks come in on: where the line to the source meets the safe rectangle (less most of a
+	// mark, so a whole one fits), the direction along it, the direction to the source, and the rectangle.
+	private (Vector2 Edge, Vector2 Side, Vector2 Toward, Rect2 Safe) Band()
+	{
+		Viewport viewport = GetViewport();
+		Transform2D canvas = viewport.GetCanvasTransform();
+		Vector2 player = anchor != null && IsInstanceValid(anchor) ? canvas * anchor.GlobalPosition : viewport.GetVisibleRect().GetCenter();
+		Vector2 toward = canvas * source - player;
+		Vector2 d = toward.LengthSquared() > 1f ? toward.Normalized() : Vector2.Up;
+		Rect2 safe = StageHintCaption.SafeRect(viewport, ResponsiveLayout.IsNarrow(this)).Grow(-Half * 0.85f);
+		return (StageHintCaption.ExitPoint(player, d, safe), new Vector2(-d.Y, d.X), d, safe);
 	}
 
 	/// <summary>The boss has come, or the place is found: everything up fades out now, nothing new comes.</summary>
@@ -158,6 +205,7 @@ public partial class StageHintCue : Node2D
 	public override void _Process(double delta)
 	{
 		float dt = (float)delta;
+		Vector2 middle = GetViewport().GetVisibleRect().GetCenter();
 		if (clock >= 0f)
 		{
 			clock += dt;
@@ -177,9 +225,19 @@ public partial class StageHintCue : Node2D
 			}
 			any = true;
 			if (m.Follow >= 0)
+			{
 				m.Position = marks[m.Follow].Position;
+			}
 			else
+			{
 				m.Position += m.Velocity * dt;
+				// A mark drifting along the edge stops at the tracked quests (or the note) rather than
+				// crossing them.
+				var at = new Rect2(m.Position - MarkHalf, MarkHalf * 2f);
+				Rect2 off = HudKeepOut.SlideOff(at, alongY, middle, 2f);
+				if (off.Position != at.Position)
+					m.Position = off.GetCenter();
+			}
 		}
 		// Redrawn while anything is up, and once more after the last mark has gone, to clear it.
 		bool active = any || clock >= 0f;
@@ -298,17 +356,10 @@ public partial class StageHintCue : Node2D
 		if (slot < 0)
 			return -1;
 
-		Viewport viewport = GetViewport();
-		Transform2D canvas = viewport.GetCanvasTransform();
-		Vector2 player = canvas * anchor.GlobalPosition;
-		Vector2 toward = canvas * source - player;
-		Vector2 d = toward.LengthSquared() > 1f ? toward.Normalized() : Vector2.Up;
-		Vector2 side = new Vector2(-d.Y, d.X);
-
-		// The band the marks come in on: the safe rectangle, less most of a mark so a whole one fits.
-		Rect2 safe = StageHintCaption.SafeRect(viewport, ResponsiveLayout.IsNarrow(this)).Grow(-Half * 0.85f);
-		Vector2 edge = StageHintCaption.ExitPoint(player, d, safe);
-		Vector2 start = ClampTo(edge + side * along - d * depth, safe);
+		var (edge, side, d, safe) = Band();
+		Vector2 start = ClampTo(edge + side * along - d * depth + laneShift, safe);
+		// And this one mark off them too, in case the band has moved under the player since the lane was laid.
+		start = HudKeepOut.SlideOff(new Rect2(start - MarkHalf, MarkHalf * 2f), alongY, safe.GetCenter(), 4f).GetCenter();
 
 		// Off the edge, slowly; on a side edge flames and notes also rise (on the top edge up is back out
 		// under the HUD, on the bottom one it is into the line).

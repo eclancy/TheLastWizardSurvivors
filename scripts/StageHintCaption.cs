@@ -34,7 +34,10 @@ public partial class StageHintCaption : Control
 	private const float PadY = 10f;
 	// How far in from the safe rectangle's edge the line sits, toward the player: past the band the
 	// cue's marks come in on (StageHintCue), and a little more.
-	public const float CueBand = 58f;
+	// The marks start half a mark in from the edge and drift a little; the plate dissolves past the words.
+	public const float CueBand = 74f;
+	// Clear air left between the line's plate and the tracked quests or the chapter note.
+	private const float KeepOutMargin = 10f;
 	private const float EdgeGap = 10f;
 	// Clear of the HUD across the top on a PC: the timer, the boss bar's slot, the objective line and
 	// the onboarding tip all end by 128; the loadout column on the left by about 150.
@@ -223,6 +226,20 @@ public partial class StageHintCaption : Control
 				? keepOut.End.Y + half.Y + EdgeGap
 				: keepOut.Position.Y - half.Y - EdgeGap;
 			centre = Clamp(centre, room, hold);
+		}
+
+		// Off the tracked quests in their corner and the chapter note while it is up (HudKeepOut): slid
+		// along the edge it lies by, toward the middle, as the edge pointers slide, and held inside again.
+		// If the edge has no room past them, it steps in across the other way.
+		bool alongY = edge.X <= inner.Position.X + 1f || edge.X >= inner.End.X - 1f;
+		var plate = new Rect2(centre - hold, hold * 2f);
+		Rect2 slid = HudKeepOut.SlideOff(plate, alongY, inner.GetCenter(), KeepOutMargin);
+		if (slid.Position != plate.Position)
+		{
+			centre = Clamp(slid.GetCenter(), room, hold);
+			plate = new Rect2(centre - hold, hold * 2f);
+			if (HudKeepOut.Touches(plate.Grow(KeepOutMargin)))
+				centre = Clamp(HudKeepOut.SlideOff(plate, !alongY, inner.GetCenter(), KeepOutMargin).GetCenter(), room, hold);
 		}
 
 		// On the plate's grid, so the dither does not crawl as the player walks.
