@@ -4,208 +4,276 @@ using System.Collections.Generic;
 using System.Linq;
 using WizardSurvivors.scripts;
 
-// THE CODEX'S ARRANGEMENT, one builder per canvas, kept apart from everything else so a layout can be
-// swapped without touching the model, the search, the keyboard, the cells, the nodes or the input: those are
-// the parts (EvolutionCodex.cs, EvolutionCodex.Detail.cs, CodexKeyboard.cs), and this file only says where
-// they go (.ai/evolution-codex.md section 2, and the wireframe's four artboards).
+// THE CODEX'S ARRANGEMENT, LAYOUT B "THE BOOK" (Eric's pick, 2026-11-02), one builder per canvas and kept apart
+// from everything else, so it says only where the parts go - the model, search, keyboard, index lines, nodes,
+// chips and input live in the other files (EvolutionCodex.cs, EvolutionCodex.Detail.cs, CodexKeyboard.cs).
 //
-//   PC      the heading band (title, search, count, Back), the filter tabs and the run line, then the grid on
-//           the left beside the detail of the selection on the right; a tree in columns, a recipe stacked.
-//   Phone   the band (title, count), the search field, the tabs, the grid filling the panel and Back at the
-//           foot; the detail is a full sheet over the grid, its tree in rows and a recipe two abreast.
+//   PC      the title, the count, the bookmarks on the book's top edge and Back over an open book on the
+//           stone plate: the index on the left page (the search at its top, the list scrolling under it),
+//           the selected entry on the right page, its tree down the page.
+//   Phone   the title, the count and Back, the bookmarks, then one page filling the plate edge to edge: the
+//           index, or - turned to - the entry's page with "‹ Index" at its top. The two pages are siblings
+//           in one holder, so a turned page covers exactly what the index did.
 public partial class EvolutionCodex
 {
-	// The grid's width on a PC: six cells and their gaps, the scroll gutter, a little air.
-	private float GridWidth() => 6f * CellWidth + 5f * CellGap + 24f;
+	/// <summary>The index page on a PC: wide enough for the longest name with its pips beside it.</summary>
+	private const float IndexPageWidth = 420f;
 
-	// A phone: five across inside the 720 canvas less the safe area, the panel margins and the gutter.
-	private float CellWidth => narrow ? 108f : 80f;
-	private float FrameSide => narrow ? 88f : 76f;
-	private const float CellGap = 6f;
-
-	/// <summary>The cells across: six on a PC, five on a phone.</summary>
-	private int GridColumns => narrow ? 5 : 6;
-
-	/// <summary>The PC's arrangement: band, tabs, then the grid beside the detail.</summary>
-	private void BuildPcLayout()
+	/// <summary>The PC's open book.</summary>
+	private void BuildPcBook()
 	{
-		var column = BuildPanel();
-		column.AddChild(BuildHeader(withSearch: true, withBack: true));
-		column.AddChild(BuildFilterRow());
-		BuildGridScroll();
-		var body = new HBoxContainer { Name = "CodexBody", SizeFlagsVertical = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
-		body.AddThemeConstantOverride("separation", 14);
-		column.AddChild(body);
-		gridScroll.CustomMinimumSize = new Vector2(GridWidth(), 0f);
-		body.AddChild(gridScroll);
-		body.AddChild(BuildDetailPanel());
+		VBoxContainer column = BuildPlate();
+		column.AddThemeConstantOverride("separation", 0);
+
+		// The bookmarks stand on the book's top edge, so the row they are in sits flush on it.
+		Control top = BuildTitleRow(withBack: false);
+		top.AddChild(BuildBookmarks());
+		backButton = BuildBackButton();
+		backButton.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+		var backGap = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		backGap.AddThemeConstantOverride("margin_left", 10);
+		backGap.AddThemeConstantOverride("margin_bottom", 6);
+		backGap.AddChild(backButton);
+		top.AddChild(backGap);
+		column.AddChild(top);
+
+		var book = new HBoxContainer { Name = "CodexBook", SizeFlagsVertical = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
+		book.AddThemeConstantOverride("separation", 0);
+		column.AddChild(book);
+
+		PanelContainer left = BuildBookPage("CodexIndexPage");
+		left.CustomMinimumSize = new Vector2(IndexPageWidth, 0f);
+		book.AddChild(left);
+		var leftColumn = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		leftColumn.AddThemeConstantOverride("separation", 8);
+		left.AddChild(leftColumn);
+		leftColumn.AddChild(BuildSearchField());
+		leftColumn.AddChild(BuildIndexScroll());
+
+		// The spine: the page's darkest ink between the two leaves.
+		book.AddChild(new ColorRect { Name = "CodexSpine", Color = CodexRows.Vellum.Ink, CustomMinimumSize = new Vector2(6f, 0f), MouseFilter = Control.MouseFilterEnum.Ignore });
+
+		PanelContainer right = BuildBookPage("CodexEntryPage");
+		right.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+		book.AddChild(right);
+		right.AddChild(BuildPageScroll());
 	}
 
-	/// <summary>The phone's arrangement: band, search, tabs, the grid, Back; the detail on a sheet over it.</summary>
-	private void BuildPhoneLayout()
+	/// <summary>The phone's book: one page at a time, filling the plate.</summary>
+	private void BuildPhoneBook()
 	{
-		var column = BuildPanel();
-		column.AddChild(BuildHeader(withSearch: false, withBack: false));
-		column.AddChild(BuildSearchField(expand: true));
-		column.AddChild(BuildFilterRow());
-		BuildGridScroll();
-		gridScroll.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		column.AddChild(gridScroll);
-		column.AddChild(BuildPhoneFoot());
-		root.AddChild(BuildSheet());
-	}
+		VBoxContainer column = BuildPlate();
+		column.AddThemeConstantOverride("separation", 4);
+		column.AddChild(BuildTitleRow(withBack: true));
+		column.AddChild(BuildBookmarks());
 
-	/// <summary>The PC's tree: four columns, left to right, an arrow bus between each.</summary>
-	private Control BuildTreeColumns(CodexEntry entry, CodexForm form)
-	{
-		var row = new HBoxContainer { Name = "CodexTree", MouseFilter = Control.MouseFilterEnum.Ignore };
-		row.AddThemeConstantOverride("separation", 0);
+		// Both pages fill one holder exactly, so the turned page can never stop short of the index's edges.
+		var holder = new Control { Name = "CodexPages", SizeFlagsVertical = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
+		column.AddChild(holder);
 
-		Control baseNode = BuildBaseNode(entry, form, wide: false);
-		row.AddChild(Column("Base", null, new List<Control> { baseNode }, fixedWidth: 56f));
-		treeLines.Add(new List<Control> { StopOf(baseNode) });
+		PanelContainer index = BuildBookPage("CodexIndexPage");
+		index.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+		holder.AddChild(index);
+		var indexColumn = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		indexColumn.AddThemeConstantOverride("separation", 8);
+		index.AddChild(indexColumn);
+		indexColumn.AddChild(BuildSearchField());
+		indexColumn.AddChild(BuildIndexScroll());
+		indexPage = index;
 
-		void AddColumn(string label, List<CodexChip> gates, List<CodexNode> nodes)
+		PanelContainer entry = BuildBookPage("CodexEntryPage");
+		entry.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+		entry.Visible = false;
+		holder.AddChild(entry);
+		var entryColumn = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		entryColumn.AddThemeConstantOverride("separation", 8);
+		entry.AddChild(entryColumn);
+		var band = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		band.AddThemeConstantOverride("separation", 12);
+		entryColumn.AddChild(band);
+		indexButton = new Button { Name = "CodexIndexButton", Text = "‹ Index", FocusMode = Control.FocusModeEnum.All };
+		ResponsiveLayout.SetFont(indexButton, ResponsiveLayout.TextRole.Body);
+		BonelightSkin.StyleButton(indexButton, BonelightSkin.Emphasis.Normal);
+		ResponsiveLayout.EnsureTouchTarget(indexButton, 124f);
+		indexButton.Pressed += ClosePage;
+		band.AddChild(indexButton);
+		entryTitle = new Label
 		{
-			if (nodes.Count == 0)
-				return;
-			var controls = nodes.Select(n => BuildNode(n, wide: false)).ToList();
-			var arrows = new AscensionForkArrows
-			{
-				Name = $"Arrows{label.Replace(" ", "")}",
-				Shape = AscensionForkArrows.Layout.Spine,
-				CustomMinimumSize = new Vector2(22f, 0f),
-			};
-			for (int i = 0; i < nodes.Count; i++)
-				arrows.AddTarget(controls[i], IsLive(nodes[i]));
-			row.AddChild(arrows);
-			row.AddChild(Column(label, gates, controls, fixedWidth: 0f));
-			treeLines.Add(controls.Select(StopOf).ToList());
-		}
+			VerticalAlignment = VerticalAlignment.Center,
+			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+			AutowrapMode = TextServer.AutowrapMode.WordSmart,
+		};
+		ResponsiveLayout.SetFont(entryTitle, ResponsiveLayout.TextRole.Title);
+		entryTitle.AddThemeColorOverride("font_color", CodexRows.Vellum.Ink);
+		band.AddChild(entryTitle);
+		entryColumn.AddChild(new ColorRect { Color = CodexRows.Vellum.Edge, CustomMinimumSize = new Vector2(0, 2), MouseFilter = Control.MouseFilterEnum.Ignore });
+		entryColumn.AddChild(BuildPageScroll());
+		entryPage = entry;
+	}
 
-		AddColumn("Level 4", form.MutationGates, form.Mutations);
-		AddColumn("Level 8", form.AscensionGates, form.Ascensions);
-		AddColumn("Apotheosis", new List<CodexChip>(), form.Finals);
+	/// <summary>The stone plate both books lie on, and the column inside it.</summary>
+	private VBoxContainer BuildPlate()
+	{
+		var plate = new PanelContainer { Name = "CodexPanel", MouseFilter = Control.MouseFilterEnum.Ignore };
+		plate.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+		plate.OffsetLeft = 12f;
+		plate.OffsetRight = -12f;
+		plate.OffsetTop = 12f;
+		plate.OffsetBottom = -12f;
+		plate.AddThemeStyleboxOverride("panel", BonelightSkin.PanelStyle(BonelightSkin.Register.Stone));
+		root.AddChild(plate);
+		var column = new VBoxContainer { Name = "CodexColumn", MouseFilter = Control.MouseFilterEnum.Ignore };
+		plate.AddChild(column);
+		return column;
+	}
+
+	private Control BuildIndexScroll()
+	{
+		indexList = new VBoxContainer { Name = "CodexIndex", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
+		indexList.AddThemeConstantOverride("separation", 2);
+		indexScroll = new ScrollContainer
+		{
+			Name = "CodexIndexScroll",
+			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+			HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+			FollowFocus = true,
+		};
+		indexScroll.AddChild(CodexRows.WithGutter(indexList));
+		return indexScroll;
+	}
+
+	private Control BuildPageScroll()
+	{
+		page = new VBoxContainer { Name = "CodexDetail", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
+		page.AddThemeConstantOverride("separation", 10);
+		pageScroll = new ScrollContainer
+		{
+			Name = "CodexDetailScroll",
+			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+			HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+			FollowFocus = true,
+		};
+		pageScroll.AddChild(CodexRows.WithGutter(page));
+		return pageScroll;
+	}
+
+	/// <summary>A tier's nodes across the page: all in a row on a PC; on a phone two to a row past three (the cat's four).</summary>
+	private int TierColumns(int count) => narrow && count > 3 ? 2 : Math.Max(1, count);
+
+	// A control centred across the page at a share of its width.
+	private static Control Centred(Control control, float share)
+	{
+		var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		row.AddThemeConstantOverride("separation", 0);
+		Control Spacer() => new() { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, SizeFlagsStretchRatio = (1f - share) / 2f, MouseFilter = Control.MouseFilterEnum.Ignore };
+		row.AddChild(Spacer());
+		control.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+		control.SizeFlagsStretchRatio = share;
+		row.AddChild(control);
+		row.AddChild(Spacer());
 		return row;
 	}
 
-	/// <summary>The phone's tree: rows, top to bottom, a fork down into each.</summary>
-	private Control BuildTreeRows(CodexEntry entry, CodexForm form)
+	/// <summary>
+	/// A spell's family tree down the page: the base centred, then a tier for each milestone - its heading and
+	/// shared requirements, its nodes across - with ink lines from the node each tier grows from (the one taken,
+	/// else the one on the way to the Apotheosis, else the whole row) into each node of the next. The way to the
+	/// Apotheosis is drawn in the ember line while it is still open.
+	/// </summary>
+	private Control ArrangeTree(CodexEntry entry, CodexForm form)
 	{
-		var tree = new VBoxContainer { Name = "CodexTree", MouseFilter = Control.MouseFilterEnum.Ignore };
-		tree.AddThemeConstantOverride("separation", 4);
-		Control baseNode = BuildBaseNode(entry, form, wide: true);
-		tree.AddChild(baseNode);
+		// The lines first, behind: a MarginContainer fits both children to its rect, and draws them in order.
+		var holder = new MarginContainer { Name = "CodexTree", MouseFilter = Control.MouseFilterEnum.Ignore };
+		var lines = new CodexTreeLines { Name = "CodexTreeLines" };
+		holder.AddChild(lines);
+		var tree = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		tree.AddThemeConstantOverride("separation", 6);
+		holder.AddChild(tree);
+
+		Control baseNode = BuildBaseNode(entry, form);
+		tree.AddChild(Centred(baseNode, narrow ? 0.8f : 0.6f));
 		treeLines.Add(new List<Control> { StopOf(baseNode) });
 		Control source = baseNode;
+		bool sourceOnPath = form.Finals.Any(f => f.State != CodexNodeState.Closed);
 
-		void AddRow(string label, List<CodexChip> gates, List<CodexNode> nodes)
+		void Tier(string label, List<CodexChip> gates, List<CodexNode> nodes, bool finals)
 		{
 			if (nodes.Count == 0)
 				return;
-			var controls = nodes.Select(n => BuildNode(n, wide: true)).ToList();
-			var arrows = new AscensionForkArrows
-			{
-				Name = $"Arrows{label.Replace(" ", "")}",
-				Shape = AscensionForkArrows.Layout.Fork,
-				Source = source,
-				CustomMinimumSize = new Vector2(0f, 34f),
-			};
-			for (int i = 0; i < nodes.Count; i++)
-				arrows.AddTarget(controls[i], IsLive(nodes[i]));
-			tree.AddChild(ColumnHeader(label, gates));
-			tree.AddChild(arrows);
-			var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-			row.AddThemeConstantOverride("separation", 10);
+			tree.AddChild(TierHeading(label, gates));
+			var grid = new GridContainer { Columns = finals ? 1 : TierColumns(nodes.Count), MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+			grid.AddThemeConstantOverride("h_separation", 10);
+			grid.AddThemeConstantOverride("v_separation", 10);
+			List<Control> controls = nodes.Select(n => BuildNode(n)).ToList();
 			foreach (Control control in controls)
 			{
 				control.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-				row.AddChild(control);
+				grid.AddChild(control);
 			}
-			tree.AddChild(row);
-			treeLines.Add(controls.Select(StopOf).ToList());
-			source = row;
-		}
+			tree.AddChild(finals ? Centred(grid, narrow ? 0.9f : 0.8f) : grid);
 
-		AddRow("Level 4", form.MutationGates, form.Mutations);
-		AddRow("Level 8", form.AscensionGates, form.Ascensions);
-		AddRow("Apotheosis", new List<CodexChip>(), form.Finals);
-		return tree;
-	}
-
-
-	/// <summary>A PC's recipe: the ingredients stacked on the left, "+" between, an arrow bus into the result.</summary>
-	private void BuildRecipePc(CodexRecipe recipe)
-	{
-		var ingredients = recipe.Ingredients.Select(n => BuildNode(n, wide: false)).ToList();
-		Control result = BuildNode(recipe.Result, wide: false);
-		bool open = recipe.Made || recipe.Offered;
-
-		var row = new HBoxContainer { Name = $"CodexRecipe_{recipe.Id}", MouseFilter = Control.MouseFilterEnum.Ignore };
-		row.AddThemeConstantOverride("separation", 6);
-		var column = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1.6f, MouseFilter = Control.MouseFilterEnum.Ignore };
-		column.AddThemeConstantOverride("separation", 6);
-		for (int i = 0; i < ingredients.Count; i++)
-		{
-			if (i > 0 && recipe.Kind == CodexKind.Combination)
+			for (int i = 0; i < nodes.Count; i++)
 			{
-				Label plus = CodexRows.MakeText("+", ResponsiveLayout.TextRole.Title, CodexRows.Stone.Heading);
-				plus.HorizontalAlignment = HorizontalAlignment.Center;
-				column.AddChild(plus);
+				bool path = sourceOnPath && (finals || form.ApotheosisPath.Contains(nodes[i].Id)) && nodes[i].State != CodexNodeState.Closed;
+				bool live = IsLive(nodes[i]);
+				Color ink = path ? CodexInk.EmberLine : live ? CodexRows.Vellum.Reward : CodexRows.Vellum.InkMeta;
+				lines.AddEdge(source, controls[i], ink, dashed: !path && !live, layer: path ? 2 : live ? 1 : 0);
 			}
-			column.AddChild(ingredients[i]);
+			treeLines.Add(controls.Select(StopOf).ToList());
+
+			int taken = nodes.FindIndex(n => n.State == CodexNodeState.Taken);
+			int onPath = nodes.FindIndex(n => form.ApotheosisPath.Contains(n.Id));
+			int pick = taken >= 0 ? taken : onPath;
+			sourceOnPath = sourceOnPath && pick >= 0 && form.ApotheosisPath.Contains(nodes[pick].Id);
+			source = pick >= 0 ? controls[pick] : grid;
 		}
-		row.AddChild(column);
-		var arrows = new AscensionForkArrows
-		{
-			Shape = AscensionForkArrows.Layout.Spine,
-			CustomMinimumSize = new Vector2(30f, 0f),
-		};
-		arrows.AddTarget(result, open);
-		row.AddChild(arrows);
-		var resultColumn = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
-		resultColumn.AddChild(result);
-		row.AddChild(resultColumn);
-		detail.AddChild(row);
-		treeLines.Add(ingredients.Select(StopOf).ToList());
-		treeLines.Add(new List<Control> { StopOf(result) });
+
+		Tier("Mutation · Lv 4", form.MutationGates, form.Mutations, finals: false);
+		Tier("Ascension · Lv 8", form.AscensionGates, form.Ascensions, finals: false);
+		Tier("Apotheosis", new List<CodexChip>(), form.Finals, finals: true);
+		return holder;
 	}
 
-	/// <summary>A phone's recipe: the ingredients two abreast, a fork down into the result.</summary>
-	private void BuildRecipePhone(CodexRecipe recipe)
+	/// <summary>
+	/// A recipe down the page: its ingredients across (four on a PC, two to a row on a phone), the ink lines
+	/// into its result centred under them - solid from an ingredient held or taken, dashed from the rest.
+	/// </summary>
+	private Control ArrangeRecipe(CodexRecipe recipe)
 	{
-		var ingredients = recipe.Ingredients.Select(n => BuildNode(n, wide: true)).ToList();
-		Control result = BuildNode(recipe.Result, wide: true);
-		bool open = recipe.Made || recipe.Offered;
+		var holder = new MarginContainer { Name = $"CodexRecipe_{recipe?.Id}", MouseFilter = Control.MouseFilterEnum.Ignore };
+		if (recipe == null)
+			return holder;
+		var lines = new CodexTreeLines { Name = "CodexTreeLines" };
+		holder.AddChild(lines);
+		var tree = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		tree.AddThemeConstantOverride("separation", 26);
+		holder.AddChild(tree);
 
-		var tree = new VBoxContainer { Name = $"CodexRecipe_{recipe.Id}", MouseFilter = Control.MouseFilterEnum.Ignore };
-		tree.AddThemeConstantOverride("separation", 4);
-		var parts = new GridContainer { Columns = Math.Min(2, Math.Max(1, ingredients.Count)), MouseFilter = Control.MouseFilterEnum.Ignore };
-		parts.AddThemeConstantOverride("h_separation", 10);
-		parts.AddThemeConstantOverride("v_separation", 10);
-		foreach (Control part in ingredients)
+		var grid = new GridContainer
+		{
+			Columns = narrow ? Math.Min(2, Math.Max(1, recipe.Ingredients.Count)) : Math.Min(4, Math.Max(1, recipe.Ingredients.Count)),
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+		};
+		grid.AddThemeConstantOverride("h_separation", 10);
+		grid.AddThemeConstantOverride("v_separation", 10);
+		List<Control> parts = recipe.Ingredients.Select(n => BuildNode(n)).ToList();
+		foreach (Control part in parts)
 		{
 			part.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-			parts.AddChild(part);
+			grid.AddChild(part);
 		}
-		tree.AddChild(parts);
-		var arrows = new AscensionForkArrows
+		tree.AddChild(grid);
+		Control result = BuildNode(recipe.Result);
+		tree.AddChild(Centred(result, narrow ? 0.8f : 0.45f));
+
+		for (int i = 0; i < parts.Count; i++)
 		{
-			Shape = AscensionForkArrows.Layout.Fork,
-			Source = parts,
-			CustomMinimumSize = new Vector2(0f, 34f),
-		};
-		arrows.AddTarget(result, open);
-		tree.AddChild(arrows);
-		var centre = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		centre.AddChild(Spacer());
-		result.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		result.SizeFlagsStretchRatio = 2f;
-		centre.AddChild(result);
-		centre.AddChild(Spacer());
-		tree.AddChild(centre);
-		detail.AddChild(tree);
-		treeLines.Add(ingredients.Select(StopOf).ToList());
+			bool live = IsLive(recipe.Ingredients[i]);
+			lines.AddEdge(parts[i], result, live ? CodexRows.Vellum.Reward : CodexRows.Vellum.InkMeta, dashed: !live, layer: live ? 1 : 0);
+		}
+		treeLines.Add(parts.Select(StopOf).ToList());
 		treeLines.Add(new List<Control> { StopOf(result) });
+		return holder;
 	}
 }

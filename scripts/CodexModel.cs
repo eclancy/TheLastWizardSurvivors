@@ -118,6 +118,10 @@ public sealed class CodexNode
 	public string OpensEntryId = string.Empty;
 	/// <summary>The element whose colour an item ingredient's chip takes, for sets.</summary>
 	public List<(Element Element, int Weight)> Elements = new();
+	/// <summary>Whose final form it is ("Pyromancer"), on an Apotheosis node.</summary>
+	public string Owner = string.Empty;
+	/// <summary>Not a name to search for (the Sovereign Rite's "any active spell you hold").</summary>
+	public bool Unsearchable;
 
 	public bool Revealed => State != CodexNodeState.Sealed;
 	public string ShownName => Revealed || NameAlwaysShown ? Name : CodexModel.SealedName;
@@ -137,6 +141,11 @@ public sealed class CodexForm
 	public List<CodexNode> Ascensions = new();
 	/// <summary>The Apotheosis forms that end this spell: the wizard's in a run, every freed wizard's otherwise.</summary>
 	public List<CodexNode> Finals = new();
+	/// <summary>
+	/// The level 4 and level 8 paths an Apotheosis names: the way to the final form, which the book draws in
+	/// the ember line (the wizard's in a run, every freed wizard's otherwise).
+	/// </summary>
+	public HashSet<string> ApotheosisPath = new(StringComparer.OrdinalIgnoreCase);
 
 	public IEnumerable<CodexNode> AllNodes => Mutations.Concat(Ascensions).Concat(Finals);
 }
@@ -187,6 +196,13 @@ public sealed class CodexEntry
 	public bool SetAside;
 	/// <summary>"Rare relic", "Boon".</summary>
 	public string KindLine = string.Empty;
+	/// <summary>The element a spell is filed under in the index: its own first, heaviest tag (the template's, never a gain).</summary>
+	public Element? IndexElement;
+	/// <summary>The wizard's own starting spell (in a run): the index stars it.</summary>
+	public bool Own;
+	/// <summary>A relic's rarity, and every Full Set Enchantment it is a piece of, discovered or not (the index files it).</summary>
+	public ChestItemRarity? Rarity;
+	public List<string> SetIds = new();
 
 	public List<CodexForm> Forms = new();
 	/// <summary>The form the detail opens on: the held one in a run, else the first.</summary>
@@ -241,6 +257,8 @@ public sealed class CodexContext
 	public IReadOnlyList<string> HeldBoons = Array.Empty<string>();
 	/// <summary>The run's element counts by name, for an element chip's popover.</summary>
 	public IReadOnlyDictionary<string, int> ElementCounts = new Dictionary<string, int>();
+	/// <summary>The wizard's own starting spell (Player.SignatureSpellId), or empty.</summary>
+	public string StarterSpellId = string.Empty;
 
 	public static CodexContext ForSave(SaveData save) => new() { Mode = CodexMode.Collection, Save = save };
 }
@@ -347,7 +365,7 @@ public sealed class CodexModel
 			if (entry.Recipe != null)
 			{
 				// A recipe's ingredients find the recipe: the reverse lookup.
-				foreach (CodexNode ingredient in entry.Recipe.Ingredients.Where(n => n.Revealed))
+				foreach (CodexNode ingredient in entry.Recipe.Ingredients.Where(n => n.Revealed && !n.Unsearchable))
 					Add(ingredient.Name, $"In {entry.Name}", entry.Id, ingredient.Id);
 			}
 		}
@@ -541,6 +559,8 @@ public sealed class CodexModel
 					Icon = template.Icon,
 					Elements = CodexRows.FromWeights(template.GetElementWeights()),
 					IsPassive = template.IsPassive,
+					IndexElement = template.GetElementWeights().OrderByDescending(p => p.Value).Select(p => (Element?)p.Key).FirstOrDefault(),
+					Own = inRun && template.Id.Equals(context.StarterSpellId ?? string.Empty, StringComparison.OrdinalIgnoreCase),
 					Owned = owned,
 					Held = held != null,
 					Discovered = owned || held != null,
@@ -762,9 +782,19 @@ public sealed class CodexModel
 						&& (string.IsNullOrEmpty(d.VariantId) || d.VariantId.Equals(form.SelectedVariantId ?? string.Empty, StringComparison.OrdinalIgnoreCase)))
 					: null;
 				if (apotheosis != null)
+				{
 					tree.Finals.Add(FinalFromPreview(form.Id, apotheosis, tree));
+					foreach (AscensionRequirement gate in apotheosis.Requirements.Where(r => r.Kind == AscensionRequirementKind.Path))
+						tree.ApotheosisPath.Add(gate.PathId);
+				}
 				else if (definition != null)
+				{
 					tree.Finals.Add(FinalFromDefinition(form, definition));
+					tree.ApotheosisPath.Add(definition.RequiredLevel4EvolutionId);
+					tree.ApotheosisPath.Add(definition.RequiredLevel8EvolutionId);
+				}
+				foreach (CodexNode final in tree.Finals)
+					final.Owner = context.WizardName ?? string.Empty;
 				return;
 			}
 			// No run: the form of every freed wizard whose final form ends this spell. A locked wizard's is
@@ -776,6 +806,8 @@ public sealed class CodexModel
 					|| !GlobalStatsManager.IsCharacterUnlocked(save, definition.CharacterId))
 					continue;
 				tree.Finals.Add(FinalFromDefinition(form, definition));
+				tree.ApotheosisPath.Add(definition.RequiredLevel4EvolutionId);
+				tree.ApotheosisPath.Add(definition.RequiredLevel8EvolutionId);
 			}
 		}
 
@@ -834,7 +866,7 @@ public sealed class CodexModel
 			{
 				CharacterData wizard = CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(definition.CharacterId, StringComparison.OrdinalIgnoreCase));
 				if (wizard != null)
-					node.Note = $"{wizard.Name}'s";
+					node.Owner = wizard.Name;
 			}
 			return node;
 		}
@@ -928,6 +960,8 @@ public sealed class CodexModel
 					Held = held,
 					Hint = "Found in a chest.",
 					KindLine = rarity == ChestItemRarity.Relic ? "Relic" : $"{rarity} relic",
+					Rarity = rarity,
+					SetIds = ChestItemCatalog.Sets.Where(s => s.RequiredItemIds.Contains(id, StringComparer.OrdinalIgnoreCase)).Select(s => s.Id).ToList(),
 				};
 				entry.State = !seen ? CodexState.Undiscovered : held ? CodexState.Taken : inRun ? CodexState.Known : CodexState.Owned;
 				yield return entry;
@@ -971,6 +1005,11 @@ public sealed class CodexModel
 		{
 			foreach (ComboDefinition recipe in ComboCatalog.All)
 			{
+				if (recipe.IsRite)
+				{
+					yield return RiteEntry(recipe);
+					continue;
+				}
 				SpellData template = ComboCatalog.Template(recipe);
 				ComboPreview preview = context.Combos?.FirstOrDefault(c => c != null && c.Id.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase));
 				bool known = ComboCatalog.IsKnown(recipe, save) || preview != null;
@@ -1042,6 +1081,82 @@ public sealed class CodexModel
 				entry.Unmet = preview?.Requirements?.Count(r => !r.Met) ?? int.MaxValue;
 				yield return entry;
 			}
+		}
+
+		// THE SOVEREIGN RITE (.ai/sovereign-spell.md): not two Ascensions but the Rite and whichever active spell it
+		// is pointed at, so neither ingredient asks for level 8. The Rite carries its own gate - your level, the
+		// active spells held, the fuel the others would pour in (every OTHER active spell's level) - read from
+		// SovereignRite, never copied; the second ingredient is "any active spell you hold", with nothing to load
+		// or look up; the result is that spell, anointed. Measured in a run, the rule as written otherwise.
+		private CodexEntry RiteEntry(ComboDefinition recipe)
+		{
+			SpellData template = ComboCatalog.Template(recipe);
+			bool known = ComboCatalog.IsKnown(recipe, save);
+			bool made = ComboCatalog.IsMet(recipe, save);
+			bool riteHeld = Held(recipe.First.SpellId) != null;
+			var rite = new CodexNode
+			{
+				Id = recipe.First.SpellId,
+				SpellId = recipe.First.SpellId,
+				Milestone = -1,
+				Name = recipe.First.SpellName,
+				Line = template?.Description ?? string.Empty,
+				Icon = template?.Icon,
+				State = riteHeld ? CodexNodeState.Taken : CodexNodeState.Known,
+			};
+			if (inRun)
+			{
+				List<SpellData> active = SovereignRite.ActiveSpells(context.HeldSpells).ToList();
+				int fuel = active.Count == 0 ? 0 : active.Max(target => SovereignRite.FuelFor(target, active));
+				int level = context.PlayerLevel;
+				rite.Chips.Add(new CodexChip { Text = $"You {Math.Min(level, SovereignRite.MinimumPlayerLevel)}/{SovereignRite.MinimumPlayerLevel}", Met = level >= SovereignRite.MinimumPlayerLevel, Have = level, Need = SovereignRite.MinimumPlayerLevel });
+				rite.Chips.Add(new CodexChip { Text = $"{Math.Min(active.Count, SovereignRite.MinimumActiveSpells)}/{SovereignRite.MinimumActiveSpells} active spells", Met = active.Count >= SovereignRite.MinimumActiveSpells, Have = active.Count, Need = SovereignRite.MinimumActiveSpells });
+				rite.Chips.Add(new CodexChip { Text = $"{Math.Min(fuel, SovereignRite.MinimumFuel)}/{SovereignRite.MinimumFuel} levels of fuel", Met = fuel >= SovereignRite.MinimumFuel, Have = fuel, Need = SovereignRite.MinimumFuel });
+			}
+			else
+			{
+				rite.Chips.Add(new CodexChip { Text = $"You {SovereignRite.MinimumPlayerLevel}", Need = SovereignRite.MinimumPlayerLevel });
+				rite.Chips.Add(new CodexChip { Text = $"{SovereignRite.MinimumActiveSpells} active spells", Need = SovereignRite.MinimumActiveSpells });
+				rite.Chips.Add(new CodexChip { Text = $"{SovereignRite.MinimumFuel} levels of fuel", Need = SovereignRite.MinimumFuel });
+			}
+			var anySpell = new CodexNode
+			{
+				Id = "any_active_spell",
+				Milestone = -1,
+				Name = recipe.Second.SpellName,
+				Line = "The spell the Rite is pointed at.",
+				State = CodexNodeState.Known,
+				Unsearchable = true,
+			};
+			var result = new CodexNode
+			{
+				Id = recipe.Id,
+				SpellId = recipe.Id,
+				Milestone = ComboCatalog.MilestoneLevel,
+				Name = $"{SovereignRite.NamePrefix}<your spell>",
+				Line = template?.Description ?? string.Empty,
+				Icon = template?.Icon,
+				NameAlwaysShown = true,
+				State = CodexNodeState.Known,
+			};
+			var card = new CodexRecipe { Id = recipe.Id, Kind = CodexKind.Combination, Made = made, Result = result };
+			card.Ingredients.Add(rite);
+			card.Ingredients.Add(anySpell);
+			var entry = new CodexEntry
+			{
+				Id = recipe.Id,
+				Kind = CodexKind.Combination,
+				Name = recipe.Name,
+				Line = string.IsNullOrWhiteSpace(template?.Tagline) ? template?.Description ?? string.Empty : template.Tagline,
+				Icon = template?.Icon,
+				Discovered = known,
+				Owned = made,
+				Hint = UnlockCatalog.GetLockedHint(recipe.First.SpellId, UnlockKind.Spell),
+				KindLine = "Conjunction",
+				Recipe = card,
+			};
+			entry.State = !known ? CodexState.Undiscovered : inRun ? CodexState.Known : made ? CodexState.Owned : CodexState.Known;
+			return entry;
 		}
 
 		private CodexNode IngredientNode(ComboDefinition recipe, ComboIngredient part, ComboPreview preview)
@@ -1151,7 +1266,8 @@ public sealed class CodexModel
 				{
 					CodexEntry part = entries.FirstOrDefault(e => e.Id.Equals(ingredient.OpensEntryId, StringComparison.OrdinalIgnoreCase));
 					// A recipe the save does not know is not named on its ingredient: its partner may be a secret.
-					if (part == null || !recipe.Discovered || part.UsedIn.Contains(recipe.Id))
+					// The Sovereign Rite is its own first ingredient: it is not "used in" itself.
+					if (part == null || part == recipe || !recipe.Discovered || part.UsedIn.Contains(recipe.Id))
 						continue;
 					part.UsedIn.Add(recipe.Id);
 				}

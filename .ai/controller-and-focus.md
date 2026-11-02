@@ -213,10 +213,11 @@ the button.
 
 The Codex (`EvolutionCodex`, `.ai/evolution-codex.md`) is the one screen with more pad buttons than A and B.
 It hears them in `_Input`, ahead of the GUI and of every screen under it, and marks them handled: **LB/RB**
-cycle the four filter tabs; **Y**, or **A with the search field selected**, opens `CodexKeyboard`; **B** (and
-Escape, Start, Android's back) steps back - the tree to its cell, the phone's sheet to the grid, the grid out
-of the Codex. A on a PC cell moves into its tree; on a phone it opens the sheet. The grid's last column never
-steps right into the detail and its first row steps up to the chosen tab.
+cycle the three bookmarks on the index and turn to the next or previous entry on a phone's turned page (a swipe
+does too); **Y**, or **A with the search field selected**, opens `CodexKeyboard`; **B** (and Escape, Start,
+Android's back) steps back - the page to its index line, the phone's page to the index, the index out of the
+Codex. A on a PC index line moves onto the entry's page; on a phone it turns to it. Sideways never jumps from the
+index onto the page, and its first line steps up to the search field, which steps up to the open bookmark.
 
 **The keyboard is ours** (Eric: "controller should have search in the most user friendly way possible"):
 A-Z in a 7-wide grid, Space, Delete, Clear and Done, and a row of the four best-matching names above the keys.

@@ -5,27 +5,29 @@ using System.Linq;
 using WizardSurvivors.scripts;
 
 /// <summary>
-/// THE EVOLUTION CODEX (.ai/evolution-codex.md, approved by Eric 2026-11-02): one page for every spell,
-/// item, evolution and recipe. It replaced the level-up screen's Ascensions browser and the main menu's
-/// Spell Index, from a player's request (Amy, 2026-11-02) that the progression stop being put together
-/// from three places.
+/// THE EVOLUTION CODEX (.ai/evolution-codex.md, approved by Eric 2026-11-02): one book for every spell, item,
+/// evolution and recipe. It replaced the level-up screen's Ascensions browser and the main menu's Spell Index,
+/// from a player's request (Amy, 2026-11-02) that the progression stop being put together from three places.
 /// </summary>
 /// <remarks>
-/// One screen, two modes (CodexModel): in a run the states are the run's, on the main menu the save's.
-/// A CanvasLayer of its own over whatever opened it - the level-up screen, the pause screen or the main
-/// menu - added to the tree's root so it is never inside the opener's menu: the opener's navigator sees the
+/// LAYOUT B, "THE BOOK" (Eric's pick, 2026-11-02). On a PC an open book on the stone plate: the LEFT PAGE is
+/// the index - the search field, then every entry by its full name, spells under their element in the
+/// Element order, items under their set or rarity, recipes under their kind - and the RIGHT PAGE is the
+/// selected entry, its evolutions as a family tree down the page. On a phone one page at a time: the index,
+/// and a tap turns to the entry's page ("‹ Index" turns back; a swipe, or LB/RB, turns to the next entry).
+/// Spells, Items and Recipes are bookmarks on the top edge. Parchment in the level-up screen's manuscript
+/// inks (CodexRows.Vellum; tools/art/ui_contrast.py "codex book").
+///
+/// One screen, two modes (CodexModel): in a run the states are the run's, on the main menu the save's. A
+/// CanvasLayer of its own over whatever opened it - the level-up screen, the pause screen or the main menu -
+/// added to the tree's root so it is never inside the opener's menu: the opener's navigator sees the
 /// selection is elsewhere and stands down, and this one's takes it (MenuNavigator, "screens stack"). It
-/// reads, it never grants: nothing here takes an Ascension or makes a recipe. The one thing it changes is
-/// the save's Set aside (a Redaction), which the Spell Index carried and the Codex keeps, in collection mode.
+/// reads, it never grants: nothing here takes an Ascension or makes a recipe. The one thing it changes is the
+/// save's Set aside (a Redaction), which the Spell Index carried and the Codex keeps, in collection mode.
 ///
-/// THE LAYOUTS (section 2). A PC is the grid on the left, 6 across, and the detail of the selected entry on
-/// the right, which follows the selection; a phone is the grid alone, 5 across, and a tap opens the detail
-/// as a full sheet over it. The header never scrolls; only the grid does, and only when the filter shows
-/// more than fit. The tree never scrolls on a PC by construction (CodexModel's bounds, ValidateCodex).
-///
-/// THE CONTROLLER (section 2). The grid is home: the stick moves the selection, the detail follows. A on a
-/// PC moves into the tree, where the stick walks the nodes, and B steps back out, then closes. LB and RB
-/// cycle the filters. Y - or A on the search field - opens the on-screen keyboard (CodexKeyboard).
+/// THE PARTS AND THE ARRANGEMENT. This file is the shell (opening, the index, the bookmarks, search, the
+/// keyboard, selection, input); EvolutionCodex.Detail.cs writes an entry's page; EvolutionCodex.Layout.cs is
+/// the only place that says where things go on each canvas.
 /// </remarks>
 public partial class EvolutionCodex : CanvasLayer
 {
@@ -34,39 +36,42 @@ public partial class EvolutionCodex : CanvasLayer
 
 	public const string Title = "Evolution Codex";
 
+	/// <summary>The book's three bookmarks (section 4's filters; "All" has no page of its own in the book).</summary>
+	private static readonly CodexFilter[] Bookmarks = { CodexFilter.Spells, CodexFilter.Items, CodexFilter.Recipes };
+
 	/// <summary>True while a Codex is open: the screens under it stand down from their own pad buttons.</summary>
 	public static bool IsOpen { get; private set; }
 
 	private CodexContext context = new();
 	private CodexModel model;
-	private CodexFilter filter = CodexFilter.All;
+	private CodexFilter filter = CodexFilter.Spells;
 	private string query = string.Empty;
 	private string selectedId = string.Empty;
 	/// <summary>A node a search hit lit inside the selected entry (an evolution, an ingredient).</summary>
 	private string litNodeId = string.Empty;
-	/// <summary>The form tab the detail shows, for a spell taken in forms; -1 for the entry's own.</summary>
+	/// <summary>The form tab the page shows, for a spell taken in forms; -1 for the entry's own.</summary>
 	private int formShown = -1;
 	private Action closed;
 	private bool narrow;
 	private bool built;
 
 	private Control root = null!;
-	private PanelContainer panel = null!;
 	private LineEdit searchField = null!;
 	private Label countLabel = null!;
 	private Button backButton = null!;
 	private readonly List<Button> tabs = new();
-	private ScrollContainer gridScroll = null!;
-	private VBoxContainer gridList = null!;
-	/// <summary>Where the detail is written: the right panel on a PC, the sheet on a phone.</summary>
-	private VBoxContainer detail = null!;
-	private ScrollContainer detailScroll = null!;
-	/// <summary>The phone's full sheet over the grid; null on a PC.</summary>
-	private Control sheet;
-	private Label sheetTitle;
+	private ScrollContainer indexScroll = null!;
+	private VBoxContainer indexList = null!;
+	/// <summary>Where an entry's page is written: the right page on a PC, the turned page on a phone.</summary>
+	private VBoxContainer page = null!;
+	private ScrollContainer pageScroll = null!;
+	/// <summary>A phone's two pages, one shown at a time; null on a PC, where both are open.</summary>
+	private Control indexPage;
+	private Control entryPage;
+	private Label entryTitle;
+	private Button indexButton;
 	private CodexKeyboard keyboard;
-	private readonly Dictionary<string, Button> cells = new();
-	private readonly Dictionary<string, PanelContainer> frames = new();
+	private readonly Dictionary<string, Button> rows = new();
 
 	/// <summary>
 	/// Opens the Codex over <paramref name="opener"/>'s screen.
@@ -93,18 +98,19 @@ public partial class EvolutionCodex : CanvasLayer
 	public CodexFilter Filter => filter;
 	public string SelectedId => selectedId;
 	public bool KeyboardOpen => keyboard != null && keyboard.Visible;
-	public bool SheetOpen => sheet != null && sheet.Visible;
+	/// <summary>A phone's entry page is turned to (the index is behind it).</summary>
+	public bool PageOpen => entryPage != null && entryPage.Visible;
 
 	// The harness's hands (_UiShot --codex-search, --codex-sheet, --codex-keyboard): each does what the
 	// player's own press would, through the same method.
 	public void DebugSearch(string text)
 	{
 		SetQuery(text);
-		if (cells.TryGetValue(selectedId, out Button cell) && IsInstanceValid(cell))
-			cell.GrabFocus();
+		if (rows.TryGetValue(selectedId, out Button row) && IsInstanceValid(row))
+			row.GrabFocus();
 	}
 
-	public void DebugOpenSheet() => OpenSheet();
+	public void DebugOpenSheet() => OpenPage();
 
 	public void DebugOpenKeyboard() => OpenKeyboard();
 
@@ -129,7 +135,7 @@ public partial class EvolutionCodex : CanvasLayer
 
 	public override void _Notification(int what)
 	{
-		// Android's back steps back exactly as B does: the sheet, then the Codex.
+		// Android's back steps back exactly as B does: the page to the index, then the Codex.
 		if (what == NotificationWMGoBackRequest)
 			StepBack();
 	}
@@ -153,10 +159,12 @@ public partial class EvolutionCodex : CanvasLayer
 			RemoveChild(child);
 			child.QueueFree();
 		}
-		cells.Clear();
-		frames.Clear();
+		rows.Clear();
 		tabs.Clear();
-		sheet = null;
+		indexPage = null;
+		entryPage = null;
+		entryTitle = null;
+		indexButton = null;
 		keyboard = null;
 		narrow = ResponsiveLayout.IsNarrow(this);
 
@@ -170,9 +178,9 @@ public partial class EvolutionCodex : CanvasLayer
 
 		// The arrangement, one builder per canvas (EvolutionCodex.Layout.cs): everything else is shared.
 		if (narrow)
-			BuildPhoneLayout();
+			BuildPhoneBook();
 		else
-			BuildPcLayout();
+			BuildPcBook();
 
 		keyboard = new CodexKeyboard { Name = "CodexKeyboard", Visible = false };
 		keyboard.Place(narrow);
@@ -184,98 +192,42 @@ public partial class EvolutionCodex : CanvasLayer
 		root.AddChild(keyboard);
 
 		built = true;
-		RebuildGrid();
-		if (!narrow)
-			ShowDetail();
+		RebuildIndex();
+		ShowPage();
 		UpdateCount();
 
 		SafeArea.Apply(root);
 		MenuNavigator.Attach(this, InitialFocus());
-		// A selection made by the opener (a search hit, a recipe) is scrolled to once the grid has a size.
+		// A selection made by the opener (a search hit, a recipe) is scrolled to once the index has a size.
 		Callable.From(ScrollToSelected).CallDeferred();
 	}
 
-
-	/// <summary>The stone panel and the column inside it, which every arrangement fills.</summary>
-	private VBoxContainer BuildPanel()
+	/// <summary>The title, the count of what has been found, and - where the arrangement puts it - Back.</summary>
+	private Control BuildTitleRow(bool withBack)
 	{
-		panel = new PanelContainer { Name = "CodexPanel", MouseFilter = Control.MouseFilterEnum.Ignore };
-		panel.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		panel.OffsetLeft = 12f;
-		panel.OffsetRight = -12f;
-		panel.OffsetTop = 12f;
-		panel.OffsetBottom = -12f;
-		panel.AddThemeStyleboxOverride("panel", BonelightSkin.PanelStyle(BonelightSkin.Register.Stone));
-		root.AddChild(panel);
-		var column = new VBoxContainer { Name = "CodexColumn", MouseFilter = Control.MouseFilterEnum.Ignore };
-		column.AddThemeConstantOverride("separation", narrow ? 10 : 8);
-		panel.AddChild(column);
-		return column;
-	}
-
-	/// <summary>The grid's list and its scroll: the only thing on the screen that scrolls.</summary>
-	private void BuildGridScroll()
-	{
-		gridList = new VBoxContainer { Name = "CodexGrid", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
-		gridList.AddThemeConstantOverride("separation", 14);
-		gridScroll = new ScrollContainer
-		{
-			Name = "CodexGridScroll",
-			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-			HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
-			FollowFocus = true,
-		};
-		gridScroll.AddChild(CodexRows.WithGutter(gridList));
-	}
-
-	/// <summary>The heading band: the title and the count, and - where the arrangement puts them there - the search and Back.</summary>
-	private Control BuildHeader(bool withSearch, bool withBack)
-	{
-		// The heading band every stone screen wears (the pause screen's, JournalScreen's): stone deep, a gold rule.
-		var band = new PanelContainer { Name = "CodexHeader", MouseFilter = Control.MouseFilterEnum.Ignore };
-		var style = new StyleBoxFlat { BgColor = CodexInk.StoneDeep, BorderColor = CodexInk.BandRule };
-		style.BorderWidthBottom = 2;
-		style.SetCornerRadiusAll(2);
-		style.ContentMarginLeft = 16;
-		style.ContentMarginRight = 8;
-		style.ContentMarginTop = 4;
-		style.ContentMarginBottom = 6;
-		band.AddThemeStyleboxOverride("panel", style);
-		var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		row.AddThemeConstantOverride("separation", 16);
-		band.AddChild(row);
-
+		var row = new HBoxContainer { Name = "CodexTitleRow", MouseFilter = Control.MouseFilterEnum.Ignore };
+		row.AddThemeConstantOverride("separation", 14);
 		var title = new Label
 		{
 			Name = "CodexTitle",
 			Text = Title,
 			VerticalAlignment = VerticalAlignment.Center,
 			CustomMinimumSize = new Vector2(0f, ResponsiveLayout.MinTouchTarget),
-			SizeFlagsHorizontal = withSearch ? Control.SizeFlags.ShrinkBegin : Control.SizeFlags.ExpandFill,
 		};
 		ResponsiveLayout.SetFont(title, narrow ? ResponsiveLayout.TextRole.Title : ResponsiveLayout.TextRole.Display);
 		title.AddThemeColorOverride("font_color", CodexRows.Stone.Heading);
 		row.AddChild(title);
-
-		if (withSearch)
-			row.AddChild(BuildSearchField(expand: true));
-
-		countLabel = new Label
-		{
-			Name = "CodexCount",
-			VerticalAlignment = VerticalAlignment.Center,
-			HorizontalAlignment = HorizontalAlignment.Right,
-		};
+		countLabel = new Label { Name = "CodexCount", VerticalAlignment = VerticalAlignment.Center };
 		ResponsiveLayout.SetFont(countLabel, ResponsiveLayout.TextRole.Label);
 		countLabel.AddThemeColorOverride("font_color", CodexRows.Stone.InkSoft);
 		row.AddChild(countLabel);
-
+		row.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore });
 		if (withBack)
 		{
 			backButton = BuildBackButton();
 			row.AddChild(backButton);
 		}
-		return band;
+		return row;
 	}
 
 	private Button BuildBackButton()
@@ -283,68 +235,76 @@ public partial class EvolutionCodex : CanvasLayer
 		var back = new Button { Name = "CodexBack", Text = "Back", FocusMode = Control.FocusModeEnum.All };
 		ResponsiveLayout.SetFont(back, ResponsiveLayout.TextRole.Body);
 		BonelightSkin.StyleButton(back, BonelightSkin.Emphasis.Normal);
-		ResponsiveLayout.EnsureTouchTarget(back, 120f);
+		ResponsiveLayout.EnsureTouchTarget(back, 112f);
 		back.Pressed += Close;
 		return back;
 	}
 
-	private Control BuildPhoneFoot()
+	/// <summary>A page of the book: the vellum, the level-up screen's manuscript (BonelightSkin's Vellum register).</summary>
+	private static PanelContainer BuildBookPage(string name)
 	{
-		var foot = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.End };
-		backButton = BuildBackButton();
-		foot.AddChild(backButton);
-		return foot;
+		var sheet = new PanelContainer
+		{
+			Name = name,
+			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+		};
+		sheet.AddThemeStyleboxOverride("panel", BonelightSkin.PanelStyle(BonelightSkin.Register.Vellum));
+		return sheet;
 	}
 
-	private Control BuildSearchField(bool expand)
+	private Control BuildSearchField()
 	{
 		searchField = new LineEdit
 		{
 			Name = "CodexSearch",
-			PlaceholderText = "Search spells, items, recipes",
+			PlaceholderText = "Search the index",
 			Text = query,
 			ClearButtonEnabled = true,
 			CaretBlink = true,
 			// A phone raises its own keyboard for the field; a pad gets ours (CodexKeyboard), through Y.
 			VirtualKeyboardEnabled = true,
-			SizeFlagsHorizontal = expand ? Control.SizeFlags.ExpandFill : Control.SizeFlags.ShrinkBegin,
-			SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
-			CustomMinimumSize = new Vector2(narrow ? 0f : 280f, ResponsiveLayout.MinTouchTarget),
+			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+			CustomMinimumSize = new Vector2(0f, ResponsiveLayout.MinTouchTarget),
 		};
 		ResponsiveLayout.SetFont(searchField, ResponsiveLayout.TextRole.Body);
-		StyleSearchField(searchField);
+		StyleBookField(searchField);
 		searchField.TextChanged += OnSearchTextChanged;
 		return searchField;
 	}
 
-	private static void StyleSearchField(LineEdit field)
+	// On the page: a lighter field ruled in the page's edge, the gold shade when it has the selection.
+	private static void StyleBookField(LineEdit field)
 	{
 		StyleBoxFlat Box(Color edge, int width)
 		{
-			var box = new StyleBoxFlat { BgColor = CodexInk.FieldFace, BorderColor = edge };
+			var box = new StyleBoxFlat { BgColor = CodexInk.BookField, BorderColor = edge };
 			box.SetBorderWidthAll(width);
-			box.SetCornerRadiusAll(4);
-			box.ContentMarginLeft = 12;
+			box.SetCornerRadiusAll(3);
+			box.ContentMarginLeft = 10;
 			box.ContentMarginRight = 8;
 			box.ContentMarginTop = 4;
 			box.ContentMarginBottom = 4;
 			return box;
 		}
-		field.AddThemeStyleboxOverride("normal", Box(CodexRows.Stone.Edge, 2));
-		field.AddThemeStyleboxOverride("focus", Box(CodexRows.Stone.Reward, 2));
-		field.AddThemeStyleboxOverride("read_only", Box(CodexRows.Stone.Edge, 1));
-		field.AddThemeColorOverride("font_color", CodexRows.Stone.Ink);
-		field.AddThemeColorOverride("font_placeholder_color", CodexRows.Stone.InkSoft);
-		field.AddThemeColorOverride("caret_color", CodexRows.Stone.Reward);
-		field.AddThemeColorOverride("selection_color", new Color(CodexRows.Stone.Reward, 0.35f));
+		field.AddThemeStyleboxOverride("normal", Box(CodexRows.Vellum.Edge, 2));
+		field.AddThemeStyleboxOverride("focus", Box(CodexRows.Vellum.Reward, 2));
+		field.AddThemeStyleboxOverride("read_only", Box(CodexRows.Vellum.Edge, 1));
+		field.AddThemeColorOverride("font_color", CodexRows.Vellum.Ink);
+		field.AddThemeColorOverride("font_placeholder_color", CodexRows.Vellum.InkMeta);
+		field.AddThemeColorOverride("caret_color", CodexRows.Vellum.Ink);
+		field.AddThemeColorOverride("selection_color", new Color(CodexInk.BookSelected, 0.9f));
+		field.AddThemeColorOverride("clear_button_color", CodexRows.Vellum.InkMeta);
+		field.AddThemeColorOverride("clear_button_color_pressed", CodexRows.Vellum.Ink);
 	}
 
-	private Control BuildFilterRow()
+	/// <summary>Spells, Items, Recipes: bookmarks on the book's top edge, the open one in the page's own vellum.</summary>
+	private Control BuildBookmarks()
 	{
-		var row = new HBoxContainer { Name = "CodexFilters", MouseFilter = Control.MouseFilterEnum.Ignore };
-		row.AddThemeConstantOverride("separation", 6);
+		var row = new HBoxContainer { Name = "CodexBookmarks", MouseFilter = Control.MouseFilterEnum.Ignore };
+		row.AddThemeConstantOverride("separation", 4);
 		var group = new ButtonGroup();
-		foreach (CodexFilter f in new[] { CodexFilter.All, CodexFilter.Spells, CodexFilter.Items, CodexFilter.Recipes })
+		foreach (CodexFilter f in Bookmarks)
 		{
 			var tab = new Button
 			{
@@ -355,416 +315,337 @@ public partial class EvolutionCodex : CanvasLayer
 				ButtonPressed = f == filter,
 				FocusMode = Control.FocusModeEnum.All,
 				SizeFlagsHorizontal = narrow ? Control.SizeFlags.ExpandFill : Control.SizeFlags.ShrinkBegin,
+				SizeFlagsVertical = Control.SizeFlags.ShrinkEnd,
 			};
-			// Cinzel on a PC; on a phone four Cinzel tabs are wider than the panel, and the sans fits.
+			// Cinzel on a PC; on a phone three Cinzel bookmarks crowd the width, and the sans fits.
 			ResponsiveLayout.SetFont(tab, narrow ? ResponsiveLayout.TextRole.Body : ResponsiveLayout.TextRole.Title);
-			CodexRows.StyleTab(tab, CodexRows.Stone);
-			ResponsiveLayout.EnsureTouchTarget(tab, narrow ? 0f : 96f);
+			StyleBookmark(tab);
+			ResponsiveLayout.EnsureTouchTarget(tab, narrow ? 0f : 112f);
 			CodexFilter chosen = f;
 			tab.Pressed += () => SetFilter(chosen, keepFocusOnTab: true);
 			tabs.Add(tab);
 			row.AddChild(tab);
 		}
-		if (!narrow)
-		{
-			row.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore });
-			// One quiet line naming the run (section 2): the wizard and his level.
-			if (!string.IsNullOrEmpty(model.RunLine))
-			{
-				Label run = CodexRows.MakeText(model.RunLine, ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
-				run.Name = "CodexRunLine";
-				run.AutowrapMode = TextServer.AutowrapMode.Off;
-				row.AddChild(run);
-			}
-			else
-			{
-				// The pad's three buttons, said once, where the run line would be.
-				Label hint = CodexRows.MakeText("LB/RB filters  ·  Y search", ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
-				hint.Name = "CodexPadHint";
-				hint.AutowrapMode = TextServer.AutowrapMode.Off;
-				hint.Visible = Input.GetConnectedJoypads().Count > 0;
-				row.AddChild(hint);
-			}
-		}
 		return row;
 	}
 
-	private Control BuildDetailPanel()
+	private static void StyleBookmark(Button tab)
 	{
-		var frame = new PanelContainer
+		StyleBoxFlat Tab(Color face, Color edge)
 		{
-			Name = "CodexDetailPanel",
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-		};
-		var style = new StyleBoxFlat { BgColor = new Color(CodexInk.StoneDeep, 0.55f), BorderColor = CodexRows.Stone.QuietEdge };
-		style.SetBorderWidthAll(1);
-		style.SetCornerRadiusAll(4);
-		style.SetContentMarginAll(12);
-		frame.AddThemeStyleboxOverride("panel", style);
-		detailScroll = new ScrollContainer
-		{
-			Name = "CodexDetailScroll",
-			HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
-			FollowFocus = true,
-		};
-		frame.AddChild(detailScroll);
-		detail = new VBoxContainer { Name = "CodexDetail", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
-		detail.AddThemeConstantOverride("separation", 10);
-		detailScroll.AddChild(detail);
-		return frame;
+			var box = new StyleBoxFlat { BgColor = face, BorderColor = edge };
+			box.SetBorderWidthAll(2);
+			box.BorderWidthBottom = 0;
+			box.CornerRadiusTopLeft = 4;
+			box.CornerRadiusTopRight = 4;
+			box.ContentMarginLeft = 16;
+			box.ContentMarginRight = 16;
+			box.ContentMarginTop = 4;
+			box.ContentMarginBottom = 4;
+			return box;
+		}
+		// The open bookmark is the page's vellum; the others a darker leaf behind it.
+		tab.AddThemeStyleboxOverride("normal", Tab(CodexInk.BookmarkShut, CodexRows.Vellum.Edge));
+		tab.AddThemeStyleboxOverride("hover", Tab(CodexInk.BookmarkHover, CodexRows.Vellum.Edge));
+		tab.AddThemeStyleboxOverride("focus", Tab(CodexInk.BookmarkHover, CodexRows.Vellum.Reward));
+		tab.AddThemeStyleboxOverride("pressed", Tab(CodexRows.Vellum.Face, CodexRows.Vellum.Reward));
+		tab.AddThemeStyleboxOverride("hover_pressed", Tab(CodexRows.Vellum.Face, CodexRows.Vellum.Reward));
+		foreach (string state in new[] { "font_color", "font_hover_color", "font_focus_color", "font_pressed_color", "font_hover_pressed_color" })
+			tab.AddThemeColorOverride(state, CodexRows.Vellum.Ink);
 	}
 
-	private Control BuildSheet()
+	// ---- the index (the left page) ----------------------------------------------------------------
+
+	private void RebuildIndex()
 	{
-		// The phone's detail: a full sheet over the grid (section 2), its tree reading top to bottom.
-		var cover = new PanelContainer { Name = "CodexSheet", Visible = false, MouseFilter = Control.MouseFilterEnum.Stop };
-		cover.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		cover.OffsetLeft = 12f;
-		cover.OffsetRight = -12f;
-		cover.OffsetTop = 12f;
-		cover.OffsetBottom = -12f;
-		cover.AddThemeStyleboxOverride("panel", BonelightSkin.PanelStyle(BonelightSkin.Register.Stone));
-		var column = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		column.AddThemeConstantOverride("separation", 10);
-		cover.AddChild(column);
-
-		var band = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		var style = new StyleBoxFlat { BgColor = CodexInk.StoneDeep, BorderColor = CodexInk.BandRule };
-		style.BorderWidthBottom = 2;
-		style.SetCornerRadiusAll(2);
-		style.ContentMarginLeft = 8;
-		style.ContentMarginRight = 12;
-		style.ContentMarginTop = 4;
-		style.ContentMarginBottom = 6;
-		band.AddThemeStyleboxOverride("panel", style);
-		column.AddChild(band);
-		var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		row.AddThemeConstantOverride("separation", 12);
-		band.AddChild(row);
-		var back = new Button { Name = "CodexSheetBack", Text = "‹ Codex", FocusMode = Control.FocusModeEnum.All };
-		ResponsiveLayout.SetFont(back, ResponsiveLayout.TextRole.Body);
-		BonelightSkin.StyleButton(back, BonelightSkin.Emphasis.Normal);
-		ResponsiveLayout.EnsureTouchTarget(back, 132f);
-		back.Pressed += CloseSheet;
-		row.AddChild(back);
-		sheetTitle = new Label
+		foreach (Node child in indexList.GetChildren())
 		{
-			VerticalAlignment = VerticalAlignment.Center,
-			HorizontalAlignment = HorizontalAlignment.Right,
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-			ClipText = true,
-			TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis,
-		};
-		ResponsiveLayout.SetFont(sheetTitle, ResponsiveLayout.TextRole.Title);
-		sheetTitle.AddThemeColorOverride("font_color", CodexRows.Stone.Heading);
-		row.AddChild(sheetTitle);
-
-		detailScroll = new ScrollContainer
-		{
-			Name = "CodexDetailScroll",
-			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-			HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
-			FollowFocus = true,
-		};
-		column.AddChild(detailScroll);
-		detail = new VBoxContainer { Name = "CodexDetail", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
-		detail.AddThemeConstantOverride("separation", 12);
-		detailScroll.AddChild(CodexRows.WithGutter(detail));
-		sheet = cover;
-		return cover;
-	}
-
-	// ---- the grid -----------------------------------------------------------------------------------
-
-	private void RebuildGrid()
-	{
-		foreach (Node child in gridList.GetChildren())
-		{
-			gridList.RemoveChild(child);
+			indexList.RemoveChild(child);
 			child.QueueFree();
 		}
-		cells.Clear();
-		frames.Clear();
+		rows.Clear();
 
 		List<CodexEntry> shown = model.Filtered(filter, query);
 		if (shown.Count == 0)
 		{
 			Label none = CodexRows.MakeText(string.IsNullOrWhiteSpace(query) ? "Nothing here yet." : $"Nothing matches \"{query}\".",
-				ResponsiveLayout.TextRole.Body, CodexRows.Stone.InkSoft);
+				ResponsiveLayout.TextRole.Body, CodexRows.Vellum.InkSoft);
 			none.Name = "CodexEmpty";
-			gridList.AddChild(none);
+			indexList.AddChild(none);
 		}
-		int columns = GridColumns;
-		foreach (IGrouping<CodexFilter, CodexEntry> group in shown.GroupBy(e => e.Group))
+		foreach ((string heading, Color? swatch, List<CodexEntry> entries) in IndexGroups(shown))
 		{
-			List<CodexEntry> all = model.Entries.Where(e => e.Group == group.Key).ToList();
-			gridList.AddChild(BuildSectionHead(group.Key, all.Count(e => e.Discovered), all.Count));
-			var grid = new GridContainer
-			{
-				Name = $"CodexCells{group.Key}",
-				Columns = columns,
-				MouseFilter = Control.MouseFilterEnum.Ignore,
-				SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-			};
-			grid.AddThemeConstantOverride("h_separation", (int)CellGap);
-			grid.AddThemeConstantOverride("v_separation", 10);
-			foreach (CodexEntry entry in group)
-				grid.AddChild(BuildCell(entry));
-			gridList.AddChild(grid);
+			indexList.AddChild(BuildIndexHeading(heading, swatch));
+			foreach (CodexEntry entry in entries)
+				indexList.AddChild(BuildIndexRow(entry));
 		}
-		WireGridFocus(columns);
+		WireIndexFocus();
 		RefreshSelectionMarks();
 	}
 
-	private Control BuildSectionHead(CodexFilter group, int found, int total)
+	/// <summary>
+	/// How the index files its entries: spells under their element (the Element order, the game's own), items
+	/// under the set they are a piece of - once that set is known - or else their rarity, then the boons, and
+	/// recipes under their kind. Inside a heading the model's order holds (section 5's sort).
+	/// </summary>
+	private List<(string Heading, Color? Swatch, List<CodexEntry> Entries)> IndexGroups(List<CodexEntry> shown)
 	{
-		var head = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		head.AddThemeConstantOverride("separation", 10);
-		var heading = new Label { Text = group.ToString(), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, VerticalAlignment = VerticalAlignment.Bottom };
-		ResponsiveLayout.SetFont(heading, ResponsiveLayout.TextRole.Title);
-		heading.AddThemeColorOverride("font_color", CodexRows.Stone.Heading);
-		head.AddChild(heading);
-		Label tally = CodexRows.MakeText($"{found} / {total}", ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
-		tally.AutowrapMode = TextServer.AutowrapMode.Off;
-		tally.VerticalAlignment = VerticalAlignment.Bottom;
-		head.AddChild(tally);
-		var box = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		box.AddThemeConstantOverride("separation", 4);
-		box.AddChild(head);
-		box.AddChild(new ColorRect { Color = CodexRows.Stone.Rule, CustomMinimumSize = new Vector2(0, 2), MouseFilter = Control.MouseFilterEnum.Ignore });
-		return box;
+		var groups = new List<(string, Color?, List<CodexEntry>)>();
+		void Add(string heading, Color? swatch, IEnumerable<CodexEntry> entries)
+		{
+			List<CodexEntry> list = entries.ToList();
+			if (list.Count > 0)
+				groups.Add((heading, swatch, list));
+		}
+		switch (filter)
+		{
+			case CodexFilter.Spells:
+				foreach (Element element in Enum.GetValues(typeof(Element)))
+					Add(element.ToString(), ElementColors.GetColor(element), shown.Where(e => e.IndexElement == element));
+				Add("Untagged", null, shown.Where(e => e.IndexElement == null));
+				break;
+			case CodexFilter.Items:
+				var placed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+				List<CodexEntry> relics = shown.Where(e => e.Kind == CodexKind.Relic).ToList();
+				foreach (CodexEntry set in model.Entries.Where(e => e.Kind == CodexKind.FullSet && e.Discovered))
+				{
+					List<CodexEntry> pieces = relics.Where(r => !placed.Contains(r.Id)
+						&& r.SetIds.FirstOrDefault(id => model.Get(id)?.Discovered == true) == set.Id).ToList();
+					foreach (CodexEntry piece in pieces)
+						placed.Add(piece.Id);
+					Add(set.Name, null, pieces);
+				}
+				foreach (ChestItemRarity rarity in new[] { ChestItemRarity.Relic, ChestItemRarity.Rare, ChestItemRarity.Uncommon, ChestItemRarity.Common })
+					Add(rarity == ChestItemRarity.Relic ? "Relics" : $"{rarity} relics", null,
+						relics.Where(r => !placed.Contains(r.Id) && r.Rarity == rarity));
+				Add("Boons", null, shown.Where(e => e.Kind == CodexKind.Boon));
+				break;
+			default:
+				Add("Conjunctions", null, shown.Where(e => e.Kind == CodexKind.Combination));
+				Add("Full Set Enchantments", null, shown.Where(e => e.Kind == CodexKind.FullSet));
+				break;
+		}
+		return groups;
 	}
 
-	/// <summary>One cell (section 3): the icon on a frame that says its state, the name on one line under it.</summary>
-	private Control BuildCell(CodexEntry entry)
+	private static Font headingFont;
+
+	private Control BuildIndexHeading(string heading, Color? swatch)
 	{
-		var cell = new VBoxContainer
+		var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		row.AddThemeConstantOverride("separation", 8);
+		var pad = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		pad.AddThemeConstantOverride("margin_top", 8);
+		pad.AddChild(row);
+		if (swatch is Color colour)
 		{
-			Name = $"Cell_{entry.Id}",
-			CustomMinimumSize = new Vector2(CellWidth, 0f),
-			MouseFilter = Control.MouseFilterEnum.Ignore,
+			// The element's own colour, rimmed in the page's ink so the pale ones (Light, Wind) still show.
+			var chip = new PanelContainer { CustomMinimumSize = new Vector2(14, 14), SizeFlagsVertical = Control.SizeFlags.ShrinkCenter, MouseFilter = Control.MouseFilterEnum.Ignore };
+			var box = new StyleBoxFlat { BgColor = colour, BorderColor = CodexRows.Vellum.Ink };
+			box.SetBorderWidthAll(1);
+			chip.AddThemeStyleboxOverride("panel", box);
+			row.AddChild(chip);
+		}
+		var label = new Label { Text = heading.ToUpperInvariant(), VerticalAlignment = VerticalAlignment.Center };
+		ResponsiveLayout.SetFont(label, ResponsiveLayout.TextRole.Label);
+		// Cinzel, as every heading (the level-up doc's 4a), at the index's size.
+		headingFont ??= GD.Load<Font>("res://scenes/resources/HeadingFont.tres");
+		if (headingFont != null)
+			label.AddThemeFontOverride("font", headingFont);
+		label.AddThemeColorOverride("font_color", CodexRows.Vellum.Heading);
+		row.AddChild(label);
+		var rule = new ColorRect { Color = CodexRows.Vellum.Rule, CustomMinimumSize = new Vector2(0, 2), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, SizeFlagsVertical = Control.SizeFlags.ShrinkCenter, MouseFilter = Control.MouseFilterEnum.Ignore };
+		row.AddChild(rule);
+		return pad;
+	}
+
+	/// <summary>
+	/// One line of the index: the full name, never cut short (a ★ on the wizard's own), in the ink while it is
+	/// held or owned and faded while it is only known, "? ? ?" while unfound; the pips of a spell held this
+	/// run, or what an item or a recipe is to this run, at the right.
+	/// </summary>
+	private Control BuildIndexRow(CodexEntry entry)
+	{
+		var button = new Button
+		{
+			Name = $"CodexRow_{entry.Id}",
+			FocusMode = Control.FocusModeEnum.All,
+			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+			CustomMinimumSize = new Vector2(0f, narrow ? ResponsiveLayout.MinTouchTarget : 34f),
 		};
-		// 8: clear of a ready cell's breathing ring (AscensionReadyGlow, 6 outside the frame), which under the
-		// name measured as its ground.
-		cell.AddThemeConstantOverride("separation", 8);
+		StyleIndexRow(button, selected: false);
+		if (!DisplayServer.IsTouchscreenAvailable() && !entry.Discovered)
+			button.TooltipText = entry.Hint;
 
-		var frame = new PanelContainer
-		{
-			Name = "Frame",
-			CustomMinimumSize = new Vector2(FrameSide, FrameSide),
-			SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-		};
-		frame.AddThemeStyleboxOverride("panel", CodexInk.CellFrame(entry.State, selected: false));
-		cell.AddChild(frame);
+		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		line.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+		line.OffsetLeft = 10f;
+		line.OffsetRight = -8f;
+		line.AddThemeConstantOverride("separation", 8);
+		button.AddChild(line);
 
-		// The whole frame is one target and one stop; the content over it ignores the mouse.
-		Button overlay = BonelightSkin.MakeCardClickOverlay(true, 4);
-		overlay.Name = $"CodexCell_{entry.Id}";
-		if (!DisplayServer.IsTouchscreenAvailable())
-			overlay.TooltipText = entry.ShownName;
-		frame.AddChild(overlay);
+		bool faded = !entry.Discovered || IsOnlyKnown(entry);
+		Color ink = faded ? CodexRows.Vellum.InkMeta : CodexRows.Vellum.Ink;
+		if (entry.Own)
+			line.AddChild(RowText("★", CodexRows.Vellum.Reward));
+		Label name = RowText(entry.Discovered ? entry.Name : "? ? ?", ink);
+		name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+		line.AddChild(name);
 
-		var centre = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		frame.AddChild(centre);
-		centre.AddChild(CellPicture(entry));
-
-		if (entry.Held && entry.LevelCap > 0 && entry.Kind == CodexKind.Spell && entry.State != CodexState.Taken)
-		{
-			// Levelling (in-run): the pips under the icon, inside the frame's foot.
-			var foot = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.End };
-			var pips = new LevelPips
+		if (!entry.Discovered)
+			line.AddChild(RowText("not yet found", CodexRows.Vellum.InkMeta, small: true));
+		else if (entry.Held && entry.Kind == CodexKind.Spell && entry.LevelCap > 0)
+			line.AddChild(new LevelPips
 			{
 				Count = entry.LevelCap,
 				Filled = Mathf.Clamp(entry.Level, 0, entry.LevelCap),
-				Pip = narrow ? 8f : 7f,
+				Pip = 9f,
 				Spacing = 2f,
-				SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
+				SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
 				MouseFilter = Control.MouseFilterEnum.Ignore,
-			};
-			var inset = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-			inset.AddThemeConstantOverride("margin_bottom", 4);
-			inset.AddChild(pips);
-			foot.AddChild(inset);
-			frame.AddChild(foot);
-		}
-		if (entry.State == CodexState.Taken)
-			frame.AddChild(CornerMark("★", CodexInk.TakenRim));
-		if (entry.SetAside)
-			frame.AddChild(CornerMark("Set aside", CodexRows.Stone.InkSoft, small: true, bottom: true));
-		if (entry.State == CodexState.Ready)
-			AscensionReadyGlow.AttachTo(frame, showRing: true).SetActive(true);
-
-		// Ready: the name in the frame's gold too, so a still screenshot says it as well as the breathing ring.
-		Label name = CodexRows.MakeText(entry.ShownName, ResponsiveLayout.TextRole.Micro,
-			entry.State == CodexState.Ready ? CodexRows.Stone.Reward : entry.Discovered ? CodexRows.Stone.Ink : CodexRows.Stone.InkSoft);
-		name.AutowrapMode = TextServer.AutowrapMode.Off;
-		name.ClipText = true;
-		name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
-		name.HorizontalAlignment = HorizontalAlignment.Center;
-		name.CustomMinimumSize = new Vector2(CellWidth, 0f);
-		cell.AddChild(name);
+			});
+		else if (RowNote(entry) is string note)
+			line.AddChild(RowText(note, entry.State == CodexState.Ready ? CodexRows.Vellum.Reward : CodexRows.Vellum.InkSoft, small: true));
 
 		string id = entry.Id;
-		overlay.FocusEntered += () => OnCellFocused(id);
-		overlay.Pressed += () => OnCellPressed(id);
-		cells[entry.Id] = overlay;
-		frames[entry.Id] = frame;
-		return cell;
+		button.FocusEntered += () => OnRowFocused(id);
+		button.Pressed += () => OnRowPressed(id);
+		rows[entry.Id] = button;
+		return button;
 	}
 
-	private Control CellPicture(CodexEntry entry)
+	// Known but not the player's: in a run anything not held; on the menu a spell, boon or recipe not owned.
+	private bool IsOnlyKnown(CodexEntry entry)
 	{
 		if (!entry.Discovered)
-		{
-			// The sealed glyph (24 drawn pixels) at exactly x2: never the thing's own shape.
-			return new TextureRect
-			{
-				Texture = StatIcons.Load("sealed"),
-				CustomMinimumSize = new Vector2(48, 48),
-				ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-				StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-				MouseFilter = Control.MouseFilterEnum.Ignore,
-				Modulate = new Color(1f, 1f, 1f, 0.7f),
-			};
-		}
-		bool dim = entry.State == CodexState.Known;
-		return new TextureRect
-		{
-			Texture = entry.Icon ?? DefaultIcon,
-			// The icons are drawn at 64: shown whole, never at a fraction.
-			CustomMinimumSize = new Vector2(64, 64),
-			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-			// Known but not owned or not taken: dimmed toward the stone, never erased.
-			Modulate = dim ? new Color(0.62f, 0.62f, 0.68f, 0.85f) : Colors.White,
-		};
+			return false;
+		if (model.Mode == CodexMode.InRun)
+			return !entry.Held && entry.State != CodexState.Ready && entry.State != CodexState.Leveling;
+		return entry.Kind is CodexKind.Spell or CodexKind.Boon or CodexKind.Combination && !entry.Owned;
 	}
 
-	private Control CornerMark(string text, Color ink, bool small = false, bool bottom = false)
+	private static string RowNote(CodexEntry entry) => entry.State switch
 	{
-		var holder = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		holder.AddThemeConstantOverride("margin_top", 1);
-		holder.AddThemeConstantOverride("margin_right", 3);
-		holder.AddThemeConstantOverride("margin_left", 3);
-		holder.AddThemeConstantOverride("margin_bottom", 1);
-		var label = new Label
-		{
-			Text = text,
-			HorizontalAlignment = small ? HorizontalAlignment.Center : HorizontalAlignment.Right,
-			VerticalAlignment = bottom ? VerticalAlignment.Bottom : VerticalAlignment.Top,
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-		};
-		ResponsiveLayout.SetFont(label, small ? ResponsiveLayout.TextRole.Micro : ResponsiveLayout.TextRole.Body);
-		label.AddThemeColorOverride("font_color", ink);
-		// A dark lip so the word reads over an icon's light pixels too.
-		label.AddThemeColorOverride("font_outline_color", CodexInk.StoneDeep);
-		label.AddThemeConstantOverride("outline_size", 5);
-		holder.AddChild(label);
-		return holder;
+		CodexState.Ready => "ready",
+		CodexState.Taken when entry.Kind == CodexKind.Combination => "made",
+		CodexState.Taken when entry.Kind == CodexKind.FullSet => "complete",
+		CodexState.Taken => "held",
+		CodexState.Leveling when entry.Kind == CodexKind.FullSet => $"{entry.Level}/{entry.LevelCap}",
+		CodexState.Owned when entry.Kind == CodexKind.Combination => "made",
+		_ => entry.SetAside ? "set aside" : null,
+	};
+
+	private Label RowText(string text, Color ink, bool small = false)
+	{
+		Label label = CodexRows.MakeText(text, small ? ResponsiveLayout.TextRole.Micro : narrow ? ResponsiveLayout.TextRole.Body : ResponsiveLayout.TextRole.Label, ink);
+		label.AutowrapMode = TextServer.AutowrapMode.Off;
+		label.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+		return label;
 	}
 
-	private static Texture2D defaultIcon;
-	private static Texture2D DefaultIcon => defaultIcon ??= BonelightSkin.LoadTextureSafe("res://assets/bonelight/ui/spells/unknown.png");
-
-	/// <summary>
-	/// The grid's focus: Godot's own geometry inside it, with three walls. The last column never steps
-	/// right into the detail (A goes there), the first row steps up to the chosen filter, and the filters
-	/// step down to the first cell.
-	/// </summary>
-	private void WireGridFocus(int columns)
+	private static void StyleIndexRow(Button button, bool selected)
 	{
-		List<Button> ordered = OrderedCells();
-		Button chosenTab = tabs.ElementAtOrDefault((int)filter);
-		for (int i = 0; i < ordered.Count; i++)
+		StyleBoxFlat Row(Color face, int marker)
 		{
-			Button cell = ordered[i];
-			GridContainer grid = cell.GetParent()?.GetParent()?.GetParent() as GridContainer;
-			int index = grid != null ? cell.GetParent().GetParent().GetIndex() : i;
-			int gridColumns = grid?.Columns ?? columns;
-			if (!narrow && (index % gridColumns == gridColumns - 1 || index == (grid?.GetChildCount() ?? ordered.Count) - 1))
-				cell.FocusNeighborRight = new NodePath(".");
-			if (grid != null && grid == FirstGrid() && index < gridColumns && chosenTab != null)
-				cell.FocusNeighborTop = cell.GetPathTo(chosenTab);
+			var box = new StyleBoxFlat { BgColor = face, BorderColor = CodexRows.Vellum.Reward };
+			box.BorderWidthLeft = marker;
+			box.SetCornerRadiusAll(2);
+			return box;
 		}
-		Button first = ordered.FirstOrDefault();
-		foreach (Button tab in tabs)
-		{
-			tab.FocusNeighborBottom = first != null ? tab.GetPathTo(first) : new NodePath();
-			tab.FocusNeighborTop = searchField != null ? tab.GetPathTo(searchField) : new NodePath();
-		}
-		if (searchField != null && tabs.Count > 0)
-			searchField.FocusNeighborBottom = searchField.GetPathTo(chosenTab ?? tabs[0]);
-	}
-
-	private GridContainer FirstGrid() => gridList.GetChildren().OfType<GridContainer>().FirstOrDefault();
-
-	/// <summary>Every cell's button in reading order.</summary>
-	private List<Button> OrderedCells()
-	{
-		var list = new List<Button>();
-		foreach (GridContainer grid in gridList.GetChildren().OfType<GridContainer>())
-			foreach (Node cell in grid.GetChildren())
-				if (cell.GetNodeOrNull<Button>($"Frame/CodexCell_{cell.Name.ToString().Substring(5)}") is Button button)
-					list.Add(button);
-		return list;
+		// The selected entry is marked on the page itself - a gold-washed line with a gold rule at its left -
+		// so it stays marked while the selection is on the right page.
+		Color rest = selected ? CodexInk.BookSelected : new Color(CodexInk.BookSelected, 0f);
+		int marker = selected ? 4 : 0;
+		button.AddThemeStyleboxOverride("normal", Row(rest, marker));
+		button.AddThemeStyleboxOverride("hover", Row(selected ? CodexInk.BookSelected : CodexInk.BookHover, marker));
+		button.AddThemeStyleboxOverride("focus", Row(selected ? CodexInk.BookSelected : CodexInk.BookHover, marker));
+		button.AddThemeStyleboxOverride("pressed", Row(CodexInk.BookSelected, 4));
+		button.AddThemeStyleboxOverride("hover_pressed", Row(CodexInk.BookSelected, 4));
 	}
 
 	private void RefreshSelectionMarks()
 	{
-		foreach (var pair in frames)
-		{
-			CodexEntry entry = model.Get(pair.Key);
-			if (entry != null && IsInstanceValid(pair.Value))
-				pair.Value.AddThemeStyleboxOverride("panel", CodexInk.CellFrame(entry.State, selected: !narrow && pair.Key == selectedId));
-		}
+		foreach (var pair in rows)
+			if (IsInstanceValid(pair.Value))
+				StyleIndexRow(pair.Value, pair.Key == selectedId);
 	}
+
+	/// <summary>
+	/// The index's focus: down the page, with two walls - sideways never jumps onto the entry's page (A goes
+	/// there), and the first line steps up to the search field, which steps up to the open bookmark.
+	/// </summary>
+	private void WireIndexFocus()
+	{
+		List<Button> ordered = OrderedRows();
+		foreach (Button row in ordered)
+		{
+			row.FocusNeighborRight = new NodePath(".");
+			row.FocusNeighborLeft = new NodePath(".");
+		}
+		Button first = ordered.FirstOrDefault();
+		if (first != null && searchField != null)
+		{
+			first.FocusNeighborTop = first.GetPathTo(searchField);
+			searchField.FocusNeighborBottom = searchField.GetPathTo(first);
+		}
+		Button chosenTab = TabFor(filter);
+		if (searchField != null && chosenTab != null)
+			searchField.FocusNeighborTop = searchField.GetPathTo(chosenTab);
+		foreach (Button tab in tabs)
+			tab.FocusNeighborBottom = searchField != null ? tab.GetPathTo(searchField) : new NodePath();
+	}
+
+	private Button TabFor(CodexFilter f)
+	{
+		int at = Array.IndexOf(Bookmarks, f);
+		return at >= 0 && at < tabs.Count ? tabs[at] : null;
+	}
+
+	/// <summary>Every index line's button, in reading order.</summary>
+	private List<Button> OrderedRows() => indexList.GetChildren().OfType<Button>().ToList();
+
+	private static string IdOf(Button row) => row?.Name.ToString().Substring("CodexRow_".Length);
 
 	private Control InitialFocus()
 	{
-		if (!string.IsNullOrEmpty(selectedId) && cells.TryGetValue(selectedId, out Button cell))
-			return cell;
-		return OrderedCells().FirstOrDefault() ?? (Control)tabs.FirstOrDefault() ?? backButton;
+		if (!string.IsNullOrEmpty(selectedId) && rows.TryGetValue(selectedId, out Button row))
+			return row;
+		return OrderedRows().FirstOrDefault() ?? (Control)tabs.FirstOrDefault() ?? backButton;
 	}
 
 	private void ScrollToSelected()
 	{
-		if (IsInstanceValid(gridScroll) && !string.IsNullOrEmpty(selectedId) && cells.TryGetValue(selectedId, out Button cell) && IsInstanceValid(cell))
-			gridScroll.EnsureControlVisible(cell.GetParent<Control>());
+		if (IsInstanceValid(indexScroll) && !string.IsNullOrEmpty(selectedId) && rows.TryGetValue(selectedId, out Button row) && IsInstanceValid(row))
+			indexScroll.EnsureControlVisible(row);
 	}
 
 	private void UpdateCount()
 	{
 		if (countLabel != null)
-			countLabel.Text = $"{model.DiscoveredCount} / {model.Total}";
+			countLabel.Text = $"{model.DiscoveredCount} of {model.Total} found";
 	}
 
 	// ---- selection ----------------------------------------------------------------------------------
 
 	private void ResolveSelection(string id)
 	{
-		if (string.IsNullOrWhiteSpace(id))
+		CodexEntry entry = model.Get(id);
+		if (entry == null && !string.IsNullOrWhiteSpace(id))
 		{
-			selectedId = model.Filtered(filter).FirstOrDefault()?.Id ?? string.Empty;
-			return;
+			// An evolution's id: its spell, with the node lit.
+			CodexSearchHit hit = model.SearchIndex.FirstOrDefault(h => h.NodeId.Equals(id.Trim(), StringComparison.OrdinalIgnoreCase));
+			entry = hit != null ? model.Get(hit.EntryId) : null;
+			litNodeId = hit?.NodeId ?? string.Empty;
 		}
-		if (model.Get(id) is CodexEntry entry)
-		{
-			selectedId = entry.Id;
-			return;
-		}
-		// An evolution's id: its spell, with the node lit.
-		CodexSearchHit hit = model.SearchIndex.FirstOrDefault(h => h.NodeId.Equals(id.Trim(), StringComparison.OrdinalIgnoreCase));
-		selectedId = hit?.EntryId ?? model.Filtered(filter).FirstOrDefault()?.Id ?? string.Empty;
-		litNodeId = hit?.NodeId ?? string.Empty;
+		// The book has no "All": it opens on the entry's own bookmark, or on Spells.
+		if (entry != null)
+			filter = entry.Group;
+		else if (filter == CodexFilter.All)
+			filter = CodexFilter.Spells;
+		selectedId = entry?.Id ?? model.Filtered(filter).FirstOrDefault()?.Id ?? string.Empty;
 	}
 
-	private void OnCellFocused(string id)
+	private void OnRowFocused(string id)
 	{
 		if (id == selectedId)
 			return;
@@ -773,10 +654,10 @@ public partial class EvolutionCodex : CanvasLayer
 		formShown = -1;
 		RefreshSelectionMarks();
 		if (!narrow)
-			ShowDetail();
+			ShowPage();
 	}
 
-	private void OnCellPressed(string id)
+	private void OnRowPressed(string id)
 	{
 		bool same = id == selectedId;
 		selectedId = id;
@@ -788,23 +669,23 @@ public partial class EvolutionCodex : CanvasLayer
 		RefreshSelectionMarks();
 		if (narrow)
 		{
-			OpenSheet();
+			OpenPage();
 			return;
 		}
 		if (!same)
-			ShowDetail();
-		// A on a PC goes into the tree, where the stick walks the nodes (section 2).
+			ShowPage();
+		// A on a PC goes onto the page, where the stick walks the tree (section 2).
 		Callable.From(FocusTree).CallDeferred();
 	}
 
+	/// <summary>Turns to <paramref name="id"/>'s page, from anywhere: a recipe's ingredient, a margin note, a search.</summary>
 	private void SelectEntry(string id, string nodeId = "")
 	{
 		CodexEntry entry = model.Get(id);
 		if (entry == null)
 			return;
-		// An entry the filter hides: back to All, so the selection is on the grid.
-		if (filter != CodexFilter.All && entry.Group != filter)
-			SetFilter(CodexFilter.All, keepFocusOnTab: false);
+		if (entry.Group != filter)
+			SetFilter(entry.Group, keepFocusOnTab: false);
 		if (!string.IsNullOrWhiteSpace(query) && !model.Filtered(filter, query).Contains(entry))
 			SetQuery(string.Empty);
 		selectedId = entry.Id;
@@ -812,54 +693,76 @@ public partial class EvolutionCodex : CanvasLayer
 		formShown = -1;
 		RefreshSelectionMarks();
 		if (narrow)
-			OpenSheet();
-		else
-			ShowDetail();
-		if (cells.TryGetValue(entry.Id, out Button cell) && IsInstanceValid(cell))
 		{
-			if (!narrow)
-				cell.GrabFocus();
+			OpenPage();
+			return;
+		}
+		ShowPage();
+		if (rows.TryGetValue(entry.Id, out Button row) && IsInstanceValid(row))
+		{
+			row.GrabFocus();
 			Callable.From(ScrollToSelected).CallDeferred();
 		}
 	}
 
-	// ---- filters and search -------------------------------------------------------------------------
-
-	private void SetFilter(CodexFilter next, bool keepFocusOnTab)
+	/// <summary>The next or previous entry in the index's order: a phone's swipe, or LB/RB on a turned page.</summary>
+	private void TurnEntry(int step)
 	{
-		filter = next;
-		for (int i = 0; i < tabs.Count; i++)
-			tabs[i].SetPressedNoSignal(i == (int)next);
-		RebuildGrid();
-		if (IsInstanceValid(gridScroll))
-			gridScroll.ScrollVertical = 0;
-		// The selection stays on its entry when the filter still shows it; otherwise the filter's first.
-		if (!cells.ContainsKey(selectedId))
-		{
-			selectedId = model.Filtered(filter, query).FirstOrDefault()?.Id ?? selectedId;
-			litNodeId = string.Empty;
-			RefreshSelectionMarks();
-		}
-		if (!narrow)
-			ShowDetail();
-		if (keepFocusOnTab)
-			tabs.ElementAtOrDefault((int)next)?.GrabFocus();
+		List<Button> ordered = OrderedRows();
+		if (ordered.Count == 0)
+			return;
+		int at = ordered.FindIndex(b => IdOf(b) == selectedId);
+		int next = Mathf.Clamp(at + step, 0, ordered.Count - 1);
+		if (next == at)
+			return;
+		selectedId = IdOf(ordered[next]);
+		litNodeId = string.Empty;
+		formShown = -1;
+		RefreshSelectionMarks();
+		OpenPage();
 		SfxPlayer.Global(SfxCatalog.UiClick);
 	}
 
-	/// <summary>LB / RB: the next or previous filter, the selection kept in the grid.</summary>
+	// ---- bookmarks and search -----------------------------------------------------------------------
+
+	private void SetFilter(CodexFilter next, bool keepFocusOnTab)
+	{
+		if (next == CodexFilter.All)
+			next = CodexFilter.Spells;
+		filter = next;
+		for (int i = 0; i < tabs.Count; i++)
+			tabs[i].SetPressedNoSignal(Bookmarks[i] == next);
+		RebuildIndex();
+		if (IsInstanceValid(indexScroll))
+			indexScroll.ScrollVertical = 0;
+		// The selection stays on its entry when the bookmark still shows it; otherwise the bookmark's first.
+		if (!rows.ContainsKey(selectedId))
+		{
+			selectedId = IdOf(OrderedRows().FirstOrDefault()) ?? selectedId;
+			litNodeId = string.Empty;
+			formShown = -1;
+			RefreshSelectionMarks();
+		}
+		if (!narrow)
+			ShowPage();
+		if (keepFocusOnTab)
+			TabFor(next)?.GrabFocus();
+		SfxPlayer.Global(SfxCatalog.UiClick);
+	}
+
+	/// <summary>LB / RB: the next or previous bookmark, the selection kept in the index.</summary>
 	private void CycleFilter(int step)
 	{
-		int count = Enum.GetValues(typeof(CodexFilter)).Length;
-		var next = (CodexFilter)(((int)filter + step + count) % count);
+		int at = Array.IndexOf(Bookmarks, filter);
+		CodexFilter next = Bookmarks[((at < 0 ? 0 : at) + step + Bookmarks.Length) % Bookmarks.Length];
 		bool onTab = tabs.Contains(GetViewport()?.GuiGetFocusOwner());
 		SetFilter(next, keepFocusOnTab: onTab);
 		if (!onTab && !KeyboardOpen)
 		{
-			if (cells.TryGetValue(selectedId, out Button cell) && IsInstanceValid(cell))
-				cell.GrabFocus();
+			if (rows.TryGetValue(selectedId, out Button row) && IsInstanceValid(row))
+				row.GrabFocus();
 			else
-				OrderedCells().FirstOrDefault()?.GrabFocus();
+				OrderedRows().FirstOrDefault()?.GrabFocus();
 		}
 	}
 
@@ -879,23 +782,28 @@ public partial class EvolutionCodex : CanvasLayer
 
 	private void ApplyQuery()
 	{
-		// The grid filters live as letters arrive; the selection moves to the best hit.
-		RebuildGrid();
-		if (!string.IsNullOrWhiteSpace(query))
+		// One field searches every name. The index filters live as letters arrive and the selection moves to
+		// the best hit; when the open bookmark holds no match the book turns to the one the best hit is under.
+		CodexSearchHit best = string.IsNullOrWhiteSpace(query) ? null : model.Search(query, 1).FirstOrDefault();
+		if (best != null && model.Get(best.EntryId) is CodexEntry hitEntry && hitEntry.Group != filter
+			&& model.Filtered(filter, query).Count == 0)
 		{
-			CodexSearchHit best = model.Search(query, 1).FirstOrDefault();
-			if (best != null && cells.ContainsKey(best.EntryId))
-			{
-				selectedId = best.EntryId;
-				litNodeId = best.NodeId;
-				formShown = -1;
-				RefreshSelectionMarks();
-			}
+			filter = hitEntry.Group;
+			for (int i = 0; i < tabs.Count; i++)
+				tabs[i].SetPressedNoSignal(Bookmarks[i] == filter);
 		}
-		if (!cells.ContainsKey(selectedId))
-			selectedId = model.Filtered(filter, query).FirstOrDefault()?.Id ?? selectedId;
+		RebuildIndex();
+		if (best != null && rows.ContainsKey(best.EntryId))
+		{
+			selectedId = best.EntryId;
+			litNodeId = best.NodeId;
+			formShown = -1;
+			RefreshSelectionMarks();
+		}
+		if (!rows.ContainsKey(selectedId))
+			selectedId = IdOf(OrderedRows().FirstOrDefault()) ?? selectedId;
 		if (!narrow)
-			ShowDetail();
+			ShowPage();
 		keyboard?.ShowQuery(query);
 		keyboard?.ShowSuggestions(model.Search(query, CodexKeyboard.MaxSuggestions));
 	}
@@ -906,7 +814,7 @@ public partial class EvolutionCodex : CanvasLayer
 	{
 		if (keyboard == null || keyboard.Visible)
 			return;
-		CloseSheetQuietly();
+		ClosePageQuietly();
 		keyboard.Open(narrow, query, model.Search(query, CodexKeyboard.MaxSuggestions));
 		SfxPlayer.Global(SfxCatalog.UiOpen);
 	}
@@ -916,11 +824,11 @@ public partial class EvolutionCodex : CanvasLayer
 		if (keyboard == null || !keyboard.Visible)
 			return;
 		keyboard.Close();
-		// Back on the grid, on the best hit.
-		if (cells.TryGetValue(selectedId, out Button cell) && IsInstanceValid(cell))
-			cell.GrabFocus();
+		// Back on the index, on the best hit.
+		if (rows.TryGetValue(selectedId, out Button row) && IsInstanceValid(row))
+			row.GrabFocus();
 		else
-			OrderedCells().FirstOrDefault()?.GrabFocus();
+			OrderedRows().FirstOrDefault()?.GrabFocus();
 		Callable.From(ScrollToSelected).CallDeferred();
 		SfxPlayer.Global(SfxCatalog.UiClose);
 	}
@@ -941,16 +849,15 @@ public partial class EvolutionCodex : CanvasLayer
 			return;
 		keyboard.Close();
 		// The search becomes the name chosen, and the selection its entry, with the node lit.
-		query = hit.Name;
-		if (searchField != null)
-			searchField.Text = query;
-		RebuildGrid();
+		SetQuery(hit.Name);
 		SelectEntry(hit.EntryId, hit.NodeId);
-		if (!narrow && cells.TryGetValue(selectedId, out Button cell) && IsInstanceValid(cell))
-			cell.GrabFocus();
+		if (!narrow && rows.TryGetValue(selectedId, out Button row) && IsInstanceValid(row))
+			row.GrabFocus();
 	}
 
 	// ---- input --------------------------------------------------------------------------------------
+
+	private Vector2? swipeFrom;
 
 	public override void _Input(InputEvent @event)
 	{
@@ -967,16 +874,34 @@ public partial class EvolutionCodex : CanvasLayer
 			return;
 		}
 
+		// A phone's page turns under a swipe (a drag mostly sideways, a fifth of the screen wide). Watched, never
+		// consumed: a drag that is not a swipe still scrolls the page.
+		if (PageOpen && @event is InputEventScreenTouch touch)
+		{
+			if (touch.Pressed)
+				swipeFrom = touch.Position;
+			else if (swipeFrom is Vector2 from)
+			{
+				swipeFrom = null;
+				Vector2 moved = touch.Position - from;
+				float width = GetViewport().GetVisibleRect().Size.X;
+				if (Mathf.Abs(moved.X) > width * 0.2f && Mathf.Abs(moved.X) > Mathf.Abs(moved.Y) * 2f)
+					TurnEntry(moved.X < 0f ? 1 : -1);
+			}
+		}
+
 		if (@event is InputEventJoypadButton { Pressed: true } pad)
 		{
 			switch (pad.ButtonIndex)
 			{
 				case JoyButton.LeftShoulder:
-					CycleFilter(-1);
-					GetViewport().SetInputAsHandled();
-					return;
 				case JoyButton.RightShoulder:
-					CycleFilter(1);
+					int step = pad.ButtonIndex == JoyButton.RightShoulder ? 1 : -1;
+					// On a turned page the shoulders turn to the next entry; on the index they change bookmark.
+					if (PageOpen)
+						TurnEntry(step);
+					else
+						CycleFilter(step);
 					GetViewport().SetInputAsHandled();
 					return;
 				case JoyButton.Y:
@@ -1006,7 +931,7 @@ public partial class EvolutionCodex : CanvasLayer
 		}
 	}
 
-	/// <summary>B: the tree to its cell, the sheet to the grid, the grid out of the Codex.</summary>
+	/// <summary>B: the page to its index line, the turned page back to the index, the index out of the Codex.</summary>
 	private void StepBack()
 	{
 		if (KeyboardOpen)
@@ -1014,51 +939,58 @@ public partial class EvolutionCodex : CanvasLayer
 			CloseKeyboard();
 			return;
 		}
-		if (SheetOpen)
+		if (PageOpen)
 		{
-			CloseSheet();
+			ClosePage();
 			return;
 		}
 		Control owner = GetViewport()?.GuiGetFocusOwner();
-		if (owner != null && detail != null && detail.IsAncestorOf(owner) && cells.TryGetValue(selectedId, out Button cell))
+		if (owner != null && page != null && page.IsAncestorOf(owner) && rows.TryGetValue(selectedId, out Button row))
 		{
-			cell.GrabFocus();
+			row.GrabFocus();
 			SfxPlayer.Global(SfxCatalog.UiBack);
 			return;
 		}
 		Close();
 	}
 
-	private void OpenSheet()
+	/// <summary>A phone turns from the index to the selected entry's page.</summary>
+	private void OpenPage()
 	{
-		if (sheet == null)
+		if (entryPage == null)
 			return;
-		ShowDetail();
-		sheet.Visible = true;
-		if (sheetTitle != null)
-			sheetTitle.Text = model.Get(selectedId)?.ShownName ?? string.Empty;
-		if (IsInstanceValid(detailScroll))
-			detailScroll.ScrollVertical = 0;
-		Control first = FirstTreeStop() ?? sheet.FindChild("CodexSheetBack", true, false) as Control;
+		ShowPage();
+		indexPage.Visible = false;
+		entryPage.Visible = true;
+		if (entryTitle != null)
+			entryTitle.Text = model.Get(selectedId)?.ShownName ?? string.Empty;
+		if (IsInstanceValid(pageScroll))
+			pageScroll.ScrollVertical = 0;
+		Control first = FirstTreeStop() ?? indexButton;
 		first?.GrabFocus();
 		SfxPlayer.Global(SfxCatalog.UiOpen);
 	}
 
-	private void CloseSheet()
+	private void ClosePage()
 	{
-		if (sheet == null || !sheet.Visible)
+		if (!PageOpen)
 			return;
-		CloseSheetQuietly();
-		// Back to the grid, the same cell selected (section 2).
-		if (cells.TryGetValue(selectedId, out Button cell) && IsInstanceValid(cell))
-			cell.GrabFocus();
+		ClosePageQuietly();
+		// Back to the index, the same line selected (section 2).
+		if (rows.TryGetValue(selectedId, out Button row) && IsInstanceValid(row))
+		{
+			row.GrabFocus();
+			Callable.From(ScrollToSelected).CallDeferred();
+		}
 		SfxPlayer.Global(SfxCatalog.UiBack);
 	}
 
-	private void CloseSheetQuietly()
+	private void ClosePageQuietly()
 	{
-		if (sheet != null)
-			sheet.Visible = false;
+		if (entryPage == null)
+			return;
+		entryPage.Visible = false;
+		indexPage.Visible = true;
 	}
 
 	private void Close()
@@ -1074,68 +1006,43 @@ public partial class EvolutionCodex : CanvasLayer
 }
 
 /// <summary>
-/// The Codex's inks and frames, in one place: every colour is the stone register's (CodexRows.Stone), the
-/// heading band's, or a milestone's mark (GameOverScreen), so the Codex teaches the visual language the
-/// player meets in play (section 3). Measured in tools/art/ui_contrast.py ("codex"): change one, change both.
+/// The Codex's inks and grounds, in one place. The book's are the level-up screen's manuscript (CodexRows.Vellum)
+/// and a few washes of it; the keyboard's are the stone register's. Measured in tools/art/ui_contrast.py
+/// ("codex book", "codex keyboard"): change one, change both.
 /// </summary>
 public static class CodexInk
 {
-	/// <summary>stone.deep: the heading band, a sealed cell's well.</summary>
-	public static readonly Color StoneDeep = new(0.043f, 0.059f, 0.094f);
-	/// <summary>The heading band's gold rule (JournalScreen's).</summary>
-	public static readonly Color BandRule = new(0.541f, 0.416f, 0.118f);
-	/// <summary>The search field's face: stone deep, a step lighter.</summary>
-	public static readonly Color FieldFace = new(0.071f, 0.090f, 0.129f);
-	/// <summary>An owned or held cell's rim: steel, the loadout strip's held rim.</summary>
-	public static readonly Color HeldRim = new(0.416f, 0.494f, 0.596f);
-	/// <summary>Taken / maxed: the solid gold rim (the mutation mark's gold).</summary>
-	public static readonly Color TakenRim = new(0.847f, 0.690f, 0.290f);
-	/// <summary>The selected cell on a PC, while the selection is in the tree: gold hi.</summary>
-	public static readonly Color SelectedRim = new(1.0f, 0.941f, 0.753f);
-	/// <summary>Dark ink on a milestone's solid mark (GameOverScreen.MarkInk).</summary>
-	public static readonly Color MarkInk = new(0.06f, 0.06f, 0.07f);
+	// --- the book (parchment) ---
+	/// <summary>A node's face: the page a step lighter.</summary>
+	public static readonly Color BookNode = new(0.965f, 0.918f, 0.824f);
+	/// <summary>The selected index line, a taken node: the page washed in gold.</summary>
+	public static readonly Color BookSelected = new(0.890f, 0.788f, 0.561f);
+	/// <summary>An index line under the pointer or the stick: the lightest gold wash.</summary>
+	public static readonly Color BookHover = new(0.922f, 0.851f, 0.722f);
+	/// <summary>The search field on the page.</summary>
+	public static readonly Color BookField = new(0.973f, 0.937f, 0.863f);
+	/// <summary>A met requirement's pill: the page a step darker.</summary>
+	public static readonly Color BookPill = new(0.890f, 0.812f, 0.663f);
+	/// <summary>A shut bookmark, and one under the pointer.</summary>
+	public static readonly Color BookmarkShut = new(0.706f, 0.604f, 0.447f);
+	public static readonly Color BookmarkHover = new(0.800f, 0.706f, 0.553f);
 	/// <summary>The rubric band an unmet requirement sits on, and its ink (the browser's, LevelUpMenu).</summary>
 	public static readonly Color UnmetBand = new(0.896f, 0.789f, 0.708f);
 	public static readonly Color UnmetInk = new(0.416f, 0.125f, 0.157f);
+	/// <summary>The way to an Apotheosis on the page: a burnt orange (3:1 and over as a graphic on the vellum).</summary>
+	public static readonly Color EmberLine = new(0.702f, 0.290f, 0.071f);
+	/// <summary>The Apotheosis node: an ember-dark face, its words in the warm light, its rim in fire.</summary>
+	public static readonly Color EmberFace = new(0.165f, 0.078f, 0.063f);
+	public static readonly Color EmberPill = new(0.231f, 0.125f, 0.094f);
+	public static readonly Color EmberInk = new(1.0f, 0.839f, 0.659f);
+	public static readonly Color EmberSoft = new(1.0f, 0.698f, 0.478f);
+	public static readonly Color EmberRim = new(0.910f, 0.412f, 0.180f);
 
-	public static readonly Color MutationMark = new(0.847f, 0.690f, 0.290f);
-	public static readonly Color AscensionMark = new(0.416f, 0.722f, 0.910f);
-	public static readonly Color ApotheosisMark = new(0.910f, 0.478f, 0.102f);
-	/// <summary>A combination's mark: the conjunction plate's starlight.</summary>
-	public static Color ConjunctionMark => CardFamilyArt.ConjunctionTitle;
-
-	public static Color MarkFor(int milestone) => milestone switch
-	{
-		4 => MutationMark,
-		8 => AscensionMark,
-		ApotheosisCatalog.MilestoneLevel => ApotheosisMark,
-		ComboCatalog.MilestoneLevel => ConjunctionMark,
-		_ => TakenRim,
-	};
-
-	public static StyleBoxFlat CellFrame(CodexState state, bool selected)
-	{
-		var box = new StyleBoxFlat
-		{
-			BgColor = state == CodexState.Undiscovered ? StoneDeep : CodexRows.Stone.Face,
-			BorderColor = state switch
-			{
-				CodexState.Undiscovered => CodexRows.Stone.QuietEdge,
-				CodexState.Known => CodexRows.Stone.Edge,
-				CodexState.Ready => CodexRows.Stone.Reward,
-				CodexState.Taken => TakenRim,
-				_ => HeldRim,
-			},
-		};
-		int width = state is CodexState.Ready or CodexState.Taken ? 3 : 2;
-		if (selected)
-		{
-			box.BorderColor = SelectedRim;
-			width = 3;
-		}
-		box.SetBorderWidthAll(width);
-		box.SetCornerRadiusAll(4);
-		box.SetContentMarginAll(0);
-		return box;
-	}
+	// --- the keyboard (stone) ---
+	/// <summary>stone.deep: the keyboard's panel.</summary>
+	public static readonly Color StoneDeep = new(0.043f, 0.059f, 0.094f);
+	/// <summary>The heading band's gold rule (JournalScreen's).</summary>
+	public static readonly Color BandRule = new(0.541f, 0.416f, 0.118f);
+	/// <summary>A pressed key: stone deep, a step lighter.</summary>
+	public static readonly Color FieldFace = new(0.071f, 0.090f, 0.129f);
 }
