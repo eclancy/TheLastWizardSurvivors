@@ -351,7 +351,7 @@ public partial class Sagittarius : Node2D
 	// flashes while it is held. It is the bowstring, and the only meter the draw has.
 	private void DrawArc()
 	{
-		if (arcLayer == null || sky == null || charge <= 0f || nockLeft > 0f)
+		if (arcLayer == null || sky == null || charge <= 0f || nockLeft > 0f || PlayerRef == null || !IsInstanceValid(PlayerRef))
 			return;
 		int n = sky.CollectLit(drawn);
 		if (n < 2)
@@ -410,7 +410,7 @@ public partial class Sagittarius : Node2D
 	/// frozen parents (Player.TryFuse): the cooldown is the rain's cloudburst, the count its stars, the range
 	/// its width, the damage one star's. Everything else is read from the parents as it fires.
 	/// </summary>
-	public static void Freeze(SpellData combination, SpellData first, SpellData second)
+	public static void Freeze(SpellData combination)
 	{
 		SpellData rainParent = combination.ComboParent(RainSpellId);
 		if (rainParent == null)

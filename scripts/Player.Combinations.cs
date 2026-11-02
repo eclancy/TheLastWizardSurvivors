@@ -115,7 +115,7 @@ public partial class Player
 		// The combination's own script reads its parents' numbers; the few the fire loop and the cards read
 		// from the spell itself are set from them here, once.
 		if (recipe.Id.Equals(Sagittarius.SpellId, StringComparison.OrdinalIgnoreCase))
-			Sagittarius.Freeze(combo, frozenFirst, frozenSecond);
+			Sagittarius.Freeze(combo);
 
 		int slot = equippedSpells.IndexOf(first);
 		DropForFusion(first);
@@ -159,7 +159,6 @@ public partial class Player
 				continue;
 			SpellData template = ComboCatalog.Template(recipe);
 			SpellData firstTemplate = ContentValidator.LoadAllSpells().FirstOrDefault(s => s.Id.Equals(recipe.First.SpellId, StringComparison.OrdinalIgnoreCase));
-			SpellData secondTemplate = ContentValidator.LoadAllSpells().FirstOrDefault(s => s.Id.Equals(recipe.Second.SpellId, StringComparison.OrdinalIgnoreCase));
 			var preview = new ComboPreview
 			{
 				Id = recipe.Id,
@@ -176,8 +175,8 @@ public partial class Player
 			};
 			preview.Names.Add((recipe.First.SpellId, recipe.First.AscensionId));
 			preview.Names.Add((recipe.Second.SpellId, recipe.Second.AscensionId));
-			preview.Requirements.Add(Ingredient(recipe.First, firstTemplate, standing.Taken || standing.FirstMet, standing.FirstClosed));
-			preview.Requirements.Add(Ingredient(recipe.Second, secondTemplate, standing.Taken || standing.SecondMet, standing.SecondClosed));
+			preview.Requirements.Add(Ingredient(recipe.First, standing.Taken || standing.FirstMet, standing.FirstClosed));
+			preview.Requirements.Add(Ingredient(recipe.Second, standing.Taken || standing.SecondMet, standing.SecondClosed));
 			if (!standing.Taken && (standing.FirstOwn || standing.SecondOwn))
 			{
 				preview.Requirements.Add(new AscensionRequirement
@@ -199,7 +198,7 @@ public partial class Player
 		return previews;
 	}
 
-	private static AscensionRequirement Ingredient(ComboIngredient ingredient, SpellData template, bool met, bool closed) => new()
+	private static AscensionRequirement Ingredient(ComboIngredient ingredient, bool met, bool closed) => new()
 	{
 		Kind = AscensionRequirementKind.Ingredient,
 		Have = met ? 1 : 0,

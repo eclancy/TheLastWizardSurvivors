@@ -3126,26 +3126,23 @@ public partial class _BalanceHarness : Node
 		// the parents put ahead of the wizard's own spell - the recipe is the plan).
 		bool parentUnfinished = recipe.Ingredients.Any(i => player.GetEquippedSpells().FirstOrDefault(s => s != null
 			&& s.Id.Equals(i.SpellId, StringComparison.OrdinalIgnoreCase)) is SpellData p && p.CurrentLevel < Player.CardLevelCap(p));
-		if (parentUnfinished && charges != null && charges.Rerolls > 0 && rerollsThisLevel < PlannedRerollsPerLevelUp
-			&& (player.UpgradesOnOfferThisLevelUp || player.IsSpellBookFull))
+		int missing = recipe.Ingredients.Count(i => !player.GetEquippedSpells().Any(s => s != null && s.Id.Equals(i.SpellId, StringComparison.OrdinalIgnoreCase)));
+		int free = player.SpellSlots - player.GetEquippedSpells().Count;
+		// A parent not in the book yet is fished for too, while there is a slot for it.
+		bool fishing = (parentUnfinished && (player.UpgradesOnOfferThisLevelUp || player.IsSpellBookFull))
+			|| (missing > 0 && free > 0);
+		if (fishing && charges != null && charges.Rerolls > 0 && rerollsThisLevel < PlannedRerollsPerLevelUp)
 		{
 			rerollsThisLevel++;
 			return RerollAction;
 		}
 
 		// Slots are kept for the parents still to come: no other new spell while the free slots are only
-		// enough for them, and the free rerolls spent fishing for one.
-		int missing = recipe.Ingredients.Count(i => !player.GetEquippedSpells().Any(s => s != null && s.Id.Equals(i.SpellId, StringComparison.OrdinalIgnoreCase)));
-		int free = player.SpellSlots - player.GetEquippedSpells().Count;
+		// enough for them.
 		IReadOnlyList<LevelUpOption> pool = options;
 		if (missing > 0 && free <= missing)
 		{
 			pool = options.Where(o => !o.IsNewUnlock || o.IsBoon || o.SpellId == Player.MarginaliaId).ToList();
-			if (charges != null && charges.Rerolls > 0 && rerollsThisLevel < PlannedRerollsPerLevelUp)
-			{
-				rerollsThisLevel++;
-				return RerollAction;
-			}
 			if (pool.Count == 0)
 				return SkipAction;
 		}
