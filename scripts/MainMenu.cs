@@ -219,6 +219,9 @@ public partial class MainMenu : Control
 		ResponsiveLayout.SetFont(spellIndexButton, ResponsiveLayout.TextRole.Label);
 
 		BonelightSkin.StyleButton(backFromArcaneButton);
+		// In the carved face, as the other three panels' Back is: the scene gave this one a size and the
+		// prose face, so Powers was the one panel whose Back read differently (menu pass, 2026-11-01).
+		ResponsiveLayout.SetFont(backFromArcaneButton, ResponsiveLayout.TextRole.Title);
 		BonelightSkin.StyleButton(backFromSpellbookButton);
 		BonelightSkin.StyleButton(backFromAchievementsButton);
 		BonelightSkin.StyleButton(backFromOptionsButton);

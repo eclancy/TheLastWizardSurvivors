@@ -326,6 +326,7 @@ def report_pairs(add, stone_ground):
 
 
 DANGER_INK = h2rgb(f2h(0.949, 0.541, 0.502))   # MainMenu.Options.cs DangerInk
+APOTHEOSIS_TITLE = h2rgb(f2h(1.0, 0.784, 0.282))  # CardFamilyArt.ApotheosisTitle, fire hot
 
 
 def options_pairs(add, stone_ground, rev):
@@ -342,6 +343,13 @@ def options_pairs(add, stone_ground, rev):
     add("choice, chosen (pressed frame)", pressed, "Heading (chosen)", STONE_HEADING, BODY)
     add("reset progress (unlit frame)", quiet, "danger red", DANGER_INK, BODY)
     add("reset progress (lit frame)", lit, "danger red", DANGER_INK, BODY)
+    # The character select (CharacterSelection.BuildFacts): the facts table on a card's stone face
+    # and on the detail pane's stone panel. Its keys and values are CodexRows inks; the apotheosis
+    # name is CardFamilyArt.ApotheosisTitle.
+    for name, g in (("wizard card (stone face)", STONE_FACE), ("wizard detail (stone panel)", stone_ground)):
+        add(name, g, "InkMeta (Spell, Passive)", STONE_INK_META, BODY)
+        add(name, g, "Ink (spell, passive)", STONE_INK, BODY)
+        add(name, g, "ApotheosisTitle (form)", APOTHEOSIS_TITLE, BODY)
 
 
 # --- the card families (scripts/CardFamilyArt.cs, .ai/level-up-screen.md "The card families") ----
