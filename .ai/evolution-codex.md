@@ -1,6 +1,7 @@
 # The Evolution Codex: one page for every spell, item, evolution and recipe
 
-**Status: a proposal (2026-11-02), wireframed, not built.** Eric approves it before anything is built.
+**Status: approved by Eric (2026-11-02), being built.** Section 9 records his answers; the one change is
+search on a controller, through an on-screen keyboard (section 2).
 Wireframe: https://claude.ai/artifact/NEHkx6sJQXjwqYrdMtuie9 (four artboards: PC in a run with
 Cinderbreath's tree, PC on the Recipes filter with Sagittarius's reverse lookup, the phone grid, the phone
 detail sheet).
@@ -94,9 +95,16 @@ One screen, two modes. The mode decides only what the states mean:
 - The grid is the home: the stick moves the selection, the detail follows it (PC) or opens on A
   (phone layout). **LB / RB cycle the filter tabs.** A on the PC moves into the tree, where the stick
   walks the nodes; B steps back out, then closes.
-- **No search on a pad.** Typing with a pad means an on-screen keyboard Godot does not provide on
-  desktop; the filters, the grid's sort (section 5) and LB/RB cover it. Search shows for mouse,
-  keyboard and touch. (`MenuNavigator` already treats a focused `LineEdit` as a selection.)
+- **Search on a pad, through our own on-screen keyboard** (Eric: "controller should have search in the
+  most user friendly way possible. On screen keyboard?"). **Y** (or A on the search field) opens it: a
+  pixel-art keyboard panel in the Codex's stone and gold, letters in an A-Z grid (alphabetical, which a
+  pad user finds faster than QWERTY), Space, Backspace and Done. The stick or D-pad walks the keys, **A**
+  types, **B** deletes a letter, **X** clears, **Start** or Done closes. The grid filters live under it
+  as letters arrive, and a **suggestion row** above the keys lists the best-matching names (spells,
+  evolutions, items, recipes), so two or three letters and one press usually finish the search:
+  RB moves the selection into the suggestions. Godot has no on-screen keyboard on desktop, so this is
+  ours; on a phone the system keyboard is used as for any `LineEdit`, and keyboard players type
+  straight into the field.
 
 ---
 
@@ -194,6 +202,11 @@ Pieces 2 and 3 can run in parallel after 1; 5 and 6 after 4.
 ---
 
 ## 9. Questions for Eric
+
+**Answered 2026-11-02: "Approve all, but controller should have search in the most user friendly way
+possible. On screen keyboard?"** So 1 Evolution Codex, 2 replace both, 3 relics and boons with an
+additive seen record, 4 "???" until first met, 6 no zoom and pan; and 5 changed: a pad searches through
+the on-screen keyboard in section 2.
 
 1. **The name.** "Evolution Codex" is Amy's. "Codex" was once retired (the Arcane Codex became Arcane
    Upgrades). Keep **Evolution Codex**, or **Codex**, or keep **Spell Index** for the menu entry?
