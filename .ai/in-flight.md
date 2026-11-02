@@ -136,6 +136,10 @@ builds to 120 and seven.
 8. **Ground per chapter**: every chapter's ground should read as its place; "Emberdeep doesn't look like
    cracked volcanic earth." A ground pass through `tools/art/tiles.py` and the chapters' terrain
    modules (`.ai/terrain.md` first), the Emberdeep first.
+12. **Queued** (Eric, 2026-11-01): the title screen's eyes in the dark "don't always look like eyes. they
+   should all be circular and blink, and be randomly spread out rather than some being on top of each
+   other" (`.ai/title-screen.md`, "The eyes in the dark blink" was already on its not-done list); and
+   **announcements must never stack** (the Forest's opening under First Blood) - with the clues agent.
 11. **Done:** the Test Wizard is off character selection (69986af); the Sketchbook's boss is **Elim**
    (b3695cf). **Waiting on Eric:** Elim's "it's wizarding time" drawing, to show when he arrives - it is
    not in the repo or this PC's Downloads or Pictures.
