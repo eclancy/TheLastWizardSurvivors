@@ -204,6 +204,17 @@ builds to 120 and seven.
   pages in the shop, systems unlocked one at a time). **Queued, in this order as slots free:** the
   defeat sequence and end-of-run screen (below); the first item wave plus rerolls and bans on the chest
   screen (`.ai/new-items.md`, after the menu pass, which also touches the chest screen).
+- **Update, end of 2026-11-02:** merged the Evolution Codex (layout A; Eric still to pick A, B or C;
+  on the phone the detail sheet stops short of the right edge, to fix in the layout pass) and the
+  menu pass (`MainMenu.Options.cs`, `SettingsRows.cs`, new switch/knob art from `ui_controls.py`).
+  **Building:** the Sovereign Rite, the defeat sequence (`wip/defeat-sequence`), the first item wave
+  with chest rerolls and bans (`wip/items-wave-1`). **Queued next:** the slow start
+  (`.ai/slow-start.md`, answered: a design pass first on which achievement teaches which system and
+  the post-run cutscenes, then the build; the epoch goes to 2 in the next release commit).
+  **Open for Eric** from the menu pass: drop Testing from shipped builds? the Gameplay Tips switch?
+  the "Momentum streak" line? dead FullSetDetailScreen/ChestItemHUD and the Test Wizard's spell
+  picker? From the Codex: keep "Evolution Codex" on the menu and "★ Codex" in runs? the Familiar's
+  four level 4 paths scroll on PC? relics claimed in earlier runs count as seen?
 - **The defeat sequence** (Eric, 2026-11-02): *"Defeat should have a dramatic animation where the game
   freezes, then crash zooms onto the wizard and they fall, then it says defeat, and when the player
   clicks, the defeat screen covers up. It then tallys up the reward with a satisfying payout sound. The
