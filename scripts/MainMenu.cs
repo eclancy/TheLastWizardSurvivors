@@ -406,20 +406,13 @@ public partial class MainMenu : Control
 	private void RefreshArcaneEnergy()
 	{
 		int total = 0;
-		float nextRunPreview = 1.0f;
-		int victoryStreak = 0;
 		string presetName = "Default";
 		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
 		if (saveManager != null)
 		{
 			total = saveManager.Data.TotalCurrency;
-			nextRunPreview = GlobalStatsManager.GetNextRunArcanePreviewMultiplier(saveManager.Data);
-			victoryStreak = GlobalStatsManager.GetConsecutiveOutcomeCount(saveManager.Data, "Victory");
 			presetName = GlobalStatsManager.GetBalancePresetDisplayName(saveManager.Data.BalancePresetId);
-			nextRunPreview *= GlobalStatsManager.GetArcaneRewardScaleForPreset(saveManager.Data.BalancePresetId);
 		}
-
-		string streakTag = victoryStreak > 1 ? $"Momentum streak {victoryStreak}" : "Steady";
 
 		// Both purses, every time: this runs after a purchase too (TryPurchaseUpgrade), which is the
 		// moment the shop's header has to drop, and after a reset.
@@ -436,12 +429,10 @@ public partial class MainMenu : Control
 			rootDetailLabel.AddThemeColorOverride("font_color", new Color(0.86f, 0.89f, 0.95f));
 			rootDetailLabel.AddThemeColorOverride("font_outline_color", new Color(0.02f, 0.027f, 0.047f, 0.95f));
 			rootDetailLabel.AddThemeConstantOverride("outline_size", 5);
-			// "\n", not Environment.NewLine: on Windows that is "\r\n", which a Label draws as two
-			// breaks, and the two lines stood a blank line apart.
 			// "Difficulty", the word Options uses for the same choice (it said "Preset" here and "Run
-			// Difficulty Curve" there until the menu pass of 2026-11-01).
-			rootDetailLabel.Text = $"Difficulty: {presetName}" + (detailOnOneLine ? " - " : "\n")
-				+ $"Next run gain x{nextRunPreview:0.00} ({streakTag})";
+			// Difficulty Curve" there until the menu pass of 2026-11-01). It had a second line, "Next run
+			// gain x1.10 (Momentum streak 5)", until Eric dropped it on 2026-11-02: nobody acted on it.
+			rootDetailLabel.Text = $"Difficulty: {presetName}";
 		}
 	}
 

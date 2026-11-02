@@ -7602,7 +7602,7 @@ public partial class Node2DGame : Node2D
 				.Select(p => (p.Key, p.Value))
 				.ToList(),
 			XpGathered = player?.RunXpGathered ?? 0,
-			PlaytestMode = saveManager?.Data?.PlaytestModeEnabled == true,
+			PlaytestMode = saveManager?.Data?.PlaytestModeEnabled == true && SettingsRows.TestingAvailable,
 		};
 	}
 

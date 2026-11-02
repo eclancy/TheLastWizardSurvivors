@@ -36,7 +36,6 @@ public partial class MainMenu
 	};
 
 	private GridContainer optionsColumns;
-	private CheckButton onboardingTipsToggle;
 	private CheckButton playtestModeToggle;
 	private List<Button> difficultyButtons = new();
 	private Label runLogStatus;
@@ -92,14 +91,13 @@ public partial class MainMenu
 		CodexRows.AddSection(left, SettingsRows.Audio, null, ink, 1, audio);
 		CodexRows.AddSection(left, SettingsRows.Display, null, ink, 1, display);
 
-		// GAMEPLAY: what changes how a run plays. The tips were "Show Gameplay Tips During Early Runs";
-		// the difficulty was a dropdown called "Run Difficulty Curve", which the root menu's corner
-		// called "Preset" - one name now, the one a player would use.
-		onboardingTipsToggle = SettingsRows.BuildSwitch("Gameplay Tips", save?.EnableGameplayOnboardingTips ?? true,
-			ink, OnOnboardingTipsToggled, "OnboardingTipsToggle");
+		// GAMEPLAY: what changes how a run plays. The difficulty was a dropdown called "Run Difficulty
+		// Curve", which the root menu's corner called "Preset" - one name now, the one a player would use.
+		// The Gameplay Tips switch is gone (Eric, 2026-11-02): it only ever mattered until the onboarding
+		// had been seen once, so the tips simply play for a new player and stop.
 		Control difficulty = SettingsRows.BuildChoiceRow("Difficulty", new[] { "Casual", "Default", "Hardcore" },
 			DifficultyIndex(save?.BalancePresetId), ink, OnDifficultyChosen, out difficultyButtons, "Difficulty");
-		var gameplay = new List<Control> { onboardingTipsToggle, difficulty };
+		var gameplay = new List<Control> { difficulty };
 		CodexRows.AddSection(right, SettingsRows.Gameplay, null, ink, 1, gameplay);
 
 		// STORY: the prologue again, on demand, and back to this menu after (.ai/prologue.md).
@@ -123,7 +121,11 @@ public partial class MainMenu
 		runLogStatusRow.AddThemeConstantOverride("margin_left", 8);
 		runLogStatusRow.AddChild(runLogStatus);
 		var testing = new List<Control> { playtestModeToggle, SettingsRows.BuildButtonRow(latestLog, logFolder), runLogStatusRow };
-		CodexRows.AddSection(right, SettingsRows.Testing, null, ink, 1, testing);
+		// Only where a tester is: never in a release build (SettingsRows.TestingAvailable).
+		if (SettingsRows.TestingAvailable)
+			CodexRows.AddSection(right, SettingsRows.Testing, null, ink, 1, testing);
+		else
+			testing.Clear();
 
 		list.AddChild(BuildResetProgress(ink));
 
@@ -265,7 +267,6 @@ public partial class MainMenu
 		SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
 		if (save == null)
 			return;
-		onboardingTipsToggle?.SetPressedNoSignal(save.EnableGameplayOnboardingTips);
 		playtestModeToggle?.SetPressedNoSignal(save.PlaytestModeEnabled);
 		// SetPressedNoSignal does not consult the ButtonGroup, so every button is set.
 		int chosen = DifficultyIndex(save.BalancePresetId);
@@ -277,17 +278,6 @@ public partial class MainMenu
 	{
 		int index = System.Array.IndexOf(DifficultyIds, GlobalStatsManager.NormalizeBalancePresetId(presetId));
 		return index >= 0 ? index : 1;
-	}
-
-	private void OnOnboardingTipsToggled(bool enabled)
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null)
-			return;
-
-		saveManager.Data.EnableGameplayOnboardingTips = enabled;
-		saveManager.Data.HasToggledOnboardingTipsAtLeastOnce = true;
-		saveManager.SaveGame();
 	}
 
 	private void OnPlaytestModeToggled(bool enabled)

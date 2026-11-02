@@ -871,7 +871,7 @@ public partial class Player : CharacterBody2D
 		int growthLevel = GetLevel("growth");
 		int extraLivesLevel = GetLevel("extra_lives");
 		int rerollsLevel = GetLevel("rerolls");
-		IsPlaytestModeEnabled = saveManager.Data.PlaytestModeEnabled;
+		IsPlaytestModeEnabled = saveManager.Data.PlaytestModeEnabled && SettingsRows.TestingAvailable;
 
 		damageMultiplier = 1.0f + (damageLevel * 0.08f);
 		recoveryPerSecond = recoveryLevel * EmberheartRegenPerLevel;

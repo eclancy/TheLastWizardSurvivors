@@ -31,6 +31,15 @@ public static class SettingsRows
 	public const string Story = "Story";
 	public const string Testing = "Testing";
 
+	/// <summary>
+	/// Whether this copy shows the tester's knobs (Playtest Mode, the run logs) and honours Playtest Mode at
+	/// all: an editor run or a debug export, never a release build (Eric, 2026-11-02: drop Testing from
+	/// shipped builds). A player's save may still say Playtest Mode is on - it was a switch they could reach
+	/// until now, and the story reset keeps settings - so a release build ignores it rather than leave a
+	/// player stuck in it with no switch.
+	/// </summary>
+	public static bool TestingAvailable => OS.IsDebugBuild();
+
 	private const string UiRoot = "res://assets/bonelight/ui/";
 
 	// A label column, so the sliders and the choice start on one line down the panel rather than
