@@ -3442,10 +3442,17 @@ public partial class Node2DGame : Node2D
 			spawnTimer = 0f;
 		}
 
-		var background = GetNode<TextureRect>(BackgroundPath);
+		SyncGroundToCamera();
+	}
+
+	// The tiled ground's shader follows the camera: every frame of a run, and every frame of the defeat's
+	// crash zoom (Node2DGame.Defeat.cs), which moves the camera on a paused tree where ProcessTick does not run.
+	private void SyncGroundToCamera()
+	{
+		var background = GetNodeOrNull<TextureRect>(BackgroundPath);
 		var backgroundOverlay = GetNodeOrNull<TextureRect>(BackgroundOverlayPath);
-		var camera = player.GetNode<Camera2D>(CameraPath);
-		if (background.Material is ShaderMaterial material && camera != null)
+		var camera = player?.GetNodeOrNull<Camera2D>(CameraPath);
+		if (background?.Material is ShaderMaterial material && camera != null)
 		{
 			var textureSize = background.Texture.GetSize();
 			Vector2 offset = camera.GlobalPosition / textureSize;
@@ -7248,8 +7255,14 @@ public partial class Node2DGame : Node2D
 			RecordBossRush(saveManager.Data, outcome);
 			saveManager.SaveGame();
 		}
-		ShowGameOver(result, reward, totalCurrency);
+		// Everything is paid, saved and gathered before anything is shown. A death holds the results
+		// back for the defeat's few seconds (Node2DGame.Defeat.cs), and a player who quits during them
+		// has lost nothing; the paused tree is the "game freezes" of that sequence.
+		RunReport report = BuildRunReport(result, reward, totalCurrency);
 		GetTree().Paused = true;
+		if (outcome == RunOutcome.Defeat && BeginDefeatSequence(report))
+			return;
+		ShowGameOver(report);
 	}
 
 	// Beating a boss opens the next stage. The spell unlock that comes with it is handled by
@@ -7544,7 +7557,9 @@ public partial class Node2DGame : Node2D
 	// through ShowGameOver's signature because it is written inside a null-guarded save block.
 	private RunUnlockSummary runUnlocks;
 
-	private void ShowGameOver(RunResult result, int reward, int totalCurrency)
+	// afterDefeat: brought down by the player's press at the end of the defeat (DefeatSequence), so it
+	// covers the field from below and the defeat's sting has already played (GameOverScreen.CoversFromBelow).
+	private void ShowGameOver(RunReport report, bool afterDefeat = false)
 	{
 		if (gameOverScene == null)
 		{
@@ -7553,10 +7568,12 @@ public partial class Node2DGame : Node2D
 		}
 
 		var overlay = gameOverScene.Instantiate<CanvasLayer>();
+		if (overlay is GameOverScreen arriving)
+			arriving.CoversFromBelow = afterDefeat;
 		AddChild(overlay);
 
 		if (overlay is GameOverScreen gameOver)
-			gameOver.Present(BuildRunReport(result, reward, totalCurrency));
+			gameOver.Present(report);
 	}
 
 	// The whole run for the results screen (RunReport). Everything in it was already paid and saved

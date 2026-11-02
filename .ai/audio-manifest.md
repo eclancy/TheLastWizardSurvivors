@@ -5,6 +5,15 @@ is the inventory and the wiring backlog: seventy-one generated `.wav` files in `
 what each one is for, and where in the code it is meant to be triggered. The music - a menu
 theme and nine chapter sets in `assets/music/` - has its own section at the end.
 
+**2026-11-02: 90 files, all wired; the defeat and its payout.** Eric: "Defeat should have a
+dramatic animation ... It then tallys up the reward with a satisfying payout sound." Three new
+sounds, generated, allowlisted in `SfxCatalog` and played: `player_fall` (the wizard reaching the
+ground, `DefeatSequence`), `tally_tick` (each step of the results screen's count, pitched up it by
+`SfxPlayer.TallyTick`) and `tally_payout` (the count landing). `game_over` moved to the moment the
+word DEFEAT lands, and `stage_clear` - never played - is now the victory's. `player_fall` and
+`tally_payout` are Critical (thirteen of ninety; the validator's limit is fourteen). `analyse.py
+--confuse` reports 0 confusable pairs. `SfxPlayer` reports `90 sounds preloaded`.
+
 **2026-11-01: 85 files, all wired; battle music.** `spell_maw_open`, Elder God Maw breaking up
 through the earth (Eric, 0.10.0: "should make a deep, scary crashing sound when it opens"):
 generated, allowlisted in `SfxCatalog` and played by `BlackTentacles` 0.20 s before the breach, so its
@@ -238,6 +247,7 @@ Trigger points map onto the damage pipeline in `CLAUDE.md`, and the order matter
 | `player_heal.wav` | 0.60 s | −11.0 dBFS | any heal, including the Light element tier and the extra-life half-heal |
 | `player_low_health.wav` | 0.55 s | −14.0 dBFS | a repeating timer below a HP threshold — designed to loop as a heartbeat, not to fire once |
 | `player_death.wav` | 1.60 s | −4.0 dBFS | the `Died` emit, **not** the extra-life branch |
+| `player_fall.wav` | 0.66 s | −7.0 dBFS | **wired** (2026-11-02), `DefeatSequence`: the wizard reaching the ground, on the last frame of his death row, about 1.5 s after `player_death`. Two thumps (knees, then body), grit, the staff's knock, dust settling; nothing below 85 Hz. **Critical**, because it lands inside `player_death`'s duck. Nearest neighbour `player_death` at 0.188 (a one-thump first draft measured 0.098 from `player_hurt`) |
 
 ## Enemies
 
@@ -289,8 +299,10 @@ death animation plays. The death sound is not gating anything and may outlast th
 | File | Length | Peak | Trigger |
 |---|---|---|---|
 | `wave_warning.wav` | 1.30 s | −7.0 dBFS | a wave or boss inbound, from `Node2DGame`'s wave scheduling |
-| `stage_clear.wav` | 1.85 s | −4.0 dBFS | a run survived to its end |
-| `game_over.wav` | 2.50 s | −5.0 dBFS | `GameOverScreen` appearing |
+| `stage_clear.wav` | 1.85 s | −4.0 dBFS | **wired** (2026-11-02), `GameOverScreen` appearing on a **victory** - it played `game_over` there until then, a descent with no resolution under the word Victory |
+| `game_over.wav` | 2.50 s | −5.0 dBFS | **wired**, the defeat's word landing (`DefeatSequence`, as DEFEAT slams onto its band); `GameOverScreen` appearing only for a defeat that did not come through the sequence |
+| `tally_tick.wav` | 0.24 s | −20.0 dBFS | **wired** (2026-11-02), each step of the results screen's Arcane Energy count, `SfxPlayer.TallyTick` - pitched 1.0 to 1.26 up the count (the XP orb's ladder idea), at most one every 45 ms, about fourteen a second. A coin struck twice and left ringing on A5; three click-like drafts measured 0.051-0.069 from `ui_click` and `ui_hover`, this one's nearest neighbour is `card_select` at 0.402 |
+| `tally_payout.wav` | 1.29 s | −6.0 dBFS | **wired** (2026-11-02), the count landing on its figure: a purse thump, a spill of the tick's coins, one struck C major chord. **Critical** - it lands inside `game_over`'s duck. Nearest neighbour `stage_clear` at 0.212 |
 | `meta_unlock.wav` | 1.70 s | −4.0 dBFS | `SaveData` gaining a character, stage or max-difficulty record — the one sound that means the **save** changed, not the run |
 
 ## Chapter hints

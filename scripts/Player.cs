@@ -2543,6 +2543,13 @@ public partial class Player : CharacterBody2D
 		return bodySprite.Position + fromCentre;
 	}
 
+	/// <summary>
+	/// The body sprite, for the defeat (DefeatSequence, 2026-11-02): it holds the wizard on the frame
+	/// the killing blow landed, through the freeze and the crash zoom, and then plays his death row as
+	/// the fall. The death below still starts it, so a run that ends any other way is unchanged.
+	/// </summary>
+	public AnimatedSprite2D? BodySprite => bodySprite;
+
 	// Walk while moving, idle while still. Never interrupts a hurt or death in progress.
 	private void UpdateBodyAnimation()
 	{
