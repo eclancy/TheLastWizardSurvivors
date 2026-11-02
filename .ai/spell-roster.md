@@ -3448,9 +3448,11 @@ section 1 are two.
   ring of puffs that lands on the rim, the cloud and the burning patches are laid out of it, every puff
   and flame with its outer edge inside it. Every area term - levels (AreaSize, in px), the player, every evolution's
   `AreaMultiplier` through `GetAreaMultiplierAtLevel` - is folded in once, in `SporeMushroom.For`.
-- **The table** (written out in full in the `.tres`): 6 damage, 3 mushrooms, 80 px bursts, 2.8 s; even
-  levels add a mushroom (2, 6, 8) or poison (4), odd levels +8 px, every level +1 damage, poison 2/s
-  for 3 s +1 at levels 4 and 7. Level 7: 12 damage, 5 mushrooms, 104 px, poison 4. Cards say
+- **The table** (written out in full in the `.tres`): 7 damage, **1 mushroom**, 80 px bursts, 2.8 s; a
+  mushroom more at levels 2, 3, 5, 6 and 8 (six at level 8, as before), odd levels +8 px, every level
+  +1 damage, poison 2/s for 3 s +1 at levels 4 and 7. Level 7: 13 damage, 5 mushrooms, 104 px,
+  poison 4. It started at 3 mushrooms and 6 damage until 2026-11-02 (Eric: "starts with too many
+  spores on the field at level one ... reducing the numbers of things and letting them ramp"). Cards say
   "Mushrooms +1" (`Player.ProjectileNoun`, which also covers Black Tentacles).
 - **One node, several mushrooms.** A Mycelial Bloom chain is slots in its sown mushroom's fixed array,
   not new nodes, so the one place the spell makes things quickly instantiates and allocates nothing.

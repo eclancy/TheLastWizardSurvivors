@@ -11,9 +11,12 @@
 ; SporeMushroom.BasePoisonTick (2 a second for 3 s) plus the DotDamage lines (Effect 12).
 ;
 ; "upgrade toxic spore burst ... it should spawn mushroom spores that explode around the map", so the
-; table grows all three things a player can see: even levels add a mushroom (2, 6, 8) or the poison
-; (4) with the cooldown step every spell gets on even levels, odd levels widen the burst by 8 px
-; (80 -> 104 by level 7) and level 7 deepens the poison again, and every level adds 1 to the burst.
+; table grows all three things a player can see. ONE mushroom at level 1, then one more at 2, 3, 5, 6
+; and 8 - six by level 8, as before (Eric, 2026-11-02: "starts with too many spores on the field at
+; level one ... reducing the numbers of things and letting them ramp"; three caps of nineteen puffs
+; each, every 2.8 s, was the noise). BaseDamage went 6 -> 7 so the one mushroom is still worth taking.
+; Levels 4 and 7 deepen the poison, odd levels widen the burst by 8 px (80 -> 104 by level 7), even
+; levels take the cooldown step every spell gets, and every level adds 1 to the burst.
 ; Written out in full so Player.EnsureRelevantLevelUps generates nothing of its own - the old table
 ; had one entry, and the lines the code invented for it ("Area +0.16", "DoT per tick +1") were read
 ; by nothing.
@@ -29,6 +32,7 @@ ProjectileCountBonus = 1
 script = ExtResource("2")
 Level = 3
 DamageBonus = 1
+ProjectileCountBonus = 1
 Effect = 7
 EffectValue = 8.0
 
@@ -44,6 +48,7 @@ EffectValue = 1.0
 script = ExtResource("2")
 Level = 5
 DamageBonus = 1
+ProjectileCountBonus = 1
 Effect = 7
 EffectValue = 8.0
 
@@ -81,9 +86,9 @@ Id = "toxic_spore_burst"
 Name = "Toxic Spore Burst"
 CurrentLevel = 1
 MaxLevel = 8
-BaseDamage = 6
+BaseDamage = 7
 BaseCooldown = 2.8
-BaseProjectileCount = 3
+BaseProjectileCount = 1
 BaseRange = 280.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_toxicspore_lvl2"), SubResource("Resource_toxicspore_lvl3"), SubResource("Resource_toxicspore_lvl4"), SubResource("Resource_toxicspore_lvl5"), SubResource("Resource_toxicspore_lvl6"), SubResource("Resource_toxicspore_lvl7_area"), SubResource("Resource_toxicspore_lvl7_poison"), SubResource("Resource_toxicspore_lvl8")])
 Description = "Sows mushrooms among the enemies around you. Each sprouts, swells, and bursts in a cloud of spores that hits and poisons everything inside its ring."
