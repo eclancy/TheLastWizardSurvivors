@@ -196,6 +196,26 @@ builds to 120 and seven.
   Ruins vault on open ground (`wip/seimei-puzzle`, building); a batch of new items (designing,
   `wip/design-items`).
 
+## 3c. Eric's answers, 2026-11-02 (the open-questions sweep)
+
+Accepted as recommended: keep every Options setting on a story reset; **Options' Reset Progress backs
+the save up too (to build)**; the first real reset comes one release after the reset code ships;
+**combinations do not count toward "The Grimoire Restored" (to change: it counts 36 today)**; the
+carried-over level 4s stay as built; a held full draw fires by itself; the boss crowd-control limits
+stay; the wizard and bosses stay drawn over trees; **a "reduce screen shake" option in Options (to
+build)**; keep the vague vault clue; **the Mystic Ruins' floor redrawn as broken paving (to build)**; the
+bridge's +3 levels is fine; the title wizard hides in the prologue; Laelaps keeps the mantle; the music's
+0:24 break and boss fights without melody stay.
+
+Answered otherwise: Sagittarius's offer rate - **Eric will test it** (no change). Seimei's Exorcist
+**keeps its +15% on bosses too** (damage, not an execute). Announcements: **never two at once** - the
+`Announcements` queue already guarantees it; First Blood's wait stays. **Seimei's Apotheosis is not early:**
+the agent compared against run-pacing's 2026-10-15 table (16.5-20 min); the current measurement in
+`.ai/gameplay-design.md` is 7.8-9.1 min against a 7.5 floor, and he took his at 9.9.
+
+Elim's "it's wizarding time" drawing: **not in Eric's email** - the only image Elim sent is
+`fnfdodgeythingy!!!!11!!!11!!1!!.png` (2026-10-14, for Blobby). Waiting on Eric for the file.
+
 ## 4. Waiting on Eric
 
 - **Playtest 0.10.0** (50 HP, scarce healing, tougher chapters and bosses). Fixes from it come
