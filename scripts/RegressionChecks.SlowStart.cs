@@ -93,8 +93,8 @@ public static partial class RegressionChecks
 					if (!ResourceLoader.Exists(path))
 						warnings.Add($"Teachings: {lesson.Name}'s panel {path} is missing or not imported (python tools/art/lessons.py, then import).");
 				}
-				if (string.IsNullOrWhiteSpace(beat.Caption) || beat.Caption.Length > 72)
-					warnings.Add($"Teachings: {lesson.Name}'s panel '{beat.Name}' needs one short line (72 characters at most).");
+				if (string.IsNullOrWhiteSpace(beat.Caption) || beat.Caption.Length > 46)
+					warnings.Add($"Teachings: {lesson.Name}'s panel '{beat.Name}' needs one short line (46 characters at most: one line on a PC).");
 			}
 		}
 

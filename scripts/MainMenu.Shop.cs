@@ -815,8 +815,8 @@ public partial class MainMenu
 				// The book's size is the save's (SpellBook): Survivor's page is in it, so "4 spells" may be "5".
 				if (def.Id == SpellBook.ShopUpgradeId)
 				{
-					row.StatNow.Text = $"{SpellBook.PagesWithBought(saveManager.Data, shownLevel)} spells";
-					row.StatNext.Text = $"→ {SpellBook.PagesWithBought(saveManager.Data, shownLevel + 1)} spells";
+					row.StatNow.Text = $"{SpellBook.PagesWithBought(saveManager.Data, shownLevel)}";
+					row.StatNext.Text = $"→ {SpellBook.PagesWithBought(saveManager.Data, shownLevel + 1)}";
 				}
 				// Redaction's ceiling grows with the book; until the book is big enough there is none.
 				row.LevelText.Text = maxLevel > 0

@@ -137,9 +137,9 @@ public partial class Prologue : Control
 	private static readonly Beat[] AscensionBeats =
 	{
 		// What he missed, giving up its light to the one he missed: the find that taught it.
-		new("ascension-gift", 5.0f, "What he missed remembers what the wizards knew.", new Vector2(-3f, 0f), new Vector2(-8f, -6f), new Vector2(-18f, 0f)),
+		new("ascension-gift", 5.0f, "What he missed kept what the wizards knew.", new Vector2(-3f, 0f), new Vector2(-8f, -6f), new Vector2(-18f, 0f)),
 		// A spell's light climbing seven marks and branching at the eighth.
-		new("ascension-rise", 6.0f, "A spell at level 7 may ascend: choose one of its paths.", new Vector2(0f, 3f), new Vector2(0f, -12f), new Vector2(0f, 12f)),
+		new("ascension-rise", 6.0f, "At level 7 a spell may ascend one path.", new Vector2(0f, 3f), new Vector2(0f, -12f), new Vector2(0f, 12f)),
 	};
 
 	private static readonly Beat[] ApotheosisBeats =
@@ -147,7 +147,7 @@ public partial class Prologue : Control
 		// The circle where the wizards met, and his own spell burning in its middle.
 		new("apotheosis-circle", 5.0f, "Your wizard's own spell has a final form.", new Vector2(-3f, 0f), new Vector2(-10f, 0f), new Vector2(-22f, 0f)),
 		// The spell at its last level, ascended, becoming it.
-		new("apotheosis-form", 6.0f, "Ascend it and raise it to its last level, and it becomes that form.", new Vector2(0f, 4f), new Vector2(0f, -14f), new Vector2(0f, 10f)),
+		new("apotheosis-form", 6.0f, "Ascend it and take it to its last level.", new Vector2(0f, 4f), new Vector2(0f, -14f), new Vector2(0f, 10f)),
 	};
 
 	private static readonly Beat[] ConjunctionBeats =
@@ -155,15 +155,15 @@ public partial class Prologue : Control
 		// Two lights, each on its own stone, leaning toward each other.
 		new("conjunctions-two", 5.0f, "Two ascended spells may become one.", new Vector2(2f, 0f), new Vector2(10f, -2f), new Vector2(-18f, 0f)),
 		// The two made one.
-		new("conjunctions-one", 6.0f, "Paths marked with linked rings have a partner.", new Vector2(0f, 3f), new Vector2(0f, -10f), new Vector2(0f, 12f)),
+		new("conjunctions-one", 6.0f, "Linked rings mark a path with a partner.", new Vector2(0f, 3f), new Vector2(0f, -10f), new Vector2(0f, 12f)),
 	};
 
 	private static readonly Beat[] RiteBeats =
 	{
 		// One spell crowned, the others' light pouring into it.
-		new("rite-crown", 5.0f, "One spell may take the strength of all the rest.", new Vector2(0f, 3f), new Vector2(0f, -12f), new Vector2(0f, 12f)),
+		new("rite-crown", 5.0f, "One spell may take the others' strength.", new Vector2(0f, 3f), new Vector2(0f, -12f), new Vector2(0f, 12f)),
 		// The rest sealed for the run.
-		new("rite-seal", 5.6f, "The others fall silent for the run, and their levels feed it.", new Vector2(-3f, 0f), new Vector2(-8f, 0f), new Vector2(-18f, 0f)),
+		new("rite-seal", 5.6f, "The rest fall silent; their levels feed it.", new Vector2(-3f, 0f), new Vector2(-8f, 0f), new Vector2(-18f, 0f)),
 	};
 
 	/// <summary>Every reel, by id: the prologue and the four lessons (Teachings.All's ids).</summary>

@@ -267,9 +267,10 @@ def p_apotheosis_form():
     pr.ward(mid, fx, fy, 44, 44, A=LT, pool=False)
     mid.radial(fx, fy, 26, 26, [LT[0], LT[0], LT[1], LT[2], LT[3]])
     # him, the title's figure from behind, his staff's light rising to it
-    hero.wizard_hero(mid, 452, 640, h=134, staff_ramp=LT)
-    arc(mid, (404, 520), (fx - 30, fy + 50), 220, 281, [LT], bow=-16, spread=12)
-    near_heath(fore, 283, y0=680, keep_out=lambda x, y: abs(x - 450) < 80)
+    # Feet at 604 so a PC, which shows rows 240-600, sees all of him under the caption's band.
+    hero.wizard_hero(mid, 452, 604, h=118, staff_ramp=LT)
+    arc(mid, (410, 496), (fx - 30, fy + 50), 200, 281, [LT], bow=-16, spread=12)
+    near_heath(fore, 283, y0=664, keep_out=lambda x, y: abs(x - 450) < 70)
     layers = dict(back=back, mid=mid, fore=fore)
     pr.finish(layers, 0.8, cy=pr.CY - 30)
     return layers

@@ -500,6 +500,9 @@ public partial class SecretDirector : Node
 		}
 
 		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+		// A teacher's find may owe a lesson (Teachings), and finding it is what owes it: read before the find
+		// is recorded, and again after its deed, so the toast can say so.
+		List<Teachings.Lesson> owedBefore = Teachings.Owed(saveManager?.Data);
 		bool firstEver = saveManager != null && saveManager.Data.RecordSecretFound(secretId);
 		string paid = "";
 		if (firstEver)
@@ -519,8 +522,6 @@ public partial class SecretDirector : Node
 
 		// The deed: recorded, its spell granted if the save lacks it, and the save written - every find,
 		// so a deed missed by an older build is recorded by the next one (CompleteNow changes nothing twice).
-		// A teacher's find may owe a lesson (Teachings): read before and after, so the toast can say so.
-		List<Teachings.Lesson> owedBefore = Teachings.Owed(saveManager?.Data);
 		List<RunUnlockEntry> granted = saveManager != null
 			? AchievementManager.CompleteNow(saveManager, AchievementDefinitions.SecretDeedId(secretId))
 			: new List<RunUnlockEntry>();
