@@ -89,8 +89,9 @@ public static class ChestItemCatalog
 
 	// --- The Gimmel Ring: the pair (.ai/new-items.md section 4) -----------------------------
 	//
-	// Two hoops that lock into one band. "The pair" is the run's two highest-level spells, never the
-	// wizard's own (Player.GetPairSpells), and a Conjunction is always one of them.
+	// Two hoops that lock into one band. "The pair" is the run's two highest-level spells
+	// (Player.GetPairSpells). Every card says it in those words and nothing else (Eric, 2026-11-02:
+	// "Fede hoop / gimmel ring descriptions are confusing. Simplify those items").
 	public const string BetrothalHoop = "betrothal_hoop";
 	public const string FedeHoop = "fede_hoop";
 	public const string GarnetBezel = "garnet_bezel";
@@ -523,7 +524,9 @@ public static class ChestItemCatalog
 			ElementTags = new[] { ("Poison", 1), ("Grass", 1) },
 			Name = "The Poppet",
 			RequiredItemIds = new[] { PrickingPin, BindingThread, SingedLock },
-			Description = $"Your debuffs last {Percent(Player.PoppetFullDurationBonus).TrimStart('+')} longer, and an enemy carrying two different ones is also Vulnerable {Percent(Player.PoppetVulnerableBonus)}.",
+			// Shortened 2026-11-02 with the chips and keywords: a four-page chest that completes the set ran
+			// its page past the fold.
+			Description = $"Your debuffs last {Percent(Player.PoppetFullDurationBonus).TrimStart('+')} longer, and an enemy with two is also Vulnerable {Percent(Player.PoppetVulnerableBonus)}.",
 			IconPath = SetIconRoot + "poppet.png",
 			Effects = new[]
 			{
@@ -536,16 +539,15 @@ public static class ChestItemCatalog
 		{
 			Id = GimmelRingSetId,
 			PartialItemCount = 2,
-			PartialEffects = new[] { new ChestSetEffect { Label = "The pair's damage", Value = Percent(Player.GimmelPartialDamageBonus) } },
+			PartialEffects = new[] { new ChestSetEffect { Label = "Two highest-level spells' damage", Value = Percent(Player.GimmelPartialDamageBonus) } },
 			ElementTags = new[] { ("Water", 1), ("Lightning", 1) },
 			Name = "The Gimmel Ring",
 			RequiredItemIds = new[] { BetrothalHoop, FedeHoop, GarnetBezel },
-			Description = $"Your two highest-level spells (besides your wizard's own) deal {Percent(Player.GimmelFullDamageBonus)} damage, and a Conjunction is always one of them.",
+			Description = $"Your two highest-level spells deal {Percent(Player.GimmelFullDamageBonus)} damage.",
 			IconPath = SetIconRoot + "gimmel_ring.png",
 			Effects = new[]
 			{
-				new ChestSetEffect { Label = "The pair's damage", Value = Percent(Player.GimmelFullDamageBonus) },
-				new ChestSetEffect { Label = "A Conjunction", Value = "always one of the pair" }
+				new ChestSetEffect { Label = "Two highest-level spells' damage", Value = Percent(Player.GimmelFullDamageBonus) }
 			}
 		}
 	};
@@ -642,9 +644,6 @@ public static class ChestItemCatalog
 	public static readonly string SplitLensDescription =
 		$"+1 projectile to spells that fire them, and -{Mathf.RoundToInt((1f - Player.SplitLensDamageMultiplier) * 100f)}% damage to those spells only.";
 
-	// "The pair" in the words every Gimmel Ring card uses (.ai/new-items.md section 4): the player is
-	// never asked to know the term, so each card spells it out.
-	private const string PairPhrase = "your two highest-level spells (besides your wizard's own)";
 
 	// A no-break space between each number and its "s", as the Brazier's card has it.
 	public static readonly string PrickingPinDescription =
@@ -652,9 +651,14 @@ public static class ChestItemCatalog
 	public static readonly string BindingThreadDescription =
 		$"An enemy that touches you is Weakened: it deals {Mathf.RoundToInt(Player.BindingThreadWeaken * 100f)}% less for {Player.BindingThreadSeconds:0} s.";
 	public static readonly string SingedLockDescription =
-		$"Every kill Withers the enemies within {Player.SingedLockRadius:0} of it by {Mathf.RoundToInt(Player.SingedLockWither * 100f)}% of their max health.";
+		$"Kills Wither enemies within {Player.SingedLockRadius:0} by {Mathf.RoundToInt(Player.SingedLockWither * 100f)}% of their max health.";
+	// The Gimmel Ring: one short sentence each, one idea, no parentheses (Eric, 2026-11-02).
 	public static readonly string FedeHoopDescription =
-		$"Your two highest-level spells (besides your wizard's own) deal {Percent(Player.FedeHoopBonus)} damage to an enemy the other hit in the last second.";
+		$"Your two highest-level spells deal {Percent(Player.FedeHoopBonus)} damage.";
+	public static readonly string GarnetBezelDescription =
+		$"Your two highest-level spells recharge {Mathf.RoundToInt(Player.GarnetBezelRecharge * 100f)}% faster.";
+	public const string BetrothalHoopDescription =
+		"Level-ups offer upgrades to your lowest-level spell twice as often.";
 
 	public static string GetDescription(string itemId)
 	{
@@ -708,9 +712,9 @@ public static class ChestItemCatalog
 			PrickingPin => PrickingPinDescription,
 			BindingThread => BindingThreadDescription,
 			SingedLock => SingedLockDescription,
-			BetrothalHoop => $"Level-ups offer upgrades to {PairPhrase} twice as often.",
+			BetrothalHoop => BetrothalHoopDescription,
 			FedeHoop => FedeHoopDescription,
-			GarnetBezel => $"Each cast of {PairPhrase} takes a fifth of its cooldown off the other's.",
+			GarnetBezel => GarnetBezelDescription,
 			_ => "An unrecorded relic.",
 		};
 	}

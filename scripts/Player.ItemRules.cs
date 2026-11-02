@@ -32,27 +32,31 @@ public partial class Player
 	private readonly List<Enemy> singedLockScratch = new();
 
 	// --- The Gimmel Ring (section 4): the pair ---------------------------------------------------
+	//
+	// SIMPLIFIED (Eric, 2026-11-02: "Fede hoop / gimmel ring descriptions are confusing. Simplify those
+	// items"). Every card is one plain sentence about "your two highest-level spells", with no exception
+	// to explain: the wizard's own spell counts now, since nothing the pair does any more moves a level.
+	// The Fede Hoop is a flat +15% (it was +30% to an enemy the other spell hit in the last second, about
+	// +15% on the sweep's overlap); the Garnet Bezel is +20% recharge (it moved the other spell's timer a
+	// fifth of the caster's cooldown per cast - +20% recharge while both fired, by construction). The
+	// Betrothal Hoop is the one that would have moved a level: doubling the upgrades of the two highest
+	// would lean on the wizard's own spell and pull the Apotheosis earlier, so it leans the other way -
+	// toward the lowest-level spell, which is never the wizard's own in a run that is climbing it.
 	public const float BetrothalHoopUpgradeWeight = 2f;
-	public const float FedeHoopBonus = 0.30f;
-	public const double FedeHoopWindowSeconds = 1.0;
-	// "A fifth of its cooldown" on the Garnet Bezel's card.
-	public const float GarnetBezelShare = 0.2f;
+	public const float FedeHoopBonus = 0.15f;
+	public const float GarnetBezelRecharge = 0.20f;
 	public const float GimmelPartialDamageBonus = 0.08f;
 	public const float GimmelFullDamageBonus = 0.25f;
 
-	private bool betrothalHoopHeld, fedeHoopHeld, garnetBezelHeld;
-	// The set's damage on the pair, partial and full summed: a set's full effect stacks on its partial
-	// and is never refunded (.ai/passives-and-items.md section 5).
+	private bool betrothalHoopHeld, garnetBezelHeld;
+	// The pair's damage, the Fede Hoop's and the set's partial and full summed: a set's full effect stacks
+	// on its partial and is never refunded (.ai/passives-and-items.md section 5).
 	private float gimmelPairDamageBonus;
 
 	// The pair, cached: rebuilt only when the loadout changes (RaiseLoadoutChanged, which every level-up,
 	// fusion and cut goes through), so a hit reads two references and never sorts anything.
 	private SpellData pairFirst, pairSecond;
 	private bool pairDirty = true;
-
-	// What the Fede Hoop measures "the last second" against: seconds of play, stopped while paused and
-	// scaled with the game's own time, so a hit-stop or the harness's --timescale cannot shorten it.
-	private double combatClock;
 
 	// --- The boons (section 7) --------------------------------------------------------------------
 	// Waywiser: how much faster the furthest-from-ready spell winds while walking; 0 = not held.
@@ -78,11 +82,6 @@ public partial class Player
 		TreeExiting += () => Enemy.DebuffDurationScale = 1f;
 	}
 
-	private void TickItemRules(double delta)
-	{
-		combatClock += delta;
-	}
-
 	// --- relics: taken, and the sets assembled ----------------------------------------------------
 
 	// From ApplyChestItemEffect. Every one is read at its moment, so taking it only switches it on.
@@ -94,7 +93,7 @@ public partial class Player
 			case ChestItemCatalog.BindingThread: bindingThreadHeld = true; break;
 			case ChestItemCatalog.SingedLock: singedLockHeld = true; break;
 			case ChestItemCatalog.BetrothalHoop: betrothalHoopHeld = true; break;
-			case ChestItemCatalog.FedeHoop: fedeHoopHeld = true; break;
+			case ChestItemCatalog.FedeHoop: gimmelPairDamageBonus += FedeHoopBonus; break;
 			case ChestItemCatalog.GarnetBezel: garnetBezelHeld = true; break;
 		}
 	}
@@ -186,9 +185,8 @@ public partial class Player
 	// --- the Gimmel Ring --------------------------------------------------------------------------
 
 	/// <summary>
-	/// The pair: the run's two highest-level spells, never the wizard's own (its last form is its
-	/// Apotheosis and it can never be fused). Ties go to the earlier slot; a Conjunction is always one of
-	/// them. Either may be null with fewer than two other spells held.
+	/// The pair: the run's two highest-level spells, the wizard's own among them. Ties go to the earlier
+	/// slot; a Conjunction is always one of them. Either may be null with fewer than two spells held.
 	/// </summary>
 	public (SpellData First, SpellData Second) GetPairSpells()
 	{
@@ -199,20 +197,18 @@ public partial class Player
 
 	// A Conjunction is level 1 of 1 on its own counter, so it is ranked as level 8 - the level its parents
 	// were at - and one above, so it wins the tie with an Ascended spell in an earlier slot. That is what
-	// keeps a fusion from taking the Gimmel Ring's bonus away the moment it was built toward.
+	// keeps a fusion from taking the Gimmel Ring's bonus away the moment it was built toward, and the card
+	// need not say so: a fusion of two level 8 spells is plainly one of the highest.
 	private const int ConjunctionPairRank = 9;
 
 	private void RebuildPair()
 	{
 		pairDirty = false;
 		pairFirst = pairSecond = null;
-		string own = OwnSpellForCombos;
 		int firstRank = int.MinValue, secondRank = int.MinValue;
 		foreach (SpellData spell in equippedSpells)
 		{
 			if (spell == null || string.IsNullOrEmpty(spell.Id))
-				continue;
-			if (own != null && spell.Id.Equals(own, StringComparison.OrdinalIgnoreCase))
 				continue;
 			int rank = spell.IsCombination ? ConjunctionPairRank : spell.CurrentLevel;
 			// Strictly greater, walking in slot order: a tie stays with the earlier slot.
@@ -234,62 +230,41 @@ public partial class Player
 	private static bool SameSpell(SpellData a, SpellData b) =>
 		a != null && b != null && (ReferenceEquals(a, b) || a.Id.Equals(b.Id, StringComparison.OrdinalIgnoreCase));
 
-	/// <summary>
-	/// The Gimmel Ring's damage on a hit from the pair: the set's +8% / +25%, and the Fede Hoop's +30% when
-	/// the other spell of the pair hit this enemy in the last second. Two references and a clock compare.
-	/// </summary>
-	private int ApplyPairDamage(Enemy target, SpellData source, int damage)
+	private bool IsPairSpell(SpellData spell)
 	{
-		if (source == null || (gimmelPairDamageBonus <= 0f && !fedeHoopHeld))
-			return damage;
 		var (first, second) = GetPairSpells();
-		bool isFirst = SameSpell(source, first);
-		if (!isFirst && !SameSpell(source, second))
-			return damage;
-
-		float scale = 1f + gimmelPairDamageBonus;
-		if (fedeHoopHeld && target != null)
-		{
-			SpellData other = isFirst ? second : first;
-			if (other != null && target.PairHitSpellId != null
-				&& target.PairHitSpellId.Equals(other.Id, StringComparison.OrdinalIgnoreCase)
-				&& combatClock - target.PairHitAt <= FedeHoopWindowSeconds)
-			{
-				scale *= 1f + FedeHoopBonus;
-			}
-			target.PairHitSpellId = source.Id;
-			target.PairHitAt = combatClock;
-		}
-		return Mathf.RoundToInt(damage * scale);
+		return SameSpell(spell, first) || SameSpell(spell, second);
 	}
 
-	/// <summary>
-	/// The Garnet Bezel: a cast of one pair spell moves the other's timer a fifth of the caster's own
-	/// cooldown toward ready. Bounded by construction - the caster gives 0.2 x its cooldown once per
-	/// cooldown, so the other gains 0.2 s a second however fast the caster is (+20% recharge while both fire).
-	/// </summary>
-	private void TickGarnetBezel(SpellData caster, float casterInterval)
+	/// <summary>The Fede Hoop and the set: the pair's own damage. Two reference compares a hit.</summary>
+	private int ApplyPairDamage(SpellData source, int damage)
 	{
-		if (!garnetBezelHeld)
-			return;
-		var (first, second) = GetPairSpells();
-		SpellData other = SameSpell(caster, first) ? second : SameSpell(caster, second) ? first : null;
-		if (other != null && spellFireTimers.TryGetValue(other.Id, out float timer))
-			spellFireTimers[other.Id] = timer + GarnetBezelShare * casterInterval;
+		if (source == null || gimmelPairDamageBonus <= 0f || !IsPairSpell(source))
+			return damage;
+		return Mathf.RoundToInt(damage * (1f + gimmelPairDamageBonus));
 	}
+
+	/// <summary>The Garnet Bezel: the pair recharges faster. Divides the interval the firing loop measures.</summary>
+	private float PairRechargeScale(SpellData spell) =>
+		garnetBezelHeld && IsPairSpell(spell) ? 1f + GarnetBezelRecharge : 1f;
 
 	// The Betrothal Hoop, inside the upgrade group only: it changes WHICH upgrade is dealt, never whether
 	// one is (UpgradeOfferChance is untouched, and NormalizeOfferWeightsByGroup keeps the group's share).
-	private void WeightPairUpgrades(List<LevelUpOption> upgrades, List<float> weights)
+	// Every held spell at the lowest level leans, so a hand of level-1 spells is unchanged.
+	private void WeightLowestUpgrades(List<LevelUpOption> upgrades, List<float> weights)
 	{
-		if (!betrothalHoopHeld)
+		if (!betrothalHoopHeld || upgrades.Count == 0)
 			return;
-		var (first, second) = GetPairSpells();
+		int lowest = int.MaxValue;
+		foreach (SpellData spell in equippedSpells)
+		{
+			if (spell != null && !spell.IsCombination)
+				lowest = Math.Min(lowest, spell.CurrentLevel);
+		}
 		for (int i = 0; i < upgrades.Count; i++)
 		{
-			string id = upgrades[i].SpellId;
-			if ((first != null && first.Id.Equals(id, StringComparison.OrdinalIgnoreCase))
-				|| (second != null && second.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
+			SpellData held = equippedSpells.FirstOrDefault(s => s != null && s.Id.Equals(upgrades[i].SpellId, StringComparison.OrdinalIgnoreCase));
+			if (held != null && held.CurrentLevel == lowest)
 				weights[i] *= BetrothalHoopUpgradeWeight;
 		}
 	}

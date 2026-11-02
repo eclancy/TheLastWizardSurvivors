@@ -64,6 +64,14 @@ multiply into an execute. (Fear goes further: it is never extended at all - see 
 | **Wither** | `Enemy.ApplyWither(fraction)` | **burns away a share of max HP, permanently** | Molten Shard (Metal), 12% |
 | **Fear** | `Enemy.ApplyFear(seconds)` | **the target turns and runs from the player** | every hit of a Darkness-tagged spell, 8% for 1.5 s |
 
+**In a description, each is a keyword** (2026-11-02, Eric: "status effects should be outlined or
+underlined or something that looks clickable"): the word underlined in its status's colour, a click
+opening one sentence on what it does, and a pad-selected card listing its statuses beside it.
+`KeywordText.Statuses` holds the sentences, built from the caps this section names (`Enemy.MaxVulnerability`,
+`MaxWeakenCeiling`, `BossSlowFloor`, `BossHoldMaxSeconds`, `Player.FearSeconds`) - change a rule here,
+read its sentence there. Shock is "Staggered"; a freeze is "Rooted"; there is no burn.
+`.ai/level-up-screen.md` 4b has the presentation.
+
 #### Bosses and crowd control (2026-11-01)
 
 "Bosses should also be immune to CC that would make it impossible for them to ever get to the

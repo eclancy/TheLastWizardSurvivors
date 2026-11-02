@@ -4495,7 +4495,7 @@ public partial class Node2DGame : Node2D
 			var box = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
 			box.AddThemeConstantOverride("separation", 3);
 			box.AddChild(BuildDetailLabel(boon.Name, PauseInk.Ink, ResponsiveLayout.TextRole.Body));
-			box.AddChild(BuildDetailLabel(BoonCatalog.DescribeEffect(boon), PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
+			box.AddChild(KeywordText.Wrap(BuildDetailLabel(BoonCatalog.DescribeEffect(boon), PauseInk.InkSoft, ResponsiveLayout.TextRole.Label)));
 			// A stance boon pays only while it holds, so say whether it held when the game paused.
 			if (boon.Effect == BoonEffect.StanceRegen && player != null)
 				box.AddChild(BuildDetailLabel(player.IsStanceRooted
@@ -4567,7 +4567,7 @@ public partial class Node2DGame : Node2D
 			var box = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
 			box.AddThemeConstantOverride("separation", 3);
 			box.AddChild(BuildDetailLabel(ChestItemCatalog.GetDisplayName(id), PauseInk.Ink, ResponsiveLayout.TextRole.Body));
-			box.AddChild(BuildDetailLabel(ChestItemCatalog.GetDescription(id), PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
+			box.AddChild(KeywordText.Wrap(BuildDetailLabel(ChestItemCatalog.GetDescription(id), PauseInk.InkSoft, ResponsiveLayout.TextRole.Label)));
 			if (BuildPauseTagChips(ChestItemCatalog.GetElementTags(id)) is Control chips)
 				box.AddChild(chips);
 			row.AddChild(box);

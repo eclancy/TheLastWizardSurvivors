@@ -320,11 +320,6 @@ public partial class Enemy : CharacterBody2D
 	/// </summary>
 	public static float DebuffDurationScale { get; set; } = 1f;
 
-	// The Fede Hoop (.ai/new-items.md section 4): the last of the pair's two spells to hit this enemy,
-	// and when, on the player's combat clock. Two fields and a compare per hit; cleared on respawn.
-	public string PairHitSpellId { get; set; }
-	public double PairHitAt { get; set; } = double.NegativeInfinity;
-
 	/// <summary>Every debuff on this enemy, as StatusEffectLayer draws them. A freeze is Freeze, not Slow.</summary>
 	/// <remarks>
 	/// Poison counts by its clock, not its tick damage, so a zero-damage poison (the harness's
@@ -1760,12 +1755,12 @@ public partial class Enemy : CharacterBody2D
 		RefreshStatusLook();
 	}
 
-	private const float FearImmunitySeconds = 4f;
+	public const float FearImmunitySeconds = 4f;
 
 	// A ceiling on the debuff itself, not just on any one application. Vulnerability multiplies
 	// every other damage source the player has, so an uncapped version scales with the whole build
 	// rather than with the spell that applied it.
-	private const float MaxVulnerability = 0.60f;
+	public const float MaxVulnerability = 0.60f;
 
 	/// <summary>Weakens the enemy: every hit it lands on the player is cut by <paramref name="fraction"/>.</summary>
 	/// <remarks>
@@ -1792,7 +1787,7 @@ public partial class Enemy : CharacterBody2D
 
 	// Half, never more, whatever a scene says. A weaken that could reach 100% would be an
 	// invulnerability aura.
-	private const float MaxWeakenCeiling = 0.50f;
+	public const float MaxWeakenCeiling = 0.50f;
 
 	/// <summary>
 	/// What a hit of <paramref name="amount"/> from this enemy actually deals after Weaken. Every
@@ -2405,8 +2400,6 @@ public partial class Enemy : CharacterBody2D
 		witherFraction = 0f;
 		poisonDamagePerTick = 0;
 		poisonTimeRemaining = 0f;
-		PairHitSpellId = null;
-		PairHitAt = double.NegativeInfinity;
 		// And none of its marks, tint or slowed walk either.
 		StatusEffectLayer.Current?.Untrack(this);
 		RefreshStatusLook();

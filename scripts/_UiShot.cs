@@ -3338,6 +3338,11 @@ public partial class _UiShot : Node
 			}
 			else
 			{
+				// A status keyword is only ever pressed by a pointer (it takes no focus), and a pointer
+				// in use hides a focused card's pad notes (StatusNotes): photograph it the way it is seen.
+				// --press-late=StatusKeyword_Weaken opens Weakened's card.
+				if (target is StatusKeyword)
+					MenuFocusHighlight.PointerActive = true;
 				target.EmitSignal(BaseButton.SignalName.Pressed);
 				frames = 0;
 				// The next name in the queue gets its own warmup, like the first.
