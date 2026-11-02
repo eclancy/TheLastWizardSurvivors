@@ -139,12 +139,29 @@ public partial class SpellData : Resource
         return null;
     }
 
-    // EVERY READER BELOW WALKS THE SAME LIST, in milestone order: level 4, level 8, Apotheosis.
-    // They used to repeat a level-4 block and a level-8 block each, fifteen times over, and the
-    // issue that planned the third milestone (#60) listed seven of them by name as places it could
-    // be forgotten. One collector means it cannot be. A reused buffer, because several of these
-    // run on every cast of every spell.
-    private readonly SpellEvolutionOption[] activeBuffer = new SpellEvolutionOption[3];
+    // THE SOVEREIGN RITE (.ai/sovereign-spell.md, SovereignRite): on the one spell the Rite anointed,
+    // the power the silenced spells pour into it, as a milestone of its own that no card offers. Its
+    // numbers move with the fuel (Player.RefreshSovereignFuel rewrites them in place), and it carries
+    // damage, cooldown, area or scale and amount and nothing else (RegressionChecks.ValidateSovereignRite).
+    // Not exported: run-only, so a Duplicate never carries it and no save ever holds it.
+    public SpellEvolutionOption SovereignBoon { get; set; }
+
+    /// <summary>True on the spell the Sovereign Rite anointed, for the rest of the run.</summary>
+    public bool IsSovereign => SovereignBoon != null;
+
+    /// <summary>
+    /// True on a spell the Sovereign Rite silenced: it never fires again this run, and its levels are
+    /// the anointed spell's fuel. Run-only, like <see cref="SovereignBoon"/>; Player.IsSilenced is the rule.
+    /// </summary>
+    public bool SilencedBySovereign { get; set; }
+
+    // EVERY READER BELOW WALKS THE SAME LIST, in milestone order: level 4, level 8, Apotheosis, and
+    // the Sovereign Rite's boon last. They used to repeat a level-4 block and a level-8 block each,
+    // fifteen times over, and the issue that planned the third milestone (#60) listed seven of them
+    // by name as places it could be forgotten. One collector means it cannot be - which is also how
+    // the Rite's fuel reaches every reader at once. A reused buffer, because several of these run on
+    // every cast of every spell.
+    private readonly SpellEvolutionOption[] activeBuffer = new SpellEvolutionOption[4];
 
     private int CollectActive(int level)
     {
@@ -152,6 +169,7 @@ public partial class SpellData : Resource
         if (level >= 4 && SelectedLevel4Evolution != null) activeBuffer[n++] = SelectedLevel4Evolution;
         if (level >= 8 && SelectedLevel8Evolution != null) activeBuffer[n++] = SelectedLevel8Evolution;
         if (SelectedApotheosis != null) activeBuffer[n++] = SelectedApotheosis;
+        if (SovereignBoon != null) activeBuffer[n++] = SovereignBoon;
         return n;
     }
 

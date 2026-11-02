@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="SpellData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/sovereign-rite-light.png" id="2_icon"]
+
+; The Sovereign Rite (.ai/sovereign-spell.md, SovereignRite, ComboCatalog's one rite).
+;
+; Not a spell that is held: it takes no slot and casts nothing. It is a Conjunction whose second ingredient
+; is whichever active spell the player points it at (Player.TryAnoint), offered in the Ascension strip once
+; the save owns it - the Warden of the Deep's deed - and the run meets its gate. This resource is its name,
+; its line and its picture, for the strip, the Spell Index, the world map card and the results screen.
+;
+; No element: the anointed spell keeps its own, and nothing the Rite does moves a tier. The numbers below are
+; placeholders the validator asks every SpellData for; nothing reads them.
+[resource]
+script = ExtResource("1")
+Tagline = "Pour every spell into one."
+Id = "sovereign_rite"
+Name = "Sovereign Rite"
+CurrentLevel = 1
+MaxLevel = 1
+BaseDamage = 1
+BaseCooldown = 1.0
+BaseProjectileCount = 1
+Description = "Choose one spell. Every other spell falls silent for the run and pours its levels into it as fuel."
+Icon = ExtResource("2_icon")

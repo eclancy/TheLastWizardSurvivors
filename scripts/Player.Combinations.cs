@@ -40,6 +40,10 @@ public partial class Player
 	/// </summary>
 	private LevelUpOption TryBuildComboOffer(ComboDefinition recipe)
 	{
+		// After the Sovereign Rite the loadout is one spell and its fuel: nothing fuses (.ai/sovereign-spell.md
+		// section 4, "a spell already anointed cannot fuse"; a silenced pair would trade its fuel for one level).
+		if (SovereignSpell != null)
+			return null;
 		ComboStanding standing = EvaluateCombo(recipe);
 		if (!standing.Ready)
 			return null;
@@ -89,6 +93,11 @@ public partial class Player
 	/// </summary>
 	private bool TryFuse(ComboDefinition recipe)
 	{
+		if (SovereignSpell != null)
+		{
+			GD.PrintErr($"Cannot make '{recipe.Id}': the Sovereign Rite holds the loadout ({SovereignSpell.Name}).");
+			return false;
+		}
 		ComboStanding standing = EvaluateCombo(recipe);
 		if (!standing.Ready)
 		{
@@ -151,7 +160,7 @@ public partial class Player
 	public List<ComboPreview> BuildComboPreviews(SaveData save)
 	{
 		var previews = new List<ComboPreview>();
-		foreach (ComboDefinition recipe in ComboCatalog.All)
+		foreach (ComboDefinition recipe in ComboCatalog.Fusions)
 		{
 			ComboStanding standing = EvaluateCombo(recipe);
 			bool heldNow = standing.Taken || standing.FirstHeld != null || standing.SecondHeld != null;
