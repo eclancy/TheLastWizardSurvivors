@@ -6855,14 +6855,18 @@ public partial class Node2DGame : Node2D
 			AddChild(new QuestIntro { Name = "QuestIntro", Tracker = questTracker });
 		}
 
-		bool note = stage != null && ChapterNotes.Has(stage.Id) && !ChapterNotes.IsSeen(data, stage.Id);
-		if (note)
+		bool firstVisit = stage != null && ChapterNotes.Has(stage.Id) && !ChapterNotes.IsSeen(data, stage.Id);
+		// A returning player sees the note again while the chapter still holds something for him - its clues
+		// alone, since the place was described the first time (.ai/quests-and-notes.md section 2).
+		bool clues = stage != null && ChapterNotes.Has(stage.Id) && ChapterNotes.CluesFor(stage.Id, data).Count > 0;
+		bool note = firstVisit || clues;
+		if (firstVisit)
 		{
 			// Marked as it is shown, and saved now: a run quit from the pause screen still read it.
 			ChapterNotes.MarkSeen(data, stage!.Id);
 			GetNodeOrNull<SaveManager>("/root/SaveManager")?.SaveGame();
 		}
-		Action next = note ? () => ChapterNoteCard.Show(this, stage!, data) : ShowStageIntroLabel;
+		Action next = note ? () => ChapterNoteCard.Show(this, stage!, data, intro: firstVisit) : ShowStageIntroLabel;
 		if (opening <= 0f)
 		{
 			next();

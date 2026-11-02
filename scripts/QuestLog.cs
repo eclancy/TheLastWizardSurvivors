@@ -107,6 +107,22 @@ public static class QuestLog
 		}
 	}
 
+	/// <summary>
+	/// The held lines alone - the wizards still held in a chapter, by epithet - and nothing once they are
+	/// free. The chapter note's clues (ChapterNotes.CluesFor): a freed wizard is no longer a clue.
+	/// </summary>
+	public static IEnumerable<string> HeldOnlyLinesFor(string stageId, SaveData save)
+	{
+		foreach (Prisoner prisoner in Prisoners)
+		{
+			UnlockDefinition who = UnlockCatalog.GetCharacter(prisoner.CharacterId);
+			if (who == null || !GlobalStatsManager.RescueChapterOf(who).Equals(stageId ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+				continue;
+			if (!GlobalStatsManager.IsCharacterUnlocked(save, prisoner.CharacterId) && !string.IsNullOrEmpty(prisoner.HeldLine))
+				yield return prisoner.HeldLine;
+		}
+	}
+
 	// --- the next wizard ---------------------------------------------------------------------------
 
 	/// <summary>

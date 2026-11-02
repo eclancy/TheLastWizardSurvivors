@@ -60,13 +60,35 @@ what the place smells or feels like. `ChapterNotes` holds them.
 
 The castle's three chapters have no note yet. The validator reports the day one flips playable without one.
 
-**When it shows.** On the first run in that chapter (`SaveData.SeenChapterNoteIds`), never in Boss Rush.
-It replaces the chapter banner on that run, so there is one piece of writing about the place, not two.
-It does not pause the run.
+**The clues (2026-11-01).** Eric: *"after that, it should provide clues for unlockables in the level, like
+how it says 'someone is singing under the ice'. the clues should be separated from the other text, in
+italics. after unlocking, that text clue will not appear."* Under the intro, past a short rule in the ink,
+one italic line for each thing the chapter still holds for this save (`ChapterNotes.CluesFor`):
+
+- the wizard held there - his held line (`QuestLog.HeldOnlyLinesFor`), gone once he is free;
+- what its side event pays when that is not a wizard (`ChapterNotes.SiteClues`): the grove "Somewhere in
+  the wood, something is still growing.", the lanterns "His lanterns are keeping something out in the
+  fog.", the caravan "A bell on the old road. Something still walks it.", the well "Something glints at the
+  bottom of the well.", the moot "Embers still glow somewhere among the stones." - gone once the site is
+  exhausted (`DiscoveryRewards.IsSiteExhausted`);
+- a spell vault not yet opened: one line for the chapter, "Something he took is hidden here. I can feel
+  it." - no more than the Spell Index already says ("Hidden somewhere in ..."), which is all a secret is
+  told before it is seen (`.ai/achievements-and-secrets.md` 4.3).
+
+A clue never names what it is about (the hints' rule, `.ai/side-events.md`). The intro now stands upright
+and only the clues are slanted, so "in italics" is what sets them apart. The journal keeps the note as it
+was (intro, then the held or freed line), without the clues.
+
+**When it shows.** On the first run in that chapter (`SaveData.SeenChapterNoteIds`), never in Boss Rush:
+the intro and the clues. **On a later run, while a clue remains, it shows again with the clues alone** - the
+place was described the first time, and text stays minimal - and once nothing is left there it does not
+show at all (the chapter banner again). Either way it replaces the chapter banner on that run, so there is
+one piece of writing about the place, not two. It does not pause the run. The Sketchbook has no clue (no
+event, no vault); its slate would set one in the slate's own ink, as it does the intro.
 
 **The card** (`ChapterNoteCard`, CanvasLayer 7) is a torn scrap of paper, drawn in code. The heading is
-bold Cinzel. The lines are the engine sans, slanted by a fifth with a `FontVariation`, so they look
-handwritten but stay legible (`.ai/level-up-screen.md` 4a). They are written in letter by letter. On a
+bold Cinzel. The intro is the engine sans, upright; the clues are the same sans slanted by a fifth with a
+`FontVariation` (italics that stay legible, `.ai/level-up-screen.md` 4a). They are written in letter by letter. On a
 PC it sits in the lower right. On a phone it sits just under the HUD band, because the lower half
 belongs to the thumb. It goes after about ten seconds, or earlier on a click or tap on the paper, or on
 A, Enter or Space. **In the Sketchbook it is a slate of floor stone, not paper**: that chapter's ground
@@ -169,10 +191,14 @@ The note is marked seen as it is shown and saved then. `SaveGame` does nothing w
     without diacritics, on four sample saves: new, early, mid-campaign and late;
   - the next wizard exists on a new save and is nobody once everyone is free;
   - the two save fields read back correctly.
+- `RegressionChecks.ValidateQuestsAndNotes` also checks the clues: none longer than a line, none naming
+  a locked wizard, no site clue naming what its site pays, the vault clue naming no vault's spell, and a
+  clue in every chapter that holds something on a new save.
 - `_UiShot` flags:
   - `--track=a,b`
-  - `--notes-seen=all|ids`
+  - `--notes-seen=all|ids` (with clues left, the card shows the clues alone)
   - `--notes-unseen`
+  - `--own-spells=ids` (a vault's clue gone; `--free-wizards=` takes a wizard's)
   - `--beaten=stage ids`
   - `--name-audit`, which reads every Label, Button and RichTextLabel on screen, plus the note's and the
     tracker's words, for a locked name, and prints PASS or FAIL.

@@ -5919,7 +5919,8 @@ public static class RegressionChecks
 			var locked = rescued.Where(id => !GlobalStatsManager.IsCharacterUnlocked(save, id))
 				.Select(id => (Id: id, Name: QuestLog.NameOf(id))).ToList();
 			IEnumerable<string> text = QuestLog.AllText(save)
-				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.LinesFor(s.Id, save)));
+				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.LinesFor(s.Id, save)))
+				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.CluesFor(s.Id, save)));
 			foreach (string line in text.Where(t => !string.IsNullOrEmpty(t)))
 			{
 				foreach (var who in locked)
@@ -5935,7 +5936,43 @@ public static class RegressionChecks
 					warnings.Add($"Chapter notes: {stage.DisplayName}'s note is {lines.Count} lines on {name}; at most {ChapterNotes.MaxLines}.");
 				foreach (string line in lines.Where(l => l.Length > ChapterNotes.MaxLineLength))
 					warnings.Add($"Chapter notes: '{line}' is {line.Length} characters; at most {ChapterNotes.MaxLineLength}.");
+				foreach (string clue in ChapterNotes.CluesFor(stage.Id, save).Where(l => l.Length > ChapterNotes.MaxLineLength))
+					warnings.Add($"Chapter notes: the clue '{clue}' is {clue.Length} characters; at most {ChapterNotes.MaxLineLength}.");
 			}
+		}
+
+		// The clues (ChapterNotes.CluesFor): each site clue belongs to a side event that pays something other
+		// than a wizard, never names what it pays, and a new save gets a clue in every chapter that holds a
+		// wizard, a site or a vault - and none once everything is owned (BuildEverythingSave's counterpart:
+		// every unlock granted below).
+		foreach (var (siteId, clue) in ChapterNotes.SiteClueLines)
+		{
+			var gives = UnlockCatalog.ForDiscoverySite(siteId).ToList();
+			if (gives.Count == 0)
+				warnings.Add($"Chapter notes: the clue for '{siteId}' belongs to no Discovery site.");
+			foreach (UnlockDefinition give in gives)
+			{
+				string named = give.Kind == UnlockKind.Character
+					? QuestLog.NameOf(give.Id)
+					: ContentValidator.LoadAllSpells().FirstOrDefault(sp => sp.Id == give.Id)?.Name
+						?? BoonCatalog.GetById(give.Id)?.Name ?? give.Id.Replace('_', ' ');
+				if (!string.IsNullOrWhiteSpace(named) && clue.Contains(named, StringComparison.OrdinalIgnoreCase))
+					warnings.Add($"Chapter notes: the clue '{clue}' names '{named}', which is what it pays.");
+			}
+		}
+		foreach (SecretDefinition vault in SecretCatalog.All.Where(v => v.IsVault))
+		{
+			if (!string.IsNullOrWhiteSpace(vault.SpellName) && ChapterNotes.VaultClue.Contains(vault.SpellName, StringComparison.OrdinalIgnoreCase))
+				warnings.Add($"Chapter notes: the vault clue names {vault.SpellName}.");
+		}
+		var fresh = new SaveData();
+		foreach (StageDefinition stage in StageCatalog.All.Where(s => s.IsPlayable && ChapterNotes.Has(s.Id)))
+		{
+			bool holds = QuestLog.HeldOnlyLinesFor(stage.Id, fresh).Any()
+				|| SideEventDirector.ForStage(stage.Id) != null
+				|| SecretCatalog.ForStage(stage.Id).Any(v => v.IsVault);
+			if (holds && ChapterNotes.CluesFor(stage.Id, fresh).Count == 0)
+				warnings.Add($"Chapter notes: {stage.DisplayName} holds something on a new save but its note gives no clue.");
 		}
 
 		// The default: a new save tracks the next wizard, and he is somebody; a save that frees everyone has none.

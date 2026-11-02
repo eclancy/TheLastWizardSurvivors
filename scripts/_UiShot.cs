@@ -1350,6 +1350,13 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--notes-unseen")
 				CurrentSave().SeenChapterNoteIds.Clear();
+			// --own-spells=a,b: those spells owned in the in-memory save, so a chapter note can be photographed
+			// with a vault's clue gone (ChapterNotes.CluesFor).
+			else if (arg.StartsWith("--own-spells="))
+			{
+				foreach (string id in arg.Substring("--own-spells=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries))
+					GlobalStatsManager.UnlockSpell(CurrentSave(), id.Trim());
+			}
 			else if (arg.StartsWith("--beaten="))
 			{
 				foreach (string id in arg.Substring("--beaten=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries))
