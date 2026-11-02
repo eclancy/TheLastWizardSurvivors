@@ -21,9 +21,8 @@ namespace WizardSurvivors.scripts;
 //
 // BUILT CHAPTER BY CHAPTER. A layout is registered per StageEnvironmentKind in AuthoredLayout.Files below,
 // and the topology is built for a chapter only once its file exists (TopologyBuild.BuiltFor). So the Court
-// plays on its building today while the Throne, whose throne_room.json is C4's to write, is still the open
-// field it was - and its campaign to-do line still says so. The day C4's generator writes that file, the
-// Throne is Authored with no edit here.
+// played on its building while the Throne was still open field; C4's throne_room.py wrote the Throne's
+// file, and the Throne became Authored with no edit here.
 //
 // It is WALLED (build.Walled): the halls play by the maze's rules - no cleanup pass (it would eat a
 // carpet runner two cells wide), every enemy on the flow field, spawns and recycling by walking

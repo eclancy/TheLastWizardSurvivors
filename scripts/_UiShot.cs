@@ -234,6 +234,15 @@ public partial class _UiShot : Node
 	// that holds its thresholds (CourtSeneschalBoss) stops the blow at the first one.
 	private float bossBleedTo = -1f;
 	private int bossBleedAfter = 30;
+	// --choir=note|dip|revive[,K] (with --rush-steps=1 on the Sunken Cave): K frames (default 30) after the
+	// Hollow Choir has landed, one of the three things Eric asked of it (2026-11-01) is made to happen, so
+	// a --burst can follow it: NOTE, the three voices sing a note at him in turn (the gesture, then the
+	// note crossing to him); DIP, the voice nearest him goes under and comes up on his far side; REVIVE,
+	// one voice is struck down and the nearest of the other two walks over and sings it back. The frame it
+	// happened on is printed, to set --frames by.
+	private string choirScene;
+	private int choirSceneAfter = 30;
+	private bool choirSceneDone;
 	// --rush-after=N: the first rush step waits for frame N as well as a quarter of the warmup, so a
 	// --teleport (at a third of it) can put the wizard in a room before the boss is brought to him.
 	private int rushAfter;
@@ -320,6 +329,13 @@ public partial class _UiShot : Node
 	private Vector2 gotoOffset = new Vector2(0f, 170f);
 	private bool forceHint;
 	private bool hintForced;
+	// --hint-preview=STAGE_ID[,DEG]: that chapter's hint - sound, cue and line - played fxLead frames
+	// before the shutter on whatever stage is running, from a point 3000 px away at DEG degrees
+	// (0 = east, 90 = south; default 20), so its line can be photographed on grounds no hint plays on:
+	// the Fallow Fields' pale field (--stage=9), the Sketchbook's paper (--stage=8). StageHintDirector.Preview.
+	private string hintPreview;
+	private float hintPreviewBearing = 20f;
+	private bool hintPreviewed;
 	private bool takeWayfinder;
 	private bool wayfinderTaken;
 	private bool arriveEvent;
@@ -846,17 +862,41 @@ public partial class _UiShot : Node
 		}
 	}
 
+	// --dismiss-levelups=N: take the first card of the first N level-ups and keep the next one on screen
+	// (implies --keep-levelup). The Throne's Muster opens seventeen at the start (.ai/endgame-castle.md
+	// 6.2): --stage=13 --dismiss-levelups=4 photographs "The Muster - 5 of 17".
+	private int dismissLevelUps;
+	private int levelUpsDismissed;
+	// A chest screen the RUN opened (the Muster's two relic chests) is claimed like a level-up is
+	// dismissed, unless the shot is of a chest (--open-chest). Its first relic of an honest offer.
+	private readonly ChestOfferMemory dismissChestMemory = new();
+
 	private void DismissLevelUpMenus(Node root)
 	{
 		// The menu-queue probe opens and closes level-ups itself.
-		if (KeepLevelUp || menuQueueProbeStarted)
+		if (menuQueueProbeStarted)
 			return;
 
 		if (root is LevelUpMenu menu && menu.Visible)
 		{
+			if (menu.IsQueuedForDeletion() || (KeepLevelUp && levelUpsDismissed >= dismissLevelUps))
+				return;
 			System.Collections.Generic.IReadOnlyList<LevelUpOption> options = menu.GetOfferedOptions();
 			if (options != null && options.Count > 0)
+			{
 				menu.EmitSignal(LevelUpMenu.SignalName.WeaponSelected, options[0].AutoChoice());
+				levelUpsDismissed++;
+			}
+			return;
+		}
+		if (root is ChestItemSelectionMenu chest)
+		{
+			if (OpenChest || chest.IsQueuedForDeletion() || FindNodeOfType<Player>(GetTree().Root) is not Player owner)
+				return;
+			System.Collections.Generic.List<string> offer = ChestItemCatalog.GetChestItemOptions(owner.GetOwnedChestItems(), null, 3,
+				new[] { ChestItemCatalog.ScribesPenknife }, dismissChestMemory);
+			if (offer.Count > 0)
+				chest.EmitSignal(ChestItemSelectionMenu.SignalName.ItemSelected, offer[0]);
 			return;
 		}
 
@@ -947,6 +987,11 @@ public partial class _UiShot : Node
 				PressButton = arg.Substring("--press=".Length);
 			else if (arg == "--keep-levelup")
 				KeepLevelUp = true;
+			else if (arg.StartsWith("--dismiss-levelups="))
+			{
+				dismissLevelUps = int.Parse(arg.Substring("--dismiss-levelups=".Length));
+				KeepLevelUp = true;
+			}
 			else if (arg == "--force-levelup")
 				ForceLevelUp = true;
 			else if (arg == "--focus-boon")
@@ -1232,6 +1277,13 @@ public partial class _UiShot : Node
 				if (bleed.Length > 1)
 					bossBleedAfter = int.Parse(bleed[1]);
 			}
+			else if (arg.StartsWith("--choir="))
+			{
+				string[] scene = arg.Substring("--choir=".Length).Split(',');
+				choirScene = scene[0];
+				if (scene.Length > 1)
+					choirSceneAfter = int.Parse(scene[1]);
+			}
 			else if (arg.StartsWith("--rush-after="))
 				rushAfter = int.Parse(arg.Substring("--rush-after=".Length));
 			else if (arg.StartsWith("--found-secrets="))
@@ -1314,6 +1366,13 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--notes-unseen")
 				CurrentSave().SeenChapterNoteIds.Clear();
+			// --own-spells=a,b: those spells owned in the in-memory save, so a chapter note can be photographed
+			// with a vault's clue gone (ChapterNotes.CluesFor).
+			else if (arg.StartsWith("--own-spells="))
+			{
+				foreach (string id in arg.Substring("--own-spells=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries))
+					GlobalStatsManager.UnlockSpell(CurrentSave(), id.Trim());
+			}
 			else if (arg.StartsWith("--beaten="))
 			{
 				foreach (string id in arg.Substring("--beaten=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries))
@@ -1554,6 +1613,13 @@ public partial class _UiShot : Node
 				takeWayfinder = true;
 			else if (arg == "--force-hint")
 				forceHint = true;
+			else if (arg.StartsWith("--hint-preview="))
+			{
+				string[] parts = arg.Substring("--hint-preview=".Length).Split(',');
+				hintPreview = parts[0];
+				if (parts.Length > 1)
+					hintPreviewBearing = float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture);
+			}
 			else if (arg == "--arrive")
 				arriveEvent = true;
 			// --zoom=Z: the run camera's zoom (player.tscn's is 0.85), for a map-like view of a stretch
@@ -2365,6 +2431,40 @@ public partial class _UiShot : Node
 		return null;
 	}
 
+	// --choir: see choirScene.
+	private void StageChoirScene()
+	{
+		var bodies = new System.Collections.Generic.List<BossEnemy>();
+		CollectBossBodies(GetTree().Root, bodies);
+		var voices = bodies.OfType<HollowChoirBoss>().Where(v => !v.IsDying).ToList();
+		Player wizard = FindNodeOfType<Player>(GetTree().Root);
+		if (voices.Count == 0 || wizard == null)
+		{
+			GD.Print("_UiShot: --choir found no Hollow Choir to stage");
+			return;
+		}
+		voices.Sort((a, b) => a.GlobalPosition.DistanceSquaredTo(wizard.GlobalPosition).CompareTo(b.GlobalPosition.DistanceSquaredTo(wizard.GlobalPosition)));
+		switch (choirScene)
+		{
+			case "note":
+				for (int i = 0; i < voices.Count; i++)
+					voices[i].DebugSingNote(i * 0.7f);
+				break;
+			case "dip":
+				// The nearest that is not mid-swing: a forced dip out of a wind-up would leave the slam to land.
+				foreach (HollowChoirBoss voice in voices)
+					if (voice.DebugDip())
+						break;
+				break;
+			case "revive":
+				// The one furthest from him falls, so its singer's walk crosses the picture.
+				HollowChoirBoss struck = voices[voices.Count - 1];
+				struck.TakeDamage(System.Math.Max(1, struck.Health) + 1, false);
+				break;
+		}
+		GD.Print($"_UiShot: --choir={choirScene} staged at frame {frames}");
+	}
+
 	// --boss-death: the bodies of the boss being fought, stood in front of the camera as they arrive.
 	private void PlaceBossBodies(Player witness, Vector2 offset)
 	{
@@ -2515,8 +2615,8 @@ public partial class _UiShot : Node
 				}
 				if (ripenEvery > 0)
 				{
-					float gap = BlackTentacles.ClosestMawGap();
-					GD.Print($"_UiShot: frame {burstTaken}: {BlackTentacles.LiveMawCount} maw(s) open"
+					float gap = BlackTentacles.ClosestRiftGap();
+					GD.Print($"_UiShot: frame {burstTaken}: {BlackTentacles.LiveRiftCount} rift(s) open"
 						+ (gap < float.MaxValue ? $", closest rims {gap:0.0} px apart" : string.Empty));
 				}
 				SaveBurstFrame();
@@ -2609,6 +2709,27 @@ public partial class _UiShot : Node
 				GD.Print(played
 					? "_UiShot: hint forced"
 					: $"_UiShot: stage {Global.SelectedStageIdx} played no hint (no hint for it, the place is found, or this save owns its discovery - try --fresh-save)");
+			}
+			if (hintPreview != null && !hintPreviewed && frames >= WarmupFrames - fxLead
+				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame previewGame && previewGame.RunPlayer != null)
+			{
+				hintPreviewed = true;
+				StageHint previewHint = StageHintCatalog.ForStage(hintPreview);
+				var previewEntry = SideEventDirector.ForStage(hintPreview);
+				if (previewHint == null || previewEntry == null)
+				{
+					GD.PrintErr($"_UiShot: --hint-preview={hintPreview}: no hint for that chapter");
+				}
+				else
+				{
+					SideEvent colourOf = previewEntry.Value.Create();
+					Color tell = colourOf.FarTellColor;
+					colourOf.Free();
+					float bearing = Mathf.DegToRad(hintPreviewBearing);
+					Vector2 from = previewGame.RunPlayer.GlobalPosition;
+					StageHintDirector.Preview(previewGame, previewHint, from + new Vector2(Mathf.Cos(bearing), Mathf.Sin(bearing)) * 3000f, tell);
+					GD.Print($"_UiShot: hint preview {hintPreview} at {hintPreviewBearing} degrees");
+				}
 			}
 			if (takeWayfinder && !wayfinderTaken && frames >= WarmupFrames / 3
 				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector finder)
@@ -2817,6 +2938,17 @@ public partial class _UiShot : Node
 						if (!body.IsDying)
 							body.TakeDamage(System.Math.Max(1, body.Health - Mathf.FloorToInt(body.MaxHealth * bossBleedTo)), false);
 					GD.Print($"_UiShot: bled {bleeding.Count} boss bod{(bleeding.Count == 1 ? "y" : "ies")} toward {bossBleedTo:P0}");
+				}
+			}
+			if (choirScene != null && !choirSceneDone && rushStepsDone > 0 && BossEnemy.EnteringCount == 0
+				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame { BossFightActive: true })
+			{
+				if (bossLandedFrame < 0)
+					bossLandedFrame = frames;
+				else if (frames - bossLandedFrame >= choirSceneAfter)
+				{
+					choirSceneDone = true;
+					StageChoirScene();
 				}
 			}
 			// Never mid-arrival (BossEnemy's entrance): a step then would fell a boss that has not landed.

@@ -18,7 +18,9 @@ using WizardSurvivors.scripts;
 // Flags: --minutes, --timescale, --character, --seed, --out, --sample-offers (boon frequency),
 // --stage=N, --walk=DEG (walk a straight bearing, to exercise the endless terrain far from the start),
 // --check-feet (count frames the footprint overlaps water or a wall), --no-open-nav (no enemy
-// navigation on an open stage, for a same-build cost comparison). --stress-swarm, read by Node2DGame,
+// navigation on an open stage, for a same-build cost comparison), --no-skirt (enemies stop dead on a
+// square hit, never skirt, and no prop cluster is in the grid - the before of .ai/enemy-behaviour.md
+// section 8 item 13). --stress-swarm, read by Node2DGame,
 // fills to the enemy cap at once and prints PERF lines, navigation cost among them.
 // --give-relics=id,id and --grant-boons=id,id hand the bot those from the start (saving off), e.g.
 // the Brazier as ember_flask,inferno_core,obsidian_heart; the report's "stand still" line says how
@@ -333,6 +335,7 @@ public partial class _BalanceHarness : Node
 			// No navigation window on an open stage: the code as it was before open stages had one,
 			// for a same-build cost comparison (MazeNavigation.BuildOnOpenStages).
 			else if (arg == "--no-open-nav") MazeNavigation.BuildOnOpenStages = false;
+			else if (arg == "--no-skirt") Enemy.TerrainSkirting = false;
 			// No status marks, tints or slowed walks (StatusEffectLayer.Disabled), for a same-build
 			// cost A/B against --status-all. The debuffs themselves still land.
 			else if (arg == "--no-status-fx") StatusEffectLayer.Disabled = true;
@@ -980,6 +983,7 @@ public partial class _BalanceHarness : Node
 		TrackAscensions();
 		TickPaceLedger();
 		if (OpensChests) PrepareNearbyChests();
+		AutoPickChestScreen();
 		AutoPickLevelUp();
 		DriveMovement();
 		// A fallen boss opens the way home and the run ends when the player steps in (Node2DGame's
@@ -3066,6 +3070,27 @@ public partial class _BalanceHarness : Node
 			chestsOpened++;
 			chestPicks.Add(pick);
 		}
+	}
+
+	// A chest SCREEN the run opened itself, which no pickup's no-menu path covers: the Throne's Muster opens
+	// two through Node2DGame.OpenChestSelectionMenu (.ai/endgame-castle.md 6.2). The screen does not say
+	// what it shows, so the bot deals the same offer it deals a chest on the ground and claims its pick
+	// through the screen's own signal, which closes it the way a player's click does.
+	private void AutoPickChestScreen()
+	{
+		if (!GetTree().Paused || player == null)
+			return;
+		ChestItemSelectionMenu menu = FindNode<ChestItemSelectionMenu>(game);
+		if (menu == null || menu.IsQueuedForDeletion())
+			return;
+		List<string> offer = ChestItemCatalog.GetChestItemOptions(player.GetOwnedChestItems(), chestRng,
+			player.HasRelicKey ? 4 : 3, new[] { ChestItemCatalog.ScribesPenknife }, chestOfferMemory);
+		if (offer.Count == 0)
+			return;
+		string pick = SeekAscensions ? PickChestForPlan(offer) : PickChestOrdinary(offer);
+		chestsOpened++;
+		chestPicks.Add(pick);
+		menu.EmitSignal(ChestItemSelectionMenu.SignalName.ItemSelected, pick);
 	}
 
 	private static string PickChestOrdinary(List<string> offer) =>

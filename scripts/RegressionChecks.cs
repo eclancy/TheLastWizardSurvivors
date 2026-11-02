@@ -80,6 +80,7 @@ public static class RegressionChecks
 		ValidateSpellClassificationText(warnings);
 		ValidateExploreArt(warnings);
 		ValidateStageHints(warnings);
+		ValidateThawArt(warnings);
 		ValidateGravewell(warnings);
 		ValidateCraters(warnings);
 		ValidateEvolutionIcons(warnings);
@@ -95,6 +96,15 @@ public static class RegressionChecks
 	// in a caption is the answer printed on the question.
 	private static void ValidateStageHints(List<string> warnings)
 	{
+		// The cues (tools/art/hint_cues.py): one row per HintCue, eight cells each, read by cell. A missing
+		// or unimported sheet means a hint is heard and read but never seen.
+		Texture2D cues = ResourceLoader.Exists(StageHintCue.SheetPath) ? GD.Load<Texture2D>(StageHintCue.SheetPath) : null;
+		var cueSize = new Vector2(StageHintCue.Cell * StageHintCue.Columns, StageHintCue.Cell * Enum.GetValues<HintCue>().Length);
+		if (cues == null)
+			warnings.Add($"Hints: {StageHintCue.SheetPath} is missing or not imported (python tools/art/hint_cues.py, then import).");
+		else if (cues.GetSize() != cueSize)
+			warnings.Add($"Hints: hint-cues.png is {cues.GetSize()}, expected {cueSize} - one row per HintCue, in its order.");
+
 		var seen = new HashSet<string>();
 		var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (StageHint hint in StageHintCatalog.All)
@@ -151,6 +161,37 @@ public static class RegressionChecks
 				}
 			}
 		}
+	}
+
+	// The thaw's lake and block (tools/art/thaw_lake.py, ThawLake, ThawEvent): four textures the shader
+	// reads by texel, which must be one size, and a sheet read by frame index. A missing one draws the
+	// thaw on bare ground, or without its block, and says nothing in a run.
+	private static void ValidateThawArt(List<string> warnings)
+	{
+		Vector2? lakeSize = null;
+		foreach (string file in new[] { "thaw-lake.png", "thaw-lake-lit.png", "thaw-lake-bright.png", "thaw-lake-data.png" })
+		{
+			string path = ThawLake.Directory + file;
+			Texture2D texture = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
+			if (texture == null)
+			{
+				warnings.Add($"Thaw: {path} is missing or not imported (python tools/art/thaw_lake.py, then import).");
+				continue;
+			}
+			lakeSize ??= texture.GetSize();
+			if (texture.GetSize() != lakeSize.Value)
+				warnings.Add($"Thaw: {file} is {texture.GetSize()}, but the lake is {lakeSize.Value}; the shader reads them texel for texel.");
+		}
+		if (lakeSize is Vector2 size && size * 2f != ThawLake.WorldAxes * 2f + new Vector2(64f, 64f))
+			warnings.Add($"Thaw: the lake is {size} at x2, which no longer matches ThawLake.WorldAxes {ThawLake.WorldAxes} (and the event's footprint).");
+		string block = ThawLake.Directory + "thaw-block.png";
+		Texture2D sheet = ResourceLoader.Exists(block) ? GD.Load<Texture2D>(block) : null;
+		if (sheet == null)
+			warnings.Add($"Thaw: {block} is missing or not imported; the wizard will not be in the ice.");
+		else if (sheet.GetSize() != new Vector2(64 * 16, 64))
+			warnings.Add($"Thaw: thaw-block.png is {sheet.GetSize()}, expected 1024x64 (four stages of four frames).");
+		if (!ResourceLoader.Exists(ThawLake.ShaderPath))
+			warnings.Add($"Thaw: {ThawLake.ShaderPath} is missing; the lake will not draw.");
 	}
 
 	// Gravewell's pit is a sheet read by frame index, its collapse a shader loaded by path, and its
@@ -1302,6 +1343,77 @@ public static class RegressionChecks
 			warnings.Add("Navigation: open ground connected to the player counts as unreachable.");
 		if (whole.IsWallAt(behind) || !whole.HasLineOfSight(behind, player))
 			warnings.Add("Navigation: water is stopping shots - only maze walls should.");
+
+		ValidateSkirtTurn(warnings);
+		ValidatePropClusters(warnings);
+	}
+
+	// Node2DGame.StampPropClusters' geometry (PropClusters, .ai/terrain.md section 9 "Props"): two props
+	// a body cannot pass between close their cells and a four-connected way between them, so the grid has
+	// no diagonal gap a body does not fit; two it can pass between close nothing, and neither does a lone
+	// one; one a hand's width off water closes itself and the gap to the shore.
+	private static void ValidatePropClusters(List<string> warnings)
+	{
+		const float tile = 48f;
+		var closed = new HashSet<Vector2I>();
+		var shore = new Vector2I(1, 6);
+		var props = new List<Rect2>
+		{
+			new(new Vector2(60f, 60f), new Vector2(27f, 15f)),    // cell (1, 1)
+			new(new Vector2(120f, 100f), new Vector2(27f, 15f)),  // cell (2, 2): 41 px off the first, diagonally
+			new(new Vector2(400f, 60f), new Vector2(27f, 15f)),   // cell (8, 1)
+			new(new Vector2(500f, 60f), new Vector2(27f, 15f)),   // cell (10, 1): 73 px off the last - a body fits
+			new(new Vector2(10f, 300f), new Vector2(27f, 15f)),   // cell (0, 6): 11 px off the water at (1, 6)
+			new(new Vector2(700f, 700f), new Vector2(12f, 12f)),  // a lone trunk
+		};
+		PropClusters.Collect(props, Vector2.Zero, tile, cell => cell == shore, cell => closed.Add(cell));
+
+		if (!closed.Contains(new Vector2I(1, 1)) || !closed.Contains(new Vector2I(2, 2)))
+			warnings.Add("Prop clusters: two rocks 41 px apart are not in the navigation grid - the swarm would wedge between them.");
+		else if (!closed.Contains(new Vector2I(2, 1)) && !closed.Contains(new Vector2I(1, 2)))
+			warnings.Add("Prop clusters: two rocks on a diagonal leave the corner between them open in the grid.");
+		if (closed.Contains(new Vector2I(8, 1)) || closed.Contains(new Vector2I(10, 1)) || closed.Contains(new Vector2I(9, 1)))
+			warnings.Add("Prop clusters: two props a body can walk between (73 px) were closed.");
+		if (closed.Contains(new Vector2I(14, 14)))
+			warnings.Add("Prop clusters: a lone trunk was closed - the skirt goes round it, the grid need not.");
+		if (!closed.Contains(new Vector2I(0, 6)))
+			warnings.Add("Prop clusters: a rock 11 px off the water is not in the grid - the swarm would wedge in the gap.");
+	}
+
+	// Enemy.Skirt's geometry (.ai/enemy-behaviour.md section 8 item 13): a body that walks square into
+	// something turns along it, keeps pressing on it so it follows it round, and goes the way it already
+	// leant; one brushing along a wall is left alone. Every heading a skirt can produce must also carry
+	// the body along the surface, never back off it or to a stop.
+	private static void ValidateSkirtTurn(List<string> warnings)
+	{
+		Vector2 normal = Vector2.Up;            // a surface facing north; the body walks south into it
+		Vector2 square = Vector2.Down;
+		if (!SkirtTurn.IsFacingInto(square, normal, 0.5f))
+			warnings.Add("Skirting: a body walking square into a surface does not count as held by it.");
+		if (SkirtTurn.IsFacingInto(new Vector2(1f, 0.3f).Normalized(), normal, 0.5f))
+			warnings.Add("Skirting: a body brushing along a wall counts as walking into it - corridors would skirt.");
+
+		Vector2 leaning = new Vector2(-0.3f, 1f).Normalized();
+		float hand = SkirtTurn.ChooseHand(leaning, normal, 1f);
+		if (SkirtTurn.Along(normal, hand).X > -0.5f)
+			warnings.Add("Skirting: a body leaning west into a surface turns east - against its own lean.");
+		if (Mathf.Abs(SkirtTurn.ChooseHand(square, normal, -1f)) != 1f || SkirtTurn.ChooseHand(square, normal, -1f) != -1f)
+			warnings.Add("Skirting: a dead-square body does not take its own tie side.");
+
+		for (int a = 0; a < 360; a += 15)
+		{
+			Vector2 heading = Vector2.FromAngle(Mathf.DegToRad(a));
+			foreach (float side in new[] { -1f, 1f })
+			{
+				Vector2 along = SkirtTurn.Along(normal, side);
+				Vector2 turn = SkirtTurn.Blend(along, heading, 0.5f);
+				if (!turn.IsNormalized() || turn.Dot(along) < 0.3f)
+				{
+					warnings.Add($"Skirting: the turn for heading {heading} on hand {side} is {turn}, which does not carry the body along the surface.");
+					return;
+				}
+			}
+		}
 	}
 
 	// Stage hazards on the maze stand in the middle of a hallway or a hall (.ai/terrain.md section 6,
@@ -3377,7 +3489,9 @@ public static class RegressionChecks
 				}
 				todo.Add($"{slot.Role} {creature.DisplayName} ({ShortScenePath(creature.ScenePath)})");
 			}
-			else if (!IsHome(creature, chapter))
+			// A chapter whose cast is borrowed by design (the Throne's household guard) says so once, in its
+			// roster, instead of carrying a to-do that asks for art it must never have.
+			else if (!IsHome(creature, chapter) && string.IsNullOrWhiteSpace(chapter.BorrowedCastBecause))
 			{
 				todo.Add($"{slot.Role} is {creature.DisplayName}, borrowed from {HomeName(creature)}");
 			}
@@ -3879,9 +3993,13 @@ public static class RegressionChecks
 				if (choir.StandRadius <= choir.SlamRadius)
 					warnings.Add($"Hollow Choir voices stand {choir.StandRadius} px out with a {choir.SlamRadius} px reach, so they crowd him and one blast takes all three.");
 				if (choir.NoteTellSeconds <= 0f)
-					warnings.Add("Hollow Choir's round marks its notes for no time at all, so they land where he stands unseen.");
+					warnings.Add("Hollow Choir's round sings its notes with no gesture at all, so they leave the voice unseen.");
 				if (choir.VoiceCount < 2)
 					warnings.Add($"Hollow Choir has {choir.VoiceCount} voices, so nothing can revive anything and the linked-health fight is an ordinary boss.");
+				if (choir.NoteSpeed <= 0f || choir.NoteRadius <= 0f)
+					warnings.Add($"Hollow Choir's notes fly at {choir.NoteSpeed} px/s with a {choir.NoteRadius} px reach, so the round hits nothing.");
+				if (choir.ReviveReach <= 0f)
+					warnings.Add("Hollow Choir's singer can never stand close enough to a fallen voice to sing it back, so a fallen voice never rises.");
 				if (choir.ReviveSeconds <= 0f)
 					warnings.Add("Hollow Choir revives instantly, so the window to drop all three at once does not exist.");
 				if (choir.ReviveHealthFraction <= 0f || choir.ReviveHealthFraction >= 1f)
@@ -5805,7 +5923,8 @@ public static class RegressionChecks
 			var locked = rescued.Where(id => !GlobalStatsManager.IsCharacterUnlocked(save, id))
 				.Select(id => (Id: id, Name: QuestLog.NameOf(id))).ToList();
 			IEnumerable<string> text = QuestLog.AllText(save)
-				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.LinesFor(s.Id, save)));
+				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.LinesFor(s.Id, save)))
+				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.CluesFor(s.Id, save)));
 			foreach (string line in text.Where(t => !string.IsNullOrEmpty(t)))
 			{
 				foreach (var who in locked)
@@ -5821,7 +5940,43 @@ public static class RegressionChecks
 					warnings.Add($"Chapter notes: {stage.DisplayName}'s note is {lines.Count} lines on {name}; at most {ChapterNotes.MaxLines}.");
 				foreach (string line in lines.Where(l => l.Length > ChapterNotes.MaxLineLength))
 					warnings.Add($"Chapter notes: '{line}' is {line.Length} characters; at most {ChapterNotes.MaxLineLength}.");
+				foreach (string clue in ChapterNotes.CluesFor(stage.Id, save).Where(l => l.Length > ChapterNotes.MaxLineLength))
+					warnings.Add($"Chapter notes: the clue '{clue}' is {clue.Length} characters; at most {ChapterNotes.MaxLineLength}.");
 			}
+		}
+
+		// The clues (ChapterNotes.CluesFor): each site clue belongs to a side event that pays something other
+		// than a wizard, never names what it pays, and a new save gets a clue in every chapter that holds a
+		// wizard, a site or a vault - and none once everything is owned (BuildEverythingSave's counterpart:
+		// every unlock granted below).
+		foreach (var (siteId, clue) in ChapterNotes.SiteClueLines)
+		{
+			var gives = UnlockCatalog.ForDiscoverySite(siteId).ToList();
+			if (gives.Count == 0)
+				warnings.Add($"Chapter notes: the clue for '{siteId}' belongs to no Discovery site.");
+			foreach (UnlockDefinition give in gives)
+			{
+				string named = give.Kind == UnlockKind.Character
+					? QuestLog.NameOf(give.Id)
+					: ContentValidator.LoadAllSpells().FirstOrDefault(sp => sp.Id == give.Id)?.Name
+						?? BoonCatalog.GetById(give.Id)?.Name ?? give.Id.Replace('_', ' ');
+				if (!string.IsNullOrWhiteSpace(named) && clue.Contains(named, StringComparison.OrdinalIgnoreCase))
+					warnings.Add($"Chapter notes: the clue '{clue}' names '{named}', which is what it pays.");
+			}
+		}
+		foreach (SecretDefinition vault in SecretCatalog.All.Where(v => v.IsVault))
+		{
+			if (!string.IsNullOrWhiteSpace(vault.SpellName) && ChapterNotes.VaultClue.Contains(vault.SpellName, StringComparison.OrdinalIgnoreCase))
+				warnings.Add($"Chapter notes: the vault clue names {vault.SpellName}.");
+		}
+		var fresh = new SaveData();
+		foreach (StageDefinition stage in StageCatalog.All.Where(s => s.IsPlayable && ChapterNotes.Has(s.Id)))
+		{
+			bool holds = QuestLog.HeldOnlyLinesFor(stage.Id, fresh).Any()
+				|| SideEventDirector.ForStage(stage.Id) != null
+				|| SecretCatalog.ForStage(stage.Id).Any(v => v.IsVault);
+			if (holds && ChapterNotes.CluesFor(stage.Id, fresh).Count == 0)
+				warnings.Add($"Chapter notes: {stage.DisplayName} holds something on a new save but its note gives no clue.");
 		}
 
 		// The default: a new save tracks the next wizard, and he is somebody; a save that frees everyone has none.

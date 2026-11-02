@@ -12,7 +12,25 @@ public enum HintVoice
 	Sound,
 }
 
-/// <summary>One chapter's hint: what it is for, how it sounds, and what its caption says.</summary>
+/// <summary>
+/// What a hint shows in the world, coming in from the edge of the screen on the side the sound came
+/// from (StageHintCue). The ORDER IS AN API: it is the row order of tools/art/hint_cues.py's sheet.
+/// </summary>
+public enum HintCue
+{
+	/// <summary>Leaves tumbling in on no wind (the grove).</summary>
+	Leaves,
+	/// <summary>Arcs of a voice coming down a corridor (the cell).</summary>
+	Echo,
+	/// <summary>Cold flames flickering and guttering (the lanterns).</summary>
+	Wisp,
+	/// <summary>Notes of a song, each with a frost glint behind it (the thaw).</summary>
+	Song,
+	/// <summary>A bell swinging, ringing at each strike (the caravan).</summary>
+	Bell,
+}
+
+/// <summary>One chapter's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
 public sealed class StageHint
 {
 	/// <summary>The chapter (<see cref="StageCatalog"/>) whose runs play it.</summary>
@@ -29,6 +47,13 @@ public sealed class StageHint
 
 	/// <summary>The cue, by <see cref="SfxCatalog"/> name. Generated in tools/audio/sfx.py.</summary>
 	public string Sound { get; init; } = string.Empty;
+
+	/// <summary>
+	/// What comes in from the edge of the screen with the sound, on its beat (StageHintCue). In the
+	/// site's own language and its far tell's colour: Eric, 2026-11-01, "for the singing wizard, once in
+	/// a while, the player should see musical notes on screen in the direction of the wizard".
+	/// </summary>
+	public HintCue Cue { get; init; }
 
 	/// <summary>
 	/// One line per hint, in order; once they run out the last one repeats. Short enough for two
@@ -48,7 +73,9 @@ public sealed class StageHint
 /// player arrives (SideEvent), which is right for the hunt and wrong for a player who does not know
 /// there is anything to hunt. So, a third of the way into a run and every two and a half minutes
 /// after, while the chapter still holds something this save has not carried out, a cue comes from
-/// its direction: a sound panned that way and a caption at that edge of the screen.</para>
+/// its direction: a sound panned that way, a few marks in the site's own language drifting in from
+/// that edge of the screen on the sound's beat (notes for the singer, leaves for the grove), and the
+/// line fading in beside them.</para>
 ///
 /// <para>It says that something is there and roughly where. It never says what to do about it, and
 /// it never names who: a rescued wizard's name is the reward (side-events.md, "Secret wizards").
@@ -84,6 +111,7 @@ public static class StageHintCatalog
 			SiteId = "the_grove",
 			Voice = HintVoice.Sound,
 			Sound = SfxCatalog.HintGroveWhisper,
+			Cue = HintCue.Leaves,
 			Lines = new[]
 			{
 				"Leaves whispering, though there is no wind.",
@@ -99,6 +127,7 @@ public static class StageHintCatalog
 			SiteId = "gaolers_key",
 			Voice = HintVoice.Speech,
 			Sound = SfxCatalog.HintCellCry,
+			Cue = HintCue.Echo,
 			Lines = new[]
 			{
 				"Help! Is someone there?",
@@ -114,6 +143,7 @@ public static class StageHintCatalog
 			SiteId = "bog_lanterns",
 			Voice = HintVoice.Sound,
 			Sound = SfxCatalog.HintLanternFlare,
+			Cue = HintCue.Wisp,
 			Lines = new[]
 			{
 				"Far off, a cold light flares and gutters.",
@@ -128,6 +158,7 @@ public static class StageHintCatalog
 			SiteId = "the_thaw",
 			Voice = HintVoice.Sound,
 			Sound = SfxCatalog.HintIceSong,
+			Cue = HintCue.Song,
 			Lines = new[]
 			{
 				"The ice groans. Under it, faintly, someone is singing.",
@@ -142,6 +173,7 @@ public static class StageHintCatalog
 			SiteId = "caravan_master",
 			Voice = HintVoice.Sound,
 			Sound = SfxCatalog.HintCaravanBell,
+			Cue = HintCue.Bell,
 			Lines = new[]
 			{
 				"A caravan bell, somewhere out on the sand.",

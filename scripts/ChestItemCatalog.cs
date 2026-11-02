@@ -170,6 +170,17 @@ public static class ChestItemCatalog
 		_ => 1.0f,
 	};
 
+	/// <summary>
+	/// An item's own offer weight: its rarity's, except the Blank Folio, a quarter of a Relic's. A seventh
+	/// spell slot is the biggest change any card makes, and Eric (2026-11-01) wants it very rare, absent
+	/// from most runs: simulated against today's pool, a Relic weight offers it in 11% of six-chest runs
+	/// and 26% of ten-chest ones; this, in 3.5% and 7%.
+	/// </summary>
+	private static float OfferWeightOf(string itemId) =>
+		string.Equals(itemId, BlankFolio, StringComparison.OrdinalIgnoreCase) ? BlankFolioOfferWeight : OfferWeightFor(GetRarity(itemId));
+
+	public const float BlankFolioOfferWeight = 0.02f;
+
 	public static ChestItemRarity GetRarity(string itemId)
 	{
 		return itemId switch
@@ -353,12 +364,12 @@ public static class ChestItemCatalog
 			ElementTags = new[] { ("Darkness", 1), ("Poison", 1) },
 			Name = "The Reaper's Scythe",
 			RequiredItemIds = new[] { SpectralFang, WrathAmulet, DuellistsChalk },
-			Description = "+25% spell damage, and any hit on an enemy below 30% health kills it outright.",
+			Description = "+25% spell damage, and any hit on an enemy below 30% health kills it outright. Not bosses.",
 			IconPath = SetIconRoot + "deathbringer.png",
 			Effects = new[]
 			{
 				new ChestSetEffect { Label = "Spell damage", Value = "+25%" },
-				new ChestSetEffect { Label = "Any hit kills an enemy", Value = "below 30% HP" }
+				new ChestSetEffect { Label = "Any hit kills a non-boss", Value = "below 30% HP" }
 			}
 		},
 		new ChestSetDefinition
@@ -721,7 +732,7 @@ public static class ChestItemCatalog
 		// A card already shown this run and passed over counts for less each time (ShownOfferFade).
 		var pool = unowned
 			.OrderByDescending(id => MathF.Pow(MathF.Max(0.0001f, rng.Randf()),
-				1f / (OfferWeightFor(GetRarity(id)) * MathF.Pow(ShownOfferFade, memory?.TimesShown(id) ?? 0))))
+				1f / (OfferWeightOf(id) * MathF.Pow(ShownOfferFade, memory?.TimesShown(id) ?? 0))))
 			.ToList();
 
 		// Padding with owned relics once the pool runs dry. Never a tome relic: an owned Folio adds no

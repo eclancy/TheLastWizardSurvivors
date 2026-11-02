@@ -72,6 +72,14 @@ public partial class Enemy : CharacterBody2D
 	// re-tested with the aim rather than every frame. Only an enemy whose way is blocked reads the
 	// flow field; one with a clear run keeps its lead and its slot on the ring.
 	private bool walkBlocked = false;
+	/// <summary>
+	/// The speed this body asked for on its last physics step, px/s, before the ground had its say:
+	/// zero while planted, stunned, knocked back or airborne. With <see cref="IsFollowingFlow"/>, what
+	/// _MazeProbe's stuck count reads - a body that wants to walk and does not is held by something.
+	/// </summary>
+	public float IntendedSpeed { get; private set; }
+	/// <summary>True while this body steers by the navigation field rather than straight at the player.</summary>
+	public bool IsFollowingFlow => walkBlocked;
 	// The player measured velocity - actual displacement per second, not the velocity it intended.
 	//
 	// CharacterBody2D.Velocity is what the player asked for, and it keeps reporting full speed while
@@ -836,6 +844,16 @@ public partial class Enemy : CharacterBody2D
 		// (floor_block_on_wall). Measured alone it was not what jammed the crowd (the masks were), but
 		// it is still a platformer's rules on every contact left: the player's body, trunks, walls.
 		MotionMode = MotionModeEnum.Floating;
+		// Slide on every contact, however square. Floating mode's default (15 degrees) stops a body
+		// dead when it meets a surface within that of head-on, and the chase's whole wander is inside
+		// it (PathNoiseStrength 0.24 bends a heading 13.5 degrees at most): a body walking at the
+		// player through a tree trunk or into a wall's face stood still for the rest of the fight,
+		// "moved 0 px" in _MazeProbe's stuck log. At 0 the first slide keeps the step's full length
+		// along the surface, so any sideways lean at all carries it round. Nothing reads a stop at a
+		// wall - no charge ends on one - so a boss's own movement is untouched (.ai/enemy-behaviour.md,
+		// section 8 item 13).
+		if (TerrainSkirting)
+			WallMinSlideAngle = 0f;
 		SetCollisionLayerValue(2, true);
 		SetCollisionMaskValue(1, true);
 		SetCollisionMaskValue(2, false);
@@ -997,13 +1015,26 @@ public partial class Enemy : CharacterBody2D
 		// Whether this body is choosing where it goes this frame, which is what a yield needs (see
 		// ComputePlayerShove). Only the chase branch below can make it true.
 		bool canYield = false;
+		IntendedSpeed = 0f;
+		// What the chase asked of the last step, for Skirt; any other branch asks for nothing.
+		float skirtWantedLastStep = skirtWanted;
+		skirtWanted = 0f;
+		// A boss is held for a capped time at most, then shrugs it off (TickCrowdControlCap); a stagger
+		// that lands on it while it is shrugging only shakes it.
+		if (CapsCrowdControl)
+		{
+			TickCrowdControlCap((float)delta);
+			shocked = shockTimeRemaining > 0f && !shockShakeOnly;
+		}
 		if (shocked)
 		{
 			shockTimeRemaining = Math.Max(0f, shockTimeRemaining - (float)delta);
 			Velocity = Vector2.Zero;
 			UpdateShockVisual((float)delta);
 		}
-		else if (knockbackTime > 0f)
+		// A boss is never carried by a shove instead of walking: its knockback rides on top of its own
+		// step, below (BossKnockbackStep).
+		else if (knockbackTime > 0f && !CapsCrowdControl)
 		{
 			float decayThreshold = KnockbackDuration * 0.3f;
 			if (knockbackTime > decayThreshold)
@@ -1085,7 +1116,7 @@ public partial class Enemy : CharacterBody2D
 				{
 					long navStart = MazeNavigation.MeasureSteering ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
 					if (reaim)
-						walkBlocked = nav.IsMaze || !nav.HasClearWalk(here, playerPosition);
+						walkBlocked = nav.IsMaze || !nav.HasClearWalk(here, playerPosition, throughProps: IgnoresDecorCollision);
 					if (walkBlocked)
 					{
 						Vector2 flow = nav.FlowDirectionAt(here);
@@ -1097,6 +1128,10 @@ public partial class Enemy : CharacterBody2D
 				}
 
 				float step = (float)delta;
+				// Round whatever small thing the field cannot see and the slide could not get it past.
+				// Before the wander and AdjustSteering, like the flow: a lunger's dash and a planted
+				// wind-up still have the last word.
+				primaryDir = Skirt(primaryDir, here, distanceToPlayer, skirtWantedLastStep, step);
 				speedDriftPhase += step * speedDriftFreq;
 				currentSpeedDrift = 1f + (Mathf.Sin(speedDriftPhase) * SpeedDriftAmount);
 				wanderPhaseA += step * wanderFreqA;
@@ -1180,6 +1215,9 @@ public partial class Enemy : CharacterBody2D
 					Velocity = steeringSpeed > 1.05f
 						? desiredVelocity
 						: Velocity.Lerp(desiredVelocity, 1f - Mathf.Exp(-turnResponse * step));
+					IntendedSpeed = steeringSpeed * EffectiveSpeed;
+					skirtFrom = here;
+					skirtWanted = IntendedSpeed * step;
 				}
 			}
 		}
@@ -1188,6 +1226,8 @@ public partial class Enemy : CharacterBody2D
 		// would compound - at a turn rate of 9 the steady state is about seven times the shove.
 		// The shove is a displacement he causes, not momentum the enemy owns.
 		Vector2 shove = ComputePlayerShove(canYield);
+		if (CapsCrowdControl && knockbackTime > 0f)
+			shove += BossKnockbackStep((float)delta, shocked);
 		Vector2 steered = Velocity;
 		if (shove != Vector2.Zero)
 			Velocity = steered + shove;
@@ -1197,7 +1237,12 @@ public partial class Enemy : CharacterBody2D
 		if (shove != Vector2.Zero)
 			Velocity = steered;
 		if (!shocked)
+		{
+			// A boss's shrugged-off stagger runs its clock here, where the shake is drawn.
+			if (shockShakeOnly && shockTimeRemaining > 0f)
+				shockTimeRemaining = Math.Max(0f, shockTimeRemaining - (float)delta);
 			UpdateShockVisual((float)delta);
+		}
 
 		if (slowTimeRemaining > 0f)
 		{
@@ -1315,6 +1360,101 @@ public partial class Enemy : CharacterBody2D
 	/// </remarks>
 	protected virtual Vector2 AdjustSteering(Vector2 chaseDirection, float distanceToPlayer) => chaseDirection;
 
+	// SKIRTING (Eric, playing 0.10.0: "All enemies tend to get stuck on terrain. Find an efficient way
+	// to have them path better"). The flow field (MazeNavigation) routes round what is in its grid -
+	// walls, water, a garden's fence, a cluster of props (TerrainStreamer.FlagProp) - and the slide
+	// (WallMinSlideAngle 0, ConfigureEntityCollision) carries a body past anything it meets at an angle.
+	// What is left is a body that meets something square, or wedges where two surfaces meet: a lone
+	// trunk or rock, a door, furniture, a wall's corner, a shore's inlet - too small for the grid's
+	// 48 px cells to see, or between two of them.
+	//
+	// So a body that asked to walk and covered under SkirtHeldShare of it, while touching something,
+	// turns along what it touched for SkirtSeconds. It keeps the hand it chose while it keeps meeting
+	// things (SkirtHandMemorySeconds) and, held again mid-turn, turns along the new surface on the same
+	// hand: a wall-follower, which is what walks out of a wedge - into its corner, then along the other
+	// face and out. Held SkirtFlipAfter times running, it is a dead end that way and turns round. Most
+	// bodies walk freely, and for them this is one subtraction and one comparison against a position
+	// already read; only a held body asks the engine what it touched (IsOnWall / GetWallNormal, neither
+	// allocates).
+	private const float SkirtHeldShare = 0.35f;
+	// Within about 60 degrees of head-on. Brushing along a corridor wall is not being held by it.
+	private const float SkirtFacingDot = 0.5f;
+	private const float SkirtSeconds = 0.45f;
+	// A turn has this long to get going before being held again counts against it.
+	private const float SkirtGraceSeconds = 0.12f;
+	private const int SkirtFlipAfter = 3;
+	private const float SkirtHandMemorySeconds = 2.5f;
+	// How much of the chase stays in the heading while skirting: enough to keep the body pressed to
+	// the surface (so it follows it round), little enough that the slide along it is most of the step.
+	private const float SkirtGoalShare = 0.5f;
+	// Near the player a body touching something is touching him, or the crowd round him: that is
+	// arriving, not being held.
+	private const float SkirtMinPlayerDistance = 120f;
+	/// <summary>
+	/// Off only for an A/B measurement (_MazeProbe, _BalanceHarness and _BossProbe --no-skirt): every
+	/// body then keeps floating mode's 15-degree stop and never skirts, and no prop is stamped into the
+	/// navigation grid - exactly as before. Read when a body configures its collision and when a chunk
+	/// is furnished, so set it before the run starts.
+	/// </summary>
+	public static bool TerrainSkirting { get; set; } = true;
+	private Vector2 skirtFrom;
+	private float skirtWanted;
+	private Vector2 skirtHeading = Vector2.Zero;
+	private float skirtTimeRemaining;
+	private float skirtHand = 1f;
+	private float skirtHandMemory;
+	private int skirtHeldTurns;
+
+	/// <summary>True while this body is turned along something it walked into (see SKIRTING).</summary>
+	public bool IsSkirting => skirtTimeRemaining > 0f;
+
+	private Vector2 Skirt(Vector2 heading, Vector2 here, float distanceToPlayer, float wantedLastStep, float delta)
+	{
+		if (!TerrainSkirting)
+			return heading;
+		if (skirtHandMemory > 0f)
+			skirtHandMemory -= delta;
+		bool held = wantedLastStep > 0f && distanceToPlayer >= SkirtMinPlayerDistance
+			&& (here - skirtFrom).LengthSquared() < wantedLastStep * wantedLastStep * SkirtHeldShare * SkirtHeldShare;
+
+		if (skirtTimeRemaining > 0f)
+		{
+			skirtTimeRemaining -= delta;
+			if (!held || SkirtSeconds - skirtTimeRemaining < SkirtGraceSeconds || !IsOnWall())
+				return SkirtTurn.Blend(skirtHeading, heading, SkirtGoalShare);
+			// Held mid-turn: along whatever it has met now, on the same hand - or, held that way too
+			// often running, the other way round.
+			if (++skirtHeldTurns >= SkirtFlipAfter)
+			{
+				skirtHand = -skirtHand;
+				skirtHeldTurns = 0;
+			}
+			skirtHandMemory = SkirtHandMemorySeconds;
+			skirtHeading = SkirtTurn.Along(GetWallNormal(), skirtHand);
+			skirtTimeRemaining = SkirtSeconds;
+			return SkirtTurn.Blend(skirtHeading, heading, SkirtGoalShare);
+		}
+
+		if (!held || !IsOnWall())
+		{
+			if (skirtHandMemory <= 0f)
+				skirtHeldTurns = 0;
+			return heading;
+		}
+
+		Vector2 normal = GetWallNormal();
+		// Held by something the last contact does not name - the far face of a wedge, say: step square
+		// to its own heading instead, which the same hand keeps doing until it is out.
+		if (!SkirtTurn.IsFacingInto(heading, normal, SkirtFacingDot))
+			normal = -heading;
+		if (skirtHandMemory <= 0f)
+			skirtHand = SkirtTurn.ChooseHand(heading, normal, shoveTieSide);
+		skirtHandMemory = SkirtHandMemorySeconds;
+		skirtHeading = SkirtTurn.Along(normal, skirtHand);
+		skirtTimeRemaining = SkirtSeconds;
+		return SkirtTurn.Blend(skirtHeading, heading, SkirtGoalShare);
+	}
+
 	/// <summary>
 	/// True if this body is stopped by walls and water (it masks LevelTilePainter.TerrainCollisionLayer,
 	/// where their tile collision lives), so it should route round them. Nothing in the roster ignores
@@ -1347,6 +1487,131 @@ public partial class Enemy : CharacterBody2D
 		if (sprite != null)
 			sprite.FlipH = flip;
 	}
+	// --- Bosses and crowd control (2026-11-01) ----------------------------------------------------
+	//
+	// "Bosses should also be immune to CC that would make it impossible for them to ever get to the
+	// player. They should always have a way to put the player in danger." (Eric, playing 0.10.0.)
+	//
+	// Every way the player stops an enemy already arrives here, through four methods - ApplySlow (a
+	// slow, and at 0 a freeze, a root or Event Horizon's stopped time), ApplyShock (a stagger),
+	// ApplyKnockback (a blast's throw, and every pull, drag and wall: Gravewell, Hollow Star, the Elder
+	// God Maw, Vortex Reaper, Spring Tide, Iron Palisade, Broken Ward), and ApplyLaunch/ApplyFear, which
+	// a boss was already immune to. So the rule is one place, and no spell changed. Three ways it failed:
+	//   - a knockback REPLACED the body's step for 0.45 s, so a pull or a wall re-applied every tick held
+	//     a boss for as long as it lasted - and a boss at KnockbackResistance 1 (the Archivist, the Still
+	//     Warden, the Ninth Stone) stood dead still under it, its whole step thrown away for nothing;
+	//   - a stagger re-applied every hop (Electrocutions, a chain) stopped one for good;
+	//   - a slow floor of 0.3 crawled.
+	// On a boss (CapsCrowdControl, BossEnemy) each is still seen to land, and none can keep it off him:
+	//   - SLOWS stop at BossSlowFloor (or the scene's own floor, if higher);
+	//   - a FREEZE, a ROOT, a TIME STOP or a STAGGER really does stop it - the ice, the shake, the Choir's
+	//     revive pausing (IsHeldByCrowdControl) - for BossHoldMaxSeconds at most at a stretch, and then
+	//     nothing holds it for BossHoldImmunityRatio times as long as it was held: a freeze lands as a
+	//     slow at the floor, a stagger as a shake. Held at most 2 seconds in 7, never more than 0.75 s on end;
+	//   - KNOCKBACK, pulls, drags and walls ride ON TOP of its own walk instead of replacing it, scaled by
+	//     its resistance as before and then capped at BossShoveShare of the walk it has, so it leans into a
+	//     well, is set back a step by a blast and shoulders through a wall - and still comes on.
+	// Elites and minibosses are not bosses here: an elite that a well holds is the well working.
+
+	/// <summary>True on a boss: no crowd control may keep it from reaching the player (see above).</summary>
+	public bool CapsCrowdControl
+	{
+		get => capsCrowdControl && CrowdControlCapping;
+		protected set => capsCrowdControl = value;
+	}
+
+	private bool capsCrowdControl;
+
+	/// <summary>
+	/// Off only for _BossProbe's <c>--no-cc-cap</c>, the before of this rule in the same build (as
+	/// <see cref="TerrainSkirting"/> is the skirt's): every boss takes crowd control as an ordinary body does.
+	/// </summary>
+	public static bool CrowdControlCapping { get; set; } = true;
+
+	/// <summary>The deepest slow a boss takes, whatever its scene says (a higher scene floor wins).</summary>
+	public const float BossSlowFloor = 0.5f;
+
+	/// <summary>The longest a boss is held still by a freeze, root, time stop or stagger, at a stretch.</summary>
+	public const float BossHoldMaxSeconds = 0.75f;
+
+	/// <summary>After a hold, nothing holds a boss again for this many times as long as it was held.</summary>
+	public const float BossHoldImmunityRatio = 2.5f;
+
+	/// <summary>The most a shove, pull, drag or wall moves a boss, as a share of its own walk.</summary>
+	public const float BossShoveShare = 0.4f;
+
+	// How long the hold now on this boss has lasted; how long before another can land; and a stagger
+	// that landed while it could not, which shakes it without stopping it.
+	private float holdElapsed;
+	private float holdImmuneRemaining;
+	private bool shockShakeOnly;
+
+	/// <summary>
+	/// True while a freeze, root, time stop or stagger has this body stopped where it stands. On a boss
+	/// it is never true for more than <see cref="BossHoldMaxSeconds"/> at a stretch.
+	/// </summary>
+	/// <remarks>Read by the Hollow Choir: a voice held while it sings a fallen one back pauses the song.</remarks>
+	public bool IsHeldByCrowdControl => IsFrozen || (shockTimeRemaining > 0f && !shockShakeOnly);
+
+	/// <summary>How much of its own pace this body has now: 0 while held, a slow's multiplier, else 1.</summary>
+	public float PaceShare => IsHeldByCrowdControl ? 0f : slowMultiplier;
+
+	/// <summary>The floor ApplySlow holds this body above: its scene's, raised to BossSlowFloor on a boss.</summary>
+	private float SlowFloor => Mathf.Clamp(CapsCrowdControl ? Mathf.Max(MinSlowMultiplier, BossSlowFloor) : MinSlowMultiplier, 0f, 1f);
+
+	// Each step on a boss, before it moves: count the hold, end it at the cap, and run the immunity after.
+	private void TickCrowdControlCap(float delta)
+	{
+		if (IsHeldByCrowdControl)
+		{
+			holdElapsed += delta;
+			if (holdElapsed >= BossHoldMaxSeconds)
+				EndBossHold();
+			return;
+		}
+		if (holdElapsed > 0f)
+		{
+			// It ran out on its own: the immunity is earned all the same.
+			holdImmuneRemaining = holdElapsed * BossHoldImmunityRatio;
+			holdElapsed = 0f;
+			return;
+		}
+		if (holdImmuneRemaining > 0f)
+			holdImmuneRemaining = Math.Max(0f, holdImmuneRemaining - delta);
+	}
+
+	// The cap: the rest of a freeze goes on as a slow at the floor (it is still chilled, and still reads
+	// so), the rest of a stagger as a shake.
+	private void EndBossHold()
+	{
+		holdImmuneRemaining = holdElapsed * BossHoldImmunityRatio;
+		holdElapsed = 0f;
+		if (slowTimeRemaining > 0f && slowMultiplier <= 0.001f)
+			slowMultiplier = SlowFloor;
+		if (shockTimeRemaining > 0f)
+			shockShakeOnly = true;
+		RefreshStatusLook();
+	}
+
+	// A boss's knockback for this step, added to its own walk (Enemy._PhysicsProcess) rather than put in
+	// its place. The same profile as anyone's - flat for 70% of KnockbackDuration, easing out over the
+	// rest - capped at BossShoveShare of the walk it has now, and nothing while it is held, when it has none.
+	private Vector2 BossKnockbackStep(float delta, bool held)
+	{
+		float decayThreshold = KnockbackDuration * 0.3f;
+		Vector2 push = knockbackTime > decayThreshold ? knockbackVelocity : knockbackVelocity * (knockbackTime / decayThreshold);
+		knockbackTime -= delta;
+		if (knockbackTime <= 0f)
+		{
+			knockbackVelocity = Vector2.Zero;
+			knockbackTime = 0f;
+		}
+		float walk = held || IsFrozen ? 0f : Speed * slowMultiplier * SwarmSpeedScale;
+		float cap = BossShoveShare * walk;
+		float length = push.Length();
+		return length > cap && length > 0f ? push * (cap / length) : push;
+	}
+
 	public void ApplyKnockback(Vector2 force)
 	{
 		if (isDying)
@@ -1361,6 +1626,13 @@ public partial class Enemy : CharacterBody2D
 		if (isDying)
 			return;
 
+		// A boss shrugging off its last hold only shakes; one that can be held is, until the cap.
+		if (CapsCrowdControl && duration > 0f)
+		{
+			bool canHold = holdImmuneRemaining <= 0f;
+			if (canHold || shockTimeRemaining <= 0f)
+				shockShakeOnly = !canHold;
+		}
 		shockTimeRemaining = Math.Max(shockTimeRemaining, duration);
 		shockAmplitude = Math.Max(0.5f, shakeAmplitude);
 		shockFrequency = Math.Max(1f, shakeFrequency);
@@ -1412,7 +1684,12 @@ public partial class Enemy : CharacterBody2D
 		if (isDying)
 			return;
 
-		multiplier = Mathf.Clamp(multiplier, Mathf.Clamp(MinSlowMultiplier, 0f, 1f), 1f);
+		// On a boss a freeze (multiplier 0) still stops it - for BossHoldMaxSeconds, after which the cap
+		// lifts it to the floor (EndBossHold) - unless it is shrugging off the last one, when it lands as
+		// the floor at once. A scene floor of 1 (the Archivist, the Still Warden) is never slowed at all.
+		float floor = SlowFloor;
+		bool bossHold = CapsCrowdControl && multiplier <= 0.001f && floor < 1f && holdImmuneRemaining <= 0f;
+		multiplier = bossHold ? 0f : Mathf.Clamp(multiplier, floor, 1f);
 		if (slowTimeRemaining <= 0f || multiplier < slowMultiplier)
 			slowMultiplier = multiplier;
 		slowTimeRemaining = Mathf.Max(slowTimeRemaining, duration);
@@ -1864,10 +2141,22 @@ public partial class Enemy : CharacterBody2D
 		marker.Play("active");
 	}
 
+	/// <summary>
+	/// True while a subclass is showing a pose of its own that a flinch or a swing must not cut short:
+	/// the Hollow Choir singing a note or a fallen voice back, or going under. Its sprite is its own then.
+	/// </summary>
+	protected virtual bool HoldsOwnPose => false;
+
+	/// <summary>
+	/// For a subclass taking its sprite over to show its own frames: whatever one-shot was playing will
+	/// not finish (a held frame emits no AnimationFinished), so it must not go on blocking the next.
+	/// </summary>
+	protected void TakeOverSprite() => oneShotAnimationPlaying = false;
+
 	private void PlayOneShotAnimation(StringName animation)
 	{
 		// Never override the death animation: a corpse mid-collapse must not flinch.
-		if (isDying || oneShotAnimationPlaying || animatedSprite?.SpriteFrames == null)
+		if (isDying || oneShotAnimationPlaying || HoldsOwnPose || animatedSprite?.SpriteFrames == null)
 			return;
 		if (!animatedSprite.SpriteFrames.HasAnimation(animation))
 			return;
@@ -2071,11 +2360,19 @@ public partial class Enemy : CharacterBody2D
 		RollMovementVariation();
 		hasLastPlayerPosition = false;
 		measuredPlayerVelocity = Vector2.Zero;
+		// Nor round whatever the old body was skirting, a spawn ring away.
+		skirtWanted = 0f;
+		skirtTimeRemaining = 0f;
+		skirtHandMemory = 0f;
+		skirtHeldTurns = 0;
 		// A recycled enemy is a fresh enemy as far as the player can tell, so it must not arrive
 		// still carrying the debuffs of the body it used to be - least of all a permanent Wither,
 		// which would otherwise follow it round the ring for the rest of the run.
 		slowMultiplier = 1f;
 		slowTimeRemaining = 0f;
+		holdElapsed = 0f;
+		holdImmuneRemaining = 0f;
+		shockShakeOnly = false;
 		vulnerableBonus = 0f;
 		vulnerableTimeRemaining = 0f;
 		fearTimeRemaining = 0f;

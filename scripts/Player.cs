@@ -572,7 +572,15 @@ public partial class Player : CharacterBody2D
 		ConfigureEntityCollision();
 		bodySprite = GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
 		if (bodySprite != null)
+		{
 			bodySprite.AnimationFinished += OnBodyAnimationFinished;
+			// "The player and bosses should always be rendered on top of spells and effects so they can
+			// always be seen" (Eric, 2026-11-01). The body sprite alone, not this node: the spells parented
+			// to him (auras, the jet, the orbit) and his ground marks (StanceGlow, HasteTrail at -1) keep
+			// the layers they picked. On the bosses' layer, so he and a boss still sort by where they stand.
+			bodySprite.ZAsRelative = false;
+			bodySprite.ZIndex = DrawLayers.Foremost;
+		}
 		_velocity = Vector2.Zero;
 		ApplyArcaneUpgrades();
 		spellFireTimers.Clear();
@@ -2270,7 +2278,10 @@ public partial class Player : CharacterBody2D
 		{
 			if (targetEnemy.HealthFraction <= 0.5f && ownedChestItems.Contains(ChestItemCatalog.SpectralFang))
 				finalDamage = Mathf.RoundToInt(finalDamage * 1.15f);
-			if (targetEnemy.HealthFraction <= chestExecuteThresholdPercent / 100.0f)
+			// Never a boss (Eric, 2026-11-01: "Bosses should be excluded from execution abilities"): the
+			// boss work made every fight minutes long on purpose, and a Reaper's Scythe cut the last 30%
+			// off all of them. Elites still fall to it; the Morrigan's peck already spares both.
+			if (targetEnemy.HealthFraction <= chestExecuteThresholdPercent / 100.0f && targetEnemy is not BossEnemy)
 				finalDamage = Math.Max(finalDamage, targetEnemy.Health);
 		}
 
@@ -2440,7 +2451,7 @@ public partial class Player : CharacterBody2D
 	/// True while a boss arrives (Node2DGame holds it for BossEnemy's entrance): every spell's timer is
 	/// HELD where it was - not reset, so each spell goes off when the fight starts exactly as far into
 	/// its cooldown as it was when the boss appeared - and nothing hurts him. No whitening, unlike the
-	/// post-menu grace: he is not the one being shown, the boss is.
+	/// post-menu grace: he is not the one being shown, the boss is. He cannot walk, either (MovePlayer).
 	/// </summary>
 	public bool HeldForBossEntrance { get; private set; }
 
@@ -6164,14 +6175,16 @@ public partial class Player : CharacterBody2D
 		}
 
 		Vector2 at;
-		if (script != null && script.IsMaw && BlackTentacles.LiveMawCount > 0)
+		if (script != null && BlackTentacles.LiveRiftCount > 0)
 		{
-			// Never over another maw. Nowhere to open: the cast stays ready and looks again shortly,
-			// rather than every frame (each look instances the scene to learn the new maw's radius).
-			if (!TryPlaceMaw(castRange, script.DrawnRadius, out at))
+			// Never over another rift, of any face (Eric, 2026-11-01: "Black tentacles should never be able
+			// to stack on top of each other"; the maws first, 2026-10-28). Nowhere to open: the cast stays
+			// ready and looks again shortly, rather than every frame (each look instances the scene to
+			// learn the new rift's radius).
+			if (!TryPlaceRift(castRange, script.DrawnRadius, out at))
 			{
 				zone.Free();
-				spellFireTimers[spell.Id] = MathF.Max(0f, interval - MawRetrySeconds);
+				spellFireTimers[spell.Id] = MathF.Max(0f, interval - RiftRetrySeconds);
 				return CastOutcome.NoTarget;
 			}
 		}
@@ -6186,20 +6199,19 @@ public partial class Player : CharacterBody2D
 		return CastOutcome.Fired;
 	}
 
-	// How long an Elder God Maw with nowhere clear to open waits before it looks again.
-	private const float MawRetrySeconds = 0.25f;
+	// How long a rift with nowhere clear to open waits before it looks again.
+	private const float RiftRetrySeconds = 0.25f;
 
-	// Where an Elder God Maw opens while another is open (2026-10-28: "they should never overlap").
-	// Clear means BlackTentacles.MawFits: rim to rim by both maws' full radii - what each is drawn to
-	// and slows - plus MawGap.
+	// Where a rift opens while another is open. Clear means BlackTentacles.RiftFits: rim to rim by both
+	// rifts' full radii - what each is drawn to and slows - plus RiftGap.
 	//
 	// 1. The densest pack that is already clear, scored exactly as FindDensestEnemy scores it.
-	// 2. Otherwise - the usual case, since an open maw drags the pack to its teeth - beside the maw in
-	//    the way: each candidate pushed straight out from that maw's centre until the rims are the gap
-	//    apart (BlackTentacles.PushClearOfMaws), kept if it is still in cast range, and scored by how
-	//    many enemies it would catch. So the new maw opens on the stragglers still coming in.
+	// 2. Otherwise - the usual case, since a rift holds the pack in it (and a maw drags it to its teeth) -
+	//    beside the rift in the way: each candidate pushed straight out from that rift's centre until the
+	//    rims are the gap apart (BlackTentacles.PushClearOfRifts), kept if it is still in cast range, and
+	//    scored by how many enemies it would catch. So the new rift opens on the stragglers still coming in.
 	// 3. Nowhere in range would catch anything: false, and the cast waits.
-	private bool TryPlaceMaw(float castRange, float mawRadius, out Vector2 at)
+	private bool TryPlaceRift(float castRange, float mawRadius, out Vector2 at)
 	{
 		at = Vector2.Zero;
 		CollectEnemiesInRange(castRange);
@@ -6209,7 +6221,7 @@ public partial class Player : CharacterBody2D
 		for (int i = 0; i < scored; i++)
 		{
 			Vector2 here = aimCandidates[i].GlobalPosition;
-			if (!BlackTentacles.MawFits(here, mawRadius))
+			if (!BlackTentacles.RiftFits(here, mawRadius))
 				continue;
 			int count = CountAimCandidatesWithin(here, clusterRadiusSquared);
 			if (count > bestCount) { bestCount = count; at = here; }
@@ -6222,7 +6234,7 @@ public partial class Player : CharacterBody2D
 			for (int i = 0; i < scored; i++)
 			{
 				Vector2 spot = aimCandidates[i].GlobalPosition;
-				if (!BlackTentacles.PushClearOfMaws(ref spot, mawRadius) || GlobalPosition.DistanceSquaredTo(spot) > rangeSquared)
+				if (!BlackTentacles.PushClearOfRifts(ref spot, mawRadius) || GlobalPosition.DistanceSquaredTo(spot) > rangeSquared)
 					continue;
 				int count = CountAimCandidatesWithin(spot, catchSquared);
 				if (count > bestCount) { bestCount = count; at = spot; }
@@ -6579,6 +6591,13 @@ public partial class Player : CharacterBody2D
 		Vector2 touchInput = TouchControls.MoveVector;
 		if (touchInput != Vector2.Zero)
 			input = touchInput;
+
+		// A boss arriving (2026-11-01: "Player should not be able to move when bosses are spawning"): every
+		// device's push is dropped here, the one place keys, pad and the touch stick all meet, so he stands
+		// where the arrival found him - facing as he was - until the frame it ends. Only walking: the pause,
+		// the menus and the stick's own drawing never come through here.
+		if (HeldForBossEntrance)
+			input = Vector2.Zero;
 
 		if (input.X > 0.01f)
 			lastHorizontalFacing = 1;
@@ -7064,6 +7083,82 @@ public partial class Player : CharacterBody2D
 		};
 		ApplyElementPreview(option, spell, baselineElementCounts, isNewUnlock: false);
 		return option;
+	}
+
+	/// <summary>
+	/// This wizard's Apotheosis on <paramref name="spell"/>, as the ascension browser and the pause
+	/// screen show it: the form, each gate with the run's progress on it, and whether it is offered,
+	/// taken or out of reach. Null when the wizard has none on this spell (the Test Wizard has none).
+	/// </summary>
+	/// <remarks>
+	/// It reports and never decides: <see cref="ApotheosisPreview.Offered"/> is TryBuildApotheosisOffer's
+	/// own answer, and the gates are read from the same ApotheosisDefinition. No spell-level line: level 8
+	/// is reached only through an Ascension (CardLevelCap), so the level 8 path line says it, and the
+	/// node's pips show the level.
+	/// </remarks>
+	public ApotheosisPreview BuildApotheosisPreview(SpellData spell)
+	{
+		ApotheosisDefinition definition = ApotheosisCatalog.ForSpell(selectedCharacter?.Id, spell);
+		if (definition?.Form == null)
+			return null;
+
+		SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
+		var preview = new ApotheosisPreview
+		{
+			SpellId = spell.Id,
+			SpellName = spell.Name,
+			FormId = definition.Form.Id,
+			FormName = definition.Form.DisplayName,
+			Description = definition.Form.Description,
+			Icon = EvolutionIcons.Own(definition.Form) ?? spell.Icon,
+			Taken = spell.IsApotheosis,
+			Offered = !spell.IsApotheosis && TryBuildApotheosisOffer(spell, GetElementInstanceCounts()) != null,
+		};
+
+		if (!AscensionLearned)
+			preview.Requirements.Add(new AscensionRequirement { Kind = AscensionRequirementKind.Learned, Have = 0, Need = 1 });
+
+		AscensionRequirement PathGate(int milestone, string requiredId, string takenId, IEnumerable<SpellEvolutionOption> options)
+		{
+			bool chosen = !string.IsNullOrEmpty(takenId);
+			bool match = chosen && takenId.Equals(requiredId, StringComparison.OrdinalIgnoreCase);
+			SpellEvolutionOption named = options?.FirstOrDefault(o => o != null && o.Id.Equals(requiredId, StringComparison.OrdinalIgnoreCase));
+			return new AscensionRequirement
+			{
+				Kind = AscensionRequirementKind.Path,
+				Have = match ? 1 : 0,
+				Need = 1,
+				MilestoneLevel = milestone,
+				PathId = requiredId,
+				PathName = named?.DisplayName ?? requiredId,
+				Closed = chosen && !match,
+			};
+		}
+		AscensionRequirement mutation = PathGate(4, definition.RequiredLevel4EvolutionId, spell.SelectedLevel4EvolutionId, spell.Level4Options);
+		AscensionRequirement ascension = PathGate(AscensionSpellLevel, definition.RequiredLevel8EvolutionId, spell.SelectedLevel8EvolutionId, spell.Level8Options);
+		preview.Requirements.Add(mutation);
+		preview.Requirements.Add(ascension);
+		preview.Closed = !preview.Taken && (mutation.Closed || ascension.Closed);
+
+		// Tiers are named by their tag counts (GetElementTier: 2, 4, 6), so tier 6 is six tags.
+		int held = GetElementInstanceCounts().TryGetValue(definition.RequiredElement, out int count) ? count : 0;
+		var element = new AscensionRequirement
+		{
+			Kind = AscensionRequirementKind.Element,
+			Have = held,
+			Need = definition.RequiredTier,
+			Element = definition.RequiredElement,
+		};
+		element.AnyOf.Add(definition.RequiredElement);
+		preview.Requirements.Add(element);
+
+		preview.Requirements.Add(new AscensionRequirement
+		{
+			Kind = AscensionRequirementKind.PlayerLevel,
+			Have = CurrentLevel,
+			Need = ApotheosisCatalog.MinimumPlayerLevel,
+		});
+		return preview;
 	}
 
 	// --- The Ascension strip ------------------------------------------------------------------

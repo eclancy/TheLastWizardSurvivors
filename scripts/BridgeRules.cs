@@ -20,7 +20,7 @@ using WizardSurvivors.scripts;
 //   4. BossSpawnPoint      the gate's foot.
 //   5. VictoryPortalPoint  the gate itself.
 //   7. CreateObjective     the strip under the run timer: the fall, the player and the gate on one line.
-//   8. CameraLean          up, while the Constable holds the wall over the gate, as far as a short screen
+//   9. CameraLean          up, while the Constable holds the wall over the gate, as far as a short screen
 //                          (1280x720) needs to show him whole under the HUD.
 // and, on its own clock: the murder-holes in each gatehouse passage, and the archers' volleys over the gate
 // yard before 15:00 (3.8).
@@ -313,11 +313,8 @@ public partial class BridgeRules : ChapterRules
 	// its own ring, privately).
 	private Vector2 VisibleHalfExtents() => GetViewport().GetVisibleRect().Size / (2f * CameraZoom());
 
-	private float CameraZoom()
-	{
-		var camera = Game.RunPlayer?.GetNodeOrNull<Camera2D>("Camera2D");
-		return camera != null && camera.Zoom.X > 0.01f ? camera.Zoom.X : 1f;
-	}
+	// The gameplay zoom, without an arrival cinematic's push-in (Node2DGame.GameplayZoomOf).
+	private float CameraZoom() => Node2DGame.GameplayZoomOf(Game.RunPlayer?.GetNodeOrNull<Camera2D>("Camera2D"));
 
 	// --- Hooks 3, 4, 5 ------------------------------------------------------------------------------
 
@@ -330,7 +327,7 @@ public partial class BridgeRules : ChapterRules
 	/// <summary>The gate in the castle wall: walking in ends the run (3.3).</summary>
 	public override Vector2? VictoryPortalPoint(Vector2 bossFellAt) => WorldAt(BridgeBand.GateS - 40f, 0f);
 
-	// --- Hook 8: the camera, while the Constable holds the wall --------------------------------------
+	// --- Hook 9: the camera, while the Constable holds the wall --------------------------------------
 
 	/// <summary>The Constable, once he has come (he says so as he reads the gate). Read for the camera's lean.</summary>
 	public BridgeConstableBoss Constable { get; set; }

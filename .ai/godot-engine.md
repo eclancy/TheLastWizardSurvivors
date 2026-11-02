@@ -39,8 +39,10 @@ So every world effect picks a side from `scripts/DrawLayers.cs`, with `ZAsRelati
 | `Decal` | -20 | walkable decoration, scorch marks |
 | `Ground` | -15 | craters, pools, lanes, the maw's pit (crater fire is -14) |
 | `GroundTell` | -1 | warnings and marks painted round a body's feet |
-| `Bodies` | 0 | the player, enemies, familiars that walk (the dog, the cat), chests, trees: y-sorted |
+| `Bodies` | 0 | the player (his node; his body sprite is on `Foremost`), enemies, familiars that walk (the dog, the cat), chests, trees: y-sorted |
 | `Air` | 6 | projectiles, blasts, swung weapons, thrown sprays, the familiar that flies (the crow, the griffin) |
+| `Foremost` | 10 | the wizard's body sprite and a boss's body (the whole `BossEnemy` node, its arrival and its fall), over every spell and effect ("the player and bosses should always be rendered on top of spells and effects so they can always be seen", 2026-11-01). One layer under the y-sorted arena, so the two still sort by where they stand. Their floor marks stay on the floor (a boss's tells and ring, the wizard's stance glow and trail); the Constable drops to `Bodies` on his wall-walk, behind the parapet |
+| `ForemostAir` | 11 | over those bodies: a boss's arrival dust and light and status marks (`StatusEffectLayer`'s `OverBosses`), Hunter's Draw's bow, a carried secret seed |
 | `AttackIcon` | 12 | the icon over an enemy winding up an attack (`TelegraphIcon`, made by `Enemy` for a class that overrides `ReadAttackTell`), and in the middle of a `TelegraphedGroundHit` |
 | `FloatingText` | 20 | damage numbers |
 

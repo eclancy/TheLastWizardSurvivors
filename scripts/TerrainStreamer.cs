@@ -113,6 +113,13 @@ public sealed class TerrainStreamer
 	/// the ground changes, and water's shape (FillWater) must never see it.
 	/// </summary>
 	public const byte FlagFence = 8;
+	/// <summary>
+	/// A cluster of props a body cannot squeeze between - two trunks or rocks closer than a body is
+	/// wide, or one that close to water or a wall (Node2DGame.StampPropClusters, .ai/terrain.md section
+	/// 9, "Props"). Solid in the navigation grid and nowhere else: stamped when the chunk is furnished,
+	/// read only by <see cref="FillNavigation"/>, so nothing that places props or paints ground sees it.
+	/// </summary>
+	public const byte FlagProp = 16;
 
 	/// <summary>TerrainChunk.WallNeighbours on an open cell: a maze wall north of it, west of it, north-west of it.</summary>
 	public const byte WallShadeN = 1;
@@ -647,7 +654,7 @@ public sealed class TerrainStreamer
 	/// little wide of a shore costs nothing; routing it into the half of a cell that is water is the
 	/// wedge this grid exists to prevent.
 	/// </remarks>
-	public void FillNavigation(bool[] solid, bool[] wall, Vector2I minCell, int width, int height)
+	public void FillNavigation(bool[] solid, bool[] wall, bool[] propOnly, Vector2I minCell, int width, int height)
 	{
 		// A chunk at a time, so it is one dictionary lookup per chunk rather than per cell.
 		int firstChunkX = FloorDiv(minCell.X, ChunkTiles);
@@ -672,8 +679,10 @@ public sealed class TerrainStreamer
 					for (int wx = x0; wx < x1; wx++)
 					{
 						byte f = chunk.Flags[src + wx];
-						solid[dst + wx] = (f & (FlagWall | FlagBlocked | FlagFence)) != 0;
+						solid[dst + wx] = (f & (FlagWall | FlagBlocked | FlagFence | FlagProp)) != 0;
 						wall[dst + wx] = (f & FlagWall) != 0;
+						// Solid only for a prop cluster: what a ghost, which passes through decor, may cross.
+						propOnly[dst + wx] = (f & (FlagWall | FlagBlocked | FlagFence | FlagProp)) == FlagProp;
 					}
 				}
 			}

@@ -21,6 +21,30 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 Each asks for something different, and none of them is "a harder fight". That was the brief: an
 event that is only a bigger elite is not an encounter.
 
+## The thaw's lake (2026-11-01)
+
+Eric, playing 0.10.0: *"Wizard trapped in ice should be in the center of a large, magically animated
+lake. Current art is corny looking."* It was two rectangles and a circle from `_Draw`, on bare ground. Now
+Väinämöinen's own idle sprite, recoloured into the ice's tones (his staff head one cold point of light),
+stands in a block of ice at the centre of a frozen lake 640x512 px with a dithered bank of drifted snow
+(`tools/art/thaw_lake.py`: `world/thaw/`). The block has four thaw stages - cracks, a chipped corner,
+meltwater - each with a glint crossing its face. `scenes/shaders/thaw_lake.gdshader` animates the lake from
+generated textures only (the water's rule, `.ai/terrain.md` 3): **rings of cold light run out under the ice
+from him**, light wanders slowly under the rest, and **frost ferns creep in from the shore and draw back**
+over 22 s. Round him is a window of clear dark ice about the size of the heat's reach (`HeatRadius` 150),
+and the light is brightest there, so where fighting counts is where the light is - no ring on the floor.
+The light grows with the heat, a warm glow grows in the block, and once he is out the song dies away.
+
+- **Walkable, not terrain.** The fight is on it, so it blocks nothing, is in no group, and is drawn on the
+  ground (`ThawLake`, z `Ground - 2`). It is the event's sibling, so it outlasts the event.
+- **Placed on open ground, all of it.** The footprint is 360 px; eight points on a ring that wide are 280
+  px apart, so the thaw alone places through `IsExploreGroundClearDense` (rings and points every 80 px,
+  opt-in, so no other site moved). `_ExploreProbe --stage=5`: 22 passed on seeds 4242 and 31.
+- **Its rules are unchanged**: damage near the block thaws it, fire counts triple, the ice is never a
+  target. The objective arrow points at the top of the block, so its chevron is not on his face
+  (`PoiPointer` now treats an objective within 140 px of a place as on it).
+- Checked by `RegressionChecks.ValidateThawArt`. Not checked: the shader's cost on the phone.
+
 ## How it is built
 
 - **`SideEvent`** is the base: where its sites are, the dormant wait and the arrival, the far
@@ -279,8 +303,9 @@ for help on the cursed dungeon map so the player identify that there are secrets
 2026-10-22 every event waits four to six chunks out and says nothing until the player arrives -
 right for the hunt, wrong for a player who does not know there is anything to hunt. So, partway
 through a run, while the chapter still holds something this save has not carried out, a cue comes
-**from its direction**: a short generated sound panned that way, and a caption at that edge of the
-screen with a tail pointing off toward it.
+**from its direction**: a short generated sound panned that way, marks in the site's own language
+drifting in from that edge of the screen on the sound's beat, and the line fading in beside them
+(2026-11-01, below; it was a caption in a bubble with a tail).
 
 ### When, and when not
 
@@ -295,7 +320,7 @@ screen with a tail pointing off toward it.
   own announcement and objective; a site that has been **seen**, or **revealed by the wayfinder**,
   has a point-of-interest arrow (`PoiPointer`), which says where it is better than a voice can. The
   hints retire for good the moment either happens.
-- **Never during the boss**; a caption up when it arrives fades out at once. Never while the tree is
+- **Never during the boss**; a line and cue up when it arrives fade out at once. Never while the tree is
   paused (the director does not process), so a level-up only delays one.
 - **It writes nothing.** It reads the unlock state; no tool scene can mark anything found through it.
 
@@ -306,26 +331,42 @@ of a screen past the edge; the wayfinder is an object 1.5 to 2.5 chunks out that
 the hint is the only one of the three that reaches a player who has seen neither, from anywhere on
 the map, and it stops as soon as either has done its job. It draws no arrow: the edge of the screen
 already carries three promises (the objective's gold triangle, the chest's round bubble, the
-place's diamond), and the caption's tail is a speech bubble's - it says where the voice came from,
-not "go here". Its rim is the event's far-tell colour (`SideEvent.FarTellColor`), so the light the
-player finds is the colour the hint told him to look for.
+place's diamond). Its cue wears the event's far-tell colour (`SideEvent.FarTellColor`), so the light
+the player finds is the colour the hint told him to look for.
 
-### The caption
+### The cue and the line (2026-11-01)
 
-`StageHintCaption`, on the `UIOverlay`: a near-black band (`#0D0F17` at 92%) with a 2 px rim and a
-tail, the line in the engine sans at the **Body** role (24 on a phone, 20 on a PC). Parchment ink for
-speech, set in quotation marks; a cool pale ink for a sound, set plainly as a caption of it. Both are
-about 15:1 on the band (`.ai/level-up-screen.md` 4a). It fades in over 0.35 s, holds 4.8 s and fades
-over 0.9 s.
+Eric, playing 0.10.0: *"The clues for each wizard should not just be text and an arrow. For example, for
+the singing wizard, once in a while, the player should see musical notes on screen in the direction of the
+wizard, and should hear the singing as well. The clue text should show up on the screen, not in a text
+bubble, but fading in as another hint."*
 
-Placed every frame from the player's position on the canvas: pushed along the line to the source to
-the edge of a safe inner rectangle, then held inside it. On a PC that rectangle starts at 150 (under
-the timer, the boss bar's slot, the objective line, the onboarding tip and the loadout column). On a
-phone it starts under the touch stick's HUD band (176 plus the safe area) and **stops at 70% of the
-height**, so it never sits where the thumb holding the stick is; and since a caption to the side of
-a 720-wide canvas is wider than the half-screen beside the wizard, it is stepped up (or down, for a
-source below) off him. It takes **no input** - it and its label are `MouseFilter.Ignore`, so a
-finger on it lands on the stick beneath as if it were not there.
+**The cue** (`StageHintCue`, `tools/art/hint_cues.py`): a few 16 px marks drawn at x3 (the voice's arcs at
+x4) in the far tell's emissive ramp with an occlusion outline and a soft glow, coming in along a band at
+the edge of the safe rectangle on the side of the source, spread along it, drifting a little way in and
+fading - each on its sound's beat (the timings are the generators'). Drawn in the world's layers, over the
+bodies and under the HUD, but held to the view: left on the ground they slid under the line whenever the
+player walked toward the sound. Fixed slots, no allocation.
+
+| site | cue | on the beat of |
+|---|---|---|
+| the grove | leaves tumbling in, though there is no wind | the whisper's breaths |
+| the cell | arcs of a voice, each with its echo, coming down the line to the source | the cry's syllables |
+| the lanterns | cold flames rising, flickering, guttering | the flare |
+| the thaw | **the song's notes**, laid along the edge in the order sung, higher notes further in, each leaving a frost glint | each sung note (`sfx._ICE_SONG` = `StageHintCue.IceSongNotes`) |
+| the caravan | the bell walking along the edge, swinging, ringing out either side | each strike |
+
+`hint_ice_song` was rebuilt to be heard as singing (six notes, A G F G E D, `.ai/audio-manifest.md`).
+
+**The line** (`StageHintCaption`): no band, rim or tail. The words fade in 0.45 s after the cue starts (0.8
+s, eased; held 4.4 s; out over 1 s), the engine sans at the Body role with a 4 px occlusion outline, over
+a soft plate: a capsule of occlusion at 86%, solid behind the words, dissolving through the Bayer matrix
+over 26 px - a shadow the words cast, not a box. Outline-only text was unreadable on the Fallow Fields;
+on the Sketchbook's paper the plate measured 12.5:1 behind the speech ink. One line on a PC wherever it
+fits (640 px), two on a phone. It is set `CueBand` (58) inside the band the cue comes in on, so the marks
+are never under it. The placement rules are unchanged: the safe rectangle (under the HUD; on a phone
+under the touch band and out of the bottom 30%, the thumb's), never over the wizard, held by the plate's
+solid part rather than the words, and `MouseFilter.Ignore` throughout.
 
 **Tone.** `.ai/world-and-tone.md` rule 2 says no copy carries the mood. These are not taglines: the
 cry is a person's words, and the rest are captions of a sound, the way a subtitle captions one -
@@ -336,13 +377,13 @@ question. `RegressionChecks.ValidateStageHints` warns on any line that contains 
 
 ### The hints
 
-| chapter | site | voice | sound | lines, in order (the last repeats) |
+| chapter | site | voice | sound (cue) | lines, in order (the last repeats) |
 |---|---|---|---|---|
-| Enchanted Forest | `the_grove` | sound | `hint_grove_whisper` | "Leaves whispering, though there is no wind." / "The whisper again. Something out there still grows." / "Fainter now, the whispering. It has not stopped." |
-| Cursed Dungeon | `gaolers_key` | **speech** (Tituba, unnamed) | `hint_cell_cry` | "Help! Is someone there?" / "Please - I can hear you. I am down here!" / "I have been patient so long. Please, this way." / "Do not leave me here. Not again." |
-| Blighted Swamp | `bog_lanterns` | sound | `hint_lantern_flare` | "Far off, a cold light flares and gutters." / "The cold light again. Nothing living lit it." / "It is still burning out there." |
-| Frozen Waste | `the_thaw` | sound (Väinämöinen, unnamed) | `hint_ice_song` | "The ice groans. Under it, faintly, someone is singing." / "The song again, slow and deep, from under the ice." / "The singing is weaker now." |
-| Scorched Sands | `caravan_master` | sound | `hint_caravan_bell` | "A caravan bell, somewhere out on the sand." / "The bell again. Something walks the old road." / "The bell is still moving. It does not stop." |
+| Enchanted Forest | `the_grove` | sound | `hint_grove_whisper` (leaves) | "Leaves whispering, though there is no wind." / "The whisper again. Something out there still grows." / "Fainter now, the whispering. It has not stopped." |
+| Cursed Dungeon | `gaolers_key` | **speech** (Tituba, unnamed) | `hint_cell_cry` (echo) | "Help! Is someone there?" / "Please - I can hear you. I am down here!" / "I have been patient so long. Please, this way." / "Do not leave me here. Not again." |
+| Blighted Swamp | `bog_lanterns` | sound | `hint_lantern_flare` (wisp) | "Far off, a cold light flares and gutters." / "The cold light again. Nothing living lit it." / "It is still burning out there." |
+| Frozen Waste | `the_thaw` | sound (Väinämöinen, unnamed) | `hint_ice_song` (song) | "The ice groans. Under it, faintly, someone is singing." / "The song again, slow and deep, from under the ice." / "The singing is weaker now." |
+| Scorched Sands | `caravan_master` | sound | `hint_caravan_bell` (bell) | "A caravan bell, somewhere out on the sand." / "The bell again. Something walks the old road." / "The bell is still moving. It does not stop." |
 
 Tituba speaks in her own character: a prisoner taken from Barbados and jailed on an accusation,
 patient (her passive is *Patience*) and nobody's witch - so she asks for help and says she has
@@ -358,7 +399,8 @@ described in `.ai/audio-manifest.md`, "Chapter hints". Played 300 px toward the 
 
 1. An entry in `StageHintCatalog` keyed by the stage id: the Discovery site its side event pays out
    (it must be the one `SideEventDirector.ForStage` maps that chapter to - the hint comes from that
-   event's place), a voice, a sound, and its lines (60 characters at most: two lines on a phone).
+   event's place), a voice, a sound, a cue (`HintCue`; a new one is a row in `hint_cues.py` and its
+   beats in `StageHintCue`), and its lines (60 characters at most: two lines on a phone).
 2. A sound in `tools/audio/sfx.py` beside the five, registered at -9 or -10 in category `hint`; run
    `python tools/audio/build.py hint_` and `analyse.py --confuse`, then check it against the whole
    set, not only its category (the first three drafts collided outside it). Add it to `SfxCatalog`,
@@ -381,8 +423,13 @@ first: it says a secret gets no text and no pointer, and a hint is both a line a
   schedule: `--stage=1 --minutes=14.5 --immortal --fresh-save` logged `StageHint: stage_1 hint 1 at
   pace 300s` and then 450, 601 and 750, each line in order.
 - Every hint prints one `StageHint:` line with its pace time and distance.
+- `_UiShot --hint-preview=STAGE_ID[,DEG]` plays that chapter's hint (sound, cue, line) on whatever stage
+  is running, from 3000 px at DEG (0 east, 90 south), touching no schedule or save - for grounds no hint
+  plays on: `--stage=9` (the Fallow Fields), `--stage=8` (the Sketchbook's paper). Add `--notes-seen=all`
+  so the chapter note is not up beside it.
 
-**Not verified: whether anyone hears them as intended.** The sounds were measured (levels, `hf`,
+**Not verified: whether anyone hears them as intended**, or whether the cues read at a glance mid-fight
+(photographed, never played). The sounds were measured (levels, `hf`,
 distances to every other sound), not auditioned, and a formant cry is the hardest thing in the set
 to judge by numbers. Whether 300/150 is the right rhythm, and whether a caption at the edge pulls a
 player off his kiting line or is ignored, needs a playtest.

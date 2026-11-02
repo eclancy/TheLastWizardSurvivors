@@ -5,6 +5,14 @@ is the inventory and the wiring backlog: seventy-one generated `.wav` files in `
 what each one is for, and where in the code it is meant to be triggered. The music - a menu
 theme and nine chapter sets in `assets/music/` - has its own section at the end.
 
+**2026-11-01: 85 files, all wired; battle music.** `spell_maw_open`, Elder God Maw breaking up
+through the earth (Eric, 0.10.0: "should make a deep, scary crashing sound when it opens"):
+generated, allowlisted in `SfxCatalog` and played by `BlackTentacles` 0.20 s before the breach, so its
+crash lands on the frame the plates are thrown; for the maw it replaces `spell_summon`. Its row is
+under "Spells". `SfxPlayer` reports `85 sounds preloaded`. The same day the music became battle
+music from the first second: every playable chapter's pulse rescored and ungated, the hook stated as
+a run opens, and a boss layer per chapter ("Music", below).
+
 **2026-10-30: 84 files, all wired.** The secret stings (piece A14 of
 `.ai/achievements-and-secrets.md`): `secret_seen`, `secret_found` and `secret_shatter`, generated,
 allowlisted in `SfxCatalog` and - since piece A4 the same day - played where the table under
@@ -211,7 +219,8 @@ element.
 | `spell_familiar_bite.wav` | 0.13 s | −21.0 dBFS | no | **wired**, `Familiar.Bite` and `Familiar.StrikeAlong`: every strike of every form - a hound's bite, a crow's peck, a cat's swipe (one sound for all three since the forms, 2026-10-28; a peck and a swipe of their own are open) - and every enemy a Griffin's swoop strikes, throttled at 110 ms (`Familiar.SoundGapMs`); also Laelaps catching a bolt in his jaws (`Player.TryCatchBolt`). The damage is the Arcane impact through `DealDamageToEnemy`; the pack has no cast cue (`CastOutcome.Maintained`) |
 | `spell_stormsweep.wav` | 0.22 s | −14.0 dBFS | no | **wired**, `Stormsweep.Tick`: every pass of every arc (a Thunderclap arc sweeps twice), throttled at 60 ms (`Stormsweep.SoundGapMs`). It replaces the Lightning cast cue for the spell (`CastOutcome.Maintained`); hits are the Lightning impact through `DealDamageToEnemy`, and a Thunderclap burst plays `cast_lightning` |
 | `spell_sleet_rune.wav` | 0.12 s | −22.0 dBFS | no | **wired**, `SleetRunes.Release`: every rune leaving the hand, throttled at 45 ms (`SleetRunes.SoundGapMs`), Swarm tier. It replaces the cast cue for the spell (`CastOutcome.Maintained`); hits are the Ice impact through `DealDamageToEnemy` |
-| `spell_summon.wav` | 0.75 s | −9.0 dBFS | no | **wired** (2026-10-23): `BlackTentacles.CastAt` as the rift opens, `ThornVine.Launch` as the vine breaks ground, `SporeMushroom` as a Doomcap breaks ground (the titan only - an ordinary sowing is covered by the cast cue). No slap/lash sound exists; the Darkness/Grass impacts play through `DealDamageToEnemy` as for every hit, and a dedicated wet slap would be the one addition worth generating |
+| `spell_maw_open.wav` | 1.85 s | −9.0 dBFS | no | **wired** (2026-11-01): `BlackTentacles._Process`, `MawCrashLeadSeconds` (0.20 s) before the breach (`MawBreach` of `MawOpenSeconds`), so the crash at 0.20 s in the file lands as the plates are thrown; the maw's summon cue, in place of `spell_summon`. The heave (a rumble swelling with two strain cracks), the crack and a thump falling 110 to 46 Hz with short rubble, stone grinding as the maw rises over a sub swelling 40 to 64 Hz, four slabs landing one after another and a bounce, the dust settling. Goes under 80 Hz as `spell_explosion` does (earth breaking, one maw every 3-4 s); centroid 372 Hz, hf 1%. Nearest in the set: `spell_summon` 0.142, `boss_death` 0.151, `boss_roar` 0.184 - the first draft's FM groan was the roar's construct and measured 0.077 from it, so the rise became grinding and the slabs separate blows |
+| `spell_summon.wav` | 0.75 s | −9.0 dBFS | no | **wired** (2026-10-23): `BlackTentacles.CastAt` as the rift opens (every face but the Elder God Maw, since 2026-11-01), `ThornVine.Launch` as the vine breaks ground, `SporeMushroom` as a Doomcap breaks ground (the titan only - an ordinary sowing is covered by the cast cue). No slap/lash sound exists; the Darkness/Grass impacts play through `DealDamageToEnemy` as for every hit, and a dedicated wet slap would be the one addition worth generating |
 | `spell_bow_draw.wav` | 0.45 s | −15.0 dBFS | no | `BowDrawVisual.cs` wind-up start |
 | `spell_bow_release.wav` | 0.30 s | −10.0 dBFS | no | `HuntersArrow` spawn |
 
@@ -296,7 +305,7 @@ way. Tier Normal: they never duck anything. The caption carries the words; these
 | `hint_grove_whisper.wav` | 2.20 s | -9.0 dBFS | **wired**, Enchanted Forest (the grove). Three breathed syllables with gaps between them over a low open-fifth hum and a few leaf ticks. hf 3% |
 | `hint_cell_cry.wav` | 2.30 s | -9.0 dBFS | **wired**, Cursed Dungeon (the cell). A woman's call, formant synthesis: one rising "Help!" syllable, then the falling-then-rising tune of "Is someone there?" with no consonants, in a long stone room with a corridor slap. hf 2% |
 | `hint_lantern_flare.wav` | 2.30 s | -9.0 dBFS | **wired**, Blighted Swamp (a lantern). A flame catching, burning level for a second at a 13 Hz flicker, guttering out in uneven gaps, under a thin cold E5 with a slow wobble. hf 2% |
-| `hint_ice_song.wav` | 2.45 s | -9.0 dBFS | **wired**, Frozen Waste (the ice). A stick-slip groan through two falling resonances, one crack, and under it a man's voice muffled through the ice, two slow notes on "oh". hf 0% |
+| `hint_ice_song.wav` | 2.58 s | -9.0 dBFS | **wired**, Frozen Waste (the ice). Rebuilt 2026-11-01 to be heard as singing (Eric, 0.10.0): a short groan and one crack, then a man singing a six-note line falling through a D minor pentachord (A G F G E D, legato, vowels changing under it, vibrato blooming on the held last note), muffled at 1.6 kHz. The notes are `sfx._ICE_SONG`, which `StageHintCue.IceSongNotes` puts on screen. Nearest sound in the whole set 0.164 (`secret_found`). hf 0% |
 | `hint_caravan_bell.wav` | 2.50 s | -10.0 dBFS | **wired**, Scorched Sands (the caravan). Five strikes of a hollow tin bell with a wooden clapper, at a walking beast's uneven stride, nearly level, one dune echo. A dB under the rest: a bell carries. hf 0% |
 
 | First draft | Collided with | Distance | Fix |
@@ -399,15 +408,20 @@ Listed so nobody adds them by reflex:
 before the repo went public, for want of a licence (`.ai/asset-licensing.md`); what replaced
 them is ours outright. Status as of 2026-10-22: **a menu theme and all nine chapters built and
 wired**, each its own mode of the same seven notes, 104-168 to the beat (section 11 has the
-per-chapter table: key, metre, tempo, palette). The boss loop is still shared.
+per-chapter table: key, metre, tempo, palette). **2026-11-01: battle music from the first second**
+(section 11, "Battle music from the first second", has the cause and the change): the eleven
+playable chapters' pulses rescored as their battle percussion and up from the first downbeat, the
+hook stated as a run opens, and a boss layer each, so the shared boss loop now plays only for the
+castle's three.
 
 | File | Length | RMS | Plays | Up when |
 |---|---|---|---|---|
-| `assets/music/menu_theme.wav` | 26.67 s | -32.0 dBFS | title, every menu | always, as a solo loop; 2 s in, crossfaded out over 3 s as a run starts |
+| `assets/music/menu_theme.wav` | 26.67 s | -32.0 dBFS | title, every menu | always, as a solo loop; 2 s in, out over 1 s under a run's first downbeat |
 | `assets/music/<chapter>_bed.wav` | 24.0-30.0 s | -33.0 dBFS | that chapter's runs | always while the set plays |
-| `assets/music/<chapter>_pulse.wav` | same | -34.0 dBFS | that chapter's runs | 28+ enemies alive; out under 14 |
-| `assets/music/<chapter>_lead.wav` | same | -35.0 dBFS | that chapter's runs | an elite, event elite or Warden alive, or pace minute 10+; held 30 s |
-| `assets/music/boss_loop.wav` | 41.74 s | -29.5 dBFS | every boss fight | crossfaded in over 3 s as the boss arrives |
+| `assets/music/<chapter>_pulse.wav` | same | -34.0 dBFS | that chapter's runs | always while the set plays, from the first downbeat (until 2026-11-01: 28+ enemies alive) |
+| `assets/music/<chapter>_lead.wav` | same | -35.0 dBFS | that chapter's runs | the run's first 24 s; an elite, event elite or Warden alive, held 30 s; pace minute 5+ (was 10) |
+| `assets/music/<chapter>_boss.wav` | same | -34.0 dBFS | that chapter's boss fight | the boss arrives: in over 1.5 s on the bed and pulse while the lead rests. The eleven playable chapters have one |
+| `assets/music/boss_loop.wav` | 41.74 s | -29.5 dBFS | the boss of a set with no boss layer (the castle's three) | crossfaded in over 3 s as the boss arrives |
 
 `<chapter>` is, in `StageCatalog` order: `forest` (25.71 s), `dungeon` (29.09), `cave` (27.00),
 `swamp` (24.00), `ruins` (30.00), `frozen` (26.67), `sands` (27.69), `emberdeep` (25.60),
@@ -427,9 +441,9 @@ Audition reels are `music.py --journey`, written to the gitignored `tools/audio/
 | Moment | Call | What happens |
 |---|---|---|
 | title screen, any menu | `MusicPlayer.PlayMenuMusic()` from `TitleScreen.StartTitle` and `MainMenu._Ready` | the menu theme as a solo loop, 2 s fade in; whatever else is playing fades out over the same 2 s. Idempotent - a theme already playing is faded back up, never restarted |
-| run starts | `Node2DGame.PlayRunMusic` | `MusicCatalog.RunSetForStage` - the chapter's own set; 3 s fade in while the theme fades out over 3 s |
-| every 0.25 s of play | `Node2DGame.UpdateRunMusic` | sets the pulse and lead targets; `MusicPlayer` fades them, in 4 s and out 8 s |
-| boss arrives | `Node2DGame.PlayBossMusic` from `TickBossPhaseStart` | the set's `Boss` loop crossfades in over 3 s; the set stops once silent |
+| run starts | `Node2DGame.PlayRunMusic` | `MusicCatalog.RunSetForStage` - the chapter's own set, bed, pulse and lead up; `MusicPlayer` starts it on its next frame (the run's first processed frame, after `_Ready`'s load) at bar one and full level, and fades the theme out under it in 1 s |
+| every 0.25 s of play | `Node2DGame.UpdateRunMusic` | pulse at 1; the lead for the opening 24 s, an elite's 30 s hold, and pace minute 5 on; `MusicPlayer` fades it in 4 s and out 8 s |
+| boss arrives | `Node2DGame.PlayBossMusic` from `TickBossPhaseStart` (and each Boss Rush fight) | a set with a boss layer raises it over the bed and pulse in 1.5 s, rests the lead, and plays on; one without crossfades to the shared `Boss` loop over 3 s and stops once silent. A Boss Rush breather lowers the layer again (or crossfades the set back in over 3 s) |
 | boss falls | `CompleteBossVictory` | everything fades over 2.5 s, under `boss_death` |
 | run ends, win or lose | `FinishRunAndReward` | the same fade, under `game_over` / `stage_clear` |
 | quit to the menu mid-run | `TitleScreen` | `PlayMenuMusic` fades the set out under the theme; from a boss fight, the boss loop fades out on one solo player while the theme fades in on the other |
@@ -458,6 +472,29 @@ full tables.
   as the old Forest did. `player_hurt` stays 17-23 dB over it everywhere.
 - **Inside each stem:** `music.py --balance` prints every voice's level; no ostinato is more than
   7 dB under its bed, no snare or tek more than 22 dB under its pulse.
+
+**2026-11-01, the battle pass** (22 files: the eleven playable chapters' `_pulse` re-rendered and
+their `_boss` added, with `music.py <chapter> --stems pulse,boss`; beds and leads untouched):
+
+- **Seams:** step at most 0.33, click at most 0.40 of each loop's own body, every wrap within 2 dB
+  of the median second.
+- **Budget:** 0% under 80 Hz and above 5 kHz, at most 1% in 2-5 kHz, hf at most 1%; pulses 49-93%
+  low band, boss layers 64-86%.
+- **Under the effects:** bed + battle pulse from the first second, a median cast +11.9 to +12.9 dB
+  over the music (the old bed + pulse row was +12.2 to +13.2); a chapter's fight, bed + pulse + boss
+  layer with the lead resting, -28.5 to -29.2 dBFS, a cast +2.9 to +3.5 dB over swarm and music (the
+  shared loop's +3.5), `level_up` at worst +8.1 dB; `player_hurt` +16.3 to +20.5 dB everywhere.
+  `.ai/audio-direction.md` section 11 has the table and why the lead rests under the boss layer.
+- **Size:** 24.6 MiB of WAV, 19.2 MiB of git objects; 2.6 MB more in an export (2,609,368 bytes,
+  the eleven boss layers' imported QOA data as Godot reads it back; the pulses replace theirs at the
+  same length). `spell_maw_open` adds 0.16 MB of WAV.
+- **Headless** (`_BalanceHarness --immortal --minutes=6` on the Forest, Dungeon, Swamp and Sands;
+  `_BossProbe` on the Cave, Ruins and Sketchbook): every run logs its set starting at bar one with
+  four stems locked - bed, pulse and lead at 0 dB, the boss layer at -80 - and the pulse never
+  leaves; `Node2DGame: run music lead out at 00:24`, back for the first elite (02:15 in the Swamp),
+  held from pace minute 5; each boss logs `pulse 1 lead 0 boss 1` on arrival. The headless audio
+  driver plays nothing, so this proves the faders, not the sound.
+- **Not heard.** Section 11, "Not yet heard", lists what to listen for.
 
 ### The castle's music (2026-10-30: rendered, and wired in `MusicCatalog` by C0)
 
@@ -523,14 +560,14 @@ committed files):
 
 ### Known limitations
 
-- **Nobody has heard it.** As with the effects, it was designed and measured, not auditioned.
+- **Nobody has heard it** - the 2026-11-01 battle pass included. As with the effects, it was designed and measured, not auditioned.
   The first listen will move things; the knobs are `STEM_RMS_DB` (loudness), the event lists
   (the music), the velocities `music.py --balance` reports (the mix inside a stem) and the
   instrument functions (the timbre), all in `music.py`. Section 11 lists what to listen for.
-- **The boss loop is shared.** Every chapter hands over to the same A minor loop at 138. The
-  chapters run from 104 to 168, so the handover is a change of tempo as well as of music; whether
-  that reads as a drop or a stumble needs an ear. A per-chapter boss loop costs about 1.8 MB of
-  history each.
+- **The boss loop is shared - by the castle's three only, since 2026-11-01.** Every playable chapter
+  meets its boss with its own layer, in its own key and tempo. The Last Bridge and the Court still
+  hand over to the A minor loop at 138 (the Throne never asks for it); each gets a layer when it is
+  playable - `boss_layer()` in its `music_<chapter>.py`, `--stems boss`, about 1.1 MB of history.
 - **`AudioStreamSynchronized` is trusted to read its stream volumes live.** It is the engine's
   layered-music stream and is built for exactly this, but the crossfades have only been
   exercised headless, where the dummy audio driver plays nothing. If the pulse or lead never

@@ -1,5 +1,6 @@
 using Godot;
 using System.Collections.Generic;
+using WizardSurvivors.scripts;
 
 /// <summary>
 /// The debuffs an enemy can be seen wearing. Bit order is not the draw order - see
@@ -104,6 +105,8 @@ public partial class StatusEffectLayer : Node2D
 	private const int OverZIndex = 3;
 	// Under every body (0) and the elite ring (-1), over the walkable decor (-20).
 	private const int UnderZIndex = -2;
+	// A boss's body is drawn over every spell (DrawLayers.Foremost), so its marks are drawn over it, on their
+	// own node: at OverZIndex they would be under the body they belong to.
 	private const float FadeSeconds = 0.3f;
 
 	private enum Anchor { Feet, AboveHead, RightShoulder, LeftShoulder, Torso }
@@ -149,6 +152,7 @@ public partial class StatusEffectLayer : Node2D
 	private readonly List<Enemy> tracked = new(256);
 	private Texture2D? atlas;
 	private Node2D? under;
+	private Node2D? overBosses;
 	private float clock;
 	private bool drewLastFrame;
 
@@ -181,6 +185,10 @@ public partial class StatusEffectLayer : Node2D
 		};
 		AddChild(under);
 		under.Draw += DrawUnder;
+
+		overBosses = new Node2D { Name = "OverBosses", ZIndex = DrawLayers.ForemostAir, ZAsRelative = false };
+		AddChild(overBosses);
+		overBosses.Draw += DrawOverBosses;
 	}
 
 	/// <summary>Starts drawing this enemy's marks. Cheap to call on every debuff application.</summary>
@@ -229,7 +237,8 @@ public partial class StatusEffectLayer : Node2D
 
 		overDraws.Clear();
 		underDraws.Clear();
-		// Both canvas items share this node's transform (Under has no offset of its own).
+		overBossDraws.Clear();
+		// All three canvas items share this node's transform (Under has no offset of its own).
 		Transform2D toLocal = GetGlobalTransform().AffineInverse();
 
 		// Every enemy is read here once a frame and both draw passes only replay the result. Each
@@ -255,11 +264,12 @@ public partial class StatusEffectLayer : Node2D
 		}
 
 		// One more redraw after the last mark goes, so it does not linger on screen.
-		bool drawing = overDraws.Count > 0 || underDraws.Count > 0;
+		bool drawing = overDraws.Count > 0 || underDraws.Count > 0 || overBossDraws.Count > 0;
 		if (drawing || drewLastFrame)
 		{
 			QueueRedraw();
 			under?.QueueRedraw();
+			overBosses?.QueueRedraw();
 		}
 		drewLastFrame = drawing;
 
@@ -267,7 +277,7 @@ public partial class StatusEffectLayer : Node2D
 		{
 			PerfTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;
 			PerfFrames++;
-			PerfMarks += overDraws.Count + underDraws.Count;
+			PerfMarks += overDraws.Count + underDraws.Count + overBossDraws.Count;
 		}
 	}
 
@@ -288,6 +298,7 @@ public partial class StatusEffectLayer : Node2D
 	// Rebuilt every frame and never shrunk, so after the first full swarm nothing here allocates.
 	private readonly List<MarkDraw> overDraws = new(512);
 	private readonly List<MarkDraw> underDraws = new(256);
+	private readonly List<MarkDraw> overBossDraws = new(16);
 
 	private void Collect(Enemy e, StatusVisual active, Transform2D toLocal)
 	{
@@ -299,6 +310,7 @@ public partial class StatusEffectLayer : Node2D
 		float body = geo.FeetY - geo.HeadY;
 		float px = geo.PixelScale * scale;
 		int phase = e.StatusFxPhase;
+		List<MarkDraw> over = e is BossEnemy ? overBossDraws : overDraws;
 
 		int shown = 0;
 		for (int m = 0; m < Priority.Length && shown < MaxMarksPerEnemy; m++)
@@ -324,7 +336,7 @@ public partial class StatusEffectLayer : Node2D
 
 			float remaining = e.StatusVisualTimeRemaining(mark.Status);
 			float alpha = remaining >= FadeSeconds ? 1f : Mathf.Clamp(remaining / FadeSeconds, 0f, 1f);
-			(mark.Under ? underDraws : overDraws).Add(new MarkDraw(dest, source, alpha));
+			(mark.Under ? underDraws : over).Add(new MarkDraw(dest, source, alpha));
 		}
 	}
 
@@ -334,6 +346,12 @@ public partial class StatusEffectLayer : Node2D
 	{
 		if (under != null)
 			Replay(under, underDraws);
+	}
+
+	private void DrawOverBosses()
+	{
+		if (overBosses != null)
+			Replay(overBosses, overBossDraws);
 	}
 
 	private void Replay(CanvasItem target, List<MarkDraw> draws)

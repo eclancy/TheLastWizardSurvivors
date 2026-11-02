@@ -903,20 +903,30 @@ public partial class GameOverScreen : CanvasLayer
 	// and the branch taken in the row's ink after it. A branch with no picture is the words alone.
 	// Internal: the pause screen's Run tab lists each held spell's milestones with this same line
 	// (Node2DGame.BuildSpellRow), so the two screens cannot word or colour them two ways.
-	internal static Control Milestone(string word, string branch, Color mark, string branchId)
+	//
+	// pending: a milestone still AHEAD - the pause screen's Apotheosis on the wizard's own spell before
+	// it is taken (Node2DGame.BuildPendingApotheosis). The mark is outlined, not solid, since solid is
+	// what says "taken" on this line; its word is in the mark's colour (Fire mid on stone base, 5.2:1),
+	// the name in the softer ink and the note after it in the meta ink (6.1:1).
+	internal static Control Milestone(string word, string branch, Color mark, string branchId, bool pending = false, string note = null)
 	{
 		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		line.AddThemeConstantOverride("separation", 8);
 		Texture2D picture = EvolutionIcons.Own(branchId);
 		var pill = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
-		var style = new StyleBoxFlat { BgColor = mark };
+		var style = new StyleBoxFlat { BgColor = pending ? new Color(mark, 0f) : mark };
+		if (pending)
+		{
+			style.BorderColor = mark;
+			style.SetBorderWidthAll(2);
+		}
 		style.SetCornerRadiusAll(4);
 		style.ContentMarginLeft = 8;
 		style.ContentMarginRight = 8;
 		style.ContentMarginTop = 1;
 		style.ContentMarginBottom = 1;
 		pill.AddThemeStyleboxOverride("panel", style);
-		Label label = CodexRows.MakeText(word, ResponsiveLayout.TextRole.Label, MarkInk);
+		Label label = CodexRows.MakeText(word, ResponsiveLayout.TextRole.Label, pending ? mark : MarkInk);
 		label.AutowrapMode = TextServer.AutowrapMode.Off;
 		pill.AddChild(label);
 		line.AddChild(pill);
@@ -926,9 +936,23 @@ public partial class GameOverScreen : CanvasLayer
 			icon.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
 			line.AddChild(icon);
 		}
-		Label name = CodexRows.MakeText(branch, ResponsiveLayout.TextRole.Label, Stone.Ink);
+		Label name = CodexRows.MakeText(branch, ResponsiveLayout.TextRole.Label, pending ? Stone.InkSoft : Stone.Ink);
 		name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		line.AddChild(name);
+		if (string.IsNullOrEmpty(note))
+		{
+			line.AddChild(name);
+			return line;
+		}
+		// The note beside the name, wrapping with it as one run of words on a phone.
+		name.SizeFlagsHorizontal = Control.SizeFlags.ShrinkBegin;
+		name.AutowrapMode = TextServer.AutowrapMode.Off;
+		var words = new HFlowContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+		words.AddThemeConstantOverride("h_separation", 8);
+		words.AddChild(name);
+		Label after = CodexRows.MakeText($"·  {note}", ResponsiveLayout.TextRole.Label, Stone.InkMeta);
+		after.AutowrapMode = TextServer.AutowrapMode.Off;
+		words.AddChild(after);
+		line.AddChild(words);
 		return line;
 	}
 

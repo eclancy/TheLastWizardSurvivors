@@ -456,6 +456,13 @@ the cards are built before that container has a size; a deferred second pass wou
 visibly resettle. The scroll container is still there as a last resort, but nothing should reach
 it: the allowance is 284 (section 7) and `_UiShot`'s card report says "fits" or "SCROLLS".
 
+**A short hand keeps a full hand's card size** (Eric, 2026-11-01: "we should not expand the size of
+each choice to fill the menu"). With one or two choices the cards used to take the whole row or
+column between them. Now a phone card's height is a third's however few there are (`NarrowCardHeight`
+counts at least three; the rows stop expanding, so two cards sit together at the top), and a PC card
+is as wide as it is three across (`ThreeAcrossColumnWidth`, from the panel's size), in a centred row.
+`_UiShot --tall-deal=1` / `=2` photographs it.
+
 ## 3a. Level 8 is not a card: the Ascension strip
 
 **Level-up cards stop at level 7, with every pip full.** The Ascension to level 8, and a
@@ -464,8 +471,8 @@ wizard's Apotheosis after it, is a row of buttons **above the cards** (`AscendSt
 level-up from the moment it is earned until it is taken. Earned includes a player level: 17 for
 an Ascension (`Player.AscensionMinimumPlayerLevel`), 23 for an Apotheosis
 (`ApotheosisCatalog.MinimumPlayerLevel`) - see `.ai/gameplay-design.md`, "The Apotheosis". The
-ascension browser names the Ascension's level among its requirements; nothing yet names the
-Apotheosis's. A reroll re-deals the cards and leaves it alone (a ban now ends the level-up, section 7). Pressing an ASCEND button
+ascension browser names both levels among the requirements - the Apotheosis's in its own entry at
+the top (section 4). A reroll re-deals the cards and leaves it alone (a ban now ends the level-up, section 7). Pressing an ASCEND button
 opens the level 8 **fork** (section 4e: the spell on top, an arrow down to each path plate, and
 only the plates are pressable); an APOTHEOSIS button opens the ember evolution page as before.
 Choosing a path spends the pick.
@@ -575,10 +582,26 @@ spell**:
   above the name, because beside it "Cataclysm" at the Title size broke mid-word.
 - **Sections by what the player can act on**: *Ready* trees first, then *Not yet* (or *Ascensions
   to earn*), the near misses at the top; spells with no ascension fold into one quiet line.
+- **The wizard's Apotheosis comes before all of them** (2026-11-01, Eric: "make it clearer that
+  apotheosis is an option, showing in 'ascensions'"). Its own section under an ember heading, one
+  tree: the starting spell with pips to 8 and a checklist from `Player.BuildApotheosisPreview` -
+  "Level 4: take Backdraft", "Level 8: take Dragon's Breath", the element chip at x/6, "Your level
+  x/23", and the Hayward's line while unlearned - then the form on the **ember** plate. `Offered` is
+  `TryBuildApotheosisOffer`'s own answer, never a copy of the gate. Sealing (4e) differs in one
+  thing: the form's **name** always shows (the character select names it, "✶ Apotheosis: Cataclysm");
+  its line and picture wait for the first offer (`spell:form`, as `Record` writes it), and its level 8
+  path reads "a sealed Ascension" while the spell's own tree seals it. A path closed by taking the
+  other is a lock, and the plate says "Out of reach this run". No wizard with none (the Test Wizard),
+  no entry. The pause screen's Run tab lists the same form as the spell's last milestone, its mark
+  outlined while it is still ahead (`GameOverScreen.Milestone`, `pending`). Photograph it with
+  `--character=1 --press-late=AscensionsButton --seen-ascensions=none`, adding `--demo-level`,
+  `--demo-spell-level` and `--demo-evolutions=cinderbreath_amplified_impact,...` for the states.
 - **It still only reports.** Nothing on the page is pressable: the node's chips (or a focus-only
   overlay) and one overlay per plate are a pad's stops, wired spell → left path → right path → next
   spell (`WireTreeFocus`, explicit, because from a node centred over two plates Godot's geometric
-  neighbour could land on either). Every container ignores the mouse, so a finger drag reaches the
+  neighbour could land on either), and up from Back to the last tree's first path. In `_UiShot`,
+  start a `--pad` script with `release`: the bot's held steering otherwise swallows every step.
+  Every container ignores the mouse, so a finger drag reaches the
   scroll.
 
 ## 4a. Legibility: faces, the heading, the floor, the inks and the glyphs
@@ -1056,6 +1079,13 @@ So for `LevelUpMenu.InputGuardSeconds` (0.8 s, real time - the tree is paused) e
 work, so the wait is spent reading. The panel comes in at 72% and rises to full as it arms, which is
 the "not yet". The same pause re-arms when a mutation or Apotheosis card swaps the cards for its
 paths, so a double click cannot pick a path unread. A reroll does not re-arm: its button does not move.
+
+**The Muster (the Throne, `.ai/endgame-castle.md` 6.2)** opens eighteen of these in a row (6.2 said
+seventeen; moved by measurement, `ThroneProcession.MusterLevels`). Its rules set two properties before each
+screen enters the tree (`ChapterRules.LevelUpOpening`, hook 8): `HeadingOverride` ("The Muster - 5 of 18") and `ArmingSeconds` - the full 0.8 s on the first screen,
+`MusterArmingSeconds` (0.3 s) on the rest, long enough that the click closing one cannot choose the
+next. The fade to full brightness follows `ArmingSeconds`. Every other screen leaves both alone.
+`_UiShot --stage=13 --dismiss-levelups=4` photographs the fifth.
 
 `_UiShot --guard-probe` proves it with real input (a mouse on a PC canvas, a finger on a phone one):
 a click on a laid-out card before the screen arms chooses nothing, and one after it has armed

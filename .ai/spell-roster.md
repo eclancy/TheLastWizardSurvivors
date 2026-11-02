@@ -872,8 +872,10 @@ the thing at the game's 2 px art grid, out of the number that decides what it hi
   up, each picks the nearest unclaimed enemy inside, winds up, lashes to it and lands: the target and
   anything within 40 px of the landing take one slap. **`CurrentRadius` is the one hit authority** and
   the shader draws to it; the old version grew the DRAWING by the ascensions' x2 / x1.7 scale while
-  their area never reached the hit. Levels add tentacles (even), rift size and slow (odd), +1 slap
-  damage every level - written out in full in the `.tres`. Amount adds tentacles. All five evolutions
+  their area never reached the hit. It starts small and builds (Eric, 2026-11-01): 60 px and two
+  tentacles at level 1, 10 px wider at every level but 6 and a tentacle at 2, 4, 5, 6 and 8, so 120 px
+  and seven at level 8 as before; the slow deepens on odd levels, +1 slap damage every level - written
+  out in full in the `.tres`. Amount adds tentacles. All five evolutions
   now do what their card says (Soul Drain and the Maw's vortex had no reader at all) and the cards
   were rewritten to say only that. **Elder God Maw** was redrawn: a lip of torn earth and wet flesh,
   three rings of teeth of uneven length turning against each other and sinking into black, a ring of
@@ -884,10 +886,12 @@ the thing at the game's 2 px art grid, out of the number that decides what it hi
   bodies, with their shadows on the ground and dust blown after them; the maw rises out of the hole,
   teeth growing out of the dark, and tips the ground up round it into a torn rim of slabs that the
   thrown earth lands on and lies on until it closes. Same 0.8 s, same slow - only its curve is eased
-  out, because the cracks are the slow's edge and have to run ahead. **Two maws never overlap**
-  ("they should never overlap"): a new one opens only where its full radius clears every open maw's
-  by 8 px; if the pack is under a maw it opens beside it, on the stragglers, and if nowhere in range
-  would catch anything the cast waits (`Player.TryPlaceMaw`, `BlackTentacles.MawFits`).
+  out, because the cracks are the slow's edge and have to run ahead. **Two rifts never overlap**:
+  the maws first ("they should never overlap"), then every face (Eric, 2026-11-01: "Black tentacles
+  should never be able to stack on top of each other"). A new rift opens only where its full radius
+  clears every open rift's by 8 px; if the pack is under a rift it opens beside it, on the stragglers,
+  and if nowhere in range would catch anything the cast waits (`Player.TryPlaceRift`,
+  `BlackTentacles.RiftFits`).
 - **Thorned Vine** keeps id `thorn_vine` and every save key; only the name changed. One vine bursts
   from the ground on the player's side of the densest pack, coils, lashes across it in a 170 degree
   sweep and withers. It strikes enemies in the order its drawn line reaches them, cuts through

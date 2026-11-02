@@ -207,6 +207,14 @@ public sealed class ChapterBestiary
 	/// </summary>
 	public bool ArtContractExempt { get; init; }
 
+	/// <summary>
+	/// Why this chapter's creatures are other chapters' by design, or empty. Only the Throne, whose minions
+	/// are his household guard from the Court and the bridge (.ai/endgame-castle.md 6.3): ValidateBestiary
+	/// then holds them to everything but the "borrowed" to-do, which would otherwise ask for a cast the
+	/// chapter must never have.
+	/// </summary>
+	public string BorrowedCastBecause { get; init; } = string.Empty;
+
 	public string ChapterName => StageCatalog.GetById(StageId)?.DisplayName ?? StageId;
 
 	/// <summary>The slot for a role. Every role but <see cref="BestiaryRole.Extra"/> has exactly one.</summary>
@@ -274,10 +282,11 @@ public static partial class StageBestiary
 		FallowFields.Build(),
 		BrokenCircle.Build(),
 		// The castle (.ai/endgame-castle.md): the bridge's garrison and the Court's household. The Cursed
-		// Dungeon keeps its own roster when it moves in, and the Throne has no trickle cast of its own -
-		// its minions are the Court's and the bridge's, sent by ThroneRules (6.3).
+		// Dungeon keeps its own roster when it moves in, and the Throne has no cast of its own - its minions
+		// are the Court's and the bridge's, his household guard come home (6.3, StageBestiary.Throne.cs).
 		Bridge.Build(),
 		Court.Build(),
+		Throne.Build(),
 	};
 
 	public static ChapterBestiary? ForStageId(string stageId)

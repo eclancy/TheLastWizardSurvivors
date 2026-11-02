@@ -90,8 +90,10 @@ public partial class BowDrawVisual : Node2D
 
 	public override void _Ready()
 	{
-		// Above the player sprite but below the HUD, so the bow never disappears behind the robe.
-		ZIndex = 3;
+		// Above the player sprite but below the HUD, so the bow never disappears behind the robe - which is
+		// over every effect now (DrawLayers.Foremost), so the bow is just over that.
+		ZIndex = DrawLayers.ForemostAir;
+		ZAsRelative = false;
 		Visible = false;
 
 		bowShader ??= GD.Load<Shader>("res://scenes/shaders/bow_draw.gdshader");

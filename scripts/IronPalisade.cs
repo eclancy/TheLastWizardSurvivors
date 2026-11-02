@@ -140,6 +140,84 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 	private Node2D rail;
 	private SpellStrokes railStrokes;
 
+	// ROLLING WALL DIGS UP THE DIRT (2026-11-01). Eric, playing 0.10.0: the rolling walls "should dig up the
+	// dirt as it moves". Two parts, both pictures of where the wall went and neither a hit:
+	//   - THE FURROW: scenes/shaders/palisade_furrow.gdshader on a child quad on the ground layer, under
+	//     every body - a groove ploughed behind each stake and the earth between turned over, from just
+	//     behind the stakes back to where the march began (`marched`), dissolving by dither as it ages so it
+	//     is a wake that closes behind the wall, and all of it once the wall is down (FurrowFallSeconds).
+	//   - THE CLODS: lumps kicked up off the stakes' feet as the wall walks, thrown back over the furrow in a
+	//     short arc with an occlusion shadow under them, landing and crumbling away by dither. Slots in a
+	//     fixed array; nothing is allocated a frame.
+	// Both in the floor's own tones where the floor is earth or stone (SoilFor), from the contract's rows.
+	private const float FurrowFallSeconds = 0.5f;
+	public const string FurrowShaderPath = "res://scenes/shaders/palisade_furrow.gdshader";
+	private static Shader furrowShader;
+	private static readonly StringName ParamMarched = "marched";
+	private static readonly StringName ParamFallen = "fallen";
+	private Node2D furrow;
+	private ShaderMaterial furrowMaterial;
+	private float marched;
+	private Color soilLit, soilBase, soilShade, soilDeep;
+
+	private const int MaxClods = 28;
+	private const float ClodEvery = 0.04f;
+	private const float ClodFlight = 0.32f;
+	private const float ClodLie = 0.35f;
+	private const float ClodHeight = 12f;
+	private readonly Vector2[] clodFrom = new Vector2[MaxClods];
+	private readonly Vector2[] clodVelocity = new Vector2[MaxClods];
+	private readonly float[] clodBorn = new float[MaxClods];
+	private int nextClod;
+	private uint clodsKicked;
+	private float clodTimer;
+
+	/// <summary>
+	/// The floor's own tones for earth turned over on it - lit, base, shade and deep - by the kind of ground
+	/// the chapter stands on: turf and soil on grass, rubble on flagstones, snow on the Frozen Waste, sand in
+	/// the Sands, graphite on the Sketchbook's paper. Every one a row of the contract (tools/art/bonelight.py).
+	/// </summary>
+	public static void SoilFor(StageEnvironmentKind kind, out Color lit, out Color baseTone, out Color shade, out Color deep)
+	{
+		switch (kind)
+		{
+			case StageEnvironmentKind.Castle:
+			case StageEnvironmentKind.Ruins:
+			case StageEnvironmentKind.Cave:
+			case StageEnvironmentKind.Volcanic:
+			case StageEnvironmentKind.Bridge:
+			case StageEnvironmentKind.Court:
+			case StageEnvironmentKind.Throne:
+				// Rubble prised out of the flagstones, grit in the grooves: the stone row, the gold row's deep.
+				lit = Hex(0x3A4658); baseTone = Hex(0x2A3444); shade = Hex(0x141A26); deep = Hex(0x2E2208);
+				break;
+			case StageEnvironmentKind.Ice:
+				// Snow thrown up off frozen ground: the steel row.
+				lit = Hex(0xB8C8DC); baseTone = Hex(0x6A7E98); shade = Hex(0x3A4A62); deep = Hex(0x202838);
+				break;
+			case StageEnvironmentKind.Desert:
+				// Sand: the gold row.
+				lit = Hex(0xD8B04A); baseTone = Hex(0x8A6A1E); shade = Hex(0x543F10); deep = Hex(0x2E2208);
+				break;
+			case StageEnvironmentKind.Swamp:
+				// Mud: the linen row the swamp's floor is.
+				lit = Hex(0x7A8A7C); baseTone = Hex(0x46544C); shade = Hex(0x2C3834); deep = Hex(0x1A2220);
+				break;
+			case StageEnvironmentKind.Sketchbook:
+				// Graphite smudged into the paper: the bone row's lower stops.
+				lit = Hex(0x9AA4B8); baseTone = Hex(0x626E84); shade = Hex(0x38404F); deep = Hex(0x05070C);
+				break;
+			default:
+				// Turf torn up off soil (the Forest, the Fields, the Heath): the lichen row on top, the gold
+				// row's soil under it (Gravewell's bank, Thorned Vine's torn soil).
+				lit = Hex(0x5A8A94); baseTone = Hex(0x543F10); shade = Hex(0x2A4E58); deep = Hex(0x2E2208);
+				break;
+		}
+	}
+
+	private static Color Hex(uint rgb) =>
+		new Color(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f);
+
 	private bool Standing => age < LifeSeconds;
 
 	public override void _Ready()
@@ -174,6 +252,28 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 		}
 		// The stakes, the sparks and the blood: cells on the world's grid, faded by dither.
 		Material = SpellInk.DitherByCell;
+		if (rolling)
+		{
+			StageEnvironmentKind kind = StageCatalog.GetByIndex(Global.SelectedStageIdx)?.EnvironmentKind ?? StageEnvironmentKind.Forest;
+			SoilFor(kind, out soilLit, out soilBase, out soilShade, out soilDeep);
+			furrowShader ??= GD.Load<Shader>(FurrowShaderPath);
+			furrowMaterial = new ShaderMaterial { Shader = furrowShader };
+			furrowMaterial.SetShaderParameter("facing", Facing.Normalized());
+			furrowMaterial.SetShaderParameter("half_length", HalfLength);
+			furrowMaterial.SetShaderParameter("spacing", HalfLength * 2f / Math.Max(1, LineStakes - 1));
+			furrowMaterial.SetShaderParameter("march_speed", MarchSpeed);
+			furrowMaterial.SetShaderParameter("seed", (float)(GetInstanceId() % 89));
+			furrowMaterial.SetShaderParameter("soil_lit", soilLit);
+			furrowMaterial.SetShaderParameter("soil_base", soilBase);
+			furrowMaterial.SetShaderParameter("soil_shade", soilShade);
+			furrowMaterial.SetShaderParameter("soil_deep", soilDeep);
+			furrowMaterial.SetShaderParameter(ParamMarched, 0f);
+			furrowMaterial.SetShaderParameter(ParamFallen, 0f);
+			// On the ground, under every body; it turns with the wall, so its quad lies along the march.
+			furrow = new Node2D { Name = "Furrow", ZAsRelative = false, ZIndex = DrawLayers.Ground, Material = furrowMaterial };
+			AddChild(furrow);
+			furrow.Draw += DrawFurrow;
+		}
 		if (spikedRail)
 		{
 			railStrokes = new SpellStrokes((IsRing ? ringStakes : MaxLineStakes) * 2 + 2);
@@ -212,6 +312,12 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 		QueueRedraw();
 		ground?.QueueRedraw();
 		rail?.QueueRedraw();
+		if (furrow != null)
+		{
+			furrowMaterial.SetShaderParameter(ParamMarched, marched);
+			furrowMaterial.SetShaderParameter(ParamFallen, Mathf.Clamp((age - LifeSeconds) / FurrowFallSeconds, 0f, 1f));
+			furrow.QueueRedraw();
+		}
 		if (IsRing && ringStakeBlocked == null)
 			SurveyRing();
 
@@ -220,7 +326,9 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 			if (caltrops && strewnAt < 0f)
 				Strew();
 			bool caltropsLie = strewnAt >= 0f && age - strewnAt < CaltropSeconds && caltropCount > 0;
-			if (!caltropsLie && bleedCount == 0)
+			// The furrow and the last clods go out after the wall does.
+			bool earthLies = rolling && marched > 0f && age - LifeSeconds < MathF.Max(FurrowFallSeconds, ClodFlight + ClodLie);
+			if (!caltropsLie && bleedCount == 0 && !earthLies)
 			{
 				QueueFree();
 				return;
@@ -253,6 +361,73 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 		if (MazeNavigation.Active?.IsBlockedAt(next + Facing * (HalfThickness + 6f)) == true)
 			return;
 		GlobalPosition = next;
+		marched += MarchSpeed * dt;
+		KickClods(dt);
+	}
+
+	// A clod kicked off a stake's foot every ClodEvery while the wall walks: thrown back over the furrow and
+	// a little to one side, the stake and the throw picked by a hash of how many have been kicked.
+	private void KickClods(float dt)
+	{
+		clodTimer -= dt;
+		int stakes = LineStakes;
+		while (clodTimer <= 0f)
+		{
+			clodTimer += ClodEvery;
+			uint h = ++clodsKicked * 2654435761u;
+			int stake = (int)(h % (uint)stakes);
+			float side = ((h >> 8) & 0xFF) / 255f - 0.5f;
+			float back = 0.6f + 0.4f * (((h >> 16) & 0xFF) / 255f);
+			Vector2 across = new Vector2(-Facing.Y, Facing.X);
+			clodFrom[nextClod] = ToGlobal(LineFoot(stake, stakes)) - Facing * 4f;
+			clodVelocity[nextClod] = -Facing * (70f * back) + across * (side * 60f);
+			clodBorn[nextClod] = age;
+			nextClod = (nextClod + 1) % MaxClods;
+		}
+	}
+
+	// The clods: two art pixels square or one, lit on the key's corner and shaded under it, an occlusion
+	// shadow on the ground under each while it flies; landed, they crumble away by dither.
+	private void DrawClods()
+	{
+		if (!rolling)
+			return;
+		float g = SpellInk.Grid;
+		for (int i = 0; i < MaxClods; i++)
+		{
+			float s = age - clodBorn[i];
+			if (clodBorn[i] <= 0f || s < 0f || s >= ClodFlight + ClodLie)
+				continue;
+			float t = MathF.Min(s, ClodFlight);
+			float u = t / ClodFlight;
+			Vector2 onGround = clodFrom[i] + clodVelocity[i] * t * (1f - 0.35f * u);
+			float height = 4f * ClodHeight * u * (1f - u);
+			float cover = s < ClodFlight ? 1f : 1f - (s - ClodFlight) / ClodLie;
+			Vector2 at = SpellInk.Snap(onGround - new Vector2(0f, height));
+			bool big = i % 3 != 0;
+			if (height > g)
+				DrawRect(new Rect2(SpellInk.Snap(onGround), new Vector2(big ? g * 2f : g, g)), new Color(Occ, cover));
+			if (big)
+			{
+				DrawRect(new Rect2(at.X, at.Y, g, g), new Color(soilLit, cover));
+				DrawRect(new Rect2(at.X + g, at.Y, g, g), new Color(soilBase, cover));
+				DrawRect(new Rect2(at.X, at.Y + g, g, g), new Color(soilBase, cover));
+				DrawRect(new Rect2(at.X + g, at.Y + g, g, g), new Color(soilShade, cover));
+			}
+			else
+			{
+				DrawRect(new Rect2(at.X, at.Y, g, g), new Color(i % 2 == 0 ? soilLit : soilBase, cover));
+			}
+		}
+	}
+
+	// The furrow's quad: in the wall's own frame (this child turns with it), from just behind the stakes
+	// back to where the march began, the wall's length and a little more across. The shader decides the rest.
+	private void DrawFurrow()
+	{
+		if (marched <= 0f)
+			return;
+		furrow.DrawRect(new Rect2(-marched - 4f, -HalfLength - 10f, marched + 6f, HalfLength * 2f + 20f), Colors.White);
 	}
 
 	private void HoldTheLine()
@@ -453,6 +628,7 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 	{
 		// The wall turns to face the pack; its stakes stand up on the screen. Draw in the world.
 		DrawSetTransformMatrix(GetGlobalTransform().AffineInverse());
+		DrawClods();
 		if (!Standing)
 		{
 			DrawBleeding();

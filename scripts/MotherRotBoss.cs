@@ -173,6 +173,8 @@ public partial class MotherRotBoss : BossEnemy
 	// of it back first, slick, the sacs on her back swelling as she clears the surface, and settles with
 	// a slap that throws muck. The stain soaks away under her as the fight starts.
 	protected internal override float EntranceSeconds => 3.3f;
+	protected internal override float EntranceClimaxWeight => 0.9f;
+	protected internal override Element EntranceFlareElement => Element.Poison;
 
 	private BossDeath.Piece rising;
 	private const float Surfaces = 0.9f;
@@ -209,6 +211,7 @@ public partial class MotherRotBoss : BossEnemy
 		}
 		if (stage.Crossed(Surfaces))
 		{
+			stage.Impact(0.45f);
 			stage.EmitAt(new BossDeath.Throw
 			{
 				Cell = BossDeath.Cell.Gob, Variants = 1, Color = RotColor, ColorB = new Color(0.3f, 0.4f, 0.2f),
@@ -217,6 +220,7 @@ public partial class MotherRotBoss : BossEnemy
 		}
 		if (stage.Crossed(Clears + 0.15f))
 		{
+			stage.Impact(0.7f);
 			stage.DustRing(foot, 60f, 9, new Color(0.24f, 0.32f, 0.18f, 0.6f), 0.7f, 14f);
 			stage.EmitAt(new BossDeath.Throw
 			{

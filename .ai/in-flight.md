@@ -57,10 +57,22 @@ Merged into `main-ff86ni` before that:
 
 ## 3. Branches in flight
 
-Three agents, each in its own worktree from 9a854b5 (2026-11-01): **`wip/boss-constable`** (C5, the
-Constable, `ws-wip-boss-constable`), **`wip/boss-seneschal`** (C5, the Seneschal, `ws-wip-boss-seneschal`)
-and **`wip/throne`** (C4: the hall, the Muster, the procession, `ws-wip-throne`). None flips `IsPlayable`
-or touches the world map. Expect conflicts in `BossCatalog.cs`, `RegressionChecks.ValidateBossPattern`
+Merged since the release (2026-11-01): the shield ring recoloured (Eric: Metal ring, Light motes;
+elite markers read gold), **the Seneschal** (440,000; flees at 75/50/25% and is followed; a door
+"hop" when unreachable for 12 s, beyond 5.6) and **the Constable** (400,000; holds the gate from the
+wall). Both bosses' chapters now miss only their world-map stop. Then **the Throne** (C4, 66235ac):
+the hall (`throne_room.py`, `throne_walls.py`), the Muster (hook 8 `LevelUpOpening`, `GrantLevelUps`;
+**18 levels**, moved by measurement), the procession (`ThroneProcession`, `SendBoss`; the guard stands
+down while a pair fights), its own roster (`StageBestiary.Throne.cs`). Its line misses only his boss and
+the map. Eyes: the pillars read squat, the south wall is a void, the doors are not drawn, the throne
+reads small, a pair overlaps on the player; a Throne defeat shows "Boss at 0:01" on the results.
+
+Three agents in flight: **`wip/boss-dark-wizard`** (C5, him and the ending, `ws-wip-boss-dark-wizard`,
+from 66235ac); **`wip/dungeon-move`** (C2, schema 21, `ws-wip-dungeon-move`, from 412df99; held, to land with
+the Bridge's flip and C8); **`wip/castle-preflip`** (`ws-wip-castle-preflip`, from 412df99: the Constable
+off the top of the PC screen, the bridge's XP far above the Emberdeep's, `BridgeRules`' unseeded spawns,
+a Court wall cell the player stands in). None flips `IsPlayable` or touches the world map. Expect
+conflicts in `BossCatalog.cs`, `RegressionChecks.ValidateBossPattern`
 and `.ai/enemy-behaviour.md`'s boss tables (keep both sides), and in the generated `tiles.json`,
 `detail.json` and atlas (take either side, re-run `tiles.py` and `ground_detail.py`).
 
@@ -79,14 +91,101 @@ Meteor Swarm's Breakup, Skipstone, Extinction Event and Creeping Barrage; `.ai/s
 with three tracked quests in the lower-left HUD corner, the run-start flourish; `.ai/quests-and-notes.md`).
 Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 
+## 3a. The 0.10.0 playtest fixes (Eric, 2026-11-01) - before any castle work
+
+The castle agents (`wip/boss-dark-wizard`, `wip/dungeon-move`, `wip/castle-preflip`) were cut off by the
+usage limit mid-work; their worktrees keep what they did. They resume after these. Done: bosses excluded
+from executes (e6f7dfd), Blank Folio offer weight 0.02 (63be6da), a short level-up hand keeps a
+three-card hand's card size (dd5cc6a), no two Black Tentacles rifts ever overlap, of any face (fc28f95), the chapter note's paper always
+draws (0175bab: the Fallow Fields' was missing), Black Tentacles starts at 60 px and two tentacles and
+builds to 120 and seven.
+
+1. **Boss cinematics** (merged, 83ef1d2; open: props under the lifted bodies, a reduce-motion option): no movement while a boss arrives; letterbox
+   bars, zoom, screen shake, a flare; shake in boss animations where it helps; **the player and bosses
+   always draw above every spell and effect**.
+2. **Spell visuals** (merged, 77394d4; Stormsweep's level 1 hits land up to 0.22 s later with the slower lash; the familiar icon options sheet is with Eric): Cone of Cold hard to see; Solar Flare rises from
+   under the player and the enemies; Stormsweep's crack slower at first, quicker with level; Scorching
+   Ray's icon a thinner ray into the ground; Iron Palisade's rolling walls dig up dirt; Bramble Seed withers quickly at its end instead of shrinking; its vines taper smoothly from the woody base to
+   the green (no abrupt step); a better Mirefoot icon (a stray black line at its foot); **familiar icons
+   too hard to read**: Eric picked option B, Moonlit (`wip/familiar-icons`, in flight).
+3. **Enemy pathing** (merged, a70cb11: `Enemy.Skirt`, prop clusters in the nav grid; bodies stuck 6 s+ fell from 24 to 3 across ten runs; open: crowds queuing in Cave and Dungeon passages are crowd spacing, Eric's call): every enemy sticks on terrain; an efficient fix.
+4. **Boss crowd control, and the Hollow Choir** (merged: bosses slow to 0.5 at most, a freeze, root,
+   time stop or stagger holds one 0.75 s and then not again for 2.5x as long, knockback and pulls add to
+   its walk; the Choir routes round rock, sings a crescent at you, dips when 560 px off, and revives in
+   7 s of visible song that freezing pauses. Open for Eric: are those numbers right?). Bosses are
+   immune to any crowd control that would stop them ever reaching the player (freeze and root, pulls,
+   knockback, time-stop, walls): they always keep a way to put the player in danger. The Choir's
+   freeze-pauses-revive below must still work. Then the Choir: pathing sticks; their ranged attack needs a launched attack, not a
+   circle and arrow; one too far from the player dips into the ground and reappears; a longer revive,
+   with the voices visibly walking to a fallen one to raise it, so the player sees to stop it; freezing
+   and other crowd control pause the revive.
+5. **The prologue** (merged: the taken wizards cut from real sprites, the one he missed animated with a
+   hound sniffing past him, a TEMPORARY "Replay intro" button bottom-left on the world map, Laelaps in hat,
+   mantle and star collar; open for Eric: show Tituba, Väinämöinen and Laelaps in "He took them all"
+   though secret? the hider is the title wizard, not the chosen one; keep the mantle?): wizard silhouettes look goofy - use the in-game characters' silhouettes; "You are
+   the one he missed" animates creatures searching for the wizard while he hides cleverly; a button on
+   the world map to replay the intro, **for testing, to be removed later**. And **Laelaps wears the
+   wizard outfit** (the familiar hound's hat, mantle and star collar, `tools/art/laelaps.py`).
+6. **Wizard clues and the ice lake** (merged: a cue in each site's language from its direction, the line
+   fading in on a dithered capsule clear of the quest tracker, Vainamoinen in a block at the centre of a
+   640 px living lake, clue lines in italics under each chapter note's intro (the intro now upright), and
+   **`Announcements`: one message on screen at a time**, the boss banner never waiting; First Blood in
+   the opening now waits about 11 s, one constant. Open for Eric: keep the vague vault clue?): every wizard's hint becomes a cue in the world from its direction
+   (the singer: musical notes drifting in from his side, and his singing heard), its line fading in on
+   screen as a hint rather than in a speech bubble; all wizards' clues this way. The wizard trapped in
+   ice sits in the centre of a large, magically animated lake (the current art reads corny).
+7. **Music** (merged: Eric listened and said "Merge it", 2026-11-01): drums and bass from bar one in each chapter's own rhythm, the
+   melody back at pace minute 5, a boss layer per chapter, a 1 s menu handover; +2.6 MB per release zip.
+   Open: the melody leaves at 0:24 until minute 5; no melody under the boss layer; the castle's stems
+   left for their flip. The menu's music should give way to more interesting, thematic battle music for each level.
+   And **the Elder God Maw opens with a deep, scary crash** (a new generated sound, by
+   `.ai/audio-direction.md`).
+8. **Ground per chapter** (merged: the Emberdeep on cracked basalt with smouldering seams and molten
+   lava, the Frozen Waste on packed snow over crazed ice; the rest passed the audit. Open for Eric: the
+   Ruins' plain slate floor as broken paving? the lava too loud over 15 min? the Frozen Waste now the
+   lightest floor): every chapter's ground should read as its place; "Emberdeep doesn't look like
+   cracked volcanic earth." A ground pass through `tools/art/tiles.py` and the chapters' terrain
+   modules (`.ai/terrain.md` first), the Emberdeep first.
+12. **Done** (Eric, 2026-11-01; eyes merged: round 4 px pairs placed by `tools/art/title_eyes.py`, each
+   blinking on its own clock by frames, the 24 whole-screen eye layers removed): the title screen's eyes in the dark "don't always look like eyes. they
+   should all be circular and blink, and be randomly spread out rather than some being on top of each
+   other" (`.ai/title-screen.md`, "The eyes in the dark blink" was already on its not-done list); and
+   **announcements must never stack** (the Forest's opening under First Blood) - with the clues agent.
+11. **Done:** the Test Wizard is off character selection (69986af); the Sketchbook's boss is **Elim**
+   (b3695cf). **Waiting on Eric:** Elim's "it's wizarding time" drawing, to show when he arrives - it is
+   not in the repo or this PC's Downloads or Pictures.
+9. **Make the Apotheosis visible** (merged: an "Apotheosis" section atop the Ascensions browser with the
+   starting spell's checklist and the form, "Apotheosis: <form>" on character select, the form after the
+   Ascension on the pause screen; its name always shows, its line stays sealed until first offered) ("make it clearer that apotheosis is an option, showing in
+   'ascensions', etc"). Today the Ascensions browser never mentions it (`LevelUpMenu.Ascensions.cs` does not
+   read `ApotheosisCatalog`); a player meets it only when the strip offers it. Show the wizard's own
+   Apotheosis in the browser with its four requirements and their progress, and name it where the
+   wizard is chosen and where the starting spell's evolutions are shown.
+10. **Design, in flight** (`wip/design-wizards-combos`, docs only): a wizard to free in every chapter
+   (`.ai/chapter-wizards.md`), and combination spells beginning with Sagittarius = Hunter's Draw +
+   Starfall/Constellation (`.ai/combo-spells.md`). **Both approved by Eric, 2026-11-01** (only the starters
+   a new save holds must open on one element; Ma Liang for the Sketchbook); nothing built yet.
+   **Decided:** a combination needs both parents fully ascended, each through one specific named
+   Ascension (revision of the doc in flight).
+
 ## 4. Waiting on Eric
 
 - **Playtest 0.10.0** (50 HP, scarce healing, tougher chapters and bosses). Fixes from it come
   before the castle.
-- From 2026-11-01's pieces: the shield ring (`ShieldAura`, shared by Aegis Ward, Protective Ward and
-  Vaultguard) is still Arcane violet though Aegis is Light and Metal, and is opaque now - recolour it?
-  Whether the Court Falconer's hawk reads as a bird and the Huntsman's horn as a horn at game size
-  (the Falconer throws a bolt, not the hawk: a hawk would be a new projectile scene).
+- **REMIND ERIC once he has played the Throne:** he kept all five of these (2026-11-01) and asked to
+  be reminded to check them again after testing.
+  **The Throne's departures from 6.x** (C4 agent, merged as built, each a constant to change): the
+  guard stands down while a pair fights (with it, auto-aim spent the spells on the swarm and no boss
+  health worked); the Muster is 18 levels, not 17 (at 17 the bot never reached the Apotheosis); elites
+  and the miniboss clock are off there, chests fixed at 2 + 1 + 1; a pair's banner is the two names,
+  his is his tagline, a 4 s beat before him. Its `ChapterDifficulty` row is still the Emberdeep's
+  stand-in and was measured with one build: a tuning pass across wizards is wanted before the flip.
+- **Decided 2026-11-01: bosses are excluded from execution abilities** (done: the Reaper's Scythe's
+  execute skips a `BossEnemy`; the Morrigan's peck already spared elites and bosses; the Greataxe's
+  Headsman only doubles damage, so it is not an execute). A new execute must skip bosses too.
+- From 2026-11-01's pieces: whether the Court Falconer's hawk reads as a bird and the Huntsman's horn
+  as a horn at game size (the Falconer throws a bolt, not the hawk: a hawk would be a new projectile
+  scene); whether the Constable's many 12 s yard visits feel repetitive.
 - **Decided 2026-11-01:** achievements count the moment they are met (done: `Node2DGame.RecordAchievementNow`);
   the Sketchbook stays open for saves that already played it (no change); the Dark Wizard is a
   silhouette only in the prologue (done, `tools/art/prologue.py`); Thorned Vine stays as it is until
@@ -106,10 +205,10 @@ Every other `wip/*` branch is fully merged and can be deleted on GitHub.
 In this order. Fixes from the 0.10.0 playtest come before anything below.
 
 1. ~~The pixel-art pass on Sleet Runes and Aegis Ward~~ and ~~C6~~: done, in 0.10.0.
-2. The castle, by `.ai/endgame-castle.md` section 9.2: C5 (the Constable and the Seneschal in flight;
-   the dark wizard after C4), C4 (in flight), C2 (**schema 21**), C8, C9; each chapter's `IsPlayable`
-   flips last. The bridge's flip needs C2, the Constable and C8 (a playable chapter with no map stop
-   is a validator fault), so those three land together.
+2. The castle, by `.ai/endgame-castle.md` section 9.2: C5 (~~the Constable~~, ~~the Seneschal~~; the
+   dark wizard after C4), C4 (in flight), C2 (**schema 21**, in flight), C8, C9; each chapter's
+   `IsPlayable` flips last. The bridge's flip needs C2, the pre-flip fixes and C8 (a playable chapter
+   with no map stop is a validator fault), so those land together.
 3. The rest of the secrets catalogue, `.ai/achievements-and-secrets.md` section 8.
 
 ## 6. How the cloud session worked
@@ -123,6 +222,16 @@ most merges: keep both sides. **Five agents at once hit the 5-hour limit within 
 or three goes further, and agents should keep tool output short.
 
 ## 7. Loose ends
+
+- **`_BossProbe` drops drain ticks on a loaded machine**: at its default `--timescale=8` a slow frame's
+  delta covers several 0.25 s ticks but `sinceDrain = 0` grants one, so a fight measures longer under
+  load (Elderbark 118 s with three agents' Godots running, 40.7 s at `--timescale=2`). Subtract the
+  interval instead of zeroing, or read fight lengths at `--timescale=2` when other Godots are running.
+
+- **An intermittent `InvalidOperationException: Handle is not initialized`** (a freed Godot object used
+  from C#): seen 2026-11-01 in `SpawnEnemy` (a Throne run), inside `RegressionChecks.ValidateFear` (a phone
+  validator run) and once in `_BossProbe --stage=7`; gone on rerun. Not from any one merge. Worth
+  catching with a stack trace and a guard on the stale reference.
 
 - On this PC the headless `--import` often finishes its work and then never exits: judge it by its
   log reaching "post-reimport operations", and run it under `timeout`.

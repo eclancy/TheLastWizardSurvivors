@@ -1,0 +1,431 @@
+# -*- coding: utf-8 -*-
+"""Chapter hint cues - what drifts in from the edge of the screen when something out there calls.
+
+Run: python tools/art/hint_cues.py
+
+One sheet, assets/bonelight/effects/hint-cues.png: five rows (one per cue) of eight 16x16 cells,
+authored 1:1 and drawn at x3 by StageHintCue (48 world units, the attack icons' size - x2 was a
+speck on the phone). See .ai/side-events.md, "Hints that something is out there".
+
+WHY (Eric, playing 0.10.0): "The clues for each wizard should not just be text and an arrow. For
+example, for the singing wizard, once in a while, the player should see musical notes on screen in
+the direction of the wizard, and should hear the singing as well." So a hint is now a thing seen as
+well as heard: a few marks in the site's own language come in from the edge of the screen on the
+side the sound came from, drift a little way in and fade, on the beat of the sound. The words fade
+in after them.
+
+THE ROW ORDER IS AN API: HintCue's order (scripts/StageHintCatalog.cs).
+
+  leaves   the grove      a leaf tumbling, eight frames of one turn - "leaves whispering, though
+                          there is no wind", so the leaves move and nothing blows them
+  echo     the cell       one arc of a voice, in eight directions: the arc bulges the way it
+                          travels, toward the player, so three in a row read as a call coming down
+                          a corridor (column = direction, 0 = east, then every 45 degrees clockwise)
+  wisp     the lanterns   a cold flame, eight frames of a flicker - one of his lights, far off
+  song     the thaw       a quaver, a pair beamed, a crotchet, a minim (0-3), then a frost glint
+                          in four sizes (4-7) that trails each note
+  bell     the caravan    the caravan bell swung two pixels left to two right (0-4), then the
+                          ring of a strike - one arc moving out in three steps (5-7) - beside the bell
+                          on the right and mirrored on the left
+
+Each wears its event's far-tell colour (SideEvent.FarTellColor) as its body, so the cue is the
+colour of the light the player will find: wind's ramp for the grove's lichen grey-green, arcane
+cyan for the cell, poison for the lanterns, ice for the thaw, metal for the caravan's pale steel.
+They are light, not things, so they come from the emissive ramps (.ai/art-direction.md section 3,
+"Elements are emissive"): a bright stop on the key-facing edge, the tell colour in the body, the
+ramp's dark end on the far edge. Every glyph has a 1 px occlusion outline, eight ways, which is
+what keeps it readable over the Fallow Fields' pale ground, the Sketchbook's paper and the swarm.
+"""
+
+import math
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import bonelight as bl
+import raster
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+OUT = os.path.join(ROOT, "assets", "bonelight", "effects", "hint-cues.png")
+PREVIEW = os.path.join(ROOT, "tools", "art", "_hint_cues_preview.png")
+
+CELL = 16
+COLS = 8
+OCC = bl.OCC
+SS = 4   # supersampling for the drawn shapes: a pixel is in a shape if half its subsamples are
+
+
+def ramp_of(name):
+    """(lit, body, shade, core) for a cue."""
+    if name == "leaves":
+        w = bl.ELEMENTS["wind"]            # white, #EAFCF6, #B4EEE0, #4FAE9E
+        return (w[1], w[2], w[3], w[0])
+    if name == "echo":
+        return (bl.tone("arcane", "hi"), bl.tone("arcane", "lit"), bl.tone("arcane", "base"), bl.tone("arcane", "hi"))
+    if name == "wisp":
+        p = bl.ELEMENTS["poison"]
+        return (p[1], p[2], p[3], p[0])
+    if name == "song":
+        i = bl.ELEMENTS["ice"]
+        return (i[1], i[2], i[3], i[0])
+    if name == "bell":
+        m = bl.ELEMENTS["metal"]
+        return (m[1], m[2], m[3], m[0])
+    raise ValueError(name)
+
+
+# --- masks ---------------------------------------------------------------------------------------
+
+def from_rows(rows):
+    assert len(rows) == CELL, len(rows)
+    mask = set()
+    for y, row in enumerate(rows):
+        assert len(row) == CELL, (y, row)
+        for x, ch in enumerate(row):
+            if ch == "#":
+                mask.add((x, y))
+    return mask
+
+
+def sampled(inside):
+    """A mask from a point test in cell coordinates (0..16), supersampled."""
+    mask = set()
+    for y in range(CELL):
+        for x in range(CELL):
+            hits = 0
+            for sy in range(SS):
+                for sx in range(SS):
+                    if inside(x + (sx + 0.5) / SS, y + (sy + 0.5) / SS):
+                        hits += 1
+            if hits * 2 >= SS * SS:
+                mask.add((x, y))
+    return mask
+
+
+def leaf(frame):
+    """A leaf turning over: its long axis rotates and it foreshortens as it goes edge-on."""
+    angle = frame * math.pi / 4.0
+    # The width breathes with the turn so it reads as flipping, not just spinning.
+    width = 0.66 + 0.30 * abs(math.cos(frame * math.pi / 4.0 * 1.5))
+    ca, sa = math.cos(angle), math.sin(angle)
+    cx, cy = 8.0, 8.0
+
+    def inside(x, y):
+        u = (x - cx) * ca + (y - cy) * sa
+        v = -(x - cx) * sa + (y - cy) * ca
+        if u < -5.6 or u > 5.6:
+            # the stalk, one pixel thick, off the back end
+            return -7.0 <= u < -5.6 and abs(v) < 0.55
+        half = width * 3.6 * math.sqrt(max(0.0, 1.0 - (u / 5.6) ** 2)) * (1.0 + 0.15 * (u / 5.6))
+        return abs(v) <= half
+    mask = sampled(inside)
+    # the midrib: the axis, marked by the shade tone in paint()
+    rib = set()
+    for t in range(-9, 10):
+        u = t * 0.5
+        px = int(math.floor(cx + u * ca))
+        py = int(math.floor(cy + u * sa))
+        if (px, py) in mask:
+            rib.add((px, py))
+    return mask, rib
+
+
+def echo(direction):
+    """One arc of a voice, bulging toward travel: direction 0 = east, clockwise in 45 degree steps."""
+    a = direction * math.pi / 4.0
+    dx, dy = math.cos(a), math.sin(a)
+    # The arc is part of a circle centred BEHIND the cell, so its convex side faces the travel.
+    ox, oy = 8.0 - dx * 4.6, 8.0 - dy * 4.6
+    r_out, r_in = 8.0, 6.1
+
+    def inside(x, y):
+        px, py = x - ox, y - oy
+        d = math.sqrt(px * px + py * py)
+        if d < r_in or d > r_out:
+            return False
+        cosang = (px * dx + py * dy) / max(1e-6, d)
+        return cosang >= math.cos(math.radians(50.0))
+    return sampled(inside), set()
+
+
+def wisp(frame):
+    """A cold flame: a teardrop on its side flickering - the tip sways, the body breathes."""
+    sway = [0.0, 0.8, 1.4, 0.9, 0.0, -0.8, -1.3, -0.7][frame]
+    tall = [6.6, 7.2, 6.4, 7.6, 6.9, 6.2, 7.4, 6.8][frame]
+    wide = [3.4, 3.2, 3.6, 3.1, 3.4, 3.6, 3.2, 3.5][frame]
+    base_y = 12.5
+
+    def inside(x, y):
+        h = base_y - y          # height above the foot of the flame
+        if h < -2.6:
+            return False
+        if h < 0:
+            # the round bottom of the drop
+            return (x - 8.0) ** 2 / (wide * wide) + (h / 2.6) ** 2 <= 1.0
+        if h > tall:
+            return False
+        f = h / tall
+        cx = 8.0 + sway * f * f
+        half = wide * (1.0 - f) ** 0.8
+        return abs(x - cx) <= half
+    mask = sampled(inside)
+    # The core: the bottom middle of the flame, white-hot (marked as "rib" so paint() gives it the core).
+    core = set(p for p in mask if abs(p[0] + 0.5 - 8.0) <= 1.0 and 9 <= p[1] <= 12)
+    return mask, core
+
+
+NOTES = {
+    "quaver": [
+        "................",
+        "........#.......",
+        "........##......",
+        "........###.....",
+        "........#.##....",
+        "........#..##...",
+        "........#...#...",
+        "........#...#...",
+        "........#..#....",
+        "........#.......",
+        "........#.......",
+        "....#####.......",
+        "...######.......",
+        "...#####........",
+        "....###.........",
+        "................",
+    ],
+    "beamed": [
+        "................",
+        "................",
+        ".......########.",
+        ".......########.",
+        ".......#......#.",
+        ".......#......#.",
+        ".......#......#.",
+        ".......#......#.",
+        ".......#......#.",
+        "...#####..#####.",
+        "..######.######.",
+        "..#####..#####..",
+        "...###....###...",
+        "................",
+        "................",
+        "................",
+    ],
+    "crotchet": [
+        "................",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".....#####......",
+        "....######......",
+        "....#####.......",
+        ".....###........",
+        "................",
+        "................",
+    ],
+    "minim": [
+        "................",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".........#......",
+        ".....#####......",
+        "....##...#......",
+        "....#...##......",
+        ".....###........",
+        "................",
+        "................",
+    ],
+}
+
+
+def note(name):
+    mask = from_rows(NOTES[name])
+    # The head is the part that wears the core: the bottom four rows.
+    head = set(p for p in mask if p[1] >= 10 and p[0] <= 9) if name != "beamed" else set(p for p in mask if p[1] >= 9)
+    return mask, head
+
+
+def glint(size):
+    """A four-point frost glint, 1 to 4: a cross whose arms grow, with a core in the middle."""
+    arm = [1, 2, 3, 5][size]
+    mask = set()
+    for k in range(-arm, arm + 1):
+        mask.add((8 + k, 8))
+        mask.add((8, 8 + k))
+    if size >= 2:
+        for (x, y) in [(7, 7), (9, 7), (7, 9), (9, 9)]:
+            mask.add((x, y))
+    if size >= 3:
+        for k in (-1, 1):
+            mask.add((8 + k, 8 + k * 0))
+    return mask, set([(8, 8)])
+
+
+BELL = [
+    "................",
+    "................",
+    ".......##.......",
+    "......#..#......",
+    "......####......",
+    ".....######.....",
+    ".....######.....",
+    ".....######.....",
+    "....########....",
+    "....########....",
+    "...##########...",
+    "...##########...",
+    "......####......",
+    ".......##.......",
+    "................",
+    "................",
+]
+
+
+def bell(swing):
+    """The caravan bell on its rope, swung by shearing it about the loop: the lip moves `swing`
+    pixels, the rows above it proportionally less. A sheared pixel bell reads as a swing where a
+    rotated one breaks up into stairs at this size."""
+    upright = from_rows(BELL)
+    mask = set()
+    for (x, y) in upright:
+        mask.add((x + int(round(swing * max(0, y - 2) / 9.0)), y))
+    clapper = set((x + int(round(swing * max(0, y - 2) / 9.0)), y) for (x, y) in upright if y >= 12)
+    return mask, clapper
+
+
+def ring(step):
+    """The ring of a strike: one short arc, moving out over three steps, drawn on the RIGHT of the bell
+    and mirrored on the left by the code. Its centre of curvature is at (1.5, 8), which StageHintCue
+    puts on the bell's own centre, so the arc stands clear of the lip. (Nested arcs in one cell ran
+    together through their outlines.)"""
+    radii = [[6.6], [8.6], [10.8]][step]
+
+    def inside(x, y):
+        px, py = x - 1.5, y - 8.0
+        d = math.sqrt(px * px + py * py)
+        if px <= 0 or not any(r - 0.75 <= d <= r + 0.55 for r in radii):
+            return False
+        return abs(math.atan2(py, px)) <= math.radians(38.0)
+    return sampled(inside), set()
+
+
+ROWS = [
+    ("leaves", [leaf(f) for f in range(8)]),
+    ("echo", [echo(d) for d in range(8)]),
+    ("wisp", [wisp(f) for f in range(8)]),
+    ("song", [note("quaver"), note("beamed"), note("crotchet"), note("minim"),
+              glint(0), glint(1), glint(2), glint(3)]),
+    ("bell", [bell(-2), bell(-1), bell(0), bell(1), bell(2), ring(0), ring(1), ring(2)]),
+]
+
+
+def paint(mask, inner, tones):
+    """Key-facing edge lit, far edge shaded, body between; the inner marks (a rib, a core, a
+    note's head, a clapper) in the core or the shade; and the eight-way occlusion outline."""
+    lit, body, shade, core = tones
+    c = raster.Canvas(CELL, CELL)
+    for (x, y) in mask:
+        if (x, y - 1) not in mask or (x - 1, y) not in mask:
+            c.set(x, y, lit)
+        elif (x, y + 1) not in mask or (x + 1, y) not in mask:
+            c.set(x, y, shade)
+        else:
+            c.set(x, y, body)
+    for p in inner:
+        if p in mask:
+            c.set(p[0], p[1], core)
+    for y in range(CELL):
+        for x in range(CELL):
+            if (x, y) in mask:
+                continue
+            if any((x + dx, y + dy) in mask for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+                c.set(x, y, OCC)
+    return c
+
+
+def paint_rib(mask, rib, tones):
+    """A leaf: as paint(), but the midrib in the shade tone - a vein, not a glow."""
+    lit, body, shade, core = tones
+    c = paint(mask, set(), tones)
+    for p in rib:
+        if p in mask and (p[0], p[1] - 1) in mask and (p[0] - 1, p[1]) in mask:
+            c.set(p[0], p[1], shade)
+    return c
+
+
+def paint_bell(mask, clapper, tones):
+    """The clapper hangs under the lip in the ramp's dark end, a separate thing from the bell."""
+    c = paint(mask, set(), tones)
+    for p in clapper:
+        c.set(p[0], p[1], tones[2])
+    return c
+
+
+def main():
+    from PIL import Image
+
+    d = os.path.dirname(OUT)
+    if not os.path.isdir(d):
+        os.makedirs(d)
+
+    sheet = Image.new("RGBA", (CELL * COLS, CELL * len(ROWS)), (0, 0, 0, 0))
+    ok = True
+    for r, (name, cells) in enumerate(ROWS):
+        tones = ramp_of(name)
+        assert len(cells) == COLS, name
+        for col, (mask, inner) in enumerate(cells):
+            for (x, y) in mask:
+                if x < 1 or y < 1 or x > CELL - 2 or y > CELL - 2:
+                    ok = False
+                    print("GLYPH %s %d touches the cell border at (%d, %d)" % (name, col, x, y))
+            if name == "leaves":
+                c = paint_rib(mask, inner, tones)
+            elif name == "bell" and col < 5:
+                c = paint_bell(mask, inner, tones)
+            else:
+                c = paint(mask, inner, tones)
+            bad = c.audit()
+            if bad:
+                ok = False
+                print("OFF-CONTRACT COLOURS in %s %d:" % (name, col))
+                for h, cnt in bad[:5]:
+                    print("   %s  x%d" % (h, cnt))
+            sheet.alpha_composite(c.img, (col * CELL, r * CELL))
+        print("  %-7s %s px" % (name, " ".join("%3d" % len(m) for m, _ in cells)))
+    sheet.save(OUT)
+
+    # The preview on the grounds that matter: the reference stone, the Fallow Fields' pale field and
+    # the Sketchbook's paper, where the outline is what keeps a pale glyph from dissolving.
+    zoom = 6
+    floors = [bl.tone("stone", "base"), bl.tone("steel", "lit"), "#E8E2CF"]
+    pw, ph = CELL * COLS * zoom, CELL * len(ROWS) * zoom
+    preview = Image.new("RGBA", (pw * len(floors) + 12 * (len(floors) + 1), ph + 24), (5, 7, 12, 255))
+    big = sheet.resize((pw, ph), Image.NEAREST)
+    for f, floor in enumerate(floors):
+        x = 12 + f * (pw + 12)
+        preview.paste(raster.rgb(floor), (x, 12, x + pw, 12 + ph))
+        preview.alpha_composite(big, (x, 12))
+    preview.convert("RGB").save(PREVIEW)
+
+    if not ok:
+        return 1
+    print("")
+    print("%d cues x %d cells, palette clean -> %s" % (len(ROWS), COLS, os.path.relpath(OUT, ROOT)))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

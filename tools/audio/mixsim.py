@@ -413,24 +413,33 @@ MUSIC_DIR = os.path.join(ROOT, "assets", "music")
 MUSIC_SCRATCH = os.path.join(HERE, "_music_preview")
 
 
-# Which stems MusicPlayer has up in each scenario, as (label, stems) rows. Early game: the bed
-# alone, because the arena has not filled to the pulse threshold - and bed + pulse, which is
-# where most of a run sits once it has. Late game: everything, because the pulse is on and the
-# last third of the run brings the lead. The boss: the shared boss loop, which replaces the set
-# and is measured once rather than per chapter.
-def music_rows(key, set_name):
+# Which stems MusicPlayer has up in each scenario, as (label, stems) rows (2026-11-01: battle music
+# from the first second). Early game: bed + pulse, which is up from the first downbeat and never
+# gated now - and all three, the opening statement and every elite. Late game: everything, because
+# pace minute 5 brings the lead for good. The boss: every stem plus the chapter's boss layer where
+# it has one (music_dir/<set>_boss.wav); a set without one hands over to the shared boss loop, which
+# is measured once rather than per chapter.
+def music_rows(key, set_name, music_dir=None):
+    three = [set_name + "_bed", set_name + "_pulse", set_name + "_lead"]
     if key == "earlygame":
-        return [("bed", [set_name + "_bed"]),
-                ("bed+pulse", [set_name + "_bed", set_name + "_pulse"])]
+        return [("bed+pulse", three[:2]), ("all three", three)]
     if key == "lategame":
-        return [("all three", [set_name + "_bed", set_name + "_pulse", set_name + "_lead"])]
+        return [("all three", three)]
+    if key == "boss" and music_dir is not None and (
+            os.path.isfile(os.path.join(music_dir, set_name + "_boss.wav"))
+            or os.path.isfile(os.path.join(MUSIC_DIR, set_name + "_boss.wav"))):
+        # The lead rests while the boss layer plays (Node2DGame.PlayBossMusic): all four measured
+        # 2 dB over the shared loop and cost a median cast 3.3 dB of its headroom over the music.
+        return [("bed+pulse+boss", three[:2] + [set_name + "_boss"])]
     return []
 
 
 def music_sets(music_dir, wanted):
-    """Every chapter set with a bed in music_dir, or only the ones named with --sets."""
-    found = sorted(set([f[:-len("_bed.wav")] for f in os.listdir(music_dir)
-                        if f.endswith("_bed.wav")]))
+    """Every chapter set with a bed in music_dir, or only the ones named with --sets. A scratch
+    render of some stems borrows the rest from assets/music/ (load_music), so it counts the sets
+    there too."""
+    found = sorted(set([f[:-len("_bed.wav")] for d in set([music_dir, MUSIC_DIR])
+                        for f in os.listdir(d) if f.endswith("_bed.wav")]))
     return [n for n in found if not wanted or n in wanted]
 
 
@@ -497,8 +506,11 @@ def report_music_sets(key, seconds, mix, swarm_only, stats, criticals, sets, mus
     """One line per chapter set and stem combination - the compact form of report_music, so
     nine chapters can be measured against one simulated fight."""
     if key == "boss":
+        # The shared loop, for the sets that still hand over to it; the per-set rows below are the
+        # chapters that meet their boss with their own layer.
         report_music(key, seconds, mix, swarm_only, stats, criticals, ["boss_loop"], music_dir)
-        return
+        if not any([music_rows(key, s, music_dir) for s in sets]):
+            return
     limited, _r = soft_limit(mix)
     with_swarm = cue_headroom(stats["cues"], swarm_only)
     print("            %-11s %-10s %6s %6s | %7s %7s %14s | %7s | %s"
@@ -507,7 +519,7 @@ def report_music_sets(key, seconds, mix, swarm_only, stats, criticals, sets, mus
     for set_name in sets:
         # One set's stems at a time: nine sets of looped stems held at once is gigabytes.
         _STEM_CACHE.clear()
-        for label, names in music_rows(key, set_name):
+        for label, names in music_rows(key, set_name, music_dir):
             music = load_music(names, seconds, music_dir)
             n = min(len(limited), len(music))
             under = [swarm_only[i] + music[i] for i in xrange(n)]

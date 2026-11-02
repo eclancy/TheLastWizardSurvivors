@@ -166,6 +166,20 @@ public partial class LevelUpMenu
 		// One tree per row in both shapes. Thirty between trees, against six inside one: the space
 		// is what says where one spell's fork ends and the next spell begins.
 		const int columns = 1;
+
+		// The wizard's own Apotheosis first, above every Ascension (BuildApotheosisTree). A wizard with
+		// none - the Test Wizard - and a tome without his spell have no entry.
+		EquippedSpellInfo formSpell = spells.FirstOrDefault(s => s?.Apotheosis != null);
+		if (formSpell != null)
+		{
+			var nodeStops = new List<Control>();
+			var pathStops = new List<Control>();
+			Control tree = BuildApotheosisTree(formSpell, formSpell.Apotheosis, narrow, nodeStops, pathStops);
+			stops.Add((nodeStops, pathStops));
+			SpaceTrees(CodexRows.AddSection(list, "✶ Apotheosis", $"{formSpell.DisplayName}'s final form", ApotheosisSectionInk,
+				columns, new List<Control> { tree }));
+		}
+
 		if (ready.Count > 0)
 			SpaceTrees(CodexRows.AddSection(list, "Ready", SpellCount(ready.Count), ink, columns, ready.Select(BuildOne).ToList()));
 		if (waiting.Count > 0)
@@ -536,14 +550,120 @@ public partial class LevelUpMenu
 		return (outer, plate, stop);
 	}
 
+	// ---- the Apotheosis, at the top of the browser -----------------------------------------------
+	//
+	// Eric's playtest (2026-11-01): "Let's make it clearer that apotheosis is an option, showing in
+	// 'ascensions', etc." The browser never said a wizard had one - it did not read ApotheosisCatalog -
+	// so the first a player heard of it was the strip offering it at level 23. Now it is the first tree
+	// on the page, drawn as the Ascensions under it are: the spell on top with every gate and the run's
+	// progress on it (Player.BuildApotheosisPreview), an arrow, and the form on the ember plate the
+	// strip's button and the evolution page already use. It reports and is never pressed; the strip
+	// stays the only place the form is taken.
+	//
+	// Sealed as the paths are (section 4e), with one difference: the NAME is always shown, because the
+	// character select names it too ("Apotheosis: Cataclysm") - it is the promise. What the form does
+	// and its picture wait for the first level-up that offers it (AscensionSightings, keyed spell:form
+	// exactly as Record writes it). The level 8 path it names is sealed while the spell's own tree
+	// seals it, so this entry can never name a path the tree under it calls "???".
+
+	// The section's heading and rule in the ember inks: Fire hot on the floor's brightest stone is
+	// 6.2:1 (a heading needs 3), Fire mid as a rule 3.3:1. The tally keeps the other sections' ink.
+	private static readonly CodexRows.Palette ApotheosisSectionInk = new()
+	{
+		Heading = CardFamilyArt.ApotheosisTitle,
+		InkMeta = CodexRows.Stone.InkMeta,
+		Rule = CardFamilyArt.ApotheosisSoft,
+	};
+
+	private StyleBoxTexture emberPlateResting, emberPlateLit;
+
+	private Control BuildApotheosisTree(EquippedSpellInfo spell, ApotheosisPreview apotheosis, bool narrow,
+		List<Control> nodeStops, List<Control> pathStops)
+	{
+		// The checklist: every gate, met or not. Once taken it says what the spell became instead.
+		var lines = new List<Control>();
+		if (apotheosis.Taken)
+			lines.Add(BuildRequirementGlyphText($"Became {apotheosis.FormName}", "done", CodexRows.Vellum.Reward, expand: narrow));
+		else
+			foreach (AscensionRequirement gate in apotheosis.Requirements)
+				lines.Add(BuildRequirementLine(gate, wrap: narrow, pathSealed: IsPathSealed(spell, gate)));
+
+		// The pips run to level 8, the level the form is taken from (Player.AscensionSpellLevel).
+		int pips = Player.AscensionSpellLevel;
+		int level = Mathf.Min(spell.CurrentLevel, pips);
+		Control node = BuildTreeNode($"apotheosis_{spell.Id}", spell.DisplayName, spell.Icon, $"Level {level}", pips, level, -1,
+			apotheosis.Offered, lines, narrow, focusStop: true, nodeStops);
+
+		bool lit = apotheosis.Offered || apotheosis.Taken;
+		bool revealed = apotheosis.Taken || AscensionSightings.IsRevealed(this, spell.Id, apotheosis.FormId, apotheosis.Offered);
+		// The full width on a phone, so the form's name never breaks; three fifths on a PC, which keeps
+		// its line to two rows and the plate one band.
+		float share = narrow ? 1f : 0.6f;
+		(Control plate, Control stop) = BuildApotheosisPlate(spell.Id, apotheosis, revealed, lit);
+		pathStops.Add(stop);
+		return BuildTree($"ApotheosisTree_{spell.Id}", node, new List<(Control, Control)> { (plate, plate) },
+			new List<bool> { lit }, narrow, sideBySide: true, loneShare: share);
+	}
+
+	// The Apotheosis's level 8 path, unmet and never stood in front of: the spell's own tree shows it as
+	// "???" (BrowserPaths), and this line must not name it either.
+	private bool IsPathSealed(EquippedSpellInfo spell, AscensionRequirement gate)
+	{
+		if (gate.Kind != AscensionRequirementKind.Path || gate.Met || gate.MilestoneLevel < Player.AscensionSpellLevel)
+			return false;
+		bool metNow = spell.Ascensions?.Any(a => a != null && a.Id == gate.PathId && a.IsAvailable) == true;
+		return !AscensionSightings.IsRevealed(this, spell.Id, gate.PathId, metNow);
+	}
+
+	/// <summary>The form on the ember plate: lit when offered or taken, dimmed while it waits, never pressable.</summary>
+	private (Control Plate, Control Stop) BuildApotheosisPlate(string spellId, ApotheosisPreview apotheosis, bool revealed, bool lit)
+	{
+		emberPlateResting ??= CardFamilyArt.Frame(CardFamily.Apotheosis, false, 0);
+		emberPlateLit ??= CardFamilyArt.Frame(CardFamily.Apotheosis, true, 0);
+		var plate = new PanelContainer
+		{
+			Name = $"ApotheosisPath_{spellId}",
+			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+			// The frame only, as on the Ascension plates: dimming can only darken the ground under light ink.
+			SelfModulate = lit ? Colors.White : revealed ? PathSeenDim : PathSealedDim,
+		};
+		plate.AddThemeStyleboxOverride("panel", lit ? emberPlateLit : emberPlateResting);
+
+		// A pad's stop, as each Ascension plate has: it does nothing pressed and ignores the mouse.
+		Button stop = BonelightSkin.MakeCardClickOverlay(true);
+		stop.Name = "PathFocus";
+		stop.MouseFilter = Control.MouseFilterEnum.Ignore;
+		plate.AddChild(stop);
+
+		List<Control> marks = null;
+		if (apotheosis.Taken)
+			marks = new List<Control> { BuildRequirementGlyphText("Chosen", "done", CodexRows.Stone.Reward, expand: false) };
+		else if (apotheosis.Closed)
+			marks = new List<Control> { BuildRequirementGlyphText("Out of reach this run", "lock", CodexRows.Stone.InkMeta, expand: false) };
+		plate.AddChild(BuildPathContent(revealed, lit, apotheosis.Icon, Colors.White, apotheosis.FormName, apotheosis.Description,
+			marks, small: false, CardFamily.Apotheosis, sealedName: apotheosis.FormName, extrasWhenSealed: true));
+		return (plate, stop);
+	}
+
 	/// <summary>
 	/// What is written on a path's plate: icon, name and what it does - or, sealed, the seal, "???"
 	/// and one line saying why. <paramref name="extras"/> (the choice page's tag, element line and
 	/// advice) are left out of a sealed path, since each would give part of it away.
 	/// </summary>
+	/// <param name="family">The plate it is written on: obsidian (an Ascension) or ember (the Apotheosis), for the inks.</param>
+	/// <param name="sealedName">What a sealed plate is called: "???", or for the Apotheosis its name, which the character select already says.</param>
+	/// <param name="extrasWhenSealed">Keep the extras on a sealed plate: the Apotheosis's "out of reach" gives nothing away.</param>
 	private Control BuildPathContent(bool revealed, bool met, Texture2D icon, Color iconTint, string name, string description,
-		IEnumerable<Control> extras, bool small)
+		IEnumerable<Control> extras, bool small, CardFamily family = CardFamily.Ascension, string sealedName = SealedName,
+		bool extrasWhenSealed = false)
 	{
+		// The ember plate's inks (CardFamilyArt): Fire hot for the name, bone for what it does, Fire mid
+		// for the quiet line - the Apotheosis page's own, measured on the ember face.
+		bool ember = family == CardFamily.Apotheosis;
+		Color titleInk = ember ? CardFamilyArt.ApotheosisTitle : CardFamilyArt.AscensionTitle;
+		Color softInk = ember ? CardFamilyArt.ApotheosisSoft : CardFamilyArt.AscensionSoft;
 		// Clear of the plate's rune band and the gilt line inside it (18 drawn pixels), with air.
 		var margin = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		margin.AddThemeConstantOverride("margin_left", 22);
@@ -590,9 +710,9 @@ public partial class LevelUpMenu
 		words.AddThemeConstantOverride("separation", 6);
 		margin.AddChild(words);
 
-		Label title = CodexRows.MakeText(revealed ? name : SealedName, ResponsiveLayout.TextRole.Title, CardFamilyArt.AscensionTitle);
+		Label title = CodexRows.MakeText(revealed ? name : sealedName, ResponsiveLayout.TextRole.Title, titleInk);
 		title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		var rest = revealed ? (extras ?? Enumerable.Empty<Control>()).ToList() : new List<Control>();
+		var rest = revealed || extrasWhenSealed ? (extras ?? Enumerable.Empty<Control>()).ToList() : new List<Control>();
 		if (small)
 		{
 			// A phone's side-by-side plate is about 240 wide: beside the picture the name had 136, and
@@ -642,7 +762,9 @@ public partial class LevelUpMenu
 		}
 		else
 		{
-			words.AddChild(CodexRows.MakeText(SealedLine, ResponsiveLayout.TextRole.Label, CardFamilyArt.AscensionSoft));
+			words.AddChild(CodexRows.MakeText(SealedLine, ResponsiveLayout.TextRole.Label, softInk));
+			foreach (Control extra in rest)
+				words.AddChild(extra);
 		}
 		return margin;
 	}
@@ -671,8 +793,9 @@ public partial class LevelUpMenu
 	/// a little narrower than them, so the shape is a fork rather than a heading over two boxes; on a
 	/// phone it takes the full width, which is the scarce axis there.
 	/// </summary>
+	/// <param name="loneShare">How much of the row a lone plate takes, centred: half for a lone path.</param>
 	private Control BuildTree(string name, Control node, List<(Control Outer, Control Plate)> cards, List<bool> open,
-		bool narrow, bool sideBySide, bool spotlight = false)
+		bool narrow, bool sideBySide, bool spotlight = false, float loneShare = 0.5f)
 	{
 		var tree = new VBoxContainer
 		{
@@ -714,16 +837,17 @@ public partial class LevelUpMenu
 			var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 			row.AddThemeConstantOverride("separation", narrow ? 12 : 20);
 			// A lone path keeps half the width, centred under the node, rather than becoming a slab.
-			if (cards.Count == 1)
-				row.AddChild(Spacer(0.25f));
+			bool lone = cards.Count == 1 && loneShare < 1f;
+			if (lone)
+				row.AddChild(Spacer((1f - loneShare) / 2f));
 			foreach ((Control outer, Control _) in cards)
 			{
 				outer.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-				outer.SizeFlagsStretchRatio = cards.Count == 1 ? 0.5f : 1f;
+				outer.SizeFlagsStretchRatio = cards.Count == 1 ? loneShare : 1f;
 				row.AddChild(outer);
 			}
-			if (cards.Count == 1)
-				row.AddChild(Spacer(0.25f));
+			if (lone)
+				row.AddChild(Spacer((1f - loneShare) / 2f));
 			tree.AddChild(row);
 			// The level 8 fork's plates are choices: the ones the selection is not on step down.
 			if (spotlight)
@@ -834,8 +958,14 @@ public partial class LevelUpMenu
 			previousPaths = paths.Count > 0 ? paths : previousPaths;
 		}
 		if (previousPaths != null && after != null)
+		{
 			foreach (Control stop in previousPaths)
 				Link(stop, after, Side.Bottom);
+			// And back up into the page, to the stop just above Back in reading order. Left to geometry,
+			// up from Back landed on whatever plate was on screen - with the list at its top, the
+			// Apotheosis's - and skipped every tree in between, as the level 8 fork's Back once did.
+			Link(after, previousPaths[0], Side.Top);
+		}
 	}
 
 	// ---- the level 8 choice: one spell's fork ---------------------------------------------------
@@ -1036,7 +1166,9 @@ public partial class LevelUpMenu
 	// in the rubric on its own band - the one thing on a greyed row that is not grey.
 	// wrap: a phone, where the line is the row's width and its words wrap; on a PC each gate is one
 	// unwrapped item in a flow across the row.
-	private Control BuildRequirementLine(AscensionRequirement requirement, bool wrap)
+	// pathSealed: an Apotheosis's level 8 path the player has never stood in front of (section 4e) - the
+	// line says a sealed Ascension is wanted, never which.
+	private Control BuildRequirementLine(AscensionRequirement requirement, bool wrap, bool pathSealed = false)
 	{
 		CodexRows.Palette ink = CodexRows.Vellum;
 		bool met = requirement.Met;
@@ -1044,6 +1176,13 @@ public partial class LevelUpMenu
 
 		string text = requirement.Kind switch
 		{
+			// The Apotheosis's named paths. A path closed by taking the other one is said plainly: the
+			// form is out of reach for the run, and the lock glyph (below) is the same mark the plate wears.
+			AscensionRequirementKind.Path => met
+				? $"Level {requirement.MilestoneLevel}: {requirement.PathName}"
+				: pathSealed ? $"Level {requirement.MilestoneLevel}: a sealed Ascension"
+				: requirement.Closed ? $"Level {requirement.MilestoneLevel}: {requirement.PathName} not taken"
+				: $"Level {requirement.MilestoneLevel}: take {requirement.PathName}",
 			AscensionRequirementKind.SpellLevel => met
 				? $"Spell level {requirement.Need}"
 				: $"Spell level {requirement.Have}/{requirement.Need}  ·  {Plural(missing, "more level", "more levels")}",
@@ -1062,7 +1201,7 @@ public partial class LevelUpMenu
 		line.AddThemeConstantOverride("separation", 8);
 		if (wrap)
 			line.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		line.AddChild(RequirementGlyph(met ? "done" : "todo"));
+		line.AddChild(RequirementGlyph(met ? "done" : requirement.Closed ? "lock" : "todo"));
 
 		// The element gate shows its chips - each tappable, opening what the element does and how many
 		// the player holds - so the tag the row is asking for is the same object as on the cards. A

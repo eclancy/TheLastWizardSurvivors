@@ -222,6 +222,9 @@ public partial class StillWardenBoss : BossEnemy
 	// bursts, shards everywhere, leaving the Warden standing in the rime it brought, cold-white until
 	// the frost on it settles.
 	protected internal override float EntranceSeconds => 3.3f;
+	// The climax (BossDeath calls it on the roar): the pillar bursts a beat before the roar, and this is that burst.
+	protected internal override float EntranceClimaxWeight => 1.2f;
+	protected internal override Element EntranceFlareElement => Element.Ice;
 
 	private BossDeath.Piece frozen;
 	private const float PillarUp = 1.4f;
@@ -346,6 +349,7 @@ public partial class StillWardenBoss : BossEnemy
 
 		if (!death.Crossed(ShatterAt))
 			return;
+		death.Impact(0.9f);
 
 		var centre = new Vector2(47.5f, 52f);
 		death.Emit(new BossDeath.Throw

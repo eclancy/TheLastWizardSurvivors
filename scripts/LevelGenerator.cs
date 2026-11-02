@@ -206,9 +206,11 @@ public sealed partial class LevelGenerator
 			Topology = StageTopology.Caverns,
 		},
 
+		// Snow, not the Ruins' slate (0.10.0 ground pass): the Frozen Waste was the darkest open floor in
+		// the game. tools/art/tiles.py's snow() says why it stands a step paler than every other one.
 		[StageEnvironmentKind.Ice] = new Palette
 		{
-			GroundMaterial = "graystone",
+			GroundMaterial = "snow",
 			Blobs = new[]
 			{
 				new BlobSpec("ice", 3.2f, 2.6f, 4.4f),
@@ -356,14 +358,20 @@ public sealed partial class LevelGenerator
 			Topology = StageTopology.Authored,
 		},
 
-		// THE THRONE (stage_13, C4): Authored, one bounded hall (throne_room.py, read by the Court's reader).
-		// Stand-in: a bare floor of laid dark tile, nothing on it.
+		// THE THRONE (stage_13, C4): Authored, one closed hall (throne_room.py -> throne_room.json, read by the
+		// Court's reader). The castle's flags, the Court's red runner up the nave and its marble for the dais,
+		// all placed by the layout: the blobs are never stamped (Density 0), only listed so the painter builds
+		// their tile sources up front. No prop themes: the throne and the doors are ThroneRules'.
 		[StageEnvironmentKind.Throne] = new Palette
 		{
-			GroundMaterial = "darktile",
-			Blobs = Array.Empty<BlobSpec>(),
+			GroundMaterial = "stonetile",
+			Blobs = new[]
+			{
+				new BlobSpec("court_marble", 0f, 0f, 0f),
+				new BlobSpec("runner_red", 0f, 0f, 0f),
+			},
 			Density = 0f,
-			PropThemes = new[] { "torture" },
+			PropThemes = Array.Empty<string>(),
 			Topology = StageTopology.Authored,
 		},
 	};

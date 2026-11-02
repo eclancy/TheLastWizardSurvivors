@@ -175,8 +175,10 @@ public partial class Node2DGame
 		// fills again. Placed the way a carried chest is (never under the player).
 		PlaceChestNear(at, ChestSourceBoss);
 		spawnGraceRemaining = Mathf.Max(spawnGraceRemaining, BossRushBreatherSeconds);
+		// Back to the arena's set for the breather: its boss layer eases out under the pulse if it has
+		// one (the set never stopped), or the set crossfades back in over the shared loop if not.
 		if (runMusicSet != null)
-			runMusic?.PlaySet(runMusicSet, MusicPlayer.RunFadeInSeconds, 0f, 0f);
+			runMusic?.PlaySet(runMusicSet, MusicPlayer.BossCrossfadeSeconds, 1f, 0f);
 
 		BossDefinition next = bossRushRoster[bossRushNext];
 		ShowRunBanner($"{ShortBossName(boss)} falls  ·  {bossRushFelled} of {bossRushRoster.Count}\n{ShortBossName(next)} comes next.",
