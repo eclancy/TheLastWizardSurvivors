@@ -803,16 +803,22 @@ the two 160-column side bands to `occ` at the frame edge.
 | figure and ward | feet at (430, 256) | right of centre; `hero.wizard_hero` at h=150, as on the phone |
 | wordmark | centred x 175, cap line 14, to row ~124 | `WORD_BOX`; scales (5, 3), see below |
 | Start Run, Arcane Upgrades + Unlocks, the energy caption | (60,134)-(290,240) | `MENU_BOX`, on the dark wood under the wordmark |
-| (nothing) | (430,8)-(630,34) | `ARCANE_BOX`, top right in the canopy. The Arcane Energy readout lived here; it is the shop button's caption now. The pocket was left in the art - soft, and only as dark as it needs - rather than re-render both title sets for it; drop it from `ui_pocket_t` the next time the wide set is regenerated |
+| (nothing) | (430,8)-(630,34) | `ARCANE_BOX`, top right in the canopy. The Arcane Energy readout lived here; it is the shop button's caption now, and the pocket left `ui_pocket_t` when the wide set was regenerated on 2026-11-02 |
 | Options | (12,292)-(126,324) | `OPTIONS_BOX` |
-| Spell Index, Report a bug | (134,296)-(222,320), (230,296)-(318,320) | no pocket of their own; quiet buttons on the dark grass, clear of the ward's left rim and flame |
-| preset / next-run | (470,312)-(632,352) | `DETAIL_BOX`, right-aligned |
+| Evolution Codex | (134,296)-(236,320) | no pocket of its own; a quiet button on the dark grass, clear of the ward's left rim and flame. Report a bug stood beside it until 2026-11-02 and is in Options now |
+| difficulty | (470,312)-(632,352) | `DETAIL_BOX`, right-aligned; one line since the next-run gain line went (2026-11-02) |
 | PRESS ANY BUTTON | rows 322-346, centred | `PROMPT_BOX`; `TitleScreen.WidePromptBottomRow` = 346 |
 | version label | (4,338)-(48,356) | `VERSION_BOX`; where `AddVersionLabel` lands on a 16:9 screen |
 
 **Every one of those boxes is a dark pocket in the art** (`ui_pocket_t`), soft-edged and only as
 dark as it needs - held at full strength with a short fade, the empty ones read as black panels
-when the menu was closed. The boxes in `splash_wide.py` and the numbers in
+when the menu was closed. **The fade has to span the darkening** (`_box_t`): `_darken_rows` does
+nothing below t = 2, so a linear fade from the pocket's strength spent most of its width doing
+nothing and crossed grass-to-occlusion in the last few pixels - the prompt pocket left a ruled line
+through the grass under the ward until 2026-11-02 (Eric: "still has a distinct line in the grass").
+Each pocket now runs from t = 2 at its edge, eased, to its strength at the box; the prompt's fades
+40 along the row but only 16 up, because the ring is about 20 rows above it and a longer fade
+dimmed its bottom flame. The boxes in `splash_wide.py` and the numbers in
 `MainMenu.PinToWideArt` calls are the same rectangles: **move one, move the other.** In landscape
 a core pixel (x, y) is always at `((x - 320) * 2, (y - 180) * 2)` from the screen centre, so
 `PinToWideArt` takes the core box directly. Portrait keeps `PinToArtRows` exactly as before.

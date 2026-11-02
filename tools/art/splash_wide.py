@@ -67,24 +67,42 @@ VERSION_BOX = (C0 + 4, 338, C0 + 48, 356)     # the version label, bottom-left o
 PROMPT_BOTTOM = 346                           # TitleScreen.LandscapePromptBottomRow must agree
 
 
-def _box_t(x, y, box, strength, soft):
+def _box_t(x, y, box, strength, soft, soft_y=None):
     """A soft-edged pocket of darkness over a UI box: full `strength` inside, fading out over
-    `soft` pixels round it. Measured to the box edge, so a long box is not a long ellipse."""
+    `soft` pixels round it (`soft_y` above and below, when the room there is shorter). Measured to
+    the box edge, so a long box is not a long ellipse.
+
+    THE FADE SPANS THE DARKENING, NOT THE NUMBER. `_darken_rows` does nothing below t = 2 (its
+    first two tones are None), so a linear `strength * (1 - d/soft)` spent most of `soft` under 2
+    and crossed the whole visible range - nothing to stone.deep to occ - in the last few pixels
+    by the box. A prompt pocket at 3.3 over 18 went from untouched grass to occlusion in about
+    seven pixels, and that was the straight line through the grass where the black bar used to
+    be (Eric, 2026-11-02: "still has a distinct line in the grass ... smooth out the grass"). Now
+    the edge of the pocket is t = 2 exactly (no change) and it eases up to `strength` at the
+    box, so the darkening is dithered across all `soft` pixels."""
     x0, y0, x1, y1 = box
-    dx = max(x0 - x, 0, x - x1)
-    dy = max(y0 - y, 0, y - y1)
+    dx = max(x0 - x, 0, x - x1) / float(soft)
+    dy = max(y0 - y, 0, y - y1) / float(soft_y or soft)
     d = math.sqrt(dx * dx + dy * dy)
-    return strength * min(1.0, max(0.0, 1.0 - d / float(soft)))
+    if d >= 1.0:
+        return 0.0
+    s = 1.0 - d
+    s = s * s * (3.0 - 2.0 * s)
+    return 2.0 + (strength - 2.0) * s
 
 
 def ui_pocket_t(x, y):
     # Wide soft edges and only as dark as each needs. The first pass held every box at full
     # strength with a short fade, and with the menu closed the empty ones read as black panels
     # printed on the picture. The prompt is the one that has to be fully dark: it is the only
-    # bitmap type, and the only thing here on screen when the menu is not.
-    return max(_box_t(x, y, PROMPT_BOX, 3.3, 18), _box_t(x, y, DETAIL_BOX, 2.6, 18),
-               _box_t(x, y, OPTIONS_BOX, 2.4, 16), _box_t(x, y, VERSION_BOX, 3.0, 10),
-               _box_t(x, y, ARCANE_BOX, 2.4, 14), _box_t(x, y, MENU_BOX, 2.6, 14))
+    # bitmap type, and the only thing here on screen when the menu is not. It sits in open, lit
+    # grass under the ward, where any edge shows: a long fade along the row, but only 16 up - 34
+    # climbed into the ring and dimmed its bottom flame, and the ring is about 20 rows above it.
+    return max(_box_t(x, y, PROMPT_BOX, 3.3, 40, 16), _box_t(x, y, DETAIL_BOX, 2.6, 24),
+               _box_t(x, y, OPTIONS_BOX, 2.4, 22), _box_t(x, y, VERSION_BOX, 3.0, 14),
+               _box_t(x, y, MENU_BOX, 2.6, 20))
+    # ARCANE_BOX keeps its place in the layout table but no pocket: nothing has stood there since
+    # the readout became the shop button's caption, and the regeneration of 2026-11-02 dropped it.
 
 
 def edge_t(x, y):
