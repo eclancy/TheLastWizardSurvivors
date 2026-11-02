@@ -98,8 +98,14 @@ def ui_pocket_t(x, y):
     # bitmap type, and the only thing here on screen when the menu is not. It sits in open, lit
     # grass under the ward, where any edge shows: a long fade along the row, but only 16 up - 34
     # climbed into the ring and dimmed its bottom flame, and the ring is about 20 rows above it.
-    return max(_box_t(x, y, PROMPT_BOX, 3.3, 40, 16), _box_t(x, y, DETAIL_BOX, 2.6, 24),
-               _box_t(x, y, OPTIONS_BOX, 2.4, 22), _box_t(x, y, VERSION_BOX, 3.0, 14),
+    #
+    # LIGHT, NOT BLACK, below the ward (Eric, 2026-11-02, after the line was gone: "there is still a
+    # big dark patch underneath"). With no pockets at all the ward's light reaches lit grass and
+    # bushes right down to the frame, and the pockets alone were what made the black slab. The
+    # prompt carries its own occ drop shadow and the menu's bottom row are framed buttons and an
+    # outlined label, so the pockets under the ring are now a light dither of stone.deep only.
+    return max(_box_t(x, y, PROMPT_BOX, 2.35, 40, 16), _box_t(x, y, DETAIL_BOX, 2.2, 24),
+               _box_t(x, y, OPTIONS_BOX, 2.2, 22), _box_t(x, y, VERSION_BOX, 2.4, 14),
                _box_t(x, y, MENU_BOX, 2.6, 20))
     # ARCANE_BOX keeps its place in the layout table but no pocket: nothing has stood there since
     # the readout became the shop button's caption, and the regeneration of 2026-11-02 dropped it.

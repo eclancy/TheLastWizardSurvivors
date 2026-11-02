@@ -818,7 +818,11 @@ nothing and crossed grass-to-occlusion in the last few pixels - the prompt pocke
 through the grass under the ward until 2026-11-02 (Eric: "still has a distinct line in the grass").
 Each pocket now runs from t = 2 at its edge, eased, to its strength at the box; the prompt's fades
 40 along the row but only 16 up, because the ring is about 20 rows above it and a longer fade
-dimmed its bottom flame. The boxes in `splash_wide.py` and the numbers in
+dimmed its bottom flame. **And the pockets under the ward are light**, a dither of `stone.deep` only (strengths
+2.2-2.4): with the line gone Eric still saw "a big dark patch underneath", and a render with no
+pockets at all showed that the pockets alone made it - the ward lights grass and bushes right down
+to the frame. PRESS ANY BUTTON carries its own `occ` drop shadow; the menu's bottom row are framed
+buttons and an outlined label. Only `MENU_BOX`, on the dark wood, is still a real pocket. The boxes in `splash_wide.py` and the numbers in
 `MainMenu.PinToWideArt` calls are the same rectangles: **move one, move the other.** In landscape
 a core pixel (x, y) is always at `((x - 320) * 2, (y - 180) * 2)` from the screen centre, so
 `PinToWideArt` takes the core box directly. Portrait keeps `PinToArtRows` exactly as before.
