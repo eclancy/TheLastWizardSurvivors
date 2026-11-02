@@ -78,6 +78,10 @@ public partial class TitleScreen : Control
 	// is every Windows copy, the editor and every harness.
 	private UpdateBanner updateBanner;
 
+	// True while the story-reset notice is up. Like `updating`, the title hears nothing until it is
+	// dismissed, so the press that dismisses it cannot also open the menu.
+	private bool noticeOpen;
+
 	public override void _Ready()
 	{
 		// Returning from a run, a quit, or backing out of character select: the player has already
@@ -218,12 +222,116 @@ public partial class TitleScreen : Control
 
 		GD.Print("TitleScreen: _Ready() invoked");
 
+		// After the update check, before the menu: the first title after a story reset says so, once.
+		if (ShowStoryResetNotice(openMenuNow))
+			return;
+
 		// Last, deliberately: everything the menu draws on top of has to exist before it is added.
 		if (openMenuNow)
 		{
 			transitioned = true;
 			ShowMenu();
 		}
+	}
+
+	/// <summary>
+	/// The one-time notice after a story reset (SaveData.ProgressResetNoticePending, set by
+	/// SaveManager when it started an earlier epoch's save again): the story was rebuilt, progress
+	/// starts again, the old save is kept. One button. False when nothing is owed.
+	/// </summary>
+	/// <remarks>
+	/// Cleared and saved on dismissal, not on showing: a player who closes the game with it up hears
+	/// it again next time. Shown over the art rather than as a screen of its own, in the stone register
+	/// every other notice uses, and it holds the menu back until it is gone (<paramref name="openMenuAfter"/>)
+	/// so two navigators never fight over the selection.
+	/// </remarks>
+	private bool ShowStoryResetNotice(bool openMenuAfter)
+	{
+		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (saveManager?.Data == null || !saveManager.Data.ProgressResetNoticePending)
+			return false;
+
+		noticeOpen = true;
+		// PRESS ANY BUTTON would be a second instruction under the first; it comes back, still
+		// breathing on its own tween, when the notice goes.
+		var prompt = GetNodeOrNull<CanvasItem>("TitleImage/Prompt");
+		if (prompt != null)
+			prompt.Visible = false;
+		var notice = new Control { Name = "StoryResetNotice", MouseFilter = MouseFilterEnum.Stop };
+		notice.SetAnchorsPreset(LayoutPreset.FullRect);
+		AddChild(notice);
+
+		var dim = new ColorRect { Color = new Color(0.019608f, 0.027451f, 0.047059f, 0.82f), MouseFilter = MouseFilterEnum.Ignore };
+		dim.SetAnchorsPreset(LayoutPreset.FullRect);
+		notice.AddChild(dim);
+
+		var center = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+		center.SetAnchorsPreset(LayoutPreset.FullRect);
+		notice.AddChild(center);
+
+		var panel = new PanelContainer
+		{
+			CustomMinimumSize = new Vector2(Mathf.Min(600f, GetViewportRect().Size.X - 32f), 0f),
+		};
+		BonelightSkin.ApplyPanel(panel);
+		center.AddChild(panel);
+
+		var column = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+		column.AddThemeConstantOverride("separation", 18);
+		panel.AddChild(column);
+
+		var heading = new Label
+		{
+			Text = "The story has been rebuilt",
+			HorizontalAlignment = HorizontalAlignment.Center,
+			AutowrapMode = TextServer.AutowrapMode.WordSmart,
+			MouseFilter = MouseFilterEnum.Ignore,
+		};
+		column.AddChild(heading);
+		ResponsiveLayout.SetFont(heading, ResponsiveLayout.TextRole.Title);
+		heading.AddThemeColorOverride("font_color", CodexRows.Stone.Heading);
+
+		var body = new Label
+		{
+			// A sentence a line, so neither is broken across the two on any canvas.
+			Text = "Your progress starts again from the beginning.\nYour old save is kept.",
+			HorizontalAlignment = HorizontalAlignment.Center,
+			MouseFilter = MouseFilterEnum.Ignore,
+		};
+		column.AddChild(body);
+		ResponsiveLayout.SetBodyText(body);
+		body.AddThemeColorOverride("font_color", new Color(0.94f, 0.93f, 0.88f));
+
+		var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+		column.AddChild(row);
+		var proceed = new Button { Name = "StoryResetContinue", Text = "Continue", FocusMode = FocusModeEnum.All };
+		row.AddChild(proceed);
+		BonelightSkin.StyleButton(proceed, BonelightSkin.Emphasis.Primary);
+		ResponsiveLayout.SetFont(proceed, ResponsiveLayout.TextRole.Body);
+		ResponsiveLayout.EnsureTouchTarget(proceed, 200f);
+
+		void Dismiss()
+		{
+			if (!noticeOpen)
+				return;
+			noticeOpen = false;
+			SfxPlayer.Global(SfxCatalog.UiClose);
+			saveManager.Data.ProgressResetNoticePending = false;
+			saveManager.SaveGame();
+			notice.QueueFree();
+			if (prompt != null && IsInstanceValid(prompt))
+				prompt.Visible = true;
+			if (openMenuAfter)
+			{
+				transitioned = true;
+				ShowMenu();
+			}
+		}
+		proceed.Pressed += Dismiss;
+		MenuBackListener.Attach(notice, Dismiss, "ui_cancel");
+		SafeArea.Apply(notice);
+		MenuNavigator.Attach(notice, proceed);
+		return true;
 	}
 
 	/// <summary>
@@ -517,7 +625,7 @@ public partial class TitleScreen : Control
 
 	public override void _Input(InputEvent @event)
 	{
-		if (transitioned || updating) return;
+		if (transitioned || updating || noticeOpen) return;
 		// A tap on the update strip's Download or Later is for the strip, not "press any button".
 		if (@event is InputEventMouseButton press && updateBanner != null && IsInstanceValid(updateBanner) && updateBanner.Covers(press.Position))
 			return;

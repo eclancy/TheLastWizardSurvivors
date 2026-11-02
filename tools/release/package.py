@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """Turn the exports in build/windows/ and build/linux/ into the files a GitHub Release carries.
 
-    python tools/release/package.py 0.2.0
+    python tools/release/package.py 0.2.0 [--progress-epoch=N]
+
+--progress-epoch is the story epoch version.json carries as "progressEpoch" (release.sh passes
+SaveData.CurrentProgressEpoch); left out, it is read from scripts/SaveData.cs the same way.
 
 Writes build/release/:
 
@@ -29,6 +32,7 @@ from __future__ import print_function
 import io
 import json
 import os
+import re
 import sys
 import tarfile
 import time
@@ -160,6 +164,19 @@ def engine_version():
     raise SystemExit("set GODOT_BIN to the Godot editor, so the engine version is known")
 
 
+def progress_epoch():
+    """SaveData.CurrentProgressEpoch: which telling of the story this build is. A copy that finds a
+    higher one in version.json warns before the download, because installing it resets progress
+    (.ai/releasing.md, "Releasing a story reset")."""
+    path = os.path.join(ROOT, "scripts", "SaveData.cs")
+    with io.open(path, encoding="utf-8") as f:
+        for line in f:
+            m = re.match(r"\s*public const int CurrentProgressEpoch = (\d+);", line)
+            if m:
+                return int(m.group(1))
+    raise SystemExit("scripts/SaveData.cs has no 'public const int CurrentProgressEpoch = N;' line")
+
+
 def add_tree(z, src, prefix):
     for dirpath, _dirs, files in os.walk(src):
         for f in sorted(files):
@@ -173,6 +190,14 @@ def main(argv):
         print(__doc__)
         return 1
     version = argv[0]
+    epoch = None
+    for arg in argv[1:]:
+        if arg.startswith("--progress-epoch="):
+            epoch = int(arg[len("--progress-epoch="):])
+        else:
+            raise SystemExit("unknown argument: %s" % arg)
+    if epoch is None:
+        epoch = progress_epoch()
     # Before writing anything, so a missing GODOT_BIN cannot leave half a release behind.
     engine = engine_version()
     if not os.path.isfile(os.path.join(EXPORT, NAME + ".pck")):
@@ -212,6 +237,10 @@ def main(argv):
         # The Android copy reads it (UpdateBanner) and offers it in the browser. Older Windows
         # copies never notice it: UpdateScreen reads the fields it names and nothing else.
         "android": base + APK,
+        # The story epoch (SaveData.CurrentProgressEpoch). A copy built at a lower one learns from
+        # this that installing the release resets its progress, and asks (Windows, Linux) or warns
+        # on its strip (Android) first. Copies from before epochs never read it, like any added field.
+        "progressEpoch": epoch,
     }
     # A Linux copy reads its own pair; Windows and Android copies never look at it.
     if linux:
