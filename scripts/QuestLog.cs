@@ -72,6 +72,8 @@ public static class QuestLog
 		new Prisoner("tituba", "the accused", "The accused is in one of these cells.", "{0}'s cell stands open."),
 		// The singer of the Kalevala: he is heard before he is found.
 		new Prisoner("vainamoinen", "the singer under the ice", "Someone is singing under the ice.", "{0} sings above the ice now."),
+		// The onmyoji, sealed in his own five-pointed seal: "the old wards were broken from the inside".
+		new Prisoner("seimei", "the master of wards", "Someone here was sealed in by his own wards.", "{0} keeps his own wards again."),
 		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
 		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.

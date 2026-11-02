@@ -28,6 +28,8 @@ public enum HintCue
 	Song,
 	/// <summary>A bell swinging, ringing at each strike (the caravan).</summary>
 	Bell,
+	/// <summary>Strips of written paper tumbling in, charring at the edges as they fall (the seal).</summary>
+	Paper,
 }
 
 /// <summary>One chapter's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
@@ -149,6 +151,23 @@ public static class StageHintCatalog
 				"Far off, a cold light flares and gutters.",
 				"The cold light again. Nothing living lit it.",
 				"It is still burning out there.",
+			},
+		},
+		// Abe no Seimei, sealed in his own five-pointed seal. A master of paper wards: his wards blow in on
+		// the wind, burning at the edges, in a hand nobody here can read. Not named, never said what they
+		// are for.
+		new()
+		{
+			StageId = "stage_4",
+			SiteId = "five_pointed_seal",
+			Voice = HintVoice.Sound,
+			Sound = SfxCatalog.HintPaperWind,
+			Cue = HintCue.Paper,
+			Lines = new[]
+			{
+				"Strips of paper on the wind, in a hand you do not know.",
+				"More paper, burning at the edges as it falls.",
+				"Still the paper comes, from the same quarter.",
 			},
 		},
 		// Vainamoinen, the singer, under the ice. He is heard, not named.

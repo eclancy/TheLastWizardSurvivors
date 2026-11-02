@@ -53,6 +53,8 @@ public partial class SideEventDirector : Node
 		"stage_0" => ("the_grove", () => new GroveEvent(), WayfinderKind.Compass),
 		"stage_1" => ("gaolers_key", () => new GaolersKeyEvent(), WayfinderKind.GaolersMap),
 		"stage_3" => ("bog_lanterns", () => new BogLanternsEvent(), WayfinderKind.Compass),
+		// The first chapter wizard (.ai/chapter-wizards.md 4.5): Abe no Seimei, sealed in his own star.
+		"stage_4" => ("five_pointed_seal", () => new FivePointedSealEvent(), WayfinderKind.Compass),
 		"stage_5" => ("the_thaw", () => new ThawEvent(), WayfinderKind.BearingCairn),
 		"stage_6" => ("caravan_master", () => new CaravanMasterEvent(), WayfinderKind.Compass),
 		// The two early chapters (.ai/campaign.md). Each line is that chapter's to fill in Phase 2 -

@@ -250,6 +250,11 @@ public static class UnlockCatalog
 		// event pays the wizard out.
 		FromEvent("tituba", UnlockKind.Character, "gaolers_key", "Freed from a cell in the Cursed Dungeon.", secretUntilStage: "stage_1"),
 		FromEvent("vainamoinen", UnlockKind.Character, "the_thaw", "Thawed out of the ice in the Frozen Waste.", secretUntilStage: "stage_5"),
+		// THE CHAPTER WIZARDS (.ai/chapter-wizards.md): one held in every place, each freed by his chapter's
+		// event, secret until that chapter opens, and counted at the Throne's gate only (G2) - so the
+		// Emberdeep's list does not grow. Abe no Seimei, sealed in his own five-pointed seal in the Ruins.
+		FromEvent("seimei", UnlockKind.Character, "five_pointed_seal", "Sealed inside a star cut in the floor of the Mystic Ruins.",
+			secretUntilStage: "stage_4", finalGateOnly: true),
 		FromEvent("iron_palisade", UnlockKind.Spell, "caravan_master", "Carried by the caravan master on the Scorched Sands road."),
 		FromEvent("contagion", UnlockKind.Spell, "bog_lanterns", "Kept by whatever tends the lanterns in the Blighted Swamp."),
 		FromEvent("bramble_seed", UnlockKind.Spell, "the_grove", "Grown back in the corrupted grove of the Enchanted Forest."),

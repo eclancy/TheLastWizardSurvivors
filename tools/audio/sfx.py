@@ -1118,6 +1118,48 @@ def hint_caravan_bell():
     return S.dc_block(_far(out, low=200.0, high=2400.0, size=0.4, mix=0.2, damp=0.45))
 
 
+# The paper wind's gusts: StageHintCue.PaperGusts is the same list - change one, change both.
+_PAPER_GUSTS = [(0.10, 1.0), (0.42, 0.72), (0.70, 0.9), (1.12, 0.78), (1.40, 0.62)]
+
+
+def hint_paper_wind():
+    """The Mystic Ruins: strips of written paper on the wind, burning at the edges as they fall.
+
+    Abe no Seimei's wards, blown out of the seal he is held in. A wind that comes in GUSTS, and on each
+    gust a strip of paper snapping in it - band noise in paper's register (1.4-2 kHz) chopped at 24-32 Hz,
+    the flutter of a loose strip, which no other sound in the set has - over one low breath of moving
+    air that swells and drops. Under the last three gusts the paper is burning: a few dry irregular
+    crackles (the gate's seeded chop), very quiet. Not the grove's whisper (breathed syllables with
+    silences, a hum under them) and not cast_wind (one long sweep): this is gusty and papery. Open
+    ruins: a short bright room. Nothing below 180 Hz."""
+    items = []
+    for i, (t, g) in enumerate(_PAPER_GUSTS):
+        dur = 0.30 + 0.04 * (i % 2)
+        flut = S.bandpass(S.osc("noise", 0, dur, seed=901 + i), 1450.0 + 120.0 * i, 1.8)
+        flut = S.tremolo(flut, 24.0 + 2.0 * i, 0.92, shape="square")
+        flut = S.env_mul(flut, S.adsr(dur, a=0.03, d=0.06, s=0.45, r=0.08))
+        items.append((flut, t, g))
+        # The gust that carries it: a short swell of lower air, a beat ahead of the paper.
+        gdur = 0.34
+        gust = S.bandpass(S.osc("noise", 0, gdur, seed=921 + i), S.sweep(gdur, 380.0, 700.0, 0.8), 1.1)
+        gust = S.env_mul(gust, S.adsr(gdur, a=0.09, d=0.08, s=0.45, r=0.1))
+        items.append((gust, max(0.0, t - 0.06), 0.55 * g))
+    for i, t in enumerate((0.78, 1.22, 1.5)):
+        cdur = 0.22
+        crackle = S.gate(S.highpass(S.osc("noise", 0, cdur, seed=951 + i), 1400.0), 70.0, duty=0.2, seed=961 + i)
+        crackle = S.env_mul(crackle, S.decay(S.n_samples(cdur), 2.5))
+        items.append((crackle, t, 0.42))
+    # The wind through the broken courtyard: one thin whistle under it all, rising and falling with the
+    # gusts - the ruins' own note, and what keeps this apart from every swoosh in the set.
+    wdur = 1.8
+    whistle = S.osc("sine", S.sweep(wdur, 640.0, 760.0, 0.7), wdur)
+    whistle = S.tremolo(whistle, 3.2, 0.6)
+    whistle = S.env_mul(whistle, S.adsr(wdur, a=0.35, d=0.2, s=0.7, r=0.5))
+    items.append((whistle, 0.05, 0.22))
+    out = S.pad(S.layer(items), 2.2)
+    return S.dc_block(_far(S.highpass(out, 180.0), low=180.0, high=2200.0, size=0.45, mix=0.25, damp=0.5))
+
+
 # ---------------------------------------------------------------------------
 # secrets - the light he missed (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9)
 # ---------------------------------------------------------------------------
@@ -1406,6 +1448,7 @@ REGISTRY += [
     ("hint_lantern_flare",  "hint",   -9.0,  hint_lantern_flare,  False),
     ("hint_ice_song",       "hint",   -9.0,  hint_ice_song,       False),
     ("hint_caravan_bell",   "hint",   -10.0, hint_caravan_bell,   False),
+    ("hint_paper_wind",     "hint",   -10.0, hint_paper_wind,     False),
 
     # Secrets. The seen shimmer is once per secret per save and meant to be played AT the site, so
     # it loses 5-6 dB to distance before it is heard; the found sting is a few a run, beside
