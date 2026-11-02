@@ -2316,7 +2316,7 @@ public partial class Player : CharacterBody2D
 			finalDamage = Mathf.RoundToInt(finalDamage * (1.0f + exposed.VulnerabilityBonus));
 
 		// The Gimmel Ring and the Fede Hoop: the pair's own damage (Player.ItemRules.cs).
-		finalDamage = ApplyPairDamage(enemy as Enemy, source, finalDamage);
+		finalDamage = ApplyPairDamage(source, finalDamage);
 
 		if (enemy is Enemy targetEnemy)
 		{
@@ -3939,7 +3939,6 @@ public partial class Player : CharacterBody2D
 			}
 		}
 
-		TickItemRules(delta);
 
 		float effectiveRegenPerSecond = RegenPerSecondNow;
 		if (effectiveRegenPerSecond > 0.0f && CurrentHP > 0 && CurrentHP < MaxHP)
@@ -3994,7 +3993,8 @@ public partial class Player : CharacterBody2D
 				continue;
 
 			float interval = (spell.GetCooldownAtLevel(spell.CurrentLevel) * cooldownMultiplier * GetWaterCooldownMultiplier()) / EffectiveAttackSpeed;
-			interval = MathF.Max(0.05f, interval);
+			// The Garnet Bezel: the pair recharges faster (Player.ItemRules.cs).
+			interval = MathF.Max(0.05f, interval / PairRechargeScale(spell));
 			spellFireTimers[spell.Id] += (float)delta;
 			float remaining = interval - spellFireTimers[spell.Id];
 			if (remaining > furthestRemaining)
@@ -4026,8 +4026,6 @@ public partial class Player : CharacterBody2D
 					SfxPlayer.Cast(SfxCatalog.DominantElement(spell), GlobalPosition);
 				spellFireTimers[spell.Id] = 0f;
 				NotifyArcaneCharge(spell);
-				// The Garnet Bezel: a cast of one of the pair winds the other (Player.ItemRules.cs).
-				TickGarnetBezel(spell, interval);
 			}
 		}
 		TickWaywiser(furthestFromReady, delta);
@@ -7552,8 +7550,8 @@ public partial class Player : CharacterBody2D
 		RemoveBanned(candidates, weights);
 		RemoveBanned(heldUpgrades, heldUpgradeWeights);
 		RemoveBanned(boonCandidates, boonWeights);
-		// The Betrothal Hoop leans the upgrade group toward the pair (Player.ItemRules.cs).
-		WeightPairUpgrades(heldUpgrades, heldUpgradeWeights);
+		// The Betrothal Hoop leans the upgrade group toward the lowest-level spell (Player.ItemRules.cs).
+		WeightLowestUpgrades(heldUpgrades, heldUpgradeWeights);
 
 		// A browse (GetDealableCandidates) lists every boon as well as every new spell.
 		if (browseAll)

@@ -319,6 +319,11 @@ public static class BonelightSkin
 		// enough to swallow the click.
 		if (IsKept(root, keepInteractive))
 			return;
+		// An element chip and a status keyword are the card's own small questions ("what is Fire?",
+		// "what does Weakened do?"): a tap on one answers it and never claims the card under it. They
+		// were swallowed here with the rest, so a chip on a chest page looked tappable and was not.
+		if (root is ElementChip || root is StatusKeyword)
+			return;
 
 		root.MouseFilter = Control.MouseFilterEnum.Ignore;
 		foreach (Node child in root.GetChildren())

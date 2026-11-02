@@ -196,7 +196,9 @@ public static class StatIcons
 		};
 		ResponsiveLayout.SetFont(label, role);
 		label.AddThemeColorOverride("font_color", ink);
-		row.AddChild(label);
+		// A status named on the line is a keyword that opens what it does, and a "+1 Fire" a chip
+		// (KeywordText) - the same Label back when the line names neither.
+		row.AddChild(KeywordText.Wrap(label));
 		return row;
 	}
 

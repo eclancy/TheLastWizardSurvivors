@@ -1121,7 +1121,8 @@ public partial class LevelUpMenu : CanvasLayer
 		// A new spell says what it does where it said "Attack" (BuildOptionTagline): the line that tells
 		// a bolt from a trap is worth more than the word, and the tightest hand has no room for both.
 		Label tagline = BuildOptionTagline(option, HorizontalAlignment.Center);
-		content.AddChild(tagline ?? BuildOptionTypeLabel(option, HorizontalAlignment.Center));
+		// A status the tagline names ("Withers", "slows") opens what it does (KeywordText).
+		content.AddChild(tagline != null ? KeywordText.Wrap(tagline) : BuildOptionTypeLabel(option, HorizontalAlignment.Center));
 
 		// Flavour text is gone from the card by design - three paragraphs of prose is not something
 		// a player reads while paused mid-fight, and it pushed the numbers they DO read off the
@@ -1226,7 +1227,7 @@ public partial class LevelUpMenu : CanvasLayer
 		if (narrowTagline != null)
 		{
 			metaRow.QueueFree();
-			text.AddChild(narrowTagline);
+			text.AddChild(KeywordText.Wrap(narrowTagline));
 		}
 		else
 		{
@@ -2600,7 +2601,7 @@ public partial class LevelUpMenu : CanvasLayer
 			};
 			ResponsiveLayout.SetBodyText(desc);
 			desc.AddThemeColorOverride("font_color", BodyInk(family));
-			text.AddChild(desc);
+			text.AddChild(KeywordText.Wrap(desc));
 		}
 
 		Control narrowElements = BuildTagGainRow(evo, option, FlowContainer.AlignmentMode.Begin, family);
@@ -2748,7 +2749,7 @@ public partial class LevelUpMenu : CanvasLayer
 			};
 			ResponsiveLayout.SetBodyText(desc);
 			desc.AddThemeColorOverride("font_color", BodyInk(family));
-			content.AddChild(desc);
+			content.AddChild(KeywordText.Wrap(desc));
 		}
 
 		Control wideElements = BuildTagGainRow(evo, option, FlowContainer.AlignmentMode.Center, family);

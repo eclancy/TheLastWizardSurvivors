@@ -450,6 +450,24 @@ PIP_GOLD_BASE = h2rgb(f2h(0.541, 0.416, 0.118))
 PIP_OLD = h2rgb(f2h(0.72, 0.54, 0.12))             # the gold leaf the pips used before
 GRAPHIC = 3.0
 
+# KeywordText.Statuses: a status keyword's underline, on a light page and on stone (StatusKeyword). The
+# word itself keeps its line's ink; the 2px rule under it is a graphic, so 3:1 (WCAG 1.4.11).
+STATUS_UNDERLINES = [
+    ("Slowed / Rooted", "#1A3E8A", "#7FDCF8"),
+    ("Poisoned", "#255416", "#B4E04A"),
+    ("Staggered", "#8A6A1E", "#FFF06A"),
+    ("Vulnerable / Frightened", "#35205C", "#B48CE8"),
+    ("Weakened", "#8A5E0A", "#FFC63C"),
+    ("Withered", "#8A1220", "#E87A1A"),
+]
+
+
+def keyword_pairs(add, page_ground):
+    for name, on_light, on_dark in STATUS_UNDERLINES:
+        for ground_name, ground in (("chest page", page_ground), ("chest set box", CHEST_SET_BOX)):
+            add("keyword underline on %s" % ground_name, ground, name, h2rgb(on_light), GRAPHIC)
+        add("keyword underline on stone (face)", STONE_FACE, name, h2rgb(on_dark), GRAPHIC)
+
 
 def blend(ink, ground, alpha):
     return tuple(int(round(g + (i - g) * alpha)) for i, g in zip(ink, ground))
@@ -710,6 +728,15 @@ def measure(rev=None):
         add(name, ground, "rarity Uncommon / gain", CHEST_UNCOMMON, BODY)
         add(name, ground, "rarity Rare", CHEST_RARE, BODY)
         add(name, ground, "rarity Relic", CHEST_RELIC, BODY)
+    # The rarity pages (2026-11-02): the relic's name is written in its rarity's ink on its rarity's
+    # page (ChestItemSelectionMenu.RarityPage, ui_frames.RARITY_TONES). The face is the plain page's.
+    if not rev:
+        for rarity, ink in (("common", CHEST_COMMON), ("uncommon", CHEST_UNCOMMON),
+                            ("rare", CHEST_RARE), ("relic", CHEST_RELIC)):
+            for lit in ("", "-lit"):
+                ground = centre(load(UI + "ui-spell-page-%s%s.png" % (rarity, lit), rev))
+                add("chest %s page%s" % (rarity, ", lit" if lit else ""), ground, "relic name (rarity ink)", ink, BODY)
+        keyword_pairs(add, centre(page))
     add("claim plate (primary button)", centre(load(UI + "ui-button-hover.png", rev)), "primary text", PRIMARY_TEXT, BODY)
 
     add("stone button", centre(button), "button text", BUTTON_TEXT, BODY)

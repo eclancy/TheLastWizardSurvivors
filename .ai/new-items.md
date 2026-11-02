@@ -616,8 +616,8 @@ The rules are `scripts/Player.ItemRules.cs`, each called by one line from the mo
   cut. That made `Player.OnBodyEntered` route its first touch through `ScaleOutgoingDamage`, which it
   never did: the first touch of every enemy skipped Weaken and the chapter's damage scale alike.
 - **A Conjunction ranks above level 8** in the pair, so it wins the tie with an Ascended spell in an
-  earlier slot (it is level 1 of 1 on its own counter). The pair excludes the wizard's own spell
-  through the same rule the Conjunctions use (`OwnSpellForCombos`), so the Test Wizard excludes none.
+  earlier slot (it is level 1 of 1 on its own counter). *(The pair excluded the wizard's own spell
+  until the second pass below, which put it back in.)*
 - **Waywiser's stat line** says "cooldown" ("Walking: slowest spell's cooldown 50% faster") so it
   takes the cooldown glyph; the pause screen says "Winding: <spell>." as Taproot says "Rooted".
 - **A chest ban is the chest's pick**, as a level-up ban is the level-up's (Eric, 2026-10-31): the
@@ -659,3 +659,50 @@ few debuffs for its two-debuff mark; it is a debuff build's set, and its plainer
 third less health lost. Waywiser does little for the `--immortal` bot, which walks only to orbs; it is
 for a kiter. Not run: `--seek-combo=sagittarius` with the Betrothal Hoop, and the 10,000-run chest
 simulation with 40 relics.
+
+### The second pass (2026-11-02, after Eric looked at it)
+
+Three things he asked for, and one more the same day:
+
+1. **"If a description lists element tags, they shouldn't just list the text, but use the colored
+   boxes. The poppet set description just has text."** A "+1 Poison" in any line is now the element
+   chip every card wears ("Poison 1/2", counting what the player would hold after taking it).
+2. **"Instead of just showing 'rare', the title and outline of the page should also be a different
+   color."** Each chest page is generated per rarity (`ui_frames.py`, `torn_page_card`'s rarity marks,
+   `RARITY_TONES`): the deckle stained and the text block double-ruled in the rarity's ink, grey, green,
+   blue, violet, and the relic's name in the same ink. The word stays.
+3. **"Fede hoop / gimmel ring descriptions are confusing. Simplify those items."** Every card is one
+   plain sentence about "your two highest-level spells", with no exception and no parentheses:
+
+   | | was | is |
+   |---|---|---|
+   | Betrothal Hoop | Level-ups offer upgrades to your two highest-level spells (besides your wizard's own) twice as often. | **Level-ups offer upgrades to your lowest-level spell twice as often.** |
+   | Fede Hoop | ... deal +30% damage to an enemy the other hit in the last second. | **Your two highest-level spells deal +15% damage.** |
+   | Garnet Bezel | Each cast of ... takes a fifth of its cooldown off the other's. | **Your two highest-level spells recharge 20% faster.** |
+   | the set, all 3 | ... deal +25% damage, and a Conjunction is always one of them. | **Your two highest-level spells deal +25% damage.** |
+
+   *Why the wizard's own spell is in the pair now:* nothing the pair does moves a level any more -
+   damage and recharge only - so leaving it in breaks nothing, and the exception was the confusing
+   half of every card. *Why the Betrothal Hoop changed instead of losing the clause:* doubling the
+   upgrades of the two highest-level spells WOULD move a level - the wizard's own spell is usually one
+   of them, and leaning the draw toward it pulls the Apotheosis earlier - so it leans the other way,
+   toward the lowest-level spell, which is never the wizard's own in a run that is climbing it. It
+   still feeds a second Ascension, the job it had. *Power:* the Fede Hoop's +15% flat is what its +30%
+   on overlap averaged; the Garnet Bezel's +20% recharge is what moving the other's timer gave "by
+   construction". A Conjunction still ranks above level 8 in the pair; the card need not say it.
+   Re-run on the same sweep (the set handed over whole): 85.6k and 60.5k dealt, x1.13 and x1.26 -
+   against x1.13 and x1.38 before, inside x0.9-1.4 either way.
+4. **"Status effects should be outlined or underlined or something that looks clickable. When
+   clicked, they should show the description of what that debuff does. On controller, just show the
+   status descriptions when focused."** A status word in a description ("Weakened", "Withers",
+   "Frightens") is underlined in its status's colour (`StatusKeyword`); a click or a tap opens its one
+   sentence through the element chips' own popover (`ElementTagPopover`, which now takes any anchor),
+   and a card a pad has selected shows every status it names in a note beside it (`StatusNotes`). One
+   parser does the chips and the keywords (`KeywordText`), and the sentences are built from the caps in
+   `.ai/gameplay-design.md` "Status effects". Bare "slow" and "root" count only as a stat line's label,
+   and "Poison" capitalised is the element: "a slow fireball" is not a debuff.
+
+Two texts got shorter so a four-page PC chest that completes the Poppet still fits (it needed 626 of
+594): the Singed Lock reads "Kills Wither enemies within 90 by 10% of their max health." and the
+Poppet "Your debuffs last 50% longer, and an enemy with two is also Vulnerable +15%." A four-page PC
+chest also takes the five-page rule now - a set's full tier shows only when the claim completes it.

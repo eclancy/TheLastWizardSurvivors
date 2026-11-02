@@ -73,6 +73,11 @@ public partial class EvolutionCodex
 		WireTreeFocus();
 		if (IsInstanceValid(pageScroll))
 			pageScroll.ScrollVertical = 0;
+		// A pad on the index reads the selected entry's statuses beside its row (StatusNotes): the row
+		// stands for this page, which was just rebuilt after the selection moved.
+		if (rows.TryGetValue(selectedId, out Button selectedRow) && IsInstanceValid(selectedRow))
+			selectedRow.SetMeta(StatusNotes.SourceMeta, page);
+		StatusNotes.Refresh();
 	}
 
 	// ---- the head: what the entry is ----------------------------------------------------------------
@@ -114,7 +119,7 @@ public partial class EvolutionCodex
 		if (entry.Discovered)
 		{
 			if (!string.IsNullOrWhiteSpace(entry.Line))
-				info.AddChild(CodexRows.MakeText(entry.Line, ResponsiveLayout.TextRole.Label, V.Ink));
+				info.AddChild(KeywordText.Wrap(CodexRows.MakeText(entry.Line, ResponsiveLayout.TextRole.Label, V.Ink)));
 		}
 		else
 		{
@@ -610,7 +615,8 @@ public partial class EvolutionCodex
 			});
 		Label label = CodexRows.MakeText(text, ResponsiveLayout.TextRole.Label, ink);
 		label.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		row.AddChild(label);
+		// A set tier or a hint that names a status or a tag (KeywordText).
+		row.AddChild(KeywordText.Wrap(label));
 		return row;
 	}
 

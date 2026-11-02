@@ -725,8 +725,39 @@ pages leave ~170 spare, so there they take a row at the foot, under the thumb; a
 (four or five) has nothing spare and moves them onto the band, where the title steps down from the
 Display face to Title to fit (`PlaceCharges`). The first page, not the band, takes the initial focus.
 Photograph with `--chest-charges=R,B` (added to the pools before `--open-chest`) and
-`--press-late=ChestReroll` or `ChestBan`. A five-page phone chest holding three Gimmel Ring pieces
-(their cards run three lines) needs 1440 of 1346 and scrolls, with or without the charges.
+`--press-late=ChestReroll` or `ChestBan`. (A five-page phone chest holding three Gimmel Ring pieces
+scrolled when their cards ran three lines; the second pass made them one short sentence each.)
+
+**A page per rarity (2026-11-02, Eric: "the title and outline of the page should also be a different
+color").** `ChestItemSelectionMenu.RarityPage` wears `ui-spell-page-<rarity>[-lit].png` - the torn page
+with its deckle stained and its text block double-ruled in the rarity's ink (`ui_frames.py`,
+`RARITY_TONES`), grey, green, blue, violet - and the relic's name is set in the same ink as the rarity
+word under it (`ui_contrast.py`: every pair 6:1 or better on the page). A four-page PC chest is
+`crowded` now too: a set's full tier only when the claim completes it, and the name at the Label size
+("Lodestone" broke mid-word at Title).
+
+**Keywords and tag chips in a description (2026-11-02).** Every description line the menus draw through
+`KeywordText.Wrap` - `StatIcons.BuildLine` (so every glyph-led stat line), the chest's set tiers, a new
+spell's tagline and the mutation and Ascension descriptions on the level-up screen, the Codex's entry
+line and set tiers, the pause screen's relic and boon lines - comes back unchanged if it names nothing,
+and otherwise as a flow of its words in the label's own size, face, ink and alignment, with:
+
+- every **"+N Element"** an element chip (`KeywordText.TagChip`, the chest rarity line's "Fire 1/2"),
+  so a set's "+1 Poison, +1 Grass" is two chips on the end of its sentence, costing no row where the
+  line has room;
+- every **status word** a `StatusKeyword`: the word in the line's ink, a 2px underline in the status's
+  colour (light-ground and dark-ground pairs, each 3:1 or better in `ui_contrast.py`, `keyword_pairs`),
+  a faint wash on hover, no focus. A click or a tap opens its card through `ElementTagPopover.Toggle(anchor,
+  build)` - the chips' popover, catcher and placement - and B or a tap elsewhere closes it. Chips and
+  keywords stay tappable inside a click-through card (`BonelightSkin.MakeSubtreeClickThrough` skips
+  them; a chest page's chips had been swallowed there).
+- **On a pad**, `StatusNotes` (one watcher for the game, on `GuiFocusChanged`) lists every status the
+  selected card names in a stone note beside it - below, above, then to either side, never over the
+  card's own words - and drops it the moment the pointer is in use, or on a phone with no pad.
+
+Photograph: `--press-late=StatusKeyword_Weaken` (a keyword's popover; `_UiShot` marks the pointer as in
+use, as a real click does), and any shot whose focused card names a status for the pad note
+(`--focus-late=OptionCard_bone_rattle` on a level-up with `--all-unlocked --force-boon=bone_rattle`).
 
 ## 4c. The Spell Index and Unlocks lists: whitespace is the hierarchy
 
