@@ -169,6 +169,23 @@ public static class ApotheosisCatalog
 				"Reflect: the archers feed it. Run among the shooters and let them aim at you.",
 				new Color(0.62f, 0.95f, 0.88f), NoVisualScale),
 		},
+		// Abe no Seimei, the onmyoji sealed in his own five-pointed seal in the Mystic Ruins (.ai/chapter-wizards.md
+		// 4.5). "Banish" was on the ADR's unclaimed list, and an exorcist's seal is what it is for: a ward that
+		// burns a body low seals it where it stands, harmless, and when the ward goes out everything it sealed is
+		// gone (KindledWard.FivePointedSealId). Not an execute - the sealed stop fighting at once and the kills land
+		// together; elites take a heavy blow instead and bosses are never sealed. The path is the pair that
+		// deepens Light: Flare, then Pyre. No visual scale: the ward is drawn out of the reach it burns.
+		new()
+		{
+			CharacterId = "seimei", SpellId = "kindled_ward",
+			RequiredLevel4EvolutionId = KindledWard.FlareId,
+			RequiredLevel8EvolutionId = KindledWard.PyreId,
+			RequiredElement = Element.Light, Verb = "banish",
+			Form = Make(KindledWard.FivePointedSealId, "The Five-Pointed Seal", Element.Light,
+				"A ward that burns an enemy below a quarter of its health seals it there, harmless. When the ward goes out, all it sealed is gone.",
+				"Banish: sealed now, gone later. Elites take a heavy blow instead; bosses are never sealed.",
+				new Color(1.0f, 0.94f, 0.66f), NoVisualScale),
+		},
 	};
 
 	// A form's visual lift is a 15% larger spell, but only where the spell's node keeps a visual scale.
