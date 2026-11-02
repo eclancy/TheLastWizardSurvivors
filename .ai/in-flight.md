@@ -109,7 +109,10 @@ builds to 120 and seven.
    the green (no abrupt step); a better Mirefoot icon (a stray black line at its foot); **familiar icons
    too hard to read**: Eric picked option B, Moonlit (`wip/familiar-icons`, in flight).
 3. **Enemy pathing** (merged, a70cb11: `Enemy.Skirt`, prop clusters in the nav grid; bodies stuck 6 s+ fell from 24 to 3 across ten runs; open: crowds queuing in Cave and Dungeon passages are crowd spacing, Eric's call): every enemy sticks on terrain; an efficient fix.
-4. **Boss crowd control, and the Hollow Choir** (after 3, which owns `Enemy.cs` movement). Bosses are
+4. **Boss crowd control, and the Hollow Choir** (merged: bosses slow to 0.5 at most, a freeze, root,
+   time stop or stagger holds one 0.75 s and then not again for 2.5x as long, knockback and pulls add to
+   its walk; the Choir routes round rock, sings a crescent at you, dips when 560 px off, and revives in
+   7 s of visible song that freezing pauses. Open for Eric: are those numbers right?). Bosses are
    immune to any crowd control that would stop them ever reaching the player (freeze and root, pulls,
    knockback, time-stop, walls): they always keep a way to put the player in danger. The Choir's
    freeze-pauses-revive below must still work. Then the Choir: pathing sticks; their ranged attack needs a launched attack, not a
@@ -202,6 +205,11 @@ most merges: keep both sides. **Five agents at once hit the 5-hour limit within 
 or three goes further, and agents should keep tool output short.
 
 ## 7. Loose ends
+
+- **An intermittent `InvalidOperationException: Handle is not initialized`** (a freed Godot object used
+  from C#): seen 2026-11-01 in `SpawnEnemy` (a Throne run), inside `RegressionChecks.ValidateFear` (a phone
+  validator run) and once in `_BossProbe --stage=7`; gone on rerun. Not from any one merge. Worth
+  catching with a stack trace and a guard on the stale reference.
 
 - On this PC the headless `--import` often finishes its work and then never exits: judge it by its
   log reaching "post-reimport operations", and run it under `timeout`.
