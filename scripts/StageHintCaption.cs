@@ -201,7 +201,18 @@ public partial class StageHintCaption : Control
 		Vector2 hold = half + PlateSpill(textSize);
 		// Out along the line to the source until it meets the inner rectangle's edge, then held inside.
 		Vector2 edge = ExitPoint(player, d, inner);
-		Vector2 centre = Clamp(edge - d * (CueBand + EdgeGap + Mathf.Min(hold.X, hold.Y)), inner, hold);
+		// The band the cue comes in on stays clear: on whichever side the line to the source leaves by,
+		// the line is held CueBand further in, even when it is clamped (a wide line toward a corner).
+		Rect2 room = inner;
+		if (edge.X <= inner.Position.X + 1f)
+			room = room.GrowIndividual(-CueBand, 0f, 0f, 0f);
+		if (edge.X >= inner.End.X - 1f)
+			room = room.GrowIndividual(0f, 0f, -CueBand, 0f);
+		if (edge.Y <= inner.Position.Y + 1f)
+			room = room.GrowIndividual(0f, -CueBand, 0f, 0f);
+		if (edge.Y >= inner.End.Y - 1f)
+			room = room.GrowIndividual(0f, 0f, 0f, -CueBand);
+		Vector2 centre = Clamp(edge - d * (CueBand + EdgeGap + Mathf.Min(hold.X, hold.Y)), room, hold);
 
 		// Never over the wizard: on a phone a line to the side is wider than the half-screen beside
 		// him. Step it up off him (or down, for a source below), and hold it inside again.
@@ -211,7 +222,7 @@ public partial class StageHintCaption : Control
 			centre.Y = d.Y > 0.35f
 				? keepOut.End.Y + half.Y + EdgeGap
 				: keepOut.Position.Y - half.Y - EdgeGap;
-			centre = Clamp(centre, inner, hold);
+			centre = Clamp(centre, room, hold);
 		}
 
 		// On the plate's grid, so the dither does not crawl as the player walks.
