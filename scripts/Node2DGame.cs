@@ -4401,6 +4401,13 @@ public partial class Node2DGame : Node2D
 			yield return GameOverScreen.Milestone("Ascension", MilestoneName(ascension), GameOverScreen.AscensionMark, ascension.Id);
 		if (spell.SelectedApotheosis is SpellEvolutionOption apotheosis)
 			yield return GameOverScreen.Milestone("Apotheosis", MilestoneName(apotheosis), GameOverScreen.ApotheosisMark, apotheosis.Id);
+		// A combination (ComboCatalog) has no milestones of its own: it lists the two Ascensions it was made
+		// of, from the parents it carries frozen.
+		foreach (SpellData parent in spell.ComboParents)
+		{
+			if (parent?.SelectedLevel8Evolution is SpellEvolutionOption made)
+				yield return GameOverScreen.Milestone("Conjunction", $"{parent.Name} - {MilestoneName(made)}", GameOverScreen.AscensionMark, made.Id);
+		}
 	}
 
 	private static string MilestoneName(SpellEvolutionOption option) =>
