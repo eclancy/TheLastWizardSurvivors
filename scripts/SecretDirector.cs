@@ -519,7 +519,15 @@ public partial class SecretDirector : Node
 			line = "";
 		}
 
-		toast?.Show(secret.DisplayName, line, paid, firstEver);
+		// Waits its turn like the achievement plate it sits beside (Announcements, Eric 2026-11-02: "make
+		// sure we can't show two announcements at the same time"): a secret found during the opening or
+		// under an achievement shows when the screen is free. The sound is the find, so it plays now.
+		if (toast != null)
+		{
+			SecretToast plate = toast;
+			AnnouncementWaiter.Queue(this, Announcements.Kind.Achievement, SecretToast.TotalSeconds,
+				() => plate.Show(secret.DisplayName, line, paid, firstEver));
+		}
 		// meta_unlock is the save changing (the page mark, a spell); secret_found is a secret found again.
 		SfxPlayer.Global(firstEver ? SfxCatalog.MetaUnlock : SfxCatalog.SecretFound);
 	}

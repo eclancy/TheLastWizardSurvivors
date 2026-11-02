@@ -52,6 +52,7 @@ public partial class MainMenu : Control
 	private CheckButton muteToggle = null!;
 	private CheckButton onboardingTipsToggle = null!;
 	private CheckButton damageNumbersToggle = null!;
+	private CheckButton reduceShakeToggle = null!;
 	private CheckButton playtestModeToggle = null!;
 	private OptionButton balancePresetOption = null!;
 	private Button openLatestPlaytestLogButton = null!;
@@ -155,6 +156,7 @@ public partial class MainMenu : Control
 		onboardingTipsToggle = GetNodeOrNull<CheckButton>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/OnboardingTipsToggle") ?? EnsureOnboardingTipsToggle();
 		// Before EnsureOptionsScroll wraps the list, like every row added here.
 		damageNumbersToggle = EnsureDamageNumbersToggle();
+		reduceShakeToggle = EnsureReduceShakeToggle();
 		EnsureWatchPrologueButton();
 		playtestModeToggle = GetNodeOrNull<CheckButton>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/PlaytestModeToggle") ?? EnsurePlaytestModeToggle();
 		balancePresetOption = GetNodeOrNull<OptionButton>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/BalancePresetRow/BalancePresetOption") ?? EnsureBalancePresetOption();
@@ -186,6 +188,7 @@ public partial class MainMenu : Control
 		muteToggle.Toggled += OnMuteToggled;
 		onboardingTipsToggle.Toggled += OnOnboardingTipsToggled;
 		damageNumbersToggle.Toggled += pressed => DisplaySettings.StoreDamageNumbers(this, pressed);
+		reduceShakeToggle.Toggled += pressed => DisplaySettings.StoreReduceShake(this, pressed);
 		playtestModeToggle.Toggled += OnPlaytestModeToggled;
 		balancePresetOption.ItemSelected += OnBalancePresetSelected;
 		openLatestPlaytestLogButton.Pressed += OnOpenLatestPlaytestLogPressed;
@@ -522,8 +525,13 @@ public partial class MainMenu : Control
 			return;
 		}
 
-		saveManager.ResetProgress();
 		resetArmed = false;
+		if (!saveManager.ResetProgress())
+		{
+			// The old save could not be kept, so nothing was reset (SaveManager.ResetProgress).
+			resetProgressButton.Text = "Reset Progress — could not back up the save";
+			return;
+		}
 		resetProgressButton.Text = "Reset Progress";
 
 		// Everything on this screen is a view over the save, so all of it is now stale.
@@ -754,7 +762,8 @@ public partial class MainMenu : Control
 		optionsVBox.AddChild(button);
 		// Under the display toggles, above the playtest toolkit: with the things a player sets, not
 		// with the ones a tester does.
-		Node after = optionsVBox.GetNodeOrNull("DamageNumbersToggle") ?? optionsVBox.GetNodeOrNull("MuteToggle");
+		Node after = optionsVBox.GetNodeOrNull("ReduceShakeToggle") ?? optionsVBox.GetNodeOrNull("DamageNumbersToggle")
+			?? optionsVBox.GetNodeOrNull("MuteToggle");
 		optionsVBox.MoveChild(button, after != null ? after.GetIndex() + 1 : Math.Max(0, optionsVBox.GetChildCount() - 2));
 		return button;
 	}
@@ -1144,6 +1153,7 @@ public partial class MainMenu : Control
 		{
 			onboardingTipsToggle.ButtonPressed = saveManager.Data.EnableGameplayOnboardingTips;
 			damageNumbersToggle.SetPressedNoSignal(saveManager.Data.ShowDamageNumbers);
+			reduceShakeToggle.SetPressedNoSignal(saveManager.Data.ReduceScreenShake);
 			playtestModeToggle.ButtonPressed = saveManager.Data.PlaytestModeEnabled;
 			SetBalancePresetSelection(GlobalStatsManager.NormalizeBalancePresetId(saveManager.Data.BalancePresetId));
 			ApplyPlaytestChecklistState(saveManager.Data.PlaytestChecklistState);
@@ -1404,6 +1414,27 @@ public partial class MainMenu : Control
 		optionsVBox.AddChild(toggle);
 		Node mute = optionsVBox.GetNodeOrNull("MuteToggle");
 		optionsVBox.MoveChild(toggle, mute != null ? mute.GetIndex() + 1 : Math.Max(0, optionsVBox.GetChildCount() - 2));
+		return toggle;
+	}
+
+	// Under the damage numbers (2026-11-02, "reduce screen shake"); the pause screen's Display section
+	// carries it too.
+	private CheckButton EnsureReduceShakeToggle()
+	{
+		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
+		if (optionsVBox == null)
+			return new CheckButton();
+
+		var toggle = new CheckButton
+		{
+			Name = "ReduceShakeToggle",
+			Text = "Reduce Screen Shake",
+			ButtonPressed = DisplaySettings.ReduceShake,
+		};
+		ResponsiveLayout.SetFont(toggle, ResponsiveLayout.TextRole.Label);
+		optionsVBox.AddChild(toggle);
+		Node numbers = optionsVBox.GetNodeOrNull("DamageNumbersToggle");
+		optionsVBox.MoveChild(toggle, numbers != null ? numbers.GetIndex() + 1 : Math.Max(0, optionsVBox.GetChildCount() - 2));
 		return toggle;
 	}
 

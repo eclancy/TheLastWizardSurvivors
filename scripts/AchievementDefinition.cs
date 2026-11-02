@@ -484,6 +484,7 @@ public static class AchievementDefinitions
 		// the final gate's key until schema 19; the gate counts wizards now, and the spells are the
 		// collection. Measured live against the catalog, so a spell added later raises the target for those
 		// still collecting - and needs no migration, which a gate counting spells did every time.
+		// The combinations are left out (UnlockCatalog.GrimoireSpellIds).
 		new()
 		{
 			Id = GrimoireRestoredId, DisplayName = "The Grimoire Restored",
@@ -491,8 +492,8 @@ public static class AchievementDefinitions
 			RewardText = "500 Arcane Energy", CurrencyReward = 500,
 			Category = AchievementCategory.Exploration,
 			Kind = AchievementKind.Collection,
-			Measure = c => GlobalStatsManager.GetUnlockedSpellCount(c.Save),
-			Target = UnlockCatalog.AllSpellIds.Count(),
+			Measure = c => GlobalStatsManager.GetGrimoireSpellCount(c.Save),
+			Target = UnlockCatalog.GrimoireSpellIds.Count(),
 		},
 	}).Concat(SideEventDeeds()).Concat(SecretDeeds()).Concat(CombinationDeeds()).ToList();
 

@@ -153,6 +153,9 @@ public class SaveData
 	/// <summary>Enemies throw their damage numbers when hit (DisplaySettings). No schema bump: an older
 	/// save simply has the key missing and keeps the default, on.</summary>
 	public bool ShowDamageNumbers { get; set; } = true;
+	/// <summary>Screen shake at a quarter strength (DisplaySettings.ShakeScale, Eric, 2026-11-02). No schema
+	/// bump, like the damage numbers: an older save has the key missing and keeps the default, off.</summary>
+	public bool ReduceScreenShake { get; set; } = false;
 
 	/// <summary>
 	/// Taught the Ascension outside the campaign's own record (GlobalStatsManager.HasLearnedAscension):
@@ -203,7 +206,7 @@ public class SaveData
 	/// </summary>
 	public static readonly string[] SettingsKeys =
 	{
-		"MasterVolume", "MusicVolume", "SfxVolume", "AudioMuted", "ShowDamageNumbers",
+		"MasterVolume", "MusicVolume", "SfxVolume", "AudioMuted", "ShowDamageNumbers", "ReduceScreenShake",
 		"EnableGameplayOnboardingTips", "HasToggledOnboardingTipsAtLeastOnce",
 		"PlaytestModeEnabled", "BalancePresetId", "PlaytestChecklistState",
 	};
@@ -997,6 +1000,7 @@ public class SaveData
 			["SfxVolume"] = SfxVolume,
 			["AudioMuted"] = AudioMuted,
 			["ShowDamageNumbers"] = ShowDamageNumbers,
+			["ReduceScreenShake"] = ReduceScreenShake,
 			["AscensionLearned"] = AscensionLearned,
 			["BalancePresetId"] = BalancePresetId,
 			["PlaytestChecklistState"] = playtestChecklistState
@@ -1265,6 +1269,8 @@ public class SaveData
 
 		if (root.ContainsKey("ShowDamageNumbers"))
 			result.ShowDamageNumbers = root["ShowDamageNumbers"].AsBool();
+		if (root.ContainsKey("ReduceScreenShake"))
+			result.ReduceScreenShake = root["ReduceScreenShake"].AsBool();
 		if (root.ContainsKey("AscensionLearned"))
 			result.AscensionLearned = root["AscensionLearned"].AsBool();
 

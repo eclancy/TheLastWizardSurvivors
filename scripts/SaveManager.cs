@@ -80,14 +80,28 @@ public partial class SaveManager : Node
 	/// <remarks>
 	/// Needed because migration deliberately grandfathers pre-campaign saves into owning
 	/// everything - which is right for a returning player and useless for testing, since it leaves
-	/// no way to see the unlock flow from the start short of hand-editing the JSON. Destructive and
-	/// irreversible: every caller must confirm first.
+	/// no way to see the unlock flow from the start short of hand-editing the JSON. Destructive, so every
+	/// caller must confirm first - but not irreversible: like a story reset it keeps the old file first
+	/// (<see cref="ResetBackupPathFor"/>, Eric, 2026-11-02) and refuses to reset without it. False when the
+	/// backup could not be written and nothing was reset.
 	/// </remarks>
-	public void ResetProgress()
+	public bool ResetProgress()
 	{
+		if (!WritesDisabled && FileAccess.FileExists(SavePath))
+		{
+			string backup = ResetBackupPathFor(SavePath);
+			if (!WriteText(backup, FileAccess.GetFileAsString(SavePath)))
+			{
+				GD.PushError($"SaveManager: the save could not be kept at {backup}, so progress was NOT reset.");
+				return false;
+			}
+			GD.Print($"SaveManager: old save kept at {backup}.");
+		}
+
 		Data = new SaveData();
 		SaveGame();
 		GD.Print("SaveManager: progress reset to a new save.");
+		return true;
 	}
 
 	public void SaveGame()
@@ -167,14 +181,22 @@ public partial class SaveManager : Node
 	/// user://savegame.before-epoch-2.json. Never overwritten: a second reset into the same epoch (only
 	/// possible after running an older build in between) takes the next free -2, -3.
 	/// </summary>
-	public static string BackupPathFor(string savePath, int epoch)
+	public static string BackupPathFor(string savePath, int epoch) => FreeBackupPath(savePath, $"before-epoch-{epoch}");
+
+	/// <summary>
+	/// Where Options' Reset Progress keeps the save it wiped: user://savegame.before-reset.json, then -2,
+	/// -3 - never overwritten, so every reset can be undone by hand.
+	/// </summary>
+	public static string ResetBackupPathFor(string savePath) => FreeBackupPath(savePath, "before-reset");
+
+	private static string FreeBackupPath(string savePath, string label)
 	{
 		string stem = savePath.EndsWith(".json", System.StringComparison.OrdinalIgnoreCase)
 			? savePath.Substring(0, savePath.Length - ".json".Length)
 			: savePath;
-		string path = $"{stem}.before-epoch-{epoch}.json";
+		string path = $"{stem}.{label}.json";
 		for (int n = 2; FileAccess.FileExists(path); n++)
-			path = $"{stem}.before-epoch-{epoch}-{n}.json";
+			path = $"{stem}.{label}-{n}.json";
 		return path;
 	}
 

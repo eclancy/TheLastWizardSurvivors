@@ -114,6 +114,10 @@ public static class GlobalStatsManager
 	public static int GetUnlockedSpellCount(SaveData data) =>
 		UnlockCatalog.AllSpellIds.Count(id => IsSpellUnlockedForLevelUp(data, id));
 
+	/// <summary>The Grimoire Restored's progress: spells recovered, the combinations not counted.</summary>
+	public static int GetGrimoireSpellCount(SaveData data) =>
+		UnlockCatalog.GrimoireSpellIds.Count(id => IsSpellUnlockedForLevelUp(data, id));
+
 	/// <summary>How many curation slots the player could ever buy, given the book they have.</summary>
 	public static int GetCurationSlotCapacity(SaveData data) =>
 		Math.Max(0, GetUnlockedSpellCount(data) - MinimumOfferablePool);
@@ -256,11 +260,11 @@ public static class GlobalStatsManager
 	// meet it: Fireball was paid only behind it. Spells are the collection now (The Grimoire Restored).
 
 	public static bool AllSpellsUnlocked(SaveData data) =>
-		UnlockCatalog.AllSpellIds.All(id => IsSpellUnlockedForLevelUp(data, id));
+		UnlockCatalog.GrimoireSpellIds.All(id => IsSpellUnlockedForLevelUp(data, id));
 
 	/// <summary>Spells still missing, for the Grimoire's "what is left".</summary>
 	public static int RemainingSpellCount(SaveData data) =>
-		UnlockCatalog.AllSpellIds.Count(id => !IsSpellUnlockedForLevelUp(data, id));
+		UnlockCatalog.GrimoireSpellIds.Count(id => !IsSpellUnlockedForLevelUp(data, id));
 
 	/// <summary>
 	/// The wizards a gate chapter counts: every wizard (<see cref="UnlockCatalog.AllWizardIds"/>, which

@@ -16,8 +16,8 @@ namespace WizardSurvivors.scripts;
 // at half of it as a jolt. Each re-aim flips the vertical sign, so it bounces rather than drifts. The
 // strength falls off with the square of what is left, so a kick lands at once and dies away.
 //
-// There is no Options switch for screen shake or reduced motion yet. When there is one, this is the one
-// place it has to be read.
+// Options' "Reduce Screen Shake" (DisplaySettings.ShakeScale) is read here, in Kick, so every caller
+// honours it without knowing it exists.
 public sealed class ScreenShake
 {
 	private const float AimSeconds = 1f / 30f;
@@ -43,6 +43,7 @@ public sealed class ScreenShake
 	/// </summary>
 	public void Kick(float kickAmplitude, float kickSeconds)
 	{
+		kickAmplitude *= DisplaySettings.ShakeScale;
 		if (kickAmplitude <= 0f || kickSeconds <= 0f || kickAmplitude < Strength)
 			return;
 		amplitude = kickAmplitude;

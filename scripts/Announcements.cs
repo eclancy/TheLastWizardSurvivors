@@ -11,7 +11,7 @@ namespace WizardSurvivors.scripts;
 /// <remarks>
 /// <para>Every centre or band message asks here before it shows and lets go when it has gone: the run's
 /// opening (the tracked quests written in big, then the chapter's banner or its note), the achievement and
-/// set plate (SetAssembledMoment), the run banners (a
+/// set plate (SetAssembledMoment), the secret-found plate (SecretToast), the run banners (a
 /// boss's arrival, a Boss Rush fall, the way home, the Throne's lines), a side event's announcement and
 /// its win line, the wayfinder's line, and the chapter hints. The onboarding tips wait while anything is
 /// held. The waiting are served first come, first served, so an achievement earned in the opening plays

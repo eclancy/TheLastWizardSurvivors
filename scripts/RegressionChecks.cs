@@ -2545,6 +2545,7 @@ public static class RegressionChecks
 				AscensionLearned = true, BossRushBestFelled = 3, BossRushBestClearSeconds = 412f,
 				// Every setting off its default, so "kept" cannot pass by coincidence.
 				MasterVolume = 0.3f, MusicVolume = 0.2f, SfxVolume = 0.6f, AudioMuted = true, ShowDamageNumbers = false,
+				ReduceScreenShake = true,
 				EnableGameplayOnboardingTips = false, HasToggledOnboardingTipsAtLeastOnce = true,
 				PlaytestModeEnabled = true, BalancePresetId = GlobalStatsManager.BalancePresetHardcore,
 			};

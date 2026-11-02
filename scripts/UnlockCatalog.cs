@@ -427,6 +427,14 @@ public static class UnlockCatalog
 		Definitions.Where(d => d.Kind == UnlockKind.Spell).Select(d => d.Id);
 
 	/// <summary>
+	/// What The Grimoire Restored counts: every spell but the combinations. A combination is made, not
+	/// recovered, and asking for all of them would make the collection a test of every Ascension pair
+	/// (Eric, 2026-11-02).
+	/// </summary>
+	public static IEnumerable<string> GrimoireSpellIds =>
+		AllSpellIds.Where(id => !ComboCatalog.IsCombination(id));
+
+	/// <summary>
 	/// Every wizard, excluding the development sandbox entry and anyone outside the campaign gate (a
 	/// character who is not a wizard - <see cref="UnlockDefinition.OutsideCampaignGate"/>). Each
 	/// wizard-gated chapter counts the ones whose rescue comes before it

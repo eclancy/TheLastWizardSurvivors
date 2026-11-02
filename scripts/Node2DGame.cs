@@ -4166,6 +4166,20 @@ public partial class Node2DGame : Node2D
 			ResponsiveLayout.EnsureTouchTarget(numbersToggle);
 			numbersToggle.Toggled += pressed => DisplaySettings.StoreDamageNumbers(this, pressed);
 			display.AddChild(numbersToggle);
+			// And the screen shake (2026-11-02), the same switch as Options'.
+			var shakeToggle = new CheckButton
+			{
+				Text = "Reduce Screen Shake",
+				FocusMode = Control.FocusModeEnum.All,
+				ButtonPressed = DisplaySettings.ReduceShake,
+			};
+			ResponsiveLayout.SetFont(shakeToggle, ResponsiveLayout.TextRole.Body);
+			foreach (string state in new[] { "font_focus_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color" })
+				shakeToggle.AddThemeColorOverride(state, PauseInk.Ink);
+			shakeToggle.AddThemeColorOverride("font_color", PauseInk.InkSoft);
+			ResponsiveLayout.EnsureTouchTarget(shakeToggle);
+			shakeToggle.Toggled += pressed => DisplaySettings.StoreReduceShake(this, pressed);
+			display.AddChild(shakeToggle);
 			sections.AddChild(BuildEscapeSection("Display", display));
 		});
 	}
