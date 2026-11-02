@@ -313,6 +313,71 @@ def tree_pairs(add, rev, vellum_ground, floors):
     add("tree fork, sealed glyph on plate", multiply(resting, PATH_SEALED_DIM), "glyph gold lit", ASC_ADVICE, GRAPHIC)
 
 
+# --- the Evolution Codex (scripts/EvolutionCodex*.cs, CodexKeyboard.cs, .ai/evolution-codex.md) --------
+# Layout B, the book: the index and the entry are vellum pages (ui-page.png) and write in CodexRows.Vellum;
+# the washes and the ember are CodexInk's. The keyboard over the book is stone. Copied from CodexInk: change
+# one there, change it here.
+BOOK_NODE = h2rgb(f2h(0.965, 0.918, 0.824))
+BOOK_SELECTED = h2rgb(f2h(0.890, 0.788, 0.561))
+BOOK_HOVER = h2rgb(f2h(0.922, 0.851, 0.722))
+BOOK_FIELD = h2rgb(f2h(0.973, 0.937, 0.863))
+BOOK_PILL = h2rgb(f2h(0.890, 0.812, 0.663))
+BOOKMARK_SHUT = h2rgb(f2h(0.706, 0.604, 0.447))
+BOOKMARK_HOVER = h2rgb(f2h(0.800, 0.706, 0.553))
+CODEX_UNMET_BAND = h2rgb(f2h(0.896, 0.789, 0.708))
+CODEX_UNMET_INK = h2rgb(f2h(0.416, 0.125, 0.157))
+EMBER_LINE = h2rgb(f2h(0.702, 0.290, 0.071))
+EMBER_FACE = h2rgb(f2h(0.165, 0.078, 0.063))
+EMBER_PILL = h2rgb(f2h(0.231, 0.125, 0.094))
+EMBER_INK = h2rgb(f2h(1.0, 0.839, 0.659))
+EMBER_SOFT = h2rgb(f2h(1.0, 0.698, 0.478))
+VELLUM_EDGE = h2rgb(f2h(0.659, 0.439, 0.345))
+CODEX_FIELD = h2rgb(f2h(0.071, 0.090, 0.129))          # a pressed key
+
+
+def evolution_codex_pairs(add, vellum_ground, stone_ground):
+    """The book: the index lines, their washes, the bookmarks, the search field, the entry page's nodes in
+    every state, the chips, the tag, the ember node, the ink lines (graphics), and the stone around it -
+    the title and count, the keyboard and its keys."""
+    for ink_name, ink in (("Ink (names, headings, reading)", VELLUM_INK), ("InkSoft (notes, kind line)", VELLUM_INK_SOFT),
+                          ("InkMeta (faded, ? ? ?, not yet found)", VELLUM_INK_META), ("Reward (star, ready)", VELLUM_REWARD)):
+        add("codex book page (vellum)", vellum_ground, ink_name, ink, BODY)
+    for ground_name, ground in (("selected line", BOOK_SELECTED), ("hovered line", BOOK_HOVER)):
+        add("codex book %s" % ground_name, ground, "Ink (name)", VELLUM_INK, BODY)
+        add("codex book %s" % ground_name, ground, "InkMeta (faded name)", VELLUM_INK_META, BODY)
+        add("codex book %s" % ground_name, ground, "InkSoft (note)", VELLUM_INK_SOFT, BODY)
+        add("codex book %s" % ground_name, ground, "Reward (star)", VELLUM_REWARD, BODY)
+    add("codex book search field", BOOK_FIELD, "Ink (typed)", VELLUM_INK, BODY)
+    add("codex book search field", BOOK_FIELD, "InkMeta (placeholder)", VELLUM_INK_META, BODY)
+    for ground_name, ground in (("shut", BOOKMARK_SHUT), ("hovered", BOOKMARK_HOVER), ("open (the page)", vellum_ground)):
+        add("codex bookmark, %s" % ground_name, ground, "Ink (Spells, Items, Recipes)", VELLUM_INK, LARGE)
+    for ground_name, ground in (("node (lighter page)", BOOK_NODE), ("node, taken (gold wash)", BOOK_SELECTED),
+                                ("node, a search hit (hover gold)", BOOK_HOVER)):
+        add("codex book %s" % ground_name, ground, "Ink (name)", VELLUM_INK, BODY)
+        add("codex book %s" % ground_name, ground, "InkSoft (status)", VELLUM_INK_SOFT, BODY)
+    add("codex book node, sealed or closed (page)", vellum_ground, "InkMeta (???, name)", VELLUM_INK_META, BODY)
+    add("codex book tag (gold shade)", VELLUM_REWARD, "page face (READY)", VELLUM_FACE_RGB, BODY)
+    add("codex book chip, met (pill)", BOOK_PILL, "Ink (Spell 7/7)", VELLUM_INK, BODY)
+    add("codex book chip, unmet (rubric band)", CODEX_UNMET_BAND, "UnmetInk (Spell 5/7)", CODEX_UNMET_INK, BODY)
+    add("codex book chip, neutral (page)", vellum_ground, "Ink (Spell 7)", VELLUM_INK, BODY)
+    add("codex book chip, neutral (node)", BOOK_NODE, "Ink (L4: Backdraft)", VELLUM_INK, BODY)
+    add("codex apotheosis (ember face)", EMBER_FACE, "EmberInk (name)", EMBER_INK, BODY)
+    add("codex apotheosis (ember face)", EMBER_FACE, "EmberSoft (crown, status)", EMBER_SOFT, BODY)
+    add("codex apotheosis chip (ember pill)", EMBER_PILL, "EmberInk (L8: Dragon's Breath)", EMBER_INK, BODY)
+    for ink_name, ink in (("open line (gold shade)", VELLUM_REWARD), ("closed line (InkMeta, dashed)", VELLUM_INK_META),
+                          ("the way to the Apotheosis (ember line)", EMBER_LINE), ("node rim (Ink)", VELLUM_INK),
+                          ("sealed rim (InkMeta)", VELLUM_INK_META)):
+        add("codex book lines (page)", vellum_ground, ink_name, ink, GRAPHIC)
+    add("codex title (stone)", stone_ground, "Heading (Evolution Codex)", STONE_HEADING, LARGE)
+    add("codex title (stone)", stone_ground, "InkSoft (count)", STONE_INK_SOFT, BODY)
+    add("codex keyboard panel (stone deep)", BAND, "Heading (Search)", STONE_HEADING, LARGE)
+    add("codex keyboard panel (stone deep)", BAND, "Ink (typed)", STONE_INK, BODY)
+    add("codex keyboard panel (stone deep)", BAND, "InkSoft (hint)", STONE_INK_SOFT, BODY)
+    add("codex key (stone face)", STONE_FACE, "Ink (letter)", STONE_INK, BODY)
+    add("codex key (stone face)", STONE_FACE, "Heading (selected, a suggestion)", STONE_HEADING, BODY)
+    add("codex key, pressed", CODEX_FIELD, "Heading (pressed)", STONE_HEADING, BODY)
+
+
 def report_pairs(add, stone_ground):
     """ReportBugScreen: CodexRows.Stone inks on the stone panel, and in its text fields and the
     "Sent with it" block, which are the stone row face."""
@@ -323,6 +388,33 @@ def report_pairs(add, stone_ground):
     for ink_name, ink in (("Ink (typed text)", STONE_INK), ("InkMeta (placeholder)", STONE_INK_META),
                           ("InkSoft (what gets sent)", STONE_INK_SOFT)):
         add("report a bug field (stone face)", STONE_FACE, ink_name, ink, BODY)
+
+
+DANGER_INK = h2rgb(f2h(0.949, 0.541, 0.502))   # MainMenu.Options.cs DangerInk
+APOTHEOSIS_TITLE = h2rgb(f2h(1.0, 0.784, 0.282))  # CardFamilyArt.ApotheosisTitle, fire hot
+
+
+def options_pairs(add, stone_ground, rev):
+    """The settings screens (SettingsRows, MainMenu.Options.cs): every row writes in the stone inks on
+    the bare stone panel; the difficulty choice writes on the stone button frames - the soft ink on
+    the unlit frame it rests on, the heading gold on the pressed frame of the chosen one - and Reset
+    Progress writes in the danger red on the unlit frame and on the lit one it wears when selected."""
+    add("settings row (stone panel)", stone_ground, "Ink (setting name)", STONE_INK, BODY)
+    add("settings row (stone panel)", stone_ground, "InkMeta (run log status)", STONE_INK_META, BODY)
+    quiet = centre(load(UI + "ui-button-disabled.png", rev))
+    pressed = centre(load(UI + "ui-button-pressed.png", rev))
+    lit = centre(load(UI + "ui-button-hover.png", rev))
+    add("choice, resting (unlit frame)", quiet, "InkSoft (choice)", STONE_INK_SOFT, BODY)
+    add("choice, chosen (pressed frame)", pressed, "Heading (chosen)", STONE_HEADING, BODY)
+    add("reset progress (unlit frame)", quiet, "danger red", DANGER_INK, BODY)
+    add("reset progress (lit frame)", lit, "danger red", DANGER_INK, BODY)
+    # The character select (CharacterSelection.BuildFacts): the facts table on a card's stone face
+    # and on the detail pane's stone panel. Its keys and values are CodexRows inks; the apotheosis
+    # name is CardFamilyArt.ApotheosisTitle.
+    for name, g in (("wizard card (stone face)", STONE_FACE), ("wizard detail (stone panel)", stone_ground)):
+        add(name, g, "InkMeta (Spell, Passive)", STONE_INK_META, BODY)
+        add(name, g, "Ink (spell, passive)", STONE_INK, BODY)
+        add(name, g, "ApotheosisTitle (form)", APOTHEOSIS_TITLE, BODY)
 
 
 # --- the card families (scripts/CardFamilyArt.cs, .ai/level-up-screen.md "The card families") ----
@@ -342,16 +434,39 @@ ASC_CHIP = h2rgb(f2h(0.090, 0.255, 0.369))         # arcane shade
 APO_TITLE = h2rgb(f2h(1.0, 0.784, 0.282))          # fire hot
 APO_SOFT = h2rgb(f2h(0.910, 0.478, 0.102))         # fire mid
 APO_CHIP = h2rgb(f2h(0.165, 0.055, 0.078))         # red shade
+# The conjunction plate (a combination, CardFamilyArt.Conjunction*): bronze glass, starlight runes.
+CON_TITLE = h2rgb(f2h(1.0, 0.973, 0.847))          # light hot
+CON_SOFT = h2rgb(f2h(0.847, 0.690, 0.290))         # gold lit
+CON_CHIP = h2rgb(f2h(0.329, 0.247, 0.063))         # gold shade
 CHIP_INK = h2rgb(f2h(0.933, 0.949, 0.980))
 LOCK_BAND = h2rgb(f2h(0.416, 0.125, 0.157))
 LOCK_INK = h2rgb(f2h(0.933, 0.949, 0.980))
 # The Ascend strip's button inks (LevelUpMenu.BuildAscendStrip).
 STRIP_GOLD = h2rgb(f2h(1.0, 0.88, 0.50))
 STRIP_EMBER = h2rgb(f2h(1.0, 0.70, 0.42))
+STRIP_STAR = h2rgb(f2h(1.0, 0.973, 0.847))
 # LevelPips: ring and held fill, on the upgrade page only. A graphic, so 3:1 (WCAG 1.4.11).
 PIP_GOLD_BASE = h2rgb(f2h(0.541, 0.416, 0.118))
 PIP_OLD = h2rgb(f2h(0.72, 0.54, 0.12))             # the gold leaf the pips used before
 GRAPHIC = 3.0
+
+# KeywordText.Statuses: a status keyword's underline, on a light page and on stone (StatusKeyword). The
+# word itself keeps its line's ink; the 2px rule under it is a graphic, so 3:1 (WCAG 1.4.11).
+STATUS_UNDERLINES = [
+    ("Slowed / Rooted", "#1A3E8A", "#7FDCF8"),
+    ("Poisoned", "#255416", "#B4E04A"),
+    ("Staggered", "#8A6A1E", "#FFF06A"),
+    ("Vulnerable / Frightened", "#35205C", "#B48CE8"),
+    ("Weakened", "#8A5E0A", "#FFC63C"),
+    ("Withered", "#8A1220", "#E87A1A"),
+]
+
+
+def keyword_pairs(add, page_ground):
+    for name, on_light, on_dark in STATUS_UNDERLINES:
+        for ground_name, ground in (("chest page", page_ground), ("chest set box", CHEST_SET_BOX)):
+            add("keyword underline on %s" % ground_name, ground, name, h2rgb(on_light), GRAPHIC)
+        add("keyword underline on stone (face)", STONE_FACE, name, h2rgb(on_dark), GRAPHIC)
 
 
 def blend(ink, ground, alpha):
@@ -379,17 +494,19 @@ def family_pairs(add, rev, floors):
         g = centre(load(UI + "ui-spell-page-mutation%s.png" % lit, rev))
         add("mutation page%s" % (", lit" if lit else ""), g, "teal rule, stained tear (lichen lit)", MUTATION_RULE, GRAPHIC)
         for plate, title, soft, label in (("obsidian", ASC_TITLE, ASC_SOFT, "ascension"),
-                                          ("ember", APO_TITLE, APO_SOFT, "apotheosis")):
+                                          ("ember", APO_TITLE, APO_SOFT, "apotheosis"),
+                                          ("conjunction", CON_TITLE, CON_SOFT, "conjunction")):
             g = centre(load(UI + "ui-%s-plate%s.png" % (plate, lit), rev))
             name = "%s plate%s" % (label, ", lit" if lit else "")
             add(name, g, "Title (name)", title, BODY)
             add(name, g, "Ink (description)", ASC_INK, BODY)
             add(name, g, "Soft (element line)", soft, BODY)
             add(name, g, "Advice (gold lit)", ASC_ADVICE, BODY)
-            add(name, g, "strip button text", STRIP_GOLD if plate == "obsidian" else STRIP_EMBER, BODY)
+            add(name, g, "strip button text", STRIP_GOLD if plate == "obsidian" else STRIP_EMBER if plate == "ember" else STRIP_STAR, BODY)
     add("synergy chip, mutation", MUTATION_CHIP, "ChipInk", CHIP_INK, BODY)
     add("synergy chip, ascension", ASC_CHIP, "ChipInk", CHIP_INK, BODY)
     add("synergy chip, apotheosis", APO_CHIP, "ChipInk", CHIP_INK, BODY)
+    add("synergy chip, conjunction", CON_CHIP, "ChipInk", CHIP_INK, BODY)
     add("lock stamp band", LOCK_BAND, "LockInk", LOCK_INK, BODY)
     # The evolution pages, the fork and the browser are written on the plate's stone (2026-10-31):
     # the heading on the level-up band, the subtitle and the browser's own lines in the stone inks.
@@ -515,8 +632,9 @@ STONE_EDGE = h2rgb(f2h(0.227, 0.275, 0.345))         # CodexRows.Stone.Edge / Ru
 def results_pairs(add, panel_ground):
     """The outcome word and its line on the band; every row ink on the row face (headline tiles,
     reward cards, spell rows, stat tiles, damage rows, pills) and on the bare panel (section and
-    group headings, the tabs, the quiet lines); the milestone marks; and the graphics - a new
-    card's gold edge, the icon wells' rims, the bars - at 3:1."""
+    group headings, the quiet lines); the folded summary's section rows, at rest and hovered; the
+    defeat's card; the milestone marks; and the graphics - a new card's gold edge, the icon wells'
+    rims, the bars - at 3:1."""
     add("results band (stone deep)", BAND, "Victory (34px)", RESULT_VICTORY, LARGE)
     add("results band (stone deep)", BAND, "Defeat (34px)", RESULT_DEFEAT, LARGE)
     add("results band (stone deep)", BAND, "InkSoft (chapter, wizard)", STONE_INK_SOFT, BODY)
@@ -524,13 +642,23 @@ def results_pairs(add, panel_ground):
                           ("InkMeta (tile labels)", STONE_INK_META), ("Reward (kind line, energy, max)", STONE_REWARD),
                           ("Flag (New seal)", STONE_FLAG)):
         add("results row (stone face)", STONE_FACE, ink_name, ink, BODY)
-    add("results breakdown toggle, hovered", blend(h2rgb("#D8B04A"), STONE_FACE, 0.08), "Ink", STONE_INK, BODY)
-    for ink_name, ink, target in (("Heading (Rewards, group titles)", STONE_HEADING, LARGE),
-                                  ("Heading (chosen tab)", STONE_HEADING, LARGE),
-                                  ("InkMeta (other tab, 26px)", STONE_INK_META, LARGE),
+    # The folded summary's section rows (2026-11-02): the name in the heading ink, the line of what is
+    # inside in InkSoft, the chevron in InkMeta - at rest, and under the card overlay's gold hover wash
+    # (BonelightSkin.MakeCardClickOverlay, 16%), which is also its focus wash.
+    hovered = blend(h2rgb(f2h(0.85, 0.69, 0.29)), STONE_FACE, 0.16)
+    for ground_name, ground in (("results section row (stone face)", STONE_FACE),
+                                ("results section row, hovered", hovered)):
+        add(ground_name, ground, "Heading (section name, 26px)", STONE_HEADING, LARGE)
+        add(ground_name, ground, "InkSoft (what is inside)", STONE_INK_SOFT, BODY)
+        add(ground_name, ground, "InkMeta (chevron, 26px)", STONE_INK_META, LARGE)
+    for ink_name, ink, target in (("Heading (section title, group titles)", STONE_HEADING, LARGE),
                                   ("InkMeta (quiet lines, counts)", STONE_INK_META, BODY),
                                   ("Flag (N new)", STONE_FLAG, BODY)):
         add("results on the stone panel", panel_ground, ink_name, ink, target)
+    # The defeat's card (scripts/DefeatSequence.cs): the results band's stone deep, full bleed, the word
+    # at 96px in the Defeat ink and the prompt under it in InkMeta.
+    add("defeat card band (stone deep)", BAND, "Defeat (96px)", RESULT_DEFEAT, LARGE)
+    add("defeat card band (stone deep)", BAND, "InkMeta (prompt)", STONE_INK_META, BODY)
     for mark_name, mark in (("Mutation", RESULT_MUTATION), ("Ascension", RESULT_ASCENSION),
                             ("Apotheosis", RESULT_APOTHEOSIS)):
         add("results milestone mark (%s)" % mark_name, mark, "MarkInk", RESULT_MARK_INK, BODY)
@@ -600,6 +728,15 @@ def measure(rev=None):
         add(name, ground, "rarity Uncommon / gain", CHEST_UNCOMMON, BODY)
         add(name, ground, "rarity Rare", CHEST_RARE, BODY)
         add(name, ground, "rarity Relic", CHEST_RELIC, BODY)
+    # The rarity pages (2026-11-02): the relic's name is written in its rarity's ink on its rarity's
+    # page (ChestItemSelectionMenu.RarityPage, ui_frames.RARITY_TONES). The face is the plain page's.
+    if not rev:
+        for rarity, ink in (("common", CHEST_COMMON), ("uncommon", CHEST_UNCOMMON),
+                            ("rare", CHEST_RARE), ("relic", CHEST_RELIC)):
+            for lit in ("", "-lit"):
+                ground = centre(load(UI + "ui-spell-page-%s%s.png" % (rarity, lit), rev))
+                add("chest %s page%s" % (rarity, ", lit" if lit else ""), ground, "relic name (rarity ink)", ink, BODY)
+        keyword_pairs(add, centre(page))
     add("claim plate (primary button)", centre(load(UI + "ui-button-hover.png", rev)), "primary text", PRIMARY_TEXT, BODY)
 
     add("stone button", centre(button), "button text", BUTTON_TEXT, BODY)
@@ -613,6 +750,8 @@ def measure(rev=None):
         menu_pairs(add, centre(panel), centre(vellum), rev)
         ascension_pairs(add, centre(vellum))
         report_pairs(add, centre(panel))
+        evolution_codex_pairs(add, centre(vellum), centre(panel))
+        options_pairs(add, centre(panel), rev)
         family_pairs(add, rev, floors)
         hud_pairs(add)
         tree_pairs(add, rev, centre(vellum), floors)

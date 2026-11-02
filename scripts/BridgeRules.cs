@@ -20,6 +20,8 @@ using WizardSurvivors.scripts;
 //   4. BossSpawnPoint      the gate's foot.
 //   5. VictoryPortalPoint  the gate itself.
 //   7. CreateObjective     the strip under the run timer: the fall, the player and the gate on one line.
+//   9. CameraLean          up, while the Constable holds the wall over the gate, as far as a short screen
+//                          (1280x720) needs to show him whole under the HUD.
 // and, on its own clock: the murder-holes in each gatehouse passage, and the archers' volleys over the gate
 // yard before 15:00 (3.8).
 //
@@ -82,7 +84,13 @@ public partial class BridgeRules : ChapterRules
 
 	// --- Lifetime -----------------------------------------------------------------------------------
 
+	// Every roll the bridge makes that changes the run - where each spawn lands (hook 2), where the
+	// murder-holes and the volleys fall - comes from this, seeded from the run's seed in RunStarted as the
+	// furniture's variants are (LevelGenerator.Hash of Game.TerrainSeed), so a run given its seed
+	// (--terrain-seed, or the harness's --seed) places its garrison the same way twice. It was Randomize()d,
+	// and one harness seed reached level 46 on one bridge run and 22 on the next (.ai/endgame-castle.md 3.3).
 	private readonly RandomNumberGenerator rng = new();
+	private const int SaltRules = 0xB21D;
 	private BridgeCollapseFront front;
 	private BridgeBackdrop backdrop;
 	private BridgeFurniture furniture;
@@ -95,7 +103,6 @@ public partial class BridgeRules : ChapterRules
 
 	public override void _Ready()
 	{
-		rng.Randomize();
 		// No scattered props on the bridge. Node2DGame scatters its curated set per chunk later in its
 		// _Ready (BuildCuratedProps), and an empty theme list there means every theme, not none; everything
 		// that stands on the bridge is the furniture below, which the front takes with the deck. A brazier
@@ -109,12 +116,27 @@ public partial class BridgeRules : ChapterRules
 					&& float.TryParse(arg.Substring("--bridge-front=".Length), System.Globalization.NumberStyles.Float,
 						System.Globalization.CultureInfo.InvariantCulture, out float lead))
 					debugFrontLead = lead;
+				if (arg.StartsWith("--bridge-split="))
+				{
+					string[] parts = arg.Substring("--bridge-split=".Length).Split(',');
+					if (parts.Length == 2
+						&& float.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float ahead)
+						&& float.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float behind))
+					{
+						aheadShare = Mathf.Clamp(ahead, 0f, 1f);
+						behindShare = Mathf.Clamp(behind, 0f, 1f - aheadShare);
+						GD.Print($"BRIDGE: --bridge-split: {aheadShare:0.00} ahead, {behindShare:0.00} behind, {1f - aheadShare - behindShare:0.00} at the parapets");
+					}
+				}
 			}
 		}
 	}
 
 	public override void RunStarted()
 	{
+		// Here, not in _Ready: the rules are added before the terrain, and the seed is the terrain's. Nothing
+		// rolls before this - the first spawn and the first murder-hole come on a frame after _Ready.
+		rng.Seed = LevelGenerator.Hash(Game.TerrainSeed, 0, 0, SaltRules);
 		front = new BridgeCollapseFront { Name = "BridgeCollapseFront", Rules = this };
 		Game.AddChild(front);
 		backdrop = new BridgeBackdrop { Name = "BridgeBackdrop", Rules = this };
@@ -194,6 +216,9 @@ public partial class BridgeRules : ChapterRules
 	// Shares of 3.3: ahead, behind (but ahead of the front), at the parapets.
 	private const float AheadShare = 0.65f;
 	private const float BehindShare = 0.15f;
+	// What TryPickSpawnPoint rolls against: the shares above, or --bridge-split=AHEAD,BEHIND (debug builds;
+	// the parapets take the rest), so a balance batch can try another split from one build.
+	private float aheadShare = AheadShare, behindShare = BehindShare;
 	// Kept off the shore by about a body, so a spawn never stands with its feet over the drop.
 	private const float SpawnShoreMargin = 70f;
 	// And this far ahead of the front, so nothing appears on ground about to fall.
@@ -206,7 +231,7 @@ public partial class BridgeRules : ChapterRules
 		// Straight along the axis the screen's edge is the nearer of its two half-sizes over cos 45.
 		float edge = Mathf.Min(half.X, half.Y) * 1.41421356f;
 		float roll = rng.Randf();
-		int first = roll < AheadShare ? 0 : roll < AheadShare + BehindShare ? 1 : 2;
+		int first = roll < aheadShare ? 0 : roll < aheadShare + behindShare ? 1 : 2;
 		for (int k = 0; k < 3; k++)
 		{
 			int kind = (first + k) % 3;
@@ -301,15 +326,10 @@ public partial class BridgeRules : ChapterRules
 
 	// Half the visible world rectangle: the viewport over the gameplay zoom (Node2DGame does the same for
 	// its own ring, privately).
-	private Vector2 VisibleHalfExtents()
-	{
-		Vector2 viewport = GetViewport().GetVisibleRect().Size;
-		float zoom = 1f;
-		var camera = Game.RunPlayer?.GetNodeOrNull<Camera2D>("Camera2D");
-		if (camera != null && camera.Zoom.X > 0.01f)
-			zoom = camera.Zoom.X;
-		return viewport / (2f * zoom);
-	}
+	private Vector2 VisibleHalfExtents() => GetViewport().GetVisibleRect().Size / (2f * CameraZoom());
+
+	// The gameplay zoom, without an arrival cinematic's push-in (Node2DGame.GameplayZoomOf).
+	private float CameraZoom() => Node2DGame.GameplayZoomOf(Game.RunPlayer?.GetNodeOrNull<Camera2D>("Camera2D"));
 
 	// --- Hooks 3, 4, 5 ------------------------------------------------------------------------------
 
@@ -321,6 +341,44 @@ public partial class BridgeRules : ChapterRules
 
 	/// <summary>The gate in the castle wall: walking in ends the run (3.3).</summary>
 	public override Vector2? VictoryPortalPoint(Vector2 bossFellAt) => WorldAt(BridgeBand.GateS - 40f, 0f);
+
+	// --- Hook 9: the camera, while the Constable holds the wall --------------------------------------
+
+	/// <summary>The Constable, once he has come (he says so as he reads the gate). Read for the camera's lean.</summary>
+	public BridgeConstableBoss Constable { get; set; }
+
+	// The HUD over the top of the view - the boss bar (44-78) and the strip under it, down to ObjectiveBottom -
+	// and a little air, in canvas px.
+	private const float HudBandCanvas = ObjectiveBottom + 16f;
+	// The lean never takes the player further than this share of the view's half-height off its centre.
+	private const float MaxLeanShare = 0.6f;
+
+	/// <summary>
+	/// Up, while the Constable holds the wall and the player is in the gate yard, by as much as it takes to
+	/// have his whole figure under the HUD. A wizard at the gate's foot stands about 450 px under the top of
+	/// the Constable's halberd, and a 1280x720 canvas shows 423 px above its centre, the top 150 of them
+	/// under the boss bar and the bridge's strip: he stood at the very top edge, partly under the bar. The
+	/// phone's canvas shows 753, so there the lean is nothing. Only as far as the player stays well on
+	/// screen; and a player too far down the yard to show the wall at all gets the lean taken back as he goes
+	/// rather than a view pushed up at nothing. Down the yard (in it with him) there is no lean.
+	/// </summary>
+	public override Vector2 CameraLean(Player player)
+	{
+		BridgeConstableBoss constable = Constable;
+		if (constable == null || !IsInstanceValid(constable) || constable.IsDying || constable.IsInYard
+			|| player == null || AlongOf(player.GlobalPosition) < BridgeBand.GateYardMouth)
+			return Vector2.Zero;
+		float zoom = CameraZoom();
+		float halfHeight = GetViewport().GetVisibleRect().Size.Y / (2f * zoom);
+		// The first world row under the HUD with the camera on him, and how far his figure's top is above it.
+		float clearTop = player.GlobalPosition.Y - halfHeight + HudBandCanvas / zoom;
+		float need = clearTop - constable.FigureTop;
+		if (need <= 0f)
+			return Vector2.Zero;
+		float most = halfHeight * MaxLeanShare;
+		float lean = need <= most ? need : Mathf.Max(0f, 2f * most - need);
+		return new Vector2(0f, -lean);
+	}
 
 	// --- The murder-holes and the volleys (3.8) ----------------------------------------------------
 

@@ -10,6 +10,9 @@ public partial class SecretToast : CanvasLayer
 	private const float InSeconds = 0.3f;
 	private const float HoldSeconds = 3.6f;
 	private const float OutSeconds = 0.6f;
+
+	/// <summary>How long the plate is on screen, in and out included: what it holds the screen for.</summary>
+	public const float TotalSeconds = InSeconds + HoldSeconds + OutSeconds;
 	private const float WideTop = 110f;
 	private const float NarrowTop = 160f;
 	private const float MaxWidth = 520f;

@@ -36,16 +36,13 @@ namespace WizardSurvivors.scripts;
 /// </remarks>
 public static class CodexRows
 {
-	// What the player calls the two lists, here so the main menu and the pause screen cannot
-	// name them two ways. The player chose these: "Spell Index" because "spell book" already means
-	// the spells you carry in a run, and the list is the catalogue of every spell and where to find
-	// the rest. The second list was "Unlocks" (because every entry exists to unlock something, which
+	// What the player calls the list, here so the main menu and the pause screen cannot name it two
+	// ways. (The Spell Index, the catalogue of every spell, became the Evolution Codex on 2026-11-02.)
+	// The list was "Unlocks" (because every entry exists to unlock something, which
 	// "Deeds" hid) until Eric called it "the achievements menu" and decided on the name
 	// (.ai/achievements-and-secrets.md 4.1, decision 4): every entry still pays something and says so,
 	// and secrets are achievements now, which "Unlocks" did not say. The constant keeps its old name -
 	// the button, the panel and the pause tab all read it.
-	public const string SpellIndexTitle = "Spell Index";
-	public const string SpellIndexSubtitle = "Every spell, and how to find the ones you have not.";
 	public const string UnlocksTitle = "Achievements";
 	public const string UnlocksSubtitle = "Each pays a spell, a boon, a wizard or Arcane Energy. Some are found, not done.";
 
@@ -768,7 +765,15 @@ public static class CodexRows
 				entry.Progress = progress.Fraction;
 				entry.ProgressText = progress.Display;
 			}
-			if (HidesWizard(deed, save))
+			if (!string.IsNullOrEmpty(deed.SealedName))
+			{
+				// A combination's Feat before it is made (AchievementVisibility.Recipe): the two parents are
+				// the deed's words, the result is sealed - its name is what making it reveals.
+				entry.Title = deed.SealedName;
+				entry.Meta = string.IsNullOrEmpty(deed.SealedReward) ? entry.Meta : deed.SealedReward;
+				entry.MetaGlyph = StatIcons.Load("sealed") ?? entry.MetaGlyph;
+			}
+			else if (HidesWizard(deed, save))
 			{
 				// His name is his reward (.ai/side-events.md, "Secret wizards"): until he is free the
 				// row says only that someone is, and shows his shape - the character select's card.

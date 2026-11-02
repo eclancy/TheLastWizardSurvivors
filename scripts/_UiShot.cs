@@ -193,6 +193,11 @@ public partial class _UiShot : Node
 	private string[] giveRelics = System.Array.Empty<string>();
 	private string[] chestOffer = System.Array.Empty<string>();
 	private bool relicsGiven;
+	// --chest-charges=R,B: R rerolls and B bans added to the run's pools before --open-chest, so the
+	// chest screen's Reroll and Ban show (both are hidden while their pool is empty). Press them with
+	// --press-late=ChestReroll (a re-deal) or --press-late=ChestBan (the tears).
+	private int chestRerolls;
+	private int chestBans;
 
 	// --fill-book: a quarter of the way in, every empty slot in the spell book is filled with spells
 	// in catalog order, so a full book can be photographed - the level-up that offers no new spell,
@@ -217,6 +222,16 @@ public partial class _UiShot : Node
 	// Several hits, because a run can carry an extra life that revives at half health.
 	[Export] public bool ForceDeath { get; set; } = false;
 	private bool deathForced;
+	// The defeat (DefeatSequence) holds the results back until a press. With --force-death the harness
+	// presses for the player as soon as the card is armed - a real injected event, through the same
+	// door a player's comes in by, so the swallowing of its release and of a tap's emulated mouse twin is
+	// on the path being photographed. --defeat-press=mouse|touch|pad|key picks the device (mouse);
+	// --defeat-press=none never presses, to photograph DEFEAT waiting. --defeat-hold=SECONDS stops the
+	// sequence's clock at that moment (DefeatSequence.DebugHoldAt) so the zoom or the fall can be shot
+	// exactly; --death-at=N kills on frame N instead of halfway, so a short shutter can follow it.
+	private string defeatPress = "mouse";
+	private bool defeatPressed;
+	private int deathAtFrame = -1;
 	// --force-victory: the other ending, through the real path - Node2DGame.FinishRunAndReward with
 	// Victory and the chapter's boss, halfway through the warmup - so the boss bonus, the chapter it
 	// opens and the gold headline are photographed as a win would pay them (writes are off).
@@ -234,6 +249,15 @@ public partial class _UiShot : Node
 	// that holds its thresholds (CourtSeneschalBoss) stops the blow at the first one.
 	private float bossBleedTo = -1f;
 	private int bossBleedAfter = 30;
+	// --choir=note|dip|revive[,K] (with --rush-steps=1 on the Sunken Cave): K frames (default 30) after the
+	// Hollow Choir has landed, one of the three things Eric asked of it (2026-11-01) is made to happen, so
+	// a --burst can follow it: NOTE, the three voices sing a note at him in turn (the gesture, then the
+	// note crossing to him); DIP, the voice nearest him goes under and comes up on his far side; REVIVE,
+	// one voice is struck down and the nearest of the other two walks over and sings it back. The frame it
+	// happened on is printed, to set --frames by.
+	private string choirScene;
+	private int choirSceneAfter = 30;
+	private bool choirSceneDone;
 	// --rush-after=N: the first rush step waits for frame N as well as a quarter of the warmup, so a
 	// --teleport (at a third of it) can put the wizard in a room before the boss is brought to him.
 	private int rushAfter;
@@ -288,8 +312,11 @@ public partial class _UiShot : Node
 	//                         30 s), so the photograph is the Done or the failure state.
 	//   --report-back       : presses Back instead, and logs where focus went and whether the tree
 	//                         is still paused - from the pause screen it must be EscapeRoot and yes.
+	//   --report-no-shot    : unticks "Include a screenshot" (through ButtonPressed, so its Toggled
+	//                         handler runs as for a click), before any Send.
 	// Point it at a local server with WIZARDSURVIVORS_INTAKE_URL; never at the real one.
 	private bool reportBack;
+	private bool reportNoShot;
 	private string reportName;
 	private string reportText;
 	private bool reportSend;
@@ -320,6 +347,13 @@ public partial class _UiShot : Node
 	private Vector2 gotoOffset = new Vector2(0f, 170f);
 	private bool forceHint;
 	private bool hintForced;
+	// --hint-preview=STAGE_ID[,DEG]: that chapter's hint - sound, cue and line - played fxLead frames
+	// before the shutter on whatever stage is running, from a point 3000 px away at DEG degrees
+	// (0 = east, 90 = south; default 20), so its line can be photographed on grounds no hint plays on:
+	// the Fallow Fields' pale field (--stage=9), the Sketchbook's paper (--stage=8). StageHintDirector.Preview.
+	private string hintPreview;
+	private float hintPreviewBearing = 20f;
+	private bool hintPreviewed;
 	private bool takeWayfinder;
 	private bool wayfinderTaken;
 	private bool arriveEvent;
@@ -473,6 +507,10 @@ public partial class _UiShot : Node
 	// --stage-mortal: the stage's skeletons keep their own health and can die, for the spells that
 	// only show themselves on a kill (Frost Shard's shatter, Contagion's jump, Cataclysm's craters).
 	private bool stageMortal;
+	// --stage-health=N: with --stage-mortal, the stage's skeletons start with N health instead of their own -
+	// for a spell whose look depends on how low it burns a body (Abe no Seimei's seal takes what a ward has
+	// burned below a quarter, and a 20-health skeleton dies before it is ever that low).
+	private int stageHealth;
 	private Vector2 stageOffset = new Vector2(230f, 0f);
 	private bool stagePlaced;
 	private readonly System.Collections.Generic.List<Enemy> stageCrowd = new();
@@ -503,6 +541,14 @@ public partial class _UiShot : Node
 	private int frames;
 	private bool captured;
 	private bool latePressed;
+	private bool codexDump;
+	private bool codexDumped;
+	private string openCodex;
+	private bool codexOpened;
+	private CodexFilter codexFilter = CodexFilter.All;
+	private string codexSearch;
+	private bool codexSheet;
+	private bool codexKeyboard;
 	private string hoverLate;
 	private bool hovered;
 
@@ -846,17 +892,41 @@ public partial class _UiShot : Node
 		}
 	}
 
+	// --dismiss-levelups=N: take the first card of the first N level-ups and keep the next one on screen
+	// (implies --keep-levelup). The Throne's Muster opens seventeen at the start (.ai/endgame-castle.md
+	// 6.2): --stage=13 --dismiss-levelups=4 photographs "The Muster - 5 of 17".
+	private int dismissLevelUps;
+	private int levelUpsDismissed;
+	// A chest screen the RUN opened (the Muster's two relic chests) is claimed like a level-up is
+	// dismissed, unless the shot is of a chest (--open-chest). Its first relic of an honest offer.
+	private readonly ChestOfferMemory dismissChestMemory = new();
+
 	private void DismissLevelUpMenus(Node root)
 	{
 		// The menu-queue probe opens and closes level-ups itself.
-		if (KeepLevelUp || menuQueueProbeStarted)
+		if (menuQueueProbeStarted)
 			return;
 
 		if (root is LevelUpMenu menu && menu.Visible)
 		{
+			if (menu.IsQueuedForDeletion() || (KeepLevelUp && levelUpsDismissed >= dismissLevelUps))
+				return;
 			System.Collections.Generic.IReadOnlyList<LevelUpOption> options = menu.GetOfferedOptions();
 			if (options != null && options.Count > 0)
+			{
 				menu.EmitSignal(LevelUpMenu.SignalName.WeaponSelected, options[0].AutoChoice());
+				levelUpsDismissed++;
+			}
+			return;
+		}
+		if (root is ChestItemSelectionMenu chest)
+		{
+			if (OpenChest || chest.IsQueuedForDeletion() || FindNodeOfType<Player>(GetTree().Root) is not Player owner)
+				return;
+			System.Collections.Generic.List<string> offer = ChestItemCatalog.GetChestItemOptions(owner.GetOwnedChestItems(), null, 3,
+				new[] { ChestItemCatalog.ScribesPenknife }, dismissChestMemory);
+			if (offer.Count > 0)
+				chest.EmitSignal(ChestItemSelectionMenu.SignalName.ItemSelected, offer[0]);
 			return;
 		}
 
@@ -873,6 +943,18 @@ public partial class _UiShot : Node
 	// --demo-spells=id,id: spells added to the tome with the demo state, so the browser has more than
 	// the starting spell to list.
 	private string[] demoSpells = System.Array.Empty<string>();
+	// --demo-combo=ID[:fuse]: both parents of a combination (ComboCatalog) put in the book at level 8 down
+	// their named Ascensions (each with a level 4 that keeps the pair inside three elements), so a level-up
+	// offers the combination in the strip and the browser lists the recipe ready; with ":fuse", made at once,
+	// through the same entry point the strip uses (Player.TryAddOrLevelSpell), for a photograph of it firing.
+	private string demoCombo;
+	private bool demoComboFuse;
+	// --demo-sovereign[=SPELL]: the Sovereign Rite's gate met (.ai/sovereign-spell.md section 3) - the Rite
+	// owned in the in-memory save, the player at its level, and every held spell raised to
+	// --demo-spell-level (6 if unset) - so a level-up offers it on the strip; with =SPELL, that held spell is
+	// anointed at once through the strip's own entry point ("sovereign_rite:SPELL"), for the HUD and the
+	// crowned casts. Hold the spells with --demo-spells.
+	private string demoSovereign;
 	private bool demoApplied;
 	// --seen-ascensions=a,b,...: which ascension paths the in-memory save has SEEN (AscensionSightings),
 	// so the browser and the level 8 page can be photographed with a path sealed, seen but out of
@@ -922,6 +1004,14 @@ public partial class _UiShot : Node
 				demoPlayerLevel = int.Parse(arg.Substring("--demo-level=".Length));
 			else if (arg.StartsWith("--demo-spells="))
 				demoSpells = arg.Substring("--demo-spells=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+			else if (arg.StartsWith("--demo-combo="))
+			{
+				string[] combo = arg.Substring("--demo-combo=".Length).Split(':');
+				demoCombo = combo[0].Trim();
+				demoComboFuse = combo.Length > 1 && combo[1].Trim() == "fuse";
+			}
+			else if (arg == "--demo-sovereign" || arg.StartsWith("--demo-sovereign="))
+				demoSovereign = arg.Contains('=') ? arg.Substring(arg.IndexOf('=') + 1).Trim() : string.Empty;
 			else if (arg.StartsWith("--demo-spell-level="))
 				demoSpellLevel = int.Parse(arg.Substring("--demo-spell-level=".Length));
 			else if (arg.StartsWith("--seen-ascensions="))
@@ -947,6 +1037,11 @@ public partial class _UiShot : Node
 				PressButton = arg.Substring("--press=".Length);
 			else if (arg == "--keep-levelup")
 				KeepLevelUp = true;
+			else if (arg.StartsWith("--dismiss-levelups="))
+			{
+				dismissLevelUps = int.Parse(arg.Substring("--dismiss-levelups=".Length));
+				KeepLevelUp = true;
+			}
 			else if (arg == "--force-levelup")
 				ForceLevelUp = true;
 			else if (arg == "--focus-boon")
@@ -983,6 +1078,24 @@ public partial class _UiShot : Node
 				lockBranch = true;
 			else if (arg == "--ink-report")
 				inkReport = true;
+			// THE EVOLUTION CODEX (.ai/evolution-codex.md). --codex-dump prints the whole model after the warmup -
+			// in a run its in-run mode, on the menu its collection mode - to the log and user://codex-dump.txt.
+			else if (arg == "--codex-dump")
+				codexDump = true;
+			// --open-codex[=<id>]: the Codex opened after the warmup - over the run (in-run mode) or the menu
+			// (collection mode) - with that entry selected (a spell, relic, boon or recipe id, or an evolution's
+			// id, which selects its spell and lights the node). --codex-filter=all|spells|items|recipes picks
+			// the tab; --codex-search=<text> types a search; --codex-sheet opens a phone's detail sheet on it.
+			else if (arg == "--open-codex" || arg.StartsWith("--open-codex="))
+				openCodex = arg.Contains('=') ? arg.Substring("--open-codex=".Length).Trim() : string.Empty;
+			else if (arg.StartsWith("--codex-filter="))
+				codexFilter = System.Enum.TryParse(arg.Substring("--codex-filter=".Length).Trim(), true, out CodexFilter parsed) ? parsed : CodexFilter.All;
+			else if (arg.StartsWith("--codex-search="))
+				codexSearch = arg.Substring("--codex-search=".Length);
+			else if (arg == "--codex-sheet")
+				codexSheet = true;
+			else if (arg == "--codex-keyboard")
+				codexKeyboard = true;
 			else if (arg.StartsWith("--tall-deal="))
 			{
 				tallDeal = int.Parse(arg.Substring("--tall-deal=".Length));
@@ -1030,6 +1143,8 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--walk-into-portal")
 				walkIntoPortal = true;
+			else if (arg.StartsWith("--stage-health="))
+				stageHealth = int.Parse(arg.Substring("--stage-health=".Length));
 			else if (arg.StartsWith("--crowd="))
 				crowd = int.Parse(arg.Substring("--crowd=".Length));
 			else if (arg == "--layer-census")
@@ -1087,6 +1202,12 @@ public partial class _UiShot : Node
 			}
 			else if (arg.StartsWith("--chest-offer="))
 				chestOffer = arg.Substring("--chest-offer=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+			else if (arg.StartsWith("--chest-charges="))
+			{
+				string[] rb = arg.Substring("--chest-charges=".Length).Split(',');
+				chestRerolls = int.Parse(rb[0]);
+				chestBans = rb.Length > 1 ? int.Parse(rb[1]) : 0;
+			}
 			else if (arg.StartsWith("--gleaning-bell="))
 			{
 				string[] xy = arg.Substring("--gleaning-bell=".Length).Split(',');
@@ -1112,6 +1233,12 @@ public partial class _UiShot : Node
 				// one, since this harness runs against it. Photographing a screen must not do that.
 				SaveManager.WritesDisabled = true;
 			}
+			else if (arg.StartsWith("--defeat-press="))
+				defeatPress = arg.Substring("--defeat-press=".Length);
+			else if (arg.StartsWith("--defeat-hold="))
+				DefeatSequence.DebugHoldAt = float.Parse(arg.Substring("--defeat-hold=".Length), System.Globalization.CultureInfo.InvariantCulture);
+			else if (arg.StartsWith("--death-at="))
+				deathAtFrame = int.Parse(arg.Substring("--death-at=".Length));
 			else if (arg == "--force-victory")
 			{
 				forceVictory = true;
@@ -1139,6 +1266,8 @@ public partial class _UiShot : Node
 				reportSend = true;
 			else if (arg == "--report-back")
 				reportBack = true;
+			else if (arg == "--report-no-shot")
+				reportNoShot = true;
 			else if (arg.StartsWith("--show-variant="))
 			{
 				showVariant = arg.Substring("--show-variant=".Length).Trim();
@@ -1232,6 +1361,13 @@ public partial class _UiShot : Node
 				if (bleed.Length > 1)
 					bossBleedAfter = int.Parse(bleed[1]);
 			}
+			else if (arg.StartsWith("--choir="))
+			{
+				string[] scene = arg.Substring("--choir=".Length).Split(',');
+				choirScene = scene[0];
+				if (scene.Length > 1)
+					choirSceneAfter = int.Parse(scene[1]);
+			}
 			else if (arg.StartsWith("--rush-after="))
 				rushAfter = int.Parse(arg.Substring("--rush-after=".Length));
 			else if (arg.StartsWith("--found-secrets="))
@@ -1294,6 +1430,11 @@ public partial class _UiShot : Node
 			// secret - can be shot on demand without touching the player's real save.
 			else if (arg == "--fresh-save")
 				ReplaceSave(new SaveData());
+			// --story-reset: the in-memory save as a story reset leaves it (SaveData.StartNewStory: a new
+			// save, the settings kept, the title's notice owed), so the notice can be photographed over
+			// TitleScreen. Writes are off; the real save is never reset or rewritten by it.
+			else if (arg == "--story-reset")
+				ReplaceSave(CurrentSave().StartNewStory());
 			// THE QUESTS AND THE NOTES (.ai/quests-and-notes.md), in memory only:
 			//   --track=a,b       : the tracked quests, in order (achievement ids, next_wizard), replacing the list.
 			//   --notes-seen=all  : every chapter's note already read (or a list of stage ids), so none shows.
@@ -1314,6 +1455,13 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--notes-unseen")
 				CurrentSave().SeenChapterNoteIds.Clear();
+			// --own-spells=a,b: those spells owned in the in-memory save, so a chapter note can be photographed
+			// with a vault's clue gone (ChapterNotes.CluesFor).
+			else if (arg.StartsWith("--own-spells="))
+			{
+				foreach (string id in arg.Substring("--own-spells=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries))
+					GlobalStatsManager.UnlockSpell(CurrentSave(), id.Trim());
+			}
 			else if (arg.StartsWith("--beaten="))
 			{
 				foreach (string id in arg.Substring("--beaten=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries))
@@ -1566,6 +1714,13 @@ public partial class _UiShot : Node
 				takeWayfinder = true;
 			else if (arg == "--force-hint")
 				forceHint = true;
+			else if (arg.StartsWith("--hint-preview="))
+			{
+				string[] parts = arg.Substring("--hint-preview=".Length).Split(',');
+				hintPreview = parts[0];
+				if (parts.Length > 1)
+					hintPreviewBearing = float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture);
+			}
 			else if (arg == "--arrive")
 				arriveEvent = true;
 			// --zoom=Z: the run camera's zoom (player.tscn's is 0.85), for a map-like view of a stretch
@@ -1610,6 +1765,12 @@ public partial class _UiShot : Node
 			return;
 		}
 
+		// This root processes through a pause (above), and a scene under it inherits that - so the run's
+		// world, which a pause stops in play, kept moving here. The defeat's freeze IS the pause
+		// (DefeatSequence), so a death is photographed with the scene pausable, as it is under the tree's
+		// root in the game. Only then: other shots were taken the old way and are left comparable.
+		if (ForceDeath)
+			instance.ProcessMode = ProcessModeEnum.Pausable;
 		AddChild(instance);
 		MoveChild(instance, 0);
 
@@ -2189,7 +2350,13 @@ public partial class _UiShot : Node
 		Vector2 canvas = GetViewport().GetVisibleRect().Size;
 		Vector2 scale = new Vector2(image.GetWidth() / canvas.X, image.GetHeight() / canvas.Y);
 		var controls = new System.Collections.Generic.List<Control>();
-		CollectInkControls(GetTree().Root, controls);
+		// The Evolution Codex covers whatever opened it (the level-up, the pause screen, the menu), so while it
+		// is up it is the only screen measured: the ones under it are hidden behind its panel.
+		// A phone's turned page covers its index the same way.
+		if (FindNodeOfType<EvolutionCodex>(GetTree().Root) is EvolutionCodex codex)
+			CollectTextControls(codex.PageOpen && codex.FindChild("CodexEntryPage", true, false) is Node turned ? turned : codex, controls);
+		else
+			CollectInkControls(GetTree().Root, controls);
 		foreach (Control control in controls)
 		{
 			string text = control is Label l ? l.Text : (control as Button)?.Text;
@@ -2377,6 +2544,40 @@ public partial class _UiShot : Node
 		return null;
 	}
 
+	// --choir: see choirScene.
+	private void StageChoirScene()
+	{
+		var bodies = new System.Collections.Generic.List<BossEnemy>();
+		CollectBossBodies(GetTree().Root, bodies);
+		var voices = bodies.OfType<HollowChoirBoss>().Where(v => !v.IsDying).ToList();
+		Player wizard = FindNodeOfType<Player>(GetTree().Root);
+		if (voices.Count == 0 || wizard == null)
+		{
+			GD.Print("_UiShot: --choir found no Hollow Choir to stage");
+			return;
+		}
+		voices.Sort((a, b) => a.GlobalPosition.DistanceSquaredTo(wizard.GlobalPosition).CompareTo(b.GlobalPosition.DistanceSquaredTo(wizard.GlobalPosition)));
+		switch (choirScene)
+		{
+			case "note":
+				for (int i = 0; i < voices.Count; i++)
+					voices[i].DebugSingNote(i * 0.7f);
+				break;
+			case "dip":
+				// The nearest that is not mid-swing: a forced dip out of a wind-up would leave the slam to land.
+				foreach (HollowChoirBoss voice in voices)
+					if (voice.DebugDip())
+						break;
+				break;
+			case "revive":
+				// The one furthest from him falls, so its singer's walk crosses the picture.
+				HollowChoirBoss struck = voices[voices.Count - 1];
+				struck.TakeDamage(System.Math.Max(1, struck.Health) + 1, false);
+				break;
+		}
+		GD.Print($"_UiShot: --choir={choirScene} staged at frame {frames}");
+	}
+
 	// --boss-death: the bodies of the boss being fought, stood in front of the camera as they arrive.
 	private void PlaceBossBodies(Player witness, Vector2 offset)
 	{
@@ -2478,10 +2679,50 @@ public partial class _UiShot : Node
 			GD.Print($"LAYER {key} frames={layerSeen[key]}");
 	}
 
+	// --open-codex: the Codex over whatever is up, as its own buttons open it (Node2DGame.OpenEvolutionCodex in a
+	// run), then the search, the sheet and the keyboard the flags ask for.
+	private void OpenCodexForShot()
+	{
+		EvolutionCodex codex = FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame game
+			? game.OpenEvolutionCodex(openCodex, codexFilter)
+			: EvolutionCodex.Open(this, CodexContext.ForSave(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data), openCodex, codexFilter);
+		if (codex == null)
+		{
+			GD.PrintErr("_UiShot: --open-codex found nothing to open the Codex over");
+			return;
+		}
+		Callable.From(() =>
+		{
+			if (!string.IsNullOrEmpty(codexSearch))
+				codex.DebugSearch(codexSearch);
+			if (codexSheet)
+				codex.DebugOpenSheet();
+			if (codexKeyboard)
+				codex.DebugOpenKeyboard();
+			GD.Print($"_UiShot: codex open, mode {codex.Model?.Mode}, filter {codex.Filter}, selected '{codex.SelectedId}'");
+		}).CallDeferred();
+	}
+
+	// --codex-dump: the Evolution Codex's model as it would be opened right now - the run's, or the save's.
+	private void DumpCodex()
+	{
+		CodexContext context = FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame game
+			? game.BuildCodexContext()
+			: CodexContext.ForSave(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data);
+		CodexModel model = CodexModel.Build(context);
+		string dump = model.Dump();
+		GD.Print(dump);
+		using var file = FileAccess.Open("user://codex-dump.txt", FileAccess.ModeFlags.Write);
+		file?.StoreString(dump);
+		GD.Print($"_UiShot: codex dump written to {ProjectSettings.GlobalizePath("user://codex-dump.txt")}");
+	}
+
 	private void OnFramePostDraw()
 	{
 		if (layerCensus && FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame censusArena)
 			CensusLayers(censusArena);
+		if (deathForced && ForceDeath && !defeatPressed)
+			PressThroughDefeat();
 		// --cover: the second half of a measured frame - the same paused moment, the spell hidden.
 		if (coverPhase == 1)
 		{
@@ -2527,8 +2768,8 @@ public partial class _UiShot : Node
 				}
 				if (ripenEvery > 0)
 				{
-					float gap = BlackTentacles.ClosestMawGap();
-					GD.Print($"_UiShot: frame {burstTaken}: {BlackTentacles.LiveMawCount} maw(s) open"
+					float gap = BlackTentacles.ClosestRiftGap();
+					GD.Print($"_UiShot: frame {burstTaken}: {BlackTentacles.LiveRiftCount} rift(s) open"
 						+ (gap < float.MaxValue ? $", closest rims {gap:0.0} px apart" : string.Empty));
 				}
 				SaveBurstFrame();
@@ -2621,6 +2862,27 @@ public partial class _UiShot : Node
 				GD.Print(played
 					? "_UiShot: hint forced"
 					: $"_UiShot: stage {Global.SelectedStageIdx} played no hint (no hint for it, the place is found, or this save owns its discovery - try --fresh-save)");
+			}
+			if (hintPreview != null && !hintPreviewed && frames >= WarmupFrames - fxLead
+				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame previewGame && previewGame.RunPlayer != null)
+			{
+				hintPreviewed = true;
+				StageHint previewHint = StageHintCatalog.ForStage(hintPreview);
+				var previewEntry = SideEventDirector.ForStage(hintPreview);
+				if (previewHint == null || previewEntry == null)
+				{
+					GD.PrintErr($"_UiShot: --hint-preview={hintPreview}: no hint for that chapter");
+				}
+				else
+				{
+					SideEvent colourOf = previewEntry.Value.Create();
+					Color tell = colourOf.FarTellColor;
+					colourOf.Free();
+					float bearing = Mathf.DegToRad(hintPreviewBearing);
+					Vector2 from = previewGame.RunPlayer.GlobalPosition;
+					StageHintDirector.Preview(previewGame, previewHint, from + new Vector2(Mathf.Cos(bearing), Mathf.Sin(bearing)) * 3000f, tell);
+					GD.Print($"_UiShot: hint preview {hintPreview} at {hintPreviewBearing} degrees");
+				}
 			}
 			if (takeWayfinder && !wayfinderTaken && frames >= WarmupFrames / 3
 				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector finder)
@@ -2794,12 +3056,15 @@ public partial class _UiShot : Node
 					boonCard.GrabFocus();
 				}
 			}
-			if (ForceDeath && !deathForced && frames >= WarmupFrames / 2
+			if (ForceDeath && !deathForced && frames >= (deathAtFrame >= 0 ? deathAtFrame : WarmupFrames / 2)
 				&& FindNodeOfType<Player>(GetTree().Root) is Player victim)
 			{
 				deathForced = true;
 				for (int i = 0; i < 6 && !victim.IsDead; i++)
 					victim.TakeDamage(System.Math.Max(1, victim.MaxHP * 10));
+				// The defeat is filmed at the speed a player sees it, whatever --timescale played the run up to it.
+				Engine.TimeScale = 1.0;
+				GD.Print($"_UiShot: forced death on frame {frames}, dead: {victim.IsDead}");
 			}
 			if (forceVictory && !deathForced && frames >= WarmupFrames / 2
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame winner)
@@ -2836,6 +3101,17 @@ public partial class _UiShot : Node
 					GD.Print($"_UiShot: bled {bleeding.Count} boss bod{(bleeding.Count == 1 ? "y" : "ies")} toward {bossBleedTo:P0}");
 				}
 			}
+			if (choirScene != null && !choirSceneDone && rushStepsDone > 0 && BossEnemy.EnteringCount == 0
+				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame { BossFightActive: true })
+			{
+				if (bossLandedFrame < 0)
+					bossLandedFrame = frames;
+				else if (frames - bossLandedFrame >= choirSceneAfter)
+				{
+					choirSceneDone = true;
+					StageChoirScene();
+				}
+			}
 			// Never mid-arrival (BossEnemy's entrance): a step then would fell a boss that has not landed.
 			if (rushStepsDone < rushSteps && frames >= WarmupFrames / 4 && frames >= rushAfter && frames >= rushNextStepFrame
 				&& BossEnemy.EnteringCount == 0
@@ -2860,7 +3136,7 @@ public partial class _UiShot : Node
 				scrolled = true;
 				ScrollAll(GetTree().Root);
 			}
-			if ((demoPlayerLevel > 0 || demoSpellLevel > 0 || demoSpells.Length > 0 || demoEvolutions.Length > 0) && !demoApplied && frames >= WarmupFrames / 4
+			if ((demoPlayerLevel > 0 || demoSpellLevel > 0 || demoSpells.Length > 0 || demoEvolutions.Length > 0 || demoCombo != null || demoSovereign != null) && !demoApplied && frames >= WarmupFrames / 4
 				&& FindNodeOfType<Player>(GetTree().Root) is Player demo && demo.GetEquippedSpells().Count > 0)
 			{
 				demoApplied = true;
@@ -2878,6 +3154,10 @@ public partial class _UiShot : Node
 				foreach (string id in demoSpells)
 					if (!demo.TryAddOrLevelSpell(id.Trim()))
 						GD.PrintErr($"_UiShot: could not add spell '{id}'");
+				if (demoCombo != null)
+					ApplyDemoCombo(demo);
+				if (demoSovereign != null)
+					ApplyDemoSovereign(demo);
 				GD.Print($"_UiShot: demo state - player level {demo.CurrentLevel}, {demo.GetEquippedSpells()[0].Name} level {demo.GetEquippedSpells()[0].CurrentLevel}");
 			}
 			// After the demo state (same frame, so --demo-spells are held by now), before the level-up.
@@ -2892,8 +3172,8 @@ public partial class _UiShot : Node
 					if (!holder.TryAddBoon(id))
 						GD.PrintErr($"_UiShot: could not grant boon '{id}'");
 			}
-			if (!reportFilled && (reportName != null || reportText != null || reportSend || reportBack)
-				&& FindNodeOfType<ReportBugScreen>(GetTree().Root) is ReportBugScreen report && report.Visible)
+			if (!reportFilled && (reportName != null || reportText != null || reportSend || reportBack || reportNoShot)
+				&& FindNodeOfType<ReportBugScreen>(GetTree().Root) is ReportBugScreen report && report.Visible && !report.IsTakingScreenshot)
 				FillReport(report);
 			if (announceAchievements.Length > 0 && !achievementsAnnounced && frames >= WarmupFrames / 4
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame announcer
@@ -3055,6 +3335,8 @@ public partial class _UiShot : Node
 			{
 				chestOpened = true;
 				Player relicHolder = FindNodeOfType<Player>(GetTree().Root);
+				if ((chestRerolls > 0 || chestBans > 0) && relicHolder != null)
+					relicHolder.AddLevelUpCharges(chestRerolls, chestBans);
 				game.OpenChestSelectionMenu();
 				// Re-deal the menu the game just built, through the same public call it used.
 				if (chestOffer.Length > 0 && relicHolder != null
@@ -3078,6 +3360,11 @@ public partial class _UiShot : Node
 			}
 			else
 			{
+				// A status keyword is only ever pressed by a pointer (it takes no focus), and a pointer
+				// in use hides a focused card's pad notes (StatusNotes): photograph it the way it is seen.
+				// --press-late=StatusKeyword_Weaken opens Weakened's card.
+				if (target is StatusKeyword)
+					MenuFocusHighlight.PointerActive = true;
 				target.EmitSignal(BaseButton.SignalName.Pressed);
 				frames = 0;
 				// The next name in the queue gets its own warmup, like the first.
@@ -3088,6 +3375,18 @@ public partial class _UiShot : Node
 				}
 				return;
 			}
+		}
+		if (codexDump && !codexDumped)
+		{
+			codexDumped = true;
+			DumpCodex();
+		}
+		if (openCodex != null && !codexOpened)
+		{
+			codexOpened = true;
+			OpenCodexForShot();
+			frames = 0;
+			return;
 		}
 		if (!string.IsNullOrEmpty(focusLate) && !focusLateDone)
 		{
@@ -3152,6 +3451,11 @@ public partial class _UiShot : Node
 				"a" => JoyButton.A,
 				"b" => JoyButton.B,
 				"y" => JoyButton.Y,
+				// The Codex's: X clears a search, the shoulders cycle its filters, Start closes its keyboard.
+				"x" => JoyButton.X,
+				"lb" => JoyButton.LeftShoulder,
+				"rb" => JoyButton.RightShoulder,
+				"start" => JoyButton.Start,
 				_ => null,
 			};
 			GD.Print($"_UiShot: pad {step} from {FocusName()}");
@@ -3161,7 +3465,7 @@ public partial class _UiShot : Node
 				Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = pressed, Pressed = false });
 			}
 			else
-				GD.PrintErr($"_UiShot: --pad step '{step}' is not up, down, left, right, a, b, y or release");
+				GD.PrintErr($"_UiShot: --pad step '{step}' is not up, down, left, right, a, b, x, y, lb, rb, start or release");
 			frames = 0;
 			return;
 		}
@@ -3250,6 +3554,13 @@ public partial class _UiShot : Node
 			text.EmitSignal(TextEdit.SignalName.TextChanged);
 		}
 		GD.Print($"_UiShot: filled the report ({reportText?.Length ?? 0} characters)");
+		if (reportNoShot)
+		{
+			if (report.FindChild("ReportBugShotToggle", true, false) is CheckButton shotToggle)
+				shotToggle.ButtonPressed = false;
+			else
+				GD.PrintErr("_UiShot: no ReportBugShotToggle");
+		}
 		if (reportBack && FindButton(report, "ReportBugBack") is Button back)
 		{
 			back.EmitSignal(BaseButton.SignalName.Pressed);
@@ -3292,6 +3603,33 @@ public partial class _UiShot : Node
 			scribe.TryAddBoon(boon.Id);
 		}
 		GD.Print($"_UiShot: every spell at its card cap, {scribe.GetOwnedBoonIds().Count} boons held");
+	}
+
+	// The press at the end of the defeat, once its card is armed (see defeatPress): a press and its
+	// release, injected through Input like a real device's, at the middle of the screen.
+	private void PressThroughDefeat()
+	{
+		if (defeatPress == "none" || DefeatSequence.DebugHoldAt != null)
+			return;
+		if (FindNodeOfType<Node2DGame>(GetTree().Root) is not Node2DGame run
+			|| run.Defeat is not DefeatSequence defeat || !IsInstanceValid(defeat) || !defeat.Armed)
+			return;
+		defeatPressed = true;
+		// In window pixels, as a device reports them (_TouchProbe.ToWindow).
+		Vector2 middle = GetViewport().GetFinalTransform() * (GetViewport().GetVisibleRect().Size * 0.5f);
+		foreach (bool down in new[] { true, false })
+		{
+			InputEvent press = defeatPress switch
+			{
+				"touch" => new InputEventScreenTouch { Index = 0, Pressed = down, Position = middle },
+				"pad" => new InputEventJoypadButton { Device = 0, ButtonIndex = JoyButton.A, Pressed = down },
+				"key" => new InputEventKey { Keycode = Key.Space, PhysicalKeycode = Key.Space, Pressed = down },
+				_ => new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = down, Position = middle, GlobalPosition = middle },
+			};
+			Input.ParseInputEvent(press);
+			Input.FlushBufferedEvents();
+		}
+		GD.Print($"_UiShot: pressed through the defeat ({defeatPress}) at {defeat.Elapsed:0.00}s");
 	}
 
 	// --demo-unlocks: one results card of every kind, added to the report the screen was built from.
@@ -3362,8 +3700,9 @@ public partial class _UiShot : Node
 			SpellData spell = held.First(s => s.Id == form.SpellId);
 			queue.Remove(spell);
 			spell.CurrentLevel = spell.MaxLevel;
-			spell.ApplyEvolution(spell.GetEvolutionOptionsForLevel(4).FirstOrDefault(e => e.Id == form.RequiredLevel4EvolutionId));
-			spell.ApplyEvolution(spell.GetEvolutionOptionsForLevel(8).FirstOrDefault(e => e.Id == form.RequiredLevel8EvolutionId));
+			// Any mutation and any Ascension: the form names no path (ApotheosisCatalog.SpellMeetsGate).
+			spell.ApplyEvolution(spell.GetEvolutionOptionsForLevel(4).FirstOrDefault());
+			spell.ApplyEvolution(spell.GetEvolutionOptionsForLevel(8).FirstOrDefault());
 			if (!scribe.TryAddOrLevelSpell($"{spell.Id}:{form.Form.Id}"))
 				GD.PrintErr($"_UiShot: could not take {spell.Id}'s Apotheosis");
 		}
@@ -3566,6 +3905,9 @@ public partial class _UiShot : Node
 					stageCrowd[i] = SpawnCoverEnemy(i);
 			return;
 		}
+		// --stage-mortal means what it says: the top-up below overrode it, so a mortal crowd was immortal.
+		if (stageMortal)
+			return;
 		foreach (Enemy e in stageCrowd)
 			if (IsInstanceValid(e))
 				e.Health = System.Math.Max(e.Health, 1000000);
@@ -3821,6 +4163,8 @@ public partial class _UiShot : Node
 			e.Speed = 18f;
 			if (!stageMortal)
 				e.Health = 1000000;
+			else if (stageHealth > 0)
+				e.Health = stageHealth;
 			p.GetParent().AddChild(e);
 			stageCrowd.Add(e);
 		}
@@ -3828,6 +4172,55 @@ public partial class _UiShot : Node
 		if (castOnStage)
 			p.DebugRipenSpells();
 		GD.Print($"_UiShot: spell stage of {stageCrowd.Count} placed at {centre}, player at {p.GlobalPosition}, facing {p.FacingDirection} (side {p.FacingSide})");
+	}
+
+	private void ApplyDemoSovereign(Player player)
+	{
+		if (GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is SaveData save)
+			GlobalStatsManager.UnlockSpell(save, SovereignRite.SpellId);
+		player.CurrentLevel = System.Math.Max(player.CurrentLevel, SovereignRite.MinimumPlayerLevel);
+		int level = demoSpellLevel > 0 ? demoSpellLevel : 6;
+		foreach (SpellData spell in player.GetEquippedSpells())
+			spell.CurrentLevel = System.Math.Min(spell.MaxLevel, System.Math.Max(spell.CurrentLevel, level));
+		GD.Print($"_UiShot: Sovereign Rite gate - player level {player.CurrentLevel}, {player.GetEquippedSpells().Count} spells at level {level}");
+		if (!string.IsNullOrEmpty(demoSovereign))
+			GD.Print($"_UiShot: Sovereign Rite on {demoSovereign} {(player.TryAddOrLevelSpell($"{SovereignRite.SpellId}:{demoSovereign}") ? "taken" : "REFUSED")}");
+	}
+
+	private void ApplyDemoCombo(Player player)
+	{
+		ComboDefinition recipe = ComboCatalog.ForId(demoCombo);
+		if (recipe == null)
+		{
+			GD.PrintErr($"_UiShot: no combination '{demoCombo}' in ComboCatalog");
+			return;
+		}
+		foreach (ComboIngredient ingredient in recipe.Ingredients)
+		{
+			SpellData held = player.GetEquippedSpells().FirstOrDefault(s => s != null && s.Id == ingredient.SpellId);
+			if (held == null && player.TryAddOrLevelSpell(SpellVariants.Selection(ingredient.SpellId, ingredient.VariantId)))
+				held = player.GetEquippedSpells().FirstOrDefault(s => s != null && s.Id == ingredient.SpellId);
+			if (held == null)
+			{
+				GD.PrintErr($"_UiShot: could not put '{ingredient.SpellId}' in the book (is it full?)");
+				return;
+			}
+			SpellEvolutionCatalog.EnsureEvolutionCoverage(held);
+			// A level 4 that deepens one of the spell's own elements - never an element path, which could
+			// bring the pair a fourth (Frostfall) and seal the recipe.
+			SpellEvolutionOption mutation = held.Level4Options.FirstOrDefault(o => o.BonusElementWeights != null
+					&& o.BonusElementWeights.Count > 0 && o.BonusElementWeights.Keys.All(k => held.ElementWeights.ContainsKey(k)))
+				?? held.Level4Options.FirstOrDefault(o => o.BonusElementWeights == null || o.BonusElementWeights.Count == 0);
+			if (mutation != null && string.IsNullOrEmpty(held.SelectedLevel4EvolutionId))
+				held.ApplyEvolution(mutation);
+			SpellEvolutionOption named = held.Level8Options.FirstOrDefault(o => o.Id == ingredient.AscensionId);
+			held.CurrentLevel = held.MaxLevel;
+			if (named != null)
+				held.ApplyEvolution(named);
+			GD.Print($"_UiShot: {held.Id} at level {held.CurrentLevel}, {mutation?.DisplayName ?? "no mutation"} then {named?.DisplayName ?? "NO ASCENSION"}");
+		}
+		if (demoComboFuse)
+			GD.Print($"_UiShot: {recipe.Name} {(player.TryAddOrLevelSpell(recipe.Id) ? "made" : "REFUSED")}");
 	}
 
 	private void ApplyDemoEvolutions(Player player, SpellData spell)

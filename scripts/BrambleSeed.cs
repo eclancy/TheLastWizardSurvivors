@@ -495,9 +495,8 @@ public partial class BrambleSeed : Node2D, IPaintsElementPath
 	private const int ShortRoots = 5;
 	private const int RootCount = LongRoots + ShortRoots;
 	private const float WitherSeconds = 0.55f;
-	// The last stretch of every life: roots draw back and dry out.
+	// The last stretch of every life, after it has stopped hurting: the thicket withers where it stands.
 	private const float RetractSeconds = 0.6f;
-	private const float DrySeconds = 1.1f;
 	// Bramble Keep's bushes: one every this many px round the rim, never more than the shader's mask holds.
 	private const float HedgeSpacing = 22f;
 
@@ -519,6 +518,7 @@ public partial class BrambleSeed : Node2D, IPaintsElementPath
 	private static readonly StringName ParamRetract = "retract";
 	private static readonly StringName ParamDry = "dry";
 	private static readonly StringName ParamFade = "fade";
+	private static readonly StringName ParamWither = "wither";
 	private static readonly StringName ParamGrown = "grown";
 	private static readonly StringName ParamRunner0 = "runner0";
 	private static readonly StringName ParamRunner1 = "runner1";
@@ -592,12 +592,6 @@ public partial class BrambleSeed : Node2D, IPaintsElementPath
 		PaintPatch();
 	}
 
-	private static float Smooth(float x)
-	{
-		x = Mathf.Clamp(x, 0f, 1f);
-		return x * x * (3f - 2f * x);
-	}
-
 	// This frame's thicket for bramble_patch.gdshader: how old and how wide, how far drawn back and dried,
 	// where each runner has crept to, and the hedge. The same numbers the old DrawRoot, DrawRunner and
 	// DrawHedge read, so the roots still end on Radius and the runners on the strip they cut.
@@ -607,19 +601,30 @@ public partial class BrambleSeed : Node2D, IPaintsElementPath
 			return;
 		float r = Radius;
 		float left = Lifetime - age;
-		float fade = Mathf.Clamp(left / 0.4f, 0f, 1f);
-		float retract = Smooth(left / RetractSeconds);
-		float dry = 1f - Mathf.Clamp(left / DrySeconds, 0f, 1f);
+		// IT WITHERS IN PLACE (2026-11-01). Eric, playing 0.10.0: "Bramble seed, instead of shrinking when it
+		// finishes, should just quickly wither." The roots, runners and hedge used to draw back into the
+		// ground over the last RetractSeconds (`retract` 1 to 0). Now they keep their length - `retract` stays
+		// 1 - and over the same last stretch of the life (WitherSeconds when pushed out) `wither` runs 0 to 1:
+		// the thicket browns quickly cell by cell, curls over at its tips, drops its thorns and buds and
+		// dissolves through the dither from the tips back to the seed (bramble_patch.gdshader). It browns only
+		// once it has stopped hurting, where it used to start yellowing half a second before. Lifetime, the
+		// reach and when it stops hurting are untouched.
+		float window = IsWithering ? WitherSeconds : RetractSeconds;
+		float wither = 1f - Mathf.Clamp(left / window, 0f, 1f);
+		float fade = Mathf.Clamp(left / 0.12f, 0f, 1f);
+		float retract = 1f;
+		float dry = Mathf.Clamp(wither * 1.8f, 0f, 1f);
 		float grown = Mathf.Clamp(age / GrowSeconds, 0f, 1f);
 		patchMaterial.SetShaderParameter(ParamAge, age);
 		patchMaterial.SetShaderParameter(ParamRadius, r);
 		patchMaterial.SetShaderParameter(ParamRetract, retract);
 		patchMaterial.SetShaderParameter(ParamDry, dry);
 		patchMaterial.SetShaderParameter(ParamFade, fade);
+		patchMaterial.SetShaderParameter(ParamWither, wither);
 		patchMaterial.SetShaderParameter(ParamGrown, grown);
 		drawReach = r + 12f;
 
-		// Runners: from inside the thicket out to where each has crept, and back in as the patch retracts.
+		// Runners: from inside the thicket out to where each has crept (they wither where they lie).
 		for (int i = 0; i < RunnerCount; i++)
 		{
 			Vector4 runner = Vector4.Zero;

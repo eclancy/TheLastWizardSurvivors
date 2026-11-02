@@ -164,7 +164,7 @@ public partial class LongCoilBoss : BossEnemy
 		}
 
 		float angle = GD.Randf() * Mathf.Tau;
-		Vector2 destination = target.GlobalPosition + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * ResurfaceDistance;
+		Vector2 destination = SurfacingPoint(target.GlobalPosition, angle);
 		dive.Begin(GlobalPosition, destination);
 
 		// Marked before it arrives, and the mark is the whole reason the dive is fair: the ridge
@@ -172,6 +172,25 @@ public partial class LongCoilBoss : BossEnemy
 		TelegraphedGroundHit.Place(GetParent(), destination,
 			Mathf.Max(0.2f, Mathf.Min(ResurfaceTellSeconds, DiveTravelSeconds - 0.1f)),
 			ResurfaceRadius, ScaleOutgoingDamage(ResurfaceDamage), SandColor);
+	}
+
+	// Where it comes up: ResurfaceDistance from the player at the rolled bearing - or, where the ground has
+	// walls, the nearest bearing round the player that is ground it could stand on (the Archivist's rule,
+	// ArchivistBoss.SurfacingPoint). The Sands are open, but the Throne's procession brings it into a closed
+	// hall with pillars (.ai/endgame-castle.md 6.3), where a bearing at random came up inside the stone about
+	// one surfacing in ten (_BossProbe --stage=13). Searched twelve steps either way; if none is open, the
+	// spot it dived from.
+	private Vector2 SurfacingPoint(Vector2 around, float angle)
+	{
+		MazeNavigation nav = MazeNavigation.Active;
+		for (int step = 0; step < 24; step++)
+		{
+			float turn = (step + 1) / 2 * (Mathf.Tau / 24f) * (step % 2 == 0 ? 1f : -1f);
+			Vector2 at = around + Vector2.FromAngle(angle + turn) * ResurfaceDistance;
+			if (nav == null || nav.IsReachable(at))
+				return at;
+		}
+		return GlobalPosition;
 	}
 
 	private void RecordTrail()
@@ -251,6 +270,8 @@ public partial class LongCoilBoss : BossEnemy
 	// will stand; the ground funnels; the head bursts straight up out of the funnel in a spout of sand
 	// and comes down; and the body surfaces behind it a segment at a time, each out of its own puff.
 	protected internal override float EntranceSeconds => 3.0f;
+	protected internal override float EntranceClimaxWeight => 1.0f;
+	protected internal override Element EntranceFlareElement => Element.Earth;
 	protected internal override float EntranceRoarSeconds => HeadBursts + 0.1f;
 
 	private BossDeath.Piece head;
@@ -298,7 +319,10 @@ public partial class LongCoilBoss : BossEnemy
 				stage.PuffAt(foot - new Vector2(0f, 20f + 26f * k), 10f, 30f, 0.7f, sand, 30f, 0.05f * k);
 		}
 		if (stage.Crossed(HeadLands))
+		{
+			stage.Impact(0.8f);
 			stage.DustRing(foot, 54f, 8, sand, 0.7f, 14f);
+		}
 		for (int i = 1; i <= Mathf.Max(2, BodySegments); i++)
 		{
 			if (stage.Crossed(SegmentsFrom + SegmentStep * i))
@@ -420,6 +444,7 @@ public partial class LongCoilBoss : BossEnemy
 
 		if (death.Crossed(0.15f))
 		{
+			death.Impact(0.5f);
 			// Scales off it as it thrashes.
 			death.Emit(new BossDeath.Throw
 			{

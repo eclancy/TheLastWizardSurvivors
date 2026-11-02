@@ -331,6 +331,9 @@ public partial class DeepWardenBoss : BossEnemy
 	// slag running off it; it stands; then the heart catches - one flare - fire runs out along every
 	// seam of the plate, embers burst up, and it is lit for the fight.
 	protected internal override float EntranceSeconds => 3.8f;
+	// The climax (BossDeath calls it on the roar): the heart catching: the heaviest arrival of them all.
+	protected internal override float EntranceClimaxWeight => 1.3f;
+	protected internal override Element EntranceFlareElement => Element.Fire;
 	protected internal override float EntranceRoarSeconds => Ignites + 0.05f;
 
 	private BossDeath.Piece forged;
@@ -366,6 +369,7 @@ public partial class DeepWardenBoss : BossEnemy
 		Vector2 foot = stage.Foot;
 		if (stage.Crossed(RiseFrom + 0.3f))
 		{
+			stage.Impact(0.35f);
 			stage.EmitAt(new BossDeath.Throw
 			{
 				Cell = BossDeath.Cell.Slag, SpeedMin = 40f, SpeedMax = 130f, UpMin = 100f, UpMax = 220f,
@@ -530,6 +534,7 @@ public partial class DeepWardenBoss : BossEnemy
 
 		if (death.Crossed(PauldronsLand))
 		{
+			death.Impact(0.5f);
 			foreach (BossDeath.Piece pauldron in new[] { deathPauldronLeft, deathPauldronRight })
 			{
 				Vector2 at = death.PieceToLocal(pauldron, new Vector2(pauldron == deathPauldronLeft ? 16f : 80f, 40f));
@@ -539,6 +544,7 @@ public partial class DeepWardenBoss : BossEnemy
 
 		if (!death.Crossed(BurstAt))
 			return;
+		death.Impact(1.0f);
 
 		var heartArt = new Vector2(47.5f, 40f);
 		death.Emit(new BossDeath.Throw

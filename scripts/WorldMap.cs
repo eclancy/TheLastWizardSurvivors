@@ -79,6 +79,12 @@ public partial class WorldMap : Control
 	private bool pageOpen;
 	private Button leftArrow;
 	private Button rightArrow;
+	// TEMPORARY, for Eric's testing - remove before the game ships for good (Eric, 2026-11-01: "Add a
+	// button in the story map to replay the intro, for testing. We will remove it later."). It is this
+	// field, its block in BuildMapView, ReplayIntro, its place in the focus ring in BuildCard, and
+	// Prologue.After.Map. It replays the prologue and comes back to this stop; it never writes
+	// SaveData.HasSeenPrologue, either way.
+	private Button replayIntroButton;
 	private VBoxContainer cardBox;
 	private SaveData save;
 	private CharacterData character;
@@ -321,6 +327,29 @@ public partial class WorldMap : Control
 		rightArrow = MakeArrow("right", 1);
 		view.AddChild(leftArrow);
 		view.AddChild(rightArrow);
+
+		// TEMPORARY (see the field): a small plate in the map's bottom-left corner, inside the map's own
+		// rectangle - clear of the top bar, the card and the step plates on both canvases, and inside
+		// SafeArea with the map. Quiet, so it does not compete with Start.
+		replayIntroButton = new Button
+		{
+			Name = "ReplayIntroButton",
+			Text = "Replay intro",
+			TooltipText = "Testing only: play the prologue again, then come back here",
+			FocusMode = FocusModeEnum.All,
+			AnchorLeft = 0f,
+			AnchorRight = 0f,
+			AnchorTop = 1f,
+			AnchorBottom = 1f,
+			OffsetLeft = 8f,
+			OffsetRight = narrow ? 156f : 168f,
+			OffsetTop = -56f,
+			OffsetBottom = -8f,
+		};
+		ResponsiveLayout.SetFont(replayIntroButton, ResponsiveLayout.TextRole.Label);
+		BonelightSkin.StyleButton(replayIntroButton, BonelightSkin.Emphasis.Quiet);
+		replayIntroButton.Pressed += ReplayIntro;
+		view.AddChild(replayIntroButton);
 	}
 
 	// The page in the map's place: the same rectangle, so the card sits where it does on the world.
@@ -517,6 +546,9 @@ public partial class WorldMap : Control
 			ring.Add(pageButton);
 		if (journalButton != null)
 			ring.Add(journalButton);
+		// TEMPORARY (see the field).
+		if (replayIntroButton != null)
+			ring.Add(replayIntroButton);
 		ring.Add(backButton);
 		for (int i = 0; i < ring.Count; i++)
 		{
@@ -938,6 +970,18 @@ public partial class WorldMap : Control
 			return;
 		}
 		SceneTransition.ChangeScene(this, "res://scenes/CharacterSelection.tscn");
+	}
+
+	/// <summary>
+	/// TEMPORARY (see the field): replays the prologue, which comes back to the map with him where he
+	/// stands, remembered as TurnToPage remembers him. Never marks the prologue seen or unseen.
+	/// </summary>
+	private void ReplayIntro()
+	{
+		if (SelectedStopId.Length > 0)
+			LastStopId = SelectedStopId;
+		SfxPlayer.Global(SfxCatalog.UiClick);
+		Prologue.Play(this, Prologue.After.Map);
 	}
 
 	/// <summary>Turns the map to the Sketchbook's page. He is remembered where he stands on the road.</summary>

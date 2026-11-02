@@ -248,6 +248,8 @@ public partial class ArchivistBoss : BossEnemy
 	// down onto one spot; the slab binds upward out of them along a seam of light, a line of writing at
 	// a time; then every line of it flares once, and it is reading.
 	protected internal override float EntranceSeconds => 3.3f;
+	// The climax (BossDeath calls it on the roar): paper and a slab: it flares more than it lands.
+	protected internal override float EntranceClimaxWeight => 0.6f;
 
 	private BossDeath.Piece slab;
 	private const float BindStart = 0.9f;
@@ -372,7 +374,10 @@ public partial class ArchivistBoss : BossEnemy
 		deathSlab.VisibleTop = UnbindRow(t);
 
 		if (death.Crossed(LeftTabletLands))
+		{
+			death.Impact(0.35f);
 			BreakTablet(death, deathTabletLeft, 14f);
+		}
 		if (death.Crossed(RightTabletLands))
 			BreakTablet(death, deathTabletRight, 78f);
 

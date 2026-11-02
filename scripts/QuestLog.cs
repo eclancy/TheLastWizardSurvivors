@@ -72,6 +72,8 @@ public static class QuestLog
 		new Prisoner("tituba", "the accused", "The accused is in one of these cells.", "{0}'s cell stands open."),
 		// The singer of the Kalevala: he is heard before he is found.
 		new Prisoner("vainamoinen", "the singer under the ice", "Someone is singing under the ice.", "{0} sings above the ice now."),
+		// The onmyoji, sealed in his own five-pointed seal: "the old wards were broken from the inside".
+		new Prisoner("seimei", "the master of wards", "Someone here was sealed in by his own wards.", "{0} keeps his own wards again."),
 		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
 		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.
@@ -103,6 +105,22 @@ public static class QuestLog
 			if (GlobalStatsManager.IsCharacterUnlocked(save, prisoner.CharacterId))
 				yield return string.Format(prisoner.FreedLine, NameOf(prisoner.CharacterId));
 			else if (!string.IsNullOrEmpty(prisoner.HeldLine))
+				yield return prisoner.HeldLine;
+		}
+	}
+
+	/// <summary>
+	/// The held lines alone - the wizards still held in a chapter, by epithet - and nothing once they are
+	/// free. The chapter note's clues (ChapterNotes.CluesFor): a freed wizard is no longer a clue.
+	/// </summary>
+	public static IEnumerable<string> HeldOnlyLinesFor(string stageId, SaveData save)
+	{
+		foreach (Prisoner prisoner in Prisoners)
+		{
+			UnlockDefinition who = UnlockCatalog.GetCharacter(prisoner.CharacterId);
+			if (who == null || !GlobalStatsManager.RescueChapterOf(who).Equals(stageId ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+				continue;
+			if (!GlobalStatsManager.IsCharacterUnlocked(save, prisoner.CharacterId) && !string.IsNullOrEmpty(prisoner.HeldLine))
 				yield return prisoner.HeldLine;
 		}
 	}
@@ -190,7 +208,8 @@ public static class QuestLog
 			Id = NextWizardId,
 			IsNextWizard = true,
 			OnTheRoad = true,
-			Title = "Free the next wizard",
+			// "Free the wizard", not "the next": Eric, 2026-11-02.
+			Title = "Free the wizard",
 			Step = clear != null ? clear.Description : "Further down the road.",
 			StageId = frontier?.Id ?? string.Empty,
 			Deed = clear,

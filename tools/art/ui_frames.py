@@ -364,6 +364,18 @@ def _tear(table, i, size, margin, rng):
     return depth
 
 
+# A chest relic's page by rarity: (ink, stain) as (row, role). The ink is the rule, the fibre line and
+# - in ChestItemSelectionMenu - the relic's name and its rarity word (InkCommon .. InkRelic, measured
+# in ui_contrast.py); the stain soaks one pixel inside the deckle, a step lighter, so the edge reads as
+# coloured at x2 rather than as a hairline. Grey, green, blue, violet: a loot table's usual order.
+RARITY_TONES = {
+    "common": (("linen", "base"), ("linen", "lit")),
+    "uncommon": (("verdant", "shade"), ("verdant", "base")),
+    "rare": (("azure", "shade"), ("azure", "base")),
+    "relic": (("violet", "lit"), ("violet", "hi")),
+}
+
+
 def torn_page_card(lit=False, mark=None):
     """A spell written on a page torn out of a book: a deckled edge, a ruled text block, gold leaf.
 
@@ -387,6 +399,13 @@ def torn_page_card(lit=False, mark=None):
                   with its rubric GILDED - the outer rule old gold, the inner one gold leaf - the
                   way a scribe finished a page worth finishing. Red says "this can still be
                   improved"; gold says it is done (.ai/level-up-screen.md, "Arcane Upgrades").
+      "common", "uncommon", "rare", "relic"
+                  a chest's relic, by its rarity (Eric, 2026-11-02: "instead of just showing 'rare',
+                  the title and outline of the page should also be a different color"). The deckle
+                  stained and the text block double-ruled in the rarity's own tone - RARITY_TONES,
+                  the same rows the chest writes the rarity word and the relic's name in - so the
+                  page's edge and its title say the rarity before the word does. Lit gilds the inner
+                  rule, as on every page; the outer rule and the stain keep the rarity's colour.
     """
     c = raster.Canvas(PANEL, PANEL, None)
     last = PANEL - 1
@@ -415,6 +434,11 @@ def torn_page_card(lit=False, mark=None):
     elif mark == "mastered":
         # Gold leaf in both states: a finished page does not go back to red at rest.
         rule = bl.tone("gold", "lit")
+    elif mark in RARITY_TONES:
+        ink, edge = RARITY_TONES[mark]
+        fibre = bl.tone(*ink)
+        if not lit:
+            rule = bl.tone(*ink)
 
     c.rect(0, 0, last, last, face)
 
@@ -430,6 +454,8 @@ def torn_page_card(lit=False, mark=None):
     # The stain soaks one pixel further in than the fibre line, so it reads as a coloured edge at
     # x2 rather than as a hairline; a plain page has no stain.
     stain = bl.tone("lichen", "hi") if mark == "mutation" else None
+    if mark in RARITY_TONES:
+        stain = bl.tone(*RARITY_TONES[mark][1])
 
     for x in range(PANEL):
         for d in range(top[x]):
@@ -487,11 +513,13 @@ def torn_page_card(lit=False, mark=None):
     # pixels of parchment between the rules make them read as a double rule, a ruled border, rather
     # than one thick one. The outer rule is red in both states; lit gilds the inner one, as on
     # every page.
-    if mark in ("upgrade", "mastered"):
+    if mark in ("upgrade", "mastered") or mark in RARITY_TONES:
         # The mastered page's outer rule is old gold (gold shade, about 8:1 on the parchment, so
         # it is still the line the eye finds on a phone) and lifts to gold base when lit.
         if mark == "mastered":
             rubric = bl.tone("gold", "base" if lit else "shade")
+        elif mark in RARITY_TONES:
+            rubric = bl.tone(*RARITY_TONES[mark][0])
         else:
             rubric = bl.tone("red", "lit")
         inset = 4
@@ -750,6 +778,7 @@ def boon_clasp():
 #   boon        boon_plaque      DARK violet enamel, a machined gold bezel    - a window, and a bail
 #   ascension   obsidian_plate   DARKEST blue-black glass in a gilded rune band
 #   apotheosis  obsidian_plate(ember=True) - the same plate, its runes burning
+#   conjunction obsidian_plate(conjunction=True) - bronze glass, runes of starlight (a combination)
 #
 # The boon and the two plates are still objects of their own: they are not spells, or not ordinary
 # ones, and they are rare enough to be loud.
@@ -952,7 +981,7 @@ RUNES = [
 ]
 
 
-def obsidian_plate(lit=False, ember=False):
+def obsidian_plate(lit=False, ember=False, conjunction=False):
     """A level 8 Ascension: a plate of blue-black glass in a gilded band of runes.
 
     The darkest card in the game, laid on the lightest page: the biggest decision in a run is the
@@ -964,11 +993,20 @@ def obsidian_plate(lit=False, ember=False):
     `ember=True` is the Apotheosis, a tier above: the same plate in `red` deep with its runes in the
     Fire ramp, the register the ✶ APOTHEOSIS strip button has always used.
 
+    `conjunction=True` is a combination (.ai/combo-spells.md, ComboCatalog): two Ascensions made one,
+    offered in the same strip. Its own plate colour, warm where the other three are cold or red: bronze
+    glass - `gold` deep with a `gold` shade band - and its runes in the Light ramp, starlight on bronze, so
+    it is never mistaken for the obsidian Ascension, the ember Apotheosis or the boon's violet enamel.
+
     `lit` gilds the bevel to gold `hi` and wakes the runes one step up their ramp. The face never
     changes.
     """
     c = raster.Canvas(PANEL, PANEL, None)
-    if ember:
+    if conjunction:
+        face, band = bl.tone("gold", "deep"), bl.tone("gold", "shade")
+        rune = bl.ELEMENTS["light"][1 if lit else 2]
+        gem = bl.ELEMENTS["light"][0]
+    elif ember:
         face, band = bl.tone("red", "deep"), bl.tone("red", "shade")
         rune = bl.ELEMENTS["fire"][0 if lit else 1]
         gem = bl.ELEMENTS["fire"][0]
@@ -1113,9 +1151,15 @@ def main():
     ok &= write(obsidian_plate(True), "ui-obsidian-plate-lit.png")
     ok &= write(obsidian_plate(False, ember=True), "ui-ember-plate.png")
     ok &= write(obsidian_plate(True, ember=True), "ui-ember-plate-lit.png")
+    ok &= write(obsidian_plate(False, conjunction=True), "ui-conjunction-plate.png")
+    ok &= write(obsidian_plate(True, conjunction=True), "ui-conjunction-plate-lit.png")
     print("Arcane Upgrades (the main menu's shop):")
     ok &= write(torn_page_card(False, mark="mastered"), "ui-spell-page-mastered.png")
     ok &= write(torn_page_card(True, mark="mastered"), "ui-spell-page-mastered-lit.png")
+    print("chest relics by rarity:")
+    for rarity in ("common", "uncommon", "rare", "relic"):
+        ok &= write(torn_page_card(False, mark=rarity), "ui-spell-page-%s.png" % rarity)
+        ok &= write(torn_page_card(True, mark=rarity), "ui-spell-page-%s-lit.png" % rarity)
     ok &= write(upgrade_socket(False), "ui-upgrade-socket.png")
     ok &= write(upgrade_socket(True), "ui-upgrade-socket-lit.png")
     ok &= write(mastery_seal(), "ui-mastery-seal.png")

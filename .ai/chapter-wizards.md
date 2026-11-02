@@ -1,0 +1,490 @@
+# Chapter wizards: one held in every place
+
+Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
+character theme on each level that is unique to that level."*
+
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1 and the pilot, Abe no Seimei** (section 4.5, "Built"); the other nine are not. It covers the ten
+chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
+Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Sketchbook, the Last Bridge and the
+Court. Tituba (Cursed Dungeon), Väinämöinen (Frozen Waste), Laelaps (Broken Circle) and Merlin (the
+Throne, `.ai/endgame-castle.md` 10.1 item 11) are spoken for. John Dee comes from chests, not a place.
+
+Read first: `.ai/world-and-tone.md` (why the rescued are named people), `.ai/side-events.md` (the
+five events, hints, secret wizards), `.ai/achievements-and-secrets.md` (every unlock is one
+achievement), `.ai/decisions/2026-10-10-apotheosis.md` (one verb per form).
+
+---
+
+## 0. What Eric must decide first
+
+**Decided by Eric, 2026-11-01.** "Only default starting wizards that are unlocked on a new save file need
+to have mono element spells. Unlockable wizards can have multi-element starting spells." So question 1
+is settled that way: the one-element rule binds only the starters a new save holds; a rescued wizard
+may open on a two-element spell, and may share an element with another wizard when their starting
+spells differ (`ValidateStartingCharacters` is relaxed to match when the first of these is built).
+Question 4: **the Sketchbook's wizard is Ma Liang** (the kids' boss there is now Elim, below). "All else
+approved": questions 2, 3, 5 and 6 as recommended - the new wizards count only at the Throne's gate, a
+second side event where a chapter already has one, Baba Yaga and Medea drawn serious, Nostradamus takes
+Starfall and Merlin the sword.
+
+The questions as they were put:
+
+| # | question | options | recommended |
+|---|---|---|---|
+| 1 | **The one-element rule.** `ValidateStartingCharacters` lets no two characters open on one element, and every opener must be pure. Eight elements are claimed; only Arcane, Light, Poison and Metal are left, so at most **four** more wizards fit, and Merlin needs one of them | **R1** two wizards may share an element if they open on different spells; **R2** a rescued wizard may also open on a hybrid; **R3** keep the rule and build a new pure spell per wizard | **R1 + R2.** It is what "one wizard per offensive spell" needs anyway: 18 of the 34 offensive spells are hybrids. The four disciplines keep distinct pure elements |
+| 2 | **Which gate counts them.** The Emberdeep counts every wizard whose rescue comes before it. Six of these are on the road, so a new save would need **eight** rescues before chapter 9 | **G1** as written: the Emberdeep counts them (no code); **G2** the Emberdeep counts today's six, and every chapter wizard is counted at the Throne, where he is | **G2.** The fiction's sentence ("he is reachable only when every wizard is free") is true at the Throne either way. G1 turns the road into a checklist of eight events |
+| 3 | **Where the prison goes in a chapter that already has an event** (Forest, Fields, Swamp, Sands) | a **second side event** per chapter; or re-point the existing event to pay the wizard | **A second event.** Re-pointing moves Bramble Seed, Contagion, Iron Palisade and Wishing Coin, and `Reconcile` would hand the wizard to every save that ever won the old event |
+| 4 | **The Sketchbook.** It is outside the fiction and its secrets pay "no meta reward but the page mark" | Ma Liang, drawn by us; or a wizard **the kids draw and name**; or none | **Ask the kids first.** If they want to, theirs; otherwise Ma Liang |
+| 5 | **Tone calls** | Baba Yaga (feared, not comic) and Medea (Euripides' Medea killed her children) | Both, drawn serious. Alternates are listed for each |
+| 6 | **Starfall** suits two seers: Nostradamus here and Merlin later | Nostradamus takes it, Merlin takes Spiritual Weapon's sword; or the reverse | Nostradamus. The sword in the stone is Merlin's better story |
+
+---
+
+## 1. What is fixed already
+
+| rule | where | what it means here |
+|---|---|---|
+| Starters are disciplines; the rescued are named historic or legendary magic-workers | `world-and-tone.md` | every proposal is a person |
+| Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect**; reserved for Merlin: **rewind**. Unclaimed in the ADR: banish, contagion, displace |
+| No path on his spell trades his element away | `ValidateApotheosisCatalog` | since 2026-11-02 the form names no path - the spell at max level, ascended down any branch, never combined - so every level 4 and level 8 option on a wizard's spell leads to it, and none may trade away the element the form deepens (it would come back as a third). The old rule, a required path that never leads away (`CheckRequiredPath`), went with the named paths |
+| A secret never pays a wizard | `achievements-and-secrets.md` 6.2 | every rescue below is a **side event** (a Road deed), never a secret |
+| One side event per chapter | `SideEventDirector.ForStage` | question 3, and plumbing piece P2 |
+| A secret wizard is revealed by the chapter whose event frees him | `ValidateSecret` | the Forest and the Sketchbook are open on a new save, so their wizards **cannot be secret**: a silhouette from the first run |
+| The kids' art is never altered or extended, and nothing new goes out under their name | `CLAUDE.md`, `stage-secrets.md` 6.9 | anything new in the Sketchbook is ours (the doodle section of `kids_art.py`, saying so) or the kids' |
+| Bosses are immune to crowd control that stops them reaching the player, and to executes | `in-flight.md` 3a item 4, section 4 | every verb below that moves, turns, blinds, seals or interrupts skips a `BossEnemy` |
+| A hint never names what it is about | `ValidateStageHints` | no caption below names a wizard, a spell or what to do |
+| The rescued wear no player pigment; only the dark wizard spends the darkness ramp as light | `side-events.md`, `world-and-tone.md` | sprites in `tools/art/roster.py`, staff head the only saturated thing |
+
+---
+
+## 2. The roster
+
+| # | chapter | wizard | element (opener) | starting spell | verb | form | how freed | rule needed |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Enchanted Forest | **Baba Yaga** | Grass (Grass+Poison) | Thorned Vine | **feed** | The Hungry Hedge | **hunt** the walking hut | R2 |
+| 2 | Fallow Fields | **Medea** | Fire (Light+Fire) | Solar Flare | **turn** | Dragon's Teeth | **pay** the reeve's tithe | R2 |
+| 3 | Sunken Cave | **the Cumaean Sibyl** | Arcane | Arcane Explosion | **echo** | The Hundred Mouths | **listen** for the true mouth | none (R1 if Ma Liang too) |
+| 4 | Blighted Swamp | **Paracelsus** | Poison | Contagion | **distil** | The Dose | **escort** him to the ferry | none |
+| 5 | Mystic Ruins | **Abe no Seimei** | Light | Kindled Ward | **banish** | The Five-Pointed Seal | **solve** the four stones | none |
+| 6 | Scorched Sands | **Imhotep** | Fire | Fireball | **blind** | Eye of Ra | **kindle** three beacons at once | R1 |
+| 7 | The Emberdeep | **Wayland the Smith** | Metal | Iron Palisade | **temper** | The Tempered Line | **bait** the hammers onto his chains | none |
+| 8 | The Sketchbook | **Ma Liang** | Arcane | Familiar (crow) | **displace** | The Painted Door | **trace** the dotted door | R1; outside the gate |
+| 9 | The Last Bridge | **Morgan le Fay** | Ice (Ice+Wind) | Sleet Runes | **double** | Fata Morgana | **keep pace** with her barge | R2 (R1 on Stormsweep) |
+| 10 | The Court | **Nostradamus** | Light | Starfall | **foresee** | The Quatrains | **seek** his voice room to room | R1 |
+
+Four open on a spell found in their own chapter (Thorned Vine, Contagion, Kindled Ward, Fireball), so
+finding the spell and freeing its wizard tell one story. Under the strict rule as it stands, only
+**Paracelsus, Seimei, Wayland** and one Arcane wizard can be built. Merlin is left Spiritual Weapon,
+Magic Missile and Stormsweep to choose from.
+
+Ten new verbs, none taken: feed, turn, echo, distil, banish, blind, temper, displace, double, foresee.
+Spares not used: silence, lead, hide.
+
+---
+
+## 3. What each prison asks
+
+The five existing events ask: stand still (grove), carry (key), explore (lanterns), fight here (thaw),
+catch (caravan), and the early chapters defend (well) and follow (moot). None of the ten repeats those,
+and none is "a harder fight".
+
+| ask | chapter | in one line | nearest thing already in the game, and the difference |
+|---|---|---|---|
+| **hunt** | Forest | a hut on hen's legs walks away from you; keep it close until it tires | the Pale Hart waits for you; this flees |
+| **pay** | Fields | XP that falls near the reeve's scale goes into its pan, not to you | nothing: the only ask that costs the player something |
+| **listen** | Cave | one of nine cave mouths is hers; the voice reaches you from it first | the moot lights its next stone; here nothing lights, you hear |
+| **escort** | Swamp | he follows you to the ferry; the bog goes for him | the key is a thing you carry; he is a person they hunt |
+| **solve** | Ruins | turn four stones to face the seal | the Broken Ward is an order; this is a state (keep it apart in art) |
+| **kindle** | Sands | three beacons burn 25 s each; have all three alight at once | the moot is in order against a clock; this is all at once, any order |
+| **bait** | Emberdeep | only his own forge's hammers break his chains; bring their slams to the stakes | nothing: the only ask that uses the enemy's attacks |
+| **trace** | Sketchbook | walk a dotted door dot to dot | Colour It In is a lap; this is a drawn line |
+| **keep pace** | Last Bridge | stay level with her drifting barge to the gate | the caravan is caught; the barge must be accompanied |
+| **seek** | Court | his voice comes from a room; reach it, and it comes from another | the hart is seen; he is only heard, through walls |
+
+Every one inherits `side-events.md`'s rules: placed from the seed 4-6 chunks out (the castle's two by
+their chapter's own rules), dormant until the player arrives, nothing timed by the pace clock, every
+event enemy an elite, nothing placed joining `"enemies"`, a failure that resets and never locks, and
+once freed, later wins pay a chest.
+
+---
+
+## 4. The ten
+
+Each block: who, why he keeps them there, the spell, the form (card of one or two sentences and a
+tagline of 34 characters or fewer), the passive (an axis no other wizard owns), the ask with first-guess
+numbers, the clue, and an alternate where one is worth having.
+
+### 4.1 Enchanted Forest - Baba Yaga
+
+- **Who.** The witch of the deep wood in Slavic tales: a hut that walks on hen's legs behind a fence
+  of bone; she tests whoever comes to her door and pays the ones who pass. Drawn tall, gaunt and
+  iron-grey, never a cackling hag.
+- **Why here.** Every path in a wood once led to her door. He bent the wood so that every path leads
+  inward (the chapter's own line) and set the hut walking its circle for ever.
+- **Spell.** **Thorned Vine** (Grass+Poison), Elderbark's deed, the Forest's own: a vine that sweeps the
+  densest pack and poisons it. Pure alternative: none is free (Bramble Seed is Väinämöinen's); R3 means a
+  new pure Grass spell.
+- **Form: The Hungry Hedge (feed).** *"Every enemy the vine kills feeds it: it sweeps further and wider
+  for the rest of the run."* Tagline: *"Feed it early. It remembers."* Growth capped (first guess +60%
+  length, +40% width). Path: the level 4 that deepens Grass, the untagged level 8.
+- **Passive: Bone Fence**, +20% knockback.
+- **Freed by: hunt.** The hut walks the deep wood. Within 420 px it turns and strides away, quicker
+  than his walk for 2 s, then slower. A bar fills while he is within 520 px and holds while he is not;
+  at 30 s it tires, kneels, the door turns to him and she steps out. Water or trunks in its way stop it
+  early. Losing it costs nothing: its prints lead back.
+- **Clue.** A slow two-beat tread shakes the ground from her side; prints of a great three-toed foot
+  appear in the moss from two chunks out; birds lift out of the canopy toward her. Sound
+  `hint_hut_step` (two heavy falls, a timber creak). Lines: *"Something heavy walks the deep wood, on two
+  legs."* / *"The steps again. Too heavy for a man."* / *"Still walking, round and round."*
+- **Locked hint:** "Kept walking in the Enchanted Forest."
+- **Alternate: Nimue**, the enchantress of Brocéliande who sealed Merlin in a tree, sealed by him in
+  Elderbark's oldest oak. The same spell, verb **banish** (Seimei then takes **silence**). She bookends
+  Merlin, but with Morgan she makes three Arthurians.
+
+### 4.2 Fallow Fields - Medea
+
+- **Who.** The sorceress of Colchis, granddaughter of the Sun, who gave Jason the charm to yoke the
+  fire-breathing bulls and plough the field of Ares, and set the soldiers sown there on each other with
+  one thrown stone.
+- **Why here.** "He takes a tithe of everything that grows here." He counts her among what grows: she
+  is held in the reeve's granary against a tithe the village could never pay.
+- **Spell.** **Solar Flare** (Light+Fire): her grandfather's sun round her, growing while she stands
+  still. Pure alternative: none free (R3).
+- **Form: Dragon's Teeth (turn).** *"At full growth the flare throws a stone of light into the crowd:
+  what it strikes turns on its neighbours for three seconds."* Tagline: *"One stone, and they fight."*
+  Elites are struck, not turned; bosses as the rule says. Needs a new enemy state (attack the nearest
+  other enemy), the largest code cost in this doc.
+- **Passive: Rejuvenation**, +20% healing from every source.
+- **Freed by: pay.** The Tithe-Reeve's great scale stands in the granary yard. From arrival, every XP orb
+  that falls within 320 px of it drifts into its pan instead of to him. When the pan holds one level's XP
+  at that moment of the run, the beam drops and the granary opens. Walking off keeps what is paid. No
+  failure, only a price: a level's XP for a wizard. (Not the Tithe Barn, FF4, which is a keepsake.)
+- **Clue.** She speaks, as Tituba does, but does not plead. A thin cold herb-smoke drifts low over the
+  stubble from her side. Sound `hint_granary_voice`. Lines: *"You there. The granary, past the
+  furrows."* / *"He counts me with the grain. Settle his count."* / *"Come, or go. I have waited out
+  worse men."*
+- **Alternate: Circe**, also the Sun's child, who turned men to beasts. The same spell and verb, a gentler
+  legend, no tie to a field.
+
+### 4.3 Sunken Cave - the Cumaean Sibyl
+
+- **Who.** The prophetess of Cumae, whose cave had a hundred mouths and spoke with a hundred voices; she
+  wrote her prophecies on leaves the wind scattered. Granted long life without youth, she shrank until
+  she hung in a jar.
+- **Why here.** She sees what is coming. He keeps her where nobody comes to ask, under the water, in a
+  jar.
+- **Spell.** **Arcane Explosion** (Arcane): it charges off every other cast and bursts out of her, the
+  god's voice breaking out. Strict-rule compatible unless Ma Liang is built too.
+- **Form: The Hundred Mouths (echo).** *"Each burst sounds your other spells again from where you
+  stand, at 40% strength."* Tagline: *"Everything you cast, twice."* Echoes queued a few a frame, never
+  echoed again.
+- **Passive: Prophecy**, +3 rerolls a run.
+- **Freed by: listen.** A cliff of nine cave mouths. Her voice comes out of all of them, each a beat
+  later than the last; the first is hers. Stand in it 2 s. A wrong mouth answers with a flight of
+  Gloomwings and the order shifts. With the sound off: written leaves blow out of every mouth, and the
+  true mouth's carry the warm glint.
+- **Clue.** Written leaves on a cold draught, out of place in a cave, drift in from her side. Sound
+  `hint_sibyl_voice`, many voices a beat apart. Lines: *"Leaves on a cold draught, every one written
+  on."* / *"A woman's voice from far down, in more places than one."* / *"The leaves again, written
+  faster now."*
+- **Alternate: Mother Shipton**, the Yorkshire prophetess born in a cave by the petrifying well.
+
+### 4.4 Blighted Swamp - Paracelsus
+
+- **Who.** The Swiss physician and alchemist (1493-1541) who wrote that the dose makes the poison, and
+  named the spirits of the four elements, the marsh lights among them.
+- **Why here.** Mother Rot heals herself; he is the one who could cure the rot. So the cure hangs in a
+  cage over her mire, breathing it.
+- **Spell.** **Contagion** (Poison), the lanterns' spell. Strict-rule compatible.
+- **Form: The Dose (distil).** *"Each jump of the plague reaches half as many and doubles its dose. The
+  last carrier dies hardest."* Tagline: *"The last one dies hardest."* Four generations at most.
+- **Passive: Sola Dosis**, +25% damage over time.
+- **Freed by: escort.** His cage hangs from a gibbet over a rot pool; hold the winch 2 s and it comes
+  down. He follows at 75% of the player's speed toward the ferry landing, about 1,600 px off, which the
+  objective arrow shows. Enemies within 250 px of him go for him; he has a health bar scaled like the
+  event enemies. If he falls, the bog takes him back to the cage and the walk starts again. At the
+  landing the Ferryman's empty punt takes him. The first ask in the game where someone is hunted who is
+  not the player.
+- **Clue.** Pale vapour threads drift in low from his side, the only thing in the bog moving against
+  the wind (not the lanterns' poison green, which is the other event's far tell). Sound
+  `hint_flask_chime`, a tapped flask and a cough. Lines: *"A man coughing, far out on the bog."* /
+  *"Glass rings across the water, like a tapped flask."* / *"The coughing again. Weaker."*
+
+### 4.5 Mystic Ruins - Abe no Seimei
+
+- **Who.** The court onmyōji of Heian Kyoto (921-1005): diviner, exorcist, master of wards and paper
+  talismans, Japan's most famous sorcerer.
+- **Why here.** "The old wards were broken from the inside." A school of wards is his kind of house;
+  the dark wizard turned a ward on its maker and sealed him inside his own five-pointed seal.
+- **Spell.** **Kindled Ward** (Light), the Ruins' vault: a mote of light that drifts at the nearest
+  enemy and burns it out, as his paper wards flew. Strict-rule compatible.
+- **Form: The Five-Pointed Seal (banish).** *"A ward that burns an enemy below a quarter of its health
+  seals it where it stands, harmless. When the ward goes out, everything it sealed is gone."* Tagline:
+  *"Sealed now. Gone later."* Sealing is `Enemy.SetTargetable(false)` plus a hold; elites take a heavy
+  hit instead; bosses are never sealed (the execute rule). Not an execute card: the sealed stop
+  fighting at once, and the kills land together.
+- **Passive: Exorcist**, +15% damage to elites.
+- **Freed by: solve.** The seal is a star cut in a courtyard floor, Seimei kneeling inside. Four
+  guardian stones stand at its quarters, each cut with one arrow. Stepping on a stone's plate turns it a
+  quarter. All four facing the seal, it breaks. About twelve steps. Draw the stones nothing like the
+  Broken Ward's notched ring.
+- **Clue.** Strips of written paper blow in from his side and char at the edges as they fall. Sound
+  `hint_paper_wind`. Lines: *"Strips of paper on the wind, in a hand you do not know."* / *"More paper,
+  burning at the edges as it falls."* / *"Still the paper comes, from the same quarter."*
+- **Alternate: Nicolas Flamel**, the Paris scrivener of the Philosopher's Stone; a book-man for the
+  Archivist's school. Or Seimei moves to the Court (he served one) and Flamel takes the Ruins.
+
+**Built (2026-11-01, `wip/wizard-seimei`).** The pilot, with P1. P2 was not needed: the Ruins had no side
+event, so `SideEventDirector.ForStage("stage_4")` simply gained its line.
+
+- **P1.** `ValidateStartingCharacters` holds the one-element and one-owner-per-element rules to the
+  STARTERS only; a freed wizard may open on a hybrid (never past two elements) and share an element; no
+  two characters may share an opening spell in one form. G2 is `UnlockDefinition.CountedAtFinalGateOnly`
+  (`FromEvent(..., finalGateOnly: true)`): `GlobalStatsManager.CountsTowardGate` counts such a wizard at
+  `StageCatalog.FinalGateChapter` (the Throne) and nowhere else, so the Emberdeep's list did not grow;
+  `ValidateGateReachability` checks the flag is only on a freed character with a rescue chapter and that
+  no earlier gate counts him. The ADR and `gameplay-design.md` say "never leads away".
+- **Him.** `CharacterData_Seimei.tres`, roster index 9 (appended). `roster.seimei()`: the pale kariginu
+  over black sashinuki, the tall black eboshi, his star on his breast, a purification wand with zigzag
+  paper taller than he is, and a paper ward held up in two fingers whose tip is the kindled light - the
+  one emissive thing on him, in the light ramp (new `LIGHT_RAMP`). Passive **Exorcist**
+  (`elite_damage_15`): +15% to everything `IsMiniBoss` marks, bosses included (it is not an execute).
+- **The event** (`FivePointedSealEvent`, `tools/art/five_pointed_seal.py`). The courtyard - a star and
+  ring cut in flagstones, full of the arcane ramp's violet - with him kneeling in it a ramp step into
+  shadow; four low square stones at its quarters, each with one arrow on its top; a plate outside each.
+  A step ONTO a plate turns its stone a quarter clockwise; standing does nothing more until he steps off
+  (52 px). **Coupled since 2026-11-01** (Eric: "Yes I like including actual puzzles in the game"): a press
+  also turns the two stones beside it on the ring. Over Z4 that is the circulant (1 1 0 1), determinant
+  -3, a unit mod 4, so every one of the 256 states has exactly one answer in press counts 0-3 a plate,
+  and that answer is the fewest presses. The start is made from the answer - four seeded rolls say how
+  often each plate must be pressed, raised to at least six, and the stones are turned back from the
+  solved seal by legal presses - so every seed is six to twelve presses away. `ValidateSealPuzzle` proves
+  it (all 256 states reachable, the solver equal to the breadth-first distance, 1,016 roll sets in
+  range). The tell: the three stones turn and flare on one beat and the seal's light runs along its
+  ring from the pressed stone to the two it moved; the objective counts "n of 4" facing, and the arrow
+  points at the courtyard only while he is away from it. Nothing fails or locks: four presses of one
+  plate are none. A ring of four of the chapter's enemies every 6 s while he is in the courtyard. The courtyard is
+  the event's sibling and stays, broken and lit, after the win. It needs 290 px of open ground, which on
+  the Ruins' lattice is only a court: `ExplorePlacer.EventSiteInBand` sweeps the whole band for one.
+- **His unlock** is the site's derived Road deed, "The Seal Broken", secret until `stage_4`; the locked
+  hint is "Sealed inside a star cut in the floor of the Mystic Ruins." (not "courtyard":
+  `ValidateStageRewards` read "Court" in it as the Court's). Quest-log prisoner "the master of wards";
+  his held line, the chapter note's clue: "Someone here was sealed in by his own wards."
+- **His clue.** `HintCue.Paper` (a sixth row of `hint-cues.png`): violet strips of written paper
+  tumbling in from his side, charring at both ends in their second half. `hint_paper_wind`: five gusts,
+  a strip snapping in each, crackle under the last three, one thin whistle of wind through the courtyard
+  (without the whistle it was 0.074 from `cast_wind`; with it, 0.125 from `ui_open`, whole set). The
+  section 4.5 lines, unchanged.
+- **His form**, The Five-Pointed Seal (banish): Flare then Pyre, then `KindledWard.FivePointedSealId`. A
+  strike that leaves an ordinary body below a quarter seals it (`Enemy.SetTargetable(false, hideBody:
+  false)` and `SetHeld`), under a small seal of the ward's light; when the ward goes out every sealed body
+  is let go and finished by the ward on one beat. Elites take one 4-strike blow instead; bosses nothing;
+  24 a ward at most.
+
+**Verified:** build; the validator (0 errors, main's 4 warnings); `_ExploreProbe --stage=4` on four seeds
+(won in 7 to 11 steps, him freed in memory; coupled, on six seeds, solved by the probe itself in 6 or 9
+presses); `_BalanceHarness --character=9 --all-unlocked
+--seek-apotheosis --immortal` (form offered and taken at 9.9 minutes, player level 23); `_UiShot` of the
+prison, the broken seal, the three card states, the hint and the form, at both canvases. **Not
+verified:** whether the stones are fun or the courtyard reads at a glance mid-fight; the sound, which was
+measured and not heard; and the form's numbers - the bot took it at 9.9 minutes, under the 15-minute floor
+`ApotheosisCatalog.MinimumPlayerLevel` was tuned for.
+
+### 4.6 Scorched Sands - Imhotep
+
+- **Who.** Chancellor to the pharaoh Djoser, architect of the first pyramid, physician, High Priest of
+  Ra at Heliopolis; revered as a sage and healer for two thousand years after.
+- **Why here.** "He hid the water." The builder who could find water and raise it is sealed in a dry
+  tomb beside the road the water left.
+- **Spell.** **Fireball** (Fire), the Long Coil's deed: the sun's fire in one slow, heavy blast. Shares
+  Fire with the Pyromancer (R1).
+- **Form: Eye of Ra (blind).** *"The blast flares like the sun. Whatever sees it loses you for two
+  seconds and wanders."* Tagline: *"What sees it forgets you."* A wander state through
+  `Enemy.AdjustSteering`; bosses immune.
+- **Passive: Surveyor**, +20% pickup reach.
+- **Freed by: kindle.** Three signal beacons on the dunes round his tomb, about 700 px apart. Stand by
+  one 1.5 s to light it; a lit beacon burns 25 s before the dry wind puts it out. All three alight at
+  once and the tomb slides open. The order is the player's; the route through the horde is the puzzle.
+- **Clue.** A thin stream of sand lifts into the air from his side, against the wind. Sound
+  `hint_tomb_knock`, slow stone on stone under hissing sand. Lines: *"Far off in the dunes, a slow
+  knocking, stone on stone."* / *"The knocking again, from under the sand."* / *"Slower now. It has not
+  stopped."*
+
+### 4.7 The Emberdeep - Wayland the Smith
+
+- **Who.** The master smith of Germanic legend (Völundr), lamed by a king and set on an island to forge
+  for him, who escaped on wings he made.
+- **Why here.** The Emberdeep is the forge "where every shackle came from". Every chain that holds the
+  others was struck by Wayland, chained to his own anvil. The Chainwright is his jailer.
+- **Spell.** **Iron Palisade** (Metal): stakes he forged. Strict-rule compatible.
+- **Form: The Tempered Line (temper).** *"Every blow the stakes take hardens the line. Struck enough,
+  it rings and cuts everything along it."* Tagline: *"The more they strike, the harder."* First guess:
+  +5% per contact to +100%, then one cut along the whole line and a reset.
+- **Passive: Wings**, +10% move speed.
+- **Freed by: bait.** He is chained to the great anvil by four chains staked in the floor. No spell
+  breaks his own iron; only his forge's hammers can. On arrival the bellows wake four Trip-Hammers (the
+  chapter's Slammer). Stand by a stake as one winds up, step out of the tell, and a slam that lands on
+  the stake breaks its chain (`GroundSlamAttack.Contains`, the one authority on the shape). One killed
+  before it strikes is replaced, four at most. He is never asked to take a hit.
+- **Clue.** Sparks drift in on hot air from his side. Sound `hint_anvil`, a tired hammer on an anvil.
+  Lines: *"Hammer on anvil, slow and steady, somewhere below."* / *"The hammer again. Whoever swings it
+  is very tired."* / *"It does not stop. It is not allowed to."*
+- **Gate.** He is freed in the gate chapter, so only the Throne counts him (either G).
+- **Alternate: Ilmarinen**, the Kalevala's eternal hammerer, but a second Kalevala hero.
+
+### 4.8 The Sketchbook - Ma Liang
+
+- **Who.** The boy of the Chinese tale whose brush made real whatever he painted; he painted for the
+  poor, and drowned a greedy emperor in a painted sea. Drawn as a young painter, serious, not a mascot.
+- **Why here.** Nobody keeps him: the Sketchbook is outside the fiction (no corruption line). He drew a
+  door into the page and needs one drawn out.
+- **Spell.** **Familiar** (Arcane): painted creatures that come alive. The catalog gives one Apotheosis
+  per form, each with its own verb, so he gets one, on the **crow** (the tale's painted birds). Taken
+  as the dog or the cat, he has none; the character card should say so.
+- **Form: The Painted Door (displace).** *"Where the crow strikes it paints a door, and whatever stands
+  on it steps out of a second door far across the field."* Tagline: *"Move the knot, not the kill."*
+- **Passive: Paint What Is Needed**, once a run, below a quarter of his health, a flask is painted at
+  his feet.
+- **Freed by: trace.** A door in dotted pencil on the page, about 300 px tall, its dots numbered. Walk
+  the line dot to dot, within 30 px; stepping off pauses, never resets; the last dot inks it in and he
+  steps out. Generated in `kids_art.py`'s doodle section, which says so.
+- **Clue.** A line of wet ink draws itself across the page toward his side. Sound `hint_brush`. Lines:
+  *"A brushstroke drawing itself across the page."* / *"Another line, wet, running the same way."* /
+  *"The ink is still running."*
+- **Gate.** `OutsideCampaignGate`, as Laelaps: the Sketchbook gates nothing.
+- **Alternate: the kids' own wizard.** They draw and name him, every frame theirs, moved only by
+  `kids_art.py`; he is exempt from the naming rule as the Sketchbook is from everything. Costs their
+  time: a playable sheet needs idle and walk frames they drew.
+
+### 4.9 The Last Bridge - Morgan le Fay
+
+- **Who.** The enchantress of Arthurian legend: healer of Avalon, shape-changer, the queen in the barge
+  who carried the dying king across the water. The mirage over the straits bears her name.
+- **Why here.** "His seat is across the water." She alone could carry anyone over without the bridge,
+  so her barge is moored under its last arch.
+- **Spell.** **Sleet Runes** (Ice+Wind): cold sleet off the strait, cast the way she faces. Pure
+  alternative under R1: **Stormsweep** (the storm on the water); the form works for either facing spell.
+- **Form: Fata Morgana (double).** *"A mirage of you walks beside you facing the other way and casts
+  behind you. Enemies near it chase it."* Tagline: *"Half of them chase a ghost."*
+- **Passive: Avalon**, the first fall of a run heals to full, not half.
+- **Freed by: keep pace.** The barge drifts under the span toward the gate, its one lantern seen through
+  gaps in the deck. Stay within 260 px of it for its drift (about 1,200 px, 50 s: slower than him, ahead
+  of the collapse). Fall behind or run ahead and the lantern dims; out of reach 6 s and it drifts back to
+  its mooring. Placed by the bridge's band rules (`ChapterRules`), not the explore bands.
+- **Clue.** Mist rolls over the parapet from her side, and a shimmering barge hangs above the water
+  there. Sound `hint_hull_knock`. Lines: *"A boat on the water below, where no boat could be."* / *"The
+  boat again, nearer the bridge."* / *"Its lantern is still lit."*
+
+### 4.10 The Court - Nostradamus
+
+- **Who.** Michel de Nostredame (1503-1566), physician and seer, astrologer to Catherine de' Medici's
+  court, author of the Prophecies.
+- **Why here.** A court needs a seer. He keeps him in the empty house to read what is coming, and what
+  is coming is the player.
+- **Spell.** **Starfall** (Light). Shares Light with Seimei (R1). See question 6.
+- **Form: The Quatrains (foresee).** *"A star falls on any enemy that begins a wind-up or draws a
+  bolt, before it can finish."* Tagline: *"It falls before they strike."* Needs a cancel on
+  `AttackTelegraph` (restart its cooldown; it may never skip a wind-up). Bosses are struck, not
+  interrupted.
+- **Passive: Foresight**, enemy wind-ups show 15% longer.
+- **Freed by: seek.** His voice reads from one of the Court's rooms (`endgame-castle.md` 5.4), chosen by
+  the seed. Reach the room and he is gone: an open book, a candle still lit. The next reading comes from
+  another room. The third time he is at his desk. The house's walls bend the route the sound promises.
+- **Clue.** He speaks, in lines written for the game in the shape of his quatrains (never his own).
+  Sound `hint_quatrain`. Lines: *"'Out of the west one light, on foot, alone.'"* / *"'The one he missed
+  walks every road he made.'"* / *"'When the last door opens, the house goes dark.'"* The Gallery's
+  portraits (5.4) uncover each wizard freed; his is the last covered frame.
+- **Alternate: Michael Scot**, court astrologer to Frederick II, the wizard Dante put in hell.
+
+---
+
+## 5. Clues: how each is heard and seen
+
+Eric's note (`in-flight.md` 3a item 6): each wizard's hint becomes a cue **in the world, from his
+direction** - the singer's notes drifting in from his side, his song heard - and the line **fades in
+on screen** as a hint, not in a speech bubble. Every block above follows it:
+
+| part | what | built from |
+|---|---|---|
+| the drift | something of his crossing the screen from his side: leaves, paper, ink, sparks, mist, sand | a pooled particle band entered at the screen edge on the bearing to the site; no allocation per frame (`performance.md`) |
+| the sound | his own generated cue, played 300 px toward the site as today | `tools/audio/sfx.py`, category `hint`, -9 or -10, checked with `analyse.py --confuse` against the whole set |
+| the line | fades in near the edge he is beyond, no band and no tail | `StageHintCaption` restyled once for all wizards |
+| when | the existing schedule: pace 300, then every 150, none after 810, never in the boss, only while the save lacks him | `StageHintDirector`, unchanged |
+
+With two events in one chapter, the director alternates them, one hint per slot, never two at once.
+Captions stay under 60 characters and never name anyone.
+
+---
+
+## 6. Rules this bends, and the options
+
+1. **One element per character** (question 1). R1 changes `ValidateStartingCharacters` to warn on two
+   characters with the same **spell** (and form), keeping distinct elements only for the four
+   disciplines. R2 lets a non-starter open on a hybrid; he claims one of its two elements, and his
+path deepens that one at one milestone and takes the untagged branch at the other.
+   `gameplay-design.md` "Starting Characters" and the ADR's "every required path deepens" sentence are
+   rewritten to "never leads away".
+2. **Gates** (question 2). G1 needs no code: `GateWizardIds` already counts by rescue chapter. Saves that
+   opened the Emberdeep keep it (it is written into the opened list), so nothing is confiscated either
+   way. G2 needs one field on the unlock entry (counted at the final gate only) and
+   `ValidateGateReachability` taught it. The Emberdeep's locked hint names those still held; with secret
+   names hidden it must name their chapters instead.
+3. **A second event in a chapter** (question 3), plumbing piece P2: `SideEventDirector.ForStage`
+   returns a list; the second site is placed in the same 4-6 chunk band at least 90 degrees off the first;
+   the wayfinder marks both; `StageHintCatalog` is keyed by site; `ValidateSecret`'s reveal rule reads
+   the wizard's own site; `StageRewards` lists both on the map card.
+4. **The Sketchbook** pays a wizard, which its secrets never do (question 4). It is an event, outside
+   the gate, so it closes nothing; it is still a departure from "the page mark only".
+5. **Secret until the chapter opens** works for eight; Baba Yaga and Ma Liang show as silhouettes from
+   the first run.
+6. **CC on bosses.** Turn, blind, displace, banish, double's lure and foresee's interrupt all skip a
+   `BossEnemy`; turn and banish also skip elites.
+7. **Real people.** Paracelsus, Nostradamus, Seimei and Imhotep are historic, as Tituba and John Dee are.
+   Seimei is enshrined in Kyoto and Imhotep was deified; both appear widely in games. None is given a
+   verb that agrees with an accusation, the line Tituba's spell was chosen by.
+8. **The character select** grows from nine cards to nineteen. Its grid and its scroll on the phone
+   canvas need checking (`_UiShot --resolution 540x1212 --portrait --safe-area`).
+
+**Schema.** None. Each rescue is a new site's derived Road deed, granted at once (`CompleteNow`); the
+reveals are derived; `LifetimeStats.EventsWon` takes new site ids as it is. A one-time reveal beat
+would need `SeenRevealedCharacterIds` and a schema step (`side-events.md` already says so).
+
+---
+
+## 7. What each costs, and the order
+
+Sizes as `achievements-and-secrets.md` uses them: **S** reuses what exists, **M** needs one primitive or a
+set of art, **L** needs a system. Every wizard also needs a 48-cell sprite (M), a `CharacterData_*.tres`,
+an `UnlockCatalog` entry, an `ApotheosisCatalog` entry, a passive id, a hint sound and a pictogram.
+
+| wizard | prison art | event code | form code | new primitive | rule | P2 |
+|---|---|---|---|---|---|---|
+| Seimei | S-M | S | M | none (`SetTargetable`) | none | no |
+| Wayland | S-M | M | S-M | a slam landing on a point | none | no |
+| the Sibyl | M (cliff of mouths) | M | M | per-mouth delayed audio | none | no |
+| Baba Yaga | L (the hut on the 96 cell, walking) | M | M | a mover that flees (`SecretMover` inverted) | R2 | yes |
+| Paracelsus | S | L | M | an escorted person enemies hunt | none | yes |
+| Imhotep | S-M | S | M | a wander steering state | R1 | yes |
+| Medea | S | S-M | **L** | orbs drawn to a point; enemies attacking enemies | R2 | yes |
+| Morgan | S-M | S-M | M | a second casting origin | R2 | no |
+| Nostradamus | S | S | M | a wind-up cancel | R1 | no |
+| Ma Liang | S | S | M | moving an enemy across the field | R1 | no |
+
+**Order.**
+
+1. **Decide** questions 1-4.
+2. **In parallel:** P1, the rule changes in the validators (S); P2, the second event and the clue form of
+   section 5 (M); and **Seimei** as the pilot: no event in the Ruins today, no rule change, a small ask,
+   a form on an existing primitive. It proves sprite, prison, form and clue end to end.
+3. **Wayland, then the Sibyl.** Both chapters have no event, so neither waits for P2.
+4. **Baba Yaga**, once P2 and R2 are in: the first rescue a new player can make, at chapter 1.
+5. **Paracelsus** (the escort primitive is the largest piece of event code), then **Imhotep** and
+   **Medea** (whose form needs the enemy-on-enemy state).
+6. **Morgan** and **Nostradamus**, each after its castle chapter flips.
+7. **Ma Liang**, whenever the kids have answered.
+
+Each piece verifies as the side events did: `dotnet build`, the validator run with `-- --no-save-writes`,
+`_ExploreProbe --stage=N` winning the event on a fixed seed fresh and `--all-unlocked`, `_UiShot` of the
+prison and the clue at both canvases, and `_BalanceHarness --seek-apotheosis --all-unlocked --immortal
+--character=N` for the form. **What no harness checks:** whether a hut that runs is fun to chase, whether
+nine mouths can be told apart by ear on a phone, whether paying a level feels like a fair price.

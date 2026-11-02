@@ -176,8 +176,16 @@ public partial class Starfall : Node2D, IPaintsElementPath
 		public int Links;
 		public uint Seed;
 		public bool Live;
+		// Sagittarius: held lit while the bow is drawn (its Life is kept a full linger ahead of its Age),
+		// when it was kindled (the oldest held goes out first), and the flare left on the loose.
+		public bool Held;
+		public float Born;
+		public float Flare;
 	}
 
+	// A line knows its two stars by slot and seed, and lives exactly as long as the shorter-lived of
+	// them - which for two ordinary lit stars is the older's remaining life, what it always was, and for
+	// a held star is as long as the draw holds it.
 	private struct Link
 	{
 		public Vector2 A;
@@ -187,10 +195,38 @@ public partial class Starfall : Node2D, IPaintsElementPath
 		public float Flash;
 		public uint Seed;
 		public bool Live;
+		public int StarA;
+		public int StarB;
+		public uint SeedA;
+		public uint SeedB;
 	}
 
 	public Player PlayerRef { get; set; }
 	public SpellData SpellData { get; private set; }
+
+	// --- Sagittarius (a combination: scripts/Sagittarius.cs, .ai/combo-spells.md section 3) -------------
+	// The combination borrows this rain whole - Starfall's own numbers and milestones, as frozen at the
+	// fusion - and changes three things. Its hits are credited to the combination, not to the parent that
+	// has left the loadout (DamageSource). A star kindled while the bow is drawn is HELD lit: it does not
+	// age out while the draw lasts, at most HeldCap of them, the oldest going out first (HoldKindled). And
+	// the loose is the end of every lit star: each flares and goes out, and its lines flash once with it
+	// (Flare). Plain Starfall never sets any of them, and every path below is then the one it always was.
+
+	/// <summary>What the hits are credited to: the combination, when Sagittarius carries this rain. Null: the spell.</summary>
+	public SpellData DamageSource { get; set; }
+
+	/// <summary>While true, a star kindled now is held lit until the loose or until the draw is lost.</summary>
+	public bool HoldKindled { get; set; }
+
+	/// <summary>The most stars held lit at once; one more puts the oldest out.</summary>
+	public int HeldCap { get; set; } = MaxLit;
+
+	/// <summary>How long a lit star's flare lasts on the loose: a landing twinkle's length.</summary>
+	public const float FlareSeconds = TwinkleSeconds;
+	// How long a star put out (the cap, the loose) takes to go: the fade every lit star ends on.
+	private const float OutSeconds = 0.3f;
+
+	private SpellData Source => DamageSource ?? SpellData;
 
 	// The sky as of the last cloudburst. Every star takes its numbers when it appears.
 	private int damage = 5;
@@ -579,7 +615,7 @@ public partial class Starfall : Node2D, IPaintsElementPath
 				continue;
 			if (MathF.Abs(p.X * dir.Y - p.Y * dir.X) > reach)
 				continue;
-			PlayerRef.DealDamageToEnemy(enemy, s.Damage, source: SpellData);
+			PlayerRef.DealDamageToEnemy(enemy, s.Damage, source: Source);
 			hits++;
 		}
 		nearBuffer.Clear();
@@ -602,7 +638,7 @@ public partial class Starfall : Node2D, IPaintsElementPath
 				continue;
 			if (enemy.GlobalPosition.DistanceSquaredTo(at) > radiusSquared)
 				continue;
-			PlayerRef.DealDamageToEnemy(enemy, amount, source: SpellData);
+			PlayerRef.DealDamageToEnemy(enemy, amount, source: Source);
 			hits++;
 		}
 		nearBuffer.Clear();
@@ -652,14 +688,21 @@ public partial class Starfall : Node2D, IPaintsElementPath
 			}
 		}
 
+		// Sagittarius: one more held than the cap puts the oldest held out.
+		bool hold = HoldKindled;
+		if (hold && HeldCount() >= Math.Max(1, HeldCap))
+			PutOut(OldestHeld());
+
 		int slot = NextFreeLit();
-		lit[slot] = new Lit { At = at, Life = linger, Seed = ++seedClock, Live = true };
+		lit[slot] = new Lit { At = at, Life = linger, Seed = ++seedClock, Live = true, Held = hold, Born = clock };
 
 		if (best < 0 || best == slot)
 			return;
 
-		// A line lives as long as the older of its two stars.
-		float life = lit[best].Life - lit[best].Age;
+		// A line lives as long as the older of its two stars. Between two ordinary stars that is fixed
+		// now, as it always was; a line with a held star at either end follows its stars (TickConstellation).
+		bool tracked = lit[best].Held || hold;
+		float life = tracked ? float.MaxValue : lit[best].Life - lit[best].Age;
 		if (life <= 0.05f)
 			return;
 		lit[best].Links++;
@@ -667,10 +710,15 @@ public partial class Starfall : Node2D, IPaintsElementPath
 		int link = NextFreeLink();
 		if (!links[link].Live)
 			liveLinks++;
-		links[link] = new Link { A = lit[best].At, B = at, Life = life, Seed = ++seedClock, Live = true };
+		links[link] = new Link
+		{
+			A = lit[best].At, B = at, Life = life, Seed = ++seedClock, Live = true,
+			StarA = tracked ? best : -1, StarB = tracked ? slot : -1, SeedA = lit[best].Seed, SeedB = lit[slot].Seed,
+		};
 	}
 
-	// Both reuse the oldest slot when every one is live, the same rule as the stars.
+	// Both reuse the oldest slot when every one is live, the same rule as the stars - except that a star
+	// held by Sagittarius's draw is never the one reused: the cap (HeldCap, under MaxLit) puts those out.
 	private int NextFreeLit()
 	{
 		for (int i = 0; i < MaxLit; i++)
@@ -682,9 +730,101 @@ public partial class Starfall : Node2D, IPaintsElementPath
 				return slot;
 			}
 		}
+		if (HeldCount() > 0)
+		{
+			int unheld = -1;
+			for (int j = 0; j < MaxLit; j++)
+				if (!lit[j].Held && (unheld < 0 || lit[j].Born < lit[unheld].Born))
+					unheld = j;
+			if (unheld >= 0)
+				return unheld;
+		}
 		int oldest = nextLit;
 		nextLit = (nextLit + 1) % MaxLit;
 		return oldest;
+	}
+
+	private int HeldCount()
+	{
+		int n = 0;
+		for (int j = 0; j < MaxLit; j++)
+			if (lit[j].Live && lit[j].Held)
+				n++;
+		return n;
+	}
+
+	private int OldestHeld()
+	{
+		int oldest = -1;
+		for (int j = 0; j < MaxLit; j++)
+			if (lit[j].Live && lit[j].Held && (oldest < 0 || lit[j].Born < lit[oldest].Born))
+				oldest = j;
+		return oldest;
+	}
+
+	// A held star let go and fading: what the cap does to the oldest, and what the end of the draw's
+	// hold does to all of them on the loose.
+	private void PutOut(int j)
+	{
+		if (j < 0 || !lit[j].Live)
+			return;
+		lit[j].Held = false;
+		lit[j].Life = MathF.Min(lit[j].Life, lit[j].Age + OutSeconds);
+	}
+
+	// How long a lit star has left, or 0 when the slot no longer holds the star a line was drawn to.
+	private float LitLeft(int j, uint seed)
+	{
+		if (j < 0 || j >= MaxLit || !lit[j].Live || lit[j].Seed != seed)
+			return 0f;
+		return lit[j].Life - lit[j].Age;
+	}
+
+	/// <summary>
+	/// Every lit star's position, up to <paramref name="into"/>'s length: Sagittarius's archers. Lit
+	/// stars that are already going out (the cap, a flare) are not among them. Allocates nothing.
+	/// </summary>
+	public int CollectLit(Vector2[] into)
+	{
+		int n = 0;
+		for (int j = 0; j < MaxLit && n < into.Length; j++)
+		{
+			if (!lit[j].Live || lit[j].Flare > 0f || lit[j].Life - lit[j].Age <= OutSeconds)
+				continue;
+			into[n++] = lit[j].At;
+		}
+		return n;
+	}
+
+	/// <summary>The draw was lost without a loose: every held star is an ordinary lit star again, a full linger from now.</summary>
+	public void ReleaseHeld()
+	{
+		for (int j = 0; j < MaxLit; j++)
+			if (lit[j].Live && lit[j].Held)
+				lit[j].Held = false;
+	}
+
+	/// <summary>
+	/// The loose: every lit star flares and goes out over <see cref="FlareSeconds"/>, and every line
+	/// flashes once and goes out with its stars. Sagittarius's arrows leave the stars on the same frame.
+	/// </summary>
+	public void Flare()
+	{
+		for (int j = 0; j < MaxLit; j++)
+		{
+			if (!lit[j].Live)
+				continue;
+			lit[j].Held = false;
+			lit[j].Flare = FlareSeconds;
+			lit[j].Life = MathF.Min(lit[j].Life, lit[j].Age + FlareSeconds);
+		}
+		for (int j = 0; j < MaxLinks; j++)
+		{
+			if (!links[j].Live)
+				continue;
+			links[j].Flash = FlareSeconds;
+			links[j].Life = MathF.Min(links[j].Life, links[j].Age + FlareSeconds);
+		}
 	}
 
 	private int NextFreeLink()
@@ -710,6 +850,10 @@ public partial class Starfall : Node2D, IPaintsElementPath
 			if (!lit[j].Live)
 				continue;
 			lit[j].Age += dt;
+			lit[j].Flare = MathF.Max(0f, lit[j].Flare - dt);
+			// Held by the draw: always a full linger ahead, so letting go of it leaves exactly that.
+			if (lit[j].Held)
+				lit[j].Life = lit[j].Age + linger;
 			if (lit[j].Age >= lit[j].Life)
 				lit[j].Live = false;
 		}
@@ -720,6 +864,10 @@ public partial class Starfall : Node2D, IPaintsElementPath
 				continue;
 			links[j].Age += dt;
 			links[j].Flash = MathF.Max(0f, links[j].Flash - dt);
+			// A line to a held star lives exactly as long as the shorter-lived of its two stars.
+			if (links[j].StarA >= 0)
+				links[j].Life = links[j].Age
+					+ MathF.Min(LitLeft(links[j].StarA, links[j].SeedA), LitLeft(links[j].StarB, links[j].SeedB));
 			if (links[j].Age >= links[j].Life)
 			{
 				links[j].Live = false;
@@ -754,7 +902,7 @@ public partial class Starfall : Node2D, IPaintsElementPath
 				if (DistanceSquaredToSegment(p, links[j].A, links[j].B) > reachSquared)
 					continue;
 				links[j].Flash = 0.18f;
-				PlayerRef.DealDamageToEnemy(enemy, amount, source: SpellData);
+				PlayerRef.DealDamageToEnemy(enemy, amount, source: Source);
 				break;
 			}
 		}
@@ -1135,9 +1283,13 @@ public partial class Starfall : Node2D, IPaintsElementPath
 			float fade = Mathf.Clamp(MathF.Min(s.Age / 0.1f, left / 0.3f), 0f, 1f);
 			float pulse = 0.75f + 0.25f * MathF.Sin(clock * 7f + s.Seed);
 			Vector2 at = toLocal * s.At;
+			// Sagittarius's loose: the star flares - a landing's twinkle, wide and white - as its arrow leaves.
+			if (s.Flare > 0f)
+				DrawTwinkle(ground, at, 26f, FlareSeconds - s.Flare, true, 4f);
 			Color hot = Ink(ramp.Hot, fade * pulse);
 			bool flick = ((int)(clock * 6f + s.Seed)) % 3 == 0;
-			float arm = flick ? 10f : 7f;
+			// A held star - the draw's - burns a step brighter and steadier than one that is only lit.
+			float arm = s.Held ? (flick ? 12f : 10f) : flick ? 10f : 7f;
 			// Two bars through the centre and a core: three calls a lit star, at up to 24 of them.
 			Bar(ground, at, Vector2.Right, -arm, arm, 2f, hot);
 			Bar(ground, at, Vector2.Down, -arm, arm, 2f, hot);

@@ -167,6 +167,10 @@ defensive build is a bigger health bar, which is the one thing a defensive build
 - **Saltbound Chain** (Water, Metal) - damages everything nearby when the player is struck.
 - **Rimebriar** (Ice, Grass) - slows everything nearby when the player is struck. Tagged Grass
   rather than Water on purpose: Grass is the only element with no chest item carrying its tag.
+- **Bone Rattle** (Darkness, Lightning; 2026-11-02, `.ai/new-items.md` section 7) - frightens every
+  ordinary enemy nearby when the player is struck (`Enemy.ApplyFear`, whose rules hold: no elite or
+  boss, never extended, four seconds' immunity after). The third reaction on the same pulse and
+  radius; its burst is Darkness's. Paid by the Gaoler's deed (`castle_conqueror`) beside Shadow Bolt.
 
 Three rules hold both of them together, and they are the interesting part:
 
@@ -451,6 +455,18 @@ its piece, and two pieces tell you what the third is:
 | `fortunes_favor` | **The Regalia** | **The Crown** (`aegis_crown`) · Signet Ring (`lucky_coin`) · Orb of Antioch (`compass_rose`) |
 | `speed_demon` | **The Seven-League Boots** | Left Boot (`quicksilver_pendant`) · Right Boot (`haste_rune`) |
 | `cabinet_of_curiosities` | **The Cabinet of Curiosities** | Lodestone (`lodestone`) · Curio Ledger (`curio_ledger`) · Hidden Drawer (`hidden_drawer`) - the collector's set, section 8 |
+| `poppet` | **The Poppet** | Pricking Pin (`pricking_pin`) · Binding Thread (`binding_thread`) · Singed Lock (`singed_lock`) - the debuffs, `.ai/new-items.md` section 3 |
+| `gimmel_ring` | **The Gimmel Ring** | Betrothal Hoop (`betrothal_hoop`) · Fede Hoop (`fede_hoop`) · Garnet Bezel (`garnet_bezel`) - the pair, `.ai/new-items.md` section 4 |
+
+The last two are the first wave of `.ai/new-items.md` (2026-11-02). Their rules live together in
+`scripts/Player.ItemRules.cs`; the Poppet's duration bonus is one number for the arena,
+`Enemy.DebuffDurationScale`, read by `ApplySlow`, `ApplyPoison`, `ApplyVulnerable` and `ApplyWeaken`.
+Two calls in that wave differ from the doc's text: the Poppet's "two different debuffs" counts slowed,
+poisoned, weakened and withered but **not Vulnerable**, since Vulnerable is what the rule pays and
+counted as an input it kept itself (and any stronger mark) alive on a withered enemy forever; and
+the Binding Thread weakens a toucher **before** its touch is scaled, so the touch that binds is the
+first one cut - which is also why the first touch of an enemy now goes through
+`ScaleOutgoingDamage` (`Player.OnBodyEntered` skipped it).
 
 Rules that hold it together:
 
@@ -464,8 +480,10 @@ Rules that hold it together:
   over-promise, and the `Effects` arrays were not touched.
 - **Pieces of one object share palette, metal and edge treatment** in `tools/art/relic_icons.py`, and
   the set icon is the object whole.
-- `RegressionChecks.ValidateFullSetObjects`: every relic is a piece of something, every piece can
-  drop, nothing is listed twice, and no partial fires at the same moment as the full effect.
+- `RegressionChecks.ValidateFullSetObjects`: every piece can drop, nothing is listed twice, and no
+  partial fires at the same moment as the full effect. **A relic may stand alone** since 2026-11-02
+  (Eric: "Every relic does not need to belong to a set"; `.ai/new-items.md` answer 1) - the check
+  used to warn on any relic that was no set's piece. A set's pieces are still the parts of one object.
 
 ### The moment a set assembles (issue #43, 2026-10-28)
 
@@ -506,7 +524,7 @@ with its numbers**:
 | The Brazier | Stand still: heat builds over 4 s to +30% spell damage and +15% spell area. Moving cools it over 3 s. (Was a per-cast ramp to +18% / +12% - see "The Brazier burns while you stand still", below.) |
 | The Lightning Rod | +10% crit chance. Every critical hit arcs to the nearest enemy within 170 for half its damage, and you move 10% faster while shielded. |
 | The Thorned Buckler | Take 15% less damage. While you are below 30% HP, every hit that hurts you strikes all enemies within 120 for 8 damage + 3 per player level. |
-| The Reaper's Scythe | +25% spell damage, and any hit on an enemy below 30% health kills it outright. |
+| The Reaper's Scythe | +25% spell damage, and any hit on an enemy below 30% health kills it outright. Not bosses (Eric, 2026-11-01). |
 | The Barrow Harness | +80 max HP, and take 18% less damage. |
 | The Tithe Chalice | Every kill heals 1 HP. |
 | The Jewelled Crown | Fire, Ice, Lightning and Poison tier bonuses +40%. Every hit slows 20% more for 40% longer. Lightning chains reach 50% farther and trigger 1 hit sooner. |
@@ -575,7 +593,7 @@ player, which says whether there is one, not how much.
 
 ### Partial bonuses on the three-piece sets
 
-Eleven sets exist: ten of three or more pieces and one of two (the boots, which are a pair, and none
+Thirteen sets exist: twelve of three or more pieces and one of two (the boots, which are a pair, and none
 other). **Every set of three or more pays a taste of its effect at two pieces; the boots stay
 all-or-nothing.** The Scythe, the Chalice and the Regalia grew a third piece when they became
 objects, and got their partials then: +8% spell damage, +20 max HP and +10% XP. The Cabinet of

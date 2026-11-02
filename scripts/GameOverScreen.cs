@@ -1,4 +1,4 @@
-﻿using Godot;
+using Godot;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,25 +11,36 @@ using WizardSurvivors.scripts;
 /// </summary>
 /// <remarks>
 /// It was nine centred lines of one weight - "Enemies killed: 0", "Final loadout: Magic Missile Lv
-/// 1, ...", "Arcane Energy earned: +28" - with one picture on it, the button. What the run EARNED
-/// sat in the same ink as how long it lasted, the loadout was a sentence, and nothing said what
-/// the boons, relics or the damage had been. Now it reads in the order a player asks:
+/// 1, ...", "Arcane Energy earned: +28" - with one picture on it, the button. Then it showed
+/// everything at once: the headline, every reward card, and the build and the stats behind two tabs.
+///
+/// FOLDED (2026-11-02, Eric: "The end game info pane should not show much info at first, but the
+/// player can click into info sections to see stats and details"). It opens on what a player asks
+/// first, and nothing else:
 ///
 ///   1. What happened: Defeat or Victory, the chapter and wizard, and three headline numbers.
-///   2. What I take away (Rewards): the Arcane Energy, counted up, with how it was counted, then one
-///      card per thing unlocked - its picture, what kind of thing it is, how it was earned - under
+///   2. What I take away: the Arcane Energy, COUNTED UP a coin at a time and landing on its figure
+///      with the payout (the tally), the purse after it, and one picture per thing unlocked under
 ///      a New seal.
-///   3. What I built and how it went, behind two tabs (Your build, Stats), because together they
-///      are longer than any screen.
+///   3. Three sections, a row each with a line of what is inside - Rewards (how the energy was
+///      counted, a card per unlock or the closest unlock), Your build (spells, element tags, boons,
+///      relics, sets) and Stats (the run's tiles, damage by spell, Playtest telemetry). A press opens
+///      one in place of the summary; Back, B or Escape folds it again.
 ///   4. Where to go: Retry, or the main menu.
 ///
-/// On a PC the rewards and the tabs stand side by side, each scrolling on its own, so a typical
-/// run fits a 1280x720 screen without scrolling at all. On a phone it is one column that scrolls
-/// under a finger, with the buttons pinned below it.
+/// Folded, the panel is only as tall as the summary and sits in the middle of the screen; with a
+/// section open it takes the whole height and the section scrolls. Every number the screen showed
+/// before is in one of the sections - folded, not removed.
+///
+/// AFTER A DEFEAT the screen is brought down by the player's press at the end of the defeat
+/// (DefeatSequence) and COVERS the field from below (CoversFromBelow); the defeat has played the
+/// sting. A victory comes up as it always did, with stage_clear rather than game_over. Either way the
+/// count runs once the screen is in place, and every press until it lands is swallowed - one lands it
+/// at once - so neither the press that brought the screen down nor a tap's emulated mouse twin can
+/// reach a button underneath.
 ///
 /// It READS, it never grants. Everything on it was paid and saved by Node2DGame.FinishRunAndReward
-/// before the screen was built (RunReport); the animations are dressing on numbers already banked,
-/// and none of them holds up a button.
+/// before the screen was built (RunReport); the count is dressing on a number already banked.
 /// </remarks>
 public partial class GameOverScreen : CanvasLayer
 {
@@ -66,11 +77,36 @@ public partial class GameOverScreen : CanvasLayer
 	private const string UnknownSpellIcon = "res://assets/bonelight/ui/spells/unknown.png";
 
 	// A PC panel is capped so a wide monitor does not stretch a row of text across it.
-	private const float MaxPanelWidth = 1200f;
+	private const float MaxPanelWidth = 1080f;
 	private const int SectionGap = 22;
 	private const int RowGap = 10;
 
+	/// <summary>How long the screen takes to cover the field after a defeat; DefeatSequence goes after it.</summary>
+	public const float CoverSeconds = 0.42f;
+	// The count: about fourteen coins a second, never shorter or longer than these, a little longer the
+	// bigger the payout (a tenfold payout is about a quarter of a second more).
+	private const float TallyMinSeconds = 0.7f;
+	private const float TallyMaxSeconds = 1.6f;
+	private const float TallyTicksPerSecond = 14f;
+	private const float TallyTickGapSeconds = 0.045f;
+	// A victory's screen comes up without a cover; the count waits this long so it is seen to start.
+	private const float VictoryTallyDelay = 0.25f;
+	// After a swallowed press the next quarter second is swallowed too: a tap arrives as a touch AND an
+	// emulated mouse press, in either order, and the second must not press what is under the finger.
+	private const ulong QuietAfterPressMsec = 250;
+	// Pictures of the unlocks on the folded card; the rest are counted, and all of them are in Rewards.
+	private const int StripMaxIconsWide = 6;
+	private const int StripMaxIconsNarrow = 5;
+
+	/// <summary>
+	/// Set before the screen enters the tree: it was brought down by the press at the end of a defeat
+	/// (DefeatSequence), so it covers the field from below and leaves the sting to the defeat.
+	/// </summary>
+	public bool CoversFromBelow { get; set; }
+
 	// --- the shell, built once ----------------------------------------------------------------
+	private Control topSpacer;
+	private Control bottomSpacer;
 	private PanelContainer panel;
 	private VBoxContainer column;
 	private VBoxContainer headerHost;
@@ -80,26 +116,69 @@ public partial class GameOverScreen : CanvasLayer
 
 	// --- per report -----------------------------------------------------------------------------
 	private RunReport report;
-	private readonly List<Control> revealed = new();
-	private readonly List<Control> seals = new();
 	private Label energyValue;
-	private readonly List<Button> tabButtons = new();
-	private readonly List<Control> tabPages = new();
-	private int activeTab;
-	private Tween revealTween;
+	private Control purseLine;
+	private Control stripSeal;
+	private readonly List<Control> stripIcons = new();
+	private Control summaryView;
+	private Control sectionView;
+	private Label sectionTitle;
+	private Button sectionBack;
+	private ScrollContainer sectionScroll;
+	private readonly List<Section> sections = new();
+	private int openSection = -1;
 	private bool narrow;
+
+	private sealed class Section
+	{
+		public string Title;
+		public Control Page;
+		public Button Opener;
+	}
+
+	// --- the arrival and the count --------------------------------------------------------------
+	private enum Phase { Cover, Waiting, Tally, Live }
+	private Phase phase = Phase.Live;
+	private float phaseAge;
+	private float tallySeconds;
+	private int tallySteps;
+	private int tallyNextStep;
+	private float lastTickAge;
+	private ulong quietUntilMsec;
+	private Tween coverTween;
+	private bool stingPlayed;
+
+	/// <summary>True until the count has landed: presses are being swallowed. For _UiShot.</summary>
+	public bool Counting => phase != Phase.Live;
 
 	public override void _Ready()
 	{
 		narrow = ResponsiveLayout.IsNarrow(this);
 		BuildShell();
-		SfxPlayer.Global(SfxCatalog.GameOver);
 
 		// Clear of the phone's rounded corners and camera hole; nothing on desktop (SafeArea).
 		SafeArea.Apply(this);
 		// The selection opens on Main menu, as it opened on Continue before: A carries straight on
 		// from a game over without the player putting the pad down to find the mouse.
 		MenuNavigator.Attach(this, continueButton);
+		// B, Escape and Android's back fold an open section; with none open they do nothing here.
+		MenuBackListener.Attach(this, CloseSection);
+
+		if (CoversFromBelow)
+		{
+			// Below the screen from the first frame it draws, then up over the field - the whole layer,
+			// dim and all, so the field is covered from the bottom up. The count starts once it is in.
+			phase = Phase.Cover;
+			Offset = new Vector2(0f, ResponsiveLayout.ViewportSize(this).Y);
+			coverTween = CreateTween();
+			coverTween.TweenProperty(this, "offset", Vector2.Zero, CoverSeconds)
+				.SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.Out);
+			coverTween.TweenCallback(Callable.From(StartTally));
+		}
+		else
+		{
+			phase = Phase.Waiting;
+		}
 	}
 
 	/// <summary>Builds the screen from a finished run. Safe to call again: it rebuilds.</summary>
@@ -111,15 +190,29 @@ public partial class GameOverScreen : CanvasLayer
 
 		Clear(headerHost);
 		Clear(bodyHost);
-		revealed.Clear();
-		seals.Clear();
-		tabButtons.Clear();
-		tabPages.Clear();
+		stripIcons.Clear();
+		sections.Clear();
+		openSection = -1;
 		energyValue = null;
+		purseLine = null;
+		stripSeal = null;
 
 		BuildHeader();
 		BuildBody();
-		Reveal();
+		ApplyFold();
+
+		if (!stingPlayed)
+		{
+			stingPlayed = true;
+			// After a defeat the sequence played game_over as DEFEAT landed. A win is stage_clear - it
+			// was game_over too, a descent with no resolution, under the word Victory.
+			if (!CoversFromBelow)
+				SfxPlayer.Global(report.Result.Outcome == RunOutcome.Victory ? SfxCatalog.StageClear : SfxCatalog.GameOver);
+		}
+		// Built at its final figures, then wound back to nothing if the count is still to run: a frame
+		// that never animates (a harness re-presenting after the count) still says the right thing.
+		if (phase != Phase.Live)
+			WindBackForTally();
 
 		// A rebuild after the first frame (a harness re-presenting) has new cards to ring and new
 		// lists to prepare for a finger; the selection stays where it was, on the footer.
@@ -139,7 +232,8 @@ public partial class GameOverScreen : CanvasLayer
 	}
 
 	// ============================================================================================
-	// The shell: a dim over the run, the stone panel, a header, a body and the buttons.
+	// The shell: a dim over the run, the stone panel - centred at its own height while folded, the
+	// whole height with a section open - a header, a body and the buttons.
 	// ============================================================================================
 
 	private void BuildShell()
@@ -148,30 +242,38 @@ public partial class GameOverScreen : CanvasLayer
 		dim.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
 		AddChild(dim);
 
+		// Edge-anchored, so SafeArea pulls it in from the phone's corners and camera hole.
+		var frame = new MarginContainer { Name = "Frame", MouseFilter = Control.MouseFilterEnum.Ignore };
+		frame.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+		int margin = narrow ? 10 : 12;
+		frame.AddThemeConstantOverride("margin_left", margin);
+		frame.AddThemeConstantOverride("margin_right", margin);
+		frame.AddThemeConstantOverride("margin_top", margin);
+		frame.AddThemeConstantOverride("margin_bottom", margin);
+		AddChild(frame);
+
+		var stack = new VBoxContainer { Name = "Stack", MouseFilter = Control.MouseFilterEnum.Ignore };
+		stack.AddThemeConstantOverride("separation", 0);
+		frame.AddChild(stack);
+
+		// The two spacers share what the folded panel does not take, which centres it; with a
+		// section open they go and the panel fills the height (ApplyFold).
+		topSpacer = new Control { Name = "TopSpacer", MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+		stack.AddChild(topSpacer);
+
 		panel = new PanelContainer { Name = "Panel" };
 		panel.AddThemeStyleboxOverride("panel", BonelightSkin.PanelStyle(BonelightSkin.Register.Stone));
-		if (narrow)
+		if (!narrow)
 		{
-			// Nearly the whole phone: width is the scarce axis, and SafeArea insets the edges.
-			panel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-			panel.OffsetLeft = 10f;
-			panel.OffsetRight = -10f;
-			panel.OffsetTop = 10f;
-			panel.OffsetBottom = -10f;
-		}
-		else
-		{
+			// Width is the panel's own on a PC; a phone gives it the whole width, which is scarce there.
 			Vector2 view = ResponsiveLayout.ViewportSize(this);
-			float halfWidth = Mathf.Min(MaxPanelWidth, view.X - 40f) * 0.5f;
-			float halfHeight = (view.Y - 24f) * 0.5f;
-			panel.AnchorLeft = panel.AnchorRight = 0.5f;
-			panel.AnchorTop = panel.AnchorBottom = 0.5f;
-			panel.OffsetLeft = -halfWidth;
-			panel.OffsetRight = halfWidth;
-			panel.OffsetTop = -halfHeight;
-			panel.OffsetBottom = halfHeight;
+			panel.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+			panel.CustomMinimumSize = new Vector2(Mathf.Min(MaxPanelWidth, view.X - 40f), 0f);
 		}
-		AddChild(panel);
+		stack.AddChild(panel);
+
+		bottomSpacer = new Control { Name = "BottomSpacer", MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+		stack.AddChild(bottomSpacer);
 
 		column = new VBoxContainer { Name = "Column" };
 		column.AddThemeConstantOverride("separation", narrow ? 12 : 10);
@@ -190,6 +292,20 @@ public partial class GameOverScreen : CanvasLayer
 		column.AddChild(bodyHost);
 
 		column.AddChild(BuildFooter());
+	}
+
+	// Folded: the summary, the panel at its own height between the spacers. Open: one section, the
+	// panel the whole height so the section has room to scroll.
+	private void ApplyFold()
+	{
+		bool open = openSection >= 0;
+		if (summaryView != null)
+			summaryView.Visible = !open;
+		if (sectionView != null)
+			sectionView.Visible = open;
+		topSpacer.Visible = !open;
+		bottomSpacer.Visible = !open;
+		panel.SizeFlagsVertical = open ? Control.SizeFlags.ExpandFill : Control.SizeFlags.ShrinkCenter;
 	}
 
 	private Control BuildFooter()
@@ -435,48 +551,16 @@ public partial class GameOverScreen : CanvasLayer
 	}
 
 	// ============================================================================================
-	// The body: Rewards, then the two tabs.
+	// The body: the summary - the reward and a row per section - or one section open in its place.
 	// ============================================================================================
 
 	private void BuildBody()
 	{
-		if (narrow)
-		{
-			// One column under a finger. The tabs sit below the rewards inside the same scroll, so
-			// a swipe goes straight from what was earned to what was built.
-			var list = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-			list.AddThemeConstantOverride("separation", SectionGap);
-			list.AddChild(BuildRewards());
-			list.AddChild(BuildTabBar());
-			foreach (Control page in BuildTabPages())
-				list.AddChild(page);
-			bodyHost.AddChild(Scroll("ResultsScroll", list));
-		}
-		else
-		{
-			var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-			row.AddThemeConstantOverride("separation", 22);
-
-			ScrollContainer left = Scroll("RewardsScroll", BuildRewards());
-			left.SizeFlagsStretchRatio = 0.92f;
-			row.AddChild(left);
-
-			var right = new VBoxContainer
-			{
-				SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-				SizeFlagsStretchRatio = 1.08f,
-				MouseFilter = Control.MouseFilterEnum.Ignore,
-			};
-			right.AddThemeConstantOverride("separation", 10);
-			right.AddChild(BuildTabBar());
-			var pages = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-			foreach (Control page in BuildTabPages())
-				pages.AddChild(page);
-			right.AddChild(Scroll("TabScroll", pages));
-			row.AddChild(right);
-			bodyHost.AddChild(row);
-		}
-		ShowTab(activeTab);
+		summaryView = BuildSummary();
+		bodyHost.AddChild(summaryView);
+		// After the summary, which built the pages it holds.
+		sectionView = BuildSectionView();
+		bodyHost.AddChild(sectionView);
 	}
 
 	private static ScrollContainer Scroll(string name, Control content)
@@ -490,35 +574,34 @@ public partial class GameOverScreen : CanvasLayer
 		return scroll;
 	}
 
-	// --- Rewards ---------------------------------------------------------------------------------
+	// --- the summary -------------------------------------------------------------------------------
 
-	private Control BuildRewards()
+	private Control BuildSummary()
 	{
-		var section = new VBoxContainer { Name = "Rewards", MouseFilter = Control.MouseFilterEnum.Ignore };
-		section.AddThemeConstantOverride("separation", RowGap);
+		var box = new VBoxContainer { Name = "Summary", MouseFilter = Control.MouseFilterEnum.Ignore };
+		box.AddThemeConstantOverride("separation", narrow ? 14 : 12);
+		box.AddChild(BuildRewardCard());
 
-		List<RunUnlockEntry> entries = report.Unlocks?.Entries ?? new List<RunUnlockEntry>();
-		section.AddChild(SectionHeading("Rewards", entries.Count > 0 ? $"{entries.Count} new" : string.Empty));
-		section.AddChild(BuildEnergyCard());
-
-		if (entries.Count > 0)
-		{
-			foreach (RunUnlockEntry entry in entries)
-				section.AddChild(BuildUnlockCard(entry));
-		}
-		else
-		{
-			section.AddChild(Quiet("Nothing new unlocked this run."));
-			if (BuildClosestUnlock() is Control closest)
-				section.AddChild(closest);
-		}
-		return section;
+		var rows = new VBoxContainer { Name = "Sections", MouseFilter = Control.MouseFilterEnum.Ignore };
+		rows.AddThemeConstantOverride("separation", 8);
+		// The reward card's own picture at half its 64: the stat glyph for energy is a dot at this size.
+		TextureRect energy = Icon(Reward("reward-energy"), 32f);
+		energy.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+		AddSection(rows, "Rewards", "Rewards", RewardsGist(), energy, BuildRewardsPage());
+		AddSection(rows, "Build", "Your build", BuildGist(), BuildSpellGlyph(), BuildBuildPage());
+		AddSection(rows, "Stats", "Stats", StatsGist(), Glyph("damage", 24f), BuildStatsPage());
+		box.AddChild(rows);
+		return box;
 	}
 
-	private Control BuildEnergyCard()
+	// What the run paid, counted up by the tally: the Arcane Energy, the purse after it, and a picture
+	// of each thing unlocked. Edged in gold when something was unlocked, as an unlock's own card is.
+	private Control BuildRewardCard()
 	{
-		// No overlay: the breakdown toggle is this card's stop for a pad.
-		var card = Row(Stone.Face, Stone.Edge, 1, focusStop: false);
+		List<RunUnlockEntry> entries = report.Unlocks?.Entries ?? new List<RunUnlockEntry>();
+		bool unlocked = entries.Count > 0;
+		PanelContainer card = Row(Stone.Face, unlocked ? NewEdge : Stone.Edge, unlocked ? 2 : 1, focusStop: false);
+		card.Name = "RewardCard";
 		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		line.AddThemeConstantOverride("separation", 14);
 		RowContent(card).AddChild(line);
@@ -528,58 +611,271 @@ public partial class GameOverScreen : CanvasLayer
 		var text = new VBoxContainer
 		{
 			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+			SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
 			MouseFilter = Control.MouseFilterEnum.Ignore,
 		};
-		text.AddThemeConstantOverride("separation", 4);
+		text.AddThemeConstantOverride("separation", 2);
 		line.AddChild(text);
 
 		var amount = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		amount.AddThemeConstantOverride("separation", 10);
-		// Counted up from nothing by Reveal; the final figure is set here, so a screen that never
-		// animates (a harness frame, a reduced-motion setting one day) still says the right thing.
+		// The final figure is set here and wound back to nothing by the tally (WindBackForTally), so a
+		// screen that never counts still says the right thing. The heading face at the Display size:
+		// it is the number the screen is for.
 		energyValue = CodexRows.MakeText($"+{Count(report.ArcaneEarned)}", ResponsiveLayout.TextRole.Title, Stone.Reward);
 		energyValue.Name = "EnergyValue";
 		energyValue.AutowrapMode = TextServer.AutowrapMode.Off;
+		energyValue.AddThemeFontSizeOverride("font_size", ResponsiveLayout.FontSize(energyValue, ResponsiveLayout.TextRole.Display));
 		amount.AddChild(energyValue);
 		Label unit = CodexRows.MakeText("Arcane Energy", ResponsiveLayout.TextRole.Body, Stone.Ink);
 		unit.AutowrapMode = TextServer.AutowrapMode.Off;
-		unit.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
+		unit.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
 		amount.AddChild(unit);
 		text.AddChild(amount);
 
-		text.AddChild(CodexRows.MakeText($"You now hold {Count(report.ArcanePurse)}", ResponsiveLayout.TextRole.Label, Stone.InkSoft));
+		Label purse = CodexRows.MakeText($"You now hold {Count(report.ArcanePurse)}", ResponsiveLayout.TextRole.Label, Stone.InkSoft);
+		purse.Name = "PurseLine";
+		purseLine = purse;
+		text.AddChild(purse);
 
-		// The breakdown is half a dozen lines, and open it pushed every unlock card below the fold
-		// of a 1280x720 PC - the things a player most wants to see. So it is one press away, the
-		// pause screen's Show details pattern, and stays as the player left it if the screen rebuilds.
-		Control breakdown = BuildBreakdown();
-		breakdown.Visible = breakdownShown;
-		var toggle = new Button
-		{
-			Name = "BreakdownToggle",
-			Text = BreakdownToggleText(),
-			FocusMode = Control.FocusModeEnum.All,
-			SizeFlagsHorizontal = Control.SizeFlags.ShrinkBegin,
-			Alignment = HorizontalAlignment.Left,
-		};
-		ResponsiveLayout.SetFont(toggle, ResponsiveLayout.TextRole.Label);
-		CodexRows.StyleQuietToggle(toggle, Stone);
-		ResponsiveLayout.EnsureTouchTarget(toggle, 120f);
-		toggle.Pressed += () =>
-		{
-			breakdownShown = !breakdownShown;
-			breakdown.Visible = breakdownShown;
-			toggle.Text = BreakdownToggleText();
-		};
-		text.AddChild(toggle);
-
-		RowContent(card).AddChild(breakdown);
+		if (unlocked)
+			RowContent(card).AddChild(BuildUnlockStrip(entries));
 		return card;
 	}
 
-	private bool breakdownShown;
+	// Every unlock as its picture alone, under the New seal; the names, kinds and how each was earned
+	// are one press away in Rewards. Wraps rather than runs off a phone.
+	private Control BuildUnlockStrip(List<RunUnlockEntry> entries)
+	{
+		var strip = new HFlowContainer { Name = "UnlockStrip", MouseFilter = Control.MouseFilterEnum.Ignore };
+		strip.AddThemeConstantOverride("h_separation", 8);
+		strip.AddThemeConstantOverride("v_separation", 8);
+		Control seal = BuildSeal();
+		seal.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+		stripSeal = seal;
+		strip.AddChild(seal);
+		int most = narrow ? StripMaxIconsNarrow : StripMaxIconsWide;
+		foreach (RunUnlockEntry entry in entries.Take(most))
+		{
+			Control well = IconWell(UnlockIcon(entry), 64f, NewEdge);
+			well.Name = $"StripUnlock_{entry.Kind}";
+			stripIcons.Add(well);
+			strip.AddChild(well);
+		}
+		if (entries.Count > most)
+		{
+			Label more = CodexRows.MakeText($"+{entries.Count - most} more", ResponsiveLayout.TextRole.Label, Stone.InkSoft);
+			more.AutowrapMode = TextServer.AutowrapMode.Off;
+			more.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+			stripIcons.Add(more);
+			strip.AddChild(more);
+		}
+		return strip;
+	}
 
-	private string BreakdownToggleText() => breakdownShown ? "Hide how it was counted" : "How it was counted";
+	// One row of the summary: a picture, the section's name, a line of what is in it, and a chevron. The
+	// whole card is the button (MakeCardClickOverlay, first so the content draws over it and lets clicks
+	// through), so a click, a tap or A anywhere on it opens the section.
+	private void AddSection(VBoxContainer rows, string key, string title, string gist, Control picture, Control page)
+	{
+		int index = sections.Count;
+		var row = new PanelContainer
+		{
+			Name = $"SectionRow_{key}",
+			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+		};
+		row.AddThemeStyleboxOverride("panel", RowStyle(Stone.Face, Stone.Edge, 1, 0, 0));
+		Button opener = BonelightSkin.MakeCardClickOverlay(true);
+		opener.Name = $"Section_{key}";
+		opener.Pressed += () => OpenSection(index);
+		row.AddChild(opener);
+
+		var padding = new MarginContainer { Name = "Padding", MouseFilter = Control.MouseFilterEnum.Ignore };
+		padding.AddThemeConstantOverride("margin_left", 16);
+		padding.AddThemeConstantOverride("margin_right", 16);
+		padding.AddThemeConstantOverride("margin_top", narrow ? 12 : 10);
+		padding.AddThemeConstantOverride("margin_bottom", narrow ? 12 : 10);
+		row.AddChild(padding);
+
+		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		line.AddThemeConstantOverride("separation", 14);
+		padding.AddChild(line);
+
+		var well = new CenterContainer { CustomMinimumSize = new Vector2(32f, 32f), MouseFilter = Control.MouseFilterEnum.Ignore };
+		well.AddChild(picture);
+		line.AddChild(well);
+
+		var text = new VBoxContainer
+		{
+			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+			SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+		};
+		text.AddThemeConstantOverride("separation", 0);
+		Label name = CodexRows.MakeText(title, ResponsiveLayout.TextRole.Title, Stone.Heading);
+		name.AutowrapMode = TextServer.AutowrapMode.Off;
+		text.AddChild(name);
+		text.AddChild(CodexRows.MakeText(gist, ResponsiveLayout.TextRole.Label, Stone.InkSoft));
+		line.AddChild(text);
+
+		// The engine sans, which has the guillemet; the heading face may not.
+		Label chevron = CodexRows.MakeText("›", ResponsiveLayout.TextRole.Title, Stone.InkMeta);
+		chevron.RemoveThemeFontOverride("font");
+		chevron.AutowrapMode = TextServer.AutowrapMode.Off;
+		chevron.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+		line.AddChild(chevron);
+
+		BonelightSkin.MakeSubtreeClickThrough(padding);
+		rows.AddChild(row);
+		sections.Add(new Section { Title = title, Page = page, Opener = opener });
+	}
+
+	private string RewardsGist()
+	{
+		int count = report.Unlocks?.Entries?.Count ?? 0;
+		return count switch
+		{
+			0 => "How it was counted",
+			1 => "1 new unlock, and how it was counted",
+			_ => $"{count} new unlocks, and how it was counted",
+		};
+	}
+
+	private string BuildGist()
+	{
+		static string Many(int n, string one) => n == 1 ? $"1 {one}" : $"{n} {one}s";
+		int spells = report.Result.EquippedSpells?.Count ?? 0;
+		int boons = report.BoonIds?.Count ?? 0;
+		int relics = report.RelicIds?.Count ?? 0;
+		var parts = new List<string> { Many(spells, "spell") };
+		if (boons > 0)
+			parts.Add(Many(boons, "boon"));
+		if (relics > 0)
+			parts.Add(Many(relics, "relic"));
+		return string.Join("  ·  ", parts);
+	}
+
+	private string StatsGist() => $"{Count(report.Result.TotalDamageDealt)} damage dealt";
+
+	// The build's row leads with the wizard's first spell, at half its 64 (exact pixels).
+	private Control BuildSpellGlyph()
+	{
+		RunSpellSnapshot first = report.Result.EquippedSpells?.FirstOrDefault(s => !s.IsPassive)
+			?? report.Result.EquippedSpells?.FirstOrDefault();
+		if (first == null)
+			return Glyph("generic", 24f);
+		TextureRect icon = Icon(SpellIcon(first.Id, first.IconPath), 32f);
+		icon.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+		return icon;
+	}
+
+	// --- a section open ----------------------------------------------------------------------------
+
+	// The section in place of the summary: Back and its name over a rule, then its page in a scroll.
+	// Every page is built with the summary and kept, so opening one is a visibility change.
+	private Control BuildSectionView()
+	{
+		var view = new VBoxContainer
+		{
+			Name = "SectionView",
+			Visible = false,
+			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+		};
+		view.AddThemeConstantOverride("separation", 10);
+
+		var head = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		head.AddThemeConstantOverride("separation", 16);
+		sectionBack = new Button
+		{
+			Name = "SectionBack",
+			Text = "Back",
+			FocusMode = Control.FocusModeEnum.All,
+			CustomMinimumSize = new Vector2(narrow ? 140f : 120f, narrow ? 56f : 44f),
+		};
+		ResponsiveLayout.SetFont(sectionBack, ResponsiveLayout.TextRole.Body);
+		BonelightSkin.StyleButton(sectionBack, BonelightSkin.Emphasis.Normal);
+		ResponsiveLayout.EnsureTouchTarget(sectionBack);
+		sectionBack.Pressed += CloseSection;
+		head.AddChild(sectionBack);
+		sectionTitle = CodexRows.MakeText(string.Empty, ResponsiveLayout.TextRole.Title, Stone.Heading);
+		sectionTitle.Name = "SectionTitle";
+		sectionTitle.AutowrapMode = TextServer.AutowrapMode.Off;
+		sectionTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+		sectionTitle.VerticalAlignment = VerticalAlignment.Center;
+		head.AddChild(sectionTitle);
+		view.AddChild(head);
+		view.AddChild(new ColorRect { Color = Stone.Rule, CustomMinimumSize = new Vector2(0, 2), MouseFilter = Control.MouseFilterEnum.Ignore });
+
+		var pages = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		foreach (Section section in sections)
+		{
+			section.Page.Visible = false;
+			pages.AddChild(section.Page);
+		}
+		sectionScroll = Scroll("SectionScroll", pages);
+		sectionScroll.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
+		view.AddChild(sectionScroll);
+		return view;
+	}
+
+	private void OpenSection(int index)
+	{
+		if (index < 0 || index >= sections.Count)
+			return;
+		openSection = index;
+		for (int i = 0; i < sections.Count; i++)
+			sections[i].Page.Visible = i == index;
+		sectionTitle.Text = sections[index].Title;
+		ApplyFold();
+		sectionScroll.ScrollVertical = 0;
+		SfxPlayer.Global(SfxCatalog.UiOpen);
+		// The selection goes to Back, above the list, so a pad walks down into the section from its top.
+		sectionBack.GrabFocus();
+		GetNodeOrNull<MenuNavigator>(MenuNavigator.NodeName)?.Rescan();
+	}
+
+	private void CloseSection()
+	{
+		if (openSection < 0)
+			return;
+		int was = openSection;
+		openSection = -1;
+		ApplyFold();
+		SfxPlayer.Global(SfxCatalog.UiBack);
+		// Back on the row it was opened from.
+		if (was < sections.Count && IsInstanceValid(sections[was].Opener))
+			sections[was].Opener.GrabFocus();
+		GetNodeOrNull<MenuNavigator>(MenuNavigator.NodeName)?.Rescan();
+	}
+
+	// --- Rewards -----------------------------------------------------------------------------------
+
+	// How the energy was counted, then one card per unlock - or, with nothing unlocked, the closest.
+	private Control BuildRewardsPage()
+	{
+		var page = new VBoxContainer { Name = "RewardsPage", MouseFilter = Control.MouseFilterEnum.Ignore };
+		page.AddThemeConstantOverride("separation", SectionGap);
+
+		PanelContainer counted = Row(Stone.Face, Stone.Edge, 1, focusStop: true);
+		counted.Name = "Breakdown";
+		RowContent(counted).AddChild(BuildBreakdown());
+		page.AddChild(Group("How it was counted", string.Empty, new Control[] { counted }, columns: 1));
+
+		List<RunUnlockEntry> entries = report.Unlocks?.Entries ?? new List<RunUnlockEntry>();
+		if (entries.Count > 0)
+		{
+			page.AddChild(Group("Unlocked", $"{entries.Count} new", entries.Select(BuildUnlockCard).ToArray(), columns: 1));
+		}
+		else
+		{
+			page.AddChild(Group("Unlocked", string.Empty, new Control[] { Quiet("Nothing new unlocked this run.") }, columns: 1));
+			if (BuildClosestUnlock() is Control closest)
+				page.AddChild(closest);
+		}
+		return page;
+	}
 
 	// How the payout was counted, one line per part, numbers in a column on the right. Every
 	// value is one CalculateArcaneReward recorded as it worked (ArcaneRewardBreakdown).
@@ -620,11 +916,7 @@ public partial class GameOverScreen : CanvasLayer
 			table.AddChild(number);
 		}
 
-		var box = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		box.AddThemeConstantOverride("separation", 6);
-		box.AddChild(new ColorRect { Color = Stone.Rule, CustomMinimumSize = new Vector2(0, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
-		box.AddChild(table);
-		return box;
+		return table;
 	}
 
 	private Control BuildUnlockCard(RunUnlockEntry entry)
@@ -660,7 +952,6 @@ public partial class GameOverScreen : CanvasLayer
 		if (entry.Currency > 0)
 			text.AddChild(GlyphLine("energy", $"+{Count(entry.Currency)} Arcane Energy", Stone.Reward));
 
-		revealed.Add(card);
 		return card;
 	}
 
@@ -687,7 +978,6 @@ public partial class GameOverScreen : CanvasLayer
 		Label word = CodexRows.MakeText("New", ResponsiveLayout.TextRole.Label, Stone.Flag);
 		word.AutowrapMode = TextServer.AutowrapMode.Off;
 		seal.AddChild(word);
-		seals.Add(seal);
 		return seal;
 	}
 
@@ -749,55 +1039,6 @@ public partial class GameOverScreen : CanvasLayer
 		box.AddChild(CodexRows.MakeText("Closest unlock", ResponsiveLayout.TextRole.Label, Stone.InkMeta));
 		box.AddChild(CodexRows.BuildDeedRow(closest.Deed, false, closest.Progress, SpellIcon, Stone));
 		return box;
-	}
-
-	// --- the tabs --------------------------------------------------------------------------------
-
-	private static readonly string[] TabTitles = { "Your build", "Stats" };
-
-	private Control BuildTabBar()
-	{
-		var bar = new HBoxContainer { Name = "Tabs", MouseFilter = Control.MouseFilterEnum.Ignore };
-		bar.AddThemeConstantOverride("separation", 6);
-		var group = new ButtonGroup();
-		for (int i = 0; i < TabTitles.Length; i++)
-		{
-			int index = i;
-			var tab = new Button
-			{
-				Name = $"ResultsTab{i}",
-				Text = TabTitles[i],
-				ToggleMode = true,
-				ButtonGroup = group,
-				FocusMode = Control.FocusModeEnum.All,
-				SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-				CustomMinimumSize = new Vector2(0f, ResponsiveLayout.MinTouchTarget),
-			};
-			ResponsiveLayout.SetFont(tab, ResponsiveLayout.TextRole.Title);
-			CodexRows.StyleTab(tab, Stone);
-			tab.Pressed += () => ShowTab(index);
-			tabButtons.Add(tab);
-			bar.AddChild(tab);
-		}
-		return bar;
-	}
-
-	private IEnumerable<Control> BuildTabPages()
-	{
-		Control build = BuildBuildPage();
-		Control stats = BuildStatsPage();
-		tabPages.Add(build);
-		tabPages.Add(stats);
-		return tabPages;
-	}
-
-	private void ShowTab(int index)
-	{
-		activeTab = Mathf.Clamp(index, 0, Math.Max(0, tabPages.Count - 1));
-		for (int i = 0; i < tabPages.Count; i++)
-			tabPages[i].Visible = i == activeTab;
-		for (int i = 0; i < tabButtons.Count; i++)
-			tabButtons[i].SetPressedNoSignal(i == activeTab);
 	}
 
 	// --- Your build ---------------------------------------------------------------------------
@@ -903,20 +1144,30 @@ public partial class GameOverScreen : CanvasLayer
 	// and the branch taken in the row's ink after it. A branch with no picture is the words alone.
 	// Internal: the pause screen's Run tab lists each held spell's milestones with this same line
 	// (Node2DGame.BuildSpellRow), so the two screens cannot word or colour them two ways.
-	internal static Control Milestone(string word, string branch, Color mark, string branchId)
+	//
+	// pending: a milestone still AHEAD - the pause screen's Apotheosis on the wizard's own spell before
+	// it is taken (Node2DGame.BuildPendingApotheosis). The mark is outlined, not solid, since solid is
+	// what says "taken" on this line; its word is in the mark's colour (Fire mid on stone base, 5.2:1),
+	// the name in the softer ink and the note after it in the meta ink (6.1:1).
+	internal static Control Milestone(string word, string branch, Color mark, string branchId, bool pending = false, string note = null)
 	{
 		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		line.AddThemeConstantOverride("separation", 8);
 		Texture2D picture = EvolutionIcons.Own(branchId);
 		var pill = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
-		var style = new StyleBoxFlat { BgColor = mark };
+		var style = new StyleBoxFlat { BgColor = pending ? new Color(mark, 0f) : mark };
+		if (pending)
+		{
+			style.BorderColor = mark;
+			style.SetBorderWidthAll(2);
+		}
 		style.SetCornerRadiusAll(4);
 		style.ContentMarginLeft = 8;
 		style.ContentMarginRight = 8;
 		style.ContentMarginTop = 1;
 		style.ContentMarginBottom = 1;
 		pill.AddThemeStyleboxOverride("panel", style);
-		Label label = CodexRows.MakeText(word, ResponsiveLayout.TextRole.Label, MarkInk);
+		Label label = CodexRows.MakeText(word, ResponsiveLayout.TextRole.Label, pending ? mark : MarkInk);
 		label.AutowrapMode = TextServer.AutowrapMode.Off;
 		pill.AddChild(label);
 		line.AddChild(pill);
@@ -926,9 +1177,23 @@ public partial class GameOverScreen : CanvasLayer
 			icon.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
 			line.AddChild(icon);
 		}
-		Label name = CodexRows.MakeText(branch, ResponsiveLayout.TextRole.Label, Stone.Ink);
+		Label name = CodexRows.MakeText(branch, ResponsiveLayout.TextRole.Label, pending ? Stone.InkSoft : Stone.Ink);
 		name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		line.AddChild(name);
+		if (string.IsNullOrEmpty(note))
+		{
+			line.AddChild(name);
+			return line;
+		}
+		// The note beside the name, wrapping with it as one run of words on a phone.
+		name.SizeFlagsHorizontal = Control.SizeFlags.ShrinkBegin;
+		name.AutowrapMode = TextServer.AutowrapMode.Off;
+		var words = new HFlowContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+		words.AddThemeConstantOverride("h_separation", 8);
+		words.AddChild(name);
+		Label after = CodexRows.MakeText($"·  {note}", ResponsiveLayout.TextRole.Label, Stone.InkMeta);
+		after.AutowrapMode = TextServer.AutowrapMode.Off;
+		words.AddChild(after);
+		line.AddChild(words);
 		return line;
 	}
 
@@ -1066,41 +1331,101 @@ public partial class GameOverScreen : CanvasLayer
 	}
 
 	// ============================================================================================
-	// Reveal: short, and never in the way.
+	// The count (Eric, 2026-11-02: "It then tallys up the reward with a satisfying payout sound").
 	// ============================================================================================
 
-	// The energy counts up, the unlock cards fade in one after another, and each New seal pops as
-	// its card arrives - about a second for a typical run, every button live from the first frame.
-	// Nothing is laid out by the tween: alpha and a seal's scale only, so a card cannot be pressed
-	// in one place and drawn in another. The tween runs on the paused tree (this layer processes
-	// while paused) and dies with the screen.
-	private void Reveal()
+	// Once the screen is in place (the cover landed, or a victory's short wait), the Arcane Energy
+	// counts up from nothing with a coin each time it passes another step of the figure - quick at
+	// first and slowing as it lands, a cubic ease - pitched up the count (SfxPlayer.TallyTick). On the
+	// figure: tally_payout, the number pops, and the purse and the unlocks' pictures arrive. Any press
+	// lands it at once. Nothing is laid out by it: text, alpha and a scale about the middle only.
+	public override void _Process(double delta)
 	{
-		revealTween?.Kill();
-		revealTween = CreateTween();
-		revealTween.SetParallel(true);
+		phaseAge += (float)delta;
+		if (phase == Phase.Waiting && phaseAge >= VictoryTallyDelay)
+			StartTally();
+		else if (phase == Phase.Tally)
+			TickTally();
+	}
 
-		if (energyValue != null && report.ArcaneEarned > 0)
+	// The figures as built, wound back to before the count: nothing earned yet, the purse and the
+	// pictures not arrived.
+	private void WindBackForTally()
+	{
+		ShowEnergy(0);
+		if (purseLine != null)
+			purseLine.Modulate = new Color(1f, 1f, 1f, 0f);
+		if (stripSeal != null)
+			stripSeal.Modulate = new Color(1f, 1f, 1f, 0f);
+		foreach (Control icon in stripIcons)
+			icon.Modulate = new Color(1f, 1f, 1f, 0f);
+	}
+
+	private void StartTally()
+	{
+		if (report == null)
 		{
-			energyValue.Text = "+0";
-			revealTween.TweenMethod(Callable.From<int>(ShowEnergy), 0, report.ArcaneEarned, 0.9f)
-				.SetDelay(0.15f).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
+			phase = Phase.Live;
+			return;
 		}
+		phase = Phase.Tally;
+		phaseAge = 0f;
+		lastTickAge = -1f;
+		int target = Math.Max(0, report.ArcaneEarned);
+		tallySeconds = Mathf.Clamp(0.55f + 0.28f * Mathf.Log(target + 1f) / Mathf.Log(10f), TallyMinSeconds, TallyMaxSeconds);
+		tallySteps = Math.Max(1, Mathf.RoundToInt(tallySeconds * TallyTicksPerSecond));
+		tallyNextStep = 1;
+		if (target <= 0)
+			LandTally();
+	}
 
-		float delay = 0.35f;
-		for (int i = 0; i < revealed.Count; i++)
+	private void TickTally()
+	{
+		float u = Mathf.Clamp(phaseAge / tallySeconds, 0f, 1f);
+		float eased = 1f - (1f - u) * (1f - u) * (1f - u);
+		ShowEnergy(Mathf.RoundToInt(report.ArcaneEarned * eased));
+		// One coin when the count passes the next step, never two in a frame or closer than the gap:
+		// the early steps go by faster than coins can be told apart.
+		if (tallyNextStep <= tallySteps && eased >= tallyNextStep / (float)tallySteps)
 		{
-			Control card = revealed[i];
-			card.Modulate = new Color(1f, 1f, 1f, 0f);
-			revealTween.TweenProperty(card, "modulate:a", 1f, 0.22f).SetDelay(delay);
-			if (i < seals.Count)
+			if (phaseAge - lastTickAge >= TallyTickGapSeconds)
 			{
-				Control seal = seals[i];
-				seal.Modulate = new Color(1f, 1f, 1f, 0f);
-				revealTween.TweenCallback(Callable.From(() => PopSeal(seal))).SetDelay(delay + 0.12f);
+				SfxPlayer.TallyTick(tallyNextStep / (float)tallySteps);
+				lastTickAge = phaseAge;
 			}
-			// Spaced while there are few to show; a long list arrives in the same second as a short one.
-			delay += Mathf.Min(0.12f, 0.6f / Math.Max(1, revealed.Count));
+			while (tallyNextStep <= tallySteps && eased >= tallyNextStep / (float)tallySteps)
+				tallyNextStep++;
+		}
+		if (u >= 1f)
+			LandTally();
+	}
+
+	// On the figure: the payout, the number's pop, then the purse and the unlocks arriving in turn.
+	private void LandTally()
+	{
+		if (phase == Phase.Live)
+			return;
+		coverTween?.Kill();
+		Offset = Vector2.Zero;
+		phase = Phase.Live;
+		phaseAge = 0f;
+		if (report == null)
+			return;
+		ShowEnergy(report.ArcaneEarned);
+		if (report.ArcaneEarned > 0)
+			SfxPlayer.Global(SfxCatalog.TallyPayout);
+		Pop(energyValue, 1.3f);
+
+		Tween arrive = CreateTween();
+		arrive.SetParallel(true);
+		if (purseLine != null)
+			arrive.TweenProperty(purseLine, "modulate:a", 1f, 0.25f).SetDelay(0.1f);
+		if (stripSeal != null)
+			arrive.TweenCallback(Callable.From(() => PopSeal(stripSeal))).SetDelay(0.12f);
+		for (int i = 0; i < stripIcons.Count; i++)
+		{
+			Control icon = stripIcons[i];
+			arrive.TweenProperty(icon, "modulate:a", 1f, 0.18f).SetDelay(0.16f + 0.07f * i);
 		}
 	}
 
@@ -1108,6 +1433,17 @@ public partial class GameOverScreen : CanvasLayer
 	{
 		if (energyValue != null && IsInstanceValid(energyValue))
 			energyValue.Text = $"+{Count(value)}";
+	}
+
+	// A control grown about its middle and settled back with a little overshoot: a scale, never a move.
+	private void Pop(Control control, float from)
+	{
+		if (control == null || !IsInstanceValid(control))
+			return;
+		control.PivotOffset = control.Size * 0.5f;
+		control.Scale = new Vector2(from, from);
+		Tween pop = control.CreateTween();
+		pop.TweenProperty(control, "scale", Vector2.One, 0.32f).SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
 	}
 
 	private void PopSeal(Control seal)
@@ -1120,6 +1456,25 @@ public partial class GameOverScreen : CanvasLayer
 		pop.SetParallel(true);
 		pop.TweenProperty(seal, "modulate:a", 1f, 0.12f);
 		pop.TweenProperty(seal, "scale", Vector2.One, 0.28f).SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
+	}
+
+	// Until the count lands, every press and release is swallowed before the buttons hear it: the
+	// press that brought the screen down, a tap's touch-and-emulated-mouse pair, a pad A held from the
+	// defeat. A press during the count lands it at once; a press during the cover only waits. Each
+	// swallowed press keeps the next QuietAfterPressMsec swallowed too, so its twin goes with it.
+	public override void _Input(InputEvent @event)
+	{
+		if (!DefeatSequence.IsButton(@event, out bool pressed))
+			return;
+		ulong now = Time.GetTicksMsec();
+		if (phase == Phase.Live && now >= quietUntilMsec)
+			return;
+		GetViewport().SetInputAsHandled();
+		if (!pressed)
+			return;
+		quietUntilMsec = now + QuietAfterPressMsec;
+		if (phase == Phase.Tally || phase == Phase.Waiting)
+			LandTally();
 	}
 
 	// ============================================================================================
@@ -1170,30 +1525,6 @@ public partial class GameOverScreen : CanvasLayer
 	}
 
 	private static VBoxContainer RowContent(PanelContainer row) => row.GetNode<VBoxContainer>("Padding/Content");
-
-	// A section heading in the CodexRows manner: bold Cinzel, a count on the right, a rule beneath.
-	private static Control SectionHeading(string title, string count)
-	{
-		var box = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		box.AddThemeConstantOverride("separation", 6);
-		var head = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		head.AddThemeConstantOverride("separation", 12);
-		Label heading = CodexRows.MakeText(title, ResponsiveLayout.TextRole.Title, Stone.Heading);
-		heading.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		heading.VerticalAlignment = VerticalAlignment.Bottom;
-		heading.AutowrapMode = TextServer.AutowrapMode.Off;
-		head.AddChild(heading);
-		if (!string.IsNullOrEmpty(count))
-		{
-			Label tally = CodexRows.MakeText(count, ResponsiveLayout.TextRole.Label, Stone.Flag);
-			tally.AutowrapMode = TextServer.AutowrapMode.Off;
-			tally.VerticalAlignment = VerticalAlignment.Bottom;
-			head.AddChild(tally);
-		}
-		box.AddChild(head);
-		box.AddChild(new ColorRect { Color = Stone.Rule, CustomMinimumSize = new Vector2(0, 2), MouseFilter = Control.MouseFilterEnum.Ignore });
-		return box;
-	}
 
 	// A group inside a tab: a quiet label with its count, then its rows in one or more columns.
 	private static Control Group(string title, string count, Control[] rows, int columns)

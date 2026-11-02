@@ -159,6 +159,32 @@ public class SaveData
 	/// </summary>
 	public List<string> SeenChapterNoteIds { get; set; } = new();
 
+	/// <summary>
+	/// The relics and boons the player has met - offered by a chest or a level-up, or held - by id: the
+	/// Evolution Codex shows the rest as "???" (.ai/evolution-codex.md, question 3). No schema bump, the way
+	/// <see cref="HasSeenPrologue"/> was added: it only adds, a save without the key reads as empty, and an
+	/// older save's items open on their next sighting. Written by CodexSightings, never by a tool scene.
+	/// </summary>
+	public List<string> SeenItemIds { get; set; } = new();
+
+	/// <summary>
+	/// Met: recorded here, or claimed in an earlier run - LifetimeStats.ChestItemsCollected, which every save
+	/// has kept since before this record existed, so a returning player's relics are not all "???".
+	/// </summary>
+	public bool IsItemSeen(string itemId) =>
+		!string.IsNullOrWhiteSpace(itemId)
+		&& (SeenItemIds.Any(id => id.Equals(itemId.Trim(), System.StringComparison.OrdinalIgnoreCase))
+			|| (Lifetime?.ChestItemsCollected?.Any(id => id.Equals(itemId.Trim(), System.StringComparison.OrdinalIgnoreCase)) ?? false));
+
+	/// <summary>Records an item as met. True when it was not before (the caller saves).</summary>
+	public bool MarkItemSeen(string itemId)
+	{
+		if (string.IsNullOrWhiteSpace(itemId) || IsItemSeen(itemId))
+			return false;
+		SeenItemIds.Add(itemId.Trim().ToLowerInvariant());
+		return true;
+	}
+
 	public bool EnableGameplayOnboardingTips { get; set; } = true;
 	public bool HasToggledOnboardingTipsAtLeastOnce { get; set; } = false;
 	public bool PlaytestModeEnabled { get; set; } = false;
@@ -175,6 +201,9 @@ public class SaveData
 	/// <summary>Enemies throw their damage numbers when hit (DisplaySettings). No schema bump: an older
 	/// save simply has the key missing and keeps the default, on.</summary>
 	public bool ShowDamageNumbers { get; set; } = true;
+	/// <summary>Screen shake at a quarter strength (DisplaySettings.ShakeScale, Eric, 2026-11-02). No schema
+	/// bump, like the damage numbers: an older save has the key missing and keeps the default, off.</summary>
+	public bool ReduceScreenShake { get; set; } = false;
 
 	/// <summary>
 	/// Taught the Ascension outside the campaign's own record (GlobalStatsManager.HasLearnedAscension):
@@ -182,6 +211,77 @@ public class SaveData
 	/// every run they played. A new save learns it from the Hayward, which the campaign records anyway.
 	/// </summary>
 	public bool AscensionLearned { get; set; } = false;
+
+	// --- The story's epoch (.ai/decisions/2026-11-02-story-resets.md) ---------------------------------
+
+	/// <summary>
+	/// Which telling of the story this build is. Bumped by hand, for a release that changes the story so
+	/// much that progress earned under the old telling no longer means anything (Eric, 2026-11-02: "reset
+	/// progress for people when we push an update that affects the progress of the story"). A save from an
+	/// earlier epoch is not migrated: SaveManager copies it aside and starts it again, keeping only the
+	/// settings (<see cref="SettingsKeys"/>). release.sh writes this into version.json as "progressEpoch",
+	/// which is how UpdateScreen and UpdateBanner warn a player before the download. Raising it is a release
+	/// decision, never a side effect of other work: see .ai/releasing.md, "Releasing a story reset".
+	/// </summary>
+	/// <remarks>
+	/// This is the one place a save is allowed to lose what it earned, and only on purpose. Every other
+	/// change that narrows what a save grants still needs a schema step in <see cref="Migrate"/>.
+	/// </remarks>
+	public const int CurrentProgressEpoch = 1;
+
+	/// <summary>
+	/// The epoch of a save with no "ProgressEpoch" key - one written before epochs existed, whose story is
+	/// the first telling. So it is never reset while the constant stands at 1, and is reset by the first
+	/// bump: the "counts as epoch 0 once the constant passes 1" rule, without a special case.
+	/// </summary>
+	public const int FirstProgressEpoch = 1;
+
+	/// <summary>The telling of the story this save's progress was earned in. New saves are in the current one.</summary>
+	public int ProgressEpoch { get; set; } = CurrentProgressEpoch;
+
+	/// <summary>
+	/// Set by a story reset; cleared when the title screen has said so (TitleScreen's notice). Saved, so a
+	/// player who quits before the title appears still hears it once.
+	/// </summary>
+	public bool ProgressResetNoticePending { get; set; } = false;
+
+	/// <summary>
+	/// The keys a story reset keeps: everything the Options screen sets (sound, damage numbers, the tips
+	/// switch, the playtest toolkit and the difficulty preset) and nothing it does not. Every other key comes
+	/// back as a brand-new save's, so a field added later is reset unless it is listed here - a setting
+	/// lost is a nuisance, progress kept across a new story is the bug this exists to prevent.
+	/// RegressionChecks.ValidateStoryReset holds the list to the save's real keys.
+	/// </summary>
+	public static readonly string[] SettingsKeys =
+	{
+		"MasterVolume", "MusicVolume", "SfxVolume", "AudioMuted", "ShowDamageNumbers", "ReduceScreenShake",
+		"EnableGameplayOnboardingTips", "HasToggledOnboardingTipsAtLeastOnce",
+		"PlaytestModeEnabled", "BalancePresetId", "PlaytestChecklistState",
+	};
+
+	/// <summary>True when this save was earned in an earlier telling of the story than this build's.</summary>
+	public bool IsFromEarlierStory => ProgressEpoch < CurrentProgressEpoch;
+
+	/// <summary>
+	/// The save this one becomes when the story starts again: a new save in the current epoch, carrying
+	/// this one's settings and the title's notice. Pure - the caller keeps the old save on disk first.
+	/// </summary>
+	public SaveData StartNewStory()
+	{
+		// Through the dictionary, so SettingsKeys IS the rule rather than a description of a copy written
+		// beside it. A save written by a newer epoch is never sent here; see SaveManager.LoadFrom.
+		Godot.Collections.Dictionary old = ToGodotDictionary();
+		Godot.Collections.Dictionary fresh = new SaveData().ToGodotDictionary();
+		foreach (string key in SettingsKeys)
+		{
+			if (old.ContainsKey(key))
+				fresh[key] = old[key];
+		}
+		SaveData result = FromVariant(fresh);
+		result.ProgressEpoch = CurrentProgressEpoch;
+		result.ProgressResetNoticePending = true;
+		return result;
+	}
 
 	/// <summary>The key a seen ascension is stored under.</summary>
 	public static string AscensionKey(string spellId, string branchId)
@@ -1030,6 +1130,10 @@ public class SaveData
 			seenChapterNoteIds.Add(id);
 		}
 
+		var seenItemIds = new Godot.Collections.Array<string>();
+		foreach (string id in SeenItemIds)
+			seenItemIds.Add(id);
+
 		var foundUpgradeLevels = new Godot.Collections.Dictionary<string, int>();
 		foreach (KeyValuePair<string, int> entry in FoundUpgradeLevels)
 		{
@@ -1063,6 +1167,8 @@ public class SaveData
 		return new Godot.Collections.Dictionary
 		{
 			["SchemaVersion"] = SchemaVersion,
+			["ProgressEpoch"] = ProgressEpoch,
+			["ProgressResetNoticePending"] = ProgressResetNoticePending,
 			["TotalCurrency"] = TotalCurrency,
 			["UnlockedCharacterIds"] = characterIds,
 			["UnlockedStageIds"] = stageIds,
@@ -1086,6 +1192,7 @@ public class SaveData
 			["HasSeenPrologue"] = HasSeenPrologue,
 			["TrackedQuestIds"] = trackedQuestIds,
 			["SeenChapterNoteIds"] = seenChapterNoteIds,
+			["SeenItemIds"] = seenItemIds,
 			["EnableGameplayOnboardingTips"] = EnableGameplayOnboardingTips,
 			["HasToggledOnboardingTipsAtLeastOnce"] = HasToggledOnboardingTipsAtLeastOnce,
 			["PlaytestModeEnabled"] = PlaytestModeEnabled,
@@ -1094,6 +1201,7 @@ public class SaveData
 			["SfxVolume"] = SfxVolume,
 			["AudioMuted"] = AudioMuted,
 			["ShowDamageNumbers"] = ShowDamageNumbers,
+			["ReduceScreenShake"] = ReduceScreenShake,
 			["AscensionLearned"] = AscensionLearned,
 			["BalancePresetId"] = BalancePresetId,
 			["PlaytestChecklistState"] = playtestChecklistState
@@ -1114,6 +1222,16 @@ public class SaveData
 		{
 			result.SchemaVersion = root["SchemaVersion"].AsInt32();
 		}
+
+		// No schema bump: the epoch is not a format, it is which story the progress belongs to. A save
+		// without the key predates epochs and so belongs to the first telling (FirstProgressEpoch), never
+		// to "now" - otherwise the first bump would pass over every save written before it.
+		result.ProgressEpoch = root.ContainsKey("ProgressEpoch")
+			? root["ProgressEpoch"].AsInt32()
+			: FirstProgressEpoch;
+
+		if (root.ContainsKey("ProgressResetNoticePending"))
+			result.ProgressResetNoticePending = root["ProgressResetNoticePending"].AsBool();
 
 		if (root.ContainsKey("TotalCurrency"))
 		{
@@ -1338,6 +1456,12 @@ public class SaveData
 			}
 		}
 
+		if (root.ContainsKey("SeenItemIds") && root["SeenItemIds"].VariantType == Variant.Type.Array)
+		{
+			foreach (Variant value in root["SeenItemIds"].AsGodotArray())
+				result.MarkItemSeen(value.AsString());
+		}
+
 		if (root.ContainsKey("EnableGameplayOnboardingTips"))
 			result.EnableGameplayOnboardingTips = root["EnableGameplayOnboardingTips"].AsBool();
 
@@ -1367,6 +1491,8 @@ public class SaveData
 
 		if (root.ContainsKey("ShowDamageNumbers"))
 			result.ShowDamageNumbers = root["ShowDamageNumbers"].AsBool();
+		if (root.ContainsKey("ReduceScreenShake"))
+			result.ReduceScreenShake = root["ReduceScreenShake"].AsBool();
 		if (root.ContainsKey("AscensionLearned"))
 			result.AscensionLearned = root["AscensionLearned"].AsBool();
 

@@ -20,6 +20,18 @@
 // The shape of every root is fixed when the patch is sown and arrives once, in root_a and root_b; what
 // moves is worked out here from the patch's age, as BrambleSeed's own DrawRoot did, so only scalars cross
 // per frame.
+//
+// TWO CHANGES FROM PLAYING 0.10.0 (2026-11-01, Eric):
+//   - "Bramble seed vines have a thick brown base that abruptly change to a thin green." A root was three
+//     runs of width - whole, 0.62, 0.32 - stepping down at s 0.4 and 0.7, and the first step fell exactly
+//     where the bark turned green through a narrow dithered band, so the brown stump ended in a hard
+//     shoulder. Now its width tapers evenly from the seed to the tip (a staircase of half art pixels, never
+//     a step of more than one cell), and the bark greens through a dithered band three times as long.
+//   - "Instead of shrinking when it finishes, should just quickly wither." The roots used to pull back
+//     into the ground (`retract`) over the patch's last 0.6 s. Now nothing shrinks: over that same window
+//     (`wither`, 0..1, set by BrambleSeed) the thicket browns cell by cell, its roots curl over at the tips,
+//     its thorns and buds drop off first, and it dissolves through the Bayer matrix from the tips back to
+//     the seed. The reach and the timing are BrambleSeed's, unchanged; `retract` stays 1.
 shader_type canvas_item;
 render_mode unshaded;
 
@@ -38,6 +50,8 @@ uniform float radius = 16.0;
 uniform float retract = 1.0;
 uniform float dry = 0.0;
 uniform float fade = 1.0;
+// The last moment of the patch, 0 .. 1: browning, curling, dropping, dissolving tip first.
+uniform float wither = 0.0;
 // age / GrowSeconds, held at 1 once grown: the soil heap and the hedge rise with it.
 uniform float grown = 0.0;
 
@@ -140,17 +154,26 @@ bool root(int i, vec2 p, float d, float a, float b, out vec3 col) {
 	if (d > len + tip_w + GRID * 2.0)
 		return false;
 	float s = clamp(d / len, 0.0, 1.0);
+	// Withering: the root goes cell by cell from its tip back toward the seed.
+	if (b < wither * 1.7 - (1.0 - s) * 0.7)
+		return false;
 	float k = age * speed + ra.w - s * 4.2;
 	float hook_x = clamp((s - 0.62) / 0.38, 0.0, 1.0);
-	float theta = ra.x + amp * s * sin(k) + rb.x * hook_x * hook_x * (3.0 - 2.0 * hook_x) * breathe;
+	// ...and curls over as it dies, its tip hooking round on its own side - held inside the radius, since
+	// the curl only turns the root, never lengthens it.
+	float theta = ra.x + amp * s * sin(k) + rb.x * hook_x * hook_x * (3.0 - 2.0 * hook_x) * breathe
+		+ rb.x * 0.7 * wither * s * s;
 	// The root's slope against the radial, so a hooked tip is as thick as a straight one.
-	float dtheta = amp * (sin(k) - 4.2 * s * cos(k)) + rb.x * 6.0 * hook_x * (1.0 - hook_x) / 0.38 * breathe;
+	float dtheta = amp * (sin(k) - 4.2 * s * cos(k)) + rb.x * 6.0 * hook_x * (1.0 - hook_x) / 0.38 * breathe
+		+ rb.x * 1.4 * wither * s;
 	float slope = s * dtheta;
 	float lateral = d * wrap_pi(a - theta) / sqrt(1.0 + slope * slope);
 	float side = lateral >= 0.0 ? 1.0 : -1.0;
 	float lat = abs(lateral);
-	// Thick at the seed, thinner in the middle, a whip at the tip: the three runs the polylines had.
-	float half_w = (s < 0.4 ? w : (s < 0.7 ? w * 0.62 : w * 0.32)) * 0.5;
+	// Thick at the seed and tapering evenly to a whip at the tip - no step anywhere along it (it was three
+	// runs, whole, 0.62 and 0.32, and the first step fell where the bark turned green). Snapped to half an
+	// art pixel, so the taper is a staircase one cell at a time.
+	float half_w = w * 0.5 * mix(1.0, 0.28, pow(s, 0.85));
 	half_w = max(GRID * 0.5, floor(half_w / GRID * 2.0 + 0.5) * GRID * 0.5);
 	bool past_tip = d > len;
 	vec3 c = OCC;
@@ -163,7 +186,9 @@ bool root(int i, vec2 p, float d, float a, float b, out vec3 col) {
 		vec2 normal = vec2(-radial.y, radial.x) * side;
 		float lit = dot(normal, KEY);
 		bool rim = lat > half_w - GRID;
-		bool living = (s - 0.4) / 0.25 > b;
+		// Bark greening into the living root through a long dithered band (s 0.22 to 0.72), so the colour
+		// changes as gradually as the width does.
+		bool living = (s - 0.22) / 0.5 > b;
 		if (!living) {
 			c = EARTH_EDGE;
 			if (rim)
@@ -184,7 +209,8 @@ bool root(int i, vec2 p, float d, float a, float b, out vec3 col) {
 
 	// Thorns: hooked barbs along the middle of the root, alternating sides, raked back toward the seed;
 	// held inside s 0.85 and pointing sideways, so a barb never reaches past the radius.
-	if (!past_tip && (!hit || lat > half_w)) {
+	// A withering root drops its thorns first.
+	if (!past_tip && (!hit || lat > half_w) && b >= wither * 2.2) {
 		for (int t = 0; t < 3; t++) {
 			float ts = 0.3 + float(t) * 0.2;
 			float tside = mod(float(t), 2.0) < 0.5 ? 1.0 : -1.0;
@@ -208,8 +234,8 @@ bool root(int i, vec2 p, float d, float a, float b, out vec3 col) {
 		}
 	}
 
-	// The living tip, a bud of its element's light that swells as the root whips.
-	if (dry < 0.6) {
+	// The living tip, a bud of its element's light that swells as the root whips; the first thing to drop.
+	if (dry < 0.6 && wither < 0.15) {
 		vec2 tip = vec2(cos(theta), sin(theta)) * len;
 		vec2 rel = p - tip;
 		float bud = GRID * (1.0 + whip);
@@ -243,6 +269,9 @@ bool runner(vec4 r, int index, vec2 p, float b, out vec3 col) {
 	if (along < r.z - 4.0 || along > r.w + 4.0)
 		return false;
 	float s = clamp((along - r.z) / (r.w - r.z), 0.0, 1.0);
+	// Withering, as a root does: from its tip back.
+	if (b < wither * 1.7 - (1.0 - s) * 0.7)
+		return false;
 	float phase = root_a[index].w;
 	float sway = sin(age * 2.2 + phase - s * 5.0) * 4.0 * min(1.0, s * 3.0);
 	float lateral = dot(p, across) - sway;
@@ -281,7 +310,7 @@ bool runner(vec4 r, int index, vec2 p, float b, out vec3 col) {
 bool hedge_at(vec2 p, float b, out vec3 col) {
 	col = OCC;
 	float bushes = hedge.x;
-	if (bushes < 1.0 || hedge.z < 2.0)
+	if (bushes < 1.0 || hedge.z < 2.0 || b < wither * 1.5)
 		return false;
 	float rim = hedge.w;
 	float d = length(p);
@@ -358,7 +387,7 @@ void fragment() {
 
 	// The hole the seed went into, and the soil heaped round it, wider as the roots thicken.
 	float mound = 5.0 + 4.0 * grown;
-	if (d < mound * 0.55) {
+	if (d < mound * 0.55 && b >= wither * 1.3) {
 		hit = true; // OCC
 	}
 	if (!hit && hedge.x > 0.0)
@@ -380,7 +409,7 @@ void fragment() {
 			hit = true;
 		}
 	}
-	if (!hit && d < mound + 3.0) {
+	if (!hit && d < mound + 3.0 && b >= wither * 1.3) {
 		// Torn soil: clumps of the dark earth, lit on the side toward the key.
 		float k = hash12(floor(cell / 2.0) + 5.0);
 		col = dot(p, KEY) > 0.0 && k > 0.55 ? EARTH_MID : (k > 0.3 ? GOLD_SHADE : GOLD_DEEP);

@@ -134,6 +134,10 @@ public sealed class MazeNavigation
 	// body cannot walk into - wall or water; "wall" is the subset that also stops a shot.
 	private bool[] _solid;
 	private bool[] _wall;
+	// Solid only because a prop cluster stands there (TerrainStreamer.FlagProp): a ghost's line test
+	// (HasClearWalk throughProps) crosses it, since it passes through decor.
+	private bool[] _propOnly;
+	private bool[] _propOnlyNext;
 	private int[] _component;
 	private int[] _penalty;
 	private Vector2[] _wallPush;
@@ -221,6 +225,8 @@ public sealed class MazeNavigation
 		_origin = origin;
 		_solid = new bool[n];
 		_wall = new bool[n];
+		_propOnly = new bool[n];
+		_propOnlyNext = new bool[n];
 		_component = new int[n];
 		_penalty = new int[n];
 		_wallPush = new Vector2[n];
@@ -310,11 +316,12 @@ public sealed class MazeNavigation
 		{
 			case 1:
 				if (_nextSource != null)
-					_nextSource.FillNavigation(_solidNext, _wallNext, _nextMinCell, _w, _h);
+					_nextSource.FillNavigation(_solidNext, _wallNext, _propOnlyNext, _nextMinCell, _w, _h);
 				else
 				{
 					System.Array.Copy(_nextTestSolid, _solidNext, _solidNext.Length);
 					System.Array.Copy(_nextTestWall, _wallNext, _wallNext.Length);
+					System.Array.Clear(_propOnlyNext);
 				}
 				_solidCountNext = 0;
 				_wallCountNext = 0;
@@ -355,6 +362,7 @@ public sealed class MazeNavigation
 			case 6:
 				(_solid, _solidNext) = (_solidNext, _solid);
 				(_wall, _wallNext) = (_wallNext, _wall);
+				(_propOnly, _propOnlyNext) = (_propOnlyNext, _propOnly);
 				(_component, _componentNext) = (_componentNext, _component);
 				(_penalty, _penaltyNext) = (_penaltyNext, _penalty);
 				(_wallPush, _wallPushNext) = (_wallPushNext, _wallPush);
@@ -553,14 +561,16 @@ public sealed class MazeNavigation
 	/// <summary>
 	/// True if the straight segment between two world points crosses no blocked cell (wall or water),
 	/// not counting the cells at either end - a body already overlapping a shoreline cell, or a player
-	/// standing on one, must not make every line to him read as blocked.
+	/// standing on one, must not make every line to him read as blocked. With
+	/// <paramref name="throughProps"/>, a cell closed only by a prop cluster does not block: a ghost
+	/// passes through decor, so a cluster is no reason for it to leave the straight chase.
 	/// </summary>
 	/// <remarks>
 	/// An exact grid walk (Amanatides and Woo): one step per cell boundary crossed, no sampling, and
 	/// it stops at the first blocked cell. About 30 cells for an enemy at the spawn ring, and nothing
 	/// at all in a window with no water or walls. Enemy runs it once per re-aim, not every frame.
 	/// </remarks>
-	public bool HasClearWalk(Vector2 from, Vector2 to)
+	public bool HasClearWalk(Vector2 from, Vector2 to, bool throughProps = false)
 	{
 		if (_solidCount == 0 || !HasWindow) return true;
 
@@ -590,7 +600,7 @@ public sealed class MazeNavigation
 			if (tMaxX < tMaxY) { x += stepX; tMaxX += tDeltaX; }
 			else { y += stepY; tMaxY += tDeltaY; }
 			if (x == ex && y == ey) return true;
-			if (x >= 0 && x < _w && y >= 0 && y < _h && _solid[x + y * _w]) return false;
+			if (x >= 0 && x < _w && y >= 0 && y < _h && _solid[x + y * _w] && !(throughProps && _propOnly[x + y * _w])) return false;
 		}
 
 		return true;
@@ -943,5 +953,122 @@ public sealed class MazeNavigation
 		gx = cx - offsetX;
 		gy = cy - offsetY;
 		return gx >= 0 && gx < _w && gy >= 0 && gy < _h;
+	}
+}
+
+/// <summary>
+/// The geometry of Enemy's skirting turn (Enemy.Skirt, .ai/enemy-behaviour.md section 8 item 13): pure
+/// functions of a heading and the normal of what a body walked into, so RegressionChecks can hold them.
+/// </summary>
+public static class SkirtTurn
+{
+	/// <summary>True if <paramref name="heading"/> walks into a surface with this normal within
+	/// acos(<paramref name="facingDot"/>) of head-on, rather than along it.</summary>
+	public static bool IsFacingInto(Vector2 heading, Vector2 normal, float facingDot) => heading.Dot(normal) < -facingDot;
+
+	/// <summary>
+	/// Which way round: +1 or -1 along <see cref="Along"/>. The side the heading already leans to, so a
+	/// body glancing off something keeps going the way it was going; dead square, the body's own tie side.
+	/// </summary>
+	public static float ChooseHand(Vector2 heading, Vector2 normal, float tieSide)
+	{
+		float lean = heading.Dot(new Vector2(-normal.Y, normal.X));
+		return Mathf.Abs(lean) > 0.1f ? Mathf.Sign(lean) : (tieSide < 0f ? -1f : 1f);
+	}
+
+	/// <summary>The unit direction along a surface with this normal, on the given hand.</summary>
+	public static Vector2 Along(Vector2 normal, float hand) => new Vector2(-normal.Y, normal.X) * hand;
+
+	/// <summary>
+	/// The heading while skirting: along the surface, with <paramref name="goalShare"/> of the chase
+	/// kept, so the body stays pressed to what it is going round and the slide carries it along. Never
+	/// zero: the turn is a unit vector and the share is under one.
+	/// </summary>
+	public static Vector2 Blend(Vector2 along, Vector2 heading, float goalShare) => (along + heading * goalShare).Normalized();
+}
+
+/// <summary>
+/// Which navigation cells a chunk's props close (Node2DGame.StampPropClusters, TerrainStreamer.FlagProp,
+/// .ai/terrain.md section 9 "Props"): every blocking prop within <see cref="Gap"/> of another prop or of
+/// solid ground, the cells its footprint covers, and the cells on the way from it to its neighbour. A
+/// lone prop closes nothing - a body slides or skirts round it (Enemy, SKIRTING).
+/// </summary>
+public static class PropClusters
+{
+	/// <summary>Closer than this, two obstacles are a notch a body walks into and wedges in: about the
+	/// widest ordinary body (a wolf is 44 px across), and one tile.</summary>
+	public const float Gap = 48f;
+
+	/// <summary>Edge-to-edge distance between two rectangles; zero when they touch or overlap.</summary>
+	public static float RectGap(Rect2 a, Rect2 b)
+	{
+		float dx = Mathf.Max(0f, Mathf.Max(a.Position.X - b.End.X, b.Position.X - a.End.X));
+		float dy = Mathf.Max(0f, Mathf.Max(a.Position.Y - b.End.Y, b.Position.Y - a.End.Y));
+		return Mathf.Sqrt(dx * dx + dy * dy);
+	}
+
+	/// <summary>
+	/// Hands <paramref name="stamp"/> every cell to close (a cell may come more than once). Cells are
+	/// world cells of size <paramref name="tile"/> whose [0, 0] has its corner at <paramref name="origin"/>.
+	/// </summary>
+	public static void Collect(IReadOnlyList<Rect2> props, Vector2 origin, float tile,
+		System.Func<Vector2I, bool> isSolidGround, System.Action<Vector2I> stamp)
+	{
+		Vector2I CellOf(Vector2 world) => new(Mathf.FloorToInt((world.X - origin.X) / tile), Mathf.FloorToInt((world.Y - origin.Y) / tile));
+
+		// Every cell the footprint really covers: shrunk by two pixels, so one that only grazes the next
+		// cell does not close it.
+		void Footprint(Rect2 prop)
+		{
+			Vector2I from = CellOf(prop.Position + Vector2.One * 2f);
+			Vector2I to = CellOf(prop.End - Vector2.One * 2f);
+			for (int y = from.Y; y <= System.Math.Max(from.Y, to.Y); y++)
+				for (int x = from.X; x <= System.Math.Max(from.X, to.X); x++)
+					stamp(new Vector2I(x, y));
+		}
+
+		// The cells on the way from one member of a cluster to the next, a quarter tile at a time, so two
+		// props on a diagonal close the corner between them rather than leave a gap the grid allows and a
+		// body does not fit.
+		void Between(Vector2 a, Vector2 b)
+		{
+			int steps = System.Math.Max(1, Mathf.CeilToInt(a.DistanceTo(b) / (tile * 0.25f)));
+			for (int i = 0; i <= steps; i++)
+				stamp(CellOf(a.Lerp(b, i / (float)steps)));
+		}
+
+		for (int a = 0; a < props.Count; a++)
+		{
+			Rect2 one = props[a];
+			for (int b = a + 1; b < props.Count; b++)
+			{
+				Rect2 other = props[b];
+				if (RectGap(one, other) >= Gap)
+					continue;
+				Footprint(one);
+				Footprint(other);
+				Between(one.GetCenter(), other.GetCenter());
+			}
+
+			// Against the ground that already blocks: a trunk a hand's width off a shore, a wall or a fence.
+			Vector2I from = CellOf(one.Position - Vector2.One * Gap);
+			Vector2I to = CellOf(one.End + Vector2.One * Gap);
+			for (int y = from.Y; y <= to.Y; y++)
+			{
+				for (int x = from.X; x <= to.X; x++)
+				{
+					var cell = new Vector2I(x, y);
+					if (!isSolidGround(cell))
+						continue;
+					var box = new Rect2(origin + new Vector2(x, y) * tile, new Vector2(tile, tile));
+					if (RectGap(one, box) >= Gap)
+						continue;
+					Footprint(one);
+					Between(one.GetCenter(), box.GetCenter());
+					y = to.Y;
+					break;
+				}
+			}
+		}
 	}
 }

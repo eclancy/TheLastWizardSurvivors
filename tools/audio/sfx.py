@@ -271,6 +271,103 @@ def spell_summon():
     return S.dc_block(S.reverb(S.drive(out, 2.0), size=0.6, mix=0.2))
 
 
+# Where the crash lands inside spell_maw_open, in seconds from the start of the file.
+# BlackTentacles.MawCrashLeadSeconds must match it: the file is started that long before the breach
+# (MawBreach of MawOpenSeconds), so the crash lands on the frame the plates are thrown.
+MAW_CRASH_AT = 0.20
+
+
+def spell_maw_open():
+    """Elder God Maw breaking up through the earth (BlackTentacles, the maw's summon; Eric, 0.10.0:
+    "should make a deep, scary crashing sound when it opens"). It replaces spell_summon for the maw's
+    cast and is timed to its three beats, which the shader and BlackTentacles share:
+
+      0.00-0.20 s  the heave: the ground swelling under the slow, a rumble growing out of nothing
+                   with two strain cracks in it - stone giving before it goes
+      0.20 s       the breach: the CRACK (a band of split stone over a thump falling 110 to 46 Hz)
+                   and the rubble thrown up after it, irregularly gated and decimated, as boss_death's
+                   collapse is, but a third of a second
+      0.26-0.76 s  something huge rising: stone grinding as the maw pushes up, its cutoff climbing,
+                   over a sub swelling 40 to 64 Hz - grinding, never a voice (a growl is boss_roar's)
+      0.56-1.06 s  the slabs landing on the rim (BlackTentacles' debris flies 0.36-0.5 s): four heavy
+                   plates one after another and a bounce, so the envelope steps down in blows
+      to 1.5 s     the dust settling, short and low, in a big room
+
+    Deep, so it goes under 80 Hz, which the budget keeps for the explosion, the boss and earth - and
+    this is earth breaking. It earns it the way spell_explosion does: it is not a swarm sound (one
+    maw every three to four seconds at most, BaseCooldown 4.0), and above 160 Hz it is lowpassed
+    hard, so the crack is the only thing in it that reaches the casts' band."""
+    rng = __import__("random").Random(811)
+    dur = 1.5
+    crash = MAW_CRASH_AT
+
+    # The heave: lowpassed noise and a low sine swelling into the breach.
+    hd = crash + 0.04
+    hn = S.n_samples(hd)
+    heave = S.lowpass(S.osc("noise", 0, hd, seed=813), 160.0, 0.9)
+    heave = S.mix(heave, S.gain(S.osc("sine", S.sweep(hd, 38.0, 56.0, 1.0), hd), 0.7))
+    heave = S.env_mul(heave, S.ramp(hn, 0.0, 1.0, 2.2))
+    strain = []
+    for k, (t, f) in enumerate(((0.07, 900.0), (0.15, 1200.0))):
+        tn = S.n_samples(0.03)
+        tick = S.bandpass(S.osc("noise", 0, 0.03, seed=817 + k), f, 2.2)
+        strain.append((S.env_mul(S.lowpass(tick, 2400.0), S.decay(tn, 5.0)), t, 0.35 + 0.15 * k))
+
+    # The breach: split stone over the thump. Both short - the crash is one blow, not a swell.
+    sd = 0.12
+    sn = S.n_samples(sd)
+    split = S.bandpass(S.osc("noise", 0, sd, seed=821), S.sweep(sd, 2000.0, 450.0, 0.6), 0.8)
+    split = S.env_mul(S.lowpass(split, 3200.0), S.decay(sn, 3.0))
+    thump_dur = 0.45
+    tn = S.n_samples(thump_dur)
+    thump = S.osc("sine", S.sweep(thump_dur, 110.0, 46.0, 0.35), thump_dur)
+    thump = S.env_mul(thump, S.expdecay(tn, 5.5))
+    rubble_dur = 0.3
+    rn = S.n_samples(rubble_dur)
+    rubble = S.gate(S.decimate(S.lowpass(S.osc("noise", 0, rubble_dur, seed=823), 1200.0), 4),
+                    28.0, 0.6, seed=827)
+    rubble = S.env_mul(rubble, S.decay(rn, 2.2))
+
+    # The rise: stone grinding as the maw pushes up through it - low noise chopped irregularly, its
+    # cutoff climbing out of the hole, over a sub swelling 40 to 64 Hz. Not a voice: a growl is
+    # boss_roar's construct, and the first draft's FM groan measured 0.077 from it.
+    gd = 0.28
+    gn = S.n_samples(gd)
+    grind = S.lowpass(S.osc("noise", 0, gd, seed=829), S.sweep(gd, 120.0, 420.0, 0.8), 1.2)
+    grind = S.gate(grind, 22.0, 0.7, seed=833)
+    swell = S.osc("sine", S.sweep(gd, 40.0, 64.0, 1.0), gd)
+    rise = S.env_mul(S.mix(grind, S.gain(swell, 0.6)), S.ad(gd, 0.06, 1.4, hold=0.08))
+
+    # The slabs: four heavy plates landing one after another on the rim, then a bounce - each its
+    # own blow, so the envelope steps down in impacts where every other low sound in the set decays.
+    slabs = []
+    for k, (t, g) in enumerate(((0.36, 0.95), (0.43, 0.85), (0.5, 0.8), (0.6, 0.55), (0.75, 0.35))):
+        ld = 0.13
+        ln = S.n_samples(ld)
+        body = S.env_mul(S.osc("sine", S.sweep(ld, 130.0, 62.0, 0.5), ld), S.expdecay(ln, 8.0))
+        grit = S.env_mul(S.lowpass(S.osc("noise", 0, ld, seed=831 + k), 800.0), S.expdecay(ln, 16.0))
+        slabs.append((S.mix(body, S.gain(grit, 0.7)), crash + t + rng.uniform(0.0, 0.02), g))
+
+    # The tail: the dust settling, short and low.
+    td = 0.7
+    tail = S.lowpass(S.osc("noise", 0, td, seed=837), S.sweep(td, 200.0, 80.0, 0.8), 0.9)
+    tail = S.env_mul(tail, S.ad(td, 0.05, 3.2))
+
+    out = S.layer(strain + slabs + [
+        (heave, 0.0, 0.35),
+        (split, crash, 1.0),
+        (thump, crash, 1.0),
+        (rubble, crash + 0.012, 0.6),
+        (rise, crash + 0.04, 0.45),
+        (tail, crash + 0.95, 0.25),
+    ])
+    # Driven for weight as the explosion is, and lowpassed after the drive (a drive left last is a
+    # hiss, audio-direction 6); the highpass at 34 Hz keeps the sub a felt floor, not a DC shove.
+    out = S.lowpass(S.drive(S.pad(out, dur), 2.4), 3600.0, 0.707)
+    out = S.highpass(out, 34.0, 0.707)
+    return S.dc_block(S.reverb(out, size=0.88, damp=0.5, mix=0.3))
+
+
 def spell_bow_draw():
     """HuntersDraw wind-up. Deliberately 0.45 s so it can telegraph the release.
 
@@ -291,6 +388,34 @@ def spell_bow_release():
     out = S.mix(S.env_mul(snap, S.decay(n, 12.0)),
                 S.gain(S.env_mul(string, S.expdecay(n, 10.0)), 0.7))
     return S.mix(out, S.gain(_whoosh(dur, 800, 2400, 2.4, seed=61), 0.35))
+
+
+def spell_sagittarius():
+    """Sagittarius's loose (Sagittarius.Loose, .ai/combo-spells.md section 3): every lit star lets fly at
+    once, and it is heard ONCE - a bowstring and a glass chord, Light's voice - never once an arrow.
+
+    A loose comes every second or two at most, so it is built for the once-a-second row: short enough,
+    no long tail. Two parents in one envelope, the way the spell is two spells in one: the string first, a
+    dry snap over a low string falling (Hunter's Draw's release, shorter and without its whoosh, so the
+    two are never twins), then 30 ms after it a chord ROLLED upward - G5, B5, D6, 22 ms apart - in glass
+    partials (a sine and its inharmonic 2.76), Light's register. cast_light is one bell stack struck at once
+    on G5 with a fifth; a rolled major triad after a string is an envelope nothing else in the set has.
+    Everything under 4 kHz: a chord of pure high tones is the trap section 6 warns about."""
+    dur = 0.6
+    snap_dur = 0.05
+    snap = S.lowpass(S.highpass(S.osc("noise", 0, snap_dur, seed=211), 1200), 4200, 0.707)
+    snap = S.env_mul(snap, S.expdecay(S.n_samples(snap_dur), 30.0))
+    string_dur = 0.2
+    string = S.osc("tri", S.sweep(string_dur, 250, 120, 0.5), string_dur)
+    string = S.env_mul(string, S.expdecay(S.n_samples(string_dur), 13.0))
+    items = [(snap, 0.0, 0.75), (string, 0.0, 0.55)]
+    for k, semis in enumerate((10, 14, 17)):
+        start = 0.03 + k * 0.022
+        glass_dur = dur - start
+        glass = S.partials(_hz(semis), [1.0, 2.76], glass_dur, amps=[1.0, 0.28], decays=[5.5, 10.0])
+        glass = S.env_mul(glass, S.ad(glass_dur, 0.003, 1.0))
+        items.append((glass, start, (0.5, 0.42, 0.38)[k]))
+    return S.lowpass(S.pad(S.layer(items), dur), 4000, 0.707)
 
 
 # ---------------------------------------------------------------------------
@@ -762,6 +887,105 @@ def game_over():
     return S.dc_block(S.reverb(out, size=0.9, damp=0.35, mix=0.36))
 
 
+# ---------------------------------------------------------------------------
+# the defeat and the payout (2026-11-02, Eric: "Defeat should have a dramatic animation where
+# the game freezes, then crash zooms onto the wizard and they fall, then it says defeat ... It
+# then tallys up the reward with a satisfying payout sound.")
+# ---------------------------------------------------------------------------
+
+def player_fall():
+    """The wizard reaching the ground at the end of his fall (DefeatSequence, the landing beat),
+    about a second and a half after player_death has carried the killing blow. The defeat's one
+    body sound: cloth and a staff on the ground, not stone breaking.
+
+    TWO impacts, not one: the knees, then the body 130 ms later and heavier - the double hit is
+    the fall's whole shape, and the first draft (one thump under a noise sweep) measured 0.098 from
+    player_hurt, which is one thump under a noise sweep. Each thump stops above 85 Hz (the sub band
+    belongs to the boss and the explosions, audio-direction 6). Then a scatter of grit, one dry
+    wooden knock as the staff lands after him, and the dust settling. Lowpassed under 3 kHz
+    throughout. Once a run."""
+    kd = 0.16
+    knees = S.env_mul(S.osc("sine", S.sweep(kd, 190, 120, 0.5), kd), S.expdecay(S.n_samples(kd), 14.0))
+    bd = 0.34
+    body = S.env_mul(S.osc("sine", S.sweep(bd, 150, 86, 0.5), bd), S.expdecay(S.n_samples(bd), 9.0))
+    gd = 0.3
+    grit = S.gate(S.lowpass(S.bandpass(S.osc("mnoise", 2200, gd, seed=547), 1500, 2.5), 2800, 0.707),
+                  34.0, 0.45, seed=557)
+    grit = S.env_mul(grit, S.decay(S.n_samples(gd), 2.4))
+    sd = 0.09
+    staff = S.lowpass(S.env_mul(S.osc("tri", S.sweep(sd, 520, 410, 0.6), sd), S.expdecay(S.n_samples(sd), 7.0)),
+                      1800, 0.707)
+    dd = 0.5
+    dust = S.lowpass(S.osc("noise", 0, dd, seed=541), 1100, 0.707)
+    dust = S.env_mul(dust, S.adsr(dd, 0.06, 0.1, 0.5, 0.3))
+    out = S.layer([
+        (knees, 0.0, 0.7),
+        (body, 0.13, 1.0),
+        (grit, 0.15, 0.3),
+        (staff, 0.24, 0.42),
+        (dust, 0.16, 0.12),
+    ])
+    return S.dc_block(S.reverb(S.lowpass(out, 3000, 0.707), size=0.55, damp=0.5, mix=0.16))
+
+
+def _coin(freq, dur, seed):
+    """One small struck coin: two inharmonic partials over a 3 ms grain. Shared by the tally's tick
+    and the payout's spill, so the spill is heard as the same coins the count was counting."""
+    n = S.n_samples(dur)
+    ring = S.partials(freq, [1.0, 2.41, 3.17], dur, amps=[1.0, 0.42, 0.18], decays=[5.0, 7.0, 9.0])
+    grain = S.lowpass(S.bandpass(S.osc("noise", 0, dur, seed=seed), 2100, 1.6), 3200, 0.707)
+    return S.mix(S.env_mul(ring, S.ad(dur, 0.0015, 1.0)), S.gain(S.env_mul(grain, S.expdecay(n, 30.0)), 0.5))
+
+
+def tally_tick():
+    """One step of the Arcane Energy count on the results screen (GameOverScreen's tally): up to
+    eighteen a second for a second and a half, and pitched up the count at PLAY time
+    (SfxPlayer.TallyTick, 1.0 to 1.26 - four semitones), so it is built like the orb: short, one
+    narrow band, no tail. A coin, not pickup_xp's sine sweep: the count is money, the orb is
+    experience. A coin landing on the heap: struck, and struck again 22 ms later as it settles,
+    and left RINGING - no noise grain, and a slow linear decay where a click falls away at once.
+    Three drafts were a click: one strike over the grain (0.051 from ui_click, which is exactly a
+    noise tick over a short tone), a short double strike on a 1.1 kHz coin (0.069 from ui_click),
+    and the same rung at 1.5 kHz (0.022 from ui_hover, whose tone sweeps through that octave).
+    What a click does not have is the ring, so this one rings for 0.22 s on A5 (the score's key)
+    with one inharmonic partial at 2.76 - 0.40 from every interface sound. Under 3.8 kHz before
+    the ladder lifts it (the ceiling, audio-direction 6)."""
+    dur = 0.22
+    ring = S.partials(_hz(12), [1.0, 2.76], dur, amps=[1.0, 0.25], decays=[2.0, 4.0])
+    hit = S.env_mul(ring, S.ad(dur, 0.0015, 1.0))
+    out = S.layer([(hit, 0.0, 1.0), (hit, 0.022, 0.55)])
+    return S.lowpass(out, 3800, 0.707)
+
+
+def tally_payout():
+    """The count landing on its figure (GameOverScreen's tally): the run's Arcane Energy banked.
+
+    Three layers in about 1.4 s: a purse set down (a short thump, 160 to 95 Hz, above the sub
+    band), a spill of eleven of tally_tick's coins over 0.3 s - each a little lower and quieter, a
+    heap settling - and over them one struck MAJOR chord, C E G and the C above, all at once.
+    Every other reward in the set is a bell RUN (level_up, chest_open, stage_clear) or a swell
+    (meta_unlock); a chord struck together is the difference between "something arrived" and "it
+    is yours". C major is A minor's relative, so it sits in the score's key and still resolves
+    game_over's descent. Lowpassed under 4 kHz."""
+    rng = __import__("random").Random(571)
+    spill = []
+    for i in range(11):
+        at = 0.012 + 0.30 * ((i / 10.0) ** 1.6) + rng.uniform(-0.008, 0.008)
+        freq = 1260.0 - 32.0 * i + rng.uniform(-40.0, 40.0)
+        spill.append((_coin(freq, 0.14, 577 + i), max(0.0, at), 0.78 - 0.045 * i))
+    hold = 1.25
+    chord = S.mix(_bell(_hz(3), hold), S.gain(_bell(_hz(7), hold), 0.8),
+                  S.gain(_bell(_hz(10), hold), 0.7), S.gain(_bell(_hz(15), hold), 0.42))
+    td = 0.26
+    thump = S.env_mul(S.osc("sine", S.sweep(td, 160, 95, 0.5), td), S.expdecay(S.n_samples(td), 9.0))
+    out = S.layer([
+        (thump, 0.0, 0.75),
+        (S.layer(spill), 0.0, 0.62),
+        (chord, 0.035, 0.85),
+    ])
+    return S.dc_block(S.reverb(S.lowpass(out, 4000, 0.707), size=0.75, damp=0.4, mix=0.28))
+
+
 def meta_unlock():
     """A character or stage unlocked on the save file - the one sound that means the SAVE
     changed, not the run.
@@ -928,38 +1152,71 @@ def hint_lantern_flare():
     return S.dc_block(_far(out, low=120.0, high=2600.0, size=0.75, mix=0.38, damp=0.6))
 
 
-def hint_ice_song():
-    """The Frozen Waste: the ice groans, and under it, faintly, someone is singing.
+# The sung line of hint_ice_song: (onset s, length s, semitones from A4, vowel). StageHintCue puts a
+# note on screen at each onset (IceSongNotes in scripts/StageHintCue.cs) - change one, change both.
+_ICE_SONG = [
+    (0.20, 0.34, -12, "oh"),    # A3
+    (0.50, 0.31, -14, "ah"),    # G3
+    (0.78, 0.31, -16, "eh"),    # F3
+    (1.06, 0.31, -14, "oh"),    # G3
+    (1.34, 0.36, -17, "ah"),    # E3
+    (1.66, 0.78, -19, "oh"),    # D3, held
+]
 
-    The groan is stick-slip friction: a buzz whose period wanders like a slab grinding, through
-    two resonances sliding down, and one dry crack in it. Under that a man's voice, very low and
-    muffled through the ice (lowpassed at 1.1 kHz), two notes of a slow song on "oh". The singer
-    of the Kalevala; the caption does not name him, and neither does this."""
-    gdur = 1.5
+# A man's vowels: (F1, F2) and their gains. "eh" keeps its F2 low enough to survive the ice.
+_SUNG_VOWELS = {
+    "oh": [(450.0, 3.5, 1.0), (800.0, 5.0, 0.55), (2500.0, 8.0, 0.08)],
+    "ah": [(700.0, 3.5, 1.0), (1150.0, 5.0, 0.6), (2600.0, 8.0, 0.08)],
+    "eh": [(530.0, 3.5, 1.0), (1500.0, 5.0, 0.45), (2500.0, 8.0, 0.08)],
+}
+
+
+def hint_ice_song():
+    """The Frozen Waste: the ice groans, and under it someone is singing.
+
+    Reported from 0.10.0: the hint should be heard as SINGING. The first version was two notes on
+    "oh" at 0.42 under a groan at full level, lowpassed at 1.1 kHz - it read as the ice making a
+    noise. Now the song is the sound and the ice is its frame: a short groan and one crack to say
+    where he is, then a man's voice singing a line - six notes falling through a D minor pentachord
+    (A G F G E D), the shape of a runo line of the Kalevala, legato, each note gliding up or down
+    from the last, the vowels changing under it (oh, ah, eh) the way sung words do, a singer's
+    vibrato that blooms late on the held last note. Still muffled (lowpassed at 1.6 kHz, through
+    the far room), because he is under the ice. The singer of the Kalevala; the caption does not
+    name him, and neither does this. The notes are _ICE_SONG, which the screen follows."""
+    gdur = 0.7
     gn = S.n_samples(gdur)
     rng = __import__("random").Random(701)
     walk, f = [], 118.0
-    for _ in xrange(60):
+    for _ in xrange(32):
         f = max(96.0, min(150.0, f + rng.uniform(-9.0, 9.0)))
         walk.append(f)
     buzz = S.osc("saw", S.resample(walk, gn), gdur)
-    groan = S.mix(S.bandpass(buzz, S.sweep(gdur, 520.0, 300.0), 6.0),
-                  S.gain(S.bandpass(buzz, S.sweep(gdur, 940.0, 700.0), 8.0), 0.5))
-    groan = S.env_mul(groan, S.ramp(S.n_samples(0.3), 0.0, 1.0, 0.8) + S.decay(gn - S.n_samples(0.3), 1.3))
+    groan = S.mix(S.bandpass(buzz, S.sweep(gdur, 520.0, 320.0), 6.0),
+                  S.gain(S.bandpass(buzz, S.sweep(gdur, 940.0, 720.0), 8.0), 0.5))
+    groan = S.env_mul(groan, S.ramp(S.n_samples(0.2), 0.0, 1.0, 0.8) + S.decay(gn - S.n_samples(0.2), 1.6))
     crack = S.lowpass(S.bandpass(S.osc("noise", 0, 0.06, seed=703), 1700.0, 2.0), 2600.0)
     crack = S.env_mul(crack, S.decay(S.n_samples(0.06), 6.0))
 
-    oh = [(420.0, 3.5, 1.0), (800.0, 5.0, 0.5)]
-    d3 = _vowel(_hz(-19), 0.7, oh, vibrato=0.01, rate=4.8, attack=0.12, release=0.2, seed=11)
-    f3 = _vowel(_hz(-16), 0.75, oh, vibrato=0.012, rate=4.8, attack=0.1, release=0.3, seed=13)
-    song = S.lowpass(S.layer([(d3, 0.0, 1.0), (f3, 0.62, 1.0)]), 1100.0)
+    notes = []
+    prev = _hz(_ICE_SONG[0][2] - 2)
+    for i, (t0, dur, semis, vowel) in enumerate(_ICE_SONG):
+        target = _hz(semis)
+        n = S.n_samples(dur)
+        glide = S.n_samples(0.07)
+        f0 = S.ramp(glide, prev, target, 0.7) + [target] * (n - glide)
+        held = i == len(_ICE_SONG) - 1
+        # Vibrato blooms on the held note, as a singer's does; the moving notes are nearly straight.
+        notes.append((_vowel(f0, dur, _SUNG_VOWELS[vowel], vibrato=0.016 if held else 0.006,
+                             rate=5.2, attack=0.06, release=0.35 if held else 0.07, seed=11 + i), t0, 1.0))
+        prev = target
+    song = S.lowpass(S.layer(notes), 1600.0)
 
     out = S.pad(S.layer([
-        (groan, 0.0, 1.0),
-        (crack, 0.52, 0.55),
-        (song, 0.55, 0.42),
-    ]), 2.45)
-    return S.dc_block(_far(out, low=95.0, high=2000.0, size=0.85, mix=0.42, damp=0.6))
+        (groan, 0.0, 0.55),
+        (crack, 0.08, 0.45),
+        (song, 0.0, 1.0),
+    ]), 2.58)
+    return S.dc_block(_far(out, low=105.0, high=2200.0, size=0.8, mix=0.4, damp=0.6))
 
 
 def _camel_bell(freq, dur, seed):
@@ -986,6 +1243,48 @@ def hint_caravan_bell():
     out = S.pad(S.layer(items), 2.5)
     out = S.delay(out, 0.27, feedback=0.3, mix=0.22, taps=3)
     return S.dc_block(_far(out, low=200.0, high=2400.0, size=0.4, mix=0.2, damp=0.45))
+
+
+# The paper wind's gusts: StageHintCue.PaperGusts is the same list - change one, change both.
+_PAPER_GUSTS = [(0.10, 1.0), (0.42, 0.72), (0.70, 0.9), (1.12, 0.78), (1.40, 0.62)]
+
+
+def hint_paper_wind():
+    """The Mystic Ruins: strips of written paper on the wind, burning at the edges as they fall.
+
+    Abe no Seimei's wards, blown out of the seal he is held in. A wind that comes in GUSTS, and on each
+    gust a strip of paper snapping in it - band noise in paper's register (1.4-2 kHz) chopped at 24-32 Hz,
+    the flutter of a loose strip, which no other sound in the set has - over one low breath of moving
+    air that swells and drops. Under the last three gusts the paper is burning: a few dry irregular
+    crackles (the gate's seeded chop), very quiet. Not the grove's whisper (breathed syllables with
+    silences, a hum under them) and not cast_wind (one long sweep): this is gusty and papery. Open
+    ruins: a short bright room. Nothing below 180 Hz."""
+    items = []
+    for i, (t, g) in enumerate(_PAPER_GUSTS):
+        dur = 0.30 + 0.04 * (i % 2)
+        flut = S.bandpass(S.osc("noise", 0, dur, seed=901 + i), 1450.0 + 120.0 * i, 1.8)
+        flut = S.tremolo(flut, 24.0 + 2.0 * i, 0.92, shape="square")
+        flut = S.env_mul(flut, S.adsr(dur, a=0.03, d=0.06, s=0.45, r=0.08))
+        items.append((flut, t, g))
+        # The gust that carries it: a short swell of lower air, a beat ahead of the paper.
+        gdur = 0.34
+        gust = S.bandpass(S.osc("noise", 0, gdur, seed=921 + i), S.sweep(gdur, 380.0, 700.0, 0.8), 1.1)
+        gust = S.env_mul(gust, S.adsr(gdur, a=0.09, d=0.08, s=0.45, r=0.1))
+        items.append((gust, max(0.0, t - 0.06), 0.55 * g))
+    for i, t in enumerate((0.78, 1.22, 1.5)):
+        cdur = 0.22
+        crackle = S.gate(S.highpass(S.osc("noise", 0, cdur, seed=951 + i), 1400.0), 70.0, duty=0.2, seed=961 + i)
+        crackle = S.env_mul(crackle, S.decay(S.n_samples(cdur), 2.5))
+        items.append((crackle, t, 0.42))
+    # The wind through the broken courtyard: one thin whistle under it all, rising and falling with the
+    # gusts - the ruins' own note, and what keeps this apart from every swoosh in the set.
+    wdur = 1.8
+    whistle = S.osc("sine", S.sweep(wdur, 640.0, 760.0, 0.7), wdur)
+    whistle = S.tremolo(whistle, 3.2, 0.6)
+    whistle = S.env_mul(whistle, S.adsr(wdur, a=0.35, d=0.2, s=0.7, r=0.5))
+    items.append((whistle, 0.05, 0.22))
+    out = S.pad(S.layer(items), 2.2)
+    return S.dc_block(_far(S.highpass(out, 180.0), low=180.0, high=2200.0, size=0.45, mix=0.25, damp=0.5))
 
 
 # ---------------------------------------------------------------------------
@@ -1217,8 +1516,15 @@ REGISTRY += [
     ("spell_stormsweep",    "spell",  -14.0, spell_stormsweep,    False),
     ("spell_sleet_rune",    "spell",  -22.0, spell_sleet_rune,    False),
     ("spell_summon",        "spell",  -9.0,  spell_summon,        False),
+    # Elder God Maw's open: the maw's summon cue in place of spell_summon, so the same slot and the
+    # same level - one maw every three to four seconds, between the once-a-second and once-a-minute
+    # rows, at the summon's -9.
+    ("spell_maw_open",      "spell",  -9.0,  spell_maw_open,      False),
     ("spell_bow_draw",      "spell",  -15.0, spell_bow_draw,      False),
     ("spell_bow_release",   "spell",  -10.0, spell_bow_release,   False),
+    # Sagittarius's loose: one a loose, every second or two at most - the once-a-second row, a step under
+    # the bow's own release, which it follows in the same run only if both parents were never fused.
+    ("spell_sagittarius",   "spell",  -11.0, spell_sagittarius,   False),
 
     ("player_hurt",         "player", -6.0,  player_hurt,         False),
     ("player_dodge",        "player", -13.0, player_dodge,        False),
@@ -1265,6 +1571,15 @@ REGISTRY += [
     ("meta_unlock",         "meta",   -4.0,  meta_unlock,         False),
     ("wave_warning",        "meta",   -7.0,  wave_warning,        False),
 
+    # The defeat and its payout (DefeatSequence, GameOverScreen's tally). The fall lands under
+    # player_death's tail and over nothing else - once a run, a body sound, a step under
+    # player_hurt. The tick plays up to eighteen times a second for a second and a half: the
+    # many-times-a-second row, a few dB over the orb because nothing else is playing then. The
+    # payout is once a run and the screen's climax.
+    ("player_fall",         "player", -7.0,  player_fall,         False),
+    ("tally_tick",          "ui",     -20.0, tally_tick,          False),
+    ("tally_payout",        "meta",   -6.0,  tally_payout,        False),
+
     # Four a run at most, and far away: the quiet end of the once-a-minute band. The game plays
     # them positionally a few hundred pixels toward their source, which takes another 3-4 dB off.
     ("hint_cell_cry",       "hint",   -9.0,  hint_cell_cry,       False),
@@ -1272,6 +1587,7 @@ REGISTRY += [
     ("hint_lantern_flare",  "hint",   -9.0,  hint_lantern_flare,  False),
     ("hint_ice_song",       "hint",   -9.0,  hint_ice_song,       False),
     ("hint_caravan_bell",   "hint",   -10.0, hint_caravan_bell,   False),
+    ("hint_paper_wind",     "hint",   -10.0, hint_paper_wind,     False),
 
     # Secrets. The seen shimmer is once per secret per save and meant to be played AT the site, so
     # it loses 5-6 dB to distance before it is heard; the found sting is a few a run, beside

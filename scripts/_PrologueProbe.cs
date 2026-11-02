@@ -11,7 +11,9 @@ using WizardSurvivors.scripts;
 /// Steps: (1) a save that has not seen it - Start Run opens the prologue; (2) a tapped Enter does not
 /// skip; (3) Enter held skips, on into the character select; (4) the flag is still unset, because
 /// writes are off; (5) a save that has seen it - Start Run goes straight to the character select;
-/// (6) Options' Watch the Prologue plays it, and Escape held returns to the main menu.
+/// (6) Options' Watch the Prologue plays it, and Escape held returns to the main menu; (7) left alone
+/// it plays through into the character select; (8, temporary, with the button) the world map's Replay
+/// intro plays it, and Escape held returns to the map.
 /// The driver hangs off the root, so it outlives the scene changes it is watching.
 /// </remarks>
 public partial class _PrologueProbe : Node
@@ -139,6 +141,28 @@ public partial class _PrologueProbe : Node
 				// Untouched, it plays to its end (about 27 s) and goes on into story mode by itself.
 				case 12 when at == 1700:
 					Check("played through, it goes on to the character select", Scene == "res://scenes/CharacterSelection.tscn");
+					// TEMPORARY, with the world map's Replay intro button (WorldMap.replayIntroButton): remove
+					// steps 13-15 when the button goes.
+					save.Data.HasSeenPrologue = true;
+					GetTree().ChangeSceneToFile("res://scenes/WorldMap.tscn");
+					Next();
+					break;
+				case 13 when at == 60:
+					Check("the world map has Replay intro", PressButton("ReplayIntroButton"));
+					Next();
+					break;
+				case 14 when at == 30:
+					Check("Replay intro opens the prologue", Scene == Prologue.ScenePath);
+					Press(Key.Escape, true);
+					Next();
+					break;
+				case 15 when at == 75:
+					Press(Key.Escape, false);
+					Next();
+					break;
+				case 16 when at == 30:
+					Check("Escape held returns to the world map", Scene == "res://scenes/WorldMap.tscn");
+					Check("the replay leaves the seen flag as it was", save.Data.HasSeenPrologue);
 					GD.Print($"_PrologueProbe: done, {failures} failure(s)");
 					GetTree().Quit(failures == 0 ? 0 : 1);
 					Next();

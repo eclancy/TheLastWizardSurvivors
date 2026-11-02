@@ -271,6 +271,10 @@ public partial class Node2DGame : Node2D
 	private Control? escapeRoot;
 	private Button? escapeResumeButton;
 	private Button? escapeReportButton;
+	// The run as it looked when the pause opened, without the pause screen over it, for a bug
+	// report's screenshot (ReportBugScreen). Taken on every pause, dropped on resume.
+	private Image? pauseScreenshot;
+	private Action? cancelPauseScreenshot;
 	private ScrollContainer? escapeDetailScroll;
 	private VBoxContainer? escapeDetailSections;
 	private readonly Dictionary<string, Button> escapeTabButtons = new();
@@ -886,21 +890,25 @@ public partial class Node2DGame : Node2D
 	}
 
 	// ---- run music -------------------------------------------------------------------------
-	// The chapter's three stems play locked together (MusicPlayer) and this decides which are up.
-	// Bed always. Pulse once the arena has filled. Lead for an elite, and for the last third of
-	// the run. Then the boss loop replaces the set, and everything fades at the end. Thresholds
-	// have hysteresis and the lead a hold, because a layer that flickers in and out with every
-	// wave is worse than one that never comes. See .ai/audio-direction.md section 11.
+	// The chapter's stems play locked together (MusicPlayer) and this decides which are up.
+	// Battle music from the first second (2026-11-01, Eric on 0.10.0: "the music on the menu should
+	// give way to more interesting, thematic battle music for each level"): the bed and the pulse -
+	// the chapter's drums and driving bass - land together on the run's first downbeat and stay. It
+	// used to be the bed alone, the menu theme's own strings and drone a dB under it, until 28
+	// enemies were alive, which the headless Forest run reached at 1:15 and lost again at 1:35. The
+	// lead states the chapter's hook as the run opens, rests, and comes back for an elite and from
+	// pace minute 5 for good. Then the boss layer lands on the bed and pulse as the hook rests (or, for a set without one,
+	// the shared boss loop replaces the set), and everything fades at the end. The lead has a hold,
+	// because a layer that flickers in and out with every wave is worse than one that never comes.
+	// See .ai/audio-direction.md section 11.
 
-	/// <summary>Pulse comes in at this share of MaxEnemies alive (28 of 140)...</summary>
-	private const float MusicPulseOnShare = 0.20f;
-	/// <summary>...and goes out only once the arena has thinned to this (14 of 140).</summary>
-	private const float MusicPulseOffShare = 0.10f;
-	/// <summary>The last third of the run, on the pace clock, brings the lead in for good.</summary>
-	private const float MusicLeadLateRunPaceMinutes = 10f;
+	/// <summary>Real seconds the hook plays as the run opens before it first rests - about one pass of a chapter's 24-30 s loop.</summary>
+	private const float MusicOpeningLeadSeconds = 24f;
+	/// <summary>From here on the pace clock (a third of the way in) the lead is in for good. It was 10.</summary>
+	private const float MusicLeadLateRunPaceMinutes = 5f;
 	/// <summary>Real seconds the lead stays after the elite that called it has gone - about one phrase of the tune.</summary>
 	private const float MusicLeadHoldSeconds = 30f;
-	/// <summary>How often the intensity is sampled. Counting enemies every frame buys nothing a 4 s fade can show.</summary>
+	/// <summary>How often the intensity is sampled. Checking every frame buys nothing a 4 s fade can show.</summary>
 	private const float MusicSampleSeconds = 0.25f;
 
 	private MusicPlayer? runMusic;
@@ -910,8 +918,9 @@ public partial class Node2DGame : Node2D
 	// flag set in a scene is not the same as being sent as a set-piece: when the Boo was still 2.5%
 	// of the opening spawns the first headless run had the tune in ten seconds on one ghost.
 	private readonly List<Node2D> musicLeadCallers = new();
-	private bool musicPulseOn;
-	private float musicLeadHeldUntil = -1f;
+	// The opening statement is a hold like an elite's, from the run's first second.
+	private float musicLeadHeldUntil = MusicOpeningLeadSeconds;
+	private bool musicLeadWasOn = true;
 	private float musicSampleTimer;
 
 	private void PlayRunMusic()
@@ -919,7 +928,8 @@ public partial class Node2DGame : Node2D
 		runMusic = GetNodeOrNull<MusicPlayer>("/root/MusicPlayer");
 		// Which set is MusicCatalog's decision, not this scene's - the branch belongs in the table.
 		runMusicSet = MusicCatalog.RunSetForStage(Global.SelectedStageIdx);
-		runMusic?.PlaySet(runMusicSet, MusicPlayer.RunFadeInSeconds, 0f, 0f);
+		// Bed, pulse and the hook together on the first downbeat; the theme out of their way.
+		runMusic?.PlaySet(runMusicSet, MusicPlayer.RunFadeInSeconds, 1f, 1f, MusicPlayer.MenuHandoverSeconds);
 	}
 
 	private void UpdateRunMusic(float delta)
@@ -932,12 +942,6 @@ public partial class Node2DGame : Node2D
 		if (musicSampleTimer > 0f)
 			return;
 		musicSampleTimer = MusicSampleSeconds;
-
-		int alive = EnemyRegistry.Count;
-		if (alive >= MaxEnemies * MusicPulseOnShare)
-			musicPulseOn = true;
-		else if (alive <= MaxEnemies * MusicPulseOffShare)
-			musicPulseOn = false;
 
 		for (int i = musicLeadCallers.Count - 1; i >= 0; i--)
 		{
@@ -952,15 +956,32 @@ public partial class Node2DGame : Node2D
 		if (leadCalled)
 			musicLeadHeldUntil = timeElapsed + MusicLeadHoldSeconds;
 		bool leadOn = leadCalled || timeElapsed < musicLeadHeldUntil;
+		if (leadOn != musicLeadWasOn)
+		{
+			// A handful of lines a run: when the hook comes and goes, so a headless log can show the
+			// opening statement ending on time and the pace clock bringing it back.
+			musicLeadWasOn = leadOn;
+			GD.Print($"Node2DGame: run music lead {(leadOn ? "in" : "out")} at {FormatTime(timeElapsed)} (pace minute {PaceMinutes:0.0}, {musicLeadCallers.Count} callers)");
+		}
 
-		// The tune never plays without the rhythm under it.
-		runMusic.SetLayerTargets(musicPulseOn || leadOn ? 1f : 0f, leadOn ? 1f : 0f);
+		// The pulse is the chapter's battle percussion and never leaves while the run is in play.
+		runMusic.SetLayerTargets(1f, leadOn ? 1f : 0f);
 	}
 
 	private void PlayBossMusic()
 	{
 		if (runMusic == null || runMusicSet == null)
 			return;
+		// The chapter's own fight: its boss layer lands on the set, which keeps playing, so the
+		// boss is met in the chapter's key and tempo. The hook rests while it plays - the fight is
+		// the drums, the stabs and the motor - which also keeps the music where the late game has
+		// it: all four together measured 2 dB over the shared loop and cost a median cast 3.3 dB of
+		// its headroom over the music (mixsim.py --music). UpdateRunMusic stands aside from here on.
+		if (runMusicSet.HasBossLayer && runMusic.CurrentSetId == runMusicSet.Id && runMusic.CurrentSetHasBossLayer)
+		{
+			runMusic.SetLayerTargets(1f, 0f, 1f);
+			return;
+		}
 		var stream = ResourceLoader.Load<AudioStream>(runMusicSet.Boss);
 		if (stream == null)
 		{
@@ -1251,6 +1272,14 @@ public partial class Node2DGame : Node2D
 		// _Ready - see LoadInitialTerrain. Mazes keep corridor dead-ends (no cleanup) so the
 		// labyrinth stays intact.
 		terrainSeed = seed;
+		// The run's other rolls follow the same seed: the spawner's picks (which creature, which formation,
+		// where on the ring) and the wizard's level-up and combat rolls. Still the clock's seed in play, so
+		// nothing a player sees changes; a run given its seed (_BalanceHarness --seed, --terrain-seed) now
+		// deals the same offers and sends the same swarm, where two bridge runs on one seed had ended eight
+		// levels apart. Spells and enemies keep generators of their own, so two runs drift by a level or two,
+		// not to the frame.
+		spawnRng.Seed = LevelGenerator.Hash(seed, 0, 0, SaltSpawnRolls);
+		player?.SeedRunRandomness(seed);
 		terrainKind = kind;
 		terrainStreamer = new TerrainStreamer(levelPainter, kind, seed, ProceduralTilePixels, stageOrigin,
 			layout.BaseTerrain, cleanup: !isMaze, ProceduralSafeRadiusTiles, spawnClearRadius: 4f)
@@ -1967,7 +1996,7 @@ public partial class Node2DGame : Node2D
 		string text = IsBossRush
 			? $"Boss Rush • {GetCurrentStageName()}\n{BossRushRosterCount} wardens, one after another. The last is his."
 			: $"{GetCurrentStageName()} • {environmentProfile.DisplayName}\n{GetCurrentStageFlavorText()}";
-		ShowRunBanner(text, environmentProfile.IntroTint, 2.4f, 0.6f);
+		ShowRunBanner(text, environmentProfile.IntroTint, 2.4f, 0.6f, opening: true);
 	}
 
 	// These were two ten-entry switches naming stages that StageSelection had never heard of and
@@ -2453,7 +2482,72 @@ public partial class Node2DGame : Node2D
 		}
 
 		FurnishStageHazards(chunk, parent, rect, chunkPixels);
+		StampPropClusters(chunk, parent);
 		return true;
+	}
+
+	// PROPS IN THE NAVIGATION GRID (Eric, 0.10.0: "All enemies tend to get stuck on terrain. Find an
+	// efficient way to have them path better"). A lone trunk or rock is something a body slides round
+	// (Enemy, SKIRTING). Two closer than a body is wide are a notch it walks into and wedges in, and
+	// _MazeProbe's stuck log found the Forest's trapped bodies in exactly those: between two rocks 29 px
+	// apart, in a channel between a trunk and a rock. So once a chunk is furnished, every blocking prop
+	// standing within PropClusters.Gap of another, or of water, a wall or a fence, is stamped into the
+	// chunk's flags (TerrainStreamer.FlagProp) together with the cells between them, and the flow field
+	// routes the swarm round the cluster as it routes it round a pond: an open-ground body whose straight
+	// walk crosses one follows the field until it is past. Its own chunk's cells only - a neighbour's
+	// data is not this chunk's to write, and a cluster split by a chunk border is left to the skirt.
+	// Read once per chunk, from the bodies themselves, so whatever furnishing places is what is stamped.
+	// The geometry is PropClusters' (MazeNavigation.cs), where RegressionChecks can hold it.
+	private readonly List<Rect2> clusterRects = new();
+
+	private void StampPropClusters(TerrainChunk chunk, Node2D holder)
+	{
+		if (terrainStreamer == null || !Enemy.TerrainSkirting)
+			return;
+		long started = System.Diagnostics.Stopwatch.GetTimestamp();
+		for (int i = 0; i < chunk.Flags.Length; i++)
+			chunk.Flags[i] &= unchecked((byte)~TerrainStreamer.FlagProp);
+
+		clusterRects.Clear();
+		uint meets = 1u | (1u << (LevelTilePainter.TerrainCollisionLayer - 1));
+		foreach (Node child in holder.GetChildren())
+		{
+			if (child is not StaticBody2D body || (body.CollisionLayer & meets) == 0)
+				continue;
+			foreach (Node part in body.GetChildren())
+			{
+				if (part is CollisionShape2D shape && !shape.Disabled && shape.Shape is RectangleShape2D box)
+				{
+					Vector2 size = box.Size * shape.GlobalScale.Abs();
+					clusterRects.Add(new Rect2(shape.GlobalPosition - size * 0.5f, size));
+				}
+			}
+		}
+		if (clusterRects.Count == 0)
+			return;
+
+		TerrainStreamer ground = terrainStreamer;
+		PropClusters.Collect(clusterRects, ground.CellOriginWorld(Vector2I.Zero), ProceduralTilePixels,
+			cell => ground.IsSolidCell(cell.X, cell.Y),
+			cell => StampPropCell(chunk, cell.X, cell.Y));
+		if (TerrainStreamer.LogTimings)
+		{
+			int closed = 0;
+			foreach (byte f in chunk.Flags)
+				if ((f & TerrainStreamer.FlagProp) != 0)
+					closed++;
+			double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - started) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+			GD.Print($"TERRAIN prop clusters {chunk.Coord}: {clusterRects.Count} props, {closed} cells closed, {ms:0.000} ms");
+		}
+	}
+
+	private static void StampPropCell(TerrainChunk chunk, int cx, int cy)
+	{
+		int n = TerrainStreamer.ChunkTiles;
+		int lx = cx - chunk.MinCell.X;
+		int ly = cy - chunk.MinCell.Y;
+		if (lx >= 0 && lx < n && ly >= 0 && ly < n)
+			chunk.Flags[lx + ly * n] |= TerrainStreamer.FlagProp;
 	}
 
 	// --- Ground detail and landmarks (.ai/terrain.md section 8) -----------------------------------
@@ -2491,6 +2585,7 @@ public partial class Node2DGame : Node2D
 	// cover enough of a chunk that eight tries found one in under half the chunks that rolled for it.
 	private const int LandmarkAttempts = 24;
 	private const int SaltLandmark = 0x1A4D;
+	private const int SaltSpawnRolls = 0x5A3B;
 
 	/// <summary>
 	/// TerrainStreamer.PlanFeatures: the moment a chunk's data exists, decide its landmark and stamp
@@ -3310,6 +3405,8 @@ public partial class Node2DGame : Node2D
 			MazeNavigation.Active.Update(player.FootPosition, d);
 		FrameProfiler.End(FrameProfiler.Section.Navigation, navStart);
 		UpdateBossHud();
+		// Bosses a chapter's rules sent on its own schedule (Node2DGame.ChapterBosses.cs, the Throne).
+		UpdateSentBosses();
 		TickBossEntrance(d);
 		TickVictoryPortalAndPointers();
 		TickBossRush(d);
@@ -3349,10 +3446,17 @@ public partial class Node2DGame : Node2D
 			spawnTimer = 0f;
 		}
 
-		var background = GetNode<TextureRect>(BackgroundPath);
+		SyncGroundToCamera();
+	}
+
+	// The tiled ground's shader follows the camera: every frame of a run, and every frame of the defeat's
+	// crash zoom (Node2DGame.Defeat.cs), which moves the camera on a paused tree where ProcessTick does not run.
+	private void SyncGroundToCamera()
+	{
+		var background = GetNodeOrNull<TextureRect>(BackgroundPath);
 		var backgroundOverlay = GetNodeOrNull<TextureRect>(BackgroundOverlayPath);
-		var camera = player.GetNode<Camera2D>(CameraPath);
-		if (background.Material is ShaderMaterial material && camera != null)
+		var camera = player?.GetNodeOrNull<Camera2D>(CameraPath);
+		if (background?.Material is ShaderMaterial material && camera != null)
 		{
 			var textureSize = background.Texture.GetSize();
 			Vector2 offset = camera.GlobalPosition / textureSize;
@@ -3424,6 +3528,9 @@ public partial class Node2DGame : Node2D
 			OnPlayerLevelGained();
 			return;
 		}
+		// Levels a chapter granted outright (the Throne's Muster), after any the player earned.
+		if (OpenNextGrantedLevelUp())
+			return;
 		GetTree().Paused = false;
 	}
 
@@ -3442,6 +3549,9 @@ public partial class Node2DGame : Node2D
 		{
 			levelUpMenu = levelupMenuScene.Instantiate<CanvasLayer>();
 			levelUpMenu.ProcessMode = ProcessModeEnum.WhenPaused;
+			// Hook 8: the chapter's word on the screen before it lays itself out (the Throne's Muster).
+			if (levelUpMenu is LevelUpMenu opening)
+				chapterRules?.LevelUpOpening(opening, openingGrantedLevelUp);
 			AddChild(levelUpMenu);
 			// Connect to WeaponSelected signal
 			var menuScript = levelUpMenu as Node;
@@ -3467,7 +3577,16 @@ public partial class Node2DGame : Node2D
 			{
 				List<EquippedSpellInfo> equippedInfo = BuildEquippedInfo();
 				List<LevelUpOption> ascensionOffers = player.GetAscensionOffers();
-				typedMenu.SetOptions(player.GetLevelUpOptions(optionCount), rerollsRemainingForCurrentLevelUp, equippedInfo, BuildBaselineElementCounts(), player.BuildCharges(rerollsRemainingForCurrentLevelUp));
+				List<LevelUpOption> dealt = player.GetLevelUpOptions(optionCount);
+				typedMenu.SetOptions(dealt, rerollsRemainingForCurrentLevelUp, equippedInfo, BuildBaselineElementCounts(), player.BuildCharges(rerollsRemainingForCurrentLevelUp));
+				// A boon dealt is met: the Evolution Codex names it from now on (CodexSightings).
+				CodexSightings.Record(this, dealt.Where(o => o.IsBoon).Select(o => o.SpellId));
+				// A combination's Feat is met the first time its recipe is (.ai/combo-spells.md section 2): the strip
+				// offering it is that moment, and the Feat grants the spell there and then - before the browser's
+				// previews are read, so the recipe the strip offers is never "???" beside it.
+				RecordCombinationsMet(ascensionOffers);
+				// The recipes the save knows, for the ascension browser and the level 8 page's mark (ComboCatalog).
+				typedMenu.SetCombinations(player.BuildComboPreviews(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data));
 				// The Ascension strip: level 8 and the Apotheosis, offered above the cards (Player.GetAscensionOffers).
 				typedMenu.SetAscensions(ascensionOffers);
 				// A path met on this level-up is revealed in the browser from now on, in every run
@@ -3506,7 +3625,9 @@ public partial class Node2DGame : Node2D
 			return;
 
 		int optionCount = player.IsPlaytestModeEnabled ? 4 : 3;
-		typedMenu.SetOptions(player.GetLevelUpOptions(optionCount), rerollsRemainingForCurrentLevelUp, BuildEquippedInfo(), BuildBaselineElementCounts(), player.BuildCharges(rerollsRemainingForCurrentLevelUp));
+		List<LevelUpOption> dealt = player.GetLevelUpOptions(optionCount);
+		typedMenu.SetOptions(dealt, rerollsRemainingForCurrentLevelUp, BuildEquippedInfo(), BuildBaselineElementCounts(), player.BuildCharges(rerollsRemainingForCurrentLevelUp));
+		CodexSightings.Record(this, dealt.Where(o => o.IsBoon).Select(o => o.SpellId));
 	}
 
 	// A ban IS the level-up's choice (Eric, 2026-10-31: "once they select a spell to ban, they dont
@@ -3548,9 +3669,58 @@ public partial class Node2DGame : Node2D
 				ElementWeights = s.GetElementWeights().ToDictionary(p => p.Key.ToString(), p => p.Value),
 				IsPassive = s.IsPassive,
 				Icon = s.Icon,
-				Ascensions = player.BuildAscensionPreview(s)
+				Ascensions = player.BuildAscensionPreview(s),
+				// The wizard's final form, on his own spell only; the browser's entry at the top.
+				Apotheosis = player.BuildApotheosisPreview(s),
 			})
 			.ToList();
+	}
+
+	/// <summary>
+	/// What this run hands the Evolution Codex (CodexModel, .ai/evolution-codex.md): the held spells with the
+	/// run's own previews of their gates, the recipes, the relics and boons held, the tags and the level. The
+	/// level-up's Codex button and the pause screen's both open it from here, so the two cannot disagree.
+	/// </summary>
+	public CodexContext BuildCodexContext()
+	{
+		SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
+		if (player == null)
+			return CodexContext.ForSave(save);
+		CharacterData character = CharacterRoster.GetByIndex(Global.SelectedCharacterIdx);
+		return new CodexContext
+		{
+			Mode = CodexMode.InRun,
+			Save = save,
+			CharacterId = character?.Id ?? string.Empty,
+			WizardName = character?.Name ?? string.Empty,
+			PlayerLevel = player.CurrentLevel,
+			StarterSpellId = player.SignatureSpellId ?? string.Empty,
+			HeldSpells = player.GetEquippedSpells().Where(s => s != null).ToList(),
+			Equipped = BuildEquippedInfo(),
+			Combos = player.BuildComboPreviews(save),
+			HeldRelics = player.GetOwnedChestItems().ToList(),
+			HeldBoons = player.GetOwnedBoonIds().ToList(),
+			ElementCounts = BuildBaselineElementCounts(),
+		};
+	}
+
+	/// <summary>
+	/// Opens the Evolution Codex in its in-run mode, over whichever screen asked (the level-up's Codex button,
+	/// the pause screen's Run tab). The tree is already paused by that screen; the Codex is its own layer above.
+	/// </summary>
+	/// <param name="select">An entry or an evolution to open on; by default the held spell with something ready.</param>
+	public EvolutionCodex OpenEvolutionCodex(string select = null, CodexFilter filter = CodexFilter.All, Action onClosed = null)
+	{
+		if (EvolutionCodex.IsOpen)
+			return null;
+		CodexContext context = BuildCodexContext();
+		if (string.IsNullOrWhiteSpace(select))
+		{
+			// The spell the player most likely came for: one with an Ascension or the Apotheosis waiting.
+			CodexModel preview = CodexModel.Build(context);
+			select = preview.Filtered(CodexFilter.Spells).FirstOrDefault(e => e.Held)?.Id;
+		}
+		return EvolutionCodex.Open(this, context, select, filter, onClosed);
 	}
 
 	// The player's true current element instance counts (issue #16), keyed by Element name, used as
@@ -3923,6 +4093,7 @@ public partial class Node2DGame : Node2D
 
 		ShowEscapeRunOverview();
 		escapeMenu.Show();
+		CapturePauseScreenshot();
 
 		// Clear of the phone's rounded corners and camera hole; nothing on desktop (SafeArea).
 		SafeArea.Apply(escapeMenu);
@@ -3939,8 +4110,37 @@ public partial class Node2DGame : Node2D
 
 	private void OnEscapeResumePressed()
 	{
+		DropPauseScreenshot();
 		escapeMenu?.Hide();
 		GetTree().Paused = false;
+	}
+
+	// The pause screen is drawn transparent for the frame it opens on, so that frame - the run,
+	// paused, with nothing over it but the HUD - is what the viewport holds once it is drawn; the
+	// screen is shown the frame after. One frame, a sixtieth of a second, is not a delay anyone sees,
+	// and it is what lets a bug report carry a picture of the fight rather than of the menu.
+	private void CapturePauseScreenshot()
+	{
+		DropPauseScreenshot();
+		if (escapeRoot == null)
+			return;
+		escapeRoot.Modulate = Colors.Transparent;
+		cancelPauseScreenshot = ReportBugScreen.CaptureAfterDraw(GetViewport(), image =>
+		{
+			cancelPauseScreenshot = null;
+			pauseScreenshot = image;
+			if (escapeRoot != null && IsInstanceValid(escapeRoot))
+				escapeRoot.Modulate = Colors.White;
+		});
+	}
+
+	private void DropPauseScreenshot()
+	{
+		cancelPauseScreenshot?.Invoke();
+		cancelPauseScreenshot = null;
+		pauseScreenshot = null;
+		if (escapeRoot != null && IsInstanceValid(escapeRoot))
+			escapeRoot.Modulate = Colors.White;
 	}
 
 	private void OnEscapeReportBugPressed()
@@ -3948,11 +4148,13 @@ public partial class Node2DGame : Node2D
 		// Over the pause screen, which keeps the run paused underneath it. A sibling of the escape
 		// menu rather than its child, so the escape menu's navigator does not count its buttons as
 		// its own. The selection goes back to Report a bug on close, where the player left it.
+		// With the picture taken as the pause opened. Without one (it is taken a frame after the
+		// pause, so only a press inside that frame misses it) the screen photographs the pause screen.
 		ReportBugScreen.Open(this, BuildBugReportContext(), () =>
 		{
 			if (escapeMenu != null && escapeMenu.Visible)
 				escapeReportButton?.GrabFocus();
-		});
+		}, pauseScreenshot);
 	}
 
 	/// <summary>
@@ -4018,90 +4220,24 @@ public partial class Node2DGame : Node2D
 
 	private void ShowEscapeOptions()
 	{
+		// The main menu's Options builds these same two sections from the same rows (SettingsRows), so a
+		// setting is named, ordered and drawn one way on both; the rest of that panel (Gameplay, Story,
+		// Testing) is not something to change in the middle of a run. Menu pass, 2026-11-01.
 		ShowStructuredEscapeDetail("Options", sections =>
 		{
-			var box = new VBoxContainer();
-			box.AddThemeConstantOverride("separation", 10);
-
-			box.AddChild(BuildEscapeVolumeRow("Master Volume", "Master"));
-			box.AddChild(BuildEscapeVolumeRow("Music Volume", MusicPlayer.ResolveMusicBusName()));
-			box.AddChild(BuildEscapeVolumeRow("Sound Effects Volume", SfxPlayer.ResolveSfxBusName()));
-
-			var muteToggle = new CheckButton { Text = "Mute All Audio", FocusMode = Control.FocusModeEnum.All };
-			ResponsiveLayout.SetFont(muteToggle, ResponsiveLayout.TextRole.Body);
-			muteToggle.AddThemeColorOverride("font_color", PauseInk.InkSoft);
-			muteToggle.AddThemeColorOverride("font_focus_color", PauseInk.Ink);
-			muteToggle.AddThemeColorOverride("font_hover_color", PauseInk.Ink);
-			muteToggle.AddThemeColorOverride("font_pressed_color", PauseInk.Ink);
-			muteToggle.AddThemeColorOverride("font_hover_pressed_color", PauseInk.Ink);
-			ResponsiveLayout.EnsureTouchTarget(muteToggle);
-			int masterBus = AudioServer.GetBusIndex("Master");
-			muteToggle.ButtonPressed = masterBus >= 0 && AudioServer.IsBusMute(masterBus);
-			muteToggle.Toggled += pressed => AudioSettings.StoreMute(this, pressed);
-			box.AddChild(muteToggle);
-
-			sections.AddChild(BuildEscapeSection("Audio", box));
-
-			// The damage numbers, switchable mid-run (2026-10-28, "add way to remove damage numbers
-			// from enemies"); the main menu's Options has the same switch.
-			var display = new VBoxContainer();
-			display.AddThemeConstantOverride("separation", 10);
-			var numbersToggle = new CheckButton
-			{
-				Text = "Show Damage Numbers",
-				FocusMode = Control.FocusModeEnum.All,
-				ButtonPressed = DisplaySettings.DamageNumbers,
-			};
-			ResponsiveLayout.SetFont(numbersToggle, ResponsiveLayout.TextRole.Body);
-			foreach (string state in new[] { "font_focus_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color" })
-				numbersToggle.AddThemeColorOverride(state, PauseInk.Ink);
-			numbersToggle.AddThemeColorOverride("font_color", PauseInk.InkSoft);
-			ResponsiveLayout.EnsureTouchTarget(numbersToggle);
-			numbersToggle.Toggled += pressed => DisplaySettings.StoreDamageNumbers(this, pressed);
-			display.AddChild(numbersToggle);
-			sections.AddChild(BuildEscapeSection("Display", display));
+			sections.AddChild(BuildEscapeSection(SettingsRows.Audio, BuildEscapeSettingsList(SettingsRows.AudioRows(this, PauseInk))));
+			sections.AddChild(BuildEscapeSection(SettingsRows.Display, BuildEscapeSettingsList(SettingsRows.DisplayRows(this, PauseInk))));
 		});
 	}
 
-	private Control BuildEscapeVolumeRow(string label, string busName)
+	private static Control BuildEscapeSettingsList(IEnumerable<Control> rows)
 	{
-		var row = new VBoxContainer();
-		row.AddThemeConstantOverride("separation", 4);
-		row.AddChild(BuildDetailLabel(label, PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
-
-		// The stick reaches a slider like a button, and left and right then move it (Godot's own
-		// ui_left/ui_right on a focused Range). MenuNavigator counts a focused slider as a
-		// selection; it used to take the focus straight back to Resume.
-		var slider = new HSlider
-		{
-			MinValue = 0.0,
-			MaxValue = 1.0,
-			// Also what one press of the stick moves it by (Godot has no separate keyboard step for a
-			// Slider any more): twenty presses end to end rather than a hundred.
-			Step = 0.05,
-			FocusMode = Control.FocusModeEnum.All,
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-			CustomMinimumSize = new Vector2(0, ResponsiveLayout.MinTouchTarget)
-		};
-		// The track in the stone rule, the filled part in the bar gold: CodexRows' progress bar.
-		StyleBoxFlat Track(Color colour)
-		{
-			var box = new StyleBoxFlat { BgColor = colour };
-			box.SetCornerRadiusAll(3);
-			box.ContentMarginTop = 4;
-			box.ContentMarginBottom = 4;
-			return box;
-		}
-		slider.AddThemeStyleboxOverride("slider", Track(PauseInk.BarTrack));
-		slider.AddThemeStyleboxOverride("grabber_area", Track(PauseInk.BarFill));
-		slider.AddThemeStyleboxOverride("grabber_area_highlight", Track(PauseInk.BarFill));
-		int busIndex = AudioServer.GetBusIndex(busName);
-		slider.Value = busIndex >= 0 ? Mathf.DbToLinear(AudioServer.GetBusVolumeDb(busIndex)) : 1.0;
-		// Through AudioSettings so a mid-run volume change survives the run, the same as the
-		// identical sliders on the main menu.
-		slider.ValueChanged += value => AudioSettings.Store(this, busName, (float)value);
-		row.AddChild(slider);
-		return row;
+		var box = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
+		// CodexRows' row gap, the one the main menu's sections use.
+		box.AddThemeConstantOverride("separation", CodexRows.RowSeparation);
+		foreach (Control row in rows)
+			box.AddChild(row);
+		return box;
 	}
 
 	private const string EscapeRunTitle = "Run Details";
@@ -4137,7 +4273,31 @@ public partial class Node2DGame : Node2D
 		// How full the book is, and how big: spells are permanent, so this is the number that says
 		// how many choices are left, and the Blank Folio's seventh slot has to show up somewhere.
 		grid.AddChild(BuildStatTile("todo", $"{player?.GetEquippedSpells().Count ?? 0}/{player?.SpellSlots ?? Player.MaxSpellSlots}", "Spell slots"));
-		return BuildEscapeSection("Run Summary", grid);
+		return BuildEscapeSection("Run Summary", grid, BuildEscapeCodexButton());
+	}
+
+	// The Evolution Codex from the pause screen (.ai/evolution-codex.md section 1): the Run tab says what this
+	// run became, the Codex every path it could still take. Beside the tab's first heading, in the quiet
+	// toggle the spell sections' Show details wears, so it does not read as a fourth action beside Resume.
+	private Button BuildEscapeCodexButton()
+	{
+		var button = new Button
+		{
+			Name = "EscapeCodexButton",
+			Text = "★ Codex",
+			FocusMode = Control.FocusModeEnum.All,
+			ProcessMode = ProcessModeEnum.Always,
+			SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd,
+		};
+		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
+		CodexRows.StyleQuietToggle(button, PauseInk);
+		ResponsiveLayout.EnsureTouchTarget(button, 120f);
+		button.Pressed += () => OpenEvolutionCodex(onClosed: () =>
+		{
+			if (IsInstanceValid(button) && button.IsVisibleInTree())
+				button.GrabFocus();
+		});
+		return button;
 	}
 
 	private Control BuildCharacterPassiveSection()
@@ -4257,6 +4417,8 @@ public partial class Node2DGame : Node2D
 		// way a spell went is the first thing a player pauses to check.
 		foreach (Control milestone in BuildSpellMilestones(spell))
 			box.AddChild(milestone);
+		if (BuildPendingApotheosis(spell) is Control ahead)
+			box.AddChild(ahead);
 		string description = string.IsNullOrWhiteSpace(spell.Description) ? "No description." : spell.Description;
 		box.AddChild(BuildDetailLabel(description, PauseInk.InkSoft));
 
@@ -4301,10 +4463,35 @@ public partial class Node2DGame : Node2D
 			yield return GameOverScreen.Milestone("Ascension", MilestoneName(ascension), GameOverScreen.AscensionMark, ascension.Id);
 		if (spell.SelectedApotheosis is SpellEvolutionOption apotheosis)
 			yield return GameOverScreen.Milestone("Apotheosis", MilestoneName(apotheosis), GameOverScreen.ApotheosisMark, apotheosis.Id);
+		// A combination (ComboCatalog) has no milestones of its own: it lists the two Ascensions it was made
+		// of, from the parents it carries frozen.
+		foreach (SpellData parent in spell.ComboParents)
+		{
+			if (parent?.SelectedLevel8Evolution is SpellEvolutionOption made)
+				yield return GameOverScreen.Milestone("Conjunction", $"{parent.Name} - {MilestoneName(made)}", GameOverScreen.AscensionMark, made.Id);
+		}
 	}
 
 	private static string MilestoneName(SpellEvolutionOption option) =>
 		string.IsNullOrWhiteSpace(option.DisplayName) ? option.Id : option.DisplayName;
+
+	// The starting spell's LAST milestone while it is still ahead: the wizard's Apotheosis (Eric's
+	// playtest, 2026-11-01: "make it clearer that apotheosis is an option"). The mark is outlined - a
+	// solid one is a milestone taken - then the form's name and where it stands. Its picture only once a
+	// run has offered it, the ascension browser's seal (.ai/level-up-screen.md 4e). Once taken it is an
+	// ordinary milestone (BuildSpellMilestones); on any other spell, and for the Test Wizard, nothing.
+	private Control BuildPendingApotheosis(SpellData spell)
+	{
+		ApotheosisPreview apotheosis = player?.BuildApotheosisPreview(spell);
+		if (apotheosis == null || apotheosis.Taken)
+			return null;
+		bool revealed = AscensionSightings.IsRevealed(this, spell.Id, apotheosis.FormId, apotheosis.Offered);
+		string note = apotheosis.Offered ? "ready at your next level-up"
+			: apotheosis.Closed ? "out of reach this run"
+			: "not yet";
+		return GameOverScreen.Milestone("Apotheosis", apotheosis.FormName, GameOverScreen.ApotheosisMark,
+			revealed ? apotheosis.FormId : string.Empty, pending: true, note: note);
+	}
 
 	// The boons the run has taken. Until this section the pause screen listed every spell and no
 	// boon at all, so once picked a boon was never seen again. Each relic is shown through BoonAura,
@@ -4344,12 +4531,17 @@ public partial class Node2DGame : Node2D
 			var box = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
 			box.AddThemeConstantOverride("separation", 3);
 			box.AddChild(BuildDetailLabel(boon.Name, PauseInk.Ink, ResponsiveLayout.TextRole.Body));
-			box.AddChild(BuildDetailLabel(BoonCatalog.DescribeEffect(boon), PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
+			box.AddChild(KeywordText.Wrap(BuildDetailLabel(BoonCatalog.DescribeEffect(boon), PauseInk.InkSoft, ResponsiveLayout.TextRole.Label)));
 			// A stance boon pays only while it holds, so say whether it held when the game paused.
 			if (boon.Effect == BoonEffect.StanceRegen && player != null)
 				box.AddChild(BuildDetailLabel(player.IsStanceRooted
 					? $"Rooted: +{boon.Magnitude:0.0} HP per second now."
 					: $"Not rooted - stand still {BoonCatalog.StanceSeconds:0.#}\u00A0s.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
+			// The walking boon winds one spell, and which one changes as the timers do: say which it was.
+			if (boon.Effect == BoonEffect.WalkingRecharge && player != null)
+				box.AddChild(BuildDetailLabel(player.WaywiserWindingSpellName is string winding
+					? $"Winding: {winding}."
+					: "Not winding - walk to wind your slowest spell.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
 			// The element tags it adds to the run, as the same chips the level-up card showed when it
 			// was taken - "why is my Water at 3" was a question the pause screen could not answer.
 			if (BuildPauseTagChips(boon.ElementWeights) is Control chips)
@@ -4411,7 +4603,7 @@ public partial class Node2DGame : Node2D
 			var box = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
 			box.AddThemeConstantOverride("separation", 3);
 			box.AddChild(BuildDetailLabel(ChestItemCatalog.GetDisplayName(id), PauseInk.Ink, ResponsiveLayout.TextRole.Body));
-			box.AddChild(BuildDetailLabel(ChestItemCatalog.GetDescription(id), PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
+			box.AddChild(KeywordText.Wrap(BuildDetailLabel(ChestItemCatalog.GetDescription(id), PauseInk.InkSoft, ResponsiveLayout.TextRole.Label)));
 			if (BuildPauseTagChips(ChestItemCatalog.GetElementTags(id)) is Control chips)
 				box.AddChild(chips);
 			row.AddChild(box);
@@ -5325,6 +5517,7 @@ public partial class Node2DGame : Node2D
 		return new ExplorePlacer(terrainSeed, Global.SelectedStageIdx, stream, new ExplorePlacer.Ground
 		{
 			IsClear = IsExploreGroundClear,
+			IsClearDense = IsExploreGroundClearDense,
 			Origin = stageOrigin,
 			ChunkPixels = TerrainStreamer.ChunkTiles * ProceduralTilePixels,
 			// A maze corridor block plus its wall strip: cell centres are this far apart, and the
@@ -5366,6 +5559,35 @@ public partial class Node2DGame : Node2D
 		}
 		// The maze is connected by construction (.ai/terrain.md section 7); open ground is asked.
 		return MazeNavigation.Active is { IsMaze: true } || CanWalkAwayFrom(centre);
+	}
+
+	/// <summary>
+	/// <see cref="IsExploreGroundClear"/>, and the whole disc open as well: rings every
+	/// <see cref="ExploreDenseStep"/> out to its edge, a point every ExploreDenseStep round each. For a
+	/// site that DRAWS over its footprint - the thaw's lake, 360 px - where eight points on a ring are
+	/// 280 px apart and a pond drawn over by walkable ice would be a wall nobody can see. Opt-in
+	/// (ExplorePlacer.EventSite's dense), so every site placed before is placed exactly as it was.
+	/// </summary>
+	public bool IsExploreGroundClearDense(Vector2 centre, float radius) =>
+		IsExploreGroundClear(centre, radius) && IsExploreFootprintOpenDense(centre, radius);
+
+	private const float ExploreDenseStep = 80f;
+
+	private bool IsExploreFootprintOpenDense(Vector2 centre, float radius)
+	{
+		int rings = Mathf.CeilToInt(radius / ExploreDenseStep);
+		for (int i = 1; i <= rings; i++)
+		{
+			float r = radius * i / rings;
+			int around = Mathf.Max(ExploreRingPoints, Mathf.CeilToInt(Mathf.Tau * r / ExploreDenseStep));
+			for (int k = 0; k < around; k++)
+			{
+				float angle = (k + 0.5f * (i % 2)) * Mathf.Tau / around;
+				if (!IsExploreSpotOpen(centre + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * r))
+					return false;
+			}
+		}
+		return true;
 	}
 
 	private bool IsExploreSpotOpen(Vector2 p) =>
@@ -5411,6 +5633,9 @@ public partial class Node2DGame : Node2D
 
 	/// <summary>Keeps decor, props and stage hazards out of a circle for the rest of the run.</summary>
 	public void ReserveExploreGround(Vector2 centre, float radius) => exploreReserves.Add((centre, radius));
+
+	/// <summary>Every footprint reserved so far this run (the event's, the wayfinder's, earlier secrets').</summary>
+	public IReadOnlyList<(Vector2 Centre, float Radius)> ExploreReserves => exploreReserves;
 
 	private bool IsInExploreReserve(Vector2 position, float margin = 0f)
 	{
@@ -5878,11 +6103,26 @@ public partial class Node2DGame : Node2D
 	// closing Hide would take the new banner down with it.
 	private Tween? runBannerTween;
 	private const float BannerTop = 42f;
+	// The run banner's turn on the screen (Announcements): the chapter's opening line is the opening's own
+	// (this node); every other banner - a boss's arrival above all - takes the screen at once and holds it
+	// as this until it has faded.
+	private readonly object runBannerTurn = new();
+	private object? runBannerHolder;
 
-	private void ShowRunBanner(string text, Color tint, float holdSeconds, float fadeSeconds = 0.7f)
+	private void ShowRunBanner(string text, Color tint, float holdSeconds, float fadeSeconds = 0.7f, bool opening = false)
 	{
+		object holder = opening ? this : runBannerTurn;
 		if (stageIntroLabel == null)
+		{
+			Announcements.Release(holder);
 			return;
+		}
+		if (!opening)
+			Announcements.Request(holder, Announcements.Kind.Banner);
+		// A banner cut short by this one gives up its turn here: its tween, and the release at its end, die.
+		if (runBannerHolder != null && !ReferenceEquals(runBannerHolder, holder))
+			Announcements.Release(runBannerHolder);
+		runBannerHolder = holder;
 
 		runBannerTween?.Kill();
 		var panel = stageIntroLabel.GetParent() as Control;
@@ -5900,6 +6140,10 @@ public partial class Node2DGame : Node2D
 			// row's foot too, wherever the cutout has put it.
 			if (ResponsiveLayout.IsNarrow(panel) && GetNodeOrNull<Control>("UIOverlay/LoadoutHud") is Control loadout)
 				top = Mathf.Max(top, loadout.GetGlobalRect().End.Y + 8f);
+			// And inside the picture while a boss's arrival is filmed: the letterbox's top bar is drawn over
+			// the HUD, and this banner is the arrival's one line of words - the boss's name - so it goes
+			// below the bar at its deepest (Node2DGame.BossEntrance.cs, LetterboxBannerFloor).
+			top = Mathf.Max(top, LetterboxBannerFloor());
 			panel.OffsetBottom = top + (panel.OffsetBottom - panel.OffsetTop);
 			panel.OffsetTop = top;
 		}
@@ -5920,6 +6164,12 @@ public partial class Node2DGame : Node2D
 			tween.Parallel().TweenProperty(panel, "modulate:a", 0.0f, fadeSeconds);
 			tween.TweenCallback(Callable.From(() => panel.Hide()));
 		}
+		tween.TweenCallback(Callable.From(() =>
+		{
+			Announcements.Release(holder);
+			if (ReferenceEquals(runBannerHolder, holder))
+				runBannerHolder = null;
+		}));
 	}
 
 	private void OnBossDefeated(string bossId)
@@ -6161,19 +6411,59 @@ public partial class Node2DGame : Node2D
 		chestSelectionMenu = menu;
 		AddChild(menu);
 
-		var ownedItems = player.GetOwnedChestItems();
-		// Three, plus the Relic Key, plus John Dee's eye for a collection: five at most.
-		int offerCount = player.ChestOfferCount;
-		// The knife is only dealt when it has something to cut (Player.CanUsePenknife).
-		var unavailable = player.CanUsePenknife ? null : new[] { ChestItemCatalog.ScribesPenknife };
-		var options = ChestItemCatalog.GetChestItemOptions(ownedItems, spawnRng, offerCount, unavailable, chestOfferMemory);
 		// The knife's picker lists the book as it stands, the wizard's own spell greyed (it cannot be cut).
 		menu.SetSpellBook(player.GetEquippedSpells(), player.SignatureSpellId);
-		menu.SetOptions(options, ownedItems);
+		DealChest(menu);
 		menu.Connect(ChestItemSelectionMenu.SignalName.ItemSelected, Callable.From<string>(OnChestItemSelected));
 		menu.Connect(ChestItemSelectionMenu.SignalName.SpellCutChosen, Callable.From<string>(OnPenknifeCutChosen));
+		menu.Connect(ChestItemSelectionMenu.SignalName.RerollRequested, Callable.From(OnChestRerollRequested));
+		menu.Connect(ChestItemSelectionMenu.SignalName.BanRequested, Callable.From<string>(OnChestBanRequested));
 
 		GetTree().Paused = true;
+	}
+
+	// One deal, for the chest opening and for its rerolls, so they cannot disagree about what a chest may
+	// hold: three relics, plus the Relic Key, plus John Dee's eye for a collection - five at most - never a
+	// relic struck this run nor the knife with nothing to cut (Player.GetChestUnavailableItems), and the
+	// run's offer memory, so a reroll's first hand sits the second one out and is faded.
+	private void DealChest(ChestItemSelectionMenu menu)
+	{
+		var ownedItems = player.GetOwnedChestItems();
+		var options = ChestItemCatalog.GetChestItemOptions(ownedItems, spawnRng, player.ChestOfferCount,
+			player.GetChestUnavailableItems(), chestOfferMemory);
+		menu.SetCharges(player.RerollsRemaining, player.BansRemaining);
+		menu.SetOptions(options, ownedItems);
+		// Every relic a chest shows is met: the Evolution Codex names it from now on (CodexSightings).
+		CodexSightings.Record(this, options);
+	}
+
+	// The run's rerolls, spent on a chest (Eric, 2026-11-02): the same pool the level-up spends.
+	private void OnChestRerollRequested()
+	{
+		if (player == null || !IsInstanceValid(player) || chestSelectionMenu is not ChestItemSelectionMenu menu || !IsInstanceValid(menu))
+			return;
+		if (!player.TrySpendReroll())
+			return;
+		GameStats.RecordRerollUsed();
+		DealChest(menu);
+	}
+
+	// A ban IS the chest's choice, as it is the level-up's (Eric, 2026-10-31, for the level-up: "once they
+	// select a spell to ban, they dont continue to level up, that is what they used the level up for"). The
+	// relic leaves the run's chest pool and the chest closes with nothing claimed. A refused ban spends
+	// nothing, so the chest is not spent either: the same pages go back up.
+	private void OnChestBanRequested(string itemId)
+	{
+		if (player == null || !IsInstanceValid(player) || chestSelectionMenu is not ChestItemSelectionMenu menu || !IsInstanceValid(menu))
+			return;
+		if (!player.TryBanRelic(itemId))
+		{
+			menu.RefreshCharges(player.RerollsRemaining, player.BansRemaining);
+			return;
+		}
+		GameStats.RecordBanUsed();
+		GD.Print($"Chest: {ChestItemCatalog.GetDisplayName(itemId)} struck from this run's chests ({player.BansRemaining} bans left)");
+		FinishChestClaim(null);
 	}
 
 	// The Scribe's Penknife is claimed by naming the spell it cuts, in the chest's own picker. The
@@ -6206,13 +6496,15 @@ public partial class Node2DGame : Node2D
 	}
 
 	// Everything a claim does after the relic itself: the run's records, the chest's heal, the
-	// Reliquary's per-chest payout, and closing the screen.
+	// Reliquary's per-chest payout, and closing the screen. A null itemId is a chest spent on a ban: it was
+	// opened, so it pays the Reliquary and may hold a Hidden Drawer's chest, but no relic was claimed.
 	private void FinishChestClaim(string itemId)
 	{
 		if (player != null && IsInstanceValid(player))
 		{
 			RunEvents.RecordChestOpened();
-			RunEvents.RecordChestItem(itemId);
+			if (itemId != null)
+				RunEvents.RecordChestItem(itemId);
 			// A chest no longer heals 4 (.ai/difficulty-curve.md, section 5): what is in it is the reward.
 			// Vaultguard's set bonus keys off a chest actually being opened, so it fires here
 			// rather than once when the set completed. Called after AddChestItem so the chest
@@ -6449,14 +6741,12 @@ public partial class Node2DGame : Node2D
 		return (toEdge * SwarmEdgeMargin) + spawnRng.RandfRange(0f, SwarmEdgeDepth);
 	}
 
-	// Half the visible world rectangle, which is the viewport scaled by the gameplay zoom.
+	// Half the visible world rectangle, which is the viewport scaled by the gameplay zoom - without a boss
+	// arrival's push-in (GameplayZoomOf), or the ring would close in while the camera is pushed in.
 	private Vector2 GetVisibleHalfExtents()
 	{
 		Vector2 viewport = GetViewport().GetVisibleRect().Size;
-		float zoom = 1f;
-		var camera = player?.GetNodeOrNull<Camera2D>("Camera2D");
-		if (camera != null && camera.Zoom.X > 0.01f)
-			zoom = camera.Zoom.X;
+		float zoom = GameplayZoomOf(player?.GetNodeOrNull<Camera2D>("Camera2D"));
 
 		return viewport / (2f * zoom);
 	}
@@ -6735,6 +7025,11 @@ public partial class Node2DGame : Node2D
 	{
 		SaveData? data = CurrentSaveData();
 		StageDefinition? stage = StageCatalog.GetByIndex(Global.SelectedStageIdx);
+		// The opening holds the screen until it is done (Announcements): an achievement earned in the first
+		// seconds - First Blood - waits for it instead of landing on top of it. Let go by the chapter's banner
+		// when it has faded, or on handing over to the note.
+		Announcements.Reset();
+		Announcements.Request(this, Announcements.Kind.Opening);
 		if (IsBossRush || data == null)
 		{
 			if (questTracker != null)
@@ -6752,14 +7047,18 @@ public partial class Node2DGame : Node2D
 			AddChild(new QuestIntro { Name = "QuestIntro", Tracker = questTracker });
 		}
 
-		bool note = stage != null && ChapterNotes.Has(stage.Id) && !ChapterNotes.IsSeen(data, stage.Id);
-		if (note)
+		bool firstVisit = stage != null && ChapterNotes.Has(stage.Id) && !ChapterNotes.IsSeen(data, stage.Id);
+		// A returning player sees the note again while the chapter still holds something for him - its clues
+		// alone, since the place was described the first time (.ai/quests-and-notes.md section 2).
+		bool clues = stage != null && ChapterNotes.Has(stage.Id) && ChapterNotes.CluesFor(stage.Id, data).Count > 0;
+		bool note = firstVisit || clues;
+		if (firstVisit)
 		{
 			// Marked as it is shown, and saved now: a run quit from the pause screen still read it.
 			ChapterNotes.MarkSeen(data, stage!.Id);
 			GetNodeOrNull<SaveManager>("/root/SaveManager")?.SaveGame();
 		}
-		Action next = note ? () => ChapterNoteCard.Show(this, stage!, data) : ShowStageIntroLabel;
+		Action next = note ? () => ShowChapterNote(stage!, data, firstVisit) : ShowStageIntroLabel;
 		if (opening <= 0f)
 		{
 			next();
@@ -6771,6 +7070,15 @@ public partial class Node2DGame : Node2D
 			if (IsInstanceValid(this))
 				next();
 		};
+	}
+
+	// The note in place of the banner keeps the opening's turn until it is put away: it is the chapter's
+	// introduction, and nothing is written over it or beside it in the meantime. A message waiting behind it
+	// cuts its long idle hold short (ChapterNoteCard), so First Blood waits seconds, not the note's ten.
+	private void ShowChapterNote(StageDefinition stage, SaveData data, bool intro)
+	{
+		ChapterNoteCard card = ChapterNoteCard.Show(this, stage, data, intro);
+		Announcements.Pass(this, card, Announcements.Kind.Note);
 	}
 
 	private void OnChestSetCompleted(string setId)
@@ -6886,6 +7194,24 @@ public partial class Node2DGame : Node2D
 		EnsureMoment().PlayAchievement(deed, reward, paid, string.Empty);
 		RecordAchievementNow(deed);
 		GD.Print($"Node2DGame: achievement met this run - {deed.Id} at {FormatTime(timeElapsed)}");
+	}
+
+	// THE CONJUNCTION FEAT (ComboCatalog.FeatId). Not watched by TickAchievementWatch - it is completed in the run,
+	// as a secret is - but here, the first time the strip offers the recipe: the moment plays (the result's name
+	// is what it reveals) and RecordAchievementNow pays it, so the combination is the save's from that level-up.
+	private void RecordCombinationsMet(List<LevelUpOption> offers)
+	{
+		if (offers == null || GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is not SaveData data)
+			return;
+		foreach (LevelUpOption offer in offers)
+		{
+			if (!ComboCatalog.IsComboOption(offer))
+				continue;
+			string featId = ComboCatalog.FeatId(offer.ComboId);
+			if (GlobalStatsManager.IsAchievementUnlocked(data, featId) || AchievementDefinitions.GetById(featId) is not AchievementDefinition deed)
+				continue;
+			AnnounceAchievement(deed, data);
+		}
 	}
 
 	// Deeds recorded mid-run, for the results screen: their names and the Arcane Energy they paid, which
@@ -7013,8 +7339,14 @@ public partial class Node2DGame : Node2D
 			RecordBossRush(saveManager.Data, outcome);
 			saveManager.SaveGame();
 		}
-		ShowGameOver(result, reward, totalCurrency);
+		// Everything is paid, saved and gathered before anything is shown. A death holds the results
+		// back for the defeat's few seconds (Node2DGame.Defeat.cs), and a player who quits during them
+		// has lost nothing; the paused tree is the "game freezes" of that sequence.
+		RunReport report = BuildRunReport(result, reward, totalCurrency);
 		GetTree().Paused = true;
+		if (outcome == RunOutcome.Defeat && BeginDefeatSequence(report))
+			return;
+		ShowGameOver(report);
 	}
 
 	// Beating a boss opens the next stage. The spell unlock that comes with it is handled by
@@ -7131,9 +7463,10 @@ public partial class Node2DGame : Node2D
 			return;
 
 		// A tip waits while a banner is up (ShowRunBanner): the two share the band under the timer,
-		// and the chapter's opening line or a boss's name is the one to read. A tip cut short by one
-		// is shown again once it has gone.
-		if (stageIntroLabel?.GetParent() is Control bannerPanel && bannerPanel.Visible)
+		// and the chapter's opening line or a boss's name is the one to read - and while any other
+		// message has the screen (Announcements: an achievement, a hint, an event's line). A tip cut
+		// short by one is shown again once it has gone.
+		if ((stageIntroLabel?.GetParent() is Control bannerPanel && bannerPanel.Visible) || Announcements.AnyHeld)
 		{
 			if (onboardingTipLabel.Visible)
 			{
@@ -7312,7 +7645,9 @@ public partial class Node2DGame : Node2D
 	// through ShowGameOver's signature because it is written inside a null-guarded save block.
 	private RunUnlockSummary runUnlocks;
 
-	private void ShowGameOver(RunResult result, int reward, int totalCurrency)
+	// afterDefeat: brought down by the player's press at the end of the defeat (DefeatSequence), so it
+	// covers the field from below and the defeat's sting has already played (GameOverScreen.CoversFromBelow).
+	private void ShowGameOver(RunReport report, bool afterDefeat = false)
 	{
 		if (gameOverScene == null)
 		{
@@ -7321,10 +7656,12 @@ public partial class Node2DGame : Node2D
 		}
 
 		var overlay = gameOverScene.Instantiate<CanvasLayer>();
+		if (overlay is GameOverScreen arriving)
+			arriving.CoversFromBelow = afterDefeat;
 		AddChild(overlay);
 
 		if (overlay is GameOverScreen gameOver)
-			gameOver.Present(BuildRunReport(result, reward, totalCurrency));
+			gameOver.Present(report);
 	}
 
 	// The whole run for the results screen (RunReport). Everything in it was already paid and saved
@@ -7370,7 +7707,7 @@ public partial class Node2DGame : Node2D
 				.Select(p => (p.Key, p.Value))
 				.ToList(),
 			XpGathered = player?.RunXpGathered ?? 0,
-			PlaytestMode = saveManager?.Data?.PlaytestModeEnabled == true,
+			PlaytestMode = saveManager?.Data?.PlaytestModeEnabled == true && SettingsRows.TestingAvailable,
 		};
 	}
 

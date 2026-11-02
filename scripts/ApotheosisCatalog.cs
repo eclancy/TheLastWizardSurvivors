@@ -5,7 +5,7 @@ using Godot;
 
 namespace WizardSurvivors.scripts;
 
-/// <summary>One wizard's Apotheosis: the covenant that unlocks it, and the form it takes.</summary>
+/// <summary>One wizard's Apotheosis: whose it is, on which spell, and the form it takes.</summary>
 public sealed class ApotheosisDefinition
 {
 	/// <summary>The gate is a (character, spell) pair: a Frostweaver who maxes Cinderbreath gets nothing.</summary>
@@ -14,14 +14,17 @@ public sealed class ApotheosisDefinition
 
 	/// <summary>
 	/// For a spell taken in a form (SpellData.Variants): the form this Apotheosis is the final form OF, so a
-	/// wizard who opens on a spell with forms can have one per form, each with its own path and verb. Empty
-	/// for a spell with no forms. The required path ids are that form's own (every form's milestones are).
+	/// wizard who opens on a spell with forms can have one per form, each with its own verb. Empty for a
+	/// spell with no forms.
 	/// </summary>
 	public string VariantId { get; init; } = string.Empty;
-	public string RequiredLevel4EvolutionId { get; init; } = string.Empty;
-	public string RequiredLevel8EvolutionId { get; init; } = string.Empty;
-	public Element RequiredElement { get; init; }
-	public int RequiredTier { get; init; } = 6;
+
+	/// <summary>
+	/// The wizard's element: the one his spell carries and the form deepens (+1, and nothing else). No
+	/// longer a gate - the tier was dropped on 2026-11-02 - but it is still what the validator holds the
+	/// form to, so the form can never name a new element.
+	/// </summary>
+	public Element Element { get; init; }
 
 	/// <summary>The one verb this form owns and no other may (issue #59, the rule that keeps the set apart).</summary>
 	public string Verb { get; init; } = string.Empty;
@@ -34,46 +37,53 @@ public sealed class ApotheosisDefinition
 /// </summary>
 /// <remarks>
 /// An Apotheosis is the final form of the spell a wizard starts with, offered in the Ascension strip
-/// above the level-up cards once five things hold on the same spell at the same time: it is at max level, the named
-/// level 4 and level 8 path was taken, the wizard's element is at tier 6, the wizard is the
-/// one this entry names, and the player is at least MinimumPlayerLevel. Taking it spends the pick, and it is terminal.
+/// above the level-up cards once it holds on that spell (<see cref="SpellMeetsGate"/>): the wizard's own
+/// starting spell, at its max level, ascended - ANY level 8 Ascension - and never combined with another
+/// spell. And the player is at least <see cref="MinimumPlayerLevel"/>, which is what sets when. Taking it
+/// spends the pick, and it is terminal.
 ///
-/// Every required path is the pair of milestone choices that DEEPENS the wizard's own element. A
-/// required branch that led away from it would make tier 6 harder on the exact build the gate
-/// demands (#61 says so in as many words), and the issue's original Stormcaller path named a
-/// level 8 option that no longer exists. RegressionChecks.ValidateApotheosisCatalog holds both.
+/// Eric, 2026-11-02: "Apotheosis should require the spell to be at Max level, not combined with another
+/// spell, and ascended." It replaced a covenant of a NAMED level 4 and level 8 path and the wizard's element
+/// at tier 6: a run that took the other mutation, or ascended down the other branch, lost its form for good
+/// at that click, and the tier asked for a whole book of one element on top. Now every route through the
+/// spell's tree ends in its form, so no path is required and none can close it.
+///
+/// "Not combined": a Conjunction (ComboCatalog) takes both parents out of the loadout, and a wizard's own
+/// spell is never an ingredient for him (ComboCatalog.Evaluate seals it, ComboSeal.OwnSpell) - so in today's
+/// rules his spell is never fused. The gate still asks, so a change to that rule cannot hand a fused spell its
+/// form, and a Conjunction's own spell is never eligible. RegressionChecks.ValidateApotheosisCatalog holds both.
 ///
 /// Each form's behaviour lives in the spell's own script, switched on by
 /// <see cref="SpellData.IsApotheosis"/>; this catalog is only the gate and the stat card. The
-/// form's element weight is +1 of the wizard's own element and nothing else, so accepting it can
-/// never drop the player out of the tier that qualified them.
+/// form's element weight is +1 of the wizard's own element and nothing else, so accepting it never
+/// moves a tier down and never names a new element - and since any path may now come before it, no
+/// level 4 or level 8 option on a wizard's spell may trade that element away (the validator again).
 /// </remarks>
 public static class ApotheosisCatalog
 {
 	public const int MilestoneLevel = 9;
 
 	/// <summary>
-	/// The player level below which no wizard is offered a form, whatever else holds. The fifth
-	/// condition, and the one that sets WHEN: the other four are met by about level 12, and how
-	/// fast a run gets there depends on what the upgrade roll hands out - the same build took its
-	/// form at 12.9 and at 17.2 minutes on two runs. A player level moves far less from run to run.
-	/// 20: at 18 the bot took three forms at 12.8-14.4 minutes, the moment it reached the level; 20 is
-	/// about minute 16 for the bot, and a human levels more slowly (.ai/gameplay-design.md).
-	/// 22 since 2026-10-15: the enemy cap doubled to 140 on every platform (Node2DGame,
-	/// WideViewEnemyCapScale), the XP that came with it put level 20 at minute 13-15, and five of six
-	/// wizards took their form under the 15-minute floor. 23 after the confirming batch: at 22 the
-	/// Pyromancer, the fastest leveller, still took his at 14.3; at 23 the bot reaches it at 16.5-20.
+	/// The player level below which no wizard is offered a form, whatever else holds - the one gate on the
+	/// player rather than the spell, and the one that sets WHEN. A player level moves far less from run to
+	/// run than the upgrade roll: the same build once took its form at 12.9 and at 17.2 minutes on two runs.
+	/// History: 20, then 22 when the enemy cap doubled to 140, then 23 (at 22 the Pyromancer still took his
+	/// under the floor). The 15-minute run's XP step of 45 was solved to put level 23 at about 8.4 minutes,
+	/// over the 7.5 floor (.ai/run-pacing.md section 9).
+	/// 21 since 2026-11-02, when the spell's gate became "max level, ascended, not combined". That gate alone
+	/// is met the level-up after the Ascension (itself gated at <see cref="Player.AscensionMinimumPlayerLevel"/>),
+	/// which the bot reached at 6.5-8.0 minutes - under the floor - so a player-level gate stays, now tuned
+	/// to it: on that build the bot reached level 20 as early as 7.8 (on the floor), and at 21 it took its
+	/// form at 8.6-10.8, where 23 had put it at 9.5-11.5. .ai/run-pacing.md section 11 has the runs.
 	/// </summary>
-	public const int MinimumPlayerLevel = 23;
+	public const int MinimumPlayerLevel = 21;
 
 	private static readonly ApotheosisDefinition[] Definitions =
 	{
 		new()
 		{
 			CharacterId = "pyromancer", SpellId = "cinderbreath",
-			RequiredLevel4EvolutionId = "cinderbreath_amplified_impact",
-			RequiredLevel8EvolutionId = "cinderbreath_titan_cataclysm",
-			RequiredElement = Element.Fire, Verb = "burn",
+			Element = Element.Fire, Verb = "burn",
 			Form = Make("cinderbreath_cataclysm", "Cataclysm", Element.Fire,
 				"Whatever the flame kills leaves a burning crater, and anything that dies in a crater opens another. The crowd is the fuel.",
 				"Burn: the denser the wave, the further it spreads. Almost nothing against a lone boss.",
@@ -82,9 +92,7 @@ public static class ApotheosisCatalog
 		new()
 		{
 			CharacterId = "frostweaver", SpellId = "cone_of_cold",
-			RequiredLevel4EvolutionId = "cone_deep_freeze",
-			RequiredLevel8EvolutionId = "cone_zero_point_wave",
-			RequiredElement = Element.Ice, Verb = "stop",
+			Element = Element.Ice, Verb = "stop",
 			Form = Make("cone_of_cold_long_winter", "The Long Winter", Element.Ice,
 				"The cone opens into a full ring that freezes all it touches. The frozen shatter when they die, freezing their neighbours.",
 				"Stop: measured in what does not reach you. Bosses take a hard slow instead of a root.",
@@ -93,9 +101,7 @@ public static class ApotheosisCatalog
 		new()
 		{
 			CharacterId = "stormcaller", SpellId = "chain_lightning",
-			RequiredLevel4EvolutionId = "chain_lightning_storm_reach",
-			RequiredLevel8EvolutionId = "chain_lightning_cascade",
-			RequiredElement = Element.Lightning, Verb = "link",
+			Element = Element.Lightning, Verb = "link",
 			Form = Make("chain_lightning_lattice", "The Lattice", Element.Lightning,
 				"The chain stops ending. Everything it strikes stays linked for a few seconds, and the web keeps discharging along its own edges.",
 				"Link: damage follows how connected the crowd is. Herd them together.",
@@ -104,9 +110,7 @@ public static class ApotheosisCatalog
 		new()
 		{
 			CharacterId = "geomancer", SpellId = "obsidian_spike",
-			RequiredLevel4EvolutionId = "obsidian_spike_splinter_field",
-			RequiredLevel8EvolutionId = "obsidian_spike_tectonic_uprising",
-			RequiredElement = Element.Earth, Verb = "hold",
+			Element = Element.Earth, Verb = "hold",
 			Form = Make("obsidian_spike_sundering", "Sundering", Element.Earth,
 				"Each cast shoves everything near you back and raises a broken ring of obsidian around you. Inside it you take less from every hit.",
 				"Hold: the only form that edits the arena. Keep re-siting the ring as the wave moves.",
@@ -115,9 +119,7 @@ public static class ApotheosisCatalog
 		new()
 		{
 			CharacterId = "tituba", SpellId = "riptide",
-			RequiredLevel4EvolutionId = "riptide_amplified_impact",
-			RequiredLevel8EvolutionId = "riptide_titan_cataclysm",
-			RequiredElement = Element.Water, Verb = "flood",
+			Element = Element.Water, Verb = "flood",
 			Form = Make("riptide_spring_tide", "Spring Tide", Element.Water,
 				"Each wave floods the ground behind it, and the current drags whatever stands in it and will not let it walk.",
 				"Flood: aim the line, then let the water carry them where you want them.",
@@ -126,9 +128,7 @@ public static class ApotheosisCatalog
 		new()
 		{
 			CharacterId = "vainamoinen", SpellId = "bramble_seed",
-			RequiredLevel4EvolutionId = "bramble_seed_amplified_impact",
-			RequiredLevel8EvolutionId = "bramble_seed_titan_cataclysm",
-			RequiredElement = Element.Grass, Verb = "swarm",
+			Element = Element.Grass, Verb = "swarm",
 			Form = Make("bramble_seed_wildwood", "Wildwood", Element.Grass,
 				"A patch that finishes growing throws three seeds around itself, so every planting becomes a thicket.",
 				"Swarm: the ground you stand your crowd on is ground that fights for you.",
@@ -138,13 +138,11 @@ public static class ApotheosisCatalog
 		// Hollow Star is the one spell in the roster that is ABOUT pulling, so the verb was his to take.
 		// The Spirit Mirror is Dee's obsidian scrying glass (the British Museum's): a well that drags
 		// the swarm from half again as far and, when it closes, draws every orb and flask in its reach
-		// to him. The path is the default pair that deepens Darkness, as every required path must.
+		// to him.
 		new()
 		{
 			CharacterId = "john_dee", SpellId = "hollow_star",
-			RequiredLevel4EvolutionId = "hollow_star_amplified_impact",
-			RequiredLevel8EvolutionId = "hollow_star_titan_cataclysm",
-			RequiredElement = Element.Darkness, Verb = "pull",
+			Element = Element.Darkness, Verb = "pull",
 			Form = Make("hollow_star_spirit_mirror", "The Spirit Mirror", Element.Darkness,
 				"The well opens half again as wide and drags harder. Its collapse pulls every orb, potion and flask in reach to you.",
 				"Pull: the knot comes to your spells, and what it drops comes to your hands.",
@@ -153,19 +151,30 @@ public static class ApotheosisCatalog
 		// Laelaps, the hound fated to catch whatever it hunted, freed by the coursing deed. "Reflect" was on
 		// the ADR's unclaimed list and a whirlwind is the thing in the roster that can throw a missile back;
 		// the hound that always caught its quarry catches what is thrown at him and returns it
-		// (OrbitingBlade.ReflectBolts). The path is the pair that deepens Wind, as every required path must
-		// deepen its wizard's element: Wind Shear (once Tailwind Surge), then Typhoon Core - the whirlwind that never falls in,
-		// so the guard is always up. No visual scale: the ring draws itself out of the radius it hits.
+		// (OrbitingBlade.ReflectBolts). No visual scale: the ring draws itself out of the radius it hits.
 		new()
 		{
 			CharacterId = "laelaps", SpellId = "cyclone_slash",
-			RequiredLevel4EvolutionId = "cyclone_slash_tailwind_surge",
-			RequiredLevel8EvolutionId = "cyclone_slash_typhoon_core",
-			RequiredElement = Element.Wind, Verb = "reflect",
+			Element = Element.Wind, Verb = "reflect",
 			Form = Make(OrbitingBlade.EndlessChaseId, "The Endless Chase", Element.Wind,
 				"The whirlwind catches enemy bolts and throws them back at the nearest enemy, three times as hard as a blade.",
 				"Reflect: the archers feed it. Run among the shooters and let them aim at you.",
 				new Color(0.62f, 0.95f, 0.88f), NoVisualScale),
+		},
+		// Abe no Seimei, the onmyoji sealed in his own five-pointed seal in the Mystic Ruins (.ai/chapter-wizards.md
+		// 4.5). "Banish" was on the ADR's unclaimed list, and an exorcist's seal is what it is for: a ward that
+		// burns a body low seals it where it stands, harmless, and when the ward goes out everything it sealed is
+		// gone (KindledWard.FivePointedSealId). Not an execute - the sealed stop fighting at once and the kills land
+		// together; elites take a heavy blow instead and bosses are never sealed. No visual scale: the ward is
+		// drawn out of the reach it burns.
+		new()
+		{
+			CharacterId = "seimei", SpellId = "kindled_ward",
+			Element = Element.Light, Verb = "banish",
+			Form = Make(KindledWard.FivePointedSealId, "The Five-Pointed Seal", Element.Light,
+				"A ward that burns an enemy below a quarter of its health seals it there, harmless. When the ward goes out, all it sealed is gone.",
+				"Banish: sealed now, gone later. Elites take a heavy blow instead; bosses are never sealed.",
+				new Color(1.0f, 0.94f, 0.66f), NoVisualScale),
 		},
 	};
 
@@ -212,16 +221,29 @@ public static class ApotheosisCatalog
 	public static ApotheosisDefinition ForForm(string formId) =>
 		Definitions.FirstOrDefault(d => d.Form.Id.Equals(formId ?? string.Empty, StringComparison.OrdinalIgnoreCase));
 
+	/// <summary>The spell has taken a level 8 Ascension - any of them (Eric, 2026-11-02: no path is named).</summary>
+	public static bool IsAscended(SpellData spell) => spell != null && !string.IsNullOrEmpty(spell.SelectedLevel8EvolutionId);
+
 	/// <summary>
-	/// Whether <paramref name="spell"/> meets this wizard's covenant right now, minus the element
-	/// tier, which the caller reads from the whole loadout.
+	/// A Conjunction's own spell (ComboCatalog), or anything carrying fused parents (SpellData.ComboParents): two
+	/// spells made one. Never anyone's to transform - it is terminal, and it is no wizard's starting spell.
 	/// </summary>
-	public static bool SpellMeetsPath(ApotheosisDefinition definition, SpellData spell) =>
+	public static bool IsCombined(SpellData spell) =>
+		spell != null && (spell.IsCombination || (spell.ComboParents?.Length ?? 0) > 0);
+
+	/// <summary>
+	/// Whether <paramref name="spell"/> meets the spell's half of the gate right now: this wizard's own spell (in
+	/// the definition's form), not yet transformed, at its max level, ascended down any branch, and not combined
+	/// with another spell - neither a Conjunction itself nor a spell that went into one. Only the run knows the
+	/// second (<paramref name="fusedAway"/>, Player.WasFusedAway), since a fused parent leaves the loadout. The
+	/// player's half, <see cref="MinimumPlayerLevel"/>, is the caller's (Player.TryBuildApotheosisOffer).
+	/// </summary>
+	public static bool SpellMeetsGate(ApotheosisDefinition definition, SpellData spell, bool fusedAway) =>
 		definition != null && spell != null && !spell.IsApotheosis
+		&& !fusedAway && !IsCombined(spell)
 		&& spell.Id.Equals(definition.SpellId, StringComparison.OrdinalIgnoreCase)
 		&& (string.IsNullOrEmpty(definition.VariantId)
 			|| definition.VariantId.Equals(spell.SelectedVariantId ?? string.Empty, StringComparison.OrdinalIgnoreCase))
 		&& spell.CurrentLevel >= spell.MaxLevel
-		&& spell.SelectedLevel4EvolutionId.Equals(definition.RequiredLevel4EvolutionId, StringComparison.OrdinalIgnoreCase)
-		&& spell.SelectedLevel8EvolutionId.Equals(definition.RequiredLevel8EvolutionId, StringComparison.OrdinalIgnoreCase);
+		&& IsAscended(spell);
 }

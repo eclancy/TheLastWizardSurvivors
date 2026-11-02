@@ -4,41 +4,14 @@ using System.Collections.Generic;
 using System.Linq;
 using WizardSurvivors.scripts;
 
-// The ascension browser and the level 8 choice, both drawn as TREES: the spell on top, an arrow down
-// to each of its paths. See .ai/level-up-screen.md, sections 4 and 4e.
+// The level 8 choice, drawn as a TREE: the spell on top, an arrow down to each of its paths. See
+// .ai/level-up-screen.md, section 4e. The ascension browser that used to share these parts was replaced by the
+// Evolution Codex (.ai/evolution-codex.md), which the level-up's Codex button opens.
 public partial class LevelUpMenu
 {
-	// THE BROWSER IS A FOREST OF SMALL TREES (from the Pixel 9: "ascensions menu should have a more
-	// distinct UI for the options. the cards blend into the background. if there are two options
-	// available for the same spell, it should show the spell on top, and two arrows pointing below to
-	// the 2 ascension options available").
-	//
-	// It was a CodexRows checklist with one row per PATH: the two branches of one spell were two rows
-	// each saying "Ascension of Cinderbreath" in small print, so that they were the same decision was
-	// something to read rather than see; and a row was a gold-hi face on a flesh-hi page - one step of
-	// value apart, which is what "blends into the background" was. Now, per spell:
-	//   - THE SPELL is the node at the top: its icon, its name, its level as pips, and the checklist
-	//     of every gate its paths SHARE (spell level, element tags, your level) - ticked when it holds,
-	//     the shortfall in words on a rubric band when it does not. A gate the two paths do not share
-	//     (an untagged branch of a hybrid takes either element; its tagged sibling only one) is written
-	//     under the path it belongs to instead, so nothing claims to gate both when it gates one.
-	//   - THE FORK (AscensionForkArrows): solid gold with a spark running down it into a path that is
-	//     open, dashed in the quiet ink into one that is not.
-	//   - THE PATHS are the Ascension's own object, the obsidian plate (CardFamilyArt) - the darkest
-	//     thing on the lightest page, so they cannot blend into it. Ready: the lit frame. Not yet: the
-	//     resting frame, dimmed. SEALED (never met - AscensionSightings): "???", no effect, the sealed
-	//     glyph where the icon goes, and the plate dimmed further.
-	// Trees with a ready path first, then the rest closest to ready first. It still only REPORTS: a
-	// ready path is taken from the strip above the cards, never from here, so nothing on this page
-	// is pressable - the plates and the node are focus stops for a pad and text to a finger.
-	private const string AscensionScrollName = "AscensionScroll";
-
 	// The ready node's face: gold hi, a step warmer and lighter than the page. Measured in
 	// tools/art/ui_contrast.py (ASC_READY_FACE) - copy any change there.
 	private static readonly Color AscensionReadyFace = new Color(1.0f, 0.941f, 0.753f);
-	// The band an unmet gate sits on: the rubric at a tenth over the page (ASC_UNMET_BAND there).
-	private static readonly Color AscensionUnmetBand = new Color(0.896f, 0.789f, 0.708f);
-
 	// How far a path's plate is dimmed, as a SelfModulate - the frame only, never the words on it, so
 	// greying a plate can only darken the ground under light ink (ui_contrast.py, "ascension tree").
 	private static readonly Color PathSeenDim = new Color(0.78f, 0.78f, 0.84f);
@@ -57,264 +30,6 @@ public partial class LevelUpMenu
 		treePlateResting ??= CardFamilyArt.Frame(CardFamily.Ascension, false, 0);
 		treePlateLit ??= CardFamilyArt.Frame(CardFamily.Ascension, true, 0);
 		return (treePlateResting, treePlateLit);
-	}
-
-	/// <summary>One path of a tree, as either page needs it.</summary>
-	private sealed class TreePath
-	{
-		public string Id = string.Empty;
-		public string Name = string.Empty;
-		public string Description = string.Empty;
-		public Texture2D Icon;
-		/// <summary>Takeable now (browser: every gate holds and the spell has not ascended; choice page: not locked).</summary>
-		public bool Met;
-		/// <summary>The branch this spell ascended into this run (browser only).</summary>
-		public bool Taken;
-		/// <summary>The other branch of an ascended spell, closed for the run (browser only).</summary>
-		public bool Closed;
-		/// <summary>Met now, or met once before in any run - its words and icon may be shown.</summary>
-		public bool Revealed;
-		/// <summary>The gates this path does not share with its siblings (browser only).</summary>
-		public List<AscensionRequirement> OwnGates = new();
-		/// <summary>Strings only, for a caller that filled no structured gates (the probe scenes).</summary>
-		public List<string> Unmet = new();
-	}
-
-	private void BuildAscensionBrowser()
-	{
-		var panel = GetNodeOrNull<Control>("Panel");
-		if (panel == null)
-			return;
-
-		ClearButtons();
-		SetNormalViewVisible(false);
-		RemoveAscensionRoot();
-
-		// On the plate's stone, like the evolution pages: every tree's node is a parchment card, and a
-		// vellum page under them was the same background twice (LevelUpMenu.PageInset's remarks). So
-		// what is written on the ground - heading, rule, section heads, the quiet line - is in the
-		// stone inks; the node keeps CodexRows.Vellum (BuildTreeNode).
-		bool narrow = ResponsiveLayout.IsNarrow(this);
-		CodexRows.Palette ink = CodexRows.Stone;
-
-		var root = new VBoxContainer { Name = AscensionRootName, MouseFilter = Control.MouseFilterEnum.Ignore };
-		root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		root.OffsetLeft = narrow ? 30 : 44;
-		root.OffsetTop = 28;
-		root.OffsetRight = narrow ? -30 : -44;
-		root.OffsetBottom = -24;
-		root.AddThemeConstantOverride("separation", 14);
-		panel.AddChild(root);
-
-		root.AddChild(BuildPageHeading("★ Ascensions"));
-
-		// The rule, once. What a sealed path is, each sealed plate says for itself (SealedLine), so the
-		// summary stays one line on a PC.
-		root.AddChild(CodexRows.BuildSummary(
-			$"Each needs its spell at level {Player.AscensionSpellLevel - 1}, {Player.AscensionElementRequirement} tags of its element " +
-			$"and you at level {Player.AscensionMinimumPlayerLevel}. A ready one waits above the cards.",
-			ink));
-
-		var list = CodexRows.BuildList("AscensionList");
-		ScrollContainer scroll = CodexRows.BuildScroll(AscensionScrollName, list);
-		root.AddChild(scroll);
-
-		var spells = currentEquippedSpells ?? new List<EquippedSpellInfo>();
-		if (spells.Count == 0)
-		{
-			list.AddChild(CodexRows.MakeText("Your tome is empty. Take a spell and come back.",
-				ResponsiveLayout.TextRole.Body, ink.InkSoft));
-		}
-
-		var trees = new List<(EquippedSpellInfo Spell, List<TreePath> Paths, List<AscensionRequirement> Shared, int Order)>();
-		var noAscension = new List<EquippedSpellInfo>();
-		foreach (EquippedSpellInfo spell in spells)
-		{
-			if (spell.Ascensions == null || spell.Ascensions.Count == 0)
-			{
-				noAscension.Add(spell);
-				continue;
-			}
-			(List<TreePath> paths, List<AscensionRequirement> shared) = BrowserPaths(spell);
-			trees.Add((spell, paths, shared, trees.Count));
-		}
-
-		// Ready first; then by the fewest failing gates on the spell's nearest path, then by how far
-		// along that path is, so the near misses sit at the top of "Not yet" and the long way off at
-		// the bottom.
-		// An ascended spell is neither ready nor waiting: it has its own section at the foot, so the
-		// page never calls a path "Ready" that was already taken.
-		var ascended = trees.Where(t => t.Paths.Any(p => p.Taken)).ToList();
-		var ready = trees.Where(t => !t.Paths.Any(p => p.Taken) && t.Paths.Any(p => p.Met)).ToList();
-		var waiting = trees.Where(t => !t.Paths.Any(p => p.Taken) && !t.Paths.Any(p => p.Met))
-			.OrderBy(t => t.Spell.Ascensions.Min(a => a.UnmetRequirements.Count))
-			.ThenByDescending(t => t.Spell.Ascensions.Max(Progress))
-			.ThenBy(t => t.Order)
-			.ToList();
-
-		// Focus stops, tree by tree, wired top to bottom once the whole page exists (WireTreeFocus).
-		var stops = new List<(List<Control> Node, List<Control> Paths)>();
-		Control BuildOne((EquippedSpellInfo Spell, List<TreePath> Paths, List<AscensionRequirement> Shared, int Order) t)
-		{
-			var nodeStops = new List<Control>();
-			var pathStops = new List<Control>();
-			Control tree = BuildBrowserTree(t.Spell, t.Paths, t.Shared, narrow, nodeStops, pathStops);
-			stops.Add((nodeStops, pathStops));
-			return tree;
-		}
-
-		// One tree per row in both shapes. Thirty between trees, against six inside one: the space
-		// is what says where one spell's fork ends and the next spell begins.
-		const int columns = 1;
-		if (ready.Count > 0)
-			SpaceTrees(CodexRows.AddSection(list, "Ready", SpellCount(ready.Count), ink, columns, ready.Select(BuildOne).ToList()));
-		if (waiting.Count > 0)
-			SpaceTrees(CodexRows.AddSection(list, ready.Count > 0 ? "Not yet" : "Ascensions to earn",
-				SpellCount(waiting.Count), ink, columns, waiting.Select(BuildOne).ToList()));
-		if (ascended.Count > 0)
-			SpaceTrees(CodexRows.AddSection(list, "Ascended", SpellCount(ascended.Count), ink, columns,
-				ascended.Select(BuildOne).ToList()));
-
-		if (noAscension.Count > 0)
-		{
-			// One quiet line, not a section per passive: saying so is the point (a spell missing from
-			// the list would read as an oversight), but it is not something to act on.
-			var passives = noAscension.Where(s => s.IsPassive).Select(s => s.DisplayName).ToList();
-			var unwritten = noAscension.Where(s => !s.IsPassive).Select(s => s.DisplayName).ToList();
-			var parts = new List<string>();
-			if (passives.Count > 0)
-				parts.Add($"{string.Join(", ", passives)} {(passives.Count == 1 ? "is a passive" : "are passives")} and {(passives.Count == 1 ? "does" : "do")} not ascend.");
-			if (unwritten.Count > 0)
-				parts.Add($"No ascension is written yet for {string.Join(", ", unwritten)}.");
-			// InkSoft, not InkMeta: on the plate's brightest stone the meta ink is 3.8:1.
-			list.AddChild(CodexRows.MakeText(string.Join(" ", parts), ResponsiveLayout.TextRole.Label, ink.InkSoft));
-		}
-
-		var backButton = new Button
-		{
-			Name = "AscensionBack",
-			Text = "Back",
-			CustomMinimumSize = new Vector2(120, ResponsiveLayout.MinTouchTarget),
-			SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
-			SizeFlagsVertical = Control.SizeFlags.ShrinkEnd,
-		};
-		ResponsiveLayout.SetFont(backButton, ResponsiveLayout.TextRole.Label);
-		backButton.Pressed += () => BuildButtonsFrom(currentOptions);
-		BonelightSkin.StyleButton(backButton);
-		root.AddChild(backButton);
-
-		WireTreeFocus(stops, backButton);
-
-		// The cards this screen just replaced were what the pad was pointing at.
-		MenuNavigator.Attach(this, backButton);
-	}
-
-	private static string SpellCount(int n) => n == 1 ? "1 spell" : $"{n} spells";
-
-	private static void SpaceTrees(VBoxContainer section)
-	{
-		if (section?.GetChildCount() > 0 && section.GetChild(section.GetChildCount() - 1) is GridContainer grid)
-			grid.AddThemeConstantOverride("v_separation", 30);
-	}
-
-	/// <summary>
-	/// A spell's paths for the browser, and the gates they all share. A gate is shared when every path
-	/// has one of its kind measuring the same thing (same have, need, element and choice of elements);
-	/// the spell and player levels always are, an element gate is unless the paths ask for different
-	/// elements.
-	/// </summary>
-	private (List<TreePath> Paths, List<AscensionRequirement> Shared) BrowserPaths(EquippedSpellInfo spell)
-	{
-		var branches = spell.Ascensions.Where(a => a != null).ToList();
-		var shared = new List<AscensionRequirement>();
-		List<AscensionRequirement> first = branches.FirstOrDefault()?.Requirements ?? new List<AscensionRequirement>();
-		foreach (AscensionRequirement gate in first)
-		{
-			if (branches.All(b => (b.Requirements ?? new List<AscensionRequirement>()).Any(r => SameGate(r, gate))))
-				shared.Add(gate);
-		}
-
-		var paths = new List<TreePath>();
-		foreach (AscensionInfo branch in branches)
-		{
-			var path = new TreePath
-			{
-				Id = branch.Id,
-				Name = branch.DisplayName,
-				Description = branch.Description,
-				// The path's own picture (EvolutionIcons). Player.BuildAscensionPreview fills a branch's
-				// Icon with its spell's, so that is only the fallback.
-				Icon = EvolutionIcons.Own(branch.Id) ?? branch.Icon ?? spell.Icon,
-				Met = branch.Open,
-				Taken = branch.Taken,
-				Closed = branch.Closed,
-				Revealed = branch.Taken || AscensionSightings.IsRevealed(this, spell.Id, branch.Id, branch.IsAvailable),
-				Unmet = branch.UnmetRequirements ?? new List<string>(),
-			};
-			foreach (AscensionRequirement gate in branch.Requirements ?? new List<AscensionRequirement>())
-				if (!shared.Any(s => SameGate(s, gate)))
-					path.OwnGates.Add(gate);
-			paths.Add(path);
-		}
-		return (paths, shared);
-	}
-
-	private static bool SameGate(AscensionRequirement a, AscensionRequirement b)
-	{
-		if (a == null || b == null || a.Kind != b.Kind || a.Have != b.Have || a.Need != b.Need || a.Element != b.Element)
-			return false;
-		var x = a.AnyOf ?? new List<Element>();
-		var y = b.AnyOf ?? new List<Element>();
-		return x.Count == y.Count && x.All(y.Contains);
-	}
-
-	// 0..1, how much of the failing gates is already done - the sort key inside "Not yet".
-	private static float Progress(AscensionInfo branch)
-	{
-		if (branch.Requirements == null || branch.Requirements.Count == 0)
-			return 0f;
-		return branch.Requirements.Average(r => r.Need <= 0 ? 1f : Mathf.Clamp((float)r.Have / r.Need, 0f, 1f));
-	}
-
-	/// <summary>One spell's tree in the browser: the spell, the fork, and its paths.</summary>
-	private Control BuildBrowserTree(EquippedSpellInfo spell, List<TreePath> paths, List<AscensionRequirement> shared,
-		bool narrow, List<Control> nodeStops, List<Control> pathStops)
-	{
-		bool anyMet = paths.Any(p => p.Met);
-		TreePath chosen = paths.FirstOrDefault(p => p.Taken);
-		int cap = shared.FirstOrDefault(r => r.Kind == AscensionRequirementKind.SpellLevel)?.Need ?? Player.AscensionSpellLevel - 1;
-
-		// The checklist: every shared gate, or - for a caller that filled only the strings - every
-		// string any path still fails. An ascended spell's gates no longer mean anything, so it says
-		// which way it went instead.
-		var lines = new List<Control>();
-		if (chosen != null)
-			lines.Add(BuildRequirementGlyphText($"Ascended into {chosen.Name}", "done", CodexRows.Vellum.Reward, expand: narrow));
-		else
-			foreach (AscensionRequirement gate in shared)
-				lines.Add(BuildRequirementLine(gate, wrap: narrow));
-		if (shared.Count == 0 && chosen == null)
-		{
-			foreach (string unmet in paths.SelectMany(p => p.Unmet).Distinct())
-				lines.Add(UnmetBand(BuildRequirementGlyphText(unmet, "todo", CodexRows.Vellum.Flag, expand: narrow), narrow));
-		}
-
-		var node = BuildTreeNode(spell.Id, spell.DisplayName, spell.Icon,
-			$"Level {Mathf.Min(spell.CurrentLevel, cap)}", cap, Mathf.Min(spell.CurrentLevel, cap), -1,
-			anyMet, lines, narrow, focusStop: true, nodeStops);
-
-		bool sideBySide = FitsAcross(paths.Count, narrow, browser: true);
-		// Side by side on a phone a plate is about 240 wide: its sentence is set a step smaller.
-		bool small = narrow && sideBySide;
-		var cards = new List<(Control Outer, Control Plate)>();
-		foreach (TreePath path in paths)
-		{
-			(Control outer, Control plate, Control stop) = BuildBrowserPathCard(spell, path, small);
-			cards.Add((outer, plate));
-			pathStops.Add(stop);
-		}
-		// The fork's solid arrow goes to an open path, or - once ascended - to the path taken.
-		return BuildTree($"AscensionTree_{spell.Id}", node, cards, paths.Select(p => p.Met || p.Taken).ToList(), narrow, sideBySide);
 	}
 
 	/// <summary>
@@ -484,56 +199,28 @@ public partial class LevelUpMenu
 	}
 
 	/// <summary>
-	/// One path in the browser: the obsidian plate, never pressable. Returns what the row lays out
-	/// (the plate, with this path's own gates under it when it has any), the plate itself (what the
-	/// fork points at), and its focus stop.
+	/// The level 8 page's mark (section 2): a path a recipe the save knows names carries two linked rings and
+	/// the partner it joins, so the choice that opens or closes a recipe is made knowingly. The result is not
+	/// named - only making it reveals that. Null when no known recipe names this path.
 	/// </summary>
-	private (Control Outer, Control Plate, Control Stop) BuildBrowserPathCard(EquippedSpellInfo spell, TreePath path, bool small)
+	private Control BuildConjunctionMark(string spellId, string ascensionId, bool onPlate)
 	{
-		(StyleBoxTexture resting, StyleBoxTexture lit) = TreePlates();
-		var plate = new PanelContainer
+		foreach (ComboPreview combo in currentCombinations ?? new List<ComboPreview>())
 		{
-			Name = $"AscensionPath_{spell.Id}_{path.Id}",
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-			// The frame only: a dimmed plate darkens the ground, never the words on it.
-			SelfModulate = path.Met || path.Taken ? Colors.White : path.Revealed ? PathSeenDim : PathSealedDim,
-		};
-		// Ready, the lit frame - brighter gilt and runes, the same face - so an open path is lit from
-		// across the page. The path an ascended spell took keeps it; the one it closed is dimmed.
-		plate.AddThemeStyleboxOverride("panel", path.Met || path.Taken ? lit : resting);
-
-		// A controller scrolls a list only by moving the selection through it: one stop per plate.
-		// It does nothing when pressed (the strip is where an ascension is taken) and ignores the mouse.
-		Button stop = BonelightSkin.MakeCardClickOverlay(true);
-		stop.Name = "PathFocus";
-		stop.MouseFilter = Control.MouseFilterEnum.Ignore;
-		plate.AddChild(stop);
-
-		List<Control> marks = null;
-		if (path.Taken)
-			marks = new List<Control> { BuildRequirementGlyphText("Chosen", "done", CodexRows.Stone.Reward, expand: false) };
-		else if (path.Closed)
-			marks = new List<Control> { BuildRequirementGlyphText("Not taken", "lock", CodexRows.Stone.InkMeta, expand: false) };
-		plate.AddChild(BuildPathContent(path.Revealed, path.Met || path.Taken, path.Icon, Colors.White, path.Name, path.Description,
-			extras: marks, small));
-
-		// An ascended spell's own gates are moot.
-		if (path.OwnGates.Count == 0 || path.Taken || path.Closed)
-			return (plate, plate, stop);
-
-		// This path's own gate, under its plate, written exactly as the node's lines are.
-		var outer = new VBoxContainer
-		{
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-		};
-		outer.AddThemeConstantOverride("separation", 6);
-		outer.AddChild(plate);
-		foreach (AscensionRequirement gate in path.OwnGates)
-			outer.AddChild(BuildRequirementLine(gate, wrap: true));
-		return (outer, plate, stop);
+			if (combo == null || combo.Taken || !combo.Names.Any(n => n.SpellId == spellId && n.AscensionId == ascensionId))
+				continue;
+			ComboIngredient partner = ComboCatalog.PartnerOf(ComboCatalog.ForId(combo.Id), spellId);
+			if (partner == null)
+				continue;
+			// Gold lit on the obsidian plate (7.8:1), the same advice ink the old level 8 cards wrote in. It wraps:
+			// unwrapped, a phone's side-by-side plate took the line's whole width and squeezed its sibling's
+			// name into "Starbur / st", and the browser's page with it past the screen's edge.
+			Control mark = BuildRequirementGlyphText($"Joins {partner.Label}", "conjunction",
+				onPlate ? CardFamilyArt.AscensionAdvice : CodexRows.Stone.InkSoft, expand: true);
+			mark.Name = $"ConjunctionMark_{combo.Id}";
+			return mark;
+		}
+		return null;
 	}
 
 	/// <summary>
@@ -541,9 +228,19 @@ public partial class LevelUpMenu
 	/// and one line saying why. <paramref name="extras"/> (the choice page's tag, element line and
 	/// advice) are left out of a sealed path, since each would give part of it away.
 	/// </summary>
+	/// <param name="family">The plate it is written on: obsidian (an Ascension) or ember (the Apotheosis), for the inks.</param>
+	/// <param name="sealedName">What a sealed plate is called: "???", or for the Apotheosis its name, which the character select already says.</param>
+	/// <param name="extrasWhenSealed">Keep the extras on a sealed plate: the Apotheosis's "out of reach" gives nothing away.</param>
 	private Control BuildPathContent(bool revealed, bool met, Texture2D icon, Color iconTint, string name, string description,
-		IEnumerable<Control> extras, bool small)
+		IEnumerable<Control> extras, bool small, CardFamily family = CardFamily.Ascension, string sealedName = SealedName,
+		bool extrasWhenSealed = false)
 	{
+		// The ember plate's inks (CardFamilyArt): Fire hot for the name, bone for what it does, Fire mid
+		// for the quiet line - the Apotheosis page's own, measured on the ember face.
+		bool ember = family == CardFamily.Apotheosis;
+		bool bronze = family == CardFamily.Conjunction;
+		Color titleInk = bronze ? CardFamilyArt.ConjunctionTitle : ember ? CardFamilyArt.ApotheosisTitle : CardFamilyArt.AscensionTitle;
+		Color softInk = bronze ? CardFamilyArt.ConjunctionSoft : ember ? CardFamilyArt.ApotheosisSoft : CardFamilyArt.AscensionSoft;
 		// Clear of the plate's rune band and the gilt line inside it (18 drawn pixels), with air.
 		var margin = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		margin.AddThemeConstantOverride("margin_left", 22);
@@ -590,9 +287,9 @@ public partial class LevelUpMenu
 		words.AddThemeConstantOverride("separation", 6);
 		margin.AddChild(words);
 
-		Label title = CodexRows.MakeText(revealed ? name : SealedName, ResponsiveLayout.TextRole.Title, CardFamilyArt.AscensionTitle);
+		Label title = CodexRows.MakeText(revealed ? name : sealedName, ResponsiveLayout.TextRole.Title, titleInk);
 		title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		var rest = revealed ? (extras ?? Enumerable.Empty<Control>()).ToList() : new List<Control>();
+		var rest = revealed || extrasWhenSealed ? (extras ?? Enumerable.Empty<Control>()).ToList() : new List<Control>();
 		if (small)
 		{
 			// A phone's side-by-side plate is about 240 wide: beside the picture the name had 136, and
@@ -642,7 +339,9 @@ public partial class LevelUpMenu
 		}
 		else
 		{
-			words.AddChild(CodexRows.MakeText(SealedLine, ResponsiveLayout.TextRole.Label, CardFamilyArt.AscensionSoft));
+			words.AddChild(CodexRows.MakeText(SealedLine, ResponsiveLayout.TextRole.Label, softInk));
+			foreach (Control extra in rest)
+				words.AddChild(extra);
 		}
 		return margin;
 	}
@@ -650,15 +349,15 @@ public partial class LevelUpMenu
 	/// <summary>
 	/// Whether <paramref name="count"/> plates fit side by side under the node at their smallest
 	/// readable width - if not, they stack and the fork becomes a spine. Measured from the panel as
-	/// laid out, less the page's inset, the content's margins and the scroll gutter.
+	/// laid out, less the page's inset and the content's margins.
 	/// </summary>
-	private bool FitsAcross(int count, bool narrow, bool browser)
+	private bool FitsAcross(int count, bool narrow)
 	{
 		float panelWidth = GetNodeOrNull<Control>("Panel")?.Size.X ?? 0f;
 		if (panelWidth <= 0f)
 			panelWidth = ResponsiveLayout.ViewportSize(this).X - 24f;
-		float side = browser ? (narrow ? 30f : 44f) : 24f;
-		float width = panelWidth - 2f * PageInset - 2f * side - (browser ? 20f : 0f);
+		const float side = 24f;
+		float width = panelWidth - 2f * PageInset - 2f * side;
 		float gap = narrow ? 12f : 20f;
 		float each = count <= 0 ? width : (width - (count - 1) * gap) / count;
 		// A Title-role name and a sentence a line need about this much plate, frame included.
@@ -671,8 +370,9 @@ public partial class LevelUpMenu
 	/// a little narrower than them, so the shape is a fork rather than a heading over two boxes; on a
 	/// phone it takes the full width, which is the scarce axis there.
 	/// </summary>
+	/// <param name="loneShare">How much of the row a lone plate takes, centred: half for a lone path.</param>
 	private Control BuildTree(string name, Control node, List<(Control Outer, Control Plate)> cards, List<bool> open,
-		bool narrow, bool sideBySide, bool spotlight = false)
+		bool narrow, bool sideBySide, bool spotlight = false, float loneShare = 0.5f)
 	{
 		var tree = new VBoxContainer
 		{
@@ -714,16 +414,17 @@ public partial class LevelUpMenu
 			var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 			row.AddThemeConstantOverride("separation", narrow ? 12 : 20);
 			// A lone path keeps half the width, centred under the node, rather than becoming a slab.
-			if (cards.Count == 1)
-				row.AddChild(Spacer(0.25f));
+			bool lone = cards.Count == 1 && loneShare < 1f;
+			if (lone)
+				row.AddChild(Spacer((1f - loneShare) / 2f));
 			foreach ((Control outer, Control _) in cards)
 			{
 				outer.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-				outer.SizeFlagsStretchRatio = cards.Count == 1 ? 0.5f : 1f;
+				outer.SizeFlagsStretchRatio = cards.Count == 1 ? loneShare : 1f;
 				row.AddChild(outer);
 			}
-			if (cards.Count == 1)
-				row.AddChild(Spacer(0.25f));
+			if (lone)
+				row.AddChild(Spacer((1f - loneShare) / 2f));
 			tree.AddChild(row);
 			// The level 8 fork's plates are choices: the ones the selection is not on step down.
 			if (spotlight)
@@ -834,8 +535,14 @@ public partial class LevelUpMenu
 			previousPaths = paths.Count > 0 ? paths : previousPaths;
 		}
 		if (previousPaths != null && after != null)
+		{
 			foreach (Control stop in previousPaths)
 				Link(stop, after, Side.Bottom);
+			// And back up into the page, to the stop just above Back in reading order. Left to geometry,
+			// up from Back landed on whatever plate was on screen - with the list at its top, the
+			// Apotheosis's - and skipped every tree in between, as the level 8 fork's Back once did.
+			Link(after, previousPaths[0], Side.Top);
+		}
 	}
 
 	// ---- the level 8 choice: one spell's fork ---------------------------------------------------
@@ -904,7 +611,7 @@ public partial class LevelUpMenu
 		Control node = BuildTreeNode(option.SpellId, option.DisplayName, option.Icon, $"Level {to - 1} → {to}",
 			to, to - 1, to - 1, ready: true, new List<Control>(), narrow, focusStop: false, noStops);
 
-		bool sideBySide = FitsAcross(count, narrow, browser: false);
+		bool sideBySide = FitsAcross(count, narrow);
 		bool small = narrow && sideBySide;
 		var cards = new List<(Control Outer, Control Plate)>();
 		var buttons = new List<Button>();
@@ -994,6 +701,9 @@ public partial class LevelUpMenu
 			Control elements = BuildTagGainRow(evo, option, FlowContainer.AlignmentMode.Begin, CardFamily.Ascension);
 			if (elements != null)
 				extras.Add(elements);
+			// Two linked rings when a recipe the save knows names this path (ComboCatalog).
+			if (BuildConjunctionMark(option.SpellId, evo.Id, onPlate: true) is Control conjunctionMark)
+				extras.Add(conjunctionMark);
 			// No advice line: it put both paths below a 1280x720 screen (BuildEvolutionOptionCard).
 		}
 
@@ -1028,113 +738,6 @@ public partial class LevelUpMenu
 		outer.AddChild(plate);
 		outer.AddChild(stamp);
 		return (outer, plate, card);
-	}
-
-	// ---- the checklist lines (shared by the node and a path's own gates) -------------------------
-
-	// One gate. Met: a tick and the numbers, quiet. Not met: the empty socket, the shortfall in words,
-	// in the rubric on its own band - the one thing on a greyed row that is not grey.
-	// wrap: a phone, where the line is the row's width and its words wrap; on a PC each gate is one
-	// unwrapped item in a flow across the row.
-	private Control BuildRequirementLine(AscensionRequirement requirement, bool wrap)
-	{
-		CodexRows.Palette ink = CodexRows.Vellum;
-		bool met = requirement.Met;
-		int missing = requirement.Missing;
-
-		string text = requirement.Kind switch
-		{
-			AscensionRequirementKind.SpellLevel => met
-				? $"Spell level {requirement.Need}"
-				: $"Spell level {requirement.Have}/{requirement.Need}  ·  {Plural(missing, "more level", "more levels")}",
-			AscensionRequirementKind.PlayerLevel => met
-				? $"Your level {requirement.Need}"
-				: $"Your level {requirement.Have}/{requirement.Need}  ·  {Plural(missing, "more level", "more levels")}",
-			// Met, the chip says it all ("Lightning 4/4"); a sentence beside it would only repeat it.
-			AscensionRequirementKind.Element => met
-				? string.Empty
-				: $"Needs {missing} more {requirement.Element} {(missing == 1 ? "tag" : "tags")}",
-			AscensionRequirementKind.Learned => met ? string.Empty : GlobalStatsManager.AscensionTeacherLine,
-			_ => string.Empty,
-		};
-
-		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		line.AddThemeConstantOverride("separation", 8);
-		if (wrap)
-			line.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		line.AddChild(RequirementGlyph(met ? "done" : "todo"));
-
-		// The element gate shows its chips - each tappable, opening what the element does and how many
-		// the player holds - so the tag the row is asking for is the same object as on the cards. A
-		// branch with no element of its own takes any of its spell's tags, so it shows each of them.
-		// Where it wraps the chips get a line of their own above the words: two chips and a sentence
-		// do not fit across a phone row, and squeezed into one they set the sentence a word a line.
-		Container chipHolder = line;
-		Container wordHolder = line;
-		if (requirement.Kind == AscensionRequirementKind.Element && requirement.AnyOf.Count > 0)
-		{
-			if (wrap)
-			{
-				var stack = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-				stack.AddThemeConstantOverride("separation", 2);
-				var chips = new HFlowContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-				chips.AddThemeConstantOverride("h_separation", 8);
-				chips.AddThemeConstantOverride("v_separation", 4);
-				// Centred on the glyph's 32-unit line.
-				var chipLine = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(0, 32) };
-				chipLine.AddChild(chips);
-				stack.AddChild(chipLine);
-				line.AddChild(stack);
-				chipHolder = chips;
-				wordHolder = stack;
-			}
-			// Met, only the element that met it: "Arcane 1/4" beside a satisfied gate reads as a
-			// shortfall that is not one.
-			foreach (Element element in requirement.AnyOf)
-			{
-				if (met && element != requirement.Element)
-					continue;
-				int held = currentBaselineElementCounts != null
-					&& currentBaselineElementCounts.TryGetValue(element.ToString(), out int n) ? n : 0;
-				if (element == requirement.Element)
-					held = requirement.Have;
-				chipHolder.AddChild(CodexRows.BuildChip(element,
-					$"{element} {Mathf.Min(held, requirement.Need)}/{requirement.Need}", focusable: true));
-			}
-		}
-
-		if (!string.IsNullOrEmpty(text))
-		{
-			Label words = CodexRows.MakeText(text, ResponsiveLayout.TextRole.Label, met ? ink.InkMeta : ink.Flag);
-			if (wordHolder == line)
-				words.CustomMinimumSize = new Vector2(0, 32);
-			if (wrap)
-				words.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-			else
-				words.AutowrapMode = TextServer.AutowrapMode.Off;
-			wordHolder.AddChild(words);
-		}
-		return met ? line : UnmetBand(line, wrap);
-	}
-
-	private static string Plural(int n, string one, string many) => n == 1 ? $"1 {one}" : $"{n} {many}";
-
-	private static Control UnmetBand(Control content, bool fill)
-	{
-		var band = new PanelContainer
-		{
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-			SizeFlagsHorizontal = fill ? Control.SizeFlags.ExpandFill : Control.SizeFlags.ShrinkBegin,
-		};
-		var style = new StyleBoxFlat { BgColor = AscensionUnmetBand };
-		style.SetCornerRadiusAll(4);
-		style.ContentMarginLeft = 6;
-		style.ContentMarginRight = 8;
-		style.ContentMarginTop = 2;
-		style.ContentMarginBottom = 2;
-		band.AddThemeStyleboxOverride("panel", style);
-		band.AddChild(content);
-		return band;
 	}
 
 	private static Control RequirementGlyph(string key)

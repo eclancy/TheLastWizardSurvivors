@@ -18,7 +18,7 @@ x2) so a 21:9 monitor still sees picture rather than ground colour - the same mo
 portrait frame, turned on its side. Both side bands fade to occlusion at the frame edge.
 
 Every primitive is shared with the portrait screen (splashkit, hero, splash's _frond/_big_leaf),
-and the layer split is the same nine stages, so anim.py emits the same 30-frame set for it.
+and the layer split is the same stages, so anim.py emits the same 18 layers and eye cells for it.
 The figure is hero.wizard_hero at the same size as on the phone.
 """
 
@@ -33,6 +33,7 @@ import hero
 import raster
 import splash
 import splashkit as sk
+import title_eyes
 
 M, E, OCC = splash.M, splash.E, splash.OCC
 STAGES = splash.STAGES
@@ -66,24 +67,50 @@ VERSION_BOX = (C0 + 4, 338, C0 + 48, 356)     # the version label, bottom-left o
 PROMPT_BOTTOM = 346                           # TitleScreen.LandscapePromptBottomRow must agree
 
 
-def _box_t(x, y, box, strength, soft):
+def _box_t(x, y, box, strength, soft, soft_y=None):
     """A soft-edged pocket of darkness over a UI box: full `strength` inside, fading out over
-    `soft` pixels round it. Measured to the box edge, so a long box is not a long ellipse."""
+    `soft` pixels round it (`soft_y` above and below, when the room there is shorter). Measured to
+    the box edge, so a long box is not a long ellipse.
+
+    THE FADE SPANS THE DARKENING, NOT THE NUMBER. `_darken_rows` does nothing below t = 2 (its
+    first two tones are None), so a linear `strength * (1 - d/soft)` spent most of `soft` under 2
+    and crossed the whole visible range - nothing to stone.deep to occ - in the last few pixels
+    by the box. A prompt pocket at 3.3 over 18 went from untouched grass to occlusion in about
+    seven pixels, and that was the straight line through the grass where the black bar used to
+    be (Eric, 2026-11-02: "still has a distinct line in the grass ... smooth out the grass"). Now
+    the edge of the pocket is t = 2 exactly (no change) and it eases up to `strength` at the
+    box, so the darkening is dithered across all `soft` pixels."""
     x0, y0, x1, y1 = box
-    dx = max(x0 - x, 0, x - x1)
-    dy = max(y0 - y, 0, y - y1)
+    dx = max(x0 - x, 0, x - x1) / float(soft)
+    dy = max(y0 - y, 0, y - y1) / float(soft_y or soft)
     d = math.sqrt(dx * dx + dy * dy)
-    return strength * min(1.0, max(0.0, 1.0 - d / float(soft)))
+    if d >= 1.0:
+        return 0.0
+    s = 1.0 - d
+    s = s * s * (3.0 - 2.0 * s)
+    return 2.0 + (strength - 2.0) * s
 
 
 def ui_pocket_t(x, y):
     # Wide soft edges and only as dark as each needs. The first pass held every box at full
     # strength with a short fade, and with the menu closed the empty ones read as black panels
     # printed on the picture. The prompt is the one that has to be fully dark: it is the only
-    # bitmap type, and the only thing here on screen when the menu is not.
-    return max(_box_t(x, y, PROMPT_BOX, 3.3, 18), _box_t(x, y, DETAIL_BOX, 2.6, 18),
-               _box_t(x, y, OPTIONS_BOX, 2.4, 16), _box_t(x, y, VERSION_BOX, 3.0, 10),
-               _box_t(x, y, ARCANE_BOX, 2.4, 14), _box_t(x, y, MENU_BOX, 2.6, 14))
+    # bitmap type, and the only thing here on screen when the menu is not. It sits in open, lit
+    # grass under the ward, where any edge shows: a long fade along the row, but only 16 up - 34
+    # climbed into the ring and dimmed its bottom flame, and the ring is about 20 rows above it.
+    #
+    # LIGHT, NOT BLACK, below the ward (Eric, 2026-11-02, after the line was gone: "there is still a
+    # big dark patch underneath"). With no pockets at all the ward's light reaches lit grass and
+    # bushes right down to the frame, and the pockets alone were what made the black slab. The
+    # prompt carries its own occ drop shadow and the menu's bottom row are framed buttons and an
+    # outlined label, so the pockets under the ring are now a light dither of stone.deep only.
+    #
+    # And then none at all under the ward (Eric, the same night, of the screenshots: "I'm seeing the
+    # dark patch ... under the letters"). The prompt, the Options row, the difficulty readout and
+    # the version label stand on the art as it is; only the menu stack on the dark wood keeps one.
+    return _box_t(x, y, MENU_BOX, 2.6, 20)
+    # ARCANE_BOX keeps its place in the layout table but no pocket: nothing has stood there since
+    # the readout became the shop button's caption, and the regeneration of 2026-11-02 dropped it.
 
 
 def edge_t(x, y):
@@ -98,79 +125,67 @@ def edge_t(x, y):
     return t
 
 
-# anim.py walks the blink index through 2, 6, 10, 0 and 13 - pairs of the portrait-sized set.
-# The extra pairs out in the side bands take their own shut pair on the same frames, far from the
-# first, so each blink frame closes two pairs in different parts of the wood rather than the new
-# ones never blinking at all. Treeline extras are 21-24 (left) and 25-28 (right); branch extras
-# 31-33 (left) and 34-35 (right).
-_EXTRA_SHUT = {2: 22, 6: 32, 10: 26, 0: 34, 13: 24}
-
-
-def _extra(blink, base):
-    return _EXTRA_SHUT.get(blink)
-
-
-# Every pair placed in this render, on both eye layers. A pair keeps EYE_SPACING (an ellipse, x and
-# y) clear of all of them. 2026-10-29, Eric: "the main screen background awkwardly has eyes that sit
-# on top of each other. the red eyes should be spread out more randomly like on the mobile screen."
-# Nothing kept two pairs apart, and the extra pairs left of the figure were drawn into strips 16 and
-# 66 columns wide, so they stood in columns and ran into each other. Reset by vigil_wide.
-_placed = []
-EYE_SPACING = (28.0, 22.0)
+# THE EYES IN THE DARK (tools/art/title_eyes.py; the shape, the blink and the spread are explained
+# there). Where the wide set's pairs may go, in wide-frame pixels. 2026-10-29, Eric: "the main screen
+# background awkwardly has eyes that sit on top of each other" - and on 2026-11-01, of both screens,
+# that they should all be round, all blink and be spread at random. Every pair keeps
+# title_eyes.SPACING from every other, so nothing stacks.
+#
+# Five pairs in the treeline and four in the branches across the CORE, which every screen shows,
+# and more out in the side bands an ultrawide shows (seven left, six right), so a wide screen still
+# meets eyes at both edges. They are all the same round pair: the old side-band ones were smaller
+# and duller blobs, which is part of what Eric was describing.
+#
+# The core holds fewer than it did (twelve), because the menu, the wordmark and the figure take
+# most of it and the free wood is two strips: the gap between the menu and the staff, and the wood
+# right of the figure. Twelve pairs went seven to the right-hand strip, which on a 3:2 screen (the
+# Surface this is played on, x 210-750) is a swarm in one corner. EYE_CAPS holds each strip down,
+# and nine is what the three strips hold at the spacing without crowding.
+#
+# Near first: the branch band has less room, round the wordmark and the menu.
+EYE_GROUPS = [("near", (C0, 56, C0 + CORE_W, 150), 4),
+              ("near", (24, 50, C0, 150), 3),
+              ("near", (C0 + CORE_W, 50, WW - 24, 150), 2),
+              ("far", (C0, 150, C0 + CORE_W, 206), 5),
+              ("far", (24, 112, C0, 236), 4),
+              ("far", (C0 + CORE_W, 112, WW - 24, 236), 4)]
+# The UI's rectangles, and a column over the figure. Nothing is ever put on the wizard (title_eyes
+# keeps FIGURE_PAD from him); this keeps the canopy straight over his hat clear as well, as before.
+# The slot between the wordmark and the menu is kept too, the wordmark's width: a pair in it sat
+# under the S of SURVIVORS, beside Start Run, and read as part of the type.
+EYE_KEEP_OUT = [WORD_BOX, MENU_BOX, (WORD_BOX[0], WORD_BOX[3], WORD_BOX[2], MENU_BOX[1]),
+                OPTIONS_BOX, DETAIL_BOX, PROMPT_BOX, VERSION_BOX,
+                (C0 + 134, 296, C0 + 318, 320),           # Spell Index and Report a bug
+                (WARD_X - 60, 30, WARD_X + 60, 260)]
+# Where the common screen shapes cut the frame. The canvas is always 720 tall, so a 16:9 screen
+# shows the core, x 160-800; 16:10 shows 192-768, 3:2 210-750, 21:9 about 53-907 and 3440x1440
+# 50-910. A pair across one of those is one eye and a half at the screen's edge, so none may be.
+SCREEN_EDGES = (C0, C0 + CORE_W, 192, 768, 210, 750, 50, 53, WW - 53, WW - 50)
 # The strip of wood between the menu column and the staff is the only stretch left of the figure a
-# 16:9 or 3:2 screen shows, and it is narrow: every region that reaches it fed it, and five pairs
-# there read as one column. It holds two, across both layers.
-GAP_MAX = 2
+# 16:9 or 3:2 screen shows, and it is narrow and mostly lit: five pairs there read as one column,
+# and three as a huddle. It holds two, the sliver left of the menu (16:9 only) two, and the wood
+# right of the figure, up to the 16:9 edge, five - so the core pairs are spread over all three.
+EYE_CAPS = [((MENU_BOX[2] + 8, 0, WARD_X - 50, WH), 2),
+            ((C0, 0, MENU_BOX[0], WH), 2),
+            ((WARD_X + 60, 0, C0 + CORE_W, WH), 5)]
+EYE_SEED = 5
+_EYES = []
 
 
-def _in_gap(x):
-    return MENU_BOX[2] + 8 < x < WARD_X - 50
+def wide_eyes():
+    """Where every pair of eyes goes on the wide set: worked out once on the finished layers of the
+    default render and memoised, as splash.vigil_eyes does for the phone."""
+    if _EYES:
+        return _EYES
+    cv = vigil_wide(layers=True, eyes=False)
+    field = title_eyes.Field(title_eyes.composite(cv, STAGES), title_eyes.blocked(cv),
+                             EYE_KEEP_OUT, SCREEN_EDGES)
+    _EYES.extend(title_eyes.place(field, EYE_GROUPS, EYE_SEED, caps=EYE_CAPS))
+    print("wide eyes: " + title_eyes.report(_EYES))
+    return _EYES
 
 
-def _eyes(c, x0, x1, y0, y1, n, seed, avoid, shut, base, size=3):
-    """splash.eyes_in_the_dark, with an x range, a list of boxes to keep out of, and a size:
-    2 for eyes deep in the wood, 3 as on the phone, 4 for the nearer pairs in the branches.
-
-    Positions come from rng.random(), not randrange: Python 3 changed randrange, and rng.random()
-    is the same stream under 2.7 and 3, so either interpreter places these eyes where the other
-    did (a + int(random() * (b - a)) is what 2.7's randrange was)."""
-    ramp = [E["fire"][2], E["fire"][3], E["fire"][3], None]
-    rng = random.Random(seed)
-    placed = 0
-    sx, sy = EYE_SPACING
-    tries = 0
-    while placed < n:
-        x = x0 + int(rng.random() * (x1 - x0))
-        y = y0 + int(rng.random() * (y1 - y0))
-        gap = size + int(rng.random() * 3)
-        tries += 1
-        if tries % 200 == 0:
-            sx, sy = sx * 0.85, sy * 0.85      # a crowded region relaxes rather than hangs
-        if any(b[0] - 8 <= x <= b[2] + 8 and b[1] - 8 <= y <= b[3] + 8 for b in avoid):
-            continue
-        if any(((x - px) / sx) ** 2 + ((y - py) / sy) ** 2 < 1.0 for px, py in _placed):
-            continue
-        if _in_gap(x) and sum(1 for px, _ in _placed if _in_gap(px)) >= GAP_MAX:
-            continue
-        # Recorded before the blink skip, so a pair that is shut on this frame still holds its
-        # place and every frame of the blink puts the others in the same spots.
-        _placed.append((x, y))
-        placed += 1
-        if shut is not None and base + placed - 1 == shut:
-            continue
-        for ox in (0, gap):
-            if size <= 2:
-                # far back: no hot core, just the dull red, so they sit behind the treeline set
-                c.radial(x + ox, y, 2, 2, [ramp[2], ramp[3], None])
-                c.set(x + ox, y, ramp[1])
-            else:
-                c.radial(x + ox, y, size, size, [ramp[1], ramp[2], ramp[3], None])
-                c.set(x + ox, y, ramp[0])
-                if size >= 4:
-                    c.set(x + ox + 1, y, ramp[0])
-
-
-def vigil_wide(beard="mane-spear", layers=False, gain=1.0, phase=0, flicker=1.0, blink=None):
+def vigil_wide(beard="mane-spear", layers=False, gain=1.0, phase=0, flicker=1.0, eyes=True):
     WARD = E["light"]
     GROUND = M["gold"]
     FAR_TONES = [(M["stone"][4], M["stone"][3]), (M["violet"][4], M["violet"][3]),
@@ -265,22 +280,7 @@ def vigil_wide(beard="mane-spear", layers=False, gain=1.0, phase=0, flicker=1.0,
         td, tl = tone(NEAR_TONES)
         sk.brush(c, bx, by, br, br * 0.62, seed=rb.randrange(9999), dark=td, light=tl,
                  density=1.15)
-    del _placed[:]
-    # The treeline set across the core - the part every screen shows - as the phone's spread
-    # across its whole width. Drawn across all 960 columns, a third of them landed in the side
-    # bands that only an ultrawide sees, and a 3:2 screen was left with a handful.
-    # Seven, not the twelve it had across the whole frame: the menu column, the wordmark and the
-    # figure take most of the core, and the dark wood left over holds about as many pairs as the
-    # phone's density puts there (.ai/title-screen.md: "eyes are cheap and easy to overspend").
-    _eyes(T("eyesA"), C0 - 10, C0 + CORE_W - 10, 150, 206, 7, 5,
-          [MENU_BOX, (WARD_X - 60, 30, WARD_X + 60, 260)], blink, 0)
-    # More of them out in the side bands an ultrawide monitor shows, left and right, so a wide
-    # screen still meets eyes at both edges. Deeper ones smaller and dimmer than the treeline set,
-    # so they read as further back rather than as more of the same.
-    _eyes(T("eyesA"), 4, C0 + 30, 112, 236, 4, 41, [MENU_BOX, WORD_BOX], _extra(blink, 21),
-          21, size=2)
-    _eyes(T("eyesA"), C0 + CORE_W - 30, WW - 12, 112, 236, 4, 43, [], _extra(blink, 25),
-          25, size=2)
+    # The treeline's eyes used to be drawn here. They go on last now (see the foot of vigil_wide).
 
     # ---------------------------------------------------------------- backB: ground and canopy
     c = T("backB")
@@ -344,17 +344,7 @@ def vigil_wide(beard="mane-spear", layers=False, gain=1.0, phase=0, flicker=1.0,
                  density=1.6)
     sk.canopy(c, -10, 175, (C0 + 255, 86, 265, 104), 700, seed=151, dark=OCC,
               light=M["stone"][4], width=WW, density=1.25)
-    # Five, numbered from 9 so the blink frames anim.py walks (2, 6, 10, 0, 13) each close one pair
-    # in view: 0, 2 and 6 in the treeline set above, 10 and 13 here.
-    _eyes(T("eyesB"), C0 - 10, C0 + CORE_W - 10, 60, 150, 5, 71,
-          [MENU_BOX, ARCANE_BOX, WORD_BOX,
-           (WARD_X - 60, 30, WARD_X + 60, 260)], blink, 9)
-    # and nearer, larger ones up in the branches of the side bands, as above (one strip beside the
-    # staff was 16 columns wide and stacked its two pairs into one blob)
-    _eyes(T("eyesB"), 10, C0 + 30, 50, 150, 3, 47, [WORD_BOX, MENU_BOX],
-          _extra(blink, 31), 31, size=4)
-    _eyes(T("eyesB"), C0 + CORE_W - 30, WW - 12, 50, 150, 2, 53, [],
-          _extra(blink, 34), 34, size=4)
+    # The branch set used to be drawn here, over the canopy. It goes on last now too.
 
     # ---------------------------------------------------------------- the ward, as vigil() draws it
     cxp, cyp = WARD_X, WARD_Y
@@ -428,6 +418,9 @@ def vigil_wide(beard="mane-spear", layers=False, gain=1.0, phase=0, flicker=1.0,
                 [M["skin"][0], M["skin"][0], M["skin"][1], M["skin"][2], M["skin"][3]],
                 [M["gold"][0], M["gold"][1], M["gold"][2]], halo=OCC, gap=WORD_GAP,
                 scales=WORD_SCALES)
+    # The eyes, last of all and only where nothing in front of them is drawn - see splash.vigil.
+    if eyes:
+        title_eyes.stamp_all(cv["eyes"], wide_eyes())
     if layers:
         return cv
     return cv["backA"]

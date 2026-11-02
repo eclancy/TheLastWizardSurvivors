@@ -443,8 +443,24 @@ def solar_flare():
     return c
 
 
+# Where the ray comes from and where it strikes the ground: evolution_icons.py places its Scorching Ray
+# cards on these two points, so they move together. The strike is left of the middle so the loadout
+# strip's level numeral, in the slot's lower right corner, never covers the splash.
+RAY_FROM = (-2.0, -1.0)
+RAY_STRIKE = (15.0, 22.0)
+
+
 def scorching_ray():
-    """A beam, and the only icon in the set that runs corner to corner.
+    """A thin ray blasting down into the ground, and splashing there.
+
+    Redrawn 2026-11-01 (Eric, playing 0.10.0: the icon "should show a thinner ray blasting into the
+    ground"). It was a beam eight pixels wide running up from a flare in the lower left to the top
+    right corner - a rocket, or a laser into the sky. The game's ray is a thin red laser splashing into
+    the ground under its target (art-replacement-manifest section 9, Scorching Ray), so now the ray is
+    a line of white-hot three pixels wide, edged in Fire's red, coming down steeply out of the top left
+    and striking the floor: a pool of molten light lying flat where it lands, the char round it with its
+    cracks glowing, a crown of droplets thrown up out of the splash and a glint on the strike. All on
+    Fire's ramp, the core white-hot and the identity in the mid and edge (art-direction.md section 3).
 
     Drawn as nested QUADS, not as stacked lines. Two earlier passes thickened the beam by drawing
     the same 45-degree line at perpendicular offsets, and both came out as a crosshatch: a diagonal
@@ -453,19 +469,55 @@ def scorching_ray():
     """
     c = raster.Canvas(CELL, CELL, None)
     f = E("fire")
+    (x0, y0), (x1, y1) = RAY_FROM, RAY_STRIKE
+    sx, sy = x1, y1 + 1.5
+
+    # The ground it strikes: char flat on the floor, a ragged edge, cracks running out of it that
+    # still glow, nearest the strike first.
+    c.disc(sx + 0.5, sy + 0.5, 10.5, 3.9, OCC)
+    for (ox, oy) in ((-10, 1.5), (11, 0.5), (-7, 3.5), (8, 3.5), (4, -2.5)):
+        c.set(sx + ox, sy + oy, OCC)
+    for (ax, ay, bx, by) in ((sx - 3, sy + 1, sx - 8, sy + 2), (sx + 3, sy + 1, sx + 9, sy + 1),
+                             (sx + 1, sy + 2, sx + 4, sy + 4), (sx - 1, sy + 2, sx - 4, sy + 4)):
+        c.line(ax, ay, bx, by, f[3])
+    for (px, py) in ((sx - 7, sy + 2), (sx + 8, sy + 1)):
+        c.set(px, py, f[2])
+
+    # The pool of molten light lying flat under the strike: red at its lip, white-hot at its heart.
+    c.disc(sx, sy, 6.3, 2.3, f[3])
+    c.disc(sx, sy, 4.7, 1.6, f[2])
+    c.disc(sx, sy, 2.9, 1.0, f[1])
+    c.hline(sx - 1, sx + 1, sy, f[0])
+
+    # The ray: three pixels wide - a white-hot core, Fire's orange either side, its red at the edges.
+    dx, dy = x1 - x0, y1 - y0
+    n = (dx * dx + dy * dy) ** 0.5
+    px, py = -dy / n, dx / n
 
     def quad(w):
-        # Perpendicular to the beam direction (1,-1) is (1,1), scaled by the half-width.
-        d = w * 0.707
-        return [(4 - d, 27 - d), (28 - d, 3 - d), (28 + d, 3 + d), (4 + d, 27 + d)]
+        return [(x0 - px * w, y0 - py * w), (x1 - px * w, y1 - py * w),
+                (x1 + px * w, y1 + py * w), (x0 + px * w, y0 + py * w)]
 
-    for (w, tone) in ((4.2, f[3]), (2.9, f[2]), (1.7, f[1]), (0.7, f[0])):
+    for (w, tone) in ((1.75, f[3]), (1.05, f[2]), (0.45, f[0])):
         c.poly(quad(w), tone)
+    # Heat crackling off it: a spark a pixel off the beam here and there, on alternate sides.
+    for (t, side, tone) in ((0.22, 1, f[3]), (0.45, -1, f[2]), (0.63, 1, f[2]), (0.8, -1, f[3])):
+        c.set(x0 + dx * t + px * 3.0 * side, y0 + dy * t + py * 3.0 * side, tone)
 
-    # The emitter flares; the far end frays into sparks.
-    c.disc(5, 26, 3.6, 3.6, f[2])
-    c.disc(5, 26, 1.8, 1.8, f[0])
-    spray(c, [(30, 2), (26, 1), (31, 6)], f, 1)
+    # The splash: a crown of droplets thrown up and out of the strike, hottest nearest it.
+    for (ddx, ddy, k) in ((-5, -3, 1), (-8, -2, 2), (-10, 0, 3), (4, -4, 1), (7, -5, 2), (9, -3, 2),
+                          (11, -1, 3), (1, -6, 0), (2, -9, 2), (-2, -8, 3), (12, -6, 3)):
+        c.set(sx + ddx, sy + ddy, f[k])
+    c.set(sx + 4, sy - 5, f[2])
+    c.set(sx - 5, sy - 4, f[2])
+
+    # The strike's glint: a white-hot cross where the ray meets the pool.
+    c.set(x1, y1, f[0])
+    c.set(x1, y1 + 1, f[0])
+    for (ddx, ddy) in ((-2, 1), (2, 1), (0, -1)):
+        c.set(x1 + ddx, y1 + ddy, f[1])
+    c.set(x1 - 3, y1 + 1, f[2])
+    c.set(x1 + 3, y1 + 1, f[2])
     return c
 
 

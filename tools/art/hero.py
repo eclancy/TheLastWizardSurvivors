@@ -587,8 +587,12 @@ def _face(c, cx, yb, u, under=None, style="cascade"):
 
 
 def wizard_hero(c, cx, yb, h=150, robe="wool", staff_ramp=None, cast=(1.5, 0.5),
-                under_ramp=None, beard="mane-spear", flicker=1.0):
-    """Draw the figure from behind with its feet on yb. h scales the whole construction."""
+                under_ramp=None, beard="mane-spear", flicker=1.0, snuffed=None):
+    """Draw the figure from behind with its feet on yb. h scales the whole construction.
+
+    snuffed: None for the lit staff. A number for the prologue's hiding wizard (prologue.p_missed),
+    whose light is out: no halo, no motes, no bounce off his robe, the orb a dark glass ball - and,
+    above 0, an ember still banked in it (0..1, its size), the one warm point on him."""
     u = h / 32.0
     r = M[robe]
     ramp = staff_ramp or E["arcane"]
@@ -699,7 +703,8 @@ def wizard_hero(c, cx, yb, h=150, robe="wool", staff_ramp=None, cast=(1.5, 0.5),
     # which is why the flicker was invisible: half the sequence was the same picture.
     step = 0 if flicker > 0.88 else (1 if flicker > 0.66 else (2 if flicker > 0.44 else 3))
     dim = lambda r: [r[min(len(r) - 1, i + min(2, step))] for i in range(len(r))]
-    _bounce(c, 1, int(cx + 14 * u), int(yb - 36 * u), int(yb), dim(ramp), skip=hood)
+    if snuffed is None:
+        _bounce(c, 1, int(cx + 14 * u), int(yb - 36 * u), int(yb), dim(ramp), skip=hood)
     if under_ramp:
         _underlight(c, int(cx - 15 * u), int(cx + 15 * u), int(yb - 22 * u), int(yb + 1),
                     dim(under_ramp))
@@ -791,6 +796,18 @@ def wizard_hero(c, cx, yb, h=150, robe="wool", staff_ramp=None, cast=(1.5, 0.5),
     # the halo lies over it. It survives because the halo is nearly all fade: the legs sit at
     # 1.7-3.4u, out in the dithered part, so the light stipples ACROSS them instead of filling
     # over them, and the claw still reads as dark metal inside a lantern.
+    if snuffed is not None:
+        # The light put out: a dark glass ball in the fork, the key's one glint on it, and what is
+        # left of the light banked in its heart.
+        c.disc(cxs, hy, 1.9 * u, 1.9 * u, M["stone"][3])
+        c.disc(cxs - 0.3 * u, hy - 0.3 * u, 1.4 * u, 1.4 * u, M["stone"][2])
+        c.set(int(cxs - 0.9 * u), int(hy - 0.9 * u), M["skin"][3])
+        if snuffed > 0:
+            c.radial(cxs, hy, max(1.0, 0.9 * u * snuffed), max(1.0, 0.9 * u * snuffed),
+                     [ramp[1], ramp[2], ramp[3]])
+        _fingers(c, yb, u, sx, w)
+        scene.blit(c.img, ox, oy)
+        return
     c.radial(cxs, hy, 4.6 * u * ag, 4.6 * u * ag,
              [ramp[3], ramp[3], None])
     c.radial(cxs, hy, 2.0 * u, 2.0 * u,

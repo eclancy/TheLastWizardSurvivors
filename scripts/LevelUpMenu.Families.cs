@@ -16,6 +16,9 @@ public partial class LevelUpMenu
 	{
 		if (option.IsBoon)
 			return CardFamily.Boon;
+		// A combination first: its milestone is past the Apotheosis's (ComboCatalog.MilestoneLevel).
+		if (ComboCatalog.IsComboOption(option))
+			return CardFamily.Conjunction;
 		if (option.IsEvolutionMilestone && option.MilestoneLevel >= ApotheosisCatalog.MilestoneLevel)
 			return CardFamily.Apotheosis;
 		if (option.IsEvolutionMilestone && option.MilestoneLevel >= 8)
@@ -30,6 +33,8 @@ public partial class LevelUpMenu
 	/// <summary>The family of an evolution page's branch cards: the milestone's own.</summary>
 	private static CardFamily EvolutionFamilyOf(LevelUpOption option)
 	{
+		if (ComboCatalog.IsComboOption(option))
+			return CardFamily.Conjunction;
 		if (option.MilestoneLevel >= ApotheosisCatalog.MilestoneLevel)
 			return CardFamily.Apotheosis;
 		return option.MilestoneLevel >= 8 ? CardFamily.Ascension : CardFamily.Mutation;
@@ -43,6 +48,7 @@ public partial class LevelUpMenu
 		CardFamily.Boon => BoonInkGold,
 		CardFamily.Ascension => CardFamilyArt.AscensionTitle,
 		CardFamily.Apotheosis => CardFamilyArt.ApotheosisTitle,
+		CardFamily.Conjunction => CardFamilyArt.ConjunctionTitle,
 		_ => Ink,
 	};
 
@@ -51,13 +57,14 @@ public partial class LevelUpMenu
 		CardFamily.Boon => BoonInkGoldSoft,
 		CardFamily.Ascension => CardFamilyArt.AscensionSoft,
 		CardFamily.Apotheosis => CardFamilyArt.ApotheosisSoft,
+		CardFamily.Conjunction => CardFamilyArt.ConjunctionSoft,
 		_ => InkSoft,
 	};
 
 	private static Color BodyInk(CardFamily family) => family switch
 	{
 		CardFamily.Boon => BoonInk,
-		CardFamily.Ascension or CardFamily.Apotheosis => CardFamilyArt.AscensionInk,
+		CardFamily.Ascension or CardFamily.Apotheosis or CardFamily.Conjunction => CardFamilyArt.AscensionInk,
 		_ => Ink,
 	};
 
@@ -66,7 +73,7 @@ public partial class LevelUpMenu
 	private static Color AccentInk(CardFamily family) => family switch
 	{
 		CardFamily.Boon => BoonInk,
-		CardFamily.Ascension or CardFamily.Apotheosis => CardFamilyArt.AscensionAdvice,
+		CardFamily.Ascension or CardFamily.Apotheosis or CardFamily.Conjunction => CardFamilyArt.AscensionAdvice,
 		_ => Rubric,
 	};
 
@@ -75,6 +82,7 @@ public partial class LevelUpMenu
 	{
 		CardFamily.Ascension => CardFamilyArt.AscensionChip,
 		CardFamily.Apotheosis => CardFamilyArt.ApotheosisChip,
+		CardFamily.Conjunction => CardFamilyArt.ConjunctionChip,
 		_ => CardFamilyArt.MutationChip,
 	};
 
@@ -90,6 +98,9 @@ public partial class LevelUpMenu
 	private StyleBoxTexture evoEmberResting, evoEmberLit;
 	private StyleBoxTexture stripObsidianResting, stripObsidianLit;
 	private StyleBoxTexture stripEmberResting, stripEmberLit;
+	private StyleBoxTexture conjunctionResting, conjunctionLit;
+	private StyleBoxTexture evoConjunctionResting, evoConjunctionLit;
+	private StyleBoxTexture stripConjunctionResting, stripConjunctionLit;
 	private StyleBoxTexture roundelStyle;
 
 	private void EnsureFamilyStyles()
@@ -115,6 +126,12 @@ public partial class LevelUpMenu
 		stripObsidianLit ??= StripFrame(CardFamily.Ascension, true);
 		stripEmberResting ??= StripFrame(CardFamily.Apotheosis, false);
 		stripEmberLit ??= StripFrame(CardFamily.Apotheosis, true);
+		conjunctionResting ??= CardFamilyArt.Frame(CardFamily.Conjunction, false, CardContentMargin);
+		conjunctionLit ??= CardFamilyArt.Frame(CardFamily.Conjunction, true, CardContentMargin);
+		evoConjunctionResting ??= CardFamilyArt.Frame(CardFamily.Conjunction, false, 16);
+		evoConjunctionLit ??= CardFamilyArt.Frame(CardFamily.Conjunction, true, 16);
+		stripConjunctionResting ??= StripFrame(CardFamily.Conjunction, false);
+		stripConjunctionLit ??= StripFrame(CardFamily.Conjunction, true);
 		roundelStyle ??= CardFamilyArt.Roundel();
 	}
 
@@ -135,6 +152,7 @@ public partial class LevelUpMenu
 			CardFamily.Upgrade => (upgradeResting, upgradeLit),
 			CardFamily.Mutation => (mutationResting, mutationLit),
 			CardFamily.Apotheosis => (emberResting, emberLit),
+			CardFamily.Conjunction => (conjunctionResting, conjunctionLit),
 			_ => (obsidianResting, obsidianLit),
 		};
 	}
@@ -146,6 +164,7 @@ public partial class LevelUpMenu
 		return family switch
 		{
 			CardFamily.Apotheosis => (evoEmberResting, evoEmberLit),
+			CardFamily.Conjunction => (evoConjunctionResting, evoConjunctionLit),
 			CardFamily.Ascension => (evoObsidianResting, evoObsidianLit),
 			_ => (evoMutationResting, evoMutationLit),
 		};

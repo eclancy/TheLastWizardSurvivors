@@ -311,6 +311,9 @@ public partial class HaywardBoss : BossEnemy
 	// enough to hide what is in it; he takes shape inside it; then he drives his hurdle down into the
 	// ground with a thud that throws the straw out flat, and the whirl is gone.
 	protected internal override float EntranceSeconds => 3.1f;
+	// The climax (BossDeath calls it on the roar): straw; the thud of the hurdle (Planted) is his heavy beat.
+	protected internal override float EntranceClimaxWeight => 0.6f;
+	protected internal override Element EntranceFlareElement => Element.Earth;
 
 	private BossDeath.Piece hayward;
 	private const float WhirlUp = 1.2f;
@@ -349,6 +352,7 @@ public partial class HaywardBoss : BossEnemy
 		}
 		if (stage.Crossed(Planted))
 		{
+			stage.Impact(0.9f);
 			stage.DustRing(foot, 74f, 10, new Color(0.62f, 0.54f, 0.36f, 0.6f), 0.8f, 16f);
 			stage.EmitAt(new BossDeath.Throw
 			{
@@ -458,6 +462,7 @@ public partial class HaywardBoss : BossEnemy
 
 		if (death.Crossed(HurdleLands))
 		{
+			death.Impact(0.6f);
 			// Flat on the stubble: the weave bursts along its whole length.
 			for (int k = 0; k < 4; k++)
 			{

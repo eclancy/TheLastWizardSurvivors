@@ -13,12 +13,14 @@ that is not one of the 50 material tones, 4 lights or 12 element ramps in §3.
 | File | What it is |
 |---|---|
 | `assets/bonelight/ui/title-screen.png` | 360×840 artwork, drawn at ×2 into a fixed 720×1680 rect centred on the canvas. The 360×640 composition sits in rows 100–739; rows 0–99 and 740–839 are the tall-frame bands |
-| `assets/bonelight/ui/title/*.png` | the 30 animation layers (`anim.py`), all 360×840, same rows |
+| `assets/bonelight/ui/title/*.png` | the 18 animation layers (`anim.py`), all 360×840, same rows |
+| `assets/bonelight/ui/title/eyes.png`, `eyes.json` | the eyes in the dark: an 11×4 cell per blink frame (open, half, slit) for each of the two tones, and where every pair sits. See "The eyes in the dark" |
 | `assets/bonelight/ui/title-prompt.png` | 360×24 transparent strip, PRESS ANY BUTTON only, at scale 3 |
 | `scenes/TitleScreen.tscn` | ground + artwork + prompt |
 | `scripts/TitleScreen.cs` | prompt fade and breath, music, input |
 | `tools/art/splash.py` | generates both PNGs, plus the six unused candidates |
 | `tools/art/hero.py` | the title-size player figure |
+| `tools/art/title_eyes.py` | the eyes: a pair's shape and tones, the blink frames, where pairs may go, and the sheet and positions it writes. Shared by both sets |
 | `tools/art/splashkit.py` | trees, boulders, candles, wordmark, sigils, skull, moon |
 | `tools/art/raster.py`, `tools/art/font.py` | drawing primitives and the two pixel faces |
 
@@ -156,10 +158,12 @@ order bugs. Back to front:
    150 loose clumps hung through rows 214–404, thickest toward the frame edges, a step darker than
    the far wood and a step lighter than the near. With only two planes the sky between them read
    as empty rather than as distance. Nothing in it rises above row ~200, so the break that holds
-   the wordmark keeps its dark sky; it is all on `backA`, under both sets of eyes. It draws from
+   the wordmark keeps its dark sky; it is all on `backA`. It draws from
    its own random stream - `tone()` shares one, and spending from it would re-colour every clump
    drawn afterwards.
-3. Eyes in the dark (y 360–424) and ground mist.
+3. Ground mist. (The eyes in the dark were drawn here and after the canopy. Since 2026-11-01
+   they go on **after everything**, the vignette and the tall frame included - see "The eyes in
+   the dark".)
 4. Ground: flagstone bands that widen toward the camera, from y=428.
 5. **Grass**, thickening toward the camera and thinned inside the ward circle so the runes still
    read through it; then **brush banked up both edges** of the clearing floor.
@@ -209,7 +213,10 @@ order bugs. Back to front:
 | Ward circle size and position | `cxp, cyp` and the radii in `vigil()` |
 | How bright the ward burns | the rings, star nodes and rune ticks in `vigil()`, all on `WARD` |
 | The six flames on it | `ward_flames()` in `vigil()` for height and depth-sort; `flame()` in `splashkit.py` for shape |
-| How many things are watching | the two `eyes_in_the_dark` calls — one in the treeline, one up in the branches after the canopy |
+| How many things are watching, and where | `EYE_GROUPS` in `splash.py`: a band and a count per set, branches then treeline, with `MENU_ROWS`, `PROMPT_ROWS` and the wordmark kept clear. The PC set has its own `EYE_GROUPS`, `EYE_KEEP_OUT`, `EYE_CAPS` and `SCREEN_EDGES` in `splash_wide.py` |
+| What a pair looks like | `OPEN`, `FRAMES`, `GAP` and `TONES` in `tools/art/title_eyes.py` |
+| How far apart pairs stay, and how dark their ground must be | `SPACING`, `CANDIDATES`, `DARK_MEAN` / `DARK_MAX` and `FIGURE_PAD` in `title_eyes.py` |
+| How often they blink | `[Export]`s on `TitleScreen.cs`: `BlinkMinGap` / `BlinkMaxGap` (each pair, 5-16 s), `BlinkCloseSeconds`, `BlinkHoldSeconds`, `BlinkOpenSeconds`, `DoubleBlinkChance`, `MaxBlinkingPairs`, `BlinkStagger` |
 | How far its light spreads on the floor | the three `radial` pools, on the **violet material** row |
 | How much it lights the figure | `under_ramp=` on `wizard_hero`, and `_underlight` in `hero.py` |
 | Figure size | `hero.wizard_hero(c, cxp, cyp, h=150)` |
@@ -464,7 +471,8 @@ title image - is hidden outright.
   needs the same treatment.
 - **Eyes are cheap and it is easy to overspend them.** 34 pairs with an amber core turned the
   wood into a firefly meadow. Nine in the treeline and seven in the branches, a step down the
-  fire ramp so they read red, is the amount that reads as *watched*.
+  fire ramp so they read red, is the amount that reads as *watched*. (The PC set has 22, but a
+  16:9 screen shows nine of them and a 3:2 one four; see "The eyes in the dark".)
 
 ## The animation
 
@@ -474,13 +482,15 @@ title image - is hidden outright.
 `title-screen.png` byte for byte, and it is worth keeping that true: it is the only cheap check
 that the layer split has not drifted from the composition.
 
-**To verify a change:** composite the layers in the order below and diff against
-`title-screen.png`. It must be **zero** differing pixels. That check is what caught the eye-depth
-bug below at 44 pixels out of 230,400 — far too few to spot by eye, and completely wrong.
+**To verify a change:** composite the layers in the order below, with the eye cells pasted open
+at their `eyes.json` places between `back-b` and the ward, and diff against `title-screen.png`.
+It must be **zero** differing pixels. That check is what caught the eye-depth bug below at 44
+pixels out of 230,400 — far too few to spot by eye, and completely wrong.
 
 Four behaviours, in the order they matter:
 
-1. **The eyes in the dark blink.** Occasionally, and not together.
+1. **The eyes in the dark blink.** Occasionally, and not together. **Done 2026-11-01**: every
+   pair on its own clock - see "The eyes in the dark".
 2. **The magic pulses.** Lightly and slowly — a breath, not a strobe.
 3. **The six flames burn.** They are currently a still frame of something that should be moving,
    and they are the most obviously frozen thing on screen.
@@ -507,16 +517,16 @@ One baked PNG cannot animate a part of itself. The split, back to front:
 | Layer | Frames | Driven by |
 |---|---|---|
 | `back-a` — sky, far wood, undergrowth, leaf mass | 1 | — |
-| `eyes-far-*` — the treeline pairs | 6 | blink timer |
 | `back-b` — mist, ground, grass, creep, near trees, canopy, wordmark | 1 | — |
-| `eyes-near-*` — the branch pairs | 6 | the same blink index |
+| `Eyes` — not a texture: one 11×4 cell per pair, from `eyes.png` at `eyes.json`'s places | 3 + shut | each pair's own clock |
 | `ward-*` — pools, rings, hexagram, runes | 3 | `WardPulseSeconds`, walked 0,1,2,1 |
 | `flames-far-*` | 4 | `FlameFrameSeconds` |
 | `figure-*` — the whole figure, rim and bounce stepped down | 4 | **the same index as the flames** |
 | `flames-near-*` — near flames and the motes | 4 | the same index again |
 | `fore` — foreground grass and brush | 1 | — |
 
-Thirty PNGs. The pulse is carried by the **size** of the ward light pools and by whether the
+Eighteen PNGs and the eye sheet (it was thirty while the eyes were two layers of six whole-screen
+frames). The pulse is carried by the **size** of the ward light pools and by whether the
 hottest tone survives on the rune ticks; the flicker steps the rim from `RIM` down through two
 bone tones and shifts the bounce and underlight one index toward their dark end. Nothing anywhere
 is tinted or faded.
@@ -536,11 +546,14 @@ Three things that are not obvious from that table:
   make a pixel **darker**: `stone.deep #0B0F18` is lighter than `occ #05070C`, so an unconditional
   write replaced 63% of the pixels in a corner sample with a mid-dark grey, which read as a filter
   laid over the whole image and flattened the contrast of exactly the areas meant to be deepest.
-- **The two eye sets are at different depths, and the backdrop has to split around them.** The
-  treeline pairs are drawn early and are then legitimately covered by the ground, the creep, the
-  near trees and the canopy; the branch pairs are drawn after the canopy and sit in front of it.
-  Lift both onto one layer above a single backdrop and the treeline pairs shine straight through
-  the foliage that is meant to be in front of them. Hence `backA` / `eyesA` / `backB` / `eyesB`.
+- **The two eye sets were at different depths, and the backdrop was split around them.** The
+  treeline pairs were drawn early and then legitimately covered by the ground, the creep, the
+  near trees and the canopy; the branch pairs were drawn after the canopy and sat in front of it.
+  Lifted onto one layer above a single backdrop, the treeline pairs shone straight through the
+  foliage meant to be in front of them - hence `backA` / `eyesA` / `backB` / `eyesB`. Since
+  2026-11-01 no pair goes anywhere anything is drawn in front of it (a pair half under a leaf was
+  a smear, not a pair of eyes), so both sets sit on one `eyes` stage above `backB` and depth is
+  told by tone alone. `backA` and `backB` are still two layers; merging them is a free cleanup.
 - **Every layer must be fully opaque or fully transparent, never in between.** Partial alpha
   anywhere reintroduces blending, and with it off-contract colour.
 
@@ -607,11 +620,10 @@ code with this path.
 
 ### Per-behaviour notes
 
-**Eyes.** Cheapest as *no texture at all*: have the generator emit the pair positions alongside
-the art and draw them in `_Draw()` from the palette constants, with a per-pair timer that skips
-drawing for a few frames. Each eye is one or two pixels; a texture layer for that is more
-machinery than the thing it animates. Blinks must be independent per pair and irregular — nine in
-the treeline and seven in the branches blinking on one clock is a lighthouse, not a wood.
+**Eyes.** Built, nearly as this note proposed: the generator emits the pair positions alongside
+the art and each pair has its own timer. The difference is that a pair is drawn from a tiny
+sheet of generated cells rather than in `_Draw()`, because a blink wants in-between frames (a
+lid half down) and an eye is now a 4×4 disc, not one or two pixels. See "The eyes in the dark".
 
 **Pulse.** Three or four frames of the ward stepped up and down the ward ramp, cycling slowly.
 Amplitude is the whole risk: the ward is already the brightest thing in the frame after the orb,
@@ -775,7 +787,7 @@ set untouched.
 |---|---|
 | `tools/art/splash_wide.py` | `vigil_wide()` - the composition; writes `title-screen-wide.png` |
 | `assets/bonelight/ui/title-screen-wide.png` | 960x360 flat render |
-| `assets/bonelight/ui/title-wide/*.png` | the same 30 layers and frame counts as `title/`, at 960x360 |
+| `assets/bonelight/ui/title-wide/*.png` | the same 18 layers and frame counts as `title/`, at 960x360, and its own `eyes.png` / `eyes.json` |
 
 `python tools/art/anim.py` now emits both sets; `anim.py tall` or `anim.py wide` makes one.
 
@@ -791,16 +803,26 @@ the two 160-column side bands to `occ` at the frame edge.
 | figure and ward | feet at (430, 256) | right of centre; `hero.wizard_hero` at h=150, as on the phone |
 | wordmark | centred x 175, cap line 14, to row ~124 | `WORD_BOX`; scales (5, 3), see below |
 | Start Run, Arcane Upgrades + Unlocks, the energy caption | (60,134)-(290,240) | `MENU_BOX`, on the dark wood under the wordmark |
-| (nothing) | (430,8)-(630,34) | `ARCANE_BOX`, top right in the canopy. The Arcane Energy readout lived here; it is the shop button's caption now. The pocket was left in the art - soft, and only as dark as it needs - rather than re-render both title sets for it; drop it from `ui_pocket_t` the next time the wide set is regenerated |
+| (nothing) | (430,8)-(630,34) | `ARCANE_BOX`, top right in the canopy. The Arcane Energy readout lived here; it is the shop button's caption now, and the pocket left `ui_pocket_t` when the wide set was regenerated on 2026-11-02 |
 | Options | (12,292)-(126,324) | `OPTIONS_BOX` |
-| Spell Index, Report a bug | (134,296)-(222,320), (230,296)-(318,320) | no pocket of their own; quiet buttons on the dark grass, clear of the ward's left rim and flame |
-| preset / next-run | (470,312)-(632,352) | `DETAIL_BOX`, right-aligned |
+| Evolution Codex | (134,296)-(236,320) | no pocket of its own; a quiet button on the dark grass, clear of the ward's left rim and flame. Report a bug stood beside it until 2026-11-02 and is in Options now |
+| difficulty | (470,312)-(632,352) | `DETAIL_BOX`, right-aligned; one line since the next-run gain line went (2026-11-02) |
 | PRESS ANY BUTTON | rows 322-346, centred | `PROMPT_BOX`; `TitleScreen.WidePromptBottomRow` = 346 |
 | version label | (4,338)-(48,356) | `VERSION_BOX`; where `AddVersionLabel` lands on a 16:9 screen |
 
 **Every one of those boxes is a dark pocket in the art** (`ui_pocket_t`), soft-edged and only as
 dark as it needs - held at full strength with a short fade, the empty ones read as black panels
-when the menu was closed. The boxes in `splash_wide.py` and the numbers in
+when the menu was closed. **The fade has to span the darkening** (`_box_t`): `_darken_rows` does
+nothing below t = 2, so a linear fade from the pocket's strength spent most of its width doing
+nothing and crossed grass-to-occlusion in the last few pixels - the prompt pocket left a ruled line
+through the grass under the ward until 2026-11-02 (Eric: "still has a distinct line in the grass").
+Each pocket now runs from t = 2 at its edge, eased, to its strength at the box; the prompt's fades
+40 along the row but only 16 up, because the ring is about 20 rows above it and a longer fade
+dimmed its bottom flame. **And the pockets under the ward are light**, a dither of `stone.deep` only (strengths
+2.2-2.4): with the line gone Eric still saw "a big dark patch underneath", and a render with no
+pockets at all showed that the pockets alone made it - the ward lights grass and bushes right down
+to the frame. PRESS ANY BUTTON carries its own `occ` drop shadow; the menu's bottom row are framed
+buttons and an outlined label. Only `MENU_BOX`, on the dark wood, is still a real pocket. The boxes in `splash_wide.py` and the numbers in
 `MainMenu.PinToWideArt` calls are the same rectangles: **move one, move the other.** In landscape
 a core pixel (x, y) is always at `((x - 320) * 2, (y - 180) * 2)` from the screen centre, so
 `PinToWideArt` takes the core box directly. Portrait keeps `PinToArtRows` exactly as before.
@@ -824,31 +846,26 @@ tall one because the shapes want different layouts - the menu beside the figure,
 and SURVIVORS 279, 620 and 558 canvas units on a 1280 screen against about 380 before. Whole
 pixel scales only, and the menu moved down and right under it.
 
-**The eyes are spread, never stacked (2026-10-29).** Eric: "the main screen background awkwardly
-has eyes that sit on top of each other. the red eyes should be spread out more randomly like on the
-mobile screen." Nothing kept two pairs apart, and two calls drew pairs into strips 16 and 66 columns
-wide beside the staff, so they stood in columns and ran into each other. Now:
+**The eyes are spread, never stacked (2026-10-29, then 2026-11-01).** Eric, of this set first: "the
+main screen background awkwardly has eyes that sit on top of each other. the red eyes should be
+spread out more randomly like on the mobile screen." The first fix kept pairs apart with a spacing
+ellipse and capped the strip beside the staff; two days later he asked the same of both screens,
+and for every pair to be round and to blink, which replaced the whole mechanism. Both sets now
+place their eyes the same way (see "The eyes in the dark" below). What is particular to this one:
 
-- Every pair keeps `EYE_SPACING` (28 x 22, an ellipse) from every pair already placed on either
-  eye layer (`_placed`, reset per render, and recorded before the blink skip so every frame puts
-  the others in the same spots). A crowded region relaxes the spacing rather than hanging.
-- The strip between the menu column and the staff - the only wood left of the figure a 16:9 or
-  3:2 screen shows - holds at most `GAP_MAX` (2) pairs across both layers.
-- The treeline (7) and branch (5) sets are drawn across the **core**, which every screen shows,
-  rather than all 960 columns, where a third of them fell in the side bands. Fewer than before
-  (12 and 9): the menu, the wordmark and the figure take most of the core, and that is what the
-  free wood holds at the phone's density.
-- **Extra pairs in the side bands** an ultrawide shows, left and right: small dull ones deep in
-  the treeline (`size=2`, no hot core, 4 a side) and larger ones up in the branches (`size=4`, 3
-  and 2). They blink on the same six frames - `_EXTRA_SHUT` gives each blink frame a second pair
-  to close, far from the first. The branch set is numbered from 9 so all five blink frames anim.py
-  walks (2, 6, 10, 0, 13) close a pair in view.
-- Positions come from `rng.random()`, not `randrange`, which Python 3 changed: the eye layers come
-  out the same under 2.7 and 3. **The rest of the wide set does not** - regenerating it under the
-  container's Python 3.13 moves every tree and tuft - so this change regenerated only the twelve
-  eye layers and rebuilt `title-screen-wide.png` by compositing the committed layers with the new
-  eyes (zero differing pixels against the old flat render before the eyes changed). Measured: 25
-  pairs, the closest two 22 apart; 11 in view at 16:9.
+- **Five pairs in the treeline and four in the branches across the core**, which every screen
+  shows, and more in the side bands an ultrawide shows: seven left, six right, all the same round
+  pair (the old side-band ones were smaller, duller blobs). 22 in all.
+- **The free wood in the core is three strips**, and `EYE_CAPS` holds each down: the gap between
+  the menu column and the staff (2), the sliver left of the menu that only 16:9 shows (2), and the
+  wood right of the figure up to the 16:9 edge (5). Uncapped, the twelve core pairs went seven to
+  the right-hand strip, which on Eric's 3:2 Surface (x 210-750 of the frame) is a swarm in one
+  corner. Measured now: nine pairs in a 16:9 view, five at 16:10, four at 3:2, nineteen at 21:9.
+- **No pair straddles a screen edge** (`SCREEN_EDGES`: 160/800 for 16:9, 192/768 for 16:10,
+  210/750 for 3:2, about 53/907 for 21:9). Across one, a screen of that shape shows one eye and a
+  sliver - which the old set did at the left edge of a 16:9 screen.
+- The slot between the wordmark and the menu is kept clear, the wordmark's width: a pair there sat
+  under the S of SURVIVORS beside Start Run and read as part of the type.
 
 `_UiShot` takes `--open-menu`, which sets `Global.OpenMenuImmediately` so the shot is the menu
 over the art as a player sees it, rather than `MainMenu.tscn` on a black ground.
@@ -859,6 +876,71 @@ over the art as a player sees it, rather than `MainMenu.tscn` on a black ground.
 it cannot be fixed the way the character select's portraits were (`.ai/art-direction.md`, 6a):
 the menu is pinned to rectangles in this art, so a per-window scale would move it off its
 pockets.
+
+## The eyes in the dark
+
+**2026-11-01, Eric:** "The eyes in the background don't always look like eyes. They should all be
+circular and blink, and be randomly spread out rather than some being on top of each other." All
+three were true of both sets, and all three had one cause each. `tools/art/title_eyes.py` is the
+whole answer; `splash.py` and `splash_wide.py` only say where each set's bands are.
+
+**Shape.** Each eye was a radius-3 `radial` on a three-stop ramp, and a radial dithers its stops
+(see "The fade band is the whole game"), so every eye came out a different blob: a square, a plus,
+a bar. With the two eyes 3-5 pixels apart at radius 3 a pair often ran together into one smear.
+The treeline set was drawn *behind* the leaves and the ground, so a pair half under a clump was a
+crescent or a dash, and the vignette swapped pixels out of pairs near the edges. Now:
+
+- One eye is a **4×4 disc with its corners off**, the smallest shape on this grid that reads as
+  round (a 3×3 is a plus or a square, which is what half the old ones were). Both eyes level, a
+  fixed 3 apart, so a pair is an 11×4 cell. A 2×2 core on a rim: `fire.mid` on `fire.edge` for
+  the branch pairs, the old red note; `fire.edge` on `ember.shade` for the treeline, so they sit
+  further off by tone. Both are drawn at one depth now, so tone is the only depth cue a pair has.
+- Pairs are **stamped after everything** - the vignette, the wordmark and the tall frame included
+  - so nothing dithers, darkens or cuts them.
+- A pair goes **only where nothing in front of the eyes comes near it**: the ward, the flames, the
+  figure and the foreground, grown by a pixel (`COVER_PAD`), and the figure grown by 14
+  (`FIGURE_PAD` - at 8 one sat among the sparks over the orb and read as two more). That is what
+  lets one stage above `backB` hold both sets, and what makes stamping them last the same picture
+  as stamping them in their place: the flat PNG and the layers plus cells still agree to the pixel.
+  `anim.py` checks every animation frame, not just frame 0, and prints `covered pairs: 0`.
+- **Only on dark wood**: over the cell and two pixels round it, a mean luma of at most 22 and no
+  pixel above 50. The mean keeps pairs off the sky round the wordmark and out of the lit
+  undergrowth; the ceiling keeps them off stars and type. The first rule tried was "no pixel above
+  34", and it left so little of the wood that every pair crowded into what there was.
+
+**Spread.** Nothing kept two pairs apart, so random draws stacked. Now every pair keeps `SPACING`
+(30×22, an ellipse, centre to centre) from every other on either depth, and each is the best of
+five random valid spots - the one furthest from the pairs already placed (Mitchell's best
+candidate) - so the set spreads out without looking laid out on a grid. Past about five
+candidates it does. The phone's branch set is placed first because it has the least room (the
+wordmark and the menu, `MENU_ROWS`, take the middle of its band, and the slot between them is kept
+clear too); the treeline gets what is left. Positions use `rng.random()` only, so 2.7 and 3 agree.
+Measured: 16 pairs on the phone, the closest two 36 apart; 22 on the PC, 35 apart.
+
+**Blink.** Six whole-screen frames each shut one pair, so five of sixteen pairs ever blinked, and
+only one at a time. Now:
+
+- `anim.py` writes **`eyes.png`** (a row per tone, a column per frame: open, lid half down, a slit;
+  35×9 with a pixel of gutter) and **`eyes.json`** (each pair's cell position, in art pixels, and
+  tone) beside each layer set. Nothing in code knows a position.
+- `TitleScreen.SetUpEyes` puts one `TextureRect` per pair, an `AtlasTexture` region of the sheet,
+  under the `Eyes` node (between `BackB` and `Ward`), at twice its art position - the same whole
+  ×2 as every layer, so a cell sits on the layers' pixel grid on both canvases. Sixteen nodes,
+  six shared `AtlasTexture`s, one float per pair per frame: nothing measurable.
+- `TickEyes` gives each pair its own clock: a 5-16 s wait, then half, slit, shut, slit, half at
+  40/40/90/60/60 ms (the lid comes down from the top and goes back up a little slower), and one
+  blink in five is followed by a second. **Never together**: at most `MaxBlinkingPairs` (2) are
+  mid-blink and no two start within `BlinkStagger` (0.15 s); a pair that comes due inside either
+  limit waits a moment and tries again. Across sixteen pairs that is a blink somewhere about every
+  0.7 s.
+- **By frame, never by tint.** A cell swaps between generated frames in contract colours, and shut
+  is the cell hidden. Nothing is faded.
+
+**To change the eyes**, edit `title_eyes.py` or the bands in the two generators and run
+`python tools/art/anim.py`, then `splash.py` and `splash_wide.py` for the flat PNGs. Only
+`eyes.png`, `eyes.json` and the two flat PNGs should change; every layer comes out byte-identical,
+because the eyes are no longer in any of them. `preview_anim.py` blinks every pair once in its
+loop and keeps frame 0 identical to `title-screen.png`.
 
 ## Verifying a change
 
@@ -871,4 +953,8 @@ pockets.
 3. The `ObjectDB instances leaked at exit` warning is pre-existing and unrelated — `MainMenu.tscn`
    prints the same.
 4. `splash.py` audits every finished image against the contract palette and prints the count.
-   It must be **0 off-contract colours**.
+   It must be **0 off-contract colours**. `anim.py` prints the same for every layer and the eye
+   sheet, and `covered pairs: 0`.
+5. The eyes blink only in a real window, so a headless run says nothing about them. Burst
+   `_UiShot` over a couple of seconds (`--frames=60 --burst=40,4`) at both canvases and look for a
+   pair mid-blink; the blink is about 0.3 s, so a 4-frame gap catches three of its steps.

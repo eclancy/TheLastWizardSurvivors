@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_KindledWard.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/seimei-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/SeimeiFrames.tres" id="4"]
+
+; Rescued, not a starter: the Mystic Ruins' chapter wizard, freed at the Five-Pointed Seal
+; (.ai/chapter-wizards.md 4.5). The court diviner and exorcist of Heian Kyoto; his passive is
+; Exorcist, the one axis no other wizard owns: damage against the strong ones.
+[resource]
+script = ExtResource("1")
+Id = "seimei"
+Name = "Abe no Seimei"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "elite_damage_15"
+StartingPassiveName = "Exorcist"
+StartingPassiveDescription = "+15% damage to elites"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

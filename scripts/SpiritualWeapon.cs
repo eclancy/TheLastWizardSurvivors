@@ -1805,6 +1805,7 @@ public partial class SpiritualWeapon : Node2D
 
 	private void Shake(float amplitude)
 	{
+		amplitude *= DisplaySettings.ShakeScale;
 		if (camera == null || !IsInstanceValid(camera))
 			camera = PlayerRef?.GetNodeOrNull<Camera2D>("Camera2D");
 		if (camera == null)

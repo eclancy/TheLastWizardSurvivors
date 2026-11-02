@@ -33,6 +33,8 @@ public static class CharacterRoster
 		// Freed by finishing his chase (the "coursing" deed): Laelaps, the hound, on Cyclone Slash. Appended
 		// for the reason John Dee was.
 		"res://CharacterData_Laelaps.tres",
+		// The chapter wizards (.ai/chapter-wizards.md), appended so every saved index keeps its wizard.
+		"res://CharacterData_Seimei.tres",
 	};
 
 	// Loaded once and held. Every call used to load all seven again, and each load hands back a

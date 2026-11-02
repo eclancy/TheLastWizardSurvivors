@@ -3,7 +3,9 @@ using WizardSurvivors.scripts;
 
 // Plays the chapter's hint (StageHintCatalog; .ai/side-events.md, "Hints that something is out
 // there"): partway through a run, while the chapter's side event still holds a wizard or a spell
-// this save does not own, a sound from its direction and a caption at that edge of the screen.
+// this save does not own, a sound from its direction, marks in the site's own language coming in from
+// that edge of the screen on the sound's beat (StageHintCue: notes for the singer, leaves for the
+// grove), and its line fading in beside them (StageHintCaption).
 //
 // Created by SideEventDirector beside the event it is about, so it exists only on a chapter that
 // has both an event and a hint, and it reads everything it needs off that event: where it is, whether
@@ -35,30 +37,81 @@ public partial class StageHintDirector : Node
 	private const float SoundOffset = 300f;
 
 	private StageHintCaption caption;
+	private StageHintCue cue;
 	private int shown;
 	private bool retired;
+	// Holding the screen's turn (Announcements) while its line and cue are up.
+	private bool holdingTurn;
 
 	/// <summary>How many hints this run has played.</summary>
 	public int Shown => shown;
 
 	public override void _Ready()
 	{
-		var overlay = Game?.GetNodeOrNull<CanvasLayer>("UIOverlay");
-		if (overlay != null)
-		{
-			caption = new StageHintCaption { Name = "StageHintCaption" };
-			overlay.AddChild(caption);
-		}
+		(caption, cue) = BuildPresentation(Game);
 	}
 
 	public override void _ExitTree()
 	{
+		Announcements.Release(this);
 		if (caption != null && IsInstanceValid(caption))
 			caption.QueueFree();
+		if (cue != null && IsInstanceValid(cue))
+			cue.QueueFree();
+	}
+
+	// The line goes on the UI overlay, the cue in the world (on the run's root, at the origin, beside
+	// the event).
+	private static (StageHintCaption, StageHintCue) BuildPresentation(Node2DGame game)
+	{
+		StageHintCaption line = null;
+		var overlay = game?.GetNodeOrNull<CanvasLayer>("UIOverlay");
+		if (overlay != null)
+		{
+			line = new StageHintCaption { Name = "StageHintCaption" };
+			overlay.AddChild(line);
+		}
+		StageHintCue marks = null;
+		if (game != null)
+		{
+			marks = new StageHintCue { Name = "StageHintCue" };
+			game.AddChild(marks);
+		}
+		return (line, marks);
+	}
+
+	/// <summary>
+	/// Plays a chapter's hint presentation - its sound, its cue and its line - toward
+	/// <paramref name="source"/>, on whatever stage is running, and frees it after. For _UiShot
+	/// --hint-preview, which photographs a hint's line on grounds no hint plays on (the Fallow Fields'
+	/// pale field, the Sketchbook's paper). It touches no schedule and no save.
+	/// </summary>
+	public static void Preview(Node2DGame game, StageHint hint, Vector2 source, Color tell)
+	{
+		Player player = game?.RunPlayer;
+		if (player == null || hint == null)
+			return;
+		var (line, marks) = BuildPresentation(game);
+		line?.ShowLine(StageHintCatalog.LineFor(hint, 0), hint.Voice, player, source);
+		marks?.Play(hint.Cue, player, source, tell);
+		Vector2 toward = source - player.GlobalPosition;
+		SfxPlayer.AtPosition(hint.Sound, player.GlobalPosition + (toward.LengthSquared() > 1f ? toward.Normalized() : Vector2.Up) * SoundOffset, 0f);
+		game.GetTree().CreateTimer(9.0).Timeout += () =>
+		{
+			if (line != null && IsInstanceValid(line))
+				line.QueueFree();
+			if (marks != null && IsInstanceValid(marks))
+				marks.QueueFree();
+		};
 	}
 
 	public override void _Process(double delta)
 	{
+		if (holdingTurn && (caption == null || !caption.Showing) && (cue == null || !cue.Showing))
+		{
+			holdingTurn = false;
+			Announcements.Release(this);
+		}
 		if (retired || Game == null || Hint == null)
 			return;
 
@@ -105,7 +158,10 @@ public partial class StageHintDirector : Node
 	private void Retire()
 	{
 		retired = true;
+		if (!holdingTurn)
+			Announcements.Release(this);
 		caption?.Dismiss();
+		cue?.Dismiss();
 	}
 
 	private bool Play()
@@ -123,11 +179,19 @@ public partial class StageHintDirector : Node
 			return false;
 		}
 
+		// Its turn (Announcements): a hint that falls due under an achievement, an event's line or a banner
+		// waits until it has gone, and is played then. The pace clock is not moved, so the next one is not.
+		if (!Announcements.Request(this, Announcements.Kind.Hint))
+			return false;
+		holdingTurn = true;
+
 		Vector2 source = NearestSite(player.GlobalPosition);
 		string line = StageHintCatalog.LineFor(Hint, shown);
 		shown++;
 
-		caption?.ShowLine(line, Hint.Voice, player, source, Event.FarTellColor);
+		// The marks come in at the edge now; the words fade in just inside them a moment later.
+		cue?.Play(Hint.Cue, player, source, Event.FarTellColor);
+		caption?.ShowLine(line, Hint.Voice, player, source);
 		Vector2 toward = source - player.GlobalPosition;
 		Vector2 heard = player.GlobalPosition + (toward.LengthSquared() > 1f ? toward.Normalized() : Vector2.Up) * SoundOffset;
 		SfxPlayer.AtPosition(Hint.Sound, heard, 0f);

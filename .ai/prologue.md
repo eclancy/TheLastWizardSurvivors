@@ -12,11 +12,11 @@ choice below comes from it.
 
 | # | Panel (`name`) | Line | What it is |
 |---|---|---|---|
-| 1 | The moot (`moot`) | - | The Broken Circle before (`.ai/campaign.md` chapter 3): a ring of standing stones on the heath at night, a warded fire in the middle, and round it seven wizards, each staff burning a different element. The only frame with more than one warm light in it - every light the world had is still in it. |
+| 1 | The moot (`moot`) | - | The Broken Circle before (`.ai/campaign.md` chapter 3): a ring of standing stones on the heath at night, a warded fire in the middle, and round it five of the game's own wizards (below), each staff burning his own element, each in the deep end of his own colour. The only frame with more than one warm light in it - every light the world had is still in it. |
 | 2 | He comes (`throne`) | *He came here first.* | The same circle under him, and **only his silhouette**: a tall cowled shape inside a collar of points, one arm raised with the wizards' light streaming into his hand, rimmed by an eclipse of his own dark light behind his head. No face, folds, trim or keys. The stones are down, the wizards are on the ground, and the shadow running out of his hem has eyes in it. |
 | 3 | The tide (`tide`) | - | His shadows over the land: a village at the foot of a hill, still lit, and coming over the crest from the tower on the horizon a flood of the things he raised, every one with his mark in its eyes. One of them, horned, in the foreground. |
 | 4 | Taken (`taken`) | *He took them all.* | The wizards led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
-| 5 | The one he missed (`missed`) | *You are the one he missed.* | The title screen's picture told as story: the player in the warded circle, in the broken ring at night, his eyes on the horizon beyond the stones. |
+| 5 | The one he missed (`missed`) | *You are the one he missed.* | **Animated** (below): the hiding. The broken ring's near stones in a row, and in the row, between two of them, the player - the title's figure, facing us, still as a stone, his light put out to an ember. Beyond the row his creatures search: a hound trots along it nose down, stops at his shoulder and works the air beside him - his ember goes out - and goes on; a caster in the gap watches; two small ones turn their heads; pair by pair the eyes in the dark turn away and back. They never find him. |
 | 6 | The road (`road`) | - | Seen from above and behind: the player small on a road that winds over the heath toward everything he holds, the tower on the far horizon. Then the character select - the player choosing who walks it. |
 
 **Three lines, all in the game's own voice.** "He came here first" is the Broken Circle's own card line
@@ -34,10 +34,17 @@ title card, no narration, nothing an image is already saying (`world-and-tone.md
   or two pixels of cold arcane for eyes (`world-and-tone.md`, "The enemy palette"). They echo the
   chapters' kinds; **nothing in the prologue is from the Sketchbook's cast**, which is the kids' art
   and is never derived from.
-- **The rescued wizards are never shown.** Every wizard in panels 1, 2 and 4 is the same anonymous
-  figure - robe, brimmed hat, staff - in near-black, no face, no beard, no colour of his own. A secret
-  wizard's name is the reward and even his silhouette is withheld until his chapter opens
-  (`.ai/side-events.md`, "Secret wizards"), so nothing here may let a player tell one from another.
+- **The wizards are the game's own, and never a secret one.** Eric, 2026-11-01, of the anonymous
+  robe-and-hat figure that stood in panels 1, 2 and 4: *"In the intro, the wizard silhouettes look
+  goofy. Use the silhouettes of the characters in the game."* Each is now cut from his real sprite
+  (`roster_figure` / `silhouette` in the generator: the 48 cell's pixels, contact line and sparks
+  dropped, smoothed onto the panel's grid, filled flat, lit only at the anchor where his own element
+  sits in the sprite). Which frames: idle in the moot, the second frame of his death strip in panel 2
+  (going down), his walk in panel 4. **Only the five whose silhouette a fresh save already shows** -
+  the four disciplines and John Dee. Tituba, Vainamoinen and Laelaps are secret until their chapters
+  open (`.ai/side-events.md`, "Secret wizards"), and the prologue plays before any chapter has, so it
+  would print the answer before the question. Dee's orb is the darkness ramp in the game; here it burns
+  arcane, because darkness as light is the dark wizard's alone.
 - **The player is the light.** The last two panels have one warm light each, and it is his.
 
 **One tension, and how Eric settled it (2026-11-01).** `world-and-tone.md` tone rule 5 says *"He is
@@ -79,17 +86,33 @@ without a seam. One set of art serves both canvases; nothing is scaled to fit.
 `scripts/Prologue.cs` drifts them at different rates; the generator draws each layer out to the frame
 edge so a drift never uncovers anything.
 
-**What is reused.** `hero.wizard_hero` (panel 5's player, the title's own figure), `splashkit`'s moon,
-flame, boulder, tree and leaf clumps, and the ward's construction from `splash.vigil`. New here: the
-standing stones, the anonymous wizard, the creature silhouettes, the dark wizard, the black sun, the
-tower and the player from behind (`player_back`).
+**What is reused.** `hero.wizard_hero` (panel 5's player, the title's own figure, with `snuffed=` for
+his light put out to an ember, and a stop down every pigment row for the dark), the character sheets in
+`assets/bonelight/characters/` (the wizards), `splashkit`'s moon, flame, boulder, tree and leaf clumps,
+and the ward's construction from `splash.vigil`. New here: the standing stones, the creature
+silhouettes and the searching hound (`sniffing_hound`), the dark wizard, the black sun, the tower and
+the player from behind (`player_back`).
+
+**The animated panel.** Panel 5's moving part is one box of its mid layer (`MISSED_BOX`, 368x112 at
+296,400), drawn at 8 frames a second over the panel's 5.4 s and written as `missed-anim.png` (an atlas,
+four frames a row) with `missed-anim.json` (the box, the clock, and a timeline of one atlas frame per
+tick, so a held frame is stored once). Each frame is the WHOLE mid layer inside the box - the searchers
+and the stones and the player standing in front of them - so laid over the still mid layer it is the
+scene at that moment, and outside the box nothing moves. Every edge and size is a multiple of 8, so the
+dissolve's Bayer threshold, read from the atlas's own pixel, matches the mid layer's under it: the box
+dissolves with the panel, pixel for pixel, with no seam. About 7 MB of texture while the panel is up.
 
 ## The scene
 
 `scenes/Prologue.tscn` is a bare `Control`; `scripts/Prologue.cs` builds the rest.
 
 - **Beats** - the panel table at the top of `Prologue.cs`: name, seconds held, line, and each layer's
-  drift in art pixels over the hold. The drift runs from -half to +half, so the picture the generator
+  drift in art pixels over the hold. The hiding's back and mid drift as one, so the searchers never
+  slide on the ground they walk.
+- **The animated box** - any panel the generator gives `<name>-anim.png` and `<name>-anim.json` gets
+  it (`AnimSpec`, `AttachAnim`): a `TextureRect` of an `AtlasTexture`, the child of the mid layer (so
+  it drifts with it, over it and under the fore), its region stepped by the panel's own clock
+  (`StepAnim`), and its own copy of the dissolve whose `art_size` is the atlas's. The drift runs from -half to +half, so the picture the generator
   composed is the one on screen mid-panel. Layer positions are snapped to **whole screen pixels**.
 - **Transitions** are a dissolve through the 8x8 Bayer matrix, 0.7 s, in a canvas shader built in
   code (`DissolveShaderCode`): the incoming panel's pixels appear in threshold order over the
@@ -118,8 +141,13 @@ tower and the player from behind (`player_back`).
 - **Start Run, the first time.** `MainMenu.OnStartRunPressed` asks `Prologue.IsUnseen`; if so it plays
   the prologue, which then goes on to `CharacterSelection` itself. Start Run is the only way into the
   campaign; Boss Rush is a card inside the stage select and never sees it.
-- **Watch the Prologue**, in Options under the display toggles, plays it on demand and returns to the
+- **Watch the Prologue**, in Options' Story section, plays it on demand and returns to the
   main menu (`Global.OpenMenuImmediately`, as every return to the menu does).
+- **Replay intro**, a small quiet plate in the world map's bottom-left corner - **temporary, for
+  Eric's testing, to be removed before the game ships for good** (2026-11-01: *"Add a button in the story
+  map to replay the intro, for testing. We will remove it later."*). It plays the prologue with
+  `Prologue.After.Map`, which returns to the map where he stood and never touches the flag below. Every
+  piece of it says TEMPORARY in `WorldMap.cs`, `Prologue.cs` and `_PrologueProbe.cs`.
 - **The save flag** is `SaveData.HasSeenPrologue`, written when the prologue ends - played through or
   skipped. Additive and defaulting to false, so **no schema bump** (it narrows nothing, and
   `FromVariant` guards the read): an existing save sees the prologue once, on its next Start Run,
@@ -139,8 +167,9 @@ tower and the player from behind (`player_back`).
 It checks, in order: an unseen save's Start Run opens the prologue; a tapped Enter does not skip; a
 held Enter skips into the character select; the flag stays unset with writes off; a seen save's Start
 Run goes straight to the character select; Options' Watch the Prologue opens it and a held Escape
-returns to the main menu; and left alone it plays through and goes on to the character select. It
-prints PASS/FAIL per step and exits non-zero on any failure. Takes about 40 s.
+returns to the main menu; left alone it plays through and goes on to the character select; and
+(temporary, with the button) the world map's Replay intro opens it and a held Escape returns to the
+map. It prints PASS/FAIL per step and exits non-zero on any failure. Takes about 45 s.
 
 **The pictures:**
 
@@ -151,11 +180,14 @@ xvfb-run -a -s "-screen 0 1400x1300x24" "$GODOT_BIN" --path . --resolution 1280x
 
 Add `--resolution 540x1212 ... --portrait --safe-area` for the Pixel 9 canvas. At 60 fps the panels sit
 mid-hold at frames 138, 396, 642, 900, 1176 and 1434; frame 255 is mid-dissolve from the first to
-the second, and the whole thing ends at about frame 1620.
+the second, and the whole thing ends at about frame 1620. The hiding starts dissolving in at frame
+1008, so its moment `t` seconds in is frame `1008 + 60t`: `--frames=1068 --burst=4,60` takes it at 1,
+2, 3 and 4 s (the hound arriving, sniffing at his shoulder, standing, gone past). `--frames=138
+--burst=6,258` takes all six panels in one run.
 
 ## Not done
 
-- The panels are still: nothing in them animates except by drift (no flicker on the fire, no
-  blinking eyes). The title's frame-swap approach (`anim.py`) would carry over if it is wanted.
+- Only the hiding animates. The others are still but for drift (no flicker on the fire, no blinking
+  eyes); the animated box would carry any of them if it is wanted.
 - No pad has been held on the skip prompt and no phone has played it; both are reasoned from
   `MenuNavigator` and `BaseButton` and tested with an injected key.

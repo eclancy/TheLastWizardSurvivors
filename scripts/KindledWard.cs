@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 namespace WizardSurvivors.scripts;
 
@@ -19,6 +20,15 @@ namespace WizardSurvivors.scripts;
 // **Rimelight** (the level 4 element path into Ice, ElementPaths): the halo, body and core burn in
 // Ice's ramp instead of candle gold, and whatever it burns is chilled (the rider, applied by
 // Player.DealDamageToEnemy).
+//
+// **The Five-Pointed Seal** (Abe no Seimei's Apotheosis, the verb BANISH; .ai/chapter-wizards.md 4.5): a
+// ward that burns an enemy below a quarter of its health seals it where it stands - out of every
+// targeting path and every collision (Enemy.SetTargetable, the body left drawn) and held (Enemy.SetHeld:
+// no step, no wind-up, no shot, no damage taken), so it stops fighting at once - and a small seal of the
+// ward's light is laid over it. When the ward goes out, everything it sealed is gone, all on one beat.
+// Not an execute: the sealed are harmless from the moment they are sealed, and the kills land together.
+// An elite is never sealed - it takes one heavy blow instead, once a ward - and a boss is never touched by
+// it (the execute rule, .ai/in-flight.md 3a item 4).
 public partial class KindledWard : Node2D, IPaintsElementPath
 {
 	[Export] public float DriftSpeed { get; set; } = 95f;
@@ -66,6 +76,16 @@ public partial class KindledWard : Node2D, IPaintsElementPath
 	public const float FlockTurnRate = 0.9f;
 	public const float FlockSight = 120f;
 	public const float FlockDartScale = 2.8f;
+	// The Five-Pointed Seal (banish): below this share of its health a burned body is sealed; an elite takes
+	// EliteBanishShare strikes in one blow instead; and a ward holds MaxSealed at most, so a ward in a packed
+	// crowd cannot pull a whole wave out of play.
+	public const string FivePointedSealId = "kindled_ward_five_pointed_seal";
+	public const float BanishThreshold = 0.25f;
+	public const float EliteBanishShare = 4f;
+	public const int MaxSealed = 24;
+	private const float BanishFlashSeconds = 0.3f;
+	private const string BanishMarkPath = "res://assets/bonelight/effects/banish-seal.png";
+	private const int BanishMarkCell = 24;
 
 	/// <summary>Kindling Flock: this ward's place on the ring, of <see cref="FlockSize"/>. Set before it enters the tree.</summary>
 	public int FlockSlot { get; set; } = -1;
@@ -79,6 +99,14 @@ public partial class KindledWard : Node2D, IPaintsElementPath
 	private float bigFlareReach;
 	private float travelled;
 	private WardWisps wisps;
+	private bool banish;
+	private readonly List<Enemy> sealedBodies = new();
+	private readonly List<float> sealedAt = new();
+	private readonly List<Vector2> banishedAt = new();
+	private readonly List<Enemy> blowsStruck = new();
+	private float banishClock = -1f;
+	private Node2D marks;
+	private static Texture2D banishMark;
 
 	private float age = 0f;
 	private float strikeTimer = 0f;
@@ -142,6 +170,17 @@ public partial class KindledWard : Node2D, IPaintsElementPath
 		flare = SpellData?.HasEvolution(FlareId) == true;
 		wispTrail = SpellData?.HasEvolution(WispTrailId) == true;
 		flock = SpellData?.HasEvolution(FlockId) == true && FlockSlot >= 0;
+		banish = SpellData?.IsApotheosis == true
+			&& string.Equals(SpellData.SelectedApotheosisId, FivePointedSealId, StringComparison.OrdinalIgnoreCase);
+		if (banish)
+		{
+			// The seals are drawn by a node of their own, in the world and over the bodies: the ward's own
+			// quad goes through its shader.
+			banishMark ??= ResourceLoader.Exists(BanishMarkPath) ? GD.Load<Texture2D>(BanishMarkPath) : null;
+			marks = new Node2D { Name = "Seals", TopLevel = true, ZAsRelative = false, ZIndex = DrawLayers.Air, TextureFilter = TextureFilterEnum.Nearest };
+			marks.Draw += DrawSeals;
+			AddChild(marks);
+		}
 		if (wispTrail && PlayerRef?.GetParent() is Node2D arena)
 		{
 			wisps = WardWisps.For(arena, SpellData, PlayerRef);
@@ -156,6 +195,19 @@ public partial class KindledWard : Node2D, IPaintsElementPath
 		age += dt;
 		bobSeconds += dt;
 		flareSeconds += dt;
+
+		// Banished: the ward has gone out and its seals are breaking; it does nothing else, and goes once
+		// the break has been seen.
+		if (banishClock >= 0f)
+		{
+			banishClock += dt;
+			marks?.QueueRedraw();
+			if (banishClock >= BanishFlashSeconds)
+				QueueFree();
+			return;
+		}
+		if (banish && sealedBodies.Count > 0)
+			marks?.QueueRedraw();
 
 		retargetTimer += dt;
 		if (retargetTimer >= TargetRefreshSeconds)
@@ -205,7 +257,108 @@ public partial class KindledWard : Node2D, IPaintsElementPath
 		UpdateVisual();
 
 		if (age >= Lifetime)
+		{
+			if (banish && sealedBodies.Count > 0)
+			{
+				Banish();
+				return;
+			}
 			QueueFree();
+		}
+	}
+
+	public override void _ExitTree()
+	{
+		// Freed some other way than going out (the run ending under it): let the sealed go, rather than
+		// leave bodies held out of play with nothing to finish them.
+		foreach (Enemy body in sealedBodies)
+		{
+			if (!IsInstanceValid(body) || body.IsDying)
+				continue;
+			body.SetHeld(false);
+			body.SetTargetable(true);
+		}
+		sealedBodies.Clear();
+		if (marks != null && IsInstanceValid(marks))
+			marks.Draw -= DrawSeals;
+	}
+
+	// The Five-Pointed Seal: what this strike burned below a quarter is sealed where it stands. An elite
+	// takes one heavy blow instead (once a ward); a boss nothing.
+	private void TrySeal(Enemy enemy)
+	{
+		if (!IsInstanceValid(enemy) || enemy.IsDying || enemy.Health <= 0 || !enemy.IsTargetable
+			|| enemy.HealthFraction >= BanishThreshold || enemy is BossEnemy)
+			return;
+		if (enemy.IsMiniBoss)
+		{
+			if (blowsStruck.Contains(enemy))
+				return;
+			blowsStruck.Add(enemy);
+			PlayerRef.DealDamageToEnemy(enemy, Math.Max(1, Mathf.RoundToInt(Damage * EliteBanishShare)), source: SpellData);
+			return;
+		}
+		if (sealedBodies.Count >= MaxSealed)
+			return;
+		enemy.SetTargetable(false, hideBody: false);
+		enemy.SetHeld(true);
+		sealedBodies.Add(enemy);
+		sealedAt.Add(age);
+	}
+
+	// The ward goes out, and everything it sealed goes with it, on one beat: each body let go and finished
+	// by the ward (so the kill is the spell's, and pays as any kill does), its seal breaking where it stood.
+	private void Banish()
+	{
+		banishClock = 0f;
+		material?.SetShaderParameter(ParamFade, 0f);
+		foreach (Enemy body in sealedBodies)
+		{
+			if (!IsInstanceValid(body) || body.IsDying)
+				continue;
+			banishedAt.Add(body.GlobalPosition);
+			body.SetHeld(false);
+			body.SetTargetable(true);
+			if (PlayerRef != null && IsInstanceValid(PlayerRef))
+				PlayerRef.DealDamageToEnemy(body, body.Health + 1, source: SpellData);
+			// Anything that took less than its health is finished outright: banished is gone.
+			if (IsInstanceValid(body) && !body.IsDying && body.Health > 0)
+				body.TakeDamage(body.Health, false);
+		}
+		sealedBodies.Clear();
+		sealedAt.Clear();
+		if (banishedAt.Count > 0)
+			SfxPlayer.Impact(Element.Light, GlobalPosition);
+		marks?.QueueRedraw();
+	}
+
+	// One seal over each sealed body: forming, then breathing between its two held frames; and as the ward
+	// goes out, the breaking frame where each one stood. At x2, on the world grid.
+	private void DrawSeals()
+	{
+		if (banishMark == null || marks == null)
+			return;
+		float half = BanishMarkCell;
+		var size = new Vector2(half * 2f, half * 2f);
+		var lift = new Vector2(half, half + 8f);
+		if (banishClock >= 0f)
+		{
+			var broken = new Rect2(3 * BanishMarkCell, 0, BanishMarkCell, BanishMarkCell);
+			float a = Mathf.Clamp(1f - banishClock / BanishFlashSeconds, 0f, 1f);
+			foreach (Vector2 at in banishedAt)
+				marks.DrawTextureRectRegion(banishMark, new Rect2((at - lift).Round(), size), broken, new Color(1f, 1f, 1f, a));
+			return;
+		}
+		for (int i = 0; i < sealedBodies.Count; i++)
+		{
+			Enemy body = sealedBodies[i];
+			if (!IsInstanceValid(body))
+				continue;
+			float since = age - sealedAt[i];
+			int frame = since < 0.15f ? 0 : 1 + ((int)((since + i * 0.13f) * 3f) % 2);
+			var src = new Rect2(frame * BanishMarkCell, 0, BanishMarkCell, BanishMarkCell);
+			marks.DrawTextureRectRegion(banishMark, new Rect2((body.GlobalPosition - lift).Round(), size), src);
+		}
 	}
 
 	private void AcquireTarget()
@@ -249,6 +402,8 @@ public partial class KindledWard : Node2D, IPaintsElementPath
 			{
 				PlayerRef.DealDamageToEnemy(node, Damage, source: SpellData);
 				flareHit = true;
+				if (banish && node is Enemy burned)
+					TrySeal(burned);
 			}
 		}
 

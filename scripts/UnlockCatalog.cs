@@ -87,6 +87,16 @@ public sealed class UnlockDefinition
 	/// - the reason schemas 10, 12, 14, 15 and 16 had to grant what they added. Characters only.
 	/// </summary>
 	public bool OutsideCampaignGate { get; init; }
+
+	/// <summary>
+	/// A chapter wizard (.ai/chapter-wizards.md, G2): counted by the LAST gate chapter only - the Throne,
+	/// where the dark wizard is - and by no gate before it, wherever his rescue falls on the road. Eric,
+	/// 2026-11-01, "the new wizards count only at the Throne's gate": the Emberdeep keeps counting the six it
+	/// counted, so a chapter held for every place on the road does not turn the road into a checklist of
+	/// rescues before chapter 9. He is still a wizard (<see cref="UnlockCatalog.AllWizardIds"/>), so the
+	/// campaign cannot end with him held. Characters only.
+	/// </summary>
+	public bool CountedAtFinalGateOnly { get; init; }
 }
 
 /// <summary>
@@ -145,6 +155,9 @@ public static class UnlockCatalog
 		// no boons until 2026-10-26, which is why the PurchaseBoon entries below were cards no new save
 		// could be dealt; MainMenu's Arcane Upgrades now has a boon shelf, PurchasableBoons.)
 		Starter("taproot", UnlockKind.Boon),
+		// The walking boon (Waywiser), Taproot's mirror, a starter for the same reason - and because
+		// Lightning has the thinnest floor in the game (.ai/new-items.md section 7).
+		Starter("waywiser", UnlockKind.Boon),
 
 		// Achievement rewards. These ids must match AchievementDefinitions.All, which
 		// ValidateUnlockCatalog checks in both directions - an achievement granting a spell that
@@ -171,6 +184,9 @@ public static class UnlockCatalog
 		FromAchievement("gale_blade", "wind_adept", "End a run with 4 Wind instances."),
 		FromAchievement("thorn_vine", "forest_cleared", "Defeat the boss of the Enchanted Forest."),
 		FromAchievement("shadow_bolt", "castle_conqueror", "Defeat the boss of the Cursed Dungeon."),
+		// The Gaoler's deed pays a second thing, as the Long Coil's does: the third reactive boon, since a
+		// jailer carries a rattle (.ai/new-items.md section 7).
+		FromAchievementBoon("bone_rattle", "castle_conqueror", "Defeat the boss of the Cursed Dungeon."),
 		FromAchievement("spiritual_weapon", "ruins_delver", "Defeat the boss of the Mystic Ruins."),
 		FromAchievement("riptide", "cave_choir_silenced", "Defeat the boss of the Sunken Cave."),
 		FromAchievement("mirefoot", "swamp_cleansed", "Defeat the boss of the Blighted Swamp."),
@@ -203,6 +219,18 @@ public static class UnlockCatalog
 		FromSecret("kindled_ward", "broken_ward", "Hidden somewhere in the Mystic Ruins."),
 		FromSecret("sleet_runes", "buried_runes", "Hidden somewhere in the Frozen Waste."),
 		FromSecret("stormsweep", "fulgurite", "Hidden somewhere in the Scorched Sands."),
+
+		// THE COMBINATIONS (.ai/combo-spells.md, ComboCatalog): each is the reward of the Feat derived from its
+		// recipe, "Conjunction: Name", completed the first time a run meets the recipe - which grants the
+		// spell there and then, so the strip offers it on that same level-up. One entry per recipe, written
+		// out so this list stays the one place every spell's source is read from; RegressionChecks holds the
+		// two lists together.
+		FromCombination("sagittarius"),
+		// THE SOVEREIGN RITE (.ai/sovereign-spell.md section 3): the one Conjunction that is not paid by its own
+		// Feat. It is the reward of the end of the road - beating the Warden of the Deep, the Emberdeep's boss -
+		// so nothing on a new save reaches it early; its Feat ("Conjunction: Sovereign Rite") is the recipe's row
+		// and pays Arcane Energy. Not counted by The Grimoire Restored: it is a combination (GrimoireSpellIds).
+		FromAchievement(SovereignRite.SpellId, "emberdeep_ended", "Defeat the Warden of the Deep, at the end of the road."),
 
 		// Boons fill the shop that passive spells used to. Priced by how much a run changes when
 		// one turns up: a stat nudge is cheap, a whole defensive layer is not. The three boons are
@@ -240,6 +268,11 @@ public static class UnlockCatalog
 		// event pays the wizard out.
 		FromEvent("tituba", UnlockKind.Character, "gaolers_key", "Freed from a cell in the Cursed Dungeon.", secretUntilStage: "stage_1"),
 		FromEvent("vainamoinen", UnlockKind.Character, "the_thaw", "Thawed out of the ice in the Frozen Waste.", secretUntilStage: "stage_5"),
+		// THE CHAPTER WIZARDS (.ai/chapter-wizards.md): one held in every place, each freed by his chapter's
+		// event, secret until that chapter opens, and counted at the Throne's gate only (G2) - so the
+		// Emberdeep's list does not grow. Abe no Seimei, sealed in his own five-pointed seal in the Ruins.
+		FromEvent("seimei", UnlockKind.Character, "five_pointed_seal", "Sealed inside a star cut in the floor of the Mystic Ruins.",
+			secretUntilStage: "stage_4", finalGateOnly: true),
 		FromEvent("iron_palisade", UnlockKind.Spell, "caravan_master", "Carried by the caravan master on the Scorched Sands road."),
 		FromEvent("contagion", UnlockKind.Spell, "bog_lanterns", "Kept by whatever tends the lanterns in the Blighted Swamp."),
 		FromEvent("bramble_seed", UnlockKind.Spell, "the_grove", "Grown back in the corrupted grove of the Enchanted Forest."),
@@ -319,8 +352,9 @@ public static class UnlockCatalog
 	/// <param name="secretUntilStage">
 	/// A stage id makes a wizard secret until that chapter opens (see <see cref="UnlockDefinition.IsSecret"/>).
 	/// </param>
+	/// <param name="finalGateOnly">A chapter wizard, counted by the Throne's gate alone (<see cref="UnlockDefinition.CountedAtFinalGateOnly"/>).</param>
 	private static UnlockDefinition FromEvent(string id, UnlockKind kind, string siteId, string hint,
-		string secretUntilStage = "") => new()
+		string secretUntilStage = "", bool finalGateOnly = false) => new()
 	{
 		Id = id,
 		Kind = kind,
@@ -330,6 +364,7 @@ public static class UnlockCatalog
 		LockedHint = hint,
 		IsSecret = !string.IsNullOrWhiteSpace(secretUntilStage),
 		RevealStageId = secretUntilStage ?? string.Empty,
+		CountedAtFinalGateOnly = finalGateOnly,
 	};
 
 	/// <summary>
@@ -343,6 +378,19 @@ public static class UnlockCatalog
 		Source = UnlockSource.Achievement,
 		SourceId = AchievementDefinitions.SecretDeedPrefix + secretId,
 		LockedHint = hint,
+	};
+
+	/// <summary>
+	/// A combination (ComboCatalog): the reward of its recipe's derived Feat (<see cref="ComboCatalog.FeatId"/>).
+	/// The hint names no name - that is the Spell Index's rule for a page not found - only how it is made.
+	/// </summary>
+	private static UnlockDefinition FromCombination(string comboId) => new()
+	{
+		Id = comboId,
+		Kind = UnlockKind.Spell,
+		Source = UnlockSource.Achievement,
+		SourceId = ComboCatalog.FeatId(comboId),
+		LockedHint = "Made, not found: two spells, each ascended down the path its recipe names, joined into one.",
 	};
 
 	/// <summary>
@@ -388,6 +436,14 @@ public static class UnlockCatalog
 	/// </summary>
 	public static IEnumerable<string> AllSpellIds =>
 		Definitions.Where(d => d.Kind == UnlockKind.Spell).Select(d => d.Id);
+
+	/// <summary>
+	/// What The Grimoire Restored counts: every spell but the combinations. A combination is made, not
+	/// recovered, and asking for all of them would make the collection a test of every Ascension pair
+	/// (Eric, 2026-11-02).
+	/// </summary>
+	public static IEnumerable<string> GrimoireSpellIds =>
+		AllSpellIds.Where(id => !ComboCatalog.IsCombination(id));
 
 	/// <summary>
 	/// Every wizard, excluding the development sandbox entry and anyone outside the campaign gate (a

@@ -33,6 +33,9 @@ public sealed class ExplorePlacer
 	{
 		/// <summary>True if a footprint of this radius round this point is open ground the player can reach.</summary>
 		public Func<Vector2, float, bool> IsClear { get; init; }
+		/// <summary>IsClear, and every point of the disc open too - for a site that draws over its whole
+		/// footprint (the thaw's lake). Null falls back to IsClear.</summary>
+		public Func<Vector2, float, bool> IsClearDense { get; init; }
 		/// <summary>The run's start: distances and bearings are measured from here.</summary>
 		public Vector2 Origin { get; init; }
 		/// <summary>World pixels in one terrain chunk (TerrainStreamer.ChunkTiles x tile size): the unit the bands are in.</summary>
@@ -73,14 +76,15 @@ public sealed class ExplorePlacer
 	/// nearest open footprint to that spot. Its bearing is remembered, so the wayfinder can be put
 	/// somewhere else.
 	/// </summary>
-	public Vector2 EventSite(float footprint)
+	public Vector2 EventSite(float footprint, bool dense = false)
 	{
 		float bearing = NextFloat() * Mathf.Tau;
 		float distance = Mathf.Lerp(EventMinChunks, EventMaxChunks, NextFloat()) * ground.ChunkPixels;
 		float searchFrom = NextFloat() * Mathf.Tau;
 		if (float.IsNaN(EventBearing))
 			EventBearing = bearing;
-		return Search(ground.Origin + Direction(bearing) * distance, footprint, searchFrom);
+		return Search(ground.Origin + Direction(bearing) * distance, footprint, searchFrom,
+			test: dense ? ground.IsClearDense ?? ground.IsClear : null);
 	}
 
 	/// <summary>A site on a given bearing, at a seeded distance between two bands (chunks from the start).</summary>
@@ -143,11 +147,25 @@ public sealed class ExplorePlacer
 	private const float SearchStep = 96f;
 	private const float SearchReach = 1600f;
 
-	private Vector2 Search(Vector2 candidate, float footprint, float startAngle, IReadOnlyList<Vector2> avoid = null, float spacing = 0f)
+	private Vector2 Search(Vector2 candidate, float footprint, float startAngle, IReadOnlyList<Vector2> avoid = null, float spacing = 0f,
+		Func<Vector2, float, bool> test = null)
 	{
+		if (TrySearch(candidate, footprint, startAngle, avoid, spacing, test, out Vector2 found))
+			return Keep(found, footprint);
+		// Measured never to happen on the shipping stages; if it ever does, the site still exists
+		// rather than the event silently not being there, and --explore-log says so.
+		GD.PushWarning($"ExplorePlacer: no open ground within {SearchReach} px of {candidate}; placing there anyway.");
+		return Keep(Snap(candidate), footprint);
+	}
+
+	private bool TrySearch(Vector2 candidate, float footprint, float startAngle, IReadOnlyList<Vector2> avoid,
+		float spacing, Func<Vector2, float, bool> test, out Vector2 found)
+	{
+		test ??= ground.IsClear;
 		Vector2 first = Snap(candidate);
-		if (Spaced(first, avoid, spacing) && ground.IsClear(first, footprint))
-			return Keep(first, footprint);
+		found = first;
+		if (Spaced(first, avoid, spacing) && test(first, footprint))
+			return true;
 
 		float step = ground.MazeCellPixels > 0f ? ground.MazeCellPixels : SearchStep;
 		for (float r = step; r <= SearchReach + 0.1f; r += step)
@@ -156,14 +174,124 @@ public sealed class ExplorePlacer
 			for (int k = 0; k < around; k++)
 			{
 				Vector2 p = Snap(candidate + Direction(startAngle + k * Mathf.Tau / around) * r);
-				if (Spaced(p, avoid, spacing) && ground.IsClear(p, footprint))
-					return Keep(p, footprint);
+				if (Spaced(p, avoid, spacing) && test(p, footprint))
+				{
+					found = p;
+					return true;
+				}
 			}
 		}
-		// Measured never to happen on the shipping stages; if it ever does, the site still exists
-		// rather than the event silently not being there, and --explore-log says so.
-		GD.PushWarning($"ExplorePlacer: no open ground within {SearchReach} px of {candidate}; placing there anyway.");
-		return Keep(first, footprint);
+		return false;
+	}
+
+	/// <summary>
+	/// The event's main site for a footprint wider than a corridor - the Five-Pointed Seal's courtyard, which
+	/// on the Ruins' lattice fits only in a court (one block in eight, .ai/terrain.md section 11). EventSite's
+	/// rolls and its search first; if that finds nothing open within its reach, the whole event band is swept,
+	/// ring by ring out from the rolled distance and either way round from the rolled bearing, one maze cell
+	/// a step, and the first open footprint taken - still 4 to 6 chunks out, still the seed's. The event's
+	/// bearing becomes the site's, so the wayfinder keeps away from where it really is. Only then the old
+	/// fallback. Opt-in: every site placed before is placed exactly as it was.
+	/// </summary>
+	public Vector2 EventSiteInBand(float footprint, bool dense = false,
+		IReadOnlyList<(Vector2 Centre, float Radius)> keepOff = null, Func<Vector2, bool> also = null)
+	{
+		float bearing = NextFloat() * Mathf.Tau;
+		float distance = Mathf.Lerp(EventMinChunks, EventMaxChunks, NextFloat()) * ground.ChunkPixels;
+		float searchFrom = NextFloat() * Mathf.Tau;
+		if (float.IsNaN(EventBearing))
+			EventBearing = bearing;
+		Func<Vector2, float, bool> test = KeepingOff(dense ? ground.IsClearDense ?? ground.IsClear : ground.IsClear, keepOff);
+		if (also != null)
+		{
+			Func<Vector2, float, bool> inner = test;
+			test = (p, f) => inner(p, f) && also(p);
+		}
+		Vector2 candidate = ground.Origin + Direction(bearing) * distance;
+		if (TrySearch(candidate, footprint, searchFrom, null, 0f, test, out Vector2 found))
+			return Keep(found, footprint);
+		if (TrySweepBand(bearing, distance, EventMinChunks, EventMaxChunks, footprint, test, out found))
+		{
+			EventBearing = Mathf.Atan2(found.Y - ground.Origin.Y, found.X - ground.Origin.X);
+			return Keep(found, footprint);
+		}
+		GD.PushWarning($"ExplorePlacer: no open ground for a {footprint:0} px footprint anywhere in the event band; placing at {candidate} anyway.");
+		return Keep(Snap(candidate), footprint);
+	}
+
+	/// <summary>
+	/// <see cref="AtBearing"/> for a footprint wider than a corridor (a vault's, on the Ruins' lattice): the
+	/// same rolls and search, then - if that finds nothing open - the whole band between the two distances
+	/// swept as <see cref="EventSiteInBand"/> sweeps it, starting at this bearing and turning away from it
+	/// either side, so the site lands as near the bearing it was given as open ground allows. With
+	/// <paramref name="dense"/>, open over the whole footprint (the thaw's test). When the first search
+	/// finds ground and the test is not dense, the site is exactly the one AtBearing gives.
+	/// </summary>
+	public Vector2 AtBearingInBand(float bearing, float minChunks, float maxChunks, float footprint, bool dense = false,
+		IReadOnlyList<(Vector2 Centre, float Radius)> keepOff = null, Func<Vector2, bool> also = null)
+	{
+		float distance = Mathf.Lerp(minChunks, maxChunks, NextFloat()) * ground.ChunkPixels;
+		float searchFrom = NextFloat() * Mathf.Tau;
+		Func<Vector2, float, bool> test = KeepingOff(dense ? ground.IsClearDense ?? ground.IsClear : ground.IsClear, keepOff);
+		if (also != null)
+		{
+			Func<Vector2, float, bool> inner = test;
+			test = (p, f) => inner(p, f) && also(p);
+		}
+		Vector2 candidate = ground.Origin + Direction(bearing) * distance;
+		if (TrySearch(candidate, footprint, searchFrom, null, 0f, test, out Vector2 found))
+			return Keep(found, footprint);
+		if (TrySweepBand(bearing, distance, minChunks, maxChunks, footprint, test, out found))
+			return Keep(found, footprint);
+		GD.PushWarning($"ExplorePlacer: no open ground for a {footprint:0} px footprint anywhere {minChunks:0.#}-{maxChunks:0.#} chunks out; placing at {candidate} anyway.");
+		return Keep(Snap(candidate), footprint);
+	}
+
+	// A test that also refuses a footprint overlapping one already reserved - another site's court, which the
+	// ground tests cannot see (a reservation keeps decor off, not other sites). Null keeps the test as it is.
+	private static Func<Vector2, float, bool> KeepingOff(Func<Vector2, float, bool> test,
+		IReadOnlyList<(Vector2 Centre, float Radius)> keepOff)
+	{
+		if (keepOff == null || keepOff.Count == 0)
+			return test;
+		return (p, footprint) =>
+		{
+			foreach (var (centre, radius) in keepOff)
+				if (centre.DistanceTo(p) < radius + footprint)
+					return false;
+			return test(p, footprint);
+		};
+	}
+
+	// The band between two distances, ring by ring out from the rolled distance and back in, and round each
+	// ring either way from the bearing, one maze cell (or SearchStep) a step; the first open footprint.
+	private bool TrySweepBand(float bearing, float distance, float minChunks, float maxChunks, float footprint,
+		Func<Vector2, float, bool> test, out Vector2 found)
+	{
+		float step = ground.MazeCellPixels > 0f ? ground.MazeCellPixels : SearchStep;
+		float min = minChunks * ground.ChunkPixels;
+		float max = maxChunks * ground.ChunkPixels;
+		int rings = Mathf.FloorToInt((max - min) / step) + 1;
+		for (int n = 0; n < rings * 2 + 2; n++)
+		{
+			// distance, +1, -1, +2, -2...
+			float d = distance + ((n % 2 == 0) ? 1 : -1) * ((n + 1) / 2) * step;
+			if (d < min || d > max)
+				continue;
+			int around = Mathf.Max(8, Mathf.RoundToInt(Mathf.Tau * d / step));
+			for (int k = 0; k < around; k++)
+			{
+				int side = (k % 2 == 0) ? (k / 2) : -((k + 1) / 2);
+				Vector2 p = Snap(ground.Origin + Direction(bearing + side * Mathf.Tau / around) * d);
+				if (test(p, footprint))
+				{
+					found = p;
+					return true;
+				}
+			}
+		}
+		found = Vector2.Zero;
+		return false;
 	}
 
 	private Vector2 Keep(Vector2 site, float footprint)

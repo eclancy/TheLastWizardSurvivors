@@ -114,6 +114,10 @@ public static class GlobalStatsManager
 	public static int GetUnlockedSpellCount(SaveData data) =>
 		UnlockCatalog.AllSpellIds.Count(id => IsSpellUnlockedForLevelUp(data, id));
 
+	/// <summary>The Grimoire Restored's progress: spells recovered, the combinations not counted.</summary>
+	public static int GetGrimoireSpellCount(SaveData data) =>
+		UnlockCatalog.GrimoireSpellIds.Count(id => IsSpellUnlockedForLevelUp(data, id));
+
 	/// <summary>How many curation slots the player could ever buy, given the book they have.</summary>
 	public static int GetCurationSlotCapacity(SaveData data) =>
 		Math.Max(0, GetUnlockedSpellCount(data) - MinimumOfferablePool);
@@ -256,11 +260,11 @@ public static class GlobalStatsManager
 	// meet it: Fireball was paid only behind it. Spells are the collection now (The Grimoire Restored).
 
 	public static bool AllSpellsUnlocked(SaveData data) =>
-		UnlockCatalog.AllSpellIds.All(id => IsSpellUnlockedForLevelUp(data, id));
+		UnlockCatalog.GrimoireSpellIds.All(id => IsSpellUnlockedForLevelUp(data, id));
 
 	/// <summary>Spells still missing, for the Grimoire's "what is left".</summary>
 	public static int RemainingSpellCount(SaveData data) =>
-		UnlockCatalog.AllSpellIds.Count(id => !IsSpellUnlockedForLevelUp(data, id));
+		UnlockCatalog.GrimoireSpellIds.Count(id => !IsSpellUnlockedForLevelUp(data, id));
 
 	/// <summary>
 	/// The wizards a gate chapter counts: every wizard (<see cref="UnlockCatalog.AllWizardIds"/>, which
@@ -276,12 +280,16 @@ public static class GlobalStatsManager
 	/// Whether a gate counts this wizard: he is a wizard (not outside the campaign gate) and his rescue
 	/// chapter - the chapter his source deed belongs to - comes before the gate. A starter, or one freed by
 	/// a Feat that names no chapter (John Dee's chests), can be had before any gate, so every gate counts
-	/// him. A chapter outside the campaign counts only if it is open from the first run.
+	/// him. A chapter outside the campaign counts only if it is open from the first run. A chapter wizard
+	/// (<see cref="UnlockDefinition.CountedAtFinalGateOnly"/>, .ai/chapter-wizards.md G2) is counted by the
+	/// last gate chapter alone, wherever his rescue falls.
 	/// </summary>
 	public static bool CountsTowardGate(string wizardId, StageDefinition gate)
 	{
 		UnlockDefinition wizard = UnlockCatalog.GetCharacter(wizardId);
 		if (wizard == null || wizard.OutsideCampaignGate || gate == null)
+			return false;
+		if (wizard.CountedAtFinalGateOnly && !gate.Id.Equals(StageCatalog.FinalGateChapter?.Id ?? string.Empty, StringComparison.OrdinalIgnoreCase))
 			return false;
 		string chapter = RescueChapterOf(wizard);
 		if (string.IsNullOrWhiteSpace(chapter))

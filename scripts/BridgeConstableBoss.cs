@@ -159,6 +159,8 @@ public partial class BridgeConstableBoss : BossEnemy
 	public bool IsInYard => post == Post.Yard;
 	/// <summary>The middle of the gate's foot, where the hold counts.</summary>
 	public Vector2 GateFoot => gateFoot;
+	/// <summary>World y of the top of his figure, the halberd's blade: the 96 cell at x2, centred on the node.</summary>
+	public float FigureTop => GlobalPosition.Y - 96f;
 
 	// --- Lifetime ----------------------------------------------------------------------------------------
 
@@ -169,6 +171,9 @@ public partial class BridgeConstableBoss : BossEnemy
 		GlobalPosition = wallSpot;
 		base._Ready();
 		post = Post.Wall;
+		// Among the bodies while he is on the wall-walk, so the parapet in front of him hides his boots;
+		// over every spell (BossEnemy's DrawLayers.Foremost) from the leap down until he climbs back.
+		ZIndex = DrawLayers.Bodies;
 		pourLeft = 0f;
 		foreach (string problem in TuningProblems())
 			GD.PushError("BridgeConstableBoss: " + problem);
@@ -187,6 +192,8 @@ public partial class BridgeConstableBoss : BossEnemy
 		bridge = Node2DGame.Current?.Rules as BridgeRules;
 		if (bridge != null)
 		{
+			// The bridge leans the camera toward him while he is up there (hook 9, BridgeRules.CameraLean).
+			bridge.Constable = this;
 			gateFoot = bridge.VictoryPortalPoint(spawnedAt) ?? spawnedAt;
 			// The gate's art stands on the lattice line past the gate yard's last row of deck
 			// (BridgeFurniture.CastleWall: x - y = e * 48 for e the first row of water).
@@ -281,7 +288,7 @@ public partial class BridgeConstableBoss : BossEnemy
 	{
 		wallHeld = true;
 		post = Post.Wall;
-		ZIndex = 0;
+		ZIndex = DrawLayers.Bodies;
 		holdSeconds = 0f;
 		pourLeft = GatePourTellSeconds;
 		volleyLeft = GatePourTellSeconds + 0.5f;
@@ -365,8 +372,10 @@ public partial class BridgeConstableBoss : BossEnemy
 			Vector2 start = at - down * back + across * offset;
 			if (!OnDeck(start + down * back, 0f))
 				continue;
+			// The reticle (Shot), not the Line's own Leap: these are bolts loosed down the lane, not his charge,
+			// whose lane shows Leap and is warm iron where these are his cold fire.
 			TelegraphedGroundHit.Place(arena, start, BoltTellSeconds + 0.08f * k, back + BoltLaneOvershoot, damage,
-				BoltColor, TelegraphShape.Line, down);
+				BoltColor, TelegraphShape.Line, down, TelegraphGlyph.Shot);
 		}
 	}
 
@@ -435,13 +444,13 @@ public partial class BridgeConstableBoss : BossEnemy
 		if (leapT < rise)
 		{
 			GlobalPosition = leapFrom.Lerp(leapApex, BossDeath.EaseOut(leapT / rise));
-			ZIndex = 0;
+			ZIndex = DrawLayers.Bodies;
 		}
 		else
 		{
 			float u = Mathf.Clamp((leapT - rise) / (1f - rise), 0f, 1f);
 			GlobalPosition = leapApex.Lerp(leapTo, u * u) - new Vector2(0f, LeapHop * 4f * u * (1f - u));
-			ZIndex = DrawLayers.Air;
+			ZIndex = DrawLayers.Foremost;
 		}
 		Velocity = Vector2.Zero;
 		if (leapT >= 1f)
@@ -451,7 +460,7 @@ public partial class BridgeConstableBoss : BossEnemy
 	private void Land()
 	{
 		GlobalPosition = leapTo;
-		ZIndex = 0;
+		ZIndex = DrawLayers.Foremost;
 		post = Post.Yard;
 		wallHeld = false;
 		yardLeft = YardSeconds;
@@ -492,12 +501,12 @@ public partial class BridgeConstableBoss : BossEnemy
 		{
 			float u = leapT / over;
 			GlobalPosition = leapFrom.Lerp(leapApex, BossDeath.EaseOut(u)) - new Vector2(0f, LeapHop * 4f * u * (1f - u));
-			ZIndex = DrawLayers.Air;
+			ZIndex = DrawLayers.Foremost;
 		}
 		else
 		{
 			GlobalPosition = leapApex.Lerp(leapTo, BossDeath.EaseIn(Mathf.Clamp((leapT - over) / (1f - over), 0f, 1f)));
-			ZIndex = 0;
+			ZIndex = DrawLayers.Bodies;
 		}
 		Velocity = Vector2.Zero;
 		if (leapT >= 1f)
@@ -648,6 +657,8 @@ public partial class BridgeConstableBoss : BossEnemy
 	// the butt of the halberd down on the walk with a ring of iron that shakes grit and dust off the merlons
 	// in front of him. He is on the wall: the arrival plays where he will fight from.
 	protected internal override float EntranceSeconds => 3.2f;
+	// The climax (BossDeath calls it on the roar): up on the wall, away from the player; the halberd grounding is its own beat.
+	protected internal override float EntranceClimaxWeight => 0.7f;
 
 	private BossDeath.Piece climbing;
 	private const float FlamesFrom = 0.2f;
@@ -685,6 +696,7 @@ public partial class BridgeConstableBoss : BossEnemy
 		Vector2 parapet = foot - new Vector2(0f, ParapetOverFeet);
 		if (stage.Crossed(Grounds))
 		{
+			stage.Impact(0.8f);
 			// The butt of the halberd on the walk: grit off the merlons in front of him, and dust.
 			stage.EmitAt(new BossDeath.Throw
 			{
@@ -784,6 +796,7 @@ public partial class BridgeConstableBoss : BossEnemy
 
 		if (death.Crossed(HalberdLands))
 		{
+			death.Impact(0.6f);
 			// The whole length of it on the setts: dust along it, a spark of iron where the head lands.
 			for (int k = 0; k < 4; k++)
 			{

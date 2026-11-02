@@ -26,6 +26,9 @@ public static partial class SecretCatalog
 				found: "A crystal grown round a light he missed. Fighting at its foot broke it open.") with
 			{
 				IsBuilt = true,
+				// A chamber, not a passage: the crystal and the frost it throws want open ground all round, which
+				// in the caverns is a chamber; the band sweep finds one (OpenRadius).
+				OpenRadius = 260f,
 				CreateSite = () => new global::GeodeHeart(),
 				RepeatReward = "It shatters again, and gives up a chest",
 			},

@@ -64,6 +64,27 @@ multiply into an execute. (Fear goes further: it is never extended at all - see 
 | **Wither** | `Enemy.ApplyWither(fraction)` | **burns away a share of max HP, permanently** | Molten Shard (Metal), 12% |
 | **Fear** | `Enemy.ApplyFear(seconds)` | **the target turns and runs from the player** | every hit of a Darkness-tagged spell, 8% for 1.5 s |
 
+**In a description, each is a keyword** (2026-11-02, Eric: "status effects should be outlined or
+underlined or something that looks clickable"): the word underlined in its status's colour, a click
+opening one sentence on what it does, and a pad-selected card listing its statuses beside it.
+`KeywordText.Statuses` holds the sentences, built from the caps this section names (`Enemy.MaxVulnerability`,
+`MaxWeakenCeiling`, `BossSlowFloor`, `BossHoldMaxSeconds`, `Player.FearSeconds`) - change a rule here,
+read its sentence there. Shock is "Staggered"; a freeze is "Rooted"; there is no burn.
+`.ai/level-up-screen.md` 4b has the presentation.
+
+#### Bosses and crowd control (2026-11-01)
+
+"Bosses should also be immune to CC that would make it impossible for them to ever get to the
+player" (Eric, 0.10.0). On a boss (`Enemy.CapsCrowdControl`, set by `BossEnemy`) every kind still
+lands and is seen to, and none can hold it off him: **slows** stop at 0.5 (`BossSlowFloor`, or the
+scene's own floor if higher); a **freeze, root, time stop or stagger** stops it for 0.75 s at most
+(`BossHoldMaxSeconds`), then nothing holds it for 2.5 times as long - a freeze lands as the floor slow,
+a stagger as a shake - so it is held at most 2 seconds in 7; **knockback, pulls, drags and walls** ride
+on top of its own walk instead of replacing it, capped at 0.4 of that walk (`BossShoveShare`). Fear and
+the throw were already immune. `Enemy.IsHeldByCrowdControl` says when a hold is on (the Hollow Choir's
+revive pauses for it). Elites and minibosses are untouched. `.ai/enemy-behaviour.md`, "Bosses and crowd
+control", has the before and after.
+
 #### What a debuff looks like on an enemy (`StatusEffectLayer`)
 
 Every debuff wears a small animated mark, with its own **shape and direction of motion** so it reads
@@ -300,28 +321,73 @@ Water is the tightest at exactly 6, having only three carriers.
 ### The Apotheosis - a third milestone, past max level
 
 Each wizard's starting spell has a final form, offered in the Ascension strip above the level-up
-cards (milestone 9; see `.ai/level-up-screen.md` 3a)
-once that spell is at level 8, the named level 4 and level 8 path was taken, the wizard's element
-is at tier 6, and the wizard is the one it belongs to. Taking it spends the pick; it is terminal.
+cards (milestone 9; see `.ai/level-up-screen.md` 3a) once that spell is **at max level, ascended -
+any level 8 Ascension - and not combined with another spell**, the wizard is the one it belongs to,
+and the player is at level 21. Taking it spends the pick; it is terminal.
 The decision, the rejected manual-button alternative and the traps are in
-`.ai/decisions/2026-10-10-apotheosis.md`. `ApotheosisCatalog` is the authority on every gate and
-form, and `RegressionChecks.ValidateApotheosisCatalog` holds the invariants.
+`.ai/decisions/2026-10-10-apotheosis.md` (amended 2026-11-02 for this gate). `ApotheosisCatalog` is
+the authority on every gate and form (`SpellMeetsGate`), and
+`RegressionChecks.ValidateApotheosisCatalog` holds the invariants.
 
-| wizard | form | verb | required path (L4 / L8) | what changes |
+| wizard | form | verb | what changes |
+|---|---|---|---|
+| Pyromancer | Cataclysm | burn | kills leave burning craters; deaths in a crater open another |
+| Frostweaver | The Long Winter | stop | the cone becomes a freezing ring; the frozen shatter and freeze neighbours |
+| Stormcaller | The Lattice | link | struck enemies stay linked for 3 s and the web discharges along its edges |
+| Geomancer | Sundering | hold | a shove and a gapped ring of pillars; +20% armour inside it |
+| Tituba | Spring Tide | flood | each wave leaves a flooded lane that slows and drags |
+| Väinämöinen | Wildwood | swarm | a fully grown patch throws three seeds of its own |
+| John Dee | The Spirit Mirror | pull | Hollow Star's well opens half again as wide and drags harder; when it closes, every XP orb and pickup in its reach flies to him |
+| Laelaps | The Endless Chase | reflect | Cyclone Slash's whirlwind catches every enemy bolt that comes into it and throws it back at the enemy nearest the catch, for three times a blade's cut (`OrbitingBlade.ReflectBolts`) |
+| Seimei | The Five-Pointed Seal | banish | a ward that burns an enemy below a quarter of its health seals it there, harmless; when the ward goes out, all it sealed is gone (elites take a heavy blow, bosses nothing) |
+
+**The gate since 2026-11-02.** Eric: "Apotheosis should require the spell to be at Max level, not
+combined with another spell, and ascended." It replaced a named level 4 and level 8 path and the
+wizard's element at tier 6, under which one click at level 4 could lose the form for the rest of the
+run, and tier 6 asked for a whole book of one element on top of the Ascension's own gate.
+
+- **No choice closes it.** Every mutation and every Ascension on the wizard's spell leads to the
+  form, element paths included, so level 4 and level 8 are decisions about the spell again. The
+  Codex draws every open route into the form in the ember line, and its node reads **Spell 8**,
+  **Ascended**, **Not combined** and **You 21** ("Spell 7/8", "You 19/21" in a run).
+- **Not combined is held twice.** A wizard's own spell is never a Conjunction ingredient for him
+  (`.ai/combo-spells.md`), so today it is never fused; the gate refuses a fused spell and a
+  Conjunction's own anyway (`ApotheosisCatalog.IsCombined`, `Player.WasFusedAway`).
+- **The element bounds the form but no longer gates it.** A form adds +1 of the wizard's element
+  and nothing else, so accepting it never moves a tier down. Since any path may now come first, no
+  level 4 or level 8 option on a wizard's spell may trade that element away (the form would put it
+  back as a third), and the two-element ceiling is checked over every pairing with the form on top.
+- **Level 21, not 23.** Without a player-level gate the form comes the level-up after the spell's
+  Ascension, and the Ascension's own gate (level 17) puts that at 6.5-8.0 minutes for the bot -
+  under the floor. So a player level stays, tuned to the floor again: on this build level 20 came as
+  early as 7.8 (on it), 21 at 8.6 at the earliest, and 23 at 9.5-12.1, two minutes clear of it - the
+  XP economy has slowed since 23 was set against a 7.8-9.1 arrival.
+
+Measured (`_BalanceHarness --seek-apotheosis --all-unlocked --immortal --minutes=15`, `--fixed-fps 30
+--timescale=1`, the Forest, one run each; the last row is the planned bot, `--seek-ascensions`).
+Minutes. "No level gate" is the level-up after the spell's Ascension - when the form would have come:
+
+| wizard | own Ascension | form, no level gate | **form at level 21** | before: the old gate at 23 |
 |---|---|---|---|---|
-| Pyromancer | Cataclysm | burn | Amplified Impact / Titan Cataclysm | kills leave burning craters; deaths in a crater open another |
-| Frostweaver | The Long Winter | stop | Deep Freeze / Zero Point Wave | the cone becomes a freezing ring; the frozen shatter and freeze neighbours |
-| Stormcaller | The Lattice | link | Storm Reach / Cascade | struck enemies stay linked for 3 s and the web discharges along its edges |
-| Geomancer | Sundering | hold | Splinter Field / Tectonic Uprising | a shove and a gapped ring of pillars; +20% armour inside it |
-| Tituba | Spring Tide | flood | Amplified Impact / Titan Cataclysm | each wave leaves a flooded lane that slows and drags |
-| Väinämöinen | Wildwood | swarm | Burrs / Bramble Keep (ids `amplified_impact` / `titan_cataclysm`) | a fully grown patch throws three seeds of its own |
-| John Dee | The Spirit Mirror | pull | Crush / Black Sun (ids `amplified_impact` / `titan_cataclysm`) | Hollow Star's well opens half again as wide and drags harder; when it closes, every XP orb and pickup in its reach flies to him |
-| Laelaps | The Endless Chase | reflect | Tailwind Surge / Typhoon Core | Cyclone Slash's whirlwind catches every enemy bolt that comes into it and throws it back at the enemy nearest the catch, for three times a blade's cut (`OrbitingBlade.ReflectBolts`) |
+| Pyromancer | 6.2 | 6.5-7.0 | **8.7** | 10.3 |
+| Frostweaver | 9.1 | 9.5-10.0 | **10.8** | 14.3 (tier 6 at 13.6) |
+| Stormcaller | 13.3 | 14.0-14.2 | **14.2** | 13.7 |
+| Geomancer | 6.4 | 7.0-7.5 | **8.6** | 10.6 |
+| Tituba | 6.8 | 7.5-8.0 | **8.6** | - |
+| Väinämöinen | 6.4 | 6.5-7.0 | **9.0** | - |
+| Seimei | 6.2 | 6.5-7.0 | **8.7** | 10.5 |
+| Pyromancer, planned | 6.3 | 7.0-7.3 | **9.0** | 10.1 |
 
-Every required path is the pair of choices that **deepens the wizard's own element**, because a
-required branch that led away from it would make tier 6 harder on the exact build the gate asks for.
-A form adds +1 of that element and nothing else, so accepting it can never drop the player out of
-the tier that earned it. Level 8's card now says **Ascension**; "ultimate" belongs to no tier.
+The form at 21 lands at 8.6-10.8 (median 8.7) for every wizard whose spell ascended on time, clear of
+the 7.5 floor in every run; with no level gate five of eight would have been under it and a sixth on
+it. The Stormcaller is the exception both ways: this bot's Chain Lightning sat at levels 5 and 6 for
+minutes (the upgrade roll), so it ascended at 13.3 under every gate and the spell, not the level, set
+his time. The Frostweaver gained most - tier 6, not the level, had been holding hers to 14.3.
+
+Level 8's card says **Ascension**; "ultimate" belongs to no tier.
+
+*The measurements below were made under the old gate (the named path and tier 6) and are kept as
+the record of how the timing was set.*
 
 **Measured, as #59 demanded** (`_BalanceHarness --seek-apotheosis --all-unlocked --immortal`, a bot
 that steers every pick toward the form and cannot die, so this is the earliest plausible arrival,
@@ -454,9 +520,11 @@ either - at a 0.3 chance the form still came at 8.7 minutes, and the same build 
   cost against a flat income was the late-run crawl. `.ai/run-pacing.md` section 10.)
 - **The Ascension needs player level 17** (`Player.AscensionMinimumPlayerLevel`) - about minute 9
   to 11 for the bot. The ascension browser names it as a requirement.
-- **The Apotheosis needs player level 23** (`ApotheosisCatalog.MinimumPlayerLevel`) - about
-  minute 16.5 to 20 for the bot. A player level moves far less between runs than the upgrade roll, so
-  this is what holds the floor. Nothing on screen yet tells the player the form is waiting on it.
+- **The Apotheosis needs player level 21** (`ApotheosisCatalog.MinimumPlayerLevel`; 23 until
+  2026-11-02, about minute 16.5 to 20 for the bot on the 30-minute run) - minute 8 to 10.5 for the
+  bot on today's 15-minute run. A player level moves far less between runs than the upgrade roll, so
+  this is what holds the floor, and since 2026-11-02 it is the only gate on the player rather than
+  the spell. The Codex's Apotheosis node names it ("You x/21").
 - **Why 23 and 17, not the 20 and 14 they started at.** Doubling the enemy cap to 140 (the wider
   PC view, then phones too) doubled the XP on the ground: at 20 five of six wizards took their form
   between 13.3 and 15.4 minutes, and at 22/16 the Pyromancer, the fastest leveller, still took his
@@ -679,6 +747,12 @@ Two consequences worth knowing:
   Magic Missile (Arcane + Lightning) is not a starter.
 - No two characters open on the same element. `RegressionChecks.ValidateStartingCharacters`
   enforces both rules.
+- **Both rules bind the starters only** (Eric, 2026-11-01, `.ai/chapter-wizards.md` section 0): "Only
+  default starting wizards that are unlocked on a new save file need to have mono element spells.
+  Unlockable wizards can have multi-element starting spells." A wizard the player frees may open on a
+  two-element spell (he claims one of the two for his Apotheosis, whose path never leads away from it),
+  and may share an element with any other wizard. What no two characters share is the opening itself:
+  one spell, in one form. The validator says so for all three.
 
 | Character | Element | Starting spell | Shape | Passive |
 |---|---|---|---|---|
@@ -866,6 +940,15 @@ a reroll is a decision about the run, as a ban always was. Prices and the refund
   XP - not the Skip's half bar. Banning the same spell twice fails without spending a charge, and a
   refused ban puts the same cards back (`LevelUpMenu.RefreshCharges`). Ban mode is a tear over the
   hand, not a list (`.ai/level-up-screen.md`, section 7).
+- **The same two pools are spent on a chest** (Eric, 2026-11-02: "you can use rerolls on chests as
+  well as level ups. You can also ban items"; `.ai/new-items.md`, answer 3). Reroll re-deals the
+  chest's relics through `ChestItemCatalog.GetChestItemOptions` and the run's `ChestOfferMemory`, so
+  the first hand sits the second out and is faded. Ban strikes a relic from the run's chest pool
+  (`Player.TryBanRelic`; `Player.GetChestUnavailableItems` is what every chest deals around) and,
+  as on the level-up, **is the chest's pick**: the chest closes with no relic, though it still counts
+  as opened (the Reliquary's shield, a Hidden Drawer's chest). The two sit on the heading band on a
+  PC, at the foot on a phone, and on the band again for a crowded phone chest (four or five pages),
+  where the title steps down a face (`ChestItemSelectionMenu.PlaceCharges`). Hidden while empty.
 
 **Save and Augury were removed (2026-10-28: "remove save and augury mechanics").** There were four
 charges: *Hoarded Insight* deferred a level-up for two picks at the next, and *Augury* named a spell

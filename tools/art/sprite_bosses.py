@@ -2,6 +2,7 @@
 """The seven remaining chapter bosses, plus the Still Warden's guard.
 
 Run: python tools/art/sprite_bosses.py     -> tools/art/_bosses/ (gitignored)
+     python tools/art/sprite_bosses.py --choir -> the Hollow Choir's song, fall and dip strips alone
 Shipping build: python tools/art/build.py
 
 Elderbark already had `sprite_treant.py`; this is the other seven, drawn to the same contract and
@@ -48,9 +49,11 @@ out wearing the same gravel.
 """
 import os
 
+import anim_sets
 import bonelight as B
 import pixel as P
 import roster
+import spriteframes
 
 CELL = 96
 GUARD_CELL = 48
@@ -385,6 +388,11 @@ def gaoler():
 
 # --- chapter 3: the Hollow Choir ---------------------------------------------------------------
 
+# The six mouths down the front, top to bottom: (row, offset from the centre line, half-width). Named
+# because the song lights them (choir_song below) and must find the same slots the pose cut.
+CHOIR_MOUTHS = ((36, -6, 5), (44, 5, 7), (52, -8, 4),
+                (61, 6, 8), (71, -5, 6), (80, 8, 5))
+
 def hollow_choir():
     """A bell. Narrow, headless, limbless - the least body of anything in the game.
 
@@ -426,8 +434,7 @@ def hollow_choir():
     # THE MOUTHS: six slots, alternating side to side, no two the same width, each with bone teeth
     # above and below. Stacked and equal they were a rung ladder; offset and uneven they are a row
     # of things that could sing.
-    for (my, mx, mw) in ((36, -6, 5), (44, 5, 7), (52, -8, 4),
-                         (61, 6, 8), (71, -5, 6), (80, 8, 5)):
+    for (my, mx, mw) in CHOIR_MOUTHS:
         cx = CX + mx
         g.span(my, cx - mw, cx + mw, "o")
         g.span(my + 1, cx - mw + 1, cx + mw - 1, "o")
@@ -458,6 +465,155 @@ def hollow_choir():
     mark(g, 46, 20, "Z", "Y")
     shadow(g, 18, 78, 92)
     return g.rows()
+
+
+# --- the Hollow Choir: its song, its fall and its dip (2026-11-01) ------------------------------
+#
+# Eric, playing 0.10.0: the voices' ranged attacks had "no animation coming from them"; a fallen voice
+# should be seen walked to and sung back up, so the player knows to stop it; a voice left far behind
+# should "dip into the ground and reappear". Five strips more, each derived from the one pose as the
+# contract's four are (anim_sets), and each saying one of those things:
+#
+#   sing    6  the gesture before a note: the mouths light from the hem up - a rising scale - while
+#              the bell gathers itself short, then it stands tall and the note leaves the cowl
+#   chant   4  singing a fallen voice back: every mouth lit, the light breathing, a sway (loops)
+#   fall    6  going QUIET, not dying: the bell slumps into a heap of wet cloth and the mark stays lit
+#              in it - the one thing on the floor still looking out. Played backwards, it is the rise
+#   downed  4  the heap, waiting to be sung back: the mark its only light, breathing (loops)
+#   dip     6  going under: the bell sinks into a pool of black water opening round its hem. Played
+#              backwards, it is coming back up
+#
+# The song is WATER, the Sunken Cave's and the colour every Choir tell and its fall are already drawn
+# in (ChoirColor); the mark stays the one arcane pair (art-direction 4c). The mouths are the only place
+# the song shows, because they are the only place it could come from.
+
+SONG = ("0", "9", "K", "M")      # water: core, hot, mid, edge
+CHOIR_SING = [
+    # (mouths lit from the hem up, brightness 0-2, squash, lean, cowl flare)
+    (2, 0, 0.97, -0.4, 0),
+    (4, 1, 0.93, -1.0, 0),
+    (6, 1, 0.92, -1.2, 0),
+    (6, 2, 1.05, 0.8, 2),
+    (6, 2, 1.03, 0.5, 1),
+    (6, 0, 1.0, 0.0, 0),
+]
+# The ramps a fall darkens along: every one but the mark's, which stays lit in the heap.
+_FALL_POS = anim_sets._positions([r for r in anim_sets.RAMPS if r != "ZYyz"])
+CHOIR_FALL = [(0.92, 0.5, 0), (0.78, 1.2, 0), (0.6, 2.0, 1), (0.45, 2.6, 1), (0.34, 3.0, 1), (0.28, 3.2, 1)]
+# The mark, breathing in the heap: (core, cool) per frame.
+CHOIR_EMBER = [("Z", "Y"), ("Y", "y"), ("y", "z"), ("Y", "y")]
+CHOIR_MARK = (46, 20)
+# The dip: rows sunk below the waterline, and the pool's half-width round the hem.
+CHOIR_DIP = [(0, 14), (16, 24), (34, 30), (52, 33), (72, 30), (96, 20)]
+WATERLINE = 88
+
+
+def _lit(pose, mouths, level, flare=0):
+    """The pose with its lowest `mouths` mouths lit, each a throat of light behind its teeth.
+
+    Only the occlusion inside each slot is lit - the teeth and the bone at the corners stay - so a lit
+    mouth is still a mouth, singing, rather than a lamp. `level` steps the light from the edge of the
+    ramp (0, a glow) to the hot (2, the note). `flare` lights the cowl round the mark: the note leaving.
+    """
+    rows = [list(r) for r in pose]
+    hot = SONG[max(0, 1 - level)] if level else SONG[2]
+    mid = SONG[2] if level == 2 else SONG[3]
+    for (my, mx, mw) in CHOIR_MOUTHS[len(CHOIR_MOUTHS) - mouths:]:
+        cx = CX + mx
+        for (y, tone) in ((my, SONG[3]), (my + 1, hot), (my + 2, mid)):
+            for x in range(int(cx - mw), int(cx + mw) + 1):
+                if rows[y][x] == "o":
+                    rows[y][x] = tone
+        if level == 2:
+            rows[my + 1][int(cx)] = SONG[0]
+    if flare:
+        mx0, my0 = CHOIR_MARK
+        for y in range(11, 31):
+            for x in range(int(CX) - 9, int(CX) + 10):
+                d = ((x - mx0 - 0.5) ** 2) / 4.0 + (y - my0) ** 2 / 9.0
+                if rows[y][x] == "o" and d <= (3.0 if flare == 2 else 1.6):
+                    rows[y][x] = SONG[1] if d <= 1.0 and flare == 2 else SONG[2]
+    return ["".join(r) for r in rows]
+
+
+def choir_sing(pose):
+    out = []
+    for mouths, level, sq, lean, flare in CHOIR_SING:
+        f = anim_sets.squash(_lit(pose, mouths, level, flare), sq)
+        out.append(anim_sets.shear(f, lean) if lean else f)
+    return out
+
+
+def choir_chant(pose):
+    out = []
+    for level, lean in ((2, 0.6), (1, 0.0), (2, -0.6), (1, 0.0)):
+        f = _lit(pose, 6, level, 1 if level == 2 else 0)
+        out.append(anim_sets.shear(f, lean) if lean else f)
+    return out
+
+
+def _heap(pose, sq, lean, dark, ember=None):
+    rows = pose
+    if ember:
+        rows = [list(r) for r in pose]
+        rows[CHOIR_MARK[1]][CHOIR_MARK[0]] = ember[0]
+        rows[CHOIR_MARK[1]][CHOIR_MARK[0] + 1] = ember[1]
+        rows = ["".join(r) for r in rows]
+    if dark:
+        rows = anim_sets.step(rows, dark, _FALL_POS)
+    return anim_sets.shear(anim_sets.squash(rows, sq), lean)
+
+
+def choir_fall(pose):
+    return [_heap(pose, sq, lean, dark) for sq, lean, dark in CHOIR_FALL]
+
+
+def choir_downed(pose):
+    sq, lean, dark = CHOIR_FALL[-1]
+    return [_heap(pose, sq + (0.01 if i % 2 else 0.0), lean, dark, CHOIR_EMBER[i]) for i in range(4)]
+
+
+def choir_dip(pose):
+    """The bell sinks below a waterline at its hem, and a pool of black water opens round it."""
+    out = []
+    for sunk, pool in CHOIR_DIP:
+        g = G(CELL)
+        shifted = anim_sets.shift(pose, 0, sunk) if sunk < CELL else ["." * CELL] * CELL
+        for y in range(WATERLINE - 1):
+            for x, ch in enumerate(shifted[y]):
+                g.set(x, y, ch)
+        # The pool: black water, flattened as everything on the floor is, with a rim of the song's
+        # edge where the light from the cowl catches it, and two ripples out on the water.
+        for y in range(WATERLINE - 3, WATERLINE + 4):
+            t = (y - WATERLINE) / 3.5
+            hw = pool * (1.0 - t * t) ** 0.5 if abs(t) < 1.0 else 0.0
+            if hw <= 0.0:
+                continue
+            g.span(y, CX - hw, CX + hw, "o")
+            g.set(CX - hw, y, SONG[3])
+            g.set(CX + hw, y, SONG[3])
+        for k, side in enumerate((-1, 1)):
+            rx = CX + side * (pool * 0.55 + 2 * k)
+            g.span(WATERLINE - 1 + k, rx - 2, rx + 2, SONG[2])
+        g.span(WATERLINE + 2, CX - pool * 0.4, CX - pool * 0.4 + 3, SONG[3])
+        out.append(g.rows())
+    return out
+
+
+def choir_extra_anims(pose):
+    """The Choir's five strips beyond the contract's four, as (name, frames, loop, speed)."""
+    return [
+        ("sing", choir_sing(pose), False, 12.0),
+        ("chant", choir_chant(pose), True, 6.0),
+        ("fall", choir_fall(pose), False, 10.0),
+        ("downed", choir_downed(pose), True, 4.0),
+        ("dip", choir_dip(pose), False, 12.0),
+    ]
+
+
+# Animations a boss has beyond the contract's four, by sheet name: build.py appends them to the
+# sheet and its SpriteFrames, and `python tools/art/sprite_bosses.py --choir` writes the Choir's alone.
+EXTRA_ANIMS = {"hollow-choir": choir_extra_anims}
 
 
 # --- chapter 4: Mother Rot ---------------------------------------------------------------------
@@ -985,7 +1141,33 @@ BOSSES = [
 ]
 
 
+def write_choir_extras():
+    """Write the Choir's five extra strips and its SpriteFrames, and nothing else.
+
+    build.py writes every boss sheet; this is the same Choir sheet's extra strips without rewriting
+    the four the contract asks for (their PNGs are untouched; the .tres lists them as build.py does).
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    root = os.path.dirname(os.path.dirname(here))
+    enemies = os.path.join(root, "assets", "bonelight", "enemies")
+    pose = hollow_choir()
+    spec = []
+    for anim, frames, loop, speed in anim_sets.full_set(pose):
+        spec.append((anim, "hollow-choir-%s.png" % anim, len(frames), loop, speed))
+    for anim, frames, loop, speed in choir_extra_anims(pose):
+        png = "hollow-choir-%s.png" % anim
+        P.write_strip(frames, PALETTE, os.path.join(enemies, png), CELL)
+        spec.append((anim, png, len(frames), loop, speed))
+        print("wrote %s (%d frames)" % (png, len(frames)))
+    spriteframes.write(os.path.join(root, "scenes", "resources", "HollowChoirBossFrames.tres"),
+                       spec, "assets/bonelight/enemies", cell=CELL)
+
+
 def main():
+    import sys
+    if "--choir" in sys.argv:
+        write_choir_extras()
+        return
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_bosses")
     if not os.path.isdir(out):
         os.makedirs(out)

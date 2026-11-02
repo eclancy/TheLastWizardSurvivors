@@ -17,6 +17,9 @@ public static class RegressionChecks
 		ValidatePresetRewardOrdering(warnings);
 		ValidateSpellEvolutionCoverage(warnings);
 		ValidateApotheosisCatalog(warnings);
+		ValidateComboCatalog(warnings);
+		ValidateCodex(warnings);
+		ValidateSovereignRite(warnings);
 		ValidateChestSetPresentation(warnings);
 		ValidateFullSetObjects(warnings);
 		ValidateTomeRelics(warnings);
@@ -63,6 +66,7 @@ public static class RegressionChecks
 		ValidateAchievementMigration(warnings);
 		ValidateRetiredChargeRefund(warnings);
 		ValidateDifficultyMigration(warnings);
+		ValidateStoryReset(warnings);
 		ValidateChapterDifficulty(warnings);
 		ValidateNoPixelsInText(warnings);
 		ValidateAudio(warnings);
@@ -81,6 +85,8 @@ public static class RegressionChecks
 		ValidateSpellClassificationText(warnings);
 		ValidateExploreArt(warnings);
 		ValidateStageHints(warnings);
+		ValidateSealPuzzle(warnings);
+		ValidateThawArt(warnings);
 		ValidateGravewell(warnings);
 		ValidateCraters(warnings);
 		ValidateEvolutionIcons(warnings);
@@ -96,6 +102,15 @@ public static class RegressionChecks
 	// in a caption is the answer printed on the question.
 	private static void ValidateStageHints(List<string> warnings)
 	{
+		// The cues (tools/art/hint_cues.py): one row per HintCue, eight cells each, read by cell. A missing
+		// or unimported sheet means a hint is heard and read but never seen.
+		Texture2D cues = ResourceLoader.Exists(StageHintCue.SheetPath) ? GD.Load<Texture2D>(StageHintCue.SheetPath) : null;
+		var cueSize = new Vector2(StageHintCue.Cell * StageHintCue.Columns, StageHintCue.Cell * Enum.GetValues<HintCue>().Length);
+		if (cues == null)
+			warnings.Add($"Hints: {StageHintCue.SheetPath} is missing or not imported (python tools/art/hint_cues.py, then import).");
+		else if (cues.GetSize() != cueSize)
+			warnings.Add($"Hints: hint-cues.png is {cues.GetSize()}, expected {cueSize} - one row per HintCue, in its order.");
+
 		var seen = new HashSet<string>();
 		var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (StageHint hint in StageHintCatalog.All)
@@ -152,6 +167,108 @@ public static class RegressionChecks
 				}
 			}
 		}
+	}
+
+	// THE COUPLED SEAL (FivePointedSealEvent): a press turns its stone and the two beside it. Proved here rather
+	// than argued: every one of the 256 states is reached from the solved seal by presses (so every start can
+	// be solved - a press is undone by three more of it), the solver's answer is the fewest presses for every
+	// state (its press counts sum to the breadth-first distance to solving it), and the seeded start is at least MinPresses
+	// away on a thousand roll sets, the extremes included. A puzzle with an unreachable state would be a rescue
+	// that can never be made, and nothing in a run would say so.
+	private static void ValidateSealPuzzle(List<string> warnings)
+	{
+		const int n = FivePointedSealEvent.StoneCount;
+		static int Code(int[] o) => o[0] | (o[1] << 2) | (o[2] << 4) | (o[3] << 6);
+		static int[] Decode(int code) => new[] { code & 3, (code >> 2) & 3, (code >> 4) & 3, (code >> 6) & 3 };
+
+		for (int plate = 0; plate < n; plate++)
+		{
+			int[] turned = FivePointedSealEvent.TurnedBy(plate);
+			var set = new HashSet<int>(turned);
+			if (turned.Length != 3 || !set.Contains(plate) || !set.Contains((plate + 1) % n) || !set.Contains((plate + n - 1) % n))
+				warnings.Add($"Seal puzzle: plate {plate} turns stones {string.Join(",", turned)}, not its own and the two beside it.");
+		}
+
+		var distance = new int[256];
+		Array.Fill(distance, -1);
+		var queue = new Queue<int>();
+		distance[0] = 0;
+		queue.Enqueue(0);
+		while (queue.Count > 0)
+		{
+			int code = queue.Dequeue();
+			for (int plate = 0; plate < n; plate++)
+			{
+				int next = Code(FivePointedSealEvent.Press(Decode(code), plate));
+				if (distance[next] >= 0)
+					continue;
+				distance[next] = distance[code] + 1;
+				queue.Enqueue(next);
+			}
+		}
+		int unreached = distance.Count(d => d < 0);
+		if (unreached > 0)
+			warnings.Add($"Seal puzzle: {unreached} of 256 states cannot be reached from the solved seal, so a start there can never be solved.");
+		// Presses only ever add, so the presses that SOLVE a state are the ones that reach its negation from the
+		// solved seal (a state plus them is zero): the breadth-first distance to -s is the fewest for s.
+		for (int code = 0; code < 256; code++)
+		{
+			int[] state = Decode(code);
+			int back = Code(new[] { (n - state[0]) % n, (n - state[1]) % n, (n - state[2]) % n, (n - state[3]) % n });
+			if (distance[back] < 0)
+				continue;
+			int presses = FivePointedSealEvent.Sum(FivePointedSealEvent.Solve(state));
+			if (presses != distance[back])
+			{
+				warnings.Add($"Seal puzzle: state {string.Join(",", state)} takes {distance[back]} presses to solve, but the solver says {presses}.");
+				break;
+			}
+		}
+
+		var rng = new Random(20261101);
+		int fewest = int.MaxValue, most = 0;
+		for (int t = 0; t < 1000 + 16; t++)
+		{
+			float[] rolls = t < 16
+				? new[] { (t & 1) * 0.99f, ((t >> 1) & 1) * 0.99f, ((t >> 2) & 1) * 0.99f, ((t >> 3) & 1) * 0.99f }
+				: new[] { (float)rng.NextDouble(), (float)rng.NextDouble(), (float)rng.NextDouble(), (float)rng.NextDouble() };
+			int presses = FivePointedSealEvent.Sum(FivePointedSealEvent.Solve(FivePointedSealEvent.StartFromRolls(rolls)));
+			fewest = Math.Min(fewest, presses);
+			most = Math.Max(most, presses);
+		}
+		if (fewest < FivePointedSealEvent.MinPresses || most > 3 * n)
+			warnings.Add($"Seal puzzle: seeded starts take {fewest} to {most} presses; every one should take {FivePointedSealEvent.MinPresses} to {3 * n}.");
+	}
+
+	// The thaw's lake and block (tools/art/thaw_lake.py, ThawLake, ThawEvent): four textures the shader
+	// reads by texel, which must be one size, and a sheet read by frame index. A missing one draws the
+	// thaw on bare ground, or without its block, and says nothing in a run.
+	private static void ValidateThawArt(List<string> warnings)
+	{
+		Vector2? lakeSize = null;
+		foreach (string file in new[] { "thaw-lake.png", "thaw-lake-lit.png", "thaw-lake-bright.png", "thaw-lake-data.png" })
+		{
+			string path = ThawLake.Directory + file;
+			Texture2D texture = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
+			if (texture == null)
+			{
+				warnings.Add($"Thaw: {path} is missing or not imported (python tools/art/thaw_lake.py, then import).");
+				continue;
+			}
+			lakeSize ??= texture.GetSize();
+			if (texture.GetSize() != lakeSize.Value)
+				warnings.Add($"Thaw: {file} is {texture.GetSize()}, but the lake is {lakeSize.Value}; the shader reads them texel for texel.");
+		}
+		if (lakeSize is Vector2 size && size * 2f != ThawLake.WorldAxes * 2f + new Vector2(64f, 64f))
+			warnings.Add($"Thaw: the lake is {size} at x2, which no longer matches ThawLake.WorldAxes {ThawLake.WorldAxes} (and the event's footprint).");
+		string block = ThawLake.Directory + "thaw-block.png";
+		Texture2D sheet = ResourceLoader.Exists(block) ? GD.Load<Texture2D>(block) : null;
+		if (sheet == null)
+			warnings.Add($"Thaw: {block} is missing or not imported; the wizard will not be in the ice.");
+		else if (sheet.GetSize() != new Vector2(64 * 16, 64))
+			warnings.Add($"Thaw: thaw-block.png is {sheet.GetSize()}, expected 1024x64 (four stages of four frames).");
+		if (!ResourceLoader.Exists(ThawLake.ShaderPath))
+			warnings.Add($"Thaw: {ThawLake.ShaderPath} is missing; the lake will not draw.");
 	}
 
 	// Gravewell's pit is a sheet read by frame index, its collapse a shader loaded by path, and its
@@ -1354,6 +1471,77 @@ public static class RegressionChecks
 			warnings.Add("Navigation: open ground connected to the player counts as unreachable.");
 		if (whole.IsWallAt(behind) || !whole.HasLineOfSight(behind, player))
 			warnings.Add("Navigation: water is stopping shots - only maze walls should.");
+
+		ValidateSkirtTurn(warnings);
+		ValidatePropClusters(warnings);
+	}
+
+	// Node2DGame.StampPropClusters' geometry (PropClusters, .ai/terrain.md section 9 "Props"): two props
+	// a body cannot pass between close their cells and a four-connected way between them, so the grid has
+	// no diagonal gap a body does not fit; two it can pass between close nothing, and neither does a lone
+	// one; one a hand's width off water closes itself and the gap to the shore.
+	private static void ValidatePropClusters(List<string> warnings)
+	{
+		const float tile = 48f;
+		var closed = new HashSet<Vector2I>();
+		var shore = new Vector2I(1, 6);
+		var props = new List<Rect2>
+		{
+			new(new Vector2(60f, 60f), new Vector2(27f, 15f)),    // cell (1, 1)
+			new(new Vector2(120f, 100f), new Vector2(27f, 15f)),  // cell (2, 2): 41 px off the first, diagonally
+			new(new Vector2(400f, 60f), new Vector2(27f, 15f)),   // cell (8, 1)
+			new(new Vector2(500f, 60f), new Vector2(27f, 15f)),   // cell (10, 1): 73 px off the last - a body fits
+			new(new Vector2(10f, 300f), new Vector2(27f, 15f)),   // cell (0, 6): 11 px off the water at (1, 6)
+			new(new Vector2(700f, 700f), new Vector2(12f, 12f)),  // a lone trunk
+		};
+		PropClusters.Collect(props, Vector2.Zero, tile, cell => cell == shore, cell => closed.Add(cell));
+
+		if (!closed.Contains(new Vector2I(1, 1)) || !closed.Contains(new Vector2I(2, 2)))
+			warnings.Add("Prop clusters: two rocks 41 px apart are not in the navigation grid - the swarm would wedge between them.");
+		else if (!closed.Contains(new Vector2I(2, 1)) && !closed.Contains(new Vector2I(1, 2)))
+			warnings.Add("Prop clusters: two rocks on a diagonal leave the corner between them open in the grid.");
+		if (closed.Contains(new Vector2I(8, 1)) || closed.Contains(new Vector2I(10, 1)) || closed.Contains(new Vector2I(9, 1)))
+			warnings.Add("Prop clusters: two props a body can walk between (73 px) were closed.");
+		if (closed.Contains(new Vector2I(14, 14)))
+			warnings.Add("Prop clusters: a lone trunk was closed - the skirt goes round it, the grid need not.");
+		if (!closed.Contains(new Vector2I(0, 6)))
+			warnings.Add("Prop clusters: a rock 11 px off the water is not in the grid - the swarm would wedge in the gap.");
+	}
+
+	// Enemy.Skirt's geometry (.ai/enemy-behaviour.md section 8 item 13): a body that walks square into
+	// something turns along it, keeps pressing on it so it follows it round, and goes the way it already
+	// leant; one brushing along a wall is left alone. Every heading a skirt can produce must also carry
+	// the body along the surface, never back off it or to a stop.
+	private static void ValidateSkirtTurn(List<string> warnings)
+	{
+		Vector2 normal = Vector2.Up;            // a surface facing north; the body walks south into it
+		Vector2 square = Vector2.Down;
+		if (!SkirtTurn.IsFacingInto(square, normal, 0.5f))
+			warnings.Add("Skirting: a body walking square into a surface does not count as held by it.");
+		if (SkirtTurn.IsFacingInto(new Vector2(1f, 0.3f).Normalized(), normal, 0.5f))
+			warnings.Add("Skirting: a body brushing along a wall counts as walking into it - corridors would skirt.");
+
+		Vector2 leaning = new Vector2(-0.3f, 1f).Normalized();
+		float hand = SkirtTurn.ChooseHand(leaning, normal, 1f);
+		if (SkirtTurn.Along(normal, hand).X > -0.5f)
+			warnings.Add("Skirting: a body leaning west into a surface turns east - against its own lean.");
+		if (Mathf.Abs(SkirtTurn.ChooseHand(square, normal, -1f)) != 1f || SkirtTurn.ChooseHand(square, normal, -1f) != -1f)
+			warnings.Add("Skirting: a dead-square body does not take its own tie side.");
+
+		for (int a = 0; a < 360; a += 15)
+		{
+			Vector2 heading = Vector2.FromAngle(Mathf.DegToRad(a));
+			foreach (float side in new[] { -1f, 1f })
+			{
+				Vector2 along = SkirtTurn.Along(normal, side);
+				Vector2 turn = SkirtTurn.Blend(along, heading, 0.5f);
+				if (!turn.IsNormalized() || turn.Dot(along) < 0.3f)
+				{
+					warnings.Add($"Skirting: the turn for heading {heading} on hand {side} is {turn}, which does not carry the body along the surface.");
+					return;
+				}
+			}
+		}
 	}
 
 	// Stage hazards on the maze stand in the middle of a hallway or a hall (.ai/terrain.md section 6,
@@ -2464,6 +2652,161 @@ public static class RegressionChecks
 			warnings.Add($"Migration: schema 18 paid {none.TotalCurrency - 50} to a save that bought no retired charge.");
 	}
 
+	// Story resets (.ai/decisions/2026-11-02-story-resets.md), on sample saves:
+	//   - a save from an earlier epoch comes back as a brand-new save in every key but the settings
+	//     (SaveData.SettingsKeys), which come back as the player's, with the title's notice owed;
+	//   - a save in this epoch, a save from a newer one, and (while the constant is 1) a save written
+	//     before epochs existed are not reset;
+	//   - on disk, through the real load (SaveManager.LoadFrom) against a scratch file: the old save is
+	//     kept beside it word for word and the file is rewritten in the new epoch, while a same-epoch save
+	//     is left as it was and kept nowhere. Debug builds only, so a player's copy never writes a scratch
+	//     file; the folder is per process, so validators run side by side cannot meet in it.
+	private static void ValidateStoryReset(List<string> warnings)
+	{
+		SaveData Earned(int epoch)
+		{
+			var s = new SaveData
+			{
+				ProgressEpoch = epoch, TotalCurrency = 900, HasSeenPrologue = true, HasSeenGameplayOnboarding = true,
+				AscensionLearned = true, BossRushBestFelled = 3, BossRushBestClearSeconds = 412f,
+				// Every setting off its default, so "kept" cannot pass by coincidence.
+				MasterVolume = 0.3f, MusicVolume = 0.2f, SfxVolume = 0.6f, AudioMuted = true, ShowDamageNumbers = false,
+				ReduceScreenShake = true,
+				EnableGameplayOnboardingTips = false, HasToggledOnboardingTipsAtLeastOnce = true,
+				PlaytestModeEnabled = true, BalancePresetId = GlobalStatsManager.BalancePresetHardcore,
+			};
+			s.PlaytestChecklistState["tips_toggle"] = true;
+			s.UnlockedSpellIds.Add("gravewell");
+			s.UnlockedCharacterIds.Add("hayward");
+			s.UnlockedStageIds.Add("stage_1");
+			s.UnlockedBoonIds.Add("sunsteel_filament");
+			s.UnlockedAchievementIds.Add("survivor");
+			s.RemovedSpellIds.Add("fireball");
+			s.SeenAscensionIds.Add(SaveData.AscensionKey("fireball", "inferno"));
+			s.MaxDifficultyCleared["stage_0"] = 2;
+			s.ArcaneUpgradeLevels["vitality"] = 4;
+			s.FoundSecretIds.Add("swallow_hole");
+			s.FoundUpgradeLevels["vitality"] = 1;
+			s.GlimpsedSecretIds.Add("swallow_hole");
+			s.TrackedQuestIds.Clear();
+			s.SeenChapterNoteIds.Add("stage_0");
+			s.Lifetime.TotalRuns = 12;
+			s.Lifetime.BossesDefeated.Add("elderbark");
+			s.Lifetime.BestTimeByStage["stage_0"] = 640f;
+			s.RecordRunTelemetry(new RunResult());
+			return s;
+		}
+
+		// In memory: key by key against a new save.
+		SaveData old = Earned(SaveData.CurrentProgressEpoch - 1);
+		if (!old.IsFromEarlierStory)
+			warnings.Add("Story reset: a save one epoch behind does not read as from an earlier story.");
+		SaveData reset = old.StartNewStory();
+		Godot.Collections.Dictionary before = old.ToGodotDictionary();
+		Godot.Collections.Dictionary after = reset.ToGodotDictionary();
+		Godot.Collections.Dictionary fresh = new SaveData().ToGodotDictionary();
+		foreach (string key in SaveData.SettingsKeys.Where(k => !fresh.ContainsKey(k)))
+			warnings.Add($"Story reset: SettingsKeys names '{key}', which is not a key of the save - a renamed setting is reset.");
+		foreach (Variant k in fresh.Keys)
+		{
+			string key = k.AsString();
+			if (key == "ProgressEpoch" || key == "ProgressResetNoticePending")
+				continue;
+			bool setting = SaveData.SettingsKeys.Contains(key);
+			string want = Json.Stringify(setting ? before[key] : fresh[key]);
+			string got = after.ContainsKey(key) ? Json.Stringify(after[key]) : "(missing)";
+			if (got != want)
+				warnings.Add($"Story reset: '{key}' came back as {got}, expected {(setting ? "the player's setting" : "a new save's")} {want}.");
+			else if (setting && Json.Stringify(fresh[key]) == want)
+				warnings.Add($"Story reset: the sample leaves the setting '{key}' at its default, so keeping it proves nothing.");
+		}
+		// And named outright, because the loop above takes SettingsKeys at its word: a progress key listed
+		// there as a setting would be "kept" and pass. What Eric's reset must take back, every piece of it.
+		var kept = new List<string>();
+		if (reset.TotalCurrency != 0) kept.Add("Arcane Energy");
+		if (reset.UnlockedSpellIds.Count + reset.UnlockedBoonIds.Count + reset.UnlockedCharacterIds.Count > 0) kept.Add("unlocks");
+		if (reset.UnlockedStageIds.Count + reset.MaxDifficultyCleared.Count > 0) kept.Add("chapters");
+		if (reset.UnlockedAchievementIds.Count > 0 || reset.Lifetime.TotalRuns > 0 || reset.Lifetime.BossesDefeated.Count > 0) kept.Add("achievements");
+		if (reset.ArcaneUpgradeLevels.Count + reset.FoundUpgradeLevels.Count > 0) kept.Add("shop and found levels");
+		if (reset.FoundSecretIds.Count + reset.GlimpsedSecretIds.Count > 0) kept.Add("secrets");
+		if (!reset.TrackedQuestIds.SequenceEqual(new SaveData().TrackedQuestIds)) kept.Add("quests");
+		if (reset.HasSeenPrologue || reset.HasSeenGameplayOnboarding || reset.SeenChapterNoteIds.Count + reset.SeenAscensionIds.Count > 0 || reset.AscensionLearned)
+			kept.Add("seen flags and the prologue");
+		if (kept.Count > 0)
+			warnings.Add($"Story reset: the new story still holds the old one's {string.Join(", ", kept)}.");
+		if (reset.ProgressEpoch != SaveData.CurrentProgressEpoch || reset.IsFromEarlierStory)
+			warnings.Add($"Story reset: the new save is in epoch {reset.ProgressEpoch}, not {SaveData.CurrentProgressEpoch}.");
+		if (!reset.ProgressResetNoticePending)
+			warnings.Add("Story reset: the new save does not owe the title's notice, so the player is never told.");
+		if (reset.Migrate(log: false))
+			warnings.Add("Story reset: the new save needed migrating; it should already be at the current schema.");
+
+		// Not reset: this epoch, a newer one, and a save with no epoch key at all.
+		if (Earned(SaveData.CurrentProgressEpoch).IsFromEarlierStory)
+			warnings.Add("Story reset: a save in this build's epoch reads as from an earlier story.");
+		if (Earned(SaveData.CurrentProgressEpoch + 1).IsFromEarlierStory)
+			warnings.Add("Story reset: a save from a newer epoch (a newer build's) would be reset by this one.");
+		Godot.Collections.Dictionary unmarked = Earned(SaveData.CurrentProgressEpoch).ToGodotDictionary();
+		unmarked.Remove("ProgressEpoch");
+		bool unmarkedResets = SaveData.FromVariant(unmarked).IsFromEarlierStory;
+		if (unmarkedResets != (SaveData.CurrentProgressEpoch > SaveData.FirstProgressEpoch))
+			warnings.Add(unmarkedResets
+				? "Story reset: a save from before epochs existed is reset while the constant is still the first epoch."
+				: "Story reset: a save from before epochs existed is not reset although the story has been rebuilt since.");
+
+		if (!OS.IsDebugBuild())
+			return;
+
+		// On disk, through the real load. Never SaveManager.SavePath: a scratch folder of this process's own.
+		string dir = $"user://story-reset-check-{OS.GetProcessId()}";
+		string path = dir + "/savegame.json";
+		DirAccess.MakeDirRecursiveAbsolute(dir);
+		try
+		{
+			string WriteSample(SaveData sample)
+			{
+				string text = Json.Stringify(sample.ToGodotDictionary());
+				using FileAccess file = FileAccess.Open(path, FileAccess.ModeFlags.Write);
+				file?.StoreString(text);
+				return text;
+			}
+			string backup = SaveManager.BackupPathFor(path, SaveData.CurrentProgressEpoch);
+
+			string oldText = WriteSample(Earned(SaveData.CurrentProgressEpoch - 1));
+			SaveData loaded = SaveManager.LoadFrom(path, writes: true, log: false);
+			if (loaded.IsFromEarlierStory || loaded.TotalCurrency != 0 || loaded.UnlockedSpellIds.Count != 0
+				|| loaded.MasterVolume != 0.3f || !loaded.ProgressResetNoticePending)
+				warnings.Add("Story reset (disk): an earlier-epoch save did not load as a new story with its settings and the notice.");
+			if (!FileAccess.FileExists(backup))
+				warnings.Add($"Story reset (disk): the old save was not kept at {backup}.");
+			else if (FileAccess.GetFileAsString(backup) != oldText)
+				warnings.Add("Story reset (disk): the kept save is not the old save word for word.");
+			SaveData reread = SaveManager.LoadFrom(path, writes: false, log: false);
+			if (reread.ProgressEpoch != SaveData.CurrentProgressEpoch || reread.TotalCurrency != 0)
+				warnings.Add("Story reset (disk): the save file was not rewritten in the new epoch, so the next launch resets again.");
+
+			DirAccess.RemoveAbsolute(backup);
+			string sameText = WriteSample(Earned(SaveData.CurrentProgressEpoch));
+			SaveData same = SaveManager.LoadFrom(path, writes: true, log: false);
+			if (same.TotalCurrency != 900 || same.ProgressResetNoticePending)
+				warnings.Add("Story reset (disk): a save in this epoch was reset.");
+			if (FileAccess.FileExists(backup))
+				warnings.Add("Story reset (disk): a save in this epoch was backed up as if it had been reset.");
+			if (FileAccess.GetFileAsString(path) != sameText)
+				warnings.Add("Story reset (disk): a save in this epoch was rewritten on load.");
+		}
+		finally
+		{
+			using DirAccess folder = DirAccess.Open(dir);
+			if (folder != null)
+			{
+				foreach (string file in folder.GetFiles())
+					folder.Remove(file);
+			}
+			DirAccess.RemoveAbsolute(dir);
+		}
+	}
+
 	// Schema 20 (.ai/difficulty-curve.md, section 9), on sample saves:
 	//   - a save that has played runs keeps the Ascension (AscensionLearned), and one that never played
 	//     starts sealed like a new save;
@@ -2888,10 +3231,32 @@ public static class RegressionChecks
 		}
 
 		StageDefinition lastGate = gates[gates.Count - 1];
+		if (StageCatalog.FinalGateChapter?.Id != lastGate.Id)
+			warnings.Add($"Gate reachability: StageCatalog.FinalGateChapter is not {lastGate.DisplayName}, the last gate in campaign order.");
 		foreach (string wizardId in UnlockCatalog.AllWizardIds)
 		{
 			if (!GlobalStatsManager.CountsTowardGate(wizardId, lastGate))
 				warnings.Add($"Gate reachability: the last gate, {lastGate.DisplayName}, does not count '{wizardId}', so the campaign can end with him still held.");
+		}
+
+		// THE CHAPTER WIZARDS (.ai/chapter-wizards.md, G2): counted at the Throne and nowhere before it, so a
+		// wizard held in every chapter of the road never lengthens the Emberdeep's list. The flag is only
+		// meaningful on a wizard someone frees in a chapter: on a boon or spell nothing reads it, on a starter
+		// there is nothing to count, and outside the campaign gate he is counted by no gate at all.
+		foreach (UnlockDefinition flagged in UnlockCatalog.All.Where(d => d.CountedAtFinalGateOnly))
+		{
+			if (flagged.Kind != UnlockKind.Character || flagged.Source == UnlockSource.Starter || flagged.OutsideCampaignGate)
+			{
+				warnings.Add($"Gate reachability: '{flagged.Id}' is counted at the final gate only, which means nothing on a {flagged.Source} {flagged.Kind}{(flagged.OutsideCampaignGate ? " outside the campaign gate" : "")}.");
+				continue;
+			}
+			if (string.IsNullOrWhiteSpace(GlobalStatsManager.RescueChapterOf(flagged)))
+				warnings.Add($"Gate reachability: chapter wizard '{flagged.Id}' is freed by no chapter's deed, so there is no road to count him on.");
+			foreach (StageDefinition gate in gates.Where(g => g.Id != lastGate.Id))
+			{
+				if (GlobalStatsManager.CountsTowardGate(flagged.Id, gate))
+					warnings.Add($"Gate reachability: {gate.DisplayName} counts chapter wizard '{flagged.Id}', who is counted at {lastGate.DisplayName} only.");
+			}
 		}
 
 		foreach (StageDefinition gate in gates)
@@ -3659,7 +4024,9 @@ public static class RegressionChecks
 				}
 				todo.Add($"{slot.Role} {creature.DisplayName} ({ShortScenePath(creature.ScenePath)})");
 			}
-			else if (!IsHome(creature, chapter))
+			// A chapter whose cast is borrowed by design (the Throne's household guard) says so once, in its
+			// roster, instead of carrying a to-do that asks for art it must never have.
+			else if (!IsHome(creature, chapter) && string.IsNullOrWhiteSpace(chapter.BorrowedCastBecause))
 			{
 				todo.Add($"{slot.Role} is {creature.DisplayName}, borrowed from {HomeName(creature)}");
 			}
@@ -4161,9 +4528,13 @@ public static class RegressionChecks
 				if (choir.StandRadius <= choir.SlamRadius)
 					warnings.Add($"Hollow Choir voices stand {choir.StandRadius} px out with a {choir.SlamRadius} px reach, so they crowd him and one blast takes all three.");
 				if (choir.NoteTellSeconds <= 0f)
-					warnings.Add("Hollow Choir's round marks its notes for no time at all, so they land where he stands unseen.");
+					warnings.Add("Hollow Choir's round sings its notes with no gesture at all, so they leave the voice unseen.");
 				if (choir.VoiceCount < 2)
 					warnings.Add($"Hollow Choir has {choir.VoiceCount} voices, so nothing can revive anything and the linked-health fight is an ordinary boss.");
+				if (choir.NoteSpeed <= 0f || choir.NoteRadius <= 0f)
+					warnings.Add($"Hollow Choir's notes fly at {choir.NoteSpeed} px/s with a {choir.NoteRadius} px reach, so the round hits nothing.");
+				if (choir.ReviveReach <= 0f)
+					warnings.Add("Hollow Choir's singer can never stand close enough to a fallen voice to sing it back, so a fallen voice never rises.");
 				if (choir.ReviveSeconds <= 0f)
 					warnings.Add("Hollow Choir revives instantly, so the window to drop all three at once does not exist.");
 				if (choir.ReviveHealthFraction <= 0f || choir.ReviveHealthFraction >= 1f)
@@ -4276,15 +4647,18 @@ public static class RegressionChecks
 	// new set being added without its presentation data filled in.
 	// Issue #63: every Full Set Enchantment is the pieces of one object, and a piece may belong to
 	// more than one (The Crown is in the Jewelled Crown and the Regalia). What that needs checked:
-	// every relic is a piece of something, every piece is a relic that can actually drop, nothing is
-	// listed twice in one set, and a set's partial threshold is below its size - a "two-piece taste"
-	// on a two-piece set would be paid at the same moment as the full effect and mean nothing.
-	// Nested sets can never block each other here because relics are never consumed: holding The
-	// Crown for one set is holding it for the other.
+	// every piece is a relic that can actually drop, nothing is listed twice in one set, and a set's
+	// partial threshold is below its size - a "two-piece taste" on a two-piece set would be paid at the
+	// same moment as the full effect and mean nothing. Nested sets can never block each other here
+	// because relics are never consumed: holding The Crown for one set is holding it for the other.
+	//
+	// A RELIC MAY STAND ALONE (Eric, 2026-11-02: "Every relic does not need to belong to a set";
+	// .ai/new-items.md, answer 1). This used to warn on any relic that was a piece of no set. The rule
+	// that still holds runs the other way - a set's pieces are the parts of one object, each named as
+	// its part, so two of them tell you the third - and it lives in the names, which no check can read.
 	private static void ValidateFullSetObjects(List<string> warnings)
 	{
 		var pool = new HashSet<string>(ChestItemCatalog.AllItemIds, StringComparer.OrdinalIgnoreCase);
-		var pieces = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var set in ChestItemCatalog.Sets)
 		{
 			if (set.RequiredItemIds == null || set.RequiredItemIds.Length < 2)
@@ -4299,20 +4673,12 @@ public static class RegressionChecks
 					warnings.Add($"Full Set Enchantment '{set.Id}' lists '{id}' twice.");
 				if (!pool.Contains(id))
 					warnings.Add($"Full Set Enchantment '{set.Id}' needs '{id}', which is not in ChestItemCatalog.AllItemIds, so it can never drop and the set can never complete.");
-				pieces.Add(id);
 			}
 			if (set.PartialItemCount > 0 && set.PartialItemCount >= set.RequiredItemIds.Length)
 				warnings.Add($"Full Set Enchantment '{set.Id}' pays its partial at {set.PartialItemCount} of {set.RequiredItemIds.Length} pieces, the same moment as the full effect.");
 		}
-		foreach (string id in ChestItemCatalog.AllItemIds)
-		{
-			// The tome relics are the one exception, and the opposite rule holds for them: they must
-			// be in NO set (ChestItemCatalog.TomeRelicIds says why). ValidateTomeRelics checks that.
-			if (ChestItemCatalog.IsTomeRelic(id))
-				continue;
-			if (!pieces.Contains(id))
-				warnings.Add($"Relic '{id}' ({ChestItemCatalog.GetDisplayName(id)}) is a piece of no Full Set Enchantment. Every relic is part of an object (#63).");
-		}
+		// The tome relics keep the opposite rule - they must be in NO set (ChestItemCatalog.TomeRelicIds
+		// says why) - and ValidateTomeRelics checks it.
 	}
 
 	// The two relics that act on the spell book (.ai/passives-and-items.md, section 4b). Spells are
@@ -4432,10 +4798,12 @@ public static class RegressionChecks
 		}
 	}
 
-	// The Apotheosis covenant (issue #60). Every one of these produces a gate that can never open, or
-	// a reward that takes the player OUT of the tier that earned it, and none of them is visible to
-	// dotnet build. A typo in a required evolution id is the classic one: the offer simply never
-	// appears, forever, and nothing says why.
+	// The Apotheosis (issue #60; the gate Eric set on 2026-11-02 - max level, ascended, not combined). Every
+	// one of these produces a gate that can never open, a form handed to a spell it must not reach, or a
+	// reward that names a third element, and none of them is visible to dotnet build: one verb per form,
+	// the wizard's OWN spell, a gate that opens down EVERY Ascension (no path is named, so none may be
+	// required by accident) and stays shut short of max level or the Ascension, and a fused spell or a
+	// Conjunction's own never offered a form.
 	private static void ValidateApotheosisCatalog(List<string> warnings)
 	{
 		var spells = ContentValidator.LoadAllSpells();
@@ -4476,13 +4844,13 @@ public static class RegressionChecks
 				continue;
 			}
 
-			// A spell taken in a form: the Apotheosis is one form's, and its required path is that form's own
+			// A spell taken in a form: the Apotheosis is one form's, and its gate is checked against that form's own
 			// milestones (SpellData.Variants; ApotheosisDefinition.VariantId).
 			SpellData spell;
 			if (string.IsNullOrEmpty(definition.VariantId))
 			{
 				if (template.HasVariants)
-					warnings.Add($"{label} transforms '{definition.SpellId}', which is taken in a form; it must name the form whose path it follows (VariantId).");
+					warnings.Add($"{label} transforms '{definition.SpellId}', which is taken in a form; it must name the form it ends (VariantId).");
 				spell = (SpellData)template.Duplicate(true);
 				SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
 			}
@@ -4496,61 +4864,490 @@ public static class RegressionChecks
 					continue;
 				}
 			}
-			string element = definition.RequiredElement.ToString();
+			string element = definition.Element.ToString();
 			if (!spell.ElementWeights.ContainsKey(element))
-				warnings.Add($"{label} requires {element}, which '{spell.Id}' does not carry.");
-
-			CheckRequiredPath(warnings, label, element, spell.Level4Options, definition.RequiredLevel4EvolutionId, 4);
-			CheckRequiredPath(warnings, label, element, spell.Level8Options, definition.RequiredLevel8EvolutionId, 8);
+				warnings.Add($"{label} deepens {element}, which '{spell.Id}' does not carry.");
 
 			if (definition.Form == null)
 				continue;
 
 			// Preserve or increase, never reduce, and never a new element: the form may only add
-			// weight to the element that qualified it.
+			// weight to the wizard's own element.
 			foreach (var pair in definition.Form.BonusElementWeights)
 			{
 				if (!pair.Key.Equals(element, StringComparison.OrdinalIgnoreCase))
 					warnings.Add($"{label} adds {pair.Key}; a form may only deepen {element}, never name another element.");
 				if (pair.Value < 0)
-					warnings.Add($"{label} REDUCES {pair.Key}, which would drop the player out of the tier that earned it.");
+					warnings.Add($"{label} REDUCES {pair.Key}, which would drop the player out of a tier.");
 			}
 
-			// The two-element ceiling, across base, path and form together.
-			var distinct = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-			foreach (var key in spell.ElementWeights.Keys) distinct.Add(key);
-			foreach (var option in spell.Level4Options.Concat(spell.Level8Options))
+			// Any route through the tree now ends in the form, so the two-element ceiling is checked over
+			// every level 4 x level 8 pairing with the form on top - and a branch that trades the wizard's
+			// element away would have the form put it back as a third.
+			var level4 = spell.Level4Options?.Where(o => o != null).ToList() ?? new List<SpellEvolutionOption>();
+			var level8 = spell.Level8Options?.Where(o => o != null).ToList() ?? new List<SpellEvolutionOption>();
+			if (level8.Count == 0)
+				warnings.Add($"{label}: '{spell.Id}' has no level 8 Ascension, so it can never be ascended and the form never offered.");
+			foreach (SpellEvolutionOption option in level4.Concat(level8))
 			{
-				if (option.Id.Equals(definition.RequiredLevel4EvolutionId, StringComparison.OrdinalIgnoreCase)
-					|| option.Id.Equals(definition.RequiredLevel8EvolutionId, StringComparison.OrdinalIgnoreCase))
+				if (element.Equals(option.ReplacesElement ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+					warnings.Add($"{label}: '{option.Id}' trades away {element}, the element the form deepens; every path leads to the form now, so none may.");
+			}
+			foreach (SpellEvolutionOption early in level4.DefaultIfEmpty())
+			{
+				foreach (SpellEvolutionOption late in level8)
 				{
-					foreach (var key in option.BonusElementWeights.Keys) distinct.Add(key);
+					var totals = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+					foreach (var pair in spell.ElementWeights)
+						totals[pair.Key] = pair.Value;
+					foreach (SpellEvolutionOption step in new[] { early, late, definition.Form })
+					{
+						if (step == null)
+							continue;
+						if (!string.IsNullOrEmpty(step.ReplacesElement))
+							totals.Remove(step.ReplacesElement);
+						foreach (var pair in step.BonusElementWeights)
+							totals[pair.Key] = (totals.TryGetValue(pair.Key, out int had) ? had : 0) + pair.Value;
+					}
+					if (totals.Count > 2)
+						warnings.Add($"{label} ends up naming {totals.Count} elements via '{early?.Id}' + '{late.Id}' ({string.Join(", ", totals.Keys)}); no spell may ever name more than two.");
 				}
 			}
-			foreach (var key in definition.Form.BonusElementWeights.Keys) distinct.Add(key);
-			if (distinct.Count > 2)
-				warnings.Add($"{label} ends up naming {distinct.Count} elements ({string.Join(", ", distinct)}); no spell may ever name more than two.");
+
+			// The gate itself, on a copy at every Ascension: open at max level down any of them, shut a level
+			// short, shut without one, shut once fused.
+			foreach (SpellEvolutionOption late in level8)
+			{
+				var ascended = (SpellData)spell.Duplicate(true);
+				ascended.CurrentLevel = ascended.MaxLevel;
+				if (level4.Count > 0)
+					ascended.ApplyEvolution(level4[0]);
+				ascended.ApplyEvolution(late);
+				if (!ApotheosisCatalog.SpellMeetsGate(definition, ascended, fusedAway: false))
+					warnings.Add($"{label}: the gate stays shut at level {ascended.MaxLevel} down '{late.Id}'; it must open down every Ascension.");
+				if (ApotheosisCatalog.SpellMeetsGate(definition, ascended, fusedAway: true))
+					warnings.Add($"{label}: the gate opens on a spell that went into a Conjunction; a combined spell is never offered its form.");
+				ascended.CurrentLevel = ascended.MaxLevel - 1;
+				if (ApotheosisCatalog.SpellMeetsGate(definition, ascended, fusedAway: false))
+					warnings.Add($"{label}: the gate opens below max level ({ascended.CurrentLevel}/{ascended.MaxLevel}).");
+			}
+			var unascended = (SpellData)spell.Duplicate(true);
+			unascended.CurrentLevel = unascended.MaxLevel;
+			if (ApotheosisCatalog.SpellMeetsGate(definition, unascended, fusedAway: false))
+				warnings.Add($"{label}: the gate opens at max level with no Ascension taken.");
+
+			// Not combined, the structural half: a fusion never takes a wizard's own spell, so his is never
+			// fused in the first place (ComboCatalog.Evaluate's ComboSeal.OwnSpell). Both parents held at level
+			// 8 down the named Ascensions, to show the seal is what stops it rather than an unmet parent.
+			foreach (ComboDefinition recipe in ComboCatalog.All.Where(r => !r.IsRite && r.Ingredients.Any(x =>
+				x != null && x.SpellId.Equals(definition.SpellId, StringComparison.OrdinalIgnoreCase))))
+			{
+				var loadout = recipe.Ingredients.Select(x => new SpellData
+				{
+					Id = x.SpellId, Name = x.SpellName, SelectedVariantId = x.VariantId,
+					MaxLevel = 8, CurrentLevel = 8, SelectedLevel8EvolutionId = x.AscensionId,
+				}).ToList();
+				ComboStanding standing = ComboCatalog.Evaluate(recipe, loadout, definition.SpellId);
+				if (standing.Ready || standing.Seal != ComboSeal.OwnSpell)
+					warnings.Add($"{label}: Conjunction '{recipe.Id}' could fuse {definition.CharacterId}'s own '{definition.SpellId}'; his spell must never be combined, or he loses his form (ComboCatalog.Evaluate, ComboSeal.OwnSpell).");
+			}
+		}
+
+		// A Conjunction's own spell is never anyone's to transform: no form names one, and the gate refuses it.
+		foreach (ComboDefinition recipe in ComboCatalog.All.Where(r => !r.IsRite))
+		{
+			if (ApotheosisCatalog.All.Any(d => d.SpellId.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase)))
+				warnings.Add($"Apotheosis: an entry transforms the Conjunction '{recipe.Id}'; a combined spell is never offered a form.");
+			if (ComboCatalog.Template(recipe) is not SpellData template)
+				continue;
+			var made = (SpellData)template.Duplicate(true);
+			made.CurrentLevel = made.MaxLevel;
+			made.SelectedLevel8EvolutionId = made.Level8Options?.FirstOrDefault()?.Id ?? "any";
+			foreach (ApotheosisDefinition definition in ApotheosisCatalog.All)
+			{
+				if (ApotheosisCatalog.SpellMeetsGate(definition, made, fusedAway: false))
+					warnings.Add($"Apotheosis '{definition.Form?.Id}': the gate opens on the Conjunction '{recipe.Id}'.");
+			}
+			if (!ApotheosisCatalog.IsCombined(made))
+				warnings.Add($"Apotheosis: '{recipe.Id}' is a Conjunction but ApotheosisCatalog.IsCombined does not say so.");
 		}
 	}
 
-	private static void CheckRequiredPath(List<string> warnings, string label, string element,
-		Godot.Collections.Array<SpellEvolutionOption> options, string requiredId, int milestone)
+	// THE COMBINATIONS (.ai/combo-spells.md section 2, ComboCatalog): what `dotnet build` cannot see. Both
+	// parents exist and are distinct; each names exactly one Ascension, and that id is one of the parent's level
+	// 8 options (for a spell taken in forms, the named form's); no two recipes share a pair and both Ascensions;
+	// no recipe names more than three elements with its named Ascensions; every verb is unique across the
+	// combinations and the Apotheoses; and every combination has its derived Feat, its UnlockCatalog entry from
+	// that Feat, its ContentValidator.SpellResourcePaths entry and an EvolutionStatReaders row. Its own resource
+	// is terminal (one level, no level-ups, no milestones), and the names the recipe writes out for the Feat
+	// are the resources' own.
+	// THE EVOLUTION CODEX (.ai/evolution-codex.md section 8). Built from the catalogs and never hardcoded, so
+	// what can go wrong is a catalog outgrowing it: every spell, relic, boon, combination and set must be in it
+	// once; every tree must fit the detail panel by construction (section 6: no zoom and pan, so a spell that
+	// outgrows the bound fails here rather than clipping); every name the search can find must lead to an entry
+	// and a node in it; and on a fresh save nothing sealed may be findable (a search must not name a secret).
+	private static void ValidateCodex(List<string> warnings)
 	{
-		SpellEvolutionOption option = options?.FirstOrDefault(o => o != null && o.Id.Equals(requiredId, StringComparison.OrdinalIgnoreCase));
-		if (option == null)
+		CodexModel fresh = CodexModel.Build(CodexContext.ForSave(new SaveData()));
+		var expected = new List<(string Id, CodexKind Kind)>();
+		foreach (SpellData spell in ContentValidator.LoadAllSpells())
+			expected.Add((spell.Id, ComboCatalog.IsCombination(spell.Id) ? CodexKind.Combination : CodexKind.Spell));
+		foreach (string id in ChestItemCatalog.AllItemIds)
+			expected.Add((id, CodexKind.Relic));
+		foreach (BoonDefinition boon in BoonCatalog.All)
+			expected.Add((boon.Id, CodexKind.Boon));
+		foreach (ChestSetDefinition set in ChestItemCatalog.Sets)
+			expected.Add((set.Id, CodexKind.FullSet));
+		foreach ((string id, CodexKind kind) in expected)
 		{
-			warnings.Add($"{label} requires level {milestone} option '{requiredId}', which the spell does not offer. The gate can never open.");
+			if (!fresh.Entries.Any(e => e.Kind == kind && e.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
+				warnings.Add($"Codex: {kind} '{id}' is missing from the Evolution Codex (CodexModel.Build).");
+		}
+		foreach (IGrouping<string, CodexEntry> twice in fresh.Entries.GroupBy(e => e.Id, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1))
+			warnings.Add($"Codex: the id '{twice.Key}' names {twice.Count()} entries ({string.Join(", ", twice.Select(e => e.Kind))}); the Codex selects by id, so only the first can be opened.");
+
+		foreach (CodexSearchHit hit in fresh.SearchIndex)
+		{
+			CodexEntry entry = fresh.Get(hit.EntryId);
+			if (entry == null || !entry.Discovered)
+				warnings.Add($"Codex: on a fresh save the search finds '{hit.Name}', which is not discovered - a search must not name a secret.");
+			else if (FindCodexNode(entry, hit.NodeId) is CodexNode node && !node.Revealed && !node.NameAlwaysShown)
+				warnings.Add($"Codex: on a fresh save the search finds '{hit.Name}' in {entry.Id}, a sealed node.");
+		}
+
+		// Everything owned, seen and made: every tree at its fullest, every name findable.
+		var all = new SaveData();
+		foreach (string id in UnlockCatalog.AllSpellIds)
+			GlobalStatsManager.UnlockSpell(all, id);
+		foreach (string id in UnlockCatalog.AllCharacterIds)
+			GlobalStatsManager.UnlockCharacter(all, id);
+		foreach (string id in UnlockCatalog.AllBoonIds)
+			GlobalStatsManager.UnlockBoon(all, id);
+		foreach (string id in ChestItemCatalog.AllItemIds)
+			all.MarkItemSeen(id);
+		foreach (ComboDefinition recipe in ComboCatalog.All)
+			all.UnlockedAchievementIds.Add(ComboCatalog.FeatId(recipe.Id));
+		foreach ((SpellData template, List<SpellData> forms) in CodexSpellForms.All())
+			foreach (SpellData form in forms)
+				foreach (SpellEvolutionOption evo in form.Level8Options ?? new Godot.Collections.Array<SpellEvolutionOption>())
+					if (evo != null)
+						all.MarkAscensionSeen(template.Id, evo.Id);
+		foreach (ApotheosisDefinition apotheosis in ApotheosisCatalog.All)
+			all.MarkAscensionSeen(apotheosis.SpellId, apotheosis.Form.Id);
+		CodexModel full = CodexModel.Build(CodexContext.ForSave(all));
+
+		foreach (CodexEntry entry in full.Entries)
+		{
+			string label = $"Codex: {entry.Kind} '{entry.Id}'";
+			if (!entry.Discovered && entry.Kind is CodexKind.Spell or CodexKind.Relic or CodexKind.Boon or CodexKind.Combination)
+				warnings.Add($"{label} is still undiscovered on a save that owns and has seen everything.");
+			foreach (CodexForm form in entry.Forms)
+			{
+				if (form.Mutations.Count > CodexModel.MaxMutations || form.Ascensions.Count > CodexModel.MaxAscensions || form.Finals.Count > CodexModel.MaxFinals)
+					warnings.Add($"{label} ({form.Name}): its tree is {form.Mutations.Count}/{form.Ascensions.Count}/{form.Finals.Count} nodes (level 4/level 8/final), over the detail's bound of {CodexModel.MaxMutations}/{CodexModel.MaxAscensions}/{CodexModel.MaxFinals}. The Codex has no zoom and pan (section 6): widen the bound and photograph both canvases, or trim the tree.");
+				if (form.AllNodes.Any(n => n.Revealed && string.IsNullOrWhiteSpace(n.Line)))
+					warnings.Add($"{label} ({form.Name}): a revealed node has no line for the reading box.");
+			}
+			if (entry.UsedIn.Count > CodexModel.MaxUsedIn)
+				warnings.Add($"{label} is used in {entry.UsedIn.Count} recipes; its Used in row holds {CodexModel.MaxUsedIn}.");
+			if (entry.Recipe != null && entry.Recipe.Ingredients.Count > CodexModel.MaxIngredients)
+				warnings.Add($"{label} has {entry.Recipe.Ingredients.Count} ingredients; a recipe card holds {CodexModel.MaxIngredients}.");
+		}
+
+		foreach (CodexSearchHit hit in full.SearchIndex)
+		{
+			CodexEntry entry = full.Get(hit.EntryId);
+			if (entry == null)
+				warnings.Add($"Codex: the search name '{hit.Name}' leads to no entry ('{hit.EntryId}').");
+			else if (!string.IsNullOrEmpty(hit.NodeId) && FindCodexNode(entry, hit.NodeId) == null)
+				warnings.Add($"Codex: the search name '{hit.Name}' leads to {entry.Id}, which has no node '{hit.NodeId}'.");
+		}
+		// Every spell's every Ascension is findable once seen: the index is what the keyboard's suggestions read.
+		foreach (CodexEntry spell in full.Entries.Where(e => e.Kind == CodexKind.Spell))
+			foreach (CodexNode node in spell.Forms.SelectMany(f => f.Ascensions))
+				if (!full.SearchIndex.Any(h => h.EntryId == spell.Id && h.NodeId == node.Id))
+					warnings.Add($"Codex: {spell.Id}'s Ascension '{node.Name}' is seen but the search cannot find it.");
+	}
+
+	private static CodexNode FindCodexNode(CodexEntry entry, string nodeId)
+	{
+		if (entry == null || string.IsNullOrEmpty(nodeId))
+			return null;
+		return entry.Forms.SelectMany(f => f.AllNodes)
+			.Concat(entry.Recipe?.Ingredients ?? new List<CodexNode>())
+			.FirstOrDefault(n => n.Id.Equals(nodeId, StringComparison.OrdinalIgnoreCase));
+	}
+
+	private static void ValidateComboCatalog(List<string> warnings)
+	{
+		var spells = ContentValidator.LoadAllSpells();
+		var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var seenRecipes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var verbs = new HashSet<string>(ApotheosisCatalog.All.Select(a => a.Verb), StringComparer.OrdinalIgnoreCase);
+		foreach (ComboDefinition recipe in ComboCatalog.All)
+		{
+			string label = $"Combination '{recipe.Id}'";
+			if (!seenIds.Add(recipe.Id))
+				warnings.Add($"{label} is defined twice in ComboCatalog.");
+			if (string.IsNullOrWhiteSpace(recipe.Verb) || !verbs.Add(recipe.Verb))
+				warnings.Add($"{label}: verb '{recipe.Verb}' is empty or already claimed by an Apotheosis or another combination. Each owns one (.ai/combo-spells.md section 4).");
+			if (recipe.First == null || recipe.Second == null)
+			{
+				warnings.Add($"{label} does not name two parents.");
+				continue;
+			}
+			// The Sovereign Rite fuses nothing and names no Ascension: ValidateSovereignRite holds it.
+			if (recipe.IsRite)
+				continue;
+			if (recipe.First.SpellId.Equals(recipe.Second.SpellId, StringComparison.OrdinalIgnoreCase))
+				warnings.Add($"{label} names '{recipe.First.SpellId}' as both parents; a combination is two distinct spells.");
+
+			// The same pair with the same two Ascensions, in either order, is one recipe.
+			string a = $"{recipe.First.SpellId}:{recipe.First.VariantId}:{recipe.First.AscensionId}";
+			string b = $"{recipe.Second.SpellId}:{recipe.Second.VariantId}:{recipe.Second.AscensionId}";
+			string pair = string.CompareOrdinal(a, b) < 0 ? $"{a}+{b}" : $"{b}+{a}";
+			if (!seenRecipes.Add(pair))
+				warnings.Add($"{label} shares its pair and both named Ascensions with another recipe.");
+
+			var elements = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var baseSum = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+			foreach (ComboIngredient ingredient in recipe.Ingredients)
+			{
+				string part = $"{label}'s parent '{ingredient.SpellId}'";
+				if (ComboCatalog.IsCombination(ingredient.SpellId))
+					warnings.Add($"{part} is itself a combination; a combination is terminal and never fused again.");
+				SpellData template = spells.FirstOrDefault(s => s.Id.Equals(ingredient.SpellId, StringComparison.OrdinalIgnoreCase));
+				if (template == null)
+				{
+					warnings.Add($"{part} is not in ContentValidator.SpellResourcePaths.");
+					continue;
+				}
+				if (!template.Name.Equals(ingredient.SpellName, StringComparison.Ordinal))
+					warnings.Add($"{part} is written '{ingredient.SpellName}' in ComboCatalog but its resource names it '{template.Name}'.");
+				if (!string.IsNullOrEmpty(ingredient.VariantId) && template.FindVariant(ingredient.VariantId) == null)
+					warnings.Add($"{part} names form '{ingredient.VariantId}', which the spell does not have.");
+				if (template.HasVariants && string.IsNullOrEmpty(ingredient.VariantId))
+					warnings.Add($"{part} is taken in a form; the recipe must name the form whose Ascension it names (VariantId).");
+
+				IReadOnlyList<SpellEvolutionOption> level8 = ComboCatalog.Level8OptionsOf(template, ingredient);
+				SpellEvolutionOption named = level8.FirstOrDefault(o => o != null && o.Id.Equals(ingredient.AscensionId, StringComparison.OrdinalIgnoreCase));
+				if (string.IsNullOrWhiteSpace(ingredient.AscensionId) || named == null)
+				{
+					warnings.Add($"{part} names Ascension '{ingredient.AscensionId}', which is not one of its level 8 options ({string.Join(", ", level8.Select(o => o.Id))}). A recipe names exactly one, never any.");
+					continue;
+				}
+				if (named.MilestoneLevel != Player.AscensionSpellLevel)
+					warnings.Add($"{part}'s named Ascension '{named.Id}' is a milestone {named.MilestoneLevel}, not the level 8 one.");
+				if (!named.DisplayName.Equals(ingredient.AscensionName, StringComparison.Ordinal))
+					warnings.Add($"{part}'s Ascension is written '{ingredient.AscensionName}' in ComboCatalog but is called '{named.DisplayName}'.");
+				foreach (var weight in template.ElementWeights)
+				{
+					elements.Add(weight.Key);
+					baseSum[weight.Key] = (baseSum.TryGetValue(weight.Key, out int had) ? had : 0) + weight.Value;
+				}
+				foreach (var weight in named.BonusElementWeights)
+					elements.Add(weight.Key);
+			}
+			if (elements.Count > ComboCatalog.MaxElements)
+				warnings.Add($"{label} names {elements.Count} elements with its named Ascensions ({string.Join(", ", elements)}); a combination may name {ComboCatalog.MaxElements}, never four.");
+
+			// Its own spell: registered, terminal, named as the recipe says, carrying the parents' tags summed.
+			SpellData combo = spells.FirstOrDefault(s => s.Id.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase));
+			if (combo == null)
+			{
+				warnings.Add($"{label} has no SpellData in ContentValidator.SpellResourcePaths ({recipe.ResourcePath}).");
+			}
+			else
+			{
+				if (!combo.ResourcePath.Equals(recipe.ResourcePath, StringComparison.OrdinalIgnoreCase))
+					warnings.Add($"{label}'s resource is {combo.ResourcePath}, but ComboCatalog names {recipe.ResourcePath}.");
+				if (!combo.Name.Equals(recipe.Name, StringComparison.Ordinal))
+					warnings.Add($"{label} is written '{recipe.Name}' in ComboCatalog but its resource names it '{combo.Name}'.");
+				if (combo.MaxLevel != 1 || (combo.LevelUpgrades?.Count ?? 0) > 0)
+					warnings.Add($"{label} has MaxLevel {combo.MaxLevel} and {combo.LevelUpgrades?.Count ?? 0} level-ups; a combination is terminal - one level, none to take.");
+				SpellData probe = (SpellData)combo.Duplicate(true);
+				SpellEvolutionCatalog.EnsureEvolutionCoverage(probe);
+				if ((probe.Level4Options?.Count ?? 0) > 0 || (probe.Level8Options?.Count ?? 0) > 0)
+					warnings.Add($"{label} has milestone options; a combination never mutates or ascends again.");
+				bool sameTags = combo.ElementWeights.Count == baseSum.Count
+					&& baseSum.All(p => combo.ElementWeights.TryGetValue(p.Key, out int w) && w == p.Value);
+				if (!sameTags)
+					warnings.Add($"{label}'s resource tags ({string.Join(", ", combo.ElementWeights.Select(p => $"{p.Key} {p.Value}"))}) are not its parents' base tags summed ({string.Join(", ", baseSum.Select(p => $"{p.Key} {p.Value}"))}).");
+			}
+			if (!EvolutionStatReaders.HasRow(recipe.Id))
+				warnings.Add($"{label} has no EvolutionStatReaders row.");
+
+			// Its Feat, and the unlock it grants.
+			AchievementDefinition feat = AchievementDefinitions.GetById(ComboCatalog.FeatId(recipe.Id));
+			if (feat == null)
+				warnings.Add($"{label} has no derived Feat '{ComboCatalog.FeatId(recipe.Id)}'.");
+			else if (!feat.SpellUnlockId.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase) || !feat.CompletesInRun
+				|| feat.Visibility != AchievementVisibility.Recipe)
+				warnings.Add($"{label}'s Feat must grant it, complete in the run and be listed as a recipe.");
+			UnlockDefinition unlock = UnlockCatalog.GetSpell(recipe.Id);
+			if (unlock == null || unlock.Source != UnlockSource.Achievement
+				|| !unlock.SourceId.Equals(ComboCatalog.FeatId(recipe.Id), StringComparison.OrdinalIgnoreCase))
+				warnings.Add($"{label} is not in UnlockCatalog as the reward of its Feat '{ComboCatalog.FeatId(recipe.Id)}'.");
+		}
+
+		// Every combination resource is in a recipe: one with none could never be made.
+		foreach (SpellData spell in spells)
+		{
+			if (UnlockCatalog.GetSpell(spell.Id)?.SourceId?.StartsWith(ComboCatalog.FeatPrefix, StringComparison.OrdinalIgnoreCase) == true
+				&& ComboCatalog.ForId(spell.Id) == null)
+				warnings.Add($"Spell '{spell.Id}' is unlocked by a Conjunction Feat but has no recipe in ComboCatalog.");
+		}
+	}
+
+	// THE SOVEREIGN RITE (.ai/sovereign-spell.md, SovereignRite, Player.Sovereign.cs): what a build cannot see.
+	//   - the gate and the per-fuel numbers are the doc's (sections 3 and 4), and the gate can be met at all;
+	//   - it is the one rite in ComboCatalog, its second ingredient any active spell, its resource registered,
+	//     terminal and elementless, and it is paid by the Warden of the Deep's Road deed - the end of the road,
+	//     so nothing on a new save reaches it early - and never counted by The Grimoire Restored;
+	//   - a passive (and the defensive spells) is never silenced, never fuel, never anointed;
+	//   - the fuel reaches the spell through the one path every milestone does (SpellData.CollectActive): a
+	//     spell's own readers move with the boon and come back without it;
+	//   - the boon carries damage, cooldown, area or scale and amount and nothing else, so no effect, rider,
+	//     slow, knockback or execute reaches a boss through it.
+	private static void ValidateSovereignRite(List<string> warnings)
+	{
+		const string label = "Sovereign Rite";
+		if (SovereignRite.MinimumPlayerLevel != 28 || SovereignRite.MinimumActiveSpells != 3 || SovereignRite.MinimumFuel != 16)
+			warnings.Add($"{label}: the gate is level {SovereignRite.MinimumPlayerLevel}, {SovereignRite.MinimumActiveSpells} active spells and {SovereignRite.MinimumFuel} fuel; .ai/sovereign-spell.md (sections 3 and 8, as tuned) says 28, 3 and 16. Change the doc with it, or put it back.");
+		if (!Mathf.IsEqualApprox(SovereignRite.DamagePerFuel, 0.005f) || !Mathf.IsEqualApprox(SovereignRite.CooldownPerFuel, 0.008f)
+			|| !Mathf.IsEqualApprox(SovereignRite.CooldownFloor, 0.70f) || !Mathf.IsEqualApprox(SovereignRite.AreaPerFuel, 0.01f)
+			|| !Mathf.IsEqualApprox(SovereignRite.AreaCap, 1.40f) || SovereignRite.FuelPerAmount != 20)
+			warnings.Add($"{label}: the power per level of fuel is not section 4's as tuned (+0.5% damage, -0.8% cooldown to -30%, +1% area to +40%, +1 amount per 20).");
+		// The gate can be met: the fuel behind one spell is the others' levels, at most eight each.
+		if (SovereignRite.MinimumActiveSpells > Player.MaxSpellSlots
+			|| SovereignRite.MinimumFuel > (Player.MaxSpellSlots - 1) * Player.AscensionSpellLevel
+			|| SovereignRite.MinimumFuel > (SovereignRite.MinimumActiveSpells - 1) * Player.AscensionSpellLevel + (Player.MaxSpellSlots - SovereignRite.MinimumActiveSpells) * Player.AscensionSpellLevel)
+			warnings.Add($"{label}: the gate asks for more fuel or spells than a {Player.MaxSpellSlots}-slot book can hold.");
+		if (SovereignRite.MinimumPlayerLevel < ApotheosisCatalog.MinimumPlayerLevel)
+			warnings.Add($"{label}: offered at level {SovereignRite.MinimumPlayerLevel}, before the Apotheosis's {ApotheosisCatalog.MinimumPlayerLevel}; it is the latest thing a run is offered.");
+
+		// The recipe and its resource.
+		List<ComboDefinition> rites = ComboCatalog.All.Where(r => r.IsRite).ToList();
+		ComboDefinition rite = ComboCatalog.Rite;
+		if (rites.Count != 1 || rite == null || !rite.IsRite)
+		{
+			warnings.Add($"{label}: ComboCatalog holds {rites.Count} rites, and '{SovereignRite.SpellId}' must be the one.");
 			return;
 		}
-		// A required branch must never lead away from the wizard's own element (#61), or tier 6 is
-		// harder on the exact build the gate demands.
-		foreach (var key in option.BonusElementWeights.Keys)
+		if (rite.Second == null || !rite.Second.AnyActiveSpell || !string.IsNullOrEmpty(rite.Second.SpellId) || rite.First == null || rite.First.AnyActiveSpell)
+			warnings.Add($"{label}: its recipe must be the Rite and any active spell (ComboIngredient.AnyActiveSpell on the second, a spell id on neither).");
+		if (ComboCatalog.Fusions.Any(r => r.IsRite))
+			warnings.Add($"{label} is listed among the fusions.");
+		SpellData template = ContentValidator.LoadAllSpells().FirstOrDefault(s => s.Id.Equals(SovereignRite.SpellId, StringComparison.OrdinalIgnoreCase));
+		if (template == null)
+			warnings.Add($"{label} has no SpellData in ContentValidator.SpellResourcePaths ({rite.ResourcePath}).");
+		else
 		{
-			if (!key.Equals(element, StringComparison.OrdinalIgnoreCase))
-				warnings.Add($"{label}: required level {milestone} option '{requiredId}' branches into {key}, away from {element}.");
+			if (!template.ResourcePath.Equals(rite.ResourcePath, StringComparison.OrdinalIgnoreCase) || !template.Name.Equals(rite.Name, StringComparison.Ordinal))
+				warnings.Add($"{label}'s resource is {template.ResourcePath} named '{template.Name}'; ComboCatalog names {rite.ResourcePath}, '{rite.Name}'.");
+			if (template.MaxLevel != 1 || (template.LevelUpgrades?.Count ?? 0) > 0 || (template.ElementWeights?.Count ?? 0) > 0)
+				warnings.Add($"{label}'s resource must be terminal and elementless: one level, no level-ups, no element (the spell it anoints keeps its own).");
+			if (template.Description.Length > 130)
+				warnings.Add($"{label}'s description is {template.Description.Length} characters; a description holds 130.");
 		}
-		if (!string.IsNullOrEmpty(option.ReplacesElement))
-			warnings.Add($"{label}: required level {milestone} option '{requiredId}' trades away {option.ReplacesElement}; a required path may only deepen {element}.");
+
+		// The unlock: the Warden of the Deep's deed, at the end of the road.
+		UnlockDefinition unlock = UnlockCatalog.GetSpell(SovereignRite.SpellId);
+		AchievementDefinition deed = UnlockCatalog.SourceDeedOf(unlock);
+		if (unlock == null || unlock.Source != UnlockSource.Achievement || deed == null || deed.Kind != AchievementKind.Road
+			|| !SovereignRite.SpellId.Equals(deed.SpellUnlockId, StringComparison.OrdinalIgnoreCase))
+			warnings.Add($"{label} must be the reward of a Road deed that grants it (UnlockCatalog, AchievementDefinitions).");
+		else
+		{
+			BossDefinition boss = BossCatalog.GetById(deed.BossId);
+			StageDefinition gate = StageCatalog.GateChapter;
+			int at = StageCatalog.CampaignPositionOf(deed.StageId);
+			if (boss == null || gate == null || at < 0 || at < StageCatalog.CampaignPositionOf(gate.Id))
+				warnings.Add($"{label} is paid by '{deed.Id}' in chapter '{deed.StageId}', before the end of the road ({gate?.Id}); a new save must not reach it early.");
+		}
+		if (UnlockCatalog.GrimoireSpellIds.Contains(SovereignRite.SpellId, StringComparer.OrdinalIgnoreCase))
+			warnings.Add($"{label} is counted by The Grimoire Restored; a combination is made, not recovered.");
+		AchievementDefinition feat = AchievementDefinitions.GetById(ComboCatalog.FeatId(SovereignRite.SpellId));
+		if (feat == null || !string.IsNullOrEmpty(feat.SpellUnlockId) || !feat.CompletesInRun || feat.Visibility != AchievementVisibility.Recipe
+			|| !feat.DisplayName.Equals($"Conjunction: {rite.Name}", StringComparison.Ordinal))
+			warnings.Add($"{label}'s Feat 'Conjunction: {rite.Name}' must exist, complete in the run, be listed as a recipe and grant no spell (the Road deed grants the Rite).");
+
+		// Passives and the defensive spells: never silenced, never fuel, never anointed.
+		foreach (string id in SovereignRite.DefensiveSpellIds.Concat(SovereignRite.RefusedTargetIds))
+		{
+			if (!ContentValidator.LoadAllSpells().Any(s => s.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
+				warnings.Add($"{label} names '{id}' (defensive or refused), which is no spell.");
+		}
+		var all = ContentValidator.LoadAllSpells().Where(s => s != null && !ComboCatalog.IsCombination(s.Id)).ToList();
+		foreach (SpellData spell in all)
+		{
+			bool passive = spell.IsPassive || SovereignRite.DefensiveSpellIds.Contains(spell.Id, StringComparer.OrdinalIgnoreCase);
+			if (passive && (!SovereignRite.IsPassiveForRite(spell) || SovereignRite.RefusalFor(spell) == null
+				|| SovereignRite.ActiveSpells(new[] { spell }).Any()))
+				warnings.Add($"{label} would silence, count or anoint '{spell.Id}', a passive or defensive spell.");
+		}
+		// A loadout with a shield in it: the shield is no fuel and is not counted among the three.
+		var loadout = new List<SpellData>();
+		foreach (string id in new[] { "aegis_ward", "magic_missile", "fireball", "chain_lightning" })
+		{
+			if (all.FirstOrDefault(s => s.Id == id)?.Duplicate(true) is SpellData copy)
+			{
+				copy.CurrentLevel = 8;
+				loadout.Add(copy);
+			}
+		}
+		if (loadout.Count == 4)
+		{
+			SpellData target = loadout[1];
+			if (SovereignRite.FuelFor(target, loadout) != 16 || SovereignRite.ActiveSpells(loadout).Count() != 3)
+				warnings.Add($"{label}: a book of Aegis Ward and three level 8 spells gives {SovereignRite.FuelFor(target, loadout)} fuel and {SovereignRite.ActiveSpells(loadout).Count()} active; the shield must be neither.");
+			if (!SovereignRite.MeetsGate(SovereignRite.MinimumPlayerLevel, loadout) || SovereignRite.MeetsGate(SovereignRite.MinimumPlayerLevel - 1, loadout))
+				warnings.Add($"{label}: MeetsGate does not open at exactly level {SovereignRite.MinimumPlayerLevel} for three level 8 spells.");
+		}
+
+		// The one stat path, and nothing else in it.
+		foreach (SpellData form in ContentValidator.LoadAllSpellForms())
+		{
+			if (form == null || ComboCatalog.IsCombination(form.Id) || SovereignRite.RefusalFor(form) != null)
+				continue;
+			var spell = (SpellData)form.Duplicate(true);
+			SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
+			spell.CurrentLevel = spell.MaxLevel;
+			int level = spell.CurrentLevel;
+			int damage = spell.GetDamageAtLevel(level);
+			float cooldown = spell.GetCooldownAtLevel(level);
+			float area = spell.GetAreaMultiplierAtLevel(level);
+			float scale = spell.GetScaleMultiplier();
+			int amount = spell.GetProjectileCountAtLevel(level);
+			const int fuel = 40;
+			SpellEvolutionOption boon = SovereignRite.BuildBoon(spell, fuel);
+			SovereignGains gains = SovereignRite.GainsFor(spell, fuel);
+			string who = $"{label} on '{ContentValidator.Label(spell)}'";
+			if (boon.Effect != SpellEffect.None || boon.EffectValue != 0f || boon.Rider != ElementRider.None
+				|| boon.SlowMagnitudeBonus != 0f || boon.KnockbackBonus != 0f || boon.PierceBonus != 0 || boon.ChainArcBonus != 0
+				|| boon.ChainBranchBonus != 0 || boon.PoisonTickBonus != 0 || boon.DamageBonus != 0 || boon.RangeBonus != 0f
+				|| boon.CooldownBonus != 0f || !Mathf.IsEqualApprox(boon.SpeedMultiplier, 1f) || (boon.BonusElementWeights?.Count ?? 0) > 0
+				|| !string.IsNullOrEmpty(boon.ReplacesElement) || boon.ModulateColor != Colors.White || !string.IsNullOrEmpty(boon.VisualTag))
+				warnings.Add($"{who}: the boon carries something besides damage, cooldown, area or scale and amount - a crowd-control or execute path a boss could meet.");
+			if (gains.CooldownMultiplier < SovereignRite.CooldownFloor - 0.0001f || gains.AreaMultiplier > SovereignRite.AreaCap + 0.0001f
+				|| gains.ScaleMultiplier > SovereignRite.AreaCap + 0.0001f || (gains.AreaMultiplier > 1f && gains.ScaleMultiplier > 1f))
+				warnings.Add($"{who}: the gains pass their floor or cap, or grow both area and scale.");
+
+			spell.SovereignBoon = boon;
+			bool moved = spell.GetDamageAtLevel(level) == Math.Max(1, Mathf.RoundToInt(damage * gains.DamageMultiplier))
+				&& Mathf.IsEqualApprox(spell.GetCooldownAtLevel(level), MathF.Max(0.05f, cooldown * gains.CooldownMultiplier))
+				&& Mathf.IsEqualApprox(spell.GetAreaMultiplierAtLevel(level), area * gains.AreaMultiplier)
+				&& Mathf.IsEqualApprox(spell.GetScaleMultiplier(), scale * gains.ScaleMultiplier)
+				&& spell.GetProjectileCountAtLevel(level) == Math.Max(1, amount + gains.AmountBonus);
+			bool elementsKept = spell.GetElementWeights().Count == form.GetElementWeights().Count;
+			spell.SovereignBoon = null;
+			bool back = spell.GetDamageAtLevel(level) == damage && Mathf.IsEqualApprox(spell.GetCooldownAtLevel(level), cooldown)
+				&& spell.GetProjectileCountAtLevel(level) == amount;
+			if (!moved || !back)
+				warnings.Add($"{who}: the fuel does not reach (or does not leave) the spell's own stat readers through SpellData.CollectActive.");
+			if (!elementsKept)
+				warnings.Add($"{who}: anointing changed the spell's elements; the Rite never moves a tier.");
+		}
 	}
 
 	private static void ValidateSpellEvolutionCoverage(List<string> warnings)
@@ -4630,9 +5427,10 @@ public static class RegressionChecks
 		}
 	}
 
-	// The starting roster's one real invariant: a character is its element. Each playable character
+	// The starting roster's one real invariant: a starter is its element. Each wizard a new save holds
 	// opens with a spell carrying a single element weight, and no two of them open the same one, so
-	// picking a character is picking which set of element thresholds the run starts pointed at.
+	// picking a starter is picking which set of element thresholds the run starts pointed at. (Freed
+	// wizards are held to less since 2026-11-01: ValidateStartingCharacters says what.)
 	//
 	// Both halves rot silently. A starting spell quietly retagged with a second element (Magic
 	// Missile carries Arcane *and* Lightning, which is why it is no longer a starter) splits the
@@ -5060,6 +5858,11 @@ public static class RegressionChecks
 					warnings.Add($"Spell '{spell.Id}' declares {pair.Key} with weight {pair.Value}; base element weights are capped at 1 per element, and depth comes from evolutions instead.");
 			}
 
+			// A combination has no milestones and is the one spell allowed three elements, never four:
+			// ValidateComboCatalog holds its ceiling.
+			if (ComboCatalog.IsCombination(spell.Id))
+				continue;
+
 			SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
 
 			var baseWeights = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -5201,6 +6004,10 @@ public static class RegressionChecks
 		foreach (SpellData spell in ContentValidator.LoadAllSpellForms())
 		{
 			if (spell?.ElementWeights == null || string.IsNullOrWhiteSpace(spell.Id))
+				continue;
+
+			// A combination never mutates or ascends: it has no element path to offer (ComboCatalog).
+			if (ComboCatalog.IsCombination(spell.Id))
 				continue;
 
 			var baseElements = new HashSet<string>(spell.ElementWeights.Keys, StringComparer.OrdinalIgnoreCase);
@@ -5367,7 +6174,8 @@ public static class RegressionChecks
 		// Every form of a spell taken in one, against its form's row (EvolutionStatReaders.TryGet(SpellData)).
 		foreach (SpellData spell in ContentValidator.LoadAllSpellForms())
 		{
-			if (spell == null || string.IsNullOrWhiteSpace(spell.Id))
+			// The Sovereign Rite casts nothing and is never held; it has no script to read a field.
+			if (spell == null || string.IsNullOrWhiteSpace(spell.Id) || ComboCatalog.ForId(spell.Id)?.IsRite == true)
 				continue;
 			if (!EvolutionStatReaders.TryGet(spell, out SpellStatReaders readers))
 			{
@@ -5582,9 +6390,17 @@ public static class RegressionChecks
 		_ => stat.ToString(),
 	};
 
+	// THE RULE, AS ERIC SET IT (2026-11-01, .ai/chapter-wizards.md section 0): "Only default starting wizards
+	// that are unlocked on a new save file need to have mono element spells. Unlockable wizards can have
+	// multi-element starting spells." So the one-element rule, and the one-owner-per-element rule, bind the
+	// STARTERS only - the four disciplines a new save holds, which are what make picking a wizard picking an
+	// element. A wizard the player frees (R2) may open on a hybrid, which never names more than two elements,
+	// and may share an element with anyone (R1); what no two characters may share is the opening itself - one
+	// spell, in one form - or one of them is the other in a different coat.
 	private static void ValidateStartingCharacters(List<string> warnings)
 	{
 		var elementOwners = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		var openingOwners = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
 		foreach (CharacterData character in CharacterRoster.GetAll())
 		{
@@ -5607,6 +6423,15 @@ public static class RegressionChecks
 			// character its own starting spell, which the rescued wizards need - they open on spells
 			// the save may not own yet (.ai/side-events.md).
 
+			// One spell in one form per character, whoever he is (R1). The form is the Apotheosis's: a wizard
+			// who opens on a spell with forms has one per form (ApotheosisDefinition.VariantId).
+			ApotheosisDefinition form = ApotheosisCatalog.ForCharacter(character.Id);
+			string opening = $"{starter.Id}:{form?.VariantId ?? string.Empty}";
+			if (openingOwners.TryGetValue(opening, out string twin))
+				warnings.Add($"Characters '{twin}' and '{character.Id}' both open on '{starter.Id}'{(string.IsNullOrEmpty(form?.VariantId) ? "" : $" as '{form.VariantId}'")}; two wizards may share an element, never an opening spell.");
+			else
+				openingOwners[opening] = character.Id;
+
 			var weights = starter.ElementWeights;
 			if (weights == null || weights.Count == 0)
 			{
@@ -5614,9 +6439,19 @@ public static class RegressionChecks
 				continue;
 			}
 
+			// A freed wizard (R2): a hybrid is allowed, but never past the two-element ceiling, and the element
+			// his Apotheosis claims must be one of the two (ValidateApotheosisCatalog holds the path to it).
+			bool isStarter = UnlockCatalog.IsStarter(character.Id, UnlockKind.Character);
+			if (!isStarter)
+			{
+				if (weights.Count > 2)
+					warnings.Add($"Character '{character.Id}' starts with '{starter.Id}', which carries {weights.Count} elements; no spell may name more than two.");
+				continue;
+			}
+
 			if (weights.Count > 1)
 			{
-				warnings.Add($"Character '{character.Id}' starts with '{starter.Id}', which carries {weights.Count} elements; a starter must carry exactly one so the character's opening weight is not split.");
+				warnings.Add($"Starter '{character.Id}' starts with '{starter.Id}', which carries {weights.Count} elements; a wizard a new save holds must open on exactly one, so picking him is picking an element.");
 				continue;
 			}
 
@@ -5628,7 +6463,7 @@ public static class RegressionChecks
 			}
 
 			if (elementOwners.TryGetValue(element, out string owner))
-				warnings.Add($"Characters '{owner}' and '{character.Id}' both open on {element}; each starting character should claim a different element.");
+				warnings.Add($"Starters '{owner}' and '{character.Id}' both open on {element}; each wizard a new save holds should claim a different element.");
 			else
 				elementOwners[element] = character.Id;
 		}
@@ -5952,7 +6787,9 @@ public static class RegressionChecks
 		{
 			case AchievementKind.Feat:
 			case AchievementKind.Collection:
-				if (deed.Visibility != AchievementVisibility.Always)
+				// A combination's Feat is the one Feat that waits: listed once the save owns both parents (Recipe).
+				if (deed.Visibility != AchievementVisibility.Always
+					&& !(deed.Kind == AchievementKind.Feat && deed.Visibility == AchievementVisibility.Recipe && !string.IsNullOrEmpty(deed.ComboId)))
 					warnings.Add($"Achievement '{id}' is a {deed.Kind} shown {deed.Visibility}; a {deed.Kind} is listed from the first run.");
 				break;
 			case AchievementKind.Road:
@@ -5977,7 +6814,9 @@ public static class RegressionChecks
 		if (AchievementDefinitions.IsSealed(deed, new SaveData()) && string.IsNullOrWhiteSpace(deed.SealedLine))
 			warnings.Add($"Achievement '{id}' frees a secret wizard but has no sealed line for the row it shows before his chapter opens.");
 
-		bool mirrors = !string.IsNullOrWhiteSpace(deed.SiteId) || !string.IsNullOrWhiteSpace(deed.SecretId);
+		// A combination's Feat is completed in the run too, the first time its recipe is met (ComboCatalog).
+		bool mirrors = !string.IsNullOrWhiteSpace(deed.SiteId) || !string.IsNullOrWhiteSpace(deed.SecretId)
+			|| !string.IsNullOrWhiteSpace(deed.ComboId);
 		if (deed.CompletesInRun != mirrors)
 			warnings.Add($"Achievement '{id}' {(deed.CompletesInRun ? "completes in the run but mirrors no site or secret" : "mirrors a site or a secret but is not completed in the run")}.");
 		if (!string.IsNullOrWhiteSpace(deed.SiteId)
@@ -6087,7 +6926,8 @@ public static class RegressionChecks
 			var locked = rescued.Where(id => !GlobalStatsManager.IsCharacterUnlocked(save, id))
 				.Select(id => (Id: id, Name: QuestLog.NameOf(id))).ToList();
 			IEnumerable<string> text = QuestLog.AllText(save)
-				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.LinesFor(s.Id, save)));
+				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.LinesFor(s.Id, save)))
+				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.CluesFor(s.Id, save)));
 			foreach (string line in text.Where(t => !string.IsNullOrEmpty(t)))
 			{
 				foreach (var who in locked)
@@ -6103,7 +6943,43 @@ public static class RegressionChecks
 					warnings.Add($"Chapter notes: {stage.DisplayName}'s note is {lines.Count} lines on {name}; at most {ChapterNotes.MaxLines}.");
 				foreach (string line in lines.Where(l => l.Length > ChapterNotes.MaxLineLength))
 					warnings.Add($"Chapter notes: '{line}' is {line.Length} characters; at most {ChapterNotes.MaxLineLength}.");
+				foreach (string clue in ChapterNotes.CluesFor(stage.Id, save).Where(l => l.Length > ChapterNotes.MaxLineLength))
+					warnings.Add($"Chapter notes: the clue '{clue}' is {clue.Length} characters; at most {ChapterNotes.MaxLineLength}.");
 			}
+		}
+
+		// The clues (ChapterNotes.CluesFor): each site clue belongs to a side event that pays something other
+		// than a wizard, never names what it pays, and a new save gets a clue in every chapter that holds a
+		// wizard, a site or a vault - and none once everything is owned (BuildEverythingSave's counterpart:
+		// every unlock granted below).
+		foreach (var (siteId, clue) in ChapterNotes.SiteClueLines)
+		{
+			var gives = UnlockCatalog.ForDiscoverySite(siteId).ToList();
+			if (gives.Count == 0)
+				warnings.Add($"Chapter notes: the clue for '{siteId}' belongs to no Discovery site.");
+			foreach (UnlockDefinition give in gives)
+			{
+				string named = give.Kind == UnlockKind.Character
+					? QuestLog.NameOf(give.Id)
+					: ContentValidator.LoadAllSpells().FirstOrDefault(sp => sp.Id == give.Id)?.Name
+						?? BoonCatalog.GetById(give.Id)?.Name ?? give.Id.Replace('_', ' ');
+				if (!string.IsNullOrWhiteSpace(named) && clue.Contains(named, StringComparison.OrdinalIgnoreCase))
+					warnings.Add($"Chapter notes: the clue '{clue}' names '{named}', which is what it pays.");
+			}
+		}
+		foreach (SecretDefinition vault in SecretCatalog.All.Where(v => v.IsVault))
+		{
+			if (!string.IsNullOrWhiteSpace(vault.SpellName) && ChapterNotes.VaultClue.Contains(vault.SpellName, StringComparison.OrdinalIgnoreCase))
+				warnings.Add($"Chapter notes: the vault clue names {vault.SpellName}.");
+		}
+		var fresh = new SaveData();
+		foreach (StageDefinition stage in StageCatalog.All.Where(s => s.IsPlayable && ChapterNotes.Has(s.Id)))
+		{
+			bool holds = QuestLog.HeldOnlyLinesFor(stage.Id, fresh).Any()
+				|| SideEventDirector.ForStage(stage.Id) != null
+				|| SecretCatalog.ForStage(stage.Id).Any(v => v.IsVault);
+			if (holds && ChapterNotes.CluesFor(stage.Id, fresh).Count == 0)
+				warnings.Add($"Chapter notes: {stage.DisplayName} holds something on a new save but its note gives no clue.");
 		}
 
 		// The default: a new save tracks the next wizard, and he is somebody; a save that frees everyone has none.

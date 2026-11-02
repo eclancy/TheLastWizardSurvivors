@@ -57,6 +57,8 @@ public partial class _ExploreProbe : Node
 	private LevelUpMenu levelUpMenu;
 	private int settleFrames;
 	private float completeClock;
+	private int sealFrames;
+	private int sealAlignedAtStart = -1;
 	private bool finished;
 
 	private static readonly string[] MoveActions = { "move_left", "move_right", "move_up", "move_down" };
@@ -374,6 +376,21 @@ public partial class _ExploreProbe : Node
 				System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.GetValue(e) ?? false);
 			Check("the event can be finished", won, $"{completeClock:0.0}s of game time after arriving");
 			Check("no arrows are left once it is over", !PointsOfInterest.AnyMarked);
+			if (e is FivePointedSealEvent seal)
+			{
+				Check("every stone faces the seal", seal.Aligned == FivePointedSealEvent.StoneCount, $"{seal.Steps} presses");
+				// The probe presses only plates an answer needs, so its count is the fewest the start took.
+				Check("the seal took at least its minimum of presses", seal.Steps >= FivePointedSealEvent.MinPresses,
+					$"{seal.Steps}, minimum {FivePointedSealEvent.MinPresses}; {sealAlignedAtStart} of 4 facing at the start");
+			}
+			// A wizard the site pays is free now - in memory: a tool scene never writes the save.
+			SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
+			if (won && e != null && !e.PaysChest && save != null)
+			{
+				foreach (UnlockDefinition wizard in UnlockCatalog.ForDiscoverySite(e.SiteId).Where(u => u.Kind == UnlockKind.Character))
+					Check($"'{wizard.Id}' is freed, in memory", GlobalStatsManager.IsCharacterUnlocked(save, wizard.Id),
+						$"writes {(SaveManager.WritesDisabled ? "off" : "ON")}");
+			}
 			Finish("event over");
 			return;
 		}
@@ -385,6 +402,16 @@ public partial class _ExploreProbe : Node
 		}
 
 		Vector2? target = PointsOfInterest.ObjectiveTarget;
+		// The coupled seal points at nothing once he is in the courtyard (an arrow on a plate would solve it for
+		// him): the probe works the answer out itself and presses a plate it needs.
+		if (e is FivePointedSealEvent puzzle && puzzle.IsFound)
+		{
+			if (sealAlignedAtStart < 0)
+				sealAlignedAtStart = puzzle.Aligned;
+			int next = puzzle.NextPress();
+			if (next >= 0)
+				target = puzzle.PlateAt(next);
+		}
 		if (target == null)
 		{
 			float best = float.MaxValue;
@@ -397,6 +424,10 @@ public partial class _ExploreProbe : Node
 		}
 		if (target is not Vector2 at)
 			return;
+		// The seal turns a stone when he STEPS onto its plate, not while he stands there: step on and off,
+		// a few frames each, so every visit is one step (FivePointedSealEvent.RearmRadius).
+		if (e is FivePointedSealEvent && (sealFrames++ / 3) % 2 == 1)
+			at += new Vector2(0f, FivePointedSealEvent.RearmRadius + 40f);
 		player.GlobalPosition = at;
 		player.Velocity = Vector2.Zero;
 		foreach (Node n in GetTree().GetNodesInGroup("enemies"))

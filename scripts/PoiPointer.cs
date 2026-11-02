@@ -72,6 +72,7 @@ public partial class PoiPointer : Control
 			screen.Size - new Vector2(2f * InsetSide + left + right, InsetTop + InsetBottom + top + bottom));
 		Vector2 centre = inner.GetCenter();
 		Vector2? objective = PointsOfInterest.ObjectiveTarget;
+		const float ObjectiveSameSite = 140f;
 		// The same slow breath as the chest bubble: noticeable at the edge of vision, never alarming.
 		float pulse = 0.85f + 0.15f * Mathf.Sin(Time.GetTicksMsec() * 0.004f);
 
@@ -79,7 +80,10 @@ public partial class PoiPointer : Control
 		{
 			if (!point.Marked)
 				continue;
-			if (objective is Vector2 o && o.DistanceSquaredTo(point.Position) < 4f)
+			// "On the same place", not "on the same pixel": the thaw aims its arrow at the top of its block,
+			// 108 px over the site, so the chevron is not drawn on the wizard's face. Every other pair of
+			// sites is hundreds of pixels apart (the lanterns 650 at the least).
+			if (objective is Vector2 o && o.DistanceSquaredTo(point.Position) < ObjectiveSameSite * ObjectiveSameSite)
 				continue;
 			Vector2 onScreen = canvas * point.Position;
 			if (screen.Grow(-20f).HasPoint(onScreen))

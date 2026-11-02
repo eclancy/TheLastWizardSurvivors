@@ -1,4 +1,5 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 using WizardSurvivors.scripts;
 
@@ -23,6 +24,11 @@ using WizardSurvivors.scripts;
 /// THE CARD IS STONE, on parchment and on stone alike: it is a note held up over the page, and a
 /// dark card is the one thing that reads as "on top" on all three grounds the chips sit on. Its inks
 /// are <see cref="CodexRows.Stone"/>, already measured against that face (tools/art/ui_contrast.py).
+///
+/// ANY ANCHOR, ANY CARD (2026-11-02). A status keyword in a description (<see cref="StatusKeyword"/>,
+/// Eric: "status effects should ... look clickable. When clicked, they should show the description")
+/// opens its own card through this same layer, catcher and placement - one popover in the game, not
+/// two. <see cref="Toggle(Control, Func{PanelContainer})"/> takes the anchor and what to show.
 /// </remarks>
 public partial class ElementTagPopover : CanvasLayer
 {
@@ -35,7 +41,9 @@ public partial class ElementTagPopover : CanvasLayer
 	// every read, so a freed card is never touched through it.
 	private static ElementTagPopover current;
 
-	private ElementChip anchor;
+	private Control anchor;
+	// What the card is: an element's tiers for a chip, a status's sentence for a keyword.
+	private Func<PanelContainer> build;
 	// Opened on a card's behalf rather than from the chip (LevelUpMenu's Y): closes when that card
 	// loses the selection, and A closes it instead of reaching the card underneath.
 	private Control holder;
@@ -47,7 +55,7 @@ public partial class ElementTagPopover : CanvasLayer
 	public static bool IsOpen => current != null && IsInstanceValid(current);
 
 	/// <summary>The chip the open card belongs to, or null.</summary>
-	public static ElementChip OpenAnchor => IsOpen ? current.anchor : null;
+	public static ElementChip OpenAnchor => IsOpen ? current.anchor as ElementChip : null;
 
 	/// <summary>
 	/// Opens the card for <paramref name="chip"/> on behalf of <paramref name="selected"/> - the card
@@ -66,6 +74,7 @@ public partial class ElementTagPopover : CanvasLayer
 			Layer = PopoverLayer,
 			ProcessMode = ProcessModeEnum.Always,
 			anchor = chip,
+			build = ChipCard(chip),
 			holder = selected,
 		};
 		chip.GetTree().Root.AddChild(popover);
@@ -75,12 +84,22 @@ public partial class ElementTagPopover : CanvasLayer
 	/// <summary>Opens the card for <paramref name="chip"/>, or closes it if it is already open.</summary>
 	public static void Toggle(ElementChip chip)
 	{
-		if (chip == null || !IsInstanceValid(chip) || !chip.IsInsideTree())
+		if (chip != null && IsInstanceValid(chip))
+			Toggle(chip, ChipCard(chip));
+	}
+
+	/// <summary>
+	/// Opens <paramref name="build"/>'s card under <paramref name="anchor"/>, or closes it if that anchor's
+	/// card is already open: the same layer, catcher, closing rules and placement as an element chip's.
+	/// </summary>
+	public static void Toggle(Control anchor, Func<PanelContainer> build)
+	{
+		if (anchor == null || !IsInstanceValid(anchor) || !anchor.IsInsideTree() || build == null)
 			return;
 
-		bool wasThisChip = IsOpen && current.anchor == chip;
+		bool wasThisAnchor = IsOpen && current.anchor == anchor;
 		Close();
-		if (wasThisChip)
+		if (wasThisAnchor)
 			return;
 
 		var popover = new ElementTagPopover
@@ -88,11 +107,15 @@ public partial class ElementTagPopover : CanvasLayer
 			Name = "ElementTagPopover",
 			Layer = PopoverLayer,
 			ProcessMode = ProcessModeEnum.Always,
-			anchor = chip,
+			anchor = anchor,
+			build = build,
 		};
-		chip.GetTree().Root.AddChild(popover);
+		anchor.GetTree().Root.AddChild(popover);
 		current = popover;
 	}
+
+	private static Func<PanelContainer> ChipCard(ElementChip chip) =>
+		() => BuildCard(chip, chip.Tag, chip.CountAfter, chip.Gain);
 
 	public static void Close()
 	{
@@ -114,7 +137,7 @@ public partial class ElementTagPopover : CanvasLayer
 		catcher.GuiInput += OnCatcherInput;
 		AddChild(catcher);
 
-		card = BuildCard(anchor, anchor.Tag, anchor.CountAfter, anchor.Gain);
+		card = build();
 		float width = Mathf.Min(MaxWidth, ResponsiveLayout.ViewportSize(anchor).X - EdgeMargin * 2f);
 		card.CustomMinimumSize = new Vector2(width, 0f);
 		card.MouseFilter = Control.MouseFilterEnum.Stop;

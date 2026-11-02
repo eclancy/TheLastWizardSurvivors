@@ -367,6 +367,12 @@ public static class StageCatalog
 	/// <summary>Every gate chapter in the campaign, in order: the Emberdeep today, the Throne later.</summary>
 	public static IEnumerable<StageDefinition> GateChapters => Campaign.Where(s => s.Gate == StageGate.PreviousBossAndWizards);
 
+	/// <summary>
+	/// The last gate chapter in the campaign: the Throne, where he is. The only gate that counts a chapter
+	/// wizard (<see cref="UnlockDefinition.CountedAtFinalGateOnly"/>, .ai/chapter-wizards.md G2).
+	/// </summary>
+	public static StageDefinition FinalGateChapter => Campaign.LastOrDefault(s => s.Gate == StageGate.PreviousBossAndWizards);
+
 	/// <summary>True for a gate whose previous chapter's boss is part of it.</summary>
 	public static bool IsBossGated(StageGate gate) => gate == StageGate.PreviousBoss || gate == StageGate.PreviousBossAndWizards;
 

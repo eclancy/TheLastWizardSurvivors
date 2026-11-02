@@ -8,10 +8,12 @@
 ; the rift itself deals none. BaseProjectileCount is the number of tentacles.
 ;
 ; "Level ups for black tentacles increase the slow, area, as well as the number of tentacles
-; slapping enemies." So the table alternates: even levels add a tentacle (and the cooldown step
-; every spell gets on even levels), odd levels widen the rift by 10 px (Effect 7, AreaSize; 90 -> 120 by level 7) and
-; deepen its slow by 4% (Effect 9, SlowPower; 0.45 -> 0.33 by level 7), and every level adds 1 to
-; the slap. Level 6 also lets the slow linger 0.35 s longer after an enemy steps out (Effect 10).
+; slapping enemies", and (Eric, 2026-11-01) "should start smaller with less tentacles and build".
+; So it opens at 60 px with two tentacles and climbs to the same 120 px and seven it always reached
+; at level 8: the rift widens by 10 px (Effect 7, AreaSize) at every level but 6, a tentacle comes at
+; 2, 4, 5, 6 and 8, odd levels deepen the slow by 4% (Effect 9, SlowPower; 0.45 -> 0.33 by level 7),
+; even levels take the cooldown step every spell gets, and every level adds 1 to the slap. Level 6
+; also lets the slow linger 0.35 s longer after an enemy steps out (Effect 10).
 ; It is written out in full so Player.EnsureRelevantLevelUps generates nothing of its own - the old
 ; table had one entry, and the level-ups the code invented for it included an "Area +0.16" that
 ; the spell never read.
@@ -22,6 +24,8 @@ Level = 2
 DamageBonus = 1
 CooldownBonus = -0.08
 ProjectileCountBonus = 1
+Effect = 7
+EffectValue = 10.0
 
 [sub_resource type="Resource" id="Resource_blacktentacles_lvl3_slow"]
 script = ExtResource("2")
@@ -42,6 +46,8 @@ Level = 4
 DamageBonus = 1
 CooldownBonus = -0.08
 ProjectileCountBonus = 1
+Effect = 7
+EffectValue = 10.0
 
 [sub_resource type="Resource" id="Resource_blacktentacles_lvl5_slow"]
 script = ExtResource("2")
@@ -55,6 +61,7 @@ script = ExtResource("2")
 Level = 5
 Effect = 7
 EffectValue = 10.0
+ProjectileCountBonus = 1
 
 [sub_resource type="Resource" id="Resource_blacktentacles_lvl6"]
 script = ExtResource("2")
@@ -88,6 +95,8 @@ Level = 8
 DamageBonus = 1
 CooldownBonus = -0.08
 ProjectileCountBonus = 1
+Effect = 7
+EffectValue = 10.0
 
 [resource]
 script = ExtResource("1")
@@ -98,7 +107,7 @@ CurrentLevel = 1
 MaxLevel = 8
 BaseDamage = 2
 BaseCooldown = 4.0
-BaseProjectileCount = 3
+BaseProjectileCount = 2
 BaseRange = 400.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_blacktentacles_lvl2"), SubResource("Resource_blacktentacles_lvl3_slow"), SubResource("Resource_blacktentacles_lvl3_area"), SubResource("Resource_blacktentacles_lvl4"), SubResource("Resource_blacktentacles_lvl5_slow"), SubResource("Resource_blacktentacles_lvl5_area"), SubResource("Resource_blacktentacles_lvl6"), SubResource("Resource_blacktentacles_lvl6_linger"), SubResource("Resource_blacktentacles_lvl7_slow"), SubResource("Resource_blacktentacles_lvl7_area"), SubResource("Resource_blacktentacles_lvl8")])
 Description = "Tears open a rift on the thickest pack. Everything inside it is slowed, and tentacles burst up out of it to lash at what is trapped."

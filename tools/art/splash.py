@@ -29,6 +29,7 @@ import font
 import hero
 import raster
 import splashkit as sk
+import title_eyes
 
 W, H = 360, 640
 
@@ -79,40 +80,19 @@ def mist(c, y0, y1, color, density=0.18, seed=1):
             if rng.random() < density * t:
                 c.set(x, y, color)
 
-def eyes_in_the_dark(c, y0, y1, n, seed, ramp=None, avoid=None, shut=None, base=0):
-    """Pairs of lit eyes at the edge of the light. Cheapest possible way to say 'there are
-    more of them out there' without drawing more of them.
-
-    `avoid` is an (x0, y0, x1, y1) box they will not be placed in - the corners of the frame
-    are where a stray pair is most conspicuous and least useful.
-    """
-    ramp = ramp or E["fire"]
-    rng = random.Random(seed)
-    placed = 0
-    while placed < n:
-        x = rng.randrange(12, W - 20)
-        y = rng.randrange(int(y0), int(y1))
-        if avoid and avoid[0] <= x <= avoid[2] and avoid[1] <= y <= avoid[3]:
-            continue
-        placed += 1
-        gap = rng.randrange(3, 6)
-        if shut is not None and base + placed - 1 == shut:
-            continue                                   # this pair is mid-blink
-        for ox in (0, gap):
-            c.radial(x + ox, y, 3, 3, [ramp[1], ramp[2], ramp[3], None])
-            c.set(x + ox, y, ramp[0])
-
 # ---------------------------------------------------------------- 1. VIGIL
-# The backdrop is TWO layers, and the reason is the eyes. The treeline set is drawn early and
-# is then legitimately covered by the ground, the creep, the near trees and the canopy; the
-# branch set is drawn after the canopy and sits in front of it. Lift both onto one layer above
-# a single backdrop and the treeline pairs shine straight through the foliage that is supposed
-# to be in front of them - which is exactly what happened, 44 pixels of it.
-STAGES = ("backA", "eyesA", "backB", "eyesB", "ward", "flamesA", "figure", "flamesB", "fore")
+# The layers, back to front. `eyes` is a stage, not a texture: since 2026-11-01 every pair of eyes
+# is its own small cell over the picture (tools/art/title_eyes.py), and this canvas only collects
+# them for the flat render and the composite check. There used to be two eye stages, one behind
+# the leaves and the ground (the treeline set) and one in front of them (the branches), and a pair
+# half behind a clump read as a smear - so now no pair goes where anything is drawn in front of it,
+# and one stage above backB holds both sets. The backdrop is still two layers, backA and backB,
+# because the treeline set once sat between them; merging them is a free cleanup for another day.
+STAGES = ("backA", "backB", "eyes", "ward", "flamesA", "figure", "flamesB", "fore")
 
 
 def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
-          layers=False, gain=1.0, phase=0, flicker=1.0, blink=None, tall=True, fill=True):
+          layers=False, gain=1.0, phase=0, flicker=1.0, tall=True, fill=True, eyes=True):
     """Wide, quiet, bottom-heavy. You, from behind, inside a ring of lit wards, in the beat
     before it starts. Sells preparation rather than the fight - and it is the only screen
     where the player character is the largest thing on frame."""
@@ -325,8 +305,7 @@ def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
         td, tl = tone(NEAR_TONES, (OCC, M["stone"][4]))
         sk.brush(c, bx, by, br, br * wd["lh"], seed=rb.randrange(9999),
                  dark=td, light=tl, density=1.15)
-    eyes_in_the_dark(T("eyesA"), 330, 450, 9, 5,
-                     [E["fire"][2], E["fire"][3], E["fire"][3], None], shut=blink, base=0)
+    # The treeline's eyes used to be drawn here. They go on last now (see the foot of vigil).
     c = T("backB")
     mist(c, 396, 452, M["stone"][3], 0.10, 4)
 
@@ -445,11 +424,8 @@ def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
                  leaf_r=17, density=1.6)
     sk.canopy(c, 0, 400, CLEAR, 250, seed=151, dark=OCC, light=M["stone"][4], width=W,
               density=wd["canopy_d"])
-    # A second set of eyes up in the branches, after the canopy - drawn before it the leaf mass
-    # buries them. Things above him as well as around him.
-    eyes_in_the_dark(T("eyesB"), 172, 330, 7, 71,
-                     [E["fire"][2], E["fire"][3], E["fire"][3], None],
-                     avoid=(0, 0, 148, 268), shut=blink, base=9)
+    # The second set of eyes, up in the branches, used to be drawn here: things above him as well
+    # as around him. They go on last now too.
 
     # The ward circle. It is the second light source in the frame after the orb, and it is
     # what the composition is actually about, so it burns on an ELEMENT ramp - the same one
@@ -607,20 +583,69 @@ def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
     # two of these screens unreadable.
     for _n in (STAGES if layers else ("backA",)):
         _cv[_n].vignette([None, None, M["stone"][4], OCC], 2.2, only_opaque=layers)
-    sk.wordmark(T("backB"), 180, 78,
-                [M["skin"][0], M["skin"][0], M["skin"][1], M["skin"][2], M["skin"][3]],
-                [M["gold"][0], M["gold"][1], M["gold"][2]],
-                halo=OCC)
+    _vigil_wordmark(T("backB"))
     # No PRESS ANY BUTTON baked in. It ships as its own transparent texture (prompt_asset below)
     # so the scene can fade and breathe it, which a pixel painted into the background cannot do.
     #
-    # Last of all, the picture grows into the tall frame - after the wordmark and the vignette,
-    # so neither of them sees the new rows and the 640 composition comes through untouched.
+    # Then the picture grows into the tall frame - after the wordmark and the vignette, so neither
+    # of them sees the new rows and the 640 composition comes through untouched.
     if tall:
         _cv = _tall_frame(_cv, layers)
+    # THE EYES IN THE DARK, last of all (tools/art/title_eyes.py). Every pair is the same round
+    # shape, and it only stays that shape if nothing gets at it afterwards: the old ones were
+    # drawn early and came out of the vignette, the ground and the leaves with pixels missing.
+    # Where they go is worked out once on the finished layers (vigil_eyes), only where nothing in
+    # front of the eyes is drawn - which is what makes stamping them last give the same picture
+    # as stamping them on their own stage, in the flat render and the layers alike.
+    if eyes:
+        title_eyes.stamp_all(_cv["eyes"], vigil_eyes(), 0 if tall else -TOP)
     if layers:
         return _cv
     return _cv["backA"], "vigil", "Vigil"
+
+
+def _vigil_wordmark(c):
+    sk.wordmark(c, 180, 78,
+                [M["skin"][0], M["skin"][0], M["skin"][1], M["skin"][2], M["skin"][3]],
+                [M["gold"][0], M["gold"][1], M["gold"][2]],
+                halo=OCC)
+
+
+# Where the menu sits over the art: MainMenu.PinToArtRows(buttons, 340, 550, halfWidth: 230), in
+# canvas units of the 1280-row composition - so halved, and moved down TOP into the tall frame.
+# Start Run, the two buttons under it and the Arcane Energy caption all live in here; a pair
+# blinking between two buttons, or beside the caption, reads as part of the menu.
+MENU_ROWS = (180 - 115, TOP + 170, 180 + 115, TOP + 275)
+# Both places TitleScreen.PlacePrompt can put PRESS ANY BUTTON, as tall-frame rows.
+PROMPT_ROWS = ((0, 686, W - 1, 710), (0, 756, W - 1, 780))
+# The two bands of dark wood the eyes live in, as tall-frame rows: the branches over the clearing
+# and the treeline. The branch set is placed first because it has less room - the wordmark and
+# the menu take the middle of its band - and the treeline gets what is left of the spacing. Nine
+# and seven, as before: the doc's "eyes are cheap and it is easy to overspend them".
+EYE_GROUPS = [("near", (6, 224, W - 7, 382), 7),
+              ("far", (6, 412, W - 7, 476), 9)]
+EYE_SEED = 5
+_EYES = []
+
+
+def vigil_eyes():
+    """Where every pair of eyes goes, in tall-frame pixels: worked out on the finished layers of
+    the default render, and memoised - a flat render needs the same answer and has no layers to
+    work it out from. See tools/art/title_eyes.py."""
+    if _EYES:
+        return _EYES
+    cv = vigil(layers=True, eyes=False)
+    word = raster.Canvas(W, H)
+    _vigil_wordmark(word)
+    wb = word.img.getbbox()
+    # The wordmark and the menu under it as ONE box: the slot between them is a few rows of dark
+    # wood, and a pair in it sat right under SURVIVORS and read as part of the type.
+    keep = [(min(wb[0], MENU_ROWS[0]), wb[1] + TOP, max(wb[2] - 1, MENU_ROWS[2]), MENU_ROWS[3])]
+    keep += list(PROMPT_ROWS)
+    field = title_eyes.Field(title_eyes.composite(cv, STAGES), title_eyes.blocked(cv), keep)
+    _EYES.extend(title_eyes.place(field, EYE_GROUPS, EYE_SEED))
+    print("vigil eyes: " + title_eyes.report(_EYES))
+    return _EYES
 
 
 # ------------------------------------------------------------ THE TALL FRAME
@@ -760,8 +785,13 @@ def _falloff_t(x, y):
     # The pocket the prompt sits in on a tall phone (TitleScreen.PlacePrompt puts its bottom on
     # row PROMPT_BOTTOM when the screen is tall enough). Soft-edged, so it reads as the ground going dark
     # there rather than as a panel behind the type.
+    #
+    # Held to `shade` (1.6 on this scale), not taken to occlusion (Eric, 2026-11-02: "I'm seeing
+    # the dark patch ... under the letters"). The falloff already takes this band most of the way
+    # down; the pocket at 3.3 was the black slab under PRESS ANY BUTTON, whose occ drop shadow
+    # keeps it readable without one.
     pe = math.sqrt(((x - 180) / 176.0) ** 2 + ((y - (PROMPT_BOTTOM - PROMPT_H // 2)) / 24.0) ** 2)
-    return max(t, 3.3 * min(1.0, max(0.0, (1.8 - pe) / 0.8)))
+    return max(t, 1.6 * min(1.0, max(0.0, (1.8 - pe) / 0.8)))
 
 
 def _mat_keep(y, seam):
@@ -925,7 +955,8 @@ def _type_pocket_t(x, y):
     best = 0.0
     # The tall-phone prompt pocket fades over twice its own half-height for the same reason:
     # with a short fade its top edge was a second ruled line, across the band below the bushes.
-    for (cx, cy, rx, ry, k, soft) in ((180, PROMPT_BOTTOM - PROMPT_H // 2, 168, 16, 3.3, 1.6),
+    # The tall prompt's pocket is held to shade (1.6), like the falloff's (see _falloff_t).
+    for (cx, cy, rx, ry, k, soft) in ((180, PROMPT_BOTTOM - PROMPT_H // 2, 168, 16, 1.6, 1.6),
                                       (180, 698, 168, 18, 1.9, 2.2),
                                       (22, 794, 40, 14, 3.3, 1.0), (16, 727, 34, 12, 2.4, 1.6)):
         e = math.sqrt(((x - cx) / float(rx)) ** 2 + ((y - cy) / float(ry)) ** 2)

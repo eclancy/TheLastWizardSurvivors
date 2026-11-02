@@ -171,6 +171,9 @@ public partial class GaolerBoss : BossEnemy
 	// dark under it, the bars swing apart, and the Gaoler rides up out of the pit already rearing,
 	// keys swinging at its hand - it comes down on all four with a crash of dust and keys on the stone.
 	protected internal override float EntranceSeconds => 3.1f;
+	// The climax (BossDeath calls it on the roar): it rears out of the pit; the landing after it is the heavier beat.
+	protected internal override float EntranceClimaxWeight => 0.6f;
+	protected internal override Element EntranceFlareElement => Element.Light;
 
 	private BossDeath.Piece rider;
 	private const float GrateOpens = 0.55f;
@@ -211,6 +214,7 @@ public partial class GaolerBoss : BossEnemy
 		}
 		if (stage.Crossed(Lands))
 		{
+			stage.Impact(1.0f);
 			stage.DustRing(foot, 70f, 10, new Color(0.42f, 0.38f, 0.46f, 0.6f), 0.8f, 16f);
 			stage.EmitAt(new BossDeath.Throw
 			{
@@ -353,6 +357,7 @@ public partial class GaolerBoss : BossEnemy
 
 		if (death.Crossed(RiderLands))
 		{
+			death.Impact(0.8f);
 			Vector2 face = death.PieceToLocal(deathRider, new Vector2(46f, 12f));
 			death.DustRing(new Vector2(face.X, death.Foot.Y - 10f), 46f, 7, DungeonDust, 0.7f, 14f);
 		}

@@ -917,7 +917,6 @@ public partial class MainMenu
 		RefreshArcaneEnergy();
 		RefreshUpgradeControls();
 		// A level of Redaction bought here is a slot the Spell Index's set-aside controls can spend.
-		RefreshSpellbookCards();
 		return true;
 	}
 

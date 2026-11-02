@@ -1,6 +1,7 @@
 using Godot;
 using WizardSurvivors.scripts;
 using System;
+using System.Text.Json;
 
 public partial class TitleScreen : Control
 {
@@ -18,22 +19,52 @@ public partial class TitleScreen : Control
 	// behind it to dirty.
 	[Export] public float FlameFrameSeconds { get; set; } = 0.13f;
 	[Export] public float WardPulseSeconds { get; set; } = 0.95f;
-	[Export] public float BlinkHoldSeconds { get; set; } = 0.11f;
-	[Export] public float BlinkMinGap { get; set; } = 0.35f;
-	[Export] public float BlinkMaxGap { get; set; } = 1.9f;
+
+	// The eyes in the dark. Every pair blinks on its own clock: it waits BlinkMinGap-BlinkMaxGap
+	// seconds, then its lid comes down through two frames, stays shut BlinkHoldSeconds and goes
+	// back up a little slower than it came down. Sometimes it blinks twice. At most
+	// MaxBlinkingPairs are mid-blink at once and no two start within BlinkStagger of each other,
+	// so the wood never blinks together - sixteen pairs on one clock is a lighthouse, not a wood.
+	// Every ~10 s a pair: across the phone's sixteen that is a blink about every 0.7 s somewhere.
+	[Export] public float BlinkMinGap { get; set; } = 5.0f;
+	[Export] public float BlinkMaxGap { get; set; } = 16.0f;
+	[Export] public float BlinkCloseSeconds { get; set; } = 0.04f;   // each of the two frames down
+	[Export] public float BlinkHoldSeconds { get; set; } = 0.09f;
+	[Export] public float BlinkOpenSeconds { get; set; } = 0.06f;    // each of the two frames up
+	[Export] public float DoubleBlinkChance { get; set; } = 0.2f;
+	[Export] public int MaxBlinkingPairs { get; set; } = 2;
+	[Export] public float BlinkStagger { get; set; } = 0.15f;
 
 	private const int FlamePhases = 4;
 	private const int WardFrames = 3;
-	private const int BlinkFrames = 6;   // frame 0 is all-open
 
-	private Texture2D[] flamesFar, flamesNear, figure, ward, eyesFar, eyesNear;
-	private TextureRect flamesFarRect, flamesNearRect, figureRect, wardRect, eyesFarRect, eyesNearRect;
+	private Texture2D[] flamesFar, flamesNear, figure, ward;
+	private TextureRect flamesFarRect, flamesNearRect, figureRect, wardRect;
 
-	private float flameClock, wardClock, blinkClock;
+	private float flameClock, wardClock;
 	private int flameStep, wardStep;                // walks 0,1,2,1 so the pulse turns round rather than snapping
-	private float nextBlink;
-	private int blinkFrame;
 	private readonly RandomNumberGenerator rng = new RandomNumberGenerator();
+
+	// One pair of eyes: a small TextureRect over the picture showing one cell of eyes.png.
+	private sealed class EyePair
+	{
+		public TextureRect Cell;
+		public AtlasTexture[] Frames;   // open, half, slit - the pair's row of the sheet
+		public int Step = -1;           // -1: open, waiting to blink; else an index into BlinkSteps
+		public float Clock;             // seconds left of the wait or of the current step
+		public bool Again;              // the second blink of a double
+	}
+
+	// A blink as columns of eyes.png: half, slit, shut (no cell), slit, half - then open again.
+	private static readonly int[] BlinkSteps = { 1, 2, -1, 2, 1 };
+	private EyePair[] eyePairs;
+	private int pairsBlinking;
+	private float sinceBlinkStarted = 10f;
+
+	// The art is drawn at a whole x2 into TitleImage on both canvases (720x1680 for the 360x840
+	// portrait set, 1920x720 for the 960x360 wide set), so an art pixel is two canvas units, and
+	// a cell placed at twice its art position sits on the same pixel grid as the layers under it.
+	private const float ArtScale = 2f;
 
 	private bool transitioned = false;
 	private Control menuInstance;
@@ -46,6 +77,10 @@ public partial class TitleScreen : Control
 	// The Android copy's "a new version is out" strip (UpdateBanner). Null everywhere else, which
 	// is every Windows copy, the editor and every harness.
 	private UpdateBanner updateBanner;
+
+	// True while the story-reset notice is up. Like `updating`, the title hears nothing until it is
+	// dismissed, so the press that dismisses it cannot also open the menu.
+	private bool noticeOpen;
 
 	public override void _Ready()
 	{
@@ -187,12 +222,116 @@ public partial class TitleScreen : Control
 
 		GD.Print("TitleScreen: _Ready() invoked");
 
+		// After the update check, before the menu: the first title after a story reset says so, once.
+		if (ShowStoryResetNotice(openMenuNow))
+			return;
+
 		// Last, deliberately: everything the menu draws on top of has to exist before it is added.
 		if (openMenuNow)
 		{
 			transitioned = true;
 			ShowMenu();
 		}
+	}
+
+	/// <summary>
+	/// The one-time notice after a story reset (SaveData.ProgressResetNoticePending, set by
+	/// SaveManager when it started an earlier epoch's save again): the story was rebuilt, progress
+	/// starts again, the old save is kept. One button. False when nothing is owed.
+	/// </summary>
+	/// <remarks>
+	/// Cleared and saved on dismissal, not on showing: a player who closes the game with it up hears
+	/// it again next time. Shown over the art rather than as a screen of its own, in the stone register
+	/// every other notice uses, and it holds the menu back until it is gone (<paramref name="openMenuAfter"/>)
+	/// so two navigators never fight over the selection.
+	/// </remarks>
+	private bool ShowStoryResetNotice(bool openMenuAfter)
+	{
+		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (saveManager?.Data == null || !saveManager.Data.ProgressResetNoticePending)
+			return false;
+
+		noticeOpen = true;
+		// PRESS ANY BUTTON would be a second instruction under the first; it comes back, still
+		// breathing on its own tween, when the notice goes.
+		var prompt = GetNodeOrNull<CanvasItem>("TitleImage/Prompt");
+		if (prompt != null)
+			prompt.Visible = false;
+		var notice = new Control { Name = "StoryResetNotice", MouseFilter = MouseFilterEnum.Stop };
+		notice.SetAnchorsPreset(LayoutPreset.FullRect);
+		AddChild(notice);
+
+		var dim = new ColorRect { Color = new Color(0.019608f, 0.027451f, 0.047059f, 0.82f), MouseFilter = MouseFilterEnum.Ignore };
+		dim.SetAnchorsPreset(LayoutPreset.FullRect);
+		notice.AddChild(dim);
+
+		var center = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+		center.SetAnchorsPreset(LayoutPreset.FullRect);
+		notice.AddChild(center);
+
+		var panel = new PanelContainer
+		{
+			CustomMinimumSize = new Vector2(Mathf.Min(600f, GetViewportRect().Size.X - 32f), 0f),
+		};
+		BonelightSkin.ApplyPanel(panel);
+		center.AddChild(panel);
+
+		var column = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+		column.AddThemeConstantOverride("separation", 18);
+		panel.AddChild(column);
+
+		var heading = new Label
+		{
+			Text = "The story has been rebuilt",
+			HorizontalAlignment = HorizontalAlignment.Center,
+			AutowrapMode = TextServer.AutowrapMode.WordSmart,
+			MouseFilter = MouseFilterEnum.Ignore,
+		};
+		column.AddChild(heading);
+		ResponsiveLayout.SetFont(heading, ResponsiveLayout.TextRole.Title);
+		heading.AddThemeColorOverride("font_color", CodexRows.Stone.Heading);
+
+		var body = new Label
+		{
+			// A sentence a line, so neither is broken across the two on any canvas.
+			Text = "Your progress starts again from the beginning.\nYour old save is kept.",
+			HorizontalAlignment = HorizontalAlignment.Center,
+			MouseFilter = MouseFilterEnum.Ignore,
+		};
+		column.AddChild(body);
+		ResponsiveLayout.SetBodyText(body);
+		body.AddThemeColorOverride("font_color", new Color(0.94f, 0.93f, 0.88f));
+
+		var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+		column.AddChild(row);
+		var proceed = new Button { Name = "StoryResetContinue", Text = "Continue", FocusMode = FocusModeEnum.All };
+		row.AddChild(proceed);
+		BonelightSkin.StyleButton(proceed, BonelightSkin.Emphasis.Primary);
+		ResponsiveLayout.SetFont(proceed, ResponsiveLayout.TextRole.Body);
+		ResponsiveLayout.EnsureTouchTarget(proceed, 200f);
+
+		void Dismiss()
+		{
+			if (!noticeOpen)
+				return;
+			noticeOpen = false;
+			SfxPlayer.Global(SfxCatalog.UiClose);
+			saveManager.Data.ProgressResetNoticePending = false;
+			saveManager.SaveGame();
+			notice.QueueFree();
+			if (prompt != null && IsInstanceValid(prompt))
+				prompt.Visible = true;
+			if (openMenuAfter)
+			{
+				transitioned = true;
+				ShowMenu();
+			}
+		}
+		proceed.Pressed += Dismiss;
+		MenuBackListener.Attach(notice, Dismiss, "ui_cancel");
+		SafeArea.Apply(notice);
+		MenuNavigator.Attach(notice, proceed);
+		return true;
 	}
 
 	/// <summary>
@@ -208,22 +347,92 @@ public partial class TitleScreen : Control
 		flamesNearRect = GetNodeOrNull<TextureRect>("TitleImage/FlamesNear");
 		figureRect = GetNodeOrNull<TextureRect>("TitleImage/Figure");
 		wardRect = GetNodeOrNull<TextureRect>("TitleImage/Ward");
-		// Two eye layers, not one, and at different depths: the treeline set is behind the
-		// ground, the creep and the canopy, the branch set is in front of all of it.
-		eyesFarRect = GetNodeOrNull<TextureRect>("TitleImage/EyesFar");
-		eyesNearRect = GetNodeOrNull<TextureRect>("TitleImage/EyesNear");
 
 		flamesFar = LoadFrames("flames-far-", FlamePhases);
 		flamesNear = LoadFrames("flames-near-", FlamePhases);
 		figure = LoadFrames("figure-", FlamePhases);
 		ward = LoadFrames("ward-", WardFrames);
-		eyesFar = LoadFrames("eyes-far-", BlinkFrames);
-		eyesNear = LoadFrames("eyes-near-", BlinkFrames);
 
 		if (!DisplayProfile.IsPortrait)
 			UseLandscapeArt();
 
-		nextBlink = (float)rng.RandfRange(BlinkMinGap, BlinkMaxGap);
+		SetUpEyes();
+	}
+
+	/// <summary>
+	/// The eyes in the dark: one small cell per pair, laid over the picture at its place in
+	/// eyes.json and stepped through the frames of eyes.png (tools/art/title_eyes.py draws both,
+	/// and places every pair where nothing in front of the eyes is drawn, so a cell is never
+	/// covered). They used to be two whole-screen layers with six frames that each shut one pair,
+	/// so only five pairs ever blinked; now every pair has its own clock and costs one TextureRect.
+	/// Like every other layer, missing art leaves the screen without eyes rather than broken.
+	/// </summary>
+	private void SetUpEyes()
+	{
+		var container = GetNodeOrNull<Control>("TitleImage/Eyes");
+		var sheet = LoadLayer("eyes");
+		string specPath = ArtFolder + "eyes.json";
+		if (container == null || sheet == null || !FileAccess.FileExists(specPath))
+			return;
+
+		var pairs = new System.Collections.Generic.List<EyePair>();
+		try
+		{
+			using JsonDocument doc = JsonDocument.Parse(FileAccess.GetFileAsString(specPath));
+			JsonElement root = doc.RootElement;
+			JsonElement cell = root.GetProperty("cell");
+			JsonElement pitch = root.GetProperty("pitch");
+			Vector2 cellSize = new Vector2(cell[0].GetInt32(), cell[1].GetInt32());
+			int frameCount = root.GetProperty("frames").GetArrayLength();
+			var rows = new System.Collections.Generic.List<string>();
+			foreach (JsonElement r in root.GetProperty("rows").EnumerateArray())
+				rows.Add(r.GetString());
+
+			// One set of AtlasTextures per row, shared by every pair in that row.
+			var frames = new AtlasTexture[rows.Count][];
+			for (int row = 0; row < rows.Count; row++)
+			{
+				frames[row] = new AtlasTexture[frameCount];
+				for (int f = 0; f < frameCount; f++)
+				{
+					frames[row][f] = new AtlasTexture
+					{
+						Atlas = sheet,
+						Region = new Rect2(new Vector2(f * pitch[0].GetInt32(), row * pitch[1].GetInt32()), cellSize),
+					};
+				}
+			}
+
+			int i = 0;
+			foreach (JsonElement p in root.GetProperty("pairs").EnumerateArray())
+			{
+				int row = rows.IndexOf(p.GetProperty("depth").GetString());
+				if (row < 0)
+					throw new InvalidOperationException($"pair {i} has a depth eyes.json does not list in rows");
+				var rect = new TextureRect
+				{
+					Name = $"Pair{i++}",
+					Texture = frames[row][0],
+					ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+					StretchMode = TextureRect.StretchModeEnum.Scale,
+					MouseFilter = MouseFilterEnum.Ignore,
+					Position = new Vector2(p.GetProperty("x").GetInt32(), p.GetProperty("y").GetInt32()) * ArtScale,
+					Size = cellSize * ArtScale,
+				};
+				container.AddChild(rect);
+				// Staggered from the start, so the first blinks come at different moments.
+				pairs.Add(new EyePair { Cell = rect, Frames = frames[row], Clock = rng.RandfRange(0.5f, BlinkMaxGap) });
+			}
+		}
+		catch (Exception e) when (e is JsonException || e is System.Collections.Generic.KeyNotFoundException
+			|| e is InvalidOperationException || e is IndexOutOfRangeException)
+		{
+			GD.PushError($"TitleScreen: {specPath} is malformed ({e.Message}) - run python tools/art/anim.py");
+			foreach (EyePair made in pairs)
+				made.Cell.QueueFree();
+			return;
+		}
+		eyePairs = pairs.ToArray();
 	}
 
 	// Two complete sets of the title art, drawn for the two shapes of screen (tools/art/splash.py
@@ -260,8 +469,6 @@ public partial class TitleScreen : Control
 		Show(flamesNearRect, flamesNear, 0);
 		Show(figureRect, figure, 0);
 		Show(wardRect, ward, 0);
-		Show(eyesFarRect, eyesFar, 0);
-		Show(eyesNearRect, eyesNear, 0);
 	}
 
 	private void SetStatic(string path, string layer)
@@ -323,25 +530,55 @@ public partial class TitleScreen : Control
 			Show(wardRect, ward, wardStep < WardFrames ? wardStep : WardFrames * 2 - 2 - wardStep);
 		}
 
-		// One pair at a time, on an irregular gap. Sixteen eyes blinking together is a
-		// lighthouse, not a wood - so the gap is re-rolled after every blink.
-		blinkClock += dt;
-		if (blinkClock >= nextBlink)
+		TickEyes(dt);
+	}
+
+	/// <summary>
+	/// Every pair on its own clock. A pair that comes due while MaxBlinkingPairs are already
+	/// mid-blink, or within BlinkStagger of another starting, waits a moment and tries again -
+	/// which is what keeps the wood from ever blinking together. Frame swaps and a Visible flag
+	/// only: nothing is tinted or faded.
+	/// </summary>
+	private void TickEyes(float dt)
+	{
+		if (eyePairs == null)
+			return;
+		sinceBlinkStarted += dt;
+		foreach (EyePair pair in eyePairs)
 		{
-			if (blinkClock >= nextBlink + BlinkHoldSeconds)
+			pair.Clock -= dt;
+			if (pair.Clock > 0f)
+				continue;
+
+			if (pair.Step < 0)
 			{
-				blinkClock = 0f;
-				nextBlink = (float)rng.RandfRange(BlinkMinGap, BlinkMaxGap);
-				blinkFrame = 0;
+				if (pairsBlinking >= MaxBlinkingPairs || (!pair.Again && sinceBlinkStarted < BlinkStagger))
+				{
+					pair.Clock = rng.RandfRange(0.2f, 0.7f);
+					continue;
+				}
+				pair.Step = 0;
+				pairsBlinking++;
+				sinceBlinkStarted = 0f;
 			}
-			else if (blinkFrame == 0)
+			else if (++pair.Step >= BlinkSteps.Length)
 			{
-				blinkFrame = rng.RandiRange(1, BlinkFrames - 1);
+				pair.Step = -1;
+				pairsBlinking--;
+				pair.Cell.Texture = pair.Frames[0];
+				// Now and then straight into a second blink; otherwise a long wait.
+				pair.Again = !pair.Again && rng.Randf() < DoubleBlinkChance;
+				pair.Clock = pair.Again ? rng.RandfRange(0.12f, 0.2f) : rng.RandfRange(BlinkMinGap, BlinkMaxGap);
+				continue;
 			}
-			// Each blink frame shuts exactly one pair, so only one of the two layers actually
-			// changes - but both are set from the same index so they can never disagree.
-			Show(eyesFarRect, eyesFar, blinkFrame);
-			Show(eyesNearRect, eyesNear, blinkFrame);
+
+			int column = BlinkSteps[pair.Step];
+			pair.Cell.Visible = column >= 0;
+			if (column >= 0)
+				pair.Cell.Texture = pair.Frames[Mathf.Min(column, pair.Frames.Length - 1)];
+			int middle = BlinkSteps.Length / 2;
+			pair.Clock = pair.Step < middle ? BlinkCloseSeconds
+				: pair.Step == middle ? BlinkHoldSeconds : BlinkOpenSeconds;
 		}
 	}
 
@@ -388,7 +625,7 @@ public partial class TitleScreen : Control
 
 	public override void _Input(InputEvent @event)
 	{
-		if (transitioned || updating) return;
+		if (transitioned || updating || noticeOpen) return;
 		// A tap on the update strip's Download or Later is for the strip, not "press any button".
 		if (@event is InputEventMouseButton press && updateBanner != null && IsInstanceValid(updateBanner) && updateBanner.Covers(press.Position))
 			return;

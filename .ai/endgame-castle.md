@@ -426,6 +426,40 @@ points (`ChapterRules.TryPickSpawnPoint`), off screen as always: **65% ahead** a
 come from his castle), **15% behind** but ahead of the front, **20% at the parapets** (climbing over).
 The budget, the pace curve and the cast are unchanged; only where they appear is the bridge's.
 
+**Measured (2026-11-01, `wip/castle-preflip`), the bridge against the Emberdeep.** Farmed Stormcaller,
+`_BalanceHarness --survivor --immortal --policy=ordinary --farmed --minutes=15.2`, `--fixed-fps 30
+--timescale=1`; L15 is the level at 15:00, and the share is the orb XP gathered of the orb XP dropped
+(the ledger's `gotXp` / `dropXp`). The C5 boss runs had read L46 and L36 here against the Emberdeep's 34,
+on other trees and one Emberdeep run. On the same seeds:
+
+| tree | seed | bridge 65/15/20 | bridge 45/25/30 | bridge 50/10/40 | Emberdeep |
+|---|---|---|---|---|---|
+| before: the spawner and the level-up roll unseeded | 1234 | 46; 43 (97%); 35 | | | 41; 42 (83%) |
+| before | 77 | 44; 45 (97%) | | | 43; 41 (89%) |
+| before | 4242 | 45 | | | 32 (the bot stood pinned five minutes) |
+| after the merge, every run roll seeded | 1234 | **42 (100%); 42 (98%)**, the same seed twice | 41 (100%) | 42 (99%) | **41 (94%)** |
+| after | 77 | **49 (99%)** | 46 (98%) | | **40 (77%)** |
+
+- **The kill rate is the same on both chapters, and so is the XP dropped**: about 5,100 kills and
+  12,000-13,100 points of orb XP in fifteen minutes on every run of either. Both sit on the spawn
+  supply's ceiling (`.ai/run-pacing.md` 3.3): the band neither starves it nor feeds it, and no split can
+  move it - the budget is the same wherever the bodies appear.
+- **The whole difference is what is picked up.** On the bridge the wizard gathers 97-100% of what drops:
+  the deck is one corridor walked end to end, every kill lies on the way, the front folds what is left
+  behind into one orb at its edge, and there is no lava to keep the bot off an orb. On the Emberdeep the
+  same bot leaves 6-23% on the ground. About 15% more XP is about three levels at 15:00: the bridge's
+  median 44-45 against the Emberdeep's 41.
+- **The split does not reach it**: 45/25/30 and 50/10/40 gathered 98-100% too, at the same kill rate,
+  and their levels (41, 46, 42) are inside a seed's spread. **65/15/20 stays.** A person gathers more on
+  the Emberdeep than the bot does, so the real gap is likely under the bot's three levels. If it is still
+  too much, the lever is collection (what the front does with the orbs it overtakes), not the spawner and
+  not the XP curve - a design call, left open.
+- **Runs reproduce now**: the bridge's rolls, the spawner's and the wizard's level-up and combat rolls
+  all hash from the run's seed, and the harness's `--seed` is the run's. Seed 1234 ended at L42 both
+  times (one seed had read 46 and 22). Spells and enemies keep their own generators, so two runs agree
+  to a level or so, not to the frame. `--bridge-split=AHEAD,BEHIND` (debug builds) tries another split
+  from one build.
+
 **The end.** The front stops at the gate yard's mouth at 15:00, so at 15:00 the player is in the
 yard, wherever he dawdled. The clock stops, the Constable comes (3.6). When he falls the gate opens:
 it is the way home (`ChapterRules.VictoryPortalPoint`, in place of the arcane portal), and walking in
@@ -500,6 +534,14 @@ and a hoop: the halberd's blade over his head, the ring of keys at his hip). Wha
 - **The wall-walk is measured off the gate's art** (`props_bridge.py` `gate_shut`: merlon tops 172 px
   over the gate's foot on its middle column): his boots stand 128 px over it, he is sorted behind the
   gate sprite, and the parapet hides his legs. His arrival plays there.
+- **The camera leans up to him while he holds the wall** (hook 9, `BridgeRules.CameraLean`, added before
+  the flip). A wizard at the gate's foot stands about 460 px under the top of the halberd; a 1280x720
+  canvas shows 423 px over its centre, the top 150 of them under the boss bar and the bridge's strip, so
+  on a PC he stood at the very top edge, partly under the bar. The lean is as much as it takes to put
+  his whole figure under the HUD (about 190 px at the gate), never more than 0.6 of the half-height,
+  taken back for a player too far down the yard to show the wall at all, and nothing in the yard with
+  him or on a phone (753 px over the centre). Photographed at both canvases,
+  `_UiShot --stage=11 --teleport=<gate's foot> --hold --rush-after=190 --rush-steps=1 --frames=560` (after the arrival's cinematic, which owns the camera while it plays and eases out to the lean).
 - **"Lines of bolts across the yard" are files down it at the player**: lanes from the gate's end, one
   through where he stands and the rest beside it 150 px apart, so the way forward is a sidestep. The
   pitch is a ring on him and rings ahead of him toward the gate. They alternate; in the last phase every
@@ -774,7 +816,16 @@ an upright staff). What it settled that the paragraph above did not:
   and one that cannot route to the player (past the flow field's 64-tile horizon, say) walks into a
   wall for the rest of the run. In one of them the bot stood six minutes with its feet in a cell the
   grid calls wall (119, 145, the Map Room's north wall), and neither the boss nor the two bodies left
-  ever reached it - worth a look by whoever owns the Court's walls (C3).
+  ever reached it - worth a look by whoever owns the Court's walls (C3). **Looked at before the flip
+  (2026-11-01, `wip/castle-preflip`): the walls agree, and that cell is where the bot's body stood, not
+  its feet.** `_MazeProbe --stage=12 --bot=corners --check-walls` sets the wizard down inside every
+  room's four corners (60) and walks him into each, and scans every painted cell round him (all 36 of
+  the building's chunks and the rock round them, 640,000 cell reads): no wall cell without collision,
+  no collision on a floor cell, the chunk data and `court_layout.json` agree on every cell, and his feet
+  were never in a wall cell. Pressed into the Map Room's north-east corner his feet stand on (119, 146)
+  and his body's centre, 36 px above them, is over (119, 145) - the cell reported. Read a cell from
+  `Player.FootPosition`, never `GlobalPosition`; every Court reader of the player's cell already does.
+  The stall itself was the flow field's horizon, which the hop answers.
 - **Hook 4 changed** (`CourtRules.BossSpawnPoint`): he now arrives on the near side of the chosen room,
   not its middle. The rooms run to 2,700 px, and an arrival at the middle of one was off screen.
 - **Health 440,000**, not 13,000: measured with the bot (`.ai/enemy-behaviour.md`, "The Seneschal"),
@@ -934,7 +985,8 @@ its own contract, and an ordinary run is untouched by it:
 
 - **The Muster stops at level 18.** The Ascension (player level 17 and a spell at 8) is reachable
   inside it for a planned build: seven picks bring a spell to 8.
-- **The Apotheosis needs level 23**, so five more levels have to be killed for. At the pinned pace an
+- **The Apotheosis needs level 23**, so five more levels have to be killed for (21 since 2026-11-02:
+  three, and a little over half the XP below). At the pinned pace an
   ordinary kill pays 5 XP (2 x 2.5) and a boss 125: levels 18 to 23 cost 5,275 XP, which at the
   end-of-run kill rate is about five minutes - **during the third pair or with him**. The form is
   then the build's payoff in the last fight, which is the right place for it.
@@ -1173,7 +1225,7 @@ exactly as it did. The Cursed Dungeon has not moved (C2).
 | side events | `SideEventDirector.ForStage` | `"stage_11" => null`, `"stage_12" => null`, `"stage_13" => null`, a comment apart |
 | traps | `RegressionChecks` | the Court and the Throne are indoor chapters and all three built ones, so a chapter may set vents or spikes in its own profile without editing the validator |
 
-### 11.2 The seven hooks
+### 11.2 The hooks
 
 `ChapterRules` is an abstract `Node`. A chapter subclasses it in a file of its own; `Node2DGame` creates one
 per run from `ChapterRulesCatalog.ForStage`, sets `Game` and `Stage`, and adds it as a child **before**
@@ -1191,8 +1243,10 @@ chapter with no line in the catalog gets no rules object at all. Each call site 
 | 5 | `VictoryPortalPoint(fellAt)` | `OpenVictoryPortal` | the castle gate, the throne room doors. The arcane portal still opens at the point and walking in still wins |
 | 6 | `PinnedPaceSeconds` | `PaceSeconds` | the Throne's end state from the first second. The survival clock and the boss's arrival read `timeElapsed`, not this |
 | 7 | `CreateObjective()` | once, after `RunStarted` | the line under the run timer: `Node2DGame` anchors the control across the HUD at `ObjectiveTop`-`ObjectiveBottom` (84-112, the side event's slot), insets it with `SafeArea.ApplyTo` and frees it with the run. `ChapterRules.ObjectiveLabel(text)` makes a text one in the side event's style |
+| 8 | `LevelUpOpening(menu, granted)` | `OnPlayerLevelGained`, before the screen enters the tree | the Throne's Muster heading and arming pause (piece C4; section 12's Muster row) |
+| 9 | `CameraLean(player)` | every frame, `TickBossEntranceCamera` (`Node2DGame.BossEntrance.cs`) | world px to hold the camera off the player, eased in and out with the boss arrival's own ease (an arrival's cinematic owns the camera while it plays, and eases out to this lean). The camera's `Position`, never its `Offset` (the screen shake's). Added before the bridge's flip (`wip/castle-preflip`): the bridge's, up toward the Constable on the wall |
 
-A chapter that needs an eighth hook adds it to `ChapterRules` with a no-op default and one call in
+A chapter that needs another hook adds it to `ChapterRules` with a no-op default and one call in
 `Node2DGame`, in one commit that says why - never a branch on the stage id in `Node2DGame`.
 
 ### 11.3 How a chapter agent plugs in
@@ -1314,3 +1368,64 @@ boss class.
 - **Not run:** any castle chapter as the real thing (they are open fields on stand-ins); `_BossProbe
   --stage=11..13` (the stand-in is the Warden of the Deep); the world map with castle stops (C8). No
   chapter has rules yet, so no hook has run with an answer - the first real test of each is its chapter's.
+
+---
+
+## 12. What C4 built (2026-11-01, `wip/throne`)
+
+Sections 6.1-6.3 and 6.5, on stand-ins where C5 has not built him. `IsPlayable` is still false and the
+Throne is not on the world map (C8); its campaign to-do line names only those two and his boss scene.
+
+| piece | where |
+|---|---|
+| the hall | `tools/art/throne_room.py` -> `assets/bonelight/layouts/throne_room.json` (44 x 44 cells: a 40 x 40 floor in walls two thick, two rows of four 2 x 2 pillars, the Court's red runner up the nave, its marble for the dais, the start at the runner's foot by the south doors) and `world/throne/throne.png`. It checks itself as `court_layout.py` does |
+| the walls | `tools/art/throne_walls.py`, the `throne_wall` set through `tiles.py`: great unlit blocks, sconces burning the `darkness` ramp as emission (the only place it is spent), banners with no device, empty niches |
+| the rules | `ThroneRules.cs`: hook 6 pins the pace at 900 s; `RunStarted` sets `TimerVictorySeconds` 0, turns off the miniboss clock and the elites (a pinned pace would fire every elite of a run at once, and each carries a chest; the Throne's chests are counted); hook 2 spawns on the hall's floor out of sight; hook 3 closes the throne's footprint; hook 5 is the foot of the great doors behind the throne (the Court's `throne-doors` sprite, which opens when he falls) |
+| the Muster | `ThroneRules` + `Node2DGame.GrantedLevels.cs` (`GrantLevelUps`: each level gained as its own ordinary screen opens, through the menu queue) + hook 8 (`ChapterRules.LevelUpOpening`, before the screen enters the tree) + `LevelUpMenu.HeadingOverride` / `ArmingSeconds` (0.8 s first, `MusterArmingSeconds` 0.3 s after); the two relic chests are queued behind the last screen through `OpenChestSelectionMenu` |
+| the procession | `ThroneProcession.cs` (the data) + `Node2DGame.ChapterBosses.cs` (`SendBoss`: a boss outside the boss phase, its own bar side by side in the boss bar's slot, its own edge badge, the field held for its arrival; the one sent as the finale wins through `CompleteBossVictory`) |
+| the cast | `StageBestiary.Throne.cs`: the Court's Household Guard (Bulk and Heavy), Empty Armour and Falconer, and the bridge's Gate Knight, all `Own`; the rest absent; the Chamberlain in the miniboss slot the validator requires (his clock is off). `ChapterBestiary.BorrowedCastBecause` says the borrowing is by design, so `ValidateBestiary` writes no to-do for it (11.5) |
+
+**Four things the measurements changed** (`_BalanceHarness --stage=13 --all-unlocked --seek-apotheosis
+--immortal`, the Pyromancer, seed 1234; the THRONE lines log every arrival and fall and each boss's health every
+20 s):
+
+1. **The guard stands down while a pair stands** (`ThroneProcession.GuardStandsDownForFights`), and the
+   field drains to the fight as it does for every boss. With the end-of-run guard arriving throughout (6.6's
+   assumption), a level-18 build's auto-aimed spells went to the swarm: about 110 HP/s reached Mother Rot,
+   who walks in, and about 14 HP/s the Archivist, who stands off, so no health served both a bot and a player
+   who walks up to it. The guard comes in the warm-up and the breathers (after the breather's first 6 s).
+2. **The pairs' health is the Throne's own** (the road's fights were lengthened to 10,000-400,000 since 6.3
+   was written), set so each pair falls together in about two minutes: the Hayward 9,000 and the Gaoler
+   30,000 (the bot put 50 HP/s into him behind his hurdle and 265 into the Gaoler), Mother Rot 30,000 and the
+   Archivist 12,000, the Still Warden and the Long Coil 17,000 each. Measured (Muster 18): the pairs fell in
+   98, 135 and 95 s, and he arrived 7.0 minutes into the procession at level 23. **One build, not a range**: the
+   Stormcaller (`--character=3 --seed=77`, the same policy) killed 4 of the guard in the warm-up, was
+   overrun by it, and took 515 s over the first pair and 336 s over the Archivist (about 80 HP/s to the
+   Pyromancer's 265). The Throne's `ChapterDifficulty` row is still the Emberdeep's stand-in (`EnemyHealth`
+   3.8, against a table of 1.70 - the guard is about 1,300 HP); a level-18 build meeting it is 6.3's premise,
+   but how hard is a tuning pass across several wizards that this piece did not make.
+3. **The Long Coil surfaces on open ground** (`LongCoilBoss.SurfacingPoint`, the Archivist's rule): in the
+   closed hall about one surfacing in ten came up inside a pillar or the wall. Unchanged on open ground.
+4. **The Muster is 18 levels, not 17** (decision 8's "moved by measurement", 6.6's rule). With the guard
+   standing down, 17 left the planned build at level 22 when he fell - no Apotheosis (one earlier run, in which
+   the guard leaked into the fights, had it 20 s into his). 18 puts it 56 s into the third wave, level 23 at
+   6.2 minutes. The Ascension is still taken inside the Muster (level 18, on its second-last screen). Before the
+   guard stood down, 17 put it in the first wave (3.2 minutes). Every save that reaches the Throne has beaten
+   the Hayward, so the Ascension is learned (`--all-unlocked` sets it too).
+
+The guard's stand-down is renewed every frame of a fight with a one-second hold: a quarter of a second let
+it through in the harness's crowded, scaled frames.
+
+**Verified:** `dotnet build`; the validator (0 errors, the same 4 warnings, the Throne's to-do line down to
+his boss scene and the map); `_BossProbe --stage=13` walks the whole procession (every arrival held the
+field, every boss through every phase, the way home open, no warden in a wall - his stand-in, the Warden of
+the Deep, still surfaces in one); the harness above; `_UiShot` of the Muster and of a pair at both canvases.
+Tool arguments: `--throne-wave=N` starts at wave N two seconds after the Muster, `--throne-muster=N` sizes
+the Muster, `_UiShot --dismiss-levelups=N` keeps the N+1th level-up on screen, and `_UiShot`, `_BossProbe`
+and `_BalanceHarness` claim a chest screen the run opens.
+
+**Not done, for later pieces:** him (C5: `ThroneDarkWizardBoss`, his health, his music handover; the
+Throne's set plays throughout today because the run never enters its boss phase); the doors he came in by
+are drawn as wall (the south wall shows only its top); the results screen's time tile reads "Boss at 0:01"
+on a Throne defeat, because `TimerVictorySeconds` is 0 (6.5's best time is C5's or the flip's); the map
+(C8); the flip.

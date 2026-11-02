@@ -96,6 +96,17 @@ because the grid had an empty row - an archetype the genre uses constantly and w
 | 31 | Stormsweep | Lightning | **the side the player faces** | timer, every cooldown whatever is there | **face the crowd** | **a band beside him, swept** | close |
 | 32 | Sleet Runes | Ice+Wind | **the way the player faces** | fast timer, a stream | **walk to aim** | **true projectiles: pierce and speed** | mid-long |
 
+### The combinations (2026-11-01)
+
+Two fully ascended spells made into one (`.ai/combo-spells.md`, `ComboCatalog`): never a level-up card,
+offered in the Ascension strip once both parents are at level 8 down the Ascensions the recipe names, and
+terminal. Each owns a verb no Apotheosis or other combination has; its elements are its parents' current
+weights summed - the one kind of spell allowed three, never four.
+
+| # | spell | element | aim | cadence | demand | payload | band |
+|---|---|---|---|---|---|---|---|
+| 33 | **Sagittarius** (Hunter's Draw - Hunter's Mark + Starfall - Constellation; `scripts/Sagittarius.cs`) | Metal+Wind+Light | **from the ground he has walked, inward, on the mark** (a full draw marks the strongest in reach; unmarked, the enemy nearest him) | the rain falls as always; **every star landing while the bow is drawn stays lit** (16 at most); **the loose when he stops** | **walk the rain round the crowd, then stop** | **a converging volley** - one piercing arrow from every lit star - with Constellation's lines while he walks | long |
+
 ### Hollow Star - the spell that moves the swarm (issue #64)
 
 Every other spell takes the enemies where it finds them. Hollow Star opens a well on the densest pack
@@ -872,8 +883,10 @@ the thing at the game's 2 px art grid, out of the number that decides what it hi
   up, each picks the nearest unclaimed enemy inside, winds up, lashes to it and lands: the target and
   anything within 40 px of the landing take one slap. **`CurrentRadius` is the one hit authority** and
   the shader draws to it; the old version grew the DRAWING by the ascensions' x2 / x1.7 scale while
-  their area never reached the hit. Levels add tentacles (even), rift size and slow (odd), +1 slap
-  damage every level - written out in full in the `.tres`. Amount adds tentacles. All five evolutions
+  their area never reached the hit. It starts small and builds (Eric, 2026-11-01): 60 px and two
+  tentacles at level 1, 10 px wider at every level but 6 and a tentacle at 2, 4, 5, 6 and 8, so 120 px
+  and seven at level 8 as before; the slow deepens on odd levels, +1 slap damage every level - written
+  out in full in the `.tres`. Amount adds tentacles. All five evolutions
   now do what their card says (Soul Drain and the Maw's vortex had no reader at all) and the cards
   were rewritten to say only that. **Elder God Maw** was redrawn: a lip of torn earth and wet flesh,
   three rings of teeth of uneven length turning against each other and sinking into black, a ring of
@@ -884,10 +897,12 @@ the thing at the game's 2 px art grid, out of the number that decides what it hi
   bodies, with their shadows on the ground and dust blown after them; the maw rises out of the hole,
   teeth growing out of the dark, and tips the ground up round it into a torn rim of slabs that the
   thrown earth lands on and lies on until it closes. Same 0.8 s, same slow - only its curve is eased
-  out, because the cracks are the slow's edge and have to run ahead. **Two maws never overlap**
-  ("they should never overlap"): a new one opens only where its full radius clears every open maw's
-  by 8 px; if the pack is under a maw it opens beside it, on the stragglers, and if nowhere in range
-  would catch anything the cast waits (`Player.TryPlaceMaw`, `BlackTentacles.MawFits`).
+  out, because the cracks are the slow's edge and have to run ahead. **Two rifts never overlap**:
+  the maws first ("they should never overlap"), then every face (Eric, 2026-11-01: "Black tentacles
+  should never be able to stack on top of each other"). A new rift opens only where its full radius
+  clears every open rift's by 8 px; if the pack is under a rift it opens beside it, on the stragglers,
+  and if nowhere in range would catch anything the cast waits (`Player.TryPlaceRift`,
+  `BlackTentacles.RiftFits`).
 - **Thorned Vine** keeps id `thorn_vine` and every save key; only the name changed. One vine bursts
   from the ground on the player's side of the densest pack, coils, lashes across it in a 170 degree
   sweep and withers. It strikes enemies in the order its drawn line reaches them, cuts through
@@ -3433,9 +3448,11 @@ section 1 are two.
   ring of puffs that lands on the rim, the cloud and the burning patches are laid out of it, every puff
   and flame with its outer edge inside it. Every area term - levels (AreaSize, in px), the player, every evolution's
   `AreaMultiplier` through `GetAreaMultiplierAtLevel` - is folded in once, in `SporeMushroom.For`.
-- **The table** (written out in full in the `.tres`): 6 damage, 3 mushrooms, 80 px bursts, 2.8 s; even
-  levels add a mushroom (2, 6, 8) or poison (4), odd levels +8 px, every level +1 damage, poison 2/s
-  for 3 s +1 at levels 4 and 7. Level 7: 12 damage, 5 mushrooms, 104 px, poison 4. Cards say
+- **The table** (written out in full in the `.tres`): 7 damage, **1 mushroom**, 80 px bursts, 2.8 s; a
+  mushroom more at levels 2, 3, 5, 6 and 8 (six at level 8, as before), odd levels +8 px, every level
+  +1 damage, poison 2/s for 3 s +1 at levels 4 and 7. Level 7: 13 damage, 5 mushrooms, 104 px,
+  poison 4. It started at 3 mushrooms and 6 damage until 2026-11-02 (Eric: "starts with too many
+  spores on the field at level one ... reducing the numbers of things and letting them ramp"). Cards say
   "Mushrooms +1" (`Player.ProjectileNoun`, which also covers Black Tentacles).
 - **One node, several mushrooms.** A Mycelial Bloom chain is slots in its sown mushroom's fixed array,
   not new nodes, so the one place the spell makes things quickly instantiates and allocates nothing.

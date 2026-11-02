@@ -19,6 +19,15 @@ namespace WizardSurvivors.scripts;
 ///
 /// Shown once per chapter (SaveData.SeenChapterNoteIds) by ChapterNoteCard, and kept in the journal
 /// (JournalPage). A playable chapter with no note is reported by RegressionChecks.ValidateQuestsAndNotes.
+///
+/// THE CLUES (Eric, 2026-11-01: "after that, it should provide clues for unlockables in the level, like how
+/// it says 'someone is singing under the ice'. the clues should be separated from the other text, in
+/// italics. after unlocking, that text clue will not appear."). Under the intro, set apart, one line for
+/// each thing the chapter still holds for this save: the wizard held there (his held line), what its side
+/// event pays when that is not a wizard (SiteClues), and a vault's spell (VaultClue). Each goes the moment
+/// it is won. A clue says something is there and never what: no wizard's name, no spell's, no place, no
+/// verb - the hints' rule (StageHintCatalog), checked by ValidateQuestsAndNotes. While a clue remains, a
+/// returning player sees the card again, with the clues alone (ChapterNoteCard).
 /// </remarks>
 public static class ChapterNotes
 {
@@ -96,6 +105,26 @@ public static class ChapterNotes
 		},
 	};
 
+	// What a side event holds when it is not a wizard (a wizard's line is his held line, QuestLog.Prisoners),
+	// keyed by its Discovery site (SideEventDirector.ForStage). In the note's voice: where the place's
+	// intro says what it is like, a clue says that something is still out there.
+	private static readonly Dictionary<string, string> SiteClues = new(StringComparer.OrdinalIgnoreCase)
+	{
+		["the_grove"] = "Somewhere in the wood, something is still growing.",
+		["bog_lanterns"] = "His lanterns are keeping something out in the fog.",
+		["caravan_master"] = "A bell on the old road. Something still walks it.",
+		["the_well"] = "Something glints at the bottom of the well.",
+		["the_moot"] = "Embers still glow somewhere among the stones.",
+	};
+
+	// A spell vault (SecretCatalog, IsVault) the save has not opened. One line for the chapter however many
+	// it holds, and only the chapter: the Spell Index already says "Hidden somewhere in" it, and that is
+	// all a secret is told before it is seen (.ai/achievements-and-secrets.md 4.3).
+	public const string VaultClue = "Something he took is hidden here. I can feel it.";
+
+	/// <summary>The site clues, for the validator.</summary>
+	public static IReadOnlyDictionary<string, string> SiteClueLines => SiteClues;
+
 	/// <summary>Whether a chapter has a note written. The castle's chapters get theirs when they are built.</summary>
 	public static bool Has(string stageId) => !string.IsNullOrWhiteSpace(stageId) && Lines.ContainsKey(stageId);
 
@@ -111,6 +140,47 @@ public static class ChapterNotes
 		lines.AddRange(Lines[stageId]);
 		lines.AddRange(QuestLog.HeldLinesFor(stageId, save));
 		return lines;
+	}
+
+	/// <summary>The chapter's own lines - the place - without whoever is held there.</summary>
+	public static IReadOnlyList<string> IntroFor(string stageId) =>
+		Has(stageId) ? Lines[stageId] : Array.Empty<string>();
+
+	/// <summary>
+	/// What the chapter still holds for this save, one clue a thing, in the order the card sets them: the
+	/// wizard held there, what its side event pays, a vault. Empty once everything here is won.
+	/// </summary>
+	public static List<string> CluesFor(string stageId, SaveData save)
+	{
+		var clues = new List<string>();
+		if (!Has(stageId))
+			return clues;
+		clues.AddRange(QuestLog.HeldOnlyLinesFor(stageId, save));
+
+		var site = SideEventDirector.ForStage(stageId);
+		if (site != null && SiteClues.TryGetValue(site.Value.SiteId, out string siteClue)
+			&& !DiscoveryRewards.IsSiteExhausted(save, site.Value.SiteId)
+			&& UnlockCatalog.ForDiscoverySite(site.Value.SiteId).Any(u => u.Kind != UnlockKind.Character
+				&& !IsOwned(save, u)))
+			clues.Add(siteClue);
+
+		if (SecretCatalog.ForStage(stageId).Any(secret => secret.IsVault && !string.IsNullOrEmpty(secret.SpellUnlockId)
+			&& (save == null || (!save.HasFoundSecret(secret.Id) && !GlobalStatsManager.IsSpellUnlockedForLevelUp(save, secret.SpellUnlockId)))))
+			clues.Add(VaultClue);
+		return clues;
+	}
+
+	// A Discovery unlock this save already has, asked the way DiscoveryRewards.IsSiteExhausted asks it.
+	private static bool IsOwned(SaveData save, UnlockDefinition unlock)
+	{
+		if (save == null)
+			return false;
+		return unlock.Kind switch
+		{
+			UnlockKind.Character => GlobalStatsManager.IsCharacterUnlocked(save, unlock.Id),
+			UnlockKind.Boon => GlobalStatsManager.IsBoonUnlocked(save, unlock.Id),
+			_ => GlobalStatsManager.IsSpellUnlockedForLevelUp(save, unlock.Id),
+		};
 	}
 
 	public static bool IsSeen(SaveData save, string stageId) =>

@@ -203,9 +203,9 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 8.0
+offset_left = 24.0
 offset_top = 20.0
-offset_right = -8.0
+offset_right = -24.0
 offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -217,48 +217,7 @@ theme_override_font_sizes/font_size = 40
 text = "Options"
 horizontal_alignment = 1
 
-[node name="MasterRow" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox"]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="MasterLabel" type="Label" parent="MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/MasterRow"]
-layout_mode = 2
-text = "Master Volume"
-
-[node name="MasterVolumeSlider" type="HSlider" parent="MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/MasterRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-min_value = 0.01
-max_value = 1.0
-step = 0.05
-value = 1.0
-
-[node name="MusicRow" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox"]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="MusicLabel" type="Label" parent="MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/MusicRow"]
-layout_mode = 2
-text = "Music Volume"
-
-[node name="MusicVolumeSlider" type="HSlider" parent="MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/MusicRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-min_value = 0.01
-max_value = 1.0
-step = 0.05
-value = 1.0
-
-[node name="MuteToggle" type="CheckButton" parent="MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox"]
-layout_mode = 2
-text = "Mute All"
-
-[node name="OptionsSpacer" type="Control" parent="MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-
 [node name="BackFromOptionsButton" type="Button" parent="MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox"]
 custom_minimum_size = Vector2(220, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
 text = "Back"

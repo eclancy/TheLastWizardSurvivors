@@ -23,8 +23,12 @@ THE STEMS, as .ai/audio-direction.md section 11 has them:
 
   bed    a G-D drone, held strings, and the fiddle's figure in spiccato running the three groups of
          every bar - the slip jig is in the bed, so the run is already dancing before the pulse
-  pulse  a frame drum in threes, the plucked bass on the roots, a harp rocking through the chord
+  pulse  (2026-11-01, the battle pulse, up from the first second) a taiko on the three dotted beats,
+         frame drums through every eighth, a snare on the third, the bass jigging root-root-octave,
+         and a harp rocking through the chord
   lead   the flute's hook in A; a solo fiddle answers in B, a second an octave under it
+  boss   (2026-11-01) the Hayward's layer: the taiko doubled through the groups, brass on the dotted
+         beats, strings running the chord in sixteenths
 
 16 BARS, NOT 24. The design said 24, and at dotted quarter 116 a 9/8 bar is 1.55 s: 24 bars is a
 37 s loop, past the 30 s the size rule allows (".ai/audio-direction.md", Size). 16 bars - A and B
@@ -104,18 +108,37 @@ def fields_bed():
     return ev
 
 
+FILLS = (B_START - 1, 16 - 1)
+
+
 def fields_pulse():
+    """The jig at a run (2026-11-01): a taiko on the three dotted beats, frame drums through every
+    eighth of the groups, a snare on the third beat, and the bass jigging root, root, octave in each
+    group under the harp."""
     g, ch = GRID, CHORDS
-    ev = M.ost(g, PROG, lambda c: ch[c]["arp"], "0.1.2.3.2.1.0.1.2.", M.harp, 5, 0.36)
-    ev += M.ost(g, PROG, lambda c: [ch[c]["root"]], "0...........0.....", M.bass_pluck, 6, 0.6)
+    ev = M.ost(g, PROG, lambda c: ch[c]["arp"], "0.1.2.3.2.1.0.1.2.", M.harp, 5, 0.32)
+    ev += M.ost(g, PROG, M.octaves_of(ch), "0.0.1.0.0.1.0.0.1.", M.bass_pluck, 1.8, 0.6)
     for bar in range(len(PROG)):
         # The drum in threes: the three dotted beats, the first heaviest, and the eighths between.
-        ev += M.hits(g, bar, "X.....x.....x.....", M.frame_drum, "G2", 0.75, 6)
-        if bar in (B_START - 1, len(PROG) - 1):
-            ev += M.hits(g, bar, "......o.x.x.xxxXXX", M.frame_drum, "D3", 0.5, 2)
+        ev += M.hits(g, bar, "X.....x.....x.....", M.taiko, "G2", 0.75, 6)
+        if bar in FILLS:
+            ev += M.hits(g, bar, "......o.x.x.xxxXXX", M.frame_drum, "D3", 0.75, 2)
         else:
-            ev += M.hits(g, bar, "..o.o...o.x...o.o.", M.frame_drum, "A3", 0.32, 2)
+            ev += M.hits(g, bar, "x.o.o.x.o.o.x.o.x.", M.frame_drum, "A3", 0.55, 2)
+            ev += M.hits(g, bar, "............X.....", M.snare, None, 0.85, 3)
     return ev
+
+
+def fields_boss():
+    """The Hayward: the taiko doubled through the groups, brass stabbing the roots on the dotted
+    beats, and the fiddle's strings running the chord in sixteenths."""
+    g, ch = GRID, CHORDS
+    return M.boss_layer(
+        g, PROG, ch,
+        drum=("X.xX.xX.xX.xX.xX.x", M.taiko, "D3", 0.62, 4),
+        stabs=("X.....x.....x.....", M.brass, 0.6, 2),
+        motor=("012321012321012321", M.spiccato, lambda c: c["arp"], 0.48, 1.2),
+        fills=FILLS, roll=("X.x.x.x.x.xxxxxXXX", M.snare, None, 0.75, 1))
 
 
 def fields_lead():
@@ -131,6 +154,7 @@ def fields_lead():
 # of them, and check_scale refuses anything else.
 PIECE = M.Piece(
     "fields", 116.0, 3, 16,
-    [("bed", fields_bed, 0.28), ("pulse", fields_pulse, 0.16), ("lead", fields_lead, 0.24)],
+    [("bed", fields_bed, 0.28), ("pulse", fields_pulse, 0.16), ("lead", fields_lead, 0.24),
+     ("boss", fields_boss, 0.14)],
     tail_beats=3, scale=M.SEVEN,
     describe="The Fallow Fields - G Mixolydian, 9/8 slip jig at dotted quarter 116, A/B of 8 bars")

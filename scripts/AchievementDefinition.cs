@@ -82,6 +82,12 @@ public enum AchievementVisibility
 	ChapterOpen,
 	/// <summary>Counted, never named, until it has been seen (<see cref="SaveData.GlimpsedSecretIds"/>) or found.</summary>
 	Hidden,
+	/// <summary>
+	/// A combination's Feat (ComboCatalog): not on the page at all until the save owns both parents, then the
+	/// two parents with their named Ascensions and a sealed result, and the result's name once made
+	/// (.ai/combo-spells.md section 2, "Unlocks and the save"). Derived from the save, never stored.
+	/// </summary>
+	Recipe,
 }
 
 public sealed class AchievementDefinition
@@ -122,6 +128,16 @@ public sealed class AchievementDefinition
 
 	/// <summary>For a secret's deed: the <see cref="SecretDefinition"/> it mirrors. Empty otherwise.</summary>
 	public string SecretId { get; init; } = string.Empty;
+
+	/// <summary>For a combination's Feat: the recipe it mirrors (ComboCatalog). Empty otherwise.</summary>
+	public string ComboId { get; init; } = string.Empty;
+
+	/// <summary>
+	/// What a Recipe deed is called and pays before it is made: the name is the result's, and stays sealed
+	/// until the run that makes it ("Conjunction: ???", "Unlocks ???"). Empty on every other deed.
+	/// </summary>
+	public string SealedName { get; init; } = string.Empty;
+	public string SealedReward { get; init; } = string.Empty;
 
 	/// <summary>
 	/// A Hidden deed's words once seen (.ai/achievements-and-secrets.md 4.3): what the player saw, as an
@@ -225,6 +241,7 @@ public static class AchievementDefinitions
 		("the_moot", "The Circle Relit", "Relight the runes of the stone circle on the Broken Circle.", "Unlocks Gilded Mote"),
 		("gaolers_key", "The Open Cell", "Carry the Gaoler's key to the locked cell in the Cursed Dungeon.", "Frees Tituba"),
 		("bog_lanterns", "The Lanterns Out", "Snuff the lanterns of the Blighted Swamp and face what tends them.", "Unlocks Contagion"),
+		("five_pointed_seal", "The Seal Broken", "Turn the four guardian stones to face the seal in the Mystic Ruins.", "Frees Abe no Seimei"),
 		("the_thaw", "Out of the Ice", "Thaw the wizard out of the ice in the Frozen Waste.", "Frees Väinämöinen"),
 		("caravan_master", "The Caravan Stopped", "Catch the caravan master on the Scorched Sands road.", "Unlocks Iron Palisade"),
 	};
@@ -332,7 +349,22 @@ public static class AchievementDefinitions
 
 		// --- Exploration: chapters, bosses and relics ------------------------------------------
 		BossClear("forest_cleared", "Forest Cleared", "forest_treant", "the Enchanted Forest", "thorn_vine", "Thorned Vine"),
-		BossClear("castle_conqueror", "Dungeon Conqueror", "castle_warden", "the Cursed Dungeon", "shadow_bolt", "Shadow Bolt"),
+		// Two things since the first wave of new items (.ai/new-items.md section 7): Shadow Bolt, and Bone
+		// Rattle - a jailer carries a rattle.
+		new()
+		{
+			Id = "castle_conqueror", DisplayName = "Dungeon Conqueror",
+			Description = "Defeat the boss of the Cursed Dungeon.",
+			RewardText = "Unlocks Shadow Bolt and Bone Rattle",
+			SpellUnlockId = "shadow_bolt", BoonUnlockId = "bone_rattle",
+			Category = AchievementCategory.Exploration,
+			Kind = AchievementKind.Road,
+			Visibility = AchievementVisibility.ChapterOpen,
+			StageId = StageOfBoss("castle_warden"),
+			BossId = "castle_warden",
+			Measure = c => c.Lifetime.HasDefeatedBoss("castle_warden") ? 1f : 0f,
+			Target = 1,
+		},
 		BossClear("cave_choir_silenced", "Silence in the Deep", "cave_choir", "the Sunken Cave", "riptide", "Riptide"),
 		BossClear("swamp_cleansed", "Cut the Rot Out", "swamp_mother", "the Blighted Swamp", "mirefoot", "Mirefoot"),
 		BossClear("ruins_delver", "Ruins Delver", "ruins_sentinel", "the Mystic Ruins", "spiritual_weapon", "Spiritual Weapon"),
@@ -358,11 +390,15 @@ public static class AchievementDefinitions
 		// The gate chapter's own deed pays Arcane Energy since schema 19 - its Fireball moved to the Long
 		// Coil - and opens the castle (.ai/endgame-castle.md) once it is built. A save that had done it
 		// keeps its Fireball and is not paid the 300: reconciling pays unlocks, never currency.
+		// Since 2026-11-02 it also pays the Sovereign Rite (.ai/sovereign-spell.md section 3): the end of the
+		// road, so nothing on a new save reaches it early. A save that has beaten the Warden is handed it by
+		// the reconcile at the end of its next run (AchievementManager.Reconcile) - no schema step.
 		new()
 		{
 			Id = "emberdeep_ended", DisplayName = "The Long Road Back",
 			Description = "Defeat the boss of the Emberdeep.",
-			RewardText = "300 Arcane Energy", CurrencyReward = 300,
+			RewardText = "Unlocks the Sovereign Rite and 300 Arcane Energy", CurrencyReward = 300,
+			SpellUnlockId = SovereignRite.SpellId,
 			Category = AchievementCategory.Exploration,
 			Kind = AchievementKind.Road,
 			Visibility = AchievementVisibility.ChapterOpen,
@@ -390,7 +426,7 @@ public static class AchievementDefinitions
 		new()
 		{
 			Id = "sketchbook_cleared", DisplayName = "Best Drawing",
-			Description = "Defeat Wizard Dude in the Sketchbook.",
+			Description = "Defeat Elim in the Sketchbook.",
 			RewardText = "400 Arcane Energy", CurrencyReward = 400,
 			Category = AchievementCategory.Exploration,
 			Kind = AchievementKind.Road,
@@ -467,6 +503,7 @@ public static class AchievementDefinitions
 		// the final gate's key until schema 19; the gate counts wizards now, and the spells are the
 		// collection. Measured live against the catalog, so a spell added later raises the target for those
 		// still collecting - and needs no migration, which a gate counting spells did every time.
+		// The combinations are left out (UnlockCatalog.GrimoireSpellIds).
 		new()
 		{
 			Id = GrimoireRestoredId, DisplayName = "The Grimoire Restored",
@@ -474,10 +511,10 @@ public static class AchievementDefinitions
 			RewardText = "500 Arcane Energy", CurrencyReward = 500,
 			Category = AchievementCategory.Exploration,
 			Kind = AchievementKind.Collection,
-			Measure = c => GlobalStatsManager.GetUnlockedSpellCount(c.Save),
-			Target = UnlockCatalog.AllSpellIds.Count(),
+			Measure = c => GlobalStatsManager.GetGrimoireSpellCount(c.Save),
+			Target = UnlockCatalog.GrimoireSpellIds.Count(),
 		},
-	}).Concat(SideEventDeeds()).Concat(SecretDeeds()).ToList();
+	}).Concat(SideEventDeeds()).Concat(SecretDeeds()).Concat(CombinationDeeds()).ToList();
 
 	/// <summary>
 	/// One Road deed for every chapter's side event (SideEventDirector.ForStage), in campaign order. Its
@@ -518,6 +555,63 @@ public static class AchievementDefinitions
 			};
 		}
 	}
+
+	/// <summary>
+	/// One Feat for every combination (ComboCatalog), "Conjunction: Name": completed the first time a run
+	/// meets the recipe (Node2DGame records it as the strip first offers it, through AchievementManager.CompleteNow)
+	/// and paid with the combination there and then. Its measure is its own record - the deed is the fact -
+	/// so no save field is added for it (no schema bump), and a run's end never completes it twice.
+	/// </summary>
+	private static IEnumerable<AchievementDefinition> CombinationDeeds()
+	{
+		foreach (ComboDefinition recipe in ComboCatalog.All)
+		{
+			string id = ComboCatalog.FeatId(recipe.Id);
+			// The Rite's row: the Warden of the Deep's deed pays the Rite itself, so its Feat - met the first
+			// time the strip offers it - pays Arcane Energy, and its line is the gate rather than two Ascensions.
+			if (recipe.IsRite)
+			{
+				yield return new AchievementDefinition
+				{
+					Id = id,
+					DisplayName = $"Conjunction: {recipe.Name}",
+					Description = $"In one run, reach level {SovereignRite.MinimumPlayerLevel} holding {SovereignRite.MinimumActiveSpells} active spells and the {recipe.Name}.",
+					RewardText = $"{SovereignRiteFeatCurrency} Arcane Energy",
+					CurrencyReward = SovereignRiteFeatCurrency,
+					Category = AchievementCategory.Mastery,
+					Kind = AchievementKind.Feat,
+					Visibility = AchievementVisibility.Recipe,
+					CompletesInRun = true,
+					ComboId = recipe.Id,
+					SealedName = "Conjunction: ???",
+					SealedReward = "???",
+					Measure = c => c.Save != null && GlobalStatsManager.IsAchievementUnlocked(c.Save, id) ? 1f : 0f,
+					Target = 1,
+				};
+				continue;
+			}
+			yield return new AchievementDefinition
+			{
+				Id = id,
+				DisplayName = $"Conjunction: {recipe.Name}",
+				Description = $"In one run, take {recipe.First.SpellName} down {recipe.First.AscensionName} and {recipe.Second.SpellName} down {recipe.Second.AscensionName}.",
+				RewardText = $"Unlocks {recipe.Name}",
+				SpellUnlockId = recipe.Id,
+				Category = AchievementCategory.Mastery,
+				Kind = AchievementKind.Feat,
+				Visibility = AchievementVisibility.Recipe,
+				CompletesInRun = true,
+				ComboId = recipe.Id,
+				SealedName = "Conjunction: ???",
+				SealedReward = "Unlocks ???",
+				Measure = c => c.Save != null && GlobalStatsManager.IsAchievementUnlocked(c.Save, id) ? 1f : 0f,
+				Target = 1,
+			};
+		}
+	}
+
+	/// <summary>What the Sovereign Rite's Feat pays: the Rite itself is the Warden of the Deep's.</summary>
+	public const int SovereignRiteFeatCurrency = 250;
 
 	/// <summary>Whether a side event's site has words written for its deed. For the validator.</summary>
 	public static bool HasSideEventWords(string siteId) =>
@@ -563,6 +657,8 @@ public static class AchievementDefinitions
 						|| GlobalStatsManager.IsAchievementUnlocked(save, deed.Id));
 			case AchievementVisibility.ChapterOpen:
 				return !IsSealed(deed, save);
+			case AchievementVisibility.Recipe:
+				return save != null && ComboCatalog.IsKnown(ComboCatalog.ForId(deed.ComboId), save);
 			default:
 				return true;
 		}

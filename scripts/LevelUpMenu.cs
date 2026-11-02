@@ -57,9 +57,26 @@ public partial class LevelUpMenu : CanvasLayer
 	/// <summary>True once the arming pause is over and a press will choose.</summary>
 	public bool IsArmed => Time.GetTicksMsec() >= armedAtMsec;
 
+	// THE MUSTER (.ai/endgame-castle.md 6.2, piece C4): the Throne grants its first levels at once (18,
+	// ThroneProcession.MusterLevels), each through this screen. Its rules (ChapterRules hook 8,
+	// ThroneRules) set these two before the screen enters the tree, so _Ready lays out what they say. The
+	// heading reads "The Muster - 5 of 18", and the arming pause is InputGuardSeconds on the first screen
+	// and MusterArmingSeconds on the rest: long enough that the click closing one cannot choose the next,
+	// short enough that eighteen screens are not fifteen seconds of waiting. Every other screen leaves both
+	// alone.
+
+	/// <summary>Words for the heading in place of "Level Up!"; null or empty for the usual.</summary>
+	public string HeadingOverride { get; set; }
+
+	/// <summary>This screen's arming pause, real seconds. <see cref="InputGuardSeconds"/> unless a run asks otherwise.</summary>
+	public float ArmingSeconds { get; set; } = InputGuardSeconds;
+
+	/// <summary>The Muster's pause on every screen after its first (6.2).</summary>
+	public const float MusterArmingSeconds = 0.3f;
+
 	private void Disarm()
 	{
-		armedAtMsec = Time.GetTicksMsec() + (ulong)(InputGuardSeconds * 1000f);
+		armedAtMsec = Time.GetTicksMsec() + (ulong)(ArmingSeconds * 1000f);
 	}
 
 	private static bool IsChoosingPress(InputEvent @event) =>
@@ -90,6 +107,23 @@ public partial class LevelUpMenu : CanvasLayer
 		MenuNavigator.Attach(this);
 	}
 
+	// THE COMBINATIONS the save knows (Player.BuildComboPreviews): the ascension browser lists them under the
+	// Apotheosis, and the level 8 page marks a path a known recipe names. Reports only - the strip above
+	// (SetAscensions) is the one place a combination is made.
+	private List<ComboPreview> currentCombinations = new();
+
+	public void SetCombinations(List<ComboPreview> combinations)
+	{
+		currentCombinations = combinations ?? new List<ComboPreview>();
+	}
+
+	// "Hunter's Draw and Starfall", from the recipe, for the conjunction page's subtitle.
+	private static string ConjunctionParents(LevelUpOption option)
+	{
+		WizardSurvivors.scripts.ComboDefinition recipe = WizardSurvivors.scripts.ComboCatalog.ForId(option?.ComboId);
+		return recipe == null ? option?.DisplayName ?? string.Empty : $"{recipe.First.SpellName} and {recipe.Second.SpellName}";
+	}
+
 	private void BuildAscendStrip()
 	{
 		var normalView = GetNodeOrNull<VBoxContainer>("Panel/VBoxContainer");
@@ -111,12 +145,16 @@ public partial class LevelUpMenu : CanvasLayer
 
 		foreach (LevelUpOption option in currentAscensions)
 		{
-			bool apotheosis = option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
+			// A combination (ComboCatalog) is in the strip as the Apotheosis is, on a plate of its own.
+			bool conjunction = WizardSurvivors.scripts.ComboCatalog.IsComboOption(option);
+			bool apotheosis = !conjunction && option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
 			string form = apotheosis && option.EvolutionChoices.Count > 0 ? option.EvolutionChoices[0].DisplayName : string.Empty;
 			var button = new Button
 			{
 				Name = $"Ascend_{option.SpellId}",
-				Text = apotheosis
+				Text = conjunction
+					? $"✶ CONJUNCTION   {option.DisplayName}"
+					: apotheosis
 					? $"✶ APOTHEOSIS   {option.DisplayName} → {form}"
 					: $"★ ASCEND   {option.DisplayName}",
 				// Wide enough to read as the headline of the screen rather than a tab beside it.
@@ -128,14 +166,16 @@ public partial class LevelUpMenu : CanvasLayer
 			// Apotheosis (CardFamilyArt), so the button and the choice behind it are one object. It
 			// was the screen's stone button, the same as Reroll. Gold on the obsidian 12.3:1, the
 			// ember ink on the ember plate 11.1:1 (tools/art/ui_contrast.py, "strip").
+			// The bronze plate for a combination, its starlight ink 14.6:1 (ui_contrast.py, "conjunction").
 			EnsureFamilyStyles();
-			StyleBoxTexture plate = apotheosis ? stripEmberResting : stripObsidianResting;
-			StyleBoxTexture plateLit = apotheosis ? stripEmberLit : stripObsidianLit;
+			StyleBoxTexture plate = conjunction ? stripConjunctionResting : apotheosis ? stripEmberResting : stripObsidianResting;
+			StyleBoxTexture plateLit = conjunction ? stripConjunctionLit : apotheosis ? stripEmberLit : stripObsidianLit;
 			button.AddThemeStyleboxOverride("normal", plate);
 			button.AddThemeStyleboxOverride("hover", plateLit);
 			button.AddThemeStyleboxOverride("pressed", plateLit);
 			button.AddThemeStyleboxOverride("focus", plateLit);
-			Color ink = apotheosis ? new Color(1.0f, 0.70f, 0.42f) : new Color(1.0f, 0.88f, 0.50f);
+			Color ink = conjunction ? WizardSurvivors.scripts.CardFamilyArt.ConjunctionTitle
+				: apotheosis ? new Color(1.0f, 0.70f, 0.42f) : new Color(1.0f, 0.88f, 0.50f);
 			button.AddThemeColorOverride("font_color", ink);
 			button.AddThemeColorOverride("font_hover_color", ink.Lightened(0.2f));
 			button.AddThemeColorOverride("font_focus_color", ink.Lightened(0.2f));
@@ -435,7 +475,8 @@ public partial class LevelUpMenu : CanvasLayer
 
 		bool narrow = ResponsiveLayout.IsNarrow(this);
 		heading.LabelSettings = null;
-		heading.Text = narrow ? "Level Up!" : "Level Up! Choose a Spell";
+		heading.Text = !string.IsNullOrEmpty(HeadingOverride) ? HeadingOverride
+			: narrow ? "Level Up!" : "Level Up! Choose a Spell";
 		heading.HorizontalAlignment = narrow ? HorizontalAlignment.Left : HorizontalAlignment.Center;
 		heading.VerticalAlignment = VerticalAlignment.Center;
 		heading.CustomMinimumSize = new Vector2(0f, ResponsiveLayout.MinTouchTarget + 8f);
@@ -495,7 +536,7 @@ public partial class LevelUpMenu : CanvasLayer
 			// cards are readable from the start and look ready only when they are.
 			panel.Modulate = new Color(1f, 1f, 1f, 0f);
 			tween.TweenProperty(panel, "modulate:a", ArmingAlpha, 0.16f).SetDelay(0.05f);
-			tween.Chain().TweenProperty(panel, "modulate:a", 1f, 0.14f).SetDelay(InputGuardSeconds - 0.35f);
+			tween.Chain().TweenProperty(panel, "modulate:a", 1f, 0.14f).SetDelay(Mathf.Max(0f, ArmingSeconds - 0.35f));
 		}
 	}
 
@@ -511,7 +552,7 @@ public partial class LevelUpMenu : CanvasLayer
 			return;
 		panel.Modulate = new Color(1f, 1f, 1f, ArmingAlpha);
 		var tween = CreateTween();
-		tween.TweenProperty(panel, "modulate:a", 1f, 0.14f).SetDelay(InputGuardSeconds - 0.14f);
+		tween.TweenProperty(panel, "modulate:a", 1f, 0.14f).SetDelay(Mathf.Max(0f, ArmingSeconds - 0.14f));
 	}
 
 	private void ApplyMenuSkin()
@@ -962,12 +1003,21 @@ public partial class LevelUpMenu : CanvasLayer
 			return;
 		}
 
+		// A hand of one or two keeps a three-card hand's card size (Eric, 2026-11-01: "we should not expand
+		// the size of each choice to fill the menu"). Each card used to take its share of the whole row, so
+		// two cards came out half as wide again and a lone one spanned the book. On a PC the short hand is a
+		// centred row of three-across columns; on a phone each card keeps a third's height
+		// (NarrowCardHeight) and the rows stop expanding, so two cards sit together rather than spread.
+		bool narrow = ResponsiveLayout.IsNarrow(this);
+		bool shortHand = options.Count < 3;
 		if (container is GridContainer grid)
 		{
 			grid.Columns = GetResponsiveColumnCount(options.Count);
+			grid.SizeFlagsHorizontal = shortHand && !narrow ? Control.SizeFlags.ShrinkCenter : Control.SizeFlags.ExpandFill;
 		}
 		wideCardsBuiltTight = WideCardsTight();
 		narrowBuiltHeight = NarrowCardHeight();
+		float threeAcross = ThreeAcrossColumnWidth();
 
 		for (int i = 0; i < options.Count; i++)
 		{
@@ -976,7 +1026,9 @@ public partial class LevelUpMenu : CanvasLayer
 			column.AddThemeConstantOverride("separation", 10);
 			column.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 			// Vertical too, or a wide card sits at its 468 minimum with dead panel under it.
-			column.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
+			column.SizeFlagsVertical = shortHand && narrow ? Control.SizeFlags.ShrinkBegin : Control.SizeFlags.ExpandFill;
+			if (shortHand && !narrow)
+				column.CustomMinimumSize = new Vector2(threeAcross, 0f);
 
 			// The element notes that used to sit here, and then inside the card, are gone
 			// entirely: the tag chips carry the count and the effect text now, which is one row
@@ -1069,7 +1121,8 @@ public partial class LevelUpMenu : CanvasLayer
 		// A new spell says what it does where it said "Attack" (BuildOptionTagline): the line that tells
 		// a bolt from a trap is worth more than the word, and the tightest hand has no room for both.
 		Label tagline = BuildOptionTagline(option, HorizontalAlignment.Center);
-		content.AddChild(tagline ?? BuildOptionTypeLabel(option, HorizontalAlignment.Center));
+		// A status the tagline names ("Withers", "slows") opens what it does (KeywordText).
+		content.AddChild(tagline != null ? KeywordText.Wrap(tagline) : BuildOptionTypeLabel(option, HorizontalAlignment.Center));
 
 		// Flavour text is gone from the card by design - three paragraphs of prose is not something
 		// a player reads while paused mid-fight, and it pushed the numbers they DO read off the
@@ -1174,7 +1227,7 @@ public partial class LevelUpMenu : CanvasLayer
 		if (narrowTagline != null)
 		{
 			metaRow.QueueFree();
-			text.AddChild(narrowTagline);
+			text.AddChild(KeywordText.Wrap(narrowTagline));
 		}
 		else
 		{
@@ -1587,7 +1640,8 @@ public partial class LevelUpMenu : CanvasLayer
 	/// </remarks>
 	private float NarrowCardHeight()
 	{
-		int count = Math.Max(1, shownCount > 0 ? shownCount : currentOptions?.Count ?? 3);
+		// Never fewer than three shares: a short hand keeps a full hand's card height (BuildButtonsFrom).
+		int count = Math.Max(3, shownCount > 0 ? shownCount : currentOptions?.Count ?? 3);
 		float available = ResponsiveLayout.ViewportSize(this).Y - HudSafeTop - NarrowChromeAllowance;
 		// The rows a level-up can add above and below the cards: the Ascension strip (its 30 of clear
 		// air, a 56-tall button and the column's gap) and the charge row. Left out, a phone hand with
@@ -1605,6 +1659,20 @@ public partial class LevelUpMenu : CanvasLayer
 		float perCard = (available - NarrowCardSeparation * (count - 1)) / count;
 		return MathF.Max(NarrowRowMinHeight, perCard);
 	}
+
+	// A PC card's width in a hand of three: the book's row (the panel less the column's 16 a side, as
+	// LevelUpMenu.tscn sets them) shared three ways across the grid's 8 of gap. Read from the panel's size
+	// rather than measured, for the reason NarrowCardHeight gives; never under CardWidth.
+	private float ThreeAcrossColumnWidth()
+	{
+		float panel = GetNodeOrNull<Control>("Panel")?.CustomMinimumSize.X ?? 0f;
+		if (panel <= 0f)
+			return CardWidth;
+		return MathF.Max(CardWidth, (panel - WideRowInsets - WideCardGap * 2f) / 3f);
+	}
+
+	private const float WideRowInsets = 16f * 2f;
+	private const float WideCardGap = 8f;
 
 	private const float NarrowCardSeparation = 12f;
 	private const float NarrowStripAllowance = 96f;
@@ -1819,7 +1887,8 @@ public partial class LevelUpMenu : CanvasLayer
 	{
 		if (!option.IsEvolutionMilestone || option.MilestoneLevel < 8)
 			return;
-		bool isApotheosis = option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
+		bool isConjunction = WizardSurvivors.scripts.ComboCatalog.IsComboOption(option);
+		bool isApotheosis = !isConjunction && option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
 
 		// So the sweep is cut off at the frame instead of running out over the plate.
 		card.ClipContents = true;
@@ -1828,7 +1897,9 @@ public partial class LevelUpMenu : CanvasLayer
 		{
 			Name = "AscensionSheen",
 			// The Apotheosis sweeps ember rather than gold: a tier above the ascension, read at a glance.
-			Color = isApotheosis ? new Color(1.0f, 0.62f, 0.34f, 0.30f) : new Color(1.0f, 0.94f, 0.70f, 0.20f),
+			// A combination sweeps starlight, whiter than the Ascension's gold.
+			Color = isConjunction ? new Color(1.0f, 0.98f, 0.88f, 0.26f)
+				: isApotheosis ? new Color(1.0f, 0.62f, 0.34f, 0.30f) : new Color(1.0f, 0.94f, 0.70f, 0.20f),
 			MouseFilter = Control.MouseFilterEnum.Ignore,
 			// Taller than the card so the band never shows a top or bottom edge.
 			AnchorTop = -0.15f,
@@ -1937,6 +2008,7 @@ public partial class LevelUpMenu : CanvasLayer
 				break;
 			case CardFamily.Ascension:
 			case CardFamily.Apotheosis:
+			case CardFamily.Conjunction:
 				(resting, lit) = FamilyFrames(family);
 				break;
 		}
@@ -2039,9 +2111,11 @@ public partial class LevelUpMenu : CanvasLayer
 		// A viewport resize re-invokes this while the view is already up (OnViewportSizeChanged),
 		// so drop any existing overlay first rather than stacking a second one on top.
 		RemoveEvolutionRoot();
+		evolutionCardWidth = 0f;
 
+		bool isConjunction = WizardSurvivors.scripts.ComboCatalog.IsComboOption(option);
 		bool isAscension = option.MilestoneLevel >= 8;
-		bool isApotheosis = option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
+		bool isApotheosis = !isConjunction && option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
 
 		// Written straight onto the plate's stone, as the hand is: the mutation cards are pages, and a
 		// page on a bigger page was the same background twice (PageInset's remarks).
@@ -2065,7 +2139,8 @@ public partial class LevelUpMenu : CanvasLayer
 
 		// Level 8 was "ULTIMATE ASCENSION", which collided with the tier above it (#59): two things
 		// called ultimate one step apart. Level 8 is the ascension; the final form is the Apotheosis.
-		headerBox.AddChild(BuildPageHeading(isApotheosis ? "✶ APOTHEOSIS ✶"
+		headerBox.AddChild(BuildPageHeading(isConjunction ? "✶ CONJUNCTION ✶"
+			: isApotheosis ? "✶ APOTHEOSIS ✶"
 			: isAscension ? "★ ASCENSION (Level 8) ★" : "✦ MUTATION (Level 4) ✦"));
 
 		// COUNT THE BRANCHES, do not assert a number. These read "1 of 2" and "1 of 3" as
@@ -2073,7 +2148,14 @@ public partial class LevelUpMenu : CanvasLayer
 		// free to do - told the player something false at the exact moment they were being asked
 		// to compare what was on screen. One short line: the heading says what kind of page it is.
 		int branchCount = option?.EvolutionChoices?.Count ?? 0;
-		headerBox.AddChild(BuildPageSubtitle(isApotheosis
+		// A combination's stakes in one line: two spells leave, one comes, a slot is freed (.ai/combo-spells.md).
+		// The Sovereign Rite's page is the same plate, its second ingredient the row of held spells.
+		bool isRite = isConjunction && option.ComboId == WizardSurvivors.scripts.SovereignRite.SpellId;
+		headerBox.AddChild(BuildPageSubtitle(isRite
+			? "Choose one spell. Every other spell falls silent and feeds it."
+			: isConjunction
+			? $"{ConjunctionParents(option)} become one spell. One slot is freed."
+			: isApotheosis
 			? $"{option.DisplayName}'s final form."
 			: $"Choose 1 of {branchCount}. {option.DisplayName} keeps it all run."));
 
@@ -2102,7 +2184,8 @@ public partial class LevelUpMenu : CanvasLayer
 			columnMargin.AddThemeConstantOverride("margin_bottom", 4);
 			scroll.AddChild(columnMargin);
 			var cardsColumn = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-			cardsColumn.AddThemeConstantOverride("separation", 16);
+			// Closer for the Rite's column of up to six, so five fit a phone without scrolling.
+			cardsColumn.AddThemeConstantOverride("separation", option.EvolutionChoices.Count > 3 ? 10 : 16);
 			columnMargin.AddChild(cardsColumn);
 
 			foreach (var evo in option.EvolutionChoices)
@@ -2112,7 +2195,7 @@ public partial class LevelUpMenu : CanvasLayer
 				card.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 				cardsColumn.AddChild(card);
 			}
-			if (!isApotheosis)
+			if (!isApotheosis && (!isConjunction || isRite))
 				FocusSpotlight.Attach(cardsColumn);
 		}
 		else
@@ -2147,6 +2230,10 @@ public partial class LevelUpMenu : CanvasLayer
 			cardsRow.AddThemeConstantOverride("separation", 14);
 			rowMargin.AddChild(cardsRow);
 
+			// The Rite's row holds a card per active spell, up to six: narrower cards so the row fits the canvas.
+			evolutionCardWidth = option.EvolutionChoices.Count > 3
+				? Mathf.Max(150f, (GetViewport().GetVisibleRect().Size.X - 96f) / option.EvolutionChoices.Count - 14f)
+				: CardWidth;
 			foreach (var evo in option.EvolutionChoices)
 			{
 				Control card = ApplyAscensionLock(
@@ -2157,7 +2244,8 @@ public partial class LevelUpMenu : CanvasLayer
 				cardsRow.AddChild(card);
 			}
 			// Not on the Apotheosis: one form, and its ember plate's element line would dim below 4.5:1.
-			if (!isApotheosis)
+			// Nor on a combination's page, which holds one card too - but the Rite's holds a row.
+			if (!isApotheosis && (!isConjunction || isRite))
 				FocusSpotlight.Attach(cardsRow);
 		}
 
@@ -2175,6 +2263,9 @@ public partial class LevelUpMenu : CanvasLayer
 		};
 		BonelightSkin.StyleButton(backButton);
 		root.AddChild(backButton);
+		// The Rite's page: B (or Escape, or Android's back) is Back too - nothing is spent (.ai/sovereign-spell.md 3).
+		if (isRite)
+			MenuBackListener.Attach(root, () => backButton.EmitSignal(BaseButton.SignalName.Pressed));
 	}
 
 	// Swaps between the normal level-up list and the evolution overlay. Hiding the normal view
@@ -2247,7 +2338,9 @@ public partial class LevelUpMenu : CanvasLayer
 		return subtitle;
 	}
 
-	private const string AscensionRootName = "AscensionBrowser";
+	// The corner button opens the Evolution Codex (.ai/evolution-codex.md), which replaced the ascension
+	// browser on 2026-11-02. The field keeps its name: everything that wakes the button for a waiting
+	// Ascension (AscensionReadyGlow, CountReadyAscensions, AlignAscensionButton) is unchanged.
 	private Button ascensionButton;
 
 	private void EnsureAscensionButton()
@@ -2261,8 +2354,8 @@ public partial class LevelUpMenu : CanvasLayer
 
 		ascensionButton = new Button
 		{
-			Name = "AscensionsButton",
-			Text = "\u2605 Ascensions",
+			Name = "CodexButton",
+			Text = "\u2605 Codex",
 			CustomMinimumSize = new Vector2(156, ResponsiveLayout.MinTouchTarget),
 		};
 
@@ -2285,7 +2378,7 @@ public partial class LevelUpMenu : CanvasLayer
 		// button wears - on a screen where everything else is bright parchment it read as greyed
 		// out, which is the one thing this button must not look like.
 		BonelightSkin.StyleButton(ascensionButton, BonelightSkin.Emphasis.Normal);
-		ascensionButton.Pressed += BuildAscensionBrowser;
+		ascensionButton.Pressed += OpenCodex;
 		panel.AddChild(ascensionButton);
 		ascensionGlow = AscensionReadyGlow.AttachTo(ascensionButton, showRing: true);
 		RefreshAscensionReadiness();
@@ -2370,7 +2463,37 @@ public partial class LevelUpMenu : CanvasLayer
 		ascensionButton.OffsetBottom = top + ResponsiveLayout.MinTouchTarget;
 	}
 
-	// The ascension browser and the level 8 fork are in LevelUpMenu.Ascensions.cs.
+	/// <summary>
+	/// The Evolution Codex in its in-run mode, over this screen, opened on the held spell with something
+	/// ready. A run hands it the run (Node2DGame.OpenEvolutionCodex); a probe scene with no run behind the
+	/// menu gets what the menu itself was given. Closing it puts the selection back on this button.
+	/// </summary>
+	private void OpenCodex()
+	{
+		void Refocus()
+		{
+			if (ascensionButton != null && IsInstanceValid(ascensionButton) && ascensionButton.IsVisibleInTree())
+				ascensionButton.GrabFocus();
+		}
+		if (GetParent() is Node2DGame game)
+		{
+			game.OpenEvolutionCodex(onClosed: Refocus);
+			return;
+		}
+		if (EvolutionCodex.IsOpen)
+			return;
+		var context = new CodexContext
+		{
+			Mode = CodexMode.InRun,
+			Save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data,
+			Equipped = currentEquippedSpells ?? new List<EquippedSpellInfo>(),
+			Combos = currentCombinations ?? new List<ComboPreview>(),
+			ElementCounts = currentBaselineElementCounts ?? new Dictionary<string, int>(),
+		};
+		EvolutionCodex.Open(this, context, onClosed: Refocus);
+	}
+
+	// The level 8 fork is in LevelUpMenu.Ascensions.cs.
 
 	private void SetNormalViewVisible(bool visible)
 	{
@@ -2385,20 +2508,7 @@ public partial class LevelUpMenu : CanvasLayer
 			ascensionButton.Visible = visible;
 
 		if (visible)
-		{
 			RemoveEvolutionRoot();
-			RemoveAscensionRoot();
-		}
-	}
-
-	private void RemoveAscensionRoot()
-	{
-		var existing = GetNodeOrNull<Control>($"Panel/{AscensionRootName}");
-		if (existing == null)
-			return;
-
-		existing.Name = $"{AscensionRootName}_freeing";
-		existing.QueueFree();
 	}
 
 	// Renames before freeing because QueueFree defers to the end of the frame: without this, a
@@ -2491,7 +2601,7 @@ public partial class LevelUpMenu : CanvasLayer
 			};
 			ResponsiveLayout.SetBodyText(desc);
 			desc.AddThemeColorOverride("font_color", BodyInk(family));
-			text.AddChild(desc);
+			text.AddChild(KeywordText.Wrap(desc));
 		}
 
 		Control narrowElements = BuildTagGainRow(evo, option, FlowContainer.AlignmentMode.Begin, family);
@@ -2538,6 +2648,9 @@ public partial class LevelUpMenu : CanvasLayer
 		}
 	}
 
+	// The width a branch card is built at: CardWidth, or narrower for a row of more than three (the Rite's).
+	private float evolutionCardWidth;
+
 	private Control BuildEvolutionOptionCard(LevelUpOption option, SpellEvolutionOption evo, Action onPressed)
 	{
 		CardFamily family = EvolutionFamilyOf(option);
@@ -2549,8 +2662,9 @@ public partial class LevelUpMenu : CanvasLayer
 		// rather than sitting at their minimum height with dead space under them.
 		column.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
 
+		float cardWidth = evolutionCardWidth > 0f ? evolutionCardWidth : CardWidth;
 		var card = new Button();
-		card.CustomMinimumSize = new Vector2(CardWidth, 0);
+		card.CustomMinimumSize = new Vector2(cardWidth, 0);
 		card.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 		card.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
 		card.ClipText = false;
@@ -2583,7 +2697,7 @@ public partial class LevelUpMenu : CanvasLayer
 		content.MinimumSizeChanged += () =>
 		{
 			if (IsInstanceValid(card) && IsInstanceValid(content))
-				card.CustomMinimumSize = new Vector2(CardWidth, content.GetCombinedMinimumSize().Y + head + foot);
+				card.CustomMinimumSize = new Vector2(cardWidth, content.GetCombinedMinimumSize().Y + head + foot);
 		};
 
 		var title = new Label
@@ -2594,6 +2708,9 @@ public partial class LevelUpMenu : CanvasLayer
 			MouseFilter = Control.MouseFilterEnum.Ignore
 		};
 		ResponsiveLayout.SetFont(title, ResponsiveLayout.TextRole.Title);
+		// A row narrower than three-wide (the Rite's): a step down, so "Sovereign Magic Missile" takes two lines, not three.
+		if (cardWidth < CardWidth)
+			title.AddThemeFontSizeOverride("font_size", 22);
 		title.AddThemeColorOverride("font_color", TitleInk(family));
 		content.AddChild(title);
 
@@ -2632,7 +2749,7 @@ public partial class LevelUpMenu : CanvasLayer
 			};
 			ResponsiveLayout.SetBodyText(desc);
 			desc.AddThemeColorOverride("font_color", BodyInk(family));
-			content.AddChild(desc);
+			content.AddChild(KeywordText.Wrap(desc));
 		}
 
 		Control wideElements = BuildTagGainRow(evo, option, FlowContainer.AlignmentMode.Center, family);

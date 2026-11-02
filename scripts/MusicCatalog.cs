@@ -1,18 +1,22 @@
 namespace WizardSurvivors.scripts;
 
 /// <summary>
-/// One chapter's music: three stems of the same loop, plus the loop the boss fight swaps to.
+/// One chapter's music: three stems of the same loop, a fourth for its boss fight, and the shared
+/// loop a chapter without that fourth stem swaps to.
 /// </summary>
 /// <remarks>
 /// The stems are rendered by <c>tools/audio/music.py</c> to the same sample count, tempo and key,
 /// and are played locked together by <see cref="MusicPlayer"/> through an
 /// <c>AudioStreamSynchronized</c>, which is what lets the run fade one in and out without it ever
-/// drifting off the beat. Bed plays always; pulse joins when the arena fills; lead joins for an
-/// elite and for the last third of the run. See <c>.ai/audio-direction.md</c> section 11.
+/// drifting off the beat. Bed and pulse play from the first downbeat (the pulse is the chapter's
+/// battle percussion, 2026-11-01); the lead states the hook as the run opens and comes back for
+/// elites and from pace minute 5; the boss layer lands on the bed and pulse, the lead resting, when the boss arrives. See
+/// <c>.ai/audio-direction.md</c> section 11.
 /// </remarks>
 public sealed class MusicSet
 {
-	public MusicSet(string id, string bed, string pulse, string lead, string boss, MusicSet standIn = null)
+	public MusicSet(string id, string bed, string pulse, string lead, string boss, MusicSet standIn = null,
+		string bossLayer = null)
 	{
 		Id = id;
 		Bed = bed;
@@ -20,6 +24,7 @@ public sealed class MusicSet
 		Lead = lead;
 		Boss = boss;
 		StandIn = standIn;
+		BossLayer = bossLayer;
 	}
 
 	/// <summary>
@@ -47,10 +52,26 @@ public sealed class MusicSet
 	/// <summary>The hook. Faded in for elites and the late run.</summary>
 	public string Lead { get; }
 
-	/// <summary>A separate loop, not a stem: swapped to when the chapter's boss walks in.</summary>
+	/// <summary>
+	/// A separate loop, not a stem: swapped to when the chapter's boss walks in - but only by a set
+	/// with no <see cref="BossLayer"/> rendered. Today that is the castle's three, and any set whose
+	/// layer is missing; the shared loop is the fallback, never the plan.
+	/// </summary>
 	public string Boss { get; }
 
-	public string[] Stems => new[] { Bed, Pulse, Lead };
+	/// <summary>
+	/// The fight's own stem (2026-11-01): the chapter's loop again, rendered to the same sample count,
+	/// holding the boss's drums at double density, low stabs and a motor. It lands over the other
+	/// three when the boss arrives, so the fight stays in the chapter's key and tempo. Null for a set
+	/// that has none; a set whose file is not on disk plays the shared <see cref="Boss"/> loop instead.
+	/// </summary>
+	public string BossLayer { get; }
+
+	/// <summary>True once the boss layer is on disk and imported.</summary>
+	public bool HasBossLayer => BossLayer != null && Godot.ResourceLoader.Exists(BossLayer);
+
+	/// <summary>Bed, pulse, lead - and the boss layer when it is rendered. Index = MusicPlayer's layer.</summary>
+	public string[] Stems => HasBossLayer ? new[] { Bed, Pulse, Lead, BossLayer } : new[] { Bed, Pulse, Lead };
 }
 
 // Which music plays where, and the one place that decision is made.
@@ -87,7 +108,8 @@ public static class MusicCatalog
 		Directory + id + "_bed.wav",
 		Directory + id + "_pulse.wav",
 		Directory + id + "_lead.wav",
-		SharedBossLoop);
+		SharedBossLoop,
+		bossLayer: Directory + id + "_boss.wav");
 
 	/// <summary>The Enchanted Forest. D Dorian, 6/8 at dotted quarter 112, 25.7 s.</summary>
 	public static readonly MusicSet Forest = Chapter("forest");
@@ -167,13 +189,16 @@ public static class MusicCatalog
 		[13] = Throne,
 	};
 
+	// A planned chapter names its boss layer too: it plays the shared loop until <id>_boss.wav is
+	// rendered (the Fields and the Circle have theirs; the castle's three do not yet).
 	private static MusicSet PlannedChapter(string id, MusicSet standIn) => new(
 		id,
 		Directory + id + "_bed.wav",
 		Directory + id + "_pulse.wav",
 		Directory + id + "_lead.wav",
 		SharedBossLoop,
-		standIn);
+		standIn,
+		Directory + id + "_boss.wav");
 
 	/// <summary>
 	/// The set for a chapter. Falls back to the shared default for any index without a row.

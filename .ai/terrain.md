@@ -784,7 +784,8 @@ boundary sits, how wide the fade is, how round the corners are and how far the l
 | `mossy_rock` | flat stones half sunk in `verdant` moss | the Swamp's; on a `lichen.deep` bed now |
 
 Floors (`MATERIALS`): `graystone` (Ruins, Cave, Frozen Waste) and the new `mud` (Swamp) and
-`basalt` (Emberdeep) are the `natural` style - one tone, small soft clumps of its neighbours, a
+`basalt` (Emberdeep) are the `natural` style (superseded for the Emberdeep and the Frozen Waste:
+`basalt` and the new `snow` have floor styles of their own, section 12) - one tone, small soft clumps of its neighbours, a
 crack or a pebble on some variants only; `sand` is the same on `gold.deep` with two ripples and
 half the incident, because it is the brightest floor. `darktile` is still generated, because
 `StageEnvironmentCatalog` names its PNGs as a background texture, but no palette paints it.
@@ -1017,14 +1018,23 @@ costs nothing; routing it into the half of a cell that is water is the wedge thi
 prevent. The water's collision on layer 4 is built from the same flags and never leaves the
 cells they mark (section 3), so the grid and the bodies cannot disagree.
 
-**Props are not in the grid; a garden fence is.** Tree trunks, rocks and fallen logs are small
-`StaticBody2D`s that a body slides off. Stamping them in would mean the furnishing code writing
-into navigation, and a thicket that walls off a gap is the one case that would need it; trees
-keep a minimum spacing for that reason (section 10). The flower pen's fence is the exception: a
-576 px wall of rails is not something a body slides off, so its cells are `FlagFence`, solid in
-the grid, stamped with the chunk's data (section 8). Ghosts (`IgnoresDecorCollision`)
-ignore decor only, so they route like everyone else. An enemy that clears its layer-4 mask
-(`Enemy.FollowsTerrain`) ignores the field and is never recycled for walking distance.
+**A lone prop is not in the grid; a cluster is, and so is a garden fence.** Tree trunks, rocks and
+fallen logs are small `StaticBody2D`s that a body slides off - since 2026-11-01 at any angle
+(`WallMinSlideAngle` 0) and, met square, by turning along them (`Enemy.Skirt`). Two of them closer
+than a body is wide are a notch it wedges in, and on 0.10.0 that was nearly every enemy trapped on the
+Forest ("All enemies tend to get stuck on terrain"). So when a chunk is furnished,
+`Node2DGame.StampPropClusters` reads its blocking props' bodies and stamps `TerrainStreamer.FlagProp`
+on every one within `PropClusters.Gap` (48 px) of another or of water, a wall or a fence, with the
+cells between them. `FillNavigation` is the only reader: placement, painting and water never see it,
+except that nothing is spawned on a closed cell, since `IsReachable` reads the same grid. Its own
+chunk's cells only; a cluster split by a chunk border is left to the skirt. Trees still keep a minimum
+spacing (section 10), so a stand of them is rarely a cluster. The flower pen's fence was the first
+exception: a 576 px wall of rails is not something a body slides off, so its cells are `FlagFence`,
+stamped with the chunk's data (section 8). Ghosts (`IgnoresDecorCollision`) ignore decor only, so they
+route like everyone else round water and walls, but their line test crosses a cell closed only by a
+prop cluster (`HasClearWalk` with `throughProps`), since they pass through the props. An enemy that clears its layer-4 mask (`Enemy.FollowsTerrain`) ignores the
+field and is never recycled for walking distance. The measurement is in `.ai/enemy-behaviour.md`
+section 8, item 13.
 
 ### Who reads it, and when
 
@@ -1212,11 +1222,12 @@ little nearer their feet than his do; for a basic enemy the error is about 6 px.
   squeezing through a thicket of small solid bodies wedges on them; one wading through knee-high
   shrubs looks right and plays like open ground. The y-sort still draws a bush over the legs of
   anything standing behind it.
-- **Trunks are not in the navigation grid.** At 12-28 px a body slides off one. What stops a
+- **A lone trunk is not in the navigation grid.** At 12-28 px a body slides off one. What stops a
   stand of trees becoming a wall is spacing: a trunk keeps `MatureTreeSpacing` (120 px) from the
   others of its set in its chunk, a young tree `YoungTreeSpacing` (72 px), and trees keep 3 cells
   from a garden. Measured below with `_MazeProbe`, whose new `snagged` line counts stalled
-  enemies whose last slide was a decor body or a fence.
+  enemies whose last slide was a decor body or a fence. A trunk within a tile of a rock, another
+  set's trunk or a shore is a cluster and is in the grid (section 9, 2026-11-01).
 
 ### The crown thins when he is behind it
 
@@ -1425,3 +1436,97 @@ rows, closest two 272 px - the Dungeon's pattern.
 - The bosses in the new ground: `_BossProbe` proves arrival, phases and a clean fall and now that no body
   stands in rock; whether the Choir's three voices and the Archivist's beam read among walls is for a
   playtest.
+
+## 12. Every chapter's ground says where it is (the 0.10.0 ground pass)
+
+Reported from playing 0.10.0: "The ground on each stage should reflect the stage. Emberdeep doesn't
+look like cracked volcanic earth." Every playable chapter was photographed mid-run with a crowd
+(`_UiShot --stage=N --terrain-seed=4242 --crowd=30 --keep-alive`, at 1280x720 and at
+`540x1212 --portrait --safe-area`) and asked one question: does the ground say where you are?
+
+| Chapter | Verdict |
+|---|---|
+| Enchanted Forest | yes - turf, flowers, ponds, trees |
+| Cursed Dungeon | yes - flagstones and the jail walls |
+| Sunken Cave | yes - worn stone between masses of rock |
+| Blighted Swamp | yes - mud, murk, moss and reeds |
+| Mystic Ruins | the walls say ruin; the open floor between them is the generic `graystone` slate. Left alone |
+| **Frozen Waste** | **no** - the darkest floor in the game (`graystone`) under a snowfield; it read "night" before "frozen" |
+| Scorched Sands | yes - sand, dry grass, scree |
+| **The Emberdeep** | **no** - a calm navy slate (`basalt` was the `natural` floor with violet in it), and its lava was black crust with thin orange cracks: the hazard had the look the floor wanted |
+| The Sketchbook | yes - ruled paper (generated, but it sits with the kids' art: not touched) |
+| The Fallow Fields | yes - stubble, furrows, sheaves |
+| The Broken Circle | yes - heather on peat, granite |
+
+No hazard or blocking flag moved, and no blob weight, radius or density: both changes are what a
+material and a terrain body LOOK like, and what the detail layer lays on them. The lava is still
+where it was and still burns.
+
+### Crack networks that tile: `crack_net`
+
+A basalt plate or a pane of lake ice is wider than a tile, and the ground layer mixes a material's
+variants freely, so a crack that crossed a tile edge would be cut wherever the neighbour is another
+variant. `tiles.crack_net` is the Wang-tile answer: every variant crosses each edge at the same
+places (two crossings a side for basalt and lava, one for ice), each with a short straight stub
+that is identical in all of them and wraps, and only the inside of the cell changes - a few
+junctions scattered per variant and joined to the stubs by their relative neighbourhood graph
+(join a pair unless a third point is nearer to both), which is the graph a cooling crust actually
+cracks along. Every variant comes out identical on its outer three pixels, which was checked
+pixel by pixel over all six fill variants of basalt, snow, lava and ice.
+
+Two attempts went first, both recorded in `tools/art/tiles.py`'s comments: one crossing per edge and
+two junctions (a honeycomb - every cell the same jigsaw piece, and the 48 px lattice showed), and the
+same with legs dropped at random (dead-end dashes everywhere, no plates). Lava rafts drawn as discs
+read as leopard print.
+
+### The Emberdeep
+
+- **`floor_basalt_0..5`** (`basalt()`, a new floor style): basalt plates on stone `shade`, each lit
+  on its upper-left lip and dropping to `deep` on its lower-right, split by two-pixel `occ` seams,
+  with violet glass in the plates. In three variants of six one seam smoulders along part of its
+  length - a one-pixel core of the red row, its lips caught red, a step of heat stain beside it -
+  and in one of those the core is the fire ramp's `edge`. That is the most walkable ground ever
+  glows: the cast wear fire eyes, and the floor must not outshine them. Four variants in six
+  glowing read as a sprinkle of red ticks on a full screen.
+- **`lava_*`, all 36** (`body_lava`): molten. The same network with three-to-four-pixel channels
+  that all run hot - fire `mid` down the middle, `edge` banked against the rafts - and red-black
+  crust rafts rimmed red. About a third glows; the channels were narrowed once (half-width 1.9 to
+  1.6) so a pool stays mostly crust and a fire bolt still reads over it. Still the `hard` profile
+  with its `occ` lip.
+- **Detail** (`tools/art/detail_ember.py`, GroundDetail's Volcanic block): `lava_rope` (a lobe of
+  pahoehoe), `cinders`, `ash_drift` and `sulphur` (a fumarole crusted in the gold row's base and
+  shade, never its lit yellow), with `ash` and `obsidian` kept and `cracks` dropped - a crack drawn
+  on a crack is noise. Pahoehoe and ash were first drawn INTO the plates and read as a printed C
+  and grey squares: anything with a shape in a fill tile repeats.
+
+### The Frozen Waste
+
+- **`floor_snow_0..5`** (`snow()`, a new material, so `tiles.json` gained six entries; the Ice palette
+  names it): wind-packed snow on the bone row's deep (#38404F), a full step above every other open
+  floor and still the deep half of a row, so the cast stands on it as the darker thing, ringed by
+  its rim. Almost bare by design - sastrugi drawn into every cell were a printed carpet - with grain,
+  one long low ridge in a third of the variants, and a stone and some dead stalks in one each.
+- **`ice_*`, all 36** (`body_ice`): on snow the old ice (steel `deep` under blotches) read as spots.
+  It is now dark glassy ice crazed with hairline fractures in steel `shade` on `crack_net`, so they
+  cross from cell to cell. Snow, then ice a step under it, then the black water: matte, glassy, open.
+  The frozen water's shelf and frost bank (`water.py`) already sat a step above the new floor.
+- **Detail** (`tools/art/detail_frost.py`, GroundDetail's Ice block): `sastrugi`, wind ridges laid in
+  drifts with the existing snow drifts and frost; `cracks` dropped from both snow and ice.
+
+### The Python 2.7 trap, again
+
+`tiles.py` run in full under 2.7 re-rolled five `cave_wall` tiles (`cave_wall_edge_bottom_4`,
+`edge_left_3`, `edge_right_3`, `edge_top_4`, `fill_4`), which were drawn under Python 3; they were
+checked out again and the atlas repacked from the kept tiles. `tiles.json`'s diff was the six snow
+entries and nothing else. `ground_detail.py` in full reproduced every existing detail tile and the
+flower pen byte for byte. Partial runs (`tiles.py basalt lava snow ice`) touch only what they name.
+
+### Still needs eyes
+
+- The basalt's crossings repeat every 48 px; with the junctions moving per variant the lattice did
+  not show in the photographs, but a long straight walk across open basalt is where it would.
+- Whether the lava is too loud over fifteen minutes, and whether a Kindler's coal reads over it in
+  a real fight; the photographs were of a still crowd.
+- The Frozen Waste is the lightest open floor in the campaign now. Its cast read darker on it in the
+  photographs; the Still Warden's fight and the Rime Guard's cone have not been looked at on snow.
+- The Ruins' open floor (above) if the walls stop being enough.

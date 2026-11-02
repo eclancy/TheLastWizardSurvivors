@@ -91,7 +91,13 @@ public partial class CharacterSelection : Control
 	// (three rows of four); a thirteenth scrolls.
 	private const float CompactPortraitBox = 148f;
 	private const float CompactCardHeight = 196f;
-	private const float RosterBottomMargin = 24f;
+	private const float RosterBottomMargin = 16f;
+	// The header row: Back at the top left, as on the world map this screen leads to, and the heading
+	// centred clear of it. Back used to sit on the roster's top edge, so the first card's ring ran
+	// under it, and on a phone the heading ran into it.
+	private const float HeaderTop = 12f;
+	private const float BackWidth = 124f;
+	private const float RosterTop = 80f;
 	private const float RosterFraction = 0.6f;
 	private string defaultTestWizardSpellId = "magic_missile";
 
@@ -106,19 +112,28 @@ public partial class CharacterSelection : Control
 		// if the window is resized or the device rotated.
 		// Four across on a PC's landscape canvas: at three the grid stopped three-quarters of the way
 		// across and left the right of the screen empty. The phone fits fewer and takes what fits.
+		var cardScroll = GetNode<Control>("CardScroll");
+		cardScroll.OffsetTop = RosterTop;
+		cardScroll.OffsetBottom = -RosterBottomMargin;
 		if (wideLayout)
 		{
 			// The roster takes the left of the screen; the detail pane is built beside it below.
-			var scroll = GetNode<Control>("CardScroll");
-			scroll.AnchorRight = RosterFraction;
-			scroll.OffsetRight = -12f;
-			scroll.OffsetBottom = -RosterBottomMargin;
+			cardScroll.AnchorRight = RosterFraction;
+			cardScroll.OffsetRight = -12f;
+			// 12 between cards, not the scene's 16: with the header row above it, the third row of faces
+			// otherwise ran 8 units under the fold.
+			grid.AddThemeConstantOverride("h_separation", 12);
+			grid.AddThemeConstantOverride("v_separation", 12);
 			ResponsiveLayout.BindGridColumns(grid, CompactCardWidth, maxColumns: 4);
 		}
 		else
 		{
-			ResponsiveLayout.BindGridColumns(grid, CardMinWidth, maxColumns: 3);
+			// One wizard to a row on a phone, his face on the left and what he brings on the right - the
+			// Achievements list's shape. Two tall cards abreast set every line centred in a column 300
+			// wide, and "Starting Spell: Cone of Cold" broke wherever the card ran out.
+			grid.Columns = 1;
 		}
+		LayoutHeader();
 
 		// Clear any placeholder cards left in the scene, then build the real roster. Free()
 		// (not QueueFree()) so old children are gone immediately instead of coexisting with the
@@ -142,16 +157,23 @@ public partial class CharacterSelection : Control
 				: GlobalStatsManager.IsCharacterRevealed(saveManager?.Data, character.Id) ? CardState.Locked
 				: CardState.Secret;
 
+			// The state is kept for every roster index, a hidden one included, because cardStates is read
+			// by roster index (ShowDetail) and the cards carry theirs.
 			cardStates.Add(state);
+			if (IsHiddenFromSelection(character))
+				continue;
 			grid.AddChild(wideLayout ? BuildCompactCard(character, i, state) : BuildCard(character, i, state));
 		}
+
+		// Global.SelectedCharacterIdx starts at 0, which is the Test Wizard, so a fresh launch would open
+		// the detail pane on a wizard who has no card.
+		if (!IsSelectable(Global.SelectedCharacterIdx))
+			Global.SelectedCharacterIdx = FirstSelectableIndex();
 
 		if (wideLayout)
 		{
 			BuildDetailPane();
-			int first = Global.SelectedCharacterIdx >= 0 && Global.SelectedCharacterIdx < characters.Count
-				? Global.SelectedCharacterIdx : 0;
-			ShowDetail(first);
+			ShowDetail(Global.SelectedCharacterIdx);
 		}
 
 		var backButton = GetNodeOrNull<Button>("BackButton");
@@ -249,9 +271,130 @@ public partial class CharacterSelection : Control
 		// assets/organized/ anywhere in the project - and the two selection screens sit next to each
 		// other in the flow, so sharing one backdrop is also the right answer independently.
 		BonelightSkin.ApplyFullscreenBackdrop(this, "res://assets/bonelight/ui/menu-background.png", 0.96f);
-		BonelightSkin.ApplyPanel(GetNodeOrNull<Control>("CardScroll"), inset: true);
+		// No panel on the roster any more. ApplyPanel on a ScrollContainer added its backdrop as a second
+		// child of the scroll, which lays it out as content at its minimum size - nothing - so it never
+		// drew; the cards carry their own faces now (CardFace).
 		BonelightSkin.ApplyButtonsInTree(this, 5);
 		BonelightSkin.StyleButton(GetNodeOrNull<Button>("BackButton"));
+	}
+
+	private void LayoutHeader()
+	{
+		if (GetNodeOrNull<Button>("BackButton") is Button back)
+		{
+			back.OffsetLeft = 20f;
+			back.OffsetRight = 20f + BackWidth;
+			back.OffsetTop = HeaderTop;
+			back.OffsetBottom = RosterTop - 12f;
+			ResponsiveLayout.SetFont(back, ResponsiveLayout.TextRole.Label);
+		}
+		if (GetNodeOrNull<Label>("Title") is Label title)
+		{
+			// Inset by Back's width and its margin on BOTH sides, so the heading stays centred on the
+			// screen and never reaches Back, whatever the safe area does to the left edge.
+			float inset = 20f + BackWidth + 16f;
+			title.OffsetLeft = inset;
+			title.OffsetRight = -inset;
+			title.OffsetTop = HeaderTop;
+			title.OffsetBottom = RosterTop - 12f;
+			// The heading gold every stone screen's heading wears (CodexRows.Stone.Heading).
+			title.AddThemeColorOverride("font_color", CodexRows.Stone.Heading);
+		}
+	}
+
+	// A card's face and the well its portrait stands in, in CodexRows' stone register - the rows of the
+	// Achievements list the roster leads to. They were Godot's default panel grey, with a flat grey box
+	// behind each face. The well is a step lighter than the face (stone lit) so a locked wizard's black
+	// silhouette still reads as a shape on it.
+	private static readonly Color PortraitWellColor = new(0.165f, 0.204f, 0.267f);
+
+	private static StyleBoxFlat CardFace()
+	{
+		var style = new StyleBoxFlat { BgColor = CodexRows.Stone.Face, BorderColor = CodexRows.Stone.Edge };
+		style.SetBorderWidthAll(1);
+		style.SetCornerRadiusAll(6);
+		return style;
+	}
+
+	private static PanelContainer BuildPortraitWell(Vector2 size)
+	{
+		var well = new PanelContainer { CustomMinimumSize = size, MouseFilter = Control.MouseFilterEnum.Ignore };
+		var style = new StyleBoxFlat { BgColor = PortraitWellColor };
+		style.SetCornerRadiusAll(4);
+		well.AddThemeStyleboxOverride("panel", style);
+		return well;
+	}
+
+	/// <summary>
+	/// What a wizard brings, as a short table: what each line is in the meta ink, what it is in the row
+	/// ink, the passive led by its stat glyph. It was three centred sentences ("Starting Spell: Cone of
+	/// Cold", "Passive Bonus: +9 HP regeneration a minute"), each wrapping wherever its card ran out, so
+	/// no two started in the same place. A wizard not yet freed shows how he is found instead.
+	/// </summary>
+	private static Control BuildFacts(CharacterData character, CardState state)
+	{
+		if (state != CardState.Unlocked)
+		{
+			// A lock that does not explain itself is indistinguishable from missing content. A secret
+			// explains nothing on purpose, and says only that it is one.
+			Label hint = CodexRows.MakeText(LockedLine(character, state), ResponsiveLayout.TextRole.Body, CodexRows.Stone.InkSoft);
+			hint.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+			return hint;
+		}
+
+		var grid = new GridContainer { Columns = 2, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
+		grid.AddThemeConstantOverride("h_separation", 14);
+		grid.AddThemeConstantOverride("v_separation", 8);
+		void Add(string key, Control value)
+		{
+			Label keyLabel = CodexRows.MakeText(key, ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkMeta);
+			keyLabel.AutowrapMode = TextServer.AutowrapMode.Off;
+			// Level with the first line of its value, which can wrap to two (a long passive).
+			keyLabel.VerticalAlignment = VerticalAlignment.Top;
+			keyLabel.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
+			grid.AddChild(keyLabel);
+			value.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+			grid.AddChild(value);
+		}
+
+		if (character.StartingSpellResource is SpellData spell)
+			Add("Spell", BuildSpellValue(spell));
+		// The wizard's final form, named where he is chosen (Eric's playtest, 2026-11-01: "make it clearer
+		// that apotheosis is an option"), in the ember register the strip's button and the ascension
+		// browser's entry wear. The name only: what the form does stays sealed until a run first offers
+		// it (.ai/level-up-screen.md 4e). None for a wizard without one - the Test Wizard.
+		ApotheosisDefinition apotheosis = ApotheosisCatalog.ForCharacter(character.Id);
+		if (apotheosis?.Form != null)
+			Add("Apotheosis", CodexRows.MakeText($"\u2736 {apotheosis.Form.DisplayName}", ResponsiveLayout.TextRole.Body, CardFamilyArt.ApotheosisTitle));
+		if (!string.IsNullOrWhiteSpace(character.StartingPassiveDescription))
+			Add("Passive", StatIcons.BuildLine(character.StartingPassiveDescription, CodexRows.Stone.Ink, ResponsiveLayout.TextRole.Body, expand: false));
+		if (character.IsLegendaryStart)
+			Add("Starts", CodexRows.MakeText("Legendary", ResponsiveLayout.TextRole.Body, CodexRows.Stone.Reward));
+		return grid;
+	}
+
+	// The starting spell with its own icon before it, as the Spell Index lists it.
+	private static Control BuildSpellValue(SpellData spell)
+	{
+		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		line.AddThemeConstantOverride("separation", 8);
+		if (spell.Icon != null)
+		{
+			line.AddChild(new TextureRect
+			{
+				Texture = spell.Icon,
+				CustomMinimumSize = new Vector2(28f, 28f),
+				ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+				StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+				SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
+				MouseFilter = Control.MouseFilterEnum.Ignore,
+			});
+		}
+		Label name = CodexRows.MakeText(spell.Name, ResponsiveLayout.TextRole.Body, CodexRows.Stone.Ink);
+		name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+		line.AddChild(name);
+		return line;
 	}
 
 	// Card width the grid sizes its column count against; see ResponsiveLayout.BindGridColumns.
@@ -284,19 +427,15 @@ public partial class CharacterSelection : Control
 	private static string LockedLine(CharacterData character, CardState state) =>
 		state == CardState.Secret ? SecretLine : UnlockCatalog.GetLockedHint(character.Id, UnlockKind.Character);
 
+	// A roster card on a phone: one row, the face in its well on the left, the name and the facts on
+	// the right. The whole card is the hit area (the overlay laid first, everything else click-through);
+	// pressing it chooses the wizard.
 	private Control BuildCard(CharacterData character, int idx, CardState state)
 	{
 		bool unlocked = state == CardState.Unlocked;
-		var card = new PanelContainer();
-		// 450 tall fitted one row on a 720-tall PC canvas, with the second row of wizards behind a
-		// scrollbar. Shorter on a PC, so both rows are on screen; the phone has the height.
-		card.CustomMinimumSize = new Vector2(CardMinWidth, ResponsiveLayout.IsNarrow(this) ? 450f : 300f);
+		var card = new PanelContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+		card.AddThemeStyleboxOverride("panel", CardFace());
 
-		// First child, so the card's content draws over it and the hover tint reads as the card
-		// lighting up rather than as a film across the portrait. Every display control below is
-		// then made click-through, which is what actually makes the *whole* card a hit area: the
-		// old handler sat on the PanelContainer, but the MarginContainer and VBoxContainer inside
-		// it default to MouseFilter.Stop and covered everything except a 12px rim.
 		var cardButton = BonelightSkin.MakeCardClickOverlay(unlocked);
 		cardButton.Name = $"CharacterButton{idx + 1}";
 		int capturedIdx = idx;
@@ -304,101 +443,41 @@ public partial class CharacterSelection : Control
 		card.AddChild(cardButton);
 
 		var margin = new MarginContainer();
-		margin.AddThemeConstantOverride("margin_left", 12);
-		margin.AddThemeConstantOverride("margin_right", 12);
-		margin.AddThemeConstantOverride("margin_top", 12);
-		margin.AddThemeConstantOverride("margin_bottom", 12);
+		foreach (string side in new[] { "margin_left", "margin_right", "margin_top", "margin_bottom" })
+			margin.AddThemeConstantOverride(side, 12);
 		card.AddChild(margin);
 
-		var vbox = new VBoxContainer();
-		vbox.AddThemeConstantOverride("separation", 6);
-		margin.AddChild(vbox);
+		var row = new HBoxContainer();
+		row.AddThemeConstantOverride("separation", 16);
+		margin.AddChild(row);
 
-		var nameLabel = new Label
-		{
-			Text = CardName(character, state),
-			HorizontalAlignment = HorizontalAlignment.Center
-		};
-		ResponsiveLayout.SetFont(nameLabel, ResponsiveLayout.TextRole.Title);
-		nameLabel.AddThemeColorOverride("font_color", CardNameInk(character, state));
-		vbox.AddChild(nameLabel);
-
-		var portraitBg = new PanelContainer();
-		portraitBg.CustomMinimumSize = new Vector2(0, ResponsiveLayout.IsNarrow(this) ? 200f : 140f);
-		var portraitStyle = new StyleBoxFlat();
-		portraitStyle.BgColor = new Color(0.12f, 0.12f, 0.14f);
-		portraitStyle.SetCornerRadiusAll(4);
-		portraitBg.AddThemeStyleboxOverride("panel", portraitStyle);
-		vbox.AddChild(portraitBg);
-
+		// The 48 cell at x3 in a 160 well, the largest whole scale that fits beside the words.
+		PanelContainer well = BuildPortraitWell(new Vector2(160f, 160f));
+		well.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
 		var portraitCenter = new CenterContainer();
-		portraitBg.AddChild(portraitCenter);
-
+		well.AddChild(portraitCenter);
 		portraitCenter.AddChild(BuildPortraitDisplay(character, state));
+		row.AddChild(well);
 
-		if (unlocked)
-		{
-			string weaponName = character.StartingSpellResource != null ? character.StartingSpellResource.Name : "-";
-			vbox.AddChild(MakeInfoLabel($"Starting Spell: {weaponName}"));
-			if (!string.IsNullOrWhiteSpace(character.StartingPassiveDescription))
-				vbox.AddChild(MakeInfoLabel($"Passive Bonus: {character.StartingPassiveDescription}"));
-			if (character.IsLegendaryStart)
-				vbox.AddChild(MakeInfoLabel("Starts Legendary!"));
-		}
-		else
-		{
-			// A lock that does not explain itself is indistinguishable from missing content. A
-			// secret explains nothing on purpose, and says only that it is one.
-			var lockedLabel = MakeInfoLabel(LockedLine(character, state));
-			lockedLabel.HorizontalAlignment = HorizontalAlignment.Center;
-			vbox.AddChild(lockedLabel);
-		}
+		var text = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+		text.AddThemeConstantOverride("separation", 10);
+		row.AddChild(text);
 
-		var spacer = new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
-		vbox.AddChild(spacer);
+		Label nameLabel = CodexRows.MakeText(CardName(character, state), ResponsiveLayout.TextRole.Title, CardNameInk(character, state));
+		text.AddChild(nameLabel);
+		text.AddChild(BuildFacts(character, state));
 
 		Control testWizardPicker = null;
-		if (character.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase))
+		if (unlocked && character.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase))
 		{
-			var testWizardPickerContainer = new VBoxContainer
-			{
-				CustomMinimumSize = new Vector2(0f, 76f),
-				MouseFilter = Control.MouseFilterEnum.Stop
-			};
-			testWizardPickerContainer.AddThemeConstantOverride("separation", 6);
-
-			var pickerLabel = new Label
-			{
-				Text = "Start Spell",
-				HorizontalAlignment = HorizontalAlignment.Center
-			};
-			ResponsiveLayout.SetFont(pickerLabel, ResponsiveLayout.TextRole.Label);
-			testWizardPickerContainer.AddChild(pickerLabel);
-
-			testWizardSpellPicker = new OptionButton
-			{
-				SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-			};
-			// No icon until the Bonelight icon set is drawn; the pack glyph that used to sit
-			// here went with the rest of the licensed art.
-			Texture2D pickerIcon = null;
-			if (pickerIcon != null)
-			{
-				testWizardSpellPicker.Icon = pickerIcon;
-				testWizardSpellPicker.ExpandIcon = false;
-				testWizardSpellPicker.AddThemeConstantOverride("icon_max_width", 24);
-			}
-			PopulateTestWizardSpellOptions();
-			testWizardSpellPicker.ItemSelected += OnTestWizardSpellSelected;
-			testWizardPickerContainer.AddChild(testWizardSpellPicker);
-			vbox.AddChild(testWizardPickerContainer);
-			testWizardPicker = testWizardPickerContainer;
+			testWizardPickerHost ??= BuildTestWizardPicker();
+			text.AddChild(testWizardPickerHost);
+			testWizardPicker = testWizardPickerHost;
 		}
 
 		// The test wizard's spell dropdown is the one thing on a card that must keep its own input;
 		// everything else lets the click fall through to the overlay button underneath.
 		BonelightSkin.MakeSubtreeClickThrough(margin, testWizardPicker);
-
 		return card;
 	}
 
@@ -408,6 +487,7 @@ public partial class CharacterSelection : Control
 	{
 		bool unlocked = state == CardState.Unlocked;
 		var card = new PanelContainer { CustomMinimumSize = new Vector2(CompactCardWidth, CompactCardHeight) };
+		card.AddThemeStyleboxOverride("panel", CardFace());
 
 		var cardButton = BonelightSkin.MakeCardClickOverlay(unlocked);
 		cardButton.Name = $"CharacterButton{idx + 1}";
@@ -426,10 +506,7 @@ public partial class CharacterSelection : Control
 		vbox.AddThemeConstantOverride("separation", 4);
 		margin.AddChild(vbox);
 
-		var portraitBg = new PanelContainer { CustomMinimumSize = new Vector2(0, CompactPortraitBox) };
-		var portraitStyle = new StyleBoxFlat { BgColor = new Color(0.12f, 0.12f, 0.14f) };
-		portraitStyle.SetCornerRadiusAll(4);
-		portraitBg.AddThemeStyleboxOverride("panel", portraitStyle);
+		PanelContainer portraitBg = BuildPortraitWell(new Vector2(0, CompactPortraitBox));
 		var portraitCenter = new CenterContainer();
 		portraitBg.AddChild(portraitCenter);
 		portraitCenter.AddChild(BuildPortraitDisplay(character, state, box: (int)CompactPortraitBox));
@@ -458,21 +535,14 @@ public partial class CharacterSelection : Control
 		pane.AnchorBottom = 1f;
 		pane.OffsetLeft = 12f;
 		pane.OffsetRight = -24f;
-		pane.OffsetTop = 64f;
-		pane.OffsetBottom = -24f;
-		var style = new StyleBoxFlat
-		{
-			BgColor = new Color(0.08f, 0.08f, 0.11f, 0.94f),
-			BorderColor = new Color(0.38f, 0.40f, 0.48f, 0.95f)
-		};
-		style.SetBorderWidthAll(1);
-		style.SetCornerRadiusAll(6);
-		style.SetContentMarginAll(16);
-		pane.AddThemeStyleboxOverride("panel", style);
+		pane.OffsetTop = RosterTop;
+		pane.OffsetBottom = -RosterBottomMargin;
+		// The stone slab every other panel in the game stands on, in place of a thin grey outline.
+		pane.AddThemeStyleboxOverride("panel", BonelightSkin.PanelStyle());
 		AddChild(pane);
 
 		detailBox = new VBoxContainer();
-		detailBox.AddThemeConstantOverride("separation", 10);
+		detailBox.AddThemeConstantOverride("separation", 14);
 		pane.AddChild(detailBox);
 	}
 
@@ -503,19 +573,11 @@ public partial class CharacterSelection : Control
 		name.AddThemeColorOverride("font_color", CardNameInk(character, state));
 		detailBox.AddChild(name);
 
-		if (unlocked)
-		{
-			string weaponName = character.StartingSpellResource != null ? character.StartingSpellResource.Name : "-";
-			detailBox.AddChild(MakeInfoLabel($"Starting Spell: {weaponName}"));
-			if (!string.IsNullOrWhiteSpace(character.StartingPassiveDescription))
-				detailBox.AddChild(MakeInfoLabel($"Passive Bonus: {character.StartingPassiveDescription}"));
-			if (character.IsLegendaryStart)
-				detailBox.AddChild(MakeInfoLabel("Starts Legendary!"));
-		}
-		else
-		{
-			detailBox.AddChild(MakeInfoLabel(LockedLine(character, state)));
-		}
+		var facts = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		facts.AddThemeConstantOverride("margin_left", 8);
+		facts.AddThemeConstantOverride("margin_right", 8);
+		facts.AddChild(BuildFacts(character, state));
+		detailBox.AddChild(facts);
 
 		detailBox.AddChild(new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill });
 
@@ -533,7 +595,9 @@ public partial class CharacterSelection : Control
 				CustomMinimumSize = new Vector2(0, 52f),
 				FocusMode = Control.FocusModeEnum.None
 			};
-			BonelightSkin.StyleButton(choose);
+			// The one thing this screen is for, so it rests on the lit frame (Start Run's tier).
+			BonelightSkin.StyleButton(choose, BonelightSkin.Emphasis.Primary);
+			ResponsiveLayout.SetFont(choose, ResponsiveLayout.TextRole.Body);
 			int capturedIdx = idx;
 			choose.Pressed += () => OnCharButtonPressed(capturedIdx);
 			detailBox.AddChild(choose);
@@ -552,16 +616,6 @@ public partial class CharacterSelection : Control
 		testWizardSpellPicker.ItemSelected += OnTestWizardSpellSelected;
 		host.AddChild(testWizardSpellPicker);
 		return host;
-	}
-
-	private static Label MakeInfoLabel(string text)
-	{
-		return new Label
-		{
-			Text = text,
-			HorizontalAlignment = HorizontalAlignment.Center,
-			AutowrapMode = TextServer.AutowrapMode.WordSmart
-		};
 	}
 
 	private static Control BuildPortraitDisplay(CharacterData character, CardState state, int scale = 3, int box = 0)
@@ -593,12 +647,29 @@ public partial class CharacterSelection : Control
 		};
 	}
 
-	private static Label MakePassiveDescriptionLabel(string text)
+	// The Test Wizard is a developer's tool, not a wizard (Eric, 2026-11-01: "Remove the test wizard from
+	// character selection"). He stays first in CharacterRoster, so every tool that asks for --character=0
+	// still gets him; only this screen leaves him out.
+	private static bool IsHiddenFromSelection(CharacterData character) =>
+		string.Equals(character?.Id, "test_wizard", System.StringComparison.OrdinalIgnoreCase);
+
+	private bool IsSelectable(int idx) =>
+		idx >= 0 && idx < characters.Count && !IsHiddenFromSelection(characters[idx]);
+
+	// The first wizard on the screen the save can play; the first on the screen at all if it can play none.
+	private int FirstSelectableIndex()
 	{
-		var label = MakeInfoLabel(text);
-		ResponsiveLayout.SetFont(label, ResponsiveLayout.TextRole.Label);
-		label.Modulate = new Color(0.85f, 0.85f, 0.9f);
-		return label;
+		int firstShown = -1;
+		for (int i = 0; i < characters.Count; i++)
+		{
+			if (!IsSelectable(i))
+				continue;
+			if (cardStates[i] == CardState.Unlocked)
+				return i;
+			if (firstShown < 0)
+				firstShown = i;
+		}
+		return Math.Max(0, firstShown);
 	}
 
 	private void OnCharButtonPressed(int idx)

@@ -259,7 +259,7 @@ public static class StageEnvironmentCatalog
 			StageEnvironmentKind.Ruins,
 			"ruins",
 			"Ruins",
-			"res://assets/bonelight/tiles/floor_graystone_0.png",
+			"res://assets/bonelight/tiles/floor_ruinstone_0.png",
 			new Rect2(),
 			string.Empty,
 			new Rect2(),
@@ -615,31 +615,34 @@ public static class StageEnvironmentCatalog
 		}
 		,
 
-		// THE THRONE (stage_13), stand-in: the Emberdeep's laid dark tile, unlit. C4 gives it the hall and
-		// his light - the `darkness` ramp as emission, the one place in the game it is spent
-		// (.ai/endgame-castle.md 6.1) - and its own walls, already named here.
+		// THE THRONE (stage_13, C4, .ai/endgame-castle.md 6.1): one closed hall (throne_room.py) on the
+		// castle's flags, a red runner up the nave to a marble dais, and walls of great unlit blocks whose
+		// sconces burn with HIS light - the `darkness` ramp as emission, the one place in the game it is spent
+		// (throne_walls.py, the `throne_wall` set; .ai/world-and-tone.md). The air is that light too: a
+		// violet-black haze and glow, a shade darker than the Court's. Everything standing in the hall - the
+		// throne, the great doors behind it - is ThroneRules', so no scattered props and no traps.
 		[StageEnvironmentKind.Throne] = new StageEnvironmentProfile(
 			StageEnvironmentKind.Throne,
 			"throne",
 			"Throne",
-			"res://assets/bonelight/tiles/floor_darktile_0.png",
+			"res://assets/bonelight/tiles/floor_stonetile_0.png",
 			new Rect2(),
 			string.Empty,
 			new Rect2(),
-			0.30f,
+			0.40f,
+			0.10f,
+			new Color(0.58f, 0.54f, 0.66f, 1.0f),
+			new Color(0.30f, 0.26f, 0.40f, 0.0f),
 			0.0f,
-			new Color(0.62f, 0.58f, 0.70f, 1.0f),
-			new Color(1f, 1f, 1f, 0f),
-			0.0f,
 			0,
 			0,
 			0,
-			new[] { "res://assets/bonelight/tiles/floor_darktile_0.png" },
+			new[] { "res://assets/bonelight/tiles/floor_stonetile_0.png" },
 			48f,
-			propCount: 8)
+			propCount: 0)
 		{
-			HazeTint = new Color(0.10f, 0.08f, 0.16f, 0.12f),
-			GlowTint = new Color(0.20f, 0.12f, 0.30f, 0.05f),
+			HazeTint = new Color(0.12f, 0.08f, 0.20f, 0.12f),
+			GlowTint = new Color(0.21f, 0.13f, 0.36f, 0.06f),
 			IntroTint = new Color(0.90f, 0.86f, 0.98f, 1.0f),
 			WallSet = "throne_wall",
 		}

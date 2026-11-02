@@ -28,9 +28,9 @@ public static class ChapterRulesCatalog
 		// way home (CourtRules.cs).
 		"stage_12" => () => new CourtRules(),
 		// (the Throne's line is below; leave this one as it is)
-		// The Throne (piece C4): becomes () => new ThroneRules() - the Muster, the procession, the pinned
-		// pace clock.
-		"stage_13" => null,
+		// The Throne (piece C4): the pinned pace clock, the Muster, the procession, the throne and the doors
+		// behind it as the way home (ThroneRules.cs, ThroneProcession.cs).
+		"stage_13" => () => new ThroneRules(),
 		_ => null,
 	};
 

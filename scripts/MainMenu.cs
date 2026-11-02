@@ -8,16 +8,17 @@ using WizardSurvivors.scripts;
 public partial class MainMenu : Control
 {
 	private Button startRunButton = null!;
-	// The player-facing names are Spell Index, Unlocks and Arcane Upgrades. The panels, lists and
-	// save keys behind them keep their older internal names (spellbook*, achievement*, the
-	// ArcaneUpgradeLevels dictionary): the save is persisted and the rest is not worth the churn.
+	// The player-facing names are Evolution Codex, Achievements and Powers. The button, panels, lists and
+	// save keys behind them keep their older internal names (spellIndexButton, achievement*, the
+	// ArcaneUpgradeLevels dictionary): the save is persisted, the harnesses press buttons by name, and the
+	// rest is not worth the churn. The Spell Index's panel itself is gone: its button opens the Evolution
+	// Codex (.ai/evolution-codex.md), which carries every spell, how to find the missing ones and Set aside.
 	private Button spellIndexButton = null!;
 	private Button unlocksButton = null!;
 	private Button arcaneUpgradesButton = null!;
 	private Button optionsButton = null!;
 	private Button reportBugButton;
 	private Button backFromArcaneButton = null!;
-	private Button backFromSpellbookButton = null!;
 	private Button backFromAchievementsButton = null!;
 	private Button backFromOptionsButton = null!;
 	private Control mainPanel = null!;
@@ -42,34 +43,10 @@ public partial class MainMenu : Control
 	private Label menuEnergyAmount;
 	private Label shopEnergyAmount;
 	private ColorRect scrim;
-	private Control spellbookPanel = null!;
 	private Control achievementsPanel = null!;
 	private Control arcaneUpgradesPanel = null!;
+	// The Options panel's rows are built and kept in MainMenu.Options.cs.
 	private Control optionsPanel = null!;
-	private HSlider masterVolumeSlider = null!;
-	private HSlider musicVolumeSlider = null!;
-	private HSlider sfxVolumeSlider = null!;
-	private CheckButton muteToggle = null!;
-	private CheckButton onboardingTipsToggle = null!;
-	private CheckButton damageNumbersToggle = null!;
-	private CheckButton playtestModeToggle = null!;
-	private OptionButton balancePresetOption = null!;
-	private Button openLatestPlaytestLogButton = null!;
-	private Button openPlaytestLogFolderButton = null!;
-	private Label playtestChecklistStatusLabel = null!;
-	private bool isInitializingPlaytestChecklist;
-	private static readonly (string Id, string Label)[] PlaytestChecklistItems =
-	{
-		("run_default", "Run one game on Default preset"),
-		("run_casual", "Run one game on Casual preset"),
-		("run_hardcore", "Run one game on Hardcore preset"),
-		("tips_toggle", "Verify onboarding tips toggle behavior"),
-		("reward_diff", "Verify reward multipliers differ by preset")
-	};
-	private readonly List<CheckButton> playtestChecklistBoxes = new();
-	private readonly Dictionary<string, CheckButton> playtestChecklistById = new();
-	private VBoxContainer spellbookList = null!;
-	private VBoxContainer spellbookSummary = null!;
 	private VBoxContainer achievementList = null!;
 	private VBoxContainer achievementSummary = null!;
 	// The shop's list: a column of sections, each a grid of cards (MainMenu.Shop.cs).
@@ -77,8 +54,8 @@ public partial class MainMenu : Control
 	private static readonly Texture2D DefaultSpellIcon = GD.Load<Texture2D>("res://assets/bonelight/ui/spells/unknown.png");
 
 	private readonly Dictionary<string, UpgradeDefinition> upgradeDefinitions = new();
-	private readonly List<SpellbookEntry> spellbookEntries = new();
-
+	// A boon's page in the shop (MainMenu.Shop.cs, BoonShopEntry). The name is the Spell Index's, whose rows
+	// it once described; the Spell Index went to the Evolution Codex.
 	private sealed class SpellbookEntry
 	{
 		public string Id = string.Empty;
@@ -118,10 +95,8 @@ public partial class MainMenu : Control
 		mainPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/MainPanel");
 		arcaneUpgradesPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel");
 		optionsPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/OptionsPanel");
-		EnsureSpellIndexUi();
 		EnsureUnlocksUi();
 		EnsureShopHeader();
-		EnsureResetProgressUi();
 
 		startRunButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/MainPanel/MenuButtons/StartRunButton");
 		arcaneUpgradesButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/MainPanel/MenuButtons/ProgressionRow/ShopColumn/ArcaneUpgradesButton");
@@ -130,76 +105,43 @@ public partial class MainMenu : Control
 		arcaneUpgradesButton.Text = "Powers";
 		unlocksButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/MainPanel/MenuButtons/ProgressionRow/UnlocksButton");
 		spellIndexButton = GetNode<Button>("SpellIndexButton");
+		// The Spell Index's slot opens the Evolution Codex now; the node keeps its name for the harnesses.
+		spellIndexButton.Text = EvolutionCodex.Title;
 		optionsButton = GetNode<Button>("OptionsButton");
 		EnsureMenuEnergyReadout();
-		spellbookList = spellbookPanel.FindChild("SpellbookList", true, false) as VBoxContainer;
-		spellbookSummary = spellbookPanel.FindChild("SpellbookSummary", true, false) as VBoxContainer;
 		achievementList = achievementsPanel.FindChild("AchievementList", true, false) as VBoxContainer;
 		achievementSummary = achievementsPanel.FindChild("AchievementSummary", true, false) as VBoxContainer;
 		upgradeList = GetNode<VBoxContainer>("MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel/ArcaneUpgradesVBox/UpgradeScroll/UpgradeGutter/UpgradeList");
 		upgradeScroll = GetNode<ScrollContainer>("MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel/ArcaneUpgradesVBox/UpgradeScroll");
 		backFromArcaneButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel/ArcaneUpgradesVBox/BackFromArcaneButton");
-		backFromSpellbookButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/SpellbookPanel/SpellbookVBox/BackFromSpellbookButton");
 		backFromAchievementsButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/AchievementsPanel/AchievementsVBox/BackFromAchievementsButton");
 		backFromOptionsButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/BackFromOptionsButton");
-		masterVolumeSlider = GetNodeOrNull<HSlider>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/MasterRow/MasterVolumeSlider") ?? EnsureMasterVolumeSlider();
-		musicVolumeSlider = GetNodeOrNull<HSlider>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/MusicRow/MusicVolumeSlider") ?? EnsureMusicVolumeSlider();
-		sfxVolumeSlider = GetNodeOrNull<HSlider>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/SfxRow/SfxVolumeSlider") ?? EnsureSfxVolumeSlider();
-		muteToggle = GetNode<CheckButton>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/MuteToggle");
 
 		// After every GetNode above, never before: this moves the button stack out of the scene's
 		// container tree, and the paths have to resolve against the scene as it was authored.
 		LayoutAroundTitleArt();
-		EnsureReportBugButton();
 		LayoutUtilityRow();
-		onboardingTipsToggle = GetNodeOrNull<CheckButton>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/OnboardingTipsToggle") ?? EnsureOnboardingTipsToggle();
-		// Before EnsureOptionsScroll wraps the list, like every row added here.
-		damageNumbersToggle = EnsureDamageNumbersToggle();
-		EnsureWatchPrologueButton();
-		playtestModeToggle = GetNodeOrNull<CheckButton>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/PlaytestModeToggle") ?? EnsurePlaytestModeToggle();
-		balancePresetOption = GetNodeOrNull<OptionButton>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/BalancePresetRow/BalancePresetOption") ?? EnsureBalancePresetOption();
-		EnsurePlaytestToolkitUi();
-		EnsureOptionsScroll();
+		BuildOptions();
 		ApplyMenuSkin();
-		ApplyOptionsSolidBackground();
 
 		// The shop needs its definitions before its cards; the boons' pages read BoonCatalog, not these
 		// entries (the shop's spell pages did, until it stopped selling spells).
-		BuildSpellbookEntries();
 		BuildUpgradeDefinitions();
 		BuildShop();
-		BuildSpellbookCards();
 		BuildAchievementCards();
 
 		startRunButton.Pressed += OnStartRunPressed;
-		spellIndexButton.Pressed += OnSpellbookPressed;
+		spellIndexButton.Pressed += OnCodexPressed;
 		unlocksButton.Pressed += OnAchievementsPressed;
 		arcaneUpgradesButton.Pressed += OnArcaneUpgradesPressed;
 		optionsButton.Pressed += OnOptionsPressed;
 		backFromArcaneButton.Pressed += ShowMainPanel;
-		backFromSpellbookButton.Pressed += ShowMainPanel;
 		backFromAchievementsButton.Pressed += ShowMainPanel;
 		backFromOptionsButton.Pressed += ShowMainPanel;
-		masterVolumeSlider.ValueChanged += OnMasterVolumeChanged;
-		musicVolumeSlider.ValueChanged += OnMusicVolumeChanged;
-		sfxVolumeSlider.ValueChanged += OnSfxVolumeChanged;
-		muteToggle.Toggled += OnMuteToggled;
-		onboardingTipsToggle.Toggled += OnOnboardingTipsToggled;
-		damageNumbersToggle.Toggled += pressed => DisplaySettings.StoreDamageNumbers(this, pressed);
-		playtestModeToggle.Toggled += OnPlaytestModeToggled;
-		balancePresetOption.ItemSelected += OnBalancePresetSelected;
-		openLatestPlaytestLogButton.Pressed += OnOpenLatestPlaytestLogPressed;
-		openPlaytestLogFolderButton.Pressed += OnOpenPlaytestLogFolderPressed;
-		foreach (CheckButton checkbox in playtestChecklistBoxes)
-			checkbox.Toggled += _ => UpdatePlaytestChecklistStatus();
-		foreach (CheckButton checkbox in playtestChecklistBoxes)
-			checkbox.Toggled += _ => PersistPlaytestChecklistState();
 
 		RefreshArcaneEnergy();
 		RefreshUpgradeControls();
-		RefreshSpellbookCards();
 		RefreshAchievementCards();
-		InitializeOptionsState();
 		ShowMainPanel();
 		PlayMenuMusic();
 
@@ -234,7 +176,6 @@ public partial class MainMenu : Control
 			"MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel/ArcaneUpgradesVBox/ArcaneUpgradesTitle",
 			"MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/OptionsTitle" })
 			ResponsiveLayout.SetFont(GetNodeOrNull<Label>(title), ResponsiveLayout.TextRole.Display);
-		BonelightSkin.ApplyPanel(spellbookPanel, BonelightSkin.Register.Vellum);
 		BonelightSkin.ApplyPanel(achievementsPanel);
 		BonelightSkin.ApplyPanel(arcaneUpgradesPanel);
 		BonelightSkin.ApplyPanel(optionsPanel);
@@ -266,16 +207,13 @@ public partial class MainMenu : Control
 		// A reference, not a destination: the quiet frame Report a bug wears, at the same size.
 		StyleMenuTier(spellIndexButton, MenuTier.Tertiary);
 		ResponsiveLayout.SetFont(spellIndexButton, ResponsiveLayout.TextRole.Label);
-		if (resetProgressButton != null)
-			StyleMenuTier(resetProgressButton, MenuTier.Tertiary);
 
 		BonelightSkin.StyleButton(backFromArcaneButton);
-		BonelightSkin.StyleButton(backFromSpellbookButton);
+		// In the carved face, as the other panels' Back is: the scene gave this one a size and the
+		// prose face, so Powers was the one panel whose Back read differently (menu pass, 2026-11-01).
+		ResponsiveLayout.SetFont(backFromArcaneButton, ResponsiveLayout.TextRole.Title);
 		BonelightSkin.StyleButton(backFromAchievementsButton);
 		BonelightSkin.StyleButton(backFromOptionsButton);
-
-		BonelightSkin.StyleButton(openLatestPlaytestLogButton);
-		BonelightSkin.StyleButton(openPlaytestLogFolderButton);
 	}
 
 	private enum MenuTier { Primary, Secondary, Tertiary }
@@ -305,40 +243,6 @@ public partial class MainMenu : Control
 		});
 	}
 
-	// Solid dark backer so the options text stays readable over the busy fantasy backdrop.
-	private void ApplyOptionsSolidBackground()
-	{
-		if (optionsPanel == null || optionsPanel.GetNodeOrNull<Panel>("OptionsSolidBackground") != null)
-			return;
-
-		var bg = new Panel
-		{
-			Name = "OptionsSolidBackground",
-			MouseFilter = Control.MouseFilterEnum.Ignore
-		};
-		bg.AnchorLeft = 0.5f;
-		bg.AnchorRight = 0.5f;
-		bg.AnchorTop = 0f;
-		bg.AnchorBottom = 1f;
-		bg.OffsetLeft = -300f;
-		bg.OffsetRight = 300f;
-		bg.OffsetTop = 8f;
-		bg.OffsetBottom = -8f;
-
-		var style = new StyleBoxFlat
-		{
-			BgColor = new Color(0.06f, 0.07f, 0.10f, 0.97f),
-			BorderColor = new Color(0.45f, 0.38f, 0.22f, 0.9f)
-		};
-		style.SetBorderWidthAll(2);
-		style.SetCornerRadiusAll(12);
-		style.SetContentMarginAll(12);
-		bg.AddThemeStyleboxOverride("panel", style);
-
-		optionsPanel.AddChild(bg);
-		optionsPanel.MoveChild(bg, 0);
-	}
-
 	private void PlayMenuMusic()
 	{
 		// Through the catalog rather than by path, via the one helper the title also uses. There
@@ -347,191 +251,6 @@ public partial class MainMenu : Control
 		GetNodeOrNull<MusicPlayer>("/root/MusicPlayer")?.PlayMenuMusic();
 	}
 
-	// The Spell Index: every spell in the game, found or not. Called the Spellbook until the player
-	// pointed out that "spell book" already means something in a run - the six spells you are
-	// carrying (Player.IsSpellBookFull, the Scribe's Penknife) - and that this page is the other
-	// thing: the catalogue, and where to find what is missing from it.
-	private void EnsureSpellIndexUi()
-	{
-		var content = GetNode<Control>("MarginContainer/VBoxContainer/Content");
-		if (content.GetNodeOrNull<Control>("SpellbookPanel") != null)
-		{
-			spellbookPanel = content.GetNode<Control>("SpellbookPanel");
-			return;
-		}
-
-		spellbookPanel = new Control { Name = "SpellbookPanel", Visible = false };
-		spellbookPanel.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		content.AddChild(spellbookPanel);
-
-		var vbox = new VBoxContainer { Name = "SpellbookVBox" };
-		vbox.SetAnchorsPreset(Control.LayoutPreset.TopWide);
-		vbox.AnchorBottom = 1.0f;
-		vbox.OffsetLeft = 24;
-		vbox.OffsetTop = 20;
-		vbox.OffsetRight = -24;
-		vbox.OffsetBottom = -20;
-		vbox.AddThemeConstantOverride("separation", 12);
-		spellbookPanel.AddChild(vbox);
-
-		var title = new Label
-		{
-			Name = "SpellbookTitle",
-			Text = CodexRows.SpellIndexTitle,
-			HorizontalAlignment = HorizontalAlignment.Center
-		};
-		ResponsiveLayout.SetFont(title, ResponsiveLayout.TextRole.Display);
-		// The heading sits ON the parchment, so it is ink like everything else there.
-		title.AddThemeColorOverride("font_color", PageInk);
-		vbox.AddChild(title);
-
-		// Says what kind of page this is before the counts do: a reference to read, not a loadout
-		// to manage. The softer ink, one step under the counts' meta ink in weight but not in
-		// contrast (CodexRows.Vellum.InkSoft is measured on the page in tools/art/ui_contrast.py).
-		vbox.AddChild(BuildPanelSubtitle(CodexRows.SpellIndexSubtitle, CodexRows.Vellum.InkSoft));
-
-		// The summary is rebuilt with the list (BuildSpellbookCards); the host keeps its place.
-		vbox.AddChild(new VBoxContainer { Name = "SpellbookSummary", MouseFilter = Control.MouseFilterEnum.Ignore });
-
-		vbox.AddChild(CodexRows.BuildScroll("SpellbookScroll", CodexRows.BuildList("SpellbookList")));
-
-		var backButton = new Button
-		{
-			Name = "BackFromSpellbookButton",
-			Text = "Back",
-			CustomMinimumSize = new Vector2(220, 50),
-			SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter
-		};
-		ResponsiveLayout.SetFont(backButton, ResponsiveLayout.TextRole.Title);
-		vbox.AddChild(backButton);
-	}
-
-	// Two-press reset, no dialog: the first press arms it and relabels, the second wipes. A confirm
-	// dialog would be better, but this is a development affordance and an accidental single click
-	// must never be able to destroy a save.
-	private Button resetProgressButton;
-	private bool resetArmed;
-
-	// Reset Progress lives INSIDE Options, not on the main menu.
-	//
-	// It used to sit in the bottom row of the menu stack next to Options, at the same size and in
-	// nearly the same style - one press away from wiping a save, presented as a peer of the button
-	// that opens the volume sliders. Two presses are still required to confirm, but the press that
-	// arms it should not be one the player can reach by accident on the way to Start Run.
-	//
-	// It goes at the END of the options list, after the sliders and before Back, because the last
-	// thing in a settings panel is where destructive actions are expected to be.
-	private void EnsureResetProgressUi()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>(
-			"MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null || optionsVBox.GetNodeOrNull<Button>("ResetProgressButton") != null)
-			return;
-
-		resetProgressButton = new Button
-		{
-			Name = "ResetProgressButton",
-			Text = "Reset Progress",
-			CustomMinimumSize = new Vector2(220, 50)
-		};
-		ResponsiveLayout.SetFont(resetProgressButton, ResponsiveLayout.TextRole.Label);
-		resetProgressButton.AddThemeColorOverride("font_color", new Color(0.86f, 0.56f, 0.56f));
-		resetProgressButton.Pressed += OnResetProgressPressed;
-		optionsVBox.AddChild(resetProgressButton);
-	}
-
-	/// <summary>
-	/// Puts everything between the title and Back into a vertical-only ScrollContainer.
-	/// </summary>
-	/// <remarks>
-	/// Options was the one panel in the game with no scroll, and it has since grown a playtest
-	/// toolkit and an eight-item checklist - so the bottom of the list simply ran off the panel,
-	/// with Reset Progress and Back among the things that could be pushed out of reach.
-	///
-	/// Done in code, after every Ensure* helper has added its row, rather than in the scene: the
-	/// helpers add to OptionsVBox by path, so a scroll sitting in the scene between them and it
-	/// would have to be threaded through every one of them. Inserting it last costs one reparenting
-	/// loop and leaves those paths alone - every path lookup into OptionsVBox happens earlier in
-	/// _Ready than this, and none of them runs again.
-	///
-	/// The title and Back stay OUTSIDE the scroll, pinned. A Back button that scrolls away is a
-	/// dead end.
-	/// </remarks>
-	private void EnsureOptionsScroll()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>(
-			"MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null || optionsVBox.GetNodeOrNull<ScrollContainer>("OptionsScroll") != null)
-			return;
-
-		var scroll = new ScrollContainer
-		{
-			Name = "OptionsScroll",
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-			HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
-			FollowFocus = true
-		};
-		var inner = new VBoxContainer
-		{
-			Name = "OptionsScrollBox",
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-		};
-		inner.AddThemeConstantOverride("separation", 12);
-		scroll.AddChild(inner);
-
-		// Collect first, then reparent: moving children while iterating the live list skips half
-		// of them.
-		var movable = new List<Node>();
-		foreach (Node child in optionsVBox.GetChildren())
-		{
-			if (child.Name == "OptionsTitle" || child.Name == "BackFromOptionsButton"
-				|| child.Name == "OptionsSolidBackground")
-				continue;
-			movable.Add(child);
-		}
-		foreach (Node child in movable)
-		{
-			optionsVBox.RemoveChild(child);
-			inner.AddChild(child);
-		}
-
-		optionsVBox.AddChild(scroll);
-		Button back = optionsVBox.GetNodeOrNull<Button>("BackFromOptionsButton");
-		optionsVBox.MoveChild(scroll, back != null ? back.GetIndex() : optionsVBox.GetChildCount() - 1);
-
-		// Reset Progress goes last, HERE, rather than earlier against OptionsVBox. Ordering it
-		// before this point does not survive: the toggles, the preset row and the toolkit are each
-		// added by their own Ensure* helper which appends and then repositions itself relative to
-		// Back, so anything placed "last" beforehand gets stepped over by the next helper to run.
-		// This is the only moment the list is complete and nothing else will touch it.
-		if (resetProgressButton != null && resetProgressButton.GetParent() == inner)
-			inner.MoveChild(resetProgressButton, inner.GetChildCount() - 1);
-	}
-
-	private void OnResetProgressPressed()
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null || resetProgressButton == null)
-			return;
-
-		if (!resetArmed)
-		{
-			resetArmed = true;
-			resetProgressButton.Text = "Reset Progress — press again to confirm";
-			return;
-		}
-
-		saveManager.ResetProgress();
-		resetArmed = false;
-		resetProgressButton.Text = "Reset Progress";
-
-		// Everything on this screen is a view over the save, so all of it is now stale.
-		RefreshArcaneEnergy();
-		RefreshUpgradeControls();
-		RefreshSpellbookCards();
-		RefreshAchievementCards();
-	}
 
 	// Achievements (once Unlocks, once Deeds; .ai/achievements-and-secrets.md section 4): every
 	// achievement in the game, listed or revealed as the player plays. Every entry pays something - a
@@ -686,20 +405,13 @@ public partial class MainMenu : Control
 	private void RefreshArcaneEnergy()
 	{
 		int total = 0;
-		float nextRunPreview = 1.0f;
-		int victoryStreak = 0;
 		string presetName = "Default";
 		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
 		if (saveManager != null)
 		{
 			total = saveManager.Data.TotalCurrency;
-			nextRunPreview = GlobalStatsManager.GetNextRunArcanePreviewMultiplier(saveManager.Data);
-			victoryStreak = GlobalStatsManager.GetConsecutiveOutcomeCount(saveManager.Data, "Victory");
 			presetName = GlobalStatsManager.GetBalancePresetDisplayName(saveManager.Data.BalancePresetId);
-			nextRunPreview *= GlobalStatsManager.GetArcaneRewardScaleForPreset(saveManager.Data.BalancePresetId);
 		}
-
-		string streakTag = victoryStreak > 1 ? $"Momentum streak {victoryStreak}" : "Steady";
 
 		// Both purses, every time: this runs after a purchase too (TryPurchaseUpgrade), which is the
 		// moment the shop's header has to drop, and after a reset.
@@ -716,10 +428,10 @@ public partial class MainMenu : Control
 			rootDetailLabel.AddThemeColorOverride("font_color", new Color(0.86f, 0.89f, 0.95f));
 			rootDetailLabel.AddThemeColorOverride("font_outline_color", new Color(0.02f, 0.027f, 0.047f, 0.95f));
 			rootDetailLabel.AddThemeConstantOverride("outline_size", 5);
-			// "\n", not Environment.NewLine: on Windows that is "\r\n", which a Label draws as two
-			// breaks, and the two lines stood a blank line apart.
-			rootDetailLabel.Text = $"Preset: {presetName}" + (detailOnOneLine ? " - " : "\n")
-				+ $"Next run gain x{nextRunPreview:0.00} ({streakTag})";
+			// "Difficulty", the word Options uses for the same choice (it said "Preset" here and "Run
+			// Difficulty Curve" there until the menu pass of 2026-11-01). It had a second line, "Next run
+			// gain x1.10 (Momentum streak 5)", until Eric dropped it on 2026-11-02: nobody acted on it.
+			rootDetailLabel.Text = $"Difficulty: {presetName}";
 		}
 	}
 
@@ -733,30 +445,6 @@ public partial class MainMenu : Control
 			return;
 		}
 		GetTree().ChangeSceneToFile("res://scenes/CharacterSelection.tscn");
-	}
-
-	// Watch the Prologue, in Options: the story again, on demand, and back to this menu after.
-	private Button EnsureWatchPrologueButton()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return null;
-
-		var button = new Button
-		{
-			Name = "WatchPrologueButton",
-			Text = "Watch the Prologue",
-			CustomMinimumSize = new Vector2(220, 50)
-		};
-		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
-		BonelightSkin.StyleButton(button);
-		button.Pressed += () => Prologue.Play(this, Prologue.After.Menu);
-		optionsVBox.AddChild(button);
-		// Under the display toggles, above the playtest toolkit: with the things a player sets, not
-		// with the ones a tester does.
-		Node after = optionsVBox.GetNodeOrNull("DamageNumbersToggle") ?? optionsVBox.GetNodeOrNull("MuteToggle");
-		optionsVBox.MoveChild(button, after != null ? after.GetIndex() + 1 : Math.Max(0, optionsVBox.GetChildCount() - 2));
-		return button;
 	}
 
 	// The shop is one button again, Powers, over the purse it spends. From 2026-10-28 to 2026-10-30 it
@@ -775,10 +463,21 @@ public partial class MainMenu : Control
 		OpenShopAtTop();
 	}
 
-	private void OnSpellbookPressed()
+	// The Evolution Codex in its collection mode (.ai/evolution-codex.md): every spell, item and recipe with the
+	// save's states - owned or how to find it, the Ascensions seen, the recipes made - over the menu, on a layer
+	// of its own. Closing it puts the selection back on this button.
+	private void OnCodexPressed()
 	{
-		RefreshSpellbookCards();
-		ShowPanel(spellbookPanel);
+		if (EvolutionCodex.IsOpen)
+			return;
+		SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
+		EvolutionCodex.Open(this, CodexContext.ForSave(save), onClosed: () =>
+		{
+			// A Set aside spent in the Codex moves the shop's Redaction row.
+			RefreshUpgradeControls();
+			if (IsInstanceValid(spellIndexButton) && spellIndexButton.IsVisibleInTree())
+				spellIndexButton.GrabFocus();
+		});
 	}
 
 	private void OnAchievementsPressed()
@@ -814,6 +513,12 @@ public partial class MainMenu : Control
 
 	private void OnViewportSizeChanged()
 	{
+		// Options' two columns of sections fold to one as the codex lists do (MainMenu.Options.cs).
+		if (optionsColumns != null && optionsColumns.Columns != CodexRows.ColumnsFor(this))
+		{
+			optionsColumns.Columns = CodexRows.ColumnsFor(this);
+			ChainOptionsFocus();
+		}
 		// The shop keeps its own count: it is rebuilt only when ITS columns are wrong, or every resize
 		// event of a window being dragged would rebuild it and throw the selection back to the top.
 		if (arcaneUpgradesPanel.Visible && CodexRows.ColumnsFor(this) != shopColumnsBuilt)
@@ -824,8 +529,6 @@ public partial class MainMenu : Control
 		}
 		if (CodexRows.ColumnsFor(this) == codexColumnsBuilt)
 			return;
-		if (spellbookPanel.Visible)
-			RefreshSpellbookCards();
 		if (achievementsPanel.Visible)
 			RefreshAchievementCards();
 		ApplyCodexPanelWidth();
@@ -846,7 +549,7 @@ public partial class MainMenu : Control
 		// frame still clears the rounded corners with 16 to spare.
 		float inset = ResponsiveLayout.IsNarrow(this) ? -24f : Mathf.Max(0f, (available - CodexColumnMaxWidth) / 2f);
 		// The shop is the same kind of list and takes the same column (MainMenu.Shop.cs).
-		foreach (Control panel in new[] { spellbookPanel, achievementsPanel, arcaneUpgradesPanel })
+		foreach (Control panel in new[] { achievementsPanel, arcaneUpgradesPanel })
 		{
 			panel.OffsetLeft = inset;
 			panel.OffsetRight = -inset;
@@ -855,9 +558,9 @@ public partial class MainMenu : Control
 
 	private void OnOptionsPressed()
 	{
-		AutoUpdatePlaytestChecklistFromTelemetry();
-		UpdatePlaytestChecklistStatus();
+		DisarmReset();
 		ShowPanel(optionsPanel);
+		FocusFirstOption();
 	}
 
 	// The title artwork is 720x1680 drawn at a whole x2 and centred on the canvas, and the canvas
@@ -958,38 +661,23 @@ public partial class MainMenu : Control
 		control.OffsetBottom = bottomRow - ArtHalfHeight;
 	}
 
-	// Report a bug: the same quiet stone as the Spell Index, at the foot of the screen with the
-	// other utilities - it is a deliberate destination, like Options, and must not compete with
-	// the stack above it. Placed by LayoutUtilityRow.
-	private void EnsureReportBugButton()
-	{
-		reportBugButton = new Button
-		{
-			Name = "ReportBugButton",
-			Text = "Report a bug",
-		};
-		AddChild(reportBugButton);
-		BonelightSkin.StyleButton(reportBugButton, BonelightSkin.Emphasis.Quiet);
-		ResponsiveLayout.SetFont(reportBugButton, ResponsiveLayout.TextRole.Label);
-		reportBugButton.Pressed += OnReportBugPressed;
-	}
-
-	// The foot of the screen: Options in its corner, then the Spell Index, then Report a bug - the
-	// three things on this screen that are not about the next run - and the preset readout.
+	// The foot of the screen: Options in its corner, then the Evolution Codex - the two things on this
+	// screen that are not about the next run - and the difficulty readout. Report a bug stood third in
+	// this row until 2026-11-02; it is in Options now (MainMenu.Options.cs).
 	//
 	// On a PC they are one row on the dark grass under the menu column, left to right from the
 	// OPTIONS_BOX corner, and the preset keeps DETAIL_BOX in the opposite corner. The two quiet
 	// buttons end at core x 318, which keeps them clear of the ward circle's left rim and its
 	// flame at about x 320 and rows 245-285.
 	//
-	// On a phone the three share one row across the grass (rows 1168-1232), each 208 wide and
+	// On a phone the two share one row across the grass (rows 1168-1232), each 316 wide and
 	// 64 tall - comfortably over the 48-unit touch floor. That row used to hold Options on the left
 	// and the preset readout on the right, with Report a bug squeezed under Options; the readout now
 	// goes under the row where a tall phone (the Pixel 9: rows to about 1410) has open ground, or
 	// above it on a 16:9 phone, whose canvas ends at row 1280, between the row and the circle's rim.
 	private void LayoutUtilityRow()
 	{
-		foreach (Button button in new[] { optionsButton, spellIndexButton, reportBugButton })
+		foreach (Button button in new[] { optionsButton, spellIndexButton })
 		{
 			if (button == null)
 				continue;
@@ -1002,8 +690,7 @@ public partial class MainMenu : Control
 		if (!DisplayProfile.IsPortrait)
 		{
 			PinToWideArt(optionsButton, 12f, 292f, 126f, 324f);
-			PinToWideArt(spellIndexButton, 134f, 296f, 222f, 320f);
-			PinToWideArt(reportBugButton, 230f, 296f, 318f, 320f);
+			PinToWideArt(spellIndexButton, 134f, 296f, 236f, 320f);
 			if (rootDetailLabel != null)
 				PinToWideArt(rootDetailLabel, 470f, 312f, 632f, 352f);
 			return;
@@ -1013,8 +700,8 @@ public partial class MainMenu : Control
 		const float RowBottom = 592f;  // composition row 1232
 		const float Half = 320f;
 		const float Gap = 8f;
-		float width = (Half * 2f - Gap * 2f) / 3f;
-		Button[] row = { optionsButton, spellIndexButton, reportBugButton };
+		Button[] row = { optionsButton, spellIndexButton };
+		float width = (Half * 2f - Gap * (row.Length - 1)) / row.Length;
 		for (int i = 0; i < row.Length; i++)
 		{
 			if (row[i] == null)
@@ -1082,7 +769,8 @@ public partial class MainMenu : Control
 		ShowMainPanel();
 	}
 
-	private const float OptionsColumnHalfWidth = 420f;
+	// Two columns of settings since the menu pass of 2026-11-01 (MainMenu.Options.cs); it was one, 840 wide.
+	private const float OptionsColumnHalfWidth = 560f;
 
 	private void ShowPanel(Control panelToShow)
 	{
@@ -1093,7 +781,8 @@ public partial class MainMenu : Control
 		// it had just opened, over that panel's own Back button. A corner control that belongs to
 		// the main screen leaves with the main screen.
 		bool atRoot = panelToShow == mainPanel;
-		foreach (Control utility in new Control[] { optionsButton, spellIndexButton, reportBugButton })
+		// Report a bug is not one of these any more: it lives inside Options, and hiding it here hid it there.
+		foreach (Control utility in new Control[] { optionsButton, spellIndexButton })
 		{
 			if (utility != null)
 				utility.Visible = atRoot;
@@ -1120,630 +809,29 @@ public partial class MainMenu : Control
 		if (GetNodeOrNull<Control>("MarginContainer/VBoxContainer/Spacer") is Control spacer)
 			spacer.Visible = atRoot;
 
-		// Options is a column of sliders and toggles; on a PC's landscape canvas a full-width panel
-		// stretched every slider across 1180 units. A centred column instead. The phone keeps the width.
+		// Options is two columns of sliders and switches; on a PC's landscape canvas a full-width panel
+		// stretched every slider across 1180 units. A centred block instead. The phone keeps the width.
 		if (!ResponsiveLayout.IsNarrow(this))
 		{
 			optionsPanel.AnchorLeft = 0.5f;
 			optionsPanel.AnchorRight = 0.5f;
-			optionsPanel.OffsetLeft = -OptionsColumnHalfWidth;
-			optionsPanel.OffsetRight = OptionsColumnHalfWidth;
+			// Never past the menu's own margin (40 a side), which a 4:3 monitor's 960 would be.
+			float half = Mathf.Min(OptionsColumnHalfWidth, (ResponsiveLayout.ViewportSize(this).X - 80f) / 2f);
+			optionsPanel.OffsetLeft = -half;
+			optionsPanel.OffsetRight = half;
+		}
+		else
+		{
+			// On a phone it reaches into the menu's margin as the codex panels do (ApplyCodexPanelWidth):
+			// width is the scarce axis there, and a slider row wants every unit of it.
+			optionsPanel.OffsetLeft = -24f;
+			optionsPanel.OffsetRight = 24f;
 		}
 		ApplyCodexPanelWidth();
 
-		spellbookPanel.Visible = panelToShow == spellbookPanel;
 		achievementsPanel.Visible = panelToShow == achievementsPanel;
 		arcaneUpgradesPanel.Visible = panelToShow == arcaneUpgradesPanel;
 		optionsPanel.Visible = panelToShow == optionsPanel;
-	}
-
-	private void InitializeOptionsState()
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager != null)
-		{
-			onboardingTipsToggle.ButtonPressed = saveManager.Data.EnableGameplayOnboardingTips;
-			damageNumbersToggle.SetPressedNoSignal(saveManager.Data.ShowDamageNumbers);
-			playtestModeToggle.ButtonPressed = saveManager.Data.PlaytestModeEnabled;
-			SetBalancePresetSelection(GlobalStatsManager.NormalizeBalancePresetId(saveManager.Data.BalancePresetId));
-			ApplyPlaytestChecklistState(saveManager.Data.PlaytestChecklistState);
-			AutoUpdatePlaytestChecklistFromTelemetry();
-		}
-		UpdatePlaytestChecklistStatus();
-
-		int masterBus = AudioServer.GetBusIndex("Master");
-		if (masterBus >= 0)
-		{
-			masterVolumeSlider.Value = Mathf.DbToLinear(AudioServer.GetBusVolumeDb(masterBus));
-			muteToggle.ButtonPressed = AudioServer.IsBusMute(masterBus);
-		}
-
-		int musicBus = AudioServer.GetBusIndex(MusicPlayer.ResolveMusicBusName());
-		if (musicBus >= 0)
-		{
-			musicVolumeSlider.Value = Mathf.DbToLinear(AudioServer.GetBusVolumeDb(musicBus));
-		}
-
-		sfxVolumeSlider.Value = AudioSettings.GetBusLinear(SfxPlayer.ResolveSfxBusName());
-	}
-
-	// All three of these go through AudioSettings rather than touching AudioServer directly, so
-	// that a slider move is also written to the save file. They used to set the bus and stop,
-	// which is why every launch came back at full volume.
-	private void OnMasterVolumeChanged(double value)
-	{
-		AudioSettings.Store(this, AudioSettings.MasterBus, (float)value);
-	}
-
-	private void OnMusicVolumeChanged(double value)
-	{
-		AudioSettings.Store(this, MusicPlayer.ResolveMusicBusName(), (float)value);
-	}
-
-	private void OnSfxVolumeChanged(double value)
-	{
-		AudioSettings.Store(this, SfxPlayer.ResolveSfxBusName(), (float)value);
-	}
-
-	private void OnMuteToggled(bool pressed)
-	{
-		AudioSettings.StoreMute(this, pressed);
-	}
-
-	private void OnOnboardingTipsToggled(bool enabled)
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null)
-			return;
-
-		saveManager.Data.EnableGameplayOnboardingTips = enabled;
-		saveManager.Data.HasToggledOnboardingTipsAtLeastOnce = true;
-		saveManager.SaveGame();
-		AutoUpdatePlaytestChecklistFromTelemetry();
-		UpdatePlaytestChecklistStatus();
-	}
-
-	private void OnPlaytestModeToggled(bool enabled)
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null)
-			return;
-
-		saveManager.Data.PlaytestModeEnabled = enabled;
-		saveManager.SaveGame();
-	}
-
-	private void OnBalancePresetSelected(long index)
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null)
-			return;
-
-		string preset = index switch
-		{
-			0 => GlobalStatsManager.BalancePresetCasual,
-			2 => GlobalStatsManager.BalancePresetHardcore,
-			_ => GlobalStatsManager.BalancePresetDefault
-		};
-
-		saveManager.Data.BalancePresetId = preset;
-		saveManager.SaveGame();
-		RefreshArcaneEnergy();
-	}
-
-	private HSlider EnsureMasterVolumeSlider()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new HSlider();
-
-		var row = optionsVBox.GetNodeOrNull<VBoxContainer>("MasterRow");
-		if (row == null)
-		{
-			row = new VBoxContainer { Name = "MasterRow" };
-			row.AddThemeConstantOverride("separation", 6);
-			var label = new Label { Text = "Master Volume" };
-			row.AddChild(label);
-			var masterSlider = new HSlider
-			{
-				Name = "MasterVolumeSlider",
-				MinValue = 0.01f,
-				MaxValue = 1.0f,
-				Step = 0.05f,
-				Value = 1.0f,
-				SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-			};
-			row.AddChild(masterSlider);
-			optionsVBox.AddChild(row);
-			optionsVBox.MoveChild(row, 1);
-			return masterSlider;
-		}
-
-		var existingSlider = row.GetNodeOrNull<HSlider>("MasterVolumeSlider");
-		if (existingSlider != null)
-			return existingSlider;
-
-		var createdMasterSlider = new HSlider
-		{
-			Name = "MasterVolumeSlider",
-			MinValue = 0.01f,
-			MaxValue = 1.0f,
-			Step = 0.05f,
-			Value = 1.0f,
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-		};
-		row.AddChild(createdMasterSlider);
-		return createdMasterSlider;
-	}
-
-	private HSlider EnsureMusicVolumeSlider()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new HSlider();
-
-		var row = optionsVBox.GetNodeOrNull<VBoxContainer>("MusicRow");
-		if (row == null)
-		{
-			row = new VBoxContainer { Name = "MusicRow" };
-			row.AddThemeConstantOverride("separation", 6);
-			var label = new Label { Text = "Music Volume" };
-			row.AddChild(label);
-			var musicSlider = new HSlider
-			{
-				Name = "MusicVolumeSlider",
-				MinValue = 0.01f,
-				MaxValue = 1.0f,
-				Step = 0.05f,
-				Value = 1.0f,
-				SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-			};
-			row.AddChild(musicSlider);
-			optionsVBox.AddChild(row);
-			optionsVBox.MoveChild(row, 2);
-			return musicSlider;
-		}
-
-		var existingSlider = row.GetNodeOrNull<HSlider>("MusicVolumeSlider");
-		if (existingSlider != null)
-			return existingSlider;
-
-		var createdMusicSlider = new HSlider
-		{
-			Name = "MusicVolumeSlider",
-			MinValue = 0.01f,
-			MaxValue = 1.0f,
-			Step = 0.05f,
-			Value = 1.0f,
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-		};
-		row.AddChild(createdMusicSlider);
-		return createdMusicSlider;
-	}
-
-	// Cloned from EnsureMusicVolumeSlider. The options panel is built in the .tscn for the rows
-	// that have always existed and patched up in code for the ones added later; SFX is the third,
-	// so it follows the same pattern rather than inventing a fourth.
-	private HSlider EnsureSfxVolumeSlider()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new HSlider();
-
-		var row = optionsVBox.GetNodeOrNull<VBoxContainer>("SfxRow");
-		if (row == null)
-		{
-			row = new VBoxContainer { Name = "SfxRow" };
-			row.AddThemeConstantOverride("separation", 6);
-			row.AddChild(new Label { Text = "Sound Effects Volume" });
-			var slider = new HSlider
-			{
-				Name = "SfxVolumeSlider",
-				MinValue = 0.01f,
-				MaxValue = 1.0f,
-				Step = 0.05f,
-				Value = 1.0f,
-				SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-			};
-			row.AddChild(slider);
-			optionsVBox.AddChild(row);
-			optionsVBox.MoveChild(row, 3);   // directly under MusicRow, which sits at 2
-			return slider;
-		}
-
-		var existing = row.GetNodeOrNull<HSlider>("SfxVolumeSlider");
-		if (existing != null)
-			return existing;
-
-		var created = new HSlider
-		{
-			Name = "SfxVolumeSlider",
-			MinValue = 0.01f,
-			MaxValue = 1.0f,
-			Step = 0.05f,
-			Value = 1.0f,
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
-		};
-		row.AddChild(created);
-		return created;
-	}
-
-	private CheckButton EnsureOnboardingTipsToggle()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new CheckButton();
-
-		var toggle = new CheckButton
-		{
-			Name = "OnboardingTipsToggle",
-			Text = "Show Gameplay Tips During Early Runs",
-			ButtonPressed = true
-		};
-		ResponsiveLayout.SetFont(toggle, ResponsiveLayout.TextRole.Label);
-		optionsVBox.AddChild(toggle);
-		optionsVBox.MoveChild(toggle, Math.Max(0, optionsVBox.GetChildCount() - 2));
-		return toggle;
-	}
-
-	// Beside the mute switch (2026-10-28: "add way to remove damage numbers from enemies"). The pause
-	// screen carries the same switch (Node2DGame's Display section), so it can be flipped mid-run.
-	private CheckButton EnsureDamageNumbersToggle()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new CheckButton();
-
-		var toggle = new CheckButton
-		{
-			Name = "DamageNumbersToggle",
-			Text = "Show Damage Numbers",
-			ButtonPressed = DisplaySettings.DamageNumbers,
-		};
-		ResponsiveLayout.SetFont(toggle, ResponsiveLayout.TextRole.Label);
-		optionsVBox.AddChild(toggle);
-		Node mute = optionsVBox.GetNodeOrNull("MuteToggle");
-		optionsVBox.MoveChild(toggle, mute != null ? mute.GetIndex() + 1 : Math.Max(0, optionsVBox.GetChildCount() - 2));
-		return toggle;
-	}
-
-	private OptionButton EnsureBalancePresetOption()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new OptionButton();
-
-		var row = new HBoxContainer
-		{
-			Name = "BalancePresetRow"
-		};
-		row.AddThemeConstantOverride("separation", 10);
-
-		var label = new Label
-		{
-			Text = "Run Difficulty Curve"
-		};
-		ResponsiveLayout.SetFont(label, ResponsiveLayout.TextRole.Label);
-		row.AddChild(label);
-
-		var option = new OptionButton
-		{
-			Name = "BalancePresetOption",
-			CustomMinimumSize = new Vector2(180, 48)
-		};
-		option.AddItem("Casual", 0);
-		option.AddItem("Default", 1);
-		option.AddItem("Hardcore", 2);
-		row.AddChild(option);
-
-		optionsVBox.AddChild(row);
-		optionsVBox.MoveChild(row, Math.Max(0, optionsVBox.GetChildCount() - 2));
-		return option;
-	}
-
-	private CheckButton EnsurePlaytestModeToggle()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return new CheckButton();
-
-		var toggle = new CheckButton
-		{
-			Name = "PlaytestModeToggle",
-			Text = "Enable Playtest Mode (faster XP + 4 options per level-up)",
-			ButtonPressed = false
-		};
-		ResponsiveLayout.SetFont(toggle, ResponsiveLayout.TextRole.Label);
-		optionsVBox.AddChild(toggle);
-		optionsVBox.MoveChild(toggle, Math.Max(0, optionsVBox.GetChildCount() - 2));
-		return toggle;
-	}
-
-	private void SetBalancePresetSelection(string presetId)
-	{
-		if (balancePresetOption == null)
-			return;
-
-		int index = GlobalStatsManager.NormalizeBalancePresetId(presetId) switch
-		{
-			GlobalStatsManager.BalancePresetCasual => 0,
-			GlobalStatsManager.BalancePresetHardcore => 2,
-			_ => 1
-		};
-		balancePresetOption.Select(index);
-	}
-
-	private void EnsurePlaytestToolkitUi()
-	{
-		var optionsVBox = GetNodeOrNull<VBoxContainer>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox");
-		if (optionsVBox == null)
-			return;
-
-		var existingSection = optionsVBox.GetNodeOrNull<VBoxContainer>("PlaytestToolsSection");
-		if (existingSection != null)
-		{
-			openLatestPlaytestLogButton = existingSection.GetNodeOrNull<Button>("OpenLatestPlaytestLogButton") ?? new Button();
-			openPlaytestLogFolderButton = existingSection.GetNodeOrNull<Button>("OpenPlaytestLogFolderButton") ?? new Button();
-			playtestChecklistStatusLabel = existingSection.GetNodeOrNull<Label>("PlaytestChecklistStatus") ?? new Label();
-			playtestChecklistBoxes.Clear();
-			playtestChecklistById.Clear();
-			foreach (Node child in existingSection.GetChildren())
-			{
-				if (child is CheckButton box && box.Name.ToString().StartsWith("PlaytestCheck"))
-				{
-					playtestChecklistBoxes.Add(box);
-					string itemId = box.GetMeta("checklist_id", string.Empty).AsString();
-					if (!string.IsNullOrWhiteSpace(itemId))
-						playtestChecklistById[itemId] = box;
-				}
-			}
-			return;
-		}
-
-		var section = new VBoxContainer
-		{
-			Name = "PlaytestToolsSection"
-		};
-		section.AddThemeConstantOverride("separation", 6);
-
-		var title = new Label
-		{
-			Text = "Playtest Toolkit"
-		};
-		ResponsiveLayout.SetFont(title, ResponsiveLayout.TextRole.Body);
-		section.AddChild(title);
-
-		var buttonRow = new HBoxContainer();
-		buttonRow.AddThemeConstantOverride("separation", 8);
-		section.AddChild(buttonRow);
-
-		openLatestPlaytestLogButton = new Button
-		{
-			Name = "OpenLatestPlaytestLogButton",
-			Text = "Open Latest Run Log",
-			CustomMinimumSize = new Vector2(220, 48)
-		};
-		buttonRow.AddChild(openLatestPlaytestLogButton);
-
-		openPlaytestLogFolderButton = new Button
-		{
-			Name = "OpenPlaytestLogFolderButton",
-			Text = "Open Log Folder",
-			CustomMinimumSize = new Vector2(180, 48)
-		};
-		buttonRow.AddChild(openPlaytestLogFolderButton);
-
-		var checklistTitle = new Label
-		{
-			Text = "First Session Checklist"
-		};
-		ResponsiveLayout.SetFont(checklistTitle, ResponsiveLayout.TextRole.Label);
-		section.AddChild(checklistTitle);
-
-		playtestChecklistBoxes.Clear();
-		playtestChecklistById.Clear();
-		for (int i = 0; i < PlaytestChecklistItems.Length; i++)
-		{
-			(string itemId, string itemLabel) = PlaytestChecklistItems[i];
-			var checkbox = new CheckButton
-			{
-				Name = $"PlaytestCheck{i + 1}",
-				Text = itemLabel
-			};
-			checkbox.SetMeta("checklist_id", itemId);
-			playtestChecklistBoxes.Add(checkbox);
-			playtestChecklistById[itemId] = checkbox;
-			section.AddChild(checkbox);
-		}
-
-		playtestChecklistStatusLabel = new Label
-		{
-			Name = "PlaytestChecklistStatus",
-			Text = "Checklist 0/0 complete"
-		};
-		playtestChecklistStatusLabel.Modulate = new Color(0.84f, 0.92f, 1.0f, 0.95f);
-		section.AddChild(playtestChecklistStatusLabel);
-
-		optionsVBox.AddChild(section);
-		optionsVBox.MoveChild(section, Math.Max(0, optionsVBox.GetChildCount() - 2));
-	}
-
-	private void OnOpenLatestPlaytestLogPressed()
-	{
-		string logsDir = ProjectSettings.GlobalizePath("user://playtest_logs");
-		if (!Directory.Exists(logsDir))
-		{
-			playtestChecklistStatusLabel.Text = "No playtest logs yet. Complete a run first.";
-			return;
-		}
-
-		string latestLogPath = Directory.GetFiles(logsDir, "run_*.txt")
-			.OrderByDescending(File.GetLastWriteTimeUtc)
-			.FirstOrDefault();
-
-		if (string.IsNullOrWhiteSpace(latestLogPath))
-		{
-			playtestChecklistStatusLabel.Text = "No run log files found yet.";
-			return;
-		}
-
-		OS.ShellOpen($"file:///{latestLogPath.Replace('\\', '/')}");
-		playtestChecklistStatusLabel.Text = $"Opened: {Path.GetFileName(latestLogPath)}";
-	}
-
-	private void OnOpenPlaytestLogFolderPressed()
-	{
-		string logsDir = ProjectSettings.GlobalizePath("user://playtest_logs");
-		Directory.CreateDirectory(logsDir);
-		OS.ShellOpen($"file:///{logsDir.Replace('\\', '/')}");
-		playtestChecklistStatusLabel.Text = "Opened playtest log folder.";
-	}
-
-	private void UpdatePlaytestChecklistStatus()
-	{
-		if (playtestChecklistStatusLabel == null)
-			return;
-
-		int checkedCount = playtestChecklistBoxes.Count(box => box != null && box.ButtonPressed);
-		int totalCount = playtestChecklistBoxes.Count;
-		int runCount = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data?.RunTelemetryHistory?.Count ?? 0;
-		playtestChecklistStatusLabel.Text = $"Checklist {checkedCount}/{totalCount} complete | Recorded runs: {runCount}";
-	}
-
-	private void ApplyPlaytestChecklistState(Dictionary<string, bool> state)
-	{
-		isInitializingPlaytestChecklist = true;
-		foreach ((string itemId, string _) in PlaytestChecklistItems)
-		{
-			if (!playtestChecklistById.TryGetValue(itemId, out CheckButton checkbox) || checkbox == null)
-				continue;
-
-			checkbox.ButtonPressed = state != null && state.TryGetValue(itemId, out bool isChecked) && isChecked;
-		}
-		isInitializingPlaytestChecklist = false;
-	}
-
-	private void PersistPlaytestChecklistState()
-	{
-		if (isInitializingPlaytestChecklist)
-			return;
-
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null)
-			return;
-
-		foreach ((string itemId, string _) in PlaytestChecklistItems)
-		{
-			if (!playtestChecklistById.TryGetValue(itemId, out CheckButton checkbox) || checkbox == null)
-				continue;
-
-			saveManager.Data.PlaytestChecklistState[itemId] = checkbox.ButtonPressed;
-		}
-
-		saveManager.SaveGame();
-	}
-
-	private void AutoUpdatePlaytestChecklistFromTelemetry()
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		if (saveManager == null)
-			return;
-
-		List<RunTelemetryRecord> history = saveManager.Data.RunTelemetryHistory ?? new List<RunTelemetryRecord>();
-		bool hasDefaultRun = HasPresetRun(history, GlobalStatsManager.BalancePresetDefault);
-		bool hasCasualRun = HasPresetRun(history, GlobalStatsManager.BalancePresetCasual);
-		bool hasHardcoreRun = HasPresetRun(history, GlobalStatsManager.BalancePresetHardcore);
-		bool rewardOrderingVerified = HasPresetRewardOrderingEvidence(history);
-		bool tipsToggleVerified = saveManager.Data.HasToggledOnboardingTipsAtLeastOnce;
-
-		isInitializingPlaytestChecklist = true;
-		bool changed = false;
-		changed |= SetChecklistItemIfTrue("run_default", hasDefaultRun);
-		changed |= SetChecklistItemIfTrue("run_casual", hasCasualRun);
-		changed |= SetChecklistItemIfTrue("run_hardcore", hasHardcoreRun);
-		changed |= SetChecklistItemIfTrue("tips_toggle", tipsToggleVerified);
-		changed |= SetChecklistItemIfTrue("reward_diff", rewardOrderingVerified);
-		isInitializingPlaytestChecklist = false;
-
-		if (changed)
-			PersistPlaytestChecklistState();
-	}
-
-	private bool SetChecklistItemIfTrue(string itemId, bool shouldBeChecked)
-	{
-		if (!shouldBeChecked)
-			return false;
-
-		if (!playtestChecklistById.TryGetValue(itemId, out CheckButton checkbox) || checkbox == null)
-			return false;
-
-		if (checkbox.ButtonPressed)
-			return false;
-
-		checkbox.ButtonPressed = true;
-		return true;
-	}
-
-	private static bool HasPresetRun(IEnumerable<RunTelemetryRecord> history, string presetId)
-	{
-		if (history == null)
-			return false;
-
-		string normalizedTarget = GlobalStatsManager.NormalizeBalancePresetId(presetId);
-		foreach (RunTelemetryRecord run in history)
-		{
-			if (run == null)
-				continue;
-
-			if (string.Equals(GlobalStatsManager.NormalizeBalancePresetId(run.BalancePresetId), normalizedTarget, StringComparison.OrdinalIgnoreCase))
-				return true;
-		}
-
-		return false;
-	}
-
-	private static bool HasPresetRewardOrderingEvidence(IEnumerable<RunTelemetryRecord> history)
-	{
-		if (history == null)
-			return false;
-
-		float casualTotal = 0f;
-		int casualCount = 0;
-		float defaultTotal = 0f;
-		int defaultCount = 0;
-		float hardcoreTotal = 0f;
-		int hardcoreCount = 0;
-
-		foreach (RunTelemetryRecord run in history)
-		{
-			if (run == null)
-				continue;
-
-			string preset = GlobalStatsManager.NormalizeBalancePresetId(run.BalancePresetId);
-			if (string.Equals(preset, GlobalStatsManager.BalancePresetCasual, StringComparison.OrdinalIgnoreCase))
-			{
-				casualTotal += run.ArcaneRewardMultiplier;
-				casualCount++;
-			}
-			else if (string.Equals(preset, GlobalStatsManager.BalancePresetHardcore, StringComparison.OrdinalIgnoreCase))
-			{
-				hardcoreTotal += run.ArcaneRewardMultiplier;
-				hardcoreCount++;
-			}
-			else
-			{
-				defaultTotal += run.ArcaneRewardMultiplier;
-				defaultCount++;
-			}
-		}
-
-		if (casualCount == 0 || defaultCount == 0 || hardcoreCount == 0)
-			return false;
-
-		float casualAvg = casualTotal / casualCount;
-		float defaultAvg = defaultTotal / defaultCount;
-		float hardcoreAvg = hardcoreTotal / hardcoreCount;
-		return casualAvg < defaultAvg && defaultAvg < hardcoreAvg;
 	}
 
 	private void BuildUpgradeDefinitions()
@@ -1788,294 +876,6 @@ public partial class MainMenu : Control
 			RegisterBoonUnlock(definition.Id, definition.PurchaseCost);
 	}
 
-	private void BuildSpellbookEntries()
-	{
-		spellbookEntries.Clear();
-		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-		AddSpellbookResource(seen, "magic_missile", "res://SpellData.tres");
-		AddSpellbookResource(seen, "arcane_explosion", "res://SpellData_ArcaneExplosion.tres");
-		AddSpellbookResource(seen, "spiritual_weapon", "res://SpellData_SpiritualWeapon.tres");
-		AddSpellbookResource(seen, "fireball", "res://SpellData_Fireball.tres");
-		AddSpellbookResource(seen, "cinderbreath", "res://SpellData_Cinderbreath.tres");
-		AddSpellbookResource(seen, "mirefoot", "res://SpellData_Mirefoot.tres");
-		AddSpellbookResource(seen, "kindled_ward", "res://SpellData_KindledWard.tres");
-		AddSpellbookResource(seen, "gravewell", "res://SpellData_Gravewell.tres");
-		AddSpellbookResource(seen, "hollow_star", "res://SpellData_HollowStar.tres");
-		AddSpellbookResource(seen, "starfall", "res://SpellData_Starfall.tres");
-		AddSpellbookResource(seen, "familiar", "res://SpellData_Familiar.tres");
-		AddSpellbookResource(seen, "stormsweep", "res://SpellData_Stormsweep.tres");
-		AddSpellbookResource(seen, "sleet_runes", "res://SpellData_SleetRunes.tres");
-		AddSpellbookResource(seen, "iron_palisade", "res://SpellData_IronPalisade.tres");
-		AddSpellbookResource(seen, "contagion", "res://SpellData_Contagion.tres");
-		AddSpellbookResource(seen, "bramble_seed", "res://SpellData_BrambleSeed.tres");
-		AddSpellbookResource(seen, "frost_shard", "res://SpellData_FrostShard.tres");
-		AddSpellbookResource(seen, "riptide", "res://SpellData_Riptide.tres");
-		AddSpellbookResource(seen, "shadow_bolt", "res://SpellData_ShadowBolt.tres");
-		AddSpellbookResource(seen, "thorn_vine", "res://SpellData_ThornVine.tres");
-		AddSpellbookResource(seen, "gale_blade", "res://SpellData_GaleBlade.tres");
-		AddSpellbookResource(seen, "solar_flare", "res://SpellData_SolarFlare.tres");
-		AddSpellbookResource(seen, "molten_shard", "res://SpellData_MoltenShard.tres");
-		AddSpellbookResource(seen, "chain_lightning", "res://SpellData_ChainLightning.tres");
-		AddSpellbookResource(seen, "toxic_spore_burst", "res://SpellData_ToxicSporeBurst.tres");
-		AddSpellbookResource(seen, "obsidian_spike", "res://SpellData_ObsidianSpike.tres");
-		AddSpellbookResource(seen, "cyclone_slash", "res://SpellData_CycloneSlash.tres");
-		AddSpellbookResource(seen, "void_lance", "res://SpellData_VoidLance.tres");
-		AddSpellbookResource(seen, "glacial_spike", "res://SpellData_GlacialSpike.tres");
-		AddSpellbookResource(seen, "black_tentacles", "res://SpellData_BlackTentacles.tres");
-		AddSpellbookResource(seen, "cone_of_cold", "res://SpellData_ConeOfCold.tres");
-		AddSpellbookResource(seen, "scorching_ray", "res://SpellData_ScorchingRay.tres");
-		AddSpellbookResource(seen, "meteor_swarm", "res://SpellData_MeteorSwarm.tres");
-		AddSpellbookResource(seen, "hunters_draw", "res://SpellData_HuntersDraw.tres");
-
-		AddSpellbookPassive(seen, "aegis_ward", "Aegis Ward", "Periodically grants an absorbing shield.", "Metal, Light");
-		AddSpellbookPassive(seen, "thornmail_barrier", "Thornmail Barrier", "Retaliates against nearby enemies when hit.", "Earth, Grass");
-		AddSpellbookPassive(seen, "frozen_bulwark", "Frozen Bulwark", "Chance to freeze nearby attackers when hit.", "Ice x2");
-		AddSpellbookPassive(seen, "stormguard_aura", "Stormguard Aura", "Strikes the nearest enemy with lightning when hit.", "Lightning, Metal");
-		AddSpellbookPassive(seen, "venom_cloak", "Venom Cloak", "Periodically poisons nearby enemies.", "Poison, Darkness");
-		AddSpellbookPassive(seen, "guardian_vines", "Guardian Vines", "Periodically roots nearby enemies.", "Grass x2");
-		AddSpellbookPassive(seen, "tidal_barrier", "Tidal Barrier", "Periodically knocks back and slows nearby enemies.", "Water, Wind");
-		AddSpellbookPassive(seen, "stone_bulwark", "Stone Bulwark", "Grants armor that reduces incoming damage.", "Earth, Metal");
-		AddSpellbookPassive(seen, "blur", "Blur", "Chance to avoid incoming hits entirely.", "Arcane, Wind");
-		AddSpellbookPassive(seen, "fortunes_favor", "Fortune's Favor", "Passively boosts Luck.", "Arcane, Light");
-		AddSpellbookPassive(seen, "haste", "Haste", "Periodically grants attack-speed and move-speed surges.", "Wind, Lightning");
-	}
-
-	private void AddSpellbookResource(HashSet<string> seen, string id, string path)
-	{
-		if (!seen.Add(id))
-			return;
-
-		SpellData spell = ResourceLoader.Load<SpellData>(path);
-		if (spell == null)
-			return;
-
-		spellbookEntries.Add(new SpellbookEntry
-		{
-			Id = id,
-			DisplayName = spell.Name,
-			Description = spell.Description,
-			Elements = FormatElementWeights(spell.GetElementWeights()),
-			ElementList = CodexRows.FromWeights(spell.GetElementWeights()),
-			IsPassive = spell.IsPassive,
-			Icon = spell.Icon ?? DefaultSpellIcon
-		});
-	}
-
-	private void AddSpellbookPassive(HashSet<string> seen, string id, string displayName, string description, string elements)
-	{
-		if (!seen.Add(id))
-			return;
-
-		spellbookEntries.Add(new SpellbookEntry
-		{
-			Id = id,
-			DisplayName = displayName,
-			Description = description,
-			Elements = elements,
-			ElementList = CodexRows.ParseElements(elements),
-			IsPassive = true,
-			Icon = DefaultSpellIcon
-		});
-	}
-
-	private static string FormatElementWeights(Dictionary<Element, int> weights)
-	{
-		if (weights == null || weights.Count == 0)
-			return "None";
-
-		string tags = string.Join(", ", weights.OrderBy(p => p.Key.ToString()).Select(p => p.Value > 1 ? $"{p.Key} x{p.Value}" : p.Key.ToString()));
-
-		// A spell naming exactly one element is attuned to it and scales with that element's tier.
-		// Worth saying on every card: it is the reason a single-element spell is not simply worse
-		// than a hybrid that hands you twice the element weight.
-		return weights.Count == 1 ? $"{tags} - Attuned" : tags;
-	}
-
-	// The Spell Index as a list rather than a wall of cards (.ai/level-up-screen.md, section 4c).
-	//
-	// It was a grid of 210-wide parchment cards, every line centred, a divider tile standing in the
-	// grid as if it were a spell, and a full stone button on every page. Now: what you have found,
-	// in two sections, then what you have not, quietly, at the end - the pages a player can act on
-	// come first and carry the weight.
-	private void BuildSpellbookCards()
-	{
-		ClearChildren(spellbookList);
-		ClearChildren(spellbookSummary);
-		codexColumnsBuilt = CodexRows.ColumnsFor(this);
-
-		SaveData data = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
-		bool Found(SpellbookEntry entry) => GlobalStatsManager.IsSpellUnlockedForLevelUp(data, entry.Id);
-
-		var attacks = spellbookEntries.Where(e => !e.IsPassive).ToList();
-		var passives = spellbookEntries.Where(e => e.IsPassive).ToList();
-		var foundAttacks = attacks.Where(Found).ToList();
-		var foundPassives = passives.Where(Found).ToList();
-		var missing = spellbookEntries.Where(e => !Found(e)).ToList();
-
-		// The Set aside control only exists once there is something to spend on it. Before the
-		// first Redaction it was a disabled button on every page - thirty controls that could not
-		// be pressed, explaining one fact. The summary line says that fact once instead.
-		int slots = GlobalStatsManager.GetCurationSlotsOwned(data);
-		int setAside = GlobalStatsManager.GetRemovedSpellCount(data);
-		bool curating = slots > 0 || setAside > 0;
-
-		string found = $"{foundAttacks.Count} of {attacks.Count} attacks and {foundPassives.Count} of {passives.Count} passives found.";
-		string curation = curating
-			? $"{setAside} of {slots} set aside - a spell set aside is never offered at level-up."
-			: "A Redaction from Arcane Upgrades lets you set a spell aside.";
-		spellbookSummary.AddChild(CodexRows.BuildSummary(found + "\n" + curation, CodexRows.Vellum));
-
-		int columns = codexColumnsBuilt;
-		if (foundAttacks.Count > 0)
-			CodexRows.AddSection(spellbookList, "Attacks", $"{foundAttacks.Count} found", CodexRows.Vellum, columns,
-				foundAttacks.Select(e => BuildSpellbookRow(e, data, curating)));
-		if (foundPassives.Count > 0)
-			CodexRows.AddSection(spellbookList, "Passives", $"{foundPassives.Count} found", CodexRows.Vellum, columns,
-				foundPassives.Select(e => BuildSpellbookRow(e, data, curating)));
-		if (missing.Count > 0)
-			CodexRows.AddSection(spellbookList, "Still to find", $"{missing.Count} spells", CodexRows.Vellum, columns,
-				CodexRows.GroupMissing(missing, e => e.IsPassive, e => UnlockCatalog.GetLockedHint(e.Id, UnlockKind.Spell))
-					.Select(g => BuildMissingSpellbookRow(g.First, g.Count)));
-	}
-
-	private Control BuildSpellbookRow(SpellbookEntry entry, SaveData data, bool curating)
-	{
-		bool removed = GlobalStatsManager.IsSpellRemovedFromPool(data, entry.Id);
-		Button control = curating ? BuildCurationToggle(entry, removed) : null;
-		var row = new CodexRows.Entry
-		{
-			Title = entry.DisplayName,
-			Body = entry.Description,
-			Icon = entry.Icon ?? DefaultSpellIcon,
-			Elements = entry.ElementList,
-			// A spell naming exactly one element is attuned to it and scales with that element's tier
-			// - the reason a single-element spell is not simply worse than a hybrid.
-			ChipNote = entry.ElementList.Count == 1 ? "Attuned" : string.Empty,
-			Quiet = removed,
-			Tag = removed ? "Set aside" : string.Empty,
-			Trailing = control,
-			// One stop per row: the button when it can be pressed, otherwise the row itself, so a
-			// controller can still scroll past a page whose button is greyed out.
-			FocusStop = control == null || control.Disabled,
-		};
-		return CodexRows.BuildRow(row, CodexRows.Vellum);
-	}
-
-	// A page not found yet says how to find it. The name stays hidden - that is the discovery - but
-	// the hint is the one useful thing on the row, so it is the row's body, not a footnote. A spell in
-	// a vault is named by its chapter only, led by the secret's warm glint (CodexRows.SpellHintGlyph).
-	private Control BuildMissingSpellbookRow(SpellbookEntry entry, int count)
-	{
-		return CodexRows.BuildRow(new CodexRows.Entry
-		{
-			Title = CodexRows.UnknownTitle(entry.IsPassive, count),
-			Icon = entry.Icon ?? DefaultSpellIcon,
-			IconSilhouette = true,
-			Meta = UnlockCatalog.GetLockedHint(entry.Id, UnlockKind.Spell),
-			MetaGlyph = CodexRows.SpellHintGlyph(entry.Id),
-			Quiet = true,
-			FocusStop = true,
-		}, CodexRows.Vellum);
-	}
-
-	// Curation lives on the page itself rather than on a separate management screen: the spellbook
-	// already shows every spell and whether you own it, which is exactly the context in which
-	// "stop offering me this one" is a sensible thing to decide.
-	//
-	// A small outlined control beside the name, never a stone button. It was a full-width bar of
-	// the heaviest frame in the game under every card - the loudest thing on the page, for an action
-	// most players take once.
-	private Button BuildCurationToggle(SpellbookEntry entry, bool setAside)
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		bool canSetAside = GlobalStatsManager.CanRemoveSpellFromPool(saveManager?.Data, entry.Id, out string reason);
-
-		var button = new Button
-		{
-			Name = "CurationToggle_" + entry.Id,
-			Text = setAside ? "Restore" : "Set aside",
-			// Putting a page back is always allowed; taking one out needs a spare Redaction.
-			Disabled = !setAside && !canSetAside,
-			TooltipText = setAside
-				? "This spell is not offered at level-up. Restore it to put it back in the pool."
-				: canSetAside
-					? "Stop offering this spell at level-up. Reversible at any time."
-					: reason
-		};
-		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
-		StyleQuietPageButton(button);
-		// The visible pill is smaller than this; the rest is the touch target.
-		ResponsiveLayout.EnsureTouchTarget(button, 0f);
-
-		button.Pressed += () =>
-		{
-			var manager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-			if (manager == null)
-				return;
-
-			if (!GlobalStatsManager.SetSpellRemovedFromPool(manager.Data, entry.Id, !setAside))
-				return;
-
-			manager.SaveGame();
-			// Every other card's availability may have changed with the last slot spent, and the
-			// shop row's "Lv n/max" moves too. Deferred: this button is in the list being rebuilt,
-			// and it is still inside its own press.
-			bool refocus = button.HasFocus();
-			Callable.From(() => RefreshAfterCuration(entry.Id, refocus)).CallDeferred();
-		};
-
-		return button;
-	}
-
-	// The rebuild frees the button a controller user just pressed. Without this the navigator would
-	// put the selection back on the first page of the book and scroll there, a whole list away from
-	// the page they were curating.
-	private void RefreshAfterCuration(string spellId, bool refocus)
-	{
-		RefreshSpellbookCards();
-		RefreshUpgradeControls();
-		if (refocus && spellbookList.FindChild("CurationToggle_" + spellId, true, false) is Button again && !again.Disabled)
-			again.GrabFocus();
-	}
-
-	// An outlined pill in the page's own inks: hairline edge, no fill until it is pointed at. The
-	// font colours are COPIED into tools/art/ui_contrast.py (the pill pairs).
-	private static void StyleQuietPageButton(Button button)
-	{
-		StyleBoxFlat Pill(Color fill, Color edge)
-		{
-			var box = new StyleBoxFlat { BgColor = fill, BorderColor = edge };
-			box.SetBorderWidthAll(1);
-			box.SetCornerRadiusAll(6);
-			box.ContentMarginLeft = 14;
-			box.ContentMarginRight = 14;
-			box.ContentMarginTop = 4;
-			box.ContentMarginBottom = 4;
-			return box;
-		}
-
-		Color edge = CodexRows.Vellum.Edge;
-		Color clear = new Color(PageCardFace, 0f);
-		Color wash = new Color(0.847f, 0.643f, 0.518f, 0.35f); // flesh.lit, a light touch
-		button.AddThemeStyleboxOverride("normal", Pill(clear, edge));
-		button.AddThemeStyleboxOverride("hover", Pill(wash, PageInk));
-		button.AddThemeStyleboxOverride("pressed", Pill(new Color(0.847f, 0.643f, 0.518f, 0.6f), PageInk));
-		button.AddThemeStyleboxOverride("focus", Pill(wash, PageInk));
-		button.AddThemeStyleboxOverride("disabled", Pill(clear, new Color(edge, 0.4f)));
-		button.AddThemeColorOverride("font_color", PageInkFaint);
-		button.AddThemeColorOverride("font_hover_color", PageInk);
-		button.AddThemeColorOverride("font_pressed_color", PageInk);
-		button.AddThemeColorOverride("font_focus_color", PageInk);
-		button.AddThemeColorOverride("font_disabled_color", CodexRows.Vellum.InkMeta);
-	}
-
-	// The parchment ramp, from .ai/art-direction.md section 3. `flesh` is the contract's name for
-	// it; on this screen it is vellum and ink. CodexRows.Vellum holds the full set the rows use.
-	private static readonly Color PageInk = new Color(0.235f, 0.141f, 0.212f);        // flesh.deep
-	private static readonly Color PageInkFaint = new Color(0.204f, 0.173f, 0.298f);   // violet.base
-	private static readonly Color PageCardFace = new Color(0.949f, 0.863f, 0.769f);   // flesh.hi
-
 	private static void ClearChildren(Node node)
 	{
 		if (node == null)
@@ -2088,8 +888,6 @@ public partial class MainMenu : Control
 			child.QueueFree();
 		}
 	}
-
-	private void RefreshSpellbookCards() => BuildSpellbookCards();
 
 	// The page under the tabs (AchievementsPage, which the pause tab builds too), and the summary over
 	// them, which counts the whole page whichever tab is showing. The Secrets section that ended this

@@ -1118,6 +1118,7 @@ public partial class CourtSeneschalBoss : BossEnemy
 	// the floor - the house called to order - and the mark opens under his cap. The doors are gone. It
 	// is how he will leave, three times, and how he will be found.
 	protected internal override float EntranceSeconds => 3.2f;
+	protected internal override float EntranceClimaxWeight => 0.9f;
 	protected internal override float EntranceRoarSeconds => StaffStrikes + 0.04f;
 
 	private BossDeath.Piece arrivingBody;
@@ -1169,7 +1170,10 @@ public partial class CourtSeneschalBoss : BossEnemy
 
 		Vector2 foot = stage.Foot;
 		if (stage.Crossed(DoorsShut))
+		{
+			stage.Impact(0.45f);
 			stage.DustRing(foot + new Vector2(0f, -2f), 64f, 8, HallDust, 0.7f, 14f);
+		}
 		if (stage.Crossed(StaffStrikes))
 		{
 			Vector2 tip = stage.ArtToLocal(StaffFoot);
@@ -1274,6 +1278,7 @@ public partial class CourtSeneschalBoss : BossEnemy
 
 		if (death.Crossed(Snaps))
 		{
+			death.Impact(0.4f);
 			// The snap: white splinters off the break.
 			death.Emit(new BossDeath.Throw
 			{

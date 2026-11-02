@@ -40,6 +40,9 @@ public partial class Player : CharacterBody2D
 	[Export] public PackedScene HollowStarScene { get; set; }
 	// Starfall: one node in the arena that carries the whole rain (scripts/Starfall.cs).
 	[Export] public PackedScene StarfallScene { get; set; }
+	// Sagittarius, the first combination (scripts/Sagittarius.cs, Player.Combinations.cs): one node in the
+	// arena that carries the rain it borrowed from Starfall, the draw it borrowed from Hunter's Draw, and the loose.
+	[Export] public PackedScene SagittariusScene { get; set; }
 	// The Familiar: one pack node in the arena that carries every hound (scripts/Familiar.cs).
 	[Export] public PackedScene FamiliarScene { get; set; }
 	// The facing family (.ai/spell-roster.md): two spells that go the way the player faces.
@@ -561,18 +564,30 @@ public partial class Player : CharacterBody2D
 	public const int CabinetFullPickupRadius = 50;
 	// John Dee's passive: one more relic in every chest (ChestOfferCount).
 	private int characterChestOfferBonus = 0;
+	// Exorcist (Abe no Seimei): the share added to every hit on an elite, a miniboss or a boss.
+	public const float CharacterEliteDamageBonus = 0.15f;
+	private float characterEliteDamageBonus = 0f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
 	public override void _Ready()
 	{
 		AddToGroup("player");
+		ResetItemRules();
 		feetBody = GetNodeOrNull<CharacterBody2D>("Feet");
 		feetShape = feetBody?.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
 		ConfigureEntityCollision();
 		bodySprite = GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
 		if (bodySprite != null)
+		{
 			bodySprite.AnimationFinished += OnBodyAnimationFinished;
+			// "The player and bosses should always be rendered on top of spells and effects so they can
+			// always be seen" (Eric, 2026-11-01). The body sprite alone, not this node: the spells parented
+			// to him (auras, the jet, the orbit) and his ground marks (StanceGlow, HasteTrail at -1) keep
+			// the layers they picked. On the bosses' layer, so he and a boss still sort by where they stand.
+			bodySprite.ZAsRelative = false;
+			bodySprite.ZIndex = DrawLayers.Foremost;
+		}
 		_velocity = Vector2.Zero;
 		ApplyArcaneUpgrades();
 		spellFireTimers.Clear();
@@ -631,6 +646,17 @@ public partial class Player : CharacterBody2D
 	/// is the middle of the sprite about 36 px above his boots.
 	/// </summary>
 	public Vector2 FootPosition => feetShape != null ? feetShape.GlobalPosition : GlobalPosition;
+
+	/// <summary>
+	/// Seeds the level-up roll and the combat roll (crits, dodges, catches) from the run's seed, which
+	/// Node2DGame knows only once it builds the ground - after this _Ready has Randomize()d both. So a run
+	/// given its seed deals the same offers in the same order.
+	/// </summary>
+	public void SeedRunRandomness(ulong runSeed)
+	{
+		levelUpRng.Seed = LevelGenerator.Hash(runSeed, 0, 0, 0x1E7E);
+		combatRng.Seed = LevelGenerator.Hash(runSeed, 0, 0, 0xC0BA);
+	}
 
 	/// <summary>
 	/// True if his footprint - the boots, the same capsule the ground stops - overlaps
@@ -766,6 +792,9 @@ public partial class Player : CharacterBody2D
 		// Laelaps, the hound that always caught what it hunted: a share of the enemy bolts that reach him
 		// are caught in his jaws (TryCatchBolt, read by EnemyProjectile).
 		"catch_bolts_25",
+		// Abe no Seimei, the exorcist: more damage to the strong ones - elites, minibosses and bosses alike,
+		// everything IsMiniBoss marks (.ai/chapter-wizards.md 4.5). An axis no other wizard owns.
+		"elite_damage_15",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -801,6 +830,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "catch_bolts_25":
 				characterBoltCatchChance = CharacterBoltCatchChance;
+				return true;
+			case "elite_damage_15":
+				characterEliteDamageBonus = CharacterEliteDamageBonus;
 				return true;
 			default:
 				return false;
@@ -840,7 +872,7 @@ public partial class Player : CharacterBody2D
 		int growthLevel = GetLevel("growth");
 		int extraLivesLevel = GetLevel("extra_lives");
 		int rerollsLevel = GetLevel("rerolls");
-		IsPlaytestModeEnabled = saveManager.Data.PlaytestModeEnabled;
+		IsPlaytestModeEnabled = saveManager.Data.PlaytestModeEnabled && SettingsRows.TestingAvailable;
 
 		damageMultiplier = 1.0f + (damageLevel * 0.08f);
 		recoveryPerSecond = recoveryLevel * EmberheartRegenPerLevel;
@@ -1571,6 +1603,13 @@ public partial class Player : CharacterBody2D
 				boonStanceRegenPerSecond += definition.Magnitude;
 				EnsureStanceGlow();
 				break;
+			// Read where they act: the firing loop (TickWaywiser) and the reaction (TriggerBoonReactions).
+			case BoonEffect.WalkingRecharge:
+				boonWalkingRecharge = Mathf.Max(boonWalkingRecharge, definition.Magnitude);
+				break;
+			case BoonEffect.Frighten:
+				boonFrightenSeconds = Mathf.Max(boonFrightenSeconds, definition.Magnitude);
+				break;
 		}
 
 	}
@@ -2075,6 +2114,9 @@ public partial class Player : CharacterBody2D
 		{
 			node2D.Scale *= scaleMultiplier;
 		}
+
+		// The anointed spell's casts are crowned (.ai/sovereign-spell.md section 5; Player.Sovereign.cs).
+		CrownIfSovereign(visual, spell);
 	}
 
 	// --- Bonus Drop Table (issue #25) ---
@@ -2225,6 +2267,9 @@ public partial class Player : CharacterBody2D
 			// Throttled per element inside SfxPlayer, so an AoE landing on forty enemies makes
 			// one sound rather than forty.
 			SfxPlayer.Impact(SfxCatalog.DominantElement(source), impactTarget.GlobalPosition);
+			// The anointed spell's strikes are crowned where they land (Player.Sovereign.cs, SovereignHits).
+			if (sovereignSpell != null && IsSovereignSource(source))
+				MarkSovereignHit(impactTarget.GlobalPosition);
 		}
 		if (enemy == null || !IsInstanceValid(enemy) || baseDamage <= 0 || !(enemy is Enemy || enemy.HasMethod(TakeDamageMethod)))
 			return 0;
@@ -2261,16 +2306,29 @@ public partial class Player : CharacterBody2D
 			finalDamage = Mathf.RoundToInt(finalDamage * 1.30f);
 		}
 
+		// The whole Poppet: two debuffs make a third, before the hit reads it (Player.ItemRules.cs).
+		if (enemy is Enemy cursed)
+			ApplyPoppetMark(cursed);
+
 		// The Vulnerable debuff. Applied here so EVERY source benefits - the whole point of it is
 		// that Shadow Bolt makes the rest of the loadout hit harder rather than hitting hard itself.
 		if (enemy is Enemy exposed && exposed.IsVulnerable)
 			finalDamage = Mathf.RoundToInt(finalDamage * (1.0f + exposed.VulnerabilityBonus));
 
+		// The Gimmel Ring and the Fede Hoop: the pair's own damage (Player.ItemRules.cs).
+		finalDamage = ApplyPairDamage(source, finalDamage);
+
 		if (enemy is Enemy targetEnemy)
 		{
 			if (targetEnemy.HealthFraction <= 0.5f && ownedChestItems.Contains(ChestItemCatalog.SpectralFang))
 				finalDamage = Mathf.RoundToInt(finalDamage * 1.15f);
-			if (targetEnemy.HealthFraction <= chestExecuteThresholdPercent / 100.0f)
+			// Exorcist: the strong ones take more from him. Not an execute, so bosses are not spared it.
+			if (characterEliteDamageBonus > 0f && targetEnemy.IsMiniBoss)
+				finalDamage = Mathf.RoundToInt(finalDamage * (1f + characterEliteDamageBonus));
+			// Never a boss (Eric, 2026-11-01: "Bosses should be excluded from execution abilities"): the
+			// boss work made every fight minutes long on purpose, and a Reaper's Scythe cut the last 30%
+			// off all of them. Elites still fall to it; the Morrigan's peck already spares both.
+			if (targetEnemy.HealthFraction <= chestExecuteThresholdPercent / 100.0f && targetEnemy is not BossEnemy)
 				finalDamage = Math.Max(finalDamage, targetEnemy.Health);
 		}
 
@@ -2284,7 +2342,12 @@ public partial class Player : CharacterBody2D
 		finalDamage = Math.Max(1, finalDamage);
 
 		if (enemy is Enemy struck)
+		{
 			struck.TakeDamage(finalDamage, isCrit);
+			// The Pricking Pin marks what a crit struck - after it lands, so the crit is not raised.
+			if (isCrit)
+				PrickOnCrit(struck);
+		}
 		else
 			enemy.Call(TakeDamageMethod, finalDamage, isCrit);
 		if (EnemyDamagedAt != null && enemy is Node2D damagedNode)
@@ -2296,7 +2359,10 @@ public partial class Player : CharacterBody2D
 				EnemyKilled?.Invoke(hitEnemy, hitEnemy.GlobalPosition, source);
 		}
 		if (targetWasAlive && enemy is Enemy defeatedEnemy && defeatedEnemy.Health <= 0)
+		{
 			OnChestEnemyKilled();
+			SpreadSingedLock(defeatedEnemy.GlobalPosition);
+		}
 		// Spells deliberately do not knock enemies back. This used to push every enemy on every
 		// spell hit, which shoved the swarm around constantly and made positioning unreadable.
 		// The player's own movement still shoves enemies aside (see MovePlayer).
@@ -2365,6 +2431,7 @@ public partial class Player : CharacterBody2D
 	private void RaiseLoadoutChanged()
 	{
 		darknessCarriersDirty = true;
+		pairDirty = true;
 		EmitSignal(SignalName.LoadoutChanged);
 	}
 
@@ -2440,7 +2507,7 @@ public partial class Player : CharacterBody2D
 	/// True while a boss arrives (Node2DGame holds it for BossEnemy's entrance): every spell's timer is
 	/// HELD where it was - not reset, so each spell goes off when the fight starts exactly as far into
 	/// its cooldown as it was when the boss appeared - and nothing hurts him. No whitening, unlike the
-	/// post-menu grace: he is not the one being shown, the boss is.
+	/// post-menu grace: he is not the one being shown, the boss is. He cannot walk, either (MovePlayer).
 	/// </summary>
 	public bool HeldForBossEntrance { get; private set; }
 
@@ -2499,6 +2566,13 @@ public partial class Player : CharacterBody2D
 			fromCentre.X = -fromCentre.X;
 		return bodySprite.Position + fromCentre;
 	}
+
+	/// <summary>
+	/// The body sprite, for the defeat (DefeatSequence, 2026-11-02): it holds the wizard on the frame
+	/// the killing blow landed, through the freeze and the crash zoom, and then plays his death row as
+	/// the fall. The death below still starts it, so a run that ends any other way is unchanged.
+	/// </summary>
+	public AnimatedSprite2D? BodySprite => bodySprite;
 
 	// Walk while moving, idle while still. Never interrupts a hurt or death in progress.
 	private void UpdateBodyAnimation()
@@ -2658,7 +2732,8 @@ public partial class Player : CharacterBody2D
 	{
 		SpellData frost = equippedSpells.FirstOrDefault(
 			s => s != null && s.Id.Equals("frost_shard", StringComparison.OrdinalIgnoreCase));
-		if (frost == null)
+		// Silenced by the Sovereign Rite: a death shatters nothing.
+		if (frost == null || IsSilenced(frost))
 			return;
 
 		// Killed by a shatter: one level only (below), except that Avalanche shatters it a beat later, a
@@ -2684,7 +2759,7 @@ public partial class Player : CharacterBody2D
 			return;
 		SpellData frost = equippedSpells.FirstOrDefault(
 			s => s != null && s.Id.Equals("frost_shard", StringComparison.OrdinalIgnoreCase));
-		if (frost != null)
+		if (frost != null && !IsSilenced(frost))
 			ShatterAt(where, frost, damageShare, generation);
 	}
 
@@ -2698,7 +2773,8 @@ public partial class Player : CharacterBody2D
 			return;
 		SpellData frost = equippedSpells.FirstOrDefault(
 			s => s != null && s.Id.Equals("frost_shard", StringComparison.OrdinalIgnoreCase));
-		if (frost == null)
+		// Silenced by the Sovereign Rite: a death shatters nothing.
+		if (frost == null || IsSilenced(frost))
 			return;
 		FrostShatter layer = FrostShatter.For(GetParent(), frost, this);
 		shatterInProgress = true;
@@ -2830,7 +2906,9 @@ public partial class Player : CharacterBody2D
 	{
 		bool retaliates = boonRetaliateDamage > 0;
 		bool chills = boonChillMultiplier < 1f;
-		if (!retaliates && !chills)
+		// Bone Rattle (.ai/new-items.md section 7), the third reaction on the same pulse and radius.
+		bool frightens = boonFrightenSeconds > 0f;
+		if (!retaliates && !chills && !frightens)
 			return;
 
 		if (boonReactionCooldownRemaining > 0f)
@@ -2851,15 +2929,21 @@ public partial class Player : CharacterBody2D
 
 			if (chills && node.HasMethod("ApplySlow"))
 				node.Call("ApplySlow", boonChillMultiplier, BoonChillDurationSeconds);
+
+			// Fear keeps its own three rules inside ApplyFear: elites, minibosses and bosses are immune,
+			// a fright is never extended, and four seconds of immunity follow it.
+			if (frightens && node is Enemy rattled)
+				rattled.ApplyFear(boonFrightenSeconds);
 		}
 
 		// Retaliation reads as damage numbers on its own; a slow does not read as anything, so the
 		// burst is the only thing telling the player the boon they bought is working. Steel shards for
-		// the chain's retaliation (Metal), frost for the briar's chill, the chain's when both fired,
-		// because the damage is the part that needs to be attributed. Thrown out to exactly the radius
-		// that was hit; it used to be a ring there that grew past it as it faded.
+		// the chain's retaliation (Metal), frost for the briar's chill, shadow for the rattle's fright;
+		// the chain's when it fired with another, because the damage is the part that needs to be
+		// attributed, then the briar's. Thrown out to exactly the radius that was hit; it used to be a
+		// ring there that grew past it as it faded.
 		ImpactDebrisLayer.Spawn(GetParent<Node2D>(), GlobalPosition, BoonReactionRadius,
-			ElementColors.GetRamp(retaliates ? Element.Metal : Element.Ice), Colors.White);
+			ElementColors.GetRamp(retaliates ? Element.Metal : chills ? Element.Ice : Element.Darkness), Colors.White);
 	}
 
 	private void TriggerBastionRetaliation()
@@ -3048,8 +3132,10 @@ public partial class Player : CharacterBody2D
 	/// <summary>The held spells the knife may cut: all of them but the wizard's own.</summary>
 	public List<SpellData> GetCuttableSpells()
 	{
+		// Nor the spell the Sovereign Rite anointed: the Rite never undoes.
 		return equippedSpells
-			.Where(s => s != null && !s.Id.Equals(signatureSpellId, StringComparison.OrdinalIgnoreCase))
+			.Where(s => s != null && !s.Id.Equals(signatureSpellId, StringComparison.OrdinalIgnoreCase)
+				&& !ReferenceEquals(s, sovereignSpell))
 			.ToList();
 	}
 
@@ -3231,6 +3317,16 @@ public partial class Player : CharacterBody2D
 			// knife does its whole job in TryCutSpellWithPenknife and never comes through here.
 			case ChestItemCatalog.BlankFolio:
 				break;
+
+			// The Poppet and the Gimmel Ring: rules read at their moment (Player.ItemRules.cs).
+			case ChestItemCatalog.PrickingPin:
+			case ChestItemCatalog.BindingThread:
+			case ChestItemCatalog.SingedLock:
+			case ChestItemCatalog.BetrothalHoop:
+			case ChestItemCatalog.FedeHoop:
+			case ChestItemCatalog.GarnetBezel:
+				TakeItemRuleRelic(itemId.Trim());
+				break;
 		}
 	}
 
@@ -3276,6 +3372,10 @@ public partial class Player : CharacterBody2D
 				break;
 			case ChestItemCatalog.CabinetOfCuriositiesSetId:
 				chestMagnetBonus += CabinetPartialPickupRadius;
+				break;
+			case ChestItemCatalog.PoppetSetId:
+			case ChestItemCatalog.GimmelRingSetId:
+				ApplyItemRulePartial(setId);
 				break;
 		}
 
@@ -3364,6 +3464,10 @@ public partial class Player : CharacterBody2D
 					case ChestItemCatalog.CabinetOfCuriositiesSetId:
 						// Every elite's chest is read live in GetEliteChestChance.
 						chestMagnetBonus += CabinetFullPickupRadius;
+						break;
+					case ChestItemCatalog.PoppetSetId:
+					case ChestItemCatalog.GimmelRingSetId:
+						ApplyItemRuleSet(set.Id);
 						break;
 				}
 			}
@@ -3824,6 +3928,8 @@ public partial class Player : CharacterBody2D
 				// A weakened enemy can roll 0 (Enemy.ScaleOutgoingDamage, issue #66). It still swings;
 				// the touch just lands like a dodge, with no on-hurt reactions.
 				int contactDamage = GetEnemyContactDamage(enemy);
+				// The Binding Thread weakens the toucher before its touch is scaled.
+				BindToucher(enemy);
 				if (enemy is Enemy toucher)
 					contactDamage = toucher.ScaleOutgoingDamage(contactDamage);
 				if (contactDamage > 0)
@@ -3832,6 +3938,7 @@ public partial class Player : CharacterBody2D
 				enemyDamageCooldowns[enemy] = 0f;
 			}
 		}
+
 
 		float effectiveRegenPerSecond = RegenPerSecondNow;
 		if (effectiveRegenPerSecond > 0.0f && CurrentHP > 0 && CurrentHP < MaxHP)
@@ -3865,6 +3972,9 @@ public partial class Player : CharacterBody2D
 		}
 
 		var spellsStart = FrameProfiler.Begin();
+		// The Waywiser's spell: whichever is furthest from ready this frame (TickWaywiser, after the loop).
+		SpellData furthestFromReady = null;
+		float furthestRemaining = float.MinValue;
 		foreach (var spell in equippedSpells)
 		{
 			if (spell == null || string.IsNullOrWhiteSpace(spell.Id))
@@ -3877,9 +3987,21 @@ public partial class Player : CharacterBody2D
 			if (HeldForBossEntrance)
 				continue;
 
+			// The Sovereign Rite silenced it for the rest of the run (Player.Sovereign.cs): its levels are the
+			// anointed spell's fuel, and it never fires again.
+			if (spell.SilencedBySovereign)
+				continue;
+
 			float interval = (spell.GetCooldownAtLevel(spell.CurrentLevel) * cooldownMultiplier * GetWaterCooldownMultiplier()) / EffectiveAttackSpeed;
-			interval = MathF.Max(0.05f, interval);
+			// The Garnet Bezel: the pair recharges faster (Player.ItemRules.cs).
+			interval = MathF.Max(0.05f, interval / PairRechargeScale(spell));
 			spellFireTimers[spell.Id] += (float)delta;
+			float remaining = interval - spellFireTimers[spell.Id];
+			if (remaining > furthestRemaining)
+			{
+				furthestRemaining = remaining;
+				furthestFromReady = spell;
+			}
 			if (spellFireTimers[spell.Id] >= interval)
 			{
 				// What the cast actually did decides the cue, the cooldown and the cast counters -
@@ -3906,6 +4028,7 @@ public partial class Player : CharacterBody2D
 				NotifyArcaneCharge(spell);
 			}
 		}
+		TickWaywiser(furthestFromReady, delta);
 		FrameProfiler.End(FrameProfiler.Section.PlayerSpells, spellsStart);
 	}
 
@@ -3932,7 +4055,7 @@ public partial class Player : CharacterBody2D
 	{
 		blackCatChoices.Clear();
 		foreach (SpellData spell in equippedSpells)
-			if (spell != null && !spell.IsPassive && BlackCatCastable.Contains(spell.Id))
+			if (spell != null && !spell.IsPassive && !IsSilenced(spell) && BlackCatCastable.Contains(spell.Id))
 				blackCatChoices.Add(spell);
 		return blackCatChoices.Count == 0 ? null : blackCatChoices[rng.RandiRange(0, blackCatChoices.Count - 1)];
 	}
@@ -3941,7 +4064,7 @@ public partial class Player : CharacterBody2D
 	/// something into the world.</summary>
 	public bool CastFromFamiliar(SpellData spell, Vector2 origin)
 	{
-		if (spell == null || IsDead || !BlackCatCastable.Contains(spell.Id) || !equippedSpells.Contains(spell))
+		if (spell == null || IsDead || IsSilenced(spell) || !BlackCatCastable.Contains(spell.Id) || !equippedSpells.Contains(spell))
 			return false;
 		float interval = MathF.Max(0.05f, (spell.GetCooldownAtLevel(spell.CurrentLevel) * cooldownMultiplier * GetWaterCooldownMultiplier()) / EffectiveAttackSpeed);
 		Vector2 home = GlobalPosition;
@@ -4120,6 +4243,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals("mirefoot", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshTrailWeaver(spell, MirefootScene);
 		else if (spell.Id.Equals("kindled_ward", StringComparison.OrdinalIgnoreCase)) outcome = FireKindledWard(spell, KindledWardScene);
 		else if (spell.Id.Equals("starfall", StringComparison.OrdinalIgnoreCase)) outcome = FireStarfall(spell, StarfallScene, interval);
+		else if (spell.Id.Equals(Sagittarius.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireSagittarius(spell, interval);
 		else if (spell.Id.Equals("familiar", StringComparison.OrdinalIgnoreCase)) outcome = FireFamiliar(spell, FamiliarScene);
 		else if (spell.Id.Equals("stormsweep", StringComparison.OrdinalIgnoreCase)) outcome = FireStormsweep(spell, StormsweepScene);
 		else if (spell.Id.Equals("sleet_runes", StringComparison.OrdinalIgnoreCase)) outcome = FireSleetRunes(spell, SleetRunesScene);
@@ -6164,14 +6288,16 @@ public partial class Player : CharacterBody2D
 		}
 
 		Vector2 at;
-		if (script != null && script.IsMaw && BlackTentacles.LiveMawCount > 0)
+		if (script != null && BlackTentacles.LiveRiftCount > 0)
 		{
-			// Never over another maw. Nowhere to open: the cast stays ready and looks again shortly,
-			// rather than every frame (each look instances the scene to learn the new maw's radius).
-			if (!TryPlaceMaw(castRange, script.DrawnRadius, out at))
+			// Never over another rift, of any face (Eric, 2026-11-01: "Black tentacles should never be able
+			// to stack on top of each other"; the maws first, 2026-10-28). Nowhere to open: the cast stays
+			// ready and looks again shortly, rather than every frame (each look instances the scene to
+			// learn the new rift's radius).
+			if (!TryPlaceRift(castRange, script.DrawnRadius, out at))
 			{
 				zone.Free();
-				spellFireTimers[spell.Id] = MathF.Max(0f, interval - MawRetrySeconds);
+				spellFireTimers[spell.Id] = MathF.Max(0f, interval - RiftRetrySeconds);
 				return CastOutcome.NoTarget;
 			}
 		}
@@ -6186,20 +6312,19 @@ public partial class Player : CharacterBody2D
 		return CastOutcome.Fired;
 	}
 
-	// How long an Elder God Maw with nowhere clear to open waits before it looks again.
-	private const float MawRetrySeconds = 0.25f;
+	// How long a rift with nowhere clear to open waits before it looks again.
+	private const float RiftRetrySeconds = 0.25f;
 
-	// Where an Elder God Maw opens while another is open (2026-10-28: "they should never overlap").
-	// Clear means BlackTentacles.MawFits: rim to rim by both maws' full radii - what each is drawn to
-	// and slows - plus MawGap.
+	// Where a rift opens while another is open. Clear means BlackTentacles.RiftFits: rim to rim by both
+	// rifts' full radii - what each is drawn to and slows - plus RiftGap.
 	//
 	// 1. The densest pack that is already clear, scored exactly as FindDensestEnemy scores it.
-	// 2. Otherwise - the usual case, since an open maw drags the pack to its teeth - beside the maw in
-	//    the way: each candidate pushed straight out from that maw's centre until the rims are the gap
-	//    apart (BlackTentacles.PushClearOfMaws), kept if it is still in cast range, and scored by how
-	//    many enemies it would catch. So the new maw opens on the stragglers still coming in.
+	// 2. Otherwise - the usual case, since a rift holds the pack in it (and a maw drags it to its teeth) -
+	//    beside the rift in the way: each candidate pushed straight out from that rift's centre until the
+	//    rims are the gap apart (BlackTentacles.PushClearOfRifts), kept if it is still in cast range, and
+	//    scored by how many enemies it would catch. So the new rift opens on the stragglers still coming in.
 	// 3. Nowhere in range would catch anything: false, and the cast waits.
-	private bool TryPlaceMaw(float castRange, float mawRadius, out Vector2 at)
+	private bool TryPlaceRift(float castRange, float mawRadius, out Vector2 at)
 	{
 		at = Vector2.Zero;
 		CollectEnemiesInRange(castRange);
@@ -6209,7 +6334,7 @@ public partial class Player : CharacterBody2D
 		for (int i = 0; i < scored; i++)
 		{
 			Vector2 here = aimCandidates[i].GlobalPosition;
-			if (!BlackTentacles.MawFits(here, mawRadius))
+			if (!BlackTentacles.RiftFits(here, mawRadius))
 				continue;
 			int count = CountAimCandidatesWithin(here, clusterRadiusSquared);
 			if (count > bestCount) { bestCount = count; at = here; }
@@ -6222,7 +6347,7 @@ public partial class Player : CharacterBody2D
 			for (int i = 0; i < scored; i++)
 			{
 				Vector2 spot = aimCandidates[i].GlobalPosition;
-				if (!BlackTentacles.PushClearOfMaws(ref spot, mawRadius) || GlobalPosition.DistanceSquaredTo(spot) > rangeSquared)
+				if (!BlackTentacles.PushClearOfRifts(ref spot, mawRadius) || GlobalPosition.DistanceSquaredTo(spot) > rangeSquared)
 					continue;
 				int count = CountAimCandidatesWithin(spot, catchSquared);
 				if (count > bestCount) { bestCount = count; at = spot; }
@@ -6580,6 +6705,13 @@ public partial class Player : CharacterBody2D
 		if (touchInput != Vector2.Zero)
 			input = touchInput;
 
+		// A boss arriving (2026-11-01: "Player should not be able to move when bosses are spawning"): every
+		// device's push is dropped here, the one place keys, pad and the touch stick all meet, so he stands
+		// where the arrival found him - facing as he was - until the frame it ends. Only walking: the pause,
+		// the menus and the stick's own drawing never come through here.
+		if (HeldForBossEntrance)
+			input = Vector2.Zero;
+
 		if (input.X > 0.01f)
 			lastHorizontalFacing = 1;
 		else if (input.X < -0.01f)
@@ -6753,6 +6885,13 @@ public partial class Player : CharacterBody2D
 			evolutionId = parts[1];
 		}
 
+		// A combination is not in the spell catalog - it is never a card - and is made only by fusing its
+		// two parents, from the strip (Player.Combinations.cs, ComboCatalog).
+		// The Sovereign Rite is a Conjunction too, but its second half names the spell it anoints
+		// ("sovereign_rite:fireball", Player.Sovereign.cs), and nothing is fused.
+		if (ComboCatalog.ForId(spellId) is ComboDefinition combination)
+			return combination.IsRite ? TryAnoint(evolutionId) : TryFuse(combination);
+
 		SpellData spellTemplate = ResolveSpellTemplate(spellId);
 		if (spellTemplate == null)
 		{
@@ -6804,6 +6943,7 @@ public partial class Player : CharacterBody2D
 			equippedSpells.Add(runtimeSpell);
 			spellFireTimers[runtimeSpell.Id] = 0f;
 			GD.Print($"Equipped spell {runtimeSpell.Name} at level {runtimeSpell.CurrentLevel}");
+			SilenceIfLate(runtimeSpell);
 			RefreshPersistentSpellInstance(runtimeSpell);
 			RefreshElementalMaxHp();
 			RaiseLoadoutChanged();
@@ -6864,6 +7004,8 @@ public partial class Player : CharacterBody2D
 
 		spellFireTimers[existing.Id] = 0f;
 		GD.Print($"Spell {existing.Name} leveled up to {existing.CurrentLevel}");
+		// A silenced spell's level is one more level of the anointed spell's fuel.
+		RefreshSovereignFuel();
 		RefreshPersistentSpellInstance(existing);
 		RaiseLoadoutChanged();
 		return true;
@@ -6898,6 +7040,7 @@ public partial class Player : CharacterBody2D
 		}
 
 		GD.Print($"Removed spell {existing.Name} from loadout.");
+		RefreshSovereignFuel();
 		RefreshElementalMaxHp();
 		RaiseLoadoutChanged();
 		return true;
@@ -6929,6 +7072,14 @@ public partial class Player : CharacterBody2D
 			if (IsInstanceValid(starfallRain))
 				starfallRain.QueueFree();
 			starfallRain = null;
+		}
+
+		// Sagittarius's node lives in the arena, with the rain, the mark and the draw it carries.
+		if (spell.Id.Equals(Sagittarius.SpellId, StringComparison.OrdinalIgnoreCase) && sagittarius != null)
+		{
+			if (IsInstanceValid(sagittarius))
+				sagittarius.QueueFree();
+			sagittarius = null;
 		}
 
 		// The pack lives in the arena too - and what the cat granted goes with it.
@@ -7031,18 +7182,16 @@ public partial class Player : CharacterBody2D
 	public CharacterData SelectedCharacter => selectedCharacter;
 
 	/// <summary>
-	/// The card offering a wizard's final form, if the covenant holds on <paramref name="spell"/>:
-	/// the wizard's own starting spell, at max level, down the named path, with the element at the
-	/// required tier, and the player at ApotheosisCatalog.MinimumPlayerLevel. Null otherwise. Built for the else side of the level-up branch, which is the
-	/// only place a maxed spell was ever looked at again.
+	/// The card offering a wizard's final form, if the gate holds on <paramref name="spell"/>
+	/// (ApotheosisCatalog.SpellMeetsGate): the wizard's own starting spell, at max level, ascended down
+	/// any branch and never combined with another spell - and the player at
+	/// ApotheosisCatalog.MinimumPlayerLevel. Null otherwise.
 	/// </summary>
 	private LevelUpOption TryBuildApotheosisOffer(SpellData spell, Dictionary<Element, int> baselineElementCounts)
 	{
 		// By spell as well as wizard: a wizard who opens on a spell with forms may have one per form.
 		ApotheosisDefinition definition = ApotheosisCatalog.ForSpell(selectedCharacter?.Id, spell);
-		if (!ApotheosisCatalog.SpellMeetsPath(definition, spell))
-			return null;
-		if (GetElementTier(definition.RequiredElement) < definition.RequiredTier)
+		if (!ApotheosisCatalog.SpellMeetsGate(definition, spell, WasFusedAway(spell?.Id)))
 			return null;
 		if (CurrentLevel < ApotheosisCatalog.MinimumPlayerLevel)
 			return null;
@@ -7066,6 +7215,70 @@ public partial class Player : CharacterBody2D
 		return option;
 	}
 
+	/// <summary>
+	/// This wizard's Apotheosis on <paramref name="spell"/>, as the ascension browser and the pause
+	/// screen show it: the form, each gate with the run's progress on it, and whether it is offered,
+	/// taken or out of reach. Null when the wizard has none on this spell (the Test Wizard has none).
+	/// </summary>
+	/// <remarks>
+	/// It reports and never decides: <see cref="ApotheosisPreview.Offered"/> is TryBuildApotheosisOffer's
+	/// own answer, and the gates are the ones ApotheosisCatalog.SpellMeetsGate reads. The spell-level line
+	/// and the Ascension line are met together in practice - level 8 is reached only through an
+	/// Ascension (CardLevelCap) - but Eric named both (2026-11-02), and the level line is the one that
+	/// counts up while the spell is still on its cards.
+	/// </remarks>
+	public ApotheosisPreview BuildApotheosisPreview(SpellData spell)
+	{
+		ApotheosisDefinition definition = ApotheosisCatalog.ForSpell(selectedCharacter?.Id, spell);
+		if (definition?.Form == null)
+			return null;
+
+		SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
+		bool combined = WasFusedAway(spell.Id) || ApotheosisCatalog.IsCombined(spell);
+		var preview = new ApotheosisPreview
+		{
+			SpellId = spell.Id,
+			SpellName = spell.Name,
+			FormId = definition.Form.Id,
+			FormName = definition.Form.DisplayName,
+			Description = definition.Form.Description,
+			Icon = EvolutionIcons.Own(definition.Form) ?? spell.Icon,
+			Taken = spell.IsApotheosis,
+			Offered = !spell.IsApotheosis && TryBuildApotheosisOffer(spell, GetElementInstanceCounts()) != null,
+			// The one thing that closes it now: no path does any more, and a fusion is never undone.
+			Closed = !spell.IsApotheosis && combined,
+		};
+
+		if (!AscensionLearned)
+			preview.Requirements.Add(new AscensionRequirement { Kind = AscensionRequirementKind.Learned, Have = 0, Need = 1 });
+		preview.Requirements.Add(new AscensionRequirement
+		{
+			Kind = AscensionRequirementKind.SpellLevel,
+			Have = spell.CurrentLevel,
+			Need = spell.MaxLevel,
+		});
+		preview.Requirements.Add(new AscensionRequirement
+		{
+			Kind = AscensionRequirementKind.Ascended,
+			Have = ApotheosisCatalog.IsAscended(spell) ? 1 : 0,
+			Need = 1,
+		});
+		preview.Requirements.Add(new AscensionRequirement
+		{
+			Kind = AscensionRequirementKind.NotCombined,
+			Have = combined ? 0 : 1,
+			Need = 1,
+			Closed = combined,
+		});
+		preview.Requirements.Add(new AscensionRequirement
+		{
+			Kind = AscensionRequirementKind.PlayerLevel,
+			Have = CurrentLevel,
+			Need = ApotheosisCatalog.MinimumPlayerLevel,
+		});
+		return preview;
+	}
+
 	// --- The Ascension strip ------------------------------------------------------------------
 	//
 	// Level 8 used to be the eighth level-up card. When it came up before its element was deep
@@ -7080,6 +7293,9 @@ public partial class Player : CharacterBody2D
 	{
 		if (spell == null)
 			return 1;
+		// Silenced by the Sovereign Rite: no Ascension to wait for, so the cards take it all the way (Player.Sovereign.cs).
+		if (spell.SilencedBySovereign)
+			return spell.MaxLevel;
 		SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
 		bool hasAscension = spell.Level8Options != null && spell.Level8Options.Count > 0
 			&& spell.MaxLevel >= AscensionSpellLevel;
@@ -7096,7 +7312,9 @@ public partial class Player : CharacterBody2D
 		var counts = GetElementInstanceCounts();
 		foreach (SpellData spell in equippedSpells)
 		{
-			if (spell == null)
+			// A spell the Sovereign Rite silenced levels to 8 on plain cards (CardLevelCap) and is offered no
+			// Ascension or Apotheosis: it never fires again, so a form would change nothing but its name.
+			if (spell == null || spell.SilencedBySovereign)
 				continue;
 
 			if (TryBuildApotheosisOffer(spell, counts) is LevelUpOption apotheosis)
@@ -7136,6 +7354,12 @@ public partial class Player : CharacterBody2D
 			ApplyElementPreview(option, spell, counts, isNewUnlock: false);
 			offers.Add(option);
 		}
+		// The combinations whose recipes this loadout meets (ComboCatalog, Player.Combinations.cs): after
+		// every spell's own, since both parents are already at level 8 and offer nothing of their own.
+		offers.AddRange(BuildComboOffers());
+		// The Sovereign Rite, on the same plate, once the save owns it and the run meets its gate (Player.Sovereign.cs).
+		if (TryBuildSovereignOffer() is LevelUpOption rite)
+			offers.Add(rite);
 		return offers;
 	}
 
@@ -7177,6 +7401,10 @@ public partial class Player : CharacterBody2D
 				if (loadoutFull)
 					continue;
 
+				// A spell that went into a combination this run is never offered again (.ai/combo-spells.md).
+				if (WasFusedAway(template.Id))
+					continue;
+
 				// The character's own starting spell is always offerable, unlocked or not. A rescued
 				// wizard opens on a spell the save may not own yet (Tituba's Riptide is a boss reward).
 				// It used to matter because a swap could erase it; nothing can now (the Penknife spares
@@ -7193,6 +7421,9 @@ public partial class Player : CharacterBody2D
 					continue;
 
 				LevelUpOption option = BuildNewSpellOption(template, baselineElementCounts);
+				// After the Sovereign Rite a new spell arrives silenced: it is one level of fuel, and says so.
+				if (sovereignSpell != null && !SovereignRite.IsPassiveForRite(template))
+					DressAsFuel(option);
 				candidates.Add(option);
 				weights.Add(GetOfferWeight(option));
 				continue;
@@ -7236,6 +7467,8 @@ public partial class Player : CharacterBody2D
 				}
 
 				ApplyElementPreview(option, equipped, baselineElementCounts, isNewUnlock: false);
+				if (equipped.SilencedBySovereign)
+					DressAsFuel(option);
 				heldUpgrades.Add(option);
 				heldUpgradeWeights.Add(GetOfferWeight(option));
 			}
@@ -7303,6 +7536,8 @@ public partial class Player : CharacterBody2D
 		RemoveBanned(candidates, weights);
 		RemoveBanned(heldUpgrades, heldUpgradeWeights);
 		RemoveBanned(boonCandidates, boonWeights);
+		// The Betrothal Hoop leans the upgrade group toward the lowest-level spell (Player.ItemRules.cs).
+		WeightLowestUpgrades(heldUpgrades, heldUpgradeWeights);
 
 		// A browse (GetDealableCandidates) lists every boon as well as every new spell.
 		if (browseAll)
@@ -7609,7 +7844,7 @@ public partial class Player : CharacterBody2D
 	/// that would satisfy it, and how deep. Null when the branch has nothing to be deep in. The rule
 	/// lives here and only here - DescribeUnmetElementGate words it, the browser draws it.
 	/// </summary>
-	private static AscensionRequirement EvaluateElementGate(SpellEvolutionOption evo, SpellData spell,
+	public static AscensionRequirement EvaluateElementGate(SpellEvolutionOption evo, SpellData spell,
 		Dictionary<Element, int> currentCounts)
 	{
 		var gates = GetAscensionGateElements(evo, spell).ToList();
@@ -8053,7 +8288,15 @@ public partial class Player : CharacterBody2D
 			// Optionally, apply damage immediately
 			if (!enemyDamageCooldowns.ContainsKey(body) || enemyDamageCooldowns[body] >= DamageCooldownSeconds)
 			{
-				TakeDamage(GetEnemyContactDamage(body));
+				// The first touch, the same as every touch after it in the contact loop: the Binding
+				// Thread binds first, then Weaken and the chapter's damage scale it. It used to go straight
+				// to TakeDamage, so the first touch of every enemy skipped ScaleOutgoingDamage.
+				BindToucher(body);
+				int contactDamage = GetEnemyContactDamage(body);
+				if (body is Enemy toucher)
+					contactDamage = toucher.ScaleOutgoingDamage(contactDamage);
+				if (contactDamage > 0)
+					TakeDamage(contactDamage);
 				PlayEnemyAttackAnimation(body);
 				enemyDamageCooldowns[body] = 0f;
 			}

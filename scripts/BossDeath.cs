@@ -179,11 +179,15 @@ public partial class BossDeath : Node2D
 		bodyLayer = new Node2D { Name = "Body" };
 		air = new Node2D { Name = "Air" };
 		light = new Node2D { Name = "Light", Material = additive };
+		// The body's pieces ride the boss's own layer (BossEnemy lifts the node to DrawLayers.Foremost), and
+		// a fall's air and light, relative to it, follow them up in tree order. An arrival's go one higher,
+		// absolute, so they are over the body even while a boss stands among the bodies (the Constable's
+		// wall-walk) - over every body, since an arrival happens in a crowd.
 		if (IsEntrance)
 		{
-			air.ZIndex = DrawLayers.Air;
+			air.ZIndex = DrawLayers.ForemostAir;
 			air.ZAsRelative = false;
-			light.ZIndex = DrawLayers.Air;
+			light.ZIndex = DrawLayers.ForemostAir;
 			light.ZAsRelative = false;
 		}
 		AddChild(ground);
@@ -242,7 +246,11 @@ public partial class BossDeath : Node2D
 			if (!entranceHandedBack)
 				Boss.TickEntrance(this, t, dt);
 			if (Crossed(Boss.EntranceRoarSeconds))
+			{
 				Boss.RoarOnArrival();
+				// The climax: the run's cinematic flares, jolts and shakes on it (Node2DGame.BossEntrance.cs).
+				Node2DGame.Current?.OnBossClimax(Boss, Boss.EntranceClimaxWeight, Boss.EntranceFlareElement);
+			}
 		}
 		else
 			Boss.TickDeath(this, t, dt);
@@ -349,6 +357,15 @@ public partial class BossDeath : Node2D
 		if (Boss != null && IsInstanceValid(Boss))
 			Boss.OnEntranceEnd(this);
 	}
+
+	// --- The run's cues -----------------------------------------------------------------------------
+
+	/// <summary>
+	/// A beat of this arrival or fall that the ground feels - a landing, a burst, a grate swinging open: the
+	/// run shakes the screen for it, <paramref name="weight"/> 1 as hard as a roar. Call it inside the
+	/// <see cref="Crossed"/> block that throws the debris, so the jolt and the dust are one frame.
+	/// </summary>
+	public void Impact(float weight) => Node2DGame.Current?.OnBossImpact(Boss, weight);
 
 	// --- Clock helpers ------------------------------------------------------------------------------
 
