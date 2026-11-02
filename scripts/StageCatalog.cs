@@ -235,7 +235,8 @@ public static class StageCatalog
 			CorruptionText = "His seat is across the water.",
 			EnvironmentKind = StageEnvironmentKind.Bridge,
 			Gate = StageGate.PreviousBoss,
-			IsPlayable = false,
+			// Flipped 2026-11-02 (Eric: "Yes, flip it"), with C2 and C8 merged as 9.2 step 6 asks.
+			IsPlayable = true,
 		},
 		new()
 		{
@@ -299,7 +300,7 @@ public static class StageCatalog
 		"stage_5",  // 7  Frozen Waste - the Still Warden
 		"stage_6",  // 8  Scorched Sands - the Long Coil
 		"stage_7",  // 9  The Emberdeep - the Warden of the Deep (the Long Coil and every wizard on the road first)
-		"stage_11", // 10 The Last Bridge - the Constable (castle, not yet playable)
+		"stage_11", // 10 The Last Bridge - the Constable (castle)
 		"stage_1",  // 11 Cursed Dungeon - the Gaoler (castle; it was fifth until C2)
 		"stage_12", // 12 The Court - the Seneschal (castle, not yet playable)
 		"stage_13", // 13 The Throne - the procession, then him (the Seneschal and every wizard first; not yet playable)

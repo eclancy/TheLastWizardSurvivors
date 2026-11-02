@@ -263,8 +263,9 @@ builds to 120 and seven.
   ladder of three vault lessons is the integrator's choice, for Eric's review). **Building:** the Dark
   Wizard as a playable wizard, unlocked by defeating him in the Throne on Hardcore
   (`wip/dark-wizard-playable`; Eric: "unlockable if you beat the whole game on hard mode"); #44's chest
-  simulation and 50 HP relic sweep (`wip/chest-sim`). **Still to ask:** flip the Last Bridge; the next
-  release raises the story epoch to 2 (the slow start is in).
+  simulation and 50 HP relic sweep (`wip/chest-sim`). **The Last Bridge is flipped playable** (Eric, the same night; chapter 10 of
+  13, the Dungeon 11). **Still to ask:** the next release raises the story epoch to 2 (the slow start is in);
+  the Court and the Throne flips.
 - **The defeat sequence** (Eric, 2026-11-02): *"Defeat should have a dramatic animation where the game
   freezes, then crash zooms onto the wizard and they fall, then it says defeat, and when the player
   clicks, the defeat screen covers up. It then tallys up the reward with a satisfying payout sound. The

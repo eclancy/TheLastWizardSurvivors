@@ -1138,7 +1138,7 @@ validators), `LevelGenerator.cs` (C0; every topology after it is a partial file)
 3. **C1, C3, C6 x2, C7, V1, V2** in parallel. **C2** may be built now too, but holds its merge (step 6).
 4. **C4** once C3's `Authored` reader has landed (or C0 lands the reader as a stub both use).
 5. **C5** per boss as its chapter's ground lands.
-6. **Flip the bridge, and merge C2, in one release**, after V2 (and ideally V1). Shipping the move
+6. **Done 2026-11-02: the bridge flipped (Eric: "Yes, flip it") on top of C2 and C8.** **Flip the bridge, and merge C2, in one release**, after V2 (and ideally V1). Shipping the move
    alone would take the Dungeon out of the middle of the campaign with nothing at the end to reach it
    by; until the bridge is playable the Warden of the Deep would open the Dungeon directly, which
    works but is not the design.
