@@ -764,6 +764,29 @@ def eye():
     ], {"A": T("arcane", "lit"), "a": T("arcane", "base")})
 
 
+def conjunction():
+    """Two linked rings, for a combination (.ai/combo-spells.md, ComboCatalog): the mark a level 8 path
+    carries when a recipe the save knows names it, so the choice that opens or closes a recipe is made
+    knowingly, and the glyph beside each parent on the ascension browser's conjunction tree. Gold for the
+    left ring, starlight (the Light ramp, the conjunction plate's runes) for the right; each passes over
+    the other once, so they read as linked rather than as a figure eight. Not `chain`, whose two square
+    links say "carries on to the next one"."""
+    return _grid([
+        "............",
+        "............",
+        "..GGG.WWW...",
+        ".G...WG..W..",
+        ".G..W.G..W..",
+        ".G..W.G..W..",
+        ".G..W.G..W..",
+        ".D...DW..w..",
+        "..DDD.www...",
+        "............",
+        "............",
+        "............",
+    ], {"W": E["light"][1], "w": E["light"][3]})
+
+
 GLYPHS = [
     ("damage", damage),
     ("cooldown", cooldown),
@@ -796,6 +819,7 @@ GLYPHS = [
     ("todo", todo),
     ("sealed", sealed),
     ("eye", eye),
+    ("conjunction", conjunction),
     ("kills", kills),
     ("elite", elite),
     ("chest", chest),

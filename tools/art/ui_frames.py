@@ -750,6 +750,7 @@ def boon_clasp():
 #   boon        boon_plaque      DARK violet enamel, a machined gold bezel    - a window, and a bail
 #   ascension   obsidian_plate   DARKEST blue-black glass in a gilded rune band
 #   apotheosis  obsidian_plate(ember=True) - the same plate, its runes burning
+#   conjunction obsidian_plate(conjunction=True) - bronze glass, runes of starlight (a combination)
 #
 # The boon and the two plates are still objects of their own: they are not spells, or not ordinary
 # ones, and they are rare enough to be loud.
@@ -952,7 +953,7 @@ RUNES = [
 ]
 
 
-def obsidian_plate(lit=False, ember=False):
+def obsidian_plate(lit=False, ember=False, conjunction=False):
     """A level 8 Ascension: a plate of blue-black glass in a gilded band of runes.
 
     The darkest card in the game, laid on the lightest page: the biggest decision in a run is the
@@ -964,11 +965,20 @@ def obsidian_plate(lit=False, ember=False):
     `ember=True` is the Apotheosis, a tier above: the same plate in `red` deep with its runes in the
     Fire ramp, the register the ✶ APOTHEOSIS strip button has always used.
 
+    `conjunction=True` is a combination (.ai/combo-spells.md, ComboCatalog): two Ascensions made one,
+    offered in the same strip. Its own plate colour, warm where the other three are cold or red: bronze
+    glass - `gold` deep with a `gold` shade band - and its runes in the Light ramp, starlight on bronze, so
+    it is never mistaken for the obsidian Ascension, the ember Apotheosis or the boon's violet enamel.
+
     `lit` gilds the bevel to gold `hi` and wakes the runes one step up their ramp. The face never
     changes.
     """
     c = raster.Canvas(PANEL, PANEL, None)
-    if ember:
+    if conjunction:
+        face, band = bl.tone("gold", "deep"), bl.tone("gold", "shade")
+        rune = bl.ELEMENTS["light"][1 if lit else 2]
+        gem = bl.ELEMENTS["light"][0]
+    elif ember:
         face, band = bl.tone("red", "deep"), bl.tone("red", "shade")
         rune = bl.ELEMENTS["fire"][0 if lit else 1]
         gem = bl.ELEMENTS["fire"][0]
@@ -1113,6 +1123,8 @@ def main():
     ok &= write(obsidian_plate(True), "ui-obsidian-plate-lit.png")
     ok &= write(obsidian_plate(False, ember=True), "ui-ember-plate.png")
     ok &= write(obsidian_plate(True, ember=True), "ui-ember-plate-lit.png")
+    ok &= write(obsidian_plate(False, conjunction=True), "ui-conjunction-plate.png")
+    ok &= write(obsidian_plate(True, conjunction=True), "ui-conjunction-plate-lit.png")
     print("Arcane Upgrades (the main menu's shop):")
     ok &= write(torn_page_card(False, mark="mastered"), "ui-spell-page-mastered.png")
     ok &= write(torn_page_card(True, mark="mastered"), "ui-spell-page-mastered-lit.png")
