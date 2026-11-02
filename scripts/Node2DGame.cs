@@ -1984,7 +1984,7 @@ public partial class Node2DGame : Node2D
 		string text = IsBossRush
 			? $"Boss Rush • {GetCurrentStageName()}\n{BossRushRosterCount} wardens, one after another. The last is his."
 			: $"{GetCurrentStageName()} • {environmentProfile.DisplayName}\n{GetCurrentStageFlavorText()}";
-		ShowRunBanner(text, environmentProfile.IntroTint, 2.4f, 0.6f);
+		ShowRunBanner(text, environmentProfile.IntroTint, 2.4f, 0.6f, opening: true);
 	}
 
 	// These were two ten-entry switches naming stages that StageSelection had never heard of and
@@ -5415,6 +5415,7 @@ public partial class Node2DGame : Node2D
 		return new ExplorePlacer(terrainSeed, Global.SelectedStageIdx, stream, new ExplorePlacer.Ground
 		{
 			IsClear = IsExploreGroundClear,
+			IsClearDense = IsExploreGroundClearDense,
 			Origin = stageOrigin,
 			ChunkPixels = TerrainStreamer.ChunkTiles * ProceduralTilePixels,
 			// A maze corridor block plus its wall strip: cell centres are this far apart, and the
@@ -5456,6 +5457,35 @@ public partial class Node2DGame : Node2D
 		}
 		// The maze is connected by construction (.ai/terrain.md section 7); open ground is asked.
 		return MazeNavigation.Active is { IsMaze: true } || CanWalkAwayFrom(centre);
+	}
+
+	/// <summary>
+	/// <see cref="IsExploreGroundClear"/>, and the whole disc open as well: rings every
+	/// <see cref="ExploreDenseStep"/> out to its edge, a point every ExploreDenseStep round each. For a
+	/// site that DRAWS over its footprint - the thaw's lake, 360 px - where eight points on a ring are
+	/// 280 px apart and a pond drawn over by walkable ice would be a wall nobody can see. Opt-in
+	/// (ExplorePlacer.EventSite's dense), so every site placed before is placed exactly as it was.
+	/// </summary>
+	public bool IsExploreGroundClearDense(Vector2 centre, float radius) =>
+		IsExploreGroundClear(centre, radius) && IsExploreFootprintOpenDense(centre, radius);
+
+	private const float ExploreDenseStep = 80f;
+
+	private bool IsExploreFootprintOpenDense(Vector2 centre, float radius)
+	{
+		int rings = Mathf.CeilToInt(radius / ExploreDenseStep);
+		for (int i = 1; i <= rings; i++)
+		{
+			float r = radius * i / rings;
+			int around = Mathf.Max(ExploreRingPoints, Mathf.CeilToInt(Mathf.Tau * r / ExploreDenseStep));
+			for (int k = 0; k < around; k++)
+			{
+				float angle = (k + 0.5f * (i % 2)) * Mathf.Tau / around;
+				if (!IsExploreSpotOpen(centre + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * r))
+					return false;
+			}
+		}
+		return true;
 	}
 
 	private bool IsExploreSpotOpen(Vector2 p) =>
@@ -5966,11 +5996,26 @@ public partial class Node2DGame : Node2D
 	// closing Hide would take the new banner down with it.
 	private Tween? runBannerTween;
 	private const float BannerTop = 42f;
+	// The run banner's turn on the screen (Announcements): the chapter's opening line is the opening's own
+	// (this node); every other banner - a boss's arrival above all - takes the screen at once and holds it
+	// as this until it has faded.
+	private readonly object runBannerTurn = new();
+	private object? runBannerHolder;
 
-	private void ShowRunBanner(string text, Color tint, float holdSeconds, float fadeSeconds = 0.7f)
+	private void ShowRunBanner(string text, Color tint, float holdSeconds, float fadeSeconds = 0.7f, bool opening = false)
 	{
+		object holder = opening ? this : runBannerTurn;
 		if (stageIntroLabel == null)
+		{
+			Announcements.Release(holder);
 			return;
+		}
+		if (!opening)
+			Announcements.Request(holder, Announcements.Kind.Banner);
+		// A banner cut short by this one gives up its turn here: its tween, and the release at its end, die.
+		if (runBannerHolder != null && !ReferenceEquals(runBannerHolder, holder))
+			Announcements.Release(runBannerHolder);
+		runBannerHolder = holder;
 
 		runBannerTween?.Kill();
 		var panel = stageIntroLabel.GetParent() as Control;
@@ -6012,6 +6057,12 @@ public partial class Node2DGame : Node2D
 			tween.Parallel().TweenProperty(panel, "modulate:a", 0.0f, fadeSeconds);
 			tween.TweenCallback(Callable.From(() => panel.Hide()));
 		}
+		tween.TweenCallback(Callable.From(() =>
+		{
+			Announcements.Release(holder);
+			if (ReferenceEquals(runBannerHolder, holder))
+				runBannerHolder = null;
+		}));
 	}
 
 	private void OnBossDefeated(string bossId)
@@ -6825,6 +6876,11 @@ public partial class Node2DGame : Node2D
 	{
 		SaveData? data = CurrentSaveData();
 		StageDefinition? stage = StageCatalog.GetByIndex(Global.SelectedStageIdx);
+		// The opening holds the screen until it is done (Announcements): an achievement earned in the first
+		// seconds - First Blood - waits for it instead of landing on top of it. Let go by the chapter's banner
+		// when it has faded, or on handing over to the note.
+		Announcements.Reset();
+		Announcements.Request(this, Announcements.Kind.Opening);
 		if (IsBossRush || data == null)
 		{
 			if (questTracker != null)
@@ -6842,14 +6898,18 @@ public partial class Node2DGame : Node2D
 			AddChild(new QuestIntro { Name = "QuestIntro", Tracker = questTracker });
 		}
 
-		bool note = stage != null && ChapterNotes.Has(stage.Id) && !ChapterNotes.IsSeen(data, stage.Id);
-		if (note)
+		bool firstVisit = stage != null && ChapterNotes.Has(stage.Id) && !ChapterNotes.IsSeen(data, stage.Id);
+		// A returning player sees the note again while the chapter still holds something for him - its clues
+		// alone, since the place was described the first time (.ai/quests-and-notes.md section 2).
+		bool clues = stage != null && ChapterNotes.Has(stage.Id) && ChapterNotes.CluesFor(stage.Id, data).Count > 0;
+		bool note = firstVisit || clues;
+		if (firstVisit)
 		{
 			// Marked as it is shown, and saved now: a run quit from the pause screen still read it.
 			ChapterNotes.MarkSeen(data, stage!.Id);
 			GetNodeOrNull<SaveManager>("/root/SaveManager")?.SaveGame();
 		}
-		Action next = note ? () => ChapterNoteCard.Show(this, stage!, data) : ShowStageIntroLabel;
+		Action next = note ? () => ShowChapterNote(stage!, data, firstVisit) : ShowStageIntroLabel;
 		if (opening <= 0f)
 		{
 			next();
@@ -6861,6 +6921,15 @@ public partial class Node2DGame : Node2D
 			if (IsInstanceValid(this))
 				next();
 		};
+	}
+
+	// The note in place of the banner keeps the opening's turn until it is put away: it is the chapter's
+	// introduction, and nothing is written over it or beside it in the meantime. A message waiting behind it
+	// cuts its long idle hold short (ChapterNoteCard), so First Blood waits seconds, not the note's ten.
+	private void ShowChapterNote(StageDefinition stage, SaveData data, bool intro)
+	{
+		ChapterNoteCard card = ChapterNoteCard.Show(this, stage, data, intro);
+		Announcements.Pass(this, card, Announcements.Kind.Note);
 	}
 
 	private void OnChestSetCompleted(string setId)
@@ -7217,9 +7286,10 @@ public partial class Node2DGame : Node2D
 			return;
 
 		// A tip waits while a banner is up (ShowRunBanner): the two share the band under the timer,
-		// and the chapter's opening line or a boss's name is the one to read. A tip cut short by one
-		// is shown again once it has gone.
-		if (stageIntroLabel?.GetParent() is Control bannerPanel && bannerPanel.Visible)
+		// and the chapter's opening line or a boss's name is the one to read - and while any other
+		// message has the screen (Announcements: an achievement, a hint, an event's line). A tip cut
+		// short by one is shown again once it has gone.
+		if ((stageIntroLabel?.GetParent() is Control bannerPanel && bannerPanel.Visible) || Announcements.AnyHeld)
 		{
 			if (onboardingTipLabel.Visible)
 			{

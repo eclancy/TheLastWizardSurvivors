@@ -21,14 +21,22 @@ using WizardSurvivors.scripts;
 /// THE MATERIAL. Paper, except in the Sketchbook, whose ground is paper already: there it is a slate of
 /// floor stone with the stone register's inks, so no screen shows the note on its own material.
 ///
-/// THE HAND. The engine sans, slanted (a FontVariation's transform), in ink on the page: the legibility
-/// rule keeps prose out of display faces (.ai/level-up-screen.md 4a), and a hand that cannot be read at a
-/// glance mid-run is worse than none. The heading is the bold Cinzel every heading is.
+/// THE HAND. The engine sans in ink on the page: the legibility rule keeps prose out of display faces
+/// (.ai/level-up-screen.md 4a), and a hand that cannot be read at a glance mid-run is worse than none. The
+/// heading is the bold Cinzel every heading is.
+///
+/// THE CLUES (Eric, 2026-11-01: "the clues should be separated from the other text, in italics"). Under
+/// the intro, past a short rule, one line for each thing the chapter still holds for this save
+/// (ChapterNotes.CluesFor), set in italics - the sans slanted by a fifth, as the whole note was before; the
+/// intro now stands upright, so the clues are the only slanted words on it. A returning player sees the
+/// card again while a clue remains, with the clues alone (the place is described the first time only).
 /// </remarks>
 public partial class ChapterNoteCard : CanvasLayer
 {
 	private const float WriteSecondsPerChar = 0.028f;
 	private const float HoldSeconds = 7.5f;
+	// How long it stays, once written, when another message is waiting for the screen.
+	private const float ReadSecondsWhenWaitedFor = 3f;
 	private const float FadeSeconds = 0.6f;
 	private const float WideWidth = 430f;
 	private const float NarrowSide = 40f;
@@ -48,7 +56,10 @@ public partial class ChapterNoteCard : CanvasLayer
 
 	private StageDefinition stage = null!;
 	private List<string> lines = new();
+	private List<string> clues = new();
 	private bool slate;
+	private Control rule;
+	private Label firstClue;
 	private PanelContainer page = null!;
 	private readonly List<Label> written = new();
 	private readonly List<Vector2> outline = new();
@@ -56,14 +67,18 @@ public partial class ChapterNoteCard : CanvasLayer
 	private float clock;
 	private float writeSeconds;
 
-	/// <summary>Shows a chapter's note over the run and returns it.</summary>
-	public static ChapterNoteCard Show(Node parent, StageDefinition stage, SaveData save)
+	/// <summary>
+	/// Shows a chapter's note over the run and returns it: its intro on the first visit
+	/// (<paramref name="intro"/>), and under it the clues this save still has to find there.
+	/// </summary>
+	public static ChapterNoteCard Show(Node parent, StageDefinition stage, SaveData save, bool intro = true)
 	{
 		var card = new ChapterNoteCard
 		{
 			Name = "ChapterNoteCard",
 			stage = stage,
-			lines = ChapterNotes.LinesFor(stage.Id, save),
+			lines = intro ? new List<string>(ChapterNotes.IntroFor(stage.Id)) : new List<string>(),
+			clues = ChapterNotes.CluesFor(stage.Id, save),
 			slate = stage.EnvironmentKind == StageEnvironmentKind.Sketchbook,
 		};
 		parent.AddChild(card);
@@ -78,6 +93,8 @@ public partial class ChapterNoteCard : CanvasLayer
 			yield return stage?.DisplayName ?? string.Empty;
 			foreach (string line in lines)
 				yield return line;
+			foreach (string clue in clues)
+				yield return clue;
 		}
 	}
 
@@ -133,14 +150,14 @@ public partial class ChapterNoteCard : CanvasLayer
 		heading.AddThemeColorOverride("font_color", slate ? SlateHeading : PaperHeading);
 		column.AddChild(heading);
 
-		var hand = new FontVariation
+		var italic = new FontVariation
 		{
 			BaseFont = ThemeDB.FallbackFont,
-			// A slant of a fifth: a hand, not an oblique - the letters keep their own widths.
+			// A slant of a fifth: italics, not a lean - the letters keep their own widths.
 			VariationTransform = new Transform2D(1f, 0.2f, 0f, 1f, 0f, 0f),
 		};
 		int total = 0;
-		foreach (string text in lines)
+		Label AddLine(string text, bool slanted)
 		{
 			var line = new Label
 			{
@@ -150,11 +167,32 @@ public partial class ChapterNoteCard : CanvasLayer
 				VisibleRatio = 0f,
 			};
 			ResponsiveLayout.SetFont(line, ResponsiveLayout.TextRole.Body);
-			line.AddThemeFontOverride("font", hand);
+			if (slanted)
+				line.AddThemeFontOverride("font", italic);
 			line.AddThemeColorOverride("font_color", slate ? SlateInk : PaperInk);
 			column.AddChild(line);
 			written.Add(line);
 			total += text.Length;
+			return line;
+		}
+		foreach (string text in lines)
+			AddLine(text, false);
+		if (clues.Count > 0)
+		{
+			// The clues are set apart: a short rule in the ink, with room above it, then the italic lines.
+			if (lines.Count > 0)
+			{
+				rule = new Control { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(0f, 14f) };
+				Color ruleInk = new Color(slate ? SlateInk : PaperInk, 0.55f);
+				rule.Draw += () => rule.DrawRect(new Rect2(0f, 6f, 56f, 2f), ruleInk);
+				rule.Modulate = new Color(1f, 1f, 1f, 0f);
+				column.AddChild(rule);
+			}
+			foreach (string clue in clues)
+			{
+				Label line = AddLine(clue, true);
+				firstClue ??= line;
+			}
 		}
 		writeSeconds = total * WriteSecondsPerChar;
 
@@ -169,7 +207,12 @@ public partial class ChapterNoteCard : CanvasLayer
 		tween.TweenProperty(page, "position:y", page.Position.Y - 12f, 0.35f).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
 	}
 
-	public override void _ExitTree() => HudKeepOut.Clear(this);
+	public override void _ExitTree()
+	{
+		HudKeepOut.Clear(this);
+		// The note holds the opening's turn (Node2DGame.ShowChapterNote); the plate waits for it.
+		Announcements.Release(this);
+	}
 
 	public override void _Process(double delta)
 	{
@@ -182,9 +225,17 @@ public partial class ChapterNoteCard : CanvasLayer
 			line.VisibleRatio = Mathf.Clamp(elapsed / seconds, 0f, 1f);
 			elapsed -= seconds;
 		}
+		// The rule is drawn as the hand reaches the clues.
+		if (rule != null && firstClue != null)
+			rule.Modulate = new Color(1f, 1f, 1f, firstClue.VisibleRatio > 0f ? 1f : 0f);
 		if (!dismissing)
 			HudKeepOut.Set(this, page.GetGlobalRect().Grow(6f));
 		if (!dismissing && clock > 0.25f + writeSeconds + HoldSeconds)
+			Dismiss();
+		// It holds the screen's turn (Announcements). Once it is written and has been up long enough to
+		// read, a message waiting behind it - an achievement earned in the first seconds - may have it.
+		if (!dismissing && clock > 0.25f + writeSeconds + ReadSecondsWhenWaitedFor
+			&& Announcements.Holds(this) && Announcements.AnyWaiting)
 			Dismiss();
 	}
 

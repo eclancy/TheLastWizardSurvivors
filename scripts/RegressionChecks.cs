@@ -80,6 +80,7 @@ public static class RegressionChecks
 		ValidateSpellClassificationText(warnings);
 		ValidateExploreArt(warnings);
 		ValidateStageHints(warnings);
+		ValidateThawArt(warnings);
 		ValidateGravewell(warnings);
 		ValidateCraters(warnings);
 		ValidateEvolutionIcons(warnings);
@@ -95,6 +96,15 @@ public static class RegressionChecks
 	// in a caption is the answer printed on the question.
 	private static void ValidateStageHints(List<string> warnings)
 	{
+		// The cues (tools/art/hint_cues.py): one row per HintCue, eight cells each, read by cell. A missing
+		// or unimported sheet means a hint is heard and read but never seen.
+		Texture2D cues = ResourceLoader.Exists(StageHintCue.SheetPath) ? GD.Load<Texture2D>(StageHintCue.SheetPath) : null;
+		var cueSize = new Vector2(StageHintCue.Cell * StageHintCue.Columns, StageHintCue.Cell * Enum.GetValues<HintCue>().Length);
+		if (cues == null)
+			warnings.Add($"Hints: {StageHintCue.SheetPath} is missing or not imported (python tools/art/hint_cues.py, then import).");
+		else if (cues.GetSize() != cueSize)
+			warnings.Add($"Hints: hint-cues.png is {cues.GetSize()}, expected {cueSize} - one row per HintCue, in its order.");
+
 		var seen = new HashSet<string>();
 		var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (StageHint hint in StageHintCatalog.All)
@@ -151,6 +161,37 @@ public static class RegressionChecks
 				}
 			}
 		}
+	}
+
+	// The thaw's lake and block (tools/art/thaw_lake.py, ThawLake, ThawEvent): four textures the shader
+	// reads by texel, which must be one size, and a sheet read by frame index. A missing one draws the
+	// thaw on bare ground, or without its block, and says nothing in a run.
+	private static void ValidateThawArt(List<string> warnings)
+	{
+		Vector2? lakeSize = null;
+		foreach (string file in new[] { "thaw-lake.png", "thaw-lake-lit.png", "thaw-lake-bright.png", "thaw-lake-data.png" })
+		{
+			string path = ThawLake.Directory + file;
+			Texture2D texture = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
+			if (texture == null)
+			{
+				warnings.Add($"Thaw: {path} is missing or not imported (python tools/art/thaw_lake.py, then import).");
+				continue;
+			}
+			lakeSize ??= texture.GetSize();
+			if (texture.GetSize() != lakeSize.Value)
+				warnings.Add($"Thaw: {file} is {texture.GetSize()}, but the lake is {lakeSize.Value}; the shader reads them texel for texel.");
+		}
+		if (lakeSize is Vector2 size && size * 2f != ThawLake.WorldAxes * 2f + new Vector2(64f, 64f))
+			warnings.Add($"Thaw: the lake is {size} at x2, which no longer matches ThawLake.WorldAxes {ThawLake.WorldAxes} (and the event's footprint).");
+		string block = ThawLake.Directory + "thaw-block.png";
+		Texture2D sheet = ResourceLoader.Exists(block) ? GD.Load<Texture2D>(block) : null;
+		if (sheet == null)
+			warnings.Add($"Thaw: {block} is missing or not imported; the wizard will not be in the ice.");
+		else if (sheet.GetSize() != new Vector2(64 * 16, 64))
+			warnings.Add($"Thaw: thaw-block.png is {sheet.GetSize()}, expected 1024x64 (four stages of four frames).");
+		if (!ResourceLoader.Exists(ThawLake.ShaderPath))
+			warnings.Add($"Thaw: {ThawLake.ShaderPath} is missing; the lake will not draw.");
 	}
 
 	// Gravewell's pit is a sheet read by frame index, its collapse a shader loaded by path, and its
@@ -5882,7 +5923,8 @@ public static class RegressionChecks
 			var locked = rescued.Where(id => !GlobalStatsManager.IsCharacterUnlocked(save, id))
 				.Select(id => (Id: id, Name: QuestLog.NameOf(id))).ToList();
 			IEnumerable<string> text = QuestLog.AllText(save)
-				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.LinesFor(s.Id, save)));
+				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.LinesFor(s.Id, save)))
+				.Concat(StageCatalog.All.Where(s => s.IsPlayable).SelectMany(s => ChapterNotes.CluesFor(s.Id, save)));
 			foreach (string line in text.Where(t => !string.IsNullOrEmpty(t)))
 			{
 				foreach (var who in locked)
@@ -5898,7 +5940,43 @@ public static class RegressionChecks
 					warnings.Add($"Chapter notes: {stage.DisplayName}'s note is {lines.Count} lines on {name}; at most {ChapterNotes.MaxLines}.");
 				foreach (string line in lines.Where(l => l.Length > ChapterNotes.MaxLineLength))
 					warnings.Add($"Chapter notes: '{line}' is {line.Length} characters; at most {ChapterNotes.MaxLineLength}.");
+				foreach (string clue in ChapterNotes.CluesFor(stage.Id, save).Where(l => l.Length > ChapterNotes.MaxLineLength))
+					warnings.Add($"Chapter notes: the clue '{clue}' is {clue.Length} characters; at most {ChapterNotes.MaxLineLength}.");
 			}
+		}
+
+		// The clues (ChapterNotes.CluesFor): each site clue belongs to a side event that pays something other
+		// than a wizard, never names what it pays, and a new save gets a clue in every chapter that holds a
+		// wizard, a site or a vault - and none once everything is owned (BuildEverythingSave's counterpart:
+		// every unlock granted below).
+		foreach (var (siteId, clue) in ChapterNotes.SiteClueLines)
+		{
+			var gives = UnlockCatalog.ForDiscoverySite(siteId).ToList();
+			if (gives.Count == 0)
+				warnings.Add($"Chapter notes: the clue for '{siteId}' belongs to no Discovery site.");
+			foreach (UnlockDefinition give in gives)
+			{
+				string named = give.Kind == UnlockKind.Character
+					? QuestLog.NameOf(give.Id)
+					: ContentValidator.LoadAllSpells().FirstOrDefault(sp => sp.Id == give.Id)?.Name
+						?? BoonCatalog.GetById(give.Id)?.Name ?? give.Id.Replace('_', ' ');
+				if (!string.IsNullOrWhiteSpace(named) && clue.Contains(named, StringComparison.OrdinalIgnoreCase))
+					warnings.Add($"Chapter notes: the clue '{clue}' names '{named}', which is what it pays.");
+			}
+		}
+		foreach (SecretDefinition vault in SecretCatalog.All.Where(v => v.IsVault))
+		{
+			if (!string.IsNullOrWhiteSpace(vault.SpellName) && ChapterNotes.VaultClue.Contains(vault.SpellName, StringComparison.OrdinalIgnoreCase))
+				warnings.Add($"Chapter notes: the vault clue names {vault.SpellName}.");
+		}
+		var fresh = new SaveData();
+		foreach (StageDefinition stage in StageCatalog.All.Where(s => s.IsPlayable && ChapterNotes.Has(s.Id)))
+		{
+			bool holds = QuestLog.HeldOnlyLinesFor(stage.Id, fresh).Any()
+				|| SideEventDirector.ForStage(stage.Id) != null
+				|| SecretCatalog.ForStage(stage.Id).Any(v => v.IsVault);
+			if (holds && ChapterNotes.CluesFor(stage.Id, fresh).Count == 0)
+				warnings.Add($"Chapter notes: {stage.DisplayName} holds something on a new save but its note gives no clue.");
 		}
 
 		// The default: a new save tracks the next wizard, and he is somebody; a save that frees everyone has none.
