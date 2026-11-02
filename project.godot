@@ -16,6 +16,8 @@ run/main_scene="uid://beb5w8ip125sd"
 config/features=PackedStringArray("4.5", "C#", "GL Compatibility")
 config/icon="res://icon.png"
 config/windows_native_icon="res://icon.ico"
+boot_splash/show_image=false
+boot_splash/bg_color=Color(0, 0, 0, 1)
 
 [autoload]
 
