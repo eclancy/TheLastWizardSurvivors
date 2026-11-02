@@ -123,8 +123,11 @@ public partial class Player
 		var frozenSecond = (SpellData)second.Duplicate(true);
 		combo.ComboParents = new[] { frozenFirst, frozenSecond };
 		combo.ElementWeights = ComboCatalog.SumWeights(first, second);
-		combo.CurrentLevel = 1;
-		combo.MaxLevel = 1;
+		// Terminal: nothing left to take. A Conjunction one wizard opens on and levels (The Taking,
+		// ComboDefinition.StartsFusedFor) has a level table; made by fusing, it arrives whole - at its max
+		// level, where the dark wizard's own copy ends - and still never levels.
+		combo.CurrentLevel = string.IsNullOrEmpty(recipe.StartsFusedFor) ? 1 : Math.Max(1, template.MaxLevel);
+		combo.MaxLevel = combo.CurrentLevel;
 		// The combination's own script reads its parents' numbers; the few the fire loop and the cards read
 		// from the spell itself are set from them here, once.
 		if (recipe.Id.Equals(Sagittarius.SpellId, StringComparison.OrdinalIgnoreCase))
@@ -143,6 +146,79 @@ public partial class Player
 		SfxPlayer.Global(SfxCatalog.SpellEvolve);
 		GD.Print($"CONJUNCTION: {first.Name} and {second.Name} became {combo.Name} (slot {slot + 1}; {equippedSpells.Count} of {SpellSlots} held)");
 		RefreshElementalMaxHp();
+		RaiseLoadoutChanged();
+		return true;
+	}
+
+	// --- the Conjunction a wizard opens on (ComboDefinition.StartsFusedFor) ------------------------------------
+	//
+	// Eric, 2026-11-02, of the dark wizard: "he should start with a powerful combination spell", and "the dark
+	// wizard's starting combination spell should be at level 1, and level up, even though combination spells
+	// wouldn't have levels normally". So his The Taking is held from the first frame, made, at level 1 of its
+	// own level table, and every card after levels it like any spell (GetLevelUpOptions offers it, since no
+	// combination is in the catalog). Its numbers are its own table's, not two frozen parents' - he never held
+	// any. It takes no Ascension (a Conjunction never ascends again); his Apotheosis counts its max level as
+	// ascended (ApotheosisCatalog.OnStartingConjunction).
+
+	/// <summary>The Conjunction this wizard opened on, if <paramref name="spellId"/> is it and it is held; else null.</summary>
+	private SpellData HeldStartingConjunction(string spellId)
+	{
+		if (string.IsNullOrWhiteSpace(spellId) || !ComboCatalog.StartsFused(ComboCatalog.ForId(spellId), selectedCharacter?.Id))
+			return null;
+		return equippedSpells.FirstOrDefault(s => s != null && s.Id.Equals(spellId.Trim(), StringComparison.OrdinalIgnoreCase));
+	}
+
+	/// <summary>Puts the Conjunction this wizard opens on into the loadout, made, at level 1.</summary>
+	private bool AddStartingConjunction(ComboDefinition recipe, bool forceLegendary)
+	{
+		if (ComboCatalog.Template(recipe)?.Duplicate(true) is not SpellData opening)
+		{
+			GD.PushError($"Player: '{selectedCharacter?.Id}' opens on the Conjunction '{recipe?.Id}', which has no SpellData in ContentValidator.SpellResourcePaths.");
+			return false;
+		}
+		opening.CurrentLevel = 1;
+		opening.IsLegendary = forceLegendary || combatRng.Randf() < GetLegendaryChance();
+		if (opening.IsLegendary && !opening.Name.EndsWith(" \u2605"))
+			opening.Name += " \u2605";
+		equippedSpells.Add(opening);
+		spellFireTimers[opening.Id] = 0f;
+		GD.Print($"Equipped spell {opening.Name} at level 1 (a Conjunction he opens on, levelling to {opening.MaxLevel})");
+		RefreshElementalMaxHp();
+		RaiseLoadoutChanged();
+		return true;
+	}
+
+	/// <summary>A level of the Conjunction this wizard opened on, or - named - his Apotheosis on it.</summary>
+	private bool LevelStartingConjunction(SpellData opening, string evolutionId)
+	{
+		if (!string.IsNullOrWhiteSpace(evolutionId))
+		{
+			ApotheosisDefinition apotheosis = ApotheosisCatalog.ForForm(evolutionId);
+			if (apotheosis == null || !ApotheosisCatalog.SpellMeetsGate(apotheosis, opening, false)
+				|| !apotheosis.CharacterId.Equals(selectedCharacter?.Id ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+			{
+				GD.PrintErr($"'{opening.Id}' takes no '{evolutionId}': a Conjunction has no milestone but its wizard's Apotheosis, at its max level.");
+				return false;
+			}
+			opening.ApplyEvolution(apotheosis.Form);
+			RunEvents.RecordApotheosis(apotheosis.Form.Id);
+			AttachApotheosisField(opening);
+			SfxPlayer.Global(SfxCatalog.SpellEvolve);
+			GD.Print($"APOTHEOSIS: {opening.Name} became {apotheosis.Form.DisplayName}");
+			spellFireTimers[opening.Id] = 0f;
+			RefreshElementalMaxHp();
+			RaiseLoadoutChanged();
+			return true;
+		}
+		if (opening.CurrentLevel >= CardLevelCap(opening))
+		{
+			GD.PrintErr($"'{opening.Id}' is at level {opening.CurrentLevel} of {opening.MaxLevel}.");
+			return false;
+		}
+		opening.CurrentLevel++;
+		spellFireTimers[opening.Id] = 0f;
+		GD.Print($"Spell {opening.Name} leveled up to {opening.CurrentLevel}");
+		RefreshSovereignFuel();
 		RaiseLoadoutChanged();
 		return true;
 	}

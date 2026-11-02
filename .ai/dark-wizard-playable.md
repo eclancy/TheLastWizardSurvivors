@@ -73,15 +73,18 @@ round to face the horde.
 Two elements, which a freed wizard may open on (`chapter-wizards.md` section 0). No spell carries
 Darkness and Light today. The pair is the boss's art: his own dark light, and the warm light he took.
 
-**Milestones** (`SpellEvolutionCatalog.SetupTheTakingEvolutions`), each a thing seen:
+**It is a Conjunction** (section 6, Eric's second pass): Hollow Star's **Black Sun** and Kindled Ward's
+**Pyre**, so the tear collapses on what stands round the taken and the light sears what it passes on its way
+home. It has no milestones; its levels carry what the first build's five cards did:
 
-| | card | what it does |
-|---|---|---|
-| 4 | **Crushing Grip** (+Darkness) | the tear throws down what stands round the taken, 60% of a hit; +20% damage |
-| 4 | **Long Reach** | hands 40% faster and turning harder; -20% cooldown |
-| 4 | **Eightfold Cross** | a caught light throws a star of four lanes, not two |
-| 8 | **Great Taking** (+Light) | the hand closes on the strongest and the three nearest it: four lights home a cast; +40% damage |
-| 8 | **Many Hands** | three more hands a cast, each at its own quarry; -25% cooldown |
+| level | what it gains |
+|---|---|
+| 1 | the hand, the collapse (60% of a hit round the taken), the burning light, two lanes |
+| 2, 5, 8 | damage (+2, +2 and a shorter cooldown, +3 and a shorter cooldown) |
+| 3, 7 | a hand more a cast, each at its own quarry |
+| 4 | lanes and burn 25% bigger; from here a caught light throws **a star of four lanes** |
+| 6 | lanes and burn 25% bigger; reach +60 |
+| 8 | **the great hand**: it closes on the strongest and the three nearest it, a light from each |
 
 ### His passive: Dread
 
@@ -161,7 +164,53 @@ flat violet over a crowd on a phone (they read at 1280x720, thin at 540x1212); t
 small in its grip); his sheet beside the boss's; the late-run frame cost on the Pixel 9; and every number
 in section 3, which the bot has met once.
 
-## 6. Open for Eric
+## 6. A Conjunction he opens on (Eric, 2026-11-02, second pass)
+
+*"He should start with a powerful combination spell, something that fits his theme"* and *"the dark wizard's
+starting combination spell should be at level 1, and level up, even though combination spells wouldn't have
+levels normally."*
+
+**The Taking, reworked as the Conjunction**, not a new spell: it was already the boss's verbs made his, and
+it reads as two parents once its parents are his darkness and the light he took - **Hollow Star down Black
+Sun** (a dark star that pulls and collapses, again and again) and **Kindled Ward down Pyre** (a kindled light
+grown into a small sun). Black Sun is the collapse at the tear; Pyre is the light searing on its way home.
+Verb **seize** (his Apotheosis keeps **take**). Darkness 1 + Light 1, its parents' base tags; with their named
+Ascensions Darkness 2, Light 2; Kindled Ward's Rimelight would make three, never four. Not John Dee's to make
+(Hollow Star is his), nor Seimei's (Kindled Ward); `.ai/combo-spells.md` section 6 has the recipe.
+
+| | how it is built |
+|---|---|
+| the recipe | `ComboCatalog`, with `StartsFusedFor = "dark_wizard"`: a real recipe, its derived Feat "Conjunction: The Taking" paying it (`UnlockCatalog.FromCombination`); the Codex lists it under Recipes |
+| his copy | `Player.AddStartingConjunction`: held from the first frame, made, at level 1 of **its own level table** (`SpellData_TheTaking.tres`, levels 2-8); `GetLevelUpOptions` offers it, though no combination is in the catalog; `LevelStartingConjunction` takes the cards and his form. No Ascension: a Conjunction never ascends again, so the cards take it to 8 (`CardLevelCap`) |
+| anyone else's | made by fusing at level 8 down both named Ascensions, and arrives whole - at its level 8, where his ends - with nothing to take (`Player.TryFuse`). A fused Conjunction still never levels |
+| his Apotheosis | All He Took (take) unchanged. **"Ascended" is its max level for this one spell**, and "not combined" means not fused again, which a Conjunction never is (`ApotheosisCatalog.OnStartingConjunction`): the gate is level 8 alone. The in-run browser and the Codex show only that line for him |
+| the unlock | the_taker_taken now pays him alone ("Unlocks The Dark Wizard"); his spell is the Conjunction's Feat's, as any recipe's |
+| gone | the five milestone cards (Crushing Grip, Long Reach, Eightfold Cross, Great Taking, Many Hands), their icons and `SetupTheTakingEvolutions`; `UnlockDefinition.OutsideGrimoire` (no Conjunction is counted) |
+| the check | `RegressionChecks.ValidateStartingConjunction`: the wizard opens on it, it levels to 8 with a line at every level, cards take it all the way, his form opens at 8 and not at 7, and no one else is offered it; `ValidateApotheosisCatalog` and `ValidateComboCatalog` let this one recipe level and carry a form |
+| on screen | at most `TakingLanes.MaxStanding` (4) crosses stand at once; a light caught past that strikes the newest cross's lanes again and relights it. At level 8 three hands each closing on four bodies brought twelve lights home together, and twelve crosses on one spot were a sunburst of forty-eight lanes |
+
+**Measured** (`_BalanceHarness --minutes=8 --all-unlocked --immortal`, seed 1234, the default bot that spreads
+its picks; the machine was loaded by another session's runs, frames at 800 ms of game time from minute 5,
+so read the shares, not the totals):
+
+| wizard | his own spell at minute 8 | its share | damage a minute | level |
+|---|---|---|---|---|
+| the Dark Wizard | The Taking, level 2 | **29.2%** (second, after Mirefoot) | 7,091 | 18 |
+| Abe no Seimei | Kindled Ward, level 2 | 29.6% (first) | 6,139 | 16 |
+| Pyromancer | Cinderbreath, level 2 | under 11.6% (not in his top three) | 5,521 | 16 |
+
+His spell takes the same share of his damage as Seimei's at the same level, and his total is the highest of
+the three - powerful, inside the starters' band, and chapter 1 still has to be fought. Without `--immortal`
+the default bot dies inside two minutes on this seed with every wizard (section 5), so that run says nothing.
+
+The whole path in play, `--seek-apotheosis --immortal --minutes=15`: The Taking took its cards to level 8 at
+8.8 minutes (player level 18), the gate held - level 8 counting as ascended - and **All He Took was offered and
+taken at 11.3 minutes**, past the 7.5-minute floor; the Conjunction did 92% of his damage.
+
+**Shots:** `dw2-taking-l1-pc` and `dw2-taking-l8-pc` (bursts, `--demo-spell-level=1|8 --spell-stage=14`),
+the same at `-phone`, and `dw2-codex-pc`, `dw2-codex-phone` (`--open-codex=the_taking --codex-filter=recipes`).
+
+## 7. Open for Eric
 
 1. **The rule.** Throne-on-Hardcore, or every chapter on Hardcore (section 1)?
 2. **Hidden, not a silhouette.** Every other locked wizard shows his shape; he shows a seal. Right for the

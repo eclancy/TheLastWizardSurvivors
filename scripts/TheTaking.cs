@@ -4,23 +4,22 @@ using System.Collections.Generic;
 using WizardSurvivors.scripts;
 
 // THE TAKING (.ai/dark-wizard-playable.md section 3): the dark wizard's own spell, the boss's three verbs
-// turned round to face the horde. This node is the first of them - THE HAND. Player.FireTheTaking throws
-// one at the strongest enemy in reach (most health; the nearest of equals); it turns to follow it, closes
-// on it, holds it still (a root - never a boss, which no crowd control may stop reaching the player), drains
-// it twice and then tears its light out. The light rises as a TakenLight that drifts home to the wizard,
-// and catching it is what throws his lanes (TakingLanes). The hand itself deals the drain and the tear; the
-// lanes are the spell's reach.
+// turned round to face the horde - and since 2026-11-02 a CONJUNCTION (ComboCatalog: Hollow Star's Black Sun
+// and Kindled Ward's Pyre, his darkness and the light he took), which he alone opens on, made, at level 1,
+// and levels like any spell (ComboDefinition.StartsFusedFor). This node is the first of its verbs - THE HAND.
+// Player.FireTheTaking throws one at the strongest enemy in reach (most health; the nearest of equals); it
+// turns to follow it, closes on it, holds it still (a root - never a boss, which no crowd control may stop
+// reaching the player), drains it twice and tears its light out, and the tear collapses on what stands round
+// the taken (Black Sun). The light rises as a TakenLight that drifts home burning what it passes (Pyre), and
+// catching it is what throws his lanes (TakingLanes).
 //
 // A scene with this script and nothing else, like KindledWard: it measures its own latch and draws its own
 // hand, so what is seen holding a body is what holds it.
 //
-// EVERY CARD ITS OWN. The ids are the archetype's (SpellEvolutionCatalog.Branch); what each does is here:
-//   Crushing Grip - the tear throws down what stands round the taken (CrushShare of a hit, CrushRadius).
-//   Long Reach    - its numbers only: a faster hand that turns harder, a shorter cooldown.
-//   Eightfold Cross - a caught light throws four lanes, not two (TakingLanes).
-//   Great Taking  - the hand closes on the strongest and the GreatTakingExtra nearest it: a light from each.
-//   Many Hands    - its numbers only: more hands a cast, each at its own quarry (Player.FireTheTaking).
-//   All He Took   - the Apotheosis (take): a kill on a lane looses a light of its own (TakingLanes).
+// A Conjunction takes no milestone, so what the five cards of the first build did is folded into its LEVELS
+// (SpellData_TheTaking.tres, read in Player.FireTheTaking): the collapse from level 1; a hand more at 3 and 6;
+// a star of four lanes from StarLevel; the great hand from GreatTakingLevel. And his Apotheosis:
+//   All He Took - (take): a kill on a lane looses a light of its own (TakingLanes).
 public partial class TheTaking : Node2D
 {
 	[Export] public float HandSpeed { get; set; } = 340f;
@@ -30,20 +29,20 @@ public partial class TheTaking : Node2D
 	[Export] public float LatchRadius { get; set; } = 22f;
 
 	public const string SpellId = "the_taking";
-	public const string CrushingGripId = "the_taking_amplified_impact";
-	public const string LongReachId = "the_taking_hyper_acceleration";
-	public const string EightfoldCrossId = "the_taking_reactive_catalyst";
-	public const string GreatTakingId = "the_taking_titan_cataclysm";
-	public const string ManyHandsId = "the_taking_infinite_horizon";
 	public const string AllHeTookId = "the_taking_all_he_took";
+
+	/// <summary>The level from which a caught light throws a star of four lanes, not two (TakingLanes).</summary>
+	public const int StarLevel = 4;
+	/// <summary>The level from which the hand closes on the strongest and the GreatTakingExtra nearest it.</summary>
+	public const int GreatTakingLevel = 8;
 
 	/// <summary>Each of the two drains, as a share of a hit; the tear is a whole one.</summary>
 	public const float DrainShare = 0.3f;
 	public const int DrainTicks = 2;
-	/// <summary>Crushing Grip: what the tear throws down round the taken, and how far.</summary>
+	/// <summary>Black Sun's collapse: what the tear throws down round the taken, and how far.</summary>
 	public const float CrushShare = 0.6f;
 	public const float CrushRadius = 70f;
-	/// <summary>Great Taking: how many more it closes on, and how near the strongest they must stand.</summary>
+	/// <summary>The great hand: how many more it closes on, and how near the strongest they must stand.</summary>
 	public const int GreatTakingExtra = 3;
 	public const float GreatTakingReach = 130f;
 	/// <summary>How far from where it lost its quarry the hand looks for another before it goes out.</summary>
@@ -87,8 +86,8 @@ public partial class TheTaking : Node2D
 		// In the air, over every body (DrawLayers): a thing thrown.
 		ZAsRelative = false;
 		ZIndex = DrawLayers.Air;
-		crushing = SpellData?.HasEvolution(CrushingGripId) == true;
-		great = SpellData?.HasEvolution(GreatTakingId) == true;
+		crushing = true;
+		great = (SpellData?.CurrentLevel ?? 1) >= GreatTakingLevel;
 		if (Quarry != null && IsInstanceValid(Quarry))
 		{
 			Vector2 to = Quarry.GlobalPosition - GlobalPosition;

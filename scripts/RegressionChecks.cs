@@ -3371,7 +3371,7 @@ public static partial class RegressionChecks
 				BossId = outcome == global::RunOutcome.Victory ? bossId : string.Empty,
 				StageId = throne.Id,
 			});
-			return GlobalStatsManager.IsCharacterUnlocked(save, wizard) || GlobalStatsManager.IsSpellUnlockedForLevelUp(save, TheTaking.SpellId);
+			return GlobalStatsManager.IsCharacterUnlocked(save, wizard);
 		}
 		if (Pays(GlobalStatsManager.BalancePresetDefault, global::RunOutcome.Victory, throneBoss.Id))
 			warnings.Add("The Taker Taken: a Default win in the Throne pays the dark wizard; only Hardcore may.");
@@ -3388,8 +3388,11 @@ public static partial class RegressionChecks
 			BossId = throneBoss.Id,
 			StageId = throne.Id,
 		});
-		if (!GlobalStatsManager.IsCharacterUnlocked(won, wizard) || !GlobalStatsManager.IsSpellUnlockedForLevelUp(won, TheTaking.SpellId))
-			warnings.Add("The Taker Taken: a Hardcore win in the Throne does not pay the dark wizard and The Taking, so neither can be earned.");
+		if (!GlobalStatsManager.IsCharacterUnlocked(won, wizard))
+			warnings.Add("The Taker Taken: a Hardcore win in the Throne does not pay the dark wizard, so he can never be earned.");
+		// His spell is a Conjunction he opens on made, which its own Feat pays everyone else (ComboCatalog).
+		if (!ComboCatalog.StartsFused(ComboCatalog.ForId(TheTaking.SpellId), wizard))
+			warnings.Add("The Taker Taken: The Taking is not the Conjunction the dark wizard opens on (ComboDefinition.StartsFusedFor).");
 
 		if (UnlockCatalog.AllWizardIds.Contains(wizard, StringComparer.OrdinalIgnoreCase))
 			warnings.Add("The Taker Taken: the dark wizard is counted as an imprisoned wizard; he must be outside the campaign gate (OutsideCampaignGate).");
@@ -3402,11 +3405,8 @@ public static partial class RegressionChecks
 			warnings.Add("The Taker Taken: The Grimoire Restored counts The Taking, which would put the collection behind a Hardcore win.");
 		if (UnlockCatalog.GetCharacter(wizard)?.SealedUntilFreed != true)
 			warnings.Add("The Taker Taken: the dark wizard is not SealedUntilFreed, so his shape shows before he is taken.");
-		foreach (string id in new[] { wizard, TheTaking.SpellId })
-		{
-			if (!StageRewards.ForStage(throne.Id).Any(r => r.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
-				warnings.Add($"The Taker Taken: the Throne's card does not list '{id}'.");
-		}
+		if (!StageRewards.ForStage(throne.Id).Any(r => r.Id.Equals(wizard, StringComparison.OrdinalIgnoreCase)))
+			warnings.Add("The Taker Taken: the Throne's card does not list the dark wizard.");
 		var locked = new SaveData();
 		AchievementDefinition deed = AchievementDefinitions.GetById(AchievementDefinitions.TakerTakenId);
 		if (deed == null || !CodexRows.HidesWizard(deed, locked))
@@ -4950,7 +4950,10 @@ public static partial class RegressionChecks
 			// element away would have the form put it back as a third.
 			var level4 = spell.Level4Options?.Where(o => o != null).ToList() ?? new List<SpellEvolutionOption>();
 			var level8 = spell.Level8Options?.Where(o => o != null).ToList() ?? new List<SpellEvolutionOption>();
-			if (level8.Count == 0)
+			// A Conjunction its wizard opens on takes no Ascension: its gate is its max level alone, held by
+			// ValidateStartingConjunction, and none of the path checks below has a path to walk.
+			bool opening = ApotheosisCatalog.OnStartingConjunction(definition);
+			if (level8.Count == 0 && !opening)
 				warnings.Add($"{label}: '{spell.Id}' has no level 8 Ascension, so it can never be ascended and the form never offered.");
 			foreach (SpellEvolutionOption option in level4.Concat(level8))
 			{
@@ -4997,7 +5000,7 @@ public static partial class RegressionChecks
 			}
 			var unascended = (SpellData)spell.Duplicate(true);
 			unascended.CurrentLevel = unascended.MaxLevel;
-			if (ApotheosisCatalog.SpellMeetsGate(definition, unascended, fusedAway: false))
+			if (!opening && ApotheosisCatalog.SpellMeetsGate(definition, unascended, fusedAway: false))
 				warnings.Add($"{label}: the gate opens at max level with no Ascension taken.");
 
 			// Not combined, the structural half: a fusion never takes a wizard's own spell, so his is never
@@ -5017,10 +5020,13 @@ public static partial class RegressionChecks
 			}
 		}
 
-		// A Conjunction's own spell is never anyone's to transform: no form names one, and the gate refuses it.
+		// A Conjunction's own spell is never anyone's to transform: no form names one, and the gate refuses it -
+		// except the one a wizard opens on (ComboDefinition.StartsFusedFor), whose form is his alone and whose gate
+		// ValidateStartingConjunction holds.
 		foreach (ComboDefinition recipe in ComboCatalog.All.Where(r => !r.IsRite))
 		{
-			if (ApotheosisCatalog.All.Any(d => d.SpellId.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase)))
+			if (ApotheosisCatalog.All.Any(d => d.SpellId.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase)
+				&& !ComboCatalog.StartsFused(recipe, d.CharacterId)))
 				warnings.Add($"Apotheosis: an entry transforms the Conjunction '{recipe.Id}'; a combined spell is never offered a form.");
 			if (ComboCatalog.Template(recipe) is not SpellData template)
 				continue;
@@ -5029,7 +5035,7 @@ public static partial class RegressionChecks
 			made.SelectedLevel8EvolutionId = made.Level8Options?.FirstOrDefault()?.Id ?? "any";
 			foreach (ApotheosisDefinition definition in ApotheosisCatalog.All)
 			{
-				if (ApotheosisCatalog.SpellMeetsGate(definition, made, fusedAway: false))
+				if (!ApotheosisCatalog.OnStartingConjunction(definition) && ApotheosisCatalog.SpellMeetsGate(definition, made, fusedAway: false))
 					warnings.Add($"Apotheosis '{definition.Form?.Id}': the gate opens on the Conjunction '{recipe.Id}'.");
 			}
 			if (!ApotheosisCatalog.IsCombined(made))
@@ -5238,7 +5244,12 @@ public static partial class RegressionChecks
 					warnings.Add($"{label}'s resource is {combo.ResourcePath}, but ComboCatalog names {recipe.ResourcePath}.");
 				if (!combo.Name.Equals(recipe.Name, StringComparison.Ordinal))
 					warnings.Add($"{label} is written '{recipe.Name}' in ComboCatalog but its resource names it '{combo.Name}'.");
-				if (combo.MaxLevel != 1 || (combo.LevelUpgrades?.Count ?? 0) > 0)
+				// A Conjunction a wizard opens on (ComboDefinition.StartsFusedFor) levels for him, so it has a level
+				// table: to the Ascension level, a line at every level, every number read (ValidateLevelUpReaders).
+				// Fused by anyone else it arrives whole at that level, still with nothing to take (Player.TryFuse).
+				if (!string.IsNullOrEmpty(recipe.StartsFusedFor))
+					ValidateStartingConjunction(recipe, combo, label, warnings);
+				else if (combo.MaxLevel != 1 || (combo.LevelUpgrades?.Count ?? 0) > 0)
 					warnings.Add($"{label} has MaxLevel {combo.MaxLevel} and {combo.LevelUpgrades?.Count ?? 0} level-ups; a combination is terminal - one level, none to take.");
 				SpellData probe = (SpellData)combo.Duplicate(true);
 				SpellEvolutionCatalog.EnsureEvolutionCoverage(probe);
@@ -5272,6 +5283,42 @@ public static partial class RegressionChecks
 				&& ComboCatalog.ForId(spell.Id) == null)
 				warnings.Add($"Spell '{spell.Id}' is unlocked by a Conjunction Feat but has no recipe in ComboCatalog.");
 		}
+	}
+
+	// THE CONJUNCTION A WIZARD OPENS ON (ComboDefinition.StartsFusedFor; the dark wizard's The Taking, Eric
+	// 2026-11-02): the wizard exists and opens on it; it levels 1 to the Ascension level on a line at every level
+	// whose numbers its script reads; and his form names it and opens at its max level alone - shut a level short,
+	// shut on a copy anyone else fused (it is no starting spell of theirs).
+	private static void ValidateStartingConjunction(ComboDefinition recipe, SpellData combo, string label, List<string> warnings)
+	{
+		CharacterData wizard = CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(recipe.StartsFusedFor, StringComparison.OrdinalIgnoreCase));
+		if (wizard == null || wizard.StartingSpellResource == null
+			|| !wizard.StartingSpellResource.Id.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase))
+			warnings.Add($"{label} is opened on by '{recipe.StartsFusedFor}', who does not start with it.");
+		if (combo.MaxLevel != Player.AscensionSpellLevel)
+			warnings.Add($"{label} levels to {combo.MaxLevel}; a Conjunction a wizard opens on levels to {Player.AscensionSpellLevel}, as every spell does.");
+		var levels = new HashSet<int>((combo.LevelUpgrades ?? new Godot.Collections.Array<SpellLevelUpgrade>()).Where(u => u != null).Select(u => u.Level));
+		for (int level = 2; level <= combo.MaxLevel; level++)
+		{
+			if (!levels.Contains(level))
+				warnings.Add($"{label} has no level-up line for level {level}; a card that changes nothing is a dead pick.");
+		}
+		if (Player.CardLevelCap(combo) != combo.MaxLevel)
+			warnings.Add($"{label} stops at level {Player.CardLevelCap(combo)} on cards; with no Ascension of its own, the cards must take it to {combo.MaxLevel}.");
+
+		ApotheosisDefinition form = ApotheosisCatalog.All.FirstOrDefault(d => d.SpellId.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase)
+			&& d.CharacterId.Equals(recipe.StartsFusedFor, StringComparison.OrdinalIgnoreCase));
+		if (form == null)
+			return;
+		var mine = (SpellData)combo.Duplicate(true);
+		mine.CurrentLevel = mine.MaxLevel;
+		if (!ApotheosisCatalog.SpellMeetsGate(form, mine, fusedAway: false))
+			warnings.Add($"{label}: {recipe.StartsFusedFor}'s form stays shut on it at level {mine.MaxLevel}; his gate is its max level alone.");
+		mine.CurrentLevel = mine.MaxLevel - 1;
+		if (ApotheosisCatalog.SpellMeetsGate(form, mine, fusedAway: false))
+			warnings.Add($"{label}: {recipe.StartsFusedFor}'s form opens below its max level.");
+		if (ApotheosisCatalog.ForSpell("pyromancer", combo) != null)
+			warnings.Add($"{label}: another wizard who fused it would be offered {recipe.StartsFusedFor}'s form.");
 	}
 
 	// THE SOVEREIGN RITE (.ai/sovereign-spell.md, SovereignRite, Player.Sovereign.cs): what a build cannot see.

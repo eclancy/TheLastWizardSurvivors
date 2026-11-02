@@ -444,15 +444,15 @@ public static class AchievementDefinitions
 		// so beating him there on Hardcore is beating the whole game on Hardcore. Measured on the run that ends -
 		// the save keeps which bosses fell but never on which difficulty - and kept once done (UnlockedAchievementIds),
 		// so no field and no schema step. No BossId: the chapter's clear is Taken Back, and a second deed naming
-		// the boss would be read as the Throne's warden deed (StageRewards.WardenDeed). Pays him and his spell; he
-		// is never named while locked (CodexRows.HidesWizard: "Frees someone").
+		// the boss would be read as the Throne's warden deed (StageRewards.WardenDeed). Pays him alone - his spell,
+		// The Taking, is a Conjunction he opens on, which its own Feat pays everyone else (ComboCatalog); he is
+		// never named while locked (CodexRows.HidesWizard: "Frees someone").
 		new()
 		{
 			Id = TakerTakenId, DisplayName = "The Taker Taken",
 			Description = "Defeat the boss of the Throne on Hardcore.",
-			RewardText = "Unlocks The Dark Wizard and The Taking",
+			RewardText = "Unlocks The Dark Wizard",
 			CharacterUnlockId = "dark_wizard",
-			SpellUnlockId = "the_taking",
 			Category = AchievementCategory.Challenge,
 			Kind = AchievementKind.Road,
 			Visibility = AchievementVisibility.ChapterOpen,

@@ -4,13 +4,19 @@
 [ext_resource type="Script" path="res://scripts/SpellLevelUpgrade.cs" id="2"]
 [ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/the-taking-dark.png" id="3_icon"]
 
-; The dark wizard's own spell (.ai/dark-wizard-playable.md): a hand of his dark light at the strongest in
-; reach, a light that drifts home, and lanes thrown where he catches it. Darkness and Light - his own dark
-; light, and the warm light he took - which no other spell carries together.
+; The dark wizard's own spell (.ai/dark-wizard-playable.md), and a CONJUNCTION (ComboCatalog): Hollow Star's
+; Black Sun and Kindled Ward's Pyre, his darkness and the light he took. A hand of his dark light seizes the
+; strongest in reach and the tear collapses on what stands round it; the light drifts home searing what it
+; passes; caught, two lanes of his light cross the field. Darkness and Light, its parents' base tags summed.
+;
+; The one Conjunction with levels (ComboDefinition.StartsFusedFor): the dark wizard opens on it made, at level
+; 1, and every card levels it to 8 off the table below; anyone else who fuses it gets it whole, at 8, with
+; nothing left to take (Player.TryFuse). No milestone of its own: from level 4 a caught light throws a star of
+; four lanes, and at 8 the hand closes on the strongest and the three nearest it (TheTaking).
 ;
 ; BaseProjectileCount is hands a cast, each at its own quarry. BaseRange is the reach a quarry is found in
-; (Player.FireTheTaking); the lanes' length and width are Area's (Player.TakingLaneLength and Width), grown
-; by the AreaSize lines below, read as 1 + their sum. Written out in full, so the scaling tags add nothing.
+; (Player.FireTheTaking); the lanes and the burn are Area's (Player.TakingLaneLength, Width, BurnRadius),
+; grown by the AreaSize lines below, read as 1 + their sum.
 [sub_resource type="Resource" id="Resource_taking_lvl2"]
 script = ExtResource("2")
 Level = 2
@@ -63,7 +69,7 @@ BaseCooldown = 2.4
 BaseProjectileCount = 1
 BaseRange = 340.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_taking_lvl2"), SubResource("Resource_taking_lvl3"), SubResource("Resource_taking_lvl4"), SubResource("Resource_taking_lvl5"), SubResource("Resource_taking_lvl6"), SubResource("Resource_taking_lvl7"), SubResource("Resource_taking_lvl8")])
-Description = "A hand of dark light takes the strongest near you. Catch the light it tears out, and dark lanes cross the field."
+Description = "A hand of dark light takes the strongest near you. Catch the burning light it tears out, and dark lanes cross the field."
 Icon = ExtResource("3_icon")
 ElementWeights = {
 "Darkness": 1,

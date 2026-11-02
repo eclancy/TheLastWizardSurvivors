@@ -252,12 +252,32 @@ public static class ApotheosisCatalog
 	/// second (<paramref name="fusedAway"/>, Player.WasFusedAway), since a fused parent leaves the loadout. The
 	/// player's half, <see cref="MinimumPlayerLevel"/>, is the caller's (Player.TryBuildApotheosisOffer).
 	/// </summary>
-	public static bool SpellMeetsGate(ApotheosisDefinition definition, SpellData spell, bool fusedAway) =>
-		definition != null && spell != null && !spell.IsApotheosis
-		&& !fusedAway && !IsCombined(spell)
-		&& spell.Id.Equals(definition.SpellId, StringComparison.OrdinalIgnoreCase)
-		&& (string.IsNullOrEmpty(definition.VariantId)
-			|| definition.VariantId.Equals(spell.SelectedVariantId ?? string.Empty, StringComparison.OrdinalIgnoreCase))
-		&& spell.CurrentLevel >= spell.MaxLevel
-		&& IsAscended(spell);
+	/// <remarks>
+	/// ONE EXCEPTION, the wizard who OPENS on a Conjunction (<see cref="OnStartingConjunction"/>: the dark wizard's
+	/// The Taking, ComboDefinition.StartsFusedFor). His spell is combined from the first moment and has no
+	/// Ascension of its own to take - a Conjunction never ascends - so for that one spell "ascended" is its max
+	/// level (Eric, 2026-11-02: it starts at level 1 and levels up), and "not combined" means not fused again,
+	/// which a Conjunction never is. Anyone else who holds it made it by fusing, and it is no starting spell of
+	/// theirs, so it is never offered a form (the CharacterId check in <see cref="ForSpell"/>).
+	/// </remarks>
+	public static bool SpellMeetsGate(ApotheosisDefinition definition, SpellData spell, bool fusedAway)
+	{
+		if (definition == null || spell == null || spell.IsApotheosis || fusedAway
+			|| !spell.Id.Equals(definition.SpellId, StringComparison.OrdinalIgnoreCase))
+			return false;
+		if (OnStartingConjunction(definition))
+			return spell.CurrentLevel >= spell.MaxLevel;
+		return !IsCombined(spell)
+			&& (string.IsNullOrEmpty(definition.VariantId)
+				|| definition.VariantId.Equals(spell.SelectedVariantId ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+			&& spell.CurrentLevel >= spell.MaxLevel
+			&& IsAscended(spell);
+	}
+
+	/// <summary>
+	/// True for a form whose spell is a Conjunction its wizard opens on, already made (the dark wizard's The
+	/// Taking): its gate is max level alone (<see cref="SpellMeetsGate"/>).
+	/// </summary>
+	public static bool OnStartingConjunction(ApotheosisDefinition definition) =>
+		definition != null && ComboCatalog.StartsFused(ComboCatalog.ForId(definition.SpellId), definition.CharacterId);
 }

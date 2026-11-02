@@ -177,10 +177,6 @@ public static class SpellEvolutionCatalog
 			case "sleet_runes":
 				SetupSleetRunesEvolutions(spell);
 				break;
-			// The dark wizard's own (.ai/dark-wizard-playable.md).
-			case TheTaking.SpellId:
-				SetupTheTakingEvolutions(spell);
-				break;
 			default:
 				SetupDefaultArchetypeEvolutions(spell);
 				break;
@@ -2700,38 +2696,6 @@ public static class SpellEvolutionCatalog
 			$"The wards circle you as a flock, breaking off to burn what comes near. 3 more, {longer:0}s longer, -50% cooldown, +80% damage.",
 			"Ascension / Flock", "Ascension: a ring of light that meets the pack wherever it closes on you.",
 			o => { o.DisplayName = "Kindling Flock"; o.VisualTag = "KindlingFlock"; o.DamageMultiplier = 1.8f; o.CooldownMultiplier = 0.5f; o.ProjectileCountBonus = 3; o.Effect = SpellEffect.ZoneDuration; o.EffectValue = longer; }));
-	}
-
-	// The Taking (scripts/TheTaking.cs, TakenLight, TakingLanes; .ai/dark-wizard-playable.md section 3): a hand
-	// at the strongest in reach that holds, drains and tears its light out; the light drifts home; caught, it
-	// throws two lanes of his dark light. EVERY CARD ITS OWN from the first: each changes one of the three
-	// verbs where it can be seen - the tear (Crushing Grip), the hand (Long Reach), the lanes (Eightfold
-	// Cross), the grip (Great Taking), the cast (Many Hands). Branch() fixes the ids, the element gains -
-	// Darkness at level 4, Light at level 8, each at a hybrid's price - and the looks; the behaviour is
-	// TheTaking's, by id. No card trades Darkness away: it is what his form deepens (ApotheosisCatalog).
-	private static void SetupTheTakingEvolutions(SpellData spell)
-	{
-		Color dark = new Color(0.78f, 0.66f, 1.0f);
-		spell.Level4Options.Add(Branch(spell, DefaultBranch.AmplifiedImpact,
-			$"The hand crushes what it tears: everything standing round the taken is thrown down for {TheTaking.CrushShare * 100f:0}% of a hit. +20% damage.",
-			"Darkness / Burst", "The strongest is never alone: take it out of the middle of its pack.",
-			o => { Renamed(o, "Crushing Grip", "CrushingGrip", dark); o.DamageMultiplier = 1.2f; }));
-		spell.Level4Options.Add(Branch(spell, DefaultBranch.HyperAcceleration,
-			"Hands fly 40% faster and turn harder. -20% cooldown.",
-			"Darkness / Cadence", "More takings, so more light coming home to be caught.",
-			o => { Renamed(o, "Long Reach", "LongReach", dark); o.SpeedMultiplier = 1.4f; o.CooldownMultiplier = 0.8f; }));
-		spell.Level4Options.Add(Branch(spell, DefaultBranch.ReactiveCatalyst,
-			"A caught light throws a star of four lanes, not two.",
-			"Darkness / Lanes", "Twice the ground struck by every light you meet.",
-			o => { Renamed(o, "Eightfold Cross", "EightfoldCross", dark); }));
-		spell.Level8Options.Add(Branch(spell, DefaultBranch.TitanCataclysm,
-			$"The hand closes on the strongest and the {TheTaking.GreatTakingExtra} nearest it, and tears a light from each. +40% damage.",
-			"Ascension / Light", "Ascension: four lights home from every hand.",
-			o => { Renamed(o, "Great Taking", "GreatTaking", dark); o.DamageMultiplier = 1.4f; }));
-		spell.Level8Options.Add(Branch(spell, DefaultBranch.InfiniteHorizon,
-			"Two more hands a cast, each at its own quarry, the strongest first. -25% cooldown.",
-			"Ascension / Hands", "Ascension: he takes from the whole front at once.",
-			o => { Renamed(o, "Many Hands", "ManyHands", dark); o.ProjectileCountBonus = 2; o.CooldownMultiplier = 0.75f; }));
 	}
 
 	// THE BOLTS' OWN CARDS (.ai/spell-roster.md 2e, built 2026-10-29). Riptide, Molten Shard and Hunter's
