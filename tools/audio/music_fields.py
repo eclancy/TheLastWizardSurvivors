@@ -23,8 +23,12 @@ THE STEMS, as .ai/audio-direction.md section 11 has them:
 
   bed    a G-D drone, held strings, and the fiddle's figure in spiccato running the three groups of
          every bar - the slip jig is in the bed, so the run is already dancing before the pulse
-  pulse  a frame drum in threes, the plucked bass on the roots, a harp rocking through the chord
+  pulse  (2026-11-01, the battle pulse, up from the first second) a taiko on the three dotted beats,
+         frame drums through every eighth, a snare on the third, the bass jigging root-root-octave,
+         and a harp rocking through the chord
   lead   the flute's hook in A; a solo fiddle answers in B, a second an octave under it
+  boss   (2026-11-01) the Hayward's layer: the taiko doubled through the groups, brass on the dotted
+         beats, strings running the chord in sixteenths
 
 16 BARS, NOT 24. The design said 24, and at dotted quarter 116 a 9/8 bar is 1.55 s: 24 bars is a
 37 s loop, past the 30 s the size rule allows (".ai/audio-direction.md", Size). 16 bars - A and B

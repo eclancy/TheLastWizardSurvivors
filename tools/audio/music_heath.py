@@ -21,9 +21,12 @@ THE STEMS (audio-direction section 11):
   bed    a D-A drone, held strings, a low male choir under them, and the HORN CALL as the ostinato -
          a short call on the 3+2 in every bar, low, so the bed alone already strides. A high choir
          joins in B: a change of colour, not of level.
-  pulse  taiko on the strong beats of the 3+2, frame drums filling the groups, a plucked bass on
-         the roots, and a harp walking the chord in eighths; a frame-drum roll into each section.
+  pulse  (2026-11-01, the battle pulse, up from the first second) taiko on both downbeats of the 3+2
+         with a stroke into each, a snare on the second beat of each group, frame drums filling, the
+         bass in eighths leaping its octave, and a harp walking the chord; a roll into each section.
   lead   two horns in fifths (A); a wordless solo voice (B).
+  boss   (2026-11-01) the Ninth Stone's layer: the taiko doubled through the 3+2, brass on the horn
+         call's stride, strings running the chord in sixteenths.
 
 TWELVE BARS, NOT TWENTY. Section 6 asked for 20 bars; at 138 in 5/4 that is a 43.5 s loop, and
 section 11's Size rule keeps every loop at 30 s or under because each rendered minute is 2.5 MB of
