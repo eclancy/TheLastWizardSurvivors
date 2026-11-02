@@ -60,6 +60,9 @@ public partial class WorldMap : Control
 		public bool IsBossRush { get; init; }
 		public WorldMapView.StopLook Look { get; set; }
 		public bool Cleared { get; set; }
+		// Shown, but not on the save's road: a chapter kept open by an older order (the grandfathered
+		// Cursed Dungeon, .ai/endgame-castle.md 1.5 and 8). Its place is lit; the road to it stays dark.
+		public bool OffRoad { get; init; }
 		public string Id => Layout.Id;
 	}
 
@@ -143,9 +146,9 @@ public partial class WorldMap : Control
 			// revealed with the dark drawing back to it (WorldMapView), once.
 			float revealFrom = -1f;
 			if (LastShownStops != null && stops.Any(s => !LastShownStops.Contains(s.Id)))
-				revealFrom = stops.Where(s => LastShownStops.Contains(s.Id)).Select(s => s.Layout.ArcLength).DefaultIfEmpty(0f).Max();
+				revealFrom = stops.Where(s => !s.OffRoad && LastShownStops.Contains(s.Id)).Select(s => s.Layout.ArcLength).DefaultIfEmpty(0f).Max();
 			LastShownStops = new HashSet<string>(stops.Select(s => s.Id));
-			view.Setup(layout, stops.Select(s => new WorldMapView.ViewStop { Layout = s.Layout, Look = s.Look }).ToList(),
+			view.Setup(layout, stops.Select(s => new WorldMapView.ViewStop { Layout = s.Layout, Look = s.Look, OffRoad = s.OffRoad }).ToList(),
 				character, selected, revealFrom);
 			compass.SetMarks(stops.Select(MarkFor));
 			// A fresh save has one place shown and nowhere to step to.
@@ -215,17 +218,7 @@ public partial class WorldMap : Control
 			return;
 		}
 
-		var order = new List<(StageDefinition Stage, bool Rush)>();
-		foreach (StageDefinition stage in StageCatalog.Campaign)
-			order.Add((stage, false));
-		if (save != null && BossRushCatalog.IsOpen(save) && BossRushCatalog.Arena != null)
-			order.Add((BossRushCatalog.Arena, true));
-		// A chapter outside the campaign that is open from the start would still stand on the road, past
-		// its end (none does today); one held until the campaign is finished is on the page instead.
-		foreach (StageDefinition stage in StageCatalog.All.Where(s => !StageCatalog.IsInCampaign(s) && !s.AfterCampaign))
-			order.Add((stage, false));
-
-		foreach (var (stage, rush) in order)
+		foreach (var (stage, rush) in RoadOrder(save != null && BossRushCatalog.IsOpen(save)))
 		{
 			// The map unrolls as the campaign is won (Eric, 2026-10-31: "you should only unlock the map as
 			// you defeat the previous level"): a chapter is not a stop, not on the compass and not lit on
@@ -236,8 +229,8 @@ public partial class WorldMap : Control
 			if (placed == null)
 			{
 				// RegressionChecks.ValidateWorldMap names this too; here it only costs the stop. A chapter
-				// not built yet may have no place until the map draws it (the castle's, until piece C8):
-				// it is left off quietly, as a to-do and not a fault (.ai/endgame-castle.md 1.9).
+				// not built yet may have no place until the map draws it (as the castle's had none until
+				// piece C8): it is left off quietly, as a to-do and not a fault (.ai/endgame-castle.md 1.9).
 				if (rush || stage.IsPlayable)
 					GD.PushError($"WorldMap: '{(rush ? WorldMapLayout.BossRushId : stage.Id)}' has no place on the map (tools/art/world_map.py PLACES).");
 				continue;
@@ -251,10 +244,43 @@ public partial class WorldMap : Control
 					: !stage.IsPlayable ? WorldMapView.StopLook.Unbuilt
 					: WorldMapView.StopLook.Locked,
 				Cleared = !rush && IsCleared(stage),
+				OffRoad = !rush && GlobalStatsManager.IsGrandfathered(save, stage) && !GlobalStatsManager.IsStageEarned(save, stage),
 			});
 		}
-		// The route visits them in this order; keep the list in it whatever the catalog order did.
+		// The route visits them in this order (RoadOrder, which ValidateWorldMap holds the picture to); the
+		// sort is a guard, so a stop drawn out of place is still stepped to along the road, never across it.
 		stops.Sort((a, b) => a.Layout.ArcLength.CompareTo(b.Layout.ArcLength));
+	}
+
+	/// <summary>
+	/// THE STOP-ORDER RULE (.ai/endgame-castle.md 8, .ai/world-map.md 6): the order the road visits the
+	/// world's stops, west to east. The campaign up to and including its gate chapter (the Emberdeep); the
+	/// Boss Rush, whose seat is on the gate chapter's summit (<paramref name="withRush"/>: only once it is a
+	/// stop); the rest of the campaign, the castle across the water; and last any chapter outside the
+	/// campaign that is open from the start (none today - one held until the campaign is finished is on
+	/// the page instead). Read by <see cref="BuildStops"/> and by RegressionChecks.ValidateWorldMap, which
+	/// holds tools/art/world_map.py's PLACES to it - otherwise the road would run back from the tower to
+	/// the summit. A campaign with no gate chapter puts the rush after its last chapter, as before.
+	/// </summary>
+	public static List<(StageDefinition Stage, bool Rush)> RoadOrder(bool withRush)
+	{
+		var order = new List<(StageDefinition Stage, bool Rush)>();
+		StageDefinition gate = StageCatalog.GateChapter;
+		bool rushPlaced = !withRush || BossRushCatalog.Arena == null;
+		foreach (StageDefinition stage in StageCatalog.Campaign)
+		{
+			order.Add((stage, false));
+			if (!rushPlaced && gate != null && stage.Id.Equals(gate.Id, StringComparison.OrdinalIgnoreCase))
+			{
+				order.Add((BossRushCatalog.Arena, true));
+				rushPlaced = true;
+			}
+		}
+		if (!rushPlaced)
+			order.Add((BossRushCatalog.Arena, true));
+		foreach (StageDefinition stage in StageCatalog.All.Where(s => !StageCatalog.IsInCampaign(s) && !s.AfterCampaign))
+			order.Add((stage, false));
+		return order;
 	}
 
 	private bool IsCleared(StageDefinition stage)
@@ -587,7 +613,7 @@ public partial class WorldMap : Control
 		// yet (the castle's, until piece C8) is not one to count - "Chapter 1 of 13" over ten places
 		// would name three the player cannot find.
 		int chapters = StageCatalog.Campaign.Count(s => layout.Get(s.Id) != null);
-		string where = stop.IsBossRush ? "The seat, at the summit"
+		string where = stop.IsBossRush ? "The summit, over his forge"
 			: position >= 0 ? $"Chapter {position + 1} of {chapters}"
 			: "Beyond the map";
 		cardBox.AddChild(MakeText(where, ResponsiveLayout.TextRole.Label, InkPlace, "CardWhere"));

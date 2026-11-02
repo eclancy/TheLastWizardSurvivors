@@ -161,7 +161,9 @@ public static class StageCatalog
 			DisplayName = "The Emberdeep",
 			TerrainCategory = "Volcanic rock",
 			FlavorText = "Blackened ground and glowing embers mark the last road, and what waits at its end.",
-			CorruptionText = "His seat, and the end of the road.",
+			// "His seat" until the castle was drawn across the water (.ai/endgame-castle.md 1.4, 8): the world
+			// map's one dark light moved to his tower, and the summit keeps the forge's fire.
+			CorruptionText = "His forge, at the end of the road.",
 			EnvironmentKind = StageEnvironmentKind.Volcanic,
 			// The Long Coil beaten and every wizard on the road freed (since schema 19).
 			Gate = StageGate.PreviousBossAndWizards,

@@ -49,6 +49,11 @@ public partial class WorldMapView : Control
 	{
 		public WorldMapStop Layout { get; init; }
 		public StopLook Look { get; set; }
+		/// <summary>
+		/// Shown, but not on the save's road (a chapter an older order opened, the grandfathered Cursed
+		/// Dungeon): its place is lit as an island, and the road to it stays dark (BuildMask).
+		/// </summary>
+		public bool OffRoad { get; init; }
 	}
 
 	private WorldMapLayout layout;
@@ -468,13 +473,22 @@ public partial class WorldMapView : Control
 		revealClock = -1f;
 		if (layout == null || stops.Length == 0)
 			return;
+		// The road is lit as far as the last stop on it. A stop off the road (ViewStop.OffRoad) does not
+		// carry the frontier with it - that would light every place between, shown or not - but its own
+		// place is lit, an island beyond the dark (.ai/endgame-castle.md 8, "an open stop beyond fogged ones").
 		float frontier = 0f;
+		var islands = new List<WorldMapStop>();
 		foreach (ViewStop stop in stops)
-			frontier = Mathf.Max(frontier, stop.Layout.ArcLength);
-		mask = BuildMask(frontier);
+		{
+			if (stop.OffRoad)
+				islands.Add(stop.Layout);
+			else
+				frontier = Mathf.Max(frontier, stop.Layout.ArcLength);
+		}
+		mask = BuildMask(frontier, islands);
 		if (revealFromArc >= 0f && revealFromArc < frontier - 0.5f)
 		{
-			maskBefore = BuildMask(revealFromArc);
+			maskBefore = BuildMask(revealFromArc, islands);
 			revealClock = 0f;
 		}
 	}
@@ -483,8 +497,8 @@ public partial class WorldMapView : Control
 	// up to the frontier and the places at or before it - and what is not - the road past it and every
 	// place past it, shown or not - and a point is dark when it lies nearer the second than the first. So
 	// a finished campaign is lit everywhere, a fresh one only round the Forest, and the road always
-	// darkens just past the last place shown.
-	private ImageTexture BuildMask(float frontier)
+	// darkens just past the last place shown. An island's place is lit wherever it lies.
+	private ImageTexture BuildMask(float frontier, List<WorldMapStop> islands)
 	{
 		const int cell = 8;
 		int gw = (int)Mathf.Ceil(layout.Size.X / cell) + 1;
@@ -498,7 +512,11 @@ public partial class WorldMapView : Control
 		foreach (WorldMapStop stop in layout.Stops)
 		{
 			float radius = Mathf.Max(PlaceRadiusFloor, Mathf.Max(stop.Shroud.X, stop.Shroud.Y));
-			(stop.ArcLength <= frontier + 0.5f ? litPlaces : darkPlaces).Add((stop.Focus, radius));
+			bool lit = stop.ArcLength <= frontier + 0.5f || islands.Exists(island => island.Id == stop.Id);
+			(lit ? litPlaces : darkPlaces).Add((stop.Focus, radius));
+			// The island's stand point too, so the wizard waiting at its door is never in the dark.
+			if (lit && stop.ArcLength > frontier + 0.5f)
+				litPlaces.Add((stop.Stand, PlaceRadiusFloor * 0.5f));
 		}
 		if (darkRoad.Count == 0 && darkPlaces.Count == 0)
 			return null;

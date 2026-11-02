@@ -23,9 +23,9 @@ then the world map, then the run. Read with `.ai/campaign.md` (the order), `.ai/
 ## 1. The world
 
 **One picture, generated** (`tools/art/world_map.py`, never a hand-edited PNG): an overworld seen from
-above, 1680x840 art pixels drawn at x2, in the Bonelight palette and under the same key from the upper
+above, 2112x840 art pixels drawn at x2 (1680 until the castle grew it east, section 18), in the Bonelight palette and under the same key from the upper
 left as everything else. Every chapter is a *place* in it - a wood, a field system, a ring of stones,
-a cave mouth, a keep - and what lies between them is drawn land: the road, a river, a scarp, a
+a cave mouth, a castle on a rock - and what lies between them is drawn land: the road, a river, a scarp, a
 mountain range, a coast. Nothing is a node on a blank ground.
 
 **The road runs west to east.** The campaign is one road (`.ai/campaign.md`, "The gate": *being past
@@ -40,24 +40,28 @@ south between places, so the map is a world rather than a strip, and the camera 
 | 2 | The Fallow Fields (`stage_9`) | south of the road, just past the wood's edge: hedged fields, a millpond, the well | *"The farms beyond the wood"* (`campaign.md` 5) - the first place that was someone's livelihood |
 | 3 | The Broken Circle (`stage_10`) | north, up on the high heath: heather, granite, eight stones and a gap | the moot was held high and apart; the road climbs to it out of the fields |
 | 4 | Sunken Cave (`stage_2`) | below the heath's eastern scarp: the tarns' stream runs down and into a cave mouth | *"His shadow followed the water down into the dark"* - the water is drawn going in |
-| 5 | Cursed Dungeon (`stage_1`) | a keep on a crag where the river comes out of the hills: the one way through | *"a grim choke-point"*; the road has to pass under its walls, which is why it is a gate in the middle of the campaign |
-| 6 | Blighted Swamp (`stage_3`) | south-east, where the river spreads into a delta bog before the sea | the lowest land on the map; cold arcane lantern lights in the reeds (*"Nothing living lights them"*) |
-| 7 | Mystic Ruins (`stage_4`) | north again, on a plateau above the bog: broken spires, rubble rings | the wizards' old seat of learning - *"The old wards were broken from the inside"* |
-| 8 | Frozen Waste (`stage_5`) | the far north, past the ruins: ice field and wind ridges under the mountains | cold is where the land is highest and furthest from his fire |
-| 9 | Scorched Sands (`stage_6`) | over the mountain pass, south-east: a dry basin, dunes, the trade road | the rain shadow of the range and the heat of his seat; *"He hid the water"* |
-| 10 | The Emberdeep (`stage_7`) | the far east: black ground, lava, a volcano at the end of the road | *"His seat, and the end of the road."* The one place on the map lit by the `darkness` ramp as emission, at its summit (`world-and-tone.md`: he is the only source of dark light) |
+| 5 | Blighted Swamp (`stage_3`) | south-east, where the river spreads into a delta bog before the sea | the lowest land on the map; cold arcane lantern lights in the reeds (*"Nothing living lights them"*) |
+| 6 | Mystic Ruins (`stage_4`) | north again, on a plateau above the bog: broken spires, rubble rings | the wizards' old seat of learning - *"The old wards were broken from the inside"* |
+| 7 | Frozen Waste (`stage_5`) | the far north, past the ruins: ice field and wind ridges under the mountains | cold is where the land is highest and furthest from his fire |
+| 8 | Scorched Sands (`stage_6`) | over the mountain pass, south-east: a dry basin, dunes, the trade road | the rain shadow of the range and the heat of his forge; *"He hid the water"* |
+| 9 | The Emberdeep (`stage_7`) | the far east of the land: black ground, lava, a volcano at the end of the road | *"His forge, at the end of the road."* The gate chapter. Its summit holds the forge's fire, and the Boss Rush (section 5) |
+| 10 | The Last Bridge (`stage_11`) | from the headland under the Emberdeep's black cliffs, across the dark sea | *"His seat is across the water."* The road comes down off the summit to the cliffs and walks the bridge's deck; the stop is the bridge foot |
+| 11 | Cursed Dungeon (`stage_1`) | at the foot of the castle on its rock, where the bridge lands: the cells cut into the rock under the south wall, one window lit, the sea-gate at the water | *"He keeps a wizard in one of these cells."* Since piece C2 the castle's cells, entered from the bridge's gate (`.ai/endgame-castle.md` 1.3, 8). At chapter 5 it was a keep on the river's crag, *"a grim choke-point"*; the keep came off, the crag stays as hills, and the road crosses the river's bridge unguarded |
+| 12 | The Court (`stage_12`) | inside the walls: the great hall's slate roof across the yard, and the west range | *"A court with no one left in it"* - so no window in it is lit |
+| 13 | The Throne (`stage_13`) | his tower at the rock's north-east, the tallest thing in the world | *"He is here."* The one place on the map lit by the `darkness` ramp as emission: the throne room's windows at its top, a halo, and motes going up off the spire (`world-and-tone.md`: he is the only source of dark light) |
 
-The Emberdeep's summit is where the **Boss Rush** stands (section 5). Past it the road runs on down
-to black cliffs and a dark sea - drawn, walked by no one, the tail where the castle across the water
-will join it - and the picture ends at the world's edge. **The Sketchbook is not in the world, nor on
-the road** (section 4).
+The Emberdeep's summit is where the **Boss Rush** stands (section 5). Past it the road runs down to the
+headland under the black cliffs, over the Last Bridge to his rock, and up through the gate, the yard and
+the hall door to the tower. Past the rock the dark sea runs to the world's edge. **The Sketchbook is not
+in the world, nor on the road** (section 4).
 
 **Lighting and palette.** Ground from the deep half of each material's ramp, features lit on their
 top and left, `occ` for contact and cliff shadow, no colour outside `bonelight.py`. The places' colours
 are their chapters' ground colours (forest lichen, field gold-and-flesh deep, heath violet and stone,
 swamp linen, snow in bone and steel, sand gold-and-flesh, basalt and fire), so each place reads as the
 chapter the player is about to walk into. Emissive light is spent only where the fiction puts it:
-his lanterns in the swamp (arcane), the Emberdeep's lava (fire), the seat (darkness), and the player.
+his lanterns in the swamp (arcane), the Emberdeep's lava and its summit's fire (fire), his tower (darkness),
+the one lit cell under his walls (light: somebody is kept there), and the player.
 
 ## 2. Locked places: on the map, visitable, never startable
 
@@ -188,33 +192,42 @@ sheet of its own** - not a stop, not on the road, not on the compass:
 
 ## 5. Boss Rush
 
-**A stop at the Emberdeep's summit, the seat**, between the Emberdeep and the edge of the world -
+**A stop at the Emberdeep's summit, over his forge**, between the Emberdeep and the Last Bridge -
 *"Every warden of the road, one after another, in the Emberdeep. The last is his."* It is a stop only
-once `BossRushCatalog.IsOpen` (the Warden of the Deep has fallen in his own chapter), as its card was
-before: until then the road simply passes the dark summit on its way to the cliff. Its card shows the
+once `BossRushCatalog.IsOpen` (since piece C2, every boss on its roster beaten - on a new save after the
+castle's dungeon, `.ai/endgame-castle.md` 1.8), as its card was before: until then the road simply passes
+the summit on its way down to the cliffs and the bridge. The summit was "the seat" while the map ended
+there; the seat is across the water now, and the card says *"The summit, over his forge"*. Its card shows the
 record (*"Cleared in 12:40"*, *"Best: 6 of 10 felled"*) in place of rewards, and Start hands the run
 `Global.BossRush = true` with the arena's index, exactly as `StageSelection.OnBossRushPressed` did.
 
 ## 6. The stops, and their order
 
-`[the campaign in StageCatalog.Campaign order] + [Boss Rush, if open]`. Left and right step through
-that list; the route visits it in the same order. A stop is a stage id or `boss_rush`. The Sketchbook
-is not a stop (section 4): it is on its own page.
+**One rule, `WorldMap.RoadOrder`** (`.ai/endgame-castle.md` 8): `[the campaign up to and including its
+gate chapter] + [Boss Rush, if open] + [the rest of the campaign] + [outside the campaign]`. The Boss Rush
+stands on the gate chapter's summit, so it comes between the road and the castle; put after the whole
+campaign, the road would run back from the tower to the summit. Left and right step through that list;
+the route visits it in the same order, and `world_map.py`'s `PLACES` are written in it. A stop is a stage
+id or `boss_rush`. The Sketchbook is not a stop (section 4).
+
+**A stop off the road.** A chapter a save keeps from an older order - the Cursed Dungeon, grandfathered
+by schema 21 (`.ai/endgame-castle.md` 1.5) - is a stop like any other: the wizard walks the road to it and
+it can be started. But it does not carry the reveal's frontier with it, which would light every place
+between, shown or not: its place is lit as an island (`WorldMapView.ViewStop.OffRoad`), the road to it
+stays dark, and the stops before it are revealed by their own rules. It looks odd on an old save short of
+the gate, and never on a new one.
 
 `RegressionChecks.ValidateWorldMap` holds the layout file to it: every chapter in `StageCatalog` has a
-stop, Boss Rush has one, the stand points' arc lengths rise in stop order, every focus point is inside
+stop, Boss Rush has one, the stand points' arc lengths rise in `RoadOrder`, every focus point is inside
 the picture, a chapter held until the campaign is finished (`AfterCampaign`) has **no** stop on the
 road, and the page has its sheet, a stand on the paper and its drawings on the paper. **A new
 chapter must be placed on the map** (a line in `world_map.py`'s `PLACES` and a landmark drawn for it),
 or the validator says so.
 
-**Adding places.** The endgame chapters being designed (a bridge to the final boss's tower, a castle
-dungeon, a castle labyrinth, a throne room) join the same way: a `StageCatalog` entry and its place in
-`CampaignOrder`, a line in `PLACES` with its stand point, focus and fog radii, the road's waypoints to
-it in `WAYPOINTS`, and a landmark function. Nothing in C# names a place. They come after the Emberdeep,
-so the world grows east: widen `W`, turn the road's tail (the last list in `WAYPOINTS`) into their
-road, and the route, the compass and the camera follow from the JSON. The page is in its own space and
-does not move.
+**Adding places.** A chapter joins the way the castle's did (section 18): a `StageCatalog` entry and its
+place in `CampaignOrder`, a line in `PLACES` in `RoadOrder`'s order with its stand point, focus and fog
+radii, the road's waypoints to it in `WAYPOINTS`, and a landmark function. Nothing in C# names a place.
+The page is in its own space and does not move.
 
 ## 7. The compass strip
 
@@ -419,3 +432,34 @@ phone, a pad step up from Start landing on the Sketchbook button. The validator 
 **Still needs eyes:** the turn itself (a scene fade, both ways) and a run started from the page coming
 back to the page; whether "World" reads as Back on a phone; and whether the button wants a first-time
 flourish the run after the campaign is finished (the results screen does say the page opened).
+
+## 18. The castle, drawn (2026-11-02, piece C8)
+
+Branch `wip/dungeon-move`, with C2 (`.ai/endgame-castle.md` section 8 is the design; section 13 there is
+the record of both pieces).
+
+- **The world is 2112 wide** (`W`; `LAND_W` = 1680 keeps the land's seeded scatters where they were, so
+  no tree west of the cliffs moved). The land ends at the Emberdeep's black cliffs (`east_edge`,
+  `black_cliffs`): a headland where the road comes down off the summit, a south-facing face where the
+  coast steps in, and the dark sea past it, going black toward his rock.
+- **The castle** (`isle`, `last_bridge`, `castle`, `cells`, `halls`, `keep_tower`): the Last Bridge on
+  piers from the headland to the gate on the rock, its deck the road; the rock's south face in black
+  buttresses; the curtain wall and its towers; the gatehouse with his cold arcane flame either side;
+  the cells in the cliff under the south wall, barred windows, one lit, the sea-gate at the water; the
+  Court's great hall and west range under slate; and the tower, whose throne room burns with the one dark
+  light, a halo and motes going up off the spire.
+- **The dark light moved** from the Emberdeep's summit to the tower; the summit's caldera is a lava lake
+  now (the forge). **The keep came off the river's crag**: the crag is a ragged knoll of bare rock with a
+  tor where the keep stood, and the road passes it on the same points as before to the river's bridge.
+- **The stops** are 14: the road's ten and the rush as they were (the Dungeon's old stand point is a plain
+  point of the road now, so the road is the same road), then `stage_11`, `stage_1`, `stage_12` and
+  `stage_13`. Every card counts 13 chapters (*"Chapter 11 of 13"* on the Dungeon's).
+- **Checked:** `ValidateWorldMap` and the rest of the validator (0 errors); `_UiShot` at 1280x720 and
+  540x1212 `--portrait --safe-area` at `--map-at=stage_13`, `stage_11` and `stage_2` (at rest, and
+  mid-walk over the river with no keep), and an in-memory schema-19 save at `stage_1`, the Dungeon
+  grandfathered and lit as an island, the bridge closed.
+- **Needs eyes:** the castle has been seen only in photographs and crops. The Bridge, the Court and the
+  Throne are not playable yet, so on every save they sit under the unbuilt double mist and the tower's
+  light is hidden; it shows once the Throne is built and open. Whether the rock reads as a rock (it is
+  smooth for one), whether the bridge's piers read at x2 on a phone, and whether the island-lit Dungeon
+  on an old save reads as a place the road reaches or as a hole in the dark.

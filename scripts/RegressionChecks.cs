@@ -701,34 +701,32 @@ public static class RegressionChecks
 		if (rush == null)
 			warnings.Add("World map: the Boss Rush has no place on the map.");
 
+		// THE STOP-ORDER RULE (WorldMap.RoadOrder, .ai/endgame-castle.md 8): the road reaches every stop in
+		// its order - the campaign to its gate chapter, the Boss Rush on the gate's summit, the castle across
+		// the water, then anything outside the campaign - so the wizard never walks back from the tower to
+		// the summit, and a chapter outside the campaign stands past its end.
 		float last = -1f;
-		foreach (StageDefinition stage in StageCatalog.Campaign)
+		string lastName = "the start of the road";
+		foreach (var (stage, isRush) in WorldMap.RoadOrder(withRush: true))
 		{
-			WorldMapStop stop = map.Get(stage.Id);
+			WorldMapStop stop = map.Get(isRush ? WorldMapLayout.BossRushId : stage.Id);
 			if (stop == null)
 				continue;
+			string name = isRush ? "the Boss Rush's seat" : stage.DisplayName;
 			if (stop.ArcLength <= last)
-				warnings.Add($"World map: the road reaches {stage.DisplayName} out of campaign order.");
+				warnings.Add($"World map: the road reaches {name} before {lastName}, against the stop order (WorldMap.RoadOrder) - reorder PLACES in tools/art/world_map.py.");
 			last = Math.Max(last, stop.ArcLength);
-			if (!stop.OnMap || stop.Focus.X < 0 || stop.Focus.Y < 0 || stop.Focus.X > map.Size.X || stop.Focus.Y > map.Size.Y)
+			lastName = name;
+			if (!isRush && StageCatalog.IsInCampaign(stage)
+				&& (!stop.OnMap || stop.Focus.X < 0 || stop.Focus.Y < 0 || stop.Focus.X > map.Size.X || stop.Focus.Y > map.Size.Y))
 				warnings.Add($"World map: {stage.DisplayName} is a campaign chapter but stands off the world picture.");
 		}
-		if (rush != null && rush.ArcLength <= last)
-			warnings.Add("World map: the road reaches the Boss Rush's seat before the last chapter.");
-		float beyond = Math.Max(last, rush?.ArcLength ?? last);
-		foreach (StageDefinition stage in StageCatalog.All.Where(s => !StageCatalog.IsInCampaign(s)))
+		// Eric, 2026-10-30: "sketchbook level should not be attached to the map ... it shows up as its own
+		// separate map". A stop for it would put it back in the road's flow and on the compass.
+		foreach (StageDefinition stage in StageCatalog.All.Where(s => !StageCatalog.IsInCampaign(s) && s.AfterCampaign))
 		{
-			WorldMapStop stop = map.Get(stage.Id);
-			// Eric, 2026-10-30: "sketchbook level should not be attached to the map ... it shows up as its
-			// own separate map". A stop for it would put it back in the road's flow and on the compass.
-			if (stage.AfterCampaign)
-			{
-				if (stop != null)
-					warnings.Add($"World map: {stage.DisplayName} is held until the campaign is finished and belongs on its own page, but it stands on the road (remove it from PLACES in tools/art/world_map.py).");
-				continue;
-			}
-			if (stop != null && stop.ArcLength <= beyond)
-				warnings.Add($"World map: {stage.DisplayName} is outside the campaign but the road reaches it before the campaign's end.");
+			if (map.Get(stage.Id) != null)
+				warnings.Add($"World map: {stage.DisplayName} is held until the campaign is finished and belongs on its own page, but it stands on the road (remove it from PLACES in tools/art/world_map.py).");
 		}
 
 		// The map unrolls as the campaign is won (GlobalStatsManager.IsChapterRevealed): a new save is shown
