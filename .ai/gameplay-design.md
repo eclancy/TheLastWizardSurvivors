@@ -692,6 +692,12 @@ Two consequences worth knowing:
   Magic Missile (Arcane + Lightning) is not a starter.
 - No two characters open on the same element. `RegressionChecks.ValidateStartingCharacters`
   enforces both rules.
+- **Both rules bind the starters only** (Eric, 2026-11-01, `.ai/chapter-wizards.md` section 0): "Only
+  default starting wizards that are unlocked on a new save file need to have mono element spells.
+  Unlockable wizards can have multi-element starting spells." A wizard the player frees may open on a
+  two-element spell (he claims one of the two for his Apotheosis, whose path never leads away from it),
+  and may share an element with any other wizard. What no two characters share is the opening itself:
+  one spell, in one form. The validator says so for all three.
 
 | Character | Element | Starting spell | Shape | Passive |
 |---|---|---|---|---|

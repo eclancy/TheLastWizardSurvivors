@@ -112,6 +112,7 @@ public static class SfxCatalog
 	public const string HintLanternFlare = "hint_lantern_flare";
 	public const string HintIceSong = "hint_ice_song";
 	public const string HintCaravanBell = "hint_caravan_bell";
+	public const string HintPaperWind = "hint_paper_wind";
 
 	// --- secrets (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9 and 8.4.1) ------
 	// Generated and allowlisted, not yet played: the secret agents wire them as they build the sites.
@@ -137,7 +138,7 @@ public static class SfxCatalog
 		CardAppear, CardSelect, Reroll,
 		UiHover, UiClick, UiBack, UiDenied, UiOpen, UiClose, UiPause,
 		StageClear, GameOver, MetaUnlock, WaveWarning,
-		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell,
+		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind,
 		SecretSeen, SecretFound, SecretShatter,
 	};
 

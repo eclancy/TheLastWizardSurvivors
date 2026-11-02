@@ -3,7 +3,7 @@
 
 Run: python tools/art/hint_cues.py
 
-One sheet, assets/bonelight/effects/hint-cues.png: five rows (one per cue) of eight 16x16 cells,
+One sheet, assets/bonelight/effects/hint-cues.png: six rows (one per cue) of eight 16x16 cells,
 authored 1:1 and drawn at x3 by StageHintCue (48 world units, the attack icons' size - x2 was a
 speck on the phone). See .ai/side-events.md, "Hints that something is out there".
 
@@ -27,6 +27,9 @@ THE ROW ORDER IS AN API: HintCue's order (scripts/StageHintCatalog.cs).
   bell     the caravan    the caravan bell swung two pixels left to two right (0-4), then the
                           ring of a strike - one arc moving out in three steps (5-7) - beside the bell
                           on the right and mirrored on the left
+  paper    the seal       a strip of written paper - one of his wards - turning end over end in four
+                          steps (0-3), then the same four burning at both ends (4-7): "more paper,
+                          burning at the edges as it falls"
 
 Each wears its event's far-tell colour (SideEvent.FarTellColor) as its body, so the cue is the
 colour of the light the player will find: wind's ramp for the grove's lichen grey-green, arcane
@@ -72,6 +75,10 @@ def ramp_of(name):
     if name == "bell":
         m = bl.ELEMENTS["metal"]
         return (m[1], m[2], m[3], m[0])
+    if name == "paper":
+        # The seal's far tell is the arcane ramp's violet (FivePointedSealEvent.TellColor): his light.
+        a = bl.ELEMENTS["arcane"]
+        return (a[1], a[2], a[3], a[0])
     raise ValueError(name)
 
 
@@ -322,6 +329,60 @@ def ring(step):
     return sampled(inside), set()
 
 
+def paper(frame):
+    """A paper ward turning end over end: a strip three pixels wide and eleven long, its long axis turned
+    a quarter of a half-turn a step (0, 45, 90, 135 degrees). Charred (frames 4-7) it is shorter by a pixel
+    at each end and those ends burn. The writing runs down its middle, a mark every other pixel."""
+    turn = frame % 4
+    burnt = frame >= 4
+    angle = turn * math.pi / 4.0 + 0.35
+    ca, sa = math.cos(angle), math.sin(angle)
+    cx, cy = 8.0, 8.0
+    half = 4.6 if burnt else 5.6
+    # Foreshortened as it turns edge-on, so it reads as tumbling and not as a needle spinning.
+    wide = 1.55 if turn % 2 == 0 else 1.05
+
+    def inside(x, y):
+        u = (x - cx) * ca + (y - cy) * sa
+        v = -(x - cx) * sa + (y - cy) * ca
+        return abs(u) <= half and abs(v) <= wide
+    mask = sampled(inside)
+    writing = set()
+    ends = set()
+    for t in range(-10, 11):
+        u = t * 0.5
+        px = int(math.floor(cx + u * ca))
+        py = int(math.floor(cy + u * sa))
+        if (px, py) in mask and abs(u) < half - 1.4 and t % 3 == 0:
+            writing.add((px, py))
+    if burnt:
+        for (x, y) in mask:
+            u = (x + 0.5 - cx) * ca + (y + 0.5 - cy) * sa
+            if abs(u) > half - 1.3:
+                ends.add((x, y))
+    return mask, (writing, ends)
+
+
+def paint_paper(mask, inner, tones):
+    """The strip in the tell's ramp, its writing in the shade stop - ink, not a glow - and, burning, its
+    two ends in fire's edge with one hot pixel each: the char eating in from the edges."""
+    writing, ends = inner
+    c = paint(mask, set(), tones)
+    for p in writing:
+        if p in mask:
+            c.set(p[0], p[1], tones[2])
+    fire = bl.ELEMENTS["fire"]
+    hot = set()
+    for p in sorted(ends):
+        c.set(p[0], p[1], fire[3])
+    # One hot pixel per burning end: the one furthest out along the strip on each side.
+    if ends:
+        xs = sorted(ends)
+        for p in (xs[0], xs[-1]):
+            c.set(p[0], p[1], fire[2])
+    return c
+
+
 ROWS = [
     ("leaves", [leaf(f) for f in range(8)]),
     ("echo", [echo(d) for d in range(8)]),
@@ -329,6 +390,7 @@ ROWS = [
     ("song", [note("quaver"), note("beamed"), note("crotchet"), note("minim"),
               glint(0), glint(1), glint(2), glint(3)]),
     ("bell", [bell(-2), bell(-1), bell(0), bell(1), bell(2), ring(0), ring(1), ring(2)]),
+    ("paper", [paper(f) for f in range(8)]),
 ]
 
 
@@ -395,6 +457,8 @@ def main():
                 c = paint_rib(mask, inner, tones)
             elif name == "bell" and col < 5:
                 c = paint_bell(mask, inner, tones)
+            elif name == "paper":
+                c = paint_paper(mask, inner, tones)
             else:
                 c = paint(mask, inner, tones)
             bad = c.audit()

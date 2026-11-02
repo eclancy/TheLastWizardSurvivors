@@ -16,6 +16,8 @@ using WizardSurvivors.scripts;
 //   the thaw      the song's notes, one per sung note, each a step higher or lower as the tune is,
 //                 with a frost glint left behind it
 //   the caravan   the bell swinging as it walks, ringing at each strike
+//   the seal      strips of written paper tumbling in on the wind, charring at the edges as they fall -
+//                 on each gust of the paper wind
 //
 // IN THE WORLD'S LAYERS, HELD TO THE VIEW. The marks are drawn in the world, on the layer over the
 // bodies and under the HUD, so they read as something out there rather than as an interface - but
@@ -35,7 +37,7 @@ public partial class StageHintCue : Node2D
 	public const string SheetPath = "res://assets/bonelight/effects/hint-cues.png";
 	public const int Cell = 16;
 	public const int Columns = 8;
-	public const int Rows = 5;   // HintCue's members, in order
+	public const int Rows = 6;   // HintCue's members, in order
 
 	// x3, the attack icons' size: at x2 a 16 px mark was a speck on the phone.
 	private const float DrawScale = 3f;
@@ -60,6 +62,8 @@ public partial class StageHintCue : Node2D
 	private static readonly float[] FlareBeats = { 0.0f, 0.14f, 0.32f, 0.6f, 0.95f };
 	// The bell's strikes (hint_caravan_bell), at a stride's uneven gaps.
 	private static readonly float[] BellStrikes = { 0.0f, 0.36f, 0.80f, 1.13f, 1.58f };
+	// The paper wind's gusts (hint_paper_wind): a strip comes in on each, the flutter between them.
+	private static readonly float[] PaperGusts = { 0.10f, 0.42f, 0.70f, 1.12f, 1.40f };
 
 	private struct Mark
 	{
@@ -158,6 +162,7 @@ public partial class StageHintCue : Node2D
 		HintCue.Leaves => 126f,
 		HintCue.Wisp => 96f,
 		HintCue.Bell => 72f,
+		HintCue.Paper => 110f,
 		_ => 8f,
 	};
 
@@ -308,6 +313,18 @@ public partial class StageHintCue : Node2D
 				if (nextBeat >= FlareBeats.Length)
 					clock = -1f;
 				break;
+			case HintCue.Paper:
+				while (nextBeat < PaperGusts.Length && PaperGusts[nextBeat] <= t)
+				{
+					// Blown in, tumbling, and falling as it comes: on a side edge the strips drift down the
+					// screen as well as in, and char from the edges in the second half of their life (Pose).
+					Spawn((int)HintCue.Paper, random.Next(4), 3.0f, Jitter(110f), Jitter(10f),
+						inward: 10f, drift: Jitter(16f), rise: -14f, fadeIn: 0.25f);
+					nextBeat++;
+				}
+				if (nextBeat >= PaperGusts.Length)
+					clock = -1f;
+				break;
 			case HintCue.Bell:
 				// The bell walks along the edge, as the caravan walks its road.
 				if (bellSlot < 0)
@@ -436,6 +453,12 @@ public partial class StageHintCue : Node2D
 				{
 					at.Y += Mathf.Sin(m.Age * 3.4f + m.Phase) * 4f;
 				}
+				break;
+			case HintCue.Paper:
+				// Fluttering end over end (four turns, columns 0-3); past half its life it burns at the edges
+				// (the same four turns charred, 4-7), and it see-saws as it falls.
+				column = (m.Glyph + (int)(m.Age * 6f)) % 4 + (m.Age > m.Life * 0.5f ? 4 : 0);
+				at.X += Mathf.Sin(m.Age * 2.2f + m.Phase) * 14f;
 				break;
 			case HintCue.Bell:
 				if (m.Glyph >= 5)

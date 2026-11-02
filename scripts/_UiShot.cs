@@ -489,6 +489,10 @@ public partial class _UiShot : Node
 	// --stage-mortal: the stage's skeletons keep their own health and can die, for the spells that
 	// only show themselves on a kill (Frost Shard's shatter, Contagion's jump, Cataclysm's craters).
 	private bool stageMortal;
+	// --stage-health=N: with --stage-mortal, the stage's skeletons start with N health instead of their own -
+	// for a spell whose look depends on how low it burns a body (Abe no Seimei's seal takes what a ward has
+	// burned below a quarter, and a 20-health skeleton dies before it is ever that low).
+	private int stageHealth;
 	private Vector2 stageOffset = new Vector2(230f, 0f);
 	private bool stagePlaced;
 	private readonly System.Collections.Generic.List<Enemy> stageCrowd = new();
@@ -1087,6 +1091,8 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--walk-into-portal")
 				walkIntoPortal = true;
+			else if (arg.StartsWith("--stage-health="))
+				stageHealth = int.Parse(arg.Substring("--stage-health=".Length));
 			else if (arg.StartsWith("--crowd="))
 				crowd = int.Parse(arg.Substring("--crowd=".Length));
 			else if (arg == "--layer-census")
@@ -3695,6 +3701,9 @@ public partial class _UiShot : Node
 					stageCrowd[i] = SpawnCoverEnemy(i);
 			return;
 		}
+		// --stage-mortal means what it says: the top-up below overrode it, so a mortal crowd was immortal.
+		if (stageMortal)
+			return;
 		foreach (Enemy e in stageCrowd)
 			if (IsInstanceValid(e))
 				e.Health = System.Math.Max(e.Health, 1000000);
@@ -3950,6 +3959,8 @@ public partial class _UiShot : Node
 			e.Speed = 18f;
 			if (!stageMortal)
 				e.Health = 1000000;
+			else if (stageHealth > 0)
+				e.Health = stageHealth;
 			p.GetParent().AddChild(e);
 			stageCrowd.Add(e);
 		}

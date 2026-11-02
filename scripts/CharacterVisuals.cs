@@ -43,6 +43,9 @@ public static class CharacterVisuals
 			// The centre of his scrying mirror (tools/art/roster.py, dee(): MX, MY), not the motes in
 			// his cupped hand, which are the same ramp.
 			case "john_dee": return new Vector2(33, 7);
+			// The kindled ward burning at the tip of the paper in his fingers (roster.py, seimei()), not
+			// the wand's head, whose paper does not glow.
+			case "seimei": return new Vector2(40, 11);
 			default: return null;
 		}
 	}
@@ -67,6 +70,7 @@ public static class CharacterVisuals
 			case "vainamoinen":
 			case "john_dee":
 			case "laelaps":
+			case "seimei":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

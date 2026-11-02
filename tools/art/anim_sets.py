@@ -59,6 +59,8 @@ PLAYER_RAMPS = RAMPS + [
     # darkness - John Dee's mirror. roster.DARKNESS_RAMP: four control characters, because the
     # roster palette has no printable character left.
     "\x01\x02\x03\x04",
+    # light - Abe no Seimei's kindled ward. roster.LIGHT_RAMP, the next four control characters.
+    "\x05\x06\x07\x08",
 ]
 
 
@@ -239,7 +241,7 @@ def full_set(pose, lean=1.0, reach=3.0, knock=2):
 # full two-row bob; the robed and the braced carry one, because a heavy or stately walk is
 # mostly NOT going up and down - that is what makes it read as heavy or stately.
 WALK_BOB = {"pyromancer": 2, "stormcaller": 2, "vainamoinen": 2,
-            "frostweaver": 1, "geomancer": 1, "tituba": 1}
+            "frostweaver": 1, "geomancer": 1, "tituba": 1, "seimei": 1}
 
 # The waist. Everything above this row is the same drawing in every frame and only rises with
 # the bob; everything below it is redrawn per frame by the pose function. It is the same row the

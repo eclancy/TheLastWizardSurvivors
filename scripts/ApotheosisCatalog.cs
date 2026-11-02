@@ -38,10 +38,12 @@ public sealed class ApotheosisDefinition
 /// level 4 and level 8 path was taken, the wizard's element is at tier 6, the wizard is the
 /// one this entry names, and the player is at least MinimumPlayerLevel. Taking it spends the pick, and it is terminal.
 ///
-/// Every required path is the pair of milestone choices that DEEPENS the wizard's own element. A
-/// required branch that led away from it would make tier 6 harder on the exact build the gate
-/// demands (#61 says so in as many words), and the issue's original Stormcaller path named a
-/// level 8 option that no longer exists. RegressionChecks.ValidateApotheosisCatalog holds both.
+/// Every required path NEVER LEADS AWAY from the wizard's own element: a pure opener's path deepens it at
+/// both milestones; a freed wizard who opens on a hybrid (.ai/chapter-wizards.md, R2) claims one of its
+/// two elements, and his path deepens that one at one milestone and takes the untagged branch at the
+/// other. A required branch that led away would make tier 6 harder on the exact build the gate demands
+/// (#61 says so in as many words), and the issue's original Stormcaller path named a level 8 option that
+/// no longer exists. RegressionChecks.ValidateApotheosisCatalog holds both.
 ///
 /// Each form's behaviour lives in the spell's own script, switched on by
 /// <see cref="SpellData.IsApotheosis"/>; this catalog is only the gate and the stat card. The
@@ -166,6 +168,23 @@ public static class ApotheosisCatalog
 				"The whirlwind catches enemy bolts and throws them back at the nearest enemy, three times as hard as a blade.",
 				"Reflect: the archers feed it. Run among the shooters and let them aim at you.",
 				new Color(0.62f, 0.95f, 0.88f), NoVisualScale),
+		},
+		// Abe no Seimei, the onmyoji sealed in his own five-pointed seal in the Mystic Ruins (.ai/chapter-wizards.md
+		// 4.5). "Banish" was on the ADR's unclaimed list, and an exorcist's seal is what it is for: a ward that
+		// burns a body low seals it where it stands, harmless, and when the ward goes out everything it sealed is
+		// gone (KindledWard.FivePointedSealId). Not an execute - the sealed stop fighting at once and the kills land
+		// together; elites take a heavy blow instead and bosses are never sealed. The path is the pair that
+		// deepens Light: Flare, then Pyre. No visual scale: the ward is drawn out of the reach it burns.
+		new()
+		{
+			CharacterId = "seimei", SpellId = "kindled_ward",
+			RequiredLevel4EvolutionId = KindledWard.FlareId,
+			RequiredLevel8EvolutionId = KindledWard.PyreId,
+			RequiredElement = Element.Light, Verb = "banish",
+			Form = Make(KindledWard.FivePointedSealId, "The Five-Pointed Seal", Element.Light,
+				"A ward that burns an enemy below a quarter of its health seals it there, harmless. When the ward goes out, all it sealed is gone.",
+				"Banish: sealed now, gone later. Elites take a heavy blow instead; bosses are never sealed.",
+				new Color(1.0f, 0.94f, 0.66f), NoVisualScale),
 		},
 	};
 

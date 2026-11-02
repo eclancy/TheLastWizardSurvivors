@@ -93,6 +93,13 @@ PALETTE.update({DK0: E["darkness"][0], DK1: E["darkness"][1],
                 DK2: E["darkness"][2], DK3: E["darkness"][3]})
 DARKNESS_RAMP = DK0 + DK1 + DK2 + DK3
 
+# Light, for Abe no Seimei's kindled ward (Kindled Ward), the mote burning at the tip of the paper in his
+# fingers. Control characters again, after darkness's, for the same reason; core / hot / mid / edge.
+LT0, LT1, LT2, LT3 = "\x05", "\x06", "\x07", "\x08"
+PALETTE.update({LT0: E["light"][0], LT1: E["light"][1],
+                LT2: E["light"][2], LT3: E["light"][3]})
+LIGHT_RAMP = LT0 + LT1 + LT2 + LT3
+
 
 # Robe cloth per wizard. Four different MATERIAL ROWS, not four tints of one - the first pass
 # came out as four distinct silhouettes all wearing the same blue, which is the same failure as
@@ -117,6 +124,9 @@ ROBES = {
     "vainamoinen": ("c", "d", "b"),     # wool, blue-grey - Bramble Seed, the forests he sowed
     # Freed by collecting rather than out of a cell, and dressed by the same rule: a material row.
     "dee": ("N", "p", "j"),             # stone, near-black - a scholar's gown; Hollow Star
+    # The onmyoji's white hunting robe over black, both material rows: linen's pale end for the robe,
+    # stone for the cap and the trousers. Kindled Ward is in his fingers, not on his clothes.
+    "seimei": ("l", "L", "e"),          # linen, pale - the kariginu; Kindled Ward
 }
 
 
@@ -1832,9 +1842,187 @@ def dee(phase=None):
     return g.rows()
 
 
+# His star: the five-pointed seal (the Seimei kikyo), seven pixels across, as the crest on his chest.
+# Filled rather than outlined: at seven pixels an outline pentagram is a smudge, and a filled star is
+# still a star. Each row is (dx from the crest's centre column, run length).
+SEIMEI_STAR = [
+    (0, 1),
+    (-1, 3),
+    (-3, 7),
+    (-2, 5),
+    (-2, 5),
+    (-3, 3), (1, 3),
+]
+
+
+def seimei(phase=None):
+    """Kindled Ward. Abe no Seimei, court onmyoji of Heian Kyoto: diviner, exorcist, master of wards.
+
+    The ward is a mote of light he sends out and lets go, so he is the one figure in the cast who is
+    RELEASING something small and exact: his near arm out in front at shoulder height, a paper ward
+    held up between two fingers, its far end already alight - the only thing on him that gives off
+    light. Everything else is stillness: upright, weight even, the far hand holding the purification
+    wand planted at his side.
+
+    The onmyoji's dress, in the two material rows the rescued wear: the kariginu, a pale hunting robe
+    with a round collar and sleeves wide enough to hang to his knees, open at the sides over black
+    sashinuki trousers gathered at the ankle; the tall black eboshi, creased and leaning back, which
+    gives him the tallest crown in the cast after the wand. His star on his breast. The wand (gohei) is
+    a plain rod with zigzag paper streamers off its head, taller than he is - his staff, but nothing on
+    it glows: the light is in the ward, as the spell is.
+    """
+    mid, lit, dark = ROBES["seimei"]
+    g = G(48)
+    CX = 23
+
+    # THE TROUSERS: black, baggy, gathered at the ankle and puffed over the feet.
+    if phase is None:
+        mass(g, [(36, 16, 30), (41, 15, 31), (44, 14, 32), (46, 15, 31)], "N", "p", "J")
+        for y in range(41, 47):
+            h = (y - 41) * 0.45
+            cut(g, *[(x, y) for x in range(int(round(23 - h)), int(round(23 + h)) + 1)])
+        fold(g, [(18, 38), (17, 45)], "J", "p")
+        fold(g, [(27, 37), (28, 45)], "J", "p")
+        g.line(22, 42, 20, 46, "o")
+        g.line(24, 42, 26, 46, "o")
+        # The black lacquered shoes, toes out from under the gathered hems.
+        toe(g, 28, w=4, shoe=("N", "j", "o"))
+        toe(g, 14, w=3, shoe=("N", "j", "o"))
+    else:
+        # Walking: the two gathered legs trade places under the robe and a toe shows at each contact.
+        c, lift_near, lift_far = stride(phase)
+        front, back = 23.0 + 6.0 * c, 23.0 - 6.0 * c
+        lo = min(15, min(front, back) - 6)
+        hi = max(31, max(front, back) + 6)
+        mass(g, [(36, 16, 30), (41, lo + 0.5, hi - 0.5), (46, lo + 1, hi - 1)], "N", "p", "J")
+        k = abs(c)
+        if k > 0.3:
+            for y in range(41, 47):
+                h = (y - 41) * 0.45 * k
+                cut(g, *[(x, y) for x in range(int(round(23 - h)), int(round(23 + h)) + 1)])
+        fold(g, [(18, 38), (int(round(back)) - 4, 45)], "J", "p")
+        fold(g, [(27, 37), (int(round(front)) + 4, 45)], "J", "p")
+        if k > 0.5:
+            fx = int(round(front if c > 0 else back))
+            toe(g, fx + 2 if c > 0 else fx - 4, w=4 if c > 0 else 3, shoe=("N", "j", "o"))
+
+    # THE KARIGINU: the pale robe, from the shoulders to below the knee, split up the sides so the
+    # black shows at the hip. The front panel hangs straight; the back panel flares a little behind.
+    mass(g, [(17, 18, 28), (22, 17, 29), (30, 16, 29), (36, 16, 30)], mid, lit, dark)
+    fold(g, [(20, 20), (19, 30), (18, 36)], dark, lit)
+    fold(g, [(26, 22), (27, 31), (28, 36)], dark, lit)
+    fold(g, [(23, 30), (23, 37)], "E", lit)
+    # The side slit: the trousers seen through it at the hip.
+    for y in range(31, 37):
+        g.set(16, y, "J")
+        g.set(17, y, "N" if y > 33 else "e")
+    # The hem: uneven, the front panel a pixel longer than the back.
+    tatters(g, [(36, 18, 22), (37, 20, 27), (36, 28, 30)], "l", "L", "E")
+    g.span(37, 18, 19, "E")
+    # The woven figure in the cloth: a few lozenges in the robe's dark stop, never in rows.
+    for (px, py) in ((21, 33), (25, 34), (19, 31), (27, 27), (21, 25), (24, 36)):
+        g.set(px, py, "e")
+        g.set(px + 1, py + 1, "E")
+    # The belt (ate-obi) at the waist, a band of the robe's own cloth tied in front.
+    g.span(28, 16, 30, "E")
+    g.span(29, 17, 29, "e")
+    g.set(24, 29, "L")
+    g.set(25, 30, "e")
+    g.set(24, 30, "E")
+
+    # HIS STAR on his breast: the crest, in the cap's black on the pale robe.
+    sx0, sy0 = 23, 20
+    for i, (dx, run) in enumerate(SEIMEI_STAR):
+        y = sy0 + (i if i < 6 else 5)
+        g.span(y, sx0 + dx, sx0 + dx + run - 1, "J")
+    g.set(sx0, sy0 + 2, "j")                                       # a lit facet on the crest's middle
+
+    # THE FAR SLEEVE, on the left of the sprite: the arm down to the wand, the wide sleeve hanging
+    # from it almost to the knee.
+    mass(g, [(18, 15, 19), (22, 12, 18), (28, 10, 17), (32, 10, 16), (34, 12, 15)], mid, lit, dark)
+    fold(g, [(15, 21), (13, 28), (12, 32)], dark, lit)
+    fold(g, [(17, 24), (15, 32)], "E", None)
+    g.line(11, 33, 15, 34, "E")                                     # the cord at the sleeve's mouth
+    g.set(13, 34, "A")
+
+    # THE WAND (gohei): a plain rod, planted, a little taller than his cap.
+    shaft(g, 13, 46, 12, 5, "l", "E", "A", width=2)
+    hand(g, 11, 26)
+    g.set(13, 26, "f")
+    # Its paper: two zigzag streamers hanging off the head either side of the rod, each a strip two
+    # pixels wide stepping out and back as it falls - a lit face, then a shaded one.
+    for (side, x0) in ((-1, 10), (1, 14)):
+        for k in range(5):
+            y = 5 + k * 2
+            x = x0 + side * (k % 2)
+            g.set(x, y, "S" if k % 2 == 0 else "s")
+            g.set(x + side, y, "s" if k % 2 == 0 else "k")
+            g.set(x, y + 1, "k")
+            g.set(x + side, y + 1, "n")
+    g.span(4, 11, 14, "s")                                          # the binding at the head
+    g.set(12, 3, "S")
+    g.set(13, 3, "k")
+
+    # THE NEAR ARM, out in front at shoulder height: the wide sleeve hanging from it in one long
+    # drape, its mouth open at the wrist.
+    mass(g, [(18, 27, 31), (19, 27, 35), (22, 27, 35), (26, 28, 34), (29, 30, 33), (30, 31, 32)],
+         mid, lit, dark)
+    fold(g, [(30, 21), (31, 26), (32, 29)], dark, lit)
+    fold(g, [(34, 22), (33, 26)], "E", None)
+    g.line(29, 19, 35, 19, "L")                                     # the arm's top, lit
+    g.line(35, 20, 36, 23, "E")                                     # the sleeve's mouth, dark inside
+    g.set(36, 21, "A")
+    g.set(35, 22, "A")
+    # The hand: two fingers up, the paper between them.
+    hand(g, 37, 19)
+    g.set(37, 18, "f")
+    g.set(38, 18, "h")
+
+    # THE WARD: a paper strip held up, written down its length, its far end burning into the light it
+    # is becoming. The spell, so it is the one thing that may glow.
+    g.line(38, 17, 39, 14, "S")
+    g.line(39, 17, 40, 14, "s")
+    g.set(39, 16, "n")                                              # the writing
+    g.set(40, 15, "n")
+    g.set(39, 13, LT3)
+    g.set(40, 13, LT3)
+    g.disc(40.5, 11.0, 1.4, LT2)
+    g.set(40, 11, LT0)
+    g.set(41, 11, LT1)
+    g.set(40, 10, LT1)
+    g.set(42, 12, LT3)
+    # Sparks lifting off it.
+    for (kx, ky, kc) in ((42, 8, LT2), (39, 8, LT3), (43, 11, LT3), (41, 6, LT2)):
+        g.set(kx, ky, kc)
+
+    # THE COLLAR: the kariginu's round neck, closed high, its edge dark against the robe.
+    g.span(16, 20, 27, "E")
+    g.span(17, 19, 28, "e")
+    g.set(19, 16, "L")
+    g.set(20, 17, "L")
+
+    # THE HEAD: a calm, narrow-eyed face looking along his arm at the ward. Black hair at the
+    # temples under the cap.
+    head(g, CX + 1, 10, 3.0, brow="flat", gaze=1, mouth="set", eye="narrow")
+    g.set(21, 11, "J")
+    g.set(21, 12, "J")
+    g.set(27, 11, "J")
+    # THE EBOSHI: tall, black, lacquered, creased across, its crown bent back.
+    mass(g, [(3, 18, 20), (5, 19, 23), (7, 20, 26), (9, 20, 27)], "j", "N", "J")
+    fold(g, [(21, 6), (26, 8)], "J", "N", side=(0, -1))
+    g.line(20, 4, 22, 5, "J")
+    g.set(18, 2, "j")
+    g.set(19, 2, "J")
+    g.span(10, 20, 27, "J")                                         # the cap's brim on the brow
+    g.set(20, 10, "j")
+    contact(g, 9, 36)
+    return g.rows()
+
+
 WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("stormcaller", stormcaller), ("geomancer", geomancer),
-           ("tituba", tituba), ("vainamoinen", vainamoinen), ("dee", dee)]
+           ("tituba", tituba), ("vainamoinen", vainamoinen), ("dee", dee),
+           ("seimei", seimei)]
 ENEMIES = [("swarmer", swarmer), ("runner", runner), ("bruiser", bruiser),
            ("shielder", shielder), ("skullsentry", skullsentry), ("lunger", lunger),
            ("slammer", slammer), ("exploder", exploder), ("summoner", summoner),
@@ -1876,6 +2064,7 @@ RAMPS = [
     "09KM",       # water - Tituba's wave
     "B,'`",       # grass - Vainamoinen's sprouting reeds, and the seed falling from his hand
     DARKNESS_RAMP,  # darkness - John Dee's scrying mirror, and the well's motes in his hand
+    LIGHT_RAMP,     # light - the kindled ward at the tip of Seimei's paper
 ]
 _STEP = {}
 for _r in RAMPS:

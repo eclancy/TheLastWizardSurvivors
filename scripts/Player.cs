@@ -564,6 +564,9 @@ public partial class Player : CharacterBody2D
 	public const int CabinetFullPickupRadius = 50;
 	// John Dee's passive: one more relic in every chest (ChestOfferCount).
 	private int characterChestOfferBonus = 0;
+	// Exorcist (Abe no Seimei): the share added to every hit on an elite, a miniboss or a boss.
+	public const float CharacterEliteDamageBonus = 0.15f;
+	private float characterEliteDamageBonus = 0f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -788,6 +791,9 @@ public partial class Player : CharacterBody2D
 		// Laelaps, the hound that always caught what it hunted: a share of the enemy bolts that reach him
 		// are caught in his jaws (TryCatchBolt, read by EnemyProjectile).
 		"catch_bolts_25",
+		// Abe no Seimei, the exorcist: more damage to the strong ones - elites, minibosses and bosses alike,
+		// everything IsMiniBoss marks (.ai/chapter-wizards.md 4.5). An axis no other wizard owns.
+		"elite_damage_15",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -823,6 +829,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "catch_bolts_25":
 				characterBoltCatchChance = CharacterBoltCatchChance;
+				return true;
+			case "elite_damage_15":
+				characterEliteDamageBonus = CharacterEliteDamageBonus;
 				return true;
 			default:
 				return false;
@@ -2292,6 +2301,9 @@ public partial class Player : CharacterBody2D
 		{
 			if (targetEnemy.HealthFraction <= 0.5f && ownedChestItems.Contains(ChestItemCatalog.SpectralFang))
 				finalDamage = Mathf.RoundToInt(finalDamage * 1.15f);
+			// Exorcist: the strong ones take more from him. Not an execute, so bosses are not spared it.
+			if (characterEliteDamageBonus > 0f && targetEnemy.IsMiniBoss)
+				finalDamage = Mathf.RoundToInt(finalDamage * (1f + characterEliteDamageBonus));
 			// Never a boss (Eric, 2026-11-01: "Bosses should be excluded from execution abilities"): the
 			// boss work made every fight minutes long on purpose, and a Reaper's Scythe cut the last 30%
 			// off all of them. Elites still fall to it; the Morrigan's peck already spares both.

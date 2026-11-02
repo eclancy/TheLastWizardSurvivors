@@ -2719,10 +2719,32 @@ public static class RegressionChecks
 		}
 
 		StageDefinition lastGate = gates[gates.Count - 1];
+		if (StageCatalog.FinalGateChapter?.Id != lastGate.Id)
+			warnings.Add($"Gate reachability: StageCatalog.FinalGateChapter is not {lastGate.DisplayName}, the last gate in campaign order.");
 		foreach (string wizardId in UnlockCatalog.AllWizardIds)
 		{
 			if (!GlobalStatsManager.CountsTowardGate(wizardId, lastGate))
 				warnings.Add($"Gate reachability: the last gate, {lastGate.DisplayName}, does not count '{wizardId}', so the campaign can end with him still held.");
+		}
+
+		// THE CHAPTER WIZARDS (.ai/chapter-wizards.md, G2): counted at the Throne and nowhere before it, so a
+		// wizard held in every chapter of the road never lengthens the Emberdeep's list. The flag is only
+		// meaningful on a wizard someone frees in a chapter: on a boon or spell nothing reads it, on a starter
+		// there is nothing to count, and outside the campaign gate he is counted by no gate at all.
+		foreach (UnlockDefinition flagged in UnlockCatalog.All.Where(d => d.CountedAtFinalGateOnly))
+		{
+			if (flagged.Kind != UnlockKind.Character || flagged.Source == UnlockSource.Starter || flagged.OutsideCampaignGate)
+			{
+				warnings.Add($"Gate reachability: '{flagged.Id}' is counted at the final gate only, which means nothing on a {flagged.Source} {flagged.Kind}{(flagged.OutsideCampaignGate ? " outside the campaign gate" : "")}.");
+				continue;
+			}
+			if (string.IsNullOrWhiteSpace(GlobalStatsManager.RescueChapterOf(flagged)))
+				warnings.Add($"Gate reachability: chapter wizard '{flagged.Id}' is freed by no chapter's deed, so there is no road to count him on.");
+			foreach (StageDefinition gate in gates.Where(g => g.Id != lastGate.Id))
+			{
+				if (GlobalStatsManager.CountsTowardGate(flagged.Id, gate))
+					warnings.Add($"Gate reachability: {gate.DisplayName} counts chapter wizard '{flagged.Id}', who is counted at {lastGate.DisplayName} only.");
+			}
 		}
 
 		foreach (StageDefinition gate in gates)
@@ -4593,9 +4615,10 @@ public static class RegressionChecks
 		}
 	}
 
-	// The starting roster's one real invariant: a character is its element. Each playable character
+	// The starting roster's one real invariant: a starter is its element. Each wizard a new save holds
 	// opens with a spell carrying a single element weight, and no two of them open the same one, so
-	// picking a character is picking which set of element thresholds the run starts pointed at.
+	// picking a starter is picking which set of element thresholds the run starts pointed at. (Freed
+	// wizards are held to less since 2026-11-01: ValidateStartingCharacters says what.)
 	//
 	// Both halves rot silently. A starting spell quietly retagged with a second element (Magic
 	// Missile carries Arcane *and* Lightning, which is why it is no longer a starter) splits the
@@ -5554,9 +5577,17 @@ public static class RegressionChecks
 		_ => stat.ToString(),
 	};
 
+	// THE RULE, AS ERIC SET IT (2026-11-01, .ai/chapter-wizards.md section 0): "Only default starting wizards
+	// that are unlocked on a new save file need to have mono element spells. Unlockable wizards can have
+	// multi-element starting spells." So the one-element rule, and the one-owner-per-element rule, bind the
+	// STARTERS only - the four disciplines a new save holds, which are what make picking a wizard picking an
+	// element. A wizard the player frees (R2) may open on a hybrid, which never names more than two elements,
+	// and may share an element with anyone (R1); what no two characters may share is the opening itself - one
+	// spell, in one form - or one of them is the other in a different coat.
 	private static void ValidateStartingCharacters(List<string> warnings)
 	{
 		var elementOwners = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		var openingOwners = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
 		foreach (CharacterData character in CharacterRoster.GetAll())
 		{
@@ -5579,6 +5610,15 @@ public static class RegressionChecks
 			// character its own starting spell, which the rescued wizards need - they open on spells
 			// the save may not own yet (.ai/side-events.md).
 
+			// One spell in one form per character, whoever he is (R1). The form is the Apotheosis's: a wizard
+			// who opens on a spell with forms has one per form (ApotheosisDefinition.VariantId).
+			ApotheosisDefinition form = ApotheosisCatalog.ForCharacter(character.Id);
+			string opening = $"{starter.Id}:{form?.VariantId ?? string.Empty}";
+			if (openingOwners.TryGetValue(opening, out string twin))
+				warnings.Add($"Characters '{twin}' and '{character.Id}' both open on '{starter.Id}'{(string.IsNullOrEmpty(form?.VariantId) ? "" : $" as '{form.VariantId}'")}; two wizards may share an element, never an opening spell.");
+			else
+				openingOwners[opening] = character.Id;
+
 			var weights = starter.ElementWeights;
 			if (weights == null || weights.Count == 0)
 			{
@@ -5586,9 +5626,19 @@ public static class RegressionChecks
 				continue;
 			}
 
+			// A freed wizard (R2): a hybrid is allowed, but never past the two-element ceiling, and the element
+			// his Apotheosis claims must be one of the two (ValidateApotheosisCatalog holds the path to it).
+			bool isStarter = UnlockCatalog.IsStarter(character.Id, UnlockKind.Character);
+			if (!isStarter)
+			{
+				if (weights.Count > 2)
+					warnings.Add($"Character '{character.Id}' starts with '{starter.Id}', which carries {weights.Count} elements; no spell may name more than two.");
+				continue;
+			}
+
 			if (weights.Count > 1)
 			{
-				warnings.Add($"Character '{character.Id}' starts with '{starter.Id}', which carries {weights.Count} elements; a starter must carry exactly one so the character's opening weight is not split.");
+				warnings.Add($"Starter '{character.Id}' starts with '{starter.Id}', which carries {weights.Count} elements; a wizard a new save holds must open on exactly one, so picking him is picking an element.");
 				continue;
 			}
 
@@ -5600,7 +5650,7 @@ public static class RegressionChecks
 			}
 
 			if (elementOwners.TryGetValue(element, out string owner))
-				warnings.Add($"Characters '{owner}' and '{character.Id}' both open on {element}; each starting character should claim a different element.");
+				warnings.Add($"Starters '{owner}' and '{character.Id}' both open on {element}; each wizard a new save holds should claim a different element.");
 			else
 				elementOwners[element] = character.Id;
 		}

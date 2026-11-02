@@ -1962,7 +1962,12 @@ public partial class Enemy : CharacterBody2D
 
 	private ProcessModeEnum modeBeforeHeld = ProcessModeEnum.Inherit;
 
-	public void SetTargetable(bool targetable)
+	/// <param name="hideBody">
+	/// False keeps the body drawn while it is out of play: a body SEALED where it stands (Abe no Seimei's
+	/// Apotheosis, KindledWard) is seen, frozen, under its seal - it is only out of reach. A burrower is
+	/// gone from sight as well, which is the default.
+	/// </param>
+	public void SetTargetable(bool targetable, bool hideBody = true)
 	{
 		if (isDying || IsTargetable == targetable)
 			return;
@@ -1982,7 +1987,7 @@ public partial class Enemy : CharacterBody2D
 		CollisionLayer = 0;
 		CollisionMask = 0;
 		Velocity = Vector2.Zero;
-		if (animatedSprite != null)
+		if (animatedSprite != null && hideBody)
 			animatedSprite.Visible = false;
 	}
 

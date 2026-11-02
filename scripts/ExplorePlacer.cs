@@ -150,10 +150,22 @@ public sealed class ExplorePlacer
 	private Vector2 Search(Vector2 candidate, float footprint, float startAngle, IReadOnlyList<Vector2> avoid = null, float spacing = 0f,
 		Func<Vector2, float, bool> test = null)
 	{
+		if (TrySearch(candidate, footprint, startAngle, avoid, spacing, test, out Vector2 found))
+			return Keep(found, footprint);
+		// Measured never to happen on the shipping stages; if it ever does, the site still exists
+		// rather than the event silently not being there, and --explore-log says so.
+		GD.PushWarning($"ExplorePlacer: no open ground within {SearchReach} px of {candidate}; placing there anyway.");
+		return Keep(Snap(candidate), footprint);
+	}
+
+	private bool TrySearch(Vector2 candidate, float footprint, float startAngle, IReadOnlyList<Vector2> avoid,
+		float spacing, Func<Vector2, float, bool> test, out Vector2 found)
+	{
 		test ??= ground.IsClear;
 		Vector2 first = Snap(candidate);
+		found = first;
 		if (Spaced(first, avoid, spacing) && test(first, footprint))
-			return Keep(first, footprint);
+			return true;
 
 		float step = ground.MazeCellPixels > 0f ? ground.MazeCellPixels : SearchStep;
 		for (float r = step; r <= SearchReach + 0.1f; r += step)
@@ -163,13 +175,61 @@ public sealed class ExplorePlacer
 			{
 				Vector2 p = Snap(candidate + Direction(startAngle + k * Mathf.Tau / around) * r);
 				if (Spaced(p, avoid, spacing) && test(p, footprint))
-					return Keep(p, footprint);
+				{
+					found = p;
+					return true;
+				}
 			}
 		}
-		// Measured never to happen on the shipping stages; if it ever does, the site still exists
-		// rather than the event silently not being there, and --explore-log says so.
-		GD.PushWarning($"ExplorePlacer: no open ground within {SearchReach} px of {candidate}; placing there anyway.");
-		return Keep(first, footprint);
+		return false;
+	}
+
+	/// <summary>
+	/// The event's main site for a footprint wider than a corridor - the Five-Pointed Seal's courtyard, which
+	/// on the Ruins' lattice fits only in a court (one block in eight, .ai/terrain.md section 11). EventSite's
+	/// rolls and its search first; if that finds nothing open within its reach, the whole event band is swept,
+	/// ring by ring out from the rolled distance and either way round from the rolled bearing, one maze cell
+	/// a step, and the first open footprint taken - still 4 to 6 chunks out, still the seed's. The event's
+	/// bearing becomes the site's, so the wayfinder keeps away from where it really is. Only then the old
+	/// fallback. Opt-in: every site placed before is placed exactly as it was.
+	/// </summary>
+	public Vector2 EventSiteInBand(float footprint, bool dense = false)
+	{
+		float bearing = NextFloat() * Mathf.Tau;
+		float distance = Mathf.Lerp(EventMinChunks, EventMaxChunks, NextFloat()) * ground.ChunkPixels;
+		float searchFrom = NextFloat() * Mathf.Tau;
+		if (float.IsNaN(EventBearing))
+			EventBearing = bearing;
+		Func<Vector2, float, bool> test = dense ? ground.IsClearDense ?? ground.IsClear : ground.IsClear;
+		Vector2 candidate = ground.Origin + Direction(bearing) * distance;
+		if (TrySearch(candidate, footprint, searchFrom, null, 0f, test, out Vector2 found))
+			return Keep(found, footprint);
+
+		float step = ground.MazeCellPixels > 0f ? ground.MazeCellPixels : SearchStep;
+		float min = EventMinChunks * ground.ChunkPixels;
+		float max = EventMaxChunks * ground.ChunkPixels;
+		int rings = Mathf.FloorToInt((max - min) / step) + 1;
+		for (int n = 0; n < rings * 2; n++)
+		{
+			// Out from the rolled distance and back in, alternately: distance, +1, -1, +2, -2...
+			float d = distance + ((n % 2 == 0) ? 1 : -1) * ((n + 1) / 2) * step;
+			if (d < min || d > max)
+				continue;
+			int around = Mathf.Max(8, Mathf.RoundToInt(Mathf.Tau * d / step));
+			for (int k = 0; k < around; k++)
+			{
+				int side = (k % 2 == 0) ? (k / 2) : -((k + 1) / 2);
+				float angle = bearing + side * Mathf.Tau / around;
+				Vector2 p = Snap(ground.Origin + Direction(angle) * d);
+				if (test(p, footprint))
+				{
+					EventBearing = Mathf.Atan2(p.Y - ground.Origin.Y, p.X - ground.Origin.X);
+					return Keep(p, footprint);
+				}
+			}
+		}
+		GD.PushWarning($"ExplorePlacer: no open ground for a {footprint:0} px footprint anywhere in the event band; placing at {candidate} anyway.");
+		return Keep(Snap(candidate), footprint);
 	}
 
 	private Vector2 Keep(Vector2 site, float footprint)
