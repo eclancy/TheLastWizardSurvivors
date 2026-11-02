@@ -240,6 +240,13 @@ builds to 120 and seven.
   right; the chest Ban closing the chest with no relic; nobody has listened to the three defeat sounds.
   **Next:** the slow start (a design pass on which achievement teaches which system and the post-run
   cutscenes, then the build); the castle (C5 dark wizard, C2, C8, C9); the secrets catalogue.
+- **After 0.11.0 (released, `main` = `main-ff86ni` at the release):** GitHub triaged - ten issues closed
+  as done or obsolete, #67 cancelled by Eric, only **#44** open. Its decisions are applied (the Reliquary
+  -18%, the Lightning Rod's speed always on). **Building:** the slow start (`wip/slow-start`, schema
+  **22**), the dark wizard (C5, `wip/boss-dark-wizard`), the Dungeon move with the castle's map stops
+  (C2 + C8, `wip/dungeon-move`, schema **21**; nothing flips `IsPlayable` without Eric). **Queued as
+  slots free:** #44's 10,000-run chest simulation and a fresh relic sweep at 50 HP with the new sets;
+  the rest of the secrets catalogue with the castle's (C9).
 - **The defeat sequence** (Eric, 2026-11-02): *"Defeat should have a dramatic animation where the game
   freezes, then crash zooms onto the wizard and they fall, then it says defeat, and when the player
   clicks, the defeat screen covers up. It then tallys up the reward with a satisfying payout sound. The
