@@ -51,6 +51,21 @@ public partial class Node2DGame
 	/// <summary>How quickly the camera eases toward its lean and back (1/s, exponential).</summary>
 	private const float BossEntranceCameraEase = 3.2f;
 
+	// BARS FIRST, THEN THE PAN (Eric, 2026-11-02: "cutscenes should stop spells firing, show the black
+	// bars, but not pan the camera immediately. after the zoom/black bars, etc, then it can pan the camera
+	// to the boss spawning ... i want to prevent the player from being overwhelmed by sudden camera
+	// panning"). The pan used to start on the hold's first frame, on the exponential ease above, which
+	// moves fastest in its first frame: the picture lurched toward the boss while the bars were still
+	// closing. Now the camera holds still on the wizard while the bars close and the picture pushes in,
+	// and only then pans, on a critically damped spring - it starts from rest, gathers speed and settles
+	// without overshoot - and comes back the same way when the hold lets go.
+
+	/// <summary>Real seconds the camera holds still once a hold begins: the bars' closing and a beat.</summary>
+	private const float BossEntrancePanDelay = LetterboxInSeconds + 0.2f;
+
+	/// <summary>The pan's spring (1/s): critically damped; about 1.1 s to settle on the boss.</summary>
+	private const float BossEntrancePanStiffness = 3.6f;
+
 	// --- The cinematic's tuning ----------------------------------------------------------------------
 
 	/// <summary>
@@ -102,6 +117,7 @@ public partial class Node2DGame
 	private float cinematicZoom = 1f;
 	private float cinematicZoomPunch;
 	private float appliedZoomFactor = 1f;
+	private Vector2 cinematicPanVelocity;
 
 	private readonly ScreenShake screenShake = new();
 
@@ -260,6 +276,7 @@ public partial class Node2DGame
 			cinematicCameraActive = true;
 			cinematicBaseZoom = entranceCamera.Zoom;
 			cinematicZoom = 1f;
+			cinematicPanVelocity = Vector2.Zero;
 		}
 
 		Vector2 want = chapterLean;
@@ -271,11 +288,30 @@ public partial class Node2DGame
 				want = want.Normalized() * BossEntranceCameraLean;
 			wantZoom = FitZoomFactor(want);
 		}
-		Vector2 now = entranceCamera.Position.Lerp(want, 1f - Mathf.Exp(-BossEntranceCameraEase * delta));
+		// The pan waits out the bars (BossEntrancePanDelay), then springs; the zoom pushes in from the start.
+		Vector2 now = entranceCamera.Position;
+		if (!bossEntranceHeld || bossEntranceHeldSeconds >= BossEntrancePanDelay)
+		{
+			// Stepped in sixtieths, and never more than a tenth of a second a frame: one long frame (a hitch
+			// as a boss's phase builds) taken as a single step flung the camera 300 px in a frame.
+			float k = BossEntrancePanStiffness;
+			for (float left = Mathf.Min(delta, 0.1f); left > 0f; left -= 1f / 60f)
+			{
+				float h = Mathf.Min(left, 1f / 60f);
+				Vector2 accel = (want - now) * (k * k) - cinematicPanVelocity * (2f * k);
+				cinematicPanVelocity += accel * h;
+				now += cinematicPanVelocity * h;
+			}
+		}
+		else
+		{
+			cinematicPanVelocity = Vector2.Zero;
+		}
 		cinematicZoom = Mathf.Lerp(cinematicZoom, wantZoom, 1f - Mathf.Exp(-(bossEntranceHeld ? ZoomInEase : ZoomOutEase) * delta));
 		cinematicZoomPunch *= Mathf.Exp(-9f * delta);
 
-		if (!bossEntranceHeld && now.DistanceTo(chapterLean) < 0.5f && Mathf.Abs(cinematicZoom - 1f) < 0.002f && cinematicZoomPunch < 0.001f)
+		if (!bossEntranceHeld && now.DistanceTo(chapterLean) < 0.5f && cinematicPanVelocity.Length() < 2f
+			&& Mathf.Abs(cinematicZoom - 1f) < 0.002f && cinematicZoomPunch < 0.001f)
 		{
 			// At rest: exactly where the run had it (or on the chapter's lean), and the cinematic lets go of
 			// the camera.
@@ -284,6 +320,7 @@ public partial class Node2DGame
 			cinematicZoom = 1f;
 			cinematicZoomPunch = 0f;
 			appliedZoomFactor = 1f;
+			cinematicPanVelocity = Vector2.Zero;
 			cinematicCameraActive = false;
 			chapterLeanMoved = chapterLean != Vector2.Zero;
 			return;

@@ -894,7 +894,13 @@ leans toward the middle of every arriving body (`BossEnemy.Arriving`: a processi
 through its `Position` and pushes in through its `Zoom`, at most x1.28 and never past what keeps each body
 (150/160 px round it, for its first tell) and the wizard inside the picture between the bars - pulling
 out instead, to x0.88 at most, when the bodies are spread wider than that (the Choir, a pair). Spawn rings
-read `Node2DGame.GameplayZoomOf`, so the push-in never pulls the swarm on screen. The screen shakes
+read `Node2DGame.GameplayZoomOf`, so the push-in never pulls the swarm on screen. **The pan waits for
+the bars** (Eric, 2026-11-02: "not pan the camera immediately ... prevent the player from being
+overwhelmed by sudden camera panning"): the camera holds still on the wizard for
+`BossEntrancePanDelay` (the bars' 0.45 s and a beat) while the picture pushes in, then pans on a
+critically damped spring that starts from rest (`BossEntrancePanStiffness`, about 1.1 s to settle), and
+comes back the same way; `_BossProbe` logs when the pan began and its peak speed (0.6 s, ~400 px/s on
+the Ruins; before, it lurched on the first frame). The screen shakes
 (`ScreenShake`, the camera's `Offset`) on the beats each boss marks in its own timeline - the roar is the
 climax (`EntranceClimaxWeight`, 0.3 the kids' wizard to 1.3 the Warden of the Deep), and landings and
 bursts call `BossDeath.Impact(weight)`, in falls too. On the climax the bars jolt in, the push-in kicks,

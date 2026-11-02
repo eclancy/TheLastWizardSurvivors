@@ -92,6 +92,11 @@ public partial class _BossProbe : Node
 	private float driftDuringEntrance, peakCinematicZoom = 1f, releaseSeenAt = -1f;
 	private int pushedFramesDuringEntrance;
 	private bool sawBarsIn, walkChecked;
+	// The camera through the arrival (2026-11-02, Eric: "not pan the camera immediately"): when the pan
+	// began after the arrival was first seen, and the fastest it moved and when, in world px per second.
+	private Vector2 camLast;
+	private bool camSeen;
+	private float panBeganAt = -1f, peakCamSpeed, peakCamSpeedAt;
 	private float bossArrivedAt;
 	private readonly List<string> notes = new();
 
@@ -340,6 +345,23 @@ public partial class _BossProbe : Node
 				sawBarsIn |= filming.LetterboxShown >= 0.999f;
 				peakCinematicZoom = Math.Max(peakCinematicZoom, filming.CinematicZoomFactor);
 			}
+			if (player.GetNodeOrNull<Camera2D>("Camera2D") is Camera2D cam && delta > 0.0001f)
+			{
+				Vector2 at = cam.Position;
+				if (camSeen)
+				{
+					float speed = at.DistanceTo(camLast) / delta;
+					if (speed > peakCamSpeed)
+					{
+						peakCamSpeed = speed;
+						peakCamSpeedAt = elapsed - entranceSeenAt;
+					}
+					if (panBeganAt < 0f && speed > 4f)
+						panBeganAt = elapsed - entranceSeenAt;
+				}
+				camLast = at;
+				camSeen = true;
+			}
 			if (wizard != null && wizard.CurrentHP < hpAtEntrance)
 				hurtDuringEntrance = true;
 			return;
@@ -355,6 +377,8 @@ public partial class _BossProbe : Node
 				+ $"hurt during it: {hurtDuringEntrance}; still held a frame after: spells {wizard?.HeldForBossEntrance}, field {(Node2DGame.Current?.BossEntranceHeld ?? false)}");
 			notes.Add($"cinematic: the wizard moved {driftDuringEntrance:0.0} px during it with the bot pushing on {pushedFramesDuringEntrance} frames; "
 				+ $"bars all the way in: {sawBarsIn}; push-in peak x{peakCinematicZoom:0.00}");
+			notes.Add($"camera: the pan began {(panBeganAt < 0f ? "never" : $"{panBeganAt:0.00}s")} into the arrival; "
+				+ $"fastest {peakCamSpeed:0} px/s at {peakCamSpeedAt:0.00}s");
 			releasedAt = player.GlobalPosition;
 			releaseSeenAt = elapsed;
 		}
