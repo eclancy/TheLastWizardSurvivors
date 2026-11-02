@@ -146,6 +146,13 @@ public partial class Sagittarius : Node2D
 		if (PlayerRef == null || !IsInstanceValid(PlayerRef) || bow == null || sky == null)
 			return;
 		TickQuarry((float)delta);
+		// A boss is arriving: every spell is silent (Player's fire loop), and so is the bow - the draw is held
+		// where it stands, never loosed and never lost.
+		if (PlayerRef.HeldForBossEntrance)
+		{
+			lastPosition = PlayerRef.GlobalPosition;
+			return;
+		}
 		TickDraw((float)delta);
 	}
 

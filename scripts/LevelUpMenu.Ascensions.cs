@@ -756,9 +756,11 @@ public partial class LevelUpMenu
 			ComboIngredient partner = ComboCatalog.PartnerOf(ComboCatalog.ForId(combo.Id), spellId);
 			if (partner == null)
 				continue;
-			// Gold lit on the obsidian plate (7.8:1), the same advice ink the old level 8 cards wrote in.
+			// Gold lit on the obsidian plate (7.8:1), the same advice ink the old level 8 cards wrote in. It wraps:
+			// unwrapped, a phone's side-by-side plate took the line's whole width and squeezed its sibling's
+			// name into "Starbur / st", and the browser's page with it past the screen's edge.
 			Control mark = BuildRequirementGlyphText($"Joins {partner.Label}", "conjunction",
-				onPlate ? CardFamilyArt.AscensionAdvice : CodexRows.Stone.InkSoft, expand: false);
+				onPlate ? CardFamilyArt.AscensionAdvice : CodexRows.Stone.InkSoft, expand: true);
 			mark.Name = $"ConjunctionMark_{combo.Id}";
 			return mark;
 		}
