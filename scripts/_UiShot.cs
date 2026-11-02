@@ -1324,6 +1324,18 @@ public partial class _UiShot : Node
 						CurrentSave().Lifetime.BossesDefeated.Add(boss.Id);
 				}
 			}
+			// --as-schema=N: the in-memory save built by the flags before it is one schema N wrote, and is
+			// migrated now as a load would migrate it (SaveData.Migrate) - so a screen can be photographed as
+			// an older save meets it, e.g. the Cursed Dungeon kept grandfathered by schema 21
+			// (.ai/endgame-castle.md 1.5): --fresh-save --open-stages=...,stage_1 --beaten=... --as-schema=19.
+			else if (arg.StartsWith("--as-schema="))
+			{
+				SaveData old = CurrentSave();
+				old.SchemaVersion = int.Parse(arg.Substring("--as-schema=".Length));
+				old.Migrate();
+				GD.Print($"_UiShot: as schema {arg.Substring("--as-schema=".Length)}: opened [{string.Join(", ", old.UnlockedStageIds)}],"
+					+ $" grandfathered [{string.Join(", ", old.GrandfatheredStageIds)}], rush {(BossRushCatalog.IsOpen(old) ? "open" : "closed")}");
+			}
 			else if (arg == "--name-audit")
 				nameAudit = true;
 			// THE WORLD MAP (.ai/world-map.md). --map-at=<stop> opens it with the wizard standing at
@@ -2794,6 +2806,11 @@ public partial class _UiShot : Node
 			{
 				deathForced = true;
 				winner.FinishRunAndReward(RunOutcome.Victory, BossCatalog.ForStageIndex(Global.SelectedStageIdx)?.Id ?? string.Empty);
+				// What the win wrote, for a probe of the road's rules (a win in a grandfathered chapter opens nothing).
+				SaveData won = CurrentSave();
+				GD.Print($"_UiShot: after the win: opened [{string.Join(", ", won.UnlockedStageIds)}],"
+					+ $" grandfathered [{string.Join(", ", won.GrandfatheredStageIds)}], beaten [{string.Join(", ", won.Lifetime.BossesDefeated)}],"
+					+ $" deeds [{string.Join(", ", won.UnlockedAchievementIds)}]");
 			}
 			// A level-one wizard stepped straight to a boss dies to it in a second; the photographs are
 			// of the rush, so he is kept whole while it steps (until --force-death means otherwise).
