@@ -488,6 +488,12 @@ their `_boss` added, with `music.py <chapter> --stems pulse,boss`; beds and lead
 - **Size:** 24.6 MiB of WAV, 19.2 MiB of git objects; 2.6 MB more in an export (2,609,368 bytes,
   the eleven boss layers' imported QOA data as Godot reads it back; the pulses replace theirs at the
   same length). `spell_maw_open` adds 0.16 MB of WAV.
+- **Headless** (`_BalanceHarness --immortal --minutes=6` on the Forest, Dungeon, Swamp and Sands;
+  `_BossProbe` on the Cave, Ruins and Sketchbook): every run logs its set starting at bar one with
+  four stems locked - bed, pulse and lead at 0 dB, the boss layer at -80 - and the pulse never
+  leaves; `Node2DGame: run music lead out at 00:24`, back for the first elite (02:15 in the Swamp),
+  held from pace minute 5; each boss logs `pulse 1 lead 0 boss 1` on arrival. The headless audio
+  driver plays nothing, so this proves the faders, not the sound.
 - **Not heard.** Section 11, "Not yet heard", lists what to listen for.
 
 ### The castle's music (2026-10-30: rendered, and wired in `MusicCatalog` by C0)
