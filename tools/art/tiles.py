@@ -490,32 +490,6 @@ def body_mossy_rock(c):
     clumps(c, 3, 1, 3, v[3], 913, fill=0.5)
 
 
-def body_ice(c):
-    st = ramp("steel")
-    c.rect(0, 0, SIZE - 1, SIZE - 1, st[4])
-    clumps(c, 4, 3, 7, st[3], 15, fill=0.35)
-    # FRACTURES, NOT A HATCH. The first pass ran five full-width diagonals across every tile and
-    # the field came out as a stripe pattern - the same failure the roster notes record for evenly
-    # spaced anything. These are short polylines that CHANGE ANGLE, which is what a crack does and
-    # a hatch does not, and they stop well inside the tile so no two meet at a join.
-    for k in range(3):
-        x = inside(k, 16, 10)
-        y = inside(k, 17, 10)
-        ang = hashed(k, 3, 18) * TAU
-        for seg in range(3):
-            ang += (hashed(k, seg, 19) - 0.5) * 1.6
-            run = 4 + int(hashed(k, seg, 30) * 4)
-            for j in range(run):
-                px = int(x + math.cos(ang) * j)
-                py = int(y + math.sin(ang) * j)
-                if 1 <= px < SIZE - 1 and 1 <= py < SIZE - 1:
-                    c.set(px, py, st[2] if j % 3 else st[3])
-            x = int(x + math.cos(ang) * run)
-            y = int(y + math.sin(ang) * run)
-        if 1 <= x < SIZE - 1 and 1 <= y < SIZE - 1:
-            c.set(x, y, st[1])
-
-
 def body_water(c):
     """Water's one tile, a crop of the forest surface from water.py.
 
@@ -530,37 +504,398 @@ def body_water(c):
             c.set(x, y, src.get(x, y))
 
 
-def body_lava(c):
+# --- the Emberdeep: basalt that cracks, and lava that is still liquid ------------------------------
+#
+# Reported from 0.10.0: "Emberdeep doesn't look like cracked volcanic earth." It stood on `basalt`,
+# which was the `natural` floor in the stone row with violet clumps - a calm navy slate that said
+# nothing about where you were - and its LAVA was black crust with thin orange cracks: what cracked
+# volcanic earth looks like. The hazard had the look the floor wanted. Both are redrawn here.
+#
+# THE PROBLEM WITH PLATES. A plate of basalt is wider than a tile, and the ground layer mixes a
+# material's variants freely, so a crack that crossed a tile edge would be cut wherever the
+# neighbour is a different variant. The answer is the old Wang-tile trick: EVERY variant crosses
+# each tile edge at the same places, with a short stub through the edge that is identical in all of
+# them (it wraps, so the stub at the top of one cell continues at the bottom of the one above), and
+# only what happens inside the cell changes (crack_net below). Every variant comes out identical on
+# its outer three pixels, so any variant meets any other with no seam.
+#
+# TWO NETWORKS THAT FAILED FIRST. One crossing per edge and two three-way junctions inside is the
+# topology of a honeycomb, which is what columnar basalt is from above - and a field of it was
+# interlocking jigsaw pieces of one size: the crossings sit on a 48 px lattice and the eye found it.
+# Dropping legs at random to merge plates left the stubs as dead-end dashes everywhere and no plates
+# at all. What works is two crossings a side, each at its own slant, and junctions scattered per
+# variant and joined by their relative neighbourhood graph: plates of every size, no lattice.
+# (The Frozen Waste's ice uses the same network for its fractures, one crossing a side.)
+
+
+def fixed_hash(x, y, salt):
+    """hashed() as variant 0, whatever variant is being drawn: for anything every variant must share."""
+    h = (x * 73856093) ^ (y * 19349663) ^ (salt * 83492791)
+    h &= 0x7FFFFFFF
+    return ((h >> 7) % 10007) / 10007.0
+
+
+def seg_dist(px, py, ax, ay, bx, by):
+    """Distance from (px, py) to segment a-b, the nearest point on it, and how far along it (0-1)."""
+    vx, vy = bx - ax, by - ay
+    l2 = vx * vx + vy * vy
+    t = 0.0 if l2 == 0 else max(0.0, min(1.0, ((px - ax) * vx + (py - ay) * vy) / l2))
+    nx, ny = ax + vx * t, ay + vy * t
+    return math.hypot(px - nx, py - ny), nx, ny, t
+
+
+def nearest_seam(segs, px, py):
+    """(clearance, distance, nearest x, nearest y, segment index, t, half-width) on the torus.
+
+    Clearance is the distance less the seam's half-width there, so a bold seam wins over a hairline
+    beside it. The tile wraps, so each segment is also tried one tile over in every direction: a
+    shared stub that runs off the top of the cell is found again at its bottom."""
+    best = (1e9, 0.0, 0.0, 0.0, -1, 0.0, 0.0)
+    for i, s in enumerate(segs):
+        ax, ay, bx, by, w0, w1 = s[0], s[1], s[2], s[3], s[4], s[5]
+        for ox in (-SIZE, 0, SIZE):
+            if min(ax, bx) + ox > px + 4 or max(ax, bx) + ox < px - 4:
+                continue
+            for oy in (-SIZE, 0, SIZE):
+                if min(ay, by) + oy > py + 4 or max(ay, by) + oy < py - 4:
+                    continue
+                d, nx, ny, t = seg_dist(px, py, ax + ox, ay + oy, bx + ox, by + oy)
+                hw = w0 + (w1 - w0) * t
+                if d - hw < best[0]:
+                    best = (d - hw, d, nx - ox, ny - oy, i, t, hw)
+    return best
+
+
+def leg(points, w0, w1, heat=None):
+    """Segments (ax, ay, bx, by, w at a, w at b, heat) along a polyline, the width running w0 -> w1.
+    heat is None, or (t0, t1, peak) in the polyline's own length - see basalt()."""
+    out = []
+    lens = [math.hypot(points[k + 1][0] - points[k][0], points[k + 1][1] - points[k][1])
+            for k in range(len(points) - 1)]
+    total = sum(lens) or 1.0
+    run = 0.0
+    for k in range(len(points) - 1):
+        u0, u1 = run / total, (run + lens[k]) / total
+        run += lens[k]
+        (ax, ay), (bx, by) = points[k], points[k + 1]
+        part = None
+        if heat:
+            lo, hi = max(heat[0], u0), min(heat[1], u1)
+            if hi > lo:
+                span = u1 - u0 or 1.0
+                # this segment's share of the hot stretch, and where in the whole stretch it sits
+                part = ((lo - u0) / span, (hi - u0) / span, heat[2],
+                        (lo - heat[0]) / (heat[1] - heat[0]), (hi - heat[0]) / (heat[1] - heat[0]))
+        out.append((ax, ay, bx, by, w0 + (w1 - w0) * u0, w0 + (w1 - w0) * u1, part))
+    return out
+
+
+def bent(a, b, h, salt, amount=3.0, bends=1):
+    """a to b through midpoints pushed sideways, so no seam is a ruled line."""
+    (ax, ay), (bx, by) = a, b
+    dx, dy = bx - ax, by - ay
+    ln = math.hypot(dx, dy) or 1.0
+    pts = [a]
+    for j in range(bends):
+        f = (j + 1) / float(bends + 1)
+        push = (h(salt + j) - 0.5) * 2.0 * amount
+        pts.append((ax + dx * f - dy / ln * push, ay + dy * f + dx / ln * push))
+    pts.append(b)
+    return pts
+
+
+def stroke(c, x0, y0, x1, y1, tone):
+    """A one-pixel line, stepped at half a pixel so a diagonal never breaks into dots."""
+    n = int(max(abs(x1 - x0), abs(y1 - y0)) * 2) + 1
+    for j in range(n + 1):
+        t = j / float(n)
+        c.set(int(x0 + (x1 - x0) * t), int(y0 + (y1 - y0) * t), tone)
+
+
+HAIR = 0.5      # a hairline: one pixel
+SEAM = 1.05     # a seam: two pixels, three where it smoulders
+
+
+def crack_net(h, top, left, stub, nodes, width, spacing=11.0):
+    """An irregular crack network for one variant of a tile, that meets every other variant at the edge.
+
+    `top` and `left` are the shared crossings, (position, angle in degrees from the edge's normal):
+    the seams that cross the top (and so the bottom) edge and the left (and so the right). Each gets a
+    stub of `stub` pixels either side of the edge, identical in every variant and wrapping. Inside the
+    cell `nodes` junctions are scattered (the variant's own, never nearer the edge than 10 px) and the
+    junctions and the stubs' inner ends are joined by their RELATIVE NEIGHBOURHOOD GRAPH - a pair is
+    joined unless some third point is nearer to both - which is the graph a drying or cooling crust
+    actually cracks along: no crossings, junctions of three, cells of every size. Returns
+    (segments, edges), the edges as (a, b) point pairs for anyone who wants to hang more off them."""
+    segs = []
+    ends = []
+    for pos, ang in top:
+        dx, dy = math.sin(math.radians(ang)) * stub, math.cos(math.radians(ang)) * stub
+        segs += leg([(pos - dx, -dy), (pos + dx, dy)], width, width)
+        ends.append(((pos + dx, dy), "t"))
+        ends.append(((pos - dx, SIZE - dy), "b"))
+    for pos, ang in left:
+        dy, dx = math.sin(math.radians(ang)) * stub, math.cos(math.radians(ang)) * stub
+        segs += leg([(-dx, pos - dy), (dx, pos + dy)], width, width)
+        ends.append(((dx, pos + dy), "l"))
+        ends.append(((SIZE - dx, pos - dy), "r"))
+    pts = []
+    for k in range(60):
+        if len(pts) >= nodes:
+            break
+        q = (10 + h(100 + k * 2) * (SIZE - 20), 10 + h(101 + k * 2) * (SIZE - 20))
+        if all(math.hypot(q[0] - o[0], q[1] - o[1]) >= spacing for o in pts) and                 all(math.hypot(q[0] - e[0][0], q[1] - e[0][1]) >= spacing * 0.7 for e in ends):
+            pts.append(q)
+    allp = [(q, "n") for q in pts] + ends
+    edges = []
+    for i in range(len(allp)):
+        for j in range(i + 1, len(allp)):
+            (a, sa), (b, sb) = allp[i], allp[j]
+            if sa != "n" and sb != "n":
+                continue      # two stubs are never joined directly: that line would hug the edge
+            dab = math.hypot(a[0] - b[0], a[1] - b[1])
+            blocked = False
+            for k in range(len(allp)):
+                if k in (i, j):
+                    continue
+                c = allp[k][0]
+                if max(math.hypot(a[0] - c[0], a[1] - c[1]), math.hypot(b[0] - c[0], b[1] - c[1])) < dab:
+                    blocked = True
+                    break
+            if not blocked:
+                edges.append((a, b))
+    # A stub the graph left alone still has to go somewhere: to its nearest junction.
+    for e, side in ends:
+        if not any(e in ab for ab in edges) and pts:
+            edges.append((e, min(pts, key=lambda q: math.hypot(q[0] - e[0], q[1] - e[1]))))
+    return segs, edges
+
+
+# The basalt's shared crossings: two seams through the top edge and two through the left, each at its
+# own slant - so the crossings neither sit on a square lattice nor all cross the edge square-on.
+BASALT_TOP = ((11, 25), (33, -30))
+BASALT_LEFT = ((17, -20), (37, 30))
+BASALT_STUB = 6
+
+
+def basalt_network(seed):
+    """The seams of one basalt variant (see leg() for the tuple)."""
+    h = lambda k: hashed(k, seed, 3100)
+    segs, edges = crack_net(h, BASALT_TOP, BASALT_LEFT, BASALT_STUB, 4 + seed % 2, SEAM, 12.0)
+    # Which seam smoulders, and how much (basalt() says what each peak looks like): the longest
+    # interior one, so the glow is a stretch of seam and never a speck.
+    peak = (3, 0, 1, 0, 2, 0)[seed % 6]
+    order = sorted(range(len(edges)), key=lambda k: -math.hypot(edges[k][0][0] - edges[k][1][0],
+                                                                edges[k][0][1] - edges[k][1][1]))
+    hot = order[int(h(30) * 3) % len(order)] if peak else None
+    for k, (a, b) in enumerate(edges):
+        heat = None
+        if k == hot:
+            t0 = 0.05 + h(31) * 0.25
+            heat = (t0, min(0.95, t0 + 0.4 + h(32) * 0.45), peak)
+        wide = SEAM
+        segs += leg(bent(a, b, h, 40 + k * 3, 1.6, 1), wide, wide, heat)
+    # A hairline off a seam into the plate, dying out: the crack that has not finished.
+    if edges and seed % 3 != 0:
+        a, b = edges[int(h(60) * len(edges)) % len(edges)]
+        u = 0.35 + h(62) * 0.3
+        sx, sy = a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u
+        ang = math.atan2(b[1] - a[1], b[0] - a[0]) + (1.0 if h(64) < 0.5 else -1.0) * (1.1 + h(66) * 0.6)
+        ln = 5 + h(68) * 4
+        ex = min(SIZE - 8, max(8, sx + math.cos(ang) * ln))
+        ey = min(SIZE - 8, max(8, sy + math.sin(ang) * ln))
+        segs += leg(bent((sx, sy), (ex, ey), h, 70, 1.2), HAIR, HAIR)
+    return segs
+
+
+def basalt(c, seed):
+    """The Emberdeep's floor: dark basalt plates, split by seams that smoulder here and there.
+
+    Stone row, on `shade` like every open floor, so a steel-deep Chainhound or a Slag Thrall still
+    stands off it by its rim; each plate catches the key on its upper-left lip (`base`) and drops
+    into `deep` on its lower-right, which is what makes it a raised slab rather than a painted line.
+    The seams are `occ`. In half the variants one seam smoulders along part of its length: a
+    one-pixel core of the RED row (a maroon, not an emissive) with the lips either side caught red
+    and the plate beside them stained a step warmer - and in one variant in six the core of that
+    stretch is the fire ramp's `edge`, the darkest fire there is. That is the most the walkable
+    ground ever glows: this chapter's cast wear fire eyes, and the floor must never outshine two
+    pixels of them. (Four variants in six glowed at first, and on a full screen the red ticks were
+    a sprinkle.) The lava is what blazes, and has to stay unmistakably the thing that does.
+
+    The plates tile because the network does: crack_net. Every variant is identical on its outer
+    three pixels - checked, not assumed - so any variant meets any other with no seam.
+
+    Nothing else is drawn INTO the plates but a little violet glass and the odd gas bubble frozen as
+    a pit. The first version pressed ropes of pahoehoe and drifts of ash into them, and in a field of
+    cells the ropes read as a printed C and the ash as grey squares: anything with a shape repeats
+    every few cells here. The ropes, the ash and the cinders are the detail layer's
+    (ground_detail.py: lava_rope, ash, cinders), which places them in world space, in drifts.
+    """
     st = ramp("stone")
-    f = bl.ELEMENTS["fire"]
-    c.rect(0, 0, SIZE - 1, SIZE - 1, OCC)
+    vi = ramp("violet")
+    rd = ramp("red")
+    fire = bl.ELEMENTS["fire"]
+    h = lambda k: hashed(k, seed, 3200)
+    segs = basalt_network(seed)
+
+    c.rect(0, 0, SIZE - 1, SIZE - 1, st[3])
+    # The shared layer: the same in every variant and allowed to wrap, so it is free to sit across a
+    # tile edge - quiet mottling a stop down, and a little violet glass.
+    clumps(c, 6, 1, 3, st[4], 3301, fill=0.25, shared=1.0)
+    clumps(c, 6, 2, 4, vi[4], 3303, fill=0.45, shared=1.0)
+    # The variant's own, kept off the edges: a violet sheen, and gas bubbles frozen as pits.
+    for k in range(2):
+        cx, cy = 8 + int(h(20 + k) * 32), 8 + int(h(30 + k) * 32)
+        for y in range(cy - 2, cy + 3):
+            for x in range(cx - 3, cx + 4):
+                if (x - cx) ** 2 * 0.5 + (y - cy) ** 2 <= 4 and hashed(x, y, 3305 + seed) < 0.55:
+                    c.set(x, y, vi[3])
+    for k in range(2 + seed % 3):
+        c.set(6 + int(h(40 + k) * 35), 6 + int(h(50 + k) * 35), st[4])
+
+    field = {}
     for y in range(SIZE):
         for x in range(SIZE):
-            if hashed(x, y, 20) > 0.60:
-                c.set(x, y, st[4])
-    # CRACKS, and they have to be ANGULAR. Sweeping the heading with a sine as the crack advanced
-    # made every one of them curl into a spiral, and a field of orange spirals reads as something
-    # alive rather than as a crust splitting. Straight segments that turn sharply at each joint.
-    #
-    # This is the one emissive ground in the game, and that is deliberate: lava is a hazard, so it
-    # is allowed - required, really - to pull the eye that everything else on the floor gives up.
-    for k in range(4):
-        x = int(hashed(k, 1, 21) * SIZE)
-        y = int(hashed(k, 2, 22) * SIZE)
-        ang = hashed(k, 3, 23) * TAU
-        for seg in range(3):
-            ang += (hashed(k, seg, 24) - 0.5) * 1.9
-            run = 6 + int(hashed(k, seg, 25) * 7)
-            for j in range(run):
-                px = int(x + math.cos(ang) * j) % SIZE
-                py = int(y + math.sin(ang) * j) % SIZE
-                c.set(px, py, f[3])
-                if j % 4 == 0:
-                    c.set(px, py, f[2])
-            x = int(x + math.cos(ang) * run)
-            y = int(y + math.sin(ang) * run)
-    for k in range(6):
-        c.set(int(hashed(k, 9, 26) * SIZE), int(hashed(k, 8, 27) * SIZE), f[1])
+            field[(x, y)] = nearest_seam(segs, x + 0.5, y + 0.5)
+
+    def warm_at(i, t):
+        part = segs[i][6]
+        return part[2] if part and part[0] - 0.06 <= t <= part[1] + 0.06 else 0
+
+    # The bevel, then the seams over it.
+    for y in range(SIZE):
+        for x in range(SIZE):
+            clear, d, nx, ny, i, t, hw = field[(x, y)]
+            heat = warm_at(i, t)
+            if clear <= 0:
+                c.set(x, y, OCC)
+                continue
+            if clear <= 1.0 and hw >= 0.8:
+                toward = (nx - (x + 0.5)) + (ny - (y + 0.5))
+                if heat >= 2:
+                    # both lips of a smouldering seam are lit by it, not by the key
+                    c.set(x, y, rd[2] if heat >= 3 and toward < 0 else rd[3])
+                elif toward < 0:
+                    # the plate's upper-left lip, facing the key - broken, so it is not an outline
+                    if hashed(x, y, 3320) < 0.75:
+                        c.set(x, y, st[2])
+                else:
+                    c.set(x, y, st[4])
+            elif heat >= 2 and clear <= 2.6 and (x + y) % 2:
+                # the plate stained by the heat beside it, a step warmer for a pixel or two
+                c.set(x, y, rd[4])
+    # The smoulder: a one-pixel core down the middle of a warm stretch, hottest in its middle.
+    for (ax, ay, bx, by, w0, w1, part) in segs:
+        if not part:
+            continue
+        t0, t1, peak, s0, s1 = part
+        n = max(2, int(math.hypot(bx - ax, by - ay) * (t1 - t0)))
+        for j in range(n):
+            u0 = t0 + (t1 - t0) * j / float(n)
+            u1 = t0 + (t1 - t0) * (j + 1) / float(n)
+            s = s0 + (s1 - s0) * (j + 0.5) / n
+            mid = abs(s - 0.5) * 2.0          # 0 in the middle of the whole stretch, 1 at its ends
+            if peak >= 3:
+                tone = fire[3] if mid < 0.5 else (rd[0] if mid < 0.85 else rd[1])
+            elif peak == 2:
+                tone = rd[0] if mid < 0.55 else rd[1]
+            else:
+                tone = rd[1] if mid < 0.6 else rd[2]
+            stroke(c, ax + (bx - ax) * u0, ay + (by - ay) * u0, ax + (bx - ax) * u1, ay + (by - ay) * u1, tone)
+
+
+# The lava's shared crossings, as the basalt's (crack_net): its channels are the crust's cracks.
+LAVA_TOP = ((8, -20), (29, 25))
+LAVA_LEFT = ((12, 25), (33, -25))
+LAVA_STUB = 6
+LAVA_CHANNEL = 1.6
+
+
+def body_lava(c):
+    """Molten rock under a crust: dark rafts, and glowing melt in the channels between them.
+
+    It used to be black crust with thin orange cracks - which is what the Emberdeep's FLOOR should
+    have looked like, and did not. With the basalt now cracked and smouldering, the lava has to be
+    the other thing, unmistakably: rock that is still liquid. The same crack network as the basalt
+    (crack_net), so it tiles the same way, but the cracks are channels four pixels wide and every
+    one of them runs hot: the fire ramp's `mid` down the middle, its `edge` banked against the
+    rafts, and the rafts themselves the red row's deep and `occ`, rimmed red where each rides on the
+    melt. The basalt's seams are two pixels of `occ` and glow along one stretch a cell at most; the
+    lava's are twice the width and glow everywhere, on red-black rather than slate. Nobody mistakes
+    one for the other from across the screen, and that is the only job a hazard's look has.
+
+    This is the one emissive ground in the game, and that is deliberate: lava is a hazard, so it is
+    allowed - required, really - to pull the eye that everything else on the floor gives up. It
+    stays mostly crust all the same: the Emberdeep's casters throw fire, and a bolt has to read
+    against the pool it flies over.
+    """
+    st = ramp("stone")
+    rd = ramp("red")
+    f = bl.ELEMENTS["fire"]
+    v = VARIANT
+    h = lambda k: hashed(k, v, 3400)
+    segs, edges = crack_net(h, LAVA_TOP, LAVA_LEFT, LAVA_STUB, 4 + v % 2, LAVA_CHANNEL, 11.0)
+    for k, (a, b) in enumerate(edges):
+        w = LAVA_CHANNEL - 0.3 * (k % 2)
+        segs += leg(bent(a, b, h, 40 + k * 3, 2.0, 1), w, w)
+    for y in range(SIZE):
+        for x in range(SIZE):
+            clear, d, nx, ny, i, t, hw = nearest_seam(segs, x + 0.5, y + 0.5)
+            if d <= hw - 1.1:
+                tone = f[2]
+            elif clear <= 0:
+                tone = f[3]
+            elif clear <= 1.0:
+                # the raft's rim where it rides on the melt, lit by it from below
+                tone = rd[1] if (nx - x - 0.5) + (ny - y - 0.5) > 0 else rd[2]
+            elif clear <= 2.0:
+                tone = rd[3]
+            else:
+                # the crust: red-black, with `occ` and stone in it - per pixel, so it may touch an edge
+                w = fixed_hash(x, y, 3412)
+                tone = OCC if w < 0.25 else (st[4] if w < 0.32 else rd[4])
+            c.set(x, y, tone)
+    # Where channels meet the melt runs fastest: a fleck of `hot` at a junction, inside the cell.
+    for k, (a, b) in enumerate(edges[:3]):
+        x, y = int(a[0]), int(a[1])
+        if 6 <= x < SIZE - 6 and 6 <= y < SIZE - 6 and k % 2 == v % 2:
+            c.set(x, y, f[1])
+
+
+# The ice's shared crossings: one fracture through each pair of edges, so a sheet of it is crazed into
+# panes about a cell across.
+ICE_TOP = ((30, 15),)
+ICE_LEFT = ((14, -20),)
+ICE_STUB = 7
+
+
+def body_ice(c):
+    """A frozen pool on the Frozen Waste: dark glassy ice with white fractures in it.
+
+    On the old slate floor the ice was the light patch, steel's deep under blotches of its shade.
+    With the floor now snow (snow() below, a step paler), ice is what it is on a real snowfield: the
+    darker, smoother thing - the matte snow, then the ice a step under it, then the black open water
+    (whose frozen shore is water.py's). So the blotches went (on snow they read as spots) and what
+    says "ice" is the crazing: hairline fractures in steel's shade, the same crack network as the
+    Emberdeep's basalt (crack_net), so they cross from cell to cell and never stop at a tile edge;
+    and at the odd junction where two fractures meet, one pixel of steel's base catching the key.
+    (Milky patches were tried and went: in a field of cells, a dithered blotch reads as a glyph.)
+    """
+    stl = ramp("steel")
+    v = VARIANT
+    h = lambda k: hashed(k, v, 3600)
+    segs, edges = crack_net(h, ICE_TOP, ICE_LEFT, ICE_STUB, 2 + v % 2, HAIR, 14.0)
+    for k, (a, b) in enumerate(edges):
+        segs += leg(bent(a, b, h, 40 + k * 3, 2.0, 2), HAIR, HAIR)
+    c.rect(0, 0, SIZE - 1, SIZE - 1, stl[4])
+    for y in range(SIZE):
+        for x in range(SIZE):
+            if nearest_seam(segs, x + 0.5, y + 0.5)[0] <= 0:
+                c.set(x, y, stl[3])
+    for k, (a, b) in enumerate(edges):
+        x, y = int(a[0]), int(a[1])
+        if 8 <= x < SIZE - 8 and 8 <= y < SIZE - 8 and k % 2 == 0:
+            c.set(x, y, stl[2])
 
 
 def body_pit(c):
@@ -660,6 +995,54 @@ def natural(c, r, seed, accent, base=3):
         pebble(c, inside(seed * 3, 74, 5), inside(seed * 3 + 1, 75, 5), 1 + seed % 3 // 2)
 
 
+def snow(c, seed):
+    """The Frozen Waste's floor: wind-packed snow under no light.
+
+    It stood on `graystone`, the Ruins' slate, with ice stamped on it - the darkest floor in the game
+    under a chapter that is a snowfield, and a player read "night" before "frozen" (0.10.0 ground
+    pass). Snow is the one ground that should be PALE, so this floor stands on the bone row's deep
+    (`skin.deep`, #38404F) - a full step above every other open floor, and still the deep half of a
+    row, so a steel-and-wool thane or a whalebone hound is the darker thing standing on it, ringed
+    by its rim. The order on screen is snow, then the ice a step under it, then the black water:
+    matte, glassy, open.
+
+    ALMOST NOTHING IS DRAWN ON IT, on purpose. The first version cut sastrugi - wind ridges - into
+    every cell, and a field of them was a printed carpet with a 48 px repeat: a ridge has a shape,
+    and a shape in a fill tile is a pattern. The wind is the detail layer's now (ground_detail.py's
+    `sastrugi`, and the drifts and frost already there), placed in world space in drifts. What is
+    left here is grain a step either side, one long low ridge in one variant in three, and the odd
+    stone or dead stalk through the crust.
+    """
+    sk = ramp("skin")
+    stl = ramp("steel")
+    st = ramp("stone")
+    ln = ramp("linen")
+    c.rect(0, 0, SIZE - 1, SIZE - 1, sk[4])
+    specks(c, 0.006, stl[3], 3505)
+    specks(c, 0.005, st[1], 3507)
+    if seed % 3 == 2:
+        # one long low ridge, lying along the wind (off the north-west), lit crest over its lee
+        run = 18 + int(hashed(seed, 1, 3521) * 12)
+        x0 = 4 + int(hashed(seed, 2, 3522) * (SIZE - 8 - run))
+        y0 = 12 + int(hashed(seed, 3, 3523) * (SIZE - 24))
+        for j in range(run):
+            u = j / float(run - 1)
+            y = y0 + int(round(-0.18 * j - math.sin(u * math.pi) * 1.5))
+            c.set(x0 + j, y, stl[3])
+            if 0.15 < u < 0.85:
+                c.set(x0 + j, y + 1, st[1])
+    # Incidents, one variant in six each: a stone the wind has bared, a few dead stalks through the
+    # crust. A dark thing on snow is the most visible thing here, and at one variant in three each
+    # they laid out the grid. The rest is snow, which is the point.
+    if seed == 0:
+        pebble(c, inside(seed, 3531, 7), inside(seed + 3, 3532, 7), 1)
+    elif seed == 4:
+        x, y = inside(seed, 3533, 8), inside(seed + 5, 3534, 8)
+        for k in range(3):
+            for j in range(2 + k % 2):
+                c.set(x + k * 2, y - j - (k % 2), ln[3] if j else ln[4])
+
+
 def floor_variant(mat, style, seed, accent=None):
     def draw():
         global VARIANT
@@ -674,6 +1057,12 @@ def floor_variant(mat, style, seed, accent=None):
             return c
         if style == "flagstone":
             flagstone(c, r, seed)
+            return c
+        if style == "basalt":
+            basalt(c, seed)
+            return c
+        if style == "snow":
+            snow(c, seed)
             return c
         if style == "natural":
             natural(c, r, seed, accent, 4 if mat == "gold" else 3)
@@ -910,8 +1299,12 @@ MATERIALS = [
     ("graystone", "stone", "natural", 6, None),
     # Swamp ground: grey-green peat with darker hollows. Was `darktile`, a near-black square grid.
     ("mud", "linen", "natural", 6, "flesh"),
-    # Emberdeep ground: dark stone with violet in it. Was `darktile` too.
-    ("basalt", "stone", "natural", 6, "violet"),
+    # Emberdeep ground: basalt plates split by seams that smoulder (basalt() above). Was `darktile`,
+    # then the `natural` floor with violet in it - a calm slate that said nothing about the place.
+    ("basalt", "stone", "basalt", 6, None),
+    # Frozen Waste ground: wind-packed snow on the bone row's deep (snow() above). It stood on
+    # `graystone`, the darkest floor in the game under a chapter that is a snowfield.
+    ("snow", "skin", "snow", 6, None),
     # No palette paints darktile now; kept because StageEnvironmentCatalog names its PNGs.
     ("darktile", "stone", "tiled", 4, None),
     # The old maze wall: a flat `occ` tile. The jail walls (jail_walls.py) replaced it on the Cursed

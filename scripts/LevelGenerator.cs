@@ -206,9 +206,11 @@ public sealed partial class LevelGenerator
 			Topology = StageTopology.Caverns,
 		},
 
+		// Snow, not the Ruins' slate (0.10.0 ground pass): the Frozen Waste was the darkest open floor in
+		// the game. tools/art/tiles.py's snow() says why it stands a step paler than every other one.
 		[StageEnvironmentKind.Ice] = new Palette
 		{
-			GroundMaterial = "graystone",
+			GroundMaterial = "snow",
 			Blobs = new[]
 			{
 				new BlobSpec("ice", 3.2f, 2.6f, 4.4f),
