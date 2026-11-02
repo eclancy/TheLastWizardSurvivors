@@ -773,7 +773,11 @@ public partial class Player : CharacterBody2D
 		string startingSpellId = SpellVariants.Split(startingSelection).SpellId;
 
 		signatureSpellId = string.IsNullOrWhiteSpace(startingSpellId) ? "magic_missile" : startingSpellId;
-		if (!string.IsNullOrWhiteSpace(startingSpellId))
+		// A wizard who opens on a Conjunction (the dark wizard's The Taking) holds it made, at level 1: it is
+		// never fused for him (Player.Combinations.cs, AddStartingConjunction).
+		if (ComboCatalog.ForId(startingSpellId) is ComboDefinition opening && ComboCatalog.StartsFused(opening, selectedCharacter.Id))
+			AddStartingConjunction(opening, selectedCharacter.IsLegendaryStart);
+		else if (!string.IsNullOrWhiteSpace(startingSpellId))
 			TryAddOrLevelSpell(startingSelection, selectedCharacter.IsLegendaryStart);
 		else
 			TryAddOrLevelSpell("magic_missile");
@@ -1056,8 +1060,6 @@ public partial class Player : CharacterBody2D
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Stormsweep.tres"));
 		if (!spellCatalog.ContainsKey("sleet_runes"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_SleetRunes.tres"));
-		if (!spellCatalog.ContainsKey(TheTaking.SpellId))
-			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_TheTaking.tres"));
 		if (!spellCatalog.ContainsKey("iron_palisade"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_IronPalisade.tres"));
 		if (!spellCatalog.ContainsKey("contagion"))
@@ -1212,15 +1214,6 @@ public partial class Player : CharacterBody2D
 				targeting = SpellTargetingMode.Facing;
 				shape = SpellDamageShape.ProjectileHit;
 				tags |= SpellScalingTag.ProjectileCount | SpellScalingTag.ProjectileSpeed | SpellScalingTag.Pierce | SpellScalingTag.Range;
-				break;
-			case "the_taking":
-				// The dark wizard's (.ai/dark-wizard-playable.md): a hand at the strongest in reach - no mode
-				// says "strongest", and MultiTarget is the nearest honest one, since Many Hands takes several -
-				// then lanes thrown where its light is caught. Its level table is written out in full in the
-				// .tres (Area is the lanes, Amount more hands), so none of these generates a line.
-				targeting = SpellTargetingMode.MultiTarget;
-				shape = SpellDamageShape.BeamHit;
-				tags |= SpellScalingTag.Area | SpellScalingTag.Range | SpellScalingTag.ProjectileCount;
 				break;
 			case "iron_palisade":
 				// Placed between the player and the nearest pack, facing it.
@@ -5143,17 +5136,20 @@ public partial class Player : CharacterBody2D
 		return 0;
 	}
 
-	// THE TAKING (.ai/dark-wizard-playable.md): the dark wizard's own spell. A cast throws a hand at the
-	// strongest enemy in reach - more hands with its levels and under Many Hands, each at its own quarry,
-	// strongest first - and every light a hand tears out carries home the numbers its lanes strike with,
-	// fixed at the cast (TakenLight.Setup). Range is the reach a quarry is found in; Area is the lanes, long
-	// and wide; Speed is the hand. NoTarget with nothing in reach, so the cooldown waits ripe for one.
+	// THE TAKING (.ai/dark-wizard-playable.md): the dark wizard's own spell, a Conjunction he opens on and levels
+	// (ComboCatalog, Player.Combinations.cs). A cast throws a hand at the strongest enemy in reach - more hands
+	// with its levels, each at its own quarry, strongest first - and every light a hand tears out carries home
+	// the numbers it burns and its lanes strike with, fixed at the cast (TakenLight.Setup). Its numbers are its
+	// own level table at the level held: 1 to 8 for him, 8 for anyone who fused it. Range is the reach a quarry
+	// is found in; Area is the lanes and the burn. NoTarget with nothing in reach, so the cooldown waits.
 	public const float TakingLaneLength = 230f;
 	public const float TakingLaneWidth = 24f;
 	// Where a light starts on its way home; it gathers speed from there (TakenLight.Acceleration), so only a
 	// wizard who runs from it for its whole life loses it.
 	public const float TakingDriftSpeed = 110f;
 	public const float TakingLightSeconds = 5f;
+	public const float TakingBurnShare = 0.35f;
+	public const float TakingBurnRadius = 26f;
 	private readonly List<Enemy> takingQuarries = new(8);
 
 	private CastOutcome FireTheTaking(SpellData spell, PackedScene scene)
@@ -5187,10 +5183,13 @@ public partial class Player : CharacterBody2D
 			// rather than into a wall.
 			LaneLength = TakingLaneLength * area,
 			LaneWidth = TakingLaneWidth * MathF.Sqrt(area),
-			Star = spell.HasEvolution(TheTaking.EightfoldCrossId),
+			Star = level >= TheTaking.StarLevel,
 			AllHeTook = spell.HasEvolution(TheTaking.AllHeTookId),
 			DriftSpeed = TakingDriftSpeed,
 			Life = TakingLightSeconds * durationMultiplier,
+			// The Pyre half of the Conjunction: the light sears what it passes on its way home.
+			BurnDamage = Math.Max(1, Mathf.RoundToInt(damage * TakingBurnShare)),
+			BurnRadius = TakingBurnRadius * MathF.Sqrt(area),
 		};
 		float speed = MathF.Max(0.25f, spell.GetSpeedMultiplier());
 		// Out of the light in his raised hand (CharacterVisuals.GetStaffTipCell), the boss's own gesture.
@@ -7059,6 +7058,10 @@ public partial class Player : CharacterBody2D
 		// two parents, from the strip (Player.Combinations.cs, ComboCatalog).
 		// The Sovereign Rite is a Conjunction too, but its second half names the spell it anoints
 		// ("sovereign_rite:fireball", Player.Sovereign.cs), and nothing is fused.
+		// The one exception is a Conjunction this wizard opened on (the dark wizard's The Taking): it levels on
+		// cards and takes his Apotheosis, so its selection is a level or his form, never a fusion.
+		if (HeldStartingConjunction(spellId) is SpellData opening)
+			return LevelStartingConjunction(opening, evolutionId);
 		if (ComboCatalog.ForId(spellId) is ComboDefinition combination)
 			return combination.IsRite ? TryAnoint(evolutionId) : TryFuse(combination);
 
@@ -7411,7 +7414,11 @@ public partial class Player : CharacterBody2D
 			return null;
 
 		SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
-		bool combined = WasFusedAway(spell.Id) || ApotheosisCatalog.IsCombined(spell);
+		// A Conjunction he opens on (the dark wizard's The Taking) is combined from the start and has no
+		// Ascension to take: its gate is its max level alone (ApotheosisCatalog.OnStartingConjunction), so only
+		// that line is shown, and nothing closes it.
+		bool opening = ApotheosisCatalog.OnStartingConjunction(definition);
+		bool combined = !opening && (WasFusedAway(spell.Id) || ApotheosisCatalog.IsCombined(spell));
 		var preview = new ApotheosisPreview
 		{
 			SpellId = spell.Id,
@@ -7437,19 +7444,22 @@ public partial class Player : CharacterBody2D
 			Have = spell.CurrentLevel,
 			Need = spell.MaxLevel,
 		});
-		preview.Requirements.Add(new AscensionRequirement
+		if (!opening)
 		{
-			Kind = AscensionRequirementKind.Ascended,
-			Have = ApotheosisCatalog.IsAscended(spell) ? 1 : 0,
-			Need = 1,
-		});
-		preview.Requirements.Add(new AscensionRequirement
-		{
-			Kind = AscensionRequirementKind.NotCombined,
-			Have = combined ? 0 : 1,
-			Need = 1,
-			Closed = combined,
-		});
+			preview.Requirements.Add(new AscensionRequirement
+			{
+				Kind = AscensionRequirementKind.Ascended,
+				Have = ApotheosisCatalog.IsAscended(spell) ? 1 : 0,
+				Need = 1,
+			});
+			preview.Requirements.Add(new AscensionRequirement
+			{
+				Kind = AscensionRequirementKind.NotCombined,
+				Have = combined ? 0 : 1,
+				Need = 1,
+				Closed = combined,
+			});
+		}
 		preview.Requirements.Add(new AscensionRequirement
 		{
 			Kind = AscensionRequirementKind.PlayerLevel,
@@ -7652,6 +7662,32 @@ public partial class Player : CharacterBody2D
 				heldUpgrades.Add(option);
 				heldUpgradeWeights.Add(GetOfferWeight(option));
 			}
+		}
+
+		// The Conjunction this wizard opened on (the dark wizard's The Taking) is not in the spell catalog - no
+		// combination is a card - but it levels on cards to its max like any spell (Player.Combinations.cs).
+		foreach (SpellData opening in equippedSpells)
+		{
+			if (opening == null || HeldStartingConjunction(opening.Id) != opening || opening.CurrentLevel >= CardLevelCap(opening))
+				continue;
+			int nextLevel = opening.CurrentLevel + 1;
+			var option = new LevelUpOption
+			{
+				SpellId = opening.Id,
+				DisplayName = opening.Name,
+				Description = opening.Description,
+				UpgradeSummary = BuildSpellUpgradeSummary(opening, nextLevel),
+				NextLevel = nextLevel,
+				MaxLevel = CardLevelCap(opening),
+				IsNewUnlock = false,
+				IsPassive = opening.IsPassive,
+				Icon = opening.Icon,
+			};
+			ApplyElementPreview(option, opening, baselineElementCounts, isNewUnlock: false);
+			if (opening.SilencedBySovereign)
+				DressAsFuel(option);
+			heldUpgrades.Add(option);
+			heldUpgradeWeights.Add(GetOfferWeight(option));
 		}
 
 		// Boons. Deliberately NOT gated on the spell loadout being full - a boon costs no slot, so a

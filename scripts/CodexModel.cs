@@ -862,8 +862,13 @@ public sealed class CodexModel
 			if (!Teachings.HasLearned(save, Teaching.Apotheosis))
 				node.Chips.Add(new CodexChip { Text = Teachings.SealedLine(save, Teaching.Apotheosis), Met = false });
 			node.Chips.Add(new CodexChip { Text = $"Spell {form.MaxLevel}", Need = form.MaxLevel });
-			node.Chips.Add(new CodexChip { Text = AscendedChip });
-			node.Chips.Add(new CodexChip { Text = NotCombinedChip });
+			// A Conjunction its wizard opens on has no Ascension and is combined from the start: its gate is
+			// its max level (ApotheosisCatalog.OnStartingConjunction).
+			if (!ApotheosisCatalog.OnStartingConjunction(definition))
+			{
+				node.Chips.Add(new CodexChip { Text = AscendedChip });
+				node.Chips.Add(new CodexChip { Text = NotCombinedChip });
+			}
 			node.Chips.Add(new CodexChip { Text = $"You {ApotheosisCatalog.MinimumPlayerLevel}", Need = ApotheosisCatalog.MinimumPlayerLevel });
 			if (!inRun)
 			{

@@ -20,6 +20,18 @@ public partial class TakingLanes : Node2D
 	public const float BodyAllowance = 10f;
 	private const float ShowSeconds = 0.45f;
 
+	/// <summary>
+	/// The most crosses standing at once. At level 8 three hands each close on four bodies, and their twelve
+	/// lights come home together: twelve crosses on one spot drew a sunburst of forty-eight lanes, hid the
+	/// field and cost twelve thousand cells a frame. Past the cap a caught light strikes down the lanes of the
+	/// newest cross again and relights it, so every light still pays and the screen holds a few crosses.
+	/// </summary>
+	public const int MaxStanding = 4;
+
+	private static int standing;
+	private static TakingLanes newest;
+	private bool counted;
+
 	private Vector2 along = Vector2.Right;
 	private int laneCount = 2;
 	private float length;
@@ -31,6 +43,12 @@ public partial class TakingLanes : Node2D
 	{
 		if (arena == null || !IsInstanceValid(arena) || caster == null || !IsInstanceValid(caster))
 			return null;
+		if (standing >= MaxStanding && newest != null && IsInstanceValid(newest) && !newest.IsQueuedForDeletion())
+		{
+			newest.age = 0f;
+			newest.Strike(caster, setup);
+			return newest;
+		}
 		var lanes = new TakingLanes
 		{
 			Name = "TakingLanes",
@@ -76,6 +94,27 @@ public partial class TakingLanes : Node2D
 			if (setup.AllHeTook && (!IsInstanceValid(body) || body.IsDying || body.Health <= 0))
 				TakenLight.Loose(GetParent(), caster, fellAt, setup);
 		}
+	}
+
+	public override void _EnterTree()
+	{
+		if (!counted)
+		{
+			counted = true;
+			standing++;
+		}
+		newest = this;
+	}
+
+	public override void _ExitTree()
+	{
+		if (counted)
+		{
+			counted = false;
+			standing = Math.Max(0, standing - 1);
+		}
+		if (newest == this)
+			newest = null;
 	}
 
 	public override void _PhysicsProcess(double delta)

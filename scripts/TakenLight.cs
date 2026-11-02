@@ -17,6 +17,10 @@ using WizardSurvivors.scripts;
 //     and only one who runs from it for its whole life loses it. The demand is where he stands when it
 //     arrives: the lanes cross there, one of them back along the way it came, through the crowd it left.
 //
+// IT BURNS ON ITS WAY (Pyre, the Conjunction's second parent): every BurnInterval it sears what stands within
+// BurnRadius of it for BurnDamage, so a light coming home through the crowd it was taken from is already
+// working before it is caught.
+//
 // Code-only, like SealOrb and DarkHand: the catch is measured once a frame, and nothing is authored.
 public partial class TakenLight : Node2D
 {
@@ -31,7 +35,12 @@ public partial class TakenLight : Node2D
 		public bool AllHeTook;
 		public float DriftSpeed;
 		public float Life;
+		/// <summary>What it sears on its way home, every <see cref="BurnInterval"/>, and how near.</summary>
+		public int BurnDamage;
+		public float BurnRadius;
 	}
+
+	public const float BurnInterval = 0.3f;
 
 	/// <summary>How close the wizard's body must come to catch it.</summary>
 	public const float CatchRadius = 40f;
@@ -57,6 +66,7 @@ public partial class TakenLight : Node2D
 	private Setup setup;
 	private Player wizard;
 	private float speed;
+	private float burnClock;
 	private float age;
 	private float lifeLeft;
 	private Vector2 rose;
@@ -146,9 +156,30 @@ public partial class TakenLight : Node2D
 		speed = Mathf.Min(MaxSpeed, Mathf.Max(speed, setup.DriftSpeed) + Acceleration * dt);
 		GlobalPosition += homeward * Mathf.Min(to.Length(), speed * dt);
 
+		burnClock += dt;
+		if (burnClock >= BurnInterval && setup.BurnDamage > 0 && setup.BurnRadius > 0f)
+		{
+			burnClock = 0f;
+			Burn();
+		}
+
 		lifeLeft -= dt;
 		if (lifeLeft <= 0f)
 			End(false);
+	}
+
+	// One pass over the field, every BurnInterval, nothing held.
+	private void Burn()
+	{
+		float reach = setup.BurnRadius * setup.BurnRadius;
+		Vector2 at = GlobalPosition;
+		foreach (Enemy body in EnemyRegistry.Snapshot)
+		{
+			if (body == null || !IsInstanceValid(body) || body.IsDying || body.Health <= 0
+				|| body.GlobalPosition.DistanceSquaredTo(at) > reach)
+				continue;
+			wizard.DealDamageToEnemy(body, setup.BurnDamage, 0f, true, setup.Spell);
+		}
 	}
 
 	private void End(bool wasCaught)
@@ -174,6 +205,9 @@ public partial class TakenLight : Node2D
 		if (alpha <= 0f || scale <= 0f)
 			return;
 		float pulse = 0.5f + 0.5f * MathF.Sin(age * 6f);
+		// The pyre round it, out to the reach it sears.
+		float pyre = Mathf.Max(11f, setup.BurnRadius) * scale;
+		BossDeath.Disc(this, Vector2.Zero, pyre, pyre, new Color(light.Edge, 0.22f * alpha));
 		BossDeath.Disc(this, Vector2.Zero, 11f * scale, 11f * scale, new Color(light.Edge, 0.35f * alpha));
 		BossDeath.Disc(this, Vector2.Zero, 7f * scale, 7f * scale, new Color(light.Mid, alpha));
 		BossDeath.Disc(this, Vector2.Zero, 4.5f * scale, 4.5f * scale, new Color(light.Hot.Lerp(light.Mid, pulse * 0.4f), alpha));

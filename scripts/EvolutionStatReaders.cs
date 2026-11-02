@@ -287,9 +287,11 @@ public static class EvolutionStatReaders
 				| EvolutionStat.Amount,
 			"Player.FireKindledWard (Amount raises how many wards may stand; it has no reach to cast within; Flare, Wisp Trail and Kindling Flock by id, in KindledWard and WardWisps)",
 			SpellEffect.ZoneDuration, SpellEffect.AreaSize, SpellEffect.CritDamage),
-		["the_taking"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
+		// A Conjunction he opens on and levels (ComboCatalog.StartsFusedFor): its level lines and his Apotheosis
+		// are all that set anything; no milestone card does.
+		["the_taking"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area
 				| EvolutionStat.Rider | EvolutionStat.Amount,
-			"Player.FireTheTaking (Projectiles and Amount are hands a cast, Range the reach a quarry is found in, Area the lanes, Speed the hand); Crushing Grip, Eightfold Cross, Great Taking and All He Took by id, in TheTaking and TakingLanes",
+			"Player.FireTheTaking (Projectiles and Amount are hands a cast, Range the reach a quarry is found in, Area the lanes and the burn; the star and the great hand by level, All He Took by id, in TheTaking and TakingLanes)",
 			SpellEffect.AreaSize, SpellEffect.CritDamage),
 		["glacial_spike"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider | EvolutionStat.Amount,

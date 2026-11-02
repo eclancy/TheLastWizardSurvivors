@@ -3927,33 +3927,6 @@ def _(sp, c):
     U(sp, march)
 
 
-# --- The Taking (the dark wizard's own, .ai/dark-wizard-playable.md) ------------------------------------
-
-@card("the_taking_reactive_catalyst")
-def _(sp, c):
-    """Eightfold Cross: a caught light throws four lanes, not two - a star of his dark light behind the hand
-    and its mote, eight arms reaching the rim."""
-    reset(sp)
-    sp.place = Place(0.74)
-
-    def star(cv, x):
-        d = E["darkness"]
-        for k in range(8):
-            a = TAU * k / 8.0 + 0.39
-            for r in range(5, 15):
-                cv.set(C0 + math.cos(a) * r, C0 + math.sin(a) * r, d[1] if r < 10 else d[2])
-            cv.set(C0 + math.cos(a) * 14.5, C0 + math.sin(a) * 14.5, d[0])
-    U(sp, star)
-
-
-@card("the_taking_hyper_acceleration")
-def _(sp, c):
-    """Long Reach: the hand flies faster - the hand smaller and ahead, speed lines of his light behind it."""
-    reset(sp)
-    sp.place = Place(0.66, at=(20.0, 12.0))
-    U(sp, lambda cv, x: m_speed(cv, E["darkness"], (1, -1), (4, 12, 18, 28), n=4, length=9))
-
-
 # --- Kindled Ward ----------------------------------------------------------------------------------
 
 @card("kindled_ward_amplified_impact")

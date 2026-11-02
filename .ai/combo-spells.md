@@ -444,3 +444,18 @@ first guesses.
 `IsRite`, whose first ingredient is the Rite and whose second is `AnyActiveSpell` ("any active spell you
 hold"). `Evaluate` never calls it Ready and `Fusions` leaves it out; `Player.TryBuildSovereignOffer` is its
 strip offer, on the same plate. After it is taken nothing fuses.
+
+**The Taking - Hollow Star + Kindled Ward (seize)** (2026-11-02, `.ai/dark-wizard-playable.md` section 6). Needs
+Hollow Star down **Black Sun** (`hollow_star_titan_cataclysm`, +Darkness) and Kindled Ward down **Pyre**
+(`kindled_ward_titan_cataclysm`, +Light): the dark wizard's darkness and the light he took. A hand of dark light
+seizes the strongest in reach and the tear collapses on what stands round it (Black Sun); the light it tears out
+drifts home searing what it passes (Pyre); caught, two lanes of his light cross the field. Darkness 2, Light 2
+with the named Ascensions; Rimelight makes three. Not John Dee's to make, nor Seimei's.
+
+**The one Conjunction with levels.** `ComboDefinition.StartsFusedFor`: the dark wizard OPENS on it, made, at
+level 1, and cards level it to 8 off its own table (Eric: "should be at level 1, and level up, even though
+combination spells wouldn't have levels normally"); his Apotheosis treats its level 8 as ascended. Anyone else
+fuses it as any recipe and gets it whole, at level 8, with nothing left to take - a fused Conjunction still never
+levels. Its numbers are its own table's at the level held, not two frozen parents' (he never held any): the
+departure from section 2's "read once from both parents", and the reason its fused copy is simply its level 8.
+`RegressionChecks.ValidateStartingConjunction` holds the exception.

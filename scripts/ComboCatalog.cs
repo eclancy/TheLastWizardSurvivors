@@ -67,6 +67,17 @@ public sealed class ComboDefinition
 	/// </summary>
 	public bool IsRite { get; init; }
 
+	/// <summary>
+	/// The one wizard who OPENS on this Conjunction, already made (.ai/dark-wizard-playable.md; Eric, 2026-11-02:
+	/// "he should start with a powerful combination spell" that "should be at level 1, and level up, even though
+	/// combination spells wouldn't have levels normally"). His copy starts at level 1 and takes cards to its
+	/// MaxLevel off its own level table (Player.AddStartingConjunction, LevelStartingConjunction), and his
+	/// Apotheosis counts its max level as ascended (ApotheosisCatalog.OnStartingConjunction). Everyone else makes
+	/// it by fusing, as any recipe, and gets it already whole - at its MaxLevel, nothing left to take
+	/// (Player.TryFuse) - so a fused Conjunction still never levels. Empty on every other recipe.
+	/// </summary>
+	public string StartsFusedFor { get; init; } = string.Empty;
+
 	public IEnumerable<ComboIngredient> Ingredients
 	{
 		get
@@ -199,6 +210,31 @@ public static class ComboCatalog
 			ResourcePath = "res://SpellData_Sagittarius.tres",
 			SynergyTag = "Conjunction / Converge",
 		},
+		// The Taking (.ai/dark-wizard-playable.md): the dark wizard's own, and the one Conjunction a wizard opens
+		// on. His darkness and the light he took: Black Sun is a dark star that pulls and collapses again and
+		// again, Pyre a kindled light grown into a small sun. Together, a hand of his dark light seizes the
+		// strongest and crushes what stands round it (the collapse), and the light it tears out drifts home
+		// burning what it passes (the pyre), to be caught and thrown as his lanes. Hollow Star's Nova Seed or
+		// Kindled Ward's Kindling Flock seals it. Not John Dee's to make (Hollow Star is his), nor Seimei's (Kindled Ward).
+		new()
+		{
+			Id = TheTaking.SpellId,
+			Name = "The Taking",
+			Verb = "seize",
+			First = new ComboIngredient
+			{
+				SpellId = "hollow_star", AscensionId = HollowStar.BlackSunId,
+				SpellName = "Hollow Star", AscensionName = "Black Sun",
+			},
+			Second = new ComboIngredient
+			{
+				SpellId = "kindled_ward", AscensionId = KindledWard.PyreId,
+				SpellName = "Kindled Ward", AscensionName = "Pyre",
+			},
+			ResourcePath = "res://SpellData_TheTaking.tres",
+			SynergyTag = "Conjunction / Seize",
+			StartsFusedFor = "dark_wizard",
+		},
 		// The Sovereign Rite (.ai/sovereign-spell.md section 3): the Rite and whichever active spell it is
 		// pointed at. Every other active spell falls silent and pours its levels into that one.
 		new()
@@ -231,6 +267,14 @@ public static class ComboCatalog
 
 	/// <summary>True for a combination's own spell id.</summary>
 	public static bool IsCombination(string spellId) => ForId(spellId) != null;
+
+	/// <summary>
+	/// True when <paramref name="characterId"/> opens on this Conjunction already made, and levels it
+	/// (<see cref="ComboDefinition.StartsFusedFor"/>): the dark wizard's The Taking.
+	/// </summary>
+	public static bool StartsFused(ComboDefinition recipe, string characterId) =>
+		recipe != null && !string.IsNullOrEmpty(recipe.StartsFusedFor)
+		&& recipe.StartsFusedFor.Equals(characterId ?? string.Empty, StringComparison.OrdinalIgnoreCase);
 
 	/// <summary>The recipe a derived Feat mirrors, or null.</summary>
 	public static ComboDefinition ForFeat(string achievementId) =>

@@ -107,12 +107,6 @@ public sealed class UnlockDefinition
 	/// </summary>
 	public bool SealedUntilFreed { get; init; }
 
-	/// <summary>
-	/// A spell The Grimoire Restored does not count (<see cref="UnlockCatalog.GrimoireSpellIds"/>): one that was
-	/// never taken from anyone, so it is not recovered. The Taking, the dark wizard's own - counting it would put
-	/// the collection behind a Hardcore win in the Throne. Spells only.
-	/// </summary>
-	public bool OutsideGrimoire { get; init; }
 }
 
 /// <summary>
@@ -242,6 +236,9 @@ public static class UnlockCatalog
 		// out so this list stays the one place every spell's source is read from; RegressionChecks holds the
 		// two lists together.
 		FromCombination("sagittarius"),
+		// The Taking (Hollow Star's Black Sun and Kindled Ward's Pyre), the dark wizard's own: he opens on it made
+		// (ComboDefinition.StartsFusedFor); anyone else makes it, and its Feat pays it, as any recipe.
+		FromCombination(TheTaking.SpellId),
 		// THE SOVEREIGN RITE (.ai/sovereign-spell.md section 3): the one Conjunction that is not paid by its own
 		// Feat. It is the reward of the end of the road - beating the Warden of the Deep, the Emberdeep's boss -
 		// so nothing on a new save reaches it early; its Feat ("Conjunction: Sovereign Rite") is the recipe's row
@@ -310,23 +307,14 @@ public static class UnlockCatalog
 			"The Coursing: in the Broken Circle, let your Familiar, taken as a hound, run down "
 			+ $"{AchievementDefinitions.CoursingTarget} Black Hares in one run.",
 			secretUntilStage: "stage_10", outsideCampaignGate: true),
-		// TAKEN ON THE HARDEST ROAD (.ai/dark-wizard-playable.md). The dark wizard himself, and his own spell, the
-		// reward of beating him in the Throne on Hardcore (the_taker_taken). Outside the campaign gate - he is not
-		// one of the imprisoned, and the Throne cannot wait on the man in it - and never shown until he is taken,
-		// so his line is vague: the whole road (the Throne's gate asks for all of it), the hard way (Hardcore).
-		// His spell is not counted by The Grimoire Restored: it was never taken, so it is not recovered.
+		// TAKEN ON THE HARDEST ROAD (.ai/dark-wizard-playable.md). The dark wizard himself, the reward of beating
+		// him in the Throne on Hardcore (the_taker_taken). Outside the campaign gate - he is not one of the
+		// imprisoned, and the Throne cannot wait on the man in it - and never shown until he is taken, so his line
+		// is vague: the whole road (the Throne's gate asks for all of it), the hard way (Hardcore). His spell, The
+		// Taking, is a Conjunction he opens on already made; everyone else makes it, as any recipe (above).
 		FromAchievementCharacter("dark_wizard", AchievementDefinitions.TakerTakenId,
 			"Something waits for whoever walks the whole road the hard way.",
 			outsideCampaignGate: true, sealedUntilFreed: true),
-		new()
-		{
-			Id = TheTaking.SpellId,
-			Kind = UnlockKind.Spell,
-			Source = UnlockSource.Achievement,
-			SourceId = AchievementDefinitions.TakerTakenId,
-			LockedHint = "Comes to whoever walks the whole road the hard way.",
-			OutsideGrimoire = true,
-		},
 	};
 
 	private static UnlockDefinition Starter(string id, UnlockKind kind) => new()
@@ -474,11 +462,10 @@ public static class UnlockCatalog
 	/// <summary>
 	/// What The Grimoire Restored counts: every spell but the combinations. A combination is made, not
 	/// recovered, and asking for all of them would make the collection a test of every Ascension pair
-	/// (Eric, 2026-11-02). Nor a spell never taken from anyone (<see cref="UnlockDefinition.OutsideGrimoire"/>:
-	/// The Taking, the dark wizard's own).
+	/// (Eric, 2026-11-02). The Taking, the dark wizard's own, is one of them.
 	/// </summary>
 	public static IEnumerable<string> GrimoireSpellIds =>
-		AllSpellIds.Where(id => !ComboCatalog.IsCombination(id) && GetSpell(id)?.OutsideGrimoire != true);
+		AllSpellIds.Where(id => !ComboCatalog.IsCombination(id));
 
 	/// <summary>
 	/// Every wizard, excluding the development sandbox entry and anyone outside the campaign gate (a
