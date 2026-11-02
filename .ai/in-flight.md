@@ -168,6 +168,25 @@ builds to 120 and seven.
    **Decided:** a combination needs both parents fully ascended, each through one specific named
    Ascension (revision of the doc in flight).
 
+## 3b. After the playtest list (2026-11-02)
+
+- **Combination spells and Sagittarius** merged (`ComboCatalog`, the Conjunction offer in the strip, fusion
+  freeing a slot, the derived "Conjunction: Sagittarius" Feat, a Conjunctions section in the browser). Open
+  for Eric: should combinations count toward "The Grimoire Restored" (now 36)? which parents' level 4s carry
+  over (kept Heavy Draw, Barbed, Shooting Stars, Skipping Stars; dropped Running Shot)? does a held full
+  draw fire by itself? the bronze plate? **The recipe was never offered inside 15 minutes** in four bot runs:
+  the parents' upgrade cards come too rarely, not the gates. Damage against the 1.2x target unmeasured.
+- **Bridge and Court pre-flip fixes** merged: hook 9 `CameraLean` frames the Constable on a PC, bridge runs
+  reproduce from the run's seed, the Court's walls and grid agree (the report read the body, not the
+  feet), his bolt files show the reticle. Open for Eric: the bridge ends about 3 levels above the
+  Emberdeep (pickup, not spawns); +3 fine, or fold overtaken orbs?
+- **No Godot logo while loading** (`boot_splash/show_image=false`, black).
+- **The Evolution Codex** proposed and wireframed from Amy's emailed feedback (`.ai/evolution-codex.md`,
+  https://claude.ai/artifact/NEHkx6sJQXjwqYrdMtuie9); six questions in its section 9.
+- **In flight:** `wip/wizard-seimei` (the first chapter wizard and P1's rules), `wip/progress-reset` (a
+  story-changing release resets progress, backs the old save up, and warns before the download; built
+  with the epoch unchanged, so it resets nobody until a release bumps it).
+
 ## 4. Waiting on Eric
 
 - **Playtest 0.10.0** (50 HP, scarce healing, tougher chapters and bosses). Fixes from it come
