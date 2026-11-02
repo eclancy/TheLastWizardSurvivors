@@ -1,6 +1,7 @@
 # The Sovereign Rite: every spell's power poured into one
 
-**Status: a proposal (2026-11-02), not built.** Eric approves it first.
+**Status: approved by Eric (2026-11-02) with one change, being built:** it is a **combination**: the
+Rite is one ingredient and the spell you point it at is the other (section 3, as revised).
 
 Eric, 2026-11-02: *"I want a very powerful ability that you can't unlock until late in the game that
 prevents any other non-passive spell from activating, but gets power based on the number of other
@@ -39,22 +40,28 @@ Alternates: *Unison*, *The Lodestar*. Not "Deus Ex Machina" (Magic Survival's), 
 
 ---
 
-## 3. Unlock and offer
+## 3. Unlock and offer: a combination you point at a spell
 
-- **Unlocked** by a Road deed: **beating the Warden of the Deep** (the end of the road, chapter 10),
-  through `UnlockCatalog` like every other unlock. Nothing on a new save can reach it early.
-- **Offered** in the Ascension strip above the level-up cards, on its own plate (beside the Apotheosis's
-  ember and the Conjunction's bronze), once **all** of these hold:
-  - player level **25** or more (late in a 15-minute run; measured, section 6);
-  - at least **three active spells** held (with fewer there is little to pour);
-  - their other levels sum to at least **16**.
-  It stays in the strip on every level-up once offered, until taken or the run ends, so it is never
-  dealt away.
-- **The choice:** taking the plate opens a one-row page of your active spells (the Conjunction's page
-  pattern), each showing the power it would gain right now ("+38 levels of fuel: x4.0 damage"); the pad
-  walks it, A anoints. Back cancels without spending the pick.
+Eric (2026-11-02): *"How does the player get sovereign rite? Randomly in level up? It should be a
+combination spell that you select another spell to use on."* So it is not dealt at random. It is a
+**Conjunction** (`.ai/combo-spells.md`), with one difference: the Rite is one ingredient, and the second
+ingredient is **whichever of your active spells you choose**.
 
----
+- **Unlocked** by a Road deed, **beating the Warden of the Deep** (the end of the road, chapter 10),
+  through `UnlockCatalog`. Nothing on a new save can reach it early.
+- **Offered exactly where the Conjunctions are**: in the Ascension strip above the level-up cards, on the
+  Conjunction plate, reading **"✶ CONJUNCTION  Sovereign Rite"**, once **all** of these hold:
+  - player level **25** or more;
+  - at least **three active spells** held;
+  - their levels sum to at least **16** besides whichever one is chosen.
+  Like every strip offer it stays on each level-up until taken or the run ends, so it is never dealt
+  away or lost to luck.
+- **Choosing the spell**: taking the plate opens the Conjunction's one-card page, with your active spells
+  in a row as the second ingredient: "Sovereign Rite + [ Cinderbreath ]  ->  Sovereign Cinderbreath",
+  each showing the power it would gain now ("+38 fuel: x3.7 damage"). The pad walks the row, A fuses,
+  Back cancels without spending the pick.
+- **In the Codex and the Achievements list** it appears as a recipe whose second ingredient reads "any
+  active spell you hold", and its derived Feat is "Conjunction: Sovereign Rite".
 
 ## 4. The power
 
@@ -105,6 +112,10 @@ planned build.
 ---
 
 ## 7. Questions for Eric
+
+**Answered 2026-11-02:** the recommendations stand (the Sovereign Rite; the Warden of the Deep;
+level 25 and three actives; silenced spells keep levelling as fuel; about 1.3 times the loadout), and it
+is offered as a Conjunction whose second ingredient the player chooses (section 3).
 
 1. **Name**: the Sovereign Rite (recommended), Unison, or The Lodestar?
 2. **Unlock**: beating the Warden of the Deep (recommended), or later (the Throne)?
