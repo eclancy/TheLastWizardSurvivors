@@ -1942,7 +1942,8 @@ public partial class MainMenu : Control
 	private Control BuildSpellbookRow(SpellbookEntry entry, SaveData data, bool curating)
 	{
 		bool removed = GlobalStatsManager.IsSpellRemovedFromPool(data, entry.Id);
-		Button control = curating ? BuildCurationToggle(entry, removed) : null;
+		// A combination (ComboCatalog) is never a level-up card, so there is nothing to set aside.
+		Button control = curating && !ComboCatalog.IsCombination(entry.Id) ? BuildCurationToggle(entry, removed) : null;
 		var row = new CodexRows.Entry
 		{
 			Title = entry.DisplayName,
