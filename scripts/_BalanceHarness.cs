@@ -254,6 +254,9 @@ public partial class _BalanceHarness : Node
 	[Export] public float CircleRadius { get; set; }
 	private Vector2 circleCentre;
 	private bool circleCentred;
+	private float circleCheckAt;
+	private Vector2 circleCheckFrom;
+	private int circleRelaid;
 	// --survivor: a MORTAL bot that plays the way a careful person does (DriveSurvivor) - steps away
 	// from whatever is closing, walks to XP orbs and chests when the way is clear. The old mortal
 	// kite bot fled in a straight line, collected nothing and died at level 2 in its second minute,
@@ -1686,6 +1689,21 @@ public partial class _BalanceHarness : Node
 		{
 			circleCentre = player.GlobalPosition + Vector2.Left * CircleRadius;
 			circleCentred = true;
+			circleCheckAt = elapsed + 1f;
+			circleCheckFrom = player.GlobalPosition;
+		}
+		// A circle that runs into a lake or a tree trunk holds him against it for the rest of the run - a
+		// --seek-combo run stood at one spot from minute 1.5 to 15 and never drew the bow. Under a body's
+		// width walked in a second, the circle is laid again with him on its far side.
+		if (elapsed >= circleCheckAt)
+		{
+			if (player.GlobalPosition.DistanceTo(circleCheckFrom) < 24f)
+			{
+				circleCentre = player.GlobalPosition + (player.GlobalPosition - circleCentre).Normalized().Rotated(Mathf.Pi * 0.5f) * CircleRadius;
+				circleRelaid++;
+			}
+			circleCheckAt = elapsed + 1f;
+			circleCheckFrom = player.GlobalPosition;
 		}
 		Vector2 offset = player.GlobalPosition - circleCentre;
 		float distance = offset.Length();
@@ -2716,7 +2734,7 @@ public partial class _BalanceHarness : Node
 	{
 		string policy = SeekAscensions ? "planned" : OrdinaryPolicy ? "ordinary" : SeekApotheosis ? "seek-apotheosis" : "default";
 		string Level(int l) => levelReachedAt.TryGetValue(l, out float t) ? $"{t / 60f:0.0}" : "-";
-		string mover = Survivor ? (NoOrbs ? "survivor-no-orbs" : "survivor") : Immortal ? (CircleRadius > 0f ? $"immortal-circle{CircleRadius:0}" : "immortal") : "kite";
+		string mover = Survivor ? (NoOrbs ? "survivor-no-orbs" : "survivor") : Immortal ? (CircleRadius > 0f ? $"immortal-circle{CircleRadius:0}{(circleRelaid > 0 ? $"-relaid{circleRelaid}" : "")}" : "immortal") : "kite";
 		return $"HARNESS SUMMARY character={CharacterIndex} policy={policy}{(FullShop ? "+shop" : "")}{(PickEvery > 1 ? $"+pick1in{PickEvery}" : "")} seed={Seed}"
 			+ $" stage={Global.SelectedStageIdx} mover={mover} end={(player != null && player.IsDead ? "died" : "clock")}@{elapsed / 60f:0.0}"
 			+ $" xp={player?.XpFirstLevelCost ?? 0}+{player?.XpCostPerLevel ?? 0} growth={SwarmStat<float>("XpGrowthPerPaceMinute"):0.000}"
