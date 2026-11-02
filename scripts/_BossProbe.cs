@@ -168,6 +168,8 @@ public partial class _BossProbe : Node
 	public override void _ExitTree()
 	{
 		Engine.TimeScale = 1.0f;
+		// A static Resource that outlived the engine is reported as still in use at exit.
+		darknessProbe = null;
 		foreach (string a in MoveActions)
 			Input.ActionRelease(a);
 	}
@@ -313,6 +315,29 @@ public partial class _BossProbe : Node
 				if (fellAt < 0f)
 					fellAt = elapsed;
 				int corpses = CountBossNodes(game);
+				// The Throne's end: the dark lifted, then the way home, then the ending over the results
+				// (ThroneEnding), checked once.
+				if (corpses == 0 && darkWizard != null && !endingChecked)
+				{
+					TrackDarkWizardFall();
+					if (!darkVeilGoneAfterFall && elapsed - darkFellAt <= 3f)
+						return;
+					if (!endingEntered)
+					{
+						endingEntered = true;
+						endingEnteredAt = elapsed;
+						Node2DGame.Current?.EnterVictoryPortal();
+						return;
+					}
+					if (elapsed - endingEnteredAt < 1.5f)
+						return;
+					endingChecked = true;
+					GameOverScreen results = FindNode<GameOverScreen>(game);
+					ThroneEnding ending = results?.Ending;
+					notes.Add(ending != null
+						? $"the ending is over the results: {ending.StandingIds.Count} wizards in the row ({string.Join(", ", ending.StandingIds)})"
+						: $"NO ENDING over the results (results screen {(results != null ? "up" : "missing")})");
+				}
 				if (corpses == 0)
 					Finish($"boss died; its fall played for {elapsed - fellAt:0.0}s and freed the body");
 				else if (elapsed - fellAt > CorpseGiveUpSeconds)
@@ -640,6 +665,8 @@ public partial class _BossProbe : Node
 	{
 		if (PursueSeneschal())
 			return;
+		if (DuelDarkWizard())
+			return;
 		Vector2 away = Vector2.Zero;
 		int counted = 0;
 
@@ -675,6 +702,146 @@ public partial class _BossProbe : Node
 
 		Press("move_right", "move_left", desired.X);
 		Press("move_down", "move_up", desired.Y);
+	}
+
+	// THE DARK WIZARD (.ai/endgame-castle.md 6.4): the fight's verb is "take it back", which a kiting bot
+	// never meets - it outruns every hand. So while he stands the bot is made to answer it both ways, and the
+	// probe proves the seal underneath each answer:
+	//   - a hand in flight: the bot stands and lets it land (every taking, so the seal is exercised);
+	//   - an orb in flight: on odd seals it walks to the orb and takes the spell back; on even seals it walks
+	//     away and lets the orb reach him, so the twenty-second seal runs out on its own;
+	//   - and for every sealed spell, its casts through the firing loop are counted: none while sealed, and
+	//     at least one after the seal lifts, which is the whole primitive (Player.Seal.cs).
+	// Kept whole throughout, as the Seneschal's bot is: the question is the mechanic, not the bot's health.
+	private int darkSealsSeen;
+	private readonly Dictionary<SpellData, (int CastsAtSeal, float SealedAt, bool TakeBack)> darkSealed = new();
+	private readonly Dictionary<SpellData, (int CastsAtRelease, float ReleasedAt)> darkReleased = new();
+	private int darkCastWhileSealed, darkCastAgain, darkNeverCastAgain, darkPeakSealed;
+	private bool darkVeilSeenInPhase1, darkVeilSeenInPhase0, darkVeilGoneAfterFall, darkSealsGoneAfterFall;
+	private float darkMultiplierPhase0 = -1f, darkMultiplierPhase1 = -1f;
+	private ThroneDarkWizardBoss darkWizard;
+	private int darkHands, darkLanded, darkTakenBack, darkReachedHim, darkLines, darkEchoes;
+	private readonly HashSet<string> darkEchoed = new();
+	private float darkFellAt = -1f;
+	private bool endingEntered, endingChecked;
+	private float endingEnteredAt;
+
+	private bool DuelDarkWizard()
+	{
+		// Found once and kept, valid or not: the summary and the ending check read it after he is gone.
+		if (darkWizard == null)
+			darkWizard = bodies.OfType<ThroneDarkWizardBoss>().FirstOrDefault();
+		if (darkWizard == null || !IsInstanceValid(darkWizard) || darkWizard.IsDying || darkWizard.IsEntering || player is not Player wizard)
+			return false;
+		if (!wizard.IsDead)
+			wizard.CurrentHP = wizard.MaxHP;
+		TrackSeals(wizard);
+
+		Vector2? toward = null;
+		bool stand = false;
+		SealOrb orb = FindNode<SealOrb>(game);
+		if (orb != null && !orb.Spent && darkSealed.TryGetValue(orb.Spell, out var sealedNow))
+		{
+			Vector2 to = orb.GlobalPosition - wizard.GlobalPosition;
+			toward = sealedNow.TakeBack ? to : -to;
+		}
+		else if (FindNode<DarkHand>(game) is DarkHand hand && !hand.Spent)
+			stand = true;
+		else if (darkWizard.TakingWindingUp)
+			stand = true;
+		if (!stand && toward == null)
+			return false;
+		Vector2 d = toward is Vector2 v && v.LengthSquared() > 1f ? v.Normalized() : Vector2.Zero;
+		Press("move_right", "move_left", stand ? 0f : d.X);
+		Press("move_down", "move_up", stand ? 0f : d.Y);
+		return true;
+	}
+
+	private void TrackSeals(Player wizard)
+	{
+		darkPeakSealed = Math.Max(darkPeakSealed, wizard.SealedCount);
+		darkHands = darkWizard.HandsThrown;
+		darkLanded = darkWizard.HandsLanded;
+		darkTakenBack = darkWizard.SealsTakenBack;
+		darkReachedHim = darkWizard.SealsReachedHim;
+		darkLines = darkWizard.LinesCast;
+		darkEchoes = darkWizard.EchoesCast;
+		foreach (string id in darkWizard.EchoLog)
+			darkEchoed.Add(id);
+		if (darkWizard.BossPhase == 0 && darkMultiplierPhase0 < 0f)
+			darkMultiplierPhase0 = darkWizard.IncomingSpellMultiplier(DarknessProbeSpell());
+		if (darkWizard.BossPhase >= 1 && darkMultiplierPhase1 < 0f)
+			darkMultiplierPhase1 = darkWizard.IncomingSpellMultiplier(DarknessProbeSpell());
+		darkVeilSeenInPhase0 |= darkWizard.BossPhase == 0 && darkWizard.DarkIsOn;
+		darkVeilSeenInPhase1 |= darkWizard.BossPhase >= 1 && darkWizard.DarkIsOn;
+		foreach (SpellData spell in wizard.GetEquippedSpells())
+		{
+			if (spell == null)
+				continue;
+			bool sealedNow = wizard.IsSealed(spell);
+			if (sealedNow && !darkSealed.ContainsKey(spell))
+			{
+				darkSealsSeen++;
+				darkSealed[spell] = (wizard.CastsOf(spell.Id), elapsed, darkSealsSeen % 2 == 1);
+				darkReleased.Remove(spell);
+			}
+			else if (sealedNow && wizard.CastsOf(spell.Id) > darkSealed[spell].CastsAtSeal)
+			{
+				darkCastWhileSealed++;
+				darkSealed[spell] = (wizard.CastsOf(spell.Id), darkSealed[spell].SealedAt, darkSealed[spell].TakeBack);
+			}
+			else if (!sealedNow && darkSealed.TryGetValue(spell, out var was))
+			{
+				notes.Add($"seal on {spell.Id} lifted after {elapsed - was.SealedAt:0.0}s ({(was.TakeBack ? "the bot went for the orb" : "the bot let it go home")})");
+				darkSealed.Remove(spell);
+				darkReleased[spell] = (wizard.CastsOf(spell.Id), elapsed);
+			}
+		}
+		foreach (SpellData spell in darkReleased.Keys.ToList())
+		{
+			var (casts, at) = darkReleased[spell];
+			if (wizard.CastsOf(spell.Id) > casts)
+			{
+				darkCastAgain++;
+				darkReleased.Remove(spell);
+			}
+			else if (elapsed - at > 30f)
+			{
+				darkNeverCastAgain++;
+				darkReleased.Remove(spell);
+			}
+		}
+	}
+
+	private static SpellData darknessProbe;
+
+	private static SpellData DarknessProbeSpell() =>
+		darknessProbe ??= ResourceLoader.Load<SpellData>("res://SpellData_ShadowBolt.tres");
+
+	// After he falls: every seal let go, the dark lifted; then the way home, and the ending over the results.
+	private void TrackDarkWizardFall()
+	{
+		if (darkWizard == null || player is not Player wizard)
+			return;
+		if (darkFellAt < 0f)
+		{
+			darkFellAt = elapsed;
+			darkSealsGoneAfterFall = wizard.SealedCount == 0;
+		}
+		if (!darkVeilGoneAfterFall)
+			darkVeilGoneAfterFall = FindNode<DarkVeil>(game) == null;
+	}
+
+	private string DarkWizardSummary()
+	{
+		if (darkWizard == null)
+			return null;
+		return $"hands {darkHands} thrown, {darkLanded} landed; seals {darkSealsSeen} "
+			+ $"(peak {darkPeakSealed} at once), {darkTakenBack} taken back, {darkReachedHim} reached him; "
+			+ $"casts while sealed {darkCastWhileSealed}, cast again after release {darkCastAgain}, never again {darkNeverCastAgain}; "
+			+ $"dark in phase 0 / 1+: {darkVeilSeenInPhase0} / {darkVeilSeenInPhase1}; darkness x{darkMultiplierPhase0:0.00} then x{darkMultiplierPhase1:0.00}; "
+			+ $"lines {darkLines}, echoes {darkEchoes} ({(darkEchoed.Count > 0 ? string.Join(", ", darkEchoed) : "none")}); "
+			+ $"after the fall: seals all let go {darkSealsGoneAfterFall}, dark lifted {darkVeilGoneAfterFall}";
 	}
 
 	// THE SENESCHAL (.ai/endgame-castle.md 5.6): he leaves at each threshold and the fight resumes only
@@ -905,6 +1072,8 @@ public partial class _BossProbe : Node
 			+ $" (ground {heldOnGround}, a prop {heldOnProp}, a body {heldOnBody}); {heldTouchingNothing} more touched nothing");
 		if (ChoirSummary() is string choir)
 			GD.Print($"  the choir      : {choir}");
+		if (DarkWizardSummary() is string dark)
+			GD.Print($"  the dark wizard: {dark}");
 		foreach (string note in notes)
 			GD.Print($"  note           : {note}");
 		foreach (var (id, phases) in processionPhases)

@@ -45,9 +45,11 @@ public partial class TelegraphedGroundHit : Node2D
 	/// </remarks>
 	/// <param name="glyph">The icon in its middle, when the shape's own would say the wrong thing: a Line
 	/// shows Leap (a charge coming), which is wrong for a file of crossbow bolts (Shot). Null is the shape's.</param>
+	/// <param name="halfAngleDegrees">A Cone's half-angle; the shape's default (32) when not given.</param>
+	/// <param name="halfWidth">A Line's half-width; the shape's default (26) when not given.</param>
 	public static TelegraphedGroundHit Place(Node arena, Vector2 where, float windUpSeconds, float radius,
 		int damage, Color warningColor, TelegraphShape telegraphShape = TelegraphShape.Ring, Vector2 facing = default,
-		TelegraphGlyph? glyph = null)
+		TelegraphGlyph? glyph = null, float halfAngleDegrees = 0f, float halfWidth = 0f)
 	{
 		if (arena == null || !IsInstanceValid(arena))
 			return null;
@@ -61,6 +63,10 @@ public partial class TelegraphedGroundHit : Node2D
 			Facing = facing == default ? Vector2.Right : facing,
 			GlyphOverride = glyph,
 		};
+		if (halfAngleDegrees > 0f)
+			hit.shape.HalfAngleDegrees = halfAngleDegrees;
+		if (halfWidth > 0f)
+			hit.shape.HalfWidth = halfWidth;
 		// Primed, so the warning appears on the first frame. Without it the telegraph would sit out a
 		// full cooldown drawing nothing, and the hit would land at twice the advertised wind-up.
 		hit.shape.Prime();

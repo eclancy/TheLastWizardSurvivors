@@ -4229,6 +4229,12 @@ public static class RegressionChecks
 				warnings.AddRange(constable.TuningProblems());
 				break;
 
+			// The dark wizard holds his own (ThroneDarkWizardBoss.TuningProblems): the taking's long tell,
+			// a hand and an orb slower than the wizard walks, a seal that ends, room between his lanes.
+			case ThroneDarkWizardBoss darkWizard:
+				warnings.AddRange(darkWizard.TuningProblems());
+				break;
+
 			case GaolerBoss gaoler:
 				// Below 0 there is no planted tell before the charge; at 1 the charge never
 				// happens, because the wind-up ends before it starts moving.

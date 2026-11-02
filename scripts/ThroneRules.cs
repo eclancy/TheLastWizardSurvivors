@@ -41,6 +41,10 @@ public partial class ThroneRules : ChapterRules
 
 	private static readonly float? PinnedPace = Node2DGame.ReferenceRunSeconds;
 
+	// How far from the wizard the throne may be for the dark wizard to rise before it: in sight on either
+	// canvas (SendWave, the finale).
+	private const float FinaleInSightPx = 400f;
+
 	/// <summary>Hook 6: the end of the reference run, for the whole of this one.</summary>
 	public override float? PinnedPaceSeconds => PinnedPace;
 
@@ -65,6 +69,15 @@ public partial class ThroneRules : ChapterRules
 
 	/// <summary>Real seconds the procession has run since the Muster closed.</summary>
 	public float ProcessionSeconds { get; private set; }
+
+	/// <summary>
+	/// The wardens felled in this run's procession, in the order they fell (BossCatalog ids): what the dark
+	/// wizard throws back in his last phase, "the telegraph of each warden the player has beaten"
+	/// (.ai/endgame-castle.md 6.4, ThroneDarkWizardBoss).
+	/// </summary>
+	public IReadOnlyList<string> FelledWardenIds => felledWardenIds;
+
+	private readonly List<string> felledWardenIds = new();
 
 	// The hall, in world pixels.
 	private AuthoredLayout grid;
@@ -248,8 +261,12 @@ public partial class ThroneRules : ChapterRules
 				GD.PushError("ThroneRules: BossCatalog has no boss for the Throne; the run cannot end in victory.");
 				return;
 			}
+			// Before his throne when the wizard is in sight of it; otherwise where the pairs arrive, a few
+			// hundred pixels toward the hall's middle - between the wizard and the throne. His arrival is the
+			// story's last entrance and is played on screen (a phone sees about 425 px either side, a PC about
+			// 425 px up and down): from the south doors the throne is 1,700 px off, and he rose out of sight.
 			Vector2 at = throneBase + new Vector2(0f, 2.5f * TilePixels);
-			if (grid == null || at.DistanceTo(from) < 320f || !IsClear(at, 60f))
+			if (grid == null || at.DistanceTo(from) < 320f || at.DistanceTo(from) > FinaleInSightPx || !IsClear(at, 60f))
 				at = ArrivalPoints(from, 1)[0];
 			Phase = ProcessionPhase.Finale;
 			standing = 1;
@@ -293,6 +310,8 @@ public partial class ThroneRules : ChapterRules
 			return;
 		lastFellAt = fellAt;
 		standing--;
+		if (definition != null && !felledWardenIds.Contains(definition.Id))
+			felledWardenIds.Add(definition.Id);
 		GD.Print($"THRONE {definition.Id} falls {ProcessionSeconds - waveStartedAt:0}s into wave {ThroneProcession.Waves[WaveIndex].Number}, "
 			+ $"level {Game.RunPlayer?.CurrentLevel ?? 0}");
 		if (standing <= 0)

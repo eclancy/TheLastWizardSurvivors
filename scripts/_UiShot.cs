@@ -249,6 +249,21 @@ public partial class _UiShot : Node
 	// that holds its thresholds (CourtSeneschalBoss) stops the blow at the first one.
 	private float bossBleedTo = -1f;
 	private int bossBleedAfter = 30;
+	// --dark-wizard=P[,K][,seal][,hand][,take] (the Throne, with --throne-wave=4): K frames (default 30)
+	// after the dark wizard has landed, he is struck to just under his phase P's threshold (0 the takings,
+	// 1 his light, 2 all he took), and with "seal" one of the wizard's spells is taken at once (the HUD's
+	// seal and the orb going home), "hand" throws a hand now, "take" starts a taking's tell now, "fall" fells
+	// him (his light going out and the storm of motes, then the way home). The frame he
+	// arrives and the frame he lands are printed, to set --frames by. The wizard is kept whole.
+	private int darkWizardPhase = -1;
+	private int darkWizardAfter = 30;
+	private bool darkWizardSeal, darkWizardHand, darkWizardTake, darkWizardFall, darkWizardStaged;
+	private int darkWizardArrivedFrame = -1, darkWizardLandedFrame = -1;
+	// --ending-advance=N (with --force-victory on the Throne): N frames after the ending is up, a press moves
+	// it on - from the row to the credits - so the roll can be photographed.
+	private int endingAdvanceAfter = -1;
+	private int endingSeenFrame = -1;
+	private bool endingAdvanced;
 	// --choir=note|dip|revive[,K] (with --rush-steps=1 on the Sunken Cave): K frames (default 30) after the
 	// Hollow Choir has landed, one of the three things Eric asked of it (2026-11-01) is made to happen, so
 	// a --burst can follow it: NOTE, the three voices sing a note at him in turn (the gesture, then the
@@ -1361,6 +1376,21 @@ public partial class _UiShot : Node
 				if (bleed.Length > 1)
 					bossBleedAfter = int.Parse(bleed[1]);
 			}
+			else if (arg.StartsWith("--dark-wizard="))
+			{
+				string[] dark = arg.Substring("--dark-wizard=".Length).Split(',');
+				darkWizardPhase = int.Parse(dark[0]);
+				foreach (string part in dark.Skip(1))
+				{
+					if (part == "seal") darkWizardSeal = true;
+					else if (part == "hand") darkWizardHand = true;
+					else if (part == "take") darkWizardTake = true;
+					else if (part == "fall") darkWizardFall = true;
+					else darkWizardAfter = int.Parse(part);
+				}
+			}
+			else if (arg.StartsWith("--ending-advance="))
+				endingAdvanceAfter = int.Parse(arg.Substring("--ending-advance=".Length));
 			else if (arg.StartsWith("--choir="))
 			{
 				string[] scene = arg.Substring("--choir=".Length).Split(',');
@@ -2614,6 +2644,57 @@ public partial class _UiShot : Node
 		return any;
 	}
 
+	// --dark-wizard and --ending-advance (above): staged once, from the frame loop.
+	private void TickDarkWizardShot()
+	{
+		if (endingAdvanceAfter >= 0 && !endingAdvanced && FindNodeOfType<GameOverScreen>(GetTree().Root)?.Ending is ThroneEnding ending)
+		{
+			if (endingSeenFrame < 0)
+			{
+				endingSeenFrame = frames;
+				GD.Print($"_UiShot: the ending is up on frame {frames}, {ending.StandingIds.Count} in the row");
+			}
+			else if (frames - endingSeenFrame >= endingAdvanceAfter)
+			{
+				endingAdvanced = true;
+				ending.Advance();
+				GD.Print($"_UiShot: the ending moved on to the credits on frame {frames}");
+			}
+		}
+		if (darkWizardPhase < 0 || FindNodeOfType<ThroneDarkWizardBoss>(GetTree().Root) is not ThroneDarkWizardBoss dark || dark.IsDying)
+			return;
+		Player wizard = FindNodeOfType<Player>(GetTree().Root);
+		if (wizard != null && !wizard.IsDead)
+			wizard.CurrentHP = wizard.MaxHP;
+		if (darkWizardArrivedFrame < 0)
+		{
+			darkWizardArrivedFrame = frames;
+			GD.Print($"_UiShot: the dark wizard arrives on frame {frames}");
+		}
+		if (dark.IsEntering)
+			return;
+		if (darkWizardLandedFrame < 0)
+		{
+			darkWizardLandedFrame = frames;
+			GD.Print($"_UiShot: the dark wizard landed on frame {frames}");
+		}
+		if (darkWizardStaged || frames - darkWizardLandedFrame < darkWizardAfter)
+			return;
+		darkWizardStaged = true;
+		float to = darkWizardPhase switch { 1 => 0.62f, 2 => 0.30f, _ => -1f };
+		if (to > 0f)
+			dark.TakeDamage(System.Math.Max(1, dark.Health - Mathf.FloorToInt(dark.MaxHealth * to)), false);
+		if (darkWizardSeal && wizard != null)
+			dark.OnHandLanded(wizard, wizard.GlobalPosition);
+		if (darkWizardHand)
+			dark.DebugThrowHand();
+		if (darkWizardTake)
+			dark.DebugBeginTaking();
+		if (darkWizardFall)
+			dark.TakeDamage(System.Math.Max(1, dark.Health), false);
+		GD.Print($"_UiShot: the dark wizard staged on frame {frames}: phase {darkWizardPhase}, seal {darkWizardSeal}, hand {darkWizardHand}, take {darkWizardTake}");
+	}
+
 	private static void CollectBossBodies(Node node, System.Collections.Generic.List<BossEnemy> into)
 	{
 		if (node is BossEnemy boss && IsInstanceValid(boss))
@@ -3084,6 +3165,7 @@ public partial class _UiShot : Node
 					GD.Print($"_UiShot: bled {bleeding.Count} boss bod{(bleeding.Count == 1 ? "y" : "ies")} toward {bossBleedTo:P0}");
 				}
 			}
+			TickDarkWizardShot();
 			if (choirScene != null && !choirSceneDone && rushStepsDone > 0 && BossEnemy.EnteringCount == 0
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame { BossFightActive: true })
 			{

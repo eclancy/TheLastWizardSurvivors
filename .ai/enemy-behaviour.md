@@ -737,6 +737,7 @@ rather than from its own machinery.
 | 9 | The Fallow Fields | **The Hayward** | Can you go round it? Its hurdle cuts what lands from in front to x0.2 (`Enemy.AdjustIncomingDamage`). | `HaywardBoss` |
 | 10 | The Broken Circle | **The Ninth Stone** | Can you find the way out of a closing ring, read from the ground in under a second? | `NinthStoneBoss` |
 | 11 | The Last Bridge (castle, not yet playable) | **The Constable** | Can you advance under fire? He holds the gate from the wall, untargetable, and comes down into the yard only to a wizard who has reached the gate's foot (`.ai/endgame-castle.md` 3.6). | `BridgeConstableBoss` |
+| 13 | The Throne (castle, not yet playable) | **The dark wizard** (never named) | Can you take back what he takes? A slow hand of his dark light seals one of your spells; its seal rides home to him as an orb you can touch to have it back (`.ai/endgame-castle.md` 6.4, 13). | `ThroneDarkWizardBoss` |
 
 Two of them deliberately take opposite halves of the same idea. The Archivist is the **stationary
 sweep** with burrowing as punctuation; the Long Coil is the **burrow** as the whole fight. Reusing
@@ -847,6 +848,7 @@ fall is the default.
 | The Ninth Stone | The mark burns down its split and then leaves, a thread of light streaming up and away; what is left is granite, and it falls whole, away from the wizard, with a thud of dust, chips and heather |
 | The Constable | The gate given up: the mark gutters in the slit, the halberd goes over off his open hand and rings on the setts, he goes down on his knees, the ring of the gate's keys drops from his belt into a heap (not thrown - the Gaoler's burst and skitter), his head bows and the plate goes dark |
 | The Seneschal | **His staff is broken**, as a steward broke his white staff over his lord's grave: it snaps where his hand holds it in a burst of white splinters, the top half spins away and the foot tips across his front; his cap goes off behind him; he sinks to his knees and the gown pools; the chain of office slides off and its gilt links skitter; the mark goes out |
+| The dark wizard | **The magic going home**: his eclipse flares once and closes, his eyes go out, the hall's dark lifts, and the warm light he took leaves his body in three waves of motes - mostly the light's own ramp, a scatter of every element's - flying off the screen in every direction while what is left of him goes to the dark he is and sinks back into his shadow |
 | Wizard Dude | **The kids' drawing is never cut, turned or redrawn.** His one frame stays untouched and only FADES, inside a puff of his own spell's colour with sparks rising - an effect of ours round their pixels, nothing in their style |
 
 **Rules a new fall keeps.** Draw on the 2 px art grid (`BossDeath.Disc`, `Line`, `Arc`), never an
@@ -921,6 +923,7 @@ ramp, core to edge, and a Bayer-dithered spill into the picture, gone in 0.34 s.
 | The Ninth Stone | A thread of his light comes down into the heath; the ground cracks; the stone heaves up and the mark runs down its split |
 | The Constable | On the wall-walk over the gate, where he fights from: his cold fire runs along the battlements merlon by merlon from the towers in; the halberd's head comes over the parapet, then the sallet with the mark lit, then the whole of him, climbing the stair in heaves; he grounds the halberd with a jolt that shakes grit and dust off the merlons |
 | The Seneschal | A pair of panelled oak doors stands where there was none and swings open on the dark; he steps out of it, the light finding him as he comes; the doors shut behind him with a thud of dust; he lifts his staff of office and brings it down on the floor, and the mark opens. It is how he leaves, three times, and how he is found |
+| The dark wizard | Out of his own shadow: it pools on the floor with his ramp at its rim and tendrils running off it, he rises out of it as the dark he is, his colours coming into him as he stands, the eclipse round his head opens, and last the warm light in his raised hand catches (the climax). Before his throne when the wizard is in sight of it, else between them |
 | Wizard Dude | **The kids' frame is never cut**: sparks of his colour wind in, a puff, and his own sprite pops up from small with one bounce (scale, height, alpha only) |
 
 **Every boss has at least two phases** (`ValidateBossPatterns` holds two or more thresholds, each
@@ -941,13 +944,16 @@ voices change together.
 | The Ninth Stone | 0.6 the double close (was 0.5). 0.28 the circle tightens: closes every 6.2 s and stray marked stones fall on the player between them |
 | The Constable | 0.66 and 0.33: each sends him back up the wall at once (he finishes the swing he is in) and thickens the volleys - files of bolts 2, 3, 4 a volley, rings of pitch 1, 2, 3, the interval x1, x0.85, x0.72, and in the last both at every volley - so the gate is taken three times. Every return to the wall pours pitch over the gate's whole foot first |
 | The Seneschal | Opens with the staff (a ring) and **the rank** (5 household guards called down a marked lane at the player, a wall that walks at 380 px/s: step out of it sideways), and in the Great Hall the chandeliers. **0.75, 0.5 and 0.25 are flights**: no hit carries him past one; he steps through a servants' door, untargetable and taking nothing, travels through the walls (one `BurrowMove`) to a room one or two away that he has not held, and the room he left fills with his household at its doors (8, 11, 14). He waits there, a shade, until the player reaches the room. Found after 1: ranks every 6.4 s. After 2: every 5.4 s, seven abreast. After 3: the enrage |
+| The dark wizard | Every phase: **the taking** (every 12 s, a 1.4 s tell; a hand at 170 px/s turning 80 deg/s; landing seals a firing spell until its orb is touched, 20 s if the orb reaches him) and his ring for a wizard at his feet. 0.66 **his light**: the hall goes dark but for him and the player, the music's pulse drops out, lanes across the hall every 4.2 s (a cross through the player, or three parallel with gaps), Darkness hits him x1.25. 0.33 **all he took**: a felled warden's tell round the player every 6 s, in its own colour, and a taking every 10 s |
 | Wizard Dude | 0.66 every fan is cast twice down the same wedge. 0.34 enrage, wider fan |
 
 **Health, second** (`BossCatalog`; the value before is on each line): Elderbark 9,500, the Hayward
 10,000, the Ninth Stone 46,000, the Choir 3 x 26,000, the Gaoler 150,000, Mother Rot 170,000, the
 Archivist 140,000, the Still Warden 400,000, the Long Coil 300,000, the Warden of the Deep 500,000,
 Wizard Dude 9,000; and the castle's two, the Constable 400,000 (11,800, the castle doc's first guess)
-and the Seneschal 440,000 (13,000, its guess), each measured below under its own protocol.
+and the Seneschal 440,000 (13,000, its guess), each measured below under its own protocol; and the dark
+wizard 30,000 (18,000, the doc's guess: the Pyromancer's harness build felled him 108 s after his arrival;
+`.ai/endgame-castle.md` 13).
 
 **The Boss Rush scales every boss to a third** (`BossRushCatalog.FightHealthShare` = 0.35, the finale
 included, on top of the arrival curve). Ten fights of three to five minutes would be forty minutes of

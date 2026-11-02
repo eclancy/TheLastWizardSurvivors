@@ -219,7 +219,12 @@ public static class BossCatalog
 			Tagline = "He takes what you have. Take it back.",
 			ScenePath = "res://scenes/ThroneDarkWizardBoss.tscn",
 			StandInScenePath = "res://scenes/DeepWardenBoss.tscn",
-			Health = 18000,
+			// C5 (2026-11-02): at 18,000 (the doc's guess) _BalanceHarness --stage=13 --all-unlocked
+			// --seek-apotheosis --immortal (the Pyromancer, seed 1234) felled him 108 s after his arrival - the
+			// procession's pairs fall in 60-80 s, and the story's last fight should be its longest. 30,000 is
+			// about three minutes for that build. ONE BUILD, and a bot that lets every seal run its twenty
+			// seconds; a player who takes them back deals more.
+			Health = 30000,
 			ArcaneVictoryBonus = 450
 		}
 	};

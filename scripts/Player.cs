@@ -2332,6 +2332,10 @@ public partial class Player : CharacterBody2D
 				finalDamage = Math.Max(finalDamage, targetEnemy.Health);
 		}
 
+		// A boss that takes one kind of spell harder (the dark wizard, his own Darkness thrown back at him).
+		if (enemy is BossEnemy weakTo)
+			finalDamage = Mathf.RoundToInt(finalDamage * weakTo.IncomingSpellMultiplier(source));
+
 		float fireBonus = GetFireDamageBonusPercent();
 		finalDamage = Mathf.RoundToInt(finalDamage * (1.0f + GetChestDamageBonusPercent()));
 		if (fireBonus > 0.0f && enemy is Node2D enemyNode && IsInstanceValid(enemyNode)
@@ -2747,8 +2751,8 @@ public partial class Player : CharacterBody2D
 	{
 		SpellData frost = equippedSpells.FirstOrDefault(
 			s => s != null && s.Id.Equals("frost_shard", StringComparison.OrdinalIgnoreCase));
-		// Silenced by the Sovereign Rite: a death shatters nothing.
-		if (frost == null || IsSilenced(frost))
+		// Silenced by the Sovereign Rite, or sealed by the dark wizard: a death shatters nothing.
+		if (frost == null || IsSilenced(frost) || IsSealed(frost))
 			return;
 
 		// Killed by a shatter: one level only (below), except that Avalanche shatters it a beat later, a
@@ -2774,7 +2778,7 @@ public partial class Player : CharacterBody2D
 			return;
 		SpellData frost = equippedSpells.FirstOrDefault(
 			s => s != null && s.Id.Equals("frost_shard", StringComparison.OrdinalIgnoreCase));
-		if (frost != null && !IsSilenced(frost))
+		if (frost != null && !IsSilenced(frost) && !IsSealed(frost))
 			ShatterAt(where, frost, damageShare, generation);
 	}
 
@@ -2788,8 +2792,8 @@ public partial class Player : CharacterBody2D
 			return;
 		SpellData frost = equippedSpells.FirstOrDefault(
 			s => s != null && s.Id.Equals("frost_shard", StringComparison.OrdinalIgnoreCase));
-		// Silenced by the Sovereign Rite: a death shatters nothing.
-		if (frost == null || IsSilenced(frost))
+		// Silenced by the Sovereign Rite, or sealed: a death shatters nothing.
+		if (frost == null || IsSilenced(frost) || IsSealed(frost))
 			return;
 		FrostShatter layer = FrostShatter.For(GetParent(), frost, this);
 		shatterInProgress = true;
@@ -3911,6 +3915,8 @@ public partial class Player : CharacterBody2D
 			lightHealCooldown -= (float)delta;
 
 		TickDistinctRelics((float)delta);
+		// The dark wizard's seals (Player.Seal.cs): their clocks, before the firing loop reads them.
+		TickSeals((float)delta);
 
 		// Prune before anything reads the contact set, and do not rely on body_exited to do it.
 		// An enemy that dies while standing on the player leaves the "enemies" group and zeroes
@@ -4003,6 +4009,11 @@ public partial class Player : CharacterBody2D
 			if (spell.SilencedBySovereign)
 				continue;
 
+			// Sealed by the dark wizard's hand (Player.Seal.cs): held like the boss arrival holds it, its
+			// timer where it stood, until the orb is touched or its twenty seconds run out.
+			if (seals.Count > 0 && IsSealed(spell))
+				continue;
+
 			float interval = (spell.GetCooldownAtLevel(spell.CurrentLevel) * cooldownMultiplier * GetWaterCooldownMultiplier()) / EffectiveAttackSpeed;
 			// The Garnet Bezel: the pair recharges faster (Player.ItemRules.cs).
 			interval = MathF.Max(0.05f, interval / PairRechargeScale(spell));
@@ -4036,6 +4047,7 @@ public partial class Player : CharacterBody2D
 				if (outcome == CastOutcome.Fired)
 					SfxPlayer.Cast(SfxCatalog.DominantElement(spell), GlobalPosition);
 				spellFireTimers[spell.Id] = 0f;
+				TallyCast(spell);
 				NotifyArcaneCharge(spell);
 			}
 		}
@@ -4066,7 +4078,7 @@ public partial class Player : CharacterBody2D
 	{
 		blackCatChoices.Clear();
 		foreach (SpellData spell in equippedSpells)
-			if (spell != null && !spell.IsPassive && !IsSilenced(spell) && BlackCatCastable.Contains(spell.Id))
+			if (spell != null && !spell.IsPassive && !IsSilenced(spell) && !IsSealed(spell) && BlackCatCastable.Contains(spell.Id))
 				blackCatChoices.Add(spell);
 		return blackCatChoices.Count == 0 ? null : blackCatChoices[rng.RandiRange(0, blackCatChoices.Count - 1)];
 	}
@@ -4075,7 +4087,7 @@ public partial class Player : CharacterBody2D
 	/// something into the world.</summary>
 	public bool CastFromFamiliar(SpellData spell, Vector2 origin)
 	{
-		if (spell == null || IsDead || IsSilenced(spell) || !BlackCatCastable.Contains(spell.Id) || !equippedSpells.Contains(spell))
+		if (spell == null || IsDead || IsSilenced(spell) || IsSealed(spell) || !BlackCatCastable.Contains(spell.Id) || !equippedSpells.Contains(spell))
 			return false;
 		float interval = MathF.Max(0.05f, (spell.GetCooldownAtLevel(spell.CurrentLevel) * cooldownMultiplier * GetWaterCooldownMultiplier()) / EffectiveAttackSpeed);
 		Vector2 home = GlobalPosition;
@@ -4923,7 +4935,8 @@ public partial class Player : CharacterBody2D
 
 		SpellData arcane = equippedSpells.FirstOrDefault(
 			s => s != null && s.Id.Equals("arcane_explosion", StringComparison.OrdinalIgnoreCase));
-		if (arcane == null)
+		// Sealed (Player.Seal.cs): it neither charges nor goes off until it is taken back.
+		if (arcane == null || IsSealed(arcane))
 			return;
 
 		arcaneCharge++;
