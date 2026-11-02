@@ -4125,104 +4125,24 @@ public partial class Node2DGame : Node2D
 
 	private void ShowEscapeOptions()
 	{
+		// The main menu's Options builds these same two sections from the same rows (SettingsRows), so a
+		// setting is named, ordered and drawn one way on both; the rest of that panel (Gameplay, Story,
+		// Testing) is not something to change in the middle of a run. Menu pass, 2026-11-01.
 		ShowStructuredEscapeDetail("Options", sections =>
 		{
-			var box = new VBoxContainer();
-			box.AddThemeConstantOverride("separation", 10);
-
-			box.AddChild(BuildEscapeVolumeRow("Master Volume", "Master"));
-			box.AddChild(BuildEscapeVolumeRow("Music Volume", MusicPlayer.ResolveMusicBusName()));
-			box.AddChild(BuildEscapeVolumeRow("Sound Effects Volume", SfxPlayer.ResolveSfxBusName()));
-
-			var muteToggle = new CheckButton { Text = "Mute All Audio", FocusMode = Control.FocusModeEnum.All };
-			ResponsiveLayout.SetFont(muteToggle, ResponsiveLayout.TextRole.Body);
-			muteToggle.AddThemeColorOverride("font_color", PauseInk.InkSoft);
-			muteToggle.AddThemeColorOverride("font_focus_color", PauseInk.Ink);
-			muteToggle.AddThemeColorOverride("font_hover_color", PauseInk.Ink);
-			muteToggle.AddThemeColorOverride("font_pressed_color", PauseInk.Ink);
-			muteToggle.AddThemeColorOverride("font_hover_pressed_color", PauseInk.Ink);
-			ResponsiveLayout.EnsureTouchTarget(muteToggle);
-			int masterBus = AudioServer.GetBusIndex("Master");
-			muteToggle.ButtonPressed = masterBus >= 0 && AudioServer.IsBusMute(masterBus);
-			muteToggle.Toggled += pressed => AudioSettings.StoreMute(this, pressed);
-			box.AddChild(muteToggle);
-
-			sections.AddChild(BuildEscapeSection("Audio", box));
-
-			// The damage numbers, switchable mid-run (2026-10-28, "add way to remove damage numbers
-			// from enemies"); the main menu's Options has the same switch.
-			var display = new VBoxContainer();
-			display.AddThemeConstantOverride("separation", 10);
-			var numbersToggle = new CheckButton
-			{
-				Text = "Show Damage Numbers",
-				FocusMode = Control.FocusModeEnum.All,
-				ButtonPressed = DisplaySettings.DamageNumbers,
-			};
-			ResponsiveLayout.SetFont(numbersToggle, ResponsiveLayout.TextRole.Body);
-			foreach (string state in new[] { "font_focus_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color" })
-				numbersToggle.AddThemeColorOverride(state, PauseInk.Ink);
-			numbersToggle.AddThemeColorOverride("font_color", PauseInk.InkSoft);
-			ResponsiveLayout.EnsureTouchTarget(numbersToggle);
-			numbersToggle.Toggled += pressed => DisplaySettings.StoreDamageNumbers(this, pressed);
-			display.AddChild(numbersToggle);
-			// And the screen shake (2026-11-02), the same switch as Options'.
-			var shakeToggle = new CheckButton
-			{
-				Text = "Reduce Screen Shake",
-				FocusMode = Control.FocusModeEnum.All,
-				ButtonPressed = DisplaySettings.ReduceShake,
-			};
-			ResponsiveLayout.SetFont(shakeToggle, ResponsiveLayout.TextRole.Body);
-			foreach (string state in new[] { "font_focus_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color" })
-				shakeToggle.AddThemeColorOverride(state, PauseInk.Ink);
-			shakeToggle.AddThemeColorOverride("font_color", PauseInk.InkSoft);
-			ResponsiveLayout.EnsureTouchTarget(shakeToggle);
-			shakeToggle.Toggled += pressed => DisplaySettings.StoreReduceShake(this, pressed);
-			display.AddChild(shakeToggle);
-			sections.AddChild(BuildEscapeSection("Display", display));
+			sections.AddChild(BuildEscapeSection(SettingsRows.Audio, BuildEscapeSettingsList(SettingsRows.AudioRows(this, PauseInk))));
+			sections.AddChild(BuildEscapeSection(SettingsRows.Display, BuildEscapeSettingsList(SettingsRows.DisplayRows(this, PauseInk))));
 		});
 	}
 
-	private Control BuildEscapeVolumeRow(string label, string busName)
+	private static Control BuildEscapeSettingsList(IEnumerable<Control> rows)
 	{
-		var row = new VBoxContainer();
-		row.AddThemeConstantOverride("separation", 4);
-		row.AddChild(BuildDetailLabel(label, PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
-
-		// The stick reaches a slider like a button, and left and right then move it (Godot's own
-		// ui_left/ui_right on a focused Range). MenuNavigator counts a focused slider as a
-		// selection; it used to take the focus straight back to Resume.
-		var slider = new HSlider
-		{
-			MinValue = 0.0,
-			MaxValue = 1.0,
-			// Also what one press of the stick moves it by (Godot has no separate keyboard step for a
-			// Slider any more): twenty presses end to end rather than a hundred.
-			Step = 0.05,
-			FocusMode = Control.FocusModeEnum.All,
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-			CustomMinimumSize = new Vector2(0, ResponsiveLayout.MinTouchTarget)
-		};
-		// The track in the stone rule, the filled part in the bar gold: CodexRows' progress bar.
-		StyleBoxFlat Track(Color colour)
-		{
-			var box = new StyleBoxFlat { BgColor = colour };
-			box.SetCornerRadiusAll(3);
-			box.ContentMarginTop = 4;
-			box.ContentMarginBottom = 4;
-			return box;
-		}
-		slider.AddThemeStyleboxOverride("slider", Track(PauseInk.BarTrack));
-		slider.AddThemeStyleboxOverride("grabber_area", Track(PauseInk.BarFill));
-		slider.AddThemeStyleboxOverride("grabber_area_highlight", Track(PauseInk.BarFill));
-		int busIndex = AudioServer.GetBusIndex(busName);
-		slider.Value = busIndex >= 0 ? Mathf.DbToLinear(AudioServer.GetBusVolumeDb(busIndex)) : 1.0;
-		// Through AudioSettings so a mid-run volume change survives the run, the same as the
-		// identical sliders on the main menu.
-		slider.ValueChanged += value => AudioSettings.Store(this, busName, (float)value);
-		row.AddChild(slider);
-		return row;
+		var box = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
+		// CodexRows' row gap, the one the main menu's sections use.
+		box.AddThemeConstantOverride("separation", CodexRows.RowSeparation);
+		foreach (Control row in rows)
+			box.AddChild(row);
+		return box;
 	}
 
 	private const string EscapeRunTitle = "Run Details";

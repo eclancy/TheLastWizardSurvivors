@@ -141,7 +141,7 @@ dissolves with the panel, pixel for pixel, with no seam. About 7 MB of texture w
 - **Start Run, the first time.** `MainMenu.OnStartRunPressed` asks `Prologue.IsUnseen`; if so it plays
   the prologue, which then goes on to `CharacterSelection` itself. Start Run is the only way into the
   campaign; Boss Rush is a card inside the stage select and never sees it.
-- **Watch the Prologue**, in Options under the display toggles, plays it on demand and returns to the
+- **Watch the Prologue**, in Options' Story section, plays it on demand and returns to the
   main menu (`Global.OpenMenuImmediately`, as every return to the menu does).
 - **Replay intro**, a small quiet plate in the world map's bottom-left corner - **temporary, for
   Eric's testing, to be removed before the game ships for good** (2026-11-01: *"Add a button in the story
