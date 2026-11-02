@@ -65,6 +65,11 @@ Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like)
   chunks with a guaranteed anchor, schema 17, three to four secrets per chapter, and the build
   order. **Read it before adding a secret, a landmark or a hidden reward.**
 - `.ai/performance.md` — what a frame costs (PC harness and Pixel 9), the `--profile` frame profiler, how to measure on the phone, and the rules for a cheap swarm (`EnemyRegistry` instead of `GetNodesInGroup("enemies")` in per-frame code, no string-built `StringName`s in hot paths, tiles through the atlas). **Read it before adding per-frame work or a spell that scans enemies.**
+- `.ai/slow-start.md` — the slow start: a new save holds 3 spells (`SpellBook`: Survivor's page, then
+  Bound Pages in the shop), and the Ascension, the Apotheosis and Conjunctions are each taught by a
+  landmark and learned through a post-run lesson reel (`Teachings`, the one authority on "has learned X";
+  `Prologue.Reels`, `tools/art/lessons.py`). One locked system on show at a time. **Read it before
+  touching spell slots, the shop's Spell book, or anything that asks whether a system is learned.**
 - `.ai/world-map.md` — the stage select is a generated world map (`tools/art/world_map.py` writes the
   picture and `worldmap.json`; `WorldMap`, `WorldMapView`, `WorldMapCompass`): the wizard walks the road
   between stops in campaign order, the compass strip, the card, and `StageRewards`, the one authority on
@@ -220,7 +225,7 @@ four disagreeing copies (`StageSelection`, `GameOverScreen`, two switches in `No
 `StageEnvironmentCatalog.GetForStageIndex`). Chapters with `IsPlayable = false` are listed but not
 enterable; flipping that is the last step of building one, not the first.
 
-`SaveData.CurrentSchemaVersion` is 20 and **`SaveData.Migrate()` is now real** — it runs from
+`SaveData.CurrentSchemaVersion` is 22 and **`SaveData.Migrate()` is now real** — it runs from
 `SaveManager.LoadGame`. Before 8 there was no migration at all. Any change that narrows what a save
 implicitly grants must add a migration step, or it silently confiscates content from existing
 players. Schema 11 added `SeenAscensionIds` — the ascension paths whose requirements the player
@@ -236,7 +241,9 @@ unlock onto achievements (`MigrateToAchievementUnlocks`: `GlimpsedSecretIds`, `L
 event deeds seeded from what the save owns, every done deed reconciled, the Emberdeep kept open for a
 save that met the old gate); 20 is the difficulty curve's (`AscensionLearned` for any save with a
 run on record, the re-priced Fate Fracture and Emberheart levels refunded,
-`ValidateDifficultyMigration`). The castle's planned Dungeon move takes 21. Steps 8-16 read frozen
+`ValidateDifficultyMigration`). The castle's planned Dungeon move takes 21 (`wip/dungeon-move`, not yet
+merged: it must land before a build carrying 22 ships); 22 is the slow start's (`MigrateToSlowStart`:
+`FullBookKept` and the three ladder lessons for a played save, `ValidateSlowStartMigration`). Steps 8-16 read frozen
 schema-18 lists, never the live catalog, and `ValidateAchievementMigration` runs sample saves through all of it.
 
 **A branch with a schema bump migrates the developer's REAL save the moment any Godot run in it

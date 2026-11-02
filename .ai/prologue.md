@@ -136,6 +136,19 @@ dissolves with the panel, pixel for pixel, with no seam. About 7 MB of texture w
   No new sound: the brief allowed one only if genuinely needed, and a sting over the dark wizard would
   spend the reveal `.ai/audio-direction.md` keeps for the Throne.
 
+## The lessons: the same player, other reels
+
+Since the slow start (`.ai/slow-start.md` section 10) `Prologue.cs` plays **reels**: the prologue is the
+reel `prologue`, and each system a save is taught has one of two panels (`Prologue.Reels`: `ascension`,
+`apotheosis`, `conjunctions`, `sovereign_rite`), drawn by `tools/art/lessons.py` into
+`assets/bonelight/ui/lessons/` on this frame, with these layers, this audit and these pieces. A lesson is
+held longer than a prologue panel (5-6 s), because its line is the lesson, and every line fits one line on
+a PC (`ValidateTeachers`: 46 characters). It plays two ways: over the paused run before the results
+(`Prologue.CreateEmbedded`, `Node2DGame.Lessons.cs`), which marks nothing here - the run teaches the save
+when it ends - and from Options > Story ("Lesson: <name>", `Prologue.Play` with the reel's id). Only the
+prologue's reel is ever marked seen by this scene. `_UiShot --scene=res://scenes/Prologue.tscn
+--reel=<id> --frames=480` photographs a lesson's second panel mid-hold, line up; `--frames=170` its first.
+
 ## When it plays
 
 - **Start Run, the first time.** `MainMenu.OnStartRunPressed` asks `Prologue.IsUnseen`; if so it plays
