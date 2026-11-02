@@ -116,10 +116,17 @@ public static class GroundDetail
 			G("bone_bits", 0.0025f, 1), G("rubble", 0.003f),
 			G("dry_grass", 0.03f, 4, "cobble"), G("cracks", 0.02f, 1, "cobble"),
 		},
+		// THE EMBERDEEP (0.10.0 playtest: "Emberdeep doesn't look like cracked volcanic earth"). The floor
+		// is cracked basalt now (tiles.py, basalt()), so `cracks` went - it was the only thing here that
+		// said "cracked", and a crack drawn on a crack is noise. What lies on the plates is what a lava
+		// field has (tools/art/detail_ember.py): ash, in specks and in long drifts; a lobe of pahoehoe
+		// where a flow skinned over and stopped; live cinders; a fumarole crusted with sulphur, which the
+		// chapter note smells first; and glass. The scree patches are where the plates have broken up.
 		[StageEnvironmentKind.Volcanic] = new[]
 		{
-			G("ash", 0.02f, 5), G("obsidian", 0.008f), G("cracks", 0.01f, 1), G("pebbles", 0.0053f, 1),
-			G("rubble", 0.003f),
+			G("ash", 0.012f, 5), G("ash_drift", 0.006f, 6), G("lava_rope", 0.0045f, 7), G("cinders", 0.007f, 4),
+			G("obsidian", 0.006f), G("sulphur", 0.0025f, 6), G("pebbles", 0.004f, 1), G("rubble", 0.003f),
+			G("rubble", 0.012f, 1, "rocky_pit"), G("cinders", 0.006f, 1, "rocky_pit"),
 		},
 		[StageEnvironmentKind.Castle] = new[]
 		{
