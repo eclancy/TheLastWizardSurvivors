@@ -37,6 +37,28 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 	// nothing (Player.AddChestItem refuses it for that reason).
 	[Signal] public delegate void SpellCutChosenEventHandler(string spellId);
 
+	// THE RUN'S REROLLS AND BANS, SPENT HERE TOO (Eric, 2026-11-02: "you can use rerolls on chests as well
+	// as level ups. You can also ban items"). The same two pools the level-up screen spends
+	// (Player.RerollsRemaining, BansRemaining), and the same presentation: "Reroll (N)" re-deals the
+	// chest's relics; "Ban (N)" lays a tear over every page (BanTear) and the page pressed then is struck
+	// from the run's chest pool instead of claimed. A ban IS this chest's choice, as it is the level-up's
+	// (Eric, 2026-10-31): Node2DGame closes the chest with no relic. The two ride on the heading band
+	// (BuildHeadingBand); each is hidden while its pool is empty, and with both empty a player who
+	// bought neither sees the screen as it was.
+	[Signal] public delegate void RerollRequestedEventHandler();
+	[Signal] public delegate void BanRequestedEventHandler(string itemId);
+
+	private int rerollsLeft;
+	private int bansLeft;
+	private bool banMode;
+	private bool inCutPicker;
+	// A PC's charges sit in two slots on the heading band, a phone's in a row at the foot.
+	private CenterContainer banSlot;
+	private CenterContainer rerollSlot;
+	private HBoxContainer chargeRow;
+	private Button rerollButton;
+	private Button banButton;
+
 	// What this chest is offering: what Back from the knife's picker re-deals - the same cards,
 	// never a fresh roll.
 	private List<string> offeredItemIds = new();
@@ -177,7 +199,7 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 		// old screen that explained the set badges; the set boxes now explain themselves, and on a
 		// 720-tall screen the line cost a row of the text it was standing in for.
 		heading = BuildHeading();
-		column.AddChild(heading);
+		column.AddChild(BuildHeadingBand(heading));
 
 		cardsRow = new BoxContainer
 		{
@@ -203,10 +225,203 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 		};
 		scroll.AddChild(cardsRow);
 		column.AddChild(scroll);
+		if (narrow)
+			column.AddChild(BuildChargeRow());
 	}
 
-	// LevelUpMenu.StyleHeading's band: the darkest stone, solid, with a gold rule at its foot, so
-	// the heading never sits on the stone's own texture.
+	// WHERE THE CHARGES GO, by shape.
+	//
+	// On a PC they ride on the heading band: Ban at its left end, Reroll at its right, the title between.
+	// A row of their own at the foot of the panel was tried first and took 58 of the 720 from the pages -
+	// the Fede Hoop's then needed 574 of 531 and the Claim plates went under the fold, on a screen that
+	// never scrolls (2026-10-31). Each end is a slot of fixed width, so one charge alone does not push the
+	// title off centre; with neither (a player who bought none, or the knife's picker) both slots go and
+	// the band is as it was.
+	//
+	// On a phone the height is what is spare for three pages - stacked, they leave about 170 of the 1281
+	// unused - so the charges take a row of their own at the foot, under the thumb, each half its width,
+	// where the level-up keeps a phone's charges too. A crowded phone chest (four or five pages, John Dee
+	// and the Relic Key) has no height to give: its pages already lose their far tiers to fit, so there
+	// the charges move up onto the band as on a PC, and the title steps down from the Display face to the
+	// Title face to make room for them (two slots and "Treasure Chest" at Display came to more than the
+	// canvas, and pushed the panel off its right edge).
+	private float SlotWidth => narrow ? 140f : 180f;
+
+	private Control BuildChargeRow()
+	{
+		chargeRow = new HBoxContainer { Name = "ChestCharges", Visible = false };
+		chargeRow.AddThemeConstantOverride("separation", 10);
+		return chargeRow;
+	}
+
+	private Control BuildHeadingBand(Label title)
+	{
+		var band = new PanelContainer { Name = "HeadingBand" };
+		var style = new StyleBoxFlat { BgColor = BandColor, BorderColor = SetBoxRule };
+		style.BorderWidthBottom = 2;
+		style.SetCornerRadiusAll(2);
+		style.ContentMarginLeft = 12;
+		style.ContentMarginRight = 12;
+		style.ContentMarginTop = 2;
+		style.ContentMarginBottom = 4;
+		band.AddThemeStyleboxOverride("panel", style);
+
+		var row = new HBoxContainer();
+		row.AddThemeConstantOverride("separation", 8);
+		band.AddChild(row);
+		// Named so _UiShot --press-late=ChestBan / ChestReroll can photograph ban mode and a re-deal.
+		banButton = MakeActionButton("ChestBan", OnBanPressed);
+		rerollButton = MakeActionButton("ChestReroll", OnRerollPressed);
+		banSlot = new CenterContainer { CustomMinimumSize = new Vector2(SlotWidth, 0f), Visible = false };
+		rerollSlot = new CenterContainer { CustomMinimumSize = new Vector2(SlotWidth, 0f), Visible = false };
+		banSlot.AddChild(banButton);
+		rerollSlot.AddChild(rerollButton);
+		title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+		row.AddChild(banSlot);
+		row.AddChild(title);
+		row.AddChild(rerollSlot);
+		return band;
+	}
+
+	private Button MakeActionButton(string name, Action onPressed)
+	{
+		var button = new Button
+		{
+			Name = name,
+			CustomMinimumSize = new Vector2(SlotWidth, ResponsiveLayout.MinTouchTarget),
+			// Paused tree, as the pages: a Pausable control navigates and refuses to activate.
+			ProcessMode = ProcessModeEnum.Always
+		};
+		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
+		BonelightSkin.StyleButton(button);
+		button.Pressed += onPressed;
+		return button;
+	}
+
+	// A phone's charges go to the foot row, or to the band when the chest is crowded (above). Moved, not
+	// duplicated: one Ban and one Reroll, so a press and a _UiShot --press-late find the same button.
+	private void PlaceCharges()
+	{
+		if (!narrow || chargeRow == null)
+			return;
+		bool onBand = crowded;
+		Place(banButton, onBand ? banSlot : chargeRow, onBand);
+		Place(rerollButton, onBand ? rerollSlot : chargeRow, onBand);
+	}
+
+	private void Place(Button button, Control parent, bool inSlot)
+	{
+		if (button.GetParent() != parent)
+		{
+			button.GetParent()?.RemoveChild(button);
+			parent.AddChild(button);
+		}
+		button.SizeFlagsHorizontal = inSlot ? Control.SizeFlags.ShrinkCenter : Control.SizeFlags.ExpandFill;
+		button.CustomMinimumSize = new Vector2(inSlot ? SlotWidth : 0f, ResponsiveLayout.MinTouchTarget);
+	}
+
+	/// <summary>The run's rerolls and bans, for the buttons. Call before SetOptions, and after every spend.</summary>
+	public void SetCharges(int rerolls, int bans)
+	{
+		rerollsLeft = Math.Max(0, rerolls);
+		bansLeft = Math.Max(0, bans);
+		UpdateActionRow();
+	}
+
+	/// <summary>
+	/// A refused ban puts the same pages back, out of ban mode, with the charges as they now stand - never
+	/// a fresh deal, which would hand the player a free reroll (LevelUpMenu.RefreshCharges' rule).
+	/// </summary>
+	public void RefreshCharges(int rerolls, int bans)
+	{
+		banMode = false;
+		SetCharges(rerolls, bans);
+		ApplyBanTears();
+		MenuNavigator.Attach(this, FirstPage());
+	}
+
+	private void UpdateActionRow()
+	{
+		if (banButton == null || rerollButton == null)
+			return;
+		rerollButton.Visible = rerollsLeft > 0;
+		rerollButton.Text = $"Reroll ({rerollsLeft})";
+		banButton.Visible = bansLeft > 0;
+		banButton.Text = banMode ? "Cancel Ban" : $"Ban ({bansLeft})";
+		// The knife's picker is a different question (which spell), and Back is its only way out.
+		bool any = !inCutPicker && (rerollButton.Visible || banButton.Visible);
+		PlaceCharges();
+		bool onBand = !narrow || crowded;
+		banSlot.Visible = any && onBand;
+		rerollSlot.Visible = any && onBand;
+		if (chargeRow != null)
+			chargeRow.Visible = any && !onBand;
+		// The phone's title steps down a face while the charges share its band (PlaceCharges).
+		if (narrow && heading != null)
+			ResponsiveLayout.SetFont(heading, any && onBand ? ResponsiveLayout.TextRole.Title : ResponsiveLayout.TextRole.Display);
+	}
+
+	private void OnRerollPressed()
+	{
+		if (rerollsLeft <= 0)
+			return;
+		SfxPlayer.Global(SfxCatalog.Reroll);
+		EmitSignal(SignalName.RerollRequested);
+	}
+
+	private void OnBanPressed()
+	{
+		SfxPlayer.Global(banMode ? SfxCatalog.UiBack : SfxCatalog.UiOpen);
+		banMode = !banMode && bansLeft > 0;
+		ApplyBanTears();
+		UpdateActionRow();
+	}
+
+	// One press handler for every page: in ban mode the page is the ban's choice; otherwise the knife's
+	// page opens its picker and every other page claims.
+	private void OnPagePressed(string itemId)
+	{
+		if (banMode)
+		{
+			banMode = false;
+			SfxPlayer.Global(SfxCatalog.CardSelect);
+			EmitSignal(SignalName.BanRequested, itemId);
+			return;
+		}
+		if (ChestItemCatalog.ScribesPenknife.Equals(itemId, StringComparison.OrdinalIgnoreCase))
+			ShowCutPicker();
+		else
+			EmitSignal(SignalName.ItemSelected, itemId);
+	}
+
+	// BAN MODE CHANGES NOTHING BUT THE TEARS, as on the level-up screen (LevelUpMenu.ApplyBanTears): the
+	// pages stay as dealt and each wears a BanTear, under the focus ring.
+	private void ApplyBanTears()
+	{
+		if (cardsRow == null)
+			return;
+		foreach (Node child in cardsRow.GetChildren())
+		{
+			if (child is not Control page || page.IsQueuedForDeletion() || !page.Name.ToString().StartsWith("Relic_"))
+				continue;
+			page.GetNodeOrNull<BanTear>(BanTear.NodeName)?.QueueFree();
+			if (!banMode)
+				continue;
+			var tear = new BanTear
+			{
+				Name = BanTear.NodeName,
+				Card = page.GetNodeOrNull<BaseButton>("ClaimCard"),
+				Seed = page.Name.ToString().Substring("Relic_".Length)
+			};
+			page.AddChild(tear);
+			if (page.GetNodeOrNull<MenuFocusHighlight>(MenuFocusHighlight.NodeName) is MenuFocusHighlight ring)
+				page.MoveChild(ring, page.GetChildCount() - 1);
+		}
+	}
+
+	// LevelUpMenu.StyleHeading's band - the darkest stone, solid, with a gold rule at its foot, so the
+	// heading never sits on the stone's own texture - is the PanelContainer the title sits in
+	// (BuildHeadingBand), since the band carries the charges too.
 	private Label BuildHeading()
 	{
 		var title = new Label
@@ -218,14 +433,6 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 		};
 		ResponsiveLayout.SetFont(title, ResponsiveLayout.TextRole.Display);
 		title.AddThemeColorOverride("font_color", HeadingInk);
-		var band = new StyleBoxFlat { BgColor = BandColor, BorderColor = SetBoxRule };
-		band.BorderWidthBottom = 2;
-		band.SetCornerRadiusAll(2);
-		band.ContentMarginLeft = 12;
-		band.ContentMarginRight = 12;
-		band.ContentMarginTop = 2;
-		band.ContentMarginBottom = 4;
-		title.AddThemeStyleboxOverride("normal", band);
 		return title;
 	}
 
@@ -247,6 +454,9 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 		ClearCards();
 		if (heading != null)
 			heading.Text = "Treasure Chest";
+		// A new deal (or Back from the knife's picker) is never in ban mode.
+		banMode = false;
+		inCutPicker = false;
 
 		ownedItems ??= Array.Empty<string>();
 		offeredItemIds = itemIds?.ToList() ?? new List<string>();
@@ -259,13 +469,19 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 		// (2026-10-31, "no scrolling, ever"), so they take five abreast's rule - a set's full tier only
 		// when the claim completes it - and the 64 header art.
 		crowded = fiveAbreast || (narrow && itemIds.Count >= 4);
+		// After crowded: a crowded phone chest puts its charges on the band (PlaceCharges).
+		UpdateActionRow();
 		bool compact = narrow || fourRelics;
 		foreach (string itemId in itemIds)
 			cardsRow.AddChild(BuildOptionCard(itemId, ownedItems, compact));
 
-		// The previous chest's cards were just freed, so the pad's selection went with them.
-		MenuNavigator.Attach(this);
+		// The previous chest's cards were just freed, so the pad's selection went with them. The first
+		// page, by name: the charges on the heading band come first in tree order.
+		MenuNavigator.Attach(this, FirstPage());
 	}
+
+	private Control FirstPage() =>
+		cardsRow?.GetChildCount() > 0 ? cardsRow.GetChild(0).GetNodeOrNull<Control>("ClaimCard") : null;
 
 	private void ClearCards()
 	{
@@ -338,11 +554,9 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 		card.AddThemeStyleboxOverride("focus", pageLit);
 		string capturedId = itemId;
 		// The knife's page opens its picker instead of claiming: what it does depends on which spell,
-		// so the claim is the second press, on a spell, with Back still available until then.
-		if (ChestItemCatalog.ScribesPenknife.Equals(itemId, StringComparison.OrdinalIgnoreCase))
-			card.Pressed += ShowCutPicker;
-		else
-			card.Pressed += () => EmitSignal(SignalName.ItemSelected, capturedId);
+		// so the claim is the second press, on a spell, with Back still available until then. In ban
+		// mode any page, the knife's too, is the ban's choice (OnPagePressed).
+		card.Pressed += () => OnPagePressed(capturedId);
 		root.AddChild(card);
 
 		var margin = new MarginContainer();
@@ -402,6 +616,8 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 	private void ShowCutPicker()
 	{
 		ClearCards();
+		inCutPicker = true;
+		UpdateActionRow();
 		if (heading != null)
 			heading.Text = ChestItemCatalog.GetDisplayName(ChestItemCatalog.ScribesPenknife);
 

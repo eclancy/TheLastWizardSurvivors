@@ -78,6 +78,23 @@ public static class ChestItemCatalog
 	public const string CurioLedger = "curio_ledger";
 	public const string HiddenDrawer = "hidden_drawer";
 
+	// --- The Poppet: the debuffs (.ai/new-items.md section 3, issue #69) --------------------
+	//
+	// A cursing doll: a pin through it, red thread round its wrists, a lock of singed hair at the
+	// crown. Each piece is one of the three things you do to a poppet and one of the three statuses
+	// #66 added - Vulnerable, Weaken, Wither - and the set joins them into one build.
+	public const string PrickingPin = "pricking_pin";
+	public const string BindingThread = "binding_thread";
+	public const string SingedLock = "singed_lock";
+
+	// --- The Gimmel Ring: the pair (.ai/new-items.md section 4) -----------------------------
+	//
+	// Two hoops that lock into one band. "The pair" is the run's two highest-level spells, never the
+	// wizard's own (Player.GetPairSpells), and a Conjunction is always one of them.
+	public const string BetrothalHoop = "betrothal_hoop";
+	public const string FedeHoop = "fede_hoop";
+	public const string GarnetBezel = "garnet_bezel";
+
 	/// <summary>The relics that act on the spell book. Never a piece of a set, never tagged.</summary>
 	/// <remarks>
 	/// No set, because a set is something you want more of and both of these are one-per-run: the
@@ -103,6 +120,8 @@ public static class ChestItemCatalog
 	public const string SpeedDemonSetId = "speed_demon";
 	public const string FortunesFavorSetId = "fortunes_favor";
 	public const string CabinetOfCuriositiesSetId = "cabinet_of_curiosities";
+	public const string PoppetSetId = "poppet";
+	public const string GimmelRingSetId = "gimmel_ring";
 
 	public static readonly IReadOnlyList<string> AllItemIds = new[]
 	{
@@ -147,7 +166,15 @@ public static class ChestItemCatalog
 		// The collector's
 		Lodestone,
 		CurioLedger,
-		HiddenDrawer
+		HiddenDrawer,
+		// The Poppet
+		PrickingPin,
+		BindingThread,
+		SingedLock,
+		// The Gimmel Ring
+		BetrothalHoop,
+		FedeHoop,
+		GarnetBezel
 	};
 
 	// --- Rarity (see .ai/passives-and-items.md) ---------------------------------------------
@@ -213,8 +240,16 @@ public static class ChestItemCatalog
 			// A chest inside a chest is a relic that pays in relics, so it is offered about as often
 			// as the elemental pieces rather than every other chest.
 			HiddenDrawer => ChestItemRarity.Rare,
+			// The Poppet's crowd piece and the Gimmel Ring's spark: each is the rule of its set worth
+			// most, and each carries the tag its art glows in (.ai/new-items.md sections 3 and 4).
+			SingedLock => ChestItemRarity.Rare,
+			GarnetBezel => ChestItemRarity.Rare,
 
 			// Uncommon
+			PrickingPin => ChestItemRarity.Uncommon,
+			BindingThread => ChestItemRarity.Uncommon,
+			BetrothalHoop => ChestItemRarity.Uncommon,
+			FedeHoop => ChestItemRarity.Uncommon,
 			// A quarter more chests from elites is worth two or three relics a run.
 			CurioLedger => ChestItemRarity.Uncommon,
 			WrathAmulet => ChestItemRarity.Uncommon,
@@ -258,6 +293,10 @@ public static class ChestItemCatalog
 			// The drawer is the dark inside of the cabinet. Darkness had no Rare carrier (its three
 			// item tags were all on Relics), and it is John Dee's element.
 			HiddenDrawer => new[] { ("Darkness", 1) },
+			// The ember at the lock's end; the spark that jumps between the two hoops. Fire and
+			// Lightning are two of the thinnest item floors (.ai/new-items.md section 8).
+			SingedLock => new[] { ("Fire", 1) },
+			GarnetBezel => new[] { ("Lightning", 1) },
 
 			_ => Array.Empty<(string, int)>(),
 		};
@@ -472,6 +511,42 @@ public static class ChestItemCatalog
 				new ChestSetEffect { Label = "Elites that drop a chest", Value = "all of them" },
 				new ChestSetEffect { Label = "Pickup radius", Value = $"+{Player.CabinetFullPickupRadius}" }
 			}
+		},
+		// THE POPPET (.ai/new-items.md section 3). "Debuffs" are Slow (a root too), Poison, Vulnerable and
+		// Weaken - what Enemy.DebuffDurationScale lengthens. Fear is never extended, by its own rule, a
+		// stagger is a hold, and Wither has no duration. Tagged for the nightshade in its straw.
+		new ChestSetDefinition
+		{
+			Id = PoppetSetId,
+			PartialItemCount = 2,
+			PartialEffects = new[] { new ChestSetEffect { Label = "Debuffs last longer", Value = Percent(Player.PoppetPartialDurationBonus) } },
+			ElementTags = new[] { ("Poison", 1), ("Grass", 1) },
+			Name = "The Poppet",
+			RequiredItemIds = new[] { PrickingPin, BindingThread, SingedLock },
+			Description = $"Your debuffs last {Percent(Player.PoppetFullDurationBonus).TrimStart('+')} longer, and an enemy carrying two different ones is also Vulnerable {Percent(Player.PoppetVulnerableBonus)}.",
+			IconPath = SetIconRoot + "poppet.png",
+			Effects = new[]
+			{
+				new ChestSetEffect { Label = "Debuffs last longer", Value = Percent(Player.PoppetFullDurationBonus) },
+				new ChestSetEffect { Label = "Two debuffs: Vulnerable", Value = Percent(Player.PoppetVulnerableBonus) }
+			}
+		},
+		// THE GIMMEL RING (.ai/new-items.md section 4). Two streams joining, and the spark between them.
+		new ChestSetDefinition
+		{
+			Id = GimmelRingSetId,
+			PartialItemCount = 2,
+			PartialEffects = new[] { new ChestSetEffect { Label = "The pair's damage", Value = Percent(Player.GimmelPartialDamageBonus) } },
+			ElementTags = new[] { ("Water", 1), ("Lightning", 1) },
+			Name = "The Gimmel Ring",
+			RequiredItemIds = new[] { BetrothalHoop, FedeHoop, GarnetBezel },
+			Description = $"Your two highest-level spells (besides your wizard's own) deal {Percent(Player.GimmelFullDamageBonus)} damage, and a Conjunction is always one of them.",
+			IconPath = SetIconRoot + "gimmel_ring.png",
+			Effects = new[]
+			{
+				new ChestSetEffect { Label = "The pair's damage", Value = Percent(Player.GimmelFullDamageBonus) },
+				new ChestSetEffect { Label = "A Conjunction", Value = "always one of the pair" }
+			}
 		}
 	};
 
@@ -532,6 +607,14 @@ public static class ChestItemCatalog
 			Lodestone => "Lodestone",
 			CurioLedger => "Curio Ledger",
 			HiddenDrawer => "Hidden Drawer",
+			// The Poppet
+			PrickingPin => "Pricking Pin",
+			BindingThread => "Binding Thread",
+			SingedLock => "Singed Lock",
+			// The Gimmel Ring
+			BetrothalHoop => "Betrothal Hoop",
+			FedeHoop => "Fede Hoop",
+			GarnetBezel => "Garnet Bezel",
 			// Tome relics - named as what they are, since they are pieces of no object
 			ScribesPenknife => "Scribe's Penknife",
 			BlankFolio => "Blank Folio",
@@ -558,6 +641,20 @@ public static class ChestItemCatalog
 	// The Split Lens's number comes from Player, where it is charged (GetSplitLensMultiplier).
 	public static readonly string SplitLensDescription =
 		$"+1 projectile to spells that fire them, and -{Mathf.RoundToInt((1f - Player.SplitLensDamageMultiplier) * 100f)}% damage to those spells only.";
+
+	// "The pair" in the words every Gimmel Ring card uses (.ai/new-items.md section 4): the player is
+	// never asked to know the term, so each card spells it out.
+	private const string PairPhrase = "your two highest-level spells (besides your wizard's own)";
+
+	// A no-break space between each number and its "s", as the Brazier's card has it.
+	public static readonly string PrickingPinDescription =
+		$"Critical hits make their target Vulnerable: {Percent(Player.PrickingPinVulnerable)} damage taken for {Player.PrickingPinSeconds:0} s.";
+	public static readonly string BindingThreadDescription =
+		$"An enemy that touches you is Weakened: it deals {Mathf.RoundToInt(Player.BindingThreadWeaken * 100f)}% less for {Player.BindingThreadSeconds:0} s.";
+	public static readonly string SingedLockDescription =
+		$"Every kill Withers the enemies within {Player.SingedLockRadius:0} of it by {Mathf.RoundToInt(Player.SingedLockWither * 100f)}% of their max health.";
+	public static readonly string FedeHoopDescription =
+		$"Your two highest-level spells (besides your wizard's own) deal {Percent(Player.FedeHoopBonus)} damage to an enemy the other hit in the last second.";
 
 	public static string GetDescription(string itemId)
 	{
@@ -607,6 +704,13 @@ public static class ChestItemCatalog
 			WormwoodTithe => $"+39% enemies, +10% enemy speed, +30% XP, +{Mathf.RoundToInt(Player.WormwoodTitheGreaterOrbChance * 100f)}% bigger XP orbs, +3 luck.",
 			ScribesPenknife => ScribesPenknifeDescription,
 			BlankFolio => BlankFolioDescription,
+			// The Poppet and the Gimmel Ring read their numbers from Player, where they are charged.
+			PrickingPin => PrickingPinDescription,
+			BindingThread => BindingThreadDescription,
+			SingedLock => SingedLockDescription,
+			BetrothalHoop => $"Level-ups offer upgrades to {PairPhrase} twice as often.",
+			FedeHoop => FedeHoopDescription,
+			GarnetBezel => $"Each cast of {PairPhrase} takes a fifth of its cooldown off the other's.",
 			_ => "An unrecorded relic.",
 		};
 	}
@@ -667,11 +771,19 @@ public static class ChestItemCatalog
 			Lodestone => Relic("lodestone"),
 			CurioLedger => Relic("curio_ledger"),
 			HiddenDrawer => Relic("hidden_drawer"),
+			// The Poppet
+			PrickingPin => Relic("pricking_pin"),
+			BindingThread => Relic("binding_thread"),
+			SingedLock => Relic("singed_lock"),
+			// The Gimmel Ring
+			BetrothalHoop => Relic("betrothal_hoop"),
+			FedeHoop => Relic("fede_hoop"),
+			GarnetBezel => Relic("garnet_bezel"),
 			_ => "res://assets/bonelight/ui/spells/unknown.png"
 		};
 	}
 
-	// All thirty-four are generated by tools/art/relic_icons.py. They used to be slices of a
+	// All forty are generated by tools/art/relic_icons.py. They used to be slices of a
 	// bought GUI sheet - art licensed for use and not for redistribution. See
 	// .ai/asset-licensing.md.
 	private static string Relic(string name) => $"res://assets/bonelight/ui/relics/{name}.png";

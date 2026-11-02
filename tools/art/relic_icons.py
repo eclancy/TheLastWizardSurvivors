@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Relic and set icons. Run: python tools/art/relic_icons.py
 
-Thirty-one relics and ten Full Set Enchantments (and the Marginalia level-up card, which is
+Forty relics and thirteen Full Set Enchantments (and the Marginalia level-up card, which is
 drawn with the two tome relics - section 11), 32x32 rendered at x2 onto the UI cell in
 `.ai/art-direction.md` section 1 - the same cell the spell and boon icons use, because all three
 are offered on the same card and have to survive being compared.
@@ -33,6 +33,9 @@ the parts of one real thing:
     Speed Demon        The Seven-League Boots   left boot, right boot
     Deathbringer       The Reaper's Scythe      blade, snath, whetstone
     Life Drain         The Tithe Chalice        cup, heartstone, wormwood
+    Cabinet            The Cabinet of Curios.   lodestone, ledger, hidden drawer
+    Poppet             The Poppet               pricking pin, binding thread, singed lock
+    Gimmel Ring        The Gimmel Ring          betrothal hoop, fede hoop, garnet bezel
 
 and the set icon is that thing ASSEMBLED, drawn with the same helper calls as its pieces. That is
 the whole mechanism of "seeing two pieces tells you what the third looks like": the pieces of one
@@ -1598,6 +1601,344 @@ def set_cabinet_of_curiosities():
     return c
 
 
+# ==============================================================================================
+# 13. THE POPPET - the debuffs (.ai/new-items.md section 3)
+# A cursing doll of rag and straw: a pin through it, red thread round its wrists, a lock of singed
+# hair at its crown. The family mark is the RED THREAD - wound under the pin's bead, knotted round
+# the wrists, tied round the lock - the only crimson in any relic, so two pieces side by side are
+# visibly one doll. The thread is the ember row: the red row is too dark to read on night glass.
+# The rag is the flesh row read as burlap (linen, the first try, made the doll a green robot), the
+# straw amber, the hair the violet row (black with a cast, which a stone-black would lose on night
+# glass), and the one glowing thing is the singed lock's ember, a Fire stop at its tip only.
+# ==============================================================================================
+
+RAG = _ramp("flesh")
+STRAW = _ramp("amber")
+THREAD = _ramp("ember")
+HAIR = _ramp("violet")
+
+
+def _on_object(c, x, y):
+    return c.get(int(x), int(y))[3] == 255
+
+
+def _wind_thread(c, cx, cy, ux, uy, turns, half):
+    """`turns` turns of red thread round something lying along (ux, uy), centred on (cx, cy):
+    short strokes across it, alternately lit and base, painted only where there is something to
+    wind round - so a turn never hangs in the air beside the object."""
+    px, py = -uy, ux
+    for k in range(turns):
+        off = (k - (turns - 1) / 2.0) * 1.7
+        bx, by = cx + ux * off, cy + uy * off
+        tone = THREAD[1] if k % 2 == 0 else THREAD[2]
+        n = int(half * 4) + 1
+        for j in range(n + 1):
+            t = -half + 2.0 * half * j / float(n)
+            x, y = bx + px * t, by + py * t
+            if _on_object(c, x, y):
+                c.set(x, y, tone)
+
+
+def _pin(c, head, tip, bead_r, thread=True):
+    """A long iron pin: a bone bead for a head, the shaft lit down one side, the point blackened
+    in a candle flame, and the doll's thread wound below the bead."""
+    hi, lit, base, shade, deep = STEEL
+    (hx, hy), (tx, ty) = head, tip
+    _thick(c, [(hx, hy), (tx, ty)], 1.8, base)
+    _rim(c, STEEL)
+    length = math.hypot(tx - hx, ty - hy)
+    ux, uy = (tx - hx) / length, (ty - hy) / length
+    for k in range(5):
+        t = length - k
+        c.set(hx + ux * t, hy + uy * t, deep if k < 3 else shade)
+    _lit_disc(c, hx, hy, bead_r, "skin")
+    if thread:
+        at = bead_r + 2.6
+        _wind_thread(c, hx + ux * at, hy + uy * at, ux, uy, 3, 1.6)
+        # its loose end, hanging off the last turn
+        ex, ey = hx + ux * (at + 2.0), hy + uy * (at + 2.0)
+        c.line(ex, ey, ex - 3, ey + 3, THREAD[2])
+        c.set(ex - 3, ey + 3, THREAD[1])
+
+
+def _rag_arm(c, a, b, w, tone):
+    """A stuffed rag arm: a fat round-ended stroke with a seam down it and straw at the sleeve."""
+    _thick(c, [a, b], w, tone)
+
+
+def _straw_tuft(c, x, y, dx, dy):
+    """Three stalks of straw poking out of a seam, fanned along (dx, dy)."""
+    for (sx, sy, tone) in ((dx, dy, STRAW[1]), (dx - dy * 0.6, dy + dx * 0.6, STRAW[2]),
+                           (dx + dy * 0.6, dy - dx * 0.6, STRAW[2])):
+        c.line(x, y, x + sx * 2.4, y + sy * 2.4, tone)
+    c.set(x + dx * 2.4, y + dy * 2.4, STRAW[0])
+
+
+def _lock(c, top, ctrl, end, width, ember=True):
+    """A lock of black hair: strands on one curve, tapering from the tie to a burned end. The last
+    of each strand is the Fire ramp - the ember - and the very tip its hottest stop."""
+    fire = bl.ELEMENTS["fire"]
+    strands = 5
+    for s in range(strands):
+        o = (s - (strands - 1) / 2.0) * width / float(strands - 1)
+        tone = HAIR[0] if s == 0 else (HAIR[1] if s == 1 else (HAIR[2] if s < strands - 1 else HAIR[3]))
+        steps = 70
+        for k in range(steps + 1):
+            t = k / float(steps)
+            x = (1 - t) ** 2 * top[0] + 2 * (1 - t) * t * ctrl[0] + t * t * end[0]
+            y = (1 - t) ** 2 * top[1] + 2 * (1 - t) * t * ctrl[1] + t * t * end[1]
+            taper = o * (1.0 - 0.85 * t)
+            col = tone
+            if ember and t > 0.86:
+                col = fire[3] if t < 0.93 else fire[2]
+            c.set(x + taper * 0.8, y - taper * 0.6, col)
+    if ember:
+        c.set(end[0], end[1], fire[1])
+        c.set(end[0] + 1, end[1], fire[0])
+
+
+def pricking_pin():
+    """Pricking Pin: the iron pin, bone bead at the head, the thread wound under it."""
+    c = raster.Canvas(CELL, CELL, None)
+    _shadow(c, 17, 9)
+    _pin(c, (9, 8), (26, 26), 2.8)
+    return c
+
+
+def binding_thread():
+    """Binding Thread: a pair of rag wrists crossed and knotted three times in red thread, the
+    loose end hanging between them, straw at the sleeves."""
+    c = raster.Canvas(CELL, CELL, None)
+    _shadow(c, 16, 10)
+    # Two arms crossed at the wrists in an X, mitten hands up at the top corners and straw out of the
+    # sleeves at the foot. The far arm a step darker, so the two read as two where they cross. (Crossed
+    # near their tops, the first cut was a pair of trousers with a belt.)
+    _rag_arm(c, (25, 25), (9, 9), 5.0, RAG[3])
+    _rag_arm(c, (7, 25), (23, 9), 5.0, RAG[2])
+    # the mitten hands, a little broader than the wrist, each with a thumb
+    c.disc(8.5, 8.0, 3.2, 3.0, RAG[3])
+    c.disc(23.5, 8.0, 3.2, 3.0, RAG[2])
+    c.disc(11.5, 6.0, 1.3, 1.3, RAG[3])
+    c.disc(20.5, 6.0, 1.3, 1.3, RAG[2])
+    _rim(c, RAG)
+    _straw_tuft(c, 6, 27, -0.5, 0.6)
+    _straw_tuft(c, 26, 27, 0.5, 0.6)
+    # the binding: three turns round both wrists where they cross, three knots down its front, and
+    # the loose end hanging into the gap between the sleeves
+    for dy in (-2, 0, 2):
+        for x in range(9, 24):
+            if _on_object(c, x, 16 + dy):
+                c.set(x, 16 + dy, THREAD[2] if dy else THREAD[1])
+    for ky in (14, 16, 18):
+        c.set(16, ky, THREAD[0])
+        c.set(16, ky + 1, THREAD[3])
+    c.line(16, 19, 18, 23, THREAD[2])
+    c.line(18, 23, 17, 26, THREAD[2])
+    c.set(17, 26, THREAD[1])
+    return c
+
+
+def singed_lock():
+    """Singed Lock: a lock of black hair tied with the red thread, its end burned to an ember."""
+    c = raster.Canvas(CELL, CELL, None)
+    _shadow(c, 16, 8)
+    _lock(c, (12, 9), (7, 21), (23, 25), 5.0)
+    # the cut end above the tie, splayed
+    for (x0, y0, x1, y1, t) in ((11, 8, 9, 4, HAIR[1]), (12, 8, 12, 3, HAIR[0]), (13, 8, 15, 4, HAIR[2])):
+        c.line(x0, y0, x1, y1, t)
+    # the tie, and its bow: two small loops off the knot
+    _wind_thread(c, 12.5, 9.5, 0.2, 1.0, 2, 3.2)
+    c.ring(17, 7.5, 2.0, 1.5, THREAD[2], 1)
+    c.ring(17, 11.5, 2.0, 1.5, THREAD[2], 1)
+    c.set(15, 9, THREAD[1])
+    c.set(16, 6, THREAD[1])
+    # two sparks off the ember
+    fire = bl.ELEMENTS["fire"]
+    c.set(26, 22, fire[1])
+    c.set(25, 20, fire[2])
+    return c
+
+
+def set_poppet():
+    """The Poppet whole: a rag doll, straw at its cuffs and feet, its wrists bound in the red
+    thread, the pin through its chest and the singed lock tied at its crown."""
+    c = raster.Canvas(CELL, CELL, None)
+    _shadow(c, 16, 9)
+    # legs, then arms, then the body over them
+    _thick(c, [(13, 21), (12, 27)], 3.6, RAG[3])
+    _thick(c, [(19, 21), (20, 27)], 3.6, RAG[3])
+    _thick(c, [(12, 14), (5, 19)], 3.4, RAG[2])
+    _thick(c, [(20, 14), (27, 19)], 3.4, RAG[2])
+    c.poly([(11, 12), (21, 12), (22, 18), (20, 23), (12, 23), (10, 18)], RAG[2])
+    # the head
+    c.disc(16, 8, 5.2, 4.8, RAG[2])
+    _rim(c, RAG)
+    # two stitched X eyes, and nothing else on the face - a mouth and a body seam made it a robot
+    for (ex, ey) in ((13.5, 8), (18.5, 8)):
+        for (dx, dy) in ((-1, -1), (1, 1), (1, -1), (-1, 1), (0, 0)):
+            c.set(ex + dx, ey + dy, RAG[4])
+    # a tie of the thread at the waist
+    for x in range(10, 23):
+        if _on_object(c, x, 19):
+            c.set(x, 19, THREAD[2])
+    # straw at the cuffs and the feet
+    _straw_tuft(c, 4, 20, -0.7, 0.4)
+    _straw_tuft(c, 28, 20, 0.7, 0.4)
+    _straw_tuft(c, 12, 28, -0.3, 0.7)
+    _straw_tuft(c, 20, 28, 0.3, 0.7)
+    # the thread at each wrist
+    _wind_thread(c, 7.5, 17.5, -0.81, 0.58, 2, 2.0)
+    _wind_thread(c, 24.5, 17.5, 0.81, 0.58, 2, 2.0)
+    # the singed lock at the crown, tied, its end burned
+    _lock(c, (17, 4), (22, 1), (25, 6), 2.4)
+    c.set(17, 4, THREAD[1])
+    c.set(16, 4, THREAD[2])
+    # the pin, driven in through the chest from the upper right
+    hi, lit, base, shade, deep = STEEL
+    c.line(26, 10, 17, 18, base)
+    c.line(25, 10, 17, 17, lit)
+    c.set(17, 18, deep)
+    _lit_disc(c, 26.5, 9.5, 2.0, "skin")
+    return c
+
+
+# ==============================================================================================
+# 14. THE GIMMEL RING - the pair (.ai/new-items.md section 4)
+# Two gold hoops worn apart by a betrothed couple and locked into one band at the wedding, the
+# hands clasped over a garnet. Gold, the Regalia's metal, is the family; each hoop is drawn as the
+# same band seen at the same angle, so the two read as halves of one ring, and the set is them
+# closed. The garnet is the ember row taken a step down (a deep, not a bright, red), and its one
+# light is the Lightning glint in its facets.
+# ==============================================================================================
+
+GARNET = [_ramp("ember")[1], _ramp("ember")[2], _ramp("ember")[3], _ramp("ember")[4]]
+
+
+def _hoop(c, cx, cy, rx, ry, thick):
+    """A gold band seen from a little above: an ellipse ring, lit along its upper-left arc."""
+    hi, lit, mid, shade, deep = GOLD
+    c.ring(cx, cy, rx, ry, mid, thick)
+    _rim(c, GOLD, (int(cx - rx - 2), int(cy - ry - 2), int(cx + rx + 2), int(cy + ry + 2)))
+    # the inside of the far wall is in shadow
+    for deg in range(200, 340, 4):
+        a = math.radians(deg)
+        x = cx + math.cos(a) * (rx - thick)
+        y = cy + math.sin(a) * (ry - thick)
+        if _on_object(c, x, y):
+            c.set(x, y, shade)
+
+
+def _half_heart(c, x, y, tone, lit, split):
+    """The left half of a heart set into a face, its straight edge the split where its mate's half
+    fits: a lobe at the top, tapering to the point at the foot of the split."""
+    rows = ((-3, -2), (-4, -1), (-4, -1), (-4, -1), (-3, -1), (-2, -1), (-1, -1))
+    for k, (a, b) in enumerate(rows):
+        c.hline(x + a, x + b, y + k, tone)
+    c.set(x - 3, y, lit)
+    c.set(x - 4, y + 1, lit)
+    c.vline(x, y - 1, y + len(rows), split)
+
+
+def _clasped_hands(c, left, right, meet, w):
+    """Two forearms rising from either side to clasp at `meet`: the left lit, the right a step
+    darker, a cuff at each wrist and the fingers of the clasp cut across it. Arms rather than two
+    blobs: a pair of hands alone, at this size, read as a crenellated block (the first cut)."""
+    hi, lit, mid, shade, deep = GOLD
+    mx, my = meet
+    # A deep outline first, a pixel wider all round: gold arms on a gold band otherwise melt into it.
+    _thick(c, [left, (mx, my)], w + 2, deep)
+    _thick(c, [right, (mx, my)], w + 2, deep)
+    c.disc(mx, my, w * 0.75 + 1, w * 0.6 + 1, deep)
+    _thick(c, [left, (mx - 1, my)], w, hi)
+    _thick(c, [right, (mx + 1, my)], w, lit)
+    # the clasp: a knot of fingers, broader than the wrists
+    c.disc(mx, my, w * 0.75, w * 0.6, lit)
+    c.disc(mx - 0.8, my - 0.4, w * 0.45, w * 0.35, hi)
+    for k in (-1, 0, 1):
+        c.set(mx + k, my + 1, shade)
+    # the cuffs, a band across each forearm a third of the way from its end
+    for (ax, ay) in (left, right):
+        bx, by = ax + (mx - ax) * 0.3, ay + (my - ay) * 0.3
+        c.disc(bx, by, w * 0.55, w * 0.55, shade)
+
+
+def betrothal_hoop():
+    """Betrothal Hoop: a plain gold hoop with a half-heart cut into its face."""
+    c = raster.Canvas(CELL, CELL, None)
+    _shadow(c, 16, 9)
+    _hoop(c, 16, 18, 10.5, 7.0, 3)
+    hi, lit, mid, shade, deep = GOLD
+    # the face the half-heart is set into: a flat at the top of the band, cut square on the right
+    # where the other hoop's face meets it
+    c.rect(10, 5, 19, 14, mid)
+    c.hline(10, 19, 5, lit)
+    c.vline(10, 5, 14, lit)
+    c.hline(10, 19, 14, shade)
+    c.vline(19, 5, 14, deep)
+    _half_heart(c, 18, 7, GARNET[1], GARNET[0], deep)
+    c.set(11, 6, hi)
+    return c
+
+
+def fede_hoop():
+    """Fede Hoop: the second hoop, the two clasped hands raised on it."""
+    c = raster.Canvas(CELL, CELL, None)
+    _shadow(c, 16, 9)
+    _hoop(c, 16, 19, 10.5, 7.0, 3)
+    # the hands rise off the band's shoulders and clasp over its top
+    _clasped_hands(c, (7, 14), (25, 14), (16, 6), 3.4)
+    return c
+
+
+def garnet_bezel():
+    """Garnet Bezel: the garnet in its collet where the two hoops meet, a Lightning glint in its
+    facets. The two shoulders of the band run down from it, split where the hoops part."""
+    c = raster.Canvas(CELL, CELL, None)
+    _shadow(c, 16, 9)
+    hi, lit, mid, shade, deep = GOLD
+    _hoop(c, 16, 22, 10.0, 5.0, 2)
+    # the split between the hoops, down the front of the band
+    c.vline(16, 25, 27, deep)
+    # the collet, and four claws over the stone
+    c.disc(16, 13, 9.0, 8.5, mid)
+    _rim(c, GOLD, (6, 3, 26, 23))
+    cut_gem(c, 16, 13, 6.6, GARNET)
+    for (x, y) in ((11, 8), (21, 8), (11, 18), (21, 18)):
+        c.disc(x, y, 1.3, 1.3, lit)
+        c.set(x - 1, y - 1, hi)
+    # the glint: the Lightning stop, in the facet that faces the key
+    bolt = bl.ELEMENTS["lightning"]
+    c.set(13, 10, bolt[0])
+    for (dx, dy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        c.set(13 + dx, 10 + dy, bolt[1])
+    c.set(15, 12, bolt[2])
+    return c
+
+
+def set_gimmel_ring():
+    """The Gimmel Ring closed: the two hoops locked into one band - a groove down it where they
+    meet - the garnet at the top and the hands clasped over it."""
+    c = raster.Canvas(CELL, CELL, None)
+    _shadow(c, 16, 10)
+    hi, lit, mid, shade, deep = GOLD
+    _hoop(c, 16, 20, 11.5, 7.5, 4)
+    # the groove where the two hoops lie against each other
+    for deg in range(0, 360, 2):
+        a = math.radians(deg)
+        x = 16 + math.cos(a) * 9.6
+        y = 20 + math.sin(a) * 5.7
+        if _on_object(c, x, y):
+            c.set(x, y, deep)
+    # the hands rise off the band and clasp, and the garnet in its bezel sits on the clasp
+    _clasped_hands(c, (5, 17), (27, 17), (16, 12), 2.8)
+    c.disc(16, 7, 4.6, 4.3, mid)
+    _rim(c, GOLD, (10, 1, 22, 12))
+    cut_gem(c, 16, 7, 3.4, GARNET)
+    bolt = bl.ELEMENTS["lightning"]
+    c.set(15, 6, bolt[0])
+    return c
+
+
 RELICS = [
     ("relic_key", relic_key), ("ember_flask", ember_flask), ("wrath_amulet", wrath_amulet),
     ("ethereal_blade", ethereal_blade), ("spectral_fang", spectral_fang),
@@ -1615,6 +1956,8 @@ RELICS = [
     ("wormwood_tithe", wormwood_tithe),
     ("scribes_penknife", scribes_penknife), ("blank_folio", blank_folio),
     ("lodestone", lodestone), ("curio_ledger", curio_ledger), ("hidden_drawer", hidden_drawer),
+    ("pricking_pin", pricking_pin), ("binding_thread", binding_thread), ("singed_lock", singed_lock),
+    ("betrothal_hoop", betrothal_hoop), ("fede_hoop", fede_hoop), ("garnet_bezel", garnet_bezel),
 ]
 
 # Not relics, but drawn with them (see marginalia()). assets/bonelight/ui/icons is the home of the
@@ -1629,6 +1972,7 @@ SETS = [
     ("elemental_mastery", set_elemental_mastery), ("speed_demon", set_speed_demon),
     ("fortunes_favor", set_fortunes_favor),
     ("cabinet_of_curiosities", set_cabinet_of_curiosities),
+    ("poppet", set_poppet), ("gimmel_ring", set_gimmel_ring),
 ]
 
 

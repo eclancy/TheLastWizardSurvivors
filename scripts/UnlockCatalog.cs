@@ -155,6 +155,9 @@ public static class UnlockCatalog
 		// no boons until 2026-10-26, which is why the PurchaseBoon entries below were cards no new save
 		// could be dealt; MainMenu's Arcane Upgrades now has a boon shelf, PurchasableBoons.)
 		Starter("taproot", UnlockKind.Boon),
+		// The walking boon (Waywiser), Taproot's mirror, a starter for the same reason - and because
+		// Lightning has the thinnest floor in the game (.ai/new-items.md section 7).
+		Starter("waywiser", UnlockKind.Boon),
 
 		// Achievement rewards. These ids must match AchievementDefinitions.All, which
 		// ValidateUnlockCatalog checks in both directions - an achievement granting a spell that
@@ -181,6 +184,9 @@ public static class UnlockCatalog
 		FromAchievement("gale_blade", "wind_adept", "End a run with 4 Wind instances."),
 		FromAchievement("thorn_vine", "forest_cleared", "Defeat the boss of the Enchanted Forest."),
 		FromAchievement("shadow_bolt", "castle_conqueror", "Defeat the boss of the Cursed Dungeon."),
+		// The Gaoler's deed pays a second thing, as the Long Coil's does: the third reactive boon, since a
+		// jailer carries a rattle (.ai/new-items.md section 7).
+		FromAchievementBoon("bone_rattle", "castle_conqueror", "Defeat the boss of the Cursed Dungeon."),
 		FromAchievement("spiritual_weapon", "ruins_delver", "Defeat the boss of the Mystic Ruins."),
 		FromAchievement("riptide", "cave_choir_silenced", "Defeat the boss of the Sunken Cave."),
 		FromAchievement("mirefoot", "swamp_cleansed", "Defeat the boss of the Blighted Swamp."),

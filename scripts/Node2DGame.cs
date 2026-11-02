@@ -4501,6 +4501,11 @@ public partial class Node2DGame : Node2D
 				box.AddChild(BuildDetailLabel(player.IsStanceRooted
 					? $"Rooted: +{boon.Magnitude:0.0} HP per second now."
 					: $"Not rooted - stand still {BoonCatalog.StanceSeconds:0.#}\u00A0s.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
+			// The walking boon winds one spell, and which one changes as the timers do: say which it was.
+			if (boon.Effect == BoonEffect.WalkingRecharge && player != null)
+				box.AddChild(BuildDetailLabel(player.WaywiserWindingSpellName is string winding
+					? $"Winding: {winding}."
+					: "Not winding - walk to wind your slowest spell.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
 			// The element tags it adds to the run, as the same chips the level-up card showed when it
 			// was taken - "why is my Water at 3" was a question the pause screen could not answer.
 			if (BuildPauseTagChips(boon.ElementWeights) is Control chips)
@@ -6368,21 +6373,59 @@ public partial class Node2DGame : Node2D
 		chestSelectionMenu = menu;
 		AddChild(menu);
 
-		var ownedItems = player.GetOwnedChestItems();
-		// Three, plus the Relic Key, plus John Dee's eye for a collection: five at most.
-		int offerCount = player.ChestOfferCount;
-		// The knife is only dealt when it has something to cut (Player.CanUsePenknife).
-		var unavailable = player.CanUsePenknife ? null : new[] { ChestItemCatalog.ScribesPenknife };
-		var options = ChestItemCatalog.GetChestItemOptions(ownedItems, spawnRng, offerCount, unavailable, chestOfferMemory);
 		// The knife's picker lists the book as it stands, the wizard's own spell greyed (it cannot be cut).
 		menu.SetSpellBook(player.GetEquippedSpells(), player.SignatureSpellId);
+		DealChest(menu);
+		menu.Connect(ChestItemSelectionMenu.SignalName.ItemSelected, Callable.From<string>(OnChestItemSelected));
+		menu.Connect(ChestItemSelectionMenu.SignalName.SpellCutChosen, Callable.From<string>(OnPenknifeCutChosen));
+		menu.Connect(ChestItemSelectionMenu.SignalName.RerollRequested, Callable.From(OnChestRerollRequested));
+		menu.Connect(ChestItemSelectionMenu.SignalName.BanRequested, Callable.From<string>(OnChestBanRequested));
+
+		GetTree().Paused = true;
+	}
+
+	// One deal, for the chest opening and for its rerolls, so they cannot disagree about what a chest may
+	// hold: three relics, plus the Relic Key, plus John Dee's eye for a collection - five at most - never a
+	// relic struck this run nor the knife with nothing to cut (Player.GetChestUnavailableItems), and the
+	// run's offer memory, so a reroll's first hand sits the second one out and is faded.
+	private void DealChest(ChestItemSelectionMenu menu)
+	{
+		var ownedItems = player.GetOwnedChestItems();
+		var options = ChestItemCatalog.GetChestItemOptions(ownedItems, spawnRng, player.ChestOfferCount,
+			player.GetChestUnavailableItems(), chestOfferMemory);
+		menu.SetCharges(player.RerollsRemaining, player.BansRemaining);
 		menu.SetOptions(options, ownedItems);
 		// Every relic a chest shows is met: the Evolution Codex names it from now on (CodexSightings).
 		CodexSightings.Record(this, options);
-		menu.Connect(ChestItemSelectionMenu.SignalName.ItemSelected, Callable.From<string>(OnChestItemSelected));
-		menu.Connect(ChestItemSelectionMenu.SignalName.SpellCutChosen, Callable.From<string>(OnPenknifeCutChosen));
+	}
 
-		GetTree().Paused = true;
+	// The run's rerolls, spent on a chest (Eric, 2026-11-02): the same pool the level-up spends.
+	private void OnChestRerollRequested()
+	{
+		if (player == null || !IsInstanceValid(player) || chestSelectionMenu is not ChestItemSelectionMenu menu || !IsInstanceValid(menu))
+			return;
+		if (!player.TrySpendReroll())
+			return;
+		GameStats.RecordRerollUsed();
+		DealChest(menu);
+	}
+
+	// A ban IS the chest's choice, as it is the level-up's (Eric, 2026-10-31, for the level-up: "once they
+	// select a spell to ban, they dont continue to level up, that is what they used the level up for"). The
+	// relic leaves the run's chest pool and the chest closes with nothing claimed. A refused ban spends
+	// nothing, so the chest is not spent either: the same pages go back up.
+	private void OnChestBanRequested(string itemId)
+	{
+		if (player == null || !IsInstanceValid(player) || chestSelectionMenu is not ChestItemSelectionMenu menu || !IsInstanceValid(menu))
+			return;
+		if (!player.TryBanRelic(itemId))
+		{
+			menu.RefreshCharges(player.RerollsRemaining, player.BansRemaining);
+			return;
+		}
+		GameStats.RecordBanUsed();
+		GD.Print($"Chest: {ChestItemCatalog.GetDisplayName(itemId)} struck from this run's chests ({player.BansRemaining} bans left)");
+		FinishChestClaim(null);
 	}
 
 	// The Scribe's Penknife is claimed by naming the spell it cuts, in the chest's own picker. The
@@ -6415,13 +6458,15 @@ public partial class Node2DGame : Node2D
 	}
 
 	// Everything a claim does after the relic itself: the run's records, the chest's heal, the
-	// Reliquary's per-chest payout, and closing the screen.
+	// Reliquary's per-chest payout, and closing the screen. A null itemId is a chest spent on a ban: it was
+	// opened, so it pays the Reliquary and may hold a Hidden Drawer's chest, but no relic was claimed.
 	private void FinishChestClaim(string itemId)
 	{
 		if (player != null && IsInstanceValid(player))
 		{
 			RunEvents.RecordChestOpened();
-			RunEvents.RecordChestItem(itemId);
+			if (itemId != null)
+				RunEvents.RecordChestItem(itemId);
 			// A chest no longer heals 4 (.ai/difficulty-curve.md, section 5): what is in it is the reward.
 			// Vaultguard's set bonus keys off a chest actually being opened, so it fires here
 			// rather than once when the set completed. Called after AddChestItem so the chest

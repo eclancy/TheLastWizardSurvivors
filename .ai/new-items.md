@@ -1,8 +1,12 @@
 # New items: a batch of relics, sets and boons
 
-**Status: answered by Eric (2026-11-02); the first wave is to build.** His answers are under
-section 0. Where an answer changes a section below, that section is still the proposal as written
-and this list wins.
+**Status: answered by Eric (2026-11-02); the first wave is built** (branch `wip/items-wave-1`):
+the Poppet and the Gimmel Ring with their sets, Waywiser (a starter) and Bone Rattle (the Gaoler's
+deed, `castle_conqueror`, beside Shadow Bolt), the run's rerolls and bans on the chest screen, and
+`ValidateFullSetObjects` relaxed. The rules are `scripts/Player.ItemRules.cs`; what it decided that
+this doc did not, and the HP-lost measurement, are under "Wave 1, as built" at the end. His answers
+are under section 0. Where an answer changes a section below, that section is still the proposal as
+written and this list wins.
 
 **Eric's answers, 2026-11-02:**
 
@@ -588,3 +592,70 @@ line as Taproot has ("Winding: Meteor Swarm", "Humming: 9 near, +18%", "Streak 1
   puts six pages on a phone (8d).
 - **Anything that raises the Gleaning Bell, a flask, regeneration or a heal**, or that lets Skip pay
   a full bar (a skip would then loop straight into the next level-up).
+
+---
+
+## Wave 1, as built (2026-11-02)
+
+Everything in section 10's first wave, with the numbers as written, plus answer 3's chest charges.
+The rules are `scripts/Player.ItemRules.cs`, each called by one line from the moment it acts in
+`Player.cs`; the art is `tools/art/relic_icons.py` sections 13 and 14 and `boon_icons.py`.
+
+**Decided here, not in the doc above:**
+
+- **The Poppet's "two different debuffs" does not count Vulnerable.** Vulnerable is what the rule
+  pays; counted as an input it fed itself - one other debuff plus the Poppet's own 0.5 s mark made two,
+  so a withered enemy (Wither is permanent) stayed Vulnerable as long as it was hit, and because a
+  status takes the longest remaining time, the refresh also kept any stronger mark (Shadow Bolt's,
+  the Pin's) alive. Against an already Vulnerable enemy the rule could do nothing else, so leaving it
+  out costs nothing. Counted: slowed (a root too), poisoned, weakened, withered.
+- **The sets stack as every set does**: the partial is never refunded, so the whole Poppet is debuffs
+  +70% longer (+20% then +50%) and the whole Gimmel Ring +33% on the pair (+8% then +25%), as the
+  Scythe's +8% and +25% make +33%. The cards state each tier's own number, as every set's do.
+- **The Binding Thread weakens before the touch is scaled**, so the touch that binds is the first one
+  cut. That made `Player.OnBodyEntered` route its first touch through `ScaleOutgoingDamage`, which it
+  never did: the first touch of every enemy skipped Weaken and the chapter's damage scale alike.
+- **A Conjunction ranks above level 8** in the pair, so it wins the tie with an Ascended spell in an
+  earlier slot (it is level 1 of 1 on its own counter). The pair excludes the wizard's own spell
+  through the same rule the Conjunctions use (`OwnSpellForCombos`), so the Test Wizard excludes none.
+- **Waywiser's stat line** says "cooldown" ("Walking: slowest spell's cooldown 50% faster") so it
+  takes the cooldown glyph; the pause screen says "Winding: <spell>." as Taproot says "Rooted".
+- **A chest ban is the chest's pick**, as a level-up ban is the level-up's (Eric, 2026-10-31): the
+  relic is struck and the chest closes empty, still counting as opened. Answer 3 did not say; this
+  follows the level-up's rule, and is the first thing to ask Eric if it plays badly.
+- **Where the charges sit**: `.ai/level-up-screen.md` 4b.
+
+**HP lost, answer 4** (Pyromancer, Forest, 8 minutes, `--all-unlocked --immortal` - the bot planted in
+the crowd, the case both items are for; HP lost after armour and shields, one run each):
+
+| | seed 11 | seed 23 | hits taken |
+|---|---|---|---|
+| neither | 2285 | 3055 | 1694 / 2338 |
+| Binding Thread | 1931 (-15%) | 2611 (-15%) | 1408 / 1958 (-17%, -16%) |
+| Bone Rattle | 2065 (-10%) | 1960 (-36%) | 1512 / 1379 |
+| both | 2060 (-10%) | 1841 (-40%) | 1466 / 1366 |
+
+The Thread is steady: about a sixth of the touches land for nothing, as a 20% Weaken on 1-damage
+touches should. The Rattle swings with how the crowd sits - a fright clears the ring for 1.5 s, then
+four seconds of immunity - and costs a close-range build some damage (the frightened run out of
+Cinderbreath: 66.6k and 49.0k dealt against 75.7k and 48.1k). Neither heals, and neither comes close
+to making a planted player safe at 50 HP; both stay at 20% and once a second. The bot is not a player
+(`_BalanceHarness`'s header): read the direction, not the percentages.
+
+**The 8g sweep, short** (same runs, the set handed over whole at 0:00, attributed damage against
+holding nothing):
+
+| | seed 11 | seed 23 | HP lost |
+|---|---|---|---|
+| neither | 75.7k | 48.1k | 2285 / 3055 |
+| the Poppet | 63.1k (x0.83) | 58.2k (x1.21) | 1522 / 1962 |
+| the Gimmel Ring | 85.3k (x1.13) | 66.4k (x1.38) | 2350 / 2252 |
+| Waywiser | 78.8k (x1.04) | 51.8k (x1.08) | 1923 / 3134 |
+
+The two seeds alone differ by a third, so one run a cell is noise-wide. The Gimmel Ring sits inside
+x0.9-1.4. The Poppet's damage is under-counted by this column - the Singed Lock's Wither burns health
+without dealing damage, so a withered enemy dies to less attributed damage - and a Fire build carries
+few debuffs for its two-debuff mark; it is a debuff build's set, and its plainer effect on this bot is a
+third less health lost. Waywiser does little for the `--immortal` bot, which walks only to orbs; it is
+for a kiter. Not run: `--seek-combo=sagittarius` with the Betrothal Hoop, and the 10,000-run chest
+simulation with 40 relics.

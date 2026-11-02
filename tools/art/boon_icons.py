@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Boon icons. Run: python tools/art/boon_icons.py
 
-Fifteen 32x32 icons, one per boon, rendered at x2 to the 32x32 UI cell in art-direction.md
+Seventeen 32x32 icons, one per boon, rendered at x2 to the 32x32 UI cell in art-direction.md
 section 1 - the same cell the spell icons use, because a boon is offered on the same card as a
 spell and has to survive the comparison.
 
@@ -359,6 +359,84 @@ def taproot():
     return c
 
 
+def waywiser():
+    """A wheel that counts the road. Wind and Lightning, a spell wound faster while walking.
+
+    A surveyor's measuring wheel: a wooden wheel with six spokes, a brass dial at the hub, and its
+    long handle running up to the right, as it is pushed along. Wood is the flesh row a step down
+    (the root's trick, so it holds against Wind's pale backlight); the brass is gold.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    hi, lit, base, shade, deep = _ramp("flesh")
+    g_hi, g_lit, g_base, g_shade, g_deep = _ramp("gold")
+    cx, cy, r = 12.5, 19.0, 8.5
+    # the handle first, so the wheel sits in front of its foot
+    c.line(13, 18, 27, 4, shade)
+    c.line(14, 18, 28, 4, base)
+    c.line(14, 19, 28, 5, deep)
+    c.rect(26, 2, 29, 4, deep)
+    c.hline(26, 29, 2, base)
+    # the rim, lit on its upper-left arc, and the tyre's iron band on its foot
+    c.ring(cx, cy, r, r, shade, 2)
+    for deg in range(0, 360, 3):
+        a = math.radians(deg)
+        facing = math.cos(a - math.radians(225.0))
+        if facing > 0.3:
+            c.set(cx + math.cos(a) * (r - 0.4), cy + math.sin(a) * (r - 0.4), base)
+        elif facing < -0.5:
+            c.set(cx + math.cos(a) * (r - 0.4), cy + math.sin(a) * (r - 0.4), deep)
+    # six spokes
+    for k in range(6):
+        a = math.radians(30 + 60 * k)
+        c.line(cx, cy, cx + math.cos(a) * (r - 1.5), cy + math.sin(a) * (r - 1.5), shade)
+    # the brass dial at the hub, its needle
+    c.disc(cx, cy, 2.6, 2.6, g_base)
+    c.set(cx - 1, cy - 1, g_hi)
+    c.line(cx, cy, cx + 1, cy - 2, g_deep)
+    _shadow(c, 13, 8)
+    return c
+
+
+def bone_rattle():
+    """Whatever is close remembers it is afraid. Darkness and Lightning, a fright when struck.
+
+    A bundle of small bones bound to a short handle with sinew, fanned at the top where they knock
+    together. Each bone has a knuckle at BOTH ends - the first cut gave them one, and a fan of
+    shafts with a knob at the tip read as a bunch of flowers. Bone is the skin row
+    (art-direction.md: skin for anything that is not alive); the handle is the flesh row a step
+    down, as the waywiser's wood is, and the sinew its lit stop.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    hi, lit, base, shade, deep = _ramp("skin")
+    f_hi, f_lit, f_base, f_shade, f_deep = _ramp("flesh")
+    # the handle, down to the lower left
+    c.line(6, 27, 13, 19, f_shade)
+    c.line(7, 27, 14, 19, f_base)
+    c.line(7, 28, 14, 20, f_deep)
+    c.disc(6, 27, 1.6, 1.6, f_shade)
+    # three bones fanned wide out of the binding, each a shaft with a double knuckle at either
+    # end - four, closer, filled in to one fan-shaped mass
+    tie = (15.0, 17.0)
+    for deg in (-108, -58, -8):
+        a = math.radians(deg)
+        ux, uy = math.cos(a), math.sin(a)
+        x0, y0 = tie[0] + ux * 4.0, tie[1] + uy * 4.0
+        x1, y1 = tie[0] + ux * 12.5, tie[1] + uy * 12.5
+        c.line(x0, y0, x1, y1, base)
+        c.line(x0 + 1, y0, x1 + 1, y1, shade)
+        px, py = -uy, ux
+        for (ex, ey) in ((x1, y1), (x0, y0)):
+            for side in (-1, 1):
+                c.disc(ex + px * side * 1.1, ey + py * side * 1.1, 1.2, 1.2, lit)
+            c.set(ex - 1, ey - 1, hi)
+    # the sinew binding where the bones meet the handle
+    for (x, y) in ((13, 17), (14, 16), (15, 15), (14, 18), (15, 17), (16, 16), (16, 18)):
+        c.set(x, y, f_lit)
+    c.set(15, 19, f_shade)
+    _shadow(c, 15, 7)
+    return c
+
+
 # --- the enchantment -------------------------------------------------------------
 #
 # A BOON IS AN OBJECT, BUT IT IS NOT AN ITEM. The material-row rule above did its job - nobody
@@ -399,6 +477,8 @@ ELEMENT = {
     "rimebriar": "ice",
     "umbral_veil": "darkness",
     "taproot": "earth",
+    "waywiser": "wind",
+    "bone_rattle": "darkness",
 }
 
 _ROLE = {"core": 0, "hot": 1, "mid": 2, "edge": 3}
@@ -470,6 +550,26 @@ INLAYS = {
         (15, 13, "mid"), (15, 14, "hot"), (15, 15, "hot"), (15, 16, "core"), (15, 17, "hot"),
         (15, 18, "mid"), (14, 19, "mid"), (16, 19, "mid"), (13, 20, "edge"), (17, 20, "edge"),
     ],
+    # The road the wheel has counted, written round its rim: three marks of wind in the wood, at the
+    # points the rim faces the key. The dial carries the second tag, Lightning, as a glint (EXTRA_GLINTS).
+    "waywiser": [
+        (6, 15, "mid"), (6, 16, "hot"), (7, 13, "mid"), (9, 11, "hot"), (10, 11, "mid"),
+        (13, 27, "edge"), (14, 27, "mid"),
+    ],
+    # A fright-rune scored into the bones: one mark on each knuckle, the middle bone's lit hottest.
+    "bone_rattle": [
+        (12, 9, "mid"), (13, 10, "edge"), (19, 10, "core"), (18, 11, "hot"), (20, 9, "edge"),
+        (23, 16, "mid"), (22, 16, "edge"),
+    ],
+}
+
+# A second element's glint on the object itself, where the boon's card puts its second tag in the
+# picture: the waywiser's brass dial and the spark where the rattle's bones knock together. Painted
+# after the inlay, in the second element's ramp (x, y, element, role).
+EXTRA_GLINTS = {
+    "waywiser": [(12, 18, "lightning", "core"), (13, 19, "lightning", "hot"), (11, 19, "lightning", "mid")],
+    "bone_rattle": [(16, 6, "lightning", "core"), (17, 6, "lightning", "hot"), (16, 7, "lightning", "hot"),
+                    (25, 10, "lightning", "mid")],
 }
 
 # The fringe is part alpha for the reason the shadow is (SHADOW_ALPHA): it has to read as light
@@ -492,6 +592,8 @@ def _enchant(c, name):
     element = ELEMENT[name]
     for (x, y, role) in INLAYS.get(name, []):
         c.set(x, y, _ramp_tone(element, role))
+    for (x, y, other, role) in EXTRA_GLINTS.get(name, []):
+        c.set(x, y, _ramp_tone(other, role))
 
     # The fringe. Only around pixels that belong to a MASS (two or more opaque neighbours), so a
     # stray single-pixel spark does not sprout a little cross of its own.
@@ -703,6 +805,8 @@ ICONS = [
     ("umbral_veil", umbral_veil),
     ("rimebriar", rimebriar),
     ("taproot", taproot),
+    ("waywiser", waywiser),
+    ("bone_rattle", bone_rattle),
 ]
 
 
