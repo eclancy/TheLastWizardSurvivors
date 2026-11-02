@@ -420,23 +420,43 @@ rate limit (a few posts an hour per address) is shared with DrawFight.
 | `name` | what the player typed, or empty (40 characters at most) |
 | `version` | `application/config/version` |
 | `suggestion` | the context lines below, `---`, then what the player typed (2000 characters at most) |
+| `screenshot` | a file part, `screenshot.jpg`, `image/jpeg`; only while "Include a screenshot" is on |
 
 The context lines are the ones the screen shows under "Sent with it", from one method, so what is
 shown is what is sent: `[Wizard Survivors 0.2.1 | Windows | PC canvas 1280x720]`, the window and
-screen size, and from the pause screen the chapter, wizard, time in run, player level and every
-spell held with its level. **Nothing else**: no save file, no log, no device or account
-identifier. Keep it that way, and if a line is added, the screen shows it automatically.
+screen size, from the pause screen the chapter, wizard, time in run, player level and every
+spell held with its level, and while the screenshot is on, `Screenshot: attached (WxH, the picture
+shown)`. **Nothing else**: no save file, no log, no device or account identifier. Keep it that
+way, and if a line is added, the screen shows it automatically.
+
+**The screenshot.** Beside those lines is a thumbnail and an "Include a screenshot" switch, on by
+default. The thumbnail is decoded from the JPEG bytes that are uploaded, so it is exactly what
+arrives; switched off, it fades, its line goes, and no file part is sent at all. The picture is
+the game just before the report screen covered it. From the pause screen that is **the run
+without the pause screen**: `Node2DGame` draws the pause screen transparent on the frame it opens,
+reads the viewport once that frame is drawn (`RenderingServer.FramePostDraw` - before it the
+texture holds nothing; `_UiShot`'s header), shows the pause screen the next frame, and hands the
+picture to the report screen. It is taken on every pause and dropped on resume. From the main menu
+the report screen photographs the menu the same way, drawn transparent itself for that one frame.
+It is scaled so its long side is at most 1600 px and encoded at JPEG quality 85 off the main
+thread: about 150-200 KB at 1280x720. The server keeps the first image (JPEG or PNG, under 12 MB),
+saves it beside the report and attaches it to the email; a server from before screenshots
+ignores the part. If the picture could not be taken, the switch is not shown and the report goes
+as text, as before.
 
 The typed text survives Back, Escape, a failed send and closing the pause screen; only a report
 the server accepted clears it. A failure shows the server's own message (429 gets ours, since the
-server's speaks of fighters) and keeps everything. The request times out after 15 seconds.
+server's speaks of fighters) and keeps everything. The request times out after 15 seconds, or 45
+with a screenshot, which on a weak phone uplink can take most of 15 by itself.
 
 **Testing without emailing Eric:** set `WIZARDSURVIVORS_INTAKE_URL=http://127.0.0.1:8799` and run
 any local server that answers `POST /api/draw/suggest`. `_UiShot` drives the screen:
 `--press-late=ReportBugButton` (with `--open-menu --scene=res://scenes/TitleScreen.tscn`) or
 `--open-pause --press-late=EscapeReportBug` in a run opens it, `--report-name=`, `--report-text=`
-fill it, `--report-send` presses Send and holds the shutter for the answer, and `--report-back`
-checks where focus lands afterwards.
+fill it, `--report-no-shot` switches the screenshot off, `--report-send` presses Send and holds
+the shutter for the answer, and `--report-back` checks where focus lands afterwards. The local
+server needs to accept a file part; logging each part's headers is enough to see the picture
+arrive.
 
 **On Android** the export preset carries `permissions/internet=true`; a debug export adds the
 permission by itself only when remote debugging, so without it the phone build could not send.

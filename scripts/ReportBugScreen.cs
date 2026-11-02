@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -21,6 +22,19 @@ using HttpClient = System.Net.Http.HttpClient;
 /// screen cannot promise one thing and send another. It is the version, the platform, the canvas
 /// and window size, and - from the pause screen - the run: chapter, wizard, time, level and the
 /// spells held. Nothing else: no save file, no log, no device or account identifier.
+///
+/// THE SCREENSHOT follows the same rule. The preview beside those lines is decoded from the very
+/// JPEG bytes that are uploaded, and while "Include a screenshot" is on (the default) a line under
+/// "Sent with it" says one is attached - and that line goes in the report too. Unticked, no file is
+/// sent at all. The picture is the game just before this screen covered it: from the main menu,
+/// the menu; from the pause screen, the run with the pause screen NOT over it, because Node2DGame
+/// photographs the frame the pause opens on with its pause screen drawn transparent and hands the
+/// picture in. A viewport's texture only holds a picture after RenderingServer.FramePostDraw (see
+/// _UiShot's header), so both paths wait for that (<see cref="CaptureAfterDraw"/>), and when this
+/// screen photographs what is under it, it is itself drawn transparent for that one frame. It is
+/// scaled to at most <see cref="ShotMaxSide"/> px on its long side, off the main thread, and sent
+/// as one JPEG file part named "screenshot": intake/server.js keeps the first image and attaches it
+/// to the email, and an older server ignores it.
 ///
 /// System.Net.Http rather than Godot's HTTPRequest node: it is what UpdateScreen already uses
 /// here, and what DrawFight's intake uses on its Android build, and a Task polled from _Process
@@ -51,8 +65,19 @@ public partial class ReportBugScreen : CanvasLayer
 	private const int MaxNameChars = 40;
 
 	// Long enough for a phone on a weak signal, short enough that a dead connection says so while
-	// the player is still looking at the screen.
+	// the player is still looking at the screen. A screenshot is a few hundred KB, which on a weak
+	// phone uplink can take most of 15 s by itself, so a report carrying one waits longer.
 	private const double TimeoutSeconds = 15.0;
+	private const double TimeoutWithShotSeconds = 45.0;
+
+	/// <summary>The screenshot's longest side in pixels, after scaling.</summary>
+	public const int ShotMaxSide = 1600;
+
+	// JPEG quality, 0-1.
+	private const float ShotQuality = 0.85f;
+
+	/// <summary>The multipart file field the server reads the picture from (intake/server.js).</summary>
+	public const string ShotField = "screenshot";
 
 	// Above the pause screen (100) and the set detail screen (110) it can be opened over.
 	private const int ScreenLayer = 120;
@@ -81,9 +106,35 @@ public partial class ReportBugScreen : CanvasLayer
 	private Label status = null!;
 	private Button sendButton = null!;
 	private Button backButton = null!;
+	private Control root = null!;
+	private Label sentLabel = null!;
+
+	// The screenshot: the picture handed in or still to be taken, the scaling and encoding of it
+	// running off the main thread, and its result once it is on the preview. Kept per opening -
+	// a screenshot is of this moment, so unlike the typed text it is never carried over.
+	private Image shotSource;
+	private bool shotPending;
+	private Action cancelCapture;
+	private Task<EncodedShot> shotEncoding;
+	private EncodedShot shot;
+	private Vector2I shotSize;
+	private bool includeShot = true;
+	private Control shotColumn = null!;
+	private Control shotFrame = null!;
+	private TextureRect shotPreview = null!;
+	private CheckButton shotToggle = null!;
+
+	private sealed class EncodedShot
+	{
+		public byte[] Jpeg;
+		public Image Decoded;
+	}
 
 	/// <summary>True while a report is on its way. The screenshot harness waits on it.</summary>
 	public bool IsSending => phase == Phase.Sending;
+
+	/// <summary>True for the one frame the screen waits, unseen, to photograph what is under it.</summary>
+	public bool IsTakingScreenshot => shotPending;
 
 	/// <summary>
 	/// Puts the screen up over <paramref name="parent"/>.
@@ -92,13 +143,18 @@ public partial class ReportBugScreen : CanvasLayer
 	/// main menu. Built by the caller, which is the one that knows the run.</param>
 	/// <param name="onClosed">Called once the screen has gone, so the screen under it can take
 	/// focus back - the pause screen's root has to, or it stops hearing B and Escape.</param>
-	public static ReportBugScreen Open(Node parent, IReadOnlyList<string> runContext, Action onClosed)
+	/// <param name="screenshot">The game as it looked before the screen under this one covered it
+	/// (the pause screen takes one as it opens). Null: this screen photographs whatever is under it
+	/// as it opens - the main menu, or the pause screen itself if the run's picture was not taken.</param>
+	public static ReportBugScreen Open(Node parent, IReadOnlyList<string> runContext, Action onClosed, Image screenshot = null)
 	{
 		var screen = new ReportBugScreen
 		{
 			Name = "ReportBugScreen",
 			runContext = runContext ?? Array.Empty<string>(),
 			closed = onClosed,
+			shotSource = screenshot,
+			shotPending = screenshot == null,
 		};
 		parent.AddChild(screen);
 		return screen;
@@ -110,8 +166,19 @@ public partial class ReportBugScreen : CanvasLayer
 		// Always: from the pause screen it opens over a paused tree, and a screen that stopped
 		// with the tree could never process its own Send or Back.
 		ProcessMode = ProcessModeEnum.Always;
-		var root = Build();
+		root = Build();
 		SfxPlayer.Global(SfxCatalog.UiOpen);
+
+		if (shotSource != null)
+			StartEncoding(shotSource);
+		else
+		{
+			// Photograph what is under the screen before the screen is seen: drawn transparent for
+			// this one frame, captured once that frame is drawn, then shown.
+			root.Modulate = Colors.Transparent;
+			cancelCapture = CaptureAfterDraw(GetViewport(), OnCaptured);
+		}
+		RefreshShot();
 
 		// Clear of the phone's rounded corners and camera hole; nothing on desktop (SafeArea).
 		SafeArea.Apply(root);
@@ -126,6 +193,120 @@ public partial class ReportBugScreen : CanvasLayer
 			CallDeferred(MethodName.FocusDescription);
 	}
 
+	public override void _ExitTree()
+	{
+		cancelCapture?.Invoke();
+		cancelCapture = null;
+	}
+
+	/// <summary>
+	/// Calls <paramref name="captured"/> with the picture in <paramref name="viewport"/> once the
+	/// frame being built now has been drawn, the only moment its texture holds anything (_UiShot's
+	/// header says why); null if there was nothing to read. Returns a cancel: called before that
+	/// frame is drawn, the callback never comes.
+	/// </summary>
+	public static Action CaptureAfterDraw(Viewport viewport, Action<Image> captured)
+	{
+		bool finished = false;
+		void OnDrawn()
+		{
+			RenderingServer.FramePostDraw -= OnDrawn;
+			if (finished)
+				return;
+			finished = true;
+			Image image = IsInstanceValid(viewport) ? viewport.GetTexture()?.GetImage() : null;
+			captured(image != null && !image.IsEmpty() ? image : null);
+		}
+		RenderingServer.FramePostDraw += OnDrawn;
+		return () =>
+		{
+			if (finished)
+				return;
+			finished = true;
+			RenderingServer.FramePostDraw -= OnDrawn;
+		};
+	}
+
+	private void OnCaptured(Image image)
+	{
+		cancelCapture = null;
+		shotPending = false;
+		root.Modulate = Colors.White;
+		if (image == null)
+			GD.Print("ReportBugScreen: no screenshot could be taken; the report goes without one");
+		else
+			StartEncoding(image);
+		RefreshShot();
+	}
+
+	private void StartEncoding(Image source)
+	{
+		shotSource = null;
+		int w = source.GetWidth(), h = source.GetHeight();
+		float scale = Mathf.Min(1f, (float)ShotMaxSide / Mathf.Max(w, h));
+		shotSize = new Vector2I(Mathf.Max(1, Mathf.RoundToInt(w * scale)), Mathf.Max(1, Mathf.RoundToInt(h * scale)));
+		Vector2I size = shotSize;
+		// A copy, so a picture the caller still holds is never touched from another thread.
+		var image = (Image)source.Duplicate();
+		shotEncoding = Task.Run(() => Encode(image, size));
+	}
+
+	// Off the main thread: an Image is plain memory, and nothing else holds this copy.
+	private static EncodedShot Encode(Image image, Vector2I size)
+	{
+		if (image.GetFormat() != Image.Format.Rgb8)
+			image.Convert(Image.Format.Rgb8);
+		if (image.GetWidth() != size.X || image.GetHeight() != size.Y)
+			image.Resize(size.X, size.Y, Image.Interpolation.Lanczos);
+		byte[] jpeg = image.SaveJpgToBuffer(ShotQuality);
+		if (jpeg == null || jpeg.Length == 0)
+			return null;
+		// The preview is decoded from the bytes that are sent rather than shown from the picture
+		// before encoding, so it is exactly what arrives.
+		var decoded = new Image();
+		if (decoded.LoadJpgFromBuffer(jpeg) != Error.Ok)
+			return null;
+		return new EncodedShot { Jpeg = jpeg, Decoded = decoded };
+	}
+
+	// From _Process, once the encoding has finished: the preview gets its picture.
+	private void ApplyEncodedShot()
+	{
+		Task<EncodedShot> task = shotEncoding;
+		shotEncoding = null;
+		shot = task.IsCompletedSuccessfully ? task.Result : null;
+		if (shot == null)
+			GD.Print($"ReportBugScreen: the screenshot could not be encoded ({task.Exception?.GetBaseException().Message ?? "no data"}); the report goes without one");
+		else
+		{
+			shotPreview.Texture = ImageTexture.CreateFromImage(shot.Decoded);
+			GD.Print($"ReportBugScreen: screenshot ready, {shotSize.X}x{shotSize.Y} JPEG, {shot.Jpeg.Length / 1024} KB");
+		}
+		RefreshShot();
+	}
+
+	// A picture is on its way or here. False once taking or encoding it failed: then there is no
+	// choice to offer, and the report goes as it always did.
+	private bool HasShot => shot != null || shotEncoding != null || shotPending;
+
+	// The screenshot that will go, or null: what the toggle, the preview and the "Sent with it"
+	// line all describe.
+	private bool SendsShot => includeShot && HasShot;
+
+	private void RefreshShot()
+	{
+		shotColumn.Visible = HasShot;
+		// Unticked, the preview fades back: still there to tick again, plainly not going.
+		shotFrame.Modulate = includeShot ? Colors.White : new Color(1f, 1f, 1f, 0.3f);
+		sentLabel.Text = string.Join("\n", ContextLines());
+	}
+
+	private void OnShotToggled(bool on)
+	{
+		includeShot = on;
+		RefreshShot();
+	}
+
 	// Without letting the list follow the focus down to it: the screen opens at its top, name
 	// field and all (MenuNavigator.GrabWithoutScrolling, for the same reason).
 	private void FocusDescription()
@@ -137,14 +318,14 @@ public partial class ReportBugScreen : CanvasLayer
 
 	private Control Build()
 	{
-		var root = new Control
+		var screenRoot = new Control
 		{
 			Name = "ReportBugRoot",
 			// STOP: a click that misses the panel must not reach the menu underneath.
 			MouseFilter = Control.MouseFilterEnum.Stop,
 		};
-		root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		AddChild(root);
+		screenRoot.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+		AddChild(screenRoot);
 
 		var dim = new ColorRect
 		{
@@ -152,7 +333,7 @@ public partial class ReportBugScreen : CanvasLayer
 			MouseFilter = Control.MouseFilterEnum.Ignore,
 		};
 		dim.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		root.AddChild(dim);
+		screenRoot.AddChild(dim);
 
 		bool narrow = ResponsiveLayout.IsNarrow(this);
 		panel = new PanelContainer { Name = "ReportBugPanel" };
@@ -179,7 +360,7 @@ public partial class ReportBugScreen : CanvasLayer
 			panel.OffsetBottom = -24f;
 		}
 		BonelightSkin.ApplyPanel(panel);
-		root.AddChild(panel);
+		screenRoot.AddChild(panel);
 
 		var column = new VBoxContainer();
 		column.AddThemeConstantOverride("separation", 10);
@@ -213,7 +394,7 @@ public partial class ReportBugScreen : CanvasLayer
 		sendButton.Pressed += TrySend;
 		buttons.AddChild(sendButton);
 
-		return root;
+		return screenRoot;
 	}
 
 	private Control BuildForm()
@@ -286,7 +467,9 @@ public partial class ReportBugScreen : CanvasLayer
 			TabInputMode = false,
 			VirtualKeyboardEnabled = true,
 			VirtualKeyboardShowOnFocus = true,
-			CustomMinimumSize = new Vector2(0f, ResponsiveLayout.IsNarrow(this) ? 280f : 130f),
+			// 108 on a PC rather than 130 since the screenshot line joined "Sent with it": what keeps
+			// the form from the main menu inside a 720-tall canvas. Longer text scrolls in the field.
+			CustomMinimumSize = new Vector2(0f, ResponsiveLayout.IsNarrow(this) ? 280f : 108f),
 			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
 		};
 		StyleField(description);
@@ -308,10 +491,21 @@ public partial class ReportBugScreen : CanvasLayer
 		sentFace.AddThemeStyleboxOverride("panel", faceStyle);
 		content.AddChild(sentFace);
 
-		var sent = new Label { Name = "ReportBugContext", Text = string.Join("\n", ContextLines()) };
-		ResponsiveLayout.SetBodyText(sent, ResponsiveLayout.TextRole.Label);
-		sent.AddThemeColorOverride("font_color", Ink.InkSoft);
-		sentFace.AddChild(sent);
+		// The lines and, beside them, the picture with its switch: the screenshot is one more thing
+		// sent with the report, so it sits in the same place.
+		var sentRow = new HBoxContainer();
+		sentRow.AddThemeConstantOverride("separation", 12);
+		sentFace.AddChild(sentRow);
+
+		sentLabel = new Label
+		{
+			Name = "ReportBugContext",
+			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+		};
+		ResponsiveLayout.SetBodyText(sentLabel, ResponsiveLayout.TextRole.Label);
+		sentLabel.AddThemeColorOverride("font_color", Ink.InkSoft);
+		sentRow.AddChild(sentLabel);
+		sentRow.AddChild(BuildShotColumn());
 
 		var promise = new Label
 		{
@@ -322,6 +516,70 @@ public partial class ReportBugScreen : CanvasLayer
 		content.AddChild(promise);
 
 		return box;
+	}
+
+	private Control BuildShotColumn()
+	{
+		var column = new VBoxContainer
+		{
+			Name = "ReportBugShot",
+			SizeFlagsVertical = Control.SizeFlags.ShrinkBegin,
+		};
+		column.AddThemeConstantOverride("separation", 2);
+		shotColumn = column;
+
+		// The thumbnail's box: the canvas's own shape, as the picture is the canvas. A PC's 16:9
+		// is a 160x90 strip beside the lines, small enough that the form still fits a 720-tall
+		// canvas; a phone's tall frame gets more height for the narrower width it can spare.
+		Vector2 canvas = GetViewport().GetVisibleRect().Size;
+		float aspect = canvas.Y > 0f ? canvas.X / canvas.Y : 16f / 9f;
+		bool narrow = ResponsiveLayout.IsNarrow(this);
+		Vector2 box = narrow ? new Vector2(150f, 210f) : new Vector2(160f, 96f);
+		Vector2 thumb = aspect >= box.X / box.Y
+			? new Vector2(box.X, Mathf.Round(box.X / aspect))
+			: new Vector2(Mathf.Round(box.Y * aspect), box.Y);
+
+		var frame = new PanelContainer
+		{
+			Name = "ReportBugShotFrame",
+			SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+		};
+		var frameStyle = new StyleBoxFlat { BgColor = Ink.QuietFace, BorderColor = Ink.Edge };
+		frameStyle.SetBorderWidthAll(1);
+		frameStyle.SetContentMarginAll(2);
+		frame.AddThemeStyleboxOverride("panel", frameStyle);
+		column.AddChild(frame);
+		shotFrame = frame;
+
+		shotPreview = new TextureRect
+		{
+			Name = "ReportBugShotPreview",
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+			CustomMinimumSize = thumb,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+		};
+		frame.AddChild(shotPreview);
+
+		// Styled as the pause screen's switches are (Node2DGame's Options tab), so a pad reaches it
+		// like any button and MenuFocusHighlight rings it.
+		shotToggle = new CheckButton
+		{
+			Name = "ReportBugShotToggle",
+			Text = "Include a screenshot",
+			ButtonPressed = includeShot,
+			FocusMode = Control.FocusModeEnum.All,
+			SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
+		};
+		ResponsiveLayout.SetFont(shotToggle, ResponsiveLayout.TextRole.Label);
+		shotToggle.AddThemeColorOverride("font_color", Ink.InkSoft);
+		foreach (string state in new[] { "font_focus_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color" })
+			shotToggle.AddThemeColorOverride(state, Ink.Ink);
+		ResponsiveLayout.EnsureTouchTarget(shotToggle);
+		shotToggle.Toggled += OnShotToggled;
+		column.AddChild(shotToggle);
+		return column;
 	}
 
 	private Control BuildDone()
@@ -412,6 +670,10 @@ public partial class ReportBugScreen : CanvasLayer
 			lines.Add("Sent from the main menu, not during a run");
 		else
 			lines.AddRange(runContext);
+		if (SendsShot)
+			lines.Add(shotSize.X > 0
+				? $"Screenshot: attached ({shotSize.X}x{shotSize.Y}, the picture shown)"
+				: "Screenshot: attached (the picture shown)");
 		return lines;
 	}
 
@@ -442,6 +704,10 @@ public partial class ReportBugScreen : CanvasLayer
 	{
 		if (phase != Phase.Editing)
 			return;
+		// The one frame the screen waits, unseen, for its picture of what is under it. Nobody can
+		// press Send in it; a script could, and would send a report whose lines promise a picture.
+		if (shotPending)
+			return;
 
 		string text = description.Text.Trim();
 		if (text.Length == 0)
@@ -453,6 +719,16 @@ public partial class ReportBugScreen : CanvasLayer
 		}
 
 		lastName = nameField.Text.Trim();
+
+		// The picture is encoded in a fraction of a second after the screen opens, so it is almost
+		// always ready; if Send beats it, the wait is that fraction.
+		if (includeShot && shotEncoding != null)
+		{
+			shotEncoding.Wait();
+			ApplyEncodedShot();
+		}
+		byte[] jpeg = includeShot ? shot?.Jpeg : null;
+
 		var report = new StringBuilder();
 		foreach (string line in ContextLines())
 			report.Append(line).Append('\n');
@@ -472,11 +748,13 @@ public partial class ReportBugScreen : CanvasLayer
 		SfxPlayer.Global(SfxCatalog.UiClick);
 		SetPhase(Phase.Sending);
 		Say("Sending...", Ink.InkSoft);
-		sending = Send(fields);
+		sending = Send(fields, jpeg);
 	}
 
 	public override void _Process(double delta)
 	{
+		if (shotEncoding != null && shotEncoding.IsCompleted)
+			ApplyEncodedShot();
 		if (phase == Phase.Sending && sending != null && sending.IsCompleted)
 			Finished(sending.Result);
 		FitAboveKeyboard();
@@ -523,6 +801,7 @@ public partial class ReportBugScreen : CanvasLayer
 		bool editing = next == Phase.Editing;
 		nameField.Editable = editing;
 		description.Editable = editing;
+		shotToggle.Disabled = !editing;
 		sendButton.Disabled = !editing;
 		sendButton.Text = next == Phase.Sending ? "Sending..." : "Send bug report";
 		backButton.Disabled = next == Phase.Sending;
@@ -577,19 +856,27 @@ public partial class ReportBugScreen : CanvasLayer
 	}
 
 	/// <summary>
-	/// Posts the report as multipart/form-data. Null when the server took it, otherwise what went
-	/// wrong in words that can go straight on screen - the server's own message where it gave one.
+	/// Posts the report as multipart/form-data, with the screenshot as one image/jpeg file part when
+	/// there is one. Null when the server took it, otherwise what went wrong in words that can go
+	/// straight on screen - the server's own message where it gave one.
 	/// </summary>
-	private static async Task<string> Send(IReadOnlyList<KeyValuePair<string, string>> fields)
+	private static async Task<string> Send(IReadOnlyList<KeyValuePair<string, string>> fields, byte[] jpeg)
 	{
 		string url = BaseUrl + Route;
+		double timeout = jpeg != null ? TimeoutWithShotSeconds : TimeoutSeconds;
 		try
 		{
-			using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(TimeoutSeconds) };
+			using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(timeout) };
 			http.DefaultRequestHeaders.UserAgent.ParseAdd($"WizardSurvivors/{UpdateScreen.CurrentVersion}");
 			using var form = new MultipartFormDataContent();
 			foreach (KeyValuePair<string, string> field in fields)
 				form.Add(new StringContent(field.Value ?? string.Empty), field.Key);
+			if (jpeg != null)
+			{
+				var picture = new ByteArrayContent(jpeg);
+				picture.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+				form.Add(picture, ShotField, "screenshot.jpg");
+			}
 
 			using HttpResponseMessage response = await http.PostAsync(url, form);
 			string body = await response.Content.ReadAsStringAsync();
@@ -621,7 +908,7 @@ public partial class ReportBugScreen : CanvasLayer
 		}
 		catch (TaskCanceledException)
 		{
-			GD.Print($"ReportBugScreen: {url} did not answer within {TimeoutSeconds:0} s");
+			GD.Print($"ReportBugScreen: {url} did not answer within {timeout:0} s");
 			return "The server took too long to answer. Your report is still here - try again in a moment.";
 		}
 		catch (Exception e)

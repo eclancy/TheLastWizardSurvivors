@@ -271,6 +271,10 @@ public partial class Node2DGame : Node2D
 	private Control? escapeRoot;
 	private Button? escapeResumeButton;
 	private Button? escapeReportButton;
+	// The run as it looked when the pause opened, without the pause screen over it, for a bug
+	// report's screenshot (ReportBugScreen). Taken on every pause, dropped on resume.
+	private Image? pauseScreenshot;
+	private Action? cancelPauseScreenshot;
 	private ScrollContainer? escapeDetailScroll;
 	private VBoxContainer? escapeDetailSections;
 	private readonly Dictionary<string, Button> escapeTabButtons = new();
@@ -4089,6 +4093,7 @@ public partial class Node2DGame : Node2D
 
 		ShowEscapeRunOverview();
 		escapeMenu.Show();
+		CapturePauseScreenshot();
 
 		// Clear of the phone's rounded corners and camera hole; nothing on desktop (SafeArea).
 		SafeArea.Apply(escapeMenu);
@@ -4105,8 +4110,37 @@ public partial class Node2DGame : Node2D
 
 	private void OnEscapeResumePressed()
 	{
+		DropPauseScreenshot();
 		escapeMenu?.Hide();
 		GetTree().Paused = false;
+	}
+
+	// The pause screen is drawn transparent for the frame it opens on, so that frame - the run,
+	// paused, with nothing over it but the HUD - is what the viewport holds once it is drawn; the
+	// screen is shown the frame after. One frame, a sixtieth of a second, is not a delay anyone sees,
+	// and it is what lets a bug report carry a picture of the fight rather than of the menu.
+	private void CapturePauseScreenshot()
+	{
+		DropPauseScreenshot();
+		if (escapeRoot == null)
+			return;
+		escapeRoot.Modulate = Colors.Transparent;
+		cancelPauseScreenshot = ReportBugScreen.CaptureAfterDraw(GetViewport(), image =>
+		{
+			cancelPauseScreenshot = null;
+			pauseScreenshot = image;
+			if (escapeRoot != null && IsInstanceValid(escapeRoot))
+				escapeRoot.Modulate = Colors.White;
+		});
+	}
+
+	private void DropPauseScreenshot()
+	{
+		cancelPauseScreenshot?.Invoke();
+		cancelPauseScreenshot = null;
+		pauseScreenshot = null;
+		if (escapeRoot != null && IsInstanceValid(escapeRoot))
+			escapeRoot.Modulate = Colors.White;
 	}
 
 	private void OnEscapeReportBugPressed()
@@ -4114,11 +4148,13 @@ public partial class Node2DGame : Node2D
 		// Over the pause screen, which keeps the run paused underneath it. A sibling of the escape
 		// menu rather than its child, so the escape menu's navigator does not count its buttons as
 		// its own. The selection goes back to Report a bug on close, where the player left it.
+		// With the picture taken as the pause opened. Without one (it is taken a frame after the
+		// pause, so only a press inside that frame misses it) the screen photographs the pause screen.
 		ReportBugScreen.Open(this, BuildBugReportContext(), () =>
 		{
 			if (escapeMenu != null && escapeMenu.Visible)
 				escapeReportButton?.GrabFocus();
-		});
+		}, pauseScreenshot);
 	}
 
 	/// <summary>
