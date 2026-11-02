@@ -332,11 +332,13 @@ public static class ChestItemCatalog
 			Name = "The Reliquary",
 			RequiredItemIds = new[] { RelicKey, VialOfVitality, Phylactery },
 			// The heal on a chest went with the healing budget (.ai/difficulty-curve.md, section 5); the shield stays.
-			Description = "Take 12% less damage, and every chest you open raises a 6-point shield.",
+			// 18%, the Barrow Harness's cut, since 2026-11-02 (issue #44): at 12% the sweep found it kept the
+			// survivor alive no longer than holding no set did (.ai/passives-and-items.md 8g).
+			Description = "Take 18% less damage, and every chest you open raises a 6-point shield.",
 			IconPath = SetIconRoot + "vaultguard.png",
 			Effects = new[]
 			{
-				new ChestSetEffect { Label = "Damage taken", Value = "-12%" },
+				new ChestSetEffect { Label = "Damage taken", Value = "-18%" },
 				new ChestSetEffect { Label = "Shield on opening a chest", Value = "6 points" },
 			}
 		},
@@ -370,13 +372,15 @@ public static class ChestItemCatalog
 			ElementTags = new[] { ("Lightning", 1), ("Metal", 1) },
 			Name = "The Lightning Rod",
 			RequiredItemIds = new[] { StormLattice, EtherealBlade, CrackedPrism },
-			Description = "+10% crit chance. Every critical hit arcs to the nearest enemy within 170 for half its damage, and you move 10% faster while shielded.",
+			// The speed is unconditional since 2026-11-02 (issue #44): "while shielded" made it a third of a set
+			// most runs never saw, and the sweep found the set no help to survival (.ai/passives-and-items.md 8g).
+			Description = "+10% crit chance. Every critical hit arcs to the nearest enemy within 170 for half its damage, and you move 10% faster.",
 			IconPath = SetIconRoot + "stormbound.png",
 			Effects = new[]
 			{
 				new ChestSetEffect { Label = "Crit chance", Value = "+10%" },
 				new ChestSetEffect { Label = "Crits arc to a 2nd enemy", Value = "50% damage, 170 range" },
-				new ChestSetEffect { Label = "Move speed while shielded", Value = "+10%" }
+				new ChestSetEffect { Label = "Move speed", Value = "+10%" }
 			}
 		},
 		new ChestSetDefinition

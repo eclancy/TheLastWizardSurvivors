@@ -545,11 +545,11 @@ public partial class Player : CharacterBody2D
 	private bool brazierLit;
 	private float brazierHeat;
 
-	// Stormbound: "crits chain and your shield gives movement speed" - the speed is conditional
-	// on actually holding shield points, and crits arc to a nearby second target.
+	// Stormbound: crits chain to a nearby second target, and the set gives movement speed - since
+	// issue #44 (2026-11-02) whenever the set is complete, not only while holding shield points.
 	[Export] public float StormboundArcRadius { get; set; } = 170f;
 	[Export] public float StormboundArcDamageMultiplier { get; set; } = 0.5f;
-	[Export] public float StormboundShieldedSpeedBonus { get; set; } = 0.10f;
+	[Export] public float StormboundSpeedBonus { get; set; } = 0.10f;
 	// Greater orbs (DropTable.GreaterOrbValue) and the collector's relics. The constants are the
 	// numbers on the cards: ChestItemCatalog builds each description from them, so the card and the
 	// rule cannot disagree (the Reliquary Vial's pattern).
@@ -3405,7 +3405,8 @@ public partial class Player : CharacterBody2D
 				{
 					// Original sets
 					case ChestItemCatalog.VaultguardSetId:
-						chestDamageReductionPercent += 0.12f;
+						// 18% since issue #44 (2026-11-02); 12% did not keep a run alive (ChestItemCatalog says more).
+						chestDamageReductionPercent += 0.18f;
 						// The shield and heal are granted per chest opened (OnChestOpened), not
 						// once here - that is what "opening a chest grants a shield and heal"
 						// means, and the one-off AddShield(4) never matched it.
@@ -3419,9 +3420,9 @@ public partial class Player : CharacterBody2D
 						break;
 					case ChestItemCatalog.StormboundSetId:
 						chestCritBonusChance += 0.1f;
-						// Move speed is applied only while shielded (GetStormboundSpeedMultiplier)
-						// and crits arc to a second target (TryStormboundCritArc), instead of a
-						// permanent Speed multiplier that ignored both halves of the description.
+						// Move speed is read live (GetStormboundSpeedMultiplier) - unconditional since
+						// issue #44, no longer only while shielded - and crits arc to a second target
+						// (TryStormboundCritArc).
 						break;
 					case ChestItemCatalog.BastionOfSpikesSetId:
 						chestDamageReductionPercent += 0.15f;
@@ -3588,14 +3589,9 @@ public partial class Player : CharacterBody2D
 	// with the heat every frame. Read at cast time, so a spell keeps the reach it was cast with.
 	private float GetEffectiveAreaMultiplier() => areaMultiplier * (1f + BrazierAreaBonus);
 
-	// Stormbound's move speed, live-checked against the shield pool so it comes and goes with it.
-	private float GetStormboundSpeedMultiplier()
-	{
-		if (shieldPoints <= 0 || !completedChestSets.Contains(ChestItemCatalog.StormboundSetId))
-			return 1f;
-
-		return 1f + StormboundShieldedSpeedBonus;
-	}
+	// Stormbound's move speed: on whenever the set is complete (issue #44 dropped "while shielded").
+	private float GetStormboundSpeedMultiplier() =>
+		completedChestSets.Contains(ChestItemCatalog.StormboundSetId) ? 1f + StormboundSpeedBonus : 1f;
 
 	// Stormbound's other half: a critical hit arcs to the nearest other enemy for a fraction of
 	// the damage. Gated on allowElementalChain so an arc cannot arc again.

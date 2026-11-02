@@ -520,9 +520,9 @@ with its numbers**:
 
 | set | description |
 |---|---|
-| The Reliquary | Take 12% less damage, and every chest you open heals 6 HP and raises a 6-point shield. |
+| The Reliquary | Take 18% less damage, and every chest you open raises a 6-point shield (12% until issue #44, 2026-11-02; the chest heal went with the healing budget). |
 | The Brazier | Stand still: heat builds over 4 s to +30% spell damage and +15% spell area. Moving cools it over 3 s. (Was a per-cast ramp to +18% / +12% - see "The Brazier burns while you stand still", below.) |
-| The Lightning Rod | +10% crit chance. Every critical hit arcs to the nearest enemy within 170 for half its damage, and you move 10% faster while shielded. |
+| The Lightning Rod | +10% crit chance. Every critical hit arcs to the nearest enemy within 170 for half its damage, and you move 10% faster (only while shielded until issue #44, 2026-11-02). |
 | The Thorned Buckler | Take 15% less damage. While you are below 30% HP, every hit that hurts you strikes all enemies within 120 for 8 damage + 3 per player level. |
 | The Reaper's Scythe | +25% spell damage, and any hit on an enemy below 30% health kills it outright. Not bosses (Eric, 2026-11-01). |
 | The Barrow Harness | +80 max HP, and take 18% less damage. |
@@ -582,8 +582,8 @@ would grow without bound.
    the Chalice Cup's per-kill heals, Light lifesteal, the heal on every chest - and is worth nothing
    to a build that never heals. (Regeneration does not count: it only ticks below max HP.)
 3. **It is what "shielded" means.** The Buckler Boss (Protective Ward, +15% defence while a shield
-   holds) and the Lightning Rod (+10% move speed while shielded) both read the shield pool, and
-   overheal keeps them switched on between Aegis Ward casts.
+   holds) reads the shield pool, and overheal keeps it switched on between Aegis Ward casts. (The
+   Lightning Rod's +10% move speed read it too, until issue #44 made it unconditional.)
 4. **It does not raise the ceiling heals refill to.** A heal still stops at max HP; only the excess
    goes to the shield, and the shield never heals back by itself.
 
@@ -1002,9 +1002,11 @@ chests) is undersold here, and one that pays at once is oversold.
   chests (8d), which this cannot see. **The Reliquary and the Lightning Rod** are the real
   question: neither kept the survivor alive longer than nothing did. The Reliquary's -12% is the
   smallest damage cut of the defensive sets and its chest payout is slow; the Lightning Rod's speed
-  only applies while shielded and its arc needs a crit. Candidates, **not applied** - your numbers
-  to choose: the Reliquary to -18% (the Barrow Harness's) or its chest heal to a share of max HP;
-  the Lightning Rod's speed unconditional.
+  only applies while shielded and its arc needs a crit. Candidates were the Reliquary to -18% (the
+  Barrow Harness's) or its chest heal to a share of max HP, and the Lightning Rod's speed
+  unconditional. **Eric chose, 2026-11-02 (issue #44): the Reliquary to -18%, the Lightning Rod's
+  speed unconditional, and run the chest simulation** - applied; the re-run of this sweep at the
+  difficulty curve's 50 HP, with the Poppet and the Gimmel Ring, and the simulation are queued.
 - **The defensive sets were invisible until this pass** - see the fixes below.
 
 **What it fixed:**
