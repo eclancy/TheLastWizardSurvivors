@@ -1,6 +1,29 @@
 # New items: a batch of relics, sets and boons
 
-**Status: proposal for Eric (2026-11-01). Nothing here is built.**
+**Status: answered by Eric (2026-11-02); the first wave is to build.** His answers are under
+section 0. Where an answer changes a section below, that section is still the proposal as written
+and this list wins.
+
+**Eric's answers, 2026-11-02:**
+
+1. **No: a relic need not belong to a set.** *"Every relic does not need to belong to a set."*
+   `ValidateFullSetObjects` (#63) is relaxed to allow a standalone relic: a set's pieces must still
+   be parts of one object, but a relic may now be no set's piece at all.
+2. **Yes**: build two boons now, Waywiser (a starter) and Bone Rattle (a chapter deed), and the
+   other three later from the sources proposed.
+3. **No nudge.** *"Chests shouldn't lean toward sets you're already working on, but you can use
+   rerolls on chests as well as level ups. You can also ban items."* So instead: **the run's
+   rerolls and bans work on the chest screen too** (the same `RerollsRemaining`/`BansRemaining`
+   pools the level-up screen spends): a reroll re-deals the chest's relics, a ban takes a relic
+   out of the run's chest pool. Two consequences for wave 2, both to put to Eric then: the Gaming
+   Board and the Gaming Box's set bonus lean chests toward started sets, which this answer rules
+   out, so the Gaming Box as written goes; Bone Dice and the Dice Cup can stand alone (answer 1),
+   the Dice Cup re-judged now that a chest can be rerolled anyway.
+4. **Yes**: Binding Thread and Bone Rattle ship at 20% Weaken and once a second; measure HP lost.
+5. **Yes**: the Poppet fits.
+6. **Yes**: the Eagle Ampulla's Sovereign Rite sentence reads "???" until the save has the Rite.
+7. **Yes**: the first wave is the Poppet and the Gimmel Ring with their sets, Waywiser and Bone
+   Rattle, **plus chest rerolls and bans** (answer 3).
 
 Eric: *"a bunch of new items"*. Today there are 34 chest relics in 11 Full Set Enchantments
 (`scripts/ChestItemCatalog.cs`) and 15 boons (`scripts/BoonCatalog.cs`). Two written-down sources
