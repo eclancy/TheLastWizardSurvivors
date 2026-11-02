@@ -471,8 +471,8 @@ wizard's Apotheosis after it, is a row of buttons **above the cards** (`AscendSt
 level-up from the moment it is earned until it is taken. Earned includes a player level: 17 for
 an Ascension (`Player.AscensionMinimumPlayerLevel`), 23 for an Apotheosis
 (`ApotheosisCatalog.MinimumPlayerLevel`) - see `.ai/gameplay-design.md`, "The Apotheosis". The
-ascension browser names the Ascension's level among its requirements; nothing yet names the
-Apotheosis's. A reroll re-deals the cards and leaves it alone (a ban now ends the level-up, section 7). Pressing an ASCEND button
+ascension browser names both levels among the requirements - the Apotheosis's in its own entry at
+the top (section 4). A reroll re-deals the cards and leaves it alone (a ban now ends the level-up, section 7). Pressing an ASCEND button
 opens the level 8 **fork** (section 4e: the spell on top, an arrow down to each path plate, and
 only the plates are pressable); an APOTHEOSIS button opens the ember evolution page as before.
 Choosing a path spends the pick.
@@ -582,10 +582,26 @@ spell**:
   above the name, because beside it "Cataclysm" at the Title size broke mid-word.
 - **Sections by what the player can act on**: *Ready* trees first, then *Not yet* (or *Ascensions
   to earn*), the near misses at the top; spells with no ascension fold into one quiet line.
+- **The wizard's Apotheosis comes before all of them** (2026-11-01, Eric: "make it clearer that
+  apotheosis is an option, showing in 'ascensions'"). Its own section under an ember heading, one
+  tree: the starting spell with pips to 8 and a checklist from `Player.BuildApotheosisPreview` -
+  "Level 4: take Backdraft", "Level 8: take Dragon's Breath", the element chip at x/6, "Your level
+  x/23", and the Hayward's line while unlearned - then the form on the **ember** plate. `Offered` is
+  `TryBuildApotheosisOffer`'s own answer, never a copy of the gate. Sealing (4e) differs in one
+  thing: the form's **name** always shows (the character select names it, "✶ Apotheosis: Cataclysm");
+  its line and picture wait for the first offer (`spell:form`, as `Record` writes it), and its level 8
+  path reads "a sealed Ascension" while the spell's own tree seals it. A path closed by taking the
+  other is a lock, and the plate says "Out of reach this run". No wizard with none (the Test Wizard),
+  no entry. The pause screen's Run tab lists the same form as the spell's last milestone, its mark
+  outlined while it is still ahead (`GameOverScreen.Milestone`, `pending`). Photograph it with
+  `--character=1 --press-late=AscensionsButton --seen-ascensions=none`, adding `--demo-level`,
+  `--demo-spell-level` and `--demo-evolutions=cinderbreath_amplified_impact,...` for the states.
 - **It still only reports.** Nothing on the page is pressable: the node's chips (or a focus-only
   overlay) and one overlay per plate are a pad's stops, wired spell → left path → right path → next
   spell (`WireTreeFocus`, explicit, because from a node centred over two plates Godot's geometric
-  neighbour could land on either). Every container ignores the mouse, so a finger drag reaches the
+  neighbour could land on either), and up from Back to the last tree's first path. In `_UiShot`,
+  start a `--pad` script with `release`: the bot's held steering otherwise swallows every step.
+  Every container ignores the mouse, so a finger drag reaches the
   scroll.
 
 ## 4a. Legibility: faces, the heading, the floor, the inks and the glyphs
