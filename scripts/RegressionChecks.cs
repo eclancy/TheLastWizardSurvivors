@@ -18,6 +18,7 @@ public static class RegressionChecks
 		ValidateSpellEvolutionCoverage(warnings);
 		ValidateApotheosisCatalog(warnings);
 		ValidateComboCatalog(warnings);
+		ValidateCodex(warnings);
 		ValidateChestSetPresentation(warnings);
 		ValidateFullSetObjects(warnings);
 		ValidateTomeRelics(warnings);
@@ -4378,6 +4379,103 @@ public static class RegressionChecks
 	// that Feat, its ContentValidator.SpellResourcePaths entry and an EvolutionStatReaders row. Its own resource
 	// is terminal (one level, no level-ups, no milestones), and the names the recipe writes out for the Feat
 	// are the resources' own.
+	// THE EVOLUTION CODEX (.ai/evolution-codex.md section 8). Built from the catalogs and never hardcoded, so
+	// what can go wrong is a catalog outgrowing it: every spell, relic, boon, combination and set must be in it
+	// once; every tree must fit the detail panel by construction (section 6: no zoom and pan, so a spell that
+	// outgrows the bound fails here rather than clipping); every name the search can find must lead to an entry
+	// and a node in it; and on a fresh save nothing sealed may be findable (a search must not name a secret).
+	private static void ValidateCodex(List<string> warnings)
+	{
+		CodexModel fresh = CodexModel.Build(CodexContext.ForSave(new SaveData()));
+		var expected = new List<(string Id, CodexKind Kind)>();
+		foreach (SpellData spell in ContentValidator.LoadAllSpells())
+			expected.Add((spell.Id, ComboCatalog.IsCombination(spell.Id) ? CodexKind.Combination : CodexKind.Spell));
+		foreach (string id in ChestItemCatalog.AllItemIds)
+			expected.Add((id, CodexKind.Relic));
+		foreach (BoonDefinition boon in BoonCatalog.All)
+			expected.Add((boon.Id, CodexKind.Boon));
+		foreach (ChestSetDefinition set in ChestItemCatalog.Sets)
+			expected.Add((set.Id, CodexKind.FullSet));
+		foreach ((string id, CodexKind kind) in expected)
+		{
+			if (!fresh.Entries.Any(e => e.Kind == kind && e.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
+				warnings.Add($"Codex: {kind} '{id}' is missing from the Evolution Codex (CodexModel.Build).");
+		}
+		foreach (IGrouping<string, CodexEntry> twice in fresh.Entries.GroupBy(e => e.Id, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1))
+			warnings.Add($"Codex: the id '{twice.Key}' names {twice.Count()} entries ({string.Join(", ", twice.Select(e => e.Kind))}); the Codex selects by id, so only the first can be opened.");
+
+		foreach (CodexSearchHit hit in fresh.SearchIndex)
+		{
+			CodexEntry entry = fresh.Get(hit.EntryId);
+			if (entry == null || !entry.Discovered)
+				warnings.Add($"Codex: on a fresh save the search finds '{hit.Name}', which is not discovered - a search must not name a secret.");
+			else if (FindCodexNode(entry, hit.NodeId) is CodexNode node && !node.Revealed && !node.NameAlwaysShown)
+				warnings.Add($"Codex: on a fresh save the search finds '{hit.Name}' in {entry.Id}, a sealed node.");
+		}
+
+		// Everything owned, seen and made: every tree at its fullest, every name findable.
+		var all = new SaveData();
+		foreach (string id in UnlockCatalog.AllSpellIds)
+			GlobalStatsManager.UnlockSpell(all, id);
+		foreach (string id in UnlockCatalog.AllCharacterIds)
+			GlobalStatsManager.UnlockCharacter(all, id);
+		foreach (string id in UnlockCatalog.AllBoonIds)
+			GlobalStatsManager.UnlockBoon(all, id);
+		foreach (string id in ChestItemCatalog.AllItemIds)
+			all.MarkItemSeen(id);
+		foreach (ComboDefinition recipe in ComboCatalog.All)
+			all.UnlockedAchievementIds.Add(ComboCatalog.FeatId(recipe.Id));
+		foreach ((SpellData template, List<SpellData> forms) in CodexSpellForms.All())
+			foreach (SpellData form in forms)
+				foreach (SpellEvolutionOption evo in form.Level8Options ?? new Godot.Collections.Array<SpellEvolutionOption>())
+					if (evo != null)
+						all.MarkAscensionSeen(template.Id, evo.Id);
+		foreach (ApotheosisDefinition apotheosis in ApotheosisCatalog.All)
+			all.MarkAscensionSeen(apotheosis.SpellId, apotheosis.Form.Id);
+		CodexModel full = CodexModel.Build(CodexContext.ForSave(all));
+
+		foreach (CodexEntry entry in full.Entries)
+		{
+			string label = $"Codex: {entry.Kind} '{entry.Id}'";
+			if (!entry.Discovered && entry.Kind is CodexKind.Spell or CodexKind.Relic or CodexKind.Boon or CodexKind.Combination)
+				warnings.Add($"{label} is still undiscovered on a save that owns and has seen everything.");
+			foreach (CodexForm form in entry.Forms)
+			{
+				if (form.Mutations.Count > CodexModel.MaxMutations || form.Ascensions.Count > CodexModel.MaxAscensions || form.Finals.Count > CodexModel.MaxFinals)
+					warnings.Add($"{label} ({form.Name}): its tree is {form.Mutations.Count}/{form.Ascensions.Count}/{form.Finals.Count} nodes (level 4/level 8/final), over the detail's bound of {CodexModel.MaxMutations}/{CodexModel.MaxAscensions}/{CodexModel.MaxFinals}. The Codex has no zoom and pan (section 6): widen the bound and photograph both canvases, or trim the tree.");
+				if (form.AllNodes.Any(n => n.Revealed && string.IsNullOrWhiteSpace(n.Line)))
+					warnings.Add($"{label} ({form.Name}): a revealed node has no line for the reading box.");
+			}
+			if (entry.UsedIn.Count > CodexModel.MaxUsedIn)
+				warnings.Add($"{label} is used in {entry.UsedIn.Count} recipes; its Used in row holds {CodexModel.MaxUsedIn}.");
+			if (entry.Recipe != null && entry.Recipe.Ingredients.Count > CodexModel.MaxIngredients)
+				warnings.Add($"{label} has {entry.Recipe.Ingredients.Count} ingredients; a recipe card holds {CodexModel.MaxIngredients}.");
+		}
+
+		foreach (CodexSearchHit hit in full.SearchIndex)
+		{
+			CodexEntry entry = full.Get(hit.EntryId);
+			if (entry == null)
+				warnings.Add($"Codex: the search name '{hit.Name}' leads to no entry ('{hit.EntryId}').");
+			else if (!string.IsNullOrEmpty(hit.NodeId) && FindCodexNode(entry, hit.NodeId) == null)
+				warnings.Add($"Codex: the search name '{hit.Name}' leads to {entry.Id}, which has no node '{hit.NodeId}'.");
+		}
+		// Every spell's every Ascension is findable once seen: the index is what the keyboard's suggestions read.
+		foreach (CodexEntry spell in full.Entries.Where(e => e.Kind == CodexKind.Spell))
+			foreach (CodexNode node in spell.Forms.SelectMany(f => f.Ascensions))
+				if (!full.SearchIndex.Any(h => h.EntryId == spell.Id && h.NodeId == node.Id))
+					warnings.Add($"Codex: {spell.Id}'s Ascension '{node.Name}' is seen but the search cannot find it.");
+	}
+
+	private static CodexNode FindCodexNode(CodexEntry entry, string nodeId)
+	{
+		if (entry == null || string.IsNullOrEmpty(nodeId))
+			return null;
+		return entry.Forms.SelectMany(f => f.AllNodes)
+			.Concat(entry.Recipe?.Ingredients ?? new List<CodexNode>())
+			.FirstOrDefault(n => n.Id.Equals(nodeId, StringComparison.OrdinalIgnoreCase));
+	}
+
 	private static void ValidateComboCatalog(List<string> warnings)
 	{
 		var spells = ContentValidator.LoadAllSpells();

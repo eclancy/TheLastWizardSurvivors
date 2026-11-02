@@ -241,7 +241,13 @@ public partial class EvolutionCodex
 	{
 		if (entry.Forms.Count == 0)
 			return;
-		int shown = formShown >= 0 && formShown < entry.Forms.Count ? formShown : Mathf.Clamp(entry.CurrentForm, 0, entry.Forms.Count - 1);
+		// The form a tab chose; else the one a search hit lit a node in (a search for Purr opens the cat); else
+		// the held one, or the first.
+		int lit = string.IsNullOrEmpty(litNodeId) ? -1
+			: entry.Forms.FindIndex(f => f.AllNodes.Any(n => n.Id.Equals(litNodeId, StringComparison.OrdinalIgnoreCase)));
+		int shown = formShown >= 0 && formShown < entry.Forms.Count ? formShown
+			: lit >= 0 ? lit
+			: Mathf.Clamp(entry.CurrentForm, 0, entry.Forms.Count - 1);
 		if (entry.Forms.Count > 1)
 			detail.AddChild(BuildFormTabs(entry, shown));
 		CodexForm form = entry.Forms[shown];

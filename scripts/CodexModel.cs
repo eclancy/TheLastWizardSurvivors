@@ -254,7 +254,10 @@ public sealed class CodexModel
 	/// column on both canvases. RegressionChecks.ValidateCodex fails a spell that outgrows it rather than
 	/// letting it clip.
 	/// </summary>
-	public const int MaxMutations = 3;
+	// Four level 4 paths, not the design's three: the Familiar's cat has four. A column of four fits the
+	// phone's sheet; on a 1280x720 PC, under the form tabs, it pushes the reading box about 50 units below the
+	// fold and the detail scrolls (_UiShot --open-codex=familiar_cat_purr) - to settle with the chosen layout.
+	public const int MaxMutations = 4;
 	public const int MaxAscensions = 3;
 	public const int MaxFinals = 2;
 	public const int MaxUsedIn = 3;
