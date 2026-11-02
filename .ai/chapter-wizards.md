@@ -3,7 +3,7 @@
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
-**Status: approved by Eric, 2026-11-01** (section 0's decisions below); nothing is built yet. It covers the ten
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1 and the pilot, Abe no Seimei** (section 4.5, "Built"); the other nine are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Sketchbook, the Last Bridge and the
 Court. Tituba (Cursed Dungeon), Väinämöinen (Frozen Waste), Laelaps (Broken Circle) and Merlin (the
@@ -233,6 +233,52 @@ numbers, the clue, and an alternate where one is worth having.
   burning at the edges as it falls."* / *"Still the paper comes, from the same quarter."*
 - **Alternate: Nicolas Flamel**, the Paris scrivener of the Philosopher's Stone; a book-man for the
   Archivist's school. Or Seimei moves to the Court (he served one) and Flamel takes the Ruins.
+
+**Built (2026-11-01, `wip/wizard-seimei`).** The pilot, with P1. P2 was not needed: the Ruins had no side
+event, so `SideEventDirector.ForStage("stage_4")` simply gained its line.
+
+- **P1.** `ValidateStartingCharacters` holds the one-element and one-owner-per-element rules to the
+  STARTERS only; a freed wizard may open on a hybrid (never past two elements) and share an element; no
+  two characters may share an opening spell in one form. G2 is `UnlockDefinition.CountedAtFinalGateOnly`
+  (`FromEvent(..., finalGateOnly: true)`): `GlobalStatsManager.CountsTowardGate` counts such a wizard at
+  `StageCatalog.FinalGateChapter` (the Throne) and nowhere else, so the Emberdeep's list did not grow;
+  `ValidateGateReachability` checks the flag is only on a freed character with a rescue chapter and that
+  no earlier gate counts him. The ADR and `gameplay-design.md` say "never leads away".
+- **Him.** `CharacterData_Seimei.tres`, roster index 9 (appended). `roster.seimei()`: the pale kariginu
+  over black sashinuki, the tall black eboshi, his star on his breast, a purification wand with zigzag
+  paper taller than he is, and a paper ward held up in two fingers whose tip is the kindled light - the
+  one emissive thing on him, in the light ramp (new `LIGHT_RAMP`). Passive **Exorcist**
+  (`elite_damage_15`): +15% to everything `IsMiniBoss` marks, bosses included (it is not an execute).
+- **The event** (`FivePointedSealEvent`, `tools/art/five_pointed_seal.py`). The courtyard - a star and
+  ring cut in flagstones, full of the arcane ramp's violet - with him kneeling in it a ramp step into
+  shadow; four low square stones at its quarters, each with one arrow on its top; a plate outside each.
+  A step ONTO a plate turns its stone a quarter clockwise; standing does nothing more until he steps off
+  (52 px). The seed starts each stone one to three quarters short, so four to twelve steps; nothing
+  fails. A ring of four of the chapter's enemies every 6 s while he is in the courtyard. The courtyard is
+  the event's sibling and stays, broken and lit, after the win. It needs 290 px of open ground, which on
+  the Ruins' lattice is only a court: `ExplorePlacer.EventSiteInBand` sweeps the whole band for one.
+- **His unlock** is the site's derived Road deed, "The Seal Broken", secret until `stage_4`; the locked
+  hint is "Sealed inside a star cut in the floor of the Mystic Ruins." (not "courtyard":
+  `ValidateStageRewards` read "Court" in it as the Court's). Quest-log prisoner "the master of wards";
+  his held line, the chapter note's clue: "Someone here was sealed in by his own wards."
+- **His clue.** `HintCue.Paper` (a sixth row of `hint-cues.png`): violet strips of written paper
+  tumbling in from his side, charring at both ends in their second half. `hint_paper_wind`: five gusts,
+  a strip snapping in each, crackle under the last three, one thin whistle of wind through the courtyard
+  (without the whistle it was 0.074 from `cast_wind`; with it, 0.125 from `ui_open`, whole set). The
+  section 4.5 lines, unchanged.
+- **His form**, The Five-Pointed Seal (banish): Flare then Pyre, then `KindledWard.FivePointedSealId`. A
+  strike that leaves an ordinary body below a quarter seals it (`Enemy.SetTargetable(false, hideBody:
+  false)` and `SetHeld`), under a small seal of the ward's light; when the ward goes out every sealed body
+  is let go and finished by the ward on one beat. Elites take one 4-strike blow instead; bosses nothing;
+  24 a ward at most.
+
+**Verified:** build; the validator (0 errors, main's 4 warnings); `_ExploreProbe --stage=4` on four seeds
+(won in 7 to 11 steps, him freed in memory); `_BalanceHarness --character=9 --all-unlocked
+--seek-apotheosis --immortal` (form offered and taken at 9.9 minutes, player level 23); `_UiShot` of the
+prison, the broken seal, the three card states, the hint and the form, at both canvases. **Not
+verified:** whether the stones are fun or the courtyard reads at a glance mid-fight; the sound, which was
+measured and not heard; and the form's numbers - the bot took it at 9.9 minutes, under the 15-minute floor
+`ApotheosisCatalog.MinimumPlayerLevel` was tuned for.
 
 ### 4.6 Scorched Sands - Imhotep
 
