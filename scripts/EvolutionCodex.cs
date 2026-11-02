@@ -239,7 +239,8 @@ public partial class EvolutionCodex : CanvasLayer
 	// The grid's width on a PC: six cells and their gaps, the scroll gutter, a little air.
 	private float GridWidth() => 6f * CellWidth + 5f * CellGap + 24f;
 
-	private float CellWidth => narrow ? 118f : 80f;
+	// A phone: five across inside the 720 canvas less the safe area, the panel margins and the gutter.
+	private float CellWidth => narrow ? 108f : 80f;
 	private float FrameSide => narrow ? 88f : 76f;
 	private const float CellGap = 6f;
 
@@ -370,7 +371,8 @@ public partial class EvolutionCodex : CanvasLayer
 				FocusMode = Control.FocusModeEnum.All,
 				SizeFlagsHorizontal = narrow ? Control.SizeFlags.ExpandFill : Control.SizeFlags.ShrinkBegin,
 			};
-			ResponsiveLayout.SetFont(tab, ResponsiveLayout.TextRole.Title);
+			// Cinzel on a PC; on a phone four Cinzel tabs are wider than the panel, and the sans fits.
+			ResponsiveLayout.SetFont(tab, narrow ? ResponsiveLayout.TextRole.Body : ResponsiveLayout.TextRole.Title);
 			CodexRows.StyleTab(tab, CodexRows.Stone);
 			ResponsiveLayout.EnsureTouchTarget(tab, narrow ? 0f : 96f);
 			CodexFilter chosen = f;
@@ -1050,7 +1052,6 @@ public partial class EvolutionCodex : CanvasLayer
 			sheetTitle.Text = model.Get(selectedId)?.ShownName ?? string.Empty;
 		if (IsInstanceValid(detailScroll))
 			detailScroll.ScrollVertical = 0;
-		SafeArea.ApplyTo(sheet);
 		Control first = FirstTreeStop() ?? sheet.FindChild("CodexSheetBack", true, false) as Control;
 		first?.GrabFocus();
 		SfxPlayer.Global(SfxCatalog.UiOpen);

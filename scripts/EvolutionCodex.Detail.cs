@@ -87,9 +87,13 @@ public partial class EvolutionCodex
 		info.AddThemeConstantOverride("separation", 4);
 		head.AddChild(info);
 
-		Label name = CodexRows.MakeText(entry.ShownName, ResponsiveLayout.TextRole.Title, CodexRows.Stone.Ink);
-		name.Name = "CodexDetailName";
-		info.AddChild(name);
+		// On a phone the sheet's band already names it ("< Codex   Cinderbreath").
+		if (!narrow)
+		{
+			Label name = CodexRows.MakeText(entry.ShownName, ResponsiveLayout.TextRole.Title, CodexRows.Stone.Ink);
+			name.Name = "CodexDetailName";
+			info.AddChild(name);
+		}
 
 		var meta = new HFlowContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		meta.AddThemeConstantOverride("h_separation", 10);
@@ -495,7 +499,8 @@ public partial class EvolutionCodex
 		content.AddThemeConstantOverride("separation", 4);
 		pad.AddChild(content);
 
-		bool taken = node.State == CodexNodeState.Taken;
+		// The base is held, not taken: it keeps the stone face, so it keeps the stone's ink.
+		bool taken = node.State == CodexNodeState.Taken && baseOf == null;
 		Color ink = taken ? CodexInk.MarkInk : node.State is CodexNodeState.Sealed or CodexNodeState.Closed ? CodexRows.Stone.InkSoft : CodexRows.Stone.Ink;
 		var title = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		title.AddThemeConstantOverride("separation", 6);
