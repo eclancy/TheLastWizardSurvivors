@@ -102,6 +102,10 @@ public partial class LoadoutHud : BoxContainer
 		// closed seal across a silenced one. Drawn, one Control a slot, redrawn only when the slot is filled.
 		public Control Mark = null!;
 		public SlotMark MarkKind;
+		// The dark wizard's seal (Player.Seal.cs) wears the same mark, and while it runs on a clock a line of
+		// wax under the band drains with it: 1 full, 0 gone, -1 for no drain (the Rite's, or held until the orb).
+		public float SealDrain = -1f;
+		public bool WasSealed;
 	}
 
 	private enum SlotMark { None, Sovereign, Silenced }
@@ -180,7 +184,12 @@ public partial class LoadoutHud : BoxContainer
 			chips[element] = BuildChip(element);
 
 		if (Holder != null)
+		{
 			Holder.Connect(Player.SignalName.LoadoutChanged, new Callable(this, nameof(OnLoadoutChanged)));
+			Holder.Connect(Player.SignalName.SealsChanged, new Callable(this, nameof(OnLoadoutChanged)));
+		}
+		// Only while a seal drains (Rebuild turns it on), and then four times a second.
+		SetProcess(false);
 		Rebuild();
 	}
 
@@ -191,6 +200,35 @@ public partial class LoadoutHud : BoxContainer
 		var callable = new Callable(this, nameof(OnLoadoutChanged));
 		if (Holder != null && IsInstanceValid(Holder) && Holder.IsConnected(Player.SignalName.LoadoutChanged, callable))
 			Holder.Disconnect(Player.SignalName.LoadoutChanged, callable);
+		if (Holder != null && IsInstanceValid(Holder) && Holder.IsConnected(Player.SignalName.SealsChanged, callable))
+			Holder.Disconnect(Player.SignalName.SealsChanged, callable);
+	}
+
+	// THE SEAL'S DRAIN. While a seal the orb did not bring back runs out its twenty seconds, the wax line
+	// under its band shortens with it; redrawn a few times a second, and only then, so the strip still
+	// costs nothing per frame in every other moment of every run.
+	private float drainClock;
+	private const float DrainRedrawSeconds = 0.25f;
+
+	public override void _Process(double delta)
+	{
+		drainClock -= (float)delta;
+		if (drainClock > 0f)
+			return;
+		drainClock = DrainRedrawSeconds;
+		if (Holder == null || !IsInstanceValid(Holder) || !Holder.AnyTimedSeal)
+		{
+			SetProcess(false);
+			return;
+		}
+		for (int i = 0; i < MaxSlots; i++)
+		{
+			SlotView view = slots[i];
+			if (view.SealDrain < 0f)
+				continue;
+			view.SealDrain = Holder.SealRemainingFraction(i);
+			view.Mark.QueueRedraw();
+		}
 	}
 
 	// Anchors and offsets as built; SafeArea.Apply on the UIOverlay (Node2DGame) moves them in from
@@ -297,7 +335,7 @@ public partial class LoadoutHud : BoxContainer
 			MouseFilter = MouseFilterEnum.Ignore,
 		};
 		mark.SetAnchorsPreset(LayoutPreset.FullRect);
-		mark.Draw += () => DrawMark(mark, view.MarkKind);
+		mark.Draw += () => DrawMark(mark, view.MarkKind, view.SealDrain);
 		frame.AddChild(mark);
 		// Under the numeral, so the level (or the fuel) still reads over the seal.
 		frame.MoveChild(mark, level.GetIndex());
@@ -309,7 +347,7 @@ public partial class LoadoutHud : BoxContainer
 	// the light hot. The seal: a dark band across the icon's middle and a small round of wax on it, pressed
 	// with a bar - closed, and small enough that the greyed icon still says which spell it was.
 	// In whole canvas units, two to an art pixel, so it reads as part of the 32-unit icon's grid.
-	private static void DrawMark(Control mark, SlotMark kind)
+	private static void DrawMark(Control mark, SlotMark kind, float drain)
 	{
 		Vector2 size = mark.Size;
 		if (kind == SlotMark.Sovereign)
@@ -332,6 +370,13 @@ public partial class LoadoutHud : BoxContainer
 			mark.DrawRect(new Rect2(c.X - 5f, c.Y - 3f, 10f, 6f), SealWax);
 			mark.DrawRect(new Rect2(c.X - 3f, c.Y - 3f, 2f, 2f), SealWaxLit);
 			mark.DrawRect(new Rect2(c.X - 2f, c.Y, 4f, 1f), SealBand);
+			// The dark wizard's timed seal: a line of wax under the band, as long as the seal has left.
+			if (drain >= 0f)
+			{
+				float width = Mathf.Round((size.X - 4f) * Mathf.Clamp(drain, 0f, 1f));
+				if (width >= 1f)
+					mark.DrawRect(new Rect2(2f, c.Y + 3f, width, 2f), SealWaxLit);
+			}
 		}
 	}
 
@@ -426,13 +471,30 @@ public partial class LoadoutHud : BoxContainer
 		{
 			SpellData? spell = i < spells.Count ? spells[i] : null;
 			FillSlot(slots[i], spell, visible: spell != null || i < open);
+			// The dark wizard's seal is the Rite's seal (.ai/endgame-castle.md 6.4): one mark for "this spell is
+			// not firing", whoever closed it.
+			bool sealedByHim = spell != null && Holder.IsSlotSealed(i);
 			SlotMark kind = spell == null ? SlotMark.None
 				: ReferenceEquals(spell, sovereign) ? SlotMark.Sovereign
-				: Holder.IsSilenced(spell) ? SlotMark.Silenced
+				: Holder.IsSilenced(spell) || sealedByHim ? SlotMark.Silenced
 				: SlotMark.None;
+			float drain = sealedByHim && Holder.IsSlotSealTimed(i) ? Holder.SealRemainingFraction(i) : -1f;
+			bool drainChanged = !Mathf.IsEqualApprox(slots[i].SealDrain, drain);
+			slots[i].SealDrain = drain;
 			MarkSlot(slots[i], kind, Holder.SovereignFuel);
+			if (drainChanged)
+				slots[i].Mark.QueueRedraw();
+			// The moment his hand closes on it: the slot flares his wax red and settles under the seal.
+			if (sealedByHim && !slots[i].WasSealed)
+				FlareSealed(slots[i]);
+			slots[i].WasSealed = sealedByHim;
 			if (kind == SlotMark.Sovereign)
 				anointedSlot = i;
+		}
+		if (Holder.AnyTimedSeal)
+		{
+			drainClock = DrainRedrawSeconds;
+			SetProcess(true);
 		}
 		if (sovereign != null && anointedSlot >= 0 && !sovereignArrived)
 		{
@@ -554,6 +616,15 @@ public partial class LoadoutHud : BoxContainer
 		flare.TweenInterval(delay + 0.43f);
 		flare.TweenProperty(target.Frame, "modulate", new Color(1.8f, 1.6f, 1.1f, 1f), 0.08f);
 		flare.TweenProperty(target.Frame, "modulate", Colors.White, 0.35f);
+	}
+
+	// A short flare of the seal's wax over the slot and back: what the player sees on the strip the frame
+	// the dark wizard's hand takes the spell, whatever else is on screen.
+	private static void FlareSealed(SlotView view)
+	{
+		Tween flare = view.Frame.CreateTween();
+		flare.TweenProperty(view.Frame, "modulate", new Color(1.9f, 0.7f, 0.7f, 1f), 0.06f);
+		flare.TweenProperty(view.Frame, "modulate", Colors.White, 0.45f);
 	}
 
 	private static Color MilestoneRim(SpellData spell)

@@ -207,6 +207,13 @@ public partial class BossEnemy : Enemy
 	protected virtual bool WantsToAttack(Node2D target, float distanceToPlayer) =>
 		distanceToPlayer <= SlamRadius * SlamEngageRadiusMultiplier;
 
+	/// <summary>
+	/// How much harder a hit from <paramref name="source"/> (null for a hit no spell names) lands on this
+	/// boss, read by Player.DealDamageToEnemy before the chest bonuses. 1 for every boss but the dark
+	/// wizard, who takes Darkness a quarter harder once his own light is out (.ai/endgame-castle.md 6.4).
+	/// </summary>
+	public virtual float IncomingSpellMultiplier(SpellData source) => 1f;
+
 	/// <summary>Called on the frame the wind-up begins. Aim here, not during it.</summary>
 	protected virtual void OnAttackStarted(Node2D target)
 	{
