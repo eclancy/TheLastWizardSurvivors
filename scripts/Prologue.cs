@@ -30,11 +30,19 @@ using WizardSurvivors.scripts;
 /// on a clock from an atlas, <c>&lt;name&gt;-anim.png</c>, by the timeline in <c>&lt;name&gt;-anim.json</c>
 /// (<see cref="AnimSpec"/>) - the title's frame-swap, never a tint. Any panel the generator gives the
 /// pair to animates the same way.</para>
+///
+/// <para><b>Reels.</b> The same player plays the lessons (.ai/slow-start.md, "The lessons"): the short
+/// cutscene that teaches a system after the run that found its teacher (Teachings), drawn by
+/// tools/art/lessons.py on this frame and played over the paused run, before the results
+/// (<see cref="CreateEmbedded"/>), and again from Options. Each is a <see cref="Reel"/> in <see cref="Reels"/>;
+/// the prologue is the reel named <see cref="PrologueReelId"/>, and only it is ever marked seen here.</para>
 /// </remarks>
 public partial class Prologue : Control
 {
 	public const string ScenePath = "res://scenes/Prologue.tscn";
-	private const string ArtFolder = "res://assets/bonelight/ui/prologue/";
+	private const string PrologueFolder = "res://assets/bonelight/ui/prologue/";
+	private const string LessonFolder = "res://assets/bonelight/ui/lessons/";
+	public const string PrologueReelId = "prologue";
 	private const string CharacterSelectionPath = "res://scenes/CharacterSelection.tscn";
 	private const string TitleScreenPath = "res://scenes/TitleScreen.tscn";
 	private const string WorldMapPath = "res://scenes/WorldMap.tscn";
@@ -58,17 +66,38 @@ public partial class Prologue : Control
 		Map,
 	}
 
-	// Static because the prologue is a scene of its own: whoever opens it says where it goes next.
+	// Static because the prologue is a scene of its own: whoever opens it says where it goes next, and which
+	// reel it plays (the prologue unless a lesson is asked for).
 	private static After next = After.Story;
+	private static string nextReel = PrologueReelId;
 
-	/// <summary>Opens the prologue, which then continues to <paramref name="then"/>.</summary>
-	public static void Play(Node from, After then)
+	/// <summary>Opens the prologue, or the reel <paramref name="reelId"/>, which then continues to <paramref name="then"/>.</summary>
+	public static void Play(Node from, After then, string reelId = PrologueReelId)
 	{
 		if (from == null || !IsInstanceValid(from))
 			return;
 		next = then;
+		nextReel = Reels.ContainsKey(reelId ?? string.Empty) ? reelId : PrologueReelId;
 		from.GetTree().ChangeSceneToFile(ScenePath);
 	}
+
+	/// <summary>
+	/// A reel played inside whatever asks for it rather than as a scene: a lesson over the paused run, before
+	/// the results (Node2DGame.Lessons.cs). <paramref name="finished"/> runs when it ends, played through or
+	/// skipped; nothing is marked seen and no scene changes. The caller adds it to a CanvasLayer that keeps
+	/// processing while the tree is paused.
+	/// </summary>
+	public static Prologue CreateEmbedded(string reelId, Action finished)
+	{
+		var player = new Prologue { Name = "Lesson_" + reelId, embeddedFinished = finished ?? (() => { }) };
+		player.reel = Reels.TryGetValue(reelId ?? string.Empty, out Reel found) ? found : Reels[PrologueReelId];
+		player.SetAnchorsPreset(LayoutPreset.FullRect);
+		return player;
+	}
+
+	/// <summary>For a tool (_UiShot --reel=): the reel the next scene-mode prologue plays.</summary>
+	public static void SetNextReel(string reelId) =>
+		nextReel = Reels.ContainsKey(reelId ?? string.Empty) ? reelId : PrologueReelId;
 
 	/// <summary>True when Start Run should show the prologue first: it has never been seen.</summary>
 	public static bool IsUnseen(SaveManager saveManager) =>
@@ -80,9 +109,12 @@ public partial class Prologue : Control
 	/// the layers separate; a figure that moves (he rises, they march, the player walks) is its layer
 	/// moving against the others.
 	/// </summary>
-	private readonly record struct Beat(string Name, float Seconds, string Caption, Vector2 Back, Vector2 Mid, Vector2 Fore);
+	public readonly record struct Beat(string Name, float Seconds, string Caption, Vector2 Back, Vector2 Mid, Vector2 Fore);
 
-	private static readonly Beat[] Beats =
+	/// <summary>A run of panels from one art folder: the prologue, or one lesson.</summary>
+	public sealed record Reel(string Id, string Folder, Beat[] Beats);
+
+	private static readonly Beat[] PrologueBeats =
 	{
 		// The circle where the wizards met, every one of their lights still in the world.
 		new("moot", 4.6f, null, new Vector2(-4f, 0f), new Vector2(-10f, 0f), new Vector2(-26f, 0f)),
@@ -98,6 +130,59 @@ public partial class Prologue : Control
 		// The road to all of it.
 		new("road", 4.8f, null, new Vector2(0f, 2f), new Vector2(8f, -10f), new Vector2(0f, 16f)),
 	};
+
+	// THE LESSONS (.ai/slow-start.md, "The lessons"; tools/art/lessons.py). Each explains one system in two
+	// panels and two lines, held longer than the prologue's because the line is the lesson. A line says what
+	// the system does; the picture says what it feels like. Ids are Teachings' lesson ids.
+	private static readonly Beat[] AscensionBeats =
+	{
+		// What he missed, giving up its light to the one he missed: the find that taught it.
+		new("ascension-gift", 5.0f, "What he missed remembers what the wizards knew.", new Vector2(-3f, 0f), new Vector2(-8f, -6f), new Vector2(-18f, 0f)),
+		// A spell's light climbing seven marks and branching at the eighth.
+		new("ascension-rise", 6.0f, "A spell at level 7 may ascend: choose one of its paths.", new Vector2(0f, 3f), new Vector2(0f, -12f), new Vector2(0f, 12f)),
+	};
+
+	private static readonly Beat[] ApotheosisBeats =
+	{
+		// The circle where the wizards met, and his own spell burning in its middle.
+		new("apotheosis-circle", 5.0f, "Your wizard's own spell has a final form.", new Vector2(-3f, 0f), new Vector2(-10f, 0f), new Vector2(-22f, 0f)),
+		// The spell at its last level, ascended, becoming it.
+		new("apotheosis-form", 6.0f, "Ascend it and raise it to its last level, and it becomes that form.", new Vector2(0f, 4f), new Vector2(0f, -14f), new Vector2(0f, 10f)),
+	};
+
+	private static readonly Beat[] ConjunctionBeats =
+	{
+		// Two lights, each on its own stone, leaning toward each other.
+		new("conjunctions-two", 5.0f, "Two ascended spells may become one.", new Vector2(2f, 0f), new Vector2(10f, -2f), new Vector2(-18f, 0f)),
+		// The two made one.
+		new("conjunctions-one", 6.0f, "Paths marked with linked rings have a partner.", new Vector2(0f, 3f), new Vector2(0f, -10f), new Vector2(0f, 12f)),
+	};
+
+	private static readonly Beat[] RiteBeats =
+	{
+		// One spell crowned, the others' light pouring into it.
+		new("rite-crown", 5.0f, "One spell may take the strength of all the rest.", new Vector2(0f, 3f), new Vector2(0f, -12f), new Vector2(0f, 12f)),
+		// The rest sealed for the run.
+		new("rite-seal", 5.6f, "The others fall silent for the run, and their levels feed it.", new Vector2(-3f, 0f), new Vector2(-8f, 0f), new Vector2(-18f, 0f)),
+	};
+
+	/// <summary>Every reel, by id: the prologue and the four lessons (Teachings.All's ids).</summary>
+	public static readonly System.Collections.Generic.IReadOnlyDictionary<string, Reel> Reels =
+		new System.Collections.Generic.Dictionary<string, Reel>(StringComparer.OrdinalIgnoreCase)
+		{
+			[PrologueReelId] = new Reel(PrologueReelId, PrologueFolder, PrologueBeats),
+			["ascension"] = new Reel("ascension", LessonFolder, AscensionBeats),
+			["apotheosis"] = new Reel("apotheosis", LessonFolder, ApotheosisBeats),
+			["conjunctions"] = new Reel("conjunctions", LessonFolder, ConjunctionBeats),
+			["sovereign_rite"] = new Reel("sovereign_rite", LessonFolder, RiteBeats),
+		};
+
+	// The reel this player plays, and its beats; set before _Ready (Play's static, or CreateEmbedded).
+	private Reel reel;
+	private Beat[] Beats => reel.Beats;
+	// Set only when embedded: what runs when it ends, in place of a scene change.
+	private Action embeddedFinished;
+	private bool Embedded => embeddedFinished != null;
 
 	[Export] public float DissolveSeconds { get; set; } = 0.7f;
 	[Export] public float HoldToSkipSeconds { get; set; } = 0.9f;
@@ -168,7 +253,7 @@ void fragment() {
 		}
 	}
 
-	private readonly PanelView[] views = new PanelView[Beats.Length];
+	private PanelView[] views;
 	private int current;
 	private bool finished;
 	private bool endingOut;
@@ -188,10 +273,18 @@ void fragment() {
 
 	public override void _Ready()
 	{
+		if (reel == null)
+		{
+			reel = Reels[nextReel];
+			nextReel = PrologueReelId;
+		}
+		views = new PanelView[Beats.Length];
 		MouseFilter = MouseFilterEnum.Ignore;
 		BuildUi();
-		// The menu theme carries on from the title; idempotent, never a restart.
-		GetNodeOrNull<MusicPlayer>("/root/MusicPlayer")?.PlayMenuMusic();
+		// The menu theme carries on from the title; idempotent, never a restart. Not over a run: its music has
+		// faded under the result, and the results bring their own.
+		if (!Embedded)
+			GetNodeOrNull<MusicPlayer>("/root/MusicPlayer")?.PlayMenuMusic();
 
 		ShowPanel(0);
 		RequestPanel(1);
@@ -201,7 +294,7 @@ void fragment() {
 		SafeArea.Apply(this);
 		// The one control: Skip. Focused on arrival so a pad's A and the keyboard's Enter hold it.
 		MenuNavigator.Attach(this, skipButton);
-		GD.Print("Prologue: _Ready");
+		GD.Print($"Prologue: _Ready ({reel.Id})");
 	}
 
 	private void BuildUi()
@@ -301,11 +394,11 @@ void fragment() {
 	}
 
 	// --- panels -----------------------------------------------------------------------------
-	private static string LayerPath(string beat, string layer) => $"{ArtFolder}{beat}-{layer}.png";
-	private static string AnimManifestPath(string beat) => $"{ArtFolder}{beat}-anim.json";
+	private string LayerPath(string beat, string layer) => $"{reel.Folder}{beat}-{layer}.png";
+	private string AnimManifestPath(string beat) => $"{reel.Folder}{beat}-anim.json";
 
 	/// <summary>The panel's animated box, or null: most panels have none. Malformed is an error, not a still.</summary>
-	private static AnimSpec LoadAnim(string beat)
+	private AnimSpec LoadAnim(string beat)
 	{
 		string path = AnimManifestPath(beat);
 		if (!FileAccess.FileExists(path))
@@ -339,7 +432,7 @@ void fragment() {
 	}
 
 	/// <summary>Starts loading a panel's three layers on a worker thread, a panel ahead.</summary>
-	private static void RequestPanel(int index)
+	private void RequestPanel(int index)
 	{
 		if (index < 0 || index >= Beats.Length)
 			return;
@@ -358,7 +451,7 @@ void fragment() {
 	{
 		if (!ResourceLoader.Exists(path))
 		{
-			GD.PushError($"Prologue: missing panel layer {path}. Run: python tools/art/prologue.py, then import.");
+			GD.PushError($"Prologue: missing panel layer {path}. Run: python tools/art/prologue.py (lessons.py for a lesson), then import.");
 			return null;
 		}
 		// Blocks only if the prefetch has not finished; a path never requested loads here.
@@ -609,10 +702,20 @@ void fragment() {
 		if (finished)
 			return;
 		finished = true;
+		if (Embedded)
+		{
+			// Over a run: the caller teaches the lesson and goes on to the results. This player goes with it.
+			Action done = embeddedFinished;
+			embeddedFinished = () => { };
+			done();
+			QueueFree();
+			return;
+		}
 		After then = next;
 		next = After.Story;
-		// A replay from the map is a test, not the player meeting the story: the flag is left as it was.
-		if (then != After.Map)
+		// A replay from the map is a test, not the player meeting the story: the flag is left as it was. A
+		// lesson replayed from Options marks nothing either: it was learned when it was first shown.
+		if (then != After.Map && reel.Id == PrologueReelId)
 			MarkSeen();
 		if (then == After.Menu)
 		{

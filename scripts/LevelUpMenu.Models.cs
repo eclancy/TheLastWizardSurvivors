@@ -276,7 +276,10 @@ public enum AscensionRequirementKind
 	SpellLevel,
 	Element,
 	PlayerLevel,
-	/// <summary>The campaign's gate: the save has not been taught the Ascension yet (Player.AscensionLearned).</summary>
+	/// <summary>
+	/// The campaign's gate: the save has not been taught this system yet (Teachings; Player.AscensionLearned,
+	/// ApotheosisLearned, ConjunctionsLearned). <see cref="AscensionRequirement.Line"/> says where it is learned.
+	/// </summary>
 	Learned,
 	/// <summary>An Apotheosis gate: the spell has taken a level 8 Ascension, any of them. Have 1 when it has.</summary>
 	Ascended,
@@ -318,6 +321,9 @@ public sealed class AscensionRequirement
 
 	/// <summary>For a combination's gates: the parent spell's name ("Hunter's Draw"), or the path that brought a fourth element.</summary>
 	public string SpellName { get; set; } = string.Empty;
+
+	/// <summary>For a Learned gate: where the system is learned (Teachings.SealedLine). Empty otherwise.</summary>
+	public string Line { get; set; } = string.Empty;
 
 	public bool Met => Have >= Need;
 	public int Missing => System.Math.Max(0, Need - Have);

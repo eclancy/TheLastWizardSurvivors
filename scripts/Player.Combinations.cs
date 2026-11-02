@@ -44,6 +44,10 @@ public partial class Player
 		// section 4, "a spell already anointed cannot fuse"; a silenced pair would trade its fuel for one level).
 		if (SovereignSpell != null)
 			return null;
+		// Not until a landmark has taught them (Teachings, .ai/slow-start.md section 3). Nothing is offered,
+		// so the recipe's Feat is not met either (Node2DGame.RecordCombinationsMet reads this strip).
+		if (!ConjunctionsLearned)
+			return null;
 		ComboStanding standing = EvaluateCombo(recipe);
 		if (!standing.Ready)
 			return null;
@@ -160,6 +164,11 @@ public partial class Player
 	public List<ComboPreview> BuildComboPreviews(SaveData save)
 	{
 		var previews = new List<ComboPreview>();
+		// One locked thing on show at a time (Teachings.IsShown, Eric's Q8): no recipe is shown, sealed or not,
+		// and no level 8 path carries the linked rings, until the Apotheosis has been learned. With the run's
+		// flags rather than the live save's, so a lesson found in this run changes nothing until it ends.
+		if (!ApotheosisLearned)
+			return previews;
 		foreach (ComboDefinition recipe in ComboCatalog.Fusions)
 		{
 			ComboStanding standing = EvaluateCombo(recipe);
@@ -184,6 +193,10 @@ public partial class Player
 			};
 			preview.Names.Add((recipe.First.SpellId, recipe.First.AscensionId));
 			preview.Names.Add((recipe.Second.SpellId, recipe.Second.AscensionId));
+			// Shown but not yet learned: sealed with where it is learned, first, as the Ascension's is.
+			if (!ConjunctionsLearned)
+				preview.Requirements.Add(new AscensionRequirement { Kind = AscensionRequirementKind.Learned, Have = 0, Need = 1,
+					Line = TeachingSealedLine(Teaching.Conjunctions) });
 			preview.Requirements.Add(Ingredient(recipe.First, standing.Taken || standing.FirstMet, standing.FirstClosed));
 			preview.Requirements.Add(Ingredient(recipe.Second, standing.Taken || standing.SecondMet, standing.SecondClosed));
 			if (!standing.Taken && (standing.FirstOwn || standing.SecondOwn))

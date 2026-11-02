@@ -989,6 +989,8 @@ public partial class GameOverScreen : CanvasLayer
 		RunUnlockKind.Chapter => "New chapter",
 		RunUnlockKind.Ascension => "Ascension revealed",
 		RunUnlockKind.Apotheosis => "Apotheosis revealed",
+		RunUnlockKind.Page => "New spell page",
+		RunUnlockKind.Lesson => "Learned",
 		_ => "Unlock completed",
 	};
 
@@ -1010,6 +1012,9 @@ public partial class GameOverScreen : CanvasLayer
 				return BonelightSkin.LoadTextureSafe(entry.IconPath) ?? Reward("reward-ascension");
 			case RunUnlockKind.Apotheosis:
 				return BonelightSkin.LoadTextureSafe(entry.IconPath) ?? Reward("reward-apotheosis");
+			// A lesson wears its family's mark: the Ascension's glass, the final forms' fire (Teachings).
+			case RunUnlockKind.Lesson:
+				return Reward(entry.Id is "apotheosis" or "sovereign_rite" ? "reward-apotheosis" : "reward-ascension");
 			default:
 				return Reward("reward-deed");
 		}

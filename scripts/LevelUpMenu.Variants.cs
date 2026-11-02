@@ -131,7 +131,7 @@ public partial class LevelUpMenu
 			back.QueueFree();
 		}
 		if (rerollButton != null)
-			rerollButton.Visible = true;
+			rerollButton.Visible = currentRerollsRemaining > 0;
 		if (skipButton != null)
 			skipButton.Visible = true;
 	}

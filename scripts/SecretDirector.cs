@@ -519,9 +519,12 @@ public partial class SecretDirector : Node
 
 		// The deed: recorded, its spell granted if the save lacks it, and the save written - every find,
 		// so a deed missed by an older build is recorded by the next one (CompleteNow changes nothing twice).
+		// A teacher's find may owe a lesson (Teachings): read before and after, so the toast can say so.
+		List<Teachings.Lesson> owedBefore = Teachings.Owed(saveManager?.Data);
 		List<RunUnlockEntry> granted = saveManager != null
 			? AchievementManager.CompleteNow(saveManager, AchievementDefinitions.SecretDeedId(secretId))
 			: new List<RunUnlockEntry>();
+		string lessonLine = Node2DGame.OwedLessonLine(owedBefore, Teachings.Owed(saveManager?.Data));
 		string line = firstEver || string.IsNullOrEmpty(secret.RepeatReward) ? secret.RunReward : secret.RepeatReward;
 		foreach (RunUnlockEntry entry in granted.Where(e => e.Kind == RunUnlockKind.Spell))
 		{
@@ -536,6 +539,9 @@ public partial class SecretDirector : Node
 			paid = $"Spell already known - {secret.SpellName}";
 			line = "";
 		}
+		// The lesson it owes, on the same plate: one more line, never a second message beside it.
+		if (lessonLine.Length > 0)
+			paid = paid.Length > 0 ? $"{paid}\n{lessonLine}" : lessonLine;
 
 		// Waits its turn like the achievement plate it sits beside (Announcements, Eric 2026-11-02: "make
 		// sure we can't show two announcements at the same time"): a secret found during the opening or

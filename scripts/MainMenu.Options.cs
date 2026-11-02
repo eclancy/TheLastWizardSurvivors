@@ -111,6 +111,16 @@ public partial class MainMenu
 		Button prologue = SettingsRows.BuildActionButton("Watch the Prologue", "WatchPrologueButton");
 		prologue.Pressed += () => Prologue.Play(this, Prologue.After.Menu);
 		var story = new List<Control> { SettingsRows.BuildButtonRow(prologue) };
+		// And every lesson this save has been taught (Teachings, .ai/slow-start.md), in the order it learns them,
+		// each back to this menu. One a row: "The Sovereign Rite" does not share a phone's width with another.
+		// A lesson not yet taught is not listed - its name alone would be a system shown before its time.
+		foreach (Teachings.Lesson lesson in Teachings.All.Where(l => Teachings.HasBeenTaught(save, l) && save != null))
+		{
+			string reel = lesson.Id;
+			Button replay = SettingsRows.BuildActionButton($"Lesson: {lesson.Name}", "WatchLesson_" + lesson.Id);
+			replay.Pressed += () => Prologue.Play(this, Prologue.After.Menu, reel);
+			story.Add(SettingsRows.BuildButtonRow(replay));
+		}
 		CodexRows.AddSection(right, SettingsRows.Story, null, ink, 1, story);
 
 		// TESTING: the tester's knobs, below everything a player sets. Playtest Mode was "Enable Playtest

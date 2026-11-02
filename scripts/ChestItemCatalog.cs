@@ -635,8 +635,10 @@ public static class ChestItemCatalog
 
 	// Both tome relics read their numbers from Player, for the same reason as the Vial: the card and
 	// the rule cannot disagree. The knife's last clause is the protection rule (Player.GetCuttableSpells).
+	// "+1 spell slot for this run" since the slow start (.ai/slow-start.md section 7): the book it adds a page
+	// to holds three to six now, so "7 instead of 6" was true only of a full one.
 	public static readonly string BlankFolioDescription =
-		$"+{Player.BlankFolioExtraSlots} spell slot: hold {Player.MaxSpellSlots + Player.BlankFolioExtraSlots} spells instead of {Player.MaxSpellSlots}.";
+		$"+{Player.BlankFolioExtraSlots} spell slot for this run.";
 	public const string ScribesPenknifeDescription =
 		"Cut 1 held spell out of your spell book: its slot is free again, and it is not offered again this run. Your wizard's own spell cannot be cut.";
 
@@ -791,6 +793,32 @@ public static class ChestItemCatalog
 	// bought GUI sheet - art licensed for use and not for redistribution. See
 	// .ai/asset-licensing.md.
 	private static string Relic(string name) => $"res://assets/bonelight/ui/relics/{name}.png";
+
+	/// <summary>
+	/// The system a relic's card names, if any (Eric's Q9, .ai/slow-start.md: "chests never deal a relic whose
+	/// card names a system the save has not learned"). Read from the words a chest would show - the relic's
+	/// name and line and every set it completes - so a card written later cannot slip past by forgetting a
+	/// field. The latest system on the ladder wins: a card naming the Apotheosis needs it, not only the
+	/// Ascension. Null for every relic today; Player.GetChestUnavailableItems reads it per chest.
+	/// </summary>
+	public static Teaching? TeachingNamedBy(string itemId)
+	{
+		var text = new System.Text.StringBuilder();
+		text.Append(GetDisplayName(itemId)).Append(' ').Append(GetDescription(itemId));
+		foreach (ChestSetDefinition set in GetAssociatedSets(itemId))
+			text.Append(' ').Append(set.Name).Append(' ').Append(set.Description);
+		string words = text.ToString();
+		bool Names(string stem) => words.Contains(stem, StringComparison.OrdinalIgnoreCase);
+		if (Names("Sovereign"))
+			return Teaching.SovereignRite;
+		if (Names("Conjunction"))
+			return Teaching.Conjunctions;
+		if (Names("Apotheos") || Names("final form"))
+			return Teaching.Apotheosis;
+		if (Names("Ascen") || Names("level 8"))
+			return Teaching.Ascension;
+		return null;
+	}
 
 	public static List<ChestSetDefinition> GetAssociatedSets(string itemId)
 	{

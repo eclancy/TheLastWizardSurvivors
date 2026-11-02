@@ -837,6 +837,10 @@ public partial class MainMenu : Control
 	private void BuildUpgradeDefinitions()
 	{
 		upgradeDefinitions.Clear();
+		// The book's 5th and 6th pages (.ai/slow-start.md 2.1, Eric's Q3): a new save holds three and Survivor
+		// pays the 4th. SpellBook holds the numbers; a book kept from before the slow start shows complete.
+		RegisterUpgrade(SpellBook.ShopUpgradeId, "Bound Pages", "+1 spell slot in every run",
+			SpellBook.ShopBaseCost, SpellBook.ShopCostPerLevel, SpellBook.ShopLevels);
 		RegisterUpgrade("damage", "Runes of Ruin", "+8% spell damage", 30, 20, 8);
 		// Re-priced with what a level pays (.ai/difficulty-curve.md, section 5; SaveData.RepricedPowers
 		// refunds the difference to levels bought before).
@@ -946,6 +950,10 @@ public partial class MainMenu : Control
 	{
 		if (def.IsBoon)
 			return GlobalStatsManager.IsBoonUnlocked(saveManager.Data, def.BoonId) ? 1 : 0;
+		// A book kept from before the slow start (SaveData.FullBookKept) reads as complete: nothing to buy,
+		// nothing charged, nothing refunded.
+		if (def.Id == SpellBook.ShopUpgradeId)
+			return SpellBook.ShopLevelShown(saveManager.Data);
 
 		return GlobalStatsManager.GetUpgradeLevel(saveManager.Data, def.Id);
 	}

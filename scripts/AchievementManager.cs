@@ -37,6 +37,10 @@ public enum RunUnlockKind
 	Chapter,
 	Ascension,
 	Apotheosis,
+	/// <summary>A spell page opened in the run (SpellBook): Survivor's.</summary>
+	Page,
+	/// <summary>A system taught after the run (Teachings): the Id is the lesson's.</summary>
+	Lesson,
 	/// <summary>An Unlocks entry finished whose reward is not a spell, boon or wizard - Arcane Energy.</summary>
 	Deed,
 }

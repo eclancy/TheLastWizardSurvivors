@@ -70,6 +70,10 @@ public partial class MainMenu
 	// because nobody added it here.
 	private static readonly (string Title, string Note, string[] Ids)[] UpgradeSections =
 	{
+		// At the top (.ai/slow-start.md 4): a new player can afford the first page after his second run, and
+		// it is likely worth more than any Power it displaces, so the shop teaches itself with its first buy.
+		("Spell book", "Room for more spells in every run.",
+			new[] { SpellBook.ShopUpgradeId }),
 		("Power", "Every spell you cast, harder and more often.",
 			new[] { "damage", "cooldowns", "attack_speed", "area", "duration", "amount", "crit_chance" }),
 		("Survival", "Staying alive long enough to use it.",
@@ -808,6 +812,12 @@ public partial class MainMenu
 				row.StatNow.Text = now;
 				row.StatNext.Visible = !finished && state != ShopRowState.NotYetOpen;
 				row.StatNext.Text = "→ " + UpgradeStat(def.Id, shownLevel + 1).Value;
+				// The book's size is the save's (SpellBook): Survivor's page is in it, so "4 spells" may be "5".
+				if (def.Id == SpellBook.ShopUpgradeId)
+				{
+					row.StatNow.Text = $"{SpellBook.PagesWithBought(saveManager.Data, shownLevel)} spells";
+					row.StatNext.Text = $"→ {SpellBook.PagesWithBought(saveManager.Data, shownLevel + 1)} spells";
+				}
 				// Redaction's ceiling grows with the book; until the book is big enough there is none.
 				row.LevelText.Text = maxLevel > 0
 					? $"Level {shownLevel}/{maxLevel}"
@@ -971,6 +981,8 @@ public partial class MainMenu
 			"luck" => ("Luck", $"+{l}"),
 			"crit_chance" => ("Crit chance", $"+{Math.Min(75, l * 3)}%"),
 			GlobalStatsManager.CurationUpgradeId => ("Spells set aside", $"{l}"),
+			// The value is rewritten with the save's own book where the card is refreshed (RefreshUpgradeControls).
+			SpellBook.ShopUpgradeId => ("Spells held", $"+{l}"),
 			_ => ("Level", $"{l}"),
 		};
 	}
@@ -978,6 +990,8 @@ public partial class MainMenu
 	/// <summary>The stat glyph a card's stat line leads with (tools/art/stat_icons.py).</summary>
 	private static string UpgradeGlyph(string id) => id switch
 	{
+		// The spell-slot glyph, as the pause screen's "Spell slots" tile wears it.
+		SpellBook.ShopUpgradeId => "todo",
 		"damage" => "damage",
 		"recovery" => "regen",
 		"cooldowns" => "cooldown",

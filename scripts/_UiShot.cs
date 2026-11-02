@@ -298,6 +298,9 @@ public partial class _UiShot : Node
 	// and its queue can be photographed without waiting for a run to earn three at once. Records nothing.
 	private string[] announceAchievements = System.Array.Empty<string>();
 	private bool achievementsAnnounced;
+	// --find-secret=id (the slow start's lesson line): found once, a quarter of the way in.
+	private string findSecretId = string.Empty;
+	private bool secretFoundByShot;
 	// --pad-y: inject a pad Y press after the warmup (see the late press). Once it is sent, _Input
 	// lets Y through; it otherwise drops every real button press.
 	private bool padY;
@@ -1172,6 +1175,29 @@ public partial class _UiShot : Node
 				SecretDirector.PlaceBesideSpawn = arg.Substring("--secret=".Length).Trim();
 				SaveManager.WritesDisabled = true;
 			}
+			// THE SLOW START (.ai/slow-start.md), in memory only:
+			//   --learned=a,b    : those lessons taught (Teachings ids: ascension, apotheosis, conjunctions,
+			//                      sovereign_rite, or "all"), so the one-at-a-time sealing can be shot per rung.
+			//   --reel=<id>      : the lesson Prologue.tscn plays (with --scene=res://scenes/Prologue.tscn).
+			//   --find-secret=id : that secret found a quarter of the way in, as its site would find it - the
+			//                      toast, and for a teacher the lesson's line on it; --force-victory then plays
+			//                      the lesson before the results.
+			else if (arg.StartsWith("--learned="))
+			{
+				string ids = arg.Substring("--learned=".Length);
+				foreach (Teachings.Lesson lesson in Teachings.All)
+				{
+					if (ids == "all" || ids.Split(',').Any(id => id.Trim().Equals(lesson.Id, System.StringComparison.OrdinalIgnoreCase)))
+						Teachings.Teach(CurrentSave(), lesson);
+				}
+			}
+			else if (arg.StartsWith("--reel="))
+				Prologue.SetNextReel(arg.Substring("--reel=".Length).Trim());
+			else if (arg.StartsWith("--find-secret="))
+			{
+				findSecretId = arg.Substring("--find-secret=".Length).Trim();
+				SaveManager.WritesDisabled = true;
+			}
 			// --secret-stage=N: the chapter's vault, if it breaks (a Breakable named "Crystal"), shown at stage
 			// N a third of the way in - 0 whole, 1 hairline, 2 cracked, 3 splitting, 4 broken (which plays the
 			// shatter and opens it, so writes are off).
@@ -1842,6 +1868,11 @@ public partial class _UiShot : Node
 			data.RecordSecretFound(secret.Id);
 		foreach (AchievementDefinition deed in AchievementDefinitions.All)
 			data.UnlockedAchievementIds.Add(deed.Id);
+		// Every system taught and the full book, as a save from before the slow start keeps them (Teachings,
+		// SpellBook): owning everything owes no lesson, so a forced victory goes straight to the results.
+		foreach (Teachings.Lesson lesson in Teachings.All)
+			Teachings.Teach(data, lesson);
+		data.FullBookKept = true;
 		return data;
 	}
 
@@ -3158,6 +3189,12 @@ public partial class _UiShot : Node
 			if (!reportFilled && (reportName != null || reportText != null || reportSend || reportBack || reportNoShot)
 				&& FindNodeOfType<ReportBugScreen>(GetTree().Root) is ReportBugScreen report && report.Visible && !report.IsTakingScreenshot)
 				FillReport(report);
+			if (findSecretId.Length > 0 && !secretFoundByShot && frames >= WarmupFrames / 4
+				&& FindNodeOfType<SecretDirector>(GetTree().Root) is SecretDirector secrets)
+			{
+				secretFoundByShot = true;
+				secrets.Found(findSecretId);
+			}
 			if (announceAchievements.Length > 0 && !achievementsAnnounced && frames >= WarmupFrames / 4
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame announcer
 				&& GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is SaveData announceSave)

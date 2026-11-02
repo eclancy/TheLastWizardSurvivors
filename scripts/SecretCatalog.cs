@@ -289,8 +289,12 @@ public static partial class SecretCatalog
 		};
 	}
 
+	// The three landmarks that teach (Teachings) say so, without naming the system: whichever is found first
+	// teaches the Ascension, so the lesson a vault gives depends on the order a save finds them in.
 	private static string RewardTextFor(SecretDefinition secret) => secret.MetaReward switch
 	{
+		SecretMetaReward.Spell when Teachings.IsTeacherDeed(AchievementDefinitions.SecretDeedId(secret.Id))
+			=> $"Frees {secret.SpellName} and teaches a lesson",
 		SecretMetaReward.Spell => $"Frees {secret.SpellName}",
 		SecretMetaReward.PageOnly => "A mark on the page",
 		_ => Capitalised(DescribeMeta(secret)),

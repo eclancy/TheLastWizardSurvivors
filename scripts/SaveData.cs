@@ -20,7 +20,11 @@ public class SaveData
 	// 20 is the difficulty curve's (.ai/difficulty-curve.md, section 9): AscensionLearned for every save
 	// that has played a run, and the levels bought of the re-priced Powers (Fate Fracture, Emberheart)
 	// paid back the difference. The castle's Dungeon move (.ai/endgame-castle.md, C2) takes 21.
-	public const int CurrentSchemaVersion = 20;
+	// 22 is the slow start's (.ai/slow-start.md, section 6): a played save keeps its six pages
+	// (FullBookKept) and every system it could already use (LessonsLearned). Written as the step AFTER 21,
+	// which is wip/dungeon-move's and is not on this branch: a save this branch migrates to 22 skips a 21
+	// that lands under it later, so 21 must merge before a build that carries this ships.
+	public const int CurrentSchemaVersion = 22;
 	public const int CampaignSchemaVersion = 8;
 	private const int MaxTelemetryHistory = 25;
 
@@ -189,6 +193,20 @@ public class SaveData
 	/// every run they played. A new save learns it from the Hayward, which the campaign records anyway.
 	/// </summary>
 	public bool AscensionLearned { get; set; } = false;
+
+	/// <summary>
+	/// The lessons given (Teachings): the systems this save has been taught, each by its post-run cutscene,
+	/// by id ("ascension", "apotheosis", "conjunctions", "sovereign_rite"). A system is usable once its id is
+	/// here (the Ascension also by <see cref="AscensionLearned"/>). Schema 22 writes the first three for a
+	/// played save that could already use them, so it never sees the cutscenes.
+	/// </summary>
+	public List<string> LessonsLearned { get; set; } = new();
+
+	/// <summary>
+	/// The book this save played with before the slow start: six pages, for good (SpellBook). Set by schema 22
+	/// for every save with a run on record; the shop then shows Bound Pages complete, at no charge.
+	/// </summary>
+	public bool FullBookKept { get; set; } = false;
 
 	// --- The story's epoch (.ai/decisions/2026-11-02-story-resets.md) ---------------------------------
 
@@ -379,6 +397,12 @@ public class SaveData
 
 		if (SchemaVersion < 20)
 			MigrateToLearnedAscensionsAndRepricedPowers();
+
+		// 21 is the castle's Dungeon move (wip/dungeon-move), which is not on this branch; its step goes
+		// here, between 20 and 22, when it merges.
+
+		if (SchemaVersion < 22)
+			MigrateToSlowStart();
 
 		if (log)
 			GD.Print($"SaveData: migrated schema {from} -> {CurrentSchemaVersion}; " +
@@ -726,6 +750,52 @@ public class SaveData
 	}
 
 	/// <summary>
+	/// Schema 22, the slow start (.ai/slow-start.md, section 6). Nothing anybody had is taken away:
+	///   1. FullBookKept for every save with a run on record (schema 20's population) - each played every run
+	///      on six pages, and keeps six. The shop's Bound Pages reads as complete, with nothing charged or
+	///      refunded;
+	///   2. the Ascension, the Apotheosis and Conjunctions learned, cutscenes and all, for every save that had
+	///      learned the Ascension under the rule it was taught by until now - the flag, the Hayward beaten, or
+	///      a chapter past the Fields opened - because until now both of the others rode it;
+	///   3. the Sovereign Rite's lesson for a save that already owns the Rite, so its cutscene does not play
+	///      for a spell he has been using.
+	/// The rule in 2 is frozen here, never read from GlobalStatsManager or the live campaign order: the step
+	/// must say tomorrow what it said the day it shipped. Returns whether it learned the ladder.
+	/// </summary>
+	internal bool MigrateToSlowStart()
+	{
+		LessonsLearned ??= new List<string>();
+		if ((Lifetime?.TotalRuns ?? 0) > 0 || (RunTelemetryHistory?.Count ?? 0) > 0)
+			FullBookKept = true;
+
+		bool hadAscension = AscensionLearned
+			|| (Lifetime?.HasDefeatedBoss(SlowStartHaywardId) ?? false)
+			|| UnlockedStageIds.Any(id => SlowStartPastFieldsStageIds.Contains(id, System.StringComparer.OrdinalIgnoreCase));
+		if (hadAscension)
+		{
+			foreach (string id in SlowStartLadderIds)
+			{
+				if (!LessonsLearned.Contains(id, System.StringComparer.OrdinalIgnoreCase))
+					LessonsLearned.Add(id);
+			}
+		}
+		if (UnlockedSpellIds.Contains(SlowStartRiteSpellId, System.StringComparer.OrdinalIgnoreCase)
+			&& !LessonsLearned.Contains(SlowStartRiteLessonId, System.StringComparer.OrdinalIgnoreCase))
+			LessonsLearned.Add(SlowStartRiteLessonId);
+		return hadAscension;
+	}
+
+	// Schema 22's frozen lists: the Hayward who taught the Ascension until now, every chapter after his in the
+	// campaign order of 2026-11-02 (the old rule's "a chapter past the Fields opened"), the ladder's lesson ids
+	// and the Rite's. Never read from the live catalogs.
+	private const string SlowStartHaywardId = "fields_hayward";
+	private static readonly string[] SlowStartPastFieldsStageIds =
+		{ "stage_10", "stage_2", "stage_1", "stage_3", "stage_4", "stage_5", "stage_6", "stage_7" };
+	private static readonly string[] SlowStartLadderIds = { "ascension", "apotheosis", "conjunctions" };
+	private const string SlowStartRiteSpellId = "sovereign_rite";
+	private const string SlowStartRiteLessonId = "sovereign_rite";
+
+	/// <summary>
 	/// Schema 19: every spell that is not a starter is an achievement's (.ai/achievements-and-secrets.md
 	/// section 3). It only adds: nothing anybody owns is taken away, and no Arcane Energy changes hands.
 	/// </summary>
@@ -966,6 +1036,10 @@ public class SaveData
 		foreach (string id in SeenItemIds)
 			seenItemIds.Add(id);
 
+		var lessonsLearned = new Godot.Collections.Array<string>();
+		foreach (string id in LessonsLearned ?? new List<string>())
+			lessonsLearned.Add(id);
+
 		var foundUpgradeLevels = new Godot.Collections.Dictionary<string, int>();
 		foreach (KeyValuePair<string, int> entry in FoundUpgradeLevels)
 		{
@@ -1033,6 +1107,8 @@ public class SaveData
 			["ShowDamageNumbers"] = ShowDamageNumbers,
 			["ReduceScreenShake"] = ReduceScreenShake,
 			["AscensionLearned"] = AscensionLearned,
+			["LessonsLearned"] = lessonsLearned,
+			["FullBookKept"] = FullBookKept,
 			["BalancePresetId"] = BalancePresetId,
 			["PlaytestChecklistState"] = playtestChecklistState
 		};
@@ -1310,6 +1386,17 @@ public class SaveData
 			result.ReduceScreenShake = root["ReduceScreenShake"].AsBool();
 		if (root.ContainsKey("AscensionLearned"))
 			result.AscensionLearned = root["AscensionLearned"].AsBool();
+		if (root.ContainsKey("FullBookKept"))
+			result.FullBookKept = root["FullBookKept"].AsBool();
+		if (root.ContainsKey("LessonsLearned"))
+		{
+			foreach (Variant value in root["LessonsLearned"].AsGodotArray())
+			{
+				string id = value.AsString();
+				if (!string.IsNullOrWhiteSpace(id) && !result.LessonsLearned.Contains(id))
+					result.LessonsLearned.Add(id);
+			}
+		}
 
 		if (root.ContainsKey("BalancePresetId"))
 			result.BalancePresetId = GlobalStatsManager.NormalizeBalancePresetId(root["BalancePresetId"].AsString());

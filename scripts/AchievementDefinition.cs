@@ -102,6 +102,13 @@ public sealed class AchievementDefinition
 	public string BoonUnlockId { get; init; } = string.Empty;
 	public string CharacterUnlockId { get; init; } = string.Empty;
 	public int CurrencyReward { get; init; }
+
+	/// <summary>
+	/// Spell pages this deed adds to the save's book (SpellBook, .ai/slow-start.md section 2): 1 on Survivor,
+	/// 0 everywhere else. Derived from the done deeds, never written, so the page can move to another deed
+	/// later without a schema step.
+	/// </summary>
+	public int PageReward { get; init; }
 	public AchievementCategory Category { get; init; } = AchievementCategory.Progress;
 
 	/// <summary>Feat, Road, Secret or Collection (.ai/achievements-and-secrets.md section 2).</summary>
@@ -270,9 +277,11 @@ public static class AchievementDefinitions
 		{
 			// Hollow Star since schema 19 (it was sold): Darkness's only pure carrier stays early. Frost
 			// Shard, which this paid, is the Geode Heart's - Eric's giant crystal (SecretCatalog).
+			// And the 4th spell page (.ai/slow-start.md 2.2): at 10:00 of the run that earns it, about four
+			// levels before a three-page book would run out of upgrades. It opens at the next level-up.
 			Id = "survivor", DisplayName = "Survivor",
 			Description = "Survive for 10 minutes in a single run.",
-			RewardText = "Unlocks Hollow Star", SpellUnlockId = "hollow_star",
+			RewardText = "Unlocks Hollow Star and a spell page", SpellUnlockId = "hollow_star", PageReward = 1,
 			Category = AchievementCategory.Progress,
 			Measure = c => c.Lifetime.BestTimeByStage.Values.DefaultIfEmpty(0f).Max(),
 			Target = TenMinutes, FormatValue = AchievementDefinition.FormatTime,
@@ -417,8 +426,8 @@ public static class AchievementDefinitions
 		// The two early chapters (.ai/campaign.md) pay in boons, for the reason the Frozen Waste and
 		// the Sands do. Both boons were sold-but-never-sold (the shop registers no boons), so until then
 		// no new save could ever be dealt them. Listed only once their chapter is playable.
-		BossClearBoon("fields_hurdled", "Round the Hurdle", "fields_hayward", "the Fallow Fields", "thornseed", "Thornseed",
-			alsoReward: "teaches Ascension"),
+		// The Hayward taught the Ascension until the slow start (2026-11-02); a landmark teaches it now (Teachings).
+		BossClearBoon("fields_hurdled", "Round the Hurdle", "fields_hayward", "the Fallow Fields", "thornseed", "Thornseed"),
 		BossClearBoon("circle_unclosed", "Out of the Ring", "heath_ninth_stone", "the Broken Circle", "shadegrease", "Shadegrease"),
 		// Pays in currency rather than content, and that is the point: the Sketchbook is a bonus
 		// chapter, so putting a spell or a wizard behind it would make an optional chapter
@@ -788,8 +797,8 @@ public static class AchievementDefinitions
 	// shop's stock is the same finite pool the achievement track draws from, and moving all seven
 	// boss rewards onto spells would have left four spells in it. A boon is a real reward and the
 	// Frozen Waste handing over Rimebriar is a better fit than any spell left unclaimed was.
-	// alsoReward: a second thing the kill pays that is not an item, said on the same line - the Hayward
-	// teaches the Ascension (GlobalStatsManager.AscensionTeacherStageId, .ai/difficulty-curve.md section 6).
+	// alsoReward: a second thing the kill pays that is not an item, said on the same line. None does since
+	// the slow start moved the Hayward's "teaches Ascension" to a landmark (Teachings).
 	private static AchievementDefinition BossClearBoon(string id, string name, string bossId, string place, string boonId, string boonName,
 		string alsoReward = "") => new()
 	{
