@@ -203,9 +203,14 @@ public partial class SecretDirector : Node
 		if (beside)
 			at = placer.AtBearing(0f, BesideSpawnChunks, BesideSpawnChunks, Mathf.Min(secret.Footprint, 160f));
 		else if (avoid.Count == 0)
-			at = placer.EventSite(secret.Footprint);
+			at = secret.OpenRadius > 0f ? placer.EventSiteInBand(secret.OpenRadius, dense: true, keepOff: Game.ExploreReserves) : placer.EventSite(secret.Footprint);
+		else if (secret.OpenRadius > 0f)
+			at = placer.AtBearingInBand(PickBearing(placer, avoid), minChunks, maxChunks, secret.OpenRadius, dense: true, keepOff: Game.ExploreReserves);
 		else
 			at = placer.AtBearing(PickBearing(placer, avoid), minChunks, maxChunks, secret.Footprint);
+		// Placed by the room it needs; the decor is still kept off its whole footprint.
+		if (secret.OpenRadius > 0f && secret.Footprint > secret.OpenRadius)
+			placer.Reserve(at, secret.Footprint);
 
 		SecretSite site = secret.CreateSite();
 		site.Name = ToPascal(secret.Id);
@@ -213,6 +218,9 @@ public partial class SecretDirector : Node
 		site.SecretId = secret.Id;
 		site.Position = at;
 		site.LayOut(placer);
+		// Measured before the site stamps its own solid parts into the ground, which the test would then see.
+		float roomRadius = secret.OpenRadius > 0f ? secret.OpenRadius : secret.Footprint;
+		bool roomOpen = logPlacement && Game.IsExploreGroundClearDense(site.Position, roomRadius);
 		foreach (var (centre, radius) in placer.Reserved)
 			Game.ReserveExploreGround(centre, radius);
 		foreach (var (centre, radius) in site.SolidFootprints)
@@ -221,8 +229,10 @@ public partial class SecretDirector : Node
 		placed.Add(site);
 
 		if (logPlacement || beside)
-			GD.Print($"SECRETS stage {StageId}: {secret.DisplayName} ({secret.Placement}) at ({at.X:0},{at.Y:0}), "
-				+ $"{at.DistanceTo(Game.StageOrigin) / 1536f:0.0} chunks out, bearing {Mathf.RadToDeg(BearingOf(at)):0} deg"
+			GD.Print($"SECRETS stage {StageId}: {secret.DisplayName} ({secret.Placement}) at ({site.Position.X:0},{site.Position.Y:0}), "
+				+ $"{site.Position.DistanceTo(Game.StageOrigin) / 1536f:0.0} chunks out, bearing {Mathf.RadToDeg(BearingOf(site.Position)):0} deg"
+				+ (site.Position.DistanceTo(at) > 1f ? $" (placed at ({at.X:0},{at.Y:0}), moved by its layout)" : "")
+				+ $", ground {(roomOpen ? "open" : "NOT open")} over {roomRadius:0} px"
 				+ (beside ? " - beside the spawn (--secret)" : ""));
 		return site;
 	}

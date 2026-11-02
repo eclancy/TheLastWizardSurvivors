@@ -25,6 +25,10 @@ public static partial class SecretCatalog
 				found: "The forge that made the shackles. Every kill on its hearth set an ember in the coals until it roared.") with
 			{
 				IsBuilt = true,
+				// Placed by a corridor cell, which is all the maze's ground is: ColdForge.LayOut then moves it to
+				// the nearest hall and reserves the vault's footprint there. Asked for the vault's 420 px here it
+				// could never fit a corridor, and the placer fell back and warned on every seed.
+				Footprint = CorridorFootprint,
 				CreateSite = () => new global::ColdForge(),
 				RepeatReward = "It roared again, and gave up a chest",
 			},

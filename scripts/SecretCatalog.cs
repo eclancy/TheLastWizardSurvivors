@@ -129,6 +129,16 @@ public sealed record SecretDefinition
 	/// </summary>
 	public float Footprint { get; init; } = 160f;
 	/// <summary>
+	/// When above zero, the site must stand on open ground over this whole radius (the dense test the thaw's
+	/// lake and the Five-Pointed Seal's courtyard use), and the director sweeps its whole band for it rather
+	/// than giving up near its roll and placing it anyway (ExplorePlacer.AtBearingInBand). The room the site
+	/// actually lays itself out in - the Broken Ward's ring and wall, the Geode Heart's frost - not
+	/// <see cref="Footprint"/>, which is the decor kept off it and is reserved as before. For walled ground,
+	/// where open ground that wide is a court or a chamber (Eric, 2026-11-01: "The vault should be in open
+	/// area").
+	/// </summary>
+	public float OpenRadius { get; init; }
+	/// <summary>
 	/// The node an Anchor, Keepsake or Vault is, made once a run: the director sets its id, its director
 	/// and its position, hands it the placer to lay out anything else it needs (a path, a set of shards)
 	/// and adds it to the run. Never called outside a run, so the validators never build a node.
@@ -226,6 +236,12 @@ public static partial class SecretCatalog
 
 	/// <summary>A vault's default footprint: the place it stands in is a place to fight (6.4).</summary>
 	public const float VaultFootprint = 420f;
+
+	/// <summary>
+	/// What a maze corridor cell can hold (six tiles wide): the footprint for a site that is placed in a
+	/// corridor and moves itself somewhere larger (the Cold Forge, to a hall).
+	/// </summary>
+	public const float CorridorFootprint = 130f;
 
 	/// <summary>A secret by id, built or planned.</summary>
 	public static SecretDefinition Get(string id) =>
