@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/TheTaking.cs" id="1"]
+
+; The dark wizard's hand (.ai/dark-wizard-playable.md). No collision shape and no sprite: it measures its
+; own latch and draws its own hand, so what is seen holding a body is what holds it. The light it tears out
+; (TakenLight) and the lanes a caught light throws (TakingLanes) are made in code.
+[node name="TheTaking" type="Node2D"]
+script = ExtResource("1")
+HandSpeed = 340.0
+TurnDegreesPerSecond = 540.0
+Lifetime = 2.4
+GripSeconds = 0.9
+LatchRadius = 22.0

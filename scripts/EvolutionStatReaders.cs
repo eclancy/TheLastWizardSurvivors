@@ -287,6 +287,10 @@ public static class EvolutionStatReaders
 				| EvolutionStat.Amount,
 			"Player.FireKindledWard (Amount raises how many wards may stand; it has no reach to cast within; Flare, Wisp Trail and Kindling Flock by id, in KindledWard and WardWisps)",
 			SpellEffect.ZoneDuration, SpellEffect.AreaSize, SpellEffect.CritDamage),
+		["the_taking"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
+				| EvolutionStat.Rider | EvolutionStat.Amount,
+			"Player.FireTheTaking (Projectiles and Amount are hands a cast, Range the reach a quarry is found in, Area the lanes, Speed the hand); Crushing Grip, Eightfold Cross, Great Taking and All He Took by id, in TheTaking and TakingLanes",
+			SpellEffect.AreaSize, SpellEffect.CritDamage),
 		["glacial_spike"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider | EvolutionStat.Amount,
 			"IceSpike.RefreshComputedStats and Player.FireIceSpikes (Amount is more spikes; Shatter, Spike Run, Rimefoot, Glacier Crown and Frozen Spire by id, through ThrownShards, FrostPatch and GlacierCrown)",

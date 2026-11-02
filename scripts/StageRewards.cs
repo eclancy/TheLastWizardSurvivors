@@ -60,7 +60,9 @@ public sealed class StageReward
 ///   2. the side event: <see cref="SideEventDirector.ForStage"/>'s site, and every
 ///      <see cref="UnlockSource.Discovery"/> entry at it (<see cref="UnlockCatalog.ForDiscoverySite"/>);
 ///   3. a deed done there: an unlock whose <see cref="UnlockDefinition.RevealStageId"/> is the chapter
-///      (Laelaps, freed by coursing hares on the Broken Circle);
+///      (Laelaps, freed by coursing hares on the Broken Circle), or what a hand-written Road deed of the
+///      chapter pays that is neither its warden's nor an event's (the dark wizard and The Taking, the
+///      Throne won on Hardcore - .ai/dark-wizard-playable.md);
 ///   4. its secrets and its keepsake (<see cref="SecretCatalog.ForStage"/>).
 /// RegressionChecks.ValidateStageRewards holds every one of those catalogs to this list, and runs a
 /// prose net over the unlock hints, so an unlock tied to a chapter in words but not in data is caught.
@@ -128,6 +130,21 @@ public static class StageRewards
 				});
 			}
 
+			// The chapter's own Road deeds that are neither its warden's nor a side event's nor a secret's - a
+			// deed done there for its own sake. The Coursing is one (already listed by its reveal, above, and
+			// not listed twice); the Taker Taken, the Throne won on Hardcore, is the other.
+			foreach (AchievementDefinition deed in AchievementDefinitions.All.Where(d => d.Kind == AchievementKind.Road
+				&& string.IsNullOrWhiteSpace(d.BossId) && string.IsNullOrWhiteSpace(d.SiteId) && string.IsNullOrWhiteSpace(d.SecretId)
+				&& d.StageId.Equals(stage.Id, StringComparison.OrdinalIgnoreCase)))
+			{
+				if (!string.IsNullOrWhiteSpace(deed.CharacterUnlockId))
+					Add(new StageReward { StageId = stage.Id, Kind = StageRewardKind.Wizard, Source = StageRewardSource.Deed, Id = deed.CharacterUnlockId, DeedId = deed.Id });
+				if (!string.IsNullOrWhiteSpace(deed.SpellUnlockId))
+					Add(new StageReward { StageId = stage.Id, Kind = StageRewardKind.Spell, Source = StageRewardSource.Deed, Id = deed.SpellUnlockId, DeedId = deed.Id });
+				if (!string.IsNullOrWhiteSpace(deed.BoonUnlockId))
+					Add(new StageReward { StageId = stage.Id, Kind = StageRewardKind.Boon, Source = StageRewardSource.Deed, Id = deed.BoonUnlockId, DeedId = deed.Id });
+			}
+
 			foreach (SecretDefinition secret in SecretCatalog.ForStage(stage.Id))
 				Add(new StageReward
 				{
@@ -178,10 +195,13 @@ public static class StageRewards
 
 	/// <summary>
 	/// True for a wizard the card may not even show as a silhouette: a secret whose reveal chapter is
-	/// not open yet (the character select's rule, <see cref="GlobalStatsManager.IsCharacterRevealed"/>).
+	/// not open yet (the character select's rule, <see cref="GlobalStatsManager.IsCharacterRevealed"/>), or
+	/// one sealed until he is free (<see cref="UnlockDefinition.SealedUntilFreed"/>, the dark wizard).
 	/// </summary>
 	public static bool IsSealed(SaveData save, StageReward reward) =>
-		reward != null && reward.Kind == StageRewardKind.Wizard && !GlobalStatsManager.IsCharacterRevealed(save, reward.Id);
+		reward != null && reward.Kind == StageRewardKind.Wizard
+		&& (!GlobalStatsManager.IsCharacterRevealed(save, reward.Id)
+			|| (UnlockCatalog.GetCharacter(reward.Id)?.SealedUntilFreed == true && !GlobalStatsManager.IsCharacterUnlocked(save, reward.Id)));
 
 	/// <summary>
 	/// The words for a slot's tooltip. A found thing is named; an unfound spell, boon or wizard says
@@ -204,7 +224,9 @@ public static class StageRewards
 			case StageRewardKind.Wizard:
 				if (found)
 					return nameOf?.Invoke(reward) ?? reward.Id;
-				return IsSealed(save, reward) ? "Someone is held here" : UnlockCatalog.GetLockedHint(reward.Id, UnlockKind.Character);
+				// One sealed until he is free is held nowhere: his slot says his vague line, never "held".
+				return IsSealed(save, reward) && UnlockCatalog.GetCharacter(reward.Id)?.SealedUntilFreed != true
+					? "Someone is held here" : UnlockCatalog.GetLockedHint(reward.Id, UnlockKind.Character);
 			case StageRewardKind.Boon:
 				return found ? nameOf?.Invoke(reward) ?? reward.Id : UnlockCatalog.GetLockedHint(reward.Id, UnlockKind.Boon);
 			default:

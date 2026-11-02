@@ -48,6 +48,9 @@ public partial class Player : CharacterBody2D
 	// The facing family (.ai/spell-roster.md): two spells that go the way the player faces.
 	[Export] public PackedScene StormsweepScene { get; set; }
 	[Export] public PackedScene SleetRunesScene { get; set; }
+	// The dark wizard's own spell (.ai/dark-wizard-playable.md): the hand (scripts/TheTaking.cs); the light it
+	// tears out and the lanes a caught light throws are made in code (TakenLight, TakingLanes).
+	[Export] public PackedScene TheTakingScene { get; set; }
 	// The three found spells (.ai/side-events.md): each is a Discovery unlock from a side event.
 	[Export] public PackedScene IronPalisadeScene { get; set; }
 	[Export] public PackedScene ContagionScene { get; set; }
@@ -606,6 +609,10 @@ public partial class Player : CharacterBody2D
 	// Exorcist (Abe no Seimei): the share added to every hit on an elite, a miniboss or a boss.
 	public const float CharacterEliteDamageBonus = 0.15f;
 	private float characterEliteDamageBonus = 0f;
+	// Dread (the dark wizard): how many times as often his Darkness hits frighten (Player.TryFrighten). The
+	// horde is his own making, and it knows him.
+	public const float CharacterDreadFearScale = 2f;
+	private float characterFearScale = 1f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -834,6 +841,9 @@ public partial class Player : CharacterBody2D
 		// Abe no Seimei, the exorcist: more damage to the strong ones - elites, minibosses and bosses alike,
 		// everything IsMiniBoss marks (.ai/chapter-wizards.md 4.5). An axis no other wizard owns.
 		"elite_damage_15",
+		// The dark wizard (.ai/dark-wizard-playable.md): Dread - his Darkness hits frighten twice as often. Crowd
+		// control as a passive, an axis no other wizard owns, and it never touches damage.
+		"fear_x2",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -872,6 +882,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "elite_damage_15":
 				characterEliteDamageBonus = CharacterEliteDamageBonus;
+				return true;
+			case "fear_x2":
+				characterFearScale = CharacterDreadFearScale;
 				return true;
 			default:
 				return false;
@@ -1043,6 +1056,8 @@ public partial class Player : CharacterBody2D
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Stormsweep.tres"));
 		if (!spellCatalog.ContainsKey("sleet_runes"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_SleetRunes.tres"));
+		if (!spellCatalog.ContainsKey(TheTaking.SpellId))
+			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_TheTaking.tres"));
 		if (!spellCatalog.ContainsKey("iron_palisade"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_IronPalisade.tres"));
 		if (!spellCatalog.ContainsKey("contagion"))
@@ -1197,6 +1212,15 @@ public partial class Player : CharacterBody2D
 				targeting = SpellTargetingMode.Facing;
 				shape = SpellDamageShape.ProjectileHit;
 				tags |= SpellScalingTag.ProjectileCount | SpellScalingTag.ProjectileSpeed | SpellScalingTag.Pierce | SpellScalingTag.Range;
+				break;
+			case "the_taking":
+				// The dark wizard's (.ai/dark-wizard-playable.md): a hand at the strongest in reach - no mode
+				// says "strongest", and MultiTarget is the nearest honest one, since Many Hands takes several -
+				// then lanes thrown where its light is caught. Its level table is written out in full in the
+				// .tres (Area is the lanes, Amount more hands), so none of these generates a line.
+				targeting = SpellTargetingMode.MultiTarget;
+				shape = SpellDamageShape.BeamHit;
+				tags |= SpellScalingTag.Area | SpellScalingTag.Range | SpellScalingTag.ProjectileCount;
 				break;
 			case "iron_palisade":
 				// Placed between the player and the nearest pack, facing it.
@@ -2470,7 +2494,7 @@ public partial class Player : CharacterBody2D
 					darknessCarriers.Add(held);
 			}
 		}
-		if (darknessCarriers.Contains(source) && combatRng.Randf() < FearChance)
+		if (darknessCarriers.Contains(source) && combatRng.Randf() < FearChance * characterFearScale)
 			enemy.ApplyFear(FearSeconds);
 	}
 
@@ -4314,6 +4338,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals("familiar", StringComparison.OrdinalIgnoreCase)) outcome = FireFamiliar(spell, FamiliarScene);
 		else if (spell.Id.Equals("stormsweep", StringComparison.OrdinalIgnoreCase)) outcome = FireStormsweep(spell, StormsweepScene);
 		else if (spell.Id.Equals("sleet_runes", StringComparison.OrdinalIgnoreCase)) outcome = FireSleetRunes(spell, SleetRunesScene);
+		else if (spell.Id.Equals(TheTaking.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireTheTaking(spell, TheTakingScene);
 		else if (spell.Id.Equals("gravewell", StringComparison.OrdinalIgnoreCase)) outcome = FireGravewellTrap(spell, GravewellScene);
 		else if (spell.Id.Equals("hollow_star", StringComparison.OrdinalIgnoreCase)) outcome = FireHollowStar(spell, HollowStarScene);
 		else if (spell.Id.Equals("iron_palisade", StringComparison.OrdinalIgnoreCase)) outcome = FireIronPalisade(spell, IronPalisadeScene);
@@ -5116,6 +5141,83 @@ public partial class Player : CharacterBody2D
 				return slot;
 		}
 		return 0;
+	}
+
+	// THE TAKING (.ai/dark-wizard-playable.md): the dark wizard's own spell. A cast throws a hand at the
+	// strongest enemy in reach - more hands with its levels and under Many Hands, each at its own quarry,
+	// strongest first - and every light a hand tears out carries home the numbers its lanes strike with,
+	// fixed at the cast (TakenLight.Setup). Range is the reach a quarry is found in; Area is the lanes, long
+	// and wide; Speed is the hand. NoTarget with nothing in reach, so the cooldown waits ripe for one.
+	public const float TakingLaneLength = 230f;
+	public const float TakingLaneWidth = 24f;
+	// Where a light starts on its way home; it gathers speed from there (TakenLight.Acceleration), so only a
+	// wizard who runs from it for its whole life loses it.
+	public const float TakingDriftSpeed = 110f;
+	public const float TakingLightSeconds = 5f;
+	private readonly List<Enemy> takingQuarries = new(8);
+
+	private CastOutcome FireTheTaking(SpellData spell, PackedScene scene)
+	{
+		if (scene == null) return CastOutcome.NoTarget;
+		Node2D arena = GetParent<Node2D>();
+		if (arena == null) return CastOutcome.NoTarget;
+
+		int level = spell.CurrentLevel;
+		float reach = spell.GetRangeAtLevel(level);
+		int hands = Math.Max(1, spell.GetProjectileCountAtLevel(level) + AmountFor(spell));
+		takingQuarries.Clear();
+		for (int i = 0; i < hands; i++)
+		{
+			Enemy quarry = TheTaking.Strongest(GlobalPosition, reach, takingQuarries);
+			if (quarry == null)
+				break;
+			takingQuarries.Add(quarry);
+		}
+		if (takingQuarries.Count == 0)
+			return CastOutcome.NoTarget;
+
+		int damage = Math.Max(1, Mathf.RoundToInt(spell.GetDamageAtLevel(level) * GetSpellDamageMultiplier(spell)));
+		float area = GetEffectiveAreaMultiplier() * spell.GetAreaMultiplierAtLevel(level)
+			* (1f + spell.GetEffectValueAtLevel(SpellEffect.AreaSize, level));
+		var light = new TakenLight.Setup
+		{
+			Spell = spell,
+			LaneDamage = damage,
+			// Area lengthens the lanes in full and widens them by its root, so a lane grows into the crowd
+			// rather than into a wall.
+			LaneLength = TakingLaneLength * area,
+			LaneWidth = TakingLaneWidth * MathF.Sqrt(area),
+			Star = spell.HasEvolution(TheTaking.EightfoldCrossId),
+			AllHeTook = spell.HasEvolution(TheTaking.AllHeTookId),
+			DriftSpeed = TakingDriftSpeed,
+			Life = TakingLightSeconds * durationMultiplier,
+		};
+		float speed = MathF.Max(0.25f, spell.GetSpeedMultiplier());
+		// Out of the light in his raised hand (CharacterVisuals.GetStaffTipCell), the boss's own gesture.
+		Vector2 from = GlobalPosition + StaffTipLocal();
+		foreach (Enemy quarry in takingQuarries)
+		{
+			var hand = scene.Instantiate<Node2D>();
+			if (hand is TheTaking script)
+			{
+				script.SpellData = spell;
+				script.PlayerRef = this;
+				script.Damage = damage;
+				script.Quarry = quarry;
+				script.Light = light;
+				script.HandSpeed *= speed;
+				script.TurnDegreesPerSecond *= speed;
+			}
+			arena.AddChild(TagSpell(hand));
+			hand.GlobalPosition = from;
+			ApplyLegendaryVisual(hand, spell);
+			// It draws its own size and its own colours: no card's scale or tint reaches it (a legendary roll
+			// keeps its gold, as Kindled Ward's does).
+			hand.Scale = Vector2.One;
+			if (!spell.IsLegendary)
+				hand.Modulate = Colors.White;
+		}
+		return CastOutcome.Fired;
 	}
 
 	// Starfall (scripts/Starfall.cs): a rain that follows the player and aims at nothing. One node in

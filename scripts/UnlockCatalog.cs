@@ -97,6 +97,22 @@ public sealed class UnlockDefinition
 	/// campaign cannot end with him held. Characters only.
 	/// </summary>
 	public bool CountedAtFinalGateOnly { get; init; }
+
+	/// <summary>
+	/// Never shown until he is free - not as a silhouette, whatever has been revealed: his card on the character
+	/// select is the sealed one, carrying his <see cref="LockedHint"/> in place of "Not yet discovered.", and his
+	/// deed's row shows the seal rather than his shape (CodexRows.DeedEntry). The dark wizard
+	/// (.ai/dark-wizard-playable.md): the story's last surprise, whom the Throne's opening must not give away.
+	/// Characters only.
+	/// </summary>
+	public bool SealedUntilFreed { get; init; }
+
+	/// <summary>
+	/// A spell The Grimoire Restored does not count (<see cref="UnlockCatalog.GrimoireSpellIds"/>): one that was
+	/// never taken from anyone, so it is not recovered. The Taking, the dark wizard's own - counting it would put
+	/// the collection behind a Hardcore win in the Throne. Spells only.
+	/// </summary>
+	public bool OutsideGrimoire { get; init; }
 }
 
 /// <summary>
@@ -294,6 +310,23 @@ public static class UnlockCatalog
 			"The Coursing: in the Broken Circle, let your Familiar, taken as a hound, run down "
 			+ $"{AchievementDefinitions.CoursingTarget} Black Hares in one run.",
 			secretUntilStage: "stage_10", outsideCampaignGate: true),
+		// TAKEN ON THE HARDEST ROAD (.ai/dark-wizard-playable.md). The dark wizard himself, and his own spell, the
+		// reward of beating him in the Throne on Hardcore (the_taker_taken). Outside the campaign gate - he is not
+		// one of the imprisoned, and the Throne cannot wait on the man in it - and never shown until he is taken,
+		// so his line is vague: the whole road (the Throne's gate asks for all of it), the hard way (Hardcore).
+		// His spell is not counted by The Grimoire Restored: it was never taken, so it is not recovered.
+		FromAchievementCharacter("dark_wizard", AchievementDefinitions.TakerTakenId,
+			"Something waits for whoever walks the whole road the hard way.",
+			outsideCampaignGate: true, sealedUntilFreed: true),
+		new()
+		{
+			Id = TheTaking.SpellId,
+			Kind = UnlockKind.Spell,
+			Source = UnlockSource.Achievement,
+			SourceId = AchievementDefinitions.TakerTakenId,
+			LockedHint = "Comes to whoever walks the whole road the hard way.",
+			OutsideGrimoire = true,
+		},
 	};
 
 	private static UnlockDefinition Starter(string id, UnlockKind kind) => new()
@@ -332,7 +365,7 @@ public static class UnlockCatalog
 	};
 
 	private static UnlockDefinition FromAchievementCharacter(string characterId, string achievementId, string hint,
-		string secretUntilStage = "", bool outsideCampaignGate = false) => new()
+		string secretUntilStage = "", bool outsideCampaignGate = false, bool sealedUntilFreed = false) => new()
 	{
 		Id = characterId,
 		Kind = UnlockKind.Character,
@@ -342,6 +375,7 @@ public static class UnlockCatalog
 		IsSecret = !string.IsNullOrWhiteSpace(secretUntilStage),
 		RevealStageId = secretUntilStage ?? string.Empty,
 		OutsideCampaignGate = outsideCampaignGate,
+		SealedUntilFreed = sealedUntilFreed,
 	};
 
 	/// <summary>
@@ -440,10 +474,11 @@ public static class UnlockCatalog
 	/// <summary>
 	/// What The Grimoire Restored counts: every spell but the combinations. A combination is made, not
 	/// recovered, and asking for all of them would make the collection a test of every Ascension pair
-	/// (Eric, 2026-11-02).
+	/// (Eric, 2026-11-02). Nor a spell never taken from anyone (<see cref="UnlockDefinition.OutsideGrimoire"/>:
+	/// The Taking, the dark wizard's own).
 	/// </summary>
 	public static IEnumerable<string> GrimoireSpellIds =>
-		AllSpellIds.Where(id => !ComboCatalog.IsCombination(id));
+		AllSpellIds.Where(id => !ComboCatalog.IsCombination(id) && GetSpell(id)?.OutsideGrimoire != true);
 
 	/// <summary>
 	/// Every wizard, excluding the development sandbox entry and anyone outside the campaign gate (a

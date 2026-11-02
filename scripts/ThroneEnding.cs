@@ -99,15 +99,19 @@ public partial class ThroneEnding : Control
 	}
 
 	// Every wizard the save holds, in the roster's order; the one played this run among them. A run with no
-	// save to read (a tool's) stands the whole roster.
+	// save to read (a tool's) stands the whole roster. Never the dark wizard himself: the row is everyone he
+	// took, and he is the one whose light went out (.ai/dark-wizard-playable.md) - even on a run he walked.
 	private static List<CharacterData> Wizards()
 	{
 		SaveData save = (Engine.GetMainLoop() as SceneTree)?.Root?.GetNodeOrNull<SaveManager>("SaveManager")?.Data;
 		var ids = new HashSet<string>(UnlockCatalog.AllCharacterIds, StringComparer.OrdinalIgnoreCase);
+		ids.Remove(DarkWizardId);
 		return CharacterRoster.GetAll()
 			.Where(c => c != null && ids.Contains(c.Id) && (save == null || GlobalStatsManager.IsCharacterUnlocked(save, c.Id)))
 			.ToList();
 	}
+
+	private const string DarkWizardId = "dark_wizard";
 
 	private void BuildRow()
 	{

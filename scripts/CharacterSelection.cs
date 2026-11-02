@@ -154,8 +154,11 @@ public partial class CharacterSelection : Control
 			// The previous check also used a case-sensitive List.Contains, alone among every unlock
 			// check in the project.
 			bool unlocked = GlobalStatsManager.IsCharacterUnlocked(saveManager?.Data, character.Id);
+			// One who is SealedUntilFreed (the dark wizard) keeps the sealed card until he is free, whatever
+			// has been revealed: his shape is the surprise (.ai/dark-wizard-playable.md section 2).
 			CardState state = unlocked ? CardState.Unlocked
-				: GlobalStatsManager.IsCharacterRevealed(saveManager?.Data, character.Id) ? CardState.Locked
+				: GlobalStatsManager.IsCharacterRevealed(saveManager?.Data, character.Id)
+					&& UnlockCatalog.GetCharacter(character.Id)?.SealedUntilFreed != true ? CardState.Locked
 				: CardState.Secret;
 
 			// The state is kept for every roster index, a hidden one included, because cardStates is read
@@ -430,8 +433,12 @@ public partial class CharacterSelection : Control
 	private static Color CardNameInk(CharacterData character, CardState state) =>
 		state == CardState.Unlocked ? CharacterVisuals.GetCharacterTint(character.Id).Lightened(0.18f) : HiddenNameInk;
 
+	// A sealed card says only that there is someone - except one sealed until he is free, whose card carries
+	// his vague line instead (UnlockDefinition.SealedUntilFreed): it names nobody and no place.
 	private static string LockedLine(CharacterData character, CardState state) =>
-		state == CardState.Secret ? SecretLine : UnlockCatalog.GetLockedHint(character.Id, UnlockKind.Character);
+		state == CardState.Secret && UnlockCatalog.GetCharacter(character.Id)?.SealedUntilFreed != true
+			? SecretLine
+			: UnlockCatalog.GetLockedHint(character.Id, UnlockKind.Character);
 
 	// A roster card on a phone: one row, the face in its well on the left, the name and the facts on
 	// the right. The whole card is the hit area (the overlay laid first, everything else click-through);
@@ -525,11 +532,27 @@ public partial class CharacterSelection : Control
 			AutowrapMode = TextServer.AutowrapMode.WordSmart
 		};
 		ResponsiveLayout.SetFont(nameLabel, ResponsiveLayout.TextRole.Label);
+		FitOneLine(nameLabel, CompactCardWidth - 16f);
 		nameLabel.AddThemeColorOverride("font_color", CardNameInk(character, state));
 		vbox.AddChild(nameLabel);
 
 		BonelightSkin.MakeSubtreeClickThrough(margin, null);
 		return card;
+	}
+
+	// A name too long for the card's one line ("The Dark Wizard", and the chapter wizards to come - the Cumaean
+	// Sibyl, Wayland the Smith) is set a point or two smaller, never below Micro, rather than wrapped onto a
+	// second line the compact card has no room for: the wrapped half was cut off under its frame.
+	private static void FitOneLine(Label label, float width)
+	{
+		Font font = label.GetThemeFont("font");
+		if (font == null || string.IsNullOrEmpty(label.Text))
+			return;
+		int size = label.GetThemeFontSize("font_size");
+		int floor = ResponsiveLayout.FontSize(label, ResponsiveLayout.TextRole.Micro);
+		while (size > floor && font.GetStringSize(label.Text, HorizontalAlignment.Left, -1f, size).X > width)
+			size--;
+		label.AddThemeFontSizeOverride("font_size", size);
 	}
 
 	private void BuildDetailPane()

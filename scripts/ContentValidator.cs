@@ -102,6 +102,8 @@ public static class ContentValidator
 		"res://SpellData_ScorchingRay.tres",
 		"res://SpellData_MeteorSwarm.tres",
 		"res://SpellData_HuntersDraw.tres",
+		// The dark wizard's own (.ai/dark-wizard-playable.md).
+		"res://SpellData_TheTaking.tres",
 		// The combinations (ComboCatalog): never in the level-up pool, made only by fusing two ascended spells.
 		"res://SpellData_Sagittarius.tres",
 		// The Sovereign Rite (ComboCatalog's rite, SovereignRite): never held, never a card; its name, line and picture.

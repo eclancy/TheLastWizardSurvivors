@@ -78,6 +78,9 @@ public static class QuestLog
 		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.
 		new Prisoner("john_dee", "the scattered scholar", "", "{0} has his library back."),
+		// Not a prisoner: the one who took them (.ai/dark-wizard-playable.md), taken in his turn on the hardest
+		// road. No held line - he is held nowhere - and once taken the Throne's note says what became of him.
+		new Prisoner("dark_wizard", "the one on the throne", "", "{0} has nothing left to take."),
 	};
 
 	public static Prisoner PrisonerOf(string characterId) =>

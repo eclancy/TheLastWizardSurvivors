@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_TheTaking.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/dark-wizard-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/DarkWizardFrames.tres" id="4"]
+
+; Taken, not freed: the dark wizard himself, the Throne's boss, earned by beating him there on Hardcore
+; (.ai/dark-wizard-playable.md; the "the_taker_taken" deed). Never named on screen - "the Dark Wizard" is
+; what he is, as the boss bar says (BossCatalog) - and never shown, not even as a silhouette, until he is
+; taken (UnlockDefinition.SealedUntilFreed). Outside the campaign gate: he is not one of the imprisoned.
+;
+; He opens on The Taking, his own: the boss's hand, his light and all he took, turned on the horde. His
+; passive is Dread: his Darkness hits frighten twice as often - the horde is his making, and knows him.
+; Carried by his shadow rather than quick on his feet.
+[resource]
+script = ExtResource("1")
+Id = "dark_wizard"
+Name = "The Dark Wizard"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 0.96
+IsUnlocked = true
+StartingPassiveId = "fear_x2"
+StartingPassiveName = "Dread"
+StartingPassiveDescription = "Darkness hits frighten twice as often"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

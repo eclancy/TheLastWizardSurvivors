@@ -46,6 +46,9 @@ public static class CharacterVisuals
 			// The kindled ward burning at the tip of the paper in his fingers (roster.py, seimei()), not
 			// the wand's head, whose paper does not glow.
 			case "seimei": return new Vector2(40, 11);
+			// The warm light he took, in his raised hand (tools/art/player_dark_wizard.py, ORB): The Taking's
+			// hands leave from it, the boss's own gesture.
+			case "dark_wizard": return new Vector2(11, 5);
 			default: return null;
 		}
 	}
@@ -71,6 +74,7 @@ public static class CharacterVisuals
 			case "john_dee":
 			case "laelaps":
 			case "seimei":
+			case "dark_wizard":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

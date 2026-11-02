@@ -176,6 +176,20 @@ public static class ApotheosisCatalog
 				"Banish: sealed now, gone later. Elites take a heavy blow instead; bosses are never sealed.",
 				new Color(1.0f, 0.94f, 0.66f), NoVisualScale),
 		},
+		// The dark wizard, taken on the hardest road (.ai/dark-wizard-playable.md). "Take" was nobody's, and it is
+		// his verb in the fight and in the story: whatever his lanes kill gives up its light too, and it comes
+		// home to be caught in its turn (TakingLanes; TakenLight.MaxInAir in the air at most). Nothing moves the
+		// swarm (pull) and nothing is summoned (swarm). Darkness, the one of his two the form deepens; no card on
+		// The Taking trades it away. No visual scale: the hand and the lanes draw their own size.
+		new()
+		{
+			CharacterId = "dark_wizard", SpellId = TheTaking.SpellId,
+			Element = Element.Darkness, Verb = "take",
+			Form = Make(TheTaking.AllHeTookId, "All He Took", Element.Darkness,
+				"Whatever your lanes kill gives up its light too. Catch it, and the lanes cross again.",
+				"Take: every kill on a lane is another light coming home. Stand where they fall.",
+				new Color(0.78f, 0.62f, 1.0f), NoVisualScale),
+		},
 	};
 
 	// A form's visual lift is a 15% larger spell, but only where the spell's node keeps a visual scale.
