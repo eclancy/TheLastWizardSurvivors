@@ -368,6 +368,12 @@ to how progress is stored still needs a schema step in `SaveData.Migrate`.
   Your old save is kept." with Continue. It is cleared when Continue is pressed, so quitting before
   reading it shows it again.
 
+**Only a copy that knows about epochs can ask.** A copy older than the epoch machinery (0.10.0 and
+before) updates itself straight into a reset with no question - it still keeps the backup and shows
+the title's notice afterwards, because that half runs in the new version. So the first story reset
+should come at least one ordinary release after the one that first carried `progressEpoch`, giving
+copies time to pick the question up.
+
 **Not covered by the game:** a player who downloads the new APK or installer from the download page
 rather than through the update check sees no warning before it. That page (ecec.dev, in the
 EricClancyEngineeringAndCrafts repository) should read `progressEpoch` from `version.json` and say it

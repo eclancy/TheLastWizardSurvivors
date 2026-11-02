@@ -78,6 +78,9 @@ release decision Eric makes, never a shortcut to avoid writing a migration.
 
 - One constant decides whether a release resets everyone. It ships at 1; raising it is a deliberate
   act, recorded in `.ai/releasing.md`, "Releasing a story reset".
+- Only copies built with this code can ask. One from 0.10.0 or before updates straight into a reset
+  (and still gets the backup and the notice, which run in the new version), so the first reset
+  should follow at least one ordinary release that carries `progressEpoch`.
 - Old saves are kept, not deleted. Nothing in the game reads them back; a player who wants the old
   story would have to run an old build against a restored file.
 - An Android player who installs the new APK from the download page or the browser, not the strip,
