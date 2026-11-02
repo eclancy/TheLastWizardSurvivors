@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwvw2b6x83eh3"
-path="res://.godot/imported/eyes-near-3.png-cbed174983dcb438771df40829e1a77e.ctex"
+uid="uid://bwi5b64v301q1"
+path="res://.godot/imported/eyes.png-111181d9501404dfe98dd79f74555f19.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bonelight/ui/title-wide/eyes-near-3.png"
-dest_files=["res://.godot/imported/eyes-near-3.png-cbed174983dcb438771df40829e1a77e.ctex"]
+source_file="res://assets/bonelight/ui/title-wide/eyes.png"
+dest_files=["res://.godot/imported/eyes.png-111181d9501404dfe98dd79f74555f19.ctex"]
 
 [params]
 

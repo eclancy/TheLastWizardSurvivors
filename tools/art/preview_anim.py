@@ -5,10 +5,12 @@ Run: python tools/art/preview_anim.py [out.gif]
 
 This is a preview, not an asset - it exists so the animation can be judged without launching
 the game, and it writes outside assets/ on purpose. It reproduces what scripts/TitleScreen.cs
-does at runtime: one clock for the flames and the figure, a slower one for the ward, and the
-occasional blink. If the GIF and the running game disagree, the GIF is the one that is wrong.
+does at runtime: one clock for the flames and the figure, a slower one for the ward, and every
+pair of eyes blinking on its own. If the GIF and the running game disagree, the GIF is the one
+that is wrong.
 """
 
+import json
 import os
 import sys
 
@@ -21,12 +23,35 @@ FLAME_MS = 130          # FlameFrameSeconds
 WARD_STEPS = [0, 1, 2, 1]
 WARD_EVERY = 7          # WardPulseSeconds / FlameFrameSeconds, near enough
 FRAMES = 32             # 4.2s, which is close to two full ward breaths
-BLINKS = {2: 1, 3: 1, 7: 4, 8: 4, 11: 3, 12: 3, 15: 2, 16: 2,
-          20: 5, 21: 5, 24: 1, 25: 1, 28: 3, 29: 3}  # frame -> pair, held two frames
+# Every pair blinks once in the loop, each starting on its own frame: half, shut, slit, open. At
+# 130 ms a frame that is slower than the game's blink (TitleScreen.cs), but it shows each pair go.
+# Frame 0 has every pair open, so it is still bit-identical to the shipping title-screen.png.
+BLINK_STEPS = [1, None, 2]              # eyes.png column per step; None is shut (no cell)
 
 
 def layer(name):
     return Image.open(os.path.join(SRC, name + ".png")).convert("RGBA")
+
+
+def eye_cells():
+    """The pairs from eyes.json and a function giving one pair's cell for a given frame of the
+    loop (None when it is shut) - see tools/art/title_eyes.py."""
+    spec = json.load(open(os.path.join(SRC, "eyes.json")))
+    sheet = Image.open(os.path.join(SRC, "eyes.png")).convert("RGBA")
+    cw, ch = spec["cell"]
+    pw, ph = spec["pitch"]
+    pairs = spec["pairs"]
+
+    def cell(i, frame):
+        p = pairs[i]
+        start = 1 + (5 * i) % (FRAMES - len(BLINK_STEPS))   # never mid-blink on frame 0
+        step = (frame - start) % FRAMES
+        col = BLINK_STEPS[step] if step < len(BLINK_STEPS) else 0
+        if col is None:
+            return None
+        row = spec["rows"].index(p["depth"])
+        return sheet.crop((col * pw, row * ph, col * pw + cw, row * ph + ch))
+    return pairs, cell
 
 
 def palette(frames):
@@ -83,16 +108,21 @@ def main():
             cache[name] = layer(name)
         return cache[name]
 
+    pairs, cell = eye_cells()
     frames = []
     for i in range(FRAMES):
         f = i % 4
         w = WARD_STEPS[(i // WARD_EVERY) % len(WARD_STEPS)]
-        e = BLINKS.get(i, 0)
-        stack = ["back-a", "eyes-far-%d" % e, "back-b", "eyes-near-%d" % e,
-                 "ward-%d" % w, "flames-far-%d" % f, "figure-%d" % f,
+        stack = ["back-a", "back-b", None, "ward-%d" % w, "flames-far-%d" % f, "figure-%d" % f,
                  "flames-near-%d" % f, "fore"]
         im = L(stack[0]).copy()
         for n in stack[1:]:
+            if n is None:                    # the eyes, between back-b and the ward
+                for k, p in enumerate(pairs):
+                    c = cell(k, i)
+                    if c is not None:
+                        im.paste(c, (p["x"], p["y"]), c)
+                continue
             im = Image.alpha_composite(im, L(n))
         frames.append(im.convert("RGB"))
 

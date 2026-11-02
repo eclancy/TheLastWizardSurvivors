@@ -1,0 +1,26 @@
+{
+ "generator": "tools/art/title_eyes.py, via tools/art/anim.py - do not edit by hand",
+ "art": [360, 840],
+ "cell": [11, 4],
+ "pitch": [12, 5],
+ "frames": ["open", "half", "slit"],
+ "rows": ["far", "near"],
+ "pairs": [
+  {"x": 220, "y": 414, "depth": "far"},
+  {"x": 58, "y": 425, "depth": "far"},
+  {"x": 320, "y": 429, "depth": "far"},
+  {"x": 174, "y": 430, "depth": "far"},
+  {"x": 80, "y": 453, "depth": "far"},
+  {"x": 39, "y": 456, "depth": "far"},
+  {"x": 216, "y": 467, "depth": "far"},
+  {"x": 265, "y": 470, "depth": "far"},
+  {"x": 326, "y": 473, "depth": "far"},
+  {"x": 307, "y": 224, "depth": "near"},
+  {"x": 32, "y": 247, "depth": "near"},
+  {"x": 340, "y": 269, "depth": "near"},
+  {"x": 42, "y": 283, "depth": "near"},
+  {"x": 324, "y": 325, "depth": "near"},
+  {"x": 45, "y": 328, "depth": "near"},
+  {"x": 12, "y": 346, "depth": "near"}
+ ]
+}
