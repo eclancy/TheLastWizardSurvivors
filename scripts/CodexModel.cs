@@ -118,6 +118,8 @@ public sealed class CodexNode
 	public string OpensEntryId = string.Empty;
 	/// <summary>The element whose colour an item ingredient's chip takes, for sets.</summary>
 	public List<(Element Element, int Weight)> Elements = new();
+	/// <summary>Whose final form it is ("Pyromancer"), on an Apotheosis node.</summary>
+	public string Owner = string.Empty;
 
 	public bool Revealed => State != CodexNodeState.Sealed;
 	public string ShownName => Revealed || NameAlwaysShown ? Name : CodexModel.SealedName;
@@ -137,6 +139,11 @@ public sealed class CodexForm
 	public List<CodexNode> Ascensions = new();
 	/// <summary>The Apotheosis forms that end this spell: the wizard's in a run, every freed wizard's otherwise.</summary>
 	public List<CodexNode> Finals = new();
+	/// <summary>
+	/// The level 4 and level 8 paths an Apotheosis names: the way to the final form, which the book draws in
+	/// the ember line (the wizard's in a run, every freed wizard's otherwise).
+	/// </summary>
+	public HashSet<string> ApotheosisPath = new(StringComparer.OrdinalIgnoreCase);
 
 	public IEnumerable<CodexNode> AllNodes => Mutations.Concat(Ascensions).Concat(Finals);
 }
@@ -187,6 +194,13 @@ public sealed class CodexEntry
 	public bool SetAside;
 	/// <summary>"Rare relic", "Boon".</summary>
 	public string KindLine = string.Empty;
+	/// <summary>The element a spell is filed under in the index: its own first, heaviest tag (the template's, never a gain).</summary>
+	public Element? IndexElement;
+	/// <summary>The wizard's own starting spell (in a run): the index stars it.</summary>
+	public bool Own;
+	/// <summary>A relic's rarity, and every Full Set Enchantment it is a piece of, discovered or not (the index files it).</summary>
+	public ChestItemRarity? Rarity;
+	public List<string> SetIds = new();
 
 	public List<CodexForm> Forms = new();
 	/// <summary>The form the detail opens on: the held one in a run, else the first.</summary>
@@ -241,6 +255,8 @@ public sealed class CodexContext
 	public IReadOnlyList<string> HeldBoons = Array.Empty<string>();
 	/// <summary>The run's element counts by name, for an element chip's popover.</summary>
 	public IReadOnlyDictionary<string, int> ElementCounts = new Dictionary<string, int>();
+	/// <summary>The wizard's own starting spell (Player.SignatureSpellId), or empty.</summary>
+	public string StarterSpellId = string.Empty;
 
 	public static CodexContext ForSave(SaveData save) => new() { Mode = CodexMode.Collection, Save = save };
 }
@@ -541,6 +557,8 @@ public sealed class CodexModel
 					Icon = template.Icon,
 					Elements = CodexRows.FromWeights(template.GetElementWeights()),
 					IsPassive = template.IsPassive,
+					IndexElement = template.GetElementWeights().OrderByDescending(p => p.Value).Select(p => (Element?)p.Key).FirstOrDefault(),
+					Own = inRun && template.Id.Equals(context.StarterSpellId ?? string.Empty, StringComparison.OrdinalIgnoreCase),
 					Owned = owned,
 					Held = held != null,
 					Discovered = owned || held != null,
@@ -762,9 +780,19 @@ public sealed class CodexModel
 						&& (string.IsNullOrEmpty(d.VariantId) || d.VariantId.Equals(form.SelectedVariantId ?? string.Empty, StringComparison.OrdinalIgnoreCase)))
 					: null;
 				if (apotheosis != null)
+				{
 					tree.Finals.Add(FinalFromPreview(form.Id, apotheosis, tree));
+					foreach (AscensionRequirement gate in apotheosis.Requirements.Where(r => r.Kind == AscensionRequirementKind.Path))
+						tree.ApotheosisPath.Add(gate.PathId);
+				}
 				else if (definition != null)
+				{
 					tree.Finals.Add(FinalFromDefinition(form, definition));
+					tree.ApotheosisPath.Add(definition.RequiredLevel4EvolutionId);
+					tree.ApotheosisPath.Add(definition.RequiredLevel8EvolutionId);
+				}
+				foreach (CodexNode final in tree.Finals)
+					final.Owner = context.WizardName ?? string.Empty;
 				return;
 			}
 			// No run: the form of every freed wizard whose final form ends this spell. A locked wizard's is
@@ -776,6 +804,8 @@ public sealed class CodexModel
 					|| !GlobalStatsManager.IsCharacterUnlocked(save, definition.CharacterId))
 					continue;
 				tree.Finals.Add(FinalFromDefinition(form, definition));
+				tree.ApotheosisPath.Add(definition.RequiredLevel4EvolutionId);
+				tree.ApotheosisPath.Add(definition.RequiredLevel8EvolutionId);
 			}
 		}
 
@@ -834,7 +864,7 @@ public sealed class CodexModel
 			{
 				CharacterData wizard = CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(definition.CharacterId, StringComparison.OrdinalIgnoreCase));
 				if (wizard != null)
-					node.Note = $"{wizard.Name}'s";
+					node.Owner = wizard.Name;
 			}
 			return node;
 		}
@@ -928,6 +958,8 @@ public sealed class CodexModel
 					Held = held,
 					Hint = "Found in a chest.",
 					KindLine = rarity == ChestItemRarity.Relic ? "Relic" : $"{rarity} relic",
+					Rarity = rarity,
+					SetIds = ChestItemCatalog.Sets.Where(s => s.RequiredItemIds.Contains(id, StringComparer.OrdinalIgnoreCase)).Select(s => s.Id).ToList(),
 				};
 				entry.State = !seen ? CodexState.Undiscovered : held ? CodexState.Taken : inRun ? CodexState.Known : CodexState.Owned;
 				yield return entry;

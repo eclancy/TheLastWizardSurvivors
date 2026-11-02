@@ -3683,6 +3683,7 @@ public partial class Node2DGame : Node2D
 			CharacterId = character?.Id ?? string.Empty,
 			WizardName = character?.Name ?? string.Empty,
 			PlayerLevel = player.CurrentLevel,
+			StarterSpellId = player.SignatureSpellId ?? string.Empty,
 			HeldSpells = player.GetEquippedSpells().Where(s => s != null).ToList(),
 			Equipped = BuildEquippedInfo(),
 			Combos = player.BuildComboPreviews(save),

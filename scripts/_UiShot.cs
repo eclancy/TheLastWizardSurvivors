@@ -2294,9 +2294,9 @@ public partial class _UiShot : Node
 		var controls = new System.Collections.Generic.List<Control>();
 		// The Evolution Codex covers whatever opened it (the level-up, the pause screen, the menu), so while it
 		// is up it is the only screen measured: the ones under it are hidden behind its panel.
-		// A phone's detail sheet covers the grid the same way.
+		// A phone's turned page covers its index the same way.
 		if (FindNodeOfType<EvolutionCodex>(GetTree().Root) is EvolutionCodex codex)
-			CollectTextControls(codex.SheetOpen && codex.FindChild("CodexSheet", true, false) is Node sheet ? sheet : codex, controls);
+			CollectTextControls(codex.PageOpen && codex.FindChild("CodexEntryPage", true, false) is Node turned ? turned : codex, controls);
 		else
 			CollectInkControls(GetTree().Root, controls);
 		foreach (Control control in controls)

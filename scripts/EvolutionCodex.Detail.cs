@@ -4,73 +4,75 @@ using System.Collections.Generic;
 using System.Linq;
 using WizardSurvivors.scripts;
 
-// THE DETAIL of the selected entry (.ai/evolution-codex.md, sections 2-4): a spell's whole tree with its
-// requirements, an item with its sets, a recipe as ingredients into a result. On a PC it is the panel on the
-// right and its tree reads left to right in columns - base, the level 4 mutations, the level 8 Ascensions,
-// the final form - with gold arrows into what is open and dashed ones into what is not (AscensionForkArrows,
-// the browser's own lines). On a phone it is the sheet, and the tree reads top to bottom in rows.
+// AN ENTRY'S PAGE (.ai/evolution-codex.md sections 2-4, layout B "the book"): the right page on a PC, the
+// turned page on a phone. A spell's evolutions are a family tree down the page - the base, the level 4
+// mutations in a row, the level 8 Ascensions under them, then the Apotheosis - joined by ink lines
+// (CodexTreeLines): the gold shade into what is open or taken, dashed into the rest, and the way to the
+// Apotheosis in the ember line. An item is its effect and its sets; a recipe is its ingredients into its
+// result. The recipes a spell is part of are a note in the margin at the foot.
 //
-// Everything a player reads here was on the Ascensions browser it replaced, and nothing it showed was lost:
-// the gates, each met or not with the shortfall in numbers on the rubric band; sealed paths ("???" and the
-// sealed glyph) until first met; the path taken and the one closed; the Apotheosis with its own gates and
-// "Out of reach this run"; the recipes a path joins. What a path DOES is one line in the reading box under
-// the tree, for the node the selection or the pointer is on, so the tree itself stays names and chips.
+// These are the PARTS; EvolutionCodex.Layout.cs places them (ArrangeTree, ArrangeRecipe). Everything the
+// Ascensions browser showed is here and nothing was lost: every gate met or not, with the shortfall in
+// numbers on the rubric band; sealed paths ("???") until first met; the path taken and the ones closed; the
+// Apotheosis with its own gates and "out of reach"; the recipes a path joins. What a node DOES is one line in
+// the reading line under the tree, for the node the selection or the pointer is on.
 public partial class EvolutionCodex
 {
 	/// <summary>What a sealed node says (AscensionSightings' rule, section 4e of the level-up doc).</summary>
 	private const string SealedLine = "Sealed until you first meet its requirements.";
 
-	/// <summary>The tree's focus stops, line by line: a column each on a PC, a row each on a phone.</summary>
+	private static CodexRows.Palette V => CodexRows.Vellum;
+
+	/// <summary>The page's focus stops, line by line: a tier each, then the margin note.</summary>
 	private readonly List<List<Control>> treeLines = new();
 	private readonly Dictionary<Control, CodexNode> stopNodes = new();
-	private TextureRect readingIcon;
 	private Label readingName;
 	private Label readingLine;
-	private Control usedInRow;
 
-	private void ShowDetail()
+	private void ShowPage()
 	{
-		if (detail == null || !IsInstanceValid(detail))
+		if (page == null || !IsInstanceValid(page))
 			return;
-		foreach (Node child in detail.GetChildren())
+		foreach (Node child in page.GetChildren())
 		{
-			detail.RemoveChild(child);
+			page.RemoveChild(child);
 			child.QueueFree();
 		}
 		treeLines.Clear();
 		stopNodes.Clear();
-		readingIcon = null;
 		readingName = null;
 		readingLine = null;
-		usedInRow = null;
 
 		CodexEntry entry = model.Get(selectedId);
+		if (entryTitle != null)
+			entryTitle.Text = entry?.ShownName ?? string.Empty;
 		if (entry == null)
 		{
-			detail.AddChild(CodexRows.MakeText("Nothing chosen.", ResponsiveLayout.TextRole.Body, CodexRows.Stone.InkSoft));
+			page.AddChild(CodexRows.MakeText("Nothing chosen.", ResponsiveLayout.TextRole.Body, V.InkSoft));
 			return;
 		}
 
-		detail.AddChild(BuildHead(entry));
-		if (!entry.Discovered)
-			return;
-
-		switch (entry.Kind)
+		page.AddChild(BuildHead(entry));
+		if (entry.Discovered)
 		{
-			case CodexKind.Spell:
-				BuildSpellDetail(entry);
-				break;
-			case CodexKind.Relic:
-			case CodexKind.Boon:
-				BuildItemDetail(entry);
-				break;
-			default:
-				BuildRecipeDetail(entry, entry.Recipe, heading: null);
-				break;
+			switch (entry.Kind)
+			{
+				case CodexKind.Spell:
+					BuildSpellPage(entry);
+					break;
+				case CodexKind.Relic:
+				case CodexKind.Boon:
+					BuildItemPage(entry);
+					break;
+				default:
+					page.AddChild(ArrangeRecipe(entry.Recipe));
+					AddRecipeTiers(entry.Recipe);
+					break;
+			}
 		}
 		WireTreeFocus();
-		if (IsInstanceValid(detailScroll))
-			detailScroll.ScrollVertical = 0;
+		if (IsInstanceValid(pageScroll))
+			pageScroll.ScrollVertical = 0;
 	}
 
 	// ---- the head: what the entry is ----------------------------------------------------------------
@@ -87,70 +89,38 @@ public partial class EvolutionCodex
 		info.AddThemeConstantOverride("separation", 4);
 		head.AddChild(info);
 
-		// On a phone the sheet's band already names it ("< Codex   Cinderbreath").
+		var titleRow = new HFlowContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		titleRow.AddThemeConstantOverride("h_separation", 10);
+		titleRow.AddThemeConstantOverride("v_separation", 4);
+		info.AddChild(titleRow);
+		// On a phone the turned page's band already names it ("‹ Index   Cinderbreath").
 		if (!narrow)
 		{
-			Label name = CodexRows.MakeText(entry.ShownName, ResponsiveLayout.TextRole.Title, CodexRows.Stone.Ink);
+			Label name = CodexRows.MakeText(entry.ShownName, ResponsiveLayout.TextRole.Title, V.Ink);
 			name.Name = "CodexDetailName";
-			info.AddChild(name);
+			name.AutowrapMode = TextServer.AutowrapMode.Off;
+			titleRow.AddChild(name);
 		}
-
-		var meta = new HFlowContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		meta.AddThemeConstantOverride("h_separation", 10);
-		meta.AddThemeConstantOverride("v_separation", 4);
-		info.AddChild(meta);
-		Label kind = CodexRows.MakeText(entry.Discovered ? entry.KindLine : KindOf(entry), ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
-		kind.AutowrapMode = TextServer.AutowrapMode.Off;
-		meta.AddChild(kind);
 		if (entry.Discovered)
 		{
 			foreach (var (element, weight) in entry.Elements)
-				meta.AddChild(CodexRows.BuildChip(element, weight > 1 ? $"{element} x{weight}" : element.ToString(), focusable: false));
-			// A held spell's level is on its base node (PC) and its pips on its cell; on a phone the base node
-			// is a row of its own, so the head says it there instead.
-			if (narrow && entry.Held && entry.Kind == CodexKind.Spell && entry.LevelCap > 0)
-			{
-				var level = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-				level.AddThemeConstantOverride("separation", 8);
-				Label words = CodexRows.MakeText($"Level {entry.Level}", ResponsiveLayout.TextRole.Label, CodexRows.Stone.Ink);
-				words.AutowrapMode = TextServer.AutowrapMode.Off;
-				level.AddChild(words);
-				level.AddChild(new LevelPips
-				{
-					Count = entry.LevelCap,
-					Filled = Mathf.Clamp(entry.Level, 0, entry.LevelCap),
-					SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
-					MouseFilter = Control.MouseFilterEnum.Ignore,
-				});
-				meta.AddChild(level);
-			}
-			else if (entry.Kind == CodexKind.FullSet && model.Mode == CodexMode.InRun)
-			{
-				Label held = CodexRows.MakeText($"{entry.Level}/{entry.LevelCap} held", ResponsiveLayout.TextRole.Label, CodexRows.Stone.Ink);
-				held.AutowrapMode = TextServer.AutowrapMode.Off;
-				meta.AddChild(held);
-			}
+				titleRow.AddChild(CodexRows.BuildChip(element, weight > 1 ? $"{element} x{weight}" : element.ToString(), focusable: false));
 		}
+		Label kind = CodexRows.MakeText(KindAndLevel(entry), ResponsiveLayout.TextRole.Label, V.InkSoft);
+		kind.AutowrapMode = TextServer.AutowrapMode.Off;
+		kind.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+		titleRow.AddChild(kind);
 
-		if (entry.Discovered && !string.IsNullOrWhiteSpace(entry.Line))
+		if (entry.Discovered)
 		{
-			// A spell's tagline is one short line (34 characters, SpellData.TaglineMaxLength): it rides with the
-			// chips, which keeps the head one band and the tree under it above the fold. An item's effect is a
-			// sentence, and gets its own.
-			Label line = CodexRows.MakeText(entry.Line, ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
-			if (entry.Kind == CodexKind.Spell && !narrow)
-			{
-				line.AutowrapMode = TextServer.AutowrapMode.Off;
-				meta.AddChild(line);
-			}
-			else
-				info.AddChild(line);
+			if (!string.IsNullOrWhiteSpace(entry.Line))
+				info.AddChild(CodexRows.MakeText(entry.Line, ResponsiveLayout.TextRole.Label, V.Ink));
 		}
 		else
 		{
 			// How it is found: the one useful thing a sealed entry has (UnlockCatalog's line for a spell).
 			Texture2D glyph = entry.Kind == CodexKind.Spell ? CodexRows.SpellHintGlyph(entry.Id) : StatIcons.Load("lock");
-			info.AddChild(GlyphLine(glyph, entry.Hint, CodexRows.Stone.InkSoft));
+			info.AddChild(GlyphLine(glyph, entry.Hint, V.InkSoft));
 		}
 
 		if (StateTag(entry) is Control tag)
@@ -160,33 +130,60 @@ public partial class EvolutionCodex
 		return head;
 	}
 
-	private static string KindOf(CodexEntry entry) => entry.Kind switch
+	// "Attack · Level 7 · your starting spell", "Rare relic", "Conjunction".
+	private string KindAndLevel(CodexEntry entry)
 	{
-		CodexKind.Spell => "Spell",
-		CodexKind.Relic => "Relic",
-		CodexKind.Boon => "Boon",
-		CodexKind.Combination => "Conjunction",
-		_ => "Full Set Enchantment",
-	};
+		if (!entry.Discovered)
+			return entry.Kind switch
+			{
+				CodexKind.Spell => "Spell, not yet found",
+				CodexKind.Relic => "Relic, not yet found",
+				CodexKind.Boon => "Boon, not yet found",
+				CodexKind.Combination => "Conjunction, not yet known",
+				_ => "Full Set Enchantment, not yet known",
+			};
+		// The level is on the base node, and the pips on the index line: said once here would be said thrice.
+		var parts = new List<string> { entry.KindLine };
+		if (entry.Own)
+			parts.Add("your starting spell");
+		return string.Join("  ·  ", parts);
+	}
 
-	// "Ready", "Held", "Owned", "Made": the cell's state said once in words.
+	// "Ready", "Held", "Made": the line's state said once in words.
 	private Control StateTag(CodexEntry entry)
 	{
-		(string text, string glyph, Color ink) = entry.State switch
+		string text = entry.State switch
 		{
-			CodexState.Ready => ("Ready", "done", CodexRows.Stone.Reward),
-			CodexState.Taken when entry.Kind == CodexKind.Spell => ("Maxed", "done", CodexRows.Stone.Reward),
-			CodexState.Taken when entry.Kind == CodexKind.Combination => ("Made", "done", CodexRows.Stone.Reward),
-			CodexState.Taken when entry.Kind == CodexKind.FullSet => ("Complete", "done", CodexRows.Stone.Reward),
-			CodexState.Taken => ("Held", "done", CodexRows.Stone.Reward),
-			CodexState.Owned when entry.Kind == CodexKind.Combination => ("Made", "done", CodexRows.Stone.InkSoft),
-			_ => (null, null, default),
+			CodexState.Ready => "Ready",
+			CodexState.Taken when entry.Kind == CodexKind.Spell => "Maxed",
+			CodexState.Taken when entry.Kind == CodexKind.Combination => "Made",
+			CodexState.Taken when entry.Kind == CodexKind.FullSet => "Complete",
+			CodexState.Taken => "Held",
+			CodexState.Owned when entry.Kind == CodexKind.Combination => "Made",
+			_ => null,
 		};
 		if (text == null)
 			return null;
-		Control tag = GlyphLine(StatIcons.Load(glyph), text, ink, expand: false);
+		Control tag = Tag(text);
 		tag.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
 		return tag;
+	}
+
+	// A small solid tag in the gold shade with the page's face for its word ("READY").
+	private static Control Tag(string text)
+	{
+		var pill = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+		var box = new StyleBoxFlat { BgColor = V.Reward };
+		box.SetCornerRadiusAll(2);
+		box.ContentMarginLeft = 6;
+		box.ContentMarginRight = 6;
+		box.ContentMarginTop = 1;
+		box.ContentMarginBottom = 1;
+		pill.AddThemeStyleboxOverride("panel", box);
+		Label words = CodexRows.MakeText(text.ToUpperInvariant(), ResponsiveLayout.TextRole.Micro, V.Face);
+		words.AutowrapMode = TextServer.AutowrapMode.Off;
+		pill.AddChild(words);
+		return pill;
 	}
 
 	// The Spell Index's Set aside, kept: a Redaction takes a spell out of the level-up pool. Collection mode
@@ -210,7 +207,7 @@ public partial class EvolutionCodex
 			TooltipText = entry.SetAside ? "Put it back in the level-up pool." : canSetAside ? "Stop offering it at level-up." : reason,
 		};
 		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
-		CodexRows.StyleQuietToggle(button, CodexRows.Stone);
+		CodexRows.StyleQuietToggle(button, V);
 		ResponsiveLayout.EnsureTouchTarget(button, 0f);
 		string id = entry.Id;
 		bool wasAside = entry.SetAside;
@@ -228,16 +225,16 @@ public partial class EvolutionCodex
 	private void RefreshAfterCuration(string id)
 	{
 		model = CodexModel.Build(context);
-		RebuildGrid();
-		ShowDetail();
+		RebuildIndex();
+		ShowPage();
 		UpdateCount();
-		if (detail.FindChild("CurationToggle_" + id, true, false) is Button again && !again.Disabled)
+		if (page.FindChild("CurationToggle_" + id, true, false) is Button again && !again.Disabled)
 			again.GrabFocus();
 	}
 
-	// ---- a spell: its tree --------------------------------------------------------------------------
+	// ---- a spell: its family tree -----------------------------------------------------------------
 
-	private void BuildSpellDetail(CodexEntry entry)
+	private void BuildSpellPage(CodexEntry entry)
 	{
 		if (entry.Forms.Count == 0)
 			return;
@@ -249,17 +246,17 @@ public partial class EvolutionCodex
 			: lit >= 0 ? lit
 			: Mathf.Clamp(entry.CurrentForm, 0, entry.Forms.Count - 1);
 		if (entry.Forms.Count > 1)
-			detail.AddChild(BuildFormTabs(entry, shown));
+			page.AddChild(BuildFormTabs(entry, shown));
 		CodexForm form = entry.Forms[shown];
 		if (form.Mutations.Count == 0 && form.Ascensions.Count == 0 && form.Finals.Count == 0)
 		{
-			detail.AddChild(CodexRows.MakeText("No evolutions.", ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft));
+			page.AddChild(CodexRows.MakeText("No evolutions.", ResponsiveLayout.TextRole.Label, V.InkSoft));
 			return;
 		}
-		detail.AddChild(narrow ? BuildTreeRows(entry, form) : BuildTreeColumns(entry, form));
-		detail.AddChild(BuildReading());
+		page.AddChild(ArrangeTree(entry, form));
+		page.AddChild(BuildReading());
 		if (entry.UsedIn.Count > 0)
-			detail.AddChild(BuildUsedIn(entry));
+			page.AddChild(BuildMarginNote(entry));
 		ShowReading(DefaultReadingNode(form));
 	}
 
@@ -283,134 +280,87 @@ public partial class EvolutionCodex
 				FocusMode = Control.FocusModeEnum.All,
 			};
 			ResponsiveLayout.SetFont(tab, ResponsiveLayout.TextRole.Label);
-			CodexRows.StyleTab(tab, CodexRows.Stone);
+			CodexRows.StyleTab(tab, V);
 			ResponsiveLayout.EnsureTouchTarget(tab, 0f);
 			int index = i;
 			tab.Pressed += () =>
 			{
 				formShown = index;
 				litNodeId = string.Empty;
-				ShowDetail();
-				(detail.FindChild($"CodexForm_{entry.Forms[index].Id}", true, false) as Button)?.GrabFocus();
+				ShowPage();
+				(page.FindChild($"CodexForm_{entry.Forms[index].Id}", true, false) as Button)?.GrabFocus();
 			};
 			row.AddChild(tab);
 		}
+		treeLines.Add(row.GetChildren().OfType<Control>().ToList());
 		return row;
 	}
 
-	// An arrow is gold into what is open now or was taken, dashed into everything else.
-	private static bool IsLive(CodexNode node) => node.State is CodexNodeState.Ready or CodexNodeState.Taken;
-
-	private Control Column(string label, List<CodexChip> gates, List<Control> nodes, float fixedWidth)
+	// A tier's heading in the book's small capitals, and the requirements every node of the tier shares.
+	private Control TierHeading(string label, List<CodexChip> gates)
 	{
-		var column = new VBoxContainer
-		{
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-			SizeFlagsHorizontal = fixedWidth > 0f ? Control.SizeFlags.ShrinkBegin : Control.SizeFlags.ExpandFill,
-			CustomMinimumSize = new Vector2(fixedWidth, 0f),
-		};
-		column.AddThemeConstantOverride("separation", 8);
-		column.AddChild(ColumnHeader(label, gates));
-		foreach (Control node in nodes)
-			column.AddChild(node);
-		return column;
-	}
-
-	// "Level 8" and the chips every node in the column shares ("Spell 7/7", "Fire 4/4", "You 17/17").
-	private Control ColumnHeader(string label, List<CodexChip> gates)
-	{
-		var head = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		head.AddThemeConstantOverride("separation", 4);
-		Label words = CodexRows.MakeText(label, ResponsiveLayout.TextRole.Label, CodexRows.Stone.Heading);
+		var row = new HFlowContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		row.AddThemeConstantOverride("h_separation", 8);
+		row.AddThemeConstantOverride("v_separation", 4);
+		Label words = CodexRows.MakeText(label.ToUpperInvariant(), ResponsiveLayout.TextRole.Label, V.Heading);
 		words.AutowrapMode = TextServer.AutowrapMode.Off;
-		head.AddChild(words);
-		if (gates != null && gates.Count > 0)
-			head.AddChild(ChipFlow(gates));
-		return head;
+		words.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+		headingFont ??= GD.Load<Font>("res://scenes/resources/HeadingFont.tres");
+		if (headingFont != null)
+			words.AddThemeFontOverride("font", headingFont);
+		// On a patch of the page itself: a tree line passing behind the heading stops at its words (the ink
+		// report measured the ember line under "MUTATION" as their ground).
+		var patch = new StyleBoxFlat { BgColor = V.Face };
+		patch.ContentMarginLeft = 2;
+		patch.ContentMarginRight = 4;
+		words.AddThemeStyleboxOverride("normal", patch);
+		row.AddChild(words);
+		foreach (CodexChip chip in gates ?? new List<CodexChip>())
+			row.AddChild(BuildChip(chip, ember: false));
+		return row;
 	}
 
-	private Control BuildBaseNode(CodexEntry entry, CodexForm form, bool wide)
+	private Control BuildBaseNode(CodexEntry entry, CodexForm form)
 	{
-		if (!wide)
-			return BuildCompactBase(entry, form);
 		var node = new CodexNode
 		{
 			Id = $"base_{entry.Id}",
 			SpellId = entry.Id,
 			Milestone = 0,
-			Name = wide ? (entry.Forms.Count > 1 ? $"{entry.Name}: {form.Name}" : entry.Name) : (entry.Held ? $"Lv {entry.Level}" : form.Name),
-			Line = entry.Line,
-			Icon = form.Icon ?? entry.Icon,
-			State = entry.Held ? CodexNodeState.Taken : CodexNodeState.Known,
-		};
-		if (entry.Held)
-			node.Note = wide ? $"Level {entry.Level} of {entry.LevelCap}" : string.Empty;
-		return BuildNode(node, wide, baseOf: entry);
-	}
-
-	// On a PC the base is the spell's picture at its own size and, held, its level: the head above already
-	// names it, and a name in an 84-unit column broke a letter a line.
-	private Control BuildCompactBase(CodexEntry entry, CodexForm form)
-	{
-		var node = new CodexNode
-		{
-			Id = $"base_{entry.Id}",
-			SpellId = entry.Id,
 			Name = entry.Forms.Count > 1 ? $"{entry.Name}: {form.Name}" : entry.Name,
 			Line = entry.Line,
 			Icon = form.Icon ?? entry.Icon,
-			State = entry.Held ? CodexNodeState.Taken : CodexNodeState.Known,
+			State = CodexNodeState.Known,
+			Note = entry.Held ? $"level {entry.Level} of {entry.LevelCap}" : "base",
 		};
-		var box = new PanelContainer { Name = $"CodexNode_{node.Id}", MouseFilter = Control.MouseFilterEnum.Ignore };
-		box.AddThemeStyleboxOverride("panel", NodeStyle(CodexNodeState.Known, CodexInk.HeldRim, lit: false, isBase: true));
-		Button stop = BonelightSkin.MakeCardClickOverlay(true, 4);
-		stop.Name = "NodeStop";
-		stop.MouseFilter = Control.MouseFilterEnum.Pass;
-		stop.FocusEntered += () => ShowReading(node);
-		stop.MouseEntered += () => ShowReading(node);
-		box.AddChild(stop);
-		stopNodes[stop] = node;
-		var column = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
-		column.AddThemeConstantOverride("separation", 2);
-		box.AddChild(column);
-		TextureRect icon = Picture(node.Icon ?? DefaultIcon, 32f, dim: false);
-		icon.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-		column.AddChild(icon);
-		if (entry.Held)
-		{
-			Label level = CodexRows.MakeText($"Lv {entry.Level}", ResponsiveLayout.TextRole.Label, CodexRows.Stone.Ink);
-			level.HorizontalAlignment = HorizontalAlignment.Center;
-			level.AutowrapMode = TextServer.AutowrapMode.Off;
-			column.AddChild(level);
-		}
-		return box;
+		return BuildNode(node, isBase: true);
 	}
 
 	/// <summary>
-	/// One node (section 3): its picture and name on a frame that says its state, its own gates as chips,
-	/// a quiet note. A focus stop for the stick and a hover target for the pointer, both of which put what it
-	/// does in the reading box.
+	/// One node (section 3) on the page: its picture and name on a face that says its state, what it is to
+	/// this run in a quiet line, its own requirements as chips. The Apotheosis wears the ember. A focus stop for
+	/// the stick and a hover target for the pointer, both of which put what it does in the reading line.
 	/// </summary>
-	private Control BuildNode(CodexNode node, bool wide, CodexEntry baseOf = null)
+	private Control BuildNode(CodexNode node, bool isBase = false)
 	{
+		bool ember = node.Milestone == ApotheosisCatalog.MilestoneLevel;
 		var box = new PanelContainer
 		{
 			Name = $"CodexNode_{node.Id}",
 			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
 			MouseFilter = Control.MouseFilterEnum.Ignore,
 		};
-		Color mark = baseOf != null ? CodexInk.HeldRim : CodexInk.MarkFor(node.Milestone);
 		bool lit = !string.IsNullOrEmpty(litNodeId) && node.Id.Equals(litNodeId, StringComparison.OrdinalIgnoreCase);
-		box.AddThemeStyleboxOverride("panel", NodeStyle(node.State, mark, lit, baseOf != null));
+		box.AddThemeStyleboxOverride("panel", NodeStyle(node.State, ember, lit));
 
-		Button stop = BonelightSkin.MakeCardClickOverlay(true, 4);
+		Button stop = BonelightSkin.MakeCardClickOverlay(true, 3);
 		stop.Name = "NodeStop";
 		stop.MouseFilter = Control.MouseFilterEnum.Pass;
 		stop.FocusEntered += () => ShowReading(node);
 		stop.MouseEntered += () => ShowReading(node);
 		if (!string.IsNullOrEmpty(node.OpensEntryId) && node.OpensEntryId != selectedId && model.Get(node.OpensEntryId) is CodexEntry opens && opens.Discovered)
 		{
-			// An ingredient opens its own entry: the reverse lookup walks both ways.
+			// An ingredient turns to its own entry's page: the reverse lookup walks both ways.
 			string target = opens.Id;
 			stop.Pressed += () => SelectEntry(target);
 		}
@@ -424,12 +374,18 @@ public partial class EvolutionCodex
 		pad.AddThemeConstantOverride("margin_bottom", 6);
 		box.AddChild(pad);
 		var content = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		content.AddThemeConstantOverride("separation", 4);
+		content.AddThemeConstantOverride("separation", 3);
 		pad.AddChild(content);
 
-		// The base is held, not taken: it keeps the stone face, so it keeps the stone's ink.
-		bool taken = node.State == CodexNodeState.Taken && baseOf == null;
-		Color ink = taken ? CodexInk.MarkInk : node.State is CodexNodeState.Sealed or CodexNodeState.Closed ? CodexRows.Stone.InkSoft : CodexRows.Stone.Ink;
+		bool quiet = node.State is CodexNodeState.Sealed or CodexNodeState.Closed;
+		Color ink = ember ? CodexInk.EmberInk : quiet ? V.InkMeta : V.Ink;
+		if (ember)
+		{
+			string owner = string.IsNullOrEmpty(node.Owner) ? "APOTHEOSIS" : $"APOTHEOSIS  ·  {node.Owner.ToUpperInvariant()}";
+			Label crown = CodexRows.MakeText($"✶ {owner}", ResponsiveLayout.TextRole.Micro, CodexInk.EmberSoft);
+			crown.AutowrapMode = TextServer.AutowrapMode.Off;
+			content.AddChild(crown);
+		}
 		var title = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		title.AddThemeConstantOverride("separation", 6);
 		content.AddChild(title);
@@ -438,97 +394,122 @@ public partial class EvolutionCodex
 		TextureRect icon = Picture(picture, 32f, dim: node.State == CodexNodeState.Closed);
 		if (node.State == CodexNodeState.Sealed)
 			icon.StretchMode = TextureRect.StretchModeEnum.KeepCentered;
-		title.AddChild(icon);
-		Label name = CodexRows.MakeText(node.ShownName, wide ? ResponsiveLayout.TextRole.Label : ResponsiveLayout.TextRole.Label, ink);
+		// On a phone three nodes share a row a third of the page wide: the picture stands over the name, which
+		// beside it broke mid-word ("Hellbreat / h"). The base and the Apotheosis have the row to themselves.
+		if (narrow && !isBase && !ember)
+		{
+			icon.SizeFlagsHorizontal = Control.SizeFlags.ShrinkBegin;
+			content.AddChild(icon);
+			content.MoveChild(icon, title.GetIndex());
+		}
+		else
+			title.AddChild(icon);
+		Label name = CodexRows.MakeText(node.ShownName, ResponsiveLayout.TextRole.Label, ink);
+		headingFont ??= GD.Load<Font>("res://scenes/resources/HeadingFont.tres");
+		if (headingFont != null)
+			name.AddThemeFontOverride("font", headingFont);
 		name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 		title.AddChild(name);
+		if (node.State == CodexNodeState.Ready)
+			title.AddChild(Tag("Ready"));
 		if (node.State == CodexNodeState.Closed)
 			title.AddChild(Glyph("lock"));
 
-		if (node.Chips.Count > 0)
-			content.AddChild(ChipFlow(node.Chips));
-		// No "Ready" line: the lit frame and its breathing ring say it, and the line cost the tree its fold.
-		string note = node.Note;
-		if (!string.IsNullOrEmpty(note) && (node.Revealed || node.NameAlwaysShown || node.State == CodexNodeState.Closed))
+		if (StatusLine(node, isBase) is string status)
 		{
-			Label quiet = CodexRows.MakeText(note, ResponsiveLayout.TextRole.Micro,
-				taken ? CodexInk.MarkInk : node.State == CodexNodeState.Ready ? CodexRows.Stone.Reward : CodexRows.Stone.InkSoft);
-			content.AddChild(quiet);
+			Label quietLine = CodexRows.MakeText(status, ResponsiveLayout.TextRole.Micro, ember ? CodexInk.EmberSoft : V.InkSoft);
+			// The base's line ("level 7 of 8") rides beside its name: the base is one band.
+			if (isBase)
+			{
+				quietLine.AutowrapMode = TextServer.AutowrapMode.Off;
+				quietLine.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+				title.AddChild(quietLine);
+			}
+			else
+				content.AddChild(quietLine);
 		}
-
-		if (node.State == CodexNodeState.Ready)
-			AscensionReadyGlow.AttachTo(box, showRing: true).SetActive(true);
+		if (node.Chips.Count > 0)
+			content.AddChild(ChipFlow(node.Chips, ember));
 		return box;
 	}
 
-	private static StyleBoxFlat NodeStyle(CodexNodeState state, Color mark, bool lit, bool isBase)
+	// What the node is to this run, in a quiet line: the model's note, or the state in words.
+	private string StatusLine(CodexNode node, bool isBase)
+	{
+		// Only what the face does not already say: a sealed node's "???" and glyph, a closed one's lock and fade
+		// say themselves (and the reading line says them in words), so they cost the page no line.
+		if (isBase || !string.IsNullOrEmpty(node.Note))
+			return string.IsNullOrEmpty(node.Note) || node.Note == "Not taken" ? null
+				: node.Note == "Chosen" ? "taken this run"
+				: node.Note;
+		return node.State == CodexNodeState.Taken ? "taken this run" : null;
+	}
+
+	private static StyleBoxFlat NodeStyle(CodexNodeState state, bool ember, bool lit)
 	{
 		var box = new StyleBoxFlat();
-		switch (state)
+		int width = 2;
+		if (ember)
 		{
-			case CodexNodeState.Taken:
-				// Solid in the milestone's colour: the loadout strip's gold, cyan, fire (section 3).
-				box.BgColor = isBase ? CodexRows.Stone.Face : mark;
-				box.BorderColor = mark;
-				break;
-			case CodexNodeState.Ready:
-				box.BgColor = CodexRows.Stone.Face;
-				box.BorderColor = CodexRows.Stone.Reward;
-				break;
-			case CodexNodeState.Sealed:
-			case CodexNodeState.Closed:
-				box.BgColor = new Color(CodexInk.StoneDeep, 0.7f);
-				box.BorderColor = CodexRows.Stone.QuietEdge;
-				break;
-			default:
-				box.BgColor = CodexRows.Stone.Face;
-				box.BorderColor = CodexRows.Stone.Edge;
-				break;
+			box.BgColor = CodexInk.EmberFace;
+			box.BorderColor = CodexInk.EmberRim;
+			width = 3;
 		}
-		box.SetBorderWidthAll(state is CodexNodeState.Sealed or CodexNodeState.Closed ? 1 : 2);
+		else
+		{
+			switch (state)
+			{
+				case CodexNodeState.Taken:
+					box.BgColor = CodexInk.BookSelected;
+					box.BorderColor = V.Reward;
+					break;
+				case CodexNodeState.Ready:
+					box.BgColor = CodexInk.BookNode;
+					box.BorderColor = V.Reward;
+					width = 3;
+					break;
+				case CodexNodeState.Sealed:
+				case CodexNodeState.Closed:
+					// Ink on the bare page, ruled faintly: present, but not the player's.
+					box.BgColor = new Color(CodexInk.BookNode, 0f);
+					box.BorderColor = V.InkMeta;
+					width = 1;
+					break;
+				default:
+					box.BgColor = CodexInk.BookNode;
+					box.BorderColor = V.Ink;
+					break;
+			}
+		}
 		if (lit)
 		{
-			// A search hit: the node it named, ringed in gold hi.
-			box.BorderColor = CodexInk.SelectedRim;
-			box.SetBorderWidthAll(3);
+			// A search hit: the node it named, in the hover gold with a heavy rule.
+			if (!ember)
+				box.BgColor = CodexInk.BookHover;
+			width = 3;
+			box.BorderColor = ember ? CodexInk.EmberSoft : V.Reward;
 		}
-		box.SetCornerRadiusAll(4);
+		box.SetBorderWidthAll(width);
+		box.SetCornerRadiusAll(3);
 		box.SetContentMarginAll(0);
 		return box;
 	}
 
 	private static Control StopOf(Control node) => node.GetNodeOrNull<Control>("NodeStop") ?? node;
 
+	// An ink line is solid into what is open now or was taken, dashed into everything else.
+	private static bool IsLive(CodexNode node) => node.State is CodexNodeState.Ready or CodexNodeState.Taken;
+
 	// ---- chips --------------------------------------------------------------------------------------
 
-	// Short chips flow side by side; a long one ("L8: Dragon's Breath") takes a line of its own and wraps, so
-	// no chip can force its column wider than the tree has room for.
-	private const int LongChip = 13;
-
-	private Control ChipFlow(List<CodexChip> chips)
+	private Control ChipFlow(List<CodexChip> chips, bool ember)
 	{
-		var stack = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		stack.AddThemeConstantOverride("separation", 4);
-		HFlowContainer flow = null;
+		var flow = new HFlowContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		flow.AddThemeConstantOverride("h_separation", 5);
+		flow.AddThemeConstantOverride("v_separation", 4);
 		foreach (CodexChip chip in chips)
-		{
-			bool wide = chip.Element == null && chip.Text.Length > LongChip;
-			if (wide)
-			{
-				flow = null;
-				stack.AddChild(BuildChip(chip, wrap: true));
-				continue;
-			}
-			if (flow == null)
-			{
-				flow = new HFlowContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-				flow.AddThemeConstantOverride("h_separation", 6);
-				flow.AddThemeConstantOverride("v_separation", 4);
-				stack.AddChild(flow);
-			}
-			flow.AddChild(BuildChip(chip, wrap: false));
-		}
-		return stack;
+			flow.AddChild(BuildChip(chip, ember));
+		return flow;
 	}
 
 	/// <summary>
@@ -536,34 +517,22 @@ public partial class EvolutionCodex
 	/// are pills. Measured in a run: met with a tick, unmet on the rubric band with the socket, closed with a
 	/// lock. In the collection there is nothing to measure, and the pill is only an outline.
 	/// </summary>
-	private Control BuildChip(CodexChip chip, bool wrap)
+	private Control BuildChip(CodexChip chip, bool ember)
 	{
 		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		line.AddThemeConstantOverride("separation", 3);
+		line.AddThemeConstantOverride("separation", 2);
 		if (chip.Element is Element element)
 		{
-			if (chip.Met == false)
-				line.AddChild(Glyph(chip.Closed ? "lock" : "todo"));
+			if (chip.Met.HasValue)
+				line.AddChild(Glyph(chip.Met.Value ? "done" : chip.Closed ? "lock" : "todo"));
 			line.AddChild(CodexRows.BuildChip(element, chip.Text, focusable: false));
 			return line;
 		}
 		var pill = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		var style = new StyleBoxFlat();
-		Color ink = CodexRows.Stone.InkSoft;
+		Color ink;
 		string glyph = null;
-		if (chip.Met == true)
-		{
-			// Met: the steel rim and the full count ("7/7") - the numbers say it, no tick needed.
-			style.BgColor = CodexRows.Stone.Face;
-			style.BorderColor = CodexInk.HeldRim;
-		}
-		else if (chip.Met == false && chip.Closed)
-		{
-			style.BgColor = new Color(0, 0, 0, 0);
-			style.BorderColor = CodexRows.Stone.QuietEdge;
-			glyph = "lock";
-		}
-		else if (chip.Met == false)
+		if (chip.Met == false && !chip.Closed && !ember)
 		{
 			style.BgColor = CodexInk.UnmetBand;
 			style.BorderColor = CodexInk.UnmetBand;
@@ -572,14 +541,16 @@ public partial class EvolutionCodex
 		}
 		else
 		{
-			style.BgColor = new Color(0, 0, 0, 0);
-			style.BorderColor = CodexRows.Stone.Edge;
+			// A neutral chip is on the page's own face, so a line behind it stops at its rim too.
+			style.BgColor = ember ? CodexInk.EmberPill : chip.Met == true ? CodexInk.BookPill : V.Face;
+			style.BorderColor = ember ? CodexInk.EmberPill : chip.Met == true ? CodexInk.BookPill : V.Edge;
+			ink = ember ? CodexInk.EmberInk : V.Ink;
+			glyph = chip.Met == true ? "done" : chip.Met == false ? (chip.Closed ? "lock" : "todo") : null;
 		}
 		style.SetBorderWidthAll(1);
-		style.SetCornerRadiusAll(4);
-		style.ContentMarginLeft = glyph != null ? 2 : 8;
-		style.ContentMarginRight = 8;
-		// 2 above and below: at 1 the pill's rim sat inside the word's box, and measured as its ground.
+		style.SetCornerRadiusAll(3);
+		style.ContentMarginLeft = glyph != null ? 2 : 7;
+		style.ContentMarginRight = 7;
 		style.ContentMarginTop = 2;
 		style.ContentMarginBottom = 2;
 		pill.AddThemeStyleboxOverride("panel", style);
@@ -587,16 +558,8 @@ public partial class EvolutionCodex
 		row.AddThemeConstantOverride("separation", 2);
 		if (glyph != null)
 			row.AddChild(Glyph(glyph));
-		Label words = CodexRows.MakeText(chip.Text, ResponsiveLayout.TextRole.Label, ink);
-		if (wrap)
-		{
-			words.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-			row.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-			pill.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-			line.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		}
-		else
-			words.AutowrapMode = TextServer.AutowrapMode.Off;
+		Label words = CodexRows.MakeText(chip.Text, ResponsiveLayout.TextRole.Micro, ink);
+		words.AutowrapMode = TextServer.AutowrapMode.Off;
 		row.AddChild(words);
 		pill.AddChild(row);
 		line.AddChild(pill);
@@ -627,12 +590,13 @@ public partial class EvolutionCodex
 		Modulate = dim ? new Color(1f, 1f, 1f, 0.55f) : Colors.White,
 	};
 
-	private static Control GlyphLine(Texture2D glyph, string text, Color ink, bool expand = true)
+	private static Texture2D defaultIcon;
+	private static Texture2D DefaultIcon => defaultIcon ??= BonelightSkin.LoadTextureSafe("res://assets/bonelight/ui/spells/unknown.png");
+
+	private static Control GlyphLine(Texture2D glyph, string text, Color ink)
 	{
-		var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
 		row.AddThemeConstantOverride("separation", 8);
-		if (expand)
-			row.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 		if (glyph != null)
 			row.AddChild(new TextureRect
 			{
@@ -645,41 +609,24 @@ public partial class EvolutionCodex
 				MouseFilter = Control.MouseFilterEnum.Ignore,
 			});
 		Label label = CodexRows.MakeText(text, ResponsiveLayout.TextRole.Label, ink);
-		if (expand)
-			label.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-		else
-			label.AutowrapMode = TextServer.AutowrapMode.Off;
+		label.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 		row.AddChild(label);
 		return row;
 	}
 
-	// ---- the reading box: what the node under the selection does --------------------------------
+	// ---- the reading line: what the node under the selection does ----------------------------------
 
 	private Control BuildReading()
 	{
-		var box = new PanelContainer { Name = "CodexReading", MouseFilter = Control.MouseFilterEnum.Ignore };
-		var style = new StyleBoxFlat { BgColor = new Color(CodexInk.StoneDeep, 0.8f), BorderColor = CodexRows.Stone.QuietEdge };
-		style.SetBorderWidthAll(1);
-		style.SetCornerRadiusAll(4);
-		style.ContentMarginLeft = 10;
-		style.ContentMarginRight = 10;
-		style.ContentMarginTop = 6;
-		style.ContentMarginBottom = 6;
-		box.AddThemeStyleboxOverride("panel", style);
-		var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		row.AddThemeConstantOverride("separation", 10);
-		box.AddChild(row);
-		readingIcon = Picture(null, 32f, dim: false);
-		row.AddChild(readingIcon);
-		var words = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
-		words.AddThemeConstantOverride("separation", 2);
-		row.AddChild(words);
-		readingName = CodexRows.MakeText(string.Empty, ResponsiveLayout.TextRole.Label, CodexRows.Stone.Heading);
-		words.AddChild(readingName);
-		readingLine = CodexRows.MakeText(string.Empty, ResponsiveLayout.TextRole.Label, CodexRows.Stone.Ink);
-		// Two lines on a PC hold any description (the 130-character cap, ValidateCardTextBudget).
-		readingLine.CustomMinimumSize = new Vector2(0f, narrow ? 0f : 48f);
-		words.AddChild(readingLine);
+		var box = new VBoxContainer { Name = "CodexReading", MouseFilter = Control.MouseFilterEnum.Ignore };
+		box.AddThemeConstantOverride("separation", 0);
+		readingName = CodexRows.MakeText(string.Empty, ResponsiveLayout.TextRole.Label, V.Heading);
+		headingFont ??= GD.Load<Font>("res://scenes/resources/HeadingFont.tres");
+		if (headingFont != null)
+			readingName.AddThemeFontOverride("font", headingFont);
+		box.AddChild(readingName);
+		readingLine = CodexRows.MakeText(string.Empty, ResponsiveLayout.TextRole.Label, V.Ink);
+		box.AddChild(readingLine);
 		return box;
 	}
 
@@ -687,11 +634,8 @@ public partial class EvolutionCodex
 	{
 		if (node == null || readingName == null || !IsInstanceValid(readingName))
 			return;
-		bool open = node.Revealed;
-		readingIcon.Texture = open ? node.Icon ?? DefaultIcon : StatIcons.Load("sealed");
-		readingIcon.StretchMode = open ? TextureRect.StretchModeEnum.KeepAspectCentered : TextureRect.StretchModeEnum.KeepCentered;
 		readingName.Text = node.ShownName;
-		readingLine.Text = open ? node.Line : SealedLine;
+		readingLine.Text = node.Revealed ? node.Line : SealedLine;
 	}
 
 	private CodexNode DefaultReadingNode(CodexForm form)
@@ -705,53 +649,59 @@ public partial class EvolutionCodex
 			?? all.FirstOrDefault();
 	}
 
-	// ---- used in: the recipes a spell is an ingredient of -----------------------------------------
+	// ---- the margin note: the recipes a spell is part of ------------------------------------------
 
-	private Control BuildUsedIn(CodexEntry entry)
+	/// <summary>
+	/// "In the margin: Hunter's Mark + Starfall · Constellation → ? ? ?" - each known recipe this spell is a part
+	/// of, its own named Ascension first, the result sealed until made. Each is a press that turns to the recipe.
+	/// </summary>
+	private Control BuildMarginNote(CodexEntry entry)
 	{
-		var row = new HFlowContainer { Name = "CodexUsedIn", MouseFilter = Control.MouseFilterEnum.Ignore };
-		row.AddThemeConstantOverride("h_separation", 10);
-		row.AddThemeConstantOverride("v_separation", 4);
-		Label label = CodexRows.MakeText("Used in", ResponsiveLayout.TextRole.Label, CodexRows.Stone.Heading);
-		label.AutowrapMode = TextServer.AutowrapMode.Off;
-		row.AddChild(label);
+		var note = new VBoxContainer { Name = "CodexMargin", MouseFilter = Control.MouseFilterEnum.Ignore };
+		note.AddThemeConstantOverride("separation", 2);
+		note.AddChild(new ColorRect { Color = V.Edge, CustomMinimumSize = new Vector2(0, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
+		Label lead = CodexRows.MakeText("In the margin", ResponsiveLayout.TextRole.Micro, V.InkSoft);
+		note.AddChild(lead);
 		var stops = new List<Control>();
 		foreach (string id in entry.UsedIn.Take(CodexModel.MaxUsedIn))
 		{
 			CodexEntry recipe = model.Get(id);
 			if (recipe?.Recipe == null)
 				continue;
-			string partner = string.Join(", ", recipe.Recipe.Ingredients
+			CodexNode own = recipe.Recipe.Ingredients.FirstOrDefault(i => i.SpellId.Equals(entry.Id, StringComparison.OrdinalIgnoreCase));
+			string partner = string.Join(" + ", recipe.Recipe.Ingredients
 				.Where(i => !i.SpellId.Equals(entry.Id, StringComparison.OrdinalIgnoreCase))
-				.Select(i => i.Milestone == 8 ? $"{i.Line}: {i.Name}" : i.ShownName));
-			string result = recipe.Recipe.Result.Revealed ? recipe.Recipe.Result.Name : CodexModel.SealedName;
+				.Select(i => i.Milestone == 8 ? $"{i.Line} · {i.Name}" : i.ShownName));
+			string result = recipe.Recipe.Result.Revealed ? recipe.Recipe.Result.Name : "? ? ?";
+			string kind = recipe.Kind == CodexKind.Combination ? ", a Conjunction" : string.Empty;
 			var button = new Button
 			{
 				Name = $"CodexUsedIn_{id}",
-				Text = string.IsNullOrEmpty(partner) ? $"✶ {result}" : $"✶ {result}  (+ {partner})",
+				Text = $"{own?.Name ?? entry.Name} + {partner}  →  {result}{kind}",
 				FocusMode = Control.FocusModeEnum.All,
+				Alignment = HorizontalAlignment.Left,
+				SizeFlagsHorizontal = Control.SizeFlags.ShrinkBegin,
 			};
 			ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
-			CodexRows.StyleQuietToggle(button, CodexRows.Stone);
+			CodexRows.StyleQuietToggle(button, V);
 			ResponsiveLayout.EnsureTouchTarget(button, 0f);
 			button.Pressed += () => SelectEntry(id);
-			row.AddChild(button);
+			note.AddChild(button);
 			stops.Add(button);
 		}
 		if (stops.Count > 0)
 			treeLines.Add(stops);
-		usedInRow = row;
-		return row;
+		return note;
 	}
 
-	// ---- an item: what it does, and its sets -----------------------------------------------------
+	// ---- an item: what it does, and its sets ------------------------------------------------------
 
-	private void BuildItemDetail(CodexEntry entry)
+	private void BuildItemPage(CodexEntry entry)
 	{
 		if (entry.Kind == CodexKind.Boon)
 		{
 			if (model.Mode == CodexMode.Collection && !entry.Owned)
-				detail.AddChild(GlyphLine(StatIcons.Load("lock"), entry.Hint, CodexRows.Stone.InkSoft));
+				page.AddChild(GlyphLine(StatIcons.Load("lock"), entry.Hint, V.InkSoft));
 			return;
 		}
 		bool any = false;
@@ -761,86 +711,61 @@ public partial class EvolutionCodex
 			if (set?.Recipe == null)
 				continue;
 			any = true;
-			BuildRecipeDetail(set, set.Recipe, heading: set.Name);
+			page.AddChild(RecipeHeading(set));
+			page.AddChild(ArrangeRecipe(set.Recipe));
+			AddRecipeTiers(set.Recipe);
 		}
 		if (!any)
-			detail.AddChild(CodexRows.MakeText("Part of no set.", ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft));
+			page.AddChild(CodexRows.MakeText("Part of no set yet known.", ResponsiveLayout.TextRole.Label, V.InkSoft));
 	}
 
-	// ---- a recipe: ingredients into a result ------------------------------------------------------
-
-	/// <summary>
-	/// A recipe as ingredients into its result (section 4): a combination's two named Ascensions, or a set's
-	/// pieces, then the arrow, then the result - the combination sealed until made, the enchantment with its
-	/// bonus. Selecting it, or searching a name in it, is the reverse lookup: the same card, ingredients first.
-	/// </summary>
-	private void BuildRecipeDetail(CodexEntry entry, CodexRecipe recipe, string heading)
+	private Control RecipeHeading(CodexEntry set)
 	{
-		if (recipe == null)
+		var head = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		head.AddThemeConstantOverride("separation", 8);
+		head.AddChild(Picture(set.Icon ?? DefaultIcon, 32f, dim: false));
+		Label title = CodexRows.MakeText($"Full Set Enchantment: {set.Name}", ResponsiveLayout.TextRole.Label, V.Heading);
+		title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+		head.AddChild(title);
+		return head;
+	}
+
+	// A set's two tiers under its recipe, each ticked once this run holds enough of it (the chest page's "now").
+	private void AddRecipeTiers(CodexRecipe recipe)
+	{
+		if (recipe == null || recipe.Kind != CodexKind.FullSet)
 			return;
-		if (!string.IsNullOrEmpty(heading))
-		{
-			var head = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-			head.AddThemeConstantOverride("separation", 10);
-			head.AddChild(Picture(recipe.Result.Icon ?? DefaultIcon, 32f, dim: false));
-			Label title = CodexRows.MakeText(recipe.Kind == CodexKind.FullSet ? $"Full Set Enchantment: {heading}" : heading,
-				ResponsiveLayout.TextRole.Label, CodexRows.Stone.Heading);
-			title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-			head.AddChild(title);
-			detail.AddChild(head);
-		}
-
-		if (narrow)
-			BuildRecipePhone(recipe);
-		else
-			BuildRecipePc(recipe);
-
-		// A set's two tiers, each ticked once this run holds enough of it (the chest page's "now").
 		bool partialOn = recipe.PartialCount > 0 && recipe.HeldCount >= recipe.PartialCount;
 		if (!string.IsNullOrEmpty(recipe.Partial))
-			detail.AddChild(GlyphLine(StatIcons.Load(partialOn ? "done" : "todo"), recipe.Partial, partialOn ? CodexRows.Stone.Ink : CodexRows.Stone.InkSoft));
-		// A recipe's own page needs no reading box: the head says what the result does, and each ingredient
-		// opens its own spell or relic (A, or a click), which is where what it does is written.
-		if (!string.IsNullOrEmpty(heading) && recipe.Result.Revealed)
-		{
-			// Under an item, the enchantment's bonus is said outright: there is no reading box for a set inside an item.
-			detail.AddChild(GlyphLine(StatIcons.Load(recipe.Made ? "done" : "todo"), recipe.Result.Line, CodexRows.Stone.Ink));
-		}
+			page.AddChild(GlyphLine(StatIcons.Load(partialOn ? "done" : "todo"), recipe.Partial, partialOn ? V.Ink : V.InkSoft));
+		if (recipe.Result.Revealed)
+			page.AddChild(GlyphLine(StatIcons.Load(recipe.Made ? "done" : "todo"), recipe.Result.Line, V.Ink));
 	}
 
-	private static Control Spacer() => new() { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
-
-	// ---- the tree's focus -----------------------------------------------------------------------------
+	// ---- the page's focus -----------------------------------------------------------------------------
 
 	/// <summary>
-	/// The stick walks the tree line by line - down a column and across to the next on a PC, along a row and
-	/// down to the next on a phone - explicitly, because Godot's geometry from a node beside a tall column
-	/// could land anywhere. The first line steps back to the cell it belongs to, and nothing walks out of the
-	/// detail into the header.
+	/// The stick walks the page tier by tier - along a tier, down to the next - explicitly, because Godot's
+	/// geometry from a centred node could land anywhere. The first tier steps back to the index line it belongs
+	/// to (a PC) or to "‹ Index" (a phone), and nothing walks off the page.
 	/// </summary>
 	private void WireTreeFocus()
 	{
 		var lines = treeLines.Where(l => l.Count > 0).ToList();
 		if (lines.Count == 0)
 			return;
-		cells.TryGetValue(selectedId, out Button cell);
-		Side along = narrow ? Side.Right : Side.Bottom;
-		Side back = narrow ? Side.Left : Side.Top;
-		Side next = narrow ? Side.Bottom : Side.Right;
-		Side previous = narrow ? Side.Top : Side.Left;
+		rows.TryGetValue(selectedId, out Button row);
+		Control back = narrow ? indexButton : row;
 		for (int l = 0; l < lines.Count; l++)
 		{
 			List<Control> line = lines[l];
 			for (int i = 0; i < line.Count; i++)
 			{
 				Control stop = line[i];
-				Link(stop, i + 1 < line.Count ? line[i + 1] : stop, along);
-				Link(stop, i > 0 ? line[i - 1] : stop, back);
-				Link(stop, l + 1 < lines.Count ? Nearest(lines[l + 1], i, line.Count) : stop, next);
-				Control before = l > 0 ? Nearest(lines[l - 1], i, line.Count) : !narrow && cell != null && IsInstanceValid(cell) ? cell : stop;
-				if (narrow && l == 0)
-					before = sheet?.FindChild("CodexSheetBack", true, false) as Control ?? stop;
-				Link(stop, before, previous);
+				Link(stop, i + 1 < line.Count ? line[i + 1] : stop, Side.Right);
+				Link(stop, i > 0 ? line[i - 1] : narrow || back == null ? stop : back, Side.Left);
+				Link(stop, l + 1 < lines.Count ? Nearest(lines[l + 1], i, line.Count) : stop, Side.Bottom);
+				Link(stop, l > 0 ? Nearest(lines[l - 1], i, line.Count) : back ?? stop, Side.Top);
 			}
 		}
 	}
@@ -850,7 +775,7 @@ public partial class EvolutionCodex
 		if (line.Count == 0)
 			return null;
 		// The same place along the other line, proportionally: the middle of three lands on the middle of two.
-		int at = count <= 1 ? 0 : Mathf.RoundToInt((float)index / (count - 1) * (line.Count - 1));
+		int at = count <= 1 ? (line.Count - 1) / 2 : Mathf.RoundToInt((float)index / (count - 1) * (line.Count - 1));
 		return line[Mathf.Clamp(at, 0, line.Count - 1)];
 	}
 
@@ -873,11 +798,11 @@ public partial class EvolutionCodex
 		foreach (var pair in stopNodes)
 			if (!string.IsNullOrEmpty(litNodeId) && pair.Value.Id.Equals(litNodeId, StringComparison.OrdinalIgnoreCase) && IsInstanceValid(pair.Key))
 				return pair.Key;
-		// The node the reading box opened on, else the first stop past the base.
 		foreach (var pair in stopNodes)
 			if (pair.Value.State == CodexNodeState.Ready && IsInstanceValid(pair.Key))
 				return pair.Key;
-		List<Control> line = treeLines.Skip(1).FirstOrDefault(l => l.Count > 0) ?? treeLines.FirstOrDefault();
+		// The first stop past the base, else the base.
+		List<Control> line = treeLines.Where(l => l.Count > 0).Skip(1).FirstOrDefault() ?? treeLines.FirstOrDefault(l => l.Count > 0);
 		return line?.FirstOrDefault();
 	}
 
