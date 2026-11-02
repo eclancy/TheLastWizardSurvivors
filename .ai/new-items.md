@@ -657,8 +657,8 @@ x0.9-1.4. The Poppet's damage is under-counted by this column - the Singed Lock'
 without dealing damage, so a withered enemy dies to less attributed damage - and a Fire build carries
 few debuffs for its two-debuff mark; it is a debuff build's set, and its plainer effect on this bot is a
 third less health lost. Waywiser does little for the `--immortal` bot, which walks only to orbs; it is
-for a kiter. Not run: `--seek-combo=sagittarius` with the Betrothal Hoop, and the 10,000-run chest
-simulation with 40 relics.
+for a kiter. Not run: `--seek-combo=sagittarius` with the Betrothal Hoop. The 10,000-run chest
+simulation with 40 relics, and the full sweep at 50 HP, are `.ai/passives-and-items.md` 8j.
 
 ### The second pass (2026-11-02, after Eric looked at it)
 
