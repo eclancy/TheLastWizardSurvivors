@@ -132,10 +132,10 @@ public partial class _LevelUpProbe : Node
 		if (Screen == "ascension" && !pressed && drawn >= SettleFrames)
 		{
 			pressed = true;
-			Button open = FindNamedButton(menu, "AscensionsButton");
+			Button open = FindNamedButton(menu, "CodexButton");
 			if (open == null)
 			{
-				GD.PrintErr("_LevelUpProbe: no AscensionsButton on the level-up screen");
+				GD.PrintErr("_LevelUpProbe: no CodexButton on the level-up screen");
 				GetTree().Quit(1);
 				return;
 			}

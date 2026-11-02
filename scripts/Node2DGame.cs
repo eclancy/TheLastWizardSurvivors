@@ -4295,7 +4295,31 @@ public partial class Node2DGame : Node2D
 		// How full the book is, and how big: spells are permanent, so this is the number that says
 		// how many choices are left, and the Blank Folio's seventh slot has to show up somewhere.
 		grid.AddChild(BuildStatTile("todo", $"{player?.GetEquippedSpells().Count ?? 0}/{player?.SpellSlots ?? Player.MaxSpellSlots}", "Spell slots"));
-		return BuildEscapeSection("Run Summary", grid);
+		return BuildEscapeSection("Run Summary", grid, BuildEscapeCodexButton());
+	}
+
+	// The Evolution Codex from the pause screen (.ai/evolution-codex.md section 1): the Run tab says what this
+	// run became, the Codex every path it could still take. Beside the tab's first heading, in the quiet
+	// toggle the spell sections' Show details wears, so it does not read as a fourth action beside Resume.
+	private Button BuildEscapeCodexButton()
+	{
+		var button = new Button
+		{
+			Name = "EscapeCodexButton",
+			Text = "★ Codex",
+			FocusMode = Control.FocusModeEnum.All,
+			ProcessMode = ProcessModeEnum.Always,
+			SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd,
+		};
+		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
+		CodexRows.StyleQuietToggle(button, PauseInk);
+		ResponsiveLayout.EnsureTouchTarget(button, 120f);
+		button.Pressed += () => OpenEvolutionCodex(onClosed: () =>
+		{
+			if (IsInstanceValid(button) && button.IsVisibleInTree())
+				button.GrabFocus();
+		});
+		return button;
 	}
 
 	private Control BuildCharacterPassiveSection()

@@ -8,16 +8,17 @@ using WizardSurvivors.scripts;
 public partial class MainMenu : Control
 {
 	private Button startRunButton = null!;
-	// The player-facing names are Spell Index, Unlocks and Arcane Upgrades. The panels, lists and
-	// save keys behind them keep their older internal names (spellbook*, achievement*, the
-	// ArcaneUpgradeLevels dictionary): the save is persisted and the rest is not worth the churn.
+	// The player-facing names are Evolution Codex, Achievements and Powers. The button, panels, lists and
+	// save keys behind them keep their older internal names (spellIndexButton, achievement*, the
+	// ArcaneUpgradeLevels dictionary): the save is persisted, the harnesses press buttons by name, and the
+	// rest is not worth the churn. The Spell Index's panel itself is gone: its button opens the Evolution
+	// Codex (.ai/evolution-codex.md), which carries every spell, how to find the missing ones and Set aside.
 	private Button spellIndexButton = null!;
 	private Button unlocksButton = null!;
 	private Button arcaneUpgradesButton = null!;
 	private Button optionsButton = null!;
 	private Button reportBugButton;
 	private Button backFromArcaneButton = null!;
-	private Button backFromSpellbookButton = null!;
 	private Button backFromAchievementsButton = null!;
 	private Button backFromOptionsButton = null!;
 	private Control mainPanel = null!;
@@ -42,7 +43,6 @@ public partial class MainMenu : Control
 	private Label menuEnergyAmount;
 	private Label shopEnergyAmount;
 	private ColorRect scrim;
-	private Control spellbookPanel = null!;
 	private Control achievementsPanel = null!;
 	private Control arcaneUpgradesPanel = null!;
 	private Control optionsPanel = null!;
@@ -68,8 +68,6 @@ public partial class MainMenu : Control
 	};
 	private readonly List<CheckButton> playtestChecklistBoxes = new();
 	private readonly Dictionary<string, CheckButton> playtestChecklistById = new();
-	private VBoxContainer spellbookList = null!;
-	private VBoxContainer spellbookSummary = null!;
 	private VBoxContainer achievementList = null!;
 	private VBoxContainer achievementSummary = null!;
 	// The shop's list: a column of sections, each a grid of cards (MainMenu.Shop.cs).
@@ -77,8 +75,8 @@ public partial class MainMenu : Control
 	private static readonly Texture2D DefaultSpellIcon = GD.Load<Texture2D>("res://assets/bonelight/ui/spells/unknown.png");
 
 	private readonly Dictionary<string, UpgradeDefinition> upgradeDefinitions = new();
-	private readonly List<SpellbookEntry> spellbookEntries = new();
-
+	// A boon's page in the shop (MainMenu.Shop.cs, BoonShopEntry). The name is the Spell Index's, whose rows
+	// it once described; the Spell Index went to the Evolution Codex.
 	private sealed class SpellbookEntry
 	{
 		public string Id = string.Empty;
@@ -118,7 +116,6 @@ public partial class MainMenu : Control
 		mainPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/MainPanel");
 		arcaneUpgradesPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel");
 		optionsPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/OptionsPanel");
-		EnsureSpellIndexUi();
 		EnsureUnlocksUi();
 		EnsureShopHeader();
 		EnsureResetProgressUi();
@@ -130,16 +127,15 @@ public partial class MainMenu : Control
 		arcaneUpgradesButton.Text = "Powers";
 		unlocksButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/MainPanel/MenuButtons/ProgressionRow/UnlocksButton");
 		spellIndexButton = GetNode<Button>("SpellIndexButton");
+		// The Spell Index's slot opens the Evolution Codex now; the node keeps its name for the harnesses.
+		spellIndexButton.Text = EvolutionCodex.Title;
 		optionsButton = GetNode<Button>("OptionsButton");
 		EnsureMenuEnergyReadout();
-		spellbookList = spellbookPanel.FindChild("SpellbookList", true, false) as VBoxContainer;
-		spellbookSummary = spellbookPanel.FindChild("SpellbookSummary", true, false) as VBoxContainer;
 		achievementList = achievementsPanel.FindChild("AchievementList", true, false) as VBoxContainer;
 		achievementSummary = achievementsPanel.FindChild("AchievementSummary", true, false) as VBoxContainer;
 		upgradeList = GetNode<VBoxContainer>("MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel/ArcaneUpgradesVBox/UpgradeScroll/UpgradeGutter/UpgradeList");
 		upgradeScroll = GetNode<ScrollContainer>("MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel/ArcaneUpgradesVBox/UpgradeScroll");
 		backFromArcaneButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel/ArcaneUpgradesVBox/BackFromArcaneButton");
-		backFromSpellbookButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/SpellbookPanel/SpellbookVBox/BackFromSpellbookButton");
 		backFromAchievementsButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/AchievementsPanel/AchievementsVBox/BackFromAchievementsButton");
 		backFromOptionsButton = GetNode<Button>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/BackFromOptionsButton");
 		masterVolumeSlider = GetNodeOrNull<HSlider>("MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/MasterRow/MasterVolumeSlider") ?? EnsureMasterVolumeSlider();
@@ -165,19 +161,16 @@ public partial class MainMenu : Control
 
 		// The shop needs its definitions before its cards; the boons' pages read BoonCatalog, not these
 		// entries (the shop's spell pages did, until it stopped selling spells).
-		BuildSpellbookEntries();
 		BuildUpgradeDefinitions();
 		BuildShop();
-		BuildSpellbookCards();
 		BuildAchievementCards();
 
 		startRunButton.Pressed += OnStartRunPressed;
-		spellIndexButton.Pressed += OnSpellbookPressed;
+		spellIndexButton.Pressed += OnCodexPressed;
 		unlocksButton.Pressed += OnAchievementsPressed;
 		arcaneUpgradesButton.Pressed += OnArcaneUpgradesPressed;
 		optionsButton.Pressed += OnOptionsPressed;
 		backFromArcaneButton.Pressed += ShowMainPanel;
-		backFromSpellbookButton.Pressed += ShowMainPanel;
 		backFromAchievementsButton.Pressed += ShowMainPanel;
 		backFromOptionsButton.Pressed += ShowMainPanel;
 		masterVolumeSlider.ValueChanged += OnMasterVolumeChanged;
@@ -197,7 +190,6 @@ public partial class MainMenu : Control
 
 		RefreshArcaneEnergy();
 		RefreshUpgradeControls();
-		RefreshSpellbookCards();
 		RefreshAchievementCards();
 		InitializeOptionsState();
 		ShowMainPanel();
@@ -234,7 +226,6 @@ public partial class MainMenu : Control
 			"MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel/ArcaneUpgradesVBox/ArcaneUpgradesTitle",
 			"MarginContainer/VBoxContainer/Content/OptionsPanel/OptionsVBox/OptionsTitle" })
 			ResponsiveLayout.SetFont(GetNodeOrNull<Label>(title), ResponsiveLayout.TextRole.Display);
-		BonelightSkin.ApplyPanel(spellbookPanel, BonelightSkin.Register.Vellum);
 		BonelightSkin.ApplyPanel(achievementsPanel);
 		BonelightSkin.ApplyPanel(arcaneUpgradesPanel);
 		BonelightSkin.ApplyPanel(optionsPanel);
@@ -270,7 +261,6 @@ public partial class MainMenu : Control
 			StyleMenuTier(resetProgressButton, MenuTier.Tertiary);
 
 		BonelightSkin.StyleButton(backFromArcaneButton);
-		BonelightSkin.StyleButton(backFromSpellbookButton);
 		BonelightSkin.StyleButton(backFromAchievementsButton);
 		BonelightSkin.StyleButton(backFromOptionsButton);
 
@@ -345,65 +335,6 @@ public partial class MainMenu : Control
 		// were three places naming a track and only one of them was the catalog, which is how a
 		// removal misses one. Idempotent: the title already started it, and this does not restart.
 		GetNodeOrNull<MusicPlayer>("/root/MusicPlayer")?.PlayMenuMusic();
-	}
-
-	// The Spell Index: every spell in the game, found or not. Called the Spellbook until the player
-	// pointed out that "spell book" already means something in a run - the six spells you are
-	// carrying (Player.IsSpellBookFull, the Scribe's Penknife) - and that this page is the other
-	// thing: the catalogue, and where to find what is missing from it.
-	private void EnsureSpellIndexUi()
-	{
-		var content = GetNode<Control>("MarginContainer/VBoxContainer/Content");
-		if (content.GetNodeOrNull<Control>("SpellbookPanel") != null)
-		{
-			spellbookPanel = content.GetNode<Control>("SpellbookPanel");
-			return;
-		}
-
-		spellbookPanel = new Control { Name = "SpellbookPanel", Visible = false };
-		spellbookPanel.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		content.AddChild(spellbookPanel);
-
-		var vbox = new VBoxContainer { Name = "SpellbookVBox" };
-		vbox.SetAnchorsPreset(Control.LayoutPreset.TopWide);
-		vbox.AnchorBottom = 1.0f;
-		vbox.OffsetLeft = 24;
-		vbox.OffsetTop = 20;
-		vbox.OffsetRight = -24;
-		vbox.OffsetBottom = -20;
-		vbox.AddThemeConstantOverride("separation", 12);
-		spellbookPanel.AddChild(vbox);
-
-		var title = new Label
-		{
-			Name = "SpellbookTitle",
-			Text = CodexRows.SpellIndexTitle,
-			HorizontalAlignment = HorizontalAlignment.Center
-		};
-		ResponsiveLayout.SetFont(title, ResponsiveLayout.TextRole.Display);
-		// The heading sits ON the parchment, so it is ink like everything else there.
-		title.AddThemeColorOverride("font_color", PageInk);
-		vbox.AddChild(title);
-
-		// Says what kind of page this is before the counts do: a reference to read, not a loadout
-		// to manage. The softer ink, one step under the counts' meta ink in weight but not in
-		// contrast (CodexRows.Vellum.InkSoft is measured on the page in tools/art/ui_contrast.py).
-		vbox.AddChild(BuildPanelSubtitle(CodexRows.SpellIndexSubtitle, CodexRows.Vellum.InkSoft));
-
-		// The summary is rebuilt with the list (BuildSpellbookCards); the host keeps its place.
-		vbox.AddChild(new VBoxContainer { Name = "SpellbookSummary", MouseFilter = Control.MouseFilterEnum.Ignore });
-
-		vbox.AddChild(CodexRows.BuildScroll("SpellbookScroll", CodexRows.BuildList("SpellbookList")));
-
-		var backButton = new Button
-		{
-			Name = "BackFromSpellbookButton",
-			Text = "Back",
-			CustomMinimumSize = new Vector2(220, 50),
-			SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter
-		};
-		ResponsiveLayout.SetFont(backButton, ResponsiveLayout.TextRole.Title);
-		vbox.AddChild(backButton);
 	}
 
 	// Two-press reset, no dialog: the first press arms it and relabels, the second wipes. A confirm
@@ -529,7 +460,6 @@ public partial class MainMenu : Control
 		// Everything on this screen is a view over the save, so all of it is now stale.
 		RefreshArcaneEnergy();
 		RefreshUpgradeControls();
-		RefreshSpellbookCards();
 		RefreshAchievementCards();
 	}
 
@@ -775,10 +705,21 @@ public partial class MainMenu : Control
 		OpenShopAtTop();
 	}
 
-	private void OnSpellbookPressed()
+	// The Evolution Codex in its collection mode (.ai/evolution-codex.md): every spell, item and recipe with the
+	// save's states - owned or how to find it, the Ascensions seen, the recipes made - over the menu, on a layer
+	// of its own. Closing it puts the selection back on this button.
+	private void OnCodexPressed()
 	{
-		RefreshSpellbookCards();
-		ShowPanel(spellbookPanel);
+		if (EvolutionCodex.IsOpen)
+			return;
+		SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
+		EvolutionCodex.Open(this, CodexContext.ForSave(save), onClosed: () =>
+		{
+			// A Set aside spent in the Codex moves the shop's Redaction row.
+			RefreshUpgradeControls();
+			if (IsInstanceValid(spellIndexButton) && spellIndexButton.IsVisibleInTree())
+				spellIndexButton.GrabFocus();
+		});
 	}
 
 	private void OnAchievementsPressed()
@@ -824,8 +765,6 @@ public partial class MainMenu : Control
 		}
 		if (CodexRows.ColumnsFor(this) == codexColumnsBuilt)
 			return;
-		if (spellbookPanel.Visible)
-			RefreshSpellbookCards();
 		if (achievementsPanel.Visible)
 			RefreshAchievementCards();
 		ApplyCodexPanelWidth();
@@ -846,7 +785,7 @@ public partial class MainMenu : Control
 		// frame still clears the rounded corners with 16 to spare.
 		float inset = ResponsiveLayout.IsNarrow(this) ? -24f : Mathf.Max(0f, (available - CodexColumnMaxWidth) / 2f);
 		// The shop is the same kind of list and takes the same column (MainMenu.Shop.cs).
-		foreach (Control panel in new[] { spellbookPanel, achievementsPanel, arcaneUpgradesPanel })
+		foreach (Control panel in new[] { achievementsPanel, arcaneUpgradesPanel })
 		{
 			panel.OffsetLeft = inset;
 			panel.OffsetRight = -inset;
@@ -1131,7 +1070,6 @@ public partial class MainMenu : Control
 		}
 		ApplyCodexPanelWidth();
 
-		spellbookPanel.Visible = panelToShow == spellbookPanel;
 		achievementsPanel.Visible = panelToShow == achievementsPanel;
 		arcaneUpgradesPanel.Visible = panelToShow == arcaneUpgradesPanel;
 		optionsPanel.Visible = panelToShow == optionsPanel;
@@ -1788,295 +1726,6 @@ public partial class MainMenu : Control
 			RegisterBoonUnlock(definition.Id, definition.PurchaseCost);
 	}
 
-	private void BuildSpellbookEntries()
-	{
-		spellbookEntries.Clear();
-		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-		AddSpellbookResource(seen, "magic_missile", "res://SpellData.tres");
-		AddSpellbookResource(seen, "arcane_explosion", "res://SpellData_ArcaneExplosion.tres");
-		AddSpellbookResource(seen, "spiritual_weapon", "res://SpellData_SpiritualWeapon.tres");
-		AddSpellbookResource(seen, "fireball", "res://SpellData_Fireball.tres");
-		AddSpellbookResource(seen, "cinderbreath", "res://SpellData_Cinderbreath.tres");
-		AddSpellbookResource(seen, "mirefoot", "res://SpellData_Mirefoot.tres");
-		AddSpellbookResource(seen, "kindled_ward", "res://SpellData_KindledWard.tres");
-		AddSpellbookResource(seen, "gravewell", "res://SpellData_Gravewell.tres");
-		AddSpellbookResource(seen, "hollow_star", "res://SpellData_HollowStar.tres");
-		AddSpellbookResource(seen, "starfall", "res://SpellData_Starfall.tres");
-		AddSpellbookResource(seen, "familiar", "res://SpellData_Familiar.tres");
-		AddSpellbookResource(seen, "stormsweep", "res://SpellData_Stormsweep.tres");
-		AddSpellbookResource(seen, "sleet_runes", "res://SpellData_SleetRunes.tres");
-		AddSpellbookResource(seen, "iron_palisade", "res://SpellData_IronPalisade.tres");
-		AddSpellbookResource(seen, "contagion", "res://SpellData_Contagion.tres");
-		AddSpellbookResource(seen, "bramble_seed", "res://SpellData_BrambleSeed.tres");
-		AddSpellbookResource(seen, "frost_shard", "res://SpellData_FrostShard.tres");
-		AddSpellbookResource(seen, "riptide", "res://SpellData_Riptide.tres");
-		AddSpellbookResource(seen, "shadow_bolt", "res://SpellData_ShadowBolt.tres");
-		AddSpellbookResource(seen, "thorn_vine", "res://SpellData_ThornVine.tres");
-		AddSpellbookResource(seen, "gale_blade", "res://SpellData_GaleBlade.tres");
-		AddSpellbookResource(seen, "solar_flare", "res://SpellData_SolarFlare.tres");
-		AddSpellbookResource(seen, "molten_shard", "res://SpellData_MoltenShard.tres");
-		AddSpellbookResource(seen, "chain_lightning", "res://SpellData_ChainLightning.tres");
-		AddSpellbookResource(seen, "toxic_spore_burst", "res://SpellData_ToxicSporeBurst.tres");
-		AddSpellbookResource(seen, "obsidian_spike", "res://SpellData_ObsidianSpike.tres");
-		AddSpellbookResource(seen, "cyclone_slash", "res://SpellData_CycloneSlash.tres");
-		AddSpellbookResource(seen, "void_lance", "res://SpellData_VoidLance.tres");
-		AddSpellbookResource(seen, "glacial_spike", "res://SpellData_GlacialSpike.tres");
-		AddSpellbookResource(seen, "black_tentacles", "res://SpellData_BlackTentacles.tres");
-		AddSpellbookResource(seen, "cone_of_cold", "res://SpellData_ConeOfCold.tres");
-		AddSpellbookResource(seen, "scorching_ray", "res://SpellData_ScorchingRay.tres");
-		AddSpellbookResource(seen, "meteor_swarm", "res://SpellData_MeteorSwarm.tres");
-		AddSpellbookResource(seen, "hunters_draw", "res://SpellData_HuntersDraw.tres");
-
-		AddSpellbookPassive(seen, "aegis_ward", "Aegis Ward", "Periodically grants an absorbing shield.", "Metal, Light");
-		AddSpellbookPassive(seen, "thornmail_barrier", "Thornmail Barrier", "Retaliates against nearby enemies when hit.", "Earth, Grass");
-		AddSpellbookPassive(seen, "frozen_bulwark", "Frozen Bulwark", "Chance to freeze nearby attackers when hit.", "Ice x2");
-		AddSpellbookPassive(seen, "stormguard_aura", "Stormguard Aura", "Strikes the nearest enemy with lightning when hit.", "Lightning, Metal");
-		AddSpellbookPassive(seen, "venom_cloak", "Venom Cloak", "Periodically poisons nearby enemies.", "Poison, Darkness");
-		AddSpellbookPassive(seen, "guardian_vines", "Guardian Vines", "Periodically roots nearby enemies.", "Grass x2");
-		AddSpellbookPassive(seen, "tidal_barrier", "Tidal Barrier", "Periodically knocks back and slows nearby enemies.", "Water, Wind");
-		AddSpellbookPassive(seen, "stone_bulwark", "Stone Bulwark", "Grants armor that reduces incoming damage.", "Earth, Metal");
-		AddSpellbookPassive(seen, "blur", "Blur", "Chance to avoid incoming hits entirely.", "Arcane, Wind");
-		AddSpellbookPassive(seen, "fortunes_favor", "Fortune's Favor", "Passively boosts Luck.", "Arcane, Light");
-		AddSpellbookPassive(seen, "haste", "Haste", "Periodically grants attack-speed and move-speed surges.", "Wind, Lightning");
-	}
-
-	private void AddSpellbookResource(HashSet<string> seen, string id, string path)
-	{
-		if (!seen.Add(id))
-			return;
-
-		SpellData spell = ResourceLoader.Load<SpellData>(path);
-		if (spell == null)
-			return;
-
-		spellbookEntries.Add(new SpellbookEntry
-		{
-			Id = id,
-			DisplayName = spell.Name,
-			Description = spell.Description,
-			Elements = FormatElementWeights(spell.GetElementWeights()),
-			ElementList = CodexRows.FromWeights(spell.GetElementWeights()),
-			IsPassive = spell.IsPassive,
-			Icon = spell.Icon ?? DefaultSpellIcon
-		});
-	}
-
-	private void AddSpellbookPassive(HashSet<string> seen, string id, string displayName, string description, string elements)
-	{
-		if (!seen.Add(id))
-			return;
-
-		spellbookEntries.Add(new SpellbookEntry
-		{
-			Id = id,
-			DisplayName = displayName,
-			Description = description,
-			Elements = elements,
-			ElementList = CodexRows.ParseElements(elements),
-			IsPassive = true,
-			Icon = DefaultSpellIcon
-		});
-	}
-
-	private static string FormatElementWeights(Dictionary<Element, int> weights)
-	{
-		if (weights == null || weights.Count == 0)
-			return "None";
-
-		string tags = string.Join(", ", weights.OrderBy(p => p.Key.ToString()).Select(p => p.Value > 1 ? $"{p.Key} x{p.Value}" : p.Key.ToString()));
-
-		// A spell naming exactly one element is attuned to it and scales with that element's tier.
-		// Worth saying on every card: it is the reason a single-element spell is not simply worse
-		// than a hybrid that hands you twice the element weight.
-		return weights.Count == 1 ? $"{tags} - Attuned" : tags;
-	}
-
-	// The Spell Index as a list rather than a wall of cards (.ai/level-up-screen.md, section 4c).
-	//
-	// It was a grid of 210-wide parchment cards, every line centred, a divider tile standing in the
-	// grid as if it were a spell, and a full stone button on every page. Now: what you have found,
-	// in two sections, then what you have not, quietly, at the end - the pages a player can act on
-	// come first and carry the weight.
-	private void BuildSpellbookCards()
-	{
-		ClearChildren(spellbookList);
-		ClearChildren(spellbookSummary);
-		codexColumnsBuilt = CodexRows.ColumnsFor(this);
-
-		SaveData data = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
-		bool Found(SpellbookEntry entry) => GlobalStatsManager.IsSpellUnlockedForLevelUp(data, entry.Id);
-
-		var attacks = spellbookEntries.Where(e => !e.IsPassive).ToList();
-		var passives = spellbookEntries.Where(e => e.IsPassive).ToList();
-		var foundAttacks = attacks.Where(Found).ToList();
-		var foundPassives = passives.Where(Found).ToList();
-		var missing = spellbookEntries.Where(e => !Found(e)).ToList();
-
-		// The Set aside control only exists once there is something to spend on it. Before the
-		// first Redaction it was a disabled button on every page - thirty controls that could not
-		// be pressed, explaining one fact. The summary line says that fact once instead.
-		int slots = GlobalStatsManager.GetCurationSlotsOwned(data);
-		int setAside = GlobalStatsManager.GetRemovedSpellCount(data);
-		bool curating = slots > 0 || setAside > 0;
-
-		string found = $"{foundAttacks.Count} of {attacks.Count} attacks and {foundPassives.Count} of {passives.Count} passives found.";
-		string curation = curating
-			? $"{setAside} of {slots} set aside - a spell set aside is never offered at level-up."
-			: "A Redaction from Arcane Upgrades lets you set a spell aside.";
-		spellbookSummary.AddChild(CodexRows.BuildSummary(found + "\n" + curation, CodexRows.Vellum));
-
-		int columns = codexColumnsBuilt;
-		if (foundAttacks.Count > 0)
-			CodexRows.AddSection(spellbookList, "Attacks", $"{foundAttacks.Count} found", CodexRows.Vellum, columns,
-				foundAttacks.Select(e => BuildSpellbookRow(e, data, curating)));
-		if (foundPassives.Count > 0)
-			CodexRows.AddSection(spellbookList, "Passives", $"{foundPassives.Count} found", CodexRows.Vellum, columns,
-				foundPassives.Select(e => BuildSpellbookRow(e, data, curating)));
-		if (missing.Count > 0)
-			CodexRows.AddSection(spellbookList, "Still to find", $"{missing.Count} spells", CodexRows.Vellum, columns,
-				CodexRows.GroupMissing(missing, e => e.IsPassive, e => UnlockCatalog.GetLockedHint(e.Id, UnlockKind.Spell))
-					.Select(g => BuildMissingSpellbookRow(g.First, g.Count)));
-	}
-
-	private Control BuildSpellbookRow(SpellbookEntry entry, SaveData data, bool curating)
-	{
-		bool removed = GlobalStatsManager.IsSpellRemovedFromPool(data, entry.Id);
-		// A combination (ComboCatalog) is never a level-up card, so there is nothing to set aside.
-		Button control = curating && !ComboCatalog.IsCombination(entry.Id) ? BuildCurationToggle(entry, removed) : null;
-		var row = new CodexRows.Entry
-		{
-			Title = entry.DisplayName,
-			Body = entry.Description,
-			Icon = entry.Icon ?? DefaultSpellIcon,
-			Elements = entry.ElementList,
-			// A spell naming exactly one element is attuned to it and scales with that element's tier
-			// - the reason a single-element spell is not simply worse than a hybrid.
-			ChipNote = entry.ElementList.Count == 1 ? "Attuned" : string.Empty,
-			Quiet = removed,
-			Tag = removed ? "Set aside" : string.Empty,
-			Trailing = control,
-			// One stop per row: the button when it can be pressed, otherwise the row itself, so a
-			// controller can still scroll past a page whose button is greyed out.
-			FocusStop = control == null || control.Disabled,
-		};
-		return CodexRows.BuildRow(row, CodexRows.Vellum);
-	}
-
-	// A page not found yet says how to find it. The name stays hidden - that is the discovery - but
-	// the hint is the one useful thing on the row, so it is the row's body, not a footnote. A spell in
-	// a vault is named by its chapter only, led by the secret's warm glint (CodexRows.SpellHintGlyph).
-	private Control BuildMissingSpellbookRow(SpellbookEntry entry, int count)
-	{
-		return CodexRows.BuildRow(new CodexRows.Entry
-		{
-			Title = CodexRows.UnknownTitle(entry.IsPassive, count),
-			Icon = entry.Icon ?? DefaultSpellIcon,
-			IconSilhouette = true,
-			Meta = UnlockCatalog.GetLockedHint(entry.Id, UnlockKind.Spell),
-			MetaGlyph = CodexRows.SpellHintGlyph(entry.Id),
-			Quiet = true,
-			FocusStop = true,
-		}, CodexRows.Vellum);
-	}
-
-	// Curation lives on the page itself rather than on a separate management screen: the spellbook
-	// already shows every spell and whether you own it, which is exactly the context in which
-	// "stop offering me this one" is a sensible thing to decide.
-	//
-	// A small outlined control beside the name, never a stone button. It was a full-width bar of
-	// the heaviest frame in the game under every card - the loudest thing on the page, for an action
-	// most players take once.
-	private Button BuildCurationToggle(SpellbookEntry entry, bool setAside)
-	{
-		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-		bool canSetAside = GlobalStatsManager.CanRemoveSpellFromPool(saveManager?.Data, entry.Id, out string reason);
-
-		var button = new Button
-		{
-			Name = "CurationToggle_" + entry.Id,
-			Text = setAside ? "Restore" : "Set aside",
-			// Putting a page back is always allowed; taking one out needs a spare Redaction.
-			Disabled = !setAside && !canSetAside,
-			TooltipText = setAside
-				? "This spell is not offered at level-up. Restore it to put it back in the pool."
-				: canSetAside
-					? "Stop offering this spell at level-up. Reversible at any time."
-					: reason
-		};
-		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
-		StyleQuietPageButton(button);
-		// The visible pill is smaller than this; the rest is the touch target.
-		ResponsiveLayout.EnsureTouchTarget(button, 0f);
-
-		button.Pressed += () =>
-		{
-			var manager = GetNodeOrNull<SaveManager>("/root/SaveManager");
-			if (manager == null)
-				return;
-
-			if (!GlobalStatsManager.SetSpellRemovedFromPool(manager.Data, entry.Id, !setAside))
-				return;
-
-			manager.SaveGame();
-			// Every other card's availability may have changed with the last slot spent, and the
-			// shop row's "Lv n/max" moves too. Deferred: this button is in the list being rebuilt,
-			// and it is still inside its own press.
-			bool refocus = button.HasFocus();
-			Callable.From(() => RefreshAfterCuration(entry.Id, refocus)).CallDeferred();
-		};
-
-		return button;
-	}
-
-	// The rebuild frees the button a controller user just pressed. Without this the navigator would
-	// put the selection back on the first page of the book and scroll there, a whole list away from
-	// the page they were curating.
-	private void RefreshAfterCuration(string spellId, bool refocus)
-	{
-		RefreshSpellbookCards();
-		RefreshUpgradeControls();
-		if (refocus && spellbookList.FindChild("CurationToggle_" + spellId, true, false) is Button again && !again.Disabled)
-			again.GrabFocus();
-	}
-
-	// An outlined pill in the page's own inks: hairline edge, no fill until it is pointed at. The
-	// font colours are COPIED into tools/art/ui_contrast.py (the pill pairs).
-	private static void StyleQuietPageButton(Button button)
-	{
-		StyleBoxFlat Pill(Color fill, Color edge)
-		{
-			var box = new StyleBoxFlat { BgColor = fill, BorderColor = edge };
-			box.SetBorderWidthAll(1);
-			box.SetCornerRadiusAll(6);
-			box.ContentMarginLeft = 14;
-			box.ContentMarginRight = 14;
-			box.ContentMarginTop = 4;
-			box.ContentMarginBottom = 4;
-			return box;
-		}
-
-		Color edge = CodexRows.Vellum.Edge;
-		Color clear = new Color(PageCardFace, 0f);
-		Color wash = new Color(0.847f, 0.643f, 0.518f, 0.35f); // flesh.lit, a light touch
-		button.AddThemeStyleboxOverride("normal", Pill(clear, edge));
-		button.AddThemeStyleboxOverride("hover", Pill(wash, PageInk));
-		button.AddThemeStyleboxOverride("pressed", Pill(new Color(0.847f, 0.643f, 0.518f, 0.6f), PageInk));
-		button.AddThemeStyleboxOverride("focus", Pill(wash, PageInk));
-		button.AddThemeStyleboxOverride("disabled", Pill(clear, new Color(edge, 0.4f)));
-		button.AddThemeColorOverride("font_color", PageInkFaint);
-		button.AddThemeColorOverride("font_hover_color", PageInk);
-		button.AddThemeColorOverride("font_pressed_color", PageInk);
-		button.AddThemeColorOverride("font_focus_color", PageInk);
-		button.AddThemeColorOverride("font_disabled_color", CodexRows.Vellum.InkMeta);
-	}
-
-	// The parchment ramp, from .ai/art-direction.md section 3. `flesh` is the contract's name for
-	// it; on this screen it is vellum and ink. CodexRows.Vellum holds the full set the rows use.
-	private static readonly Color PageInk = new Color(0.235f, 0.141f, 0.212f);        // flesh.deep
-	private static readonly Color PageInkFaint = new Color(0.204f, 0.173f, 0.298f);   // violet.base
-	private static readonly Color PageCardFace = new Color(0.949f, 0.863f, 0.769f);   // flesh.hi
-
 	private static void ClearChildren(Node node)
 	{
 		if (node == null)
@@ -2089,8 +1738,6 @@ public partial class MainMenu : Control
 			child.QueueFree();
 		}
 	}
-
-	private void RefreshSpellbookCards() => BuildSpellbookCards();
 
 	// The page under the tabs (AchievementsPage, which the pause tab builds too), and the summary over
 	// them, which counts the whole page whichever tab is showing. The Secrets section that ended this
