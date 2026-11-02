@@ -195,6 +195,21 @@ builds to 120 and seven.
   Conjunction you point at a spell (`.ai/sovereign-spell.md`, to build); Seimei's coupled puzzle and the
   Ruins vault on open ground (`wip/seimei-puzzle`, building); a batch of new items (designing,
   `wip/design-items`).
+- **Later on 2026-11-02:** merged - the sweep answers (3c), Seimei's coupled seal and vaults on open
+  ground, the Ruins on broken paving (`ruinstone`), "Free the wizard", Toxic Spore Burst from one
+  mushroom. **Building:** the menu styling pass (`wip/menu-pass`, Options first, the First Session
+  Checklist removed; told to leave GameOverScreen alone), the Sovereign Rite (`wip/sovereign-rite`), the
+  Evolution Codex's logic (`wip/evolution-codex`; its LAYOUT waits on Eric choosing A, B or C on the
+  canvas), the slow-start plan (`wip/design-slow-start`, design only: fewer spell slots on a new save,
+  pages in the shop, systems unlocked one at a time). **Queued, in this order as slots free:** the
+  defeat sequence and end-of-run screen (below); the first item wave plus rerolls and bans on the chest
+  screen (`.ai/new-items.md`, after the menu pass, which also touches the chest screen).
+- **The defeat sequence** (Eric, 2026-11-02): *"Defeat should have a dramatic animation where the game
+  freezes, then crash zooms onto the wizard and they fall, then it says defeat, and when the player
+  clicks, the defeat screen covers up. It then tallys up the reward with a satisfying payout sound. The
+  end game info pane should not show much info at first, but the player can click into info sections to
+  see stats and details."* There is no player death animation today, and `GameOverScreen.cs` (1485
+  lines) shows everything at once.
 
 ## 3c. Eric's answers, 2026-11-02 (the open-questions sweep)
 
