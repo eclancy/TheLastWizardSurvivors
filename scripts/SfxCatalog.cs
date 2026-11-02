@@ -104,6 +104,15 @@ public static class SfxCatalog
 	public const string MetaUnlock = "meta_unlock";
 	public const string WaveWarning = "wave_warning";
 
+	// --- the defeat and its payout (2026-11-02) ---------------------------
+	// Eric: "Defeat should have a dramatic animation ... It then tallys up the reward with a
+	// satisfying payout sound." PlayerFall: the wizard reaching the ground (DefeatSequence).
+	// TallyTick: one step of the Arcane Energy count (GameOverScreen, SfxPlayer.TallyTick pitches it
+	// up the count). TallyPayout: the count landing on its figure.
+	public const string PlayerFall = "player_fall";
+	public const string TallyTick = "tally_tick";
+	public const string TallyPayout = "tally_payout";
+
 	// --- chapter hints -----------------------------------------------------
 	// One per chapter that still holds a discovery, played from its direction a few times a run
 	// (StageHintCatalog, StageHintDirector). Far away by construction: lowpassed, in a room.
@@ -138,6 +147,7 @@ public static class SfxCatalog
 		CardAppear, CardSelect, Reroll,
 		UiHover, UiClick, UiBack, UiDenied, UiOpen, UiClose, UiPause,
 		StageClear, GameOver, MetaUnlock, WaveWarning,
+		PlayerFall, TallyTick, TallyPayout,
 		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind,
 		SecretSeen, SecretFound, SecretShatter,
 	};
@@ -149,9 +159,9 @@ public static class SfxCatalog
 
 	private static string[] allNames;
 
-	// Every sound the game expects to exist: the 58 named above, the three hurt variants, and
-	// the twelve casts and twelve impacts derived from the element enum. 85 in total, which is
-	// exactly what tools/audio/build.py reports writing.
+	// Every sound the game expects to exist: the 63 named above, the three hurt variants, and
+	// the twelve casts and twelve impacts derived from the element enum. 90 in total, which is
+	// exactly what tools/audio/build.py reports writing (counted 2026-11-02, with the defeat's three).
 	public static string[] AllNames
 	{
 		get
@@ -190,17 +200,20 @@ public static class SfxCatalog
 		Critical,
 	}
 
-	// Critical is deliberately tiny - eleven of eighty-five. player_hurt is loud and important and is
+	// Critical is deliberately tiny - thirteen of ninety. player_hurt is loud and important and is
 	// NOT here: while the player is being swarmed it fires several times a second, and a duck
 	// that retriggers before it releases turns the mix into a pump and removes hit feedback at
 	// the exact moment the player is dying. The Geode Heart's shatter is: once a run at most, a
 	// spell vault opening, and it lands in the thick of the fight the crystal asked for, where a
-	// Normal sound can lose its voice to the swarm.
+	// Normal sound can lose its voice to the swarm. The fall and the payout are (2026-11-02): once a
+	// run each, with nothing else playing, and each lands inside the duck of the Critical sound
+	// before it - the fall inside player_death's, the payout inside game_over's - which would take
+	// 6 dB off the two beats the defeat is built round. The tick stays Normal: it is a ladder.
 	private static readonly string[] CriticalNames =
 	{
 		BossRoar, BossDeath, PlayerDeath, EliteSpawn,
 		LevelUp, SpellEvolve, StageClear, MetaUnlock, GameOver, WaveWarning,
-		SecretShatter,
+		SecretShatter, PlayerFall, TallyPayout,
 	};
 
 	// Everything that can fire many times a second: the hurt variants, every impact, the XP orb,

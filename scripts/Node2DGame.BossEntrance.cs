@@ -388,7 +388,8 @@ public partial class Node2DGame
 		if (letterbox == null || !IsInstanceValid(letterbox))
 			return;
 		float was = letterboxShown;
-		letterboxShown = bossEntranceHeld
+		// The defeat films its fall between the same bars (Node2DGame.Defeat.cs).
+		letterboxShown = bossEntranceHeld || defeatFilming
 			? Mathf.Min(1f, letterboxShown + delta / LetterboxInSeconds)
 			: Mathf.Max(0f, letterboxShown - delta / LetterboxOutSeconds);
 		letterboxJolt *= Mathf.Exp(-14f * delta);

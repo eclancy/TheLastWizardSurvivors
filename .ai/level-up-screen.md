@@ -1242,7 +1242,13 @@ gathered by `Node2DGame.BuildRunReport` after `FinishRunAndReward` has paid and 
 The screen **reads, it never grants**: no amount, no save write, no unlock moved. The scene is just
 the `CanvasLayer` (layer 10, processes while paused).
 
-**It reads in the order a player asks:**
+**Folded (2026-11-02).** Eric: "The end game info pane should not show much info at first, but the
+player can click into info sections to see stats and details." It used to show everything at once -
+the headline, every reward card, the breakdown toggle, and the build and the stats behind two tabs.
+Now it opens on the answer to the first question only, and every detail is one press away. Nothing
+the screen showed was removed; it was folded into three sections.
+
+**What it opens on:**
 
 1. **What happened.** A heading band (LevelUpMenu's: stone deep, gold rule) with **Defeat** in
    cloth red or **Victory** in gold (Display, 4.8 and 14.2:1), the chapter and the wizard, and three
@@ -1250,46 +1256,67 @@ the `CanvasLayer` (layer 10, processes while paused).
    or "Defeated ..."), level reached, enemies slain - each led by a stat glyph (48 on a PC, the
    12-pixel drawing at x4; 24 on a phone). On a PC the title and the tiles share the band, because
    height is what 1280x720 runs out of.
-2. **Rewards** (what you take away). The Arcane Energy card - `reward-energy`, the payout counted
-   up from nothing, the purse after the run - with **How it was counted** one press away: base,
-   minutes x per-minute, level x per-level, the Arcane Upgrades (Avarice Seal), each streak/variety/improvement bonus by a
-   player's name for it ("Losing streak +24%"), a preset scale, the boss bonus, the run's total, and
-   the Unlocks entries' Arcane Energy. Every value is recorded by `CalculateArcaneReward` as its
-   arithmetic uses it (`ArcaneRewardBreakdown`), never recomputed, so it cannot disagree with what
-   was paid. Then **one card per thing unlocked**, each a picture in a gold-rimmed well, its kind
-   ("New wizard", "New spell", "New boon", "New chapter", "Ascension revealed", "Apotheosis
-   revealed", "Unlock completed"), its name and how it was earned ("Unlock completed: First
-   Blood", "Freed during the run", "Defeated Elderbark, the Treant"), under a **New** seal (the
-   mutation page's wax seal and the word in the flag ink). A deed that unlocked a thing is shown as
-   the thing, with the deed as its source - one card, not two. Nothing new: "Nothing new unlocked
-   this run" and the closest Unlocks entry, as the Unlocks list's own row (`CodexRows.BuildDeedRow`).
-3. **Your build | Stats**, two tabs, because together they are longer than any screen. The build:
-   every spell as a row - icon in its milestone's rim (the loadout strip's colours: gold mutated,
-   cyan ascended, fire Apotheosis), level ("Level 8 - max"), a solid mark per milestone with the
-   branch taken, its element chips - then the run's element tags in total, boons (`BoonAura`, as on
-   the pause screen), relics and Full Set Enchantments as icon pills. Stats: tiles (slain, elites,
-   damage dealt, damage taken and hits, XP gathered, chests, first hit, extra lives spent) and each
-   spell's damage as a bar against the biggest with its share; damage-over-time ticks arrive with no
-   spell named (`GameStats.RecordDamageBySource`) and are one "Other" line, not a guess. Playtest
-   Mode adds the old telemetry line.
+2. **What I take away.** One card: `reward-energy`, the payout **counted up** (the tally, below) in
+   the heading face at the Display size, the purse after the run, and - when the run unlocked
+   anything - a strip of each unlock's picture in a gold-rimmed well under the **New** seal (six on a
+   PC, five on a phone, then "+N more"), the card edged in gold. Pictures only: names, kinds and how
+   each was earned are in Rewards.
+3. **Three section rows**, each one whole button (`MakeCardClickOverlay`, named `Section_<key>`):
+   a picture, the name in the heading face, a line of what is inside, and a chevron.
+   - **Rewards** ("3 new unlocks, and how it was counted"): **How it was counted** - base, minutes
+     x per-minute, level x per-level, the Arcane Upgrades (Avarice Seal), each streak/variety/
+     improvement bonus by a player's name for it ("Losing streak +24%"), a preset scale, the boss
+     bonus, the run's total, and the Unlocks entries' Arcane Energy, every value recorded by
+     `CalculateArcaneReward` as its arithmetic uses it (`ArcaneRewardBreakdown`), never recomputed.
+     Then **one card per thing unlocked** - a picture in a gold-rimmed well, its kind ("New wizard",
+     "New spell", "New boon", "New chapter", "Ascension revealed", "Apotheosis revealed", "Unlock
+     completed"), its name and how it was earned, under a **New** seal; a deed that unlocked a thing
+     is shown as the thing, with the deed as its source. Nothing new: "Nothing new unlocked this run"
+     and the closest Unlocks entry, as the Unlocks list's own row (`CodexRows.BuildDeedRow`).
+   - **Your build** ("4 spells · 2 boons · 1 relic"): every spell as a row - icon in its
+     milestone's rim (the loadout strip's colours: gold mutated, cyan ascended, fire Apotheosis),
+     level ("Level 8 - max"), a solid mark per milestone with the branch taken, its element chips -
+     then the run's element tags in total, boons (`BoonAura`, as on the pause screen), relics and
+     Full Set Enchantments as icon pills.
+   - **Stats** ("12,345 damage dealt"): tiles (slain, elites, damage dealt, damage taken and hits,
+     XP gathered, chests, first hit, extra lives spent) and each spell's damage as a bar against the
+     biggest with its share; damage-over-time ticks arrive with no spell named
+     (`GameStats.RecordDamageBySource`) and are one "Other" line, not a guess. Playtest Mode adds the
+     old telemetry line.
 4. **Retry** and **Main menu** (primary, initially focused). Main menu is the old Continue, same
    node name (`ContinueButton`, which `_TouchProbe` taps) and same destination; Retry is the pause
    screen's Restart (unpause, reload `node_2d_game.tscn` with Global's wizard and chapter).
 
-**Layout.** PC: the band across the top, then Rewards (left) and the tabs (right) side by side,
-each in its own scroll, the buttons pinned below - a typical run's rewards and build are on screen
-without scrolling. Phone: band, tiles, then one scroll holding Rewards and the tabs, the buttons
-pinned below it. Every container ignores the mouse so a finger drag reaches the scroll
-(`TouchScroll` via `MenuNavigator.Attach`). A pad: the selection opens on Main menu without
-scrolling; each reward card, spell row, tab and the breakdown toggle is a stop
-(`MakeCardClickOverlay` with the mouse ignored, as `CodexRows` does), so the stick walks the lists.
-`SafeArea.Apply` insets the panel on a phone.
+**A section open** takes the summary's place: **Back** (`SectionBack`) and the section's name over a
+rule, then its page in a scroll (`SectionScroll`). Back, **B**, Escape or Android's back
+(`MenuBackListener`) fold it again, and the selection returns to the row it was opened from; opening
+puts the selection on Back, so a pad walks down into the page from its top. Every page is built with
+the summary and kept, so opening is a visibility change.
 
-**Motion, short and never in the way.** The energy counts up over 0.9 s, the unlock cards fade in
-one after another inside about a second, and each New seal pops (scale 1.6 to 1, back-eased) as its
-card arrives. Alpha and a seal's scale only - nothing the layout places is moved - and every button
-works from the first frame. The final figures are set before the tween starts, so a frame that never
-animates still says the right thing. If a reduced-motion setting is added it should skip `Reveal`.
+**Layout.** One code path for both canvases. Folded, the panel is only as tall as the summary and
+sits in the middle of the screen between two spacers (on a PC 1080 wide at most; on a phone the
+full width); with a section open the spacers go and the panel takes the whole height so the section
+has room to scroll. The panel sits in a full-rect `Frame`, which `SafeArea.Apply` insets on a phone.
+Every container ignores the mouse so a finger drag reaches the scroll (`TouchScroll` via
+`MenuNavigator.Attach`); inside a section each reward card, spell row and the breakdown is a stop
+(`MakeCardClickOverlay` with the mouse ignored, as `CodexRows` does), so the stick walks the lists.
+
+**Arriving, and the count.** After a defeat the screen is brought down by the player's press at the
+end of the defeat (`DefeatSequence`, section 6a) and **covers the field from below**: the whole
+layer slides up over 0.42 s (`CoversFromBelow`, `CoverSeconds`). A victory comes up in place, as it
+always did. Once it is there the Arcane Energy **counts up** from nothing (Eric: "It then tallys up
+the reward with a satisfying payout sound"): 0.7 to 1.6 s by the size of the payout, a cubic ease,
+and a `tally_tick` each time the count passes another step (about fourteen a second) - quick at
+first, slowing as it lands - pitched 1.0 to 1.26 up the count (`SfxPlayer.TallyTick`, at most one
+every 45 ms). On the figure: `tally_payout`, the number pops (scale 1.3 to 1, back-eased), the purse
+fades in and the strip's seal pops and its pictures arrive one after another. Text, alpha and a
+scale about the middle only - nothing the layout places is moved. **Until the count lands every
+press and release is swallowed** before a button hears it, and a press during the count lands it at
+once; each swallowed press keeps the next 250 ms swallowed too. That is what stops the press that
+brought the screen down, a pad A held from the defeat, or a tap's emulated mouse twin (a finger
+arrives as a touch AND a mouse press, in either order) from pressing what is under it. The sting is
+the defeat's `game_over` (played by the sequence) or, on a victory, `stage_clear` - a victory used
+to play `game_over` too.
 
 **Where the cards come from.** `RunUnlockSummary.Entries` (`AchievementManager.cs`) beside the old
 name lists: `ApplyRunAchievements` adds the deeds' spells, boons, wizards and Arcane Energy;
@@ -1305,13 +1332,54 @@ ascension, apotheosis - the last two only when a branch has no art) and three ne
 weakest the held rim on the well at 4.6:1 as a graphic and InkMeta on the face at 6.1:1).
 
 **Photographing it.** `_UiShot --force-death` (or **`--force-victory`**, the real victory path with
-the chapter's boss) photographs a run's own results; **`--demo-unlocks`** then adds one card of
-every kind to the screen's report (the save is untouched) so all of them can be judged at once;
-`--press-late=ResultsTab1` opens Stats, `--press-late=BreakdownToggle` the count. A full build:
+the chapter's boss) photographs a run's own results - through the defeat, which the harness presses
+through for the player once it is armed (`--defeat-press=mouse|touch|pad|key`, a real injected event;
+`none` leaves DEFEAT waiting) - and **`--demo-unlocks`** then adds one card of every kind to the
+screen's report (the save is untouched) so all of them can be judged at once. `--press-late=
+Section_Rewards` (or `Section_Build`, `Section_Stats`) opens a section. Leave the shutter time for
+the defeat (about 2.5 s) and the count (up to 1.6 s more): `--death-at=600 --frames=800 --timescale=3`
+plays a run up to the death at three times speed, then films the defeat at one. A full build:
 `--frames=480 --timescale=3 --hud-milestones --give-relics=ember_flask,inferno_core,obsidian_heart
---grant-boons=iron_rivets,lantern_oil`. `--ink-report` covers the screen. Two of its flags are the
+--grant-boons=iron_rivets,lantern_oil`. `--ink-report` covers the screen. One of its flags is the
 sampler, not the ink: the hidden pause menu's labels are walked and measured against the results'
-pixels, and the chosen tab is declared in its resting ink while it draws in the pressed gold.
+pixels. (A second, the chosen tab declared in its resting ink, went with the tabs.)
+
+## 6a. The defeat (2026-11-02)
+
+Eric: "Defeat should have a dramatic animation where the game freezes, then crash zooms onto the
+wizard and they fall, then it says defeat, and when the player clicks, the defeat screen covers up."
+`scripts/DefeatSequence.cs` is the timeline and the card; `scripts/Node2DGame.Defeat.cs` lends it the
+run camera, the boss arrival's letterbox bars and `ScreenShake` - the machinery a boss's arrival
+already owns, driven rather than duplicated. Only the death that ends the run plays it: the extra
+life's heal never reaches `FinishRunAndReward`, a death after the boss has fallen is the victory it
+is, and a victory has none of this.
+
+**The freeze is the paused tree.** `FinishRunAndReward` pays, saves, builds the `RunReport` and
+pauses on the frame of the killing blow, as it always paused; the results are held back, never the
+save, so quitting during the defeat loses nothing. Enemies, bolts, spells, particles and timers stop
+where they stood. What processes through the pause: the sequence (layer 9), the run camera, the
+wizard's body sprite (`Player.TakeDamage` already let it run for his death row) and the sounds.
+`ProcessTick` is stopped by `runFinished`, so the sequence ticks the camera, the bars, the shake and
+the tiled ground's shader (`SyncGroundToCamera`) itself, through `FilmDefeat`.
+
+| Real seconds | Beat |
+|---|---|
+| 0.00 | **Freeze.** The field stops dead; the wizard is held on his death row's first frame (still standing); the damage flash hangs over it; one small kick. `player_death` has played. |
+| 0.40 | **Crash zoom.** Every canvas layer the run put over the field goes (HUD, touch pad, a chapter note or toast - not the ground, the bars or the card); the bars slide in; the camera snaps from 0.85 to **2.0** in 0.32 s (quartic out, 7% overshoot settling, a jolt as it lands). 2.0 because the body sprite is drawn at x2: every art pixel of the close-up is four canvas pixels. He is framed at 40% of the height so the word can sit below him; a 5% push-in over the next 2.6 s keeps the shot alive. |
+| 0.80 | **The fall.** His own death row - every generated wizard has one, six frames folding to the ground (Laelaps turns to stone) - slowed to 0.9 s. On its last frame: `player_fall`, a puff of dust at his feet (squares on the 2-px art grid, three dust tones), a jolt. The **Test Wizard** (Eric's own drawing, never derived) has no death row, so he falls in code: a two-pixel buckle, then one quarter turn onto the line his feet stood on - no fractional rotation of pixel art. |
+| 2.10 | **DEFEAT.** A full-bleed band (the results band's stone deep and gold rules; 70% down a PC, 63% down a phone) opens from its middle in 0.14 s, the field dims to 42%, and "Defeat" slams on in Cinzel at its heaviest (900), 96 px, the Defeat ink (4.8:1), scale 1.35 to 1 in 0.18 s, with `game_over` and a jolt. |
+| 2.50 | **Armed.** Only now does a press continue, and only a press that starts now: a held button, a held key (repeats ignored) or a thumb still on the stick sends no new press. Until then every press and release is swallowed. F11 and Alt+Enter are left to the window. |
+| 3.00 | "Press any button" ("Tap to continue" with touch controls) fades in under the word, breathing. |
+| press | `ui_open`; the results screen covers the field from below (section 6); the card goes once it is covered. |
+
+Every jolt goes through the run's `ScreenShake`, so **Reduce Screen Shake** scales all four. The card
+is full bleed like the letterbox, so `SafeArea` is not applied, and it is not a menu - nothing to
+select, any press continues - so no `MenuNavigator`. **Photographing it:** `_UiShot --force-death
+--death-at=N` kills on frame N; `--burst` then films the sequence, or `--defeat-hold=SECONDS` stops
+its clock at one moment (0.55 is the zoom mid-way, 1.3 the fall). Under `--force-death` the harness
+hosts the run pausable, as the game's root does - its own root processes through a pause, and the
+world used to keep moving under it - and films the defeat at one speed whatever `--timescale` played
+the run up to it. `_TouchProbe --force-death` taps through the card like a finger.
 
 ## 7. Less text, one ground, no scroll (2026-10-31)
 
