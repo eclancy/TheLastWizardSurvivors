@@ -94,49 +94,140 @@ public partial class SaveManager : Node
 	{
 		if (WritesDisabled)
 			return;
-		string json = Json.Stringify(Data.ToGodotDictionary());
-		using FileAccess file = FileAccess.Open(SavePath, FileAccess.ModeFlags.Write);
-		if (file == null)
-		{
-			GD.PushError($"Failed to open save file for writing: {SavePath}");
-			return;
-		}
-
-		file.StoreString(json);
+		WriteSave(SavePath, Data);
 	}
 
 	public SaveData LoadGame()
 	{
-		if (!FileAccess.FileExists(SavePath))
+		Data = LoadFrom(SavePath, writes: !WritesDisabled);
+		return Data;
+	}
+
+	/// <summary>
+	/// The whole load of the save at <paramref name="path"/>: read it, start the story again if it was
+	/// earned in an earlier telling, migrate it, and write the result back when <paramref name="writes"/>.
+	/// </summary>
+	/// <remarks>
+	/// Static and path-driven so RegressionChecks.ValidateStoryReset can run this exact code against a
+	/// scratch file rather than a copy of it - the player's save is only ever the path LoadGame passes.
+	/// <paramref name="writes"/> is explicit for the same reason: the check writes its scratch file while
+	/// the run's <see cref="WritesDisabled"/> keeps the real one untouched.
+	/// </remarks>
+	public static SaveData LoadFrom(string path, bool writes, bool log = true)
+	{
+		if (!FileAccess.FileExists(path))
+			return new SaveData();
+
+		string json;
+		using (FileAccess file = FileAccess.Open(path, FileAccess.ModeFlags.Read))
 		{
-			Data = new SaveData();
-			return Data;
+			if (file == null)
+			{
+				GD.PushError($"Failed to open save file for reading: {path}");
+				return new SaveData();
+			}
+			json = file.GetAsText();
 		}
 
-		using FileAccess file = FileAccess.Open(SavePath, FileAccess.ModeFlags.Read);
-		if (file == null)
-		{
-			GD.PushError($"Failed to open save file for reading: {SavePath}");
-			Data = new SaveData();
-			return Data;
-		}
-
-		string json = file.GetAsText();
 		Variant parsed = Json.ParseString(json);
 		if (parsed.VariantType == Variant.Type.Nil)
 		{
 			GD.PushWarning("Save file exists but contains invalid JSON. Loading defaults.");
-			Data = new SaveData();
-			return Data;
+			return new SaveData();
 		}
 
-		Data = SaveData.FromVariant(parsed);
+		SaveData data = SaveData.FromVariant(parsed);
+		bool changed = false;
+
+		// Before the migration, which would only be work done on progress about to be set aside. A save
+		// from a NEWER epoch (a copy run back on an older build) is left alone, like a newer schema.
+		if (data.IsFromEarlierStory)
+		{
+			SaveData restarted = StartNewStory(path, json, data, writes, log);
+			if (restarted != null)
+			{
+				data = restarted;
+				changed = true;
+			}
+		}
+
 		// Before anything reads unlock state. A pre-campaign save has an empty UnlockedSpellIds
 		// that means "everything was free", not "nothing was earned"; Migrate is what keeps that
 		// from reading as an empty spellbook.
-		if (Data.Migrate())
-			SaveGame();
+		if (data.Migrate(log))
+			changed = true;
 
-		return Data;
+		if (changed && writes)
+			WriteSave(path, data);
+		return data;
+	}
+
+	/// <summary>
+	/// Where a story reset keeps the save it replaced: beside it, named for the epoch being entered -
+	/// user://savegame.before-epoch-2.json. Never overwritten: a second reset into the same epoch (only
+	/// possible after running an older build in between) takes the next free -2, -3.
+	/// </summary>
+	public static string BackupPathFor(string savePath, int epoch)
+	{
+		string stem = savePath.EndsWith(".json", System.StringComparison.OrdinalIgnoreCase)
+			? savePath.Substring(0, savePath.Length - ".json".Length)
+			: savePath;
+		string path = $"{stem}.before-epoch-{epoch}.json";
+		for (int n = 2; FileAccess.FileExists(path); n++)
+			path = $"{stem}.before-epoch-{epoch}-{n}.json";
+		return path;
+	}
+
+	/// <summary>
+	/// The story has been rebuilt since this save was earned (<see cref="SaveData.CurrentProgressEpoch"/>):
+	/// keep the old file, word for word, and hand back a new save carrying only its settings. Null when
+	/// the old save could not be kept - then nothing is reset, and the next launch tries again.
+	/// </summary>
+	/// <remarks>
+	/// The backup is written BEFORE anything is reset and the reset is refused without it, because a story
+	/// reset may take a player's progress out of play but must never take it out of existence. With writes
+	/// off (every tool scene, --no-save-writes) the reset happens in memory only, so a harness sees what a
+	/// player would, and neither file is touched.
+	/// </remarks>
+	private static SaveData StartNewStory(string path, string json, SaveData old, bool writes, bool log)
+	{
+		int from = old.ProgressEpoch;
+		int to = SaveData.CurrentProgressEpoch;
+		if (!writes)
+		{
+			if (log)
+				GD.Print($"SaveManager: the save is from story epoch {from}, this build is {to}: progress restarted in memory only (writes are off).");
+			return old.StartNewStory();
+		}
+
+		string backup = BackupPathFor(path, to);
+		if (!WriteText(backup, json))
+		{
+			GD.PushError($"SaveManager: the save is from story epoch {from} and this build is {to}, but the old save " +
+				$"could not be kept at {backup} - so it was NOT reset. The next launch tries again.");
+			return null;
+		}
+		if (log)
+			GD.Print($"SaveManager: story epoch {from} -> {to}: progress restarted, settings kept, old save kept at {backup}.");
+		return old.StartNewStory();
+	}
+
+	private static void WriteSave(string path, SaveData data)
+	{
+		WriteText(path, Json.Stringify(data.ToGodotDictionary()));
+	}
+
+	private static bool WriteText(string path, string text)
+	{
+		using FileAccess file = FileAccess.Open(path, FileAccess.ModeFlags.Write);
+		if (file == null)
+		{
+			GD.PushError($"Failed to open save file for writing: {path}");
+			return false;
+		}
+
+		file.StoreString(text);
+		file.Flush();
+		return file.GetError() == Error.Ok;
 	}
 }

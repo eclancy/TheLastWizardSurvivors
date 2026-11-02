@@ -62,6 +62,7 @@ public static class RegressionChecks
 		ValidateAchievementMigration(warnings);
 		ValidateRetiredChargeRefund(warnings);
 		ValidateDifficultyMigration(warnings);
+		ValidateStoryReset(warnings);
 		ValidateChapterDifficulty(warnings);
 		ValidateNoPixelsInText(warnings);
 		ValidateAudio(warnings);
@@ -2522,6 +2523,160 @@ public static class RegressionChecks
 		none.Migrate(log: false);
 		if (none.TotalCurrency != 50)
 			warnings.Add($"Migration: schema 18 paid {none.TotalCurrency - 50} to a save that bought no retired charge.");
+	}
+
+	// Story resets (.ai/decisions/2026-11-02-story-resets.md), on sample saves:
+	//   - a save from an earlier epoch comes back as a brand-new save in every key but the settings
+	//     (SaveData.SettingsKeys), which come back as the player's, with the title's notice owed;
+	//   - a save in this epoch, a save from a newer one, and (while the constant is 1) a save written
+	//     before epochs existed are not reset;
+	//   - on disk, through the real load (SaveManager.LoadFrom) against a scratch file: the old save is
+	//     kept beside it word for word and the file is rewritten in the new epoch, while a same-epoch save
+	//     is left as it was and kept nowhere. Debug builds only, so a player's copy never writes a scratch
+	//     file; the folder is per process, so validators run side by side cannot meet in it.
+	private static void ValidateStoryReset(List<string> warnings)
+	{
+		SaveData Earned(int epoch)
+		{
+			var s = new SaveData
+			{
+				ProgressEpoch = epoch, TotalCurrency = 900, HasSeenPrologue = true, HasSeenGameplayOnboarding = true,
+				AscensionLearned = true, BossRushBestFelled = 3, BossRushBestClearSeconds = 412f,
+				// Every setting off its default, so "kept" cannot pass by coincidence.
+				MasterVolume = 0.3f, MusicVolume = 0.2f, SfxVolume = 0.6f, AudioMuted = true, ShowDamageNumbers = false,
+				EnableGameplayOnboardingTips = false, HasToggledOnboardingTipsAtLeastOnce = true,
+				PlaytestModeEnabled = true, BalancePresetId = GlobalStatsManager.BalancePresetHardcore,
+			};
+			s.PlaytestChecklistState["tips_toggle"] = true;
+			s.UnlockedSpellIds.Add("gravewell");
+			s.UnlockedCharacterIds.Add("hayward");
+			s.UnlockedStageIds.Add("stage_1");
+			s.UnlockedBoonIds.Add("sunsteel_filament");
+			s.UnlockedAchievementIds.Add("survivor");
+			s.RemovedSpellIds.Add("fireball");
+			s.SeenAscensionIds.Add(SaveData.AscensionKey("fireball", "inferno"));
+			s.MaxDifficultyCleared["stage_0"] = 2;
+			s.ArcaneUpgradeLevels["vitality"] = 4;
+			s.FoundSecretIds.Add("swallow_hole");
+			s.FoundUpgradeLevels["vitality"] = 1;
+			s.GlimpsedSecretIds.Add("swallow_hole");
+			s.TrackedQuestIds.Clear();
+			s.SeenChapterNoteIds.Add("stage_0");
+			s.Lifetime.TotalRuns = 12;
+			s.Lifetime.BossesDefeated.Add("elderbark");
+			s.Lifetime.BestTimeByStage["stage_0"] = 640f;
+			s.RecordRunTelemetry(new RunResult());
+			return s;
+		}
+
+		// In memory: key by key against a new save.
+		SaveData old = Earned(SaveData.CurrentProgressEpoch - 1);
+		if (!old.IsFromEarlierStory)
+			warnings.Add("Story reset: a save one epoch behind does not read as from an earlier story.");
+		SaveData reset = old.StartNewStory();
+		Godot.Collections.Dictionary before = old.ToGodotDictionary();
+		Godot.Collections.Dictionary after = reset.ToGodotDictionary();
+		Godot.Collections.Dictionary fresh = new SaveData().ToGodotDictionary();
+		foreach (string key in SaveData.SettingsKeys.Where(k => !fresh.ContainsKey(k)))
+			warnings.Add($"Story reset: SettingsKeys names '{key}', which is not a key of the save - a renamed setting is reset.");
+		foreach (Variant k in fresh.Keys)
+		{
+			string key = k.AsString();
+			if (key == "ProgressEpoch" || key == "ProgressResetNoticePending")
+				continue;
+			bool setting = SaveData.SettingsKeys.Contains(key);
+			string want = Json.Stringify(setting ? before[key] : fresh[key]);
+			string got = after.ContainsKey(key) ? Json.Stringify(after[key]) : "(missing)";
+			if (got != want)
+				warnings.Add($"Story reset: '{key}' came back as {got}, expected {(setting ? "the player's setting" : "a new save's")} {want}.");
+			else if (setting && Json.Stringify(fresh[key]) == want)
+				warnings.Add($"Story reset: the sample leaves the setting '{key}' at its default, so keeping it proves nothing.");
+		}
+		// And named outright, because the loop above takes SettingsKeys at its word: a progress key listed
+		// there as a setting would be "kept" and pass. What Eric's reset must take back, every piece of it.
+		var kept = new List<string>();
+		if (reset.TotalCurrency != 0) kept.Add("Arcane Energy");
+		if (reset.UnlockedSpellIds.Count + reset.UnlockedBoonIds.Count + reset.UnlockedCharacterIds.Count > 0) kept.Add("unlocks");
+		if (reset.UnlockedStageIds.Count + reset.MaxDifficultyCleared.Count > 0) kept.Add("chapters");
+		if (reset.UnlockedAchievementIds.Count > 0 || reset.Lifetime.TotalRuns > 0 || reset.Lifetime.BossesDefeated.Count > 0) kept.Add("achievements");
+		if (reset.ArcaneUpgradeLevels.Count + reset.FoundUpgradeLevels.Count > 0) kept.Add("shop and found levels");
+		if (reset.FoundSecretIds.Count + reset.GlimpsedSecretIds.Count > 0) kept.Add("secrets");
+		if (!reset.TrackedQuestIds.SequenceEqual(new SaveData().TrackedQuestIds)) kept.Add("quests");
+		if (reset.HasSeenPrologue || reset.HasSeenGameplayOnboarding || reset.SeenChapterNoteIds.Count + reset.SeenAscensionIds.Count > 0 || reset.AscensionLearned)
+			kept.Add("seen flags and the prologue");
+		if (kept.Count > 0)
+			warnings.Add($"Story reset: the new story still holds the old one's {string.Join(", ", kept)}.");
+		if (reset.ProgressEpoch != SaveData.CurrentProgressEpoch || reset.IsFromEarlierStory)
+			warnings.Add($"Story reset: the new save is in epoch {reset.ProgressEpoch}, not {SaveData.CurrentProgressEpoch}.");
+		if (!reset.ProgressResetNoticePending)
+			warnings.Add("Story reset: the new save does not owe the title's notice, so the player is never told.");
+		if (reset.Migrate(log: false))
+			warnings.Add("Story reset: the new save needed migrating; it should already be at the current schema.");
+
+		// Not reset: this epoch, a newer one, and a save with no epoch key at all.
+		if (Earned(SaveData.CurrentProgressEpoch).IsFromEarlierStory)
+			warnings.Add("Story reset: a save in this build's epoch reads as from an earlier story.");
+		if (Earned(SaveData.CurrentProgressEpoch + 1).IsFromEarlierStory)
+			warnings.Add("Story reset: a save from a newer epoch (a newer build's) would be reset by this one.");
+		Godot.Collections.Dictionary unmarked = Earned(SaveData.CurrentProgressEpoch).ToGodotDictionary();
+		unmarked.Remove("ProgressEpoch");
+		bool unmarkedResets = SaveData.FromVariant(unmarked).IsFromEarlierStory;
+		if (unmarkedResets != (SaveData.CurrentProgressEpoch > SaveData.FirstProgressEpoch))
+			warnings.Add(unmarkedResets
+				? "Story reset: a save from before epochs existed is reset while the constant is still the first epoch."
+				: "Story reset: a save from before epochs existed is not reset although the story has been rebuilt since.");
+
+		if (!OS.IsDebugBuild())
+			return;
+
+		// On disk, through the real load. Never SaveManager.SavePath: a scratch folder of this process's own.
+		string dir = $"user://story-reset-check-{OS.GetProcessId()}";
+		string path = dir + "/savegame.json";
+		DirAccess.MakeDirRecursiveAbsolute(dir);
+		try
+		{
+			string WriteSample(SaveData sample)
+			{
+				string text = Json.Stringify(sample.ToGodotDictionary());
+				using FileAccess file = FileAccess.Open(path, FileAccess.ModeFlags.Write);
+				file?.StoreString(text);
+				return text;
+			}
+			string backup = SaveManager.BackupPathFor(path, SaveData.CurrentProgressEpoch);
+
+			string oldText = WriteSample(Earned(SaveData.CurrentProgressEpoch - 1));
+			SaveData loaded = SaveManager.LoadFrom(path, writes: true, log: false);
+			if (loaded.IsFromEarlierStory || loaded.TotalCurrency != 0 || loaded.UnlockedSpellIds.Count != 0
+				|| loaded.MasterVolume != 0.3f || !loaded.ProgressResetNoticePending)
+				warnings.Add("Story reset (disk): an earlier-epoch save did not load as a new story with its settings and the notice.");
+			if (!FileAccess.FileExists(backup))
+				warnings.Add($"Story reset (disk): the old save was not kept at {backup}.");
+			else if (FileAccess.GetFileAsString(backup) != oldText)
+				warnings.Add("Story reset (disk): the kept save is not the old save word for word.");
+			SaveData reread = SaveManager.LoadFrom(path, writes: false, log: false);
+			if (reread.ProgressEpoch != SaveData.CurrentProgressEpoch || reread.TotalCurrency != 0)
+				warnings.Add("Story reset (disk): the save file was not rewritten in the new epoch, so the next launch resets again.");
+
+			DirAccess.RemoveAbsolute(backup);
+			string sameText = WriteSample(Earned(SaveData.CurrentProgressEpoch));
+			SaveData same = SaveManager.LoadFrom(path, writes: true, log: false);
+			if (same.TotalCurrency != 900 || same.ProgressResetNoticePending)
+				warnings.Add("Story reset (disk): a save in this epoch was reset.");
+			if (FileAccess.FileExists(backup))
+				warnings.Add("Story reset (disk): a save in this epoch was backed up as if it had been reset.");
+			if (FileAccess.GetFileAsString(path) != sameText)
+				warnings.Add("Story reset (disk): a save in this epoch was rewritten on load.");
+		}
+		finally
+		{
+			using DirAccess folder = DirAccess.Open(dir);
+			if (folder != null)
+			{
+				foreach (string file in folder.GetFiles())
+					folder.Remove(file);
+			}
+			DirAccess.RemoveAbsolute(dir);
+		}
 	}
 
 	// Schema 20 (.ai/difficulty-curve.md, section 9), on sample saves:

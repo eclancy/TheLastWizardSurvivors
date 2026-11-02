@@ -161,6 +161,77 @@ public class SaveData
 	/// </summary>
 	public bool AscensionLearned { get; set; } = false;
 
+	// --- The story's epoch (.ai/decisions/2026-11-02-story-resets.md) ---------------------------------
+
+	/// <summary>
+	/// Which telling of the story this build is. Bumped by hand, for a release that changes the story so
+	/// much that progress earned under the old telling no longer means anything (Eric, 2026-11-02: "reset
+	/// progress for people when we push an update that affects the progress of the story"). A save from an
+	/// earlier epoch is not migrated: SaveManager copies it aside and starts it again, keeping only the
+	/// settings (<see cref="SettingsKeys"/>). release.sh writes this into version.json as "progressEpoch",
+	/// which is how UpdateScreen and UpdateBanner warn a player before the download. Raising it is a release
+	/// decision, never a side effect of other work: see .ai/releasing.md, "Releasing a story reset".
+	/// </summary>
+	/// <remarks>
+	/// This is the one place a save is allowed to lose what it earned, and only on purpose. Every other
+	/// change that narrows what a save grants still needs a schema step in <see cref="Migrate"/>.
+	/// </remarks>
+	public const int CurrentProgressEpoch = 1;
+
+	/// <summary>
+	/// The epoch of a save with no "ProgressEpoch" key - one written before epochs existed, whose story is
+	/// the first telling. So it is never reset while the constant stands at 1, and is reset by the first
+	/// bump: the "counts as epoch 0 once the constant passes 1" rule, without a special case.
+	/// </summary>
+	public const int FirstProgressEpoch = 1;
+
+	/// <summary>The telling of the story this save's progress was earned in. New saves are in the current one.</summary>
+	public int ProgressEpoch { get; set; } = CurrentProgressEpoch;
+
+	/// <summary>
+	/// Set by a story reset; cleared when the title screen has said so (TitleScreen's notice). Saved, so a
+	/// player who quits before the title appears still hears it once.
+	/// </summary>
+	public bool ProgressResetNoticePending { get; set; } = false;
+
+	/// <summary>
+	/// The keys a story reset keeps: everything the Options screen sets (sound, damage numbers, the tips
+	/// switch, the playtest toolkit and the difficulty preset) and nothing it does not. Every other key comes
+	/// back as a brand-new save's, so a field added later is reset unless it is listed here - a setting
+	/// lost is a nuisance, progress kept across a new story is the bug this exists to prevent.
+	/// RegressionChecks.ValidateStoryReset holds the list to the save's real keys.
+	/// </summary>
+	public static readonly string[] SettingsKeys =
+	{
+		"MasterVolume", "MusicVolume", "SfxVolume", "AudioMuted", "ShowDamageNumbers",
+		"EnableGameplayOnboardingTips", "HasToggledOnboardingTipsAtLeastOnce",
+		"PlaytestModeEnabled", "BalancePresetId", "PlaytestChecklistState",
+	};
+
+	/// <summary>True when this save was earned in an earlier telling of the story than this build's.</summary>
+	public bool IsFromEarlierStory => ProgressEpoch < CurrentProgressEpoch;
+
+	/// <summary>
+	/// The save this one becomes when the story starts again: a new save in the current epoch, carrying
+	/// this one's settings and the title's notice. Pure - the caller keeps the old save on disk first.
+	/// </summary>
+	public SaveData StartNewStory()
+	{
+		// Through the dictionary, so SettingsKeys IS the rule rather than a description of a copy written
+		// beside it. A save written by a newer epoch is never sent here; see SaveManager.LoadFrom.
+		Godot.Collections.Dictionary old = ToGodotDictionary();
+		Godot.Collections.Dictionary fresh = new SaveData().ToGodotDictionary();
+		foreach (string key in SettingsKeys)
+		{
+			if (old.ContainsKey(key))
+				fresh[key] = old[key];
+		}
+		SaveData result = FromVariant(fresh);
+		result.ProgressEpoch = CurrentProgressEpoch;
+		result.ProgressResetNoticePending = true;
+		return result;
+	}
+
 	/// <summary>The key a seen ascension is stored under.</summary>
 	public static string AscensionKey(string spellId, string branchId)
 		=> $"{spellId?.Trim().ToLowerInvariant()}:{branchId?.Trim().ToLowerInvariant()}";
@@ -895,6 +966,8 @@ public class SaveData
 		return new Godot.Collections.Dictionary
 		{
 			["SchemaVersion"] = SchemaVersion,
+			["ProgressEpoch"] = ProgressEpoch,
+			["ProgressResetNoticePending"] = ProgressResetNoticePending,
 			["TotalCurrency"] = TotalCurrency,
 			["UnlockedCharacterIds"] = characterIds,
 			["UnlockedStageIds"] = stageIds,
@@ -944,6 +1017,16 @@ public class SaveData
 		{
 			result.SchemaVersion = root["SchemaVersion"].AsInt32();
 		}
+
+		// No schema bump: the epoch is not a format, it is which story the progress belongs to. A save
+		// without the key predates epochs and so belongs to the first telling (FirstProgressEpoch), never
+		// to "now" - otherwise the first bump would pass over every save written before it.
+		result.ProgressEpoch = root.ContainsKey("ProgressEpoch")
+			? root["ProgressEpoch"].AsInt32()
+			: FirstProgressEpoch;
+
+		if (root.ContainsKey("ProgressResetNoticePending"))
+			result.ProgressResetNoticePending = root["ProgressResetNoticePending"].AsBool();
 
 		if (root.ContainsKey("TotalCurrency"))
 		{
