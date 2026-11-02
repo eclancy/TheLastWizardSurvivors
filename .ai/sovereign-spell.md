@@ -1,7 +1,7 @@
 # The Sovereign Rite: every spell's power poured into one
 
-**Status: approved by Eric (2026-11-02) with one change, being built:** it is a **combination**: the
-Rite is one ingredient and the spell you point it at is the other (section 3, as revised).
+**Status: approved by Eric (2026-11-02) with one change, and built (section 8):** it is a **combination**:
+the Rite is one ingredient and the spell you point it at is the other (section 3, as revised).
 
 Eric, 2026-11-02: *"I want a very powerful ability that you can't unlock until late in the game that
 prevents any other non-passive spell from activating, but gets power based on the number of other
@@ -122,3 +122,123 @@ is offered as a Conjunction whose second ingredient the player chooses (section 
 3. **Offer gate**: player level 25 with three actives (recommended)?
 4. **Do silenced spells keep levelling** as fuel (recommended), or is the fuel fixed at the moment it is taken?
 5. **The target**: about 1.3 times the whole loadout (recommended), or stronger still?
+
+---
+
+## 8. Built (2026-11-02, `wip/sovereign-rite`)
+
+Sections 1-6 as written, with the decisions below. Where to look:
+
+- **`scripts/SovereignRite.cs`** is the one authority on the numbers and the rules: the gate (level 25, three
+  active spells, 16 fuel behind the chosen one), the power per level of fuel (+7% damage, -0.8% cooldown to
+  -30%, +1% area to +40%, +1 amount per 10), who counts as passive, who may be anointed, and the card line.
+- **It is a recipe in `ComboCatalog`** (`IsRite`, second ingredient `AnyActiveSpell`, read "any active spell
+  you hold"). `Evaluate` never calls it Ready and `ComboCatalog.Fusions` leaves it out; the strip offer is
+  `Player.TryBuildSovereignOffer` (`scripts/Player.Sovereign.cs`), on the conjunction plate, "✶ CONJUNCTION
+  Sovereign Rite". The selection is `sovereign_rite:<spell id>`; `TryAddOrLevelSpell` hands it to `TryAnoint`,
+  which re-checks the offer and the target before it does anything.
+- **The page** is the conjunction page with one card per active spell ("Sovereign Fireball", a "+24 fuel"
+  chip, "x2.7 damage, -19% cooldown, +24% area, +2 amount"), narrower cards when there are more than three,
+  the focus spotlight on, Back cancelling without spending the pick. A spell the Rite will not take, or one
+  with less than 16 fuel behind it, is shown locked with the reason.
+- **The power is a milestone the anointed spell carries**, `SpellData.SovereignBoon`, the fourth entry of
+  `CollectActive` after the Apotheosis. So every stat reader sees the fuel through the one path the
+  milestones use, and none names the Rite. `RefreshSovereignFuel` rewrites it in place whenever a level or a
+  spell is added. A Conjunction anointed hands the same boon to its frozen parents (Sagittarius reads them).
+- **Silence** (`Player.IsSilenced`, mirrored on `SpellData.SilencedBySovereign`): the fire loop skips the
+  spell, its standing nodes go (`DropStandingNodes`: the persistent instances, the four on the wizard by type,
+  the bow), Frost Shard's shatter and the Black Cat leave it alone. What it already put on the ground burns
+  out on its own clock. A silenced spell is offered on a plain card to level 8 (`CardLevelCap` returns
+  `MaxLevel` for it), "✶ +1 fuel to Sovereign X", with no mutation page and no Ascension or Apotheosis; a
+  spell taken after the Rite is silenced as it arrives.
+- **Unlock**: the Warden of the Deep's Road deed, `emberdeep_ended` ("Unlocks the Sovereign Rite and 300
+  Arcane Energy"). A save that already beat him is handed it by `AchievementManager.Reconcile` at the end of
+  its next run; **no schema bump**. Its Feat "Conjunction: Sovereign Rite" (`conjunction_sovereign_rite`,
+  listed as a recipe once the Rite is owned) completes the first time the strip offers it, through the
+  combinations' existing `Node2DGame.RecordCombinationsMet`, and pays 250 Arcane Energy. Not counted by The
+  Grimoire Restored (`GrimoireSpellIds` leaves out every combination).
+- **The look** (section 5), all code-drawn: `SovereignCorona` on every node a cast of the anointed spell makes
+  through `Player.ApplyLegendaryVisual` (the ring in the element's core and hot stop, Bayer-thinned, gilt
+  glints at the eight points, one cached texture per element and radius, a slow trail of motes; the first
+  cast after the Rite flashes); `SovereignHits`, one pooled layer in the arena that crowns every strike of
+  the anointed spell where it lands (`Player.DealDamageToEnemy`) - which is what crowns the spells that draw
+  their own strikes and make no node to crown (Starfall, the Familiar, the Spiritual Weapon, Stormsweep,
+  Sleet Runes, Frost Shard); `SovereignCrown`, the turning crown-ring over the wizard's head; and on
+  `LoadoutHud`, the gold crown frame with the fuel in gold, the greyed slots under a wax seal on a band, and
+  the silenced icons flying into the anointed slot when play resumes.
+- **The validator**, `RegressionChecks.ValidateSovereignRite`: the gate and per-fuel numbers are these, and
+  the gate can be met; one rite, registered, terminal, elementless, paid by a Road deed no earlier than the
+  first gate chapter, never in the Grimoire's count; a passive or defensive spell is never silenced, fuel or
+  anointed; for every spell form, the boon moves the spell's own damage, cooldown, area or scale and count by
+  exactly its numbers and they come back without it; the boon carries nothing else (no effect, rider, slow,
+  knockback, pierce, chain, element or execute), so it opens no crowd-control or execute path on a boss.
+- **Tools**: `_BalanceHarness --seek-sovereign [--anoint=top|own|ID] [--anoint-wait=S] [--policy=ordinary]`
+  and `_UiShot --demo-sovereign[=SPELL]` (the scripts' headers say how). Shots: add `--force-levelup
+  --keep-levelup` for the strip, `--press-late=Ascend_sovereign_rite` for the page, and `--spell-stage=8
+  --cast-on-stage` with `=SPELL` for the crowned casts and the loadout strip.
+- **For the Evolution Codex** (section 3, "a recipe whose second ingredient reads 'any active spell you
+  hold'"): `ComboCatalog.All` holds the Rite (`ComboCatalog.Rite`, `IsRite`). Its `First` is the Rite itself
+  (`SpellId` `sovereign_rite`, no Ascension; `Label` reads "Sovereign Rite"), its `Second` has
+  `AnyActiveSpell` set, no spell id, and reads `ComboCatalog.AnyActiveSpellName`. `Template` is its
+  SpellData (name, line, icon), `IsKnown` is "the save owns the Rite", `IsMet` its Feat, `FeatId` gives
+  `conjunction_sovereign_rite`. A screen that loads a parent's resource or its level 8 options must skip an
+  `AnyActiveSpell` ingredient; `ComboCatalog.Fusions` is every recipe but the Rite.
+
+**Decided while building** (for Eric to overrule):
+
+1. **"Passive" is Aegis Ward.** `SpellData.IsPassive` is set on nothing since boons replaced the passive
+   spells, so the doc's "wards, auras, the defensive spells" would have meant no spell at all. The one shield
+   (`SovereignRite.DefensiveSpellIds`) is never silenced, never fuel, never anointed, and not one of the three.
+2. **Two spells cannot be anointed**: Arcane Explosion (charged by the casts the Rite silences) and Frost
+   Shard (shatters only what other spells kill). Either would be a dead build the moment it was taken.
+3. **Nothing fuses after the Rite**, not only the anointed spell: two silenced parents would trade sixteen
+   fuel for one level.
+4. **Area or scale, never both**: a spell whose script reads area grows its area; one that has none but is
+   drawn at a scale (the bolts) grows its scale instead, which is its reach. Cooldown and amount are given
+   only to a spell that reads them, so a card never promises a number its spell ignores.
+5. **The anointed spell cannot be cut by the Scribe's Penknife** (the Rite never undoes). A silenced one can,
+   and its fuel goes with it.
+6. **Silenced spells keep their element tags**: they are still held, so no tier moves.
+
+**Measured (2026-11-02): far stronger than 1.3 once it is pointed at the spell the build carries, and the
+offer comes about two minutes early.** `_BalanceHarness --seek-sovereign --all-unlocked --immortal`,
+seed 11, timescale 3, three runs at a time. The ratio is the loadout's damage a second (every source) over
+the 60 s after the Rite against the 60 s before; "share" is the anointed spell's part of the minute before.
+
+| wizard | build | offered (min, level) | taken (min, level) | anointed (its level) | fuel at taking -> 15:00 | dmg/s before -> after | ratio |
+|---|---|---|---|---|---|---|---|
+| Pyromancer | planned, best spell | 9.1, L25 | 10.9, L29 | Cinderbreath (8) | 16 -> 32 | 1197 -> 3474 | **x2.90** |
+| Frostweaver | planned, best spell | 9.3, L25 | 11.8, L30 | Cone of Cold (8) | 16 -> 22 | 1082 -> 2990 | **x2.76** |
+| Stormcaller | planned, best spell | 11.2, L25 | 13.5, L29 | Chain Lightning (8) | 16 -> 19 | 941 -> 2160 | **x2.30** |
+| Frostweaver | ordinary, best spell | 9.2, L25 | 9.2, L25 | Obsidian Spike (8), share 0.70 | 16 -> 30 | 584 -> 1323 | **x2.26** |
+| Stormcaller | ordinary, best spell | 9.2, L25 | 9.2, L25 | Meteor Swarm (7), share 0.35 | 17 -> 32 | 428 -> 734 | **x1.71** |
+| Pyromancer | ordinary, best spell | 9.1, L25 | 9.7, L26 | Cinderbreath (8), share 0.83 | 16 -> 24 | 943 -> 2824 | **x2.99** |
+| Pyromancer | planned, first offer | 9.2, L25 | 9.2, L25 | Fireball (1) | 19 -> 28 | 653 -> 690 | x1.06 |
+| Frostweaver | planned, first offer | 9.2, L25 | 9.2, L25 | Mirefoot (1) | 18 -> 31 | 802 -> 282 | x0.35 |
+| Stormcaller | planned, first offer | 8.3, L25 | 8.3, L25 | Magic Missile (3) | 17 -> 25 | 496 -> 543 | x1.09 |
+
+What the table says:
+
+- **Pointed at the spell the build is carrying, it is x1.7 to x3.0 at the gate's minimum fuel (16-17)**,
+  against section 4's target of about 1.3. On the numbers, the anointed spell alone gains about x3 at 16
+  fuel (Frostweaver's Obsidian Spike: share 0.70, ratio 2.26) and about x5 with an amount it can use (the
+  Stormcaller's Meteor Swarm: share 0.35, ratio 1.71). To land near 1.3 at the gate the damage per fuel
+  wants to be about half (3-3.5%), or the target read at the end of a run (fuel 30-40) rather than at the
+  offer. **Not retuned** - section 4's numbers stand until Eric says.
+- **The gate makes the obvious target the last to open.** It counts the OTHER spells' levels, so the spell a
+  build pours its levels into is the one with the least fuel behind it: at its first offer every run's best
+  spell (level 8, beside spells at 1-3) was locked, and only a spell the run had just picked up could be
+  anointed - which is the "first offer" rows, a sidegrade or a loss (x0.35 for a level 1 Mirefoot). A
+  player who waits for his spell takes it 1.7 to 2.5 minutes later.
+- **The offer lands at minute 9.1-9.4 at level 25** (8.3 and 11.2 the outliers), before section 6's 11-12.
+  These bots reached level 29-31 by minute 11-12, so that is where the gate would have to move for the same
+  bots - but they are immortal, own everything and walk to every orb, and `.ai/run-pacing.md`'s planned bot
+  is level 26 at 10.7 and 29 at 12.2. **Not moved**: Eric approved 25, and a gate that waits for the strongest
+  spell to be choosable already puts the taking at 10.9-13.5 for a planned build.
+- **Read the ratio as power, not kill speed.** The bots kill what the spawner sends from about minute 8
+  (kills ≈ spawns, 420-450 a minute), and the damage a source is credited with is every hit's full amount,
+  overkill included. Against three times the enemies' health (`--enemy-hp=3`), to get off that ceiling, the
+  bots levelled too slowly to say: the Frostweaver was first offered it at 13.6 and did not take it before
+  the end, and the Stormcaller never reached level 25.
+- `--seek-sovereign --policy=ordinary` is the ordinary build; with neither, no policy takes the Rite, so a
+  report without the flag plays as it did before the Rite existed.

@@ -2389,12 +2389,16 @@ public partial class _BalanceHarness : Node
 			}
 		}
 
-		// --seek-sovereign: the Rite the moment the strip offers it; everything else as planned.
+		// --seek-sovereign: the Rite once the spell it wants is open; everything else as planned.
 		if (SeekSovereign && PickSovereign(ascensions) is string rite)
 		{
 			Act(menu, rite);
 			return;
 		}
+		// No other policy takes the Rite: a planner waiting for its spell would otherwise have it taken for
+		// him by the policy below, and a run without --seek-sovereign plays as it did before the Rite existed.
+		if (ascensions.Any(o => o.ComboId == SovereignRite.SpellId))
+			ascensions = ascensions.Where(o => o.ComboId != SovereignRite.SpellId).ToList();
 
 		// --seek-combo first: its parents' Ascensions and the combination are its own to choose.
 		if (!string.IsNullOrEmpty(SeekCombo) && ComboTarget() != null)
