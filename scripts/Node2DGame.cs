@@ -1268,6 +1268,14 @@ public partial class Node2DGame : Node2D
 		// _Ready - see LoadInitialTerrain. Mazes keep corridor dead-ends (no cleanup) so the
 		// labyrinth stays intact.
 		terrainSeed = seed;
+		// The run's other rolls follow the same seed: the spawner's picks (which creature, which formation,
+		// where on the ring) and the wizard's level-up and combat rolls. Still the clock's seed in play, so
+		// nothing a player sees changes; a run given its seed (_BalanceHarness --seed, --terrain-seed) now
+		// deals the same offers and sends the same swarm, where two bridge runs on one seed had ended eight
+		// levels apart. Spells and enemies keep generators of their own, so two runs drift by a level or two,
+		// not to the frame.
+		spawnRng.Seed = LevelGenerator.Hash(seed, 0, 0, SaltSpawnRolls);
+		player?.SeedRunRandomness(seed);
 		terrainKind = kind;
 		terrainStreamer = new TerrainStreamer(levelPainter, kind, seed, ProceduralTilePixels, stageOrigin,
 			layout.BaseTerrain, cleanup: !isMaze, ProceduralSafeRadiusTiles, spawnClearRadius: 4f)
@@ -2573,6 +2581,7 @@ public partial class Node2DGame : Node2D
 	// cover enough of a chunk that eight tries found one in under half the chunks that rolled for it.
 	private const int LandmarkAttempts = 24;
 	private const int SaltLandmark = 0x1A4D;
+	private const int SaltSpawnRolls = 0x5A3B;
 
 	/// <summary>
 	/// TerrainStreamer.PlanFeatures: the moment a chunk's data exists, decide its landmark and stamp
