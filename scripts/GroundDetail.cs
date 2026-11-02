@@ -103,11 +103,16 @@ public static class GroundDetail
 			new("pebbles", Site.Shore, null, 0.06f, 1),
 		},
 
+		// THE FROZEN WASTE stands on snow now (tools/art/tiles.py, snow()), not on the Ruins' slate, and snow
+		// is drawn almost bare because a shape in a fill tile repeats every cell. The wind is here instead:
+		// sastrugi, the ridges it cuts in packed snow (tools/art/detail_frost.py), in drifts with the snow
+		// drifts and the frost. `cracks` went from both the snow (snow does not crack) and the ice, which
+		// carries its own fractures now and crosses from cell to cell with them.
 		[StageEnvironmentKind.Ice] = new[]
 		{
-			G("snow", 0.02f, 6), G("frost", 0.015f, 5), G("ice_shards", 0.005f), G("pebbles", 0.0037f, 1),
-			G("cracks", 0.004f, 1),
-			G("frost", 0.02f, 4, "ice"), G("cracks", 0.012f, 1, "ice"),
+			G("sastrugi", 0.014f, 6), G("snow", 0.018f, 6), G("frost", 0.012f, 5), G("ice_shards", 0.005f),
+			G("pebbles", 0.0025f, 1),
+			G("frost", 0.02f, 4, "ice"),
 			new("frost", Site.Shore, null, 0.05f, 1),
 		},
 		[StageEnvironmentKind.Desert] = new[]

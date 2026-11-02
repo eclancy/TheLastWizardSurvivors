@@ -490,32 +490,6 @@ def body_mossy_rock(c):
     clumps(c, 3, 1, 3, v[3], 913, fill=0.5)
 
 
-def body_ice(c):
-    st = ramp("steel")
-    c.rect(0, 0, SIZE - 1, SIZE - 1, st[4])
-    clumps(c, 4, 3, 7, st[3], 15, fill=0.35)
-    # FRACTURES, NOT A HATCH. The first pass ran five full-width diagonals across every tile and
-    # the field came out as a stripe pattern - the same failure the roster notes record for evenly
-    # spaced anything. These are short polylines that CHANGE ANGLE, which is what a crack does and
-    # a hatch does not, and they stop well inside the tile so no two meet at a join.
-    for k in range(3):
-        x = inside(k, 16, 10)
-        y = inside(k, 17, 10)
-        ang = hashed(k, 3, 18) * TAU
-        for seg in range(3):
-            ang += (hashed(k, seg, 19) - 0.5) * 1.6
-            run = 4 + int(hashed(k, seg, 30) * 4)
-            for j in range(run):
-                px = int(x + math.cos(ang) * j)
-                py = int(y + math.sin(ang) * j)
-                if 1 <= px < SIZE - 1 and 1 <= py < SIZE - 1:
-                    c.set(px, py, st[2] if j % 3 else st[3])
-            x = int(x + math.cos(ang) * run)
-            y = int(y + math.sin(ang) * run)
-        if 1 <= x < SIZE - 1 and 1 <= y < SIZE - 1:
-            c.set(x, y, st[1])
-
-
 def body_water(c):
     """Water's one tile, a crop of the forest surface from water.py.
 
@@ -551,6 +525,7 @@ def body_water(c):
 # Dropping legs at random to merge plates left the stubs as dead-end dashes everywhere and no plates
 # at all. What works is two crossings a side, each at its own slant, and junctions scattered per
 # variant and joined by their relative neighbourhood graph: plates of every size, no lattice.
+# (The Frozen Waste's ice uses the same network for its fractures, one crossing a side.)
 
 
 def fixed_hash(x, y, salt):
@@ -887,6 +862,42 @@ def body_lava(c):
             c.set(x, y, f[1])
 
 
+# The ice's shared crossings: one fracture through each pair of edges, so a sheet of it is crazed into
+# panes about a cell across.
+ICE_TOP = ((30, 15),)
+ICE_LEFT = ((14, -20),)
+ICE_STUB = 7
+
+
+def body_ice(c):
+    """A frozen pool on the Frozen Waste: dark glassy ice with white fractures in it.
+
+    On the old slate floor the ice was the light patch, steel's deep under blotches of its shade.
+    With the floor now snow (snow() below, a step paler), ice is what it is on a real snowfield: the
+    darker, smoother thing - the matte snow, then the ice a step under it, then the black open water
+    (whose frozen shore is water.py's). So the blotches went (on snow they read as spots) and what
+    says "ice" is the crazing: hairline fractures in steel's shade, the same crack network as the
+    Emberdeep's basalt (crack_net), so they cross from cell to cell and never stop at a tile edge;
+    and at the odd junction where two fractures meet, one pixel of steel's base catching the key.
+    (Milky patches were tried and went: in a field of cells, a dithered blotch reads as a glyph.)
+    """
+    stl = ramp("steel")
+    v = VARIANT
+    h = lambda k: hashed(k, v, 3600)
+    segs, edges = crack_net(h, ICE_TOP, ICE_LEFT, ICE_STUB, 2 + v % 2, HAIR, 14.0)
+    for k, (a, b) in enumerate(edges):
+        segs += leg(bent(a, b, h, 40 + k * 3, 2.0, 2), HAIR, HAIR)
+    c.rect(0, 0, SIZE - 1, SIZE - 1, stl[4])
+    for y in range(SIZE):
+        for x in range(SIZE):
+            if nearest_seam(segs, x + 0.5, y + 0.5)[0] <= 0:
+                c.set(x, y, stl[3])
+    for k, (a, b) in enumerate(edges):
+        x, y = int(a[0]), int(a[1])
+        if 8 <= x < SIZE - 8 and 8 <= y < SIZE - 8 and k % 2 == 0:
+            c.set(x, y, stl[2])
+
+
 def body_pit(c):
     st = ramp("stone")
     c.rect(0, 0, SIZE - 1, SIZE - 1, OCC)
@@ -984,6 +995,54 @@ def natural(c, r, seed, accent, base=3):
         pebble(c, inside(seed * 3, 74, 5), inside(seed * 3 + 1, 75, 5), 1 + seed % 3 // 2)
 
 
+def snow(c, seed):
+    """The Frozen Waste's floor: wind-packed snow under no light.
+
+    It stood on `graystone`, the Ruins' slate, with ice stamped on it - the darkest floor in the game
+    under a chapter that is a snowfield, and a player read "night" before "frozen" (0.10.0 ground
+    pass). Snow is the one ground that should be PALE, so this floor stands on the bone row's deep
+    (`skin.deep`, #38404F) - a full step above every other open floor, and still the deep half of a
+    row, so a steel-and-wool thane or a whalebone hound is the darker thing standing on it, ringed
+    by its rim. The order on screen is snow, then the ice a step under it, then the black water:
+    matte, glassy, open.
+
+    ALMOST NOTHING IS DRAWN ON IT, on purpose. The first version cut sastrugi - wind ridges - into
+    every cell, and a field of them was a printed carpet with a 48 px repeat: a ridge has a shape,
+    and a shape in a fill tile is a pattern. The wind is the detail layer's now (ground_detail.py's
+    `sastrugi`, and the drifts and frost already there), placed in world space in drifts. What is
+    left here is grain a step either side, one long low ridge in one variant in three, and the odd
+    stone or dead stalk through the crust.
+    """
+    sk = ramp("skin")
+    stl = ramp("steel")
+    st = ramp("stone")
+    ln = ramp("linen")
+    c.rect(0, 0, SIZE - 1, SIZE - 1, sk[4])
+    specks(c, 0.006, stl[3], 3505)
+    specks(c, 0.005, st[1], 3507)
+    if seed % 3 == 2:
+        # one long low ridge, lying along the wind (off the north-west), lit crest over its lee
+        run = 18 + int(hashed(seed, 1, 3521) * 12)
+        x0 = 4 + int(hashed(seed, 2, 3522) * (SIZE - 8 - run))
+        y0 = 12 + int(hashed(seed, 3, 3523) * (SIZE - 24))
+        for j in range(run):
+            u = j / float(run - 1)
+            y = y0 + int(round(-0.18 * j - math.sin(u * math.pi) * 1.5))
+            c.set(x0 + j, y, stl[3])
+            if 0.15 < u < 0.85:
+                c.set(x0 + j, y + 1, st[1])
+    # Incidents, one variant in six each: a stone the wind has bared, a few dead stalks through the
+    # crust. A dark thing on snow is the most visible thing here, and at one variant in three each
+    # they laid out the grid. The rest is snow, which is the point.
+    if seed == 0:
+        pebble(c, inside(seed, 3531, 7), inside(seed + 3, 3532, 7), 1)
+    elif seed == 4:
+        x, y = inside(seed, 3533, 8), inside(seed + 5, 3534, 8)
+        for k in range(3):
+            for j in range(2 + k % 2):
+                c.set(x + k * 2, y - j - (k % 2), ln[3] if j else ln[4])
+
+
 def floor_variant(mat, style, seed, accent=None):
     def draw():
         global VARIANT
@@ -1001,6 +1060,9 @@ def floor_variant(mat, style, seed, accent=None):
             return c
         if style == "basalt":
             basalt(c, seed)
+            return c
+        if style == "snow":
+            snow(c, seed)
             return c
         if style == "natural":
             natural(c, r, seed, accent, 4 if mat == "gold" else 3)
@@ -1240,6 +1302,9 @@ MATERIALS = [
     # Emberdeep ground: basalt plates split by seams that smoulder (basalt() above). Was `darktile`,
     # then the `natural` floor with violet in it - a calm slate that said nothing about the place.
     ("basalt", "stone", "basalt", 6, None),
+    # Frozen Waste ground: wind-packed snow on the bone row's deep (snow() above). It stood on
+    # `graystone`, the darkest floor in the game under a chapter that is a snowfield.
+    ("snow", "skin", "snow", 6, None),
     # No palette paints darktile now; kept because StageEnvironmentCatalog names its PNGs.
     ("darktile", "stone", "tiled", 4, None),
     # The old maze wall: a flat `occ` tile. The jail walls (jail_walls.py) replaced it on the Cursed
