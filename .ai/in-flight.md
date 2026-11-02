@@ -215,6 +215,15 @@ builds to 120 and seven.
   the "Momentum streak" line? dead FullSetDetailScreen/ChestItemHUD and the Test Wizard's spell
   picker? From the Codex: keep "Evolution Codex" on the menu and "★ Codex" in runs? the Familiar's
   four level 4 paths scroll on PC? relics claimed in earlier runs count as seen?
+- **Merged, night of 2026-11-02:** the Sovereign Rite (tuned to x1.39 against the 1.3 target at
+  0.5% damage a fuel, gate level 28, offered at minutes 10.4-12.2; `.ai/sovereign-spell.md` 8), the
+  defeat sequence and folded results (`DefeatSequence.cs`, `Node2DGame.Defeat.cs`; three generated
+  sounds nobody has listened to yet), Report a bug moved into Options, Testing hidden in release
+  builds. **Building:** the Codex as layout **B, the book** (Eric: "build the one you think makes the
+  most sense and is easiest to read on phone", revisit when votes come in; it must also stop showing
+  "L8" on the Rite's recipe), the first item wave. **Votes:** Eric wants them posted through the bug intake, so the vote page is
+  being built on ecec.dev (branch `spell-index-vote` in the website repo, worktree `../ecec-spell-vote`;
+  the claude.ai draft is https://claude.ai/artifact/B4pnZKUXgtnzCYp1BBJFjE).
 - **The defeat sequence** (Eric, 2026-11-02): *"Defeat should have a dramatic animation where the game
   freezes, then crash zooms onto the wizard and they fall, then it says defeat, and when the player
   clicks, the defeat screen covers up. It then tallys up the reward with a satisfying payout sound. The
