@@ -3671,8 +3671,9 @@ public partial class _UiShot : Node
 			SpellData spell = held.First(s => s.Id == form.SpellId);
 			queue.Remove(spell);
 			spell.CurrentLevel = spell.MaxLevel;
-			spell.ApplyEvolution(spell.GetEvolutionOptionsForLevel(4).FirstOrDefault(e => e.Id == form.RequiredLevel4EvolutionId));
-			spell.ApplyEvolution(spell.GetEvolutionOptionsForLevel(8).FirstOrDefault(e => e.Id == form.RequiredLevel8EvolutionId));
+			// Any mutation and any Ascension: the form names no path (ApotheosisCatalog.SpellMeetsGate).
+			spell.ApplyEvolution(spell.GetEvolutionOptionsForLevel(4).FirstOrDefault());
+			spell.ApplyEvolution(spell.GetEvolutionOptionsForLevel(8).FirstOrDefault());
 			if (!scribe.TryAddOrLevelSpell($"{spell.Id}:{form.Form.Id}"))
 				GD.PrintErr($"_UiShot: could not take {spell.Id}'s Apotheosis");
 		}

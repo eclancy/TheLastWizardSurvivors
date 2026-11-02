@@ -496,8 +496,9 @@ public partial class SpellData : Resource
     // Latest milestone wins - except that a branch into a new element keeps its colour for good.
     // An element path is a different spell from then on (.ai/spell-roster.md, "Element paths"), and
     // a level 8 tint laid over it later (Titan Cataclysm's orange, say) would hide the element the
-    // player chose. An Apotheosis cannot follow a branch (its required path deepens the wizard's own
-    // element), so this never fights a final form for the colour.
+    // player chose. That holds over a final form too: since 2026-11-02 any path leads to the Apotheosis
+    // (ApotheosisCatalog.SpellMeetsGate), so a wizard who branched his spell keeps the branch's colour
+    // under the form's tint, as he would under a level 8 one.
     public Color GetModulateColor()
     {
         Color color = Colors.White;

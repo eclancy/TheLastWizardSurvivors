@@ -212,8 +212,6 @@ public partial class Player
 		Kind = AscensionRequirementKind.Ingredient,
 		Have = met ? 1 : 0,
 		Need = 1,
-		MilestoneLevel = AscensionSpellLevel,
-		PathId = ingredient.AscensionId,
 		PathName = ingredient.AscensionName,
 		SpellName = ingredient.SpellName,
 		Closed = closed,

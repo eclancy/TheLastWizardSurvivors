@@ -7182,18 +7182,16 @@ public partial class Player : CharacterBody2D
 	public CharacterData SelectedCharacter => selectedCharacter;
 
 	/// <summary>
-	/// The card offering a wizard's final form, if the covenant holds on <paramref name="spell"/>:
-	/// the wizard's own starting spell, at max level, down the named path, with the element at the
-	/// required tier, and the player at ApotheosisCatalog.MinimumPlayerLevel. Null otherwise. Built for the else side of the level-up branch, which is the
-	/// only place a maxed spell was ever looked at again.
+	/// The card offering a wizard's final form, if the gate holds on <paramref name="spell"/>
+	/// (ApotheosisCatalog.SpellMeetsGate): the wizard's own starting spell, at max level, ascended down
+	/// any branch and never combined with another spell - and the player at
+	/// ApotheosisCatalog.MinimumPlayerLevel. Null otherwise.
 	/// </summary>
 	private LevelUpOption TryBuildApotheosisOffer(SpellData spell, Dictionary<Element, int> baselineElementCounts)
 	{
 		// By spell as well as wizard: a wizard who opens on a spell with forms may have one per form.
 		ApotheosisDefinition definition = ApotheosisCatalog.ForSpell(selectedCharacter?.Id, spell);
-		if (!ApotheosisCatalog.SpellMeetsPath(definition, spell))
-			return null;
-		if (GetElementTier(definition.RequiredElement) < definition.RequiredTier)
+		if (!ApotheosisCatalog.SpellMeetsGate(definition, spell, WasFusedAway(spell?.Id)))
 			return null;
 		if (CurrentLevel < ApotheosisCatalog.MinimumPlayerLevel)
 			return null;
@@ -7224,9 +7222,10 @@ public partial class Player : CharacterBody2D
 	/// </summary>
 	/// <remarks>
 	/// It reports and never decides: <see cref="ApotheosisPreview.Offered"/> is TryBuildApotheosisOffer's
-	/// own answer, and the gates are read from the same ApotheosisDefinition. No spell-level line: level 8
-	/// is reached only through an Ascension (CardLevelCap), so the level 8 path line says it, and the
-	/// node's pips show the level.
+	/// own answer, and the gates are the ones ApotheosisCatalog.SpellMeetsGate reads. The spell-level line
+	/// and the Ascension line are met together in practice - level 8 is reached only through an
+	/// Ascension (CardLevelCap) - but Eric named both (2026-11-02), and the level line is the one that
+	/// counts up while the spell is still on its cards.
 	/// </remarks>
 	public ApotheosisPreview BuildApotheosisPreview(SpellData spell)
 	{
@@ -7235,6 +7234,7 @@ public partial class Player : CharacterBody2D
 			return null;
 
 		SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
+		bool combined = WasFusedAway(spell.Id) || ApotheosisCatalog.IsCombined(spell);
 		var preview = new ApotheosisPreview
 		{
 			SpellId = spell.Id,
@@ -7245,45 +7245,31 @@ public partial class Player : CharacterBody2D
 			Icon = EvolutionIcons.Own(definition.Form) ?? spell.Icon,
 			Taken = spell.IsApotheosis,
 			Offered = !spell.IsApotheosis && TryBuildApotheosisOffer(spell, GetElementInstanceCounts()) != null,
+			// The one thing that closes it now: no path does any more, and a fusion is never undone.
+			Closed = !spell.IsApotheosis && combined,
 		};
 
 		if (!AscensionLearned)
 			preview.Requirements.Add(new AscensionRequirement { Kind = AscensionRequirementKind.Learned, Have = 0, Need = 1 });
-
-		AscensionRequirement PathGate(int milestone, string requiredId, string takenId, IEnumerable<SpellEvolutionOption> options)
+		preview.Requirements.Add(new AscensionRequirement
 		{
-			bool chosen = !string.IsNullOrEmpty(takenId);
-			bool match = chosen && takenId.Equals(requiredId, StringComparison.OrdinalIgnoreCase);
-			SpellEvolutionOption named = options?.FirstOrDefault(o => o != null && o.Id.Equals(requiredId, StringComparison.OrdinalIgnoreCase));
-			return new AscensionRequirement
-			{
-				Kind = AscensionRequirementKind.Path,
-				Have = match ? 1 : 0,
-				Need = 1,
-				MilestoneLevel = milestone,
-				PathId = requiredId,
-				PathName = named?.DisplayName ?? requiredId,
-				Closed = chosen && !match,
-			};
-		}
-		AscensionRequirement mutation = PathGate(4, definition.RequiredLevel4EvolutionId, spell.SelectedLevel4EvolutionId, spell.Level4Options);
-		AscensionRequirement ascension = PathGate(AscensionSpellLevel, definition.RequiredLevel8EvolutionId, spell.SelectedLevel8EvolutionId, spell.Level8Options);
-		preview.Requirements.Add(mutation);
-		preview.Requirements.Add(ascension);
-		preview.Closed = !preview.Taken && (mutation.Closed || ascension.Closed);
-
-		// Tiers are named by their tag counts (GetElementTier: 2, 4, 6), so tier 6 is six tags.
-		int held = GetElementInstanceCounts().TryGetValue(definition.RequiredElement, out int count) ? count : 0;
-		var element = new AscensionRequirement
+			Kind = AscensionRequirementKind.SpellLevel,
+			Have = spell.CurrentLevel,
+			Need = spell.MaxLevel,
+		});
+		preview.Requirements.Add(new AscensionRequirement
 		{
-			Kind = AscensionRequirementKind.Element,
-			Have = held,
-			Need = definition.RequiredTier,
-			Element = definition.RequiredElement,
-		};
-		element.AnyOf.Add(definition.RequiredElement);
-		preview.Requirements.Add(element);
-
+			Kind = AscensionRequirementKind.Ascended,
+			Have = ApotheosisCatalog.IsAscended(spell) ? 1 : 0,
+			Need = 1,
+		});
+		preview.Requirements.Add(new AscensionRequirement
+		{
+			Kind = AscensionRequirementKind.NotCombined,
+			Have = combined ? 0 : 1,
+			Need = 1,
+			Closed = combined,
+		});
 		preview.Requirements.Add(new AscensionRequirement
 		{
 			Kind = AscensionRequirementKind.PlayerLevel,

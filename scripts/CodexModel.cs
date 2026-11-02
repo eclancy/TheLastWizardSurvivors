@@ -139,13 +139,12 @@ public sealed class CodexForm
 	/// <summary>The gates every Ascension shares (spell level, element, your level).</summary>
 	public List<CodexChip> AscensionGates = new();
 	public List<CodexNode> Ascensions = new();
-	/// <summary>The Apotheosis forms that end this spell: the wizard's in a run, every freed wizard's otherwise.</summary>
-	public List<CodexNode> Finals = new();
 	/// <summary>
-	/// The level 4 and level 8 paths an Apotheosis names: the way to the final form, which the book draws in
-	/// the ember line (the wizard's in a run, every freed wizard's otherwise).
+	/// The Apotheosis forms that end this spell: the wizard's in a run, every freed wizard's otherwise. Every
+	/// mutation and every Ascension leads to them (ApotheosisCatalog.SpellMeetsGate names no path), so the book
+	/// draws the whole open tree in the ember line while one is still open (EvolutionCodex.ArrangeTree).
 	/// </summary>
-	public HashSet<string> ApotheosisPath = new(StringComparer.OrdinalIgnoreCase);
+	public List<CodexNode> Finals = new();
 
 	public IEnumerable<CodexNode> AllNodes => Mutations.Concat(Ascensions).Concat(Finals);
 }
@@ -266,6 +265,10 @@ public sealed class CodexContext
 public sealed class CodexModel
 {
 	public const string SealedName = "???";
+
+	/// <summary>The Apotheosis's two gates on the spell beside its level (ApotheosisCatalog.SpellMeetsGate).</summary>
+	public const string AscendedChip = "Ascended";
+	public const string NotCombinedChip = "Not combined";
 
 	/// <summary>
 	/// The tree's bound (section 6, "no zoom and pan"): a detail panel holds at most this many nodes in each
@@ -696,7 +699,7 @@ public sealed class CodexModel
 			List<AscensionRequirement> first = branches.FirstOrDefault()?.Requirements ?? new List<AscensionRequirement>();
 			var shared = first.Where(g => branches.All(b => (b.Requirements ?? new List<AscensionRequirement>()).Any(r => SameGate(r, g)))).ToList();
 			foreach (AscensionRequirement gate in shared)
-				tree.AscensionGates.AddRange(Chips(gate, sealedPath: false));
+				tree.AscensionGates.AddRange(Chips(gate));
 			foreach (AscensionInfo branch in branches)
 			{
 				var node = new CodexNode
@@ -721,7 +724,7 @@ public sealed class CodexModel
 				if (!branch.Taken && !branch.Closed)
 					foreach (AscensionRequirement gate in branch.Requirements ?? new List<AscensionRequirement>())
 						if (!shared.Any(s => SameGate(s, gate)))
-							node.Chips.AddRange(Chips(gate, sealedPath: false));
+							node.Chips.AddRange(Chips(gate));
 				if (node.Revealed && !branch.Closed && JoinsLine(spellId, branch.Id) is string joins)
 					node.Note = string.IsNullOrEmpty(node.Note) ? joins : $"{node.Note} · {joins}";
 				tree.Ascensions.Add(node);
@@ -782,17 +785,9 @@ public sealed class CodexModel
 						&& (string.IsNullOrEmpty(d.VariantId) || d.VariantId.Equals(form.SelectedVariantId ?? string.Empty, StringComparison.OrdinalIgnoreCase)))
 					: null;
 				if (apotheosis != null)
-				{
-					tree.Finals.Add(FinalFromPreview(form.Id, apotheosis, tree));
-					foreach (AscensionRequirement gate in apotheosis.Requirements.Where(r => r.Kind == AscensionRequirementKind.Path))
-						tree.ApotheosisPath.Add(gate.PathId);
-				}
+					tree.Finals.Add(FinalFromPreview(form.Id, apotheosis));
 				else if (definition != null)
-				{
 					tree.Finals.Add(FinalFromDefinition(form, definition));
-					tree.ApotheosisPath.Add(definition.RequiredLevel4EvolutionId);
-					tree.ApotheosisPath.Add(definition.RequiredLevel8EvolutionId);
-				}
 				foreach (CodexNode final in tree.Finals)
 					final.Owner = context.WizardName ?? string.Empty;
 				return;
@@ -806,12 +801,10 @@ public sealed class CodexModel
 					|| !GlobalStatsManager.IsCharacterUnlocked(save, definition.CharacterId))
 					continue;
 				tree.Finals.Add(FinalFromDefinition(form, definition));
-				tree.ApotheosisPath.Add(definition.RequiredLevel4EvolutionId);
-				tree.ApotheosisPath.Add(definition.RequiredLevel8EvolutionId);
 			}
 		}
 
-		private CodexNode FinalFromPreview(string spellId, ApotheosisPreview apotheosis, CodexForm tree)
+		private CodexNode FinalFromPreview(string spellId, ApotheosisPreview apotheosis)
 		{
 			bool revealed = apotheosis.Taken || apotheosis.Offered || Seen(spellId, apotheosis.FormId);
 			var node = new CodexNode
@@ -835,18 +828,13 @@ public sealed class CodexModel
 				node.Note = "Out of reach this run";
 			else
 				foreach (AscensionRequirement gate in apotheosis.Requirements)
-					node.Chips.AddRange(Chips(gate, sealedPath: gate.Kind == AscensionRequirementKind.Path && !gate.Met
-						&& gate.MilestoneLevel >= Player.AscensionSpellLevel
-						&& tree.Ascensions.FirstOrDefault(a => a.Id.Equals(gate.PathId, StringComparison.OrdinalIgnoreCase))?.State == CodexNodeState.Sealed));
+					node.Chips.AddRange(Chips(gate));
 			return node;
 		}
 
 		private CodexNode FinalFromDefinition(SpellData form, ApotheosisDefinition definition)
 		{
 			SpellEvolutionOption shape = definition.Form;
-			string Named(IEnumerable<SpellEvolutionOption> options, string id) =>
-				options?.FirstOrDefault(o => o != null && o.Id.Equals(id, StringComparison.OrdinalIgnoreCase))?.DisplayName ?? id;
-			bool pathSeen = Seen(form.Id, definition.RequiredLevel8EvolutionId);
 			var node = new CodexNode
 			{
 				Id = shape.Id,
@@ -858,9 +846,11 @@ public sealed class CodexModel
 				NameAlwaysShown = true,
 				State = Seen(form.Id, shape.Id) ? CodexNodeState.Known : CodexNodeState.Sealed,
 			};
-			node.Chips.Add(new CodexChip { Text = $"L4: {Named(form.Level4Options, definition.RequiredLevel4EvolutionId)}" });
-			node.Chips.Add(new CodexChip { Text = pathSeen ? $"L8: {Named(form.Level8Options, definition.RequiredLevel8EvolutionId)}" : $"L8: {SealedName}" });
-			node.Chips.Add(new CodexChip { Text = $"{definition.RequiredElement} {definition.RequiredTier}", Element = definition.RequiredElement, Need = definition.RequiredTier });
+			// The gate as ApotheosisCatalog.SpellMeetsGate states it (Eric, 2026-11-02): no path and no element
+			// are named, so nothing here can give a sealed Ascension away.
+			node.Chips.Add(new CodexChip { Text = $"Spell {form.MaxLevel}", Need = form.MaxLevel });
+			node.Chips.Add(new CodexChip { Text = AscendedChip });
+			node.Chips.Add(new CodexChip { Text = NotCombinedChip });
 			node.Chips.Add(new CodexChip { Text = $"You {ApotheosisCatalog.MinimumPlayerLevel}", Need = ApotheosisCatalog.MinimumPlayerLevel });
 			if (!inRun)
 			{
@@ -872,7 +862,7 @@ public sealed class CodexModel
 		}
 
 		// One run gate as chips. A run measured it, so each chip is met or not.
-		private List<CodexChip> Chips(AscensionRequirement gate, bool sealedPath)
+		private List<CodexChip> Chips(AscensionRequirement gate)
 		{
 			var chips = new List<CodexChip>();
 			switch (gate.Kind)
@@ -890,14 +880,11 @@ public sealed class CodexModel
 					if (!gate.Met)
 						chips.Add(new CodexChip { Text = "Not yet learned", Met = false });
 					break;
-				case AscensionRequirementKind.Path:
-					string name = sealedPath ? SealedName : gate.PathName;
-					chips.Add(new CodexChip
-					{
-						Text = $"L{gate.MilestoneLevel}: {name}",
-						Met = gate.Met,
-						Closed = gate.Closed,
-					});
+				case AscensionRequirementKind.Ascended:
+					chips.Add(new CodexChip { Text = AscendedChip, Met = gate.Met });
+					break;
+				case AscensionRequirementKind.NotCombined:
+					chips.Add(new CodexChip { Text = NotCombinedChip, Met = gate.Met, Closed = gate.Closed });
 					break;
 				case AscensionRequirementKind.Ingredient:
 					chips.Add(new CodexChip { Text = $"{gate.SpellName}: {gate.PathName}", Met = gate.Met, Closed = gate.Closed });
@@ -1048,7 +1035,7 @@ public sealed class CodexModel
 					result.Note = "Made";
 				foreach (AscensionRequirement gate in preview?.Requirements ?? new List<AscensionRequirement>())
 					if (gate.Kind is AscensionRequirementKind.OwnSpell or AscensionRequirementKind.ElementCeiling)
-						result.Chips.AddRange(Chips(gate, sealedPath: false));
+						result.Chips.AddRange(Chips(gate));
 				card.Result = result;
 
 				var entry = new CodexEntry

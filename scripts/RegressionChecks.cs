@@ -4516,10 +4516,12 @@ public static class RegressionChecks
 		}
 	}
 
-	// The Apotheosis covenant (issue #60). Every one of these produces a gate that can never open, or
-	// a reward that takes the player OUT of the tier that earned it, and none of them is visible to
-	// dotnet build. A typo in a required evolution id is the classic one: the offer simply never
-	// appears, forever, and nothing says why.
+	// The Apotheosis (issue #60; the gate Eric set on 2026-11-02 - max level, ascended, not combined). Every
+	// one of these produces a gate that can never open, a form handed to a spell it must not reach, or a
+	// reward that names a third element, and none of them is visible to dotnet build: one verb per form,
+	// the wizard's OWN spell, a gate that opens down EVERY Ascension (no path is named, so none may be
+	// required by accident) and stays shut short of max level or the Ascension, and a fused spell or a
+	// Conjunction's own never offered a form.
 	private static void ValidateApotheosisCatalog(List<string> warnings)
 	{
 		var spells = ContentValidator.LoadAllSpells();
@@ -4560,13 +4562,13 @@ public static class RegressionChecks
 				continue;
 			}
 
-			// A spell taken in a form: the Apotheosis is one form's, and its required path is that form's own
+			// A spell taken in a form: the Apotheosis is one form's, and its gate is checked against that form's own
 			// milestones (SpellData.Variants; ApotheosisDefinition.VariantId).
 			SpellData spell;
 			if (string.IsNullOrEmpty(definition.VariantId))
 			{
 				if (template.HasVariants)
-					warnings.Add($"{label} transforms '{definition.SpellId}', which is taken in a form; it must name the form whose path it follows (VariantId).");
+					warnings.Add($"{label} transforms '{definition.SpellId}', which is taken in a form; it must name the form it ends (VariantId).");
 				spell = (SpellData)template.Duplicate(true);
 				SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
 			}
@@ -4580,40 +4582,112 @@ public static class RegressionChecks
 					continue;
 				}
 			}
-			string element = definition.RequiredElement.ToString();
+			string element = definition.Element.ToString();
 			if (!spell.ElementWeights.ContainsKey(element))
-				warnings.Add($"{label} requires {element}, which '{spell.Id}' does not carry.");
-
-			CheckRequiredPath(warnings, label, element, spell.Level4Options, definition.RequiredLevel4EvolutionId, 4);
-			CheckRequiredPath(warnings, label, element, spell.Level8Options, definition.RequiredLevel8EvolutionId, 8);
+				warnings.Add($"{label} deepens {element}, which '{spell.Id}' does not carry.");
 
 			if (definition.Form == null)
 				continue;
 
 			// Preserve or increase, never reduce, and never a new element: the form may only add
-			// weight to the element that qualified it.
+			// weight to the wizard's own element.
 			foreach (var pair in definition.Form.BonusElementWeights)
 			{
 				if (!pair.Key.Equals(element, StringComparison.OrdinalIgnoreCase))
 					warnings.Add($"{label} adds {pair.Key}; a form may only deepen {element}, never name another element.");
 				if (pair.Value < 0)
-					warnings.Add($"{label} REDUCES {pair.Key}, which would drop the player out of the tier that earned it.");
+					warnings.Add($"{label} REDUCES {pair.Key}, which would drop the player out of a tier.");
 			}
 
-			// The two-element ceiling, across base, path and form together.
-			var distinct = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-			foreach (var key in spell.ElementWeights.Keys) distinct.Add(key);
-			foreach (var option in spell.Level4Options.Concat(spell.Level8Options))
+			// Any route through the tree now ends in the form, so the two-element ceiling is checked over
+			// every level 4 x level 8 pairing with the form on top - and a branch that trades the wizard's
+			// element away would have the form put it back as a third.
+			var level4 = spell.Level4Options?.Where(o => o != null).ToList() ?? new List<SpellEvolutionOption>();
+			var level8 = spell.Level8Options?.Where(o => o != null).ToList() ?? new List<SpellEvolutionOption>();
+			if (level8.Count == 0)
+				warnings.Add($"{label}: '{spell.Id}' has no level 8 Ascension, so it can never be ascended and the form never offered.");
+			foreach (SpellEvolutionOption option in level4.Concat(level8))
 			{
-				if (option.Id.Equals(definition.RequiredLevel4EvolutionId, StringComparison.OrdinalIgnoreCase)
-					|| option.Id.Equals(definition.RequiredLevel8EvolutionId, StringComparison.OrdinalIgnoreCase))
+				if (element.Equals(option.ReplacesElement ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+					warnings.Add($"{label}: '{option.Id}' trades away {element}, the element the form deepens; every path leads to the form now, so none may.");
+			}
+			foreach (SpellEvolutionOption early in level4.DefaultIfEmpty())
+			{
+				foreach (SpellEvolutionOption late in level8)
 				{
-					foreach (var key in option.BonusElementWeights.Keys) distinct.Add(key);
+					var totals = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+					foreach (var pair in spell.ElementWeights)
+						totals[pair.Key] = pair.Value;
+					foreach (SpellEvolutionOption step in new[] { early, late, definition.Form })
+					{
+						if (step == null)
+							continue;
+						if (!string.IsNullOrEmpty(step.ReplacesElement))
+							totals.Remove(step.ReplacesElement);
+						foreach (var pair in step.BonusElementWeights)
+							totals[pair.Key] = (totals.TryGetValue(pair.Key, out int had) ? had : 0) + pair.Value;
+					}
+					if (totals.Count > 2)
+						warnings.Add($"{label} ends up naming {totals.Count} elements via '{early?.Id}' + '{late.Id}' ({string.Join(", ", totals.Keys)}); no spell may ever name more than two.");
 				}
 			}
-			foreach (var key in definition.Form.BonusElementWeights.Keys) distinct.Add(key);
-			if (distinct.Count > 2)
-				warnings.Add($"{label} ends up naming {distinct.Count} elements ({string.Join(", ", distinct)}); no spell may ever name more than two.");
+
+			// The gate itself, on a copy at every Ascension: open at max level down any of them, shut a level
+			// short, shut without one, shut once fused.
+			foreach (SpellEvolutionOption late in level8)
+			{
+				var ascended = (SpellData)spell.Duplicate(true);
+				ascended.CurrentLevel = ascended.MaxLevel;
+				if (level4.Count > 0)
+					ascended.ApplyEvolution(level4[0]);
+				ascended.ApplyEvolution(late);
+				if (!ApotheosisCatalog.SpellMeetsGate(definition, ascended, fusedAway: false))
+					warnings.Add($"{label}: the gate stays shut at level {ascended.MaxLevel} down '{late.Id}'; it must open down every Ascension.");
+				if (ApotheosisCatalog.SpellMeetsGate(definition, ascended, fusedAway: true))
+					warnings.Add($"{label}: the gate opens on a spell that went into a Conjunction; a combined spell is never offered its form.");
+				ascended.CurrentLevel = ascended.MaxLevel - 1;
+				if (ApotheosisCatalog.SpellMeetsGate(definition, ascended, fusedAway: false))
+					warnings.Add($"{label}: the gate opens below max level ({ascended.CurrentLevel}/{ascended.MaxLevel}).");
+			}
+			var unascended = (SpellData)spell.Duplicate(true);
+			unascended.CurrentLevel = unascended.MaxLevel;
+			if (ApotheosisCatalog.SpellMeetsGate(definition, unascended, fusedAway: false))
+				warnings.Add($"{label}: the gate opens at max level with no Ascension taken.");
+
+			// Not combined, the structural half: a fusion never takes a wizard's own spell, so his is never
+			// fused in the first place (ComboCatalog.Evaluate's ComboSeal.OwnSpell). Both parents held at level
+			// 8 down the named Ascensions, to show the seal is what stops it rather than an unmet parent.
+			foreach (ComboDefinition recipe in ComboCatalog.All.Where(r => !r.IsRite && r.Ingredients.Any(x =>
+				x != null && x.SpellId.Equals(definition.SpellId, StringComparison.OrdinalIgnoreCase))))
+			{
+				var loadout = recipe.Ingredients.Select(x => new SpellData
+				{
+					Id = x.SpellId, Name = x.SpellName, SelectedVariantId = x.VariantId,
+					MaxLevel = 8, CurrentLevel = 8, SelectedLevel8EvolutionId = x.AscensionId,
+				}).ToList();
+				ComboStanding standing = ComboCatalog.Evaluate(recipe, loadout, definition.SpellId);
+				if (standing.Ready || standing.Seal != ComboSeal.OwnSpell)
+					warnings.Add($"{label}: Conjunction '{recipe.Id}' could fuse {definition.CharacterId}'s own '{definition.SpellId}'; his spell must never be combined, or he loses his form (ComboCatalog.Evaluate, ComboSeal.OwnSpell).");
+			}
+		}
+
+		// A Conjunction's own spell is never anyone's to transform: no form names one, and the gate refuses it.
+		foreach (ComboDefinition recipe in ComboCatalog.All.Where(r => !r.IsRite))
+		{
+			if (ApotheosisCatalog.All.Any(d => d.SpellId.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase)))
+				warnings.Add($"Apotheosis: an entry transforms the Conjunction '{recipe.Id}'; a combined spell is never offered a form.");
+			if (ComboCatalog.Template(recipe) is not SpellData template)
+				continue;
+			var made = (SpellData)template.Duplicate(true);
+			made.CurrentLevel = made.MaxLevel;
+			made.SelectedLevel8EvolutionId = made.Level8Options?.FirstOrDefault()?.Id ?? "any";
+			foreach (ApotheosisDefinition definition in ApotheosisCatalog.All)
+			{
+				if (ApotheosisCatalog.SpellMeetsGate(definition, made, fusedAway: false))
+					warnings.Add($"Apotheosis '{definition.Form?.Id}': the gate opens on the Conjunction '{recipe.Id}'.");
+			}
+			if (!ApotheosisCatalog.IsCombined(made))
+				warnings.Add($"Apotheosis: '{recipe.Id}' is a Conjunction but ApotheosisCatalog.IsCombined does not say so.");
 		}
 	}
 
@@ -4992,26 +5066,6 @@ public static class RegressionChecks
 			if (!elementsKept)
 				warnings.Add($"{who}: anointing changed the spell's elements; the Rite never moves a tier.");
 		}
-	}
-
-	private static void CheckRequiredPath(List<string> warnings, string label, string element,
-		Godot.Collections.Array<SpellEvolutionOption> options, string requiredId, int milestone)
-	{
-		SpellEvolutionOption option = options?.FirstOrDefault(o => o != null && o.Id.Equals(requiredId, StringComparison.OrdinalIgnoreCase));
-		if (option == null)
-		{
-			warnings.Add($"{label} requires level {milestone} option '{requiredId}', which the spell does not offer. The gate can never open.");
-			return;
-		}
-		// A required branch must never lead away from the wizard's own element (#61), or tier 6 is
-		// harder on the exact build the gate demands.
-		foreach (var key in option.BonusElementWeights.Keys)
-		{
-			if (!key.Equals(element, StringComparison.OrdinalIgnoreCase))
-				warnings.Add($"{label}: required level {milestone} option '{requiredId}' branches into {key}, away from {element}.");
-		}
-		if (!string.IsNullOrEmpty(option.ReplacesElement))
-			warnings.Add($"{label}: required level {milestone} option '{requiredId}' trades away {option.ReplacesElement}; a required path may only deepen {element}.");
 	}
 
 	private static void ValidateSpellEvolutionCoverage(List<string> warnings)
