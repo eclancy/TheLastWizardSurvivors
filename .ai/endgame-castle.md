@@ -983,6 +983,10 @@ The Apotheosis floor (no earlier than 7.5 minutes for the planned bot) and the t
 `.ai/gameplay-design.md` are about an ordinary run. The Throne grants levels on purpose, so it has
 its own contract, and an ordinary run is untouched by it:
 
+**Eric, 2026-11-02: the form may come early here.** *"apotheosis can come out early during the throne. the
+throne should be the final level, basically a boss fight the whole time."* With the gate at 21 it lands in
+the first wave (2.2 minutes); that is accepted, and the "third wave or later" below is no longer a target.
+
 - **The Muster stops at level 18.** The Ascension (player level 17 and a spell at 8) is reachable
   inside it for a planned build: seven picks bring a spell to 8.
 - **The Apotheosis needs level 23**, so five more levels have to be killed for (21 since 2026-11-02:
@@ -1475,7 +1479,8 @@ seal let go and the dark lifted when he fell, the way home open, and the ending 
 procession in 310 s, his fight 108 s at 18,000 (the immortal bot stands still, so every hand lands and every
 seal runs out). **The Apotheosis now comes in the first wave** (2.2 minutes, level 21): the gate moved from
 23 to 21 on 2026-11-02 after C4 sized the Muster (18) for 23, so 6.6's "third wave or later" no longer
-holds. The Muster is C4's number; it was not moved here.
+holds. The Muster is C4's number; it was not moved here. Eric accepted it the same night (6.6): the Throne is the final
+level, a boss fight the whole way, and the form may come early in it.
 
 **Shots** (`_UiShot --scene=res://scenes/node_2d_game.tscn --stage=13 --character=1 --throne-muster=1
 --throne-wave=4 --dark-wizard=P,K[,take|hand|seal|fall]`, and `--force-victory --all-unlocked

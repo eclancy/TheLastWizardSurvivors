@@ -24,17 +24,15 @@ public partial class ThroneEnding : Control
 	/// <summary>Raised once, as it hands over to the results.</summary>
 	[Signal] public delegate void FinishedEventHandler();
 
-	// THE CREDITS. Every line is a fact the repository states (README.md, NOTICE): who made it, who drew the
-	// Sketchbook, what it is built with, and the fonts' licence. Eric: edit freely - nothing reads them.
+	// THE CREDITS. Every line is a fact the repository states (README.md, NOTICE): who made it, what it is built
+	// with, and the fonts' licence. Eric: edit freely - nothing reads them. (The
+	// Sketchbook's "drawn by Eric's kids" line came out at his word, 2026-11-02.)
 	private static readonly (string Text, bool Heading)[] Credits =
 	{
 		("Wizard Survivors", true),
 		("", false),
 		("Made by", false),
 		("Eric Clancy", true),
-		("", false),
-		("The Sketchbook", false),
-		("drawn by Eric's kids", true),
 		("", false),
 		("Built with", false),
 		("Godot Engine", true),
