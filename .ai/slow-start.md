@@ -150,7 +150,7 @@ your own wizard's final form, and the first wall, so the reward for climbing it 
 wizard has. The Hollow Choir is three voices singing as one, the fiction of two spells made one. Moving
 the Apotheosis a chapter later costs a played save nothing (section 6) and costs a new save the runs of
 chapter 3 before the Stone falls - runs a fresh save loses anyway, and in which a farmed one meets an
-Apotheosis only if it planned for one (named paths and tier 6 are a plan, not a drop).
+Apotheosis only if it planned for one (an Ascension on his own spell is a plan, not a drop).
 
 **Why not leave Conjunctions to their recipes' own Feats.** With one recipe built, they are late on
 their own. With section 4 of `.ai/combo-spells.md` built, Burning Briar's parents are Thorned Vine
@@ -217,9 +217,10 @@ the book holds 4-6, and by the Apotheosis 6. Element tiers count held spells, bo
 
 - **Ascension** (4 of the branch's element, from chapter 3): the wizard's own pure spell at level 7 down
   its path carries 2; two more from three other spells and up to six boons. Reachable on four pages.
-- **Apotheosis** (6 of the wizard's element, level 23): the own spell at 8 carries 3; three more. Built
-  for six pages and six boons, as today - **the Apotheosis is the reason to buy the pages**, and on four
-  it is possible but hard.
+- **Apotheosis** (since 2026-11-02: the own spell at max level, ascended and not combined, and level 21;
+  it was 6 of the wizard's element and level 23). It asks no element count of its own any more - only
+  what the spell's Ascension asks - so it no longer needs six pages, and it is not the reason to buy
+  them that this section was written around: on four pages it is as reachable as the Ascension.
 - **The Feats that pay spells** slide by about a run, never close. Elementalist (4 of anything) is
   reachable on three pages through the Earth starter boons (Iron Rivets, Mossgrown Charm, Taproot). The
   Fire Adept for a Pyromancer is not, short of a Fire relic: Cinderbreath and its level 4 path (2) and

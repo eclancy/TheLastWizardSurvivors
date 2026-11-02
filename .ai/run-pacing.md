@@ -15,9 +15,9 @@ length:
   not time, and the trip to it is paid in walking - about half a minute each way with no swarm,
   more with one - which is XP orbs left behind rather than a position on the run.)
 - **The player's level** places the *build*: the Ascension (level 17) and the Apotheosis
-  (level 23). Level comes from XP, XP comes from kills, and the kill rate in the middle and late run
+  (level 21 since 2026-11-02, section 11; 23 before). Level comes from XP, XP comes from kills, and the kill rate in the middle and late run
   is pinned by a cap that is in **real seconds** (the spawn burst window). So changing the run
-  length moves the world but **does not move when the player reaches level 17 or 23**. Change
+  length moves the world but **does not move when the player reaches level 17 or 21**. Change
   `TimerVictorySeconds` alone and the gates stay where they are in real minutes, which on a shorter
   run means late or never.
 
@@ -157,7 +157,7 @@ normal.
 | the Gleaning Bell | `GleaningBell`, `Node2DGame.GleaningBell.cs`, `DropTable` | a rare pickup from chest carriers (2% rising 1.5% a carrier, never two within 90 s): every XP orb on the map flies in. **It adds no XP** - it collects what was dropped and left - so it moves the clock by what the player had walked past, and that is more than it sounds: the ordinary bot leaves about a quarter of its drops lying. A bell before minute ten is worth one to two levels; a late one, six level-ups in a row on the measured run. `.ai/passives-and-items.md` 8i |
 | level-up cadence knobs | `Player.cs:114, 132` | `UpgradeOfferChance` 0.6, `BoonOfferChance` 0.22 - these decide *what* a level offers, not when it comes |
 | level-up charges | `Player.BansRemaining`, `RerollsPerLevelUp` | rerolls refill every level; bans are per run (saved levels and auguries were removed, 2026-10-28) |
-| gates | `Player.AscensionMinimumPlayerLevel` (`Player.cs:4792`), `ApotheosisCatalog.MinimumPlayerLevel` (`ApotheosisCatalog.cs:60`) | **17** and **23** |
+| gates | `Player.AscensionMinimumPlayerLevel`, `ApotheosisCatalog.MinimumPlayerLevel` | **17** and **21** (23 until 2026-11-02, section 11) |
 | milestones | `SpellData.MaxLevel` 8; evolutions at 4 and 8; Apotheosis milestone 9 | per spell, needs upgrade picks |
 | slots | `Player.MaxSpellSlots` (`Player.cs:281`) | 6 |
 
@@ -328,8 +328,9 @@ section 8. The model's 27 assumed the chest-less bot's income; a bot that opens 
 minute six, not 900, and at 27 reached level 23 at 6.0-7.2 minutes and level 38-43 by 15:00.
 
 Gate 16 under A puts the fastest at 7.5, on the floor exactly; take 17. At T = 15 the other four
-Apotheosis conditions (spell at level 8, the named path, tier 6 - measured at 3.9 to 8.4 minutes)
-are close behind the gate; under A they may become what sets the time, under B they keep today's
+Apotheosis conditions (then the spell at level 8, the named path and tier 6 - measured at 3.9 to 8.4
+minutes; since 2026-11-02 the spell at max level, ascended and not combined, which is met the level-up
+after its Ascension - section 11) are close behind the gate; under A they may become what sets the time, under B they keep today's
 place in the build. Either way, step 5 is not optional.
 
 **What is computed and what must be measured.** The fractions, the strategy and a first value are
@@ -841,3 +842,51 @@ frame is exactly 1/30 s of game time and real-time sync is off, so the run simul
 whatever the machine does; contention costs wall-clock time (12-20 minutes per 15-minute run here),
 not validity. Check `frame ms` in the ledger: 33 under it, and anything over about 35 is a minute the
 machine decided. Sections 3 and 9 were timescale 2 on a shared machine and carry this caveat.
+
+## 11. The Apotheosis gate after 2026-11-02: max level, ascended, not combined
+
+Eric: "Apotheosis should require the spell to be at Max level, not combined with another spell, and
+ascended." The named level 4 / level 8 path and the element at tier 6 left the gate
+(`ApotheosisCatalog.SpellMeetsGate`, `.ai/decisions/2026-10-10-apotheosis.md`, amendment). The player
+level was not in Eric's sentence, and was to go unless the form then came under the 7.5-minute floor.
+
+**What the spell's half of the gate does to the clock.** It is met the moment the spell ascends - level
+8 is reached only through an Ascension - so the form would come on the very next level-up. The
+Ascension is gated at level 17, so for every wizard whose own spell ascends on time the form would
+come at about level 18, 6.5-8.0 minutes: under the floor. The level gate stays, and since it is now
+the only thing setting when, it is re-tuned to the floor by section 5's rule (the lowest level whose
+fastest arrival is clear of it): level 20 came as early as 7.8 (on the floor), 21 at 8.6 at the
+earliest, 23 at 9.5-12.1. **21.** The 23 had been set on 2026-10-23 against a
+7.8-9.1 arrival; the economy has slowed since (the planned bot's level 23 is 9.5-10.2 now).
+
+`_BalanceHarness --seek-apotheosis --all-unlocked --immortal --minutes=15`, `--fixed-fps 30
+--timescale=1`, the Forest, seed 1234, one or two runs at a time; the planned bot is
+`--seek-ascensions`. Minutes; a level time is bracketed by the harness's 30 s stamps. "Spell ready" is
+when the spell's half of the gate first held (`HARNESS APOTHEOSIS spell gate met`), "no gate" the
+level-up after it - when the form would have come with no player level at all:
+
+| wizard | before (23, named path, tier 6): own Ascension / form | spell ready | no gate | gate 23: form | **gate 21: form** |
+|---|---|---|---|---|---|
+| Pyromancer | 6.3 / 10.3 | 6.2 | 6.5-7.0 | 10.0 | **8.7** |
+| Frostweaver | 8.4 / 14.3 (tier 6 at 13.6) | 9.1 | 9.5-10.0 | 11.5 | **10.8** |
+| Stormcaller | 13.4 / 13.7 | 13.3 | 14.0-14.2 | 14.1 | **14.2** |
+| Geomancer | 6.2 / 10.6 | 6.4 | 7.0-7.5 | 10.0 | **8.6** |
+| Tituba | - | 6.8 | 7.5-8.0 | - | **8.6** |
+| Väinämöinen | - | 6.4 | 6.5-7.0 | - | **9.0** |
+| Seimei | 6.3 / 10.5 | 6.2 | 6.5-7.0 | 10.7 | **8.7** |
+| Pyromancer, planned | 6.4 / 10.1 | 6.3 | 7.0-7.3 | 9.5 | **9.0** |
+
+"Spell ready" and "no gate" are the gate-21 runs' (the gate-23 runs' Ascensions came within 0.7
+minutes of them). Level 21 itself came at 8.6-10.8 in those runs, level 20 as early as 7.8 and level
+23 at 9.5-12.1.
+
+- **Before, the tier set the time for two wizards.** The Frostweaver had level 23 at 11.3 and tier 6
+  only at 13.6; the Stormcaller's named Ascension came at 13.4. Where the tier was not binding, the
+  form came on the level-23 level-up (10.1-10.6).
+- **After, at 21: 8.6-10.8 for every wizard whose spell ascended on time** (median 8.7), against the
+  7.5 floor and the 8.5-10 skilled target. The Stormcaller is the one the spell, not the gate, holds:
+  this bot's Chain Lightning sat at levels 5 and 6 for minutes (the upgrade roll), so it ascended at
+  13.3 under every gate.
+- **No dead level-ups** in any run. Only the Forest and one seed were measured, and the bot levels
+  faster than a person; re-measure with the other chapters before reading the ordinary-player row
+  into these.

@@ -171,7 +171,7 @@ public sealed class EquippedSpellInfo
 /// </summary>
 /// <remarks>
 /// From Eric's playtest (2026-11-01): "Let's make it clearer that apotheosis is an option, showing in
-/// 'ascensions', etc." Until then a player met it only when the strip offered it, at level 23.
+/// 'ascensions', etc." Until then a player met it only when the strip offered it.
 /// </remarks>
 public sealed class ApotheosisPreview
 {
@@ -183,7 +183,7 @@ public sealed class ApotheosisPreview
 	/// <summary>The form's own picture (EvolutionIcons), or the spell's.</summary>
 	public Texture2D Icon { get; set; }
 
-	/// <summary>Every gate, met or not: the level 4 and level 8 paths, the element, your level (and the Hayward's, unlearned).</summary>
+	/// <summary>Every gate, met or not: the spell at max level, ascended, not combined, your level (and the Hayward's, unlearned).</summary>
 	public List<AscensionRequirement> Requirements { get; set; } = new();
 
 	/// <summary>In the strip now: Player.TryBuildApotheosisOffer's own answer, never a second copy of the gate.</summary>
@@ -192,7 +192,7 @@ public sealed class ApotheosisPreview
 	/// <summary>The spell has taken its final form.</summary>
 	public bool Taken { get; set; }
 
-	/// <summary>The spell's level 4 or level 8 went down another path, so the form is out of reach this run.</summary>
+	/// <summary>Out of reach this run: the spell went into a Conjunction (ApotheosisCatalog.SpellMeetsGate's "not combined").</summary>
 	public bool Closed { get; set; }
 }
 
@@ -278,11 +278,13 @@ public enum AscensionRequirementKind
 	PlayerLevel,
 	/// <summary>The campaign's gate: the save has not been taught the Ascension yet (Player.AscensionLearned).</summary>
 	Learned,
+	/// <summary>An Apotheosis gate: the spell has taken a level 8 Ascension, any of them. Have 1 when it has.</summary>
+	Ascended,
 	/// <summary>
-	/// An Apotheosis gate: the named level 4 or level 8 path taken (<see cref="AscensionRequirement.MilestoneLevel"/>,
-	/// <see cref="AscensionRequirement.PathId"/>). Have 1 when it was.
+	/// An Apotheosis gate: the spell was not combined with another (a Conjunction, ComboCatalog). Have 1 while
+	/// it was not; Closed when it was, since a fusion is never undone.
 	/// </summary>
-	Path,
+	NotCombined,
 	/// <summary>
 	/// A combination's parent (ComboCatalog): <see cref="AscensionRequirement.SpellName"/> at level 8 down the
 	/// Ascension <see cref="AscensionRequirement.PathName"/>. Have 1 when held so; Closed when it took the other.
@@ -309,10 +311,9 @@ public sealed class AscensionRequirement
 	public WizardSurvivors.scripts.Element? Element { get; set; }
 	public List<WizardSurvivors.scripts.Element> AnyOf { get; set; } = new();
 
-	/// <summary>For a Path gate: the milestone (4 or 8), the path it names, and whether another was taken instead.</summary>
-	public int MilestoneLevel { get; set; }
-	public string PathId { get; set; } = string.Empty;
+	/// <summary>For a combination's Ingredient gate: the Ascension it names on that parent.</summary>
 	public string PathName { get; set; } = string.Empty;
+	/// <summary>Out of reach for the rest of the run: an ingredient down the other Ascension, a fused spell.</summary>
 	public bool Closed { get; set; }
 
 	/// <summary>For a combination's gates: the parent spell's name ("Hunter's Draw"), or the path that brought a fourth element.</summary>

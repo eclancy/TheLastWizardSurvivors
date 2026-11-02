@@ -177,8 +177,9 @@ public partial class EvolutionCodex
 	/// <summary>
 	/// A spell's family tree down the page: the base centred, then a tier for each milestone - its heading and
 	/// shared requirements, its nodes across - with ink lines from the node each tier grows from (the one taken,
-	/// else the one on the way to the Apotheosis, else the whole row) into each node of the next. The way to the
-	/// Apotheosis is drawn in the ember line while it is still open.
+	/// else the whole row) into each node of the next. The way to the Apotheosis is drawn in the ember line while
+	/// it is still open - and since 2026-11-02 every route is the way (ApotheosisCatalog.SpellMeetsGate names no
+	/// path), so on the wizard's own spell that is every line into a node not closed by another choice.
 	/// </summary>
 	private Control ArrangeTree(CodexEntry entry, CodexForm form)
 	{
@@ -194,7 +195,7 @@ public partial class EvolutionCodex
 		tree.AddChild(Centred(baseNode, narrow ? 0.8f : 0.6f));
 		treeLines.Add(new List<Control> { StopOf(baseNode) });
 		Control source = baseNode;
-		bool sourceOnPath = form.Finals.Any(f => f.State != CodexNodeState.Closed);
+		bool apotheosisOpen = form.Finals.Any(f => f.State != CodexNodeState.Closed);
 
 		void Tier(string label, List<CodexChip> gates, List<CodexNode> nodes, bool finals)
 		{
@@ -214,7 +215,7 @@ public partial class EvolutionCodex
 
 			for (int i = 0; i < nodes.Count; i++)
 			{
-				bool path = sourceOnPath && (finals || form.ApotheosisPath.Contains(nodes[i].Id)) && nodes[i].State != CodexNodeState.Closed;
+				bool path = apotheosisOpen && nodes[i].State != CodexNodeState.Closed;
 				bool live = IsLive(nodes[i]);
 				Color ink = path ? CodexInk.EmberLine : live ? CodexRows.Vellum.Reward : CodexRows.Vellum.InkMeta;
 				lines.AddEdge(source, controls[i], ink, dashed: !path && !live, layer: path ? 2 : live ? 1 : 0);
@@ -222,10 +223,7 @@ public partial class EvolutionCodex
 			treeLines.Add(controls.Select(StopOf).ToList());
 
 			int taken = nodes.FindIndex(n => n.State == CodexNodeState.Taken);
-			int onPath = nodes.FindIndex(n => form.ApotheosisPath.Contains(n.Id));
-			int pick = taken >= 0 ? taken : onPath;
-			sourceOnPath = sourceOnPath && pick >= 0 && form.ApotheosisPath.Contains(nodes[pick].Id);
-			source = pick >= 0 ? controls[pick] : grid;
+			source = taken >= 0 ? controls[taken] : grid;
 		}
 
 		Tier("Mutation · Lv 4", form.MutationGates, form.Mutations, finals: false);

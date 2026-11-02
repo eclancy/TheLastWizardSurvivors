@@ -985,7 +985,8 @@ its own contract, and an ordinary run is untouched by it:
 
 - **The Muster stops at level 18.** The Ascension (player level 17 and a spell at 8) is reachable
   inside it for a planned build: seven picks bring a spell to 8.
-- **The Apotheosis needs level 23**, so five more levels have to be killed for. At the pinned pace an
+- **The Apotheosis needs level 23**, so five more levels have to be killed for (21 since 2026-11-02:
+  three, and a little over half the XP below). At the pinned pace an
   ordinary kill pays 5 XP (2 x 2.5) and a boss 125: levels 18 to 23 cost 5,275 XP, which at the
   end-of-run kill rate is about five minutes - **during the third pair or with him**. The form is
   then the build's payoff in the last fight, which is the right place for it.

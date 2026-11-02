@@ -2533,10 +2533,12 @@ public partial class _BalanceHarness : Node
 	}
 
 	// --- --seek-apotheosis (issue #59: "report the game clock when the card appeared") ---------
-	// A player who knows what they want: take the final form the moment it is offered; walk the
-	// starting spell down its required path; otherwise take whatever carries the wizard's element,
-	// preferring evolution branches that deepen it. Anything else falls back to the default policy.
-	// It is a measurement of the earliest plausible arrival, not of a typical run.
+	// A player who knows what they want: take the final form the moment it is offered; take the
+	// starting spell's Ascension the moment it is offered (any branch - the gate names none since
+	// 2026-11-02 - preferring one that deepens the wizard's element); otherwise take whatever carries
+	// that element, which is what the Ascension's own element gate asks for, preferring evolution
+	// branches that deepen it. Anything else falls back to the default policy. It is a measurement of
+	// the earliest plausible arrival, not of a typical run.
 
 	// Resolved once. Calling CharacterRoster.GetAll every frame loads seven resources a frame, and
 	// the churn of short-lived wrappers crashed the run in the finalizer (0xC000001D).
@@ -2553,7 +2555,7 @@ public partial class _BalanceHarness : Node
 			// Said out loud, because a run with no target falls back to taking the first card and
 			// otherwise reads exactly like a wizard who could not reach his form.
 			GD.Print(seekTarget != null
-				? $"HARNESS seeking {seekTarget.Form.DisplayName} for '{characterId}' ({seekTarget.RequiredElement} tier 6)"
+				? $"HARNESS seeking {seekTarget.Form.DisplayName} for '{characterId}' (spell max level, ascended, not combined; {seekTarget.Element} focus)"
 				: $"HARNESS NO SEEK TARGET for character index {CharacterIndex} (id '{characterId ?? "null"}') - picks fall back to the first card");
 		}
 		return seekTarget;
@@ -2562,16 +2564,25 @@ public partial class _BalanceHarness : Node
 	private float apotheosisOfferedAt = -1f;
 	private float apotheosisTakenAt = -1f;
 	private int peakTier;
+	private bool apotheosisSpellReady;
 
 	private void TrackTier()
 	{
 		ApotheosisDefinition target = SeekTarget();
 		if (target == null || player == null) return;
-		int tier = player.GetElementTier(target.RequiredElement);
+		int tier = player.GetElementTier(target.Element);
 		if (tier > peakTier)
 		{
 			peakTier = tier;
-			GD.Print($"HARNESS {target.RequiredElement} reached tier {tier} at t={elapsed:0}s ({elapsed / 60f:0.0} min)");
+			GD.Print($"HARNESS {target.Element} reached tier {tier} at t={elapsed:0}s ({elapsed / 60f:0.0} min)");
+		}
+		// The spell's half of the gate (max level, ascended, not combined) without the player level: when
+		// the form would come with no level gate at all. Measured to decide whether that gate stays.
+		if (!apotheosisSpellReady && player.GetEquippedSpells().Any(s => s != null
+			&& ApotheosisCatalog.SpellMeetsGate(target, s, player.WasFusedAway(s.Id))))
+		{
+			apotheosisSpellReady = true;
+			GD.Print($"HARNESS APOTHEOSIS spell gate met (max level, ascended, not combined) at t={elapsed:0}s ({elapsed / 60f:0.0} min), player level {player.CurrentLevel}");
 		}
 	}
 
@@ -2591,7 +2602,7 @@ public partial class _BalanceHarness : Node
 		ApotheosisDefinition target = SeekTarget();
 		if (target == null)
 			return options.First().SpellId;
-		string element = target.RequiredElement.ToString();
+		string element = target.Element.ToString();
 
 		// The strip first: it is above the cards, and everything in it is the reward for a plan.
 		LevelUpOption final = ascensions.FirstOrDefault(o => o.MilestoneLevel == ApotheosisCatalog.MilestoneLevel);
@@ -2602,15 +2613,21 @@ public partial class _BalanceHarness : Node
 			GD.Print($"HARNESS APOTHEOSIS offered and taken at t={elapsed:0}s ({elapsed / 60f:0.0} min)");
 			return $"{final.SpellId}:{target.Form.Id}";
 		}
+		// The starting spell's own Ascension, down any earned branch: the form asks only that it ascended.
 		LevelUpOption ownAscension = ascensions.FirstOrDefault(o => o.SpellId == target.SpellId
-			&& !o.EvolutionLockReason.ContainsKey(target.RequiredLevel8EvolutionId)
-			&& o.EvolutionChoices.Any(e => e.Id == target.RequiredLevel8EvolutionId));
+			&& o.MilestoneLevel == Player.AscensionSpellLevel
+			&& o.EvolutionChoices.Any(e => !o.EvolutionLockReason.ContainsKey(e.Id)));
 		if (ownAscension != null)
-			return $"{ownAscension.SpellId}:{target.RequiredLevel8EvolutionId}";
+		{
+			SpellEvolutionOption branch = ownAscension.EvolutionChoices.FirstOrDefault(e => !ownAscension.EvolutionLockReason.ContainsKey(e.Id)
+					&& e.BonusElementWeights != null && e.BonusElementWeights.ContainsKey(element))
+				?? ownAscension.EvolutionChoices.First(e => !ownAscension.EvolutionLockReason.ContainsKey(e.Id));
+			return $"{ownAscension.SpellId}:{branch.Id}";
+		}
 		foreach (LevelUpOption other in ascensions.Where(o => o.SpellId != target.SpellId))
 		{
 			SpellEvolutionOption deepen = other.EvolutionChoices.FirstOrDefault(e => !other.EvolutionLockReason.ContainsKey(e.Id)
-				&& e.BonusElementWeights != null && e.BonusElementWeights.ContainsKey(target.RequiredElement.ToString()));
+				&& e.BonusElementWeights != null && e.BonusElementWeights.ContainsKey(element));
 			if (deepen != null)
 				return $"{other.SpellId}:{deepen.Id}";
 		}
@@ -2619,11 +2636,8 @@ public partial class _BalanceHarness : Node
 		LevelUpOption signature = options.FirstOrDefault(o => o.SpellId == target.SpellId);
 		if (signature != null)
 		{
-			if (signature.IsEvolutionMilestone && signature.MilestoneLevel == 4)
-				return $"{signature.SpellId}:{target.RequiredLevel4EvolutionId}";
-			if (signature.IsEvolutionMilestone && signature.MilestoneLevel == 8)
-				return $"{signature.SpellId}:{target.RequiredLevel8EvolutionId}";
-			return signature.SpellId;
+			// No path is required any more; the branch that deepens the element still helps the Ascension's gate.
+			return WithEvolution(signature, element);
 		}
 
 		bool Carries(LevelUpOption o) => o.SpellElementTags != null && o.SpellElementTags.ContainsKey(element);
@@ -2916,7 +2930,7 @@ public partial class _BalanceHarness : Node
 			return comboFocus;
 		ApotheosisDefinition target = SeekTarget();
 		if (target != null)
-			return target.RequiredElement;
+			return target.Element;
 		SpellData signature = player.GetEquippedSpells().FirstOrDefault(s => s != null
 			&& s.Id.Equals(player.SignatureSpellId, StringComparison.OrdinalIgnoreCase));
 		foreach (Element e in signature?.GetElementWeights().Keys ?? Enumerable.Empty<Element>())
@@ -3003,7 +3017,6 @@ public partial class _BalanceHarness : Node
 	{
 		Element focus = PlanFocus();
 		string focusName = focus.ToString();
-		ApotheosisDefinition target = SeekTarget();
 
 		LevelUpOption final = ascensions.FirstOrDefault(o => o.MilestoneLevel == ApotheosisCatalog.MilestoneLevel);
 		if (final != null && final.EvolutionChoices.Count > 0)
@@ -3014,11 +3027,9 @@ public partial class _BalanceHarness : Node
 		foreach (LevelUpOption up in ascensions.Where(o => o.MilestoneLevel == Player.AscensionSpellLevel))
 		{
 			bool earned(SpellEvolutionOption e) => e != null && !up.EvolutionLockReason.ContainsKey(e.Id);
+			// Any branch opens the Apotheosis now (ApotheosisCatalog.SpellMeetsGate), the starter's included.
 			SpellEvolutionOption branch =
-				(target != null && up.SpellId == target.SpellId
-					? up.EvolutionChoices.FirstOrDefault(e => earned(e) && e.Id == target.RequiredLevel8EvolutionId)
-					: null)
-				?? up.EvolutionChoices.FirstOrDefault(e => earned(e) && e.BonusElementWeights != null && e.BonusElementWeights.ContainsKey(focusName))
+				up.EvolutionChoices.FirstOrDefault(e => earned(e) && e.BonusElementWeights != null && e.BonusElementWeights.ContainsKey(focusName))
 				?? up.EvolutionChoices.FirstOrDefault(earned);
 			if (branch != null)
 				return $"{up.SpellId}:{branch.Id}";
@@ -3031,16 +3042,11 @@ public partial class _BalanceHarness : Node
 		LevelUpOption best = options.OrderByDescending(o => PlanValue(o, focus, counts, unblocking)).First();
 		int bestValue = PlanValue(best, focus, counts, unblocking);
 
-		// The starter's mutation is the Apotheosis path's; every other mutation deepens the focus,
-		// or failing that the element the player holds most of.
+		// Every mutation deepens the focus, or failing that the element the player holds most of - the
+		// starter's too, since the Apotheosis names no path (2026-11-02).
 		var branchOrder = new List<string> { focusName };
 		branchOrder.AddRange(DeepestFirst(counts).Where(e => e != focusName));
-		string Choose(LevelUpOption o)
-		{
-			if (target != null && o.SpellId == target.SpellId && o.IsEvolutionMilestone && o.MilestoneLevel == 4)
-				return $"{o.SpellId}:{target.RequiredLevel4EvolutionId}";
-			return WithBranch(o, branchOrder);
-		}
+		string Choose(LevelUpOption o) => WithBranch(o, branchOrder);
 
 		// The spell being finished: the starter until it ascends, then the highest-level spell that can
 		// still ascend. A planner fishes for that one card with its free rerolls (they refill every

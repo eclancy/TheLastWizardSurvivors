@@ -469,8 +469,8 @@ is as wide as it is three across (`ThreeAcrossColumnWidth`, from the panel's siz
 wizard's Apotheosis after it, is a row of buttons **above the cards** (`AscendStrip`, built by
 `LevelUpMenu.SetAscensions` from `Player.GetAscensionOffers`). It is offered on **every**
 level-up from the moment it is earned until it is taken. Earned includes a player level: 17 for
-an Ascension (`Player.AscensionMinimumPlayerLevel`), 23 for an Apotheosis
-(`ApotheosisCatalog.MinimumPlayerLevel`) - see `.ai/gameplay-design.md`, "The Apotheosis". The
+an Ascension (`Player.AscensionMinimumPlayerLevel`), 21 for an Apotheosis
+(`ApotheosisCatalog.MinimumPlayerLevel`; 23 until 2026-11-02) - see `.ai/gameplay-design.md`, "The Apotheosis". The
 ascension browser names both levels among the requirements - the Apotheosis's in its own entry at
 the top (section 4). A reroll re-deals the cards and leaves it alone (a ban now ends the level-up, section 7). Pressing an ASCEND button
 opens the level 8 **fork** (section 4e: the spell on top, an arrow down to each path plate, and
@@ -591,13 +591,14 @@ spell**:
 - **The wizard's Apotheosis comes before all of them** (2026-11-01, Eric: "make it clearer that
   apotheosis is an option, showing in 'ascensions'"). Its own section under an ember heading, one
   tree: the starting spell with pips to 8 and a checklist from `Player.BuildApotheosisPreview` -
-  "Level 4: take Backdraft", "Level 8: take Dragon's Breath", the element chip at x/6, "Your level
-  x/23", and the Hayward's line while unlearned - then the form on the **ember** plate. `Offered` is
+  "Spell x/8", "Ascended", "Not combined", "You x/21", and the Hayward's line while unlearned (the
+  gate since 2026-11-02: no path and no element are named any more, `.ai/gameplay-design.md`, "The
+  Apotheosis") - then the form on the **ember** plate. `Offered` is
   `TryBuildApotheosisOffer`'s own answer, never a copy of the gate. Sealing (4e) differs in one
   thing: the form's **name** always shows (the character select names it, "✶ Apotheosis: Cataclysm");
-  its line and picture wait for the first offer (`spell:form`, as `Record` writes it), and its level 8
-  path reads "a sealed Ascension" while the spell's own tree seals it. A path closed by taking the
-  other is a lock, and the plate says "Out of reach this run". No wizard with none (the Test Wizard),
+  its line and picture wait for the first offer (`spell:form`, as `Record` writes it). Only a fusion
+  closes it - never, today, since a wizard's own spell is never an ingredient - and then the chip is a
+  lock and the plate says "Out of reach this run". No wizard with none (the Test Wizard),
   no entry. The pause screen's Run tab lists the same form as the spell's last milestone, its mark
   outlined while it is still ahead (`GameOverScreen.Milestone`, `pending`). Photograph it with
   `--character=1 --press-late=AscensionsButton --seen-ascensions=none`, adding `--demo-level`,
