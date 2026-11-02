@@ -107,6 +107,23 @@ public partial class LevelUpMenu : CanvasLayer
 		MenuNavigator.Attach(this);
 	}
 
+	// THE COMBINATIONS the save knows (Player.BuildComboPreviews): the ascension browser lists them under the
+	// Apotheosis, and the level 8 page marks a path a known recipe names. Reports only - the strip above
+	// (SetAscensions) is the one place a combination is made.
+	private List<ComboPreview> currentCombinations = new();
+
+	public void SetCombinations(List<ComboPreview> combinations)
+	{
+		currentCombinations = combinations ?? new List<ComboPreview>();
+	}
+
+	// "Hunter's Draw and Starfall", from the recipe, for the conjunction page's subtitle.
+	private static string ConjunctionParents(LevelUpOption option)
+	{
+		WizardSurvivors.scripts.ComboDefinition recipe = WizardSurvivors.scripts.ComboCatalog.ForId(option?.ComboId);
+		return recipe == null ? option?.DisplayName ?? string.Empty : $"{recipe.First.SpellName} and {recipe.Second.SpellName}";
+	}
+
 	private void BuildAscendStrip()
 	{
 		var normalView = GetNodeOrNull<VBoxContainer>("Panel/VBoxContainer");
@@ -128,12 +145,16 @@ public partial class LevelUpMenu : CanvasLayer
 
 		foreach (LevelUpOption option in currentAscensions)
 		{
-			bool apotheosis = option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
+			// A combination (ComboCatalog) is in the strip as the Apotheosis is, on a plate of its own.
+			bool conjunction = WizardSurvivors.scripts.ComboCatalog.IsComboOption(option);
+			bool apotheosis = !conjunction && option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
 			string form = apotheosis && option.EvolutionChoices.Count > 0 ? option.EvolutionChoices[0].DisplayName : string.Empty;
 			var button = new Button
 			{
 				Name = $"Ascend_{option.SpellId}",
-				Text = apotheosis
+				Text = conjunction
+					? $"✶ CONJUNCTION   {option.DisplayName}"
+					: apotheosis
 					? $"✶ APOTHEOSIS   {option.DisplayName} → {form}"
 					: $"★ ASCEND   {option.DisplayName}",
 				// Wide enough to read as the headline of the screen rather than a tab beside it.
@@ -145,14 +166,16 @@ public partial class LevelUpMenu : CanvasLayer
 			// Apotheosis (CardFamilyArt), so the button and the choice behind it are one object. It
 			// was the screen's stone button, the same as Reroll. Gold on the obsidian 12.3:1, the
 			// ember ink on the ember plate 11.1:1 (tools/art/ui_contrast.py, "strip").
+			// The bronze plate for a combination, its starlight ink 14.6:1 (ui_contrast.py, "conjunction").
 			EnsureFamilyStyles();
-			StyleBoxTexture plate = apotheosis ? stripEmberResting : stripObsidianResting;
-			StyleBoxTexture plateLit = apotheosis ? stripEmberLit : stripObsidianLit;
+			StyleBoxTexture plate = conjunction ? stripConjunctionResting : apotheosis ? stripEmberResting : stripObsidianResting;
+			StyleBoxTexture plateLit = conjunction ? stripConjunctionLit : apotheosis ? stripEmberLit : stripObsidianLit;
 			button.AddThemeStyleboxOverride("normal", plate);
 			button.AddThemeStyleboxOverride("hover", plateLit);
 			button.AddThemeStyleboxOverride("pressed", plateLit);
 			button.AddThemeStyleboxOverride("focus", plateLit);
-			Color ink = apotheosis ? new Color(1.0f, 0.70f, 0.42f) : new Color(1.0f, 0.88f, 0.50f);
+			Color ink = conjunction ? WizardSurvivors.scripts.CardFamilyArt.ConjunctionTitle
+				: apotheosis ? new Color(1.0f, 0.70f, 0.42f) : new Color(1.0f, 0.88f, 0.50f);
 			button.AddThemeColorOverride("font_color", ink);
 			button.AddThemeColorOverride("font_hover_color", ink.Lightened(0.2f));
 			button.AddThemeColorOverride("font_focus_color", ink.Lightened(0.2f));
@@ -1863,7 +1886,8 @@ public partial class LevelUpMenu : CanvasLayer
 	{
 		if (!option.IsEvolutionMilestone || option.MilestoneLevel < 8)
 			return;
-		bool isApotheosis = option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
+		bool isConjunction = WizardSurvivors.scripts.ComboCatalog.IsComboOption(option);
+		bool isApotheosis = !isConjunction && option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
 
 		// So the sweep is cut off at the frame instead of running out over the plate.
 		card.ClipContents = true;
@@ -1872,7 +1896,9 @@ public partial class LevelUpMenu : CanvasLayer
 		{
 			Name = "AscensionSheen",
 			// The Apotheosis sweeps ember rather than gold: a tier above the ascension, read at a glance.
-			Color = isApotheosis ? new Color(1.0f, 0.62f, 0.34f, 0.30f) : new Color(1.0f, 0.94f, 0.70f, 0.20f),
+			// A combination sweeps starlight, whiter than the Ascension's gold.
+			Color = isConjunction ? new Color(1.0f, 0.98f, 0.88f, 0.26f)
+				: isApotheosis ? new Color(1.0f, 0.62f, 0.34f, 0.30f) : new Color(1.0f, 0.94f, 0.70f, 0.20f),
 			MouseFilter = Control.MouseFilterEnum.Ignore,
 			// Taller than the card so the band never shows a top or bottom edge.
 			AnchorTop = -0.15f,
@@ -1981,6 +2007,7 @@ public partial class LevelUpMenu : CanvasLayer
 				break;
 			case CardFamily.Ascension:
 			case CardFamily.Apotheosis:
+			case CardFamily.Conjunction:
 				(resting, lit) = FamilyFrames(family);
 				break;
 		}
@@ -2084,8 +2111,9 @@ public partial class LevelUpMenu : CanvasLayer
 		// so drop any existing overlay first rather than stacking a second one on top.
 		RemoveEvolutionRoot();
 
+		bool isConjunction = WizardSurvivors.scripts.ComboCatalog.IsComboOption(option);
 		bool isAscension = option.MilestoneLevel >= 8;
-		bool isApotheosis = option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
+		bool isApotheosis = !isConjunction && option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
 
 		// Written straight onto the plate's stone, as the hand is: the mutation cards are pages, and a
 		// page on a bigger page was the same background twice (PageInset's remarks).
@@ -2109,7 +2137,8 @@ public partial class LevelUpMenu : CanvasLayer
 
 		// Level 8 was "ULTIMATE ASCENSION", which collided with the tier above it (#59): two things
 		// called ultimate one step apart. Level 8 is the ascension; the final form is the Apotheosis.
-		headerBox.AddChild(BuildPageHeading(isApotheosis ? "✶ APOTHEOSIS ✶"
+		headerBox.AddChild(BuildPageHeading(isConjunction ? "✶ CONJUNCTION ✶"
+			: isApotheosis ? "✶ APOTHEOSIS ✶"
 			: isAscension ? "★ ASCENSION (Level 8) ★" : "✦ MUTATION (Level 4) ✦"));
 
 		// COUNT THE BRANCHES, do not assert a number. These read "1 of 2" and "1 of 3" as
@@ -2117,7 +2146,10 @@ public partial class LevelUpMenu : CanvasLayer
 		// free to do - told the player something false at the exact moment they were being asked
 		// to compare what was on screen. One short line: the heading says what kind of page it is.
 		int branchCount = option?.EvolutionChoices?.Count ?? 0;
-		headerBox.AddChild(BuildPageSubtitle(isApotheosis
+		// A combination's stakes in one line: two spells leave, one comes, a slot is freed (.ai/combo-spells.md).
+		headerBox.AddChild(BuildPageSubtitle(isConjunction
+			? $"{ConjunctionParents(option)} become one spell. One slot is freed."
+			: isApotheosis
 			? $"{option.DisplayName}'s final form."
 			: $"Choose 1 of {branchCount}. {option.DisplayName} keeps it all run."));
 
@@ -2156,7 +2188,7 @@ public partial class LevelUpMenu : CanvasLayer
 				card.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 				cardsColumn.AddChild(card);
 			}
-			if (!isApotheosis)
+			if (!isApotheosis && !isConjunction)
 				FocusSpotlight.Attach(cardsColumn);
 		}
 		else
@@ -2201,7 +2233,8 @@ public partial class LevelUpMenu : CanvasLayer
 				cardsRow.AddChild(card);
 			}
 			// Not on the Apotheosis: one form, and its ember plate's element line would dim below 4.5:1.
-			if (!isApotheosis)
+			// Nor on a combination's page, which holds one card too.
+			if (!isApotheosis && !isConjunction)
 				FocusSpotlight.Attach(cardsRow);
 		}
 

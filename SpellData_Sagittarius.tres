@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="SpellData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/sagittarius-light.png" id="2_icon"]
+
+; Sagittarius - Hunter's Draw + Starfall, the first COMBINATION (.ai/combo-spells.md section 3, ComboCatalog).
+;
+; Never a level-up card and never in the spell catalog: it is made only in the Ascension strip, from Hunter's
+; Draw at level 8 down Hunter's Mark and Starfall at level 8 down Constellation (Player.TryFuse). It is terminal,
+; so it has one level and no milestones.
+;
+; The numbers below are a stand-in for the card and the Spell Index. A run's copy carries its two parents frozen
+; as they were at the fusion (SpellData.ComboParents), and Sagittarius.Freeze sets the cooldown, the stars, the
+; range and one star's damage from the frozen Starfall; the arrows are read from the frozen Hunter's Draw as they
+; fly. These are Starfall's at level 8 with Constellation: 22 a star, 8 stars every 0.68 s over a 270 px rain.
+;
+; ElementWeights are the two parents' base tags summed. A run's copy carries the two parents' CURRENT weights
+; summed instead (ComboCatalog.SumWeights): Metal 2, Wind 1, Light 2 after Heavy Draw and Shooting Stars, say.
+; The one kind of spell allowed three elements; never four (ComboCatalog.MaxElements).
+[resource]
+script = ExtResource("1")
+Tagline = "Walk the stars. Stop. Loose."
+Id = "sagittarius"
+Name = "Sagittarius"
+CurrentLevel = 1
+MaxLevel = 1
+BaseDamage = 22
+BaseCooldown = 0.68
+BaseProjectileCount = 8
+BaseRange = 270.0
+TargetingMode = 4
+Description = "Stars that fall while you walk stay lit and join into an archer. Stop, and every lit star looses at the quarry you have marked."
+Icon = ExtResource("2_icon")
+ElementWeights = {
+"Light": 1,
+"Metal": 1,
+"Wind": 1
+}

@@ -79,7 +79,9 @@ public static class AscensionSightings
 
 		foreach (LevelUpOption offer in offers ?? Enumerable.Empty<LevelUpOption>())
 		{
-			if (offer == null || offer.MilestoneLevel < ApotheosisCatalog.MilestoneLevel || offer.EvolutionChoices == null)
+			// A combination is revealed by its own Feat (ComboCatalog), not here.
+			if (offer == null || offer.MilestoneLevel < ApotheosisCatalog.MilestoneLevel || offer.EvolutionChoices == null
+				|| ComboCatalog.IsComboOption(offer))
 				continue;
 			foreach (SpellEvolutionOption form in offer.EvolutionChoices)
 			{

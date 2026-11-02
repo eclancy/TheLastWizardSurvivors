@@ -39,7 +39,9 @@ public partial class HuntersArrowLook : Node2D
 		material.SetShaderParameter(ParamArrowLength, ArrowLength);
 		material.SetShaderParameter(ParamWake, true);
 		material.SetShaderParameter(ParamSeed, (GetInstanceId() % 997) * 0.731f);
-		material.SetShaderParameter(ParamGilded, bolt?.SpellData?.IsLegendary ?? false);
+		// Gilded for a Legendary - and for Sagittarius's volley (a combination's arrow: ElementalBolt.DamageSource),
+		// whose arrows streak gold with a white point from every lit star (.ai/combo-spells.md section 3).
+		material.SetShaderParameter(ParamGilded, (bolt?.SpellData?.IsLegendary ?? false) || (bolt?.DamageSource?.IsCombination ?? false));
 		Refresh();
 	}
 

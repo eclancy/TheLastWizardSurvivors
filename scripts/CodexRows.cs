@@ -768,7 +768,15 @@ public static class CodexRows
 				entry.Progress = progress.Fraction;
 				entry.ProgressText = progress.Display;
 			}
-			if (HidesWizard(deed, save))
+			if (!string.IsNullOrEmpty(deed.SealedName))
+			{
+				// A combination's Feat before it is made (AchievementVisibility.Recipe): the two parents are
+				// the deed's words, the result is sealed - its name is what making it reveals.
+				entry.Title = deed.SealedName;
+				entry.Meta = string.IsNullOrEmpty(deed.SealedReward) ? entry.Meta : deed.SealedReward;
+				entry.MetaGlyph = StatIcons.Load("sealed") ?? entry.MetaGlyph;
+			}
+			else if (HidesWizard(deed, save))
 			{
 				// His name is his reward (.ai/side-events.md, "Secret wizards"): until he is free the
 				// row says only that someone is, and shows his shape - the character select's card.

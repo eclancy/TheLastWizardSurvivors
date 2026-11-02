@@ -45,6 +45,10 @@ public static class SfxCatalog
 	// replace the element cast cue for their spell rather than adding to it (Player.FireStormsweep).
 	public const string SpellStormsweep = "spell_stormsweep";
 	public const string SpellSleetRune = "spell_sleet_rune";
+	// Sagittarius's loose (Sagittarius.Loose): a bowstring and a glass chord, Light's voice - once a loose,
+	// never once an arrow (.ai/combo-spells.md section 3). A loose comes every second or two at most, so it
+	// sits in the Normal tier with the bow's own release.
+	public const string SpellSagittarius = "spell_sagittarius";
 
 	// --- the player --------------------------------------------------------
 	public const string PlayerHurt = "player_hurt";
@@ -124,7 +128,7 @@ public static class SfxCatalog
 	{
 		SpellExplosion, SpellBeamStart, SpellBeamLoop, SpellBeamEnd,
 		SpellOrbit, SpellSummon, SpellMawOpen, SpellBowDraw, SpellBowRelease, SpellStarfall, SpellStormsweep, SpellSleetRune,
-		SpellFamiliarBite,
+		SpellFamiliarBite, SpellSagittarius,
 		PlayerHurt, PlayerDodge, PlayerHeal, PlayerShieldAbsorb,
 		PlayerShieldBreak, PlayerDeath, PlayerLowHealth,
 		EnemyDeathSmall, EnemyDeathHeavy, EnemyShoot, EnemyMelee,

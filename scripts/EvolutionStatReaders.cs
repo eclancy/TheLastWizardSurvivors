@@ -299,6 +299,13 @@ public static class EvolutionStatReaders
 				| EvolutionStat.Rider,
 			"Flamethrower.RefreshComputedStats and FlamePuff (area is the width of a tongue, never its reach; Backdraft, Ember Wake and Dragon's Breath's reach and wall by id, through CinderGround)",
 			SpellEffect.AreaSize, SpellEffect.ZoneDuration, SpellEffect.CritDamage),
+		// The combinations (ComboCatalog). Terminal - no level-ups and no milestones of their own - so no card
+		// reaches them; the row says what the script reads of the spell itself and of the frozen parents it
+		// carries (SpellData.ComboParents), whose own milestones ride on the rain and the arrows.
+		["sagittarius"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Pierce
+				| EvolutionStat.Speed | EvolutionStat.Knockback | EvolutionStat.Rider | EvolutionStat.Amount,
+			"Sagittarius.Cloudburst, Loose and Freeze, through Player.FireSagittarius: the rain is a Starfall on the frozen Starfall (Amount is more stars, so more archers), the arrows are Hunter's Draw's on the frozen Hunter's Draw, every hit credited to the combination",
+			SpellEffect.AreaSize, SpellEffect.ProjectileSpeed, SpellEffect.Pierce, SpellEffect.CritChance, SpellEffect.CritDamage),
 		["mirefoot"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Area | EvolutionStat.Speed | EvolutionStat.Slow
 				| EvolutionStat.Rider,
 			"TrailWeaver.LayPool and PoolCap (its cooldown is the pools' spacing; it has no reach; Sucking Mud, Broad Wake, Fen Gas, Great Bog and Will-o'-Wisps by id, through LingeringZone.GripSeconds, FenGas and WispSwarm)",

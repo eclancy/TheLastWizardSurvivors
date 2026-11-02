@@ -82,6 +82,12 @@ public enum AchievementVisibility
 	ChapterOpen,
 	/// <summary>Counted, never named, until it has been seen (<see cref="SaveData.GlimpsedSecretIds"/>) or found.</summary>
 	Hidden,
+	/// <summary>
+	/// A combination's Feat (ComboCatalog): not on the page at all until the save owns both parents, then the
+	/// two parents with their named Ascensions and a sealed result, and the result's name once made
+	/// (.ai/combo-spells.md section 2, "Unlocks and the save"). Derived from the save, never stored.
+	/// </summary>
+	Recipe,
 }
 
 public sealed class AchievementDefinition
@@ -122,6 +128,16 @@ public sealed class AchievementDefinition
 
 	/// <summary>For a secret's deed: the <see cref="SecretDefinition"/> it mirrors. Empty otherwise.</summary>
 	public string SecretId { get; init; } = string.Empty;
+
+	/// <summary>For a combination's Feat: the recipe it mirrors (ComboCatalog). Empty otherwise.</summary>
+	public string ComboId { get; init; } = string.Empty;
+
+	/// <summary>
+	/// What a Recipe deed is called and pays before it is made: the name is the result's, and stays sealed
+	/// until the run that makes it ("Conjunction: ???", "Unlocks ???"). Empty on every other deed.
+	/// </summary>
+	public string SealedName { get; init; } = string.Empty;
+	public string SealedReward { get; init; } = string.Empty;
 
 	/// <summary>
 	/// A Hidden deed's words once seen (.ai/achievements-and-secrets.md 4.3): what the player saw, as an
@@ -477,7 +493,7 @@ public static class AchievementDefinitions
 			Measure = c => GlobalStatsManager.GetUnlockedSpellCount(c.Save),
 			Target = UnlockCatalog.AllSpellIds.Count(),
 		},
-	}).Concat(SideEventDeeds()).Concat(SecretDeeds()).ToList();
+	}).Concat(SideEventDeeds()).Concat(SecretDeeds()).Concat(CombinationDeeds()).ToList();
 
 	/// <summary>
 	/// One Road deed for every chapter's side event (SideEventDirector.ForStage), in campaign order. Its
@@ -514,6 +530,37 @@ public static class AchievementDefinitions
 				SiteId = siteId,
 				SealedLine = UnlockCatalog.GetCharacter(wizard)?.IsSecret == true ? SomeoneHeldIn(stage.Id) : string.Empty,
 				Measure = c => c.Lifetime.HasWonEvent(siteId) ? 1f : 0f,
+				Target = 1,
+			};
+		}
+	}
+
+	/// <summary>
+	/// One Feat for every combination (ComboCatalog), "Conjunction: Name": completed the first time a run
+	/// meets the recipe (Node2DGame records it as the strip first offers it, through AchievementManager.CompleteNow)
+	/// and paid with the combination there and then. Its measure is its own record - the deed is the fact -
+	/// so no save field is added for it (no schema bump), and a run's end never completes it twice.
+	/// </summary>
+	private static IEnumerable<AchievementDefinition> CombinationDeeds()
+	{
+		foreach (ComboDefinition recipe in ComboCatalog.All)
+		{
+			string id = ComboCatalog.FeatId(recipe.Id);
+			yield return new AchievementDefinition
+			{
+				Id = id,
+				DisplayName = $"Conjunction: {recipe.Name}",
+				Description = $"In one run, take {recipe.First.SpellName} down {recipe.First.AscensionName} and {recipe.Second.SpellName} down {recipe.Second.AscensionName}.",
+				RewardText = $"Unlocks {recipe.Name}",
+				SpellUnlockId = recipe.Id,
+				Category = AchievementCategory.Mastery,
+				Kind = AchievementKind.Feat,
+				Visibility = AchievementVisibility.Recipe,
+				CompletesInRun = true,
+				ComboId = recipe.Id,
+				SealedName = "Conjunction: ???",
+				SealedReward = "Unlocks ???",
+				Measure = c => c.Save != null && GlobalStatsManager.IsAchievementUnlocked(c.Save, id) ? 1f : 0f,
 				Target = 1,
 			};
 		}
@@ -563,6 +610,8 @@ public static class AchievementDefinitions
 						|| GlobalStatsManager.IsAchievementUnlocked(save, deed.Id));
 			case AchievementVisibility.ChapterOpen:
 				return !IsSealed(deed, save);
+			case AchievementVisibility.Recipe:
+				return save != null && ComboCatalog.IsKnown(ComboCatalog.ForId(deed.ComboId), save);
 			default:
 				return true;
 		}

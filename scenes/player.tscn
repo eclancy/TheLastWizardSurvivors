@@ -1,4 +1,4 @@
-[gd_scene load_steps=38 format=3 uid="uid://blm05dwe1lxph"]
+[gd_scene load_steps=39 format=3 uid="uid://blm05dwe1lxph"]
 
 [ext_resource type="Script" uid="uid://c03i6ui7vfdm0" path="res://scripts/Player.cs" id="1_qhqgy"]
 [ext_resource type="PackedScene" uid="uid://c5me6ajqighyl" path="res://scenes/MagicMissile.tscn" id="2_qlg0r"]
@@ -17,6 +17,7 @@
 [ext_resource type="PackedScene" path="res://scenes/Gravewell.tscn" id="27_gravewell"]
 [ext_resource type="PackedScene" path="res://scenes/HollowStar.tscn" id="28_hollowstar"]
 [ext_resource type="PackedScene" path="res://scenes/Starfall.tscn" id="32_starfall"]
+[ext_resource type="PackedScene" path="res://scenes/Sagittarius.tscn" id="35_sagittarius"]
 [ext_resource type="PackedScene" path="res://scenes/Familiar.tscn" id="33_familiar"]
 [ext_resource type="PackedScene" path="res://scenes/Stormsweep.tscn" id="33_stormsweep"]
 [ext_resource type="PackedScene" path="res://scenes/SleetRunes.tscn" id="34_sleetrunes"]
@@ -87,6 +88,7 @@ KindledWardScene = ExtResource("26_kindledward")
 GravewellScene = ExtResource("27_gravewell")
 HollowStarScene = ExtResource("28_hollowstar")
 StarfallScene = ExtResource("32_starfall")
+SagittariusScene = ExtResource("35_sagittarius")
 FamiliarScene = ExtResource("33_familiar")
 StormsweepScene = ExtResource("33_stormsweep")
 SleetRunesScene = ExtResource("34_sleetrunes")

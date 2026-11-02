@@ -77,6 +77,32 @@ public partial class SpellData : Resource
     /// <summary>True once this spell has become its wizard's Apotheosis.</summary>
     public bool IsApotheosis => SelectedApotheosis != null;
 
+    // A COMBINATION (.ai/combo-spells.md, ComboCatalog): the run's copy of a spell made from two fully
+    // ascended ones. Its two parents ride on it, frozen as they were at the fusion - they have left the
+    // loadout and can never level again - and its script builds what it does from their numbers
+    // (Sagittarius: the rain from Starfall's, the arrows from Hunter's Draw's). Empty on a template and
+    // on every other spell. In ComboCatalog's order: the first parent, then the second. A plain C# array,
+    // not an export: an exported Array<SpellData> on SpellData is a typed array of its own script, which
+    // holds the script alive past the engine's teardown ("resources still in use at exit"). Nothing
+    // duplicates a run's copy of a spell, and a combination's copy is made once, at the fusion.
+    public SpellData[] ComboParents { get; set; } = Array.Empty<SpellData>();
+
+    /// <summary>True for a combination's own spell (ComboCatalog), template or run's copy.</summary>
+    public bool IsCombination => ComboCatalog.IsCombination(Id);
+
+    /// <summary>A combination's parent by spell id, as frozen at the fusion; null on anything else.</summary>
+    public SpellData ComboParent(string spellId)
+    {
+        if (ComboParents == null)
+            return null;
+        foreach (SpellData parent in ComboParents)
+        {
+            if (parent != null && parent.Id.Equals(spellId ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+                return parent;
+        }
+        return null;
+    }
+
     // Optional icon shown on the level-up card (LevelUpMenu). Left null for most spells (no unique
     // art yet, #30) - LevelUpMenu falls back to a shared default icon in that case.
     [Export] public Texture2D Icon { get; set; }

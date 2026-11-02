@@ -189,6 +189,24 @@ public partial class LevelUpMenu
 			SpaceTrees(CodexRows.AddSection(list, "Ascended", SpellCount(ascended.Count), ink, columns,
 				ascended.Select(BuildOne).ToList()));
 
+		// The combinations the save knows (ComboCatalog, Player.BuildComboPreviews), after every spell's own
+		// Ascensions: each recipe is made of two of them. A tree each, in the Apotheosis's style - the two
+		// parents' named Ascensions on the node, the result on the conjunction plate under it.
+		var conjunctions = currentCombinations ?? new List<ComboPreview>();
+		if (conjunctions.Count > 0)
+		{
+			var conjunctionTrees = new List<Control>();
+			foreach (ComboPreview combo in conjunctions)
+			{
+				var nodeStops = new List<Control>();
+				var pathStops = new List<Control>();
+				conjunctionTrees.Add(BuildConjunctionTree(combo, narrow, nodeStops, pathStops));
+				stops.Add((nodeStops, pathStops));
+			}
+			SpaceTrees(CodexRows.AddSection(list, "✶ Conjunctions", conjunctions.Count == 1 ? "1 recipe" : $"{conjunctions.Count} recipes",
+				ConjunctionSectionInk, columns, conjunctionTrees));
+		}
+
 		if (noAscension.Count > 0)
 		{
 			// One quiet line, not a section per passive: saying so is the point (a spell missing from
@@ -530,6 +548,12 @@ public partial class LevelUpMenu
 			marks = new List<Control> { BuildRequirementGlyphText("Chosen", "done", CodexRows.Stone.Reward, expand: false) };
 		else if (path.Closed)
 			marks = new List<Control> { BuildRequirementGlyphText("Not taken", "lock", CodexRows.Stone.InkMeta, expand: false) };
+		// A path a known recipe names carries its linked rings here too, so the plan is visible before level 8.
+		if (!path.Closed && BuildConjunctionMark(spell.Id, path.Id, onPlate: true) is Control conjunctionMark)
+		{
+			marks ??= new List<Control>();
+			marks.Add(conjunctionMark);
+		}
 		plate.AddChild(BuildPathContent(path.Revealed, path.Met || path.Taken, path.Icon, Colors.White, path.Name, path.Description,
 			extras: marks, small));
 
@@ -647,6 +671,100 @@ public partial class LevelUpMenu
 		return (plate, stop);
 	}
 
+	// ---- the combinations, in the browser (ComboCatalog; .ai/combo-spells.md section 2) -----------------------
+	//
+	// "The Ascensions browser lists every recipe the save knows as 'Hunter's Draw - Hunter's Mark + Starfall -
+	// Constellation', with each named Ascension marked when this run holds it, and the row reads 'sealed this
+	// run' once a parent held in the loadout has taken the other one." A tree, as the Apotheosis's is: the node
+	// is the two parents, its checklist one line per parent and its named Ascension (Player.BuildComboPreviews),
+	// and the arrow runs to the result on the conjunction plate. The result's name, line and picture are sealed
+	// until the save has made it once - the Feat that made it is what reveals it. It reports and is never
+	// pressed: the strip above the cards is the only place a combination is made.
+
+	// The section's heading and rule in the conjunction plate's own inks: starlight on the floor's brightest
+	// stone for the heading, gold lit for the rule.
+	private static readonly CodexRows.Palette ConjunctionSectionInk = new()
+	{
+		Heading = CardFamilyArt.ConjunctionTitle,
+		InkMeta = CodexRows.Stone.InkMeta,
+		Rule = CardFamilyArt.ConjunctionSoft,
+	};
+
+	private StyleBoxTexture conjunctionPlateResting, conjunctionPlateLit;
+
+	private Control BuildConjunctionTree(ComboPreview combo, bool narrow, List<Control> nodeStops, List<Control> pathStops)
+	{
+		var lines = new List<Control>();
+		if (combo.Taken)
+			lines.Add(BuildRequirementGlyphText($"Made this run: {combo.Name}", "done", CodexRows.Vellum.Reward, expand: narrow));
+		else
+			foreach (AscensionRequirement gate in combo.Requirements)
+				lines.Add(BuildRequirementLine(gate, wrap: narrow));
+
+		Control node = BuildTreeNode($"conjunction_{combo.Id}", combo.ParentsName, combo.ParentIcon, "Two Ascensions, made one",
+			0, 0, -1, combo.Offered, lines, narrow, focusStop: true, nodeStops);
+		bool lit = combo.Offered || combo.Taken;
+		(Control plate, Control stop) = BuildConjunctionPlate(combo, lit);
+		pathStops.Add(stop);
+		return BuildTree($"ConjunctionTree_{combo.Id}", node, new List<(Control, Control)> { (plate, plate) },
+			new List<bool> { lit }, narrow, sideBySide: true, loneShare: narrow ? 1f : 0.6f);
+	}
+
+	/// <summary>The result on the conjunction plate: lit when offered or made, dimmed while it waits, never pressable.</summary>
+	private (Control Plate, Control Stop) BuildConjunctionPlate(ComboPreview combo, bool lit)
+	{
+		conjunctionPlateResting ??= CardFamilyArt.Frame(CardFamily.Conjunction, false, 0);
+		conjunctionPlateLit ??= CardFamilyArt.Frame(CardFamily.Conjunction, true, 0);
+		var plate = new PanelContainer
+		{
+			Name = $"ConjunctionPath_{combo.Id}",
+			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+			SelfModulate = lit ? Colors.White : combo.Revealed ? PathSeenDim : PathSealedDim,
+		};
+		plate.AddThemeStyleboxOverride("panel", lit ? conjunctionPlateLit : conjunctionPlateResting);
+
+		Button stop = BonelightSkin.MakeCardClickOverlay(true);
+		stop.Name = "PathFocus";
+		stop.MouseFilter = Control.MouseFilterEnum.Ignore;
+		plate.AddChild(stop);
+
+		List<Control> marks = null;
+		if (combo.Taken)
+			marks = new List<Control> { BuildRequirementGlyphText("Made", "done", CodexRows.Stone.Reward, expand: false) };
+		else if (combo.Sealed)
+			marks = new List<Control> { BuildRequirementGlyphText("Sealed this run", "lock", CodexRows.Stone.InkMeta, expand: false) };
+		else if (combo.Offered)
+			marks = new List<Control> { BuildRequirementGlyphText("Waiting above the cards", "conjunction", CardFamilyArt.ConjunctionSoft, expand: false) };
+		plate.AddChild(BuildPathContent(combo.Revealed, lit, combo.Icon, Colors.White, combo.Name, combo.Description,
+			marks, small: false, CardFamily.Conjunction, extrasWhenSealed: true));
+		return (plate, stop);
+	}
+
+	/// <summary>
+	/// The level 8 page's mark (section 2): a path a recipe the save knows names carries two linked rings and
+	/// the partner it joins, so the choice that opens or closes a recipe is made knowingly. The result is not
+	/// named - only making it reveals that. Null when no known recipe names this path.
+	/// </summary>
+	private Control BuildConjunctionMark(string spellId, string ascensionId, bool onPlate)
+	{
+		foreach (ComboPreview combo in currentCombinations ?? new List<ComboPreview>())
+		{
+			if (combo == null || combo.Taken || !combo.Names.Any(n => n.SpellId == spellId && n.AscensionId == ascensionId))
+				continue;
+			ComboIngredient partner = ComboCatalog.PartnerOf(ComboCatalog.ForId(combo.Id), spellId);
+			if (partner == null)
+				continue;
+			// Gold lit on the obsidian plate (7.8:1), the same advice ink the old level 8 cards wrote in.
+			Control mark = BuildRequirementGlyphText($"Joins {partner.Label}", "conjunction",
+				onPlate ? CardFamilyArt.AscensionAdvice : CodexRows.Stone.InkSoft, expand: false);
+			mark.Name = $"ConjunctionMark_{combo.Id}";
+			return mark;
+		}
+		return null;
+	}
+
 	/// <summary>
 	/// What is written on a path's plate: icon, name and what it does - or, sealed, the seal, "???"
 	/// and one line saying why. <paramref name="extras"/> (the choice page's tag, element line and
@@ -662,8 +780,9 @@ public partial class LevelUpMenu
 		// The ember plate's inks (CardFamilyArt): Fire hot for the name, bone for what it does, Fire mid
 		// for the quiet line - the Apotheosis page's own, measured on the ember face.
 		bool ember = family == CardFamily.Apotheosis;
-		Color titleInk = ember ? CardFamilyArt.ApotheosisTitle : CardFamilyArt.AscensionTitle;
-		Color softInk = ember ? CardFamilyArt.ApotheosisSoft : CardFamilyArt.AscensionSoft;
+		bool bronze = family == CardFamily.Conjunction;
+		Color titleInk = bronze ? CardFamilyArt.ConjunctionTitle : ember ? CardFamilyArt.ApotheosisTitle : CardFamilyArt.AscensionTitle;
+		Color softInk = bronze ? CardFamilyArt.ConjunctionSoft : ember ? CardFamilyArt.ApotheosisSoft : CardFamilyArt.AscensionSoft;
 		// Clear of the plate's rune band and the gilt line inside it (18 drawn pixels), with air.
 		var margin = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		margin.AddThemeConstantOverride("margin_left", 22);
@@ -1124,6 +1243,9 @@ public partial class LevelUpMenu
 			Control elements = BuildTagGainRow(evo, option, FlowContainer.AlignmentMode.Begin, CardFamily.Ascension);
 			if (elements != null)
 				extras.Add(elements);
+			// Two linked rings when a recipe the save knows names this path (ComboCatalog).
+			if (BuildConjunctionMark(option.SpellId, evo.Id, onPlate: true) is Control conjunctionMark)
+				extras.Add(conjunctionMark);
 			// No advice line: it put both paths below a 1280x720 screen (BuildEvolutionOptionCard).
 		}
 
@@ -1194,6 +1316,14 @@ public partial class LevelUpMenu
 				? string.Empty
 				: $"Needs {missing} more {requirement.Element} {(missing == 1 ? "tag" : "tags")}",
 			AscensionRequirementKind.Learned => met ? string.Empty : GlobalStatsManager.AscensionTeacherLine,
+			// A combination's parents (ComboCatalog): each named Ascension, ticked when this run holds it, and
+			// "sealed this run" once the parent took the other one - an Ascension is permanent.
+			AscensionRequirementKind.Ingredient => met
+				? $"{requirement.SpellName}: {requirement.PathName}"
+				: requirement.Closed ? $"{requirement.SpellName} took the other path: sealed this run"
+				: $"{requirement.SpellName}, level {requirement.MilestoneLevel}: take {requirement.PathName}",
+			AscensionRequirementKind.OwnSpell => $"{requirement.SpellName} is your own: its last form is your Apotheosis",
+			AscensionRequirementKind.ElementCeiling => $"{(string.IsNullOrEmpty(requirement.SpellName) ? "A path" : requirement.SpellName)} brought a fourth element: never offered",
 			_ => string.Empty,
 		};
 
