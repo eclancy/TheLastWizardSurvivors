@@ -7,6 +7,7 @@
     python tools/audio/music.py --report [--scratch] # measure what is on disk: seam, loudness, size
     python tools/audio/music.py --journey [--scratch]  # one audition reel per chapter, plus a sampler
     python tools/audio/music.py cave --balance       # how loud each voice is inside each stem
+    python tools/audio/music.py forest --stems pulse,boss   # only these stems of the named pieces
 
 The generators are the source and the .wav files are output, exactly as for assets/sfx/: edit a
 piece here and re-run, never edit a rendered file. Every random draw is seeded, so a re-render is
@@ -29,6 +30,14 @@ The contract this file works to is section 11 of .ai/audio-direction.md. In shor
     of a run, before the pulse is up, are already going somewhere; the pulse is drums and a
     driving bass; the lead is a hook short enough to be sung back. Loops are 24-30 s - two
     sections - because a minute of mono costs 2.5 MB of git history for every render.
+  * BATTLE MUSIC FROM THE FIRST SECOND (2026-11-01). Eric, playing 0.10.0: "the music on the menu
+    should give way to more interesting, thematic battle music for each level." The run used to
+    open on the bed alone - held strings, a drone and an ostinato, the menu theme's own instruments,
+    a dB quieter than it - for over a minute, until 28 enemies were alive. So the pulse is now the
+    chapter's battle percussion and driving bass, up from the first downbeat and never gated, the
+    lead states the hook as the run opens, and each road chapter has a fourth stem, `boss`, that
+    lands on the bed and pulse, the hook resting, when its boss walks in (its own key, tempo and instruments,
+    harder: drums at double density, low stabs, a motor) instead of handing over to the shared loop.
   * THE FILE IS THE MIX. Each stem is normalised to an RMS target in dBFS, and the game plays it
     at unity, the same discipline tools/audio/build.py applies to effects. Rebalancing the music
     against the effects is one number in STEM_RMS_DB and a re-render.
@@ -935,6 +944,52 @@ def _drone_runs(g, bars, pitches, vel, runs=2):
     return ev
 
 
+def octaves(c):
+    """A chord's root and the octave over it - the stab and bass tones every chord has in every
+    mode, so no figure built on them can leave a piece's scale (a fifth over Bdim would)."""
+    return [c["root"], transpose(c["root"], 12)]
+
+
+# ---------------------------------------------------------------------------
+# the boss layer (2026-11-01)
+# ---------------------------------------------------------------------------
+# A fourth stem of a chapter's loop, rendered to the same sample count, that MusicPlayer brings up
+# over the bed and pulse, the lead resting, when the chapter's boss arrives. The fight stays in the chapter's key, tempo
+# and instruments - no change of gear into a shared loop at another tempo - and gets harder: the
+# drums at double density, low stabs on the roots in octaves, a motor in sixteenths over the chord,
+# and a roll into every section. Written per chapter from these four parts, so each fight speaks its
+# own place's rhythm; it is a layer, so on its own it is only percussion, stabs and a motor.
+
+def boss_layer(g, prog, chords, drum, stabs, motor, fills, roll=None, extra=None):
+    """drum   (pattern, instrument, pitch, vel, length_steps) - the double-density drum, every bar
+    stabs  (hits pattern, instrument, vel, length_steps): root and octave struck together
+    motor  (pattern or fn(bar), instrument, tones fn(chord), vel, length_steps) - the sixteenths
+    fills  the bars that roll into the next section (the last bar of each, across the seam too)
+    roll   (pattern, instrument, pitch, vel, length_steps) played on the fill bars instead of drum
+    extra  fn(bar) -> events, for anything a chapter adds on top"""
+    ev = []
+    pat, inst, vel, length = stabs
+    for bar, c in enumerate(prog):
+        for k, p in enumerate(octaves(chords[c])):
+            ev += hits(g, bar, pat, inst, p, vel * (1.0 - 0.25 * k), length)
+    mpat, minst, mtones, mvel, mlength = motor
+    ev += ost(g, prog, lambda c: mtones(chords[c]), mpat, minst, mlength, mvel)
+    for bar in xrange(len(prog)):
+        if roll is not None and bar in fills:
+            rp, ri, rpitch, rvel, rlen = roll
+            ev += hits(g, bar, rp, ri, rpitch, rvel, rlen)
+        else:
+            dp, di, dpitch, dvel, dlen = drum
+            ev += hits(g, bar, dp, di, dpitch, dvel, dlen)
+        if extra is not None:
+            ev += extra(bar)
+    return ev
+
+
+def octaves_of(chords):
+    return lambda c: octaves(chords[c])
+
+
 # ---------------------------------------------------------------------------
 # the menu theme - A Aeolian, 4/4, quarter = 72, 8 bars, one stem
 # ---------------------------------------------------------------------------
@@ -1023,20 +1078,38 @@ def forest_bed():
     return ev
 
 
+FOREST_FILLS = (FOREST_B - 1, 24 - 1)
+
+
 def forest_pulse():
+    """The hunt (2026-11-01): a taiko on both beats with a pickup, a backbeat on two, frame drums
+    galloping through every beat, and the bass galloping the root and its octave under the harp."""
     g, ch = FOREST_GRID, FOREST_CHORDS
     ev = ost(g, FOREST_PROG, lambda c: ch[c]["arp"],
-             lambda bar: "0.2.1.3.1.2." if bar >= FOREST_B else "0.1.2.3.2.1.", harp, 8, 0.42)
-    ev += ost(g, FOREST_PROG, lambda c: [ch[c]["root"]], "0.....0...0.", bass_pluck, 5, 0.6)
+             lambda bar: "0.2.1.3.1.2." if bar >= FOREST_B else "0.1.2.3.2.1.", harp, 8, 0.34)
+    # The gallop: eighth, two sixteenths, eighth - the bed's spiccato figure, now in the bass.
+    ev += ost(g, FOREST_PROG, octaves_of(ch), "0.010.0.010.", bass_pluck, 2, 0.62)
     for bar in xrange(len(FOREST_PROG)):
-        ev += hits(g, bar, "X........x..", frame_drum, "G2", 0.75, 6)
-        if bar in (FOREST_B - 1, len(FOREST_PROG) - 1):
-            ev += hits(g, bar, "......oxxxXX", frame_drum, "D3", 0.5, 2)
+        ev += hits(g, bar, "X.....X...x.", taiko, "G2", 0.75, 6)
+        if bar in FOREST_FILLS:
+            ev += hits(g, bar, "......oxxxXX", frame_drum, "D3", 0.62, 2)
         else:
-            ev += hits(g, bar, "......X.....", frame_drum, "D3", 0.55, 4)
-            ev += hits(g, bar, "..o.x...o.x." if bar % 2 else "..o.o...o.xo", frame_drum, "A3",
-                       0.32, 2)
+            ev += hits(g, bar, "......X.....", snare, None, 1.0, 3)
+            ev += hits(g, bar, "x.xxo.x.xxo." if bar % 2 else "x.xxo.x.xox.", frame_drum, "A3",
+                       0.62, 2)
     return ev
+
+
+def forest_boss():
+    """Elderbark: the gallop doubled in the taiko, horns' brass stabbing the roots on the hoofbeats,
+    and the strings running sixteenths up and down the chord over it."""
+    g, ch = FOREST_GRID, FOREST_CHORDS
+    return boss_layer(
+        g, FOREST_PROG, ch,
+        drum=("X.xxX.X.xxXx", taiko, "D3", 0.62, 4),
+        stabs=("X...x.X.....", brass, 0.6, 2),
+        motor=("012321012321", spiccato, lambda c: c["arp"], 0.55, 1.2),
+        fills=FOREST_FILLS, roll=("X.x.xxxxXXXX", snare, None, 0.7, 1))
 
 
 def forest_lead():
@@ -1050,7 +1123,8 @@ def forest_lead():
 
 FOREST = Piece(
     "forest", 112.0, 2, 24,
-    [("bed", forest_bed, 0.28), ("pulse", forest_pulse, 0.16), ("lead", forest_lead, 0.24)],
+    [("bed", forest_bed, 0.28), ("pulse", forest_pulse, 0.16), ("lead", forest_lead, 0.24),
+     ("boss", forest_boss, 0.14)],
     tail_beats=4, scale=SEVEN,
     describe="Enchanted Forest - D Dorian, 6/8 at dotted quarter 112, A/B of 12 bars")
 
@@ -1099,15 +1173,37 @@ def dungeon_bed():
     return ev
 
 
+DUNGEON_FILLS = (DUNGEON_B - 1, 16 - 1)
+
+
 def dungeon_pulse():
+    """The march to the cells (2026-11-01): the taiko on a 3-3-2 twice a bar, the backbeat with its
+    ghost, a brushed sixteenth like a chain dragged on stone, the bassoon on the same 3-3-2 and a
+    plucked bass chugging eighths under it."""
     g, ch = DUNGEON_GRID, DUNGEON_CHORDS
-    ev = ost(g, DUNGEON_PROG, lambda c: [ch[c]["root"]], "0..0..0...0..0..", bassoon, 2, 0.6)
+    ev = ost(g, DUNGEON_PROG, lambda c: [ch[c]["root"]], "0..0..0.0..0..0.", bassoon, 2, 0.6)
+    ev += ost(g, DUNGEON_PROG, octaves_of(ch), "0.0.0.1.0.0.0.1.", bass_pluck, 1.6, 0.46)
     for bar in xrange(len(DUNGEON_PROG)):
-        ev += hits(g, bar, "X..x..x...X.x...", taiko, "B2", 0.7, 6)
-        ev += hits(g, bar, "....X.......X...", snare, None, 1.0, 3)
-        if bar in (DUNGEON_B - 1, len(DUNGEON_PROG) - 1):
-            ev += hits(g, bar, "........x.x.xxXX", frame_drum, "E3", 0.5, 2)
+        ev += hits(g, bar, "X..x..x.X..x..x.", taiko, "B2", 0.75, 6)
+        if bar in DUNGEON_FILLS:
+            ev += hits(g, bar, "....X...x.x.xxXX", frame_drum, "E3", 0.7, 2)
+            ev += hits(g, bar, "....X.......xxXX", snare, None, 0.9, 1)
+        else:
+            ev += hits(g, bar, "....X..o....X.o.", snare, None, 1.0, 3)
+            ev += hits(g, bar, "o-x-o-x-o-x-o-x-", brush, None, 0.5, 1)
     return ev
+
+
+def dungeon_boss():
+    """The Gaoler: the taiko in sixteenths on the 3-3-2, brass stabbing the roots, and the square
+    bass sawing the root in sixteenths, the bed's B-C semitone answered an octave down."""
+    g, ch = DUNGEON_GRID, DUNGEON_CHORDS
+    return boss_layer(
+        g, DUNGEON_PROG, ch,
+        drum=("X.xxX.xxX.xxX.xx", taiko, "E3", 0.62, 4),
+        stabs=("X..x..x.....x.x.", brass, 0.62, 2),
+        motor=("0000000000000000", bass, lambda c: [c["root"]], 0.4, 0.9),
+        fills=DUNGEON_FILLS, roll=("X.x.x.xxxxxxXXXX", snare, None, 0.75, 1))
 
 
 def dungeon_lead():
@@ -1120,7 +1216,8 @@ def dungeon_lead():
 
 DUNGEON = Piece(
     "dungeon", 132.0, 4, 16,
-    [("bed", dungeon_bed, 0.28), ("pulse", dungeon_pulse, 0.3), ("lead", dungeon_lead, 0.24)],
+    [("bed", dungeon_bed, 0.28), ("pulse", dungeon_pulse, 0.3), ("lead", dungeon_lead, 0.24),
+     ("boss", dungeon_boss, 0.2)],
     tail_beats=8, scale=SEVEN, room=(0.88, 0.45),
     describe="Cursed Dungeon - B Locrian over a B drone, 4/4 at 132, A/B of 8 bars")
 
@@ -1165,17 +1262,38 @@ def cave_bed():
     return ev
 
 
+CAVE_FILLS = (CAVE_B - 1, 24 - 1)
+
+
 def cave_pulse():
+    """A dark scherzo with its blood up (2026-11-01): the taiko on one and the and-of-two, hand drums
+    and teks in eighths, a frame drum on three, and the bass driving root and octave in eighths
+    under the pizzicato's threes."""
     g, ch = CAVE_GRID, CAVE_CHORDS
-    ev = ost(g, CAVE_PROG, lambda c: [ch[c]["root"]], "0.......0...", bass_pluck, 6, 0.62)
-    ev += ost(g, CAVE_PROG, lambda c: ch[c]["arp"], "0.1.2.0.1.2.", pizz, 3, 0.46)
+    ev = ost(g, CAVE_PROG, octaves_of(ch), "0.0.1.0.0.1.", bass_pluck, 1.8, 0.6)
+    ev += ost(g, CAVE_PROG, lambda c: ch[c]["arp"], "0.1.2.0.1.2.", pizz, 3, 0.42)
     for bar in xrange(len(CAVE_PROG)):
-        ev += hits(g, bar, "X.....x.....", hand_drum, "A2", 1.0, 4)
-        if bar in (CAVE_B - 1, len(CAVE_PROG) - 1):
-            ev += hits(g, bar, "....x.xoxxXX", tek, "E4", 0.9, 1)
+        ev += hits(g, bar, "X.....x.....", taiko, "A2", 0.8, 6)
+        ev += hits(g, bar, "X.o.x.o.X.o.", hand_drum, "A2", 0.7, 3)
+        if bar in CAVE_FILLS:
+            ev += hits(g, bar, "....x.xoxxXX", tek, "E4", 1.0, 1)
+            ev += hits(g, bar, "........xxXX", frame_drum, "D3", 0.7, 1)
         else:
-            ev += hits(g, bar, "....x...x.xo", tek, "E4", 0.9, 1)
+            ev += hits(g, bar, "..x...x.x.xo", tek, "E4", 1.0, 1)
+            ev += hits(g, bar, "........X...", frame_drum, "D3", 0.7, 3)
     return ev
+
+
+def cave_boss():
+    """The Hollow Choir: the choir itself barking the roots on the scherzo's accents, the taiko
+    doubled, and the strings running the chord in sixteenths high over the cavern."""
+    g, ch = CAVE_GRID, CAVE_CHORDS
+    return boss_layer(
+        g, CAVE_PROG, ch,
+        drum=("X.xxX.x.X.xx", taiko, "E3", 0.62, 4),
+        stabs=("X.....x.x...", chant, 0.62, 2.5),
+        motor=("012101210121", spiccato, lambda c: [transpose(p, 12) for p in c["arp"]], 0.42, 1.2),
+        fills=CAVE_FILLS, roll=("X.x.xxxxXXXX", frame_drum, "A3", 0.8, 1))
 
 
 def cave_lead():
@@ -1184,7 +1302,8 @@ def cave_lead():
 
 CAVE = Piece(
     "cave", 160.0, 3, 24,
-    [("bed", cave_bed, 0.38), ("pulse", cave_pulse, 0.26), ("lead", cave_lead, 0.34)],
+    [("bed", cave_bed, 0.38), ("pulse", cave_pulse, 0.26), ("lead", cave_lead, 0.34),
+     ("boss", cave_boss, 0.26)],
     tail_beats=6, scale=SEVEN, room=(0.93, 0.42),
     describe="Sunken Cave - A Aeolian, 3/4 at 160, A/B of 12 bars")
 
@@ -1229,16 +1348,36 @@ def swamp_bed():
     return ev
 
 
+SWAMP_FILLS = (SWAMP_B - 1, 16 - 1)
+
+
 def swamp_pulse():
+    """The lurch, driven (2026-11-01): the taiko on the three group starts, the slack drum between,
+    a snare cracking the long group, a brush on every eighth, and the bass worrying E-F harder."""
     g, ch = SWAMP_GRID, SWAMP_CHORDS
-    ev = riff(g, SWAMP_PROG, lambda c: ch[c]["root"], SEVEN, SWAMP_RIFF, bass_pluck, 2, 0.62)
+    ev = riff(g, SWAMP_PROG, lambda c: ch[c]["root"], SEVEN, SWAMP_RIFF, bass_pluck, 2, 0.66)
     for bar in xrange(len(SWAMP_PROG)):
-        ev += hits(g, bar, "X...x...X.x.x.", dull_drum, "A2", 0.7, 4)
-        if bar in (SWAMP_B - 1, len(SWAMP_PROG) - 1):
-            ev += hits(g, bar, "........xxxXXX", dull_drum, "D3", 0.5, 2)
+        ev += hits(g, bar, "X...x...X.....", taiko, "E3", 0.75, 5)
+        ev += hits(g, bar, "..x...x...x.x.", dull_drum, "A2", 0.75, 3)
+        if bar in SWAMP_FILLS:
+            ev += hits(g, bar, "........xxxXXX", dull_drum, "D3", 0.7, 2)
+            ev += hits(g, bar, "..........xxXX", snare, None, 0.8, 1)
         else:
-            ev += hits(g, bar, "..x...x...x..x", brush, None, 0.65, 2)
+            ev += hits(g, bar, "..........X...", snare, None, 1.0, 3)
+            ev += hits(g, bar, "x.o.x.o.x.o.o.", brush, None, 0.6, 2)
     return ev
+
+
+def swamp_boss():
+    """Mother Rot: the taiko doubled through the 2+2+3, the bassoon stabbing the roots, and the
+    square bass churning the root in sixteenths like something turning over in the mud."""
+    g, ch = SWAMP_GRID, SWAMP_CHORDS
+    return boss_layer(
+        g, SWAMP_PROG, ch,
+        drum=("X.xxX.xxX.xX.x", taiko, "A2", 0.62, 4),
+        stabs=("X...x...X.....", bassoon, 0.66, 2.5),
+        motor=("00000000000000", bass, lambda c: [c["root"]], 0.38, 0.9),
+        fills=SWAMP_FILLS, roll=("X.x.x.x.xxxXXX", dull_drum, "D3", 0.8, 1))
 
 
 def swamp_lead():
@@ -1250,7 +1389,8 @@ def swamp_lead():
 
 SWAMP = Piece(
     "swamp", 280.0, 7, 16,
-    [("bed", swamp_bed, 0.3), ("pulse", swamp_pulse, 0.16), ("lead", swamp_lead, 0.24)],
+    [("bed", swamp_bed, 0.3), ("pulse", swamp_pulse, 0.16), ("lead", swamp_lead, 0.24),
+     ("boss", swamp_boss, 0.14)],
     tail_beats=14, scale=SEVEN,
     describe="Blighted Swamp - E Phrygian, 7/8 (2+2+3) at eighth 280, A/B of 8 bars")
 
@@ -1292,21 +1432,40 @@ def ruins_bed():
     return ev
 
 
+RUINS_FILLS = (RUINS_B - 1, 16 - 1)
+
+
 def ruins_pulse():
+    """The adventure cue at a run (2026-11-01): a kick and a taiko on the bed's 3-3-2, the backbeat
+    with its ghosts, the rattle in eighths, and the bass in eighths leaping to its octave under the
+    harp's sixteenths. The bell rings on the off-beats as before."""
     g, ch = RUINS_GRID, RUINS_CHORDS
-    ev = ost(g, RUINS_PROG, lambda c: ch[c]["arp"], "0123212301232123", harp, 4, 0.3)
-    ev += ost(g, RUINS_PROG, lambda c: [ch[c]["root"]], "0.....0.0...0...", bass_pluck, 4, 0.55)
+    ev = ost(g, RUINS_PROG, lambda c: ch[c]["arp"], "0123212301232123", harp, 4, 0.28)
+    ev += ost(g, RUINS_PROG, octaves_of(ch), "0.0.1.0.0.0.1.0.", bass_pluck, 1.8, 0.58)
     # The bell an octave over the chord's third tone, on the last off-beat of each half bar.
     ev += ost(g, RUINS_PROG, lambda c: [transpose(ch[c]["arp"][2], 12)], "......0.......0.",
-              bell_pluck, 4, 0.3)
+              bell_pluck, 4, 0.26)
     for bar in xrange(len(RUINS_PROG)):
-        ev += hits(g, bar, "X.....x.X.......", kick, None, 0.55, 4)
+        ev += hits(g, bar, "X.....x.X.....x.", kick, None, 0.7, 4)
+        ev += hits(g, bar, "X..x..x.........", taiko, "F2", 0.6, 6)
         ev += hits(g, bar, "x.o.x.o.x.o.x.o.", rattle, None, 0.45, 1)
-        if bar in (RUINS_B - 1, len(RUINS_PROG) - 1):
-            ev += hits(g, bar, "....X...x.x.xXXX", frame_drum, "D3", 0.55, 2)
+        if bar in RUINS_FILLS:
+            ev += hits(g, bar, "....X...x.x.xXXX", frame_drum, "D3", 0.75, 2)
         else:
-            ev += hits(g, bar, "....X.......X...", snare, None, 1.0, 3)
+            ev += hits(g, bar, "....X..o....X.o.", snare, None, 1.0, 3)
     return ev
+
+
+def ruins_boss():
+    """The Archivist: the taiko through the tresillo in sixteenths, the horns' brass stabbing the
+    roots on it, and the strings driving root and fifth under everything."""
+    g, ch = RUINS_GRID, RUINS_CHORDS
+    return boss_layer(
+        g, RUINS_PROG, ch,
+        drum=("X.xxX.xxX.x.X.xx", taiko, "C3", 0.62, 4),
+        stabs=("X..x..x.....x.x.", brass, 0.62, 2),
+        motor=("0102010201020102", spiccato, lambda c: c["low"], 0.5, 1.2),
+        fills=RUINS_FILLS, roll=("X.x.x.xxxxxxXXXX", snare, None, 0.75, 1))
 
 
 def ruins_lead():
@@ -1319,7 +1478,8 @@ def ruins_lead():
 
 RUINS = Piece(
     "ruins", 128.0, 4, 16,
-    [("bed", ruins_bed, 0.28), ("pulse", ruins_pulse, 0.16), ("lead", ruins_lead, 0.24)],
+    [("bed", ruins_bed, 0.28), ("pulse", ruins_pulse, 0.16), ("lead", ruins_lead, 0.24),
+     ("boss", ruins_boss, 0.14)],
     tail_beats=8, scale=SEVEN,
     describe="Mystic Ruins - F Lydian, 4/4 at 128, A/B of 8 bars")
 
@@ -1359,18 +1519,38 @@ def frozen_bed():
     return ev
 
 
+FROZEN_FILLS = (FROZEN_B - 1, 16 - 1)
+
+
 def frozen_pulse():
+    """Stillness at speed, with a heart racing in it (2026-11-01): the lub-dub on one and three
+    every bar now, a snare on three - the half-time backbeat - a brushed eighth over it all, and
+    the bass running root and fifth in eighths, no third anywhere."""
     g, ch = FROZEN_GRID, FROZEN_CHORDS
-    ev = ost(g, FROZEN_PROG, lambda c: [ch[c]["root"]], "0.....0...0.....", bass_pluck, 5, 0.6)
+    # Root and fifth: every root here (C, G, A, F, D) has its fifth in C Ionian.
+    ev = ost(g, FROZEN_PROG, lambda c: [ch[c]["root"], transpose(ch[c]["root"], 7)],
+             "0.0.1.0.0.0.1.0.", bass_pluck, 1.8, 0.6)
     for bar in xrange(len(FROZEN_PROG)):
-        ev += hits(g, bar, "X..x......X..x.." if bar % 2 else "X..x............",
-                   taiko, "G2", 0.65, 6)
-        if bar in (FROZEN_B - 1, len(FROZEN_PROG) - 1):
-            ev += hits(g, bar, "........x.x.xxXX", brush, None, 0.8, 2)
+        ev += hits(g, bar, "X..x......X..x..", taiko, "G2", 0.75, 6)
+        if bar in FROZEN_FILLS:
+            ev += hits(g, bar, "........x.x.xxXX", snare, None, 0.85, 1)
         else:
-            ev += hits(g, bar, "........X.......", brush, None, 0.95, 4)
-            ev += hits(g, bar, "..o...o...o...o.", brush, None, 0.5, 1)
+            ev += hits(g, bar, "........X.......", snare, None, 0.9, 3)
+            ev += hits(g, bar, "x.o.x.o.x.o.x.o.", brush, None, 0.55, 2)
     return ev
+
+
+def frozen_boss():
+    """The Still Warden: the heartbeat doubled into sixteenths, brass stabbing the roots on the
+    lub-dub, and the strings ticking root and fifth in sixteenths - the bed's eighths, twice as
+    fast and an octave apart."""
+    g, ch = FROZEN_GRID, FROZEN_CHORDS
+    return boss_layer(
+        g, FROZEN_PROG, ch,
+        drum=("X.xxX.x.X.xxX.x.", taiko, "C3", 0.6, 4),
+        stabs=("X..x......X..x..", brass, 0.6, 2),
+        motor=("0101010101010101", spiccato, lambda c: c["low"], 0.5, 1.2),
+        fills=FROZEN_FILLS, roll=("X.x.x.xxxxxxXXXX", snare, None, 0.75, 1))
 
 
 def frozen_lead():
@@ -1383,7 +1563,8 @@ def frozen_lead():
 
 FROZEN = Piece(
     "frozen", 144.0, 4, 16,
-    [("bed", frozen_bed, 0.3), ("pulse", frozen_pulse, 0.16), ("lead", frozen_lead, 0.26)],
+    [("bed", frozen_bed, 0.3), ("pulse", frozen_pulse, 0.16), ("lead", frozen_lead, 0.26),
+     ("boss", frozen_boss, 0.14)],
     tail_beats=8, scale=SEVEN, room=(0.86, 0.6),
     describe="Frozen Waste - C Ionian in open fifths, 4/4 at 144 (half time), A/B of 8 bars")
 
@@ -1425,17 +1606,37 @@ def sands_bed():
     return ev
 
 
+SANDS_FILLS = (SANDS_B - 1, 24 - 1)
+
+
 def sands_pulse():
+    """A caravan under attack (2026-11-01): the taiko on the downbeat, the hand drum's dum and tek in
+    a darbuka's pattern, a snare on two, the rattle running, and the bass in dotted eighths against
+    the 6/8 - the desert's hemiola, three against two."""
     g, ch = SANDS_GRID, SANDS_CHORDS
-    ev = ost(g, SANDS_PROG, lambda c: [ch[c]["root"]], "0.....0.....", bass_pluck, 5, 0.42)
+    ev = ost(g, SANDS_PROG, octaves_of(ch), "0..0..1..0..", bass_pluck, 2.5, 0.6)
     for bar in xrange(len(SANDS_PROG)):
-        ev += hits(g, bar, "X.....X..x..", hand_drum, "G2", 0.8, 4)
-        ev += hits(g, bar, "x.o.o.x.o.o.", rattle, None, 0.4, 1)
-        if bar in (SANDS_B - 1, len(SANDS_PROG) - 1):
-            ev += hits(g, bar, "..x.x.xxxxXX", tek, "D4", 0.85, 1)
+        ev += hits(g, bar, "X.....x.....", taiko, "G2", 0.75, 6)
+        ev += hits(g, bar, "X..x..X..x..", hand_drum, "G2", 0.8, 3)
+        ev += hits(g, bar, "x.o.o.x.o.o.", rattle, None, 0.42, 1)
+        if bar in SANDS_FILLS:
+            ev += hits(g, bar, "..x.x.xxxxXX", tek, "D4", 1.0, 1)
         else:
-            ev += hits(g, bar, "..x.x...x.xo", tek, "D4", 0.85, 1)
+            ev += hits(g, bar, "......X.....", snare, None, 0.85, 3)
+            ev += hits(g, bar, "..x.x...x.xo", tek, "D4", 1.0, 1)
     return ev
+
+
+def sands_boss():
+    """The Long Coil: the taiko doubled on the 6/8, paired shawms stabbing the roots, and the
+    strings coiling up and down the chord in sixteenths."""
+    g, ch = SANDS_GRID, SANDS_CHORDS
+    return boss_layer(
+        g, SANDS_PROG, ch,
+        drum=("X.xX.xX.xX.x", taiko, "D3", 0.62, 4),
+        stabs=("X.....X.x...", reed, 0.6, 2),
+        motor=("012101210121", spiccato, lambda c: c["pad"], 0.48, 1.2),
+        fills=SANDS_FILLS, roll=("X.x.xxxxXXXX", hand_drum, "D3", 0.9, 1))
 
 
 def sands_lead():
@@ -1448,7 +1649,8 @@ def sands_lead():
 
 SANDS = Piece(
     "sands", 104.0, 2, 24,
-    [("bed", sands_bed, 0.26), ("pulse", sands_pulse, 0.14), ("lead", sands_lead, 0.22)],
+    [("bed", sands_bed, 0.26), ("pulse", sands_pulse, 0.14), ("lead", sands_lead, 0.22),
+     ("boss", sands_boss, 0.12)],
     tail_beats=4, scale=SEVEN,
     describe="Scorched Sands - G Mixolydian, 6/8 at dotted quarter 104, A/B of 12 bars")
 
@@ -1489,6 +1691,9 @@ def ember_bed():
     return ev
 
 
+EMBER_FILLS = (EMBER_B - 1, 16 - 1)
+
+
 def ember_pulse():
     g, ch = EMBER_GRID, EMBER_CHORDS
     ev = ost(g, EMBER_PROG, lambda c: ch[c]["arp"], "0.1.0.1.0.1.0.1.", bass, 1.8, 0.42)
@@ -1496,13 +1701,28 @@ def ember_pulse():
     # already speaks the fight's language before the fight.
     ev += ost(g, EMBER_PROG, lambda c: ch[c]["pad"], ".0.1.2.1.0.1.2.1", pluck, 1.8, 0.5)
     for bar in xrange(len(EMBER_PROG)):
-        ev += hits(g, bar, "X...X...X...X...", kick, None, 0.6, 4)
-        ev += hits(g, bar, "X......xX...x.x.", taiko, "A2", 0.8, 6)
-        if bar in (EMBER_B - 1, len(EMBER_PROG) - 1):
+        # 2026-11-01: the kick picks up into each half bar, the taiko syncopates on the 3-3-2 the
+        # bed's motor implies, and the backbeat gets its ghosts - the descent, at a run.
+        ev += hits(g, bar, "X...X...X...X.x.", kick, None, 0.7, 4)
+        ev += hits(g, bar, "X..x..x.X..x.xx.", taiko, "A2", 0.8, 6)
+        if bar in EMBER_FILLS:
             ev += hits(g, bar, "....xoooxxxxXXXX", snare, None, 0.9, 1)
         else:
-            ev += hits(g, bar, "....X.......X.o.", snare, None, 1.0, 3)
+            ev += hits(g, bar, "....X..o....X.o.", snare, None, 1.0, 3)
     return ev
+
+
+def ember_boss():
+    """The Warden of the Deep: the taiko in sixteenths, low brass stabbing the roots on a 3-3-2
+    with the Neapolitan's weight, and the strings in sixteenths up the chord an octave over the
+    choir, the G sharp and B flat in them."""
+    g, ch = EMBER_GRID, EMBER_CHORDS
+    return boss_layer(
+        g, EMBER_PROG, ch,
+        drum=("X.xxX.xxX.xxXxxx", taiko, "E3", 0.62, 4),
+        stabs=("X..X..X...X..X..", brass, 0.62, 2),
+        motor=("0120120120120120", spiccato, lambda c: [transpose(p, 12) for p in c["pad"]], 0.44, 1.2),
+        fills=EMBER_FILLS, roll=("X.x.x.xxxxxxXXXX", taiko, "D3", 0.8, 1))
 
 
 def ember_lead():
@@ -1515,7 +1735,8 @@ def ember_lead():
 
 EMBER = Piece(
     "emberdeep", 150.0, 4, 16,
-    [("bed", ember_bed, 0.26), ("pulse", ember_pulse, 0.14), ("lead", ember_lead, 0.22)],
+    [("bed", ember_bed, 0.26), ("pulse", ember_pulse, 0.14), ("lead", ember_lead, 0.22),
+     ("boss", ember_boss, 0.14)],
     tail_beats=8, scale=EMBER_SCALE, room=(0.86, 0.5),
     describe="The Emberdeep - A minor with bII and V, 4/4 at 150, A/B of 8 bars")
 
@@ -1562,17 +1783,37 @@ def sketch_bed():
     return ev
 
 
+SKETCH_FILLS = (SKETCH_B - 1, 24 - 1)
+
+
 def sketch_pulse():
+    """The toy waltz with its sleeves rolled up (2026-11-01), still played straight: a kick drum's
+    oom on one with a pickup into the next bar, a snare's pah-pah on two and three, the toy tick on
+    the off-beats, and a plucked bass under the harp. A tin-soldier band, never a joke."""
     g, ch = SKETCH_GRID, SKETCH_CHORDS
     ev = ost(g, SKETCH_PROG, lambda c: ch[c]["pad"], "0.1.2.1.2.1.", harp, 4, 0.3)
+    ev += ost(g, SKETCH_PROG, octaves_of(ch), "0.......1.0.", bass_pluck, 2.5, 0.55)
     for bar in xrange(len(SKETCH_PROG)):
-        ev += hits(g, bar, "X...........", frame_drum, "G2", 0.62, 4)
-        if bar in (SKETCH_B - 1, len(SKETCH_PROG) - 1):
-            ev += hits(g, bar, "....x.xxxxXX", brush, None, 0.44, 1)
+        ev += hits(g, bar, "X.........x.", frame_drum, "G2", 0.8, 4)
+        if bar in SKETCH_FILLS:
+            ev += hits(g, bar, "....x.xxxxXX", snare, None, 0.6, 1)
         else:
-            ev += hits(g, bar, "....x...x...", brush, None, 0.46, 3)
-            ev += hits(g, bar, "..o...o...o.", tek, "C5", 0.5, 1)
+            ev += hits(g, bar, "....x...x...", snare, None, 0.62, 3)
+            ev += hits(g, bar, "..o...o...o.", tek, "C5", 0.55, 1)
     return ev
+
+
+def sketch_boss():
+    """Wizard Dude: the frame drums doubled into a toy-soldier roll, horns' brass on the downbeat
+    and the pickup, and the pizzicato running the chord in eighths high over the waltz - bigger,
+    and still warm."""
+    g, ch = SKETCH_GRID, SKETCH_CHORDS
+    return boss_layer(
+        g, SKETCH_PROG, ch,
+        drum=("X.x.X.x.X.xx", frame_drum, "D3", 0.66, 2),
+        stabs=("X.......x...", brass, 0.5, 2),
+        motor=("012101210121", pizz, lambda c: c["arp"], 0.42, 2),
+        fills=SKETCH_FILLS, roll=("x.x.x.xxxxXX", snare, None, 0.6, 1))
 
 
 def sketch_lead():
@@ -1586,7 +1827,8 @@ def sketch_lead():
 
 SKETCH = Piece(
     "sketchbook", 168.0, 3, 24,
-    [("bed", sketch_bed, 0.24), ("pulse", sketch_pulse, 0.14), ("lead", sketch_lead, 0.22)],
+    [("bed", sketch_bed, 0.24), ("pulse", sketch_pulse, 0.14), ("lead", sketch_lead, 0.22),
+     ("boss", sketch_boss, 0.12)],
     tail_beats=6, scale=SEVEN,
     describe="The Sketchbook - C major, 3/4 at 168, A/B of 12 bars")
 
@@ -1703,7 +1945,14 @@ PIECES = [MENU] + CHAPTERS + [BOSS]
 # from there is the setting, and the action-packed rewrite (2026-10-22) kept it: the extra energy
 # is rhythm, not level. The boss loop sits level with a full chapter set, so the swap at the boss
 # is a change of music and not a jump in loudness.
-_CHAPTER_RMS = {"bed": -33.0, "pulse": -34.0, "lead": -35.0}
+#
+# The boss layer (2026-11-01) sits a dB over the lead, and the lead rests while it plays: the fight
+# is bed, pulse and the layer, -28.5 to -29.2 dBFS together, 0.5-1.2 dB over the shared loop it
+# replaces and level with a late-game set (mixsim.py --music's boss rows). All four at once measured
+# 2 dB over the loop and cost a median cast 3.3 dB of its headroom over the music. The pulse kept -34 when it became the battle
+# percussion: it is up from the first second now, so bed and pulse together (-30.5) already open
+# the run 1.5 dB over the menu theme, and its new energy is in transients, which RMS undercounts.
+_CHAPTER_RMS = {"bed": -33.0, "pulse": -34.0, "lead": -35.0, "boss": -34.0}
 STEM_RMS_DB = {("menu", "theme"): -32.0, ("boss", "loop"): -29.5}
 for _p in CHAPTERS:
     for _stem in _CHAPTER_RMS:
@@ -1739,10 +1988,14 @@ def check_scale(piece, stem, events):
         raise SystemExit("%s/%s: %s under E2, in the sub band" % (piece.name, stem, ", ".join(low)))
 
 
-def build_piece(piece, out_dir, balance=False):
+def build_piece(piece, out_dir, balance=False, only_stems=None):
     print("%s, %.2f s" % (piece.describe, piece.seconds()))
     rendered = []
     for stem, fn, reverb_mix in piece.stems:
+        # --stems: re-render only these, so changing one stem never rewrites (or re-commits) the
+        # others. Every stem is rendered from the same Piece, so it keeps their sample count.
+        if only_stems and stem not in only_stems:
+            continue
         events = fn()
         check_scale(piece, stem, events)
         parts = {} if balance else None
@@ -1862,8 +2115,14 @@ def report(paths):
 # end faded over 2.5.
 
 LAYER_FADE = 4.0
+LAYER_FADE_OUT = 8.0
 BOSS_FADE = 3.0
+BOSS_LAYER_FADE = 1.5
 END_FADE = 2.5
+# MusicPlayer.MenuHandoverSeconds and Node2DGame.MusicOpeningLeadSeconds: the theme gets out of the
+# way of the run's first downbeat, and the lead states the hook for this long before it rests.
+MENU_HANDOVER = 1.0
+OPENING_LEAD = 24.0
 
 
 def _fader(i, sr, on_at, fade, off_at=None, off_fade=None):
@@ -1882,24 +2141,43 @@ def _load(src_dir, name):
     return None
 
 
+def _lead_gain(i, sr, rest_at, back_at):
+    """The lead as a run plays it: up from the first downbeat (the opening statement), out over 8 s
+    from rest_at, back over 4 s from back_at (an elite, or pace minute 5)."""
+    if i < back_at:
+        return math.sin(max(0.0, 1.0 - max(0, i - rest_at) / float(LAYER_FADE_OUT * sr)) * math.pi * 0.5)
+    return _fader(i, sr, back_at, LAYER_FADE)
+
+
 def chapter_journey(piece, src_dir, out_dir, boss):
-    """bed alone for one loop, + pulse for one, + lead for a loop and a half, then the boss."""
+    """A run as MusicPlayer plays it (2026-11-01): bed, pulse and lead from the first downbeat, the
+    lead resting after the opening statement and back a loop later, then the fight - the chapter's
+    own boss layer landing on the bed and pulse as the lead rests again, or the shared boss loop
+    crossfading in where a chapter has none."""
     bed, pulse, lead_s = [_load(src_dir, file_name(piece, s)) for s in ("bed", "pulse", "lead")]
     if bed is None or pulse is None or lead_s is None:
         return None
+    layer = _load(src_dir, file_name(piece, "boss"))
     sr = MUSIC_SR
     n = len(bed)
+    rest_at = int(OPENING_LEAD * sr)
+    back_at = 2 * n
     boss_at = int(n * 3.5)
-    end_at = boss_at + int(14.0 * sr)
+    end_at = boss_at + (n if layer is not None else int(14.0 * sr))
     total = end_at + int(END_FADE * sr)
     out = [0.0] * total
     for i in xrange(total):
         j = i % n
-        v = (bed[j] + pulse[j] * _fader(i, sr, n, LAYER_FADE)
-             + lead_s[j] * _fader(i, sr, 2 * n, LAYER_FADE))
-        v *= _fader(i, sr, 0, 0.0, boss_at, BOSS_FADE)
-        if boss is not None and i >= boss_at:
-            v += boss[(i - boss_at) % len(boss)] * _fader(i, sr, boss_at, BOSS_FADE, end_at, END_FADE)
+        v = bed[j] + pulse[j] + lead_s[j] * _lead_gain(i, sr, rest_at, back_at)
+        if layer is not None:
+            if i >= boss_at:
+                v = (bed[j] + pulse[j] + lead_s[j] * _lead_gain(i, sr, boss_at, total)
+                     + layer[j] * _fader(i, sr, boss_at, BOSS_LAYER_FADE))
+            v *= _fader(i, sr, 0, 0.0, end_at, END_FADE)
+        else:
+            v *= _fader(i, sr, 0, 0.0, boss_at, BOSS_FADE)
+            if boss is not None and i >= boss_at:
+                v += boss[(i - boss_at) % len(boss)] * _fader(i, sr, boss_at, BOSS_FADE, end_at, END_FADE)
         out[i] = v
     path = os.path.join(out_dir, "%s_journey.wav" % piece.name)
     S.write_wav(path, out, sr=sr)
@@ -1907,20 +2185,23 @@ def chapter_journey(piece, src_dir, out_dir, boss):
 
 
 def menu_journey(src_dir, out_dir):
-    """The title twice through, then a run starting: the menu out and the forest's bed in, over
-    the 3 s MusicPlayer uses."""
+    """The title twice through, then a run starting as MusicPlayer starts one (2026-11-01): the
+    forest's bed, pulse and lead landing together on their first downbeat while the theme gets out
+    of the way over a second."""
     theme = _load(src_dir, file_name(MENU, "theme"))
-    bed = _load(src_dir, file_name(FOREST, "bed"))
+    stems = [_load(src_dir, file_name(FOREST, s)) for s in ("bed", "pulse", "lead")]
     if theme is None:
         return None
     sr = MUSIC_SR
     run_at = 2 * len(theme)
-    total = run_at + int(12.0 * sr)
+    total = run_at + int(16.0 * sr)
     out = [0.0] * total
     for i in xrange(total):
-        v = theme[i % len(theme)] * _fader(i, sr, 0, 0.0, run_at, BOSS_FADE)
-        if bed is not None and i >= run_at:
-            v += bed[(i - run_at) % len(bed)] * _fader(i, sr, run_at, BOSS_FADE)
+        v = theme[i % len(theme)] * _fader(i, sr, 0, 0.0, run_at, MENU_HANDOVER)
+        if i >= run_at:
+            for stem in stems:
+                if stem is not None:
+                    v += stem[(i - run_at) % len(stem)]
         out[i] = v
     path = os.path.join(out_dir, "menu_journey.wav")
     S.write_wav(path, out, sr=sr)
@@ -1972,8 +2253,8 @@ def journeys(src_dir, out_dir):
             continue
         r = chapter_journey(piece, src_dir, out_dir, boss)
         if r:
-            print("wrote %s - bed 0:00, +pulse %.0f s, +lead %.0f s, boss %.0f s; %.0f s"
-                  % (os.path.relpath(r[0], ROOT), r[1], 2 * r[1], r[2], r[3]))
+            print("wrote %s - all three 0:00, lead rests %.0f s, back %.0f s, boss %.0f s; %.0f s"
+                  % (os.path.relpath(r[0], ROOT), OPENING_LEAD, 2 * r[1], r[2], r[3]))
     r = sampler(src_dir, out_dir)
     print("wrote %s - %d pieces, 14 s each; %.0f s" % (os.path.relpath(r[0], ROOT), r[1], r[2]))
 
@@ -1990,12 +2271,18 @@ def main(argv):
     if "--journey" in argv:
         journeys(out_dir, SCRATCH)
         return 0
+    only_stems = None
+    for a in argv:
+        if a.startswith("--stems"):
+            value = a.split("=", 1)[1] if "=" in a else argv[argv.index(a) + 1]
+            only_stems = set(value.split(","))
+            names = [n for n in names if n != value]
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
     for piece in PIECES:
         if names and not any([n in piece.name for n in names]):
             continue
-        build_piece(piece, out_dir, balance="--balance" in argv)
+        build_piece(piece, out_dir, balance="--balance" in argv, only_stems=only_stems)
     print("%d unique note renders cached" % len(_CACHE))
     return 0
 

@@ -89,23 +89,42 @@ def bed():
     return ev
 
 
+FILLS = (B - 1, 12 - 1)
+
+
 def pulse():
+    """The moot at war (2026-11-01): the taiko on the two downbeats of the 3+2 with strokes leading
+    into each, a snare on the second beat of each group, frame drums filling, and the bass in eighths
+    with an octave leap per beat under the harp."""
     g, ch = GRID, CHORDS
     ev = M.ost(g, PROG, lambda c: ch[c]["arp"],
                lambda bar: "0.2.1.3.2.1.0.2.3.1." if bar >= B else "0.1.2.3.2.1.0.1.2.1.",
-               M.harp, 6, 0.36)
-    ev += M.ost(g, PROG, lambda c: [ch[c]["root"]], "0.....0.....0...0...", M.bass_pluck, 5, 0.62)
+               M.harp, 6, 0.32)
+    ev += M.ost(g, PROG, M.octaves_of(ch), "0.0.1.0.0.1.0.0.1.0.", M.bass_pluck, 1.8, 0.62)
     for bar in range(len(PROG)):
-        # The taiko on the two downbeats of the 3+2, a lighter stroke leading into the two.
-        ev += M.hits(g, bar, "X...........X.......", M.taiko, "A2", 0.8, 8)
-        ev += M.hits(g, bar, "..........o.........", M.taiko, "D3", 0.6, 4)
-        if bar in (B - 1, len(PROG) - 1):
+        # The taiko on the two downbeats of the 3+2, a lighter stroke leading into each.
+        ev += M.hits(g, bar, "X.....x.....X.....x.", M.taiko, "A2", 0.8, 8)
+        ev += M.hits(g, bar, "..........o.......o.", M.taiko, "D3", 0.6, 4)
+        if bar in FILLS:
             # A roll into the next section (and across the seam into the first).
             ev += M.hits(g, bar, "....o...o.xxx.xxxXXX", M.frame_drum, "D3", 0.8, 2)
         else:
-            ev += M.hits(g, bar, "....x...o.....x...o." if bar % 2 else "....x...o.o...x.o.o.",
+            ev += M.hits(g, bar, "....X...........X...", M.snare, None, 0.9, 3)
+            ev += M.hits(g, bar, "..x...o.o.....x...o." if bar % 2 else "..x...o.o.o...x.o.o.",
                          M.frame_drum, "A3", 0.7, 2)
     return ev
+
+
+def boss():
+    """The Ninth Stone: the taiko doubled through the 3+2, brass stabbing the roots with the horn
+    call's stride, and the strings running the chord in sixteenths."""
+    g, ch = GRID, CHORDS
+    return M.boss_layer(
+        g, PROG, ch,
+        drum=("X.xxX.x.X.xxX.xxX.x.", M.taiko, "D3", 0.62, 4),
+        stabs=("X.....x.....X...x...", M.brass, 0.6, 2),
+        motor=("01230123012301230123", M.spiccato, lambda c: c["arp"], 0.46, 1.2),
+        fills=FILLS, roll=("X...x...x.xxx.xxxXXX", M.snare, None, 0.75, 1))
 
 
 def lead():
@@ -118,6 +137,6 @@ def lead():
 
 PIECE = M.Piece(
     "heath", 138.0, 5, 12,
-    [("bed", bed, 0.3), ("pulse", pulse, 0.16), ("lead", lead, 0.26)],
+    [("bed", bed, 0.3), ("pulse", pulse, 0.16), ("lead", lead, 0.26), ("boss", boss, 0.14)],
     tail_beats=5, scale=M.SEVEN,
     describe="The Broken Circle - D Dorian, 5/4 (3+2) at 138, A/B of 6 bars")
