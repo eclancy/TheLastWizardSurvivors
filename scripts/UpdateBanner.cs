@@ -43,16 +43,18 @@ public partial class UpdateBanner : CanvasLayer
 	private const int BannerLayer = 6;
 
 	/// <summary>Forces the strip on outside an Android export, showing this version as the new
-	/// one without touching the network: <c>--update-banner=9.9.9</c>. For photographing the strip
-	/// with _UiShot on a desktop; see .ai/releasing.md.</summary>
+	/// one without touching the network: <c>--update-banner=9.9.9</c>, or <c>--update-banner=9.9.9:2</c>
+	/// for a release built at story epoch 2, which adds the story-reset warning. For photographing the
+	/// strip with _UiShot on a desktop; see .ai/releasing.md.</summary>
 	private const string TestArgPrefix = "--update-banner=";
 
 	// The same five seconds as UpdateScreen. Shorter than that and a phone on a weak signal would
 	// never hear back; longer is pointless, because nothing waits on it.
 	private static readonly TimeSpan CheckTimeout = TimeSpan.FromSeconds(5);
 
-	/// <summary>What the check found: a version newer than this one, and where its APK is.</summary>
-	private sealed record Offer(string Version, string ApkUrl);
+	/// <summary>What the check found: a version newer than this one, where its APK is, and whether
+	/// installing it restarts the story (its "progressEpoch" is above this build's).</summary>
+	private sealed record Offer(string Version, string ApkUrl, bool RestartsStory);
 
 	// Once per launch, like UpdateScreen. Every return "to the main menu" reloads TitleScreen, and
 	// each new title asks the same finished task rather than fetching again - so the strip comes
@@ -79,7 +81,7 @@ public partial class UpdateBanner : CanvasLayer
 			return null;
 
 		check ??= testVersion != null
-			? Task.FromResult(new Offer(testVersion, "https://ecec.dev/wizard-survivors/download"))
+			? Task.FromResult(TestOffer(testVersion))
 			: Task.Run(Fetch);
 
 		var banner = new UpdateBanner { Name = "UpdateBanner" };
@@ -104,6 +106,15 @@ public partial class UpdateBanner : CanvasLayer
 				return arg.Substring(TestArgPrefix.Length);
 		}
 		return null;
+	}
+
+	/// <summary>The made-up release a test argument describes, read the way a real version.json is.</summary>
+	private static Offer TestOffer(string arg)
+	{
+		using JsonDocument doc = JsonDocument.Parse(UpdateScreen.TestReleaseJson(arg));
+		JsonElement release = doc.RootElement;
+		return new Offer(release.GetProperty("version").GetString(), release.GetProperty("android").GetString(),
+			UpdateScreen.RestartsStory(release));
 	}
 
 	/// <summary>
@@ -134,8 +145,9 @@ public partial class UpdateBanner : CanvasLayer
 				return null;
 			}
 
-			GD.Print($"UpdateBanner: {latest} is available");
-			return new Offer(latest, apk.GetString());
+			bool restarts = UpdateScreen.RestartsStory(release);
+			GD.Print($"UpdateBanner: {latest} is available{(restarts ? ", and restarts the story" : "")}");
+			return new Offer(latest, apk.GetString(), restarts);
 		}
 		catch (Exception e)
 		{
@@ -205,9 +217,16 @@ public partial class UpdateBanner : CanvasLayer
 		BonelightSkin.ApplyPanel(panel);
 		AddChild(panel);
 
+		// Two rows when the release restarts the story: the offer, and under it the warning across the
+		// strip's full width, so it is read before Download rather than squeezed beside it. The panel's
+		// height is a minimum - it grows down to fit the second row.
+		var rows = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		rows.AddThemeConstantOverride("separation", 6);
+		panel.AddChild(rows);
+
 		var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
 		row.AddThemeConstantOverride("separation", 12);
-		panel.AddChild(row);
+		rows.AddChild(row);
 
 		var message = new Label
 		{
@@ -228,6 +247,21 @@ public partial class UpdateBanner : CanvasLayer
 		var later = MakeButton("Later", BonelightSkin.Emphasis.Quiet);
 		later.Pressed += OnLaterPressed;
 		row.AddChild(later);
+
+		if (offer.RestartsStory)
+		{
+			var warning = new Label
+			{
+				Name = "StoryResetWarning",
+				Text = UpdateScreen.StoryResetWarning,
+				HorizontalAlignment = HorizontalAlignment.Center,
+				MouseFilter = Control.MouseFilterEnum.Ignore,
+			};
+			rows.AddChild(warning);
+			ResponsiveLayout.SetBodyText(warning, ResponsiveLayout.TextRole.Label);
+			// The update screen's gold: the one line on the strip that must not be skimmed past.
+			warning.AddThemeColorOverride("font_color", new Color(0.85f, 0.69f, 0.29f));
+		}
 
 		SafeArea.Apply(this);
 	}

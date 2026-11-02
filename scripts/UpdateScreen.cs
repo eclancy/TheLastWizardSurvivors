@@ -29,6 +29,11 @@ using HttpClient = System.Net.Http.HttpClient;
 /// when the check is done this frees itself and the title carries on exactly as it would have.
 /// Every failure, from no internet onwards, just goes to the title. An update is never worth not
 /// being able to play.
+///
+/// The one question it ever asks: a release that restarts the story (its version.json carries a
+/// "progressEpoch" above <see cref="SaveData.CurrentProgressEpoch"/>) is not installed until the
+/// player says Update, because installing it is what resets their progress. Not now plays this
+/// version, and the next launch asks again. See .ai/decisions/2026-11-02-story-resets.md.
 /// </summary>
 public partial class UpdateScreen : Control
 {
@@ -55,6 +60,63 @@ public partial class UpdateScreen : Control
 		}
 	}
 
+	/// <summary>
+	/// What both update checks say before a release that restarts the story is downloaded: here as
+	/// the question, and on Android's strip (UpdateBanner) beside Download.
+	/// </summary>
+	public const string StoryResetWarning =
+		"This update restarts the story: your progress will be reset. Your current save is kept as a backup.";
+
+	/// <summary>
+	/// The story epoch a release was built at - version.json's "progressEpoch", written by release.sh
+	/// from <see cref="SaveData.CurrentProgressEpoch"/>. 0 for a release from before epochs existed,
+	/// which never restarts anything.
+	/// </summary>
+	public static int ProgressEpochOf(JsonElement release) =>
+		release.TryGetProperty("progressEpoch", out JsonElement epoch)
+			&& epoch.ValueKind == JsonValueKind.Number && epoch.TryGetInt32(out int value) ? value : 0;
+
+	/// <summary>True when installing this release will reset the player's progress.</summary>
+	public static bool RestartsStory(JsonElement release) =>
+		ProgressEpochOf(release) > SaveData.CurrentProgressEpoch;
+
+	/// <summary>
+	/// Plays the whole check against a made-up release instead of the network, in any build:
+	/// <c>--update-screen=9.9.9</c> (no epoch: behaves as an ordinary update) or
+	/// <c>--update-screen=9.9.9:2</c> (built at epoch 2, so the question is asked). Nothing is ever
+	/// downloaded; Update just carries on to the title. For photographing the question with _UiShot -
+	/// see .ai/releasing.md, "Releasing a story reset". Android's strip has --update-banner.
+	/// </summary>
+	const string TestArgPrefix = "--update-screen=";
+
+	static string TestArg()
+	{
+		foreach (string arg in OS.GetCmdlineUserArgs())
+		{
+			if (arg.StartsWith(TestArgPrefix))
+				return arg.Substring(TestArgPrefix.Length);
+		}
+		return null;
+	}
+
+	/// <summary>A test argument's version.json: "9.9.9" or "9.9.9:2" (version, then story epoch).</summary>
+	public static string TestReleaseJson(string arg)
+	{
+		string[] parts = arg.Split(':');
+		var release = new System.Collections.Generic.Dictionary<string, object>
+		{
+			["version"] = parts[0],
+			["engine"] = "test",
+			["patch"] = "",
+			["full"] = "",
+			["android"] = "https://ecec.dev/wizard-survivors/download",
+			["linux"] = new System.Collections.Generic.Dictionary<string, string> { ["patch"] = "", ["full"] = "" },
+		};
+		if (parts.Length > 1 && int.TryParse(parts[1], out int epoch))
+			release["progressEpoch"] = epoch;
+		return JsonSerializer.Serialize(release);
+	}
+
 	// Once per launch. Everything that returns "to the main menu" reloads TitleScreen, and a
 	// second check every time the player quits a run would be a pause for nothing.
 	static bool checkedThisLaunch;
@@ -65,6 +127,7 @@ public partial class UpdateScreen : Control
 	public static bool ShouldCheck()
 	{
 		if (checkedThisLaunch) return false;
+		if (TestArg() != null) return true;
 		if (!OS.HasFeature("template") || (!Windows && !Linux)) return false;
 		return Array.IndexOf(OS.GetCmdlineUserArgs(), "--no-update") < 0
 			&& Array.IndexOf(OS.GetCmdlineArgs(), "--no-update") < 0;
@@ -73,14 +136,17 @@ public partial class UpdateScreen : Control
 	static bool Windows => OS.GetName() == "Windows";
 	static bool Linux => OS.GetName() == "Linux";
 
-	enum Phase { Checking, Downloading, Installing, Restart, Done }
+	enum Phase { Checking, Asking, Downloading, Installing, Restart, Done }
 
 	// Written by the worker thread, read by the main thread. Everything the screen needs is a
-	// plain value, so there is nothing to lock.
+	// plain value, so there is nothing to lock. The one value going the other way - the player's
+	// answer to the story-reset question - is a TaskCompletionSource, which is thread-safe.
 	volatile Phase phase = Phase.Checking;
 	volatile float progress;
 	string newVersion = "";
 	string applyScript = "";
+	TaskCompletionSource<bool> answer;
+	Control question;
 
 	Label title;
 	Label detail;
@@ -104,7 +170,10 @@ public partial class UpdateScreen : Control
 	{
 		checkedThisLaunch = true;
 
-		SetAnchorsPreset(LayoutPreset.FullRect);
+		// AndOffsets: this runs already in the tree, where SetAnchorsPreset alone keeps the current
+		// rect - a zero-size one at the corner - so the ground, the labels and the bar were all laid
+		// out in nothing (photographed 2026-11-02 for the story-reset question, which made it visible).
+		SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 		// Swallows clicks, so nothing on the title underneath can be pressed mid-update.
 		MouseFilter = MouseFilterEnum.Stop;
 
@@ -186,7 +255,18 @@ public partial class UpdateScreen : Control
 				detail.Text = "";
 				break;
 
+			case Phase.Asking:
+				if (question == null)
+					AskAboutStoryReset();
+				break;
+
 			case Phase.Downloading:
+				// The question is answered; its buttons must not stay pressable over the bar.
+				if (question != null)
+				{
+					question.QueueFree();
+					question = null;
+				}
 				title.Text = "Updating Wizard Survivors";
 				detail.Text = $"Getting version {newVersion}...  {Mathf.RoundToInt(progress * 100.0f)}%";
 				ShowBar(progress);
@@ -207,6 +287,85 @@ public partial class UpdateScreen : Control
 		barFill.OffsetRight = barFill.OffsetLeft + BarWidth * Mathf.Clamp(filled, 0f, 1f);
 	}
 
+	/// <summary>
+	/// The release restarts the story: say so and wait for the player. One line, two buttons -
+	/// Update (selected, so A or Enter takes it) and Not now (B, Escape, or the button), which
+	/// plays this version and asks again at the next launch.
+	/// </summary>
+	/// <remarks>
+	/// On this screen's own ground, in the title's colours, so it reads as the title asking rather
+	/// than as a dialog from somewhere else. The title underneath ignores input while this screen is
+	/// up (TitleScreen.updating), so neither answer also counts as "press any button".
+	/// </remarks>
+	void AskAboutStoryReset()
+	{
+		title.Text = "";
+		detail.Text = "";
+
+		var center = new CenterContainer { Name = "StoryResetQuestion", MouseFilter = MouseFilterEnum.Ignore };
+		center.SetAnchorsPreset(LayoutPreset.FullRect);
+		AddChild(center);
+		question = center;
+
+		var column = new VBoxContainer
+		{
+			// Wide enough for the line to break into two on a PC; a phone gets its full width less a margin.
+			CustomMinimumSize = new Vector2(Mathf.Min(640f, GetViewportRect().Size.X - 48f), 0f),
+			MouseFilter = MouseFilterEnum.Ignore,
+		};
+		column.AddThemeConstantOverride("separation", 22);
+		center.AddChild(column);
+
+		Label Line(string text, ResponsiveLayout.TextRole role, Color color)
+		{
+			var label = new Label
+			{
+				Text = text,
+				HorizontalAlignment = HorizontalAlignment.Center,
+				AutowrapMode = TextServer.AutowrapMode.WordSmart,
+				MouseFilter = MouseFilterEnum.Ignore,
+			};
+			column.AddChild(label);
+			ResponsiveLayout.SetFont(label, role);
+			label.AddThemeColorOverride("font_color", color);
+			return label;
+		}
+		Line($"Version {newVersion} is out", ResponsiveLayout.TextRole.Title, Bone);
+		Line(StoryResetWarning, ResponsiveLayout.TextRole.Body, Gold);
+
+		var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+		row.AddThemeConstantOverride("separation", 16);
+		column.AddChild(row);
+		Button update = AnswerButton(row, "UpdateNow", "Update", BonelightSkin.Emphasis.Primary, true);
+		AnswerButton(row, "NotNow", "Not now", BonelightSkin.Emphasis.Quiet, false);
+
+		MenuBackListener.Attach(this, () => Answer(false), "ui_cancel");
+		SafeArea.Apply(this);
+		MenuNavigator.Attach(this, update);
+	}
+
+	Button AnswerButton(HBoxContainer row, string name, string text, BonelightSkin.Emphasis emphasis, bool yes)
+	{
+		var button = new Button { Name = name, Text = text, FocusMode = FocusModeEnum.All };
+		row.AddChild(button);
+		BonelightSkin.StyleButton(button, emphasis);
+		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Body);
+		ResponsiveLayout.EnsureTouchTarget(button, 160f);
+		button.Pressed += () => Answer(yes);
+		return button;
+	}
+
+	void Answer(bool update)
+	{
+		if (answer == null || answer.Task.IsCompleted)
+			return;
+		SfxPlayer.Global(update ? SfxCatalog.UiClick : SfxCatalog.UiClose);
+		// Nothing more can be pressed: the worker carries on to the download, or to the title.
+		if (question != null)
+			question.Visible = false;
+		answer.TrySetResult(update);
+	}
+
 	// --- The worker -----------------------------------------------------------------
 
 	async Task Work()
@@ -225,12 +384,10 @@ public partial class UpdateScreen : Control
 	/// <summary>True when a new version is unpacked and the restart script is written.</summary>
 	async Task<bool> Update()
 	{
-		using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-		http.DefaultRequestHeaders.UserAgent.ParseAdd($"WizardSurvivors/{CurrentVersion}");
-
+		string test = TestArg();
 		string url = OS.GetEnvironment(UrlOverrideVariable);
 		if (string.IsNullOrEmpty(url)) url = VersionUrl;
-		using JsonDocument doc = JsonDocument.Parse(await http.GetStringAsync(url));
+		using JsonDocument doc = JsonDocument.Parse(test != null ? TestReleaseJson(test) : await FetchVersionJson(url));
 		JsonElement release = doc.RootElement;
 		string latest = release.GetProperty("version").GetString() ?? "";
 		if (!IsNewer(latest, CurrentVersion))
@@ -240,7 +397,7 @@ public partial class UpdateScreen : Control
 		}
 
 		string installDir = Path.GetDirectoryName(OS.GetExecutablePath());
-		if (!CanWriteTo(installDir))
+		if (test == null && !CanWriteTo(installDir))
 		{
 			GD.Print($"UpdateScreen: {latest} is out, but {installDir} is not writable");
 			return false;
@@ -262,6 +419,26 @@ public partial class UpdateScreen : Control
 			: files.GetProperty("full").GetString();
 
 		newVersion = latest;
+
+		// Last, so the question is only ever asked about an update that can actually be installed.
+		// Installing this one resets the player's progress (SaveManager keeps the old save aside), so
+		// it is the player's to choose; the answer arrives from the main thread.
+		if (RestartsStory(release))
+		{
+			answer = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			phase = Phase.Asking;
+			if (!await answer.Task)
+			{
+				GD.Print($"UpdateScreen: {latest} restarts the story; the player chose to stay on {CurrentVersion} for now");
+				return false;
+			}
+		}
+
+		if (test != null)
+		{
+			GD.Print($"UpdateScreen: test release {latest} - nothing to download (--update-screen)");
+			return false;
+		}
 		phase = Phase.Downloading;
 
 		string work = ProjectSettings.GlobalizePath("user://update");
@@ -298,6 +475,13 @@ public partial class UpdateScreen : Control
 			: ApplyScript(from, installDir, OS.GetExecutablePath(), OS.GetProcessId()));
 		GD.Print($"UpdateScreen: {CurrentVersion} -> {latest} ready, restarting");
 		return true;
+	}
+
+	static async Task<string> FetchVersionJson(string url)
+	{
+		using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+		http.DefaultRequestHeaders.UserAgent.ParseAdd($"WizardSurvivors/{CurrentVersion}");
+		return await http.GetStringAsync(url);
 	}
 
 	async Task Download(string url, string path)

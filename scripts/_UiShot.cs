@@ -1346,6 +1346,11 @@ public partial class _UiShot : Node
 			// secret - can be shot on demand without touching the player's real save.
 			else if (arg == "--fresh-save")
 				ReplaceSave(new SaveData());
+			// --story-reset: the in-memory save as a story reset leaves it (SaveData.StartNewStory: a new
+			// save, the settings kept, the title's notice owed), so the notice can be photographed over
+			// TitleScreen. Writes are off; the real save is never reset or rewritten by it.
+			else if (arg == "--story-reset")
+				ReplaceSave(CurrentSave().StartNewStory());
 			// THE QUESTS AND THE NOTES (.ai/quests-and-notes.md), in memory only:
 			//   --track=a,b       : the tracked quests, in order (achievement ids, next_wizard), replacing the list.
 			//   --notes-seen=all  : every chapter's note already read (or a list of stage ids), so none shows.
