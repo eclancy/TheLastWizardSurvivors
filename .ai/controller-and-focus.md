@@ -209,6 +209,23 @@ unable to act. Both of these traded away the pad's ability to press things in ex
 tidiness, and neither trade was visible in a build, a validator or a screenshot — only in pressing
 the button.
 
+## 5a. The Evolution Codex: shoulders, Y and its own keyboard
+
+The Codex (`EvolutionCodex`, `.ai/evolution-codex.md`) is the one screen with more pad buttons than A and B.
+It hears them in `_Input`, ahead of the GUI and of every screen under it, and marks them handled: **LB/RB**
+cycle the four filter tabs; **Y**, or **A with the search field selected**, opens `CodexKeyboard`; **B** (and
+Escape, Start, Android's back) steps back - the tree to its cell, the phone's sheet to the grid, the grid out
+of the Codex. A on a PC cell moves into its tree; on a phone it opens the sheet. The grid's last column never
+steps right into the detail and its first row steps up to the chosen tab.
+
+**The keyboard is ours** (Eric: "controller should have search in the most user friendly way possible"):
+A-Z in a 7-wide grid, Space, Delete, Clear and Done, and a row of the four best-matching names above the keys.
+Every key's four neighbours are set by hand and wrap inside the panel, so the stick cannot walk out onto the
+grid. While it is open it takes every pad button first: A types (the key's own press), B deletes, X clears,
+Start or Done closes, RB moves into the suggestions and LB back. A real keyboard types into it too. A phone's
+touch types into the field with the system keyboard; a PC keyboard types straight into the field.
+`_UiShot --pad` takes `x`, `lb`, `rb` and `start` for it.
+
 ## 6. What is not done
 
 - **No pad has been held while playing this.** `scripts/_PadProbe.cs` closes most of the gap: it

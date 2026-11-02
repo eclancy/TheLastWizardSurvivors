@@ -524,6 +524,12 @@ Rules that keep it closed:
 
 ## 4. The ascension browser
 
+**Replaced by the Evolution Codex (2026-11-02, `.ai/evolution-codex.md`).** The ★ Ascensions button is the
+★ Codex button (`CodexButton`) and opens the Codex in its in-run mode; `LevelUpMenu.Ascensions.cs` keeps only
+the level 8 fork (section 4e) and the parts it shares. What this section says the browser showed - the gates
+met and unmet, sealed paths, the Apotheosis and its gates, the recipes a path joins - the Codex's tree shows.
+The history below is the browser's.
+
 An ascension is the biggest single decision in a run, and until this landed the player met each one
 by surprise. Nothing anywhere said which of their spells *had* one, what it wanted, or how close
 they were — the requirement only ever appeared stamped across a card they were already being shown,
@@ -710,6 +716,10 @@ section 8d has the photographs' setup.
 and what the chest deals, so a before and an after show the same three cards.
 
 ## 4c. The Spell Index and Unlocks lists: whitespace is the hierarchy
+
+**The Spell Index is gone (2026-11-02):** its menu slot opens the Evolution Codex's collection mode
+(`.ai/evolution-codex.md`), which carries every spell, how to find a missing one and Set aside. The rules
+below still hold for the Achievements page.
 
 **The names.** The player renamed both lists, and the shop with them: the **Spell Index** was the
 Spellbook ("spell book" already means the spells carried in a run - `Player.IsSpellBookFull`, the
