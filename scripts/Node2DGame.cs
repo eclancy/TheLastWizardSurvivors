@@ -3638,7 +3638,9 @@ public partial class Node2DGame : Node2D
 				ElementWeights = s.GetElementWeights().ToDictionary(p => p.Key.ToString(), p => p.Value),
 				IsPassive = s.IsPassive,
 				Icon = s.Icon,
-				Ascensions = player.BuildAscensionPreview(s)
+				Ascensions = player.BuildAscensionPreview(s),
+				// The wizard's final form, on his own spell only; the browser's entry at the top.
+				Apotheosis = player.BuildApotheosisPreview(s),
 			})
 			.ToList();
 	}
@@ -4347,6 +4349,8 @@ public partial class Node2DGame : Node2D
 		// way a spell went is the first thing a player pauses to check.
 		foreach (Control milestone in BuildSpellMilestones(spell))
 			box.AddChild(milestone);
+		if (BuildPendingApotheosis(spell) is Control ahead)
+			box.AddChild(ahead);
 		string description = string.IsNullOrWhiteSpace(spell.Description) ? "No description." : spell.Description;
 		box.AddChild(BuildDetailLabel(description, PauseInk.InkSoft));
 
@@ -4395,6 +4399,24 @@ public partial class Node2DGame : Node2D
 
 	private static string MilestoneName(SpellEvolutionOption option) =>
 		string.IsNullOrWhiteSpace(option.DisplayName) ? option.Id : option.DisplayName;
+
+	// The starting spell's LAST milestone while it is still ahead: the wizard's Apotheosis (Eric's
+	// playtest, 2026-11-01: "make it clearer that apotheosis is an option"). The mark is outlined - a
+	// solid one is a milestone taken - then the form's name and where it stands. Its picture only once a
+	// run has offered it, the ascension browser's seal (.ai/level-up-screen.md 4e). Once taken it is an
+	// ordinary milestone (BuildSpellMilestones); on any other spell, and for the Test Wizard, nothing.
+	private Control BuildPendingApotheosis(SpellData spell)
+	{
+		ApotheosisPreview apotheosis = player?.BuildApotheosisPreview(spell);
+		if (apotheosis == null || apotheosis.Taken)
+			return null;
+		bool revealed = AscensionSightings.IsRevealed(this, spell.Id, apotheosis.FormId, apotheosis.Offered);
+		string note = apotheosis.Offered ? "ready at your next level-up"
+			: apotheosis.Closed ? "out of reach this run"
+			: "not yet";
+		return GameOverScreen.Milestone("Apotheosis", apotheosis.FormName, GameOverScreen.ApotheosisMark,
+			revealed ? apotheosis.FormId : string.Empty, pending: true, note: note);
+	}
 
 	// The boons the run has taken. Until this section the pause screen listed every spell and no
 	// boon at all, so once picked a boon was never seen again. Each relic is shown through BoonAura,

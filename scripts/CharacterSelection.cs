@@ -347,6 +347,8 @@ public partial class CharacterSelection : Control
 		{
 			string weaponName = character.StartingSpellResource != null ? character.StartingSpellResource.Name : "-";
 			vbox.AddChild(MakeInfoLabel($"Starting Spell: {weaponName}"));
+			if (MakeApotheosisLabel(character) is Label apotheosis)
+				vbox.AddChild(apotheosis);
 			if (!string.IsNullOrWhiteSpace(character.StartingPassiveDescription))
 				vbox.AddChild(MakeInfoLabel($"Passive Bonus: {character.StartingPassiveDescription}"));
 			if (character.IsLegendaryStart)
@@ -514,6 +516,8 @@ public partial class CharacterSelection : Control
 		{
 			string weaponName = character.StartingSpellResource != null ? character.StartingSpellResource.Name : "-";
 			detailBox.AddChild(MakeInfoLabel($"Starting Spell: {weaponName}"));
+			if (MakeApotheosisLabel(character) is Label apotheosis)
+				detailBox.AddChild(apotheosis);
 			if (!string.IsNullOrWhiteSpace(character.StartingPassiveDescription))
 				detailBox.AddChild(MakeInfoLabel($"Passive Bonus: {character.StartingPassiveDescription}"));
 			if (character.IsLegendaryStart)
@@ -559,6 +563,20 @@ public partial class CharacterSelection : Control
 		testWizardSpellPicker.ItemSelected += OnTestWizardSpellSelected;
 		host.AddChild(testWizardSpellPicker);
 		return host;
+	}
+
+	// The wizard's final form, named where he is chosen (Eric's playtest, 2026-11-01: "make it clearer
+	// that apotheosis is an option"). One line, in the ember register the strip's button and the
+	// ascension browser's entry wear. The name only: what the form does stays sealed until a run first
+	// offers it (.ai/level-up-screen.md 4e). Null for a wizard with none - the Test Wizard.
+	private static Label MakeApotheosisLabel(CharacterData character)
+	{
+		ApotheosisDefinition apotheosis = ApotheosisCatalog.ForCharacter(character?.Id);
+		if (apotheosis?.Form == null)
+			return null;
+		Label label = MakeInfoLabel($"✶ Apotheosis: {apotheosis.Form.DisplayName}");
+		label.AddThemeColorOverride("font_color", CardFamilyArt.ApotheosisTitle);
+		return label;
 	}
 
 	private static Label MakeInfoLabel(string text)

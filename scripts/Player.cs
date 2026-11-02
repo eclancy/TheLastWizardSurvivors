@@ -7085,6 +7085,82 @@ public partial class Player : CharacterBody2D
 		return option;
 	}
 
+	/// <summary>
+	/// This wizard's Apotheosis on <paramref name="spell"/>, as the ascension browser and the pause
+	/// screen show it: the form, each gate with the run's progress on it, and whether it is offered,
+	/// taken or out of reach. Null when the wizard has none on this spell (the Test Wizard has none).
+	/// </summary>
+	/// <remarks>
+	/// It reports and never decides: <see cref="ApotheosisPreview.Offered"/> is TryBuildApotheosisOffer's
+	/// own answer, and the gates are read from the same ApotheosisDefinition. No spell-level line: level 8
+	/// is reached only through an Ascension (CardLevelCap), so the level 8 path line says it, and the
+	/// node's pips show the level.
+	/// </remarks>
+	public ApotheosisPreview BuildApotheosisPreview(SpellData spell)
+	{
+		ApotheosisDefinition definition = ApotheosisCatalog.ForSpell(selectedCharacter?.Id, spell);
+		if (definition?.Form == null)
+			return null;
+
+		SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
+		var preview = new ApotheosisPreview
+		{
+			SpellId = spell.Id,
+			SpellName = spell.Name,
+			FormId = definition.Form.Id,
+			FormName = definition.Form.DisplayName,
+			Description = definition.Form.Description,
+			Icon = EvolutionIcons.Own(definition.Form) ?? spell.Icon,
+			Taken = spell.IsApotheosis,
+			Offered = !spell.IsApotheosis && TryBuildApotheosisOffer(spell, GetElementInstanceCounts()) != null,
+		};
+
+		if (!AscensionLearned)
+			preview.Requirements.Add(new AscensionRequirement { Kind = AscensionRequirementKind.Learned, Have = 0, Need = 1 });
+
+		AscensionRequirement PathGate(int milestone, string requiredId, string takenId, IEnumerable<SpellEvolutionOption> options)
+		{
+			bool chosen = !string.IsNullOrEmpty(takenId);
+			bool match = chosen && takenId.Equals(requiredId, StringComparison.OrdinalIgnoreCase);
+			SpellEvolutionOption named = options?.FirstOrDefault(o => o != null && o.Id.Equals(requiredId, StringComparison.OrdinalIgnoreCase));
+			return new AscensionRequirement
+			{
+				Kind = AscensionRequirementKind.Path,
+				Have = match ? 1 : 0,
+				Need = 1,
+				MilestoneLevel = milestone,
+				PathId = requiredId,
+				PathName = named?.DisplayName ?? requiredId,
+				Closed = chosen && !match,
+			};
+		}
+		AscensionRequirement mutation = PathGate(4, definition.RequiredLevel4EvolutionId, spell.SelectedLevel4EvolutionId, spell.Level4Options);
+		AscensionRequirement ascension = PathGate(AscensionSpellLevel, definition.RequiredLevel8EvolutionId, spell.SelectedLevel8EvolutionId, spell.Level8Options);
+		preview.Requirements.Add(mutation);
+		preview.Requirements.Add(ascension);
+		preview.Closed = !preview.Taken && (mutation.Closed || ascension.Closed);
+
+		// Tiers are named by their tag counts (GetElementTier: 2, 4, 6), so tier 6 is six tags.
+		int held = GetElementInstanceCounts().TryGetValue(definition.RequiredElement, out int count) ? count : 0;
+		var element = new AscensionRequirement
+		{
+			Kind = AscensionRequirementKind.Element,
+			Have = held,
+			Need = definition.RequiredTier,
+			Element = definition.RequiredElement,
+		};
+		element.AnyOf.Add(definition.RequiredElement);
+		preview.Requirements.Add(element);
+
+		preview.Requirements.Add(new AscensionRequirement
+		{
+			Kind = AscensionRequirementKind.PlayerLevel,
+			Have = CurrentLevel,
+			Need = ApotheosisCatalog.MinimumPlayerLevel,
+		});
+		return preview;
+	}
+
 	// --- The Ascension strip ------------------------------------------------------------------
 	//
 	// Level 8 used to be the eighth level-up card. When it came up before its element was deep
