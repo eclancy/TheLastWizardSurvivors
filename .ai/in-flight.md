@@ -224,6 +224,22 @@ builds to 120 and seven.
   "L8" on the Rite's recipe), the first item wave. **Votes:** Eric wants them posted through the bug intake, so the vote page is
   being built on ecec.dev (branch `spell-index-vote` in the website repo, worktree `../ecec-spell-vote`;
   the claude.ai draft is https://claude.ai/artifact/B4pnZKUXgtnzCYp1BBJFjE).
+- **Released 0.11.0 (night of 2026-11-02, Eric: "once all current work is done, commit push
+  release. I will review tomorrow").** It carries everything above plus: the item wave's second pass
+  (element tags as chips, chest pages coloured by rarity, the Gimmel Ring simplified to one sentence a
+  card, clickable status keywords with a pad note; the "debuffs never add up" line removed), the
+  Apotheosis gate Eric asked for (the wizard's own spell at max level, ascended down any branch, never
+  combined; **player level 21, down from 23** by the run-pacing rule, so forms come ~1.5 min earlier -
+  one line back to 23 if he prefers), the PC title with no dark pockets under the ward and the phone
+  title's prompt pocket held to shade. **No story reset in it** (epoch stays 1): Eric said "the next
+  release will reset game progress for everyone" while answering the slow start, which is not built
+  yet, so the reset rides the slow-start release instead - **confirm with Eric**. `release.sh` now
+  judges a desktop export that finishes but never exits by its log and .pck.
+  **For Eric to look at:** the phone title is still dark under the ring (its foreground grass is drawn
+  as occlusion blades, plus the ward falloff) - the PC one is lit; whether the earlier Apotheosis feels
+  right; the chest Ban closing the chest with no relic; nobody has listened to the three defeat sounds.
+  **Next:** the slow start (a design pass on which achievement teaches which system and the post-run
+  cutscenes, then the build); the castle (C5 dark wizard, C2, C8, C9); the secrets catalogue.
 - **The defeat sequence** (Eric, 2026-11-02): *"Defeat should have a dramatic animation where the game
   freezes, then crash zooms onto the wizard and they fall, then it says defeat, and when the player
   clicks, the defeat screen covers up. It then tallys up the reward with a satisfying payout sound. The
