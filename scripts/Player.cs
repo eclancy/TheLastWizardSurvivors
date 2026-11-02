@@ -7751,7 +7751,7 @@ public partial class Player : CharacterBody2D
 	/// that would satisfy it, and how deep. Null when the branch has nothing to be deep in. The rule
 	/// lives here and only here - DescribeUnmetElementGate words it, the browser draws it.
 	/// </summary>
-	private static AscensionRequirement EvaluateElementGate(SpellEvolutionOption evo, SpellData spell,
+	public static AscensionRequirement EvaluateElementGate(SpellEvolutionOption evo, SpellData spell,
 		Dictionary<Element, int> currentCounts)
 	{
 		var gates = GetAscensionGateElements(evo, spell).ToList();

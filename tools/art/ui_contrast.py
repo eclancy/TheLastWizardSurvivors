@@ -313,6 +313,57 @@ def tree_pairs(add, rev, vellum_ground, floors):
     add("tree fork, sealed glyph on plate", multiply(resting, PATH_SEALED_DIM), "glyph gold lit", ASC_ADVICE, GRAPHIC)
 
 
+# --- the Evolution Codex (scripts/EvolutionCodex*.cs, CodexKeyboard.cs, .ai/evolution-codex.md) --------
+# Copied from CodexInk: change one there, change it here. Everything else it writes in is CodexRows.Stone.
+CODEX_FIELD = h2rgb(f2h(0.071, 0.090, 0.129))          # the search field and a pressed key
+CODEX_UNMET_BAND = h2rgb(f2h(0.896, 0.789, 0.708))     # the browser's band, CodexInk.UnmetBand
+CODEX_UNMET_INK = h2rgb(f2h(0.416, 0.125, 0.157))      # the Rubric, CodexInk.UnmetInk
+CODEX_MARK_INK = h2rgb(f2h(0.06, 0.06, 0.07))          # GameOverScreen.MarkInk
+CODEX_MARKS = (("mutation gold", h2rgb(f2h(0.847, 0.690, 0.290))),
+               ("ascension cyan", h2rgb(f2h(0.416, 0.722, 0.910))),
+               ("apotheosis fire", h2rgb(f2h(0.910, 0.478, 0.102))),
+               ("conjunction starlight", h2rgb(f2h(1.0, 0.973, 0.847))))
+CODEX_TAKEN_RIM = h2rgb(f2h(0.847, 0.690, 0.290))
+
+
+def evolution_codex_pairs(add, stone_ground):
+    """The Codex is written on the stone panel, the heading band, the detail's well (stone deep at 55%
+    over the panel), a node's face (stone base), a sealed node's well (stone deep at 70% over the well),
+    the reading box (stone deep at 80%), the search field, the keyboard's panel (stone deep) and its keys
+    (stone base). A taken node is solid in its milestone's mark with the mark ink; an unmet requirement is
+    on the rubric band."""
+    well = blend(BAND, stone_ground, 0.55)
+    sealed = blend(BAND, well, 0.7)
+    reading = blend(BAND, well, 0.8)
+    for ink_name, ink in (("Heading (sections, columns)", STONE_HEADING), ("Ink (cell names)", STONE_INK),
+                          ("InkSoft (???, kind, tagline, count)", STONE_INK_SOFT), ("Reward (a ready cell's name)", STONE_REWARD)):
+        add("codex panel (stone)", stone_ground, ink_name, ink, BODY)
+    add("codex heading band", BAND, "Heading (title)", STONE_HEADING, LARGE)
+    add("codex heading band", BAND, "InkSoft (count)", STONE_INK_SOFT, BODY)
+    for ink_name, ink in (("Ink (name, chips)", STONE_INK), ("InkSoft (kind, line, hint)", STONE_INK_SOFT),
+                          ("Heading (column, Used in)", STONE_HEADING), ("Reward (Ready, a state tag)", STONE_REWARD)):
+        add("codex detail well", well, ink_name, ink, BODY)
+    for ink_name, ink in (("Ink (node name)", STONE_INK), ("InkSoft (note, met chip)", STONE_INK_SOFT),
+                          ("Reward (Waiting above the cards)", STONE_REWARD)):
+        add("codex node (stone face)", STONE_FACE, ink_name, ink, BODY)
+    add("codex node, sealed or closed", sealed, "InkSoft (???, lock note)", STONE_INK_SOFT, BODY)
+    add("codex reading box", reading, "Heading (node name)", STONE_HEADING, BODY)
+    add("codex reading box", reading, "Ink (what it does)", STONE_INK, BODY)
+    for mark_name, mark in CODEX_MARKS:
+        add("codex node, taken (%s)" % mark_name, mark, "MarkInk (name, note)", CODEX_MARK_INK, BODY)
+    add("codex chip, unmet (rubric band)", CODEX_UNMET_BAND, "UnmetInk (Spell 5/7)", CODEX_UNMET_INK, BODY)
+    add("codex chip, neutral (on the well)", well, "InkSoft (Spell 7)", STONE_INK_SOFT, BODY)
+    add("codex cell (stone face)", STONE_FACE, "taken star (gold, graphic)", CODEX_TAKEN_RIM, GRAPHIC)
+    add("codex search field", CODEX_FIELD, "Ink (typed)", STONE_INK, BODY)
+    add("codex search field", CODEX_FIELD, "InkSoft (placeholder)", STONE_INK_SOFT, BODY)
+    add("codex keyboard panel (stone deep)", BAND, "Heading (Search)", STONE_HEADING, LARGE)
+    add("codex keyboard panel (stone deep)", BAND, "Ink (typed)", STONE_INK, BODY)
+    add("codex keyboard panel (stone deep)", BAND, "InkSoft (hint)", STONE_INK_SOFT, BODY)
+    add("codex key (stone face)", STONE_FACE, "Ink (letter)", STONE_INK, BODY)
+    add("codex key (stone face)", STONE_FACE, "Heading (selected, a suggestion)", STONE_HEADING, BODY)
+    add("codex key, pressed", CODEX_FIELD, "Heading (pressed)", STONE_HEADING, BODY)
+
+
 def report_pairs(add, stone_ground):
     """ReportBugScreen: CodexRows.Stone inks on the stone panel, and in its text fields and the
     "Sent with it" block, which are the stone row face."""
@@ -620,6 +671,7 @@ def measure(rev=None):
         menu_pairs(add, centre(panel), centre(vellum), rev)
         ascension_pairs(add, centre(vellum))
         report_pairs(add, centre(panel))
+        evolution_codex_pairs(add, centre(panel))
         family_pairs(add, rev, floors)
         hud_pairs(add)
         tree_pairs(add, rev, centre(vellum), floors)

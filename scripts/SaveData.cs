@@ -137,6 +137,32 @@ public class SaveData
 	/// </summary>
 	public List<string> SeenChapterNoteIds { get; set; } = new();
 
+	/// <summary>
+	/// The relics and boons the player has met - offered by a chest or a level-up, or held - by id: the
+	/// Evolution Codex shows the rest as "???" (.ai/evolution-codex.md, question 3). No schema bump, the way
+	/// <see cref="HasSeenPrologue"/> was added: it only adds, a save without the key reads as empty, and an
+	/// older save's items open on their next sighting. Written by CodexSightings, never by a tool scene.
+	/// </summary>
+	public List<string> SeenItemIds { get; set; } = new();
+
+	/// <summary>
+	/// Met: recorded here, or claimed in an earlier run - LifetimeStats.ChestItemsCollected, which every save
+	/// has kept since before this record existed, so a returning player's relics are not all "???".
+	/// </summary>
+	public bool IsItemSeen(string itemId) =>
+		!string.IsNullOrWhiteSpace(itemId)
+		&& (SeenItemIds.Any(id => id.Equals(itemId.Trim(), System.StringComparison.OrdinalIgnoreCase))
+			|| (Lifetime?.ChestItemsCollected?.Any(id => id.Equals(itemId.Trim(), System.StringComparison.OrdinalIgnoreCase)) ?? false));
+
+	/// <summary>Records an item as met. True when it was not before (the caller saves).</summary>
+	public bool MarkItemSeen(string itemId)
+	{
+		if (string.IsNullOrWhiteSpace(itemId) || IsItemSeen(itemId))
+			return false;
+		SeenItemIds.Add(itemId.Trim().ToLowerInvariant());
+		return true;
+	}
+
 	public bool EnableGameplayOnboardingTips { get; set; } = true;
 	public bool HasToggledOnboardingTipsAtLeastOnce { get; set; } = false;
 	public bool PlaytestModeEnabled { get; set; } = false;
@@ -936,6 +962,10 @@ public class SaveData
 			seenChapterNoteIds.Add(id);
 		}
 
+		var seenItemIds = new Godot.Collections.Array<string>();
+		foreach (string id in SeenItemIds)
+			seenItemIds.Add(id);
+
 		var foundUpgradeLevels = new Godot.Collections.Dictionary<string, int>();
 		foreach (KeyValuePair<string, int> entry in FoundUpgradeLevels)
 		{
@@ -992,6 +1022,7 @@ public class SaveData
 			["HasSeenPrologue"] = HasSeenPrologue,
 			["TrackedQuestIds"] = trackedQuestIds,
 			["SeenChapterNoteIds"] = seenChapterNoteIds,
+			["SeenItemIds"] = seenItemIds,
 			["EnableGameplayOnboardingTips"] = EnableGameplayOnboardingTips,
 			["HasToggledOnboardingTipsAtLeastOnce"] = HasToggledOnboardingTipsAtLeastOnce,
 			["PlaytestModeEnabled"] = PlaytestModeEnabled,
@@ -1238,6 +1269,12 @@ public class SaveData
 				if (!string.IsNullOrWhiteSpace(id) && !result.SeenChapterNoteIds.Contains(id))
 					result.SeenChapterNoteIds.Add(id);
 			}
+		}
+
+		if (root.ContainsKey("SeenItemIds") && root["SeenItemIds"].VariantType == Variant.Type.Array)
+		{
+			foreach (Variant value in root["SeenItemIds"].AsGodotArray())
+				result.MarkItemSeen(value.AsString());
 		}
 
 		if (root.ContainsKey("EnableGameplayOnboardingTips"))

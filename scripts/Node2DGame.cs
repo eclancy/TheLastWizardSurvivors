@@ -3566,7 +3566,10 @@ public partial class Node2DGame : Node2D
 			{
 				List<EquippedSpellInfo> equippedInfo = BuildEquippedInfo();
 				List<LevelUpOption> ascensionOffers = player.GetAscensionOffers();
-				typedMenu.SetOptions(player.GetLevelUpOptions(optionCount), rerollsRemainingForCurrentLevelUp, equippedInfo, BuildBaselineElementCounts(), player.BuildCharges(rerollsRemainingForCurrentLevelUp));
+				List<LevelUpOption> dealt = player.GetLevelUpOptions(optionCount);
+				typedMenu.SetOptions(dealt, rerollsRemainingForCurrentLevelUp, equippedInfo, BuildBaselineElementCounts(), player.BuildCharges(rerollsRemainingForCurrentLevelUp));
+				// A boon dealt is met: the Evolution Codex names it from now on (CodexSightings).
+				CodexSightings.Record(this, dealt.Where(o => o.IsBoon).Select(o => o.SpellId));
 				// A combination's Feat is met the first time its recipe is (.ai/combo-spells.md section 2): the strip
 				// offering it is that moment, and the Feat grants the spell there and then - before the browser's
 				// previews are read, so the recipe the strip offers is never "???" beside it.
@@ -3611,7 +3614,9 @@ public partial class Node2DGame : Node2D
 			return;
 
 		int optionCount = player.IsPlaytestModeEnabled ? 4 : 3;
-		typedMenu.SetOptions(player.GetLevelUpOptions(optionCount), rerollsRemainingForCurrentLevelUp, BuildEquippedInfo(), BuildBaselineElementCounts(), player.BuildCharges(rerollsRemainingForCurrentLevelUp));
+		List<LevelUpOption> dealt = player.GetLevelUpOptions(optionCount);
+		typedMenu.SetOptions(dealt, rerollsRemainingForCurrentLevelUp, BuildEquippedInfo(), BuildBaselineElementCounts(), player.BuildCharges(rerollsRemainingForCurrentLevelUp));
+		CodexSightings.Record(this, dealt.Where(o => o.IsBoon).Select(o => o.SpellId));
 	}
 
 	// A ban IS the level-up's choice (Eric, 2026-10-31: "once they select a spell to ban, they dont
@@ -3658,6 +3663,52 @@ public partial class Node2DGame : Node2D
 				Apotheosis = player.BuildApotheosisPreview(s),
 			})
 			.ToList();
+	}
+
+	/// <summary>
+	/// What this run hands the Evolution Codex (CodexModel, .ai/evolution-codex.md): the held spells with the
+	/// run's own previews of their gates, the recipes, the relics and boons held, the tags and the level. The
+	/// level-up's Codex button and the pause screen's both open it from here, so the two cannot disagree.
+	/// </summary>
+	public CodexContext BuildCodexContext()
+	{
+		SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
+		if (player == null)
+			return CodexContext.ForSave(save);
+		CharacterData character = CharacterRoster.GetByIndex(Global.SelectedCharacterIdx);
+		return new CodexContext
+		{
+			Mode = CodexMode.InRun,
+			Save = save,
+			CharacterId = character?.Id ?? string.Empty,
+			WizardName = character?.Name ?? string.Empty,
+			PlayerLevel = player.CurrentLevel,
+			HeldSpells = player.GetEquippedSpells().Where(s => s != null).ToList(),
+			Equipped = BuildEquippedInfo(),
+			Combos = player.BuildComboPreviews(save),
+			HeldRelics = player.GetOwnedChestItems().ToList(),
+			HeldBoons = player.GetOwnedBoonIds().ToList(),
+			ElementCounts = BuildBaselineElementCounts(),
+		};
+	}
+
+	/// <summary>
+	/// Opens the Evolution Codex in its in-run mode, over whichever screen asked (the level-up's Codex button,
+	/// the pause screen's Run tab). The tree is already paused by that screen; the Codex is its own layer above.
+	/// </summary>
+	/// <param name="select">An entry or an evolution to open on; by default the held spell with something ready.</param>
+	public EvolutionCodex OpenEvolutionCodex(string select = null, CodexFilter filter = CodexFilter.All, Action onClosed = null)
+	{
+		if (EvolutionCodex.IsOpen)
+			return null;
+		CodexContext context = BuildCodexContext();
+		if (string.IsNullOrWhiteSpace(select))
+		{
+			// The spell the player most likely came for: one with an Ascension or the Apotheosis waiting.
+			CodexModel preview = CodexModel.Build(context);
+			select = preview.Filtered(CodexFilter.Spells).FirstOrDefault(e => e.Held)?.Id;
+		}
+		return EvolutionCodex.Open(this, context, select, filter, onClosed);
 	}
 
 	// The player's true current element instance counts (issue #16), keyed by Element name, used as
@@ -4258,7 +4309,31 @@ public partial class Node2DGame : Node2D
 		// How full the book is, and how big: spells are permanent, so this is the number that says
 		// how many choices are left, and the Blank Folio's seventh slot has to show up somewhere.
 		grid.AddChild(BuildStatTile("todo", $"{player?.GetEquippedSpells().Count ?? 0}/{player?.SpellSlots ?? Player.MaxSpellSlots}", "Spell slots"));
-		return BuildEscapeSection("Run Summary", grid);
+		return BuildEscapeSection("Run Summary", grid, BuildEscapeCodexButton());
+	}
+
+	// The Evolution Codex from the pause screen (.ai/evolution-codex.md section 1): the Run tab says what this
+	// run became, the Codex every path it could still take. Beside the tab's first heading, in the quiet
+	// toggle the spell sections' Show details wears, so it does not read as a fourth action beside Resume.
+	private Button BuildEscapeCodexButton()
+	{
+		var button = new Button
+		{
+			Name = "EscapeCodexButton",
+			Text = "★ Codex",
+			FocusMode = Control.FocusModeEnum.All,
+			ProcessMode = ProcessModeEnum.Always,
+			SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd,
+		};
+		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
+		CodexRows.StyleQuietToggle(button, PauseInk);
+		ResponsiveLayout.EnsureTouchTarget(button, 120f);
+		button.Pressed += () => OpenEvolutionCodex(onClosed: () =>
+		{
+			if (IsInstanceValid(button) && button.IsVisibleInTree())
+				button.GrabFocus();
+		});
+		return button;
 	}
 
 	private Control BuildCharacterPassiveSection()
@@ -6374,6 +6449,8 @@ public partial class Node2DGame : Node2D
 		// The knife's picker lists the book as it stands, the wizard's own spell greyed (it cannot be cut).
 		menu.SetSpellBook(player.GetEquippedSpells(), player.SignatureSpellId);
 		menu.SetOptions(options, ownedItems);
+		// Every relic a chest shows is met: the Evolution Codex names it from now on (CodexSightings).
+		CodexSightings.Record(this, options);
 		menu.Connect(ChestItemSelectionMenu.SignalName.ItemSelected, Callable.From<string>(OnChestItemSelected));
 		menu.Connect(ChestItemSelectionMenu.SignalName.SpellCutChosen, Callable.From<string>(OnPenknifeCutChosen));
 

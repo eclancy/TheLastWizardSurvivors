@@ -523,6 +523,14 @@ public partial class _UiShot : Node
 	private int frames;
 	private bool captured;
 	private bool latePressed;
+	private bool codexDump;
+	private bool codexDumped;
+	private string openCodex;
+	private bool codexOpened;
+	private CodexFilter codexFilter = CodexFilter.All;
+	private string codexSearch;
+	private bool codexSheet;
+	private bool codexKeyboard;
 	private string hoverLate;
 	private bool hovered;
 
@@ -1044,6 +1052,24 @@ public partial class _UiShot : Node
 				lockBranch = true;
 			else if (arg == "--ink-report")
 				inkReport = true;
+			// THE EVOLUTION CODEX (.ai/evolution-codex.md). --codex-dump prints the whole model after the warmup -
+			// in a run its in-run mode, on the menu its collection mode - to the log and user://codex-dump.txt.
+			else if (arg == "--codex-dump")
+				codexDump = true;
+			// --open-codex[=<id>]: the Codex opened after the warmup - over the run (in-run mode) or the menu
+			// (collection mode) - with that entry selected (a spell, relic, boon or recipe id, or an evolution's
+			// id, which selects its spell and lights the node). --codex-filter=all|spells|items|recipes picks
+			// the tab; --codex-search=<text> types a search; --codex-sheet opens a phone's detail sheet on it.
+			else if (arg == "--open-codex" || arg.StartsWith("--open-codex="))
+				openCodex = arg.Contains('=') ? arg.Substring("--open-codex=".Length).Trim() : string.Empty;
+			else if (arg.StartsWith("--codex-filter="))
+				codexFilter = System.Enum.TryParse(arg.Substring("--codex-filter=".Length).Trim(), true, out CodexFilter parsed) ? parsed : CodexFilter.All;
+			else if (arg.StartsWith("--codex-search="))
+				codexSearch = arg.Substring("--codex-search=".Length);
+			else if (arg == "--codex-sheet")
+				codexSheet = true;
+			else if (arg == "--codex-keyboard")
+				codexKeyboard = true;
 			else if (arg.StartsWith("--tall-deal="))
 			{
 				tallDeal = int.Parse(arg.Substring("--tall-deal=".Length));
@@ -2266,7 +2292,13 @@ public partial class _UiShot : Node
 		Vector2 canvas = GetViewport().GetVisibleRect().Size;
 		Vector2 scale = new Vector2(image.GetWidth() / canvas.X, image.GetHeight() / canvas.Y);
 		var controls = new System.Collections.Generic.List<Control>();
-		CollectInkControls(GetTree().Root, controls);
+		// The Evolution Codex covers whatever opened it (the level-up, the pause screen, the menu), so while it
+		// is up it is the only screen measured: the ones under it are hidden behind its panel.
+		// A phone's detail sheet covers the grid the same way.
+		if (FindNodeOfType<EvolutionCodex>(GetTree().Root) is EvolutionCodex codex)
+			CollectTextControls(codex.SheetOpen && codex.FindChild("CodexSheet", true, false) is Node sheet ? sheet : codex, controls);
+		else
+			CollectInkControls(GetTree().Root, controls);
 		foreach (Control control in controls)
 		{
 			string text = control is Label l ? l.Text : (control as Button)?.Text;
@@ -2587,6 +2619,44 @@ public partial class _UiShot : Node
 		keys.Sort(System.StringComparer.Ordinal);
 		foreach (string key in keys)
 			GD.Print($"LAYER {key} frames={layerSeen[key]}");
+	}
+
+	// --open-codex: the Codex over whatever is up, as its own buttons open it (Node2DGame.OpenEvolutionCodex in a
+	// run), then the search, the sheet and the keyboard the flags ask for.
+	private void OpenCodexForShot()
+	{
+		EvolutionCodex codex = FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame game
+			? game.OpenEvolutionCodex(openCodex, codexFilter)
+			: EvolutionCodex.Open(this, CodexContext.ForSave(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data), openCodex, codexFilter);
+		if (codex == null)
+		{
+			GD.PrintErr("_UiShot: --open-codex found nothing to open the Codex over");
+			return;
+		}
+		Callable.From(() =>
+		{
+			if (!string.IsNullOrEmpty(codexSearch))
+				codex.DebugSearch(codexSearch);
+			if (codexSheet)
+				codex.DebugOpenSheet();
+			if (codexKeyboard)
+				codex.DebugOpenKeyboard();
+			GD.Print($"_UiShot: codex open, mode {codex.Model?.Mode}, filter {codex.Filter}, selected '{codex.SelectedId}'");
+		}).CallDeferred();
+	}
+
+	// --codex-dump: the Evolution Codex's model as it would be opened right now - the run's, or the save's.
+	private void DumpCodex()
+	{
+		CodexContext context = FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame game
+			? game.BuildCodexContext()
+			: CodexContext.ForSave(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data);
+		CodexModel model = CodexModel.Build(context);
+		string dump = model.Dump();
+		GD.Print(dump);
+		using var file = FileAccess.Open("user://codex-dump.txt", FileAccess.ModeFlags.Write);
+		file?.StoreString(dump);
+		GD.Print($"_UiShot: codex dump written to {ProjectSettings.GlobalizePath("user://codex-dump.txt")}");
 	}
 
 	private void OnFramePostDraw()
@@ -3229,6 +3299,18 @@ public partial class _UiShot : Node
 				return;
 			}
 		}
+		if (codexDump && !codexDumped)
+		{
+			codexDumped = true;
+			DumpCodex();
+		}
+		if (openCodex != null && !codexOpened)
+		{
+			codexOpened = true;
+			OpenCodexForShot();
+			frames = 0;
+			return;
+		}
 		if (!string.IsNullOrEmpty(focusLate) && !focusLateDone)
 		{
 			focusLateDone = true;
@@ -3292,6 +3374,11 @@ public partial class _UiShot : Node
 				"a" => JoyButton.A,
 				"b" => JoyButton.B,
 				"y" => JoyButton.Y,
+				// The Codex's: X clears a search, the shoulders cycle its filters, Start closes its keyboard.
+				"x" => JoyButton.X,
+				"lb" => JoyButton.LeftShoulder,
+				"rb" => JoyButton.RightShoulder,
+				"start" => JoyButton.Start,
 				_ => null,
 			};
 			GD.Print($"_UiShot: pad {step} from {FocusName()}");
@@ -3301,7 +3388,7 @@ public partial class _UiShot : Node
 				Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = pressed, Pressed = false });
 			}
 			else
-				GD.PrintErr($"_UiShot: --pad step '{step}' is not up, down, left, right, a, b, y or release");
+				GD.PrintErr($"_UiShot: --pad step '{step}' is not up, down, left, right, a, b, x, y, lb, rb, start or release");
 			frames = 0;
 			return;
 		}

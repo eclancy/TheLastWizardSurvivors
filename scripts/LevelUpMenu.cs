@@ -2324,7 +2324,9 @@ public partial class LevelUpMenu : CanvasLayer
 		return subtitle;
 	}
 
-	private const string AscensionRootName = "AscensionBrowser";
+	// The corner button opens the Evolution Codex (.ai/evolution-codex.md), which replaced the ascension
+	// browser on 2026-11-02. The field keeps its name: everything that wakes the button for a waiting
+	// Ascension (AscensionReadyGlow, CountReadyAscensions, AlignAscensionButton) is unchanged.
 	private Button ascensionButton;
 
 	private void EnsureAscensionButton()
@@ -2338,8 +2340,8 @@ public partial class LevelUpMenu : CanvasLayer
 
 		ascensionButton = new Button
 		{
-			Name = "AscensionsButton",
-			Text = "\u2605 Ascensions",
+			Name = "CodexButton",
+			Text = "\u2605 Codex",
 			CustomMinimumSize = new Vector2(156, ResponsiveLayout.MinTouchTarget),
 		};
 
@@ -2362,7 +2364,7 @@ public partial class LevelUpMenu : CanvasLayer
 		// button wears - on a screen where everything else is bright parchment it read as greyed
 		// out, which is the one thing this button must not look like.
 		BonelightSkin.StyleButton(ascensionButton, BonelightSkin.Emphasis.Normal);
-		ascensionButton.Pressed += BuildAscensionBrowser;
+		ascensionButton.Pressed += OpenCodex;
 		panel.AddChild(ascensionButton);
 		ascensionGlow = AscensionReadyGlow.AttachTo(ascensionButton, showRing: true);
 		RefreshAscensionReadiness();
@@ -2447,7 +2449,37 @@ public partial class LevelUpMenu : CanvasLayer
 		ascensionButton.OffsetBottom = top + ResponsiveLayout.MinTouchTarget;
 	}
 
-	// The ascension browser and the level 8 fork are in LevelUpMenu.Ascensions.cs.
+	/// <summary>
+	/// The Evolution Codex in its in-run mode, over this screen, opened on the held spell with something
+	/// ready. A run hands it the run (Node2DGame.OpenEvolutionCodex); a probe scene with no run behind the
+	/// menu gets what the menu itself was given. Closing it puts the selection back on this button.
+	/// </summary>
+	private void OpenCodex()
+	{
+		void Refocus()
+		{
+			if (ascensionButton != null && IsInstanceValid(ascensionButton) && ascensionButton.IsVisibleInTree())
+				ascensionButton.GrabFocus();
+		}
+		if (GetParent() is Node2DGame game)
+		{
+			game.OpenEvolutionCodex(onClosed: Refocus);
+			return;
+		}
+		if (EvolutionCodex.IsOpen)
+			return;
+		var context = new CodexContext
+		{
+			Mode = CodexMode.InRun,
+			Save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data,
+			Equipped = currentEquippedSpells ?? new List<EquippedSpellInfo>(),
+			Combos = currentCombinations ?? new List<ComboPreview>(),
+			ElementCounts = currentBaselineElementCounts ?? new Dictionary<string, int>(),
+		};
+		EvolutionCodex.Open(this, context, onClosed: Refocus);
+	}
+
+	// The level 8 fork is in LevelUpMenu.Ascensions.cs.
 
 	private void SetNormalViewVisible(bool visible)
 	{
@@ -2462,20 +2494,7 @@ public partial class LevelUpMenu : CanvasLayer
 			ascensionButton.Visible = visible;
 
 		if (visible)
-		{
 			RemoveEvolutionRoot();
-			RemoveAscensionRoot();
-		}
-	}
-
-	private void RemoveAscensionRoot()
-	{
-		var existing = GetNodeOrNull<Control>($"Panel/{AscensionRootName}");
-		if (existing == null)
-			return;
-
-		existing.Name = $"{AscensionRootName}_freeing";
-		existing.QueueFree();
 	}
 
 	// Renames before freeing because QueueFree defers to the end of the frame: without this, a
