@@ -256,6 +256,15 @@ builds to 120 and seven.
   flip land together: **waiting on Eric's OK**. **Open for Eric:** the Apotheosis now lands in the
   Throne's first wave (the gate at 21 under an 18-level Muster sized for 23) - cut the Muster or put
   the gate back to 23; the ending's credits say "drawn by Eric's kids" - check the wording.
+- **Eric's answers and merges, end of the night:** the ending's credits drop the Sketchbook line; the
+  Apotheosis may come early in the Throne ("the throne should be the final level, basically a boss fight
+  the whole time"). **Merged:** `wip/dungeon-move` (C2 + C8; the Last Bridge still NOT flipped - until it
+  is, the Warden of the Deep opens the Dungeon directly) and `wip/slow-start` (schema 22 after 21; the
+  ladder of three vault lessons is the integrator's choice, for Eric's review). **Building:** the Dark
+  Wizard as a playable wizard, unlocked by defeating him in the Throne on Hardcore
+  (`wip/dark-wizard-playable`; Eric: "unlockable if you beat the whole game on hard mode"); #44's chest
+  simulation and 50 HP relic sweep (`wip/chest-sim`). **Still to ask:** flip the Last Bridge; the next
+  release raises the story epoch to 2 (the slow start is in).
 - **The defeat sequence** (Eric, 2026-11-02): *"Defeat should have a dramatic animation where the game
   freezes, then crash zooms onto the wizard and they fall, then it says defeat, and when the player
   clicks, the defeat screen covers up. It then tallys up the reward with a satisfying payout sound. The
