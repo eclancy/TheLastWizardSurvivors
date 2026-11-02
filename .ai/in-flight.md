@@ -150,7 +150,9 @@ builds to 120 and seven.
 11. **Done:** the Test Wizard is off character selection (69986af); the Sketchbook's boss is **Elim**
    (b3695cf). **Waiting on Eric:** Elim's "it's wizarding time" drawing, to show when he arrives - it is
    not in the repo or this PC's Downloads or Pictures.
-9. **Make the Apotheosis visible** ("make it clearer that apotheosis is an option, showing in
+9. **Make the Apotheosis visible** (merged: an "Apotheosis" section atop the Ascensions browser with the
+   starting spell's checklist and the form, "Apotheosis: <form>" on character select, the form after the
+   Ascension on the pause screen; its name always shows, its line stays sealed until first offered) ("make it clearer that apotheosis is an option, showing in
    'ascensions', etc"). Today the Ascensions browser never mentions it (`LevelUpMenu.Ascensions.cs` does not
    read `ApotheosisCatalog`); a player meets it only when the strip offers it. Show the wizard's own
    Apotheosis in the browser with its four requirements and their progress, and name it where the
