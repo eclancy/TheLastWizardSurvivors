@@ -785,8 +785,13 @@ def _falloff_t(x, y):
     # The pocket the prompt sits in on a tall phone (TitleScreen.PlacePrompt puts its bottom on
     # row PROMPT_BOTTOM when the screen is tall enough). Soft-edged, so it reads as the ground going dark
     # there rather than as a panel behind the type.
+    #
+    # Held to `shade` (1.6 on this scale), not taken to occlusion (Eric, 2026-11-02: "I'm seeing
+    # the dark patch ... under the letters"). The falloff already takes this band most of the way
+    # down; the pocket at 3.3 was the black slab under PRESS ANY BUTTON, whose occ drop shadow
+    # keeps it readable without one.
     pe = math.sqrt(((x - 180) / 176.0) ** 2 + ((y - (PROMPT_BOTTOM - PROMPT_H // 2)) / 24.0) ** 2)
-    return max(t, 3.3 * min(1.0, max(0.0, (1.8 - pe) / 0.8)))
+    return max(t, 1.6 * min(1.0, max(0.0, (1.8 - pe) / 0.8)))
 
 
 def _mat_keep(y, seam):
@@ -950,7 +955,8 @@ def _type_pocket_t(x, y):
     best = 0.0
     # The tall-phone prompt pocket fades over twice its own half-height for the same reason:
     # with a short fade its top edge was a second ruled line, across the band below the bushes.
-    for (cx, cy, rx, ry, k, soft) in ((180, PROMPT_BOTTOM - PROMPT_H // 2, 168, 16, 3.3, 1.6),
+    # The tall prompt's pocket is held to shade (1.6), like the falloff's (see _falloff_t).
+    for (cx, cy, rx, ry, k, soft) in ((180, PROMPT_BOTTOM - PROMPT_H // 2, 168, 16, 1.6, 1.6),
                                       (180, 698, 168, 18, 1.9, 2.2),
                                       (22, 794, 40, 14, 3.3, 1.0), (16, 727, 34, 12, 2.4, 1.6)):
         e = math.sqrt(((x - cx) / float(rx)) ** 2 + ((y - cy) / float(ry)) ** 2)

@@ -104,9 +104,11 @@ def ui_pocket_t(x, y):
     # bushes right down to the frame, and the pockets alone were what made the black slab. The
     # prompt carries its own occ drop shadow and the menu's bottom row are framed buttons and an
     # outlined label, so the pockets under the ring are now a light dither of stone.deep only.
-    return max(_box_t(x, y, PROMPT_BOX, 2.35, 40, 16), _box_t(x, y, DETAIL_BOX, 2.2, 24),
-               _box_t(x, y, OPTIONS_BOX, 2.2, 22), _box_t(x, y, VERSION_BOX, 2.4, 14),
-               _box_t(x, y, MENU_BOX, 2.6, 20))
+    #
+    # And then none at all under the ward (Eric, the same night, of the screenshots: "I'm seeing the
+    # dark patch ... under the letters"). The prompt, the Options row, the difficulty readout and
+    # the version label stand on the art as it is; only the menu stack on the dark wood keeps one.
+    return _box_t(x, y, MENU_BOX, 2.6, 20)
     # ARCANE_BOX keeps its place in the layout table but no pocket: nothing has stood there since
     # the readout became the shop button's caption, and the regeneration of 2026-11-02 dropped it.
 

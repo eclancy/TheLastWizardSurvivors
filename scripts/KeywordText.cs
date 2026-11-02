@@ -118,8 +118,8 @@ public static class KeywordText
 		},
 	};
 
-	/// <summary>The line every status card ends on: the rule all seven share.</summary>
-	public const string StackingNote = "Debuffs never add up: the strongest and the longest win.";
+	// The cards once ended on a shared line, "Debuffs never add up: the strongest and the longest
+	// win." Eric had it removed (2026-11-02); each card is its own sentence only.
 
 	// Every form of every status word, lower case. "poison" alone is handled in MatchStatus (the element).
 	private static readonly Dictionary<string, StatusId> Words = new(StringComparer.Ordinal)

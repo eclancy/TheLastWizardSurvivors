@@ -244,7 +244,6 @@ public partial class StatusNotes : CanvasLayer
 			line.AddChild(CodexRows.MakeText(info.Sentence, ResponsiveLayout.TextRole.Label, ink.Ink));
 			column.AddChild(line);
 		}
-		column.AddChild(CodexRows.MakeText(KeywordText.StackingNote, ResponsiveLayout.TextRole.Label, ink.InkMeta));
 		return panel;
 	}
 }
