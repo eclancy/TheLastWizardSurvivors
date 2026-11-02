@@ -1,0 +1,44 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ThroneDarkWizardBoss.cs" id="1"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/ThroneDarkWizardFrames.tres" id="2_frames"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_dark_wizard"]
+radius = 32.0
+
+; The Throne's boss (.ai/endgame-castle.md 6.4), never named on screen: he takes a spell with a hand of his
+; dark light, and the player takes it back from the orb it rides home in (ThroneDarkWizardBoss.cs, SealOrb,
+; Player.Seal.cs). A caster who keeps his distance, a little slower than Elderbark; his ring is for a player
+; who comes to his feet. He faces the player with his raised hand (SpriteFacesRightByDefault off: the art's
+; raised arm is on its left). Health and the Arcane bonus are BossCatalog's [13] block.
+[node name="ThroneDarkWizardBoss" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 3
+script = ExtResource("1")
+Speed = 66
+Health = 18000
+EnemyType = "Boss"
+IsMiniBoss = true
+ContactDamage = 4
+KnockbackResistance = 0.9
+MinSlowMultiplier = 0.4
+EnemySpacingRadius = 96.0
+MinPlayerSeparation = 36.0
+SpriteFacesRightByDefault = false
+BossId = "throne_dark_wizard"
+BossDisplayName = "The Dark Wizard"
+SlamIntervalSeconds = 5.0
+SlamTelegraphSeconds = 0.9
+SlamRadius = 150.0
+SlamDamage = 5
+EnrageHealthFraction = 0.33
+SlamEngageRadiusMultiplier = 1.15
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(2, 2)
+sprite_frames = ExtResource("2_frames")
+animation = &"moving"
+autoplay = "moving"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_dark_wizard")

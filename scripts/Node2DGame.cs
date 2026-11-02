@@ -964,9 +964,17 @@ public partial class Node2DGame : Node2D
 			GD.Print($"Node2DGame: run music lead {(leadOn ? "in" : "out")} at {FormatTime(timeElapsed)} (pace minute {PaceMinutes:0.0}, {musicLeadCallers.Count} callers)");
 		}
 
-		// The pulse is the chapter's battle percussion and never leaves while the run is in play.
-		runMusic.SetLayerTargets(1f, leadOn ? 1f : 0f);
+		// The pulse is the chapter's battle percussion and never leaves while the run is in play - but for
+		// the one moment the music is written to lose it: the Throne's set, "whose pulse drops out in his
+		// second phase" (.ai/endgame-castle.md 9.1, C7), when his dark falls over the hall.
+		runMusic.SetLayerTargets(RunMusicPulseHeld ? 0f : 1f, leadOn ? 1f : 0f);
 	}
+
+	/// <summary>
+	/// True while the run's music plays without its pulse (the drums and bass): the dark wizard's second phase
+	/// holds it (ThroneDarkWizardBoss). Read by UpdateRunMusic on its next sample.
+	/// </summary>
+	public bool RunMusicPulseHeld { get; set; }
 
 	private void PlayBossMusic()
 	{

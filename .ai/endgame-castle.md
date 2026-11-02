@@ -1424,8 +1424,66 @@ Tool arguments: `--throne-wave=N` starts at wave N two seconds after the Muster,
 the Muster, `_UiShot --dismiss-levelups=N` keeps the N+1th level-up on screen, and `_UiShot`, `_BossProbe`
 and `_BalanceHarness` claim a chest screen the run opens.
 
-**Not done, for later pieces:** him (C5: `ThroneDarkWizardBoss`, his health, his music handover; the
-Throne's set plays throughout today because the run never enters its boss phase); the doors he came in by
+**Not done, for later pieces:** him (C5 - built, section 13); the doors he came in by
 are drawn as wall (the south wall shows only its top); the results screen's time tile reads "Boss at 0:01"
 on a Throne defeat, because `TimerVictorySeconds` is 0 (6.5's best time is C5's or the flip's); the map
 (C8); the flip.
+
+## 13. What C5 built for him (2026-11-02, `wip/boss-dark-wizard`)
+
+Section 6.4, on the Throne C4 built. `IsPlayable` is still false; the validator's Throne line now names only
+the map stop (C8).
+
+| piece | where |
+|---|---|
+| him | `ThroneDarkWizardBoss.cs` on `scenes/ThroneDarkWizardBoss.tscn`, the scene `BossCatalog[13]` already named, so the Throne switched to him from the Warden of the Deep with no other edit. The five hooks: his Slam is a ring of his light round himself (a wizard who comes to his feet for an orb meets it), two thresholds (0.66, 0.33), `OnPhaseEntered` turns the dark on and then the echoes, he plants through his ring and through the taking's tell, he rings only a wizard close by. The taking, the lines and the echoes are clocks beside the Slam, as Elderbark's roots are. `TuningProblems` holds his numbers in `ValidateBossPattern` |
+| the taking | `DarkHand.cs` (code-only, like `TelegraphedGroundHit`): every 12 s (10 in the last phase) after a 1.4 s tell - the alert over his head and his light gathering into his raised hand - a hand of his light at 170 px/s, turning 80 deg/s, living 6 s. Slower than the wizard (220) and slower to turn, so it can always be left behind or side-stepped; what lands it is the rest of the floor |
+| the seal | `Player.Seal.cs` (the earlier agent's file, kept and finished): `SealSpell`, `ReleaseSeal`, `ReleaseAllSeals`, `CanSeal`, read by the one firing loop (the timer held where it stood), by `NotifyArcaneCharge`, the Black Cat and Frost Shard's shatter; a spell's standing nodes (orbit, flame, pulse, trail, explosion, rain, pack, weapons, Sagittarius, the facing pair) are taken out of play and put back as they were, not freed, so a pack keeps what the cat granted. Never the shield (the Rite's rule). `CastsOf` counts casts for the probe |
+| the orb | `SealOrb.cs`: the spell's own icon in a dark orb, leaping 170 px out of the wizard toward him (untouchable and unable to reach him while it leaps), then drifting at 60 px/s to his raised hand. Touched: back at once. Home: sealed 20 s more. His fall lets every one go |
+| the mark | `LoadoutHud`: **the Sovereign Rite's seal, reused** - the same band and wax on the same greyed slot - plus a line of wax under the band that drains with a timed seal (redrawn four times a second, and only while one runs), and a flare of wax red the frame a spell is taken |
+| his light | `DarkVeil.cs` + `scenes/shaders/dark_veil.gdshader`: one quad over the floor and under every tell and body (between `DrawLayers.Ground` and `GroundTell`), two pools of light (the wizard's, his) in four dithered stops on the 2 px grid, in over 1.5 s, out with his light. Lanes across the hall every 4.2 s, alternating a cross through the player and three parallel lanes with 84 px between. Darkness x1.25 on him from here on (`BossEnemy.IncomingSpellMultiplier`, read by `Player.DealDamageToEnemy`). The music's pulse drops out (`Node2DGame.RunMusicPulseHeld`), as C7 wrote the Throne's set for |
+| all he took | `ThroneRules.FelledWardenIds` (the procession's falls, in order; every one of the six if no procession was walked): one warden's tell every 6 s round the player, each in its own colour - the Hayward's wedge, the Gaoler's lane, Mother Rot's pools, the Archivist's beam in three steps, the Still Warden's ice, the Long Coil's surfacing and its spray. `TelegraphedGroundHit.Place` gained optional cone and lane widths |
+| his art | `tools/art/boss_dark_wizard.py`: the prologue's silhouette (6.4's reference, `.ai/prologue.md`) on the 96 boss cell - the cowl in a collar of iron points, the raised arm with its sleeve hanging like a wing, the keys at his belt, no feet (the hem goes into the ground as shadow); the darkness ramp as emission on him alone (the eclipse round his head, the eyes, the shadow's edge), violet pigment for what it lands on, and the warm light he took in his hand. 0.85 edges/px |
+| the end | `ThroneEnding.cs`, laid over the results by `GameOverScreen` on a victory over him (a new `Phase.Ending`; the count waits): every wizard the save holds standing in a row out of the dark, each in his idle and named, nothing else; a press rolls the credits over the row as it goes back to the dark; a press (or the roll's end) hands over to the results. The credits are a list of facts in its head for Eric to edit. The results' time tile no longer says "Boss at 0:01" on a chapter with no survival clock |
+
+**Departures from 6.4, each a constant:**
+
+1. **His ring.** 6.4 gives him no attack of his own beyond the taking, the lines and the echoes; a boss needs
+   a Slam (the validator's rule), and a wizard chasing an orb drifts toward him, so the Slam is a ring round
+   him for a wizard at his feet. It answers the chase without blocking it.
+2. **The hand turns.** "A slow projectile with a long tell: dodge it" - a straight one at 170 px/s missed
+   every moving wizard and the fight's verb never came up. It turns at 80 deg/s, slower than the wizard can.
+3. **The orb leaps first.** It must leave the wizard before it can be touched, or it is retaken the frame
+   it leaves; 170 px toward him (half the way if he is near), and it cannot reach him while it leaps.
+4. **The lines give way to the echoes** in phase 3 ("between takings he casts" the wardens' tells), and the
+   dark stays: his light goes out only when he falls.
+5. **Darkness x1.25 from phase 2 on**, not throughout: it is "his light", and the line sits under it in 6.4.
+6. **The row is every wizard the save holds**, the one who walked the road among them - "every freed
+   wizard" in the fiction is everyone he took (`.ai/prologue.md`: the four and John Dee at the moot, the rest
+   in their places).
+7. **His health is 30,000**, not 18,000 (above, `.ai/enemy-behaviour.md`).
+8. **He rises where he is seen** (`ThroneRules.SendWave`): before his throne when the wizard is within
+   400 px of it, else where the pairs arrive. From the south doors the throne is 1,700 px off.
+
+**Measured:** `_BossProbe --stage=13 --timescale=2` walks the whole procession to him and through both his
+phases (the echoes thrown in the order the wardens fell), and `-- --throne-wave=4 --drain=150` gives him
+long enough to do everything: 11 hands thrown and landed (the probe stands for them), 11 seals, 5 taken
+back and 6 let home, **0 casts by a sealed spell, every one cast again after its seal lifted**, dark from the
+first threshold and Darkness x1.25 after it, 12 volleys of lanes, 7 echoes covering all six wardens, every
+seal let go and the dark lifted when he fell, the way home open, and the ending over the results.
+`_BalanceHarness --stage=13 --all-unlocked --seek-apotheosis --immortal --character=1 --seed=1234`: the
+procession in 310 s, his fight 108 s at 18,000 (the immortal bot stands still, so every hand lands and every
+seal runs out). **The Apotheosis now comes in the first wave** (2.2 minutes, level 21): the gate moved from
+23 to 21 on 2026-11-02 after C4 sized the Muster (18) for 23, so 6.6's "third wave or later" no longer
+holds. The Muster is C4's number; it was not moved here.
+
+**Shots** (`_UiShot --scene=res://scenes/node_2d_game.tscn --stage=13 --character=1 --throne-muster=1
+--throne-wave=4 --dark-wizard=P,K[,take|hand|seal|fall]`, and `--force-victory --all-unlocked
+[--ending-advance=N]` for the end): his arrival, the taking's tell, a hand in flight, a seal on the strip and
+its orb, the dark and its lanes, an echo, the fall and the end, at 1280x720 and 540x1212 `--portrait
+--safe-area`.
+
+**Needs eyes:** whether the taking is a threat or a chore at 12 s; whether chasing an orb into his ring is
+the right pull; whether the dark reads as his on a phone's small pools; the lanes' white blink over the dark;
+the storm of motes in motion; the ending's pace (the row, then 18 s of credits); whether the credits say
+what Eric wants them to; his art at game size beside the player.

@@ -137,7 +137,9 @@ public partial class GameOverScreen : CanvasLayer
 	}
 
 	// --- the arrival and the count --------------------------------------------------------------
-	private enum Phase { Cover, Waiting, Tally, Live }
+	// Ending: a victory over the dark wizard lays the ending over the screen first (ThroneEnding), and the
+	// count waits for it.
+	private enum Phase { Cover, Waiting, Tally, Live, Ending }
 	private Phase phase = Phase.Live;
 	private float phaseAge;
 	private float tallySeconds;
@@ -200,6 +202,7 @@ public partial class GameOverScreen : CanvasLayer
 		BuildHeader();
 		BuildBody();
 		ApplyFold();
+		ShowEndingIfTheStoryEnds();
 
 		if (!stingPlayed)
 		{
@@ -221,6 +224,29 @@ public partial class GameOverScreen : CanvasLayer
 
 	/// <summary>What the screen was built from, for a harness that wants to add to it.</summary>
 	public RunReport Report => report;
+
+	private bool endingShown;
+
+	/// <summary>The ending over the screen while it plays (a victory over the dark wizard), else null. For _UiShot.</summary>
+	public ThroneEnding Ending { get; private set; }
+
+	// .ai/endgame-castle.md 6.4: the results of the run that beat him carry the ending - the freed wizards in a
+	// row, then the credits - before the ledger. Once a screen, over everything on it; the count waits.
+	private void ShowEndingIfTheStoryEnds()
+	{
+		if (endingShown || !ThroneEnding.EndsTheStory(report?.Result))
+			return;
+		endingShown = true;
+		phase = Phase.Ending;
+		Ending = new ThroneEnding();
+		Ending.Finished += () =>
+		{
+			Ending = null;
+			phase = Phase.Waiting;
+			phaseAge = 0f;
+		};
+		AddChild(Ending);
+	}
 
 	private static void Clear(Node node)
 	{
@@ -452,6 +478,8 @@ public partial class GameOverScreen : CanvasLayer
 		if (report.BossRushTotal > 0)
 			return BuildBossRushTile(won);
 
+		// A chapter with no survival clock (the Throne: its procession brings him) has no arrival to count to.
+		bool clocked = report.BossArrivalSeconds > 0f;
 		float arrival = Mathf.Max(1f, report.BossArrivalSeconds);
 		// The boss by the name before its epithet - "Elderbark", not "Elderbark, the Treant" - so the
 		// line under the bar stays one line on a PC. The breakdown and the chapter card say it in full.
@@ -462,9 +490,9 @@ public partial class GameOverScreen : CanvasLayer
 		else if (report.BossReached)
 			caption = string.IsNullOrWhiteSpace(boss) ? "Fell to the boss" : $"Fell to {boss}";
 		else
-			caption = $"Boss at {FormatTime(arrival)}";
+			caption = clocked ? $"Boss at {FormatTime(arrival)}" : null;
 
-		float fraction = won || report.BossReached ? 1f : Mathf.Clamp(result.TimeSurvived / arrival, 0f, 1f);
+		float fraction = won || report.BossReached ? 1f : clocked ? Mathf.Clamp(result.TimeSurvived / arrival, 0f, 1f) : 0f;
 		Control tile = BuildHeadlineTile("duration", FormatTime(result.TimeSurvived), "Time survived", fraction, caption, won);
 		// Wider than its neighbours: it carries the boss's line as well as its own.
 		tile.SizeFlagsStretchRatio = narrow ? 1.25f : 1.6f;
