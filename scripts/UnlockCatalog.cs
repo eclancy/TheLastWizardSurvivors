@@ -87,6 +87,16 @@ public sealed class UnlockDefinition
 	/// - the reason schemas 10, 12, 14, 15 and 16 had to grant what they added. Characters only.
 	/// </summary>
 	public bool OutsideCampaignGate { get; init; }
+
+	/// <summary>
+	/// A chapter wizard (.ai/chapter-wizards.md, G2): counted by the LAST gate chapter only - the Throne,
+	/// where the dark wizard is - and by no gate before it, wherever his rescue falls on the road. Eric,
+	/// 2026-11-01, "the new wizards count only at the Throne's gate": the Emberdeep keeps counting the six it
+	/// counted, so a chapter held for every place on the road does not turn the road into a checklist of
+	/// rescues before chapter 9. He is still a wizard (<see cref="UnlockCatalog.AllWizardIds"/>), so the
+	/// campaign cannot end with him held. Characters only.
+	/// </summary>
+	public bool CountedAtFinalGateOnly { get; init; }
 }
 
 /// <summary>
@@ -319,8 +329,9 @@ public static class UnlockCatalog
 	/// <param name="secretUntilStage">
 	/// A stage id makes a wizard secret until that chapter opens (see <see cref="UnlockDefinition.IsSecret"/>).
 	/// </param>
+	/// <param name="finalGateOnly">A chapter wizard, counted by the Throne's gate alone (<see cref="UnlockDefinition.CountedAtFinalGateOnly"/>).</param>
 	private static UnlockDefinition FromEvent(string id, UnlockKind kind, string siteId, string hint,
-		string secretUntilStage = "") => new()
+		string secretUntilStage = "", bool finalGateOnly = false) => new()
 	{
 		Id = id,
 		Kind = kind,
@@ -330,6 +341,7 @@ public static class UnlockCatalog
 		LockedHint = hint,
 		IsSecret = !string.IsNullOrWhiteSpace(secretUntilStage),
 		RevealStageId = secretUntilStage ?? string.Empty,
+		CountedAtFinalGateOnly = finalGateOnly,
 	};
 
 	/// <summary>

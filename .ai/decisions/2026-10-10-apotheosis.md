@@ -50,10 +50,13 @@ form pulls the loot in with the swarm - `.ai/passives-and-items.md` section 8.)
 - **The Pyromancer's form is Cinderbreath's, not Fireball's.** The covenant is the wizard's
   *starting* spell, and the starter rework moved the Pyromancer onto Cinderbreath after #61 was
   written. Cataclysm keeps its verb and its crater chain.
-- **Every required path is the one that deepens the wizard's own element.** #61 named some
-  paths that did not: Chain Lightning's `forked_surge` adds no Lightning, and its level 8
+- **Every required path never leads away from the wizard's own element.** #61 named some
+  paths that did not follow it: Chain Lightning's `forked_surge` adds no Lightning, and its level 8
   `overcharge` no longer exists. #61's own rule is that a required path must never branch away
-  from the wizard's element, so the paths follow the rule rather than the stale ids.
+  from the wizard's element, so the paths follow the rule rather than the stale ids. (2026-11-01,
+  `.ai/chapter-wizards.md` R2: a freed wizard may open on a two-element spell. He claims one of the
+  two; his path deepens it at one milestone and takes the untagged branch at the other, which the
+  check has always accepted. A pure opener's path still deepens at both.)
 - **Sundering grants armour, not flat reduction.** Flat reduction left the game, and armour is one
   percentage stat (`Player.GetArmorPercent`). The ring adds 20% inside it, under the same cap.
 - **Two forms were added for wizards #61 did not know about**: Spring Tide (flood) and Wildwood

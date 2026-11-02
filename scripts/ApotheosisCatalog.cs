@@ -38,10 +38,12 @@ public sealed class ApotheosisDefinition
 /// level 4 and level 8 path was taken, the wizard's element is at tier 6, the wizard is the
 /// one this entry names, and the player is at least MinimumPlayerLevel. Taking it spends the pick, and it is terminal.
 ///
-/// Every required path is the pair of milestone choices that DEEPENS the wizard's own element. A
-/// required branch that led away from it would make tier 6 harder on the exact build the gate
-/// demands (#61 says so in as many words), and the issue's original Stormcaller path named a
-/// level 8 option that no longer exists. RegressionChecks.ValidateApotheosisCatalog holds both.
+/// Every required path NEVER LEADS AWAY from the wizard's own element: a pure opener's path deepens it at
+/// both milestones; a freed wizard who opens on a hybrid (.ai/chapter-wizards.md, R2) claims one of its
+/// two elements, and his path deepens that one at one milestone and takes the untagged branch at the
+/// other. A required branch that led away would make tier 6 harder on the exact build the gate demands
+/// (#61 says so in as many words), and the issue's original Stormcaller path named a level 8 option that
+/// no longer exists. RegressionChecks.ValidateApotheosisCatalog holds both.
 ///
 /// Each form's behaviour lives in the spell's own script, switched on by
 /// <see cref="SpellData.IsApotheosis"/>; this catalog is only the gate and the stat card. The
