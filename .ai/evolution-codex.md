@@ -223,11 +223,25 @@ the on-screen keyboard in section 2.
 
 ## 10. What was built (2026-11-02)
 
+**Layout B, "the book" (Eric's pick) replaced the grid of sections 2-3** (wireframe artboards B-Book-PC and
+B-Book-Phone). On a PC an open book on the stone plate: the left page is the index - the search field, then every
+entry by its full name, spells under their element in the Element order (no element wheel exists in the code, so
+the enum's order), with the run's pips, a star on the wizard's own, faded while only known, "? ? ?" while unfound;
+items under their known set or else their rarity, then the boons; recipes under Conjunctions and Full Set
+Enchantments - and the right page is the selected entry: its evolutions as a family tree down the page (base, the
+level 4 row, the level 8 row, the Apotheosis on its ember face) with `CodexTreeLines` behind it (the gold shade
+into what is open or taken, dashed into the rest, the way to the Apotheosis in the ember line), a reading line,
+and the recipes it joins as a margin note. Spells, Items and Recipes are bookmarks on the top edge (LB/RB). On a
+phone one page at a time: the index, and a tap turns to the entry's page ("‹ Index"), in the same holder so it
+fills the plate edge to edge; a swipe or LB/RB turns to the next entry. Parchment in the level-up screen's
+manuscript inks (`CodexRows.Vellum`, `CodexInk`). The Sovereign Rite is a recipe of its own: the Rite (with its
+gate from `SovereignRite`) and "any active spell you hold" into "Sovereign <your spell>".
+
 | piece | where |
 |---|---|
 | the model, both modes, the search index | `scripts/CodexModel.cs` (`CodexModel`, `CodexContext`, `CodexSpellForms`, `CodexSightings`) |
 | the screen: parts, selection, search, input | `scripts/EvolutionCodex.cs`, `EvolutionCodex.Detail.cs` |
-| the arrangement, one builder per canvas | `scripts/EvolutionCodex.Layout.cs` (`BuildPcLayout`, `BuildPhoneLayout`, the tree in columns or rows, a recipe stacked or two abreast) |
+| the arrangement, one builder per canvas | `scripts/EvolutionCodex.Layout.cs` (`BuildPcBook`, `BuildPhoneBook`, `ArrangeTree`, `ArrangeRecipe`); the lines, `scripts/CodexTreeLines.cs` |
 | the pad keyboard | `scripts/CodexKeyboard.cs` |
 | the seen record for relics and boons | `SaveData.SeenItemIds` (additive, no schema bump); a relic claimed in any earlier run (`LifetimeStats.ChestItemsCollected`) counts as seen |
 | the run's side | `Node2DGame.BuildCodexContext`, `OpenEvolutionCodex`; a chest's relics and a level-up's boons recorded as met |
@@ -236,14 +250,12 @@ the on-screen keyboard in section 2.
 
 Where it differs from the sections above, and why:
 
-- **Four level 4 paths, not three** (section 6's bound): the Familiar's cat has four. On a 1280x720 PC, under
-  the form tabs, that column pushes the reading box about 50 units below the fold and the detail scrolls inside
-  itself; the phone's sheet holds it. To settle with the chosen layout.
-- **What a node does is one line in a reading box** under the tree, for the node the selection or the pointer
-  is on: the tree itself stays names and chips, which is what fits.
-- **Requirement chips**: met ones show the full count in a steel rim with no tick (the numbers say it, and the
-  tick cost the PC tree a row); unmet ones keep the rubric band and the socket; a long one ("L8: Dragon's
-  Breath") takes its own line and wraps.
+- **Four level 4 paths, not three** (section 6's bound): the Familiar's cat has four - a row of four on a PC, two
+  rows on a phone.
+- **What a node does is a reading line** under the tree, for the node the selection or the pointer is on: the
+  tree itself stays names and chips, which is what fits a 1280x720 page.
+- **Requirement chips**: met ones a darker pill with a tick, unmet ones the rubric band and the socket, and in the
+  collection an outline with no tick at all (nothing to measure).
 - **Set aside moved into the Codex**: the Spell Index carried the Redaction's Set aside, so a spell's detail
   carries it in collection mode, once the save owns a Redaction.
 - **The Spell Index's ten legacy passives** ("10 unknown passives", ids with no `UnlockCatalog` entry and no
@@ -254,6 +266,6 @@ Where it differs from the sections above, and why:
   partner may be a secret.
 
 Photographs: `_UiShot --open-codex=<entry or evolution id> --codex-filter=all|spells|items|recipes`, with
-`--codex-search=<text>`, `--codex-keyboard` and `--codex-sheet` (a phone's detail), at `--resolution 1280x720`
+`--codex-search=<text>`, `--codex-keyboard` and `--codex-sheet` (a phone's turned page), at `--resolution 1280x720`
 and `--resolution 540x1212 --portrait --safe-area`; `--codex-dump` prints the model. While the Codex is up the
 ink report measures it alone.
