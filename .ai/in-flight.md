@@ -140,7 +140,10 @@ builds to 120 and seven.
    left for their flip. The menu's music should give way to more interesting, thematic battle music for each level.
    And **the Elder God Maw opens with a deep, scary crash** (a new generated sound, by
    `.ai/audio-direction.md`).
-8. **Ground per chapter** (`wip/ground-pass`, in flight): every chapter's ground should read as its place; "Emberdeep doesn't look like
+8. **Ground per chapter** (merged: the Emberdeep on cracked basalt with smouldering seams and molten
+   lava, the Frozen Waste on packed snow over crazed ice; the rest passed the audit. Open for Eric: the
+   Ruins' plain slate floor as broken paving? the lava too loud over 15 min? the Frozen Waste now the
+   lightest floor): every chapter's ground should read as its place; "Emberdeep doesn't look like
    cracked volcanic earth." A ground pass through `tools/art/tiles.py` and the chapters' terrain
    modules (`.ai/terrain.md` first), the Emberdeep first.
 12. **Queued** (Eric, 2026-11-01): the title screen's eyes in the dark "don't always look like eyes. they
