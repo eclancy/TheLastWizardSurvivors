@@ -4763,12 +4763,12 @@ public static class RegressionChecks
 	private static void ValidateSovereignRite(List<string> warnings)
 	{
 		const string label = "Sovereign Rite";
-		if (SovereignRite.MinimumPlayerLevel != 25 || SovereignRite.MinimumActiveSpells != 3 || SovereignRite.MinimumFuel != 16)
-			warnings.Add($"{label}: the gate is level {SovereignRite.MinimumPlayerLevel}, {SovereignRite.MinimumActiveSpells} active spells and {SovereignRite.MinimumFuel} fuel; .ai/sovereign-spell.md section 3 says 25, 3 and 16. Change the doc with it, or put it back.");
-		if (!Mathf.IsEqualApprox(SovereignRite.DamagePerFuel, 0.07f) || !Mathf.IsEqualApprox(SovereignRite.CooldownPerFuel, 0.008f)
+		if (SovereignRite.MinimumPlayerLevel != 28 || SovereignRite.MinimumActiveSpells != 3 || SovereignRite.MinimumFuel != 16)
+			warnings.Add($"{label}: the gate is level {SovereignRite.MinimumPlayerLevel}, {SovereignRite.MinimumActiveSpells} active spells and {SovereignRite.MinimumFuel} fuel; .ai/sovereign-spell.md (sections 3 and 8, as tuned) says 28, 3 and 16. Change the doc with it, or put it back.");
+		if (!Mathf.IsEqualApprox(SovereignRite.DamagePerFuel, 0.005f) || !Mathf.IsEqualApprox(SovereignRite.CooldownPerFuel, 0.008f)
 			|| !Mathf.IsEqualApprox(SovereignRite.CooldownFloor, 0.70f) || !Mathf.IsEqualApprox(SovereignRite.AreaPerFuel, 0.01f)
-			|| !Mathf.IsEqualApprox(SovereignRite.AreaCap, 1.40f) || SovereignRite.FuelPerAmount != 10)
-			warnings.Add($"{label}: the power per level of fuel is not section 4's (+7% damage, -0.8% cooldown to -30%, +1% area to +40%, +1 amount per 10).");
+			|| !Mathf.IsEqualApprox(SovereignRite.AreaCap, 1.40f) || SovereignRite.FuelPerAmount != 20)
+			warnings.Add($"{label}: the power per level of fuel is not section 4's as tuned (+0.5% damage, -0.8% cooldown to -30%, +1% area to +40%, +1 amount per 20).");
 		// The gate can be met: the fuel behind one spell is the others' levels, at most eight each.
 		if (SovereignRite.MinimumActiveSpells > Player.MaxSpellSlots
 			|| SovereignRite.MinimumFuel > (Player.MaxSpellSlots - 1) * Player.AscensionSpellLevel

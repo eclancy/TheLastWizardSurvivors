@@ -48,10 +48,14 @@ combination spell that you select another spell to use on."* So it is not dealt 
 ingredient is **whichever of your active spells you choose**.
 
 - **Unlocked** by a Road deed, **beating the Warden of the Deep** (the end of the road, chapter 10),
-  through `UnlockCatalog`. Nothing on a new save can reach it early.
+  through `UnlockCatalog`. Nothing on a new save can reach it early. **For now:** Eric has since decided
+  (`.ai/slow-start.md`, top, 2026-11-02) that every new system - the Ascension, the Apotheosis, the
+  Conjunctions, and after them the Rite - is unlocked by an achievement and taught in a post-run cutscene.
+  That is the slow start's to build; until it chooses the Rite's achievement and cutscene, the Warden's
+  deed stays its unlock.
 - **Offered exactly where the Conjunctions are**: in the Ascension strip above the level-up cards, on the
   Conjunction plate, reading **"✶ CONJUNCTION  Sovereign Rite"**, once **all** of these hold:
-  - player level **25** or more;
+  - player level **28** or more (25 in the first draft; moved by section 6's measurement, section 8);
   - at least **three active spells** held;
   - their levels sum to at least **16** besides whichever one is chosen.
   Like every strip offer it stays on each level-up until taken or the run ends, so it is never dealt
@@ -69,14 +73,16 @@ Let **F** = the sum of the levels of every *other* active spell held when the ri
 level those spells would gain afterwards (they still level: an upgrade card for a silenced spell now reads
 "+1 fuel to Sovereign Cinderbreath", so the build keeps growing). Then the anointed spell gets:
 
-| what | per level of fuel | at F = 40 |
-|---|---|---|
-| damage | +7% | x3.8 |
-| cooldown | -0.8% (floor -30%) | -30% |
-| area / reach | +1% (cap +40%) | +40% |
-| amount (projectiles, strikes, tentacles, where it has one) | +1 per 10 | +4 |
+| what | per level of fuel | at F = 16 (the gate) | at F = 40 |
+|---|---|---|---|
+| damage | +0.5% (first draft +7%) | x1.08 | x1.2 |
+| cooldown | -0.8% (floor -30%) | -13% | -30% |
+| area / reach | +1% (cap +40%) | +16% | +40% |
+| amount (projectiles, strikes, tentacles, where it has one) | +1 per 20 (first draft per 10) | +0 | +2 |
 
-Starting numbers, to be measured (section 6). **The target**: the anointed spell alone deals about
+Measured and tuned by section 6 (section 8, "Tuned"): the first draft's +7% damage made the build's main
+spell, at the gate's 16 fuel, x2.3 to x3.0 the loadout - the cooldown, area and amount steps carry most of
+the gain on their own. **The target**: the anointed spell alone deals about
 **1.3 times what the whole loadout dealt** before the rite, so it is a real gain for a real loss, not a
 trap and not a must-take. Bosses take its full damage but none of it ever bypasses the boss
 crowd-control rule (`.ai/in-flight.md` 3a item 4) or the no-execute rule.
@@ -129,16 +135,16 @@ is offered as a Conjunction whose second ingredient the player chooses (section 
 
 Sections 1-6 as written, with the decisions below. Where to look:
 
-- **`scripts/SovereignRite.cs`** is the one authority on the numbers and the rules: the gate (level 25, three
-  active spells, 16 fuel behind the chosen one), the power per level of fuel (+7% damage, -0.8% cooldown to
-  -30%, +1% area to +40%, +1 amount per 10), who counts as passive, who may be anointed, and the card line.
+- **`scripts/SovereignRite.cs`** is the one authority on the numbers and the rules: the gate (level 28, three
+  active spells, 16 fuel behind the chosen one), the power per level of fuel (+0.5% damage, -0.8% cooldown
+  to -30%, +1% area to +40%, +1 amount per 20, as tuned below), who counts as passive, who may be anointed, and the card line.
 - **It is a recipe in `ComboCatalog`** (`IsRite`, second ingredient `AnyActiveSpell`, read "any active spell
   you hold"). `Evaluate` never calls it Ready and `ComboCatalog.Fusions` leaves it out; the strip offer is
   `Player.TryBuildSovereignOffer` (`scripts/Player.Sovereign.cs`), on the conjunction plate, "✶ CONJUNCTION
   Sovereign Rite". The selection is `sovereign_rite:<spell id>`; `TryAddOrLevelSpell` hands it to `TryAnoint`,
   which re-checks the offer and the target before it does anything.
 - **The page** is the conjunction page with one card per active spell ("Sovereign Fireball", a "+24 fuel"
-  chip, "x2.7 damage, -19% cooldown, +24% area, +2 amount"), narrower cards when there are more than three,
+  chip, "x1.1 damage, -19% cooldown, +24% area, +1 amount"), narrower cards when there are more than three,
   the focus spotlight on, Back cancelling without spending the pick. A spell the Rite will not take, or one
   with less than 16 fuel behind it, is shown locked with the reason.
 - **The power is a milestone the anointed spell carries**, `SpellData.SovereignBoon`, the fourth entry of
@@ -198,10 +204,40 @@ Sections 1-6 as written, with the decisions below. Where to look:
    only to a spell that reads them, so a card never promises a number its spell ignores.
 5. **The anointed spell cannot be cut by the Scribe's Penknife** (the Rite never undoes). A silenced one can,
    and its fuel goes with it.
-6. **Silenced spells keep their element tags**: they are still held, so no tier moves.
+6. **The Rite's own Feat pays 250 Arcane Energy.** The Warden of the Deep's deed pays the Rite itself, so its
+   "Conjunction: Sovereign Rite" Feat (met the first time the strip offers it) could not pay the spell, and a
+   deed needs reward words.
+7. **A silenced spell is offered no Ascension and no Apotheosis**: it levels to 8 on plain "+1 fuel" cards
+   (`CardLevelCap`), since a form it never fires would change nothing but its name.
 
-**Measured (2026-11-02): far stronger than 1.3 once it is pointed at the spell the build carries, and the
-offer comes about two minutes early.** `_BalanceHarness --seek-sovereign --all-unlocked --immortal`,
+Silenced spells also keep their element tags: they are still held, so no tier moves.
+
+**Tuned (2026-11-02), as section 6 asks: +0.5% damage a level of fuel, +1 amount per 20, the gate at level
+28.** Same harness, seed and timescale as the first table below, at most two runs at a time, the planned
+policy anointing the build's main spell the moment it first opens (`--anoint=top`):
+
+| wizard | build | offered (min, level) | taken (min, level) | anointed (its level), share | fuel at taking -> 15:00 | dmg/s before -> after | ratio |
+|---|---|---|---|---|---|---|---|
+| Pyromancer | planned | 10.4, L28 | 10.7, L29 | Cinderbreath (8), 0.84 | 16 -> 27 | 1129 -> 1579 | **x1.40** |
+| Frostweaver | planned | 11.5, L28 | 12.6, L30 | Cone of Cold (8), 0.71 | 16 -> 25 | 947 -> 1367 | **x1.44** |
+| Stormcaller | planned | 12.2, L28 | 12.8, L29 | Chain Lightning (8), 0.94 | 16 -> 19 | 868 -> 1160 | **x1.34** |
+| Pyromancer | ordinary | 10.6, L28 | 10.6, L28 | Cinderbreath (8), 0.83 | 18 -> 33 | 886 -> 1500 | x1.69 |
+
+Mean of the three planned runs **x1.39** (1.34-1.44); the ordinary build, taking it the moment it opened
+with 18 fuel, x1.69. The gate at 28 puts the planned build's first offer at **10.4-12.2 minutes** (11.0,
+10.3 and 11.5-11.7 in the other runs at 28), so three actives and 16 fuel are unchanged.
+
+How it got there, on the same seed: at +1% damage and +1 amount per 10 the Pyromancer was x1.67 and the
+Frostweaver x1.47. Taking damage from 1% to 0.5% moved the Frostweaver (whose cone reads no amount) only to
+x1.44: with damage at nothing the cooldown and area steps alone hold the main spell near x1.3, and a spell
+that reads an amount (Cinderbreath's tongues) well over it - so the amount step went to one per 20 as well,
+and the Pyromancer came to x1.40. A third pass halved the area step too (+0.5% to +20%): x1.61 and x1.19, a
+mean no different from the pass before. **The runs scatter by about 0.2 either way**, so a cut finer than
+this one cannot be told from the noise with single runs; the area step was put back as drafted. If Eric
+wants it nearer 1.3, damage at nothing (about x1.3 on these figures) is the next step, then cooldown.
+
+**First measured (2026-11-02), at the draft's numbers (+7%, per 10, level 25): far stronger than 1.3 once it
+is pointed at the spell the build carries, and the offer comes about two minutes early.** `_BalanceHarness --seek-sovereign --all-unlocked --immortal`,
 seed 11, timescale 3, three runs at a time. The ratio is the loadout's damage a second (every source) over
 the 60 s after the Rite against the 60 s before; "share" is the anointed spell's part of the minute before.
 
@@ -223,8 +259,8 @@ What the table says:
   against section 4's target of about 1.3. On the numbers, the anointed spell alone gains about x3 at 16
   fuel (Frostweaver's Obsidian Spike: share 0.70, ratio 2.26) and about x5 with an amount it can use (the
   Stormcaller's Meteor Swarm: share 0.35, ratio 1.71). To land near 1.3 at the gate the damage per fuel
-  wants to be about half (3-3.5%), or the target read at the end of a run (fuel 30-40) rather than at the
-  offer. **Not retuned** - section 4's numbers stand until Eric says.
+  wants to be far lower, or the target read at the end of a run (fuel 30-40) rather than at the offer. This
+  was the starting point of the tuning above.
 - **The gate makes the obvious target the last to open.** It counts the OTHER spells' levels, so the spell a
   build pours its levels into is the one with the least fuel behind it: at its first offer every run's best
   spell (level 8, beside spells at 1-3) was locked, and only a spell the run had just picked up could be
@@ -233,8 +269,7 @@ What the table says:
 - **The offer lands at minute 9.1-9.4 at level 25** (8.3 and 11.2 the outliers), before section 6's 11-12.
   These bots reached level 29-31 by minute 11-12, so that is where the gate would have to move for the same
   bots - but they are immortal, own everything and walk to every orb, and `.ai/run-pacing.md`'s planned bot
-  is level 26 at 10.7 and 29 at 12.2. **Not moved**: Eric approved 25, and a gate that waits for the strongest
-  spell to be choosable already puts the taking at 10.9-13.5 for a planned build.
+  is level 26 at 10.7 and 29 at 12.2. The tuning above moved it to 28.
 - **Read the ratio as power, not kill speed.** The bots kill what the spawner sends from about minute 8
   (kills ≈ spawns, 420-450 a minute), and the damage a source is credited with is every hit's full amount,
   overkill included. Against three times the enemies' health (`--enemy-hp=3`), to get off that ceiling, the

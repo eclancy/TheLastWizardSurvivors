@@ -36,8 +36,9 @@ public static class SovereignRite
 
 	// --- the offer (section 3) ------------------------------------------------------------------------
 
-	/// <summary>The player level the strip waits for.</summary>
-	public const int MinimumPlayerLevel = 25;
+	/// <summary>The player level the strip waits for. 25 in the doc's first draft; moved by section 6's
+	/// measurement so a planned build is first offered it at minute 11-12 (section 8, "Tuned").</summary>
+	public const int MinimumPlayerLevel = 28;
 
 	/// <summary>Active spells held, the anointed one among them.</summary>
 	public const int MinimumActiveSpells = 3;
@@ -47,15 +48,20 @@ public static class SovereignRite
 
 	// --- the power (section 4), per level of fuel -------------------------------------------------------
 
-	public const float DamagePerFuel = 0.07f;
+	// Section 4 started at 7%, which made the build's main spell, anointed at the gate's 16 fuel, x2.3-3.0 the
+	// whole loadout against a 1.3 target: the cooldown, area and amount steps carry most of that on their own.
+	// Tuned by section 6's measurement to 0.5%, which measured x1.34-1.44 (section 8, "Tuned").
+	public const float DamagePerFuel = 0.005f;
 	public const float CooldownPerFuel = 0.008f;
 	/// <summary>The cooldown never falls below this share of what it was (-30%).</summary>
 	public const float CooldownFloor = 0.70f;
 	public const float AreaPerFuel = 0.01f;
 	/// <summary>The area never grows past this (+40%).</summary>
 	public const float AreaCap = 1.40f;
-	/// <summary>One more projectile, strike or tentacle for every this many levels of fuel.</summary>
-	public const int FuelPerAmount = 10;
+	/// <summary>One more projectile, strike or tentacle for every this many levels of fuel. 10 in section 4's
+	/// draft, which kept a spell that reads an amount (Cinderbreath's tongues) over the target however far the
+	/// damage was cut; at 20 the gate's 16 fuel gives none and a full book's 40 gives two.</summary>
+	public const int FuelPerAmount = 20;
 
 	/// <summary>"Sovereign Cinderbreath": what the anointed spell is called for the rest of the run.</summary>
 	public const string NamePrefix = "Sovereign ";
@@ -148,7 +154,7 @@ public static class SovereignRite
 		boon.ProjectileCountBonus = gains.AmountBonus;
 	}
 
-	/// <summary>"x3.8 damage, -30% cooldown, +40% area, +4 amount": a chooser card's line, the numbers that apply.</summary>
+	/// <summary>"x1.2 damage, -30% cooldown, +40% area, +2 amount": a chooser card's line, the numbers that apply.</summary>
 	public static string GainLine(SovereignGains gains)
 	{
 		var parts = new List<string>();
