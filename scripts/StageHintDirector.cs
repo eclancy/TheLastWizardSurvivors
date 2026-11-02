@@ -40,6 +40,8 @@ public partial class StageHintDirector : Node
 	private StageHintCue cue;
 	private int shown;
 	private bool retired;
+	// Holding the screen's turn (Announcements) while its line and cue are up.
+	private bool holdingTurn;
 
 	/// <summary>How many hints this run has played.</summary>
 	public int Shown => shown;
@@ -51,6 +53,7 @@ public partial class StageHintDirector : Node
 
 	public override void _ExitTree()
 	{
+		Announcements.Release(this);
 		if (caption != null && IsInstanceValid(caption))
 			caption.QueueFree();
 		if (cue != null && IsInstanceValid(cue))
@@ -104,6 +107,11 @@ public partial class StageHintDirector : Node
 
 	public override void _Process(double delta)
 	{
+		if (holdingTurn && (caption == null || !caption.Showing) && (cue == null || !cue.Showing))
+		{
+			holdingTurn = false;
+			Announcements.Release(this);
+		}
 		if (retired || Game == null || Hint == null)
 			return;
 
@@ -150,6 +158,8 @@ public partial class StageHintDirector : Node
 	private void Retire()
 	{
 		retired = true;
+		if (!holdingTurn)
+			Announcements.Release(this);
 		caption?.Dismiss();
 		cue?.Dismiss();
 	}
@@ -168,6 +178,12 @@ public partial class StageHintDirector : Node
 			retired = true;
 			return false;
 		}
+
+		// Its turn (Announcements): a hint that falls due under an achievement, an event's line or a banner
+		// waits until it has gone, and is played then. The pace clock is not moved, so the next one is not.
+		if (!Announcements.Request(this, Announcements.Kind.Hint))
+			return false;
+		holdingTurn = true;
 
 		Vector2 source = NearestSite(player.GlobalPosition);
 		string line = StageHintCatalog.LineFor(Hint, shown);

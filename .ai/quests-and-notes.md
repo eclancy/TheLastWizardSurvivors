@@ -169,8 +169,28 @@ level-up). It is Pausable and takes no input. It lasts **2.1 s**:
 Two or three quests are written smaller, so the block stays above the player. Nothing is allocated while
 it plays: the mote pool and the letter offsets are made once.
 
-**Sequence at a run's start:** the opening, then (on a first visit) the note, otherwise the chapter banner
-after the opening rather than under it.
+**Sequence at a run's start:** the opening, then (on a first visit, or while a clue remains) the note,
+otherwise the chapter banner after the opening rather than under it.
+
+### Taking turns (2026-11-01)
+
+Eric: *"announcements should not stack on top of each other. i just saw the enchanted forest introduction
+with the first blood achievement stacked on top of it."* `Announcements` is the one owner of the screen's
+messages: each asks before it shows (`Request`, true when it may), holds the turn while it is up and lets go
+when it has gone (`Release`); the rest wait, first come first served, and ask again each frame.
+
+| who | kind | holds |
+|---|---|---|
+| the run's opening (`Node2DGame.StartRunOpening`): the quests written in big, then the chapter banner | Opening | from the run's first frame until the banner has faded, or hands it to the note (`Pass`) |
+| the chapter note, on both canvases | Note | until it is put away - and once written and up 3 s, it makes way for anything waiting (`AnyWaiting`), instead of its full 7.5 s |
+| the achievement / set plate (`SetAssembledMoment`) | Achievement | each moment its own turn, so others can go between a run of three |
+| a side event's announcement and its win line (`SideEvent`); the wayfinder's line (`AnnouncementWaiter`) | Line | while they show; the win line's five seconds start when it gets the turn |
+| a chapter hint's line and cue (`StageHintDirector`) | Hint | while either is up; a hint due under something else plays when it has gone, without moving the next |
+| a run banner: a boss's arrival, a Boss Rush fall, the way home, the Throne's lines | Banner | **never waits**: it takes the screen at once, and whoever held it is suspended (hidden, its clock stopped) and carries on after |
+
+The onboarding tips wait while anything is held. Things that belong to what is happening are not in it and
+keep their own places: the objective line while an event runs, the tracked quests and the edge pointers. First Blood earned in the opening plays when the opening is done: after the banner, or
+after the note has been written and read for three seconds.
 
 ## 6. Save
 

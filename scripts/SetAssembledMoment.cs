@@ -29,6 +29,8 @@ using WizardSurvivors.scripts;
 /// glow closes on nothing and the reward appears in the flash. One queue for both, so a set and an
 /// achievement - or three achievements met by one kill - play one after another and never on top of
 /// each other. The plate stands clear of the phone's camera hole (SafeArea.Insets) as well as the HUD.
+/// And it takes its turn with every other message on the screen (Announcements): First Blood in the
+/// opening plays when the opening is done, not over it.
 /// </remarks>
 public partial class SetAssembledMoment : CanvasLayer
 {
@@ -204,6 +206,7 @@ public partial class SetAssembledMoment : CanvasLayer
 			showing = null;
 			root.Visible = false;
 			SetProcess(false);
+			Announcements.Release(this);
 			return;
 		}
 
@@ -242,6 +245,14 @@ public partial class SetAssembledMoment : CanvasLayer
 	{
 		if (showing == null)
 			return;
+		// Its turn (Announcements): a plate waits for the run's opening, a banner, an event's line or a
+		// hint to finish rather than standing on top of it, and a boss's banner cutting in holds it where
+		// it is, hidden, until the banner has gone. Its sound waits with it.
+		if (!Announcements.Request(this, Announcements.Kind.Achievement) || Announcements.IsSuspended(this))
+		{
+			root.Visible = false;
+			return;
+		}
 
 		clock += (float)delta;
 		root.Visible = true;
@@ -256,8 +267,14 @@ public partial class SetAssembledMoment : CanvasLayer
 		float fade = clock <= HoldUntil ? 1f : Mathf.Clamp(1f - (clock - HoldUntil) / FadeSeconds, 0f, 1f);
 		root.Modulate = new Color(1f, 1f, 1f, fade);
 		if (clock >= HoldUntil + FadeSeconds)
+		{
+			// Each moment takes its own turn, so a hint or a line waiting behind a run of three can go between.
+			Announcements.Release(this);
 			StartNext();
+		}
 	}
+
+	public override void _ExitTree() => Announcements.Release(this);
 
 	// Everything is placed from the viewport each frame, so a window resized mid-moment, or the
 	// phone's portrait canvas, keeps the object over the player and the plate on screen.

@@ -187,10 +187,17 @@ public partial class WayfinderPickup : Node2D
 		var overlay = Game?.GetNodeOrNull<CanvasLayer>("UIOverlay");
 		if (overlay == null)
 			return;
+		// It waits its turn (Announcements): it stands in the band the achievement plate uses.
+		string text = TakenLine(Kind);
+		AnnouncementWaiter.Queue(overlay, Announcements.Kind.Line, LineSeconds, () => WriteLine(overlay, text));
+	}
+
+	private static void WriteLine(CanvasLayer overlay, string text)
+	{
 		var label = new Label
 		{
 			Name = "WayfinderLine",
-			Text = TakenLine(Kind),
+			Text = text,
 			HorizontalAlignment = HorizontalAlignment.Center,
 			AutowrapMode = TextServer.AutowrapMode.WordSmart,
 			MouseFilter = Control.MouseFilterEnum.Ignore,

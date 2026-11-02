@@ -35,6 +35,8 @@ public partial class ChapterNoteCard : CanvasLayer
 {
 	private const float WriteSecondsPerChar = 0.028f;
 	private const float HoldSeconds = 7.5f;
+	// How long it stays, once written, when another message is waiting for the screen.
+	private const float ReadSecondsWhenWaitedFor = 3f;
 	private const float FadeSeconds = 0.6f;
 	private const float WideWidth = 430f;
 	private const float NarrowSide = 40f;
@@ -205,7 +207,12 @@ public partial class ChapterNoteCard : CanvasLayer
 		tween.TweenProperty(page, "position:y", page.Position.Y - 12f, 0.35f).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
 	}
 
-	public override void _ExitTree() => HudKeepOut.Clear(this);
+	public override void _ExitTree()
+	{
+		HudKeepOut.Clear(this);
+		// The note holds the opening's turn (Node2DGame.ShowChapterNote); the plate waits for it.
+		Announcements.Release(this);
+	}
 
 	public override void _Process(double delta)
 	{
@@ -224,6 +231,11 @@ public partial class ChapterNoteCard : CanvasLayer
 		if (!dismissing)
 			HudKeepOut.Set(this, page.GetGlobalRect().Grow(6f));
 		if (!dismissing && clock > 0.25f + writeSeconds + HoldSeconds)
+			Dismiss();
+		// It holds the screen's turn (Announcements). Once it is written and has been up long enough to
+		// read, a message waiting behind it - an achievement earned in the first seconds - may have it.
+		if (!dismissing && clock > 0.25f + writeSeconds + ReadSecondsWhenWaitedFor
+			&& Announcements.Holds(this) && Announcements.AnyWaiting)
 			Dismiss();
 	}
 

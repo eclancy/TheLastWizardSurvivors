@@ -1967,7 +1967,7 @@ public partial class Node2DGame : Node2D
 		string text = IsBossRush
 			? $"Boss Rush • {GetCurrentStageName()}\n{BossRushRosterCount} wardens, one after another. The last is his."
 			: $"{GetCurrentStageName()} • {environmentProfile.DisplayName}\n{GetCurrentStageFlavorText()}";
-		ShowRunBanner(text, environmentProfile.IntroTint, 2.4f, 0.6f);
+		ShowRunBanner(text, environmentProfile.IntroTint, 2.4f, 0.6f, opening: true);
 	}
 
 	// These were two ten-entry switches naming stages that StageSelection had never heard of and
@@ -5979,11 +5979,26 @@ public partial class Node2DGame : Node2D
 	// closing Hide would take the new banner down with it.
 	private Tween? runBannerTween;
 	private const float BannerTop = 42f;
+	// The run banner's turn on the screen (Announcements): the chapter's opening line is the opening's own
+	// (this node); every other banner - a boss's arrival above all - takes the screen at once and holds it
+	// as this until it has faded.
+	private readonly object runBannerTurn = new();
+	private object? runBannerHolder;
 
-	private void ShowRunBanner(string text, Color tint, float holdSeconds, float fadeSeconds = 0.7f)
+	private void ShowRunBanner(string text, Color tint, float holdSeconds, float fadeSeconds = 0.7f, bool opening = false)
 	{
+		object holder = opening ? this : runBannerTurn;
 		if (stageIntroLabel == null)
+		{
+			Announcements.Release(holder);
 			return;
+		}
+		if (!opening)
+			Announcements.Request(holder, Announcements.Kind.Banner);
+		// A banner cut short by this one gives up its turn here: its tween, and the release at its end, die.
+		if (runBannerHolder != null && !ReferenceEquals(runBannerHolder, holder))
+			Announcements.Release(runBannerHolder);
+		runBannerHolder = holder;
 
 		runBannerTween?.Kill();
 		var panel = stageIntroLabel.GetParent() as Control;
@@ -6025,6 +6040,12 @@ public partial class Node2DGame : Node2D
 			tween.Parallel().TweenProperty(panel, "modulate:a", 0.0f, fadeSeconds);
 			tween.TweenCallback(Callable.From(() => panel.Hide()));
 		}
+		tween.TweenCallback(Callable.From(() =>
+		{
+			Announcements.Release(holder);
+			if (ReferenceEquals(runBannerHolder, holder))
+				runBannerHolder = null;
+		}));
 	}
 
 	private void OnBossDefeated(string bossId)
@@ -6838,6 +6859,11 @@ public partial class Node2DGame : Node2D
 	{
 		SaveData? data = CurrentSaveData();
 		StageDefinition? stage = StageCatalog.GetByIndex(Global.SelectedStageIdx);
+		// The opening holds the screen until it is done (Announcements): an achievement earned in the first
+		// seconds - First Blood - waits for it instead of landing on top of it. Let go by the chapter's banner
+		// when it has faded, or on handing over to the note.
+		Announcements.Reset();
+		Announcements.Request(this, Announcements.Kind.Opening);
 		if (IsBossRush || data == null)
 		{
 			if (questTracker != null)
@@ -6866,7 +6892,7 @@ public partial class Node2DGame : Node2D
 			ChapterNotes.MarkSeen(data, stage!.Id);
 			GetNodeOrNull<SaveManager>("/root/SaveManager")?.SaveGame();
 		}
-		Action next = note ? () => ChapterNoteCard.Show(this, stage!, data, intro: firstVisit) : ShowStageIntroLabel;
+		Action next = note ? () => ShowChapterNote(stage!, data, firstVisit) : ShowStageIntroLabel;
 		if (opening <= 0f)
 		{
 			next();
@@ -6878,6 +6904,15 @@ public partial class Node2DGame : Node2D
 			if (IsInstanceValid(this))
 				next();
 		};
+	}
+
+	// The note in place of the banner keeps the opening's turn until it is put away: it is the chapter's
+	// introduction, and nothing is written over it or beside it in the meantime. A message waiting behind it
+	// cuts its long idle hold short (ChapterNoteCard), so First Blood waits seconds, not the note's ten.
+	private void ShowChapterNote(StageDefinition stage, SaveData data, bool intro)
+	{
+		ChapterNoteCard card = ChapterNoteCard.Show(this, stage, data, intro);
+		Announcements.Pass(this, card, Announcements.Kind.Note);
 	}
 
 	private void OnChestSetCompleted(string setId)
@@ -7234,9 +7269,10 @@ public partial class Node2DGame : Node2D
 			return;
 
 		// A tip waits while a banner is up (ShowRunBanner): the two share the band under the timer,
-		// and the chapter's opening line or a boss's name is the one to read. A tip cut short by one
-		// is shown again once it has gone.
-		if (stageIntroLabel?.GetParent() is Control bannerPanel && bannerPanel.Visible)
+		// and the chapter's opening line or a boss's name is the one to read - and while any other
+		// message has the screen (Announcements: an achievement, a hint, an event's line). A tip cut
+		// short by one is shown again once it has gone.
+		if ((stageIntroLabel?.GetParent() is Control bannerPanel && bannerPanel.Visible) || Announcements.AnyHeld)
 		{
 			if (onboardingTipLabel.Visible)
 			{

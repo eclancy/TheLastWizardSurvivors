@@ -110,6 +110,10 @@ public abstract partial class SideEvent : Node2D
 	private string resolvedText = string.Empty;
 	private float announceSeconds;
 	private const float AnnounceSeconds = 3.5f;
+	// The announcement and the win line wait their turn (Announcements) - the win line above all, which
+	// lands with the event's achievement - and hold it while they show.
+	private bool announcePending;
+	private bool holdingTurn;
 	private const float ResolvedLingerSeconds = 5f;
 
 	/// <summary>Seconds this event has existed, for flicker and animation. Game time.</summary>
@@ -177,6 +181,7 @@ public abstract partial class SideEvent : Node2D
 	{
 		if (lightLayer != null && IsInstanceValid(lightLayer))
 			lightLayer.Draw -= OnLightDraw;
+		Announcements.Release(this);
 		if (objectiveLabel != null && IsInstanceValid(objectiveLabel))
 			objectiveLabel.QueueFree();
 		if (pointer != null && IsInstanceValid(pointer))
@@ -193,6 +198,19 @@ public abstract partial class SideEvent : Node2D
 
 		if (state == State.Resolved)
 		{
+			// The win line waits for its turn before its five seconds start; nothing else does.
+			if (!string.IsNullOrEmpty(resolvedText) && !holdingTurn)
+			{
+				if (!Announcements.Request(this, Announcements.Kind.Line))
+				{
+					if (objectiveLabel != null)
+						objectiveLabel.Modulate = new Color(1f, 1f, 1f, 0f);
+					if (pointer != null) pointer.Target = null;
+					PointsOfInterest.ObjectiveTarget = null;
+					return;
+				}
+				holdingTurn = true;
+			}
 			resolvedSeconds += dt;
 			if (pointer != null) pointer.Target = null;
 			PointsOfInterest.ObjectiveTarget = null;
@@ -242,7 +260,18 @@ public abstract partial class SideEvent : Node2D
 		if (state == State.Resolved)
 			return;
 
+		if (announcePending && Announcements.Request(this, Announcements.Kind.Line))
+		{
+			announcePending = false;
+			holdingTurn = true;
+			announceSeconds = AnnounceSeconds;
+		}
 		announceSeconds -= dt;
+		if (holdingTurn && !announcePending && announceSeconds <= 0f && state == State.Running)
+		{
+			holdingTurn = false;
+			Announcements.Release(this);
+		}
 		if (objectiveLabel != null)
 			objectiveLabel.Text = announceSeconds > 0f ? Announcement : Objective;
 		Vector2? target = PointerTarget;
@@ -260,7 +289,8 @@ public abstract partial class SideEvent : Node2D
 		if (state != State.Dormant)
 			return;
 		state = State.Running;
-		announceSeconds = AnnounceSeconds;
+		announcePending = true;
+		announceSeconds = 0f;
 		foreach (PointOfInterest site in sites)
 			site.Seen = true;
 		Begin();
