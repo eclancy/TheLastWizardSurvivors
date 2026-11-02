@@ -220,7 +220,7 @@ four disagreeing copies (`StageSelection`, `GameOverScreen`, two switches in `No
 `StageEnvironmentCatalog.GetForStageIndex`). Chapters with `IsPlayable = false` are listed but not
 enterable; flipping that is the last step of building one, not the first.
 
-`SaveData.CurrentSchemaVersion` is 20 and **`SaveData.Migrate()` is now real** — it runs from
+`SaveData.CurrentSchemaVersion` is 21 and **`SaveData.Migrate()` is now real** — it runs from
 `SaveManager.LoadGame`. Before 8 there was no migration at all. Any change that narrows what a save
 implicitly grants must add a migration step, or it silently confiscates content from existing
 players. Schema 11 added `SeenAscensionIds` — the ascension paths whose requirements the player
@@ -236,7 +236,10 @@ unlock onto achievements (`MigrateToAchievementUnlocks`: `GlimpsedSecretIds`, `L
 event deeds seeded from what the save owns, every done deed reconciled, the Emberdeep kept open for a
 save that met the old gate); 20 is the difficulty curve's (`AscensionLearned` for any save with a
 run on record, the re-priced Fate Fracture and Emberheart levels refunded,
-`ValidateDifficultyMigration`). The castle's planned Dungeon move takes 21. Steps 8-16 read frozen
+`ValidateDifficultyMigration`); 21 moves the Cursed Dungeon into the castle (`MigrateDungeonIntoCastle`:
+what a save could enter under the old order is written down, the Dungeon itself into
+`GrandfatheredStageIds` - entry and evidence of nothing, `.ai/endgame-castle.md` 1.5,
+`ValidateDungeonMove`). Steps 8-16 read frozen
 schema-18 lists, never the live catalog, and `ValidateAchievementMigration` runs sample saves through all of it.
 
 **A branch with a schema bump migrates the developer's REAL save the moment any Godot run in it

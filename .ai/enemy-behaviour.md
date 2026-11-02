@@ -938,7 +938,8 @@ voices change together.
 | Wizard Dude | 0.66 every fan is cast twice down the same wedge. 0.34 enrage, wider fan |
 
 **Health, second** (`BossCatalog`; the value before is on each line): Elderbark 9,500, the Hayward
-10,000, the Ninth Stone 46,000, the Choir 3 x 26,000, the Gaoler 150,000, Mother Rot 170,000, the
+10,000, the Ninth Stone 46,000, the Choir 3 x 26,000, the Gaoler 150,000 (900,000 since he moved into the
+castle, measured below; the rush keeps 150,000), Mother Rot 170,000, the
 Archivist 140,000, the Still Warden 400,000, the Long Coil 300,000, the Warden of the Deep 500,000,
 Wizard Dude 9,000; and the castle's two, the Constable 400,000 (11,800, the castle doc's first guess)
 and the Seneschal 440,000 (13,000, its guess), each measured below under its own protocol.
@@ -1050,6 +1051,36 @@ and holds the field 2.3-2.9 s, flees at each threshold to a room 740-3,600 px of
 later, and falls in 2.4-2.9 s, the body freed. Six runs in a row clean; before them the probe's
 wizard twice died to the household it walked through and twice stuck on a route that hugged a jamb,
 which keeping it whole, the route's wall clearance and a sidestep fixed.
+
+**The Gaoler in the castle, measured** (C2, 2026-11-02, `wip/dungeon-move`). Since the Cursed Dungeon
+moved into the castle he is chapter eleven, behind the Constable, and the Dungeon's difficulty row is the
+Emberdeep's. The same protocol as the Constable's and the Seneschal's (`--stage=1 --farmed --survivor
+--immortal --policy=ordinary --stop-overrun=60 --minutes=21`, `--fixed-fps 30 --timescale=1`), three wizards
+at the seeds above, in batches of three; fight = boss down minus 15:00, the arrival included. Batch a is the
+agent's who began C2 (2026-11-01, farmed Arcane 6,800), the rest on this branch after the merge of
+`main-ff86ni` (Arcane 6,150).
+
+| batch | health | Stormcaller: L15, fight | Frostweaver | Pyromancer |
+|---|---|---|---|---|
+| a | 420,000 | 48, **0.6** | 41, **2.5** | 37, **1.5** |
+| b | 420,000 | 40, **2.8** | 51, **1.1** | 43, **1.3** |
+| c | 700,000 | 43, **1.4** | 51, **0.8** | 39, **1.8** |
+| d | **900,000** | stopped: the bot stalled in a corridor and gathered no XP after minute 6 (L23 at 13 min), a harness fault rather than a build; a rerun at seed 77 was stopped at 3.5 min of game for time, the machine shared with other sessions' runs | 51, **1.2** | 43, **2.7** |
+
+Read as the other tables are: one run a cell, and the build decides it. The same seed and wizard reached
+L40 and L48 on two runs, and the minutes per 100,000 of his health ran from 0.11 to 0.67 across the eleven
+fights (median 0.26) - so at 900,000 the median build is about 2.3 minutes, the fastest about one, and the
+slowest seen about six.
+
+Placed between the Constable and the Seneschal on the curve, at 420,000, he fell in a minute and a half: he
+charges down a lane at the player and stands in every area spell while he does, so he is in reach for the
+whole fight and takes damage about twice as fast for his health as the Seneschal, who leaves. **900,000**
+puts the median build at two to three minutes and the fastest (Frostweaver, L51) at a minute, with the
+spread the other castle bosses have. The fight itself is unchanged - lane, dismount at half, enrage - so the
+castle doc's third phase (4.3, *"if at 12,500 the fight is long rather than hard"*) was not added: he
+measured short, not long. If a strong build still makes him a formality in a person's hands, that phase is
+the lever, not more health. The rush meets him at 150,000 (`BossRushHealth`) and the Throne's procession
+at its own 30,000, so neither moved.
 
 ### The Hollow Choir, played (2026-11-01)
 

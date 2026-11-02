@@ -42,6 +42,10 @@ line in the order (section 9, decision 1).
 
 \* While the two new chapters are not playable, Elderbark opens the Sunken Cave.
 
+**Since piece C2 (2026-11-02) the Cursed Dungeon is not fifth**: it moved into the castle, between the
+Last Bridge and the Court, and the Choir opens the Swamp. `.ai/endgame-castle.md` 1.4 is the order now, 1.5
+the save (schema 21) and section 13 what was built. The table above is the order this document built.
+
 The Emberdeep is still gated on **every spell recovered and every wizard freed**, not on a boss,
 and is still last. (Since schema 19 it is a gate chapter instead, `StageGate.PreviousBossAndWizards`:
 the Long Coil beaten and every wizard whose rescue comes before it - `.ai/achievements-and-secrets.md`

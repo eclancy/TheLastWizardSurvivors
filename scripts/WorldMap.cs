@@ -318,10 +318,11 @@ public partial class WorldMap : Control
 		int found = stops.FindIndex(s => s.Id.Equals(want ?? string.Empty, StringComparison.OrdinalIgnoreCase));
 		if (found >= 0)
 			return found;
-		// A first visit: the furthest open chapter of the campaign, where the road has got to.
+		// A first visit: the furthest open chapter of the campaign, where the road has got to - on the road,
+		// so an old save's grandfathered Dungeon (an island past the dark, OffRoad) is not where he wakes.
 		for (int i = stops.Count - 1; i >= 0; i--)
 		{
-			if (!stops[i].IsBossRush && !IsOutside(stops[i]) && stops[i].Look == WorldMapView.StopLook.Open)
+			if (!stops[i].IsBossRush && !stops[i].OffRoad && !IsOutside(stops[i]) && stops[i].Look == WorldMapView.StopLook.Open)
 				return i;
 		}
 		return 0;
