@@ -519,6 +519,8 @@ public partial class _UiShot : Node
 	private int frames;
 	private bool captured;
 	private bool latePressed;
+	private bool codexDump;
+	private bool codexDumped;
 	private string hoverLate;
 	private bool hovered;
 
@@ -1040,6 +1042,10 @@ public partial class _UiShot : Node
 				lockBranch = true;
 			else if (arg == "--ink-report")
 				inkReport = true;
+			// THE EVOLUTION CODEX (.ai/evolution-codex.md). --codex-dump prints the whole model after the warmup -
+			// in a run its in-run mode, on the menu its collection mode - to the log and user://codex-dump.txt.
+			else if (arg == "--codex-dump")
+				codexDump = true;
 			else if (arg.StartsWith("--tall-deal="))
 			{
 				tallDeal = int.Parse(arg.Substring("--tall-deal=".Length));
@@ -2578,6 +2584,20 @@ public partial class _UiShot : Node
 			GD.Print($"LAYER {key} frames={layerSeen[key]}");
 	}
 
+	// --codex-dump: the Evolution Codex's model as it would be opened right now - the run's, or the save's.
+	private void DumpCodex()
+	{
+		CodexContext context = FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame game
+			? game.BuildCodexContext()
+			: CodexContext.ForSave(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data);
+		CodexModel model = CodexModel.Build(context);
+		string dump = model.Dump();
+		GD.Print(dump);
+		using var file = FileAccess.Open("user://codex-dump.txt", FileAccess.ModeFlags.Write);
+		file?.StoreString(dump);
+		GD.Print($"_UiShot: codex dump written to {ProjectSettings.GlobalizePath("user://codex-dump.txt")}");
+	}
+
 	private void OnFramePostDraw()
 	{
 		if (layerCensus && FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame censusArena)
@@ -3217,6 +3237,11 @@ public partial class _UiShot : Node
 				}
 				return;
 			}
+		}
+		if (codexDump && !codexDumped)
+		{
+			codexDumped = true;
+			DumpCodex();
 		}
 		if (!string.IsNullOrEmpty(focusLate) && !focusLateDone)
 		{
