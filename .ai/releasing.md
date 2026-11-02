@@ -336,6 +336,12 @@ the machine, so do not trust it for this.
 
 ## Releasing a story reset
 
+**The next release is one** (Eric, 2026-11-02: "The next release will reset game progress for
+everyone"): raise the epoch to 2 in the release commit itself, so no branch run restarts the
+developer's save before then. It carries the slow start (`.ai/slow-start.md`). Copies of 0.10.0
+predate the epoch, so their updater fetches it without the warning; the new build still keeps their
+old save beside the new one on first launch.
+
 Decided 2026-11-02 (`.ai/decisions/2026-11-02-story-resets.md`): a release that changes the story
 restarts every player's progress, and they are warned before they download it. The game is in
 active development, and a save earned under a story that no longer exists is better started again

@@ -7,7 +7,30 @@ Eric, 2026-11-01:
 > increase that, like additional spell pages in the shop. In addition, we can unlock combination spells
 > and ascension via achievements or story progression. Let's plan out a good pace."
 
-**Status: design for Eric. Nothing is built.** On 2026-10-31 he asked for four slots as a difficulty
+**Status: answered by Eric (2026-11-02), to build.** His answers, which win over the table below
+where they differ:
+
+- **New systems are unlocked by an achievement and taught in a post-run cutscene.** *"I think new
+  systems should be unlocked in a post-run cutscene, after fulfilling an achievement, like finding a
+  landmark. The cutscene can then explain the new system."* So questions 4 and 5 are answered
+  otherwise: the Ascension, the Apotheosis and Conjunctions (and the Sovereign Rite after them) each
+  open when the save completes a chosen achievement - finding a landmark is his example, which
+  points at the stage secrets (`.ai/stage-secrets.md`) - and the next time a run ends, a short
+  cutscene plays before the results to show and explain what was learned. The cutscene is the
+  prologue's kind (`.ai/prologue.md`, `Prologue.cs`: generated panels, a line each), one per
+  system, played once per save and replayable from Options beside the prologue. Which achievement
+  teaches which system is still to be chosen and put to Eric with the build (a design pass first).
+- **Pages 5 and 6 from the shop** (question 3 as recommended); the 4th from the Survivor Feat
+  (question 2 as recommended).
+- **The next release resets everyone's progress** (question 11): it raises
+  `SaveData.CurrentProgressEpoch` to 2, so every save starts the slow start and no schema step is
+  needed to keep six pages for played saves. Raise the epoch **at release time**, not on a branch: a
+  Godot run of a branch with the new epoch restarts the developer's real save (backed up first, but
+  still). The 0.10.0 updater does not know to warn before it downloads (`.ai/releasing.md`); the
+  backup is still written on first launch.
+- **Questions 1, 3, 6, 7, 8, 9 and 10: yes, as recommended.**
+
+On 2026-10-31 he asked for four slots as a difficulty
 lever and withdrew it ("let's stick with 6 spells available to select", `.ai/difficulty-curve.md`). This
 does not reopen that: the full book stays six. It is about how a new save *gets* to six.
 
