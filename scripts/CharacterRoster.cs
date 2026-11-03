@@ -53,6 +53,9 @@ public static class CharacterRoster
 		// first on the character select: a saved index and --character=N must keep their wizard (index 14). The
 		// screen's order is SelectionOrder's.
 		"res://CharacterData_Archmage.tres",
+		// The Last Bridge's chapter wizard (.ai/chapter-wizards.md 4.9): Morgan le Fay, freed from her barge under the
+		// span. Appended, so every saved index keeps its wizard.
+		"res://CharacterData_Morgan.tres",
 	};
 
 	/// <summary>

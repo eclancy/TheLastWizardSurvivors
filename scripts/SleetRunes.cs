@@ -46,6 +46,10 @@ namespace TheOneHeMissed.scripts;
 //   Sigil Fan    (level 8) - every cast leaves at once, across a fan, and more of them.
 //   Turning Gale (level 8, +1 Wind) - at the end of its flight the wind turns every rune and it flies
 //                back to the player, striking again on the way.
+//   Fata Morgana (the Apotheosis, Morgan le Fay's; verb "double") - a mirage of the player walks beside him
+//                facing the other way (FataMorganaMirage), and every cast is let go twice: his stream from his
+//                hand along his facing, and the same stream, at the same strength, from the mirage's hand
+//                along its own - behind him. A second casting origin, in the same node and the same slots.
 public partial class SleetRunes : Node2D
 {
 	// Evolution ids. SpellEvolutionCatalog builds the options from these; this node reads them. The three
@@ -57,6 +61,8 @@ public partial class SleetRunes : Node2D
 	public const string PartingWindId = "sleet_runes_far_wind";
 	public const string SigilFanId = "sleet_runes_sigil_fan";
 	public const string TurningGaleId = "sleet_runes_turning_gale";
+	/// <summary>Morgan le Fay's Apotheosis (ApotheosisCatalog): the mirage, and every cast twice.</summary>
+	public const string FataMorganaId = "sleet_runes_fata_morgana";
 
 	/// <summary>The most runes one cast may hand over. Amount can push a count past this.</summary>
 	public const int MaxRunesPerCast = 16;
@@ -144,6 +150,7 @@ public partial class SleetRunes : Node2D
 		public bool Returns;       // Turning Gale
 		public bool Returning;     // on the way back
 		public bool Great;         // Great Rune
+		public bool FromMirage;    // Fata Morgana: let go by the mirage, and comes home to it under Turning Gale
 		public bool Parts;         // Parting Wind
 		public float Reach;        // half-width as a hit, before the body it meets
 		// Braided Wind: the line it weaves about, the way along it, how far either side, and where in
@@ -169,6 +176,9 @@ public partial class SleetRunes : Node2D
 	public Player PlayerRef { get; set; }
 	public SpellData SpellData { get; private set; }
 
+	/// <summary>Fata Morgana's mirage, the second casting origin; set by the player while the form is held.</summary>
+	public FataMorganaMirage Mirage { get; set; }
+
 	// The numbers of the last cast. Each rune takes its own when it is released.
 	private int damage = 6;
 	private float speed = 640f;
@@ -184,10 +194,12 @@ public partial class SleetRunes : Node2D
 	private int released;
 	private Color tint = Colors.White;
 
-	// The stream: runes owed by the last cast, and the clock that lets them go.
-	private int owed;
-	private int streamIndex;
-	private float releaseClock;
+	// The stream: runes owed by the last cast, and the clock that lets them go. Two of them: [0] his, [1] the
+	// mirage's under Fata Morgana - the same cast from a second hand, each along its own facing.
+	private readonly int[] owed = new int[2];
+	private readonly int[] streamIndex = new int[2];
+	private readonly float[] releaseClock = new float[2];
+	private bool doubled;
 
 	private readonly Rune[] runes = new Rune[MaxRunes];
 	private readonly ulong[] hitIds = new ulong[MaxRunes * MaxHitsPerRune];
@@ -236,22 +248,28 @@ public partial class SleetRunes : Node2D
 		great = spell.HasEvolution(GreatRuneId);
 		braided = spell.HasEvolution(BraidedWindId);
 		parting = spell.HasEvolution(PartingWindId);
+		doubled = spell.HasEvolution(FataMorganaId) && Mirage != null && IsInstanceValid(Mirage);
 		tint = visualTint;
 
 		count = Math.Clamp(count, 1, MaxRunesPerCast);
+		int streams = doubled ? 2 : 1;
 		if (fan)
 		{
-			ReleaseFan(count);
+			for (int k = 0; k < streams; k++)
+				ReleaseFan(count, k == 1);
 			return;
 		}
-		// A backlog is capped at two casts, so a cooldown cut mid-stream cannot pour.
-		bool idle = owed == 0;
-		owed = Math.Min(owed + count, count * 2);
-		if (idle)
+		for (int k = 0; k < streams; k++)
 		{
-			streamIndex = 0;
-			releaseClock = 0f;
-			ReleaseNext();
+			// A backlog is capped at two casts, so a cooldown cut mid-stream cannot pour.
+			bool idle = owed[k] == 0;
+			owed[k] = Math.Min(owed[k] + count, count * 2);
+			if (idle)
+			{
+				streamIndex[k] = 0;
+				releaseClock[k] = 0f;
+				ReleaseNext(k == 1);
+			}
 		}
 	}
 
@@ -259,13 +277,21 @@ public partial class SleetRunes : Node2D
 	{
 		var perfStart = FrameProfiler.Begin();
 		float dt = (float)delta;
-		if (owed > 0)
+		for (int k = 0; k < 2; k++)
 		{
-			releaseClock += dt;
-			while (owed > 0 && releaseClock >= StreamGap)
+			if (owed[k] <= 0)
+				continue;
+			// The mirage gone (the form lost with the spell): its stream is dropped, not let go from nowhere.
+			if (k == 1 && (Mirage == null || !IsInstanceValid(Mirage)))
 			{
-				releaseClock -= StreamGap;
-				ReleaseNext();
+				owed[k] = 0;
+				continue;
+			}
+			releaseClock[k] += dt;
+			while (owed[k] > 0 && releaseClock[k] >= StreamGap)
+			{
+				releaseClock[k] -= StreamGap;
+				ReleaseNext(k == 1);
 			}
 		}
 
@@ -296,38 +322,48 @@ public partial class SleetRunes : Node2D
 
 	// --- releasing ---------------------------------------------------------------------------------
 
-	private Vector2 Facing() =>
-		PlayerRef != null && IsInstanceValid(PlayerRef) ? PlayerRef.FacingDirection : Vector2.Right;
-
-	private Vector2 Hand(Vector2 heading) =>
-		(PlayerRef != null && IsInstanceValid(PlayerRef) ? PlayerRef.GlobalPosition : GlobalPosition) + heading * HandReach;
-
-	// The next rune of the stream, along the facing as it is NOW. Every other rune steps a little off
-	// the line, alternating sides, so a stream reads as several runes rather than one long streak.
-	private void ReleaseNext()
+	// The way a stream goes: his facing, or - for the mirage's stream - the mirage's, which is the other way.
+	private Vector2 Facing(bool mirage = false)
 	{
-		owed--;
-		Vector2 heading = Facing();
-		int k = streamIndex++;
+		if (mirage && Mirage != null && IsInstanceValid(Mirage))
+			return Mirage.Facing;
+		return PlayerRef != null && IsInstanceValid(PlayerRef) ? PlayerRef.FacingDirection : Vector2.Right;
+	}
+
+	private Vector2 Hand(Vector2 heading, bool mirage = false)
+	{
+		if (mirage && Mirage != null && IsInstanceValid(Mirage))
+			return Mirage.GlobalPosition + heading * FataMorganaMirage.HandReach;
+		return (PlayerRef != null && IsInstanceValid(PlayerRef) ? PlayerRef.GlobalPosition : GlobalPosition) + heading * HandReach;
+	}
+
+	// The next rune of a stream, along its facing as it is NOW. Every other rune steps a little off the line,
+	// alternating sides, so a stream reads as several runes rather than one long streak.
+	private void ReleaseNext(bool mirage = false)
+	{
+		int s = mirage ? 1 : 0;
+		owed[s]--;
+		Vector2 heading = Facing(mirage);
+		int k = streamIndex[s]++;
 		float offset = k == 0 ? 0f : ((k & 1) == 1 ? 1f : -1f) * (4f + 2f * ((k - 1) / 2 % 2));
 		Vector2 across = new Vector2(-heading.Y, heading.X);
-		Release(Hand(heading) + across * offset, heading);
+		Release(Hand(heading, mirage) + across * offset, heading, mirage);
 	}
 
 	// Sigil Fan: the whole cast at once, spread evenly across FanDegrees about the facing.
-	private void ReleaseFan(int count)
+	private void ReleaseFan(int count, bool mirage = false)
 	{
-		Vector2 heading = Facing();
+		Vector2 heading = Facing(mirage);
 		float spread = Mathf.DegToRad(FanDegrees);
 		for (int k = 0; k < count; k++)
 		{
 			float turn = count > 1 ? -spread * 0.5f + spread * k / (count - 1) : 0f;
 			Vector2 dir = heading.Rotated(turn);
-			Release(Hand(dir), dir);
+			Release(Hand(dir, mirage), dir, mirage);
 		}
 	}
 
-	private void Release(Vector2 at, Vector2 heading)
+	private void Release(Vector2 at, Vector2 heading, bool mirage = false)
 	{
 		int slot = -1;
 		for (int i = 0; i < MaxRunes; i++)
@@ -361,6 +397,7 @@ public partial class SleetRunes : Node2D
 			MaxPierce = runePierce,
 			Returns = returns,
 			Great = isGreat,
+			FromMirage = mirage,
 			Parts = parting,
 			Reach = isGreat ? HitRadius * GreatHitScale : HitRadius,
 			Line = at,
@@ -371,6 +408,8 @@ public partial class SleetRunes : Node2D
 			Live = true,
 		};
 		SfxPlayer.Instance?.PlayAt(SfxCatalog.SpellSleetRune, at, 0.08f, SfxCatalog.SpellSleetRune, SoundGapMs);
+		if (mirage)
+			FataMorganaMirage.CountRune();
 	}
 
 	// --- flight -------------------------------------------------------------------------------------
@@ -388,7 +427,8 @@ public partial class SleetRunes : Node2D
 				Vanish(ref k);
 				return;
 			}
-			Vector2 home = PlayerRef.GlobalPosition;
+			// Home is the hand that let it go: the mirage's runes are blown back to the mirage.
+			Vector2 home = k.FromMirage && Mirage != null && IsInstanceValid(Mirage) ? Mirage.GlobalPosition : PlayerRef.GlobalPosition;
 			Vector2 toHome = home - k.Pos;
 			if (toHome.LengthSquared() <= CatchRadius * CatchRadius)
 			{

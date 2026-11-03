@@ -251,6 +251,23 @@ public static class ApotheosisCatalog
 				"Count: the bigger the crowd, the bigger the count. Nobody in reach is left out.",
 				new Color(0.86f, 0.80f, 1.0f)),
 		},
+		// Morgan le Fay, freed from her barge under the Last Bridge (.ai/chapter-wizards.md 4.9). "Double" was nobody's:
+		// the mirage over the strait bears her name, and hers is of the player - his own figure walking beside him the
+		// other way, every cast of the runes let go again from its hand, behind him (SleetRunes.FataMorganaId,
+		// FataMorganaMirage, Player.Mirage.cs) - and what is near it chases it. Not an echo (the Sibyl's: her other
+		// spells again, weaker, from where she stands) and not a pull (nothing is dragged): the same runes at the same
+		// strength from a second origin, and a lure no boss answers. Ice, the one of its two the form deepens; no card
+		// on Sleet Runes trades Ice away (Great Rune adds it, Turning Gale adds Wind). No visual scale: the rune sheet
+		// is drawn at one size.
+		new()
+		{
+			CharacterId = "morgan", SpellId = "sleet_runes",
+			Element = Element.Ice, Verb = "double",
+			Form = Make(SleetRunes.FataMorganaId, "Fata Morgana", Element.Ice,
+				"A mirage of you walks beside you facing the other way and casts behind you. Enemies near it chase it.",
+				"Double: half of them chase a ghost. Every cast leaves both hands; no boss is fooled.",
+				new Color(0.78f, 0.96f, 1.0f), NoVisualScale),
+		},
 	};
 
 	// A form's visual lift is a 15% larger spell, but only where the spell's node keeps a visual scale.

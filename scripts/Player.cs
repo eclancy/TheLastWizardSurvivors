@@ -886,6 +886,10 @@ public partial class Player : CharacterBody2D
 		// the dark wizard missed. An axis no other wizard owns: not armour (the Geomancer), not a dodge on every hit (the
 		// boons' and Darkness's evasion), not a heal (.ai/difficulty-curve.md) - one death, refused, and nothing else.
 		"missed_once",
+		// Morgan le Fay (.ai/chapter-wizards.md 4.9): Avalon - the first extra life a run spends heals to full, not
+		// half, as the isle she carried the dying king to healed him. An axis no other wizard owns: not a heal over
+		// time (the Frostweaver), not a death refused (the Archmage) - what an extra life is worth, once.
+		"first_fall_full",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -940,6 +944,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "missed_once":
 				characterOverlooked = true;
+				return true;
+			case "first_fall_full":
+				characterAvalon = true;
 				return true;
 			default:
 				return false;
@@ -2854,9 +2861,11 @@ public partial class Player : CharacterBody2D
 			{
 				RunEvents.RecordRevive();
 				extraLives--;
-				// Spending an extra life is a heal, not a death. Only the branch below is a death.
+				// Spending an extra life is a heal, not a death. Only the branch below is a death. Half the bar -
+				// or, the first time a run spends one under Avalon (Morgan le Fay, Player.Mirage.cs), the whole of
+				// it. After Overlooked's step on purpose: a blow the Archmage's passive turned aside never gets here.
 				SfxPlayer.Global(SfxCatalog.PlayerHeal);
-				CurrentHP = Math.Max(1, MaxHP / 2);
+				CurrentHP = ExtraLifeHeal();
 				return;
 			}
 
@@ -5604,6 +5613,9 @@ public partial class Player : CharacterBody2D
 			arena.AddChild(TagSpell(sleetRunes));
 		}
 		int runes = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
+		// Fata Morgana (Morgan le Fay's Apotheosis, Player.Mirage.cs): the mirage beside him is this cast's second
+		// origin, and the node lets the same runes go from it along its own facing.
+		KeepFataMorgana(spell, sleetRunes);
 		sleetRunes.Cast(spell, runes, GetSpellDamageMultiplier(spell), GetSpellVisualTint(spell));
 		return CastOutcome.Maintained;
 	}
@@ -7525,6 +7537,9 @@ public partial class Player : CharacterBody2D
 				sleetRunes.QueueFree();
 			sleetRunes = null;
 		}
+		// Fata Morgana's mirage goes with the runes it casts.
+		if (spell.Id.Equals("sleet_runes", StringComparison.OrdinalIgnoreCase))
+			ReleaseFataMorgana();
 	}
 
 	// --- Level-up charges ---

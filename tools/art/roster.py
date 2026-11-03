@@ -108,6 +108,15 @@ PALETTE.update({MT0: E["metal"][0], MT1: E["metal"][1],
                 MT2: E["metal"][2], MT3: E["metal"][3]})
 METAL_RAMP = MT0 + MT1 + MT2 + MT3
 
+# Lichen, the contract's sea-grey-green row (bonelight.MATERIALS["lichen"]), for Morgan le Fay's mantle: the
+# strait's mist, wet stone and weed under the bridge. A material, not an element - cloth, so the idle does not
+# pulse it - but it is in anim_sets.PLAYER_RAMPS so a hurt or a death steps it along its own five stops. Single
+# bytes past \x8a: \x90-\x94 are held for Baba Yaga's (merged in parallel), \x85 and \xa0 are whitespace.
+# hi / lit / base / shade / deep.
+LC0, LC1, LC2, LC3, LC4 = "\x95", "\x96", "\x97", "\x98", "\x99"
+PALETTE.update(dict(zip(LC0 + LC1 + LC2 + LC3 + LC4, M["lichen"])))
+LICHEN_RAMP = LC0 + LC1 + LC2 + LC3 + LC4
+
 
 # Robe cloth per wizard. Four different MATERIAL ROWS, not four tints of one - the first pass
 # came out as four distinct silhouettes all wearing the same blue, which is the same failure as
@@ -143,6 +152,10 @@ ROBES = {
     # gone the colour of the cave. Her stola under it is violet's deep end. Arcane Explosion is in the jar
     # on her staff.
     "sibyl": ("m", "n", "J"),           # bone, deep - the palla; Arcane Explosion
+    # Morgan le Fay's mantle: the lichen row, the sea-grey-green of the strait's mist and the weed on the piers
+    # under the bridge she was moored beneath. Her gown under it is violet's deep end, the black samite of the
+    # barge. Sleet Runes is the rune of rime before her raised hand.
+    "morgan": (LC2, LC1, LC3),          # lichen - the mantle; Sleet Runes
 }
 
 
@@ -2355,11 +2368,146 @@ def sibyl(phase=None):
     return g.rows()
 
 
+def morgan(phase=None):
+    """Sleet Runes. Morgan le Fay, the enchantress of Avalon: healer, shape-changer, the queen in the black barge
+    who carried the dying king over the water to be healed - and the name on the mirage that hangs ships in the
+    air over the strait.
+
+    Sleet Runes is cast the way she faces, on the wind off the sea, so she is the one figure in the cast standing
+    INTO a wind: upright and still, a queen, her near arm raised level before her with the hand open and a rune of
+    rime cut in the air in front of the palm - the one thing on her that gives off light, in ice's ramp - while
+    everything loose on her streams back the other way. Her long dark hair and her mantle are what set her
+    silhouette: both blown out behind her to the left, the mantle's tail ragged and nearly to the floor, so she is
+    widest on the side she is not looking at.
+
+    The rescued wear no pigment. The mantle is the lichen row - the strait's sea-grey-green, weed on wet stone -
+    pinned at the throat with old gold; the gown under it is violet's deep end, the black samite of the barge, to
+    the floor, with a long hanging sleeve on the raised arm lined in the mantle's green; a thin gold circlet; a
+    pale, set face looking along her hand. Serious, never the cackling enchantress of the later romances.
+    """
+    mid, lit, dark = ROBES["morgan"]
+    g = G(48)
+    CX = 27
+
+    # THE MANTLE, first: it hangs from her shoulders behind her and streams back to the left on the wind, its tail
+    # ragged and nearly to the floor. Everything of her is in front of it.
+    # From the shade end of the row: it is cloth in a cold wind, not a plane catching the light, and the first
+    # draft in the body stop read as one flat wing. The lit stop only on the leading edge.
+    mass(g, [(13, 20, 25), (15, 17, 25), (18, 14, 24), (22, 11, 23), (26, 9, 22), (30, 7, 21), (34, 6, 20),
+             (37, 5, 19), (40, 6, 17), (43, 8, 15)], dark, mid, LC4)
+    # Its tail torn into three tongues by the wind, the gaps between them open.
+    cut(g, (9, 43), (10, 43), (10, 42), (10, 41), (13, 43), (14, 43), (14, 42), (6, 40), (5, 38), (7, 42))
+    tatters(g, [(44, 11, 12), (44, 15, 16)], LC4, dark, "o")
+    # The leading edge turned over by the wind, the lining's deep green showing a pixel inside its lit rim.
+    g.line(19, 15, 9, 27, LC4)
+    g.line(18, 14, 8, 26, lit)
+    g.set(13, 19, LC0)
+    g.set(9, 25, LC0)
+    # The creases: gathered at the clasp on her throat and running out from it to the tongues - converging, so
+    # it reads as cloth pinned at one point and pulled, never as stripes.
+    fold(g, [(22, 16), (15, 27), (8, 37)], LC4, mid)
+    fold(g, [(23, 18), (18, 29), (12, 40)], LC4, mid)
+    fold(g, [(23, 21), (20, 31), (16, 41)], LC4, None)
+    fold(g, [(21, 17), (14, 23), (10, 30)], LC4, lit)
+    g.line(18, 33, 17, 38, mid)
+    g.set(7, 35, mid)
+    g.set(11, 38, mid)
+
+    # THE GOWN: black samite to the floor, a little fuller behind as the wind presses it to her front, the hem
+    # trailing back. Violet's deep end, so it is never the mantle's green and never the hair's slate.
+    mass(g, [(14, 22, 30), (19, 22, 29), (23, 23, 28), (25, 22, 29), (32, 20, 31), (40, 18, 32), (46, 16, 32)],
+         "x", "w", "X")
+    fold(g, [(26, 26), (25, 34), (24, 46)], "X", "w")
+    fold(g, [(29, 27), (30, 36), (31, 45)], "X", None)
+    fold(g, [(23, 30), (20, 39), (18, 46)], "X", "w")
+    g.line(27, 15, 26, 22, "X")
+    g.set(28, 16, "w")
+    tatters(g, [(46, 16, 19), (46, 23, 27)], "X", "x", "o")
+    g.set(21, 45, "w")
+    if phase is not None:
+        # A queen's walk: short, level steps, the hem swinging toward the leading foot and that toe showing under
+        # it. The mantle, the arm and the rune are drawn after, so they stay where they are.
+        c, _ln, _lf = stride(phase)
+        hem = 1.4 * c
+        sway(g, 33, hem)
+        if abs(c) > 0.5:
+            toe(g, (29 if c > 0 else 18) + int(round(hem)), w=3, shoe=("p", "N", "o"))
+    # The girdle at her waist, old gold, its end hanging down her front.
+    g.span(24, 23, 28, "u")
+    g.set(24, 24, "g")
+    g.set(26, 24, "G")
+    g.line(27, 25, 27, 30, "u")
+    g.set(27, 31, "g")
+
+    # THE HAIR: long and dark, from under the circlet back over the mantle on the wind, in strands - slate, the
+    # stone row, lit along the top of each lock.
+    mass(g, [(5, 23, 29), (8, 21, 27), (11, 18, 25), (14, 15, 23), (17, 13, 21), (19, 14, 18)], "N", "p", "j")
+    fold(g, [(24, 6), (20, 11), (16, 16)], "j", "p")
+    fold(g, [(26, 8), (22, 13), (18, 18)], "J", "p")
+    fold(g, [(22, 9), (17, 14)], "j", None)
+    g.set(14, 18, "j")
+    g.set(13, 17, "p")
+    cut(g, (13, 19), (14, 20))
+
+    # The clasp at her throat, old gold, and the mantle's edge over the near shoulder.
+    g.line(25, 13, 30, 15, LC1)
+    g.line(25, 14, 30, 16, LC3)
+    g.set(26, 14, "G")
+    g.set(27, 14, "g")
+    g.set(26, 15, "u")
+
+    # THE NEAR ARM: raised level before her, in the gown's sleeve, the long hanging sleeve falling from the
+    # forearm lined in the mantle's green.
+    mass(g, [(15, 29, 33), (16, 30, 36), (17, 31, 35)], "x", "w", "X")
+    mass(g, [(17, 31, 35), (21, 31, 34), (25, 32, 34), (28, 32, 33)], LC3, LC1, LC4, rim=False)
+    fold(g, [(33, 18), (33, 27)], LC4, LC1)
+    g.line(31, 18, 32, 28, "x")
+    g.set(33, 28, LC4)
+    # The hand: open, palm out to the rune, fingers up.
+    hand(g, 37, 14)
+    g.set(37, 13, "f")
+    g.set(38, 13, "h")
+    g.set(39, 14, "i")
+    g.set(36, 15, "h")
+
+    # THE RUNE OF RIME, cut in the air before her palm: the spell's own sigil (tools/art/sleet_runes.py) - a
+    # diamond frame of rime, lit on its two key-facing edges and ice's edge stop on the other two, a white-hot
+    # heart - with sleet blown off it back past her hand on the wind she faces into. Not a staff head: nothing
+    # holds it, which is also what keeps it apart from the Frostweaver's.
+    RX, RY = 43, 15
+    for d in range(4):
+        for (x, y) in ((RX - 3 + d, RY - d), (RX + d, RY - 3 + d), (RX + 3 - d, RY + d), (RX - d, RY + 3 - d)):
+            upper_left = (x < RX and y <= RY) or (x <= RX and y < RY)
+            g.set(x, y, ">" if upper_left else ("/" if (x > RX and y >= RY) or (x >= RX and y > RY) else "?"))
+    g.set(RX, RY, "<")
+    g.set(RX - 1, RY, ">")
+    g.set(RX, RY - 1, ">")
+    g.set(RX + 1, RY, "?")
+    g.set(RX, RY + 1, "?")
+    for (x, y, c) in ((40, 11, "/"), (39, 19, "/"), (41, 21, "?"), (46, 10, "/"), (47, 18, "/")):
+        g.set(x, y, c)
+
+    # THE HEAD: pale, set, looking along her hand, under a thin circlet of old gold.
+    head(g, CX, 7, 2.4, brow="flat", gaze=1, mouth="set", eye="open")
+    g.span(6, 24, 30, "u")
+    g.set(25, 6, "g")
+    g.set(28, 6, "G")
+    g.set(27, 5, "g")
+    # Her hair at the near temple, under the circlet, and down behind the jaw.
+    g.set(24, 7, "N")
+    g.set(24, 8, "j")
+    g.set(24, 10, "N")
+    g.set(24, 11, "j")
+    g.set(30, 7, "j")
+    contact(g, 13, 33)
+    return g.rows()
+
+
 WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("stormcaller", stormcaller), ("geomancer", geomancer),
            ("tituba", tituba), ("vainamoinen", vainamoinen), ("dee", dee),
            ("seimei", seimei), ("wayland", wayland),
-           ("sibyl", sibyl)]
+           ("sibyl", sibyl), ("morgan", morgan)]
 ENEMIES = [("swarmer", swarmer), ("runner", runner), ("bruiser", bruiser),
            ("shielder", shielder), ("skullsentry", skullsentry), ("lunger", lunger),
            ("slammer", slammer), ("exploder", exploder), ("summoner", summoner),

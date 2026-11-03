@@ -29,6 +29,10 @@ public partial class Enemy : CharacterBody2D
 	// frightened again. See ApplyFear.
 	private float fearTimeRemaining = 0f;
 	private float fearImmuneTimeRemaining = 0f;
+	// Lure (Fata Morgana, Morgan le Fay's Apotheosis): seconds left chasing a point that is not the player - her
+	// mirage - and the point. See ApplyLure.
+	private float lureTimeRemaining = 0f;
+	private Vector2 lurePoint;
 	// Weaken (issue #66): the fraction this enemy's outgoing damage is cut by while it lasts.
 	private float weakenFraction = 0f;
 	private float weakenTimeRemaining = 0f;
@@ -1165,6 +1169,10 @@ public partial class Enemy : CharacterBody2D
 				// its behaviour wanted - a caster holding range or a wind-up planting it alike.
 				else if (fearTimeRemaining > 0f)
 					steering = -variedDir;
+				// A lured one chases the mirage instead of him (ApplyLure) - but a deliberate hold stays a hold, so
+				// a slammer planted mid wind-up does not drift off the tell it is drawing.
+				else if (lureTimeRemaining > 0f && steering.LengthSquared() > 0.0001f)
+					steering = LureSteering(here, steering.Length());
 
 				if (staggerTick % SeparationUpdateInterval == 0)
 				{
@@ -1289,6 +1297,8 @@ public partial class Enemy : CharacterBody2D
 		}
 		else if (fearImmuneTimeRemaining > 0f)
 			fearImmuneTimeRemaining = Math.Max(0f, fearImmuneTimeRemaining - (float)delta);
+		if (lureTimeRemaining > 0f)
+			lureTimeRemaining = Math.Max(0f, lureTimeRemaining - (float)delta);
 
 		if (weakenTimeRemaining > 0f)
 		{
@@ -1756,6 +1766,40 @@ public partial class Enemy : CharacterBody2D
 	}
 
 	public const float FearImmunitySeconds = 4f;
+
+	/// <summary>True while this enemy is chasing a lure rather than the player (ApplyLure).</summary>
+	public bool IsLured => lureTimeRemaining > 0f;
+
+	/// <summary>
+	/// Lures the enemy: for <paramref name="duration"/> seconds it chases <paramref name="point"/> instead of the
+	/// player - Fata Morgana's mirage (Morgan le Fay's Apotheosis, .ai/chapter-wizards.md 4.9), which walks beside
+	/// her and refreshes the lure on whatever is near it, so it follows the mirage for as long as it stays near.
+	/// </summary>
+	/// <remarks>
+	/// Stacking-resistant like every status: the newest point, the longest remaining time, never added up. A boss
+	/// is never lured - crowd control that stops a boss reaching the player is the one thing a boss is immune to
+	/// (.ai/chapter-wizards.md section 1) - and nothing is lured while it is dying. Elites are: a lure turns where
+	/// a body walks, not whether it fights. It moves the body only: a caster still shoots at the player.
+	/// </remarks>
+	public void ApplyLure(Vector2 point, float duration)
+	{
+		if (isDying || duration <= 0f || this is BossEnemy)
+			return;
+		lurePoint = point;
+		lureTimeRemaining = Mathf.Max(lureTimeRemaining, duration);
+	}
+
+	// Toward the lure at the speed its behaviour asked for (a dash stays a dash), easing in over the last 60 px so
+	// the crowd that reaches the mirage mills about it - the separation push spreads them - rather than piling on
+	// one point.
+	private Vector2 LureSteering(Vector2 here, float speed)
+	{
+		Vector2 toward = lurePoint - here;
+		float distance = toward.Length();
+		if (distance < 0.5f)
+			return new Vector2(Mathf.Cos(wanderPhaseA), Mathf.Sin(wanderPhaseA)) * 0.25f;
+		return toward / distance * speed * Mathf.Clamp(distance / 60f, 0.25f, 1f);
+	}
 
 	// A ceiling on the debuff itself, not just on any one application. Vulnerability multiplies
 	// every other damage source the player has, so an uncapped version scales with the whole build
@@ -2395,6 +2439,7 @@ public partial class Enemy : CharacterBody2D
 		vulnerableTimeRemaining = 0f;
 		fearTimeRemaining = 0f;
 		fearImmuneTimeRemaining = 0f;
+		lureTimeRemaining = 0f;
 		weakenFraction = 0f;
 		weakenTimeRemaining = 0f;
 		witherFraction = 0f;
