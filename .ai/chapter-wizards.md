@@ -3,7 +3,7 @@
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
-**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **and Baba Yaga, the first second event** (4.1, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other six are not. It covers the ten
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **and Baba Yaga, the first second event** (4.1, "Built"), **Medea, the Fields' second event** (4.2, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other five are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Last Bridge and the Court (which holds
 two: Nostradamus, and Ma Liang since the Sketchbook was emptied - 4.8). Tituba (Cursed Dungeon),
@@ -278,6 +278,126 @@ the bot makes as her uses; nothing on the phone.
   worse men."*
 - **Alternate: Circe**, also the Sun's child, who turned men to beasts. The same spell and verb, a gentler
   legend, no tie to a field.
+
+**Built (2026-11-03, `wip/wizard-medea`).** The Fields' second event, after the well, through P2's API as 6.3 wrote it
+(one line in `SideEventDirector`, a hint by site, deed words, `FromEvent`, a prisoner row, a freeing reel). Nothing in
+P2 had to change. Section 1 holds: the Fields are the campaign's second chapter, opened by Elderbark, so on a new save
+nobody can know she is there - she is **secret until `stage_9`**, counted at the Throne's gate only (`finalGateOnly`).
+
+- **Her.** `CharacterData_Medea.tres`, appended to `CharacterRoster`. Name "Medea", id `medea`. `roster.medea()`, drawn
+  serious: upright and square, face level and unsmiling, the near arm out level from the shoulder, palm up, a small sun
+  burning over it in the light ramp (Solar Flare, her grandfather's light, the only thing on her that gives off light);
+  the far hand at her side with the bronze sickle she cut her herbs with, its crescent turned back behind her - the one
+  curve in the cast's outlines. A long peplos of lichen's middle (the sea-green of the water at Colchis), belted high and
+  folded to the hip; a mantle of the red row's dark end over the back of her head, falling behind her to the ground and
+  across her in one diagonal to the near hip; a thin bronze diadem with the Sun's disc on it over black hair; dried herbs
+  at her girdle. 0.98 edges/px. New bytes: lichen as `\x8b-\x8f`; the red row is merlin_concepts' `\x14-\x18`, reused
+  byte for byte.
+- **Her passive, Rejuvenation** (`healing_20`): +20% to every heal that comes through `Player.Heal` - the flask, the
+  Light tier's banked share, the Grass tier, every regeneration line (a point at a time), the relics, the boons, the
+  cat's purr, the events' heals - with the fraction **carried** (`rejuvenationCarry`), as `AddXp` carries XP, because
+  most of what heals a run now is one-point regeneration ticks and 1.2 rounds back to 1. Not a revive (a life is not a
+  heal). Against the healing ledger (`.ai/difficulty-curve.md` 5.1): it scales the budget's trickle, it adds no source,
+  and the Light tier's cap of a point a second (her spell carries Light) becomes 1.2 for her, since the cap is on
+  what is banked and Rejuvenation acts where it is paid.
+- **The event** (`TitheScaleEvent`, `GranaryTithe`, `tools/art/tithe_scale.py`, `world/granary/`). A yard of stubble swept
+  for through the band (`EventSiteInBand`, 250 px, dense): the reeve's raised granary on staddle stones (weatherboard
+  gone grey, a hipped thatch, double doors at the top of three plank steps, barred by an oak beam in iron brackets and
+  padlocked, the reeve's tally in chalk beside them; 96x96 at x2) and in front of it, to the right, his great scale (an
+  oak post bound with iron, an iron beam, the empty tithe pan on the left and his iron weight on the right; 64x80 at x2,
+  six frames). From arrival every XP orb that comes into the world within **320 px** of the scale is the reeve's
+  (`GranaryTithe.Claims`, asked once as it lands): it lifts and drifts up into the pan, slow and quickening, over every
+  body; his magnet, his feet, the Gleaning Bell and the Spirit Mirror do not touch it, and the far-orb fold leaves it
+  alone. The pan weighs each at what it was worth to him the moment it got there (`Player.XpWorthOf`: every XP bonus and
+  the run's pace). **The price is his bar at the level he arrived at** (`XPToNextLevel`), fixed then: "one level's XP at
+  that moment of the run". As it fills the beam tips the pan down frame by frame; paid, the beam drops, the bar falls from
+  the doors (0.45 s), they open (1.05 s), and she comes out and down the steps toward him (1.35-2.2 s) and is gone into the
+  column of light. Anything still in the air falls back to the ground his. A dashed ring at 320 px fills with the pan,
+  brighter while he is inside it. **No failure**: walking off keeps what is paid, nothing drains, nothing comes for him;
+  and **no ring of enemies** - what pays the tithe is the field's own crowd, killed where the reeve can count it. Nothing
+  here is a body: two sprites sorted at their feet, no collision, never in "enemies".
+- **Her unlock** is the site's derived Road deed, "The Tithe Paid", secret until `stage_9`, counted at the Throne only;
+  locked hint "Counted with the grain in the Fallow Fields." Quest-log prisoner "the one in the granary", held line
+  "Someone is kept in the reeve's granary, counted with the grain."; freed line "{0} has walked out of the granary." Her
+  freeing reel (`freed.py` `WIZARDS`, `Freeings.WizardIds`): `freed-medea-mid.png`, she turned to the Archmage, her sun
+  burning again over her palm.
+- **Her clue.** `HintCue.Smoke`, a new last row of `hint-cues.png` (every row before it unchanged, byte for byte): wisps
+  of a thin cold herb-smoke in the wind ramp's pale body (the far tell's colour - not the well's water, the Fields' other
+  event), lying low and flat, drifting in slowly from her side, curling and thinning to a thread, one on each syllable of
+  `hint_granary_voice`: a woman's voice through plank walls, an alto falling from B-flat 3 to F-sharp 3, two words, a
+  breath, then the longer line, almost no vibrato - said, not called (the cell's cry rises into a question), with a few
+  soft crackles of herbs smouldering under the last phrase (`sfx._GRANARY_SYLLABLES` = `StageHintCue.GranaryVoices`).
+  `HintVoice.Speech`. The doc's three lines, unchanged. Nearest in the whole set 0.164 (`pickup_health`), then 0.179
+  (`hint_cell_cry`). In the world her smoke leaks from the vent at the granary's ridge and drifts off over the yard: the
+  far tell, from the first second. The well still has no hint (`SitesWithoutHints`), so every slot is hers.
+- **Her form**, Dragon's Teeth (turn, `ElementalPulse.DragonsTeethId`, `Enemy.Turned.cs`). Every pulse that goes off at
+  **full growth** (he has stood the whole four seconds) throws one stone of light, lobbed high, onto the densest knot
+  within 2.6 times this pulse's reach (of the first 32 bodies in reach, the one with most within the strike). Where it
+  lands it strikes everything within **76 px** for **a fifth of the pulse** (his spell, through `DealDamageToEnemy`), then turns
+  the ordinary ones nearest it, **up to 8 a stone and 16 in the arena** (`Enemy.MaxTurnedAtOnce`), for **3 s**. A turned
+  body looks for the nearest other through the swarm's grid every 0.3 s, goes at it a little faster than it walks,
+  stands, and strikes it every 0.6 s for **34% of its own health** - three blows kill one of its own kind. It never
+  touches the player (the contact loop passes over it, and `TargetPlayer` is null, so a caster draws no bolt and a
+  slammer's wind-up resolves against nobody). Elites (and the Boo) are struck, not turned; bosses are never turned. Lit
+  warm while it lasts (`TurnedLook`), with a small mark of the stone's light over its head and a short run of light a third
+  of the way toward the one it is going for (`ElementalPulse.DrawTurned`), its blows' numbers in the stone's gold, not his
+  red. Fire, the one of Solar Flare's
+  two the form deepens; no card on Solar Flare trades either away, so every route leads to it. Its own evolution icon.
+- **Where the blows go** (the brief asked for a decision): straight into the target's `TakeDamage` (`TakeTurnedBlow`),
+  **never** through `Player.DealDamageToEnemy` - no crit, no multiplier, no Vulnerable, no lifesteal, no chalice, no
+  Hungry Hedge feeding, no spell tally, no `EnemyDamagedAt` (the thaw is not warmed by it) - and not through
+  `ScaleOutgoingDamage`, which is what an enemy deals the PLAYER. **A death it causes counts as his kill and pays its
+  orb**, as a poison tick's does (`Enemy.StartDeath` is the one place a kill is recorded, whatever did it): a form that
+  cost the run its XP would be a form nobody took.
+
+**What moved, and why.**
+
+1. **"At that moment of the run" is read twice**: the price is fixed at arrival (his bar at that level), and each orb is
+   weighed at its worth when it reaches the pan (the pace multiplier in it). A live price that rose with every level he
+   took elsewhere would be a pan that never filled for a player who kept fighting outside the ring.
+2. **The granary blocks nothing.** A building that stopped bodies would be terrain, and four places must agree about
+   that (`.ai/terrain.md`); the hut is the precedent. It is drawn on its staddles, and what walks behind it is hidden.
+3. **No ring of enemies at the scale.** Every other event applies pressure; this one's pressure is the price. The swarm
+   that follows him is what pays.
+4. **The stone strikes for a fifth of the pulse, not all of it.** At the first guess it killed most of what it struck - a
+   level 8 flare with its Ascension one-shots the crowd - and so turned 0.43 a stone: standing still after the form the bot
+   threw 178 stones in six minutes and turned 77, whose 45 blows killed 23. At a fifth, on the same seed: 180 stones, 211
+   turned (1.17 a stone), 223 blows, 74 killed by their own. What it strikes has to live to turn.
+5. **The turned are marked.** The first tint (1.36 / 1.20 / 0.74) was lost on the Fields' dark bodies in the photographs;
+   it is 1.6 / 1.34 / 0.6, with the mark and the run of light toward the foe. At most 16, nothing allocated, and the walk of
+   the registry is skipped while nobody is turned.
+6. Path: the doc's form named no path, and none is needed (the gate is max level, ascended, not combined, level 21).
+
+**Verified:** build; the validator (0 errors, main's 1 warning - the Test Wizard's missing passive);
+`RegressionChecks.ValidateTitheScale` (the Fields' line is the well then the scale; the pan comes down frame by frame and
+stays in its cell; the tithe on paper - claims inside the reach and not outside, weighs, a closed scale takes nothing; the
+clue's beats are the sound's; the sheets' sizes; Dragon's Teeth's numbers and its catalog entry). `_ExploreProbe
+--stage=9`, which stands in the yard and kills what comes (`--tithe-level=N` puts him at level N as he arrives, since the
+probe comes in the first two minutes at level 1-2, where a level is 10-55 XP): seeds 4242 fresh (level 10: 415 paid in 124
+orbs, 23.4 s after arriving), 31 fresh (level 12: 505 in 154, 27.6 s), 1001 fresh `--wayfinder-first` (begun while the well
+ran: 55 in 24, 10.3 s), 7 `--all-unlocked` (the chest: 325 in 115, 20.6 s) and 4242 `--all-unlocked --tithe-walk-off` (he
+walked 1,500 px off at 40.0% and the pan stood at 42.4% after five seconds away - what was in the air arrived; 415 in 146,
+34.4 s): 40 to 46 passed, 0 failed; both events won every time, the sites 98 to 172 degrees apart, the scale 4.2 to 6.0
+chunks out; Medea freed in memory and her deed recorded by her site. (Three first runs failed and one hung while six other
+Godot runs shared the machine - physics capped at eight steps a frame fell behind the probe's clock, and the well was fouled
+in the teleport's twenty-frame wait; run alone, all passed.) `_UiShot` of the scale part-paid (`--event-progress`, new), the
+open granary as she comes out, the clue, the form turning a crowd, and the character select locked and freed, at both
+canvases. `_BalanceHarness --character=16 --stage=9 --all-unlocked --seek-apotheosis --immortal`, seed 1234: the spell gate
+at 9.4 min (level 17) and the form at 12.1 (level 21) on a loaded machine, and the bot - which walks to every orb - threw no
+stone in the whole run; with `--still-after-apotheosis` (new: it stands still once the form is taken) and `--timescale=1
+--profile=10`, the gate at 7.0 min and the form at 9.3, the numbers in 4 above; kills a minute 320-348 before the form, 412
+and 400 the two minutes after. **Frame cost**: the spells section about 205 us a physics step before the form (8 min) and
+234 after (13 min), 0.3-0.75 KB a step either side; the late frames slowed to 10-50 fps because a bot that never walks
+leaves a thousand orbs on the ground (the orbs section 1.3-1.9 ms a frame), not because of the form. Healing offered
+under Rejuvenation 1.9-2.5 HP a minute on those runs.
+
+**Not verified: whether paying a level feels like a fair price** - section 7's own question - nor how long it takes a real
+player, whose spells kill outside the ring as well as in it (the probe kills only inside it); whether the pan and the ring
+read at a glance in a crowd; the voice, measured and never heard; the smoke at a glance mid-fight; whether a player stands
+the four seconds the stone needs, and what Dragon's Teeth is worth against a moving player's flare (the harness either never
+stands or never stops standing); Rejuvenation on a real run; nothing on the phone. The tutorial tip on a fresh save ("Stay
+moving and kite enemies") is drawn over the objective line in the same place - seen in the photographs, not this work's, and
+not fixed here.
 
 ### 4.3 Sunken Cave - the Cumaean Sibyl
 

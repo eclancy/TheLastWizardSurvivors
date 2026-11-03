@@ -14,6 +14,7 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 |---|---|---|---|---|
 | Enchanted Forest | **Hold the grove** (`GroveEvent`) | "Every path now leads inward." | **stand still** in a ring for 20 s; leaving drains it at half speed | Bramble Seed |
 | Enchanted Forest (second) | **The walking hut** (`WalkingHutEvent`) | "Every path now leads inward." | **hunt**: a hut on hen's legs walks its circle in the deep wood; within 420 px it turns its back and bolts, quicker than you for 2 s, then slower. Keep within 520 px of it for 30 s (the bar holds when you are not) and it tires, kneels and opens its door | Baba Yaga |
+| Fallow Fields (second) | **The Tithe-Reeve's scale** (`TitheScaleEvent`) | "He takes a tithe of everything that grows here." | **pay**: from arrival every XP orb that falls within 320 px of the reeve's great scale drifts into its pan instead of to you; when the pan holds one level's XP at that moment of the run the beam drops, the bar falls from the granary door and she steps out. Walking off keeps what is paid; nothing fails | Medea |
 | Cursed Dungeon | **The Gaoler's key** (`GaolersKeyEvent`) | "He keeps a wizard in one of these cells." | **carry**: kill the Warden, take its key across the map; three hits knock it loose | Tituba |
 | Sunken Cave | **The nine mouths** (`NineMouthsEvent`) | "His shadow followed the water down into the dark." | **listen**: a crescent of rock with nine mouths; her voice comes out of all of them a beat apart, hers first; stand in hers 2 s. A wrong mouth answers with a flight of Gloomwings and hers moves | the Cumaean Sibyl |
 | Blighted Swamp | **Snuff the lanterns** (`BogLanternsEvent`) | "Nothing living lights them." | **explore**: four lanterns spread over the map, each releasing wisps, then the lantern-tender comes and is fought on its own terms (below) | Contagion |
@@ -114,6 +115,7 @@ All five events resolve through `SideEvent.Succeed`, so all five now get the sam
 | The great anvil | Wayland the Smith (wizard) | a chest | "The chains are broken - a chest was left at the anvil" |
 | The nine mouths | the Cumaean Sibyl (wizard) | a chest | "Her mouth falls quiet - a chest was left in it" |
 | The walking hut | Baba Yaga (wizard) | a chest | "The hut kneels - a chest was left at its door" |
+| The Tithe-Reeve's scale | Medea (wizard) | a chest | "The tithe is paid - a chest was left in the granary" |
 
 To photograph any of them: `_UiShot --scene=res://scenes/node_2d_game.tscn --stage=N --win-event`
 (add `--event-chest` for the chest path on a save that lacks the discovery). It sets
@@ -383,6 +385,7 @@ player walked toward the sound. Fixed slots, no allocation.
 | the seal | strips of written paper, violet, tumbling in and falling, charring at both ends in their second half | each gust (`sfx._PAPER_GUSTS` = `StageHintCue.PaperGusts`) |
 | the mouths | written leaves, pale with blue ink, blown in flat and fast on a cold draught, the first on the line to her | each voice of the call (`sfx._SIBYL_VOICES` = `StageHintCue.SibylVoices`) |
 | the hut | birds lifting out of the canopy in his violet light, beating up and away out toward her, near ones and far smaller ones | each fall of its feet and its timbers' creak (`sfx._HUT_FALLS`, `_HUT_CREAK` = `StageHintCue.HutBeats`) |
+| the granary | wisps of a thin cold herb-smoke in the wind ramp's pale body, lying low and flat and drifting in slowly from her side, curling and thinning to a thread | each syllable of her voice (`sfx._GRANARY_SYLLABLES` = `StageHintCue.GranaryVoices`) |
 
 `hint_ice_song` was rebuilt to be heard as singing (six notes, A G F G E D, `.ai/audio-manifest.md`).
 
@@ -416,6 +419,7 @@ question. `RegressionChecks.ValidateStageHints` warns on any line that contains 
 | The Emberdeep | `great_anvil` | sound (Wayland the Smith, unnamed) | `hint_anvil` (sparks) | "Hammer on anvil, slow and steady, somewhere below." / "The hammer again. Whoever swings it is very tired." / "It does not stop. It is not allowed to." |
 | Sunken Cave | `nine_mouths` | sound (the Cumaean Sibyl, unnamed) | `hint_sibyl_voice` (writ) | "Leaves on a cold draught, every one written on." / "A woman's voice from far down, in more places than one." / "The leaves again, written faster now." |
 | Enchanted Forest | `walking_hut` | sound (Baba Yaga's hut, unnamed) | `hint_hut_step` (birds) | "Something heavy walks the deep wood, on two legs." / "The steps again. Too heavy for a man." / "Still walking, round and round." |
+| Fallow Fields | `tithe_scale` | **speech** (Medea, unnamed; she does not plead) | `hint_granary_voice` (smoke) | "You there. The granary, past the furrows." / "He counts me with the grain. Settle his count." / "Come, or go. I have waited out worse men." |
 
 Tituba speaks in her own character: a prisoner taken from Barbados and jailed on an accusation,
 patient (her passive is *Patience*) and nobody's witch - so she asks for help and says she has
@@ -572,6 +576,11 @@ chapter's line in `SideEventDirector` is a list, its original event first:
   +20% to every shove and pull her spells give. Freed by running her walking hut down, the Forest's second event;
   counted at the Throne's gate only. **Never secret**: the Forest is open on a new save, so she is a silhouette
   from the first run.
+- **Medea** (2026-11-03), the sorceress of Colchis, granddaughter of the Sun, drawn serious: upright, a madder mantle
+  over a sea-green peplos, a bronze diadem, a small sun in her open hand and a bronze sickle in the other. Opens on
+  **Solar Flare** (two elements, R2). Passive *Rejuvenation*: +20% healing from every source. Freed by paying the
+  Tithe-Reeve's scale a level's XP, the Fallow Fields' second event; secret until the Fields open (`stage_9`),
+  counted at the Throne's gate only.
 
 Both wear **no player pigment**. The four saturated rows are the starters'. The rescued wear what
 they were held in, so the only saturated thing on them is their staff head. Sprites are in
