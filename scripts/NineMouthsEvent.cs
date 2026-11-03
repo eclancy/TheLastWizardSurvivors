@@ -279,7 +279,11 @@ public partial class NineMouthsEvent : SideEvent
 	public override void _ExitTree()
 	{
 		if (leafLayer != null && IsInstanceValid(leafLayer))
+		{
 			leafLayer.Draw -= DrawLeaves;
+			// A canvas keeps its last drawing until it is asked again: with no handler, the next one is empty.
+			leafLayer.QueueRedraw();
+		}
 		// Freed before she finished stepping out (nothing in play does that): she does not stay half-drawn.
 		if (sibyl != null && IsInstanceValid(sibyl))
 			sibyl.QueueFree();

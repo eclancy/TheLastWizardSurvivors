@@ -8,9 +8,9 @@ using WizardSurvivors.scripts;
 // its final form each burst gives them back.
 //
 // HOW, AND WHY IT CANNOT FEED ITSELF. ArcaneExplosion asks (EchoOtherSpells) and this does the rest. The burst
-// QUEUES every other spell she holds that puts something into the arena - the Black Cat's list, for the cat's
-// reason: an orbit, a breath, a sun, a held weapon or the Familiar recast from where she stands would be
-// re-anchored or refreshed, not cast - and the queue is spent EchoesPerFrame a physics frame, after the fire
+// QUEUES every other spell she holds whose cast puts something new into the arena (IsEchoable: the Black Cat's
+// list and the ray and the cone; an orbit, a breath, a sun, a held weapon or the Familiar would only be
+// refreshed, not cast again) - and the queue is spent EchoesPerFrame a physics frame, after the fire
 // loop, never inside the cast that asked. An echo runs CastSpellNow, exactly the code her own cast runs, with
 // the damage the cast hands its projectiles scaled by EchoShare for the length of the call. It is not a cast:
 // no timer is touched, nothing is tallied, and NotifyArcaneCharge never hears it - so an echo never charges the
@@ -30,9 +30,22 @@ public partial class Player
 	/// <summary>How many queued echoes are cast in one physics frame.</summary>
 	public const int EchoesPerFrame = 2;
 
-	// What may be echoed: the spells that put something into the arena and leave it there (BlackCatCastable,
-	// for the same reason the cat may only cast those).
-	public static bool IsEchoable(SpellData spell) => spell != null && BlackCatCastable.Contains(spell.Id);
+	// What may be echoed: every spell whose cast puts something NEW into the world. The Black Cat's list, and
+	// the two the cat may not cast for the cat's own reason - Scorching Ray and Cone of Cold make a fresh ray
+	// or cone on every cast, but anchored on the wizard, so from the cat they would come out of him; an echo
+	// comes from where she stands, so they are cast again as they are. (Measured 2026-11-02: on the seek bot's
+	// Arcane loadout - Spiritual Weapon, Magic Missile, Scorching Ray, the Familiar, Aegis Ward - the cat's list
+	// alone echoed Magic Missile and nothing else.) Never echoed: whatever keeps ONE node standing and only
+	// refreshes it on its cooldown (an orbit, a breath, an aura, a trail, the Spiritual Weapon, the Familiar's
+	// pack, the Starfall rain, the facing pair's emitters), Aegis Ward (a shield, not a cast at anything),
+	// Hunter's Draw (drawn by walking) and Frost Shard (it casts nothing).
+	public static readonly System.Collections.Generic.HashSet<string> EchoOnlyCastable = new(StringComparer.OrdinalIgnoreCase)
+	{
+		"scorching_ray", "cone_of_cold",
+	};
+
+	public static bool IsEchoable(SpellData spell) =>
+		spell != null && (BlackCatCastable.Contains(spell.Id) || EchoOnlyCastable.Contains(spell.Id));
 
 	private readonly SpellData[] echoQueue = new SpellData[MaxSpellSlots * 2];
 	private int echoHead;
