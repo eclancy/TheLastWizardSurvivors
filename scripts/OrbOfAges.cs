@@ -101,20 +101,41 @@ public partial class OrbOfAges : Node2D
 	// Burning Rim's crossing test: who was inside last frame, swapped with who is inside now (no allocation).
 	private HashSet<Enemy> insideBefore = new();
 	private HashSet<Enemy> insideNow = new();
+
+	// The look (the drawing section below): the ward's canvas and the two that draw behind it, and the orbs'.
+	private Node2D ward;
+	private Node2D star;
+	private Node2D stroke;
 	private Node2D air;
+	// What the ward and the star last drew, so each redraws only when that changes - not every frame.
+	private int drawnRing = -1;
+	private int drawnTone = -1;
+	private long drawnStar = long.MinValue;
+	private bool strokeDrawn;
+	private bool orbsDrawn;
 
 	private static readonly ElementColors.Ramp Light = ElementColors.GetRamp(Element.Light);
 	private static readonly ElementColors.Ramp Arcane = ElementColors.GetRamp(Element.Arcane);
 
 	public override void _Ready()
 	{
-		// The ward lies on the ground under the bodies; the orb flies in the air over them (DrawLayers). One node
-		// can stand on one layer, so the orb is drawn by a child that only draws.
+		// The ward lies on the ground under the bodies; the orb flies in the air over them (DrawLayers). Each is a
+		// canvas of its own, on the world's 2 px grid (the drawing section below).
 		ZAsRelative = false;
 		ZIndex = DrawLayers.Ground;
-		air = new Node2D { ZAsRelative = false, ZIndex = DrawLayers.Air, Name = "Orbs" };
-		air.Draw += DrawOrbs;
+		ward = new Node2D { Name = "Ward", TopLevel = true, ZAsRelative = false, ZIndex = DrawLayers.Ground };
+		star = new Node2D { Name = "Star", ShowBehindParent = true };
+		stroke = new Node2D { Name = "Stroke", ShowBehindParent = true };
+		ward.AddChild(star);
+		ward.AddChild(stroke);
+		AddChild(ward);
+		air = new Node2D { Name = "Orbs", TopLevel = true, ZAsRelative = false, ZIndex = DrawLayers.Air };
 		AddChild(air);
+		air.GlobalPosition = Vector2.Zero;
+		ward.Draw += DrawWard;
+		star.Draw += DrawStar;
+		stroke.Draw += DrawStroke;
+		air.Draw += DrawOrbs;
 
 		centre = GlobalPosition;
 		Vector2 from = IsLive(PlayerRef) ? PlayerRef.GlobalPosition + PlayerRef.StaffTipLocal() : GlobalPosition;
@@ -132,10 +153,17 @@ public partial class OrbOfAges : Node2D
 				Leaving = true,
 			});
 		}
+		UpdateLook();
 	}
 
 	public override void _ExitTree()
 	{
+		if (ward != null)
+		{
+			ward.Draw -= DrawWard;
+			star.Draw -= DrawStar;
+			stroke.Draw -= DrawStroke;
+		}
 		if (air != null)
 			air.Draw -= DrawOrbs;
 	}
@@ -144,8 +172,6 @@ public partial class OrbOfAges : Node2D
 	{
 		float dt = (float)delta;
 		age += dt;
-		QueueRedraw();
-		air?.QueueRedraw();
 		if (Walking)
 			GlobalPosition = Centre;
 
@@ -160,9 +186,13 @@ public partial class OrbOfAges : Node2D
 			default:
 				fade += dt;
 				if (fade >= FadeSeconds)
+				{
 					QueueFree();
+					return;
+				}
 				break;
 		}
+		UpdateLook();
 	}
 
 	private void Stand(float dt)
@@ -351,57 +381,181 @@ public partial class OrbOfAges : Node2D
 
 	// --- drawing -----------------------------------------------------------------------------------------------
 	//
-	// Opaque ramp colours on whole-pixel widths (the Bonelight contract), no translucency: the ring in the gold of
-	// Light's edge with seven points of light where the star touches it, the strokes an orb has flown this star in
-	// Light's mid, the stroke it is flying in its hot tone. Fading, it steps down the ramp rather than going
-	// transparent.
+	// THE LOOK IS PIXEL ART (2026-11-03; the pixel-art pass's rules, .ai/art-replacement-manifest.md section 9, which
+	// Cyclone Slash had on 2026-10-29 for the same complaint). It was DrawArc rings and DrawLine strokes at whole
+	// world-unit widths - half an art pixel, on no grid - and DrawCircle orbs: thin smooth lines in a frame where every
+	// sprite round them stands on the world's 2 px art grid. Now every part is stamped in whole cells of that grid by
+	// PixelInk, opaque, from the two ramps, and a fade is a dissolve through the Bayer matrix, never alpha. Cyclone
+	// Slash's whirlwind is a shader because it is an area; what the pass found to be lines - a chain's arc, a thread,
+	// a crescent in flight - it stamped, and a ring and a star are lines.
+	//
+	//   the ward    the midpoint circle one art pixel thick at Radius, in Light's edge (the gold), and a second a
+	//               cell's gap inside it in Arcane's edge: the line he must not cross, which reads on the dark floors
+	//               by its gold and on the Sketchbook's paper by its violet. Seven points of light where the star
+	//               touches it, a white-hot cell with arms of the hot and mid stops, set in a square of the gold.
+	//   the star    the strokes an orb has flown this star, a cell wide in Light's mid; the stroke it is flying, a
+	//               seam of the hot stop on a band of the edge three cells wide, from the point it turned at to it.
+	//   the orb     a disc of the light ramp in a rim of Arcane's edge, white-hot up and to the left, as wide as a
+	//               ward of this size makes it: a wider ring is a bigger orb (StrokeReach grows by the same share).
+	//
+	// Closing, the light goes out of the ring and the arcane is left (the edge and points step to Arcane's ramp, the
+	// star is gone); fading, that dissolves cell by cell. The hit is measured from Centre and Radius exactly; the
+	// drawing stands on the cell Centre falls in, so it is never more than an art pixel off what it strikes.
+	//
+	// Cheap on purpose (.ai/performance.md): the ward's canvas stands on that cell and draws round its own origin, so
+	// it is MOVED, not redrawn, when the ward walks; the ring and its points redraw only when the ring's size or tone
+	// changes, the flown strokes only when an orb turns a point; only the stroke in flight and the orbs are drawn
+	// every frame. Nothing allocates.
 
-	public override void _Draw()
+	/// <summary>The gap, in art pixels, between the gold ring and the arcane one inside it, plus the line itself.</summary>
+	private const int InnerRingCells = 2;
+	private const float Grid = PixelInk.Grid;
+
+	private float Coverage => phase == Phase.Fading ? Mathf.Clamp(1f - fade / FadeSeconds, 0f, 1f) : 1f;
+
+	private int RingCells => Math.Max(InnerRingCells + 2, (int)MathF.Round(Radius / Grid));
+
+	// Standing, closing, or how far through its dissolve (sixteen steps, the Bayer matrix's).
+	private int Tone => phase switch
 	{
-		Vector2 c = Centre - GlobalPosition;
-		bool dim = phase != Phase.Standing;
-		Color ring = dim ? Arcane.Edge : Light.Edge;
-		if (phase == Phase.Fading && fade > FadeSeconds * 0.5f)
+		Phase.Standing => 100,
+		Phase.Homing => 99,
+		_ => (int)MathF.Ceiling(Coverage * 16f),
+	};
+
+	private void UpdateLook()
+	{
+		if (ward == null)
 			return;
-		DrawArc(c, Radius, 0f, Mathf.Tau, Math.Clamp((int)(Radius * 0.6f), 48, 160), ring, 2f, false);
-		DrawArc(c, Radius - 5f, 0f, Mathf.Tau, Math.Clamp((int)(Radius * 0.6f), 48, 160), Arcane.Edge, 1f, false);
+		Vector2 c = Centre;
+		var corner = new Vector2(MathF.Floor(c.X / Grid) * Grid, MathF.Floor(c.Y / Grid) * Grid);
+		if (ward.GlobalPosition != corner)
+			ward.GlobalPosition = corner;
+
+		int ring = RingCells;
+		int tone = Tone;
+		if (ring != drawnRing || tone != drawnTone)
+		{
+			drawnRing = ring;
+			drawnTone = tone;
+			ward.QueueRedraw();
+		}
+		// The star changes when an orb turns a point (or sets out from the staff), and with the ring.
+		long key = ring * 131L + tone;
+		foreach (Orb orb in orbs)
+			key = key * 257L + orb.Vertex + 8 * (orb.Strokes + 8 * ((orb.Leaving ? 1 : 0) + 2 * (orb.Step > 0 ? 1 : 0)));
+		if (key != drawnStar)
+		{
+			drawnStar = key;
+			star.QueueRedraw();
+		}
+		if (phase == Phase.Standing || strokeDrawn)
+			stroke.QueueRedraw();
+		if (phase != Phase.Fading || orbsDrawn)
+			air.QueueRedraw();
+	}
+
+	// A point of the star, as the cell's centre in the ward canvas's frame: the true point's direction, out the
+	// ring's whole number of cells, so it lands on the ring that is drawn.
+	private Vector2 PointCell(int vertex)
+	{
+		float angle = FirstPointAngle + vertex * Mathf.Tau / StarPoints;
+		int ring = RingCells;
+		return new Vector2(MathF.Round(MathF.Cos(angle) * ring) * Grid + Grid * 0.5f, MathF.Round(MathF.Sin(angle) * ring) * Grid + Grid * 0.5f);
+	}
+
+	// The ring and its seven points of light.
+	private void DrawWard()
+	{
+		float cover = Coverage;
+		if (cover <= 0f)
+			return;
+		bool lit = phase == Phase.Standing;
+		int ring = RingCells;
+		PixelInk.Circle(ward, 0, 0, ring, lit ? Light.Edge : Arcane.Edge, cover);
+		PixelInk.Circle(ward, 0, 0, ring - InnerRingCells, Arcane.Edge, cover);
 		for (int v = 0; v < StarPoints; v++)
 		{
-			Vector2 p = Point(v) - GlobalPosition;
-			DrawRect(new Rect2(p - new Vector2(3f, 3f), new Vector2(6f, 6f)), dim ? Arcane.Mid : Light.Hot);
-			DrawRect(new Rect2(p - new Vector2(1f, 1f), new Vector2(2f, 2f)), Light.Core);
+			Vector2 p = PointCell(v);
+			// Lit, its four corners in the gold too, so the point still shows on the Sketchbook's paper, where the
+			// white-hot cross alone is lost.
+			if (lit)
+			{
+				PixelInk.Cell(ward, p + new Vector2(Grid, Grid), Light.Edge, cover);
+				PixelInk.Cell(ward, p + new Vector2(-Grid, Grid), Light.Edge, cover);
+				PixelInk.Cell(ward, p + new Vector2(Grid, -Grid), Light.Edge, cover);
+				PixelInk.Cell(ward, p + new Vector2(-Grid, -Grid), Light.Edge, cover);
+			}
+			for (int arm = 1; arm <= (lit ? 2 : 1); arm++)
+			{
+				Color tone = arm == 1 ? (lit ? Light.Hot : Arcane.Mid) : Light.Mid;
+				PixelInk.Cell(ward, p + new Vector2(arm * Grid, 0f), tone, cover);
+				PixelInk.Cell(ward, p - new Vector2(arm * Grid, 0f), tone, cover);
+				PixelInk.Cell(ward, p + new Vector2(0f, arm * Grid), tone, cover);
+				PixelInk.Cell(ward, p - new Vector2(0f, arm * Grid), tone, cover);
+			}
+			PixelInk.Cell(ward, p, lit ? Light.Core : Arcane.Hot, cover);
 		}
-		if (dim)
+	}
+
+	// The strokes each orb has flown this star, from the point it started on round to the one it last turned at.
+	private void DrawStar()
+	{
+		if (phase != Phase.Standing)
 			return;
 		foreach (Orb orb in orbs)
 		{
 			if (orb.Leaving)
 				continue;
-			// The strokes flown this star, from the point it started on round to the one it last turned at.
 			int v = Mod(orb.Vertex - orb.Step * (orb.Strokes + 1), StarPoints);
 			for (int s = 0; s < orb.Strokes; s++)
 			{
 				int next = Mod(v + orb.Step, StarPoints);
-				DrawLine(Point(v) - GlobalPosition, Point(next) - GlobalPosition, Light.Mid, 2f, false);
+				PixelInk.Line(star, PointCell(v), PointCell(next), Light.Mid);
 				v = next;
 			}
-			DrawLine(Point(v) - GlobalPosition, orb.At - GlobalPosition, Light.Hot, 3f, false);
 		}
 	}
 
+	// The stroke each orb is flying, from the point it last turned at to where it is now.
+	private void DrawStroke()
+	{
+		strokeDrawn = false;
+		if (phase != Phase.Standing)
+			return;
+		Vector2 origin = ward.GlobalPosition;
+		foreach (Orb orb in orbs)
+		{
+			if (orb.Leaving)
+				continue;
+			Vector2 from = PointCell(Mod(orb.Vertex - orb.Step, StarPoints));
+			Vector2 to = orb.At - origin;
+			PixelInk.Line(stroke, from, to, Light.Edge, 3);
+			PixelInk.Line(stroke, from, to, Light.Hot);
+			strokeDrawn = true;
+		}
+	}
+
+	// The orbs, in the world's frame (this canvas stands at the origin).
 	private void DrawOrbs()
 	{
-		if (air == null || (phase == Phase.Fading))
+		orbsDrawn = false;
+		if (phase == Phase.Fading)
 			return;
+		// As StrokeReach grows with the ward, so does the orb.
+		float size = MathF.Max(1f, Radius / Player.OrbWardRadius);
+		// The core a whole art pixel up and to the left of the middle, toward the key.
+		var key = new Vector2(-Grid, -Grid) * MathF.Round(size);
 		foreach (Orb orb in orbs)
 		{
 			if (orb.Home)
 				continue;
-			Vector2 p = orb.At - GlobalPosition;
-			air.DrawCircle(p, 8f, Arcane.Edge);
-			air.DrawCircle(p, 6f, Light.Edge);
-			air.DrawCircle(p, 4f, Light.Hot);
-			air.DrawCircle(p, 2f, Light.Core);
+			Vector2 p = orb.At;
+			PixelInk.Disc(air, p, 8f * size, Arcane.Edge);
+			PixelInk.Disc(air, p, 6f * size, Light.Edge);
+			PixelInk.Disc(air, p, 4f * size, Light.Hot);
+			PixelInk.Disc(air, p + key, 2f * size, Light.Core);
+			orbsDrawn = true;
 		}
 	}
 }

@@ -164,6 +164,69 @@ public static class PixelInk
 		}
 	}
 
+	/// <summary>
+	/// A circle one art pixel thick round the cell (<paramref name="cx"/>, <paramref name="cy"/>), <paramref name="r"/>
+	/// cells out: the midpoint circle, so each cell meets the next by a side or a corner and none is doubled - the
+	/// circle a pixel artist draws. <see cref="Ring"/> stamps a block every step round, which is right for an
+	/// ellipse and thickens a circle's diagonals; this walks one octant and mirrors it, a rect a run.
+	/// </summary>
+	/// <remarks>Made for the Orb of Ages' ward (2026-11-03). The cells are the canvas's own, so a canvas moved to
+	/// a whole cell of the world's grid keeps the world's grid; only the dissolve's Bayer phase is the canvas's.</remarks>
+	public static void Circle(CanvasItem canvas, int cx, int cy, int r, Color color, float coverage = 1f)
+	{
+		if (r <= 0 || coverage <= 0f)
+			return;
+		int x = r, y = 0, d = 1 - r, runStart = 0;
+		while (y <= x)
+		{
+			int nx = x, ny = y + 1, nd;
+			if (d < 0)
+			{
+				nd = d + 2 * y + 3;
+			}
+			else
+			{
+				nd = d + 2 * (y - x) + 5;
+				nx = x - 1;
+			}
+			// A run is the cells of the first octant that share their x; it ends where x steps in, or at 45 degrees.
+			if (nx != x || ny > nx)
+			{
+				int n = y - runStart + 1;
+				Span(canvas, cx + x, cy + runStart, 1, n, color, coverage);
+				Span(canvas, cx + x, cy - y, 1, n, color, coverage);
+				Span(canvas, cx - x, cy + runStart, 1, n, color, coverage);
+				Span(canvas, cx - x, cy - y, 1, n, color, coverage);
+				Span(canvas, cx + runStart, cy + x, n, 1, color, coverage);
+				Span(canvas, cx - y, cy + x, n, 1, color, coverage);
+				Span(canvas, cx + runStart, cy - x, n, 1, color, coverage);
+				Span(canvas, cx - y, cy - x, n, 1, color, coverage);
+				runStart = ny;
+			}
+			x = nx;
+			y = ny;
+			d = nd;
+		}
+	}
+
+	// A w x h block of cells from (x0, y0): one rect whole, cell by cell through the Bayer matrix below it.
+	private static void Span(CanvasItem canvas, int x0, int y0, int w, int h, Color color, float coverage)
+	{
+		if (coverage >= 1f)
+		{
+			canvas.DrawRect(new Rect2(x0 * Grid, y0 * Grid, w * Grid, h * Grid), color);
+			return;
+		}
+		for (int y = 0; y < h; y++)
+		{
+			for (int x = 0; x < w; x++)
+			{
+				if (Keeps(x0 + x, y0 + y, coverage))
+					canvas.DrawRect(new Rect2((x0 + x) * Grid, (y0 + y) * Grid, Grid, Grid), color);
+			}
+		}
+	}
+
 	/// <summary>A filled disc of art pixels, a row a rect, dissolving below full coverage.</summary>
 	public static void Disc(CanvasItem canvas, Vector2 centre, float radius, Color color, float coverage = 1f)
 	{
