@@ -3,7 +3,8 @@
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
-**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **and Baba Yaga, the first second event** (4.1, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other six are not. It covers the ten
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **and Baba Yaga, the first second event** (4.1, "Built"), **and P2, two events in one chapter** (6.3, "Built"), **and Paracelsus,
+the first escort** (4.4, "Built"); the other five are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Last Bridge and the Court (which holds
 two: Nostradamus, and Ma Liang since the Sketchbook was emptied - 4.8). Tituba (Cursed Dungeon),
@@ -437,6 +438,142 @@ exactly this). Not measured on the phone.
   `hint_flask_chime`, a tapped flask and a cough. Lines: *"A man coughing, far out on the bog."* /
   *"Glass rings across the water, like a tapped flask."* / *"The coughing again. Weaker."*
 
+**Built (2026-11-03, `wip/wizard-paracelsus`).** The Swamp's second event, after the lanterns, through P2's API as 6.3
+wrote it (one line in `SideEventDirector`, a hint by site, deed words, `FromEvent`, a prisoner row); nothing in P2 changed.
+
+- **Him.** `CharacterData_Paracelsus.tres`, appended to `CharacterRoster`. Name "Paracelsus", id `paracelsus`.
+  `roster.paracelsus()`: the one figure EXAMINING his spell - his near arm raised, a round-bellied flask held up to the
+  light at the height of his eyes, his face turned up to it and narrowed, reading the dose; the liquid is the poison
+  ramp, the only light on him, with a thread of pale vapour off the neck. His far hand rests on the pommel of a long
+  sword planted point-down at his side (Azoth, the sword the stories say he kept his remedy in), so the far side of his
+  silhouette is a cross, which nobody else's is. Stocky and square, heavy-jawed and clean-shaven, in a wide flat beret
+  - the broadest head in the cast - over a physician's gown open down the front, its collar dark fur; under it a
+  near-black doublet and a belt with a pouch and two corked vials. The gown is the contract's `red` row from its base
+  down (a doctor's scarlet faded to wine), on the bytes the Archmage's sash already holds for that row (`\x14-\x18`,
+  in `anim_sets.PLAYER_RAMPS`), so no new material was needed. 0.98 edges/px. Sheets written by `build.py`'s wizard
+  loop for this name only.
+- **His passive, Sola Dosis** (`dot_25`): +25% to every poison tick on an enemy - `Enemy.PlayerPoisonScale`, read at the
+  tick (the one place poison takes health) and rounded stochastically as `ScaleOutgoingDamage` is, set back to 1 by
+  every `Player._Ready`. Every poison on an enemy is the player's, so it reaches every spell, rider and item that lays
+  one. "Damage over time" is poison in this game: nothing else takes health on a clock.
+- **The event** (`GibbetCageEvent`, `tools/art/gibbet.py`, `world/gibbet/`). A gibbet on a cairn of bog stones, its arm
+  out over a pool of Mother Rot's rot, a pulley at its end and the anvil's chain (`anvil-link.png`, hung) down to an
+  iron cage cut to a man's shape, him inside it standing with his hands on the bars, coughing now and then; a winch at
+  the post's foot. Placed on a 180 px open disc through the band (`EventSiteInBand`, dense). **Hold the winch 2 s**
+  (within 60 px of its foot; it drains over 2 s when let go) and the cage comes down (1.3 s), the door swings open and
+  he steps out onto the bank. He **follows at 75% of the player's walk** (`Player.WalkingSpeed`) to the **ferry
+  landing, 1,450-1,750 px off** - the objective arrow is on it, and a faint column stands over it while he walks.
+  Every plain chaser within **250 px** of him goes for him; each body within **46 px** of his feet bites every
+  **0.35 s** through `ScaleOutgoingDamage` (the chapter's x1.15) off a bar of **60** drawn over his head, which flashes
+  as he is bitten; and every **5 s** while he walks the bog raises **three of the chapter's Mired** (Bulk role, 3x the
+  run's spawn health) **220-300 px ahead of him, across his way**. If he falls the bog takes him: he sinks where he
+  stands (his own sheet, eaten from the feet up), and he is in the cage again, hoisted and coughing, the winch to hold
+  again and the walk to start again from the cage, his bar full. At the landing - he is within 90 px of its foot, or
+  the player is and he is close behind - he walks the jetty and steps into the Ferryman's empty punt, which drifts off
+  into the fog with him, and he is gone into the column of light. Nothing here is a body: he is a sprite y-sorted at
+  his feet, never in "enemies", with no collision layer, never a target; the gibbet, the cage, the pool, the landing
+  and the punt are drawings that block nothing. On a save that already has him free the walk is the same and the
+  landing pays the chest (as the Sibyl's voice still calls once she is out).
+- **The primitive** (section 7): `HuntedEscort`, two halves. What the swarm sees is three statics (whether anyone is
+  led, where he stands, the 250 px radius), read in `Enemy._PhysicsProcess`'s chase branch - one flag test while nobody
+  is led, one distance while someone is - and a plain chaser inside it chases HIM with everything it would have chased
+  the player with (the lead, the ring slot, the stand-off at its touch distance), re-aiming on the frame it switches.
+  How he walks is the leader's own steps: a crumb every 20 px of the player's walk in a ring of 512, walked in order,
+  stopping 64 px short of him - so he goes round the lake the player went round, and never anywhere the player's boots
+  could not go. Bites are one `EnemyRegistry.ForEachNear` a bite interval with a struct visitor: no allocation per frame.
+- **Who goes for him** (`Enemy.ClassHuntsEscort`, measured once per class): a body whose steering is the plain chase -
+  the base `AdjustSteering`. Not one with a behaviour of its own, because that behaviour is aimed at the player: a
+  caster would hold range from him and fire past him at the player, a lunger's dash and a slammer's ring are measured
+  against the player, an exploder goes off on the player. And every boss overrides it (`BossEnemy` does), so **no boss
+  ever retargets**. The Swamp's walkers (the Mired, Striders, Mudbacks, Broodlings) and the Ferryman go for him; its
+  Lamplighters, Frog Idols, Bog Hounds, Blister Toads, Peat Cutters and Reed Pipers do not.
+- **His unlock** is the site's derived Road deed, "The Ferry Reached", secret until `stage_3`, counted at the Throne
+  only; locked hint "Hung in a cage over the rot of the Blighted Swamp."; quest-log prisoner "the man in the gibbet's
+  cage", held line "A man is coughing in a cage somewhere over the rot." (so the Swamp's note carries it), freed line
+  "{0} has crossed the water.", and his freeing reel (`freed.py`, `Freeings.WizardIds`; `prologue.HALO` gained
+  `poison`, verdant as grass's).
+- **His clue.** `HintCue.Vapour`, a new last row of `hint-cues.png` (every row before it unchanged, byte for byte):
+  threads of pale vapour - the arcane ramp's two pale stops, never the lanterns' poison green - curling as they drift
+  in slowly and low from his side, against the wind, and thinning out before the line; a few on each beat of
+  `hint_flask_chime`: a glass flask tapped twice, a man coughing twice, a last faint tap (`sfx._FLASK_TAPS`,
+  `_FLASK_COUGHS` = `StageHintCue.FlaskBeats`). Nearest in the whole set 0.113 (`cast_metal`). The three lines above,
+  unchanged.
+- **His form**, The Dose (distil, `Contagion.TheDoseId`). Every carrier has a generation, the cast's 0, and each jump is
+  one more: the first jump reaches the **8** nearest, the next **4**, then **2**, then **1**, each generation dosed twice
+  the last (the infecting hit and the poison both: x2, x4, x8, x16). The quota is the generation's, shared by every
+  carrier of the one before it, so a plague reaches fifteen bodies past its first and the one at the end carries
+  sixteen times the first dose and spreads nothing - it is where the plague ends, and it goes down in a heavy, dark
+  burst. Within a jump the nearest go first (a selection, not a sort: nothing allocated). Each generation's mark is a
+  grid step wider than the last, and the last carrier's is ringed twice in the hot tone. Every card still works on it in
+  its generation: a fever cloud infects into the next generation of the carrier that left it, a Pandemic beat bursts
+  each carrier as its own generation, Outbreak's burst is the first jump, the Plague Wind infects as the first jump does.
+  No card on Contagion trades Poison away (Marsh Fever adds Water beside it), so every route leads to the form. Card:
+  "Each jump of the plague reaches half as many and doubles its dose: 8, 4, 2, then 1. The last carrier dies hardest."
+  Synergy line: "Distil: the last one dies hardest." Its own evolution icon. No visual scale. **A boss is dosed at
+  most x4** (`Contagion.DoseBossGeneration`; 8 below).
+
+**What moved, and why.**
+
+1. **"A health bar scaled like the event enemies" is a fixed bar of 60, not one grown with the run's spawn health.**
+   An event enemy's health is chewed by the player's damage, which grows over a run; his is chewed by the swarm's
+   touches, which do not - one touch is the same at minute 3 and minute 13 (only the chapter's x1.15 is on it). What
+   grows is how many reach him, so the walk gets harder through the run by itself. "Scaled like" is kept in the sense
+   that matters: it is a number of touches, so it means the same wherever in the run he is walked.
+2. **A bite is 46 px and every 0.35 s, not a first guess of 38 px and 0.5 s.** With eight Mired raised round him and
+   nothing killing them, at 38/0.5 they took 20 s to bring him down: the swarm's own spacing (`EnemySpacingRadius`)
+   spreads a ring of bodies past 38, so one or two of eight were ever biting. At 46/0.35 the same ring brought him down
+   in about 8 s of biting.
+3. **The Mired rise ahead of him, across his way, not round him, at 3x spawn health.** Nothing in the swarm walks half
+   his pace, so a ring raised round him only ever fell behind: on the first probe runs six were risen and none came
+   within 250 px. At the run's own health the player's opening loadout burned them down before they turned on him.
+4. **The bog raises them where it raises them.** `SpawnEventEnemy` moves anything it cannot prove reachable to the spawn
+   ring, asking the navigation window - which, measured, did not cover him a few seconds into the walk, so every riser
+   went to the ring 400-1,100 px off. A riser is put back where the bog raised it unless that ground is water or a wall.
+5. **He boards when the player is at the landing and he is close behind, not only when he is within 90 px of its
+   foot.** On seed 7 the bank in front of the landing was the player's to find round water, and he stood at 93% of the
+   way, 64 px behind a player who was standing on the landing, while the risers piled up until he fell - three times.
+   The landing is also placed on ground open over its whole disc now (`ExplorePlacer.IsClearDense`, new), so its bank
+   is never half water.
+6. **No new material.** The doc left `\x9a-\x9e` free for one; the gown is the contract's `red` row on the bytes the
+   Archmage's sash already holds.
+7. The doc's four generations are read as four JUMPS (8, 4, 2, 1), the cast's carrier being the source: "the last
+   carrier" is one body, as the sentence has it.
+
+8. **A boss is dosed at most x4** (`Contagion.DoseBossGeneration`), in the infection and in a burst's hit. The last
+   carrier is meant to die of its dose, and a boss does not: it stands in its adds for a whole fight, and under
+   Pandemic a beat re-doses it every two seconds without anything dying, so uncapped it would hold the last carrier's
+   x16 for the fight. It is still infected and still passes the plague on. The synergy line says so.
+
+**Verified:** build; the validator (0 errors, main's 1 warning); `RegressionChecks.ValidateGibbetCage` (the numbers keep
+their shape; a plain chaser hunts him and no boss or behaviour class does, over every `Enemy` type in the assembly; led
+round a lake on paper he never enters it, never strays more than a crumb off the walked path, never outpaces 75%, and
+ends close behind; the hint's vapour on the sound's beats; the sheets' sizes). `_ExploreProbe --stage=3`, which ESCORTS:
+it holds the winch, then walks toward the landing at the player's own walking speed, round water and walls (its feet
+test the ground a stride ahead), waiting whenever he is more than a few strides behind, and clears the swarm only every
+5 s so the Mired and the trickle reach him: seeds 4242, 31 and 7 `--fresh-save`, 4242 `--all-unlocked` (the chest) and 1001 `--fresh-save --wayfinder-first` - 47 to 55 passed, 0 failed, both Swamp events found and won every time, the two sites 122 to 156 degrees apart; he walked 1,545 to 2,189 px behind the player (the probe turned off water 0 to 51 times on the way), 6 to 34 bodies turned on him, 3 to 17 bites, and he reached the landing with 39 to 57 of his 60. Paracelsus freed in memory and his deed recorded by his site on the
+fresh saves; the hints alternated lanterns and cage, then the cage had every slot after the lanterns were won.
+`--let-him-fall` (seed 31): once he was out, the player's spells stopped and eight Mired raised on him - he fell about 9 s later (48 bites),
+sank, was in the cage again, was lowered again and led out again from the cage, and reached the landing. `_UiShot` of the
+cage dormant, the winch (him stepping out), the walk, the punt and the clue at both canvases, and the character select
+locked (his silhouette and hint once the Swamp is open) and freed at both. `_BalanceHarness --character=N --stage=3
+--minutes=15 --all-unlocked --seek-apotheosis --immortal --timescale=6`, seeds 1234 and 77: the spell gate met at 6.8
+and 6.9 minutes (player level 17), the form offered and taken at 9.9 and 9.1 (level 21). In the five minutes after it
+the plague's carriers by generation came to 151/620/472/263/127 and 169/728/538/300/146 - the first jump reaching about
+four of its eight, the last carrier reached on 84-86% of casts - and 126 and 146 last carriers were finished. Contagion
+was 97-98% of each run's damage, but the seek bot pours every pick into its own spell and leaves the rest at level 1-4,
+so that says nothing of a player's loadout; kills a minute are held by the spawn economy (310-330 before the form,
+350-470 after), so the harness cannot see the form's worth either. Both runs ended on the boss's arrival, so the boss
+cap is not measured.
+
+**Not verified: whether escorting him is fun,** or readable through a real crowd - the probe clears the swarm every 5 s
+and walks a teleported player through ground nobody has fought over - nor whether a player reads that he follows the
+player's own steps (the objective says only "Lead him to the ferry landing"), nor how often a real player loses him;
+the bite numbers were tuned against eight Mired raised on him, not against a run's swarm. The sound, measured (0.113
+from `cast_metal`, the nearest in the whole set; above the 0.10 line, but the lowest of any chapter hint) and never
+heard; the vapour at a glance mid-fight; The Dose against a boss; Sola Dosis, which no build the bot makes as him
+measures; nothing on the phone. One probe run, before the board-and-placement fixes, spun without output for eight
+minutes and was killed; it did not recur in the eleven runs after (29 to 42 s each), and its cause was not found.
+
 ### 4.5 Mystic Ruins - Abe no Seimei
 
 - **Who.** The court onmyōji of Heian Kyoto (921-1005): diviner, exorcist, master of wards and paper
@@ -779,7 +916,7 @@ an `UnlockCatalog` entry, an `ApotheosisCatalog` entry, a passive id, a hint sou
 | Wayland | S-M | M | S-M | a slam landing on a point | none | no |
 | the Sibyl | M (cliff of mouths) | M | M | per-mouth delayed audio | none | no |
 | Baba Yaga | L (the hut on the 96 cell, walking) | M | M | a mover that flees (`SecretMover` inverted) | R2 | yes |
-| Paracelsus | S | L | M | an escorted person enemies hunt | none | yes |
+| Paracelsus | S | L | M | an escorted person enemies hunt (`HuntedEscort`, built) | none | yes |
 | Imhotep | S-M | S | M | a wander steering state | R1 | yes |
 | Medea | S | S-M | **L** | orbs drawn to a point; enemies attacking enemies | R2 | yes |
 | Morgan | S-M | S-M | M | a second casting origin | R2 | no |
