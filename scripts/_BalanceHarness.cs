@@ -1520,6 +1520,15 @@ public partial class _BalanceHarness : Node
 		// The Hungry Hedge (Baba Yaga): how much it has eaten, and how far grown toward its cap.
 		if (player.HungryHedgeFed > 0)
 			GD.Print($"HARNESS HEDGE m={row.Minute} fed={player.HungryHedgeFed} growth={player.HungryHedgeGrowth * 100f:0}%");
+		// The Eye of Ra (Imhotep): flares so far, bodies blinded by them, elites seared instead, and how many are blind now.
+		if (Fireball.FlaresThisRun > 0)
+		{
+			int blindNow = 0;
+			foreach (Enemy e in EnemyRegistry.Snapshot)
+				if (IsInstanceValid(e) && e.IsBlinded)
+					blindNow++;
+			GD.Print($"HARNESS EYE m={row.Minute} flares={Fireball.FlaresThisRun} blinded={Fireball.BlindedThisRun} seared={Fireball.ElitesSearedThisRun} blind_now={blindNow}");
+		}
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger
@@ -3699,6 +3708,9 @@ public partial class _BalanceHarness : Node
 		// The Hungry Hedge (Baba Yaga): what it ate, and how near its cap it grew.
 		if (player != null && IsInstanceValid(player) && player.HungryHedgeFed > 0)
 			lines.Add($"  the hungry hedge ate {player.HungryHedgeFed} ({player.HungryHedgeGrowth * 100f:0}% grown)");
+		// The Eye of Ra (Imhotep): how often it flared and what it blinded.
+		if (Fireball.FlaresThisRun > 0)
+			lines.Add($"  the eye of ra flared {Fireball.FlaresThisRun} times, blinded {Fireball.BlindedThisRun}, seared {Fireball.ElitesSearedThisRun} elites");
 		lines.AddRange(SpellLevelLines());
 		lines.Add("");
 		lines.Add(AscensionSummaryLine());

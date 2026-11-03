@@ -658,6 +658,8 @@ public partial class Player : CharacterBody2D
 		AddToGroup("player");
 		// Bone Fence is a run's, not the process's: every run starts at no bonus, and her passive raises it.
 		Enemy.PlayerKnockbackScale = 1f;
+		// The Eye of Ra's tallies are a run's too (the harness reads them).
+		Fireball.ResetEyeOfRaTallies();
 		ResetItemRules();
 		feetBody = GetNodeOrNull<CharacterBody2D>("Feet");
 		feetShape = feetBody?.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");

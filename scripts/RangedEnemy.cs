@@ -113,7 +113,8 @@ public partial class RangedEnemy : Enemy
 
 	private void TickCast(float delta)
 	{
-		switch (cast.Tick(delta, CanSeeTargetInRange()))
+		// Blinded (Enemy.ApplyBlind, the Eye of Ra): it has lost him, so it begins nothing; one already begun still lands.
+		switch (cast.Tick(delta, CanSeeTargetInRange() && !IsBlinded))
 		{
 			case AttackTelegraph.Beat.Started:
 				PlayAttackAnimation();

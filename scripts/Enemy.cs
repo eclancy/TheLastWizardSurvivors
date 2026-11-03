@@ -29,6 +29,10 @@ public partial class Enemy : CharacterBody2D
 	// frightened again. See ApplyFear.
 	private float fearTimeRemaining = 0f;
 	private float fearImmuneTimeRemaining = 0f;
+	// Blind (Imhotep's Eye of Ra, .ai/chapter-wizards.md 4.6): seconds left having lost the player, and the way it is
+	// wandering meanwhile. See ApplyBlind.
+	private float blindTimeRemaining = 0f;
+	private Vector2 blindHeading = Vector2.Zero;
 	// Weaken (issue #66): the fraction this enemy's outgoing damage is cut by while it lasts.
 	private float weakenFraction = 0f;
 	private float weakenTimeRemaining = 0f;
@@ -425,7 +429,7 @@ public partial class Enemy : CharacterBody2D
 	// animation slowed with the body or stopped dead by a freeze. Written on transitions only -
 	// SelfModulate, not Modulate, so the hit flash and the elite and boss tints that own Modulate
 	// (baseModulate, SetBaseModulate) compose with it instead of fighting it.
-	// 0 none, 1 poisoned, 2 slowed, 3 frozen, 4 feared. Poison is the only mark-only status with a
+	// 0 none, 1 poisoned, 2 slowed, 3 frozen, 4 feared, 5 blinded (a sun-struck pallor, warm-white, and a stumbling walk). Poison is the only mark-only status with a
 	// tint, and it is faint: modulate is a status channel (.ai/art-direction.md §4), but a green swarm
 	// is not. Fear has no mark at all - like Shock's shake and knockback, it is motion: the enemy
 	// turns and runs - and wears a pallor and a scrambling walk on the sprite.
@@ -436,15 +440,17 @@ public partial class Enemy : CharacterBody2D
 	private static readonly Color PoisonedLook = new Color(0.90f, 1.06f, 0.82f);
 	private static readonly Color FearedLook = new Color(1.30f, 1.22f, 1.45f);
 	private const float FearedWalkSpeed = 1.5f;
+	private static readonly Color BlindedLook = new Color(1.42f, 1.32f, 1.02f);
+	private const float BlindedWalkSpeed = 0.6f;
 
 	private void RefreshStatusLook()
 	{
 		int look = 0;
 		if (!isDying && !StatusEffectLayer.Disabled)
-			look = IsFrozen ? 3 : IsFeared ? 4 : IsSlowed ? 2 : poisonTimeRemaining > 0f ? 1 : 0;
+			look = IsFrozen ? 3 : IsFeared ? 4 : IsBlinded ? 5 : IsSlowed ? 2 : poisonTimeRemaining > 0f ? 1 : 0;
 		// The walk slows with the body, floored so a heavy slow still visibly walks; a freeze stops it;
 		// a fright scrambles it.
-		float speed = look == 3 ? 0f : look == 4 ? FearedWalkSpeed : look == 2 ? Mathf.Clamp(slowMultiplier, 0.35f, 1f) : 1f;
+		float speed = look == 3 ? 0f : look == 4 ? FearedWalkSpeed : look == 5 ? BlindedWalkSpeed : look == 2 ? Mathf.Clamp(slowMultiplier, 0.35f, 1f) : 1f;
 		if (look == statusLook && Mathf.IsEqualApprox(speed, statusLookSpeed))
 			return;
 
@@ -454,6 +460,7 @@ public partial class Enemy : CharacterBody2D
 		{
 			3 => FrozenLook,
 			4 => FearedLook,
+			5 => BlindedLook,
 			2 => SlowedLook,
 			1 => PoisonedLook,
 			_ => Colors.White,
@@ -1165,6 +1172,11 @@ public partial class Enemy : CharacterBody2D
 				// its behaviour wanted - a caster holding range or a wind-up planting it alike.
 				else if (fearTimeRemaining > 0f)
 					steering = -variedDir;
+				// A blinded enemy has lost him: it wanders where it was looking, slowly, turning a little as it goes,
+				// over whatever its behaviour wanted - except a deliberate hold (a planted wind-up), which stays planted
+				// so a tell already being drawn never slides off it. Once its sight comes back it chases again.
+				else if (blindTimeRemaining > 0f && steering.LengthSquared() > 0.0001f)
+					steering = BlindWander(step);
 
 				if (staggerTick % SeparationUpdateInterval == 0)
 				{
@@ -1274,6 +1286,16 @@ public partial class Enemy : CharacterBody2D
 			{
 				vulnerableTimeRemaining = 0f;
 				vulnerableBonus = 0f;
+			}
+		}
+
+		if (blindTimeRemaining > 0f)
+		{
+			blindTimeRemaining -= (float)delta;
+			if (blindTimeRemaining <= 0f)
+			{
+				blindTimeRemaining = 0f;
+				RefreshStatusLook();
 			}
 		}
 
@@ -1771,6 +1793,51 @@ public partial class Enemy : CharacterBody2D
 	}
 
 	public const float FearImmunitySeconds = 4f;
+
+	/// <summary>True while it has lost the player (<see cref="ApplyBlind"/>): it wanders and starts no attack.</summary>
+	public bool IsBlinded => blindTimeRemaining > 0f;
+
+	/// <summary>Seconds of blindness left. For the harness and the validator.</summary>
+	public float BlindSecondsLeft => blindTimeRemaining;
+
+	/// <summary>A blinded enemy's pace, as a share of its own: it is feeling its way.</summary>
+	public const float BlindPace = 0.45f;
+
+	/// <summary>How fast a blinded enemy's heading turns as it wanders, in radians a second at most.</summary>
+	public const float BlindTurnRate = 1.6f;
+
+	/// <summary>Blinds the enemy: it loses the player for <paramref name="duration"/> seconds and wanders.</summary>
+	/// <remarks>
+	/// Imhotep's Apotheosis, the Eye of Ra (.ai/chapter-wizards.md 4.6): "Whatever sees it loses you for two seconds and
+	/// wanders." Not fear: a frightened enemy runs from him, which still says where he is; a blinded one has no idea,
+	/// so it walks on the way it was facing at a feeling pace (<see cref="BlindPace"/>), turning by degrees, and starts
+	/// no attack - every attacking subclass asks <see cref="IsBlinded"/> before it begins a wind-up (a wind-up already
+	/// under way still lands: AttackTelegraph's promise). Its body is still a body - one that blunders into him still
+	/// hurts. Stacking-resistant like every debuff: the longer of the two durations, never a sum. Elites, minibosses
+	/// and bosses are immune (IsMiniBoss): a boss that lost him would be a fight that stopped, and the elites are
+	/// struck by the flare instead (Fireball.FlareEyeOfRa).
+	/// </remarks>
+	public void ApplyBlind(float duration)
+	{
+		if (isDying || IsMiniBoss || IsHeld || duration <= 0f)
+			return;
+		if (blindTimeRemaining <= 0f)
+		{
+			// The way it was facing when the light took its eyes: on along its walk, or a random way if it stood still.
+			Vector2 v = Velocity;
+			blindHeading = v.LengthSquared() > 1f ? v.Normalized() : Vector2.FromAngle(wanderPhaseA * 2.3f + instanceId % 7);
+		}
+		blindTimeRemaining = MathF.Max(blindTimeRemaining, duration);
+		RefreshStatusLook();
+	}
+
+	// One step of the blind wander: the heading turned a little by the body's own wander phases, at the feeling pace.
+	private Vector2 BlindWander(float step)
+	{
+		float turn = (Mathf.Sin(wanderPhaseA * 1.7f) + 0.6f * Mathf.Sin(wanderPhaseB * 2.3f)) / 1.6f;
+		blindHeading = blindHeading.Rotated(turn * BlindTurnRate * step).Normalized();
+		return blindHeading * BlindPace;
+	}
 
 	// A ceiling on the debuff itself, not just on any one application. Vulnerability multiplies
 	// every other damage source the player has, so an uncapped version scales with the whole build
@@ -2410,6 +2477,7 @@ public partial class Enemy : CharacterBody2D
 		vulnerableTimeRemaining = 0f;
 		fearTimeRemaining = 0f;
 		fearImmuneTimeRemaining = 0f;
+		blindTimeRemaining = 0f;
 		weakenFraction = 0f;
 		weakenTimeRemaining = 0f;
 		witherFraction = 0f;
