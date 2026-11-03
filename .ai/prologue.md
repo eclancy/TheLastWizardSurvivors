@@ -1,6 +1,6 @@
 # The prologue
 
-The story-mode introduction: six illustrated panels, about 27 seconds, mostly without words. Built
+The story-mode introduction: eight illustrated panels, about 36 seconds, mostly without words. Built
 2026-10-31 from Eric's request: *"When you first open up story mode, there should be an introduction
 to the story, mostly told through art, introducing the final boss and his dark creatures taking over
 the land, and kidnapping the other wizards."* And then: *"Overall keep text minimal."*
@@ -17,11 +17,15 @@ choice below comes from it.
 | 3 | The tide (`tide`) | - | His shadows over the land: a village at the foot of a hill, still lit, and coming over the crest from the tower on the horizon a flood of the things he raised, every one with his mark in its eyes. One of them, horned, in the foreground. |
 | 4 | Taken (`taken`) | *He took them all.* | The wizards led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
 | 5 | The one he missed (`missed`) | *You are the one he missed.* | **Animated** (below): the hiding. The broken ring's near stones in a row, and in the row, between two of them, the player - the title's figure, facing us, still as a stone, his light put out to an ember. Beyond the row his creatures search: a hound trots along it nose down, stops at his shoulder and works the air beside him - his ember goes out - and goes on; a caster in the gap watches; two small ones turn their heads; pair by pair the eyes in the dark turn away and back. They never find him. |
-| 6 | The road (`road`) | - | Seen from above and behind: the player small on a road that winds over the heath toward everything he holds, the tower on the far horizon. Then the character select - the player choosing who walks it. |
+| 6 | The break (`break`) | *You went back for them.* | **Animated.** The freeing (`.ai/cutscenes.md`, built 2026-11-02 from Eric's *"Include a cutscene where the blue robed wizard frees the four starting wizards"*): the four disciplines on their knees in his chain, the Archmage in the middle of them, his light coming up and breaking it, their own lights coming back. |
+| 7 | The five (`five`) | - | The four standing where they knelt, each light his own again, and the Archmage in his warded circle among them. |
+| 8 | The road (`road`) | - | Seen from above and behind: the player small on a road that winds over the heath toward everything he holds, the tower on the far horizon. Then the character select - the player choosing who walks it, any of the five. |
 
-**Three lines, all in the game's own voice.** "He came here first" is the Broken Circle's own card line
-(`.ai/campaign.md`); "You are the one he missed" is the premise's sentence. Nothing else is said: no
-title card, no narration, nothing an image is already saying (`world-and-tone.md` tone rule 2).
+**Four lines, all in the game's own voice.** "He came here first" is the Broken Circle's own card line
+(`.ai/campaign.md`); "You are the one he missed" is the premise's sentence; "You went back for them" is
+the freeing's, the only thing its picture cannot say - that the one breaking the chain is the player.
+Nothing else is said: no title card, no narration, nothing an image is already saying
+(`world-and-tone.md` tone rule 2).
 
 **Rules it keeps:**
 
@@ -45,7 +49,8 @@ title card, no narration, nothing an image is already saying (`world-and-tone.md
   open (`.ai/side-events.md`, "Secret wizards"), and the prologue plays before any chapter has, so it
   would print the answer before the question. Dee's orb is the darkness ramp in the game; here it burns
   arcane, because darkness as light is the dark wizard's alone.
-- **The player is the light.** The last two panels have one warm light each, and it is his.
+- **The player is the light.** The hiding and the road have one warm light each, and it is his; the
+  break and the five are where his light gives the four theirs back.
 
 **One tension, and how Eric settled it (2026-11-01).** `world-and-tone.md` tone rule 5 says *"He is
 never on screen until he is."* Eric asked for the prologue to introduce him, then ruled: *"The dark
@@ -63,7 +68,7 @@ takes. A later prologue panel may never show more of him than this one does.
 every random stream uses `rng.random()` only (Python 3 changed `randrange`).
 
 ```
-python tools/art/prologue.py              # all six panels into assets/bonelight/ui/prologue/
+python tools/art/prologue.py              # all eight panels into assets/bonelight/ui/prologue/
 python tools/art/prologue.py taken road   # just these
 python tools/art/prologue.py --preview    # also tools/art/_prologue/<panel>.png (gitignored)
 "$GODOT_BIN" --headless --path . --import  # then import, and commit the .import sidecars
@@ -93,7 +98,9 @@ and the ward's construction from `splash.vigil`. New here: the standing stones, 
 silhouettes and the searching hound (`sniffing_hound`), the dark wizard, the black sun, the tower and
 the player from behind (`player_back`).
 
-**The animated panel.** Panel 5's moving part is one box of its mid layer (`MISSED_BOX`, 368x112 at
+**The animated panels.** The break (panel 6) animates the same way, in its own box (`BREAK_BOX`; each
+animated panel's box, clock and atlas width are in `ANIMS`); `.ai/cutscenes.md` says what moves. Panel 5's
+moving part is one box of its mid layer (`MISSED_BOX`, 368x112 at
 296,400), drawn at 8 frames a second over the panel's 5.4 s and written as `missed-anim.png` (an atlas,
 four frames a row) with `missed-anim.json` (the box, the clock, and a timeline of one atlas frame per
 tick, so a held frame is stored once). Each frame is the WHOLE mid layer inside the box - the searchers
@@ -177,12 +184,14 @@ prologue's reel is ever marked seen by this scene. `_UiShot --scene=res://scenes
 "$GODOT_BIN" --path . --fixed-fps 60 scenes/_PrologueProbe.tscn
 ```
 
-It checks, in order: an unseen save's Start Run opens the prologue; a tapped Enter does not skip; a
-held Enter skips into the character select; the flag stays unset with writes off; a seen save's Start
-Run goes straight to the character select; Options' Watch the Prologue opens it and a held Escape
-returns to the main menu; left alone it plays through and goes on to the character select; and
-(temporary, with the button) the world map's Replay intro opens it and a held Escape returns to the
-map. It prints PASS/FAIL per step and exits non-zero on any failure. Takes about 45 s.
+It starts from a brand-new save in memory and checks, in order: an unseen save's Start Run opens the
+prologue; a tapped Enter does not skip; a held Enter skips into the character select; the flag stays
+unset with writes off; a seen save's Start Run goes straight to the character select; Options' Watch the
+Prologue opens it and a held Escape returns to the main menu; left alone it plays through the freeing
+(the break follows the hiding, the five follow the break) and goes on to the character select;
+(temporary, with the button) the world map's Replay intro opens it and a held Escape returns to the map;
+and once a wizard is free, Options plays his freeing (`.ai/cutscenes.md`). It prints PASS/FAIL per step
+and exits non-zero on any failure. Takes about a minute.
 
 **The pictures:**
 
@@ -192,15 +201,16 @@ xvfb-run -a -s "-screen 0 1400x1300x24" "$GODOT_BIN" --path . --resolution 1280x
 ```
 
 Add `--resolution 540x1212 ... --portrait --safe-area` for the Pixel 9 canvas. At 60 fps the panels sit
-mid-hold at frames 138, 396, 642, 900, 1176 and 1434; frame 255 is mid-dissolve from the first to
-the second, and the whole thing ends at about frame 1620. The hiding starts dissolving in at frame
+mid-hold at frames 138, 396, 642, 900, 1176, 1452 (the break, animated: see `.ai/cutscenes.md`), 1716
+and 1962; frame 255 is mid-dissolve from the first to the second, and the whole thing ends at about
+frame 2148. The hiding starts dissolving in at frame
 1008, so its moment `t` seconds in is frame `1008 + 60t`: `--frames=1068 --burst=4,60` takes it at 1,
 2, 3 and 4 s (the hound arriving, sniffing at his shoulder, standing, gone past). `--frames=138
---burst=6,258` takes all six panels in one run.
+--burst=6,258` takes the first six panels in one run.
 
 ## Not done
 
-- Only the hiding animates. The others are still but for drift (no flicker on the fire, no blinking
-  eyes); the animated box would carry any of them if it is wanted.
+- Only the hiding and the break animate. The others are still but for drift (no flicker on the fire, no
+  blinking eyes); the animated box would carry any of them if it is wanted.
 - No pad has been held on the skip prompt and no phone has played it; both are reasoned from
   `MenuNavigator` and `BaseButton` and tested with an injected key.
