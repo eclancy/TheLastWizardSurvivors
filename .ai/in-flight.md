@@ -316,7 +316,16 @@ Elim's "it's wizarding time" drawing: **not in Eric's email** - the only image E
   the complaint Cyclone Slash had (2026-10-29), so it wants the same pixel-art pass; his spell trails
   Kindled Ward late (40% of his damage against Seimei's 56%); whether holding the circle feels like a
   choice on the phone stick; his sheet beside Väinämöinen's.
-- **The name** (Eric): *something like The One He Missed*; `.ai/game-name.md`, exact words not picked.
+- **The name is The One He Missed** (Eric, later the same day), everywhere - repo, game, website, and the
+  GitHub repo renamed to `eclancy/TheOneHeMissed`. **The blue-robed title figure is the player**, "the one
+  he missed", story only (title, prologue), and **not Merlin**: Merlin gets a look of his own. Building:
+  the rename (`wip/rename`), the title art for the new name (`wip/title-art`), Merlin's new look
+  (`wip/merlin-art`); the website's half is PR eclancy/EricClancyEngineeringAndCrafts#48, held until
+  the GitHub repo is renamed (old `/wizard-survivors/version.json` and `/download` keep answering for
+  installed copies). Merge order: rename the GitHub repo, merge the site PR once its CI (`nginx -t`)
+  passes, then the game rename.
+- **Merged since:** Wayland (`56097665`, index 12) and the Sibyl (`4738a49e`, index 13, hint row 8).
+  **Building:** P2, a second event per chapter (`wip/second-events`).
 
 ## 4. Waiting on Eric
 
