@@ -168,13 +168,21 @@ public partial class CharacterSelection : Control
 			// (Eric, 2026-11-02: "the dark wizard shouldn't show up, even in silhouette, until he's unlocked").
 			if (!unlocked && UnlockCatalog.GetCharacter(character.Id)?.SealedUntilFreed == true)
 				hiddenUntilFreed.Add(i);
-			if (IsHiddenFromSelection(character) || hiddenUntilFreed.Contains(i))
+		}
+
+		// Laid out in the screen's own order, not the roster's: The Archmage first (CharacterRoster.SelectionOrder;
+		// Eric, 2026-11-02: "He should be the first one on the list"), the rest as the roster lists them. Every card
+		// still carries its ROSTER index, which is what Global.SelectedCharacterIdx and the run read.
+		foreach (int i in CharacterRoster.SelectionOrder())
+		{
+			if (!IsSelectable(i))
 				continue;
-			grid.AddChild(wideLayout ? BuildCompactCard(character, i, state) : BuildCard(character, i, state));
+			grid.AddChild(wideLayout ? BuildCompactCard(characters[i], i, cardStates[i]) : BuildCard(characters[i], i, cardStates[i]));
 		}
 
 		// Global.SelectedCharacterIdx starts at 0, which is the Test Wizard, so a fresh launch would open
-		// the detail pane on a wizard who has no card.
+		// the detail pane on a wizard who has no card. It falls to the first playable card in the screen's
+		// order - The Archmage on every save, a starter drawn first.
 		if (!IsSelectable(Global.SelectedCharacterIdx))
 			Global.SelectedCharacterIdx = FirstSelectableIndex();
 
@@ -708,11 +716,12 @@ public partial class CharacterSelection : Control
 	private bool IsSelectable(int idx) =>
 		idx >= 0 && idx < characters.Count && !IsHiddenFromSelection(characters[idx]) && !hiddenUntilFreed.Contains(idx);
 
-	// The first wizard on the screen the save can play; the first on the screen at all if it can play none.
+	// The first wizard on the screen the save can play; the first on the screen at all if it can play none. In the
+	// screen's order (CharacterRoster.SelectionOrder), so a fresh launch opens on the card drawn first.
 	private int FirstSelectableIndex()
 	{
 		int firstShown = -1;
-		for (int i = 0; i < characters.Count; i++)
+		foreach (int i in CharacterRoster.SelectionOrder())
 		{
 			if (!IsSelectable(i))
 				continue;

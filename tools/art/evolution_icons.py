@@ -4103,15 +4103,18 @@ def _(sp, c):
 
 @card("magic_missile_twin_volley")
 def _(sp, c):
-    """Twin Volley: the missile forks on its first hit, two shards flying out either side."""
+    """Twin Volley: the missile forks on its first hit, two shards flying out either side. Since 2026-11-02 it is
+    Magic Missile's branch into Lightning (the spell went pure Arcane for The Archmage), so the fork is forked
+    lightning: the shards and the glint where it split are drawn in that ramp, over the Lightning night the
+    gain gives the disc."""
     reset(sp)
     sp.place = Place(0.66, at=(10.0, 16.0))
 
     def split(cv, x):
-        a = E["arcane"]
-        dart(cv, a, 18, 15, 27, 7)
-        dart(cv, a, 18, 17, 27, 25)
-        m_glint(cv, 18, 16, 2, a)
+        l = E["lightning"]
+        dart(cv, l, 18, 15, 27, 7)
+        dart(cv, l, 18, 17, 27, 25)
+        m_glint(cv, 18, 16, 2, l)
     O(sp, split)
 
 
@@ -4173,6 +4176,32 @@ def _(sp, c):
     """Arcane Orb (2h, was Singularity Core): the dart swells into a great slow orb."""
     reset(sp)
     sp.subject = arcane_orb
+
+
+@card("magic_missile_not_one_missed")
+def _(sp, c):
+    """Not One Missed (The Archmage's Apotheosis, count): a count leaving the light in the middle - six darts out
+    along six lines, and at the end of every one its own mark, a dark body rimmed in the eye-light. One each, none
+    twice, nobody in the ring without one."""
+    reset(sp)
+    sp.place = Place(0.0001)
+
+    def count(cv, x):
+        a = E["arcane"]
+        for k in range(6):
+            t = math.radians(-90 + k * 60)
+            ux, uy = math.cos(t), math.sin(t)
+            # the mark: a dark body, its rim in the eye-light
+            mx, my = C0 + ux * 10.5, C0 + uy * 10.5
+            cv.disc(mx, my, 1.9, 1.9, a[2])
+            cv.disc(mx, my, 1.0, 1.0, OCC)
+            # the dart: a thin streak, its head lit, stopping short of its mark
+            cv.line(C0 + ux * 3.0, C0 + uy * 3.0, C0 + ux * 6.5, C0 + uy * 6.5, a[2])
+            cv.set(C0 + ux * 7.0, C0 + uy * 7.0, a[1])
+            cv.set(C0 + ux * 7.8, C0 + uy * 7.8, a[0])
+        cv.disc(C0, C0, 1.6, 1.6, a[1])
+        cv.set(C0, C0, a[0])
+    O(sp, count)
 
 
 # --- Meteor Swarm ----------------------------------------------------------------------------------

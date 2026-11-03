@@ -17,6 +17,10 @@ Pulled on 2026-11-02 from Eric's Claude Docs page "Game name ideas"
 (https://claude.ai/artifact/LM9fYy1cs7vbEWRwssepAN), which came from his conversation with Claude Duet
 and a voice call. That page also holds names for Creature Tactics; only this game's are copied here.
 
+**The figure it names** - the blue-robed wizard on the title, the one he missed - was to stay story only; Eric made
+him playable the same day, the fifth starter, named **The Archmage** on the character select (the game keeps the
+title, the wizard has his own name). `.ai/protagonist.md`.
+
 ## The shortlist it was chosen from
 
 All are drawn from the story (`.ai/world-and-tone.md`, `.ai/prologue.md`): he strikes the wizards'

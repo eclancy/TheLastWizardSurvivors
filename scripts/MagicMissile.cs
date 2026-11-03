@@ -72,6 +72,40 @@ public partial class MagicMissile : Area2D
 	// A body is a body, not a point.
 	private const float BodyAllowance = 8f;
 
+	// NOT ONE MISSED - The Archmage's Apotheosis, verb COUNT (.ai/protagonist.md; ApotheosisCatalog). He is the one the
+	// dark wizard missed, and the dart that never misses is his: in its final form every fourth volley is a count, a
+	// dart at every enemy in reach, nearest first, one each and none twice. It is a TARGETING verb - who is struck, not
+	// what a strike does - so every mutation and Ascension rides on it unchanged: a count of Twin Volley darts forks,
+	// a threaded count stitches, an Overcharged count sparks every body it touches. Nothing is pulled, linked, echoed or
+	// doubled. Player's missile loop runs it (CastSpellNow); this holds the numbers.
+
+	/// <summary>The form's id: switched on by SpellData.HasEvolution, as every card of this spell is.</summary>
+	public const string NotOneMissedId = "magic_missile_not_one_missed";
+	/// <summary>Every this-many volleys that flew, one is a count.</summary>
+	public const int CountEvery = 4;
+	/// <summary>
+	/// The most darts a count looses: EnemyTargeting.MaxPick, the most a nearest-first pick returns. The crowd past it
+	/// is the next count's.
+	/// </summary>
+	public const int CountDarts = EnemyTargeting.MaxPick;
+	/// <summary>
+	/// The most a count looses under Arcane Orb: an orb grinds what it rolls over for nearly two seconds and bursts,
+	/// so sixteen at once buried the field (the orb's own first screenshot, with six, buried the wizard).
+	/// </summary>
+	public const int CountOrbs = 6;
+	/// <summary>How far off its mark each dart of a count leaves, alternately to either side, before it curves in.</summary>
+	public const float CountFanDegrees = 40f;
+	/// <summary>The burst of arcane sparks off the staff's head that a count leaves by.</summary>
+	public const float CountFlareRadius = 46f;
+
+	/// <summary>The count's size for this spell as it stands: <see cref="CountOrbs"/> under Arcane Orb, else <see cref="CountDarts"/>.</summary>
+	public static int CountCap(SpellData spell) =>
+		spell != null && spell.HasEvolution(ArcaneOrbId) ? CountOrbs : CountDarts;
+
+	/// <summary>Counts loosed this process, and the darts in them. For the balance harness.</summary>
+	public static int StatCounts { get; set; }
+	public static int StatCountDarts { get; set; }
+
 	[Export] public SpellData SpellData { get; set; }
 	[Export] public int CurrentLevel { get; set; } = 1;
 	[Export] public float BaseSpeed { get; set; } = 400f;

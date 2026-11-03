@@ -191,16 +191,27 @@ public static class SpellEvolutionCatalog
 	// Barrage (+2 darts, a shorter cooldown, +5 pierce) only moved numbers, and Singularity Core pulled -
 	// Hollow Star's verb. Each now changes what the dart does where it can be seen, out of what a dart that
 	// never misses is: it forks, it threads the pack, it bursts, it leaves static, it swells into an orb.
-	// The ids and each card's element gain are the ones they always were, so saves carry over; the
-	// behaviour is switched on by id (MagicMissile.ThreadedNeedleId and the rest, StaticCharges).
+	// The ids are the ones they always were, so saves carry over; the behaviour is switched on by id
+	// (MagicMissile.ThreadedNeedleId and the rest, StaticCharges).
+	//
+	// PURE ARCANE SINCE 2026-11-02 (Eric: "Magic missile should also change to pure arcane"; it is The Archmage's
+	// opener, .ai/protagonist.md). It was Arcane + Lightning, a hybrid, and a pure spell is held to the pure spell's
+	// rules (RegressionChecks.ValidateElementPaths): its level 4 offers a branch that deepens its element AND one that
+	// adds another, and a deepening is free - the 12% a hybrid pays for a tag (AttunementGainCooldownCost) is the
+	// price of a second element it already has. So the Lightning it carried moved onto Twin Volley, the fork - forked
+	// lightning - as the branch; Unstable Detonation, the deepening, lost the 12%; Overcharge keeps its Lightning,
+	// which is the same element, so no route names three. In return the spell is attuned to Arcane
+	// (Player.GetAttunementMultiplier) until a branch takes Lightning.
 	private static void SetupMagicMissileEvolutions(SpellData spell)
 	{
 		// Level 4 (3 choices)
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = MagicMissile.TwinVolleyId,
+			// The element path: the spell's old Lightning, on the card that forks.
+			BonusElementWeights = new() { { "Lightning", 1 } },
 			DisplayName = "Twin Volley",
-			Description = "The missile forks on its first hit, spraying two shards straight out to either side for 30% damage.",
+			Description = "The missile forks like lightning on its first hit, two shards flying out either side for 30% damage.",
 			MilestoneLevel = 4,
 			// The fork is the whole upgrade, so it carries no ProjectileCountBonus. That is
 			// deliberate: the magic missile firing loop in Player never asks SpellData for a
@@ -210,9 +221,10 @@ public static class SpellEvolutionCatalog
 			Effect = SpellEffect.SplitOnHit,
 			EffectValue = 30f,
 			VisualTag = "TwinVolley",
-			ModulateColor = new Color(1.0f, 0.88f, 0.4f),
-			SynergyTag = "Arcane / Multi-target",
-			SynergyDescription = "Synergizes with raw damage and attack speed - the shards fly straight, so they pay off against a line or a wall of enemies."
+			// Lightning's own tint, as every branch into it wears (it was a near match, 1.0 / 0.88 / 0.4, already).
+			ModulateColor = ElementColors.GetEvolutionTint(Element.Lightning),
+			SynergyTag = "Arcane / Lightning",
+			SynergyDescription = "Branches into Lightning. The shards fly straight, so they pay off against a line or a wall of enemies."
 		});
 
 		// Was Piercing Stardust, +3 pierce: the dart flew on in a straight line, and in a crowd that thins as
@@ -237,7 +249,8 @@ public static class SpellEvolutionCatalog
 			// Kept (2026-10-29): it always changed the hit into a splash, but drew nothing; the burst now
 			// throws arcane sparks out to the reach it strikes.
 			Description = "Missiles detonate where they hit: an arcane burst throws sparks out round the impact, hitting everything in it for 60% damage.",
-			CooldownMultiplier = 1.12f,
+			// No cooldown since 2026-11-02: it was the 12% a hybrid pays to deepen (AttunementGainCooldownCost), and the
+			// spell is pure now - a pure spell's deepening is free, and the card's chip says "stays attuned".
 			MilestoneLevel = 4,
 			Effect = SpellEffect.ExplosionOnHit,
 			EffectValue = 60f,

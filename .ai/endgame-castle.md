@@ -197,7 +197,8 @@ Fireball bug again (`.ai/achievements-and-secrets.md` 1.4), for a person this ti
 
 **A1's rule is enough for correctness**: the gate counts only wizards whose rescue chapter comes
 before it, and `ValidateGateReachability` holds it. The Emberdeep then opens on the Long Coil and the
-wizards on the road - the four starters, John Dee and Väinämöinen (Laelaps is outside the gate) -
+wizards on the road - the starters (five since The Archmage, 2026-11-02; every save holds them), John Dee
+and Väinämöinen (Laelaps is outside the gate) -
 and it cannot be blocked by anything behind it.
 
 **It is not enough for the fiction**, which says *he becomes reachable only when every wizard is

@@ -319,7 +319,9 @@ Elim's "it's wizarding time" drawing: **not in Eric's email** - the only image E
   choice on the phone stick; his sheet beside Väinämöinen's.
 - **The name is The One He Missed** (Eric, later the same day), everywhere - repo, game, website, and the
   GitHub repo renamed to `eclancy/TheOneHeMissed`. **The blue-robed title figure is the player**, "the one
-  he missed", story only (title, prologue), and **not Merlin**: Merlin gets a look of his own. Building:
+  he missed", and **not Merlin**: Merlin gets a look of his own. He was to be story only (title, prologue);
+  later the same day Eric made him **the fifth starter, The Archmage**, first on the character select, on Magic
+  Missile made pure Arcane (`.ai/protagonist.md`, `wip/protagonist`). Building:
   the rename (`wip/rename`), the title art for the new name (`wip/title-art`), Merlin's new look
   (`wip/merlin-art`); the website's half is PR eclancy/EricClancyEngineeringAndCrafts#48, held until
   the GitHub repo is renamed (old `/wizard-survivors/version.json` and `/download` keep answering for
@@ -336,6 +338,12 @@ Elim's "it's wizarding time" drawing: **not in Eric's email** - the only image E
   new one - about 8 s, once. **Any branch cut before `0aae133a`** needs the namespace command from
   `e2898cc2` re-applied at merge (`git grep -l -a -z 'WizardSurvivors\.scripts' -- '*.cs' | xargs -0
   sed -i 's/\bWizardSurvivors\.scripts\b/TheOneHeMissed.scripts/g'`).
+- **Release: once, when the whole pipeline is finished** (Eric, 2026-11-03: "I only want to release once
+  we've finished every change we have in the pipeline"). That release is also the first renamed one
+  (the bridge) and the story reset (epoch 2).
+- **Eric's answers, 2026-11-03:** nerf Magic Missile (pure Arcane made the Archmage clear the slow
+  start's measured run far above the starters'); redraw the four in the freeing with their real sprites
+  (they were flat colour cut-outs); "You went back for them." stays.
 - **Merged:** Merlin's own look (`fef6641b`, the Crystal Cave; B and C on the sheet), the title art
   (`70581528`, A the stack, Eric's pick), P2 (`6ceeaf20`). **Building:** the fifth starter **The
   Archmage** (Eric's name; the blue-robed player figure, Arcane, Magic Missile made pure Arcane, first

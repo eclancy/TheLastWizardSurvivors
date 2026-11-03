@@ -470,3 +470,9 @@ level-up that found the book full. **No run overran and no run had a dead level-
 against about three minutes on six. From there to the page at 10:00 every hand is upgrades of the three
 held spells and boons, which lasted on five of the six runs (Marginalia 0; the harness does not say
 when the Stormcaller's three came). The page opened at 10.1-10.7, at the next level-up after 10:00.
+
+**The Archmage, the fifth starter (2026-11-02, `.ai/protagonist.md` section 7), run through cell A:** the boss
+down in 0.61 and 0.52 (seeds 1234 and 99), no overrun, the page at 10.2-10.4 - but **Marginalia 10 and 5**,
+which is rule 1's trigger. He writes his three pages out sooner than the four because he kills faster: Magic
+Missile went pure Arcane with him and is attuned, and as Arcane + Lightning the same run took none. Left for Eric
+with the levers listed there; the four's rows above are unchanged by him.

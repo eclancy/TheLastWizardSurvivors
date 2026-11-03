@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/archmage-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/ArchmageFrames.tres" id="4"]
+
+; The Archmage (.ai/protagonist.md): the blue-robed figure in the ward on the title screen and in the prologue - the
+; player, the one wizard the dark wizard did not take. Eric, 2026-11-02: "the fifth starting character - his starting
+; tag alignment is arcane. If no one's starting spell is magic missile, that will be his", and he is first on the
+; character select (CharacterRoster.SelectionOrder). A starter, so every save holds him (UnlockCatalog). He opens on
+; Magic Missile, pure Arcane since the same day. His passive is Overlooked: once a run, the blow that would end him
+; misses - he was missed once already. His sheet is tools/art/player_archmage.py, the title figure on the 48 cell.
+[resource]
+script = ExtResource("1")
+Id = "archmage"
+Name = "The Archmage"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "missed_once"
+StartingPassiveName = "Overlooked"
+StartingPassiveDescription = "Once a run, the blow that would end you misses"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

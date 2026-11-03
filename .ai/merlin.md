@@ -27,8 +27,9 @@ prison and no chapter.
 
 **He is not the one he missed.** He was first built as the title screen's blue-robed figure (`tools/art/hero.py`,
 `hero.wizard_hero`), the prologue's hider and the lessons' figure, and drawn from it. That figure is the player
-(`.ai/world-and-tone.md`: "You are the one he missed"), the game is named for him, and he stays story only, never a
-playable character. Merlin's look, his quest-log epithet ("the old enchanter") and his deed's name (The King-Maker)
+(`.ai/world-and-tone.md`: "You are the one he missed") and the game is named for him. He was to stay story only; Eric
+reversed that the same day, and he is the fifth starter now, **The Archmage**, on the sheet first drawn for Merlin
+(`.ai/protagonist.md`). Merlin's look, his quest-log epithet ("the old enchanter") and his deed's name (The King-Maker)
 are his own; none of them is the title figure's or the game's.
 
 The name was reserved for another build until 2026-11-02 - the one wizard the dark wizard KEPT, freed at the

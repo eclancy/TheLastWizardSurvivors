@@ -149,7 +149,7 @@ public static class EvolutionStatReaders
 	{
 		["magic_missile"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Pierce
 				| EvolutionStat.Scale | EvolutionStat.Rider | EvolutionStat.Amount,
-			"MagicMissile.RefreshComputedStats and the missile loop in Player._PhysicsProcess (Amount is more missiles; Area also sizes the Arcane Orb and the Overcharge burst; Threaded Needle, Overcharge and Arcane Orb by id, through StaticCharges)",
+			"MagicMissile.RefreshComputedStats and the missile loop in Player.CastSpellNow (Amount is more missiles; Area also sizes the Arcane Orb and the Overcharge burst; Threaded Needle, Overcharge and Arcane Orb by id, through StaticCharges; The Archmage's Not One Missed by id, the count in that loop)",
 			SpellEffect.ProjectileSpeed, SpellEffect.AreaSize, SpellEffect.ExplosionOnHit, SpellEffect.SplitOnHit,
 			SpellEffect.Pierce, SpellEffect.CritChance, SpellEffect.CritDamage),
 		["arcane_explosion"] = R(EvolutionStat.Damage | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Knockback | EvolutionStat.Rider,

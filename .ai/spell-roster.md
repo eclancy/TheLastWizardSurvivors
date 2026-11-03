@@ -51,7 +51,7 @@ Proposed roster. **Bold** is a change from today.
 | 2 | Cone of Cold | Ice | **facing** | timer | **face the threat** | burst cone | mid |
 | 3 | Chain Lightning | Lightning | multi-target | timer | — | **chain jump, damage only** | long |
 | 4 | Obsidian Spike | Earth | ground at enemy | timer | — | eruption, no travel | mid |
-| 5 | Magic Missile | Arcane+Lightning | nearest | timer | — | projectile | long |
+| 5 | Magic Missile | Arcane (pure since 2026-11-02) | nearest | timer | — | projectile | long |
 | 6 | Aegis Ward | Metal+Light | self | **recharge on break** | — | shield pool | self |
 | 7 | Riptide | Water | fired once, no homing | timer | line it up | **a travelling wave**, piercing line | mid |
 | 8 | Molten Shard | Metal+Fire | **random enemy** | timer | — | projectile | long |
@@ -980,6 +980,7 @@ Deepening options marked (A) are the wizard's Apotheosis path and keep their ids
 | Arcane Explosion | Arcane | Lingering Rift | **Static Nova** - +1 Lightning, +20% damage; staggers 0.3 s. Lightning tint | Event Horizon +Arcane |
 | Obsidian Spike | Earth | Splinter Field (A) | **Umbral Vein** - +1 Darkness; Vulnerable +10% for 3 s. Darkness tint | Tectonic Uprising +Earth (A) |
 | Cone of Cold | Ice | Deep Freeze (A) | **Frost Shrapnel** - +1 Water, +30% damage; no rider (the cone already slows harder than Water's drag). Water tint | Zero Point Shockwave +Ice (A) |
+| Magic Missile (pure since 2026-11-02, `.ai/protagonist.md`) | Arcane | Unstable Detonation (free now: no 12%) | **Twin Volley** - +1 Lightning; the fork, as it was; no rider. Lightning tint | Overcharge +Lightning - **the one level 8 that may add**: it deepens the path's Lightning after Twin Volley and branches into it after the other two (allowed when the spell went pure, 2026-11-02: a level 4 or level 8 option may add another element, none may trade Arcane away). Never three elements |
 
 The first eight are new, and Starfall (2026-10-25) was built with its path. The last five had a branch already, and every one of them promised a
 mechanic its spell never read - Iron Comet's pierce, Razor Gale's crescents, Static Nova's sparks,
@@ -990,7 +991,6 @@ say only what they do, plus the element's rider; the dead fields that still sit 
 
 | spell | base | deepens at level 4 | deepens at level 8 |
 |---|---|---|---|
-| Magic Missile | Arcane + Lightning | Unstable Detonation +Arcane | Arcane Gatling Barrage +Lightning |
 | Aegis Ward | Metal + Light | Fortified Aegis +Metal | Sun Aegis +Light |
 | Black Tentacles | Poison + Earth | Crushing Grip +Earth | Shadow Forest +Poison |
 | Frost Shard | Ice + Water | Glacial Spike +Ice | Blizzard Engine +Water |
@@ -2260,14 +2260,19 @@ forged shards (Forge Swarm), no lance that sweeps from target to target (Sunlanc
 
 #### Magic Missile - a homing violet dart that never misses
 
-`MagicMissile.cs` (ids and numbers as constants there), `StaticCharges.cs`. The starter's spell, the
-Apprentice's and the Test Wizard's; neither has an Apotheosis on it.
+`MagicMissile.cs` (ids and numbers as constants there), `StaticCharges.cs`. The Archmage's opener since
+2026-11-02 (`.ai/protagonist.md`), and with it **pure Arcane**: it was Arcane + Lightning, and a pure spell's
+level 4 must offer a branch into a second element as well as one that deepens its own
+(`ValidateElementPaths`), so the Lightning moved onto Twin Volley, the fork, and Unstable Detonation's
+deepening lost the 12% cooldown a hybrid pays for a tag. His Apotheosis is on it: **Not One Missed**
+(count) - every fourth volley a dart at every enemy in reach, up to 16 (6 under Arcane Orb), one each.
+The Test Wizard opens on it too, with no form.
 
 | card | was | now: what the player sees |
 |---|---|---|
-| Twin Volley (L4) | unchanged | the dart forks on its first hit, two shards flung straight out either side |
+| Twin Volley (L4, +Lightning since 2026-11-02) | unchanged | the dart forks on its first hit, two shards flung straight out either side. The spell's element path into Lightning since it went pure; Lightning's tint |
 | **Threaded Needle** (L4) | Piercing Stardust: +3 pierce | after each hit the dart turns on the nearest enemy it has not struck (within 220) and flies on, 3 more times, stitching a fading thread of stardust through them. No numbers |
-| Unstable Detonation (L4, +Arcane) | the same splash, drawn nothing | the burst throws arcane sparks out to the 60 it strikes |
+| Unstable Detonation (L4, +Arcane) | the same splash, drawn nothing | the burst throws arcane sparks out to the 60 it strikes. No cooldown since 2026-11-02 (a pure spell's deepening is free) |
 | **Overcharge** (L8, +Lightning) | Arcane Gatling Barrage | every dart leaves a spark of static crackling round what it hits; an enemy carrying 3 overloads - lightning bursts out of it to 64 (x Area), striking it and everything round it for 3x a dart. A spark no dart renews goes out after 2.5 s. -40% cooldown |
 | **Arcane Orb** (L8) | Singularity Core: x2.2 area, +100%, a pull | every dart is loosed as a great slow orb (radius 26 x Area, a third of a dart's speed, no homing) that rolls straight through the pack, striking everything under it five times a second for 1.8 s, and bursts where its flight ends (72 x Area) for 2x. +50% damage, +50% cooldown. With Unstable Detonation the end burst reaches 30% further; with Twin Volley the orb forks at its first contact |
 
@@ -2962,8 +2967,9 @@ Hammer's Aftershock), not a pool (Pyroclasm), not a delayed eruption in the targ
 | Ascension (`arcane_explosion_supernova`) | **numbers**: Supernova, the blast x2.5 wide | **Resonance**: every blast goes off again, in full, wherever each of the wizard's other spells last struck (in the last 2.5 s, up to five, not on top of the blast round him), each drawn by a copy of its own front. +180% damage |
 | Ascension (`arcane_explosion_event_horizon`, +Arcane) | **visible, but its half was the pull** - Hollow Star's verb | **Event Horizon**: no pull. Where the blast goes off time stops for 2.5 s - a sphere drawn on the ground as motes of the force hung still over a dark floor - and what the blast caught, and whatever walks in, hangs frozen until it closes (a boss only slows). Nothing is thrown. +190% damage, 80% wider |
 
-The element is the charger's strongest that is not Arcane (Magic Missile's Lightning, Spiritual
-Weapon's Light; Arcane only for a pure Arcane spell), handed in by `Player.NotifyArcaneCharge` through
+The element is the charger's strongest that is not Arcane (Spiritual Weapon's Light, Magic Missile's
+Lightning once Twin Volley or Overcharge has branched it; Arcane only for a pure Arcane spell, which Magic
+Missile is unbranched since 2026-11-02), handed in by `Player.NotifyArcaneCharge` through
 `TriggerNow(caster)`. Resonance listens to `Player.EnemyDamagedAt` only while the card is held, one slot
 a spell. **The pairing the 2i audit reported is gone with the pull**: under Event Horizon, Dual
 Shockwave's +70% throw turned into a 70% harder pull; the card is Sympathetic Blast now (no throw), and

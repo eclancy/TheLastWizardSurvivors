@@ -743,10 +743,14 @@ Two consequences worth knowing:
   leaving boss hits dangerous. Percentage Armor does the reverse. The trade was made knowingly.
 
 ### Starting Characters
-- Four playable characters, each opening on one element and one basic spell.
+- Five playable characters, each opening on one element and one basic spell: the four disciplines
+  and, since 2026-11-02, **The Archmage** - the title figure, the player, first on the character
+  select, on Magic Missile and Arcane (`.ai/protagonist.md`).
 - A starter spell carries **exactly one** element weight, so a character begins the run already
   pointed at a single element's thresholds rather than splitting weight across two. This is why
-  Magic Missile (Arcane + Lightning) is not a starter.
+  Magic Missile (then Arcane + Lightning) was no starter's until it went pure Arcane for The
+  Archmage (Eric, 2026-11-02); its Lightning is a level 4 branch (Twin Volley) and its level 8
+  Overcharge now.
 - No two characters open on the same element. `RegressionChecks.ValidateStartingCharacters`
   enforces both rules.
 - **Both rules bind the starters only** (Eric, 2026-11-01, `.ai/chapter-wizards.md` section 0): "Only
@@ -762,6 +766,7 @@ Two consequences worth knowing:
 | Frostweaver | Ice | Cone of Cold | Cone in front, slows what it touches | +0.5 HP/sec |
 | Stormcaller | Lightning | Chain Lightning | Arcs between nearby enemies | -10% cooldowns |
 | Geomancer | Earth | Obsidian Spike | Erupts under the target, no travel time | -1 damage per hit taken |
+| The Archmage | Arcane | Magic Missile | A homing dart at the nearest enemy, from the light on his staff | Overlooked: once a run, the blow that would end him misses |
 
 - **A starting spell must have a shape of its own.** The four wizards previously opened on
   purpose-built basics - Ember, Icicle, Spark and Stone Shard - which were all the same spell: a

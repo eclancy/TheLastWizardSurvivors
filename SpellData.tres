@@ -42,8 +42,7 @@ LevelUpgrades = Array[ExtResource("2_5s5xv")]([SubResource("Resource_mm_lvl2"), 
 Description = "Fires a fast projectile at nearby enemies."
 Icon = ExtResource("3_icon")
 ElementWeights = {
-"Arcane": 1,
-"Lightning": 1
+"Arcane": 1
 }
 metadata/_custom_type_script = "uid://dhglesdswci45"
 

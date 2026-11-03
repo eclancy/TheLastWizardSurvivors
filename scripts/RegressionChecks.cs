@@ -5828,9 +5828,10 @@ public static partial class RegressionChecks
 	// wizards are held to less since 2026-11-01: ValidateStartingCharacters says what.)
 	//
 	// Both halves rot silently. A starting spell quietly retagged with a second element (Magic
-	// Missile carries Arcane *and* Lightning, which is why it is no longer a starter) splits the
-	// character's opening weight without changing anything visible; two characters sharing an
-	// element makes one of them redundant without breaking a thing.
+	// Missile carried Arcane *and* Lightning, which is why the Apprentice was dropped; it went pure
+	// Arcane on 2026-11-02 for The Archmage) splits the character's opening weight without changing
+	// anything visible; two characters sharing an element makes one of them redundant without
+	// breaking a thing.
 	// Two rules that only exist as agreement between data files, so nothing but this notices when
 	// they break.
 	//
@@ -5858,10 +5859,9 @@ public static partial class RegressionChecks
 	//
 	// It stays because the same thing can happen to any future content change.
 	//
-	// Slightly pessimistic by construction: magic_missile is built in code rather than loaded from
-	// a resource, so its Arcane and Lightning tags are not counted. Both elements are far above the
-	// floor, so a false pass is not possible from that omission - only a false failure, which would
-	// be visible rather than silent.
+	// (Magic Missile was once built in code and went uncounted here; it is SpellData.tres, in
+	// ContentValidator.SpellResourcePaths, and pure Arcane since 2026-11-02 - its Lightning is a branch,
+	// Twin Volley at level 4 and Overcharge at 8, so its best Lightning is the 2 it always was.)
 	// Every boon needs exactly one way to be obtained, for the same reason every spell does: one
 	// with no catalog entry is defined, offered by nothing, and invisible.
 	// Rarity and element tags on chest items, which are two separate tables that have to agree.
