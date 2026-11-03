@@ -89,6 +89,9 @@ public static class QuestLog
 		// held line - he was never held. Not "the one he missed": that is the player (.ai/world-and-tone.md), and the
 		// game is named for him.
 		new Prisoner("merlin", "the old enchanter", "", "{0} keeps his circle."),
+		// The queen in the barge, who carried the dying king over the water: the one who could cross without his
+		// bridge, so he moored her under it (.ai/chapter-wizards.md 4.9). Seen as a light on the water.
+		new Prisoner("morgan", "the woman in the barge", "A lantern on the water under the bridge, where no boat could be.", "{0} has come ashore."),
 	};
 
 	public static Prisoner PrisonerOf(string characterId) =>

@@ -24,8 +24,15 @@ public sealed class PointOfInterest
 		IsWayfinder = isWayfinder;
 	}
 
-	/// <summary>World position. Fixed for the run.</summary>
-	public Vector2 Position { get; }
+	/// <summary>World position. Fixed for the run - but for the one thing that floats (<see cref="DriftTo"/>).</summary>
+	public Vector2 Position { get; private set; }
+
+	/// <summary>
+	/// Moves the point. Only for a site that floats rather than stands: the barge under the Last Bridge, which
+	/// slips its mooring and waits ahead of the fall once the collapse has reached it (BargeEvent), so its arrow
+	/// and its hints keep pointing at the barge and never into the drop. Everything else placed stays put.
+	/// </summary>
+	public void DriftTo(Vector2 position) => Position = position;
 
 	/// <summary>Which pictogram its arrow carries (ExploreArt.GlyphPath).</summary>
 	public string Glyph { get; }

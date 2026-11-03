@@ -96,6 +96,7 @@ public static partial class RegressionChecks
 		ValidateSideEventTable(warnings);
 		ValidateSealPuzzle(warnings);
 		ValidateNineMouths(warnings);
+		ValidateBarge(warnings);
 		ValidateThawArt(warnings);
 		ValidateGravewell(warnings);
 		ValidateCraters(warnings);

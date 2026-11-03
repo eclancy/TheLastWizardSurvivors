@@ -35,6 +35,15 @@ using TheOneHeMissed.scripts;
 //      and stands in the mouth whose voice came first (NineMouthsEvent.LastCallFirst - what a player
 //      hears and sees), never the answer itself. --wrong-mouth first stands in a mouth that was NOT first,
 //      and checks that it answers with a flight and that hers moves.
+//      The Last Bridge's barge (--stage=11) is KEPT PACE WITH: placed by the bridge's band, not the explore
+//      bands, so its placement is checked against the bridge's rules (moored under a span, on the water beside
+//      the deck, the wayfinder on the deck ahead of the start); then the probe comes level with it and stays
+//      level - a little behind it, on its side of the deck - for the whole drift, and checks it stayed ahead of
+//      the fall. --fall-behind=S stops following for S seconds a third of the way in: under the barge's grace
+//      (6 s) it must recover and win in one drift, over it the drift must fail, drift back, and be won from the
+//      start again. --arrive-late waits for the fall to pass the barge's mooring before coming, and checks it
+//      slipped its mooring and waits ahead of the fall, its arrow with it. Pair it with --bridge-front=-6000
+//      (the front started 6,000 px ahead of the start) to keep the wait short.
 // TWO EVENTS IN A CHAPTER (P2, .ai/chapter-wizards.md 6.3). On a chapter whose list holds more than one - or
 // with --second-event-test[=STAGE], which adds a stand-in second event on this tool run only
 // (SecondEventStandIn) - every placement check runs for every event, each pair of main sites must be at least
@@ -72,6 +81,15 @@ public partial class _ExploreProbe : Node
 	private bool wrongMouth;
 	// --wayfinder-first: with two events, take the wayfinder first (see the header).
 	private bool wayfinderFirst;
+	// The Last Bridge's barge: --fall-behind=S and --arrive-late (see the header).
+	private float fallBehind;
+	private bool arriveLate;
+	private float bargeHeld = -1f;
+	private float bargeWait;
+	private float bargeLeadMin = float.MaxValue;
+	private bool bargeOutSeen;
+	private float bargeOutMax;
+	private Vector2 fellBackTo;
 	// Which of the chapter's events is being visited, found and won; and which of them were won.
 	private int cur;
 	private readonly List<bool> wonEvents = new();
@@ -124,6 +142,8 @@ public partial class _ExploreProbe : Node
 			else if (arg.StartsWith("--kill-hammers=")) killHammers = int.Parse(arg.Substring(15));
 			else if (arg == "--wrong-mouth") wrongMouth = true;
 			else if (arg == "--wayfinder-first") wayfinderFirst = true;
+			else if (arg.StartsWith("--fall-behind=")) fallBehind = float.Parse(arg.Substring(14), System.Globalization.CultureInfo.InvariantCulture);
+			else if (arg == "--arrive-late") arriveLate = true;
 		}
 		ProcessMode = ProcessModeEnum.Always;
 		SaveManager.WritesDisabled = true;
@@ -186,7 +206,8 @@ public partial class _ExploreProbe : Node
 		}
 		// After a teleport, nothing is compared until the streamer has painted and furnished every
 		// chunk round the new spot: a snapshot taken half-way would differ from the next for no reason.
-		if (step >= 4 && game.Terrain != null && !game.Terrain.IsSettled && settleFrames < 2000)
+		// Not while keeping pace with the barge (step 34): it walks, and a frame skipped there is a frame left behind.
+		if (step >= 4 && step != 34 && game.Terrain != null && !game.Terrain.IsSettled && settleFrames < 2000)
 		{
 			settleFrames++;
 			return;
@@ -255,6 +276,22 @@ public partial class _ExploreProbe : Node
 			case 23:
 				CheckRevealedBetweenEvents();
 				break;
+			// The Last Bridge's barge (see the header).
+			case 30:
+				BargeTakeWayfinder();
+				break;
+			case 31:
+				BargeCheckRevealedThenNear();
+				break;
+			case 32:
+				BargeWaitForTheFall((float)delta);
+				break;
+			case 33:
+				BargeArrive();
+				break;
+			case 34:
+				BargeKeepPace((float)delta);
+				break;
 		}
 	}
 
@@ -292,6 +329,11 @@ public partial class _ExploreProbe : Node
 		if (!placed || director.Wayfinder == null)
 		{
 			Finish("nothing to probe");
+			return;
+		}
+		if (director.Events.Count == 1 && director.Events[0] is BargeEvent moored)
+		{
+			CheckBargePlacement(moored);
 			return;
 		}
 
@@ -372,7 +414,189 @@ public partial class _ExploreProbe : Node
 		foreach (var (copy, _) in again)
 			copy.Free();
 		Check(Multi ? "the same seed lays every event out in the same places" : "the same seed lays the event out in the same places", same);
-		step = 3;
+		step = Event is BargeEvent ? 30 : 3;
+	}
+
+	// --- the Last Bridge's barge ---------------------------------------------------------------------------
+
+	private BridgeRules Bridge => game.Rules as BridgeRules;
+
+	// Its world point level with the barge, d px along from it, on its side of the deck this far in from the shore.
+	private Vector2 DeckLevelWith(BargeEvent barge, float along, float fromShore = 150f)
+	{
+		float s = barge.BargeS + along;
+		float t = barge.Side * Mathf.Max(0f, BridgeBand.HalfWidthAt(s) - fromShore);
+		return Bridge.WorldAt(s, t);
+	}
+
+	private void CheckBargePlacement(BargeEvent barge)
+	{
+		BridgeRules rules = Bridge;
+		Check("the bridge's rules are running", rules != null);
+		if (rules == null)
+		{
+			Finish("no bridge");
+			return;
+		}
+		Vector2 site = barge.Sites[0].Position;
+		int piece = BridgeBand.PieceIndexAt(barge.MooringS);
+		BridgeBand.Piece span = piece >= 0 ? BridgeBand.Pieces[piece] : default;
+		Check("it is moored under one of its spans", piece >= 0 && span.Kind == BridgeBand.PieceKind.Span
+			&& System.Array.IndexOf(BargeEvent.MooringSpans, span.Index) >= 0,
+			$"{barge.MooringS:0} px along, span {span.Index + 1}, the {(barge.Side > 0 ? "south-east" : "north-west")} side");
+		Check("its whole drift is inside that span", barge.MooringS + BargeEvent.DriftLength <= span.S1 - BargeEvent.LandingBeforeSpanEnd + 0.5f,
+			$"landing at {barge.MooringS + BargeEvent.DriftLength:0}, the span ends at {span.S1:0}");
+		TerrainStreamer terrain = game.Terrain;
+		Check("it rides on the water, not the deck", terrain == null || terrain.IsBlockedAtWorld(site),
+			$"{Mathf.Abs(rules.AcrossOf(site)):0} px across, the shore at {BridgeBand.HalfWidthAt(barge.MooringS):0}");
+		Vector2 deck = DeckLevelWith(barge, 0f);
+		Check("the deck level with it is open ground", terrain == null || (!terrain.IsBlockedAtWorld(deck) && !terrain.IsHazardAtWorld(deck)));
+		Vector2 w = director.Wayfinder.Site.Position;
+		float ws = rules.AlongOf(w);
+		float chunk = TerrainStreamer.ChunkTiles * game.ProceduralTilePixels;
+		Check("the wayfinder is on the deck, ahead of the start, in its band along the bridge",
+			BridgeBand.IsOnDeck(w - game.StageOrigin, 40f) && ws >= SideEventDirector.WayfinderMinChunks * chunk - 1f
+			&& ws <= SideEventDirector.WayfinderMaxChunks * chunk + 1f, $"{ws:0} px along = {ws / chunk:0.0} chunks");
+		Check("the event is dormant", barge.IsDormant);
+		Check("nothing is marked before it is seen or revealed", !PointsOfInterest.AnyMarked);
+		siteAtStart = new List<Vector2> { site };
+		notes.Add($"barge moored at ({site.X:0},{site.Y:0}), {barge.MooringS:0} px along span {span.Index + 1}, side {barge.Side}; wayfinder {ws:0} px along");
+		wonEvents.Add(false);
+		step = 2;
+	}
+
+	private void BargeTakeWayfinder()
+	{
+		Vector2 w = director.Wayfinder.Site.Position;
+		Teleport(w - (player.FootPosition - player.GlobalPosition), 40);
+		step = 31;
+	}
+
+	private void BargeCheckRevealedThenNear()
+	{
+		var barge = (BargeEvent)Event;
+		bool taken = director.Wayfinder == null || !IsInstanceValid(director.Wayfinder) || director.Wayfinder.Taken;
+		Check("walking onto the wayfinder takes it", taken);
+		Check("taking it marks the barge for an arrow", PointsOfInterest.Revealed && barge.Sites[0].Marked);
+		// 900 px short of it along the bridge, level across: near enough to see its light, not arrived.
+		Teleport(DeckLevelWith(barge, -900f, BridgeBand.HalfWidthAt(barge.BargeS)), 60);
+		bargeWait = 0f;
+		step = 32;
+	}
+
+	// Dormant 900 px short of it; with --arrive-late, kept there while the fall passes its mooring.
+	private void BargeWaitForTheFall(float delta)
+	{
+		var barge = (BargeEvent)Event;
+		if (bargeWait == 0f)
+			Check("dormant 900 px short of it along the bridge", barge.IsDormant);
+		bargeWait += delta;
+		if (arriveLate && Bridge.FrontS < barge.MooringS + 200f)
+		{
+			// He has gone on past it, well beyond arriving, and the fall comes on behind them both.
+			player.GlobalPosition = Bridge.WorldAt(barge.BargeS + 1400f, 0f);
+			if (bargeWait > 600f)
+			{
+				Check("the fall reached its mooring", false, $"the fall at {Bridge.FrontS:0} after {bargeWait:0} s");
+				Finish("gave up waiting");
+			}
+			return;
+		}
+		if (arriveLate)
+		{
+			wait = 90;
+			Check("the fall has taken its mooring and it waits ahead of it", barge.IsDormant && barge.BargeS >= Bridge.FrontS + BargeEvent.RestLead - 2f,
+				$"mooring {barge.MooringS:0}, the fall {Bridge.FrontS:0}, the barge {barge.BargeS:0}");
+			Check("its arrow went with it", barge.Sites[0].Position.DistanceTo(barge.BargeWorld) < 1f && barge.BargeS > barge.MooringS);
+		}
+		step = 33;
+	}
+
+	private void BargeArrive()
+	{
+		var barge = (BargeEvent)Event;
+		if (!barge.IsFound)
+		{
+			Teleport(DeckLevelWith(barge, -200f), 10);
+			return;
+		}
+		Check("it begins when the player comes level with it", barge.IsFound, $"t={game.RunSeconds:0.0}s, pace {game.PaceSeconds:0}");
+		string line = barge.ObjectiveShown;
+		Check("the objective line is up", !string.IsNullOrEmpty(line), string.IsNullOrEmpty(line) ? "no line" : line);
+		completeClock = 0f;
+		step = 34;
+	}
+
+	// Level with it, a little behind, on its side of the deck: every frame, as a player walking beside it would be.
+	// --fall-behind=S stops for S seconds a third of the way in.
+	private void BargeKeepPace(float delta)
+	{
+		var barge = (BargeEvent)Event;
+		completeClock += delta;
+		if (barge == null || barge.IsWon)
+		{
+			Check("it came ashore: the event was won", barge == null || barge.IsWon, $"{completeClock:0.0} s of game time after arriving");
+			Check("he stayed ahead of the fall all the way", bargeLeadMin > 0f, $"closest {bargeLeadMin:0} px ahead of it");
+			if (fallBehind > 0f)
+			{
+				bool over = fallBehind > BargeEvent.OutOfReachSeconds;
+				Check(over ? "falling behind longer than its grace failed the drift, and it drifted back" : "falling behind for less than its grace was forgiven",
+					over ? barge.DriftsFailed >= 1 : barge.DriftsFailed == 0 && bargeOutSeen,
+					$"{barge.DriftsFailed} drift(s) failed; out of reach {bargeOutMax:0.0} s at most; held back {fallBehind:0.0} s");
+			}
+			else
+				Check("kept pace in one drift", barge.DriftsFailed == 0, $"{barge.DriftsFailed} failed");
+			SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
+			if (barge != null && !barge.PaysChest && save != null)
+				Check("'morgan' is freed, in memory", GlobalStatsManager.IsCharacterUnlocked(save, "morgan"), $"writes {(SaveManager.WritesDisabled ? "off" : "ON")}");
+			else if (barge != null)
+				Check("it paid a chest (she is already free on this save)", barge.PaysChest);
+			Check("no arrows are left once it is over", !PointsOfInterest.AnyMarked);
+			Finish("event over");
+			return;
+		}
+		if (completeClock > 300f)
+		{
+			Check("the event can be finished", false, $"not finished after 300 s ({barge.Progress * 100f:0}% of a drift, {barge.DriftsFailed} failed)");
+			Finish("gave up");
+			return;
+		}
+		bargeLeadMin = Mathf.Min(bargeLeadMin, Bridge.AlongOf(player.GlobalPosition) - Bridge.FrontS);
+		if (barge.SecondsOutOfReach > 0f)
+		{
+			bargeOutSeen = true;
+			bargeOutMax = Mathf.Max(bargeOutMax, barge.SecondsOutOfReach);
+		}
+		// Held back: from a third of the way in, for --fall-behind seconds, he falls back out of its reach - a pack
+		// in his way, a step back from it - and stands there; then he catches it up.
+		if (fallBehind > 0f && bargeHeld < 0f && barge.IsDrifting && barge.Progress >= 0.33f)
+		{
+			bargeHeld = 0f;
+			fellBackTo = DeckLevelWith(barge, -(BargeEvent.Reach + 140f));
+			notes.Add($"fell back out of reach at {barge.Progress * 100f:0}% of the drift, for {fallBehind:0.0} s");
+		}
+		if (bargeHeld >= 0f && bargeHeld < fallBehind)
+		{
+			bargeHeld += delta;
+			player.GlobalPosition = fellBackTo;
+		}
+		else if (barge.IsReturning)
+		{
+			// It drifts back to its mooring: he walks back with it, and waits there.
+			player.GlobalPosition = DeckLevelWith(barge, -60f);
+		}
+		else
+		{
+			player.GlobalPosition = DeckLevelWith(barge, -90f);
+		}
+		player.Velocity = Vector2.Zero;
+		foreach (Enemy enemy in EnemyRegistry.Snapshot)
+		{
+			if (!IsInstanceValid(enemy) || enemy.IsDying || enemy.IsMiniBoss)
+				continue;
+			if (enemy.GlobalPosition.DistanceTo(player.GlobalPosition) < 500f)
+				enemy.QueueFree();
+		}
 	}
 
 	private void SendAway()
@@ -873,7 +1097,10 @@ public partial class _ExploreProbe : Node
 
 	private void AutoPickLevelUp()
 	{
-		levelUpMenu ??= FindNode<LevelUpMenu>(game);
+		// Found again once the last one is freed: each level-up is a new screen, and holding the first one's freed
+		// reference left the second open for ever, the tree paused (a long wait, --arrive-late, met it).
+		if (levelUpMenu == null || !IsInstanceValid(levelUpMenu))
+			levelUpMenu = FindNode<LevelUpMenu>(game);
 		LevelUpMenu menu = levelUpMenu;
 		if (menu == null || !IsInstanceValid(menu) || !menu.Visible)
 			return;

@@ -68,8 +68,24 @@ public sealed class ExplorePlacer
 
 	public Vector2 Origin => ground.Origin;
 
+	/// <summary>World pixels in one terrain chunk: the unit the bands are in.</summary>
+	public float ChunkPixels => ground.ChunkPixels;
+
 	/// <summary>The next roll in this placer's stream, 0 to 1.</summary>
 	public float NextFloat() => rng.NextFloat();
+
+	/// <summary>
+	/// An event's main site placed by its chapter's own shape rather than by the band (the Last Bridge's barge,
+	/// BargeEvent: on a deck over a drop the band's bearing is mostly water). Remembered as the event's site -
+	/// its bearing for the wayfinder and the secrets, as <see cref="EventSite"/> remembers its roll - and its
+	/// footprint reserved. The rolls that chose it are the caller's, drawn from this placer.
+	/// </summary>
+	public Vector2 PlacedByChapter(Vector2 site, float footprint)
+	{
+		if (float.IsNaN(EventBearing))
+			EventBearing = BearingFrom(ground.Origin, site);
+		return Keep(site, footprint);
+	}
 
 	// --- a chapter's second event (P2, .ai/chapter-wizards.md 6.3) ---------------------------------------
 	// The bearings an event's main site must keep away from - every earlier event's in the same chapter - and

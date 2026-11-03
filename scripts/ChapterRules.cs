@@ -19,7 +19,7 @@ using TheOneHeMissed.scripts;
 // (the bridge's collapsing front, the Court's rooms) and free them with the run. Its _Ready runs then,
 // with nothing built yet; the RUN START hook is the one that runs once the stage exists.
 //
-// THE NINE HOOKS, and where Node2DGame asks each:
+// THE TEN HOOKS, and where each is asked (Node2DGame, but for 10):
 //   1. RunStarted          the end of _Ready: the terrain's first chunks are loaded, the HUD is built.
 //   2. TryPickSpawnPoint   every candidate spawn point (GetRandomSpawnPositionAroundPlayer): the trickle,
 //                          elites, the miniboss, recycled enemies, and a formation member that misses.
@@ -32,12 +32,17 @@ using TheOneHeMissed.scripts;
 //   6. PinnedPaceSeconds   PaceSeconds: the pace clock held at a fixed point (the Throne's end state). The
 //                          survival clock and the boss's arrival still read real time (timeElapsed).
 //   7. CreateObjective     once, after RunStarted: a control for the objective line under the run timer,
-//                          in the slot a side event's line uses - no castle chapter has a side event.
+//                          in the slot a side event's line uses. The bridge is the one castle chapter with a
+//                          side event (the barge), and its strip steps aside while the event speaks
+//                          (SideEvent.LineInUse).
 //   8. LevelUpOpening      OnPlayerLevelGained, every level-up screen, before it enters the tree (the
 //                          Throne's Muster heading and its shorter arming pause; added by piece C4).
 //   9. CameraLean          every frame (TickBossEntranceCamera): how far to hold the camera off the player,
 //                          eased in and out - the bridge's, so the Constable on the wall is on a PC screen.
 //                          A boss arrival's cinematic owns the camera while it plays.
+//  10. WayfinderSite       once, in SideEventDirector._Ready, on a chapter with a side event: where its
+//                          wayfinder goes, when the usual bearing-and-band would put it somewhere the
+//                          chapter's ground does not allow (the bridge: on the deck, ahead of the start).
 //
 // Beside the hooks, two ways IN that a chapter's rules call rather than answer (piece C4): GrantLevelUps
 // (Node2DGame.GrantedLevels.cs: levels granted outright, each through the ordinary screen and its queue)
@@ -130,6 +135,16 @@ public abstract partial class ChapterRules : Node
 	/// screen shake's.
 	/// </summary>
 	public virtual Vector2 CameraLean(Player player) => Vector2.Zero;
+
+	/// <summary>
+	/// Hook 10, WHERE THE WAYFINDER GOES (2026-11-03, the Last Bridge's barge): a world point for the chapter's
+	/// wayfinder, or null for the usual - 1.5 to 2.5 chunks out on a bearing kept off the events'
+	/// (SideEventDirector). Asked once, by the director, only on a chapter with a side event. Added because the
+	/// bridge is a band: the usual bearing is mostly over the drop, and the open-ground search could settle on
+	/// the bridgehead behind the start, which the collapse takes in its first minute. Roll from
+	/// <paramref name="placer"/> (it is the run's seeded stream) and reserve the footprint on it.
+	/// </summary>
+	public virtual Vector2? WayfinderSite(ExplorePlacer placer, float footprint) => null;
 
 	/// <summary>The objective line's slot, under the boss bar's (44-78), as a side event's line sits.</summary>
 	public const float ObjectiveTop = 84f;

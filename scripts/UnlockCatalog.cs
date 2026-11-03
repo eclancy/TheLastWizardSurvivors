@@ -308,6 +308,10 @@ public static class UnlockCatalog
 		// The Cumaean Sibyl, kept behind a cliff of nine mouths under the water in the Sunken Cave (4.3).
 		FromEvent("sibyl", UnlockKind.Character, "nine_mouths", "Heard behind the rock, far down in the Sunken Cave.",
 			secretUntilStage: "stage_2", finalGateOnly: true),
+		// Morgan le Fay, kept in her barge moored under the span of the Last Bridge (.ai/chapter-wizards.md 4.9). The
+		// castle's first chapter, after the Emberdeep's gate, so only the Throne counts her either way.
+		FromEvent("morgan", UnlockKind.Character, "the_barge", "Moored on the dark water under the Last Bridge.",
+			secretUntilStage: "stage_11", finalGateOnly: true),
 		FromEvent("iron_palisade", UnlockKind.Spell, "caravan_master", "Carried by the caravan master on the Scorched Sands road."),
 		FromEvent("contagion", UnlockKind.Spell, "bog_lanterns", "Kept by whatever tends the lanterns in the Blighted Swamp."),
 		FromEvent("bramble_seed", UnlockKind.Spell, "the_grove", "Grown back in the corrupted grove of the Enchanted Forest."),

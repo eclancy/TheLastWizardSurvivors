@@ -30,7 +30,7 @@ public static class Freeings
 	/// <summary>The wizards with a freeing reel, in the order freed.py draws them.</summary>
 	public static readonly IReadOnlyList<string> WizardIds = new[]
 	{
-		"tituba", "vainamoinen", "seimei", "wayland", "sibyl", "laelaps",
+		"tituba", "vainamoinen", "seimei", "wayland", "sibyl", "laelaps", "morgan",
 	};
 
 	/// <summary>A freeing's reel id in Prologue.Reels: "freed_tituba".</summary>

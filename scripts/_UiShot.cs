@@ -3911,6 +3911,9 @@ public partial class _UiShot : Node
 		// The nine mouths point at nothing once he is there (an arrow would be the answer): stand him in hers.
 		if (IsInstanceValid(wonEvent) && wonEvent is NineMouthsEvent mouths)
 			p.GlobalPosition = mouths.StandPoint(mouths.TrueMouth);
+		// The barge rides on the water: stand on the deck level with it, where a player keeping pace would be.
+		else if (IsInstanceValid(wonEvent) && wonEvent is BargeEvent barge)
+			p.GlobalPosition = barge.StandPoint(-60f);
 		else if (IsInstanceValid(wonEvent) && EventSite(wonEvent) is Vector2 site)
 			p.GlobalPosition = site;
 	}
@@ -3964,8 +3967,18 @@ public partial class _UiShot : Node
 			return null;
 		else if (gotoTarget == "wayfinder")
 			at = director.Wayfinder != null && IsInstanceValid(director.Wayfinder) ? director.Wayfinder.Site.Position : null;
+		else if (gotoTarget.StartsWith("barge:") && director.Events.Count > 0 && director.Events[0] is BargeEvent barge)
+		{
+			// The Last Bridge's barge rides on the water: stand on the deck level with it instead,
+			// --goto=barge:ALONG[,FROMSHORE] px along the bridge from it (negative behind it) and in from its shore.
+			string[] parts = gotoTarget.Substring(6).Split(',');
+			float along = parts.Length > 0 && float.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float a) ? a : 0f;
+			float fromShore = parts.Length > 1 && float.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float f) ? f : 150f;
+			at = barge.StandPoint(along, fromShore);
+		}
 		else if (gotoTarget == "event")
-			at = GotoEvent(director) is SideEvent chosen && chosen.Sites.Count > 0 ? chosen.Sites[0].Position : null;
+			at = GotoEvent(director) is BargeEvent onWater ? onWater.StandPoint()
+				: GotoEvent(director) is SideEvent chosen && chosen.Sites.Count > 0 ? chosen.Sites[0].Position : null;
 		else if (gotoTarget.StartsWith("event:") && int.TryParse(gotoTarget.Substring(6), out int which)
 			&& which >= 0 && which < director.Events.Count && director.Events[which].Sites.Count > 0)
 			at = director.Events[which].Sites[0].Position;

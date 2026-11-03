@@ -61,6 +61,8 @@ WIZARDS = [
     ("wayland", ("wayland", "metal", "metal"), M["amber"][4]),
     ("sibyl", ("sibyl", "arcane", "arcane"), ST[4]),
     ("laelaps", ("laelaps", "light", "wind"), G[4]),
+    # Morgan le Fay: the rune of rime before her palm is ice; it burns ice here. The deep end of her mantle.
+    ("morgan", ("morgan", "ice", "ice"), M["lichen"][4]),
 ]
 
 # Where they stand: the Archmage left of the middle, the freed wizard right of it, turned to him.

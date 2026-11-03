@@ -28,8 +28,8 @@ public sealed class ChapterEvents
 // The table below is the whole mapping. Each entry is a chapter, the events that live there - each with
 // the Discovery site it pays out - and the wayfinder that reveals them; UnlockCatalog says what a site
 // gives. A chapter that is not listed has no event - and so no wayfinder, since there would be nothing
-// for it to point at - which is true of seven of the fourteen today (three of them the castle's
-// chapters, still being built, whose null lines are already here waiting).
+// for it to point at - which is true of three of the fourteen today: the Sketchbook, which holds nothing,
+// and the Court and the Throne, whose null lines are already here waiting.
 //
 // TWO EVENTS IN ONE CHAPTER (P2, .ai/chapter-wizards.md 6.3). Five chapter wizards are held in chapters
 // that already had an event, so a chapter's line is a LIST: the first is the chapter's original event,
@@ -115,11 +115,13 @@ public partial class SideEventDirector : Node
 		"stage_9" => new(WayfinderKind.Compass, new SideEventEntry("the_well", () => new WellEvent())),
 		// (the Broken Circle's line is below; leave this one as it is)
 		"stage_10" => new(WayfinderKind.Compass, new SideEventEntry("the_moot", () => new MootFiresEvent())),
-		// THE CASTLE (.ai/endgame-castle.md). No side event is designed for any of the three: the bridge's
-		// goal is the crossing, the Court's its rooms, the Throne's the fight - each through its
-		// ChapterRules (ChapterRulesCatalog), not here. The lines are written so that one designed later is
-		// one line's edit, a line apart from its neighbours. The Cursed Dungeon keeps the Gaoler's key.
-		"stage_11" => null,
+		// THE CASTLE (.ai/endgame-castle.md). The chapters' own goals - the bridge's crossing, the Court's rooms,
+		// the Throne's fight - are their ChapterRules' (ChapterRulesCatalog), not here. The lines are written so
+		// that an event designed later is one line's edit, a line apart from its neighbours. The Cursed Dungeon
+		// keeps the Gaoler's key.
+		// The Last Bridge's chapter wizard (.ai/chapter-wizards.md 4.9): Morgan le Fay, in her barge under the span.
+		// Placed by the bridge's band (BargeEvent.PlaceSites), its wayfinder by the bridge's rules (hook 10).
+		"stage_11" => new(WayfinderKind.Compass, new SideEventEntry("the_barge", () => new BargeEvent())),
 		// (the Court's line is below)
 		"stage_12" => null,
 		// (the Throne's line is below)
@@ -249,7 +251,11 @@ public partial class SideEventDirector : Node
 		float[] eventBearings = laid.Select(l => l.Placer.EventBearing).ToArray();
 		float bearing = WayfinderBearing(near.NextFloat(), eventBearings);
 		WayfinderKind kind = WayfinderFor(stage.Id) ?? WayfinderKind.Compass;
-		Vector2 wayfinderAt = near.AtBearing(bearing, WayfinderMinChunks, WayfinderMaxChunks, WayfinderPickup.Footprint);
+		// ChapterRules hook 10: a chapter whose ground the band cannot read (the Last Bridge, a deck over a drop)
+		// says where its wayfinder goes. Asked after the bearing's roll, so every other chapter's wayfinder is
+		// where it always was.
+		Vector2 wayfinderAt = Game.Rules?.WayfinderSite(near, WayfinderPickup.Footprint)
+			?? near.AtBearing(bearing, WayfinderMinChunks, WayfinderMaxChunks, WayfinderPickup.Footprint);
 		var site = PointsOfInterest.Add(new PointOfInterest(wayfinderAt, WayfinderPickup.GlyphFor(kind), isWayfinder: true));
 		var wayfinder = new WayfinderPickup { Name = "Wayfinder", Game = Game, Kind = kind, Site = site };
 

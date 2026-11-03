@@ -22,6 +22,8 @@ using TheOneHeMissed.scripts;
 //                 a few on each strike of the tired hammer
 //   the mouths    written leaves blown in fast and flat on a cold draught, one on each voice of the call,
 //                 the first the nearest the line to her
+//   the barge     sea mist rolling in low on each knock of the hull, and with the first a barge hung
+//                 shimmering above the water among it - the fata morgana the strait is named for
 //
 // IN THE WORLD'S LAYERS, HELD TO THE VIEW. The marks are drawn in the world, on the layer over the
 // bodies and under the HUD, so they read as something out there rather than as an interface - but
@@ -41,7 +43,7 @@ public partial class StageHintCue : Node2D
 	public const string SheetPath = "res://assets/bonelight/effects/hint-cues.png";
 	public const int Cell = 16;
 	public const int Columns = 8;
-	public const int Rows = 7;   // HintCue's members, in order
+	public const int Rows = 9;   // HintCue's members, in order
 
 	// x3, the attack icons' size: at x2 a 16 px mark was a speck on the phone.
 	private const float DrawScale = 3f;
@@ -78,6 +80,12 @@ public partial class StageHintCue : Node2D
 
 	/// <summary>The nine mouths' hint beats, for RegressionChecks.ValidateNineMouths (a copy: it cannot be changed through this).</summary>
 	public static float[] SibylVoiceBeats => (float[])SibylVoices.Clone();
+	// The barge's hull knocking on the pier, the swell's uneven gaps (hint_hull_knock): tools/audio/sfx.py
+	// _HULL_KNOCKS is the same list. Mist rolls in on each; the barge hangs over it from the first.
+	private static readonly float[] HullKnocks = { 0.06f, 0.98f, 1.62f };
+
+	/// <summary>The barge's hint beats, for RegressionChecks.ValidateBarge (a copy).</summary>
+	public static float[] HullKnockBeats => (float[])HullKnocks.Clone();
 
 	private struct Mark
 	{
@@ -179,6 +187,7 @@ public partial class StageHintCue : Node2D
 		HintCue.Paper => 110f,
 		HintCue.Sparks => 90f,
 		HintCue.Writ => 120f,
+		HintCue.Mist => 116f,
 		_ => 8f,
 	};
 
@@ -366,6 +375,21 @@ public partial class StageHintCue : Node2D
 				if (nextBeat >= SibylVoices.Length)
 					clock = -1f;
 				break;
+			case HintCue.Mist:
+				while (nextBeat < HullKnocks.Length && HullKnocks[nextBeat] <= t)
+				{
+					// The barge first, hung a little way in on the line to her, shimmering (columns 4-7), as long as
+					// the whole cue; then on every knock two banks of mist rolling in low along the edge (0-3).
+					if (nextBeat == 0)
+						Spawn((int)HintCue.Mist, 4, 3.4f, Jitter(10f), 20f, inward: 6f, drift: 0f, rise: 0f, fadeIn: 0.5f);
+					for (int k = 0; k < 2; k++)
+						Spawn((int)HintCue.Mist, random.Next(4), 2.6f, (k == 0 ? -1f : 1f) * (40f + 26f * nextBeat) + Jitter(14f), Jitter(6f),
+							inward: 9f, drift: (k == 0 ? 1f : -1f) * 12f, rise: 0f, fadeIn: 0.4f);
+					nextBeat++;
+				}
+				if (nextBeat >= HullKnocks.Length)
+					clock = -1f;
+				break;
 			case HintCue.Bell:
 				// The bell walks along the edge, as the caravan walks its road.
 				if (bellSlot < 0)
@@ -511,6 +535,19 @@ public partial class StageHintCue : Node2D
 				// Turning over as it is blown, and lifted and dropped by the draught.
 				column = (m.Glyph + (int)(m.Age * 9f)) % Columns;
 				at.Y += Mathf.Sin(m.Age * 4.1f + m.Phase) * 6f;
+				break;
+			case HintCue.Mist:
+				if (m.Glyph >= 4)
+				{
+					// The barge: shimmering through its four frames, and lifting and settling on the heat of the air.
+					column = 4 + (int)(m.Age * 5f) % 4;
+					at.Y += Mathf.Sin(m.Age * 1.6f + m.Phase) * 3f;
+				}
+				else
+				{
+					// Mist: rolling, slowly, across the way it drifts.
+					at += new Vector2(Mathf.Sin(m.Age * 1.3f + m.Phase) * 10f, Mathf.Sin(m.Age * 0.9f + m.Phase) * 3f);
+				}
 				break;
 			case HintCue.Bell:
 				if (m.Glyph >= 5)

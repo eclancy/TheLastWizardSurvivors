@@ -181,7 +181,9 @@ public static partial class RegressionChecks
 					for (int i = 0; i < mains.Count; i++)
 					{
 						float d = mains[i].DistanceTo(ground.Origin);
-						if (d < min || d > max)
+						// An event its chapter places (the barge, on the Last Bridge's band) is held to its own rules
+						// (ValidateBarge), not to the explore band.
+						if (!laid[i].Event.PlacedByChapterRules && (d < min || d > max))
 						{
 							outOfBand++;
 							firstFault ??= $"seed {seed}{(maze ? " (maze)" : "")}: event {i}'s site {d / chunk:0.0} chunks out";
@@ -281,5 +283,100 @@ public static partial class RegressionChecks
 			ChunkPixels = 1536f,
 			MazeCellPixels = maze ? 384f : 0f,
 		};
+	}
+
+	// THE BARGE (BargeEvent, .ai/chapter-wizards.md 4.9), what no build sees: that keeping pace can be won against
+	// the Last Bridge's fall from any arrival he is ahead of - its drift faster than the fall and slower than his
+	// walk - and that on every seed the bridge's own rules moor it under one of its spans, on the water beside the
+	// deck, with its whole drift inside that span and in the water all the way; that a mooring the fall has taken
+	// still leaves it a whole drift before the castle wall; that its reach fits the deck it is measured along; and
+	// that the hint's beats are the sound's.
+	private static void ValidateBarge(List<string> warnings)
+	{
+		const string at = "Barge (the Last Bridge)";
+		float walk = 220f;
+		if (BargeEvent.DriftSpeed <= BridgeRules.FrontSpeed * 1.1f)
+			warnings.Add($"{at}: it drifts at {BargeEvent.DriftSpeed:0} px a second, not clear of the fall's {BridgeRules.FrontSpeed:0.0}; keeping pace would walk him into the drop from a late arrival.");
+		if (BargeEvent.DriftSpeed >= walk * 0.5f)
+			warnings.Add($"{at}: it drifts at {BargeEvent.DriftSpeed:0} px a second, more than half his walk; keeping pace is a race, not an escort.");
+		if (BargeEvent.Reach * 2f < BargeEvent.DriftSpeed * BargeEvent.OutOfReachSeconds)
+			warnings.Add($"{at}: its reach ({BargeEvent.Reach:0} either side) is less than the ground it covers in the {BargeEvent.OutOfReachSeconds:0} s grace.");
+		// Moored where the fall has taken its mooring, it waits RestLead ahead of the fall - which stops at the gate
+		// yard's mouth - and a whole drift must still fit before the castle wall.
+		if (BridgeBand.GateYardMouth + BargeEvent.RestLead + BargeEvent.DriftLength > BridgeBand.End - 300f)
+			warnings.Add($"{at}: a barge waiting ahead of the stopped fall has no room for a whole drift before the castle wall.");
+		foreach (int index in BargeEvent.MooringSpans)
+		{
+			BridgeBand.Piece span = BridgeBand.Find(BridgeBand.PieceKind.Span, index);
+			if (span.S1 - span.S0 < BargeEvent.MooringFromSpanStart + BargeEvent.DriftLength + BargeEvent.LandingBeforeSpanEnd)
+				warnings.Add($"{at}: span {index + 1} is too short to moor it with its whole drift inside it.");
+		}
+
+		int before = PointsOfInterest.Live.Count;
+		var ground = new ExplorePlacer.Ground { IsClear = (_, _) => true, Origin = Vector2.Zero, ChunkPixels = 1536f };
+		int sides = 0, layouts = 0;
+		var spans = new HashSet<int>();
+		string fault = null;
+		try
+		{
+			for (int k = 0; k < 64; k++)
+			{
+				ulong seed = (ulong)(k * 6151 + 11);
+				var placer = new ExplorePlacer(seed, 11, SideEventDirector.EventStream(0), ground);
+				var barge = new BargeEvent();
+				barge.PlaceSites(placer);
+				layouts++;
+				int piece = BridgeBand.PieceIndexAt(barge.MooringS);
+				BridgeBand.Piece p = piece >= 0 ? BridgeBand.Pieces[piece] : default;
+				if (piece < 0 || p.Kind != BridgeBand.PieceKind.Span || System.Array.IndexOf(BargeEvent.MooringSpans, p.Index) < 0)
+					fault ??= $"seed {seed}: moored {barge.MooringS:0} px along, not under one of its spans";
+				else
+				{
+					spans.Add(p.Index);
+					if (barge.MooringS + BargeEvent.DriftLength > p.S1 - BargeEvent.LandingBeforeSpanEnd + 0.5f)
+						fault ??= $"seed {seed}: its drift runs past the end of span {p.Index + 1}";
+				}
+				if (barge.Side > 0)
+					sides++;
+				// In the water beside the deck, never on it, for the whole of the drift.
+				for (float s = barge.MooringS; s <= barge.MooringS + BargeEvent.DriftLength; s += 100f)
+				{
+					float t = BargeEvent.TrackAcross(s, barge.Side);
+					if (Mathf.Abs(t) < BridgeBand.HalfWidthAt(s) + 40f)
+					{
+						fault ??= $"seed {seed}: at {s:0} px along it rides {Mathf.Abs(t):0} px out, on the deck (the shore is at {BridgeBand.HalfWidthAt(s):0})";
+						break;
+					}
+				}
+				if (placer.EventBearing is float bearing && float.IsNaN(bearing))
+					fault ??= $"seed {seed}: its site was placed without a bearing, so the wayfinder could not keep off it";
+				barge.Free();
+			}
+		}
+		finally
+		{
+			if (PointsOfInterest.Live.Count > before)
+				PointsOfInterest.Live.RemoveRange(before, PointsOfInterest.Live.Count - before);
+		}
+		if (fault != null)
+			warnings.Add($"{at}: {fault}.");
+		if (spans.Count < BargeEvent.MooringSpans.Length)
+			warnings.Add($"{at}: {layouts} seeds moored it under only {spans.Count} of its {BargeEvent.MooringSpans.Length} spans.");
+		if (sides == 0 || sides == layouts)
+			warnings.Add($"{at}: {layouts} seeds moored it on one side of the bridge every time.");
+
+		// The hint's mist comes in on the knocks of the hull (StageHintCue.HullKnocks = sfx._HULL_KNOCKS): every beat
+		// inside the sound, in order.
+		float[] knocks = StageHintCue.HullKnockBeats;
+		string path = SfxCatalog.PathFor(SfxCatalog.HintHullKnock);
+		double length = ResourceLoader.Exists(path) && ResourceLoader.Load<AudioStream>(path) is AudioStream sound ? sound.GetLength() : 0.0;
+		for (int i = 0; i < knocks.Length; i++)
+		{
+			if ((i > 0 && knocks[i] <= knocks[i - 1]) || (length > 0.0 && knocks[i] >= length))
+			{
+				warnings.Add($"{at}: the hint's knock {i} at {knocks[i]:0.00} s is out of order or past the end of {SfxCatalog.HintHullKnock} ({length:0.00} s).");
+				break;
+			}
+		}
 	}
 }

@@ -1390,6 +1390,65 @@ def hint_sibyl_voice():
     return S.dc_block(_far(out, low=190.0, high=2600.0, size=0.9, mix=0.42, damp=0.6))
 
 
+# The Last Bridge (.ai/chapter-wizards.md 4.9): Morgan le Fay's barge, moored under the last arch, its hull
+# knocking on the pier as the swell lifts it and lets it fall. Each (onset s, gain): StageHintCue.HullKnocks
+# is the same list of onsets - change one, change both.
+_HULL_KNOCKS = [(0.06, 1.0), (0.98, 0.8), (1.62, 0.62)]
+
+
+def _hull_knock(seed):
+    """One knock of a wooden hull on stone: the planks' dull tok, the hollow of the boat ringing under it (a
+    low box mode falling a little as it rings, and the next plate mode up), and the hull touching the pier
+    again 90 ms later, softer, as it settles - the double contact of a boat, low and hollow, where the anvil's
+    rebound is a small tap of steel."""
+    dur = 0.42
+    n = S.n_samples(dur)
+    boom = S.env_mul(S.osc("sine", S.sweep(dur, 150.0, 128.0, 0.5), dur), S.expdecay(n, 9.0))
+    pd = 0.2
+    # The next mode up sits at 1.75x the box, not 2.3x: at 352 Hz it filled the bands impact_water's
+    # droplet lives in and measured 0.142 from it; at 262 Hz the nearest sound in the set is 0.22 away.
+    plate = S.env_mul(S.osc("sine", S.sweep(pd, 262.0, 252.0), pd), S.expdecay(S.n_samples(pd), 12.0))
+    td = 0.05
+    tok = S.env_mul(S.bandpass(S.osc("noise", 0, td, seed=seed), 700.0, 3.0), S.expdecay(S.n_samples(td), 8.0))
+    contact = S.layer([(boom, 0.0, 1.0), (plate, 0.0, 0.5), (tok, 0.0, 0.85)])
+    # The hollow inside the hull: a short comb, the box's own flutter.
+    contact = S.delay(contact, 0.0045, feedback=0.5, mix=0.35, taps=5)
+    return S.layer([(contact, 0.0, 1.0), (contact, 0.09, 0.42)])
+
+
+def _water_slap(seed, dur=0.2):
+    """The swell slapping the pier between knocks: a short wet band of noise falling as it breaks. Noise only -
+    a pitched droplet is the water element's cast, and this must not sound like a spell."""
+    n = S.n_samples(dur)
+    slap = S.bandpass(S.osc("noise", 0, dur, seed=seed), S.sweep(dur, 760.0, 260.0, 0.7), 1.4)
+    return S.lowpass(S.env_mul(slap, S.ad(dur, 0.012, 2.5)), 1400.0)
+
+
+def hint_hull_knock():
+    """The Last Bridge: a boat knocking against the pier, far below, where no boat could be.
+
+    Morgan le Fay's barge, moored under the bridge's last arch over a dark sea. Three knocks of a hollow
+    wooden hull on stone, at the uneven gaps the swell gives (0.92, 0.64 s), each with the softer second touch
+    of the hull settling - a low box resonance at 150 Hz under a dull wooden tok at 700 Hz, short and boomy,
+    nothing that rings. Not the anvil (struck steel at 1.2 kHz, a hammer's rebound) and not stone on stone.
+    Between the knocks the water slaps the pier, and as the swell lifts the boat for the second knock the
+    mooring rope creaks once (a stick-slip buzz through two narrow wooden resonances). Far below and out in
+    the open over the sea: one echo off the arch and a short open room, not a cave's long tail; the top cut at
+    2.2 kHz. Nothing below 95 Hz. The knocks are _HULL_KNOCKS, which the screen follows."""
+    items = [(_hull_knock(1201 + i), t, g) for i, (t, g) in enumerate(_HULL_KNOCKS)]
+    for i, (t, g) in enumerate([(0.40, 0.42), (0.62, 0.3), (1.30, 0.36), (1.92, 0.3)]):
+        items.append((_water_slap(1221 + i), t, g))
+    cd = 0.38
+    rope = S.osc("saw", S.sweep(cd, 42.0, 66.0, 0.8), cd)
+    rope = S.mix(S.bandpass(rope, 520.0, 5.0), S.gain(S.bandpass(rope, 1180.0, 6.0), 0.6))
+    rope = S.lowpass(S.env_mul(rope, S.adsr(cd, a=0.12, d=0.06, s=0.7, r=0.12)), 1600.0)
+    items.append((rope, 0.54, 0.22))
+    out = S.pad(S.layer(items), 2.4)
+    out = S.highpass(out, 95.0)
+    out = S.delay(out, 0.13, feedback=0.25, mix=0.2, taps=2)
+    return S.dc_block(_far(out, low=95.0, high=2200.0, size=0.6, mix=0.24, damp=0.55))
+
+
 # ---------------------------------------------------------------------------
 # secrets - the light he missed (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9)
 # ---------------------------------------------------------------------------
@@ -1693,6 +1752,7 @@ REGISTRY += [
     ("hint_paper_wind",     "hint",   -10.0, hint_paper_wind,     False),
     ("hint_anvil",          "hint",   -10.0, hint_anvil,          False),
     ("hint_sibyl_voice",    "hint",   -10.0, hint_sibyl_voice,    False),
+    ("hint_hull_knock",     "hint",   -10.0, hint_hull_knock,     False),
     # The nine mouths' call (NineMouthsEvent): nine voices in two seconds, a call every few seconds, only
     # while the player is at the cliff - the once-a-second row. Hers is the louder of the two because it is
     # the one to hear; the eight echoes come a few dB under it and lose more again to the distance.
