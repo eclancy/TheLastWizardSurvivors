@@ -41,6 +41,9 @@ public static class CharacterRoster
 		// The one he missed (.ai/merlin.md): Merlin, the title screen's blue-robed figure, playable once every chapter
 		// has fallen on Default or harder. Appended (index 11).
 		"res://CharacterData_Merlin.tres",
+		// The Emberdeep's chapter wizard (.ai/chapter-wizards.md 4.7): Wayland the Smith, chained to his own anvil.
+		// Appended, so every saved index keeps its wizard (index 12: Merlin took 11 the same day).
+		"res://CharacterData_Wayland.tres",
 	};
 
 	// Loaded once and held. Every call used to load all seven again, and each load hands back a

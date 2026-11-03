@@ -3,7 +3,7 @@
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
-**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1 and the pilot, Abe no Seimei** (section 4.5, "Built"); the other nine are not. It covers the ten
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **and Wayland the Smith** (4.7, "Built"); the other eight are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Last Bridge and the Court (which holds
 two: Nostradamus, and Ma Liang since the Sketchbook was emptied - 4.8). Tituba (Cursed Dungeon),
@@ -341,6 +341,68 @@ measured and not heard; and the form's numbers - the bot took it at 9.9 minutes,
   is very tired."* / *"It does not stop. It is not allowed to."*
 - **Gate.** He is freed in the gate chapter, so only the Throne counts him (either G).
 - **Alternate: Ilmarinen**, the Kalevala's eternal hammerer, but a second Kalevala hero.
+
+**Built (2026-11-02, `wip/wizard-wayland`).** No P2: the Emberdeep had no event, so `SideEventDirector.ForStage("stage_7")`
+gained its line.
+
+- **Him.** `CharacterData_Wayland.tres`, roster index 12 (appended after Merlin, who took 11 the same day). `roster.wayland()`: square to
+  the front over the thing he has just struck, a long forge hammer stood upright in his near hand (its head the top of
+  him on that side, taller than he is), an iron-grey shirt rolled at the sleeves, a leather apron scorched at the hem,
+  a short dark beard - and his **wings**, hammered iron feathers folded on his back and rising above his shoulders,
+  which no other figure has: the top of his silhouette. The lameness is the far leg, an iron brace at the knee and a
+  shackle at the ankle with its chain broken off. The one emissive thing is the hammer's polished face, in the metal
+  ramp (new `METAL_RAMP`, control characters `\x10-\x13`: `\x09-\x0D` are whitespace). 0.90 edges/px. Passive
+  **Wings** (`move_speed_10`): +10% move speed, the one passive about his feet.
+- **The event** (`GreatAnvilEvent`, `tools/art/great_anvil.py`). A round forge floor of sooted flags with the hearth's
+  joints still lit; the great anvil on its iron-banded block a little south of the middle and him behind it, from the
+  waist up, striking slowly (a 1.9 s blow: raised only to the shoulder, down, struck, resting) with a burst of sparks
+  off each strike; four chains lying link by link from the anvil's rings to four squat iron stakes on the diagonals,
+  140 px out, each in an eye let into the floor. On arrival the bellows wake **four Trip-Hammers** (the chapter's
+  Slammer role, elites at 12x spawn health) 460 px out, one each side. **A slam that lands on a stake breaks its
+  chain**: `SlammerEnemy.SlamLanded` (new, raised on the frame a slam resolves) and `SlamCovers`, which is
+  `GroundSlamAttack.Contains` measured where the hammer stands, tested against the point of the stake nearest it
+  (12 px of iron) - so the ring the player was shown is the ring that breaks the chain. **First guess changed:** a
+  stock Trip-Hammer begins its wind-up at 1.5 times its ring, while the player is still coming, so standing BY a stake
+  never put the stake under the ring (it plants 144 px off, the ring reaches 96). The event's hammers start only once
+  the player is inside 0.85 of a 104 px ring (`HammerEngage`, `HammerSlamRadius`, `SlammerEnemy.RebuildSlam`): the tell
+  then always covers him and the stake he stands by, and he has the whole 0.75 s wind-up to step out of it - which is
+  the design's sentence exactly, and he is never asked to take a hit. **"One killed before it strikes is replaced, four
+  at most"** is read as: four on the floor at most, and while chains remain and he is at the forge the bellows wake
+  another every 3.5 s on the far side of the forge from him; walk away and none come. Nothing locks, and a strong
+  loadout that melts them costs time, never the wizard. Freed, he lowers the hammer and fades into the column of
+  light; the forge stays, the stakes burst and the chains in two lengths. The objective: "Bring the hammers down on the
+  chains (n of 4)", with the dashed track round each stake filling as its chain goes.
+- **His unlock** is the site's derived Road deed, "The Chains Struck", secret until `stage_7`, counted at the Throne only;
+  the locked hint is "Chained to his own anvil in the Emberdeep." Quest-log prisoner "the smith at the anvil"; held line
+  "Someone below is still at the anvil. He may not stop."
+- **His clue.** `HintCue.Sparks`, a seventh row of `hint-cues.png`: sparks rising in on the forge's hot air,
+  white-hot with a fire tail and cooling to embers in the last third of their life, a few on each strike. The far tell
+  is fire's hot stop, not his cold violet: the forge is built, and built things burn (world-and-tone.md, the one
+  carve-out). `hint_anvil`: four tired blows, the ring of struck steel at a free bar's modes over the hammer's thud and
+  the rebound tap a smith lets it make, the gaps lengthening and each softer; 2.50 s; nearest in the whole set 0.180
+  (`ui_hover`). The three lines above, unchanged.
+- **His form**, The Tempered Line (temper, `IronPalisade.TemperedLineId`), as the first guess: every cut a wall lands
+  adds 5% to its cuts, to +100%; full, the wall rings - one cut along its whole length and 72 px either side (or that
+  far either side of an Iron Ring's circle) at the full-tempered cut - and starts again. **Per wall, not per spell**: a
+  wall is what the crowd strikes, and a wall you can see heating is one you can read - its stakes go from steel to the
+  metal ramp's white as it hardens, and white for a moment when it rings. Lightning Rod adds Lightning and trades
+  nothing, so every route leads to the form. Card: "Every blow the stakes take hardens the line, +5% a blow to +100%.
+  Struck enough, it rings and cuts all along it." Its own evolution icon (white-hot stakes, the ring either side).
+- **The character select.** "Wayland the Smith" was a few pixels too wide for a PC card at Micro, and wrapped onto a
+  second line cut off by the frame (`FitOneLine` measured before the card was in the tree, so it took the phone's
+  floor). The name is now fitted once it is in the tree and may run 3 px into each side margin.
+
+**Verified:** build; the validator (0 errors, main's 1 warning); `_ExploreProbe --stage=7` on seeds 4242, 31 and 7 with
+`--fresh-save` (won in 8.1 to 10.7 s of game time, every chain broken by a hammer, no slam on him, Wayland freed in
+memory) and on 4242 and 31 with `--all-unlocked` (the chest path); `--kill-hammers=6` (six killed before they struck,
+six replacements, won in 32.6 s); `_BalanceHarness --character=11 --stage=7 --all-unlocked --seek-apotheosis --immortal` (index 11 on his branch; he is 12 since the merge)
+on two seeds (form offered and taken at 12.1 and 13.0 minutes, player level 21; the line rang 51 times in the two
+minutes after; kills a minute 331-337 before it, 393-409 after). `_UiShot` of the forge, the clue, the win, the form
+and the character select at both canvases. **Not verified:** whether baiting a hammer onto a stake is readable in a
+real crowd (the probe teleports and steps out on the frame a wind-up starts); whether players find the rule without
+being told it (the objective line says "Bring the hammers down on the chains"); the sound, measured and not heard;
+and the form's numbers beyond one harness pair. The Apotheosis comes late on the Emberdeep (12-13 minutes) because the
+chapter's health (x3.8) slows the levels - the gate, not the form.
 
 ### 4.8 The Court (second event) - Ma Liang
 

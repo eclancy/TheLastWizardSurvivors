@@ -74,6 +74,8 @@ public static class QuestLog
 		new Prisoner("vainamoinen", "the singer under the ice", "Someone is singing under the ice.", "{0} sings above the ice now."),
 		// The onmyoji, sealed in his own five-pointed seal: "the old wards were broken from the inside".
 		new Prisoner("seimei", "the master of wards", "Someone here was sealed in by his own wards.", "{0} keeps his own wards again."),
+		// The smith who struck every chain in the game, chained to his own anvil: "every shackle came from here".
+		new Prisoner("wayland", "the smith at the anvil", "Someone below is still at the anvil. He may not stop.", "{0} has put his hammer down."),
 		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
 		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.

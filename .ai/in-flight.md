@@ -308,9 +308,15 @@ Elim's "it's wizarding time" drawing: **not in Eric's email** - the only image E
   run to the fall (the Seneschal's three flights; the procession, then him at level 21, 483 s).
   **REMIND ERIC once he has played the Throne** (section 4) still stands.
 - **Every chapter wizard is to be built** (Eric: "keep working and building until all wizards are
-  finished"). Order: Wayland and the Sibyl (building, `wip/wizard-wayland`, `wip/wizard-sibyl`) and
-  Merlin (`wip/blue-wizard`); then P2 (a second event per chapter); then Baba Yaga, Paracelsus, Imhotep,
-  Medea; Morgan; Nostradamus and Ma Liang (the Court); Nimue (the Throne).
+  finished"). Order: Wayland and the Sibyl (building, `wip/wizard-wayland`, `wip/wizard-sibyl`);
+  **Merlin merged** (`d923ecc6`, `.ai/merlin.md`); P2 (a second event per chapter, `wip/second-events`);
+  then Baba Yaga, Paracelsus, Imhotep, Medea; Morgan; Nostradamus and Ma Liang (the Court); Nimue (the
+  Throne).
+- **Merlin, to look at:** the Orb of Ages' ring and star are thin smooth lines, not the 2 px world grid -
+  the complaint Cyclone Slash had (2026-10-29), so it wants the same pixel-art pass; his spell trails
+  Kindled Ward late (40% of his damage against Seimei's 56%); whether holding the circle feels like a
+  choice on the phone stick; his sheet beside Väinämöinen's.
+- **The name** (Eric): *something like The One He Missed*; `.ai/game-name.md`, exact words not picked.
 
 ## 4. Waiting on Eric
 

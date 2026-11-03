@@ -73,7 +73,7 @@ OUT_CHARS = os.path.join("assets", "bonelight", "characters")
 LT0, LT1, LT2, LT3 = roster.LT0, roster.LT1, roster.LT2, roster.LT3
 
 # The `red` row, hi / lit / base / shade / deep. anim_sets.PLAYER_RAMPS carries the same five.
-RED0, RED1, RED2, RED3, RED4 = "\x0e", "\x0f", "\x10", "\x11", "\x12"
+RED0, RED1, RED2, RED3, RED4 = "\x14", "\x15", "\x16", "\x17", "\x18"  # past metal (anim_sets.PLAYER_RAMPS)
 RED_RAMP = RED0 + RED1 + RED2 + RED3 + RED4
 PALETTE = dict(roster.PALETTE)
 PALETTE.update(dict(zip(RED_RAMP, B.MATERIALS["red"])))

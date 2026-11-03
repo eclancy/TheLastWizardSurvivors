@@ -52,6 +52,8 @@ public static class CharacterVisuals
 			// The light in the claw of his forked staff (tools/art/player_merlin.py), the title figure's orb: the ward's
 			// orb leaves from it and comes home to it.
 			case "merlin": return new Vector2(13, 6);
+			// The polished face of his hammer (roster.py, wayland()): the one bright thing on him.
+			case "wayland": return new Vector2(42, 7);
 			default: return null;
 		}
 	}
@@ -79,6 +81,7 @@ public static class CharacterVisuals
 			case "seimei":
 			case "dark_wizard":
 			case "merlin":
+			case "wayland":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

@@ -18,9 +18,11 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 | Mystic Ruins | **The Five-Pointed Seal** (`FivePointedSealEvent`) | "The old wards were broken from the inside." | **solve**: four guardian stones round a star cut in a courtyard floor; a step onto a stone's plate turns it and the two beside it a quarter (a puzzle, six to twelve presses, always solvable); all four facing the seal breaks it | Abe no Seimei |
 | Frozen Waste | **The thaw** (`ThawEvent`) | "A wizard lies under the ice." | **fight here**: damage dealt near the block thaws it, fire counts triple | Väinämöinen |
 | Scorched Sands | **The caravan master** (`CaravanMasterEvent`) | "The dead still walk the trade road." | **catch**: a walker on a fixed road that never turns toward you and escapes at the end | Iron Palisade |
+| The Emberdeep | **The great anvil** (`GreatAnvilEvent`) | "His forge, at the end of the road." | **bait**: four chains staked out from the anvil Wayland is chained to; only the forge's own Trip-Hammers break them - a slam that lands on a stake breaks its chain | Wayland the Smith |
 
 Each asks for something different, and none of them is "a harder fight". The Ruins' is the first of
-the chapter wizards' (`.ai/chapter-wizards.md`, section 4.5 and its "Built" note), added 2026-11-01. That was the brief: an
+the chapter wizards' (`.ai/chapter-wizards.md`, section 4.5 and its "Built" note), added 2026-11-01; the Emberdeep's
+the second (4.7, 2026-11-02), and the only one that uses the enemy's own attack. That was the brief: an
 event that is only a bigger elite is not an encounter.
 
 ## The thaw's lake (2026-11-01)
@@ -104,6 +106,7 @@ All five events resolve through `SideEvent.Succeed`, so all five now get the sam
 | The thaw | Väinämöinen (wizard) | a chest | "The ice gives up a chest" |
 | The caravan master | Iron Palisade (spell) | a chest | "The caravan master falls - his chest is yours" |
 | The Five-Pointed Seal | Abe no Seimei (wizard) | a chest | "The seal is broken - a chest was left inside it" |
+| The great anvil | Wayland the Smith (wizard) | a chest | "The chains are broken - a chest was left at the anvil" |
 
 To photograph any of them: `_UiShot --scene=res://scenes/node_2d_game.tscn --stage=N --win-event`
 (add `--event-chest` for the chest path on a save that lacks the discovery). It sets
@@ -147,7 +150,9 @@ wayfinders 1.5 to 2.2, 66 to 106 degrees apart; every site on open ground with n
 footprint, identical after its chunks were forgotten and reloaded. At 220 px/s with no swarm the
 main site is 28 to 42 s of straight walking; a real walk through the horde is longer, and the
 distance is the price of the trip, which is what the band is for. Stages without an event
-(Cave, Emberdeep, Sketchbook) place nothing. The Ruins has had the Five-Pointed Seal since 2026-11-01: its
+(Cave, Sketchbook) place nothing. The Emberdeep has had the great anvil since 2026-11-02, placed the seal's way
+(open ground over its whole 230 px disc, so the anvil never stands in lava): seeds 4242, 31 and 7 put it 5.9, 5.1 and
+4.3 chunks out. The Ruins has had the Five-Pointed Seal since 2026-11-01: its
 courtyard needs 290 px of open ground, which on the Ruins' walled lattice is only a court (one block in
 eight, `.ai/terrain.md` section 11), so it is placed by `ExplorePlacer.EventSiteInBand`, which sweeps the
 whole band when the ordinary search near the roll finds none. Seeds 4242, 31, 7 and 1001 put it 3.8 to
@@ -205,7 +210,7 @@ system (`PointsOfInterest.Add` is the hook); today it marks the event's sites on
 `PoiPointer` draws a **diamond** badge with the place's pictogram in it and a short tail toward
 it, pinned to the screen edge on the line from the centre, inset 66 px at the sides, 132 at the
 top (under the HUD band and the objective line) and 76 at the bottom, plus the safe-area insets on
-a phone. (The seal's pictogram, a violet star, is `tools/art/five_pointed_seal.py`'s, as the well's is
+a phone. (The seal's pictogram, a violet star, is `tools/art/five_pointed_seal.py`'s, the anvil's `great_anvil.py`'s, as the well's is
 `explore_well.py`'s.) Three promises, three shapes: the objective's gold triangle (what to do now), the chest's
 round bubble (a reward), and this (a place). His places wear an arcane-cyan rim; a wayfinder seen
 and not yet taken wears gold. The badge and the eight pictograms (lantern, grove, cell, ice,
@@ -395,12 +400,14 @@ question. `RegressionChecks.ValidateStageHints` warns on any line that contains 
 | Frozen Waste | `the_thaw` | sound (Väinämöinen, unnamed) | `hint_ice_song` (song) | "The ice groans. Under it, faintly, someone is singing." / "The song again, slow and deep, from under the ice." / "The singing is weaker now." |
 | Scorched Sands | `caravan_master` | sound | `hint_caravan_bell` (bell) | "A caravan bell, somewhere out on the sand." / "The bell again. Something walks the old road." / "The bell is still moving. It does not stop." |
 | Mystic Ruins | `five_pointed_seal` | sound (Abe no Seimei, unnamed) | `hint_paper_wind` (paper) | "Strips of paper on the wind, in a hand you do not know." / "More paper, burning at the edges as it falls." / "Still the paper comes, from the same quarter." |
+| The Emberdeep | `great_anvil` | sound (Wayland the Smith, unnamed) | `hint_anvil` (sparks) | "Hammer on anvil, slow and steady, somewhere below." / "The hammer again. Whoever swings it is very tired." / "It does not stop. It is not allowed to." |
 
 Tituba speaks in her own character: a prisoner taken from Barbados and jailed on an accusation,
 patient (her passive is *Patience*) and nobody's witch - so she asks for help and says she has
 waited, and never says why she is there. Väinämöinen cannot speak through the ice; he is heard
 singing, because he is a singer. Seimei, a master of paper wards, is not heard at all: his wards blow
-in on the wind. The other three are not people, so nothing speaks. A line says
+in on the wind. Wayland is heard working - he is not allowed to stop - and the sparks off his hammer come in
+on the forge's hot air, in fire's ramp, because the forge is built and built things burn. The other three are not people, so nothing speaks. A line says
 something is there and roughly where; none says what to do (no key, no snuffing, no catching).
 
 The sounds are generated (`tools/audio/sfx.py`, "chapter hints"), registered in `SfxCatalog`, and
@@ -478,6 +485,10 @@ player off his kiting line or is ignored, needs a playtest.
 - **Abe no Seimei** (2026-11-01), the onmyoji of Heian Kyoto, in the pale hunting robe over black. Opens on
   **Kindled Ward**, the Ruins' own vault spell. Passive *Exorcist*: +15% damage to elites, minibosses and
   bosses. The first chapter wizard (`.ai/chapter-wizards.md`): counted at the Throne's gate only.
+- **Wayland the Smith** (2026-11-02), the master smith of the Germanic tales, in an iron-grey shirt and a leather
+  apron, his hammered-iron wings folded on his back, a brace and a broken shackle on his lamed leg. Opens on
+  **Iron Palisade**, the stakes he forged. Passive *Wings*: +10% move speed. Freed in the Emberdeep, the gate
+  chapter, so only the Throne counts him.
 
 Both wear **no player pigment**. The four saturated rows are the starters'. The rescued wear what
 they were held in, so the only saturated thing on them is their staff head. Sprites are in
@@ -499,7 +510,7 @@ A wizard's card on the character select is in one of three states (`CharacterSel
 
 **The rescued wizards are secret until the chapter that holds them opens**: Tituba until the
 Cursed Dungeon (`stage_1`, opened by beating Elderbark), Väinämöinen until the Frozen Waste
-(`stage_5`), Abe no Seimei until the Mystic Ruins (`stage_4`). The reveal is data: `UnlockDefinition.IsSecret` and `RevealStageId`, set through
+(`stage_5`), Abe no Seimei until the Mystic Ruins (`stage_4`), Wayland the Smith until the Emberdeep (`stage_7`). The reveal is data: `UnlockDefinition.IsSecret` and `RevealStageId`, set through
 `DiscoveryCharacter(..., secretUntilStage:)`. Why that condition:
 
 - Before the chapter opens the player cannot act on anything about him, and the stage list does

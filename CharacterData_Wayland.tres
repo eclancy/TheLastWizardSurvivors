@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_IronPalisade.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/wayland-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/WaylandFrames.tres" id="4"]
+
+; Rescued, not a starter: the Emberdeep's chapter wizard, freed at the great anvil (.ai/chapter-wizards.md
+; 4.7). The master smith of the Germanic tales, who struck every chain in this game and was chained to his
+; own anvil with them. His passive is Wings - the wings he made to get off the king's island, the one axis
+; no other wizard owns: how fast he moves.
+[resource]
+script = ExtResource("1")
+Id = "wayland"
+Name = "Wayland the Smith"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "move_speed_10"
+StartingPassiveName = "Wings"
+StartingPassiveDescription = "+10% move speed"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

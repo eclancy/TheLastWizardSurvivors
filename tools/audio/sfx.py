@@ -1287,6 +1287,40 @@ def hint_paper_wind():
     return S.dc_block(_far(S.highpass(out, 180.0), low=180.0, high=2200.0, size=0.45, mix=0.25, damp=0.5))
 
 
+# The tired hammer's strikes, each (onset, gain): StageHintCue.AnvilStrikes is the same list of onsets.
+_ANVIL_STRIKES = [(0.08, 1.0), (0.64, 0.86), (1.24, 0.8), (1.90, 0.64)]
+
+
+def _anvil_strike(seed):
+    """One blow on an anvil: the steel ringing at a free bar's inharmonic modes (1, 2.76, 5.40), bright and
+    quick to die, over the dull thud of the hammer landing - and the little rebound tap a smith lets the
+    hammer make a beat after, which nothing else in the set has."""
+    dur = 0.6
+    ring = S.partials(1240.0, [1.0, 2.76, 5.40, 8.93], dur,
+                      amps=[1.0, 0.5, 0.26, 0.1], decays=[7.0, 9.0, 12.0, 16.0])
+    tn = S.n_samples(0.06)
+    thud = S.env_mul(S.bandpass(S.osc("noise", 0, 0.06, seed=seed), 260.0, 1.4), S.decay(tn, 4.0))
+    body = S.env_mul(S.osc("sine", S.sweep(0.08, 180.0, 120.0, 0.6), 0.08), S.decay(S.n_samples(0.08), 3.0))
+    tap = S.partials(1240.0, [1.0, 2.76], 0.25, amps=[1.0, 0.3], decays=[14.0, 18.0])
+    return S.layer([(ring, 0.0, 0.55), (thud, 0.0, 0.8), (body, 0.0, 0.6), (tap, 0.11, 0.16)])
+
+
+def hint_anvil():
+    """The Emberdeep: a hammer on an anvil, somewhere below.
+
+    Wayland the Smith, chained to his own anvil, working because he is not allowed to stop. Four blows,
+    each a ring of struck steel over the thud of the hammer, each with the small rebound tap a smith lets
+    the hammer make - and TIRED: the gaps between them lengthen (0.56, 0.60, 0.66 s) and each lands softer
+    than the last. The ring sits high (1.2 kHz and its bar modes), well clear of the caravan's tin bell
+    (330 Hz) and of chest_open's glassy bells, and it dies fast; what makes it an anvil is the thud under
+    the ring and the tap after it. Far below and in a big stone room: the top cut at 3 kHz, a long dark
+    tail. Nothing below 100 Hz."""
+    items = [(_anvil_strike(1101 + i), t, g) for i, (t, g) in enumerate(_ANVIL_STRIKES)]
+    out = S.pad(S.layer(items), 2.3)
+    out = S.highpass(out, 100.0)
+    return S.dc_block(_far(out, low=100.0, high=3000.0, size=0.8, mix=0.32, damp=0.55))
+
+
 # ---------------------------------------------------------------------------
 # secrets - the light he missed (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9)
 # ---------------------------------------------------------------------------
@@ -1588,6 +1622,7 @@ REGISTRY += [
     ("hint_ice_song",       "hint",   -9.0,  hint_ice_song,       False),
     ("hint_caravan_bell",   "hint",   -10.0, hint_caravan_bell,   False),
     ("hint_paper_wind",     "hint",   -10.0, hint_paper_wind,     False),
+    ("hint_anvil",          "hint",   -10.0, hint_anvil,          False),
 
     # Secrets. The seen shimmer is once per secret per save and meant to be played AT the site, so
     # it loses 5-6 dB to distance before it is heard; the found sting is a few a run, beside

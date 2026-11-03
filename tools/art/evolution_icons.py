@@ -3911,6 +3911,25 @@ def _(sp, c):
     sp.subject = iron_ring
 
 
+@card("iron_palisade_tempered_line")
+def _(sp, c):
+    """The Tempered Line (Wayland's Apotheosis, temper): the stakes struck white, ringing - the cut running
+    out along the line either side of them, and a glint where each blow landed."""
+    reset(sp)
+    sp.place = Place(0.74, dy=1)
+
+    def ring(cv, x):
+        m = E["metal"]
+        for y, col in ((10, m[1]), (25, m[1])):
+            for xx in range(4, 29, 2):
+                cv.set(xx, y, col)
+            cv.set(3, y, m[2])
+            cv.set(29, y, m[2])
+        for (gx, gy) in ((8, 14), (16, 12), (24, 15)):
+            m_glint(cv, gx, gy, 2, m)
+    O(sp, ring)
+
+
 @card("iron_palisade_infinite_horizon")
 def _(sp, c):
     """Rolling Wall: the wall marching forward, the pack shoved along ahead of it."""

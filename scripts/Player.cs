@@ -620,6 +620,8 @@ public partial class Player : CharacterBody2D
 	// as they resist every shove. Protection by holding them off - no heal, no armour.
 	public const float CharacterWardingHandThrow = 220f;
 	private float characterWardingHandThrow = 0f;
+	// Wings (Wayland the Smith): the share added to his walking speed - the wings he made to get off the island.
+	public const float CharacterWingsSpeedBonus = 0.10f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -858,6 +860,9 @@ public partial class Player : CharacterBody2D
 		// Merlin (.ai/merlin.md): Warding Hand - whatever touches him is thrown back. Holding the dark off as a
 		// passive, an axis no other wizard owns: not armour (the Geomancer), not a heal (.ai/difficulty-curve.md).
 		"repel_on_hit",
+		// Wayland the Smith (.ai/chapter-wizards.md 4.7): Wings, +10% move speed. Every other wizard's passive is
+		// about his spells or his skin; this one is the only one about his feet.
+		"move_speed_10",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -902,6 +907,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "repel_on_hit":
 				characterWardingHandThrow = CharacterWardingHandThrow;
+				return true;
+			case "move_speed_10":
+				Speed *= 1f + CharacterWingsSpeedBonus;
 				return true;
 			default:
 				return false;

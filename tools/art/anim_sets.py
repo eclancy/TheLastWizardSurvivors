@@ -61,9 +61,13 @@ PLAYER_RAMPS = RAMPS + [
     "\x01\x02\x03\x04",
     # light - Abe no Seimei's kindled ward. roster.LIGHT_RAMP, the next four control characters.
     "\x05\x06\x07\x08",
+    # metal - the face of Wayland the Smith's hammer. roster.METAL_RAMP, four more control characters
+    # (past the whitespace ones: \x10-\x13).
+    "\x10\x11\x12\x13",
     # red - Merlin's sash, the `red` material row (player_merlin.RED_RAMP). Five control characters
-    # past \x0d, because \x09-\x0d are whitespace and a row that splits on them falls apart.
-    "\x0e\x0f\x10\x11\x12",
+    # past metal's: \x09-\x0d are whitespace, and \x10-\x13 went to Wayland's metal when both landed
+    # on 2026-11-02 (each had taken \x10-\x12, so a hurt flash would step one along the other's ramp).
+    "\x14\x15\x16\x17\x18",
 ]
 
 
@@ -244,7 +248,9 @@ def full_set(pose, lean=1.0, reach=3.0, knock=2):
 # full two-row bob; the robed and the braced carry one, because a heavy or stately walk is
 # mostly NOT going up and down - that is what makes it read as heavy or stately.
 WALK_BOB = {"pyromancer": 2, "stormcaller": 2, "vainamoinen": 2,
-            "frostweaver": 1, "geomancer": 1, "tituba": 1, "seimei": 1}
+            "frostweaver": 1, "geomancer": 1, "tituba": 1, "seimei": 1,
+            # Lamed by a king: the far leg in its brace hardly bends, so the walk is a heavy one.
+            "wayland": 1}
 
 # The waist. Everything above this row is the same drawing in every frame and only rises with
 # the bob; everything below it is redrawn per frame by the pose function. It is the same row the
