@@ -1175,6 +1175,14 @@ public partial class _UiShot : Node
 				stageHealth = int.Parse(arg.Substring("--stage-health=".Length));
 			else if (arg.StartsWith("--crowd="))
 				crowd = int.Parse(arg.Substring("--crowd=".Length));
+			// --light-probe: the light pool's readability, measured (_UiShot.LightPool.cs).
+			else if (arg == "--light-probe")
+				lightProbe = true;
+			else if (arg == "--light-probe-low-health")
+				lightProbe = lightProbeLowHealth = true;
+			// --reduce-darkness: the Reduce Darkness switch on for this run (in memory; writes are off).
+			else if (arg == "--reduce-darkness")
+				DisplaySettings.StoreReduceDarkness(null, true);
 			else if (arg == "--layer-census")
 				layerCensus = true;
 			else if (arg.StartsWith("--landmark-census="))
@@ -2949,15 +2957,18 @@ public partial class _UiShot : Node
 				HoldShowcase();
 			else if (stageCount > 0)
 				HoldForStage();
-			else if (bossDeathOffset != null)
+			else if (bossDeathOffset != null || lightProbe)
 			{
 				// --boss-death: he stands still, so the camera does and the fall is photographed where
-				// it lands. (He cannot die meanwhile: --rush-steps keeps him whole.)
+				// it lands. (He cannot die meanwhile: --rush-steps keeps him whole.) --light-probe: still,
+				// so what he lights stays where the probe stood it.
 				foreach (string a in MoveActions)
 					Input.ActionRelease(a);
 			}
 			else
 				DriveMovement();
+			if (lightProbe && !lightProbeStarted && frames >= WarmupFrames / 3)
+				StartLightProbe();
 			if (cover && !stagePlaced && frames >= WarmupFrames / 3)
 				PlaceCoverRing();
 			else if (stageCount > 0 && !cover && !stagePlaced && frames >= WarmupFrames - fxLead)
