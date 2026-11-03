@@ -38,6 +38,9 @@ public static class CharacterRoster
 		// Taken on the hardest road (.ai/dark-wizard-playable.md): the dark wizard himself. Appended, as everyone
 		// after the four is, so every saved index keeps its wizard (index 10).
 		"res://CharacterData_DarkWizard.tres",
+		// The one he missed (.ai/merlin.md): Merlin, the title screen's blue-robed figure, playable once every chapter
+		// has fallen on Default or harder. Appended (index 11).
+		"res://CharacterData_Merlin.tres",
 	};
 
 	// Loaded once and held. Every call used to load all seven again, and each load hands back a

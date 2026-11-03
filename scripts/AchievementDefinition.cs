@@ -231,21 +231,31 @@ public static class AchievementDefinitions
 
 	public static string SecretDeedId(string secretId) => SecretDeedPrefix + (secretId ?? string.Empty).Trim();
 
-	/// <summary>The deed that takes the dark wizard: the Throne won on Hardcore (.ai/dark-wizard-playable.md).</summary>
+	/// <summary>
+	/// The deed that takes the dark wizard: every chapter's boss beaten on Hardcore (.ai/dark-wizard-playable.md;
+	/// Eric, 2026-11-02, "dark wizard should unlock after defeating all stages on hard mode").
+	/// </summary>
 	public const string TakerTakenId = "the_taker_taken";
+
+	/// <summary>The deed that frees Merlin: every chapter's boss beaten on Default or harder (.ai/merlin.md).</summary>
+	public const string OneHeMissedId = "the_one_he_missed";
 
 	/// <summary>The Throne's boss, the dark wizard (BossCatalog).</summary>
 	public const string ThroneBossId = "throne_dark_wizard";
 
 	/// <summary>
-	/// A run won over the dark wizard on the Hardcore difficulty: the victory's boss is his and the run was
-	/// played on <see cref="GlobalStatsManager.BalancePresetHardcore"/> (Node2DGame.BuildRunResult reads the
-	/// preset the run was set up with). False with no run - nothing else records the difficulty a boss fell on.
+	/// The whole road at a difficulty: how many of the campaign's chapters have had their boss beaten on the preset
+	/// of <paramref name="rank"/> or harder (SaveData.MaxDifficultyCleared, with the run that is ending folded in -
+	/// the pause tab's projection reads the save before the run's end records it). The two deeds' measure, out of
+	/// <see cref="CampaignChapterCount"/>, which counts the chapters not yet playable. Read from StageCatalog.Campaign,
+	/// never a list of its own, so the Sketchbook - outside the campaign, and with no unlocks (Eric, 2026-11-02) - is
+	/// never asked for.
 	/// </summary>
-	public static bool WonTheThroneOnHardcore(global::RunResult run) =>
-		run != null && run.Outcome == global::RunOutcome.Victory
-		&& string.Equals(run.BossId, ThroneBossId, StringComparison.OrdinalIgnoreCase)
-		&& GlobalStatsManager.NormalizeBalancePresetId(run.BalancePresetId) == GlobalStatsManager.BalancePresetHardcore;
+	public static float ChaptersClearedAt(AchievementContext context, int rank) =>
+		GlobalStatsManager.ChaptersClearedAt(context?.Save, rank, context?.Run);
+
+	/// <summary>Every chapter of the campaign, built or not: the target of the two whole-road deeds.</summary>
+	public static int CampaignChapterCount => StageCatalog.Campaign.Count;
 
 	/// <summary>The Grimoire Restored: every spell recovered, now the collection rather than the final gate's key.</summary>
 	public const string GrimoireRestoredId = "grimoire_restored";
@@ -439,26 +449,44 @@ public static class AchievementDefinitions
 		BossClearArcane("bridge_crossed", "Across the Water", "bridge_constable", "the Last Bridge", 350),
 		BossClearArcane("court_emptied", "No One Left", "court_seneschal", "the Court", 400),
 		BossClearArcane("throne_taken_back", "Taken Back", "throne_dark_wizard", "the Throne", 1000),
-		// THE TAKER TAKEN (.ai/dark-wizard-playable.md, Eric 2026-11-02: "the dark wizard should be unlockable if
-		// you beat the whole game on hard mode"). The Throne is the end of the road and its gate asks for all of it,
-		// so beating him there on Hardcore is beating the whole game on Hardcore. Measured on the run that ends -
-		// the save keeps which bosses fell but never on which difficulty - and kept once done (UnlockedAchievementIds),
-		// so no field and no schema step. No BossId: the chapter's clear is Taken Back, and a second deed naming
-		// the boss would be read as the Throne's warden deed (StageRewards.WardenDeed). Pays him alone - his spell,
-		// The Taking, is a Conjunction he opens on, which its own Feat pays everyone else (ComboCatalog); he is
-		// never named while locked (CodexRows.HidesWizard: "Frees someone").
+		// THE TAKER TAKEN (.ai/dark-wizard-playable.md). Eric, 2026-11-02, a second time: "dark wizard should unlock
+		// after defeating all stages on hard mode" - every chapter's boss beaten on Hardcore, the stricter reading
+		// the first build left for later. Read off SaveData.MaxDifficultyCleared (each chapter's hardest clear,
+		// written by AchievementManager.ApplyRunAchievements) out of every chapter of the campaign, built or not,
+		// so it cannot be done until the Throne exists. Still a Road deed of the Throne, listed once it is playable:
+		// the end of that road is where it is finished. No BossId: the chapter's clear is Taken Back, and a second
+		// deed naming the boss would be read as the Throne's warden deed (StageRewards.WardenDeed). Pays him alone -
+		// his spell, The Taking, is a Conjunction he opens on, which its own Feat pays everyone else (ComboCatalog);
+		// he is never named while locked (CodexRows.HidesWizard: "Frees someone").
 		new()
 		{
 			Id = TakerTakenId, DisplayName = "The Taker Taken",
-			Description = "Defeat the boss of the Throne on Hardcore.",
+			Description = "Defeat every chapter's boss on Hardcore.",
 			RewardText = "Unlocks The Dark Wizard",
 			CharacterUnlockId = "dark_wizard",
 			Category = AchievementCategory.Challenge,
 			Kind = AchievementKind.Road,
 			Visibility = AchievementVisibility.ChapterOpen,
 			StageId = StageOfBoss(ThroneBossId),
-			Measure = c => WonTheThroneOnHardcore(c.Run) ? 1f : 0f,
-			Target = 1,
+			Measure = c => ChaptersClearedAt(c, GlobalStatsManager.PresetRankHardcore),
+			Target = CampaignChapterCount,
+		},
+		// THE ONE HE MISSED (.ai/merlin.md). Eric, 2026-11-02: the blue-robed wizard "should be his own character.
+		// maybe unlocked when finishing the full campaign on medium" - every chapter's boss beaten on Default or
+		// harder, counted as the Taker Taken is, so it too waits for the whole campaign to exist. A Feat, listed from
+		// the first run: he is the title screen's figure, never a secret, and his card shows his shape and this line
+		// from the start. He is the one the dark wizard missed, so he is outside the campaign gate (UnlockCatalog).
+		// Pays him and his own spell, Orb of Ages, which no other wizard is ever offered (UnlockDefinition.ExclusiveTo).
+		new()
+		{
+			Id = OneHeMissedId, DisplayName = "The One He Missed",
+			Description = "Defeat every chapter's boss on Default or harder.",
+			RewardText = "Unlocks Merlin and Orb of Ages",
+			CharacterUnlockId = "merlin",
+			SpellUnlockId = OrbOfAges.SpellId,
+			Category = AchievementCategory.Challenge,
+			Measure = c => ChaptersClearedAt(c, GlobalStatsManager.PresetRankDefault),
+			Target = CampaignChapterCount,
 		},
 		// The two early chapters (.ai/campaign.md) pay in boons, for the reason the Frozen Waste and
 		// the Sands do. Both boons were sold-but-never-sold (the shop registers no boons), so until then

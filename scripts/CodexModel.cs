@@ -571,6 +571,11 @@ public sealed class CodexModel
 					Hint = UnlockCatalog.GetLockedHint(template.Id, UnlockKind.Spell),
 					KindLine = template.IsPassive ? "Passive" : "Attack",
 				};
+				// One wizard's alone (UnlockDefinition.ExclusiveTo: Merlin's Orb of Ages). Named only once owned - it is
+				// paid with him, so owning it is having him - and until then the page is "not yet found" like any other.
+				string owner = UnlockCatalog.ExclusiveOwnerOf(template.Id);
+				if (!string.IsNullOrEmpty(owner) && owned)
+					entry.KindLine += ", " + QuestLog.NameOf(owner) + "'s alone";
 				if (held != null)
 				{
 					// The run's own copy: its name, icon and tags are the form it was taken in.

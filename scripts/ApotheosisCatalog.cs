@@ -190,6 +190,21 @@ public static class ApotheosisCatalog
 				"Take: every kill on a lane is another light coming home. Stand where they fall.",
 				new Color(0.78f, 0.62f, 1.0f), NoVisualScale),
 		},
+		// Merlin, the one the dark wizard missed (.ai/merlin.md), who lives his life backwards in the old stories.
+		// "Rewind" was held for him (.ai/decisions/2026-10-10-apotheosis.md, .ai/chapter-wizards.md): each time the orb
+		// finishes its star it flies it again backwards and the ward's hour turns back, so his circle stands for as long
+		// as he holds it (OrbOfAges.OnceAndFutureId). Protection as a place that does not fall, not a heal. Light, the
+		// one of his two the form deepens; no card on Orb of Ages trades it away. No visual scale: the ward and the orb
+		// draw their own size.
+		new()
+		{
+			CharacterId = "merlin", SpellId = OrbOfAges.SpellId,
+			Element = Element.Light, Verb = "rewind",
+			Form = Make(OrbOfAges.OnceAndFutureId, "The Once and Future", Element.Light,
+				"When the orb finishes its star it flies it again backwards. Your ward stands as long as you stay inside it.",
+				"Rewind: the ward's hour turns back. Hold your ground and it never falls.",
+				new Color(1.0f, 0.96f, 0.78f), NoVisualScale),
+		},
 	};
 
 	// A form's visual lift is a 15% larger spell, but only where the spell's node keeps a visual scale.

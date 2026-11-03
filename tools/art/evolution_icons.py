@@ -1208,6 +1208,9 @@ SPELLS = {
     "hollow_star":       dict(paint=si.hollow_star, travel=None, tip=(16, 16), rows=("darkness",)),
     # The dark wizard's own (.ai/dark-wizard-playable.md): the hand closing on the mote he takes.
     "the_taking":        dict(paint=si.the_taking, travel=(1, -1), tip=(20, 10), rows=("darkness", "light")),
+    # Merlin's own (tools/art/player_merlin.py): the orb in the gold claw, inside the ward and the {7/3} it
+    # traces. Drawn without its night here, as Starfall is: every milestone frame brings its own.
+    "orb_of_ages":       dict(paint=lambda: si.orb_of_ages(sky=False), travel=None, tip=(16, 14), rows=("amber", "light")),
     "starfall":          dict(paint=lambda: si.starfall(sky=False), travel=(0.75, 1), tip=(21, 22), rows=("light",)),
     "familiar":          dict(paint=image(lambda: familiar.portrait()), travel=(1, 0), tip=(27, 19), rows=()),
     # The Familiar is taken in a form too (a dog, a crow or a cat), each its own subject, drawn by
@@ -1246,7 +1249,7 @@ BASE = {
     "spiritual_weapon_sword": lambda: sw.icon("sword"),
     "starfall": si.starfall, "familiar": si.familiar_icon, "stormsweep": si.stormsweep,
     "familiar_dog": si.familiar_dog_icon, "familiar_crow": si.familiar_crow_icon, "familiar_cat": si.familiar_cat_icon,
-    "sleet_runes": si.sleet_runes,
+    "sleet_runes": si.sleet_runes, "orb_of_ages": si.orb_of_ages,
 }
 
 
@@ -3996,6 +3999,65 @@ def _(sp, c):
     sp.copies = places[1:]
     sp.place = places[0]
     U(sp, lambda cv, x: m_cycle(cv, E["light"], (C0, C0), 13.0))
+
+
+# --- Orb of Ages (Merlin's own, .ai/merlin.md) ----------------------------------------------------------
+# Twin Orbs (a second orb), Great Circle (the ring grown, in Arcane's ring) and The Once and Future (the crown)
+# say their verb as derived; these three do not, and Burning Rim and Missile Ward came out 4% apart.
+
+@card("orb_of_ages_amplified_impact")
+def _(sp, c):
+    """Burning Rim: the ring itself burns - tongues of light standing out all round its edge."""
+    reset(sp)
+    sp.place = Place(0.8)
+
+    def rim(cv, x):
+        l = E["light"]
+        for k in range(14):
+            a = TAU * k / 14.0 + 0.11
+            tall = k % 2 == 0
+            r1 = 15.0 if tall else 13.8
+            cv.line(C0 + math.cos(a) * 12.0, C0 + math.sin(a) * 12.0, C0 + math.cos(a) * r1, C0 + math.sin(a) * r1,
+                    l[1] if tall else l[2])
+            cv.set(C0 + math.cos(a) * 12.0, C0 + math.sin(a) * 12.0, l[0])
+    O(sp, rim)
+    sp.why = "the ring's edge on fire"
+
+
+@card("orb_of_ages_reactive_catalyst")
+def _(sp, c):
+    """Missile Ward: enemy bolts break on the ring - three dark bolts in from outside, each bursting on it."""
+    reset(sp)
+    sp.place = Place(0.72)
+
+    def guard(cv, x):
+        dk = E["darkness"]
+        for d in (-60, 35, 150):
+            t = math.radians(d)
+            bx, by = C0 + math.cos(t) * 12.5, C0 + math.sin(t) * 12.5
+            ox, oy = C0 + math.cos(t) * 17.5, C0 + math.sin(t) * 17.5
+            # Lighter than Rampart's: these come in over the ward's own night, not over a lit dome.
+            cv.line(ox, oy, bx + math.cos(t) * 1.5, by + math.sin(t) * 1.5, dk[1])
+            cv.line(ox + 0.7, oy, bx + math.cos(t) * 1.5 + 0.7, by + math.sin(t) * 1.5, dk[2])
+            m_glint(cv, bx, by, 2, E["light"])
+    O(sp, guard)
+    sp.why = "bolts breaking on the ring"
+
+
+@card("orb_of_ages_infinite_horizon")
+def _(sp, c):
+    """Walking Ward: the ward walks with him - the ring set up and to the right, the footsteps it came by
+    trailing away down to the left."""
+    reset(sp)
+    sp.place = Place(0.68, at=(19.5, 12.5))
+
+    def steps(cv, x):
+        a, l = M["amber"], E["light"]
+        for k, (fx, fy) in enumerate(((4.5, 28.0), (8.0, 25.5), (6.0, 22.0), (10.0, 20.0))):
+            cv.disc(fx, fy + 0.8, 1.7, 0.8, a[3])
+            cv.disc(fx, fy, 1.4, 0.9, l[2] if k % 2 else l[1])
+    U(sp, steps)
+    sp.why = "a ward that walks"
 
 
 # --- Magic Missile ---------------------------------------------------------------------------------

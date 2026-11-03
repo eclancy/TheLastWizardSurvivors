@@ -80,6 +80,9 @@ public static class AchievementManager
 		// always be judged against the state before it happened, and every achievement would fire
 		// exactly one run late.
 		data.Lifetime.Absorb(result);
+		// And the preset its boss fell on, kept per chapter (the hardest): the two whole-road deeds read it - every
+		// chapter on Default frees Merlin, on Hardcore the Dark Wizard (GlobalStatsManager.ClearedEveryChapterAt).
+		GlobalStatsManager.RecordChapterClear(data, result);
 
 		AchievementContext context = AchievementContext.ForRun(data, result);
 

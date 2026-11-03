@@ -104,6 +104,8 @@ public static class ContentValidator
 		"res://SpellData_HuntersDraw.tres",
 		// The dark wizard's own (.ai/dark-wizard-playable.md).
 		"res://SpellData_TheTaking.tres",
+		// Merlin's own (.ai/merlin.md), offered to no other wizard (UnlockDefinition.ExclusiveTo).
+		"res://SpellData_OrbOfAges.tres",
 		// The combinations (ComboCatalog): never in the level-up pool, made only by fusing two ascended spells.
 		"res://SpellData_Sagittarius.tres",
 		// The Sovereign Rite (ComboCatalog's rite, SovereignRite): never held, never a card; its name, line and picture.
