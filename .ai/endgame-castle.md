@@ -1143,7 +1143,11 @@ validators), `LevelGenerator.cs` (C0; every topology after it is a partial file)
    by; until the bridge is playable the Warden of the Deep would open the Dungeon directly, which
    works but is not the design.
 7. **C8, C9.**
-8. **Flip** the Court, then the Throne. A chapter's validator to-do line must be gone before its flag
+8. **Done 2026-11-02: the Court and the Throne flipped together** (Eric: "You can switch all of that on
+   and then commit it"). Each raised its chapter note (written, `ChapterNotes`) and one validator
+   line that was the sample save's fault, not the game's: `SaveThroughGates` beat only the boss before
+   each gate, and past the first gate a chapter's previous one must be on the road too, so it now walks
+   the whole road. **Flip** the Court, then the Throne. A chapter's validator to-do line must be gone before its flag
    flips; if it says "playable but still has stand-ins", the flag went first.
 
 ### 9.3 What each piece must verify

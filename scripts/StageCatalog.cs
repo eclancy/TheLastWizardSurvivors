@@ -247,7 +247,8 @@ public static class StageCatalog
 			CorruptionText = "A court with no one left in it.",
 			EnvironmentKind = StageEnvironmentKind.Court,
 			Gate = StageGate.PreviousBoss,
-			IsPlayable = false,
+			// Flipped 2026-11-02 with the Throne (Eric: "You can switch all of that on").
+			IsPlayable = true,
 		},
 		new()
 		{
@@ -262,7 +263,8 @@ public static class StageCatalog
 			// is every wizard here, Tituba included, so "he is reachable only when every wizard is free" is
 			// true exactly where he is.
 			Gate = StageGate.PreviousBossAndWizards,
-			IsPlayable = false,
+			// Flipped 2026-11-02 with the Court (Eric: "You can switch all of that on").
+			IsPlayable = true,
 		},
 	};
 

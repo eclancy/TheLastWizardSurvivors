@@ -293,6 +293,25 @@ the agent compared against run-pacing's 2026-10-15 table (16.5-20 min); the curr
 Elim's "it's wizarding time" drawing: **not in Eric's email** - the only image Elim sent is
 `fnfdodgeythingy!!!!11!!!11!!1!!.png` (2026-10-14, for Blobby). Waiting on Eric for the file.
 
+## 3d. Later on 2026-11-02: wizards, the Sketchbook, the castle switched on
+
+- **Names.** The blue-robed title wizard is **Merlin** (verb *rewind*, the Orb of Ages, unlocked by the
+  campaign cleared at Default); the Throne's kept wizard is now **Nimue**, the Lady of the Lake, keeping
+  Spiritual Weapon's sword, Apotheosis **Excalibur** on the Sword form, verb **sever** (Eric). Nimue is
+  docs only until built.
+- **The Sketchbook holds nothing to earn** (Eric: "no unlocks or any achievements. move that to other
+  maps"): Best Drawing removed, its secrets shelved, `ValidateSketchbookHoldsNothing`; Ma Liang moves to
+  the Court as its second event (the greedy emperor's painter, the Gallery). Merlin's and the Dark
+  Wizard's "every chapter" unlocks must not count it.
+- **The Court and the Throne are playable** (Eric: "You can switch all of that on and then commit it").
+  Both chapter notes written; `SaveThroughGates` walks the whole road now. `_BossProbe` 12 and 13 both
+  run to the fall (the Seneschal's three flights; the procession, then him at level 21, 483 s).
+  **REMIND ERIC once he has played the Throne** (section 4) still stands.
+- **Every chapter wizard is to be built** (Eric: "keep working and building until all wizards are
+  finished"). Order: Wayland and the Sibyl (building, `wip/wizard-wayland`, `wip/wizard-sibyl`) and
+  Merlin (`wip/blue-wizard`); then P2 (a second event per chapter); then Baba Yaga, Paracelsus, Imhotep,
+  Medea; Morgan; Nostradamus and Ma Liang (the Court); Nimue (the Throne).
+
 ## 4. Waiting on Eric
 
 - **Playtest 0.10.0** (50 HP, scarce healing, tougher chapters and bosses). Fixes from it come

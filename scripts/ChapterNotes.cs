@@ -107,6 +107,18 @@ public static class ChapterNotes
 			"Wind off the dark sea, and his rock at the far end.",
 			"Salt and old mortar. The span falls in behind me.",
 		},
+		// 12 The Court - "A court with no one left in it." Written for its flip (2026-11-02).
+		["stage_12"] = new[]
+		{
+			"His house. Tables laid for a feast nobody comes to.",
+			"Cold wax and old rushes. Every door opens on another room.",
+		},
+		// 13 The Throne - "He is here." Written for its flip (2026-11-02).
+		["stage_13"] = new[]
+		{
+			"One hall of black stone. The doors shut behind me.",
+			"Nothing to smell, nothing to hear. He is here.",
+		},
 		// The Sketchbook - outside the campaign; nothing here is his doing (StageCatalog).
 		["stage_8"] = new[]
 		{

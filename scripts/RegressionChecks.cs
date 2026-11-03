@@ -2562,18 +2562,30 @@ public static partial class RegressionChecks
 		ValidateCampaignToDo(warnings);
 	}
 
-	// Every wizard free and the boss before every gate chapter beaten: what opens each gate.
+	// Every wizard free, then the road walked: every chapter the save can enter has its boss beaten the way a
+	// victory records it, until nothing new opens. Past the first gate a chapter's previous one must be on
+	// the save's road too (GlobalStatsManager.HasClearedPreviousChapter), so beating only the boss before
+	// each gate - what this did until the Court and the Throne flipped on 2026-11-02 - left the Throne shut
+	// behind a Court the sample had never earned.
 	private static SaveData SaveThroughGates()
 	{
 		var save = new SaveData();
 		foreach (string wizardId in UnlockCatalog.AllWizardIds)
 			GlobalStatsManager.UnlockCharacter(save, wizardId);
-		foreach (StageDefinition gate in StageCatalog.GateChapters)
+		IReadOnlyList<StageDefinition> campaign = StageCatalog.Campaign;
+		for (int pass = 0; pass <= campaign.Count; pass++)
 		{
-			StageDefinition previous = StageCatalog.PreviousChapter(gate);
-			BossDefinition boss = previous != null ? BossCatalog.ForStageIndex(previous.Index) : null;
-			if (boss != null)
-				save.Lifetime.BossesDefeated.Add(boss.Id);
+			bool changed = false;
+			foreach (StageDefinition stage in campaign)
+			{
+				BossDefinition boss = BossCatalog.ForStageIndex(stage.Index);
+				if (boss == null || !GlobalStatsManager.IsStageAvailable(save, stage) || save.Lifetime.HasDefeatedBoss(boss.Id))
+					continue;
+				RecordVictory(save, boss, stage);
+				changed = true;
+			}
+			if (!changed)
+				break;
 		}
 		return save;
 	}
