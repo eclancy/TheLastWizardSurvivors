@@ -3871,7 +3871,7 @@
       "milestone": 4,
       "id": "magic_missile_twin_volley",
       "name": "Twin Volley",
-      "description": "The missile forks like lightning on its first hit, two shards flying out either side for 30% damage. \u002B1 Lightning tag.",
+      "description": "The missile forks like lightning on its first hit, two shards flying out either side for 30% damage.",
       "synergy": "Arcane / Lightning",
       "visual_tag": "TwinVolley",
       "gains": {

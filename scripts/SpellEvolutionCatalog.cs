@@ -211,7 +211,7 @@ public static class SpellEvolutionCatalog
 			// The element path: the spell's old Lightning, on the card that forks.
 			BonusElementWeights = new() { { "Lightning", 1 } },
 			DisplayName = "Twin Volley",
-			Description = "The missile forks like lightning on its first hit, two shards flying out either side for 30% damage. +1 Lightning tag.",
+			Description = "The missile forks like lightning on its first hit, two shards flying out either side for 30% damage.",
 			MilestoneLevel = 4,
 			// The fork is the whole upgrade, so it carries no ProjectileCountBonus. That is
 			// deliberate: the magic missile firing loop in Player never asks SpellData for a
