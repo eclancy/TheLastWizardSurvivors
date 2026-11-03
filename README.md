@@ -21,7 +21,7 @@ repository, and most of what follows is about it.
 
 ## The art is code
 
-**506 sprites and 188 ground tiles**, drawn by forty-six Python generators in
+**3,248 images, 1,441 of them ground tiles**, drawn by 157 Python generators in
 [`tools/art/`](tools/art). Not exported from an editor — *drawn in code*, pixel by pixel, against
 a fixed palette. One command rebuilds every image in the game:
 
@@ -36,10 +36,11 @@ colour the palette does not define. The bosses are in
 [`sprite_bosses.py`](tools/art/sprite_bosses.py), the ground in [`tiles.py`](tools/art/tiles.py),
 the relic icons in [`relic_icons.py`](tools/art/relic_icons.py).
 
-**78 sound effects and the music**, synthesised by [`tools/audio/`](tools/audio) — no library, no
-recordings. The music is a theme for the menus, a set for each of the eleven chapters - each in
-its own mode of the same seven notes, as three stems the game fades in and out with the fight -
-and one loop the bosses share: 35 files.
+**101 sound effects and the music**, synthesised by [`tools/audio/`](tools/audio) — no library, no
+recordings. The music is a theme for the menus and a set for each of the fourteen chapters, as three
+stems the game fades in and out with the fight - the road's chapters in modes of the same seven notes,
+the castle's taking up notes outside them - with a boss track of its own for eleven of them and one
+loop the rest share: 55 files.
 The reasoning, including why a sound's loudness is set by how *often* it plays rather than how
 important it feels, is in [`.ai/audio-direction.md`](.ai/audio-direction.md).
 
@@ -65,12 +66,12 @@ Please read the [`NOTICE`](NOTICE) file before doing anything with that folder.
 
 | | |
 |---|---|
-| Chapters | 10 campaign chapters plus the Sketchbook, each ending in a boss |
-| Bosses | 11 — among them a hurdle that must be walked round, a stone circle that closes on you, three bodies that must all be silent at the same moment, one that sheds pieces of itself, a burrower, and a finale that quotes the rest |
-| Spells | 35, with evolutions and level-up branches |
-| Wizards | 8, and one hound who is not a wizard |
-| Relics | 34 — 32 in 11 Full Set Enchantments, and 2 that act on the spell book itself |
-| Boons | 15 |
+| Chapters | 13 campaign chapters plus the Sketchbook, each ending in a boss |
+| Bosses | 14 — among them a hurdle that must be walked round, a stone circle that closes on you, three bodies that must all be silent at the same moment, one that sheds pieces of itself, a burrower, one that quotes four of the others, a steward who flees through the walls and must be hunted room to room, and the dark wizard himself, who seals your spells until you take them back |
+| Spells | 39, with evolutions and level-up branches |
+| Wizards | 21, and one hound who is not a wizard |
+| Relics | 40 — 38 in 13 Full Set Enchantments, and 2 that act on the spell book itself |
+| Boons | 17 |
 
 The bosses were designed as outlines before a pixel of detail was placed — a T, a bell, a dome, a
 slab, a wedge, an S and an H — on the theory that a player meeting them fifteen minutes apart
@@ -100,12 +101,12 @@ console on launch.
 ## Layout
 
 ```
-scripts/      ~120 C# files, flat — no subdirectories
-scenes/       ~85 .tscn, flat
+scripts/      ~460 C# files, flat — no subdirectories
+scenes/       ~230 .tscn, flat
 SpellData_*.tres, CharacterData_*.tres   at the repo root, where they all live
 assets/       generated art, synthesised audio, the kids' drawings
 tools/        the generators, and the headless probes that photograph the game
-.ai/          22 design documents — the actual source of truth for decisions
+.ai/          52 design documents — the actual source of truth for decisions
 ```
 
 `.ai/` is not documentation written after the fact. It is where a decision is argued out before
