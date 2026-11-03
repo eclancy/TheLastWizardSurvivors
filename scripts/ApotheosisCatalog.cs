@@ -316,6 +316,24 @@ public static class ApotheosisCatalog
 				"Double: half of them chase a ghost. Every cast leaves both hands; no boss is fooled.",
 				new Color(0.78f, 0.96f, 1.0f), NoVisualScale),
 		},
+		// Ma Liang, freed by tracing the door he sketched in the Court's Gallery (.ai/chapter-wizards.md 4.8). "Displace" was
+		// on the ADR's unclaimed list: the boy of the tale painted a door and walked through it, and his crow paints one where
+		// it strikes - whatever ordinary body stands on it steps out of a second door far across the field
+		// (Familiar.PaintedDoorId, Familiar.PaintedDoor.cs). Nothing is pulled (pull), drowned in a current (flood), held
+		// (hold) or lured (double): the knot is moved, and it deals nothing of its own. Elites, minibosses and bosses are
+		// never moved. ONE FORM'S: he opens on the Familiar and chooses its form each run (Node2DGame.OpeningForm.cs), and
+		// only the crow - the tale's painted birds - has a final form; as the dog or the cat he has none, and his card says
+		// so. Arcane, the Familiar's only element; no card on the crow trades it away (Stormcrow adds Lightning beside it).
+		// No visual scale: the doors are drawn at one size.
+		new()
+		{
+			CharacterId = "ma_liang", SpellId = "familiar", VariantId = Familiar.CrowId,
+			Element = Element.Arcane, Verb = "displace",
+			Form = Make(Familiar.PaintedDoorId, "The Painted Door", Element.Arcane,
+				"Where the crow strikes it paints a door, and whatever stands on it steps out of a second door far across the field.",
+				"Displace: move the knot, not the kill. Elites and bosses never go through a door.",
+				new Color(0.91f, 0.75f, 1.0f), NoVisualScale),
+		},
 	};
 
 	// A form's visual lift is a 15% larger spell, but only where the spell's node keeps a visual scale.

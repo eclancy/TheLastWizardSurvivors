@@ -3175,6 +3175,60 @@ def _(sp, c):
     O(sp, lambda cv, x: m_glint(cv, 27, 24, 3, E["fire"]))
 
 
+@card("familiar_crow_painted_door")
+def _(sp, c):
+    """The Painted Door (Ma Liang's Apotheosis on the crow, displace): the crow small above, and under it the two doors
+    it paints in its light - the near one where it struck, dark inside, a skull of the swarm going into it; the far
+    one across the frame open on the light, the same skull stepping out of it; and the dotted way between them, over
+    the top. The knot moved, not killed."""
+    reset(sp)
+    # On the Familiar's full moon, as every Familiar card is (familiar_frame): the doors carry an occlusion outline so
+    # their light lands on the pale bone and not into it.
+    sp.place = Place(0.4, at=(15.5, 8.0))
+
+    def doors(cv, x):
+        a = E["arcane"]
+        core, hot, mid, edge = a
+
+        def door(x0, foot, w, h, inside):
+            r = w / 2.0
+            cx = x0 + r
+            spring = foot - h + r
+            for yy in range(int(foot - h) - 1, int(foot) + 2):
+                for xx in range(int(x0) - 1, int(x0 + w) + 2):
+                    dx = xx - cx
+                    if yy < spring and math.hypot(dx, yy - spring) > r + 1.0:
+                        continue
+                    cv.set(xx, yy, OCC)
+            for yy in range(int(foot - h), int(foot) + 1):
+                for xx in range(int(x0), int(x0 + w) + 1):
+                    dx = xx - cx
+                    if yy < spring and math.hypot(dx, yy - spring) > r:
+                        continue
+                    edge_px = abs(dx) >= r - 0.6 or (yy < spring and math.hypot(dx, yy - spring) > r - 1.1) or yy == int(foot)
+                    if edge_px:
+                        cv.set(xx, yy, hot if dx < 0 or yy < spring else mid)
+                    elif inside == "dark":
+                        cv.set(xx, yy, OCC)
+                    else:
+                        d = math.hypot(dx / r, (yy - foot + 2) / float(h))
+                        cv.set(xx, yy, core if d < 0.35 else hot if d < 0.6 else mid if d < 0.85 else edge)
+        door(4, 27, 9, 13, "dark")
+        door(19, 25, 9, 14, "light")
+        # The swarm skull half through the near door, and out of the far one.
+        foe(cv, 8.5, 24.0, 0.9)
+        foe(cv, 23.5, 22.0, 1.0)
+        # The way between them, dotted, arching over.
+        for i in range(14):
+            t = i / 13.0
+            px = 10 + t * 13
+            py = 12 - math.sin(t * math.pi) * 5
+            if i % 2 == 0:
+                cv.set(px, py, mid if t < 0.6 else hot)
+        m_glint(cv, 23, 9, 1, a)
+    O(sp, doors)
+
+
 @card("familiar_cat_grimalkin")
 def _(sp, c):
     """Grimalkin: the old witch's cat in the wizard's mantle, the arcane light behind it."""

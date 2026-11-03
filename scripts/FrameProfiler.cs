@@ -69,6 +69,9 @@ public partial class FrameProfiler : Node
 		// Thorned Vine: every vine's _Process - its whip stroke, its hit test and its paint
 		// (scripts/ThornVine.cs, the strikes' damage included).
 		ThornVine,
+		// The Familiar: every creature's step, its effects and The Painted Door's doors (scripts/Familiar.cs,
+		// Familiar.PaintedDoor.cs), process and the doors' draw. Its strikes' damage is in it too.
+		Familiar,
 		Harness,
 		Count,
 	}
@@ -76,7 +79,7 @@ public partial class FrameProfiler : Node
 	private static readonly string[] SectionNames =
 	{
 		"enemy", "separation", "move", "takeDamage", "death", "dmgText", "hitFx",
-		"player", "spells", "game", "spawn", "orbs", "textAnim", "terrain", "nav", "starfall", "stormsweep", "runes", "mire", "chain", "vine", "harness",
+		"player", "spells", "game", "spawn", "orbs", "textAnim", "terrain", "nav", "starfall", "stormsweep", "runes", "mire", "chain", "vine", "familiar", "harness",
 	};
 
 	/// <summary>True while a profiler is attached and counting.</summary>

@@ -1534,6 +1534,13 @@ public partial class _BalanceHarness : Node
 		// and bosses (struck, never stopped).
 		if (Starfall.ForeseenStars > 0)
 			GD.Print($"HARNESS QUATRAINS m={row.Minute} foreseen={Starfall.ForeseenStars} stopped={Starfall.WindUpsStopped} on_elites={Starfall.ForeseenOnElites}");
+		// The Painted Door (Ma Liang): doors the crow painted, bodies taken through them, and the strong ones a door would
+		// not take (elites, minibosses, bosses - counted each time one stood on an open door).
+		if (Familiar.DoorsPainted > 0)
+			GD.Print($"HARNESS PAINTED DOOR m={row.Minute} doors={Familiar.DoorsPainted} displaced={Familiar.BodiesDisplaced} strong_ignored={Familiar.StrongIgnored}");
+		// Paint What Is Needed (his passive): when it painted its flask, once it has.
+		if (player.FlaskPaintedAtSeconds >= 0f)
+			GD.Print($"HARNESS PAINTED FLASK m={row.Minute} at={player.FlaskPaintedAtSeconds:0.0}s");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger
@@ -2519,7 +2526,7 @@ public partial class _BalanceHarness : Node
 			?? options.OrderBy(o => o.NextLevel).First();
 
 		levelUpsHandled++;
-		menu.EmitSignal(LevelUpMenu.SignalName.WeaponSelected, pick.AutoChoice(Variant));
+		menu.EmitSignal(LevelUpMenu.SignalName.WeaponSelected, pick.AutoChoice(FormFor(pick)));
 	}
 
 	// A choice the policies made by spell id alone, for a card that opens a page of forms: the card's form
@@ -2530,7 +2537,17 @@ public partial class _BalanceHarness : Node
 		if (string.IsNullOrEmpty(choice) || choice.Contains(':'))
 			return choice;
 		LevelUpOption card = menu.GetOfferedOptions()?.FirstOrDefault(o => o.OffersVariants && o.SpellId == choice);
-		return card != null ? card.AutoChoice(Variant) : choice;
+		return card != null ? card.AutoChoice(FormFor(card)) : choice;
+	}
+
+	// The form a card that opens a page of forms is taken in: --variant's, else - seeking an Apotheosis that belongs to one
+	// form (Ma Liang's, on the Familiar's crow) - that form, else the first.
+	private string FormFor(LevelUpOption card)
+	{
+		if (!string.IsNullOrEmpty(Variant) || card == null)
+			return Variant;
+		ApotheosisDefinition target = SeekApotheosis ? SeekTarget() : null;
+		return target != null && !string.IsNullOrEmpty(target.VariantId) && target.SpellId == card.SpellId ? target.VariantId : Variant;
 	}
 
 	// --- --solo: the opener's cards and nothing else ------------------------------------
