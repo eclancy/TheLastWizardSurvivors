@@ -23,6 +23,7 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 | Scorched Sands | **The caravan master** (`CaravanMasterEvent`) | "The dead still walk the trade road." | **catch**: a walker on a fixed road that never turns toward you and escapes at the end | Iron Palisade |
 | The Emberdeep | **The great anvil** (`GreatAnvilEvent`) | "His forge, at the end of the road." | **bait**: four chains staked out from the anvil Wayland is chained to; only the forge's own Trip-Hammers break them - a slam that lands on a stake breaks its chain | Wayland the Smith |
 | The Court | **The seer's voice** (`SeersVoiceEvent`) | "A court with no one left in it." | **seek**: a voice reads aloud from one of the house's rooms (the seed's); reach the reading place and he is gone - an open book, a candle still lit - and the voice reads from another room; the third time he is at his desk. Heard, never pointed at: the voice, the stars of its cue and the line it reads come from the room's side, and the walls bend the way there | Nostradamus |
+| The Court (its second) | **The dotted door** (`DottedDoorEvent`) | "A court with no one left in it." | **trace**: on the Gallery's floor at its west end, under the first portrait, a door sketched in charcoal with fifteen numbered dots; from dot 1, walk the line dot to dot within 30 px and his light follows the feet as ink - stepping off pauses it, nothing resets - and the last dot inks the door in: painted, it opens on his light and he steps out. The household comes in at the Gallery's doors while it is traced | Ma Liang |
 
 Each asks for something different, and none of them is "a harder fight". The Ruins' is the first of
 the chapter wizards' (`.ai/chapter-wizards.md`, section 4.5 and its "Built" note), added 2026-11-01; the Emberdeep's
@@ -119,6 +120,7 @@ All five events resolve through `SideEvent.Succeed`, so all five now get the sam
 | The barge | Morgan le Fay (wizard) | a chest | "The barge comes ashore empty - a chest was left in it" |
 | The gibbet's cage | Paracelsus (wizard) | a chest | "The punt has taken him - a chest was left on the landing" |
 | The seer's voice | Nostradamus (wizard) | a chest | "He left something on the desk - a chest" |
+| The dotted door | Ma Liang (wizard) | a chest | "He left something in the doorway - a chest" |
 
 To photograph any of them: `_UiShot --scene=res://scenes/node_2d_game.tscn --stage=N --win-event`
 (add `--event-chest` for the chest path on a save that lacks the discovery). It sets
@@ -426,6 +428,7 @@ question. `RegressionChecks.ValidateStageHints` warns on any line that contains 
 | The Last Bridge | `the_barge` | sound (Morgan le Fay, unnamed) | `hint_hull_knock` (mist) | "A boat on the water below, where no boat could be." / "The boat again, nearer the bridge." / "Its lantern is still lit." |
 | Blighted Swamp | `gibbet_cage` | sound (Paracelsus, unnamed) | `hint_flask_chime` (vapour) | "A man coughing, far out on the bog." / "Glass rings across the water, like a tapped flask." / "The coughing again. Weaker." |
 | The Court | `seers_voice` | **speech** (Nostradamus reading, unnamed) | `hint_quatrain` (stars) | "Out of the west one light, on foot, alone." / "The one he missed walks every road he made." / "When the last door opens, the house goes dark." |
+| The Court | `dotted_door` | sound (Ma Liang's brush, unnamed) | `hint_brush` (paint) | "A brushstroke drawing itself along the wall." / "Another line, wet, running the same way." / "The paint is still running." |
 
 Tituba speaks in her own character: a prisoner taken from Barbados and jailed on an accusation,
 patient (her passive is *Patience*) and nobody's witch - so she asks for help and says she has
@@ -597,6 +600,13 @@ chapter's line in `SideEventDirector` is a list, its original event first:
   on **Starfall**, Light (R1: Seimei and Merlin hold Light on other spells). Passive *Foresight*: every ordinary
   enemy's wind-up shows 15% longer. Freed by seeking his voice through the Court, its first event; secret until the
   Court opens, counted at the Throne's gate only. The last frame of the Gallery's portraits is always his.
+- **Ma Liang** (2026-11-03), the boy of the Chinese tale whose brush made real whatever he painted, drawn young and
+  serious: a short crossed jacket of washed indigo, a red sash, a rolled painting slung on his back, his brush held up
+  and a crow of his light lifting off its tip. Opens on the **Familiar**, Arcane (R1: the Archmage and the Sibyl hold
+  Arcane on other spells), and chooses its form on his run's first screen - only the crow has a final form. Passive
+  *Paint What Is Needed*: once a run, below a quarter of his health, a flask is painted at his feet. Freed by tracing
+  the door he sketched in the Gallery, the Court's second event; secret until the Court opens, counted at the Throne's
+  gate only. The first frame of the Gallery's portraits is always his own.
 
 Both wear **no player pigment**. The four saturated rows are the starters'. The rescued wear what
 they were held in, so the only saturated thing on them is their staff head. Sprites are in

@@ -3,7 +3,7 @@
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
-**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **Baba Yaga, the first second event** (4.1, "Built"), **Morgan le Fay** (4.9, "Built"), **Paracelsus, the first escort** (4.4, "Built"), **Nostradamus, the Court's first event** (4.10, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other three are not. It covers the ten
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **Baba Yaga, the first second event** (4.1, "Built"), **Morgan le Fay** (4.9, "Built"), **Paracelsus, the first escort** (4.4, "Built"), **Nostradamus, the Court's first event** (4.10, "Built"), **Ma Liang, the Court's second** (4.8, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other two are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Last Bridge and the Court (which holds
 two: Nostradamus, and Ma Liang since the Sketchbook was emptied - 4.8). Tituba (Cursed Dungeon),
@@ -56,7 +56,7 @@ The questions as they were put:
 | rule | where | what it means here |
 |---|---|---|
 | Starters are disciplines; the rescued are named historic or legendary magic-workers | `world-and-tone.md` | every proposal is a person |
-| Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect, banish** (Seimei), **take** (the Dark Wizard), **rewind** (Merlin, earned by the whole road, `.ai/merlin.md`, 2026-11-02), **temper** (Wayland), **echo** (the Sibyl), **count** (The Archmage, the fifth starter, `.ai/protagonist.md`), **double** (Morgan le Fay); reserved for Nimue: **sever** (Excalibur, decided by Eric 2026-11-02). Unclaimed in the ADR: contagion, displace |
+| Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect, banish** (Seimei), **take** (the Dark Wizard), **rewind** (Merlin, earned by the whole road, `.ai/merlin.md`, 2026-11-02), **temper** (Wayland), **echo** (the Sibyl), **count** (The Archmage, the fifth starter, `.ai/protagonist.md`), **double** (Morgan le Fay), **displace** (Ma Liang, on the Familiar's crow only); reserved for Nimue: **sever** (Excalibur, decided by Eric 2026-11-02). Unclaimed in the ADR: contagion |
 | No path on his spell trades his element away | `ValidateApotheosisCatalog` | since 2026-11-02 the form names no path - the spell at max level, ascended down any branch, never combined - so every level 4 and level 8 option on a wizard's spell leads to it, and none may trade away the element the form deepens (it would come back as a third). The old rule, a required path that never leads away (`CheckRequiredPath`), went with the named paths |
 | A secret never pays a wizard | `achievements-and-secrets.md` 6.2 | every rescue below is a **side event** (a Road deed), never a secret |
 | ~~One side event per chapter~~ A chapter's events are a list (P2, built) | `SideEventDirector.EventsFor` | question 3; 6.3 "Built" says how a second is added |
@@ -785,6 +785,162 @@ He is the Court's second event, so he waits on P2 and the Court's flip, with Nos
   *"The paint is still running."*
 - **Gate.** Counted at the Throne's gate with every chapter wizard (G2).
 - The kids'-own-wizard alternate went with the Sketchbook.
+
+**Built (2026-11-03, `wip/wizard-maliang`).** The Court's second event, through P2's API as 6.3 wrote it: the second entry
+on the Court's line in `SideEventDirector` (`"dotted_door"`, after the seer's voice), a hint by site, deed words ("The
+Door Inked In"), `FromEvent(..., secretUntilStage: "stage_12", finalGateOnly: true)`, a prisoner row, and his freeing
+reel. Nothing in P2 changed; the one thing two building-placed events needed is below (item 8).
+
+- **Him.** `CharacterData_MaLiang.tres`, appended to `CharacterRoster`. Name "Ma Liang", id `ma_liang`. `roster.maliang()`:
+  the youngest figure in the cast and the slightest, drawn at the cast's proportion and never a child's - clean-shaven,
+  the brow level, the mouth set, his black hair drawn back hard and tied in a knot at the crown with a red cord. Caught
+  mid-stroke: his near arm out and up, a long bamboo brush held upright in the fingers, and lifting off its wet tip a crow
+  of his light, wings up - the Familiar's crow, the tale's painted birds - in the arcane ramp, the only light on him. On his
+  back a rolled painting slung on a cord, its end standing up behind his far shoulder (nobody else carries anything on
+  his back); his far hand holds a small ink-stone at his hip. A short crossed jacket of steel's dark end (indigo cotton
+  washed to blue-grey: a cloth gone grey, not the Archmage's blue pigment), patched; a sash of the red row knotted at the
+  hip; wide trousers of stone gathered at the calf, bare ankles, straw sandals. 0.89 edges/px. No new material (steel,
+  stone, red and gold rows, all already the roster's; `\xb5-\xb9` stay free). Sheets written by `build.py`'s wizard loop
+  for this name only. Arcane, shared with the Archmage and the Sibyl on other spells (R1).
+- **The form he opens in is chosen each run** (`Node2DGame.OpeningForm.cs`, `Player.MaLiang.cs`). A starting spell used
+  to get its first form, the dog, without a word; he is the first wizard who opens on a spell with forms, so his spell
+  is OWED until the run's first screen answers it - the ordinary page of forms on the ordinary level-up screen
+  (`LevelUpMenu.ShowOpeningForms`, "Choose your familiar"), with no Back, the tree paused under it, ahead of every other
+  screen in the queue (the Throne's Muster deals its cards to a wizard who already holds his spell). Only the crow has
+  a final form, so the character card's Apotheosis line says "As the crow; the dog and the cat have none", and the
+  card's spell icon is the Familiar's own, not one form's (`Player.ChoosesOpeningForm`). Every tool answers the page as
+  it answers any page of forms (`LevelUpOption.AutoChoice`); `_BalanceHarness --seek-apotheosis` takes the form its
+  target names.
+- **His passive, Paint What Is Needed** (`paint_flask`): once a run, the first blow that leaves him below a quarter of
+  his health and still standing paints a flask at his feet - four strokes of his light drawn on the ground beside him in
+  0.55 s (`PaintedFlask`, stamped on the world's 2 px grid, over the bodies), and where the last closes it is the
+  ordinary `HealthPickup`, 8 HP, which comes to him as any flask does. After the shield, on the HP that actually left
+  (step 8 of `TakeDamage`); a blow from above a quarter to nothing paints nothing. On the healing ledger
+  (`.ai/difficulty-curve.md` 5.1) as 8 HP once a run, the rarest drop's size.
+- **The event** (`DottedDoorEvent`, `tools/art/painted_door.py`, `world/door/`). The door is on the Gallery's floor, 3
+  cells in from its west wall and on its middle row, under the first portrait of the row (his own, below). An arch
+  160 px wide and 300 px tall - jambs 220 px, a round arch of radius 80 - sketched in charcoal (the bone row's greys,
+  pale on the dark oak): a dashed outline, the faint lines of its planks and its ring, and **fifteen dots** at equal steps
+  along the 691 px of line, from the left jamb's foot over the arch to the right jamb's foot, each numbered outside it.
+  Arriving is the Gallery and 440 px of the door (the hall behind its end wall is nearer than that, so the room is asked
+  too). From dot 1 (within 30 px of it), wherever his feet stay within **30 px** of the line - measured from a little
+  behind the ink to 120 px ahead of it, so the line must be followed in order and a step can never jump the arch (its
+  chord sags 21 px) - his own light follows them as ink, dot after dot lighting as it passes (`DottedDoorEvent.Step`, a
+  pure rule the validator traces on paper). Off the line the ink only waits where it got to, its wet head glowing where
+  he must pick it up, and the line under the timer says "Back to the line - dot n". Nothing resets and nothing times
+  out. The last dot inks it in: a short shake through Reduce Shake, the brush's sound, the ink running round the whole
+  door; it is PAINTED - a door of red lacquer with gold studs and a ring, the only pigment in the event - and opens on his
+  light in three steps (0.55-1.1 s); he steps out of the doorway (1.15-2.05 s, his own walking sheet) and is gone into
+  the column of light. The door stays open after the win.
+- **The pressure is the house's.** Once the trace has begun, every 7 s while it is unfinished and he is in the Gallery,
+  two of the household come in at each of the Gallery's three doors - ordinary bodies of the chapter's table, not elites:
+  nothing must be killed, they are what pushes him off the line.
+- **The Gallery** hangs his portrait in its **first frame** (`GalleryRoom.FirstFrameWizardId`), at the west end over his
+  door, as the seer's is always the last: the portraits are his work, done under orders, and the first is his own face.
+  So in the Court the frames still covered at either end of the row are the two this house holds.
+- **His unlock** is the site's derived Road deed, "The Door Inked In", secret until `stage_12`, counted at the Throne's
+  gate only. Locked hint "Kept painting the portraits in the Court's Gallery." Quest-log prisoner "the painter in the
+  gallery", held line "Along the walls a line of wet paint keeps running." (on the Court's note beside the seer's), freed
+  line "Ma Liang has stepped out of his door." His freeing reel: `freed.py` WIZARDS and `Freeings.WizardIds`, his panel only.
+- **His clue.** `HintCue.Paint`, a new last row of `hint-cues.png` (rows 0-11 byte-identical): dabs of wet paint - round,
+  an oval, a tapered flick, a small one with a speck - and a drop running off the end of a stroke into a teardrop. On each
+  of the three strokes of `hint_brush` a line of six dabs is laid one after another from deeper in toward the edge he is
+  beyond - the line runs toward his room - three lines side by side, and a drop hangs off the last on the fourth beat;
+  dabs are round, so a line of them is a stroke whichever way the edge runs, and a drop always runs down the screen.
+  `hint_brush`: three strokes of a loaded brush on plaster (a soft wet press, the drag of the bristles in a band rising as
+  the load runs out, a smear of wet under it, lifted off) and a drop running off the last, twice; 2.40 s; nearest in the
+  whole set 0.131 (`spell_beam_loop`), the nearest hint 0.273 (`sfx._BRUSH_STROKES`, `_BRUSH_DRIP` =
+  `StageHintCue.BrushBeats`). His far tell is the arcane ramp's hot stop, a stop paler than the seer's violet in the same
+  house. The doc's three lines, unchanged.
+- **His form**, The Painted Door (displace, `Familiar.PaintedDoorId`, `Familiar.PaintedDoor.cs`), on the crow only
+  (`ApotheosisDefinition.VariantId`). Where the crow's peck lands - the stoop's strike, or the griffin's swoop at the
+  first body it strikes - a door is painted on the ground in its light (two strokes, shut, ajar, open:
+  `effects/painted-door.png`), and stands open 1.2 s. Whatever ORDINARY body stands within **54 px** of its foot (times
+  the spell's area) while it is open is taken through it, **8 a door at most**, and steps out of a second door painted
+  **820 px** from him across the field - on the far side of him from the knot, turned off that line by up to 63 degrees,
+  on ground a body can stand on, never nearer him than 600 - spread round it, at a standstill. A body moved is not moved
+  again for 4 s. The crow paints at most one door every **0.9 s** and keeps at most **3** open. It deals nothing of its
+  own; elites, minibosses and bosses are never moved (counted, ignored). Card: "Where the crow strikes it paints a door,
+  and whatever stands on it steps out of a second door far across the field." Synergy line: "Displace: move the knot,
+  not the kill. Elites and bosses never go through a door." Its own evolution icon (the crow small over two doors, a
+  skull going into one and out of the other, on the Familiar's moon). No card on the crow trades Arcane away.
+
+**What moved, and why.**
+
+1. **He chooses his form on the run's first screen.** "Taken as the dog or the cat, he has none" needed a choice that did
+   not exist: a starting spell got its first form (the dog) silently, and the code's comments assumed a wizard opened in
+   his Apotheosis's form. A fixed crow would have made the sentence false and the dog and the cat unreachable for him, so
+   the choice the forms ADR puts "on the level-up screen, in the run" is made there, first.
+2. **The door is drawn on the floor in front of the end wall, standing up the screen.** In a top-down house an end wall
+   is only its top: nothing can be walked on it. The drawing lies on the boards where a door in that wall would be walked
+   through, upright as every door in this projection stands up its wall.
+3. **The line is measured near the ink, not anywhere on it.** "Within 30 px" alone would let a player stand by dot 15
+   and finish; the window (30 px behind the ink, 120 ahead) makes "dot to dot" an order, and the validator shows a walk
+   straight across from dot 1 to dot 15 inks nothing.
+4. **The household comes in at the Gallery's doors.** The design named no pressure, and the probe walks the whole line in
+   3-4 s; the house is what makes stepping off a thing that happens.
+5. **A crow on his brush, not a stroke.** A crescent of light beside the shaft read as a sickle; an S-stroke as a question
+   mark. A bird reads as a bird at 48 px, and it is the spell.
+6. **His portrait is the first frame** - "if it fits cleanly": it does, beside the seer's last-frame rule, and costs one
+   constant.
+7. **His far tell is the arcane hot stop**, so the house's two events are not one violet.
+8. **Two events a building places are exempt from the 90 degrees.** The band's rule (each later event 90 degrees round the
+   start from the first) is about rolls; the seer's rooms and the Gallery are where the house has them. The validator
+   (`CheckSideEventSeparation`) and the probe skip a pair both of whose events are `PlacedByChapterRules`.
+9. **The brush's strokes shortened.** A first draft (0.62, 0.48, 0.44 s strokes, one drop) was 0.111 from
+   `spell_beam_loop`, a sustained beam; shorter strokes and a second drop put it at 0.131.
+10. **The Gallery's frames will run out at the merge.** Eleven wizards he took hang in its twelve frames on this branch;
+    Imhotep and Medea make thirteen, and `ValidateSeersVoice` will say the Gallery must hang more (`court_layout.py`).
+
+**Verified:** build (each of the three code commits on its own too); the validator (0 errors, main's 1 warning);
+`RegressionChecks.ValidateDottedDoor` (the line on the Gallery's open floor with the tolerance round it, and nothing of
+the house on the drawing; on paper, walked at his pace it inks all fifteen dots, stepped off half way it waits and picks
+up where it was, walked straight across from dot 1 to dot 15 it inks nothing, begun at the last dot it never begins;
+the look-ahead's chord inside the tolerance; the sheets' sizes and the generator's geometry; the hint on the sound's
+beats; his portrait the first frame and no wizard framed twice; his opening page and his Apotheosis on the crow; a door
+takes an ordinary body and never an elite or a boss). `_ExploreProbe --stage=12`, which TRACES at his own walking speed,
+feet first, never teleported along the line: seeds 4242 and 1001 `--fresh-save`, 7 `--all-unlocked` (the chest), and
+`--step-off` on 31 and 2026 fresh and 77 `--all-unlocked` - 42 to 50 passed, 0 failed, both Court events found and won
+every time (the seer first, by seeking, then the door); the door begun 0.4-1.1 s and inked 3.8-4.5 s after arriving
+(7.4-9.6 s with the step-off, the ink held at 278-284 px through 3.9-4.5 s off the line and nothing reset); six of the
+household came in each time; Ma Liang freed in memory and his deed recorded by its site. `_UiShot` of the door half
+traced (`--door-trace=0.45 --hold`), its ending (`--door-open=1.7`), the clue (`--hint-preview=dotted_door`, from the east
+and the west), the opening page, the flask being painted (`--paint-flask`), the freed panel and the character select
+(locked, his silhouette and hint once the Court is open; freed) at both canvases: `_shots/wizard-maliang/`.
+
+**The form, measured** (`_BalanceHarness --character=N --stage=0 --minutes=15 --all-unlocked --seek-apotheosis
+--immortal`, N his roster index; the bot takes the crow on the opening page):
+
+| run | spell ascended | form taken | doors / bodies moved a minute after | damage taken a minute, before -> after | kills a minute, before / after |
+|---|---|---|---|---|---|
+| seed 1234, `--timescale=1 --profile=10`, alone | 5.9 min (level 17) | **7.3** (21) | 41-54 / 37-144 (698 moved by 15:00, 39 strong ones ignored) | 465-599 -> 188, then 13-95 | 429-446 / 342-494 |
+| seed 77, timescale 6 | 7.7 (17) | 10.4 (21) | 25-39 / 105-209 | 523-669 -> 154-306 | 205-233 / 248-341 |
+| seed 1234, timescale 6, beside the screenshot runs | 9.6 (17) | 12.7 (21) | - | - | - |
+
+The last row is not a measurement: beside four windowed screenshot runs the harness ran at 5-7 fps, and at timescale 6 a
+frame was more than a second of the crow's climb-stoop-peck cycle, so it pecked a few times a minute (5 doors in two
+minutes). At real time, alone, the crow paints about fifty doors a minute and moves a hundred-odd bodies while the crowd
+round him is thick (`near` 68-81 before the form, 34-51 after it), and fewer as it thins. The form comes at 7.3 minutes
+on seed 1234, a hair under the 7.5-minute floor `ApotheosisCatalog.MinimumPlayerLevel` was tuned to: the crow's kills
+level him fast, and level 21 is the gate that sets the time. On the Court itself the bot never meets the gate (the
+chapter's health, as for Nostradamus).
+
+**Frame cost** (`--timescale=1 --profile=10`, headless, alone): `FrameProfiler` gained a `familiar` section (the whole
+node's process and the doors' draw), which it had never had. It cost 29-47 us a frame (mean 36) in the 90 s before the
+form, 32-67 (mean 48) in the 90 s after, and 24-98 (mean 36-39) for the rest of the run; whole frames 7.2-10.9 ms before
+and 7.2-11.7 after, allocation 8.2-11.2 KB a frame before and 6.9-11.0 after (the harness's own). The doors are a fixed
+array and the candidates the registry's shared buffer. Not measured on the phone.
+
+**Not verified: whether tracing is a real ask.** The probe walks the whole line in 3-4 s and clears the swarm round
+itself every frame; the household's six come once in that time. Whether a player under the Court's crowd, on a phone's
+floating stick, finds the line hard to hold within 30 px - or too easy to be worth a wizard - needs a hand, and if it is
+too slight the levers are the household (more, and from the first dot) or a dot that must be stood on, not passed. Nor
+verified: whether a player finds the Gallery from the paint at the screen's edge without the wayfinder; whether the
+numbers on the dots read on a phone (3x5 digits at x2 are small there); the sound, measured and never heard; the
+Painted Door in a real crowd (whether a player reads that the knot went through and came out across the field, and
+whether a second door off a phone's narrow canvas is ever seen); its exit on the Last Bridge, where ground a body can
+stand on next to the drop has not been driven; Paint What Is Needed in a run (photographed through `--paint-flask`, never
+met by the bot, which cannot be hurt); nothing on the phone.
 
 ### 4.9 The Last Bridge - Morgan le Fay
 

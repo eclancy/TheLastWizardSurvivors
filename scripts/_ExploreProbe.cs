@@ -63,7 +63,7 @@ using TheOneHeMissed.scripts;
 //      The Court's dotted door (its second event) is TRACED at the player's own walking speed, never teleported along
 //      it: from where it arrives the probe walks to dot 1 and then along the line a stride ahead of the ink, feet first
 //      (Player.FootPosition, what the trace reads), and logs how long it took and how much of the household came in at
-//      the Gallery's doors. --step-off, once two fifths of it is inked, walks 130 px off the line and waits there 3 s,
+//      the Gallery's doors. --step-off, once two fifths of it is inked, walks 130 px off the line (into the door's middle) and waits there 3 s,
 //      and checks the ink held where it was and nothing reset; then walks back to where the ink ends and finishes.
 // TWO EVENTS IN A CHAPTER (P2, .ai/chapter-wizards.md 6.3). On a chapter whose list holds more than one - or
 // with --second-event-test[=STAGE], which adds a stand-in second event on this tool run only
@@ -1382,9 +1382,11 @@ public partial class _ExploreProbe : Node
 			{
 				traceOffPhase = 1;
 				traceHeld = door.Pen;
-				Vector2 outward = door.PenWorld - (door.DoorCentre + new Vector2(0f, -DottedDoorEvent.HalfHeight + DottedDoorEvent.ArchRadius));
-				outward = outward.LengthSquared() > 1f ? outward.Normalized() : Vector2.Left;
-				traceOffPoint = door.PenWorld + outward * 130f;
+				// Into the door's middle, over open boards: the door stands 64 px off the end wall, and a step off outward
+				// from its jamb or its arch would be into the wall, which the body cannot stand in.
+				Vector2 inward = door.DoorCentre + new Vector2(0f, 40f) - door.PenWorld;
+				inward = inward.LengthSquared() > 1f ? inward.Normalized() : Vector2.Right;
+				traceOffPoint = door.PenWorld + inward * 130f;
 				GD.Print($"EXPLOREPROBE trace: stepping off the line at {door.Pen:0} px ({door.DotsInked} dots), to ({traceOffPoint.X:0},{traceOffPoint.Y:0})");
 			}
 			if (traceOffPhase == 1 || traceOffPhase == 2)
