@@ -347,16 +347,25 @@ template found" until they are there.
 
 1. Export the current version to `build/windows/` and run `package.py` (or let a dry run of the
    steps in `release.sh` do it).
-2. Copy `build/release/` somewhere, and edit its `version.json` so the two zip URLs point at a
-   local server (`http://127.0.0.1:8765/...`). Serve it: `python -m SimpleHTTPServer 8765`.
-3. Temporarily set `config/version` lower, export to `build/test/`, and put it back.
+2. Copy `build/release/` somewhere, and edit its `version.json` so its URLs (the `"builds"`
+   pairs, and the top-level bridge fields for an old copy) point at a local server
+   (`http://127.0.0.1:8765/...`). Serve it: `python -m SimpleHTTPServer 8765`.
+3. Temporarily set `config/version` lower, export to `build/test/`, and put it back. (Or skip the
+   export: an `override.cfg` beside an exported exe with `[application]` `config/version="0.11.9"`
+   makes it report that version - put the file back as soon as the first run exits, or the
+   restarted copy updates again.)
 4. Run `build/test/TheOneHeMissed.exe` with `THEONEHEMISSED_UPDATE_URL` set to the local
-   `version.json`. It should update, restart, and on the next launch say it is up to date. The
-   relaunched copy inherits the variable.
+   `version.json` (`WIZARDSURVIVORS_UPDATE_URL` for a copy from before the rename). It should
+   update, restart, and on the next launch say it is up to date. The relaunched copy inherits the
+   variable.
 
 Run any build with `--no-update` to skip the check entirely. The exported exe prints to stdout
 when started from a shell; `user://logs/` is shared with every other copy and editor session on
-the machine, so do not trust it for this.
+the machine, so do not trust it for this - and point `APPDATA` at a scratch folder, so the test
+never touches a real save. To keep a test copy off the screen, an `override.cfg` beside its exe
+with `[display]` `display_server/driver.windows="headless"` and `[audio]` `driver/driver="Dummy"`
+makes it, and the copy it restarts, headless; `[application]` `run/flush_stdout_on_print=true`
+makes the restarted copy's `user://logs/godot.log` readable while it runs.
 
 ## Releasing a story reset
 
@@ -486,6 +495,198 @@ arrive.
 
 **On Android** the export preset carries `permissions/internet=true`; a debug export adds the
 permission by itself only when remote debugging, so without it the phone build could not send.
+
+## The rename
+
+Eric, 2026-11-02: *"remove all references to wizard survivors from the repo, from the website and
+from the game itself and replace it with the new name of the game"* - The One He Missed
+(`.ai/game-name.md`). Every copy installed before then is 0.11.0 or older under the old name, and
+its updater, its file names and its save folder are fixed in it. This section is how those copies
+and their saves get across, and the list of what keeps the old name **because changing it would
+strand someone**. Do not tidy any of it away.
+
+### What keeps the old name, on purpose
+
+| What | Where | Why it cannot change |
+|---|---|---|
+| The Android package id, `com.ecec.wizardsurvivors` | `export_presets.cfg` `package/unique_name`; `release.sh` refuses an APK with any other; the `adb` lines in `CLAUDE.md`, `tools/android-deploy.sh` and a few comments | the app's identity: a new id is a second app that cannot update the first, and every installed copy's save is filed under it. Only the label (`package/name`) changed |
+| The release keystore's file name and alias | `%APPDATA%\Godot\keystores\`, `release.sh` | made before the rename; the key is what Android checks, and the alias lives inside the keystore |
+| The installer's `AppId` | `installer.iss` | never changes by design - and it is what makes the new setup upgrade an old install in place |
+| The old ecec.dev addresses, `/wizard-survivors/version.json` and `/wizard-survivors/download` | the website's `nginx.conf` | baked into every copy up to 0.11.0: Windows and Linux ask the first, Android opens the second. They answer exactly as the new ones do, forever |
+| The old `user://` folder's name | `UserDataCarryOver.OldFolderName` | where every desktop save from before the rename is |
+| `WizardSurvivors.exe`, `.pck`, `.x86_64` in the bridges | `package.py` `OLD_NAME` | what a 0.11.0 updater looks for in a download and restarts |
+| The old program, `.pck`, .NET folder, shortcuts, install folder and menu entry | `installer.iss` `[InstallDelete]`, `install.sh` `OLD_DEST` | so a new install can retire one of the old name |
+| The checkout folder (`WizardSurvivors/`), the Desktop art folder, the pre-filter backup | outside the repo | not part of the game; named in docs as they are on disk |
+
+Everything else - the game's name in every window, label and line of text, the export and release
+file names, the C# namespace, solution, project and assembly (`TheOneHeMissed`), the update and
+intake variables (`THEONEHEMISSED_UPDATE_URL`, `..._INTAKE_URL`, `..._KEYSTORE`), the User-Agent,
+the bug report's `game`, the URLs and the repo slug (`eclancy/TheOneHeMissed`) - took the new name.
+The title's lettering is redrawn on its own branch (`.ai/title-screen.md`).
+
+### Saves: copied once, the old folder left alone
+
+On a desktop Godot names the `user://` folder after `application/config/name`, so the rename moved
+it: `%APPDATA%\Godot\app_userdata\Wizard Survivors\` became `...\The One He Missed\` (on Linux,
+under `~/.local/share/godot/app_userdata/`). `scripts/UserDataCarryOver.cs`, which
+`SaveManager._Ready` runs before it loads the save, copies the old folder into the new one the
+first time the game runs under the new name:
+
+- everything - the save, its `before-epoch` and `before-reset` backups, settings, logs, shots -
+  except `update/`, the updater's scratch folder (an old copy's apply script may still be deleting
+  it while the updated game starts);
+- never over a file the new folder already has (this launch's own log), and never into a folder
+  that already holds a save of its own;
+- the save last, so a copy cut short is finished on the next launch rather than trusted, and then
+  a marker, `carried-over.txt`, so it never happens twice - a player who later deletes their save is
+  not handed the old one back;
+- **the old folder is never moved, deleted or written.** It stays as a backup, and as the live
+  folder of any copy not yet updated;
+- never from a launch that may not write the save (every `_` tool scene, `--no-save-writes`): a
+  tool run that copied would leave a stale save behind for the real first launch to trust while the
+  player's live save moved on. So until the first real launch, tool runs see an empty save.
+
+**Why a copy and not `use_custom_user_dir`.** A custom user dir is placed straight under
+`%APPDATA%` - not under `Godot\app_userdata\` - so pointing it back at the old folder takes a whole
+path, and a different one per platform (`Godot` on Windows and macOS, `godot` on Linux), and it
+keeps the old name in `project.godot` for good. (This page's predecessor, `game-name.md`, assumed
+`custom_user_dir_name` alone would keep the folder. It would not.) Copying gives the folder the
+game's name, costs one copy on one launch, and keeps the old folder untouched.
+
+`RegressionChecks.ValidateUserDataCarryOver` runs the real copy against scratch folders at every
+startup: the save copied word for word, a nested file copied, an existing file not overwritten,
+`update/` skipped, the old folder byte for byte unchanged, a second launch and a folder with a save
+of its own both left alone.
+
+Android is not touched by any of it: there `user://` is the app's private folder, named by the
+package id, which did not change.
+
+### Updates: what a copy from before the rename does with a renamed release
+
+A 0.11.0 copy on Windows, step by step, with the first release that carries the new name:
+
+1. It asks the old address; ecec.dev answers with a 302 to the newest release's `version.json` - the
+   same file the renamed copies read.
+2. The version is newer. If `progressEpoch` has risen, it asks first (0.11.0 knows epochs).
+3. It reads the top-level `"patch"` (same engine) or `"full"` (another engine). **Both are the
+   Windows bridge.** A Linux copy reads `"linux"`, both of which are the Linux bridge.
+4. It unpacks the bridge and looks for `WizardSurvivors.pck` at the top or one folder down. The
+   bridge is flat and has it at the top.
+5. Its `apply.cmd` robocopies everything beside that `.pck` over its folder - `WizardSurvivors.exe`
+   (this release's engine binary, with the new product name), `WizardSurvivors.pck` (the renamed
+   game) and `data_TheOneHeMissed_windows_x86_64\` (the renamed assembly with the whole .NET
+   runtime) - and starts `WizardSurvivors.exe` again.
+6. Godot loads the `.pck` named after the program, so the new game starts. It asks for the
+   assembly its `.pck` names, `TheOneHeMissed`, from `data_TheOneHeMissed_windows_x86_64\`, which
+   is there in full. `UserDataCarryOver` copies the save across, the window says The One He
+   Missed, and its own update check now uses the new address and reads `"builds"`.
+
+The old `data_WizardSurvivors_windows_x86_64\` stays behind, unused (about 86 MB), until a setup is
+run over it.
+
+**Why a bridge, and in every release.** The normal patch has no `WizardSurvivors.pck`, so a 0.11.0
+copy given it would find nothing to install, log "no update" and go to the title - playing 0.11.0
+for good. A patch under the old names would not do either: the renamed assembly's .NET folder would
+hold only the game's DLL and no runtime, and the game would not start. So the bridge is the whole
+export, and it ships with **every** release: a copy from before the rename that is not started
+again for months still needs one from whichever release is newest then. It costs about 170 MB of
+upload per release. ecec.dev's download page never offers a bridge - it finds files by how their
+names end (`-windows.zip`, `-linux.tar.gz`), and theirs end `-bridge.zip` and `-bridge.tar.gz`.
+
+**From then on** a copy updates from `"builds"` - the 19 MB patch - and installs it **under the
+running program's name** (`UpdateScreen.ProgramName`, step 3 of "How a copy updates"): a copy that
+crossed on the bridge is `WizardSurvivors.exe`, its Start menu and desktop shortcuts name that
+file, and Godot loads the `.pck` named after it, so the release's `TheOneHeMissed.pck` is installed
+as `WizardSurvivors.pck` (and in a full download `TheOneHeMissed.exe` as `WizardSurvivors.exe`).
+Every install made since the rename has matching names and nothing is renamed.
+
+**Running a new setup over an old install** upgrades it in place (same `AppId`, so the same folder,
+`...\Programs\WizardSurvivors\`): `[InstallDelete]` removes the old program, its `.pck`, its .NET
+folder and its "Wizard Survivors" shortcuts, and the new program and "The One He Missed" shortcuts
+take their place. **On Linux**, `install.sh` installs to `~/.local/share/TheOneHeMissed`, and if an
+install of the old name is there (`~/.local/share/WizardSurvivors` with an `install.sh` in it) it
+removes it and its menu entry; run from inside an old install - which the bridge gives the new
+`install.sh` - it refreshes that one where it is; `--uninstall` takes out both.
+
+**Android** needs nothing: the APK keeps the package id and the signing key, so it installs over an
+old copy, save and all, and only the label under the icon changes. An old copy's update strip opens
+the old `/download` address, which ecec.dev serves as the new page.
+
+### How it was tested
+
+2026-11-02, on the Windows PC, all in scratch folders. Every game run had `APPDATA` pointed at a
+scratch folder, and the old-name user folder it used was a **copy** of the developer's real one; the
+real `%APPDATA%\Godot\app_userdata\` folders were only ever read.
+
+- **`release.sh 0.12.0 "rename" --dry-run`** completed: every file built, the installer compiled,
+  the APK release-signed (certificate `8052adfc...bddd47`), versionCode 1200, package
+  `com.ecec.wizardsurvivors`, label "The One He Missed"; `android/` came out of the export exactly
+  as committed, and the tree was clean afterwards. The archives were read back: the Windows bridge
+  is flat - `WizardSurvivors.exe`, `WizardSurvivors.pck`, `data_TheOneHeMissed_windows_x86_64\` (188
+  files); the Linux bridge the same with `WizardSurvivors.x86_64` (mode 755), `install.sh` and
+  `icon.png`; `version.json` has `"builds"` and its top-level `"patch"`, `"full"` and `"linux"`
+  name the bridges. It took 29 minutes: the Windows export sat 15 minutes after its DONE line (the
+  hang in "Things to know"), and the Android export wrote its APK and then did not exit, so that
+  process was stopped by hand rather than waiting out its 30-minute timeout. A first attempt lost
+  its Android export to another session's `taskkill` of Godot processes.
+- **A 0.11.0 copy across the rename.** The real v0.11.0 `WizardSurvivors-windows.zip` from GitHub,
+  unpacked; a copy of the developer's old-name user folder (752 MB, 5,656 files, the save at schema
+  18); the dry run's files on a local server (`python -m SimpleHTTPServer 8765`) with
+  `version.json`'s URLs pointed at it and `WIZARDSURVIVORS_UPDATE_URL` set; an `override.cfg`
+  beside the exe making it headless (`display/display_server/driver.windows="headless"` - the plain
+  key is shadowed by the engine's `.windows` one). 0.11.0 took the bridge (its `"patch"`, same
+  engine), wrote `apply.cmd` and quit in 3 s; the script robocopied and restarted
+  `WizardSurvivors.exe`, which ran the renamed game: its exe and `.pck` byte-identical to the
+  bridge's, `data_TheOneHeMissed_windows_x86_64\` present and the old .NET folder left beside it.
+  The restarted game copied the user folder in about 8 s - all 5,649 files other than the save
+  byte-identical, `update\` not copied, the marker written - then loaded the carried save and
+  migrated it to schema 22 in the new folder (Arcane Energy 603 before and after). The old folder
+  was unchanged outside `logs\` and `update\`. Launched again it said "0.12.0 is up to date" and
+  copied nothing.
+- **A renamed copy updating.** The 0.12.0 export, made to report itself as 0.11.9
+  (`config/version` in `override.cfg`, put back as soon as the first run exited) and with its
+  `.pck` altered so a replacement would show: as `TheOneHeMissed.exe` it took the patch and its
+  `.pck` became the release's; as `WizardSurvivors.exe` (a copy that crossed on the bridge) it took
+  the patch, logged "TheOneHeMissed.pck installs as WizardSurvivors.pck" and left nothing of the new
+  name behind; the same with the release's `"engine"` made to differ, it took the full zip and
+  renamed the exe too, replacing the old one. Every restarted copy said "0.12.0 is up to date".
+- **`install.sh`**, in Git Bash against a scratch `XDG_DATA_HOME`: run from inside an install of
+  the old name it refreshed it in place and replaced its menu entry; installed from a new download
+  it retired the old install and entry; `--uninstall` removed both.
+- **The game:** `dotnet build TheOneHeMissed.sln`, the headless import, the startup validator (0
+  errors, `ValidateUserDataCarryOver` among the checks), the title headless, and `_UiShot` of the
+  main menu and of the bug report screen, which shows `[The One He Missed 0.11.0 | Windows | PC
+  canvas 1280x720]`. (`_UiShot` over `TitleScreen` with a late press crashed in the C# finalizer,
+  `gchandle.is_released()`, as the released 0.11.0 did at its own title in a windowed GL run on
+  this machine; the bug report screen was photographed over `MainMenu.tscn` instead.)
+
+**Not tested:** anything on Linux itself (no Linux machine here - the bridge, the patch and
+`install.sh` were checked from Windows); the installer run over an old install (on this machine
+that would rewrite the developer's own install's uninstall entry - `[InstallDelete]` was only
+compiled); the APK on a phone (the dry run checks its signature, version, package id and label);
+and the real ecec.dev, which is not deployed yet. A copy restarted by `apply.cmd` writes its log
+(`user://logs/godot.log`) only as it exits unless `application/run/flush_stdout_on_print` is on:
+the 0.11.0 run's restarted copy was stopped unflushed, so it is judged by what it left on disk and
+by its second launch; the renamed-copy runs had the flush in their `override.cfg`.
+
+### Merging and releasing it, in order
+
+1. **Rename the GitHub repo** `eclancy/WizardSurvivors` to `eclancy/TheOneHeMissed`. GitHub then
+   redirects the old slug, release downloads included, so links to 0.11.0 and earlier keep working.
+   Point each checkout at it: `git remote set-url origin https://github.com/eclancy/TheOneHeMissed.git`.
+2. **Deploy the website.** Its `version.json` redirects name `TheOneHeMissed`; before the repo
+   rename they would point at nothing (an old copy would just find no update, but do it in order).
+   Check: `curl -sI https://ecec.dev/wizard-survivors/version.json` - a 302 to
+   `github.com/eclancy/TheOneHeMissed/releases/latest/download/version.json`.
+3. **Merge this branch.** Every branch that lands afterwards still saying `WizardSurvivors.scripts`
+   needs the namespace command from the mechanical commit's message (`Rename: namespace, solution,
+   project and assembly ...`), then `dotnet build TheOneHeMissed.sln`.
+4. **The first release from the renamed code** (0.12.0 or later): `--dry-run` first, then for real.
+   It is the first with bridges and `"builds"`; nothing else about releasing changed. It can be the
+   story reset too - the carry-over runs before the load, so the reset's backup lands in the new
+   folder beside the carried save.
+5. **After it is out:** fetch `version.json` from both addresses (the same file), and if a 0.11.0
+   copy is to hand, start it - it should update, restart as The One He Missed, and keep its save.
 
 ## Things to know
 
