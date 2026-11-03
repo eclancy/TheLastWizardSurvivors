@@ -46,6 +46,9 @@ public static class CharacterRoster
 		"res://CharacterData_Wayland.tres",
 		// The chapter wizards again: the Cumaean Sibyl, freed at the nine mouths in the Sunken Cave. Appended (index 13: Merlin and Wayland took 11 and 12 the same day).
 		"res://CharacterData_Sibyl.tres",
+		// The chapter wizards again: Baba Yaga, freed by running her walking hut down in the Enchanted Forest. Appended,
+		// so every saved index keeps its wizard.
+		"res://CharacterData_BabaYaga.tres",
 	};
 
 	// Loaded once and held. Every call used to load all seven again, and each load hands back a

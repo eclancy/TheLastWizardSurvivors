@@ -1624,7 +1624,22 @@ public partial class Enemy : CharacterBody2D
 		return length > cap && length > 0f ? push * (cap / length) : push;
 	}
 
-	public void ApplyKnockback(Vector2 force)
+	/// <summary>
+	/// Bone Fence (Baba Yaga's passive, .ai/chapter-wizards.md 4.1): how much harder than written every shove and pull
+	/// the player's side gives. 1 for everyone else; Player._Ready puts it back to 1 at the start of every run and her
+	/// passive raises it. Read by <see cref="ApplyKnockback"/> only - a shove that is the world's and not his goes
+	/// through <see cref="ApplyWorldShove"/>, which it never touches.
+	/// </summary>
+	public static float PlayerKnockbackScale { get; set; } = 1f;
+
+	/// <summary>A shove or pull from the player's side - a spell, an item, his passive. Bone Fence scales it.</summary>
+	public void ApplyKnockback(Vector2 force) => ApplyWorldShove(force * PlayerKnockbackScale);
+
+	/// <summary>
+	/// A shove that is the place's, not the player's (a ward pushing the swarm out of its ring, a room's door): the
+	/// same as <see cref="ApplyKnockback"/> without Bone Fence on it.
+	/// </summary>
+	public void ApplyWorldShove(Vector2 force)
 	{
 		if (isDying)
 			return;

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_ThornVine.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/yaga-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/YagaFrames.tres" id="4"]
+
+; Rescued, not a starter: the Enchanted Forest's chapter wizard, freed by running her walking hut down
+; (.ai/chapter-wizards.md 4.1). The witch of the deep wood, whose hut stands behind a fence of bone. Her
+; passive is Bone Fence, the one axis no other wizard owns: every shove and pull her spells give lands
+; harder (+20% knockback). She opens on Thorned Vine, two elements (Grass and Poison) - a freed wizard may
+; (R2); the form deepens Grass.
+[resource]
+script = ExtResource("1")
+Id = "baba_yaga"
+Name = "Baba Yaga"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "knockback_20"
+StartingPassiveName = "Bone Fence"
+StartingPassiveDescription = "+20% knockback"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

@@ -306,7 +306,7 @@ public partial class BrokenWard : SecretVault
 			float d = MathF.Sqrt(d2);
 			Vector2 outward = d > 1f ? (at - c) / d : Vector2.Down;
 			float depth = 1f - d / WardRadius;
-			enemy.ApplyKnockback(outward * PushSpeed * (1f + depth));
+			enemy.ApplyWorldShove(outward * PushSpeed * (1f + depth));
 			if (WardRadius - d < 24f)
 				Flash(c + outward * WardRadius);
 		}

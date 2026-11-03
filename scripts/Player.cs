@@ -625,12 +625,16 @@ public partial class Player : CharacterBody2D
 	private float characterWardingHandThrow = 0f;
 	// Wings (Wayland the Smith): the share added to his walking speed - the wings he made to get off the island.
 	public const float CharacterWingsSpeedBonus = 0.10f;
+	// Bone Fence (Baba Yaga): the share added to every shove and pull her spells give (Enemy.PlayerKnockbackScale).
+	public const float CharacterBoneFenceKnockbackBonus = 0.20f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
 	public override void _Ready()
 	{
 		AddToGroup("player");
+		// Bone Fence is a run's, not the process's: every run starts at no bonus, and her passive raises it.
+		Enemy.PlayerKnockbackScale = 1f;
 		ResetItemRules();
 		feetBody = GetNodeOrNull<CharacterBody2D>("Feet");
 		feetShape = feetBody?.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
@@ -870,6 +874,10 @@ public partial class Player : CharacterBody2D
 		// the cards again. Three more rerolls in the run's pool, on top of Fate Fracture's. An axis no other
 		// wizard owns: it touches no number in the fight, only the choices.
 		"rerolls_3",
+		// Baba Yaga (.ai/chapter-wizards.md 4.1): Bone Fence - her hut stands behind a fence of bone, and whatever her
+		// spells shove or drag is thrown that much harder (Enemy.PlayerKnockbackScale). An axis no other wizard owns:
+		// not damage, not speed, the strength of every push. Her own vine pushes nothing; it is a build's passive.
+		"knockback_20",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -921,6 +929,9 @@ public partial class Player : CharacterBody2D
 			case "rerolls_3":
 				// ApplyArcaneUpgrades has already filled the pool from the shop; this goes on top, once.
 				RerollsRemaining += CharacterProphecyRerolls;
+				return true;
+			case "knockback_20":
+				Enemy.PlayerKnockbackScale = 1f + CharacterBoneFenceKnockbackBonus;
 				return true;
 			default:
 				return false;
