@@ -11,11 +11,11 @@ scripts/Freeings.cs says when. Runs under Python 2.7 and 3 (PIL only), every ran
 rng.random(), as prologue.py's are.
 
 A TEMPLATE, NOT SIX PICTURES. One panel, the same for everyone: the heath at night with his tower on the
-horizon, the Archmage - the one he missed, the title's own figure (hero.wizard_hero) - with his light up, and beside him the
-wizard he has just freed - cut from that wizard's real sprite exactly as the prologue cuts the four
-(prologue.roster_figure: the 48 cell's pixels, filled flat in the deep end of his own colour, lit only where
-his own element sits in the sprite) - standing, his chain broken off him and falling, and his light coming
-back to him out of the sky it was drawn into. The ground and the near heath are one pair of layers shared
+horizon, the Archmage - the one he missed, the title's own figure (hero.wizard_hero) - with his light up, and
+beside him the wizard he has just freed: his real sprite, every pixel of his 48 cell at a whole x2 in his own
+colours (prologue.sprite_figure; Eric, 2026-11-03: "Redraw with real sprites" - the flat one-colour cut-out
+this drew first made Wayland one amber shape), standing, his chain broken off him and falling, and his light
+coming back to him out of the sky it was drawn into. The ground and the near heath are one pair of layers shared
 by every panel (freed-back.png, freed-fore.png); only the mid layer is the wizard's (freed-<id>-mid.png).
 So a wizard added to the roster is one row in WIZARDS, here, and one in Freeings.cs.
 
@@ -50,22 +50,22 @@ OUT = os.path.join(ROOT, "assets", "bonelight", "ui", "freed")
 PREVIEW = os.path.join(HERE, "_freed")
 
 # The wizards a chapter holds and the player frees there (UnlockCatalog: a FromEvent or chapter-deed
-# character with a rescue chapter; Freeings.WizardIds, in the same order). (character id, sprite prefix,
-# the ramp his light is in the sprite, the ramp it burns here, the deep end of his own colour.)
+# character with a rescue chapter; Freeings.WizardIds, in the same order). (character id, (sprite prefix,
+# the ramp his light is in the sprite, the ramp it burns here).)
 # Laelaps carries no light of his own (the prologue's rule): his collar's star is found as light, and it
 # burns his wind.
 WIZARDS = [
-    ("tituba", ("tituba", "water", "water"), V[3]),
-    ("vainamoinen", ("vainamoinen", "grass", "grass"), M["azure"][4]),
-    ("seimei", ("seimei", "light", "light"), LI[4]),
-    ("wayland", ("wayland", "metal", "metal"), M["amber"][4]),
-    ("sibyl", ("sibyl", "arcane", "arcane"), ST[4]),
-    ("laelaps", ("laelaps", "light", "wind"), G[4]),
+    ("tituba", ("tituba", "water", "water")),
+    ("vainamoinen", ("vainamoinen", "grass", "grass")),
+    ("seimei", ("seimei", "light", "light")),
+    ("wayland", ("wayland", "metal", "metal")),
+    ("sibyl", ("sibyl", "arcane", "arcane")),
+    ("laelaps", ("laelaps", "light", "wind")),
 ]
 
 # Where they stand: the Archmage left of the middle, the freed wizard right of it, turned to him.
 HIM_X, HIM_Y, HIM_H = 428, 548, 120
-WIZ_X, WIZ_Y, WIZ_H = 560, 542, 112
+WIZ_X, WIZ_Y = 560, 542
 
 
 def p_ground():
@@ -92,21 +92,24 @@ def p_ground():
     return back, fore
 
 
-def p_freed(who, robe, seed):
+def p_freed(who, seed):
     """One wizard's mid layer: him, and the wizard he has freed."""
     mid = pr.frame()
     prefix, carried, burns = who
     halo = pr.HALO[burns]
     mid.radial(WIZ_X, WIZ_Y + 4, 64, 15, [halo[3], halo[4], halo[4], None])
+    # Where his sprite puts his light and his wrist, measured on a scratch layer: the motes go behind him.
+    rim = (-0.8, -0.5, G[2])
+    light, box = pr.sprite_figure(pr.frame(), who, WIZ_X, WIZ_Y, strip="idle", frame=0, facing=-1, rim=rim)
     # His light coming back to him, out of the sky (the procession's motes, the other way).
-    ax, ay = pr.light_at(who, WIZ_X, WIZ_Y, WIZ_H, "idle", 0, -1)
+    ax, ay = light or ((box[0] + box[2]) / 2.0, box[1] + 10)
     pr.motes(mid, (ax + 40, ay - 180), (ax, ay), 190, seed, [E[burns]], spread=16, bow=-24)
     # The chain off him. Drawn after him, in front: two lengths of it on the ground at his feet with the
     # light still going out of them, its two shackles open, and the last of it falling from his wrist.
     # (Dead links in occlusion on the dark ground were tried first and could not be seen at all: the
     # chain is his light, and it has to read as his chain going out, not as gravel.)
     rng = random.Random(seed + 1)
-    wx, wy = pr._wrist(who, "idle", 0, WIZ_X, WIZ_Y, WIZ_H, -1)
+    wx, wy = pr.sprite_wrist(box, -1)
     chain = []
     for (a, b, sag) in [((WIZ_X - 64, WIZ_Y + 8), (WIZ_X - 14, WIZ_Y + 12), 3.0),
                         ((WIZ_X + 4, WIZ_Y + 11), (WIZ_X + 48, WIZ_Y + 5), 2.0)]:
@@ -115,8 +118,7 @@ def p_freed(who, robe, seed):
     falling = []
     for k, col in enumerate([DK[1], DK[2], DK[2], DK[3], DK[3], V[3]]):
         falling.append((wx - 2 + (rng.random() - 0.5) * 1.6 * k, wy + 5 + k * 6 + k * k * 0.7, col))
-    pr.roster_figure(mid, who, WIZ_X, WIZ_Y, WIZ_H, [robe, OCC], strip="idle", frame=0, facing=-1,
-                     toward=(-0.8, -0.5, G[2]))
+    pr.sprite_figure(mid, who, WIZ_X, WIZ_Y, strip="idle", frame=0, facing=-1, rim=rim)
     for pts in chain:
         pr._chain(mid, pts, colors=(DK[2], DK[1]))
     for (x, y) in shackles:
@@ -155,10 +157,10 @@ def main(argv):
     back.img.save(os.path.join(OUT, "freed-back.png"))
     fore.img.save(os.path.join(OUT, "freed-fore.png"))
     print("%-18s %d off-contract pixels" % ("freed (ground)", sum(bad.values())))
-    for i, (wid, who, robe) in enumerate(WIZARDS):
+    for i, (wid, who) in enumerate(WIZARDS):
         if want and wid not in want:
             continue
-        mid = p_freed(who, robe, 700 + i * 10)
+        mid = p_freed(who, 700 + i * 10)
         pr.finish(dict(mid=mid), 0.9, cy=pr.CY + 60)
         bad = pr.audit(dict(mid=mid))
         total_bad += sum(bad.values())
