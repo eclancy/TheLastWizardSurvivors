@@ -49,6 +49,8 @@ public static class CharacterVisuals
 			// The warm light he took, in his raised hand (tools/art/player_dark_wizard.py, ORB): The Taking's
 			// hands leave from it, the boss's own gesture.
 			case "dark_wizard": return new Vector2(11, 5);
+			// The polished face of his hammer (roster.py, wayland()): the one bright thing on him.
+			case "wayland": return new Vector2(42, 7);
 			default: return null;
 		}
 	}
@@ -75,6 +77,7 @@ public static class CharacterVisuals
 			case "laelaps":
 			case "seimei":
 			case "dark_wizard":
+			case "wayland":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

@@ -536,9 +536,17 @@ public partial class CharacterSelection : Control
 			AutowrapMode = TextServer.AutowrapMode.WordSmart
 		};
 		ResponsiveLayout.SetFont(nameLabel, ResponsiveLayout.TextRole.Label);
-		FitOneLine(nameLabel, CompactCardWidth - 16f);
 		nameLabel.AddThemeColorOverride("font_color", CardNameInk(character, state));
-		vbox.AddChild(nameLabel);
+		// The name may use the card's side margins as well as the well's width (NameBleed each side): at Micro,
+		// "Wayland the Smith" was still a few pixels wider than the well and wrapped onto a cut-off second line.
+		var nameRow = new MarginContainer();
+		nameRow.AddThemeConstantOverride("margin_left", -NameBleed);
+		nameRow.AddThemeConstantOverride("margin_right", -NameBleed);
+		nameRow.AddChild(nameLabel);
+		vbox.AddChild(nameRow);
+		// Fitted once it is in the tree: before that ResponsiveLayout cannot tell a PC from a phone, and took the
+		// phone's floor (18) for Micro - one point too high for "Wayland the Smith" on a PC card.
+		nameLabel.Ready += () => FitOneLine(nameLabel, CompactCardWidth - 16f + 2f * NameBleed);
 
 		BonelightSkin.MakeSubtreeClickThrough(margin, null);
 		return card;
@@ -557,7 +565,13 @@ public partial class CharacterSelection : Control
 		while (size > floor && font.GetStringSize(label.Text, HorizontalAlignment.Left, -1f, size).X > width)
 			size--;
 		label.AddThemeFontSizeOverride("font_size", size);
+		// Fitted, it is one line: no wrap left to break it on a pixel of rounding.
+		if (font.GetStringSize(label.Text, HorizontalAlignment.Left, -1f, size).X <= width)
+			label.AutowrapMode = TextServer.AutowrapMode.Off;
 	}
+
+	// How far into the card's 8 px side margins a compact card's name may run.
+	private const int NameBleed = 3;
 
 	private void BuildDetailPane()
 	{

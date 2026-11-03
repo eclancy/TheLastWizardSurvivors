@@ -100,6 +100,14 @@ PALETTE.update({LT0: E["light"][0], LT1: E["light"][1],
                 LT2: E["light"][2], LT3: E["light"][3]})
 LIGHT_RAMP = LT0 + LT1 + LT2 + LT3
 
+# Metal, for Wayland the Smith's hammer (Iron Palisade): the striking face polished bright, the one thing
+# on him that gives back light. Control characters again; \x09-\x0D are skipped because they are tab,
+# newline and the rest of the whitespace, which a row of pixels should never carry.
+MT0, MT1, MT2, MT3 = "\x10", "\x11", "\x12", "\x13"
+PALETTE.update({MT0: E["metal"][0], MT1: E["metal"][1],
+                MT2: E["metal"][2], MT3: E["metal"][3]})
+METAL_RAMP = MT0 + MT1 + MT2 + MT3
+
 
 # Robe cloth per wizard. Four different MATERIAL ROWS, not four tints of one - the first pass
 # came out as four distinct silhouettes all wearing the same blue, which is the same failure as
@@ -127,6 +135,10 @@ ROBES = {
     # The onmyoji's white hunting robe over black, both material rows: linen's pale end for the robe,
     # stone for the cap and the trousers. Kindled Ward is in his fingers, not on his clothes.
     "seimei": ("l", "L", "e"),          # linen, pale - the kariginu; Kindled Ward
+    # The smith in his work clothes, both material rows and both from their dark ends: an iron-grey shirt
+    # (steel's shade) under a leather apron (gold's shade, which is what leather is in this palette).
+    # Iron Palisade is in the hammer's face, not on his clothes.
+    "wayland": ("R", "r", "q"),         # steel, dark - the shirt; Iron Palisade
 }
 
 
@@ -2019,10 +2031,194 @@ def seimei(phase=None):
     return g.rows()
 
 
+def wayland(phase=None):
+    """Iron Palisade. Wayland the Smith (Volundr), the master smith of the Germanic tales: lamed by a
+    king and set on an island to forge for him, who made himself wings and flew.
+
+    The palisade is stakes driven into the ground between him and the pack, so he is the one figure in
+    the cast who has just STRUCK something and is standing over it: square to the front, weight down,
+    a long forge hammer stood upright in his near hand, its head the top of him on that side. Its
+    striking face is polished and catches the light - the one thing on him in an element ramp, metal,
+    as the spell is.
+
+    WHAT SETS HIS SILHOUETTE IS HIS WINGS. Folded on his back and rising above his shoulders, the far
+    one tall behind his head and the near one a blade between his head and the hammer: hammered iron
+    feathers, each lit on its top edge, in steel's dark end so they never outshine the hammer. They are
+    how he got out the first time; no other figure in the cast has anything above his head but a hat or
+    a staff. Under them, broad shoulders in an iron-grey shirt with the sleeves rolled, bare forearms, a
+    leather apron to the knee scorched at the hem, a short dark beard.
+
+    The lameness is the far leg: an iron brace at the knee and a shackle at the ankle with its chain
+    broken off - he is the man who made every chain in this game, and the one that held him did not.
+    """
+    mid, lit, dark = ROBES["wayland"]
+    g = G(48)
+    CX = 23
+
+    # THE WINGS, first: everything else is in front of them. The far wing tall behind his head and
+    # down his back; the near one a narrow blade rising between his head and the hammer.
+    mass(g, [(3, 9, 10), (5, 7, 11), (8, 6, 13), (12, 6, 15), (17, 6, 15), (23, 7, 15),
+             (29, 8, 14), (33, 9, 13)], "q", "R", "o")
+    mass(g, [(4, 31, 32), (6, 30, 33), (9, 29, 33), (13, 29, 33), (16, 30, 32)], "q", "R", "o")
+    # The feathers. Folded, so the long ones run DOWN the wing from the shoulder, each a lit edge with
+    # occlusion beside it, ending in a tip of its own at a different height - the wing's lower edge is
+    # their ends, ragged, not a cut line. Over them at the top, two short rows of coverts. Irregular in
+    # length and spacing on purpose: evenly spaced plates read as a radiator.
+    for (x0, y0, x1, y1) in ((13, 10, 11, 31), (11, 8, 8, 27), (9, 6, 7, 20), (14, 16, 13, 33)):
+        g.line(x0, y0, x1, y1, "r")
+        g.line(x0 + 1, y0 + 1, x1 + 1, y1, "o")
+    for (x, y) in ((10, 32), (8, 28), (7, 21), (12, 34), (9, 31)):
+        g.set(x, y, "q")
+    cut(g, (8, 33), (8, 32), (9, 33), (7, 29), (6, 22), (6, 23))
+    for (y, x0, x1) in ((6, 8, 10), (9, 7, 12), (12, 9, 14)):
+        g.line(x0, y, x1, y - 1, "r")
+        g.set(x0, y + 1, "o")
+    g.set(9, 3, "t")
+    g.set(7, 8, "t")
+    g.set(6, 13, "t")
+    # The near wing: a blade of the same iron, its coverts and one long edge.
+    g.line(30, 8, 31, 16, "r")
+    g.line(31, 8, 32, 15, "o")
+    g.line(30, 6, 32, 5, "r")
+    g.set(31, 4, "t")
+
+    # THE LEGS, under the apron: dark breeches and heavy boots, the near leg set forward.
+    if phase is None:
+        mass(g, [(34, 17, 21), (38, 16, 20), (43, 16, 20)], "N", "p", "J")
+        mass(g, [(43, 14, 20), (46, 13, 20)], "J", "j", "o")
+        mass(g, [(34, 25, 29), (38, 26, 30), (43, 27, 31)], "N", "p", "J", rim=False)
+        mass(g, [(43, 26, 32), (46, 26, 33)], "J", "j", "o", rim=False)
+        far_x, near_x, far_lift = 0, 0, 0
+        g.set(14, 44, "N")
+        g.set(27, 44, "N")
+    else:
+        # A lame man's walk: the near leg does the striding and the far one, braced straight, is
+        # swung after it and set down - it moves half as far and barely leaves the ground.
+        c, lift_near, lift_far = stride(phase)
+        far_x = int(round(-1.0 * c))
+        near_x = int(round(2.0 * c))
+        far_lift = int(round(1 * lift_far))
+        near_lift = int(round(2 * lift_near))
+        mass(g, [(34, 17, 21), (43 - far_lift, 16 + far_x, 20 + far_x)], "N", "p", "J")
+        mass(g, [(43 - far_lift, 14 + far_x, 20 + far_x), (46 - far_lift, 13 + far_x, 20 + far_x)], "J", "j", "o")
+        mass(g, [(34, 25, 29), (38, 26 + near_x // 2, 30 + near_x // 2), (43 - near_lift, 27 + near_x, 31 + near_x)],
+             "N", "p", "J", rim=False)
+        mass(g, [(43 - near_lift, 26 + near_x, 32 + near_x), (46 - near_lift, 26 + near_x, 33 + near_x)], "J", "j", "o",
+             rim=False)
+        g.set(14 + far_x, 44 - far_lift, "N")
+        g.set(27 + near_x, 44 - near_lift, "N")
+    # The brace on the far leg: two iron bands and the bar between them down the outside of the knee,
+    # and the shackle at the ankle with a broken link hanging off it.
+    g.span(40, 16 + far_x, 20 + far_x, "R")
+    g.set(16 + far_x, 40, "t")
+    g.set(20 + far_x, 40, "q")
+    g.line(16 + far_x, 39, 16 + far_x, 41, "r")
+    g.span(42 - far_lift, 15 + far_x, 20 + far_x, "r")
+    g.set(15 + far_x, 42 - far_lift, "t")
+    g.set(20 + far_x, 42 - far_lift, "q")
+    g.set(13 + far_x, 43 - far_lift, "R")
+    g.set(12 + far_x, 44 - far_lift, "r")
+    g.set(12 + far_x, 45 - far_lift, "q")
+
+    # THE SHIRT: broad at the shoulders - the broadest in the cast after the Geomancer - and in to
+    # the waist under the apron.
+    mass(g, [(16, 16, 30), (18, 13, 32), (22, 13, 31), (27, 15, 30), (33, 16, 30)], mid, lit, dark)
+    fold(g, [(17, 19), (16, 24)], dark, lit)
+    fold(g, [(29, 19), (30, 24)], dark, lit)
+
+    # THE APRON: heavy leather from the chest to the knee, its bib on straps up to the neck, scorched
+    # along the hem and spattered with burns. Gold's shade, which is what leather is in this palette.
+    mass(g, [(20, 18, 27), (24, 17, 28), (27, 16, 30), (33, 15, 30), (37, 15, 31), (38, 16, 30)],
+         "u", "g", "J", rim=False)
+    fold(g, [(20, 27), (19, 37)], "J", None)
+    fold(g, [(27, 28), (28, 37)], "J", "u")
+    fold(g, [(23, 30), (23, 36)], "J", None)
+    g.line(18, 20, 20, 16, "u")
+    g.line(27, 20, 25, 16, "u")
+    g.set(19, 18, "g")
+    # The scorched hem: uneven, the leather burnt to the deep stop in tongues.
+    tatters(g, [(38, 16, 19), (39, 17, 18), (38, 22, 25), (39, 23, 24), (38, 28, 30)], "J", "u", "o")
+    for (bx, by) in ((20, 34), (26, 31), (18, 29), (25, 36), (21, 25)):
+        g.set(bx, by, "J")
+        g.set(bx + 1, by, "g")
+    # The belt over it, an iron buckle on the key side.
+    g.span(27, 15, 30, "J")
+    g.span(28, 16, 29, "u")
+    g.rect(19, 27, 20, 28, "r")
+    g.set(19, 27, "t")
+
+    # THE FAR ARM, hanging: the sleeve rolled to the elbow, a bare forearm, a closed fist.
+    mass(g, [(18, 11, 15), (24, 10, 14)], mid, lit, dark)
+    g.span(24, 10, 14, "r")
+    g.span(25, 10, 14, "R")
+    mass(g, [(26, 10, 13), (30, 10, 13)], "h", "f", "i")
+    fold(g, [(12, 26), (12, 30)], "i", None)
+    hand(g, 10, 31)
+    hand(g, 12, 31)
+
+    # THE HAMMER, stood upright in his near hand: a long ash haft down to the ground and the head the
+    # top of him on this side. Its body is iron; its striking face, turned to the light, is polished
+    # bright - the metal ramp, his spell.
+    shaft(g, 38, 44, 38, 10, "g", "u", "J", width=2)
+    g.set(38, 44, "u")
+    g.set(39, 44, "J")
+    for y in (17, 29, 36):
+        g.set(38, y, "u")                                           # the grain, and old knocks in it
+    mass(g, [(5, 34, 42), (9, 34, 42)], "r", "t", "q", rim=True)
+    g.span(5, 34, 42, "t")
+    g.span(9, 34, 42, "R")
+    g.span(10, 35, 41, "q")
+    g.set(38, 10, "g")
+    # The face (the far end, toward the key light's falloff) and the peen (the near end).
+    for (y, ch) in ((5, MT1), (6, MT0), (7, MT1), (8, MT2), (9, MT3)):
+        g.set(42, y, ch)
+    g.set(43, 6, MT2)
+    g.set(43, 7, MT3)
+    for (y, ch) in ((6, MT2), (7, MT2), (8, MT3)):
+        g.set(34, y, ch)
+    g.set(36, 5, MT1)
+    g.set(37, 5, MT2)
+    # The wedge through the eye of the head, and a nick on its cheek.
+    g.set(38, 6, "q")
+    g.set(39, 6, "R")
+    g.set(36, 8, "q")
+
+    # THE NEAR ARM: the sleeve rolled, the forearm bare and corded, the hand closed round the haft.
+    mass(g, [(18, 29, 33), (23, 31, 34)], mid, lit, dark, rim=False)
+    g.span(23, 31, 34, "r")
+    shaft(g, 33, 25, 36, 21, "f", "h", "i", width=3)
+    g.line(32, 26, 35, 23, "i")
+    hand(g, 37, 20)
+    hand(g, 37, 22)
+    g.set(39, 21, "i")
+
+    # THE COLLAR of the shirt, open at the throat.
+    g.span(15, 19, 27, dark)
+    g.span(16, 20, 26, mid)
+    g.set(23, 16, "h")
+    g.set(22, 16, "i")
+
+    # THE HEAD: square-jawed, the brow low, looking out past the hammer. Cropped dark hair and a short
+    # beard, both in stone's dark end - a working man's, kept short for the forge.
+    head(g, CX, 8, 3.2, brow="low", gaze=1, mouth="set", eye="narrow")
+    g.span(7, 20, 26, "N")
+    g.span(6, 21, 25, "J")
+    g.set(20, 7, "p")
+    g.set(21, 6, "N")
+    g.set(20, 8, "N")
+    g.set(26, 8, "J")
+    g.set(20, 9, "J")
+    moustache(g, CX, 12, 2.4, "N", "p", "J")
+    hair(g, CX, 13, 16, 3.2, 1.6, "N", "p", "J")
+    g.set(CX, 14, "J")
+    contact(g, 11, 35)
+    return g.rows()
+
+
 WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("stormcaller", stormcaller), ("geomancer", geomancer),
            ("tituba", tituba), ("vainamoinen", vainamoinen), ("dee", dee),
-           ("seimei", seimei)]
+           ("seimei", seimei), ("wayland", wayland)]
 ENEMIES = [("swarmer", swarmer), ("runner", runner), ("bruiser", bruiser),
            ("shielder", shielder), ("skullsentry", skullsentry), ("lunger", lunger),
            ("slammer", slammer), ("exploder", exploder), ("summoner", summoner),
@@ -2065,6 +2261,7 @@ RAMPS = [
     "B,'`",       # grass - Vainamoinen's sprouting reeds, and the seed falling from his hand
     DARKNESS_RAMP,  # darkness - John Dee's scrying mirror, and the well's motes in his hand
     LIGHT_RAMP,     # light - the kindled ward at the tip of Seimei's paper
+    METAL_RAMP,     # metal - the face of Wayland's hammer
 ]
 _STEP = {}
 for _r in RAMPS:

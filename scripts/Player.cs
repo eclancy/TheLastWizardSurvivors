@@ -613,6 +613,8 @@ public partial class Player : CharacterBody2D
 	// horde is his own making, and it knows him.
 	public const float CharacterDreadFearScale = 2f;
 	private float characterFearScale = 1f;
+	// Wings (Wayland the Smith): the share added to his walking speed - the wings he made to get off the island.
+	public const float CharacterWingsSpeedBonus = 0.10f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -848,6 +850,9 @@ public partial class Player : CharacterBody2D
 		// The dark wizard (.ai/dark-wizard-playable.md): Dread - his Darkness hits frighten twice as often. Crowd
 		// control as a passive, an axis no other wizard owns, and it never touches damage.
 		"fear_x2",
+		// Wayland the Smith (.ai/chapter-wizards.md 4.7): Wings, +10% move speed. Every other wizard's passive is
+		// about his spells or his skin; this one is the only one about his feet.
+		"move_speed_10",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -889,6 +894,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "fear_x2":
 				characterFearScale = CharacterDreadFearScale;
+				return true;
+			case "move_speed_10":
+				Speed *= 1f + CharacterWingsSpeedBonus;
 				return true;
 			default:
 				return false;
