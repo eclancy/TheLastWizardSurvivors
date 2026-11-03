@@ -64,6 +64,8 @@ public static class CharacterVisuals
 			case "baba_yaga": return new Vector2(16, 3);
 			// The rune of rime cut in the air before her raised hand (roster.py, morgan()): where her runes leave her.
 			case "morgan": return new Vector2(43, 15);
+			// The dose in the round-bellied flask he holds up to the light (roster.py, paracelsus()), its middle.
+			case "paracelsus": return new Vector2(38, 9);
 			default: return null;
 		}
 	}
@@ -96,6 +98,7 @@ public static class CharacterVisuals
 			case "archmage":
 			case "baba_yaga":
 			case "morgan":
+			case "paracelsus":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

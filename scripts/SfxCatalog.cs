@@ -127,6 +127,8 @@ public static class SfxCatalog
 	// The walking hut in the Enchanted Forest (WalkingHutEvent): two heavy falls of a great foot and its timbers creaking.
 	public const string HintHutStep = "hint_hut_step";
 	public const string HintHullKnock = "hint_hull_knock";
+	// The gibbet's cage in the Blighted Swamp (GibbetCageEvent): a glass flask tapped twice, and a man coughing.
+	public const string HintFlaskChime = "hint_flask_chime";
 	// The nine mouths' call in the Sunken Cave (NineMouthsEvent): her voice out of the true mouth, first, and
 	// the cave's echo of it out of the other eight, a beat apart - played at each mouth, so the 2D listener
 	// pans and fades each from where it comes.
@@ -158,7 +160,7 @@ public static class SfxCatalog
 		UiHover, UiClick, UiBack, UiDenied, UiOpen, UiClose, UiPause,
 		StageClear, GameOver, MetaUnlock, WaveWarning,
 		PlayerFall, TallyTick, TallyPayout,
-		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep, HintHullKnock,
+		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep, HintHullKnock, HintFlaskChime,
 		SibylVoice, SibylEcho,
 		SecretSeen, SecretFound, SecretShatter,
 	};

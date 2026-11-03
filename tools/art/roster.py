@@ -117,6 +117,12 @@ METAL_RAMP = MT0 + MT1 + MT2 + MT3
 LC0, LC1, LC2, LC3, LC4 = "\x95", "\x96", "\x97", "\x98", "\x99"
 PALETTE.update(dict(zip(LC0 + LC1 + LC2 + LC3 + LC4, M["lichen"])))
 LICHEN_RAMP = LC0 + LC1 + LC2 + LC3 + LC4
+# The `red` material row, for Paracelsus's physician's gown: hi / lit / base / shade / deep. The same five bytes
+# the Archmage's sash and Merlin's red hold for the same row (player_archmage.RED_RAMP, merlin_concepts.RED_RAMP),
+# already in anim_sets.PLAYER_RAMPS, so a hurt flash and a death fade step it along its own ramp. A material, not
+# a pigment: the row is the contract's maroon, the colour a doctor's gown of his century was dyed and has faded to.
+RD0, RD1, RD2, RD3, RD4 = "\x14", "\x15", "\x16", "\x17", "\x18"
+PALETTE.update({RD0: M["red"][0], RD1: M["red"][1], RD2: M["red"][2], RD3: M["red"][3], RD4: M["red"][4]})
 
 
 # Robe cloth per wizard. Four different MATERIAL ROWS, not four tints of one - the first pass
@@ -161,6 +167,10 @@ ROBES = {
     # under the bridge she was moored beneath. Her gown under it is violet's deep end, the black samite of the
     # barge. Sleet Runes is the rune of rime before her raised hand.
     "morgan": (LC2, LC1, LC3),          # lichen - the mantle; Sleet Runes
+    # Paracelsus's physician's gown: the red row from its base down, a dark wine faded from a doctor's scarlet,
+    # over a doublet of stone's near-black, its fur collar stone too. Contagion is in the flask he holds up to the
+    # light, not on his clothes.
+    "paracelsus": (RD2, RD1, RD3),      # red, dark - the gown; Contagion
 }
 
 # RUSSET, madder-dyed wool and auburn hair: Thora's hair (stormcaller()). The same five bytes and
@@ -2796,12 +2806,194 @@ def morgan(phase=None):
     return g.rows()
 
 
+def paracelsus(phase=None):
+    """Contagion. Paracelsus, the Swiss physician and alchemist (1493-1541), who wrote that the dose makes the
+    poison: everything is poison, and nothing is without poison; only the dose makes a thing not a poison.
+
+    The plague is a thing he MEASURES, so he is the one figure in the cast EXAMINING his spell: his near arm
+    raised, holding a round-bellied flask up to the light at the height of his eyes, and his face turned up to
+    it, narrowed, reading the dose. The liquid in it is the poison ramp - the only light on him - and a thread
+    of its vapour lifts off the neck. His far hand rests on the pommel of a long sword planted point-down at
+    his side: Azoth, the sword the stories say he never put off and kept his remedy in the pommel of. The
+    crossguard and the blade make the far side of his silhouette a cross, which no other figure has.
+
+    DRAWN SERIOUS (.ai/chapter-wizards.md 4.4; the portraits): a stocky, square, heavy-jawed man, clean-shaven,
+    in a wide flat beret - the broadest head in the cast - over a physician's gown open down the front, its
+    collar of dark fur. Under it a near-black doublet, a belt with a pouch and two corked vials, the doctor's
+    kit. He breathed Mother Rot's mire for as long as he hung over it: the cheek is drawn and the eyes are set.
+
+    The rescued wear no pigment: the gown is the red row from its base down (a doctor's scarlet faded to wine),
+    the beret, the doublet and the collar are stone, the belt and pouch old leather (gold's dark end), the
+    sword steel with an old-gold guard. Only the flask's liquid gives off light.
+    """
+    mid, lit, dark = ROBES["paracelsus"]
+    g = G(48)
+    CX = 24
+
+    # THE GOWN: broad from a square pair of shoulders, falling wide to the floor, its hem uneven.
+    mass(g, [(16, 16, 32), (20, 15, 33), (28, 14, 34), (38, 13, 35), (46, 12, 36)], mid, lit, dark)
+    fold(g, [(18, 20), (17, 30), (15, 46)], dark, lit)
+    fold(g, [(30, 19), (31, 31), (33, 46)], dark, lit)
+    fold(g, [(20, 34), (19, 46)], RD4, None)
+    fold(g, [(29, 35), (30, 46)], RD4, None)
+    fold(g, [(16, 39), (17, 45)], RD4, lit)
+    tatters(g, [(46, 12, 15), (46, 19, 22), (46, 33, 36)], dark, mid, RD4)
+    for (sx, sy) in ((17, 37), (32, 41), (21, 43), (27, 39)):
+        g.set(sx, sy, RD4)                                          # old stains, the mire's
+        g.set(sx + 1, sy, dark)
+    # The front of the gown open over the doublet and the underskirt: a dark panel down the middle, the gown's
+    # two edges lit along it where they turn back, faced with the same fur as the collar.
+    for y in range(17, 46):
+        half = 2 if y < 30 else 3
+        g.span(y, CX - half + 1, CX + half, "j")
+        g.set(CX - half, y, "p" if y % 3 else "N")                  # the near edge, faced in fur
+        g.set(CX + half + 1, y, "J")                                # the far edge, in its own shadow
+    for y in range(18, 29, 3):
+        g.set(CX + 1, y, "N")                                       # the doublet's buttons
+        g.set(CX + 1, y + 1, "J")
+    for y in range(31, 46, 4):
+        g.set(CX + ((y // 4) % 2), y, "N")                          # the underskirt's folds
+    if phase is not None:
+        # A heavy man's short, planted step under a long gown: the hem swings toward the leading foot and that
+        # shoe shows under it. The sword and both arms are drawn after, so they hold.
+        c, _ln, _lf = stride(phase)
+        hem = 1.2 * c
+        sway(g, 33, hem)
+        if abs(c) > 0.45:
+            toe(g, (27 if c > 0 else 17) + int(round(hem)), w=4, shoe=("N", "j", "J"))
+    else:
+        # Standing: both broad shoes under the hem.
+        for (fx, w) in ((17, 4), (27, 4)):
+            g.span(45, fx, fx + w - 1, "j")
+            g.span(46, fx - 1, fx + w, "J")
+            g.set(fx, 45, "N")
+            g.set(fx - 1, 46, "j")
+            g.span(44, fx, fx + w - 1, "o")
+
+    # THE BELT, old leather, with a buckle, a pouch hanging on the near side and two corked vials on the far.
+    g.span(29, 15, 33, "u")
+    g.span(30, 15, 33, "J")
+    g.set(15, 29, "g")
+    g.set(CX, 29, "G")                                              # the buckle
+    g.set(CX + 1, 29, "g")
+    g.set(CX, 30, "u")
+    mass(g, [(31, 28, 31), (35, 28, 32)], "u", "g", "J", rim=False)  # the pouch
+    g.span(31, 28, 31, "J")                                         # its flap
+    g.set(30, 32, "g")
+    g.set(29, 33, "J")
+    for (vx, vy) in ((18, 31), (21, 31)):
+        g.set(vx, vy, "u")                                          # the cork
+        g.set(vx, vy + 1, "T")                                      # the glass, lit
+        g.set(vx, vy + 2, "R")
+        g.set(vx + 1, vy + 1, "r")
+        g.set(vx + 1, vy + 2, "q")
+        g.set(vx, vy + 3, "q")
+
+    # THE COLLAR: dark fur over both shoulders and round the back of the neck, its edge ragged with tufts.
+    mass(g, [(14, 18, 30), (16, 15, 33), (18, 16, 32)], "N", "p", "j")
+    for (tx, ty, tc) in ((16, 19, "j"), (19, 19, "N"), (22, 19, "j"), (28, 19, "N"), (31, 19, "j"),
+                         (17, 17, "P"), (20, 15, "p"), (26, 15, "P"), (30, 16, "p"), (32, 17, "J"),
+                         (18, 15, "J"), (29, 15, "J"), (24, 17, "J"), (21, 17, "p"), (27, 17, "J")):
+        g.set(tx, ty, tc)
+
+    # THE FAR ARM: down and forward to the sword's pommel, the gown's wide sleeve hanging from it.
+    mass(g, [(17, 14, 19), (20, 12, 18), (22, 11, 16)], mid, lit, dark)
+    fold(g, [(17, 18), (13, 21)], dark, lit)
+    g.line(11, 23, 15, 23, RD4)                                     # the sleeve's mouth
+
+    # THE SWORD, Azoth, planted point-down: a round pommel under his hand, a leather grip, an old-gold guard
+    # across the gown's edge well above the belt (level with it, the two read as one gold band), and a long
+    # plain blade to the ground.
+    g.disc(11.5, 18.6, 1.6, "g")
+    g.set(11, 17, "H")                                              # the pommel's lit crown
+    g.set(10, 18, "G")
+    g.set(13, 19, "u")
+    g.set(12, 20, "u")
+    hand(g, 10, 20)
+    hand(g, 12, 20)
+    g.set(14, 21, "i")
+    g.span(22, 11, 12, "J")                                         # the grip
+    g.span(23, 11, 12, "u")
+    g.set(11, 24, "J")
+    g.set(12, 24, "u")
+    g.span(25, 7, 16, "g")                                          # the guard
+    g.set(7, 25, "G")
+    g.set(8, 25, "G")
+    g.span(26, 8, 15, "u")
+    g.set(16, 26, "J")
+    g.set(6, 25, "u")
+    g.set(17, 25, "J")
+    for y in range(27, 46):
+        g.set(11, y, "t" if y < 37 else "r")                        # the blade, lit along its key edge
+        g.set(12, y, "R")
+        g.set(13, y, "o")
+    g.set(11, 31, "T")                                              # a glint on the steel
+    g.set(12, 27, "q")                                              # the fuller
+    g.set(12, 28, "q")
+    g.set(11, 46, "R")                                              # the point, in the ground
+    g.set(12, 46, "q")
+
+    # THE NEAR ARM, raised: the sleeve falling back from it to the elbow, the forearm up, the hand holding the
+    # flask up to the light.
+    mass(g, [(17, 30, 34), (21, 32, 36), (24, 33, 37)], mid, lit, dark)
+    fold(g, [(31, 18), (35, 23)], dark, lit)
+    g.line(33, 24, 37, 24, RD4)                                     # the sleeve's mouth, dark inside
+    mass(g, [(13, 36, 38), (20, 35, 37), (23, 34, 37)], "j", "N", "J", rim=False)   # the doublet's sleeve
+    for (ax, ay, ac) in ((37, 12, "f"), (38, 12, "h"), (36, 13, "h"), (37, 13, "i"), (38, 13, "i"),
+                         (39, 12, "i"), (36, 12, "f")):
+        g.set(ax, ay, ac)                                           # the hand, round the flask's neck
+
+    # THE FLASK: a round-bellied glass held up by its neck, the dose inside it - the poison ramp, the only
+    # light on him - its glass lit on the key side, and a thread of vapour off the neck.
+    g.disc(38.0, 8.6, 2.6, ")")
+    for (fx, fy, fc) in ((36, 7, "("), (37, 7, "("), (36, 8, "("), (37, 8, ")"), (39, 10, "_"), (38, 11, "_"),
+                         (40, 9, "_"), (37, 10, ")"), (36, 10, "_"), (40, 8, ")")):
+        g.set(fx, fy, fc)
+    for (fx, fy, fc) in ((35, 7, "T"), (35, 8, "T"), (36, 6, "T"), (37, 6, "t"), (39, 6, "t"), (40, 7, "r"),
+                         (41, 8, "R"), (41, 9, "R"), (40, 11, "R"), (39, 11, "q"), (35, 9, "t"), (35, 10, "r"),
+                         (36, 11, "R")):
+        g.set(fx, fy, fc)                                           # the glass round the liquid
+    g.set(38, 5, "t")                                               # the neck
+    g.set(38, 4, "T")
+    g.set(39, 5, "R")
+    g.set(39, 4, "R")
+    g.set(38, 3, "u")                                               # the cork, drawn out a little
+    g.set(37, 3, "g")
+    g.set(36, 8, "(")
+    for (vx, vy) in ((40, 3), (41, 2)):
+        g.set(vx, vy, "l")                                          # the vapour, pale
+
+    # THE HEAD: square and heavy-jawed, turned up to the flask, the eyes narrowed on it, the mouth set.
+    head(g, CX, 8, 3.0, brow="low", gaze=1, mouth="set", eye="narrow")
+    g.span(14, CX - 2, CX + 2, "h")                                 # the heavy jaw, a second chin
+    g.set(CX - 2, 14, "f")
+    g.set(CX + 2, 14, "i")
+    g.span(15, CX - 1, CX + 2, "i")
+    g.set(CX + 3, 11, "I")                                          # the cheek drawn in on the far side
+    g.set(CX - 3, 12, "i")
+    # His hair, dark and cropped, at the temples under the beret.
+    for (hx, hy, hc) in ((20, 8, "J"), (20, 9, "j"), (21, 10, "J"), (28, 8, "j"), (28, 9, "J"), (27, 10, "j")):
+        g.set(hx, hy, hc)
+    # THE BERET: wide and flat, set level on his head and a little forward, wider than his shoulders' top -
+    # the broadest head in the cast. Its brim's underside in shadow, a fold across its crown.
+    mass(g, [(4, 20, 28), (5, 18, 31), (6, 17, 32)], "N", "p", "j")
+    g.span(7, 18, 31, "J")
+    g.set(17, 7, "j")
+    g.set(32, 7, "o")
+    fold(g, [(21, 5), (27, 4)], "j", "P", side=(0, -1))
+    g.set(30, 5, "J")
+    g.set(19, 6, "P")
+    contact(g, 10, 38)
+    return g.rows()
+
+
 WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("stormcaller", stormcaller), ("geomancer", geomancer),
            ("tituba", tituba), ("vainamoinen", vainamoinen), ("dee", dee),
            ("seimei", seimei), ("wayland", wayland),
            ("sibyl", sibyl), ("yaga", yaga),
-           ("morgan", morgan)]
+           ("morgan", morgan),
+           ("paracelsus", paracelsus)]
 ENEMIES = [("swarmer", swarmer), ("runner", runner), ("bruiser", bruiser),
            ("shielder", shielder), ("skullsentry", skullsentry), ("lunger", lunger),
            ("slammer", slammer), ("exploder", exploder), ("summoner", summoner),

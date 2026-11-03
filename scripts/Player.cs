@@ -639,6 +639,8 @@ public partial class Player : CharacterBody2D
 	public float OverlookedAtSeconds { get; private set; } = -1f;
 	// Bone Fence (Baba Yaga): the share added to every shove and pull her spells give (Enemy.PlayerKnockbackScale).
 	public const float CharacterBoneFenceKnockbackBonus = 0.20f;
+	// Sola Dosis (Paracelsus): the share added to every poison tick on an enemy (Enemy.PlayerPoisonScale).
+	public const float CharacterSolaDosisBonus = 0.25f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -647,6 +649,8 @@ public partial class Player : CharacterBody2D
 		AddToGroup("player");
 		// Bone Fence is a run's, not the process's: every run starts at no bonus, and her passive raises it.
 		Enemy.PlayerKnockbackScale = 1f;
+		// Sola Dosis likewise: every run's poison starts at its written dose, and his passive raises it.
+		Enemy.PlayerPoisonScale = 1f;
 		ResetItemRules();
 		feetBody = GetNodeOrNull<CharacterBody2D>("Feet");
 		feetShape = feetBody?.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
@@ -898,6 +902,11 @@ public partial class Player : CharacterBody2D
 		// half, as the isle she carried the dying king to healed him. An axis no other wizard owns: not a heal over
 		// time (the Frostweaver), not a death refused (the Archmage) - what an extra life is worth, once.
 		"first_fall_full",
+		// Paracelsus (.ai/chapter-wizards.md 4.4): Sola Dosis - "the dose alone makes the poison". Every poison tick on
+		// an enemy bites a quarter harder (Enemy.PlayerPoisonScale), whichever spell or item laid it. Damage over time is
+		// poison in this game: no other status takes health on a clock. An axis no other wizard owns: not the hit
+		// (the Pyromancer's spell damage), not the duration (Tituba's), the dose.
+		"dot_25",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -958,6 +967,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "first_fall_full":
 				characterAvalon = true;
+				return true;
+			case "dot_25":
+				Enemy.PlayerPoisonScale = 1f + CharacterSolaDosisBonus;
 				return true;
 			default:
 				return false;

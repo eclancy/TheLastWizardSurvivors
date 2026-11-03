@@ -63,6 +63,7 @@ WIZARDS = [
     ("laelaps", ("laelaps", "light", "wind")),
     ("baba_yaga", ("yaga", "grass", "grass")),
     ("morgan", ("morgan", "ice", "ice")),
+    ("paracelsus", ("paracelsus", "poison", "poison")),
 ]
 
 # Where they stand: the Archmage left of the middle, the freed wizard right of it, turned to him.

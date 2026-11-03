@@ -2885,6 +2885,31 @@ def _(sp, c):
     O(sp, wind)
 
 
+@card("contagion_the_dose")
+def _(sp, c):
+    """The Dose (Paracelsus's Apotheosis, distil): the plague narrowing as it goes - the spell small in the corner it
+    started from, then each jump fewer and fatter marks down to one, the last carrier, going down in a heavy burst."""
+    reset(sp)
+    sp.place = Place(0.45, at=(7.0, 7.5))
+
+    def distil(cv, x):
+        p = E["poison"]
+        # The generations: four small, two larger, then the last - each a jump on from the one before.
+        marks = (((15.0, 8.0, 1.2), (19.0, 11.0, 1.2), (12.5, 13.0, 1.2), (17.0, 15.0, 1.2)),
+                 ((21.0, 17.5, 1.9), (15.5, 20.0, 1.9)),
+                 ((22.5, 23.5, 2.6),))
+        for gen in marks:
+            for (ex, ey, r) in gen:
+                cv.disc(ex, ey, r + 0.9, r + 0.9, p[3])
+                cv.disc(ex, ey, r, r, p[2])
+                cv.set(ex - 1, ey - 1, p[1])
+        dart(cv, p, 17.5, 14.5, 20.0, 16.5)
+        dart(cv, p, 20.0, 19.5, 21.5, 21.5)
+        # The last carrier, dying hardest.
+        m_blast(cv, p, 25.0, 25.5, 5.2)
+    O(sp, distil)
+
+
 # --- Cyclone Slash ---------------------------------------------------------------------------------
 
 @card("cyclone_slash_dual_blades")

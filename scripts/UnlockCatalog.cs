@@ -316,6 +316,10 @@ public static class UnlockCatalog
 		// castle's first chapter, after the Emberdeep's gate, so only the Throne counts her either way.
 		FromEvent("morgan", UnlockKind.Character, "the_barge", "Moored on the dark water under the Last Bridge.",
 			secretUntilStage: "stage_11", finalGateOnly: true),
+		// Paracelsus, caged from a gibbet over Mother Rot's mire in the Blighted Swamp and led out to the ferry (4.4). Secret
+		// until the Swamp opens; counted at the Throne's gate only, as every chapter wizard is.
+		FromEvent("paracelsus", UnlockKind.Character, "gibbet_cage", "Hung in a cage over the rot of the Blighted Swamp.",
+			secretUntilStage: "stage_3", finalGateOnly: true),
 		FromEvent("iron_palisade", UnlockKind.Spell, "caravan_master", "Carried by the caravan master on the Scorched Sands road."),
 		FromEvent("contagion", UnlockKind.Spell, "bog_lanterns", "Kept by whatever tends the lanterns in the Blighted Swamp."),
 		FromEvent("bramble_seed", UnlockKind.Spell, "the_grove", "Grown back in the corrupted grove of the Enchanted Forest."),

@@ -1527,6 +1527,9 @@ public partial class _BalanceHarness : Node
 		// Avalon (her passive): the first fall it healed to full, once it has.
 		if (player.AvalonAtSeconds >= 0f)
 			GD.Print($"HARNESS AVALON m={row.Minute} at={player.AvalonAtSeconds:0.0}s");
+		// The Dose (Paracelsus): how many carriers each generation has had, and how many last carriers it has finished.
+		if (Contagion.DoseInfectedByGeneration[1] > 0)
+			GD.Print($"HARNESS DOSE m={row.Minute} by generation={string.Join("/", Contagion.DoseInfectedByGeneration)} last={Contagion.LastCarriersDosed}");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger
@@ -3706,6 +3709,9 @@ public partial class _BalanceHarness : Node
 		// The Hungry Hedge (Baba Yaga): what it ate, and how near its cap it grew.
 		if (player != null && IsInstanceValid(player) && player.HungryHedgeFed > 0)
 			lines.Add($"  the hungry hedge ate {player.HungryHedgeFed} ({player.HungryHedgeGrowth * 100f:0}% grown)");
+		// The Dose (Paracelsus): carriers by generation, and the last carriers, each sixteen times dosed.
+		if (Contagion.DoseInfectedByGeneration[1] > 0)
+			lines.Add($"  the dose: carriers by generation {string.Join("/", Contagion.DoseInfectedByGeneration)}, {Contagion.LastCarriersDosed} last carriers finished");
 		lines.AddRange(SpellLevelLines());
 		lines.Add("");
 		lines.Add(AscensionSummaryLine());

@@ -383,6 +383,12 @@ public partial class _UiShot : Node
 	// --second-event-test adds a stand-in one on a tool run) --goto=event, --goto=site:N, --win-event and --arrive
 	// mean. --goto=event:N goes to event N's main site whatever this says.
 	private int eventIndex;
+	// --escort-at=F: with --win-event on the Swamp's gibbet cage (--event-index=1), at the shutter's lead Paracelsus is let
+	// out through the real release and stood F of the way from the cage to the ferry landing, the player a stride ahead
+	// (GibbetCageEvent.DebugWalkFrom) - 0.5 for the walk, 1 for the punt taking him. Without it --win-event fills the
+	// winch and the cage comes down.
+	private float? escortAt;
+	private Vector2? escortStand;
 
 	// --teleport=X,Y: moves the player to that world position a third of the way through the warmup,
 	// so ground far from the start can be photographed - the endless terrain (TerrainStreamer) is
@@ -1797,6 +1803,8 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--arrive")
 				arriveEvent = true;
+			else if (arg.StartsWith("--escort-at="))
+				escortAt = float.Parse(arg.Substring("--escort-at=".Length), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg.StartsWith("--event-index="))
 				eventIndex = System.Math.Max(0, int.Parse(arg.Substring("--event-index=".Length)));
 			// --zoom=Z: the run camera's zoom (player.tscn's is 0.85), for a map-like view of a stretch
@@ -3917,6 +3925,9 @@ public partial class _UiShot : Node
 		// The barge rides on the water: stand on the deck level with it, where a player keeping pace would be.
 		else if (IsInstanceValid(wonEvent) && wonEvent is BargeEvent barge)
 			p.GlobalPosition = barge.StandPoint(-60f);
+		// The gibbet's cage, once --escort-at has let him out: a stride ahead of him toward the landing.
+		else if (IsInstanceValid(wonEvent) && wonEvent is GibbetCageEvent && escortStand is Vector2 stand)
+			p.GlobalPosition = stand;
 		else if (IsInstanceValid(wonEvent) && EventSite(wonEvent) is Vector2 site)
 			p.GlobalPosition = site;
 	}
@@ -4029,7 +4040,12 @@ public partial class _UiShot : Node
 			// it - so fill it and let the real path run. The others are won through Succeed directly.
 			var progress = wonEvent.GetType().GetField("progress",
 				System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-			if (progress != null && progress.FieldType == typeof(float))
+			if (wonEvent is GibbetCageEvent gibbet && escortAt is float along)
+			{
+				escortStand = gibbet.DebugWalkFrom(along);
+				GD.Print($"_UiShot: let Paracelsus out, {along * 100f:0}% of the way to the landing at {gibbet.Landing}; the player at {escortStand}");
+			}
+			else if (progress != null && progress.FieldType == typeof(float))
 				progress.SetValue(wonEvent, 0.999f);
 			else
 				typeof(SideEvent).GetMethod("Succeed",

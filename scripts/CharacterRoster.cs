@@ -59,6 +59,9 @@ public static class CharacterRoster
 		// The Last Bridge's chapter wizard (.ai/chapter-wizards.md 4.9): Morgan le Fay, freed from her barge under the
 		// span. Appended, so every saved index keeps its wizard (index 16).
 		"res://CharacterData_Morgan.tres",
+		// The chapter wizards again: Paracelsus, brought out of the gibbet's cage to the ferry landing in the Blighted
+		// Swamp. Appended, so every saved index keeps its wizard (index 17).
+		"res://CharacterData_Paracelsus.tres",
 	};
 
 	/// <summary>

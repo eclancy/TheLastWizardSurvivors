@@ -81,6 +81,8 @@ public static class QuestLog
 		// The witch of the deep wood, kept in her own hut and the hut kept walking its circle for ever (4.1). The Forest
 		// is open on a new save, so this line is on its note from the first run.
 		new Prisoner("baba_yaga", "the one in the walking hut", "Something heavy walks the deep wood, round and round.", "{0}'s hut has knelt at last."),
+		// The physician who could cure the rot, hung in a cage over it to breathe it (4.4).
+		new Prisoner("paracelsus", "the man in the gibbet's cage", "A man is coughing in a cage somewhere over the rot.", "{0} has crossed the water."),
 		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
 		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.

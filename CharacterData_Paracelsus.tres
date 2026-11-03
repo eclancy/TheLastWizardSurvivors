@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_Contagion.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/paracelsus-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/ParacelsusFrames.tres" id="4"]
+
+; Rescued, not a starter: the Blighted Swamp's chapter wizard, freed by bringing him out of the gibbet's cage to
+; the ferry landing (.ai/chapter-wizards.md 4.4). The physician who wrote that the dose makes the poison. His
+; passive is Sola Dosis, the one axis no other wizard owns: every poison tick bites harder (+25% damage over
+; time). He opens on Contagion, Poison alone - the lanterns' spell, found in the same bog.
+[resource]
+script = ExtResource("1")
+Id = "paracelsus"
+Name = "Paracelsus"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "dot_25"
+StartingPassiveName = "Sola Dosis"
+StartingPassiveDescription = "+25% damage over time"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

@@ -17,6 +17,7 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 | Cursed Dungeon | **The Gaoler's key** (`GaolersKeyEvent`) | "He keeps a wizard in one of these cells." | **carry**: kill the Warden, take its key across the map; three hits knock it loose | Tituba |
 | Sunken Cave | **The nine mouths** (`NineMouthsEvent`) | "His shadow followed the water down into the dark." | **listen**: a crescent of rock with nine mouths; her voice comes out of all of them a beat apart, hers first; stand in hers 2 s. A wrong mouth answers with a flight of Gloomwings and hers moves | the Cumaean Sibyl |
 | Blighted Swamp | **Snuff the lanterns** (`BogLanternsEvent`) | "Nothing living lights them." | **explore**: four lanterns spread over the map, each releasing wisps, then the lantern-tender comes and is fought on its own terms (below) | Contagion |
+| Blighted Swamp (second) | **The gibbet's cage** (`GibbetCageEvent`) | "Nothing living lights them." | **escort**: a cage hangs from a gibbet over a pool of rot; hold the winch 2 s and it comes down. He follows your own steps at 75% of your walk to the ferry landing, 1,450-1,750 px off, which the arrow shows; every plain chaser within 250 px goes for him, and the Mired rise across his way every 5 s. 60 health, a bite per touching body every 0.35 s; if he falls the bog takes him back to the cage and the walk starts again | Paracelsus |
 | Mystic Ruins | **The Five-Pointed Seal** (`FivePointedSealEvent`) | "The old wards were broken from the inside." | **solve**: four guardian stones round a star cut in a courtyard floor; a step onto a stone's plate turns it and the two beside it a quarter (a puzzle, six to twelve presses, always solvable); all four facing the seal breaks it | Abe no Seimei |
 | Frozen Waste | **The thaw** (`ThawEvent`) | "A wizard lies under the ice." | **fight here**: damage dealt near the block thaws it, fire counts triple | Väinämöinen |
 | Scorched Sands | **The caravan master** (`CaravanMasterEvent`) | "The dead still walk the trade road." | **catch**: a walker on a fixed road that never turns toward you and escapes at the end | Iron Palisade |
@@ -115,6 +116,7 @@ All five events resolve through `SideEvent.Succeed`, so all five now get the sam
 | The nine mouths | the Cumaean Sibyl (wizard) | a chest | "Her mouth falls quiet - a chest was left in it" |
 | The walking hut | Baba Yaga (wizard) | a chest | "The hut kneels - a chest was left at its door" |
 | The barge | Morgan le Fay (wizard) | a chest | "The barge comes ashore empty - a chest was left in it" |
+| The gibbet's cage | Paracelsus (wizard) | a chest | "The punt has taken him - a chest was left on the landing" |
 
 To photograph any of them: `_UiShot --scene=res://scenes/node_2d_game.tscn --stage=N --win-event`
 (add `--event-chest` for the chest path on a save that lacks the discovery). It sets
@@ -385,6 +387,7 @@ player walked toward the sound. Fixed slots, no allocation.
 | the mouths | written leaves, pale with blue ink, blown in flat and fast on a cold draught, the first on the line to her | each voice of the call (`sfx._SIBYL_VOICES` = `StageHintCue.SibylVoices`) |
 | the hut | birds lifting out of the canopy in his violet light, beating up and away out toward her, near ones and far smaller ones | each fall of its feet and its timbers' creak (`sfx._HUT_FALLS`, `_HUT_CREAK` = `StageHintCue.HutBeats`) |
 | the barge | sea mist rolling in low along the edge, and from the first knock a small barge hung shimmering above the water among it, in wind's ramp | each knock of the hull (`sfx._HULL_KNOCKS` = `StageHintCue.HullKnocks`) |
+| the gibbet | threads of pale vapour, the arcane ramp's two pale stops (never the lanterns' poison green), drifting in slowly and low against the wind, curling and thinning | each tap of the flask and each cough (`sfx._FLASK_TAPS`, `_FLASK_COUGHS` = `StageHintCue.FlaskBeats`) |
 
 `hint_ice_song` was rebuilt to be heard as singing (six notes, A G F G E D, `.ai/audio-manifest.md`).
 
@@ -419,6 +422,7 @@ question. `RegressionChecks.ValidateStageHints` warns on any line that contains 
 | Sunken Cave | `nine_mouths` | sound (the Cumaean Sibyl, unnamed) | `hint_sibyl_voice` (writ) | "Leaves on a cold draught, every one written on." / "A woman's voice from far down, in more places than one." / "The leaves again, written faster now." |
 | Enchanted Forest | `walking_hut` | sound (Baba Yaga's hut, unnamed) | `hint_hut_step` (birds) | "Something heavy walks the deep wood, on two legs." / "The steps again. Too heavy for a man." / "Still walking, round and round." |
 | The Last Bridge | `the_barge` | sound (Morgan le Fay, unnamed) | `hint_hull_knock` (mist) | "A boat on the water below, where no boat could be." / "The boat again, nearer the bridge." / "Its lantern is still lit." |
+| Blighted Swamp | `gibbet_cage` | sound (Paracelsus, unnamed) | `hint_flask_chime` (vapour) | "A man coughing, far out on the bog." / "Glass rings across the water, like a tapped flask." / "The coughing again. Weaker." |
 
 Tituba speaks in her own character: a prisoner taken from Barbados and jailed on an accusation,
 patient (her passive is *Patience*) and nobody's witch - so she asks for help and says she has
@@ -580,6 +584,11 @@ chapter's line in `SideEventDirector` is a list, its original event first:
   +20% to every shove and pull her spells give. Freed by running her walking hut down, the Forest's second event;
   counted at the Throne's gate only. **Never secret**: the Forest is open on a new save, so she is a silhouette
   from the first run.
+- **Paracelsus** (2026-11-03), the Swiss physician who wrote that the dose makes the poison: stocky, heavy-jawed, a
+  wide flat beret, a wine-dark physician's gown, a flask held up to the light in one hand and his sword Azoth planted
+  under the other. Opens on **Contagion**, the lanterns' spell. Passive *Sola Dosis*: +25% to every poison tick.
+  Freed by leading him out of the gibbet's cage to the ferry landing, the Swamp's second event; secret until the
+  Swamp opens, counted at the Throne's gate only.
 
 Both wear **no player pigment**. The four saturated rows are the starters'. The rescued wear what
 they were held in, so the only saturated thing on them is their staff head. Sprites are in
