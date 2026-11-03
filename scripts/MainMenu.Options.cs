@@ -121,6 +121,15 @@ public partial class MainMenu
 			replay.Pressed += () => Prologue.Play(this, Prologue.After.Menu, reel);
 			story.Add(SettingsRows.BuildButtonRow(replay));
 		}
+		// And the freeing of every wizard this save has freed (Freeings, .ai/cutscenes.md). A wizard still held is
+		// never listed: his name is his reward (QuestLog).
+		foreach (string wizardId in Freeings.Watchable(save))
+		{
+			string reel = Freeings.ReelIdFor(wizardId);
+			Button replay = SettingsRows.BuildActionButton($"Freed: {QuestLog.NameOf(wizardId)}", "WatchFreeing_" + wizardId);
+			replay.Pressed += () => Prologue.Play(this, Prologue.After.Menu, reel);
+			story.Add(SettingsRows.BuildButtonRow(replay));
+		}
 		CodexRows.AddSection(right, SettingsRows.Story, null, ink, 1, story);
 
 		// TESTING: the tester's knobs, below everything a player sets. Playtest Mode was "Enable Playtest

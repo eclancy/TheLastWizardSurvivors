@@ -4,8 +4,8 @@ using System.Text.Json;
 using WizardSurvivors.scripts;
 
 /// <summary>
-/// The story-mode prologue: six generated panels (tools/art/prologue.py), each held a few seconds
-/// with its layers drifting, three short lines between them, then on to wherever story mode was
+/// The story-mode prologue: eight generated panels (tools/art/prologue.py), each held a few seconds
+/// with its layers drifting, four short lines between them, then on to wherever story mode was
 /// going. See .ai/prologue.md.
 /// </summary>
 /// <remarks>
@@ -42,6 +42,7 @@ public partial class Prologue : Control
 	public const string ScenePath = "res://scenes/Prologue.tscn";
 	private const string PrologueFolder = "res://assets/bonelight/ui/prologue/";
 	private const string LessonFolder = "res://assets/bonelight/ui/lessons/";
+	private const string FreedFolder = "res://assets/bonelight/ui/freed/";
 	public const string PrologueReelId = "prologue";
 	private const string CharacterSelectionPath = "res://scenes/CharacterSelection.tscn";
 	private const string TitleScreenPath = "res://scenes/TitleScreen.tscn";
@@ -109,10 +110,17 @@ public partial class Prologue : Control
 	/// the layers separate; a figure that moves (he rises, they march, the player walks) is its layer
 	/// moving against the others.
 	/// </summary>
-	public readonly record struct Beat(string Name, float Seconds, string Caption, Vector2 Back, Vector2 Mid, Vector2 Fore);
+	/// <remarks><paramref name="Ground"/>: a panel whose back and fore are shared with others (the freeings: one
+	/// ground, a mid layer per wizard) names them here - <c>&lt;Ground&gt;-back.png</c> and <c>-fore.png</c>; null,
+	/// the panel's own.</remarks>
+	public readonly record struct Beat(string Name, float Seconds, string Caption, Vector2 Back, Vector2 Mid, Vector2 Fore,
+		string Ground = null);
 
-	/// <summary>A run of panels from one art folder: the prologue, or one lesson.</summary>
-	public sealed record Reel(string Id, string Folder, Beat[] Beats);
+	/// <summary>
+	/// A run of panels from one art folder: the prologue, one lesson, or one freeing. <paramref name="WizardId"/>: the
+	/// wizard a freeing shows, whose name its line carries ("{0}'s cell stands open.", QuestLog's freed line).
+	/// </summary>
+	public sealed record Reel(string Id, string Folder, Beat[] Beats, string WizardId = null);
 
 	private static readonly Beat[] PrologueBeats =
 	{
@@ -127,6 +135,14 @@ public partial class Prologue : Control
 		// The one he missed, hiding among the stones while his creatures search (its box animates). The back
 		// and the mid drift as one, so the searchers never slide on the ground they walk.
 		new("missed", 5.4f, "You are the one he missed.", new Vector2(-4f, 0f), new Vector2(-4f, 0f), new Vector2(14f, 0f)),
+		// THE FREEING (.ai/cutscenes.md; Eric, 2026-11-02: "Include a cutscene where the blue robed wizard frees the
+		// four starting wizards."). The Archmage goes back for the four disciplines, on their knees in the dark
+		// wizard's chain, and his light breaks it (its box animates: tools/art/prologue.py, BREAK_BOX); their own
+		// lights come back to them. Back and mid as one again: the four kneel on the ground the back layer lights.
+		new("break", 5.4f, "You went back for them.", new Vector2(-3f, 0f), new Vector2(-3f, 0f), new Vector2(12f, 0f)),
+		// The five of them, standing where the four knelt, each light his own again. No line: the road is next, and
+		// then the character select, where any of the five may walk it.
+		new("five", 4.8f, null, new Vector2(-2f, 0f), new Vector2(-2f, 0f), new Vector2(-14f, 0f)),
 		// The road to all of it.
 		new("road", 4.8f, null, new Vector2(0f, 2f), new Vector2(8f, -10f), new Vector2(0f, 16f)),
 	};
@@ -166,9 +182,24 @@ public partial class Prologue : Control
 		new("rite-seal", 5.6f, "The rest fall silent; their levels feed it.", new Vector2(-3f, 0f), new Vector2(-8f, 0f), new Vector2(-18f, 0f)),
 	};
 
-	/// <summary>Every reel, by id: the prologue and the four lessons (Teachings.All's ids).</summary>
-	public static readonly System.Collections.Generic.IReadOnlyDictionary<string, Reel> Reels =
-		new System.Collections.Generic.Dictionary<string, Reel>(StringComparer.OrdinalIgnoreCase)
+	// THE FREEINGS (.ai/cutscenes.md; tools/art/freed.py; Freeings). One panel each, made once as a template: the
+	// shared ground, and a mid layer per wizard - the Archmage beside the one he has freed, that wizard's own light
+	// coming back to him. Its line is the wizard's freed line from QuestLog.Prisoners, with his name in it.
+	private static Reel FreedReel(string wizardId) =>
+		new(Freeings.ReelIdFor(wizardId), FreedFolder,
+			new[]
+			{
+				new Beat("freed-" + wizardId, 6.0f, QuestLog.PrisonerOf(wizardId)?.FreedLine,
+					new Vector2(2f, 0f), new Vector2(2f, 0f), new Vector2(-14f, 0f), Ground: "freed"),
+			},
+			wizardId);
+
+	/// <summary>Every reel, by id: the prologue, the four lessons (Teachings.All's ids) and the freeings (Freeings).</summary>
+	public static readonly System.Collections.Generic.IReadOnlyDictionary<string, Reel> Reels = BuildReels();
+
+	private static System.Collections.Generic.Dictionary<string, Reel> BuildReels()
+	{
+		var reels = new System.Collections.Generic.Dictionary<string, Reel>(StringComparer.OrdinalIgnoreCase)
 		{
 			[PrologueReelId] = new Reel(PrologueReelId, PrologueFolder, PrologueBeats),
 			["ascension"] = new Reel("ascension", LessonFolder, AscensionBeats),
@@ -176,6 +207,39 @@ public partial class Prologue : Control
 			["conjunctions"] = new Reel("conjunctions", LessonFolder, ConjunctionBeats),
 			["sovereign_rite"] = new Reel("sovereign_rite", LessonFolder, RiteBeats),
 		};
+		foreach (string wizardId in Freeings.WizardIds)
+			reels[Freeings.ReelIdFor(wizardId)] = FreedReel(wizardId);
+		return reels;
+	}
+
+	/// <summary>The path of one of a panel's layers ("back", "mid", "fore" or "anim"): a shared ground's for back and fore.</summary>
+	public static string LayerPathFor(Reel reel, Beat beat, string layer)
+	{
+		string name = beat.Ground != null && (layer == "back" || layer == "fore") ? beat.Ground : beat.Name;
+		return $"{reel.Folder}{name}-{layer}.png";
+	}
+
+	/// <summary>
+	/// How long a reel plays untouched, in seconds: each panel's hold, less the dissolve the next one overlaps it by,
+	/// and the last one's dissolve out. For a probe that waits it out (_PrologueProbe).
+	/// </summary>
+	public static float ReelSeconds(string reelId, float dissolveSeconds = 0.7f)
+	{
+		if (!Reels.TryGetValue(reelId ?? string.Empty, out Reel found) || found.Beats.Length == 0)
+			return 0f;
+		float total = dissolveSeconds;
+		foreach (Beat beat in found.Beats)
+			total += beat.Seconds - dissolveSeconds;
+		return total + dissolveSeconds;
+	}
+
+	/// <summary>A panel's line as it is shown: a freeing's carries its wizard's name.</summary>
+	public static string CaptionFor(Reel reel, Beat beat)
+	{
+		if (string.IsNullOrEmpty(beat.Caption) || string.IsNullOrEmpty(reel?.WizardId))
+			return beat.Caption;
+		return string.Format(beat.Caption, QuestLog.NameOf(reel.WizardId));
+	}
 
 	// The reel this player plays, and its beats; set before _Ready (Play's static, or CreateEmbedded).
 	private Reel reel;
@@ -394,7 +458,7 @@ void fragment() {
 	}
 
 	// --- panels -----------------------------------------------------------------------------
-	private string LayerPath(string beat, string layer) => $"{reel.Folder}{beat}-{layer}.png";
+	private string LayerPath(Beat beat, string layer) => LayerPathFor(reel, beat, layer);
 	private string AnimManifestPath(string beat) => $"{reel.Folder}{beat}-anim.json";
 
 	/// <summary>The panel's animated box, or null: most panels have none. Malformed is an error, not a still.</summary>
@@ -438,11 +502,11 @@ void fragment() {
 			return;
 		foreach (string layer in LayerNames)
 		{
-			string path = LayerPath(Beats[index].Name, layer);
+			string path = LayerPath(Beats[index], layer);
 			if (ResourceLoader.Exists(path))
 				ResourceLoader.LoadThreadedRequest(path, "Texture2D");
 		}
-		string anim = LayerPath(Beats[index].Name, "anim");
+		string anim = LayerPath(Beats[index], "anim");
 		if (ResourceLoader.Exists(anim))
 			ResourceLoader.LoadThreadedRequest(anim, "Texture2D");
 	}
@@ -490,7 +554,7 @@ void fragment() {
 			layers[i] = new TextureRect
 			{
 				Name = LayerNames[i],
-				Texture = TakeLayer(LayerPath(beat.Name, LayerNames[i])),
+				Texture = TakeLayer(LayerPath(beat, LayerNames[i])),
 				ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
 				StretchMode = TextureRect.StretchModeEnum.Scale,
 				TextureFilter = TextureFilterEnum.Nearest,
@@ -501,7 +565,7 @@ void fragment() {
 			root.AddChild(layers[i]);
 		}
 		var view = new PanelView { Root = root, Layers = layers, Material = material };
-		AttachAnim(view, beat.Name);
+		AttachAnim(view, beat);
 		stage.AddChild(root);
 		views[index] = view;
 		ApplyDrift(index);
@@ -509,9 +573,9 @@ void fragment() {
 
 	// The animated box, laid over the mid layer as its child: it drifts with the mid layer, draws over it
 	// and under the fore, and dissolves with the panel through its own copy of the shader.
-	private void AttachAnim(PanelView view, string beat)
+	private void AttachAnim(PanelView view, Beat beat)
 	{
-		AnimSpec spec = LoadAnim(beat);
+		AnimSpec spec = LoadAnim(beat.Name);
 		if (spec == null)
 			return;
 		Texture2D atlas = TakeLayer(LayerPath(beat, "anim"));
@@ -641,13 +705,14 @@ void fragment() {
 	{
 		PanelView view = views[current];
 		Beat beat = Beats[current];
-		if (view == null || string.IsNullOrEmpty(beat.Caption))
+		string line = CaptionFor(reel, beat);
+		if (view == null || string.IsNullOrEmpty(line))
 		{
 			caption.Modulate = new Color(1f, 1f, 1f, 0f);
 			return;
 		}
-		if (caption.Text != beat.Caption)
-			caption.Text = beat.Caption;
+		if (caption.Text != line)
+			caption.Text = line;
 		float e = view.Elapsed;
 		float fadeIn = Mathf.Clamp((e - CaptionInAt) / CaptionFadeSeconds, 0f, 1f);
 		// Gone before the next panel starts to dissolve in, so a line never sits over two pictures.
