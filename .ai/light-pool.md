@@ -28,7 +28,7 @@ Eric's eyes.
 | Sunken Cave (`stage_2`) | `Cave` | **1** | its chapter note already says *"my light the only light"* |
 | Forest, Fields, Heath, Swamp, Ruins, Frozen Waste, Sands, Bridge | | 0 | under open sky; they stay as they are |
 | The Sketchbook (`stage_8`) | `Sketchbook` | 0 | the kids' chapter; never touched (`--light-pool=X` refuses it too) |
-| The Emberdeep, the Court, the Throne | | 0 | proposed, section 7 |
+| The Emberdeep, the Court, the Throne | | 0 | proposed in section 7, and declined: the pool stays in two chapters (Eric, 2026-11-03: *"Keep to two"*) |
 
 `LightPool.Validate` (run by `RegressionChecks.RunAll`) reports an open-air chapter or the Sketchbook given
 any darkness, a darkness outside 0 to 1, a missing shader, and the bodies' floor falling below the room's.
@@ -215,6 +215,11 @@ bodies' pass only over the outer ring (it is 1.0 out to 233 units), half-resolut
 
 ## 7. Proposal: the other indoor chapters
 
+**Decided 2026-11-03: none of them.** Asked whether the Court should have the pool too, or it should stay in
+the Dungeon and the Cave, Eric answered *"Keep to two"*. The table below is kept as the record of what was
+proposed and why, should any of them be asked again; the Emberdeep's lava and the Throne's `DarkVeil` notes
+still hold if they are.
+
 Shot with `--light-pool=1` (the tool flag; it refuses the Sketchbook), 1280x720, four seconds in,
 `pair-propose-*-pc.png` (off on the left):
 
@@ -255,6 +260,6 @@ The shots are in `_shots/light-pool/` beside the repo (not in it).
 5. **The boss reveal** (section 5): a cold pool round an arriving boss, gone after it lands, so the fight
    itself is on a dark floor with the boss above the dark. Whether it should stay with the boss through the
    fight is a design call.
-6. **The proposals** (section 7).
+6. ~~**The proposals** (section 7).~~ Decided 2026-11-03: declined, the pool stays in the Dungeon and the Cave.
 7. **Not seen on the phone.** Everything here was shot on the desktop at the phone's canvas; the Pixel 9's
    own frame cost and how dark it looks on an OLED in daylight are not checked.
