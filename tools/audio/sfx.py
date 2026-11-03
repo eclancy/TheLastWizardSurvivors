@@ -1448,6 +1448,58 @@ def hint_hut_step():
     return S.dc_block(_far(out, low=50.0, high=2200.0, size=0.55, mix=0.3, damp=0.65))
 
 
+# The Scorched Sands' dry tomb (.ai/chapter-wizards.md 4.6). Three slow knocks of stone on stone from under the sand,
+# each later and softer than the last: (onset, gain). StageHintCue.TombKnocks is the same list of onsets - change one,
+# change both.
+_TOMB_KNOCKS = [(0.12, 1.0), (0.98, 0.82), (1.96, 0.66)]
+
+
+def _stone_knock(seed):
+    """One knock of stone on stone, heard through rock: a dull, dense tok - a block's inharmonic modes low down (a
+    stone bar's, 1 : 2.4 : 4.1, under 1 kHz, gone in a tenth of a second, which is what makes it stone and not wood or
+    iron) - over the weight of it (a short low thump), and the grit of the two faces grinding as it lands (a rasp of
+    band noise at 700 Hz, chopped). No ring: the anvil rings; this is dead."""
+    tok = S.partials(212.0, [1.0, 2.42, 4.07], 0.16, amps=[1.0, 0.5, 0.22], decays=[22.0, 30.0, 40.0])
+    dur = 0.3
+    thump = S.env_mul(S.osc("sine", S.sweep(dur, 92.0, 62.0, 0.6), dur), S.decay(S.n_samples(dur), 6.0))
+    gn = S.n_samples(0.14)
+    grit = S.bandpass(S.osc("noise", 0, 0.14, seed=seed), 700.0, 1.6)
+    grit = S.env_mul(S.gate(grit, 46.0, duty=0.55, seed=seed + 1), S.decay(gn, 4.0))
+    return S.layer([(thump, 0.0, 0.9), (tok, 0.0, 0.75), (grit, 0.01, 0.4)])
+
+
+def _sand_hiss(dur, seed):
+    """Sand running, the whole length of the sound: band noise high in the mids, lowpassed so it is a hiss and not
+    steam, low and steady - and swelling a little after each knock, as sand the knock shook loose runs down."""
+    n = S.n_samples(dur)
+    hiss = S.lowpass(S.bandpass(S.osc("noise", 0, dur, seed=seed), 1400.0, 0.8), 2400.0, 0.707)
+    env = [0.16] * n
+    for (t, g) in _TOMB_KNOCKS:
+        i0 = int((t + 0.05) * S.SR)
+        for i in range(i0, min(n, i0 + int(0.9 * S.SR))):
+            u = (i - i0) / float(S.SR)
+            swell = g * 0.42 * min(1.0, u / 0.12) * math.exp(-u / 0.32)
+            env[i] += swell
+    fade = S.adsr(dur, a=0.15, d=0.05, s=1.0, r=0.35)
+    return S.env_mul(S.env_mul(hiss, env), fade)
+
+
+def hint_tomb_knock():
+    """The Scorched Sands: far off in the dunes, a slow knocking, stone on stone.
+
+    Imhotep, sealed in a dry tomb, knocking on the slab from inside. Three knocks, the gaps lengthening (0.86, 0.98 s)
+    and each softer - "slower now; it has not stopped" - under a steady hiss of sand that swells after each knock, as if
+    it shook some loose. Not the anvil (a tired hammer, but RINGING steel at 1.2 kHz and up); not the hut's tread (a low
+    thump in a damp forest): this is dead stone, short and dry, and the room round it is the open desert - a short,
+    bright-free reflection rather than a cave's tail. Top cut at 2.6 kHz, nothing under 60 Hz."""
+    dur = 2.7
+    items = [(_stone_knock(3301 + i), t, g) for i, (t, g) in enumerate(_TOMB_KNOCKS)]
+    items.append((_sand_hiss(dur, 3311), 0.0, 0.3))
+    out = S.pad(S.layer(items), dur)
+    out = S.highpass(out, 60.0)
+    return S.dc_block(_far(out, low=60.0, high=2600.0, size=0.4, mix=0.22, damp=0.7))
+
+
 # ---------------------------------------------------------------------------
 # secrets - the light he missed (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9)
 # ---------------------------------------------------------------------------
@@ -1752,6 +1804,7 @@ REGISTRY += [
     ("hint_anvil",          "hint",   -10.0, hint_anvil,          False),
     ("hint_sibyl_voice",    "hint",   -10.0, hint_sibyl_voice,    False),
     ("hint_hut_step",       "hint",   -10.0, hint_hut_step,       False),
+    ("hint_tomb_knock",     "hint",   -10.0, hint_tomb_knock,     False),
     # The nine mouths' call (NineMouthsEvent): nine voices in two seconds, a call every few seconds, only
     # while the player is at the cliff - the once-a-second row. Hers is the louder of the two because it is
     # the one to hear; the eight echoes come a few dB under it and lose more again to the distance.

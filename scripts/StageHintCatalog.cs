@@ -36,6 +36,8 @@ public enum HintCue
 	Writ,
 	/// <summary>Birds lifting out of the canopy on each fall of a great foot (the walking hut).</summary>
 	Birds,
+	/// <summary>A thin stream of sand lifting into the air against the wind, on each knock of stone on stone (the dry tomb).</summary>
+	Sand,
 }
 
 /// <summary>One side event's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
@@ -248,6 +250,22 @@ public static class StageHintCatalog
 				"A caravan bell, somewhere out on the sand.",
 				"The bell again. Something walks the old road.",
 				"The bell is still moving. It does not stop.",
+			},
+		},
+		// Imhotep, sealed in a dry tomb on the Scorched Sands (.ai/chapter-wizards.md 4.6). He is heard knocking - slow,
+		// stone on stone, under the hiss of sand - and on each knock a thin stream of sand lifts into the air on his
+		// side, against the wind. Not named; never said who knocks, or what would open it.
+		new()
+		{
+			SiteId = "tomb_beacons",
+			Voice = HintVoice.Sound,
+			Sound = SfxCatalog.HintTombKnock,
+			Cue = HintCue.Sand,
+			Lines = new[]
+			{
+				"Far off in the dunes, a slow knocking, stone on stone.",
+				"The knocking again, from under the sand.",
+				"Slower now. It has not stopped.",
 			},
 		},
 	};

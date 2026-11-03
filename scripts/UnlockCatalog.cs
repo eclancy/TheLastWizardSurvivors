@@ -312,6 +312,10 @@ public static class UnlockCatalog
 		// the Forest is open on a new save, so she is a silhouette from the first run (chapter-wizards.md section 1).
 		// Counted at the Throne's gate only, as every chapter wizard is.
 		FromEvent("baba_yaga", UnlockKind.Character, "walking_hut", "Kept walking in the Enchanted Forest.", finalGateOnly: true),
+		// Imhotep, sealed in a dry tomb beside the road the water left on the Scorched Sands (4.6), freed by lighting its
+		// three beacons at once. Secret until the Sands open; counted at the Throne's gate only.
+		FromEvent("imhotep", UnlockKind.Character, "tomb_beacons", "Sealed in a dry tomb out on the Scorched Sands.",
+			secretUntilStage: "stage_6", finalGateOnly: true),
 		FromEvent("iron_palisade", UnlockKind.Spell, "caravan_master", "Carried by the caravan master on the Scorched Sands road."),
 		FromEvent("contagion", UnlockKind.Spell, "bog_lanterns", "Kept by whatever tends the lanterns in the Blighted Swamp."),
 		FromEvent("bramble_seed", UnlockKind.Spell, "the_grove", "Grown back in the corrupted grove of the Enchanted Forest."),

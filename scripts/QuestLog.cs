@@ -81,6 +81,9 @@ public static class QuestLog
 		// The witch of the deep wood, kept in her own hut and the hut kept walking its circle for ever (4.1). The Forest
 		// is open on a new save, so this line is on its note from the first run.
 		new Prisoner("baba_yaga", "the one in the walking hut", "Something heavy walks the deep wood, round and round.", "{0}'s hut has knelt at last."),
+		// The builder who could find water in the desert and raise it, sealed in a dry tomb beside the road the water
+		// left (4.6). He is heard knocking under the sand.
+		new Prisoner("imhotep", "the builder in the dry tomb", "Something knocks, stone on stone, under the sand.", "{0} walks in the sun again."),
 		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
 		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.

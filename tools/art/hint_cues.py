@@ -40,6 +40,9 @@ THE ROW ORDER IS AN API: HintCue's order (scripts/StageHintCatalog.cs).
   birds    the hut        a bird lifting out of the canopy, four beats of its wings (0-3: up, half, down,
                           half), then the same four smaller - one further off (4-7): "birds lift out of
                           the canopy toward her" on each fall of the hut's feet
+  sand     the tomb       a thin stream of sand lifting into the air, a ribbon at its foot breaking into grains
+                          as it rises, the grains running up it (0-3), then the same thinner and fainter (4-7) -
+                          "a thin stream of sand lifts into the air from his side, against the wind"
 
 Each wears its event's far-tell colour (SideEvent.FarTellColor) as its body, so the cue is the
 colour of the light the player will find: wind's ramp for the grove's lichen grey-green, arcane
@@ -99,6 +102,11 @@ def ramp_of(name):
         # the horse skull on its gable. Birds put up by its tread, seen against his light.
         a = bl.ELEMENTS["arcane"]
         return (a[1], a[2], a[3], a[0])
+    if name == "sand":
+        # Sand, so the earth ramp's pale stops - the grains lit, never his violet: the far tell's colour is the light
+        # under them (StageHintCue's glow, the tomb's TellColor), and violet grains would read as a spell, not sand.
+        e = bl.ELEMENTS["earth"]
+        return (e[1], e[2], e[3], e[0])
     if name == "writ":
         # The nine mouths' far tell is the water ramp's blue (NineMouthsEvent.TellColor): the drowned dark.
         # From the ramp's PALE end, a stop up from the others: paper in a cold light, with the ramp's dark
@@ -506,6 +514,30 @@ def bird(frame):
     return sampled(inside), set()
 
 
+def sand(frame):
+    """A thin stream of sand lifting off the ground: a ribbon two pixels wide at its foot that bends as it rises and
+    breaks into grains toward the top, the gaps between them moving up a pixel a frame so the grains run up it
+    (frames 0-3). Frames 4-7 are the same stream thinner and more broken: one further off, or the last of one."""
+    k = frame % 4
+    thin = frame >= 4
+    mask = set()
+    for y in range(2, 15):
+        u = (14 - y) / 12.0                         # 0 at the foot, 1 at the top
+        x = 8.0 + 1.7 * math.sin(y * 0.62 + 0.9) - 1.2 * u
+        broken = u > (0.25 if thin else 0.45)
+        if broken and (y + k) % 3 == 0:
+            continue
+        if thin and (y + k) % 4 == 1 and u > 0.1:
+            continue
+        mask.add((int(round(x)), y))
+        if not thin and u < 0.55:
+            mask.add((int(round(x)) + 1, y))
+        if not thin and u > 0.6 and (y + k) % 3 == 1:
+            mask.add((int(round(x)) + (1 if y % 2 else -1), y))       # a grain thrown off the stream
+    core = set((x, y) for (x, y) in mask if y >= 12)                  # the foot, where it lifts off: the brightest
+    return mask, core
+
+
 ROWS = [
     ("leaves", [leaf(f) for f in range(8)]),
     ("echo", [echo(d) for d in range(8)]),
@@ -517,6 +549,7 @@ ROWS = [
     ("sparks", [spark(f) for f in range(8)]),
     ("writ", [writ(f) for f in range(8)]),
     ("birds", [bird(f) for f in range(8)]),
+    ("sand", [sand(f) for f in range(8)]),
 ]
 
 

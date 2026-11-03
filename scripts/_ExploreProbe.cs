@@ -39,6 +39,10 @@ using TheOneHeMissed.scripts;
 //      at it and holds just inside its startle radius, so it bolts again and again and the bolts really gain on
 //      him. --lose-hut, once the bar is two fifths full, walks straight away past its lose radius and waits
 //      there, and checks the bar held and the hut calmed and stood; then walks back to it and finishes.
+//      The Sands' dry tomb is KINDLED, walked at the player's own walking speed from beacon to beacon, never teleported:
+//      the probe goes to the nearest cold one, stands in its reach until it catches, and on to the next, so the 25 s
+//      clock is run against a real walk. --let-beacon-die, once the first has caught, stands off at the tomb (outside
+//      every reach) until the wind puts it out, checks it went cold, and then lights all three.
 // TWO EVENTS IN A CHAPTER (P2, .ai/chapter-wizards.md 6.3). On a chapter whose list holds more than one - or
 // with --second-event-test[=STAGE], which adds a stand-in second event on this tool run only
 // (SecondEventStandIn) - every placement check runs for every event, each pair of main sites must be at least
@@ -78,6 +82,11 @@ public partial class _ExploreProbe : Node
 	private bool wayfinderFirst;
 	// --lose-hut: at the walking hut, walk away from it part-way through and come back (see the header).
 	private bool loseHut;
+	// --let-beacon-die: at the dry tomb, let the first beacon burn out before lighting the three (see the header).
+	private bool letBeaconDie;
+	private int beaconPhase;
+	private float beaconWentOutAt = -1f;
+	private bool beaconWentCold;
 	private int lostPhase;
 	private float lostClock;
 	private float progressOutside = -1f;
@@ -135,6 +144,7 @@ public partial class _ExploreProbe : Node
 			else if (arg == "--wrong-mouth") wrongMouth = true;
 			else if (arg == "--wayfinder-first") wayfinderFirst = true;
 			else if (arg == "--lose-hut") loseHut = true;
+			else if (arg == "--let-beacon-die") letBeaconDie = true;
 		}
 		ProcessMode = ProcessModeEnum.Always;
 		SaveManager.WritesDisabled = true;
@@ -702,6 +712,24 @@ public partial class _ExploreProbe : Node
 						$"calmed {ran.TimesCalmed} time(s)");
 				}
 			}
+			if (e is TombBeaconsEvent tomb)
+			{
+				float spread = float.MaxValue;
+				for (int i = 0; i < TombBeaconsEvent.BeaconCount; i++)
+					for (int j = i + 1; j < TombBeaconsEvent.BeaconCount; j++)
+						spread = Mathf.Min(spread, tomb.BeaconAt(i).DistanceTo(tomb.BeaconAt(j)));
+				Check("the beacons stand about 700 px apart round the tomb", spread >= TombBeaconsEvent.BeaconSpacing - 120f,
+					$"nearest pair {spread:0} px");
+				Check("all three burned together and the tomb opened", tomb.IsOpening && tomb.IsWon,
+					$"{tomb.TimesLit} kindled, {tomb.TimesWentOut} put out by the wind, {tomb.DeadDrawn} of the dead drawn to the light");
+				if (letBeaconDie)
+				{
+					Check("a beacon left burning went out on the wind, and went cold", beaconWentCold && tomb.TimesWentOut >= 1,
+						$"out at {beaconWentOutAt:0.0}s after arriving");
+					Check("and it was lit again with the other two", tomb.TimesLit >= TombBeaconsEvent.BeaconCount + 1,
+						$"{tomb.TimesLit} kindled in all");
+				}
+			}
 			if (e is FivePointedSealEvent seal)
 			{
 				Check("every stone faces the seal", seal.Aligned == FivePointedSealEvent.StoneCount, $"{seal.Steps} presses");
@@ -828,6 +856,9 @@ public partial class _ExploreProbe : Node
 		// The walking hut: hunted at his own walk (HuntStep), and stood still while it kneels.
 		if (e is WalkingHutEvent hunt && hunt.IsFound)
 			target = hunt.IsTired ? player.GlobalPosition : HuntStep(hunt, delta);
+		// The dry tomb: kindled at his own walk (KindleStep), and stood still while it opens.
+		if (e is TombBeaconsEvent beacons && beacons.IsFound)
+			target = beacons.IsOpening ? player.GlobalPosition : KindleStep(beacons, delta);
 		if (target == null)
 		{
 			float best = float.MaxValue;
@@ -909,6 +940,49 @@ public partial class _ExploreProbe : Node
 		}
 		const float Want = WalkingHutEvent.StartleRadius - 40f;
 		return d > Want ? me + toHut / d * Mathf.Min(step, d - Want) : me;
+	}
+
+	// One step of the kindling, at the player's own walking speed: to the nearest cold beacon, into its reach, and held
+	// there until it catches. With --let-beacon-die, once the first has caught: to the tomb (404 px from every beacon,
+	// outside every reach) until the wind has put that one out, and then on.
+	private Vector2 KindleStep(TombBeaconsEvent tomb, float delta)
+	{
+		Vector2 me = player.GlobalPosition;
+		float step = player.WalkingSpeed * delta;
+		if (letBeaconDie && beaconPhase == 0 && tomb.TimesLit >= 1)
+			beaconPhase = 1;
+		if (beaconPhase == 1)
+		{
+			if (tomb.TimesWentOut >= 1)
+			{
+				beaconWentOutAt = completeClock;
+				beaconWentCold = tomb.LitCount == 0;
+				GD.Print($"EXPLOREPROBE a beacon went out on the wind {completeClock:0.0}s after arriving; lit now: {tomb.LitCount}; lighting all three");
+				beaconPhase = 2;
+			}
+			else
+				return me.MoveToward(tomb.TombPosition, step);
+		}
+		int best = -1;
+		float bestD = float.MaxValue;
+		for (int i = 0; i < TombBeaconsEvent.BeaconCount; i++)
+		{
+			if (tomb.IsLit(i))
+				continue;
+			float d = tomb.BeaconAt(i).DistanceTo(me);
+			if (d < bestD)
+			{
+				bestD = d;
+				best = i;
+			}
+		}
+		if (best < 0)
+			return me;
+		// Into the reach on the side he comes from, short of the pillar, and stand there.
+		Vector2 foot = tomb.BeaconAt(best);
+		Vector2 from = (me - foot).LengthSquared() > 1f ? (me - foot).Normalized() : Vector2.Down;
+		Vector2 stand = foot + from * (TombBeaconsEvent.KindleRadius * 0.55f);
+		return me.MoveToward(stand, step);
 	}
 
 	// Everything the streamer furnished within radius of a point: children of the chunks' prop
