@@ -237,7 +237,11 @@ public static class AchievementDefinitions
 	/// </summary>
 	public const string TakerTakenId = "the_taker_taken";
 
-	/// <summary>The deed that frees Merlin: every chapter's boss beaten on Default or harder (.ai/merlin.md).</summary>
+	/// <summary>
+	/// The deed that frees Merlin, The King-Maker: every chapter's boss beaten on Default or harder (.ai/merlin.md).
+	/// The id keeps the deed's first name, "The One He Missed", so a save that has done it keeps it; that name is the
+	/// player's now, and the game's (.ai/world-and-tone.md), never a deed's.
+	/// </summary>
 	public const string OneHeMissedId = "the_one_he_missed";
 
 	/// <summary>The Throne's boss, the dark wizard (BossCatalog).</summary>
@@ -473,15 +477,17 @@ public static class AchievementDefinitions
 			Measure = c => ChaptersClearedAt(c, GlobalStatsManager.PresetRankHardcore),
 			Target = CampaignChapterCount,
 		},
-		// THE ONE HE MISSED (.ai/merlin.md). Eric, 2026-11-02: the blue-robed wizard "should be his own character.
-		// maybe unlocked when finishing the full campaign on medium" - every chapter's boss beaten on Default or
-		// harder, counted as the Taker Taken is, so it too waits for the whole campaign to exist. A Feat, listed from
-		// the first run: he is the title screen's figure, never a secret, and his card shows his shape and this line
-		// from the start. He is the one the dark wizard missed, so he is outside the campaign gate (UnlockCatalog).
+		// THE KING-MAKER (.ai/merlin.md), for Merlin, who made a king. Eric, 2026-11-02: "maybe unlocked when finishing
+		// the full campaign on medium" - every chapter's boss beaten on Default or harder, counted as the Taker Taken
+		// is, so it too waits for the whole campaign to exist. Named "The One He Missed" while he was drawn as the
+		// title figure; that figure is the player and the game is named for him (Eric, 2026-11-02: "The blue robed
+		// wizard should represent player"), so the deed has a name of Merlin's own and keeps its id. A Feat, listed
+		// from the first run: never a secret, his card shows his shape and this line from the start. He was never
+		// held, so he is outside the campaign gate (UnlockCatalog).
 		// Pays him and his own spell, Orb of Ages, which no other wizard is ever offered (UnlockDefinition.ExclusiveTo).
 		new()
 		{
-			Id = OneHeMissedId, DisplayName = "The One He Missed",
+			Id = OneHeMissedId, DisplayName = "The King-Maker",
 			Description = "Defeat every chapter's boss on Default or harder.",
 			RewardText = "Unlocks Merlin and Orb of Ages",
 			CharacterUnlockId = "merlin",

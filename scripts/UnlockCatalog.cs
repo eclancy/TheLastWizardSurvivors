@@ -332,9 +332,9 @@ public static class UnlockCatalog
 		FromAchievementCharacter("dark_wizard", AchievementDefinitions.TakerTakenId,
 			"Something waits for whoever walks the whole road the hard way.",
 			outsideCampaignGate: true, sealedUntilFreed: true),
-		// THE ONE HE MISSED (.ai/merlin.md). Merlin, the title screen's blue-robed figure - the one the dark wizard
-		// missed, who hid while the others were taken (the prologue) - playable once every chapter's boss has fallen
-		// on Default or harder. Outside the campaign gate, as Laelaps is: he was never imprisoned, and the gates count
+		// THE KING-MAKER (.ai/merlin.md). Merlin, the old enchanter, in a look of his own - not the title screen's
+		// blue-robed figure, who is the player, the one the dark wizard missed - playable once every chapter's boss
+		// has fallen on Default or harder. Outside the campaign gate, as Laelaps is: he was never imprisoned, and the gates count
 		// the imprisoned. Not secret: his shape and this line are on the character select from the first run.
 		FromAchievementCharacter("merlin", AchievementDefinitions.OneHeMissedId,
 			"Defeat every chapter's boss on Default or harder.",

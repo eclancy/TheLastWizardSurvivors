@@ -1191,7 +1191,7 @@ whether the end lands. Eyes, on both devices.
 | 8 | the Muster | 17 levels and two relic chests, moved by measurement |
 | 9 | the procession | the road's wardens in pairs, then him |
 | 10 | him | unnamed on screen; his light out, the motes going home, the freed wizards standing, credits |
-| 11 | Nimue (was Merlin) | yes, as its own build after the Throne: the one wizard he kept, revealed by the Oubliette (now D7, in the Dungeon), freed by the Throne, outside the gate as Laelaps is. **Nimue, the Lady of the Lake**, keeping Spiritual Weapon's sword; her Apotheosis is **Excalibur**, the final form of the Sword form (`VariantId = "spiritual_weapon_sword"`), verb **sever** - the cut goes on through everything in a line behind its target and cuts bolts along the whole line (Eric, 2026-11-02; not built). The name Merlin moved to the blue-robed title wizard on 2026-11-02, with the verb *rewind* (`.ai/merlin.md`) |
+| 11 | Nimue (was Merlin) | yes, as its own build after the Throne: the one wizard he kept, revealed by the Oubliette (now D7, in the Dungeon), freed by the Throne, outside the gate as Laelaps is. **Nimue, the Lady of the Lake**, keeping Spiritual Weapon's sword; her Apotheosis is **Excalibur**, the final form of the Sword form (`VariantId = "spiritual_weapon_sword"`), verb **sever** - the cut goes on through everything in a line behind its target and cuts bolts along the whole line (Eric, 2026-11-02; not built). The name Merlin moved to a wizard earned by the whole road on 2026-11-02, with the verb *rewind* (`.ai/merlin.md`) |
 | 12 | Boss Rush | unchanged (1.8 says what that takes) |
 | 13 | variety first | the Ruins' walls and the Cave's caverns |
 

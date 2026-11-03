@@ -3447,8 +3447,9 @@ public static partial class RegressionChecks
 	}
 
 	// THE WHOLE ROAD, TWICE (.ai/dark-wizard-playable.md, .ai/merlin.md). Eric, 2026-11-02: the Dark Wizard "should
-	// unlock after defeating all stages on hard mode", and Merlin, the blue-robed wizard, "when finishing the full
-	// campaign on medium". Both read each chapter's hardest clear (SaveData.MaxDifficultyCleared, written by
+	// unlock after defeating all stages on hard mode", and Merlin (asked for that day as the blue-robed wizard, who
+	// is the player's figure and keeps it; Merlin has a look of his own) "when finishing the full campaign on
+	// medium". Both read each chapter's hardest clear (SaveData.MaxDifficultyCleared, written by
 	// AchievementManager.ApplyRunAchievements) over every chapter of the campaign, built or not. Held on paper,
 	// with runs ended on sample saves - a boss victory in every chapter: every one on Default frees Merlin and not
 	// the Dark Wizard; every one on Hardcore frees both; one chapter short frees neither; one chapter on Default and
@@ -3587,14 +3588,14 @@ public static partial class RegressionChecks
 		// Merlin: never secret, never sealed, and Orb of Ages his alone.
 		UnlockDefinition merlinUnlock = UnlockCatalog.GetCharacter(merlin);
 		if (merlinUnlock != null && (merlinUnlock.IsSecret || merlinUnlock.SealedUntilFreed))
-			warnings.Add("The One He Missed: Merlin is secret or sealed; he is the title screen's figure, shown locked from the first run.");
+			warnings.Add("The King-Maker: Merlin is secret or sealed; he was never held, and is shown locked from the first run.");
 		CharacterData merlinData = CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(merlin, StringComparison.OrdinalIgnoreCase));
 		if (merlinData?.StartingSpellResource?.Id?.Equals(OrbOfAges.SpellId, StringComparison.OrdinalIgnoreCase) != true)
-			warnings.Add("The One He Missed: Merlin does not open on Orb of Ages.");
+			warnings.Add("The King-Maker: Merlin does not open on Orb of Ages.");
 		if (AchievementDefinitions.GetById(AchievementDefinitions.OneHeMissedId)?.SpellUnlockId != OrbOfAges.SpellId)
-			warnings.Add("The One He Missed: the deed does not pay Orb of Ages with him.");
+			warnings.Add("The King-Maker: the deed does not pay Orb of Ages with him.");
 		if (UnlockCatalog.GrimoireSpellIds.Contains(OrbOfAges.SpellId, StringComparer.OrdinalIgnoreCase))
-			warnings.Add("The One He Missed: The Grimoire Restored counts Orb of Ages, which would put the collection behind the whole road.");
+			warnings.Add("The King-Maker: The Grimoire Restored counts Orb of Ages, which would put the collection behind the whole road.");
 		foreach (CharacterData who in CharacterRoster.GetAll())
 		{
 			bool his = who.Id.Equals(merlin, StringComparison.OrdinalIgnoreCase);

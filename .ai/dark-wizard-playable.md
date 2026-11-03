@@ -26,7 +26,8 @@ the field existed and nothing wrote it, so no save holds a stale value). The dee
 `GlobalStatsManager.ChaptersClearedAt(save, Hardcore)` out of every chapter in `StageCatalog.Campaign`, **built or
 not**, so it waits for the whole castle; the Sketchbook is outside the campaign and never counted. Card: *"Defeat
 every chapter's boss on Hardcore."* Still a Road deed of the Throne, listed once the Throne is playable. The same
-record pays Merlin at Default (`.ai/merlin.md`). `RegressionChecks.ValidateTakerTaken` holds both rules on sample
+record pays Merlin, the old enchanter, at Default (`.ai/merlin.md`; not the blue-robed title figure, who is the
+player). `RegressionChecks.ValidateTakerTaken` holds both rules on sample
 saves. What follows is the first build's reading, kept for the record.
 
 "The whole game on hard mode" was first read as **the dark wizard defeated in the Throne with the Difficulty set

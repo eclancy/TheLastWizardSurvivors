@@ -296,7 +296,8 @@ Elim's "it's wizarding time" drawing: **not in Eric's email** - the only image E
 ## 3d. Later on 2026-11-02: wizards, the Sketchbook, the castle switched on
 
 - **Names.** The blue-robed title wizard is **Merlin** (verb *rewind*, the Orb of Ages, unlocked by the
-  campaign cleared at Default); the Throne's kept wizard is now **Nimue**, the Lady of the Lake, keeping
+  campaign cleared at Default; later that day Eric took it back - the blue-robed figure is the player and Merlin
+  has a look of his own, `.ai/merlin.md` section 5); the Throne's kept wizard is now **Nimue**, the Lady of the Lake, keeping
   Spiritual Weapon's sword, Apotheosis **Excalibur** on the Sword form, verb **sever** (Eric). Nimue is
   docs only until built.
 - **The Sketchbook holds nothing to earn** (Eric: "no unlocks or any achievements. move that to other

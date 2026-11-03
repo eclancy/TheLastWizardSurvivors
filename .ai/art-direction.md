@@ -229,6 +229,8 @@ Materials — `hi / lit / base / shade / deep`:
 | Robe violet (caster) | `#6E6296` | `#4E4470` | `#342C4C` | `#221C33` | `#14101F` |
 | Arcane cyan | `#DCF4FF` | `#6AB8E8` | `#2A6A9A` | `#17415E` | `#0B2436` |
 | Sand cloth (Scorched Sands only) | `#D8CCA4` | `#A88C62` | `#7C6040` | `#54362E` | `#341E24` |
+| Ivory (Merlin, the Crystal Cave) | `#F2ECD8` | `#DCCDAC` | `#B4A07E` | `#74605A` | `#40323A` |
+| Russet (Merlin, the Wood) | `#DA9670` | `#B4643E` | `#84402A` | `#52222E` | `#2C1220` |
 
 **Sand cloth** was added 2026-10-24 for the Scorched Sands' cast (`.ai/bestiary.md` section 10, item
 6, Eric's call): desert wrappings in grey-green `linen` only read sun-bleached under the per-stage
@@ -237,6 +239,14 @@ defined in `tools/art/cast_sands.py` rather than in `bonelight.py`. Its base and
 shade and base do (lightness 0.37 / 0.52), so a wrapped body is no brighter than an armoured one,
 and its shade rotates 19 degrees toward indigo with its chroma held. Its lower stops are also that
 chapter's wood (the Swollen Cask), the one warm brown the contract holds.
+
+**Ivory and russet** were added 2026-11-02 for Merlin's own look (`.ai/merlin.md` section 5), when the blue-robed
+title figure he had been drawn from became the player's alone: undyed warm wool and madder-dyed wool, defined in
+`tools/art/merlin_concepts.py` (registered with `matte`) rather than in `bonelight.py`, as sand cloth is. Ivory is
+the shipped look's mantle: warmer than bone (cold, every beard), paler than sand cloth, L\* 93 / 83 / 67 / 42 / 23,
+its shade turning toward indigo through the warm side (hue 37 -> 13 -> 325) at 0.22 saturation. Russet is the
+alternate look's robe: redder and deeper than flesh, darker and browner than ember. Neither is player pigment and
+nobody else wears either.
 
 That is **fifty-five material colours plus five lights** (the soft rim, 2026-10-28, is the
 fifth), against the 935 the current art carries. It is a budget, not a suggestion: a new material

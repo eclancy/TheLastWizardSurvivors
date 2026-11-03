@@ -220,7 +220,7 @@ public static class ApotheosisCatalog
 				"Take: every kill on a lane is another light coming home. Stand where they fall.",
 				new Color(0.78f, 0.62f, 1.0f), NoVisualScale),
 		},
-		// Merlin, the one the dark wizard missed (.ai/merlin.md), who lives his life backwards in the old stories.
+		// Merlin, the old enchanter (.ai/merlin.md), who lives his life backwards in the old stories.
 		// "Rewind" was held for him (.ai/decisions/2026-10-10-apotheosis.md, .ai/chapter-wizards.md): each time the orb
 		// finishes its star it flies it again backwards and the ward's hour turns back, so his circle stands for as long
 		// as he holds it (OrbOfAges.OnceAndFutureId). Protection as a place that does not fall, not a heal. Light, the

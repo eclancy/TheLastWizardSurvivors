@@ -9,13 +9,13 @@ Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Last Bridge and 
 two: Nostradamus, and Ma Liang since the Sketchbook was emptied - 4.8). Tituba (Cursed Dungeon),
 Väinämöinen (Frozen Waste), Laelaps (Broken Circle) and Nimue, the Lady of the Lake (the Throne,
 `.ai/endgame-castle.md` 10.1 item 11) are spoken for; the Throne's kept wizard was named Merlin until
-2026-11-02, when the name moved to the blue-robed title wizard (`.ai/merlin.md`). John Dee comes from
+2026-11-02, when the name moved to a wizard earned by the whole road (`.ai/merlin.md`). John Dee comes from
 chests, not a place. **The Sketchbook holds nothing to earn** (Eric, 2026-11-02: "the sketchbook should
 not have any unlocks or any achievements. move that to other maps";
 `RegressionChecks.ValidateSketchbookHoldsNothing`). The dark wizard himself is playable too, held nowhere
 and earned by beating every chapter's boss on Hardcore: `.ai/dark-wizard-playable.md` (he claims the verb
-**take**). Merlin, the one he missed, is earned by beating every chapter's boss on Default or harder (he
-claims **rewind**).
+**take**). Merlin, the old enchanter, is earned by beating every chapter's boss on Default or harder (he
+claims **rewind**). He is not the one he missed: that is the player, the blue-robed title figure.
 
 Read first: `.ai/world-and-tone.md` (why the rescued are named people), `.ai/side-events.md` (the
 five events, hints, secret wizards), `.ai/achievements-and-secrets.md` (every unlock is one
@@ -35,7 +35,7 @@ the Court on 2026-11-02, when the Sketchbook was emptied of every unlock (4.8). 
 approved": questions 2, 3, 5 and 6 as recommended - the new wizards count only at the Throne's gate, a
 second side event where a chapter already has one, Baba Yaga and Medea drawn serious, Nostradamus takes
 Starfall and the Throne's kept wizard the sword - Nimue since 2026-11-02 (Eric: "i like that the lady of
-the lake keeps spiritual weapon"); the Throne's kept wizard was named Merlin until 2026-11-02, when the name moved to the blue-robed title wizard (`.ai/merlin.md`).
+the lake keeps spiritual weapon"); the Throne's kept wizard was named Merlin until 2026-11-02, when the name moved to the wizard earned by the whole road (`.ai/merlin.md`).
 
 The questions as they were put:
 
@@ -55,7 +55,7 @@ The questions as they were put:
 | rule | where | what it means here |
 |---|---|---|
 | Starters are disciplines; the rescued are named historic or legendary magic-workers | `world-and-tone.md` | every proposal is a person |
-| Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect, banish** (Seimei), **take** (the Dark Wizard), **rewind** (Merlin, the blue-robed title wizard, `.ai/merlin.md`, 2026-11-02); reserved for Nimue: **sever** (Excalibur, decided by Eric 2026-11-02). Unclaimed in the ADR: contagion, displace |
+| Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect, banish** (Seimei), **take** (the Dark Wizard), **rewind** (Merlin, earned by the whole road, `.ai/merlin.md`, 2026-11-02); reserved for Nimue: **sever** (Excalibur, decided by Eric 2026-11-02). Unclaimed in the ADR: contagion, displace |
 | No path on his spell trades his element away | `ValidateApotheosisCatalog` | since 2026-11-02 the form names no path - the spell at max level, ascended down any branch, never combined - so every level 4 and level 8 option on a wizard's spell leads to it, and none may trade away the element the form deepens (it would come back as a third). The old rule, a required path that never leads away (`CheckRequiredPath`), went with the named paths |
 | A secret never pays a wizard | `achievements-and-secrets.md` 6.2 | every rescue below is a **side event** (a Road deed), never a secret |
 | One side event per chapter | `SideEventDirector.ForStage` | question 3, and plumbing piece P2 |
@@ -85,7 +85,7 @@ The questions as they were put:
 Four open on a spell found in their own chapter (Thorned Vine, Contagion, Kindled Ward, Fireball), so
 finding the spell and freeing its wizard tell one story. Under the strict rule as it stands, only
 **Paracelsus, Seimei, Wayland** and one Arcane wizard can be built. Nimue (the Throne's kept wizard, Merlin
-until 2026-11-02) keeps Spiritual Weapon's sword; Merlin, the blue-robed title wizard, opens on a spell of his
+until 2026-11-02) keeps Spiritual Weapon's sword; Merlin, earned by the whole road, opens on a spell of his
 own (Orb of Ages, `.ai/merlin.md`).
 
 Ten new verbs, none taken: feed, turn, echo, distil, banish, blind, temper, displace, double, foresee.
