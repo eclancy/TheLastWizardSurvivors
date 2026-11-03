@@ -98,7 +98,7 @@ What the move costs, and how each cost is met:
 | 11 | **Cursed Dungeon** (moved from 5) | `stage_1` | **the Gaoler** | sidestep a lane, in a maze | the Constable | the Court | Shadow Bolt; its key event frees Tituba |
 | 12 | **The Court** | `stage_12` | **the Seneschal** | **pursue** | the Gaoler | (half the Throne's gate) | 400 Arcane Energy |
 | 13 | **The Throne** | `stage_13` | **the procession, then him** | **take it back** | **the Seneschal beaten and every wizard freed** (1.6) | - | the ending; 1,000 Arcane Energy; Merlin, as a later build (decision 11) |
-| - | The Sketchbook | `stage_8` | Wizard Dude | leave the wedge | always, outside the order | - | 400 Arcane Energy |
+| - | The Sketchbook | `stage_8` | Elim | leave the wedge | always, outside the order | - | nothing (2026-11-02: no unlocks or achievements) |
 
 Thirteen chapters: eight on the road before the gate, the gate, and the castle's four. (The first
 draft's ids `stage_12` to `stage_14` for the Undercroft, Court and Throne were never built; the Court

@@ -862,8 +862,11 @@ The gate chapter. Whatever is decided in 2.5, a secret here pays nothing the gat
 
 ### 8.11 The Sketchbook (`stage_8`)
 
-Unchanged from `.ai/stage-secrets.md` 6.9 (the Dog's Find, Colour It In, the Kids' Page), under the
-kids' art rules: nothing of theirs altered, nothing new under their name, page marks only.
+**None, and no achievements at all** (Eric, 2026-11-02: "the sketchbook should not have any unlocks or
+any achievements. move that to other maps"). Its clear, *Best Drawing* (400 Arcane Energy), was removed;
+the three secrets of `.ai/stage-secrets.md` 6.9 are shelved, never built; Ma Liang, the wizard planned
+for it, moved to the Court (`.ai/chapter-wizards.md` 4.8). Elim's win purse (`ArcaneVictoryBonus`)
+stays, as every boss's does. `RegressionChecks.ValidateSketchbookHoldsNothing` holds it there.
 
 ### 8.12 The castle (`.ai/endgame-castle.md`)
 

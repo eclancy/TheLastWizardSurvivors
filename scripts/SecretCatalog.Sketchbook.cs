@@ -5,13 +5,12 @@ namespace WizardSurvivors.scripts;
 public static partial class SecretCatalog
 {
 	/// <summary>
-	/// The Sketchbook (stage_8): .ai/stage-secrets.md 6.9, unchanged by .ai/achievements-and-secrets.md
-	/// 8.11. Outside the campaign and the fiction: page marks only, and the kids' art is never altered,
-	/// extended or given derived frames - ValidateSecretCatalog holds the first rule, CLAUDE.md the second.
+	/// The Sketchbook (stage_8) holds no secrets (Eric, 2026-11-02: "the sketchbook should not have any
+	/// unlocks or any achievements"). Every secret is a deed, so this stays empty;
+	/// RegressionChecks.ValidateSketchbookHoldsNothing reports one placed here.
 	/// </summary>
 	/// <remarks>
-	/// To build: K1 the Dog's Find (follow the dog), K2 Colour It In (circle). K3 the Kids' Page is a
-	/// reserved slot for something the kids draw, if and when they want to.
+	/// .ai/stage-secrets.md 6.9 keeps the shelved plan (the Dog's Find, Colour It In, the Kids' Page).
 	/// </remarks>
 	private static class Sketchbook
 	{

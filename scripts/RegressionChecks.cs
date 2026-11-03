@@ -42,6 +42,7 @@ public static partial class RegressionChecks
 		ValidateFear(warnings);
 		ValidateSecretCatalog(warnings);
 		ValidateStageRewards(warnings);
+		ValidateSketchbookHoldsNothing(warnings);
 		ValidateWorldMap(warnings);
 		ValidateBossRush(warnings);
 		ValidateHazardPlacement(warnings);
@@ -551,8 +552,8 @@ public static partial class RegressionChecks
 			if (secret.MetaReward == SecretMetaReward.ArcaneEnergy
 				&& (secret.MetaAmount <= 0 || secret.MetaAmount > SecretCatalog.MaxKeepsakeArcane))
 				warnings.Add($"Secrets: '{secret.Id}' pays {secret.MetaAmount} Arcane Energy; a keepsake pays 1 to {SecretCatalog.MaxKeepsakeArcane}.");
-			if (secret.StageId.Equals("stage_8", StringComparison.OrdinalIgnoreCase) && secret.MetaReward != SecretMetaReward.PageOnly)
-				warnings.Add($"Secrets: '{secret.Id}' is the Sketchbook's and pays {secret.MetaReward}; its secrets pay the page only.");
+			if (secret.StageId.Equals(SketchbookStageId, StringComparison.OrdinalIgnoreCase))
+				warnings.Add($"Secrets: '{secret.Id}' is in the Sketchbook, which holds no secrets (every secret is a deed; ValidateSketchbookHoldsNothing).");
 		}
 		foreach (var (stageId, count) in keepsakesByStage)
 			if (count > 1)
@@ -569,6 +570,31 @@ public static partial class RegressionChecks
 	// Then the prose net: an unlock whose hint (or whose deed's description) NAMES a chapter must be on
 	// that chapter's card. That is the check that would catch a new deed tied to a place in words but
 	// not in data - the Coursing without its RevealStageId, say - which every other rule here would miss.
+	private const string SketchbookStageId = "stage_8";
+
+	/// <summary>
+	/// The Sketchbook holds nothing to earn (Eric, 2026-11-02: "the sketchbook should not have any unlocks or
+	/// any achievements. move that to other maps"): no deed of any kind names it or its boss, and its world
+	/// map card is empty - StageRewards reads every source a chapter can pay from (warden, side event, a
+	/// deed done there, secrets), so an empty card means nothing anywhere points at it. Its boss's
+	/// ArcaneVictoryBonus stays: that is every boss's win purse, not an unlock.
+	/// </summary>
+	private static void ValidateSketchbookHoldsNothing(List<string> warnings)
+	{
+		StageDefinition sketchbook = StageCatalog.GetById(SketchbookStageId);
+		BossDefinition boss = sketchbook != null ? BossCatalog.ForStageIndex(sketchbook.Index) : null;
+		foreach (AchievementDefinition deed in AchievementDefinitions.All)
+		{
+			if (deed.StageId.Equals(SketchbookStageId, StringComparison.OrdinalIgnoreCase)
+				|| (boss != null && deed.BossId.Equals(boss.Id, StringComparison.OrdinalIgnoreCase)))
+				warnings.Add($"Sketchbook: the deed '{deed.Id}' is tied to the Sketchbook, which holds no achievements.");
+		}
+		foreach (StageReward reward in StageRewards.ForStage(SketchbookStageId))
+			warnings.Add($"Sketchbook: its card pays {reward}; the Sketchbook holds no unlocks.");
+		if (SideEventDirector.ForStage(SketchbookStageId) != null)
+			warnings.Add("Sketchbook: it has a side event; the Sketchbook holds no unlocks.");
+	}
+
 	private static void ValidateStageRewards(List<string> warnings)
 	{
 		IReadOnlyList<StageReward> all = StageRewards.All;
@@ -655,7 +681,9 @@ public static partial class RegressionChecks
 			if (!seen.Add(reward.ToString()))
 				warnings.Add($"Stage rewards: {reward} is listed twice.");
 		}
-		foreach (StageDefinition stage in StageCatalog.All.Where(s => s.IsPlayable))
+		// The Sketchbook is the one chapter meant to hold nothing (ValidateSketchbookHoldsNothing); the map
+		// card simply has no "What he keeps here" there.
+		foreach (StageDefinition stage in StageCatalog.All.Where(s => s.IsPlayable && !s.Id.Equals(SketchbookStageId, StringComparison.OrdinalIgnoreCase)))
 		{
 			if (!all.Any(r => r.StageId.Equals(stage.Id, StringComparison.OrdinalIgnoreCase)))
 				warnings.Add($"Stage rewards: {stage.DisplayName} holds nothing, so its card has no row - give its boss a deed.");

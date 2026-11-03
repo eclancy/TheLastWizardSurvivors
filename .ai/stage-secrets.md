@@ -668,6 +668,10 @@ fewer, quieter and about who came before.
 
 ### 6.9 The Sketchbook (`stage_8`)
 
+**Shelved, 2026-11-02.** Eric: "the sketchbook should not have any unlocks or any achievements". A secret
+is a deed, so the Sketchbook has none; K1 to K3 below are kept only as the record of what was planned,
+and `RegressionChecks.ValidateSketchbookHoldsNothing` reports any secret placed here.
+
 Outside the campaign and outside the fiction; it has no corruption line because he has never been
 here. Three rules, from `CLAUDE.md` and `art-replacement-manifest.md`, that bind every secret in it:
 

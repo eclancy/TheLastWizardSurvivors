@@ -5,9 +5,13 @@ character theme on each level that is unique to that level."*
 
 **Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1 and the pilot, Abe no Seimei** (section 4.5, "Built"); the other nine are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
-Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Sketchbook, the Last Bridge and the
-Court. Tituba (Cursed Dungeon), Väinämöinen (Frozen Waste), Laelaps (Broken Circle) and Merlin (the
-Throne, `.ai/endgame-castle.md` 10.1 item 11) are spoken for. John Dee comes from chests, not a place.
+Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Last Bridge and the Court (which holds
+two: Nostradamus, and Ma Liang since the Sketchbook was emptied - 4.8). Tituba (Cursed Dungeon),
+Väinämöinen (Frozen Waste), Laelaps (Broken Circle) and Nimue (the Throne, `.ai/endgame-castle.md` 10.1
+item 11; the name Merlin went to the blue-robed title wizard on 2026-11-02) are spoken for. John Dee comes
+from chests, Merlin from the campaign cleared at Default, not a place. **The Sketchbook holds nothing to
+earn** (Eric, 2026-11-02: "the sketchbook should not have any unlocks or any achievements. move that to
+other maps"; `RegressionChecks.ValidateSketchbookHoldsNothing`).
 The dark wizard himself is playable too, held nowhere and earned by beating him in the Throne on Hardcore:
 `.ai/dark-wizard-playable.md` (he claims the verb **take**).
 
@@ -24,7 +28,8 @@ to have mono element spells. Unlockable wizards can have multi-element starting 
 is settled that way: the one-element rule binds only the starters a new save holds; a rescued wizard
 may open on a two-element spell, and may share an element with another wizard when their starting
 spells differ (`ValidateStartingCharacters` is relaxed to match when the first of these is built).
-Question 4: **the Sketchbook's wizard is Ma Liang** (the kids' boss there is now Elim, below). "All else
+Question 4: **the Sketchbook's wizard is Ma Liang** (the kids' boss there is now Elim, below) - moved to
+the Court on 2026-11-02, when the Sketchbook was emptied of every unlock (4.8). "All else
 approved": questions 2, 3, 5 and 6 as recommended - the new wizards count only at the Throne's gate, a
 second side event where a chapter already has one, Baba Yaga and Medea drawn serious, Nostradamus takes
 Starfall and Merlin the sword.
@@ -51,8 +56,8 @@ The questions as they were put:
 | No path on his spell trades his element away | `ValidateApotheosisCatalog` | since 2026-11-02 the form names no path - the spell at max level, ascended down any branch, never combined - so every level 4 and level 8 option on a wizard's spell leads to it, and none may trade away the element the form deepens (it would come back as a third). The old rule, a required path that never leads away (`CheckRequiredPath`), went with the named paths |
 | A secret never pays a wizard | `achievements-and-secrets.md` 6.2 | every rescue below is a **side event** (a Road deed), never a secret |
 | One side event per chapter | `SideEventDirector.ForStage` | question 3, and plumbing piece P2 |
-| A secret wizard is revealed by the chapter whose event frees him | `ValidateSecret` | the Forest and the Sketchbook are open on a new save, so their wizards **cannot be secret**: a silhouette from the first run |
-| The kids' art is never altered or extended, and nothing new goes out under their name | `CLAUDE.md`, `stage-secrets.md` 6.9 | anything new in the Sketchbook is ours (the doodle section of `kids_art.py`, saying so) or the kids' |
+| A secret wizard is revealed by the chapter whose event frees him | `ValidateSecret` | the Forest is open on a new save, so its wizard **cannot be secret**: a silhouette from the first run |
+| The kids' art is never altered or extended, and nothing new goes out under their name | `CLAUDE.md`, `stage-secrets.md` 6.9 | nothing is added to the Sketchbook: it holds no wizard, deed or secret (`ValidateSketchbookHoldsNothing`) |
 | Bosses are immune to crowd control that stops them reaching the player, and to executes | `in-flight.md` 3a item 4, section 4 | every verb below that moves, turns, blinds, seals or interrupts skips a `BossEnemy` |
 | A hint never names what it is about | `ValidateStageHints` | no caption below names a wizard, a spell or what to do |
 | The rescued wear no player pigment; only the dark wizard spends the darkness ramp as light | `side-events.md`, `world-and-tone.md` | sprites in `tools/art/roster.py`, staff head the only saturated thing |
@@ -70,7 +75,7 @@ The questions as they were put:
 | 5 | Mystic Ruins | **Abe no Seimei** | Light | Kindled Ward | **banish** | The Five-Pointed Seal | **solve** the four stones | none |
 | 6 | Scorched Sands | **Imhotep** | Fire | Fireball | **blind** | Eye of Ra | **kindle** three beacons at once | R1 |
 | 7 | The Emberdeep | **Wayland the Smith** | Metal | Iron Palisade | **temper** | The Tempered Line | **bait** the hammers onto his chains | none |
-| 8 | The Sketchbook | **Ma Liang** | Arcane | Familiar (crow) | **displace** | The Painted Door | **trace** the dotted door | R1; outside the gate |
+| 8 | The Court (second event; was the Sketchbook) | **Ma Liang** | Arcane | Familiar (crow) | **displace** | The Painted Door | **trace** the dotted door | R1; P2 |
 | 9 | The Last Bridge | **Morgan le Fay** | Ice (Ice+Wind) | Sleet Runes | **double** | Fata Morgana | **keep pace** with her barge | R2 (R1 on Stormsweep) |
 | 10 | The Court | **Nostradamus** | Light | Starfall | **foresee** | The Quatrains | **seek** his voice room to room | R1 |
 
@@ -99,7 +104,7 @@ and none is "a harder fight".
 | **solve** | Ruins | turn four stones to face the seal | the Broken Ward is an order; this is a state (keep it apart in art) |
 | **kindle** | Sands | three beacons burn 25 s each; have all three alight at once | the moot is in order against a clock; this is all at once, any order |
 | **bait** | Emberdeep | only his own forge's hammers break his chains; bring their slams to the stakes | nothing: the only ask that uses the enemy's attacks |
-| **trace** | Sketchbook | walk a dotted door dot to dot | Colour It In is a lap; this is a drawn line |
+| **trace** | Court (the Gallery) | walk a door sketched in charcoal dot to dot | nothing else is a drawn line |
 | **keep pace** | Last Bridge | stay level with her drifting barge to the gate | the caravan is caught; the barge must be accompanied |
 | **seek** | Court | his voice comes from a room; reach it, and it comes from another | the hart is seen; he is only heard, through walls |
 
@@ -334,12 +339,18 @@ measured and not heard; and the form's numbers - the bot took it at 9.9 minutes,
 - **Gate.** He is freed in the gate chapter, so only the Throne counts him (either G).
 - **Alternate: Ilmarinen**, the Kalevala's eternal hammerer, but a second Kalevala hero.
 
-### 4.8 The Sketchbook - Ma Liang
+### 4.8 The Court (second event) - Ma Liang
+
+**Moved from the Sketchbook, 2026-11-02** (Eric: "the sketchbook should not have any unlocks or any
+achievements. move that to other maps"). The Court was chosen for him: the tale's villain is a greedy
+emperor who kept the painter to paint for him, and the Court is the one chapter with a Gallery (5.4).
+He is the Court's second event, so he waits on P2 and the Court's flip, with Nostradamus.
 
 - **Who.** The boy of the Chinese tale whose brush made real whatever he painted; he painted for the
   poor, and drowned a greedy emperor in a painted sea. Drawn as a young painter, serious, not a mascot.
-- **Why here.** Nobody keeps him: the Sketchbook is outside the fiction (no corruption line). He drew a
-  door into the page and needs one drawn out.
+- **Why here.** He keeps him to paint: the Gallery's portraits (5.4) are his work, done under orders, and
+  his brush paints nothing real while it is held. He drew himself a door in the Gallery's end wall and
+  was never let finish it.
 - **Spell.** **Familiar** (Arcane): painted creatures that come alive. The catalog gives one Apotheosis
   per form, each with its own verb, so he gets one, on the **crow** (the tale's painted birds). Taken
   as the dog or the cat, he has none; the character card should say so.
@@ -347,16 +358,15 @@ measured and not heard; and the form's numbers - the bot took it at 9.9 minutes,
   on it steps out of a second door far across the field."* Tagline: *"Move the knot, not the kill."*
 - **Passive: Paint What Is Needed**, once a run, below a quarter of his health, a flask is painted at
   his feet.
-- **Freed by: trace.** A door in dotted pencil on the page, about 300 px tall, its dots numbered. Walk
-  the line dot to dot, within 30 px; stepping off pauses, never resets; the last dot inks it in and he
-  steps out. Generated in `kids_art.py`'s doodle section, which says so.
-- **Clue.** A line of wet ink draws itself across the page toward his side. Sound `hint_brush`. Lines:
-  *"A brushstroke drawing itself across the page."* / *"Another line, wet, running the same way."* /
-  *"The ink is still running."*
-- **Gate.** `OutsideCampaignGate`, as Laelaps: the Sketchbook gates nothing.
-- **Alternate: the kids' own wizard.** They draw and name him, every frame theirs, moved only by
-  `kids_art.py`; he is exempt from the naming rule as the Sketchbook is from everything. Costs their
-  time: a playable sheet needs idle and walk frames they drew.
+- **Freed by: trace.** A door sketched in dotted charcoal on the Gallery's end wall, about 300 px tall,
+  its dots numbered. Walk the line dot to dot, within 30 px; stepping off pauses, never resets; the last
+  dot inks it in and he steps out. Generated with the Court's art, never in `kids_art.py` (the kids'
+  chapter holds nothing now).
+- **Clue.** A line of wet paint draws itself along the walls toward his room. Sound `hint_brush`. Lines:
+  *"A brushstroke drawing itself along the wall."* / *"Another line, wet, running the same way."* /
+  *"The paint is still running."*
+- **Gate.** Counted at the Throne's gate with every chapter wizard (G2).
+- The kids'-own-wizard alternate went with the Sketchbook.
 
 ### 4.9 The Last Bridge - Morgan le Fay
 
@@ -435,10 +445,10 @@ path deepens that one at one milestone and takes the untagged branch at the othe
    returns a list; the second site is placed in the same 4-6 chunk band at least 90 degrees off the first;
    the wayfinder marks both; `StageHintCatalog` is keyed by site; `ValidateSecret`'s reveal rule reads
    the wizard's own site; `StageRewards` lists both on the map card.
-4. **The Sketchbook** pays a wizard, which its secrets never do (question 4). It is an event, outside
-   the gate, so it closes nothing; it is still a departure from "the page mark only".
-5. **Secret until the chapter opens** works for eight; Baba Yaga and Ma Liang show as silhouettes from
-   the first run.
+4. **The Sketchbook** pays nothing at all since 2026-11-02, not even page marks: no wizard, no deed, no
+   secret (Eric). Ma Liang moved to the Court (4.8).
+5. **Secret until the chapter opens** works for all but Baba Yaga, who shows as a silhouette from the
+   first run (the Forest is open on a new save).
 6. **CC on bosses.** Turn, blind, displace, banish, double's lure and foresee's interrupt all skip a
    `BossEnemy`; turn and banish also skip elites.
 7. **Real people.** Paracelsus, Nostradamus, Seimei and Imhotep are historic, as Tituba and John Dee are.
@@ -483,7 +493,7 @@ an `UnlockCatalog` entry, an `ApotheosisCatalog` entry, a passive id, a hint sou
 5. **Paracelsus** (the escort primitive is the largest piece of event code), then **Imhotep** and
    **Medea** (whose form needs the enemy-on-enemy state).
 6. **Morgan** and **Nostradamus**, each after its castle chapter flips.
-7. **Ma Liang**, whenever the kids have answered.
+7. **Ma Liang**, with Nostradamus: the Court's second event, so after P2 and the Court's flip.
 
 Each piece verifies as the side events did: `dotnet build`, the validator run with `-- --no-save-writes`,
 `_ExploreProbe --stage=N` winning the event on a fixed seed fresh and `--all-unlocked`, `_UiShot` of the

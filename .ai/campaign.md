@@ -38,7 +38,7 @@ line in the order (section 9, decision 1).
 | 8 | Frozen Waste | `stage_5` | the Still Warden | hold ground | 1.13 | 7800 | the Scorched Sands | Rimebriar (boon) |
 | 9 | Scorched Sands | `stage_6` | the Long Coil | burst a window | 1.09 | 8200 | - | Sunsteel Filament (boon) |
 | 10 | The Emberdeep | `stage_7` | the Warden of the Deep | all of it, in sequence | 1.28 | 11000 | - | Fireball |
-| - | The Sketchbook | `stage_8` | Wizard Dude | leave the wedge | (the kids') | 4600 | - | 400 Arcane Energy |
+| - | The Sketchbook | `stage_8` | Wizard Dude | leave the wedge | (the kids') | 4600 | - | nothing (2026-11-02: no unlocks or achievements) |
 
 \* While the two new chapters are not playable, Elderbark opens the Sunken Cave.
 

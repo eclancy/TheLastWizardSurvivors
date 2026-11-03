@@ -295,8 +295,9 @@ nothing: it derives every entry from the catalogs that already own them.
 | a wizard whose reveal is this chapter | `UnlockDefinition.RevealStageId` (Tituba, Vainamoinen, Laelaps's coursing) | owned |
 | its secrets and its keepsake | `SecretCatalog.ForStage` | `SaveData.HasFoundSecret` |
 
-Sketchbook's deed (*Best Drawing*, 400 Arcane Energy) gains its `BossId` (`kid_wizard`) so it joins by
-the same rule; it was the one chapter clear without one.
+The Sketchbook's deed (*Best Drawing*) was removed on 2026-11-02 with everything else it held (Eric: no
+unlocks or achievements there), so its card has no "What he keeps here" and is the one playable chapter
+`ValidateStageRewards` lets hold nothing.
 
 **`RegressionChecks.ValidateStageRewards`** - so a new unlock tied to a chapter cannot be missed:
 

@@ -466,25 +466,9 @@ public static class AchievementDefinitions
 		// The Hayward taught the Ascension until the slow start (2026-11-02); a landmark teaches it now (Teachings).
 		BossClearBoon("fields_hurdled", "Round the Hurdle", "fields_hayward", "the Fallow Fields", "thornseed", "Thornseed"),
 		BossClearBoon("circle_unclosed", "Out of the Ring", "heath_ninth_stone", "the Broken Circle", "shadegrease", "Shadegrease"),
-		// Pays in currency rather than content, and that is the point: the Sketchbook is a bonus
-		// chapter, so putting a spell or a wizard behind it would make an optional chapter
-		// mandatory for anyone completing the campaign.
-		new()
-		{
-			Id = "sketchbook_cleared", DisplayName = "Best Drawing",
-			Description = "Defeat Elim in the Sketchbook.",
-			RewardText = "400 Arcane Energy", CurrencyReward = 400,
-			Category = AchievementCategory.Exploration,
-			Kind = AchievementKind.Road,
-			Visibility = AchievementVisibility.ChapterOpen,
-			StageId = StageOfBoss("kid_wizard"),
-			// Its boss, like every other chapter clear's, so StageRewards finds what the Sketchbook pays
-			// by the same rule (.ai/world-map.md, section 9). Outside the campaign, so InCampaignOrder
-			// keeps it last among the clears, which is where it already stood.
-			BossId = "kid_wizard",
-			Measure = c => c.Lifetime.HasDefeatedBoss("kid_wizard") ? 1f : 0f,
-			Target = 1,
-		},
+		// The Sketchbook has no deed at all (Eric, 2026-11-02: "the sketchbook should not have any unlocks
+		// or any achievements"). Its clear, Best Drawing (400 Arcane Energy), was the last; the kids' chapter
+		// is played for itself. RegressionChecks.ValidateSketchbookHoldsNothing keeps it that way.
 		new()
 		{
 			Id = "relic_hunter", DisplayName = "Relic Hunter",
