@@ -2321,7 +2321,7 @@ phone.
 #### Chain Lightning - a heavy bolt that hops close and hard
 
 `ChainLightning.cs` (ids and numbers as constants beside Shadow Bolt's), `Electrocutions.cs`. The
-Stormcaller's spell: his Apotheosis, the Lattice, needs Storm Reach and then Cascade, and links whatever
+Stormcaller's spell: her Apotheosis, the Lattice, needs Storm Reach and then Cascade, and links whatever
 the chain strikes - so both cards keep their ids, their Lightning and their numbers, and only what the
 chain does with them changed. Storm Surge, the Water element path, is as it was.
 

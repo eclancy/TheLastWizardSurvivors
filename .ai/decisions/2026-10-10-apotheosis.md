@@ -142,7 +142,7 @@ runs; in short (`_BalanceHarness --seek-apotheosis --all-unlocked --immortal --m
 |---|---|---|
 | Pyromancer | 10.3 | 8.7 |
 | Frostweaver | 14.3 | 10.8 |
-| Stormcaller | 13.7 | 14.2 (his spell ascended at 13.3 under both: the upgrade roll) |
+| Stormcaller | 13.7 | 14.2 (her spell ascended at 13.3 under both: the upgrade roll) |
 | Geomancer | 10.6 | 8.6 |
 | Tituba | - | 8.6 |
 | Väinämöinen | - | 9.0 |

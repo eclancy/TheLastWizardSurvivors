@@ -341,6 +341,87 @@ public partial class CharacterSelection : Control
 		return well;
 	}
 
+	// THE STARTING SPELL ON THE PORTRAIT (Eric, 2026-11-03: "in the corner of their portraits on character select
+	// put a little icon showing their starting spell"). The spell's own icon - the one the HUD's loadout strip and
+	// the level-up cards show - tucked into the portrait's bottom-right corner: the face is at the top of the 48
+	// cell, and the name is under the well on a PC card and beside it on a phone, so that corner is clear of both.
+	//
+	// Pixel-honest: the icon is 32 art pixels stored at x2, drawn at a whole number of SCREEN pixels per art pixel
+	// (PixelArtRect, TexelsPerArtPixel 2), the portrait's own rule. The box decides which whole scale a window gets:
+	// 36 on a PC card keeps it at 32 units on a 1:1 window and one screen pixel per art pixel at x1.5 (a third of
+	// the face's width at two); 44 on a phone card and in the detail pane lets x1.5 - the Pixel 9 - take two, since
+	// 32 device pixels there is two millimetres and unreadable. On a dark plate, so it reads as laid ON the portrait
+	// rather than as something the figure holds.
+	//
+	// NEVER ON A WIZARD NOT YET FREE: a silhouette carrying its spell would say what that wizard opens on, which is
+	// what freeing him tells you. A secret or a locked card gets nothing here.
+	private const float CardBadgeBox = 36f;
+	private const float LargeBadgeBox = 44f;
+	private const int BadgeInset = 4;
+	private static readonly Color BadgePlateColor = new(0.043f, 0.059f, 0.094f, 0.92f);   // stone deep, the bands' ground
+
+	private static Control BuildSpellBadge(CharacterData character, CardState state, float box)
+	{
+		if (state != CardState.Unlocked)
+			return null;
+		Texture2D icon = StartingSpellIcon(character);
+		if (icon == null)
+			return null;
+
+		var plate = new StyleBoxFlat { BgColor = BadgePlateColor, BorderColor = CodexRows.Stone.Edge };
+		plate.SetBorderWidthAll(1);
+		plate.SetCornerRadiusAll(3);
+		var art = new PixelArtRect(new[] { icon }, 1, box)
+		{
+			Name = "SpellBadge",
+			TexelsPerArtPixel = 2,
+			Align = new Vector2(1f, 1f),
+			Plate = plate,
+		};
+		// Laid into a PanelContainer (the well) beside the portrait, which fits every child to the whole well unless
+		// told otherwise: ShrinkEnd both ways puts the badge at its own size in the bottom-right corner.
+		var corner = new MarginContainer
+		{
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+			SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd,
+			SizeFlagsVertical = Control.SizeFlags.ShrinkEnd,
+		};
+		corner.AddThemeConstantOverride("margin_right", BadgeInset);
+		corner.AddThemeConstantOverride("margin_bottom", BadgeInset);
+		corner.AddChild(art);
+		return corner;
+	}
+
+	// The icon of the spell a wizard opens on, in the form he opens it in if it has forms (ApotheosisCatalog's
+	// VariantId, the one rule for which form is his) - the picture his first run's loadout strip shows.
+	private static Texture2D StartingSpellIcon(CharacterData character)
+	{
+		SpellData spell = character?.StartingSpellResource;
+		if (spell == null)
+			return null;
+		string formId = ApotheosisCatalog.ForCharacter(character.Id)?.VariantId;
+		if (!string.IsNullOrEmpty(formId) && spell.HasVariants)
+		{
+			foreach (SpellVariant variant in spell.Variants)
+			{
+				if (variant != null && variant.Icon != null && formId.Equals(variant.Id, StringComparison.OrdinalIgnoreCase))
+					return variant.Icon;
+			}
+		}
+		return spell.Icon;
+	}
+
+	// A wizard's craft under his name ("the Pyromancer"), for a starter who carries his own name (CharacterData.Craft);
+	// null for everyone whose name already says what he is, and for any card not yet free.
+	private static Label BuildCraftLine(CharacterData character, CardState state, ResponsiveLayout.TextRole role)
+	{
+		if (state != CardState.Unlocked || string.IsNullOrWhiteSpace(character.CraftTitle))
+			return null;
+		Label craft = CodexRows.MakeText(character.CraftTitle, role, CodexRows.Stone.InkMeta);
+		craft.Name = "CraftLine";
+		return craft;
+	}
+
 	/// <summary>
 	/// What a wizard brings, as a short table: what each line is in the meta ink, what it is in the row
 	/// ink, the passive led by its stat glyph. It was three centred sentences ("Starting Spell: Cone of
@@ -482,6 +563,8 @@ public partial class CharacterSelection : Control
 		var portraitCenter = new CenterContainer();
 		well.AddChild(portraitCenter);
 		portraitCenter.AddChild(BuildPortraitDisplay(character, state));
+		if (BuildSpellBadge(character, state, LargeBadgeBox) is Control badge)
+			well.AddChild(badge);
 		row.AddChild(well);
 
 		var text = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -489,7 +572,20 @@ public partial class CharacterSelection : Control
 		row.AddChild(text);
 
 		Label nameLabel = CodexRows.MakeText(CardName(character, state), ResponsiveLayout.TextRole.Title, CardNameInk(character, state));
-		text.AddChild(nameLabel);
+		// The name and its craft as one block ("Aedan" over "the Pyromancer"), closer to each other than to the facts:
+		// a phone has no detail pane, so this card is the one place the craft is said.
+		if (BuildCraftLine(character, state, ResponsiveLayout.TextRole.Label) is Label craftLine)
+		{
+			var nameBlock = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+			nameBlock.AddThemeConstantOverride("separation", 0);
+			nameBlock.AddChild(nameLabel);
+			nameBlock.AddChild(craftLine);
+			text.AddChild(nameBlock);
+		}
+		else
+		{
+			text.AddChild(nameLabel);
+		}
 		text.AddChild(BuildFacts(character, state));
 
 		Control testWizardPicker = null;
@@ -535,6 +631,8 @@ public partial class CharacterSelection : Control
 		var portraitCenter = new CenterContainer();
 		portraitBg.AddChild(portraitCenter);
 		portraitCenter.AddChild(BuildPortraitDisplay(character, state, box: (int)CompactPortraitBox));
+		if (BuildSpellBadge(character, state, CardBadgeBox) is Control badge)
+			portraitBg.AddChild(badge);
 		vbox.AddChild(portraitBg);
 
 		var nameLabel = new Label
@@ -620,13 +718,38 @@ public partial class CharacterSelection : Control
 			child.QueueFree();
 
 		var portraitCenter = new CenterContainer { CustomMinimumSize = new Vector2(0, 260f) };
-		portraitCenter.AddChild(BuildPortraitDisplay(character, state, scale: 5));
+		Control portrait = BuildPortraitDisplay(character, state, scale: 5);
+		if (BuildSpellBadge(character, state, LargeBadgeBox) is Control badge)
+		{
+			// The big portrait carries its spell too, in the same corner: stacked in a bare PanelContainer the size of
+			// the portrait's box, so the badge sits on the portrait's corner rather than on the pane's.
+			var stack = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+			stack.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
+			stack.AddChild(portrait);
+			stack.AddChild(badge);
+			portrait = stack;
+		}
+		portraitCenter.AddChild(portrait);
 		detailBox.AddChild(portraitCenter);
 
 		var name = new Label { Text = CardName(character, state), HorizontalAlignment = HorizontalAlignment.Center };
 		ResponsiveLayout.SetFont(name, ResponsiveLayout.TextRole.Display);
 		name.AddThemeColorOverride("font_color", CardNameInk(character, state));
-		detailBox.AddChild(name);
+		// The heading says the name ("Aedan") and the line under it the craft ("the Pyromancer"), tight under it as
+		// its title, so a starter's discipline is never lost to his name (CharacterData.Craft).
+		if (BuildCraftLine(character, state, ResponsiveLayout.TextRole.Body) is Label craftLine)
+		{
+			craftLine.HorizontalAlignment = HorizontalAlignment.Center;
+			var nameBlock = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+			nameBlock.AddThemeConstantOverride("separation", -2);
+			nameBlock.AddChild(name);
+			nameBlock.AddChild(craftLine);
+			detailBox.AddChild(nameBlock);
+		}
+		else
+		{
+			detailBox.AddChild(name);
+		}
 
 		var facts = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		facts.AddThemeConstantOverride("margin_left", 8);

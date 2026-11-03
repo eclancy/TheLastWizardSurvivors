@@ -5,10 +5,13 @@
 [ext_resource type="Texture2D" path="res://assets/bonelight/characters/pyromancer-1.png" id="3"]
 [ext_resource type="SpriteFrames" path="res://scenes/resources/PyromancerFrames.tres" id="4"]
 
+; A starter (UnlockCatalog), on Cinderbreath. Aedan, the Pyromancer: his own name, his craft carried as his title
+; (Craft; Eric, 2026-11-03: "Let's give names to the four original elemental wizards"). The id never changes.
 [resource]
 script = ExtResource("1")
 Id = "pyromancer"
-Name = "Pyromancer"
+Name = "Aedan"
+Craft = "Pyromancer"
 StartingSpellResource = ExtResource("2")
 HealthModifier = 0.9
 SpeedModifier = 1.05

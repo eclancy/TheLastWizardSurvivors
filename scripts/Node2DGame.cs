@@ -4179,7 +4179,8 @@ public partial class Node2DGame : Node2D
 		StageDefinition stage = StageCatalog.GetByIndex(Global.SelectedStageIdx);
 		lines.Add($"Chapter: {stage?.DisplayName ?? $"stage {Global.SelectedStageIdx}"}");
 		CharacterData character = CharacterRoster.GetByIndex(Global.SelectedCharacterIdx);
-		lines.Add($"Wizard: {character?.Name ?? $"character {Global.SelectedCharacterIdx}"}");
+		// The full title ("Aedan, the Pyromancer"): a report is read by someone who may know the starters by craft.
+		lines.Add($"Wizard: {character?.FullName ?? $"character {Global.SelectedCharacterIdx}"}");
 		lines.Add($"Time in run: {FormatTime(timeElapsed)}");
 		lines.Add($"Player level: {player?.CurrentLevel ?? 1}");
 		List<SpellData> spells = player?.GetEquippedSpells().Where(s => s != null).ToList() ?? new List<SpellData>();

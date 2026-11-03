@@ -5,10 +5,13 @@
 [ext_resource type="Texture2D" path="res://assets/bonelight/characters/stormcaller-1.png" id="3"]
 [ext_resource type="SpriteFrames" path="res://scenes/resources/StormcallerFrames.tres" id="4"]
 
+; A starter (UnlockCatalog), on Chain Lightning. Thora, the Stormcaller: her own name, her craft carried as her title
+; (Craft; Eric, 2026-11-03: "Make her a woman, with hair blowing in the wind"). The id never changes.
 [resource]
 script = ExtResource("1")
 Id = "stormcaller"
-Name = "Stormcaller"
+Name = "Thora"
+Craft = "Stormcaller"
 StartingSpellResource = ExtResource("2")
 HealthModifier = 0.95
 SpeedModifier = 1.12

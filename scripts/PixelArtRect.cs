@@ -44,6 +44,22 @@ public partial class PixelArtRect : Control
 
 	public float FramesPerSecond { get; set; } = 6f;
 
+	/// <summary>
+	/// Texture pixels to one art pixel. 1 for the 48 cells this was built for; 2 for the spell icons, which are 32
+	/// art pixels stored at x2 in a 64 texture, so the whole scale is counted in THEIR pixels and never lands one
+	/// art pixel across a fraction of the next (the character select's spell badge).
+	/// </summary>
+	public int TexelsPerArtPixel { get; set; } = 1;
+
+	/// <summary>
+	/// Where the art sits in the box when it is drawn smaller than it: (0.5, 0.5) centred, as every portrait is;
+	/// (1, 1) tucked into the bottom-right corner, which keeps a corner badge on its corner at every scale.
+	/// </summary>
+	public Vector2 Align { get; set; } = new(0.5f, 0.5f);
+
+	/// <summary>An optional plate drawn under the art, exactly the art's drawn rect - a badge's backing. Null, none.</summary>
+	public StyleBox Plate { get; set; }
+
 	/// <summary>Screen pixels per art pixel at the last draw. For the harness and for logs.</summary>
 	public int ScreenPixelsPerArtPixel { get; private set; }
 
@@ -128,7 +144,7 @@ public partial class PixelArtRect : Control
 			return;
 
 		Texture2D texture = frames[Math.Clamp(frame, 0, frames.Length - 1)];
-		Vector2 art = texture.GetSize();
+		Vector2 art = texture.GetSize() / Math.Max(1, TexelsPerArtPixel);
 		if (art.X <= 0f || art.Y <= 0f)
 			return;
 
@@ -142,7 +158,7 @@ public partial class PixelArtRect : Control
 		ScreenPixelsPerArtPixel = WholeScreenScale(CanvasScale, screenPerUnit, art, Size);
 		float unitsPerArtPixel = ScreenPixelsPerArtPixel / screenPerUnit;
 		Vector2 drawn = art * unitsPerArtPixel;
-		Vector2 topLeft = (Size - drawn) * 0.5f;
+		Vector2 topLeft = (Size - drawn) * Align;
 
 		// Snap the corner onto a screen pixel. Nearest sampling at a whole scale gives every art
 		// pixel the same width wherever the corner falls, but a corner exactly half a pixel off puts
@@ -150,6 +166,8 @@ public partial class PixelArtRect : Control
 		Vector2 screenCorner = toScreen * topLeft;
 		topLeft = toScreen.AffineInverse() * screenCorner.Round();
 
+		if (Plate != null)
+			DrawStyleBox(Plate, new Rect2(topLeft, drawn));
 		DrawTextureRect(texture, new Rect2(topLeft, drawn), false);
 	}
 

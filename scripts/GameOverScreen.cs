@@ -452,7 +452,7 @@ public partial class GameOverScreen : CanvasLayer
 		headerHost.AddChild(band);
 	}
 
-	// "Chapter 1 · Enchanted Forest" over "Pyromancer" on a PC, where it stacks under the title;
+	// "Chapter 1 · Enchanted Forest" over "Aedan" on a PC, where it stacks under the title;
 	// one line on a phone.
 	private string BuildWhereLine()
 	{

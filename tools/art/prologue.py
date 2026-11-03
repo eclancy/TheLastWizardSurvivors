@@ -47,8 +47,13 @@ import bonelight as bl
 import hero
 import raster
 import splashkit as sk
+import roster
 
-M = bl.MATERIALS
+# The rows the panels' pigments step along. bonelight.py's, plus the rows a player sprite wears that
+# bonelight.py keeps out of its contract on purpose (art-direction.md section 3, matte.add_ramp): Thora's
+# russet hair (roster.RUSSET, 2026-11-03). The freeing draws the real sprites, so without it her hair
+# stayed lit while the others knelt in the dark, and audited off-contract.
+M = dict(bl.MATERIALS, russet=roster.RUSSET)
 E = bl.ELEMENTS
 OCC = bl.OCC
 RIM_SOFT = bl.RIM_SOFT
@@ -503,7 +508,7 @@ def light_at(who, cx, yb, h, strip="idle", frame=0, facing=1):
     return (cx + (anchor[0] - CELL / 2.0) * k * facing, yb + (anchor[1] - (CELL - 1)) * k)
 
 
-# In the moot, before the fall, each wears the deep end of his own colour - the only time the prologue
+# In the moot, before the fall, each wears the deep end of their own colour - the only time the prologue
 # lets them have one - so the circle reads as five different people at a glance, not five shadows.
 ROBE = {"pyromancer": R[4], "frostweaver": M["azure"][4], "stormcaller": G[4], "geomancer": M["verdant"][4],
         "dee": ST[4]}
@@ -1773,7 +1778,7 @@ def p_break():
 
 def p_five():
     """7. The five of them. The same heath and the same places: the four stand up where they knelt, each
-    his own sprite in his own colours, his staff burning his own element again - and in the middle, in his
+    each in their own sprite and colours, each staff burning its own element again - and in the middle, in his
     warded circle, the Archmage.
     His chain lies on the ground in front of them, dead. Five lights on the heath where there was one; no
     line - the next panel is the road, and the one after it the player choosing which of them walks it."""
@@ -1898,6 +1903,9 @@ ANIMS = {"missed": (MISSED_BOX, MISSED_FPS, MISSED_COLUMNS), "break": (BREAK_BOX
 # =========================================================================== output
 def audit(layers, extra=()):
     ok = raster.allowed()
+    for name, ramp in M.items():
+        for i, t in enumerate(ramp):
+            ok.setdefault(t.upper(), name + "." + bl.ROLES[i])
     bad = {}
     for img in [c.img for c in layers.values()] + list(extra):
         for (n, col) in img.getcolors(1 << 20) or []:

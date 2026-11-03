@@ -5,10 +5,13 @@
 [ext_resource type="Texture2D" path="res://assets/bonelight/characters/frostweaver-1.png" id="3"]
 [ext_resource type="SpriteFrames" path="res://scenes/resources/FrostweaverFrames.tres" id="4"]
 
+; A starter (UnlockCatalog), on Cone of Cold. Isbrand, the Frostweaver: his own name, his craft carried as his title
+; (Craft; Eric, 2026-11-03: "Let's give names to the four original elemental wizards"). The id never changes.
 [resource]
 script = ExtResource("1")
 Id = "frostweaver"
-Name = "Frostweaver"
+Name = "Isbrand"
+Craft = "Frostweaver"
 StartingSpellResource = ExtResource("2")
 HealthModifier = 1.1
 SpeedModifier = 0.95

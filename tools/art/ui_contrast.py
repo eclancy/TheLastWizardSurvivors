@@ -410,8 +410,10 @@ def options_pairs(add, stone_ground, rev):
     add("reset progress (lit frame)", lit, "danger red", DANGER_INK, BODY)
     # The character select (CharacterSelection.BuildFacts): the facts table on a card's stone face
     # and on the detail pane's stone panel. Its keys and values are CodexRows inks; the apotheosis
-    # name is CardFamilyArt.ApotheosisTitle.
+    # name is CardFamilyArt.ApotheosisTitle. A starter's craft under his name ("the Pyromancer",
+    # BuildCraftLine) is InkMeta too: on the phone's card and in the PC's detail pane.
     for name, g in (("wizard card (stone face)", STONE_FACE), ("wizard detail (stone panel)", stone_ground)):
+        add(name, g, "InkMeta (craft title)", STONE_INK_META, BODY)
         add(name, g, "InkMeta (Spell, Passive)", STONE_INK_META, BODY)
         add(name, g, "Ink (spell, passive)", STONE_INK, BODY)
         add(name, g, "ApotheosisTitle (form)", APOTHEOSIS_TITLE, BODY)

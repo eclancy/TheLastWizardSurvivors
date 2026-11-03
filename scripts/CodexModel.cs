@@ -118,7 +118,7 @@ public sealed class CodexNode
 	public string OpensEntryId = string.Empty;
 	/// <summary>The element whose colour an item ingredient's chip takes, for sets.</summary>
 	public List<(Element Element, int Weight)> Elements = new();
-	/// <summary>Whose final form it is ("Pyromancer"), on an Apotheosis node.</summary>
+	/// <summary>Whose final form it is ("Aedan" - the wizard's name, not his craft), on an Apotheosis node.</summary>
 	public string Owner = string.Empty;
 	/// <summary>Not a name to search for (the Sovereign Rite's "any active spell you hold").</summary>
 	public bool Unsearchable;
@@ -286,7 +286,7 @@ public sealed class CodexModel
 
 	public CodexMode Mode;
 	public List<CodexEntry> Entries = new();
-	/// <summary>"Pyromancer, level 17" in a run; empty otherwise.</summary>
+	/// <summary>"Aedan, level 17" in a run; empty otherwise.</summary>
 	public string RunLine = string.Empty;
 	public CodexContext Context;
 
