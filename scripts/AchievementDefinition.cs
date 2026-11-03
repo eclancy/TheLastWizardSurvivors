@@ -130,7 +130,7 @@ public sealed class AchievementDefinition
 	/// </summary>
 	public bool CompletesInRun { get; init; }
 
-	/// <summary>For a side event's deed: the site it mirrors (SideEventDirector.ForStage). Empty otherwise.</summary>
+	/// <summary>For a side event's deed: the site it mirrors (one of SideEventDirector.EventsFor its chapter). Empty otherwise.</summary>
 	public string SiteId { get; init; } = string.Empty;
 
 	/// <summary>For a secret's deed: the <see cref="SecretDefinition"/> it mirrors. Empty otherwise.</summary>
@@ -583,20 +583,20 @@ public static class AchievementDefinitions
 	}).Concat(SideEventDeeds()).Concat(SecretDeeds()).Concat(CombinationDeeds()).ToList();
 
 	/// <summary>
-	/// One Road deed for every chapter's side event (SideEventDirector.ForStage), in campaign order. Its
-	/// reward is whatever UnlockCatalog lists at the site; its words are <see cref="SideEventWords"/>.
-	/// Completed the moment the event is won (DiscoveryRewards), measured by LifetimeStats.EventsWon.
+	/// One Road deed for every side event of every chapter (SideEventDirector.EventsFor - a chapter may hold
+	/// two), in campaign order and then the chapter's own order. Its reward is whatever UnlockCatalog lists at
+	/// the site; its words are <see cref="SideEventWords"/>. Completed the moment the event is won
+	/// (DiscoveryRewards), measured by LifetimeStats.EventsWon - both by site, never by chapter.
 	/// </summary>
 	private static IEnumerable<AchievementDefinition> SideEventDeeds()
 	{
 		foreach (StageDefinition stage in StageCatalog.InDisplayOrder)
+		foreach (SideEventEntry entry in global::SideEventDirector.EventsFor(stage.Id))
 		{
-			string site = global::SideEventDirector.ForStage(stage.Id)?.SiteId;
-			if (string.IsNullOrWhiteSpace(site))
+			string siteId = entry.SiteId;
+			if (string.IsNullOrWhiteSpace(siteId))
 				continue;
-			string siteId = site;
-			(string Site, string Name, string Description, string Reward) words =
-				SideEventWords.FirstOrDefault(w => w.Site.Equals(siteId, StringComparison.OrdinalIgnoreCase));
+			(string Site, string Name, string Description, string Reward) words = WordsFor(siteId);
 			List<UnlockDefinition> pays = UnlockCatalog.ForDiscoverySite(siteId).ToList();
 			string wizard = pays.FirstOrDefault(d => d.Kind == UnlockKind.Character)?.Id ?? string.Empty;
 			yield return new AchievementDefinition
@@ -680,8 +680,17 @@ public static class AchievementDefinitions
 	public const int SovereignRiteFeatCurrency = 250;
 
 	/// <summary>Whether a side event's site has words written for its deed. For the validator.</summary>
-	public static bool HasSideEventWords(string siteId) =>
-		SideEventWords.Any(w => w.Site.Equals(siteId ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+	public static bool HasSideEventWords(string siteId) => WordsFor(siteId).Site != null;
+
+	// A site's words: the table's, or the stand-in second event's on a tool run that has it (SecondEventStandIn).
+	// Default (all null) when there are none.
+	private static (string Site, string Name, string Description, string Reward) WordsFor(string siteId)
+	{
+		var words = SideEventWords.FirstOrDefault(w => w.Site.Equals(siteId ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+		if (words.Site == null && SecondEventStandIn.Active && SecondEventStandIn.IsStandInSite(siteId))
+			words = SecondEventStandIn.Words;
+		return words;
+	}
 
 	/// <summary>The site ids the words table names, for the validator's other direction.</summary>
 	public static IEnumerable<string> SideEventWordSites => SideEventWords.Select(w => w.Site);

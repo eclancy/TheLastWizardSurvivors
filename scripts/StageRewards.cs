@@ -57,8 +57,8 @@ public sealed class StageReward
 ///   1. the warden: the deed whose <see cref="AchievementDefinition.BossId"/> is the chapter's boss
 ///      (<see cref="BossCatalog.ForStageIndex"/>), and whatever it grants - a spell, a boon, a wizard,
 ///      or Arcane Energy (the Sketchbook's);
-///   2. the side event: <see cref="SideEventDirector.ForStage"/>'s site, and every
-///      <see cref="UnlockSource.Discovery"/> entry at it (<see cref="UnlockCatalog.ForDiscoverySite"/>);
+///   2. the side events: every site in <see cref="SideEventDirector.EventsFor"/> - one or two - and
+///      everything each pays (<see cref="UnlockCatalog.ForDiscoverySite"/>);
 ///   3. a deed done there: an unlock whose <see cref="UnlockDefinition.RevealStageId"/> is the chapter
 ///      (Laelaps, freed by coursing hares on the Broken Circle), or what a hand-written Road deed of the
 ///      chapter pays that is neither its warden's nor an event's (the dark wizard and The Taking, the
@@ -110,10 +110,11 @@ public static class StageRewards
 					Add(new StageReward { StageId = stage.Id, Kind = StageRewardKind.ArcaneEnergy, Source = StageRewardSource.Warden, Id = warden.Id, DeedId = warden.Id, Amount = warden.CurrencyReward });
 			}
 
-			string site = global::SideEventDirector.ForStage(stage.Id)?.SiteId;
-			if (!string.IsNullOrWhiteSpace(site))
+			// Every side event the chapter holds, in its order - two, where a chapter wizard is held beside the
+			// chapter's original event (.ai/chapter-wizards.md 6.3) - and everything each one's site pays.
+			foreach (SideEventEntry site in global::SideEventDirector.EventsFor(stage.Id))
 			{
-				foreach (UnlockDefinition found in UnlockCatalog.ForDiscoverySite(site))
+				foreach (UnlockDefinition found in UnlockCatalog.ForDiscoverySite(site.SiteId))
 					Add(new StageReward { StageId = stage.Id, Kind = KindOf(found.Kind), Source = StageRewardSource.SideEvent, Id = found.Id });
 			}
 

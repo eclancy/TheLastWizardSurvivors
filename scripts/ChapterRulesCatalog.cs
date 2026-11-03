@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace WizardSurvivors.scripts;
 
 // WHICH CHAPTERS HAVE RULES OF THEIR OWN (ChapterRules, .ai/endgame-castle.md 1.9), and the one place
-// that is decided. The pattern is SideEventDirector.ForStage's: a line per chapter that needs one,
+// that is decided. The pattern is SideEventDirector's table: a line per chapter that needs one,
 // written by the plumbing as null, so each chapter's agent replaces ONE line and writes one file of its
 // own - BridgeRules.cs, CourtRules.cs, ThroneRules.cs - and never edits Node2DGame.
 //

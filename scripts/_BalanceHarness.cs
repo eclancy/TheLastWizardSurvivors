@@ -2209,18 +2209,22 @@ public partial class _BalanceHarness : Node
 	private float exploreLegWalked;
 	private Vector2 exploreLastPosition;
 	private bool exploreHasLast;
-	private bool exploreSawFound;
+	private readonly System.Collections.Generic.HashSet<int> exploreSawFound = new();
 	private bool exploreSawTaken;
-	private bool[] exploreSiteLogged = System.Array.Empty<bool>();
+	private readonly System.Collections.Generic.HashSet<(int Event, int Site)> exploreSiteLogged = new();
 
 	// One frame of the explore walk. False once there is nothing left to go to (the bot then holds
-	// its ground or kites, as it would without the flag).
+	// its ground or kites, as it would without the flag). Every event the chapter holds is walked to -
+	// the nearest site not done of any of them - so a chapter with two events has both found.
 	private bool ExploreStep()
 	{
 		SideEventDirector director = game.GetNodeOrNull<SideEventDirector>("SideEventDirector");
 		if (director == null)
 			return false;
-		SideEvent sideEvent = director.Event != null && IsInstanceValid(director.Event) ? director.Event : null;
+		var events = new System.Collections.Generic.List<SideEvent>();
+		foreach (SideEvent e in director.Events)
+			if (e != null && IsInstanceValid(e))
+				events.Add(e);
 		WayfinderPickup wayfinder = director.Wayfinder != null && IsInstanceValid(director.Wayfinder) ? director.Wayfinder : null;
 
 		if (exploreHasLast)
@@ -2233,22 +2237,14 @@ public partial class _BalanceHarness : Node
 			exploreSawTaken = true;
 			ExploreLog("wayfinder taken");
 		}
-		if (sideEvent != null && !exploreSawFound && sideEvent.IsFound)
+		foreach (SideEvent sideEvent in events)
 		{
-			exploreSawFound = true;
-			ExploreLog(sideEvent.GetType().Name + " found (begun)");
-		}
-		if (sideEvent != null)
-		{
-			if (exploreSiteLogged.Length != sideEvent.Sites.Count)
-				exploreSiteLogged = new bool[sideEvent.Sites.Count];
+			if (sideEvent.IsFound && exploreSawFound.Add(sideEvent.Index))
+				ExploreLog(sideEvent.GetType().Name + (director.Events.Count > 1 ? $" (event {sideEvent.Index}, '{sideEvent.SiteId}')" : "") + " found (begun)");
 			for (int i = 0; i < sideEvent.Sites.Count; i++)
 			{
-				if (sideEvent.Sites[i].Done && !exploreSiteLogged[i])
-				{
-					exploreSiteLogged[i] = true;
-					ExploreLog($"site {i} ({sideEvent.Sites[i].Glyph}) done");
-				}
+				if (sideEvent.Sites[i].Done && exploreSiteLogged.Add((sideEvent.Index, i)))
+					ExploreLog((director.Events.Count > 1 ? $"event {sideEvent.Index} " : "") + $"site {i} ({sideEvent.Sites[i].Glyph}) done");
 			}
 		}
 
@@ -2259,7 +2255,7 @@ public partial class _BalanceHarness : Node
 			target = wayfinder.Site.Position;
 			leg = "to the wayfinder";
 		}
-		else if (sideEvent != null && PointsOfInterest.ObjectiveTarget is Vector2 objective)
+		else if (events.Count > 0 && PointsOfInterest.ObjectiveTarget is Vector2 objective)
 		{
 			target = objective;
 			leg = "after the objective";
@@ -2267,7 +2263,7 @@ public partial class _BalanceHarness : Node
 		else
 		{
 			float best = float.MaxValue;
-			if (sideEvent != null)
+			foreach (SideEvent sideEvent in events)
 			{
 				foreach (PointOfInterest site in sideEvent.Sites)
 				{

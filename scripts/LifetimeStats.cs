@@ -46,7 +46,7 @@ public sealed class LifetimeStats
 	public List<string> CharactersPlayed { get; set; } = new();
 
 	/// <summary>
-	/// Every side event ever won, by site id (SideEventDirector.ForStage): what each event's Road deed
+	/// Every side event ever won, by site id (SideEventDirector.EventsFor; a chapter may hold two): what each event's Road deed
 	/// measures (.ai/achievements-and-secrets.md 2.6). Written by DiscoveryRewards the moment the event
 	/// is won - not at run end, so it is not in <see cref="Absorb"/> - and seeded at schema 19 from the
 	/// unlocks a save already owned.

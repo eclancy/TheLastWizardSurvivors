@@ -35,6 +35,16 @@ using WizardSurvivors.scripts;
 //      and stands in the mouth whose voice came first (NineMouthsEvent.LastCallFirst - what a player
 //      hears and sees), never the answer itself. --wrong-mouth first stands in a mouth that was NOT first,
 //      and checks that it answers with a flight and that hers moves.
+// TWO EVENTS IN A CHAPTER (P2, .ai/chapter-wizards.md 6.3). On a chapter whose list holds more than one - or
+// with --second-event-test[=STAGE], which adds a stand-in second event on this tool run only
+// (SecondEventStandIn) - every placement check runs for every event, each pair of main sites must be at least
+// SideEventDirector.MinSiteSeparationDegrees apart, and the order is: the hints (forced, four of them) must
+// alternate the events; the first event is won WITHOUT the wayfinder; two more hints must all be the second's
+// (a won event stops hinting); then the wayfinder is taken and must mark what is left; then the second event is
+// visited, found and won. --wayfinder-first takes the wayfinder before anything instead, as a one-event chapter
+// does, and checks it marks every site of both events and that no hint plays after it; and once the first has
+// begun it starts the second too, where it stands, so two run at once - the line under the timer must pass to
+// the one begun last, back to the first for its win line, and to the second again after.
 // --fresh-save runs on a brand-new save and --all-unlocked on one that owns every spell, boon and wizard,
 // both built in memory (the balance harness's), so a won event's first-win path (the wizard freed) and its
 // chest path are each driven on purpose rather than by whatever the machine's save holds.
@@ -60,6 +70,16 @@ public partial class _ExploreProbe : Node
 	private bool slowBleed;
 	// --wrong-mouth: at the nine mouths, stand in a wrong one first and check it answers.
 	private bool wrongMouth;
+	// --wayfinder-first: with two events, take the wayfinder first (see the header).
+	private bool wayfinderFirst;
+	// Which of the chapter's events is being visited, found and won; and which of them were won.
+	private int cur;
+	private readonly List<bool> wonEvents = new();
+	// The hints phase: forced hints wanted, and its game-time clock.
+	private int hintsWanted;
+	private float hintClock;
+	// --wayfinder-first with two events: the second was begun while the first ran.
+	private bool secondBegunEarly;
 	private int mouthWrongFirst = -1;
 	private int mouthTrueBefore = -1;
 	private int mouthTrueAfter = -1;
@@ -78,7 +98,8 @@ public partial class _ExploreProbe : Node
 	private readonly List<string> notes = new();
 	private List<Vector2> visitA;
 	private Vector2 lookout;
-	private Vector2 firstSiteAtStart;
+	// Where each event stood at the start: it must never move.
+	private List<Vector2> siteAtStart = new();
 	private LevelUpMenu levelUpMenu;
 	private int settleFrames;
 	private float completeClock;
@@ -102,6 +123,7 @@ public partial class _ExploreProbe : Node
 			else if (arg == "--all-unlocked") allUnlocked = true;
 			else if (arg.StartsWith("--kill-hammers=")) killHammers = int.Parse(arg.Substring(15));
 			else if (arg == "--wrong-mouth") wrongMouth = true;
+			else if (arg == "--wayfinder-first") wayfinderFirst = true;
 		}
 		ProcessMode = ProcessModeEnum.Always;
 		SaveManager.WritesDisabled = true;
@@ -122,7 +144,8 @@ public partial class _ExploreProbe : Node
 		Engine.TimeScale = TimeScale;
 		GameStats.ResetRunTelemetry();
 		GD.Print($"EXPLOREPROBE stage={StageIndex} seed={Seed} timescale={TimeScale}"
-			+ (allUnlocked ? " all-unlocked" : freshSave ? " fresh-save" : ""));
+			+ (allUnlocked ? " all-unlocked" : freshSave ? " fresh-save" : "")
+			+ (SecondEventStandIn.Active ? $" second-event-test={SecondEventStandIn.StageId}" : ""));
 
 		game = ResourceLoader.Load<PackedScene>("res://scenes/node_2d_game.tscn").Instantiate<Node2DGame>();
 		game.ProceduralSeed = Seed;
@@ -219,10 +242,29 @@ public partial class _ExploreProbe : Node
 			case 12:
 				DriveToCompletion((float)delta);
 				break;
+			// Two events (see the header).
+			case 20:
+				HintsAlternate((float)delta);
+				break;
+			case 21:
+				HintsAfterWin((float)delta);
+				break;
+			case 22:
+				TakeWayfinderBetweenEvents();
+				break;
+			case 23:
+				CheckRevealedBetweenEvents();
+				break;
 		}
 	}
 
-	private SideEvent Event => director?.Event != null && IsInstanceValid(director.Event) ? director.Event : null;
+	// The event being visited now: the chapter's first, then (with two) its second.
+	private SideEvent Event => director != null && cur < director.Events.Count && IsInstanceValid(director.Events[cur]) ? director.Events[cur] : null;
+
+	private bool Multi => director != null && director.Events.Count > 1;
+
+	// "event 1 " on a chapter with two, nothing on a chapter with one - so a one-event chapter's lines read as they always did.
+	private string Of(int index) => Multi ? $"event {index} " : "";
 
 	private void Teleport(Vector2 to, int settleFrames = 60)
 	{
@@ -235,18 +277,19 @@ public partial class _ExploreProbe : Node
 	{
 		director = game.GetNodeOrNull<SideEventDirector>("SideEventDirector");
 		StageDefinition stage = StageCatalog.GetByIndex(StageIndex);
-		var entry = stage != null ? SideEventDirector.ForStage(stage.Id) : null;
-		if (entry == null)
+		IReadOnlyList<SideEventEntry> entries = stage != null ? SideEventDirector.EventsFor(stage.Id) : Array.Empty<SideEventEntry>();
+		if (entries.Count == 0)
 		{
 			Check("a chapter without an event places nothing", director != null && director.Event == null
 				&& director.Wayfinder == null && PointsOfInterest.Live.Count == 0);
 			Finish("no side event on this stage");
 			return;
 		}
-		Check("the director placed the event at stage start", Event != null && Event.Sites.Count > 0,
-			$"{Event?.GetType().Name} with {Event?.Sites.Count} site(s), t={game.RunSeconds:0.0}s");
+		bool placed = director.Events.Count == entries.Count && director.Events.All(e => e != null && e.Sites.Count > 0);
+		Check("the director placed the event at stage start" + (entries.Count > 1 ? $"s ({entries.Count})" : ""), placed,
+			string.Join("; ", director.Events.Select(e => $"{e.GetType().Name} at '{e.SiteId}' with {e.Sites.Count} site(s)")) + $", t={game.RunSeconds:0.0}s");
 		Check("the wayfinder was placed", director.Wayfinder != null, director.Wayfinder?.Kind.ToString() ?? "none");
-		if (Event == null || director.Wayfinder == null)
+		if (!placed || director.Wayfinder == null)
 		{
 			Finish("nothing to probe");
 			return;
@@ -257,48 +300,78 @@ public partial class _ExploreProbe : Node
 		TerrainStreamer terrain = game.Terrain;
 		// The bands are where the roll lands; the open-ground search may move a site up to 1600 px.
 		const float slack = 1700f;
-		for (int i = 0; i < Event.Sites.Count; i++)
-		{
-			Vector2 p = Event.Sites[i].Position;
-			float d = p.DistanceTo(origin);
-			float min = SideEventDirector.EventMinChunks * chunk - slack;
-			// The lanterns are a chain from the first, so later ones may lie a mire's reach further.
-			float max = SideEventDirector.EventMaxChunks * chunk + slack + (i > 0 ? 2200f : 0f);
-			Check($"site {i} ({Event.Sites[i].Glyph}) is in the event band", d >= min && d <= max, $"{d:0} px = {d / chunk:0.0} chunks");
-			bool open = terrain == null || (!terrain.IsBlockedAtWorld(p) && !terrain.IsWallAtWorld(p)
-				&& !terrain.IsFenceAtWorld(p) && !terrain.IsHazardAtWorld(p));
-			Check($"site {i} stands on open ground", open && game.IsExploreGroundClear(p, 40f));
-		}
 		Vector2 w = director.Wayfinder.Site.Position;
 		float wd = w.DistanceTo(origin);
+		foreach (SideEvent e in director.Events)
+		{
+			for (int i = 0; i < e.Sites.Count; i++)
+			{
+				Vector2 p = e.Sites[i].Position;
+				float d = p.DistanceTo(origin);
+				float min = SideEventDirector.EventMinChunks * chunk - slack;
+				// The lanterns are a chain from the first, so later ones may lie a mire's reach further.
+				float max = SideEventDirector.EventMaxChunks * chunk + slack + (i > 0 ? 2200f : 0f);
+				Check($"{Of(e.Index)}site {i} ({e.Sites[i].Glyph}) is in the event band", d >= min && d <= max, $"{d:0} px = {d / chunk:0.0} chunks");
+				bool open = terrain == null || (!terrain.IsBlockedAtWorld(p) && !terrain.IsWallAtWorld(p)
+					&& !terrain.IsFenceAtWorld(p) && !terrain.IsHazardAtWorld(p));
+				Check($"{Of(e.Index)}site {i} stands on open ground", open && game.IsExploreGroundClear(p, 40f));
+			}
+		}
 		Check("the wayfinder is in its band", wd >= SideEventDirector.WayfinderMinChunks * chunk - slack
 			&& wd <= SideEventDirector.WayfinderMaxChunks * chunk + slack, $"{wd:0} px = {wd / chunk:0.0} chunks");
-		float angle = Mathf.RadToDeg(Mathf.Abs(Mathf.AngleDifference((w - origin).Angle(), (Event.Sites[0].Position - origin).Angle())));
-		// The search can turn a site by a few degrees; the roll keeps 75.
-		Check("the wayfinder is well off the event's bearing", angle >= 60f, $"{angle:0} degrees apart");
-		Check("the event is dormant", Event.IsDormant);
+		foreach (SideEvent e in director.Events)
+		{
+			float angle = Mathf.RadToDeg(Mathf.Abs(Mathf.AngleDifference((w - origin).Angle(), (e.Sites[0].Position - origin).Angle())));
+			// The search can turn a site by a few degrees; the roll keeps 75.
+			Check(Multi ? $"the wayfinder is well off event {e.Index}'s bearing" : "the wayfinder is well off the event's bearing", angle >= 60f, $"{angle:0} degrees apart");
+		}
+		// Two events: their main sites keep SideEventDirector.MinSiteSeparationDegrees between them, measured here
+		// where they really are, not where they were rolled.
+		for (int i = 0; i < director.Events.Count; i++)
+		{
+			for (int j = i + 1; j < director.Events.Count; j++)
+			{
+				float apart = Mathf.RadToDeg(ExplorePlacer.Separation(
+					ExplorePlacer.BearingFrom(origin, director.Events[i].Sites[0].Position),
+					ExplorePlacer.BearingFrom(origin, director.Events[j].Sites[0].Position)));
+				Check($"events {i} and {j} are at least {SideEventDirector.MinSiteSeparationDegrees:0} degrees apart",
+					apart >= SideEventDirector.MinSiteSeparationDegrees - 0.01f, $"{apart:0.0} degrees");
+				notes.Add($"events {i} and {j}: {apart:0.0} degrees apart, "
+					+ $"{director.Events[i].Sites[0].Position.DistanceTo(director.Events[j].Sites[0].Position):0} px");
+			}
+		}
+		Check(Multi ? "every event is dormant" : "the event is dormant", director.Events.All(e => e.IsDormant));
 		Check("nothing is marked before it is seen or revealed", !PointsOfInterest.AnyMarked);
-		firstSiteAtStart = Event.Sites[0].Position;
-		notes.Add($"event sites: {string.Join("; ", Event.Sites.Select(s => $"({s.Position.X:0},{s.Position.Y:0})"))}");
+		siteAtStart = director.Events.Select(e => e.Sites[0].Position).ToList();
+		foreach (SideEvent e in director.Events)
+			notes.Add($"{Of(e.Index)}{(Multi ? $"at {e.SiteId}, " : "")}event sites: {string.Join("; ", e.Sites.Select(s => $"({s.Position.X:0},{s.Position.Y:0})"))}");
 		notes.Add($"wayfinder: ({w.X:0},{w.Y:0}) {wd:0} px");
+		for (int i = 0; i < director.Events.Count; i++)
+			wonEvents.Add(false);
 		step = 2;
 	}
 
 	private void CheckDeterminism()
 	{
+		// Laid out again from the same seed, by the run's own code (SideEventDirector.LayOut): every event of the
+		// chapter in its place, the second still kept round from the first.
 		StageDefinition stage = StageCatalog.GetByIndex(StageIndex);
-		var entry = SideEventDirector.ForStage(stage.Id).Value;
-		SideEvent again = entry.Create();
 		int before = PointsOfInterest.Live.Count;
-		ExplorePlacer placer = game.CreateExplorePlacer(1, SideEventDirector.EventMinChunks, SideEventDirector.EventMaxChunks);
-		again.PlaceSites(placer);
-		bool same = again.Sites.Count == Event.Sites.Count;
-		for (int i = 0; same && i < again.Sites.Count; i++)
-			same = again.Sites[i].Position.DistanceTo(Event.Sites[i].Position) < 0.01f;
-		// Leave the run's list as it was: the copy's sites were never the run's.
+		var again = SideEventDirector.LayOut(SideEventDirector.EventsFor(stage.Id),
+			stream => game.CreateExplorePlacer(stream, SideEventDirector.EventMinChunks, SideEventDirector.EventMaxChunks));
+		bool same = again.Count == director.Events.Count;
+		for (int k = 0; same && k < again.Count; k++)
+		{
+			SideEvent copy = again[k].Event, real = director.Events[k];
+			same = copy.SiteId == real.SiteId && copy.Sites.Count == real.Sites.Count;
+			for (int i = 0; same && i < copy.Sites.Count; i++)
+				same = copy.Sites[i].Position.DistanceTo(real.Sites[i].Position) < 0.01f;
+		}
+		// Leave the run's list as it was: the copies' sites were never the run's.
 		PointsOfInterest.Live.RemoveRange(before, PointsOfInterest.Live.Count - before);
-		again.Free();
-		Check("the same seed lays the event out in the same places", same);
+		foreach (var (copy, _) in again)
+			copy.Free();
+		Check(Multi ? "the same seed lays every event out in the same places" : "the same seed lays the event out in the same places", same);
 		step = 3;
 	}
 
@@ -306,7 +379,24 @@ public partial class _ExploreProbe : Node
 	{
 		Vector2 origin = game.StageOrigin;
 		Vector2 toEvent = (Event.Sites[0].Position - origin).Normalized();
-		lookout = origin - toEvent * 6f * TerrainStreamer.ChunkTiles * game.ProceduralTilePixels;
+		Vector2 away = -toEvent;
+		if (Multi)
+		{
+			// Away from every event: the bearing, of 36, farthest round from all of them, so no second site is
+			// on screen out there to be seen and marked (which would retire its hints before they were heard).
+			float best = -1f;
+			for (int k = 0; k < 36; k++)
+			{
+				float bearing = k * Mathf.Tau / 36f;
+				float gap = director.Events.Min(e => ExplorePlacer.Separation(bearing, ExplorePlacer.BearingFrom(origin, e.Sites[0].Position)));
+				if (gap > best)
+				{
+					best = gap;
+					away = new Vector2(Mathf.Cos(bearing), Mathf.Sin(bearing));
+				}
+			}
+		}
+		lookout = origin + away * 6f * TerrainStreamer.ChunkTiles * game.ProceduralTilePixels;
 		Teleport(lookout, 120);
 		step = 4;
 	}
@@ -314,7 +404,17 @@ public partial class _ExploreProbe : Node
 	private void CheckHiddenThenTakeWayfinder()
 	{
 		Check("still nothing marked after walking away", !PointsOfInterest.AnyMarked);
-		Check("still dormant", Event.IsDormant);
+		Check("still dormant", director.Events.All(e => e.IsDormant));
+		if (Multi && !wayfinderFirst)
+		{
+			// The hints first, while nothing is found or marked: they must alternate the two events. A run plays
+			// four at most (StageHintCatalog's schedule): two here - the first event's, then the second's - and two
+			// after the first is won, the first of which the rotation would have given back to it.
+			hintsWanted = 2;
+			hintClock = 0f;
+			step = 20;
+			return;
+		}
 		// Onto the wayfinder: its chunks are loaded on arrival, and it is taken with the feet.
 		Vector2 w = director.Wayfinder.Site.Position;
 		Teleport(w - (player.FootPosition - player.GlobalPosition), 40);
@@ -326,8 +426,121 @@ public partial class _ExploreProbe : Node
 		bool taken = director.Wayfinder == null || !IsInstanceValid(director.Wayfinder) || director.Wayfinder.Taken;
 		Check("walking onto the wayfinder takes it", taken);
 		Check("taking it reveals", PointsOfInterest.Revealed);
-		int marked = Event.Sites.Count(s => s.Marked);
-		Check("every site of the event is marked for an arrow", marked == Event.Sites.Count, $"{marked} of {Event.Sites.Count}");
+		foreach (SideEvent e in director.Events)
+		{
+			int marked = e.Sites.Count(s => s.Marked);
+			Check(Multi ? $"every site of event {e.Index} ({e.SiteId}) is marked for an arrow" : "every site of the event is marked for an arrow",
+				marked == e.Sites.Count, $"{marked} of {e.Sites.Count}");
+		}
+		if (Multi)
+			Check("no hint plays once the wayfinder has marked every event", director.Hints == null || !director.Hints.ForceHint());
+		step = 6;
+	}
+
+	// --- two events -----------------------------------------------------------------------------------
+
+	// Which of the chapter's events can be hinted at on this save: dormant, unmarked, and paying something it lacks.
+	private List<string> HintableSites()
+	{
+		SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
+		return director.Events
+			.Where(e => IsInstanceValid(e) && e.IsDormant && !e.PaysChest && !e.Sites.Any(s => s.Marked)
+				&& StageHintCatalog.ForSite(e.SiteId) != null && (save == null || !DiscoveryRewards.IsSiteExhausted(save, e.SiteId)))
+			.Select(e => e.SiteId).ToList();
+	}
+
+	// Forces hints, one as soon as the screen's turn allows (StageHintDirector.ForceHint refuses while the last
+	// one's line is up - never two at once), until enough have played since a count, or the clock runs out.
+	// True when done.
+	private bool ForceHints(float delta, int wanted, int already)
+	{
+		hintClock += delta;
+		StageHintDirector hints = director.Hints;
+		if (hints != null && hints.PlayedSites.Count - already < wanted && hintClock < 150f)
+		{
+			// Asked again on the very frame one starts: refused, or two would be up at once.
+			if (hints.ForceHint() && hints.ForceHint())
+				hintsAtOnce++;
+			return false;
+		}
+		return true;
+	}
+
+	private int hintsAtOnce;
+
+	private int hintsBeforeWin;
+
+	private void HintsAlternate(float delta)
+	{
+		List<string> hintable = HintableSites();
+		StageHintDirector hints = director.Hints;
+		if (hintable.Count == 0)
+		{
+			Check("no hint plays when this save owns what every event pays", hints == null || !hints.ForceHint(),
+				allUnlocked ? "everything owned" : "nothing to hint at");
+			hintsBeforeWin = hints?.PlayedSites.Count ?? 0;
+			step = 6;
+			return;
+		}
+		if (!ForceHints(delta, hintsWanted, 0))
+			return;
+		List<string> played = hints.PlayedSites.ToList();
+		notes.Add($"hints before either was found: {string.Join(", ", played)} ({hintClock:0.0}s of game time)");
+		Check($"{hintsWanted} hints played, one at a time", played.Count >= hintsWanted && hintsAtOnce == 0,
+			$"{played.Count} in {hintClock:0.0}s; a second asked for on the frame one started was refused {(hintsAtOnce == 0 ? "every time" : $"all but {hintsAtOnce} times")}");
+		bool alternates = true;
+		for (int i = 1; i < played.Count; i++)
+			alternates &= hintable.Count < 2 || played[i] != played[i - 1];
+		Check(hintable.Count >= 2 ? "the hints alternate the chapter's events" : "the only event worth hinting at has every hint",
+			alternates && hintable.All(played.Contains) && played.All(hintable.Contains), string.Join(" -> ", played));
+		hintsBeforeWin = played.Count;
+		step = 6;
+	}
+
+	private void HintsAfterWin(float delta)
+	{
+		StageHintDirector hints = director.Hints;
+		List<string> hintable = HintableSites();
+		if (hintable.Count == 0)
+		{
+			Check("no hint plays after the win when nothing is left to hint at", hints == null || !hints.ForceHint());
+			step = 22;
+			return;
+		}
+		if (!ForceHints(delta, 2, hintsBeforeWin))
+			return;
+		List<string> after = hints.PlayedSites.Skip(hintsBeforeWin).ToList();
+		string wonSite = director.Events[0].SiteId;
+		notes.Add($"hints after event 0 was won: {string.Join(", ", after)}");
+		Check("a won event stops hinting; the other has every slot after", after.Count >= 2 && !after.Contains(wonSite) && hintsAtOnce == 0
+			&& after.All(hintable.Contains), string.Join(" -> ", after));
+		// That was the run's fourth: the schedule has no fifth, whoever is still out there.
+		if (hints.PlayedSites.Count >= 4)
+			Check("the run's hints stop at four", !hints.ForceHint(), $"{hints.PlayedSites.Count} played");
+		step = 22;
+	}
+
+	private void TakeWayfinderBetweenEvents()
+	{
+		Vector2 w = director.Wayfinder.Site.Position;
+		Teleport(w - (player.FootPosition - player.GlobalPosition), 40);
+		step = 23;
+	}
+
+	private void CheckRevealedBetweenEvents()
+	{
+		bool taken = director.Wayfinder == null || !IsInstanceValid(director.Wayfinder) || director.Wayfinder.Taken;
+		Check("walking onto the wayfinder takes it", taken);
+		Check("taking it reveals", PointsOfInterest.Revealed);
+		int left = 0, marked = 0;
+		foreach (PointOfInterest site in PointsOfInterest.Live.Where(p => !p.IsWayfinder && !p.Done))
+		{
+			left++;
+			if (site.Marked)
+				marked++;
+		}
+		Check("it marks every site still to be found", left > 0 && marked == left, $"{marked} of {left}");
+		cur++;
 		step = 6;
 	}
 
@@ -356,7 +569,10 @@ public partial class _ExploreProbe : Node
 
 	private void RecordVisitAndLeave()
 	{
-		Check("dormant at 900 px from the site", Event.IsDormant);
+		if (secondBegunEarly && cur > 0)
+			Check($"{Of(cur)}still running at 900 px, begun while the first ran", Event.IsFound && !Event.IsWon);
+		else
+			Check("dormant at 900 px from the site", Event.IsDormant);
 		visitA = PropsNear(Event.Sites[0].Position, 700f);
 		int inside = 0;
 		foreach (PointOfInterest site in Event.Sites)
@@ -382,7 +598,7 @@ public partial class _ExploreProbe : Node
 			notes.Add("first visit: " + string.Join(", ", visitA.Select(v => $"({v.X:0},{v.Y:0})")));
 			notes.Add("second visit: " + string.Join(", ", visitB.Select(v => $"({v.X:0},{v.Y:0})")));
 		}
-		Check("the site did not move", Event.Sites[0].Position.DistanceTo(firstSiteAtStart) < 0.01f);
+		Check("the site did not move", Event.Sites[0].Position.DistanceTo(siteAtStart[cur]) < 0.01f);
 		step = 10;
 	}
 
@@ -394,9 +610,19 @@ public partial class _ExploreProbe : Node
 
 	private void CheckBegun()
 	{
-		Check("it begins when the player arrives", Event.IsFound, $"t={game.RunSeconds:0.0}s");
-		var label = game.GetNodeOrNull<CanvasLayer>("UIOverlay")?.GetNodeOrNull<Label>("SideEventObjective");
-		Check("the objective line is up", label != null && !string.IsNullOrEmpty(label.Text), label?.Text ?? "no label");
+		Check($"{Of(cur)}it begins when the player arrives", Event.IsFound, $"t={game.RunSeconds:0.0}s");
+		// Its own line, and the one under the timer (two events' lines share the spot; the one arrived at speaks).
+		string line = Event.ObjectiveShown;
+		Check($"{Of(cur)}the objective line is up", !string.IsNullOrEmpty(line), string.IsNullOrEmpty(line) ? "no line" : line);
+		if (Multi && wayfinderFirst && cur == 0 && !secondBegunEarly)
+		{
+			// Two at once: the second begun where it stands while the first runs. The line under the timer is
+			// the one begun last; the first's goes quiet (its line and arrow hidden), and comes back after.
+			secondBegunEarly = true;
+			director.Start(1);
+			Check("two running: the one begun last speaks under the timer", director.Events[1].HoldsObjectiveLine
+				&& !director.Events[0].HoldsObjectiveLine && director.Events[1].IsFound);
+		}
 		if (!Complete)
 		{
 			Finish("arrived (--no-complete)");
@@ -414,10 +640,16 @@ public partial class _ExploreProbe : Node
 		SideEvent e = Event;
 		if (e == null || e.Sites.All(s => s.Done) && PointsOfInterest.ObjectiveTarget == null)
 		{
-			bool won = e == null || (bool)(typeof(SideEvent).GetProperty("Succeeded",
-				System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.GetValue(e) ?? false);
-			Check("the event can be finished", won, $"{completeClock:0.0}s of game time after arriving");
-			Check("no arrows are left once it is over", !PointsOfInterest.AnyMarked);
+			bool won = e == null || e.IsWon;
+			Check($"{Of(cur)}the event can be finished", won, $"{completeClock:0.0}s of game time after arriving");
+			if (secondBegunEarly && cur == 0)
+				Check("its win line takes the line under the timer from the one still running", e == null || e.HoldsObjectiveLine,
+					$"the other {(director.Events[1].IsFound && !director.Events[1].IsWon ? "still running, quiet" : "not running")}");
+			if (cur < wonEvents.Count)
+				wonEvents[cur] = won;
+			// The chapter's last event: nothing at all is marked any more. An earlier one: nothing of it is.
+			bool last = director == null || cur >= director.Events.Count - 1;
+			Check($"{Of(cur)}no arrows are left once it is over", last ? !PointsOfInterest.AnyMarked : e == null || !e.Sites.Any(s => s.Marked));
 			if (e is GreatAnvilEvent forge)
 			{
 				Check("every chain is broken", forge.ChainsBroken == GreatAnvilEvent.StakeCount,
@@ -457,18 +689,48 @@ public partial class _ExploreProbe : Node
 				foreach (UnlockDefinition wizard in UnlockCatalog.ForDiscoverySite(e.SiteId).Where(u => u.Kind == UnlockKind.Character))
 					Check($"'{wizard.Id}' is freed, in memory", GlobalStatsManager.IsCharacterUnlocked(save, wizard.Id),
 						$"writes {(SaveManager.WritesDisabled ? "off" : "ON")}");
+				// Two events: whatever else the site pays is the save's now too - per site.
+				if (Multi)
+				{
+					foreach (UnlockDefinition found in UnlockCatalog.ForDiscoverySite(e.SiteId).Where(u => u.Kind != UnlockKind.Character))
+						Check($"{Of(cur)}{found.Id} is the save's, in memory", found.Kind == UnlockKind.Boon
+							? GlobalStatsManager.IsBoonUnlocked(save, found.Id) : GlobalStatsManager.IsSpellUnlockedForLevelUp(save, found.Id));
+				}
 			}
-			Finish("event over");
+			// Recorded by its site on a first win; a chest win records nothing (SideEvent.Succeed pays the chest without
+			// DiscoveryRewards, as it always has), so that path is not asked.
+			if (Multi && e != null && save != null && !e.PaysChest)
+				Check($"{Of(cur)}its own deed is recorded, by its site", save.Lifetime.HasWonEvent(e.SiteId)
+					&& GlobalStatsManager.IsAchievementUnlocked(save, AchievementDefinitions.EventDeedId(e.SiteId)), e.SiteId);
+			if (Multi && director != null && cur < director.Events.Count - 1)
+			{
+				// On to the next event: with the wayfinder still to take, the hints are heard again first.
+				completeClock = 0f;
+				hintClock = 0f;
+				if (wayfinderFirst)
+				{
+					cur++;
+					step = 6;
+				}
+				else
+					step = 21;
+				return;
+			}
+			if (Multi)
+				Check("every one of the chapter's events was won", wonEvents.All(w => w), $"{wonEvents.Count(w => w)} of {wonEvents.Count}");
+			Finish(Multi ? "every event over" : "event over");
 			return;
 		}
 		if (completeClock > 240f)
 		{
-			Check("the event can be finished", false, "not finished after 240 s");
+			Check($"{Of(cur)}the event can be finished", false, "not finished after 240 s");
 			Finish("gave up");
 			return;
 		}
 
-		Vector2? target = PointsOfInterest.ObjectiveTarget;
+		// The arrow under the timer is the event that speaks there; with two running it may be the other's, so
+		// drive this one by its own.
+		Vector2? target = e.HoldsObjectiveLine ? PointsOfInterest.ObjectiveTarget : e.OwnObjectiveTarget;
 		// The coupled seal points at nothing once he is in the courtyard (an arrow on a plate would solve it for
 		// him): the probe works the answer out itself and presses a plate it needs.
 		if (e is FivePointedSealEvent puzzle && puzzle.IsFound)

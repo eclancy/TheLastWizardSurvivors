@@ -41,7 +41,8 @@ him "???".
 
 ## 2. The notes
 
-Two lines per chapter, a third only where someone is held. The wizard's own voice: terse, first person,
+Two lines per chapter, and one more for each wizard held there (`ChapterNotes.MaxLinesFor`; the Court will
+hold two). The wizard's own voice: terse, first person,
 what the place smells or feels like. `ChapterNotes` holds them.
 
 | chapter | note |
@@ -205,7 +206,8 @@ The note is marked seen as it is shown and saved then. `SaveGame` does nothing w
 ## 7. Checking it
 
 - `RegressionChecks.ValidateQuestsAndNotes` checks:
-  - every playable chapter has a note, of at most 3 lines and 64 characters a line;
+  - every playable chapter has a note, of at most two lines of the place plus one a wizard held there, and 64
+    characters a line;
   - every rescuable character has an epithet;
   - **no line the log, the HUD, the opening or a note can show carries a locked wizard's name**, with or
     without diacritics, on four sample saves: new, early, mid-campaign and late;

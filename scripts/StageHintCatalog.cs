@@ -36,16 +36,15 @@ public enum HintCue
 	Writ,
 }
 
-/// <summary>One chapter's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
+/// <summary>One side event's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
 public sealed class StageHint
 {
-	/// <summary>The chapter (<see cref="StageCatalog"/>) whose runs play it.</summary>
-	public string StageId { get; init; } = string.Empty;
-
 	/// <summary>
-	/// The Discovery site it is about (<see cref="UnlockCatalog"/> <c>SourceId</c>). It plays only
-	/// while something that site gives is still unowned on this save, and comes from that site's
-	/// place in the world - today the chapter's side event (SideEventDirector.ForStage).
+	/// The side event's site it is about, and its key (<see cref="StageHintCatalog.ForSite"/>): the event
+	/// standing there (SideEventDirector.EventsFor) is where it comes from, and its chapter is the one whose
+	/// runs play it. It plays only while something the site gives (<see cref="UnlockCatalog.ForDiscoverySite"/>)
+	/// is still unowned on this save. Keyed by site, not by chapter, because a chapter may hold two events
+	/// (.ai/chapter-wizards.md 6.3), and each has its own.
 	/// </summary>
 	public string SiteId { get; init; } = string.Empty;
 
@@ -89,11 +88,13 @@ public sealed class StageHint
 /// from then on the point-of-interest arrow says the same thing better, and it never plays once the
 /// discovery is owned, during the boss, or in the last pace minute and a half before it.</para>
 ///
-/// <para>To add a chapter's: one entry below, keyed by stage id, naming the Discovery site its side
-/// event pays out, a sound (tools/audio/sfx.py, then <see cref="SfxCatalog"/>), and its lines.
+/// <para>To add an event's: one entry below, keyed by the site its side event stands on and pays out, a
+/// sound (tools/audio/sfx.py, then <see cref="SfxCatalog"/>), and its lines. A chapter with two events has
+/// two entries, one a site, and StageHintDirector alternates them, one a slot.
 /// <c>RegressionChecks.ValidateStageHints</c> checks every one of those against the catalogs that
-/// own them. A hint about something that is not a side event (a stage secret, once they exist)
-/// needs StageHintDirector taught where that thing is; nothing else changes.</para>
+/// own them, and <c>ValidateSideEventTable</c> that every event has one. A hint about something that is not
+/// a side event (a stage secret, once they exist) needs StageHintDirector taught where that thing is;
+/// nothing else changes.</para>
 /// </remarks>
 public static class StageHintCatalog
 {
@@ -113,7 +114,6 @@ public static class StageHintCatalog
 		// The grove is not a person, so nothing speaks: the leaves do.
 		new()
 		{
-			StageId = "stage_0",
 			SiteId = "the_grove",
 			Voice = HintVoice.Sound,
 			Sound = SfxCatalog.HintGroveWhisper,
@@ -129,7 +129,6 @@ public static class StageHintCatalog
 		// prisoner who has been patient for a long time, not a witch. Her name is never said.
 		new()
 		{
-			StageId = "stage_1",
 			SiteId = "gaolers_key",
 			Voice = HintVoice.Speech,
 			Sound = SfxCatalog.HintCellCry,
@@ -145,7 +144,6 @@ public static class StageHintCatalog
 		// His lanterns. "Nothing living lights them" - so the caption never says who tends them.
 		new()
 		{
-			StageId = "stage_3",
 			SiteId = "bog_lanterns",
 			Voice = HintVoice.Sound,
 			Sound = SfxCatalog.HintLanternFlare,
@@ -162,7 +160,6 @@ public static class StageHintCatalog
 		// are for.
 		new()
 		{
-			StageId = "stage_4",
 			SiteId = "five_pointed_seal",
 			Voice = HintVoice.Sound,
 			Sound = SfxCatalog.HintPaperWind,
@@ -179,7 +176,6 @@ public static class StageHintCatalog
 		// Not named; never said what the hammer is, or that anyone is held.
 		new()
 		{
-			StageId = "stage_7",
 			SiteId = "great_anvil",
 			Voice = HintVoice.Sound,
 			Sound = SfxCatalog.HintAnvil,
@@ -197,7 +193,6 @@ public static class StageHintCatalog
 		// than one. A sound, not speech - she is not calling for help. Not named, never said what to do.
 		new()
 		{
-			StageId = "stage_2",
 			SiteId = "nine_mouths",
 			Voice = HintVoice.Sound,
 			Sound = SfxCatalog.HintSibylVoice,
@@ -212,7 +207,6 @@ public static class StageHintCatalog
 		// Vainamoinen, the singer, under the ice. He is heard, not named.
 		new()
 		{
-			StageId = "stage_5",
 			SiteId = "the_thaw",
 			Voice = HintVoice.Sound,
 			Sound = SfxCatalog.HintIceSong,
@@ -227,7 +221,6 @@ public static class StageHintCatalog
 		// The caravan master on the trade road. The bell walks; it does not wait.
 		new()
 		{
-			StageId = "stage_6",
 			SiteId = "caravan_master",
 			Voice = HintVoice.Sound,
 			Sound = SfxCatalog.HintCaravanBell,
@@ -241,18 +234,43 @@ public static class StageHintCatalog
 		},
 	};
 
+	/// <summary>Every hint written - the real ones; a tool run's stand-in is answered by <see cref="ForSite"/> alone.</summary>
 	public static IReadOnlyList<StageHint> All => Hints;
 
-	/// <summary>The chapter's hint, or null if it has none.</summary>
-	public static StageHint ForStage(string stageId)
+	/// <summary>
+	/// The hint about the side event standing on <paramref name="siteId"/>, or null if it has none. On a tool
+	/// run with the stand-in second event (<see cref="SecondEventStandIn"/>), its hint too.
+	/// </summary>
+	public static StageHint ForSite(string siteId)
 	{
+		if (string.IsNullOrWhiteSpace(siteId))
+			return null;
 		foreach (StageHint hint in Hints)
 		{
-			if (string.Equals(hint.StageId, stageId, StringComparison.Ordinal))
+			if (string.Equals(hint.SiteId, siteId, StringComparison.OrdinalIgnoreCase))
 				return hint;
 		}
-		return null;
+		return SecondEventStandIn.Active && SecondEventStandIn.IsStandInSite(siteId) ? SecondEventStandIn.Hint : null;
 	}
+
+	/// <summary>The hints of a chapter's events, in the chapter's order (SideEventDirector.EventsFor); the ones without one skipped.</summary>
+	public static List<StageHint> ForStage(string stageId)
+	{
+		var found = new List<StageHint>();
+		foreach (SideEventEntry entry in global::SideEventDirector.EventsFor(stageId))
+		{
+			if (ForSite(entry.SiteId) is StageHint hint)
+				found.Add(hint);
+		}
+		return found;
+	}
+
+	/// <summary>
+	/// The side events written before a hint was asked of every one (.ai/campaign.md, the early chapters'): the
+	/// one exception to ValidateSideEventTable's rule. A site leaves this list when its hint is written, and
+	/// the validator says so if it is not taken off. No new event may be added here.
+	/// </summary>
+	public static readonly IReadOnlyList<string> SitesWithoutHints = new[] { "the_well", "the_moot" };
 
 	/// <summary>The pace second at which hint number <paramref name="index"/> (0-based) falls due.</summary>
 	public static float DuePaceSeconds(int index) => FirstPaceSeconds + Math.Max(0, index) * RepeatPaceSeconds;

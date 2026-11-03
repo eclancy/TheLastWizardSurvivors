@@ -59,9 +59,11 @@ The light grows with the heat, a warm glow grows in the block, and once he is ou
   chests and the Warden do. A subclass is only its own rules. Each one is a code-created `Node2D`
   at the run's origin that draws itself on the ground (`ZIndex` -5, y-sorted) with an additive
   light layer over the actors; the only one with a sprite is the bog lantern.
-- **`SideEventDirector`** is the whole mapping from chapter to event to Discovery site to
-  wayfinder, and it **places** the event and the wayfinder at stage start, from the terrain seed
-  (section "Finding the event"). A chapter not in its table has no event and no wayfinder.
+- **`SideEventDirector`** is the whole mapping from chapter to events to Discovery sites to
+  wayfinder, and it **places** the events and the wayfinder at stage start, from the terrain seed
+  (section "Finding the event"). A chapter's line is a list, its original event first, and may hold
+  a second (section "Two events in one chapter"). A chapter not in its table has no event and no
+  wayfinder.
 - **`DiscoveryRewards`** pays out a site: everything in `UnlockCatalog` with
   `Source = Discovery` and that site as `SourceId`. **Granted and saved the moment the event is
   won**, not at the end of the run, because a wizard you carried out does not go back in when you
@@ -207,8 +209,9 @@ warm glow from further off. Warm against a world whose light is all cold.
 | Mystic Ruins | the Arcane Compass | `arcane-compass` |
 | Sunken Cave | the Arcane Compass | `arcane-compass` |
 
-`SideEventDirector.ForStage` is the table. A chapter without an event has no wayfinder, since
-there is nothing for it to mark. Once secrets exist, what a wayfinder marks is a decision for that
+`SideEventDirector`'s table is the list (`EventsFor`, `WayfinderFor`): one wayfinder a chapter,
+however many events it holds. A chapter without an event has no wayfinder, since there is nothing
+for it to mark. Once secrets exist, what a wayfinder marks is a decision for that
 system (`PointsOfInterest.Add` is the hook); today it marks the event's sites only.
 
 ### The arrows
@@ -424,17 +427,18 @@ described in `.ai/audio-manifest.md`, "Chapter hints". Played 300 px toward the 
 
 ### Adding one
 
-1. An entry in `StageHintCatalog` keyed by the stage id: the Discovery site its side event pays out
-   (it must be the one `SideEventDirector.ForStage` maps that chapter to - the hint comes from that
-   event's place), a voice, a sound, a cue (`HintCue`; a new one is a row in `hint_cues.py` and its
-   beats in `StageHintCue`), and its lines (60 characters at most: two lines on a phone).
+1. An entry in `StageHintCatalog` keyed by its event's site (`ForSite`; since P2 there is no stage id
+   on a hint - the site's chapter is the one that plays it, and the hint comes from that event's
+   place), a voice, a sound, a cue (`HintCue`; a new one is a row in `hint_cues.py` and its beats in
+   `StageHintCue`), and its lines (60 characters at most: two lines on a phone). Every event needs one
+   (`ValidateSideEventTable`), save the well and the moot (`StageHintCatalog.SitesWithoutHints`).
 2. A sound in `tools/audio/sfx.py` beside the five, registered at -9 or -10 in category `hint`; run
    `python tools/audio/build.py hint_` and `analyse.py --confuse`, then check it against the whole
    set, not only its category (the first three drafts collided outside it). Add it to `SfxCatalog`,
    import it, and give it a manifest row.
-3. Nothing else. `SideEventDirector` starts the director for any chapter whose hint names its
-   event's site; `RegressionChecks.ValidateStageHints` checks the stage, the site, the event, the
-   sound, the line lengths and the no-names rule.
+3. Nothing else. `SideEventDirector` starts the director for any chapter one of whose events has a
+   hint, and the director alternates them; `RegressionChecks.ValidateStageHints` checks the site, its
+   one chapter, the sound, the line lengths and the no-names rule.
 
 A hint about something that is not a side event - a stage secret, once they exist - needs
 `StageHintDirector` taught where that thing is, and needs `.ai/stage-secrets.md` section 2 revisited
@@ -460,6 +464,65 @@ first: it says a secret gets no text and no pointer, and a hint is both a line a
 distances to every other sound), not auditioned, and a formant cry is the hardest thing in the set
 to judge by numbers. Whether 300/150 is the right rhythm, and whether a caption at the edge pulls a
 player off his kiting line or is ignored, needs a playtest.
+
+## Two events in one chapter (P2, 2026-11-02)
+
+Five chapter wizards are held in chapters that already had an event (`.ai/chapter-wizards.md` 6.3), so a
+chapter's line in `SideEventDirector` is a list, its original event first:
+
+```
+"stage_0" => new(WayfinderKind.Compass, new SideEventEntry("the_grove", () => new GroveEvent()),
+                                         new SideEventEntry("walking_hut", () => new WalkingHutEvent())),
+```
+
+- **Placement** (`SideEventDirector.LayOut`, shared with the validator and the probe). Event 0 is placed
+  exactly as before, on stream 1. Each later one has its own stream (3 to 6; `EventStream`), in the same 4-6
+  chunk band, through the same `EventSite`/`EventSiteInBand`, with `ExplorePlacer.Avoiding`: the roll is drawn
+  inside the arcs at least **90 degrees** (`MinSiteSeparationDegrees`) round from every earlier event's main
+  site, and every spot the search or the band sweep tries is held to the same rule and kept off every earlier
+  footprint, so the site it settles on keeps the rule, not only the roll.
+- **The wayfinder** is one a chapter. It keeps 75 degrees off every event's bearing
+  (`ExplorePlacer.BearingAvoiding`; with one event, exactly the bearing it always had) and marks every site of
+  every event. The secrets keep off every event's bearing too.
+- **The hints** are keyed by site (`StageHintCatalog.ForSite`). One `StageHintDirector` holds the chapter's
+  events that have one, and each slot of the schedule (still four a run) plays ONE: the next event, round the
+  chapter's order, that is still dormant, unmarked and paying something the save lacks. Two hidden events
+  alternate; a found, marked or owned one drops out and the other has every slot after; each event's lines
+  run in their own order. One caption and one cue, and a hint asked for while the last one's line is up is
+  refused, so never two at once (before P2 a forced hint could start on top of another: the director held
+  the screen's turn and Announcements handed it straight back).
+- **The line under the timer.** Each event keeps its own objective line and arrow (`SideEventObjective`,
+  `SideEventObjective2`), but only one speaks: the event most recently arrived at, or one whose win line is
+  showing (`SideEvent.HoldsObjectiveLine`). A player who leaves one running and walks to the other sees the
+  other's.
+- **Everything else is per site, never per chapter**: the derived Road deed (`event_<site>`, one per event),
+  `LifetimeStats.EventsWon`, `UnlockCatalog.ForDiscoverySite`, `DiscoveryRewards`, the map card
+  (`StageRewards` lists every event's rewards), the chapter note's clues (`ChapterNotes.CluesFor`: each
+  event's site clue, and every wizard held there by his held line - a note may now carry two of the place and
+  one a wizard held there, `ChapterNotes.MaxLinesFor`), the quest log and the reveal rule (`ValidateSecret`
+  reads the wizard's own site).
+- **Checked** by `RegressionChecks.ValidateSideEventTable` (`RegressionChecks.SideEvents.cs`): no two events of
+  a chapter on one site, no site in two chapters, at most five events, every event with a hint, and the
+  90 degrees with every main site in band on 32 sampled layouts a chapter (lakes, and a maze lattice) - for
+  every chapter that holds two, and for every chapter with a second appended, the rule its next event will
+  meet. Shown to fire by taking `Avoiding` out (every chapter reported pairs as close as 0 degrees), and by
+  four faults put in at once and taken out: two Forest events on one site, a Cave event with no hint, the
+  stand-in's site written into the table (reported as a LEAK), and Seimei revealed by the Swamp
+  (`ValidateSecret` now names the chapter that holds him and the reveal chapter's events).
+- **The stand-in** (`SecondEventStandIn`): `--second-event-test[=STAGE]` on a tool scene only appends a copy
+  of the grove at site `standin_second_event`, with a hint, a clue, deed words and a prize (the Quicksilver
+  Bead, a shop boon a new save lacks), each answered by the lookup that would find a real one and never
+  listed in a catalog. The game itself never gets it (`SaveManager.IsToolSceneLaunch`); the validator says so
+  on the tool run that asked, and calls it a leak anywhere else. `_ExploreProbe --second-event-test` drives
+  the two-event order (two hints, one each; the first event won without the wayfinder; the next two hints both
+  the second's, though the rotation would have given the first of them back; no fifth; the wayfinder marks
+  what is left; the second won). `--wayfinder-first` takes it first instead (both events marked, no hint
+  after), and begins the second while the first runs, so the line under the timer is seen passing to the one
+  begun last, back to the first for its win line, and on again. `_UiShot` takes the flag too, with
+  `--event-index=N` and `--goto=event:N`.
+- **A chest win records nothing**, as before P2: on a save that already owns what a site pays, `SideEvent.Succeed`
+  pays the chest without `DiscoveryRewards`, so neither `EventsWon` nor the deed is written. Normally the deed
+  was done when the thing was first won; a save that owns it some other way never records the event.
 
 ## Rules every event inherits
 
