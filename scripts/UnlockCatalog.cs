@@ -80,6 +80,15 @@ public sealed class UnlockDefinition
 	public string RevealStageId { get; init; } = string.Empty;
 
 	/// <summary>
+	/// A second, earlier reveal: a stage secret (SecretCatalog id) whose find turns the card as the reveal
+	/// chapter opening would - whichever comes first (<c>GlobalStatsManager.IsCharacterRevealed</c>). Read from
+	/// the save's <c>FoundSecretIds</c>, so it too costs no save field. The reveal chapter stays the fallback
+	/// for a save that never finds it. Nimue's: the Oubliette in the Dungeon, a voice below
+	/// (.ai/endgame-castle.md 4.4 D7 and decision 11). Characters only, and only beside a RevealStageId.
+	/// </summary>
+	public string RevealSecretId { get; init; } = string.Empty;
+
+	/// <summary>
 	/// A character who is not one of the imprisoned WIZARDS, so the final chapter's gate - "the previous
 	/// boss beaten and every wizard freed" - does not count him (<see cref="UnlockCatalog.AllWizardIds"/>).
 	/// Laelaps, the hound: freeing him is an optional deed in one chapter, and counting him would make
@@ -376,14 +385,14 @@ public static class UnlockCatalog
 			outsideCampaignGate: true),
 		// THE ONE HE KEPT (.ai/endgame-castle.md decision 11). Nimue, the Lady of the Lake, kept by the dark wizard beside
 		// him to the end, and freed when he falls: the Throne's own deed, Taken Back, pays her (AchievementDefinitions). A
-		// SECRET until the Throne opens - the sealed blank until then, so the last surprise of the road is not on the
-		// character select from the first run - and revealed by the Throne itself: D7, the Oubliette in the Dungeon that
-		// was to turn her card (achievements-and-secrets.md 8.5), is not built, and when it is, its find is the earlier
-		// reveal to add (decision 11's Built note says how). OUTSIDE THE CAMPAIGN GATE, as Laelaps is: the Throne's gate
-		// counts every wizard, and she is freed only by the fall of the man the gate opens onto, so counting her would
-		// close the Throne for ever.
+		// SECRET - "Not yet discovered." on her card, so the last surprise of the road is not on the character select from
+		// the first run - until the EARLIER of two things: D7, the Oubliette in the Dungeon (achievements-and-secrets.md
+		// 8.5), a voice below a grate in a dead end, found (RevealSecretId); or the Throne opening, the fallback for a save
+		// that never stood on the grate (decision 11's Built note). OUTSIDE THE CAMPAIGN GATE, as Laelaps is: the Throne's
+		// gate counts every wizard, and she is freed only by the fall of the man the gate opens onto, so counting her
+		// would close the Throne for ever.
 		FromAchievementCharacter("nimue", "throne_taken_back", "Kept by him to the end. Freed when he falls in the Throne.",
-			secretUntilStage: "stage_13", outsideCampaignGate: true),
+			secretUntilStage: "stage_13", outsideCampaignGate: true, revealSecret: SecretCatalog.OublietteId),
 		// His own spell, paid with him and offered to no one else (ExclusiveTo). The hint does not name him.
 		new()
 		{
@@ -432,7 +441,8 @@ public static class UnlockCatalog
 	};
 
 	private static UnlockDefinition FromAchievementCharacter(string characterId, string achievementId, string hint,
-		string secretUntilStage = "", bool outsideCampaignGate = false, bool sealedUntilFreed = false) => new()
+		string secretUntilStage = "", bool outsideCampaignGate = false, bool sealedUntilFreed = false,
+		string revealSecret = "") => new()
 	{
 		Id = characterId,
 		Kind = UnlockKind.Character,
@@ -441,6 +451,7 @@ public static class UnlockCatalog
 		LockedHint = hint,
 		IsSecret = !string.IsNullOrWhiteSpace(secretUntilStage),
 		RevealStageId = secretUntilStage ?? string.Empty,
+		RevealSecretId = revealSecret ?? string.Empty,
 		OutsideCampaignGate = outsideCampaignGate,
 		SealedUntilFreed = sealedUntilFreed,
 	};

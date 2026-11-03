@@ -12,6 +12,11 @@
     world/dungeon/shackles-1.png, -2     its far tell: dropped shackles and soot, and nearer, clinker from
     world/dungeon/soot-1.png, -2         the forge (SecretFarTell; the clinker only near)
     world/dungeon/clinker-1.png, -2
+    world/dungeon/oubliette-grate.png    D7, the Oubliette: an iron grate set in a stone curb over a shaft, in the
+                                         floor of a dead end. Oubliette.cs draws the glint far down between the
+                                         bars and the cold draught rising off them, in code
+    world/dungeon/puddle-1.png, -2       its far tell: standing water on the flagstones, seeping up from the
+    world/dungeon/rime-1.png, -2         shaft, and nearest it the same puddles rimed by the draught's cold
     tools/art/_secret_dungeon_preview.png (gitignored) on the dungeon's floor, for looking at
 
 "A dead smithy in the gaol: a cold hearth, an anvil, and a warm glint on the anvil's horn." The forge that
@@ -290,6 +295,128 @@ def clinker(k):
     return c
 
 
+# --- the Oubliette (D7) ----------------------------------------------------------------------------------
+
+GW = 40                      # the grate's cell: a 36-pixel curb and two clear round it (a dither of damp there
+                             # read as a dotted outline, not as wet stone, and was taken out)
+GC = GW // 2                 # its middle, on a pixel corner: Oubliette.cs centres the sprite on its node
+BARS = (10, 16, 22, 28)      # where each two-pixel bar starts, down and across. The gaps between them are four
+                             # wide, and the middle one (18-21) is where the glint is drawn, far down
+
+
+def grate():
+    """An iron grate over a shaft, in a curb of dressed stone set flush with the floor: seen from above, the
+    straps crossing in a lattice, the dark of the shaft between them, its far wall catching a little of the
+    room's light just under the north curb. Steel for the iron, stone for the curb, occlusion for the shaft.
+    Nothing warm: the glint is drawn in code, in the middle gap."""
+    c = raster.Canvas(GW, GW, None)
+    lo, hi = 2, GW - 3           # the curb's outer square
+    ilo, ihi = 6, GW - 7         # the opening's
+    # the curb: blocks lit on the north and west faces (toward the key), shaded south and east, joints dark
+    for y in range(lo, hi + 1):
+        for x in range(lo, hi + 1):
+            if ilo <= x <= ihi and ilo <= y <= ihi:
+                continue
+            north, west = y < ilo, x < ilo
+            south, east = y > ihi, x > ihi
+            tone = ST[1] if (north or west) and not (south or east) else ST[2] if not (south and east) else ST[3]
+            if south or east:
+                tone = ST[2] if (west or north) else ST[3]
+            # the outer edge's highlight, and the bevel down into the shaft
+            if (y == lo and not east) or (x == lo and not south):
+                tone = ST[0] if th(x, y) < 0.5 else ST[1]
+            if (y == ilo - 1 and ilo - 1 <= x <= ihi + 1) or (x == ilo - 1 and ilo - 1 <= y <= ihi + 1):
+                tone = ST[4]
+            if (y == ihi + 1 and ilo - 1 <= x <= ihi + 1) or (x == ihi + 1 and ilo - 1 <= y <= ihi + 1):
+                tone = ST[2]
+            # joints: the curb is four long stones mitred at the corners, each cut once along its length
+            if (north or south) and not (west or east) and x == GC:
+                tone = ST[4]
+            if (west or east) and not (north or south) and y == GC:
+                tone = ST[4]
+            if (x - lo == y - lo or x - lo == hi - y) and (x < ilo or x > ihi) and (y < ilo or y > ihi):
+                tone = ST[4]
+            c.set(x, y, tone)
+    # the shaft: dark, its far (north) wall catching a little light for two rows under the curb
+    for y in range(ilo, ihi + 1):
+        for x in range(ilo, ihi + 1):
+            tone = OCC
+            if y == ilo and th(x, y) < 0.7:
+                tone = ST[4]
+            elif y == ilo + 1 and th(x, y) < 0.3:
+                tone = ST[4]
+            c.set(x, y, tone)
+    # the straps: two pixels wide, lit on their north and west edges; where two cross, a rivet head
+    for b in BARS:
+        for t in range(ilo, ihi + 1):
+            c.set(b, t, SL[2])
+            c.set(b + 1, t, SL[3])
+    for b in BARS:
+        for t in range(ilo, ihi + 1):
+            if c.get(t, b) in (SL[2], SL[3]):
+                continue
+            c.set(t, b, SL[2])
+            c.set(t, b + 1, SL[3])
+    for bx in BARS:
+        for by in BARS:
+            c.set(bx, by, SL[1])
+            c.set(bx + 1, by, SL[2])
+            c.set(bx, by + 1, SL[2])
+            c.set(bx + 1, by + 1, SL[4])
+    # the straps run into the curb under its lip: their ends are in shadow
+    for b in BARS:
+        for t in (ilo, ihi):
+            c.set(b, t, SL[4])
+            c.set(t, b, SL[4])
+    return c
+
+
+def puddle(k, rimed=False):
+    """Standing water on the flags, seeped up from far below: dark (stone's deep, almost black) with its edge
+    shaded into the floor and one pale streak where it catches the room's light from the north-west - steel's
+    shade, never a white, since nothing in the gaol is lit but by him. Rimed: the draught's cold has frosted its
+    edge, steel's hi and lit in a broken rind round the north and west and a few needles out over the water."""
+    w, h = (22, 10) if k == 0 else (18, 9)
+    c = raster.Canvas(w, h, None)
+    cx, cy = (w - 1) / 2.0, (h - 1) / 2.0
+    rx, ry = w / 2.0 - 1.0, h / 2.0 - 1.0
+    lobes = ((0.3, -0.2, 0.55), (-0.35, 0.25, 0.5)) if k == 0 else ((-0.2, -0.3, 0.6), (0.4, 0.2, 0.45))
+    inside = set()
+    for y in range(h):
+        for x in range(w):
+            u, v = (x - cx) / rx, (y - cy) / ry
+            d = math.hypot(u, v)
+            for (lu, lv, lr) in lobes:
+                d = min(d, math.hypot(u - lu, v - lv) / lr * 0.62)
+            wob = 0.08 * math.sin(x * 1.3 + k * 2.0) + 0.06 * math.cos(y * 1.9 + k)
+            if d + wob <= 1.0:
+                inside.add((x, y))
+    for (x, y) in inside:
+        edge = any((x + dx, y + dy) not in inside for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+        tone = ST[4]
+        if edge:
+            tone = ST[3]
+        c.set(x, y, tone)
+    # the streak of light on it, short, across the north-west of the water
+    for i in range(4 if k == 0 else 3):
+        x, y = int(cx - 3 + i), int(cy - 1)
+        if (x, y) in inside:
+            c.set(x, y, SL[3])
+    if rimed:
+        for (x, y) in inside:
+            nw = ((x - 1, y) not in inside) or ((x, y - 1) not in inside)
+            if nw and th(x, y) < 0.75:
+                c.set(x, y, SL[0] if th(x, y) < 0.35 else SL[1])
+        # needles of frost reaching in from the rind
+        for j in range(3):
+            x0 = int(cx - rx * 0.6 + j * rx * 0.55)
+            y0 = min(y for (xx, y) in inside if xx == x0) if any(xx == x0 for (xx, _) in inside) else int(cy)
+            for t in range(2 + (j + k) % 2):
+                if (x0 + t, y0 + 1 + t) in inside:
+                    c.set(x0 + t, y0 + 1 + t, SL[1])
+    return c
+
+
 # --- out ----------------------------------------------------------------------------------------------
 
 def audit(name, c):
@@ -324,6 +451,9 @@ def main():
     singles += [("shackles-%d" % (k + 1), shackles(k)) for k in range(2)]
     singles += [("soot-%d" % (k + 1), soot(k)) for k in range(2)]
     singles += [("clinker-%d" % (k + 1), clinker(k)) for k in range(2)]
+    singles += [("oubliette-grate", grate())]
+    singles += [("puddle-%d" % (k + 1), puddle(k)) for k in range(2)]
+    singles += [("rime-%d" % (k + 1), puddle(k, rimed=True)) for k in range(2)]
     row = []
     for name, c in singles:
         ok = audit(name, c) and ok
@@ -333,6 +463,8 @@ def main():
     print("  cold forge   3 frames at %dx%d, anvil, ring r=%d px, 2 shackles, 2 soot, 2 clinker"
           % (FW * SCALE, FH * SCALE, RING_R * SCALE))
     print("  ember spots  %s" % ember_spots())
+    print("  oubliette    grate %dx%d px (the glint's gap at art %d-%d), 2 puddles, 2 rimed"
+          % (GW * SCALE, GW * SCALE, GC - 2, GC + 1))
 
     # The preview: the ring with the forge behind it and the anvil, as ColdForge.cs lays them out, and the
     # rest in a row.

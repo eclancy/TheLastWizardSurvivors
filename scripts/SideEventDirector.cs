@@ -88,7 +88,7 @@ public partial class SideEventDirector : Node
 	/// <summary>
 	/// The placer stream of a chapter's event <paramref name="index"/>: the first keeps stream 1, so every
 	/// chapter's original event is placed exactly where it always was; the later ones take 3 to 6 (2 is the
-	/// wayfinder's, 7 to 9 the secrets').
+	/// wayfinder's, 7 to 10 the secrets').
 	/// </summary>
 	public static int EventStream(int index) => index == 0 ? 1 : 2 + index;
 

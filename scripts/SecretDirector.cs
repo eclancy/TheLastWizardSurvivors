@@ -15,8 +15,8 @@ using TheOneHeMissed.scripts;
 //   - Placing the chapter's secrets (piece A4). Every built secret in SecretCatalog.ForStage is put in the
 //     world by its SecretPlacement, from the terrain seed, once at stage start - the anchor three to four
 //     chunks out, the keepsake ten to twelve, the spell vault five to seven at a bearing at least 90
-//     degrees from the side event's and the keepsake's (6.4) - each on its own ExplorePlacer stream, so
-//     a change to one never moves another. A Custom secret hooks itself in (Install; the Fenced Bloom
+//     degrees from the side event's and the keepsake's (6.4), and a mid-band site five to nine out clear of
+//     all three (the Oubliette) - each on its own ExplorePlacer stream, so a change to one never moves another. A Custom secret hooks itself in (Install; the Fenced Bloom
 //     rides every flower pen through HookLandmarks). So a chapter's secrets are its catalog file and its
 //     nodes, and never an edit here.
 //   - What a placed site asks of the ground: its far tell, furnished into each chunk round it as the
@@ -61,10 +61,11 @@ public partial class SecretDirector : Node
 		return state;
 	}
 
-	/// <summary>The chapter's anchor, keepsake and spell vault, placed at stage start; null where it has none.</summary>
+	/// <summary>The chapter's anchor, keepsake, spell vault and mid-band site, placed at stage start; null where it has none.</summary>
 	public SecretSite Anchor { get; private set; }
 	public SecretSite Keepsake { get; private set; }
 	public SecretSite Vault { get; private set; }
+	public SecretSite Mid { get; private set; }
 
 	/// <summary>Every site placed at stage start, in the order placed.</summary>
 	public IReadOnlyList<SecretSite> Placed => placed;
@@ -85,6 +86,9 @@ public partial class SecretDirector : Node
 	/// <summary>The vault band: 35 to 50 s of walking (.ai/achievements-and-secrets.md 6.4).</summary>
 	public const float VaultMinChunks = 5f;
 	public const float VaultMaxChunks = 7f;
+	/// <summary>The mid band (stage-secrets section 4): 35 to 65 s of walking. SecretPlacement.Mid.</summary>
+	public const float MidMinChunks = 5f;
+	public const float MidMaxChunks = 9f;
 	/// <summary>How far apart, in bearing from the start, a vault is from the event and the keepsake.</summary>
 	public const float MinBearingSeparationDegrees = 90f;
 
@@ -93,6 +97,7 @@ public partial class SecretDirector : Node
 	private const int KeepsakeStream = 7;
 	private const int VaultStream = 8;
 	private const int AnchorStream = 9;
+	private const int MidStream = 10;
 
 	/// <summary>
 	/// How near is seen (4.3: "came within about 450 px of the site, once"): the near tell is on screen by
@@ -157,6 +162,11 @@ public partial class SecretDirector : Node
 		if (Keepsake != null)
 			avoid.Add(BearingOf(Keepsake.Position));
 		Vault = PlaceAll(here, SecretPlacement.Vault, VaultStream, VaultMinChunks, VaultMaxChunks, avoid);
+		// The mid band last, clear of the vault too: the Oubliette is a walk of its own, not the forge's (D7).
+		// Placed after everything else, so a chapter without one places every other site exactly as before.
+		if (Vault != null)
+			avoid.Add(BearingOf(Vault.Position));
+		Mid = PlaceAll(here, SecretPlacement.Mid, MidStream, MidMinChunks, MidMaxChunks, avoid);
 
 		// Already seen on this save: no check a frame for those.
 		if (Save is SaveData save)
@@ -207,6 +217,11 @@ public partial class SecretDirector : Node
 			Func<Vector2, bool> also = secret.RoomAt == null ? null : p => secret.RoomAt(Game, p);
 			at = avoid.Count == 0
 				? placer.EventSiteInBand(room, dense: secret.OpenRadius > 0f, keepOff: Game.ExploreReserves, also: also)
+				// The mid band's site keeps its bearing through the sweep as well as at the roll: its room is rare
+				// (the Oubliette's dead end), and the plain sweep would walk it round onto the event's line.
+				: secret.Placement == SecretPlacement.Mid
+					? placer.AtBearingInBandKeeping(PickBearing(placer, avoid), minChunks, maxChunks, room, avoid,
+						Mathf.DegToRad(MinBearingSeparationDegrees), dense: secret.OpenRadius > 0f, keepOff: Game.ExploreReserves, also: also)
 				: placer.AtBearingInBand(PickBearing(placer, avoid), minChunks, maxChunks, room, dense: secret.OpenRadius > 0f,
 					keepOff: Game.ExploreReserves, also: also);
 		}
@@ -492,8 +507,10 @@ public partial class SecretDirector : Node
 	/// spell on the spot: the level-up pool reads the save live, so the spell can be offered from the next
 	/// level-up of this run (decision 9). Never into the run itself - no loadout, no level, no offer.
 	/// A second of the same kind in one run (another pen bloomed) is quieter: a sound and no toast.
+	/// <paramref name="runLine"/>, when given, is the toast's line in place of the catalog's run or repeat
+	/// reward: for a find whose words depend on the save (the Oubliette's, once the one below is free).
 	/// </summary>
-	public void Found(string secretId)
+	public void Found(string secretId, string runLine = null)
 	{
 		SecretDefinition secret = SecretCatalog.Get(secretId);
 		if (secret == null)
@@ -534,7 +551,7 @@ public partial class SecretDirector : Node
 			? AchievementManager.CompleteNow(saveManager, AchievementDefinitions.SecretDeedId(secretId))
 			: new List<RunUnlockEntry>();
 		string lessonLine = Node2DGame.OwedLessonLine(owedBefore, Teachings.Owed(saveManager?.Data));
-		string line = firstEver || string.IsNullOrEmpty(secret.RepeatReward) ? secret.RunReward : secret.RepeatReward;
+		string line = runLine ?? (firstEver || string.IsNullOrEmpty(secret.RepeatReward) ? secret.RunReward : secret.RepeatReward);
 		foreach (RunUnlockEntry entry in granted.Where(e => e.Kind == RunUnlockKind.Spell))
 		{
 			// On the results screen with the run's other discoveries. The kind leads, as a side event's

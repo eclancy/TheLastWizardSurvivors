@@ -2028,6 +2028,75 @@ def secret_shatter():
     return S.dc_block(S.reverb(out, size=0.9, damp=0.42, mix=0.36))
 
 
+# The Oubliette's answer (Oubliette.cs; .ai/endgame-castle.md 4.4, D7): what comes up the shaft once he has stood
+# on the grate five seconds untouched. (onset, length, f0 from, f0 to, vowel). A woman's voice, wordless, and it
+# never names her: a hum that lifts as if toward someone overhead, then two open syllables, the second falling
+# and held. Water drips at the bottom of the shaft before and after it (_VOICE_BELOW_DRIPS).
+_VOICE_BELOW = [
+    (0.30, 0.66, 294.0, 349.0, "m"),     # D4 lifting to F4, mouth closed: a hum
+    (1.02, 0.34, 349.0, 392.0, "oh"),    # opening to "oh", up to G4
+    (1.40, 0.86, 392.0, 294.0, "ah"),    # "ah", falling back to D4, held, the vibrato blooming
+]
+_VOICE_BELOW_DRIPS = [(0.06, 1.0), (0.94, 0.55), (2.34, 0.8)]
+
+_VOICE_BELOW_VOWELS = {
+    # A hum: the fundamental and the lowest resonance, almost nothing above - the mouth is shut.
+    "m":  [(280.0, 2.5, 1.0), (1050.0, 6.0, 0.10), (2300.0, 9.0, 0.04)],
+    "oh": [(480.0, 4.0, 1.0), (860.0, 6.0, 0.45), (2450.0, 8.0, 0.08)],
+    "ah": [(S.sweep(0.86, 760.0, 650.0), 4.0, 1.0), (S.sweep(0.86, 1180.0, 1040.0), 6.0, 0.5), (2600.0, 8.0, 0.1)],
+}
+
+
+def _drip(seed):
+    """A drop falling into still water far down: the plink of the bubble it traps - a sine rising an octave in
+    30 ms, gone in a tenth of a second - and a softer second ring as the surface settles."""
+    rng = __import__("random").Random(seed)
+    dur = 0.16
+    n = S.n_samples(dur)
+    f0 = rng.uniform(820.0, 980.0)
+    plink = S.env_mul(S.osc("sine", S.sweep(dur, f0, f0 * 2.0, 0.35), dur), S.expdecay(n, 9.0))
+    settle = S.env_mul(S.osc("sine", f0 * 1.5, dur), S.expdecay(n, 14.0))
+    return S.mix(plink, S.gain(settle, 0.25))
+
+
+def secret_voice_below():
+    """The Cursed Dungeon's Oubliette (D7): a voice from the bottom of a shaft under the gaol, answering the one
+    who stood over its grate untouched for five seconds. Played at the grate, once a run at most, and only while
+    the one below is still held. It is the reveal (her card turns) - so it is a person, but nobody named: no
+    words, and nothing in it is a name's rhythm.
+
+    Not the other voices in the set. The cell's cry (the same chapter's, Tituba's) is CALLED, high, rising into a
+    question; the Sibyl INTONES three syllables and the cave hands them back six times; the granary SAYS two
+    phrases level and low; the ice song is a man's. This one HUMS first - a closed mouth, the fundamental and one
+    low resonance, lifting D4 to F4 - and only then opens, "oh" up to G4 and "ah" falling back to D4 and held,
+    its vibrato blooming late, as a voice does that has not been used. One voice, once, no echoes handed back.
+
+    The shaft is what carries it: a long narrow pipe (a 12 ms comb, so its resonances sit on 83 Hz), the top gone
+    at 1.5 kHz, a tall stone room under it, and water at the bottom - a drop falling into it before the hum, one
+    in the gap, one in the tail, through the same shaft. Nothing under 120 Hz: the sub band is the explosion's."""
+    items = []
+    last = len(_VOICE_BELOW) - 1
+    for i, (t, dur, f0, f1, vowel) in enumerate(_VOICE_BELOW):
+        hum = vowel == "m"
+        v = _vowel(S.sweep(dur, f0, f1, 0.7), dur, _VOICE_BELOW_VOWELS[vowel],
+                   vibrato=0.004 if hum else (0.022 if i == last else 0.01), rate=5.0,
+                   attack=0.16 if hum else 0.04, release=0.3 if i == last else 0.06, seed=81 + i)
+        if i == last:
+            # The vibrato blooms late on the held note: none at its start, all of it by its end.
+            v = S.mix(S.gain(v, 0.55), S.env_mul(S.gain(v, 0.45), S.ramp(len(v), 0.2, 1.0)))
+        items.append((v, t, 0.9 if hum else 1.0))
+    voiced = S.pad(S.layer(items), 2.7)
+    # A breath of the same resonances under the held "ah", as an unused voice has.
+    husk = S.env_mul(_breath(0.86, [(700.0, 1.0), (1100.0, 0.45)], q=3.0, seed=89), S.adsr(0.86, a=0.12, d=0.05, s=0.7, r=0.3))
+    voice = S.layer([(voiced, 0.0, 1.0), (husk, 1.40, 0.12)])
+    drips = S.layer([(_drip(91 + k), t, g) for k, (t, g) in enumerate(_VOICE_BELOW_DRIPS)])
+    out = S.pad(S.layer([(voice, 0.0, 1.0), (drips, 0.0, 0.32)]), 2.7)
+    # Up the shaft: a narrow pipe, the top gone, a tall stone room round all of it.
+    pipe = S.delay(out, 0.012, feedback=0.62, mix=0.55, taps=8)
+    out = S.lowpass(S.highpass(pipe, 120.0), 1500.0)
+    return S.dc_block(S.reverb(out, size=0.92, damp=0.62, mix=0.42))
+
+
 # ---------------------------------------------------------------------------
 # registry
 # ---------------------------------------------------------------------------
@@ -2162,4 +2231,8 @@ REGISTRY += [
     ("secret_seen",         "secret", -9.0,  secret_seen,         False),
     ("secret_found",        "secret", -8.0,  secret_found,        False),
     ("secret_shatter",      "secret", -4.0,  secret_shatter,      False),
+    # The Oubliette's voice below: once a run at most, played at the grate he is standing on, so nothing is lost to
+    # distance - the quiet end of the once-a-minute row beside secret_found, a voice from far down rather than a
+    # sting, and under the meta_unlock that follows it once it has finished.
+    ("secret_voice_below",  "secret", -8.0,  secret_voice_below,  False),
 ]

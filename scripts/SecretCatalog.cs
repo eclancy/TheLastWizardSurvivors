@@ -21,6 +21,11 @@ public enum SecretVerb
 	Gather,
 	/// <summary>Only enemies that walk into a zone count; he stands at the edge and lets them come (5).</summary>
 	Lure,
+	/// <summary>
+	/// A place held for a while without being struck (5, "conditions to meet": Player.DamageTaken): the
+	/// Oubliette's grate. Not linger, which only asks him to stay: a hit starts it again.
+	/// </summary>
+	Untouched,
 }
 
 /// <summary>
@@ -66,6 +71,14 @@ public enum SecretPlacement
 	/// <summary>A spell vault (.ai/achievements-and-secrets.md 6.4): five to seven chunks out, at least 90
 	/// degrees from the side event's and the keepsake's bearings, in every run of its chapter. Stream 8.</summary>
 	Vault,
+	/// <summary>
+	/// One site in the mid band (.ai/stage-secrets.md section 4: five to nine chunks out), in every run of its
+	/// chapter, at least 90 degrees from the side event's, the keepsake's and the vault's bearings where the
+	/// circle leaves room (the farthest from them where it does not). Stream 10. For a mid-band secret that
+	/// must be there every run because something rides on it - the Oubliette, whose find reveals a wizard -
+	/// rather than the per-chunk scatter that section planned for the common ones (still unbuilt).
+	/// </summary>
+	Mid,
 }
 
 /// <summary>One stage secret: what it is called, where it lives, how it is worked and what it pays.</summary>
@@ -99,6 +112,12 @@ public sealed record SecretDefinition
 	/// whose spell is already on the save pays a chest (6.4). Empty: <see cref="RunReward"/> again.
 	/// </summary>
 	public string RepeatReward { get; init; } = "";
+	/// <summary>
+	/// What its deed's row says it pays, when "A mark on the page" would undersell it: a find that turns
+	/// something on another screen without paying it (the Oubliette's, a wizard's sealed card). Never names
+	/// what it turns. Empty: the meta reward's own words.
+	/// </summary>
+	public string RewardText { get; init; } = "";
 	public SecretMetaReward MetaReward { get; init; } = SecretMetaReward.PageOnly;
 	/// <summary>For FoundLevel: the ArcaneUpgrades id (vitality, recovery, magnet, movespeed).</summary>
 	public string MetaRewardId { get; init; } = "";
@@ -293,6 +312,7 @@ public static partial class SecretCatalog
 	// teaches the Ascension, so the lesson a vault gives depends on the order a save finds them in.
 	private static string RewardTextFor(SecretDefinition secret) => secret.MetaReward switch
 	{
+		SecretMetaReward.PageOnly when !string.IsNullOrWhiteSpace(secret.RewardText) => secret.RewardText,
 		SecretMetaReward.Spell when Teachings.IsTeacherDeed(AchievementDefinitions.SecretDeedId(secret.Id))
 			=> $"Frees {secret.SpellName} and teaches a lesson",
 		SecretMetaReward.Spell => $"Frees {secret.SpellName}",

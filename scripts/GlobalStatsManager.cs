@@ -220,12 +220,16 @@ public static class GlobalStatsManager
 	/// Derived, never stored: the save already says which chapters are open, so there is no
 	/// "revealed" flag to migrate or to fall out of step with it. It also means the reveal follows
 	/// the stage list exactly - a chapter appears there, and the wizard it holds appears here, on the
-	/// same unlock.
+	/// same unlock. A wizard with a reveal secret (<see cref="UnlockDefinition.RevealSecretId"/>, Nimue's
+	/// Oubliette) is revealed by its find too, whichever comes first - read from the found list the save
+	/// already keeps, so that is derived as well.
 	/// </remarks>
 	public static bool IsCharacterRevealed(SaveData data, string characterId)
 	{
 		UnlockDefinition definition = UnlockCatalog.GetCharacter(characterId);
 		if (definition == null || !definition.IsSecret || IsCharacterUnlocked(data, characterId))
+			return true;
+		if (!string.IsNullOrWhiteSpace(definition.RevealSecretId) && data != null && data.HasFoundSecret(definition.RevealSecretId))
 			return true;
 
 		return IsStageAvailable(data, StageCatalog.GetById(definition.RevealStageId));

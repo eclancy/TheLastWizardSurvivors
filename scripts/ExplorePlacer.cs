@@ -449,6 +449,45 @@ public sealed class ExplorePlacer
 		return Keep(Snap(candidate), footprint);
 	}
 
+	/// <summary>
+	/// <see cref="AtBearingInBand"/>, but the spot it settles on keeps <paramref name="separation"/> round from every
+	/// bearing in <paramref name="avoid"/> - then two thirds of that, a third, and none, each searched near the roll
+	/// and then over the whole band. For a site whose room is rare (the Oubliette's dead end: the maze's braid pass
+	/// gives nine dead ends in ten a second way out), where the plain sweep walks round its ring until it finds one,
+	/// and on seed 4242 walked the Oubliette round to 5 degrees off the Gaoler's key's bearing. The bearing is tested
+	/// first, so a spot outside the arc never asks the ground about itself.
+	/// </summary>
+	public Vector2 AtBearingInBandKeeping(float bearing, float minChunks, float maxChunks, float footprint,
+		IReadOnlyList<float> avoid, float separation, bool dense = false,
+		IReadOnlyList<(Vector2 Centre, float Radius)> keepOff = null, Func<Vector2, bool> also = null)
+	{
+		float distance = Mathf.Lerp(minChunks, maxChunks, NextFloat()) * ground.ChunkPixels;
+		float searchFrom = NextFloat() * Mathf.Tau;
+		Func<Vector2, float, bool> open = KeepingOff(dense ? ground.IsClearDense ?? ground.IsClear : ground.IsClear, keepOff);
+		Vector2 candidate = ground.Origin + Direction(bearing) * distance;
+		foreach (float share in new[] { 1f, 2f / 3f, 1f / 3f, 0f })
+		{
+			float need = separation * share;
+			Func<Vector2, float, bool> test = (p, f) =>
+			{
+				if (need > 0f && avoid != null)
+				{
+					float b = BearingFrom(ground.Origin, p);
+					foreach (float other in avoid)
+						if (!float.IsNaN(other) && Separation(b, other) < need - 1e-4f)
+							return false;
+				}
+				return (also == null || also(p)) && open(p, f);
+			};
+			if (TrySearch(candidate, footprint, searchFrom, null, 0f, test, out Vector2 found))
+				return Keep(found, footprint);
+			if (TrySweepBand(bearing, distance, minChunks, maxChunks, footprint, test, out found))
+				return Keep(found, footprint);
+		}
+		GD.PushWarning($"ExplorePlacer: no open ground for a {footprint:0} px footprint anywhere {minChunks:0.#}-{maxChunks:0.#} chunks out; placing at {candidate} anyway.");
+		return Keep(Snap(candidate), footprint);
+	}
+
 	// A test that also refuses a footprint overlapping one already reserved - another site's court, which the
 	// ground tests cannot see (a reservation keeps decor off, not other sites). Null keeps the test as it is.
 	private static Func<Vector2, float, bool> KeepingOff(Func<Vector2, float, bool> test,
