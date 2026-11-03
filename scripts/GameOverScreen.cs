@@ -497,9 +497,13 @@ public partial class GameOverScreen : CanvasLayer
 			return narrow ? $"{rush}  ·  {report.CharacterName}" : $"{rush}\n{report.CharacterName}";
 		}
 
+		// Its place on the road, as the map and the pause screen say it (StageCatalog.ChapterPlace), not the roster
+		// index - which called the Fallow Fields, second on the road, Chapter 10.
+		StageDefinition stage = StageCatalog.GetByIndex(report.StageIndex);
+		string place = stage != null ? StageCatalog.ChapterPlace(stage) : $"Chapter {report.StageIndex + 1}";
 		string chapter = string.IsNullOrWhiteSpace(report.StageName)
-			? $"Chapter {report.StageIndex + 1}"
-			: $"Chapter {report.StageIndex + 1}  ·  {report.StageName}";
+			? place
+			: $"{place}  ·  {report.StageName}";
 		if (string.IsNullOrWhiteSpace(report.CharacterName))
 			return chapter;
 		return narrow ? $"{chapter}  ·  {report.CharacterName}" : $"{chapter}\n{report.CharacterName}";

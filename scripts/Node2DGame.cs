@@ -4067,9 +4067,16 @@ public partial class Node2DGame : Node2D
 
 		StageDefinition stage = StageCatalog.GetByIndex(Global.SelectedStageIdx);
 		CharacterData character = CharacterRoster.GetByIndex(Global.SelectedCharacterIdx);
+		// Its place on the road, as the map's card says it (StageCatalog.ChapterPlace): "Chapter 2" for the Fallow
+		// Fields, "Beyond the map" for the Sketchbook. It was the roster index, which called the Fallow Fields
+		// Chapter 10. A Boss Rush is not a chapter, though it is fought in one (BossRushCatalog.Arena), and says so,
+		// as the results do.
+		string place = IsBossRush ? "Boss Rush"
+			: stage != null ? StageCatalog.ChapterPlace(stage)
+			: $"Chapter {Global.SelectedStageIdx + 1}";
 		string chapter = stage == null || string.IsNullOrWhiteSpace(stage.DisplayName)
-			? $"Chapter {Global.SelectedStageIdx + 1}"
-			: $"Chapter {Global.SelectedStageIdx + 1}  ·  {stage.DisplayName}";
+			? place
+			: $"{place}  ·  {stage.DisplayName}";
 		Label where = CodexRows.MakeText(character == null ? chapter : $"{chapter}\n{character.Name}",
 			ResponsiveLayout.TextRole.Label, PauseInk.InkSoft);
 		where.Name = "EscapeWhere";

@@ -616,7 +616,7 @@ public partial class WorldMap : Control
 		int chapters = StageCatalog.Campaign.Count(s => layout.Get(s.Id) != null);
 		string where = stop.IsBossRush ? "The summit, over his forge"
 			: position >= 0 ? $"Chapter {position + 1} of {chapters}"
-			: "Beyond the map";
+			: StageCatalog.OffRoadPlace;
 		cardBox.AddChild(MakeText(where, ResponsiveLayout.TextRole.Label, InkPlace, "CardWhere"));
 		var name = MakeText(stop.IsBossRush ? "Boss Rush" : stage.DisplayName, ResponsiveLayout.TextRole.Title, Ink, "CardName");
 		cardBox.AddChild(name);
