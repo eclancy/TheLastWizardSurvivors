@@ -245,8 +245,11 @@ title figure he had been drawn from became the player's alone: undyed warm wool 
 `tools/art/merlin_concepts.py` (registered with `matte`) rather than in `bonelight.py`, as sand cloth is. Ivory is
 the shipped look's mantle: warmer than bone (cold, every beard), paler than sand cloth, L\* 93 / 83 / 67 / 42 / 23,
 its shade turning toward indigo through the warm side (hue 37 -> 13 -> 325) at 0.22 saturation. Russet is the
-alternate look's robe: redder and deeper than flesh, darker and browner than ember. Neither is player pigment and
-nobody else wears either.
+alternate look's robe: redder and deeper than flesh, darker and browner than ember. Neither is player pigment.
+**Russet is also Thora's hair** (2026-11-03, the Stormcaller redrawn as a woman, `tools/art/roster.py`
+`HAIR_STORM`): from its deep end, dark auburn, chosen to part from her amber cloak in hue and in value both, where
+near-black hair sank into the portrait well. roster.py carries the same five bytes and colours and registers the
+row with `matte` too, so it is settled whichever generator runs first.
 
 That is **fifty-five material colours plus five lights** (the soft rim, 2026-10-28, is the
 fifth), against the 935 the current art carries. It is a budget, not a suggestion: a new material

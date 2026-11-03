@@ -457,7 +457,7 @@ level-up that found the book full. **No run overran and no run had a dead level-
 1. **A meets chapter 1's target on five of six; Marginalia are 3 or fewer on all six.** The one miss
    (Stormcaller at 99, the boss down in 2.27) is the boss fight's spread, not the book's: the six-page
    book misses on two of the same six (the Geomancer at 2.00; the Frostweaver at 99 with a ten-minute
-   siege, the worst run measured), and B, four pages, passes the Stormcaller at 99 (0.47) and misses him
+   siege, the worst run measured), and B, four pages, passes the Stormcaller at 99 (0.47) and misses her
    at 1234 (1.62), where three pages took 0.54. Rule 1 asks for B on a miss and for four pages if B
    passes; B does not pass any better than A, so **a new save stays on three**. Eric's call if the spread
    says otherwise to a person: section 8's "only a person can answer".
