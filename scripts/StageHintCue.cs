@@ -28,6 +28,8 @@ using TheOneHeMissed.scripts;
 //                 shimmering above the water among it - the fata morgana the strait is named for
 //   the gibbet    pale threads of vapour drifting in low from his side against the wind, curling and thinning
 //                 as they come - a few on each tap of the flask and each cough
+//   the seer      stars twinkling in from his side, a near one and a far one on each line of the verse he
+//                 reads, each flaring once and fading as it drifts in
 //
 // IN THE WORLD'S LAYERS, HELD TO THE VIEW. The marks are drawn in the world, on the layer over the
 // bodies and under the HUD, so they read as something out there rather than as an interface - but
@@ -106,6 +108,12 @@ public partial class StageHintCue : Node2D
 
 	/// <summary>The gibbet's hint beats, for RegressionChecks.ValidateGibbetCage (a copy).</summary>
 	public static float[] FlaskBeatTimes => (float[])FlaskBeats.Clone();
+	// The seer reading (hint_quatrain): the four lines of a verse, two couplets with a breath between -
+	// tools/audio/sfx.py _QUATRAIN_LINES is the same list. A star on each line, near, and one further off.
+	private static readonly float[] QuatrainLines = { 0.06f, 0.78f, 1.74f, 2.46f };
+
+	/// <summary>The seer's hint beats, for RegressionChecks.ValidateQuatrains (a copy).</summary>
+	public static float[] QuatrainLineTimes => (float[])QuatrainLines.Clone();
 
 	private struct Mark
 	{
@@ -210,6 +218,7 @@ public partial class StageHintCue : Node2D
 		HintCue.Birds => 110f,
 		HintCue.Mist => 116f,
 		HintCue.Vapour => 120f,
+		HintCue.Stars => 100f,
 		_ => 8f,
 	};
 
@@ -439,6 +448,20 @@ public partial class StageHintCue : Node2D
 				if (nextBeat >= FlaskBeats.Length)
 					clock = -1f;
 				break;
+			case HintCue.Stars:
+				while (nextBeat < QuatrainLines.Length && QuatrainLines[nextBeat] <= t)
+				{
+					// A line read: a near star on the line to him, a little either side line by line as a verse sets
+					// its lines down, and a far one further along - each drifting slowly in and flaring once (Pose).
+					float along = ((nextBeat % 2 == 0) ? -1f : 1f) * (10f + 14f * nextBeat) + Jitter(8f);
+					Spawn((int)HintCue.Stars, 0, 2.6f, along, Jitter(10f), inward: 9f, drift: Jitter(6f), rise: 6f, fadeIn: 0.2f);
+					Spawn((int)HintCue.Stars, 4, 2.2f, -along * 1.8f + Jitter(20f), 20f + (float)random.NextDouble() * 16f,
+						inward: 6f, drift: Jitter(8f), rise: 4f, fadeIn: 0.3f);
+					nextBeat++;
+				}
+				if (nextBeat >= QuatrainLines.Length)
+					clock = -1f;
+				break;
 			case HintCue.Bell:
 				// The bell walks along the edge, as the caravan walks its road.
 				if (bellSlot < 0)
@@ -592,6 +615,16 @@ public partial class StageHintCue : Node2D
 				column = (m.Glyph + (int)(m.Age * 2.4f)) % 4 + (m.Age > m.Life * 0.5f ? 4 : 0);
 				at.Y += Mathf.Sin(m.Age * 1.7f + m.Phase) * 5f;
 				break;
+			case HintCue.Stars:
+			{
+				// A twinkle (four phases, near or far): it swells to its longest spikes in the middle of its life and
+				// flashes once, eight-pointed, at the peak - then settles back as it fades.
+				float f = m.Age / Mathf.Max(0.01f, m.Life);
+				int step = Mathf.Clamp(Mathf.RoundToInt(3f * Mathf.Sin(f * Mathf.Pi)), 0, 3);
+				column = (m.Glyph >= 4 ? 4 : 0) + step;
+				at.Y += Mathf.Sin(m.Age * 2.3f + m.Phase) * 3f;
+				break;
+			}
 			case HintCue.Writ:
 				// Turning over as it is blown, and lifted and dropped by the draught.
 				column = (m.Glyph + (int)(m.Age * 9f)) % Columns;

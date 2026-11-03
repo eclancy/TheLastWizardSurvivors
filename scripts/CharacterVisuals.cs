@@ -66,6 +66,9 @@ public static class CharacterVisuals
 			case "morgan": return new Vector2(43, 15);
 			// The dose in the round-bellied flask he holds up to the light (roster.py, paracelsus()), its middle.
 			case "paracelsus": return new Vector2(38, 9);
+			// The star kindled at the heart of the armillary sphere he holds up (roster.py, nostradamus()): where
+			// Starfall's light is, not the brass rings round it.
+			case "nostradamus": return new Vector2(12, 5);
 			default: return null;
 		}
 	}
@@ -99,6 +102,7 @@ public static class CharacterVisuals
 			case "baba_yaga":
 			case "morgan":
 			case "paracelsus":
+			case "nostradamus":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

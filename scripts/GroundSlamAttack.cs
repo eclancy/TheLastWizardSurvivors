@@ -111,6 +111,16 @@ public sealed class GroundSlamAttack
 	/// <summary>Clears the cooldown so the next <see cref="Tick"/> starts winding up at once.</summary>
 	public void Prime() => telegraph.Prime();
 
+	/// <summary>Whether Foresight lengthens this slam's wind-up (<see cref="AttackTelegraph.Foreseeable"/>): an ordinary body's, never a boss's.</summary>
+	public bool Foreseeable
+	{
+		get => telegraph.Foreseeable;
+		set => telegraph.Foreseeable = value;
+	}
+
+	/// <summary>Ends the wind-up without landing it and starts the cooldown over (<see cref="AttackTelegraph.Cancel"/>).</summary>
+	public bool Cancel() => telegraph.Cancel();
+
 	/// <summary>0 the frame the wind-up starts, 1 the frame before it resolves.</summary>
 	public float WindUpProgress => telegraph.WindUpProgress;
 

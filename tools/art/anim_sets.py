@@ -264,7 +264,9 @@ WALK_BOB = {"pyromancer": 2, "stormcaller": 2, "vainamoinen": 2,
             # A tall old woman's long, slow step under a coat to the ground.
             "yaga": 1,
             # A heavy man's planted step under a physician's gown.
-            "paracelsus": 1}
+            "paracelsus": 1,
+            # An old man's measured step under a long physician's gown.
+            "nostradamus": 1}
 
 # The waist. Everything above this row is the same drawing in every frame and only rises with
 # the bob; everything below it is redrawn per frame by the pose function. It is the same row the

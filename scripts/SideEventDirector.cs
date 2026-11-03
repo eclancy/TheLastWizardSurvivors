@@ -129,7 +129,10 @@ public partial class SideEventDirector : Node
 		// Placed by the bridge's band (BargeEvent.PlaceSites), its wayfinder by the bridge's rules (hook 10).
 		"stage_11" => new(WayfinderKind.Compass, new SideEventEntry("the_barge", () => new BargeEvent())),
 		// (the Court's line is below)
-		"stage_12" => null,
+		// The Court's first event (.ai/chapter-wizards.md 4.10): Nostradamus, heard reading from room to room. Its
+		// rooms are the Court's own, chosen by the seed (SeersVoiceEvent.PlaceSites); Ma Liang's dotted door in the
+		// Gallery will be the second event on this line (4.8), and the Gallery is kept out of the seer's rooms for it.
+		"stage_12" => new(WayfinderKind.Compass, new SideEventEntry("seers_voice", () => new SeersVoiceEvent())),
 		// (the Throne's line is below)
 		"stage_13" => null,
 		_ => null,
@@ -261,10 +264,13 @@ public partial class SideEventDirector : Node
 		float bearing = WayfinderBearing(near.NextFloat(), eventBearings);
 		WayfinderKind kind = WayfinderFor(stage.Id) ?? WayfinderKind.Compass;
 		// ChapterRules hook 10: a chapter whose ground the band cannot read (the Last Bridge, a deck over a drop)
-		// says where its wayfinder goes. Asked after the bearing's roll, so every other chapter's wayfinder is
-		// where it always was.
+		// says where its wayfinder goes. Every other chapter searches the band: where the first search finds
+		// ground this is exactly AtBearing's spot, so a chapter that had a wayfinder keeps it where it was; where it
+		// does not, the band is swept from the bearing outward rather than the wayfinder being left in the rock. The
+		// Court needs it: its building fills only the quarter of the band north-east of the stair.
 		Vector2 wayfinderAt = Game.Rules?.WayfinderSite(near, WayfinderPickup.Footprint)
-			?? near.AtBearing(bearing, WayfinderMinChunks, WayfinderMaxChunks, WayfinderPickup.Footprint);
+			?? near.AtBearingInBandAvoiding(bearing, WayfinderMinChunks, WayfinderMaxChunks, WayfinderPickup.Footprint,
+				eventBearings, Mathf.DegToRad(WayfinderMinSeparationDegrees));
 		var site = PointsOfInterest.Add(new PointOfInterest(wayfinderAt, WayfinderPickup.GlyphFor(kind), isWayfinder: true));
 		var wayfinder = new WayfinderPickup { Name = "Wayfinder", Game = Game, Kind = kind, Site = site };
 

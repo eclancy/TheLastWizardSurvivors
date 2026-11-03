@@ -286,6 +286,7 @@ public static class AchievementDefinitions
 		("caravan_master", "The Caravan Stopped", "Catch the caravan master on the Scorched Sands road.", "Unlocks Iron Palisade"),
 		("great_anvil", "The Chains Struck", "Bring the forge's own hammers down on the four chains in the Emberdeep.", "Frees Wayland the Smith"),
 		("the_barge", "Kept Pace", "Keep level with the barge under the Last Bridge all the way to its landing.", "Frees Morgan le Fay"),
+		("seers_voice", "The Last Reading", "Follow the voice reading room to room through the Court until you find the reader.", "Frees Nostradamus"),
 	};
 
 	private const float TenMinutes = 600f;

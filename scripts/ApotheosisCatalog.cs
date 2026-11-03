@@ -238,6 +238,22 @@ public static class ApotheosisCatalog
 				"Distil: the last one dies hardest. Fewer carriers each jump, each dosed twice over; a boss at most x4.",
 				new Color(0.86f, 0.96f, 0.55f), NoVisualScale),
 		},
+		// Nostradamus, freed by seeking his voice room to room through the Court (.ai/chapter-wizards.md 4.10). "Foresee"
+		// was nobody's: the seer reads what is coming, so a star of the rain falls on any enemy that begins a wind-up or
+		// draws a bolt, and lands before it can finish - the attack is stopped unlanded and waits its whole cooldown
+		// again (Starfall.QuatrainsId, Enemy.TryInterruptWindUp, AttackTelegraph.Cancel). Elites and bosses are struck,
+		// never stopped. Not a reflect, a hold or a stop: nothing is turned, rooted or frozen, an attack is simply never
+		// made. Light, Starfall's only element; no card on it trades Light away (Frostfall adds Ice beside it). No
+		// visual scale: the stars are drawn out of the radius they hit.
+		new()
+		{
+			CharacterId = "nostradamus", SpellId = "starfall",
+			Element = Element.Light, Verb = "foresee",
+			Form = Make(Starfall.QuatrainsId, "The Quatrains", Element.Light,
+				"A star falls on any enemy that begins a wind-up or draws a bolt, before it can finish. What it stops must wait its cooldown again.",
+				"Foresee: it falls before they strike. Elites and bosses are struck, never stopped.",
+				new Color(0.84f, 0.80f, 1.0f), NoVisualScale),
+		},
 		// The dark wizard, taken on the hardest road (.ai/dark-wizard-playable.md). "Take" was nobody's, and it is
 		// his verb in the fight and in the story: whatever his lanes kill gives up its light too, and it comes
 		// home to be caught in its turn (TakingLanes; TakenLight.MaxInAir in the air at most). Nothing moves the

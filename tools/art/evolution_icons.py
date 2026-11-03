@@ -5447,6 +5447,57 @@ def _(sp, c):
     pass
 
 
+@card("starfall_quatrains")
+def _(sp, c):
+    """The Quatrains (Nostradamus's Apotheosis, foresee): one of the swarm winding up - the claw tell the game
+    shows over a body about to lunge (telegraph_icons.leap, the same painter), filling in fire - and the star
+    already come down on it, the flash where it struck cutting the tell through. The rain still falls behind.
+    The star is there before the stroke: it falls before they strike."""
+    reset(sp)
+    sp.place = Place(0.0001)
+
+    def foresee(cv, x):
+        import telegraph_icons as ti
+        light = E["light"]
+        core, hot, mid, edge = light
+        fire = E["fire"]
+        # The rain behind it, small: two stars still falling at their slant.
+        si._falling_star(cv, 10, 24, 3, light, glint=1)
+        si._falling_star(cv, 8, 13, 3, light, glint=1)
+        # The one winding up: a skull of the swarm, low on the right.
+        foe(cv, 20.0, 24.0, 1.35)
+        # Its tell over its head, the claw slashes at three fifths, filling in fire as a wind-up does.
+        claw = ti.leap()
+        s, ox, oy = 0.62, 15, 7
+        mask = set()
+        for ty in range(int(16 * s) + 1):
+            for tx in range(int(16 * s) + 1):
+                if (int(tx / s), int(ty / s)) in claw:
+                    mask.add((ox + tx, oy + ty))
+        for (mx, my) in mask:
+            if (mx, my - 1) not in mask or (mx - 1, my) not in mask:
+                cv.set(mx, my, fire[1])
+            elif (mx, my + 1) not in mask or (mx + 1, my) not in mask:
+                cv.set(mx, my, fire[3])
+            else:
+                cv.set(mx, my, fire[2])
+        for my in range(oy - 1, oy + 12):
+            for mx in range(ox - 1, ox + 12):
+                if (mx, my) not in mask and any((mx + dx, my + dy) in mask for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+                    cv.set(mx, my, OCC)
+        # The star that came down on it, its trail back up the slant, and the flash where it struck the tell's
+        # foot - small, so the claw it cut is still read round it.
+        px, py = 17, 15
+        si._falling_star(cv, px, py, 6, light, glint=1)
+        for k in range(1, 3):
+            for (dx, dy) in ((k, 0), (-k, 0), (0, k), (0, -k)):
+                cv.set(px + dx, py + dy, core if k == 1 else mid)
+        for (dx, dy) in ((1, 1), (-1, 1), (1, -1), (-1, -1)):
+            cv.set(px + dx, py + dy, hot)
+        cv.set(px, py, core)
+    O(sp, foresee)
+
+
 @card("starfall_starburst")
 def _(sp, c):
     """Starburst: each star swells and explodes, throwing sparks."""

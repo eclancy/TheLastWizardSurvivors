@@ -79,7 +79,7 @@ public partial class RangedEnemy : Enemy
 	public override void _Ready()
 	{
 		base._Ready();
-		cast = new AttackTelegraph(CastIntervalSeconds, CastWindUpSeconds);
+		cast = new AttackTelegraph(CastIntervalSeconds, CastWindUpSeconds) { Foreseeable = true };
 		strafeSign = (GetInstanceId() % 2 == 0) ? 1f : -1f;
 
 		projectileScene = ResourceLoader.Load<PackedScene>(ProjectileScenePath);
@@ -210,12 +210,15 @@ public partial class RangedEnemy : Enemy
 	public override void ResetForRespawn(Vector2 newPos, int newHealth)
 	{
 		base.ResetForRespawn(newPos, newHealth);
-		cast = new AttackTelegraph(CastIntervalSeconds, CastWindUpSeconds);
+		cast = new AttackTelegraph(CastIntervalSeconds, CastWindUpSeconds) { Foreseeable = true };
 	}
 
 	// "A shot is coming" is the reticle over its head (TelegraphIcon), filling through the wind-up. It
 	// used to be a translucent mote swelling in front of the caster, which Eric ruled out in 0.9.2 with
 	// every other build-up.
+	// A star of The Quatrains fell on it mid-draw: the bolt is never loosed and the cast waits a whole cooldown.
+	protected override bool CancelWindUp() => cast != null && cast.Cancel();
+
 	protected override bool ReadAttackTell(out TelegraphGlyph glyph, out float progress)
 	{
 		glyph = TelegraphGlyph.Shot;

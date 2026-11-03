@@ -10,6 +10,25 @@ every cutscene here is a reel of that player (`scripts/Prologue.cs`), drawn on i
 under its rules. `.ai/world-and-tone.md` says why he is alone, why he is the light, and why a freed wizard
 is a person and not a pickup.
 
+## The cinematic rules (every cutscene and cinematic beat)
+
+Eric, 2026-11-03: *"Make sure we use things like speed lines, screen shake, etc to really bring out the
+cinematics when appropriate in cutscenes. Always give a pause before panning, or beginning play after a
+cutscene, and don't move too fast, so the player can keep up visually."* These bind the prologue and its
+reels, the freed reels, the lesson reels, boss entrances, the defeat and the ending.
+
+1. **Punctuate the impact beats.** A landing, a chain breaking, a killing blow, a door slamming gets speed lines,
+   a short screen shake, a flash or a hit-stop: whichever the moment calls for, and only where it does. Calm
+   beats stay calm.
+2. **Shake always goes through Reduce Shake** (`DisplaySettings.ShakeScale`): a player who turned it down never
+   gets a full shake from a cutscene.
+3. **Hold before any pan.** The picture is still for a beat before the camera moves (the boss entrance's
+   `BossEntrancePanDelay` is the model, `.ai/enemy-behaviour.md`).
+4. **Hold before play resumes.** After a cutscene or an entrance, a beat passes before the player has control
+   and before the swarm moves again.
+5. **Never faster than the eye.** Pans and zooms ease in and out and keep under a speed the eye can follow; no
+   snap cuts of the camera mid-beat.
+
 ## What makes a player identify with him
 
 Three things, and each beat below uses at least one:

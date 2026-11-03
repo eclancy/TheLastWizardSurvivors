@@ -171,6 +171,11 @@ ROBES = {
     # over a doublet of stone's near-black, its fur collar stone too. Contagion is in the flask he holds up to the
     # light, not on his clothes.
     "paracelsus": (RD2, RD1, RD3),      # red, dark - the gown; Contagion
+    # Nostradamus's long physician's gown: lichen from its deep end, a dark teal-grey nobody else wears (the
+    # gowns beside it are Dee's near-black, the Sibyl's grey-blue, Yaga's moss-grey; blue is the Archmage's
+    # and the house's red is the Seneschal's). His tippet is marten (gold's shade); Starfall is the star in
+    # the sphere he holds up, not on his clothes.
+    "nostradamus": (LC3, LC2, LC4),  # lichen, deep - the gown; Starfall
 }
 
 # RUSSET, madder-dyed wool and auburn hair: Thora's hair (stormcaller()). The same five bytes and
@@ -2987,13 +2992,171 @@ def paracelsus(phase=None):
     return g.rows()
 
 
+def nostradamus(phase=None):
+    """Starfall. Michel de Nostredame (1503-1566), physician and seer, astrologer to Catherine de' Medici's
+    court, who wrote the Prophecies at night by a brass tripod (.ai/chapter-wizards.md 4.10).
+
+    The rain falls where nobody aimed it, so he is the one figure in the cast LOOKING UP: upright, his far
+    arm raised over his head with an armillary sphere held up by its stem - the brass rings of the sky, open
+    so the ground shows through them, and a star kindled at their centre, the only thing on him that gives
+    off light. His face is turned up to it. His near hand hangs at his side with the written roll unrolled
+    from it, nearly to his knee: what he read there.
+
+    Drawn so he can never be read as John Dee, the other bearded scholar of his century in the cast: Dee
+    stoops and gathers low with a disc on a staff; this one stands straight and holds an open sphere up on no
+    staff at all. Dee wears a ruff and a skullcap; this one the square four-cornered doctor's cap of his
+    portraits, flat on top with its corners up - the one flat-topped head in the cast - and a tippet of sable
+    over the shoulders that squares them. His beard is iron-grey and forked, not white and pointed.
+
+    The rescued wear no pigment: the long physician's gown in lichen's deep end (a dark teal-grey), the cap
+    and the fur in stone's near-black, the roll in bone, the sphere in tarnished brass.
+    """
+    mid, lit, dark = ROBES["nostradamus"]
+    g = G(48)
+    CX = 25
+
+    # THE GOWN: long, to the floor, straight in front and fuller behind; a doctor's, not a cloak.
+    mass(g, [(17, 19, 31), (22, 18, 32), (30, 17, 33), (38, 16, 34), (44, 15, 35), (46, 14, 36)],
+         mid, lit, dark)
+    fold(g, [(21, 22), (19, 34), (17, 46)], LC4, LC2)
+    fold(g, [(29, 23), (31, 35), (33, 46)], LC4, LC2)
+    fold(g, [(25, 27), (25, 33), (24, 45)], LC4, LC1)            # the front, where the gown closes
+    fold(g, [(22, 37), (21, 45)], LC4, None)
+    fold(g, [(28, 38), (29, 45)], LC4, None)
+    for (bx, by) in ((20, 41), (27, 35), (31, 42), (23, 30)):
+        g.set(bx, by, LC4)                                        # wear, and a darn or two
+        g.set(bx + 1, by, LC1)
+    # The guarded hem: a border of the same cloth turned, broken where it has worn through.
+    for x in range(15, 36):
+        if x in (18, 19, 26, 31):
+            continue
+        g.set(x, 44, LC1 if (x * 7) % 5 else LC0)
+    g.span(45, 15, 35, LC4)
+
+    if phase is None:
+        near_toe = True
+        hem = 0
+    else:
+        # An old man's measured step under a long gown: the hem swings a little toward the leading foot and
+        # its toe shows under it. Everything held is drawn after, so it holds still.
+        c, _ln, _lf = stride(phase)
+        hem = int(round(1.3 * c))
+        sway(g, 36, 1.3 * c)
+        near_toe = c > -0.3
+        if c < -0.5:
+            toe(g, 17 + hem, shoe=("p", "N", "o"))
+    if near_toe:
+        toe(g, 28 + hem, shoe=("p", "N", "o"))
+
+    # THE NEAR ARM, hanging, in the gown's wide sleeve; the hand out of its mouth holding the roll.
+    mass(g, [(18, 30, 33), (22, 31, 35), (26, 32, 36), (28, 32, 37)], mid, lit, dark, rim=False)
+    fold(g, [(32, 20), (34, 27)], dark, lit)
+    g.line(32, 28, 37, 28, LC4)                                   # the sleeve's mouth, dark inside
+    # THE ROLL: written on, unrolled from his hand nearly to his knee, its foot curling.
+    g.span(29, 34, 38, "n")
+    g.set(34, 29, "k")
+    g.set(38, 29, "m")
+    for y in range(30, 40):
+        g.set(35, y, "S" if y in (30, 33, 34, 38) else "k")
+        g.set(36, y, "k")
+        g.set(37, y, "k" if y % 3 else "n")
+        g.set(38, y, "n")
+    for (ix, iy) in ((36, 31), (37, 32), (36, 34), (37, 36), (36, 37), (37, 39)):
+        g.set(ix, iy, "m")                                        # lines of a hand, uneven
+    g.span(40, 35, 38, "n")
+    g.set(35, 40, "k")
+    g.set(38, 41, "m")
+    g.set(36, 41, "n")
+    g.set(37, 41, "m")
+    hand(g, 33, 28)
+
+    # THE TIPPET: sable over the shoulders, squaring them; ragged where the fur ends.
+    mass(g, [(15, 20, 30), (17, 17, 33), (19, 16, 34), (21, 17, 33)], "j", "N", "J")
+    for (fx, fy, fc) in ((18, 18, "p"), (21, 17, "o"), (24, 19, "p"), (27, 18, "o"), (30, 17, "p"),
+                         (32, 20, "o"), (19, 20, "o"), (29, 20, "p"), (22, 21, "J"), (26, 21, "p")):
+        g.set(fx, fy, fc)
+    for (tx, ty) in ((18, 22), (20, 23), (23, 22), (27, 23), (30, 22), (32, 22)):
+        g.set(tx, ty, "J")                                        # the fur's ragged edge
+        g.set(tx + 1, ty, "o")
+
+    # THE FAR ARM, raised over his head: the wide sleeve fallen back to the elbow and hanging from it, the
+    # forearm bare above it - an old man's arm, lean - up to the fist round the sphere's stem.
+    mass(g, [(15, 14, 17), (18, 12, 19), (21, 13, 19), (23, 15, 18)], mid, lit, dark)
+    fold(g, [(16, 16), (14, 21)], dark, lit)
+    fold(g, [(18, 17), (17, 22)], dark, None)
+    shaft(g, 19, 20, 16, 16, LC2, mid, LC4, width=3)
+    g.line(13, 16, 17, 15, LC4)                                   # the sleeve's mouth, dark inside
+    for (ax, ay, ac) in ((12, 13, "f"), (13, 13, "h"), (13, 14, "f"), (14, 14, "h"), (14, 15, "i"),
+                         (15, 15, "i"), (12, 14, "W")):
+        g.set(ax, ay, ac)
+    hand(g, 11, 11)
+
+    # THE SPHERE, held up by its stem: an armillary of tarnished brass - the meridian round it, the
+    # equator and the band of the ecliptic crossing it - open between the rings, and a star at its heart.
+    SX, SY, SR = 11.5, 6.0, 3.8
+    for k in range(40):
+        a = 2.0 * math.pi * k / 40.0
+        x, y = SX + SR * math.cos(a), SY + SR * math.sin(a)
+        g.set(x, y, "G" if (x < SX and y < SY + 1) else ("g" if y < SY + 2 else "u"))
+    for x in range(8, 16):
+        g.set(x, 6 + (1 if 10 <= x <= 13 else 0), "u" if x > 12 else "g")
+    for (ex, ey) in ((9, 8), (10, 8), (13, 4), (14, 4), (15, 5)):
+        g.set(ex, ey, "g")                                        # the ecliptic, tilted across
+    g.set(9, 3, "H")
+    g.set(8, 4, "H")
+    g.set(11, 10, "u")                                            # the stem, into his fist
+    g.set(12, 10, "g")
+    g.set(11, 11, "f")
+    # The star: Starfall's own light, kindled where the earth would be.
+    g.set(12, 5, LT0)
+    g.set(11, 5, LT1)
+    g.set(13, 5, LT1)
+    g.set(12, 4, LT1)
+    g.set(12, 6, LT2)
+    g.set(11, 4, LT3)
+    g.set(13, 6, LT3)
+    for (mx, my, mc) in ((16, 2, LT3), (6, 4, LT3), (17, 8, LT2)):
+        g.set(mx, my, mc)                                         # a few motes off it
+
+    # THE HEAD: turned up to what he holds; the face set, the eyes on the star.
+    head(g, CX, 10, 3.0, brow="flat", gaze=-1, mouth="hidden", eye="open")
+    for (hx, hy) in ((21, 10), (21, 11), (29, 10), (29, 11), (21, 12)):
+        g.set(hx, hy, "R")                                        # grey hair under the cap
+    g.set(29, 12, "q")
+    # THE CAP: the square doctor's bonnet of his portraits - a flat crown wider than its band, its corners
+    # standing out sideways over the brow, never up (two corners up at this size are horns).
+    mass(g, [(4, 21, 29), (6, 19, 31), (7, 19, 31), (8, 20, 30)], "j", "N", "J", rim=False)
+    g.span(4, 22, 28, "N")                                        # the flat top, catching the light
+    g.set(21, 4, "p")
+    g.set(19, 6, "p")                                             # the near corner, out over the brow
+    g.set(31, 6, "J")
+    g.line(25, 5, 25, 7, "J")                                     # the seam between two of the corners
+    g.set(24, 5, "p")
+    g.set(23, 7, "J")
+    g.set(27, 7, "J")
+    g.span(9, 21, 29, "J")                                        # the band, low on the brow
+    g.set(22, 9, "N")
+    g.set(26, 9, "N")
+    # THE BEARD: iron-grey, long and forked, over the tippet to the middle of his chest.
+    moustache(g, CX, 14, 2.4, "r", "t", "R")
+    hair(g, CX, 15, 26, 3.0, 1.6, "r", "t", "R", sweep=0.4, tip="T", parted=True)
+    g.set(25, 25, LC4)                                            # the fork: the gown between the two points
+    g.set(25, 26, LC4)
+    g.set(26, 26, mid)
+    g.set(24, 26, "q")
+    g.set(27, 26, "q")
+    contact(g, 11, 39)
+    return g.rows()
+
+
 WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("stormcaller", stormcaller), ("geomancer", geomancer),
            ("tituba", tituba), ("vainamoinen", vainamoinen), ("dee", dee),
            ("seimei", seimei), ("wayland", wayland),
            ("sibyl", sibyl), ("yaga", yaga),
            ("morgan", morgan),
-           ("paracelsus", paracelsus)]
+           ("paracelsus", paracelsus),
+           ("nostradamus", nostradamus)]
 ENEMIES = [("swarmer", swarmer), ("runner", runner), ("bruiser", bruiser),
            ("shielder", shielder), ("skullsentry", skullsentry), ("lunger", lunger),
            ("slammer", slammer), ("exploder", exploder), ("summoner", summoner),

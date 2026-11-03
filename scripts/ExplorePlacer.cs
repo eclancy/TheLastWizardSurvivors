@@ -232,6 +232,19 @@ public sealed class ExplorePlacer
 		return Keep(Snap(candidate), footprint);
 	}
 
+	/// <summary>
+	/// An event site chosen by its chapter's own rules rather than rolled in the band - the Court's rooms, which are
+	/// a fixed building (SeersVoiceEvent) - recorded as the event's site all the same: its bearing becomes
+	/// <see cref="EventBearing"/> (so the wayfinder keeps away from it, as from any) and its footprint is reserved.
+	/// Draws no roll.
+	/// </summary>
+	public Vector2 FixedSite(Vector2 site, float footprint)
+	{
+		if (float.IsNaN(EventBearing))
+			EventBearing = BearingFrom(ground.Origin, site);
+		return Keep(site, footprint);
+	}
+
 	/// <summary>A site on a given bearing, at a seeded distance between two bands (chunks from the start).</summary>
 	public Vector2 AtBearing(float bearing, float minChunks, float maxChunks, float footprint)
 	{
@@ -396,6 +409,42 @@ public sealed class ExplorePlacer
 			return Keep(found, footprint);
 		if (TrySweepBand(bearing, distance, minChunks, maxChunks, footprint, test, out found))
 			return Keep(found, footprint);
+		GD.PushWarning($"ExplorePlacer: no open ground for a {footprint:0} px footprint anywhere {minChunks:0.#}-{maxChunks:0.#} chunks out; placing at {candidate} anyway.");
+		return Keep(Snap(candidate), footprint);
+	}
+
+	/// <summary>
+	/// The wayfinder's site: exactly <see cref="AtBearing"/>'s wherever its first search finds ground (every open
+	/// chapter, so no wayfinder there moved). Where it does not - the Court, whose building fills only the quarter of
+	/// the band north-east of the stair - the band is swept for one that keeps <paramref name="separation"/> round
+	/// from every one of <paramref name="avoid"/>, then two thirds of that, a third, and none: as far round from the
+	/// events as the ground there allows, never left in the rock.
+	/// </summary>
+	public Vector2 AtBearingInBandAvoiding(float bearing, float minChunks, float maxChunks, float footprint,
+		IReadOnlyList<float> avoid, float separation)
+	{
+		float distance = Mathf.Lerp(minChunks, maxChunks, NextFloat()) * ground.ChunkPixels;
+		float searchFrom = NextFloat() * Mathf.Tau;
+		Vector2 candidate = ground.Origin + Direction(bearing) * distance;
+		if (TrySearch(candidate, footprint, searchFrom, null, 0f, null, out Vector2 found))
+			return Keep(found, footprint);
+		foreach (float share in new[] { 1f, 2f / 3f, 1f / 3f, 0f })
+		{
+			float need = separation * share;
+			Func<Vector2, float, bool> test = (p, f) =>
+			{
+				if (need > 0f && avoid != null)
+				{
+					float b = BearingFrom(ground.Origin, p);
+					foreach (float other in avoid)
+						if (!float.IsNaN(other) && Separation(b, other) < need)
+							return false;
+				}
+				return ground.IsClear(p, f);
+			};
+			if (TrySweepBand(bearing, distance, minChunks, maxChunks, footprint, test, out found))
+				return Keep(found, footprint);
+		}
 		GD.PushWarning($"ExplorePlacer: no open ground for a {footprint:0} px footprint anywhere {minChunks:0.#}-{maxChunks:0.#} chunks out; placing at {candidate} anyway.");
 		return Keep(Snap(candidate), footprint);
 	}

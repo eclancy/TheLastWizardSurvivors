@@ -1530,6 +1530,10 @@ public partial class _BalanceHarness : Node
 		// The Dose (Paracelsus): how many carriers each generation has had, and how many last carriers it has finished.
 		if (Contagion.DoseInfectedByGeneration[1] > 0)
 			GD.Print($"HARNESS DOSE m={row.Minute} by generation={string.Join("/", Contagion.DoseInfectedByGeneration)} last={Contagion.LastCarriersDosed}");
+		// The Quatrains (Nostradamus): stars foreseen onto wind-ups, the attacks they stopped, and those struck on elites
+		// and bosses (struck, never stopped).
+		if (Starfall.ForeseenStars > 0)
+			GD.Print($"HARNESS QUATRAINS m={row.Minute} foreseen={Starfall.ForeseenStars} stopped={Starfall.WindUpsStopped} on_elites={Starfall.ForeseenOnElites}");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger

@@ -500,9 +500,19 @@ def furniture(rng):
 
     # The Gallery: portraits on its north wall's face - one for each wizard he took (CourtRooms
     # assigns them), the rest empty frames.
+    # Every 4 cells along the wall, and never in one of its two doors (a frame hung across a doorway was where
+    # the eighth portrait would have gone, at the old 6-cell pitch). Twelve frames: the wizards he took run
+    # past nine once every chapter holds one (.ai/chapter-wizards.md), and the last frame of the row is
+    # always the seer's (CourtRooms.GalleryRoom, 4.10).
     px, py, pw, ph = room_by_id("gallery")[3]
-    for k in range(9):
-        put("portrait", "gallery", px + 4.5 + k * 6.0, py - 0.5, slot=k, wall=True)
+    gaps = [r for (rid, r, _) in DOORS if rid == "gallery" and r[1] + r[3] <= py]
+    slot = 0
+    for k in range(14):
+        x = px + 2.5 + k * 4.0
+        if any(gx - 0.5 < x < gx + gw + 0.5 for (gx, gy, gw, gh) in gaps):
+            continue
+        put("portrait", "gallery", x, py - 0.5, slot=slot, wall=True)
+        slot += 1
 
     # The Minstrels' Gallery: a harp and music stands on the balcony.
     sx, sy, sw, sh = room_by_id("minstrels_gallery")[3]
@@ -658,7 +668,8 @@ def write_json(g, start, plaques, signs, items):
         "signs": signs,
         "furniture": items,
     }
-    text = json.dumps(doc, indent=1, sort_keys=True)
+    # No space after a comma at a line end (Python 2 writes one with indent; the file was first written without).
+    text = json.dumps(doc, indent=1, sort_keys=True, separators=(",", ": "))
     # One row of the grid per line, which is what a diff of the building should show.
     text = text if isinstance(text, type(u"")) else text.decode("utf-8")
     if not os.path.isdir(OUT_DIR):

@@ -53,7 +53,7 @@ public partial class SummonerEnemy : Enemy
 	public override void _Ready()
 	{
 		base._Ready();
-		summon = new AttackTelegraph(SummonIntervalSeconds, SummonWindUpSeconds);
+		summon = new AttackTelegraph(SummonIntervalSeconds, SummonWindUpSeconds) { Foreseeable = true };
 		strafeSign = (GetInstanceId() % 2 == 0) ? 1f : -1f;
 
 		minionScene = ResourceLoader.Load<PackedScene>(MinionScenePath);
@@ -170,13 +170,16 @@ public partial class SummonerEnemy : Enemy
 	public override void ResetForRespawn(Vector2 newPos, int newHealth)
 	{
 		base.ResetForRespawn(newPos, newHealth);
-		summon = new AttackTelegraph(SummonIntervalSeconds, SummonWindUpSeconds);
+		summon = new AttackTelegraph(SummonIntervalSeconds, SummonWindUpSeconds) { Foreseeable = true };
 	}
 
 	// The tell is the skull over its head (TelegraphIcon), filling as it calls. It used to be a
 	// translucent ring at the summon radius with a mote swelling on each spot a minion would take - a
 	// build-up on the floor, which Eric ruled out in 0.9.2. The summon deals no damage, so there is no
 	// ground to keep the player off; what he needs is "kill this one now", which the skull says.
+	// Struck mid-call (The Quatrains): nothing answers, and the next call waits a whole cooldown.
+	protected override bool CancelWindUp() => summon != null && summon.Cancel();
+
 	protected override bool ReadAttackTell(out TelegraphGlyph glyph, out float progress)
 	{
 		glyph = TelegraphGlyph.Summon;

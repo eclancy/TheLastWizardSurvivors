@@ -99,6 +99,8 @@ public static partial class RegressionChecks
 		ValidateWalkingHut(warnings);
 		ValidateBarge(warnings);
 		ValidateGibbetCage(warnings);
+		ValidateSeersVoice(warnings);
+		ValidateQuatrains(warnings);
 		ValidateThawArt(warnings);
 		ValidateGravewell(warnings);
 		ValidateCraters(warnings);

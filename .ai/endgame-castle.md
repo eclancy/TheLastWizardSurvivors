@@ -764,7 +764,7 @@ the secret run state, never on the node). Finding a room for the first time is a
 | **The Kennels** | south, green wing | empty kennels, a broken chain. With the Familiar's hound in the loadout, the hound finds something in the straw | a chest (with the hound) | page |
 | **The Map Room** | south | a table map of the house | the Court's map for the run (5.2) | page |
 | **The Treasury** | north, gold wing | the Court's keepsake: guarded by the Chamberlain (the miniboss) | a chest | **150 Arcane Energy** |
-| **The Gallery** | middle | portraits of the wizards he took, their faces covered; those the player has freed are uncovered | heal 50% | page |
+| **The Gallery** | middle | portraits of the wizards he took, their faces covered; those the player has freed are uncovered. Twelve frames on its north wall, never in a doorway; the last is always the seer's, the one he keeps in this house (`.ai/chapter-wizards.md` 4.10) | heal 50% | page |
 | **The Minstrels' Gallery** | above the Great Hall, reached only by a back stair from the Kitchens (a place to reach) | a balcony over the feast | a chest | page |
 | **The Solar** | north-west, **hidden** (5.5) | his own chamber | a relic chest | page |
 | **The Keepsake Doors** | south-east | a corridor of ten locked doors, one for each campaign chapter's keepsake. Every keepsake the save has found opens its door: behind it, that keepsake in an alcove, and a heal | heals | **"Every Door"** (all ten): 500 Arcane Energy |

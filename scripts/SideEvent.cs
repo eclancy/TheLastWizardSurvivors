@@ -72,8 +72,10 @@ public abstract partial class SideEvent : Node2D
 	protected virtual float SiteFootprint => 160f;
 
 	/// <summary>
-	/// True for an event its chapter's shape places rather than the explore band (the Last Bridge's barge, on a
-	/// deck over a drop): the band checks (RegressionChecks, _ExploreProbe) hold it to its own rules instead.
+	/// True for an event its chapter's shape places rather than the explore band: the Last Bridge's barge, on a
+	/// deck over a drop, and the Court's rooms (SeersVoiceEvent), whose building decides its sites. The band checks
+	/// (RegressionChecks, ValidateSideEventSeparation, _ExploreProbe) hold it to its own rules instead; its first
+	/// site is still recorded as the event's (ExplorePlacer.FixedSite).
 	/// </summary>
 	public virtual bool PlacedByChapterRules => false;
 
@@ -101,6 +103,7 @@ public abstract partial class SideEvent : Node2D
 	{
 		AddSite(placer.EventSite(SiteFootprint));
 	}
+
 
 	protected PointOfInterest AddSite(Vector2 world, string glyph = null)
 	{
@@ -222,9 +225,11 @@ public abstract partial class SideEvent : Node2D
 				AnchorLeft = 0f,
 				AnchorRight = 1f,
 				// Under the boss bar's slot (44-78), which a live event never shares: events stand
-				// down the moment the boss arrives.
-				OffsetTop = 84f,
-				OffsetBottom = 112f,
+				// down the moment the boss arrives. A chapter with rules of its own may have its own line in
+				// that slot (ChapterRules.CreateObjective: the Court's rooms found), so there the event's goes
+				// one line under it - the Court is the first chapter with both (.ai/chapter-wizards.md 4.10).
+				OffsetTop = Game?.Rules != null ? ChapterRules.ObjectiveBottom : 84f,
+				OffsetBottom = Game?.Rules != null ? ChapterRules.ObjectiveBottom + 28f : 112f,
 			};
 			ResponsiveLayout.SetFont(objectiveLabel, ResponsiveLayout.TextRole.Micro);
 			objectiveLabel.AddThemeColorOverride("font_color", new Color(0.96f, 0.86f, 0.55f));

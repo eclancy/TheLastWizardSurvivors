@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_Starfall.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/nostradamus-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/NostradamusFrames.tres" id="4"]
+
+; Rescued, not a starter: the Court's chapter wizard, freed by seeking his voice from room to room of the
+; dark wizard's house until he is found at his desk (.ai/chapter-wizards.md 4.10). Michel de Nostredame,
+; physician and seer, astrologer to a court - kept to read what is coming, and what is coming is the
+; player. His passive is Foresight, the one axis no other wizard owns: every enemy wind-up shows 15%
+; longer, so a tell gives more time to step out of it. He opens on Starfall (Light), which no one else
+; opens on; Light is shared with Seimei and Merlin on different spells (R1).
+[resource]
+script = ExtResource("1")
+Id = "nostradamus"
+Name = "Nostradamus"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "windup_15"
+StartingPassiveName = "Foresight"
+StartingPassiveDescription = "Enemy wind-ups show 15% longer"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

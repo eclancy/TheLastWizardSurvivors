@@ -320,6 +320,10 @@ public static class UnlockCatalog
 		// until the Swamp opens; counted at the Throne's gate only, as every chapter wizard is.
 		FromEvent("paracelsus", UnlockKind.Character, "gibbet_cage", "Hung in a cage over the rot of the Blighted Swamp.",
 			secretUntilStage: "stage_3", finalGateOnly: true),
+		// Nostradamus, kept in the Court to read what is coming (4.10): the Court's first event, heard reading from room
+		// to room. Secret until the Court opens, and counted at the Throne's gate only, as every chapter wizard is.
+		FromEvent("nostradamus", UnlockKind.Character, "seers_voice", "Heard reading aloud, room to room, in the Court.",
+			secretUntilStage: "stage_12", finalGateOnly: true),
 		FromEvent("iron_palisade", UnlockKind.Spell, "caravan_master", "Carried by the caravan master on the Scorched Sands road."),
 		FromEvent("contagion", UnlockKind.Spell, "bog_lanterns", "Kept by whatever tends the lanterns in the Blighted Swamp."),
 		FromEvent("bramble_seed", UnlockKind.Spell, "the_grove", "Grown back in the corrupted grove of the Enchanted Forest."),

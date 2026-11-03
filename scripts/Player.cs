@@ -641,6 +641,8 @@ public partial class Player : CharacterBody2D
 	public const float CharacterBoneFenceKnockbackBonus = 0.20f;
 	// Sola Dosis (Paracelsus): the share added to every poison tick on an enemy (Enemy.PlayerPoisonScale).
 	public const float CharacterSolaDosisBonus = 0.25f;
+	// Foresight (Nostradamus): how much longer every ordinary enemy's wind-up shows (AttackTelegraph.ForesightScale).
+	public const float CharacterForesightWindUpBonus = 0.15f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -651,6 +653,8 @@ public partial class Player : CharacterBody2D
 		Enemy.PlayerKnockbackScale = 1f;
 		// Sola Dosis likewise: every run's poison starts at its written dose, and his passive raises it.
 		Enemy.PlayerPoisonScale = 1f;
+		// Foresight likewise: no wind-up is lengthened until his passive says so.
+		AttackTelegraph.ForesightScale = 1f;
 		ResetItemRules();
 		feetBody = GetNodeOrNull<CharacterBody2D>("Feet");
 		feetShape = feetBody?.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
@@ -907,6 +911,11 @@ public partial class Player : CharacterBody2D
 		// poison in this game: no other status takes health on a clock. An axis no other wizard owns: not the hit
 		// (the Pyromancer's spell damage), not the duration (Tituba's), the dose.
 		"dot_25",
+		// Nostradamus (.ai/chapter-wizards.md 4.10): Foresight - the seer reads what is coming, so every ordinary
+		// enemy's wind-up shows 15% longer (AttackTelegraph.ForesightScale, read the frame a wind-up starts). An axis
+		// no other wizard owns: not his damage, not his speed, the time he is given to read an attack. A boss's tells
+		// are its fight's timing and are left as drawn (AttackTelegraph.Foreseeable).
+		"windup_15",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -970,6 +979,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "dot_25":
 				Enemy.PlayerPoisonScale = 1f + CharacterSolaDosisBonus;
+				return true;
+			case "windup_15":
+				AttackTelegraph.ForesightScale = 1f + CharacterForesightWindUpBonus;
 				return true;
 			default:
 				return false;

@@ -44,6 +44,16 @@ namespace TheOneHeMissed.scripts;
 //                   the rim and land as small stars of their own.
 //   Constellation  (level 8) - every star stays lit where it fell, and is drawn to the nearest lit
 //                   star by a line of light; the lines strike whatever they touch.
+//
+// THE QUATRAINS (milestone 9, Nostradamus's Apotheosis, verb FORESEE: .ai/chapter-wizards.md 4.10). The rain still
+// aims at nothing - but the seer reads what is coming. Whenever an enemy within ForeseenReach of him BEGINS a
+// wind-up (Enemy.WindUpBegan: the caster drawing its bolt, the lunger's crouch, the ring on the floor, the fuse, the
+// call), a star of the rain falls on it, ForeseenFallSeconds after, following it down. It lands well before the
+// shortest wind-up in the game can finish (RegressionChecks.ValidateQuatrains holds that), strikes as a star of the
+// rain does, and stops the attack: Enemy.TryInterruptWindUp, which ends the wind-up UNLANDED and starts its whole
+// cooldown over (AttackTelegraph.Cancel) - never an attack sooner. Elites and bosses are struck, never stopped. It
+// is a star like any other (the Starburst does not make it heavy: a fuse would land too late), so a Constellation
+// kindles it and Skipping Stars skips it on.
 public partial class Starfall : Node2D, IPaintsElementPath
 {
 	// Evolution ids. SpellEvolutionCatalog builds the options from these, this node reads them. The
@@ -54,6 +64,22 @@ public partial class Starfall : Node2D, IPaintsElementPath
 	public const string SkippingStarsId = "starfall_downpour";
 	public const string StarburstId = "starfall_starburst";
 	public const string ConstellationId = "starfall_constellation";
+	/// <summary>Nostradamus's Apotheosis (ApotheosisCatalog): a star falls on whatever begins a wind-up.</summary>
+	public const string QuatrainsId = "starfall_quatrains";
+
+	/// <summary>How far from him a wind-up is foreseen: about the half-screen a threat comes from.</summary>
+	public const float ForeseenReach = 560f;
+
+	/// <summary>
+	/// Seconds a foreseen star takes to land. The shortest ordinary wind-up is 0.7 s (a lunger's), and the edge
+	/// is seen a physics step late, so 0.3 lands with 0.35 s to spare - and Foresight only lengthens the wind-up.
+	/// </summary>
+	public const float ForeseenFallSeconds = 0.3f;
+
+	/// <summary>This run's foreseen stars and the wind-ups they stopped, for the harness (reset by every Starfall).</summary>
+	public static int ForeseenStars { get; private set; }
+	public static int WindUpsStopped { get; private set; }
+	public static int ForeseenOnElites { get; private set; }
 
 	/// <summary>The most stars one cloudburst may hand over. Amount can push a count past this.</summary>
 	public const int MaxStarsPerCloudburst = 24;
@@ -166,6 +192,7 @@ public partial class Starfall : Node2D, IPaintsElementPath
 		public Phase Phase;
 		public bool Hit;
 		public bool Live;
+		public Enemy Target;     // a foreseen star (The Quatrains): the body it follows down and stops
 	}
 
 	private struct Lit
@@ -236,6 +263,8 @@ public partial class Starfall : Node2D, IPaintsElementPath
 	private bool linking;
 	private bool shooting;
 	private bool skipping;
+	private bool foreseeing;
+	private bool listening;
 	private float streakHalf = StreakHalfWidth;
 	// Stars let fall since the node was made: every ShootingEvery-th is a streak under Shooting Stars,
 	// counted across cloudbursts so a short one still sends its share.
@@ -270,6 +299,9 @@ public partial class Starfall : Node2D, IPaintsElementPath
 	public override void _Ready()
 	{
 		rng.Randomize();
+		ForeseenStars = 0;
+		WindUpsStopped = 0;
+		ForeseenOnElites = 0;
 		// The sky: over the bodies the stars fall among, as ImpactDebrisLayer is; under the HUD. The
 		// shooting stars and the skips are drawn here too: they cross the crowd, so they are in the air.
 		ZAsRelative = false;
@@ -329,6 +361,12 @@ public partial class Starfall : Node2D, IPaintsElementPath
 		linking = spell.HasEvolution(ConstellationId);
 		shooting = spell.HasEvolution(ShootingStarsId);
 		skipping = spell.HasEvolution(SkippingStarsId);
+		foreseeing = spell.HasEvolution(QuatrainsId);
+		if (foreseeing && !listening)
+		{
+			Enemy.WindUpBegan += OnWindUpBegan;
+			listening = true;
+		}
 		streakHalf = StreakHalfWidth * MathF.Sqrt(MathF.Max(0.25f, starRadius / BaseStarRadius));
 		linger = LingerSeconds * MathF.Max(0.1f, durationMultiplier);
 		ramp = ElementColors.GetRamp(spell.GetBranchElement() ?? Element.Light);
@@ -355,6 +393,44 @@ public partial class Starfall : Node2D, IPaintsElementPath
 		ground?.QueueRedraw();
 		webLines?.QueueRedraw();
 		FrameProfiler.End(FrameProfiler.Section.Starfall, perfStart);
+	}
+
+	public override void _ExitTree()
+	{
+		if (listening)
+		{
+			Enemy.WindUpBegan -= OnWindUpBegan;
+			listening = false;
+		}
+	}
+
+	// --- the Quatrains: a star on whatever begins a wind-up --------------------------------------
+
+	private void OnWindUpBegan(Enemy enemy)
+	{
+		if (!foreseeing || PlayerRef == null || !IsInstanceValid(PlayerRef) || !IsInstanceValid(enemy) || enemy.IsDying
+			|| !enemy.IsInGroup("enemies"))
+			return;
+		Vector2 at = enemy.GlobalPosition;
+		if (at.DistanceSquaredTo(PlayerRef.GlobalPosition) > ForeseenReach * ForeseenReach)
+			return;
+		float height = FallHeight * rng.RandfRange(0.85f, 1.15f);
+		float slant = FallSlant * rng.RandfRange(0.8f, 1.2f);
+		AddStar(new Star
+		{
+			Land = at,
+			Origin = at + new Vector2(-height * slant, -height),
+			Fall = ForeseenFallSeconds,
+			Radius = starRadius,
+			Damage = damage,
+			Skips = skipping ? SkipCount : 0,
+			Seed = ++seedClock,
+			Kind = StarKind.Drop,
+			Phase = Phase.Falling,
+			Live = true,
+			Target = enemy,
+		});
+		ForeseenStars++;
 	}
 
 	// --- the drizzle ------------------------------------------------------------------------------
@@ -476,6 +552,18 @@ public partial class Starfall : Node2D, IPaintsElementPath
 			switch (s.Phase)
 			{
 				case Phase.Falling:
+					// A foreseen star follows its body down (a planted wind-up hardly moves, but a shove can).
+					if (s.Target != null)
+					{
+						if (IsInstanceValid(s.Target) && !s.Target.IsDying)
+						{
+							Vector2 drift = s.Target.GlobalPosition - s.Land;
+							s.Land += drift;
+							s.Origin += drift;
+						}
+						else
+							s.Target = null;
+					}
 					if (s.Age >= s.Fall)
 					{
 						s.PhaseAge = 0f;
@@ -518,6 +606,19 @@ public partial class Starfall : Node2D, IPaintsElementPath
 
 	private void Land(ref Star s)
 	{
+		// Foreseen: stopped before it is struck, so a body the star also kills was still stopped by it - and an elite
+		// or a boss is struck and fights on (Enemy.TryInterruptWindUp refuses them).
+		if (s.Target != null)
+		{
+			if (IsInstanceValid(s.Target) && !s.Target.IsDying)
+			{
+				if (s.Target.TryInterruptWindUp())
+					WindUpsStopped++;
+				else if (s.Target.IsMiniBoss)
+					ForeseenOnElites++;
+			}
+			s.Target = null;
+		}
 		s.Hit = Strike(s.Land, s.Radius, s.Damage) > 0;
 		SfxPlayer.Instance?.PlayAt(SfxCatalog.SpellStarfall, s.Land, 0.08f, SfxCatalog.SpellStarfall, SoundGapMs);
 

@@ -51,6 +51,7 @@ public partial class ExploderEnemy : Enemy
 		return new GroundSlamAttack(0.05f, FuseSeconds, BlastRadius, BlastDamage, BlastWarningColor)
 		{
 			GlyphOverride = TelegraphGlyph.Burst,
+			Foreseeable = true,
 		};
 	}
 
@@ -94,6 +95,7 @@ public partial class ExploderEnemy : Enemy
 				PlayAttackAnimation();
 				// Hot and bright for the length of the fuse, so an exploder mid-crowd is findable
 				// by colour as well as by the starburst over it.
+				coldModulate = BaseModulate;
 				SetBaseModulate(new Color(1.0f, 0.55f, 0.45f));
 				break;
 			case AttackTelegraph.Beat.Resolved:
@@ -133,6 +135,19 @@ public partial class ExploderEnemy : Enemy
 	// The blast's reach is a dashed ring on the floor, under every body (Enemy.DrawGroundTells); the fuse
 	// is the starburst over its head, filling as it burns.
 	protected override void DrawGroundTells(CanvasItem floor) => blast?.Draw(floor);
+
+	// The fuse put out by a star of The Quatrains: it cools to its own colour and never bursts. Its interval is
+	// the shortest there is (BuildBlast), so one still inside its trigger reach lights a NEW fuse at once - a whole
+	// fresh fuse, shown from its first frame, which is all a cancel may ever give back.
+	private Color coldModulate = Colors.White;
+
+	protected override bool CancelWindUp()
+	{
+		if (detonated || blast == null || !blast.Cancel())
+			return false;
+		SetBaseModulate(coldModulate);
+		return true;
+	}
 
 	protected override bool ReadAttackTell(out TelegraphGlyph glyph, out float progress)
 	{

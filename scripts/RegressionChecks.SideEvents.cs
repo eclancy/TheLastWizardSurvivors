@@ -183,6 +183,7 @@ public static partial class RegressionChecks
 						float d = mains[i].DistanceTo(ground.Origin);
 						// An event its chapter places (the barge, on the Last Bridge's band) is held to its own rules
 						// (ValidateBarge), not to the explore band.
+						// The Court's rooms are its building's, not the band's (SideEvent.PlacedByChapterRules).
 						if (!laid[i].Event.PlacedByChapterRules && (d < min || d > max))
 						{
 							outOfBand++;

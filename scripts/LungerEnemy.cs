@@ -54,7 +54,7 @@ public partial class LungerEnemy : Enemy
 	public override void _Ready()
 	{
 		base._Ready();
-		lunge = new AttackTelegraph(LungeIntervalSeconds, LungeWindUpSeconds);
+		lunge = new AttackTelegraph(LungeIntervalSeconds, LungeWindUpSeconds) { Foreseeable = true };
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -147,7 +147,7 @@ public partial class LungerEnemy : Enemy
 	public override void ResetForRespawn(Vector2 newPos, int newHealth)
 	{
 		base.ResetForRespawn(newPos, newHealth);
-		lunge = new AttackTelegraph(LungeIntervalSeconds, LungeWindUpSeconds);
+		lunge = new AttackTelegraph(LungeIntervalSeconds, LungeWindUpSeconds) { Foreseeable = true };
 		lungeRemaining = 0f;
 		recoveryRemaining = 0f;
 		repositioning = false;
@@ -160,6 +160,9 @@ public partial class LungerEnemy : Enemy
 	// are weird... remove them"). The streak never said anything the claw does not: the dash is aimed
 	// at the player on the frame the wind-up ends, so "it is coming at me, now" is the whole read, and
 	// the answer is the same sideways step.
+	// Struck in the crouch (The Quatrains): it never leaps, and the next leap waits a whole cooldown.
+	protected override bool CancelWindUp() => lunge != null && lunge.Cancel();
+
 	protected override bool ReadAttackTell(out TelegraphGlyph glyph, out float progress)
 	{
 		glyph = TelegraphGlyph.Leap;

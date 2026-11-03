@@ -83,6 +83,9 @@ public static class QuestLog
 		new Prisoner("baba_yaga", "the one in the walking hut", "Something heavy walks the deep wood, round and round.", "{0}'s hut has knelt at last."),
 		// The physician who could cure the rot, hung in a cage over it to breathe it (4.4).
 		new Prisoner("paracelsus", "the man in the gibbet's cage", "A man is coughing in a cage somewhere over the rot.", "{0} has crossed the water."),
+		// The seer kept in the Court to read what is coming - and what is coming is the player (4.10). Heard reading,
+		// room to room, never seen until the third.
+		new Prisoner("nostradamus", "the reader in the house", "Somewhere in the house a voice is reading aloud.", "{0} has closed his book."),
 		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
 		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.

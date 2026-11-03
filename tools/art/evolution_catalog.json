@@ -7854,6 +7854,45 @@
       "verb": "distil"
     },
     {
+      "spell": "starfall",
+      "variant": "",
+      "spell_name": "Starfall",
+      "spell_icon": "res://assets/bonelight/ui/spells/starfall-light.png",
+      "spell_elements": {
+        "Light": 1
+      },
+      "milestone": 9,
+      "id": "starfall_quatrains",
+      "name": "The Quatrains",
+      "description": "A star falls on any enemy that begins a wind-up or draws a bolt, before it can finish. What it stops must wait its cooldown again.",
+      "synergy": "Apotheosis",
+      "visual_tag": "Apotheosis",
+      "gains": {
+        "Light": 1
+      },
+      "replaces": "",
+      "effect": "None",
+      "effect_value": 0,
+      "rider": "None",
+      "damage": 1.25,
+      "damage_bonus": 0,
+      "cooldown": 1,
+      "projectiles": 0,
+      "area": 1,
+      "scale": 1,
+      "speed": 1,
+      "pierce": 0,
+      "arcs": 0,
+      "branches": 0,
+      "knockback": 0,
+      "slow": 0,
+      "poison": 0,
+      "range": 0,
+      "tint": "d6ccff",
+      "character": "nostradamus",
+      "verb": "foresee"
+    },
+    {
       "spell": "the_taking",
       "variant": "",
       "spell_name": "The Taking",

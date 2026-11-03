@@ -54,6 +54,12 @@ using TheOneHeMissed.scripts;
 //      the trickle get to him and bite. --let-him-fall, once he is out the first time, stops the player's spells and the
 //      clearing and raises a ring of Mired on him, and checks he falls, sinks, is in the cage again and is lowered and led
 //      out again from the cage - and then finishes the walk.
+//      The Court's seer (--stage=12) is SOUGHT, at the player's own walking speed, never teleported: once a room is
+//      found empty the probe stands and waits for the voice, and when it reads it walks the shortest way through the
+//      halls (the building's own grid, CourtLayout) to where the reading came from - what a player who knows the
+//      house does - and logs, per leg, how long the voice took, how far the walls made the walk against the straight
+//      line the sound promised, and how long it took. The Court's events are placed by its rooms, not the bands, so
+//      the band check is the rooms' there, and the probe's far points are kept on the building's floor.
 // TWO EVENTS IN A CHAPTER (P2, .ai/chapter-wizards.md 6.3). On a chapter whose list holds more than one - or
 // with --second-event-test[=STAGE], which adds a stand-in second event on this tool run only
 // (SecondEventStandIn) - every placement check runs for every event, each pair of main sites must be at least
@@ -373,6 +379,21 @@ public partial class _ExploreProbe : Node
 		float wd = w.DistanceTo(origin);
 		foreach (SideEvent e in director.Events)
 		{
+			if (e is SeersVoiceEvent seer)
+			{
+				// Placed by the Court's own rooms, not the bands: three different rooms of its list, the first far enough
+				// from the stair, its one point of interest the first reading place.
+				Vector2 first = seer.Sites[0].Position;
+				Check("the seer's readings are three rooms of the Court", seer.ReadingRooms.Count == SeersVoiceEvent.Readings
+					&& seer.ReadingRooms.Distinct().Count() == SeersVoiceEvent.Readings
+					&& seer.ReadingRooms.All(r => SeersVoiceEvent.ReadingRoomIds.Contains(r)), string.Join(" -> ", seer.ReadingRooms));
+				Check("only the first reading is a point of interest", seer.Sites.Count == 1 && first.DistanceTo(seer.ReadingSpots[0]) < 0.01f);
+				Check("the first reading is a walk from the stair", first.DistanceTo(origin) >= SeersVoiceEvent.FirstFromStart, $"{first.DistanceTo(origin):0} px");
+				Check("the first reading stands on the building's floor", game.IsExploreGroundClear(first, 40f));
+				for (int i = 1; i < seer.ReadingSpots.Count; i++)
+					notes.Add($"reading {i + 1} in {seer.ReadingRooms[i]}, {seer.ReadingSpots[i].DistanceTo(seer.ReadingSpots[i - 1]):0} px straight from the last");
+				continue;
+			}
 			for (int i = 0; i < e.Sites.Count; i++)
 			{
 				Vector2 p = e.Sites[i].Position;
@@ -391,8 +412,10 @@ public partial class _ExploreProbe : Node
 		foreach (SideEvent e in director.Events)
 		{
 			float angle = Mathf.RadToDeg(Mathf.Abs(Mathf.AngleDifference((w - origin).Angle(), (e.Sites[0].Position - origin).Angle())));
-			// The search can turn a site by a few degrees; the roll keeps 75.
-			Check(Multi ? $"the wayfinder is well off event {e.Index}'s bearing" : "the wayfinder is well off the event's bearing", angle >= 60f, $"{angle:0} degrees apart");
+			// The search can turn a site by a few degrees; the roll keeps 75. In the Court the band holds floor only in the
+			// building's quarter north-east of the stair, so the wayfinder is as far round as that allows (25 at the least).
+			float wanted = e.PlacedByChapterRules ? 25f : 60f;
+			Check(Multi ? $"the wayfinder is well off event {e.Index}'s bearing" : "the wayfinder is well off the event's bearing", angle >= wanted, $"{angle:0} degrees apart");
 		}
 		// Two events: their main sites keep SideEventDirector.MinSiteSeparationDegrees between them, measured here
 		// where they really are, not where they were rolled.
@@ -648,6 +671,10 @@ public partial class _ExploreProbe : Node
 			}
 		}
 		lookout = origin + away * 6f * TerrainStreamer.ChunkTiles * game.ProceduralTilePixels;
+		// The Court is a building with rock all round it: the far point is the room's floor furthest from the event.
+		if (CourtFloor != null)
+			lookout = CourtFloor.Rooms.Where(r => !r.Hidden && CourtFloor.IsFloor(r.Centre))
+				.OrderByDescending(r => r.Centre.DistanceTo(Event.Sites[0].Position)).First().Centre;
 		Teleport(lookout, 120);
 		step = 4;
 	}
@@ -808,6 +835,17 @@ public partial class _ExploreProbe : Node
 				centroid += site.Position;
 			centroid /= Event.Sites.Count;
 			Vector2 away = first - centroid;
+			if (CourtFloor != null)
+			{
+				// In the Court: a point of floor about 900 px off, on the first of sixteen bearings that has one.
+				for (float reach = 900f; reach >= 500f; reach -= 100f)
+					for (int k = 0; k < 16; k++)
+					{
+						Vector2 p = first + Vector2.FromAngle(k * Mathf.Tau / 16f) * reach;
+						if (CourtFloor.IsFloor(p) && CourtFloor.IsFloor(p + new Vector2(0f, 40f)))
+							return p;
+					}
+			}
 			return first + (away.LengthSquared() > 1f ? away.Normalized() : Vector2.Down) * 900f;
 		}
 	}
@@ -889,7 +927,10 @@ public partial class _ExploreProbe : Node
 	{
 		completeClock += delta;
 		SideEvent e = Event;
-		if (e == null || e.Sites.All(s => s.Done) && PointsOfInterest.ObjectiveTarget == null)
+		// The seer's one site is done the moment he arrives (an arrow on the later rooms would be the answer): it is over
+		// only once the third reading is reached.
+		bool seeking = e is SeersVoiceEvent sv && sv.Leg < SeersVoiceEvent.Readings && !sv.IsWon;
+		if (e == null || !seeking && e.Sites.All(s => s.Done) && PointsOfInterest.ObjectiveTarget == null)
 		{
 			bool won = e == null || e.IsWon;
 			Check($"{Of(cur)}the event can be finished", won, $"{completeClock:0.0}s of game time after arriving");
@@ -958,6 +999,15 @@ public partial class _ExploreProbe : Node
 						$"{led.Releases} releases");
 				}
 			}
+			if (e is SeersVoiceEvent sawHim)
+			{
+				SeekStep(sawHim, 0f);   // closes the last leg's line
+				Check("he was found by seeking: the voice read on every leg", sawHim.ReadingsHeard >= SeersVoiceEvent.Readings - 1
+					&& seekLegsHeard == SeersVoiceEvent.Readings - 1, $"{sawHim.ReadingsHeard} readings heard, {seekLegsHeard} legs walked to the voice");
+				Check("all three readings, to the desk", sawHim.Leg == SeersVoiceEvent.Readings && sawHim.IsWon, string.Join(" -> ", sawHim.ReadingRooms));
+				foreach (string leg in seekLog)
+					notes.Add(leg);
+			}
 			if (e is FivePointedSealEvent seal)
 			{
 				Check("every stone faces the seal", seal.Aligned == FivePointedSealEvent.StoneCount, $"{seal.Steps} presses");
@@ -1004,7 +1054,7 @@ public partial class _ExploreProbe : Node
 			Finish(Multi ? "every event over" : "event over");
 			return;
 		}
-		if (completeClock > 240f)
+		if (completeClock > (e is SeersVoiceEvent ? 480f : 240f))
 		{
 			Check($"{Of(cur)}the event can be finished", false, "not finished after 240 s");
 			Finish("gave up");
@@ -1088,6 +1138,9 @@ public partial class _ExploreProbe : Node
 		bool clearSwarm = true;
 		if (e is GibbetCageEvent escort && escort.IsFound)
 			target = EscortStep(escort, delta, out clearSwarm);
+		// The seer: listened for, then walked to through the halls (SeekStep).
+		if (e is SeersVoiceEvent sought && sought.IsFound)
+			target = SeekStep(sought, delta);
 		if (target == null)
 		{
 			float best = float.MaxValue;
@@ -1245,6 +1298,122 @@ public partial class _ExploreProbe : Node
 		}
 		const float Want = WalkingHutEvent.StartleRadius - 40f;
 		return d > Want ? me + toHut / d * Mathf.Min(step, d - Want) : me;
+	}
+
+	// --- the seer: sought through the house ------------------------------------------------------------
+
+	private CourtLayout courtFloor;
+	private bool courtFloorAsked;
+
+	// The Court's building, when this run is in it; null anywhere else.
+	private CourtLayout CourtFloor
+	{
+		get
+		{
+			if (!courtFloorAsked)
+			{
+				courtFloorAsked = true;
+				courtFloor = (game.Rules as CourtRules)?.Layout;
+			}
+			return courtFloor;
+		}
+	}
+
+	private int seekLeg = -1;
+	private int seekReadingsAtLeg;
+	private float seekLegClock;
+	private float seekHeardAt;
+	private List<Vector2> seekPath;
+	private int seekIndex;
+	private float seekWalked;
+	private float seekStraight;
+	private int seekLegsHeard;
+	private readonly List<string> seekLog = new();
+
+	// One step of the seek at his own walking speed. A new leg (a room found empty): stand and listen. The voice reads:
+	// the shortest way through the halls to where it came from, walked cell by cell - the straight line the sound
+	// promised is what the walls bend. The feet walk the path (Player.FootPosition), as every Court reader of a cell does.
+	private Vector2 SeekStep(SeersVoiceEvent seer, float delta)
+	{
+		if (seer.Leg != seekLeg)
+		{
+			if (seekLeg >= 1 && seekPath != null)
+				seekLog.Add($"seek leg {seekLeg}: heard {seekHeardAt:0.0} s after the last room, walked {seekWalked:0} px through the halls "
+					+ $"against {seekStraight:0} px straight (x{seekWalked / Mathf.Max(1f, seekStraight):0.00}), there {seekLegClock:0.0} s after it was found empty");
+			seekLeg = seer.Leg;
+			seekReadingsAtLeg = seer.ReadingsHeard;
+			seekLegClock = 0f;
+			seekPath = null;
+		}
+		seekLegClock += delta;
+		if (seer.CurrentSpot is not Vector2 || CourtFloor == null)
+			return player.GlobalPosition;
+		if (seer.ReadingsHeard == seekReadingsAtLeg)
+			return player.GlobalPosition;            // listening: nothing has read since the room was found empty
+		Vector2 feetOffset = player.FootPosition - player.GlobalPosition;
+		if (seekPath == null)
+		{
+			Vector2 from = seer.LastReadingFrom ?? seer.CurrentSpot.Value;
+			seekHeardAt = seekLegClock;
+			seekPath = CourtPath(player.FootPosition, from);
+			seekIndex = 0;
+			seekWalked = 0f;
+			seekStraight = player.FootPosition.DistanceTo(from);
+			seekLegsHeard++;
+			GD.Print($"EXPLOREPROBE seek: the voice reads from {seer.ReadingRooms[Mathf.Min(seer.Leg, seer.ReadingRooms.Count - 1)]}, "
+				+ $"{seekStraight:0} px straight; the halls' way is {seekPath.Count} cells");
+		}
+		float step = player.WalkingSpeed * delta;
+		Vector2 feet = player.FootPosition;
+		while (step > 0f && seekIndex < seekPath.Count)
+		{
+			float d = feet.DistanceTo(seekPath[seekIndex]);
+			if (d <= step)
+			{
+				feet = seekPath[seekIndex++];
+				step -= d;
+				seekWalked += d;
+			}
+			else
+			{
+				feet = feet.MoveToward(seekPath[seekIndex], step);
+				seekWalked += step;
+				step = 0f;
+			}
+		}
+		return feet - feetOffset;
+	}
+
+	// The shortest way between two points of the building's floor, by its cells (4-way), as world points: each cell's
+	// centre, the goal itself last. Empty if there is none.
+	private List<Vector2> CourtPath(Vector2 from, Vector2 to)
+	{
+		AuthoredLayout grid = CourtFloor.Grid;
+		Vector2I a = CourtFloor.WorldToCell(from), b = CourtFloor.WorldToCell(to);
+		var came = new Dictionary<Vector2I, Vector2I> { [a] = a };
+		var queue = new Queue<Vector2I>();
+		queue.Enqueue(a);
+		Vector2I[] steps = { Vector2I.Right, Vector2I.Left, Vector2I.Down, Vector2I.Up };
+		while (queue.Count > 0 && !came.ContainsKey(b))
+		{
+			Vector2I c = queue.Dequeue();
+			foreach (Vector2I st in steps)
+			{
+				Vector2I n = c + st;
+				if (came.ContainsKey(n) || !grid.IsWalkable(n))
+					continue;
+				came[n] = c;
+				queue.Enqueue(n);
+			}
+		}
+		var path = new List<Vector2>();
+		if (!came.ContainsKey(b))
+			return path;
+		for (Vector2I c = b; c != a; c = came[c])
+			path.Add(CourtFloor.CellToWorld(new Vector2(c.X + 0.5f, c.Y + 0.5f)));
+		path.Reverse();
+		path.Add(to);
+		return path;
 	}
 
 	// Everything the streamer furnished within radius of a point: children of the chunks' prop
