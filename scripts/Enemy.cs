@@ -1308,7 +1308,7 @@ public partial class Enemy : CharacterBody2D
 			{
 				poisonTickTimer = 0f;
 				if (poisonDamagePerTick > 0)
-					TakeDamage(poisonDamagePerTick);
+					TakeDamage(DosedPoisonTick(poisonDamagePerTick));
 			}
 			if (poisonTimeRemaining <= 0f)
 			{
@@ -1631,6 +1631,25 @@ public partial class Enemy : CharacterBody2D
 	/// through <see cref="ApplyWorldShove"/>, which it never touches.
 	/// </summary>
 	public static float PlayerKnockbackScale { get; set; } = 1f;
+
+	/// <summary>
+	/// Sola Dosis (Paracelsus's passive, .ai/chapter-wizards.md 4.4): how much harder than laid every poison tick on an
+	/// enemy bites. 1 for everyone else; Player._Ready puts it back to 1 at the start of every run and his passive raises
+	/// it. Every poison on an enemy is the player's (a spell, a rider, an item), so it is read at the tick, the one place
+	/// poison takes health, and nowhere else.
+	/// </summary>
+	public static float PlayerPoisonScale { get; set; } = 1f;
+
+	// A poison tick at the run's dose. Rounded stochastically, as ScaleOutgoingDamage rounds: most ticks are a few
+	// points, and 1.25 rounded to nearest would leave a 1- or 2-point tick exactly as it was.
+	private int DosedPoisonTick(int tick)
+	{
+		if (PlayerPoisonScale == 1f || tick <= 0)
+			return tick;
+		float scaled = tick * PlayerPoisonScale;
+		int whole = Mathf.FloorToInt(scaled);
+		return rng.Randf() < scaled - whole ? whole + 1 : whole;
+	}
 
 	/// <summary>A shove or pull from the player's side - a spell, an item, his passive. Bone Fence scales it.</summary>
 	public void ApplyKnockback(Vector2 force) => ApplyWorldShove(force * PlayerKnockbackScale);

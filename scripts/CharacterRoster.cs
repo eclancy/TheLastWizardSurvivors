@@ -56,6 +56,9 @@ public static class CharacterRoster
 		// The chapter wizards again: Baba Yaga, freed by running her walking hut down in the Enchanted Forest. Appended,
 		// so every saved index keeps its wizard (index 15: the Archmage took 14).
 		"res://CharacterData_BabaYaga.tres",
+		// The chapter wizards again: Paracelsus, brought out of the gibbet's cage to the ferry landing in the Blighted
+		// Swamp. Appended, so every saved index keeps its wizard.
+		"res://CharacterData_Paracelsus.tres",
 	};
 
 	/// <summary>

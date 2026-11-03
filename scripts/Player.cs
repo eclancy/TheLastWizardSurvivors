@@ -639,6 +639,8 @@ public partial class Player : CharacterBody2D
 	public float OverlookedAtSeconds { get; private set; } = -1f;
 	// Bone Fence (Baba Yaga): the share added to every shove and pull her spells give (Enemy.PlayerKnockbackScale).
 	public const float CharacterBoneFenceKnockbackBonus = 0.20f;
+	// Sola Dosis (Paracelsus): the share added to every poison tick on an enemy (Enemy.PlayerPoisonScale).
+	public const float CharacterSolaDosisBonus = 0.25f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -647,6 +649,8 @@ public partial class Player : CharacterBody2D
 		AddToGroup("player");
 		// Bone Fence is a run's, not the process's: every run starts at no bonus, and her passive raises it.
 		Enemy.PlayerKnockbackScale = 1f;
+		// Sola Dosis likewise: every run's poison starts at its written dose, and his passive raises it.
+		Enemy.PlayerPoisonScale = 1f;
 		ResetItemRules();
 		feetBody = GetNodeOrNull<CharacterBody2D>("Feet");
 		feetShape = feetBody?.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
@@ -894,6 +898,11 @@ public partial class Player : CharacterBody2D
 		// spells shove or drag is thrown that much harder (Enemy.PlayerKnockbackScale). An axis no other wizard owns:
 		// not damage, not speed, the strength of every push. Her own vine pushes nothing; it is a build's passive.
 		"knockback_20",
+		// Paracelsus (.ai/chapter-wizards.md 4.4): Sola Dosis - "the dose alone makes the poison". Every poison tick on
+		// an enemy bites a quarter harder (Enemy.PlayerPoisonScale), whichever spell or item laid it. Damage over time is
+		// poison in this game: no other status takes health on a clock. An axis no other wizard owns: not the hit
+		// (the Pyromancer's spell damage), not the duration (Tituba's), the dose.
+		"dot_25",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -951,6 +960,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "knockback_20":
 				Enemy.PlayerKnockbackScale = 1f + CharacterBoneFenceKnockbackBonus;
+				return true;
+			case "dot_25":
+				Enemy.PlayerPoisonScale = 1f + CharacterSolaDosisBonus;
 				return true;
 			default:
 				return false;

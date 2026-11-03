@@ -259,7 +259,9 @@ WALK_BOB = {"pyromancer": 2, "stormcaller": 2, "vainamoinen": 2,
             # Lamed by a king: the far leg in its brace hardly bends, so the walk is a heavy one.
             "wayland": 1,
             # A tall old woman's long, slow step under a coat to the ground.
-            "yaga": 1}
+            "yaga": 1,
+            # A heavy man's planted step under a physician's gown.
+            "paracelsus": 1}
 
 # The waist. Everything above this row is the same drawing in every frame and only rises with
 # the bob; everything below it is redrawn per frame by the pose function. It is the same row the
