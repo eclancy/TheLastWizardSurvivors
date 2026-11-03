@@ -71,6 +71,9 @@ public static class CharacterRoster
 		// The chapter wizards again: Medea, freed by paying the Tithe-Reeve's scale in the Fallow Fields. Appended, so every
 		// saved index keeps its wizard (index 20).
 		"res://CharacterData_Medea.tres",
+		// The Throne's kept wizard (.ai/endgame-castle.md decision 11): Nimue, the Lady of the Lake, the one the dark
+		// wizard kept by him, freed when he falls. Appended, so every saved index keeps its wizard (index 21).
+		"res://CharacterData_Nimue.tres",
 	};
 
 	/// <summary>

@@ -1530,6 +1530,10 @@ public partial class _BalanceHarness : Node
 		// Fata Morgana (Morgan le Fay's Apotheosis): the runes its mirage has let go and the lures it has laid, once it walks.
 		if (FataMorganaMirage.RunesCast > 0)
 			GD.Print($"HARNESS MIRAGE m={row.Minute} runes={FataMorganaMirage.RunesCast} lures={FataMorganaMirage.Lures}");
+		// Excalibur (Nimue's Apotheosis, SpiritualWeapon.SeverOn): cuts that went on, what they struck behind the quarry,
+		// bolts cut on the line - once the form has cut.
+		if (SpiritualWeapon.StatSevers > 0)
+			GD.Print($"HARNESS SEVER m={row.Minute} {SpiritualWeapon.SeverLine()}");
 		// Avalon (her passive): the first fall it healed to full, once it has.
 		if (player.AvalonAtSeconds >= 0f)
 			GD.Print($"HARNESS AVALON m={row.Minute} at={player.AvalonAtSeconds:0.0}s");
@@ -3671,6 +3675,9 @@ public partial class _BalanceHarness : Node
 			"  " + StandStillSummary(),
 			"  " + OverlapSummary(),
 			$"  taken        : {GameStats.RunDamageTaken} damage in {GameStats.RunHitsTaken} hits; {GameStats.RunHpLost} HP actually lost after armour and shields",
+			// Contact bites (every wizard's), and the clock between one body's bites - 0.25 s under Nimue's Scabbard.
+			player != null && IsInstanceValid(player)
+				? $"  contact      : {player.ContactBitesTaken} bites landed, {player.ContactBiteSeconds:0.00} s between one body's bites" : "",
 			// The pack's own count, and the proof no hound got stuck: every blink home is a recovery.
 			Familiar.StatHoundFrames > 0 ? "  " + Familiar.StatsLine() : "",
 			// The other bolt guards (EnemyProjectile.Live): Daybreak's flare, the sword's guard and the hammer's slam.

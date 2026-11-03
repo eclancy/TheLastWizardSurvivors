@@ -460,7 +460,27 @@ public static class AchievementDefinitions
 		// (IsChapterBuilt); each boss fights on its stand-in under its own id until then.
 		BossClearArcane("bridge_crossed", "Across the Water", "bridge_constable", "the Last Bridge", 350),
 		BossClearArcane("court_emptied", "No One Left", "court_seneschal", "the Court", 400),
-		BossClearArcane("throne_taken_back", "Taken Back", "throne_dark_wizard", "the Throne", 1000),
+		// The Throne's clear pays a wizard too since 2026-11-03: Nimue, the Lady of the Lake, the one he kept by him
+		// (.ai/endgame-castle.md decision 11), freed when he falls. Not a second deed for the same fall - one row says
+		// it. A wizard here is past every gate (UnlockCatalog: outside the campaign gate), so 2.5's rule - the castle
+		// pays Arcane Energy, never what a gate could count - still holds. Sealed while she is a secret (until the
+		// Throne opens), as a side event that frees a secret wizard is. A save that has already beaten him is handed
+		// her by the reconcile at the end of its next run (AchievementManager.Reconcile), which owes her freeing too.
+		new()
+		{
+			Id = "throne_taken_back", DisplayName = "Taken Back",
+			Description = "Defeat the boss of the Throne.",
+			RewardText = "Frees Nimue and 1,000 Arcane Energy", CurrencyReward = 1000,
+			CharacterUnlockId = "nimue",
+			Category = AchievementCategory.Exploration,
+			Kind = AchievementKind.Road,
+			Visibility = AchievementVisibility.ChapterOpen,
+			StageId = StageOfBoss(ThroneBossId),
+			BossId = ThroneBossId,
+			SealedLine = SomeoneHeldIn(StageOfBoss(ThroneBossId)),
+			Measure = c => c.Lifetime.HasDefeatedBoss(ThroneBossId) ? 1f : 0f,
+			Target = 1,
+		},
 		// THE TAKER TAKEN (.ai/dark-wizard-playable.md). Eric, 2026-11-02, a second time: "dark wizard should unlock
 		// after defeating all stages on hard mode" - every chapter's boss beaten on Hardcore, the stricter reading
 		// the first build left for later. Read off SaveData.MaxDifficultyCleared (each chapter's hardest clear,

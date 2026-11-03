@@ -71,6 +71,9 @@ public partial class FrameProfiler : Node
 		ThornVine,
 		// The light pool's frame: the camera read, the small lights uploaded (scripts/LightPool.cs).
 		LightPool,
+		// Spiritual Weapon: the weapons' _Process - every swing and blow, Excalibur's line and its bolt sweep
+		// included - and the air's draw, where the lines are painted (scripts/SpiritualWeapon.cs).
+		SpiritWeapon,
 		Harness,
 		Count,
 	}
@@ -78,7 +81,7 @@ public partial class FrameProfiler : Node
 	private static readonly string[] SectionNames =
 	{
 		"enemy", "separation", "move", "takeDamage", "death", "dmgText", "hitFx",
-		"player", "spells", "game", "spawn", "orbs", "textAnim", "terrain", "nav", "starfall", "stormsweep", "runes", "mire", "chain", "vine", "light", "harness",
+		"player", "spells", "game", "spawn", "orbs", "textAnim", "terrain", "nav", "starfall", "stormsweep", "runes", "mire", "chain", "vine", "light", "spirit", "harness",
 	};
 
 	/// <summary>True while a profiler is attached and counting.</summary>

@@ -392,23 +392,22 @@ public partial class CharacterSelection : Control
 		return corner;
 	}
 
-	// The icon of the spell a wizard opens on, in the form he opens it in if it has forms (ApotheosisCatalog's
-	// VariantId, the one rule for which form is his) - the picture his first run's loadout strip shows.
+	// The icon of the spell a wizard opens on, in the form he opens it in if it has forms (CharacterData.StartingForm:
+	// ApotheosisCatalog's VariantId, the one rule for which form is his) - the picture his first run's loadout strip shows.
 	private static Texture2D StartingSpellIcon(CharacterData character)
 	{
 		SpellData spell = character?.StartingSpellResource;
 		if (spell == null)
 			return null;
-		string formId = ApotheosisCatalog.ForCharacter(character.Id)?.VariantId;
-		if (!string.IsNullOrEmpty(formId) && spell.HasVariants)
-		{
-			foreach (SpellVariant variant in spell.Variants)
-			{
-				if (variant != null && variant.Icon != null && formId.Equals(variant.Id, StringComparison.OrdinalIgnoreCase))
-					return variant.Icon;
-			}
-		}
-		return spell.Icon;
+		return character.StartingForm?.Icon ?? spell.Icon;
+	}
+
+	// And its name, the same way: Nimue's card says "Spirit Sword", the form she opens in, not the spell's own name,
+	// which is the name of a choice she never makes.
+	private static string StartingSpellName(CharacterData character)
+	{
+		SpellVariant form = character?.StartingForm;
+		return form != null && !string.IsNullOrWhiteSpace(form.DisplayName) ? form.DisplayName : character?.StartingSpellResource?.Name ?? string.Empty;
 	}
 
 	// A wizard's craft under his name ("the Pyromancer"), for a starter who carries his own name (CharacterData.Craft);
@@ -458,7 +457,7 @@ public partial class CharacterSelection : Control
 		}
 
 		if (character.StartingSpellResource is SpellData spell)
-			Add("Spell", BuildSpellValue(spell));
+			Add("Spell", BuildSpellValue(StartingSpellIcon(character) ?? spell.Icon, StartingSpellName(character)));
 		// The wizard's final form, named where he is chosen (Eric's playtest, 2026-11-01: "make it clearer
 		// that apotheosis is an option"), in the ember register the strip's button and the ascension
 		// browser's entry wear. The name only: what the form does stays sealed until a run first offers
@@ -476,15 +475,15 @@ public partial class CharacterSelection : Control
 	}
 
 	// The starting spell with its own icon before it, as the Spell Index lists it.
-	private static Control BuildSpellValue(SpellData spell)
+	private static Control BuildSpellValue(Texture2D icon, string spellName)
 	{
 		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		line.AddThemeConstantOverride("separation", 8);
-		if (spell.Icon != null)
+		if (icon != null)
 		{
 			line.AddChild(new TextureRect
 			{
-				Texture = spell.Icon,
+				Texture = icon,
 				CustomMinimumSize = new Vector2(28f, 28f),
 				ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
 				StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
@@ -493,7 +492,7 @@ public partial class CharacterSelection : Control
 				MouseFilter = Control.MouseFilterEnum.Ignore,
 			});
 		}
-		Label name = CodexRows.MakeText(spell.Name, ResponsiveLayout.TextRole.Body, CodexRows.Stone.Ink);
+		Label name = CodexRows.MakeText(spellName, ResponsiveLayout.TextRole.Body, CodexRows.Stone.Ink);
 		name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 		line.AddChild(name);
 		return line;

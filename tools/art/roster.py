@@ -3525,6 +3525,211 @@ def medea(phase=None):
     return g.rows()
 
 
+def nimue(phase=None, wind=0.0, drift=0.0, lift=0):
+    """Spiritual Weapon, taken as the Sword. Nimue, the Lady of the Lake: who rose out of the mere with the
+    sword and gave it to the king, and took it back when he fell - the one wizard the dark wizard KEPT, by him,
+    to the end (.ai/endgame-castle.md decision 11).
+
+    She FLOATS (Eric, 2026-11-03: "One of the wizards should float, her feet hanging together and her dress
+    should flow in the wind"): the one figure in the cast not standing on the ground. Her bare feet hang
+    together under the hem, pointed down, three rows clear of the floor at rest, and the soft contact shadow
+    lies on the ground under her and never touches them - the gap between the two is what says she is off it.
+    Everything loose on her streams back from the way she faces, as water runs off something rising out of
+    it: the skirt of her gown in long tongues, her far sleeve like a pennant, the girdle's ribbon, her hair.
+
+    The sword she gave is upright in her near fist, held before her at the shoulder with the point above her
+    head - the Lady's own gesture, the arm out of the water holding it up - and its blade is the one thing on
+    her that gives off light, in light's ramp. Old gold at the guard and the pommel; a dark grip in her hand.
+
+    Drawn so she can never be Morgan le Fay (the bridge's queen, beside her in the story): Morgan stands planted
+    into the wind in a sea-grey lichen mantle over black samite, her arm level with an open palm and a rune of
+    rime before it; Nimue hangs above the ground with no mantle at all, in pale samite, a sword upright in her
+    fist. Nor the Cumaean Sibyl, the cave's old prophetess hooded in grey under a crook. The rescued wear no
+    pigment: the gown is the steel row - the colour of still water under a white sky - the hair wool's deep end,
+    a blue-black like deep water; the girdle and its ribbon wool's base; a fillet of silver (steel's hi) on her
+    brow. Serious: a lady of power, never a fairy.
+
+    `wind` (0..1) is where the streaming cloth is in its ripple; `drift` (0..1) how hard she is moving, which
+    streams it further back and leans her into it; `lift` how many rows she is risen off her rest, which the
+    shadow answers by narrowing. All three at rest is the portrait pose. `phase` is accepted for the walk's
+    signature and ignored: she does not step (anim_sets.hover draws her moving).
+    """
+    g = G(48)
+    CX = 27
+    T, t_, r, R, q = "T", "t", "r", "R", "q"
+    TAU = 2.0 * math.pi
+
+    def ripple(k, amp=1.0):
+        # One streamer's flutter: each out of step with the next, so the ripple runs down the cloth.
+        return amp * math.sin(TAU * (wind + 0.27 * k))
+
+    stream = 2.0 * drift          # how much further back everything streams while she moves
+    sb = -int(round(stream))
+
+    # THE FAR SLEEVE, first: her far arm hangs back and down behind her, and the long hanging sleeve of the
+    # samite streams off it to the left like a pennant, its end ragged and lifting.
+    e0 = int(round(ripple(0)))
+    mass(g, [(18, 21, 24), (21, 17 + sb // 2, 23), (24, 13 + sb, 21), (27, 10 + sb + e0, 19), (28, 11 + sb + e0, 16)],
+         R, r, q)
+    fold(g, [(22, 20), (15 + sb, 25)], q, r)
+    fold(g, [(23, 23), (13 + sb, 27)], q, None)
+    cut(g, (11 + sb + e0, 28), (13 + sb + e0, 28))
+    hand(g, 20, 27)                                               # her far hand, open, out of the sleeve's mouth
+    g.set(19, 26, q)
+
+    # THE SKIRT: from the girdle to the hem above her feet, hanging and streaming back. The front falls nearly
+    # straight; the back is torn by the wind into three tongues, each lifting on its own ripple.
+    dx = -int(round(stream * 1.5))
+    mass(g, [(24, 23, 31), (28, 20, 32), (32, 18 + dx // 2, 32), (36, 17 + dx, 31), (39, 19 + dx, 30), (40, 22, 30)],
+         r, t_, R)
+    for k, (y0, x0, length, top, body, under) in enumerate((
+            (29, 21, 9, t_, r, R),          # the upper tongue, catching the light
+            (33, 18, 10, r, R, q),
+            (37, 19, 9, R, R, q))):         # the lowest, in the skirt's own shadow
+        rise = ripple(k + 1, 1.3)
+        end = x0 + dx - length + sb
+        y = y0
+        for i, x in enumerate(range(x0 + dx, end - 1, -1)):
+            u = i / float(max(1, length))
+            # A curve, not a ramp: the tongue droops and then lifts toward its end on the wind.
+            y = y0 + 2.2 * u * u + rise * u
+            w = max(0, int(round(2.0 * (1.0 - u))))
+            yi = int(round(y))
+            for yy in range(yi - w, yi + 1):
+                g.set(x, yy, top if (yy == yi - w and u < 0.75) else body)
+            if u < 0.9:
+                g.set(x, yi + 1, under)
+    # The folds of the skirt hanging from the girdle: converging at the waist, opening to the hem.
+    fold(g, [(27, 25), (26, 31), (25, 39)], R, t_)
+    fold(g, [(30, 26), (30, 33), (29, 39)], q, t_)
+    fold(g, [(25, 25), (22, 31), (19 + dx, 36)], R, T)
+    fold(g, [(24, 28), (21, 35)], q, None)
+    g.set(28, 29, t_)
+    g.set(23, 33, t_)
+    # The hem, its edge turned under, lit where it catches.
+    for x in range(21, 31):
+        g.set(x, 40, R if (x * 5) % 3 else q)
+    g.set(22, 39, t_)
+    g.set(27, 39, T)
+
+    # THE FEET: bare, hanging together under the hem and pointed down - drawn back a column when she moves.
+    back = int(round(drift))
+    for (fx, fy, fc) in ((25, 41, "h"), (26, 41, "i"), (27, 41, "f"), (28, 41, "i"),
+                         (25, 42, "f"), (26, 42, "i"), (27, 42, "h"), (28, 42, "i"),
+                         (25 - back, 43, "h"), (27 - back, 43, "f"), (28 - back, 43, "I")):
+        g.set(fx, fy, fc)
+    g.set(29, 40, "o")                                            # the hem's shadow over the near ankle
+    g.set(24, 40, "o")
+
+    # THE BODICE: close-fitted samite from the shoulders to the girdle, the far (key) side lit.
+    mass(g, [(14, 24, 30), (17, 23, 31), (20, 24, 31), (23, 24, 30)], r, t_, R)
+    fold(g, [(27, 15), (27, 22)], R, T)
+    fold(g, [(25, 17), (25, 22)], q, None)
+    g.set(29, 18, R)
+    g.set(30, 21, q)
+    # The neckline, square-cut, and her throat above it.
+    g.span(14, 25, 29, "h")
+    g.set(25, 14, "f")
+    g.set(29, 14, "i")
+    g.span(13, 26, 28, "h")
+    g.set(28, 13, "i")
+    g.span(15, 26, 28, "o")
+    g.set(27, 15, q)
+
+    # THE GIRDLE, low on the hips, and its long ribbon streaming back on the wind.
+    g.span(23, 23, 31, "c")
+    g.set(23, 23, "d")
+    g.set(28, 23, "b")
+    g.set(30, 23, "a")
+    g.span(24, 24, 30, "b")
+    g.set(27, 24, "g")                                            # the clasp, old gold
+    g.set(26, 24, "G")
+    for i, x in enumerate(range(23, 10 + sb, -1)):
+        y = 24 + i * 0.32 + ripple(4, 1.1) * (i / 12.0)
+        g.set(x, y, "c" if i % 4 else "d")
+        g.set(x, y + 1, "a")
+
+    # THE HAIR: long and dark as deep water, from under the fillet back over her shoulders on the wind, in
+    # locks - wool's deep end, lit along the top of each lock in its base.
+    e5 = int(round(ripple(5)))
+    mass(g, [(5, 24, 29), (7, 22, 25), (10, 19 + sb // 2, 24), (13, 17 + sb, 24), (16, 14 + sb, 23),
+             (18, 13 + sb + e5, 20)], "a", "b", q)
+    fold(g, [(25, 7), (21, 11), (16 + sb, 16)], q, "c")
+    fold(g, [(24, 9), (19, 13), (15 + sb, 17)], q, "b")
+    fold(g, [(23, 11), (18 + sb, 16)], q, None)
+    for k in range(3):
+        # The locks' ends, each lifting on its own ripple.
+        ex = 13 + sb - k + int(round(ripple(6 + k)))
+        ey = 18 + k
+        g.set(ex, ey, "b")
+        g.set(ex - 1, ey + (1 if ripple(6 + k) > 0 else 0), "a")
+    cut(g, (15 + sb, 19), (18 + sb, 18))
+
+    # THE NEAR ARM: out before her and bent up, the forearm in the close sleeve, the fist round the grip at
+    # the height of her shoulder. Its hanging sleeve streams back under the arm.
+    mass(g, [(15, 29, 32), (16, 30, 34), (17, 31, 35)], r, t_, R, rim=False)
+    mass(g, [(17, 30, 34), (19, 29, 33), (21, 28 + sb, 31)], R, r, q, rim=False)
+    fold(g, [(32, 18), (29, 21)], q, r)
+    g.set(28 + sb, 22 + (1 if ripple(7) > 0 else 0), R)
+    hand(g, 35, 15)
+    g.set(34, 16, "h")
+
+    # THE SWORD: upright in her fist, its point above her head. The blade is light's ramp - a white-hot edge on
+    # the key side, the mid and the edge stops down the far side - and the one thing on her that gives off
+    # light. Guard and pommel old gold, the grip dark wool below her fist.
+    BX = 36
+    for y in range(3, 14):
+        tip = y < 5
+        g.set(BX, y, LT0 if (y % 4 == 1 or tip) else LT1)
+        g.set(BX + 1, y, LT3 if tip else (LT2 if y % 3 else LT1))
+    g.set(BX, 2, LT2)                                             # the very point
+    g.span(14, 33, 40, "g")                                       # the cross-guard
+    g.set(33, 14, "G")
+    g.set(34, 14, "H")
+    g.set(40, 14, "u")
+    g.set(36, 14, "G")
+    g.set(38, 14, "u")
+    g.set(BX, 17, "a")                                            # the grip below her fist, and the pommel
+    g.set(BX + 1, 17, "a")
+    g.set(BX, 18, "G")
+    g.set(BX + 1, 18, "u")
+    for (mx, my, mc) in ((39, 5, LT3), (34, 8, LT3), (40, 10, LT2)):
+        g.set(mx, my, mc)                                         # light coming off the edge
+
+    # THE HEAD: pale and set, looking the way she floats, under a thin fillet of silver.
+    head(g, CX, 7, 2.4, brow="flat", gaze=1, mouth="set", eye="open")
+    # The crown of her head, rounded, the hair parted over it, and the silver fillet one unbroken line.
+    g.span(5, 25, 29, "a")
+    g.set(26, 5, "b")
+    g.set(27, 5, "c")
+    g.set(29, 5, q)
+    g.span(6, 24, 30, "t")
+    g.set(28, 6, T)
+    g.set(24, 6, "r")
+    g.set(30, 6, "R")
+    g.set(24, 7, "a")                                             # her hair at the near temple, down past the jaw
+    g.set(24, 8, q)
+    g.set(24, 10, "a")
+    g.set(24, 11, q)
+    g.set(30, 7, q)
+
+    # Risen: every row of her up by `lift`, and leaning into the way she floats while she moves. The shadow is
+    # laid after both, so it stays on the ground where it is.
+    if lift:
+        g.g = g.g[lift:] + [["."] * g.cell for _ in range(lift)]
+    if drift:
+        g.g = [(row[-1:] + row[:-1]) if y < 22 else row for y, row in enumerate(g.g)]
+    # THE SHADOW: soft, under where she hangs, never touching her - the occlusion line on the contract's row,
+    # its ends broken by the dither, and a dithered row over its middle; narrower the higher she is.
+    half = 7 - (1 if lift >= 2 else 0)
+    for x in range(CX - half, CX + half + 1):
+        d = abs(x - CX)
+        if d < half - 1 or (x + lift) % 2 == 0:
+            g.set(x, 47, "o")
+        if d <= half - 3 and x % 2 == 1:
+            g.set(x, 46, "o")
+    return g.rows()
+
 WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("stormcaller", stormcaller), ("geomancer", geomancer),
            ("tituba", tituba), ("vainamoinen", vainamoinen), ("dee", dee),
@@ -3534,7 +3739,12 @@ WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("paracelsus", paracelsus),
            ("nostradamus", nostradamus),
            ("imhotep", imhotep),
-           ("medea", medea)]
+           ("medea", medea),
+           ("nimue", nimue)]
+
+# The ones who float (anim_sets.hover): drawn whole at any height and any flutter, so their idle bobs and their
+# walk drifts instead of breathing and stepping. Nimue (.ai/endgame-castle.md decision 11).
+FLOATERS = {"nimue"}
 ENEMIES = [("swarmer", swarmer), ("runner", runner), ("bruiser", bruiser),
            ("shielder", shielder), ("skullsentry", skullsentry), ("lunger", lunger),
            ("slammer", slammer), ("exploder", exploder), ("summoner", summoner),

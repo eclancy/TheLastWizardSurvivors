@@ -818,7 +818,9 @@ public partial class Player : CharacterBody2D
 		CurrentHP = MaxHP;
 		Speed *= selectedCharacter.SpeedModifier;
 
-		string startingSelection = selectedCharacter.StartingSpellResource?.Id;
+		// In his own form, for a spell taken in one (CharacterData.StartingSelection: Nimue's Sword); the spell alone
+		// for every other wizard, whose spell has no forms.
+		string startingSelection = selectedCharacter.StartingSelection;
 		if (selectedCharacter.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase)
 			&& !string.IsNullOrWhiteSpace(Global.TestWizardStartingSpellId))
 		{
@@ -945,6 +947,11 @@ public partial class Player : CharacterBody2D
 		// cauldron, and every heal she takes is a fifth more (Heal). An axis no other wizard owns: not a heal of its
 		// own (the healing budget, .ai/difficulty-curve.md section 5, gives her none), the worth of every other one.
 		"healing_20",
+		// Nimue (.ai/endgame-castle.md decision 11): the Scabbard - "ye shall lose no blood, be ye never so sore
+		// wounded" - a body pressed against her bites a quarter less often (Player.Scabbard.cs). An axis no other
+		// wizard owns: not a share of every hit (the Geomancer), not a chance of none (evasion), not a death refused
+		// (the Archmage) - the rate at which the touching crowd wounds.
+		"bite_interval_25",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -1017,6 +1024,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "healing_20":
 				characterHealingBonus = CharacterRejuvenationBonus;
+				return true;
+			case "bite_interval_25":
+				characterScabbard = true;
 				return true;
 			default:
 				return false;
@@ -4176,11 +4186,13 @@ public partial class Player : CharacterBody2D
 			// Turned on its own by Dragon's Teeth (Enemy.Turned.cs): for those seconds it is fighting someone else.
 			if (enemy is Enemy turnedToucher && turnedToucher.IsTurned)
 				continue;
+			// The clock between one body's bites: 0.2 s, longer under Nimue's Scabbard (Player.Scabbard.cs).
+			float bite = ContactBiteSeconds;
 			if (!enemyDamageCooldowns.ContainsKey(enemy))
-				enemyDamageCooldowns[enemy] = DamageCooldownSeconds; // So damage applies on next tick
+				enemyDamageCooldowns[enemy] = bite; // So damage applies on next tick
 
 			enemyDamageCooldowns[enemy] += (float)delta;
-			if (enemyDamageCooldowns[enemy] >= DamageCooldownSeconds)
+			if (enemyDamageCooldowns[enemy] >= bite)
 			{
 				// A weakened enemy can roll 0 (Enemy.ScaleOutgoingDamage, issue #66). It still swings;
 				// the touch just lands like a dodge, with no on-hurt reactions.
@@ -4191,6 +4203,7 @@ public partial class Player : CharacterBody2D
 					contactDamage = toucher.ScaleOutgoingDamage(contactDamage);
 				if (contactDamage > 0)
 				{
+					CountContactBite();
 					TakeDamage(contactDamage);
 					RepelToucher(enemy);
 				}
@@ -8879,7 +8892,7 @@ public partial class Player : CharacterBody2D
 			// Optionally, apply damage immediately - never from a body turned on its own (Dragon's Teeth).
 			if (body is Enemy { IsTurned: true })
 				return;
-			if (!enemyDamageCooldowns.ContainsKey(body) || enemyDamageCooldowns[body] >= DamageCooldownSeconds)
+			if (!enemyDamageCooldowns.ContainsKey(body) || enemyDamageCooldowns[body] >= ContactBiteSeconds)
 			{
 				// The first touch, the same as every touch after it in the contact loop: the Binding
 				// Thread binds first, then Weaken and the chapter's damage scale it. It used to go straight
@@ -8890,6 +8903,7 @@ public partial class Player : CharacterBody2D
 					contactDamage = toucher.ScaleOutgoingDamage(contactDamage);
 				if (contactDamage > 0)
 				{
+					CountContactBite();
 					TakeDamage(contactDamage);
 					RepelToucher(body);
 				}

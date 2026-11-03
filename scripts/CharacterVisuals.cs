@@ -73,6 +73,9 @@ public static class CharacterVisuals
 			case "imhotep": return new Vector2(38, 5);
 			// The small sun burning over her open palm (roster.py, medea()).
 			case "medea": return new Vector2(39, 12);
+			// The blade of the sword she holds upright before her (roster.py, nimue()), halfway up its light: where the
+			// Spirit Sword leaves her and comes home. Her rest pose; the idle lifts her two rows at most.
+			case "nimue": return new Vector2(36, 8);
 			default: return null;
 		}
 	}
@@ -109,6 +112,7 @@ public static class CharacterVisuals
 			case "nostradamus":
 			case "imhotep":
 			case "medea":
+			case "nimue":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:
