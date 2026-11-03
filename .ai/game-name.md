@@ -1,7 +1,9 @@
 # The game's name
 
-**Status: undecided.** These are ideas to review, nothing has been chosen, and the game ships as *Wizard
-Survivors*. Pulled on 2026-11-02 from Eric's Claude Docs page "Game name ideas"
+**Status: the direction is decided, the exact name is not.** Eric, 2026-11-02: *"The name relevant for
+wizard survivors should be something like the one he missed."* So the name tells the story's premise -
+everyone else was taken, and you were the one he did not get - rather than the genre. Until the exact
+words are picked the game ships as *Wizard Survivors*. Pulled on 2026-11-02 from Eric's Claude Docs page "Game name ideas"
 (https://claude.ai/artifact/LM9fYy1cs7vbEWRwssepAN), which came from his conversation with Claude Duet
 and a voice call. That page also holds names for Creature Tactics; only this game's are copied here.
 
@@ -21,8 +23,24 @@ take your spells back in his castle.
 | The Broken Circle | where he struck first; also chapter 3's name, so the title would name a chapter |
 | Every Wizard Freed | what you earn to reach him (the Throne's gate) |
 
-*Above and Below* is also on the favourites list, "from the voice call". It reads as Creature Tactics'
-(its Undercity and Overcity), not this game's; check with Eric before counting it here.
+*Above and Below* is also on the favourites list, "from the voice call". It is Creature Tactics' (its
+Undercity and Overcity), not this game's.
+
+## In the same vein
+
+Names "something like the one he missed": each says that he took everyone and missed you. The first is
+still the favourite; the others are for comparing it against.
+
+| name | note |
+|---|---|
+| **The One He Missed** | the original; plain, and already a line in the game (the Court's quatrain) |
+| He Missed One | the same thought from his side; shorter, and a little ominous for him |
+| One Light Left | the ember: of every wizard's light, yours is the one still burning |
+| One Light, Alone | from the quatrain "Out of the west one light, on foot, alone"; the walk across the map |
+| The Ember He Missed | joins the favourite to the Last Ember idea |
+| The Last Unbound | the others are sealed, chained and jailed; you are the one still free |
+
+Each can stand alone or follow "Wizard Survivors:" while the old name is still known.
 
 ## If a name is chosen: what a rename touches
 
