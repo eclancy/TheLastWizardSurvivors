@@ -74,6 +74,8 @@ public partial class Node2DGame
 			screenShake.Tick(entranceCamera, delta);
 		}
 		TickLetterbox(delta);
+		// The crash zoom's speed lines (DefeatSequence), on the run's impact layer, which draws through the pause.
+		TickImpactBeats(delta);
 		SyncGroundToCamera();
 	}
 

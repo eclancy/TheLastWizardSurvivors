@@ -73,6 +73,7 @@ public static partial class RegressionChecks
 		ValidateTeachers(warnings);
 		ValidatePrologueReel(warnings);
 		ValidateFreeings(warnings);
+		ValidateCinematicRules(warnings);
 		ValidateSlowStartMigration(warnings);
 		ValidateStoryReset(warnings);
 		ValidateUserDataCarryOver(warnings);
@@ -4795,6 +4796,8 @@ public static partial class RegressionChecks
 			float arrival = probe.EntranceSeconds + probe.EntranceDelaySeconds;
 			if (probe.EntranceSeconds < 2.5f || arrival > 4.0f)
 				warnings.Add($"Boss '{boss.Id}' arrives over {probe.EntranceSeconds}s after {probe.EntranceDelaySeconds}s; outside 2.5-4 s the field is held for too little to see it or too long to bear.");
+			// ...and its climax lands with the camera there (RegressionChecks.Cinematics.cs, rule 3).
+			ValidateArrivalClimaxFramed(warnings, boss.Id, probe);
 
 			// AT LEAST TWO PHASES, each a fraction strictly inside 0-1 and below the one before: a
 			// threshold out of order is crossed on the same frame as its neighbour and its change is lost.

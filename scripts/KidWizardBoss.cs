@@ -181,6 +181,9 @@ public partial class KidWizardBoss : BossEnemy
 	// The climax (BossDeath calls it on the roar): a pop, not a landing.
 	protected internal override float EntranceClimaxWeight => 0.3f;
 	protected internal override float EntranceRoarSeconds => PopAt + 0.05f;
+	// The arrival waits this long first, so the pop lands with the camera on it rather than a quarter of the way there
+	// (.ai/cutscenes.md, rules 1 and 3; the Long Coil's lead, for the same reason). Timing only: the drawing is untouched.
+	protected internal override float EntranceDelaySeconds => 0.75f;
 
 	private const float PopAt = 1.1f;
 	private Vector2 restScale = Vector2.One;

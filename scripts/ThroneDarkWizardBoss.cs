@@ -665,6 +665,11 @@ public partial class ThroneDarkWizardBoss : BossEnemy
 
 	private BossDeath.Piece fallen;
 	private const float StormStart = 0.25f;
+	// The storm's flash: blooming out of his chest, most of its pixels lit there on its first frame and thinning to
+	// none 360 canvas units out - over half a PC screen - gone in a third of a second.
+	private const float FallFlashDensity = 0.75f;
+	private const float FallFlashSeconds = 0.32f;
+	private const float FallFlashReach = 360f;
 	private const float SinkStart = 1.2f;
 	private const float SinkEnd = 3.0f;
 
@@ -690,7 +695,15 @@ public partial class ThroneDarkWizardBoss : BossEnemy
 		// before the fall ends - in waves, the first the biggest. Mostly the light's own ramp, with a scatter
 		// of every element's: the wizards' magic, each its own colour, going home.
 		if (death.Crossed(StormStart))
+		{
 			Storm(death, 90, 1f);
+			// THE IMPACT BEAT of the whole game (.ai/cutscenes.md, rule 1): the light he took going home. Speed lines
+			// out of his chest in the warm light - the Archmage's, not his violet: it is theirs again - and one
+			// dithered flash of it over the screen. The shake is the killing blow's (OnDeathBegin), still dying away.
+			ElementColors.Ramp light = ElementColors.GetRamp(Element.Light);
+			death.ThrowSpeedLines(new Vector2(47f, 44f), light, 1.4f);
+			death.Flash(new Vector2(47f, 44f), light, FallFlashDensity, FallFlashSeconds, FallFlashReach);
+		}
 		if (death.Crossed(StormStart + 0.35f))
 			Storm(death, 60, 0.85f);
 		if (death.Crossed(StormStart + 0.8f))

@@ -373,6 +373,13 @@ public partial class BossEnemy : Enemy
 	// is stopped (physics off: no step, no wind-up, no phase, nothing it summons), so it cannot touch
 	// the player and nothing can touch it; Node2DGame reads EnteringCount and holds the player's spells
 	// and the swarm, and keeps the player from being hurt, until every arriving body has landed.
+	//
+	// AND A BEAT AFTER IT (Eric, 2026-11-03: "Always give a pause before panning, or beginning play after a
+	// cutscene"; .ai/cutscenes.md, rules 3 and 4). A body that lands while the run holds the field does not start
+	// its fight on the landing frame: it stands in its own sprite, still untargetable with its clock stopped
+	// (IsAwaitingFight), while the camera holds on it, goes back to the wizard and a beat passes - and the run
+	// lets every such body fight on the frame it lets the field go (LetLandedBodiesFight). A body that lands with
+	// no hold to wait on (a tool's) fights at once, as every body did before.
 
 	/// <summary>Bodies of any boss still arriving. Node2DGame holds the field while it is above zero.</summary>
 	public static int EnteringCount { get; private set; }
@@ -380,13 +387,45 @@ public partial class BossEnemy : Enemy
 	private static readonly System.Collections.Generic.List<BossEnemy> arriving = new();
 
 	/// <summary>
-	/// The bodies counted in <see cref="EnteringCount"/>, in the order they began: what the arrival's camera
-	/// looks at (Node2DGame.BossEntrance.cs). The Throne's pairs and the Choir's three voices are all here.
+	/// The bodies arriving or landed and waiting for their fight, in the order they began: what the arrival's
+	/// camera looks at (Node2DGame.BossEntrance.cs). The Throne's pairs and the Choir's three voices are all here.
 	/// </summary>
 	public static System.Collections.Generic.IReadOnlyList<BossEnemy> Arriving => arriving;
 
 	/// <summary>True from the frame the boss is added until its arrival has played.</summary>
 	public bool IsEntering { get; private set; }
+
+	/// <summary>
+	/// True from the landing until the run lets the fight begin: standing in its own sprite, untargetable, its
+	/// clock stopped (physics off), while the run holds the beat after an arrival.
+	/// </summary>
+	public bool IsAwaitingFight { get; private set; }
+
+	/// <summary>Bodies landed and waiting for the run to let them fight. Tools wait for 0 before they touch a fight.</summary>
+	public static int AwaitingFightCount
+	{
+		get
+		{
+			int n = 0;
+			foreach (BossEnemy body in arriving)
+			{
+				if (body.IsAwaitingFight)
+					n++;
+			}
+			return n;
+		}
+	}
+
+	/// <summary>Lets every landed body that is waiting for its fight begin it (Node2DGame, as it lets the field go).</summary>
+	public static void LetLandedBodiesFight()
+	{
+		for (int i = arriving.Count - 1; i >= 0; i--)
+		{
+			BossEnemy body = arriving[i];
+			if (body != null && IsInstanceValid(body) && body.IsAwaitingFight)
+				body.BeginFight();
+		}
+	}
 
 	private BossDeath entrance;
 	private bool countedAsEntering;
@@ -438,7 +477,10 @@ public partial class BossEnemy : Enemy
 		AddChild(entrance);
 	}
 
-	/// <summary>Called by the stage on the arrival's last frame: the fight begins.</summary>
+	/// <summary>
+	/// Called by the stage on the arrival's last frame: it has landed. The fight begins now, or - while the run
+	/// holds the field for the beat after an arrival - when the run lets it (<see cref="LetLandedBodiesFight"/>).
+	/// </summary>
 	internal void FinishEntrance()
 	{
 		if (!IsEntering)
@@ -446,6 +488,23 @@ public partial class BossEnemy : Enemy
 		IsEntering = false;
 		entrance = null;
 		ReleaseEnteringCount();
+		if (IsDying)
+		{
+			LeaveArriving();
+			return;
+		}
+		if (Node2DGame.Current is Node2DGame run && IsInstanceValid(run) && run.HoldsLandedBossFights)
+		{
+			IsAwaitingFight = true;
+			return;
+		}
+		BeginFight();
+	}
+
+	private void BeginFight()
+	{
+		IsAwaitingFight = false;
+		LeaveArriving();
 		if (IsDying)
 			return;
 		SetTargetable(true);
@@ -467,6 +526,12 @@ public partial class BossEnemy : Enemy
 
 	private void AbortEntrance()
 	{
+		// Felled while it waited for its fight (a tool's kill): nothing to cut, only the wait to end.
+		if (IsAwaitingFight)
+		{
+			IsAwaitingFight = false;
+			LeaveArriving();
+		}
 		if (!IsEntering)
 			return;
 		IsEntering = false;
@@ -477,6 +542,7 @@ public partial class BossEnemy : Enemy
 		}
 		entrance = null;
 		ReleaseEnteringCount();
+		LeaveArriving();
 	}
 
 	private void ReleaseEnteringCount()
@@ -485,13 +551,16 @@ public partial class BossEnemy : Enemy
 			return;
 		countedAsEntering = false;
 		EnteringCount = Math.Max(0, EnteringCount - 1);
-		arriving.Remove(this);
 	}
+
+	private void LeaveArriving() => arriving.Remove(this);
 
 	public override void _ExitTree()
 	{
 		// A run left mid-arrival must not leave the next run's field held.
 		ReleaseEnteringCount();
+		IsAwaitingFight = false;
+		LeaveArriving();
 		base._ExitTree();
 	}
 

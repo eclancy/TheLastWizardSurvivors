@@ -37,10 +37,26 @@ using TheOneHeMissed.scripts;
 //
 // One hold covers every body arriving at once - the Choir's three voices, a procession's pair - so one
 // cinematic does too. Real seconds throughout: the arrival is how a moment feels, not a position on the run.
+//
+// THE CINEMATIC RULES (Eric, 2026-11-03: "Always give a pause before panning, or beginning play after a cutscene,
+// and don't move too fast, so the player can keep up visually"; .ai/cutscenes.md). The hold runs in four beats:
+//
+//   ARRIVING  the bars close and the picture pushes in while the camera holds on the wizard (BossEntrancePanDelay),
+//             then it pans to the arrival - eased in and out, never faster than BossEntrancePanMaxSpeed - and the
+//             boss's climax lands with speed lines thrown out of it in its own light (SpeedLines).
+//   LANDED    the last body is down, in its own sprite, waiting for its fight (BossEnemy.IsAwaitingFight). The
+//             camera stays on it: BossEntranceLandedHold since the landing, and BossEntranceRestHold since the pan
+//             came to rest, whichever is later - a short arrival lands while its pan is still settling.
+//   RETURNING the camera goes back to the wizard and the zoom to the run's own, at the same capped ease.
+//   READY     the camera is home and the bars go out; BossEntrancePlayHold later the field is let go - the
+//             wizard walks, his spells fire, the swarm and the boss move - all on one frame.
 public partial class Node2DGame
 {
-	/// <summary>The longest any hold may last, whatever the count says: a body freed oddly must not hold the run.</summary>
+	/// <summary>The longest the ARRIVING beat may last, whatever the count says: a body freed oddly must not hold the run.</summary>
 	private const float MaxBossEntranceHoldSeconds = 6f;
+
+	/// <summary>The longest any later beat may last, if the camera never settles (it always should).</summary>
+	private const float MaxEntranceBeatSeconds = 3.5f;
 
 	/// <summary>How far the camera leans toward an arriving boss, at most, in world pixels.</summary>
 	private const float BossEntranceCameraLean = 230f;
@@ -60,11 +76,43 @@ public partial class Node2DGame
 	// and only then pans, on a critically damped spring - it starts from rest, gathers speed and settles
 	// without overshoot - and comes back the same way when the hold lets go.
 
-	/// <summary>Real seconds the camera holds still once a hold begins: the bars' closing and a beat.</summary>
-	private const float BossEntrancePanDelay = LetterboxInSeconds + 0.2f;
+	/// <summary>Real seconds the camera holds still once a hold begins: the bars' closing and a beat (rule 3).</summary>
+	internal const float BossEntrancePanDelay = LetterboxInSeconds + 0.2f;
 
-	/// <summary>The pan's spring (1/s): critically damped; about 1.1 s to settle on the boss.</summary>
-	private const float BossEntrancePanStiffness = 3.6f;
+	/// <summary>The pan's spring (1/s): critically damped, under the caps below; about 1.5 s to settle on the boss.</summary>
+	internal const float BossEntrancePanStiffness = 3.6f;
+
+	// NEVER FASTER THAN THE EYE (rule 5). The spring alone starts at its hardest - 230 px of lean asked ~3000 px/s2
+	// of it on the first frame, and it was near its top speed a quarter of a second later (_BossProbe before this:
+	// "fastest 292 px/s at 0.90s", 0.25 s after the pan began). Capping the acceleration makes the start an ease of
+	// about 0.4 s, and capping the speed keeps the furthest lean (230 px) to about a sixth of a PC screen a second.
+	// The settle is the spring's own (its deceleration peaks near 320 px/s2, under the cap): no overshoot.
+
+	/// <summary>The fastest the arrival's camera pans, world px/s.</summary>
+	internal const float BossEntrancePanMaxSpeed = 220f;
+
+	/// <summary>The hardest it speeds up or slows down, world px/s2: the ease in and out.</summary>
+	internal const float BossEntrancePanMaxAccel = 600f;
+
+	// THE HOLDS (rules 3 and 4), picked on the probe's numbers. A hold under about 0.4 s reads as a hitch rather than
+	// a held shot; one over a second reads as the game waiting on the player.
+
+	/// <summary>Seconds the camera stays on the arrival after the last body lands, before it goes back.</summary>
+	internal const float BossEntranceLandedHold = 0.5f;
+
+	/// <summary>Seconds the pan must have been at rest on the arrival before it goes back: never a pan straight into a pan.</summary>
+	internal const float BossEntranceRestHold = 0.45f;
+
+	/// <summary>Seconds from the camera home on the wizard (the bars going out) to the field let go.</summary>
+	internal const float BossEntrancePlayHold = 0.6f;
+
+	/// <summary>At rest on its mark: within this many world px, moving slower than CameraRestSpeed px/s.</summary>
+	internal const float CameraRestPx = 6f;
+	internal const float CameraRestSpeed = 12f;
+	/// <summary>Home on the wizard as the eye sees it; the last of the settle goes on under the beat before play.</summary>
+	private const float CameraHomePx = 8f;
+	private const float CameraHomeSpeed = 25f;
+	private const float CameraHomeZoom = 0.01f;
 
 	// --- The cinematic's tuning ----------------------------------------------------------------------
 
@@ -75,7 +123,7 @@ public partial class Node2DGame
 	/// </summary>
 	private const float LetterboxShare = 0.11f;
 	private const float LetterboxSharePortrait = 0.09f;
-	private const float LetterboxInSeconds = 0.45f;
+	internal const float LetterboxInSeconds = 0.45f;
 	private const float LetterboxOutSeconds = 0.4f;
 	private const int LetterboxLayer = 4;
 	/// <summary>The bars: the palette's occlusion, the one black everything shares.</summary>
@@ -92,8 +140,11 @@ public partial class Node2DGame
 	private static readonly Vector2 ArrivalFrameMargin = new(150f, 160f);
 	/// <summary>Room kept round the wizard, world px: he is where the fight starts.</summary>
 	private static readonly Vector2 WizardFrameMargin = new(60f, 80f);
-	private const float ZoomInEase = 1.4f;
-	private const float ZoomOutEase = 4.5f;
+	// The push-in rides a spring too (rule 5). It eased exponentially, which moves fastest on its first frame
+	// (x0.39 a second into a push of x0.28), and back out at 4.5/s - a snap as the fight began.
+	private const float CinematicZoomStiffness = 3.6f;
+	private const float CinematicZoomMaxRate = 0.35f;
+	private const float CinematicZoomMaxAccel = 1.2f;
 
 	/// <summary>World pixels a weight-1 beat shakes the screen; a climax shakes a little harder.</summary>
 	private const float ImpactShakePx = 6f;
@@ -105,8 +156,25 @@ public partial class Node2DGame
 	private const float ClimaxZoomPunch = 0.05f;
 	private const float FlareSeconds = 0.34f;
 
+	// THE CLIMAX'S SPEED LINES (rule 1): thrown out of the boss in its own light, from a clear ring round its body to
+	// past the edge of the picture between the bars, on the world's 2 px grid; more of them the harder it lands.
+	private const float ClimaxLinesSeconds = 0.55f;
+	private const float ClimaxLinesReach = 330f;
+	private const int ClimaxLinesFew = 18;
+	private const int ClimaxLinesMore = 14;
+
 	private bool bossEntranceHeld;
 	private float bossEntranceHeldSeconds;
+
+	private enum EntranceBeat { Arriving, Landed, Returning, Ready }
+	private EntranceBeat entranceBeat;
+	private float entranceBeatSeconds;
+	// How long the camera has been at rest on the arrival (LANDED waits on it) and whether it is home on the wizard
+	// (RETURNING waits on that); both written by the camera's tick.
+	private float cameraRestSeconds;
+	private bool cameraHome;
+	private bool cinematicPanBegun;
+	private float cinematicZoomVelocity;
 	private readonly List<Enemy> heldForBossEntrance = new();
 	private Camera2D? entranceCamera;
 
@@ -131,10 +199,15 @@ public partial class Node2DGame
 	// Sixteen levels of the 4x4 Bayer matrix on the 2 px art grid, as 8x8 white tiles, drawn tiled and
 	// modulated to an opaque ramp stop: the flare's spill, and the only gradient the art contract allows.
 	private static Texture2D[]? bayerTiles;
-	private static readonly int[] Bayer4 = { 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5 };
 
 	/// <summary>True while the field is held for a boss's arrival. For _BossProbe and _UiShot.</summary>
 	public bool BossEntranceHeld => bossEntranceHeld;
+
+	/// <summary>True while a body that lands must wait for this run to let it fight (BossEnemy.FinishEntrance).</summary>
+	public bool HoldsLandedBossFights => bossEntranceHeld && !runFinished;
+
+	/// <summary>The hold's beat by name (Arriving, Landed, Returning, Ready); empty when nothing is held. For the tools.</summary>
+	public string BossEntranceBeatName => bossEntranceHeld ? entranceBeat.ToString() : string.Empty;
 
 	/// <summary>0 to 1: how far in the letterbox bars are. For _BossProbe and _UiShot.</summary>
 	public float LetterboxShown => letterboxShown;
@@ -171,20 +244,116 @@ public partial class Node2DGame
 	}
 
 	/// <summary>
-	/// An arrival's climax (BossDeath, on the roar): the shake at the boss's weight, and while the bars are
-	/// in, the jolt, the kick of the push-in and the flare in <paramref name="element"/>'s light.
+	/// An arrival's climax (BossDeath, on the roar): the shake at the boss's weight, speed lines thrown out of the
+	/// body (round <paramref name="bodyCentre"/>, clear of <paramref name="bodyRadius"/>) in
+	/// <paramref name="element"/>'s light, and while the bars are in, the jolt, the kick of the push-in and the flare.
 	/// </summary>
-	public void OnBossClimax(BossEnemy boss, float weight, Element element)
+	public void OnBossClimax(BossEnemy boss, float weight, Element element, Vector2? bodyCentre = null, float bodyRadius = 0f)
 	{
 		if (weight > 0f)
 			ShakeScreen(ClimaxShakePx * weight, 0.35f + 0.35f * weight);
+		float w = Mathf.Max(0.3f, weight);
+		if (boss != null && IsInstanceValid(boss))
+		{
+			ElementColors.Ramp ramp = ElementColors.GetRamp(element);
+			Vector2 centre = bodyCentre ?? boss.GlobalPosition;
+			float inner = Mathf.Max(56f, bodyRadius);
+			int streaks = ClimaxLinesFew + Mathf.RoundToInt(ClimaxLinesMore * Mathf.Min(1.3f, w) / 1.3f);
+			BurstSpeedLines(centre, inner, inner + ClimaxLinesReach * (0.75f + 0.25f * Mathf.Min(1f, w)), streaks,
+				ClimaxLinesSeconds, ramp.Hot, ramp.Mid, SeedOf(boss.BossId), SpeedLines.Motion.Outward);
+		}
 		if (!bossEntranceHeld && letterboxShown <= 0f)
 			return;
-		float w = Mathf.Max(0.3f, weight);
 		letterboxJolt = Mathf.Clamp(ClimaxBarJolt * w, letterboxJolt, MaxBarJolt);
 		cinematicZoomPunch = Mathf.Max(cinematicZoomPunch, ClimaxZoomPunch * w);
 		flareRamp = ElementColors.GetRamp(element);
 		flareAge = 0f;
+	}
+
+	// --- Impact beats: speed lines and the flash (.ai/cutscenes.md, rule 1) ---------------------------------
+	//
+	// One burst of speed lines at a time, in world space on its own node over every body (DrawLayers.ForemostAir,
+	// absolute), and one flash at a time on the letterbox's canvas layer, over the HUD. Both tick from the arrival's
+	// tick in a run and from FilmDefeat through the defeat's paused tree, and draw nothing once they are done.
+
+	private Node2D? impactLayer;
+	private readonly SpeedLines impactLines = new();
+	private readonly DitherFlash screenFlash = new();
+	private bool impactDrawn;
+
+	/// <summary>
+	/// Speed lines round <paramref name="centre"/> (world px), between <paramref name="inner"/> and
+	/// <paramref name="outer"/>, on the world's 2 px grid: a boss's climax, the dark wizard's fall, the defeat's
+	/// crash zoom. Replaces any burst still drawing.
+	/// </summary>
+	public void BurstSpeedLines(Vector2 centre, float inner, float outer, int streaks, float seconds, Color near, Color far,
+		uint seed, SpeedLines.Motion motion)
+	{
+		EnsureImpactLayer();
+		// The layer sits at the run's origin, so its local space is the world's and the grid is the world's grid.
+		impactLines.Burst(impactLayer!.ToLocal(centre), inner, outer, streaks, seconds, near, far, 2f, seed, motion);
+		impactLayer.QueueRedraw();
+	}
+
+	/// <summary>
+	/// A dithered flash blooming out of <paramref name="worldSource"/> over the screen and the HUD (DitherFlash):
+	/// opaque <paramref name="hot"/> then <paramref name="edge"/> pixels through the Bayer matrix, up to
+	/// <paramref name="density"/> of them at the source, thinning to none <paramref name="reach"/> canvas units out
+	/// and over <paramref name="seconds"/>. Only for an impact that calls for it (the dark wizard's fall).
+	/// </summary>
+	public void FlashScreen(Color hot, Color edge, float density, float seconds, Vector2 worldSource, float reach)
+	{
+		EnsureLetterbox();
+		// The letterbox's layer draws in the viewport's canvas units; the camera's transform takes the world there.
+		Vector2 source = GetViewport().GetCanvasTransform() * worldSource;
+		screenFlash.Flash(hot, edge, density, seconds, source, reach);
+		letterbox?.QueueRedraw();
+	}
+
+	private void EnsureImpactLayer()
+	{
+		if (impactLayer != null && IsInstanceValid(impactLayer))
+			return;
+		impactLayer = new Node2D
+		{
+			Name = "ImpactLines",
+			ZAsRelative = false,
+			ZIndex = DrawLayers.ForemostAir,
+			// Through the defeat's paused tree too: its crash zoom draws here.
+			ProcessMode = ProcessModeEnum.Always,
+		};
+		impactLayer.Draw += DrawImpactLines;
+		AddChild(impactLayer);
+	}
+
+	// From the arrival's tick and from FilmDefeat: the lines' clock and the flash's, and a redraw while either shows.
+	private void TickImpactBeats(float delta)
+	{
+		if (impactLayer != null && IsInstanceValid(impactLayer) && (impactLines.Active || impactDrawn))
+		{
+			impactLines.Tick(delta);
+			impactLayer.QueueRedraw();
+		}
+		if (screenFlash.Active)
+		{
+			screenFlash.Tick(delta);
+			letterbox?.QueueRedraw();
+		}
+	}
+
+	private void DrawImpactLines()
+	{
+		impactDrawn = impactLines.Active;
+		if (impactLayer != null)
+			impactLines.Draw(impactLayer);
+	}
+
+	private static uint SeedOf(string id)
+	{
+		uint seed = 2166136261u;
+		foreach (char c in id ?? string.Empty)
+			seed = (seed ^ c) * 16777619u;
+		return seed;
 	}
 
 	// From SpawnBoss, on the frame the boss is added: the spells stop that frame, not the next.
@@ -194,36 +363,90 @@ public partial class Node2DGame
 			return;
 		bossEntranceHeld = true;
 		bossEntranceHeldSeconds = 0f;
+		SetEntranceBeat(EntranceBeat.Arriving);
 		player?.SetHeldForBossEntrance(true);
 		HoldOrdinaryBodies();
 		FreezePlayerSpells(true);
 		EnsureLetterbox();
 	}
 
-	// Every frame from ProcessTick. Lets go when the last arriving body has landed.
+	// Every frame from ProcessTick. Walks the hold's four beats (the header) and lets go after the last.
 	private void TickBossEntrance(float delta)
 	{
 		if (bossEntranceHeld)
 		{
 			bossEntranceHeldSeconds += delta;
+			entranceBeatSeconds += delta;
 			// Anything that arrives while the field is held (the Choir's two echoes come a frame after
 			// the first voice) is held with it.
 			HoldOrdinaryBodies();
-			bool overdue = bossEntranceHeldSeconds > MaxBossEntranceHoldSeconds;
-			if (overdue)
-				GD.PushWarning($"Node2DGame: a boss arrival held the field for {bossEntranceHeldSeconds:0.0}s; letting it go.");
-			if (BossEnemy.EnteringCount <= 0 || overdue || runFinished)
+			if (runFinished)
 				EndBossEntranceHold();
+			else
+				TickEntranceBeat();
 		}
 		TickBossEntranceCamera(delta);
 		TickLetterbox(delta);
+		TickImpactBeats(delta);
 		if (entranceCamera != null && IsInstanceValid(entranceCamera))
 			screenShake.Tick(entranceCamera, delta);
+	}
+
+	private void SetEntranceBeat(EntranceBeat beat)
+	{
+		entranceBeat = beat;
+		entranceBeatSeconds = 0f;
+	}
+
+	private void TickEntranceBeat()
+	{
+		// A body arriving while the camera goes back (a wave sent on the heels of the last) is the arrival again.
+		if (BossEnemy.EnteringCount > 0 && entranceBeat != EntranceBeat.Arriving)
+			SetEntranceBeat(EntranceBeat.Arriving);
+		bool noCamera = entranceCamera == null || !IsInstanceValid(entranceCamera);
+		switch (entranceBeat)
+		{
+			case EntranceBeat.Arriving:
+				if (entranceBeatSeconds > MaxBossEntranceHoldSeconds)
+				{
+					GD.PushWarning($"Node2DGame: a boss arrival held the field for {entranceBeatSeconds:0.0}s; letting it go.");
+					EndBossEntranceHold();
+				}
+				else if (BossEnemy.EnteringCount <= 0)
+					SetEntranceBeat(EntranceBeat.Landed);
+				break;
+			case EntranceBeat.Landed:
+				if (entranceBeatSeconds >= BossEntranceLandedHold && (cameraRestSeconds >= BossEntranceRestHold || noCamera))
+					SetEntranceBeat(EntranceBeat.Returning);
+				else if (OverdueBeat())
+					SetEntranceBeat(EntranceBeat.Returning);
+				break;
+			case EntranceBeat.Returning:
+				if (cameraHome || noCamera)
+					SetEntranceBeat(EntranceBeat.Ready);
+				else if (OverdueBeat())
+					SetEntranceBeat(EntranceBeat.Ready);
+				break;
+			case EntranceBeat.Ready:
+				if (entranceBeatSeconds >= BossEntrancePlayHold)
+					EndBossEntranceHold();
+				break;
+		}
+	}
+
+	private bool OverdueBeat()
+	{
+		if (entranceBeatSeconds <= MaxEntranceBeatSeconds)
+			return false;
+		GD.PushWarning($"Node2DGame: the arrival's camera never settled in its {entranceBeat} beat ({entranceBeatSeconds:0.0}s); moving on.");
+		return true;
 	}
 
 	private void EndBossEntranceHold()
 	{
 		bossEntranceHeld = false;
+		// Every landed body's fight begins on the frame the field is let go, never before it.
+		BossEnemy.LetLandedBodiesFight();
 		if (player != null && IsInstanceValid(player))
 			player.SetHeldForBossEntrance(false);
 		foreach (Enemy body in heldForBossEntrance)
@@ -305,41 +528,46 @@ public partial class Node2DGame
 			cinematicCameraActive = true;
 			cinematicBaseZoom = entranceCamera.Zoom;
 			cinematicZoom = 1f;
+			cinematicZoomVelocity = 0f;
 			cinematicPanVelocity = Vector2.Zero;
+			cinematicPanBegun = false;
+			cameraRestSeconds = 0f;
 		}
 
+		// On the arrival through ARRIVING and LANDED; back to the wizard (or the chapter's lean) after.
+		bool onArrival = bossEntranceHeld && entranceBeat is EntranceBeat.Arriving or EntranceBeat.Landed;
 		Vector2 want = chapterLean;
 		float wantZoom = 1f;
-		if (bossEntranceHeld && TryArrivalFocus(out Vector2 focus))
+		if (onArrival && TryArrivalFocus(out Vector2 focus))
 		{
 			want = (focus - player.GlobalPosition) * BossEntranceCameraShare;
 			if (want.Length() > BossEntranceCameraLean)
 				want = want.Normalized() * BossEntranceCameraLean;
 			wantZoom = FitZoomFactor(want);
 		}
-		// The pan waits out the bars (BossEntrancePanDelay), then springs; the zoom pushes in from the start.
+		// The pan waits out the bars (BossEntrancePanDelay), then eases on its capped spring; the zoom pushes in from
+		// the start, on its own.
 		Vector2 now = entranceCamera.Position;
-		if (!bossEntranceHeld || bossEntranceHeldSeconds >= BossEntrancePanDelay)
+		if (!onArrival || bossEntranceHeldSeconds >= BossEntrancePanDelay)
 		{
-			// Stepped in sixtieths, and never more than a tenth of a second a frame: one long frame (a hitch
-			// as a boss's phase builds) taken as a single step flung the camera 300 px in a frame.
-			float k = BossEntrancePanStiffness;
-			for (float left = Mathf.Min(delta, 0.1f); left > 0f; left -= 1f / 60f)
-			{
-				float h = Mathf.Min(left, 1f / 60f);
-				Vector2 accel = (want - now) * (k * k) - cinematicPanVelocity * (2f * k);
-				cinematicPanVelocity += accel * h;
-				now += cinematicPanVelocity * h;
-			}
+			StepPan(ref now, ref cinematicPanVelocity, want, delta);
+			cinematicPanBegun |= onArrival;
 		}
 		else
 		{
 			cinematicPanVelocity = Vector2.Zero;
 		}
-		cinematicZoom = Mathf.Lerp(cinematicZoom, wantZoom, 1f - Mathf.Exp(-(bossEntranceHeld ? ZoomInEase : ZoomOutEase) * delta));
+		StepSpring(ref cinematicZoom, ref cinematicZoomVelocity, wantZoom, CinematicZoomStiffness, CinematicZoomMaxRate,
+			CinematicZoomMaxAccel, delta);
 		cinematicZoomPunch *= Mathf.Exp(-9f * delta);
 
-		if (!bossEntranceHeld && now.DistanceTo(chapterLean) < 0.5f && cinematicPanVelocity.Length() < 2f
+		float speed = cinematicPanVelocity.Length();
+		bool atRest = now.DistanceTo(want) < CameraRestPx && speed < CameraRestSpeed;
+		cameraRestSeconds = onArrival && cinematicPanBegun && atRest ? cameraRestSeconds + delta : 0f;
+		cameraHome = !onArrival && now.DistanceTo(chapterLean) < CameraHomePx && speed < CameraHomeSpeed
+			&& Mathf.Abs(cinematicZoom - 1f) < CameraHomeZoom;
+
+		if (!bossEntranceHeld && now.DistanceTo(chapterLean) < 0.5f && speed < 2f
 			&& Mathf.Abs(cinematicZoom - 1f) < 0.002f && cinematicZoomPunch < 0.001f)
 		{
 			// At rest: exactly where the run had it (or on the chapter's lean), and the cinematic lets go of
@@ -347,6 +575,7 @@ public partial class Node2DGame
 			entranceCamera.Position = chapterLean;
 			entranceCamera.Zoom = cinematicBaseZoom;
 			cinematicZoom = 1f;
+			cinematicZoomVelocity = 0f;
 			cinematicZoomPunch = 0f;
 			appliedZoomFactor = 1f;
 			cinematicPanVelocity = Vector2.Zero;
@@ -357,6 +586,37 @@ public partial class Node2DGame
 		entranceCamera.Position = now;
 		appliedZoomFactor = cinematicZoom + cinematicZoomPunch;
 		entranceCamera.Zoom = cinematicBaseZoom * appliedZoomFactor;
+	}
+
+	/// <summary>
+	/// One frame of the arrival's pan: a critically damped spring toward <paramref name="want"/>, its acceleration
+	/// and speed capped (BossEntrancePanMaxAccel, BossEntrancePanMaxSpeed) so it eases in, never outruns the eye, and
+	/// settles without overshoot. Stepped in sixtieths, and never more than a tenth of a second a frame: one long
+	/// frame (a hitch as a boss's phase builds) taken as a single step flung the camera 300 px. Static, so
+	/// RegressionChecks walks the same pan the camera does.
+	/// </summary>
+	internal static void StepPan(ref Vector2 now, ref Vector2 velocity, Vector2 want, float delta)
+	{
+		float k = BossEntrancePanStiffness;
+		for (float left = Mathf.Min(delta, 0.1f); left > 0.00001f; left -= 1f / 60f)
+		{
+			float h = Mathf.Min(left, 1f / 60f);
+			Vector2 accel = ((want - now) * (k * k) - velocity * (2f * k)).LimitLength(BossEntrancePanMaxAccel);
+			velocity = (velocity + accel * h).LimitLength(BossEntrancePanMaxSpeed);
+			now += velocity * h;
+		}
+	}
+
+	// The same capped spring on one number: the push-in's zoom factor.
+	private static void StepSpring(ref float now, ref float velocity, float want, float k, float maxRate, float maxAccel, float delta)
+	{
+		for (float left = Mathf.Min(delta, 0.1f); left > 0.00001f; left -= 1f / 60f)
+		{
+			float h = Mathf.Min(left, 1f / 60f);
+			float accel = Mathf.Clamp((want - now) * (k * k) - velocity * (2f * k), -maxAccel, maxAccel);
+			velocity = Mathf.Clamp(velocity + accel * h, -maxRate, maxRate);
+			now += velocity * h;
+		}
 	}
 
 	// Hook 9 out of an arrival: the camera's Position eased to the chapter's lean and back to the centre,
@@ -454,8 +714,10 @@ public partial class Node2DGame
 		if (letterbox == null || !IsInstanceValid(letterbox))
 			return;
 		float was = letterboxShown;
-		// The defeat films its fall between the same bars (Node2DGame.Defeat.cs).
-		letterboxShown = bossEntranceHeld || defeatFilming
+		// The defeat films its fall between the same bars (Node2DGame.Defeat.cs). An arrival's bars go out as its
+		// READY beat begins - the camera home - so the field is seen whole for a moment before it is let go.
+		bool wanted = (bossEntranceHeld && entranceBeat != EntranceBeat.Ready) || defeatFilming;
+		letterboxShown = wanted
 			? Mathf.Min(1f, letterboxShown + delta / LetterboxInSeconds)
 			: Mathf.Max(0f, letterboxShown - delta / LetterboxOutSeconds);
 		letterboxJolt *= Mathf.Exp(-14f * delta);
@@ -467,7 +729,7 @@ public partial class Node2DGame
 			if (flareAge > FlareSeconds)
 				flareAge = -1f;
 		}
-		bool showing = letterboxShown > 0f || flareAge >= 0f;
+		bool showing = letterboxShown > 0f || flareAge >= 0f || screenFlash.Active;
 		letterbox.Visible = showing;
 		if (showing || was > 0f)
 			letterbox.QueueRedraw();
@@ -502,6 +764,8 @@ public partial class Node2DGame
 		Vector2 canvas = letterbox.Size;
 		if (canvas.X <= 0f || canvas.Y <= 0f)
 			return;
+		// Under the bars, so a flash over a filmed beat never lights them.
+		screenFlash.Draw(letterbox, new Rect2(Vector2.Zero, canvas));
 		var (fullTop, fullBottom) = LetterboxBarHeights(canvas);
 		// In fast and settling, out by falling away: a smoothstep on whole pixels.
 		float u = letterboxShown * letterboxShown * (3f - 2f * letterboxShown);
@@ -548,24 +812,5 @@ public partial class Node2DGame
 	/// <summary>How far the flare reaches into the picture past a bar's edge, line and spill.</summary>
 	private static float FlareDepth => 4f + FlareSpill.Length * FlareStrip;
 
-	private static Texture2D[] BayerTiles()
-	{
-		if (bayerTiles != null)
-			return bayerTiles;
-		bayerTiles = new Texture2D[17];
-		for (int level = 0; level <= 16; level++)
-		{
-			Image image = Image.CreateEmpty(8, 8, false, Image.Format.Rgba8);
-			for (int y = 0; y < 8; y++)
-			{
-				for (int x = 0; x < 8; x++)
-				{
-					bool lit = Bayer4[(y / 2) % 4 * 4 + (x / 2) % 4] < level;
-					image.SetPixel(x, y, lit ? Colors.White : new Color(1f, 1f, 1f, 0f));
-				}
-			}
-			bayerTiles[level] = ImageTexture.CreateFromImage(image);
-		}
-		return bayerTiles;
-	}
+	private static Texture2D[] BayerTiles() => bayerTiles ??= DitherFlash.BuildBayerTiles();
 }

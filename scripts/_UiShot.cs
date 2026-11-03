@@ -1310,6 +1310,12 @@ public partial class _UiShot : Node
 				chestDrops.Add(new Vector2(float.Parse(xy[0], System.Globalization.CultureInfo.InvariantCulture),
 					float.Parse(xy[1], System.Globalization.CultureInfo.InvariantCulture)));
 			}
+			// --reduce-shake: Options' Reduce Screen Shake on, in memory (writes are off in a tool scene), to check
+			// that a shake honours it (.ai/cutscenes.md rule 2). --cinematic-log: the readout above, every shutter.
+			else if (arg == "--reduce-shake")
+				DisplaySettings.StoreReduceShake(null, true);
+			else if (arg == "--cinematic-log")
+				cinematicLog = true;
 			else if (arg == "--force-death")
 			{
 				ForceDeath = true;
@@ -2772,7 +2778,7 @@ public partial class _UiShot : Node
 			darkWizardArrivedFrame = frames;
 			GD.Print($"_UiShot: the dark wizard arrives on frame {frames}");
 		}
-		if (dark.IsEntering)
+		if (dark.IsEntering || dark.IsAwaitingFight)
 			return;
 		if (darkWizardLandedFrame < 0)
 		{
@@ -3288,7 +3294,7 @@ public partial class _UiShot : Node
 				rushPlayer.CurrentHP = rushPlayer.MaxHP;
 			if (bossDeathOffset is Vector2 bossAt && FindNodeOfType<Player>(GetTree().Root) is Player bossWitness)
 				PlaceBossBodies(bossWitness, bossAt);
-			if (bossBleedTo >= 0f && !bossBled && rushStepsDone > 0 && BossEnemy.EnteringCount == 0
+			if (bossBleedTo >= 0f && !bossBled && rushStepsDone > 0 && BossEnemy.EnteringCount == 0 && BossEnemy.AwaitingFightCount == 0
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame { BossFightActive: true })
 			{
 				if (bossLandedFrame < 0)
@@ -3305,7 +3311,7 @@ public partial class _UiShot : Node
 				}
 			}
 			TickDarkWizardShot();
-			if (choirScene != null && !choirSceneDone && rushStepsDone > 0 && BossEnemy.EnteringCount == 0
+			if (choirScene != null && !choirSceneDone && rushStepsDone > 0 && BossEnemy.EnteringCount == 0 && BossEnemy.AwaitingFightCount == 0
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame { BossFightActive: true })
 			{
 				if (bossLandedFrame < 0)
@@ -3318,7 +3324,7 @@ public partial class _UiShot : Node
 			}
 			// Never mid-arrival (BossEnemy's entrance): a step then would fell a boss that has not landed.
 			if (rushStepsDone < rushSteps && frames >= WarmupFrames / 4 && frames >= rushAfter && frames >= rushNextStepFrame
-				&& BossEnemy.EnteringCount == 0
+				&& BossEnemy.EnteringCount == 0 && BossEnemy.AwaitingFightCount == 0
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame rush)
 			{
 				// In a chapter the same steps bring its boss and then fell it, which opens the way home.
@@ -3747,6 +3753,7 @@ public partial class _UiShot : Node
 		}
 
 		string path = $"user://{ShotName}.png";
+		LogCinematic();
 		// Where the selection is in the picture, and whether the ring is drawn for it at all (it is
 		// not while the pointer is the device in use), so a photograph of a focus state can be read.
 		GD.Print($"_UiShot: selection at the shutter: {FocusName()}, pointer active: {MenuFocusHighlight.PointerActive}");
@@ -4519,8 +4526,33 @@ public partial class _UiShot : Node
 			ScrollAll(child);
 	}
 
+	// --cinematic-log: one line at every shutter with what the cinematic rules move (.ai/cutscenes.md) - a run's
+	// camera (lean, zoom factor, shake offset), its arrival beat and bars, the defeat's clock, a reel's shake - so a
+	// burst can be read in numbers as well as by eye, and --reduce-shake's quarter strength checked.
+	private bool cinematicLog;
+
+	private void LogCinematic()
+	{
+		if (!cinematicLog)
+			return;
+		var line = new System.Text.StringBuilder($"_UiShot: cinematic at shutter {burstTaken}:");
+		if (FindNodeOfType<Prologue>(GetTree().Root) is Prologue reel)
+			line.Append($" reel shake {reel.ShakeOffset}");
+		if (FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame run)
+		{
+			line.Append($" beat '{run.BossEntranceBeatName}', bars {run.LetterboxShown:0.00}, zoom x{run.CinematicZoomFactor:0.000}");
+			if (FindNodeOfType<Player>(run) is Player wizard && wizard.GetNodeOrNull<Camera2D>("Camera2D") is Camera2D cam)
+				line.Append($", lean {cam.Position.Round()}, shake {cam.Offset}");
+			if (run.Defeat is DefeatSequence defeat && IsInstanceValid(defeat))
+				line.Append($", defeat at {defeat.Elapsed:0.00}s");
+		}
+		line.Append($" (reduce shake {DisplaySettings.ReduceShake})");
+		GD.Print(line.ToString());
+	}
+
 	private void SaveBurstFrame()
 	{
+		LogCinematic();
 		Image image = GetViewport()?.GetTexture()?.GetImage();
 		string path = $"user://{ShotName}-{burstTaken}.png";
 		Error err = image?.SavePng(path) ?? Error.Failed;
