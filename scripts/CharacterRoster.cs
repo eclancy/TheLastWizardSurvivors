@@ -65,6 +65,9 @@ public static class CharacterRoster
 		// The chapter wizards again: Nostradamus, freed by seeking his voice from room to room of the Court until he
 		// is found at his desk (.ai/chapter-wizards.md 4.10). Appended, so every saved index keeps its wizard (index 18).
 		"res://CharacterData_Nostradamus.tres",
+		// The chapter wizards again: Ma Liang, the Court's second, freed by tracing the door he sketched on the Gallery's end
+		// wall, dot to dot (.ai/chapter-wizards.md 4.8). Appended, so every saved index keeps its wizard.
+		"res://CharacterData_MaLiang.tres",
 	};
 
 	/// <summary>

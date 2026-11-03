@@ -266,7 +266,9 @@ WALK_BOB = {"pyromancer": 2, "stormcaller": 2, "vainamoinen": 2,
             # A heavy man's planted step under a physician's gown.
             "paracelsus": 1,
             # An old man's measured step under a long physician's gown.
-            "nostradamus": 1}
+            "nostradamus": 1,
+            # The youngest in the cast, light on his feet in straw sandals: the full two-row bob of the striders.
+            "maliang": 2}
 
 # The waist. Everything above this row is the same drawing in every frame and only rises with
 # the bob; everything below it is redrawn per frame by the pose function. It is the same row the

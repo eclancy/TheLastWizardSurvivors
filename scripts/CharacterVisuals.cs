@@ -69,6 +69,8 @@ public static class CharacterVisuals
 			// The star kindled at the heart of the armillary sphere he holds up (roster.py, nostradamus()): where
 			// Starfall's light is, not the brass rings round it.
 			case "nostradamus": return new Vector2(12, 5);
+			// The crow of light lifting off the tip of his brush (roster.py, maliang()), its body: what he painted.
+			case "ma_liang": return new Vector2(42, 7);
 			default: return null;
 		}
 	}
@@ -103,6 +105,7 @@ public static class CharacterVisuals
 			case "morgan":
 			case "paracelsus":
 			case "nostradamus":
+			case "ma_liang":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

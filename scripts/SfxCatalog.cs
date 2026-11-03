@@ -131,6 +131,9 @@ public static class SfxCatalog
 	public const string HintFlaskChime = "hint_flask_chime";
 	// The Court's seer, heard reading his verse from a room (SeersVoiceEvent): the chapter hint, and his readings in the seek.
 	public const string HintQuatrain = "hint_quatrain";
+	// The Court's painter (DottedDoorEvent): three strokes of a wet brush along a wall and a drop running off the last -
+	// the chapter's second hint, and Paint What Is Needed drawing his flask (PaintedFlask).
+	public const string HintBrush = "hint_brush";
 	// The nine mouths' call in the Sunken Cave (NineMouthsEvent): her voice out of the true mouth, first, and
 	// the cave's echo of it out of the other eight, a beat apart - played at each mouth, so the 2D listener
 	// pans and fades each from where it comes.
@@ -162,7 +165,7 @@ public static class SfxCatalog
 		UiHover, UiClick, UiBack, UiDenied, UiOpen, UiClose, UiPause,
 		StageClear, GameOver, MetaUnlock, WaveWarning,
 		PlayerFall, TallyTick, TallyPayout,
-		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep, HintHullKnock, HintFlaskChime, HintQuatrain,
+		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep, HintHullKnock, HintFlaskChime, HintQuatrain, HintBrush,
 		SibylVoice, SibylEcho,
 		SecretSeen, SecretFound, SecretShatter,
 	};
