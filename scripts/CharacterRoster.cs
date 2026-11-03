@@ -56,6 +56,9 @@ public static class CharacterRoster
 		// The chapter wizards again: Baba Yaga, freed by running her walking hut down in the Enchanted Forest. Appended,
 		// so every saved index keeps its wizard (index 15: the Archmage took 14).
 		"res://CharacterData_BabaYaga.tres",
+		// The chapter wizards again: Medea, freed by paying the Tithe-Reeve's scale in the Fallow Fields. Appended, so every
+		// saved index keeps its wizard.
+		"res://CharacterData_Medea.tres",
 	};
 
 	/// <summary>

@@ -639,6 +639,10 @@ public partial class Player : CharacterBody2D
 	public float OverlookedAtSeconds { get; private set; } = -1f;
 	// Bone Fence (Baba Yaga): the share added to every shove and pull her spells give (Enemy.PlayerKnockbackScale).
 	public const float CharacterBoneFenceKnockbackBonus = 0.20f;
+	// Rejuvenation (Medea): the share added to every heal (Heal), and the carry that keeps a one-point heal's share.
+	public const float CharacterRejuvenationBonus = 0.20f;
+	private float characterHealingBonus = 0f;
+	private float rejuvenationCarry = 0f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -894,6 +898,10 @@ public partial class Player : CharacterBody2D
 		// spells shove or drag is thrown that much harder (Enemy.PlayerKnockbackScale). An axis no other wizard owns:
 		// not damage, not speed, the strength of every push. Her own vine pushes nothing; it is a build's passive.
 		"knockback_20",
+		// Medea (.ai/chapter-wizards.md 4.2): Rejuvenation - the sorceress who made old Aeson young again in her
+		// cauldron, and every heal she takes is a fifth more (Heal). An axis no other wizard owns: not a heal of its
+		// own (the healing budget, .ai/difficulty-curve.md section 5, gives her none), the worth of every other one.
+		"healing_20",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -951,6 +959,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "knockback_20":
 				Enemy.PlayerKnockbackScale = 1f + CharacterBoneFenceKnockbackBonus;
+				return true;
+			case "healing_20":
+				characterHealingBonus = CharacterRejuvenationBonus;
 				return true;
 			default:
 				return false;
@@ -3182,6 +3193,18 @@ public partial class Player : CharacterBody2D
 	public void Heal(int amount)
 	{
 		int adjustedAmount = Math.Max(0, Mathf.RoundToInt(amount * (1.0f + chestHealingBonusPercent)));
+		// Rejuvenation (Medea): a fifth more of every heal, from every source that heals through here - the flask, the
+		// Light tier's banked share, the Grass tier, every regeneration line (RegenPerSecondNow, a point at a time), the
+		// relics, the boons, the cat's purr, the events' heals. The fraction is CARRIED, as AddXp carries XP: a one-point
+		// regeneration tick is most of what heals a run now, and rounding 1.2 per tick would round the passive away.
+		// Not a revive (TakeDamage sets the bar to half itself): a life is not a heal. Nobody else reaches the carry, so
+		// every other wizard's healing is exactly what it was.
+		if (characterHealingBonus > 0f && adjustedAmount > 0)
+		{
+			rejuvenationCarry += adjustedAmount * (1f + characterHealingBonus);
+			adjustedAmount = (int)rejuvenationCarry;
+			rejuvenationCarry -= adjustedAmount;
+		}
 		if (GameStats.TrackHealing)
 			GameStats.RecordHealing(HealCallerName(), adjustedAmount);
 		int headroom = Math.Max(0, MaxHP - CurrentHP);

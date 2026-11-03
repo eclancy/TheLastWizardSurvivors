@@ -148,6 +148,10 @@ ROBES = {
     # shade (iron-grey) and her kerchief stone's near-black. Thorned Vine is in the shoot under her hand and
     # the tip of the vine climbing her pestle, not on her clothes.
     "yaga": ("E", "e", "A"),            # linen, deep - the coat; Thorned Vine
+    # Medea's peplos: lichen, the sea-green of the water at Colchis, from its middle (base / lit / shade). Her
+    # mantle is the red row's deep end and her diadem and sickle bronze (gold's lit and base). Solar Flare is the
+    # small sun in her open hand, not on her clothes.
+    "medea": ("\x8d", "\x8c", "\x8e"),  # lichen - the peplos; Solar Flare
 }
 
 # RUSSET, madder-dyed wool and auburn hair: Thora's hair (stormcaller()). The same five bytes and
@@ -171,6 +175,20 @@ matte.add_ramp("russet", RUSSET)
 # and parted from the cloak as well, but sank into the portrait well and the dark grounds, and at
 # game size read as smoke rather than hair.
 HAIR_STORM = (RU3, RU2, RU4, RU1)
+
+# RED, the bonelight `red` row (madder, hi / lit / base / shade / deep): Medea's mantle (medea()). The same five
+# bytes and colours as merlin_concepts.RED_RAMP, which had the row first for Merlin's sash and the Counsellor's
+# cope; anim_sets lists it once (PLAYER_RAMPS). They must stay identical - change one, change both.
+RD0, RD1, RD2, RD3, RD4 = "\x14", "\x15", "\x16", "\x17", "\x18"
+PALETTE.update(dict(zip((RD0, RD1, RD2, RD3, RD4), B.MATERIALS["red"])))
+
+# LICHEN, the bonelight `lichen` row (hi / lit / base / shade / deep): Medea's peplos, the deep sea-green of the
+# water at Colchis. A material row no figure had worn, so five new control characters, the next free run past
+# russet's (\x8b-\x8f; \x85 is NEL, whitespace to unicode). anim_sets.PLAYER_RAMPS lists it, so a hurt flash
+# and a death step it along its own row. matte knows the row already (it registers every bonelight material).
+LC0, LC1, LC2, LC3, LC4 = "\x8b", "\x8c", "\x8d", "\x8e", "\x8f"
+PALETTE.update(dict(zip((LC0, LC1, LC2, LC3, LC4), B.MATERIALS["lichen"])))
+LICHEN_RAMP = LC0 + LC1 + LC2 + LC3 + LC4
 
 
 class G(object):
@@ -2648,11 +2666,187 @@ def yaga(phase=None):
     return g.rows()
 
 
+def medea(phase=None):
+    """Solar Flare. Medea of Colchis, granddaughter of the Sun: the sorceress who gave Jason the charm to yoke the
+    fire-breathing bulls and set the men sown from the dragon's teeth on each other with one thrown stone.
+
+    DRAWN SERIOUS (.ai/chapter-wizards.md question 5: Euripides' Medea killed her children). Not a temptress and
+    not a monster: a queen's daughter standing straight and square, tall, her face level and unsmiling, who has
+    waited out worse men than the one who holds her.
+
+    The flare is her grandfather's sun round her, growing while she stands still - so she is the one figure
+    HOLDING A LIGHT OUT IN HER OPEN HAND: her near arm out level from the shoulder, the palm turned up, and a
+    small sun burning over it in the light ramp, the only thing on her that gives off light. Her far hand hangs at
+    her side with the bronze sickle she cut her herbs with by moonlight, its crescent turned back behind her - the
+    one curve in the cast's outlines, and the break in hers below the mantle.
+
+    The rescued wear no pigment: a long peplos of lichen's middle, the sea-green of the water at Colchis, belted
+    high and folded over to the hip; a mantle from the red row's dark end, madder gone almost black, drawn over
+    the back of her head and falling behind her to the ground; a thin bronze diadem with one small disc on it, the
+    Sun's, over hair as black as stone's deep end; a bundle of dried herbs tied at her girdle.
+    """
+    mid, lit, dark = ROBES["medea"]
+    g = G(48)
+    CX = 24
+
+    # THE MANTLE, behind everything: over the crown, down behind the far shoulder, falling to the ground at her
+    # back - the long dark edge of her outline on the far side.
+    mass(g, [(4, 21, 26), (6, 19, 28), (9, 17, 22), (14, 15, 22), (22, 13, 21), (32, 12, 20), (40, 11, 19),
+             (46, 11, 19)], RD3, RD2, RD4)
+    fold(g, [(18, 12), (16, 22), (15, 34), (14, 45)], RD4, RD2)
+    fold(g, [(20, 16), (18, 30), (17, 45)], RD4, RD2)
+    fold(g, [(13, 30), (12, 44)], RD4, None)
+    g.set(13, 41, RD1)                                              # a worn edge catching the key light
+    g.set(12, 36, RD2)
+    tatters(g, [(46, 11, 13), (46, 15, 16), (46, 18, 19)], RD3, RD2, RD4)
+
+    # THE PEPLOS: long, belted high, the overfold to the hip, to the ground.
+    mass(g, [(15, 20, 28), (19, 19, 29), (24, 20, 29), (29, 19, 31), (36, 18, 32), (42, 17, 33), (46, 17, 33)],
+         mid, lit, dark)
+    # The overfold's edge at the hip: a lit lip over a shadow, dipping at the front.
+    for x in range(19, 32):
+        dy = 1 if 23 <= x <= 27 else 0
+        if g.get(x, 29 + dy) not in (".", "W"):
+            g.set(x, 29 + dy, LC0 if x < 25 else lit)
+            g.set(x, 30 + dy, LC4)
+    fold(g, [(23, 16), (22, 23)], dark, lit)
+    fold(g, [(26, 17), (27, 23)], dark, None)
+    fold(g, [(22, 31), (21, 39), (20, 46)], dark, lit)
+    fold(g, [(26, 32), (26, 45)], LC4, lit)
+    fold(g, [(29, 31), (30, 38), (31, 46)], dark, lit)
+    fold(g, [(24, 36), (23, 44)], dark, None)
+    for (sx, sy) in ((28, 41), (20, 35), (25, 26), (30, 44)):
+        g.set(sx, sy, LC4)                                          # the cloth's wear: a darn, a stain, the dust
+        g.set(sx + 1, sy, lit)
+    # THE GIRDLE, high under the breast: a bronze cord, knotted at the front, its ends hanging.
+    g.span(24, 21, 28, "g")
+    g.set(21, 24, "G")
+    g.set(28, 24, "u")
+    g.set(26, 25, "G")
+    g.set(26, 26, "u")
+    g.set(27, 27, "g")
+    # THE MANTLE'S FRONT: drawn over the far shoulder and down across her in one diagonal fall to the near hip, the
+    # way a himation is worn - so the dark red is plainly cloth, and the column of the peplos is broken across.
+    mass(g, [(15, 19, 22), (19, 19, 24), (23, 19, 27), (27, 19, 30), (30, 21, 31), (32, 26, 31)], RD3, RD2, RD4, rim=False)
+    # Its folds, falling the way the drape hangs, and its lower edge: a lit lip, and its shadow on the peplos.
+    fold(g, [(20, 17), (23, 27)], RD4, RD2)
+    fold(g, [(21, 21), (26, 30)], RD4, RD1)
+    fold(g, [(20, 25), (23, 30)], RD4, None)
+    for (ex, ey) in ((19, 28), (20, 29), (21, 30), (22, 31), (23, 31), (24, 32), (25, 32), (26, 33), (27, 33), (28, 33),
+                     (29, 33), (30, 33)):
+        if g.get(ex, ey) not in (".", "W"):
+            g.set(ex, ey, RD1 if ex < 24 else RD2)
+        if g.get(ex, ey + 1) not in (".", "W"):
+            g.set(ex, ey + 1, LC4)
+    # The pin that holds it on her shoulder: bronze.
+    g.set(21, 16, "G")
+    g.set(22, 16, "u")
+    # The herbs tied at her girdle on the near side, under the drape's end: dried stems, their heads grey-green.
+    for (hx, hy, hc) in ((29, 25, LC0), (30, 26, "e"), (29, 26, LC1), (30, 27, "l"), (29, 27, "A"), (31, 27, LC0),
+                         (30, 28, "E")):
+        g.set(hx, hy, hc)
+
+    hem = 0
+    near_shown, far_shown = True, True
+    if phase is not None:
+        # A measured, upright walk: the hem swings toward the leading foot, and that foot shows under it.
+        c, _ln, _lf = stride(phase)
+        hem = int(round(1.2 * c))
+        sway(g, 36, 1.2 * c)
+        far_shown, near_shown = c < 0.35, c > -0.35
+    # Her feet: plain sandals, the near toe out past the hem.
+    if near_shown:
+        nx = 29 + hem
+        g.set(nx, 45, "o")
+        g.span(46, nx, nx + 4, "u")
+        g.set(nx, 46, "g")
+        g.set(nx + 1, 45, "h")
+        g.set(nx + 2, 45, "f")
+        g.set(nx + 3, 45, "i")
+        g.set(nx + 4, 46, "J")
+    if far_shown:
+        fx = 20 + hem
+        g.span(46, fx, fx + 2, "u")
+        g.set(fx + 1, 45, "i")
+        g.set(fx, 46, "g")
+
+    # THE FAR ARM, hanging at her side, bare to the shoulder, the hand closed on the sickle's haft.
+    mass(g, [(16, 19, 21), (22, 18, 20), (28, 17, 19)], "h", "f", "i", rim=False)
+    g.set(19, 20, "I")                                              # the elbow's shade
+    hand(g, 16, 29)
+    g.set(18, 30, "i")
+    # THE SICKLE: a short haft down from her fist, then the bronze crescent turned back behind her, lit along
+    # its inner edge, the back of the blade a stop down, its point turned up.
+    g.line(17, 31, 17, 34, "u")
+    g.set(16, 31, "J")
+    g.set(16, 33, "g")
+    for (bx, by, bc) in ((16, 35, "G"), (15, 36, "G"), (14, 36, "g"), (13, 36, "G"), (12, 35, "H"), (11, 35, "g"),
+                         (10, 34, "G"), (9, 33, "g"), (9, 32, "G"), (8, 31, "g"), (8, 30, "G"), (9, 29, "H"),
+                         (15, 37, "u"), (14, 37, "u"), (13, 37, "J"), (12, 36, "u"), (11, 36, "u"), (10, 35, "u"),
+                         (9, 34, "J"), (8, 32, "u"), (7, 31, "o"), (7, 30, "u")):
+        g.set(bx, by, bc)
+
+    # THE NEAR ARM, out level from the shoulder: the upper arm bare, the forearm turned up, the hand open, palm up.
+    for (ax, ay, ac) in ((28, 16, "f"), (29, 16, "f"), (30, 16, "h"), (31, 17, "h"), (32, 17, "h"), (33, 17, "f"),
+                         (34, 17, "f"), (35, 17, "h"), (36, 17, "h"),
+                         (28, 17, "h"), (29, 17, "h"), (30, 17, "i"), (31, 18, "i"), (32, 18, "i"), (33, 18, "h"),
+                         (34, 18, "i"), (35, 18, "i"), (36, 18, "I"), (29, 18, "I"), (30, 18, "I")):
+        g.set(ax, ay, ac)
+    g.set(33, 19, "o")                                              # the forearm's shadow on the peplos
+    g.set(34, 19, "o")
+    # The open hand: fingers out and a little up, the thumb raised, the palm cupped under the sun.
+    for (fx2, fy2, fc) in ((37, 17, "f"), (38, 17, "h"), (39, 17, "h"), (40, 17, "i"), (41, 16, "h"),
+                           (37, 18, "h"), (38, 18, "i"), (39, 18, "i"), (40, 18, "I"), (37, 16, "F"), (36, 16, "f")):
+        g.set(fx2, fy2, fc)
+    # A bronze armlet above the elbow.
+    g.set(30, 16, "G")
+    g.set(30, 17, "u")
+
+    # THE SUN over her palm: white at the heart, the light ramp's hot stop round it, its rays and corona in the
+    # mid and edge stops - her grandfather's light, the one thing on her that burns.
+    sx0, sy0 = 39, 12
+    g.disc(sx0, sy0, 2.5, LT2)
+    g.disc(sx0, sy0, 1.6, LT1)
+    g.set(sx0, sy0, LT0)
+    g.set(sx0 - 1, sy0, LT0)
+    g.set(sx0, sy0 - 1, LT0)
+    for (rx, ry, rc) in ((sx0, sy0 - 4, LT2), (sx0, sy0 - 5, LT3), (sx0 + 4, sy0, LT2), (sx0 + 5, sy0, LT3),
+                         (sx0 - 4, sy0, LT2), (sx0 - 5, sy0, LT3), (sx0 + 3, sy0 - 3, LT3), (sx0 - 3, sy0 - 3, LT3),
+                         (sx0 + 3, sy0 + 3, LT3), (sx0 - 3, sy0 + 3, LT3), (sx0, sy0 + 4, LT3)):
+        g.set(rx, ry, rc)
+    g.set(38, 15, LT3)                                              # its light on her fingers
+    g.set(39, 16, LT3)
+
+    # THE HEAD: level, unsmiling, looking out past her hand.
+    head(g, CX, 8, 2.4, brow="flat", gaze=1, mouth="set", eye="open")
+    g.set(CX - 2, 12, "i")                                          # the cheek
+    g.span(14, 23, 25, "i")                                         # the neck, in shadow
+    g.set(25, 14, "I")
+    # HER HAIR, black, under the mantle's edge: a band over the brow and a long lock down the near side of her neck.
+    g.span(6, 21, 27, "J")
+    g.span(7, 21, 27, "j")
+    g.set(21, 7, "N")
+    g.set(22, 6, "j")
+    for (lx, ly, lc) in ((27, 8, "J"), (27, 9, "j"), (28, 10, "J"), (28, 11, "j"), (27, 12, "J"), (28, 13, "N"),
+                         (27, 14, "J"), (28, 15, "j"), (21, 8, "J"), (20, 9, "j"), (20, 10, "J")):
+        g.set(lx, ly, lc)
+    # THE DIADEM: a thin band of bronze across the hair, one small disc on it over her brow - the Sun's.
+    g.span(7, 22, 26, "g")
+    g.set(22, 7, "G")
+    g.set(26, 7, "u")
+    g.set(24, 6, "H")
+    g.set(23, 6, "G")
+    g.set(25, 6, "g")
+    g.set(24, 5, "G")
+    contact(g, 11, 36)
+    return g.rows()
+
+
 WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("stormcaller", stormcaller), ("geomancer", geomancer),
            ("tituba", tituba), ("vainamoinen", vainamoinen), ("dee", dee),
            ("seimei", seimei), ("wayland", wayland),
-           ("sibyl", sibyl), ("yaga", yaga)]
+           ("sibyl", sibyl), ("yaga", yaga), ("medea", medea)]
 ENEMIES = [("swarmer", swarmer), ("runner", runner), ("bruiser", bruiser),
            ("shielder", shielder), ("skullsentry", skullsentry), ("lunger", lunger),
            ("slammer", slammer), ("exploder", exploder), ("summoner", summoner),

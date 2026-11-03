@@ -75,6 +75,8 @@ PLAYER_RAMPS = RAMPS + [
     # with them, and \x85, which is whitespace (NEL) to unicode, between the two rows.
     "\x80\x81\x82\x83\x84",
     "\x86\x87\x88\x89\x8a",
+    # lichen - Medea's peplos (roster.LICHEN_RAMP), the next five single bytes past russet's: \x8b-\x8f.
+    "\x8b\x8c\x8d\x8e\x8f",
 ]
 
 
@@ -259,7 +261,9 @@ WALK_BOB = {"pyromancer": 2, "stormcaller": 2, "vainamoinen": 2,
             # Lamed by a king: the far leg in its brace hardly bends, so the walk is a heavy one.
             "wayland": 1,
             # A tall old woman's long, slow step under a coat to the ground.
-            "yaga": 1}
+            "yaga": 1,
+            # A queen's measured walk, upright, under a peplos to the ground.
+            "medea": 1}
 
 # The waist. Everything above this row is the same drawing in every frame and only rises with
 # the bob; everything below it is redrawn per frame by the pose function. It is the same row the

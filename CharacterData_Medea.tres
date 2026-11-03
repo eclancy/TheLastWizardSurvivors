@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_SolarFlare.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/medea-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/MedeaFrames.tres" id="4"]
+
+; Rescued, not a starter: the Fallow Fields' chapter wizard, freed by paying the Tithe-Reeve's scale its due
+; (.ai/chapter-wizards.md 4.2). The sorceress of Colchis, granddaughter of the Sun, held in the reeve's granary and
+; counted with the grain. Her passive is Rejuvenation, the one axis no other wizard owns: every heal she takes is a
+; fifth more (+20% healing). She opens on Solar Flare, two elements (Light and Fire) - a freed wizard may (R2); the
+; form deepens Fire.
+[resource]
+script = ExtResource("1")
+Id = "medea"
+Name = "Medea"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "healing_20"
+StartingPassiveName = "Rejuvenation"
+StartingPassiveDescription = "+20% healing"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")
