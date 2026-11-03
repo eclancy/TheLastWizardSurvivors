@@ -291,7 +291,7 @@ nothing: it derives every entry from the catalogs that already own them.
 | Kind | From | Found when |
 |---|---|---|
 | the warden's reward (spell, boon, or Arcane Energy) | the deed whose `BossId` is the chapter's boss (`BossCatalog.ForStageIndex`), its `SpellUnlockId`/`BoonUnlockId`/`CurrencyReward` | the spell/boon is owned; for Energy, the deed is done |
-| what its side event carries out (spell, boon, wizard) | `SideEventDirector.ForStage(id).SiteId` -> `UnlockCatalog.ForDiscoverySite` | owned |
+| what its side events carry out (spell, boon, wizard) | every site in `SideEventDirector.EventsFor(id)` (one or two) -> `UnlockCatalog.ForDiscoverySite` | owned |
 | a wizard whose reveal is this chapter | `UnlockDefinition.RevealStageId` (Tituba, Vainamoinen, Laelaps's coursing) | owned |
 | its secrets and its keepsake | `SecretCatalog.ForStage` | `SaveData.HasFoundSecret` |
 

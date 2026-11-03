@@ -3,7 +3,7 @@
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
-**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **and the Cumaean Sibyl** (4.3, "Built"); the other seven are not. It covers the ten
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **and the Cumaean Sibyl** (4.3, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other seven are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Last Bridge and the Court (which holds
 two: Nostradamus, and Ma Liang since the Sketchbook was emptied - 4.8). Tituba (Cursed Dungeon),
@@ -58,7 +58,7 @@ The questions as they were put:
 | Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect, banish** (Seimei), **take** (the Dark Wizard), **rewind** (Merlin, the blue-robed title wizard, `.ai/merlin.md`, 2026-11-02); reserved for Nimue: **sever** (Excalibur, decided by Eric 2026-11-02). Unclaimed in the ADR: contagion, displace |
 | No path on his spell trades his element away | `ValidateApotheosisCatalog` | since 2026-11-02 the form names no path - the spell at max level, ascended down any branch, never combined - so every level 4 and level 8 option on a wizard's spell leads to it, and none may trade away the element the form deepens (it would come back as a third). The old rule, a required path that never leads away (`CheckRequiredPath`), went with the named paths |
 | A secret never pays a wizard | `achievements-and-secrets.md` 6.2 | every rescue below is a **side event** (a Road deed), never a secret |
-| One side event per chapter | `SideEventDirector.ForStage` | question 3, and plumbing piece P2 |
+| ~~One side event per chapter~~ A chapter's events are a list (P2, built) | `SideEventDirector.EventsFor` | question 3; 6.3 "Built" says how a second is added |
 | A secret wizard is revealed by the chapter whose event frees him | `ValidateSecret` | the Forest is open on a new save, so its wizard **cannot be secret**: a silhouette from the first run |
 | The kids' art is never altered or extended, and nothing new goes out under their name | `CLAUDE.md`, `stage-secrets.md` 6.9 | nothing is added to the Sketchbook: it holds no wizard, deed or secret (`ValidateSketchbookHoldsNothing`) |
 | Bosses are immune to crowd control that stops them reaching the player, and to executes | `in-flight.md` 3a item 4, section 4 | every verb below that moves, turns, blinds, seals or interrupts skips a `BossEnemy` |
@@ -624,6 +624,28 @@ path deepens that one at one milestone and takes the untagged branch at the othe
    returns a list; the second site is placed in the same 4-6 chunk band at least 90 degrees off the first;
    the wayfinder marks both; `StageHintCatalog` is keyed by site; `ValidateSecret`'s reveal rule reads
    the wizard's own site; `StageRewards` lists both on the map card.
+
+   **Built (2026-11-02, `wip/second-events`).** As written, and `.ai/side-events.md` "Two events in one
+   chapter" has the whole of it. **To add a chapter's second event:** put it after the first on the chapter's
+   line in `SideEventDirector` (`new SideEventEntry("my_site", () => new MyEvent())`); give the site a hint in
+   `StageHintCatalog` (keyed by `SiteId`), deed words in `AchievementDefinitions.SideEventWords`, and what it
+   pays in `UnlockCatalog` (`FromEvent(..., "my_site", ...)`); a wizard needs his `QuestLog.Prisoners` row (his
+   held line is his clue), anything else a `ChapterNotes.SiteClues` line. Nothing else: placement (90 degrees
+   off the first, in the band), the wayfinder, the alternating hints, the map card, the deed, `EventsWon`,
+   the quest log and `ValidateSecret` all read the list. `ValidateSideEventTable` holds it right. Prove it
+   with `_ExploreProbe --stage=N --fresh-save` (the two-event order runs whenever a chapter holds two);
+   `--second-event-test` is the stand-in that drove it before any chapter had two.
+
+   **Verified:** build; the validator (0 errors, main's 1 warning); `_ExploreProbe --second-event-test` on the
+   Forest (grove + stand-in), the Swamp (lanterns + stand-in) and the Sands (caravan + stand-in), seeds 4242,
+   31 and 7 fresh, 4242 and 31 `--all-unlocked`, and `--wayfinder-first` on 1001 fresh and 7 `--all-unlocked`
+   (21 runs, 0 failed: both events found and won every time, main sites 122 to 172 degrees apart, the hints
+   one each and then both the second's, the line under the timer passed between two running events);
+   the Ruins, the Emberdeep, the Cave and the Dungeon unchanged on 4242 fresh and 31 `--all-unlocked` - the
+   same checks, counts and coordinates as main. `_UiShot` of the Forest's map card and chapter note with the
+   stand-in at both canvases. **Left for the wizards:** each event's own hint sound and cue; Medea's chapter
+   hints only for her, since the well has no hint (`SitesWithoutHints`); the Court's note will carry two held
+   lines (allowed: `MaxLinesFor`), not yet photographed with two wizards.
 4. **The Sketchbook** pays nothing at all since 2026-11-02, not even page marks: no wizard, no deed, no
    secret (Eric). Ma Liang moved to the Court (4.8).
 5. **Secret until the chapter opens** works for all but Baba Yaga, who shows as a silhouette from the
