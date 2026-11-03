@@ -7932,6 +7932,46 @@
       "verb": "blind"
     },
     {
+      "spell": "solar_flare",
+      "variant": "",
+      "spell_name": "Solar Flare",
+      "spell_icon": "res://assets/bonelight/ui/spells/solar-flare-light.png",
+      "spell_elements": {
+        "Light": 1,
+        "Fire": 1
+      },
+      "milestone": 9,
+      "id": "solar_flare_dragons_teeth",
+      "name": "Dragon\u0027s Teeth",
+      "description": "At full growth the flare throws a stone of light into the crowd: what it strikes turns on its neighbours for three seconds.",
+      "synergy": "Apotheosis",
+      "visual_tag": "Apotheosis",
+      "gains": {
+        "Fire": 1
+      },
+      "replaces": "",
+      "effect": "None",
+      "effect_value": 0,
+      "rider": "None",
+      "damage": 1.25,
+      "damage_bonus": 0,
+      "cooldown": 1,
+      "projectiles": 0,
+      "area": 1,
+      "scale": 1,
+      "speed": 1,
+      "pierce": 0,
+      "arcs": 0,
+      "branches": 0,
+      "knockback": 0,
+      "slow": 0,
+      "poison": 0,
+      "range": 0,
+      "tint": "ffe085",
+      "character": "medea",
+      "verb": "turn"
+    },
+    {
       "spell": "the_taking",
       "variant": "",
       "spell_name": "The Taking",

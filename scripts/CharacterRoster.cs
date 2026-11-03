@@ -68,6 +68,9 @@ public static class CharacterRoster
 		// The chapter wizards again: Imhotep, freed by kindling the three beacons round his tomb on the Scorched Sands.
 		// Appended, so every saved index keeps its wizard (index 19).
 		"res://CharacterData_Imhotep.tres",
+		// The chapter wizards again: Medea, freed by paying the Tithe-Reeve's scale in the Fallow Fields. Appended, so every
+		// saved index keeps its wizard (index 20).
+		"res://CharacterData_Medea.tres",
 	};
 
 	/// <summary>

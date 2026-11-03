@@ -71,6 +71,8 @@ public static class CharacterVisuals
 			case "nostradamus": return new Vector2(12, 5);
 			// The sun resting on his raised palm (roster.py, imhotep()): Fireball leaves from it.
 			case "imhotep": return new Vector2(38, 5);
+			// The small sun burning over her open palm (roster.py, medea()).
+			case "medea": return new Vector2(39, 12);
 			default: return null;
 		}
 	}
@@ -106,6 +108,7 @@ public static class CharacterVisuals
 			case "paracelsus":
 			case "nostradamus":
 			case "imhotep":
+			case "medea":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

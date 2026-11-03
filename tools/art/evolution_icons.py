@@ -5186,6 +5186,42 @@ def _(sp, c):
     sp.subject = daybreak
 
 
+@card("solar_flare_dragons_teeth")
+def _(sp, c):
+    """Dragon's Teeth (Medea's Apotheosis, turn): the sun drawn up small into the corner, a stone of its light lobbed
+    out of it, and where it comes down the dragon's teeth breaking out of the furrow - three fangs of bone, two of
+    them leaning at each other, the sown men about to fall on one another."""
+    reset(sp)
+    sp.back = "fire"
+    sp.accent = None
+    sp.place = Place(0.52, dx=-6, dy=-6)
+
+    def stone(cv, x):
+        l = E["light"]
+        lob(cv, l, (C0 - 5, C0 - 5), (C0 + 5, C0 - 1), 7)
+        m_blast(cv, l, C0 + 5, C0 - 1, 2.0)
+
+    def teeth(cv, x):
+        hi, base, shade = bl.tone("skin", "hi"), bl.tone("skin", "base"), bl.tone("skin", "shade")
+        soil = bl.tone("gold", "shade")
+        c0 = int(C0)
+        for px in range(c0 - 4, c0 + 12):
+            cv.set(px, c0 + 8, soil)
+            cv.set(px, c0 + 9, OCC)
+        # (root x, lean): a fang is a narrow triangle out of the furrow, lit on its key side
+        for (rx, lean, h) in ((c0 - 2, 1, 7), (c0 + 4, 0, 5), (c0 + 9, -1, 7)):
+            for k in range(h):
+                y = c0 + 7 - k
+                w = 1 if k > h - 3 else 2
+                cx = rx + int(round(lean * k * 0.5))
+                for dx in range(w):
+                    cv.set(cx + dx, y, hi if dx == 0 else base)
+                cv.set(cx + w, y, shade)
+                cv.set(cx - 1, y, OCC)
+    O(sp, teeth)
+    O(sp, stone)
+
+
 @card("solar_flare_corona_discharge")
 def _(sp, c):
     """Corona Discharge: eight sunbeams thrown far past the flare."""

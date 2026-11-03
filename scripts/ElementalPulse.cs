@@ -84,6 +84,8 @@ public partial class ElementalPulse : Area2D
 			sunDogGlow.Draw -= DrawSunDogs;
 		if (prominenceCanvas != null && IsInstanceValid(prominenceCanvas))
 			prominenceCanvas.Draw -= DrawProminences;
+		if (stoneCanvas != null && IsInstanceValid(stoneCanvas))
+			stoneCanvas.Draw -= DrawStones;
 	}
 
 	public override void _Process(double delta)
@@ -95,6 +97,7 @@ public partial class ElementalPulse : Area2D
 		BurnBolts();
 		TickSunDogs((float)delta);
 		TickProminences((float)delta);
+		TickStones((float)delta);
 		if (customVisual is SolarFlareVisual building)
 		{
 			// The Feet capsule, which Player.FitFeetToSprite moves for other cell sizes; the pulse sits
@@ -170,6 +173,7 @@ public partial class ElementalPulse : Area2D
 		FireCoronaBeams(player, reach, hit);
 		FlareSunDogs(player, reach, hit);
 		HurlProminences(reach, hit, charge);
+		ThrowTeethStone(reach, hit, charge);
 
 		if (particles != null)
 			particles.Restart();
@@ -636,6 +640,307 @@ public partial class ElementalPulse : Area2D
 				Color c = w > 0.85f ? FireRamp.Core : w > 0.6f ? FireRamp.Hot : w > 0.3f ? FireRamp.Mid : FireRamp.Edge;
 				float size = MathF.Max(WhipLimb.Grid, MathF.Round(Mathf.Lerp(4f, 10f, w) / WhipLimb.Grid) * WhipLimb.Grid);
 				prominenceCanvas.DrawRect(WhipLimb.Cell(ArcPoint(p, u), size), c);
+			}
+		}
+	}
+
+	// DRAGON'S TEETH (Medea's Apotheosis, the verb TURN; .ai/chapter-wizards.md 4.2). "At full growth the flare throws
+	// a stone of light into the crowd: what it strikes turns on its neighbours for three seconds." In the story Medea
+	// told Jason to throw one stone among the men sown from the dragon's teeth, and they fell on each other. Every pulse
+	// that goes off at FULL growth - he has stood still the whole StillGrowthSeconds - throws one stone, a lob of the
+	// sun's own light, onto the densest knot within TeethThrowReach of this pulse's reach; where it lands it strikes
+	// everything within TeethStrikeRadius for TeethStoneShare of the pulse (through DealDamageToEnemy: it is his
+	// spell), and turns the ordinary ones on their neighbours, nearest the stone first, up to TeethTurnPerStone of them
+	// (Enemy.Turn; never past Enemy.MaxTurnedAtOnce in the arena). Elites are struck, not turned; a boss is struck.
+	// The stand-still spell's form asks for the stillness it already rewards, and pays it in the crowd's own blows.
+	// A fixed pool of stones on a TopLevel canvas, as the prominences are; nothing allocated per pulse.
+	public const string DragonsTeethId = "solar_flare_dragons_teeth";
+	public const float TeethThrowReach = 2.6f;
+	public const float TeethStrikeRadius = 76f;
+	public const int TeethTurnPerStone = 8;
+	// A fifth of the pulse: a stone, not a bomb. At the first guess (the whole pulse) the stone killed most of what it
+	// struck - the flare at level 8 with its Ascension one-shots the crowd - and so turned 0.43 a stone: the seek bot
+	// standing still after the form threw 178 stones in six minutes and turned 77, whose 45 blows killed 23. What it
+	// strikes must live to turn.
+	public const float TeethStoneShare = 0.2f;
+	public const float TeethFlight = 0.5f;
+	private const float TeethFade = 0.3f;
+	private const int MaxStones = 4;
+	// How many knots are scored for the throw: the candidates are the first this many in reach.
+	private const int TeethCandidates = 32;
+
+	/// <summary>This run's stones, and what they did, for the harness and the shots.</summary>
+	public static int StatStonesThrown { get; private set; }
+	public static int StatBodiesTurned { get; private set; }
+	public static int StatStonesStruckElites { get; private set; }
+
+	/// <summary>Sets the tally back for a new run (Player._Ready, with Enemy.ResetTurnedTally).</summary>
+	public static void ResetTeethTally()
+	{
+		StatStonesThrown = 0;
+		StatBodiesTurned = 0;
+		StatStonesStruckElites = 0;
+	}
+
+	private struct Stone
+	{
+		public Vector2 From;
+		public Vector2 To;
+		public float Height;
+		public float Age;
+		public int Damage;
+		public bool Landed;
+		public bool Live;
+	}
+
+	private readonly Stone[] stones = new Stone[MaxStones];
+	private int nextStone;
+	private bool stonesDrawn;
+	private Node2D stoneCanvas;
+	// Who the landing strikes, nearest the stone first, in fixed slots.
+	private readonly Enemy[] stoneHits = new Enemy[24];
+	private readonly float[] stoneHitDistances = new float[24];
+
+	private bool HasDragonsTeeth => SpellData != null && SpellData.HasEvolution(DragonsTeethId);
+
+	// The knot a stone is thrown at: of the first TeethCandidates in reach, the one with most bodies within the
+	// stone's strike. Counted through the swarm's grid, a struct visitor - once a full-grown pulse, never a frame.
+	private struct KnotCount : INeighbourVisitor
+	{
+		private readonly Vector2 origin;
+		private readonly float radiusSquared;
+		public int Count;
+
+		public KnotCount(Vector2 origin, float radius)
+		{
+			this.origin = origin;
+			radiusSquared = radius * radius;
+			Count = 0;
+		}
+
+		public void Visit(Enemy enemy, Vector2 position)
+		{
+			if (!enemy.IsDying && origin.DistanceSquaredTo(position) <= radiusSquared)
+				Count++;
+		}
+	}
+
+	private void ThrowTeethStone(float reach, int pulseDamage, float charge)
+	{
+		if (!HasDragonsTeeth || charge < 0.999f)
+			return;
+		Vector2 origin = GlobalPosition;
+		float throwReach = reach * TeethThrowReach;
+		float r2 = throwReach * throwReach;
+		Vector2 best = Vector2.Zero;
+		int bestCount = 0;
+		int scored = 0;
+		foreach (Enemy e in EnemyRegistry.Snapshot)
+		{
+			if (scored >= TeethCandidates)
+				break;
+			if (!IsInstanceValid(e) || e.IsDying)
+				continue;
+			Vector2 at = e.GlobalPosition;
+			if (at.DistanceSquaredTo(origin) > r2)
+				continue;
+			scored++;
+			var knot = new KnotCount(at, TeethStrikeRadius);
+			EnemyRegistry.ForEachNear(at, TeethStrikeRadius, ref knot);
+			if (knot.Count > bestCount)
+			{
+				bestCount = knot.Count;
+				best = at;
+			}
+		}
+		if (bestCount == 0)
+			return;
+
+		EnsureStoneCanvas();
+		Vector2 dir = (best - origin).LengthSquared() > 1f ? (best - origin).Normalized() : Vector2.Up;
+		// Thrown from her hand, a little up from the middle of her: lobbed high so it is seen to come down.
+		Vector2 from = origin + dir * 14f + new Vector2(0f, -30f);
+		stones[nextStone] = new Stone
+		{
+			From = from,
+			To = best,
+			Height = 40f + 0.45f * from.DistanceTo(best),
+			Damage = Math.Max(1, Mathf.RoundToInt(pulseDamage * TeethStoneShare)),
+			Live = true,
+		};
+		nextStone = (nextStone + 1) % MaxStones;
+		StatStonesThrown++;
+	}
+
+	private void EnsureStoneCanvas()
+	{
+		if (stoneCanvas != null && IsInstanceValid(stoneCanvas))
+			return;
+		stoneCanvas = new Node2D { Name = "TeethStones", TopLevel = true, ZAsRelative = false, ZIndex = DrawLayers.Air };
+		AddChild(stoneCanvas);
+		stoneCanvas.GlobalPosition = Vector2.Zero;
+		stoneCanvas.Draw += DrawStones;
+	}
+
+	private void TickStones(float delta)
+	{
+		if (stoneCanvas == null || !IsInstanceValid(stoneCanvas))
+			return;
+		bool any = false;
+		for (int i = 0; i < MaxStones; i++)
+		{
+			Stone s = stones[i];
+			if (!s.Live)
+				continue;
+			any = true;
+			s.Age += delta;
+			if (!s.Landed && s.Age >= TeethFlight)
+			{
+				s.Landed = true;
+				LandStone(s);
+			}
+			if (s.Age >= TeethFlight + TeethFade)
+				s.Live = false;
+			stones[i] = s;
+		}
+		// The turned are marked while any is (DrawTurned), so the canvas redraws for them too.
+		any |= Enemy.TurnedCount > 0;
+		if (any || stonesDrawn)
+			stoneCanvas.QueueRedraw();
+		stonesDrawn = any;
+	}
+
+	// WHO IS FIGHTING WHOM. A turned body is lit warm (Enemy.TurnedLook), but a tint on a dark body in a crowd is a
+	// faint thing; so over each one, while it lasts, a small mark of the stone's light flickers at its head, and a
+	// short run of light leans from it toward the one it is going for - a third of the way, never the whole line, so
+	// a knot of them reads as bodies turned on each other and not as a web. At most Enemy.MaxTurnedAtOnce; nothing is
+	// allocated, and the walk of the registry is skipped outright while nobody is turned.
+	private void DrawTurned()
+	{
+		if (Enemy.TurnedCount <= 0)
+			return;
+		float t = (float)Time.GetTicksMsec() * 0.001f;
+		foreach (Enemy e in EnemyRegistry.Snapshot)
+		{
+			if (!IsInstanceValid(e) || !e.IsTurned)
+				continue;
+			Vector2 at = e.GlobalPosition;
+			Vector2 head = at + new Vector2(0f, -38f);
+			bool bright = ((int)(t * 8f + e.GetInstanceId() % 5)) % 2 == 0;
+			stoneCanvas.DrawRect(WhipLimb.Cell(head, 6f), bright ? LightRamp.Hot : LightRamp.Mid);
+			stoneCanvas.DrawRect(WhipLimb.Cell(head, 2f), LightRamp.Core);
+			if (e.TurnedTarget is not Enemy foe)
+				continue;
+			Vector2 to = foe.GlobalPosition - at;
+			float d = to.Length();
+			if (d < 1f)
+				continue;
+			Vector2 dir = to / d;
+			float reach = MathF.Min(d * 0.35f, 46f);
+			for (float k = 10f; k < reach; k += 6f)
+				stoneCanvas.DrawRect(WhipLimb.Cell(at + new Vector2(0f, -14f) + dir * k, WhipLimb.Grid * 2f),
+					k < reach * 0.5f ? LightRamp.Hot : LightRamp.Edge);
+		}
+	}
+
+	// The stone comes down: everything under it struck, then the ordinary ones nearest it turned.
+	private void LandStone(in Stone s)
+	{
+		if (PlayerRef is not Player player || !IsInstanceValid(player))
+			return;
+		int found = 0;
+		float r2 = TeethStrikeRadius * TeethStrikeRadius;
+		foreach (Enemy e in EnemyRegistry.Snapshot)
+		{
+			if (!IsInstanceValid(e) || e.IsDying)
+				continue;
+			float d2 = e.GlobalPosition.DistanceSquaredTo(s.To);
+			if (d2 > r2)
+				continue;
+			int slot;
+			if (found < stoneHits.Length)
+				slot = found++;
+			else if (d2 < stoneHitDistances[found - 1])
+				slot = found - 1;
+			else
+				continue;
+			while (slot > 0 && stoneHitDistances[slot - 1] > d2)
+			{
+				stoneHits[slot] = stoneHits[slot - 1];
+				stoneHitDistances[slot] = stoneHitDistances[slot - 1];
+				slot--;
+			}
+			stoneHits[slot] = e;
+			stoneHitDistances[slot] = d2;
+		}
+		int turned = 0;
+		for (int i = 0; i < found; i++)
+		{
+			Enemy e = stoneHits[i];
+			stoneHits[i] = null;
+			if (!IsInstanceValid(e) || e.IsDying)
+				continue;
+			player.DealDamageToEnemy(e, s.Damage, source: SpellData);
+			if (!IsInstanceValid(e) || e.IsDying)
+				continue;
+			if (e.IsMiniBoss || e is BossEnemy)
+			{
+				StatStonesStruckElites++;
+				continue;
+			}
+			if (turned < TeethTurnPerStone && e.Turn(Enemy.TurnSeconds))
+			{
+				turned++;
+				StatBodiesTurned++;
+			}
+		}
+		if (player.GetParent() is Node2D arena)
+			ImpactDebrisLayer.Spawn(arena, s.To, TeethStrikeRadius, LightRamp, Colors.White);
+		SfxPlayer.Impact(Element.Light, s.To);
+	}
+
+	// A stone of light in flight: a small hard stone, white at its heart and the light ramp's hot stop round it, its
+	// trail falling behind it down the ramp, lobbed high and coming down on the knot; once down, a broken ring of light
+	// runs out over the strike's reach and fades. Stamped on the 2 px grid, as the prominences are.
+	private static Vector2 StonePoint(in Stone s, float u) =>
+		s.From.Lerp(s.To, u) + new Vector2(0f, -MathF.Sin(MathF.PI * u) * s.Height);
+
+	private void DrawStones()
+	{
+		DrawTurned();
+		const int trail = 9;
+		for (int i = 0; i < MaxStones; i++)
+		{
+			Stone s = stones[i];
+			if (!s.Live)
+				continue;
+			if (!s.Landed)
+			{
+				float head = Mathf.Clamp(s.Age / TeethFlight, 0f, 1f);
+				for (int k = trail; k >= 1; k--)
+				{
+					float u = Mathf.Max(0f, head - k * 0.035f);
+					float w = 1f - k / (float)trail;
+					Color c = w > 0.6f ? LightRamp.Hot : w > 0.3f ? LightRamp.Mid : LightRamp.Edge;
+					float size = MathF.Max(WhipLimb.Grid, MathF.Round(Mathf.Lerp(2f, 6f, w) / WhipLimb.Grid) * WhipLimb.Grid);
+					stoneCanvas.DrawRect(WhipLimb.Cell(StonePoint(s, u), size), c);
+				}
+				// The stone itself: a white-hot heart in a ring of the ramp's hot stop.
+				stoneCanvas.DrawRect(WhipLimb.Cell(StonePoint(s, head), 8f), LightRamp.Hot);
+				stoneCanvas.DrawRect(WhipLimb.Cell(StonePoint(s, head), 4f), LightRamp.Core);
+				continue;
+			}
+			// Landed: a broken ring of light out over what it struck, cooling down the ramp as it goes.
+			float f = Mathf.Clamp((s.Age - TeethFlight) / TeethFade, 0f, 1f);
+			float radius = Mathf.Lerp(TeethStrikeRadius * 0.35f, TeethStrikeRadius, f);
+			Color ring = f < 0.4f ? LightRamp.Hot : f < 0.75f ? LightRamp.Mid : LightRamp.Edge;
+			const int steps = 28;
+			for (int k = 0; k < steps; k++)
+			{
+				if ((k + (int)(f * 6f)) % 3 == 2)
+					continue;
+				Vector2 at = s.To + Vector2.FromAngle(Mathf.Tau * k / steps) * radius;
+				stoneCanvas.DrawRect(WhipLimb.Cell(at, WhipLimb.Grid * 2f), ring);
 			}
 		}
 	}

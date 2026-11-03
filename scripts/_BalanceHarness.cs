@@ -250,6 +250,11 @@ public partial class _BalanceHarness : Node
 	private string[] grantBoons = Array.Empty<string>();
 	// --stand-still: the bot never moves (see DriveMovement).
 	[Export] public bool StandStill { get; set; }
+
+	// --still-after-apotheosis: plays as ever until the Apotheosis is taken, then stands still like --stand-still. For
+	// a form that only fires on stillness (Dragon's Teeth, Medea's: the flare must be at full growth), which the
+	// seek bot - walking to every orb - never gives it; and --stand-still from the start never reaches the level gate.
+	[Export] public bool StillAfterApotheosis { get; set; }
 	// --aim-facing: with --immortal, a bot that aims with its feet. Whenever it is standing (not walking
 	// to an orb) it taps toward the nearest enemy for ONE physics frame every AimTapSeconds - enough to
 	// turn Player.FacingDirection and Stormsweep's side to the threat, too little to move it (about 4 px).
@@ -377,6 +382,7 @@ public partial class _BalanceHarness : Node
 			else if (arg.StartsWith("--give-relics=")) giveRelics = arg.Substring(14).Split(',', StringSplitOptions.RemoveEmptyEntries);
 			else if (arg.StartsWith("--grant-boons=")) grantBoons = arg.Substring(14).Split(',', StringSplitOptions.RemoveEmptyEntries);
 			else if (arg == "--stand-still") StandStill = true;
+			else if (arg == "--still-after-apotheosis") StillAfterApotheosis = true;
 			else if (arg == "--aim-facing") AimFacing = true;
 			else if (arg.StartsWith("--circle=")) CircleRadius = float.Parse(arg.Substring(9), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg == "--survivor") Survivor = true;
@@ -1543,6 +1549,10 @@ public partial class _BalanceHarness : Node
 					blindNow++;
 			GD.Print($"HARNESS EYE m={row.Minute} flares={Fireball.FlaresThisRun} blinded={Fireball.BlindedThisRun} seared={Fireball.ElitesSearedThisRun} blind_now={blindNow}");
 		}
+		// Dragon's Teeth (Medea): stones thrown, bodies turned, and what the turned did to their own.
+		if (ElementalPulse.StatStonesThrown > 0)
+			GD.Print($"HARNESS TEETH m={row.Minute} stones={ElementalPulse.StatStonesThrown} turned={ElementalPulse.StatBodiesTurned} "
+				+ $"elites_struck={ElementalPulse.StatStonesStruckElites} blows={Enemy.TurnedBlows} kills={Enemy.TurnedKills} now={Enemy.TurnedCount}");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger
@@ -1704,7 +1714,7 @@ public partial class _BalanceHarness : Node
 		// Brazier's heat, Taproot). Pair with --immortal, or the swarm ends it in a minute. Not a
 		// player - it gathers only what drifts into its pickup radius - so read its stand-still line,
 		// not its level clock.
-		if (StandStill)
+		if (StandStill || (StillAfterApotheosis && apotheosisTakenAt >= 0f))
 		{
 			foreach (string a in MoveActions)
 				Input.ActionRelease(a);
@@ -3728,6 +3738,9 @@ public partial class _BalanceHarness : Node
 		// The Eye of Ra (Imhotep): how often it flared and what it blinded.
 		if (Fireball.FlaresThisRun > 0)
 			lines.Add($"  the eye of ra flared {Fireball.FlaresThisRun} times, blinded {Fireball.BlindedThisRun}, seared {Fireball.ElitesSearedThisRun} elites");
+		// Dragon's Teeth (Medea): the stones, and the crowd fighting itself.
+		if (ElementalPulse.StatStonesThrown > 0)
+			lines.Add($"  dragon's teeth threw {ElementalPulse.StatStonesThrown} stones, turned {ElementalPulse.StatBodiesTurned}; the turned landed {Enemy.TurnedBlows} blows and killed {Enemy.TurnedKills}");
 		lines.AddRange(SpellLevelLines());
 		lines.Add("");
 		lines.Add(AscensionSummaryLine());

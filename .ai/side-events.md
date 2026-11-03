@@ -14,6 +14,7 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 |---|---|---|---|---|
 | Enchanted Forest | **Hold the grove** (`GroveEvent`) | "Every path now leads inward." | **stand still** in a ring for 20 s; leaving drains it at half speed | Bramble Seed |
 | Enchanted Forest (second) | **The walking hut** (`WalkingHutEvent`) | "Every path now leads inward." | **hunt**: a hut on hen's legs walks its circle in the deep wood; within 420 px it turns its back and bolts, quicker than you for 2 s, then slower. Keep within 520 px of it for 30 s (the bar holds when you are not) and it tires, kneels and opens its door | Baba Yaga |
+| Fallow Fields (second) | **The Tithe-Reeve's scale** (`TitheScaleEvent`) | "He takes a tithe of everything that grows here." | **pay**: from arrival every XP orb that falls within 320 px of the reeve's great scale drifts into its pan instead of to you; when the pan holds one level's XP at that moment of the run the beam drops, the bar falls from the granary door and she steps out. Walking off keeps what is paid; nothing fails | Medea |
 | Cursed Dungeon | **The Gaoler's key** (`GaolersKeyEvent`) | "He keeps a wizard in one of these cells." | **carry**: kill the Warden, take its key across the map; three hits knock it loose | Tituba |
 | Sunken Cave | **The nine mouths** (`NineMouthsEvent`) | "His shadow followed the water down into the dark." | **listen**: a crescent of rock with nine mouths; her voice comes out of all of them a beat apart, hers first; stand in hers 2 s. A wrong mouth answers with a flight of Gloomwings and hers moves | the Cumaean Sibyl |
 | Blighted Swamp | **Snuff the lanterns** (`BogLanternsEvent`) | "Nothing living lights them." | **explore**: four lanterns spread over the map, each releasing wisps, then the lantern-tender comes and is fought on its own terms (below) | Contagion |
@@ -121,6 +122,7 @@ All five events resolve through `SideEvent.Succeed`, so all five now get the sam
 | The barge | Morgan le Fay (wizard) | a chest | "The barge comes ashore empty - a chest was left in it" |
 | The gibbet's cage | Paracelsus (wizard) | a chest | "The punt has taken him - a chest was left on the landing" |
 | The seer's voice | Nostradamus (wizard) | a chest | "He left something on the desk - a chest" |
+| The Tithe-Reeve's scale | Medea (wizard) | a chest | "The tithe is paid - a chest was left in the granary" |
 
 To photograph any of them: `_UiShot --scene=res://scenes/node_2d_game.tscn --stage=N --win-event`
 (add `--event-chest` for the chest path on a save that lacks the discovery). It sets
@@ -393,6 +395,7 @@ player walked toward the sound. Fixed slots, no allocation.
 | the hut | birds lifting out of the canopy in his violet light, beating up and away out toward her, near ones and far smaller ones | each fall of its feet and its timbers' creak (`sfx._HUT_FALLS`, `_HUT_CREAK` = `StageHintCue.HutBeats`) |
 | the barge | sea mist rolling in low along the edge, and from the first knock a small barge hung shimmering above the water among it, in wind's ramp | each knock of the hull (`sfx._HULL_KNOCKS` = `StageHintCue.HullKnocks`) |
 | the gibbet | threads of pale vapour, the arcane ramp's two pale stops (never the lanterns' poison green), drifting in slowly and low against the wind, curling and thinning | each tap of the flask and each cough (`sfx._FLASK_TAPS`, `_FLASK_COUGHS` = `StageHintCue.FlaskBeats`) |
+| the granary | wisps of a thin cold herb-smoke in the wind ramp's pale body, lying low and flat and drifting in slowly from her side, curling and thinning to a thread | each syllable of her voice (`sfx._GRANARY_SYLLABLES` = `StageHintCue.GranaryVoices`) |
 
 `hint_ice_song` was rebuilt to be heard as singing (six notes, A G F G E D, `.ai/audio-manifest.md`).
 
@@ -430,6 +433,7 @@ question. `RegressionChecks.ValidateStageHints` warns on any line that contains 
 | The Last Bridge | `the_barge` | sound (Morgan le Fay, unnamed) | `hint_hull_knock` (mist) | "A boat on the water below, where no boat could be." / "The boat again, nearer the bridge." / "Its lantern is still lit." |
 | Blighted Swamp | `gibbet_cage` | sound (Paracelsus, unnamed) | `hint_flask_chime` (vapour) | "A man coughing, far out on the bog." / "Glass rings across the water, like a tapped flask." / "The coughing again. Weaker." |
 | The Court | `seers_voice` | **speech** (Nostradamus reading, unnamed) | `hint_quatrain` (stars) | "Out of the west one light, on foot, alone." / "The one he missed walks every road he made." / "When the last door opens, the house goes dark." |
+| Fallow Fields | `tithe_scale` | **speech** (Medea, unnamed; she does not plead) | `hint_granary_voice` (smoke) | "You there. The granary, past the furrows." / "He counts me with the grain. Settle his count." / "Come, or go. I have waited out worse men." |
 
 Tituba speaks in her own character: a prisoner taken from Barbados and jailed on an accusation,
 patient (her passive is *Patience*) and nobody's witch - so she asks for help and says she has
@@ -606,6 +610,11 @@ chapter's line in `SideEventDirector` is a list, its original event first:
   was-sceptre planted, and the sun lifted on his palm. Opens on **Fireball**, the Long Coil's deed (Fire, shared with
   the Pyromancer: R1, their spells differ). Passive *Surveyor*: +20% pickup reach. Freed by lighting the three beacons
   round his dry tomb at once, the Sands' second event; secret until the Sands open; counted at the Throne's gate only.
+- **Medea** (2026-11-03), the sorceress of Colchis, granddaughter of the Sun, drawn serious: upright, a madder mantle
+  over a sea-green peplos, a bronze diadem, a small sun in her open hand and a bronze sickle in the other. Opens on
+  **Solar Flare** (two elements, R2). Passive *Rejuvenation*: +20% healing from every source. Freed by paying the
+  Tithe-Reeve's scale a level's XP, the Fallow Fields' second event; secret until the Fields open (`stage_9`),
+  counted at the Throne's gate only.
 
 Both wear **no player pigment**. The four saturated rows are the starters'. The rescued wear what
 they were held in, so the only saturated thing on them is their staff head. Sprites are in

@@ -56,6 +56,9 @@ THE ROW ORDER IS AN API: HintCue's order (scripts/StageHintCatalog.cs).
   sand     the tomb       a thin stream of sand lifting into the air, a ribbon at its foot breaking into grains
                           as it rises, the grains running up it (0-3), then the same thinner and fainter (4-7) -
                           "a thin stream of sand lifts into the air from his side, against the wind"
+  smoke    the granary    a wisp of herb-smoke lying low on the air, running flat into a curl that turns over
+                          a quarter at a time (0-3), then the same four thinned to a thread (4-7): "a thin
+                          cold herb-smoke drifts low over the stubble from her side", one on each syllable
 
 Each wears its event's far-tell colour (SideEvent.FarTellColor) as its body, so the cue is the
 colour of the light the player will find: wind's ramp for the grove's lichen grey-green, arcane
@@ -131,6 +134,11 @@ def ramp_of(name):
         # under them (StageHintCue's glow, the tomb's TellColor), and violet grains would read as a spell, not sand.
         e = bl.ELEMENTS["earth"]
         return (e[1], e[2], e[3], e[0])
+    if name == "smoke":
+        # The granary's far tell is the wind ramp's body (TitheScaleEvent.TellColor): a cold, pale smoke of herbs
+        # burning low somewhere shut away - not the well's water, the Fields' other event.
+        w = bl.ELEMENTS["wind"]
+        return (w[1], w[2], w[3], w[0])
     if name == "writ":
         # The nine mouths' far tell is the water ramp's blue (NineMouthsEvent.TellColor): the drowned dark.
         # From the ramp's PALE end, a stop up from the others: paper in a cold light, with the ramp's dark
@@ -624,6 +632,41 @@ def vapour(frame):
     return sampled(inside), set()
 
 
+def smoke(frame):
+    """A wisp of herb-smoke lying low on the air: a tapering stroke that runs flat and rises into a curl at its head,
+    the curl turning over itself a quarter at a time (frames 0-3), then the same four thinned to a thread as it
+    goes (4-7). Flat, not a column: it drifts low over the stubble rather than climbing."""
+    k = frame % 4
+    thin = frame >= 4
+    turn = k * math.pi / 2.0
+
+    def seg(px, py, ax, ay, bx, by):
+        dx, dy = bx - ax, by - ay
+        L = dx * dx + dy * dy
+        t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / L)) if L > 0 else 0.0
+        return math.hypot(px - (ax + dx * t), py - (ay + dy * t)), t
+
+    # The body: three segments from the tail (left) to the head (right), with a gentle sag.
+    pts = [(1.8, 9.4), (5.6, 10.6), (9.4, 9.8), (12.0, 7.6)]
+    cx, cy = 11.2, 5.6
+
+    def inside(x, y):
+        for i in range(len(pts) - 1):
+            d, t = seg(x, y, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1])
+            w = (0.45 + 0.35 * ((i + t) / 3.0)) * (0.7 if thin else 1.0)
+            if d <= w:
+                return True
+        # The curl at the head: an arc of most of a ring, opened on the side the curl is turning to.
+        r = math.hypot(x - cx, y - cy)
+        if abs(r - 2.2) <= (0.42 if thin else 0.62):
+            a = math.atan2(y - cy, x - cx)
+            gap = (a - turn) % (2.0 * math.pi)
+            if gap > (1.6 if thin else 1.1):
+                return True
+        return False
+    return sampled(inside), set()
+
+
 def star(frame):
     """A star twinkling, the seer's: four points with concave sides (an astroid, |u|^2/3 + |v|^2/3 <= 1) on
     one pixel's centre, so every arm ends in a single pixel. The cycle: small, larger, its longest spikes,
@@ -698,6 +741,7 @@ ROWS = [
     ("vapour", [vapour(f) for f in range(8)]),
     ("stars", [star(f) for f in range(8)]),
     ("sand", [sand(f) for f in range(8)]),
+    ("smoke", [smoke(f) for f in range(8)]),
 ]
 
 

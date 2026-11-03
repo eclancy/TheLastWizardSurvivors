@@ -133,6 +133,9 @@ public static class SfxCatalog
 	public const string HintQuatrain = "hint_quatrain";
 	// The dry tomb on the Scorched Sands (TombBeaconsEvent): slow knocks of stone on stone under hissing sand.
 	public const string HintTombKnock = "hint_tomb_knock";
+	// The Tithe-Reeve's granary in the Fallow Fields (TitheScaleEvent): a woman's voice, level and unhurried, through
+	// plank walls - she speaks, and does not plead.
+	public const string HintGranaryVoice = "hint_granary_voice";
 	// The nine mouths' call in the Sunken Cave (NineMouthsEvent): her voice out of the true mouth, first, and
 	// the cave's echo of it out of the other eight, a beat apart - played at each mouth, so the 2D listener
 	// pans and fades each from where it comes.
@@ -164,7 +167,7 @@ public static class SfxCatalog
 		UiHover, UiClick, UiBack, UiDenied, UiOpen, UiClose, UiPause,
 		StageClear, GameOver, MetaUnlock, WaveWarning,
 		PlayerFall, TallyTick, TallyPayout,
-		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep, HintHullKnock, HintFlaskChime, HintQuatrain, HintTombKnock,
+		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep, HintHullKnock, HintFlaskChime, HintQuatrain, HintTombKnock, HintGranaryVoice,
 		SibylVoice, SibylEcho,
 		SecretSeen, SecretFound, SecretShatter,
 	};

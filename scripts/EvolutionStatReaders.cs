@@ -201,7 +201,7 @@ public static class EvolutionStatReaders
 			"OrbitingBlade.RefreshComputedStats and PullTowardRing (Amount is more blades; the gust then scales the orbit it computes); persistent, so its cooldown only refreshes it and it is never re-scaled; Twin Gyres' inner ring, Wind Shear's crescents and Typhoon Core by id",
 			SpellEffect.VortexPull, SpellEffect.AreaSize, SpellEffect.CritDamage),
 		["solar_flare"] = R(Core | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Knockback | EvolutionStat.Rider,
-			"ElementalPulse.RefreshComputedStats and TriggerPulse (Area is the flare's reach, Knockback Blinding Flash's shove; Sun Dogs, Solar Prominence, Daybreak's ward and Corona's beams by id)",
+			"ElementalPulse.RefreshComputedStats and TriggerPulse (Area is the flare's reach, Knockback Blinding Flash's shove; Sun Dogs, Solar Prominence, Daybreak's ward, Corona's beams and Dragon's Teeth's stone by id)",
 			SpellEffect.AreaSize, SpellEffect.CritDamage),
 		["black_tentacles"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Rider
 				| EvolutionStat.Amount,

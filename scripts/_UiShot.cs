@@ -390,6 +390,9 @@ public partial class _UiShot : Node
 	// --beacons-lit=N: with --arrive on the Scorched Sands' dry tomb (--event-index=1), N of its beacons lit (their clocks
 	// staggered) the moment it is begun, so the fires, the clock rings and the objective's count are photographed.
 	private int beaconsLit;
+	// --event-progress=F: with --arrive, the begun event's own "progress" float set to F (0-1) - an event photographed
+	// part-way (the Tithe-Reeve's pan part-paid, its beam part-tipped) without the minutes it takes to get there.
+	private float eventProgress = -1f;
 	// --event-index=N: which of the chapter's events (SideEventDirector.EventsFor; 0 its original, 1 a second -
 	// --second-event-test adds a stand-in one on a tool run) --goto=event, --goto=site:N, --win-event and --arrive
 	// mean. --goto=event:N goes to event N's main site whatever this says.
@@ -1841,6 +1844,8 @@ public partial class _UiShot : Node
 				seerRead = true;
 			else if (arg.StartsWith("--beacons-lit="))
 				beaconsLit = System.Math.Max(0, int.Parse(arg.Substring("--beacons-lit=".Length)));
+			else if (arg.StartsWith("--event-progress="))
+				eventProgress = float.Parse(arg.Substring("--event-progress=".Length), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg.StartsWith("--event-index="))
 				eventIndex = System.Math.Max(0, int.Parse(arg.Substring("--event-index=".Length)));
 			// --zoom=Z: the run camera's zoom (player.tscn's is 0.85), for a map-like view of a stretch
@@ -3086,6 +3091,13 @@ public partial class _UiShot : Node
 					lighting.KindleForPhoto(beaconsLit);
 					GD.Print($"_UiShot: {beaconsLit} of the tomb's beacons lit");
 				}
+				if (begunEvent != null && eventProgress >= 0f
+					&& begunEvent.GetType().GetField("progress", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic) is System.Reflection.FieldInfo field
+					&& field.FieldType == typeof(float))
+				{
+					field.SetValue(begunEvent, Mathf.Clamp(eventProgress, 0f, 0.99f));
+					GD.Print($"_UiShot: {begunEvent.GetType().Name}'s progress set to {eventProgress:0.00}");
+				}
 			}
 			if (seerLeg >= 0 && !seerMoved && frames >= WarmupFrames / 3 + 2
 				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector seerDirector
@@ -3351,7 +3363,11 @@ public partial class _UiShot : Node
 			{
 				demoApplied = true;
 				if (demoPlayerLevel > 0)
+				{
 					demo.CurrentLevel = demoPlayerLevel;
+					// And the bar that level has, so what reads it (the Tithe-Reeve's price) sees that level's.
+					demo.XPToNextLevel = demo.CalculateXPForLevel(demoPlayerLevel);
+				}
 				if (demoSpellLevel > 0)
 					demo.GetEquippedSpells()[0].CurrentLevel = demoSpellLevel;
 				if (demoArea > 0f && typeof(Player).GetField("areaMultiplier",
@@ -3998,6 +4014,9 @@ public partial class _UiShot : Node
 		// The dry tomb: down and to one side of its door, so he climbs out toward him and the whole front is in frame.
 		else if (IsInstanceValid(wonEvent) && wonEvent is TombBeaconsEvent tombEvent)
 			p.GlobalPosition = tombEvent.StandPoint;
+		// The Tithe-Reeve's scale: in front of the yard, so the doors, the steps and the scale are all on screen.
+		else if (IsInstanceValid(wonEvent) && wonEvent is TitheScaleEvent titheEvent)
+			p.GlobalPosition = titheEvent.StandPoint;
 		else if (IsInstanceValid(wonEvent) && EventSite(wonEvent) is Vector2 site)
 			p.GlobalPosition = site;
 	}

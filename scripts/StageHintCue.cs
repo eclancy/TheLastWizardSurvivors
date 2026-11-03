@@ -32,6 +32,8 @@ using TheOneHeMissed.scripts;
 //                 reads, each flaring once and fading as it drifts in
 //   the tomb      a thin stream of sand lifting off the ground on his side and rising, against the wind - one
 //                 on each slow knock of stone on stone, and a fainter one beside it
+//   the granary   a thin cold herb-smoke lying low over the stubble, drifting in slow and flat from her side,
+//                 curling and thinning - a wisp on each syllable of her voice
 //
 // IN THE WORLD'S LAYERS, HELD TO THE VIEW. The marks are drawn in the world, on the layer over the
 // bodies and under the HUD, so they read as something out there rather than as an interface - but
@@ -122,6 +124,12 @@ public partial class StageHintCue : Node2D
 
 	/// <summary>The dry tomb's hint beats, for RegressionChecks.ValidateTombBeacons (a copy).</summary>
 	public static float[] TombKnockTimes => (float[])TombKnocks.Clone();
+	// Her voice from the granary (hint_granary_voice): "you there", a breath, then the longer line falling - every
+	// syllable's onset, the same list as tools/audio/sfx.py _GRANARY_SYLLABLES. A wisp of her smoke comes in on each.
+	private static readonly float[] GranaryVoices = { 0.00f, 0.22f, 0.72f, 0.88f, 1.04f, 1.22f };
+
+	/// <summary>The granary's hint beats, for RegressionChecks.ValidateTitheScale (a copy).</summary>
+	public static float[] GranaryVoiceBeats => (float[])GranaryVoices.Clone();
 
 	private struct Mark
 	{
@@ -228,6 +236,7 @@ public partial class StageHintCue : Node2D
 		HintCue.Vapour => 120f,
 		HintCue.Stars => 100f,
 		HintCue.Sand => 70f,
+		HintCue.Smoke => 130f,
 		_ => 8f,
 	};
 
@@ -486,6 +495,19 @@ public partial class StageHintCue : Node2D
 				if (nextBeat >= TombKnocks.Length)
 					clock = -1f;
 				break;
+			case HintCue.Smoke:
+				while (nextBeat < GranaryVoices.Length && GranaryVoices[nextBeat] <= t)
+				{
+					// Lying low and flat on the air, not rising: it drifts in slowly along the stubble from her side,
+					// sinking a little, spread wide along the edge - her first word's wisp on the line to her.
+					float along = nextBeat == 0 ? Jitter(10f) : Jitter(130f);
+					Spawn((int)HintCue.Smoke, random.Next(4), 3.4f + (float)random.NextDouble() * 0.6f, along, 6f + Jitter(10f),
+						inward: 9f, drift: Jitter(14f), rise: -5f, fadeIn: 0.45f);
+					nextBeat++;
+				}
+				if (nextBeat >= GranaryVoices.Length)
+					clock = -1f;
+				break;
 			case HintCue.Bell:
 				// The bell walks along the edge, as the caravan walks its road.
 				if (bellSlot < 0)
@@ -653,6 +675,12 @@ public partial class StageHintCue : Node2D
 				// The grains running up the stream (four steps, near or thin), and the stream bending a little as it rises.
 				column = (m.Glyph >= 4 ? 4 : 0) + ((int)(m.Age * 9f + m.Phase) % 4);
 				at.X += Mathf.Sin(m.Age * 2.1f + m.Phase) * 3f;
+				break;
+			case HintCue.Smoke:
+				// Curling over itself slowly (four columns of a curl), thinning to a thread in the last two fifths of its
+				// life (the same four thinned, 4-7), and lifting and settling a little on the air.
+				column = (m.Glyph + (int)(m.Age * 2.6f)) % 4 + (m.Age > m.Life * 0.6f ? 4 : 0);
+				at.Y += Mathf.Sin(m.Age * 1.7f + m.Phase) * 3f;
 				break;
 			case HintCue.Writ:
 				// Turning over as it is blown, and lifted and dropped by the draught.

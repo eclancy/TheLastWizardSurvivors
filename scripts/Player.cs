@@ -654,6 +654,10 @@ public partial class Player : CharacterBody2D
 	// A share of the whole reach, magnets and shop levels included, so it stays a fifth more however far it has grown.
 	public const float CharacterSurveyorReachBonus = 0.20f;
 	private float characterPickupReachScale = 1f;
+	// Rejuvenation (Medea): the share added to every heal (Heal), and the carry that keeps a one-point heal's share.
+	public const float CharacterRejuvenationBonus = 0.20f;
+	private float characterHealingBonus = 0f;
+	private float rejuvenationCarry = 0f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -668,6 +672,9 @@ public partial class Player : CharacterBody2D
 		AttackTelegraph.ForesightScale = 1f;
 		// The Eye of Ra's tallies are a run's too (the harness reads them).
 		Fireball.ResetEyeOfRaTallies();
+		// Nobody is turned at the start of a run, and Dragon's Teeth's tally is the run's (Enemy.Turned.cs).
+		Enemy.ResetTurnedTally();
+		ElementalPulse.ResetTeethTally();
 		ResetItemRules();
 		feetBody = GetNodeOrNull<CharacterBody2D>("Feet");
 		feetShape = feetBody?.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
@@ -934,6 +941,10 @@ public partial class Player : CharacterBody2D
 		// (PickupReach). An axis no other wizard owns: not his speed (Wings), not a pull of the swarm (Hollow Star),
 		// only how far his hands reach for what the fight drops.
 		"pickup_reach_20",
+		// Medea (.ai/chapter-wizards.md 4.2): Rejuvenation - the sorceress who made old Aeson young again in her
+		// cauldron, and every heal she takes is a fifth more (Heal). An axis no other wizard owns: not a heal of its
+		// own (the healing budget, .ai/difficulty-curve.md section 5, gives her none), the worth of every other one.
+		"healing_20",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -1003,6 +1014,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "pickup_reach_20":
 				characterPickupReachScale = 1f + CharacterSurveyorReachBonus;
+				return true;
+			case "healing_20":
+				characterHealingBonus = CharacterRejuvenationBonus;
 				return true;
 			default:
 				return false;
@@ -3236,6 +3250,18 @@ public partial class Player : CharacterBody2D
 	public void Heal(int amount)
 	{
 		int adjustedAmount = Math.Max(0, Mathf.RoundToInt(amount * (1.0f + chestHealingBonusPercent)));
+		// Rejuvenation (Medea): a fifth more of every heal, from every source that heals through here - the flask, the
+		// Light tier's banked share, the Grass tier, every regeneration line (RegenPerSecondNow, a point at a time), the
+		// relics, the boons, the cat's purr, the events' heals. The fraction is CARRIED, as AddXp carries XP: a one-point
+		// regeneration tick is most of what heals a run now, and rounding 1.2 per tick would round the passive away.
+		// Not a revive (TakeDamage sets the bar to half itself): a life is not a heal. Nobody else reaches the carry, so
+		// every other wizard's healing is exactly what it was.
+		if (characterHealingBonus > 0f && adjustedAmount > 0)
+		{
+			rejuvenationCarry += adjustedAmount * (1f + characterHealingBonus);
+			adjustedAmount = (int)rejuvenationCarry;
+			rejuvenationCarry -= adjustedAmount;
+		}
 		if (GameStats.TrackHealing)
 			GameStats.RecordHealing(HealCallerName(), adjustedAmount);
 		int headroom = Math.Max(0, MaxHP - CurrentHP);
@@ -4147,6 +4173,9 @@ public partial class Player : CharacterBody2D
 		// Damage-over-time for overlapping enemies
 		foreach (var enemy in overlappingEnemies)
 		{
+			// Turned on its own by Dragon's Teeth (Enemy.Turned.cs): for those seconds it is fighting someone else.
+			if (enemy is Enemy turnedToucher && turnedToucher.IsTurned)
+				continue;
 			if (!enemyDamageCooldowns.ContainsKey(enemy))
 				enemyDamageCooldowns[enemy] = DamageCooldownSeconds; // So damage applies on next tick
 
@@ -7310,7 +7339,13 @@ public partial class Player : CharacterBody2D
 	/// screen (GameOverScreen). Nothing reads it to decide anything.</summary>
 	public int RunXpGathered { get; private set; }
 
-	public void AddXp(int amount)
+	/// <summary>
+	/// What an orb of <paramref name="amount"/> is worth to him if picked up NOW, in points of his bar: every XP
+	/// bonus and the run's pace (Node2DGame.XpPacing.cs) on it, before the fraction is carried. AddXp banks this;
+	/// the Tithe-Reeve's scale (TitheScaleEvent) weighs what it takes from him by it, so its price is a level at
+	/// that moment of the run.
+	/// </summary>
+	public float XpWorthOf(int amount)
 	{
 		float scaled = amount * growthMultiplier * GetArcaneXpBonusMultiplier() * (1.0f + chestXpBonusPercent);
 		// A point of XP is worth more the further into the run it is picked up (Node2DGame.XpPacing.cs).
@@ -7318,6 +7353,12 @@ public partial class Player : CharacterBody2D
 			scaled *= run.XpPaceMultiplier;
 		if (IsPlaytestModeEnabled)
 			scaled *= 1.15f;
+		return scaled;
+	}
+
+	public void AddXp(int amount)
+	{
+		float scaled = XpWorthOf(amount);
 
 		// The fraction is CARRIED, not rounded away. Every XP bonus used to be rounded per orb, and
 		// nine kills in ten pay a 2 XP orb: 2 x 1.15 rounds back to 2, and so does 2 x 1.25 (banker's
@@ -8835,7 +8876,9 @@ public partial class Player : CharacterBody2D
 		if (body.IsInGroup("enemies"))
 		{
 			overlappingEnemies.Add(body);
-			// Optionally, apply damage immediately
+			// Optionally, apply damage immediately - never from a body turned on its own (Dragon's Teeth).
+			if (body is Enemy { IsTurned: true })
+				return;
 			if (!enemyDamageCooldowns.ContainsKey(body) || enemyDamageCooldowns[body] >= DamageCooldownSeconds)
 			{
 				// The first touch, the same as every touch after it in the contact loop: the Binding

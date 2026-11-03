@@ -89,6 +89,9 @@ public static class QuestLog
 		// The builder who could find water in the desert and raise it, sealed in a dry tomb beside the road the water
 		// left (4.6). He is heard knocking under the sand.
 		new Prisoner("imhotep", "the builder in the dry tomb", "Something knocks, stone on stone, under the sand.", "{0} walks in the sun again."),
+		// The sorceress of Colchis, counted among what grows here and held in the reeve's granary against a tithe the
+		// village could never pay (4.2).
+		new Prisoner("medea", "the one in the granary", "Someone is kept in the reeve's granary, counted with the grain.", "{0} has walked out of the granary."),
 		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
 		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.

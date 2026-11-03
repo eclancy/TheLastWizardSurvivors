@@ -328,6 +328,11 @@ public static class UnlockCatalog
 		// three beacons at once. Secret until the Sands open; counted at the Throne's gate only.
 		FromEvent("imhotep", UnlockKind.Character, "tomb_beacons", "Sealed in a dry tomb out on the Scorched Sands.",
 			secretUntilStage: "stage_6", finalGateOnly: true),
+		// Medea, counted with the grain in the Tithe-Reeve's granary in the Fallow Fields (4.2). Secret until the Fields
+		// open: the second chapter, opened by Elderbark, so a new save has no way to know she is there (section 1).
+		// Counted at the Throne's gate only, as every chapter wizard is.
+		FromEvent("medea", UnlockKind.Character, "tithe_scale", "Counted with the grain in the Fallow Fields.",
+			secretUntilStage: "stage_9", finalGateOnly: true),
 		FromEvent("iron_palisade", UnlockKind.Spell, "caravan_master", "Carried by the caravan master on the Scorched Sands road."),
 		FromEvent("contagion", UnlockKind.Spell, "bog_lanterns", "Kept by whatever tends the lanterns in the Blighted Swamp."),
 		FromEvent("bramble_seed", UnlockKind.Spell, "the_grove", "Grown back in the corrupted grove of the Enchanted Forest."),
