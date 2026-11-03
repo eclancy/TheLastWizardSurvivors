@@ -30,6 +30,7 @@ import hero
 import raster
 import splashkit as sk
 import title_eyes
+import title_lettering
 
 W, H = 360, 640
 
@@ -92,7 +93,8 @@ STAGES = ("backA", "backB", "eyes", "ward", "flamesA", "figure", "flamesB", "for
 
 
 def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
-          layers=False, gain=1.0, phase=0, flicker=1.0, tall=True, fill=True, eyes=True):
+          layers=False, gain=1.0, phase=0, flicker=1.0, tall=True, fill=True, eyes=True,
+          lettering=None):
     """Wide, quiet, bottom-heavy. You, from behind, inside a ring of lit wards, in the beat
     before it starts. Sells preparation rather than the fight - and it is the only screen
     where the player character is the largest thing on frame."""
@@ -185,6 +187,9 @@ def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
                                 (86, 452, 66, 40, 241)]),
     }
     wd = WOODS[wood]
+    # Which layout of THE ONE HE MISSED goes on (tools/art/title_lettering.py). Only the
+    # comparison sheet passes anything but the shipping one.
+    lettering = lettering or title_lettering.SHIPPING
     _tone_rng = random.Random(9631)
 
     def tone(pool, fallback):
@@ -413,8 +418,8 @@ def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
 
     # Boughs reaching in from off the top corners, then a canopy of loose leaf mass filling
     # the sky around them. CLEAR is the one hole left in it - the break you are looking up
-    # through - and it is sized and placed to hold the wordmark, which does not move.
-    CLEAR = (180, 108, 150, 66)
+    # through - and it is sized and placed to hold the lettering (_clear_for).
+    CLEAR = _clear_for(lettering)
     for (bx, by, ba, bl, bw, bs) in [(-18, 26, 0.30, 62, 5.0, 101), (-10, -12, 0.62, 56, 4.4, 107),
                                      (376, 34, 2.84, 60, 5.0, 113), (368, -8, 2.52, 54, 4.4, 127),
                                      (-16, 150, -0.22, 52, 3.6, 131), (374, 158, 3.36, 50, 3.6, 137),
@@ -523,8 +528,17 @@ def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
         # near arc of the circle, which put the brightest thing in the frame behind a hedge.
         if ((gx - 180) / 168.0) ** 2 + ((gy2 - 574) / 74.0) ** 2 < 1.0:
             continue
-        sk.grass(T("fore"), gx, gy2, 10 + (gy2 - 582) * 0.44, seed=rf.randrange(9999),
-                 dark=OCC, light=M["stone"][4])
+        gh, lit_blade = 10 + (gy2 - 582) * 0.44, M["stone"][4]
+        # In the tall frame, straight under the ring the tufts thin out, start short and catch
+        # the ward's light (_under_ring) - the black hedge they made there was the phone's dark
+        # patch. The keep test hashes the position rather than drawing from rf, so every tuft
+        # and bush after this one is the one it always was.
+        if tall:
+            w, gh, lit_blade = _under_ring(gx, gy2 - LIFT + TOP, gh, lit_blade)
+            if w and _hash01(gx, gy2) < UNDER_RING_DROP * w:
+                rf.randrange(9999)
+                continue
+        sk.grass(T("fore"), gx, gy2, gh, seed=rf.randrange(9999), dark=OCC, light=lit_blade)
     for _ in range(70):
         side = -1 if rf.random() < 0.5 else 1
         gx = 180 + side * (150 + rf.randrange(0, 62))
@@ -583,7 +597,7 @@ def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
     # two of these screens unreadable.
     for _n in (STAGES if layers else ("backA",)):
         _cv[_n].vignette([None, None, M["stone"][4], OCC], 2.2, only_opaque=layers)
-    _vigil_wordmark(T("backB"))
+    _vigil_wordmark(T("backB"), lettering)
     # No PRESS ANY BUTTON baked in. It ships as its own transparent texture (prompt_asset below)
     # so the scene can fade and breathe it, which a pixel painted into the background cannot do.
     #
@@ -598,17 +612,29 @@ def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
     # front of the eyes is drawn - which is what makes stamping them last give the same picture
     # as stamping them on their own stage, in the flat render and the layers alike.
     if eyes:
-        title_eyes.stamp_all(_cv["eyes"], vigil_eyes(), 0 if tall else -TOP)
+        title_eyes.stamp_all(_cv["eyes"], vigil_eyes(lettering), 0 if tall else -TOP)
     if layers:
         return _cv
     return _cv["backA"], "vigil", "Vigil"
 
 
-def _vigil_wordmark(c):
-    sk.wordmark(c, 180, 78,
-                [M["skin"][0], M["skin"][0], M["skin"][1], M["skin"][2], M["skin"][3]],
-                [M["gold"][0], M["gold"][1], M["gold"][2]],
-                halo=OCC)
+def _vigil_wordmark(c, lettering):
+    """THE ONE HE MISSED, in the layout named (tools/art/title_lettering.py). It was the two-line
+    WIZARD SURVIVORS here until the game was renamed on 2026-11-02."""
+    title_lettering.draw(c, lettering, "tall")
+
+
+def _clear_for(lettering):
+    """The break in the canopy the lettering sits in, (cx, cy, rx, ry), grown from its box.
+
+    WIZARD SURVIVORS was 186 wide and its hole (180, 108, 150, 66) left about 55 columns of sky
+    beyond each end and 29 rows above and below; the same margins round THE ONE HE MISSED, which is
+    272 wide, would open the hole wider than the frame and take every leaf off the title's rows.
+    So the hole is the box plus a smaller margin across, at least the old one, and its lobing
+    (splashkit.canopy) lets a few clumps reach in behind the ends of the lines - which reads as
+    the lettering standing in front of the leaves rather than as a hole cut to fit it."""
+    x0, y0, x1, y1 = title_lettering.box(lettering, "tall")
+    return (180, (y0 + y1) // 2, max(150, (x1 - x0) // 2 + 22), max(66, (y1 - y0) // 2 + 26))
 
 
 # Where the menu sits over the art: MainMenu.PinToArtRows(buttons, 340, 550, halfWidth: 230), in
@@ -625,27 +651,26 @@ PROMPT_ROWS = ((0, 686, W - 1, 710), (0, 756, W - 1, 780))
 EYE_GROUPS = [("near", (6, 224, W - 7, 382), 7),
               ("far", (6, 412, W - 7, 476), 9)]
 EYE_SEED = 5
-_EYES = []
+_EYES = {}
 
 
-def vigil_eyes():
+def vigil_eyes(lettering=None):
     """Where every pair of eyes goes, in tall-frame pixels: worked out on the finished layers of
-    the default render, and memoised - a flat render needs the same answer and has no layers to
-    work it out from. See tools/art/title_eyes.py."""
-    if _EYES:
-        return _EYES
-    cv = vigil(layers=True, eyes=False)
-    word = raster.Canvas(W, H)
-    _vigil_wordmark(word)
-    wb = word.img.getbbox()
-    # The wordmark and the menu under it as ONE box: the slot between them is a few rows of dark
-    # wood, and a pair in it sat right under SURVIVORS and read as part of the type.
+    the default render, and memoised per lettering - a flat render needs the same answer and has
+    no layers to work it out from. See tools/art/title_eyes.py."""
+    lettering = lettering or title_lettering.SHIPPING
+    if lettering in _EYES:
+        return _EYES[lettering]
+    cv = vigil(layers=True, eyes=False, lettering=lettering)
+    wb = title_lettering.box(lettering, "tall")
+    # The lettering and the menu under it as ONE box: the slot between them is a few rows of dark
+    # wood, and a pair in it sat right under the second line and read as part of the type.
     keep = [(min(wb[0], MENU_ROWS[0]), wb[1] + TOP, max(wb[2] - 1, MENU_ROWS[2]), MENU_ROWS[3])]
     keep += list(PROMPT_ROWS)
     field = title_eyes.Field(title_eyes.composite(cv, STAGES), title_eyes.blocked(cv), keep)
-    _EYES.extend(title_eyes.place(field, EYE_GROUPS, EYE_SEED))
-    print("vigil eyes: " + title_eyes.report(_EYES))
-    return _EYES
+    _EYES[lettering] = title_eyes.place(field, EYE_GROUPS, EYE_SEED)
+    print("vigil eyes (%s): %s" % (lettering, title_eyes.report(_EYES[lettering])))
+    return _EYES[lettering]
 
 
 # ------------------------------------------------------------ THE TALL FRAME
@@ -755,6 +780,59 @@ def _taper(c, y0, y1, keep_above):
 WARD_C = (180, 568 - LIFT + TOP)
 
 
+# How many of the foreground tufts straight under the ring are left out (x the weight _under_ring
+# gives them). See there for why it has to be nearly all of them.
+UNDER_RING_DROP = 0.9
+
+
+def _hash01(x, y):
+    """A fixed pseudo-random number in [0, 1) for a position, for a decision that must not draw
+    from a random stream (drawing would move everything drawn after it)."""
+    h = (int(x) * 73856093) ^ (int(y) * 19349663) ^ 0x5BD1E995
+    h = (h ^ (h >> 13)) * 1274126177
+    return ((h ^ (h >> 16)) & 0xFFFF) / 65536.0
+
+
+def _under_ring(x, y, gh, light):
+    """THE PHONE'S DARK PATCH. How far a foreground tuft rooted at (x, y), tall-frame rows, stands
+    straight under the ring - and what that does to it. Returns (w, height, lit blade colour).
+
+    The foreground grass is the nearest plane and flat occlusion, and its tufts are tall: rooted
+    just below the ward's keep-out, forty-odd rows of blade reached straight up to the ring's lower
+    arc, and between vigil()'s grass and the mat _ground_falloff carries on it covered 91-98% of
+    rows 670-710 across the middle of the frame. That was a black slab right under the brightest
+    thing on screen, and on a phone it is in the middle of the screen (Eric flagged it more than
+    once; the PC's was fixed by taking its UI pockets out from under the ward, but the phone's was
+    the grass itself). So under the ring, and only there:
+      - fewer tufts (the caller drops up to UNDER_RING_DROP of them, by w), so the lit ground
+        shows between. It has to be most of them: the mat is saturated - about seven blades over
+        every pixel - so dropping 62% left the patch 87% covered (see _mat_keep, the same lesson);
+      - short ones near the ring (6 rows, plus a third of a row for every row further down, so
+        back to full height about 125 rows below the arc): the nearest grass is a fringe in front
+        of the light rather than a hedge across it;
+      - the one blade per tuft that catches light catches the ward's, in gold pigment near the
+        ring and lichen further off, instead of stone.deep.
+    w is 1 straight under the ring and falls to 0 just past either end of it and 150 rows down,
+    by smoothstep both ways, so none of it starts on a line."""
+    cx, cy = WARD_C
+    ax = abs(x - cx) / 152.0
+    if ax >= 1.12:
+        return 0.0, gh, light
+    arc = cy + 41.0 * math.sqrt(max(0.0, 1.0 - min(1.0, ax) ** 2))     # the ring's lower edge
+    d = max(0.0, y - arc)
+    u = min(1.0, max(0.0, (1.12 - ax) / 0.40))
+    v = min(1.0, max(0.0, 1.0 - d / 150.0))
+    w = (u * u * (3.0 - 2.0 * u)) * (v * v * (3.0 - 2.0 * v))
+    if w <= 0.0:
+        return 0.0, gh, light
+    gh = gh + (min(gh, 6.0 + d * 0.32) - gh) * min(1.0, u * 1.5)
+    if w > 0.55:
+        light = M["gold"][3] if d < 40 else M["lichen"][3]
+    elif w > 0.2:
+        light = M["lichen"][4]
+    return w, gh, light
+
+
 def _wobble(x, k):
     """A slow, irregular horizontal wobble in -1..1: three sines at unrelated frequencies. What
     makes a falloff edge read as ground going dark unevenly rather than as a drawn ellipse."""
@@ -772,7 +850,12 @@ def _falloff_t(x, y):
     texture the rest of the way into occlusion by the bottom row."""
     cx, cy = WARD_C
     rx = 196.0 * (1.0 + 0.12 * _wobble(x, 0.7))
-    ry = 58.0 * (1.0 + 0.22 * _wobble(x, 1.9))
+    # 84 below the ward, not the pool's own 58. The floor runs toward the camera down here, so the
+    # same distance on the ground covers more rows of screen the lower it is, and at 58 the light
+    # died within about forty rows of the ring - with the foreground mat in front of it, that was
+    # the dark patch under the ring on a phone (Eric, more than once). Only rows below the ward
+    # read this at all (the gate below), so the treeline is untouched.
+    ry = 84.0 * (1.0 + 0.22 * _wobble(x, 1.9))
     e = math.sqrt(((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2)
     t = min(2.7, max(0.0, (e - 0.90) / 0.85 * 2.7))
     # Only below the ward. The same ellipse above it would darken the treeline, so it is gated
@@ -885,8 +968,13 @@ def _ground_falloff(out, layers):
         # and vigil()'s height rule, carried on from where it stopped, capped where it would
         # start to reach the ring from below
         gh = min(46.0, 10 + (gy - TOP + LIFT - 582) * 0.44)
+        # ...and, straight under the ring, thinner, shorter and catching the light, as vigil()'s
+        # own grass does there (_under_ring).
+        w, gh, lit_blade = _under_ring(gx, gy, gh, M["stone"][4])
+        if w and rng.random() < UNDER_RING_DROP * w:
+            continue
         sk.grass(f, gx, gy, gh * (0.9 + rng.random() * 0.2), seed=rng.randrange(9999),
-                 dark=OCC, light=M["stone"][4])
+                 dark=OCC, light=lit_blade)
     _over(out["fore"], f)
 
     seen = []
