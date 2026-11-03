@@ -3,7 +3,7 @@
 
 Run: python tools/art/hint_cues.py
 
-One sheet, assets/bonelight/effects/hint-cues.png: seven rows (one per cue) of eight 16x16 cells,
+One sheet, assets/bonelight/effects/hint-cues.png: one row per cue, each of eight 16x16 cells,
 authored 1:1 and drawn at x3 by StageHintCue (48 world units, the attack icons' size - x2 was a
 speck on the phone). See .ai/side-events.md, "Hints that something is out there".
 
@@ -30,6 +30,10 @@ THE ROW ORDER IS AN API: HintCue's order (scripts/StageHintCatalog.cs).
   paper    the seal       a strip of written paper - one of his wards - turning end over end in four
                           steps (0-3), then the same four burning at both ends (4-7): "more paper,
                           burning at the edges as it falls"
+  writ     the mouths     a written leaf on a cold draught - the grove's leaf turning, a quarter-turn
+                          ahead of it, with two lines of ink down it instead of a vein; paper in a cold
+                          light, from the water ramp's pale end (NineMouthsEvent also blows them out
+                          of the mouths in the world)
 
 Each wears its event's far-tell colour (SideEvent.FarTellColor) as its body, so the cue is the
 colour of the light the player will find: wind's ramp for the grove's lichen grey-green, arcane

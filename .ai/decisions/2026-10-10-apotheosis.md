@@ -42,6 +42,7 @@ more damage". The validator enforces it.
 | Tituba | Riptide | Spring Tide | flood |
 | Väinämöinen | Bramble Seed | Wildwood | swarm |
 | John Dee | Hollow Star | The Spirit Mirror | pull |
+| the Cumaean Sibyl | Arcane Explosion | The Hundred Mouths | echo (2026-11-02, `.ai/chapter-wizards.md` 4.3) |
 
 Unclaimed, for wizards still to come: banish, contagion, rewind, displace, reflect. (Pull went to
 John Dee on 2026-10-22: Hollow Star is the roster's one spell about pulling, and the collector's
