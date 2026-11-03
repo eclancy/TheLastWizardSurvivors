@@ -51,6 +51,8 @@ public partial class Player : CharacterBody2D
 	// The dark wizard's own spell (.ai/dark-wizard-playable.md): the hand (scripts/TheTaking.cs); the light it
 	// tears out and the lanes a caught light throws are made in code (TakenLight, TakingLanes).
 	[Export] public PackedScene TheTakingScene { get; set; }
+	// Merlin's own spell (.ai/merlin.md): the ward and the orb that ricochets in it (scripts/OrbOfAges.cs).
+	[Export] public PackedScene OrbOfAgesScene { get; set; }
 	// The three found spells (.ai/side-events.md): each is a Discovery unlock from a side event.
 	[Export] public PackedScene IronPalisadeScene { get; set; }
 	[Export] public PackedScene ContagionScene { get; set; }
@@ -613,6 +615,11 @@ public partial class Player : CharacterBody2D
 	// horde is his own making, and it knows him.
 	public const float CharacterDreadFearScale = 2f;
 	private float characterFearScale = 1f;
+	// Warding Hand (Merlin, .ai/merlin.md): whatever touches him and lands a hit is thrown back this fast
+	// (Enemy.ApplyKnockback: a speed held for most of its knockback time, about 80 px of ground). Bosses resist it
+	// as they resist every shove. Protection by holding them off - no heal, no armour.
+	public const float CharacterWardingHandThrow = 220f;
+	private float characterWardingHandThrow = 0f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -848,6 +855,9 @@ public partial class Player : CharacterBody2D
 		// The dark wizard (.ai/dark-wizard-playable.md): Dread - his Darkness hits frighten twice as often. Crowd
 		// control as a passive, an axis no other wizard owns, and it never touches damage.
 		"fear_x2",
+		// Merlin (.ai/merlin.md): Warding Hand - whatever touches him is thrown back. Holding the dark off as a
+		// passive, an axis no other wizard owns: not armour (the Geomancer), not a heal (.ai/difficulty-curve.md).
+		"repel_on_hit",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -889,6 +899,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "fear_x2":
 				characterFearScale = CharacterDreadFearScale;
+				return true;
+			case "repel_on_hit":
+				characterWardingHandThrow = CharacterWardingHandThrow;
 				return true;
 			default:
 				return false;
@@ -1060,6 +1073,8 @@ public partial class Player : CharacterBody2D
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Stormsweep.tres"));
 		if (!spellCatalog.ContainsKey("sleet_runes"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_SleetRunes.tres"));
+		if (!spellCatalog.ContainsKey(OrbOfAges.SpellId))
+			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_OrbOfAges.tres"));
 		if (!spellCatalog.ContainsKey("iron_palisade"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_IronPalisade.tres"));
 		if (!spellCatalog.ContainsKey("contagion"))
@@ -1214,6 +1229,14 @@ public partial class Player : CharacterBody2D
 				targeting = SpellTargetingMode.Facing;
 				shape = SpellDamageShape.ProjectileHit;
 				tags |= SpellScalingTag.ProjectileCount | SpellScalingTag.ProjectileSpeed | SpellScalingTag.Pierce | SpellScalingTag.Range;
+				break;
+			case "orb_of_ages":
+				// Merlin's (.ai/merlin.md): a ward drawn at his feet and an orb ricocheting inside it. It aims at
+				// nothing - Self, as for Mirefoot and Starfall - and the ward is a zone that stands. Area widens the
+				// ring, Duration is how long it stands; its level table is written out in full in the .tres.
+				targeting = SpellTargetingMode.Self;
+				shape = SpellDamageShape.PersistentZone;
+				tags |= SpellScalingTag.Area | SpellScalingTag.Duration;
 				break;
 			case "iron_palisade":
 				// Placed between the player and the nearest pack, facing it.
@@ -4011,7 +4034,10 @@ public partial class Player : CharacterBody2D
 				if (enemy is Enemy toucher)
 					contactDamage = toucher.ScaleOutgoingDamage(contactDamage);
 				if (contactDamage > 0)
+				{
 					TakeDamage(contactDamage);
+					RepelToucher(enemy);
+				}
 				PlayEnemyAttackAnimation(enemy);
 				enemyDamageCooldowns[enemy] = 0f;
 			}
@@ -4332,6 +4358,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals("stormsweep", StringComparison.OrdinalIgnoreCase)) outcome = FireStormsweep(spell, StormsweepScene);
 		else if (spell.Id.Equals("sleet_runes", StringComparison.OrdinalIgnoreCase)) outcome = FireSleetRunes(spell, SleetRunesScene);
 		else if (spell.Id.Equals(TheTaking.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireTheTaking(spell, TheTakingScene);
+		else if (spell.Id.Equals(OrbOfAges.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireOrbOfAges(spell, OrbOfAgesScene);
 		else if (spell.Id.Equals("gravewell", StringComparison.OrdinalIgnoreCase)) outcome = FireGravewellTrap(spell, GravewellScene);
 		else if (spell.Id.Equals("hollow_star", StringComparison.OrdinalIgnoreCase)) outcome = FireHollowStar(spell, HollowStarScene);
 		else if (spell.Id.Equals("iron_palisade", StringComparison.OrdinalIgnoreCase)) outcome = FireIronPalisade(spell, IronPalisadeScene);
@@ -5217,6 +5244,115 @@ public partial class Player : CharacterBody2D
 				hand.Modulate = Colors.White;
 		}
 		return CastOutcome.Fired;
+	}
+
+	// ORB OF AGES (.ai/merlin.md): Merlin's own. A cast draws the ward where he stands and sends the orb round its
+	// star; while the ward stands the cooldown only keeps it current (Maintained, silent), and when it closes - he
+	// stepped out, or its time ran - the orb flies home and the ward restarts the cooldown itself
+	// (RestartSpellCooldown), so the rest begins when the orb is in his hand. NoTarget with nothing near enough to
+	// ward against, so a ward is never drawn on an empty field.
+	public const float OrbWardRadius = 140f;
+	public const float OrbSpeed = 760f;
+	public const float OrbWardSeconds = 6f;
+	/// <summary>How far past the ring an enemy may stand and still be worth drawing a ward against.</summary>
+	public const float OrbWakeReach = 120f;
+	private OrbOfAges orbWard;
+
+	private CastOutcome FireOrbOfAges(SpellData spell, PackedScene scene)
+	{
+		if (scene == null) return CastOutcome.NoTarget;
+		Node2D arena = GetParent<Node2D>();
+		if (arena == null) return CastOutcome.NoTarget;
+
+		int level = spell.CurrentLevel;
+		int damage = Math.Max(1, Mathf.RoundToInt(spell.GetDamageAtLevel(level) * GetSpellDamageMultiplier(spell)));
+		float area = GetEffectiveAreaMultiplier() * spell.GetAreaMultiplierAtLevel(level)
+			* (1f + spell.GetEffectValueAtLevel(SpellEffect.AreaSize, level));
+		float radius = OrbWardRadius * area;
+		float seconds = (OrbWardSeconds + spell.GetEffectValueAtLevel(SpellEffect.ZoneDuration, level)) * durationMultiplier;
+		// The orb crosses a wider ring in the same time - a star keeps its rhythm however big the ward grows.
+		float speed = OrbSpeed * MathF.Max(0.25f, spell.GetSpeedMultiplier()) * MathF.Max(1f, area);
+		int orbs = Math.Max(1, spell.GetProjectileCountAtLevel(level) + AmountFor(spell));
+
+		// A ward standing: kept current - a level taken mid-ward reaches it - and the cooldown spent quietly.
+		if (orbWard != null && IsInstanceValid(orbWard))
+		{
+			if (orbWard.Closing)
+				return CastOutcome.NoTarget;
+			orbWard.Damage = damage;
+			orbWard.Radius = radius;
+			orbWard.OrbSpeed = speed;
+			orbWard.WeakenDurationScale = durationMultiplier;
+			orbWard.OnceAndFuture = spell.HasEvolution(OrbOfAges.OnceAndFutureId);
+			return CastOutcome.Maintained;
+		}
+		orbWard = null;
+
+		// The first point of the star faces the nearest enemy, so the orb's first stroke goes toward the threat.
+		Enemy nearest = null;
+		float best = (radius + OrbWakeReach) * (radius + OrbWakeReach);
+		foreach (Enemy body in EnemyRegistry.Snapshot)
+		{
+			if (body == null || !IsInstanceValid(body) || body.IsDying)
+				continue;
+			float d = GlobalPosition.DistanceSquaredTo(body.GlobalPosition);
+			if (d < best)
+			{
+				best = d;
+				nearest = body;
+			}
+		}
+		if (nearest == null)
+			return CastOutcome.NoTarget;
+
+		var ward = scene.Instantiate<Node2D>();
+		if (ward is not OrbOfAges script)
+		{
+			ward.QueueFree();
+			return CastOutcome.NoTarget;
+		}
+		script.SpellData = spell;
+		script.PlayerRef = this;
+		script.Damage = damage;
+		script.Radius = radius;
+		script.OrbSpeed = speed;
+		script.WardSeconds = seconds;
+		script.WeakenDurationScale = durationMultiplier;
+		script.Orbs = orbs;
+		script.FirstPointAngle = (nearest.GlobalPosition - GlobalPosition).Angle();
+		script.BurningRim = spell.HasEvolution(OrbOfAges.BurningRimId);
+		script.MissileWard = spell.HasEvolution(OrbOfAges.MissileWardId);
+		script.Walking = spell.HasEvolution(OrbOfAges.WalkingWardId);
+		script.OnceAndFuture = spell.HasEvolution(OrbOfAges.OnceAndFutureId);
+		ward.GlobalPosition = GlobalPosition;
+		arena.AddChild(TagSpell(ward));
+		ApplyLegendaryVisual(ward, spell);
+		// It draws its own size and its own colours: no card's scale or tint reaches it (a legendary roll keeps its
+		// gold, as Kindled Ward's does).
+		ward.Scale = Vector2.One;
+		if (!spell.IsLegendary)
+			ward.Modulate = Colors.White;
+		orbWard = script;
+		return CastOutcome.Fired;
+	}
+
+	/// <summary>
+	/// Starts a spell's cooldown again from nothing: Orb of Ages, whose rest begins when the orb is home rather than
+	/// when the ward was drawn (OrbOfAges.FlyHome).
+	/// </summary>
+	public void RestartSpellCooldown(string spellId)
+	{
+		if (!string.IsNullOrWhiteSpace(spellId) && spellFireTimers.ContainsKey(spellId))
+			spellFireTimers[spellId] = 0f;
+	}
+
+	// Warding Hand (Merlin): whatever has just struck him by touch is thrown back, straight away from him.
+	private void RepelToucher(Node toucher)
+	{
+		if (characterWardingHandThrow <= 0f || toucher is not Enemy body || body.IsDying)
+			return;
+		Vector2 away = body.GlobalPosition - GlobalPosition;
+		body.ApplyKnockback((away.LengthSquared() > 0.01f ? away.Normalized() : Vector2.Right) * characterWardingHandThrow);
 	}
 
 	// Starfall (scripts/Starfall.cs): a rain that follows the player and aims at nothing. One node in
@@ -7595,6 +7731,11 @@ public partial class Player : CharacterBody2D
 				if (WasFusedAway(template.Id))
 					continue;
 
+				// Another wizard's alone (UnlockDefinition.ExclusiveTo: Merlin's Orb of Ages) is never dealt to
+				// this one, whatever the save owns - nor to the Test Wizard, who is nobody's.
+				if (!UnlockCatalog.MayBeOffered(template.Id, selectedCharacter?.Id))
+					continue;
+
 				// The character's own starting spell is always offerable, unlocked or not. A rescued
 				// wizard opens on a spell the save may not own yet (Tituba's Riptide is a boss reward).
 				// It used to matter because a swap could erase it; nothing can now (the Penknife spares
@@ -8512,7 +8653,10 @@ public partial class Player : CharacterBody2D
 				if (body is Enemy toucher)
 					contactDamage = toucher.ScaleOutgoingDamage(contactDamage);
 				if (contactDamage > 0)
+				{
 					TakeDamage(contactDamage);
+					RepelToucher(body);
+				}
 				PlayEnemyAttackAnimation(body);
 				enemyDamageCooldowns[body] = 0f;
 			}

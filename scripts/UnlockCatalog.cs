@@ -107,6 +107,16 @@ public sealed class UnlockDefinition
 	/// </summary>
 	public bool SealedUntilFreed { get; init; }
 
+	/// <summary>
+	/// A spell that is one wizard's alone: the character id it belongs to, empty for every spell anyone may be dealt.
+	/// It is never offered to another wizard - not as a level-up card, whatever the save owns
+	/// (<see cref="UnlockCatalog.MayBeOffered"/>, read by Player.GetLevelUpOptions) - and The Grimoire Restored does
+	/// not count it (<see cref="UnlockCatalog.GrimoireSpellIds"/>): it was never taken from anyone, so it is not
+	/// recovered, and counting it would put the collection behind the whole road. The Codex still shows it, owned
+	/// once he is. Merlin's Orb of Ages (.ai/merlin.md; Eric, 2026-11-02: "a starter spell that no one else has").
+	/// Spells only.
+	/// </summary>
+	public string ExclusiveTo { get; init; } = string.Empty;
 }
 
 /// <summary>
@@ -315,6 +325,23 @@ public static class UnlockCatalog
 		FromAchievementCharacter("dark_wizard", AchievementDefinitions.TakerTakenId,
 			"Something waits for whoever walks the whole road the hard way.",
 			outsideCampaignGate: true, sealedUntilFreed: true),
+		// THE ONE HE MISSED (.ai/merlin.md). Merlin, the title screen's blue-robed figure - the one the dark wizard
+		// missed, who hid while the others were taken (the prologue) - playable once every chapter's boss has fallen
+		// on Default or harder. Outside the campaign gate, as Laelaps is: he was never imprisoned, and the gates count
+		// the imprisoned. Not secret: his shape and this line are on the character select from the first run.
+		FromAchievementCharacter("merlin", AchievementDefinitions.OneHeMissedId,
+			"Defeat every chapter's boss on Default or harder.",
+			outsideCampaignGate: true),
+		// His own spell, paid with him and offered to no one else (ExclusiveTo). The hint does not name him.
+		new()
+		{
+			Id = OrbOfAges.SpellId,
+			Kind = UnlockKind.Spell,
+			Source = UnlockSource.Achievement,
+			SourceId = AchievementDefinitions.OneHeMissedId,
+			LockedHint = "One wizard's own: defeat every chapter's boss on Default or harder.",
+			ExclusiveTo = "merlin",
+		},
 	};
 
 	private static UnlockDefinition Starter(string id, UnlockKind kind) => new()
@@ -462,10 +489,25 @@ public static class UnlockCatalog
 	/// <summary>
 	/// What The Grimoire Restored counts: every spell but the combinations. A combination is made, not
 	/// recovered, and asking for all of them would make the collection a test of every Ascension pair
-	/// (Eric, 2026-11-02). The Taking, the dark wizard's own, is one of them.
+	/// (Eric, 2026-11-02). The Taking, the dark wizard's own, is one of them. Nor a spell that is one wizard's alone
+	/// (<see cref="UnlockDefinition.ExclusiveTo"/>: Merlin's Orb of Ages), which was never taken, so is never recovered.
 	/// </summary>
 	public static IEnumerable<string> GrimoireSpellIds =>
-		AllSpellIds.Where(id => !ComboCatalog.IsCombination(id));
+		AllSpellIds.Where(id => !ComboCatalog.IsCombination(id) && string.IsNullOrEmpty(GetSpell(id)?.ExclusiveTo));
+
+	/// <summary>The wizard a spell belongs to alone (<see cref="UnlockDefinition.ExclusiveTo"/>), or empty.</summary>
+	public static string ExclusiveOwnerOf(string spellId) => GetSpell(spellId)?.ExclusiveTo ?? string.Empty;
+
+	/// <summary>
+	/// Whether this wizard may ever be dealt this spell: true for every spell but one that is another wizard's alone
+	/// (<see cref="UnlockDefinition.ExclusiveTo"/>). Ownership is the save's question (GlobalStatsManager); this is
+	/// only who the spell is for. Read by Player.GetLevelUpOptions and held by RegressionChecks.ValidateTakerTaken.
+	/// </summary>
+	public static bool MayBeOffered(string spellId, string characterId)
+	{
+		string owner = ExclusiveOwnerOf(spellId);
+		return string.IsNullOrEmpty(owner) || owner.Equals(characterId ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+	}
 
 	/// <summary>
 	/// Every wizard, excluding the development sandbox entry and anyone outside the campaign gate (a

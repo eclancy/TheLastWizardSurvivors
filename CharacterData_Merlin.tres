@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_OrbOfAges.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/merlin-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/MerlinFrames.tres" id="4"]
+
+; The one he missed (.ai/merlin.md): the title screen's blue-robed figure, who hid while every other wizard was
+; taken (the prologue). Eric, 2026-11-02: "merlin is perfect, as one that uses his magic to protect others."
+; Playable once every chapter's boss has fallen on Default or harder (the_one_he_missed); outside the campaign
+; gate, since he was never imprisoned. He opens on Orb of Ages, his alone (UnlockDefinition.ExclusiveTo): a ward
+; drawn where he stands and the orb of his staff ricocheting in it. His passive is Warding Hand: whatever touches
+; him is thrown back.
+[resource]
+script = ExtResource("1")
+Id = "merlin"
+Name = "Merlin"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "repel_on_hit"
+StartingPassiveName = "Warding Hand"
+StartingPassiveDescription = "Whatever touches you is thrown back"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

@@ -293,6 +293,11 @@ public static class EvolutionStatReaders
 				| EvolutionStat.Rider | EvolutionStat.Amount,
 			"Player.FireTheTaking (Projectiles and Amount are hands a cast, Range the reach a quarry is found in, Area the lanes and the burn; the star and the great hand by level, All He Took by id, in TheTaking and TakingLanes)",
 			SpellEffect.AreaSize, SpellEffect.CritDamage),
+		// Merlin's own (.ai/merlin.md): what Player.FireOrbOfAges reads into the ward. Projectiles and Amount are orbs,
+		// Area the ring, Speed the orb; the cards' behaviour by id in OrbOfAges.
+		["orb_of_ages"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Area | EvolutionStat.Speed | EvolutionStat.Amount,
+			"Player.FireOrbOfAges (Projectiles and Amount are orbs, Area the ring, Speed the orb, ZoneDuration the ward's time; Burning Rim, Missile Ward, Walking Ward and The Once and Future by id, in OrbOfAges)",
+			SpellEffect.AreaSize, SpellEffect.ZoneDuration, SpellEffect.CritDamage),
 		["glacial_spike"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider | EvolutionStat.Amount,
 			"IceSpike.RefreshComputedStats and Player.FireIceSpikes (Amount is more spikes; Shatter, Spike Run, Rimefoot, Glacier Crown and Frozen Spire by id, through ThrownShards, FrostPatch and GlacierCrown)",

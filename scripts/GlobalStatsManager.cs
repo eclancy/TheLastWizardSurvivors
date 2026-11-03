@@ -646,6 +646,90 @@ public static class GlobalStatsManager
 		};
 	}
 
+	// --- the hardest clear of every chapter (SaveData.MaxDifficultyCleared) -----------------------------------
+	//
+	// Eric, 2026-11-02: "dark wizard should unlock after defeating all stages on hard mode" and the blue-robed
+	// wizard "unlocked when finishing the full campaign on medium". Easy, medium and hard are the Options
+	// difficulty presets, Casual, Default and Hardcore, ranked 0, 1 and 2 here. Each chapter keeps the highest
+	// rank its boss has fallen on (RecordChapterClear, from AchievementManager.ApplyRunAchievements), and the two
+	// deeds read it through ClearedEveryChapterAt. The field was saved and loaded since the first save format
+	// and never written, so no save holds a stale value in it.
+
+	public const int PresetRankCasual = 0;
+	public const int PresetRankDefault = 1;
+	public const int PresetRankHardcore = 2;
+
+	/// <summary>Casual 0, Default 1, Hardcore 2: how hard a preset is, for "this hard or harder".</summary>
+	public static int PresetRank(string? presetId) => NormalizeBalancePresetId(presetId) switch
+	{
+		BalancePresetCasual => PresetRankCasual,
+		BalancePresetHardcore => PresetRankHardcore,
+		_ => PresetRankDefault,
+	};
+
+	/// <summary>
+	/// The chapter whose boss this run beat, and the rank of the preset it was played on: a victory with a boss
+	/// (a Boss Rush records none, Node2DGame.BuildRunResult), at the boss's own chapter (BossCatalog). Null for
+	/// anything else.
+	/// </summary>
+	public static (string StageId, int Rank)? ChapterClearOf(global::RunResult run)
+	{
+		if (run == null || run.Outcome != global::RunOutcome.Victory || string.IsNullOrWhiteSpace(run.BossId))
+			return null;
+		BossDefinition boss = BossCatalog.GetById(run.BossId);
+		int index = boss != null ? BossCatalog.StageIndexOf(boss) : -1;
+		StageDefinition stage = index >= 0 ? StageCatalog.GetByIndex(index) : null;
+		return stage == null ? null : (stage.Id, PresetRank(run.BalancePresetId));
+	}
+
+	/// <summary>
+	/// Writes a boss victory into <see cref="SaveData.MaxDifficultyCleared"/>: its chapter keeps the hardest
+	/// preset its boss has fallen on, never a lower one. True when the record rose.
+	/// </summary>
+	public static bool RecordChapterClear(SaveData data, global::RunResult run)
+	{
+		if (data == null || ChapterClearOf(run) is not (string stageId, int rank))
+			return false;
+		data.MaxDifficultyCleared ??= new Dictionary<string, int>();
+		if (data.MaxDifficultyCleared.TryGetValue(stageId, out int kept) && kept >= rank)
+			return false;
+		data.MaxDifficultyCleared[stageId] = rank;
+		return true;
+	}
+
+	/// <summary>
+	/// The hardest preset this chapter's boss has fallen on, -1 if never. With <paramref name="run"/>, as if that
+	/// run had been recorded too - the pause tab's projection, which reads the save before the run's end writes it.
+	/// </summary>
+	public static int HardestClearOf(SaveData data, string stageId, global::RunResult run = null)
+	{
+		int best = -1;
+		if (data?.MaxDifficultyCleared != null && !string.IsNullOrWhiteSpace(stageId))
+		{
+			foreach (KeyValuePair<string, int> entry in data.MaxDifficultyCleared)
+			{
+				if (entry.Key.Equals(stageId, StringComparison.OrdinalIgnoreCase))
+					best = Math.Max(best, entry.Value);
+			}
+		}
+		if (ChapterClearOf(run) is (string runStage, int runRank) && runStage.Equals(stageId ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+			best = Math.Max(best, runRank);
+		return best;
+	}
+
+	/// <summary>How many of the campaign's chapters have been cleared at <paramref name="rank"/> or harder.</summary>
+	public static int ChaptersClearedAt(SaveData data, int rank, global::RunResult run = null) =>
+		StageCatalog.Campaign.Count(stage => HardestClearOf(data, stage.Id, run) >= rank);
+
+	/// <summary>
+	/// Every chapter of the campaign (StageCatalog.Campaign) has had its boss beaten at <paramref name="rank"/> or
+	/// harder. COUNTING THE CHAPTERS NOT YET PLAYABLE (the Court and the Throne today): neither deed that reads
+	/// this - the Dark Wizard's on Hardcore, Merlin's on Default - can be earned until the whole campaign exists
+	/// and has been beaten. A chapter outside the campaign (the Sketchbook) is not asked for.
+	/// </summary>
+	public static bool ClearedEveryChapterAt(SaveData data, int rank, global::RunResult run = null) =>
+		StageCatalog.Campaign.Count > 0 && ChaptersClearedAt(data, rank, run) == StageCatalog.Campaign.Count;
+
 	public static float GetArcaneRewardScaleForPreset(string? presetId)
 	{
 		return NormalizeBalancePresetId(presetId) switch

@@ -177,6 +177,9 @@ public static class SpellEvolutionCatalog
 			case "sleet_runes":
 				SetupSleetRunesEvolutions(spell);
 				break;
+			case OrbOfAges.SpellId:
+				SetupOrbOfAgesEvolutions(spell);
+				break;
 			default:
 				SetupDefaultArchetypeEvolutions(spell);
 				break;
@@ -3543,6 +3546,39 @@ public static class SpellEvolutionCatalog
 	// fire loop, the arc's length and band through GetAreaMultiplierAtLevel, its tempo through
 	// GetSpeedMultiplier, and the four behaviours through HasEvolution. No ScaleMultiplier: the arc is
 	// drawn out of the band it sweeps.
+	// Orb of Ages (scripts/OrbOfAges.cs, .ai/merlin.md): Merlin's own - a ward drawn where he stands and the orb
+	// ricocheting inside it along a seven-pointed star, weakening what it strikes. Every card is something more the
+	// WARD does, his theme being magic that protects: its rim bites, a second orb runs the star the other way, it
+	// stops bolts, it grows, it walks with him. Light + Arcane, so the archetype's rule gives Light at level 4
+	// (Burning Rim) and Arcane at level 8 (Great Circle), each at the hybrid's cooldown price; no card trades Light
+	// away, which his form deepens (ApotheosisCatalog). The behaviour is switched on by id (OrbOfAges.BurningRimId
+	// and the rest); Branch() fixes each id, its element gain and its look.
+	private static void SetupOrbOfAgesEvolutions(SpellData spell)
+	{
+		Color ward = new Color(1.0f, 0.93f, 0.62f);
+		const float walkingSeconds = 2f;
+		spell.Level4Options.Add(Branch(spell, DefaultBranch.AmplifiedImpact,
+			$"The ring itself burns: whatever crosses into it takes {OrbOfAges.RimShare * 100f:0}% of a strike and is Weakened. +20% damage.",
+			"Light / Edge", "The line they must cross to reach you bites.",
+			o => { Renamed(o, "Burning Rim", "BurningRim", ward); o.DamageMultiplier = 1.2f; }));
+		spell.Level4Options.Add(Branch(spell, DefaultBranch.HyperAcceleration,
+			"One more orb runs the star. -20% cooldown.",
+			"Arcane / Orbs", "More strokes across the same ground.",
+			o => { Renamed(o, "Twin Orbs", "TwinOrbs", ward); o.ProjectileCountBonus = 1; o.CooldownMultiplier = 0.8f; }));
+		spell.Level4Options.Add(Branch(spell, DefaultBranch.ReactiveCatalyst,
+			"Enemy bolts that enter the ring burn out while the ward stands. +10% damage.",
+			"Light / Guard", "Inside your circle, nothing thrown reaches you.",
+			o => { Renamed(o, "Missile Ward", "MissileWard", ward); o.DamageMultiplier = 1.1f; }));
+		spell.Level8Options.Add(Branch(spell, DefaultBranch.TitanCataclysm,
+			"The circle is drawn half as wide again, and the orb strikes harder. +60% damage.",
+			"Ascension / Ward", "Ascension: a great circle to hold.",
+			o => { Renamed(o, "Great Circle", "GreatCircle", ward); o.DamageMultiplier = 1.6f; o.AreaMultiplier = 1.5f; }));
+		spell.Level8Options.Add(Branch(spell, DefaultBranch.InfiniteHorizon,
+			$"The ward is drawn round you and walks with you; only its time closes it. {walkingSeconds:0}s longer, -20% cooldown, +50% damage.",
+			"Ascension / Ward", "Ascension: you carry your ground with you.",
+			o => { Renamed(o, "Walking Ward", "WalkingWard", ward); o.DamageMultiplier = 1.5f; o.CooldownMultiplier = 0.8f; o.Effect = SpellEffect.ZoneDuration; o.EffectValue = walkingSeconds; }));
+	}
+
 	private static void SetupStormsweepEvolutions(SpellData spell)
 	{
 		// Every percentage on these cards is computed from the number the option carries, so a tune can

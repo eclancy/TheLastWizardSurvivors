@@ -49,6 +49,9 @@ public static class CharacterVisuals
 			// The warm light he took, in his raised hand (tools/art/player_dark_wizard.py, ORB): The Taking's
 			// hands leave from it, the boss's own gesture.
 			case "dark_wizard": return new Vector2(11, 5);
+			// The light in the claw of his forked staff (tools/art/player_merlin.py), the title figure's orb: the ward's
+			// orb leaves from it and comes home to it.
+			case "merlin": return new Vector2(13, 6);
 			default: return null;
 		}
 	}
@@ -75,6 +78,7 @@ public static class CharacterVisuals
 			case "laelaps":
 			case "seimei":
 			case "dark_wizard":
+			case "merlin":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

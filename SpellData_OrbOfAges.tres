@@ -1,0 +1,78 @@
+[gd_resource type="Resource" script_class="SpellData" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/SpellLevelUpgrade.cs" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/orb-of-ages-light.png" id="3_icon"]
+
+; Merlin's own (.ai/merlin.md), and no one else's: UnlockCatalog's ExclusiveTo keeps it out of every other
+; wizard's level-up pool. A ward drawn on the ground where he stands, and the orb from his staff ricocheting
+; inside it along a seven-pointed star; everything it strikes is Weakened. The ward closes when he steps out
+; of it or its time runs out, and the cooldown starts when the orb is home (OrbOfAges, Player.FireOrbOfAges).
+;
+; BaseRange is unused: the ring's size is Player.OrbWardRadius times Area. AreaSize widens the ring (two lines,
+; 15% each), and the orb grows and flies faster with it; ZoneDuration is seconds more the ward stands (two lines,
+; a second each); a second orb at 6, running the star the other way.
+; First numbers (8 a stroke, 2.0 s, a 6 s ward, 760 px/s) after the bot's first 8 minutes on 6 / 2.5 / 5 / 620
+; gave the spell 11.8% of Merlin's damage at level 2 against Kindled Ward's 25.8% of Seimei's (.ai/merlin.md). Every level is written
+; out, so the scaling tags (Area, Duration) generate nothing; Player.EnsureRelevantLevelUps still adds its +1
+; damage on a level with none and its -0.08 s cooldown on an even level with none.
+[sub_resource type="Resource" id="Resource_orb_lvl2"]
+script = ExtResource("2")
+Level = 2
+DamageBonus = 2
+
+[sub_resource type="Resource" id="Resource_orb_lvl3"]
+script = ExtResource("2")
+Level = 3
+Effect = 7
+EffectValue = 0.15
+
+[sub_resource type="Resource" id="Resource_orb_lvl4"]
+script = ExtResource("2")
+Level = 4
+Effect = 13
+EffectValue = 1.0
+
+[sub_resource type="Resource" id="Resource_orb_lvl5"]
+script = ExtResource("2")
+Level = 5
+DamageBonus = 2
+CooldownBonus = -0.3
+
+[sub_resource type="Resource" id="Resource_orb_lvl6"]
+script = ExtResource("2")
+Level = 6
+ProjectileCountBonus = 1
+Effect = 7
+EffectValue = 0.15
+
+[sub_resource type="Resource" id="Resource_orb_lvl7"]
+script = ExtResource("2")
+Level = 7
+Effect = 13
+EffectValue = 1.0
+
+[sub_resource type="Resource" id="Resource_orb_lvl8"]
+script = ExtResource("2")
+Level = 8
+DamageBonus = 3
+CooldownBonus = -0.4
+
+[resource]
+script = ExtResource("1")
+Tagline = "A ward of light you stand in."
+Id = "orb_of_ages"
+Name = "Orb of Ages"
+CurrentLevel = 1
+MaxLevel = 8
+BaseDamage = 8
+BaseCooldown = 2.0
+BaseProjectileCount = 1
+BaseRange = 0.0
+LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_orb_lvl2"), SubResource("Resource_orb_lvl3"), SubResource("Resource_orb_lvl4"), SubResource("Resource_orb_lvl5"), SubResource("Resource_orb_lvl6"), SubResource("Resource_orb_lvl7"), SubResource("Resource_orb_lvl8")])
+Description = "Draws a warded circle where you stand. The orb ricochets inside it, weakening all it strikes."
+Icon = ExtResource("3_icon")
+ElementWeights = {
+"Light": 1,
+"Arcane": 1
+}

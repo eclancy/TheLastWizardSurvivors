@@ -3385,74 +3385,168 @@ public static partial class RegressionChecks
 		}
 	}
 
-	// THE TAKER TAKEN (.ai/dark-wizard-playable.md): the dark wizard and The Taking are earned by beating him in
-	// the Throne on Hardcore, and by nothing short of it. On paper, since the Throne is not playable yet: four
-	// runs ended on sample saves - the Throne won on Default, lost on Hardcore, another chapter won on Hardcore,
-	// and the Throne won on Hardcore - and only the last may pay. Then what keeps him outside everything else:
-	// no gate counts him (the Throne cannot wait on the man in it), The Grimoire Restored does not count his
-	// spell, and the Throne's card lists both.
+	// THE WHOLE ROAD, TWICE (.ai/dark-wizard-playable.md, .ai/merlin.md). Eric, 2026-11-02: the Dark Wizard "should
+	// unlock after defeating all stages on hard mode", and Merlin, the blue-robed wizard, "when finishing the full
+	// campaign on medium". Both read each chapter's hardest clear (SaveData.MaxDifficultyCleared, written by
+	// AchievementManager.ApplyRunAchievements) over every chapter of the campaign, built or not. Held on paper,
+	// with runs ended on sample saves - a boss victory in every chapter: every one on Default frees Merlin and not
+	// the Dark Wizard; every one on Hardcore frees both; one chapter short frees neither; one chapter on Default and
+	// the rest on Hardcore frees Merlin alone. A defeat, and a Boss Rush (no boss), record nothing, and a Casual
+	// clear is never lifted to Default by a later one. Then what keeps each outside everything else: no gate counts
+	// either, the Dark Wizard stays sealed and on the Throne's card, Merlin is never secret, and Orb of Ages is his
+	// alone - his opening spell, paid with him, offered to no other wizard and not counted by The Grimoire Restored.
 	private static void ValidateTakerTaken(List<string> warnings)
 	{
-		const string wizard = "dark_wizard";
+		const string dark = "dark_wizard";
+		const string merlin = "merlin";
+		IReadOnlyList<StageDefinition> road = StageCatalog.Campaign;
+		foreach (StageDefinition stage in road)
+		{
+			if (BossCatalog.ForStageIndex(stage.Index) == null)
+				warnings.Add($"The whole road: {stage.DisplayName} has no boss, so no clear of it can ever be recorded and neither the Dark Wizard nor Merlin can be earned.");
+		}
+
+		// Every chapter of the road won once, on the preset each is given (null: not won).
+		SaveData Walk(Func<int, string> presetAt)
+		{
+			var save = new SaveData();
+			for (int i = 0; i < road.Count; i++)
+			{
+				string preset = presetAt(i);
+				BossDefinition boss = BossCatalog.ForStageIndex(road[i].Index);
+				if (preset == null || boss == null)
+					continue;
+				save.BalancePresetId = preset;
+				AchievementManager.ApplyRunAchievements(save, new global::RunResult
+				{
+					Outcome = global::RunOutcome.Victory,
+					BalancePresetId = preset,
+					BossId = boss.Id,
+					StageId = road[i].Id,
+				});
+			}
+			return save;
+		}
+		void Expect(string label, SaveData save, bool merlinFree, bool darkFree)
+		{
+			if (GlobalStatsManager.IsCharacterUnlocked(save, merlin) != merlinFree)
+				warnings.Add($"The whole road: {label} {(merlinFree ? "does not free" : "frees")} Merlin.");
+			if (GlobalStatsManager.IsCharacterUnlocked(save, dark) != darkFree)
+				warnings.Add($"The whole road: {label} {(darkFree ? "does not free" : "frees")} the Dark Wizard.");
+		}
+		string D = GlobalStatsManager.BalancePresetDefault, H = GlobalStatsManager.BalancePresetHardcore, C = GlobalStatsManager.BalancePresetCasual;
+		Expect("every chapter on Default", Walk(_ => D), merlinFree: true, darkFree: false);
+		Expect("every chapter on Hardcore", Walk(_ => H), merlinFree: true, darkFree: true);
+		Expect("every chapter on Casual", Walk(_ => C), merlinFree: false, darkFree: false);
+		Expect("every chapter on Hardcore but the last, never won", Walk(i => i == road.Count - 1 ? null : H), merlinFree: false, darkFree: false);
+		Expect("every chapter on Hardcore but the first, never won", Walk(i => i == 0 ? null : H), merlinFree: false, darkFree: false);
+		Expect("one chapter on Default and the rest on Hardcore", Walk(i => i == road.Count / 2 ? D : H), merlinFree: true, darkFree: false);
+		// NO SKETCHBOOK (Eric, 2026-11-02: it has no unlocks and no achievements). Only the campaign's chapters are
+		// counted: a chapter outside it is never asked for, and a win there counts toward neither deed.
+		foreach (StageDefinition outside in StageCatalog.All.Where(s => !StageCatalog.IsInCampaign(s)))
+		{
+			BossDefinition outsideBoss = BossCatalog.ForStageIndex(outside.Index);
+			if (outsideBoss == null)
+				continue;
+			var only = new SaveData { BalancePresetId = H };
+			AchievementManager.ApplyRunAchievements(only, new global::RunResult
+			{
+				Outcome = global::RunOutcome.Victory, BalancePresetId = H, BossId = outsideBoss.Id, StageId = outside.Id,
+			});
+			if (GlobalStatsManager.ChaptersClearedAt(only, GlobalStatsManager.PresetRankCasual) > 0)
+				warnings.Add($"The whole road: a win in {outside.DisplayName}, outside the campaign, counts toward Merlin and the Dark Wizard.");
+		}
+		if (StageCatalog.Campaign.Any(s => s.Id.Equals("stage_8", StringComparison.OrdinalIgnoreCase)))
+			warnings.Add("The whole road: the Sketchbook is in the campaign, so Merlin and the Dark Wizard would ask for it; it has no unlocks.");
+		SaveData orbOwned = Walk(_ => D);
+		if (!GlobalStatsManager.IsSpellUnlockedForLevelUp(orbOwned, OrbOfAges.SpellId))
+			warnings.Add("The whole road: every chapter on Default frees Merlin but not his Orb of Ages.");
+
+		// Only a boss victory records a clear, and a record never comes down.
+		var record = new SaveData();
+		StageDefinition first = road.Count > 0 ? road[0] : null;
+		BossDefinition firstBoss = first != null ? BossCatalog.ForStageIndex(first.Index) : null;
+		if (first != null && firstBoss != null)
+		{
+			void End(global::RunOutcome outcome, string bossId, string preset) => AchievementManager.ApplyRunAchievements(record,
+				new global::RunResult { Outcome = outcome, BossId = bossId, BalancePresetId = preset, StageId = first.Id });
+			End(global::RunOutcome.Defeat, string.Empty, H);
+			End(global::RunOutcome.Victory, string.Empty, H);
+			if (GlobalStatsManager.HardestClearOf(record, first.Id) >= 0)
+				warnings.Add($"The whole road: a defeat or a Boss Rush (no boss) recorded a clear of {first.DisplayName}.");
+			End(global::RunOutcome.Victory, firstBoss.Id, C);
+			End(global::RunOutcome.Victory, firstBoss.Id, H);
+			End(global::RunOutcome.Victory, firstBoss.Id, D);
+			if (GlobalStatsManager.HardestClearOf(record, first.Id) != GlobalStatsManager.PresetRankHardcore)
+				warnings.Add($"The whole road: {first.DisplayName} won on Casual, Hardcore then Default keeps {GlobalStatsManager.HardestClearOf(record, first.Id)}, not Hardcore.");
+		}
+
+		// Outside every gate, both: neither was ever one of the imprisoned.
+		foreach (string who in new[] { dark, merlin })
+		{
+			if (UnlockCatalog.GetCharacter(who) == null)
+			{
+				warnings.Add($"The whole road: '{who}' has no UnlockCatalog entry.");
+				continue;
+			}
+			if (UnlockCatalog.AllWizardIds.Contains(who, StringComparer.OrdinalIgnoreCase))
+				warnings.Add($"The whole road: '{who}' is counted as an imprisoned wizard; he must be outside the campaign gate (OutsideCampaignGate).");
+			foreach (StageDefinition gate in StageCatalog.GateChapters)
+			{
+				if (GlobalStatsManager.CountsTowardGate(who, gate))
+					warnings.Add($"The whole road: {gate.DisplayName}'s gate counts '{who}', who is earned only past it.");
+			}
+		}
+
+		// The Dark Wizard: sealed until taken, on the Throne's card, his spell the Conjunction he opens on.
 		BossDefinition throneBoss = BossCatalog.GetById(AchievementDefinitions.ThroneBossId);
 		StageDefinition throne = throneBoss != null ? StageCatalog.GetByIndex(BossCatalog.StageIndexOf(throneBoss)) : null;
 		if (throne == null)
 		{
-			warnings.Add($"The Taker Taken: the boss '{AchievementDefinitions.ThroneBossId}' has no chapter, so the dark wizard can never be earned.");
-			return;
+			warnings.Add($"The Taker Taken: the boss '{AchievementDefinitions.ThroneBossId}' has no chapter, so the dark wizard's deed has nowhere to be listed.");
 		}
-		bool Pays(string preset, global::RunOutcome outcome, string bossId)
+		else
 		{
-			var save = new SaveData { BalancePresetId = preset };
-			AchievementManager.ApplyRunAchievements(save, new global::RunResult
-			{
-				Outcome = outcome,
-				BalancePresetId = preset,
-				BossId = outcome == global::RunOutcome.Victory ? bossId : string.Empty,
-				StageId = throne.Id,
-			});
-			return GlobalStatsManager.IsCharacterUnlocked(save, wizard);
+			if (!ComboCatalog.StartsFused(ComboCatalog.ForId(TheTaking.SpellId), dark))
+				warnings.Add("The Taker Taken: The Taking is not the Conjunction the dark wizard opens on (ComboDefinition.StartsFusedFor).");
+			if (UnlockCatalog.GrimoireSpellIds.Contains(TheTaking.SpellId, StringComparer.OrdinalIgnoreCase))
+				warnings.Add("The Taker Taken: The Grimoire Restored counts The Taking, which would put the collection behind a Hardcore win.");
+			if (UnlockCatalog.GetCharacter(dark)?.SealedUntilFreed != true)
+				warnings.Add("The Taker Taken: the dark wizard is not SealedUntilFreed, so his shape shows before he is taken.");
+			if (!StageRewards.ForStage(throne.Id).Any(r => r.Id.Equals(dark, StringComparison.OrdinalIgnoreCase)))
+				warnings.Add("The Taker Taken: the Throne's card does not list the dark wizard.");
+			var locked = new SaveData();
+			AchievementDefinition deed = AchievementDefinitions.GetById(AchievementDefinitions.TakerTakenId);
+			if (deed == null || !CodexRows.HidesWizard(deed, locked))
+				warnings.Add("The Taker Taken: his deed's row names him while he is locked.");
+			if (!StageRewards.ForStage(throne.Id).Where(r => r.Id.Equals(dark, StringComparison.OrdinalIgnoreCase)).All(r => StageRewards.IsSealed(locked, r)))
+				warnings.Add("The Taker Taken: the Throne's card shows the dark wizard's shape before he is taken.");
 		}
-		if (Pays(GlobalStatsManager.BalancePresetDefault, global::RunOutcome.Victory, throneBoss.Id))
-			warnings.Add("The Taker Taken: a Default win in the Throne pays the dark wizard; only Hardcore may.");
-		if (Pays(GlobalStatsManager.BalancePresetHardcore, global::RunOutcome.Defeat, throneBoss.Id))
-			warnings.Add("The Taker Taken: a Hardcore defeat in the Throne pays the dark wizard.");
-		if (Pays(GlobalStatsManager.BalancePresetHardcore, global::RunOutcome.Victory, "forest_treant"))
-			warnings.Add("The Taker Taken: a Hardcore win over another chapter's boss pays the dark wizard.");
 
-		var won = new SaveData { BalancePresetId = GlobalStatsManager.BalancePresetHardcore };
-		AchievementManager.ApplyRunAchievements(won, new global::RunResult
+		// Merlin: never secret, never sealed, and Orb of Ages his alone.
+		UnlockDefinition merlinUnlock = UnlockCatalog.GetCharacter(merlin);
+		if (merlinUnlock != null && (merlinUnlock.IsSecret || merlinUnlock.SealedUntilFreed))
+			warnings.Add("The One He Missed: Merlin is secret or sealed; he is the title screen's figure, shown locked from the first run.");
+		CharacterData merlinData = CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(merlin, StringComparison.OrdinalIgnoreCase));
+		if (merlinData?.StartingSpellResource?.Id?.Equals(OrbOfAges.SpellId, StringComparison.OrdinalIgnoreCase) != true)
+			warnings.Add("The One He Missed: Merlin does not open on Orb of Ages.");
+		if (AchievementDefinitions.GetById(AchievementDefinitions.OneHeMissedId)?.SpellUnlockId != OrbOfAges.SpellId)
+			warnings.Add("The One He Missed: the deed does not pay Orb of Ages with him.");
+		if (UnlockCatalog.GrimoireSpellIds.Contains(OrbOfAges.SpellId, StringComparer.OrdinalIgnoreCase))
+			warnings.Add("The One He Missed: The Grimoire Restored counts Orb of Ages, which would put the collection behind the whole road.");
+		foreach (CharacterData who in CharacterRoster.GetAll())
 		{
-			Outcome = global::RunOutcome.Victory,
-			BalancePresetId = GlobalStatsManager.BalancePresetHardcore,
-			BossId = throneBoss.Id,
-			StageId = throne.Id,
-		});
-		if (!GlobalStatsManager.IsCharacterUnlocked(won, wizard))
-			warnings.Add("The Taker Taken: a Hardcore win in the Throne does not pay the dark wizard, so he can never be earned.");
-		// His spell is a Conjunction he opens on made, which its own Feat pays everyone else (ComboCatalog).
-		if (!ComboCatalog.StartsFused(ComboCatalog.ForId(TheTaking.SpellId), wizard))
-			warnings.Add("The Taker Taken: The Taking is not the Conjunction the dark wizard opens on (ComboDefinition.StartsFusedFor).");
-
-		if (UnlockCatalog.AllWizardIds.Contains(wizard, StringComparer.OrdinalIgnoreCase))
-			warnings.Add("The Taker Taken: the dark wizard is counted as an imprisoned wizard; he must be outside the campaign gate (OutsideCampaignGate).");
-		foreach (StageDefinition gate in StageCatalog.GateChapters)
-		{
-			if (GlobalStatsManager.CountsTowardGate(wizard, gate))
-				warnings.Add($"The Taker Taken: {gate.DisplayName}'s gate counts the dark wizard, who is earned only past it.");
+			bool his = who.Id.Equals(merlin, StringComparison.OrdinalIgnoreCase);
+			if (UnlockCatalog.MayBeOffered(OrbOfAges.SpellId, who.Id) != his)
+				warnings.Add($"Orb of Ages: '{who.Id}' {(his ? "is never" : "may be")} offered it; it is Merlin's alone (UnlockDefinition.ExclusiveTo).");
 		}
-		if (UnlockCatalog.GrimoireSpellIds.Contains(TheTaking.SpellId, StringComparer.OrdinalIgnoreCase))
-			warnings.Add("The Taker Taken: The Grimoire Restored counts The Taking, which would put the collection behind a Hardcore win.");
-		if (UnlockCatalog.GetCharacter(wizard)?.SealedUntilFreed != true)
-			warnings.Add("The Taker Taken: the dark wizard is not SealedUntilFreed, so his shape shows before he is taken.");
-		if (!StageRewards.ForStage(throne.Id).Any(r => r.Id.Equals(wizard, StringComparison.OrdinalIgnoreCase)))
-			warnings.Add("The Taker Taken: the Throne's card does not list the dark wizard.");
-		var locked = new SaveData();
-		AchievementDefinition deed = AchievementDefinitions.GetById(AchievementDefinitions.TakerTakenId);
-		if (deed == null || !CodexRows.HidesWizard(deed, locked))
-			warnings.Add("The Taker Taken: his deed's row names him while he is locked.");
-		if (!StageRewards.ForStage(throne.Id).Where(r => r.Id.Equals(wizard, StringComparison.OrdinalIgnoreCase)).All(r => StageRewards.IsSealed(locked, r)))
-			warnings.Add("The Taker Taken: the Throne's card shows the dark wizard's shape before he is taken.");
+		// Any spell that is someone's alone names a wizard who exists and opens on it - or nobody could ever be dealt it.
+		foreach (UnlockDefinition spell in UnlockCatalog.All.Where(d => d.Kind == UnlockKind.Spell && !string.IsNullOrEmpty(d.ExclusiveTo)))
+		{
+			CharacterData owner = CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(spell.ExclusiveTo, StringComparison.OrdinalIgnoreCase));
+			if (owner?.StartingSpellResource?.Id?.Equals(spell.Id, StringComparison.OrdinalIgnoreCase) != true)
+				warnings.Add($"'{spell.Id}' is exclusive to '{spell.ExclusiveTo}', who does not open on it, so no one is ever dealt it.");
+		}
 	}
 
 	// A boss victory as the end of a run records it: the run's achievements (ApplyRunAchievements folds

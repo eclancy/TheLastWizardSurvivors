@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/OrbOfAges.cs" id="1"]
+
+; Merlin's ward and its orb (.ai/merlin.md). No collision shape and no sprite: it measures its own strokes and
+; draws its own ring and orb, so what is seen striking is what strikes. Player.FireOrbOfAges sets everything.
+[node name="OrbOfAges" type="Node2D"]
+script = ExtResource("1")
