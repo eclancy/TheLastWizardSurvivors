@@ -284,6 +284,9 @@ public partial class Player : CharacterBody2D
 	private readonly HashSet<string> undeclaredAmountReaders = new(StringComparer.OrdinalIgnoreCase);
 	// Reused by the magic missile volley so picking targets does not allocate on every cast.
 	private readonly List<Node2D> magicMissileTargets = new();
+	// Not One Missed (The Archmage's Apotheosis): volleys flown since the last count (MagicMissile.CountEvery). It starts
+	// one short, so the first volley after the form is taken is a count: the pick is seen paying at once.
+	private int magicMissileCountClock = MagicMissile.CountEvery - 1;
 	private float growthMultiplier = 1.0f;
 	private float recoveryPerSecond = 0.0f;
 	private float recoveryAccumulator = 0.0f;
@@ -625,6 +628,15 @@ public partial class Player : CharacterBody2D
 	private float characterWardingHandThrow = 0f;
 	// Wings (Wayland the Smith): the share added to his walking speed - the wings he made to get off the island.
 	public const float CharacterWingsSpeedBonus = 0.10f;
+	// Overlooked (The Archmage, .ai/protagonist.md): once a run, the blow that would end him misses (TakeDamage). The
+	// grace after it is a menu's (PostMenuInvincibilitySeconds), and he is drawn white through it, so the miss is seen:
+	// the crowd that landed the blow is still on him, and without it the next touch would end the run anyway.
+	public const float OverlookedGraceSeconds = 2.0f;
+	private bool characterOverlooked = false;
+	private bool overlookedSpent = false;
+
+	/// <summary>Run seconds at which Overlooked turned a killing blow aside, or -1 while it has not. For the harness.</summary>
+	public float OverlookedAtSeconds { get; private set; } = -1f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -870,6 +882,10 @@ public partial class Player : CharacterBody2D
 		// the cards again. Three more rerolls in the run's pool, on top of Fate Fracture's. An axis no other
 		// wizard owns: it touches no number in the fight, only the choices.
 		"rerolls_3",
+		// The Archmage (.ai/protagonist.md): Overlooked - once a run, the blow that would end him misses. He is the one
+		// the dark wizard missed. An axis no other wizard owns: not armour (the Geomancer), not a dodge on every hit (the
+		// boons' and Darkness's evasion), not a heal (.ai/difficulty-curve.md) - one death, refused, and nothing else.
+		"missed_once",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -921,6 +937,9 @@ public partial class Player : CharacterBody2D
 			case "rerolls_3":
 				// ApplyArcaneUpgrades has already filled the pool from the shop; this goes on top, once.
 				RerollsRemaining += CharacterProphecyRerolls;
+				return true;
+			case "missed_once":
+				characterOverlooked = true;
 				return true;
 			default:
 				return false;
@@ -1612,11 +1631,11 @@ public partial class Player : CharacterBody2D
 			Icon = ResolveDefaultSpellIcon(id) ?? DefaultSpellIconTexture
 		};
 
-		// Fallback element tags, matching the #13 starter roster, in case the .tres resource fails to load.
+		// Fallback element tags, matching the #13 starter roster, in case the .tres resource fails to load. Magic
+		// Missile is pure Arcane since 2026-11-02 (The Archmage's, .ai/protagonist.md); its Lightning is a branch now.
 		if (id.Equals("magic_missile", StringComparison.OrdinalIgnoreCase))
 		{
 			spell.ElementWeights["Arcane"] = 1;
-			spell.ElementWeights["Lightning"] = 1;
 		}
 		else if (id.Equals("arcane_explosion", StringComparison.OrdinalIgnoreCase))
 		{
@@ -2785,6 +2804,20 @@ public partial class Player : CharacterBody2D
 		}
 		if (shieldPoints > 0 && mitigated > 0)
 			mitigated -= SpendShield(mitigated);
+		// OVERLOOKED (The Archmage's passive, .ai/protagonist.md): once a run, the blow that would end him misses. After
+		// armour and the shield, so it answers only a blow that would really kill; before any HP leaves, so he keeps the
+		// little he had - it heals nothing (.ai/difficulty-curve.md, the healing budget). Before an extra life, which is
+		// kept for later. The DamageTaken signal has already gone out: he was struck at, as a dodge is not.
+		if (characterOverlooked && !overlookedSpent && mitigated > 0 && mitigated >= CurrentHP)
+		{
+			overlookedSpent = true;
+			OverlookedAtSeconds = Node2DGame.Current?.RunSeconds ?? 0f;
+			PlayBlurDodgeEffect();
+			SfxPlayer.Global(SfxCatalog.PlayerDodge, 0.05f);
+			GrantInvincibility(OverlookedGraceSeconds);
+			GD.Print($"Overlooked: a blow of {mitigated} against {CurrentHP} HP missed at {OverlookedAtSeconds:0.0} s.");
+			return;
+		}
 		GameStats.RecordHpLost(Math.Min(mitigated, CurrentHP));
 		CurrentHP = Math.Max(0, CurrentHP - mitigated);
 		// Keyed off the HP that actually left, not off the DamageTaken signal, which carries the
@@ -4182,6 +4215,10 @@ public partial class Player : CharacterBody2D
 
 	private readonly List<SpellData> blackCatChoices = new(8);
 
+	// True while CastFromFamiliar has the wizard's position on the cat: a cast that leaves from his staff head
+	// (Magic Missile) leaves from the cat itself then, not from where the staff would be beside it.
+	private bool castingFromFamiliar;
+
 	/// <summary>One of the wizard's equipped spells the Black Cat can cast, at random; null when he holds none.</summary>
 	public SpellData PickBlackCatSpell(RandomNumberGenerator rng)
 	{
@@ -4202,6 +4239,7 @@ public partial class Player : CharacterBody2D
 		Vector2 home = GlobalPosition;
 		CastOutcome outcome;
 		GlobalPosition = origin;
+		castingFromFamiliar = true;
 		try
 		{
 			outcome = CastSpellNow(spell, interval, 0.0);
@@ -4209,6 +4247,7 @@ public partial class Player : CharacterBody2D
 		finally
 		{
 			GlobalPosition = home;
+			castingFromFamiliar = false;
 		}
 		if (outcome == CastOutcome.Fired)
 			SfxPlayer.Cast(SfxCatalog.DominantElement(spell), origin);
@@ -4228,10 +4267,22 @@ public partial class Player : CharacterBody2D
 			// that did were silently ignored for this spell alone.
 			int projectileCount = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
 			float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
-			EnemyTargeting.CollectNearest(GetTree(), GlobalPosition, projectileCount, magicMissileTargets, castRange);
+			// NOT ONE MISSED (The Archmage's Apotheosis, count; MagicMissile.NotOneMissedId): every CountEvery-th volley
+			// is a count - a dart at every enemy in reach, nearest first, up to the count's cap, one each. The clock only
+			// moves on a volley that flew, so a cast into an empty field never spends the count.
+			bool counting = spell.HasEvolution(MagicMissile.NotOneMissedId)
+				&& magicMissileCountClock >= MagicMissile.CountEvery - 1;
+			int asked = counting ? Math.Max(projectileCount, MagicMissile.CountCap(spell)) : projectileCount;
+			EnemyTargeting.CollectNearest(GetTree(), GlobalPosition, asked, magicMissileTargets, castRange);
 			outcome = CastOutcome.NoTarget;
+			// A count is one dart for each enemy it found, never two at one; an ordinary volley wraps round a thin crowd.
+			int shots = counting ? Math.Max(projectileCount, magicMissileTargets.Count) : projectileCount;
+			bool orbs = spell.HasEvolution(MagicMissile.ArcaneOrbId);
+			// Out of the light on his staff's head (CharacterVisuals.GetStaffTipCell), as Cinderbreath is poured from
+			// it; the body's centre for a wizard without one (the Test Wizard), and the cat itself when the Black Cat casts.
+			Vector2 from = GlobalPosition + (castingFromFamiliar ? Vector2.Zero : StaffTipLocal());
 
-			for (int p = 0; p < projectileCount && magicMissileTargets.Count > 0; p++)
+			for (int p = 0; p < shots && magicMissileTargets.Count > 0; p++)
 			{
 				// One missile per enemy, nearest first. These home, so fanning them by
 				// angle would only bend them back onto the same body - spreading the
@@ -4241,8 +4292,14 @@ public partial class Player : CharacterBody2D
 				if (!IsInstanceValid(shotTarget))
 					continue;
 
+				// A count's darts leave fanned off their marks, alternately to either side, and curve in: the volley
+				// opens like a hand before it closes on them. An orb never homes, so it is loosed straight.
+				Vector2 aim = shotTarget.GlobalPosition;
+				if (counting && !orbs && aim != from)
+					aim = from + (aim - from).Normalized().Rotated(Mathf.DegToRad(p % 2 == 0 ? MagicMissile.CountFanDegrees : -MagicMissile.CountFanDegrees)) * 32f;
+
 				var missile = MagicMissileScene.Instantiate<Area2D>();
-				missile.Position = GlobalPosition;
+				missile.Position = from;
 				var script = missile as MagicMissile;
 				if (script != null)
 				{
@@ -4255,12 +4312,20 @@ public partial class Player : CharacterBody2D
 				}
 				GetParent().AddChild(TagSpell(missile));
 				ApplyLegendaryVisual(missile, spell);
-				var shootMethod = missile.GetType().GetMethod("Shoot");
-				if (shootMethod != null)
-				{
-					shootMethod.Invoke(missile, new object[] { GlobalPosition, shotTarget.GlobalPosition, shotTarget });
-				}
+				(missile as MagicMissile)?.Shoot(from, aim, shotTarget);
 				outcome = CastOutcome.Fired;
+			}
+			if (outcome == CastOutcome.Fired && spell.HasEvolution(MagicMissile.NotOneMissedId))
+			{
+				magicMissileCountClock = counting ? 0 : magicMissileCountClock + 1;
+				if (counting)
+				{
+					MagicMissile.StatCounts++;
+					MagicMissile.StatCountDarts += shots;
+					// The count is seen leaving: a burst of arcane sparks off the staff's head.
+					if (GetParent() is Node2D arena)
+						ImpactDebrisLayer.Spawn(arena, from, MagicMissile.CountFlareRadius, ElementColors.GetRamp(Element.Arcane), Colors.White);
+				}
 			}
 		}
 		else if (spell.Id.Equals("aegis_ward", StringComparison.OrdinalIgnoreCase))

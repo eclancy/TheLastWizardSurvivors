@@ -104,7 +104,8 @@ public static class StatIcons
 			return "regen";
 		if (t.Contains("max hp") || t.Contains("max health") || t.EndsWith(" hp"))
 			return "heart";
-		if (t.Contains("evasion") || t.Contains("dodge") || t.Contains("ignores one hit"))
+		// "misses": The Archmage's Overlooked, "the blow that would end you misses" - a hit avoided, as a dodge is.
+		if (t.Contains("evasion") || t.Contains("dodge") || t.Contains("ignores one hit") || t.Contains(" misses"))
 			return "evasion";
 		if (t.Contains("luck") || t.Contains("chest") || t.Contains("relic") || t.Contains("reward"))
 			return "luck";

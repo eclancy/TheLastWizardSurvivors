@@ -289,7 +289,8 @@ namespace WizardSurvivors.scripts
 		// (ElementPaths.RiderFor: ice and water slow, lightning staggers, poison poisons, darkness exposes,
 		// light weakens, metal withers). The five elements with no status (fire, earth, grass, wind, arcane)
 		// make it hit SympathyBareShare harder instead. The element is the spell's strongest that is not
-		// Arcane - Magic Missile's Lightning, Spiritual Weapon's Light - and Arcane only for a pure Arcane one.
+		// Arcane - Spiritual Weapon's Light, Magic Missile's Lightning once Twin Volley or Overcharge has branched it - and
+		// Arcane only for a pure Arcane one (Magic Missile unbranched, since it went pure on 2026-11-02).
 		public const float SympathyBareShare = 1.3f;
 
 		private Element? SympathyElement()

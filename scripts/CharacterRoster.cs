@@ -9,12 +9,14 @@ namespace WizardSurvivors.scripts;
 public static class CharacterRoster
 {
 	// Test Wizard stays first for development flows (it is the only entry that can pick its own
-	// starting loadout); the four after it are the playable roster, one per starting element.
+	// starting loadout); the four after it are the first four starters, one per starting element. The
+	// fifth, The Archmage, is appended at index 14 (below), and the character select shows him first by
+	// its own order (SelectionOrder), not by this one.
 	//
 	// CharacterData.tres - the Arcane "Apprentice Wizard" - is deliberately no longer listed. It
-	// started with Magic Missile, which carries Arcane and Lightning weight, so it was the one
-	// character whose opening spell pulled toward two elements at once. The file is still on disk
-	// if it is ever wanted back.
+	// started with Magic Missile when that carried Arcane and Lightning weight, so it was the one
+	// character whose opening spell pulled toward two elements at once. Magic Missile is pure Arcane
+	// since 2026-11-02 and The Archmage opens on it; the file is still on disk, unlisted.
 	private static readonly string[] ResourcePaths = new[]
 	{
 		"res://CharacterData_TestWizard.tres",
@@ -46,7 +48,46 @@ public static class CharacterRoster
 		"res://CharacterData_Wayland.tres",
 		// The chapter wizards again: the Cumaean Sibyl, freed at the nine mouths in the Sunken Cave. Appended (index 13: Merlin and Wayland took 11 and 12 the same day).
 		"res://CharacterData_Sibyl.tres",
+		// The Archmage (.ai/protagonist.md): the title screen's blue-robed figure, the player, the one the dark wizard
+		// missed - the fifth starter (Eric, 2026-11-02), on Magic Missile. APPENDED, never inserted, although he is
+		// first on the character select: a saved index and --character=N must keep their wizard (index 14). The
+		// screen's order is SelectionOrder's.
+		"res://CharacterData_Archmage.tres",
 	};
+
+	/// <summary>
+	/// Who the character select shows first, by id, ahead of everyone else (who follow in roster order). Eric,
+	/// 2026-11-02: The Archmage "should be the first one on the list on the character select screen". Kept apart
+	/// from the roster's own order on purpose: the roster index is what a save, Global.SelectedCharacterIdx and the
+	/// tools' --character=N name, so a wizard who moves on the screen must never move in the list.
+	/// </summary>
+	private static readonly string[] ShownFirst = { "archmage" };
+
+	/// <summary>
+	/// Every roster index in the order the character select lays its cards out: <see cref="ShownFirst"/>, then the
+	/// rest in roster order. A display order only - nothing stores a position in it.
+	/// </summary>
+	public static List<int> SelectionOrder()
+	{
+		var all = GetAll();
+		var order = new List<int>(all.Count);
+		foreach (string id in ShownFirst)
+		{
+			int index = all.FindIndex(c => c != null && c.Id.Equals(id, System.StringComparison.OrdinalIgnoreCase));
+			if (index >= 0)
+				order.Add(index);
+		}
+		for (int i = 0; i < all.Count; i++)
+		{
+			if (!order.Contains(i))
+				order.Add(i);
+		}
+		return order;
+	}
+
+	/// <summary>The roster index of the character with this id, or -1.</summary>
+	public static int IndexOf(string characterId) =>
+		GetAll().FindIndex(c => c != null && c.Id.Equals(characterId ?? string.Empty, System.StringComparison.OrdinalIgnoreCase));
 
 	// Loaded once and held. Every call used to load all seven again, and each load hands back a
 	// fresh managed wrapper for the same cached Godot resource; the old wrappers were left to the

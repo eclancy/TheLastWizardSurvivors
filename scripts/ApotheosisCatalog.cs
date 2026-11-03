@@ -235,6 +235,22 @@ public static class ApotheosisCatalog
 				"Rewind: the ward's hour turns back. Hold your ground and it never falls.",
 				new Color(1.0f, 0.96f, 0.78f), NoVisualScale),
 		},
+		// The Archmage (.ai/protagonist.md): the title figure, the player, the one the dark wizard missed - and Magic Missile
+		// is the dart that never misses. "Count" was nobody's: he was the one left out of a count, and his final form
+		// leaves no one out of his - every fourth volley is a dart at every enemy in reach, one each (MagicMissile.
+		// NotOneMissedId). A targeting verb: it changes who is struck, never what a strike does, so nothing is pulled,
+		// linked, echoed or doubled, and a boss is struck once like anyone. Arcane, the spell's only element since
+		// 2026-11-02; no card on it trades Arcane away (Twin Volley and Overcharge add Lightning beside it). Scale reaches
+		// the dart (EvolutionStatReaders), so the form keeps the usual lift.
+		new()
+		{
+			CharacterId = "archmage", SpellId = "magic_missile",
+			Element = Element.Arcane, Verb = "count",
+			Form = Make(MagicMissile.NotOneMissedId, "Not One Missed", Element.Arcane,
+				$"Every {MagicMissile.CountEvery}th volley is a count: a missile at every enemy in reach, up to {MagicMissile.CountDarts}, one each.",
+				"Count: the bigger the crowd, the bigger the count. Nobody in reach is left out.",
+				new Color(0.86f, 0.80f, 1.0f)),
+		},
 	};
 
 	// A form's visual lift is a 15% larger spell, but only where the spell's node keeps a visual scale.

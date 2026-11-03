@@ -1511,6 +1511,12 @@ public partial class _BalanceHarness : Node
 		// The Hundred Mouths (Player.Echo.cs): how many echoes have sounded, once the form has any to count.
 		if (player.EchoesCast > 0)
 			GD.Print($"HARNESS ECHOES m={row.Minute} cast={player.EchoesCast}");
+		// Not One Missed (The Archmage's Apotheosis, MagicMissile): how many counts have flown and how many darts in them.
+		if (MagicMissile.StatCounts > 0)
+			GD.Print($"HARNESS COUNTS m={row.Minute} counts={MagicMissile.StatCounts} darts={MagicMissile.StatCountDarts}");
+		// Overlooked (The Archmage's passive): the one killing blow it turned aside, once it has.
+		if (player.OverlookedAtSeconds >= 0f)
+			GD.Print($"HARNESS OVERLOOKED m={row.Minute} at={player.OverlookedAtSeconds:0.0}s");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger

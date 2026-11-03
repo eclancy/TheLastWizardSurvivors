@@ -57,6 +57,9 @@ public static class CharacterVisuals
 			case "wayland": return new Vector2(42, 7);
 			// The light in the bronze jar hung from her crook (roster.py, sibyl()), out of its mouth.
 			case "sibyl": return new Vector2(6, 9);
+			// The orb in the gold claw at the head of his staff (tools/art/player_archmage.py, ORB; the generator prints
+			// (13.4, 5.8)): the title figure's light, where Magic Missile leaves him (Player.CastSpellNow).
+			case "archmage": return new Vector2(13, 6);
 			default: return null;
 		}
 	}
@@ -86,6 +89,7 @@ public static class CharacterVisuals
 			case "merlin":
 			case "wayland":
 			case "sibyl":
+			case "archmage":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

@@ -136,8 +136,8 @@ public sealed class UnlockDefinition
 /// </remarks>
 public static class UnlockCatalog
 {
-	// The opening hand. Four signature spells - one per starting character - plus Magic Missile,
-	// plus three passives chosen so no early build is without an answer: a shield, flat armour and
+	// The opening hand. Five signature spells - one per starting character, Magic Missile The Archmage's
+	// since 2026-11-02 - plus three passives chosen so no early build is without an answer: a shield, flat armour and
 	// evasion. Eight candidates against three level-up slots is roughly a one-in-three chance a
 	// given spell is offered; the old all-35 pool was one in twelve, which is why builds used to
 	// feel like something that happened to the player rather than something they chose.
@@ -267,12 +267,17 @@ public static class UnlockCatalog
 		// plays rather than how long it lasts - standing in the crowd becomes a thing you do on
 		// purpose rather than a thing you survive.
 
-		// The four starting wizards. Listed rather than assumed, so the roster and the catalog
+		// The five starting wizards. Listed rather than assumed, so the roster and the catalog
 		// cannot disagree about who the player begins with.
 		Starter("pyromancer", UnlockKind.Character),
 		Starter("frostweaver", UnlockKind.Character),
 		Starter("stormcaller", UnlockKind.Character),
 		Starter("geomancer", UnlockKind.Character),
+		// The Archmage (.ai/protagonist.md), the fifth (Eric, 2026-11-02): the title figure, the one the dark wizard
+		// missed, on Magic Missile and Arcane. A starter is held by every save without a write
+		// (GlobalStatsManager.IsCharacterUnlocked asks this catalog), so an old save has him the moment it loads and
+		// no schema step is needed. Every gate counts a starter and every save holds him, so no gate moves.
+		Starter("archmage", UnlockKind.Character),
 		Starter("test_wizard", UnlockKind.Character),
 
 		// FOUND IN THE WORLD (.ai/side-events.md). Each chapter's side event is a place where the
