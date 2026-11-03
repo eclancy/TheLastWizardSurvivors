@@ -1488,6 +1488,84 @@ def _wrist(who, strip, frame, cx, yb, h, facing):
     return ((x1 - 4) if facing > 0 else (x0 + 4), y)
 
 
+# --------------------------------------------------------------------------- the real sprites
+# Eric, 2026-11-03, of the freeing's flat one-colour cut-outs: "Redraw with real sprites." In the break, the
+# five and the freed reels a wizard is his own 48 cell, every pixel of it, at a whole x2 on the panel's grid
+# (one sprite pixel is two panel pixels, four on screen): his real colours and his real light, the figure
+# the character select shows. The flat silhouettes (roster_figure) stay where the story wants a shape and not
+# yet a person - the moot, the fall, the procession.
+SPRITE_K = 2
+
+
+def _tone(steps):
+    """A colour map that puts a sprite `steps` stops into the dark: every pigment that many stops down its own
+    row (past the deep end, occlusion), his own light out (the element ramps to dull steel, then occlusion),
+    the key's rims to stone. Empty for 0: the sprite as it is."""
+    m = {}
+    if steps <= 0:
+        return m
+    for name, ramp in sorted(M.items()):
+        for i, col in enumerate(ramp):
+            key = rgb(col)
+            if key not in m:
+                m[key] = rgb(ramp[i + steps]) if i + steps < len(ramp) else rgb(OCC)
+    dull = rgb([ST[3], ST[4], OCC][min(2, steps - 1)])
+    for name, ramp in sorted(E.items()):
+        for col in ramp:
+            m.setdefault(rgb(col), dull)
+    for col in (bl.RIM, RIM_SOFT):
+        m[rgb(col)] = rgb([S[2], S[3], S[4]][min(2, steps - 1)])
+    return m
+
+
+def sprite_figure(c, who, cx, yb, strip="idle", frame=0, facing=1, steps=0, rim=None, glow=True):
+    """One of the game's wizards as he is in the game: his 48 cell at a whole SPRITE_K, turned by facing, his
+    contact row on yb (where roster_figure puts it, so the two stand on the same ground).
+
+    steps: how far into the dark (_tone) - 0 his real colours. rim=(dx, dy, colour): the sprite pixels on the
+    edge facing a light lit in that colour, one SPRITE pixel deep (lit on the cell, before the scale, so the
+    rim sits on his own grid and not on a finer one). glow: his own light's halo behind the anchor his element
+    sits at (silhouette), only while he is in his colours.
+    Returns (light, box): his light's centre, or None, and the drawn box (x0, y0, x1, y1), in frame pixels."""
+    prefix, carried, burns = who
+    k = SPRITE_K
+    cell = _sprite_cell(prefix, strip, frame)
+    if facing < 0:
+        cell = cell.transpose(Image.FLIP_LEFT_RIGHT)
+    s = Cv(CELL + 2, CELL + 2)
+    s.img.paste(cell, (1, 1), cell)
+    s.px = s.img.load()
+    tone = _tone(steps)
+    if tone:
+        for y in range(s.h):
+            for x in range(s.w):
+                p = s.px[x, y]
+                if p[3] and p in tone:
+                    s.px[x, y] = tone[p]
+    if rim:
+        edge_light(s, rim[2], rim[:2])
+    big = s.img.resize((s.w * k, s.h * k), Image.NEAREST)
+    left = int(round(cx - (CELL / 2.0 + 1) * k))
+    top = int(round(yb - CELL * k))
+    _pixels, anchor = silhouette(prefix, strip, frame, carried)
+    light = None
+    if anchor:
+        light = (cx + (anchor[0] - CELL / 2.0) * k * facing, yb + (anchor[1] - (CELL - 1)) * k)
+        if glow and steps <= 0:
+            ramp = E[burns]
+            c.radial(light[0], light[1], 4.2 * k, 4.2 * k, [ramp[3], ramp[3], None])
+    c.img.paste(big, (left, top), big)
+    c.px = c.img.load()
+    bx = big.getbbox() or (0, 0, big.size[0], big.size[1])
+    return light, (left + bx[0], top + bx[1], left + bx[2], top + bx[3])
+
+
+def sprite_wrist(box, facing):
+    """The point a chain holds a sprite figure by: his front, a little over half way down what is drawn of him."""
+    x0, y0, x1, y1 = box
+    return ((x1 - 2 * SPRITE_K) if facing > 0 else (x0 + 2 * SPRITE_K), y0 + (y1 - y0) * 0.56)
+
+
 def _chain_pts(a, b, n=40, sag=8.0):
     return [(a[0] + (b[0] - a[0]) * (k / float(n - 1)),
              a[1] + (b[1] - a[1]) * (k / float(n - 1)) + math.sin(k / float(n - 1) * math.pi) * sag)
@@ -1581,21 +1659,31 @@ def _break_frame(t, him):
         k = min(1.0, (t - BREAK_LIGHT_UP) / 0.5)
         c.radial(HIM_X, HIM_Y + 2, 70 + 80 * k, 18 + 18 * k, [G[2], G[3], G[3], G[4], G[4], None])
     wrists = []
+    broken = t >= BREAK_AT[0]
     for i, (who, x, y, h, f) in enumerate(FREED_FOUR):
-        relit = t >= RELIGHT_AT[i]
-        coming = RELIGHT_AT[i] - 0.6 <= t < RELIGHT_AT[i]
+        since = t - RELIGHT_AT[i]
+        coming = -0.6 <= since < 0
+        # His own sprite, kneeling (the second frame of his fall), three stops into the dark while the chain
+        # holds him, and coming up into his own colours a stop at a time as his light returns (Eric:
+        # "Redraw with real sprites").
+        steps = 3 if since < 0 else (2 if since < 0.2 else (1 if since < 0.4 else 0))
+        # Their only lit edge before the break is the dark wizard's light, his chain's, landing as the violet
+        # it makes (the rule: his ramp is emission on him and the chain alone); once the chain breaks it is
+        # the Archmage's gold, from his staff.
+        if broken:
+            toward = (HIM_X - x, (HIM_Y - 60) - (y - 50))
+            n = math.hypot(*toward) or 1.0
+            rim = (toward[0] / n, toward[1] / n, G[2])
+        else:
+            rim = (f, 0, V[2])
+        light, box = sprite_figure(c, who, x, y, strip="death", frame=1, facing=f, steps=steps, rim=rim)
         # Their own light coming back to them, out of the sky it was drawn into, just before it lights.
-        if coming or relit:
-            ax, ay = light_at(who, x, y, h, "death", 1, f)
-            span = min(1.0, (t - (RELIGHT_AT[i] - 0.6)) / 0.6)
+        if light and (coming or since >= 0):
+            ax, ay = light
+            span = min(1.0, (since + 0.6) / 0.6)
             motes(c, (ax - f * 40, ay - 120), (ax, ay), int(70 * span) if coming else 18, 900 + i,
                   [E[who[2]]], spread=10, bow=-14)
-        toward = (HIM_X - x, (HIM_Y - 60) - (y - h * 0.5))
-        n = math.hypot(*toward) or 1.0
-        rim = (toward[0] / n, toward[1] / n, G[2]) if lit else (0, -1, V[3])
-        roster_figure(c, who, x, y, h, [OCC, S[4]], strip="death", frame=1, facing=f,
-                      lit=relit, dim=not relit, toward=rim)
-        wrists.append(_wrist(who, "death", 1, x, y, h, f))
+        wrists.append(sprite_wrist(box, f))
     # The chain: three lengths, wrist to wrist, the middle one behind him.
     spans = [(wrists[0], wrists[1]), (wrists[1], wrists[2]), (wrists[2], wrists[3])]
     order = [1, 0, 2]
@@ -1622,11 +1710,13 @@ def _break_frame(t, him):
 
 def p_break():
     """6. "You went back for them." The hiding's heath again, the tower on its horizon, and the four he
-    could reach - the disciplines - on their knees in a row, bound wrist to wrist by his chain, their
-    staves dark. The Archmage, the one he missed, stands in the middle of them, the title's own figure, his light
-    banked as it was in the hiding. It comes up (animated): his light finds the chain and it breaks,
-    the length behind him first, then the others, link by link going out as it flies; and one after
-    another their own lights come back to them out of the sky they were drawn into."""
+    could reach - the disciplines, each his own sprite (sprite_figure) put three stops into the dark - on
+    their knees in a row, bound wrist to wrist by his chain, its violet their only lit edge, their staves
+    dark. The Archmage, the one he missed, stands in the middle of them, the title's own figure, his light
+    banked as it was in the hiding. It comes up (animated): his light finds the chain and it breaks, the
+    length behind him first, then the others, link by link going out as it flies, and his gold is on their
+    edges now; and one after another their own lights come back to them out of the sky they were drawn
+    into, and each comes up into his own colours a stop at a time."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 420, [OCC, OCC, S[4], V[4], V[3]])
     stars(back, (0, 0, FW, 340), 240, 151)
@@ -1683,8 +1773,8 @@ def p_break():
 
 def p_five():
     """7. The five of them. The same heath and the same places: the four stand up where they knelt, each
-    staff burning his own element again and each robe back in the deep end of his own colour - the moot's
-    colours, the first time since the circle - and in the middle, in his warded circle, the Archmage.
+    his own sprite in his own colours, his staff burning his own element again - and in the middle, in his
+    warded circle, the Archmage.
     His chain lies on the ground in front of them, dead. Five lights on the heath where there was one; no
     line - the next panel is the road, and the one after it the player choosing which of them walks it."""
     back, mid, fore = frame(True), frame(), frame()
@@ -1717,12 +1807,12 @@ def p_five():
         mid.set(x + 1, y, S[4] if rng.random() < 0.6 else OCC)
         if rng.random() < 0.3:
             mid.set(x + 2, y + 1, OCC)
-    # The four, standing, their lights back. Back to front.
+    # The four, standing, their lights back: each his own sprite in his own colours (Eric: "Redraw with real
+    # sprites"), rimmed on the side that faces the Archmage's light. Back to front.
     for (who, x, y, h, f) in sorted(FREED_FOUR, key=lambda e: e[2]):
         toward = (HIM_X - x, -0.6 * abs(HIM_X - x))
         n = math.hypot(*toward) or 1.0
-        light, _front = roster_figure(mid, who, x, y + 4, h + 2, [ROBE[who[0]], OCC], strip="idle", frame=0,
-                                      facing=f, toward=(toward[0] / n, toward[1] / n, G[2]))
+        sprite_figure(mid, who, x, y + 4, strip="idle", frame=0, facing=f, rim=(toward[0] / n, toward[1] / n, G[2]))
     hero.wizard_hero(mid, HIM_X, HIM_Y, h=HIM_H, staff_ramp=LT)
     heath(fore, 600, 840, 900, 159, [(OCC, OCC), (OCC, S[4])], scale=1.7)
     layers = dict(back=back, mid=mid, fore=fore)

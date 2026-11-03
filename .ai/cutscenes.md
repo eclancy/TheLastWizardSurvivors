@@ -16,7 +16,7 @@ Three things, and each beat below uses at least one:
 
 1. **He acts.** Until now the story shows him hiding (the prologue's panel 5) and walking away (panel 6).
    A hero the player is asked to be has to *do* something on screen: break a chain, go back for someone.
-2. **He is seen with the people he saved.** The wizards are the game's own, cut from their real sprites,
+2. **He is seen with the people he saved.** The wizards are the game's own, drawn from their real sprites,
    so the one standing beside him in a cutscene is the one the player picks on the next screen.
 3. **"You."** The prologue already says *"You are the one he missed."* One more line in that voice makes
    what he does the player's own act. Never more than one line a beat (Eric: *"Overall keep text minimal."*).
@@ -55,8 +55,8 @@ played straight after:
 
 | # | panel | line | what |
 |---|---|---|---|
-| 6 | The break (`break`, 5.4 s) | *You went back for them.* | **Animated.** The hiding's heath, his tower on the horizon. The four disciplines - Pyromancer, Geomancer, Frostweaver, Stormcaller, cut from their real sprites (the second frame of each one's death strip: going down) - kneel in a row, bound wrist to wrist by the dark wizard's chain of light, their staves dark. The Archmage stands in the middle of them, the title's own figure, his light banked as it was in the hiding. At 1.3 s it comes up; at 2.0 s it bursts and the chain breaks - the length behind him first, then the outer two, then the shackles - link by link going out as it flies (the darkness ramp down to violet, then nothing), one link in four falling dead to the ground. From 3.2 s their own lights come back to them one after another, motes falling out of the sky they were drawn into in panel 4. |
-| 7 | The five (`five`, 4.8 s) | - | The same heath and the same places: the four stand where they knelt (the dissolve is the moment they rise), each staff burning his own element again and each robe back in the deep end of his own colour - the moot's colours, the first time since the circle. The Archmage in the middle, in his warded circle as on the title. Each light's pool on the ground in the pigment it makes; the dead chain on the ground in front of them. Five lights on the heath where the last two panels had one. |
+| 6 | The break (`break`, 5.4 s) | *You went back for them.* | **Animated.** The hiding's heath, his tower on the horizon. The four disciplines - Pyromancer, Geomancer, Frostweaver, Stormcaller, each his own real sprite (the second frame of his death strip: going down) put three stops into the dark - kneel in a row, bound wrist to wrist by the dark wizard's chain of light, their staves dark, the chain's violet their only lit edge. The Archmage stands in the middle of them, the title's own figure, his light banked as it was in the hiding. At 1.3 s it comes up; at 2.0 s it bursts and the chain breaks - the length behind him first, then the outer two, then the shackles - link by link going out as it flies (the darkness ramp down to violet, then nothing), one link in four falling dead to the ground, and the Archmage's gold is on their edges now. From 3.2 s their own lights come back to them one after another, motes falling out of the sky they were drawn into in panel 4, and each comes up into his own colours a stop at a time. |
+| 7 | The five (`five`, 4.8 s) | - | The same heath and the same places: the four stand where they knelt (the dissolve is the moment they rise), each his own sprite in his own colours, his staff burning his own element again, rimmed in the Archmage's gold on the side that faces him. The Archmage in the middle, in his warded circle as on the title. Each light's pool on the ground in the pigment it makes; the dead chain on the ground in front of them. Five lights on the heath where the last two panels had one. |
 
 Then the road (unchanged) and the character select, where all five are playable.
 
@@ -65,11 +65,23 @@ went back for them.* - past tense like the first two, "you" like the third. It s
 picture cannot: that the figure breaking the chain is the player.
 
 **Rules it keeps** (`.ai/prologue.md`): the dark wizard's light is the chain and the black sun over the
-tower, nothing else; the Archmage's is the light ramp and the gold it lands on; the four are flat-filled
-silhouettes lit only at their own element's anchor (`roster_figure`); nothing from the Sketchbook; feet
+tower, nothing else; the Archmage's is the light ramp and the gold it lands on; the four are their real
+sprites (below); nothing from the Sketchbook; feet
 above row 552, so the PC's caption band never crosses a figure. The old rule "the last two panels have one
 warm light each, and it is his" now reads: the hiding and the road have one each; the five is the one
 panel where his light gives theirs back.
+
+**Real sprites, not cut-outs** (Eric, 2026-11-03: *"Redraw with real sprites"*). The first build drew the
+four, and the freed wizards, as `roster_figure`'s flat one-colour silhouettes - right for the moot, the
+fall and the procession, where the story wants a shape and not yet a person, and wrong here, where the point
+is the person the player picks next. `sprite_figure` draws a wizard's 48 cell, every pixel, at a whole x2 on
+the panel's grid (`SPRITE_K`: one sprite pixel is two panel pixels, four on screen), turned by `facing`,
+with a rim lit one SPRITE pixel deep (on the cell, before the scale, so it sits on his grid) and, while he is
+in his colours, his own light's halo behind his element's anchor. `steps` puts him into the dark (`_tone`):
+every pigment that many stops down its own row, his element ramps to dull steel and then occlusion, the key's
+rims to stone. In the break the four are at 3 until their light returns, then 2, 1, 0 a fifth of a second
+apart. Before the chain breaks their only lit edge is its light landing as violet pigment (the rule: the
+darkness ramp is emission on him and his chain alone); from the break on it is the Archmage's gold.
 
 **The animation** is the hiding's machinery (`write_anim`, `<name>-anim.png` + `.json`, Prologue.cs's
 `AnimSpec`), now per panel: `ANIMS` in `tools/art/prologue.py` holds each animated panel's box, clock and
@@ -85,8 +97,8 @@ over 5.4 s, 35 unique frames of 44 ticks. Its still mid layer is empty inside th
 One panel, 6 s, made once as a template (`tools/art/freed.py`): the heath at night, the moon, his tower
 far off on the horizon (he still holds the land). The Archmage left of the middle, the title's figure with
 his light up and the gold it makes on the ground; right of it, turned to him, the wizard he has just freed -
-cut from that wizard's real sprite (idle) exactly as the prologue cuts the four, filled flat in the deep end
-of his own colour, rimmed by the Archmage's light - his own light burning again at its anchor, motes of it
+his real sprite (idle) in his own colours, drawn as the break and the five draw the four (`sprite_figure`),
+rimmed by the Archmage's light - his own light burning again at its anchor, motes of it
 falling back to him out of the sky. The chain is off him: two lengths on the ground at his feet with the
 light going out of them, the shackles open, the last of it falling from his wrist.
 
@@ -214,7 +226,8 @@ nothing).
 - The line *You went back for them.* - the only new copy in the prologue.
 - The break at full size on a real screen: whether the four read as kneeling wizards before the light comes
   up (they are dark shapes on cold ground for the first 1.3 s), and whether the burst is too much.
-- The five: whether the moot's flat colours on the four read as "their colours back" or as cut-outs.
+- The real sprites at x2 beside the Archmage, who is drawn on the panel's finer grid and stands half a
+  head taller: whether the two scales sit together, and whether the freed wizard reads as small beside him.
 - The freed template: whether one ground for every chapter is enough, or each wants its own place (the
   Dungeon's cell, the Waste's ice) - the template takes a per-wizard ground with one more `WIZARDS` column.
 - Whether C and D are wanted, and in that form.
