@@ -96,6 +96,13 @@ public abstract partial class SideEvent : Node2D
 		AddSite(placer.EventSite(SiteFootprint));
 	}
 
+	/// <summary>
+	/// True for an event whose sites its chapter's own building decides (the Court's rooms: SeersVoiceEvent), not the
+	/// 4-6 chunk band every open chapter's are rolled in - so the band is not asked of it (ValidateSideEventSeparation,
+	/// _ExploreProbe). Its first site is still recorded as the event's (ExplorePlacer.FixedSite).
+	/// </summary>
+	public virtual bool PlacedByChapterRules => false;
+
 	protected PointOfInterest AddSite(Vector2 world, string glyph = null)
 	{
 		var site = PointsOfInterest.Add(new PointOfInterest(world, glyph ?? SiteGlyph));
@@ -209,9 +216,11 @@ public abstract partial class SideEvent : Node2D
 				AnchorLeft = 0f,
 				AnchorRight = 1f,
 				// Under the boss bar's slot (44-78), which a live event never shares: events stand
-				// down the moment the boss arrives.
-				OffsetTop = 84f,
-				OffsetBottom = 112f,
+				// down the moment the boss arrives. A chapter with rules of its own may have its own line in
+				// that slot (ChapterRules.CreateObjective: the Court's rooms found), so there the event's goes
+				// one line under it - the Court is the first chapter with both (.ai/chapter-wizards.md 4.10).
+				OffsetTop = Game?.Rules != null ? ChapterRules.ObjectiveBottom : 84f,
+				OffsetBottom = Game?.Rules != null ? ChapterRules.ObjectiveBottom + 28f : 112f,
 			};
 			ResponsiveLayout.SetFont(objectiveLabel, ResponsiveLayout.TextRole.Micro);
 			objectiveLabel.AddThemeColorOverride("font_color", new Color(0.96f, 0.86f, 0.55f));

@@ -36,6 +36,8 @@ public enum HintCue
 	Writ,
 	/// <summary>Birds lifting out of the canopy on each fall of a great foot (the walking hut).</summary>
 	Birds,
+	/// <summary>Stars twinkling in, one on each line of a verse read aloud (the seer's voice in the Court).</summary>
+	Stars,
 }
 
 /// <summary>One side event's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
@@ -220,6 +222,23 @@ public static class StageHintCatalog
 				"Something heavy walks the deep wood, on two legs.",
 				"The steps again. Too heavy for a man.",
 				"Still walking, round and round.",
+			},
+		},
+		// Nostradamus, kept in the Court to read what is coming (.ai/chapter-wizards.md 4.10). He is heard READING,
+		// and what he reads is the player: lines written for the game in the shape of his quatrains, never his own
+		// words. Speech, as Tituba's is - a person's voice - but he does not call for help. Stars come in on each line
+		// of the verse from his side. Not named; never said what to do, or that anyone is held.
+		new()
+		{
+			SiteId = "seers_voice",
+			Voice = HintVoice.Speech,
+			Sound = SfxCatalog.HintQuatrain,
+			Cue = HintCue.Stars,
+			Lines = new[]
+			{
+				"Out of the west one light, on foot, alone.",
+				"The one he missed walks every road he made.",
+				"When the last door opens, the house goes dark.",
 			},
 		},
 		// Vainamoinen, the singer, under the ice. He is heard, not named.

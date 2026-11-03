@@ -1448,6 +1448,135 @@ def hint_hut_step():
     return S.dc_block(_far(out, low=50.0, high=2200.0, size=0.55, mix=0.3, damp=0.65))
 
 
+# The Court's seer (.ai/chapter-wizards.md 4.10): Nostradamus, reading aloud in one of the rooms of the house - four
+# lines of verse, one quatrain, read as two couplets with a breath between them. The onset of each line, in seconds:
+# StageHintCue.QuatrainLines is the same list (the drifting marks come in on each line) - change one, change both.
+_QUATRAIN_LINES = [0.06, 0.78, 1.74, 2.46]
+# Each line a little softer than the one before: a reader's voice settling as he reads on, not a call.
+_QUATRAIN_GAINS = [1.0, 0.92, 0.88, 0.8]
+
+# A man's vowels, (F1, F2, F3) - Peterson and Barney's, the third pulled in a little so nothing reaches for 3 kHz.
+_SPOKEN_VOWELS = {
+    "ah": (730.0, 1090.0, 2440.0),
+    "aw": (570.0, 840.0, 2410.0),
+    "uh": (520.0, 1190.0, 2390.0),
+    "eh": (530.0, 1840.0, 2480.0),
+    "ih": (390.0, 1990.0, 2550.0),
+    "ee": (300.0, 2200.0, 2750.0),
+    "oo": (320.0, 870.0, 2240.0),
+    "er": (490.0, 1350.0, 1690.0),
+}
+
+# The verse, line by line: each syllable is (consonant before it, vowel it starts on, vowel it glides to, seconds,
+# pitch it starts on, pitch it ends on, gain). Read, not sung: the pitch moves inside every syllable as speech does,
+# each line falls from its stress to its end (declination), the first and third lift a little at the line's end -
+# the voice going on - and the fourth starts lower, falls furthest and holds its last syllable, because it is the
+# end of the verse. Weak, strong, weak, strong: a short line of verse at a reader's pace, not a sentence.
+_QUATRAIN_VERSE = [
+    [("", "aw", "oo", 0.09, 128.0, 132.0, 0.8), ("w", "eh", "eh", 0.13, 141.0, 134.0, 1.0),
+     ("s", "uh", "uh", 0.07, 128.0, 125.0, 0.65), ("l", "ah", "ee", 0.15, 134.0, 138.0, 0.9)],
+    [("th", "uh", "uh", 0.07, 127.0, 124.0, 0.6), ("w", "aw", "aw", 0.13, 139.0, 131.0, 1.0),
+     ("m", "ih", "ih", 0.07, 128.0, 125.0, 0.7), ("s", "eh", "eh", 0.15, 125.0, 116.0, 0.85)],
+    [("w", "eh", "eh", 0.07, 127.0, 126.0, 0.65), ("s", "uh", "er", 0.13, 140.0, 133.0, 1.0),
+     ("l", "ah", "ah", 0.07, 128.0, 125.0, 0.65), ("d", "aw", "oo", 0.15, 129.0, 135.0, 0.85)],
+    [("h", "aw", "oo", 0.08, 122.0, 119.0, 0.65), ("g", "oo", "oo", 0.13, 128.0, 120.0, 0.95),
+     ("z", "ah", "ah", 0.07, 117.0, 112.0, 0.65), ("d", "ah", "er", 0.28, 110.0, 96.0, 0.85)],
+]
+
+# What comes before a vowel, as a short sound and the gap it leaves: a breath, a hiss, a buzz or a closed lip.
+_CONSONANTS = {
+    "": None,
+    "h": ("breath", 0.04),
+    "th": ("hiss", 0.045, 1700.0, 0.08),
+    "s": ("hiss", 0.055, 2600.0, 0.12),
+    "z": ("hiss", 0.04, 2400.0, 0.07),
+    "t": ("stop", 0.03, 1900.0),
+    "d": ("stop", 0.025, 1500.0),
+    "g": ("stop", 0.03, 1200.0),
+    "w": ("glide", 0.04, "oo"),
+    "l": ("glide", 0.035, "er"),
+    "m": ("hum", 0.045),
+}
+
+
+def _spoken_syllable(spec, seed):
+    """One syllable of the reading: its consonant, then a voiced vowel that glides from one vowel's resonances to
+    the next, with an old man's husk of breath under it. Returns the buffer and the seconds of consonant ahead of the
+    vowel (the syllable's onset is its consonant, so a line begins where its first sound does)."""
+    cons, v0, v1, dur, p0, p1, g = spec
+    a, b = _SPOKEN_VOWELS[v0], _SPOKEN_VOWELS[v1]
+    # The second and third resonances kept up, as a near speaking voice keeps them: the ice song, sung through the
+    # ice, has its top taken off, and a voice in the same room does not.
+    formants = [(S.sweep(dur, a[0], b[0]), 4.0, 1.0), (S.sweep(dur, a[1], b[1]), 6.0, 0.8),
+                (S.sweep(dur, a[2], b[2]), 9.0, 0.32)]
+    # Old: a fast small tremor in the pitch (6.4 Hz) rather than a singer's slow vibrato, and breath through the
+    # same resonances under the voice.
+    vowel = _vowel(S.sweep(dur, p0, p1), dur, formants, vibrato=0.011, rate=6.4, attack=0.018, release=0.04, seed=seed)
+    husk = S.env_mul(_breath(dur, [(a[0], 0.8), (a[1], 0.4)], q=3.0, seed=seed + 50), S.adsr(dur, a=0.02, d=0.03, s=0.8, r=0.04))
+    voiced = S.layer([(vowel, 0.0, 1.0), (husk, 0.0, 0.16)])
+    kind = _CONSONANTS.get(cons)
+    if kind is None:
+        return S.gain(voiced, g), 0.0
+    if kind[0] == "breath":
+        lead = kind[1]
+        c = S.env_mul(_breath(lead, [(a[0], 0.7), (a[1], 0.5)], q=2.0, seed=seed + 7), S.adsr(lead, a=0.01, d=0.01, s=0.8, r=0.01))
+        return S.gain(S.layer([(c, 0.0, 0.35), (voiced, lead, 1.0)]), g), lead
+    if kind[0] == "hiss":
+        lead, centre, level = kind[1], kind[2], kind[3]
+        noise = S.bandpass(S.osc("noise", 0, lead, seed=seed + 9), centre, 2.0)
+        c = S.env_mul(noise, S.adsr(lead, a=0.012, d=0.01, s=0.8, r=0.015))
+        return S.gain(S.layer([(c, 0.0, level * 4.0), (voiced, lead * 0.8, 1.0)]), g), lead * 0.8
+    if kind[0] == "stop":
+        lead, centre = kind[1], kind[2]
+        burst = S.env_mul(S.bandpass(S.osc("noise", 0, 0.012, seed=seed + 11), centre, 2.5), S.decay(S.n_samples(0.012), 3.0))
+        return S.gain(S.layer([(burst, lead - 0.012, 0.45), (voiced, lead, 1.0)]), g), lead
+    if kind[0] == "glide":
+        lead, from_vowel = kind[1], kind[2]
+        f = _SPOKEN_VOWELS[from_vowel]
+        glide = _vowel(S.sweep(lead, p0 * 0.97, p0), lead,
+                       [(S.sweep(lead, f[0], a[0]), 4.0, 0.8), (S.sweep(lead, f[1], a[1]), 6.0, 0.35)],
+                       vibrato=0.008, rate=6.4, attack=0.012, release=0.005, seed=seed + 13)
+        return S.gain(S.layer([(glide, 0.0, 0.55), (voiced, lead, 1.0)]), g), lead
+    # A hum: the lips closed on the voice, only its lowest resonance getting out.
+    lead = kind[1]
+    hum = _vowel(S.sweep(lead, p0, p0), lead, [(260.0, 4.0, 1.0), (1000.0, 8.0, 0.08)],
+                 vibrato=0.008, rate=6.4, attack=0.012, release=0.005, seed=seed + 15)
+    return S.gain(S.layer([(hum, 0.0, 0.5), (voiced, lead, 1.0)]), g), lead
+
+
+def _quatrain_line(syllables, seed):
+    """A line of the verse: its syllables one after another, each joined to the next with a breath of a gap, the
+    first starting at the line's onset."""
+    items = []
+    t = 0.0
+    for k, spec in enumerate(syllables):
+        buf, _lead = _spoken_syllable(spec, seed + 17 * k)
+        items.append((buf, t, 1.0))
+        t += len(buf) / S.SR + 0.012
+    return S.layer(items)
+
+
+def hint_quatrain():
+    """The Court: an old man's voice, reading aloud in one of the rooms of the house.
+
+    Nostradamus at his verses (.ai/chapter-wizards.md 4.10). Four lines of a quatrain read in a measured voice: each
+    line four syllables, weak and strong, the pitch moving inside every syllable as speech does and falling through
+    the line, the first and third lifting at their ends where the verse goes on, the fourth lower, falling furthest,
+    its last syllable held. A man's register, low (96-140 Hz) and dry, with an old voice's quick tremor and a husk of
+    breath; consonants as breaths, hisses, stops and glides, so it is read and not sung. Near: a person in a room,
+    not a voice from the rock - a stone room's air at a fifth of the level and short, top cut at 3.2 kHz. Not the
+    Sibyl (a woman, intoned, multiplied by the cave), not the cell's cry (called, rising into a question), not the
+    ice song (sung, legato, muffled under ice). It plays as the chapter hint and, in the seek, every few seconds
+    from the room his voice is in, so it is level and soft-edged and pleasant on repeat. The line onsets are
+    _QUATRAIN_LINES, which StageHintCue puts its marks up on."""
+    items = []
+    for i, onset in enumerate(_QUATRAIN_LINES):
+        items.append((_quatrain_line(_QUATRAIN_VERSE[i], 1301 + 101 * i), onset, _QUATRAIN_GAINS[i]))
+    out = S.pad(S.layer(items), 3.3)
+    out = S.lowpass(S.highpass(out, 85.0), 3200.0)
+    return S.dc_block(S.reverb(out, size=0.5, damp=0.6, mix=0.12))
+
+
 # ---------------------------------------------------------------------------
 # secrets - the light he missed (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9)
 # ---------------------------------------------------------------------------
@@ -1752,6 +1881,9 @@ REGISTRY += [
     ("hint_anvil",          "hint",   -10.0, hint_anvil,          False),
     ("hint_sibyl_voice",    "hint",   -10.0, hint_sibyl_voice,    False),
     ("hint_hut_step",       "hint",   -10.0, hint_hut_step,       False),
+    # The Court's seer reading (SeersVoiceEvent): the chapter hint, and in the seek every few seconds from the room
+    # his voice is in while the player looks for it - so it sits with the hints, not above them.
+    ("hint_quatrain",       "hint",   -10.0, hint_quatrain,       False),
     # The nine mouths' call (NineMouthsEvent): nine voices in two seconds, a call every few seconds, only
     # while the player is at the cliff - the once-a-second row. Hers is the louder of the two because it is
     # the one to hear; the eight echoes come a few dB under it and lose more again to the distance.

@@ -181,7 +181,8 @@ public static partial class RegressionChecks
 					for (int i = 0; i < mains.Count; i++)
 					{
 						float d = mains[i].DistanceTo(ground.Origin);
-						if (d < min || d > max)
+						// The Court's rooms are its building's, not the band's (SideEvent.PlacedByChapterRules).
+						if (!laid[i].Event.PlacedByChapterRules && (d < min || d > max))
 						{
 							outOfBand++;
 							firstFault ??= $"seed {seed}{(maze ? " (maze)" : "")}: event {i}'s site {d / chunk:0.0} chunks out";

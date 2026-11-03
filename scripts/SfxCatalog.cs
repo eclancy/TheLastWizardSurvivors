@@ -126,6 +126,8 @@ public static class SfxCatalog
 	public const string HintSibylVoice = "hint_sibyl_voice";
 	// The walking hut in the Enchanted Forest (WalkingHutEvent): two heavy falls of a great foot and its timbers creaking.
 	public const string HintHutStep = "hint_hut_step";
+	// The Court's seer, heard reading his verse from a room (SeersVoiceEvent): the chapter hint, and his readings in the seek.
+	public const string HintQuatrain = "hint_quatrain";
 	// The nine mouths' call in the Sunken Cave (NineMouthsEvent): her voice out of the true mouth, first, and
 	// the cave's echo of it out of the other eight, a beat apart - played at each mouth, so the 2D listener
 	// pans and fades each from where it comes.
@@ -157,7 +159,7 @@ public static class SfxCatalog
 		UiHover, UiClick, UiBack, UiDenied, UiOpen, UiClose, UiPause,
 		StageClear, GameOver, MetaUnlock, WaveWarning,
 		PlayerFall, TallyTick, TallyPayout,
-		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep,
+		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep, HintQuatrain,
 		SibylVoice, SibylEcho,
 		SecretSeen, SecretFound, SecretShatter,
 	};

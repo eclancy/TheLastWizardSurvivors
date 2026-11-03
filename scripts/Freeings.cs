@@ -31,6 +31,8 @@ public static class Freeings
 	public static readonly IReadOnlyList<string> WizardIds = new[]
 	{
 		"tituba", "vainamoinen", "seimei", "wayland", "sibyl", "laelaps", "baba_yaga",
+		// The Court's: found at his desk at the end of the voice he was heard reading in (.ai/chapter-wizards.md 4.10).
+		"nostradamus",
 	};
 
 	/// <summary>A freeing's reel id in Prologue.Reels: "freed_tituba".</summary>

@@ -525,6 +525,40 @@ public sealed class GalleryRoom : CourtRoom
 	public static IReadOnlyList<string> TakenWizards =>
 		UnlockCatalog.AllWizardIds.Where(id => UnlockCatalog.GetCharacter(id)?.Source != UnlockSource.Starter).ToList();
 
+	/// <summary>
+	/// The wizard whose portrait is always the LAST frame of the row: the seer he keeps in this house to read what is
+	/// coming (.ai/chapter-wizards.md 4.10). Every frame is uncovered as its wizard is freed, so on a road walked in
+	/// order the frame still covered at the end of the row is his, in the house where he is - the clue the Gallery
+	/// gives. Everyone else hangs in catalog order from the first frame.
+	/// </summary>
+	public const string LastFrameWizardId = "nostradamus";
+
+	/// <summary>
+	/// Which wizard hangs in frame <paramref name="slot"/> of <paramref name="frames"/>, or null for a bare frame: the
+	/// others from the first frame on, the seer in the last. Past the frames the wall holds, the others that do not
+	/// fit are left off (court_layout.py hangs twelve).
+	/// </summary>
+	public static string WizardInFrame(int slot, int frames, IReadOnlyList<string> taken)
+	{
+		if (slot < 0 || slot >= frames || taken == null)
+			return null;
+		bool hasSeer = taken.Contains(LastFrameWizardId);
+		if (hasSeer && slot == frames - 1)
+			return LastFrameWizardId;
+		int k = 0;
+		foreach (string id in taken)
+		{
+			if (hasSeer && id == LastFrameWizardId)
+				continue;
+			if (k == slot)
+				return id;
+			k++;
+		}
+		return null;
+	}
+
+	private int frameCount = -1;
+
 	protected override void BuildPiece(AuthoredLayout.Piece piece)
 	{
 		if (piece.Kind != "portrait")
@@ -532,11 +566,13 @@ public sealed class GalleryRoom : CourtRoom
 			base.BuildPiece(piece);
 			return;
 		}
-		IReadOnlyList<string> taken = TakenWizards;
-		if (piece.Slot < 0 || piece.Slot >= taken.Count)
+		if (frameCount < 0)
+			frameCount = Pieces.Count(p => p.Kind == "portrait");
+		string wizard = WizardInFrame(piece.Slot, frameCount, TakenWizards);
+		if (wizard == null)
 			return;            // a bare stretch of wall: there are more frames' places than wizards he took
 		SaveData save = Rules.Save;
-		bool freed = save != null && GlobalStatsManager.IsCharacterUnlocked(save, taken[piece.Slot]);
+		bool freed = save != null && GlobalStatsManager.IsCharacterUnlocked(save, wizard);
 		Rules.PlaceSprite(Root, piece, freed ? "portrait" : "portrait-covered", CourtRules.WallDecorZ);
 	}
 

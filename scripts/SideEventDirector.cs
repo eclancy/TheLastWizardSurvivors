@@ -118,13 +118,17 @@ public partial class SideEventDirector : Node
 		"stage_9" => new(WayfinderKind.Compass, new SideEventEntry("the_well", () => new WellEvent())),
 		// (the Broken Circle's line is below; leave this one as it is)
 		"stage_10" => new(WayfinderKind.Compass, new SideEventEntry("the_moot", () => new MootFiresEvent())),
-		// THE CASTLE (.ai/endgame-castle.md). No side event is designed for any of the three: the bridge's
-		// goal is the crossing, the Court's its rooms, the Throne's the fight - each through its
-		// ChapterRules (ChapterRulesCatalog), not here. The lines are written so that one designed later is
-		// one line's edit, a line apart from its neighbours. The Cursed Dungeon keeps the Gaoler's key.
+		// THE CASTLE (.ai/endgame-castle.md). The bridge's goal is the crossing and the Throne's the fight - each
+		// through its ChapterRules (ChapterRulesCatalog), not here; the Court's is its rooms, and since the chapter
+		// wizards (.ai/chapter-wizards.md 4.8, 4.10) it holds two prisoners among them too. The lines are written so
+		// that one designed later is one line's edit, a line apart from its neighbours. The Cursed Dungeon keeps the
+		// Gaoler's key.
 		"stage_11" => null,
 		// (the Court's line is below)
-		"stage_12" => null,
+		// The Court's first event (.ai/chapter-wizards.md 4.10): Nostradamus, heard reading from room to room. Its
+		// rooms are the Court's own, chosen by the seed (SeersVoiceEvent.PlaceSites); Ma Liang's dotted door in the
+		// Gallery will be the second event on this line (4.8), and the Gallery is kept out of the seer's rooms for it.
+		"stage_12" => new(WayfinderKind.Compass, new SideEventEntry("seers_voice", () => new SeersVoiceEvent())),
 		// (the Throne's line is below)
 		"stage_13" => null,
 		_ => null,
@@ -252,7 +256,12 @@ public partial class SideEventDirector : Node
 		float[] eventBearings = laid.Select(l => l.Placer.EventBearing).ToArray();
 		float bearing = WayfinderBearing(near.NextFloat(), eventBearings);
 		WayfinderKind kind = WayfinderFor(stage.Id) ?? WayfinderKind.Compass;
-		Vector2 wayfinderAt = near.AtBearing(bearing, WayfinderMinChunks, WayfinderMaxChunks, WayfinderPickup.Footprint);
+		// In the band, not only at the bearing: where the first search finds ground this is exactly AtBearing's spot,
+		// so every chapter that had a wayfinder keeps it where it was; where it does not, the band is swept from the
+		// bearing outward for one rather than the wayfinder being left in the rock. The Court needs it: its building
+		// fills only the quarter of the band north-east of the stair, and a bearing out over the sea found no floor.
+		Vector2 wayfinderAt = near.AtBearingInBandAvoiding(bearing, WayfinderMinChunks, WayfinderMaxChunks, WayfinderPickup.Footprint,
+			eventBearings, Mathf.DegToRad(WayfinderMinSeparationDegrees));
 		var site = PointsOfInterest.Add(new PointOfInterest(wayfinderAt, WayfinderPickup.GlyphFor(kind), isWayfinder: true));
 		var wayfinder = new WayfinderPickup { Name = "Wayfinder", Game = Game, Kind = kind, Site = site };
 

@@ -24,6 +24,8 @@ using TheOneHeMissed.scripts;
 //                 the first the nearest the line to her
 //   the hut       birds lifting out of the canopy on her side, beating up and away toward her - a few on
 //                 each fall of its feet, one or two more as its timbers creak
+//   the seer      stars twinkling in from his side, a near one and a far one on each line of the verse he
+//                 reads, each flaring once and fading as it drifts in
 //
 // IN THE WORLD'S LAYERS, HELD TO THE VIEW. The marks are drawn in the world, on the layer over the
 // bodies and under the HUD, so they read as something out there rather than as an interface - but
@@ -43,7 +45,7 @@ public partial class StageHintCue : Node2D
 	public const string SheetPath = "res://assets/bonelight/effects/hint-cues.png";
 	public const int Cell = 16;
 	public const int Columns = 8;
-	public const int Rows = 9;   // HintCue's members, in order
+	public const int Rows = 10;   // HintCue's members, in order
 
 	// x3, the attack icons' size: at x2 a 16 px mark was a speck on the phone.
 	private const float DrawScale = 3f;
@@ -88,6 +90,13 @@ public partial class StageHintCue : Node2D
 
 	/// <summary>The walking hut's hint beats, for RegressionChecks.ValidateWalkingHut (a copy).</summary>
 	public static float[] HutBeatTimes => (float[])HutBeats.Clone();
+
+	// The seer reading (hint_quatrain): the four lines of a verse, two couplets with a breath between -
+	// tools/audio/sfx.py _QUATRAIN_LINES is the same list. A star on each line, near, and one further off.
+	private static readonly float[] QuatrainLines = { 0.06f, 0.78f, 1.74f, 2.46f };
+
+	/// <summary>The seer's hint beats, for RegressionChecks.ValidateQuatrains (a copy).</summary>
+	public static float[] QuatrainLineTimes => (float[])QuatrainLines.Clone();
 
 	private struct Mark
 	{
@@ -190,6 +199,7 @@ public partial class StageHintCue : Node2D
 		HintCue.Sparks => 90f,
 		HintCue.Writ => 120f,
 		HintCue.Birds => 110f,
+		HintCue.Stars => 100f,
 		_ => 8f,
 	};
 
@@ -391,6 +401,20 @@ public partial class StageHintCue : Node2D
 				if (nextBeat >= HutBeats.Length)
 					clock = -1f;
 				break;
+			case HintCue.Stars:
+				while (nextBeat < QuatrainLines.Length && QuatrainLines[nextBeat] <= t)
+				{
+					// A line read: a near star on the line to him, a little either side line by line as a verse sets
+					// its lines down, and a far one further along - each drifting slowly in and flaring once (Pose).
+					float along = ((nextBeat % 2 == 0) ? -1f : 1f) * (10f + 14f * nextBeat) + Jitter(8f);
+					Spawn((int)HintCue.Stars, 0, 2.6f, along, Jitter(10f), inward: 9f, drift: Jitter(6f), rise: 6f, fadeIn: 0.2f);
+					Spawn((int)HintCue.Stars, 4, 2.2f, -along * 1.8f + Jitter(20f), 20f + (float)random.NextDouble() * 16f,
+						inward: 6f, drift: Jitter(8f), rise: 4f, fadeIn: 0.3f);
+					nextBeat++;
+				}
+				if (nextBeat >= QuatrainLines.Length)
+					clock = -1f;
+				break;
 			case HintCue.Bell:
 				// The bell walks along the edge, as the caravan walks its road.
 				if (bellSlot < 0)
@@ -538,6 +562,16 @@ public partial class StageHintCue : Node2D
 				column = (m.Glyph >= 4 ? 4 : 0) + (int)(m.Age * (13f - 3f * Mathf.Min(1f, m.Age)) + m.Phase) % 4;
 				at.X += Mathf.Sin(m.Age * 3.7f + m.Phase) * 4f;
 				break;
+			case HintCue.Stars:
+			{
+				// A twinkle (four phases, near or far): it swells to its longest spikes in the middle of its life and
+				// flashes once, eight-pointed, at the peak - then settles back as it fades.
+				float f = m.Age / Mathf.Max(0.01f, m.Life);
+				int step = Mathf.Clamp(Mathf.RoundToInt(3f * Mathf.Sin(f * Mathf.Pi)), 0, 3);
+				column = (m.Glyph >= 4 ? 4 : 0) + step;
+				at.Y += Mathf.Sin(m.Age * 2.3f + m.Phase) * 3f;
+				break;
+			}
 			case HintCue.Writ:
 				// Turning over as it is blown, and lifted and dropped by the draught.
 				column = (m.Glyph + (int)(m.Age * 9f)) % Columns;

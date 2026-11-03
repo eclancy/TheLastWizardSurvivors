@@ -379,6 +379,14 @@ public partial class _UiShot : Node
 	private bool wayfinderTaken;
 	private bool arriveEvent;
 	private bool eventArrived;
+	// --seer-leg=N: the Court's seer (SeersVoiceEvent) moved on to reading N (1, 2; 3 found) and the player stood in front of
+	// the place he just found empty (at N = 2 the desk is laid in the third room); --seer-desk stands him at the desk
+	// instead; --seer-read has the voice read once, near the end of the warmup, from wherever it reads now.
+	private int seerLeg = -1;
+	private bool seerDesk;
+	private bool seerRead;
+	private bool seerMoved;
+	private bool seerReadDone;
 	// --event-index=N: which of the chapter's events (SideEventDirector.EventsFor; 0 its original, 1 a second -
 	// --second-event-test adds a stand-in one on a tool run) --goto=event, --goto=site:N, --win-event and --arrive
 	// mean. --goto=event:N goes to event N's main site whatever this says.
@@ -1797,6 +1805,15 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--arrive")
 				arriveEvent = true;
+			else if (arg.StartsWith("--seer-leg="))
+				seerLeg = System.Math.Clamp(int.Parse(arg.Substring("--seer-leg=".Length)), 0, SeersVoiceEvent.Readings - 1);
+			else if (arg == "--seer-desk")
+			{
+				seerDesk = true;
+				seerLeg = SeersVoiceEvent.Readings - 1;
+			}
+			else if (arg == "--seer-read")
+				seerRead = true;
 			else if (arg.StartsWith("--event-index="))
 				eventIndex = System.Math.Max(0, int.Parse(arg.Substring("--event-index=".Length)));
 			// --zoom=Z: the run camera's zoom (player.tscn's is 0.85), for a map-like view of a stretch
@@ -1822,7 +1839,7 @@ public partial class _UiShot : Node
 		if (dropPotion || dropHealth || winEvent || castBramble || stageCount > 0 || demoEvolutions.Length > 0)
 			SaveManager.WritesDisabled = true;
 		// A run that walks to its event can win it, and a won event saves on the spot.
-		if (gotoTarget != null || takeWayfinder || arriveEvent)
+		if (gotoTarget != null || takeWayfinder || arriveEvent || seerLeg >= 0 || seerRead)
 			SaveManager.WritesDisabled = true;
 
 		if (!ResourceLoader.Exists(ScenePath))
@@ -3033,6 +3050,27 @@ public partial class _UiShot : Node
 			{
 				eventArrived = true;
 				GD.Print(arrival.Start(eventIndex) is SideEvent begun ? $"_UiShot: {begun.GetType().Name} begun where it stands" : "_UiShot: no event to begin");
+			}
+			if (seerLeg >= 0 && !seerMoved && frames >= WarmupFrames / 3 + 2
+				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector seerDirector
+				&& seerDirector.Events.OfType<SeersVoiceEvent>().FirstOrDefault() is SeersVoiceEvent seerShot
+				&& FindNodeOfType<Player>(GetTree().Root) is Player seeker)
+			{
+				seerMoved = true;
+				seerShot.DebugAdvanceTo(seerLeg);
+				Vector2 stand = seerDesk ? seerShot.StandPoint : seerShot.ReadingSpots[System.Math.Max(0, seerLeg - 1)] + new Vector2(0f, 130f);
+				seeker.GlobalPosition = stand;
+				teleported = true;
+				GD.Print($"_UiShot: the seer at leg {seerShot.Leg} ({string.Join(" -> ", seerShot.ReadingRooms)}); standing at {stand}");
+			}
+			if (seerRead && !seerReadDone && frames >= WarmupFrames - fxLead
+				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector readDirector
+				&& readDirector.Events.OfType<SeersVoiceEvent>().FirstOrDefault() is SeersVoiceEvent reader)
+			{
+				seerReadDone = true;
+				Vector2 from = reader.CurrentSpot ?? reader.ReadingSpots[^1];
+				reader.Read(from);
+				GD.Print($"_UiShot: the seer read from {from}");
 			}
 			if (teleportTo is Vector2 target && !teleported && frames >= WarmupFrames / 3
 				&& FindNodeOfType<Player>(GetTree().Root) is Player traveller)

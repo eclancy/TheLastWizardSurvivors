@@ -284,6 +284,7 @@ public static class AchievementDefinitions
 		("the_thaw", "Out of the Ice", "Thaw the wizard out of the ice in the Frozen Waste.", "Frees Väinämöinen"),
 		("caravan_master", "The Caravan Stopped", "Catch the caravan master on the Scorched Sands road.", "Unlocks Iron Palisade"),
 		("great_anvil", "The Chains Struck", "Bring the forge's own hammers down on the four chains in the Emberdeep.", "Frees Wayland the Smith"),
+		("seers_voice", "The Last Reading", "Follow the voice reading room to room through the Court until you find the reader.", "Frees Nostradamus"),
 	};
 
 	private const float TenMinutes = 600f;

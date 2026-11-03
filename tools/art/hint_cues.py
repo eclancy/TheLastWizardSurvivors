@@ -40,6 +40,12 @@ THE ROW ORDER IS AN API: HintCue's order (scripts/StageHintCatalog.cs).
   birds    the hut        a bird lifting out of the canopy, four beats of its wings (0-3: up, half, down,
                           half), then the same four smaller - one further off (4-7): "birds lift out of
                           the canopy toward her" on each fall of the hut's feet
+  stars    the seer       a star twinkling - a four-pointed star with concave sides, small, swelling to its
+                          longest spikes, then turned a quarter-turn as a twinkle turns (0-3), then the same
+                          four smaller and dimmer, one further off (4-7): a few come in on each phrase of
+                          his reading in the Court - an astrologer's stars, never a falling one (Starfall's
+                          stars fall at their slant; these hang and turn), and no trail, since they come in
+                          from whichever edge he is beyond
 
 Each wears its event's far-tell colour (SideEvent.FarTellColor) as its body, so the cue is the
 colour of the light the player will find: wind's ramp for the grove's lichen grey-green, arcane
@@ -97,6 +103,11 @@ def ramp_of(name):
     if name == "birds":
         # The walking hut's far tell is the arcane ramp's mid (WalkingHutEvent.TellColor): his mark, the eye-light in
         # the horse skull on its gable. Birds put up by its tread, seen against his light.
+        a = bl.ELEMENTS["arcane"]
+        return (a[1], a[2], a[3], a[0])
+    if name == "stars":
+        # The seer's far tell is the arcane ramp's mid (SeersVoiceEvent.TellColor), as the seal's and the hut's:
+        # he is held in the house of the one who took him, and the light he is heard through is that one's.
         a = bl.ELEMENTS["arcane"]
         return (a[1], a[2], a[3], a[0])
     if name == "writ":
@@ -506,6 +517,41 @@ def bird(frame):
     return sampled(inside), set()
 
 
+def star(frame):
+    """A star twinkling, the seer's: four points with concave sides (an astroid, |u|^2/3 + |v|^2/3 <= 1) on
+    one pixel's centre, so every arm ends in a single pixel. The cycle: small, larger, its longest spikes,
+    then a flash - shorter again, with a glint thrown out on each diagonal, eight points for a moment
+    (frames 0-3): a twinkle, which the song's frost glint (a cross that only grows) never does. Frames 4-7
+    are the same four at three fifths, one further off. The core is the middle pixel and, once it has grown,
+    the four beside it."""
+    k = frame % 4
+    s = 1.0 if frame < 4 else 0.6
+    r = [3.6, 5.0, 6.3, 4.2][k] * s
+    cx = cy = 8.5
+
+    def inside(x, y):
+        u, v = abs(x - cx), abs(y - cy)
+        return (u / r) ** (2.0 / 3.0) + (v / r) ** (2.0 / 3.0) <= 1.0
+    if k == 3:
+        # The flash: a thin cross, and a glint standing off each diagonal with a gap between - eight points
+        # that only read as eight because the diagonals are not joined to the middle.
+        arm = 4 if s == 1.0 else 2
+        mask = set()
+        for t in range(-arm, arm + 1):
+            mask.add((8 + t, 8))
+            mask.add((8, 8 + t))
+        if s == 1.0:
+            for (ox, oy) in ((2, 2), (-2, 2), (2, -2), (-2, -2)):
+                mask.add((8 + ox, 8 + oy))
+        return mask, set([(8, 8)])
+    mask = sampled(inside)
+    mask.add((8, 8))
+    core = set([(8, 8)])
+    if r >= 4.5:
+        core.update([(7, 8), (9, 8), (8, 7), (8, 9)])
+    return mask, core
+
+
 ROWS = [
     ("leaves", [leaf(f) for f in range(8)]),
     ("echo", [echo(d) for d in range(8)]),
@@ -517,6 +563,7 @@ ROWS = [
     ("sparks", [spark(f) for f in range(8)]),
     ("writ", [writ(f) for f in range(8)]),
     ("birds", [bird(f) for f in range(8)]),
+    ("stars", [star(f) for f in range(8)]),
 ]
 
 

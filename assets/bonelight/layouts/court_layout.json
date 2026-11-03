@@ -830,7 +830,7 @@
   },
   {
    "at": [
-    72.5,
+    70.5,
     61.5
    ],
    "kind": "portrait",
@@ -850,7 +850,7 @@
   },
   {
    "at": [
-    84.5,
+    82.5,
     61.5
    ],
    "kind": "portrait",
@@ -860,7 +860,7 @@
   },
   {
    "at": [
-    90.5,
+    86.5,
     61.5
    ],
    "kind": "portrait",
@@ -870,7 +870,7 @@
   },
   {
    "at": [
-    96.5,
+    90.5,
     61.5
    ],
    "kind": "portrait",
@@ -880,7 +880,7 @@
   },
   {
    "at": [
-    102.5,
+    94.5,
     61.5
    ],
    "kind": "portrait",
@@ -890,7 +890,7 @@
   },
   {
    "at": [
-    108.5,
+    98.5,
     61.5
    ],
    "kind": "portrait",
@@ -900,7 +900,7 @@
   },
   {
    "at": [
-    114.5,
+    102.5,
     61.5
    ],
    "kind": "portrait",
@@ -910,12 +910,42 @@
   },
   {
    "at": [
-    120.5,
+    106.5,
     61.5
    ],
    "kind": "portrait",
    "room": "gallery",
    "slot": 8,
+   "wall": true
+  },
+  {
+   "at": [
+    110.5,
+    61.5
+   ],
+   "kind": "portrait",
+   "room": "gallery",
+   "slot": 9,
+   "wall": true
+  },
+  {
+   "at": [
+    118.5,
+    61.5
+   ],
+   "kind": "portrait",
+   "room": "gallery",
+   "slot": 10,
+   "wall": true
+  },
+  {
+   "at": [
+    122.5,
+    61.5
+   ],
+   "kind": "portrait",
+   "room": "gallery",
+   "slot": 11,
    "wall": true
   },
   {
