@@ -165,9 +165,15 @@ hurt flash and the death fade step each along its own row whichever look ships.
 A: idle (frame one is the portrait; the light in the quartz pulses), moving, hurt and death (`MerlinFrames.tres`);
 0.97 edges/px. The orb leaves from the quartz, cell (10, 7).
 
-Icon `orb-of-ages-light.png` (`spell_icons.py`: the orb in the claw inside the ring and its star); the six evolution
-icons are `evolution_icons.py`'s, three hand-written (Burning Rim, Missile Ward, Walking Ward). **The icons still
-draw the title figure's claw** round the orb - not redrawn with his look (section 7).
+Icon `orb-of-ages-light.png` (`spell_icons.py`: his staff's quartz with the light in it, inside the ring and its
+star - his sprite's staff head, `merlin_concepts.crystal`, grown to the icon cell as `QUARTZ`; 2026-11-03, it was
+the title figure's gold claw round an orb until then); the six evolution icons are `evolution_icons.py`'s, drawn from
+the same painter, so they carry the quartz too, three hand-written (Burning Rim, Missile Ward, Walking Ward).
+
+**The ward in the field is pixel art** (2026-11-03, the pixel-art pass's rules,
+`.ai/art-replacement-manifest.md` section 7): the ring a stepped circle a cell of the world's 2 px grid thick in
+Light's gold, an arcane one inside it, the star and the orb stamped in whole cells, the close a Bayer dissolve.
+The comment over `OrbOfAges`' drawing section has every part. Radius, reach and every number are unchanged.
 
 ## 6. Built (2026-11-02, `wip/blue-wizard`)
 
@@ -190,9 +196,10 @@ draw the title figure's claw** round the orb - not redrawn with his look (sectio
 5. **His look** (section 5): A ships, B is the alternate, C the third; the sheet is
    `tools/art/_merlin_concepts/sheet.png` (and `_shots/merlin-art/`). The deed's new name, The King-Maker, and the
    epithet, the old enchanter, are first guesses too.
-6. **The Orb of Ages icons** (the spell's and its six evolutions') still put the orb in the title figure's gold
-   claw. Redrawing them to his quartz means rerunning `spell_icons.py` and `evolution_icons.py`, which rewrite
-   every icon they own; not done here.
+6. **The Orb of Ages icons** (the spell's and its six evolutions') are redrawn in his quartz (2026-11-03,
+   section 5); the old claw and the new quartz side by side are in `_shots/merlin-ring/icons-old-vs-new.png`.
+   Rerunning `spell_icons.py` and `evolution_icons.py` on this machine's Python 2.7 also moves 43 other icons
+   with their painters untouched (a re-run under another Python moves pixels); only Merlin's were committed.
 
 ## 8. Measured (2026-11-02)
 

@@ -595,21 +595,57 @@ def the_taking():
     return c
 
 
-def orb_of_ages(sky=True):
-    """Merlin's own (tools/art/player_merlin.py): the orb in his staff's gold fork, inside the ward it
-    ricochets round.
+# Merlin's quartz (orb_of_ages), pixel by pixel: the staff's head his own sprite carries
+# (merlin_concepts.crystal), grown to the icon's cell. A tall point and two small ones leaning off it, the
+# stone's facet edges in steel - its hi and lit on the key side, its shade on the far one - and the light
+# inside it, white-hot up the key-side face; bound in gold wire at the seat, on the gold shaft.
+# T t r R: steel hi / lit / base / shade. 0 1 2 3: light core / hot / mid / edge. H G g u: gold hi / lit /
+# base / shade. The map's top-left pixel is QUARTZ_AT.
+QUARTZ_AT = (9, 3)
+QUARTZ = [
+    "......Tr......",
+    ".....T0rR.....",
+    "....t001rR....",
+    "....t011rR....",
+    "....t012rR....",
+    "..T.t112rR....",
+    ".tTRt122rR.T..",
+    ".t0Rt122rRtrR.",
+    ".t1Rt223rRt1R.",
+    "..t2Rt23rRr2R.",
+    "..rRRr33rRRrR.",
+    "...RRrrrRR.R..",
+    "...uGHGggggu..",
+    "....uGggggu...",
+    "......Gg......",
+]
+QUARTZ_TONES = {
+    "T": ("steel", 0), "t": ("steel", 1), "r": ("steel", 2), "R": ("steel", 3),
+    "H": ("gold", 0), "G": ("gold", 1), "g": ("gold", 2), "u": ("gold", 3),
+    "0": ("light", 0), "1": ("light", 1), "2": ("light", 2), "3": ("light", 3),
+}
+# The glow: a few points of the light's edge stop clear of the stone - the fade, never a disc (the
+# sprite's own rule).
+QUARTZ_GLOW = [(10, 4), (19, 6), (8, 9), (21, 9), (13, 2)]
 
-    In the order the eye takes them: the orb - the light ramp, white-hot up and to the left, the subject -
-    held in the gold claw that grows out of the top of the staff (the title screen's staff head, hero.py,
-    two legs up round its flanks and their tips turned in over it); then the thin ring of light round
-    both, the warded circle drawn on the ground; and inside the ring the path the orb traces bouncing off
-    it, the seven-pointed star {7/3}, dimmer than the ring so the ring stays the boundary and the star
-    reads as the line inside it, a point of light where it strikes the ring at each of its seven corners.
-    The star's dense middle is behind the orb, so what shows are its seven spikes.
+
+def orb_of_ages(sky=True):
+    """Merlin's own (tools/art/player_merlin.py): his staff's head - raw quartz with the light in it -
+    inside the ward its light ricochets round.
+
+    In the order the eye takes them: the quartz - a tall point and two small ones leaning off it, set in
+    gold wire on the gold shaft, its facet edges steel and the light ramp inside it, white-hot up the
+    key-side face: the light the spell sends round the ring, still in the stone (his sprite's staff head,
+    merlin_concepts.crystal, grown to this cell; until 2026-11-03 it was the title figure's gold claw round
+    an orb, and that claw is the player's now, .ai/merlin.md section 5); then the thin ring of light round
+    it, the warded circle drawn on the ground; and inside the ring the path the orb traces bouncing off it,
+    the seven-pointed star {7/3}, dimmer than the ring so the ring stays the boundary and the star reads as
+    the line inside it, a point of light where it strikes the ring at each of its seven corners. The
+    star's dense middle is behind the quartz, so what shows are its seven spikes.
 
     `sky` lays the night inside the ward and a rim of arcane round it - the spell's second element, and
     what keeps a ring of light from vanishing on the new spell's pale page. evolution_icons.py draws it
-    without, because every milestone frame brings its own night.
+    without, because every milestone frame brings its own.
     """
     c = raster.Canvas(CELL, CELL, None)
     lcore, lhot, lmid, ledge = bl.ELEMENTS["light"]
@@ -634,40 +670,28 @@ def orb_of_ages(sky=True):
     for (x, y) in pts:
         c.set(int(round(x)), int(round(y)), lhot)
 
-    # The staff's head: a short stub of the shaft from below, the cup it opens into, and the two legs
-    # up round the orb's flanks, tips turned in. Lit on the key side; the far leg a stop down. An
-    # occlusion seam round all of it first, so the gold stands in front of the star's lines rather than
-    # running into them - the two are near enough in hue to merge without one.
-    ox, oy = 15.5, 14.0
-    c.disc(15.5, 14.5, 5.6, 5.6, OCC)
-    c.rect(12, 19, 19, 21, OCC)
-    c.rect(14, 21, 17, 28, OCC)
-    c.rect(15, 20, 15, 27, gold[1])
-    c.rect(16, 20, 16, 27, gold[2])
-    c.set(15, 27, gold[2])
-    c.set(16, 27, gold[3])
-    c.hline(13, 18, 19, gold[2])
-    c.hline(14, 17, 20, gold[2])
-    c.set(13, 19, gold[1])
-    c.set(18, 19, gold[3])
-    c.vline(11, 11, 18, gold[1])
-    c.vline(12, 18, 19, gold[1])
-    c.vline(20, 11, 18, gold[2])
-    c.vline(19, 18, 19, gold[3])
-    c.set(11, 11, gold[0])
-    c.set(11, 12, gold[0])
-    c.set(12, 9, gold[1])           # the tips, turned in over the orb's shoulders
-    c.set(12, 10, gold[1])
-    c.set(19, 9, gold[2])
-    c.set(19, 10, gold[2])
-    c.set(20, 18, gold[3])
-
-    # The orb, in the claw: the light ramp, its core up and to the left. A pixel of the dark between it
-    # and each leg - without that gap the legs are more of the orb's rim and the claw is not there.
-    c.disc(ox, oy, 3.2, 3.4, ledge)
-    c.disc(ox - 0.2, oy - 0.2, 2.5, 2.6, lmid)
-    c.disc(ox - 0.6, oy - 0.6, 1.6, 1.6, lhot)
-    c.disc(ox - 1.0, oy - 1.0, 0.7, 0.7, lcore)
+    # The staff's head and the shaft under it. An occlusion seam round all of it first, so the stone and
+    # the gold stand in front of the star's lines rather than running into them - the light's stops and
+    # the star's amber are near enough to merge without one.
+    ax, ay = QUARTZ_AT
+    head = {}
+    for j, row in enumerate(QUARTZ):
+        for i, ch in enumerate(row):
+            if ch != ".":
+                kind, k = QUARTZ_TONES[ch]
+                head[(ax + i, ay + j)] = bl.ELEMENTS["light"][k] if kind == "light" else bl.MATERIALS[kind][k]
+    for y in range(ay + len(QUARTZ), 28):
+        head[(15, y)] = gold[1]
+        head[(16, y)] = gold[2]
+    head[(16, 27)] = gold[3]
+    for (x, y) in head:
+        for (dx, dy) in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            if (x + dx, y + dy) not in head:
+                c.set(x + dx, y + dy, OCC)
+    for (x, y), tone in head.items():
+        c.set(x, y, tone)
+    for (x, y) in QUARTZ_GLOW:
+        c.set(x, y, ledge)
     return c
 
 

@@ -1208,9 +1208,10 @@ SPELLS = {
     "hollow_star":       dict(paint=si.hollow_star, travel=None, tip=(16, 16), rows=("darkness",)),
     # The dark wizard's own (.ai/dark-wizard-playable.md): the hand closing on the mote he takes.
     "the_taking":        dict(paint=si.the_taking, travel=(1, -1), tip=(20, 10), rows=("darkness", "light")),
-    # Merlin's own (tools/art/player_merlin.py): the orb in the gold claw, inside the ward and the {7/3} it
-    # traces. Drawn without its night here, as Starfall is: every milestone frame brings its own.
-    "orb_of_ages":       dict(paint=lambda: si.orb_of_ages(sky=False), travel=None, tip=(16, 14), rows=("amber", "light")),
+    # Merlin's own (tools/art/player_merlin.py): his staff's quartz with the light in it (the tip), inside the
+    # ward and the {7/3} it traces. Drawn without its night here, as Starfall is: every milestone frame brings
+    # its own.
+    "orb_of_ages":       dict(paint=lambda: si.orb_of_ages(sky=False), travel=None, tip=(15, 6), rows=("amber", "light")),
     "starfall":          dict(paint=lambda: si.starfall(sky=False), travel=(0.75, 1), tip=(21, 22), rows=("light",)),
     "familiar":          dict(paint=image(lambda: familiar.portrait()), travel=(1, 0), tip=(27, 19), rows=()),
     # The Familiar is taken in a form too (a dog, a crow or a cat), each its own subject, drawn by
