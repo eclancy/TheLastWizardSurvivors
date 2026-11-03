@@ -56,6 +56,9 @@ public static class CharacterRoster
 		// The chapter wizards again: Baba Yaga, freed by running her walking hut down in the Enchanted Forest. Appended,
 		// so every saved index keeps its wizard (index 15: the Archmage took 14).
 		"res://CharacterData_BabaYaga.tres",
+		// The Last Bridge's chapter wizard (.ai/chapter-wizards.md 4.9): Morgan le Fay, freed from her barge under the
+		// span. Appended, so every saved index keeps its wizard (index 16).
+		"res://CharacterData_Morgan.tres",
 	};
 
 	/// <summary>

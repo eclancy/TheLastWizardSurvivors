@@ -284,6 +284,7 @@ public static class AchievementDefinitions
 		("the_thaw", "Out of the Ice", "Thaw the wizard out of the ice in the Frozen Waste.", "Frees Väinämöinen"),
 		("caravan_master", "The Caravan Stopped", "Catch the caravan master on the Scorched Sands road.", "Unlocks Iron Palisade"),
 		("great_anvil", "The Chains Struck", "Bring the forge's own hammers down on the four chains in the Emberdeep.", "Frees Wayland the Smith"),
+		("the_barge", "Kept Pace", "Keep level with the barge under the Last Bridge all the way to its landing.", "Frees Morgan le Fay"),
 	};
 
 	private const float TenMinutes = 600f;

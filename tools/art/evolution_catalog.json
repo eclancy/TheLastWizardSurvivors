@@ -7932,6 +7932,46 @@
       "tint": "dbccff",
       "character": "archmage",
       "verb": "count"
+    },
+    {
+      "spell": "sleet_runes",
+      "variant": "",
+      "spell_name": "Sleet Runes",
+      "spell_icon": "res://assets/bonelight/ui/spells/sleet-runes-ice.png",
+      "spell_elements": {
+        "Ice": 1,
+        "Wind": 1
+      },
+      "milestone": 9,
+      "id": "sleet_runes_fata_morgana",
+      "name": "Fata Morgana",
+      "description": "A mirage of you walks beside you facing the other way and casts behind you. Enemies near it chase it.",
+      "synergy": "Apotheosis",
+      "visual_tag": "Apotheosis",
+      "gains": {
+        "Ice": 1
+      },
+      "replaces": "",
+      "effect": "None",
+      "effect_value": 0,
+      "rider": "None",
+      "damage": 1.25,
+      "damage_bonus": 0,
+      "cooldown": 1,
+      "projectiles": 0,
+      "area": 1,
+      "scale": 1,
+      "speed": 1,
+      "pierce": 0,
+      "arcs": 0,
+      "branches": 0,
+      "knockback": 0,
+      "slow": 0,
+      "poison": 0,
+      "range": 0,
+      "tint": "c7f5ff",
+      "character": "morgan",
+      "verb": "double"
     }
   ]
 }

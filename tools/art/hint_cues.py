@@ -40,6 +40,10 @@ THE ROW ORDER IS AN API: HintCue's order (scripts/StageHintCatalog.cs).
   birds    the hut        a bird lifting out of the canopy, four beats of its wings (0-3: up, half, down,
                           half), then the same four smaller - one further off (4-7): "birds lift out of
                           the canopy toward her" on each fall of the hut's feet
+  mist     the barge      a bank of sea mist rolling in low, four lumpy shapes (0-3), then the barge hung
+                          shimmering above the water among it - a long low hull, a pall, its prow post and
+                          the lantern hung from it, the hull's rows sliding a pixel on the heat (4-7): "a
+                          shimmering barge hangs above the water there". Wind's ramp, the barge's far tell
 
 Each wears its event's far-tell colour (SideEvent.FarTellColor) as its body, so the cue is the
 colour of the light the player will find: wind's ramp for the grove's lichen grey-green, arcane
@@ -106,6 +110,11 @@ def ramp_of(name):
         # already hold unlit crystals - a leaf must not read as one.
         w = bl.ELEMENTS["water"]
         return (w[0], w[1], w[2], w[0])
+    if name == "mist":
+        # The barge's far tell is wind's body stop (BargeEvent.TellColor): the strait's mist, which her lantern
+        # wears too. The mist from the ramp's hot end down, the lantern its white core.
+        w = bl.ELEMENTS["wind"]
+        return (w[1], w[2], w[3], w[0])
     raise ValueError(name)
 
 
@@ -462,6 +471,60 @@ def writ(frame):
     return mask, writing
 
 
+def mist(frame):
+    """A bank of sea mist rolling in low: a long, flat, lumpy cloud - three overlapping humps on a flat underside,
+    their sizes and places different in each of the four - drawn in the barge's mist-green (frames 0-3)."""
+    humps = [
+        ((4.5, 9.0, 3.2), (8.5, 8.2, 3.6), (12.0, 9.2, 2.6)),
+        ((3.8, 9.4, 2.6), (7.6, 8.4, 3.4), (11.4, 8.8, 3.2)),
+        ((4.8, 8.8, 3.4), (9.2, 8.8, 3.0), (12.4, 9.6, 2.2)),
+        ((3.6, 9.2, 2.8), (6.8, 8.0, 3.0), (10.6, 8.6, 3.6)),
+    ][frame]
+
+    def inside(x, y):
+        if y > 11.4 or x < 1.6 or x > 14.4:
+            return False
+        return any((x - cx) ** 2 / (r * 1.25) ** 2 + (y - cy) ** 2 / (r * 0.8) ** 2 <= 1.0 for cx, cy, r in humps)
+    mask = sampled(inside)
+    # The mist's thicker middle, a stop down (marked as inner: paint_mist gives it the body's shade).
+    inner = set(p for p in mask if 10 <= p[1] <= 11 and 4 <= p[0] <= 11 and (p[0] + p[1]) % 3 == 0)
+    return mask, inner
+
+
+def mirage(frame):
+    """The barge hung shimmering above the water among the mist: a long low hull with its prow post and the
+    lantern hung from it, its rows sliding a pixel either way on the heat-shimmer, one band at a time across the
+    four frames (4-7). The lantern is the core."""
+    shift = [(0, 1, 0, -1), (1, 0, -1, 0), (0, -1, 0, 1), (-1, 0, 1, 0)][frame]
+    rows = [
+        "................",
+        "................",
+        "................",
+        "................",
+        "................",
+        "............##..",
+        "............#...",
+        "......###...#...",
+        ".##..#####..#...",
+        ".#############..",
+        "..###########...",
+        "....#######.....",
+        "................",
+        "................",
+        "................",
+        "................",
+    ]
+    mask = set()
+    for y, row in enumerate(rows):
+        dx = shift[(y // 3) % 4] if 8 <= y <= 11 else 0
+        for x, ch in enumerate(row):
+            if ch == "#" and 1 <= x + dx <= CELL - 2:
+                mask.add((x + dx, y))
+    lantern = set([(14, 6), (14, 7)])
+    mask |= lantern
+    return mask, lantern
+
+
 def paint_writ(mask, writing, tones):
     """The leaf in the tell's ramp, its writing in the ramp's dark end: ink, not a glow."""
     c = paint(mask, set(), tones)
@@ -517,6 +580,7 @@ ROWS = [
     ("sparks", [spark(f) for f in range(8)]),
     ("writ", [writ(f) for f in range(8)]),
     ("birds", [bird(f) for f in range(8)]),
+    ("mist", [mist(f) for f in range(4)] + [mirage(f) for f in range(4)]),
 ]
 
 

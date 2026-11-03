@@ -75,6 +75,9 @@ PLAYER_RAMPS = RAMPS + [
     # with them, and \x85, which is whitespace (NEL) to unicode, between the two rows.
     "\x80\x81\x82\x83\x84",
     "\x86\x87\x88\x89\x8a",
+    # lichen - Morgan le Fay's mantle (roster.LICHEN_RAMP), the contract's sea-grey-green row: \x95-\x99, since
+    # \x90-\x94 are held for Baba Yaga's, merged in parallel.
+    "\x95\x96\x97\x98\x99",
 ]
 
 

@@ -253,7 +253,7 @@ public static class EvolutionStatReaders
 			SpellEffect.AreaSize, SpellEffect.CritDamage),
 		["sleet_runes"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Pierce | EvolutionStat.Speed
 				| EvolutionStat.Rider | EvolutionStat.Amount,
-			"SleetRunes.Cast and the fire loop (runes are the projectile count plus Amount; Range is how far one flies, Speed scales its speed; Great Rune, Braided Wind, Parting Wind, Sigil Fan and Turning Gale by id)",
+			"SleetRunes.Cast and the fire loop (runes are the projectile count plus Amount; Range is how far one flies, Speed scales its speed; Great Rune, Braided Wind, Parting Wind, Sigil Fan, Turning Gale and Fata Morgana by id)",
 			SpellEffect.ProjectileSpeed, SpellEffect.Pierce, SpellEffect.CritDamage),
 		["toxic_spore_burst"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.PoisonTick | EvolutionStat.Rider | EvolutionStat.Amount,

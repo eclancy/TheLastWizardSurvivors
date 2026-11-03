@@ -431,6 +431,7 @@ public partial class _BalanceHarness : Node
 
 		GameStats.ResetRunTelemetry();
 		IronPalisade.ResetRingCount();
+		FataMorganaMirage.ResetCounts();
 
 		// Every spell, boon and wizard owned, in memory only, with saving switched off for the run.
 		// What the measurement needs is "when CAN the card arrive", which should not depend on which
@@ -1520,6 +1521,12 @@ public partial class _BalanceHarness : Node
 		// The Hungry Hedge (Baba Yaga): how much it has eaten, and how far grown toward its cap.
 		if (player.HungryHedgeFed > 0)
 			GD.Print($"HARNESS HEDGE m={row.Minute} fed={player.HungryHedgeFed} growth={player.HungryHedgeGrowth * 100f:0}%");
+		// Fata Morgana (Morgan le Fay's Apotheosis): the runes its mirage has let go and the lures it has laid, once it walks.
+		if (FataMorganaMirage.RunesCast > 0)
+			GD.Print($"HARNESS MIRAGE m={row.Minute} runes={FataMorganaMirage.RunesCast} lures={FataMorganaMirage.Lures}");
+		// Avalon (her passive): the first fall it healed to full, once it has.
+		if (player.AvalonAtSeconds >= 0f)
+			GD.Print($"HARNESS AVALON m={row.Minute} at={player.AvalonAtSeconds:0.0}s");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger

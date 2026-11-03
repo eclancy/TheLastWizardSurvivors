@@ -191,7 +191,9 @@ public partial class BridgeRules : ChapterRules
 			// A new player's onboarding tips use the same strip of the HUD (Node2DGame.OnboardingTipTop): the
 			// bridge's line steps aside while one is up rather than printing under it.
 			onboardingTip ??= Game.GetNodeOrNull<Control>("UIOverlay/OnboardingTipLabel");
-			objective.Visible = onboardingTip == null || !onboardingTip.Visible;
+			// And for the barge's line (BargeEvent, the bridge's one side event): the same slot, so while an event
+			// speaks under the timer - its announcement, its objective, its win - the strip is not drawn under it.
+			objective.Visible = (onboardingTip == null || !onboardingTip.Visible) && !SideEvent.LineInUse;
 			objective.QueueRedraw();
 		}
 	}
@@ -341,6 +343,29 @@ public partial class BridgeRules : ChapterRules
 
 	/// <summary>The gate in the castle wall: walking in ends the run (3.3).</summary>
 	public override Vector2? VictoryPortalPoint(Vector2 bossFellAt) => WorldAt(BridgeBand.GateS - 40f, 0f);
+
+	// --- Hook 10: the wayfinder --------------------------------------------------------------------
+
+	// Kept this far in from either shore, so the compass never stands against a parapet.
+	private const float WayfinderShoreMargin = 150f;
+
+	/// <summary>
+	/// On the deck, 1.5 to 2.5 chunks AHEAD of the start along the bridge - the explore band's distances, laid
+	/// along the one way the bridge goes - at a seeded place across it. The usual bearing is mostly over the
+	/// drop, and the search off it could settle on the bridgehead behind the start, which falls in the first
+	/// minute and a half. On a band nothing can be kept off the events' bearing (everything is on it): the
+	/// compass is on the way to the barge, as everything on the bridge is on the way to the gate.
+	/// </summary>
+	public override Vector2? WayfinderSite(ExplorePlacer placer, float footprint)
+	{
+		float chunk = placer.ChunkPixels;
+		float s = Mathf.Lerp(SideEventDirector.WayfinderMinChunks, SideEventDirector.WayfinderMaxChunks, placer.NextFloat()) * chunk;
+		float half = Mathf.Max(0f, BridgeBand.HalfWidthAt(s) - WayfinderShoreMargin);
+		float t = (placer.NextFloat() * 2f - 1f) * half;
+		Vector2 at = WorldAt(s, t);
+		placer.Reserve(at, footprint);
+		return at;
+	}
 
 	// --- Hook 9: the camera, while the Constable holds the wall --------------------------------------
 

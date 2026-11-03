@@ -5016,6 +5016,24 @@ def _(sp, c):
     U(sp, turn)
 
 
+@card("sleet_runes_fata_morgana")
+def _(sp, c):
+    """Fata Morgana (Morgan le Fay's Apotheosis, double): the rune flying out to the right, and back to back
+    with it its mirage flying out to the left - mirrored, a stop darker, its rows broken by the shimmer a mirage
+    hangs in. Every cast twice, from two hands, each the other's way."""
+    reset(sp)
+    sp.copies = [Place(0.62, at=(C0 - 7.0, C0 + 2.0), mirror=True, darken=1)]
+    sp.place = Place(0.62, at=(C0 + 7.0, C0 - 2.0))
+
+    def shimmer(cv, x):
+        w = E["wind"]
+        for (y, x0, x1) in ((13, 1, 15), (17, 2, 14), (21, 1, 13)):
+            for xx in range(x0, x1, 3):
+                cv.set(xx, y, w[3])
+                cv.set(xx + 1, y, w[2])
+    O(sp, shimmer)
+
+
 # --- Solar Flare -----------------------------------------------------------------------------------
 
 def lob(cv, ramp, a, b, h, steps=18, thick=2):

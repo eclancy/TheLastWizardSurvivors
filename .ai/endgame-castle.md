@@ -599,6 +599,14 @@ existing `pit` hazard terrain); the **archers' volleys** over the gate yard befo
 
 ---
 
+### 3.10 Its side event: the barge (2026-11-03)
+
+The one castle chapter with a side event: Morgan le Fay's barge, moored under the second or third span and kept
+pace with for 2,000 px of drift (`.ai/chapter-wizards.md` 4.9, "Built"). It is placed by the band, not the explore
+bands, and it reads the front: its drift (40 px a second) outruns the fall's 31, and a mooring the fall has taken is
+slipped - the barge waits 560 px ahead of the fall. Its wayfinder is on the deck ahead of the start (hook 10), and the
+strip under the timer steps aside while its line speaks. `_ExploreProbe --stage=11` drives it.
+
 ## 4. Cursed Dungeon, in the castle (`stage_1`)
 
 *"He keeps a wizard in one of these cells."* The cells under his castle: the way in, since the gate
@@ -1258,6 +1266,7 @@ chapter with no line in the catalog gets no rules object at all. Each call site 
 | 7 | `CreateObjective()` | once, after `RunStarted` | the line under the run timer: `Node2DGame` anchors the control across the HUD at `ObjectiveTop`-`ObjectiveBottom` (84-112, the side event's slot), insets it with `SafeArea.ApplyTo` and frees it with the run. `ChapterRules.ObjectiveLabel(text)` makes a text one in the side event's style |
 | 8 | `LevelUpOpening(menu, granted)` | `OnPlayerLevelGained`, before the screen enters the tree | the Throne's Muster heading and arming pause (piece C4; section 12's Muster row) |
 | 9 | `CameraLean(player)` | every frame, `TickBossEntranceCamera` (`Node2DGame.BossEntrance.cs`) | world px to hold the camera off the player, eased in and out with the boss arrival's own ease (an arrival's cinematic owns the camera while it plays, and eases out to this lean). The camera's `Position`, never its `Offset` (the screen shake's). Added before the bridge's flip (`wip/castle-preflip`): the bridge's, up toward the Constable on the wall |
+| 10 | `WayfinderSite(placer, footprint)` | once, `SideEventDirector._Ready`, on a chapter with a side event | where its wayfinder goes, or null for the band's bearing. Added for the barge (2026-11-03, `.ai/chapter-wizards.md` 4.9): on the bridge the usual bearing is mostly over the drop and its search could settle behind the start, so the compass goes on the deck 1.5-2.5 chunks ahead of it. The bridge's strip under the timer (hook 7) steps aside while the barge's line speaks (`SideEvent.LineInUse`) |
 
 A chapter that needs another hook adds it to `ChapterRules` with a no-op default and one call in
 `Node2DGame`, in one commit that says why - never a branch on the stage id in `Node2DGame`.

@@ -71,6 +71,12 @@ public abstract partial class SideEvent : Node2D
 	/// <summary>Open ground kept round a site: placement tests it, and decor stays out of it.</summary>
 	protected virtual float SiteFootprint => 160f;
 
+	/// <summary>
+	/// True for an event its chapter's shape places rather than the explore band (the Last Bridge's barge, on a
+	/// deck over a drop): the band checks (RegressionChecks, _ExploreProbe) hold it to its own rules instead.
+	/// </summary>
+	public virtual bool PlacedByChapterRules => false;
+
 	/// <summary>How close to any of its sites the player must come for the event to begin.</summary>
 	protected virtual float ArrivalRadius => 380f;
 
@@ -148,6 +154,13 @@ public abstract partial class SideEvent : Node2D
 
 	/// <summary>True while this event's objective (or win) line is the one shown under the timer.</summary>
 	public bool HoldsObjectiveLine => ReferenceEquals(objectiveHolder, this);
+
+	/// <summary>
+	/// True while any event is speaking under the timer (its objective, or its win line). The slot is shared with a
+	/// chapter's own line (ChapterRules hook 7: the Last Bridge's strip), which steps aside while this holds -
+	/// the bridge is the one castle chapter with an event (the barge, BargeEvent).
+	/// </summary>
+	public static bool LineInUse => objectiveHolder != null && !LetsGoOfLine(objectiveHolder);
 
 	/// <summary>Where this event's own objective arrow points while it runs, whether or not its line is the one shown. For probes.</summary>
 	public Vector2? OwnObjectiveTarget => state == State.Running ? PointerTarget : null;
@@ -305,14 +318,8 @@ public abstract partial class SideEvent : Node2D
 		if (state == State.Dormant)
 		{
 			DormantTick(dt);
-			foreach (PointOfInterest site in sites)
-			{
-				if (!site.Done && PlayerWithin(site.Position, ArrivalRadius))
-				{
-					Arrive();
-					break;
-				}
-			}
+			if (HasArrived())
+				Arrive();
 			if (state == State.Dormant)
 				return;
 		}
@@ -370,6 +377,21 @@ public abstract partial class SideEvent : Node2D
 
 	/// <summary>Every frame while nobody has come. Animation only - a dormant event asks nothing.</summary>
 	protected virtual void DormantTick(float delta) { }
+
+	/// <summary>
+	/// Whether the player has come, asked every frame while dormant: by default within <see cref="ArrivalRadius"/>
+	/// of any site not done. An event whose thing drifts (the barge, which slips its mooring ahead of the Last
+	/// Bridge's fall) measures from where the thing is now instead.
+	/// </summary>
+	protected virtual bool HasArrived()
+	{
+		foreach (PointOfInterest site in sites)
+		{
+			if (!site.Done && PlayerWithin(site.Position, ArrivalRadius))
+				return true;
+		}
+		return false;
+	}
 
 	/// <summary>Called when the boss ends a running event early. Clean up anything left on the field.</summary>
 	protected virtual void OnStoodDown() { }

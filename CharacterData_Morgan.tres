@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_SleetRunes.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/morgan-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/MorganFrames.tres" id="4"]
+
+; Rescued, not a starter: the Last Bridge's chapter wizard, freed from her barge under the span
+; (.ai/chapter-wizards.md 4.9). The enchantress of Avalon, the queen in the barge who carried the dying king
+; over the water to be healed; she opens on Sleet Runes, the cold off the strait cast the way she faces (R2: a
+; freed wizard may open on a two-element spell). Her passive is Avalon - the first extra life a run spends heals
+; to full, not half - the one axis no other wizard owns: what an extra life is worth.
+[resource]
+script = ExtResource("1")
+Id = "morgan"
+Name = "Morgan le Fay"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "first_fall_full"
+StartingPassiveName = "Avalon"
+StartingPassiveDescription = "First revive of a run heals to full"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

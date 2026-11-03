@@ -3,7 +3,7 @@
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
-**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **and Baba Yaga, the first second event** (4.1, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other six are not. It covers the ten
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **Baba Yaga, the first second event** (4.1, "Built"), **Morgan le Fay** (4.9, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other five are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Last Bridge and the Court (which holds
 two: Nostradamus, and Ma Liang since the Sketchbook was emptied - 4.8). Tituba (Cursed Dungeon),
@@ -56,7 +56,7 @@ The questions as they were put:
 | rule | where | what it means here |
 |---|---|---|
 | Starters are disciplines; the rescued are named historic or legendary magic-workers | `world-and-tone.md` | every proposal is a person |
-| Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect, banish** (Seimei), **take** (the Dark Wizard), **rewind** (Merlin, earned by the whole road, `.ai/merlin.md`, 2026-11-02), **temper** (Wayland), **echo** (the Sibyl), **count** (The Archmage, the fifth starter, `.ai/protagonist.md`); reserved for Nimue: **sever** (Excalibur, decided by Eric 2026-11-02). Unclaimed in the ADR: contagion, displace |
+| Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect, banish** (Seimei), **take** (the Dark Wizard), **rewind** (Merlin, earned by the whole road, `.ai/merlin.md`, 2026-11-02), **temper** (Wayland), **echo** (the Sibyl), **count** (The Archmage, the fifth starter, `.ai/protagonist.md`), **double** (Morgan le Fay); reserved for Nimue: **sever** (Excalibur, decided by Eric 2026-11-02). Unclaimed in the ADR: contagion, displace |
 | No path on his spell trades his element away | `ValidateApotheosisCatalog` | since 2026-11-02 the form names no path - the spell at max level, ascended down any branch, never combined - so every level 4 and level 8 option on a wizard's spell leads to it, and none may trade away the element the form deepens (it would come back as a third). The old rule, a required path that never leads away (`CheckRequiredPath`), went with the named paths |
 | A secret never pays a wizard | `achievements-and-secrets.md` 6.2 | every rescue below is a **side event** (a Road deed), never a secret |
 | ~~One side event per chapter~~ A chapter's events are a list (P2, built) | `SideEventDirector.EventsFor` | question 3; 6.3 "Built" says how a second is added |
@@ -668,6 +668,153 @@ He is the Court's second event, so he waits on P2 and the Court's flip, with Nos
 - **Clue.** Mist rolls over the parapet from her side, and a shimmering barge hangs above the water
   there. Sound `hint_hull_knock`. Lines: *"A boat on the water below, where no boat could be."* / *"The
   boat again, nearer the bridge."* / *"Its lantern is still lit."*
+
+**Built (2026-11-03, `wip/wizard-morgan`).** The design above, with the changes listed under "What moved".
+
+- **Her.** `CharacterData_Morgan.tres`, appended to `CharacterRoster`. Name "Morgan le Fay", id `morgan`.
+  `roster.morgan()`: tall and upright, a queen standing INTO the wind off the strait - her near arm raised level
+  with the hand open and the spell's own rune (the diamond sigil of `tools/art/sleet_runes.py`) cut in the air
+  before the palm, the one thing on her that gives off light, in ice's ramp; everything loose on her streamed back
+  the other way - long slate hair (the stone row) and a mantle in the contract's lichen row, its tail torn into
+  three tongues - so she is widest on the side she is not looking at. A gown of violet's deep end (the black samite
+  of the barge), an old-gold girdle and a thin circlet. Lichen is new to the roster's palette, on `\x95-\x99`
+  (`roster.LICHEN_RAMP`, in `anim_sets.PLAYER_RAMPS`). 0.92 edges/px. Her rune is not a staff head: nothing holds
+  it, which keeps her apart from the Frostweaver's trident (a first draft's raised-arm stave read as one).
+  Sheets written by `build_roster`'s wizard loop for her name only; her freeing reel is `freed.py`'s row and
+  `Freeings.WizardIds`.
+- **Avalon** (`first_fall_full`): the first extra life a run spends heals to full, not half (`Player.ExtraLifeHeal`,
+  read in `TakeDamage`'s step 10). After the Archmage's Overlooked in the pipeline, so a blow Overlooked turns
+  aside never spends a life - but a character has one passive, so the two never meet in a run. On the healing
+  ledger as two lines: "an extra life" (every revive's half, which the ledger never counted) and "Avalon" (the
+  other half, once). `.ai/difficulty-curve.md` 5.1 has its row: +25 HP once a run at 50 max HP, and **nothing at
+  all without a revive to spend** - Phoenix Oath from the shop or the Familiar's Nine Lives. By the castle most
+  saves own a level of Phoenix Oath; whether a passive that waits on the shop is fair is Eric's call.
+- **The event** (`BargeEvent`, `tools/art/barge.py`, `world/barge/`). The black barge drawn lying along the
+  bridge's diagonal - its bow up and right, on the one angle a pixel grid draws without a stair - a long low hull of
+  black wood with an old-gold line under each rail, a pall of black samite heaped amidships, a plain stern post
+  and a tall prow post curled forward with the one lantern hung from the curl, in wind's ramp (the strait's mist,
+  its far-tell colour). She stands toward the stern in it (her own sprite, the rune taken from her hand, so she
+  reaches out over the bow toward his castle). 88 cell, four frames (the lantern breathing, ripples under the
+  hull, the swell). It rides on the water hard under the shore on its side, sorted at its waterline - in front of
+  the south-east parapet, behind the north-west one - and through a gatehouse it passes outside the towers.
+  Dormant, its far tell is the usual light plus its own image hung upside down above the water, shimmering (the
+  fata morgana, on the light layer). Running: its lantern, a pool of its light thrown across the deck level with
+  it, two dashed lines across the deck at the edges of its reach (bright while he is between them), and a ring
+  round the lantern that fills toward the landing. Freed, she fades into the column and the barge thins to mist.
+- **The rules.** Come within `ArrivalAlong` (400 px) of it along the bridge, and 760 px of it, and it begins;
+  come LEVEL with it - within `Reach` (260 px) along the bridge, **anywhere across the deck** - and it casts off,
+  drifting 2,000 px at 40 px a second. Out of reach 6 s at a stretch and it drifts back (220 px a second) to its
+  mooring and waits to be met again; at its landing it waits for him to be level, and she comes ashore. While it
+  drifts, two of the gate's dogs (the chapter's Fast role, ordinary bodies) come down the deck at its level from
+  1,050 px ahead every 7 s. Objective: "Come level with the barge" / "Keep level with the barge to its landing
+  (n s)" / "The lantern is going out - keep level with the barge" / "The barge drifts back to its mooring".
+- **Her unlock** is the site's derived Road deed, "Kept Pace", secret until `stage_11`, counted at the Throne only
+  (G2); locked hint "Moored on the dark water under the Last Bridge."; quest-log prisoner "the woman in the barge",
+  held line "A lantern on the water under the bridge, where no boat could be.", freed line "{0} has come ashore."
+- **Her clue.** `HintCue.Mist`, the next row of `hint-cues.png` (every row before it byte for byte the same): banks
+  of sea mist rolling in low (four shapes), and with the first knock the barge hung shimmering above the water
+  among them (four frames), in wind's ramp, on the knocks of `hint_hull_knock` (`sfx._HULL_KNOCKS` =
+  `StageHintCue.HullKnocks`: 0.06, 0.98, 1.62 s). The sound: a wooden hull knocking on the stone of a pier far
+  below, a boomy box, water slapping between, one creak of rope, an echo off the arch; 2.40 s at -10 dB, nearest in
+  the whole set `impact_darkness` at 0.224, the nearest hint `hint_grove_whisper` at 0.327 (a first draft was 0.142
+  from `impact_water`, its second box mode in that sound's bands; moved from 352 to 262 Hz). The three lines above,
+  unchanged.
+- **Her form**, Fata Morgana (double, `SleetRunes.FataMorganaId`, `FataMorganaMirage`, `Player.Mirage.cs`). A
+  **second casting origin**: a mirage of the player - his own sprite on the frame he is on, turned the other way,
+  drawn as light (additive, overbright, in ice's pale cyan), shimmering in bands - walks 150 px beside him, square
+  to his facing, and every Sleet Runes cast is let go twice: his stream from his hand along his facing, and the
+  same runes at the same strength from its hand along its own, behind him (Turning Gale brings its runes back to
+  it). **A lure**: every 0.15 s whatever is within 190 px of it, and nearer it than him, chases it for 0.6 s
+  (`Enemy.ApplyLure`: the newest point, the longest time, never added) - a planted wind-up stays planted; a boss is
+  never lured. Card: "A mirage of you walks beside you facing the other way and casts behind you. Enemies near it
+  chase it." Its own evolution icon (the rune and its mirrored mirage back to back, a shimmer through the copy).
+  Great Rune adds Ice and Turning Gale Wind; nothing on Sleet Runes trades Ice away.
+
+**What moved, and why.**
+
+1. **The drift outruns the fall: 2,000 px in 50 s, not 1,200.** The first guess was 24 px a second and the span
+   falls at 31.3 (`BridgeRules.FrontSpeed`): keeping pace walked him into the drop from any arrival with the fall a
+   few hundred pixels behind him, so whether it could be won depended on when he got there - the pace clock, which
+   no event may be timed by. At 40 px a second every second of the drift puts 9 px between him and the fall, so from
+   any arrival he is ahead of, keeping pace keeps him ahead. Still slower than his walk (220). `ValidateBarge`
+   holds it over the fall's speed by a tenth and under half his walk.
+2. **Reach is measured ALONG the bridge, anywhere across the deck.** Section 3's word is "level with", and "fall
+   behind or run ahead" are along-the-bridge words; a 260 px circle round a barge in the water would have pinned him
+   to within 200 px of the parapet, under a horde that comes down the deck from ahead.
+3. **"Seen through gaps in the deck" is its light thrown across the deck.** The barge cannot be under the deck
+   and seen; it rides on the water under the span's flank, and what reaches the deck is its lantern's pool and the
+   two lines of its reach.
+4. **A mooring the fall has taken is slipped.** The barge is on the water, but the deck beside a fallen mooring is
+   gone: it waits `RestLead` (560 px) ahead of the fall instead, and its arrow and hints go with it
+   (`PointOfInterest.DriftTo`, the one placed thing that floats). A failed drift drifts back to the same place.
+5. **Placed by the bridge's band**: under its second or third span, on one side, along it so the whole drift fits
+   (three rolls from the event's own stream). `ExplorePlacer.PlacedByChapter` records its bearing;
+   `SideEvent.PlacedByChapterRules` takes it out of the explore-band checks, and `ValidateBarge` holds it to its own.
+6. **The wayfinder** goes on the deck 1.5 to 2.5 chunks ahead of the start (`ChapterRules` hook 10,
+   `WayfinderSite`): on a band the usual bearing is mostly water, and the search could settle on the bridgehead that
+   falls in the first minute and a half. Nothing on a band can be kept off the event's bearing; it is on the way, as
+   everything on the bridge is.
+7. **It arrives at 400 px along, not the usual radius.** A player at the far parapet passes the barge 950 px
+   across; the arrival is measured along the bridge too, and at 400 (a first build's 480) the barge is on a phone's
+   narrow canvas when its line comes up.
+8. **The bridge's strip under the timer steps aside while the event speaks** (`SideEvent.LineInUse`): they share
+   the slot, and hook 7's comment said no castle chapter had an event.
+9. **The mirage keeps its side.** A first build stood it on his right hand as he faced, and every reversal of a
+   kite sent it through him to the other side; it now stays on whichever side it is, and a quarter turn walks it a
+   quarter of the way round him. And it is drawn as light: multiplied, a wizard in deep cloth came out as a dark
+   smudge nobody could find.
+
+**Verified:** build; the validator (0 errors, 1 warning - the Test Wizard's missing passive, which main has);
+`ValidateBarge` (64 seeds: moored under both spans and on both sides, its drift inside its span and on the water all
+the way, a slipped mooring with room for a whole drift, the hint's beats inside the sound). `_ExploreProbe
+--stage=11`, which KEEPS PACE (level with it, 90 px behind it on its side of the deck, every frame): seventeen runs
+on twelve seeds, all won (the first twelve before arrival moved from 480 to 400 px and the light was brightened,
+seeds 4242, 7, 2, 55 and 99 again on the final build) - seeds 4242, 31, 1, 2, 3, 99, 500 and 2026 on a fresh save
+(Morgan freed in memory) and 7 `--all-unlocked` (a chest), the barge under span 2 on four seeds and span 3 on eight,
+on both sides, every one landing 49.4-49.9 s after arriving; `--fall-behind=4` on 1001 and 2 (out of
+reach 4.0 s, forgiven, one drift); `--fall-behind=9` on 55 (the drift failed at 45%, drifted back, won from the
+mooring 76 s after arriving); `--arrive-late --bridge-front=-6000` on 8 and 99 (the fall 200 px past the mooring,
+the barge waiting 560 ahead of it with its arrow, won, he never nearer the fall than 345 px). Each probe run also
+checks the wayfinder on the deck ahead of the start and taking it marks the barge. Two probe faults found and fixed
+on the way: `AutoPickLevelUp` held the first level-up's freed screen and left the second open for ever (the tree
+paused), and a fall-behind that only stood still never left its 260 px reach. `_UiShot` of the dormant barge (its
+mirage over the water), keeping pace, the win, the clue, the form and the character select (freed, and her
+silhouette with her hint) at both canvases: `_shots/wizard-morgan/`. `_BalanceHarness` reached the form: see "The
+form, measured" below.
+
+**The form, measured** (`_BalanceHarness` as Morgan, `--minutes=15 --all-unlocked --seek-apotheosis --immortal
+--aim-facing`, seed 1234). `--aim-facing` is needed: a facing spell in the hands of a bot that stands still fires
+wherever its last step pointed, and without it the bot killed about one enemy a minute.
+
+| run | her spell ascended | form taken | after the form | kills a minute, before / after |
+|---|---|---|---|---|
+| the Forest, timescale 6 | 7.2 min (level 17) | 9.7 min | - | 278-365 / 265-371 (another harness beside it) |
+| the Forest, timescale 6, alone | 7.2 (17) | **9.2** (level 21) | the mirage let go 850-900 runes and laid 560-650 lures a minute | 316-324 / 368-455 |
+| the Forest, `--timescale=1 --profile=10` | - | **9.1** | about 910 runes and 720 lures a minute | 359-378 / 429-470 |
+| the Emberdeep, timescale 6 | never: level 16 at 15:00, under the Ascension's 17 | - | - | - |
+| the Last Bridge, timescale 6 | never: level 8 at 15:00 | - | - | - |
+
+On the Forest the form comes at 9.2-9.7 minutes, past the 7.5 floor, the level-21 gate setting the time as it does
+for everyone, and Sleet Runes did three quarters of the damage. On her own chapter the harness cannot measure it:
+`--immortal` holds its ground, and on the bridge the ground it holds falls in at 1:21 - it stood in the drop for
+fourteen minutes, where everything that reaches it falls too. The bridge's own measurements (`.ai/endgame-castle.md`
+3.3) used `--survivor`, which walks. On the Emberdeep (x3.8 health, the bridge's) the standing bot never reached
+the Ascension's level; a player who walks the bridge's crowd gathers far more than a bot that stands (3.3: 97-100%
+of what drops).
+
+**Frame cost** (`--timescale=1 --profile=10`, headless, alone on the laptop): the runes' section (`FrameProfiler`'s
+`runes`, where both streams fly) went from 89 us a frame over the minute and a half before the form to 116 after it,
+the spells' from 54 to 91 and the player's from 91 to 127, with the loadout also grown meanwhile; whole frames held
+at 7.9-8.0 ms either side and allocation at 3.9-4.6 KB a frame. The mirage's lure (a grid read every 0.15 s) is in no
+section of its own. Two timescale-6 runs beside other Godot runs read frames of 100-300 ms in the same minutes,
+which is the machine (performance.md section 5), not the form. Not measured on the phone.
+
+**Not verified:** whether keeping pace is a decision under a real horde or a formality (the probe stands level with
+it every frame; the bridge's crowd comes from ahead, and its dogs at its level, but nobody has walked it); **on a
+phone the barge is off the right of a 540-wide canvas once he trails it by more than about 150 px** - the lines
+across the deck and its light carry the reach there, and whether that is enough needs a phone in a hand; the sound,
+measured and not heard; whether a mirage of the player reads as his and as false at a glance in a crowd; and Avalon,
+which no run here spent a revive on.
 
 ### 4.10 The Court - Nostradamus
 

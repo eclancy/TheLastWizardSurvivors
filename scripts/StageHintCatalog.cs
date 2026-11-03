@@ -36,6 +36,8 @@ public enum HintCue
 	Writ,
 	/// <summary>Birds lifting out of the canopy on each fall of a great foot (the walking hut).</summary>
 	Birds,
+	/// <summary>Sea mist rolling in low, and a barge hung shimmering above the water among it (the barge).</summary>
+	Mist,
 }
 
 /// <summary>One side event's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
@@ -248,6 +250,23 @@ public static class StageHintCatalog
 				"A caravan bell, somewhere out on the sand.",
 				"The bell again. Something walks the old road.",
 				"The bell is still moving. It does not stop.",
+			},
+		},
+		// Morgan le Fay, in her barge moored under the Last Bridge (.ai/chapter-wizards.md 4.9). Mist rolls over the
+		// parapet from her side and her barge hangs shimmering above the water there - the fata morgana, her name
+		// on the strait - and a wooden hull knocks against the stone of a pier far below. A sound, not speech: she
+		// does not call out. Not named, never said what to do.
+		new()
+		{
+			SiteId = "the_barge",
+			Voice = HintVoice.Sound,
+			Sound = SfxCatalog.HintHullKnock,
+			Cue = HintCue.Mist,
+			Lines = new[]
+			{
+				"A boat on the water below, where no boat could be.",
+				"The boat again, nearer the bridge.",
+				"Its lantern is still lit.",
 			},
 		},
 	};
