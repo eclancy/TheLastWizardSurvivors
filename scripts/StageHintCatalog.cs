@@ -46,6 +46,8 @@ public enum HintCue
 	Sand,
 	/// <summary>A thin cold herb-smoke lying low over the stubble, a wisp on each phrase of her voice (the granary).</summary>
 	Smoke,
+	/// <summary>A line of wet paint drawing itself, dab after dab, on each stroke of a brush, and a drip off the last (the dotted door in the Court).</summary>
+	Paint,
 }
 
 /// <summary>One side event's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
@@ -280,6 +282,22 @@ public static class StageHintCatalog
 				"You there. The granary, past the furrows.",
 				"He counts me with the grain. Settle his count.",
 				"Come, or go. I have waited out worse men.",
+			},
+		},
+		// Ma Liang, kept in the Court's Gallery to paint its portraits (.ai/chapter-wizards.md 4.8). A brush is heard drawing
+		// along a wall and a line of wet paint draws itself in from his side, dab after dab, a drip running off its end.
+		// Not a voice: he is never heard, only his brush. Not named; never said what to do, or that anyone is held.
+		new()
+		{
+			SiteId = "dotted_door",
+			Voice = HintVoice.Sound,
+			Sound = SfxCatalog.HintBrush,
+			Cue = HintCue.Paint,
+			Lines = new[]
+			{
+				"A brushstroke drawing itself along the wall.",
+				"Another line, wet, running the same way.",
+				"The paint is still running.",
 			},
 		},
 		// Vainamoinen, the singer, under the ice. He is heard, not named.

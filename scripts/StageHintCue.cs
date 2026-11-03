@@ -34,6 +34,8 @@ using TheOneHeMissed.scripts;
 //                 on each slow knock of stone on stone, and a fainter one beside it
 //   the granary   a thin cold herb-smoke lying low over the stubble, drifting in slow and flat from her side,
 //                 curling and thinning - a wisp on each syllable of her voice
+//   the door      a line of wet paint drawing itself in from his side, dab after dab toward that edge, on each
+//                 stroke of his brush, three lines side by side - and a drop running off the end of the last
 //
 // IN THE WORLD'S LAYERS, HELD TO THE VIEW. The marks are drawn in the world, on the layer over the
 // bodies and under the HUD, so they read as something out there rather than as an interface - but
@@ -53,7 +55,7 @@ public partial class StageHintCue : Node2D
 	public const string SheetPath = "res://assets/bonelight/effects/hint-cues.png";
 	public const int Cell = 16;
 	public const int Columns = 8;
-	public const int Rows = 10;   // HintCue's members, in order
+	public const int Rows = 13;   // HintCue's members, in order
 
 	// x3, the attack icons' size: at x2 a 16 px mark was a speck on the phone.
 	private const float DrawScale = 3f;
@@ -130,6 +132,21 @@ public partial class StageHintCue : Node2D
 
 	/// <summary>The granary's hint beats, for RegressionChecks.ValidateTitheScale (a copy).</summary>
 	public static float[] GranaryVoiceBeats => (float[])GranaryVoices.Clone();
+
+	// The painter's brush (hint_brush): three strokes along a wall, then a drop running off the last - tools/audio/sfx.py
+	// _BRUSH_STROKES' onsets and _BRUSH_DRIP are the same four. A line of wet paint is laid on each stroke, dab after dab
+	// toward the edge he is beyond, and a drip hangs off the end of the last line on the fourth.
+	private static readonly float[] BrushBeats = { 0.06f, 0.80f, 1.40f, 1.96f };
+	// Each line's dabs, in the sheet's columns, fat where the brush pressed and small where it lifted, and the gap
+	// between one dab coming in and the next - a line drawn in 0.3 s, the length of the sound's stroke.
+	private static readonly int[] StrokeDabs = { 0, 1, 0, 1, 3, 2 };
+	private const float DabSeconds = 0.055f;
+	private const float DabStep = 8f;
+	private float lastLineAlong;
+	private float lastLineDepth;
+
+	/// <summary>The dotted door's hint beats, for RegressionChecks.ValidateDottedDoor (a copy).</summary>
+	public static float[] BrushBeatTimes => (float[])BrushBeats.Clone();
 
 	private struct Mark
 	{
@@ -237,6 +254,7 @@ public partial class StageHintCue : Node2D
 		HintCue.Stars => 100f,
 		HintCue.Sand => 70f,
 		HintCue.Smoke => 130f,
+		HintCue.Paint => 60f,
 		_ => 8f,
 	};
 
@@ -508,6 +526,49 @@ public partial class StageHintCue : Node2D
 				if (nextBeat >= GranaryVoices.Length)
 					clock = -1f;
 				break;
+			case HintCue.Paint:
+				while (nextBeat < BrushBeats.Length && BrushBeats[nextBeat] <= t)
+				{
+					if (nextBeat < BrushBeats.Length - 1)
+					{
+						// A stroke: a line of dabs laid one after another from deeper in toward the edge he is beyond - the
+						// line runs toward his room - each a beat after the last (a mark's age starts below zero, so it is
+						// laid down where it will be and comes in on its turn). The next stroke runs beside it.
+						float along = (nextBeat - 1) * 34f + Jitter(4f);
+						// The stroke's flick (column 2) points east as drawn: it ends a line running east, mirrored one
+						// running west; a line running up or down the screen ends in the small dab instead.
+						Vector2 toward = Band().Toward;
+						bool sideways = Mathf.Abs(toward.X) > 0.5f;
+						for (int k = 0; k < StrokeDabs.Length; k++)
+						{
+							// From a little in to the edge itself, short of the caption set just inside the band
+							// (StageHintCaption.CueBand): a first draft ran it 84 px in, under the words.
+							float depth = 44f - k * DabStep;
+							float sway = Mathf.Sin(k * 0.9f + nextBeat) * 3f;
+							int glyph = StrokeDabs[k] == 2 && !sideways ? 3 : StrokeDabs[k];
+							int dab = Spawn((int)HintCue.Paint, glyph, 2.6f - nextBeat * 0.2f, along + sway, depth,
+								inward: 0f, drift: 0f, rise: 0f, fadeIn: 0.06f);
+							if (dab >= 0)
+							{
+								marks[dab].Age = -k * DabSeconds;
+								marks[dab].Mirror = glyph == 2 && toward.X < 0f;
+							}
+							lastLineAlong = along + sway;
+							lastLineDepth = depth;
+						}
+					}
+					else
+					{
+						// The drop running off the end of the last line: its run lengthens as it hangs (Pose).
+						int d = Spawn((int)HintCue.Paint, 4, 1.6f, lastLineAlong, lastLineDepth - 6f, inward: 0f, drift: 0f, rise: 0f, fadeIn: 0.1f);
+						if (d >= 0)
+							marks[d].Position += Vector2.Down * 10f;
+					}
+					nextBeat++;
+				}
+				if (nextBeat >= BrushBeats.Length)
+					clock = -1f;
+				break;
 			case HintCue.Bell:
 				// The bell walks along the edge, as the caravan walks its road.
 				if (bellSlot < 0)
@@ -681,6 +742,14 @@ public partial class StageHintCue : Node2D
 				// life (the same four thinned, 4-7), and lifting and settling a little on the air.
 				column = (m.Glyph + (int)(m.Age * 2.6f)) % 4 + (m.Age > m.Life * 0.6f ? 4 : 0);
 				at.Y += Mathf.Sin(m.Age * 1.7f + m.Phase) * 3f;
+				break;
+			case HintCue.Paint:
+				// A dab lies where it was laid. A drop's run lengthens as it hangs, a column a quarter second, and sags.
+				if (m.Glyph >= 4)
+				{
+					column = 4 + Mathf.Clamp((int)(Mathf.Max(0f, m.Age) / 0.22f), 0, 3);
+					at.Y += Mathf.Max(0f, m.Age) * 6f;
+				}
 				break;
 			case HintCue.Writ:
 				// Turning over as it is blown, and lifted and dropped by the draught.

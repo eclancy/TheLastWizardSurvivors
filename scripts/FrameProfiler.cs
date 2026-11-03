@@ -74,6 +74,9 @@ public partial class FrameProfiler : Node
 		// Spiritual Weapon: the weapons' _Process - every swing and blow, Excalibur's line and its bolt sweep
 		// included - and the air's draw, where the lines are painted (scripts/SpiritualWeapon.cs).
 		SpiritWeapon,
+		// The Familiar: every creature's step, its effects and The Painted Door's doors (scripts/Familiar.cs,
+		// Familiar.PaintedDoor.cs), process and the doors' draw. Its strikes' damage is in it too.
+		Familiar,
 		Harness,
 		Count,
 	}
@@ -81,7 +84,7 @@ public partial class FrameProfiler : Node
 	private static readonly string[] SectionNames =
 	{
 		"enemy", "separation", "move", "takeDamage", "death", "dmgText", "hitFx",
-		"player", "spells", "game", "spawn", "orbs", "textAnim", "terrain", "nav", "starfall", "stormsweep", "runes", "mire", "chain", "vine", "light", "spirit", "harness",
+		"player", "spells", "game", "spawn", "orbs", "textAnim", "terrain", "nav", "starfall", "stormsweep", "runes", "mire", "chain", "vine", "light", "spirit", "familiar", "harness",
 	};
 
 	/// <summary>True while a profiler is attached and counting.</summary>

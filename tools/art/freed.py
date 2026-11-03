@@ -70,6 +70,7 @@ WIZARDS = [
     # The one he kept, freed by his fall in the Throne (.ai/endgame-castle.md decision 11): the sword upright in her fist
     # is her light. She floats in the panel as in the game - her sprite's shadow on the ground, her feet off it.
     ("nimue", ("nimue", "light", "light")),
+    ("ma_liang", ("maliang", "arcane", "arcane")),
 ]
 
 # Where they stand: the Archmage left of the middle, the freed wizard right of it, turned to him.

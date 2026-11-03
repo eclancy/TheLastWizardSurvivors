@@ -1786,6 +1786,56 @@ def hint_granary_voice():
     return S.dc_block(_far(out, low=150.0, high=1900.0, size=0.45, mix=0.24, damp=0.75))
 
 
+# The Court's second prisoner (.ai/chapter-wizards.md 4.8): Ma Liang, painting in the Gallery. Three strokes of a wet
+# brush along a wall and a drop running off the last: (onset, length, gain). StageHintCue.BrushStrokes is the same
+# three onsets, and _BRUSH_DRIP its fourth beat - change one, change both.
+_BRUSH_STROKES = [(0.06, 0.46, 1.0), (0.80, 0.36, 0.86), (1.40, 0.32, 0.76)]
+_BRUSH_DRIP = 1.96
+
+
+def _brush_stroke(dur, seed):
+    """One stroke of a loaded brush drawn along plaster: the hair meeting the wall (a soft wet press, no click - a
+    brush has no hard part), then the drag, which is what a brush sounds like - a hush of bristles over a rough
+    surface, the band sliding up a little as the load runs out and the hairs go drier, its grain the bristles
+    catching and letting go (an irregular chop at 50-80 Hz, a stick-slip, shallow), and under it the wet of the paint
+    itself, a slow low smear. Lifted off at the end, not stopped: the drag thins and rises. Nothing in the set is a
+    drag: the paper wind flutters, a whoosh is air, the mire's sounds are below 600 Hz."""
+    press = S.env_mul(S.lowpass(S.osc("noise", 0, 0.07, seed=seed), 700.0), S.ad(0.07, 0.012, 3.0))
+    body = S.env_mul(S.osc("sine", S.sweep(0.09, 230.0, 170.0, 0.7), 0.09), S.ad(0.09, 0.01, 3.5))
+    drag = S.bandpass(S.osc("noise", 0, dur, seed=seed + 1), S.sweep(dur, 1150.0, 1750.0, 1.3), 1.4)
+    grain = S.gate(S.osc("noise", 0, dur, seed=seed + 2), 64.0 + 9.0 * (seed % 3), duty=0.55, seed=seed + 3)
+    drag = S.mix(S.gain(drag, 0.7), S.gain(S.bandpass(grain, S.sweep(dur, 1500.0, 2300.0), 2.0), 0.45))
+    drag = S.env_mul(drag, S.adsr(dur, a=0.05, d=0.1, s=0.75, r=dur * 0.45))
+    wet = S.lowpass(S.osc("noise", 0, dur, seed=seed + 4), 420.0)
+    wet = S.env_mul(S.tremolo(wet, 7.0 + seed % 2, 0.5), S.adsr(dur, a=0.04, d=0.1, s=0.6, r=dur * 0.4))
+    return S.layer([(press, 0.0, 0.7), (body, 0.0, 0.5), (drag, 0.03, 1.0), (wet, 0.02, 0.55)])
+
+
+def _paint_drip(seed):
+    """A drop of paint running off the end of a stroke and landing: a bead of liquid letting go (a short rising chirp,
+    what a drop sounds like as it parts) and its small soft landing a beat after."""
+    dur = 0.05
+    plip = S.env_mul(S.osc("sine", S.sweep(dur, 780.0, 1560.0, 0.6), dur), S.ad(dur, 0.002, 2.5))
+    land = S.env_mul(S.bandpass(S.osc("noise", 0, 0.04, seed=seed), 900.0, 1.6), S.ad(0.04, 0.002, 5.0))
+    return S.layer([(plip, 0.0, 0.8), (land, 0.16, 0.35)])
+
+
+def hint_brush():
+    """The Court: a brush drawing itself along the wall, in the Gallery where he paints.
+
+    Ma Liang, kept to paint the dark wizard's portraits (.ai/chapter-wizards.md 4.8): three strokes of a wet brush on
+    plaster, the first long and the next two shorter, "running the same way", and a drop of paint running off the
+    last. A drag and a drip: nothing else in the set is either. Indoors, in a long room of the house - a short bright
+    tail, the top kept at 3.4 kHz for the bristles. The stroke onsets are _BRUSH_STROKES, the drop _BRUSH_DRIP, which
+    StageHintCue lays its line of paint on. Also the sound of Paint What Is Needed drawing his flask (PaintedFlask)."""
+    items = [(_brush_stroke(d, 4101 + 13 * i), t, g) for i, (t, d, g) in enumerate(_BRUSH_STROKES)]
+    items.append((_paint_drip(4201), _BRUSH_DRIP, 0.62))
+    items.append((_paint_drip(4202), _BRUSH_DRIP + 0.21, 0.4))
+    out = S.pad(S.layer(items), 2.4)
+    out = S.lowpass(S.highpass(out, 110.0), 3400.0)
+    return S.dc_block(S.reverb(out, size=0.55, damp=0.55, mix=0.2))
+
+
 # ---------------------------------------------------------------------------
 # secrets - the light he missed (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9)
 # ---------------------------------------------------------------------------
@@ -2097,6 +2147,8 @@ REGISTRY += [
     ("hint_quatrain",       "hint",   -10.0, hint_quatrain,       False),
     ("hint_tomb_knock",     "hint",   -10.0, hint_tomb_knock,     False),
     ("hint_granary_voice",  "hint",   -10.0, hint_granary_voice,  False),
+    # The Court's painter (DottedDoorEvent): the chapter's second hint, and his flask being painted (PaintedFlask).
+    ("hint_brush",          "hint",   -10.0, hint_brush,          False),
     # The nine mouths' call (NineMouthsEvent): nine voices in two seconds, a call every few seconds, only
     # while the player is at the cliff - the once-a-second row. Hers is the louder of the two because it is
     # the one to hear; the eight echoes come a few dB under it and lose more again to the distance.

@@ -27,6 +27,25 @@ public partial class LevelUpMenu
 	/// <summary>True while the page of a spell's forms is up.</summary>
 	public bool ShowingVariantPage => pendingVariantOption != null;
 
+	// The run's first screen for a wizard who opens on a spell with forms (Node2DGame.OpeningForm.cs): the page with no
+	// hand behind it, so no Back.
+	private bool openingFormsOnly;
+
+	/// <summary>
+	/// The page of <paramref name="option"/>'s forms as the run's first screen, for a wizard who opens on a spell with
+	/// forms (Ma Liang's Familiar, .ai/chapter-wizards.md 4.8). The hand behind it is the one card, so a tool that reads
+	/// the offered options (GetOfferedOptions, LevelUpOption.AutoChoice) answers it as it answers any page of forms;
+	/// there is no Back, no Reroll, no Skip - the spell is his, only its form is open.
+	/// </summary>
+	public void ShowOpeningForms(LevelUpOption option)
+	{
+		if (option == null || !option.OffersVariants)
+			return;
+		openingFormsOnly = true;
+		SetOptions(new System.Collections.Generic.List<LevelUpOption> { option });
+		BuildVariantSelectionButtons(option);
+	}
+
 	/// <summary>The forms on the page, while it is up; empty otherwise. Read by the tools that drive it.</summary>
 	public System.Collections.Generic.IReadOnlyList<LevelUpOption> GetVariantOptions() =>
 		pendingVariantOption?.Variants ?? (System.Collections.Generic.IReadOnlyList<LevelUpOption>)System.Array.Empty<LevelUpOption>();
@@ -83,8 +102,9 @@ public partial class LevelUpMenu
 		if (ascensionButton != null && IsInstanceValid(ascensionButton))
 			ascensionButton.Visible = false;
 
-		// One Back where Reroll and Skip were, in the same stone.
-		if (skipButton?.GetParent() is Control row && row.GetNodeOrNull<Button>(VariantBackName) == null)
+		// One Back where Reroll and Skip were, in the same stone - but not on the run's first screen, which has no
+		// hand to go back to.
+		if (!openingFormsOnly && skipButton?.GetParent() is Control row && row.GetNodeOrNull<Button>(VariantBackName) == null)
 		{
 			var back = new Button
 			{

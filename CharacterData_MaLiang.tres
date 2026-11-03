@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_Familiar.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/maliang-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/MaliangFrames.tres" id="4"]
+
+; Rescued, not a starter: the Court's second chapter wizard, freed by tracing the door he sketched in charcoal on the
+; Gallery's end wall, dot to dot (.ai/chapter-wizards.md 4.8). The boy of the Chinese tale whose brush made real
+; whatever he painted, kept here to paint the dark wizard's portraits. His passive is Paint What Is Needed, the one
+; axis no other wizard owns: once a run, below a quarter of his health, a flask is painted at his feet. He opens on
+; the Familiar (Arcane), choosing its form on his run's first screen (Node2DGame.OpeningForm.cs); only the crow has a
+; final form (The Painted Door). Arcane is shared with the Archmage and the Sibyl on other spells (R1).
+[resource]
+script = ExtResource("1")
+Id = "ma_liang"
+Name = "Ma Liang"
+StartingSpellResource = ExtResource("2")
+ChoosesStartingForm = true
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "paint_flask"
+StartingPassiveName = "Paint What Is Needed"
+StartingPassiveDescription = "Once a run, a healing flask is painted at your feet below 25% health"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

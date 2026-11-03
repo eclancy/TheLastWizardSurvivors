@@ -400,6 +400,17 @@ public partial class _UiShot : Node
 	// --event-progress=F: with --arrive, the begun event's own "progress" float set to F (0-1) - an event photographed
 	// part-way (the Tithe-Reeve's pan part-paid, its beam part-tipped) without the minutes it takes to get there.
 	private float eventProgress = -1f;
+	// --door-trace=F: the Court's dotted door (DottedDoorEvent) begun and inked F of the way round (0-1), the player
+	// standing with his feet on the line where the ink ends; --door-open=S instead inks it whole S seconds before the
+	// shutter, so the shot is that far into its ending (the door painted at 0.4, open by 1.1, him stepping out to 2.05).
+	private float doorTrace = -1f;
+	private float doorOpenAt = -1f;
+	private bool doorDone;
+	// --paint-flask: Ma Liang's Paint What Is Needed (--character=19) - a blow that leaves him below a quarter of his
+	// health, PAINT_FLASK_LEAD frames before the shutter, so the flask is photographed being painted at his feet.
+	private bool paintFlask;
+	private bool flaskHit;
+	private const int PaintFlaskLead = 24;
 	// --event-index=N: which of the chapter's events (SideEventDirector.EventsFor; 0 its original, 1 a second -
 	// --second-event-test adds a stand-in one on a tool run) --goto=event, --goto=site:N, --win-event and --arrive
 	// mean. --goto=event:N goes to event N's main site whatever this says.
@@ -1855,6 +1866,12 @@ public partial class _UiShot : Node
 				beaconsLit = System.Math.Max(0, int.Parse(arg.Substring("--beacons-lit=".Length)));
 			else if (arg.StartsWith("--event-progress="))
 				eventProgress = float.Parse(arg.Substring("--event-progress=".Length), System.Globalization.CultureInfo.InvariantCulture);
+			else if (arg == "--paint-flask")
+				paintFlask = true;
+			else if (arg.StartsWith("--door-trace="))
+				doorTrace = Mathf.Clamp(float.Parse(arg.Substring("--door-trace=".Length), System.Globalization.CultureInfo.InvariantCulture), 0f, 1f);
+			else if (arg.StartsWith("--door-open="))
+				doorOpenAt = float.Parse(arg.Substring("--door-open=".Length), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg.StartsWith("--event-index="))
 				eventIndex = System.Math.Max(0, int.Parse(arg.Substring("--event-index=".Length)));
 			// --zoom=Z: the run camera's zoom (player.tscn's is 0.85), for a map-like view of a stretch
@@ -1880,7 +1897,7 @@ public partial class _UiShot : Node
 		if (dropPotion || dropHealth || winEvent || castBramble || stageCount > 0 || demoEvolutions.Length > 0)
 			SaveManager.WritesDisabled = true;
 		// A run that walks to its event can win it, and a won event saves on the spot.
-		if (gotoTarget != null || takeWayfinder || arriveEvent || seerLeg >= 0 || seerRead)
+		if (gotoTarget != null || takeWayfinder || arriveEvent || seerLeg >= 0 || seerRead || doorTrace >= 0f || doorOpenAt >= 0f)
 			SaveManager.WritesDisabled = true;
 
 		if (!ResourceLoader.Exists(ScenePath))
@@ -3155,6 +3172,32 @@ public partial class _UiShot : Node
 				Vector2 from = reader.CurrentSpot ?? reader.ReadingSpots[^1];
 				reader.Read(from);
 				GD.Print($"_UiShot: the seer read from {from}");
+			}
+			if (paintFlask && !flaskHit && frames >= WarmupFrames - PaintFlaskLead && FindNodeOfType<Player>(GetTree().Root) is Player painter)
+			{
+				flaskHit = true;
+				painter.CurrentHP = Mathf.CeilToInt(painter.MaxHP * 0.3f);
+				painter.TakeDamage(Mathf.CeilToInt(painter.MaxHP * 0.1f));
+				GD.Print($"_UiShot: struck below a quarter, {painter.CurrentHP}/{painter.MaxHP} HP; flask painted at {painter.FlaskPaintedAtSeconds:0.0} s");
+			}
+			// The dotted door: traced part of the way with him on the line, or inked whole for its ending.
+			// Late, for the trace: the run's own steering walks him off wherever he is put, so he is put there a few frames
+			// before the shutter, which is long enough for the ink to be drawn and the line under the timer to say so.
+			int doorFrame = doorOpenAt >= 0f ? WarmupFrames - Mathf.RoundToInt(doorOpenAt * 60f) : WarmupFrames - 6;
+			if ((doorTrace >= 0f || doorOpenAt >= 0f) && !doorDone && frames >= Mathf.Max(WarmupFrames / 3 + 2, doorFrame)
+				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector doorDirector
+				&& doorDirector.Events.OfType<DottedDoorEvent>().FirstOrDefault() is DottedDoorEvent door
+				&& FindNodeOfType<Player>(GetTree().Root) is Player tracer)
+			{
+				doorDone = true;
+				float f = doorOpenAt >= 0f ? 1f : doorTrace;
+				door.DebugTraceTo(f);
+				// His feet on the line where the ink ends; for the ending, a step below the door's foot, looking at it.
+				Vector2 feetAt = doorOpenAt >= 0f ? door.DoorCentre + new Vector2(70f, DottedDoorEvent.HalfHeight + 110f) : door.PenWorld;
+				// Through the ordinary teleport (below, this frame), so --hold keeps him there against the run's steering.
+				teleportTo = feetAt - (tracer.FootPosition - tracer.GlobalPosition);
+				teleported = false;
+				GD.Print($"_UiShot: the dotted door traced to {f:0.00} ({door.DotsInked} dots) at {door.DoorCentre}; standing at {feetAt}");
 			}
 			if (teleportTo is Vector2 target && !teleported && frames >= WarmupFrames / 3
 				&& FindNodeOfType<Player>(GetTree().Root) is Player traveller)

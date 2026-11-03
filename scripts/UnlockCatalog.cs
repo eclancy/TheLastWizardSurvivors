@@ -333,6 +333,11 @@ public static class UnlockCatalog
 		// Counted at the Throne's gate only, as every chapter wizard is.
 		FromEvent("medea", UnlockKind.Character, "tithe_scale", "Counted with the grain in the Fallow Fields.",
 			secretUntilStage: "stage_9", finalGateOnly: true),
+		// Ma Liang, kept in the Court to paint its portraits (4.8): the Court's second event, the door he sketched in the
+		// Gallery traced dot to dot. Secret until the Court opens, and counted at the Throne's gate only, as every chapter
+		// wizard is.
+		FromEvent("ma_liang", UnlockKind.Character, "dotted_door", "Kept painting the portraits in the Court's Gallery.",
+			secretUntilStage: "stage_12", finalGateOnly: true),
 		FromEvent("iron_palisade", UnlockKind.Spell, "caravan_master", "Carried by the caravan master on the Scorched Sands road."),
 		FromEvent("contagion", UnlockKind.Spell, "bog_lanterns", "Kept by whatever tends the lanterns in the Blighted Swamp."),
 		FromEvent("bramble_seed", UnlockKind.Spell, "the_grove", "Grown back in the corrupted grove of the Enchanted Forest."),

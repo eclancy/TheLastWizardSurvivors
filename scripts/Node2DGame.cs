@@ -469,6 +469,9 @@ public partial class Node2DGame : Node2D
 		bestiary = LoadBestiaryForStage();
 		player = GetNode<Player>("CharacterBody2D"); // Strongly typed YES
 		stageOrigin = player?.GlobalPosition ?? Vector2.Zero;
+		// A wizard who opens on a spell with forms chooses it first (Node2DGame.OpeningForm.cs). Deferred so the run is
+		// built under it, and asked before anything a chapter defers here (the Throne's Muster) so it is the first screen.
+		Callable.From(() => OpenOpeningFormIfOwed()).CallDeferred();
 		// Before anything is placed: the terrain, the side event and the secrets all ask hook 3.
 		CreateChapterRules();
 		ApplyBalancePresetFromSave();
@@ -3529,6 +3532,9 @@ public partial class Node2DGame : Node2D
 	private void ResumeOrOpenNextMenu()
 	{
 		if (runFinished)
+			return;
+		// The wizard's own spell before anything else (Node2DGame.OpeningForm.cs).
+		if (OpenOpeningFormIfOwed())
 			return;
 		if (queuedChestOpens > 0)
 		{

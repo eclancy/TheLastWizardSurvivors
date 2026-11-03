@@ -500,15 +500,17 @@ def furniture(rng):
 
     # The Gallery: portraits on its north wall's face - one for each wizard he took (CourtRooms
     # assigns them), the rest empty frames.
-    # Every 4 cells along the wall, and never in one of its two doors (a frame hung across a doorway was where
-    # the eighth portrait would have gone, at the old 6-cell pitch). Twelve frames: the wizards he took run
-    # past nine once every chapter holds one (.ai/chapter-wizards.md), and the last frame of the row is
-    # always the seer's (CourtRooms.GalleryRoom, 4.10).
+    # Every 3 cells along the wall, and never in one of its two doors (a frame hung across a doorway was where
+    # the eighth portrait would have gone, at the old 6-cell pitch). Sixteen frames: the wizards he took
+    # reached thirteen with Ma Liang, past the twelve the 4-cell pitch hung (a frame is one 48 px cell wide,
+    # so 3 cells still leaves two cells of wall between), and the spare three leave room. The first frame of the
+    # row is always the painter's, over his door (4.8), and the last always the seer's (CourtRooms.GalleryRoom,
+    # 4.10); a frame with no wizard for it is bare wall.
     px, py, pw, ph = room_by_id("gallery")[3]
     gaps = [r for (rid, r, _) in DOORS if rid == "gallery" and r[1] + r[3] <= py]
     slot = 0
-    for k in range(14):
-        x = px + 2.5 + k * 4.0
+    for k in range(18):
+        x = px + 2.5 + k * 3.0
         if any(gx - 0.5 < x < gx + gw + 0.5 for (gx, gy, gw, gh) in gaps):
             continue
         put("portrait", "gallery", x, py - 0.5, slot=slot, wall=True)

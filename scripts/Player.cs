@@ -835,6 +835,10 @@ public partial class Player : CharacterBody2D
 		// never fused for him (Player.Combinations.cs, AddStartingConjunction).
 		if (ComboCatalog.ForId(startingSpellId) is ComboDefinition opening && ComboCatalog.StartsFused(opening, selectedCharacter.Id))
 			AddStartingConjunction(opening, selectedCharacter.IsLegendaryStart);
+		// A wizard who opens on a spell with forms chooses the form on the run's first screen (Ma Liang's Familiar,
+		// Player.MaLiang.cs): the spell is owed until then, and Node2DGame opens the page before anything moves.
+		else if (ChoosesOpeningForm(selectedCharacter) && string.IsNullOrEmpty(SpellVariants.Split(startingSelection).VariantId))
+			OweOpeningForm(startingSpellId, selectedCharacter.IsLegendaryStart);
 		else if (!string.IsNullOrWhiteSpace(startingSpellId))
 			TryAddOrLevelSpell(startingSelection, selectedCharacter.IsLegendaryStart);
 		else
@@ -952,6 +956,11 @@ public partial class Player : CharacterBody2D
 		// wizard owns: not a share of every hit (the Geomancer), not a chance of none (evasion), not a death refused
 		// (the Archmage) - the rate at which the touching crowd wounds.
 		"bite_interval_25",
+		// Ma Liang (.ai/chapter-wizards.md 4.8): Paint What Is Needed - the brush that painted what the poor needed paints
+		// him a flask, once a run, below a quarter of his health (Player.MaLiang.cs, PaintedFlask). An axis no other
+		// wizard owns: not a heal over time (the Frostweaver), not a death refused (the Archmage), not a revive made
+		// whole (Morgan) - one flask's worth, at the moment it is needed, and taken like any flask.
+		"paint_flask",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -1027,6 +1036,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "bite_interval_25":
 				characterScabbard = true;
+				return true;
+			case "paint_flask":
+				characterPaintsFlask = true;
 				return true;
 			default:
 				return false;
@@ -2928,6 +2940,10 @@ public partial class Player : CharacterBody2D
 			}
 		}
 		
+		// Paint What Is Needed (Ma Liang): below a quarter and still standing, once a run, a flask is painted at his feet.
+		if (mitigated > 0)
+			MaybePaintFlask();
+
 		// Bastion of Spikes retaliation: trigger spike burst when HP drops below 30%
 		if (chestRetaliationEnabled && mitigated > 0 && CurrentHP > 0)
 		{

@@ -840,7 +840,7 @@
   },
   {
    "at": [
-    78.5,
+    73.5,
     61.5
    ],
    "kind": "portrait",
@@ -850,7 +850,7 @@
   },
   {
    "at": [
-    82.5,
+    79.5,
     61.5
    ],
    "kind": "portrait",
@@ -860,7 +860,7 @@
   },
   {
    "at": [
-    86.5,
+    82.5,
     61.5
    ],
    "kind": "portrait",
@@ -870,7 +870,7 @@
   },
   {
    "at": [
-    90.5,
+    85.5,
     61.5
    ],
    "kind": "portrait",
@@ -880,7 +880,7 @@
   },
   {
    "at": [
-    94.5,
+    88.5,
     61.5
    ],
    "kind": "portrait",
@@ -890,7 +890,7 @@
   },
   {
    "at": [
-    98.5,
+    91.5,
     61.5
    ],
    "kind": "portrait",
@@ -900,7 +900,7 @@
   },
   {
    "at": [
-    102.5,
+    94.5,
     61.5
    ],
    "kind": "portrait",
@@ -910,7 +910,7 @@
   },
   {
    "at": [
-    106.5,
+    97.5,
     61.5
    ],
    "kind": "portrait",
@@ -920,7 +920,7 @@
   },
   {
    "at": [
-    110.5,
+    100.5,
     61.5
    ],
    "kind": "portrait",
@@ -930,7 +930,7 @@
   },
   {
    "at": [
-    118.5,
+    103.5,
     61.5
    ],
    "kind": "portrait",
@@ -940,12 +940,52 @@
   },
   {
    "at": [
-    122.5,
+    106.5,
     61.5
    ],
    "kind": "portrait",
    "room": "gallery",
    "slot": 11,
+   "wall": true
+  },
+  {
+   "at": [
+    109.5,
+    61.5
+   ],
+   "kind": "portrait",
+   "room": "gallery",
+   "slot": 12,
+   "wall": true
+  },
+  {
+   "at": [
+    112.5,
+    61.5
+   ],
+   "kind": "portrait",
+   "room": "gallery",
+   "slot": 13,
+   "wall": true
+  },
+  {
+   "at": [
+    118.5,
+    61.5
+   ],
+   "kind": "portrait",
+   "room": "gallery",
+   "slot": 14,
+   "wall": true
+  },
+  {
+   "at": [
+    121.5,
+    61.5
+   ],
+   "kind": "portrait",
+   "room": "gallery",
+   "slot": 15,
    "wall": true
   },
   {

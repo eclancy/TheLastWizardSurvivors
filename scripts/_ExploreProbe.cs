@@ -64,6 +64,11 @@ using TheOneHeMissed.scripts;
 //      the probe goes to the nearest cold one, stands in its reach until it catches, and on to the next, so the 25 s
 //      clock is run against a real walk. --let-beacon-die, once the first has caught, stands off at the tomb (outside
 //      every reach) until the wind puts it out, checks it went cold, and then lights all three.
+//      The Court's dotted door (its second event) is TRACED at the player's own walking speed, never teleported along
+//      it: from where it arrives the probe walks to dot 1 and then along the line a stride ahead of the ink, feet first
+//      (Player.FootPosition, what the trace reads), and logs how long it took and how much of the household came in at
+//      the Gallery's doors. --step-off, once two fifths of it is inked, walks 130 px off the line (into the door's middle) and waits there 3 s,
+//      and checks the ink held where it was and nothing reset; then walks back to where the ink ends and finishes.
 // TWO EVENTS IN A CHAPTER (P2, .ai/chapter-wizards.md 6.3). On a chapter whose list holds more than one - or
 // with --second-event-test[=STAGE], which adds a stand-in second event on this tool run only
 // (SecondEventStandIn) - every placement check runs for every event, each pair of main sites must be at least
@@ -200,6 +205,7 @@ public partial class _ExploreProbe : Node
 			else if (arg == "--let-beacon-die") letBeaconDie = true;
 			else if (arg.StartsWith("--tithe-level=")) titheLevel = int.Parse(arg.Substring(14));
 			else if (arg == "--tithe-walk-off") titheWalkOff = true;
+			else if (arg == "--step-off") stepOffDoor = true;
 		}
 		// The gibbet's cage says each change of phase, each rising and each fall (a run says nothing).
 		GibbetCageEvent.LogPhases = true;
@@ -404,6 +410,18 @@ public partial class _ExploreProbe : Node
 		float wd = w.DistanceTo(origin);
 		foreach (SideEvent e in director.Events)
 		{
+			if (e is DottedDoorEvent drawn)
+			{
+				// Placed by the Court's own building, not the bands: on the Gallery's floor at its west end, every dot on it.
+				Vector2 at = drawn.Sites[0].Position;
+				Check("the door is drawn on the Gallery's floor", drawn.Court != null && drawn.Court.RoomAt(at)?.Id == DottedDoorEvent.RoomId
+					&& at.DistanceTo(drawn.DoorCentre) < 0.01f, $"({at.X:0},{at.Y:0})");
+				bool dotsOnFloor = Enumerable.Range(0, DottedDoorEvent.DotCount).All(k => drawn.Court != null
+					&& drawn.Court.IsFloor(drawn.DotWorld(k)) && drawn.Court.RoomAt(drawn.DotWorld(k))?.Id == DottedDoorEvent.RoomId);
+				Check("every one of its dots is on the Gallery's floor", dotsOnFloor, $"{DottedDoorEvent.DotCount} dots, {DottedDoorEvent.PathLength:0} px of line");
+				Check("the door stands on the building's floor", game.IsExploreGroundClear(at, 40f));
+				continue;
+			}
 			if (e is SeersVoiceEvent seer)
 			{
 				// Placed by the Court's own rooms, not the bands: three different rooms of its list, the first far enough
@@ -448,6 +466,13 @@ public partial class _ExploreProbe : Node
 		{
 			for (int j = i + 1; j < director.Events.Count; j++)
 			{
+				// Two events the building places (the Court's seer and its door) are where the house has them: the 90
+				// degrees round the start is the band's rule, so only the distance is noted.
+				if (director.Events[i].PlacedByChapterRules && director.Events[j].PlacedByChapterRules)
+				{
+					notes.Add($"events {i} and {j}: placed by the building, {director.Events[i].Sites[0].Position.DistanceTo(director.Events[j].Sites[0].Position):0} px apart");
+					continue;
+				}
 				float apart = Mathf.RadToDeg(ExplorePlacer.Separation(
 					ExplorePlacer.BearingFrom(origin, director.Events[i].Sites[0].Position),
 					ExplorePlacer.BearingFrom(origin, director.Events[j].Sites[0].Position)));
@@ -1076,6 +1101,19 @@ public partial class _ExploreProbe : Node
 					Check("walked off: what was paid stayed paid", tithePhase == 2 && titheBefore >= 0f && titheAfter >= titheBefore - 0.0001f,
 						$"{titheBefore * 100f:0.0}% when he left, {titheAfter * 100f:0.0}% after waiting away");
 			}
+			if (e is DottedDoorEvent traced)
+			{
+				Check("the door was traced dot to dot and inked in", traced.IsInked && traced.DotsInked == DottedDoorEvent.DotCount && traced.IsWon,
+					$"{traced.DotsInked} of {DottedDoorEvent.DotCount} dots, {traceWalked:0} px walked for {DottedDoorEvent.PathLength:0} px of line, "
+					+ $"begun {traceBegunAt:0.0} s and inked {traceInkedAt:0.0} s after arriving; {traced.HouseholdCalled} of the household came in at its doors");
+				if (stepOffDoor)
+				{
+					Check("stepped off: the ink waited where it was", traceHeld >= 0f && Mathf.Abs(traceAfterWait - traceHeld) < 0.01f && traced.StepOffs >= 1,
+						$"held at {traceHeld:0} px, {traceAfterWait:0} px after {StepOffWait:0} s off the line; {traced.StepOffs} step(s) off, {traced.SecondsOffLine:0.0} s off it");
+					Check("stepped off: picked up where it paused and finished, nothing reset", traced.IsInked && traceLowest >= traceHeld - 0.01f,
+						$"the ink never fell below {traceLowest:0} px after the pause");
+				}
+			}
 			if (e is FivePointedSealEvent seal)
 			{
 				Check("every stone faces the seal", seal.Aligned == FivePointedSealEvent.StoneCount, $"{seal.Steps} presses");
@@ -1250,6 +1288,9 @@ public partial class _ExploreProbe : Node
 				}
 			}
 		}
+		// The dotted door: traced, dot to dot, at his own walk (TraceStep).
+		if (e is DottedDoorEvent tracing && tracing.IsFound)
+			target = TraceStep(tracing, delta);
 		if (target == null)
 		{
 			float best = float.MaxValue;
@@ -1411,6 +1452,78 @@ public partial class _ExploreProbe : Node
 		}
 		const float Want = WalkingHutEvent.StartleRadius - 40f;
 		return d > Want ? me + toHut / d * Mathf.Min(step, d - Want) : me;
+	}
+
+	// --- the dotted door: traced ----------------------------------------------------------------------
+
+	private bool stepOffDoor;
+	private int traceOffPhase;
+	private Vector2 traceOffPoint;
+	private float traceOffClock;
+	private float traceHeld = -1f;
+	private float traceAfterWait = -1f;
+	private float traceLowest = float.MaxValue;
+	private float traceWalked;
+	private float traceClock;
+	private float traceBegunAt = -1f;
+	private float traceInkedAt = -1f;
+	private const float StepOffWait = 3f;
+
+	// One step of the trace at his own walking speed, by the feet: to dot 1, then along the line a stride ahead of the ink.
+	// With --step-off, once two fifths is inked: off the line, a wait, and back to where the ink ends.
+	private Vector2 TraceStep(DottedDoorEvent door, float delta)
+	{
+		traceClock += delta;
+		if (door.TraceBegun && traceBegunAt < 0f)
+			traceBegunAt = traceClock;
+		if (door.IsInked)
+		{
+			if (traceInkedAt < 0f)
+				traceInkedAt = traceClock;
+			return player.GlobalPosition;            // stand while it is painted and he steps out
+		}
+		if (traceOffPhase >= 3)
+			traceLowest = Mathf.Min(traceLowest, door.Pen);
+		Vector2 feetOffset = player.FootPosition - player.GlobalPosition;
+		Vector2 feet = player.FootPosition;
+		Vector2 goal;
+		if (!door.TraceBegun)
+			goal = door.DotWorld(0);
+		else
+		{
+			if (stepOffDoor && traceOffPhase == 0 && door.Pen >= DottedDoorEvent.PathLength * 0.4f)
+			{
+				traceOffPhase = 1;
+				traceHeld = door.Pen;
+				// Into the door's middle, over open boards: the door stands 64 px off the end wall, and a step off outward
+				// from its jamb or its arch would be into the wall, which the body cannot stand in.
+				Vector2 inward = door.DoorCentre + new Vector2(0f, 40f) - door.PenWorld;
+				inward = inward.LengthSquared() > 1f ? inward.Normalized() : Vector2.Right;
+				traceOffPoint = door.PenWorld + inward * 130f;
+				GD.Print($"EXPLOREPROBE trace: stepping off the line at {door.Pen:0} px ({door.DotsInked} dots), to ({traceOffPoint.X:0},{traceOffPoint.Y:0})");
+			}
+			if (traceOffPhase == 1 || traceOffPhase == 2)
+			{
+				goal = traceOffPoint;
+				if (traceOffPhase == 1 && feet.DistanceTo(traceOffPoint) < 2f)
+				{
+					traceOffPhase = 2;
+					traceOffClock = 0f;
+				}
+				if (traceOffPhase == 2 && (traceOffClock += delta) >= StepOffWait)
+				{
+					traceAfterWait = door.Pen;
+					traceOffPhase = 3;
+					GD.Print($"EXPLOREPROBE trace: {StepOffWait:0} s off the line, the ink at {door.Pen:0} px (held at {traceHeld:0}); back to it");
+				}
+			}
+			else
+				goal = door.DoorCentre + DottedDoorEvent.PathPoint(Mathf.Min(DottedDoorEvent.PathLength, door.Pen + 24f));
+		}
+		float step = player.WalkingSpeed * delta;
+		Vector2 next = feet.MoveToward(goal, step);
+		traceWalked += feet.DistanceTo(next);
+		return next - feetOffset;
 	}
 
 	// --- the seer: sought through the house ------------------------------------------------------------

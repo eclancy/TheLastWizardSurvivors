@@ -92,6 +92,8 @@ public static class QuestLog
 		// The sorceress of Colchis, counted among what grows here and held in the reeve's granary against a tithe the
 		// village could never pay (4.2).
 		new Prisoner("medea", "the one in the granary", "Someone is kept in the reeve's granary, counted with the grain.", "{0} has walked out of the granary."),
+		// The painter kept to paint the portraits in the Gallery (4.8), who drew himself a door and was never let finish it.
+		new Prisoner("ma_liang", "the painter in the gallery", "Along the walls a line of wet paint keeps running.", "{0} has stepped out of his door."),
 		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
 		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.

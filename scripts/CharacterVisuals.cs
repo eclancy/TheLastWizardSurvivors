@@ -76,6 +76,8 @@ public static class CharacterVisuals
 			// The blade of the sword she holds upright before her (roster.py, nimue()), halfway up its light: where the
 			// Spirit Sword leaves her and comes home. Her rest pose; the idle lifts her two rows at most.
 			case "nimue": return new Vector2(36, 8);
+			// The crow of light lifting off the tip of his brush (roster.py, maliang()), its body: what he painted.
+			case "ma_liang": return new Vector2(42, 7);
 			default: return null;
 		}
 	}
@@ -113,6 +115,7 @@ public static class CharacterVisuals
 			case "imhotep":
 			case "medea":
 			case "nimue":
+			case "ma_liang":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

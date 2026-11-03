@@ -74,6 +74,9 @@ public static class CharacterRoster
 		// The Throne's kept wizard (.ai/endgame-castle.md decision 11): Nimue, the Lady of the Lake, the one the dark
 		// wizard kept by him, freed when he falls. Appended, so every saved index keeps its wizard (index 21).
 		"res://CharacterData_Nimue.tres",
+		// The chapter wizards again: Ma Liang, the Court's second, freed by tracing the door he sketched on the Gallery's end
+		// wall, dot to dot (.ai/chapter-wizards.md 4.8). Appended, so every saved index keeps its wizard (index 22).
+		"res://CharacterData_MaLiang.tres",
 	};
 
 	/// <summary>

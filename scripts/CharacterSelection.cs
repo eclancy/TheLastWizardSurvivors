@@ -1,6 +1,7 @@
 ﻿using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TheOneHeMissed.scripts;
 
 // Data-driven character selection (issue #1/#29): builds one scrollable card per CharacterRoster
@@ -399,6 +400,8 @@ public partial class CharacterSelection : Control
 		SpellData spell = character?.StartingSpellResource;
 		if (spell == null)
 			return null;
+		// Null for a wizard who chooses his form each run (Ma Liang's Familiar, CharacterData.ChoosesStartingForm):
+		// his card shows the spell's own picture, not one form of it.
 		return character.StartingForm?.Icon ?? spell.Icon;
 	}
 
@@ -466,12 +469,37 @@ public partial class CharacterSelection : Control
 		// a final form named to a save that has not met the Ascension it needs is two systems at once.
 		ApotheosisDefinition apotheosis = ApotheosisCatalog.ForCharacter(character.Id);
 		if (apotheosis?.Form != null && apotheosisShown)
-			Add("Apotheosis", CodexRows.MakeText($"\u2736 {apotheosis.Form.DisplayName}", ResponsiveLayout.TextRole.Body, CardFamilyArt.ApotheosisTitle));
+			Add("Apotheosis", BuildApotheosisValue(character, apotheosis));
 		if (!string.IsNullOrWhiteSpace(character.StartingPassiveDescription))
 			Add("Passive", StatIcons.BuildLine(character.StartingPassiveDescription, CodexRows.Stone.Ink, ResponsiveLayout.TextRole.Body, expand: false));
 		if (character.IsLegendaryStart)
 			Add("Starts", CodexRows.MakeText("Legendary", ResponsiveLayout.TextRole.Body, CodexRows.Stone.Reward));
 		return grid;
+	}
+
+	// The form's name in the ember register. For a wizard whose final form belongs to one form of a spell he chooses each
+	// run (Ma Liang: the Familiar's crow, .ai/chapter-wizards.md 4.8), the line under it says which, and that the other
+	// forms have none - taken as the dog or the cat, he never meets it, and the card is the only place that can say so.
+	private static Control BuildApotheosisValue(CharacterData character, ApotheosisDefinition apotheosis)
+	{
+		Label name = CodexRows.MakeText($"\u2736 {apotheosis.Form.DisplayName}", ResponsiveLayout.TextRole.Body, CardFamilyArt.ApotheosisTitle);
+		SpellData spell = character.StartingSpellResource;
+		if (string.IsNullOrEmpty(apotheosis.VariantId) || spell == null || !spell.HasVariants)
+			return name;
+		string Short(SpellVariant v) => (string.IsNullOrWhiteSpace(v.ShortName) ? v.DisplayName : v.ShortName).ToLowerInvariant();
+		SpellVariant own = spell.FindVariant(apotheosis.VariantId);
+		var others = spell.Variants.Where(v => v != null && v != own).Select(Short).ToList();
+		if (own == null)
+			return name;
+		string rest = others.Count == 0 ? string.Empty
+			: $"; the {string.Join(" and the ", others)} {(others.Count == 1 ? "has" : "have")} none";
+		var column = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		column.AddThemeConstantOverride("separation", 0);
+		column.AddChild(name);
+		Label which = CodexRows.MakeText($"As the {Short(own)}{rest}", ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
+		which.Name = "ApotheosisForm";
+		column.AddChild(which);
+		return column;
 	}
 
 	// The starting spell with its own icon before it, as the Spell Index lists it.

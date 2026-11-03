@@ -59,6 +59,13 @@ THE ROW ORDER IS AN API: HintCue's order (scripts/StageHintCatalog.cs).
   smoke    the granary    a wisp of herb-smoke lying low on the air, running flat into a curl that turns over
                           a quarter at a time (0-3), then the same four thinned to a thread (4-7): "a thin
                           cold herb-smoke drifts low over the stubble from her side", one on each syllable
+  paint    the door       a dab of wet paint - round and full, an oval, a tapered flick, a small one with a speck
+                          beside it (0-3) - and a drip running off the end of a stroke, its run lengthening and a
+                          bead gathering at its foot (4-7): "a line of wet paint draws itself along the walls toward
+                          his room", laid dab after dab in a line running toward the edge he is beyond, three lines
+                          side by side on the three strokes of hint_brush and a drip hanging off the last. Round,
+                          so a line of them reads as a brushstroke whichever way the edge runs, and a drip always
+                          runs down the screen, which is down whatever the edge
 
 Each wears its event's far-tell colour (SideEvent.FarTellColor) as its body, so the cue is the
 colour of the light the player will find: wind's ramp for the grove's lichen grey-green, arcane
@@ -139,6 +146,12 @@ def ramp_of(name):
         # burning low somewhere shut away - not the well's water, the Fields' other event.
         w = bl.ELEMENTS["wind"]
         return (w[1], w[2], w[3], w[0])
+    if name == "paint":
+        # The dotted door's far tell is the arcane ramp's hot stop (DottedDoorEvent.TellColor): his paint, the light the
+        # crow on his brush is drawn in - a stop paler than the seer's stars in the same house. Wet: the core on the
+        # sheen, the hot in the body, the mid on the far edge.
+        a = bl.ELEMENTS["arcane"]
+        return (a[0], a[1], a[2], a[0])
     if name == "writ":
         # The nine mouths' far tell is the water ramp's blue (NineMouthsEvent.TellColor): the drowned dark.
         # From the ramp's PALE end, a stop up from the others: paper in a cold light, with the ramp's dark
@@ -726,6 +739,55 @@ def sand(frame):
     return mask, core
 
 
+def dab(frame):
+    """A dab of wet paint, round so a line of them is a stroke whichever way it runs: full and round (0), an oval as the
+    brush is drawn (1), a tapered flick where it lifts (2), small with a speck flung beside it (3). The core is the wet
+    sheen, up and to the left on the key side."""
+    k = frame % 4
+    cx, cy = 8.0, 8.5
+
+    def inside(x, y):
+        if k == 0:
+            return math.hypot(x - cx, (y - cy) * 1.05) <= 4.6 + 0.5 * math.sin(math.atan2(y - cy, x - cx) * 3.0)
+        if k == 1:
+            return ((x - cx) / 5.6) ** 2 + ((y - cy) / 3.7) ** 2 <= 1.0
+        if k == 2:
+            u = (x - 3.5) / 9.5
+            return 0.0 <= u <= 1.0 and abs(y - cy) <= 3.4 * (1.0 - u) ** 0.8 + 0.4
+        return math.hypot(x - cx + 1.0, y - cy) <= 3.1 or math.hypot(x - 12.5, y - 5.0) <= 1.0
+    mask = sampled(inside)
+    core = set()
+    for (x, y) in mask:
+        if (x - 1, y) in mask and (x, y - 1) in mask and (x - 2, y) not in mask and (x, y - 2) not in mask:
+            continue
+    sheen = {0: [(6, 6), (7, 6), (6, 7)], 1: [(5, 7), (6, 7), (7, 7)], 2: [(5, 7), (6, 7)], 3: [(6, 7)]}[k]
+    core.update(p for p in sheen if p in mask)
+    return mask, core
+
+
+def drip(frame):
+    """A drop running off the end of a stroke: the stroke's flat end at the top, the paint sagging out of its underside
+    and running, longer each frame (0-3 here are the sheet's columns 4-7), into a teardrop that swells at its foot. The
+    stroke's end is drawn wide and flat and the drop wider than its run, so it never reads as a key."""
+    k = frame % 4
+    run = 1.3 + 1.7 * k
+    top = 5.4
+
+    def inside(x, y):
+        if ((x - 7.5) / 5.4) ** 2 + ((y - 3.9) / 2.3) ** 2 <= 1.0:
+            return True
+        sag = 1.4 - 0.5 * min(1.0, (y - top) / 2.0)
+        if top <= y <= top + run and abs(x - 7.8) <= max(0.7, sag):
+            return True
+        by = top + run + 0.8
+        r = 1.2 + 0.35 * k
+        return y >= by - r * 1.6 and math.hypot(x - 7.8, max(0.0, y - by) * 1.0 + min(0.0, y - by) * 0.55) <= r
+    mask = sampled(inside)
+    core = set(p for p in [(4, 3), (5, 3), (6, 3)] if p in mask)
+    core.update(p for p in [(7, int(top + run))] if p in mask)
+    return mask, core
+
+
 ROWS = [
     ("leaves", [leaf(f) for f in range(8)]),
     ("echo", [echo(d) for d in range(8)]),
@@ -742,6 +804,7 @@ ROWS = [
     ("stars", [star(f) for f in range(8)]),
     ("sand", [sand(f) for f in range(8)]),
     ("smoke", [smoke(f) for f in range(8)]),
+    ("paint", [dab(f) for f in range(4)] + [drip(f) for f in range(4)]),
 ]
 
 

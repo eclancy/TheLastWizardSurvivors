@@ -28,10 +28,21 @@ public partial class CharacterData : Resource
     /// Apotheosis is the final form OF (ApotheosisDefinition.VariantId), or empty. Nimue opens on Spiritual Weapon as
     /// the Sword (.ai/endgame-castle.md decision 11) because Excalibur ends the Sword. Read from the catalog rather
     /// than kept here, so the two can never disagree: a form holds for the run, and a wizard opened in another
-    /// would never meet his gate. Empty for a spell with no forms, which every other wizard opens on.
+    /// would never meet his gate. Empty for a spell with no forms, which every other wizard opens on, and for a wizard
+    /// who chooses his form each run (ChoosesStartingForm).
     /// </summary>
     public string StartingFormId =>
-        StartingSpellResource?.HasVariants == true ? ApotheosisCatalog.ForCharacter(Id)?.VariantId ?? string.Empty : string.Empty;
+        StartingSpellResource?.HasVariants == true && !ChoosesStartingForm
+            ? ApotheosisCatalog.ForCharacter(Id)?.VariantId ?? string.Empty : string.Empty;
+
+    /// <summary>
+    /// True for a wizard who chooses the form of his starting spell on his run's first screen instead of opening in
+    /// his Apotheosis's form: Ma Liang (.ai/chapter-wizards.md 4.8), whose design takes the Familiar "as the dog or the
+    /// cat" too, though only the crow has a final form. Nimue keeps the Sword (.ai/endgame-castle.md decision 11). The
+    /// two branches that built them each made their own rule general; this is which wizard follows which (Player.MaLiang.cs,
+    /// ChoosesOpeningForm).
+    /// </summary>
+    [Export] public bool ChoosesStartingForm { get; set; } = false;
 
     /// <summary>
     /// What a run's opening hand asks for: the spell, or "spell:form" when he opens it in a form (SpellVariants.Selection),

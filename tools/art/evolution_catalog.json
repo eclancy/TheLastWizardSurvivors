@@ -8169,6 +8169,45 @@
       "tint": "ebf7ff",
       "character": "nimue",
       "verb": "sever"
+    },
+    {
+      "spell": "familiar",
+      "variant": "familiar_crow",
+      "spell_name": "Crow Familiar",
+      "spell_icon": "res://assets/bonelight/ui/spells/familiar-crow-arcane.png",
+      "spell_elements": {
+        "Arcane": 1
+      },
+      "milestone": 9,
+      "id": "familiar_crow_painted_door",
+      "name": "The Painted Door",
+      "description": "Where the crow strikes it paints a door, and whatever stands on it steps out of a second door far across the field.",
+      "synergy": "Apotheosis",
+      "visual_tag": "Apotheosis",
+      "gains": {
+        "Arcane": 1
+      },
+      "replaces": "",
+      "effect": "None",
+      "effect_value": 0,
+      "rider": "None",
+      "damage": 1.25,
+      "damage_bonus": 0,
+      "cooldown": 1,
+      "projectiles": 0,
+      "area": 1,
+      "scale": 1,
+      "speed": 1,
+      "pierce": 0,
+      "arcs": 0,
+      "branches": 0,
+      "knockback": 0,
+      "slow": 0,
+      "poison": 0,
+      "range": 0,
+      "tint": "e8bfff",
+      "character": "ma_liang",
+      "verb": "displace"
     }
   ]
 }

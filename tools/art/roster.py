@@ -186,6 +186,11 @@ ROBES = {
     # mantle is the red row's deep end and her diadem and sickle bronze (gold's lit and base). Solar Flare is the
     # small sun in her open hand, not on her clothes.
     "medea": (LC2, LC1, LC3),          # lichen - the peplos; Solar Flare
+    # Ma Liang's jacket: steel from its base up, the blue-grey that indigo cotton washes out to when it is worn
+    # every day - a poor boy's jacket, not a wizard's robe (the Archmage's blue is a pigment; this is a cloth
+    # gone grey). Trousers of stone's near-black, a sash of the red row, straw sandals in gold. The Familiar is
+    # the stroke of light his brush has just laid on the air, not on his clothes.
+    "maliang": ("R", "r", "q"),      # steel, washed and dark - the jacket; Familiar
 }
 
 # RUSSET, madder-dyed wool and auburn hair: Thora's hair (stormcaller()). The same five bytes and
@@ -3730,6 +3735,202 @@ def nimue(phase=None, wind=0.0, drift=0.0, lift=0):
             g.set(x, 46, "o")
     return g.rows()
 
+
+def maliang(phase=None):
+    """Familiar. Ma Liang, the boy of the Chinese tale whose brush made real whatever he painted: he painted for
+    the poor - a plough, a well, a lamp - and when a greedy emperor kept him to paint gold, he painted the emperor
+    a sea and a wind to drown him in (.ai/chapter-wizards.md 4.8). The dark wizard keeps him in the Court to paint
+    its portraits, and his brush paints nothing real while it is held.
+
+    The Familiar is a creature he PAINTS, so he is the one figure in the cast caught mid-stroke: his near arm
+    out and up, a long brush held the way a painter holds it - upright between the fingers, never fisted - and
+    the stroke he has just laid on the air hanging behind its tip: a crow's wing in one sweep, the arcane ramp,
+    the only light on him. It is drawn, not glowing at its source: the brush tip is only wet with it.
+
+    YOUNG, AND SERIOUS (Eric's note for every wizard: never a mascot). The youngest figure in the cast, so the
+    shortest and the slightest - shoulders inside the Archmage's, no beard - but drawn at the cast's proportion,
+    never a child's big head: his eyes on the stroke, the brow level, the mouth set. His hair is tied up in a
+    knot at the crown, bound with a red cord, which is the top of him on that side.
+
+    WHAT SETS HIS SILHOUETTE: the brush arm out to the near side with the wing of light above it, and on his back
+    a rolled painting slung on a cord, its end standing up behind his far shoulder - the painter carrying his
+    work. Nobody else carries anything on his back.
+
+    The rescued wear no pigment: a short crossed jacket of steel's base (indigo cotton washed to blue-grey),
+    knotted at the waist with a sash of the red row, wide trousers of stone's near-black gathered at the calf,
+    bare ankles and straw sandals (gold). The brush is bamboo (gold's lit end) with a black tip.
+    """
+    mid, lit, dark = ROBES["maliang"]
+    g = G(48)
+    CX = 22
+
+    # THE ROLLED PAINTING on his back, first: everything else is in front of it. A scroll on its wooden rod,
+    # slung on a cord across him, its end standing up behind the far shoulder and leaning out; the paper rolled
+    # round it in bone's shade (old paper in the cold light), lit on its key edge, and the rod's knob of the
+    # house's black oak (gold's dark end) at the top.
+    mass(g, [(6, 14, 16), (11, 13, 15), (17, 14, 16)], "n", "k", "m", rim=True)
+    for y in (8, 11, 14):
+        g.set(14, y, "m")                                        # the turns of the roll, uneven
+        g.set(15, y + 1, "k")
+    g.span(5, 14, 16, "u")                                       # the rod's knob, standing out of the roll
+    g.set(15, 4, "J")
+    g.set(14, 5, "g")
+    g.set(16, 5, "J")
+    g.line(16, 15, 21, 23, "J")                                  # the cord across his back, over the jacket
+
+    # THE LEGS: wide trousers of near-black, full at the knee and gathered in at the calf, a bare ankle under
+    # each, and straw sandals. The near leg a little forward, the stance of someone painting standing up.
+    def trouser(hx, ax, lift, rim=True):
+        mass(g, [(31, hx - 3, hx + 3), (36, ax - 4 + (hx - ax) // 3, ax + 4 + (hx - ax) // 3),
+                 (40 - lift, ax - 3, ax + 3)], "N", "p", "J", rim=rim)
+        g.span(41 - lift, ax - 2, ax + 2, "J")                   # the gather at the calf, tied
+        g.set(ax - 2, 41 - lift, "j")
+        g.set(ax - 1, 42 - lift, "h")                            # the bare ankle
+        g.set(ax, 42 - lift, "h")
+        g.set(ax + 1, 42 - lift, "i")
+        g.set(ax - 1, 43 - lift, "f")
+        g.set(ax, 43 - lift, "h")
+        g.set(ax + 1, 43 - lift, "i")
+        # The straw sandal: a sole, a toe-strap, the weave in two stops.
+        g.span(44 - lift, ax - 2, ax + 3, "g")
+        g.set(ax - 2, 44 - lift, "G")
+        g.set(ax + 3, 44 - lift, "u")
+        g.span(45 - lift, ax - 2, ax + 3, "u")
+        g.set(ax, 45 - lift, "g")
+        g.set(ax + 2, 45 - lift, "g")
+        g.set(ax + 1, 43 - lift, "u")                            # the strap across the instep
+        fold(g, [(hx + 1, 32), (ax + 1, 39 - lift)], "J", "p")   # the crease down the front
+
+    if phase is None:
+        trouser(18, 17, 0)
+        trouser(26, 28, 0, rim=False)
+        cut(g, (22, 39), (22, 40), (23, 40), (22, 41), (23, 41), (22, 42), (23, 42), (22, 43), (23, 43))
+    else:
+        # A young man's quick, light step: the near leg does most of the striding, each foot off the ground
+        # only while it swings forward.
+        c, lift_near, lift_far = stride(phase)
+        trouser(18, 17 - int(round(1.5 * c)), int(round(1.5 * lift_far)))
+        trouser(26, 28 + int(round(2.0 * c)), int(round(2.0 * lift_near)), rim=False)
+
+    # THE JACKET: short, to the top of the thigh, crossed at the front (the right side over the left) and
+    # knotted at the waist with the sash; slight in the shoulder - the slightest in the cast.
+    mass(g, [(15, 18, 27), (17, 16, 29), (22, 16, 29), (27, 17, 28), (31, 16, 29), (33, 16, 30)],
+         mid, lit, dark)
+    fold(g, [(18, 18), (17, 24)], dark, lit)
+    fold(g, [(28, 19), (29, 24)], dark, None)
+    fold(g, [(19, 28), (18, 32)], dark, lit)
+    fold(g, [(26, 28), (27, 32)], dark, None)
+    # The crossed front: the overlap runs from the near side of the collar down to the far side of the waist.
+    g.line(25, 16, 19, 25, "J")
+    g.line(26, 16, 20, 25, lit)
+    g.line(25, 17, 23, 20, "q")
+    # Patched and darned: a square of other cloth on the near side, its stitches.
+    g.rect(25, 29, 27, 31, "N")
+    for (sx, sy) in ((25, 29), (27, 29), (25, 31), (27, 31)):
+        g.set(sx, sy, "r")
+    # The hem, worn, broken where it has frayed.
+    for x in range(16, 31):
+        if x in (17, 22, 27):
+            continue
+        g.set(x, 33, dark if (x * 5) % 7 else "J")
+    # THE SASH: the red row, round the waist, knotted at the far hip and its two ends hanging.
+    g.span(25, 15, 30, RD2)
+    g.span(26, 15, 30, RD3)
+    g.set(15, 25, RD1)
+    g.set(30, 26, RD4)
+    for (x, y) in ((21, 25), (26, 26)):
+        g.set(x, y, RD1)
+    g.rect(14, 25, 16, 27, RD2)                                  # the knot
+    g.set(14, 25, RD1)
+    g.set(16, 27, RD4)
+    g.line(15, 28, 14, 33, RD2)                                  # the ends
+    g.line(16, 28, 16, 31, RD3)
+    g.set(14, 34, RD3)
+
+    # THE FAR ARM, at his side: the sleeve wide at the wrist, the hand holding a small ink-stone against his
+    # hip - the ink he grinds, its well wet and catching the light.
+    mass(g, [(17, 13, 16), (23, 12, 16), (27, 12, 16)], mid, lit, dark)
+    fold(g, [(14, 19), (13, 25)], dark, lit)
+    g.span(27, 12, 16, "q")                                      # the sleeve's mouth, dark inside
+    hand(g, 13, 28)
+    g.rect(10, 28, 13, 30, "J")                                  # the ink-stone
+    g.span(28, 10, 13, "p")
+    g.set(11, 29, "o")
+    g.set(12, 29, "N")
+    g.set(10, 30, "o")
+
+    # THE NEAR ARM, out and up: the sleeve fallen back from the forearm, the wrist turned, and the brush held
+    # upright in the fingers.
+    mass(g, [(16, 28, 31), (19, 29, 33), (22, 31, 34)], mid, lit, dark, rim=False)
+    fold(g, [(30, 17), (32, 21)], dark, lit)
+    g.line(32, 22, 34, 19, "q")                                  # the sleeve's mouth
+    shaft(g, 33, 20, 36, 15, "f", "h", "i", width=2)             # the forearm, bare
+    hand(g, 36, 13)
+    g.set(38, 14, "i")
+    # THE BRUSH: a long bamboo shaft standing up out of his fingers and leaning a little out, one node on it and
+    # a ferrule of dark binding under the hair; the hair of its tip black, full, and wet with what it painted.
+    g.line(37, 15, 39, 9, "G")
+    g.line(38, 15, 40, 9, "u")
+    g.set(38, 12, "u")
+    g.set(39, 12, "g")
+    g.set(37, 16, "g")
+    g.set(39, 9, "J")                                            # the ferrule
+    g.set(40, 9, "J")
+    g.set(40, 8, "o")
+    g.set(41, 8, "J")
+    g.set(41, 7, "y")                                            # wet with it
+
+    # WHAT IT PAINTED, coming alive: a crow of light lifting off the tip of the brush, its wings up - the Familiar's
+    # crow, the tale's painted birds that flew off the paper. The one thing on him that gives off light, in the
+    # arcane ramp: core in its body, hot in the near wing, mid and the edge stop in the far wing and the tail it
+    # is still pulling out of the stroke. A first draft hung a stroke of light here instead; as a crescent beside
+    # the shaft it read as a sickle, as an S as a question mark - a bird reads as a bird at any size.
+    crow = [
+        "z.........",
+        "yz......zz",
+        ".yz....zYy",
+        "..yY..zYy.",
+        "...yYZZy..",
+        "....YZZYYz",
+        "...zyYy...",
+        "..z..z....",
+    ]
+    for r, row in enumerate(crow):
+        for k, ch in enumerate(row):
+            if ch != ".":
+                g.set(37 + k, 2 + r, ch)
+    g.set(44, 7, "o")                                            # its eye
+
+    # THE HEAD: young, clean-shaven, set; turned a little to the stroke and the eyes on it.
+    head(g, CX, 8, 2.8, brow="flat", gaze=1, mouth="set", eye="narrow")
+    # The hair: black, drawn back hard from the brow and tied up in a knot at the crown, bound with a red cord.
+    g.span(7, 19, 25, "J")
+    g.span(6, 20, 24, "J")
+    g.set(20, 6, "N")
+    g.set(19, 7, "N")
+    g.set(19, 8, "J")
+    g.set(19, 9, "J")
+    g.set(25, 8, "o")
+    g.set(25, 9, "J")
+    g.set(18, 9, "J")                                            # the hair at the back of his head
+    g.set(18, 10, "o")
+    g.rect(20, 3, 23, 5, "J")                                    # the knot
+    g.set(20, 3, "N")
+    g.set(21, 3, "p")
+    g.set(23, 5, "o")
+    g.span(5, 20, 23, RD2)                                       # the cord
+    g.set(20, 5, RD1)
+    g.set(24, 5, RD3)
+    g.set(24, 6, RD3)
+    # The neck, and the jacket's collar standing round it.
+    g.span(14, 21, 23, "h")
+    g.set(21, 14, "f")
+    g.set(23, 14, "i")
+    g.span(15, 19, 25, "R")
+    contact(g, 12, 33)
+    return g.rows()
+
+
 WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("stormcaller", stormcaller), ("geomancer", geomancer),
            ("tituba", tituba), ("vainamoinen", vainamoinen), ("dee", dee),
@@ -3740,7 +3941,8 @@ WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("nostradamus", nostradamus),
            ("imhotep", imhotep),
            ("medea", medea),
-           ("nimue", nimue)]
+           ("nimue", nimue),
+           ("maliang", maliang)]
 
 # The ones who float (anim_sets.hover): drawn whole at any height and any flutter, so their idle bobs and their
 # walk drifts instead of breathing and stepping. Nimue (.ai/endgame-castle.md decision 11).

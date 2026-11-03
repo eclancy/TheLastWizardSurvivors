@@ -253,6 +253,7 @@ from the code at a typical holding.
 | the grove, the first tree, the Court's fowl | side events and secrets | one heal each | once a run at most | unchanged |
 | Phoenix Oath revives | `TakeDamage` | half the bar, per revive | - | unchanged |
 | Avalon, Morgan le Fay's passive (`first_fall_full`, 2026-11-03) | `TakeDamage` step 10, `Player.ExtraLifeHeal` | the first revive of a run heals the whole bar, not half | +25 once a run at 50 max HP, and only with a revive to spend (Phoenix Oath, or the Familiar's Nine Lives) | new: on the ledger as two lines, "an extra life" (every revive's half, never counted before) and "Avalon" (the other half, once) |
+| Paint What Is Needed, Ma Liang's passive (`paint_flask`, 2026-11-03) | `Player.MaybePaintFlask` (`TakeDamage` step 8), `PaintedFlask` | once a run, the first blow that leaves him below a quarter of his health and standing: a flask painted at his feet, the ordinary `HealthPickup` | **8 HP once a run** at 50 max HP - one flask, the rarest drop's size - and nothing from a blow that kills outright | new: on the ledger as a flask (`HealthPickup.OnPickedUp`), since that is what heals |
 | **the Familiar's Purr** | `Familiar.Visit` | 0.8 HP a second (48 a minute; up to 100 with Grimalkin and Cath Palug) | not met by this bot | **3 HP every 20 s**, the cat running to him with a heart over his head (9; Grimalkin and Cath Palug no longer scale it) |
 
 The Gleaning Bell pays XP, not health.

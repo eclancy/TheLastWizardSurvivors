@@ -31,6 +31,8 @@ public static class Freeings
 	public static readonly IReadOnlyList<string> WizardIds = new[]
 	{
 		"tituba", "vainamoinen", "seimei", "wayland", "sibyl", "laelaps", "baba_yaga", "morgan", "paracelsus", "nostradamus", "imhotep", "medea",
+		// The Court's second: stepped out of the door he drew, once it was traced and inked in (.ai/chapter-wizards.md 4.8).
+		"ma_liang",
 		// The one he kept (.ai/endgame-castle.md decision 11): freed by his fall in the Throne, so her reel plays after the
 		// ending, not before the results (GameOverScreen.AfterEnding).
 		"nimue",
