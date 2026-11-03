@@ -8,6 +8,61 @@ still in the generator and are one line away from shipping instead.
 exception to it: 1:1 authoring, a whole ×2 render scale, nearest filtering, and nothing on frame
 that is not one of the 50 material tones, 4 lights or 12 element ramps in §3.
 
+## The name: THE ONE HE MISSED (2026-11-02)
+
+The game was Wizard Survivors. Eric, 2026-11-02: *"The title screen art needs to change because the
+title changed."* The new name is the premise's own sentence (`.ai/world-and-tone.md`): a dark wizard
+took every wizard who could have stood against him, and you are the one he missed. **The blue-robed
+figure in the ward is that player** - the one wizard he did not take - and he is nobody else: not
+Merlin, who is getting a look of his own (Eric, the same day). The picture already said the rest of
+the premise - one figure, alone, in the only warm light in a wood full of eyes - so the composition
+is unchanged above the ring, and the lettering carries the one new idea: **THE ONE is lit in the
+ward's gold and HE MISSED is set in cold bone**, the one warm phrase over the colour of the world
+he left. No tagline; tone rule 2 still holds.
+
+**The lettering is `tools/art/title_lettering.py`.** It holds three layouts, each given for both
+screens in the coordinates that screen is authored in, and `SHIPPING` names the one `splash.py`,
+`splash_wide.py` and `anim.py` draw. `python tools/art/title_lettering.py` draws all three into the
+finished art for both screens and writes the comparison sheet to
+`tools/art/_title_lettering/comparison.png` (gitignored; PC 16:9 above, Pixel 9 below, at 1x):
+
+| | Layout | Why not |
+|---|---|---|
+| **A, ships** | **Stack**: THE ONE over HE MISSED, scales 4 and 3 (272 and 261 wide), the same on both screens | - |
+| B | **Ember**: THE, then ONE at scale 5, then HE MISSED, the small words in bone | the strongest single shape, but it says ONE first and the title second, and THE at scale 2 is a scrap over a word that big |
+| C | **Line**: THE ONE HE MISSED on one line, scale 3 on a PC and 2 on a phone | the quietest, and on a phone it fits only at scale 2 with the tracking taken in - small print for a title; on a PC it runs across the canopy and right over the staff's orb |
+
+The stack breaks where the sentence does (the one / he missed), puts the lit phrase alone on top,
+and its two lines come out within eleven pixels of each other, so it reads as one justified block
+the way WIZARD SURVIVORS did (both its lines were 186).
+
+What it took:
+
+- **Five new DISPLAY glyphs** in `font.py`: T, H, E, N, M, drawn at the face's weight (two-pixel
+  strokes, two-row slabs, N's and M's diagonals stepping a column every two rows as W's do). T is
+  ten wide so its stem can sit on the centre line, M is W turned over. No existing glyph changed:
+  `icon_concepts.py` draws the icon candidates from W and S.
+- **`splashkit.lettering()`** sets lines of words, each word in its own tone ramp, every halo down
+  before any glyph. **`WORD_SPACE` is 7**: a space inside one string comes to 9 (the 5-wide space
+  glyph and a track either side), a whole letter, and THE ONE set that way read as two words parked
+  apart; at 6 HE ran into MISSED. `wordmark()` is kept for the six unshipped candidates, which now
+  carry the new name too.
+- **The gold is `[g0, g0, g1, g1, g2]`**, not SURVIVORS' `[g0, g1, g2]`: on a line twice as tall the
+  pale cap was a sliver and the lit line came out darker than the bone one under it.
+- **Everything that stood clear of the old wordmark now reads its box** (`title_lettering.box`):
+  the phone's canopy hole (`splash._clear_for`), the eyes' keep-out on both screens, and on the PC
+  `splash_wide.word_box()`, which replaced `WORD_X`/`WORD_SCALES`/`WORD_HALF`/`WORD_BOTTOM` and holds
+  the far trees low under the letters. Change the layout and all of it follows.
+- **Where it sits.** Phone: cap line at composition row 58, bottom at 154 (157 with the shadow),
+  under the old 148 by six rows and still 13 clear of Start Run at 170. PC: cap line 16 at core
+  x 175, bottom 113 (116), 18 clear of the menu at 134. THE ONE at scale 5 would be 340 wide on a PC
+  and run off a 16:9 screen's left edge or into the staff, which is why the PC no longer gets a
+  bigger lettering than the phone (it had (5, 3) to the phone's (3, 2)).
+- **The phone's canopy hole is wider** (`_clear_for`: the box plus 22 across and 26 up and down, and
+  never smaller than the old (150, 66)). The old margins round a block this wide would have opened
+  the hole past the frame edges; with these, the lobing lets a few clumps reach in behind the ends
+  of THE ONE, which reads as the type standing in front of the leaves.
+
 ## What ships
 
 | File | What it is |
@@ -21,7 +76,8 @@ that is not one of the 50 material tones, 4 lights or 12 element ramps in §3.
 | `tools/art/splash.py` | generates both PNGs, plus the six unused candidates |
 | `tools/art/hero.py` | the title-size player figure |
 | `tools/art/title_eyes.py` | the eyes: a pair's shape and tones, the blink frames, where pairs may go, and the sheet and positions it writes. Shared by both sets |
-| `tools/art/splashkit.py` | trees, boulders, candles, wordmark, sigils, skull, moon |
+| `tools/art/title_lettering.py` | THE ONE HE MISSED: the three layouts, which one ships, and the comparison sheet. See "The name" above |
+| `tools/art/splashkit.py` | trees, boulders, candles, lettering, sigils, skull, moon |
 | `tools/art/raster.py`, `tools/art/font.py` | drawing primitives and the two pixel faces |
 
 Regenerate everything with **`python tools/art/splash.py`** (Python 2.7 + PIL, the only Python on
@@ -88,6 +144,33 @@ screen. Scaling up is forbidden, so the fix was **more picture**. `splash.py` st
   12-row fade, so the lit banks started on a ruled edge just under the ring. It is now weaker
   (`stone.shade`) and fades over 40 rows, and the tall-phone prompt pocket fades over twice its
   half-height. Pockets are the easiest way to put a line back: give every one a long fade.
+- **The dark patch under the ring was the grass itself** (fixed 2026-11-02; Eric had flagged it
+  more than once). The PC's went when its UI pockets came out from under the ward, but on the phone
+  the pockets were not the cause: measured across the middle (x 100-260), the foreground layer
+  covered **91-98% of rows 670-710** in flat occlusion, over ground the falloff had already taken
+  most of the way to black, so the band straight under the brightest thing on screen came out at a
+  mean luminance of 9-10 - `occ`, near enough. Two things made it. The foreground tufts rooted just
+  below the ward's keep-out ellipse are forty-odd rows tall, so they reached straight up to the
+  ring's lower arc; and the ward light died within about forty rows of the ring, because the
+  falloff used the pool's own flat 58-row radius on a floor that runs toward the camera. Now:
+  - `_falloff_t` reaches **84** rows below the ward, not 58, so the lit floor carries to about row
+    730 before it goes (the gate keeps it off the treeline, as before);
+  - `_under_ring()` weights each foreground tuft by how straight under the ring it stands (1 under
+    the arc, smoothstepped to 0 past either end of it and 150 rows down) and then **drops most of
+    them** (`UNDER_RING_DROP` 0.9 x weight), **shortens** them (to 6 + 0.32 per row below the arc,
+    so the nearest grass is a fringe, not a hedge) and gives the one lit blade in each tuft the
+    ward's light (gold pigment near the ring, lichen further off) instead of `stone.deep`. It has to
+    be most of them for the same reason as `_mat_keep`: the mat is saturated, and dropping 62%
+    left the patch 87% covered. vigil()'s own grass makes its keep decision from a position hash
+    (`_hash01`), not from its random stream, so every tuft and bush drawn after it is unchanged.
+  The pockets were checked and left alone, because they were not part of it: `_type_pocket_t`'s two
+  prompt pockets (1.6 and 1.9) sit under 2, where the undergrowth's darkening scale is still two
+  `None`s, so they change no pixel (only its version-label pockets do), and `_falloff_t`'s own
+  prompt pocket is the largest term at 7 pixels of the frame.
+  Measured after: rows 670-710 are 2-70% covered (it grows with depth) and come out at luminance
+  36-20 where they were 11-9, falling to about 12 by the Pixel 9 prompt rows, which is where the
+  old picture already was. The layers still composite to the flat render with zero differing
+  pixels.
 - **Behind the type it is dark on purpose.** The menu's Options row and preset readout sit on
   file rows 675–720, darkened enough by the falloff there. PRESS ANY BUTTON now sits near the
   bottom of the screen (below), and `_falloff_t` holds a soft-edged dark pocket centred on its
@@ -178,8 +261,8 @@ order bugs. Back to front:
    the atmospheric work: they put the viewer *inside* the wood looking out at the clearing.
 9. **Overhead canopy** — six boughs reaching in from off the top corners, then a band of loose
    leaf mass from y=0 to y=344 filling the sky around them. `CLEAR` in `vigil()` is the single
-   hole left in it, and it exists to hold the wordmark: **move the wordmark and you must move
-   `CLEAR` with it.**
+   hole left in it, and it exists to hold the lettering. It is grown from the lettering's box
+   (`_clear_for`), so it moves with it; it used to be a fixed tuple that had to be moved by hand.
 10. **The ward circle**, on the `WARD` ramp — the brightest thing in the frame after the orb, and
    the reason the composition works. There are no candles on it any more: nine orange flames
    around a gold-white ward put two warm light sources in the same place competing for one job.
@@ -198,7 +281,7 @@ order bugs. Back to front:
 | Which of the seven screens ships | index into `made[]` in `splash.py: main()` |
 | Tree placement, height, canopy spread | the `far` and near-pair lists in `splash.py: vigil()` |
 | Canopy density and raggedness | `density` arg, and `_clump` in `splashkit.py` |
-| The hole in the canopy | `CLEAR = (cx, cy, rx, ry)` in `vigil()`; its lobing lives in `canopy()` |
+| The hole in the canopy | `_clear_for()` in `splash.py`, grown from the lettering's box; its lobing lives in `canopy()` |
 | Overhead boughs | the bough list in `vigil()` — origin, angle, length and width per limb |
 | Grass density and reach | the two grass loops in `vigil()`; one blade shape in `grass()` |
 | **How closed-in the wood is** | `wood=` on `vigil()`. `open` **ships**; `thicket`, `rank`, `walls` and `current` are one word away. `python tools/art/woods.py` renders them |
@@ -223,7 +306,8 @@ order bugs. Back to front:
 | Figure proportions | `wizard_hero` in `hero.py`, all in units of `u = h/32` |
 | Robe colour | `robe="wool"` — any key in `bonelight.MATERIALS` |
 | Orb / staff colour | `staff_ramp=` — any ramp in `bonelight.ELEMENTS` |
-| Wordmark position and tone ramps | `sk.wordmark(...)` at the foot of `vigil()` |
+| **Which lettering ships**, and its position, scales and tone ramps | `SHIPPING` and `LAYOUTS` in `tools/art/title_lettering.py` (both screens); the glyphs in `font.DISPLAY`; the word space in `splashkit.WORD_SPACE` |
+| How dark the ground is straight under the ring (phone) | `_under_ring()` and `UNDER_RING_DROP` in `splash.py` for the near grass; the `84` in `_falloff_t` for how far the ward light carries down the floor |
 | Prompt wording and face | `prompt_asset()` in `splash.py` |
 
 **The prompt says BUTTON, not KEY.** The title screen has always accepted a key, a mouse click or
@@ -676,8 +760,9 @@ Three things make it cheap, and all three depend on where in the order it happen
   exposed band *and* the floor's cut edge above it toward `occ` in the same sweep that darkens
   the rest of the frame. The seam does not read as a crop because by the time you see it, it is
   the same colour as everything around it.
-- **Before the wordmark.** WIZARD SURVIVORS is stamped afterwards and keeps its own height. Had
-  it been lifted with the scene it would sit 30px off the top edge.
+- **Before the wordmark.** The lettering (WIZARD SURVIVORS then, THE ONE HE MISSED now) is stamped
+  afterwards and keeps its own height. Had it been lifted with the scene it would sit 30px off the
+  top edge.
 - **Every layer by the same amount**, via `Canvas.lift`, so the animation layers still composite
   to the flat render exactly and `TitleScreen.tscn` needs no change — the rects did not move,
   their contents did.
@@ -801,7 +886,7 @@ the two 160-column side bands to `occ` at the frame edge.
 | what | where | |
 |---|---|---|
 | figure and ward | feet at (430, 256) | right of centre; `hero.wizard_hero` at h=150, as on the phone |
-| wordmark | centred x 175, cap line 14, to row ~124 | `WORD_BOX`; scales (5, 3), see below |
+| lettering | centred x 175, cap line 16, to row ~116 | `WORD_BOX` = `word_box()`, read off `title_lettering`; scales (4, 3), see below |
 | Start Run, Arcane Upgrades + Unlocks, the energy caption | (60,134)-(290,240) | `MENU_BOX`, on the dark wood under the wordmark |
 | (nothing) | (430,8)-(630,34) | `ARCANE_BOX`, top right in the canopy. The Arcane Energy readout lived here; it is the shop button's caption now, and the pocket left `ui_pocket_t` when the wide set was regenerated on 2026-11-02 |
 | Options | (12,292)-(126,324) | `OPTIONS_BOX` |
@@ -841,10 +926,11 @@ sides, pressing in under the menu and right of the ward, fern, big near leaves i
 foreground grass is held out of the ward. Composed for the wide frame rather than cropped from the
 tall one because the shapes want different layouts - the menu beside the figure, not above it.
 
-**The PC wordmark is bigger than the phone's.** `sk.wordmark` takes `scales=`; the phone keeps
-(3, 2), where the two lines come out the same 186 wide, and the wide set uses (5, 3): WIZARD 310
-and SURVIVORS 279, 620 and 558 canvas units on a 1280 screen against about 380 before. Whole
-pixel scales only, and the menu moved down and right under it.
+**The PC lettering is the phone's size now.** Under the old name the PC wordmark was the bigger
+one: the phone had (3, 2), the wide set (5, 3) - WIZARD 310 and SURVIVORS 279, 620 and 558 canvas
+units on a 1280 screen. THE ONE at 5 is 340 wide, which runs off the left edge of a 16:9 screen or
+into the staff, so both screens set the stack at (4, 3): 544 and 522 canvas units on a PC, about
+what the old one came to. Whole pixel scales only.
 
 **The eyes are spread, never stacked (2026-10-29, then 2026-11-01).** Eric, of this set first: "the
 main screen background awkwardly has eyes that sit on top of each other. the red eyes should be
