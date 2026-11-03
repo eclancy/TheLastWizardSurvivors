@@ -2480,6 +2480,8 @@ public partial class Player : CharacterBody2D
 		{
 			OnChestEnemyKilled();
 			SpreadSingedLock(defeatedEnemy.GlobalPosition);
+			// The Hungry Hedge (Baba Yaga's form): what the vine kills feeds it (Player.HungryHedge.cs).
+			FeedHungryHedge(source);
 		}
 		// Spells deliberately do not knock enemies back. This used to push every enemy on every
 		// spell hit, which shoved the swarm around constantly and made positioning unreadable.

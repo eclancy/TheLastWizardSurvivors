@@ -5575,6 +5575,28 @@ def _(sp, c):
     O(sp, thicket)
 
 
+@card("thorn_vine_hungry_hedge")
+def _(sp, c):
+    """The Hungry Hedge (Baba Yaga's Apotheosis, feed): the vine grown long and broad on what it has eaten - the
+    bones of what it cut down sunk at its root, and new leaves breaking out all along it."""
+    reset(sp)
+    sp.place = Place(0.98, dx=-1, dy=1)
+
+    def fed(cv, x):
+        g = E["grass"]
+        hi, base, shade = bl.tone("skin", "hi"), bl.tone("skin", "base"), bl.tone("skin", "shade")
+        for (bx, by) in ((5, 26), (9, 28), (3, 22), (12, 27)):
+            cv.set(bx, by, hi)
+            cv.set(bx + 1, by, base)
+            cv.set(bx, by + 1, shade)
+            cv.set(bx + 1, by + 1, OCC)
+        for (lx, ly) in ((14, 18), (19, 13), (24, 9), (10, 22), (22, 15)):
+            cv.set(lx, ly, g[1])
+            cv.set(lx + 1, ly - 1, g[0])
+            cv.set(lx - 1, ly + 1, g[3])
+    O(sp, fed)
+
+
 @card("thorn_vine_infinite_horizon")
 def _(sp, c):
     """Hydra Vine: one root splits into three heads, each lashing its own third of the ring round it."""

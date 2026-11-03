@@ -206,6 +206,21 @@ public static class ApotheosisCatalog
 				"Echo: everything you cast, twice. An echo is never echoed, and never charges the burst.",
 				new Color(0.91f, 0.75f, 1.0f), NoVisualScale),
 		},
+		// Baba Yaga, freed by running her walking hut down in the Enchanted Forest (.ai/chapter-wizards.md 4.1). "Feed"
+		// was nobody's: her hut stands behind a fence of bones, and the vine she calls up out of the ground eats what it
+		// cuts down and grows on it - longer and wider for the rest of the run, to a cap (ThornVine.HungryHedgeId,
+		// Player.HungryHedge.cs). Nothing is summoned (swarm), pulled (pull) or spread (burn): one vine, growing. Grass,
+		// the one of Thorned Vine's two the form deepens; no card on Thorned Vine trades Grass away (Barbed Lash deepens
+		// it, Thicket adds Poison beside it). No visual scale: the vine is drawn out of its own length and arc.
+		new()
+		{
+			CharacterId = "baba_yaga", SpellId = "thorn_vine",
+			Element = Element.Grass, Verb = "feed",
+			Form = Make(ThornVine.HungryHedgeId, "The Hungry Hedge", Element.Grass,
+				"Every enemy the vine kills feeds it: it sweeps further and wider for the rest of the run, to +60% reach and +40% arc.",
+				"Feed: feed it early. It remembers. What it eats never comes off it.",
+				new Color(0.66f, 0.92f, 0.42f), NoVisualScale),
+		},
 		// The dark wizard, taken on the hardest road (.ai/dark-wizard-playable.md). "Take" was nobody's, and it is
 		// his verb in the fight and in the story: whatever his lanes kill gives up its light too, and it comes
 		// home to be caught in its turn (TakingLanes; TakenLight.MaxInAir in the air at most). Nothing moves the
