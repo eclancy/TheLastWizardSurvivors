@@ -3,7 +3,7 @@
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
-**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **and Baba Yaga, the first second event** (4.1, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other six are not. It covers the ten
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **and Baba Yaga, the first second event** (4.1, "Built"), **Nostradamus, the Court's first event** (4.10, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other five are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Last Bridge and the Court (which holds
 two: Nostradamus, and Ma Liang since the Sketchbook was emptied - 4.8). Tituba (Cursed Dungeon),
@@ -689,6 +689,148 @@ He is the Court's second event, so he waits on P2 and the Court's flip, with Nos
   walks every road he made.'"* / *"'When the last door opens, the house goes dark.'"* The Gallery's
   portraits (5.4) uncover each wizard freed; his is the last covered frame.
 - **Alternate: Michael Scot**, court astrologer to Frederick II, the wizard Dante put in hell.
+
+**Built (2026-11-03, `wip/wizard-nostradamus`).** The Court's first event, through P2's API as 6.3 wrote it: one line in
+`SideEventDirector` (`"stage_12"`, the Compass), a hint by site, deed words ("The Last Reading"), `FromEvent(...,
+secretUntilStage: "stage_12", finalGateOnly: true)`, a prisoner row. Ma Liang's dotted door will be the second entry on
+the same line (4.8); the Gallery is kept out of the seer's rooms for it.
+
+- **Him.** `CharacterData_Nostradamus.tres`, appended to `CharacterRoster`. Name "Nostradamus", id `nostradamus`.
+  `roster.nostradamus()`: upright and looking up, the square four-cornered doctor's cap of his portraits (its corners
+  out sideways - pointed up they read as horns), a sable tippet over a long gown of the contract's lichen row (a new
+  `LICHEN_RAMP` on `\xb0-\xb4`, the first material there), an iron-grey forked beard, a written roll hanging from his
+  near hand nearly to the knee, and his far arm raised, the sleeve fallen back, holding a brass armillary sphere by its
+  stem - its rings open so the ground shows through, and the star at its centre, in the light ramp, the only light on
+  him. Against John Dee, the other bearded scholar: no staff, no ruff, standing straight, an open sphere held up rather
+  than a disc on a pole, a flat-topped head. 0.92 edges/px. Sheets written by `build.py`'s wizard loop for this name
+  only. Starfall, Light; he shares Light with Seimei and Merlin on different spells (R1).
+- **His passive, Foresight** (`windup_15`): every ordinary enemy's wind-up shows 15% longer -
+  `AttackTelegraph.ForesightScale`, read on the frame a wind-up starts, put back to 1 by every `Player._Ready`. It reaches
+  only clocks marked `Foreseeable`: the caster's bolt, the lunger's crouch, the slammer's ring (so the Rime Guard's cone
+  and the anvil's hammers too), the exploder's fuse, the summoner's call. Not a boss's.
+- **The event** (`SeersVoiceEvent`, `tools/art/seers_voice.py`, `world/seer/`). Seven rooms may hold a reading: the Great
+  Hall, the Kitchens, the Chapel, the Library, the Kennels, the Map Room and the Well Court. The seed's choice
+  (`ChooseReadings`, every roll drawn before anything is tested): a reading place in each room, then a shuffle of the
+  rooms, then the first ordered three whose first place is at least **3000 px** from the stair and each next at least
+  **2400 px** from the last. A reading place stands at least **4 cells** in from its room's walls, **130 px** off its
+  furniture, and where nothing walkable but the room and its doorways comes within the **220 px** reach
+  (`ReachedOnlyFromInside`) - so it is found only by coming into the room. The first is the event's one point of
+  interest: dormant, it has the far tell any event has (his violet) and the wayfinder's arrow. Reach it and he is gone -
+  a lectern, a heavy book lying open, a candle still lit (warm: the only lit candle in a house of cold ones) - and **4 s**
+  later the voice reads from the second room, then every **8 s** until that room's place is reached; gone again; then
+  the third, where he stands at his tall writing desk, the armillary sphere raised; reach it and he is free, into the
+  column of light. The next place is laid when the voice moves to it, in a room far off screen. Nothing fails, nothing
+  times out, no event enemy is spawned: the household is the pressure.
+- **Heard, never pointed at.** Every reading is `hint_quatrain` played **300 px toward the room** from where he stands (as
+  the chapter hints are, so a far room is as loud as a near one - a sound at the room itself would be lost past a
+  screen or two), the stars of his cue drifting in from that edge (`StageHintCue.Play`), and the line he reads set
+  beside them (`StageHintCaption`, waiting its turn on the screen). Two lines a leg, written for the game in the shape
+  of his quatrains: "He comes too late, and finds the candle lit." / "A book left open; the reader has gone on.", then
+  "Twice to an empty chair. The third, the seer." / "The third room waits, and one who waits in it." No arrow points at
+  the second or third room, and they are not points of interest. With the sound off the stars and the line still say
+  which side.
+- **The primitive** (section 7, "a wind-up cancel") is the form's, below; the event needed none - it is the Court's own
+  building (`CourtLayout`), its rooms and its doors.
+- **His unlock** is the site's derived Road deed, "The Last Reading", secret until `stage_12`, counted at the Throne's
+  gate only. Locked hint "Heard reading aloud, room to room, in the Court." Quest-log prisoner "the reader in the house",
+  held line "Somewhere in the house a voice is reading aloud." (on the Court's note), freed line "Nostradamus has closed
+  his book." His freeing reel: `freed.py` WIZARDS and `Freeings.WizardIds`, his panel only.
+- **His clue.** `HintCue.Stars`, a new last row of `hint-cues.png` (rows 0-8 byte-identical): four-pointed stars
+  twinkling in, a near one and a far one on each line of the verse, in the arcane ramp's violet. `hint_quatrain`: an old
+  man reading four lines of four syllables, two couplets with a breath between, the fourth lower with its last syllable
+  held, in a dry room (`sfx._QUATRAIN_LINES` = `StageHintCue.QuatrainLines`, 0.06 / 0.78 / 1.74 / 2.46 s; 3.30 s; nearest
+  in the whole set 0.149, `hint_ice_song`; the Sibyl's three and Tituba's cry all 0.21 or more). The doc's three lines,
+  unchanged.
+- **The Gallery.** His portrait is always the **last frame** of the row (`GalleryRoom.LastFrameWizardId`,
+  `WizardInFrame`): every frame is uncovered as its wizard is freed, so on a road walked in order the frame still covered
+  at the end is his, in the house where he is. The others hang in catalog order from the first.
+- **His form**, The Quatrains (foresee, `Starfall.QuatrainsId`). Whenever an enemy within **560 px** begins a wind-up -
+  `Enemy.WindUpBegan`, the rising edge of the same reading the icon over its head pops in on - a star of the rain falls
+  on it, **0.3 s**, following it down, and lands before the shortest ordinary wind-up there is (0.7 s, a lunger's) can
+  finish. It strikes as a star of the rain does and stops the attack: `Enemy.TryInterruptWindUp` -> the class's
+  `CancelWindUp` -> `AttackTelegraph.Cancel`, which ends the wind-up UNLANDED and starts its whole cooldown over. The
+  icon over the head is cleared rather than flashed (a strike that never came must not be shown). An exploder's fuse is
+  put out and its heat goes; one still in reach lights a whole new fuse. Elites and bosses are struck, never stopped. It
+  is a star like any other: Skipping Stars skips it, a Constellation kindles it; the Starburst does not make it heavy (a
+  fuse would land too late). No card on Starfall trades Light away (Frostfall adds Ice beside it). Card: "A star falls on
+  any enemy that begins a wind-up or draws a bolt, before it can finish. What it stops must wait its cooldown again."
+  Its own evolution icon (a swarm skull's wind-up icon struck by a falling star).
+
+**What moved, and why.**
+
+1. **Elites are struck, never stopped - not only bosses.** An elite's wind-up is often an event's: the anvil's hammers
+   must land on the stakes to break Wayland's chains (4.7), and a form that stopped them would lock his event for the
+   one wizard who plays a Light rain. So `TryInterruptWindUp` refuses every `IsMiniBoss` (elites, minibosses, bosses).
+2. **Foresight reaches ordinary bodies and elites, not bosses.** A boss's tells are its fight's timing: a burrow that must
+   outlast the tell it places, a charge whose tell is a share of its run (`ValidateBossPatterns`), the arrival's 2.5-4 s.
+   A 15% longer boss tell would move those numbers under the validator, not just the player's margin.
+3. **Reach the reading place, not the room.** The rooms run to 2,700 px; "reach the room and he is gone" on the room's
+   rectangle would find it empty off screen, the book never seen. 220 px of the lectern, which is inset so it cannot be
+   met through a wall (the first draft's check found the Kitchens' back stair within reach of one).
+4. **Heard, not pointed at.** The objective arrow would be the answer, so there is none after the first room; the
+   voice is played toward the room from near him, not from the room, and the stars and the line carry the side for a
+   player without sound.
+5. **The rooms.** Seven of the thirteen: not the Gallery (Ma Liang's), the Armoury (beside the stair), the Treasury (its
+   Chamberlain comes out the moment anyone steps in), the Solar, the Minstrels' Gallery or the Keepsake Doors (each a way
+   of its own to reach). The distances keep every leg a walk across the house.
+6. **He stands at a tall desk** rather than sitting, so his own sheet is the figure (no second drawing of him to keep
+   in step); the desk's front hides him to the waist.
+7. **The Court's wayfinder is in the building.** The director now places the wayfinder with
+   `ExplorePlacer.AtBearingInBandAvoiding`: exactly `AtBearing`'s spot wherever its first search finds ground (every open
+   chapter, unchanged), else the band swept for floor as far round from the events as it allows. The Court's building
+   fills only the quarter of the band north-east of the stair, and a bearing out over the rock had found no floor
+   within the search's reach - the compass would have stood in the wall.
+8. **The Gallery hangs twelve frames, every 4 cells, never in a doorway** (`court_layout.py`). At the old 6-cell pitch the
+   eighth frame hung across the Gallery's east door, and nine frames could not hold the wizards he took once every
+   chapter holds one.
+9. **The event's line goes under the Court's.** The Court is the first chapter with both an objective line of its own
+   ("Rooms found n / 13") and a side event, so a side event's line moves one line down wherever its chapter has rules.
+
+**Verified:** build; the validator (0 errors, main's 1 warning), with `ValidateAttackPatternEnemies` and
+`ValidateBossPatterns` still clean with the cancel in; `RegressionChecks.ValidateSeersVoice` (no reading room is another
+room's to reach; every room has a place; on 400 seeds three different rooms, the distances kept, every place reached
+only from inside; the hint's stars on the sound's four lines; the reading lines' length; the Gallery's last frame his
+and every wizard he took framed; the sheets) and `ValidateQuatrains` (a clock cancelled mid wind-up never lands it, waits
+its whole 2 s cooldown and then shows its whole 0.8 s wind-up; Foresight lengthens a foreseeable 0.8 s wind-up to 0.92
+and leaves the rest; the shortest wind-up of any ordinary body, defaults and every scene's override, longer than the
+star's fall). `_ExploreProbe --stage=12`, which SEEKS at his own walking speed and never teleports to a reading - it
+waits for the voice, then walks the shortest way through the halls to where it read from: seeds 4242, 31, 1001 and 77
+`--fresh-save` and 7 and 4242 `--all-unlocked` (the chest), 26 to 27 passed, 0 failed; all three readings to the desk
+every time, 7 to 11 readings heard, found 59 to 88 s after arriving; each leg's walk through the halls 1.22 to 1.59 times
+the straight line the sound promised (4,567 to 10,044 px), 24 to 48 s a leg; Nostradamus freed in memory. `_UiShot` of a
+reading (the empty lectern, the stars and his line), the desk, the win, the clue and the character select (locked on a
+save with the Court open; freed) at both canvases.
+
+**The form, measured** (`_BalanceHarness --character=N --stage=0 --minutes=15 --all-unlocked --seek-apotheosis
+--immortal`, N his roster index):
+
+| run | his spell ascended | form taken | stars foreseen / attacks stopped by 15:00 | on elites | damage taken a minute, before -> after | Starfall's share |
+|---|---|---|---|---|---|---|
+| seed 1234, timescale 6 | 7.2 min (level 17, Starburst) | 9.4 (level 21) | 846 / 801 | 4 | 125-183 -> 7-67 | 52% |
+| seed 77, timescale 6 | 7.7 (17, Starburst) | 9.9 (21) | 988 / 932 | 2 | 156-163 -> 43-76 | 74% |
+| seed 1234, `--timescale=1 --profile=10` | 6.4 (17) | **8.5** (21) | 791 / 730 | 4 | 102-207 -> 29-92 | 43% |
+
+The form is taken at 8.5-9.9 minutes, the level-21 gate setting the time as it does for everyone. Once taken it stops
+93-95% of what it falls on - 140 to 190 attacks a minute - and the damage the bot takes falls by half to nine tenths,
+though some of that fall was coming anyway (Aegis Ward and the levels were already cutting it). It is the strongest
+defensive form there is against a crowd of casters and lungers, and nothing against contact, elites or the boss; whether
+that is too much is a playtest question (below). Kills a minute were 375-393 in the two minutes before it and 435-461
+after. **On the Court itself** (`--stage=12`, seeds 1234 and 77) the bot reached only level 12 and 10 by 15:00 and
+never met the gate - the chapter's health, not the form; every chapter wizard's harness run is on an early chapter for
+that reason.
+
+**Frame cost** (`--timescale=1 --profile=10`, headless, the laptop the harness runs on): the Starfall section cost 66-88 us
+a frame in the minute before the form and 77-101 us in the minute after, 0.1-0.2 KB/frame either side; an enemy's step
+6.8-7.0 us a call either side (the wind-up edge is a bool compare a body a step, the star only on an edge); frames held at
+6.9 ms (144 fps) either side. From 13.5 minutes every section slowed together (the player 72 to 112-171 us, the game
+110 to 172-264, an enemy's step to 12-15 us) - other sessions' Godot runs beside it, which `performance.md` section 5
+warns of, not the form. Not measured on the phone.
+
+**Not verified:** whether seeking is fun, and whether a player hears the side a voice comes from through a swarm - the
+probe knows the house and walks its shortest way, which is the best a player can do, not what one does; whether the
+stars and the line are enough without sound on a phone; the sound, measured and never heard; whether the last covered
+frame is read as a clue; the Quatrains in a real crowd (how often it stops something a player would have dodged, and
+whether a cancelled cast reads as cancelled); Foresight, which nothing measures; nothing on the phone.
 
 ---
 

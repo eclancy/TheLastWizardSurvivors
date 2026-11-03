@@ -21,6 +21,7 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 | Frozen Waste | **The thaw** (`ThawEvent`) | "A wizard lies under the ice." | **fight here**: damage dealt near the block thaws it, fire counts triple | Väinämöinen |
 | Scorched Sands | **The caravan master** (`CaravanMasterEvent`) | "The dead still walk the trade road." | **catch**: a walker on a fixed road that never turns toward you and escapes at the end | Iron Palisade |
 | The Emberdeep | **The great anvil** (`GreatAnvilEvent`) | "His forge, at the end of the road." | **bait**: four chains staked out from the anvil Wayland is chained to; only the forge's own Trip-Hammers break them - a slam that lands on a stake breaks its chain | Wayland the Smith |
+| The Court | **The seer's voice** (`SeersVoiceEvent`) | "A court with no one left in it." | **seek**: a voice reads aloud from one of the house's rooms (the seed's); reach the reading place and he is gone - an open book, a candle still lit - and the voice reads from another room; the third time he is at his desk. Heard, never pointed at: the voice, the stars of its cue and the line it reads come from the room's side, and the walls bend the way there | Nostradamus |
 
 Each asks for something different, and none of them is "a harder fight". The Ruins' is the first of
 the chapter wizards' (`.ai/chapter-wizards.md`, section 4.5 and its "Built" note), added 2026-11-01; the Emberdeep's
@@ -114,6 +115,7 @@ All five events resolve through `SideEvent.Succeed`, so all five now get the sam
 | The great anvil | Wayland the Smith (wizard) | a chest | "The chains are broken - a chest was left at the anvil" |
 | The nine mouths | the Cumaean Sibyl (wizard) | a chest | "Her mouth falls quiet - a chest was left in it" |
 | The walking hut | Baba Yaga (wizard) | a chest | "The hut kneels - a chest was left at its door" |
+| The seer's voice | Nostradamus (wizard) | a chest | "He left something on the desk - a chest" |
 
 To photograph any of them: `_UiShot --scene=res://scenes/node_2d_game.tscn --stage=N --win-event`
 (add `--event-chest` for the chest path on a save that lacks the discovery). It sets
@@ -416,6 +418,7 @@ question. `RegressionChecks.ValidateStageHints` warns on any line that contains 
 | The Emberdeep | `great_anvil` | sound (Wayland the Smith, unnamed) | `hint_anvil` (sparks) | "Hammer on anvil, slow and steady, somewhere below." / "The hammer again. Whoever swings it is very tired." / "It does not stop. It is not allowed to." |
 | Sunken Cave | `nine_mouths` | sound (the Cumaean Sibyl, unnamed) | `hint_sibyl_voice` (writ) | "Leaves on a cold draught, every one written on." / "A woman's voice from far down, in more places than one." / "The leaves again, written faster now." |
 | Enchanted Forest | `walking_hut` | sound (Baba Yaga's hut, unnamed) | `hint_hut_step` (birds) | "Something heavy walks the deep wood, on two legs." / "The steps again. Too heavy for a man." / "Still walking, round and round." |
+| The Court | `seers_voice` | **speech** (Nostradamus reading, unnamed) | `hint_quatrain` (stars) | "Out of the west one light, on foot, alone." / "The one he missed walks every road he made." / "When the last door opens, the house goes dark." |
 
 Tituba speaks in her own character: a prisoner taken from Barbados and jailed on an accusation,
 patient (her passive is *Patience*) and nobody's witch - so she asks for help and says she has
@@ -572,6 +575,11 @@ chapter's line in `SideEventDirector` is a list, its original event first:
   +20% to every shove and pull her spells give. Freed by running her walking hut down, the Forest's second event;
   counted at the Throne's gate only. **Never secret**: the Forest is open on a new save, so she is a silhouette
   from the first run.
+- **Nostradamus** (2026-11-03), Michel de Nostredame, the physician and seer, in the square doctor's cap and a long
+  lichen gown with a sable tippet, a brass armillary sphere raised in his hand and a written roll in the other. Opens
+  on **Starfall**, Light (R1: Seimei and Merlin hold Light on other spells). Passive *Foresight*: every ordinary
+  enemy's wind-up shows 15% longer. Freed by seeking his voice through the Court, its first event; secret until the
+  Court opens, counted at the Throne's gate only. The last frame of the Gallery's portraits is always his.
 
 Both wear **no player pigment**. The four saturated rows are the starters'. The rescued wear what
 they were held in, so the only saturated thing on them is their staff head. Sprites are in
