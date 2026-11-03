@@ -344,6 +344,21 @@ public static class StageCatalog
 
 	public static bool IsInCampaign(StageDefinition stage) => stage != null && CampaignPositionOf(stage.Id) >= 0;
 
+	/// <summary>What the world map's card says over a chapter that is not on the road (the Sketchbook).</summary>
+	public const string OffRoadPlace = "Beyond the map";
+
+	/// <summary>
+	/// Where a chapter is, in the words the world map's card uses over its name (WorldMap.RebuildCard): "Chapter N"
+	/// by its place on the road (CampaignOrder), or <see cref="OffRoadPlace"/> for one outside it. The pause screen
+	/// and the results numbered chapters by their roster index, so the Fallow Fields, second on the road, called
+	/// itself Chapter 10 under a map that said "Chapter 2 of 10".
+	/// </summary>
+	public static string ChapterPlace(StageDefinition stage)
+	{
+		int position = stage == null ? -1 : CampaignPositionOf(stage.Id);
+		return position >= 0 ? $"Chapter {position + 1}" : OffRoadPlace;
+	}
+
 	/// <summary>The campaign's last chapter - the one his seat is in.</summary>
 	public static StageDefinition FinalChapter => Campaign.Count > 0 ? Campaign[Campaign.Count - 1] : null;
 

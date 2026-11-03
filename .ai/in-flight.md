@@ -471,8 +471,6 @@ or three goes further, and agents should keep tool output short.
   log reaching "post-reimport operations", and run it under `timeout`.
 - `scripts/_BossProbe.cs`'s header promises `--stage=all`, but line 62 `int.Parse`s it and the probe
   throws in `_Ready` and idles. Pass one stage at a time (the Choir is stage 2, not 3).
-- The pause screen numbers chapters by stage index (the Fallow Fields shows "Chapter 10"); the map
-  says "Chapter 2 of 10". `Node2DGame.cs`, around the pause screen's chapter line.
 - `ImpactDebris` still fades by alpha in its last 30%, and Ice's first two ramp colours vanish on
   the Sketchbook's paper.
 - `lingering_pool.gdshader` has no caller.

@@ -37,13 +37,41 @@ Where things sit, in canvas units (the 720 short side on both shapes):
 |---|---|---|
 | Health bar | top-left, 7..247 x 6..50 | same |
 | XP bar | under it, 7..247 x 54..69 | same |
-| Run timer | top-centre, 8..36 | same |
-| Boss bar (only during the fight) | full width, 44..78 | same |
-| Side event objective | full width, 84..112 | same |
-| Stage intro / onboarding tip | centred, 42..128 | same |
+| Run timer | top-centre, built 8..36 (its padded Body digits make it 8..52) | same |
+| **The band under the timer** (`HudBand`, below) - resting places only | | |
+| - Boss bar (only during the fight) | full width, rests at 44..78 | same |
+| - A chapter's own line (the Court's rooms found, the Last Bridge's strip) | full width, rests at 84 | same |
+| - Side event objective / announcement / win line | full width, rests at 84 | same |
+| - Stage intro / run banner | centred 520, rests at 42 | under the spell row |
+| - Onboarding tip | centred 640, rests at 82 | same |
 | **Loadout strip** | a column under the boss slot, 7..257 x 84.. | one row on the floor of the touch band, ..172 |
 | Touch pause button | - | top-right, 8..56 |
 | Touch stick | - | anywhere below 176 |
+
+### The band under the timer (`scripts/HudBand.cs`)
+
+The five rows that hang from the timer are not placed by their owners: they register with `HudBand`
+(`Node2DGame.Band`) once they are on the overlay and inset, and it lays them out every frame, late. **It
+is a stack, in a fixed order** - boss bar, chapter line, event line, banner, tip - and a row that is
+showing sits at its resting place or under the foot of the showing row above it, whichever is lower,
+and never on the element tags (where a phone wraps them) or a phone's spell row, which a row that would
+reach it jumps. A row not showing takes no room. What stays (the bar, the lines being followed) is above
+what comes and goes (a banner, a tip), so a message moves to make room, never a line. A box (bar,
+banner, tags, spell row) has 6 units of air under it; a line of text has none, its line box carries its
+leading - which is what keeps the Court's two lines between the bar's slot and the phone's spell row.
+
+It replaced five hand-placed exceptions: the tip and an event's line rested in the same place, so a new
+player who found an event in his first minutes read the tip printed through it (both canvases); the
+Court's event line was moved one line down by hand; the bar and the tip were stepped down by hand under
+wrapped tags; the banner placed itself under the bar; the Last Bridge hid its strip whenever a tip was
+up (it still stands aside for the barge's line, by choice). **A new row under the timer registers with
+`Band.Add`** - and is then never on another. `HudBand.Validate` (in `RegressionChecks.RunAll`) runs the
+rule with every row up at both canvases; `_UiShot` measures the real rows at every shutter over a run
+and prints `HUD band CLEAR` or `HUD band OVERLAP`, and `--show-tip=N` puts tip N up at the shutter.
+
+Not in the band: the timer itself. The bar resting at 44 and the banner at 42 overlap the foot of its
+grown box (its padding, not its digits); counting it would drop the bar to 58, onto a PC's spell column,
+which starts at 84 under the bar's slot.
 
 ### The loadout strip (`scripts/LoadoutHud.cs`)
 
@@ -83,8 +111,8 @@ full.
   strip on the overlay, `LoadoutHud.TagRow`) hung at the timer's height: on a PC one line 560 wide
   from the right edge, which holds all twelve chips clear of the timer; on a phone a block 214 wide
   between the timer and the touch pause button, five chips a line, wrapping down. A wrapped block
-  would be under the boss bar, so `ConfigureBossHud` steps the bar (and the onboarding tip under it)
-  down past the chips' foot - which on a phone happens from six elements up.
+  would be under the boss bar, so the band under the timer (`HudBand`) steps the bar (and every row
+  under it) down past the chips' foot - which on a phone happens from six elements up.
 - **Updates** on `Player.LoadoutChanged` only - raised at the mutation (a spell taken, levelled,
   mutated, ascended, cut; a boon taken; a relic claimed) rather than at the menu handlers, because
   the harnesses grant spells and boons directly - coalesced to one rebuild per frame through

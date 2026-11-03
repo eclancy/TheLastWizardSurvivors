@@ -161,13 +161,9 @@ public partial class Node2DGame
 		};
 		uiOverlay.AddChild(bossHudRoot);
 		SafeArea.ApplyTo(bossHudRoot);
-		// Under the element tags when they wrap to a second line, as the chapter boss's bar steps down.
-		if (GetNodeOrNull<LoadoutHud>("UIOverlay/LoadoutHud")?.TagRow is Control tags && tags.IsVisibleInTree())
-		{
-			float stepDown = Mathf.Max(0f, tags.GetGlobalRect().End.Y + 6f - bossHudRoot.GetGlobalRect().Position.Y);
-			bossHudRoot.OffsetTop += stepDown;
-			bossHudRoot.OffsetBottom += stepDown;
-		}
+		// The band's first row, as the chapter boss's bar is (HudBand): under the element tags when they wrap to a
+		// second line, and over the events' lines, which can still be running while a sent boss stands.
+		hudBand?.Add(HudBand.Row.BossBar, bossHudRoot);
 
 		var row = new HBoxContainer { Name = "Bars", MouseFilter = Control.MouseFilterEnum.Ignore };
 		row.SetAnchorsPreset(Control.LayoutPreset.FullRect);

@@ -285,11 +285,17 @@ public partial class Node2DGame : Node2D
 	private ColorRect? lowHealthOverlay;
 	private Tween? damageFlashTween;
 	private Label? onboardingTipLabel;
-	// Under the boss bar's usual foot (78); ConfigureBossHud steps it down with the bar.
+	// Its resting place, under the boss bar's usual foot (78). Where it goes when there is more under the
+	// timer - the bar, a chapter's line, an event's - is the band's to say (HudBand), not this number's.
 	private const float OnboardingTipTop = 82f;
 	private const float OnboardingTipHeight = 46f;
-	private float? onboardingTipRestTop;
 	private Label? stageIntroLabel;
+	// The band under the run timer (HudBand): the one authority on where the boss bar, the chapter's and the
+	// event's lines, the banner and the tip go, so no two of them can be drawn over each other.
+	private HudBand? hudBand;
+
+	/// <summary>The band under the run timer. A row hung there (SideEvent's objective line) registers with it.</summary>
+	public HudBand? Band => hudBand;
 	private bool showOnboardingTips = false;
 	private int onboardingTipIndex = 0;
 	private float onboardingTipTimer = 0f;
@@ -599,6 +605,8 @@ public partial class Node2DGame : Node2D
 			runTimerPanel.AddChild(runTimerLabel);
 			uiOverlay.AddChild(runTimerPanel);
 
+			// The banner's and the tip's offsets are where they REST: the band under the timer (HudBand) moves
+			// them down under whatever else is up there.
 			var stageIntroPanel = new PanelContainer
 			{
 				Name = "StageIntroPanel",
@@ -691,6 +699,7 @@ public partial class Node2DGame : Node2D
 		// The whole HUD is built by now. On a phone the health bar, XP bar and timer sat under the
 		// rounded corners and the camera hole (SafeArea).
 		SafeArea.Apply(GetNodeOrNull<CanvasLayer>("UIOverlay"));
+		BuildHudBand();
 		RefreshElementHud();
 		EnsureEscapeMenuUi();
 		BuildDecorProps();
@@ -729,6 +738,36 @@ public partial class Node2DGame : Node2D
 		GD.Print($"Node2DGame: {stage!.DisplayName} plays by its own rules ({chapterRules.GetType().Name}).");
 	}
 
+	// The band under the run timer (HudBand), once SafeArea has inset the HUD, so the rows' resting places are
+	// the inset ones. The loadout's tags and phone spell row are what is fixed in it; the banner and the tip are
+	// the rows built here. The boss bar, the chapter's line and the events' lines join it as they are made.
+	private void BuildHudBand()
+	{
+		hudBand = new HudBand { Name = "HudBand" };
+		AddChild(hudBand);
+		hudBand.Loadout = GetNodeOrNull<LoadoutHud>("UIOverlay/LoadoutHud");
+		hudBand.BannerFloor = BannerFloor;
+		if (stageIntroLabel?.GetParent() is Control bannerPanel)
+			hudBand.Add(HudBand.Row.Banner, bannerPanel);
+		if (onboardingTipLabel != null)
+			hudBand.Add(HudBand.Row.Tip, onboardingTipLabel);
+	}
+
+	// The banner's own floor, on top of the band's rule (asked by HudBand every frame; no lookups by path).
+	private float BannerFloor()
+	{
+		// Inside the picture while a boss's arrival is filmed: the letterbox's top bar is drawn over the HUD, and
+		// this banner is the arrival's one line of words - the boss's name - so it goes below the bar at its
+		// deepest (Node2DGame.BossEntrance.cs, LetterboxBannerFloor).
+		float floor = LetterboxBannerFloor();
+		// On a phone, under the spell row wherever the cutout has put it: the banner is wider than the gap between
+		// the health and XP bars on its left and the tags on its right, so the row's foot is the first line clear
+		// of all of them.
+		if (hudBand?.Loadout is LoadoutHud loadout && IsInstanceValid(loadout) && ResponsiveLayout.IsNarrow(loadout))
+			floor = Mathf.Max(floor, loadout.GetGlobalRect().End.Y + 8f);
+		return floor;
+	}
+
 	// Hooks 1 and 7: run start, and the objective line under the run timer.
 	private void StartChapterRules()
 	{
@@ -753,6 +792,9 @@ public partial class Node2DGame : Node2D
 		uiOverlay.AddChild(objective);
 		// Added after the HUD's SafeArea.Apply, so inset on its own (the side event's line had to learn this).
 		SafeArea.ApplyTo(objective);
+		// Its slot is where it rests; the band puts it under the boss bar when the tags push the bar down, and an
+		// event's line and a tip under it (HudBand).
+		hudBand?.Add(HudBand.Row.ChapterLine, objective);
 	}
 
 	// THE ONLY PLACE THE PLAYER'S HEALTH IS SHOWN.
@@ -4025,9 +4067,16 @@ public partial class Node2DGame : Node2D
 
 		StageDefinition stage = StageCatalog.GetByIndex(Global.SelectedStageIdx);
 		CharacterData character = CharacterRoster.GetByIndex(Global.SelectedCharacterIdx);
+		// Its place on the road, as the map's card says it (StageCatalog.ChapterPlace): "Chapter 2" for the Fallow
+		// Fields, "Beyond the map" for the Sketchbook. It was the roster index, which called the Fallow Fields
+		// Chapter 10. A Boss Rush is not a chapter, though it is fought in one (BossRushCatalog.Arena), and says so,
+		// as the results do.
+		string place = IsBossRush ? "Boss Rush"
+			: stage != null ? StageCatalog.ChapterPlace(stage)
+			: $"Chapter {Global.SelectedStageIdx + 1}";
 		string chapter = stage == null || string.IsNullOrWhiteSpace(stage.DisplayName)
-			? $"Chapter {Global.SelectedStageIdx + 1}"
-			: $"Chapter {Global.SelectedStageIdx + 1}  ·  {stage.DisplayName}";
+			? place
+			: $"{place}  ·  {stage.DisplayName}";
 		Label where = CodexRows.MakeText(character == null ? chapter : $"{chapter}\n{character.Name}",
 			ResponsiveLayout.TextRole.Label, PauseInk.InkSoft);
 		where.Name = "EscapeWhere";
@@ -6050,25 +6099,11 @@ public partial class Node2DGame : Node2D
 		};
 		uiOverlay.AddChild(bossHudRoot);
 		SafeArea.ApplyTo(bossHudRoot);
-		// The element tags hang from the top right (LoadoutHud.TagRow). One line ends well above the
-		// bar; a phone holding six elements or more wraps to a second, and the bar steps down under it
-		// rather than covering the chips for the whole fight.
-		// The onboarding tip hangs just under the bar's usual foot, so it steps down by the same amount -
-		// set from where it was built, not added to, since a Boss Rush builds a bar per boss.
-		float stepDown = 0f;
-		if (GetNodeOrNull<LoadoutHud>("UIOverlay/LoadoutHud")?.TagRow is Control tags && tags.IsVisibleInTree())
-		{
-			stepDown = Mathf.Max(0f, tags.GetGlobalRect().End.Y + 6f - bossHudRoot.GetGlobalRect().Position.Y);
-			bossHudRoot.OffsetTop += stepDown;
-			bossHudRoot.OffsetBottom += stepDown;
-		}
-		if (onboardingTipLabel != null)
-		{
-			// Its resting place as SafeArea left it (the inset is applied once and remembered).
-			onboardingTipRestTop ??= onboardingTipLabel.OffsetTop;
-			onboardingTipLabel.OffsetTop = onboardingTipRestTop.Value + stepDown;
-			onboardingTipLabel.OffsetBottom = onboardingTipRestTop.Value + OnboardingTipHeight + stepDown;
-		}
+		// The first row of the band (HudBand). The element tags hang from the top right (LoadoutHud.TagRow): one
+		// line ends well above the bar, and a phone holding six elements or more wraps to a second, which the
+		// band steps the bar down under rather than covering the chips for the whole fight - and everything
+		// under the bar (a chapter's line, the banner, a tip) down with it.
+		hudBand?.Add(HudBand.Row.BossBar, bossHudRoot);
 
 		bossHudBar = new ProgressBar
 		{
@@ -6137,7 +6172,6 @@ public partial class Node2DGame : Node2D
 	// Boss Rush each fall. One at a time - a new banner kills the last one's fade, or that fade's
 	// closing Hide would take the new banner down with it.
 	private Tween? runBannerTween;
-	private const float BannerTop = 42f;
 	// The run banner's turn on the screen (Announcements): the chapter's opening line is the opening's own
 	// (this node); every other banner - a boss's arrival above all - takes the screen at once and holds it
 	// as this until it has faded.
@@ -6165,26 +6199,15 @@ public partial class Node2DGame : Node2D
 		{
 			panel.Visible = true;
 			panel.Modulate = Colors.White;
-			// Under the boss's bar while there is one. The banner sits where the bar does (both hang
-			// from the timer), and the bar, added later, was drawn over the banner's top line - the
-			// boss's own name, on the one frame it is announced.
-			float top = BannerTop;
-			if (bossHudRoot != null)
-				top = Mathf.Max(top, bossHudRoot.OffsetBottom + 8f);
-			// The phone's spell row is as wide as the banner is off-centre, so there it clears the
-			// row's foot too, wherever the cutout has put it.
-			if (ResponsiveLayout.IsNarrow(panel) && GetNodeOrNull<Control>("UIOverlay/LoadoutHud") is Control loadout)
-				top = Mathf.Max(top, loadout.GetGlobalRect().End.Y + 8f);
-			// And inside the picture while a boss's arrival is filmed: the letterbox's top bar is drawn over
-			// the HUD, and this banner is the arrival's one line of words - the boss's name - so it goes
-			// below the bar at its deepest (Node2DGame.BossEntrance.cs, LetterboxBannerFloor).
-			top = Mathf.Max(top, LetterboxBannerFloor());
-			panel.OffsetBottom = top + (panel.OffsetBottom - panel.OffsetTop);
-			panel.OffsetTop = top;
 		}
 
 		stageIntroLabel.Text = text;
 		stageIntroLabel.Modulate = tint;
+		// Where it goes is the band's (HudBand): under the boss's bar while there is one - the bar was once
+		// drawn over the banner's top line, the boss's own name, on the one frame it is announced - under a
+		// chapter's or an event's line, and under its own floor (BannerFloor: the letterbox, the phone's
+		// spell row). Laid out now, so it is in place on the frame it appears.
+		hudBand?.Layout();
 
 		// Hold, THEN fade, then hide - three steps in order. It used to set the whole tween parallel,
 		// which started the fade on the first frame alongside the hold: every banner, the chapter's
@@ -7559,6 +7582,20 @@ public partial class Node2DGame : Node2D
 		onboardingTipLabel.Visible = true;
 		onboardingTipTimer = 0f;
 		onboardingTipIndex++;
+		// The tip is the band's last row (HudBand): under the boss bar, a chapter's line and an event's, never
+		// on them. Laid out now, so it is in place on the frame it appears.
+		hudBand?.Layout();
+	}
+
+	/// <summary>
+	/// For _UiShot (--show-tip=N): onboarding tip N shown now, on any save, through the tip's own path - so it
+	/// still waits while anything holds the screen (Announcements), and the band places it.
+	/// </summary>
+	public void DebugShowOnboardingTip(int index)
+	{
+		showOnboardingTips = true;
+		onboardingTipIndex = Math.Clamp(index, 0, OnboardingTips.Length - 1);
+		ShowNextOnboardingTip(force: true);
 	}
 
 	private Dictionary<string, int> BuildElementCountSnapshot()
