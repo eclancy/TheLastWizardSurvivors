@@ -21,6 +21,21 @@ and a voice call. That page also holds names for Creature Tactics; only this gam
 him playable the same day, the fifth starter, named **The Archmage** on the character select (the game keeps the
 title, the wizard has his own name). `.ai/protagonist.md`.
 
+## The store title
+
+**Decided 2026-11-03: the Google Play listing is titled "The One He Missed: Survivors"** (28 of Play's 30
+characters). Eric: *"when we list it, we'll call it that."* Why: Play matches searches mostly on the title, and
+"survivors" is the word the genre's players search; the bare name matches nothing they type. "Wizard
+Survivors" alone was out - a Steam game and a Play app already use it.
+
+- **Only the store listing carries ": Survivors".** The game's own name stays *The One He Missed* everywhere
+  else: the title screen, `config/name`, the website, the release files.
+- **The short description leads with "wizard survivors roguelike"** (Play indexes it), so the "wizard"
+  searches still match.
+- The rest of the launch plan (listing copy, screenshots, trailer, the closed test, the checklist) is Eric's
+  Claude Docs page "The One He Missed: store listing and launch plan"
+  (https://claude.ai/artifact/91ZJS1xzvQtUiFXXTxZcKU).
+
 ## The shortlist it was chosen from
 
 All are drawn from the story (`.ai/world-and-tone.md`, `.ai/prologue.md`): he strikes the wizards'
