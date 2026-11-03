@@ -397,7 +397,7 @@ read at a glance in a crowd; the voice, measured and never heard; the smoke at a
 the four seconds the stone needs, and what Dragon's Teeth is worth against a moving player's flare (the harness either never
 stands or never stops standing); Rejuvenation on a real run; nothing on the phone. The tutorial tip on a fresh save ("Stay
 moving and kite enemies") is drawn over the objective line in the same place - seen in the photographs, not this work's, and
-not fixed here.
+not fixed here. (Fixed since, 2026-11-03: the band under the timer, `HudBand`, stacks the tip under the line.)
 
 ### 4.3 Sunken Cave - the Cumaean Sibyl
 
@@ -1465,6 +1465,8 @@ the same line (4.8); the Gallery is kept out of the seer's rooms for it.
    thirteen (2026-11-03, at the merge); a frame is one 48 px cell wide, so 3 cells still leaves two of wall between.
 9. **The event's line goes under the Court's.** The Court is the first chapter with both an objective line of its own
    ("Rooms found n / 13") and a side event, so a side event's line moves one line down wherever its chapter has rules.
+   (Since 2026-11-03 that is the band's rule rather than this exception: `HudBand` stacks the event's line under any
+   chapter line that is showing, and a tip under both - `.ai/technical-architecture.md`, "The band under the timer".)
 
 **Verified:** build; the validator (0 errors, main's 1 warning), with `ValidateAttackPatternEnemies` and
 `ValidateBossPatterns` still clean with the cancel in; `RegressionChecks.ValidateSeersVoice` (no reading room is another

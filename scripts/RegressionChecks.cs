@@ -44,6 +44,7 @@ public static partial class RegressionChecks
 		ValidateStageRewards(warnings);
 		ValidateSketchbookHoldsNothing(warnings);
 		LightPool.Validate(warnings);
+		HudBand.Validate(warnings);
 		ValidateWorldMap(warnings);
 		ValidateBossRush(warnings);
 		ValidateHazardPlacement(warnings);

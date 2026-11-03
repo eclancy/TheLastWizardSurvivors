@@ -224,12 +224,12 @@ public abstract partial class SideEvent : Node2D
 				MouseFilter = Control.MouseFilterEnum.Ignore,
 				AnchorLeft = 0f,
 				AnchorRight = 1f,
-				// Under the boss bar's slot (44-78), which a live event never shares: events stand
-				// down the moment the boss arrives. A chapter with rules of its own may have its own line in
-				// that slot (ChapterRules.CreateObjective: the Court's rooms found), so there the event's goes
-				// one line under it - the Court is the first chapter with both (.ai/chapter-wizards.md 4.10).
-				OffsetTop = Game?.Rules != null ? ChapterRules.ObjectiveBottom : 84f,
-				OffsetBottom = Game?.Rules != null ? ChapterRules.ObjectiveBottom + 28f : 112f,
+				// Resting under the boss bar's slot (44-78). It is a row of the band under the timer (HudBand,
+				// below), which puts it under a chapter's own line when there is one (ChapterRules.CreateObjective:
+				// the Court's rooms found, .ai/chapter-wizards.md 4.10) and keeps a new player's tip under it - the
+				// tip used to rest in this very place and was printed through it.
+				OffsetTop = ChapterRules.ObjectiveTop,
+				OffsetBottom = ChapterRules.ObjectiveBottom,
 			};
 			ResponsiveLayout.SetFont(objectiveLabel, ResponsiveLayout.TextRole.Micro);
 			objectiveLabel.AddThemeColorOverride("font_color", new Color(0.96f, 0.86f, 0.55f));
@@ -239,6 +239,7 @@ public abstract partial class SideEvent : Node2D
 			// Added after Node2DGame ran SafeArea.Apply on the overlay, so it was never inset: on a
 			// phone the line sat on the XP bar, which the heading-sized win line made unreadable.
 			SafeArea.ApplyTo(objectiveLabel);
+			Game?.Band?.Add(HudBand.Row.EventLine, objectiveLabel);
 
 			pointer = new SideEventPointer { Name = Index == 0 ? "SideEventPointer" : $"SideEventPointer{Index + 1}" };
 			overlay.AddChild(pointer);

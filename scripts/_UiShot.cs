@@ -375,6 +375,13 @@ public partial class _UiShot : Node
 	private Vector2 gotoOffset = new Vector2(0f, 170f);
 	private bool forceHint;
 	private bool hintForced;
+	// --show-tip=N: onboarding tip N (Node2DGame.OnboardingTips, 0-5) put up fxLead frames before the shutter, on
+	// any save, through the tip's own path - so it still waits while a banner, a note or an event's announcement
+	// holds the screen. With --arrive it photographs the tip and an event's line together, which is where the
+	// tip was once printed through the line (HudBand). Tip 2 is the longest. Every shutter over a run also
+	// measures the band under the timer and prints CLEAR or OVERLAP (ReportHudBand).
+	private int showTip = -1;
+	private bool tipShown;
 	// --hint-preview=STAGE_ID[,DEG]: that chapter's hint - sound, cue and line - played fxLead frames
 	// before the shutter on whatever stage is running, from a point 3000 px away at DEG degrees
 	// (0 = east, 90 = south; default 20), so its line can be photographed on grounds no hint plays on:
@@ -1842,6 +1849,8 @@ public partial class _UiShot : Node
 				takeWayfinder = true;
 			else if (arg == "--force-hint")
 				forceHint = true;
+			else if (arg.StartsWith("--show-tip="))
+				showTip = int.Parse(arg.Substring("--show-tip=".Length));
 			else if (arg.StartsWith("--hint-preview="))
 			{
 				string[] parts = arg.Substring("--hint-preview=".Length).Split(',');
@@ -3091,6 +3100,13 @@ public partial class _UiShot : Node
 			}
 			if (gotoTarget != null && teleportTo == null && frames >= WarmupFrames / 3 - 1)
 				teleportTo = ResolveGoto();
+			if (showTip >= 0 && !tipShown && frames >= WarmupFrames - fxLead
+				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame tipGame)
+			{
+				tipShown = true;
+				tipGame.DebugShowOnboardingTip(showTip);
+				GD.Print($"_UiShot: onboarding tip {showTip} put up {fxLead} frames before the shutter");
+			}
 			if (forceHint && !hintForced && frames >= WarmupFrames - fxLead
 				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector hinted)
 			{
@@ -3836,6 +3852,7 @@ public partial class _UiShot : Node
 		if (statusShowcase)
 			WriteShowcasePositions();
 		Report();
+		ReportHudBand();
 		if (shorePlaced)
 			ReportShore();
 
@@ -4973,6 +4990,20 @@ public partial class _UiShot : Node
 	{
 		text = text?.Replace('\n', ' ') ?? string.Empty;
 		return text.Length <= 40 ? text : text.Substring(0, 40) + "...";
+	}
+
+	// The band under the run timer (HudBand), measured on screen at the shutter: every row up and what is fixed
+	// there, and whether any two meet. A run shot only; a menu has no band.
+	private void ReportHudBand()
+	{
+		if (FindNodeOfType<Node2DGame>(GetTree().Root)?.Band is not HudBand band)
+			return;
+		var (rows, overlap) = band.Audit();
+		GD.Print($"_UiShot: HUD band rows: {(rows.Length > 0 ? rows : "none up")}");
+		if (overlap == null)
+			GD.Print("_UiShot: HUD band CLEAR - no two rows meet, none is on the tags or the spell row");
+		else
+			GD.PrintErr($"_UiShot: HUD band OVERLAP - {overlap}");
 	}
 
 	private void Report()

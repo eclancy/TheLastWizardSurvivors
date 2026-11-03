@@ -95,7 +95,6 @@ public partial class BridgeRules : ChapterRules
 	private BridgeBackdrop backdrop;
 	private BridgeFurniture furniture;
 	private Control objective;
-	private Control onboardingTip;
 	private float objectiveRedraw;
 	private float murderHoleTimer;
 	private float volleyTimer;
@@ -188,12 +187,12 @@ public partial class BridgeRules : ChapterRules
 		if (objective != null && objectiveRedraw <= 0f)
 		{
 			objectiveRedraw = 0.1f;
-			// A new player's onboarding tips use the same strip of the HUD (Node2DGame.OnboardingTipTop): the
-			// bridge's line steps aside while one is up rather than printing under it.
-			onboardingTip ??= Game.GetNodeOrNull<Control>("UIOverlay/OnboardingTipLabel");
-			// And for the barge's line (BargeEvent, the bridge's one side event): the same slot, so while an event
-			// speaks under the timer - its announcement, its objective, its win - the strip is not drawn under it.
-			objective.Visible = (onboardingTip == null || !onboardingTip.Visible) && !SideEvent.LineInUse;
+			// It used to step aside for a new player's onboarding tip too, which rested in the same place; the band
+			// under the timer (HudBand) now puts the tip under the strip instead. It still steps aside for the barge's
+			// line (BargeEvent, the bridge's one side event): while an event speaks under the timer - its
+			// announcement, its objective, its win - that line is the one to read, and the strip would only push
+			// it down.
+			objective.Visible = !SideEvent.LineInUse;
 			objective.QueueRedraw();
 		}
 	}
