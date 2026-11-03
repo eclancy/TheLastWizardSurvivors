@@ -34,6 +34,8 @@ public enum HintCue
 	Sparks,
 	/// <summary>Written leaves blown in on a cold draught, one on each voice of the call (the nine mouths).</summary>
 	Writ,
+	/// <summary>Birds lifting out of the canopy on each fall of a great foot (the walking hut).</summary>
+	Birds,
 }
 
 /// <summary>One side event's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
@@ -202,6 +204,22 @@ public static class StageHintCatalog
 				"Leaves on a cold draught, every one written on.",
 				"A woman's voice from far down, in more places than one.",
 				"The leaves again, written faster now.",
+			},
+		},
+		// Baba Yaga, kept in her own walking hut in the Enchanted Forest (.ai/chapter-wizards.md 4.1). Nobody calls: the
+		// hut is heard walking - two heavy falls and its timbers creaking - and the birds it puts up lift out of the
+		// canopy on her side. Not named; never said what walks, or that anyone is in it.
+		new()
+		{
+			SiteId = "walking_hut",
+			Voice = HintVoice.Sound,
+			Sound = SfxCatalog.HintHutStep,
+			Cue = HintCue.Birds,
+			Lines = new[]
+			{
+				"Something heavy walks the deep wood, on two legs.",
+				"The steps again. Too heavy for a man.",
+				"Still walking, round and round.",
 			},
 		},
 		// Vainamoinen, the singer, under the ice. He is heard, not named.

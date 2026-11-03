@@ -5443,6 +5443,20 @@ public partial class Node2DGame : Node2D
 	public Vector2 ClampToStage(Vector2 position) => ClampPositionToStageBounds(position);
 
 	/// <summary>
+	/// True where the ground itself stops a walker: water, a wall, a fence (the streamer's chunk data, generated
+	/// for far ground if need be), or past the stage's edge. Lone trunks are bodies, not ground - ask the physics
+	/// for those (WalkingHutEvent does).
+	/// </summary>
+	public bool IsGroundBlockedAt(Vector2 world)
+	{
+		if (ClampPositionToStageBounds(world).DistanceSquaredTo(world) > 1f)
+			return true;
+		if (terrainStreamer == null)
+			return false;
+		return terrainStreamer.IsBlockedAtWorld(world) || terrainStreamer.IsWallAtWorld(world) || terrainStreamer.IsFenceAtWorld(world);
+	}
+
+	/// <summary>
 	/// The nearest point to <paramref name="position"/> the player can actually stand on: inside the
 	/// stage bounds and not in water or a wall. Enemies are not held to the bounds the player is, so
 	/// anything an enemy drops for the player to pick up must pass through here first - a Warden that

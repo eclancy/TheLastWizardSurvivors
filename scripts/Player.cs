@@ -3726,6 +3726,13 @@ public partial class Player : CharacterBody2D
 	private float GetStormboundSpeedMultiplier() =>
 		completedChestSets.Contains(ChestItemCatalog.StormboundSetId) ? 1f + StormboundSpeedBonus : 1f;
 
+	/// <summary>
+	/// His walk on open ground, every bonus in and no crowd in the way: what MovePlayer moves him at before a pack
+	/// slows him. The walking hut (WalkingHutEvent, FleeingMover) bolts at a share of it, so "quicker than his walk"
+	/// stays true for a wizard with Wings or a speed boon.
+	/// </summary>
+	public float WalkingSpeed => Speed * GetWindSpeedMultiplier() * GetStormboundSpeedMultiplier() * boonMoveSpeedMultiplier;
+
 	// Stormbound's other half: a critical hit arcs to the nearest other enemy for a fraction of
 	// the damage. Gated on allowElementalChain so an arc cannot arc again.
 	private void TryStormboundCritArc(Node sourceEnemy, int damage, bool isCrit, bool allowElementalChain)

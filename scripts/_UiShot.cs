@@ -3885,6 +3885,9 @@ public partial class _UiShot : Node
 		// The nine mouths point at nothing once he is there (an arrow would be the answer): stand him in hers.
 		if (IsInstanceValid(wonEvent) && wonEvent is NineMouthsEvent mouths)
 			p.GlobalPosition = mouths.StandPoint(mouths.TrueMouth);
+		// The walking hut: in front of where its door turns to, so she steps out toward him and not out of his feet.
+		else if (IsInstanceValid(wonEvent) && wonEvent is WalkingHutEvent hutEvent)
+			p.GlobalPosition = hutEvent.StandPoint;
 		else if (IsInstanceValid(wonEvent) && EventSite(wonEvent) is Vector2 site)
 			p.GlobalPosition = site;
 	}
