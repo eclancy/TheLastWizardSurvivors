@@ -1,8 +1,9 @@
 # Releasing
 
 Decided 2026-10-12, ported from DrawFight (whose `.ai/releasing.md` is where this design was
-first argued and tested). How a downloadable copy of Wizard Survivors gets to people, and how it
-keeps itself up to date.
+first argued and tested). How a downloadable copy of The One He Missed gets to people, and how it
+keeps itself up to date. The game was renamed on 2026-11-02; how copies and saves from before then
+get across is "The rename" below.
 
 **In one line:** `bash tools/release/release.sh X.Y.Z "What changed"` makes a GitHub Release. The
 next time a Windows copy starts, it finds the release and updates itself; an Android copy says on
@@ -12,10 +13,11 @@ its title screen that the new version is out and offers the APK.
 
 | What | Where | Why |
 |---|---|---|
-| The download page | `ecec.dev/wizard-survivors/download` (in the EricClancyEngineeringAndCrafts repo) | the page people are sent; it offers the installer, with the zip as the portable fallback |
-| The game files | GitHub Releases on `eclancy/WizardSurvivors` | GitHub serves release downloads free with no bandwidth limit, so the droplet's 1 TB a month is left alone |
-| The update check | `ecec.dev/wizard-survivors/version.json` | an nginx 302 to `github.com/eclancy/WizardSurvivors/releases/latest/download/version.json` |
-| "What's new" | `ecec.dev/games/wizard-survivors` | shows the newest release's notes, minus the download paragraph |
+| The download page | `ecec.dev/the-one-he-missed/download` (in the EricClancyEngineeringAndCrafts repo) | the page people are sent; it offers the installer, with the zip as the portable fallback |
+| The game files | GitHub Releases on `eclancy/TheOneHeMissed` | GitHub serves release downloads free with no bandwidth limit, so the droplet's 1 TB a month is left alone |
+| The update check | `ecec.dev/the-one-he-missed/version.json` | an nginx 302 to `github.com/eclancy/TheOneHeMissed/releases/latest/download/version.json` |
+| The old update check | the game's old address, `/wizard-survivors/version.json` | the same 302, kept forever by the website for copies from before the rename (see "The rename") |
+| "What's new" | `ecec.dev/games/the-one-he-missed` | shows the newest release's notes, minus the download paragraph |
 
 The update address is on ecec.dev, not GitHub, because it is the one address compiled into every
 copy ever downloaded (`UpdateScreen.VersionUrl`). Behind a redirect, the releases can move
@@ -25,30 +27,35 @@ nor ecec.dev needs a deploy for a release**.
 
 ## What a release contains
 
-Seven files: four made from the export in `build/windows/`, two from the export in
+Nine files: six made from the export in `build/windows/`, three from the export in
 `build/linux/` (see "Linux" below), and the Android APK.
 
-- **`WizardSurvivors-Setup.exe`**: the installer, and the file a new player downloads. Compiled
+- **`TheOneHeMissed-Setup.exe`**: the installer, and the file a new player downloads. Compiled
   by `release.sh` with Inno Setup from `tools/release/installer.iss`. See "The installer" below.
-- **`WizardSurvivors-windows.zip`** (about 69 MB): the **portable version**, for anyone who would
-  rather not run an installer. Everything, in a `WizardSurvivors/` folder, with a
+- **`TheOneHeMissed-windows.zip`** (about 89 MB): the **portable version**, for anyone who would
+  rather not run an installer. Everything, in a `TheOneHeMissed/` folder, with a
   `How to play.txt` (SmartScreen, where to keep the folder, the controls). The controls in it are
   written from the input map in `project.godot`; change one and change the other.
-- **`WizardSurvivors-patch.zip`** (about 2 MB): `WizardSurvivors.pck` (every image, sound,
-  setting and scene) and `WizardSurvivors.dll` with its two JSON files (all the C#). These are the
+- **`TheOneHeMissed-patch.zip`** (about 19 MB): `TheOneHeMissed.pck` (every image, sound,
+  setting and scene) and `TheOneHeMissed.dll` with its two JSON files (all the C#). These are the
   only files that change when the game changes and Godot does not. The rest of the full zip is
   the Godot engine and the .NET runtime.
-- **`WizardSurvivors-android.apk`** (about 90 MB): the Android game, release-signed. See
+- **`TheOneHeMissed-windows-bridge.zip`** and **`TheOneHeMissed-linux-bridge.tar.gz`** (about the
+  size of the full downloads): the whole game again, under the file names a copy from before the
+  rename looks for. Only those copies ever fetch them. See "The rename".
+- **`TheOneHeMissed-android.apk`** (about 110 MB): the Android game, release-signed. See
   "Android" below.
-- **`version.json`**: the version, the Godot version it was built with, and the URLs of both
-  zips, the installer (`"installer"`; the game itself does not read that one) and the APK
-  (`"android"`, read only by the Android copy), under `"linux"` the Linux pair, and
-  `"progressEpoch"`, the story epoch the release was built at (see "Releasing a story reset"). Adding a
-  field is safe: `UpdateScreen` reads the fields it names with `GetProperty`/`TryGetProperty` and
-  ignores the rest, so every Windows copy already out there carries on as before.
+- **`version.json`**: the version, the Godot version it was built with, under `"builds"` the
+  Windows and Linux pairs (`"patch"` and `"full"` each) that every copy since the rename reads, the
+  installer (`"installer"`; the game itself does not read that one), the APK (`"android"`, read
+  only by the Android copy), `"progressEpoch"`, the story epoch the release was built at (see
+  "Releasing a story reset"), and at the top level `"patch"`, `"full"` and `"linux"`, which since
+  the rename all point at the bridges. Adding a field is safe: `UpdateScreen` reads the fields it
+  names with `GetProperty`/`TryGetProperty` and ignores the rest, so every copy already out there
+  carries on as before.
 
-`tools/release/package.py` makes the zips and `version.json`; ISCC makes the installer;
-`release.sh` exports, checks and copies the APK.
+`tools/release/package.py` makes the zips, the bridges and `version.json`; ISCC makes the
+installer; `release.sh` exports, checks and copies the APK.
 
 The export preset is `Windows Desktop` in `export_presets.cfg`: x86_64, `.pck` beside the exe
 rather than embedded (the patch depends on that), `tools/`, `docs/`, `.ai/` and `build/`
@@ -57,19 +64,20 @@ excluded. Everything under `build/` is gitignored.
 ## The installer
 
 `tools/release/installer.iss`, Inno Setup 6. `release.sh` compiles it after `package.py` with
-`/DAppVersion=X.Y.Z`, into `build/release/WizardSurvivors-Setup.exe`.
+`/DAppVersion=X.Y.Z`, into `build/release/TheOneHeMissed-Setup.exe`.
 
-- **It installs per user, to `%LOCALAPPDATA%\Programs\WizardSurvivors`**, with no admin
+- **It installs per user, to `%LOCALAPPDATA%\Programs\TheOneHeMissed`**, with no admin
   prompt (`PrivilegesRequired=lowest`). Two reasons. The self-updater copies new files into the
   game's own folder, so that folder has to stay writable by the player - Program Files would
   leave every installed copy stuck on its first version. And no UAC prompt means one less
   scary dialog after SmartScreen's.
-- It adds a Start menu shortcut and, checked by default, a desktop one, and offers "Play Wizard
-  Survivors now" at the end. Uninstalling (Settings > Apps) removes the whole folder, including
-  anything the updater added, but **not the save** in `%APPDATA%\Godotpp_userdata\`.
+- It adds a Start menu shortcut and, checked by default, a desktop one, and offers "Play The One
+  He Missed now" at the end. Uninstalling (Settings > Apps) removes the whole folder, including
+  anything the updater added, but **not the save** in `%APPDATA%\Godot\app_userdata\`.
 - **The `AppId` GUID in `installer.iss` must never change.** It is how Windows recognises a newer
   setup as the same program, so running a new installer upgrades in place (into the same folder,
-  `UsePreviousAppDir`) instead of installing a second copy. It closes a running game first.
+  `UsePreviousAppDir`) instead of installing a second copy. It closes a running game first. It is
+  also why a copy installed before the rename upgrades in place: see "The rename".
 - An installed copy updates itself exactly like an unzipped one; the installer is only how the
   first copy arrives. Installing a newer setup over an older copy also works.
 - The setup is not code-signed either, so SmartScreen warns about it the same way.
@@ -98,8 +106,15 @@ not check again.
 2. If the release restarts the story (its `progressEpoch` is above this copy's), it asks first -
    Update or Not now; see "Releasing a story reset". Otherwise it never asks anything.
    If the release was built with the same Godot version as this copy, it downloads the patch;
-   otherwise the full zip. It unpacks to `user://update/`.
-3. Windows will not let a running program overwrite its own files. So the game writes
+   otherwise the full zip - the pair under `"builds"."windows"` (or `"linux"`). It unpacks to
+   `user://update/`.
+3. It installs the new files **under the running program's name**, not the release's: the
+   release's `.pck` (and in a full download its program) is renamed to match the exe this copy
+   was started as (`UpdateScreen.ProgramName`). Every install since the rename already agrees, so
+   nothing happens; a copy from before the rename that crossed on the bridge is still
+   `WizardSurvivors.exe`, its shortcuts name that file, and Godot loads the `.pck` named after the
+   program. See "The rename".
+4. Windows will not let a running program overwrite its own files. So the game writes
    `apply.cmd`, starts it, and quits. The script waits for the game to close, `robocopy`s the new
    files over the old ones, and starts the game again.
 
@@ -116,36 +131,40 @@ down, and against the real address before it existed, it went straight to the ti
 
 Added 2026-10-26, on Eric's call, for every game on ecec.dev (DrawFight did it first, the same
 way). `release.sh` exports the `Linux` preset (x86_64, `.pck` beside the binary) to `build/linux/`,
-and `package.py` makes two more files from it:
+and `package.py` makes three more files from it:
 
-- **`WizardSurvivors-linux.tar.gz`** (about 70 MB): the game in a `WizardSurvivors/` folder - the
-  `WizardSurvivors.x86_64` binary, the `.pck`, and `data_WizardSurvivors_linuxbsd_x86_64/` with
+- **`TheOneHeMissed-linux.tar.gz`** (about 80 MB): the game in a `TheOneHeMissed/` folder - the
+  `TheOneHeMissed.x86_64` binary, the `.pck`, and `data_TheOneHeMissed_linuxbsd_x86_64/` with
   the .NET runtime, so nothing has to be installed first - plus `install.sh`, `icon.png` and
   `How to play.txt`. A tarball rather than a zip, because a tarball carries the "can be run"
   permission on the binary and the script; `package.py` sets it, which it can do from Windows.
-- **`WizardSurvivors-linux-patch.zip`** (about 11 MB): the Linux export's `.pck` and the game's
+- **`TheOneHeMissed-linux-patch.zip`** (about 19 MB): the Linux export's `.pck` and the game's
   DLL with its two JSON files.
+- **`TheOneHeMissed-linux-bridge.tar.gz`**: for Linux copies from before the rename; see "The
+  rename".
 
 **`install.sh`** (`tools/release/install.sh`) is the Linux installer. It copies the game to
-`~/.local/share/WizardSurvivors` and writes `wizardsurvivors.desktop` into
+`~/.local/share/TheOneHeMissed` and writes `theonehemissed.desktop` into
 `~/.local/share/applications`, so it is on the app menu. No sudo and nothing outside the home
 folder, for the same reason the Windows installer installs per user: the game updates itself, so
 its folder must stay writable. `./install.sh --uninstall` takes it out again; the save (in
-`~/.local/share/godot/app_userdata/Wizard Survivors`) is never touched. Running
-`./WizardSurvivors.x86_64` straight from the unpacked folder works too.
+`~/.local/share/godot/app_userdata/The One He Missed`) is never touched. Running
+`./TheOneHeMissed.x86_64` straight from the unpacked folder works too. **The folder's name must
+stay the name the release files start with** (`APP` in `install.sh`, `NAME` in `package.py`):
+ecec.dev's download page reads it off the files and tells people that is where the game goes.
 
-**Updating** works as on Windows, from `version.json`'s `"linux"` pair: the patch on the same
-engine, the tarball otherwise (unpacked with `System.Formats.Tar`, so the binary stays runnable).
-The game writes `apply.sh`, starts it with `/bin/sh` and quits; the script waits for the game to
-close, copies the new files over, `chmod +x`es the binary and starts it again. A release from
-before Linux has no `"linux"` pair, and a Linux copy just goes on to the title.
+**Updating** works as on Windows, from `version.json`'s `"builds"."linux"` pair: the patch on the
+same engine, the tarball otherwise (unpacked with `System.Formats.Tar`, so the binary stays
+runnable). The game writes `apply.sh`, starts it with `/bin/sh` and quits; the script waits for the
+game to close, copies the new files over, `chmod +x`es the binary and starts it again. A release
+with no Linux pair leaves a Linux copy on the title.
 
 **Tested so far:** the export, the packaging and the permissions in the tarball, on Windows. Not
 yet run on Linux - Eric is testing it on a Linux machine.
 
 ## Android
 
-Added 2026-10-21. Every release carries `WizardSurvivors-android.apk`, a **release-signed** APK
+Added 2026-10-21. Every release carries `TheOneHeMissed-android.apk`, a **release-signed** APK
 made from the `Android` preset in `export_presets.cfg` (arm64, portrait, a Gradle build for the
 GL surface watchdog - see CLAUDE.md). It is not on the Play Store; players sideload it from the
 download page.
@@ -157,7 +176,7 @@ download page.
 1. Restores `android/build/libs/` from the installed templates' `android_source.zip` if it is
    missing (git does not track the 264 MB of AARs). The patterns are per directory
    (`'libs/debug/*' 'libs/release/*'`): Git Bash's unzip silently extracts nothing for `'libs/*'`.
-2. Runs `--export-release "Android" build/android/WizardSurvivors.apk` under a 30-minute timeout,
+2. Runs `--export-release "Android" build/android/TheOneHeMissed.apk` under a 30-minute timeout,
    with the signing key in the environment (below). A cold Gradle build takes several minutes;
    the first one on this machine took 11. The export can write the APK and then never exit, so it
    is judged by the file, not the exit code.
@@ -167,8 +186,9 @@ download page.
 4. Checks the APK: `apksigner verify --print-certs` must pass, its certificate's SHA-256 must equal
    the release keystore's (read with `keytool`), it must not carry a debug certificate
    (`Android Debug` or Godot's `Godot Engine`), and `aapt dump badging` must show this release's
-   versionCode and versionName. Any failure stops the release before anything is committed.
-5. Copies it to `build/release/WizardSurvivors-android.apk`.
+   versionCode and versionName and the package id `com.ecec.wizardsurvivors` (the game's old name,
+   kept on purpose - see "The rename"). Any failure stops the release before anything is committed.
+5. Copies it to `build/release/TheOneHeMissed-android.apk`.
 
 apksigner, aapt and keytool are found where the Godot editor settings point
 (`export/android/android_sdk_path`, `export/android/java_sdk_path`), or through `ANDROID_SDK_ROOT`
@@ -182,13 +202,17 @@ touches anything.
 | `%APPDATA%\Godot\keystores\wizardsurvivors-release.keystore` | the release keystore, alias `wizardsurvivors` |
 | `%APPDATA%\Godot\keystores\wizardsurvivors-release.secret` | two lines, `alias=...` and `password=...` |
 
+Both keep the game's old name **on purpose**: they were made before the rename, the key inside is
+what Android checks, and the alias cannot be renamed without rewriting the keystore - the one file
+that must never be put at risk. Nothing reads the file names but `release.sh`.
+
 **This repo is public, so the password is never in it.** The preset's `keystore/release` fields
 are left empty; Godot then reads `GODOT_ANDROID_KEYSTORE_RELEASE_PATH`, `..._USER` and
 `..._PASSWORD` from the environment. `release.sh` reads the secret file and exports those three
 inside a subshell around the Godot export (and around `keytool`), so the password exists only in
 those two processes. It is never on a command line, never in `export_presets.cfg`, and the
 script searches the export log for it and deletes the log and stops if it is there (it was not,
-in testing). `WIZARDSURVIVORS_KEYSTORE` points the script at a keystore elsewhere; the secret is
+in testing). `THEONEHEMISSED_KEYSTORE` points the script at a keystore elsewhere; the secret is
 the same path with `.secret` for `.keystore`.
 
 > **Back up both files somewhere safe, off this machine** - a password manager or an encrypted
@@ -213,8 +237,8 @@ what was published, it is what the monotonic check compares against, and
 
 ### How players install it
 
-On the phone: open `ecec.dev/wizard-survivors/download`, tap **Download for Android**, open the
-downloaded `WizardSurvivors-android.apk`, and when Android asks, allow the browser to install
+On the phone: open `ecec.dev/the-one-he-missed/download`, tap **Download for Android**, open the
+downloaded `TheOneHeMissed-android.apk`, and when Android asks, allow the browser to install
 unknown apps (Settings > *Allow from this source*), then **Install**. Play Protect may warn that
 it does not recognise the app, because it is not from the Play Store: *More details*, *Install
 anyway*. The download page says all of this.
@@ -248,7 +272,7 @@ A tap on the strip does not count as the title's "press any button".
 To look at it on a desktop: `--update-banner=9.9.9` shows it with that version, no network, in
 any build; `--update-banner=9.9.9:2` makes that release story epoch 2, which adds the warning. With `_UiShot`: `"$GODOT_BIN" --path . --resolution 540x1212 scenes/_UiShot.tscn --
 --portrait --safe-area --scene=res://scenes/TitleScreen.tscn --update-banner=0.9.9 --shot=banner`
-(add `--open-menu` for the menu over it). `WIZARDSURVIVORS_UPDATE_URL` points the real check at a
+(add `--open-menu` for the menu over it). `THEONEHEMISSED_UPDATE_URL` points the real check at a
 test server, as on Windows.
 
 ### Switching from the debug build: uninstall first, and the save is lost
@@ -297,7 +321,7 @@ bash tools/release/release.sh 0.2.0 "Two new spells. The Gaoler hits less hard."
 ```
 
 The quoted text is optional: it is what players see under "What's new" on
-`ecec.dev/games/wizard-survivors`, so write it for them. Leave it out and the release just says
+`ecec.dev/games/the-one-he-missed`, so write it for them. Leave it out and the release just says
 how to download. The script always appends a paragraph starting `Download **` below it; that page
 strips the paragraph that starts that way, so **keep that wording when editing the script**.
 
@@ -326,7 +350,7 @@ template found" until they are there.
 2. Copy `build/release/` somewhere, and edit its `version.json` so the two zip URLs point at a
    local server (`http://127.0.0.1:8765/...`). Serve it: `python -m SimpleHTTPServer 8765`.
 3. Temporarily set `config/version` lower, export to `build/test/`, and put it back.
-4. Run `build/test/WizardSurvivors.exe` with `WIZARDSURVIVORS_UPDATE_URL` set to the local
+4. Run `build/test/TheOneHeMissed.exe` with `THEONEHEMISSED_UPDATE_URL` set to the local
    `version.json`. It should update, restart, and on the next launch say it is up to date. The
    relaunched copy inherits the variable.
 
@@ -364,7 +388,7 @@ to how progress is stored still needs a schema step in `SaveData.Migrate`.
   at the next launch. An Android copy shows the same line under its update strip; Download still
   opens the APK. A release with no epoch change looks exactly as before.
 - *The first time the new version runs.* The save from the earlier epoch is copied, unchanged, to
-  `savegame.before-epoch-<n>.json` beside it (`%APPDATA%\Godot\app_userdata\Wizard Survivors\` on
+  `savegame.before-epoch-<n>.json` beside it (`%APPDATA%\Godot\app_userdata\The One He Missed\` on
   Windows; `-2`, `-3` if the name is taken), then replaced by a new save that keeps only the
   settings (`SaveData.SettingsKeys`: the Options screen's sound, damage numbers, tips switch,
   playtest toolkit and difficulty preset). Everything else - Arcane Energy, unlocks, chapters,
@@ -408,14 +432,16 @@ builds against a scratch file in `user://story-reset-check-<pid>/`, never the re
 same server: `https://ecec.dev/api/draw/suggest` (EricClancyEngineeringAndCrafts,
 `intake/server.js`), which saves each report under `/data/suggestions/<id>/` and emails it to Eric.
 The server picks the email subject from the `game` field through an allowlist, so this game must
-send exactly `Wizard Survivors`; anything else is filed as a DrawFight suggestion. The server's
+send exactly `The One He Missed`; anything else is filed as a DrawFight suggestion. (Copies from
+before the rename send the game's old name, which the server files under the new one.) The server's
 rate limit (a few posts an hour per address) is shared with DrawFight.
 
-**What is sent**, as multipart/form-data with a `WizardSurvivors/<version>` User-Agent:
+**What is sent**, as multipart/form-data with a `TheOneHeMissed/<version>` User-Agent
+(`UpdateScreen.UserAgent`, which the update checks send too):
 
 | Field | Value |
 |---|---|
-| `game` | `Wizard Survivors` |
+| `game` | `The One He Missed` |
 | `kind` | `bug` |
 | `name` | what the player typed, or empty (40 characters at most) |
 | `version` | `application/config/version` |
@@ -423,7 +449,7 @@ rate limit (a few posts an hour per address) is shared with DrawFight.
 | `screenshot` | a file part, `screenshot.jpg`, `image/jpeg`; only while "Include a screenshot" is on |
 
 The context lines are the ones the screen shows under "Sent with it", from one method, so what is
-shown is what is sent: `[Wizard Survivors 0.2.1 | Windows | PC canvas 1280x720]`, the window and
+shown is what is sent: `[The One He Missed 0.2.1 | Windows | PC canvas 1280x720]`, the window and
 screen size, from the pause screen the chapter, wizard, time in run, player level and every
 spell held with its level, and while the screenshot is on, `Screenshot: attached (WxH, the picture
 shown)`. **Nothing else**: no save file, no log, no device or account identifier. Keep it that
@@ -449,7 +475,7 @@ the server accepted clears it. A failure shows the server's own message (429 get
 server's speaks of fighters) and keeps everything. The request times out after 15 seconds, or 45
 with a screenshot, which on a weak phone uplink can take most of 15 by itself.
 
-**Testing without emailing Eric:** set `WIZARDSURVIVORS_INTAKE_URL=http://127.0.0.1:8799` and run
+**Testing without emailing Eric:** set `THEONEHEMISSED_INTAKE_URL=http://127.0.0.1:8799` and run
 any local server that answers `POST /api/draw/suggest`. `_UiShot` drives the screen:
 `--press-late=ReportBugButton` (with `--open-menu --scene=res://scenes/TitleScreen.tscn`) or
 `--open-pause --press-late=EscapeReportBug` in a run opens it, `--report-name=`, `--report-text=`
@@ -478,7 +504,8 @@ permission by itself only when remote debugging, so without it the phone build c
   the Desktop.
 - **Windows, Linux and Android are exported.** A Mac build needs Apple notarization to open without a
   fight; iOS needs the App Store.
-- The save (`user://savegame.json`) lives in `%APPDATA%\Godot\app_userdata\Wizard Survivors\`
-  (on Linux, `~/.local/share/godot/app_userdata/Wizard Survivors/`), not in the game folder, so an
-  update never touches it. On Android it is in the app's private
-  data: an update installed over the top keeps it, an uninstall deletes it.
+- The save (`user://savegame.json`) lives in `%APPDATA%\Godot\app_userdata\The One He Missed\`
+  (on Linux, `~/.local/share/godot/app_userdata/The One He Missed/`; before the rename, in the
+  folder of the old name, which the first launch copies from - see "The rename"), not in the
+  game folder, so an update never touches it. On Android it is in the app's private data: an
+  update installed over the top keeps it, an uninstall deletes it.
