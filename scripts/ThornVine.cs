@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Thorned Vine (id thorn_vine, Grass + Poison). A thorned vine bursts out of the ground beside the
 // densest pack in range, coils, cracks across the pack like a whip in one wide stroke, and withers back

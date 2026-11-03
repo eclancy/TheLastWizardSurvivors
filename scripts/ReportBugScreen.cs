@@ -6,7 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 using HttpClient = System.Net.Http.HttpClient;
 
 /// <summary>

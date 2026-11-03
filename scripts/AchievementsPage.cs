@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The achievements page, built once for both places it is shown: the main menu's panel and the pause

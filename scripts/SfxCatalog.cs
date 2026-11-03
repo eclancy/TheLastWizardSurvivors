@@ -1,4 +1,4 @@
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 using System;
 using System.Collections.Generic;

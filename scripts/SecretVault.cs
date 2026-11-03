@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE SPELL VAULT (.ai/achievements-and-secrets.md 6.4): a secret class between the anchor and the
 // keepsake, built so a spell is never a coin flip. What every vault shares, and so what a chapter's vault

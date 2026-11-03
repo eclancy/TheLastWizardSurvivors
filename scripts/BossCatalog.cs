@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// One stage's end-of-run boss. A stage without an entry here still ends at

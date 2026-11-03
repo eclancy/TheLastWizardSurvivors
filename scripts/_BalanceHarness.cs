@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // A headless run of the real game, played by a bot, reported as numbers.
 //

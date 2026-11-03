@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE SEAL, CARRIED HOME (.ai/endgame-castle.md 6.4). When his hand closes on a spell (Player.SealSpell), the
 // spell goes out of the wizard as a dark orb with its own icon inside and is carried back to him - into

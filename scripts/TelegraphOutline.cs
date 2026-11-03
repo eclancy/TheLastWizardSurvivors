@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The ground an enemy attack will hit, marked as an opaque dashed outline in pixel art: the ring, the

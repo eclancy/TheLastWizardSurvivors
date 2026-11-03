@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Chapter 2, the Fallow Fields: THE HAYWARD (.ai/campaign.md section 5).
 //

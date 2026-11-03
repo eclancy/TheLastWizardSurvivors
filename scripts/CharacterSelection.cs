@@ -1,7 +1,7 @@
 ﻿using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Data-driven character selection (issue #1/#29): builds one scrollable card per CharacterRoster
 // entry at runtime instead of a hardcoded stub list, and respects both CharacterData.IsUnlocked

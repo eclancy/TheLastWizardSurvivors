@@ -1,6 +1,6 @@
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 public static partial class SecretCatalog
 {

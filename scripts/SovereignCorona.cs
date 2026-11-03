@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The crown on every cast of the spell the Sovereign Rite anointed (.ai/sovereign-spell.md section 5): a thin

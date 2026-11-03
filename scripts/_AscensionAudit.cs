@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Prints every spell's level 4 and level 8 (Ascension) cards with the numbers that decide how much an
 // Ascension changes - and the commands to measure it - so the "is every Ascension big?" question is

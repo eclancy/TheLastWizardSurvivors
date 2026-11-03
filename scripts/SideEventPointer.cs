@@ -48,7 +48,7 @@ public partial class SideEventPointer : Control
 		float scaleX = direction.X != 0f ? (inner.Size.X * 0.5f) / Mathf.Abs(direction.X) : float.MaxValue;
 		float scaleY = direction.Y != 0f ? (inner.Size.Y * 0.5f) / Mathf.Abs(direction.Y) : float.MaxValue;
 		Vector2 edge = centre + direction * Mathf.Min(scaleX, scaleY);
-		edge = WizardSurvivors.scripts.HudKeepOut.Avoid(edge, inner, 24f);
+		edge = TheOneHeMissed.scripts.HudKeepOut.Avoid(edge, inner, 24f);
 		DrawArrow(edge, direction, 13f);
 	}
 

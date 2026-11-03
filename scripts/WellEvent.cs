@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Fallow Fields' side event: defend the well (.ai/campaign.md section 5, .ai/side-events.md).
 //

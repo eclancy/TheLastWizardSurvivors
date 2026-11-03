@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Magic Missile's Overcharge (.ai/spell-roster.md section 2h): the sparks of static its darts leave on

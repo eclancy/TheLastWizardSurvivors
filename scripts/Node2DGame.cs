@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 public partial class Node2DGame : Node2D
 {

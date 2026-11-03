@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Sounds placed in the world and played after a delay - the primitive .ai/chapter-wizards.md section 7 asks

@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // LURE (.ai/achievements-and-secrets.md section 5, "Conditions to meet"): only enemies that walk into a
 // zone count, and the zone takes them - the Swallow-Hole's black mud. Distinct from cull, which counts

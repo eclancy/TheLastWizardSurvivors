@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>How a thing is obtained. The extension point for new unlock mechanics.</summary>
 public enum UnlockSource

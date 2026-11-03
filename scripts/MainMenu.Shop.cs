@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Arcane Upgrades shop: everything bought with Arcane Energy, on the main menu.
 // See .ai/level-up-screen.md, "Arcane Upgrades", for the layout and the rules it follows.

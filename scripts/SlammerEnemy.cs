@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Stop-and-attack (issue #33). It closes like an ordinary chaser, and once it is near enough it
 // plants, marks its reach on the ground in a dashed ring while the icon over its head fills, and hits

@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The Codex's on-screen keyboard, for a pad (.ai/evolution-codex.md section 2; Eric: "controller should have

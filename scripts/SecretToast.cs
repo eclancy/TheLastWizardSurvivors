@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The beat when a stage secret is found (.ai/stage-secrets.md 7.6): its name, what it did in the run,
 // and - the first time ever - what it paid for good. The side event's success beat, quieter: no column

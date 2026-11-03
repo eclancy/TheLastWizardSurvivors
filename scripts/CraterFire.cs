@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The fire that stands in a crater, the smoke that rises off it and the embers it throws up - drawn

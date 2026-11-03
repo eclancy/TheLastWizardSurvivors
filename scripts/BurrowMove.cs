@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// One dive: go under, travel somewhere else, come back up. The bookkeeping half of a burrowing

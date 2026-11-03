@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The in-run loadout strip: the held spells as small icons in slot order, each with its level, and

@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Mirefoot's Fen Gas (TrailWeaver.FenGasId, 2026-10-29): the bog breathes. Every pool of the trail lets a
 // cloud of marsh gas up out of the water now and then, and the cloud poisons whatever it hangs over.

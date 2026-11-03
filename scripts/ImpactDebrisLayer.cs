@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// One node per arena that draws every debris burst that has no node of its own to draw in: Frost

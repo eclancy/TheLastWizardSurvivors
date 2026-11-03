@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// What Shadow Bolt's milestones leave behind it (.ai/spell-roster.md section 2e): Black Sigil's marks

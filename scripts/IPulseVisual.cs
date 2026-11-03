@@ -1,4 +1,4 @@
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Contract for a spell-specific pulse visual that ElementalPulse drives instead of its generic
 // PlaceholderShape ring. A pulse scene opts in by giving itself a child node named "Visual" whose

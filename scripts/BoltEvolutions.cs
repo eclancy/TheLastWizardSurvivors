@@ -1,4 +1,4 @@
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The evolutions of the four spells that fly on ElementalBolt - Molten Shard, Riptide, Hunter's Draw

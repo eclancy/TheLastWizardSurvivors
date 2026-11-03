@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Measures whether the horde can actually reach the player, headless. Built for the maze; it reads
 // the same navigation on open stages, where the obstacles are lakes.

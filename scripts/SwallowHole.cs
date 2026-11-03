@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // S5, THE SWALLOW-HOLE - the Blighted Swamp's spell vault (.ai/achievements-and-secrets.md 8.6). It pays
 // Gravewell, the grave that opens under the swarm and pulls it in - learned from a hole in the bog that

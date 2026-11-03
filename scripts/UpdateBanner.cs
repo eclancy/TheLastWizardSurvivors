@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 using HttpClient = System.Net.Http.HttpClient;
 
 /// <summary>

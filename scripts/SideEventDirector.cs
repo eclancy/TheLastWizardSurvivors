@@ -1,6 +1,6 @@
 using Godot;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Places the chapter's side event and its wayfinder at stage start (.ai/side-events.md).
 //

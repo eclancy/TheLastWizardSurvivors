@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The card an <see cref="ElementChip"/> opens: what the element does at each of its three tiers,

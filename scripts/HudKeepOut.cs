@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Screen rectangles the edge pointers (WorldPointer, ChestPointer, SideEventPointer, PoiPointer) slide

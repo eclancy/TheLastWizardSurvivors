@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// What the lantern-tender needs from the lanterns it keeps. <see cref="BogLanternsEvent"/> is the

@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The crater itself - the hole in the ground, not the fire in it: one quad per crater through

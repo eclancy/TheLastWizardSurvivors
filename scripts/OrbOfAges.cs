@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // ORB OF AGES (.ai/merlin.md): Merlin's own spell, and no one else's (UnlockDefinition.ExclusiveTo). Eric,
 // 2026-11-02: the blue-robed wizard should have "a starter spell that no one else has", and he is "one that uses

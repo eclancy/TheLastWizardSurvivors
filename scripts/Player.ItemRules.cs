@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE FIRST WAVE OF .ai/new-items.md (Eric's answers, 2026-11-02): the Poppet and the Gimmel Ring with
 // their sets, the Waywiser and Bone Rattle boons, and the run's rerolls and bans spent on the chest

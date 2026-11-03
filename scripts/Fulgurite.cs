@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // A5, THE FULGURITE - the Scorched Sands' spell vault (.ai/achievements-and-secrets.md 8.9). It pays
 // Stormsweep, the lash of wind and lightning - learned by standing beside the glass the lightning made

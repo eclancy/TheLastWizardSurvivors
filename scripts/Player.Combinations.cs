@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE COMBINATIONS (.ai/combo-spells.md, approved by Eric 2026-11-01; ComboCatalog is the one authority).
 //

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // THE EVOLUTION CODEX'S MODEL (.ai/evolution-codex.md, approved by Eric 2026-11-02). Every spell, item,
 // evolution and recipe as plain data, built from the catalogs and the save - never hardcoded - so a new

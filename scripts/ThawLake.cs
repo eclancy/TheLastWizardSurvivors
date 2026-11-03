@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The frozen lake the thaw's wizard stands in (.ai/side-events.md, "The thaw").
 //

@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The Sketchbook's page: a map of its own, apart from the world (.ai/world-map.md, section 4). A loose

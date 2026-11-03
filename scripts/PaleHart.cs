@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // F5, THE PALE HART - the Enchanted Forest's spell vault (.ai/achievements-and-secrets.md 8.1). It pays
 // Hunter's Draw: the bow that hangs where the hart leads, learned by following the one thing in the wood

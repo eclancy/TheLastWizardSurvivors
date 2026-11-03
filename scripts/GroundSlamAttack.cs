@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>What shape the warning is drawn in, and therefore what shape gets hit.</summary>
 /// <remarks>

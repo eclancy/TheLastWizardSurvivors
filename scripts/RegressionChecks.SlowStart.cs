@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The slow start's checks (.ai/slow-start.md): the book's arithmetic, the teachers' order and art, and the
 // schema 22 step on sample saves. Every line is a warning, as the rest of RunAll's are.

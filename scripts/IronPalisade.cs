@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Iron Palisade: a line of stakes driven up between the player and the nearest pack (.ai/side-events.md,
 // issue #64). Carried by the caravan master on the Scorched Sands road.

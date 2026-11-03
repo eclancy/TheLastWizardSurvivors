@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The one authority on how many spells a save's book holds (.ai/slow-start.md, section 2). Eric,

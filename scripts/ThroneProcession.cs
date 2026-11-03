@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The Throne's numbers (.ai/endgame-castle.md 6.2, 6.3): the Muster's size and the procession - who

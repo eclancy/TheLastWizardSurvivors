@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>How a hint's caption is set: a person's words, or the sound something makes.</summary>
 public enum HintVoice

@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Spring Tide, Tituba's Apotheosis (.ai/decisions/2026-10-10-apotheosis.md). Verb: flood.
 //

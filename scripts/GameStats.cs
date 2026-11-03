@@ -37,7 +37,7 @@ public class RunSpellSnapshot
 public class RunResult
 {
 	public RunOutcome Outcome { get; set; } = RunOutcome.Defeat;
-	public string BalancePresetId { get; set; } = WizardSurvivors.scripts.GlobalStatsManager.BalancePresetDefault;
+	public string BalancePresetId { get; set; } = TheOneHeMissed.scripts.GlobalStatsManager.BalancePresetDefault;
 	public string StageId { get; set; } = string.Empty;
 	public int FinalPlayerLevel { get; set; } = 1;
 	public float TimeSurvived { get; set; } = 0f;

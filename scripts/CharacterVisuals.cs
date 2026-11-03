@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Shared character look rules so CharacterSelection and Player stay in sync.
 public static class CharacterVisuals

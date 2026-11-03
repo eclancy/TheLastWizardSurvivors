@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// A world sprite that stands on the ground at a line of its own - a tree, a bush, a piece of the

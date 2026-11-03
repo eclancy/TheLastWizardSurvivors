@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE DEFEAT, the run's half (2026-11-02, Eric: "Defeat should have a dramatic animation where the game
 // freezes, then crash zooms onto the wizard and they fall, then it says defeat, and when the player

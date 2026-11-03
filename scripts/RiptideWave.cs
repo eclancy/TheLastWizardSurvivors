@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Riptide projectile: a small travelling wave, drawn by the bolt it rides on.
 //

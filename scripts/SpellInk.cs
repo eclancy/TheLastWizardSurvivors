@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The pixel-art pass's helpers for the trap and star spells (2026-10-29: Gravewell, Glacial Spike,

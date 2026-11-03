@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// One whip-like limb - a tentacle (BlackTentacles) - laid out along a heading that bends as it goes,

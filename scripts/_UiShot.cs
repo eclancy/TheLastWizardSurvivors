@@ -1,6 +1,6 @@
 using Godot;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // A screenshot harness for menu work, and the reason menu work can be judged by eye at all.
 //

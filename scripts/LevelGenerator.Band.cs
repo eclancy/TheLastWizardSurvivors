@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // THE BAND TOPOLOGY: the Last Bridge's ground (.ai/endgame-castle.md 3.2), piece C1.
 //

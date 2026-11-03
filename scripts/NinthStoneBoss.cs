@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Chapter 3, the Broken Circle: THE NINTH STONE.
 //

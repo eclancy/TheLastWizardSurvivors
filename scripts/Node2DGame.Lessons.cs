@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE LESSONS (.ai/slow-start.md, "The lessons"). Eric, 2026-11-02: "new systems should be unlocked in a
 // post-run cutscene, after fulfilling an achievement, like finding a landmark. The cutscene can then explain

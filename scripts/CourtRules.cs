@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE COURT'S RULES (.ai/endgame-castle.md 5, ChapterRules' hooks). "A court with no one left in it."
 //

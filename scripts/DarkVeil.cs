@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // HIS LIGHT (.ai/endgame-castle.md 6.4, phase 2): "The hall goes dark but for him and the player." One quad
 // the size of what the camera sees, following it, drawn through scenes/shaders/dark_veil.gdshader: the

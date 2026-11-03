@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Hunter's Draw's Hunter's Mark (.ai/spell-roster.md 2e): the sigil a full draw leaves on the strongest

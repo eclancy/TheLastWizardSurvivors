@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Cinderbreath: a sustained jet of fire, thrown as individual tongues.
 //

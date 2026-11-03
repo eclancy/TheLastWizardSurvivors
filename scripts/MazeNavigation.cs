@@ -2,7 +2,7 @@ using Godot;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The one shared, terrain-aware navigation for enemies, on every procedural stage. Computes one

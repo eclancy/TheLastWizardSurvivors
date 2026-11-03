@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>Which glyph an attack shows over its attacker. THE ORDER IS THE ATLAS'S ROW ORDER.</summary>
 /// <remarks>tools/art/telegraph_icons.py draws the rows in this order; RegressionChecks checks the sheet's size.</remarks>

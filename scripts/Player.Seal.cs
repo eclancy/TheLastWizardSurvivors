@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE SEAL (.ai/endgame-castle.md 6.4; piece C5, the dark wizard's one new shared primitive).
 //

@@ -3,7 +3,7 @@ using System.Collections;
 using System.Linq;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 public enum WeaponId
 {

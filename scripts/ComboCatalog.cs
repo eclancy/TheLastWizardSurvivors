@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>One parent of a combination: a spell, and the one level 8 Ascension the recipe names on it.</summary>
 public sealed class ComboIngredient

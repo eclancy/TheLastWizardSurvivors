@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Wizard Dude, the boss of the Sketchbook — and the only boss in the game drawn by a child.
 //

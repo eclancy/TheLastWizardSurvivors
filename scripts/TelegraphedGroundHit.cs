@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // A single telegraphed hit placed on the ground, away from whoever caused it.
 //

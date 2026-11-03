@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>One quest as the player reads it: a title, one line of what to do, and how far along it is.</summary>
 public sealed class Quest

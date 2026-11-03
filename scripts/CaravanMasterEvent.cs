@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Scorched Sands' side event: the caravan master (.ai/side-events.md).
 //

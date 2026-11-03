@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The journal over the world map (.ai/quests-and-notes.md): the quest log and the chapter notes, the same

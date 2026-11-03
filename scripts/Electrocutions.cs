@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Chain Lightning's Electrocution (.ai/spell-roster.md section 2h): the first enemy each cast strikes

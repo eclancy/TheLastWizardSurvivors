@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// A boon's relic in its own light: a breathing halo, a rune ring turning behind it, and the icon

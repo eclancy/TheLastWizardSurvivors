@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE BOO - the Sketchbook's ghost, and since 2026-10-20 that chapter's second miniboss.
 //

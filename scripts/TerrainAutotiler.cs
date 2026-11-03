@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Roles in a terrain autotile set. Matches the `autotile.role` strings in the
 // curated tile metadata (see RoleKey) so resolved cells can be mapped to tile ids.

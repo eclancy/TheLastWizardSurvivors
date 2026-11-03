@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Blighted Swamp's side event: snuff the lanterns (.ai/side-events.md).
 //

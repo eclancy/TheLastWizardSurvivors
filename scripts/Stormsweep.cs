@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Stormsweep (pure Lightning): an arc of storm-light leapt from the wizard's hand to the side he is
 // facing and swept down through the ground beside him, every cooldown, aimed at nothing.

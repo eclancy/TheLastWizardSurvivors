@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Burst chase (issue #33). It walks slower than an ordinary chaser, plants, shows a claw over its
 // head that fills as it winds up (TelegraphIcon), then dashes at the player far faster than anything

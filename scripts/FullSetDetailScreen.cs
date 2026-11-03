@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// Modal that explains one Full Set Enchantment in full: what the whole set does in one sentence, every numeric bonus it grants

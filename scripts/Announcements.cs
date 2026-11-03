@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Who may put a message on the screen now: one at a time, the rest waiting their turn (Eric,

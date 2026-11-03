@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Bus volumes, and the one place they are read from and written back to the save file.
 //

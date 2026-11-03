@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // FOLLOW (.ai/stage-secrets.md 7.3 and 6.4's Warm Wisp; .ai/achievements-and-secrets.md section 5,
 // "Things to follow"): something that moves ahead of him and waits. It stands at the start of a path laid

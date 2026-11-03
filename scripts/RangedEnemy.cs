@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // An enemy that keeps its distance and throws bolts instead of closing. Every other enemy in the
 // roster is the same creature mechanically - run at the player, damage on touch - which left a run

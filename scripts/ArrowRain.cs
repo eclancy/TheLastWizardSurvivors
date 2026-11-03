@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Hunter's Draw's Rain of Arrows (.ai/spell-roster.md 2e): the volley loosed straight up, coming down

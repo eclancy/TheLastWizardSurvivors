@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Gravewell's Grave Line (GravewellTrap.GraveLineId, 2026-10-29): the ground the wizard has just crossed,
 // remembered so the graves can be dug along it - a minefield behind him for whatever follows.

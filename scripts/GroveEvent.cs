@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Enchanted Forest's side event: hold the grove (.ai/side-events.md).
 //

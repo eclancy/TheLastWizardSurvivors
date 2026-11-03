@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The stage boss. Everything about chasing, damage, status and death already lives in Enemy, so
 // this only adds what makes a boss a boss: an identity the run result can record, a telegraphed

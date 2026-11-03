@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The Court's building, in world coordinates (.ai/endgame-castle.md 5): its rooms, doors, hidden ways,

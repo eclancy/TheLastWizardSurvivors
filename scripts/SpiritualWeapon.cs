@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Spiritual Weapon: a weapon of light that floats at the wizard's side, picks an enemy, rises into the
 // air over it, swings down onto it and winds up again (.ai/spell-roster.md, "Spiritual Weapon").

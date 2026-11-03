@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Toxic Spore Burst: mushrooms sown among the enemies. Each one sprouts, swells for a moment - the
 // warning is the cap itself, visibly fattening - and then bursts in a cloud of spores that flies out

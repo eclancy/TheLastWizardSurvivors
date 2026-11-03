@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// What a hit does because of an element a milestone brought to the spell. One per element that has

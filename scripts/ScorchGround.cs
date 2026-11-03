@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// A burn on the floor - Scorching Ray's scorch where it struck and the char under Cinderbreath's fire -

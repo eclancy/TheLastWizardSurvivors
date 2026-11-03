@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Central character roster (issue #29): single source of truth for both CharacterSelection.cs
 // (issue #1's dynamic refactor) and Player.cs, replacing CharacterSelection's previous hardcoded

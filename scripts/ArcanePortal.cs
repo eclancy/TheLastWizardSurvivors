@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The way home, opened where the chapter's boss fell (2026-10-28: "when you defeat the boss, we should
 // open an arcane portal so the player can end the run when they want to leave").

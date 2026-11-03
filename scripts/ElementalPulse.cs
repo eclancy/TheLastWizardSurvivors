@@ -2,7 +2,7 @@ using Godot;
 using System.Collections.Generic;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Shared script for simple "AoE pulse" offensive spells (issue #13 roster expansion): Solar Flare
 // (Toxic Spore Burst left it for its mushrooms, SporeMushroom). Behaves like ArcaneExplosion

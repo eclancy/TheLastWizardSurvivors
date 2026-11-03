@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Aegis Ward's milestones, the ones that show (.ai/spell-roster.md section 2h). The spell itself is no
 // node: its cooldown refills Player's shield pool (Player, the aegis_ward branch) and TakeDamage spends it.

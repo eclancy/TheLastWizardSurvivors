@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // What the speed potion looks like while it lasts (BuffItem, Player.ApplyTemporaryBuff).
 //

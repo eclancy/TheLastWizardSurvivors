@@ -1,4 +1,4 @@
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // The 12 elements a spell can be tagged with (see issue #13).
 // Each spell carries a weight (usually 1) per element; some spells are

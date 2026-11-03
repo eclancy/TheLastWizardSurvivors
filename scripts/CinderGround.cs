@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// What Cinderbreath leaves on the ground (.ai/spell-roster.md section 2e): Ember Wake's embers,

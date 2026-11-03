@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Does a finger do what a finger should: does a tap press what it lands on, and does a drag move
 // the list without pressing anything?

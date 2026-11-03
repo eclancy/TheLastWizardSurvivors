@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// One chunk's open water: a distance field drawn by scenes/shaders/water_surface.gdshader, and

@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Chapter 8, the Emberdeep: THE WARDEN OF THE DEEP. The last fight.
 //

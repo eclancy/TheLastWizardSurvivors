@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The defeat (2026-11-02, Eric: "Defeat should have a dramatic animation where the game freezes, then

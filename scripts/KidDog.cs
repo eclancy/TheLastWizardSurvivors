@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The dog. One of the kids drew it and called it "dog companion", so it is one: it follows the
 // player through the whole chapter, runs at whatever is nearest, bites it, and cannot be killed.

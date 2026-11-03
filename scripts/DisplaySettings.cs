@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // What the screen shows, as opposed to what the game does: the damage numbers and the screen shake.
 //

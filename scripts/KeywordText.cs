@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>The debuffs a description can name, as .ai/gameplay-design.md "Status effects" defines them.</summary>
 /// <remarks>Root covers a freeze too: both are a slow at 0 (Enemy.IsFrozen). There is no burn status.</remarks>

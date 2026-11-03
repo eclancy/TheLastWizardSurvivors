@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Health Pickup (issue #25's Bonus Drop Table): restores a flat amount of HP on contact.
 //

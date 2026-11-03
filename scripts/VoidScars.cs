@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Void Lance's Abyssal Scar (.ai/spell-roster.md section 2h): the line a lance lay along, torn into the

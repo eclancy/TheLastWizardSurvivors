@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE CHEST SIMULATION (issue #44; .ai/passives-and-items.md section 8j). How often a run completes a
 // Full Set Enchantment, which one, at which chest, and how often each relic is even shown - counted

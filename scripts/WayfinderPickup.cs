@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>Which thing a chapter hides near the start to reveal its points of interest.</summary>
 public enum WayfinderKind

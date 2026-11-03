@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Chapter 2, the Cursed Dungeon: THE GAOLER.
 //

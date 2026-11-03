@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Shared script for straightforward "elemental bolt" offensive spells (issue #13 roster expansion):
 // Frost Shard, Shadow Bolt, Gale Blade, Molten Shard, Chain Lightning, Void Lance, Glacial Spike,

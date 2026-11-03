@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Gale Blade's Live Wire, drawn (.ai/spell-roster.md 2e): the crackling line of lightning from the wizard

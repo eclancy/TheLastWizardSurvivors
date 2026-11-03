@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Gale Blade's Thunderhead (.ai/spell-roster.md 2e): a stroke of lightning out of the sky onto the

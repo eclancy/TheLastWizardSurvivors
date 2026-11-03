@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // THE AUTHORED TOPOLOGY: ground read from a file rather than a function (.ai/endgame-castle.md 5.1, 6.1).
 // Piece C3 built it for the Court; the Throne (piece C4) reads its hall with the same reader.

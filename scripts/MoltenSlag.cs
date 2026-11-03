@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Molten Shard's two kinds of burning ground (.ai/spell-roster.md 2e): the line of slag a shard's

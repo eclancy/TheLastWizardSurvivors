@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// THE EVOLUTION CODEX (.ai/evolution-codex.md, approved by Eric 2026-11-02): one book for every spell, item,

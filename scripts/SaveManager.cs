@@ -1,6 +1,6 @@
 ﻿using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 public partial class SaveManager : Node
 {

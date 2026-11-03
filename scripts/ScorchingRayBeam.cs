@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Scorching Ray beam: extends from caster to target, then retracts into the target. Damage is
 // applied once when the beam fully reaches the target.

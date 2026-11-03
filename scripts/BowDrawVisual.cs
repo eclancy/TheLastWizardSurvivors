@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The drawn bow that hovers at the player's shoulder while Hunter's Draw is charging, and the mark

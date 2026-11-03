@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// A place on this run's map worth walking to: a side event, one of its parts (a bog lantern), or

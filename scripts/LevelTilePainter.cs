@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// Example Godot integration for the curated autotile pipeline. Consumes a logical

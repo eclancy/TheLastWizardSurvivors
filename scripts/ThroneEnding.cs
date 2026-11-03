@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE ENDING (.ai/endgame-castle.md 6.4, "The end"): "The results screen carries an ending panel with every
 // freed wizard standing in a row, named and nothing else (no copy carries the mood), then the credits."

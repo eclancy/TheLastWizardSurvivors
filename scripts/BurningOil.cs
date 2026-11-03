@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The burning oil the lantern-tender spills (LanternTenderEnemy, .ai/side-events.md): a wedge of the
 // ground in front of it, alight for a few seconds after the splash has landed.

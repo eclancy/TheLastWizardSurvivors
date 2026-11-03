@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Fireball (Fire x2 double-weight, issue #13): lobs a slow, high-damage projectile that explodes
 // in an area on impact or at max range/duration.

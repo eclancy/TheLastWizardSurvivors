@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE CODEX'S ARRANGEMENT, LAYOUT B "THE BOOK" (Eric's pick, 2026-11-02), one builder per canvas and kept apart
 // from everything else, so it says only where the parts go - the model, search, keyboard, index lines, nodes,
