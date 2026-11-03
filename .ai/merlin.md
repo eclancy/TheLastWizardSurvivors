@@ -1,25 +1,35 @@
-# Merlin, the one he missed
+# Merlin, the old enchanter
 
 Eric, 2026-11-02: *"the blue robed wizard should be his own character. maybe unlocked when finishing the full
 campaign on medium? maybe he can have a starter spell that no one else has (therefore able to try a new
 apotheosis no one else can get)"*, and then *"merlin is perfect, as one that uses his magic to protect others."*
+Later the same day: *"I don't actually want the blue wizard to be Merlin. Let's come up with new art for Merlin.
+The blue robed wizard should represent player. That is the point of the name of the game now."* So Merlin keeps
+his kit and his unlock and has a look of his own (section 5); the blue-robed figure is the player, the one he
+missed, and the game is named for him.
 
 **Status: built on `wip/blue-wizard` for Eric's review (section 6).** The deed asks for every chapter of the
 campaign as `StageCatalog.Campaign` lists them - no list of its own - so on this branch, where the Court and the
 Throne are not yet playable, nobody can earn him; once they are (`main-ff86ni`, 41466ed6) the whole road can be
 walked.
 
-Read first: `.ai/world-and-tone.md` (he is "you, the one he missed"), `.ai/title-screen.md` (the figure he is),
-`.ai/spell-roster.md` section 2 (the four axes), `.ai/dark-wizard-playable.md` (the other whole-road wizard).
+Read first: `.ai/world-and-tone.md` (the one he missed is the player, not Merlin), `.ai/spell-roster.md` section 2
+(the four axes), `.ai/dark-wizard-playable.md` (the other whole-road wizard).
 
 ---
 
 ## 1. Who he is
 
-The title screen's blue-robed figure (`tools/art/hero.py`, `hero.wizard_hero`), the prologue's hider and the
-lessons' figure: the one wizard the dark wizard missed, who hid while the others were taken. Unlockable wizards
-are named historic or legendary magic-workers; **Merlin** is the archetype the figure already is, and the old
-stories have him living his life backwards, which is where his form comes from (section 3).
+**Merlin**, the Arthurian enchanter: an old man who uses his magic to protect others. Unlockable wizards are named
+historic or legendary magic-workers, and the old stories have him living his life backwards, which is where his form
+comes from (section 3). He was never held - he is earned by the whole road (section 2) - so he has no cell, no
+prison and no chapter.
+
+**He is not the one he missed.** He was first built as the title screen's blue-robed figure (`tools/art/hero.py`,
+`hero.wizard_hero`), the prologue's hider and the lessons' figure, and drawn from it. That figure is the player
+(`.ai/world-and-tone.md`: "You are the one he missed"), the game is named for him, and he stays story only, never a
+playable character. Merlin's look, his quest-log epithet ("the old enchanter") and his deed's name (The King-Maker)
+are his own; none of them is the title figure's or the game's.
 
 The name was reserved for another build until 2026-11-02 - the one wizard the dark wizard KEPT, freed at the
 Throne, with Spiritual Weapon's sword. That wizard is **Nimue, the Lady of the Lake** now, keeping the sword, with
@@ -35,7 +45,8 @@ both of them the name.
   Default 1, Hardcore 2, written by `AchievementManager.ApplyRunAchievements` through
   `GlobalStatsManager.RecordChapterClear`. A Boss Rush records no boss and so no clear. The field was saved and
   loaded since the first save format and never written, so no save holds a stale value in it; no schema step.
-- The deed **The One He Missed** (*"Defeat every chapter's boss on Default or harder."*) measures
+- The deed **The King-Maker** (*"Defeat every chapter's boss on Default or harder."*; id `the_one_he_missed`, its
+  first name, kept so a save that has done it keeps it - the name is the game's now, never a deed's) measures
   `GlobalStatsManager.ChaptersClearedAt(save, Default)` out of every chapter in `StageCatalog.Campaign`, **built
   or not** - so it cannot be earned until the castle is built and beaten. The Sketchbook is outside the campaign
   and never counted (Eric: it has no unlocks). The pause tab's projection folds the running run in.
@@ -50,8 +61,7 @@ both of them the name.
 
 ### Orb of Ages (Light + Arcane, his alone)
 
-*"A ward of light you stand in."* The title screen is the picture: a wizard in a warded circle, the orb in the
-claw of his forked staff.
+*"A ward of light you stand in."* A wizard in a warded circle, the light on his staff's head sent round it.
 
 1. **A cast draws the ward on the ground where he stands** - anchored there, not on him - 140 px across the
    radius at level 1, wider with Area.
@@ -124,23 +134,50 @@ pays it, and that any exclusive spell names a wizard who opens on it.
 
 ## 5. Art
 
-`tools/art/player_merlin.py` redraws `hero.wizard_hero` on the 48 cell (not a downscale): the wool robe deep and in
-shade, the cone hat with its gold band and swept tip, the scalloped mantle, the mane-spear beard, the red sash, the
-cloak swept off-axis, the tall gold forked staff with the Light orb setting the top of the silhouette. Idle (frame
-one is the portrait), moving, hurt and death (`MerlinFrames.tres`); 0.85 edges/px. The title art is unchanged.
+**His own look (2026-11-02).** Until then `player_merlin.py` redrew the title figure on the 48 cell - the blue wool
+robe, the starred cone hat, the forked gold staff with the orb in its claw. All of that is the player's now, and
+Merlin may wear none of it. Three looks were drawn on one comparison sheet (`tools/art/merlin_concepts.py`, writes
+`tools/art/_merlin_concepts/sheet.png`, gitignored; a copy is in `_shots/merlin-art/`), each held to the player
+cell's proportion rules, no player pigment and no indigo wool, and measured against the whole cast - the largest
+filled-silhouette overlap with any wizard (the cast's own nearest pair is Dee and the Sibyl, 0.72) and the nearest
+colour (Dee and the Sibyl again, 0.77):
+
+| look | what it is | silhouette | colour |
+|---|---|---|---|
+| **A, The Crystal Cave** (ships) | the court enchanter, bare-headed (the only bare crown in the cast), a white fringe and a forked beard, an ivory mantle bordered in gold over a darker under-robe, a straight staff planted at arm's length and crowned with raw quartz - the cave he was sealed in - with the light inside it; his free hand held out low over the ground, palm down (Warding Hand) | 0.71, Frostweaver | 0.41, Pyromancer |
+| B, The Wood | Myrddin Wyllt, the wild Merlin who rode a stag (the *Vita Merlini*): antlers bound on over wild white hair, a wolf's pelt, a russet robe and rope belt, a gnarled thorn staff with the light in its knot, the warding hand | **0.66**, Dee | 0.46, Pyromancer |
+| C, The Counsellor | the king-maker: a wine-red cope with a high standing collar, a gold chain of office, a charcoal robe, a raised palm, a staff crowned with a gold seven-pointed star (his spell's {7/3}) | 0.70, Dee | 0.51, the Sibyl |
+
+**A ships**: the one that is all of the brief at once (the Arthurian enchanter, Light, an old man who protects),
+the clearest in colour (nobody in the cast is warm white), and its silhouette clears the cast's own nearest pair.
+**B is the alternate**: the boldest silhouette of the three by a clear margin, and russet is worn by no one, but
+it is the Welsh wild man rather than the court enchanter (and the Forest's effigy also wears an antler rack). To
+ship another, set `player_merlin.SHIPPING`, run it, and move `CharacterVisuals.GetStaffTipCell("merlin")` to the
+cell it prints.
+
+Two new material rows came with them, each five tones by the contract's rule and listed in
+`.ai/art-direction.md` section 3: **ivory** (A's mantle) and **russet** (B's robe). C is the `red` row, which his
+sash had. They live on single bytes past `\x18` (ivory `\x80-\x84`, russet `\x86-\x8a`; `\x19-\x1f`, `\x7f`
+and `\x85` skipped as line boundaries or whitespace to Python's unicode), all in `anim_sets.PLAYER_RAMPS`, so the
+hurt flash and the death fade step each along its own row whichever look ships.
+
+A: idle (frame one is the portrait; the light in the quartz pulses), moving, hurt and death (`MerlinFrames.tres`);
+0.97 edges/px. The orb leaves from the quartz, cell (10, 7).
+
 Icon `orb-of-ages-light.png` (`spell_icons.py`: the orb in the claw inside the ring and its star); the six evolution
-icons are `evolution_icons.py`'s, three hand-written (Burning Rim, Missile Ward, Walking Ward).
+icons are `evolution_icons.py`'s, three hand-written (Burning Rim, Missile Ward, Walking Ward). **The icons still
+draw the title figure's claw** round the orb - not redrawn with his look (section 7).
 
 ## 6. Built (2026-11-02, `wip/blue-wizard`)
 
 | piece | where |
 |---|---|
-| him | `CharacterData_Merlin.tres`, roster index **11** (appended); `CharacterVisuals` (untinted; the orb leaves from the staff's claw, cell (13, 6)) |
+| him | `CharacterData_Merlin.tres`, roster index **11** (appended); `CharacterVisuals` (untinted; the orb leaves from the quartz on his staff, cell (10, 7); it left the title figure's claw at (13, 6) until his own look) |
 | Orb of Ages | `SpellData_OrbOfAges.tres`, `scenes/OrbOfAges.tscn` + `scripts/OrbOfAges.cs`, `Player.FireOrbOfAges` and `RestartSpellCooldown`, `ContentValidator.SpellResourcePaths`, its `EvolutionStatReaders` row |
 | Warding Hand | `repel_on_hit`: `Player.RepelToucher`, after both contact-damage sites |
 | The Once and Future | `ApotheosisCatalog` (verb **rewind**), `OrbOfAges.OnceAndFutureId` |
-| the unlock | `the_one_he_missed` (`AchievementDefinitions`), `UnlockCatalog` (`OutsideCampaignGate`; the spell `ExclusiveTo = "merlin"`); the record in `GlobalStatsManager` (`PresetRank`, `RecordChapterClear`, `HardestClearOf`, `ChaptersClearedAt`, `ClearedEveryChapterAt`) |
-| quest log | `QuestLog.Prisoners`: "the one he missed", no held line, freed line "{0} keeps his circle." |
+| the unlock | The King-Maker, id `the_one_he_missed` (`AchievementDefinitions`), `UnlockCatalog` (`OutsideCampaignGate`; the spell `ExclusiveTo = "merlin"`); the record in `GlobalStatsManager` (`PresetRank`, `RecordChapterClear`, `HardestClearOf`, `ChaptersClearedAt`, `ClearedEveryChapterAt`) |
+| quest log | `QuestLog.Prisoners`: "the old enchanter" (it was "the one he missed", which is the player), no held line, freed line "{0} keeps his circle." |
 
 ## 7. Open for Eric
 
@@ -149,6 +186,12 @@ icons are `evolution_icons.py`'s, three hand-written (Burning Rim, Missile Ward,
    the demand most likely to feel like a chore. Walking Ward is the way out of it, at level 8.
 3. **Every number in section 3**, met by the bot once (section 8).
 4. **The Codex names him** on his spell's page once owned ("Merlin's alone"); before that it is "not yet found".
+5. **His look** (section 5): A ships, B is the alternate, C the third; the sheet is
+   `tools/art/_merlin_concepts/sheet.png` (and `_shots/merlin-art/`). The deed's new name, The King-Maker, and the
+   epithet, the old enchanter, are first guesses too.
+6. **The Orb of Ages icons** (the spell's and its six evolutions') still put the orb in the title figure's gold
+   claw. Redrawing them to his quartz means rerunning `spell_icons.py` and `evolution_icons.py`, which rewrite
+   every icon they own; not done here.
 
 ## 8. Measured (2026-11-02)
 

@@ -4,9 +4,8 @@ using System.Collections.Generic;
 using WizardSurvivors.scripts;
 
 // ORB OF AGES (.ai/merlin.md): Merlin's own spell, and no one else's (UnlockDefinition.ExclusiveTo). Eric,
-// 2026-11-02: the blue-robed wizard should have "a starter spell that no one else has", and he is "one that uses
-// his magic to protect others". The title screen is the picture of it: a wizard standing in a warded circle,
-// the orb in the claw of his staff.
+// 2026-11-02: he should have "a starter spell that no one else has", and he is "one that uses his magic to
+// protect others". A wizard standing in a warded circle, the light on his staff's head sent round it.
 //
 // A cast DRAWS THE WARD on the ground where he stands - anchored there, not on him - and the orb leaves the staff
 // and ricochets inside it, vertex to vertex of a seven-pointed star ({7/3}: each stroke skips three points), so the

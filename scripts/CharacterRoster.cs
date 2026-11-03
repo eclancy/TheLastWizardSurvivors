@@ -38,8 +38,8 @@ public static class CharacterRoster
 		// Taken on the hardest road (.ai/dark-wizard-playable.md): the dark wizard himself. Appended, as everyone
 		// after the four is, so every saved index keeps its wizard (index 10).
 		"res://CharacterData_DarkWizard.tres",
-		// The one he missed (.ai/merlin.md): Merlin, the title screen's blue-robed figure, playable once every chapter
-		// has fallen on Default or harder. Appended (index 11).
+		// Merlin, the old enchanter (.ai/merlin.md), in a look of his own (the title screen's blue-robed figure is the
+		// player), playable once every chapter has fallen on Default or harder. Appended (index 11).
 		"res://CharacterData_Merlin.tres",
 		// The Emberdeep's chapter wizard (.ai/chapter-wizards.md 4.7): Wayland the Smith, chained to his own anvil.
 		// Appended, so every saved index keeps its wizard (index 12: Merlin took 11 the same day).

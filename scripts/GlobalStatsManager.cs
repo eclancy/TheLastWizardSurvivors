@@ -648,8 +648,9 @@ public static class GlobalStatsManager
 
 	// --- the hardest clear of every chapter (SaveData.MaxDifficultyCleared) -----------------------------------
 	//
-	// Eric, 2026-11-02: "dark wizard should unlock after defeating all stages on hard mode" and the blue-robed
-	// wizard "unlocked when finishing the full campaign on medium". Easy, medium and hard are the Options
+	// Eric, 2026-11-02: "dark wizard should unlock after defeating all stages on hard mode" and Merlin (asked for as
+	// the blue-robed wizard, the player's figure since; .ai/merlin.md) "unlocked when finishing the full campaign
+	// on medium". Easy, medium and hard are the Options
 	// difficulty presets, Casual, Default and Hardcore, ranked 0, 1 and 2 here. Each chapter keeps the highest
 	// rank its boss has fallen on (RecordChapterClear, from AchievementManager.ApplyRunAchievements), and the two
 	// deeds read it through ClearedEveryChapterAt. The field was saved and loaded since the first save format

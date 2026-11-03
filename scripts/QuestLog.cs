@@ -83,9 +83,10 @@ public static class QuestLog
 		// Not a prisoner: the one who took them (.ai/dark-wizard-playable.md), taken in his turn on the hardest
 		// road. No held line - he is held nowhere - and once taken the Throne's note says what became of him.
 		new Prisoner("dark_wizard", "the one on the throne", "", "{0} has nothing left to take."),
-		// Not a prisoner either: the one the dark wizard missed (.ai/merlin.md, .ai/world-and-tone.md), the title
-		// screen's figure, who hid while the others were taken. No held line - he was never held.
-		new Prisoner("merlin", "the one he missed", "", "{0} keeps his circle."),
+		// Not a prisoner either: Merlin, the old enchanter (.ai/merlin.md), earned by the whole road on Default. No
+		// held line - he was never held. Not "the one he missed": that is the player (.ai/world-and-tone.md), and the
+		// game is named for him.
+		new Prisoner("merlin", "the old enchanter", "", "{0} keeps his circle."),
 	};
 
 	public static Prisoner PrisonerOf(string characterId) =>

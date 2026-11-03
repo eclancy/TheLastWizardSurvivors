@@ -5,12 +5,12 @@
 [ext_resource type="Texture2D" path="res://assets/bonelight/characters/merlin-1.png" id="3"]
 [ext_resource type="SpriteFrames" path="res://scenes/resources/MerlinFrames.tres" id="4"]
 
-; The one he missed (.ai/merlin.md): the title screen's blue-robed figure, who hid while every other wizard was
-; taken (the prologue). Eric, 2026-11-02: "merlin is perfect, as one that uses his magic to protect others."
-; Playable once every chapter's boss has fallen on Default or harder (the_one_he_missed); outside the campaign
-; gate, since he was never imprisoned. He opens on Orb of Ages, his alone (UnlockDefinition.ExclusiveTo): a ward
-; drawn where he stands and the orb of his staff ricocheting in it. His passive is Warding Hand: whatever touches
-; him is thrown back.
+; Merlin, the old enchanter (.ai/merlin.md), in a look of his own (tools/art/player_merlin.py): the title
+; screen's blue-robed figure is the player, the one the dark wizard missed. Eric, 2026-11-02: "merlin is perfect,
+; as one that uses his magic to protect others." Playable once every chapter's boss has fallen on Default or
+; harder (The King-Maker, id the_one_he_missed); outside the campaign gate, since he was never imprisoned. He opens
+; on Orb of Ages, his alone (UnlockDefinition.ExclusiveTo): a ward drawn where he stands and the light on his
+; staff ricocheting in it. His passive is Warding Hand: whatever touches him is thrown back.
 [resource]
 script = ExtResource("1")
 Id = "merlin"
