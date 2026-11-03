@@ -71,6 +71,7 @@ public partial class SlammerEnemy : Enemy
 		{
 			Shape = SlamShape,
 			HalfAngleDegrees = SlamHalfAngleDegrees,
+			Foreseeable = true,
 		};
 
 	public override void _PhysicsProcess(double delta)
@@ -122,6 +123,10 @@ public partial class SlammerEnemy : Enemy
 	// The reach is a dashed outline on the floor, under every body (Enemy.DrawGroundTells); the clock is
 	// the icon over its head.
 	protected override void DrawGroundTells(CanvasItem floor) => slam?.Draw(floor);
+
+	// Struck with the staff raised (The Quatrains): the ring is taken off the floor unlanded, and SlamLanded never
+	// fires for it. An elite never gets here (Enemy.TryInterruptWindUp), so the anvil's hammers always land.
+	protected override bool CancelWindUp() => slam != null && slam.Cancel();
 
 	protected override bool ReadAttackTell(out TelegraphGlyph glyph, out float progress)
 	{

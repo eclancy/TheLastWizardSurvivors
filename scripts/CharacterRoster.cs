@@ -56,6 +56,9 @@ public static class CharacterRoster
 		// The chapter wizards again: Baba Yaga, freed by running her walking hut down in the Enchanted Forest. Appended,
 		// so every saved index keeps its wizard (index 15: the Archmage took 14).
 		"res://CharacterData_BabaYaga.tres",
+		// The chapter wizards again: Nostradamus, freed by seeking his voice from room to room of the Court until he
+		// is found at his desk (.ai/chapter-wizards.md 4.10). Appended, so every saved index keeps its wizard.
+		"res://CharacterData_Nostradamus.tres",
 	};
 
 	/// <summary>

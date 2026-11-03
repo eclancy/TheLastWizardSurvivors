@@ -62,6 +62,9 @@ public static class CharacterVisuals
 			case "archmage": return new Vector2(13, 6);
 			// The living tip of the thorned vine curling over the head of her pestle (roster.py, yaga()).
 			case "baba_yaga": return new Vector2(16, 3);
+			// The star kindled at the heart of the armillary sphere he holds up (roster.py, nostradamus()): where
+			// Starfall's light is, not the brass rings round it.
+			case "nostradamus": return new Vector2(12, 5);
 			default: return null;
 		}
 	}
@@ -93,6 +96,7 @@ public static class CharacterVisuals
 			case "sibyl":
 			case "archmage":
 			case "baba_yaga":
+			case "nostradamus":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

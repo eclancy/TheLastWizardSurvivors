@@ -545,15 +545,68 @@ public partial class Enemy : CharacterBody2D
 		// Never on a corpse: a body killed mid wind-up has a clock that just stopped, and an icon left on
 		// it - or a strike flash for an attack that never landed - would promise a hit that never comes.
 		if (isDying)
+		{
 			attackIconState.Clear();
+			windUpSeen = false;
+		}
 		else
 		{
 			bool windingUp = ReadAttackTell(out TelegraphGlyph glyph, out float progress);
-			attackIconState.Tick(delta, windingUp, glyph, progress);
+			// The rising edge of a wind-up, raised once per wind-up for whoever listens (The Quatrains). The same
+			// reading the icon pops in on, so what the player sees begin is what the listener hears begin.
+			if (windingUp && !windUpSeen)
+				WindUpBegan?.Invoke(this);
+			windUpSeen = windingUp;
+			if (interruptedThisStep)
+			{
+				// Cancelled, not landed: the falling edge must not flash a strike that never came.
+				attackIconState.Clear();
+				interruptedThisStep = false;
+			}
+			else
+				attackIconState.Tick(delta, windingUp, glyph, progress);
 		}
 		if (wasShowing || attackIconState.IsShowing)
 			attackIcon.QueueRedraw();
 	}
+
+	// THE WIND-UP AS OTHERS SEE IT (The Quatrains, .ai/chapter-wizards.md 4.10). Nostradamus's form drops a star on
+	// any enemy that begins a wind-up or draws a bolt, before it can finish; these are the two halves of that, on
+	// the body, so the spell needs no list of attackers and no attacker needs to know the spell.
+	private bool windUpSeen;
+	private bool interruptedThisStep;
+
+	/// <summary>
+	/// Raised the step a body's wind-up begins (the first frame <see cref="ReadAttackTell"/> says so): the
+	/// caster's bolt drawn, the lunger crouching, the ring on the floor, a boss's tell. Static, so a spell
+	/// subscribes once; it fires only on that edge, so a full swarm costs a bool compare a body a step. A
+	/// listener must unsubscribe when it leaves the tree.
+	/// </summary>
+	public static event Action<Enemy> WindUpBegan;
+
+	/// <summary>True while this body is winding up an attack (the icon over its head is up).</summary>
+	public bool IsWindingUpAttack => windUpSeen && !isDying;
+
+	/// <summary>
+	/// Stops this body's wind-up without its attack landing, and starts that attack's cooldown over
+	/// (<see cref="AttackTelegraph.Cancel"/>). False - and nothing happens - for a body dying, one not winding
+	/// up, and every elite and boss (<see cref="IsMiniBoss"/>): those are STRUCK, never stopped. A boss's tells
+	/// are its fight, and an elite's are often an event's (the anvil's hammers must land to break the chains).
+	/// </summary>
+	public bool TryInterruptWindUp()
+	{
+		if (isDying || IsMiniBoss || !CancelWindUp())
+			return false;
+		interruptedThisStep = attackIconState != null;
+		windUpSeen = false;
+		return true;
+	}
+
+	/// <summary>
+	/// A class with a wind-up ends it here without landing it (its clock's Cancel) and puts back whatever the
+	/// wind-up changed on the body. True when there was one to end. The default has none.
+	/// </summary>
+	protected virtual bool CancelWindUp() => false;
 
 	private void PaintAttackIcon()
 	{
@@ -2228,6 +2281,9 @@ public partial class Enemy : CharacterBody2D
 	// Retints the enemy permanently. Goes through baseModulate rather than the sprite alone so the
 	// hit flash restores to the new colour instead of snapping back to the old one - a boss that
 	// darkens on enrage must stay dark for the rest of the fight.
+	/// <summary>The tint the hit flash eases back to (what <see cref="SetBaseModulate"/> last set).</summary>
+	protected Color BaseModulate => baseModulate;
+
 	protected void SetBaseModulate(Color color)
 	{
 		baseModulate = color;
@@ -2398,6 +2454,9 @@ public partial class Enemy : CharacterBody2D
 		skirtTimeRemaining = 0f;
 		skirtHandMemory = 0f;
 		skirtHeldTurns = 0;
+		// Its wind-up went with the old body (each subclass rebuilds its clock): the next one is a new edge.
+		windUpSeen = false;
+		interruptedThisStep = false;
 		// A recycled enemy is a fresh enemy as far as the player can tell, so it must not arrive
 		// still carrying the debuffs of the body it used to be - least of all a permanent Wither,
 		// which would otherwise follow it round the ring for the rest of the run.

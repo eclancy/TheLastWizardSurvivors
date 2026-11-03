@@ -37,8 +37,26 @@ public sealed class AttackTelegraph
 	/// <summary>Seconds the enemy spends visibly winding up before the attack lands.</summary>
 	public float WindUpSeconds { get; set; }
 
+	/// <summary>
+	/// How much longer every foreseeable wind-up shows this run (Foresight, Nostradamus's passive:
+	/// .ai/chapter-wizards.md 4.10). 1 unless he is the one playing; every Player._Ready puts it back, so it is
+	/// a run's and never the process's. Read on the frame a wind-up STARTS, so a passive taken mid-swing cannot
+	/// shorten one already shown.
+	/// </summary>
+	public static float ForesightScale { get; set; } = 1f;
+
+	/// <summary>
+	/// Whether <see cref="ForesightScale"/> reaches this clock. The ordinary bodies' attacks set it (the caster's
+	/// bolt, the lunger's leap, the slammer's ring, the exploder's fuse, the summoner's call). A boss's clocks do
+	/// not: their tells are their fights' timing - a burrow that must outlast the tell it places, a charge whose
+	/// tell is a share of its run - and a hazard placed on the ground is the ground's.
+	/// </summary>
+	public bool Foreseeable { get; set; }
+
 	private float cooldown;
 	private float windUpRemaining;
+	// The wind-up being shown now, as it started: WindUpSeconds, lengthened by Foresight where it reaches.
+	private float windUpTotal;
 
 	public AttackTelegraph(float intervalSeconds, float windUpSeconds)
 	{
@@ -52,15 +70,39 @@ public sealed class AttackTelegraph
 	public bool IsWindingUp => windUpRemaining > 0f;
 
 	/// <summary>0 the frame the wind-up starts, 1 the frame before it resolves. For drawing tells.</summary>
-	public float WindUpProgress => WindUpSeconds > 0f
-		? 1f - Mathf.Clamp(windUpRemaining / WindUpSeconds, 0f, 1f)
+	public float WindUpProgress => windUpTotal > 0f
+		? 1f - Mathf.Clamp(windUpRemaining / windUpTotal, 0f, 1f)
 		: 1f;
+
+	/// <summary>Seconds until the wind-up being shown lands; 0 while none is.</summary>
+	public float WindUpRemaining => Mathf.Max(0f, windUpRemaining);
+
+	/// <summary>
+	/// Ends a wind-up that has not landed WITHOUT landing it, and starts the whole cooldown over: The Quatrains'
+	/// star (.ai/chapter-wizards.md 4.10), which falls on whatever begins one, "before it can finish". True when
+	/// there was a wind-up to end.
+	/// </summary>
+	/// <remarks>
+	/// The one way a wind-up may stop short, and it can only take an attack away, never bring one sooner: the
+	/// cancelled attack never resolves, and the next must wait out a full <see cref="IntervalSeconds"/> and then
+	/// a full wind-up of its own, shown from its first frame. <see cref="Prime"/> after it skips only the wait,
+	/// as it always has. RegressionChecks.ValidateQuatrains runs a clock through it on paper.
+	/// </remarks>
+	public bool Cancel()
+	{
+		if (windUpRemaining <= 0f)
+			return false;
+		windUpRemaining = 0f;
+		cooldown = IntervalSeconds;
+		return true;
+	}
 
 	/// <summary>
 	/// Advances the clock one frame. <paramref name="wantsToAttack"/> is the caller's gate - range,
 	/// line of sight, whatever the attack needs - and is only consulted at the moment a wind-up
 	/// would start. Once started, a wind-up always resolves: an attack that could be cancelled by
-	/// stepping away mid-tell would teach the player that the tell means nothing.
+	/// stepping away mid-tell would teach the player that the tell means nothing. (<see cref="Cancel"/> is
+	/// the one exception, and it is the player's spell that calls it, never the attacker's range.)
 	/// </summary>
 	/// <summary>
 	/// Clears the remaining cooldown so the next <see cref="Tick"/> begins a wind-up at once.
@@ -101,7 +143,8 @@ public sealed class AttackTelegraph
 		if (WindUpSeconds <= 0f)
 			return Beat.Resolved;
 
-		windUpRemaining = WindUpSeconds;
+		windUpTotal = WindUpSeconds * (Foreseeable ? Mathf.Max(1f, ForesightScale) : 1f);
+		windUpRemaining = windUpTotal;
 		return Beat.Started;
 	}
 }

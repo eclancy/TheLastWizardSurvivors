@@ -75,6 +75,9 @@ PLAYER_RAMPS = RAMPS + [
     # with them, and \x85, which is whitespace (NEL) to unicode, between the two rows.
     "\x80\x81\x82\x83\x84",
     "\x86\x87\x88\x89\x8a",
+    # lichen - Nostradamus's physician's gown (roster.LICHEN_RAMP), the contract's lichen row worn from its
+    # deep end. \xb0-\xb4: the block left for a new material while \x95-\x9e were held for two other wizards.
+    "\xb0\xb1\xb2\xb3\xb4",
 ]
 
 
@@ -259,7 +262,9 @@ WALK_BOB = {"pyromancer": 2, "stormcaller": 2, "vainamoinen": 2,
             # Lamed by a king: the far leg in its brace hardly bends, so the walk is a heavy one.
             "wayland": 1,
             # A tall old woman's long, slow step under a coat to the ground.
-            "yaga": 1}
+            "yaga": 1,
+            # An old man's measured step under a long physician's gown.
+            "nostradamus": 1}
 
 # The waist. Everything above this row is the same drawing in every frame and only rises with
 # the bob; everything below it is redrawn per frame by the pose function. It is the same row the
