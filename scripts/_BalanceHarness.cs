@@ -1520,6 +1520,10 @@ public partial class _BalanceHarness : Node
 		// The Hungry Hedge (Baba Yaga): how much it has eaten, and how far grown toward its cap.
 		if (player.HungryHedgeFed > 0)
 			GD.Print($"HARNESS HEDGE m={row.Minute} fed={player.HungryHedgeFed} growth={player.HungryHedgeGrowth * 100f:0}%");
+		// The Quatrains (Nostradamus): stars foreseen onto wind-ups, the attacks they stopped, and those struck on elites
+		// and bosses (struck, never stopped).
+		if (Starfall.ForeseenStars > 0)
+			GD.Print($"HARNESS QUATRAINS m={row.Minute} foreseen={Starfall.ForeseenStars} stopped={Starfall.WindUpsStopped} on_elites={Starfall.ForeseenOnElites}");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger
