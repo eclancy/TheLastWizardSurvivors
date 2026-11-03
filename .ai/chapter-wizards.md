@@ -3,7 +3,7 @@
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
-**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **and Baba Yaga, the first second event** (4.1, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other six are not. It covers the ten
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **and Baba Yaga, the first second event** (4.1, "Built"), **Imhotep, the Sands' second event** (4.6, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other five are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Last Bridge and the Court (which holds
 two: Nostradamus, and Ma Liang since the Sketchbook was emptied - 4.8). Tituba (Cursed Dungeon),
@@ -536,6 +536,126 @@ measured and not heard; and the form's numbers - the bot took it at 9.9 minutes,
   `hint_tomb_knock`, slow stone on stone under hissing sand. Lines: *"Far off in the dunes, a slow
   knocking, stone on stone."* / *"The knocking again, from under the sand."* / *"Slower now. It has not
   stopped."*
+
+**Built (2026-11-03, `wip/wizard-imhotep`).** The Sands' second event, after the caravan, through P2's API exactly as
+6.3 wrote it (one line in `SideEventDirector`, a hint by site, deed words, `FromEvent`, a prisoner row). Nothing in P2
+had to change.
+
+- **Him.** `CharacterData_Imhotep.tres`, appended to `CharacterRoster`. Name "Imhotep", id `imhotep`. `roster.imhotep()`:
+  the one figure HOLDING UP A SUN - his near arm raised high, the hand open and palm up under a ball of fire (Fireball,
+  the only light on him), his face turned up to it - upright and still, the opposite figure to Aedan beside him, who
+  strides forward in a red coat with his fire levelled like a spear. A priest's starched white kilt (linen's pale end)
+  to the shin with its triangular front panel standing out, finely pleated; a bare brown chest and arms; the broad
+  collar of his rank, gold beads between rows of lapis (the wool row's deep end); the leopard's pelt a High Priest of Ra
+  wore, over the far shoulder to the near hip, its paw at his hip and its tail behind him; a close lapis cap; and the
+  was-sceptre in his far hand, forked at the foot, the beast's head bent at the top - a staff shaped like no other in
+  the cast. Drawn serious and ALIVE: nothing on him is wrapped, and he is not in ivory or the Sands' sand cloth
+  (`cast_sands.py`), which is what his chapter's dead wear - a priest in their colours would read as one of them, and
+  as the films' mummy. 1.06 edges/px. Sheets written by `build.py`'s wizard loop for this name only. No new material
+  (`\x9a-\x9e` stay free).
+- **His passive, Surveyor** (`pickup_reach_20`): every orb, flask and pickup starts coming to him a fifth further off.
+  `Player.PickupReach` - (the pickup's own reach + every magnet bonus) x 1.2 - is now the one reader both `XPOrb` and
+  `PickupBase` ask, so a reach bonus cannot reach one and miss the other. A share of the whole reach, so it stays a fifth
+  however far magnets and the shop have grown it.
+- **The event** (`TombBeaconsEvent`, `tools/art/tomb_beacons.py`, `world/tomb/`). The tomb - a mastaba front of
+  sandstone courses in gold's dark end, a cornice over the door, sand drifted against both corners, a granite slab with
+  his mark on it, the one cold light, where the far tell stands up from - is the site, swept for through the band on
+  open ground over a 494 px disc. Three beacons on a triangle round it, **700 px a side (404 px out)**, the triangle
+  turned by the site and each walked in or out along its spoke to open ground: a granite pillar on a stepped base with
+  a bronze fire-basket on it. Stand within **100 px** of a cold one for **1.5 s** and it catches (kindling he steps off
+  drains back at half the rate it fills); a lit one burns **25 s**, its flames sinking and guttering for the last **5**,
+  a ring on the ground draining with it, and goes out on the wind - cold again, to be lit again as often as it takes.
+  With all three alight at once the slab slides into the wall (0.5, 1.0, 1.5 s), he climbs up out of the stair
+  (1.7-2.7 s) and is gone into the column of light. The beacons' fire is warm, the wizards' light: a column over each
+  fire, sinking with it, and a faint cold glow on a cold basket so the three can be found before they burn. The arrow
+  points at the tomb while he is away from it, at the nearest cold beacon once he is there (never an order), and at the
+  tomb again while it opens; the objective counts "n of 3 alight" and the seconds left on the soonest to go out. Nothing
+  is a target: the beacons have a trunk's footprint on the blocking layer, as the moot's stones; the tomb blocks
+  nothing (a facade on the sand, like the nine mouths' rock). Both are handed to the run after - the tomb open, the
+  fires burnt to embers. The slab sliding is `impact_earth`, a beacon catching `cast_fire`, one going out `cast_wind`.
+- **His unlock** is the site's derived Road deed, "The Beacons Lit", secret until `stage_6`, counted at the Throne only.
+  Locked hint "Sealed in a dry tomb out on the Scorched Sands."; quest-log prisoner "the builder in the dry tomb", held
+  line "Something knocks, stone on stone, under the sand." His freeing reel: `freed.py` and `Freeings.WizardIds`, only
+  his panel ("Imhotep walks in the sun again.").
+- **His clue.** `HintCue.Sand`, a new last row of `hint-cues.png` (every row before it unchanged, byte for byte): a thin
+  stream of sand lifting off the ground and rising, against the wind, its foot a ribbon breaking into grains as it
+  climbs, with a fainter one beside it - sand, so in earth's pale stops, over his violet glow (violet grains would read
+  as a spell). One on each knock of `hint_tomb_knock`: three knocks of dead stone on stone (a block's low modes, gone in
+  a tenth of a second - not the anvil's ringing steel), the gaps lengthening, under a hiss of running sand that swells
+  after each (`sfx._TOMB_KNOCKS` = `StageHintCue.TombKnocks`). Nearest in the whole set 0.176 (`spell_orbit`). The three
+  lines above, unchanged.
+- **His form**, Eye of Ra (blind, `Fireball.EyeOfRaId`, `Enemy.ApplyBlind`, `SunFlare`). The ball's own burst flares out
+  past its reach to **1.8x** it (**380 px** at most) and every ordinary body in the flare is blinded for **2 s**: it walks
+  on the way it was facing at **45%** of its pace, turning by degrees, under a sun-struck pallor and a stumbling walk, and
+  begins no attack - every attacking subclass asks `IsBlinded` before a wind-up (one already begun still lands:
+  `AttackTelegraph`'s promise), and a planted hold stays planted. Stacking-resistant (the longer, never the sum). Not
+  fear, the dark wizard's Dread: a frightened body runs from him, which still says where he is; a blinded one has no
+  idea. **Elites are struck, not blinded**, as the Quatrains strike rather than stop them: one in the flare but outside
+  the blast is seared for half the hit. **Bosses are neither** (the crowd-control rule). Only the ball's own burst
+  flares - not the Cluster's bomblets, not Brimstone's spit - so it comes on the spell's own beat and blindness is never
+  held on a crowd for good. The flare is drawn to exactly the radius it blinds: a white heart, a ring running out from
+  the blast's edge to the flare's, rays between. No card on Fireball trades Fire away (Iron Comet adds Metal beside it),
+  so every route leads to the form. Its own evolution icon (the ball flaring like the sun over the eye of Ra).
+
+**What moved, and why.**
+
+1. **The light draws the dead** - not in the first guess. "The route through the horde is the puzzle" needs a horde
+   between the fires, and the swarm round a player standing still to kindle is wherever he already was. So when a
+   beacon catches, **six** of the chapter's own come in at it from **420 px** round it (not on the third: then the tomb
+   opens), and the beacon just lit is the worst place to stand.
+2. **Kindling drains back at half its rate** when he steps off, rather than resetting or holding: a body that shoves him
+   out of the reach for a moment costs a moment, not the 1.5 s.
+3. **Elites are seared and bosses untouched**, the question 4.6 left open: an elite that lost him would be a miniboss
+   that stopped (the Fear rule), and "struck, not stopped" is the Quatrains' answer to the same question.
+4. **The flare is capped at 380 px.** At 1.8x an Armageddon Sun's swollen blast (x1.6 area) would blind more than the
+   whole height of a PC screen (about 420 px either side of him).
+5. **A blinded body keeps its contact damage.** It has lost him; it is still a body, and one that blunders into him
+   still hurts. What it loses is every aimed thing: no wind-up, no bolt, no fuse, no summoning.
+6. **The 25 s burn is the first guess, kept.** On paper, the best order through a crowd that leaves him 60% of his walk
+   takes 15 s (`ValidateTombBeacons`), and the probe, walking at his own speed with the swarm cleared, 13.2-13.5 s from
+   arriving to the win; the clock bites only a player held to under a third of his walk, or one who wanders. Whether it
+   has teeth through a real crowd is a playtest question (below).
+
+**Verified:** build; the validator (0 errors, main's 1 warning); `RegressionChecks.ValidateTombBeacons` and
+`ValidateEyeOfRa` (an ordinary body takes a 2 s blind, a second flare does not stack it, an elite or boss takes none; the
+card's "two seconds" is the code's; the flare reaches past the blast). `_ExploreProbe --stage=6`, which KINDLES at his own
+walking speed from beacon to beacon and never teleports onto one: seeds 4242, 31 and 7 `--fresh-save`, 4242
+`--all-unlocked` (the chest), 1001 `--fresh-save --wayfinder-first` - 39 to 45 passed, 0 failed, both Sands events won
+every time, the two sites 149 to 172 degrees apart and 14,151-15,153 px apart, the beacons' nearest pair 700 px, the tomb
+won 12.2-13.5 s after arriving, twelve of the dead drawn to the light, Imhotep freed in memory and his deed recorded by
+his site; the hints alternated caravan and tomb, then the tomb had every slot after the caravan was won.
+`--let-beacon-die` (seeds 31 fresh and 7 `--all-unlocked`): the first beacon went out on the wind 27.8-28.0 s after
+arriving and went cold, and was lit again with the other two (four kindled, eighteen of the dead drawn), won 40.5-41.4 s
+after arriving. (The first seed-7 `--all-unlocked --let-beacon-die` run failed the CARAVAN's furnished-ground comparison,
+"7 then 0", while three other Godot runs of this branch and other sessions' ran beside it; run again alone, 41 passed, 0
+failed - the streamer had not settled, which the check's 2,000-frame wait does not cover under that load.)
+`_UiShot` of the beacons cold and two of them lit, the tomb opening and him climbing out, the clue, the Eye of Ra's flare
+over a stage crowd (`--spell-stage`, the bodies taking the pallor after it), and the character select - "Not yet
+discovered." on a fresh save, his locked hint once the Sands open, freed - at both canvases. `_BalanceHarness --character=N --stage=6
+--minutes=15 --all-unlocked --seek-apotheosis --immortal` (index 16 on this branch), two seeds:
+
+| run | spell gate met | form taken | flares by 15:00 | blinded | elites seared | damage taken a minute, before -> after |
+|---|---|---|---|---|---|---|
+| seed 1234, timescale 6 | 8.9 min (level 17) | 11.9 (level 21) | 40 (13 a minute) | 2,059 (44-53 a flare) | 6 | 914, 628, 927 -> 529, 791, 773 |
+| seed 77, `--timescale=1 --profile=10` | 7.2 (17) | 9.8 (21) | 61 (12 a minute) | 2,348 (about 39 a flare) | 1 | 960, 875 -> 708, 775, 759, 852, 893 |
+
+The flare takes about two in five of the crowd round him each time (alive 120-139, near him 55-83) and holds them two
+seconds of every five; the immortal bot, standing its ground, took 10-20% less a minute after it. Kills a minute fell on
+seed 77 (221 before, 166-212 after): a blinded body wanders out of his auras and the reach of his other spells, which is
+the price of the verb (Fear pays it too). Brimstone was the Ascension on both, so the Cluster's bomblets never flared.
+
+**Frame cost** (seed 77, `--profile=10`, headless, the laptop the harness runs on, with seven Godot processes of other
+sessions on it). In the quiet windows before the form (7.5-9.2 min: 87-115 fps) an enemy step cost 12.2-14.9 us a call
+and the spells section 181-310 us a physics step; after it (14.5-15 min: 70-95 fps) 13.4-15.1 us and 246-294 us, at
+0.4-0.5 KB a frame either side - the blind wander (a turn and a scale, no allocation) costs nothing measurable per body.
+From 9.5 to 13 minutes every section slowed together, to 2-10 fps (an enemy step 73-80 us a call), beginning before the
+form came at 9.8: the machine, as `performance.md` section 5 warns. Not measured on the phone.
+
+**Not verified: whether kindling is fun**, nor whether the 25 s has teeth through a real crowd (the probe clears the swarm
+round itself and walks unhindered), nor whether a player reads that the three must burn TOGETHER before the first one
+goes out on him (the objective says "together" and counts the seconds); the sound, measured and never heard; the sand
+at a glance mid-fight; whether a crowd of wandering, blinded bodies reads as blind rather than as a glitch (the pallor
+and the stumble are the only tells); Surveyor, which the bot's builds never feel; nothing on the phone.
 
 ### 4.7 The Emberdeep - Wayland the Smith
 
