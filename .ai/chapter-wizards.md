@@ -3,7 +3,7 @@
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
-**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **and the Cumaean Sibyl** (4.3, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other seven are not. It covers the ten
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **the Cumaean Sibyl** (4.3, "Built") **and Baba Yaga, the first second event** (4.1, "Built"), **and P2, two events in one chapter** (6.3, "Built"); the other six are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Last Bridge and the Court (which holds
 two: Nostradamus, and Ma Liang since the Sketchbook was emptied - 4.8). Tituba (Cursed Dungeon),
@@ -150,6 +150,108 @@ numbers, the clue, and an alternate where one is worth having.
 - **Locked hint:** "Kept walking in the Enchanted Forest."
 - ~~Alternate: Nimue~~ - **taken by the Throne** (2026-11-02): she is the Throne's kept wizard, the Lady of
   the Lake with Spiritual Weapon's sword (`.ai/endgame-castle.md` decision 11), so she is never offered here.
+
+**Built (2026-11-03, `wip/wizard-babayaga`).** The first chapter wizard held where an event already stood: the walking
+hut is the Forest's second event, after the grove, through P2's API exactly as 6.3 wrote it (one line in
+`SideEventDirector`, a hint by site, deed words, `FromEvent`, a prisoner row). Nothing in P2 had to change.
+
+- **Her.** `CharacterData_BabaYaga.tres`, appended to `CharacterRoster`. Name "Baba Yaga", id `baba_yaga`. `roster.yaga()`:
+  tall, gaunt and iron-grey - the narrowest figure in the cast, stooped a little at the shoulders - in a long coat of
+  linen's dark end (the moss-grey of the deep wood) to the ground, an iron-grey shawl fringed at its point, a kerchief of
+  stone's near-black, her own iron-grey hair long down her back on the far side (the break in her outline that is nobody
+  else's). Her near arm reaches down, long fingers spread over a thorned shoot coming up out of the earth - the only
+  figure whose spell comes from below - and her far hand plants the pestle she steers her mortar with, the club of its
+  head at the top, a thorned vine climbing it with its living tip curling over. The tip and the shoot are grass's ramp,
+  one bead of poison on a thorn: the only light on her. Bone-Leg, as the tales call her: the far foot under the hem is
+  bone. Face set and level, never a grin. 0.88 edges/px. Sheets written by `build.py`'s wizard loop for this name only.
+- **Her passive, Bone Fence** (`knockback_20`): +20% to every shove and pull the player's side gives -
+  `Enemy.PlayerKnockbackScale`, read by `Enemy.ApplyKnockback` and set back to 1 by every `Player._Ready`. The two shoves
+  that are the place's, not his (the Broken Ward pushing the swarm out of its ring, the Court's rooms), now go through
+  `Enemy.ApplyWorldShove`, which it never touches. Her own vine pushes nothing: it is a build's passive.
+- **The event** (`WalkingHutEvent`, `tools/art/walking_hut.py`, `world/hut/`). The hut stands on a 280 px open disc swept
+  for through the band (`EventSiteInBand`, dense) and walks a 200 px circle round it at 45 px/s whenever someone is
+  within 3200 px - "round and round". It begins when he comes within 480 px of the HUT (or of the circle's middle).
+  Within **420 px** it turns its back and **bolts at 1.5x his walk for 2 s** (`Player.WalkingSpeed`, so a wizard with
+  Wings is still outrun), easing to 1.15x as it tires; while he stays that close it strides on at 0.75x; further off it
+  treads its own way at 60 px/s, turning off from him by degrees. A bar fills while he is within **520 px** and holds
+  while he is not; at **30 s** it stops, turns (the side frame), shows its door, kneels, the door opens and she steps
+  out of it toward him (2.35-3.1 s after it tires), and is gone into the column of light. **Water, a wall, a fence or a
+  trunk across the way it wants cuts a bolt short**: it slides off along the first open way at the stride, or stands at
+  bay. Left alone past **1100 px for 3 s** it calms and stands where it is, the bar held - losing it costs nothing, the
+  gold arrow stays on it, and its prints lead back. The circle's middle is marked done once the hunt begins, so the only
+  arrow is the one on the hut. Nothing here is a body: the hut is a sprite y-sorted at its feet, never in "enemies",
+  with no collision layer; it is stopped by the streamer's data (`Node2DGame.IsGroundBlockedAt`), the navigation
+  grid's prop clusters and a one-point physics query on the blocking layer for lone trunks - what stops the player's
+  boots stops its feet. Each fall of a foot plays `impact_earth` there.
+- **The primitive** (section 7): `FleeingMover`, SecretMover inverted - a plain class (`Step(delta, chaser,
+  chaserSpeed)`) so the validator chases it on paper with the game's own rules.
+- **The prints.** Every fall lays a fresh three-toed print (a ring of 96); from two chunks out, three old trails spiral
+  in through the moss to the worn ring of its circle (laid from the placer, so they are the run's; each tested against
+  the ground the first time it is near enough to draw). **Laid toes-back** (`PrintDirection`): a bird's print is an
+  arrow pointing back along its walk, and a player reads an arrow before he reads a foot, so every print points the way
+  it went - they lead to it. Fresh prints carry turned earth and go old after 50 s.
+- **Her unlock** is the site's derived Road deed, "The Hut Run Down", counted at the Throne only. **Not secret**
+  (section 1): a silhouette from the first run, locked hint "Kept walking in the Enchanted Forest." Quest-log prisoner
+  "the one in the walking hut", held line "Something heavy walks the deep wood, round and round." - so the Forest's note
+  carries it from a new save.
+- **Her clue.** `HintCue.Birds`, a new last row of `hint-cues.png` (every row before it unchanged, byte for byte): a bird
+  beating up out of the canopy, four beats near and four further off, in his violet (the hut's far tell, the eye-light in
+  the horse skull on its gable), lifting at the edge on her side and flying out toward her on each beat of
+  `hint_hut_step` - two heavy falls 0.64 s apart and the hut's timbers creaking (`sfx._HUT_FALLS`, `_HUT_CREAK` =
+  `StageHintCue.HutBeats`). Nearest sound in the whole set 0.187 (`spell_explosion`). The three lines above, unchanged.
+  The ground does not shake: the sound's falls carry the tread.
+- **Her form**, The Hungry Hedge (feed, `ThornVine.HungryHedgeId`, `Player.HungryHedge.cs`). A kill counts when a hit whose
+  source is the vine in this form takes the last of an enemy's health - the lash, the Thicket's brambles and the Barbed
+  Lash's thorns all hand over the spell; its poison ticks are the enemy's own and do not. Each cast reads the growth as it
+  comes up (`ThornVine.Feed`): up to **+60% length and +40% arc**, full at **60 kills**, never shrinking. The vine is drawn
+  out of its own length and arc (and its width follows its length), so a fed vine is seen to be bigger. Its own
+  evolution icon (the vine grown over the whole frame, bones at its root). No card on Thorned Vine trades Grass away
+  (Barbed Lash deepens it, Thicket adds Poison beside it), so every route leads to the form.
+
+**What moved, and why.**
+
+1. **The bolt is 1.5x his walk, not 1.3x.** At 1.3 a 2 s bolt gains 132 px, so from just inside the startle radius it
+   never left the 520 px reach: the probe walked straight at it and ran it down in 30.5-33 s on four seeds, a bar of 30.
+   The bolt had no teeth. Modelled at 1.5: rushing it on open ground costs about 8 s out of reach (38 s), rushing it
+   through a crowd at 80% of his walk about 71 s - and shadowing it in the 100 px band between the radii, so it never
+   bolts, is still 30 s. The band is the skill.
+2. **Full growth at 60 kills, not a first guess of 400.** The vine's own last hits are a small share of a run's kills (one
+   spell of six, the poison's not counted): the seek bot's ate 73 in the five minutes after taking the form and ended the
+   run 18% grown. At 60 it ate 25 then 26 then 24 a minute (seed 1234) and 36 then 43 (seed 77) - the bigger it grows the
+   more it eats, which is the verb - and was full by about 13.5 and 11.5 minutes.
+3. **A 96x128 cell, not the boss's 96.** She has to come out of the door, and she is 88 px tall; in a 96-row hut with its
+   legs under it the door is 56 px. 128 rows give the walls 42, the door 34 (68 px: she stoops through it) and the legs
+   48. Render scale is still x2.
+4. **Its back to him the whole time it walks**, whatever way it goes - the tales' "turn your back to the forest, your front
+   to me" - so the walk is drawn from behind only and the door appears when it turns to kneel.
+5. **Lost, it stands** where it is rather than going back to its circle: a hut that walked home across ground nobody has
+   painted would be stopped by nothing, and one that waits is one the prints lead to.
+6. The doc's "Path: the level 4 that deepens Grass, the untagged level 8" went with the named paths on 2026-11-02: the
+   gate is max level, ascended down any branch, never combined, player level 21.
+
+**Verified:** build; the validator (0 errors, main's 1 warning); `RegressionChecks.ValidateWalkingHut` (the radii nest;
+on paper on open ground a straight chase and a band-holding chase both fill the bar inside two minutes and the straight
+one startles it repeatedly; run at a shore it never walks into the water and a bolt is cut short; left 1700 px behind it
+calms and stands; every print column points the way it went; the hint's beats are the sound's; the sheets' sizes).
+`_ExploreProbe --stage=0`, which HUNTS at his own walking speed and never teleports onto it, holding just inside the
+startle radius so it bolts whenever it can: seeds 4242 and 31 `--fresh-save`, 7 `--all-unlocked` (the chest), 1001
+`--fresh-save --wayfinder-first`, and 4242 `--all-unlocked` again on the final build - 40 to 48 passed, 0 failed; both
+events found and won every time, the two sites 133 to 170 degrees apart, the hut 4.6 to 5.5 chunks out; 10 to 12 bolts,
+2 to 6 cut short by the ground, run down 33.5 to 41.0 s after arriving; Baba Yaga freed in memory and her deed recorded by
+her site; the hints alternated grove and hut, then the hut had every slot after the grove was won. `--lose-hut` (seed
+31): at 40% he walked 1600 px off and waited - the bar held at 40.2%, the hut calmed and stood; he walked back, found it
+and ran it down (48.6 s after arriving). `_UiShot` of the hut on its circle, the hunt begun, the clue and the win at both
+canvases, and the character select locked (her silhouette and hint on a new save) and freed at both.
+`_BalanceHarness --character=N --stage=0 --minutes=15 --all-unlocked --seek-apotheosis --immortal` on seeds 1234 and 77:
+the spell gate met at 7.9 and 7.0 minutes (player level 17), the form offered and taken at 10.9 and 9.7 minutes (level
+21); the hedge ate 88 and 181 and was full by the end of both; the vine 18.7% of seed 77's damage.
+
+**Not verified: whether hunting it is fun** - section 7's own question - nor whether the hut reads at a glance through a
+real crowd (the probe clears the swarm round itself), nor whether a player finds the 420-520 band without being told (the
+objective says only "keep up"); the sound, measured and never heard; the birds at a glance mid-fight; the Hungry Hedge's
+effect on a real run (kills a minute are held by the spawn economy at 205-285 either side of the form, so the harness
+cannot see it, and the bot's frame rates were 2-36 fps with other sessions' runs beside it); Bone Fence, which no build
+the bot makes as her uses; nothing on the phone.
 
 ### 4.2 Fallow Fields - Medea
 
