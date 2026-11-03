@@ -37,6 +37,7 @@ So every world effect picks a side from `scripts/DrawLayers.cs`, with `ZAsRelati
 |---|---|---|
 | `Terrain` | -100 | the painted ground |
 | `Decal` | -20 | walkable decoration, scorch marks |
+| `RoomDark` | -18 | a dark chapter's dark (`LightPool`'s room pass, `.ai/light-pool.md`): over the ground, the walls and the decals, under everything on them. Its second, gentler pass sits at `Bodies`, placed 4000 px below the screen so the y-sort draws it after every body and before anything at z 1 or more |
 | `Ground` | -15 | craters, pools, lanes, the maw's pit (crater fire is -14) |
 | `GroundTell` | -1 | warnings and marks painted round a body's feet |
 | `Bodies` | 0 | the player (his node; his body sprite is on `Foremost`), enemies, familiars that walk (the dog, the cat), chests, trees: y-sorted |

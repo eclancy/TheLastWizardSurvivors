@@ -18,7 +18,8 @@ edge to edge, a flat dark-teal ground with soft blotches, about eight bushes, on
 
 ## 1. Light: the player is the lamp (Wizard Survivors)
 
-**The lesson that matters most.**
+**The lesson that matters most.** Prototyped 2026-11-03 for the Cursed Dungeon and the Sunken Cave only
+(Eric: *"The light pool can possibly be used in certain levels? like the dungeons"*): `.ai/light-pool.md`.
 
 - **What they do.** A large warm pool of light sits on the wizard and moves with him. It falls to near-black at
   the screen's edges. Enemies walk out of the dark into it.

@@ -44,6 +44,11 @@ Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like)
   the four inside the prologue, the one-panel freeing reel after the run that frees a chapter's wizard
   (`tools/art/freed.py`, `Freeings`, owed in `SaveData.FreeingsOwed`), and the beats only planned.
   **Read it before adding a cutscene or a wizard a place holds.**
+- `.ai/light-pool.md` — the wizard as the only light, in the chapters with no other (the Cursed Dungeon
+  and the Sunken Cave, `StageEnvironmentProfile.Darkness`): the room pass and the gentler bodies pass and
+  why there are two, warm spells as small lights (`LightPool.Light`), what is never darkened, Reduce
+  Darkness, and `_UiShot --light-probe`, which measures what it does to the swarm's readability. **Read it
+  before giving a chapter darkness, adding a warm spell, or drawing anything between `Decal` and `Bodies`.**
 - `.ai/terrain.md` — the three tile layers and why every cell carries a ground tile even under
   an overlay (it is what lets a shoreline fade into whatever surrounds it), the independent
   `hazard` and `blocking` flags, the four places that have to agree about a blocking terrain,
