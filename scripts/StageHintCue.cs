@@ -30,6 +30,8 @@ using TheOneHeMissed.scripts;
 //                 as they come - a few on each tap of the flask and each cough
 //   the seer      stars twinkling in from his side, a near one and a far one on each line of the verse he
 //                 reads, each flaring once and fading as it drifts in
+//   the tomb      a thin stream of sand lifting off the ground on his side and rising, against the wind - one
+//                 on each slow knock of stone on stone, and a fainter one beside it
 //
 // IN THE WORLD'S LAYERS, HELD TO THE VIEW. The marks are drawn in the world, on the layer over the
 // bodies and under the HUD, so they read as something out there rather than as an interface - but
@@ -114,6 +116,12 @@ public partial class StageHintCue : Node2D
 
 	/// <summary>The seer's hint beats, for RegressionChecks.ValidateQuatrains (a copy).</summary>
 	public static float[] QuatrainLineTimes => (float[])QuatrainLines.Clone();
+	// The dry tomb heard from afar (hint_tomb_knock): three slow knocks of stone on stone, each slower than the last -
+	// tools/audio/sfx.py _TOMB_KNOCKS is the same onsets. A stream of sand lifts on each.
+	private static readonly float[] TombKnocks = { 0.12f, 0.98f, 1.96f };
+
+	/// <summary>The dry tomb's hint beats, for RegressionChecks.ValidateTombBeacons (a copy).</summary>
+	public static float[] TombKnockTimes => (float[])TombKnocks.Clone();
 
 	private struct Mark
 	{
@@ -219,6 +227,7 @@ public partial class StageHintCue : Node2D
 		HintCue.Mist => 116f,
 		HintCue.Vapour => 120f,
 		HintCue.Stars => 100f,
+		HintCue.Sand => 70f,
 		_ => 8f,
 	};
 
@@ -462,6 +471,21 @@ public partial class StageHintCue : Node2D
 				if (nextBeat >= QuatrainLines.Length)
 					clock = -1f;
 				break;
+			case HintCue.Sand:
+				while (nextBeat < TombKnocks.Length && TombKnocks[nextBeat] <= t)
+				{
+					// Shaken loose by the knock: a thin stream lifts off the ground near the line to him and rises -
+					// against the wind, which is the wrong way for sand - with a fainter one a little along the edge.
+					float along = Jitter(36f);
+					Spawn((int)HintCue.Sand, 0, 2.6f, along, 10f + Jitter(6f),
+						inward: 4f, drift: Jitter(6f), rise: 26f, fadeIn: 0.22f);
+					Spawn((int)HintCue.Sand, 4, 2.0f, along + (random.Next(2) == 0 ? -1f : 1f) * (34f + Jitter(10f)), 16f + Jitter(6f),
+						inward: 3f, drift: Jitter(6f), rise: 20f, fadeIn: 0.3f);
+					nextBeat++;
+				}
+				if (nextBeat >= TombKnocks.Length)
+					clock = -1f;
+				break;
 			case HintCue.Bell:
 				// The bell walks along the edge, as the caravan walks its road.
 				if (bellSlot < 0)
@@ -625,6 +649,11 @@ public partial class StageHintCue : Node2D
 				at.Y += Mathf.Sin(m.Age * 2.3f + m.Phase) * 3f;
 				break;
 			}
+			case HintCue.Sand:
+				// The grains running up the stream (four steps, near or thin), and the stream bending a little as it rises.
+				column = (m.Glyph >= 4 ? 4 : 0) + ((int)(m.Age * 9f + m.Phase) % 4);
+				at.X += Mathf.Sin(m.Age * 2.1f + m.Phase) * 3f;
+				break;
 			case HintCue.Writ:
 				// Turning over as it is blown, and lifted and dropped by the draught.
 				column = (m.Glyph + (int)(m.Age * 9f)) % Columns;

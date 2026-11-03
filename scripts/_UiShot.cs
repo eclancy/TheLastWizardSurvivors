@@ -387,6 +387,9 @@ public partial class _UiShot : Node
 	private bool seerRead;
 	private bool seerMoved;
 	private bool seerReadDone;
+	// --beacons-lit=N: with --arrive on the Scorched Sands' dry tomb (--event-index=1), N of its beacons lit (their clocks
+	// staggered) the moment it is begun, so the fires, the clock rings and the objective's count are photographed.
+	private int beaconsLit;
 	// --event-index=N: which of the chapter's events (SideEventDirector.EventsFor; 0 its original, 1 a second -
 	// --second-event-test adds a stand-in one on a tool run) --goto=event, --goto=site:N, --win-event and --arrive
 	// mean. --goto=event:N goes to event N's main site whatever this says.
@@ -1822,6 +1825,8 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--seer-read")
 				seerRead = true;
+			else if (arg.StartsWith("--beacons-lit="))
+				beaconsLit = System.Math.Max(0, int.Parse(arg.Substring("--beacons-lit=".Length)));
 			else if (arg.StartsWith("--event-index="))
 				eventIndex = System.Math.Max(0, int.Parse(arg.Substring("--event-index=".Length)));
 			// --zoom=Z: the run camera's zoom (player.tscn's is 0.85), for a map-like view of a stretch
@@ -3057,7 +3062,13 @@ public partial class _UiShot : Node
 				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector arrival)
 			{
 				eventArrived = true;
-				GD.Print(arrival.Start(eventIndex) is SideEvent begun ? $"_UiShot: {begun.GetType().Name} begun where it stands" : "_UiShot: no event to begin");
+				SideEvent begunEvent = arrival.Start(eventIndex);
+				GD.Print(begunEvent is SideEvent begun ? $"_UiShot: {begun.GetType().Name} begun where it stands" : "_UiShot: no event to begin");
+				if (beaconsLit > 0 && begunEvent is TombBeaconsEvent lighting)
+				{
+					lighting.KindleForPhoto(beaconsLit);
+					GD.Print($"_UiShot: {beaconsLit} of the tomb's beacons lit");
+				}
 			}
 			if (seerLeg >= 0 && !seerMoved && frames >= WarmupFrames / 3 + 2
 				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector seerDirector
@@ -3966,6 +3977,9 @@ public partial class _UiShot : Node
 		// The gibbet's cage, once --escort-at has let him out: a stride ahead of him toward the landing.
 		else if (IsInstanceValid(wonEvent) && wonEvent is GibbetCageEvent && escortStand is Vector2 stand)
 			p.GlobalPosition = stand;
+		// The dry tomb: down and to one side of its door, so he climbs out toward him and the whole front is in frame.
+		else if (IsInstanceValid(wonEvent) && wonEvent is TombBeaconsEvent tombEvent)
+			p.GlobalPosition = tombEvent.StandPoint;
 		else if (IsInstanceValid(wonEvent) && EventSite(wonEvent) is Vector2 site)
 			p.GlobalPosition = site;
 	}
@@ -4083,6 +4097,9 @@ public partial class _UiShot : Node
 				escortStand = gibbet.DebugWalkFrom(along);
 				GD.Print($"_UiShot: let Paracelsus out, {along * 100f:0}% of the way to the landing at {gibbet.Landing}; the player at {escortStand}");
 			}
+			// The dry tomb: its three beacons lit where they stand, and the real opening runs (the slab, him climbing out).
+			else if (wonEvent is TombBeaconsEvent kindled)
+				kindled.KindleForPhoto(TombBeaconsEvent.BeaconCount);
 			else if (progress != null && progress.FieldType == typeof(float))
 				progress.SetValue(wonEvent, 0.999f);
 			else

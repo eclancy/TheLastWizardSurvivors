@@ -109,7 +109,8 @@ public partial class LungerEnemy : Enemy
 		if (recoveryRemaining > 0f)
 			recoveryRemaining = Mathf.Max(0f, recoveryRemaining - delta);
 
-		switch (lunge.Tick(delta, WantsToLunge()))
+		// Blinded (Enemy.ApplyBlind, the Eye of Ra): it has lost him, so it begins nothing; one already begun still lands.
+		switch (lunge.Tick(delta, WantsToLunge() && !IsBlinded))
 		{
 			case AttackTelegraph.Beat.Started:
 				PlayAttackAnimation();

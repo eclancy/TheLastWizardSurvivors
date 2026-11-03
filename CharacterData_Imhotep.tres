@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_Fireball.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/imhotep-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/ImhotepFrames.tres" id="4"]
+
+; Rescued, not a starter: the Scorched Sands' chapter wizard, freed by kindling the three signal beacons round his
+; tomb at once (.ai/chapter-wizards.md 4.6). Architect of the first pyramid, physician, High Priest of Ra. His
+; passive is Surveyor, the one axis no other wizard owns: the reach at which orbs and pickups come to him (+20%).
+; He opens on Fireball, the Long Coil's deed, pure Fire - which he shares with the Pyromancer (R1: their spells
+; differ). The form deepens Fire.
+[resource]
+script = ExtResource("1")
+Id = "imhotep"
+Name = "Imhotep"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "pickup_reach_20"
+StartingPassiveName = "Surveyor"
+StartingPassiveDescription = "+20% pickup reach"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

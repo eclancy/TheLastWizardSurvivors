@@ -69,6 +69,8 @@ public static class CharacterVisuals
 			// The star kindled at the heart of the armillary sphere he holds up (roster.py, nostradamus()): where
 			// Starfall's light is, not the brass rings round it.
 			case "nostradamus": return new Vector2(12, 5);
+			// The sun resting on his raised palm (roster.py, imhotep()): Fireball leaves from it.
+			case "imhotep": return new Vector2(38, 5);
 			default: return null;
 		}
 	}
@@ -103,6 +105,7 @@ public static class CharacterVisuals
 			case "morgan":
 			case "paracelsus":
 			case "nostradamus":
+			case "imhotep":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

@@ -87,7 +87,8 @@ public partial class SummonerEnemy : Enemy
 	{
 		PruneDeadMinions();
 
-		switch (summon.Tick(delta, CanSummon()))
+		// Blinded (Enemy.ApplyBlind, the Eye of Ra): it has lost him, so it begins nothing; one already begun still lands.
+		switch (summon.Tick(delta, CanSummon() && !IsBlinded))
 		{
 			case AttackTelegraph.Beat.Started:
 				PlayAttackAnimation();

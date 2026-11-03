@@ -86,6 +86,9 @@ public static class QuestLog
 		// The seer kept in the Court to read what is coming - and what is coming is the player (4.10). Heard reading,
 		// room to room, never seen until the third.
 		new Prisoner("nostradamus", "the reader in the house", "Somewhere in the house a voice is reading aloud.", "{0} has closed his book."),
+		// The builder who could find water in the desert and raise it, sealed in a dry tomb beside the road the water
+		// left (4.6). He is heard knocking under the sand.
+		new Prisoner("imhotep", "the builder in the dry tomb", "Something knocks, stone on stone, under the sand.", "{0} walks in the sun again."),
 		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
 		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.

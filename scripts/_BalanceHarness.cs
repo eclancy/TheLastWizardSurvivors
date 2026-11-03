@@ -1534,6 +1534,15 @@ public partial class _BalanceHarness : Node
 		// and bosses (struck, never stopped).
 		if (Starfall.ForeseenStars > 0)
 			GD.Print($"HARNESS QUATRAINS m={row.Minute} foreseen={Starfall.ForeseenStars} stopped={Starfall.WindUpsStopped} on_elites={Starfall.ForeseenOnElites}");
+		// The Eye of Ra (Imhotep): flares so far, bodies blinded by them, elites seared instead, and how many are blind now.
+		if (Fireball.FlaresThisRun > 0)
+		{
+			int blindNow = 0;
+			foreach (Enemy e in EnemyRegistry.Snapshot)
+				if (IsInstanceValid(e) && e.IsBlinded)
+					blindNow++;
+			GD.Print($"HARNESS EYE m={row.Minute} flares={Fireball.FlaresThisRun} blinded={Fireball.BlindedThisRun} seared={Fireball.ElitesSearedThisRun} blind_now={blindNow}");
+		}
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger
@@ -3716,6 +3725,9 @@ public partial class _BalanceHarness : Node
 		// The Dose (Paracelsus): carriers by generation, and the last carriers, each sixteen times dosed.
 		if (Contagion.DoseInfectedByGeneration[1] > 0)
 			lines.Add($"  the dose: carriers by generation {string.Join("/", Contagion.DoseInfectedByGeneration)}, {Contagion.LastCarriersDosed} last carriers finished");
+		// The Eye of Ra (Imhotep): how often it flared and what it blinded.
+		if (Fireball.FlaresThisRun > 0)
+			lines.Add($"  the eye of ra flared {Fireball.FlaresThisRun} times, blinded {Fireball.BlindedThisRun}, seared {Fireball.ElitesSearedThisRun} elites");
 		lines.AddRange(SpellLevelLines());
 		lines.Add("");
 		lines.Add(AscensionSummaryLine());

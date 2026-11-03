@@ -254,6 +254,22 @@ public static class ApotheosisCatalog
 				"Foresee: it falls before they strike. Elites and bosses are struck, never stopped.",
 				new Color(0.84f, 0.80f, 1.0f), NoVisualScale),
 		},
+		// Imhotep, freed by kindling the three beacons round his dry tomb on the Scorched Sands (.ai/chapter-wizards.md 4.6).
+		// "Blind" was nobody's: the High Priest of Ra lifts the sun on his palm, and his blast flares like it - whatever sees
+		// it loses him for two seconds and wanders (Fireball.EyeOfRaId, Enemy.ApplyBlind). Not fear (the dark wizard's
+		// Dread): a frightened body runs from him, a blinded one has no idea where he is. Elites are seared by the flare
+		// instead, and bosses never lose him (the crowd-control rule). Fire, Fireball's only element; no card on it trades
+		// Fire away (Iron Comet adds Metal beside it). Scale reaches the ball (EvolutionStatReaders), so the form keeps the
+		// usual lift.
+		new()
+		{
+			CharacterId = "imhotep", SpellId = "fireball",
+			Element = Element.Fire, Verb = "blind",
+			Form = Make(Fireball.EyeOfRaId, "Eye of Ra", Element.Fire,
+				"The blast flares like the sun. Whatever sees it loses you for two seconds and wanders.",
+				"Blind: what sees it forgets you. Elites are seared by the flare instead; bosses never lose you.",
+				new Color(1.0f, 0.93f, 0.62f)),
+		},
 		// The dark wizard, taken on the hardest road (.ai/dark-wizard-playable.md). "Take" was nobody's, and it is
 		// his verb in the fight and in the story: whatever his lanes kill gives up its light too, and it comes
 		// home to be caught in its turn (TakingLanes; TakenLight.MaxInAir in the air at most). Nothing moves the

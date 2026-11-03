@@ -284,6 +284,7 @@ public static class AchievementDefinitions
 		("nine_mouths", "The True Mouth", "Find the one mouth of nine her voice comes out of first, in the Sunken Cave.", "Frees The Cumaean Sibyl"),
 		("the_thaw", "Out of the Ice", "Thaw the wizard out of the ice in the Frozen Waste.", "Frees Väinämöinen"),
 		("caravan_master", "The Caravan Stopped", "Catch the caravan master on the Scorched Sands road.", "Unlocks Iron Palisade"),
+		("tomb_beacons", "The Beacons Lit", "Light the three beacons round the dry tomb on the Scorched Sands, all at once.", "Frees Imhotep"),
 		("great_anvil", "The Chains Struck", "Bring the forge's own hammers down on the four chains in the Emberdeep.", "Frees Wayland the Smith"),
 		("the_barge", "Kept Pace", "Keep level with the barge under the Last Bridge all the way to its landing.", "Frees Morgan le Fay"),
 		("seers_voice", "The Last Reading", "Follow the voice reading room to room through the Court until you find the reader.", "Frees Nostradamus"),

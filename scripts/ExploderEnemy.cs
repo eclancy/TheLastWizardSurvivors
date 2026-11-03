@@ -89,7 +89,8 @@ public partial class ExploderEnemy : Enemy
 			&& IsInstanceValid(target)
 			&& GlobalPosition.DistanceTo(target.GlobalPosition) <= BlastRadius * TriggerRadiusMultiplier;
 
-		switch (blast.Tick(delta, inTriggerRange))
+		// Blinded (Enemy.ApplyBlind, the Eye of Ra): it has lost him, so it begins nothing; one already begun still lands.
+		switch (blast.Tick(delta, inTriggerRange && !IsBlinded))
 		{
 			case AttackTelegraph.Beat.Started:
 				PlayAttackAnimation();

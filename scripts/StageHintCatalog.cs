@@ -42,6 +42,8 @@ public enum HintCue
 	Vapour,
 	/// <summary>Stars twinkling in, one on each line of a verse read aloud (the seer's voice in the Court).</summary>
 	Stars,
+	/// <summary>A thin stream of sand lifting into the air against the wind, on each knock of stone on stone (the dry tomb).</summary>
+	Sand,
 }
 
 /// <summary>One side event's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
@@ -305,6 +307,22 @@ public static class StageHintCatalog
 				"A boat on the water below, where no boat could be.",
 				"The boat again, nearer the bridge.",
 				"Its lantern is still lit.",
+			},
+		},
+		// Imhotep, sealed in a dry tomb on the Scorched Sands (.ai/chapter-wizards.md 4.6). He is heard knocking - slow,
+		// stone on stone, under the hiss of sand - and on each knock a thin stream of sand lifts into the air on his
+		// side, against the wind. Not named; never said who knocks, or what would open it.
+		new()
+		{
+			SiteId = "tomb_beacons",
+			Voice = HintVoice.Sound,
+			Sound = SfxCatalog.HintTombKnock,
+			Cue = HintCue.Sand,
+			Lines = new[]
+			{
+				"Far off in the dunes, a slow knocking, stone on stone.",
+				"The knocking again, from under the sand.",
+				"Slower now. It has not stopped.",
 			},
 		},
 	};

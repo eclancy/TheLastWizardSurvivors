@@ -62,7 +62,8 @@ public partial class XPOrb : Area2D
 			float dynamicAttractDistance = AttractDistance;
 			if (player is Player typedPlayer)
 			{
-				dynamicAttractDistance += typedPlayer.MagnetBonus;
+				// Every magnet bonus and Surveyor's share of the whole (Player.PickupReach).
+				dynamicAttractDistance = typedPlayer.PickupReach(AttractDistance);
 			}
 
 			var dist = GlobalPosition.DistanceTo(player.GlobalPosition);

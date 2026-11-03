@@ -96,7 +96,8 @@ public partial class SlammerEnemy : Enemy
 			&& IsInstanceValid(target)
 			&& GlobalPosition.DistanceTo(target.GlobalPosition) <= SlamRadius * SlamEngageRadiusMultiplier;
 
-		switch (slam.Tick(delta, inRange))
+		// Blinded (Enemy.ApplyBlind, the Eye of Ra): it has lost him, so it begins nothing; one already begun still lands.
+		switch (slam.Tick(delta, inRange && !IsBlinded))
 		{
 			case AttackTelegraph.Beat.Started:
 				PlayAttackAnimation();

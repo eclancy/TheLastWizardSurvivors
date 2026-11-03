@@ -61,6 +61,8 @@ public partial class Fireball : Area2D
 	public const string IronCometId = "fireball_comet";
 	public const string HellfireNovaId = "fireball_hellfire_nova";
 	public const string ArmageddonSunId = "fireball_armageddon_sun";
+	// Imhotep's Apotheosis (.ai/chapter-wizards.md 4.6, ApotheosisCatalog): the blast flares like the sun (FlareEyeOfRa).
+	public const string EyeOfRaId = "fireball_eye_of_ra";
 	// The old sprite's flame radius at a visual scale of 1: its outer disc, 8 art px of a 32 px cell at x2.
 	private const float BodyPerVisualScale = 16f;
 	private ShaderMaterial material;
@@ -256,12 +258,76 @@ public partial class Fireball : Area2D
 
 		LeaveMagmaPool();
 		ScatterClusterBombs();
+		if (SpellData?.HasEvolution(EyeOfRaId) == true)
+			FlareEyeOfRa();
 		// Brimstone (Hellfire Nova's id, BrimstoneLayer): a lump of it left burning in the blast.
 		if (SpellData?.HasEvolution(HellfireNovaId) == true && PlayerRef is Player stoneOwner && GetParent() is Node2D stoneArena)
 			BrimstoneLayer.Lay(stoneArena, stoneOwner, SpellData, GlobalPosition, explosionRadius, damage);
 
 		var timer = GetTree().CreateTimer(0.4);
 		timer.Timeout += () => { if (IsInstanceValid(this)) QueueFree(); };
+	}
+
+	// THE EYE OF RA (Imhotep's Apotheosis, the verb "blind"; .ai/chapter-wizards.md 4.6): "The blast flares like the sun.
+	// Whatever sees it loses you for two seconds and wanders." The burst flares out past its own reach to
+	// FlareRadiusShare of it (MaxFlareRadius at most, so an Armageddon Sun's swollen blast does not blind the whole
+	// screen), and every ordinary body in the flare is blinded for BlindSeconds (Enemy.ApplyBlind): it loses him, wanders
+	// at a feeling pace and begins no attack. ELITES ARE STRUCK, NOT BLINDED, as the Quatrains strike rather than stop
+	// them: one in the flare but outside the blast is seared by it for FlareSearShare of the hit (one in the blast has
+	// had the blast). BOSSES ARE NEITHER: a boss never loses him (the crowd-control rule), and the flare adds nothing to
+	// the blast it takes like anyone. Only the ball's own burst flares - not the Cluster's bomblets, not Brimstone's
+	// spit - so the flare comes on the spell's own beat, and blindness can never be held on a crowd for good.
+	public const float FlareRadiusShare = 1.8f;
+	public const float MaxFlareRadius = 380f;
+	public const float BlindSeconds = 2f;
+	public const float FlareSearShare = 0.5f;
+
+	/// <summary>The Eye of Ra's tallies this run, for _BalanceHarness (reset by every Player._Ready).</summary>
+	public static int FlaresThisRun, BlindedThisRun, ElitesSearedThisRun;
+
+	public static void ResetEyeOfRaTallies()
+	{
+		FlaresThisRun = 0;
+		BlindedThisRun = 0;
+		ElitesSearedThisRun = 0;
+	}
+
+	/// <summary>How far an Eye of Ra flare reaches for a blast of <paramref name="blastRadius"/>.</summary>
+	public static float FlareRadiusFor(float blastRadius) => MathF.Min(MaxFlareRadius, blastRadius * FlareRadiusShare);
+
+	private void FlareEyeOfRa()
+	{
+		float flare = FlareRadiusFor(explosionRadius);
+		float flare2 = flare * flare;
+		float blast2 = explosionRadius * explosionRadius;
+		Vector2 at = GlobalPosition;
+		Player player = PlayerRef as Player;
+		int sear = Math.Max(1, Mathf.RoundToInt(damage * FlareSearShare));
+		FlaresThisRun++;
+		foreach (Enemy e in EnemyRegistry.Snapshot)
+		{
+			if (!IsInstanceValid(e) || e.IsDying)
+				continue;
+			float d2 = e.GlobalPosition.DistanceSquaredTo(at);
+			if (d2 > flare2 || e is BossEnemy)
+				continue;
+			if (e.IsMiniBoss)
+			{
+				if (d2 > blast2 && player != null && IsInstanceValid(player))
+				{
+					player.DealDamageToEnemy(e, sear, source: SpellData);
+					ElitesSearedThisRun++;
+				}
+				continue;
+			}
+			bool was = e.IsBlinded;
+			e.ApplyBlind(BlindSeconds);
+			if (!was && e.IsBlinded)
+				BlindedThisRun++;
+		}
+		// The flare itself, drawn out to exactly the reach it blinds: the arena's, since this node frees itself first.
+		if (GetParent() is Node2D arena)
+			SunFlare.Spawn(arena, at, explosionRadius, flare);
 	}
 
 	// Pyroclasm (Effect Burn = seconds): the blast leaves a pool of magma that burns what stands in

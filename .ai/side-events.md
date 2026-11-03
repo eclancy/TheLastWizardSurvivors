@@ -21,6 +21,7 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 | Mystic Ruins | **The Five-Pointed Seal** (`FivePointedSealEvent`) | "The old wards were broken from the inside." | **solve**: four guardian stones round a star cut in a courtyard floor; a step onto a stone's plate turns it and the two beside it a quarter (a puzzle, six to twelve presses, always solvable); all four facing the seal breaks it | Abe no Seimei |
 | Frozen Waste | **The thaw** (`ThawEvent`) | "A wizard lies under the ice." | **fight here**: damage dealt near the block thaws it, fire counts triple | Väinämöinen |
 | Scorched Sands | **The caravan master** (`CaravanMasterEvent`) | "The dead still walk the trade road." | **catch**: a walker on a fixed road that never turns toward you and escapes at the end | Iron Palisade |
+| Scorched Sands (second) | **The dry tomb** (`TombBeaconsEvent`) | "He hid the water." | **kindle**: three cold beacons on the dunes 700 px apart round a sealed tomb; stand by one 1.5 s to light it, a lit one burns 25 s before the wind puts it out, and the light draws six of the dead in at it. All three alight at once and the slab slides aside. Any order | Imhotep |
 | The Emberdeep | **The great anvil** (`GreatAnvilEvent`) | "His forge, at the end of the road." | **bait**: four chains staked out from the anvil Wayland is chained to; only the forge's own Trip-Hammers break them - a slam that lands on a stake breaks its chain | Wayland the Smith |
 | The Court | **The seer's voice** (`SeersVoiceEvent`) | "A court with no one left in it." | **seek**: a voice reads aloud from one of the house's rooms (the seed's); reach the reading place and he is gone - an open book, a candle still lit - and the voice reads from another room; the third time he is at his desk. Heard, never pointed at: the voice, the stars of its cue and the line it reads come from the room's side, and the walls bend the way there | Nostradamus |
 
@@ -112,6 +113,7 @@ All five events resolve through `SideEvent.Succeed`, so all five now get the sam
 | Snuff the lanterns | Contagion (spell) | a chest | "The lanterns are dark - the tender's chest is yours" |
 | The thaw | Väinämöinen (wizard) | a chest | "The ice gives up a chest" |
 | The caravan master | Iron Palisade (spell) | a chest | "The caravan master falls - his chest is yours" |
+| The dry tomb | Imhotep (wizard) | a chest | "The tomb stands open - a chest was left on its stair" |
 | The Five-Pointed Seal | Abe no Seimei (wizard) | a chest | "The seal is broken - a chest was left inside it" |
 | The great anvil | Wayland the Smith (wizard) | a chest | "The chains are broken - a chest was left at the anvil" |
 | The nine mouths | the Cumaean Sibyl (wizard) | a chest | "Her mouth falls quiet - a chest was left in it" |
@@ -385,6 +387,7 @@ player walked toward the sound. Fixed slots, no allocation.
 | the lanterns | cold flames rising, flickering, guttering | the flare |
 | the thaw | **the song's notes**, laid along the edge in the order sung, higher notes further in, each leaving a frost glint | each sung note (`sfx._ICE_SONG` = `StageHintCue.IceSongNotes`) |
 | the caravan | the bell walking along the edge, swinging, ringing out either side | each strike |
+| the tomb | a thin stream of sand lifting off the ground and rising against the wind, its foot a ribbon breaking into grains, and a fainter one beside it - sand, so in earth's pale stops, over his violet glow | each knock of stone on stone (`sfx._TOMB_KNOCKS` = `StageHintCue.TombKnocks`) |
 | the seal | strips of written paper, violet, tumbling in and falling, charring at both ends in their second half | each gust (`sfx._PAPER_GUSTS` = `StageHintCue.PaperGusts`) |
 | the mouths | written leaves, pale with blue ink, blown in flat and fast on a cold draught, the first on the line to her | each voice of the call (`sfx._SIBYL_VOICES` = `StageHintCue.SibylVoices`) |
 | the hut | birds lifting out of the canopy in his violet light, beating up and away out toward her, near ones and far smaller ones | each fall of its feet and its timbers' creak (`sfx._HUT_FALLS`, `_HUT_CREAK` = `StageHintCue.HutBeats`) |
@@ -419,6 +422,7 @@ question. `RegressionChecks.ValidateStageHints` warns on any line that contains 
 | Blighted Swamp | `bog_lanterns` | sound | `hint_lantern_flare` (wisp) | "Far off, a cold light flares and gutters." / "The cold light again. Nothing living lit it." / "It is still burning out there." |
 | Frozen Waste | `the_thaw` | sound (Väinämöinen, unnamed) | `hint_ice_song` (song) | "The ice groans. Under it, faintly, someone is singing." / "The song again, slow and deep, from under the ice." / "The singing is weaker now." |
 | Scorched Sands | `caravan_master` | sound | `hint_caravan_bell` (bell) | "A caravan bell, somewhere out on the sand." / "The bell again. Something walks the old road." / "The bell is still moving. It does not stop." |
+| Scorched Sands | `tomb_beacons` | sound (Imhotep, unnamed) | `hint_tomb_knock` (sand) | "Far off in the dunes, a slow knocking, stone on stone." / "The knocking again, from under the sand." / "Slower now. It has not stopped." |
 | Mystic Ruins | `five_pointed_seal` | sound (Abe no Seimei, unnamed) | `hint_paper_wind` (paper) | "Strips of paper on the wind, in a hand you do not know." / "More paper, burning at the edges as it falls." / "Still the paper comes, from the same quarter." |
 | The Emberdeep | `great_anvil` | sound (Wayland the Smith, unnamed) | `hint_anvil` (sparks) | "Hammer on anvil, slow and steady, somewhere below." / "The hammer again. Whoever swings it is very tired." / "It does not stop. It is not allowed to." |
 | Sunken Cave | `nine_mouths` | sound (the Cumaean Sibyl, unnamed) | `hint_sibyl_voice` (writ) | "Leaves on a cold draught, every one written on." / "A woman's voice from far down, in more places than one." / "The leaves again, written faster now." |
@@ -597,6 +601,11 @@ chapter's line in `SideEventDirector` is a list, its original event first:
   on **Starfall**, Light (R1: Seimei and Merlin hold Light on other spells). Passive *Foresight*: every ordinary
   enemy's wind-up shows 15% longer. Freed by seeking his voice through the Court, its first event; secret until the
   Court opens, counted at the Throne's gate only. The last frame of the Gallery's portraits is always his.
+- **Imhotep** (2026-11-03), architect of the first pyramid, physician and High Priest of Ra: a priest's white kilt, a
+  bare brown chest under a broad collar of gold and lapis, a leopard's pelt over one shoulder, a close lapis cap, the
+  was-sceptre planted, and the sun lifted on his palm. Opens on **Fireball**, the Long Coil's deed (Fire, shared with
+  the Pyromancer: R1, their spells differ). Passive *Surveyor*: +20% pickup reach. Freed by lighting the three beacons
+  round his dry tomb at once, the Sands' second event; secret until the Sands open; counted at the Throne's gate only.
 
 Both wear **no player pigment**. The four saturated rows are the starters'. The rescued wear what
 they were held in, so the only saturated thing on them is their staff head. Sprites are in
@@ -619,6 +628,7 @@ A wizard's card on the character select is in one of three states (`CharacterSel
 **The rescued wizards are secret until the chapter that holds them opens**: Tituba until the
 Cursed Dungeon (`stage_1`, opened by beating Elderbark), Väinämöinen until the Frozen Waste
 (`stage_5`), Abe no Seimei until the Mystic Ruins (`stage_4`), Wayland the Smith until the Emberdeep (`stage_7`), the Cumaean Sibyl until the Sunken Cave (`stage_2`), Morgan le Fay until the Last Bridge (`stage_11`). The reveal is data: `UnlockDefinition.IsSecret` and `RevealStageId`, set through
+(`stage_5`), Abe no Seimei until the Mystic Ruins (`stage_4`), Wayland the Smith until the Emberdeep (`stage_7`), the Cumaean Sibyl until the Sunken Cave (`stage_2`), Imhotep until the Scorched Sands (`stage_6`). The reveal is data: `UnlockDefinition.IsSecret` and `RevealStageId`, set through
 `DiscoveryCharacter(..., secretUntilStage:)`. Why that condition:
 
 - Before the chapter opens the player cannot act on anything about him, and the stage list does
