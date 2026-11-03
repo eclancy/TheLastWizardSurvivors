@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The story-mode prologue: six illustrated panels, drawn by code on the Bonelight contract.
+"""The story-mode prologue: eight illustrated panels, drawn by code on the Bonelight contract.
 
     python tools/art/prologue.py              # every panel, written to assets/bonelight/ui/prologue/
     python tools/art/prologue.py moot throne  # only these panels
@@ -1440,6 +1440,296 @@ def p_missed():
     return layers
 
 
+# --------------------------------------------------------------------------- the freeing
+# THE FREEING (Eric, 2026-11-02: "We need to add cutscenes to help the player identify with the blue
+# robed character. Include a cutscene where the blue robed wizard frees the four starting wizards.").
+# Two panels between the hiding and the road: the Archmage - the one he missed, the playable starter -
+# goes back for the four he could reach, the disciplines a fresh save plays, and breaks the dark
+# wizard's chain off them (animated, BREAK_BOX); then the five of them stand together with their lights
+# back. Then the road, and the character select, where all five are the player's to choose. See
+# .ai/cutscenes.md.
+#
+# The four kneel where the hiding's row of stones stood and stand up in the same places in the next
+# panel, so the dissolve between them is the one moment they rise. The order, left to right, is the
+# same in both: Pyromancer, Geomancer, him, Frostweaver, Stormcaller. The fire is outermost: inside, the
+# Pyromancer's lantern, held out in front of him, came back to light behind the Archmage's staff.
+FREED_FOUR = [(PYRO, 342, 524, 88, 1), (GEO, 404, 536, 94, 1), (FROST, 556, 536, 94, -1), (STORM, 618, 524, 88, -1)]
+# Where he stands in both: the title's figure, his feet above row 560 so the PC's caption band
+# (rows ~558-578) never crosses them.
+HIM_X, HIM_Y, HIM_H = 480, 548, 112
+
+# The chain's breaking is the panel's one moving part: a box of its mid layer swapped on a clock, the
+# hiding's way (write_anim). Every edge a multiple of 8, so the dissolve's Bayer threshold, taken from the
+# atlas's own pixel, matches the mid layer's under it.
+BREAK_BOX = (288, 384, 672, 576)
+BREAK_FPS = 8
+# The panel's hold in Prologue.cs (Beats, "break"); the frames cover it, the last held after.
+BREAK_SECONDS = 5.4
+
+# The pigment each element's light lands on (the lessons' halos): a pool under a wizard is the colour
+# his light makes of the ground, never his element's own ramp.
+HALO = {"fire": M["ember"], "ice": M["azure"], "lightning": G, "earth": M["amber"], "water": M["azure"],
+        "grass": M["verdant"], "light": G, "metal": ST, "arcane": AR, "wind": LI, "darkness": V}
+
+
+def _figure_box(who, strip, frame, cx, yb, h, facing):
+    """Where roster_figure puts a wizard's drawn pixels, as (x0, y0, x1, y1) in frame pixels, without
+    drawing him: what the chain is fastened to. A kneeling frame stands lower than his height says."""
+    s = Cv(FW, FH)
+    roster_figure(s, who, cx, yb, h, [OCC, OCC], strip=strip, frame=frame, facing=facing, lit=False)
+    box = s.img.getbbox()
+    return box or (cx - 10, yb - h, cx + 10, yb)
+
+
+def _wrist(who, strip, frame, cx, yb, h, facing):
+    """The point the chain holds him by: his front, a little over half way down what is drawn of him."""
+    x0, y0, x1, y1 = _figure_box(who, strip, frame, cx, yb, h, facing)
+    y = y0 + (y1 - y0) * 0.56
+    return ((x1 - 4) if facing > 0 else (x0 + 4), y)
+
+
+def _chain_pts(a, b, n=40, sag=8.0):
+    return [(a[0] + (b[0] - a[0]) * (k / float(n - 1)),
+             a[1] + (b[1] - a[1]) * (k / float(n - 1)) + math.sin(k / float(n - 1) * math.pi) * sag)
+            for k in range(n)]
+
+
+def _chain(c, pts, colors=(DK[2], DK[1])):
+    """One length of his chain: a line of his light, every third link brighter (the procession's), with
+    its own shadow under it - one pixel was a thread at a phone's size."""
+    for k, (x, y) in enumerate(pts):
+        c.set(x, y + 1, DK[3])
+    for k, (x, y) in enumerate(pts):
+        c.set(x, y, colors[1] if k % 3 == 0 else colors[0])
+
+
+def _shackle(c, x, y, col):
+    c.ring(x, y, 2.2, 2.2, col, 1)
+    c.set(x, y - 2, DK[0] if col == DK[1] else col)
+
+
+# The breaking, in panel seconds: his light banked, then up; the length behind him goes first, then the
+# outer two, then the shackles; then each of them takes his own light back, one after another.
+BREAK_LIGHT_UP = 1.3
+BREAK_AT = [2.0, 2.25, 2.25]          # the middle length, the left, the right
+SHACKLES_AT = 2.5
+RELIGHT_AT = [3.2, 3.5, 3.8, 4.1]     # FREED_FOUR's order
+
+
+def _fragments(c, pts, burst, t, seed, ground):
+    """A length of chain bursting at `burst` (x) at time t after it broke: each link flies away from the
+    break and up, its light going out as it goes - the darkness ramp down to the violet it lit, then
+    nothing - and one link in four comes down dead on the ground, in occlusion, and stays."""
+    rng = random.Random(seed)
+    for (x, y) in pts:
+        side = 1.0 if x >= burst else -1.0
+        near = max(0.0, 1.0 - abs(x - burst) / 90.0)
+        vx = side * (20 + rng.random() * 50) * (0.4 + near)
+        vy = -(30 + rng.random() * 60) * (0.3 + near)
+        life = 0.45 + rng.random() * 0.5
+        dead = rng.random() < 0.25
+        px_ = x + vx * t
+        py_ = y + vy * t + 140 * t * t
+        if dead:
+            gy = ground + rng.random() * 6
+            if py_ >= gy:
+                c.set(px_, gy, OCC)
+                c.set(px_ + side, gy, S[4])
+                continue
+        if t > life:
+            continue
+        a = t / life
+        col = DK[0] if a < 0.18 else (DK[1] if a < 0.4 else (DK[2] if a < 0.62 else (DK[3] if a < 0.82 else V[3])))
+        c.set(px_, py_, col)
+        if a < 0.4:
+            c.set(px_ + side, py_, DK[2])
+
+
+def _flare(c, x, y, t):
+    """His light coming up through the panel, as an extra bloom over the staff's own: nothing while it is
+    banked, a burst with rays as he breaks the chain, settling to a lantern's glow. The light ramp is
+    his - the ward's colour - and the only warm light until theirs come back."""
+    if t < BREAK_LIGHT_UP:
+        return
+    # Only the burst: once it has passed, the staff's own glow (hero.wizard_hero) is all the light there
+    # is. A bloom left standing over it was a yellow ball twice the orb's size.
+    peak = max(0.0, 1.0 - abs(t - (BREAK_AT[0] + 0.05)) / 0.75)
+    if peak <= 0.0:
+        return
+    r = 6 + 20 * peak
+    c.radial(x, y, r * 1.6, r * 1.6, [LT[3], LT[3], None])
+    c.radial(x, y, r * 0.6, r * 0.6, [LT[1], LT[2], LT[3], None])
+    if peak > 0.15:
+        rng = random.Random(7)
+        rays = 28
+        for i in range(rays):
+            a = i * 6.28318 / rays + rng.random() * 0.12
+            ln = (40 + rng.random() * 70) * peak
+            for d in range(int(r * 0.9), int(r * 0.9 + ln)):
+                if (d + i) % 3 == 0:
+                    continue
+                c.set(x + math.cos(a) * d, y + math.sin(a) * d, LT[2] if d < r + ln * 0.4 else LT[3])
+
+
+def _break_frame(t, him):
+    """The whole mid layer inside BREAK_BOX at panel time t."""
+    c = Cv(FW, FH)
+    hx, hy = him["head"]
+    lit = t >= BREAK_LIGHT_UP
+    # The ground his light finds: gold pigment under him, growing as it comes up.
+    if lit:
+        k = min(1.0, (t - BREAK_LIGHT_UP) / 0.5)
+        c.radial(HIM_X, HIM_Y + 2, 70 + 80 * k, 18 + 18 * k, [G[2], G[3], G[3], G[4], G[4], None])
+    wrists = []
+    for i, (who, x, y, h, f) in enumerate(FREED_FOUR):
+        relit = t >= RELIGHT_AT[i]
+        coming = RELIGHT_AT[i] - 0.6 <= t < RELIGHT_AT[i]
+        # Their own light coming back to them, out of the sky it was drawn into, just before it lights.
+        if coming or relit:
+            ax, ay = light_at(who, x, y, h, "death", 1, f)
+            span = min(1.0, (t - (RELIGHT_AT[i] - 0.6)) / 0.6)
+            motes(c, (ax - f * 40, ay - 120), (ax, ay), int(70 * span) if coming else 18, 900 + i,
+                  [E[who[2]]], spread=10, bow=-14)
+        toward = (HIM_X - x, (HIM_Y - 60) - (y - h * 0.5))
+        n = math.hypot(*toward) or 1.0
+        rim = (toward[0] / n, toward[1] / n, G[2]) if lit else (0, -1, V[3])
+        roster_figure(c, who, x, y, h, [OCC, S[4]], strip="death", frame=1, facing=f,
+                      lit=relit, dim=not relit, toward=rim)
+        wrists.append(_wrist(who, "death", 1, x, y, h, f))
+    # The chain: three lengths, wrist to wrist, the middle one behind him.
+    spans = [(wrists[0], wrists[1]), (wrists[1], wrists[2]), (wrists[2], wrists[3])]
+    order = [1, 0, 2]
+    for j, (a, b) in enumerate(spans):
+        at = BREAK_AT[order.index(j)]
+        pts = _chain_pts(a, b, n=int(math.hypot(b[0] - a[0], b[1] - a[1]) / 2.4), sag=6 if j != 1 else 12)
+        if t < at:
+            _chain(c, pts)
+        else:
+            mid_x = (a[0] + b[0]) / 2.0 if j != 1 else HIM_X - 14
+            _fragments(c, pts, mid_x, t - at, 300 + j, max(a[1], b[1]) + 14)
+            # Where it broke, the instant it broke: a spark of his light.
+            if t - at < 0.2:
+                c.radial(mid_x, (a[1] + b[1]) / 2.0 + 6, 7, 7, [LT[0], LT[1], LT[3], None])
+    for k, (x, y) in enumerate(wrists):
+        if t < SHACKLES_AT:
+            _shackle(c, x, y, DK[1])
+        else:
+            _fragments(c, [(x - 2, y), (x, y - 2), (x + 2, y), (x, y + 2)], x, t - SHACKLES_AT, 400 + k, y + 22)
+    over(c, him["lit"] if lit else him["banked"])
+    _flare(c, hx, hy, t)
+    return c
+
+
+def p_break():
+    """6. "You went back for them." The hiding's heath again, the tower on its horizon, and the four he
+    could reach - the disciplines - on their knees in a row, bound wrist to wrist by his chain, their
+    staves dark. The Archmage, the one he missed, stands in the middle of them, the title's own figure, his light
+    banked as it was in the hiding. It comes up (animated): his light finds the chain and it breaks,
+    the length behind him first, then the others, link by link going out as it flies; and one after
+    another their own lights come back to them out of the sky they were drawn into."""
+    back, mid, fore = frame(True), frame(), frame()
+    sky(back, 0, 420, [OCC, OCC, S[4], V[4], V[3]])
+    stars(back, (0, 0, FW, 340), 240, 151)
+    # His light over the tower, landing on the sky as violet: he is still there, and still far.
+    back.radial(700, 360, 260, 120, [V[3], V[3], V[4], None])
+    hills(back, ridge_fn(390, 10, 153, 0.9), [V[3], V[4], S[4]], 30, lit=V[2])
+    tower(back, 700, 394, 44, seed=15)
+    hills(back, ridge_fn(402, 9, 155, 1.4), [S[4], V[4], OCC], 36, lit=V[3])
+    back.vramp(404, FH - 1, [S[4], S[4], OCC, OCC])
+    heath(back, 404, 840, 1800, 157, [(OCC, S[4]), (OCC, V[4])])
+    # Two of the ring's stones, far off: the moot is behind him, on the way he came.
+    for i, (x, y, w, h, lean, br) in enumerate([(212, 432, 18, 44, -0.3, True), (760, 436, 16, 38, 0.35, False)]):
+        standing_stone(back, x, y, w, h, 1500 + i, lean=lean, broken=br, ramp=[S[2], S[3], S[4], OCC, OCC])
+    # The ground under the row, cold under the sky, as the hiding has it: the four are dark shapes in the
+    # dark, and without it they were not there at all until his light came up behind them.
+    back.radial(HIM_X, HIM_Y - 26, 300, 70, [S[3], S[3], S[4], S[4], None])
+
+    # Him, twice: banked as he was in the hiding (a stop down every pigment, the ember in the orb), and
+    # with his light up. The frames lay one or the other over the four.
+    def draw_him(ember):
+        c = Cv(FW, FH)
+        hero.wizard_hero(c, HIM_X, HIM_Y, h=HIM_H, staff_ramp=LT, under_ramp=None, snuffed=ember)
+        if ember is not None:
+            down = _shade_down(1, keep=LT, more={"gold": 1})
+            px = c.px
+            for y in range(int(HIM_Y - 150), int(HIM_Y + 30)):
+                for x in range(int(HIM_X - 80), int(HIM_X + 90)):
+                    q = px[x, y]
+                    if q[3] and q in down:
+                        px[x, y] = down[q]
+        return c
+    u = HIM_H / 32.0
+    sx = HIM_X - 11.6 * u
+    w = max(1, int(round(1.3 * u)))
+    him = {"banked": draw_him(0.6), "lit": draw_him(None),
+           "head": ((int(sx) + int(sx + w)) * 0.5, HIM_Y - 37.0 * u)}
+
+    t_of = frame_t(0.9, CY + 60)
+    x0, y0, x1, y1 = BREAK_BOX
+    frames = []
+    for k in range(int(math.ceil(BREAK_SECONDS * BREAK_FPS))):
+        t = (k + 0.5) / BREAK_FPS
+        c = _break_frame(t, him)
+        darken(c, t_of, [S[4], OCC], box=BREAK_BOX)
+        frames.append(c.img.crop((x0, y0, x1, y1)))
+    # The still mid layer holds nothing inside the box (everything there moves); the last frame stands
+    # in for it in a preview.
+    heath(fore, 600, 840, 900, 159, [(OCC, OCC), (OCC, S[4])], scale=1.7)
+    layers = dict(back=back, mid=mid, fore=fore)
+    finish(layers, 0.9, cy=CY + 60)
+    layers["anim"] = frames
+    return layers
+
+
+def p_five():
+    """7. The five of them. The same heath and the same places: the four stand up where they knelt, each
+    staff burning his own element again and each robe back in the deep end of his own colour - the moot's
+    colours, the first time since the circle - and in the middle, in his warded circle, the Archmage.
+    His chain lies on the ground in front of them, dead. Five lights on the heath where there was one; no
+    line - the next panel is the road, and the one after it the player choosing which of them walks it."""
+    back, mid, fore = frame(True), frame(), frame()
+    sky(back, 0, 420, [OCC, S[4], V[4], V[3], V[2]])
+    stars(back, (0, 0, FW, 340), 300, 161)
+    sk.moon(back, 392, 262, 9)
+    back.radial(700, 360, 220, 100, [V[3], V[4], None])
+    hills(back, ridge_fn(390, 10, 153, 0.9), [V[3], V[4], S[4]], 30, lit=V[2])
+    tower(back, 700, 394, 44, seed=15)
+    hills(back, ridge_fn(402, 9, 155, 1.4), [S[4], V[4], OCC], 36, lit=V[3])
+    back.vramp(404, FH - 1, [S[4], S[4], OCC, OCC])
+    heath(back, 404, 840, 1800, 157, [(OCC, S[4]), (OCC, V[4])])
+    for i, (x, y, w, h, lean, br) in enumerate([(212, 432, 18, 44, -0.3, True), (760, 436, 16, 38, 0.35, False)]):
+        standing_stone(back, x, y, w, h, 1500 + i, lean=lean, broken=br, ramp=[S[2], S[3], S[4], OCC, OCC])
+    # Each light's pool on the ground, in the pigment it makes: gold under him, theirs under them.
+    back.radial(HIM_X, HIM_Y + 4, 230, 56, [G[3], G[3], G[4], G[4], None])
+    for (who, x, y, h, f) in FREED_FOUR:
+        halo = HALO[who[2]]
+        back.radial(x, y + 4, 38, 9, [halo[4], halo[4], None])
+    # His ward under him, as on the title.
+    ward(mid, HIM_X, HIM_Y + 2, 58, 15, pool=False)
+    # The chain they wore, dead on the ground in front of them: links in occlusion, the light gone out of it.
+    rng = random.Random(163)
+    for _ in range(70):
+        x = 330 + rng.random() * 300
+        y = 560 + rng.random() * 18 + abs(x - HIM_X) * -0.02
+        if abs(x - HIM_X) < 40 and y < 566:
+            continue
+        mid.set(x, y, OCC)
+        mid.set(x + 1, y, S[4] if rng.random() < 0.6 else OCC)
+        if rng.random() < 0.3:
+            mid.set(x + 2, y + 1, OCC)
+    # The four, standing, their lights back. Back to front.
+    for (who, x, y, h, f) in sorted(FREED_FOUR, key=lambda e: e[2]):
+        toward = (HIM_X - x, -0.6 * abs(HIM_X - x))
+        n = math.hypot(*toward) or 1.0
+        light, _front = roster_figure(mid, who, x, y + 4, h + 2, [ROBE[who[0]], OCC], strip="idle", frame=0,
+                                      facing=f, toward=(toward[0] / n, toward[1] / n, G[2]))
+    hero.wizard_hero(mid, HIM_X, HIM_Y, h=HIM_H, staff_ramp=LT)
+    heath(fore, 600, 840, 900, 159, [(OCC, OCC), (OCC, S[4])], scale=1.7)
+    layers = dict(back=back, mid=mid, fore=fore)
+    finish(layers, 0.9, cy=CY + 60)
+    return layers
+
+
 def p_road():
     """6. The road ahead. Seen from above and behind: the player small on a road that winds
     away across the heath toward everything he holds, the tower on the far horizon under his
@@ -1508,7 +1798,11 @@ def p_road():
 
 
 PANELS = [("moot", p_moot), ("throne", p_throne), ("tide", p_tide), ("taken", p_taken),
-          ("missed", p_missed), ("road", p_road)]
+          ("missed", p_missed), ("break", p_break), ("five", p_five), ("road", p_road)]
+
+# The animated panels' boxes, clocks and atlas widths (write_anim): the hiding's searchers, and the chain
+# breaking.
+ANIMS = {"missed": (MISSED_BOX, MISSED_FPS, MISSED_COLUMNS), "break": (BREAK_BOX, BREAK_FPS, 4)}
 
 
 # =========================================================================== output
@@ -1532,10 +1826,12 @@ def composite(layers):
     return flat
 
 
-def write_anim(name, frames):
-    """The frames as one atlas, MISSED_COLUMNS wide, and its manifest: where the box sits in the
-    frame, its size, the clock, and the timeline - one atlas index per tick, so a frame that does not
+def write_anim(name, frames, out=None):
+    """The frames as one atlas, the panel's columns wide (ANIMS), and its manifest: where the box sits in
+    the frame, its size, the clock, and the timeline - one atlas index per tick, so a frame that does not
     change from one tick to the next is stored once and held. Prologue.cs reads both."""
+    out = out or OUT
+    box, fps, columns = ANIMS[name]
     unique, timeline, seen = [], [], {}
     for img in frames:
         key = img.tobytes()
@@ -1543,30 +1839,31 @@ def write_anim(name, frames):
             seen[key] = len(unique)
             unique.append(img)
         timeline.append(seen[key])
-    x0, y0, x1, y1 = MISSED_BOX
+    x0, y0, x1, y1 = box
     w, h = x1 - x0, y1 - y0
     for v in (x0, y0, w, h):
         assert v % 8 == 0, "the anim box must sit on the 8-pixel Bayer grid"
-    cols = min(MISSED_COLUMNS, len(unique))
+    cols = min(columns, len(unique))
     rows = (len(unique) + cols - 1) // cols
     atlas = Image.new("RGBA", (cols * w, rows * h), (0, 0, 0, 0))
     for i, img in enumerate(unique):
         atlas.paste(img, ((i % cols) * w, (i // cols) * h))
-    atlas.save(os.path.join(OUT, "%s-anim.png" % name))
+    atlas.save(os.path.join(out, "%s-anim.png" % name))
     # Binary, so it is LF on Windows too (the repo's line endings), whichever Python writes it.
-    with open(os.path.join(OUT, "%s-anim.json" % name), "wb") as fh:
-        fh.write((json.dumps({"x": x0, "y": y0, "width": w, "height": h, "columns": cols, "fps": MISSED_FPS,
+    with open(os.path.join(out, "%s-anim.json" % name), "wb") as fh:
+        fh.write((json.dumps({"x": x0, "y": y0, "width": w, "height": h, "columns": cols, "fps": fps,
                               "timeline": timeline}, sort_keys=True) + "\n").encode("ascii"))
     return len(unique)
 
 
 def preview_anim(name, layers, frames, ticks):
     """A few ticks of the animated panel, the PC's view, one above the other."""
+    box = ANIMS[name][0]
     flat = composite(layers)
     shots = []
     for k in ticks:
         im = flat.copy()
-        im.paste(frames[k], MISSED_BOX[:2], frames[k])
+        im.paste(frames[k], box[:2], frames[k])
         for n in ("fore",):
             im.paste(layers[n].img, (0, 0), layers[n].img)
         shots.append(im.crop((VIEW_TALL[0], 360, VIEW_TALL[2], 600)))
@@ -1578,9 +1875,14 @@ def preview_anim(name, layers, frames, ticks):
     sheet.save(os.path.join(PREVIEW, name + "-anim.png"))
 
 
-def preview(name, layers):
-    """Both views side by side at x1: the PC's 640x360 and the Pixel 9's 360x808."""
+def preview(name, layers, anim=None):
+    """Both views side by side at x1: the PC's 640x360 and the Pixel 9's 360x808. anim: a frame of the
+    panel's animated box to lay over it (the break's still mid layer is empty inside its box)."""
     flat = composite(layers)
+    if anim is not None:
+        flat.paste(anim, ANIMS[name][0][:2], anim)
+        fore = layers["fore"].img
+        flat.paste(fore, (0, 0), fore)
     wide = flat.crop(VIEW_WIDE)
     tall = flat.crop(VIEW_TALL)
     sheet = Image.new("RGBA", (wide.size[0] + tall.size[0] + 12, tall.size[1]), (40, 40, 40, 255))
@@ -1610,9 +1912,9 @@ def main(argv):
             n = write_anim(name, frames)
             print("%-7s %d ticks, %d frames in %s-anim.png" % (name, len(frames), n, name))
         if do_preview:
-            preview(name, layers)
+            preview(name, layers, frames[-1] if frames else None)
             if frames:
-                preview_anim(name, layers, frames, [4, 12, 18, 22, 30, 38])
+                preview_anim(name, layers, frames, [k for k in [4, 12, 18, 22, 30, 38] if k < len(frames)])
         print("%-7s %d off-contract pixels%s" % (name, sum(bad.values()),
                                                    (" " + str(sorted(bad.items())[:4])) if bad else ""))
     return 1 if total_bad else 0

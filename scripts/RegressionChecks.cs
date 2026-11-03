@@ -70,6 +70,8 @@ public static partial class RegressionChecks
 		ValidateDifficultyMigration(warnings);
 		ValidateSpellBook(warnings);
 		ValidateTeachers(warnings);
+		ValidatePrologueReel(warnings);
+		ValidateFreeings(warnings);
 		ValidateSlowStartMigration(warnings);
 		ValidateStoryReset(warnings);
 		ValidateUserDataCarryOver(warnings);

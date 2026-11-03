@@ -316,6 +316,9 @@ public partial class _UiShot : Node
 	// --find-secret=id (the slow start's lesson line): found once, a quarter of the way in.
 	private string findSecretId = string.Empty;
 	private bool secretFoundByShot;
+	// --free-in-run=<wizard>: the deed that frees him completed a quarter of the way in (.ai/cutscenes.md).
+	private string freeInRunId = string.Empty;
+	private bool freedByShot;
 	// --pad-y: inject a pad Y press after the warmup (see the late press). Once it is sent, _Input
 	// lets Y through; it otherwise drops every real button press.
 	private bool padY;
@@ -1218,6 +1221,14 @@ public partial class _UiShot : Node
 			else if (arg.StartsWith("--find-secret="))
 			{
 				findSecretId = arg.Substring("--find-secret=".Length).Trim();
+				SaveManager.WritesDisabled = true;
+			}
+			// --free-in-run=<wizard>: THE FREEINGS (.ai/cutscenes.md). The deed that frees him (his side event's)
+			// completed a quarter of the way in, through AchievementManager.CompleteNow as his event would; then
+			// --force-victory plays his freeing over the run before the results (and any lesson after it).
+			else if (arg.StartsWith("--free-in-run="))
+			{
+				freeInRunId = arg.Substring("--free-in-run=".Length).Trim();
 				SaveManager.WritesDisabled = true;
 			}
 			// --secret-stage=N: the chapter's vault, if it breaks (a Breakable named "Crystal"), shown at stage
@@ -3305,6 +3316,21 @@ public partial class _UiShot : Node
 			{
 				secretFoundByShot = true;
 				secrets.Found(findSecretId);
+			}
+			if (freeInRunId.Length > 0 && !freedByShot && frames >= WarmupFrames / 4
+				&& FindNodeOfType<Node2DGame>(GetTree().Root) != null)
+			{
+				freedByShot = true;
+				AchievementDefinition frees = AchievementDefinitions.All.FirstOrDefault(d =>
+					freeInRunId.Equals(d.CharacterUnlockId ?? string.Empty, System.StringComparison.OrdinalIgnoreCase));
+				if (frees == null)
+					GD.PrintErr($"_UiShot: no deed frees '{freeInRunId}'");
+				else
+				{
+					var freeSave = GetNodeOrNull<SaveManager>("/root/SaveManager");
+					AchievementManager.CompleteNow(freeSave, frees.Id);
+					GD.Print($"_UiShot: '{frees.Id}' completed; freeings owed: {string.Join(",", Freeings.Owed(freeSave?.Data))}");
+				}
 			}
 			if (announceAchievements.Length > 0 && !achievementsAnnounced && frames >= WarmupFrames / 4
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame announcer

@@ -228,6 +228,14 @@ public class SaveData
 	/// </summary>
 	public bool FullBookKept { get; set; } = false;
 
+	/// <summary>
+	/// The freeing reels owed (Freeings, .ai/cutscenes.md): the wizards a deed has freed whose cutscene has not
+	/// played yet, by character id, in the order they were freed. Written the moment a deed frees one, cleared as
+	/// each reel ends after a run. No schema bump: it only adds, a save without the key reads as owing nothing,
+	/// and nothing that was freed before it existed is owed (which is why it is a debt and not a "seen" list).
+	/// </summary>
+	public List<string> FreeingsOwed { get; set; } = new();
+
 	// --- The story's epoch (.ai/decisions/2026-11-02-story-resets.md) ---------------------------------
 
 	/// <summary>
@@ -1203,6 +1211,10 @@ public class SaveData
 		foreach (string id in LessonsLearned ?? new List<string>())
 			lessonsLearned.Add(id);
 
+		var freeingsOwed = new Godot.Collections.Array<string>();
+		foreach (string id in FreeingsOwed ?? new List<string>())
+			freeingsOwed.Add(id);
+
 		var foundUpgradeLevels = new Godot.Collections.Dictionary<string, int>();
 		foreach (KeyValuePair<string, int> entry in FoundUpgradeLevels)
 		{
@@ -1274,6 +1286,7 @@ public class SaveData
 			["AscensionLearned"] = AscensionLearned,
 			["LessonsLearned"] = lessonsLearned,
 			["FullBookKept"] = FullBookKept,
+			["FreeingsOwed"] = freeingsOwed,
 			["BalancePresetId"] = BalancePresetId,
 			["PlaytestChecklistState"] = playtestChecklistState
 		};
@@ -1575,6 +1588,15 @@ public class SaveData
 				string id = value.AsString();
 				if (!string.IsNullOrWhiteSpace(id) && !result.LessonsLearned.Contains(id))
 					result.LessonsLearned.Add(id);
+			}
+		}
+		if (root.ContainsKey("FreeingsOwed"))
+		{
+			foreach (Variant value in root["FreeingsOwed"].AsGodotArray())
+			{
+				string id = value.AsString();
+				if (!string.IsNullOrWhiteSpace(id) && !result.FreeingsOwed.Contains(id))
+					result.FreeingsOwed.Add(id);
 			}
 		}
 

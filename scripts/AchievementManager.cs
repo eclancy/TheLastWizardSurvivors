@@ -225,7 +225,12 @@ public static class AchievementManager
 			granted.Add(new RunUnlockEntry { Kind = RunUnlockKind.Boon, Id = definition.BoonUnlockId, Name = definition.BoonUnlockId, Source = earnedBy });
 		if (!string.IsNullOrWhiteSpace(definition.CharacterUnlockId)
 			&& GlobalStatsManager.UnlockCharacter(data, definition.CharacterUnlockId))
+		{
 			granted.Add(new RunUnlockEntry { Kind = RunUnlockKind.Wizard, Id = definition.CharacterUnlockId, Name = definition.CharacterUnlockId, Source = earnedBy });
+			// A wizard a place held is owed the cutscene of his freeing, played when this run ends (Freeings,
+			// .ai/cutscenes.md). Written here, with the unlock, so a run quit after the cell opened still owes it.
+			Freeings.RecordFreed(data, definition.CharacterUnlockId);
+		}
 		return granted;
 	}
 

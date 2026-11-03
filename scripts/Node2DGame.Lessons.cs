@@ -46,6 +46,9 @@ public partial class Node2DGame
 	/// </summary>
 	private bool PlayOwedLessonsThen(Action then)
 	{
+		// A wizard freed first (Freeings): the story before the systems, one reel at a time.
+		if (PlayOwedFreeingThen(then))
+			return true;
 		if (lessonsOwed.Count == 0)
 			return false;
 		Teachings.Lesson lesson = lessonsOwed[0];
@@ -72,6 +75,43 @@ public partial class Node2DGame
 		reel.ProcessMode = ProcessModeEnum.Always;
 		layer.AddChild(reel);
 		GD.Print($"Node2DGame: lesson '{lesson.Id}' playing before the results");
+		return true;
+	}
+
+	// THE FREEINGS (Freeings, .ai/cutscenes.md): a wizard a place held, freed by a deed - in this run, or in one that
+	// was quit before it ended - is owed the short reel of his freeing. It plays on the same layer and the same way as
+	// a lesson, before the lessons, one at a time; the debt is paid when it ends, played through or skipped. The
+	// caller asks again when it ends, so a second freeing (two wizards in one run) and then the lessons follow it.
+	private bool PlayOwedFreeingThen(Action then)
+	{
+		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+		List<string> owed = Freeings.Owed(saveManager?.Data);
+		if (owed.Count == 0)
+			return false;
+		string wizardId = owed[0];
+		void Shown()
+		{
+			// Paid in memory even when writes are off, so the queue always moves on.
+			if (Freeings.MarkShown(saveManager.Data, wizardId))
+				saveManager.SaveGame();
+			then();
+		}
+		if (DisplayServer.GetName() == "headless")
+		{
+			GD.Print($"Node2DGame: the freeing of '{wizardId}' passed without its reel (headless)");
+			Shown();
+			return true;
+		}
+		var layer = new CanvasLayer { Name = "FreeingLayer", Layer = LessonLayer, ProcessMode = ProcessModeEnum.Always };
+		AddChild(layer);
+		Prologue reel = Prologue.CreateEmbedded(Freeings.ReelIdFor(wizardId), () =>
+		{
+			layer.QueueFree();
+			Shown();
+		});
+		reel.ProcessMode = ProcessModeEnum.Always;
+		layer.AddChild(reel);
+		GD.Print($"Node2DGame: the freeing of '{wizardId}' playing before the results");
 		return true;
 	}
 

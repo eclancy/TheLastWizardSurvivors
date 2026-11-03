@@ -37,9 +37,13 @@ Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like)
   regen, every heal source cut and capped), the Ascension sealed until the Hayward is beaten, and
   the harness flags (`--farmed`, `--stop-overrun`) that measured it. **Read it before adding a heal,
   changing enemy or boss health, or moving the Ascension gate.**
-- `.ai/prologue.md` — the story-mode prologue: six generated panels (`tools/art/prologue.py`)
+- `.ai/prologue.md` — the story-mode prologue: eight generated panels (`tools/art/prologue.py`)
   played before the first Start Run and from Options by `scripts/Prologue.cs`, gated by
   `SaveData.HasSeenPrologue`. Read it before changing the story's opening or the Dark Wizard's look.
+- `.ai/cutscenes.md` — the cutscenes that keep the Archmage at the centre of the story: the freeing of
+  the four inside the prologue, the one-panel freeing reel after the run that frees a chapter's wizard
+  (`tools/art/freed.py`, `Freeings`, owed in `SaveData.FreeingsOwed`), and the beats only planned.
+  **Read it before adding a cutscene or a wizard a place holds.**
 - `.ai/terrain.md` — the three tile layers and why every cell carries a ground tile even under
   an overlay (it is what lets a shoreline fade into whatever surrounds it), the independent
   `hazard` and `blocking` flags, the four places that have to agree about a blocking terrain,
