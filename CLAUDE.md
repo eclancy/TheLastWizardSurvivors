@@ -86,6 +86,8 @@ Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like)
 - `.ai/title-screen.md` — the shipping title screen: how the scene avoids fractional scaling, the draw order, every knob, and four bugs not to reintroduce. **Read it before touching `TitleScreen.tscn`, `tools/art/splash.py` or `tools/art/hero.py`.** The art is generated, not painted: edit the generator and re-run it, never the PNG.
 - `.ai/game-name.md` — the name: something like *The One He Missed* (Eric; exact words not picked), the ideas, and what a rename
   touches, above all that `config/name` is also the save folder.
+- `.ai/genre-lessons.md` — what Wizard Survivors (Jam Studios) and Vampire Survivors teach us: the player as the
+  light, foliage density, scenery landmarks, the scale of the chaos, menus, payoff moments, trailers.
 - **The backlog lives on GitHub**, not in this repo — `gh issue list`, or the `/issue` command. `.ai/issues/` was migrated there and removed. Several open issues predate work that has since landed, so check the code before assuming one is still open.
 - **`LICENSE` and `NOTICE` at the repo root.** Source-available, all rights reserved: the code
   can be read, nothing can be reused, and the art least of all. The generators in `tools/art/`
