@@ -66,7 +66,7 @@ public static class SettingsRows
 		};
 	}
 
-	/// <summary>The Display section's rows: damage numbers and screen shake.</summary>
+	/// <summary>The Display section's rows: damage numbers, screen shake and the dark chapters' dark.</summary>
 	public static List<Control> DisplayRows(Node owner, CodexRows.Palette palette)
 	{
 		return new List<Control>
@@ -78,6 +78,9 @@ public static class SettingsRows
 			// 2026-11-02, "reduce screen shake".
 			BuildSwitch("Reduce Screen Shake", DisplaySettings.ReduceShake, palette,
 				pressed => DisplaySettings.StoreReduceShake(owner, pressed), "ReduceShakeToggle"),
+			// 2026-11-03, the light pool: for a player who finds the dark chapters too dark.
+			BuildSwitch("Reduce Darkness", DisplaySettings.ReduceDarkness, palette,
+				pressed => DisplaySettings.StoreReduceDarkness(owner, pressed), "ReduceDarknessToggle"),
 		};
 	}
 

@@ -206,6 +206,9 @@ public class SaveData
 	/// <summary>Screen shake at a quarter strength (DisplaySettings.ShakeScale, Eric, 2026-11-02). No schema
 	/// bump, like the damage numbers: an older save has the key missing and keeps the default, off.</summary>
 	public bool ReduceScreenShake { get; set; } = false;
+	/// <summary>A dark chapter's dark lifted to DisplaySettings.ReducedDarknessScale (LightPool, 2026-11-03). No
+	/// schema bump, like the shake: an older save has the key missing and keeps the default, off.</summary>
+	public bool ReduceDarkness { get; set; } = false;
 
 	/// <summary>
 	/// Taught the Ascension outside the campaign's own record (GlobalStatsManager.HasLearnedAscension):
@@ -278,7 +281,7 @@ public class SaveData
 	/// </summary>
 	public static readonly string[] SettingsKeys =
 	{
-		"MasterVolume", "MusicVolume", "SfxVolume", "AudioMuted", "ShowDamageNumbers", "ReduceScreenShake",
+		"MasterVolume", "MusicVolume", "SfxVolume", "AudioMuted", "ShowDamageNumbers", "ReduceScreenShake", "ReduceDarkness",
 		"EnableGameplayOnboardingTips", "HasToggledOnboardingTipsAtLeastOnce",
 		"PlaytestModeEnabled", "BalancePresetId", "PlaytestChecklistState",
 	};
@@ -1283,6 +1286,7 @@ public class SaveData
 			["AudioMuted"] = AudioMuted,
 			["ShowDamageNumbers"] = ShowDamageNumbers,
 			["ReduceScreenShake"] = ReduceScreenShake,
+			["ReduceDarkness"] = ReduceDarkness,
 			["AscensionLearned"] = AscensionLearned,
 			["LessonsLearned"] = lessonsLearned,
 			["FullBookKept"] = FullBookKept,
@@ -1577,6 +1581,8 @@ public class SaveData
 			result.ShowDamageNumbers = root["ShowDamageNumbers"].AsBool();
 		if (root.ContainsKey("ReduceScreenShake"))
 			result.ReduceScreenShake = root["ReduceScreenShake"].AsBool();
+		if (root.ContainsKey("ReduceDarkness"))
+			result.ReduceDarkness = root["ReduceDarkness"].AsBool();
 		if (root.ContainsKey("AscensionLearned"))
 			result.AscensionLearned = root["AscensionLearned"].AsBool();
 		if (root.ContainsKey("FullBookKept"))

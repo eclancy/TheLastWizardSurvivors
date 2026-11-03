@@ -488,6 +488,8 @@ public partial class Node2DGame : Node2D
 			GD.Print("STATUS all: every enemy slowed and poisoned (0 damage) for the whole run");
 		ApplyStageTheme();
 		ApplyAmbientStageEffects();
+		// The wizard as the only light, in the chapters that have no other (LightPool, .ai/light-pool.md).
+		LightPool.Kindle(this, player, StageEnvironmentCatalog.GetForStageIndex(Global.SelectedStageIdx));
 		BuildWorldTileMapLayout();
 		nextEliteSpawnTime = EliteStartTimeSeconds;
 		player?.Connect("XpGained", new Callable(this, nameof(OnPlayerXpGained)));
