@@ -1392,7 +1392,7 @@ through for the player once it is armed (`--defeat-press=mouse|touch|pad|key`, a
 `none` leaves DEFEAT waiting) - and **`--demo-unlocks`** then adds one card of every kind to the
 screen's report (the save is untouched) so all of them can be judged at once. `--press-late=
 Section_Rewards` (or `Section_Build`, `Section_Stats`) opens a section. Leave the shutter time for
-the defeat (about 2.5 s) and the count (up to 1.6 s more): `--death-at=600 --frames=800 --timescale=3`
+the defeat (about 3.4 s) and the count (up to 1.6 s more): `--death-at=600 --frames=800 --timescale=3`
 plays a run up to the death at three times speed, then films the defeat at one. A full build:
 `--frames=480 --timescale=3 --hud-milestones --give-relics=ember_flask,inferno_core,obsidian_heart
 --grant-boons=iron_rivets,lantern_oil`. `--ink-report` covers the screen. One of its flags is the
@@ -1420,18 +1420,18 @@ the tiled ground's shader (`SyncGroundToCamera`) itself, through `FilmDefeat`.
 | Real seconds | Beat |
 |---|---|
 | 0.00 | **Freeze.** The field stops dead; the wizard is held on his death row's first frame (still standing); the damage flash hangs over it; one small kick. `player_death` has played. |
-| 0.40 | **Crash zoom.** Every canvas layer the run put over the field goes (HUD, touch pad, a chapter note or toast - not the ground, the bars or the card); the bars slide in; the camera snaps from 0.85 to **2.0** in 0.32 s (quartic out, 7% overshoot settling, a jolt as it lands). 2.0 because the body sprite is drawn at x2: every art pixel of the close-up is four canvas pixels. He is framed at 40% of the height so the word can sit below him; a 5% push-in over the next 2.6 s keeps the shot alive. |
-| 0.80 | **The fall.** His own death row - every generated wizard has one, six frames folding to the ground (Laelaps turns to stone) - slowed to 0.9 s. On its last frame: `player_fall`, a puff of dust at his feet (squares on the 2-px art grid, three dust tones), a jolt. The **Test Wizard** (Eric's own drawing, never derived) has no death row, so he falls in code: a two-pixel buckle, then one quarter turn onto the line his feet stood on - no fractional rotation of pixel art. |
-| 2.10 | **DEFEAT.** A full-bleed band (the results band's stone deep and gold rules; 70% down a PC, 63% down a phone) opens from its middle in 0.14 s, the field dims to 42%, and "Defeat" slams on in Cinzel at its heaviest (900), 96 px, the Defeat ink (4.8:1), scale 1.35 to 1 in 0.18 s, with `game_over` and a jolt. |
-| 2.50 | **Armed.** Only now does a press continue, and only a press that starts now: a held button, a held key (repeats ignored) or a thumb still on the stick sends no new press. Until then every press and release is swallowed. F11 and Alt+Enter are left to the window. |
-| 3.00 | "Press any button" ("Tap to continue" with touch controls) fades in under the word, breathing. |
+| 0.55 | **Crash zoom** (after the freeze is held long enough to read; the cinematic rules, `.ai/cutscenes.md`, 2026-11-03). Every canvas layer the run put over the field goes (HUD, touch pad, a chapter note or toast - not the ground, the bars or the card); the bars slide in; the camera drives in from 0.85 to **2.0** in 0.6 s (eased in and out, 4% overshoot settling, a jolt as it lands) while violet speed lines rush in on him and are gone as it lands. It was 0.32 s on a quartic ease-out, fastest on its first frame. 2.0 because the body sprite is drawn at x2: every art pixel of the close-up is four canvas pixels. He is framed at 40% of the height so the word can sit below him; a 5% push-in over the next 2.6 s keeps the shot alive. |
+| 1.45 | **The fall**, after a 0.3 s held close-up. His own death row - every generated wizard has one, six frames folding to the ground (Laelaps turns to stone) - slowed to 0.9 s. On its last frame: `player_fall`, a puff of dust at his feet (squares on the 2-px art grid, three dust tones), a jolt. The **Test Wizard** (Eric's own drawing, never derived) has no death row, so he falls in code: a two-pixel buckle, then one quarter turn onto the line his feet stood on - no fractional rotation of pixel art. |
+| 2.95 | **DEFEAT**, a 0.6 s beat after he lands. A full-bleed band (the results band's stone deep and gold rules; 70% down a PC, 63% down a phone) opens from its middle in 0.14 s, the field dims to 42%, and "Defeat" slams on in Cinzel at its heaviest (900), 96 px, the Defeat ink (4.8:1), scale 1.35 to 1 in 0.18 s, with `game_over` and a jolt. |
+| 3.35 | **Armed.** Only now does a press continue, and only a press that starts now: a held button, a held key (repeats ignored) or a thumb still on the stick sends no new press. Until then every press and release is swallowed. F11 and Alt+Enter are left to the window. |
+| 3.85 | "Press any button" ("Tap to continue" with touch controls) fades in under the word, breathing. |
 | press | `ui_open`; the results screen covers the field from below (section 6); the card goes once it is covered. |
 
 Every jolt goes through the run's `ScreenShake`, so **Reduce Screen Shake** scales all four. The card
 is full bleed like the letterbox, so `SafeArea` is not applied, and it is not a menu - nothing to
 select, any press continues - so no `MenuNavigator`. **Photographing it:** `_UiShot --force-death
 --death-at=N` kills on frame N; `--burst` then films the sequence, or `--defeat-hold=SECONDS` stops
-its clock at one moment (0.55 is the zoom mid-way, 1.3 the fall). Under `--force-death` the harness
+its clock at one moment (0.85 is the zoom mid-way, 1.9 the fall). Under `--force-death` the harness
 hosts the run pausable, as the game's root does - its own root processes through a pause, and the
 world used to keep moving under it - and films the defeat at one speed whatever `--timescale` played
 the run up to it. `_TouchProbe --force-death` taps through the card like a finger.

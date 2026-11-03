@@ -900,9 +900,15 @@ read `Node2DGame.GameplayZoomOf`, so the push-in never pulls the swarm on screen
 the bars** (Eric, 2026-11-02: "not pan the camera immediately ... prevent the player from being
 overwhelmed by sudden camera panning"): the camera holds still on the wizard for
 `BossEntrancePanDelay` (the bars' 0.45 s and a beat) while the picture pushes in, then pans on a
-critically damped spring that starts from rest (`BossEntrancePanStiffness`, about 1.1 s to settle), and
-comes back the same way; `_BossProbe` logs when the pan began and its peak speed (0.6 s, ~400 px/s on
-the Ruins; before, it lurched on the first frame). The screen shakes
+critically damped spring that starts from rest (`BossEntrancePanStiffness`), and comes back the same way;
+`_BossProbe` logs when the pan began and its peak speed. **Since 2026-11-03 (the cinematic rules,
+`.ai/cutscenes.md`) the hold runs in four beats** - arriving, landed, returning, ready: the pan and the zoom
+are capped (220 px/s, 600 px/s2; it peaked at 250-310 px/s a quarter second after it began), the camera
+holds on the landed boss (0.5 s after the landing, 0.45 s after the pan rests) while the boss stands
+waiting for its fight (`BossEnemy.IsAwaitingFight`: untargetable, clock stopped), goes back to the wizard
+with the field still held, and 0.6 s after it is home - the bars going out - the field, the spells, the
+swarm and the boss are let go on one frame. The climax throws speed lines out of the body in its light.
+`_BossProbe`'s "beats", "holds" and "speeds" lines time every one. The screen shakes
 (`ScreenShake`, the camera's `Offset`) on the beats each boss marks in its own timeline - the roar is the
 climax (`EntranceClimaxWeight`, 0.3 the kids' wizard to 1.3 the Warden of the Deep), and landings and
 bursts call `BossDeath.Impact(weight)`, in falls too. On the climax the bars jolt in, the push-in kicks,

@@ -357,11 +357,13 @@ public partial class _BossProbe : Node
 			phaseCountSeen = boss.PhaseCount;
 			notes.Add($"{bodies.Count} bodies arrived at {elapsed:0.0}s with {bodies[0].Health} HP each");
 		}
+		TrackEntranceBeats(delta);
 
 		// The arrival (2026-10-31): every body untargetable and still, the field held, the wizard's spells
 		// silent and nothing hurting him, until the last body has landed. Timed, and nothing drained
 		// until it is over - an arrival is not part of the fight it opens.
-		bool anyEntering = bodies.Any(b => b.IsEntering);
+		// Landed and waiting for its fight (BossEnemy.IsAwaitingFight) is still the arrival: the field is held until it ends.
+		bool anyEntering = bodies.Any(b => b.IsEntering || b.IsAwaitingFight);
 		if (anyEntering)
 		{
 			Player wizard = player as Player;
@@ -1050,6 +1052,98 @@ public partial class _BossProbe : Node
 			?? options.OrderBy(o => o.NextLevel).First();
 		menu.EmitSignal(LevelUpMenu.SignalName.WeaponSelected, pick.AutoChoice());
 	}
+
+	// --- the cinematic's beats (.ai/cutscenes.md, "The cinematic rules") ------------------------------------
+	// The first arrival, timed from the frame the field is first held to the frame the camera has let go, by
+	// what can be seen rather than by the run's own bookkeeping, so the same lines read the same before and after a
+	// change to it: when the pan began and came to rest on the bodies (rule 3: a hold before it, and a hold on what
+	// it found), when the last body landed, when the camera started back and was home on the wizard, and when the
+	// field was let go (rule 4: a beat before play) - and the fastest the camera moved and zoomed each way (rule 5).
+	private const float BeatMovingPxPerSec = 4f;
+	private const float BeatRestPxPerSec = 12f;
+	private bool beatsDone;
+	private float beatHeldAt = -1f, beatPanAt = -1f, beatPanRestAt = -1f, beatLandedAt = -1f, beatReturnAt = -1f,
+		beatHomeAt = -1f, beatReleasedAt = -1f;
+	private float beatOutPeak, beatBackPeak, beatOutZoomRate, beatBackZoomRate, beatLastZoom = 1f;
+	private Vector2 beatLastCam;
+	private bool beatCamSeen;
+
+	private void TrackEntranceBeats(float delta)
+	{
+		if (beatsDone || bodies.Count == 0 || delta <= 0.0001f || Node2DGame.Current is not Node2DGame run)
+			return;
+		float now = elapsed;
+		if (beatHeldAt < 0f)
+		{
+			if (!run.BossEntranceHeld)
+				return;
+			beatHeldAt = now;
+		}
+		Camera2D cam = player?.GetNodeOrNull<Camera2D>("Camera2D");
+		if (cam == null)
+			return;
+		Vector2 at = cam.Position;
+		float zoom = run.CinematicZoomFactor;
+		float speed = beatCamSeen ? at.DistanceTo(beatLastCam) / delta : 0f;
+		float zoomRate = beatCamSeen ? Mathf.Abs(zoom - beatLastZoom) / delta : 0f;
+		beatLastCam = at;
+		beatLastZoom = zoom;
+		beatCamSeen = true;
+
+		if (beatLandedAt < 0f && bodies.All(b => b.EntranceProgress >= 1f))
+			beatLandedAt = now;
+		if (beatReleasedAt < 0f && !run.BossEntranceHeld)
+			beatReleasedAt = now;
+
+		bool goingBack = beatPanAt >= 0f && beatLandedAt >= 0f;
+		if (beatPanAt < 0f && speed > BeatMovingPxPerSec)
+			beatPanAt = now;
+		else if (beatPanAt >= 0f && beatReturnAt < 0f)
+		{
+			// Outbound: the last time it came to rest before it started back.
+			if (speed < BeatRestPxPerSec)
+			{
+				if (beatPanRestAt < 0f)
+					beatPanRestAt = now;
+			}
+			else if (!(goingBack && at.Length() < beatLastCamLength))
+				beatPanRestAt = -1f;
+			// Back: once the bodies have landed, the first frame it moves toward the wizard.
+			if (goingBack && speed > BeatMovingPxPerSec && at.Length() < beatLastCamLength)
+				beatReturnAt = now;
+		}
+		if (beatReturnAt < 0f)
+		{
+			beatOutPeak = Mathf.Max(beatOutPeak, speed);
+			beatOutZoomRate = Mathf.Max(beatOutZoomRate, zoomRate);
+		}
+		else
+		{
+			beatBackPeak = Mathf.Max(beatBackPeak, speed);
+			beatBackZoomRate = Mathf.Max(beatBackZoomRate, zoomRate);
+			// Home: back on the wizard (or the chapter's lean, which no probed chapter has) and at its own zoom,
+			// as near as the eye can tell.
+			if (beatHomeAt < 0f && at.Length() < 8f && speed < 25f && Mathf.Abs(zoom - 1f) < 0.01f)
+				beatHomeAt = now;
+		}
+		beatLastCamLength = at.Length();
+
+		bool settled = beatReleasedAt >= 0f && at.Length() < 0.5f && Mathf.Abs(zoom - 1f) < 0.002f;
+		if (settled || now - beatHeldAt > 14f)
+		{
+			beatsDone = true;
+			string T(float t) => t < 0f ? "never" : $"{t - beatHeldAt:0.00}s";
+			notes.Add($"beats: held 0.00s, pan {T(beatPanAt)}, at rest on the bodies {T(beatPanRestAt)}, landed {T(beatLandedAt)}, "
+				+ $"back {T(beatReturnAt)}, home {T(beatHomeAt)}, field let go {T(beatReleasedAt)}");
+			float onBodies = beatPanRestAt >= 0f && beatReturnAt >= 0f ? beatReturnAt - beatPanRestAt : -1f;
+			float beforePlay = beatHomeAt >= 0f && beatReleasedAt >= 0f ? beatReleasedAt - beatHomeAt : float.NaN;
+			notes.Add($"holds: before the pan {(beatPanAt >= 0f ? beatPanAt - beatHeldAt : -1f):0.00}s, on the bodies after it {onBodies:0.00}s, "
+				+ $"before play {(float.IsNaN(beforePlay) ? "n/a" : $"{beforePlay:0.00}s")} (negative: let go before the camera was home)");
+			notes.Add($"speeds: out {beatOutPeak:0} px/s and x{beatOutZoomRate:0.00}/s zoom; back {beatBackPeak:0} px/s and x{beatBackZoomRate:0.00}/s zoom");
+		}
+	}
+
+	private float beatLastCamLength;
 
 	private void Finish(string why)
 	{

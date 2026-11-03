@@ -29,6 +29,32 @@ reels, the freed reels, the lesson reels, boss entrances, the defeat and the end
 5. **Never faster than the eye.** Pans and zooms ease in and out and keep under a speed the eye can follow; no
    snap cuts of the camera mid-beat.
 
+### How each beat keeps them (2026-11-03, `wip/cinematics`)
+
+Two reusable pieces, both code-drawn, allocation-free per frame and pixel-art honest (opaque ramp stops on a
+grid, never a blend): **`SpeedLines`** (a ring of streaks out of a subject or in on it, stepped one rect per
+grid row on the world's 2 px or the panel's x2, two stops of a ramp, gone by getting shorter and fewer) and
+**`DitherFlash`** (a screen of opaque light pixels through the 4x4 Bayer matrix, thinning level by level).
+Every shake is a `ScreenShake.Kick`, which reads Reduce Screen Shake; `ScreenShake.Step` gives a camera-less
+offset for the prologue's panels. Every hold is a named constant, and `RegressionChecks.Cinematics.cs`
+(`ValidateCinematicRules`, `ValidateArrivalClimaxFramed`) says when one drops under its floor.
+
+| beat | impact (rule 1) | holds (rules 3, 4) | speed (rule 5) |
+|---|---|---|---|
+| **Boss arrival** (`Node2DGame.BossEntrance.cs`) | the climax: speed lines out of the body in `EntranceFlareElement`'s ramp (violet for the dark wizard), with the shake, bar jolt, push-in kick and flare it had | 0.65 s before the pan (`BossEntrancePanDelay`); on the landed boss 0.5 s after it lands and 0.45 s after the pan rests, whichever is later (`BossEntranceLandedHold`, `RestHold`); the camera goes back with the field still held; home, the bars go out and 0.6 s later the field is let go (`BossEntrancePlayHold`) | pan capped at 220 px/s and 600 px/s2 (`BossEntrancePanMaxSpeed`, `MaxAccel`), the zoom on a capped spring too; both ways |
+| **The landed boss** (`BossEnemy.IsAwaitingFight`) | - | stands in its own sprite, untargetable with its clock stopped, until the field is let go (`LetLandedBodiesFight`); the Long Coil and the kids' wizard lead their arrivals (`EntranceDelaySeconds` 0.6, 0.75) so their reveal lands with the camera there | - |
+| **The prologue's break** (`Prologue`, `Beat.Impact`) | at 2.0 s: warm speed lines out of the Archmage's staff, a shake of the stage, a warm dithered flash | every panel still 0.9 s at its start and 0.35 s at its end; the black holds 0.6 s after the last panel (`EndHoldSeconds`) before the next screen - the prologue's, every lesson's, every freeing's | the drift a smoothstep, at most 23 canvas px/s (`MaxDriftSpeed` 28) |
+| **Lessons and freeings** (embedded reels) | calm: none | the same end hold before the results | the same drift |
+| **The defeat** (`DefeatSequence`) | violet speed lines rush in on him through the zoom; the four jolts it had | freeze held 0.55 s; a 0.3 s close-up before he falls; 0.6 s between his landing and the word | the zoom 0.6 s, eased in and out (it was 0.32 s, fastest on its first frame) |
+| **The dark wizard's fall** (`ThroneDarkWizardBoss`) | the storm: warm speed lines out of his chest, a warm flash; the killing blow's shake | - | - |
+| **The ending** (`ThroneEnding`) | calm: none | the row dims and holds 0.9 s before the credits move (`RollHoldSeconds`) | the roll eases in over 1.6 s, then its steady pace |
+
+Measured on `_BossProbe --timescale=1` with `--fixed-fps 60` (its "beats", "holds" and "speeds" lines), before
+and after: the pan's peak fell from 247-308 to 220 px/s and comes 0.4-0.5 s after it starts instead of 0.25 s;
+the field used to be let go 1.4 s before the camera was home and is now let go 0.62 s after; a whole arrival
+holds the field 6.0-6.7 s where it held 3.1-3.8. `_UiShot --cinematic-log` prints the camera, beat,
+bars and shake at every shutter; `--reduce-shake` turns Reduce Screen Shake on in memory.
+
 ## What makes a player identify with him
 
 Three things, and each beat below uses at least one:
@@ -250,3 +276,8 @@ nothing).
 - The freed template: whether one ground for every chapter is enough, or each wants its own place (the
   Dungeon's cell, the Waste's ice) - the template takes a per-wizard ground with one more `WIZARDS` column.
 - Whether C and D are wanted, and in that form.
+- The cinematic rules in motion (2026-11-03): whether an arrival's whole hold - now 6.0-6.7 s, up from 3.1-3.8,
+  with the camera going back before play - is a beat or a wait, above all in a Boss Rush (ten of them); whether
+  220 px/s is slow enough on the phone's narrower picture; the speed lines' density over a crowded arrival; the
+  break's flash and lines at full size; the defeat's slower crash zoom (0.6 s) and the 0.85 s it adds before the
+  word; the dark wizard's fall, where the flash covers part of the HUD for a third of a second.

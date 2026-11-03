@@ -114,7 +114,48 @@ public partial class Prologue : Control
 	/// ground, a mid layer per wizard) names them here - <c>&lt;Ground&gt;-back.png</c> and <c>-fore.png</c>; null,
 	/// the panel's own.</remarks>
 	public readonly record struct Beat(string Name, float Seconds, string Caption, Vector2 Back, Vector2 Mid, Vector2 Fore,
-		string Ground = null);
+		string Ground = null, PanelImpact? Impact = null);
+
+	/// <summary>
+	/// A panel's impact beat (.ai/cutscenes.md, "The cinematic rules", rule 1): <paramref name="At"/> seconds into the
+	/// panel's own clock (the one its animated box runs on), speed lines thrown out of <paramref name="Art"/> (an art
+	/// pixel of the frame, on the mid layer), a shake of <paramref name="ShakePx"/> canvas units through Reduce Screen
+	/// Shake, and a dithered flash - in the warm light, the Archmage's, when <paramref name="Warm"/>, else the dark
+	/// wizard's cold violet. Only where something lands: most panels are calm, and have none.
+	/// </summary>
+	public readonly record struct PanelImpact(float At, Vector2 Art, bool Warm, float ShakePx = 8f);
+
+	// THE KEN BURNS MOVES (rules 3 and 5). Each layer's drift eases in and out (a smoothstep) and is still at both
+	// ends: the panel holds as it dissolves in and a beat after (DriftStillIn) before anything moves, and comes to
+	// rest DriftStillOut before its hold ends, under the next panel's dissolve. It used to run linearly from the first
+	// frame to the last - moving at once, and two moving pictures crossing in every dissolve.
+
+	/// <summary>Seconds a panel is still at the start of its hold: its dissolve in (0.7 s) and a beat.</summary>
+	public const float DriftStillIn = 0.9f;
+
+	/// <summary>Seconds a panel is still at the end of its hold.</summary>
+	public const float DriftStillOut = 0.35f;
+
+	/// <summary>The fastest any layer may drift, canvas units a second at the eased peak. The validator holds every beat to it.</summary>
+	public const float MaxDriftSpeed = 28f;
+
+	/// <summary>
+	/// Seconds the black ground holds after the last panel has dissolved out, before the menu, the character select or
+	/// the results (rule 4): the reel ends, and then the next screen comes, never the two on one frame.
+	/// </summary>
+	public const float EndHoldSeconds = 0.6f;
+
+	/// <summary>The fastest a beat's layer drifts at the eased peak, canvas units a second: the validator's number.</summary>
+	public static float PeakDriftSpeed(Beat beat)
+	{
+		float span = Mathf.Max(0.1f, beat.Seconds - DriftStillIn - DriftStillOut);
+		float longest = Mathf.Max(beat.Back.Length(), Mathf.Max(beat.Mid.Length(), beat.Fore.Length()));
+		// A smoothstep's steepest is 1.5 times its average.
+		return 1.5f * longest * ArtScale / span;
+	}
+
+	/// <summary>The art frame's size in art pixels and its whole render scale, for the validator.</summary>
+	public static Vector2 FrameArtSize => ArtSize;
 
 	/// <summary>
 	/// A run of panels from one art folder: the prologue, one lesson, or one freeing. <paramref name="WizardId"/>: the
@@ -139,7 +180,11 @@ public partial class Prologue : Control
 		// four starting wizards."). The Archmage goes back for the four disciplines, on their knees in the dark
 		// wizard's chain, and his light breaks it (its box animates: tools/art/prologue.py, BREAK_BOX); their own
 		// lights come back to them. Back and mid as one again: the four kneel on the ground the back layer lights.
-		new("break", 5.4f, "You went back for them.", new Vector2(-3f, 0f), new Vector2(-3f, 0f), new Vector2(12f, 0f)),
+		// THE IMPACT (rule 1): at 2.0 s the light his staff holds bursts and the chain breaks (tools/art/prologue.py,
+		// BREAK_AT and _flare, drawn at the staff's head, art (442, 418)). Speed lines out of it in his warm light, a
+		// shake and a flash, over the burst the generator draws.
+		new("break", 5.4f, "You went back for them.", new Vector2(-3f, 0f), new Vector2(-3f, 0f), new Vector2(12f, 0f),
+			Impact: new PanelImpact(2.0f, new Vector2(442f, 418f), Warm: true)),
 		// The five of them, standing where the four knelt, each light his own again. No line: the road is next, and
 		// then the character select, where any of the five may walk it.
 		new("five", 4.8f, null, new Vector2(-2f, 0f), new Vector2(-2f, 0f), new Vector2(-14f, 0f)),
@@ -221,7 +266,7 @@ public partial class Prologue : Control
 
 	/// <summary>
 	/// How long a reel plays untouched, in seconds: each panel's hold, less the dissolve the next one overlaps it by,
-	/// and the last one's dissolve out. For a probe that waits it out (_PrologueProbe).
+	/// the last one's dissolve out, and the black held after it. For a probe that waits it out (_PrologueProbe).
 	/// </summary>
 	public static float ReelSeconds(string reelId, float dissolveSeconds = 0.7f)
 	{
@@ -230,7 +275,7 @@ public partial class Prologue : Control
 		float total = dissolveSeconds;
 		foreach (Beat beat in found.Beats)
 			total += beat.Seconds - dissolveSeconds;
-		return total + dissolveSeconds;
+		return total + dissolveSeconds + EndHoldSeconds;
 	}
 
 	/// <summary>A panel's line as it is shown: a freeing's carries its wizard's name.</summary>
@@ -293,6 +338,8 @@ void fragment() {
 		public AtlasTexture AnimAtlas;
 		public ShaderMaterial AnimMaterial;
 		public int AnimFrame = -1;
+		// The panel's impact beat has fired (Beat.Impact): once a panel, however long it is held.
+		public bool ImpactFired;
 	}
 
 	/// <summary>
@@ -321,8 +368,35 @@ void fragment() {
 	private int current;
 	private bool finished;
 	private bool endingOut;
+	// Seconds on the black ground after the last panel has gone (EndHoldSeconds).
+	private float endHeld;
 
 	private Control stage;
+
+	// THE IMPACT BEATS (Beat.Impact). The shake moves the stage and the fx layer together, on whole art pixels;
+	// the speed lines and the flash draw on the fx layer, over every panel and under the caption and the skip.
+	private Control fx;
+	private readonly ScreenShake panelShake = new();
+	private readonly SpeedLines panelLines = new();
+	private readonly DitherFlash panelFlash = new();
+	private bool fxDrawn;
+
+	/// <summary>Where the impact's shake has the picture this frame, canvas units; zero at rest. For _UiShot.</summary>
+	public Vector2 ShakeOffset => stage?.Position ?? Vector2.Zero;
+
+	// Speed lines out of the panel's subject: from inside the burst the art draws (its rays reach ~130 art px) out
+	// past the edges of what a PC or a phone shows of the frame, one art pixel thick (two canvas units) on the art
+	// grid. Fewer and quicker than a boss's: the drawn burst is the subject, and the four in the chain must still
+	// read through them (the first cut's 28 for 0.6 s covered them).
+	private const float ImpactLinesInner = 50f * ArtScale;
+	private const float ImpactLinesOuter = 330f * ArtScale;
+	private const int ImpactLinesCount = 20;
+	private const float ImpactLinesSeconds = 0.45f;
+	private const float ImpactShakeSeconds = 0.4f;
+	// The flash blooms out of the same light, dense at it and thinning to nothing 260 art px out (DitherFlash).
+	private const float ImpactFlashDensity = 0.8f;
+	private const float ImpactFlashSeconds = 0.24f;
+	private const float ImpactFlashReach = 260f * ArtScale;
 	private Label caption;
 	private Button skipButton;
 	private ColorRect skipFill;
@@ -370,6 +444,17 @@ void fragment() {
 		stage = new Control { Name = "Stage", MouseFilter = MouseFilterEnum.Ignore };
 		stage.SetAnchorsPreset(LayoutPreset.FullRect);
 		AddChild(stage);
+
+		fx = new Control
+		{
+			Name = "ImpactFx",
+			MouseFilter = MouseFilterEnum.Ignore,
+			TextureFilter = TextureFilterEnum.Nearest,
+			TextureRepeat = TextureRepeatEnum.Enabled,
+		};
+		fx.SetAnchorsPreset(LayoutPreset.FullRect);
+		fx.Draw += DrawFx;
+		AddChild(fx);
 
 		caption = new Label
 		{
@@ -439,6 +524,8 @@ void fragment() {
 	{
 		if (GetViewport() is Viewport viewport)
 			viewport.SizeChanged -= PlaceCaption;
+		if (fx != null && IsInstanceValid(fx))
+			fx.Draw -= DrawFx;
 	}
 
 	// The caption sits near the foot of what the screen shows. Every panel darkens its ground
@@ -631,8 +718,11 @@ void fragment() {
 			return;
 		Beat beat = Beats[index];
 		// -0.5 to +0.5 over the hold, so the picture the generator composed is the one on screen
-		// mid-panel, and every layer stays within half its drift of where it was drawn.
-		float t = Mathf.Clamp(view.Elapsed / beat.Seconds, 0f, 1f) - 0.5f;
+		// mid-panel, and every layer stays within half its drift of where it was drawn - still for
+		// DriftStillIn and DriftStillOut at its ends and eased between (rules 3 and 5).
+		float span = Mathf.Max(0.1f, beat.Seconds - DriftStillIn - DriftStillOut);
+		float u = Mathf.Clamp((view.Elapsed - DriftStillIn) / span, 0f, 1f);
+		float t = u * u * (3f - 2f * u) - 0.5f;
 		// Whole SCREEN pixels: a layer at a fraction of one would be resampled (.ai/art-direction.md 6a).
 		float perUnit = Mathf.Max(0.01f, GetViewport().GetFinalTransform().X.X);
 		Vector2[] drift = { beat.Back, beat.Mid, beat.Fore };
@@ -659,6 +749,17 @@ void fragment() {
 			views[i].Elapsed += dt;
 			ApplyDrift(i);
 			StepAnim(views[i]);
+			FireImpact(i);
+		}
+		TickFx(dt);
+
+		if (endHeld > 0f || (endingOut && views[current] == null))
+		{
+			// The reel is over and the ground is black: hold it, then move on (rule 4).
+			endHeld += dt;
+			if (endHeld >= EndHoldSeconds)
+				Finish();
+			return;
 		}
 
 		PanelView now = views[current];
@@ -695,10 +796,71 @@ void fragment() {
 			float progress = 1f - (now.Elapsed - beat.Seconds) / DissolveSeconds;
 			SetProgress(now, Mathf.Clamp(progress, 0f, 1f));
 			if (progress <= 0f)
-				Finish();
+			{
+				// Gone to the ground. The black holds for EndHoldSeconds before the next screen (above).
+				now.Root.QueueFree();
+				views[current] = null;
+				caption.Modulate = new Color(1f, 1f, 1f, 0f);
+				endHeld = 0.0001f;
+				return;
+			}
 		}
 
 		UpdateCaption();
+	}
+
+	// --- the impact beats ---------------------------------------------------------------------------------
+
+	// A panel's impact on the frame its own clock passes it: the speed lines laid out from where its subject stands
+	// now, on the stage's own grid, a kick of the shake and the flash.
+	private void FireImpact(int index)
+	{
+		PanelView view = views[index];
+		if (view == null || view.ImpactFired || Beats[index].Impact is not PanelImpact impact || view.Elapsed < impact.At)
+			return;
+		view.ImpactFired = true;
+		// A panel come to after its moment (a long first frame) fires nothing: the burst belongs to the moment.
+		if (view.Elapsed - impact.At > 0.25f)
+			return;
+		Vector2 at = view.Root.Position + view.Layers[1].Position + impact.Art * ArtScale;
+		ElementColors.Ramp ramp = ElementColors.GetRamp(impact.Warm ? Element.Light : Element.Darkness);
+		// The light's pale yellow into its gold on the warm side (its two stops under white, so the lines sit inside
+		// the burst rather than over it); the violet's hot into its mid on the cold, whose edge is near black.
+		Color near = impact.Warm ? ramp.Mid : ramp.Hot;
+		Color far = impact.Warm ? ramp.Edge : ramp.Mid;
+		panelLines.Burst(at, ImpactLinesInner, ImpactLinesOuter, ImpactLinesCount, ImpactLinesSeconds, near, far, ArtScale,
+			(uint)(index * 7919 + 17), SpeedLines.Motion.Outward);
+		panelShake.Kick(impact.ShakePx, ImpactShakeSeconds);
+		// White at the light while it is young, the ramp's own far stop (gold, or violet) out from it.
+		panelFlash.Flash(ramp.Core, far, ImpactFlashDensity, ImpactFlashSeconds, at, ImpactFlashReach);
+		fx.QueueRedraw();
+	}
+
+	// The shake (through Reduce Screen Shake, in ScreenShake.Kick) moves the stage and the fx layer by whole art
+	// pixels and whole screen pixels both, so no layer is ever resampled (.ai/art-direction.md 6a).
+	private void TickFx(float dt)
+	{
+		Vector2 shake = panelShake.Step(dt);
+		float perUnit = Mathf.Max(0.01f, GetViewport().GetFinalTransform().X.X);
+		var offset = new Vector2(Mathf.Round(shake.X / ArtScale), Mathf.Round(shake.Y / ArtScale)) * ArtScale;
+		offset = new Vector2(Mathf.Round(offset.X * perUnit), Mathf.Round(offset.Y * perUnit)) / perUnit;
+		if (stage.Position != offset)
+		{
+			stage.Position = offset;
+			fx.Position = offset;
+		}
+		panelLines.Tick(dt);
+		panelFlash.Tick(dt);
+		if (panelLines.Active || panelFlash.Active || fxDrawn)
+			fx.QueueRedraw();
+	}
+
+	private void DrawFx()
+	{
+		fxDrawn = panelLines.Active || panelFlash.Active;
+		// The flash under the lines, so the streaks stay whole through the bloom.
+		panelFlash.Draw(fx, new Rect2(new Vector2(-32f, -32f), fx.Size + new Vector2(64f, 64f)));
+		panelLines.Draw(fx);
 	}
 
 	private void UpdateCaption()

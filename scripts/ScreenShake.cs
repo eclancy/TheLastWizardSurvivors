@@ -57,17 +57,32 @@ public sealed class ScreenShake
 	{
 		if (camera == null || !GodotObject.IsInstanceValid(camera))
 			return;
-		if (left <= 0f)
+		if (!Advance(delta))
 		{
 			Release(camera);
 			return;
 		}
+		camera.Offset = (aim * Strength).Round();
+		wrote = true;
+	}
+
+	/// <summary>
+	/// Once a frame, for a shake that has no camera (the prologue's panels, Prologue.cs): the offset to draw the
+	/// picture at this frame, in the caller's own units, unrounded - the caller snaps it to its own grid. Zero
+	/// once the kick has died. Kick, and so Reduce Screen Shake, is the same for both.
+	/// </summary>
+	public Vector2 Step(float delta) => Advance(delta) ? aim * Strength : Vector2.Zero;
+
+	// The clock and the re-aim, shared by Tick and Step. False once nothing is shaking.
+	private bool Advance(float delta)
+	{
+		if (left <= 0f)
+			return false;
 		left -= delta;
 		if (left <= 0f)
 		{
 			left = 0f;
-			Release(camera);
-			return;
+			return false;
 		}
 		aimLeft -= delta;
 		if (aimLeft <= 0f)
@@ -76,8 +91,7 @@ public sealed class ScreenShake
 			upDown = -upDown;
 			aim = new Vector2(rng.RandfRange(-0.45f, 0.45f), upDown * rng.RandfRange(0.55f, 1f));
 		}
-		camera.Offset = (aim * Strength).Round();
-		wrote = true;
+		return true;
 	}
 
 	/// <summary>Stops at once and hands the camera back centred.</summary>

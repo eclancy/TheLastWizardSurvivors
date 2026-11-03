@@ -273,6 +273,10 @@ public partial class LongCoilBoss : BossEnemy
 	protected internal override float EntranceClimaxWeight => 1.0f;
 	protected internal override Element EntranceFlareElement => Element.Earth;
 	protected internal override float EntranceRoarSeconds => HeadBursts + 0.1f;
+	// The whole arrival waits this long first (.ai/cutscenes.md, rules 1 and 3): the camera holds on the wizard while
+	// the bars close and then pans, and a head bursting 1.3 s in burst while the pan was under half way there, at the
+	// edge of the picture. Now the ridge races in as the camera goes to it, and the head bursts with it framed.
+	protected internal override float EntranceDelaySeconds => 0.6f;
 
 	private BossDeath.Piece head;
 	private Vector2 entranceBack = Vector2.Right;

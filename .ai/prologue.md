@@ -121,11 +121,21 @@ dissolves with the panel, pixel for pixel, with no seam. About 7 MB of texture w
   it drifts with it, over it and under the fore), its region stepped by the panel's own clock
   (`StepAnim`), and its own copy of the dissolve whose `art_size` is the atlas's. The drift runs from -half to +half, so the picture the generator
   composed is the one on screen mid-panel. Layer positions are snapped to **whole screen pixels**.
+  **The drift eases and holds** (`.ai/cutscenes.md`, the cinematic rules, 2026-11-03): still for
+  `DriftStillIn` (0.9 s: the dissolve in and a beat), a smoothstep across the middle, at rest
+  `DriftStillOut` (0.35 s) before the hold ends. `PeakDriftSpeed` is the steepest any layer moves -
+  23 canvas px/s at most today (the moot's fore) - and the validator holds every reel under
+  `MaxDriftSpeed` (28).
 - **Transitions** are a dissolve through the 8x8 Bayer matrix, 0.7 s, in a canvas shader built in
   code (`DissolveShaderCode`): the incoming panel's pixels appear in threshold order over the
-  outgoing one, which keeps drifting underneath. Every pixel on screen is one panel's or the other's,
+  outgoing one, which has come to rest underneath. Every pixel on screen is one panel's or the other's,
   never a blend - the only fade the contract allows. The first panel dissolves in from black, the last
-  out to it. Thresholds come from each layer's own art pixel, so the pattern sits on the x2 grid.
+  out to it, and the black then holds `EndHoldSeconds` (0.6 s) before the menu, the character select
+  or the results. Thresholds come from each layer's own art pixel, so the pattern sits on the x2 grid.
+- **An impact beat** (`Beat.Impact`, a `PanelImpact`): at a time on the panel's own clock, speed lines
+  thrown out of an art point (`SpeedLines`, one art pixel thick on the art grid), a shake of the stage
+  through `ScreenShake` (so Reduce Screen Shake), and a dithered flash (`DitherFlash`), warm for the
+  Archmage's light, violet for the dark wizard's. Only the break has one: the chain breaking, at 2.0 s.
 - **Captions** are a `Label` in the display face (Cinzel), bone over an occlusion outline, near the
   foot of the screen: on a PC over frame rows ~560-600, on a phone ~690-790, both darkened ground. A
   line fades in after 0.9 s and is gone before the next dissolve starts, so it never sits over two

@@ -248,8 +248,10 @@ public partial class BossDeath : Node2D
 			if (Crossed(Boss.EntranceRoarSeconds))
 			{
 				Boss.RoarOnArrival();
-				// The climax: the run's cinematic flares, jolts and shakes on it (Node2DGame.BossEntrance.cs).
-				Node2DGame.Current?.OnBossClimax(Boss, Boss.EntranceClimaxWeight, Boss.EntranceFlareElement);
+				// The climax: the run's cinematic flares, jolts and shakes on it, and throws speed lines out of the
+				// body in its light (Node2DGame.BossEntrance.cs) - from the middle of its frame, clear of the body.
+				Node2DGame.Current?.OnBossClimax(Boss, Boss.EntranceClimaxWeight, Boss.EntranceFlareElement,
+					ToGlobal(ArtToLocal(FrameSize * 0.5f)), BodyRadius);
 			}
 		}
 		else
@@ -366,6 +368,34 @@ public partial class BossDeath : Node2D
 	/// <see cref="Crossed"/> block that throws the debris, so the jolt and the dust are one frame.
 	/// </summary>
 	public void Impact(float weight) => Node2DGame.Current?.OnBossImpact(Boss, weight);
+
+	/// <summary>
+	/// Room round the middle of the frame that the body fills, world px: where a burst of speed lines starts, so
+	/// they leave the body clear. A little under half the frame's height - a boss stands in most of its cell.
+	/// </summary>
+	public float BodyRadius => FrameSize.Y * Mathf.Abs(ArtScale.Y) * Mathf.Abs(GlobalScale.Y) * 0.42f;
+
+	/// <summary>
+	/// Speed lines thrown out of <paramref name="art"/> (an art pixel of the frame) in <paramref name="ramp"/>, on the
+	/// world's grid (.ai/cutscenes.md rule 1): for a beat of a fall or an arrival that is more than a jolt - the dark
+	/// wizard's light leaving him. <paramref name="weight"/> 1 is a roar's burst.
+	/// </summary>
+	public void ThrowSpeedLines(Vector2 art, ElementColors.Ramp ramp, float weight)
+	{
+		if (Node2DGame.Current is not Node2DGame run || Boss == null)
+			return;
+		float w = Mathf.Clamp(weight, 0.3f, 1.5f);
+		run.BurstSpeedLines(ToGlobal(ArtToLocal(art)), BodyRadius * 0.8f, BodyRadius * 0.8f + 260f + 120f * w,
+			Mathf.RoundToInt(16f + 12f * w), 0.5f + 0.15f * w, ramp.Hot, ramp.Edge, 0x5EED0000u ^ (uint)Boss.BossId.Length,
+			SpeedLines.Motion.Outward);
+	}
+
+	/// <summary>
+	/// A dithered flash in <paramref name="ramp"/>'s light blooming out of <paramref name="art"/> (an art pixel of the
+	/// frame) to <paramref name="reach"/> canvas units (Node2DGame.FlashScreen), for the rare beat that calls for one.
+	/// </summary>
+	public void Flash(Vector2 art, ElementColors.Ramp ramp, float density, float seconds, float reach) =>
+		Node2DGame.Current?.FlashScreen(ramp.Core, ramp.Edge, density, seconds, ToGlobal(ArtToLocal(art)), reach);
 
 	// --- Clock helpers ------------------------------------------------------------------------------
 

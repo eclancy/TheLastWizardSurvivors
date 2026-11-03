@@ -45,6 +45,12 @@ public partial class ThroneEnding : Control
 	private const float RiseGapSeconds = 0.42f;
 	private const float RiseSeconds = 0.6f;
 	private const float RollSeconds = 18f;
+	// THE ROLL'S HOLD AND EASE (.ai/cutscenes.md, "The cinematic rules", rules 3 and 5). The credits are the
+	// ending's one camera move, and they used to start at full speed on the frame of the press, while the row was
+	// still going back to the dark. Now the row dims first and holds (RollHoldSeconds), and the roll gathers speed
+	// over RollEaseSeconds before it runs at its steady pace; the whole of the motion still takes RollSeconds.
+	internal const float RollHoldSeconds = 0.9f;
+	internal const float RollEaseSeconds = 1.6f;
 	private const float RowArmSeconds = 1.2f;
 	private const float FadeSeconds = 0.6f;
 	private const ulong QuietAfterPressMsec = 250;
@@ -244,7 +250,7 @@ public partial class ThroneEnding : Control
 
 		if (part == Part.Roll)
 		{
-			float u = Mathf.Clamp(partAge / RollSeconds, 0f, 1f);
+			float u = RollShare(partAge - RollHoldSeconds);
 			PlaceRoll(u);
 			if (u >= 1f)
 				BeginOut();
@@ -259,6 +265,18 @@ public partial class ThroneEnding : Control
 				QueueFree();
 			}
 		}
+	}
+
+	// How far through the roll <t> seconds of motion are, 0 to 1: speeding up evenly over RollEaseSeconds from rest,
+	// then steady, arriving at 1 at RollSeconds. Distance under a ramp is half the ramp's time at full speed.
+	internal static float RollShare(float t)
+	{
+		if (t <= 0f)
+			return 0f;
+		float ease = Mathf.Min(RollEaseSeconds, RollSeconds * 0.5f);
+		float total = RollSeconds - ease * 0.5f;
+		float travelled = t < ease ? t * t / (2f * ease) : t - ease * 0.5f;
+		return Mathf.Clamp(travelled / total, 0f, 1f);
 	}
 
 	// From under the bottom edge to past the top, centred: a slow credits roll.

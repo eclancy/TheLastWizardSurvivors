@@ -14,24 +14,32 @@ using TheOneHeMissed.scripts;
 ///   0.00  FREEZE. The field stops dead on the frame of the blow; the wizard is held on the frame he was
 ///         struck in (his death row's first, which is still standing), the damage flash hangs over the
 ///         field, and the screen gives one small kick. player_death has already played (Player.TakeDamage).
-///   0.40  CRASH ZOOM. The HUD and the touch pad go, the letterbox bars slide in, and the camera snaps in
-///         on him - the run's 0.85 to 2.0 in a third of a second, a quartic ease-out that overshoots by 7%
-///         and settles, with a jolt as it lands. 2.0 because the body sprite is drawn at x2: at a camera
-///         zoom of 2 every art pixel of the close-up is exactly four canvas pixels. He is framed a tenth of
-///         the screen above centre, so the word can sit below him.
-///   0.80  THE FALL. His own death row (every generated wizard has one, tools/art/anim_sets.py: six
-///         frames folding to the ground), slowed to take 0.9 s; when its last frame lands, player_fall, a
-///         puff of dust at his feet and a second jolt. The Test Wizard, Eric's own drawing, has no death
-///         row and is never derived (CLAUDE.md), so he falls in code on whole pixels: a two-pixel buckle,
-///         then one quarter turn onto the ground - no fractional rotation of pixel art.
-///   2.10  DEFEAT. A band opens across the screen below him (the results band's stone deep and gold rule,
-///         full bleed like the letterbox), the field dims behind it, and "Defeat" slams onto it in the
-///         heading face - large, cloth red - with game_over and a third jolt.
-///   2.50  ARMED. Only now does a press do anything, and only a press that starts now: a held button or a
+///   0.55  CRASH ZOOM. The HUD and the touch pad go, the letterbox bars slide in, and the camera drives in
+///         on him - the run's 0.85 to 2.0 in 0.6 s, eased in and out, overshooting by 4% and settling, with
+///         a jolt as it lands - while speed lines in the dark wizard's cold violet rush in on him from the
+///         edges and are gone as it lands. 2.0 because the body sprite is drawn at x2: at a camera zoom of 2
+///         every art pixel of the close-up is exactly four canvas pixels. He is framed a tenth of the screen
+///         above centre, so the word can sit below him.
+///   1.45  THE FALL, after a held beat on the close-up. His own death row (every generated wizard has one,
+///         tools/art/anim_sets.py: six frames folding to the ground), slowed to take 0.9 s; when its last
+///         frame lands, player_fall, a puff of dust at his feet and a second jolt. The Test Wizard, Eric's own
+///         drawing, has no death row and is never derived (CLAUDE.md), so he falls in code on whole pixels: a
+///         two-pixel buckle, then one quarter turn onto the ground - no fractional rotation of pixel art.
+///   2.95  DEFEAT, a beat after he lands. A band opens across the screen below him (the results band's stone
+///         deep and gold rule, full bleed like the letterbox), the field dims behind it, and "Defeat" slams
+///         onto it in the heading face - large, cloth red - with game_over and a third jolt.
+///   3.35  ARMED. Only now does a press do anything, and only a press that starts now: a held button or a
 ///         thumb still on the stick sends no new press, so nothing is skipped by accident. Until then
 ///         every press and release is swallowed, so nothing under the card hears one either.
-///   3.00  The prompt fades in under the word.
+///   3.85  The prompt fades in under the word.
 ///   press The results screen covers the field from below (GameOverScreen.CoversFromBelow) and this goes.
+///
+/// THE CINEMATIC RULES (Eric, 2026-11-03; .ai/cutscenes.md). The first cut snapped in a third of a second on a
+/// quartic ease-out - fastest on its first frame - 0.4 s after the blow, fell 0.08 s after the zoom landed and
+/// said "Defeat" 0.4 s after the fall: a crash the eye could not follow and beats that ran into each other. Now
+/// the freeze is held long enough to read (FreezeHold), the zoom eases in and out at under half the old peak
+/// rate, the close-up holds before he falls (CloseUpHold) and a beat passes between his landing and the word
+/// (WordBeat). RegressionChecks.ValidateCinematicRules holds all three above their floors.
 ///
 /// Every shake goes through the run's ScreenShake, so Reduce Screen Shake (DisplaySettings.ShakeScale)
 /// scales all four. The card is full bleed - a band edge to edge, like the letterbox - so SafeArea is not
@@ -41,21 +49,35 @@ using TheOneHeMissed.scripts;
 public partial class DefeatSequence : CanvasLayer
 {
 	// --- the timeline (real seconds from the killing blow) -----------------------------------------
-	public const float ZoomAt = 0.40f;
-	public const float ZoomSeconds = 0.32f;
-	public const float FallAt = 0.80f;
+	/// <summary>The freeze, held: the frozen field reads as the moment of the blow before anything moves (rule 3).</summary>
+	public const float FreezeHold = 0.55f;
+	/// <summary>The zoom in on him: long enough for the eye to ride it (rule 5), short enough to still be a crash.</summary>
+	public const float ZoomSeconds = 0.60f;
+	/// <summary>The close-up, held still before he falls.</summary>
+	public const float CloseUpHold = 0.30f;
 	public const float FallSeconds = 0.90f;
-	public const float TitleAt = 2.10f;
+	/// <summary>The beat between his landing and the word.</summary>
+	public const float WordBeat = 0.60f;
+
+	public const float ZoomAt = FreezeHold;
+	public const float FallAt = ZoomAt + ZoomSeconds + CloseUpHold;
+	public const float TitleAt = FallAt + FallSeconds + WordBeat;
 	public const float BandOpenSeconds = 0.14f;
 	public const float SlamSeconds = 0.18f;
-	public const float ArmAt = 2.50f;
-	public const float PromptAt = 3.00f;
+	public const float ArmAt = TitleAt + 0.40f;
+	public const float PromptAt = TitleAt + 0.90f;
 
 	// --- the camera ---------------------------------------------------------------------------------
 	/// <summary>The run camera's zoom on the close-up: the x2 body sprite at exactly 4 canvas px an art pixel.</summary>
 	public const float CloseZoom = 2.0f;
 	/// <summary>How far past the close-up the crash zoom overshoots before it settles, as a share.</summary>
-	private const float ZoomOvershoot = 0.07f;
+	private const float ZoomOvershoot = 0.04f;
+
+	// The crash zoom's speed lines: rushing in on him from past the edge of the wide shot to a ring clear of his
+	// body (the x2 sprite is 96 px tall), in the dark wizard's violet - the blow is his. World px, the 2 px grid.
+	private const float ZoomLinesInner = 60f;
+	private const float ZoomLinesOuter = 560f;
+	private const int ZoomLinesCount = 26;
 	/// <summary>The slow push-in that keeps the held shot alive after the snap, as a share, over DriftSeconds.</summary>
 	private const float DriftZoom = 0.05f;
 	private const float DriftSeconds = 2.6f;
@@ -186,10 +208,17 @@ public partial class DefeatSequence : CanvasLayer
 			{
 				zoomStarted = true;
 				Run.HideRunHudForDefeat();
+				if (Wizard != null && IsInstanceValid(Wizard))
+				{
+					ElementColors.Ramp dark = ElementColors.GetRamp(Element.Darkness);
+					Run.BurstSpeedLines(Wizard.GlobalPosition, ZoomLinesInner, ZoomLinesOuter, ZoomLinesCount, ZoomSeconds,
+						dark.Hot, dark.Mid, 0xDEFEA7u, SpeedLines.Motion.Inward);
+				}
 			}
 			float u = Mathf.Clamp((t - ZoomAt) / ZoomSeconds, 0f, 1f);
-			// Quartic out: almost all of the way in the first third, which is what makes it a crash.
-			share = 1f - Mathf.Pow(1f - u, 4f);
+			// Eased in and out (rule 5: no snap of the camera), the second half steeper than the first, so it still
+			// lands as a crash: a smoothstep on u^1.3 gathers for a beat and drives home.
+			share = Smooth(Mathf.Pow(u, 1.3f));
 			if (t < zoomEnd)
 			{
 				factor = Mathf.Lerp(StartZoomFactor, close * (1f + ZoomOvershoot), share);
