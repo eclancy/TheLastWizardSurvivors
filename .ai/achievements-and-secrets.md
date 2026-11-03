@@ -44,7 +44,7 @@ Read from `scripts/UnlockCatalog.cs`, `scripts/AchievementDefinition.cs`, `scrip
 | Cone of Cold | Ice | **Starter** | the Frostweaver's opener |
 | Chain Lightning | Lightning | **Starter** | the Stormcaller's opener |
 | Obsidian Spike | Earth | **Starter** | the Geomancer's opener |
-| Magic Missile | Arcane, Lightning | **Starter** | |
+| Magic Missile | Arcane (pure since 2026-11-02) | **Starter** | The Archmage's opener (`.ai/protagonist.md`) |
 | Aegis Ward | Metal, Light | **Starter** | the one shield |
 | Arcane Explosion | Arcane | Achievement | First Blood: defeat 1 enemy |
 | Frost Shard | Ice, Water | Achievement | Survivor: survive 10 minutes in one run |
@@ -250,8 +250,8 @@ person behind. Narrow it there first."*
   Sands could be skipped once Väinämöinen is free.
 - **"Every wizard" means every wizard whose rescue chapter comes before the gate.** With the Cursed
   Dungeon moved into the castle, Tituba is freed behind the Emberdeep; counting her would be the
-  Fireball bug again, for a person. So the gate counts the four starters, John Dee and Väinämöinen
-  (Laelaps is outside every gate), and `ValidateGateReachability` holds it. **The rule is written per
+  Fireball bug again, for a person. So the gate counts the starters (four then; five since The
+  Archmage, 2026-11-02, whom every save holds), John Dee and Väinämöinen (Laelaps is outside every gate), and `ValidateGateReachability` holds it. **The rule is written per
   gate chapter** - "every wizard whose rescue comes before *this* chapter" - because the castle doc
   gives the Throne the same kind of gate, where "every wizard" includes Tituba and the fiction's
   sentence is true where he actually is (`.ai/endgame-castle.md` 1.6).

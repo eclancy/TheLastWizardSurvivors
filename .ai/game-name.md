@@ -7,6 +7,11 @@ words are picked the game ships as *Wizard Survivors*. Pulled on 2026-11-02 from
 (https://claude.ai/artifact/LM9fYy1cs7vbEWRwssepAN), which came from his conversation with Claude Duet
 and a voice call. That page also holds names for Creature Tactics; only this game's are copied here.
 
+**Later on 2026-11-02 the name was chosen: The One He Missed** (the rename is its own branch). The figure it
+names - the blue-robed wizard on the title, the one he missed - was to stay story only; Eric made him playable
+the same day, the fifth starter, named **The Archmage** on the character select (the game keeps the title,
+the wizard has his own name). `.ai/protagonist.md`.
+
 ## The shortlist
 
 Any of them can be a new title or a subtitle after "Wizard Survivors:". All are drawn from the story

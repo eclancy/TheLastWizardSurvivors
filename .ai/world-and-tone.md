@@ -37,7 +37,7 @@ wrote it down, which is why the vocabulary in the code already fits:
 | Eight places he holds | `StageCatalog`, chapters gated `PreviousBoss` |
 | His lieutenant at each place | the per-chapter boss that opens the next |
 | He is unreachable until the land is free | `IsCampaignComplete` gates the final chapter — *every spell recovered and every wizard freed* |
-| You start with almost nothing | four starter disciplines, eight starter unlocks |
+| You start with almost nothing | four starter disciplines and yourself (The Archmage, `.ai/protagonist.md`), a handful of starter unlocks |
 
 `.ai/gameplay-design.md` already words the gate as **"every spell recovered and every wizard
 freed."** That sentence is the story. Nothing here needs adding to the code.
@@ -65,10 +65,15 @@ are a faction of one master, and his colour is absence. Worked out in full below
 is something you made — a ward, a flame, a spell. Magic did not leave the world; it was taken and
 locked up, and every point of warm light is a piece of it he does not have.
 
-**Why unlockable wizards are named people.** The four you begin with — Pyromancer, Frostweaver,
-Stormcaller, Geomancer — are *disciplines*, roles the player steps into. Everyone unlocked after is
+**Why unlockable wizards are named people.** The four disciplines you begin with — Pyromancer,
+Frostweaver, Stormcaller, Geomancer — are roles the player steps into. Everyone unlocked after is
 a historic or legendary magic-worker, because each one is a prisoner with a name and a life before
 this. An archetype has nothing to be taken from; a person does.
+
+**The fifth you begin with is you.** Since 2026-11-02 the title screen's blue-robed figure — the one
+he missed — is playable from the first run as **The Archmage** (Eric's name for him), first on the
+character select, on Magic Missile and Arcane (`.ai/protagonist.md`). He is neither a discipline nor
+a prisoner: nobody took him, so there was nobody to free. Merlin is not him (`.ai/merlin.md`).
 
 **Why every place is ruined.** Enchanted Forest, Cursed Dungeon, Sunken Cave, Blighted Swamp,
 Mystic Ruins, Frozen Waste, Scorched Sands, The Emberdeep - and, building (`.ai/campaign.md`), the

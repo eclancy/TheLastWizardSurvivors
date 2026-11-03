@@ -15,7 +15,8 @@ not have any unlocks or any achievements. move that to other maps";
 `RegressionChecks.ValidateSketchbookHoldsNothing`). The dark wizard himself is playable too, held nowhere
 and earned by beating every chapter's boss on Hardcore: `.ai/dark-wizard-playable.md` (he claims the verb
 **take**). Merlin, the old enchanter, is earned by beating every chapter's boss on Default or harder (he
-claims **rewind**). He is not the one he missed: that is the player, the blue-robed title figure.
+claims **rewind**). He is not the one he missed: that is the player, the blue-robed title figure - playable from the
+first run as **The Archmage**, the fifth starter, on Magic Missile (he claims **count**; `.ai/protagonist.md`).
 
 Read first: `.ai/world-and-tone.md` (why the rescued are named people), `.ai/side-events.md` (the
 five events, hints, secret wizards), `.ai/achievements-and-secrets.md` (every unlock is one
@@ -55,7 +56,7 @@ The questions as they were put:
 | rule | where | what it means here |
 |---|---|---|
 | Starters are disciplines; the rescued are named historic or legendary magic-workers | `world-and-tone.md` | every proposal is a person |
-| Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect, banish** (Seimei), **take** (the Dark Wizard), **rewind** (Merlin, earned by the whole road, `.ai/merlin.md`, 2026-11-02); reserved for Nimue: **sever** (Excalibur, decided by Eric 2026-11-02). Unclaimed in the ADR: contagion, displace |
+| Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect, banish** (Seimei), **take** (the Dark Wizard), **rewind** (Merlin, earned by the whole road, `.ai/merlin.md`, 2026-11-02), **temper** (Wayland), **echo** (the Sibyl), **count** (The Archmage, the fifth starter, `.ai/protagonist.md`); reserved for Nimue: **sever** (Excalibur, decided by Eric 2026-11-02). Unclaimed in the ADR: contagion, displace |
 | No path on his spell trades his element away | `ValidateApotheosisCatalog` | since 2026-11-02 the form names no path - the spell at max level, ascended down any branch, never combined - so every level 4 and level 8 option on a wizard's spell leads to it, and none may trade away the element the form deepens (it would come back as a third). The old rule, a required path that never leads away (`CheckRequiredPath`), went with the named paths |
 | A secret never pays a wizard | `achievements-and-secrets.md` 6.2 | every rescue below is a **side event** (a Road deed), never a secret |
 | ~~One side event per chapter~~ A chapter's events are a list (P2, built) | `SideEventDirector.EventsFor` | question 3; 6.3 "Built" says how a second is added |

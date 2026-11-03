@@ -319,7 +319,9 @@ Elim's "it's wizarding time" drawing: **not in Eric's email** - the only image E
   choice on the phone stick; his sheet beside Väinämöinen's.
 - **The name is The One He Missed** (Eric, later the same day), everywhere - repo, game, website, and the
   GitHub repo renamed to `eclancy/TheOneHeMissed`. **The blue-robed title figure is the player**, "the one
-  he missed", story only (title, prologue), and **not Merlin**: Merlin gets a look of his own. Building:
+  he missed", and **not Merlin**: Merlin gets a look of his own. He was to be story only (title, prologue);
+  later the same day Eric made him **the fifth starter, The Archmage**, first on the character select, on Magic
+  Missile made pure Arcane (`.ai/protagonist.md`, `wip/protagonist`). Building:
   the rename (`wip/rename`), the title art for the new name (`wip/title-art`), Merlin's new look
   (`wip/merlin-art`); the website's half is PR eclancy/EricClancyEngineeringAndCrafts#48, held until
   the GitHub repo is renamed (old `/wizard-survivors/version.json` and `/download` keep answering for
