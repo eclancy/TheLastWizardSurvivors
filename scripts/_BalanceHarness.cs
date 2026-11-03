@@ -430,6 +430,7 @@ public partial class _BalanceHarness : Node
 		Engine.TimeScale = TimeScale;
 
 		GameStats.ResetRunTelemetry();
+		IronPalisade.ResetRingCount();
 
 		// Every spell, boon and wizard owned, in memory only, with saving switched off for the run.
 		// What the measurement needs is "when CAN the card arrive", which should not depend on which
@@ -3684,6 +3685,9 @@ public partial class _BalanceHarness : Node
 
 		lines.Add("");
 		lines.Add($"  damage per minute (attributed): {total / Math.Max(0.01f, elapsed / 60f):0}");
+		// The Tempered Line (Wayland): how often a wall was struck enough to ring - the form's whole verb.
+		if (IronPalisade.RingsRung > 0)
+			lines.Add($"  the tempered line rang {IronPalisade.RingsRung} times");
 		lines.AddRange(SpellLevelLines());
 		lines.Add("");
 		lines.Add(AscensionSummaryLine());

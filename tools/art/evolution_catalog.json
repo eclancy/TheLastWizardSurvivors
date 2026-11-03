@@ -7516,6 +7516,45 @@
       "verb": "banish"
     },
     {
+      "spell": "iron_palisade",
+      "variant": "",
+      "spell_name": "Iron Palisade",
+      "spell_icon": "res://assets/bonelight/ui/spells/iron-palisade-metal.png",
+      "spell_elements": {
+        "Metal": 1
+      },
+      "milestone": 9,
+      "id": "iron_palisade_tempered_line",
+      "name": "The Tempered Line",
+      "description": "Every blow the stakes take hardens the line, \u002B5% a blow to \u002B100%. Struck enough, it rings and cuts all along it.",
+      "synergy": "Apotheosis",
+      "visual_tag": "Apotheosis",
+      "gains": {
+        "Metal": 1
+      },
+      "replaces": "",
+      "effect": "None",
+      "effect_value": 0,
+      "rider": "None",
+      "damage": 1.25,
+      "damage_bonus": 0,
+      "cooldown": 1,
+      "projectiles": 0,
+      "area": 1,
+      "scale": 1,
+      "speed": 1,
+      "pierce": 0,
+      "arcs": 0,
+      "branches": 0,
+      "knockback": 0,
+      "slow": 0,
+      "poison": 0,
+      "range": 0,
+      "tint": "ebf2fa",
+      "character": "wayland",
+      "verb": "temper"
+    },
+    {
       "spell": "the_taking",
       "variant": "",
       "spell_name": "The Taking",

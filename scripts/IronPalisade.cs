@@ -34,6 +34,14 @@ using WizardSurvivors.scripts;
 //     shoved back in, what is outside kept out, and whatever leans on the stakes is cut.
 //   - Rolling Wall (level 8): the wall marches forward at a walk once it is up, shoving what it meets
 //     ahead of it and cutting it as it goes. It halts at water and walls.
+//
+// **The Tempered Line** (Wayland the Smith's Apotheosis, the verb TEMPER; .ai/chapter-wizards.md 4.7): every
+// blow the stakes take hardens the wall. Each cut it lands on something leaning on it adds TemperPerBlow to
+// its cuts, up to TemperMax; the stakes heat from steel to white as it climbs (the metal ramp). Full, the
+// wall RINGS: one cut along its whole length and RingReach either side of it, at the full-tempered cut
+// times RingShare, and the temper goes back to nothing and starts again. Per wall, not per spell: a wall
+// is what the crowd strikes, and a wall you can see heating is a wall you can read. Nothing here moves or
+// stops anything, so a boss takes it like any cut.
 public partial class IronPalisade : Node2D, IPaintsElementPath
 {
 	public const string SpikedRailId = "iron_palisade_amplified_impact";
@@ -63,6 +71,15 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 	// Rolling Wall: how fast it marches.
 	public const float MarchSpeed = 75f;
 
+	// The Tempered Line: +5% a blow to +100%, then the ring - the full-tempered cut, along the whole wall and
+	// this far either side of it (a band about as wide as a Trip-Hammer's ring), and a fresh temper.
+	public const string TemperedLineId = "iron_palisade_tempered_line";
+	public const float TemperPerBlow = 0.05f;
+	public const float TemperMax = 1.0f;
+	public const float RingReach = 72f;
+	public const float RingShare = 1.0f;
+	private const float RingFlashSeconds = 0.32f;
+
 	[Export] public float HalfLength { get; set; } = 80f;
 	[Export] public float HalfThickness { get; set; } = 14f;
 	[Export] public float LifeSeconds { get; set; } = 4f;
@@ -91,6 +108,23 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 	private bool spikedRail;
 	private bool caltrops;
 	private bool rolling;
+	private bool tempered;
+
+	// The Tempered Line: how hard this wall is now (0 to TemperMax), and when it last rang.
+	private float temper;
+	private float rangAt = -10f;
+
+	/// <summary>The Tempered Line: this wall's temper, 0 to <see cref="TemperMax"/>. For the probes.</summary>
+	public float Temper => temper;
+
+	/// <summary>The Tempered Line: how many times any wall has rung since the count was reset. For the probes.</summary>
+	public static int RingsRung { get; private set; }
+
+	/// <summary>Forgets the ring count, for a probe that measures one run.</summary>
+	public static void ResetRingCount() => RingsRung = 0;
+
+	// What a cut deals now: the card's damage, hardened by every blow the wall has taken.
+	private int CutDamage => tempered ? Mathf.RoundToInt(Damage * (1f + temper)) : Damage;
 
 	// Spiked Rail's bleeding: who, how long left, and when each next bleeds. Swap-removed, never resized.
 	private readonly Enemy[] bleeder = new Enemy[MaxBleeding];
@@ -239,6 +273,7 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 			spikedRail = SpellData.HasEvolution(SpikedRailId);
 			caltrops = SpellData.HasEvolution(CaltropsId);
 			rolling = !IsRing && SpellData.HasEvolution(RollingWallId);
+			tempered = SpellData.HasEvolution(TemperedLineId);
 		}
 		if (spikedRail)
 			ShoveSpeed *= RailThrow;
@@ -468,10 +503,45 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 			if (nextCutAt.TryGetValue(id, out float readyAt) && age < readyAt)
 				continue;
 			nextCutAt[id] = age + CutIntervalSeconds;
-			PlayerRef.DealDamageToEnemy(enemy, Damage, source: SpellData);
+			PlayerRef.DealDamageToEnemy(enemy, CutDamage, source: SpellData);
 			if (spikedRail && IsInstanceValid(enemy) && !enemy.IsDying)
 				StartBleeding(enemy);
+			// The Tempered Line: the blow hardens the wall.
+			if (tempered)
+				temper = MathF.Min(TemperMax, temper + TemperPerBlow);
 		}
+		if (tempered && temper >= TemperMax)
+			Ring();
+	}
+
+	// The Tempered Line, struck enough: the wall rings, and everything along it is cut at the temper it
+	// reached - along the line and RingReach either side, or that far either side of an Iron Ring's circle.
+	// A stake not raised (blocked ground) still rings with the rest: the line is one piece of iron.
+	private void Ring()
+	{
+		int cut = Mathf.RoundToInt(Damage * (1f + temper) * RingShare);
+		foreach (Node node in EnemyRegistry.Snapshot)
+		{
+			if (node is not Enemy enemy || !IsInstanceValid(enemy) || enemy.IsDying)
+				continue;
+			bool along;
+			if (IsRing)
+			{
+				float d = GlobalPosition.DistanceTo(enemy.GlobalPosition);
+				along = MathF.Abs(d - RingRadius) <= RingReach;
+			}
+			else
+			{
+				Vector2 local = ToLocal(enemy.GlobalPosition);
+				along = MathF.Abs(local.X) <= RingReach && Mathf.Abs(local.Y) <= HalfLength + 16f;
+			}
+			if (along)
+				PlayerRef.DealDamageToEnemy(enemy, cut, source: SpellData);
+		}
+		temper = 0f;
+		rangAt = age;
+		RingsRung++;
+		SfxPlayer.Impact(Element.Metal, GlobalPosition);
 	}
 
 	// --- Spiked Rail -----------------------------------------------------------------------------
@@ -656,7 +726,52 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 			for (int i = 0; i < stakes; i++)
 				DrawStake(ToGlobal(LineFoot(i, stakes)), i, rise, fade);
 		}
+		if (tempered)
+			DrawRing(fade);
 		DrawBleeding();
+	}
+
+	private static readonly ElementColors.Ramp MetalRamp = ElementColors.GetRamp(Element.Metal);
+
+	// The Tempered Line ringing: the cut runs out from the stakes to the edge of its reach and goes - two
+	// lines of the metal's white at RingReach either side, and the line itself white, for RingFlashSeconds.
+	// On the art grid, faded by the dither like everything else the wall draws.
+	private void DrawRing(float fade)
+	{
+		float since = age - rangAt;
+		if (since >= RingFlashSeconds)
+			return;
+		float reach = Mathf.Clamp(since / (RingFlashSeconds * 0.4f), 0f, 1f) * RingReach;
+		float cover = fade * (1f - Mathf.Clamp((since - RingFlashSeconds * 0.4f) / (RingFlashSeconds * 0.6f), 0f, 1f));
+		float g = SpellInk.Grid;
+		if (IsRing)
+		{
+			int segments = Math.Max(24, ringStakes * 3);
+			for (int band = -1; band <= 1; band++)
+			{
+				float r = RingRadius + band * reach;
+				Color c = band == 0 ? MetalRamp.Core : MetalRamp.Hot;
+				for (int k = 0; k < segments; k++)
+				{
+					float a = k * Mathf.Tau / segments;
+					Vector2 at = SpellInk.Snap(GlobalPosition + new Vector2(MathF.Cos(a), MathF.Sin(a)) * r);
+					DrawRect(new Rect2(at.X, at.Y, g, g), new Color(c, cover));
+				}
+			}
+			return;
+		}
+		int steps = Math.Max(8, Mathf.RoundToInt((HalfLength * 2f + 16f) / g));
+		for (int band = -1; band <= 1; band++)
+		{
+			Color c = band == 0 ? MetalRamp.Core : MetalRamp.Hot;
+			for (int k = 0; k <= steps; k += band == 0 ? 1 : 2)
+			{
+				Vector2 local = new Vector2(band * reach, Mathf.Lerp(-HalfLength - 8f, HalfLength + 8f, k / (float)steps));
+				Vector2 at = SpellInk.Snap(ToGlobal(local));
+				// The line itself rings at the stakes' middle height, where the iron is.
+				DrawRect(new Rect2(at.X, at.Y - (band == 0 ? 12f : 0f), g, g), new Color(c, cover));
+			}
+		}
 	}
 
 	private const float StakeTall = 26f;
@@ -677,6 +792,16 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 	private void DrawStake(Vector2 footWorld, int i, float rise, float fade)
 	{
 		float height = (i % 3 == 0 ? StakeTall : StakeShort) * rise;
+		// The Tempered Line: the iron heats toward white as the wall hardens, and is white the moment it rings.
+		Color lit = ironLit, shade = SteelShade, body = SteelBase, point = SteelHi;
+		if (tempered)
+		{
+			float heat = MathF.Max(temper / TemperMax, 1f - Mathf.Clamp((age - rangAt) / RingFlashSeconds, 0f, 1f));
+			lit = ironLit.Lerp(MetalRamp.Core, heat);
+			body = SteelBase.Lerp(MetalRamp.Mid, heat);
+			shade = SteelShade.Lerp(MetalRamp.Edge, heat);
+			point = SteelHi.Lerp(MetalRamp.Core, heat);
+		}
 		// Rolling Wall: the stakes heave in turn as the wall walks, a stamp running down the line.
 		if (rolling && rise >= 1f)
 			height -= 3f * MathF.Max(0f, MathF.Sin(age * 9f + i * 1.3f));
@@ -689,12 +814,12 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 		// The three columns, cut to a slanted point: the lit side stops one art pixel below the tip, the
 		// shaded side two, so the top reads as a sharpened stake and not as a peg.
 		if (rows > 1)
-			DrawRect(new Rect2(foot.X - g, top + g, g, rows * g - g), new Color(ironLit, fade));
+			DrawRect(new Rect2(foot.X - g, top + g, g, rows * g - g), new Color(lit, fade));
 		if (rows > 2)
-			DrawRect(new Rect2(foot.X + g, top + 2f * g, g, rows * g - 2f * g), new Color(SteelShade, fade));
-		DrawRect(new Rect2(foot.X, top, g, rows * g), new Color(SteelBase, fade));
+			DrawRect(new Rect2(foot.X + g, top + 2f * g, g, rows * g - 2f * g), new Color(shade, fade));
+		DrawRect(new Rect2(foot.X, top, g, rows * g), new Color(body, fade));
 		// The point catching the key, and the band a third of the way up.
-		DrawRect(new Rect2(foot.X, top, g, g), new Color(SteelHi, fade));
+		DrawRect(new Rect2(foot.X, top, g, g), new Color(point, fade));
 		if (rows >= 5)
 		{
 			float band = foot.Y - Mathf.RoundToInt(rows * 0.34f) * g - g;

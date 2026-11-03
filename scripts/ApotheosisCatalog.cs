@@ -176,6 +176,21 @@ public static class ApotheosisCatalog
 				"Banish: sealed now, gone later. Elites take a heavy blow instead; bosses are never sealed.",
 				new Color(1.0f, 0.94f, 0.66f), NoVisualScale),
 		},
+		// Wayland the Smith, chained to his own anvil in the Emberdeep (.ai/chapter-wizards.md 4.7). "Temper" was
+		// nobody's: a smith hardens iron by working it, and the stakes he forged harden under every blow the crowd
+		// lands on them, then ring and cut all along the line (IronPalisade.TemperedLineId). Nothing moves, holds
+		// or stops anything (hold is the Geomancer's), so a boss takes it as any cut. Metal, Iron Palisade's own;
+		// its one branch, Lightning Rod, adds Lightning and trades nothing away. No visual scale: the wall is
+		// drawn out of its own length (Player.RaiseIronPalisade drops any scale).
+		new()
+		{
+			CharacterId = "wayland", SpellId = "iron_palisade",
+			Element = Element.Metal, Verb = "temper",
+			Form = Make(IronPalisade.TemperedLineId, "The Tempered Line", Element.Metal,
+				"Every blow the stakes take hardens the line, +5% a blow to +100%. Struck enough, it rings and cuts all along it.",
+				"Temper: the more they strike, the harder. Raise it where the crowd leans hardest.",
+				new Color(0.92f, 0.95f, 0.98f), NoVisualScale),
+		},
 		// The dark wizard, taken on the hardest road (.ai/dark-wizard-playable.md). "Take" was nobody's, and it is
 		// his verb in the fight and in the story: whatever his lanes kill gives up its light too, and it comes
 		// home to be caught in its turn (TakingLanes; TakenLight.MaxInAir in the air at most). Nothing moves the
