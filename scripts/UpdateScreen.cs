@@ -14,15 +14,22 @@ using HttpClient = System.Net.Http.HttpClient;
 /// if there is one, installs it and restarts - no questions. Ported from DrawFight, where it was
 /// built and tested end to end first.
 ///
-/// How a release is laid out is in .ai/releasing.md. In short: ecec.dev/wizard-survivors/version.json
-/// redirects to the newest GitHub Release's version.json, which names a small patch (the .pck and
-/// the game's own DLL - everything a normal change touches) and the full zip (needed only when the
-/// Godot engine itself changed). GitHub serves the files, so downloads cost nothing.
+/// How a release is laid out is in .ai/releasing.md. In short: ecec.dev/the-one-he-missed/version.json
+/// redirects to the newest GitHub Release's version.json, which names, under "builds", a small patch
+/// (the .pck and the game's own DLL - everything a normal change touches) and the full download
+/// (needed only when the Godot engine itself changed) for Windows and for Linux. GitHub serves the
+/// files, so downloads cost nothing.
 ///
 /// The running game cannot overwrite itself on Windows - its DLL and .pck are open - so the new
 /// files are unpacked to user://update/ and a small script waits for the game to close, copies
-/// them over, and starts it again. Linux does the same with a shell script, from its own pair of
-/// downloads in version.json ("linux": the .tar.gz and a patch from the Linux export).
+/// them over, and starts it again. Linux does the same with a shell script.
+///
+/// The files are named for the program that is running, not for the release (<see cref="ProgramName"/>).
+/// A copy installed before the game was renamed runs as the program of the old name, and its shortcuts,
+/// Start menu entry and app-menu entry all point at that file, so it keeps it: the new .pck is installed
+/// under its name. How such a copy got the renamed game in the first place - the "bridge" a release
+/// carries for builds from before the rename, which read the top-level "patch", "full" and "linux"
+/// fields this build ignores - is in .ai/releasing.md, "The rename".
 ///
 /// It is not a scene of its own. TitleScreen stays the main scene (run/main_scene, which every
 /// harness and probe assumes) and lays this over the artwork before anything else on it starts;
@@ -38,18 +45,29 @@ using HttpClient = System.Net.Http.HttpClient;
 public partial class UpdateScreen : Control
 {
 	/// <summary>The one address baked into every copy of the game. It is on ecec.dev rather than
-	/// GitHub so where releases live can change without stranding old copies.</summary>
-	public const string VersionUrl = "https://ecec.dev/wizard-survivors/version.json";
+	/// GitHub so where releases live can change without stranding old copies. Copies from before the
+	/// rename have the game's old address baked in instead, and ecec.dev answers it the same way,
+	/// forever.</summary>
+	public const string VersionUrl = "https://ecec.dev/the-one-he-missed/version.json";
 
 	/// <summary>Points a build at a test server instead - see .ai/releasing.md.</summary>
-	public const string UrlOverrideVariable = "WIZARDSURVIVORS_UPDATE_URL";
+	public const string UrlOverrideVariable = "THEONEHEMISSED_UPDATE_URL";
 
-	const string PckName = "WizardSurvivors.pck";
+	/// <summary>The User-Agent of every request the game makes: the update checks and the bug report.</summary>
+	public static string UserAgent => $"TheOneHeMissed/{CurrentVersion}";
 
 	[Signal] public delegate void FinishedEventHandler();
 
 	public static string CurrentVersion =>
 		ProjectSettings.GetSetting("application/config/version", "0.0.0").AsString();
+
+	/// <summary>
+	/// The running program's name without its extension - TheOneHeMissed for TheOneHeMissed.exe or
+	/// TheOneHeMissed.x86_64. Godot loads the .pck of this name from beside the program, so an update is
+	/// installed under it whatever the release calls its files. That is what keeps a copy installed before
+	/// the rename (still WizardSurvivors.exe, which every shortcut to it names) updating.
+	/// </summary>
+	static string ProgramName => Path.GetFileNameWithoutExtension(OS.GetExecutablePath());
 
 	static string EngineVersion
 	{
@@ -103,14 +121,13 @@ public partial class UpdateScreen : Control
 	public static string TestReleaseJson(string arg)
 	{
 		string[] parts = arg.Split(':');
+		var nothing = new System.Collections.Generic.Dictionary<string, string> { ["patch"] = "", ["full"] = "" };
 		var release = new System.Collections.Generic.Dictionary<string, object>
 		{
 			["version"] = parts[0],
 			["engine"] = "test",
-			["patch"] = "",
-			["full"] = "",
-			["android"] = "https://ecec.dev/wizard-survivors/download",
-			["linux"] = new System.Collections.Generic.Dictionary<string, string> { ["patch"] = "", ["full"] = "" },
+			["builds"] = new System.Collections.Generic.Dictionary<string, object> { ["windows"] = nothing, ["linux"] = nothing },
+			["android"] = "https://ecec.dev/the-one-he-missed/download",
 		};
 		if (parts.Length > 1 && int.TryParse(parts[1], out int epoch))
 			release["progressEpoch"] = epoch;
@@ -267,13 +284,13 @@ public partial class UpdateScreen : Control
 					question.QueueFree();
 					question = null;
 				}
-				title.Text = "Updating Wizard Survivors";
+				title.Text = "Updating The One He Missed";
 				detail.Text = $"Getting version {newVersion}...  {Mathf.RoundToInt(progress * 100.0f)}%";
 				ShowBar(progress);
 				break;
 
 			case Phase.Installing:
-				title.Text = "Updating Wizard Survivors";
+				title.Text = "Updating The One He Missed";
 				detail.Text = "Nearly done - the game will restart by itself.";
 				ShowBar(1f);
 				break;
@@ -403,15 +420,17 @@ public partial class UpdateScreen : Control
 			return false;
 		}
 
-		// The patch only works on the engine it was built with; anything else takes the full zip.
-		// Linux has its own pair - a release from before there was a Linux build has none, and then
-		// there is nothing to update to.
+		// The patch only works on the engine it was built with; anything else takes the full download.
+		// This copy's pair is under "builds" - never the top-level "patch", "full" and "linux", which
+		// since the rename are the bridge for builds from before it (.ai/releasing.md, "The rename"),
+		// a whole game in every download. A release with no build for this platform has nothing to
+		// update to.
 		bool sameEngine = release.TryGetProperty("engine", out JsonElement engine)
 			&& engine.GetString() == EngineVersion;
-		JsonElement files = release;
-		if (Linux && !release.TryGetProperty("linux", out files))
+		string platform = Linux ? "linux" : "windows";
+		if (!release.TryGetProperty("builds", out JsonElement builds) || !builds.TryGetProperty(platform, out JsonElement files))
 		{
-			GD.Print($"UpdateScreen: {latest} has no Linux build");
+			GD.Print($"UpdateScreen: {latest} has no {platform} build");
 			return false;
 		}
 		url = sameEngine && files.TryGetProperty("patch", out JsonElement patch)
@@ -464,10 +483,12 @@ public partial class UpdateScreen : Control
 		}
 		File.Delete(zipPath);
 
-		// The full zip keeps everything in a WizardSurvivors/ folder so it unzips tidily for a
-		// person; the patch does not. Either way, copy from wherever the .pck is.
-		string from = FindPck(unpacked);
-		if (from == null) throw new InvalidDataException($"the update has no {PckName}");
+		// The full download keeps everything in a folder so it unpacks tidily for a person; the patch
+		// does not. Either way, copy from wherever the .pck is, under this program's name.
+		string pck = FindPck(unpacked);
+		if (pck == null) throw new InvalidDataException("the update has no .pck");
+		string from = Path.GetDirectoryName(pck);
+		InstallAs(from, Path.GetFileNameWithoutExtension(pck), ProgramName);
 
 		applyScript = Path.Combine(work, Linux ? "apply.sh" : "apply.cmd");
 		File.WriteAllText(applyScript, Linux
@@ -480,7 +501,7 @@ public partial class UpdateScreen : Control
 	static async Task<string> FetchVersionJson(string url)
 	{
 		using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-		http.DefaultRequestHeaders.UserAgent.ParseAdd($"WizardSurvivors/{CurrentVersion}");
+		http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
 		return await http.GetStringAsync(url);
 	}
 
@@ -489,7 +510,7 @@ public partial class UpdateScreen : Control
 		// A separate client: the five-second timeout above is for the check, not for a full zip
 		// on a slow connection.
 		using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(15) };
-		http.DefaultRequestHeaders.UserAgent.ParseAdd($"WizardSurvivors/{CurrentVersion}");
+		http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
 		using HttpResponseMessage response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 		response.EnsureSuccessStatusCode();
 		long total = response.Content.Headers.ContentLength ?? 0;
@@ -508,14 +529,39 @@ public partial class UpdateScreen : Control
 		}
 	}
 
+	/// <summary>The one .pck in the unpacked download, at its top or one folder down; null if none.</summary>
 	static string FindPck(string dir)
 	{
-		if (File.Exists(Path.Combine(dir, PckName))) return dir;
-		foreach (string sub in Directory.GetDirectories(dir))
+		var folders = new System.Collections.Generic.List<string> { dir };
+		folders.AddRange(Directory.GetDirectories(dir));
+		foreach (string folder in folders)
 		{
-			if (File.Exists(Path.Combine(sub, PckName))) return sub;
+			string[] pcks = Directory.GetFiles(folder, "*.pck");
+			if (pcks.Length > 1) throw new InvalidDataException($"the update has {pcks.Length} .pck files in one folder");
+			if (pcks.Length == 1) return pcks[0];
 		}
 		return null;
+	}
+
+	/// <summary>
+	/// Renames the release's own files in <paramref name="dir"/> - every one called
+	/// <paramref name="releaseName"/>, whatever its extension: the .pck, and in a full download the
+	/// program too - to <paramref name="programName"/>, so the copy that follows replaces the files this
+	/// install actually runs. Nothing to do when the names already agree, which is every install made since
+	/// the rename. The .NET folder is named for the assembly, not the program, and needs nothing.
+	/// </summary>
+	static void InstallAs(string dir, string releaseName, string programName)
+	{
+		if (releaseName == programName)
+			return;
+		foreach (string file in Directory.GetFiles(dir))
+		{
+			if (Path.GetFileNameWithoutExtension(file) != releaseName)
+				continue;
+			string renamed = Path.Combine(dir, programName + Path.GetExtension(file));
+			File.Move(file, renamed, overwrite: true);
+			GD.Print($"UpdateScreen: {Path.GetFileName(file)} installs as {Path.GetFileName(renamed)}");
+		}
 	}
 
 	static bool CanWriteTo(string dir)

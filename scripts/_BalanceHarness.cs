@@ -3604,7 +3604,7 @@ public partial class _BalanceHarness : Node
 
 		var lines = new List<string>
 		{
-			"Wizard Survivors - balance run",
+			"The One He Missed - balance run",
 			$"  ended        : {why} at {elapsed / 60f:0.00} minutes of game time",
 			$"  character    : {CharacterRoster.GetByIndex(CharacterIndex)?.Name ?? "?"} (index {CharacterIndex})",
 			$"  timescale    : {TimeScale}x   seed: {Seed}",

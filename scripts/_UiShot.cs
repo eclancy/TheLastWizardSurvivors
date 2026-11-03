@@ -332,7 +332,7 @@ public partial class _UiShot : Node
 	//                         is still paused - from the pause screen it must be EscapeRoot and yes.
 	//   --report-no-shot    : unticks "Include a screenshot" (through ButtonPressed, so its Toggled
 	//                         handler runs as for a click), before any Send.
-	// Point it at a local server with WIZARDSURVIVORS_INTAKE_URL; never at the real one.
+	// Point it at a local server with THEONEHEMISSED_INTAKE_URL; never at the real one.
 	private bool reportBack;
 	private bool reportNoShot;
 	private string reportName;

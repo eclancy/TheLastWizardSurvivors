@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="Wizard Survivors"
+config/name="The One He Missed"
 config/version="0.11.0"
 run/main_scene="uid://beb5w8ip125sd"
 config/features=PackedStringArray("4.5", "C#", "GL Compatibility")

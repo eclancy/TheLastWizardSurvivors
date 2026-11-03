@@ -26,7 +26,7 @@ from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "_status_sheet.png")
-USER = os.path.join(os.environ.get("APPDATA", ""), "Godot", "app_userdata", "Wizard Survivors")
+USER = os.path.join(os.environ.get("APPDATA", ""), "Godot", "app_userdata", "The One He Missed")
 
 ZOOM = 3
 BG = (11, 15, 24)

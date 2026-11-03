@@ -59,7 +59,7 @@ public partial class DisplayProfile : Node
 		GD.Print($"DisplayProfile: {(askedFullscreen ? "fullscreen asked" : "windowed launch")}; the window is "
 			+ $"{DisplayServer.WindowGetMode()} at {DisplayServer.WindowGetSize()} (F11 or Alt+Enter toggles fullscreen)");
 
-	// 2026-10-29: "wizard survivors should start in fullscreen when i start the game". Set here rather
+	// 2026-10-29, Eric: the game "should start in fullscreen when i start the game". Set here rather
 	// than as window/size/mode in project.godot, because the tools photograph exact canvases with
 	// --resolution (_UiShot at 1280x720, the Pixel 9's 540x1212) and a fullscreen window takes the
 	// screen's size instead. Godot consumes its own flags (--windowed, --resolution, --position): none

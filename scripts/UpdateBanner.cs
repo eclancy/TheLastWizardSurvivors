@@ -126,7 +126,7 @@ public partial class UpdateBanner : CanvasLayer
 		try
 		{
 			using var http = new HttpClient { Timeout = CheckTimeout };
-			http.DefaultRequestHeaders.UserAgent.ParseAdd($"WizardSurvivors/{UpdateScreen.CurrentVersion}");
+			http.DefaultRequestHeaders.UserAgent.ParseAdd(UpdateScreen.UserAgent);
 
 			string url = OS.GetEnvironment(UpdateScreen.UrlOverrideVariable);
 			if (string.IsNullOrEmpty(url)) url = UpdateScreen.VersionUrl;

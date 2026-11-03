@@ -1,4 +1,4 @@
-# Wizard Survivors
+# The One He Missed
 
 AI agent instructions for this repo live in [/CLAUDE.md](../CLAUDE.md).
 

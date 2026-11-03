@@ -29,7 +29,7 @@ public partial class ThroneEnding : Control
 	// Sketchbook's "drawn by Eric's kids" line came out at his word, 2026-11-02.)
 	private static readonly (string Text, bool Heading)[] Credits =
 	{
-		("Wizard Survivors", true),
+		("The One He Missed", true),
 		("", false),
 		("Made by", false),
 		("Eric Clancy", true),

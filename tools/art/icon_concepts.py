@@ -956,7 +956,7 @@ def build_sheet(results):
     head = 36
     sheet = Image.new("RGBA", (width, head + row_h * len(results)), SHEET_BG)
     d = ImageDraw.Draw(sheet)
-    label(d, (12, 12), "Wizard Survivors - icon concepts.  Left: 64px master x4.  Middle: 48/32/24/16 at 1x"
+    label(d, (12, 12), "The One He Missed - icon concepts.  Left: 64px master x4.  Middle: 48/32/24/16 at 1x"
                        " with x4 beside each, Windows taskbar at 24px.  Right: Android adaptive "
                        "(108-unit canvas, 72 visible), circle and rounded-square masks, x2 and ~48px.")
     for i, r in enumerate(results):

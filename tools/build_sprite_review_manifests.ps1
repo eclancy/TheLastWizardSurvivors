@@ -1,4 +1,4 @@
-Set-Location "C:\Users\Eric\Documents\GitHub\wizard-survivors"
+Set-Location (Join-Path $PSScriptRoot "..")
 
 $manifestDir = "assets\imported\fantasy\manifests"
 $ambPath = Join-Path $manifestDir "ambiguous_review_manifest.csv"

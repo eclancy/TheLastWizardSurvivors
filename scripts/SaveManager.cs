@@ -37,6 +37,12 @@ public partial class SaveManager : Node
 		// branch that has not shipped is a schema the released build will never upgrade again.
 		if (IsWriteProtectedLaunch())
 			WritesDisabled = true;
+		// Before the load, and only when this launch may write: on a desktop a save from before the game was
+		// renamed is in the user:// folder of its old name, and the first launch under the new one copies it
+		// across (UserDataCarryOver). A tool run that did it would leave a stale copy for the real first
+		// launch to find and trust, while the player's live save moved on without it.
+		if (!WritesDisabled)
+			UserDataCarryOver.Run();
 		Data = LoadGame();
 		// The display switches are read on hot paths (a damage number per hit), so they are held as
 		// statics and taken from the save here, before any scene runs.

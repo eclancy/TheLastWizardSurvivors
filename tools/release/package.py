@@ -8,20 +8,22 @@ SaveData.CurrentProgressEpoch); left out, it is read from scripts/SaveData.cs th
 
 Writes build/release/:
 
-  WizardSurvivors-windows.zip   everything, in a WizardSurvivors/ folder - the portable
-                                version (the installer is what a new player downloads)
-  WizardSurvivors-patch.zip     just the game: the .pck and the game's own assembly. A fraction
-                                of the full zip, because the engine and the .NET runtime only
-                                change when Godot is upgraded.
-  WizardSurvivors-linux.tar.gz  the Linux version, in a WizardSurvivors/ folder with install.sh
-                                (which puts it in ~/.local/share and on the app menu) - from
-                                build/linux/
-  WizardSurvivors-linux-patch.zip  the Linux patch: its .pck and the game's assembly
-  version.json                  what the game's update check reads (see scripts/UpdateScreen.cs)
+  TheOneHeMissed-windows.zip   everything, in a TheOneHeMissed/ folder - the portable
+                               version (the installer is what a new player downloads)
+  TheOneHeMissed-patch.zip     just the game: the .pck and the game's own assembly. A fraction
+                               of the full zip, because the engine and the .NET runtime only
+                               change when Godot is upgraded.
+  TheOneHeMissed-linux.tar.gz  the Linux version, in a TheOneHeMissed/ folder with install.sh
+                               (which puts it in ~/.local/share and on the app menu) - from
+                               build/linux/
+  TheOneHeMissed-linux-patch.zip  the Linux patch: its .pck and the game's assembly
+  TheOneHeMissed-windows-bridge.zip    the bridge: the whole game again, under the file names a
+  TheOneHeMissed-linux-bridge.tar.gz   copy from before the rename looks for (see BRIDGE below)
+  version.json                 what the game's update check reads (see scripts/UpdateScreen.cs)
 
-The installer, WizardSurvivors-Setup.exe, is compiled from the same export by release.sh
+The installer, TheOneHeMissed-Setup.exe, is compiled from the same export by release.sh
 (tools/release/installer.iss); version.json carries its URL. The full zip is the portable version.
-The Android APK, WizardSurvivors-android.apk, is exported and signature-checked by release.sh too;
+The Android APK, TheOneHeMissed-android.apk, is exported and signature-checked by release.sh too;
 version.json carries its URL as "android".
 
 Normally run by tools/release/release.sh rather than by hand. See .ai/releasing.md.
@@ -42,8 +44,12 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 EXPORT = os.path.join(ROOT, "build", "windows")
 LINUX = os.path.join(ROOT, "build", "linux")
 OUT = os.path.join(ROOT, "build", "release")
-REPO = "eclancy/WizardSurvivors"
-NAME = "WizardSurvivors"
+REPO = "eclancy/TheOneHeMissed"
+# Every file a release carries starts with this, and so do the program, its .pck and the .NET
+# folder (the assembly is named the same). ecec.dev's download page reads the part before the last
+# "-" of the files' names as the program's name and the Linux install folder, so install.sh's APP
+# must stay equal to it.
+NAME = "TheOneHeMissed"
 DATA = "data_%s_windows_x86_64" % NAME
 FULL_ZIP = NAME + "-windows.zip"
 PATCH_ZIP = NAME + "-patch.zip"
@@ -53,26 +59,45 @@ LINUX_DATA = "data_%s_linuxbsd_x86_64" % NAME
 LINUX_TAR = NAME + "-linux.tar.gz"
 LINUX_PATCH = NAME + "-linux-patch.zip"
 
+# BRIDGE. The game was called Wizard Survivors until 0.12.0, and every copy installed before then
+# runs a build whose updater is fixed in it: it reads version.json's top-level "patch" and "full"
+# (Windows) or "linux" pair (Linux), looks for a .pck called exactly OLD_NAME + ".pck" in what it
+# downloads, copies whatever sits beside that .pck over its own folder, and starts OLD_NAME.exe (or
+# .x86_64) again. Given the normal downloads it would find no such .pck and quietly stay on its
+# version for good; given the patch alone, the renamed assembly's .NET folder would have no runtime
+# in it. So those fields point at a bridge instead: the whole export, flat, with the program and the
+# .pck renamed to OLD_NAME. The old program then starts the new game, and from then on the new
+# updater (which reads "builds" and keeps an install's own program name) takes over.
+#
+# Kept on purpose, and in every release: a copy from before the rename may not be started again for
+# months, and whichever release is newest when it is must still have a bridge for it. Without one it
+# keeps playing its own version and never updates. The ends of the bridges' names ("-bridge.zip",
+# "-bridge.tar.gz") are chosen so ecec.dev's download page, which finds files by how their names end
+# ("-windows.zip", "-linux.tar.gz"), never offers one. See .ai/releasing.md, "The rename".
+OLD_NAME = "WizardSurvivors"
+BRIDGE_ZIP = NAME + "-windows-bridge.zip"
+BRIDGE_TAR = NAME + "-linux-bridge.tar.gz"
+
 # The engine the export was made with. A patch is only offered to a copy on the same engine;
 # anything else downloads the full zip. Read from the editor binary's name rather than
 # hard-coded, so upgrading Godot cannot leave this behind.
 GODOT = os.environ.get("GODOT_BIN", "")
 
 # What the patch carries: everything that changes when the game changes and the engine does
-# not. The .pck is every scene, image, sound and setting; the WizardSurvivors.* files are the C#.
+# not. The .pck is every scene, image, sound and setting; the TheOneHeMissed.* files are the C#.
 PATCH = [NAME + ".pck", DATA + "/" + NAME + ".dll", DATA + "/" + NAME + ".deps.json",
          DATA + "/" + NAME + ".runtimeconfig.json"]
 
 # The controls are the input map in project.godot (move_*, ui_*, pause). The README has no
 # controls section, so this is the one place they are written down for a player.
-HOW_TO_PLAY = u"""Wizard Survivors
-================
+HOW_TO_PLAY = u"""The One He Missed
+=================
 
 You are a lone wizard in a haunted wood, and the dead keep coming. You only move - your spells
 cast themselves. Gather what the fallen leave behind to level up, choose new spells and
 upgrades, and survive each chapter long enough to face the boss at its end.
 
-1. Double-click WizardSurvivors.exe.
+1. Double-click TheOneHeMissed.exe.
 
 2. The first time, Windows may say "Windows protected your PC". That is because this game
    is not from a big company that paid for a signature. Click "More info", then "Run anyway".
@@ -88,20 +113,20 @@ upgrades, and survive each chapter long enough to face the boss at its end.
 The game updates itself: every time it starts, it checks for a new version and installs it.
 Keep this folder somewhere you can write to, like Documents or the Desktop, so it can.
 
-Made at https://ecec.dev - download page: https://ecec.dev/wizard-survivors/download
+Made at https://ecec.dev - download page: https://ecec.dev/the-one-he-missed/download
 """
 
 
-HOW_TO_PLAY_LINUX = u"""Wizard Survivors
-================
+HOW_TO_PLAY_LINUX = u"""The One He Missed
+=================
 
 You are a lone wizard in a haunted wood, and the dead keep coming. You only move - your spells
 cast themselves. Gather what the fallen leave behind to level up, choose new spells and
 upgrades, and survive each chapter long enough to face the boss at its end.
 
 1. Open a terminal in this folder and run:  ./install.sh
-   That puts the game in ~/.local/share/WizardSurvivors and adds it to your app menu.
-   (Or just run ./WizardSurvivors.x86_64 from here - keep the folder somewhere you can write to.)
+   That puts the game in ~/.local/share/TheOneHeMissed and adds it to your app menu.
+   (Or just run ./TheOneHeMissed.x86_64 from here - keep the folder somewhere you can write to.)
 
 2. Controls (keyboard or an Xbox controller):
 
@@ -112,9 +137,9 @@ upgrades, and survive each chapter long enough to face the boss at its end.
      Pause           Esc, or Start on a controller
 
 The game updates itself: every time it starts, it checks for a new version and installs it.
-To remove it: ~/.local/share/WizardSurvivors/install.sh --uninstall  (your save is kept)
+To remove it: ~/.local/share/TheOneHeMissed/install.sh --uninstall  (your save is kept)
 
-Made at https://ecec.dev - download page: https://ecec.dev/wizard-survivors/download
+Made at https://ecec.dev - download page: https://ecec.dev/the-one-he-missed/download
 """
 
 
@@ -126,27 +151,51 @@ def add_tar_file(t, data, name, executable=False):
     t.addfile(info, io.BytesIO(data))
 
 
+def export_files(src):
+    """Every file of an export as (path on disk, path inside it with forward slashes), sorted."""
+    found = []
+    for dirpath, _dirs, files in os.walk(src):
+        for f in sorted(files):
+            full = os.path.join(dirpath, f)
+            found.append((full, os.path.relpath(full, src).replace(os.sep, "/")))
+    return found
+
+
+def as_old_name(rel):
+    """A bridge's name for an export file: the program and the .pck - the top-level files named
+    NAME, whatever their extension - take OLD_NAME; everything else, the .NET folder included
+    (it is named for the assembly, which the new .pck asks for), keeps its own."""
+    if "/" not in rel:
+        stem, ext = os.path.splitext(rel)
+        if stem == NAME:
+            return OLD_NAME + ext
+    return rel
+
+
+def read_install_sh():
+    with open(os.path.join(ROOT, "tools", "release", "install.sh"), "rb") as fh:
+        return fh.read().replace(b"\r\n", b"\n")
+
+
 def linux_package():
-    """The Linux download and patch. Every file gets its permissions set here, on Windows: the
-    game binary and install.sh executable, the rest readable. A tarball rather than a zip, so
-    those permissions travel with it."""
+    """The Linux download, its patch and its bridge. Every file gets its permissions set here, on
+    Windows: the game binary and install.sh executable, the rest readable. Tarballs rather than
+    zips, so those permissions travel with them."""
     patch_files = [NAME + ".pck", LINUX_DATA + "/" + NAME + ".dll", LINUX_DATA + "/" + NAME + ".deps.json",
                    LINUX_DATA + "/" + NAME + ".runtimeconfig.json"]
     for rel in patch_files:
         if not os.path.isfile(os.path.join(LINUX, rel.replace("/", os.sep))):
             raise SystemExit("the Linux export has no %s" % rel)
-    t = tarfile.open(os.path.join(OUT, LINUX_TAR), "w:gz")
-    for dirpath, _dirs, files in os.walk(LINUX):
-        for f in sorted(files):
-            full = os.path.join(dirpath, f)
-            rel = os.path.relpath(full, LINUX).replace(os.sep, "/")
-            with open(full, "rb") as fh:
-                data = fh.read()
-            add_tar_file(t, data, NAME + "/" + rel, executable=rel == NAME + ".x86_64")
-    with open(os.path.join(ROOT, "tools", "release", "install.sh"), "rb") as fh:
-        add_tar_file(t, fh.read().replace(b"\r\n", b"\n"), NAME + "/install.sh", executable=True)
+    files = export_files(LINUX)
     with open(os.path.join(ROOT, "icon.png"), "rb") as fh:
-        add_tar_file(t, fh.read(), NAME + "/icon.png")
+        icon = fh.read()
+
+    t = tarfile.open(os.path.join(OUT, LINUX_TAR), "w:gz")
+    for full, rel in files:
+        with open(full, "rb") as fh:
+            add_tar_file(t, fh.read(), NAME + "/" + rel, executable=rel == NAME + ".x86_64")
+    add_tar_file(t, read_install_sh(), NAME + "/install.sh", executable=True)
+    add_tar_file(t, icon, NAME + "/icon.png")
     add_tar_file(t, HOW_TO_PLAY_LINUX.encode("utf-8"), NAME + "/How to play.txt")
     t.close()
 
@@ -154,6 +203,17 @@ def linux_package():
     for rel in patch_files:
         z.write(os.path.join(LINUX, rel.replace("/", os.sep)), rel)
     z.close()
+
+    # The bridge, flat: an old Linux copy copies what sits beside the .pck over its install folder.
+    # install.sh and icon.png come too, so an old install's own install.sh learns the new names
+    # (its --uninstall then takes out both). See BRIDGE.
+    t = tarfile.open(os.path.join(OUT, BRIDGE_TAR), "w:gz")
+    for full, rel in files:
+        with open(full, "rb") as fh:
+            add_tar_file(t, fh.read(), as_old_name(rel), executable=rel == NAME + ".x86_64")
+    add_tar_file(t, read_install_sh(), "install.sh", executable=True)
+    add_tar_file(t, icon, "icon.png")
+    t.close()
 
 
 def engine_version():
@@ -177,14 +237,6 @@ def progress_epoch():
     raise SystemExit("scripts/SaveData.cs has no 'public const int CurrentProgressEpoch = N;' line")
 
 
-def add_tree(z, src, prefix):
-    for dirpath, _dirs, files in os.walk(src):
-        for f in sorted(files):
-            full = os.path.join(dirpath, f)
-            rel = os.path.relpath(full, src).replace(os.sep, "/")
-            z.write(full, prefix + rel)
-
-
 def main(argv):
     if not argv:
         print(__doc__)
@@ -202,15 +254,17 @@ def main(argv):
     engine = engine_version()
     if not os.path.isfile(os.path.join(EXPORT, NAME + ".pck")):
         raise SystemExit("no export in build/windows - run the Godot export first")
-    for rel in PATCH:
+    for rel in PATCH + [NAME + ".exe"]:
         if not os.path.isfile(os.path.join(EXPORT, rel.replace("/", os.sep))):
             raise SystemExit("the export has no %s - is the preset still embedding nothing?" % rel)
     if not os.path.isdir(OUT):
         os.makedirs(OUT)
 
+    files = export_files(EXPORT)
     full = os.path.join(OUT, FULL_ZIP)
     z = zipfile.ZipFile(full, "w", zipfile.ZIP_DEFLATED, allowZip64=True)
-    add_tree(z, EXPORT, NAME + "/")
+    for path, rel in files:
+        z.write(path, NAME + "/" + rel)
     z.writestr(NAME + "/How to play.txt", HOW_TO_PLAY.replace(u"\n", u"\r\n").encode("utf-8"))
     z.close()
 
@@ -220,39 +274,55 @@ def main(argv):
         z.write(os.path.join(EXPORT, rel.replace("/", os.sep)), rel)
     z.close()
 
+    # The Windows bridge, flat, the program included so a bridge across an engine upgrade works
+    # too. See BRIDGE.
+    z = zipfile.ZipFile(os.path.join(OUT, BRIDGE_ZIP), "w", zipfile.ZIP_DEFLATED, allowZip64=True)
+    for path, rel in files:
+        z.write(path, as_old_name(rel))
+    z.close()
+
     linux = os.path.isfile(os.path.join(LINUX, NAME + ".pck"))
     if linux:
         linux_package()
 
     base = "https://github.com/%s/releases/download/v%s/" % (REPO, version)
+    builds = {"windows": {"patch": base + PATCH_ZIP, "full": base + FULL_ZIP}}
+    if linux:
+        builds["linux"] = {"patch": base + LINUX_PATCH, "full": base + LINUX_TAR}
     info = {
         "version": version,
         "engine": engine,
-        "patch": base + PATCH_ZIP,
-        "full": base + FULL_ZIP,
+        # What every copy since the rename updates from (UpdateScreen): its platform's patch, on the
+        # same engine, or its full download. A copy from before Linux existed never looks for one.
+        "builds": builds,
+        # The bridge, for copies from before the rename only - see BRIDGE. Their updater reads these
+        # three and nothing else of the above; this build's never reads them. Both of a pair are the
+        # bridge: an old copy on this engine takes "patch", one on another engine "full", and either
+        # way it needs the whole game under the old names.
+        "patch": base + BRIDGE_ZIP,
+        "full": base + BRIDGE_ZIP,
         # Built by release.sh with Inno Setup after this script runs. The game does not read it;
         # it is there for anything that wants this release's installer by URL.
         "installer": base + INSTALLER,
         # The release-signed APK, exported and verified by release.sh after this script runs.
-        # The Android copy reads it (UpdateBanner) and offers it in the browser. Older Windows
-        # copies never notice it: UpdateScreen reads the fields it names and nothing else.
+        # The Android copy reads it (UpdateBanner) and offers it in the browser - copies from before
+        # the rename too: the APK keeps the app's package id, so it installs over them, save and all.
         "android": base + APK,
         # The story epoch (SaveData.CurrentProgressEpoch). A copy built at a lower one learns from
         # this that installing the release resets its progress, and asks (Windows, Linux) or warns
         # on its strip (Android) first. Copies from before epochs never read it, like any added field.
         "progressEpoch": epoch,
     }
-    # A Linux copy reads its own pair; Windows and Android copies never look at it.
     if linux:
-        info["linux"] = {"patch": base + LINUX_PATCH, "full": base + LINUX_TAR}
+        info["linux"] = {"patch": base + BRIDGE_TAR, "full": base + BRIDGE_TAR}
     with io.open(os.path.join(OUT, "version.json"), "w", encoding="utf-8") as f:
         f.write(unicode(json.dumps(info, indent=2, sort_keys=True)) + u"\n")
 
-    names = [FULL_ZIP, PATCH_ZIP, "version.json"]
+    names = [FULL_ZIP, PATCH_ZIP, BRIDGE_ZIP, "version.json"]
     if linux:
-        names += [LINUX_TAR, LINUX_PATCH]
+        names += [LINUX_TAR, LINUX_PATCH, BRIDGE_TAR]
     for name in names:
-        print("%-32s %6.1f MB" % (name, os.path.getsize(os.path.join(OUT, name)) / 1048576.0))
+        print("%-36s %6.1f MB" % (name, os.path.getsize(os.path.join(OUT, name)) / 1048576.0))
     return 0
 
 

@@ -25,7 +25,8 @@ public partial class Node2DGame : Node2D
 	// arena to MaxEnemies at once and keeps it there, with the player unkillable and level-ups held
 	// back (a level-up pauses the tree, and a paused tree logs nothing), so the PERF lines read the
 	// frame rate against a full swarm in seconds instead of minutes in. On a phone the flag goes in
-	// with: adb shell run-as com.ecec.wizardsurvivors touch files/debug_stress_swarm  (rm to remove).
+	// with: adb shell run-as com.ecec.wizardsurvivors touch files/debug_stress_swarm  (rm to remove; the
+	// package id keeps the game's old name on purpose - export_presets.cfg).
 	// A release build never reads the file.
 	private bool stressSwarm;
 	private const int StressSpawnsPerFrame = 8;
