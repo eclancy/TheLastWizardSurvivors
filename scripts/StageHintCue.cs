@@ -24,6 +24,8 @@ using TheOneHeMissed.scripts;
 //                 the first the nearest the line to her
 //   the hut       birds lifting out of the canopy on her side, beating up and away toward her - a few on
 //                 each fall of its feet, one or two more as its timbers creak
+//   the gibbet    pale threads of vapour drifting in low from his side against the wind, curling and thinning
+//                 as they come - a few on each tap of the flask and each cough
 //
 // IN THE WORLD'S LAYERS, HELD TO THE VIEW. The marks are drawn in the world, on the layer over the
 // bodies and under the HUD, so they read as something out there rather than as an interface - but
@@ -43,7 +45,7 @@ public partial class StageHintCue : Node2D
 	public const string SheetPath = "res://assets/bonelight/effects/hint-cues.png";
 	public const int Cell = 16;
 	public const int Columns = 8;
-	public const int Rows = 9;   // HintCue's members, in order
+	public const int Rows = 10;   // HintCue's members, in order
 
 	// x3, the attack icons' size: at x2 a 16 px mark was a speck on the phone.
 	private const float DrawScale = 3f;
@@ -88,6 +90,14 @@ public partial class StageHintCue : Node2D
 
 	/// <summary>The walking hut's hint beats, for RegressionChecks.ValidateWalkingHut (a copy).</summary>
 	public static float[] HutBeatTimes => (float[])HutBeats.Clone();
+
+	// The gibbet's cage heard from afar (hint_flask_chime): two taps on a glass flask, a man's cough twice, and a last
+	// faint tap - tools/audio/sfx.py _FLASK_TAPS and _FLASK_COUGHS are the same onsets. Vapour comes in on each.
+	private static readonly float[] FlaskBeats = { 0.10f, 0.34f, 0.86f, 1.10f, 1.66f };
+	private static readonly int[] VapourPerBeat = { 2, 1, 3, 2, 1 };
+
+	/// <summary>The gibbet's hint beats, for RegressionChecks.ValidateGibbetCage (a copy).</summary>
+	public static float[] FlaskBeatTimes => (float[])FlaskBeats.Clone();
 
 	private struct Mark
 	{
@@ -190,6 +200,7 @@ public partial class StageHintCue : Node2D
 		HintCue.Sparks => 90f,
 		HintCue.Writ => 120f,
 		HintCue.Birds => 110f,
+		HintCue.Vapour => 120f,
 		_ => 8f,
 	};
 
@@ -391,6 +402,19 @@ public partial class StageHintCue : Node2D
 				if (nextBeat >= HutBeats.Length)
 					clock = -1f;
 				break;
+			case HintCue.Vapour:
+				while (nextBeat < FlaskBeats.Length && FlaskBeats[nextBeat] <= t)
+				{
+					// Threads of pale vapour off his flask, coming in slowly and low from his side - against the wind, the only
+					// thing on the bog that does - each curling as it drifts and thinning out before the line.
+					for (int k = 0; k < VapourPerBeat[nextBeat]; k++)
+						Spawn((int)HintCue.Vapour, random.Next(4), 3.0f + (float)random.NextDouble() * 0.8f, Jitter(120f), Jitter(12f),
+							inward: 12f + (float)random.NextDouble() * 6f, drift: Jitter(8f), rise: -8f, fadeIn: 0.45f);
+					nextBeat++;
+				}
+				if (nextBeat >= FlaskBeats.Length)
+					clock = -1f;
+				break;
 			case HintCue.Bell:
 				// The bell walks along the edge, as the caravan walks its road.
 				if (bellSlot < 0)
@@ -537,6 +561,12 @@ public partial class StageHintCue : Node2D
 				// and rolling a little from side to side as birds do.
 				column = (m.Glyph >= 4 ? 4 : 0) + (int)(m.Age * (13f - 3f * Mathf.Min(1f, m.Age)) + m.Phase) % 4;
 				at.X += Mathf.Sin(m.Age * 3.7f + m.Phase) * 4f;
+				break;
+			case HintCue.Vapour:
+				// Curling as it drifts (four columns of one slow curl), thinning out over its last half (the same four, 4-7),
+				// and rising and sinking a little on the air over the water.
+				column = (m.Glyph + (int)(m.Age * 2.4f)) % 4 + (m.Age > m.Life * 0.5f ? 4 : 0);
+				at.Y += Mathf.Sin(m.Age * 1.7f + m.Phase) * 5f;
 				break;
 			case HintCue.Writ:
 				// Turning over as it is blown, and lifted and dropped by the draught.

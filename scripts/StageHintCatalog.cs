@@ -36,6 +36,8 @@ public enum HintCue
 	Writ,
 	/// <summary>Birds lifting out of the canopy on each fall of a great foot (the walking hut).</summary>
 	Birds,
+	/// <summary>Pale threads of vapour drifting in low, against the wind, on each tap of a flask and each cough (the gibbet's cage).</summary>
+	Vapour,
 }
 
 /// <summary>One side event's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
@@ -220,6 +222,23 @@ public static class StageHintCatalog
 				"Something heavy walks the deep wood, on two legs.",
 				"The steps again. Too heavy for a man.",
 				"Still walking, round and round.",
+			},
+		},
+		// Paracelsus, caged from a gibbet over the rot in the Blighted Swamp (.ai/chapter-wizards.md 4.4). He is heard, not
+		// named: a glass flask tapped and a man coughing, out on the bog, and threads of pale vapour off his flask coming in
+		// low against the wind on his side - not the lanterns' poison green, which is the other event's far tell. Never said
+		// who coughs, or what the flask holds.
+		new()
+		{
+			SiteId = "gibbet_cage",
+			Voice = HintVoice.Sound,
+			Sound = SfxCatalog.HintFlaskChime,
+			Cue = HintCue.Vapour,
+			Lines = new[]
+			{
+				"A man coughing, far out on the bog.",
+				"Glass rings across the water, like a tapped flask.",
+				"The coughing again. Weaker.",
 			},
 		},
 		// Vainamoinen, the singer, under the ice. He is heard, not named.

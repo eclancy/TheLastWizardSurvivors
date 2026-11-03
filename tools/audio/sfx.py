@@ -1448,6 +1448,55 @@ def hint_hut_step():
     return S.dc_block(_far(out, low=50.0, high=2200.0, size=0.55, mix=0.3, damp=0.65))
 
 
+# The Blighted Swamp's gibbet cage (.ai/chapter-wizards.md 4.4). Two taps on a glass flask, a man coughing twice, and a
+# last faint tap: (onset, gain). StageHintCue.FlaskBeats is the same five onsets in order (taps and coughs merged) -
+# change one, change both.
+_FLASK_TAPS = [(0.10, 0.62), (0.34, 0.5), (1.66, 0.34)]
+_FLASK_COUGHS = [(0.86, 1.0), (1.10, 0.72)]
+
+
+def _flask_tap(seed):
+    """A fingernail on a round-bellied flask with a dose in it: the click of the nail (a few ms of bright noise), and
+    the glass answering - a stiff shell's inharmonic modes, a ninth apart from any bell in the set (the light element's
+    G5, level_up, chest_open), damped by the liquid inside so it rings a third of a second and not three."""
+    dur = 0.42
+    ring = S.partials(1318.0, [1.0, 2.41, 4.07, 5.93], dur, amps=[1.0, 0.46, 0.22, 0.1], decays=[12.0, 17.0, 23.0, 31.0])
+    kn = S.n_samples(0.012)
+    click = S.env_mul(S.highpass(S.osc("noise", 0, 0.012, seed=seed), 2600.0), S.decay(kn, 6.0))
+    # The liquid's slosh under it: a low wobble of the same shell, a breath after.
+    slosh = S.env_mul(S.osc("sine", S.sweep(0.16, 540.0, 470.0), 0.16), S.decay(S.n_samples(0.16), 5.0))
+    return S.layer([(ring, 0.0, 0.8), (click, 0.0, 0.5), (slosh, 0.02, 0.18)])
+
+
+def _cough(seed, f0=118.0):
+    """A man's cough, wet and tired: the burst of the glottis opening (noise through the "kh" of the throat and the
+    "ah" of an open mouth), a short voiced bark under it in a man's register, and the breath after it."""
+    dur = 0.24
+    n = S.n_samples(dur)
+    burst = S.osc("noise", 0, dur, seed=seed)
+    kh = S.mix(S.gain(S.bandpass(burst, 1250.0, 1.6), 1.0), S.gain(S.bandpass(burst, 560.0, 2.2), 0.8),
+               S.gain(S.bandpass(burst, 2600.0, 3.0), 0.3))
+    kh = S.env_mul(kh, S.ad(dur, attack=0.004, curve=4.0))
+    bark = _vowel(S.sweep(0.12, f0 * 1.15, f0 * 0.9), 0.12, [(640.0, 3.0, 1.0), (1150.0, 4.0, 0.6), (2400.0, 6.0, 0.2)],
+                  vibrato=0.03, rate=17.0, attack=0.006, release=0.05, seed=seed)
+    breath = _breath(0.22, [(900.0, 0.5), (1700.0, 0.3)], q=1.0, seed=seed + 1)
+    breath = S.env_mul(breath, S.adsr(0.22, a=0.03, d=0.06, s=0.5, r=0.12))
+    return S.layer([(kh, 0.0, 1.0), (bark, 0.008, 0.85), (breath, 0.13, 0.32)])
+
+
+def hint_flask_chime():
+    """The Blighted Swamp: glass ringing across the water, and a man coughing, far out on the bog.
+
+    Paracelsus in the gibbet's cage over the rot, tapping his flask to hear how much is left in it - two taps, a
+    breath - then coughing, twice, the second weaker; and one more tap, faint. Glass and a voice: nothing else in the
+    set is both. Over water, so the room is wide and soft and the top goes at 3.2 kHz (the taps are glass and want a
+    little more air than the hut's timbers had)."""
+    items = [(_flask_tap(3301 + i), t, g) for i, (t, g) in enumerate(_FLASK_TAPS)]
+    items += [(_cough(3401 + i, 118.0 - 6.0 * i), t, g) for i, (t, g) in enumerate(_FLASK_COUGHS)]
+    out = S.pad(S.layer(items), 2.4)
+    return S.dc_block(_far(out, low=140.0, high=3200.0, size=0.8, mix=0.36, damp=0.55))
+
+
 # ---------------------------------------------------------------------------
 # secrets - the light he missed (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9)
 # ---------------------------------------------------------------------------
@@ -1752,6 +1801,7 @@ REGISTRY += [
     ("hint_anvil",          "hint",   -10.0, hint_anvil,          False),
     ("hint_sibyl_voice",    "hint",   -10.0, hint_sibyl_voice,    False),
     ("hint_hut_step",       "hint",   -10.0, hint_hut_step,       False),
+    ("hint_flask_chime",    "hint",   -10.0, hint_flask_chime,    False),
     # The nine mouths' call (NineMouthsEvent): nine voices in two seconds, a call every few seconds, only
     # while the player is at the cliff - the once-a-second row. Hers is the louder of the two because it is
     # the one to hear; the eight echoes come a few dB under it and lose more again to the distance.

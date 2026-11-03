@@ -260,6 +260,12 @@ public sealed class ExplorePlacer
 	/// <summary>True if a footprint round this point is open ground. On a maze, asked of the snapped cell.</summary>
 	public bool IsClear(Vector2 point, float footprint) => ground.IsClear(Snap(point), footprint);
 
+	/// <summary>
+	/// <see cref="IsClear"/> over the whole footprint (the dense test EventSite takes with <c>dense</c>): for a place that
+	/// is drawn over its whole disc and walked to, not only stood on - the gibbet's ferry landing.
+	/// </summary>
+	public bool IsClearDense(Vector2 point, float footprint) => (ground.IsClearDense ?? ground.IsClear)(Snap(point), footprint);
+
 	/// <summary>The nearest corridor cell centre on a maze; the point itself on an open stage.</summary>
 	public Vector2 Snap(Vector2 point)
 	{

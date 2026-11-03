@@ -106,7 +106,10 @@ public partial class SideEventDirector : Node
 		"stage_1" => new(WayfinderKind.GaolersMap, new SideEventEntry("gaolers_key", () => new GaolersKeyEvent())),
 		// The Sunken Cave's chapter wizard (.ai/chapter-wizards.md 4.3): the Cumaean Sibyl, behind nine mouths.
 		"stage_2" => new(WayfinderKind.Compass, new SideEventEntry("nine_mouths", () => new NineMouthsEvent())),
-		"stage_3" => new(WayfinderKind.Compass, new SideEventEntry("bog_lanterns", () => new BogLanternsEvent())),
+		// The Swamp's chapter wizard (.ai/chapter-wizards.md 4.4), its second event: Paracelsus, caged over the rot and led
+		// out to the ferry.
+		"stage_3" => new(WayfinderKind.Compass, new SideEventEntry("bog_lanterns", () => new BogLanternsEvent()),
+			new SideEventEntry("gibbet_cage", () => new GibbetCageEvent())),
 		// The first chapter wizard (.ai/chapter-wizards.md 4.5): Abe no Seimei, sealed in his own star.
 		"stage_4" => new(WayfinderKind.Compass, new SideEventEntry("five_pointed_seal", () => new FivePointedSealEvent())),
 		"stage_5" => new(WayfinderKind.BearingCairn, new SideEventEntry("the_thaw", () => new ThawEvent())),
@@ -223,6 +226,9 @@ public partial class SideEventDirector : Node
 	{
 		PointsOfInterest.Reset();
 		SideEvent.ResetObjectiveLine();
+		// Nobody is being led at the start of a run, whatever the last one left (HuntedEscort's statics are the process's).
+		HuntedEscort.Withdraw();
+		HuntedEscort.ResetTally();
 		logPlacement = OS.GetCmdlineUserArgs().Contains("--explore-log");
 		if (Game == null)
 			return;

@@ -1469,7 +1469,9 @@ BREAK_SECONDS = 5.4
 # The pigment each element's light lands on (the lessons' halos): a pool under a wizard is the colour
 # his light makes of the ground, never his element's own ramp.
 HALO = {"fire": M["ember"], "ice": M["azure"], "lightning": G, "earth": M["amber"], "water": M["azure"],
-        "grass": M["verdant"], "light": G, "metal": ST, "arcane": AR, "wind": LI, "darkness": V}
+        "grass": M["verdant"], "light": G, "metal": ST, "arcane": AR, "wind": LI, "darkness": V,
+        # Paracelsus's dose (freed.py): a poison light lands on the ground as grass's does.
+        "poison": M["verdant"]}
 
 
 def _figure_box(who, strip, frame, cx, yb, h, facing):

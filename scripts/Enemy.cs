@@ -593,6 +593,31 @@ public partial class Enemy : CharacterBody2D
 		return draws;
 	}
 
+	// THE HUNTED (HuntedEscort, .ai/chapter-wizards.md 4.4): which classes go for an escorted person near them. A body
+	// whose steering is the plain chase - the base AdjustSteering - does: it walks at whoever it wants and bites. One
+	// with a behaviour of its own does not, because that behaviour is aimed at the player: a caster holds range from
+	// him and shoots at him, a lunger's dash and a slammer's ring are measured against him, an exploder goes off on
+	// him. Turning their feet to the escort and leaving their aim on the player would put a caster at his side firing
+	// past him. And every boss overrides it (BossEnemy does), so no boss ever retargets. Measured once per class.
+	private static readonly System.Collections.Generic.Dictionary<Type, bool> huntsEscortByType = new();
+
+	/// <summary>Whether bodies of <paramref name="type"/> go for an escorted person within HuntedEscort.HuntRadius.</summary>
+	public static bool ClassHuntsEscort(Type type)
+	{
+		if (!huntsEscortByType.TryGetValue(type, out bool hunts))
+		{
+			var steer = type.GetMethod(nameof(AdjustSteering), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+				null, new[] { typeof(Vector2), typeof(float) }, null);
+			hunts = steer != null && steer.DeclaringType == typeof(Enemy) && !typeof(BossEnemy).IsAssignableFrom(type);
+			huntsEscortByType[type] = hunts;
+		}
+		return hunts;
+	}
+
+	private bool huntsEscort;
+	// Whether the last chase step went for the escort rather than the player, so the switch re-aims at once.
+	private bool wasHuntingEscort;
+
 	private static bool ClassDrawsItself(Type type)
 	{
 		if (!drawsItselfByType.TryGetValue(type, out bool draws))
@@ -609,6 +634,7 @@ public partial class Enemy : CharacterBody2D
 	{
 		maxHealth = Health;
 		drawsItself = ClassDrawsItself(GetType());
+		huntsEscort = ClassHuntsEscort(GetType());
 		if (ClassDrawsGroundTells(GetType()))
 		{
 			groundTells = new Node2D { Name = "GroundTells", ZAsRelative = false, ZIndex = DrawLayers.GroundTell };
@@ -1078,6 +1104,19 @@ public partial class Enemy : CharacterBody2D
 			// Read once: each position read is a call into the engine, per body per step.
 			Vector2 here = GlobalPosition;
 			Vector2 playerPosition = player.GlobalPosition;
+			// THE HUNTED (HuntedEscort): within its radius of a person the player is leading, a plain chaser goes
+			// for him instead - he is the target of everything below, the chase, the ring slot and the stand-off.
+			// One flag test while nobody is being led; one distance while someone is.
+			bool huntingEscort = false;
+			if (HuntedEscort.Active && huntsEscort && here.DistanceSquaredTo(HuntedEscort.Target) <= HuntedEscort.HuntRadiusSquared)
+			{
+				playerPosition = HuntedEscort.Target;
+				huntingEscort = true;
+				if (!wasHuntingEscort)
+					HuntedEscort.NoteTurned();
+			}
+			bool switchedTarget = huntingEscort != wasHuntingEscort;
+			wasHuntingEscort = huntingEscort;
 			Vector2 playerOffset = playerPosition - here;
 			float distanceToPlayer = playerOffset.Length();
 
@@ -1101,7 +1140,7 @@ public partial class Enemy : CharacterBody2D
 				// Both staggers below key off this; read once, and the id held from _Ready - each is a
 				// call into the engine, per body per step.
 				ulong staggerTick = Engine.GetPhysicsFrames() + instanceId;
-				bool reaim = !hasCachedApproachDir
+				bool reaim = !hasCachedApproachDir || switchedTarget
 					|| staggerTick % (ulong)refreshInterval == 0;
 				if (reaim)
 				{

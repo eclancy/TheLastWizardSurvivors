@@ -279,6 +279,7 @@ public static class AchievementDefinitions
 		("the_moot", "The Circle Relit", "Relight the runes of the stone circle on the Broken Circle.", "Unlocks Gilded Mote"),
 		("gaolers_key", "The Open Cell", "Carry the Gaoler's key to the locked cell in the Cursed Dungeon.", "Frees Tituba"),
 		("bog_lanterns", "The Lanterns Out", "Snuff the lanterns of the Blighted Swamp and face what tends them.", "Unlocks Contagion"),
+		("gibbet_cage", "The Ferry Reached", "Lower the gibbet's cage in the Blighted Swamp and bring the man in it to the ferry landing alive.", "Frees Paracelsus"),
 		("five_pointed_seal", "The Seal Broken", "Turn the four guardian stones to face the seal in the Mystic Ruins.", "Frees Abe no Seimei"),
 		("nine_mouths", "The True Mouth", "Find the one mouth of nine her voice comes out of first, in the Sunken Cave.", "Frees The Cumaean Sibyl"),
 		("the_thaw", "Out of the Ice", "Thaw the wizard out of the ice in the Frozen Waste.", "Frees Väinämöinen"),

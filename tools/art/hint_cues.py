@@ -40,6 +40,9 @@ THE ROW ORDER IS AN API: HintCue's order (scripts/StageHintCatalog.cs).
   birds    the hut        a bird lifting out of the canopy, four beats of its wings (0-3: up, half, down,
                           half), then the same four smaller - one further off (4-7): "birds lift out of
                           the canopy toward her" on each fall of the hut's feet
+  vapour   the gibbet     a thread of pale vapour off a flask, curling as it drifts: four steps of one slow curl
+                          (0-3), then the same four thinning and breaking up (4-7) - "pale vapour threads drift in
+                          low from his side, the only thing in the bog moving against the wind"
 
 Each wears its event's far-tell colour (SideEvent.FarTellColor) as its body, so the cue is the
 colour of the light the player will find: wind's ramp for the grove's lichen grey-green, arcane
@@ -99,6 +102,12 @@ def ramp_of(name):
         # the horse skull on its gable. Birds put up by its tread, seen against his light.
         a = bl.ELEMENTS["arcane"]
         return (a[1], a[2], a[3], a[0])
+    if name == "vapour":
+        # The gibbet's far tell is the arcane ramp's mid (GibbetCageEvent.TellColor), his mark on the cage's lock - but the
+        # vapour is PALE, off the dose in the caged man's flask: the ramp's two pale stops, the core along its lit edge and
+        # the hot in its body, with the mid only on its far edge. Never poison's green, which is the lanterns' tell.
+        a = bl.ELEMENTS["arcane"]
+        return (a[0], a[1], a[2], a[0])
     if name == "writ":
         # The nine mouths' far tell is the water ramp's blue (NineMouthsEvent.TellColor): the drowned dark.
         # From the ramp's PALE end, a stop up from the others: paper in a cold light, with the ramp's dark
@@ -506,6 +515,33 @@ def bird(frame):
     return sampled(inside), set()
 
 
+def vapour(frame):
+    """A thread of vapour drifting: a wavering strand across the cell, thick in its middle and tapering to both ends,
+    one end curling up on itself - four steps of a slow curl (0-3); then the same four thinner, broken into lengths,
+    the thread coming apart (4-7)."""
+    k = frame % 4
+    thin = frame >= 4
+    phase = k * math.pi / 2.0
+
+    def inside(x, y):
+        if x < 1.6 or x > 14.4:
+            return False
+        u = (x - 1.6) / 12.8                                   # 0 at the tail, 1 at the curl
+        cy = 8.0 + 2.2 * math.sin(u * 2.6 * math.pi + phase) * (0.5 + 0.5 * u) - 1.2 * u
+        half = (0.55 + 0.75 * math.sin(u * math.pi)) * (0.6 if thin else 1.0)
+        if thin and (int(u * 7 + k) % 3 == 1):
+            return False                                       # coming apart
+        if abs(y - cy) <= half:
+            return True
+        # The curl at its head: a small open loop turning over.
+        if not thin and u > 0.78:
+            lx, ly = 13.0, cy - 1.6
+            r = math.hypot(x - lx, y - ly)
+            return 1.0 <= r <= 1.9 and math.atan2(y - ly, x - lx) > -2.2 + phase * 0.2
+        return False
+    return sampled(inside), set()
+
+
 ROWS = [
     ("leaves", [leaf(f) for f in range(8)]),
     ("echo", [echo(d) for d in range(8)]),
@@ -517,6 +553,7 @@ ROWS = [
     ("sparks", [spark(f) for f in range(8)]),
     ("writ", [writ(f) for f in range(8)]),
     ("birds", [bird(f) for f in range(8)]),
+    ("vapour", [vapour(f) for f in range(8)]),
 ]
 
 

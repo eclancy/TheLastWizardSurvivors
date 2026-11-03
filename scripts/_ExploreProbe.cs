@@ -39,6 +39,12 @@ using TheOneHeMissed.scripts;
 //      at it and holds just inside its startle radius, so it bolts again and again and the bolts really gain on
 //      him. --lose-hut, once the bar is two fifths full, walks straight away past its lose radius and waits
 //      there, and checks the bar held and the hut calmed and stood; then walks back to it and finishes.
+//      The Swamp's gibbet cage is ESCORTED: the probe holds the winch, then walks toward the ferry landing at the
+//      player's own walking speed and waits whenever Paracelsus falls more than a few strides behind, so he really walks
+//      the whole way on the player's steps. The swarm round him is cleared only every few seconds, so the bog's Mired and
+//      the trickle get to him and bite. --let-him-fall, once he is out the first time, stops the player's spells and the
+//      clearing and raises a ring of Mired on him, and checks he falls, sinks, is in the cage again and is lowered and led
+//      out again from the cage - and then finishes the walk.
 // TWO EVENTS IN A CHAPTER (P2, .ai/chapter-wizards.md 6.3). On a chapter whose list holds more than one - or
 // with --second-event-test[=STAGE], which adds a stand-in second event on this tool run only
 // (SecondEventStandIn) - every placement check runs for every event, each pair of main sites must be at least
@@ -79,6 +85,13 @@ public partial class _ExploreProbe : Node
 	// --lose-hut: at the walking hut, walk away from it part-way through and come back (see the header).
 	private bool loseHut;
 	private int lostPhase;
+	// --let-him-fall: at the gibbet's cage, let the swarm have him once (see the header).
+	private bool letHimFall;
+	private bool fallSetUp;
+	private bool fallRestored;
+	private bool backInCageAfterFall;
+	private float escortClearClock;
+	private int escortWaits;
 	private float lostClock;
 	private float progressOutside = -1f;
 	private float progressAfterWait = -1f;
@@ -135,7 +148,10 @@ public partial class _ExploreProbe : Node
 			else if (arg == "--wrong-mouth") wrongMouth = true;
 			else if (arg == "--wayfinder-first") wayfinderFirst = true;
 			else if (arg == "--lose-hut") loseHut = true;
+			else if (arg == "--let-him-fall") letHimFall = true;
 		}
+		// The gibbet's cage says each change of phase, each rising and each fall (a run says nothing).
+		GibbetCageEvent.LogPhases = true;
 		ProcessMode = ProcessModeEnum.Always;
 		SaveManager.WritesDisabled = true;
 		if ((freshSave || allUnlocked) && GetNodeOrNull<SaveManager>("/root/SaveManager") is SaveManager saves)
@@ -702,6 +718,22 @@ public partial class _ExploreProbe : Node
 						$"calmed {ran.TimesCalmed} time(s)");
 				}
 			}
+			if (e is GibbetCageEvent led)
+			{
+				Check("the winch lowered the cage and he stepped out", led.Releases >= 1, $"{led.Releases} time(s)");
+				Check("he followed the player's steps to the landing", led.BestProgress >= 0.99f && led.Walked > GibbetCageEvent.LandingMin * 0.8f,
+					$"{led.Walked:0} px walked, best {led.BestProgress * 100f:0}% of the way; the probe waited for him {escortWaits} frame(s) and turned off water {escortDetours} time(s)");
+				Check("the swarm went for him", HuntedEscort.TurnedOnHim > 0,
+					$"{HuntedEscort.TurnedOnHim} turned on him, {led.BitesTaken} bites for {led.DamageTaken}, {led.Risen} Mired risen; {led.Health} of {GibbetCageEvent.HealthMax} left");
+				Check("the punt took him", led.IsWon);
+				if (letHimFall)
+				{
+					Check("let fall: he fell and the bog took him back to the cage", led.Falls >= 1 && backInCageAfterFall,
+						$"{led.Falls} fall(s), back in the cage: {backInCageAfterFall}");
+					Check("let fall: the cage was lowered again and the walk began again from it", led.Releases >= 2,
+						$"{led.Releases} releases");
+				}
+			}
 			if (e is FivePointedSealEvent seal)
 			{
 				Check("every stone faces the seal", seal.Aligned == FivePointedSealEvent.StoneCount, $"{seal.Steps} presses");
@@ -828,6 +860,10 @@ public partial class _ExploreProbe : Node
 		// The walking hut: hunted at his own walk (HuntStep), and stood still while it kneels.
 		if (e is WalkingHutEvent hunt && hunt.IsFound)
 			target = hunt.IsTired ? player.GlobalPosition : HuntStep(hunt, delta);
+		// The gibbet's cage: the winch held, then led to the ferry at his own walk (EscortStep).
+		bool clearSwarm = true;
+		if (e is GibbetCageEvent escort && escort.IsFound)
+			target = EscortStep(escort, delta, out clearSwarm);
 		if (target == null)
 		{
 			float best = float.MaxValue;
@@ -873,10 +909,86 @@ public partial class _ExploreProbe : Node
 			}
 			else if (enemy.IsMiniBoss && d < 140f && e is not GreatAnvilEvent)
 				enemy.TakeDamage(Math.Max(1, enemy.Health / 6 + 50), false);
-			else if (!enemy.IsMiniBoss && d < 500f && e is not ThawEvent)
+			else if (!enemy.IsMiniBoss && d < 500f && e is not ThawEvent && clearSwarm)
 				enemy.QueueFree();
 		}
 	}
+
+	// One step of the escort. While the cage hangs: stand at the winch. While he walks: toward the landing at the
+	// player's own walking speed, waiting while he is more than a few strides behind, the swarm cleared only every few
+	// seconds. With --let-him-fall, the first time he is out: hold still, the player's spells stopped, the clearing
+	// stopped, and a ring of the chapter's Mired raised on him until the bog takes him.
+	private Vector2 EscortStep(GibbetCageEvent escort, float delta, out bool clear)
+	{
+		clear = false;
+		Vector2 me = player.GlobalPosition;
+		if (escort.IsSinking && escort.Falls > 0 && !fallRestored)
+		{
+			// He is going under: the player may fight again, and everything on him is cleared.
+			fallRestored = true;
+			player.ProcessMode = ProcessModeEnum.Inherit;
+			clear = true;
+			return me;
+		}
+		if (fallRestored && escort.IsHanging && escort.Falls > 0)
+			backInCageAfterFall = true;
+		if (escort.IsHanging)
+			return escort.WinchPoint + new Vector2(0f, 8f);
+		if (!escort.IsWalking)
+			return me;
+		if (letHimFall && escort.Falls == 0)
+		{
+			if (!fallSetUp)
+			{
+				fallSetUp = true;
+				player.ProcessMode = ProcessModeEnum.Disabled;
+				for (int k = 0; k < 8; k++)
+					game.SpawnEventEnemy(BestiaryRole.Bulk, escort.HimAt + Vector2.FromAngle(k * Mathf.Tau / 8f) * 150f, 1f, false);
+				GD.Print($"EXPLOREPROBE let him fall: eight Mired raised on him at ({escort.HimAt.X:0},{escort.HimAt.Y:0}), the player's spells stopped");
+			}
+			return me;
+		}
+		escortClearClock += delta;
+		if (escortClearClock >= 5f)
+		{
+			escortClearClock = 0f;
+			clear = true;
+		}
+		Vector2 toLanding = escort.Landing + new Vector2(0f, -40f) - me;
+		float d = toLanding.Length();
+		if (me.DistanceTo(escort.HimAt) > 150f)
+		{
+			escortWaits++;
+			return me;
+		}
+		float step = player.WalkingSpeed * delta;
+		if (d <= 4f)
+			return me;
+		// Walked as a player walks: round water and walls, not through them - his feet test the ground a stride ahead,
+		// and turn by degrees either way from the straight line until it is open. A straight line over a lake would
+		// put the player (and so the man following his steps) where no player can stand, and the game's own placement
+		// then puts nothing near him.
+		Vector2 dir = toLanding / d;
+		Vector2 feet = player.FootPosition - player.GlobalPosition;
+		for (int k = 0; k <= 12; k++)
+		{
+			float turn = (k % 2 == 1 ? 1f : -1f) * Mathf.DegToRad(15f * ((k + 1) / 2));
+			Vector2 tryDir = dir.Rotated(k == 0 ? escortTurn : escortTurn + turn);
+			Vector2 ahead = me + feet + tryDir * 40f;
+			if (!game.IsGroundBlockedAt(ahead) && !game.IsGroundBlockedAt(me + feet + tryDir * step))
+			{
+				if (k > 0)
+					escortDetours++;
+				escortTurn = Mathf.Wrap(escortTurn + (k == 0 ? 0f : turn), -Mathf.Pi, Mathf.Pi) * 0.92f;
+				return me + tryDir * Mathf.Min(step, d - 4f);
+			}
+		}
+		escortTurn *= 0.5f;
+		return me + dir * Mathf.Min(step, d - 4f);
+	}
+
+	private float escortTurn;
+	private int escortDetours;
 
 	// One step of the hunt, at the player's own walking speed: to just inside its startle radius on the line to it,
 	// so it bolts whenever it can. With --lose-hut, part-way through: straight away past its lose radius, a wait
