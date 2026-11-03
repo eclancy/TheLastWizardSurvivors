@@ -436,6 +436,10 @@ public partial class _UiShot : Node
 	private Vector2? teleportTo;
 	private float cameraZoom;
 	private bool teleported;
+	private int teleportedAtFrame = -1;
+	// Frames the light probe waits after a teleport, so the chunks round the new spot are painted
+	// and furnished before anything is stood on them.
+	private const int LightProbeTeleportSettle = 90;
 
 	// --hold: after the teleport the player stands on the target and stays there - re-placed every
 	// frame and never killed - so a before and an after photograph on the same --terrain-seed frame
@@ -3070,7 +3074,12 @@ public partial class _UiShot : Node
 			}
 			else
 				DriveMovement();
-			if (lightProbe && !lightProbeStarted && frames >= WarmupFrames / 3)
+			// After a --teleport, once the ground round where he landed has streamed in (the foliage pass
+			// measured stands and clearings away from the start, .ai/genre-lessons.md 2).
+			if (teleported && teleportedAtFrame < 0)
+				teleportedAtFrame = frames;
+			if (lightProbe && !lightProbeStarted && frames >= WarmupFrames / 3
+				&& (teleportTo == null || (teleported && frames >= teleportedAtFrame + LightProbeTeleportSettle)))
 				StartLightProbe();
 			if (cover && !stagePlaced && frames >= WarmupFrames / 3)
 				PlaceCoverRing();
