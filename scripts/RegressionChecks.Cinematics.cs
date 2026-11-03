@@ -34,6 +34,13 @@ public static partial class RegressionChecks
 			warnings.Add($"Cinematics: an arrival pans {Node2DGame.BossEntrancePanDelay}s into its hold; rule 3 wants the bars in ({Node2DGame.LetterboxInSeconds}s) and a beat first, and no more than {MaxHoldSeconds}s.");
 		CheckHold(warnings, "an arrival's hold on the landed boss (BossEntranceLandedHold)", Node2DGame.BossEntranceLandedHold);
 		CheckHold(warnings, "an arrival's hold before play (BossEntrancePlayHold)", Node2DGame.BossEntrancePlayHold);
+		// Boss Rush's shorter arrivals keep every hold, at its floor (Node2DGame.BossRush*).
+		CheckHold(warnings, "a Boss Rush arrival's hold on the landed boss (BossRushLandedHold)", Node2DGame.BossRushLandedHold);
+		CheckHold(warnings, "a Boss Rush arrival's hold before play (BossRushPlayHold)", Node2DGame.BossRushPlayHold);
+		if (Node2DGame.BossRushRestHold < 0.3f)
+			warnings.Add($"Cinematics: a Boss Rush arrival's camera goes back after {Node2DGame.BossRushRestHold}s at rest on the boss; under 0.3 s it is a pan straight into a pan.");
+		if (Node2DGame.BossRushCameraLean <= 0f || Node2DGame.BossRushCameraShare <= 0f)
+			warnings.Add("Cinematics: a Boss Rush arrival does not lean toward the boss at all; a rush boss spawns 300-400 px off and must still be framed.");
 		if (Node2DGame.BossEntranceRestHold < 0.3f || Node2DGame.BossEntranceRestHold > MaxHoldSeconds)
 			warnings.Add($"Cinematics: the arrival's camera goes back after {Node2DGame.BossEntranceRestHold}s at rest on the boss; under 0.3 s it is a pan straight into a pan.");
 		if (Node2DGame.BossEntrancePanMaxSpeed <= 0f || Node2DGame.BossEntrancePanMaxSpeed > MaxEyePanSpeed || Node2DGame.BossEntrancePanMaxAccel <= 0f)

@@ -106,6 +106,33 @@ public partial class Node2DGame
 	/// <summary>Seconds from the camera home on the wizard (the bars going out) to the field let go.</summary>
 	internal const float BossEntrancePlayHold = 0.6f;
 
+	// BOSS RUSH ARRIVES SHORTER (Eric, 2026-11-03, of a ~6 s arrival ten times in a row: "Yes, shorter there"). The
+	// rush keeps every rule - the bars, a hold before the pan, a pan no faster than the eye, a hold on the boss and
+	// one before play - but each at its least: the camera leans half as far (a rush boss spawns 300-400 px off, so
+	// half the lean still frames it) and each hold sits at the floor where it still reads as a held shot
+	// (RegressionChecks.Cinematics holds both sets). The boss's own themed entrance is untouched.
+
+	/// <summary>In Boss Rush, of the way to the boss, the share the camera leans.</summary>
+	internal const float BossRushCameraShare = 0.3f;
+
+	/// <summary>In Boss Rush, how far the camera leans toward an arriving boss, at most, in world pixels.</summary>
+	internal const float BossRushCameraLean = 120f;
+
+	/// <summary>In Boss Rush, seconds the camera stays on the arrival after the last body lands.</summary>
+	internal const float BossRushLandedHold = 0.4f;
+
+	/// <summary>In Boss Rush, seconds the pan must have been at rest on the arrival before it goes back.</summary>
+	internal const float BossRushRestHold = 0.3f;
+
+	/// <summary>In Boss Rush, seconds from the camera home to the field let go.</summary>
+	internal const float BossRushPlayHold = 0.4f;
+
+	private float EntranceCameraShare => IsBossRush ? BossRushCameraShare : BossEntranceCameraShare;
+	private float EntranceCameraLean => IsBossRush ? BossRushCameraLean : BossEntranceCameraLean;
+	private float EntranceLandedHold => IsBossRush ? BossRushLandedHold : BossEntranceLandedHold;
+	private float EntranceRestHold => IsBossRush ? BossRushRestHold : BossEntranceRestHold;
+	private float EntrancePlayHold => IsBossRush ? BossRushPlayHold : BossEntrancePlayHold;
+
 	/// <summary>At rest on its mark: within this many world px, moving slower than CameraRestSpeed px/s.</summary>
 	internal const float CameraRestPx = 6f;
 	internal const float CameraRestSpeed = 12f;
@@ -416,7 +443,7 @@ public partial class Node2DGame
 					SetEntranceBeat(EntranceBeat.Landed);
 				break;
 			case EntranceBeat.Landed:
-				if (entranceBeatSeconds >= BossEntranceLandedHold && (cameraRestSeconds >= BossEntranceRestHold || noCamera))
+				if (entranceBeatSeconds >= EntranceLandedHold && (cameraRestSeconds >= EntranceRestHold || noCamera))
 					SetEntranceBeat(EntranceBeat.Returning);
 				else if (OverdueBeat())
 					SetEntranceBeat(EntranceBeat.Returning);
@@ -428,7 +455,7 @@ public partial class Node2DGame
 					SetEntranceBeat(EntranceBeat.Ready);
 				break;
 			case EntranceBeat.Ready:
-				if (entranceBeatSeconds >= BossEntrancePlayHold)
+				if (entranceBeatSeconds >= EntrancePlayHold)
 					EndBossEntranceHold();
 				break;
 		}
@@ -540,9 +567,9 @@ public partial class Node2DGame
 		float wantZoom = 1f;
 		if (onArrival && TryArrivalFocus(out Vector2 focus))
 		{
-			want = (focus - player.GlobalPosition) * BossEntranceCameraShare;
-			if (want.Length() > BossEntranceCameraLean)
-				want = want.Normalized() * BossEntranceCameraLean;
+			want = (focus - player.GlobalPosition) * EntranceCameraShare;
+			if (want.Length() > EntranceCameraLean)
+				want = want.Normalized() * EntranceCameraLean;
 			wantZoom = FitZoomFactor(want);
 		}
 		// The pan waits out the bars (BossEntrancePanDelay), then eases on its capped spring; the zoom pushes in from

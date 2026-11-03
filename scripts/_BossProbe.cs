@@ -114,6 +114,9 @@ public partial class _BossProbe : Node
 			else if (arg.StartsWith("--drain=")) { DrainSeconds = float.Parse(arg.Substring(8)); drainGiven = true; }
 			else if (arg.StartsWith("--drain-interval=")) DrainInterval = float.Parse(arg.Substring(17));
 			else if (arg == "--focus") FocusOneBody = true;
+			// --boss-rush: the run is a Boss Rush, so the first arrival is the rush's shorter one
+			// (Node2DGame.BossRush*); read its "arrival held the field" note against a chapter's.
+			else if (arg == "--boss-rush") Global.BossRush = true;
 			else if (arg == "--no-skirt") Enemy.TerrainSkirting = false;
 			else if (arg == "--approach") Approach = true;
 			else if (arg.StartsWith("--cc=")) CrowdControl = arg.Substring(5);
