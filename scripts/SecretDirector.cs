@@ -147,10 +147,8 @@ public partial class SecretDirector : Node
 		}
 		installing = null;
 
-		var avoid = new List<float>();
-		float? eventBearing = SideEventBearing();
-		if (eventBearing is float b)
-			avoid.Add(b);
+		// Clear of every side event's bearing - two, where a chapter holds a second (.ai/chapter-wizards.md 6.3).
+		var avoid = SideEventBearings();
 		Anchor = PlaceAll(here, SecretPlacement.Anchor, AnchorStream, AnchorMinChunks, AnchorMaxChunks, avoid);
 		// The keepsake keeps clear of the anchor; with no anchor it goes on the seed's own bearing, which is
 		// exactly where the First Tree has always been (stream 7, EventSite).
@@ -275,10 +273,20 @@ public partial class SecretDirector : Node
 
 	private float BearingOf(Vector2 world) => (world - Game.StageOrigin).Angle();
 
-	private float? SideEventBearing()
+	// The bearing of each of the chapter's side events' main sites, in the chapter's order; empty without one.
+	// With one event this is the one bearing it always was.
+	private List<float> SideEventBearings()
 	{
-		SideEvent sideEvent = Game.GetNodeOrNull<SideEventDirector>("SideEventDirector")?.Event;
-		return sideEvent != null && sideEvent.Sites.Count > 0 ? BearingOf(sideEvent.Sites[0].Position) : null;
+		var bearings = new List<float>();
+		SideEventDirector director = Game.GetNodeOrNull<SideEventDirector>("SideEventDirector");
+		if (director == null)
+			return bearings;
+		foreach (SideEvent sideEvent in director.Events)
+		{
+			if (sideEvent != null && sideEvent.Sites.Count > 0)
+				bearings.Add(BearingOf(sideEvent.Sites[0].Position));
+		}
+		return bearings;
 	}
 
 	private static string ToPascal(string id) =>

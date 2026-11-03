@@ -348,8 +348,8 @@ public partial class _UiShot : Node
 
 	// Exploration (.ai/side-events.md, "Finding the event"). The event and the wayfinder are placed
 	// from the terrain seed, so pair these with --terrain-seed=N for a repeatable picture.
-	//   --goto=wayfinder|event|site:N|hazard : like --teleport, to that placed thing (site N of the
-	//                                   event; the stage hazard nearest the player),
+	//   --goto=wayfinder|event|event:N|site:N|hazard : like --teleport, to that placed thing (event N's
+	//                                   main site; site N of the event; the stage hazard nearest the player),
 	//                                   standing --goto-offset=DX,DY from it (default 0,170: just
 	//                                   south, so the thing is on screen above the player).
 	//   --take-wayfinder               : the chapter's wayfinder is taken a third of the way in, through
@@ -376,6 +376,10 @@ public partial class _UiShot : Node
 	private bool wayfinderTaken;
 	private bool arriveEvent;
 	private bool eventArrived;
+	// --event-index=N: which of the chapter's events (SideEventDirector.EventsFor; 0 its original, 1 a second -
+	// --second-event-test adds a stand-in one on a tool run) --goto=event, --goto=site:N, --win-event and --arrive
+	// mean. --goto=event:N goes to event N's main site whatever this says.
+	private int eventIndex;
 
 	// --teleport=X,Y: moves the player to that world position a third of the way through the warmup,
 	// so ground far from the start can be photographed - the endless terrain (TerrainStreamer) is
@@ -793,13 +797,16 @@ public partial class _UiShot : Node
 			&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector director)
 		{
 			tenderCalled = true;
-			if ((director.Event?.IsFound == true ? director.Event : director.Start()) is BogLanternsEvent bog)
+			// The lanterns are whichever of the chapter's events they are (the Swamp may hold a second).
+			int lanterns = director.Events.ToList().FindIndex(e => e is BogLanternsEvent);
+			SideEvent mire = lanterns >= 0 ? director.Events[lanterns] : null;
+			if ((mire?.IsFound == true ? mire : director.Start(lanterns)) is BogLanternsEvent bog)
 			{
 				bog.DebugSnuffAll();
 				GD.Print("_UiShot: every bog lantern snuffed; the tender is called on the event's next tick");
 			}
 			else
-				GD.PrintErr($"_UiShot: --tender needs the Blighted Swamp's lanterns (--stage=3); stage {Global.SelectedStageIdx} has {director.Event?.GetType().Name ?? "no event"}");
+				GD.PrintErr($"_UiShot: --tender needs the Blighted Swamp's lanterns (--stage=3); stage {Global.SelectedStageIdx} has {string.Join(", ", director.Events.Select(e => e.GetType().Name).DefaultIfEmpty("no event"))}");
 		}
 
 		if (tenderCalled && tenderEnemy == null)
@@ -1779,6 +1786,8 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--arrive")
 				arriveEvent = true;
+			else if (arg.StartsWith("--event-index="))
+				eventIndex = System.Math.Max(0, int.Parse(arg.Substring("--event-index=".Length)));
 			// --zoom=Z: the run camera's zoom (player.tscn's is 0.85), for a map-like view of a stretch
 			// of ground - the maze's trap pattern, say. Applied at a quarter of the warmup.
 			else if (arg.StartsWith("--zoom="))
@@ -2979,11 +2988,14 @@ public partial class _UiShot : Node
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame previewGame && previewGame.RunPlayer != null)
 			{
 				hintPreviewed = true;
-				StageHint previewHint = StageHintCatalog.ForStage(hintPreview);
-				var previewEntry = SideEventDirector.ForStage(hintPreview);
+				// A site id names that event's hint; a stage id its first event's (hints are keyed by site).
+				StageHint previewHint = StageHintCatalog.ForSite(hintPreview) ?? StageHintCatalog.ForStage(hintPreview).FirstOrDefault();
+				StageDefinition previewChapter = previewHint != null ? SideEventDirector.ChapterOfSite(previewHint.SiteId) : null;
+				SideEventEntry? previewEntry = previewChapter == null ? null
+					: SideEventDirector.EventsFor(previewChapter.Id).FirstOrDefault(e => e.SiteId == previewHint.SiteId);
 				if (previewHint == null || previewEntry == null)
 				{
-					GD.PrintErr($"_UiShot: --hint-preview={hintPreview}: no hint for that chapter");
+					GD.PrintErr($"_UiShot: --hint-preview={hintPreview}: no hint for that chapter or site");
 				}
 				else
 				{
@@ -3009,7 +3021,7 @@ public partial class _UiShot : Node
 				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector arrival)
 			{
 				eventArrived = true;
-				GD.Print(arrival.Start() is SideEvent begun ? $"_UiShot: {begun.GetType().Name} begun where it stands" : "_UiShot: no event to begin");
+				GD.Print(arrival.Start(eventIndex) is SideEvent begun ? $"_UiShot: {begun.GetType().Name} begun where it stands" : "_UiShot: no event to begin");
 			}
 			if (teleportTo is Vector2 target && !teleported && frames >= WarmupFrames / 3
 				&& FindNodeOfType<Player>(GetTree().Root) is Player traveller)
@@ -3848,7 +3860,7 @@ public partial class _UiShot : Node
 	{
 		if (FindNodeOfType<SideEventDirector>(GetTree().Root) is not SideEventDirector director)
 			return;
-		wonEvent = director.Start();
+		wonEvent = director.Start(eventIndex);
 		if (wonEvent == null)
 		{
 			GD.PrintErr($"_UiShot: stage {Global.SelectedStageIdx} has no side event");
@@ -3891,6 +3903,10 @@ public partial class _UiShot : Node
 		return null;
 	}
 
+	// The event --goto=event, --goto=site:N, --win-event and --arrive mean: the chapter's --event-index=N (its first by default).
+	private SideEvent GotoEvent(SideEventDirector director) =>
+		eventIndex >= 0 && eventIndex < director.Events.Count && IsInstanceValid(director.Events[eventIndex]) ? director.Events[eventIndex] : null;
+
 	// --goto: where the named placed thing is, plus the offset; null (with a message) if it is not there.
 	private Vector2? ResolveGoto()
 	{
@@ -3923,10 +3939,13 @@ public partial class _UiShot : Node
 		else if (gotoTarget == "wayfinder")
 			at = director.Wayfinder != null && IsInstanceValid(director.Wayfinder) ? director.Wayfinder.Site.Position : null;
 		else if (gotoTarget == "event")
-			at = director.Event != null && director.Event.Sites.Count > 0 ? director.Event.Sites[0].Position : null;
+			at = GotoEvent(director) is SideEvent chosen && chosen.Sites.Count > 0 ? chosen.Sites[0].Position : null;
+		else if (gotoTarget.StartsWith("event:") && int.TryParse(gotoTarget.Substring(6), out int which)
+			&& which >= 0 && which < director.Events.Count && director.Events[which].Sites.Count > 0)
+			at = director.Events[which].Sites[0].Position;
 		else if (gotoTarget.StartsWith("site:") && int.TryParse(gotoTarget.Substring(5), out int index)
-			&& director.Event != null && index >= 0 && index < director.Event.Sites.Count)
-			at = director.Event.Sites[index].Position;
+			&& GotoEvent(director) is SideEvent owner && index >= 0 && index < owner.Sites.Count)
+			at = owner.Sites[index].Position;
 		if (at == null)
 		{
 			GD.PrintErr($"_UiShot: --goto={gotoTarget}: nothing like that on stage {Global.SelectedStageIdx}");

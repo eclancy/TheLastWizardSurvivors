@@ -71,6 +71,120 @@ public sealed class ExplorePlacer
 	/// <summary>The next roll in this placer's stream, 0 to 1.</summary>
 	public float NextFloat() => rng.NextFloat();
 
+	// --- a chapter's second event (P2, .ai/chapter-wizards.md 6.3) ---------------------------------------
+	// The bearings an event's main site must keep away from - every earlier event's in the same chapter - and
+	// by how much, and the footprints it may not overlap. Empty for a chapter's first event, which is then
+	// placed exactly as before: no roll, no test and no search changes.
+	private IReadOnlyList<float> avoidBearings = Array.Empty<float>();
+	private float avoidSeparation;
+	private IReadOnlyList<(Vector2 Centre, float Radius)> keepOff = Array.Empty<(Vector2, float)>();
+
+	/// <summary>
+	/// Keeps this placer's event site (<see cref="EventSite"/>, <see cref="EventSiteInBand"/>) at least
+	/// <paramref name="separation"/> radians round from each of <paramref name="bearings"/>, seen from the
+	/// start, and off every one of <paramref name="footprints"/>: the roll is drawn inside the allowed arcs
+	/// (<see cref="BearingAvoiding"/>), and every spot the search or the band sweep tries is held to the same
+	/// rule, so the site the search settles on keeps it too - not only the roll. Set before PlaceSites.
+	/// </summary>
+	public ExplorePlacer Avoiding(IReadOnlyList<float> bearings, float separation,
+		IReadOnlyList<(Vector2 Centre, float Radius)> footprints = null)
+	{
+		avoidBearings = bearings ?? Array.Empty<float>();
+		avoidSeparation = separation;
+		keepOff = footprints ?? Array.Empty<(Vector2, float)>();
+		return this;
+	}
+
+	/// <summary>True when this placer's event site has bearings to keep away from (it is a chapter's later event).</summary>
+	public bool HasSiteRule => avoidBearings.Count > 0 || keepOff.Count > 0;
+
+	/// <summary>The bearing of <paramref name="point"/> seen from <paramref name="origin"/>, in radians from east.</summary>
+	public static float BearingFrom(Vector2 origin, Vector2 point) => Mathf.Atan2(point.Y - origin.Y, point.X - origin.X);
+
+	/// <summary>How far round <paramref name="a"/> is from <paramref name="b"/>: 0 to pi.</summary>
+	public static float Separation(float a, float b) => Mathf.Abs(Mathf.AngleDifference(a, b));
+
+	/// <summary>
+	/// A roll (0 to 1) mapped onto the bearings at least <paramref name="separation"/> from every one of
+	/// <paramref name="avoid"/>: the arcs between them, each trimmed by the separation at both ends, laid end to
+	/// end. None to avoid: the roll times a whole turn, as every unconstrained bearing is rolled. One: exactly
+	/// <c>b + separation + roll * (tau - 2 * separation)</c>, the wayfinder's formula from before there were two
+	/// events, so a one-event chapter's wayfinder is where it always was. When the bearings leave no gap that
+	/// wide, the middle of the widest gap.
+	/// </summary>
+	public static float BearingAvoiding(float roll, IReadOnlyList<float> avoid, float separation)
+	{
+		if (avoid == null || avoid.Count == 0)
+			return roll * Mathf.Tau;
+		if (avoid.Count == 1)
+			return avoid[0] + separation + roll * (Mathf.Tau - 2f * separation);
+
+		var sorted = new List<float>(avoid.Count);
+		foreach (float bearing in avoid)
+			sorted.Add(Mathf.PosMod(bearing, Mathf.Tau));
+		sorted.Sort();
+		float total = 0f;
+		float widestStart = sorted[0], widest = -1f;
+		for (int i = 0; i < sorted.Count; i++)
+		{
+			float start = sorted[i];
+			float gap = (i + 1 < sorted.Count ? sorted[i + 1] : sorted[0] + Mathf.Tau) - start;
+			total += Mathf.Max(0f, gap - 2f * separation);
+			if (gap > widest)
+			{
+				widest = gap;
+				widestStart = start;
+			}
+		}
+		if (total <= 0f)
+			return widestStart + widest * 0.5f;
+		float along = Mathf.Clamp(roll, 0f, 1f) * total;
+		for (int i = 0; i < sorted.Count; i++)
+		{
+			float start = sorted[i];
+			float gap = (i + 1 < sorted.Count ? sorted[i + 1] : sorted[0] + Mathf.Tau) - start;
+			float open = Mathf.Max(0f, gap - 2f * separation);
+			if (along <= open)
+				return start + separation + along;
+			along -= open;
+		}
+		return widestStart + widest * 0.5f;
+	}
+
+	/// <summary>True if a spot keeps this placer's site rule: far enough round from every bearing it avoids, off every footprint.</summary>
+	public bool KeepsSiteRule(Vector2 point, float footprint)
+	{
+		if (avoidBearings.Count > 0 && point.DistanceSquaredTo(ground.Origin) > 1f)
+		{
+			float bearing = BearingFrom(ground.Origin, point);
+			foreach (float other in avoidBearings)
+			{
+				// A hair under, so a site the band sweep put exactly on the edge of an arc is not refused for rounding.
+				if (Separation(bearing, other) < avoidSeparation - 1e-4f)
+					return false;
+			}
+		}
+		foreach (var (centre, radius) in keepOff)
+		{
+			if (centre.DistanceTo(point) < radius + footprint)
+				return false;
+		}
+		return true;
+	}
+
+	// The test with the site rule folded in; the test itself when there is no rule.
+	private Func<Vector2, float, bool> WithSiteRule(Func<Vector2, float, bool> test)
+	{
+		if (!HasSiteRule)
+			return test;
+		Func<Vector2, float, bool> inner = test ?? ground.IsClear;
+		return (p, footprint) => KeepsSiteRule(p, footprint) && inner(p, footprint);
+	}
+
+	// The event band's roll: anywhere round for a chapter's first event, inside the allowed arcs for a later one.
+	private float RollEventBearing() =>
+		avoidBearings.Count == 0 ? NextFloat() * Mathf.Tau : BearingAvoiding(NextFloat(), avoidBearings, avoidSeparation);
+
 	/// <summary>
 	/// The event's main site: a seeded bearing and a seeded distance in the event band, then the
 	/// nearest open footprint to that spot. Its bearing is remembered, so the wayfinder can be put
@@ -78,13 +192,28 @@ public sealed class ExplorePlacer
 	/// </summary>
 	public Vector2 EventSite(float footprint, bool dense = false)
 	{
-		float bearing = NextFloat() * Mathf.Tau;
+		float bearing = RollEventBearing();
 		float distance = Mathf.Lerp(EventMinChunks, EventMaxChunks, NextFloat()) * ground.ChunkPixels;
 		float searchFrom = NextFloat() * Mathf.Tau;
 		if (float.IsNaN(EventBearing))
 			EventBearing = bearing;
-		return Search(ground.Origin + Direction(bearing) * distance, footprint, searchFrom,
-			test: dense ? ground.IsClearDense ?? ground.IsClear : null);
+		Func<Vector2, float, bool> test = dense ? ground.IsClearDense ?? ground.IsClear : null;
+		if (!HasSiteRule)
+			return Search(ground.Origin + Direction(bearing) * distance, footprint, searchFrom, test: test);
+
+		// A later event: the search held to the rule, then - if nothing open keeps it near the roll - the whole
+		// band swept for one, as EventSiteInBand does. Only then the old fallback, which says so.
+		test = WithSiteRule(test);
+		Vector2 candidate = ground.Origin + Direction(bearing) * distance;
+		if (TrySearch(candidate, footprint, searchFrom, null, 0f, test, out Vector2 found))
+			return Keep(found, footprint);
+		if (TrySweepBand(bearing, distance, EventMinChunks, EventMaxChunks, footprint, test, out found))
+		{
+			EventBearing = BearingFrom(ground.Origin, found);
+			return Keep(found, footprint);
+		}
+		GD.PushWarning($"ExplorePlacer: no open ground keeping a chapter's events apart for a {footprint:0} px footprint; placing at {candidate} anyway.");
+		return Keep(Snap(candidate), footprint);
 	}
 
 	/// <summary>A site on a given bearing, at a seeded distance between two bands (chunks from the start).</summary>
@@ -196,7 +325,7 @@ public sealed class ExplorePlacer
 	public Vector2 EventSiteInBand(float footprint, bool dense = false,
 		IReadOnlyList<(Vector2 Centre, float Radius)> keepOff = null, Func<Vector2, bool> also = null)
 	{
-		float bearing = NextFloat() * Mathf.Tau;
+		float bearing = RollEventBearing();
 		float distance = Mathf.Lerp(EventMinChunks, EventMaxChunks, NextFloat()) * ground.ChunkPixels;
 		float searchFrom = NextFloat() * Mathf.Tau;
 		if (float.IsNaN(EventBearing))
@@ -207,6 +336,8 @@ public sealed class ExplorePlacer
 			Func<Vector2, float, bool> inner = test;
 			test = (p, f) => inner(p, f) && also(p);
 		}
+		// A chapter's later event keeps round from the earlier ones however far the sweep goes (no-op for the first).
+		test = WithSiteRule(test);
 		Vector2 candidate = ground.Origin + Direction(bearing) * distance;
 		if (TrySearch(candidate, footprint, searchFrom, null, 0f, test, out Vector2 found))
 			return Keep(found, footprint);

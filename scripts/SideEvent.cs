@@ -34,6 +34,12 @@ public abstract partial class SideEvent : Node2D
 	public Node2DGame Game { get; set; }
 	public string SiteId { get; set; } = string.Empty;
 
+	/// <summary>
+	/// Where it stands in its chapter's list (SideEventDirector.EventsFor): 0 for the chapter's original event,
+	/// 1 for a second. Names its nodes, so two events' objective lines are two nodes.
+	/// </summary>
+	public int Index { get; set; }
+
 	/// <summary>True when the site's unlocks are all owned; the event then pays a chest.</summary>
 	public bool PaysChest { get; set; }
 
@@ -125,6 +131,54 @@ public abstract partial class SideEvent : Node2D
 	/// <summary>The player has arrived; the event is running or over.</summary>
 	public bool IsFound => state != State.Dormant;
 
+	/// <summary>True once the event was won (not failed or stood down). For probes and the win's line.</summary>
+	public bool IsWon => Succeeded;
+
+	// --- one line under the timer, whichever event is speaking ---------------------------------------
+	// A chapter may hold two events (SideEventDirector, P2), and a player can arrive at one, leave it running
+	// and walk to the other. Each event has its own objective line and arrow, in the same place under the
+	// timer, so only one of them may speak at a time: the event the player most recently arrived at, or one
+	// whose win line is showing - a win is never hidden by an objective. Whoever does not hold the line hides
+	// its line and its arrow and leaves PointsOfInterest.ObjectiveTarget alone, and takes the line back the
+	// moment the holder lets it go. With one event it always holds it, so nothing changes there.
+	private static SideEvent objectiveHolder;
+
+	/// <summary>Forgets who holds the line. The director calls it when a run's events are made and freed.</summary>
+	public static void ResetObjectiveLine() => objectiveHolder = null;
+
+	/// <summary>True while this event's objective (or win) line is the one shown under the timer.</summary>
+	public bool HoldsObjectiveLine => ReferenceEquals(objectiveHolder, this);
+
+	/// <summary>Where this event's own objective arrow points while it runs, whether or not its line is the one shown. For probes.</summary>
+	public Vector2? OwnObjectiveTarget => state == State.Running ? PointerTarget : null;
+
+	/// <summary>What this event's line under the timer shows now, or empty while another event holds it. For probes.</summary>
+	public string ObjectiveShown => HoldsObjectiveLine && objectiveLabel != null && objectiveLabel.Modulate.A > 0f ? objectiveLabel.Text : string.Empty;
+
+	// Done with the line: freed, stood down, or its win line has had its five seconds.
+	private static bool LetsGoOfLine(SideEvent holder) =>
+		holder == null || !IsInstanceValid(holder) || holder.IsDormant
+		|| (holder.state == State.Resolved && (string.IsNullOrEmpty(holder.resolvedText) || holder.resolvedSeconds >= ResolvedLingerSeconds));
+
+	// Takes the line when it is free; <paramref name="force"/> takes it from a running event too (an arrival,
+	// a win), but never from a win line still showing.
+	private bool ClaimObjectiveLine(bool force)
+	{
+		if (LetsGoOfLine(objectiveHolder)
+			|| (force && objectiveHolder.state != State.Resolved))
+			objectiveHolder = this;
+		return HoldsObjectiveLine;
+	}
+
+	// Not holding the line: nothing of this event's is under the timer or at the edge of the screen.
+	private void HideObjectiveLine()
+	{
+		if (objectiveLabel != null)
+			objectiveLabel.Modulate = new Color(1f, 1f, 1f, 0f);
+		if (pointer != null)
+			pointer.Target = null;
+	}
+
 	public override void _Ready()
 	{
 		// Under the actors, over the ground: what this node draws is on the floor. Y-sorted, so a
@@ -148,7 +202,8 @@ public abstract partial class SideEvent : Node2D
 		{
 			objectiveLabel = new Label
 			{
-				Name = "SideEventObjective",
+				// The chapter's first event keeps the old name; a second's is numbered beside it.
+				Name = Index == 0 ? "SideEventObjective" : $"SideEventObjective{Index + 1}",
 				HorizontalAlignment = HorizontalAlignment.Center,
 				MouseFilter = Control.MouseFilterEnum.Ignore,
 				AnchorLeft = 0f,
@@ -167,7 +222,7 @@ public abstract partial class SideEvent : Node2D
 			// phone the line sat on the XP bar, which the heading-sized win line made unreadable.
 			SafeArea.ApplyTo(objectiveLabel);
 
-			pointer = new SideEventPointer { Name = "SideEventPointer" };
+			pointer = new SideEventPointer { Name = Index == 0 ? "SideEventPointer" : $"SideEventPointer{Index + 1}" };
 			overlay.AddChild(pointer);
 		}
 
@@ -186,7 +241,12 @@ public abstract partial class SideEvent : Node2D
 			objectiveLabel.QueueFree();
 		if (pointer != null && IsInstanceValid(pointer))
 			pointer.QueueFree();
-		PointsOfInterest.ObjectiveTarget = null;
+		// Only the event speaking under the timer owns the objective target; another still running keeps its own.
+		if (HoldsObjectiveLine || objectiveHolder == null)
+		{
+			PointsOfInterest.ObjectiveTarget = null;
+			objectiveHolder = null;
+		}
 	}
 
 	public override void _Process(double delta)
@@ -198,22 +258,23 @@ public abstract partial class SideEvent : Node2D
 
 		if (state == State.Resolved)
 		{
-			// The win line waits for its turn before its five seconds start; nothing else does.
+			// The win line waits for its turn before its five seconds start; nothing else does. With two events in
+			// the chapter it also waits for the line under the timer, should the other's win line still be on it.
 			if (!string.IsNullOrEmpty(resolvedText) && !holdingTurn)
 			{
-				if (!Announcements.Request(this, Announcements.Kind.Line))
+				if (!ClaimObjectiveLine(force: true) || !Announcements.Request(this, Announcements.Kind.Line))
 				{
-					if (objectiveLabel != null)
-						objectiveLabel.Modulate = new Color(1f, 1f, 1f, 0f);
-					if (pointer != null) pointer.Target = null;
-					PointsOfInterest.ObjectiveTarget = null;
+					HideObjectiveLine();
+					if (HoldsObjectiveLine)
+						PointsOfInterest.ObjectiveTarget = null;
 					return;
 				}
 				holdingTurn = true;
 			}
 			resolvedSeconds += dt;
 			if (pointer != null) pointer.Target = null;
-			PointsOfInterest.ObjectiveTarget = null;
+			if (HoldsObjectiveLine)
+				PointsOfInterest.ObjectiveTarget = null;
 			if (objectiveLabel != null)
 			{
 				objectiveLabel.Text = resolvedText;
@@ -272,8 +333,17 @@ public abstract partial class SideEvent : Node2D
 			holdingTurn = false;
 			Announcements.Release(this);
 		}
+		// Another of the chapter's events is speaking under the timer (the one he arrived at since, or a win).
+		if (!ClaimObjectiveLine(force: false))
+		{
+			HideObjectiveLine();
+			return;
+		}
 		if (objectiveLabel != null)
+		{
+			objectiveLabel.Modulate = Colors.White;
 			objectiveLabel.Text = announceSeconds > 0f ? Announcement : Objective;
+		}
 		Vector2? target = PointerTarget;
 		if (pointer != null)
 			pointer.Target = target;
@@ -291,6 +361,8 @@ public abstract partial class SideEvent : Node2D
 		state = State.Running;
 		announcePending = true;
 		announceSeconds = 0f;
+		// The place he has just come to is what the line under the timer is about now.
+		ClaimObjectiveLine(force: true);
 		foreach (PointOfInterest site in sites)
 			site.Seen = true;
 		Begin();

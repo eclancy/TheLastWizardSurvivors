@@ -90,6 +90,7 @@ public static partial class RegressionChecks
 		ValidateSpellClassificationText(warnings);
 		ValidateExploreArt(warnings);
 		ValidateStageHints(warnings);
+		ValidateSideEventTable(warnings);
 		ValidateSealPuzzle(warnings);
 		ValidateNineMouths(warnings);
 		ValidateThawArt(warnings);
@@ -117,21 +118,20 @@ public static partial class RegressionChecks
 		else if (cues.GetSize() != cueSize)
 			warnings.Add($"Hints: hint-cues.png is {cues.GetSize()}, expected {cueSize} - one row per HintCue, in its order.");
 
-		var seen = new HashSet<string>();
+		// Keyed by site (a chapter may hold two events, each with its own hint): one hint a site, and the site
+		// one chapter's event - the chapter whose runs play it.
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (StageHint hint in StageHintCatalog.All)
 		{
-			string at = $"Hint {hint.StageId}";
-			if (!seen.Add(hint.StageId))
-				warnings.Add($"{at}: a chapter has two hints; ForStage only ever plays the first.");
-			if (StageCatalog.All.All(s => s.Id != hint.StageId))
-				warnings.Add($"{at}: no such chapter in StageCatalog.");
-
-			var entry = SideEventDirector.ForStage(hint.StageId);
-			if (entry == null)
-				warnings.Add($"{at}: the chapter has no side event, so the hint has nowhere to come from.");
-			else if (entry.Value.SiteId != hint.SiteId)
-				warnings.Add($"{at}: names site '{hint.SiteId}', but the chapter's event pays '{entry.Value.SiteId}'; it will never play.");
+			string at = $"Hint '{hint.SiteId}'";
+			if (!seen.Add(hint.SiteId ?? string.Empty))
+				warnings.Add($"{at}: a site has two hints; ForSite only ever plays the first.");
+			List<StageDefinition> chapters = SideEventDirector.ChaptersOfSite(hint.SiteId);
+			if (chapters.Count == 0)
+				warnings.Add($"{at}: no chapter's side event stands on that site, so the hint has nowhere to come from.");
+			else if (chapters.Count > 1)
+				warnings.Add($"{at}: {chapters.Count} chapters' side events stand on that site; a site is one place.");
 
 			var gives = UnlockCatalog.ForDiscoverySite(hint.SiteId).ToList();
 			if (gives.Count == 0)
@@ -652,7 +652,7 @@ public static partial class RegressionChecks
 		}
 		foreach (StageReward reward in StageRewards.ForStage(SketchbookStageId))
 			warnings.Add($"Sketchbook: its card pays {reward}; the Sketchbook holds no unlocks.");
-		if (SideEventDirector.ForStage(SketchbookStageId) != null)
+		if (SideEventDirector.EventsFor(SketchbookStageId).Count > 0)
 			warnings.Add("Sketchbook: it has a side event; the Sketchbook holds no unlocks.");
 	}
 
@@ -668,9 +668,7 @@ public static partial class RegressionChecks
 
 		foreach (UnlockDefinition found in UnlockCatalog.All.Where(d => !string.IsNullOrWhiteSpace(d.SiteId)))
 		{
-			List<StageDefinition> sites = StageCatalog.All
-				.Where(s => string.Equals(global::SideEventDirector.ForStage(s.Id)?.SiteId, found.SiteId, StringComparison.OrdinalIgnoreCase))
-				.ToList();
+			List<StageDefinition> sites = global::SideEventDirector.ChaptersOfSite(found.SiteId);
 			if (sites.Count != 1)
 				warnings.Add($"Stage rewards: '{found.Id}' is found at site '{found.SiteId}', which {(sites.Count == 0 ? "no chapter's side event stands on" : $"{sites.Count} chapters' side events stand on")}, so no single chapter's card can show it.");
 			else if (!OnCard(sites[0].Id, found.Id))
@@ -1373,9 +1371,9 @@ public static partial class RegressionChecks
 		}
 		foreach (StageDefinition stage in StageCatalog.All)
 		{
-			var entry = SideEventDirector.ForStage(stage.Id);
-			if (entry != null && Array.IndexOf(ExploreArt.Glyphs, WayfinderPickup.GlyphFor(entry.Value.Wayfinder)) < 0)
-				warnings.Add($"Explore: {stage.Id}'s wayfinder {entry.Value.Wayfinder} has no arrow glyph.");
+			WayfinderKind? wayfinder = SideEventDirector.WayfinderFor(stage.Id);
+			if (wayfinder != null && Array.IndexOf(ExploreArt.Glyphs, WayfinderPickup.GlyphFor(wayfinder.Value)) < 0)
+				warnings.Add($"Explore: {stage.Id}'s wayfinder {wayfinder.Value} has no arrow glyph.");
 		}
 	}
 
@@ -2721,10 +2719,9 @@ public static partial class RegressionChecks
 		// side event pays out can never be had - a fault once its chapter is built, a to-do before.
 		foreach (UnlockDefinition found in UnlockCatalog.All.Where(d => !string.IsNullOrWhiteSpace(d.SiteId)))
 		{
-			StageDefinition holder = StageCatalog.All.FirstOrDefault(s =>
-				SideEventDirector.ForStage(s.Id)?.SiteId.Equals(found.SiteId, StringComparison.OrdinalIgnoreCase) == true);
+			StageDefinition holder = SideEventDirector.ChapterOfSite(found.SiteId);
 			if (holder == null)
-				warnings.Add($"Campaign to-do (Phase 2, .ai/campaign.md): {found.Kind} '{found.Id}' is found at '{found.SiteId}', and no chapter's side event (SideEventDirector.ForStage) is that site yet, so nobody can find it.");
+				warnings.Add($"Campaign to-do (Phase 2, .ai/campaign.md): {found.Kind} '{found.Id}' is found at '{found.SiteId}', and no chapter's side event (SideEventDirector.EventsFor) is that site yet, so nobody can find it.");
 			else if (!holder.IsPlayable)
 				warnings.Add($"Campaign to-do (Phase 2, .ai/campaign.md): {found.Kind} '{found.Id}' is found in {holder.DisplayName}, which is not playable yet.");
 		}
@@ -3394,10 +3391,11 @@ public static partial class RegressionChecks
 						WinOnPaper(save, boss, stage);
 						changed = true;
 					}
-					string site = global::SideEventDirector.ForStage(stage.Id)?.SiteId;
-					if (!string.IsNullOrWhiteSpace(site) && !save.Lifetime.HasWonEvent(site))
+					foreach (SideEventEntry site in global::SideEventDirector.EventsFor(stage.Id))
 					{
-						DiscoveryRewards.GrantSite(save, site);
+						if (save.Lifetime.HasWonEvent(site.SiteId))
+							continue;
+						DiscoveryRewards.GrantSite(save, site.SiteId);
 						changed = true;
 					}
 					foreach (SecretDefinition secret in SecretCatalog.ForStage(stage.Id))
@@ -6875,6 +6873,10 @@ public static partial class RegressionChecks
 		// somewhere else. Both halves would look correct on their own.
 		foreach (AchievementDefinition achievement in AchievementDefinitions.All)
 		{
+			// A tool run's stand-in second event pays a shop boon on purpose (SecondEventStandIn); it is reported
+			// once, by ValidateSideEventTable, not here as a fault in the catalog.
+			if (SecondEventStandIn.IsStandInSite(achievement.SiteId))
+				continue;
 			// A wizard freed by an achievement (John Dee) keeps the same agreement a spell does.
 			if (!string.IsNullOrWhiteSpace(achievement.CharacterUnlockId))
 			{
@@ -6977,12 +6979,15 @@ public static partial class RegressionChecks
 			warnings.Add($"Secret '{definition.Id}' reads as revealed on a brand-new save although '{stage.DisplayName}' is closed on one; IsCharacterRevealed has stopped honouring the reveal.");
 
 		// A wizard found at a side event is revealed by the chapter that holds him: the place the
-		// player is shown is the place he is freed from. Anything else hints at the wrong map.
-		if (!string.IsNullOrWhiteSpace(definition.SiteId))
+		// player is shown is the place he is freed from. Anything else hints at the wrong map. Read off his
+		// own site - a chapter may hold two events (.ai/chapter-wizards.md 6.3), and his is the one that counts.
+		if (!string.IsNullOrWhiteSpace(definition.SiteId) && !SideEventDirector.HoldsSite(stage.Id, definition.SiteId))
 		{
-			var site = SideEventDirector.ForStage(stage.Id);
-			if (site == null || !site.Value.SiteId.Equals(definition.SiteId, StringComparison.OrdinalIgnoreCase))
-				warnings.Add($"Secret '{definition.Id}' is found at '{definition.SiteId}' but revealed by '{stage.DisplayName}', whose side event is '{site?.SiteId ?? "none"}'; reveal him with the chapter that holds him.");
+			StageDefinition holder = SideEventDirector.ChapterOfSite(definition.SiteId);
+			string events = string.Join(", ", SideEventDirector.EventsFor(stage.Id).Select(e => $"'{e.SiteId}'"));
+			warnings.Add($"Secret '{definition.Id}' is found at '{definition.SiteId}'"
+				+ (holder != null ? $" in '{holder.DisplayName}'" : ", which no chapter's event stands on,")
+				+ $" but revealed by '{stage.DisplayName}', whose side events are {(events.Length > 0 ? events : "none")}; reveal him with the chapter that holds him.");
 		}
 	}
 
@@ -7041,7 +7046,7 @@ public static partial class RegressionChecks
 
 		// Derivation is complete in both directions: every side event's site and every secret has its
 		// deed, and the words table names no site that has none (a renamed site would leave words behind).
-		var sites = StageCatalog.All.Select(s => global::SideEventDirector.ForStage(s.Id)?.SiteId)
+		var sites = global::SideEventDirector.AllEvents.Select(e => e.Entry.SiteId)
 			.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
 		foreach (string site in sites)
 		{
@@ -7136,9 +7141,8 @@ public static partial class RegressionChecks
 			|| !string.IsNullOrWhiteSpace(deed.ComboId);
 		if (deed.CompletesInRun != mirrors)
 			warnings.Add($"Achievement '{id}' {(deed.CompletesInRun ? "completes in the run but mirrors no site or secret" : "mirrors a site or a secret but is not completed in the run")}.");
-		if (!string.IsNullOrWhiteSpace(deed.SiteId)
-			&& !string.Equals(global::SideEventDirector.ForStage(deed.StageId)?.SiteId, deed.SiteId, StringComparison.OrdinalIgnoreCase))
-			warnings.Add($"Achievement '{id}' mirrors site '{deed.SiteId}', which is not the side event of its chapter '{deed.StageId}'.");
+		if (!string.IsNullOrWhiteSpace(deed.SiteId) && !global::SideEventDirector.HoldsSite(deed.StageId, deed.SiteId))
+			warnings.Add($"Achievement '{id}' mirrors site '{deed.SiteId}', which is not a side event of its chapter '{deed.StageId}'.");
 		if (!string.IsNullOrWhiteSpace(deed.SecretId)
 			&& SecretCatalog.Get(deed.SecretId)?.StageId.Equals(deed.StageId, StringComparison.OrdinalIgnoreCase) != true)
 			warnings.Add($"Achievement '{id}' mirrors secret '{deed.SecretId}', which is not a secret of its chapter '{deed.StageId}'.");
@@ -7256,8 +7260,10 @@ public static partial class RegressionChecks
 			foreach (StageDefinition stage in StageCatalog.All.Where(s => s.IsPlayable && ChapterNotes.Has(s.Id)))
 			{
 				List<string> lines = ChapterNotes.LinesFor(stage.Id, save);
-				if (lines.Count > ChapterNotes.MaxLines)
-					warnings.Add($"Chapter notes: {stage.DisplayName}'s note is {lines.Count} lines on {name}; at most {ChapterNotes.MaxLines}.");
+				if (lines.Count > ChapterNotes.MaxLinesFor(stage.Id))
+					warnings.Add($"Chapter notes: {stage.DisplayName}'s note is {lines.Count} lines on {name}; at most {ChapterNotes.MaxLinesFor(stage.Id)} (two of the place, one a wizard held there).");
+				if (ChapterNotes.IntroFor(stage.Id).Count > ChapterNotes.MaxIntroLines)
+					warnings.Add($"Chapter notes: {stage.DisplayName}'s own lines are {ChapterNotes.IntroFor(stage.Id).Count}; at most {ChapterNotes.MaxIntroLines}.");
 				foreach (string line in lines.Where(l => l.Length > ChapterNotes.MaxLineLength))
 					warnings.Add($"Chapter notes: '{line}' is {line.Length} characters; at most {ChapterNotes.MaxLineLength}.");
 				foreach (string clue in ChapterNotes.CluesFor(stage.Id, save).Where(l => l.Length > ChapterNotes.MaxLineLength))
@@ -7293,7 +7299,7 @@ public static partial class RegressionChecks
 		foreach (StageDefinition stage in StageCatalog.All.Where(s => s.IsPlayable && ChapterNotes.Has(s.Id)))
 		{
 			bool holds = QuestLog.HeldOnlyLinesFor(stage.Id, fresh).Any()
-				|| SideEventDirector.ForStage(stage.Id) != null
+				|| SideEventDirector.EventsFor(stage.Id).Count > 0
 				|| SecretCatalog.ForStage(stage.Id).Any(v => v.IsVault);
 			if (holds && ChapterNotes.CluesFor(stage.Id, fresh).Count == 0)
 				warnings.Add($"Chapter notes: {stage.DisplayName} holds something on a new save but its note gives no clue.");

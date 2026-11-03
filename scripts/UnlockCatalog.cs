@@ -49,8 +49,8 @@ public sealed class UnlockDefinition
 	public string SourceId { get; init; } = string.Empty;
 
 	/// <summary>
-	/// For something a chapter's side event pays: the event's site id, as <c>SideEventDirector.ForStage</c>
-	/// maps it. Its <see cref="SourceId"/> is that event's Road deed
+	/// For something a chapter's side event pays: the event's site id, one of its chapter's
+	/// <c>SideEventDirector.EventsFor</c> (a chapter may hold two, each paying its own). Its <see cref="SourceId"/> is that event's Road deed
 	/// (<see cref="AchievementDefinitions.EventDeedId"/>), and the deed reads its reward from here - so what
 	/// a site pays is written once, on this entry, and nowhere else. Empty for anything else.
 	/// </summary>
@@ -454,9 +454,16 @@ public static class UnlockCatalog
 	/// (whether the event pays a chest instead) and by the world map's chapter card. The name is the
 	/// old one: a "discovery site" is still what the world calls the place an event stands.
 	/// </summary>
-	public static IEnumerable<UnlockDefinition> ForDiscoverySite(string siteId) =>
-		Definitions.Where(d => !string.IsNullOrEmpty(d.SiteId)
+	/// <remarks>Per site, never per chapter: a chapter may hold two events, each paying its own. On a tool run with
+	/// the stand-in second event (SecondEventStandIn) its site pays the stand-in's prize, which is never in
+	/// <see cref="All"/>.</remarks>
+	public static IEnumerable<UnlockDefinition> ForDiscoverySite(string siteId)
+	{
+		if (SecondEventStandIn.Active && SecondEventStandIn.IsStandInSite(siteId))
+			return new[] { SecondEventStandIn.Prize };
+		return Definitions.Where(d => !string.IsNullOrEmpty(d.SiteId)
 			&& d.SiteId.Equals(siteId ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+	}
 
 	/// <summary>The deed that grants this unlock, or null for a starter or a purchase.</summary>
 	public static AchievementDefinition SourceDeedOf(UnlockDefinition definition) =>

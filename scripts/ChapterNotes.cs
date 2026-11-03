@@ -31,8 +31,18 @@ namespace WizardSurvivors.scripts;
 /// </remarks>
 public static class ChapterNotes
 {
-	/// <summary>The most lines a note may carry, held line included.</summary>
-	public const int MaxLines = 3;
+	/// <summary>The most lines a note's own text - the place - may carry.</summary>
+	public const int MaxIntroLines = 2;
+
+	/// <summary>
+	/// The most lines a chapter's note may carry, held lines included: the place's two, and one for each
+	/// wizard held there - at least one, the "third only where someone is held" the note was written to. A
+	/// chapter with two events can hold two wizards (the Court, .ai/chapter-wizards.md 6.3), and each is a line.
+	/// </summary>
+	public static int MaxLinesFor(string stageId) =>
+		MaxIntroLines + Math.Max(1, QuestLog.Prisoners.Count(p =>
+			GlobalStatsManager.RescueChapterOf(UnlockCatalog.GetCharacter(p.CharacterId))
+				.Equals(stageId ?? string.Empty, StringComparison.OrdinalIgnoreCase)));
 
 	/// <summary>The longest a line may run - one line of the note card on a phone.</summary>
 	public const int MaxLineLength = 64;
@@ -128,7 +138,7 @@ public static class ChapterNotes
 	};
 
 	// What a side event holds when it is not a wizard (a wizard's line is his held line, QuestLog.Prisoners),
-	// keyed by its Discovery site (SideEventDirector.ForStage). In the note's voice: where the place's
+	// keyed by its Discovery site (SideEventDirector.EventsFor). In the note's voice: where the place's
 	// intro says what it is like, a clue says that something is still out there.
 	private static readonly Dictionary<string, string> SiteClues = new(StringComparer.OrdinalIgnoreCase)
 	{
@@ -144,8 +154,18 @@ public static class ChapterNotes
 	// all a secret is told before it is seen (.ai/achievements-and-secrets.md 4.3).
 	public const string VaultClue = "Something he took is hidden here. I can feel it.";
 
-	/// <summary>The site clues, for the validator.</summary>
+	/// <summary>The site clues, for the validator: the real ones (a tool run's stand-in is answered by <see cref="SiteClueFor"/> alone).</summary>
 	public static IReadOnlyDictionary<string, string> SiteClueLines => SiteClues;
+
+	/// <summary>The clue for the side event at <paramref name="siteId"/>, or null; the stand-in's on a tool run that has it.</summary>
+	public static string SiteClueFor(string siteId)
+	{
+		if (string.IsNullOrWhiteSpace(siteId))
+			return null;
+		if (SiteClues.TryGetValue(siteId, out string clue))
+			return clue;
+		return SecondEventStandIn.Active && SecondEventStandIn.IsStandInSite(siteId) ? SecondEventStandIn.Clue : null;
+	}
 
 	/// <summary>Whether a chapter has a note written. The castle's chapters get theirs when they are built (the Last Bridge has its own already).</summary>
 	public static bool Has(string stageId) => !string.IsNullOrWhiteSpace(stageId) && Lines.ContainsKey(stageId);
@@ -179,12 +199,17 @@ public static class ChapterNotes
 			return clues;
 		clues.AddRange(QuestLog.HeldOnlyLinesFor(stageId, save));
 
-		var site = SideEventDirector.ForStage(stageId);
-		if (site != null && SiteClues.TryGetValue(site.Value.SiteId, out string siteClue)
-			&& !DiscoveryRewards.IsSiteExhausted(save, site.Value.SiteId)
-			&& UnlockCatalog.ForDiscoverySite(site.Value.SiteId).Any(u => u.Kind != UnlockKind.Character
-				&& !IsOwned(save, u)))
-			clues.Add(siteClue);
+		// Every side event the chapter holds, in its order (a chapter may hold two, .ai/chapter-wizards.md 6.3):
+		// a site's clue while it still pays something other than a wizard this save lacks - a wizard's clue is
+		// his held line, above.
+		foreach (SideEventEntry site in SideEventDirector.EventsFor(stageId))
+		{
+			if (SiteClueFor(site.SiteId) is string siteClue
+				&& !DiscoveryRewards.IsSiteExhausted(save, site.SiteId)
+				&& UnlockCatalog.ForDiscoverySite(site.SiteId).Any(u => u.Kind != UnlockKind.Character
+					&& !IsOwned(save, u)))
+				clues.Add(siteClue);
+		}
 
 		if (SecretCatalog.ForStage(stageId).Any(secret => secret.IsVault && !string.IsNullOrEmpty(secret.SpellUnlockId)
 			&& (save == null || (!save.HasFoundSecret(secret.Id) && !GlobalStatsManager.IsSpellUnlockedForLevelUp(save, secret.SpellUnlockId)))))
