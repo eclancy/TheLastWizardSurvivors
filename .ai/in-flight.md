@@ -1,8 +1,59 @@
+# Work in flight
+
+**A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
+
+## 0. Now (2026-11-03, after the 0.12.0 release)
+
+**0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
+(15d35a38): every player's progress restarts the first time it runs, their old save kept as
+`savegame.before-epoch-2.json`. It is the first release under the new name, and carries the bridges
+for copies from before the rename. Rehearsed first with `--dry-run` on a throwaway local branch, so
+`main-ff86ni` never held epoch 2 before the release commit. Both update feeds
+(`ecec.dev/the-one-he-missed/version.json` and the old `ecec.dev/wizard-survivors/version.json`) serve
+0.12.0 with `progressEpoch` 2. `main` was fast-forwarded to the release.
+
+What it carries beyond 0.11.0: the rename; the Archmage (the fifth starter, first on the select) and
+the four's names (Aedan, Isbrand, Thora, Gabbro); the castle open to the end (the Bridge, the Dungeon
+moved into it, the Court, the Throne, the Dark Wizard, the ending, the Dark Wizard playable); **every
+one of the ten chapter wizards** (`.ai/chapter-wizards.md`), Merlin in a look of his own and Nimue
+(Excalibur, the Throne's kept wizard); P2, two side events in a chapter; the slow start; the
+cutscenes and freeing reels; the cinematic rules; the light pool in the Dungeon and the Cave only
+(Eric: *"Keep to two"*); Boss Rush's shorter arrivals; the chest lean (#44).
+
+**Building now**, one worktree each, cut from 31233f2a, three at a time (section 6: five at once ran
+into the usage limit); the Oubliette and the foliage pilot start as the first three report:
+
+| Branch | Worktree | What |
+|---|---|---|
+| `fix/tip-overlap` | `ws-fix-tip-overlap` | the onboarding tip drawn over the objective lines; the pause screen's chapter number (section 7) |
+| `feel/damage-colours` | `ws-feel-damage-colours` | damage numbers tinted by the element that dealt them (`.ai/genre-lessons.md` 11.4) |
+| `art/merlin-ring` | `ws-art-merlin-ring` | the Orb of Ages' ring and star on the 2 px grid; its icons in his quartz (`.ai/merlin.md` 7.6) |
+| `castle/oubliette` | `ws-castle-oubliette` | D7, the Oubliette, the earlier reveal of Nimue (`.ai/endgame-castle.md` 4.4) |
+| `art/forest-foliage` | `ws-art-forest-foliage` | the foliage density pilot on the Forest (`.ai/genre-lessons.md` 2); landmarks after it |
+
+Not started: scenery-only landmarks per chapter (after the foliage pilot, same painter); the Play
+Store listing as *The One He Missed: Survivors* (`.ai/game-name.md`, Eric's Play Console).
+
+**Waiting on Eric's eyes** (none of it measurable by a harness):
+- Nimue: the float and its shadow at game size; the Scabbard's size; the sever line in motion; the
+  Throne as her reveal until D7 lands; "the one he kept" and her freed line.
+- Ma Liang: whether tracing the door under a crowd on a phone stick is a challenge; the dot numbers on
+  a phone; the brush sound; the flask; the Painted Door in a crowd. His Apotheosis came at 7.3 min,
+  under the 7.5 floor.
+- The light pool's depth, and Reduce Darkness at 40% or truly off (`.ai/light-pool.md` 9).
+- Every boss arrival's length in real play.
+- #44's chest playtest (the only open GitHub issue).
+- Nothing from 2026-11-03 has been seen on the Pixel 9.
+
+Everything below is the history from 2026-11-01 and 11-02. **Sections 4 and 7 still list open
+items**; check each against the code before acting on it.
+
+---
+
 # Work in flight (snapshot, 2026-11-01, updated after the 0.10.0 release)
 
 A handoff from the cloud session that ran 2026-10-30 to 11-01. Eric moved the work to a local Claude
-Code session. **A snapshot, not a source of truth:** check `git log` and the branches before acting
-on it, and delete this file once everything below has landed or been dropped.
+Code session.
 
 ## 1. Released
 
