@@ -130,9 +130,11 @@ public partial class SideEventDirector : Node
 		"stage_11" => new(WayfinderKind.Compass, new SideEventEntry("the_barge", () => new BargeEvent())),
 		// (the Court's line is below)
 		// The Court's first event (.ai/chapter-wizards.md 4.10): Nostradamus, heard reading from room to room. Its
-		// rooms are the Court's own, chosen by the seed (SeersVoiceEvent.PlaceSites); Ma Liang's dotted door in the
-		// Gallery will be the second event on this line (4.8), and the Gallery is kept out of the seer's rooms for it.
-		"stage_12" => new(WayfinderKind.Compass, new SideEventEntry("seers_voice", () => new SeersVoiceEvent())),
+		// rooms are the Court's own, chosen by the seed (SeersVoiceEvent.PlaceSites). Its second (4.8): Ma Liang's
+		// dotted door, sketched on the Gallery's floor at its west end (DottedDoorEvent.PlaceSites) - the Gallery is kept
+		// out of the seer's rooms for it, so two prisoners never share a room.
+		"stage_12" => new(WayfinderKind.Compass, new SideEventEntry("seers_voice", () => new SeersVoiceEvent()),
+			new SideEventEntry("dotted_door", () => new DottedDoorEvent())),
 		// (the Throne's line is below)
 		"stage_13" => null,
 		_ => null,

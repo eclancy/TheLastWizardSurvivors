@@ -42,6 +42,8 @@ public enum HintCue
 	Vapour,
 	/// <summary>Stars twinkling in, one on each line of a verse read aloud (the seer's voice in the Court).</summary>
 	Stars,
+	/// <summary>A line of wet paint drawing itself, dab after dab, on each stroke of a brush, and a drip off the last (the dotted door in the Court).</summary>
+	Paint,
 }
 
 /// <summary>One side event's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
@@ -260,6 +262,22 @@ public static class StageHintCatalog
 				"Out of the west one light, on foot, alone.",
 				"The one he missed walks every road he made.",
 				"When the last door opens, the house goes dark.",
+			},
+		},
+		// Ma Liang, kept in the Court's Gallery to paint its portraits (.ai/chapter-wizards.md 4.8). A brush is heard drawing
+		// along a wall and a line of wet paint draws itself in from his side, dab after dab, a drip running off its end.
+		// Not a voice: he is never heard, only his brush. Not named; never said what to do, or that anyone is held.
+		new()
+		{
+			SiteId = "dotted_door",
+			Voice = HintVoice.Sound,
+			Sound = SfxCatalog.HintBrush,
+			Cue = HintCue.Paint,
+			Lines = new[]
+			{
+				"A brushstroke drawing itself along the wall.",
+				"Another line, wet, running the same way.",
+				"The paint is still running.",
 			},
 		},
 		// Vainamoinen, the singer, under the ice. He is heard, not named.

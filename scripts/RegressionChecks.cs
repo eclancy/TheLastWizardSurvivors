@@ -100,6 +100,7 @@ public static partial class RegressionChecks
 		ValidateBarge(warnings);
 		ValidateGibbetCage(warnings);
 		ValidateSeersVoice(warnings);
+		ValidateDottedDoor(warnings);
 		ValidateQuatrains(warnings);
 		ValidateThawArt(warnings);
 		ValidateGravewell(warnings);

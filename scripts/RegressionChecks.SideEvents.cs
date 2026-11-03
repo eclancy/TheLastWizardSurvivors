@@ -191,6 +191,10 @@ public static partial class RegressionChecks
 						}
 						for (int j = i + 1; j < mains.Count; j++)
 						{
+							// Two events a chapter's building places (the Court's seer and its dotted door) are where the
+							// house has them, not rolled round the start: the 90 degrees is the band's rule.
+							if (laid[i].Event.PlacedByChapterRules && laid[j].Event.PlacedByChapterRules)
+								continue;
 							float sep = Mathf.RadToDeg(ExplorePlacer.Separation(
 								ExplorePlacer.BearingFrom(ground.Origin, mains[i]), ExplorePlacer.BearingFrom(ground.Origin, mains[j])));
 							closest = Mathf.Min(closest, sep);

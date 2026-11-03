@@ -65,6 +65,7 @@ WIZARDS = [
     ("morgan", ("morgan", "ice", "ice")),
     ("paracelsus", ("paracelsus", "poison", "poison")),
     ("nostradamus", ("nostradamus", "light", "light")),
+    ("ma_liang", ("maliang", "arcane", "arcane")),
 ]
 
 # Where they stand: the Archmage left of the middle, the freed wizard right of it, turned to him.

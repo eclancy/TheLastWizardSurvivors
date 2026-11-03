@@ -534,21 +534,32 @@ public sealed class GalleryRoom : CourtRoom
 	public const string LastFrameWizardId = "nostradamus";
 
 	/// <summary>
+	/// The wizard whose portrait is always the FIRST frame of the row, at its west end over the door he drew: the painter
+	/// kept here to paint them (.ai/chapter-wizards.md 4.8). The portraits are his work, done under orders, and the first
+	/// of them is his own face. So in this house the frames still covered at either end of the row are the two it holds:
+	/// the painter's at the end where his door is, the seer's at the other.
+	/// </summary>
+	public const string FirstFrameWizardId = "ma_liang";
+
+	/// <summary>
 	/// Which wizard hangs in frame <paramref name="slot"/> of <paramref name="frames"/>, or null for a bare frame: the
-	/// others from the first frame on, the seer in the last. Past the frames the wall holds, the others that do not
-	/// fit are left off (court_layout.py hangs twelve).
+	/// painter in the first, the seer in the last, the others in catalog order between. Past the frames the wall holds,
+	/// the others that do not fit are left off (court_layout.py hangs twelve).
 	/// </summary>
 	public static string WizardInFrame(int slot, int frames, IReadOnlyList<string> taken)
 	{
 		if (slot < 0 || slot >= frames || taken == null)
 			return null;
 		bool hasSeer = taken.Contains(LastFrameWizardId);
+		bool hasPainter = taken.Contains(FirstFrameWizardId) && frames > 1;
 		if (hasSeer && slot == frames - 1)
 			return LastFrameWizardId;
-		int k = 0;
+		if (hasPainter && slot == 0)
+			return FirstFrameWizardId;
+		int k = hasPainter ? 1 : 0;
 		foreach (string id in taken)
 		{
-			if (hasSeer && id == LastFrameWizardId)
+			if ((hasSeer && id == LastFrameWizardId) || (hasPainter && id == FirstFrameWizardId))
 				continue;
 			if (k == slot)
 				return id;
