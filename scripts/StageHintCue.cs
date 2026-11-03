@@ -18,6 +18,8 @@ using WizardSurvivors.scripts;
 //   the caravan   the bell swinging as it walks, ringing at each strike
 //   the seal      strips of written paper tumbling in on the wind, charring at the edges as they fall -
 //                 on each gust of the paper wind
+//   the anvil     sparks off a hammer rising in on the forge's hot air, white-hot and cooling to embers -
+//                 a few on each strike of the tired hammer
 //
 // IN THE WORLD'S LAYERS, HELD TO THE VIEW. The marks are drawn in the world, on the layer over the
 // bodies and under the HUD, so they read as something out there rather than as an interface - but
@@ -37,7 +39,7 @@ public partial class StageHintCue : Node2D
 	public const string SheetPath = "res://assets/bonelight/effects/hint-cues.png";
 	public const int Cell = 16;
 	public const int Columns = 8;
-	public const int Rows = 6;   // HintCue's members, in order
+	public const int Rows = 7;   // HintCue's members, in order
 
 	// x3, the attack icons' size: at x2 a 16 px mark was a speck on the phone.
 	private const float DrawScale = 3f;
@@ -64,6 +66,10 @@ public partial class StageHintCue : Node2D
 	private static readonly float[] BellStrikes = { 0.0f, 0.36f, 0.80f, 1.13f, 1.58f };
 	// The paper wind's gusts (hint_paper_wind): a strip comes in on each, the flutter between them.
 	private static readonly float[] PaperGusts = { 0.10f, 0.42f, 0.70f, 1.12f, 1.40f };
+	// The tired hammer's strikes (hint_anvil), slowing: tools/audio/sfx.py _ANVIL_STRIKES is the same list.
+	private static readonly float[] AnvilStrikes = { 0.08f, 0.64f, 1.24f, 1.90f };
+	// Sparks off each strike: fewer as he tires.
+	private static readonly int[] SparksPerStrike = { 4, 3, 3, 2 };
 
 	private struct Mark
 	{
@@ -163,6 +169,7 @@ public partial class StageHintCue : Node2D
 		HintCue.Wisp => 96f,
 		HintCue.Bell => 72f,
 		HintCue.Paper => 110f,
+		HintCue.Sparks => 90f,
 		_ => 8f,
 	};
 
@@ -325,6 +332,18 @@ public partial class StageHintCue : Node2D
 				if (nextBeat >= PaperGusts.Length)
 					clock = -1f;
 				break;
+			case HintCue.Sparks:
+				while (nextBeat < AnvilStrikes.Length && AnvilStrikes[nextBeat] <= t)
+				{
+					// A spray off the strike, coming in on hot air: on a side edge they rise as they come.
+					for (int k = 0; k < SparksPerStrike[nextBeat]; k++)
+						Spawn((int)HintCue.Sparks, random.Next(4), 1.6f + (float)random.NextDouble() * 0.8f, Jitter(90f), Jitter(14f),
+							inward: 14f + (float)random.NextDouble() * 10f, drift: Jitter(22f), rise: 30f, fadeIn: 0.05f);
+					nextBeat++;
+				}
+				if (nextBeat >= AnvilStrikes.Length)
+					clock = -1f;
+				break;
 			case HintCue.Bell:
 				// The bell walks along the edge, as the caravan walks its road.
 				if (bellSlot < 0)
@@ -459,6 +478,12 @@ public partial class StageHintCue : Node2D
 				// (the same four turns charred, 4-7), and it see-saws as it falls.
 				column = (m.Glyph + (int)(m.Age * 6f)) % 4 + (m.Age > m.Life * 0.5f ? 4 : 0);
 				at.X += Mathf.Sin(m.Age * 2.2f + m.Phase) * 14f;
+				break;
+			case HintCue.Sparks:
+				// Flickering white-hot (columns 0-3), cooling to an ember for the last third of its life (4-7),
+				// and weaving a little as hot air carries it.
+				column = (m.Glyph + (int)(m.Age * 12f)) % 4 + (m.Age > m.Life * 0.66f ? 4 : 0);
+				at.X += Mathf.Sin(m.Age * 5.3f + m.Phase) * 5f;
 				break;
 			case HintCue.Bell:
 				if (m.Glyph >= 5)

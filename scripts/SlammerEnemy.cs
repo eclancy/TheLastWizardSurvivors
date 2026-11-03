@@ -38,6 +38,28 @@ public partial class SlammerEnemy : Enemy
 
 	private GroundSlamAttack slam;
 
+	/// <summary>
+	/// Raised on the frame a slam lands, after it has been measured against the player - whether or not it
+	/// caught him. The great anvil (GreatAnvilEvent) listens, because the only thing that breaks Wayland's
+	/// chains is his own forge's hammers coming down on their stakes (.ai/chapter-wizards.md 4.7).
+	/// </summary>
+	public event System.Action<SlammerEnemy> SlamLanded;
+
+	/// <summary>
+	/// Whether the slam covers <paramref name="world"/>, measured where this enemy stands now - the frame a slam
+	/// lands, where it lands (GroundSlamAttack.Contains, the one authority on the shape, which also drew the tell).
+	/// </summary>
+	public bool SlamCovers(Vector2 world) => slam != null && slam.Contains(GlobalPosition, world);
+
+	/// <summary>
+	/// Builds the slam again from the exports, for a caller that retuned them after the body was spawned (an
+	/// event's hammers, whose ring is a little wider and whose wind-up starts only once the player is inside it).
+	/// </summary>
+	public void RebuildSlam() => slam = BuildSlam();
+
+	/// <summary>True while the tell is on the ground. For an event that reads the hammers, and its probe.</summary>
+	public bool IsWindingUp => slam != null && slam.IsWindingUp;
+
 	public override void _Ready()
 	{
 		base._Ready();
@@ -84,6 +106,7 @@ public partial class SlammerEnemy : Enemy
 				break;
 			case AttackTelegraph.Beat.Resolved:
 				slam.ResolveAgainst(this, TargetPlayer);
+				SlamLanded?.Invoke(this);
 				break;
 		}
 	}

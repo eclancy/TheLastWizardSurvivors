@@ -30,6 +30,8 @@ public enum HintCue
 	Bell,
 	/// <summary>Strips of written paper tumbling in, charring at the edges as they fall (the seal).</summary>
 	Paper,
+	/// <summary>Sparks off a hammer rising on hot air, white-hot and cooling to embers (the anvil).</summary>
+	Sparks,
 }
 
 /// <summary>One chapter's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
@@ -168,6 +170,23 @@ public static class StageHintCatalog
 				"Strips of paper on the wind, in a hand you do not know.",
 				"More paper, burning at the edges as it falls.",
 				"Still the paper comes, from the same quarter.",
+			},
+		},
+		// Wayland the Smith, chained to his own anvil in the Emberdeep (.ai/chapter-wizards.md 4.7). He is heard
+		// working - a tired hammer on an anvil, below - and the sparks off it come in on the forge's hot air.
+		// Not named; never said what the hammer is, or that anyone is held.
+		new()
+		{
+			StageId = "stage_7",
+			SiteId = "great_anvil",
+			Voice = HintVoice.Sound,
+			Sound = SfxCatalog.HintAnvil,
+			Cue = HintCue.Sparks,
+			Lines = new[]
+			{
+				"Hammer on anvil, slow and steady, somewhere below.",
+				"The hammer again. Whoever swings it is very tired.",
+				"It does not stop. It is not allowed to.",
 			},
 		},
 		// Vainamoinen, the singer, under the ice. He is heard, not named.

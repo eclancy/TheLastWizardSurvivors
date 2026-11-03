@@ -26,7 +26,14 @@ using WizardSurvivors.scripts;
 //      fight with a phase in it lives to reach it: on the Swamp the lantern-tender rekindles a
 //      lantern at half health, the objective moves to that lantern, the probe stands in it until it
 //      is out, and only then comes back for the tender (LanternTenderEnemy logs both beats).
+//      The great anvil (--stage=7) is baited, not bled: the probe stands on a stake still holding its
+//      chain, and the moment a hammer near it starts its wind-up it steps out of the ring on the far side
+//      of the stake, so the slam comes down on the iron and not on him; then the next stake.
+//      --kill-hammers=N kills the first N hammers that come near him before they can strike, to show the
+//      bellows wake their replacements and the forge cannot be locked by a strong loadout.
 // It teleports rather than walks: the walking is _BalanceHarness --explore's job. Saving is off.
+// --fresh-save plays it on a brand-new save in memory (the site pays its unlock: a wizard is freed); --all-unlocked
+// on one that owns everything (the site is exhausted, so the win pays a chest). Without either, the machine's save.
 // WHAT IT CANNOT TELL YOU: whether anything is visible, readable or fun. It renders nothing.
 public partial class _ExploreProbe : Node
 {
@@ -36,6 +43,12 @@ public partial class _ExploreProbe : Node
 	[Export] public bool Complete { get; set; } = true;
 	// --log-props: name every furnished thing the visit comparison counts.
 	private bool logProps;
+	// --fresh-save / --all-unlocked: the save the run plays on, in memory.
+	private bool freshSave;
+	private bool allUnlocked;
+	// --kill-hammers=N: the great anvil's first N hammers killed before they strike.
+	private int killHammers;
+	private int hammersKilled;
 	// --slow-bleed: elites bled at SlowBleedPerSecond of their health, carried between frames.
 	private bool slowBleed;
 	private float bleedCarry;
@@ -73,6 +86,9 @@ public partial class _ExploreProbe : Node
 			else if (arg == "--no-complete") Complete = false;
 			else if (arg == "--log-props") logProps = true;
 			else if (arg == "--slow-bleed") slowBleed = true;
+			else if (arg == "--fresh-save") freshSave = true;
+			else if (arg == "--all-unlocked") allUnlocked = true;
+			else if (arg.StartsWith("--kill-hammers=")) killHammers = int.Parse(arg.Substring(15));
 		}
 		ProcessMode = ProcessModeEnum.Always;
 		SaveManager.WritesDisabled = true;
@@ -80,7 +96,19 @@ public partial class _ExploreProbe : Node
 		Global.SelectedStageIdx = StageIndex;
 		Engine.TimeScale = TimeScale;
 		GameStats.ResetRunTelemetry();
-		GD.Print($"EXPLOREPROBE stage={StageIndex} seed={Seed} timescale={TimeScale}");
+		GD.Print($"EXPLOREPROBE stage={StageIndex} seed={Seed} timescale={TimeScale}"
+			+ (allUnlocked ? " all-unlocked" : freshSave ? " fresh-save" : ""));
+		if ((freshSave || allUnlocked) && GetNodeOrNull<SaveManager>("/root/SaveManager") is SaveManager saves)
+		{
+			var data = new SaveData();
+			if (allUnlocked)
+			{
+				foreach (string id in UnlockCatalog.AllSpellIds) data.UnlockedSpellIds.Add(id);
+				foreach (string id in UnlockCatalog.AllBoonIds) data.UnlockedBoonIds.Add(id);
+				foreach (string id in UnlockCatalog.AllCharacterIds) data.UnlockedCharacterIds.Add(id);
+			}
+			saves.ReplaceInMemory(data);
+		}
 
 		game = ResourceLoader.Load<PackedScene>("res://scenes/node_2d_game.tscn").Instantiate<Node2DGame>();
 		game.ProceduralSeed = Seed;
@@ -376,6 +404,17 @@ public partial class _ExploreProbe : Node
 				System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.GetValue(e) ?? false);
 			Check("the event can be finished", won, $"{completeClock:0.0}s of game time after arriving");
 			Check("no arrows are left once it is over", !PointsOfInterest.AnyMarked);
+			if (e is GreatAnvilEvent forge)
+			{
+				Check("every chain is broken", forge.ChainsBroken == GreatAnvilEvent.StakeCount,
+					$"{forge.HammersWoken} hammers woken, {forge.HammersWoken - GreatAnvilEvent.HammerCount} of them replacements");
+				Check("the hammers broke them without one slam landing on him", forge.SlamsOnPlayer == 0,
+					$"{forge.SlamsOnPlayer} slam(s) caught him");
+				if (killHammers > 0)
+					Check("every hammer killed before it struck was replaced", hammersKilled == killHammers
+						&& forge.HammersWoken >= GreatAnvilEvent.HammerCount + killHammers,
+						$"{hammersKilled} killed, {forge.HammersWoken} woken");
+			}
 			if (e is FivePointedSealEvent seal)
 			{
 				Check("every stone faces the seal", seal.Aligned == FivePointedSealEvent.StoneCount, $"{seal.Steps} presses");
@@ -411,6 +450,40 @@ public partial class _ExploreProbe : Node
 			int next = puzzle.NextPress();
 			if (next >= 0)
 				target = puzzle.PlateAt(next);
+		}
+		// The great anvil: bait. Stand on the first stake still holding; once a hammer near it winds up, step out
+		// of its ring on the far side of the stake (GreatAnvilEvent.HammerSlamRadius), and come back once it lands.
+		if (e is GreatAnvilEvent forge2 && forge2.IsFound)
+		{
+			// A strong loadout melting them on the way in: the first --kill-hammers=N that come near die at once.
+			if (hammersKilled < killHammers)
+			{
+				foreach (SlammerEnemy hammer in forge2.Hammers)
+				{
+					if (!IsInstanceValid(hammer) || hammer.IsDying || hammer.GlobalPosition.DistanceTo(player.GlobalPosition) > 260f)
+						continue;
+					hammer.TakeDamage(hammer.Health + 1, false);
+					hammersKilled++;
+					break;
+				}
+			}
+			for (int i = 0; i < GreatAnvilEvent.StakeCount; i++)
+			{
+				if (forge2.IsBroken(i))
+					continue;
+				Vector2 stake = forge2.StakeAt(i);
+				target = stake;
+				foreach (SlammerEnemy hammer in forge2.Hammers)
+				{
+					if (!IsInstanceValid(hammer) || !hammer.IsWindingUp
+						|| hammer.GlobalPosition.DistanceTo(stake) > GreatAnvilEvent.HammerSlamRadius + 40f)
+						continue;
+					Vector2 away = stake - hammer.GlobalPosition;
+					target = stake + (away.LengthSquared() > 1f ? away.Normalized() : Vector2.Down) * (GreatAnvilEvent.HammerSlamRadius + 70f);
+					break;
+				}
+				break;
+			}
 		}
 		if (target == null)
 		{
@@ -455,7 +528,7 @@ public partial class _ExploreProbe : Node
 				}
 				bleedFloor = enemy.Health;
 			}
-			else if (enemy.IsMiniBoss && d < 140f)
+			else if (enemy.IsMiniBoss && d < 140f && e is not GreatAnvilEvent)
 				enemy.TakeDamage(Math.Max(1, enemy.Health / 6 + 50), false);
 			else if (!enemy.IsMiniBoss && d < 500f && e is not ThawEvent)
 				enemy.QueueFree();

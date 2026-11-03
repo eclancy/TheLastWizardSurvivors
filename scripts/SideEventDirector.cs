@@ -57,6 +57,8 @@ public partial class SideEventDirector : Node
 		"stage_4" => ("five_pointed_seal", () => new FivePointedSealEvent(), WayfinderKind.Compass),
 		"stage_5" => ("the_thaw", () => new ThawEvent(), WayfinderKind.BearingCairn),
 		"stage_6" => ("caravan_master", () => new CaravanMasterEvent(), WayfinderKind.Compass),
+		// The Emberdeep's chapter wizard (.ai/chapter-wizards.md 4.7): Wayland the Smith, chained to his own anvil.
+		"stage_7" => ("great_anvil", () => new GreatAnvilEvent(), WayfinderKind.Compass),
 		// The two early chapters (.ai/campaign.md). Each line is that chapter's to fill in Phase 2 -
 		// ("the_well", () => new WellEvent(), WayfinderKind.Compass) and ("the_moot", () => new
 		// MootFiresEvent(), WayfinderKind.Compass) - and the comment between them keeps two agents'

@@ -3,7 +3,7 @@
 
 Run: python tools/art/hint_cues.py
 
-One sheet, assets/bonelight/effects/hint-cues.png: six rows (one per cue) of eight 16x16 cells,
+One sheet, assets/bonelight/effects/hint-cues.png: seven rows (one per cue) of eight 16x16 cells,
 authored 1:1 and drawn at x3 by StageHintCue (48 world units, the attack icons' size - x2 was a
 speck on the phone). See .ai/side-events.md, "Hints that something is out there".
 
@@ -30,6 +30,9 @@ THE ROW ORDER IS AN API: HintCue's order (scripts/StageHintCatalog.cs).
   paper    the seal       a strip of written paper - one of his wards - turning end over end in four
                           steps (0-3), then the same four burning at both ends (4-7): "more paper,
                           burning at the edges as it falls"
+  sparks   the anvil      a spark off a hammer, rising on the forge's hot air: four flickers of a white-hot
+                          point trailing fire down behind it (0-3), then the same four cooling to an ember
+                          (4-7) - "sparks drift in on hot air from his side"
 
 Each wears its event's far-tell colour (SideEvent.FarTellColor) as its body, so the cue is the
 colour of the light the player will find: wind's ramp for the grove's lichen grey-green, arcane
@@ -79,6 +82,11 @@ def ramp_of(name):
         # The seal's far tell is the arcane ramp's violet (FivePointedSealEvent.TellColor): his light.
         a = bl.ELEMENTS["arcane"]
         return (a[1], a[2], a[3], a[0])
+    if name == "sparks":
+        # The anvil's far tell is fire's hot stop (GreatAnvilEvent.TellColor): the forge is built, and built
+        # things burn (world-and-tone.md, the carve-out).
+        f = bl.ELEMENTS["fire"]
+        return (f[1], f[2], f[3], f[0])
     raise ValueError(name)
 
 
@@ -383,6 +391,37 @@ def paint_paper(mask, inner, tones):
     return c
 
 
+def spark(frame):
+    """A spark off the anvil, rising: a white-hot head of two or three pixels and a tail of fire trailing
+    down behind it, kinked a pixel one way or the other as it flickers (frames 0-3). Cooling (4-7) the head
+    shrinks to one pixel and the tail to a stub - an ember about to go out. The head is the core."""
+    cooling = frame >= 4
+    k = frame % 4
+    kink = [0, 1, 0, -1][k]
+    tail = [5, 6, 4, 6][k] if not cooling else [2, 3, 2, 1][k]
+    mask = set()
+    head = set()
+    hx, hy = 8, 5
+    if not cooling:
+        for (x, y) in ((hx, hy), (hx + 1, hy), (hx, hy + 1), (hx + 1, hy + 1)):
+            mask.add((x, y))
+            head.add((x, y))
+        if k % 2 == 0:
+            mask.add((hx, hy - 1))
+    else:
+        mask.add((hx, hy + 1))
+        head.add((hx, hy + 1))
+        if k < 2:
+            mask.add((hx + 1, hy + 1))
+    for t in range(tail):
+        y = hy + 2 + t
+        x = hx + (kink if t >= tail // 2 else 0)
+        mask.add((x, y))
+        if t < 2 and not cooling:
+            mask.add((x + 1, y))
+    return mask, head
+
+
 ROWS = [
     ("leaves", [leaf(f) for f in range(8)]),
     ("echo", [echo(d) for d in range(8)]),
@@ -391,6 +430,7 @@ ROWS = [
               glint(0), glint(1), glint(2), glint(3)]),
     ("bell", [bell(-2), bell(-1), bell(0), bell(1), bell(2), ring(0), ring(1), ring(2)]),
     ("paper", [paper(f) for f in range(8)]),
+    ("sparks", [spark(f) for f in range(8)]),
 ]
 
 
