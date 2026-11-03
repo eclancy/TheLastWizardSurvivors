@@ -33,6 +33,7 @@ public static partial class RegressionChecks
 		ValidateStartingCharacters(warnings);
 		ValidateElementTags(warnings);
 		ValidateElementPaths(warnings);
+		ValidateDamageNumberInks(warnings);
 		ValidateEvolutionReaders(warnings);
 		ValidateCardTextBudget(warnings);
 		ValidateLevelUpReaders(warnings);
@@ -6406,6 +6407,54 @@ public static partial class RegressionChecks
 	//      capstone.
 	//
 	// Options are flattened to plain data first, for the reason ValidateElementTags gives.
+	// The damage numbers' inks (DamageNumberInk, .ai/art-direction.md "Damage numbers wear the element"). A
+	// number is read for 0.7 s, moving and fading, over whatever it rose from - the Sketchbook's paper, a
+	// skeleton's bone, the Dungeon's black - so every ink, ordinary and crit, must clear the body-text floor
+	// against the outline that separates it from all of them. A crit must differ from its element's ordinary
+	// ink (it burns a stop hotter), and no two elements may share one, or the number stops saying which spell
+	// struck. And every spell that names an element must number its hits in one of its own.
+	private static void ValidateDamageNumberInks(List<string> warnings)
+	{
+		var seen = new Dictionary<Color, Element>();
+		foreach (Element element in Enum.GetValues<Element>())
+		{
+			Color ink = DamageNumberInk.For(element, false);
+			Color crit = DamageNumberInk.For(element, true);
+			foreach (var (what, colour) in new[] { ("ink", ink), ("crit ink", crit) })
+			{
+				float contrast = StatIcons.ContrastRatio(colour, DamageNumberInk.Outline);
+				if (contrast < DamageNumberInk.ContrastFloor)
+					warnings.Add($"Damage number: {element}'s {what} #{colour.ToHtml(false).ToUpperInvariant()} is {contrast:0.00}:1 against the outline, under the {DamageNumberInk.ContrastFloor}:1 floor; take another stop of its ramp (DamageNumberInk.StopFor).");
+			}
+			if (crit == ink)
+				warnings.Add($"Damage number: {element}'s crit is written in its ordinary ink; a crit burns a stop hotter (DamageNumberInk.CritStopFor).");
+			if (ink == DamageNumberInk.Untyped)
+				warnings.Add($"Damage number: {element} is written in the untyped red, so its hits read as having no element.");
+			if (seen.TryGetValue(ink, out Element other))
+				warnings.Add($"Damage number: {element} and {other} share an ink, so their hits cannot be told apart.");
+			else
+				seen[ink] = element;
+		}
+		foreach (var (what, colour) in new[] { ("untyped ink", DamageNumberInk.Untyped), ("untyped crit ink", DamageNumberInk.UntypedCrit), ("turned blow's ink", DamageNumberInk.TurnedBlow) })
+		{
+			float contrast = StatIcons.ContrastRatio(colour, DamageNumberInk.Outline);
+			if (contrast < DamageNumberInk.ContrastFloor)
+				warnings.Add($"Damage number: the {what} is {contrast:0.00}:1 against the outline, under the {DamageNumberInk.ContrastFloor}:1 floor.");
+		}
+		if (seen.TryGetValue(DamageNumberInk.TurnedBlow, out Element turnedLike))
+			warnings.Add($"Damage number: a turned enemy's blow is written in {turnedLike}'s ink, so it reads as his hit.");
+
+		foreach (SpellData spell in ContentValidator.LoadAllSpellForms())
+		{
+			if (spell == null || string.IsNullOrWhiteSpace(spell.Id))
+				continue;
+			Dictionary<Element, int> weights = spell.GetElementWeights();
+			Element? numbered = spell.GetNumberElement();
+			if (weights.Count > 0 && (numbered is not Element e || !weights.ContainsKey(e)))
+				warnings.Add($"Damage number: '{spell.Id}' names {string.Join("/", weights.Keys)} but numbers its hits in {numbered?.ToString() ?? "no element"}.");
+		}
+	}
+
 	private static void ValidateElementPaths(List<string> warnings)
 	{
 		var pureElements = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

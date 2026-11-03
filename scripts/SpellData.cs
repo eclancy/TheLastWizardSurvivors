@@ -546,6 +546,69 @@ public partial class SpellData : Resource
     }
 
     /// <summary>
+    /// The element this spell's hits are numbered in (DamageNumberInk; .ai/art-direction.md, "Damage
+    /// numbers wear the element"), or null for a spell that names none.
+    /// </summary>
+    /// <remarks>
+    /// The element the spell LOOKS like, so the number matches what struck: an element path when it has
+    /// taken one (a branch is a different spell from then on and is repainted in that element's ramp -
+    /// Riptide into Brackish Tide is Poison-green whatever its weights say), otherwise its heaviest
+    /// element, a tie going to the one its .tres lists first. That is the element the Spell Index files
+    /// it under (CodexModel's IndexElement), and it reads the author's intent where the enum order would
+    /// not: Toxic Spore Burst is Poison, not Grass; Solar Flare Light, not Fire.
+    ///
+    /// Asked on every hit, and working it out walks Godot dictionaries and parses enum names, so the
+    /// answer is kept until something that decides it changes: a milestone taken (level 4, level 8, the
+    /// Apotheosis, the Sovereign Rite's boon) or the weights replaced. Those are plain C# property reads,
+    /// so a hit pays five reference compares. A legendary roll doubles every weight alike and cannot
+    /// change the answer. Not exported, so a Duplicate starts with an empty cache.
+    /// </remarks>
+    public Element? GetNumberElement()
+    {
+        if (numberElementKnown
+            && ReferenceEquals(numberKeyLevel4, SelectedLevel4Evolution)
+            && ReferenceEquals(numberKeyLevel8, SelectedLevel8Evolution)
+            && ReferenceEquals(numberKeyApotheosis, SelectedApotheosis)
+            && ReferenceEquals(numberKeySovereign, SovereignBoon)
+            && ReferenceEquals(numberKeyWeights, ElementWeights))
+            return numberElement;
+
+        numberKeyLevel4 = SelectedLevel4Evolution;
+        numberKeyLevel8 = SelectedLevel8Evolution;
+        numberKeyApotheosis = SelectedApotheosis;
+        numberKeySovereign = SovereignBoon;
+        numberKeyWeights = ElementWeights;
+        numberElement = GetBranchElement() ?? HeaviestElement();
+        numberElementKnown = true;
+        return numberElement;
+    }
+
+    private Element? numberElement;
+    private bool numberElementKnown;
+    private SpellEvolutionOption numberKeyLevel4;
+    private SpellEvolutionOption numberKeyLevel8;
+    private SpellEvolutionOption numberKeyApotheosis;
+    private SpellEvolutionOption numberKeySovereign;
+    private Godot.Collections.Dictionary<string, int> numberKeyWeights;
+
+    // The heaviest element, a tie to the first met: GetElementWeights fills its dictionary in the .tres's
+    // order and then the milestones', so "first met" is "listed first".
+    private Element? HeaviestElement()
+    {
+        Element? best = null;
+        int bestWeight = int.MinValue;
+        foreach (var pair in GetElementWeights())
+        {
+            if (pair.Value > bestWeight)
+            {
+                best = pair.Key;
+                bestWeight = pair.Value;
+            }
+        }
+        return best;
+    }
+
+    /// <summary>
     /// Applies every element rider the spell's active milestones carry to one enemy it just hit
     /// (ElementPaths). Called by Player.DealDamageToEnemy, once per hit.
     /// </summary>

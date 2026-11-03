@@ -218,12 +218,11 @@ public partial class Enemy
 
 	/// <summary>
 	/// A blow from one of its own that the stone turned: the same as <see cref="TakeDamage"/> - the hit's flash and
-	/// number, the damage statistic, the death and everything a death pays - in the stone's warm light rather than
-	/// the player's red, so a crowd fighting itself is not read as his hits. Never the player's pipeline.
+	/// number, the damage statistic, the death and everything a death pays - its number in the horde's own colourless
+	/// bone (DamageNumberInk.TurnedBlow), so a crowd fighting itself is not read as his hits. Never the player's
+	/// pipeline. It was the stone's warm gold until his numbers took their elements' colours, and Light's is gold.
 	/// </summary>
-	public void TakeTurnedBlow(int amount) => ApplyHit(amount, false, TurnedBlowColor);
-
-	private static readonly Color TurnedBlowColor = new(1f, 0.86f, 0.46f, 1f);
+	public void TakeTurnedBlow(int amount) => ApplyHit(amount, false, DamageNumberInk.TurnedBlow);
 
 	// The turned look: lit warm by the stone of light - the light ramp's hot stop on a body that is, for three
 	// seconds, not his. Composes with the hit flash and the elite tints as every status look does (SelfModulate).

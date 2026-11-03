@@ -331,7 +331,7 @@ public partial class KindledWard : Node2D, IPaintsElementPath
 				PlayerRef.DealDamageToEnemy(body, body.Health + 1, source: SpellData);
 			// Anything that took less than its health is finished outright: banished is gone.
 			if (IsInstanceValid(body) && !body.IsDying && body.Health > 0)
-				body.TakeDamage(body.Health, false);
+				body.TakeHit(body.Health, false, DamageNumberInk.For(SpellData?.GetNumberElement(), false));
 		}
 		sealedBodies.Clear();
 		sealedAt.Clear();
