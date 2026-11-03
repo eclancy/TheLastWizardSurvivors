@@ -126,6 +126,9 @@ public partial class KindledWard : Node2D, IPaintsElementPath
 
 	// Its light: Light's ramp. An element path (Rimelight) repaints all of it in its own ramp.
 	private ElementColors.Ramp ramp = ElementColors.GetRamp(Element.Light);
+	// Whether it lights a dark chapter's room (LightPool): candle gold does, Rimelight's ice does not.
+	private bool warmLight = true;
+	private const float LightReach = 90f;
 
 	// PIXEL ART (2026-10-29, "Update all spells to the same quality we expect now"). The mote was three
 	// translucent DrawCircles and its flare a fan of DrawLines at fractional widths and alpha. Both are now
@@ -158,6 +161,7 @@ public partial class KindledWard : Node2D, IPaintsElementPath
 		bobSeconds = (GetInstanceId() % 29) * 0.21f;
 		if (SpellData?.GetBranchElement() is Element branch)
 			ramp = ElementColors.GetRamp(branch);
+		warmLight = SpellData?.GetBranchElement() is not Element path || LightPool.IsWarm(path);
 		wardShader ??= GD.Load<Shader>("res://scenes/shaders/kindled_ward.gdshader");
 		material = new ShaderMaterial { Shader = wardShader };
 		material.SetShaderParameter("tone_core", ramp.Core);
@@ -208,6 +212,10 @@ public partial class KindledWard : Node2D, IPaintsElementPath
 		}
 		if (banish && sealedBodies.Count > 0)
 			marks?.QueueRedraw();
+
+		// A mote of light, and a light in a dark chapter (LightPool) - unless its path took it into the cold.
+		if (warmLight)
+			LightPool.Light(GlobalPosition, LightReach * MathF.Sqrt(DrawScale), 0.8f);
 
 		retargetTimer += dt;
 		if (retargetTimer >= TargetRefreshSeconds)

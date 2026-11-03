@@ -120,6 +120,8 @@ public partial class MeteorImpact : Node2D
 
 	private int damage = 8;
 	private float explosionRadius = 60f;
+	// How far its light carries in a dark chapter, as a multiple of its blast (LightPool).
+	private const float LightReach = 2.0f;
 	private float meteorScale = 1f;
 	private float burnSeconds;
 	private int burnDamage;
@@ -222,10 +224,17 @@ public partial class MeteorImpact : Node2D
 			if (age >= FallSeconds)
 				Impact();
 			QueueRedraw();
+			// A falling star lights the ground it is falling on as it comes (LightPool, a dark chapter).
+			float falling = Mathf.Clamp(age / MathF.Max(0.05f, FallSeconds), 0f, 1f);
+			LightPool.Light(GlobalPosition, explosionRadius * LightReach * 0.6f, falling * falling * 0.7f);
 			return;
 		}
 
 		sinceImpact += dt;
+		// The impact's flash, then the burning crater's glow while it burns.
+		float flash = 1f - sinceImpact / ImpactDebris.LifeSeconds;
+		float glow = burnSeconds > 0f && sinceImpact < burnSeconds ? 0.45f : 0f;
+		LightPool.Light(GlobalPosition, explosionRadius * LightReach, MathF.Max(flash, glow));
 		if (burnSeconds > 0f && sinceImpact < burnSeconds)
 		{
 			burnTick -= dt;

@@ -23,6 +23,8 @@ public partial class FireburstLayer : Node2D
 	private const int MaxBursts = 24;
 	// The radius rides in a colour channel as radius / RadiusScale, so it must stay under 1.
 	private const float RadiusScale = 1024f;
+	// How far a burst's light carries in a dark chapter, as a multiple of its blast (LightPool).
+	private const float LightReach = 2.2f;
 
 	/// <summary>How a burst is painted (fireburst.gdshader's style).</summary>
 	public enum Style
@@ -143,7 +145,11 @@ public partial class FireburstLayer : Node2D
 			{
 				bursts[i].Live = false;
 				live--;
+				continue;
 			}
+			// A burst lights the room round it in a dark chapter (LightPool), flaring and dying with it.
+			float fade = 1f - bursts[i].Age / LifeSeconds;
+			LightPool.Light(bursts[i].At, bursts[i].Radius * LightReach, fade * fade);
 		}
 		QueueRedraw();
 		if (live <= 0)
