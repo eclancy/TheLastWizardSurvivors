@@ -1075,7 +1075,8 @@ public partial class Player : CharacterBody2D
 	{
 		if (!spellCatalog.ContainsKey("magic_missile"))
 		{
-			AddSpellToCatalog(CreateFallbackSpellData("magic_missile", "Magic Missile", 10, 0.5f, 1, 500f, "Fires a fast projectile at nearby enemies."));
+			// SpellData.tres's numbers (12 every 0.8 s since the 2026-11-03 nerf, .ai/protagonist.md section 8).
+			AddSpellToCatalog(CreateFallbackSpellData("magic_missile", "Magic Missile", 12, 0.8f, 1, 500f, "Fires a fast projectile at nearby enemies."));
 		}
 
 		if (!spellCatalog.ContainsKey("aegis_ward"))
