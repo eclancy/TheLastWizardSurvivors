@@ -27,6 +27,10 @@ Level = 7
 Effect = 8
 EffectValue = 120.0
 
+; Magic Missile, The Archmage's opener (.ai/protagonist.md). Pure Arcane since 2026-11-02; NERFED 2026-11-03 (Eric:
+; "Nerf magic missile") from 10 every 0.5 s to 12 every 0.8 s. The cadence is the nerf: every cast charges Arcane
+; Explosion, and a dart every half second set it off nearly nonstop; damage alone (10 -> 8, -> 7) did not move it.
+
 [resource]
 script = ExtResource("1_43iml")
 Tagline = "Darts at the nearest enemy."
@@ -34,8 +38,8 @@ Id = "magic_missile"
 Name = "Magic Missile"
 CurrentLevel = 1
 MaxLevel = 8
-BaseDamage = 10
-BaseCooldown = 0.5
+BaseDamage = 12
+BaseCooldown = 0.8
 BaseProjectileCount = 1
 BaseRange = 500.0
 LevelUpgrades = Array[ExtResource("2_5s5xv")]([SubResource("Resource_mm_lvl2"), SubResource("Resource_mm_lvl3"), SubResource("Resource_mm_lvl5"), SubResource("Resource_mm_lvl7")])

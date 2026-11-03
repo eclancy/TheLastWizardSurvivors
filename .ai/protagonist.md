@@ -79,7 +79,8 @@ takes the evasion glyph (`StatIcons.KeyFor`: " misses").
 ### Magic Missile, pure Arcane
 
 The homing violet dart at the nearest enemy (`.ai/spell-roster.md` 2h). Nobody opened on it - the Test Wizard
-is a sandbox - so it is his, per Eric. One dart every half second at level 1, and still one at level 8 (its
+is a sandbox - so it is his, per Eric. One dart every 0.8 s at level 1 (every half second until the nerf,
+section 8 item 2), and still one at level 8 (its
 levels add damage, a pierce at 5 and speed at 7; more darts come only from Amount, the shop's and the relics'):
 the fewest things on screen of any opener, which a new player's first minute wants. The dart now leaves **from the light on his staff** (`StaffTipLocal`), as
 Cinderbreath is poured from it - for every wizard who holds it, the body's centre for one without a staff head,
@@ -167,6 +168,9 @@ portrait; the orb pulses), an eight-frame walk, hurt and death. `hero.py` and th
 
 ## 7. Measured (2026-11-02)
 
+**Before the nerf.** Everything in this section is Magic Missile at 10 every 0.5 s; section 8 item 2 has it at
+12 every 0.8 s, before and after on one tree.
+
 `_BalanceHarness`, the Enchanted Forest, seed 1234 unless marked, `--no-save-writes` on every run.
 
 **The plain 8 minutes** (`--minutes=8 --character=14`, the machine's save, the kiting bot): alive at 8:00, level 17
@@ -233,13 +237,42 @@ starters' band (x18-26, Marginalia 0-1) to above it**, and as a hybrid he would 
 1. **The passive.** Overlooked is the premise as a rule. Its alternates, each also on an axis nobody holds:
    **+10% experience** (the ember that catches: he was too small to be worth taking, and grows fastest - but XP
    moves the slow start's pages and the level 21 gate), or **pickup range** (he gathers the light the others lost).
-2. **Strength.** The strongest opener on a fresh save (need x7.7-12.1 against the starters' x18-26) with five and
-   ten Marginalia against the slow start's three, and the strongest of the three Apotheosis runs (section 7). The
-   A/B says the fresh-save lift is pure Arcane's attunement, not his kit. Levers, smallest first: Magic Missile's
-   base damage 10 -> 8 (everyone's dart); for the form alone, a count every 5th volley, or a cap of 12. None
-   touched without your word.
-3. **Magic Missile is stronger for everyone in an Arcane build** - attuned, +20 / 45 / 80% at tier 2 / 4 / 6 - and
-   Unstable Detonation 12% faster. Twin Volley now costs that attunement for its Lightning tag.
+2. **Strength - decided, and done (2026-11-03).** Eric: "Nerf magic missile". The bar was this doc's own: on
+   the slow start's cell A, Marginalia within 3 and the health he needs in the starters' band (the Stormcaller
+   and the Pyromancer, x18-26). **Magic Missile is now 12 damage every 0.8 s, from 10 every 0.5 s**
+   (`SpellData.tres`; the level table is unchanged: +2, +2 and -0.05 s at 3, a pierce at 5, speed at 7). That
+   is a quarter less a second at level 1 and about a third less at level 7, and two fifths fewer casts.
+
+   **The cadence is the nerf, not the damage.** Damage alone did not move him: 10 -> 8 left him at x13.9 /
+   x13.8 with 7 and 3 Marginalia, 8 with the level bonuses halved at x15.0 / x10.7 (7, 6), 7 at x10.6 / x12.4
+   (9, 0). What lifted him was **Arcane Explosion**, in every one of his books - the tags steer him to it, and
+   it is charged by every cast of every other spell, so a dart every half second set it off nearly nonstop;
+   the Pyromancer with both in his book was lifted the same way (x11.2). Fewer, heavier darts charge it two
+   fifths as often: 10 every 0.75 s reached x17.1 / x23.4 (7, 0), 12 every 0.75 s x19.4 / x16.6 (5, 2) and
+   x9.1 at seed 7, and **12 every 0.8 s** is the first that held on three seeds. Before and after, all on
+   `ec09b847`'s tree, `--fixed-fps 30`, cell A as `.ai/slow-start.md` 10.4 runs it:
+
+   | run (cell A unless marked) | before: 10 every 0.5 s | after: 12 every 0.8 s |
+   |---|---|---|
+   | The Archmage, 1234 | need x10.3, Marginalia 7, level 39 at 15:00, boss down 1.2 | need **x25.0**, Marginalia **3**, level 32, boss 1.4 |
+   | The Archmage, 99 | x8.4, Marginalia 3, level 36, boss 0.5 | **x21.9**, **0**, level 31, boss 0.6 |
+   | The Archmage, 7 | - | **x22.7**, **0**, level 31, boss 1.5 |
+   | the Pyromancer, 99 (Magic Missile and Arcane Explosion both in his book) | x11.2, 0, level 32 | **x19.2**, 3, level 36 |
+   | the Pyromancer, 42 (Magic Missile in his book) | x17.4, 0 (it stopped at level 4) | x19.6, 0 (level 7, beside Arcane Explosion) |
+   | the Pyromancer, 1234 (no Magic Missile), the band | x17.6, 1, level 33 | - |
+   | The Archmage's Apotheosis (`--seek-apotheosis --all-unlocked --immortal`, the two side by side) | form at 8.6 min, 32,732 a minute, 479 counts | form at **8.5 min**, **32,404** a minute, 143 counts |
+   | Magic Missile alone (`--character=0 --spell=magic_missile --solo --upgrade-chance=1 --force-ascension --timescale=2 --all-unlocked --immortal --seed=11`), damage a second L4 / L6 / L8, Threaded Needle + Overcharge | 40 / 136 / 323 | 53 / 95 / 312 |
+   | the same, Unstable Detonation + Arcane Orb | 46 / 104 / 403 | 39 / 78 / 397 |
+
+   So he sits in the band on all three seeds (x21.9-25.0), within three Marginalia, and still downs the
+   Forest's boss at the band's speed. The Pyromancer who takes the dart is in the band whether or not Arcane
+   Explosion joins it. **The form is not left weak**: it comes at the same minute and does the same damage a
+   minute, though a count now flies about a third as often (every 4th volley of a slower volley), so it is felt
+   less as a moment; `CountEvery` 3 is the lever if that reads as a loss. Alone, the dart stays in the peers'
+   band (40-60 / 70-130 / 331-465) except Overcharge's level 8, 312 against 331, which was 323 before. Not
+   re-measured: the other three disciplines, the Sibyl and the Test Wizard with the dart in their books.
+3. **Magic Missile is attuned in an Arcane build** - +20 / 45 / 80% at tier 2 / 4 / 6 - and Unstable Detonation is
+   12% faster; the nerf (item 2) was measured with both. Twin Volley costs that attunement for its Lightning tag.
 4. **Overcharge is the one level 8 on a pure spell that adds an element** (`.ai/spell-roster.md` 2b says "Level 8
    only deepens"). Kept because the card IS lightning, and the rule given with this change lets a level 4 or
    level 8 option add an element so long as none trades Arcane away; the alternative is Overcharge +Arcane, which

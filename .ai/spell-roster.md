@@ -2268,6 +2268,17 @@ deepening lost the 12% cooldown a hybrid pays for a tag. His Apotheosis is on it
 (count) - every fourth volley a dart at every enemy in reach, up to 16 (6 under Arcane Orb), one each.
 The Test Wizard opens on it too, with no form.
 
+**Nerfed 2026-11-03** (Eric: "Nerf magic missile"): **12 damage every 0.8 s**, from 10 every 0.5 s; the
+level table is as it was. Pure Arcane lifted The Archmage out of the starters' band on the slow start's
+fresh Forest (`.ai/protagonist.md` section 8 item 2 has every run), and the lift was its cadence, not its
+damage: every cast charges Arcane Explosion, and a dart every half second set it off nearly nonstop (a
+Pyromancer holding both was lifted the same way). Lowering the damage alone to 8 or 7 did not move it;
+the slower dart charges the blast two fifths as often. Alone, at this section's footing (seed 11,
+`--solo --upgrade-chance=1`, here `--all-unlocked --immortal --timescale=2`), damage a second at L4 / L6 /
+L8, before -> after: Threaded Needle + Overcharge 40 / 136 / 323 -> 53 / 95 / 312; Unstable Detonation +
+Arcane Orb 46 / 104 / 403 -> 39 / 78 / 397 - in the peers' band but Overcharge's level 8, a little under
+331 as it was before.
+
 | card | was | now: what the player sees |
 |---|---|---|
 | Twin Volley (L4, +Lightning since 2026-11-02) | unchanged | the dart forks on its first hit, two shards flung straight out either side. The spell's element path into Lightning since it went pure; Lightning's tint |
