@@ -340,7 +340,13 @@ public partial class SolarFlareVisual : Node2D, IPulseVisual
 		}
 		burstMaterial.SetShaderParameter(ParamProgress, Mathf.Clamp(elapsed / MathF.Max(0.01f, BurstDuration), 0f, 1f));
 		QueueRedraw();
+		// The flare throws the room into light in a dark chapter (LightPool), out past its reach, and dies.
+		float fade = 1f - elapsed / MathF.Max(0.01f, BurstDuration);
+		LightPool.Light(GlobalPosition, radius * LightReach, fade);
 	}
+
+	// How far the flare's light carries in a dark chapter, as a multiple of its reach (LightPool).
+	private const float LightReach = 1.6f;
 
 	// One quad over the reach and the beams; the shader decides every pixel and discards the rest. Sized
 	// in world px, which is what the pulse hit in, whatever this node's scale.

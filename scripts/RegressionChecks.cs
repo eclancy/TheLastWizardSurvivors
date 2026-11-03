@@ -43,6 +43,7 @@ public static partial class RegressionChecks
 		ValidateSecretCatalog(warnings);
 		ValidateStageRewards(warnings);
 		ValidateSketchbookHoldsNothing(warnings);
+		LightPool.Validate(warnings);
 		ValidateWorldMap(warnings);
 		ValidateBossRush(warnings);
 		ValidateHazardPlacement(warnings);
@@ -2781,7 +2782,7 @@ public static partial class RegressionChecks
 				AscensionLearned = true, BossRushBestFelled = 3, BossRushBestClearSeconds = 412f,
 				// Every setting off its default, so "kept" cannot pass by coincidence.
 				MasterVolume = 0.3f, MusicVolume = 0.2f, SfxVolume = 0.6f, AudioMuted = true, ShowDamageNumbers = false,
-				ReduceScreenShake = true,
+				ReduceScreenShake = true, ReduceDarkness = true,
 				EnableGameplayOnboardingTips = false, HasToggledOnboardingTipsAtLeastOnce = true,
 				PlaytestModeEnabled = true, BalancePresetId = GlobalStatsManager.BalancePresetHardcore,
 			};

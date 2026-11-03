@@ -150,6 +150,14 @@ public sealed class StageEnvironmentProfile
 
 	/// <summary>The jail walls: what every wall is drawn with until its chapter has its own.</summary>
 	public const string DefaultWallSet = "wall";
+
+	/// <summary>
+	/// How dark the chapter is outside the wizard's own light (LightPool, .ai/light-pool.md): 0 lit evenly,
+	/// 1 the full dark. Only where nothing else gives light - under ground and indoors (Eric, 2026-11-03:
+	/// "The light pool can possibly be used in certain levels? like the dungeons"). Every open-air chapter
+	/// leaves it at 0, and the Sketchbook is never given one.
+	/// </summary>
+	public float Darkness { get; init; }
 }
 
 public static class StageEnvironmentCatalog
@@ -253,6 +261,8 @@ public static class StageEnvironmentCatalog
 			IntroTint = new Color(0.94f, 0.92f, 0.96f, 1.0f),
 			HazardSpikes = true,
 			HazardFlameChance = 0.28f,
+			// The Cursed Dungeon, the light pool's pilot: a gaol under the castle, and nobody has lit it.
+			Darkness = 1f,
 		}
 		,
 		[StageEnvironmentKind.Ruins] = new StageEnvironmentProfile(
@@ -455,6 +465,8 @@ public static class StageEnvironmentCatalog
 			// No flower pen. It needs 24 x 18 tiles clear of walls, which a cavern almost never has, and
 			// where one fitted it would fill a chamber with a fence; nothing grows down here anyway.
 			HasLandmarks = false,
+			// "The only light is the one you brought" - now drawn (LightPool).
+			Darkness = 1f,
 		}
 		,
 		// THE FALLOW FIELDS (stage_9, .ai/campaign.md section 5): stubble, ploughed earth and hedge

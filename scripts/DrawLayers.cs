@@ -23,6 +23,13 @@ public static class DrawLayers
 	/// <summary>Walkable decoration and scorch marks, flat on the ground.</summary>
 	public const int Decal = -20;
 
+	/// <summary>
+	/// The dark of a lightless chapter (LightPool's room pass): over the floor, the walls and the decals,
+	/// under every crater, pool, tell, hazard and body on them. Its gentle second pass over the bodies is
+	/// drawn at <see cref="Bodies"/>, sorted after every one of them.
+	/// </summary>
+	public const int RoomDark = Decal + 2;
+
 	/// <summary>What lies on the ground: craters, pools, lanes (CraterGround.GroundZ; its fire is one above).</summary>
 	public const int Ground = -15;
 

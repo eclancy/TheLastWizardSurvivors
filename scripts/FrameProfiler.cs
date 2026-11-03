@@ -69,6 +69,8 @@ public partial class FrameProfiler : Node
 		// Thorned Vine: every vine's _Process - its whip stroke, its hit test and its paint
 		// (scripts/ThornVine.cs, the strikes' damage included).
 		ThornVine,
+		// The light pool's frame: the camera read, the small lights uploaded (scripts/LightPool.cs).
+		LightPool,
 		Harness,
 		Count,
 	}
@@ -76,7 +78,7 @@ public partial class FrameProfiler : Node
 	private static readonly string[] SectionNames =
 	{
 		"enemy", "separation", "move", "takeDamage", "death", "dmgText", "hitFx",
-		"player", "spells", "game", "spawn", "orbs", "textAnim", "terrain", "nav", "starfall", "stormsweep", "runes", "mire", "chain", "vine", "harness",
+		"player", "spells", "game", "spawn", "orbs", "textAnim", "terrain", "nav", "starfall", "stormsweep", "runes", "mire", "chain", "vine", "light", "harness",
 	};
 
 	/// <summary>True while a profiler is attached and counting.</summary>

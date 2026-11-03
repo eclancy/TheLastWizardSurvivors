@@ -67,6 +67,8 @@ public partial class Fireball : Area2D
 	private const float BodyPerVisualScale = 16f;
 	private ShaderMaterial material;
 	private float visualRadius = 21.6f;
+	// How far its light carries in a dark chapter, as a multiple of the drawn ball (LightPool).
+	private const float LightReach = 4.5f;
 	private float collisionRadius = 6f;
 	private float drawTime;
 
@@ -148,6 +150,8 @@ public partial class Fireball : Area2D
 		drawTime += (float)delta;
 		material?.SetShaderParameter(ParamTime, drawTime);
 		Position += direction * speed * (float)delta;
+		// A light of its own in a dark chapter (LightPool): it carries its halo out into the dark.
+		LightPool.Light(GlobalPosition, visualRadius * MathF.Abs(GlobalScale.X) * LightReach, 0.9f);
 		lifetime += (float)delta;
 		float flown = (GlobalPosition - spawnPosition).Length();
 		if (ploughing)

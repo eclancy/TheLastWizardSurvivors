@@ -13,6 +13,12 @@ namespace TheOneHeMissed.scripts;
 // 2026-11-02: a "reduce screen shake" switch beside it (Eric, from the open-questions sweep). Reduced, not
 // off: at a quarter strength a boss's landing still lands, it just no longer throws the picture about.
 // Every shake reads ShakeScale - ScreenShake.Kick, and SpiritualWeapon's hammer, which shakes for itself.
+//
+// 2026-11-03: a "reduce darkness" switch, for the chapters lit only by the wizard's own light (LightPool,
+// .ai/light-pool.md), for a player who finds them too dark - a dim screen, a phone in daylight. Reduced,
+// not off, as the shake is: the pool and the warm spells still light the room, the dark only lifts to
+// ReducedDarknessScale of itself. The light pool reads DarknessScale every frame, so the pause screen's
+// switch fades it in the run being played.
 public static class DisplaySettings
 {
 	/// <summary>How much of a shake is kept with the switch on.</summary>
@@ -27,6 +33,15 @@ public static class DisplaySettings
 	/// <summary>What every screen shake's strength is multiplied by.</summary>
 	public static float ShakeScale => ReduceShake ? ReducedShakeScale : 1f;
 
+	/// <summary>How much of a dark chapter's dark is kept with the switch on.</summary>
+	public const float ReducedDarknessScale = 0.4f;
+
+	/// <summary>Whether a dark chapter's dark is reduced (Options, and the pause screen's Display section).</summary>
+	public static bool ReduceDarkness { get; private set; }
+
+	/// <summary>What a dark chapter's darkness is multiplied by (LightPool).</summary>
+	public static float DarknessScale => ReduceDarkness ? ReducedDarknessScale : 1f;
+
 	/// <summary>Takes the saved switches. Called by SaveManager whenever its data is loaded or replaced.</summary>
 	public static void ApplyFromSave(SaveData data)
 	{
@@ -34,6 +49,7 @@ public static class DisplaySettings
 			return;
 		DamageNumbers = data.ShowDamageNumbers;
 		ReduceShake = data.ReduceScreenShake;
+		ReduceDarkness = data.ReduceDarkness;
 	}
 
 	/// <summary>Flips the damage numbers and persists it. Safe to call when there is no SaveManager.</summary>
@@ -55,6 +71,17 @@ public static class DisplaySettings
 		if (saveManager == null)
 			return;
 		saveManager.Data.ReduceScreenShake = reduce;
+		saveManager.SaveGame();
+	}
+
+	/// <summary>Flips the reduced darkness and persists it. Safe to call when there is no SaveManager.</summary>
+	public static void StoreReduceDarkness(Node context, bool reduce)
+	{
+		ReduceDarkness = reduce;
+		var saveManager = context?.GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (saveManager == null)
+			return;
+		saveManager.Data.ReduceDarkness = reduce;
 		saveManager.SaveGame();
 	}
 }

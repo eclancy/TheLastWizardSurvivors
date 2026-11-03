@@ -37,6 +37,8 @@ public partial class FlamePuff : Node2D
 	// The reach of the flame as drawn (cinder_tongue.gdshader puts its front on this and keeps all its
 	// fire inside it), not its tail - the tail is what the flame leaves and does not deal damage.
 	[Export] public float HitRadius { get; set; } = 20f;
+	// How far a tongue's light carries in a dark chapter, as a multiple of its reach (LightPool).
+	private const float LightReach = 3.2f;
 
 	public int Damage { get; set; } = 4;
 	public SpellData SpellData { get; set; }
@@ -137,7 +139,11 @@ public partial class FlamePuff : Node2D
 		if (age >= Lifetime)
 			QueueFree();
 		else
+		{
 			QueueRedraw();
+			// Each tongue is a small light in a dark chapter (LightPool), guttering as it goes.
+			LightPool.Light(GlobalPosition, HitRadius * LightReach, 0.75f * (1f - age / Lifetime));
+		}
 	}
 
 	private void BurnWhatItTouches()

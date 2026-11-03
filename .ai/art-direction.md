@@ -556,6 +556,11 @@ Per-stage values, with Bonelight as the reference:
 `StageEnvironmentCatalog` gains these two colours per profile and stops carrying a
 `BackgroundModulate` that tints the whole floor sheet.
 
+**Not to be confused with the light pool** (`.ai/light-pool.md`, 2026-11-03), which is built: a falloff
+from the wizard into the dark in the chapters with no other light, multiplied over the floor and, more
+gently, over the bodies. It retints nothing and keys on no colour, so the reserved colours above are
+untouched by it; the emissive rule holds by depth instead - every spell, bolt and blast is drawn above it.
+
 The three tones that lost the study are kept as stage identities rather than discarded:
 **Fenlight** is the Swamp, **Cold Ash** is Ice and a candidate for a late-difficulty overlay
 where the world drains as the run degrades, and **Candle Ward** is the warm first stage — the
