@@ -408,6 +408,13 @@ public partial class Player : CharacterBody2D
 	private readonly HashSet<string> bannedSpellIds = new(StringComparer.OrdinalIgnoreCase);
 	public bool IsPlaytestModeEnabled { get; private set; } = false;
 	public int MagnetBonus => magnetBonus + chestMagnetBonus;
+
+	/// <summary>
+	/// How far from him a pickup starts coming to him: the pickup's own <paramref name="attractDistance"/> plus every
+	/// magnet bonus (MagnetBonus), the whole of it scaled by Surveyor (Imhotep's passive, .ai/chapter-wizards.md 4.6).
+	/// The one reader: XPOrb and PickupBase both ask it, so a reach bonus cannot reach one and miss the other.
+	/// </summary>
+	public float PickupReach(float attractDistance) => (attractDistance + MagnetBonus) * characterPickupReachScale;
 	// Crit chance stat (issue #26) and Luck stat (issue #23), both driven by SaveManager.ArcaneUpgradeLevels.
 	private float baseCritChance = 0f;
 	private int luckLevel = 0;
@@ -639,6 +646,10 @@ public partial class Player : CharacterBody2D
 	public float OverlookedAtSeconds { get; private set; } = -1f;
 	// Bone Fence (Baba Yaga): the share added to every shove and pull her spells give (Enemy.PlayerKnockbackScale).
 	public const float CharacterBoneFenceKnockbackBonus = 0.20f;
+	// Surveyor (Imhotep): the share added to the reach at which every orb, flask and pickup comes to him (PickupReach).
+	// A share of the whole reach, magnets and shop levels included, so it stays a fifth more however far it has grown.
+	public const float CharacterSurveyorReachBonus = 0.20f;
+	private float characterPickupReachScale = 1f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -894,6 +905,11 @@ public partial class Player : CharacterBody2D
 		// spells shove or drag is thrown that much harder (Enemy.PlayerKnockbackScale). An axis no other wizard owns:
 		// not damage, not speed, the strength of every push. Her own vine pushes nothing; it is a build's passive.
 		"knockback_20",
+		// Imhotep (.ai/chapter-wizards.md 4.6): Surveyor - the builder who could find water in the desert and raise it,
+		// who read the ground for miles. Every orb, flask and pickup starts coming to him a fifth further off
+		// (PickupReach). An axis no other wizard owns: not his speed (Wings), not a pull of the swarm (Hollow Star),
+		// only how far his hands reach for what the fight drops.
+		"pickup_reach_20",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -951,6 +967,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "knockback_20":
 				Enemy.PlayerKnockbackScale = 1f + CharacterBoneFenceKnockbackBonus;
+				return true;
+			case "pickup_reach_20":
+				characterPickupReachScale = 1f + CharacterSurveyorReachBonus;
 				return true;
 			default:
 				return false;

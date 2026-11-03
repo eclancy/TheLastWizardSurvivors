@@ -49,7 +49,7 @@ public partial class PickupBase : Area2D
 		{
 			float dynamicAttractDistance = AttractDistance;
 			if (player is Player typedPlayer)
-				dynamicAttractDistance += typedPlayer.MagnetBonus;
+				dynamicAttractDistance = typedPlayer.PickupReach(AttractDistance);
 
 			var dist = GlobalPosition.DistanceTo(player.GlobalPosition);
 			if (dist < dynamicAttractDistance) attracted = true;

@@ -62,6 +62,8 @@ public static class CharacterVisuals
 			case "archmage": return new Vector2(13, 6);
 			// The living tip of the thorned vine curling over the head of her pestle (roster.py, yaga()).
 			case "baba_yaga": return new Vector2(16, 3);
+			// The sun resting on his raised palm (roster.py, imhotep()): Fireball leaves from it.
+			case "imhotep": return new Vector2(38, 5);
 			default: return null;
 		}
 	}
@@ -93,6 +95,7 @@ public static class CharacterVisuals
 			case "sibyl":
 			case "archmage":
 			case "baba_yaga":
+			case "imhotep":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

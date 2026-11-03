@@ -148,6 +148,12 @@ ROBES = {
     # shade (iron-grey) and her kerchief stone's near-black. Thorned Vine is in the shoot under her hand and
     # the tip of the vine climbing her pestle, not on her clothes.
     "yaga": ("E", "e", "A"),            # linen, deep - the coat; Thorned Vine
+    # Imhotep's kilt: starched white linen, linen's pale end - the same row Seimei's kariginu is cut from, but
+    # only from the waist down: above it is a bare brown chest under a gold-and-lapis collar and a leopard's
+    # pelt. NOT ivory or the Sands' sand cloth: his own chapter's dead are wrapped in sand cloth, and a priest in
+    # the colour of their wrappings would read as one of them (and as the films' mummy, which he is not).
+    # Fireball is the sun on his palm, not on his clothes.
+    "imhotep": ("l", "L", "e"),         # linen, pale - the kilt; Fireball
 }
 
 # RUSSET, madder-dyed wool and auburn hair: Thora's hair (stormcaller()). The same five bytes and
@@ -2648,11 +2654,201 @@ def yaga(phase=None):
     return g.rows()
 
 
+def imhotep(phase=None):
+    """Fireball. Imhotep: chancellor to the pharaoh Djoser, architect of the first pyramid, physician, High
+    Priest of Ra at Heliopolis - a sage and a healer to two thousand years of the people who came after him.
+
+    DRAWN SERIOUS, AND NOT THE FILMS' MUMMY. Nothing on him is wrapped: he is a living priest in the dress of
+    his office, upright and calm, the one figure in the cast HOLDING UP A SUN. Fireball is the sun's fire in
+    one slow, heavy blast, so his near arm is raised high, the hand open and palm up under a ball of fire
+    resting on it - the only thing on him that gives off light - and his face is turned up to it. The
+    Pyromancer beside him (Aedan) is the opposite figure: pitched forward mid-stride in a red coat, his fire
+    levelled like a spear; Imhotep stands square and still and lifts his.
+
+    The rescued wear no pigment, so his dress is material rows. A priest's starched kilt of white linen
+    (linen's pale end) from the waist to the shin, finely pleated, with the triangular front panel standing
+    out from it; a bare brown chest and arms; the broad collar of his rank, gold beads between rows of lapis
+    (the blue wool row's deep end); over the far shoulder and down across the chest to the near hip, the
+    leopard's pelt a High Priest of Ra wore - gold, spotted dark, a paw hanging at his hip and the tail behind
+    him. A close cap of the same lapis. In his far hand, planted, the was-sceptre - a straight shaft forked
+    at the foot, the beast's head bent at the top - which no other staff in the cast is shaped like.
+    """
+    mid, lit, dark = ROBES["imhotep"]
+    g = G(48)
+    CX = 23
+
+    # THE KILT: starched linen from the waist to the shin, a little fuller at the hem.
+    mass(g, [(29, 18, 29), (34, 17, 30), (40, 16, 31)], mid, lit, dark)
+    # Pleats, fanning a little from the waist - irregular, so they are cloth and not a grille.
+    for (xa, xb, d) in ((19, 17, dark), (21, 20, "E"), (27, 28, dark), (29, 30, "E")):
+        fold(g, [(xa, 30), (xb, 40)], d, lit)
+    g.span(40, 17, 30, "E")                                         # the hem's turned edge, in shade
+    g.set(16, 40, "l")
+    # THE FRONT PANEL: the stiff triangle of the kilt's apron standing out from the waist, paler than the
+    # kilt because it catches the light, its own fine pleats run down it.
+    for y in range(30, 40):
+        t = (y - 30) / 9.0
+        x0, x1 = int(round(24 - 3.0 * t)), int(round(25 + 3.6 * t))
+        g.span(y, x0, x1, lit)
+        g.set(x0, y, mid)
+        g.set(x1, y, dark)
+    for k in (-1.2, 1.4):
+        for y in range(32, 39, 2):
+            g.set(24.5 + k * (y - 30) / 3.2, y, mid)
+    g.span(39, 21, 28, dark)
+    g.set(24, 30, "E")
+
+    # THE LEGS, below the kilt: bare shins and sandals with a strap over the instep.
+    def shin(x, lift=0):
+        for y in range(41, 45 - lift):
+            g.span(y, x, x + 2, "i")
+            g.set(x, y, "h")
+            g.set(x + 2, y, "I")
+        fy = 45 - lift
+        g.span(fy, x, x + 3, "i")
+        g.set(x, fy, "h")
+        g.set(x + 1, fy, "g")                                       # the strap
+        g.set(x + 3, fy, "I")
+        g.span(fy + 1, x - 1, x + 4, "u")                           # the sole
+        g.set(x + 4, fy + 1, "J")
+        g.set(x - 1, fy + 1, "g")
+        g.set(x, 41, "o")                                           # the kilt's shadow on the shin
+    if phase is None:
+        shin(19)
+        shin(26)
+    else:
+        # A priest's measured step: the hem swings toward the leading foot, the shins trade places
+        # under it, and the swinging foot lifts a pixel or two while it passes.
+        c, lift_near, lift_far = stride(phase)
+        sway(g, 36, 1.0 * c)
+        shin(int(round(19 - 2.2 * c)), int(round(2 * lift_far)))
+        shin(int(round(26 + 2.2 * c)), int(round(2 * lift_near)))
+
+    # THE TORSO, bare and brown, drawn before the pelt and the collar that lie on it.
+    # No rim: the far arm hangs beside it, and a rim between the two is a pale seam down his side.
+    mass(g, [(19, 18, 28), (23, 19, 28), (28, 19, 28)], "i", "h", "I", rim=False)
+    g.line(21, 23, 23, 24, "I")                                     # the chest's lower line
+    g.line(25, 24, 27, 23, "I")
+    g.set(24, 27, "I")                                              # the navel
+    g.set(20, 21, "h")
+    # THE BELT, a band of gold with lapis set in it, over the kilt's top.
+    g.span(28, 18, 29, "u")
+    g.span(29, 18, 29, "g")
+    g.set(18, 29, "G")
+    for x in (20, 23, 27):
+        g.set(x, 29, "b")
+        g.set(x, 28, "c")
+    g.span(30, 18, 23, "o")                                         # the belt's shadow on the kilt
+
+    # THE LEOPARD'S PELT, over the far shoulder and down across the chest to the near hip: gold, lit along its
+    # upper edge, its rosettes dark, rings of shade round dark centres, never in a row.
+    for y in range(17, 31):
+        cx = 19.0 + (y - 17) * 0.72
+        x0, x1 = int(round(cx - 2.0)), int(round(cx + 2.2))
+        g.span(y, x0, x1, "g")
+        g.set(x0, y, "G")
+        g.set(x1, y, "u")
+        g.set(x1 + 1, y, "o" if y < 29 else g.get(x1 + 1, y))
+    for (sx, sy) in ((19, 18), (21, 21), (20, 24), (23, 24), (24, 27), (26, 29), (22, 19), (27, 27)):
+        if g.get(sx, sy) in ("g", "G"):
+            g.set(sx, sy, "J")
+            if g.get(sx + 1, sy) == "g":
+                g.set(sx + 1, sy, "u")
+    # A paw hanging at the near hip, its claws dark, and the tail down behind him on the far side.
+    for (px, py, pc) in ((29, 30, "g"), (30, 30, "u"), (29, 31, "G"), (30, 31, "g"), (29, 32, "g"), (30, 32, "u"),
+                         (29, 33, "g"), (30, 33, "J"), (28, 34, "J"), (29, 34, "u"), (30, 34, "J"), (31, 34, "o")):
+        g.set(px, py, pc)
+    for k, (tx, ty) in enumerate(((17, 29), (16, 31), (16, 33), (15, 35), (15, 37), (15, 38))):
+        g.set(tx, ty, "J" if k % 2 else "g")
+        g.set(tx, ty + 1, "u" if k % 2 else "J")
+
+    # THE BROAD COLLAR of his rank, on the shoulders over the pelt: a dark neck band, gold, lapis, gold
+    # drops, and a last row of lapis drops on the skin.
+    g.span(15, 20, 26, "a")
+    for x in range(18, 29):
+        g.set(x, 16, "G" if x % 2 == 0 else "g")
+        g.set(x, 17, "c" if x < 22 else ("b" if x % 3 else "c"))
+        g.set(x, 18, "g" if (x + 1) % 2 == 0 else "u")
+    g.set(17, 17, "d")
+    g.set(29, 17, "a")
+    g.set(17, 18, "u")
+    g.set(29, 18, "u")
+    for x in range(18, 29, 2):
+        g.set(x, 19, "b")
+        g.set(x + 1, 19, "a" if g.get(x + 1, 19) != "." else ".")
+    g.set(18, 16, "H")
+    g.set(17, 16, "W")
+
+    # THE FAR ARM, down to the sceptre: bare, a gold bracelet at the wrist, the hand round the shaft.
+    shaft(g, 17, 19, 14, 24, "h", "i", "I", width=3)
+    g.set(15, 23, "G")
+    g.set(16, 23, "g")
+    g.set(17, 23, "u")
+    # THE WAS-SCEPTRE, planted: a straight shaft of gilded wood a little taller than he is, forked at the foot,
+    # the beast's head bent forward at the top with its two ears up.
+    shaft(g, 12, 44, 12, 8, "g", "u", "J", width=2)
+    for (wx, wy, wc) in ((11, 45, "u"), (14, 45, "u"), (11, 46, "J"), (14, 46, "J"), (12, 45, "J"), (13, 45, "J"),
+                         (12, 7, "G"), (13, 7, "g"), (12, 6, "g"), (13, 6, "G"), (14, 6, "g"), (15, 6, "g"),
+                         (16, 6, "u"), (16, 7, "u"), (17, 7, "u"), (14, 7, "J"), (15, 7, "J"), (14, 5, "J"),
+                         (13, 5, "g"), (12, 5, "u"), (11, 4, "u"), (12, 4, "g"), (11, 5, "J"), (12, 3, "u"),
+                         (13, 4, "J")):
+        g.set(wx, wy, wc)
+    for by in (14, 30):
+        g.set(12, by, "G")                                          # the gilding's bands
+        g.set(13, by, "u")
+    hand(g, 12, 24, tone="deep")
+    g.set(14, 25, "I")
+
+    # THE NEAR ARM, raised high and out: the upper arm to the elbow, the forearm up to the open hand. A gold
+    # armlet above the elbow and a bracelet at the wrist.
+    shaft(g, 28, 17, 33, 14, "h", "i", "I", width=3)
+    shaft(g, 33, 14, 36, 9, "h", "i", "I", width=3)
+    g.line(29, 20, 32, 18, "o")                                     # the arm's shadow on the chest
+    g.set(30, 15, "G")
+    g.set(30, 16, "g")
+    g.set(31, 17, "u")
+    g.set(34, 11, "G")
+    g.set(35, 11, "g")
+    g.set(36, 11, "u")
+    # The hand, palm up, fingers curled a little round what rests on it.
+    for (hx, hy, hc) in ((35, 8, "h"), (36, 8, "h"), (37, 8, "i"), (38, 8, "i"), (39, 8, "I"), (39, 7, "h"),
+                         (35, 7, "h"), (40, 7, "I")):
+        g.set(hx, hy, hc)
+
+    # THE SUN on his palm: a ball of fire, white at the heart, its edge burning dark red on the side away from
+    # the key, and a few flames licking off it. The spell, so it is the one thing that may glow.
+    g.disc(38.0, 4.6, 2.5, "=")
+    g.disc(37.6, 4.2, 1.5, "-")
+    g.set(37, 4, "+")
+    g.set(38, 4, "+")
+    for (fx, fy, fc) in ((40, 6, "~"), (41, 5, "~"), (39, 7, "~"), (40, 3, "~"), (35, 5, "~"),
+                         (36, 2, "="), (39, 2, "~"), (42, 3, "~"), (34, 3, "~")):
+        g.set(fx, fy, fc)
+
+    # THE HEAD: a level, unhurried face turned up to the sun in his hand, clean-shaven, under a close cap of
+    # lapis that comes down over the temples.
+    head(g, CX, 8, 2.8, brow="flat", gaze=1, mouth="set", eye="narrow", tone="deep")
+    g.span(14, 22, 25, "i")                                         # the neck
+    g.set(25, 14, "I")
+    mass(g, [(5, 21, 25), (6, 20, 26), (8, 20, 26)], "b", "b", "a")
+    g.span(8, 20, 26, "a")                                          # the cap's edge on the brow
+    g.set(20, 9, "a")
+    g.set(20, 10, "a")
+    g.set(26, 9, "a")
+    g.set(21, 6, "c")                                               # the crown catching the key
+    g.set(22, 5, "c")
+    g.set(21, 7, "c")
+    g.set(24, 6, "a")                                               # a seam over the crown
+    g.set(25, 7, "a")
+    contact(g, 9, 36)
+    return g.rows()
+
+
 WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("stormcaller", stormcaller), ("geomancer", geomancer),
            ("tituba", tituba), ("vainamoinen", vainamoinen), ("dee", dee),
            ("seimei", seimei), ("wayland", wayland),
-           ("sibyl", sibyl), ("yaga", yaga)]
+           ("sibyl", sibyl), ("yaga", yaga), ("imhotep", imhotep)]
 ENEMIES = [("swarmer", swarmer), ("runner", runner), ("bruiser", bruiser),
            ("shielder", shielder), ("skullsentry", skullsentry), ("lunger", lunger),
            ("slammer", slammer), ("exploder", exploder), ("summoner", summoner),

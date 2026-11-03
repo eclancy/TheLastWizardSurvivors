@@ -56,6 +56,9 @@ public static class CharacterRoster
 		// The chapter wizards again: Baba Yaga, freed by running her walking hut down in the Enchanted Forest. Appended,
 		// so every saved index keeps its wizard (index 15: the Archmage took 14).
 		"res://CharacterData_BabaYaga.tres",
+		// The chapter wizards again: Imhotep, freed by kindling the three beacons round his tomb on the Scorched Sands.
+		// Appended, so every saved index keeps its wizard.
+		"res://CharacterData_Imhotep.tres",
 	};
 
 	/// <summary>
