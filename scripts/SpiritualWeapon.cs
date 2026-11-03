@@ -772,7 +772,13 @@ public partial class SpiritualWeapon : Node2D
 	{
 		if (PlayerRef == null || !IsInstanceValid(PlayerRef))
 			return;
-		float dt = (float)delta;
+		var perfStart = FrameProfiler.Begin();
+		ProcessWeapons((float)delta);
+		FrameProfiler.End(FrameProfiler.Section.SpiritWeapon, perfStart);
+	}
+
+	private void ProcessWeapons(float dt)
+	{
 		if (armed)
 		{
 			int n = 0;
@@ -1530,7 +1536,7 @@ public partial class SpiritualWeapon : Node2D
 			Sparks(p, 4, light, 80f);
 		}
 
-		severs[nextSever] = new Sever { From = from, To = to, Width = 6f * MathF.Max(1f, scale * 0.8f), Live = true };
+		severs[nextSever] = new Sever { From = from, To = to, Width = 8f * MathF.Max(1f, scale * 0.8f), Live = true };
 		nextSever = (nextSever + 1) % MaxSevers;
 		for (int i = 0; i < 5; i++)
 			AddMote(from.Lerp(to, (i + 0.5f) / 5f), new Vector2(rng.RandfRange(-25f, 25f), rng.RandfRange(-45f, -15f)), 0.3f,
@@ -2100,6 +2106,13 @@ public partial class SpiritualWeapon : Node2D
 
 	// The air: the slashes, the weapons, and the motes.
 	private void DrawAir()
+	{
+		var perfStart = FrameProfiler.Begin();
+		DrawAirPass();
+		FrameProfiler.End(FrameProfiler.Section.SpiritWeapon, perfStart);
+	}
+
+	private void DrawAirPass()
 	{
 		foreach (Weapon w in weapons)
 		{

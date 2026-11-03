@@ -668,6 +668,8 @@ Empty Cell - and one added, moved from the first draft's Undercroft:
 - **D7, the Oubliette** (untouched for 5 s on a grate in a dead-end hall room's floor): a voice
   below. If Nimue is built (decision 11) this is where her card stops being a sealed blank and
   becomes a silhouette: someone else is still held here. Until then it pays 150 Arcane Energy, once.
+  *Nimue is built (2026-11-03) and D7 is not: until it is, the Throne opening reveals her (decision 11,
+  its Built note, says how the Oubliette takes that over).*
 
 The Gaoler's Ledger now arrives late in the game, and the Court's Library a chapter later reveals the
 hint of every secret, not only the keepsakes. The Ledger keeps its design; its reveal is simply the
@@ -1200,7 +1202,7 @@ whether the end lands. Eyes, on both devices.
 | 8 | the Muster | 17 levels and two relic chests, moved by measurement |
 | 9 | the procession | the road's wardens in pairs, then him |
 | 10 | him | unnamed on screen; his light out, the motes going home, the freed wizards standing, credits |
-| 11 | Nimue (was Merlin) | yes, as its own build after the Throne: the one wizard he kept, revealed by the Oubliette (now D7, in the Dungeon), freed by the Throne, outside the gate as Laelaps is. **Nimue, the Lady of the Lake**, keeping Spiritual Weapon's sword; her Apotheosis is **Excalibur**, the final form of the Sword form (`VariantId = "spiritual_weapon_sword"`), verb **sever** - the cut goes on through everything in a line behind its target and cuts bolts along the whole line (Eric, 2026-11-02; not built). **She floats** (Eric, 2026-11-03: "One of the wizards should float, her feet hanging together and her dress should flow in the wind"; Nimue, as the one risen from the lake): drawn hovering a little off the ground, feet hanging together, her gown streaming in the wind; an idle that bobs instead of breathing and a walk that drifts instead of stepping. The look only - her Feet collider still meets water and walls as everyone's does. The name Merlin moved to a wizard earned by the whole road on 2026-11-02, with the verb *rewind* (`.ai/merlin.md`) |
+| 11 | Nimue (was Merlin) | yes, as its own build after the Throne: the one wizard he kept, revealed by the Oubliette (now D7, in the Dungeon), freed by the Throne, outside the gate as Laelaps is. **Nimue, the Lady of the Lake**, keeping Spiritual Weapon's sword; her Apotheosis is **Excalibur**, the final form of the Sword form (`VariantId = "spiritual_weapon_sword"`), verb **sever** - the cut goes on through everything in a line behind its target and cuts bolts along the whole line (Eric, 2026-11-02; built 2026-11-03 - "Decision 11, built" after 10.2). **She floats** (Eric, 2026-11-03: "One of the wizards should float, her feet hanging together and her dress should flow in the wind"; Nimue, as the one risen from the lake): drawn hovering a little off the ground, feet hanging together, her gown streaming in the wind; an idle that bobs instead of breathing and a walk that drifts instead of stepping. The look only - her Feet collider still meets water and walls as everyone's does. The name Merlin moved to a wizard earned by the whole road on 2026-11-02, with the verb *rewind* (`.ai/merlin.md`) |
 | 12 | Boss Rush | unchanged (1.8 says what that takes) |
 | 13 | variety first | the Ruins' walls and the Cave's caverns |
 
@@ -1218,6 +1220,81 @@ whether the end lands. Eyes, on both devices.
 4. **A third phase for the Gaoler** (4.3), only if he measures long rather than hard at 12,500.
 5. **Nothing at fifth place** (1.7); the Cave's caverns and the Ruins' walls carry the middle.
    **Recommended**, with V1 and V2 landing before the move.
+
+### Decision 11, built: Nimue, the Lady of the Lake (2026-11-03, `wip/wizard-nimue`)
+
+The last of the planned wizards: the one he kept, freed by his fall.
+
+| piece | where |
+|---|---|
+| her | `CharacterData_Nimue.tres`, appended to `CharacterRoster`; id `nimue`, Name "Nimue", Craft "Lady of the Lake" (the line under her name reads "the Lady of the Lake"). Untinted (`CharacterVisuals`); the Spirit Sword leaves her from the blade she holds, cell (36, 8) |
+| her form, fixed | `CharacterData.StartingForm` / `StartingSelection`: a wizard whose starting spell has forms opens in the form his Apotheosis ends (`ApotheosisDefinition.VariantId`), read in `Player.ApplySelectedCharacter` - so she always opens on the Sword, and the two can never disagree. The card names the form ("Spirit Sword", its icon), not the spell |
+| her look | `roster.nimue(wind=, drift=, lift=)` and `anim_sets.hover`, the build loop's one branch (`roster.FLOATERS`). She hangs three rows off the ground, bare feet together and pointed down, the contact shadow (occlusion on row 47, dithered over row 46) under her and never touching them. The gown is the steel row - pale, still water under a white sky - her hair wool's deep end, a blue-black; a wool girdle and ribbon, a silver fillet; no mantle (Morgan's lichen mantle is the thing she must not be). The sword upright in her near fist is the light (light's ramp). 1.02 edges/px. **Idle: 12 frames that bob** (two rows up and down in 2 s, the shadow narrowing at the top, the cloth through one ripple, the blade a stop brighter at the top). **Walk: 8 frames that drift** - no step; the cloth streams two columns further back, she leans one into it, a one-row bob. Hurt and death are derived as everyone's are (a death sinks her to the ground). The look only: `FitFeetToSprite` puts the Feet collider at the cell's bottom, the shadow's row, so she meets water and walls as everyone does |
+| the Scabbard | `bite_interval_25`, `Player.Scabbard.cs`: a body pressed against her bites a quarter less often - `Player.ContactBiteSeconds`, 0.25 s between one body's bites where everyone else's is 0.2 (`DamageCooldownSeconds`), read at both contact sites (the loop and the first touch). The bite itself goes through `TakeDamage` unchanged, so dodge, the signal, armour and the reactive boons all answer it. Card: "Contact damage taken lands 20% less often" |
+| Excalibur | `ApotheosisCatalog` (verb **sever**, Light, `VariantId = spiritual_weapon_sword`), `SpiritualWeapon.SeverOn`, its icon (`evolution_icons.py`: the sword risen from two rings of the lake, its line run on through two of the swarm). Every Spirit Sword cut goes on: the line runs straight on from her through where the blade came down, `SeverReach` 300 px past it (with Area and the form's Scale, to 640), `SeverHalfWidth` 14 + a body's half-width; everything on it the blow did not already strike takes `SeverShare` 60% of the cut, and every enemy bolt on the whole line from her to its end is cut. Nothing on it is moved, so a boss is struck and never displaced. Drawn as cells of light's ramp running out in 0.05 s and breaking up through the air canvas's dither from the root outward (0.24 s). Fixed pools and EnemyRegistry's grid; `FrameProfiler`'s new `spirit` section is the weapon's whole process and air draw |
+| the unlock | `UnlockCatalog`: `FromAchievementCharacter("nimue", "throne_taken_back", ...)`, secret until `stage_13`, `OutsideCampaignGate` (the Throne's gate counts every wizard, and she is freed only behind it). **Taken Back pays her** beside its 1,000 (one row for one fall, not a second deed); it is sealed ("The Throne holds someone") until she is revealed, and a save that beat him before this build is handed her by the reconcile at the end of its next run |
+| her names | `QuestLog.Prisoners`: "the one he kept", held line "He keeps one wizard by him still, close at hand." (the Throne's note), freed line "{0} is out of his keeping." Locked hint: "Kept by him to the end. Freed when he falls in the Throne." The journal lists Taken Back under Wizards once the Throne is shown; the world map's Throne card has her as its warden's wizard |
+| her freeing | `freed.py` WIZARDS and `Freeings.WizardIds`: the template's panel, she floating beside the Archmage, her light back into the blade. **It plays after the ending**: on the run that ends the story `Node2DGame.ShowGameOver` holds every owed reel back, `GameOverScreen.AfterEnding` hands them to `PlayOwedReelsThen` when the ending's `Finished` fires, and the results stay hidden (swallowing nothing, so the reel's skip hears every press) until the last reel ends; then they come back with the selection on the footer and count. Every other run is as it was |
+
+**The reveal: the Throne, not the Oubliette.** D7 is not built (the Dungeon has only its vault, D5). So her card
+is the secret one until the Throne opens - every wizard free and the Seneschal beaten - and is revealed by it;
+she is freed by the same chapter. When D7 is built, its find should be the EARLIER reveal: add a secret to
+`UnlockDefinition` beside `RevealStageId` (revealed when either holds), read it in
+`GlobalStatsManager.IsCharacterRevealed`, and leave the Throne as the fallback for a save that never found it.
+The validator's rules on a secret's reveal chapter read only `RevealStageId`, so they stay true.
+
+**Why the Scabbard, and why on the bite.** It is the other half of her gift in Malory - "whiles ye have the
+scabbard upon you, ye shall lose no blood, be ye never so sore wounded" - and every other wizard's defence is
+a share of every hit (the Geomancer), a chance of none (evasion, Laelaps's catch), one death refused (the
+Archmage), a revive made whole (Morgan) or a shove (Merlin): none touches the rate at which a touching body
+wounds. **The first build put it on the SIZE of a blow** - no hit over a tenth of her max HP - on the guess that
+slams, exploders and a boss's ring were the danger. Measured, it never bound: the survivor bot (`--survivor
+--all-unlocked --timescale=6`, seed 1234) took 59 hits in the Throne at level 19 and not one was over its cap of 7
+(70 max HP); with the cap dropped to 1 HP to read the spread, the Forest, the Last Bridge and the Throne gave 150,
+52 and 117 hits of which 41, 42 and 52 were over 1 - by 1.0 to 1.25 HP each on average, so 2s and 3s. The damage
+in this game is the swarm's touch: with the bite clock in, 48 of 66, 48 of 48 and 63 of 61 hits (a bite a shield
+or a dodge ate is counted and is no hit) were contact bites. So the Scabbard answers the touch: a fifth fewer bites from a body pressed against her, and
+nothing at all against a slam, a bolt or a ring. It gives no health back (`.ai/difficulty-curve.md`'s budget).
+
+**Verified.** `dotnet build`; `--import` (her 16 sheets, her freeing's panel and Excalibur's icon, sidecars
+committed); the validator: 0 errors, 1 warning (the Test Wizard's missing passive, which main has). `freed.py
+nimue` and `evolution_icons.py --only=spiritual_weapon_sword_excalibur`: 0 off-contract pixels, the icon 30%+ from
+its siblings.
+
+- **Her unlock, through the real deed** (`_UiShot --scene=res://scenes/node_2d_game.tscn --stage=13 --character=1
+  --fresh-save --free-wizards=<the ten> --beaten=<every chapter but the Throne> --open-stages=stage_13
+  --throne-muster=1 --force-victory --ending-through=120`, the new flag that presses the ending on every N frames):
+  the win completes Taken Back and frees her in memory; the ending stands sixteen in the row, her among them; the
+  row, the roll, then "the ending is done and the results are held for the reels it owes", her freeing ("Nimue is
+  out of his keeping."), then the save's owed lesson, then the results with the selection on Main menu. Both
+  canvases.
+- **The character select** at both canvases: secret (fresh save: her silhouette, "Not yet discovered."), revealed
+  (the Throne open: her hint), freed (`--all-unlocked`: "Nimue / the Lady of the Lake", Spell Spirit Sword,
+  Apotheosis Excalibur, the Scabbard's line with the shield glyph).
+- **In a run** at both canvases: idle (four frames 15 apart: the bob and the ripple), drifting (`--walk=1,0`), and
+  Excalibur (`--spell-stage=16 --demo-spell-level=8` with Deflection, Thousand Cuts and Excalibur): the lines run on
+  through the knot behind each quarry.
+- **The form, measured** (`_BalanceHarness --character=<hers> --all-unlocked --seek-apotheosis --immortal --seed=1234`,
+  the Forest): at timescale 6, the Spirit Sword ascended down Celestial Greatsword at 9.1 min (level 17) and
+  **Excalibur was offered and taken at 10.7 min (level 21)**, over the 7.5 floor; her spell did 73.5% of her damage;
+  in the 4.3 minutes after it, 1,110 cuts went on, striking 2.3 bodies each past the quarry, and cut 486 bolts. At
+  timescale 1 with `--profile=10`, alone on the laptop: the form at **10.0 min**, 78.7% of her damage; the new
+  `spirit` section (the weapons' whole process and air draw) ran 90-140 us a frame over the minute and a half before
+  the form and 100-160 after it (one 10 s block at 334), so the line costs on the order of 20 us a frame; whole
+  frames 7.0-12.2 ms before and 7.0-10.3 ms after, allocation 8-12 KB a frame either side (the section's own
+  0.2-0.5 KB is the extra hits' share of `DealDamageToEnemy`). Not measured on the phone.
+- **The Scabbard**: see "why on the bite" above. Three survivor runs with the bite clock in (the Throne 0.5 min, the
+  Forest 3.2, the Last Bridge 1.2) against the first build's, whose cap never bound (the Throne 1.1, the Forest 3.0),
+  are inside the bot's noise: `--seed` seeds only the harness's chests, so one run each cannot see a fifth of the
+  bites. Nobody has measured it beyond that.
+
+**Needs Eric's eyes:** her sprite at game size beside Morgan and the Sibyl (`_shots/wizard-nimue/`), and whether the
+float reads as floating with a shadow this thin; whether the Scabbard on the bite is the right call, and its size (a
+quarter longer between bites); the reveal at the Throne rather than the Oubliette; Taken Back paying her rather than a
+deed of her own; "the one he kept" and "Nimue is out of his keeping."; whether the freeing template (his tower on
+the horizon, his light still on it) is right for the one reel that plays after his light went out; the sever line's
+look in motion (gold-white cells, a quarter of a second); and Excalibur's 60% against a real horde, where a line can
+hold a dozen.
 
 ---
 

@@ -264,6 +264,13 @@ public partial class _UiShot : Node
 	private int endingAdvanceAfter = -1;
 	private int endingSeenFrame = -1;
 	private bool endingAdvanced;
+	// --ending-through=N (with --force-victory on the Throne): a press every N frames while the ending is up - the
+	// row to the credits, the credits to their end - so it hands over to the results, and then to whatever the run
+	// owes after it (GameOverScreen.AfterEnding: the freeing of the one he kept). Reports when the results are held
+	// for those reels and when they come back, so the order can be read from the log.
+	private int endingThroughEvery = -1;
+	private int endingLastPress = -1;
+	private bool reelsHeldSeen, reelsResumedSeen;
 	// --choir=note|dip|revive[,K] (with --rush-steps=1 on the Sunken Cave): K frames (default 30) after the
 	// Hollow Choir has landed, one of the three things Eric asked of it (2026-11-01) is made to happen, so
 	// a --burst can follow it: NOTE, the three voices sing a note at him in turn (the gesture, then the
@@ -1449,6 +1456,8 @@ public partial class _UiShot : Node
 			}
 			else if (arg.StartsWith("--ending-advance="))
 				endingAdvanceAfter = int.Parse(arg.Substring("--ending-advance=".Length));
+			else if (arg.StartsWith("--ending-through="))
+				endingThroughEvery = int.Parse(arg.Substring("--ending-through=".Length));
 			else if (arg.StartsWith("--choir="))
 			{
 				string[] scene = arg.Substring("--choir=".Length).Split(',');
@@ -2735,6 +2744,33 @@ public partial class _UiShot : Node
 	// --dark-wizard and --ending-advance (above): staged once, from the frame loop.
 	private void TickDarkWizardShot()
 	{
+		if (endingThroughEvery > 0 && FindNodeOfType<GameOverScreen>(GetTree().Root) is GameOverScreen over)
+		{
+			if (over.Ending is ThroneEnding through)
+			{
+				if (endingSeenFrame < 0)
+				{
+					endingSeenFrame = endingLastPress = frames;
+					GD.Print($"_UiShot: the ending is up on frame {frames}, {through.StandingIds.Count} in the row: {string.Join(", ", through.StandingIds)}");
+				}
+				else if (frames - endingLastPress >= endingThroughEvery)
+				{
+					endingLastPress = frames;
+					through.Advance();
+					GD.Print($"_UiShot: a press on the ending on frame {frames} (rolling: {through.Rolling})");
+				}
+			}
+			if (over.HeldForReels && !reelsHeldSeen)
+			{
+				reelsHeldSeen = true;
+				GD.Print($"_UiShot: the ending is done and the results are held for the reels it owes, on frame {frames}");
+			}
+			else if (reelsHeldSeen && !reelsResumedSeen && !over.HeldForReels)
+			{
+				reelsResumedSeen = true;
+				GD.Print($"_UiShot: the results are back after the reels, on frame {frames}; counting: {over.Counting}");
+			}
+		}
 		if (endingAdvanceAfter >= 0 && !endingAdvanced && FindNodeOfType<GameOverScreen>(GetTree().Root)?.Ending is ThroneEnding ending)
 		{
 			if (endingSeenFrame < 0)

@@ -919,10 +919,10 @@ public partial class Player : CharacterBody2D
 		// are its fight's timing and are left as drawn (AttackTelegraph.Foreseeable).
 		"windup_15",
 		// Nimue (.ai/endgame-castle.md decision 11): the Scabbard - "ye shall lose no blood, be ye never so sore
-		// wounded" - no one hit takes more than a tenth of her max HP (Player.Scabbard.cs). An axis no other wizard
-		// owns: not a share of every hit (the Geomancer), not a chance of none (evasion), not a death refused (the
-		// Archmage) - the size of a single blow.
-		"hit_cap_10",
+		// wounded" - a body pressed against her bites a quarter less often (Player.Scabbard.cs). An axis no other
+		// wizard owns: not a share of every hit (the Geomancer), not a chance of none (evasion), not a death refused
+		// (the Archmage) - the rate at which the touching crowd wounds.
+		"bite_interval_25",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -990,7 +990,7 @@ public partial class Player : CharacterBody2D
 			case "windup_15":
 				AttackTelegraph.ForesightScale = 1f + CharacterForesightWindUpBonus;
 				return true;
-			case "hit_cap_10":
+			case "bite_interval_25":
 				characterScabbard = true;
 				return true;
 			default:
@@ -2859,9 +2859,6 @@ public partial class Player : CharacterBody2D
 		}
 		if (shieldPoints > 0 && mitigated > 0)
 			mitigated -= SpendShield(mitigated);
-		// THE SCABBARD (Nimue's passive, Player.Scabbard.cs): no one blow takes more than a tenth of her max HP. On what
-		// would really land, after armour and the shield; before Overlooked and before any HP leaves.
-		mitigated = ApplyScabbard(mitigated);
 		// OVERLOOKED (The Archmage's passive, .ai/protagonist.md): once a run, the blow that would end him misses. After
 		// armour and the shield, so it answers only a blow that would really kill; before any HP leaves, so he keeps the
 		// little he had - it heals nothing (.ai/difficulty-curve.md, the healing budget). Before an extra life, which is
@@ -4139,11 +4136,13 @@ public partial class Player : CharacterBody2D
 		// Damage-over-time for overlapping enemies
 		foreach (var enemy in overlappingEnemies)
 		{
+			// The clock between one body's bites: 0.2 s, longer under Nimue's Scabbard (Player.Scabbard.cs).
+			float bite = ContactBiteSeconds;
 			if (!enemyDamageCooldowns.ContainsKey(enemy))
-				enemyDamageCooldowns[enemy] = DamageCooldownSeconds; // So damage applies on next tick
+				enemyDamageCooldowns[enemy] = bite; // So damage applies on next tick
 
 			enemyDamageCooldowns[enemy] += (float)delta;
-			if (enemyDamageCooldowns[enemy] >= DamageCooldownSeconds)
+			if (enemyDamageCooldowns[enemy] >= bite)
 			{
 				// A weakened enemy can roll 0 (Enemy.ScaleOutgoingDamage, issue #66). It still swings;
 				// the touch just lands like a dodge, with no on-hurt reactions.
@@ -4154,6 +4153,7 @@ public partial class Player : CharacterBody2D
 					contactDamage = toucher.ScaleOutgoingDamage(contactDamage);
 				if (contactDamage > 0)
 				{
+					CountContactBite();
 					TakeDamage(contactDamage);
 					RepelToucher(enemy);
 				}
@@ -8828,7 +8828,7 @@ public partial class Player : CharacterBody2D
 		{
 			overlappingEnemies.Add(body);
 			// Optionally, apply damage immediately
-			if (!enemyDamageCooldowns.ContainsKey(body) || enemyDamageCooldowns[body] >= DamageCooldownSeconds)
+			if (!enemyDamageCooldowns.ContainsKey(body) || enemyDamageCooldowns[body] >= ContactBiteSeconds)
 			{
 				// The first touch, the same as every touch after it in the contact loop: the Binding
 				// Thread binds first, then Weaken and the chapter's damage scale it. It used to go straight
@@ -8839,6 +8839,7 @@ public partial class Player : CharacterBody2D
 					contactDamage = toucher.ScaleOutgoingDamage(contactDamage);
 				if (contactDamage > 0)
 				{
+					CountContactBite();
 					TakeDamage(contactDamage);
 					RepelToucher(body);
 				}

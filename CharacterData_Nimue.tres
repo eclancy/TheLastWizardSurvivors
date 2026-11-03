@@ -10,8 +10,8 @@
 ; scabbard and took the sword back. She opens on Spiritual Weapon in its Sword form - fixed, never chosen: the
 ; form she opens in is her Apotheosis's (ApotheosisCatalog VariantId, CharacterData.StartingSelection), and her
 ; Apotheosis is Excalibur, its final form. Her passive is the Scabbard - "whiles ye have the scabbard upon you, ye
-; shall lose no blood, be ye never so sore wounded" (Malory) - no one hit takes more than a tenth of her health:
-; the one axis no other wizard owns, the size of a single blow. She floats (roster.nimue, anim_sets.hover); the
+; shall lose no blood, be ye never so sore wounded" (Malory) - a body pressed against her bites a quarter less often
+; (0.25 s between bites, not 0.2): the one axis no other wizard owns, the rate at which the touching crowd wounds. She floats (roster.nimue, anim_sets.hover); the
 ; look only, her Feet collider meets water and walls as everyone's does. Her title rides the Craft line ("the Lady
 ; of the Lake" under her name), because her name alone does not say who she is and the whole of it does not fit a
 ; freed line.
@@ -24,9 +24,9 @@ StartingSpellResource = ExtResource("2")
 HealthModifier = 1.0
 SpeedModifier = 1.0
 IsUnlocked = true
-StartingPassiveId = "hit_cap_10"
+StartingPassiveId = "bite_interval_25"
 StartingPassiveName = "The Scabbard"
-StartingPassiveDescription = "No hit deals over 10% of your max HP"
+StartingPassiveDescription = "Contact damage taken lands 20% less often"
 IsLegendaryStart = false
 Portrait = ExtResource("3")
 Frames = ExtResource("4")

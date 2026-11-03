@@ -69,6 +69,9 @@ public partial class FrameProfiler : Node
 		// Thorned Vine: every vine's _Process - its whip stroke, its hit test and its paint
 		// (scripts/ThornVine.cs, the strikes' damage included).
 		ThornVine,
+		// Spiritual Weapon: the weapons' _Process - every swing and blow, Excalibur's line and its bolt sweep
+		// included - and the air's draw, where the lines are painted (scripts/SpiritualWeapon.cs).
+		SpiritWeapon,
 		Harness,
 		Count,
 	}
@@ -76,7 +79,7 @@ public partial class FrameProfiler : Node
 	private static readonly string[] SectionNames =
 	{
 		"enemy", "separation", "move", "takeDamage", "death", "dmgText", "hitFx",
-		"player", "spells", "game", "spawn", "orbs", "textAnim", "terrain", "nav", "starfall", "stormsweep", "runes", "mire", "chain", "vine", "harness",
+		"player", "spells", "game", "spawn", "orbs", "textAnim", "terrain", "nav", "starfall", "stormsweep", "runes", "mire", "chain", "vine", "spirit", "harness",
 	};
 
 	/// <summary>True while a profiler is attached and counting.</summary>

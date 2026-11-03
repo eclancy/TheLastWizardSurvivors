@@ -742,7 +742,7 @@ it keeps its design.
 | D4 | The Gaoler's Ledger | planned, keepsake | 10-12 | guarded, then touch | a lectern in an empty hall | a chest; the ledger, once (4.3) |
 | D5 | **The Cold Forge** | **new, vault** | 5-7 chunks, in a hall room | **cull**: kill 40 enemies standing on the forge's hearth ring (a 180 px circle in front of the anvil); each kill sets an ember in the dead coals until the forge roars | far: the walls' sconces give way to soot-stained faces and dropped shackles from two chunks out; near: the anvil, with a warm glint on the horn | **Molten Shard**; later runs a chest |
 | D6 | **The Empty Cell** | **new** | mid | **untouched**: stand in the one cell whose door stands open for 4 s without being struck | a cell door open in a corridor of shut ones; the name scratched off the lintel | heal 50%; page. Absence, never a body |
-| D7 | **The Oubliette** | **new** | mid, in a dead-end hall room | **untouched** for 5 s on a grate in the floor | a draught of cold motes rising through the grate; a voice below | 150 Arcane Energy, once; when Nimue is built, her card turns from a sealed blank to a silhouette here (`.ai/endgame-castle.md`, decision 11) |
+| D7 | **The Oubliette** | **new** | mid, in a dead-end hall room | **untouched** for 5 s on a grate in the floor | a draught of cold motes rising through the grate; a voice below | 150 Arcane Energy, once; when it is built, the find is the earlier reveal of Nimue (built 2026-11-03, revealed by the Throne opening until then - `.ai/endgame-castle.md`, decision 11, its Built note) |
 
 **D5 built (2026-10-30, `wip/vaults-a`, in the Dungeon as it is now):** `ColdForge.cs`, art
 `tools/art/secret_dungeon.py`. The placer snaps a maze site to a corridor cell, where a 360 px ring does not
