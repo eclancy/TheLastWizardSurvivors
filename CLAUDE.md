@@ -194,7 +194,7 @@ Order matters, and passive-spell work depends on it:
 7. Flat reduction — `Σ PassiveSpellEffect.GetFlatDamageReduction()` + Metal.
 8. `CurrentHP -= mitigated`.
 9. Bastion of Spikes retaliation if HP drops below 30%.
-10. Death: spend an extra life and heal to `MaxHP / 2`, otherwise emit `Died`.
+10. Death: spend an extra life and heal to `MaxHP / 2` (to `MaxHP` the first time a run spends one under Morgan le Fay's Avalon, `Player.ExtraLifeHeal`), otherwise emit `Died`.
 
 `DamageTaken` carries the **pre-mitigation** amount. A passive that should scale off damage *actually dealt* must read the HP delta, not the signal argument.
 

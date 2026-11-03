@@ -112,6 +112,7 @@ All five events resolve through `SideEvent.Succeed`, so all five now get the sam
 | The Five-Pointed Seal | Abe no Seimei (wizard) | a chest | "The seal is broken - a chest was left inside it" |
 | The great anvil | Wayland the Smith (wizard) | a chest | "The chains are broken - a chest was left at the anvil" |
 | The nine mouths | the Cumaean Sibyl (wizard) | a chest | "Her mouth falls quiet - a chest was left in it" |
+| The barge | Morgan le Fay (wizard) | a chest | "The barge comes ashore empty - a chest was left in it" |
 
 To photograph any of them: `_UiShot --scene=res://scenes/node_2d_game.tscn --stage=N --win-event`
 (add `--event-chest` for the chest path on a save that lacks the discovery). It sets
@@ -380,6 +381,7 @@ player walked toward the sound. Fixed slots, no allocation.
 | the caravan | the bell walking along the edge, swinging, ringing out either side | each strike |
 | the seal | strips of written paper, violet, tumbling in and falling, charring at both ends in their second half | each gust (`sfx._PAPER_GUSTS` = `StageHintCue.PaperGusts`) |
 | the mouths | written leaves, pale with blue ink, blown in flat and fast on a cold draught, the first on the line to her | each voice of the call (`sfx._SIBYL_VOICES` = `StageHintCue.SibylVoices`) |
+| the barge | sea mist rolling in low along the edge, and from the first knock a small barge hung shimmering above the water among it, in wind's ramp | each knock of the hull (`sfx._HULL_KNOCKS` = `StageHintCue.HullKnocks`) |
 
 `hint_ice_song` was rebuilt to be heard as singing (six notes, A G F G E D, `.ai/audio-manifest.md`).
 
@@ -412,6 +414,7 @@ question. `RegressionChecks.ValidateStageHints` warns on any line that contains 
 | Mystic Ruins | `five_pointed_seal` | sound (Abe no Seimei, unnamed) | `hint_paper_wind` (paper) | "Strips of paper on the wind, in a hand you do not know." / "More paper, burning at the edges as it falls." / "Still the paper comes, from the same quarter." |
 | The Emberdeep | `great_anvil` | sound (Wayland the Smith, unnamed) | `hint_anvil` (sparks) | "Hammer on anvil, slow and steady, somewhere below." / "The hammer again. Whoever swings it is very tired." / "It does not stop. It is not allowed to." |
 | Sunken Cave | `nine_mouths` | sound (the Cumaean Sibyl, unnamed) | `hint_sibyl_voice` (writ) | "Leaves on a cold draught, every one written on." / "A woman's voice from far down, in more places than one." / "The leaves again, written faster now." |
+| The Last Bridge | `the_barge` | sound (Morgan le Fay, unnamed) | `hint_hull_knock` (mist) | "A boat on the water below, where no boat could be." / "The boat again, nearer the bridge." / "Its lantern is still lit." |
 
 Tituba speaks in her own character: a prisoner taken from Barbados and jailed on an accusation,
 patient (her passive is *Patience*) and nobody's witch - so she asks for help and says she has
@@ -560,6 +563,11 @@ chapter's line in `SideEventDirector` is a list, its original event first:
   apron, his hammered-iron wings folded on his back, a brace and a broken shackle on his lamed leg. Opens on
   **Iron Palisade**, the stakes he forged. Passive *Wings*: +10% move speed. Freed in the Emberdeep, the gate
   chapter, so only the Throne counts him.
+- **Morgan le Fay** (2026-11-03), the enchantress of Avalon, the queen in the black barge: upright into the wind
+  off the strait, her hair and a lichen-green mantle streamed back, the spell's rune of rime before her raised
+  palm. Opens on **Sleet Runes** (Ice+Wind, R2). Passive *Avalon*: the first extra life a run spends heals to
+  full, not half. Freed by keeping pace with her barge under the Last Bridge (`.ai/chapter-wizards.md` 4.9);
+  counted at the Throne's gate only.
 - **The Cumaean Sibyl** (2026-11-02), the prophetess of Cumae, old, hooded, a bronze jar of arcane light on
   her crook. Opens on **Arcane Explosion** - which, alone, keeps its own time until she holds a second spell.
   Passive *Prophecy*: +3 rerolls a run. Freed at the nine mouths; counted at the Throne's gate only.
@@ -584,7 +592,7 @@ A wizard's card on the character select is in one of three states (`CharacterSel
 
 **The rescued wizards are secret until the chapter that holds them opens**: Tituba until the
 Cursed Dungeon (`stage_1`, opened by beating Elderbark), Väinämöinen until the Frozen Waste
-(`stage_5`), Abe no Seimei until the Mystic Ruins (`stage_4`), Wayland the Smith until the Emberdeep (`stage_7`), the Cumaean Sibyl until the Sunken Cave (`stage_2`). The reveal is data: `UnlockDefinition.IsSecret` and `RevealStageId`, set through
+(`stage_5`), Abe no Seimei until the Mystic Ruins (`stage_4`), Wayland the Smith until the Emberdeep (`stage_7`), the Cumaean Sibyl until the Sunken Cave (`stage_2`), Morgan le Fay until the Last Bridge (`stage_11`). The reveal is data: `UnlockDefinition.IsSecret` and `RevealStageId`, set through
 `DiscoveryCharacter(..., secretUntilStage:)`. Why that condition:
 
 - Before the chapter opens the player cannot act on anything about him, and the stage list does
