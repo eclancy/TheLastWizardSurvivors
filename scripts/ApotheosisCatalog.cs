@@ -221,6 +221,23 @@ public static class ApotheosisCatalog
 				"Feed: feed it early. It remembers. What it eats never comes off it.",
 				new Color(0.66f, 0.92f, 0.42f), NoVisualScale),
 		},
+		// Paracelsus, led out of the gibbet's cage to the ferry in the Blighted Swamp (.ai/chapter-wizards.md 4.4). "Distil"
+		// was nobody's: the physician who wrote that the dose makes the poison distils the plague as it goes - each jump
+		// reaches half as many as the last and gives each twice the dose, 8 then 4, 2 and 1, and the one at the end carries
+		// sixteen times what the first did and spreads nothing (Contagion.TheDoseId). Nothing spreads wider (burn) or links
+		// (link): the plague narrows. A boss is still a carrier, at most x4 (Contagion.DoseBossGeneration): it does not die
+		// of the dose, so uncapped it would hold the last carrier's x16 for a fight. Poison, the spell's only element; no
+		// card on Contagion trades it away (Marsh Fever adds Water beside it). No visual scale: the marks and the jumps are
+		// drawn from the reach they infect.
+		new()
+		{
+			CharacterId = "paracelsus", SpellId = "contagion",
+			Element = Element.Poison, Verb = "distil",
+			Form = Make(Contagion.TheDoseId, "The Dose", Element.Poison,
+				$"Each jump of the plague reaches half as many and doubles its dose: {Contagion.DoseFirstJump}, 4, 2, then 1. The last carrier dies hardest.",
+				"Distil: the last one dies hardest. Fewer carriers each jump, each dosed twice over; a boss at most x4.",
+				new Color(0.86f, 0.96f, 0.55f), NoVisualScale),
+		},
 		// The dark wizard, taken on the hardest road (.ai/dark-wizard-playable.md). "Take" was nobody's, and it is
 		// his verb in the fight and in the story: whatever his lanes kill gives up its light too, and it comes
 		// home to be caught in its turn (TakingLanes; TakenLight.MaxInAir in the air at most). Nothing moves the

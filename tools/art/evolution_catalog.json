@@ -7815,6 +7815,45 @@
       "verb": "feed"
     },
     {
+      "spell": "contagion",
+      "variant": "",
+      "spell_name": "Contagion",
+      "spell_icon": "res://assets/bonelight/ui/spells/contagion-poison.png",
+      "spell_elements": {
+        "Poison": 1
+      },
+      "milestone": 9,
+      "id": "contagion_the_dose",
+      "name": "The Dose",
+      "description": "Each jump of the plague reaches half as many and doubles its dose: 8, 4, 2, then 1. The last carrier dies hardest.",
+      "synergy": "Apotheosis",
+      "visual_tag": "Apotheosis",
+      "gains": {
+        "Poison": 1
+      },
+      "replaces": "",
+      "effect": "None",
+      "effect_value": 0,
+      "rider": "None",
+      "damage": 1.25,
+      "damage_bonus": 0,
+      "cooldown": 1,
+      "projectiles": 0,
+      "area": 1,
+      "scale": 1,
+      "speed": 1,
+      "pierce": 0,
+      "arcs": 0,
+      "branches": 0,
+      "knockback": 0,
+      "slow": 0,
+      "poison": 0,
+      "range": 0,
+      "tint": "dbf58c",
+      "character": "paracelsus",
+      "verb": "distil"
+    },
+    {
       "spell": "the_taking",
       "variant": "",
       "spell_name": "The Taking",
