@@ -227,5 +227,7 @@ public partial class Enemy
 
 	// The turned look: lit warm by the stone of light - the light ramp's hot stop on a body that is, for three
 	// seconds, not his. Composes with the hit flash and the elite tints as every status look does (SelfModulate).
-	private static readonly Color TurnedLook = new(1.36f, 1.20f, 0.74f);
+	// Strong enough to read on the dark bodies of a crowd (the first, 1.36 / 1.20 / 0.74, was lost on the Fields' cast in
+	// the photographs); the mark over the head is ElementalPulse.DrawTurned's.
+	private static readonly Color TurnedLook = new(1.6f, 1.34f, 0.6f);
 }

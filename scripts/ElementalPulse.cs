@@ -658,7 +658,11 @@ public partial class ElementalPulse : Area2D
 	public const float TeethThrowReach = 2.6f;
 	public const float TeethStrikeRadius = 76f;
 	public const int TeethTurnPerStone = 8;
-	public const float TeethStoneShare = 1.0f;
+	// A fifth of the pulse: a stone, not a bomb. At the first guess (the whole pulse) the stone killed most of what it
+	// struck - the flare at level 8 with its Ascension one-shots the crowd - and so turned 0.43 a stone: the seek bot
+	// standing still after the form threw 178 stones in six minutes and turned 77, whose 45 blows killed 23. What it
+	// strikes must live to turn.
+	public const float TeethStoneShare = 0.2f;
 	public const float TeethFlight = 0.5f;
 	private const float TeethFade = 0.3f;
 	private const int MaxStones = 4;
@@ -799,9 +803,44 @@ public partial class ElementalPulse : Area2D
 				s.Live = false;
 			stones[i] = s;
 		}
+		// The turned are marked while any is (DrawTurned), so the canvas redraws for them too.
+		any |= Enemy.TurnedCount > 0;
 		if (any || stonesDrawn)
 			stoneCanvas.QueueRedraw();
 		stonesDrawn = any;
+	}
+
+	// WHO IS FIGHTING WHOM. A turned body is lit warm (Enemy.TurnedLook), but a tint on a dark body in a crowd is a
+	// faint thing; so over each one, while it lasts, a small mark of the stone's light flickers at its head, and a
+	// short run of light leans from it toward the one it is going for - a third of the way, never the whole line, so
+	// a knot of them reads as bodies turned on each other and not as a web. At most Enemy.MaxTurnedAtOnce; nothing is
+	// allocated, and the walk of the registry is skipped outright while nobody is turned.
+	private void DrawTurned()
+	{
+		if (Enemy.TurnedCount <= 0)
+			return;
+		float t = (float)Time.GetTicksMsec() * 0.001f;
+		foreach (Enemy e in EnemyRegistry.Snapshot)
+		{
+			if (!IsInstanceValid(e) || !e.IsTurned)
+				continue;
+			Vector2 at = e.GlobalPosition;
+			Vector2 head = at + new Vector2(0f, -38f);
+			bool bright = ((int)(t * 8f + e.GetInstanceId() % 5)) % 2 == 0;
+			stoneCanvas.DrawRect(WhipLimb.Cell(head, 6f), bright ? LightRamp.Hot : LightRamp.Mid);
+			stoneCanvas.DrawRect(WhipLimb.Cell(head, 2f), LightRamp.Core);
+			if (e.TurnedTarget is not Enemy foe)
+				continue;
+			Vector2 to = foe.GlobalPosition - at;
+			float d = to.Length();
+			if (d < 1f)
+				continue;
+			Vector2 dir = to / d;
+			float reach = MathF.Min(d * 0.35f, 46f);
+			for (float k = 10f; k < reach; k += 6f)
+				stoneCanvas.DrawRect(WhipLimb.Cell(at + new Vector2(0f, -14f) + dir * k, WhipLimb.Grid * 2f),
+					k < reach * 0.5f ? LightRamp.Hot : LightRamp.Edge);
+		}
 	}
 
 	// The stone comes down: everything under it struck, then the ordinary ones nearest it turned.
@@ -868,6 +907,7 @@ public partial class ElementalPulse : Area2D
 
 	private void DrawStones()
 	{
+		DrawTurned();
 		const int trail = 9;
 		for (int i = 0; i < MaxStones; i++)
 		{
