@@ -739,8 +739,11 @@ public partial class ElementalBolt : Area2D
 			{
 				if (node != enemy && node is Node2D nearby2D && IsInstanceValid(nearby2D) && GlobalPosition.DistanceTo(nearby2D.GlobalPosition) <= effectiveAoERadius)
 				{
+					// Not credited to the spell (no source: no rider, no impact sound per body), but numbered in
+					// its element like the bolt that burst (DamageNumberInk).
 					if (player != null)
-						player.DealDamageToEnemy(nearby2D, Math.Max(1, Mathf.RoundToInt(damage * 0.75f)), critBonus);
+						player.DealDamageToEnemy(nearby2D, Math.Max(1, Mathf.RoundToInt(damage * 0.75f)), critBonus,
+							numberElement: (DamageSource ?? SpellData)?.GetNumberElement());
 					else if (nearby2D.HasMethod("TakeDamage"))
 						// Two arguments - see the note in KidDog.TickBite. A one-argument Call
 						// here failed silently on the no-player path.

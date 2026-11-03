@@ -1196,6 +1196,9 @@ public partial class _UiShot : Node
 			// is only set in memory, the save is not written.
 			else if (arg == "--damage-numbers=off")
 				DisplaySettings.StoreDamageNumbers(null, false);
+			// --number-swatch: every damage number's ink at once, over the chapter's bodies (_UiShot.NumberSwatch.cs).
+			else if (arg == "--number-swatch")
+				numberSwatch = true;
 			else if (arg.StartsWith("--boss-death"))
 			{
 				bossDeathOffset = new Vector2(0f, -190f);
@@ -3051,7 +3054,7 @@ public partial class _UiShot : Node
 				HoldShowcase();
 			else if (stageCount > 0)
 				HoldForStage();
-			else if (bossDeathOffset != null || lightProbe)
+			else if (bossDeathOffset != null || lightProbe || numberSwatch)
 			{
 				// --boss-death: he stands still, so the camera does and the fall is photographed where
 				// it lands. (He cannot die meanwhile: --rush-steps keeps him whole.) --light-probe: still,
@@ -3063,6 +3066,12 @@ public partial class _UiShot : Node
 				DriveMovement();
 			if (lightProbe && !lightProbeStarted && frames >= WarmupFrames / 3)
 				StartLightProbe();
+			// From the run's first frames: a wizard left to fight first kills something, and the deed it
+			// announces covers the swatch at the shutter.
+			if (numberSwatch && swatch == null && frames >= 2)
+				StartNumberSwatch();
+			if (swatch != null && !swatch.Struck && frames >= WarmupFrames - fxLead)
+				swatch.Strike();
 			if (cover && !stagePlaced && frames >= WarmupFrames / 3)
 				PlaceCoverRing();
 			else if (stageCount > 0 && !cover && !stagePlaced && frames >= WarmupFrames - fxLead)

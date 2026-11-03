@@ -2482,7 +2482,13 @@ public partial class Player : CharacterBody2D
 		return true;
 	}
 
-	public int DealDamageToEnemy(Node enemy, int baseDamage, float bonusCritChance = 0f, bool allowElementalChain = true, SpellData source = null)
+	/// <param name="numberElement">
+	/// The element the hit's damage number is written in when it is not the source spell's
+	/// (DamageNumberInk): a hit that carries an element but no spell - the Lightning tier's chain, the boon
+	/// chain's steel - or a spell's hit that is deliberately not credited to it (ElementalBolt's splash).
+	/// Colour only: it changes nothing the hit does.
+	/// </param>
+	public int DealDamageToEnemy(Node enemy, int baseDamage, float bonusCritChance = 0f, bool allowElementalChain = true, SpellData source = null, Element? numberElement = null)
 	{
 		if (source != null && enemy is Node2D impactTarget && IsInstanceValid(impactTarget))
 		{
@@ -2569,7 +2575,9 @@ public partial class Player : CharacterBody2D
 
 		if (enemy is Enemy struck)
 		{
-			struck.TakeDamage(finalDamage, isCrit);
+			// The number wears the element of what dealt it (DamageNumberInk). GetNumberElement is cached on the
+			// spell, so this is a few reference compares and an array read - nothing allocated per hit.
+			struck.TakeHit(finalDamage, isCrit, DamageNumberInk.For(numberElement ?? source?.GetNumberElement(), isCrit));
 			// The Pricking Pin marks what a crit struck - after it lands, so the crit is not raised.
 			if (isCrit)
 				PrickOnCrit(struck);
@@ -2689,7 +2697,7 @@ public partial class Player : CharacterBody2D
 
 		lightningChainHitCounter = 0;
 		int chainDamage = Math.Max(1, Mathf.RoundToInt(sourceDamage * damageMultiplier));
-		DealDamageToEnemy(second, chainDamage, allowElementalChain: false);
+		DealDamageToEnemy(second, chainDamage, allowElementalChain: false, numberElement: Element.Lightning);
 		if (second.HasMethod("ApplyShock"))
 			second.Call("ApplyShock", 0.18f, 6.0f, 60.0f);
 	}
@@ -3187,8 +3195,9 @@ public partial class Player : CharacterBody2D
 			if (GlobalPosition.DistanceTo(enemy.GlobalPosition) > BoonReactionRadius)
 				continue;
 
+			// Metal's number, as the burst below throws Metal's steel for it.
 			if (retaliates && node.HasMethod("TakeDamage"))
-				DealDamageToEnemy(node, boonRetaliateDamage);
+				DealDamageToEnemy(node, boonRetaliateDamage, numberElement: Element.Metal);
 
 			if (chills && node.HasMethod("ApplySlow"))
 				node.Call("ApplySlow", boonChillMultiplier, BoonChillDurationSeconds);
@@ -3894,7 +3903,7 @@ public partial class Player : CharacterBody2D
 			return;
 
 		int arcDamage = Math.Max(1, Mathf.RoundToInt(damage * StormboundArcDamageMultiplier));
-		DealDamageToEnemy(target, arcDamage, allowElementalChain: false);
+		DealDamageToEnemy(target, arcDamage, allowElementalChain: false, numberElement: Element.Lightning);
 		if (target.HasMethod("ApplyShock"))
 			target.Call("ApplyShock", 0.16f, 5.0f, 55.0f);
 	}

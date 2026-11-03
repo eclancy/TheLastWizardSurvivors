@@ -295,6 +295,74 @@ later. One drawn burst can serve every element by remapping its ramp.
 `ElementColors.GetColor` should return the **mid** of each row, so the existing tint-and-icon
 call sites line up with the effect art instead of drifting from it.
 
+### Damage numbers wear the element
+
+Decided 2026-11-03 (`.ai/genre-lessons.md` item 4: Wizard Survivors tints its numbers per spell, and
+every number of ours was red whatever struck). The code is `scripts/DamageNumberInk.cs`; the measurement
+is the "damage number" rows of `tools/art/ui_contrast.py`; `RegressionChecks.ValidateDamageNumberInks`
+holds both.
+
+- **What colours a number.** The element of what dealt it. For a spell, `SpellData.GetNumberElement`:
+  its element path if it has taken one (a branch is repainted in that element, so Riptide after
+  Brackish Tide numbers in Poison), otherwise its heaviest element, a tie going to the one its `.tres`
+  lists first - the element the Spell Index files it under. One colour per spell, so a spell is always
+  the same colour. The impact sound still picks by enum order on a tie (`SfxCatalog.DominantElement`),
+  so ten dual spells sound one element and number in the other; worth unifying if anyone notices.
+- **Hits with an element but no spell** number in that element: a poison tick (Poison, whoever
+  applied it), the Lightning tier's chain and the Stormbound set's arc (Lightning), the boon chain's
+  retaliation (Metal, as its burst is), the Fulgurite's storm bolts (Lightning), a bolt's impact splash
+  (`ElementalBolt.AoEOnImpact`, which is deliberately not credited to the spell: its spell's element).
+- **Hits with no element** - Bastion of Spikes, the Iron Fang, the Sketchbook's dog, a spell that names
+  none - keep the red every number was.
+- **A turned enemy's blow** on its own kind is not his hit at all, and is written in bone's base
+  (`#9AA4B8`, 8.0:1), the horde's own colourless material. It was a warm gold, which is now Light's
+  ink (7.3 apart); bone's base is 12.7 from the nearest element ink.
+- **A crit** is one stop hotter on the same ramp, and keeps the "!" and the 1.4x size. It used to be
+  gold for every spell; now a crit still says which spell it was.
+- **The numbers the player takes** do not exist (only enemies throw numbers), so nothing changes there.
+
+**Legibility: an outline, and a stop chosen per element.** No colour clears 4.5:1 on both the
+Sketchbook's paper and the darkest floor stone, Ice's mid is 1.6:1 on white paper, and a number rises
+from the body it struck - often a skeleton's near-white bone. So every number is outlined in occlusion
+(`#05070C`, opaque, `outline_size` 4 before the label's 2x), and each element writes in the stop of its
+own ramp that clears 4.5:1 against that outline. With the outline opaque, the ground never touches the
+letterforms, so one table serves every chapter, dark or pale. Size, rise and fade are unchanged.
+Sampled from the photographs (the colour covering most of the frame's middle), the floors are darker
+than their names: the Dungeon and the Cave `#1E2634`, the Forest `#24404A`, the Frozen Waste `#38404F`,
+the Scorched Sands `#2E2208`; only the Sketchbook's paper (`#DDD5C0`) is pale, and there Water's crit
+without the outline would be 1.02:1. **What it costs:** one draw call per number on screen (the outline is its own pass: 27 numbers drew
+27 calls without it and 54 with it, `_UiShot --number-swatch`'s `SWATCH draws` lines), and nothing on
+the CPU that the harness can see (`.ai/performance.md` method, 8 minutes, seed 1234, last 90 s: number
+spawn 108 / 88 us a call before / after, frame 9.49 / 9.39 ms). The ink is the label's `Modulate`,
+set per hit as before; the outline is set once per pooled label.
+
+| Element | stop | ink | vs outline | crit (one hotter) | vs outline |
+|---|---|---|---|---|---|
+| Fire | mid | `#E87A1A` | 6.9 | hot `#FFC848` | 13.1 |
+| Ice | mid | `#7FDCF8` | 13.0 | hot `#C8F4FF` | 17.1 |
+| Arcane | hot | `#E8C0FF` | 12.9 | core `#FFF0FF` | 18.4 |
+| Darkness | hot | `#B48CE8` | 7.5 | core `#E8D8FF` | 15.1 |
+| Light | edge | `#FFC63C` | 12.9 | mid `#FFF0A8` | 17.5 |
+| Grass | mid | `#9BD455` | 11.5 | hot `#CFEE94` | 15.7 |
+| Earth | mid | `#C99A5E` | 7.9 | hot `#E8C48C` | 12.2 |
+| Wind | edge | `#4FAE9E` | 7.6 | mid `#B4EEE0` | 15.6 |
+| Lightning | mid | `#FFF06A` | 17.2 | hot `#FFF8B0` | 18.5 |
+| Poison | hot | `#DCF48C` | 16.7 | core `#F8FFD8` | 19.5 |
+| Metal | mid | `#C4D4E8` | 13.4 | hot `#EAF2FA` | 17.8 |
+| Water | mid | `#6FB8F0` | 9.4 | hot `#B4DCFF` | 14.0 |
+| no element | - | `#FF3333` | 5.5 | ember hi `#FFC0A8` | 12.8 |
+
+Why not every mid: four pairs of ramps share a hue family. At the mids Grass and Poison are 5.2 apart
+(CIEDE2000) and Darkness's mid fails the outline (4.2:1), leaving its hot 3.8 from Arcane's mid. Moving
+one of each pair to another stop of its own ramp - Poison to its pale hot, Light to its gold edge,
+Arcane to its pale hot, Wind to its teal edge, out of the pale cluster Ice and Metal sit in - puts the
+closest pairs at 10.5 (Lightning and Poison), 10.6 (Grass and Poison) and 12.7 (Ice and Water). Grass
+went to its deep edge first (`#4A8C3A`, every pair 12.7 apart), but on the Forest's dark teal floor, its
+own chapter, it was 2.2:1 against the ground itself and the one number in the photographs that had to be
+looked for; moving Poison instead keeps both bright. The weakest ink is now the untyped red, 5.5:1.
+Photographs of every ink on six chapters, PC and phone: `_UiShot --number-swatch`
+(`scripts/_UiShot.NumberSwatch.cs`).
+
 ### The player's spells carry no area markers
 
 Decided 2026-10-23 from a playtest: *"remove aoe markers from abilities, their animations should

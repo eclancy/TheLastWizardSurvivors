@@ -1442,7 +1442,7 @@ public partial class Enemy : CharacterBody2D
 			{
 				poisonTickTimer = 0f;
 				if (poisonDamagePerTick > 0)
-					TakeDamage(DosedPoisonTick(poisonDamagePerTick));
+					ApplyHit(DosedPoisonTick(poisonDamagePerTick), false, PoisonTickInk);
 			}
 			if (poisonTimeRemaining <= 0f)
 			{
@@ -2130,8 +2130,20 @@ public partial class Enemy : CharacterBody2D
 
 	public void TakeDamage(int amount, bool isCrit = false) => ApplyHit(amount, isCrit, null);
 
-	// Every hit an enemy takes: the player's and the world's through TakeDamage, a turned neighbour's blow through
-	// TakeTurnedBlow (Enemy.Turned.cs), which differs only in the colour of its number.
+	/// <summary>
+	/// The same hit as <see cref="TakeDamage"/>, its number written in <paramref name="numberInk"/> - the
+	/// element of what dealt it (DamageNumberInk.For). Player.DealDamageToEnemy lands every one of the
+	/// player's hits through here. A separate name, not a third argument on TakeDamage: Godot matches a
+	/// duck-typed Call by name and argument count, and every Call("TakeDamage", n, crit) in the game would
+	/// stop finding it.
+	/// </summary>
+	public void TakeHit(int amount, bool isCrit, Color numberInk) => ApplyHit(amount, isCrit, numberInk);
+
+	// A poison tick is Poison's own status doing the damage, whoever applied it, so its number is Poison's.
+	private static readonly Color PoisonTickInk = DamageNumberInk.For(Element.Poison, false);
+
+	// Every hit an enemy takes: the player's through TakeHit, the world's through TakeDamage, a turned neighbour's
+	// blow through TakeTurnedBlow (Enemy.Turned.cs). They differ only in the colour of the number.
 	private void ApplyHit(int amount, bool isCrit, Color? numberColor)
 	{
 		if (isDying || IsHeld)
@@ -2150,7 +2162,9 @@ public partial class Enemy : CharacterBody2D
 		var textStart = FrameProfiler.Begin();
 		if (floatingTextScene != null && DisplaySettings.DamageNumbers)
 		{
-			Color color = numberColor ?? (isCrit ? new Color(1f, 0.85f, 0.1f, 1f) : new Color(1, 0.2f, 0.2f, 1)); // Yellow for crits, red otherwise
+			// The element of what dealt it (DamageNumberInk); a hit that names none keeps the old red, and a crit
+			// burns a stop hotter. The "!" and the 1.4x size still mark every crit.
+			Color color = numberColor ?? DamageNumberInk.For(null, isCrit);
 			string text = isCrit ? $"{amount}!" : amount.ToString();
 			// Under the enemy's parent so it persists after the enemy is freed. Pooled - see FloatingText.
 			FloatingText.Show(GetParent(), floatingTextScene, text, color, GlobalPosition, isCrit ? 1.4f : 1f);

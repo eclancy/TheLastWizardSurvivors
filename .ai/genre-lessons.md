@@ -127,5 +127,7 @@ edge to edge, a flat dark-teal ground with soft blotches, about eight bushes, on
 1. The light pool, with warm spells as their own small lights.
 2. A foliage density pass on the Forest as the pilot.
 3. Non-interactive landmarks per chapter.
-4. Element-coloured damage numbers (Wizard Survivors tints them per spell; ours are red whatever the spell).
+4. Element-coloured damage numbers (Wizard Survivors tints them per spell; ours were red whatever the spell).
+   **Built 2026-11-03** (`scripts/DamageNumberInk.cs`; the rule and its edge cases are `.ai/art-direction.md`,
+   "Damage numbers wear the element").
 5. Measure the late-run enemy count against the phone before deciding on more.

@@ -23,6 +23,10 @@ public partial class FloatingText : Node2D
 	private const int MaxPooled = 256;
 	private static readonly Stack<FloatingText> pool = new();
 
+	private static readonly StringName FontColorName = "font_color";
+	private static readonly StringName FontOutlineColorName = "font_outline_color";
+	private static readonly StringName OutlineSizeName = "outline_size";
+
 	/// <summary>
 	/// Shows <paramref name="text"/> rising from <paramref name="globalPosition"/> under
 	/// <paramref name="parent"/>, reusing a faded number from the pool when there is one there.
@@ -78,6 +82,13 @@ public partial class FloatingText : Node2D
 		ZIndex = DrawLayers.FloatingText;
 		label = new Label();
 		label.Text = Text;
+		// The ink is the Modulate (set per hit, below and in Restart), so the face itself is white and the
+		// number shows its ink exactly. The outline is what keeps every element's ink readable on every
+		// ground - the Sketchbook's paper and a skeleton's bone as much as the darkest floor - and is set
+		// once per label: a pooled number keeps it (DamageNumberInk).
+		label.AddThemeColorOverride(FontColorName, Colors.White);
+		label.AddThemeColorOverride(FontOutlineColorName, DamageNumberInk.Outline);
+		label.AddThemeConstantOverride(OutlineSizeName, DamageNumberInk.OutlineSize);
 		label.Modulate = Color;
 		label.HorizontalAlignment = HorizontalAlignment.Center;
 		// Set label scale

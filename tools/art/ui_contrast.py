@@ -570,6 +570,49 @@ def hud_pairs(add):
             add("HUD slot backing on %s" % ground_name, backing, "rim, " + rim_name, rim, GRAPHIC)
 
 
+# --- the damage numbers (scripts/DamageNumberInk.cs, .ai/art-direction.md "Damage numbers wear the element") --
+# Copied from DamageNumberInk and ElementColors.GetRamp: change a stop there, change it here. Every number
+# is outlined in occlusion, opaque, so its letterforms are read against the outline whatever it rose
+# from - the Sketchbook's paper, a skeleton's bone, the Dungeon's black - and that is the ground each ink
+# is measured on, at the body-text floor (a number is large, but it is read moving and fading).
+NUMBER_OUTLINE = h2rgb("#05070C")
+ELEMENT_RAMPS = (
+    ("Fire", "#FFF4D0", "#FFC848", "#E87A1A", "#B8381A"),
+    ("Ice", "#F4FEFF", "#C8F4FF", "#7FDCF8", "#2E7FC4"),
+    ("Arcane", "#FFF0FF", "#E8C0FF", "#C08CFF", "#7A3FD4"),
+    ("Darkness", "#E8D8FF", "#B48CE8", "#8A5CC4", "#35205C"),
+    ("Light", "#FFFFFF", "#FFF8D8", "#FFF0A8", "#FFC63C"),
+    ("Grass", "#F4FFDC", "#CFEE94", "#9BD455", "#4A8C3A"),
+    ("Earth", "#FFF0D8", "#E8C48C", "#C99A5E", "#7A5024"),
+    ("Wind", "#FFFFFF", "#EAFCF6", "#B4EEE0", "#4FAE9E"),
+    ("Lightning", "#FFFFF0", "#FFF8B0", "#FFF06A", "#E0B02A"),
+    ("Poison", "#F8FFD8", "#DCF48C", "#B4E04A", "#6B9420"),
+    ("Metal", "#FFFFFF", "#EAF2FA", "#C4D4E8", "#5E7290"),
+    ("Water", "#F0FAFF", "#B4DCFF", "#6FB8F0", "#2A5FC4"),
+)
+RAMP_STOPS = ("core", "hot", "mid", "edge")
+# DamageNumberInk.StopFor; a crit is one stop toward the core.
+NUMBER_STOPS = {"Fire": "mid", "Ice": "mid", "Arcane": "hot", "Darkness": "hot", "Light": "edge", "Grass": "mid",
+                "Earth": "mid", "Wind": "edge", "Lightning": "mid", "Poison": "hot", "Metal": "mid", "Water": "mid"}
+NUMBER_UNTYPED = h2rgb(f2h(1.0, 0.2, 0.2))
+NUMBER_UNTYPED_CRIT = h2rgb("#FFC0A8")       # ember hi
+NUMBER_TURNED = h2rgb(f2h(0.604, 0.643, 0.722))  # DamageNumberInk.TurnedBlow: bone base
+
+
+def damage_number_pairs(add):
+    for row in ELEMENT_RAMPS:
+        name = row[0]
+        stop = RAMP_STOPS.index(NUMBER_STOPS[name])
+        crit = max(0, stop - 1)
+        add("damage number, outlined", NUMBER_OUTLINE, "%s (%s)" % (name, RAMP_STOPS[stop]), h2rgb(row[1 + stop]), BODY)
+        add("damage number, outlined", NUMBER_OUTLINE, "%s crit (%s)" % (name, RAMP_STOPS[crit]), h2rgb(row[1 + crit]), BODY)
+    add("damage number, outlined", NUMBER_OUTLINE, "no element (red)", NUMBER_UNTYPED, BODY)
+    add("damage number, outlined", NUMBER_OUTLINE, "no element crit (ember hi)", NUMBER_UNTYPED_CRIT, BODY)
+    add("damage number, outlined", NUMBER_OUTLINE, "turned blow (bone base)", NUMBER_TURNED, BODY)
+    # The outline itself, where it has to separate the number from the ground: the palest ground there is.
+    add("damage number on white paper", WHITE, "outline (graphic)", NUMBER_OUTLINE, GRAPHIC)
+
+
 # --- the Arcane Upgrades shop (scripts/MainMenu.Shop.cs, .ai/level-up-screen.md "Arcane Upgrades") --
 # Copied from MainMenu.Shop.cs: change one there, change it here. The pages write in the page inks
 # above (INK, INK_SOFT, RUBRIC, INK_GOLD); these are the shop's own.
@@ -756,6 +799,7 @@ def measure(rev=None):
         options_pairs(add, centre(panel), rev)
         family_pairs(add, rev, floors)
         hud_pairs(add)
+        damage_number_pairs(add)
         tree_pairs(add, rev, centre(vellum), floors)
         shop_pairs(add, rev)
         results_pairs(add, centre(panel))

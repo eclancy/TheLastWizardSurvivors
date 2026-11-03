@@ -46,6 +46,7 @@ public partial class Fulgurite : SecretVault
 	public const float StrikeWindUp = 0.9f;
 	public const float StrikeRadius = 52f;
 	public const int StrikeDamage = 3;
+	private static readonly Color StrikeInk = DamageNumberInk.For(Element.Lightning, false);
 
 	/// <summary>Stand within this of the glass through the strikes (8.9: 120 px).</summary>
 	public const float HoldRadius = 120f;
@@ -268,7 +269,8 @@ public partial class Fulgurite : SecretVault
 					continue;
 				if (enemy.GlobalPosition.DistanceSquaredTo(strike.At) > r2)
 					continue;
-				enemy.TakeDamage(StrikeDamage, false);
+				// The storm's bolt, not the player's, but lightning all the same: numbered in Lightning's ink.
+				enemy.TakeHit(StrikeDamage, false, StrikeInk);
 				hit++;
 			}
 			SfxPlayer.Impact(Element.Lightning, strike.At);
