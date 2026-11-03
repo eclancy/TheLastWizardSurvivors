@@ -3,8 +3,12 @@
 Eric, 2026-11-02: *"the dark wizard should be unlockable if you beat the whole game on hard mode"*.
 
 **Status: proposed for Eric's review, and built on `wip/dark-wizard-playable` (section 5).** Nobody can earn
-him yet: the Throne is not playable (`StageCatalog`, `IsPlayable`), so the deed is unlisted and unreachable
-until the castle flips. Every number below is a first guess the bot measured once (section 5, "Measured").
+him until the whole road can be walked: the deed asks for every chapter of the campaign as `StageCatalog.Campaign`
+lists them, and it is unlisted until the Throne is playable (`IsPlayable`; the castle flipped on `main-ff86ni`,
+41466ed6, after this branch was cut). Every number below is
+a first guess the bot measured once (section 5, "Measured").
+
+**The rule moved on 2026-11-02 (section 1):** every chapter's boss beaten on Hardcore, not the Throne alone.
 
 Read first: `.ai/endgame-castle.md` 6.4 and 13 (the fight he comes out of), `.ai/spell-roster.md` section 2
 (the four axes), `.ai/world-and-tone.md` (the one figure who sheds dark light), `.ai/chapter-wizards.md`
@@ -12,9 +16,20 @@ section 1 (the verbs already claimed).
 
 ---
 
-## 1. The rule: beat him in the Throne on Hardcore
+## 1. The rule: every chapter's boss on Hardcore
 
-"The whole game on hard mode" is read as **the dark wizard defeated in the Throne with the Difficulty set
+**Since 2026-11-02** (Eric: *"dark wizard should unlock after defeating all stages on hard mode"*), the deed is
+**every chapter of the campaign with its boss beaten on Hardcore** - the stricter reading below, built. Each
+chapter keeps the hardest preset its boss has fallen on (`SaveData.MaxDifficultyCleared`, Casual 0, Default 1,
+Hardcore 2, written by `AchievementManager.ApplyRunAchievements` through `GlobalStatsManager.RecordChapterClear`;
+the field existed and nothing wrote it, so no save holds a stale value). The deed's measure is
+`GlobalStatsManager.ChaptersClearedAt(save, Hardcore)` out of every chapter in `StageCatalog.Campaign`, **built or
+not**, so it waits for the whole castle; the Sketchbook is outside the campaign and never counted. Card: *"Defeat
+every chapter's boss on Hardcore."* Still a Road deed of the Throne, listed once the Throne is playable. The same
+record pays Merlin at Default (`.ai/merlin.md`). `RegressionChecks.ValidateTakerTaken` holds both rules on sample
+saves. What follows is the first build's reading, kept for the record.
+
+"The whole game on hard mode" was first read as **the dark wizard defeated in the Throne with the Difficulty set
 to Hardcore** (`GlobalStatsManager.BalancePresetHardcore`, the save's `BalancePresetId`, recorded on the
 run as `RunResult.BalancePresetId`). The Throne is the last chapter and he is its end, and its gate already
 asks for the whole road: the Seneschal beaten and every wizard freed (`StageGate.PreviousBossAndWizards`).
@@ -126,12 +141,12 @@ warm mote; the milestones' icons are `evolution_icons.py`'s, derived.
 | The Taking | `SpellData_TheTaking.tres` (8 dmg, 2.4 s, 1 hand, 340 reach; a hand more at 3 and 7, lanes 25% bigger at 4 and 6), `scenes/TheTaking.tscn` + `TheTaking.cs` (the hand), `TakenLight.cs` (the light home), `TakingLanes.cs` (the cross); `Player.FireTheTaking`; `ContentValidator.SpellResourcePaths`; `SpellEvolutionCatalog.SetupTheTakingEvolutions`; its `EvolutionStatReaders` row; icon `the-taking-dark.png` and six evolution icons (two hand-drawn: Eightfold Cross, Long Reach) |
 | Dread | `fear_x2`: `Player.characterFearScale` doubles `FearChance` in `TryFrighten` |
 | All He Took | `ApotheosisCatalog` (verb **take**), `TheTaking.AllHeTookId`, read in `TakingLanes.Strike` |
-| the unlock | the `the_taker_taken` deed (`AchievementDefinitions.WonTheThroneOnHardcore`, measured on the run's `RunResult`), `UnlockCatalog` (`OutsideCampaignGate`, `SealedUntilFreed`; The Taking `OutsideGrimoire`) |
+| the unlock | the `the_taker_taken` deed - since 2026-11-02 every chapter on Hardcore (`AchievementDefinitions.ChaptersClearedAt`, read off `SaveData.MaxDifficultyCleared`); first built as the Throne won on Hardcore (`WonTheThroneOnHardcore`, gone) - `UnlockCatalog` (`OutsideCampaignGate`, `SealedUntilFreed`; The Taking `OutsideGrimoire`) |
 | hidden | `CharacterSelection` (sealed card with his line; long names now shrink to one line on the compact card, `FitOneLine`), `CodexRows.DeedEntry` and `JournalPage` (the seal, not his shape), `StageRewards` (his slot sealed with his line, never "Someone is held here") |
 | the Throne's card | `StageRewards` lists what a chapter's own Road deed pays when it is neither its warden's, an event's nor a secret's - him and The Taking on the Throne |
 | quest log | `QuestLog.Prisoners`: "the one on the throne", no held line, freed line "{0} has nothing left to take." |
 | the ending | `ThroneEnding.Wizards` leaves him out |
-| the check | `RegressionChecks.ValidateTakerTaken`: the Throne won on Default, lost on Hardcore, another chapter won on Hardcore - none pays him; won on Hardcore - pays both; no gate counts him; the Grimoire does not count his spell; his card and his row stay sealed while he is locked |
+| the check | `RegressionChecks.ValidateTakerTaken` (since 2026-11-02: every chapter on Default frees Merlin and not him, every chapter on Hardcore frees both, one chapter short frees neither, the Sketchbook counts for nothing; first built as: the Throne won on Default, lost on Hardcore, another chapter won on Hardcore - none pays him; won on Hardcore - pays both); no gate counts him; the Grimoire does not count his spell; his card and his row stay sealed while he is locked |
 
 **The light comes home faster than drawn in section 3.** The first build let a light drift at a flat 95 px/s
 and the balance bot, which kites, caught none and died at 1.5 minutes. A light now starts at 110 px/s and
@@ -212,7 +227,8 @@ the same at `-phone`, and `dw2-codex-pc`, `dw2-codex-phone` (`--open-codex=the_t
 
 ## 7. Open for Eric
 
-1. **The rule.** Throne-on-Hardcore, or every chapter on Hardcore (section 1)?
+1. ~~**The rule.** Throne-on-Hardcore, or every chapter on Hardcore (section 1)?~~ Every chapter on Hardcore
+   (Eric, 2026-11-02), built.
 2. **Hidden, not a silhouette.** Every other locked wizard shows his shape; he shows a seal. Right for the
    last surprise, or should the Throne's opening reveal his shadow like a secret's chapter does?
 3. **His spell in everyone's pool.** Once he is free, The Taking can be offered to any wizard, as every

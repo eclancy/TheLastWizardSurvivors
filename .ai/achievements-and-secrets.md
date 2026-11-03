@@ -553,7 +553,7 @@ different things:
 - **Only a spell vault pays a spell** (6.4), one per chapter.
 - **A secret still never pays a wizard or a new boon.** A wizard is the gate's in either option of
   2.5; a boon still dilutes the draw. The one exception is past the gate and outside it (a wizard
-  with `OutsideCampaignGate`, as Laelaps), which `.ai/endgame-castle.md` raises for Merlin as a
+  with `OutsideCampaignGate`, as Laelaps), which `.ai/endgame-castle.md` raises for Nimue as a
   decision.
 - **Run rewards and found levels are unchanged** (`.ai/stage-secrets.md` section 3): heals,
   sanctuaries, timed buffs under 60 s, tactical effects, two chests a run from all secrets, 40 Arcane
@@ -742,7 +742,7 @@ it keeps its design.
 | D4 | The Gaoler's Ledger | planned, keepsake | 10-12 | guarded, then touch | a lectern in an empty hall | a chest; the ledger, once (4.3) |
 | D5 | **The Cold Forge** | **new, vault** | 5-7 chunks, in a hall room | **cull**: kill 40 enemies standing on the forge's hearth ring (a 180 px circle in front of the anvil); each kill sets an ember in the dead coals until the forge roars | far: the walls' sconces give way to soot-stained faces and dropped shackles from two chunks out; near: the anvil, with a warm glint on the horn | **Molten Shard**; later runs a chest |
 | D6 | **The Empty Cell** | **new** | mid | **untouched**: stand in the one cell whose door stands open for 4 s without being struck | a cell door open in a corridor of shut ones; the name scratched off the lintel | heal 50%; page. Absence, never a body |
-| D7 | **The Oubliette** | **new** | mid, in a dead-end hall room | **untouched** for 5 s on a grate in the floor | a draught of cold motes rising through the grate; a voice below | 150 Arcane Energy, once; when Merlin is built, his card turns from a sealed blank to a silhouette here (`.ai/endgame-castle.md`, decision 11) |
+| D7 | **The Oubliette** | **new** | mid, in a dead-end hall room | **untouched** for 5 s on a grate in the floor | a draught of cold motes rising through the grate; a voice below | 150 Arcane Energy, once; when Nimue is built, her card turns from a sealed blank to a silhouette here (`.ai/endgame-castle.md`, decision 11) |
 
 **D5 built (2026-10-30, `wip/vaults-a`, in the Dungeon as it is now):** `ColdForge.cs`, art
 `tools/art/secret_dungeon.py`. The placer snaps a maze site to a corridor cell, where a 360 px ring does not

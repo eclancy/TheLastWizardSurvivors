@@ -97,7 +97,7 @@ What the move costs, and how each cost is met:
 | 10 | **The Last Bridge** | `stage_11` | **the Constable** | **advance under fire** | the Warden of the Deep | the Cursed Dungeon | 350 Arcane Energy |
 | 11 | **Cursed Dungeon** (moved from 5) | `stage_1` | **the Gaoler** | sidestep a lane, in a maze | the Constable | the Court | Shadow Bolt; its key event frees Tituba |
 | 12 | **The Court** | `stage_12` | **the Seneschal** | **pursue** | the Gaoler | (half the Throne's gate) | 400 Arcane Energy |
-| 13 | **The Throne** | `stage_13` | **the procession, then him** | **take it back** | **the Seneschal beaten and every wizard freed** (1.6) | - | the ending; 1,000 Arcane Energy; Merlin, as a later build (decision 11) |
+| 13 | **The Throne** | `stage_13` | **the procession, then him** | **take it back** | **the Seneschal beaten and every wizard freed** (1.6) | - | the ending; 1,000 Arcane Energy; Nimue, as a later build (decision 11) |
 | - | The Sketchbook | `stage_8` | Wizard Dude | leave the wedge | always, outside the order | - | 400 Arcane Energy |
 
 Thirteen chapters: eight on the road before the gate, the gate, and the castle's four. (The first
@@ -657,7 +657,7 @@ Flagstone, the Gaoler's Ledger (its keepsake), **the Cold Forge** (its spell vau
 Empty Cell - and one added, moved from the first draft's Undercroft:
 
 - **D7, the Oubliette** (untouched for 5 s on a grate in a dead-end hall room's floor): a voice
-  below. If Merlin is built (decision 11) this is where his card stops being a sealed blank and
+  below. If Nimue is built (decision 11) this is where her card stops being a sealed blank and
   becomes a silhouette: someone else is still held here. Until then it pays 150 Arcane Energy, once.
 
 The Gaoler's Ledger now arrives late in the game, and the Court's Library a chapter later reveals the
@@ -1187,7 +1187,7 @@ whether the end lands. Eyes, on both devices.
 | 8 | the Muster | 17 levels and two relic chests, moved by measurement |
 | 9 | the procession | the road's wardens in pairs, then him |
 | 10 | him | unnamed on screen; his light out, the motes going home, the freed wizards standing, credits |
-| 11 | Merlin | yes, as its own build after the Throne: the one wizard he kept, revealed by the Oubliette (now D7, in the Dungeon), freed by the Throne, outside the gate as Laelaps is; verb *rewind*, on Light or Arcane |
+| 11 | Nimue (was Merlin) | yes, as its own build after the Throne: the one wizard he kept, revealed by the Oubliette (now D7, in the Dungeon), freed by the Throne, outside the gate as Laelaps is. **Nimue, the Lady of the Lake**, keeping Spiritual Weapon's sword; her Apotheosis is **Excalibur**, the final form of the Sword form (`VariantId = "spiritual_weapon_sword"`), verb **sever** - the cut goes on through everything in a line behind its target and cuts bolts along the whole line (Eric, 2026-11-02; not built). The name Merlin moved to the blue-robed title wizard on 2026-11-02, with the verb *rewind* (`.ai/merlin.md`) |
 | 12 | Boss Rush | unchanged (1.8 says what that takes) |
 | 13 | variety first | the Ruins' walls and the Cave's caverns |
 

@@ -319,7 +319,9 @@ enough to matter for everything after.
 **Whose prison: a relic.** The circle was warded, and a fleck of the ward is still lit in the stones:
 the **Gilded Mote** (*"A fleck of the warded circle, still lit"* - again the boon's own line). The
 person this place could hold is decision 2 (Merlin, who in the legend raised a stone circle and was
-sealed in stone, is the obvious one, and the reason the chapter is built to take him later).
+sealed in stone, was the obvious one, and the reason the chapter is built to take him later. Since
+2026-11-02 Merlin is the blue-robed title wizard, never held - `.ai/merlin.md` - and Laelaps is the
+Circle's).
 
 **Ground.** Heather (violet, deep half) over peat (stone and linen deep), granite outcrops and scree
 (`rocky_pit` is already walkable scree), cotton-grass and lichen detail, peat-dark tarns (water: the
@@ -553,8 +555,8 @@ Each Phase 2 agent edits only its own line.
    deed and outside the gate, so the question below is still open for a wizard.) The fiction says each
    place holds one of the others. Both chapters
    pay a relic so they cannot close the finale (section 4) and because a wizard is not a chapter
-   build. If either should hold a person: the Broken Circle is built for **Merlin** (the stone-raiser,
-   sealed in stone); the Fields for a cunning woman (a historic one, as Tituba is). A wizard needs a
+   build. If either should hold a person: the Broken Circle was built for **Merlin** (the stone-raiser,
+   sealed in stone; since 2026-11-02 Merlin is the blue-robed title wizard, never held, `.ai/merlin.md`); the Fields for a cunning woman (a historic one, as Tituba is). A wizard needs a
    sprite, a signature spell on an element no wizard opens on, the Apotheosis verb rule, and a schema
    step that grants him to a save that had finished the campaign (as schema 12 did for John Dee).
 3. **Retune the Gaoler for chapter 5?** Left at 5200 health / 170 Arcane after the Choir's 5700 / 190.

@@ -6,10 +6,11 @@ character theme on each level that is unique to that level."*
 **Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1 and the pilot, Abe no Seimei** (section 4.5, "Built"); the other nine are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Sketchbook, the Last Bridge and the
-Court. Tituba (Cursed Dungeon), Väinämöinen (Frozen Waste), Laelaps (Broken Circle) and Merlin (the
-Throne, `.ai/endgame-castle.md` 10.1 item 11) are spoken for. John Dee comes from chests, not a place.
-The dark wizard himself is playable too, held nowhere and earned by beating him in the Throne on Hardcore:
-`.ai/dark-wizard-playable.md` (he claims the verb **take**).
+Court. Tituba (Cursed Dungeon), Väinämöinen (Frozen Waste), Laelaps (Broken Circle) and Nimue, the Lady
+of the Lake (the Throne, `.ai/endgame-castle.md` 10.1 item 11) are spoken for; the Throne's kept wizard was named Merlin until 2026-11-02, when the name moved to the blue-robed title wizard (`.ai/merlin.md`). John Dee
+comes from chests, not a place. The dark wizard himself is playable too, held nowhere and earned by beating
+every chapter's boss on Hardcore: `.ai/dark-wizard-playable.md` (he claims the verb **take**). Merlin, the
+one he missed, is earned by beating every chapter's boss on Default or harder (he claims **rewind**).
 
 Read first: `.ai/world-and-tone.md` (why the rescued are named people), `.ai/side-events.md` (the
 five events, hints, secret wizards), `.ai/achievements-and-secrets.md` (every unlock is one
@@ -27,18 +28,19 @@ spells differ (`ValidateStartingCharacters` is relaxed to match when the first o
 Question 4: **the Sketchbook's wizard is Ma Liang** (the kids' boss there is now Elim, below). "All else
 approved": questions 2, 3, 5 and 6 as recommended - the new wizards count only at the Throne's gate, a
 second side event where a chapter already has one, Baba Yaga and Medea drawn serious, Nostradamus takes
-Starfall and Merlin the sword.
+Starfall and the Throne's kept wizard the sword - Nimue since 2026-11-02 (Eric: "i like that the lady of
+the lake keeps spiritual weapon"); the Throne's kept wizard was named Merlin until 2026-11-02, when the name moved to the blue-robed title wizard (`.ai/merlin.md`).
 
 The questions as they were put:
 
 | # | question | options | recommended |
 |---|---|---|---|
-| 1 | **The one-element rule.** `ValidateStartingCharacters` lets no two characters open on one element, and every opener must be pure. Eight elements are claimed; only Arcane, Light, Poison and Metal are left, so at most **four** more wizards fit, and Merlin needs one of them | **R1** two wizards may share an element if they open on different spells; **R2** a rescued wizard may also open on a hybrid; **R3** keep the rule and build a new pure spell per wizard | **R1 + R2.** It is what "one wizard per offensive spell" needs anyway: 18 of the 34 offensive spells are hybrids. The four disciplines keep distinct pure elements |
+| 1 | **The one-element rule.** `ValidateStartingCharacters` lets no two characters open on one element, and every opener must be pure. Eight elements are claimed; only Arcane, Light, Poison and Metal are left, so at most **four** more wizards fit, and Merlin (now Nimue) needs one of them | **R1** two wizards may share an element if they open on different spells; **R2** a rescued wizard may also open on a hybrid; **R3** keep the rule and build a new pure spell per wizard | **R1 + R2.** It is what "one wizard per offensive spell" needs anyway: 18 of the 34 offensive spells are hybrids. The four disciplines keep distinct pure elements |
 | 2 | **Which gate counts them.** The Emberdeep counts every wizard whose rescue comes before it. Six of these are on the road, so a new save would need **eight** rescues before chapter 9 | **G1** as written: the Emberdeep counts them (no code); **G2** the Emberdeep counts today's six, and every chapter wizard is counted at the Throne, where he is | **G2.** The fiction's sentence ("he is reachable only when every wizard is free") is true at the Throne either way. G1 turns the road into a checklist of eight events |
 | 3 | **Where the prison goes in a chapter that already has an event** (Forest, Fields, Swamp, Sands) | a **second side event** per chapter; or re-point the existing event to pay the wizard | **A second event.** Re-pointing moves Bramble Seed, Contagion, Iron Palisade and Wishing Coin, and `Reconcile` would hand the wizard to every save that ever won the old event |
 | 4 | **The Sketchbook.** It is outside the fiction and its secrets pay "no meta reward but the page mark" | Ma Liang, drawn by us; or a wizard **the kids draw and name**; or none | **Ask the kids first.** If they want to, theirs; otherwise Ma Liang |
 | 5 | **Tone calls** | Baba Yaga (feared, not comic) and Medea (Euripides' Medea killed her children) | Both, drawn serious. Alternates are listed for each |
-| 6 | **Starfall** suits two seers: Nostradamus here and Merlin later | Nostradamus takes it, Merlin takes Spiritual Weapon's sword; or the reverse | Nostradamus. The sword in the stone is Merlin's better story |
+| 6 | **Starfall** suits two seers: Nostradamus here and Merlin later (now Nimue) | Nostradamus takes it, Merlin (now Nimue) takes Spiritual Weapon's sword; or the reverse | Nostradamus. The sword in the stone is Merlin's better story (the Lady of the Lake's, since 2026-11-02) |
 
 ---
 
@@ -47,7 +49,7 @@ The questions as they were put:
 | rule | where | what it means here |
 |---|---|---|
 | Starters are disciplines; the rescued are named historic or legendary magic-workers | `world-and-tone.md` | every proposal is a person |
-| Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect**; reserved for Merlin: **rewind**. Unclaimed in the ADR: banish, contagion, displace |
+| Each Apotheosis owns a verb no other does | `ValidateApotheosisCatalog` | taken: **burn, stop, link, hold, flood, swarm, pull, reflect, banish** (Seimei), **take** (the Dark Wizard), **rewind** (Merlin, the blue-robed title wizard, `.ai/merlin.md`, 2026-11-02); reserved for Nimue: **sever** (Excalibur, decided by Eric 2026-11-02). Unclaimed in the ADR: contagion, displace |
 | No path on his spell trades his element away | `ValidateApotheosisCatalog` | since 2026-11-02 the form names no path - the spell at max level, ascended down any branch, never combined - so every level 4 and level 8 option on a wizard's spell leads to it, and none may trade away the element the form deepens (it would come back as a third). The old rule, a required path that never leads away (`CheckRequiredPath`), went with the named paths |
 | A secret never pays a wizard | `achievements-and-secrets.md` 6.2 | every rescue below is a **side event** (a Road deed), never a secret |
 | One side event per chapter | `SideEventDirector.ForStage` | question 3, and plumbing piece P2 |
@@ -76,8 +78,9 @@ The questions as they were put:
 
 Four open on a spell found in their own chapter (Thorned Vine, Contagion, Kindled Ward, Fireball), so
 finding the spell and freeing its wizard tell one story. Under the strict rule as it stands, only
-**Paracelsus, Seimei, Wayland** and one Arcane wizard can be built. Merlin is left Spiritual Weapon,
-Magic Missile and Stormsweep to choose from.
+**Paracelsus, Seimei, Wayland** and one Arcane wizard can be built. Nimue (the Throne's kept wizard, Merlin
+until 2026-11-02) keeps Spiritual Weapon's sword; Merlin, the blue-robed title wizard, opens on a spell of his
+own (Orb of Ages, `.ai/merlin.md`).
 
 Ten new verbs, none taken: feed, turn, echo, distil, banish, blind, temper, displace, double, foresee.
 Spares not used: silence, lead, hide.
@@ -139,9 +142,8 @@ numbers, the clue, and an alternate where one is worth having.
   `hint_hut_step` (two heavy falls, a timber creak). Lines: *"Something heavy walks the deep wood, on two
   legs."* / *"The steps again. Too heavy for a man."* / *"Still walking, round and round."*
 - **Locked hint:** "Kept walking in the Enchanted Forest."
-- **Alternate: Nimue**, the enchantress of Brocéliande who sealed Merlin in a tree, sealed by him in
-  Elderbark's oldest oak. The same spell, verb **banish** (Seimei then takes **silence**). She bookends
-  Merlin, but with Morgan she makes three Arthurians.
+- ~~Alternate: Nimue~~ - **taken by the Throne** (2026-11-02): she is the Throne's kept wizard, the Lady of
+  the Lake with Spiritual Weapon's sword (`.ai/endgame-castle.md` decision 11), so she is never offered here.
 
 ### 4.2 Fallow Fields - Medea
 
