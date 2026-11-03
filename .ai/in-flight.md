@@ -327,6 +327,21 @@ Elim's "it's wizarding time" drawing: **not in Eric's email** - the only image E
   passes, then the game rename.
 - **Merged since:** Wayland (`56097665`, index 12) and the Sibyl (`4738a49e`, index 13, hint row 8).
   **Building:** P2, a second event per chapter (`wip/second-events`).
+- **Done, 2026-11-02/03: the rename is live.** GitHub `eclancy/TheOneHeMissed` (the old address
+  redirects), ecec.dev's site PR #48 deployed (`/wizard-survivors/version.json` and `/download` still
+  answer; checked with curl), the game merged as `0aae133a` (namespace `TheOneHeMissed.scripts`,
+  `TheOneHeMissed.sln`). **Not yet released:** the first renamed release must ship the bridge
+  (`.ai/releasing.md`, "The rename") so 0.11.0 copies update. **On Eric's first real launch** of a
+  renamed build, `UserDataCarryOver` copies his old user folder (752 MB, mostly dev shots) into the
+  new one - about 8 s, once. **Any branch cut before `0aae133a`** needs the namespace command from
+  `e2898cc2` re-applied at merge (`git grep -l -a -z 'WizardSurvivors\.scripts' -- '*.cs' | xargs -0
+  sed -i 's/\bWizardSurvivors\.scripts\b/TheOneHeMissed.scripts/g'`).
+- **Merged:** Merlin's own look (`fef6641b`, the Crystal Cave; B and C on the sheet), the title art
+  (`70581528`, A the stack, Eric's pick), P2 (`6ceeaf20`). **Building:** the fifth starter **The
+  Archmage** (Eric's name; the blue-robed player figure, Arcane, Magic Missile made pure Arcane, first
+  on the character select; `wip/protagonist`), the cutscenes (he frees the four; `wip/cutscenes`),
+  Baba Yaga (`wip/wizard-babayaga`). Then Morgan, Paracelsus, Imhotep, Medea, Nostradamus, Ma Liang,
+  Nimue.
 
 ## 4. Waiting on Eric
 
