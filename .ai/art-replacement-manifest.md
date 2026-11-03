@@ -545,6 +545,16 @@ pixels drawn upright in world coordinates, and every fade among them - and the F
 and Mirefoot's wisps' - is a dither (`spell_dither.gdshader`). Section 9, "The trap and star spells'
 shared pieces" and after, has each part.
 
+`OrbOfAges` (Merlin's ward, `.ai/merlin.md`) no longer has it (2026-11-03), built after the pass and drawn
+with `DrawArc`, `DrawLine` and `DrawCircle` at whole world-unit widths - half an art pixel. Its ring, star and
+orb are lines and a small disc, so they are stamped as the pass stamped its strokes, not a shader: the ring a
+midpoint circle a cell thick (`PixelInk.Circle`, new) in Light's edge with a second in Arcane's edge a cell's
+gap inside it, seven points of light in a square of the gold, the flown strokes a cell of Light's mid, the
+stroke in flight a hot seam on a three-cell band of the edge (Lightning's paper rule), the orb `PixelInk.Disc`s
+grown with the ward as its reach is; closing steps to Arcane and dissolves through the Bayer matrix. The ward's
+canvas stands on the cell its centre falls in and is moved, not redrawn, when Walking Ward walks it; only the
+stroke in flight and the orbs redraw every frame. Radius, reach and every number unchanged.
+
 `SolarFlare` (`SolarFlareVisual`) no longer has it either (2026-10-29): the burst, Corona Discharge's
 beams and the charge at his boots are `scenes/shaders/solar_flare.gdshader` on the world's 2-unit cell,
 and Sun Dogs' mock suns are stamped cell by cell. Section 9 has the audit.
