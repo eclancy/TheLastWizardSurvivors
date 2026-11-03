@@ -191,6 +191,21 @@ public static class ApotheosisCatalog
 				"Temper: the more they strike, the harder. Raise it where the crowd leans hardest.",
 				new Color(0.92f, 0.95f, 0.98f), NoVisualScale),
 		},
+		// The Cumaean Sibyl, freed at the nine mouths in the Sunken Cave (.ai/chapter-wizards.md 4.3). "Echo" was
+		// nobody's: her cave had a hundred mouths and spoke with a hundred voices, and Arcane Explosion is the
+		// one spell set off by the others - so each burst sounds them again, from where she stands, at 40%
+		// (ArcaneExplosion.HundredMouthsId, Player.Echo.cs). Nothing is pulled, linked or doubled behind her:
+		// it is her own loadout, heard twice. Arcane, the spell's only element; no card on it trades Arcane
+		// away (Static Nova adds Lightning beside it). No visual scale: the blast is drawn from its range.
+		new()
+		{
+			CharacterId = "sibyl", SpellId = "arcane_explosion",
+			Element = Element.Arcane, Verb = "echo",
+			Form = Make(ArcaneExplosion.HundredMouthsId, "The Hundred Mouths", Element.Arcane,
+				"Each burst sounds your other spells again from where you stand, at 40% strength.",
+				"Echo: everything you cast, twice. An echo is never echoed, and never charges the burst.",
+				new Color(0.91f, 0.75f, 1.0f), NoVisualScale),
+		},
 		// The dark wizard, taken on the hardest road (.ai/dark-wizard-playable.md). "Take" was nobody's, and it is
 		// his verb in the fight and in the story: whatever his lanes kill gives up its light too, and it comes
 		// home to be caught in its turn (TakingLanes; TakenLight.MaxInAir in the air at most). Nothing moves the

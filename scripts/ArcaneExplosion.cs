@@ -204,6 +204,14 @@ namespace WizardSurvivors.scripts
 		public const string ResonanceId = "arcane_explosion_supernova";
 		public const string EventHorizonId = "arcane_explosion_event_horizon";
 
+		// THE HUNDRED MOUTHS (the Cumaean Sibyl's Apotheosis, the verb ECHO; .ai/chapter-wizards.md 4.3). The cave
+		// at Cumae had a hundred mouths and spoke with a hundred voices: each burst sounds her other spells again,
+		// from where she stands, at Player.EchoShare of their strength (Player.Echo.cs). The burst only asks; the
+		// player queues the echoes and casts a few a frame, and an echo is never a cast - it charges nothing and
+		// is never echoed again - so the form cannot feed itself.
+		public const string HundredMouthsId = "arcane_explosion_hundred_mouths";
+		private bool hundredMouths;
+
 		/// <summary>Detonate now. Called by Player when the charge comes due, with the cast that filled it.</summary>
 		public void TriggerNow(SpellData charger = null)
 		{
@@ -241,6 +249,8 @@ namespace WizardSurvivors.scripts
 				OpenStasis(GlobalPosition, range, freezeSeconds);
 			StartBlast(isVortex, mimic);
 			Resonate(damage, stopsTime, isVortex, freezeSeconds, mimic);
+			if (hundredMouths && PlayerRef is Player sibyl)
+				sibyl.EchoOtherSpells(SpellData);
 		}
 
 		// One detonation's hits at `at`: the damage, the throw (scaled by `throwShare`; inward for a pull),
@@ -624,6 +634,8 @@ namespace WizardSurvivors.scripts
 				+ (SpellData?.GetKnockbackBonusAtLevel(CurrentLevel) ?? 0f));
 			knockbackSpeed = MathF.Max(0f, BaseKnockbackSpeed);
 			resonance = SpellData != null && SpellData.HasEvolution(ResonanceId);
+			hundredMouths = SpellData != null && SpellData.IsApotheosis
+				&& string.Equals(SpellData.SelectedApotheosisId, HundredMouthsId, StringComparison.OrdinalIgnoreCase);
 			if (IsInsideTree())
 				Listen(resonance);
 		}

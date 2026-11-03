@@ -44,6 +44,8 @@ public static class CharacterRoster
 		// The Emberdeep's chapter wizard (.ai/chapter-wizards.md 4.7): Wayland the Smith, chained to his own anvil.
 		// Appended, so every saved index keeps its wizard (index 12: Merlin took 11 the same day).
 		"res://CharacterData_Wayland.tres",
+		// The chapter wizards again: the Cumaean Sibyl, freed at the nine mouths in the Sunken Cave. Appended (index 13: Merlin and Wayland took 11 and 12 the same day).
+		"res://CharacterData_Sibyl.tres",
 	};
 
 	// Loaded once and held. Every call used to load all seven again, and each load hands back a

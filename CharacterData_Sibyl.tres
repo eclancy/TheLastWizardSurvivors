@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_ArcaneExplosion.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/sibyl-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/SibylFrames.tres" id="4"]
+
+; Rescued, not a starter: the Sunken Cave's chapter wizard, freed at the nine mouths (.ai/chapter-wizards.md
+; 4.3). The prophetess of Cumae, whose cave spoke with a hundred voices; she sees what is coming, so her
+; passive is Prophecy, the one axis no other wizard owns: three more rerolls a run.
+[resource]
+script = ExtResource("1")
+Id = "sibyl"
+Name = "The Cumaean Sibyl"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "rerolls_3"
+StartingPassiveName = "Prophecy"
+StartingPassiveDescription = "+3 rerolls a run"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

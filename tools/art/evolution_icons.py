@@ -2293,6 +2293,26 @@ def _(sp, c):
     U(sp, threads)
 
 
+@card("arcane_explosion_hundred_mouths")
+def _(sp, c):
+    """The Hundred Mouths (the Cumaean Sibyl's Apotheosis, echo): the burst small in the middle, and round it
+    five arcs of a call going out again - the cell cry's voice-arc, each bulging outward - one for each
+    other spell it sounds a second time."""
+    reset(sp)
+    sp.place = Place(0.34)
+
+    def voices(cv, x):
+        a = E["arcane"]
+        for k in range(5):
+            t0 = math.radians(-90 + k * 72)
+            for d in range(-30, 31, 3):
+                t = t0 + math.radians(d)
+                for (rr, tone) in ((9.6, OCC), (8.6, a[1]), (7.6, a[2])):
+                    cv.set(C0 + math.cos(t) * rr, C0 + math.sin(t) * rr, tone)
+            cv.set(C0 + math.cos(t0) * 8.6, C0 + math.sin(t0) * 8.6, a[0])
+    O(sp, voices)
+
+
 @card("arcane_explosion_event_horizon")
 def _(sp, c):
     """Event Horizon: a sphere of stopped time where the blast went off - motes hung still in it, and

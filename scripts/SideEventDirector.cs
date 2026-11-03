@@ -52,6 +52,8 @@ public partial class SideEventDirector : Node
 	{
 		"stage_0" => ("the_grove", () => new GroveEvent(), WayfinderKind.Compass),
 		"stage_1" => ("gaolers_key", () => new GaolersKeyEvent(), WayfinderKind.GaolersMap),
+		// The Sunken Cave's chapter wizard (.ai/chapter-wizards.md 4.3): the Cumaean Sibyl, behind nine mouths.
+		"stage_2" => ("nine_mouths", () => new NineMouthsEvent(), WayfinderKind.Compass),
 		"stage_3" => ("bog_lanterns", () => new BogLanternsEvent(), WayfinderKind.Compass),
 		// The first chapter wizard (.ai/chapter-wizards.md 4.5): Abe no Seimei, sealed in his own star.
 		"stage_4" => ("five_pointed_seal", () => new FivePointedSealEvent(), WayfinderKind.Compass),

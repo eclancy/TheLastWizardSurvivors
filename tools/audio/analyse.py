@@ -66,6 +66,13 @@ TWINS = [
     ("spell_beam_start", "spell_beam_loop"),
     ("spell_beam_start", "spell_beam_end"),
     ("spell_beam_loop", "spell_beam_end"),
+    # The Cumaean Sibyl's one line (.ai/chapter-wizards.md 4.3): her voice at the true mouth, the cave giving
+    # it back at the other eight, and the whole call heard across the map. One voice by design - the echo is
+    # MEANT to be heard as hers - and the hint never plays at the cliff (only while the event is dormant).
+    # Measured 0.026-0.059 apart; the nearest other sound in the set is 0.139 (hint_lantern_flare).
+    ("sibyl_voice", "sibyl_echo"),
+    ("hint_sibyl_voice", "sibyl_voice"),
+    ("hint_sibyl_voice", "sibyl_echo"),
 ]
 
 

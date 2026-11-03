@@ -76,6 +76,8 @@ public static class QuestLog
 		new Prisoner("seimei", "the master of wards", "Someone here was sealed in by his own wards.", "{0} keeps his own wards again."),
 		// The smith who struck every chain in the game, chained to his own anvil: "every shackle came from here".
 		new Prisoner("wayland", "the smith at the anvil", "Someone below is still at the anvil. He may not stop.", "{0} has put his hammer down."),
+		// The prophetess of Cumae, kept where nobody comes to ask: she is heard in more places than one.
+		new Prisoner("sibyl", "the voice in the rock", "A woman's voice comes out of the rock, from more than one place.", "{0} speaks with one voice again."),
 		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
 		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.

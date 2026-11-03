@@ -3,7 +3,7 @@
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
-**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **and Wayland the Smith** (4.7, "Built"); the other eight are not. It covers the ten
+**Status: approved by Eric, 2026-11-01** (section 0's decisions below). **Built: P1, the pilot Abe no Seimei** (section 4.5, "Built") **Wayland the Smith** (4.7, "Built") **and the Cumaean Sibyl** (4.3, "Built"); the other seven are not. It covers the ten
 chapters that hold nobody today: the Enchanted Forest, the Fallow Fields, the Sunken Cave, the Blighted
 Swamp, the Mystic Ruins, the Scorched Sands, the Emberdeep, the Last Bridge and the Court (which holds
 two: Nostradamus, and Ma Liang since the Sketchbook was emptied - 4.8). Tituba (Cursed Dungeon),
@@ -198,6 +198,120 @@ numbers, the clue, and an alternate where one is worth having.
   on."* / *"A woman's voice from far down, in more places than one."* / *"The leaves again, written
   faster now."*
 - **Alternate: Mother Shipton**, the Yorkshire prophetess born in a cave by the petrifying well.
+
+**Built (2026-11-02, `wip/wizard-sibyl`).** The design above, with the changes listed under "What moved".
+
+- **Her.** `CharacterData_Sibyl.tres`, appended to `CharacterRoster` after everyone before her (Merlin and
+  Wayland were built beside her; the roster's order is the merge's). Name "The Cumaean Sibyl", id `sibyl`. `roster.sibyl()`: old,
+  stooped over her own reach, in a hooded palla from the bone row's deep end (a dusty grey-blue in shade)
+  over a deep violet stola, leaning on a plain bough whose crook carries a small bronze jar on a cord - the
+  jar she was kept in - with the arcane ramp breaking out of its mouth and one crack, the one thing on her
+  that glows. Her near arm is flung out low, palm up, written leaves tearing off it. 0.84 edges/px. Passive
+  **Prophecy** (`rerolls_3`): +3 rerolls in the run's pool, on top of Fate Fracture's.
+- **The event** (`NineMouthsEvent`, `tools/art/nine_mouths.py`, `world/mouths/`). A crescent of the
+  caverns' own rock (cave_walls' three values: the top darkest, the face in shade, a lit lip), 560 px wide,
+  bowing 120 px away in the middle, with nine ragged, water-worn mouths at its foot, all facing the viewer.
+  It is ONE painting cut into nine strips, each y-sorted at its own mouth's foot: no seams, and whoever
+  walks behind the rock is hidden by it. Not terrain (it blocks nothing and joins no group, like the
+  seal's stones). A dashed threshold ring in front of each mouth. Every **5.5 s** a call: her voice out of
+  all nine, **0.24 s** apart, hers first, the rest in a seeded shuffle. Standing in hers (the nearest
+  threshold within 26 px of a point halfway to his feet) fills a hold over **2 s**, which drains at a
+  quarter of that rate out of it; standing in another for **0.6 s** makes it answer - a flight of **five
+  Gloomwings** (the chapter's Fast role, ordinary bodies) out of it, a flare of his colour - and hers moves
+  at least two mouths over; the next call (2.6 s later) says where. The ring under a wrong mouth fills
+  exactly as hers does until it answers, so a ring cannot be used to test a mouth for free. Placed on a
+  300 px open disc (dense) through `ExplorePlacer.EventSiteInBand`: on four seeds 3.6 to 5.3 chunks out.
+  When she is free she steps out of her mouth and aside, and is gone with the column of light.
+- **The primitive** (section 7): `PlacedSoundSchedule`, a fixed queue of positioned sounds each played
+  after its delay through `SfxPlayer.AtPosition`, with a hook on the frame each plays. The hook spawns that
+  mouth's breath of cold light and its written leaves, so what is heard and what is seen cannot drift.
+- **Fair on a phone speaker.** Three tells point at one mouth, and the first two need no sound: on each
+  voice its mouth breathes out light and a puff of written leaves, in the call's order, so the first puff is
+  hers; only her leaves carry the warm glint (`SecretSite.DrawGlint`, the secrets' near tell); and, for the
+  ear, hers is a person's voice, near and dry (`sibyl_voice`), while the other eight are the same line from
+  deep in the rock, dark and hollow (`sibyl_echo`) - so the order and the timbre agree.
+- **Her unlock** is the site's derived Road deed, "The True Mouth", secret until `stage_2`, counted at the
+  Throne only (G2); locked hint "Heard behind the rock, far down in the Sunken Cave."; quest-log prisoner
+  "the voice in the rock", held line "A woman's voice comes out of the rock, from more than one place."
+- **Her clue.** `HintCue.Writ`, a new last row of `hint-cues.png` (every row before it unchanged, byte for byte):
+  written leaves blown in flat on a cold draught, the first on the line to her, one on each voice of
+  `hint_sibyl_voice` (her line, then six echoes a beat apart, `sfx._SIBYL_VOICES` = `StageHintCue.SibylVoices`).
+  The three lines above, unchanged.
+- **Her form**, The Hundred Mouths (echo), `ArcaneExplosion.HundredMouthsId` and `Player.Echo.cs`. Each
+  burst queues her other spells and the player casts them two a physics frame, after the fire loop, through
+  `CastSpellNow` - exactly her own cast, so only the spells whose cast puts something new out (see 2 below)
+  - with the damage the cast hands its projectiles at 40%
+  (`castDamageScale`, folded into `GetSpellDamageMultiplier`). An echo is not a cast: no timer, no tally,
+  no `NotifyArcaneCharge` - it never charges the burst and is never echoed again, and a spell already
+  waiting is not queued twice. A ring of arcane motes leaves her on each echo. No card on Arcane Explosion
+  trades Arcane away (Static Nova adds Lightning beside it).
+
+**What moved, and why.**
+
+1. **Alone, Arcane Explosion keeps its own time.** It charges only off the OTHER spells' casts, and until
+   her nobody opened on it, so a Sibyl at level 1 burst once on spawn and never again until her first
+   level-up - which she could not reach. With nothing else held that can charge it (`Player.HasArcaneCharger`:
+   any other equipped spell not silenced for the run or sealed), its own cooldown sets it off (1.5 s, the old
+   timed pulse); the moment a second spell is held it is charge-driven again. It touches no run in which
+   Arcane Explosion is taken beside another spell, which is every run before her.
+2. **"Your other spells" means the ones whose cast puts something new into the arena**
+   (`Player.IsEchoable`): the Black Cat's list (`Player.BlackCatCastable`), plus Scorching Ray and Cone of
+   Cold (`EchoOnlyCastable`) - a fresh ray or cone every cast, anchored on the wizard, which is why the cat
+   may not cast them and why an echo, coming from where she stands, may. Never echoed: whatever keeps one
+   node standing and only refreshes it (an orbit, a breath, an aura, a trail, the Spiritual Weapon, the
+   Familiar's pack, the Starfall rain, the facing pair), Aegis Ward, Hunter's Draw and Frost Shard. The first
+   build used the cat's list alone, and the seek bot's Arcane loadout (Spiritual Weapon, Magic Missile,
+   Scorching Ray, the Familiar, Aegis Ward) echoed Magic Missile and nothing else - 60 to 77 echoes a minute,
+   and Arcane Explosion's own blast 90% of the run's damage. "Everything you cast, twice" is true of the
+   casts; a loadout of summons and auras gets little from it, and that is the form's build pressure.
+3. **The cliff is a crescent, not a wall of nine.** A cliff that blocked would be terrain, which four places
+   must agree on (`.ai/terrain.md`); a mouth facing sideways is a sliver at this size. So all nine face the
+   viewer along a crescent that bows away, and it blocks nothing. A first draft drew one block of rock per
+   mouth; the blocks' flanks made a seam between every pair and their crowns read as gatehouses.
+4. **A second tell for the ear** (hers dry, the eight hollow), and **the leaves are paper** - the water
+   ramp's pale end with its dark end for the ink. In the ramp's body stop they read as blue gems, and the
+   caverns' walls already hold unlit crystals.
+5. **The numbers are first guesses**: 5.5 s calls, 0.24 s beat, 2 s hold, 0.6 s to answer, five
+   Gloomwings, a shift of at least two mouths.
+
+**Verified:** build; the validator (0 errors, 1 warning - the Test Wizard's missing passive, which main
+has); `RegressionChecks.ValidateNineMouths` (hers first on 400 seeded calls, the shift rule, thresholds
+that never overlap, the strips tiling the painting, the hint's beat equal to the call's);
+`_ExploreProbe --stage=2`, which LISTENS (it stands in the mouth heard first on the last call, never reads
+the answer): seeds 4242 and 31 on a fresh save (won 2.6-2.7 s after arriving, her freed in memory), 4242
+`--all-unlocked` (a chest), 7 fresh and 1001 `--all-unlocked` with `--wrong-mouth` (the wrong mouth
+answered with 5 Gloomwings, hers moved 3 to 7 and 7 to 3, won 5.4-6.0 s after arriving); 24 to 27 passed,
+0 failed. `_UiShot` of the call, the hold, the win and the clue at both canvases, and the character select
+(freed, locked, phone list). `_BalanceHarness` as the Sibyl, `--stage=2 --all-unlocked --seek-apotheosis
+--immortal`: see "The form, measured" below. **Not verified: whether the nine can be told apart by ear,**
+on a PC's stereo or a phone's speaker. The sounds were measured, not heard (`analyse.py`: the three are
+declared twins, 0.026-0.059 apart, one voice by design; the nearest other sound in the whole set is 0.139,
+`hint_lantern_flare`). Whether a 0.24 s beat is long enough to hear "first" through a swarm, whether the
+dry/hollow difference survives a phone speaker, and whether the glint reads at a glance mid-fight, are
+playtest questions; so is whether listening is fun.
+
+**The form, measured** (`_BalanceHarness` as the Sibyl, `--stage=2 --minutes=15 --all-unlocked
+--seek-apotheosis --immortal`, one run each, seed 1234):
+
+| run | her spell ascended | form taken | echoes by 15:00 | Arcane Explosion's share of damage |
+|---|---|---|---|---|
+| timescale 6, the cat's list only (first build) | 8.7 min (level 17) | 10.5 min | 290 | 90% |
+| timescale 6 | 9.5 (17) | 11.1 | 490 | 88% |
+| `--timescale=1 --profile=10` | 6.8 (17) | **9.0** (level 21) | 910 | - |
+
+All three take the form between 9.0 and 11.1 minutes, past the 7.5 floor, the level-21 gate
+(`ApotheosisCatalog.MinimumPlayerLevel`) setting the time as it does for everyone. The seek bot pours every
+pick into Arcane and leaves its other spells at level 1 (Spiritual Weapon, Scorching Ray, Aegis Ward), so
+the echoes - 40% of a level-1 spell - are a small share of its damage; what a player's echoes are worth
+depends on a loadout of cast spells, and has not been measured by hand.
+
+**Frame cost** (`--timescale=1 --profile=10`, headless, the laptop the harness runs on). The spells section,
+where the echoes run, cost 172 us a physics step before the form (8.3 min: 69 us/frame, 0.5 KB/frame) and
+222 us after it (14.2 min: 89 us/frame, 0.7 KB/frame), with the loadout also grown meanwhile; frames held at
+6.9-7.4 ms either side. One stretch at 13.2-13.9 minutes ran at 23-42 fps, but every section slowed by the
+same factor there (enemy steering 8.5 to 29 us a call, the spells 172 to 600 us a step), which is the
+machine, not the form: other sessions' Godot runs were going beside it (performance.md section 5 warns of
+exactly this). Not measured on the phone.
 
 ### 4.4 Blighted Swamp - Paracelsus
 

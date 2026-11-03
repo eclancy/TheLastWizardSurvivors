@@ -31,6 +31,13 @@ using WizardSurvivors.scripts;
 //      of the stake, so the slam comes down on the iron and not on him; then the next stake.
 //      --kill-hammers=N kills the first N hammers that come near him before they can strike, to show the
 //      bellows wake their replacements and the forge cannot be locked by a strong loadout.
+//      The Sunken Cave's nine mouths are LISTENED to: the probe waits in front of the cliff for a call
+//      and stands in the mouth whose voice came first (NineMouthsEvent.LastCallFirst - what a player
+//      hears and sees), never the answer itself. --wrong-mouth first stands in a mouth that was NOT first,
+//      and checks that it answers with a flight and that hers moves.
+// --fresh-save runs on a brand-new save and --all-unlocked on one that owns every spell, boon and wizard,
+// both built in memory (the balance harness's), so a won event's first-win path (the wizard freed) and its
+// chest path are each driven on purpose rather than by whatever the machine's save holds.
 // It teleports rather than walks: the walking is _BalanceHarness --explore's job. Saving is off.
 // --fresh-save plays it on a brand-new save in memory (the site pays its unlock: a wizard is freed); --all-unlocked
 // on one that owns everything (the site is exhausted, so the win pays a chest). Without either, the machine's save.
@@ -51,6 +58,11 @@ public partial class _ExploreProbe : Node
 	private int hammersKilled;
 	// --slow-bleed: elites bled at SlowBleedPerSecond of their health, carried between frames.
 	private bool slowBleed;
+	// --wrong-mouth: at the nine mouths, stand in a wrong one first and check it answers.
+	private bool wrongMouth;
+	private int mouthWrongFirst = -1;
+	private int mouthTrueBefore = -1;
+	private int mouthTrueAfter = -1;
 	private float bleedCarry;
 	private Enemy bleedTarget;
 	private int bleedFloor;
@@ -89,15 +101,10 @@ public partial class _ExploreProbe : Node
 			else if (arg == "--fresh-save") freshSave = true;
 			else if (arg == "--all-unlocked") allUnlocked = true;
 			else if (arg.StartsWith("--kill-hammers=")) killHammers = int.Parse(arg.Substring(15));
+			else if (arg == "--wrong-mouth") wrongMouth = true;
 		}
 		ProcessMode = ProcessModeEnum.Always;
 		SaveManager.WritesDisabled = true;
-		Global.SelectedCharacterIdx = 1;
-		Global.SelectedStageIdx = StageIndex;
-		Engine.TimeScale = TimeScale;
-		GameStats.ResetRunTelemetry();
-		GD.Print($"EXPLOREPROBE stage={StageIndex} seed={Seed} timescale={TimeScale}"
-			+ (allUnlocked ? " all-unlocked" : freshSave ? " fresh-save" : ""));
 		if ((freshSave || allUnlocked) && GetNodeOrNull<SaveManager>("/root/SaveManager") is SaveManager saves)
 		{
 			var data = new SaveData();
@@ -108,7 +115,14 @@ public partial class _ExploreProbe : Node
 				foreach (string id in UnlockCatalog.AllCharacterIds) data.UnlockedCharacterIds.Add(id);
 			}
 			saves.ReplaceInMemory(data);
+			GD.Print($"EXPLOREPROBE save: {(allUnlocked ? "everything owned" : "brand new")}, in memory");
 		}
+		Global.SelectedCharacterIdx = 1;
+		Global.SelectedStageIdx = StageIndex;
+		Engine.TimeScale = TimeScale;
+		GameStats.ResetRunTelemetry();
+		GD.Print($"EXPLOREPROBE stage={StageIndex} seed={Seed} timescale={TimeScale}"
+			+ (allUnlocked ? " all-unlocked" : freshSave ? " fresh-save" : ""));
 
 		game = ResourceLoader.Load<PackedScene>("res://scenes/node_2d_game.tscn").Instantiate<Node2DGame>();
 		game.ProceduralSeed = Seed;
@@ -415,6 +429,20 @@ public partial class _ExploreProbe : Node
 						&& forge.HammersWoken >= GreatAnvilEvent.HammerCount + killHammers,
 						$"{hammersKilled} killed, {forge.HammersWoken} woken");
 			}
+			if (e is NineMouthsEvent heard)
+			{
+				Check(e.PaysChest ? "her mouth paid a chest (she is already free on this save)" : "the win was her first",
+					true, $"PaysChest={e.PaysChest}");
+				Check("she was found by listening", heard.CallsHeard > 0,
+					$"{heard.CallsHeard} calls heard, freed at mouth {heard.TrueMouth}, {heard.WrongAnswers} wrong mouths");
+				if (wrongMouth)
+				{
+					Check("a wrong mouth answered with a flight", heard.WrongAnswers >= 1 && heard.GloomwingsSent >= NineMouthsEvent.FlightSize,
+						$"mouth {mouthWrongFirst}: {heard.WrongAnswers} answers, {heard.GloomwingsSent} Gloomwings");
+					Check("and her mouth moved", mouthTrueBefore >= 0 && mouthTrueAfter >= 0 && mouthTrueBefore != mouthTrueAfter,
+						$"{mouthTrueBefore} -> {mouthTrueAfter}");
+				}
+			}
 			if (e is FivePointedSealEvent seal)
 			{
 				Check("every stone faces the seal", seal.Aligned == FivePointedSealEvent.StoneCount, $"{seal.Steps} presses");
@@ -483,6 +511,29 @@ public partial class _ExploreProbe : Node
 					break;
 				}
 				break;
+			}
+		}
+		// The nine mouths: wait in front of the cliff for a call, then stand in the mouth that spoke first. With
+		// --wrong-mouth, first stand in one that did not, until it answers.
+		if (e is NineMouthsEvent mouths && mouths.IsFound)
+		{
+			int heard = mouths.LastCallFirst;
+			if (heard < 0)
+				target = mouths.ListeningPoint;
+			else if (wrongMouth && mouths.WrongAnswers == 0)
+			{
+				if (mouthWrongFirst < 0)
+				{
+					mouthWrongFirst = (heard + 3) % NineMouthsEvent.MouthCount;
+					mouthTrueBefore = mouths.TrueMouth;
+				}
+				target = mouths.StandPoint(mouthWrongFirst);
+			}
+			else
+			{
+				if (wrongMouth && mouthTrueAfter < 0)
+					mouthTrueAfter = mouths.TrueMouth;
+				target = mouths.StandPoint(heard);
 			}
 		}
 		if (target == null)

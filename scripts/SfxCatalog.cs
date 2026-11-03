@@ -123,6 +123,12 @@ public static class SfxCatalog
 	public const string HintCaravanBell = "hint_caravan_bell";
 	public const string HintPaperWind = "hint_paper_wind";
 	public const string HintAnvil = "hint_anvil";
+	public const string HintSibylVoice = "hint_sibyl_voice";
+	// The nine mouths' call in the Sunken Cave (NineMouthsEvent): her voice out of the true mouth, first, and
+	// the cave's echo of it out of the other eight, a beat apart - played at each mouth, so the 2D listener
+	// pans and fades each from where it comes.
+	public const string SibylVoice = "sibyl_voice";
+	public const string SibylEcho = "sibyl_echo";
 
 	// --- secrets (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9 and 8.4.1) ------
 	// Generated and allowlisted, not yet played: the secret agents wire them as they build the sites.
@@ -149,7 +155,8 @@ public static class SfxCatalog
 		UiHover, UiClick, UiBack, UiDenied, UiOpen, UiClose, UiPause,
 		StageClear, GameOver, MetaUnlock, WaveWarning,
 		PlayerFall, TallyTick, TallyPayout,
-		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil,
+		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice,
+		SibylVoice, SibylEcho,
 		SecretSeen, SecretFound, SecretShatter,
 	};
 

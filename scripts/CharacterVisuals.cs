@@ -54,6 +54,8 @@ public static class CharacterVisuals
 			case "merlin": return new Vector2(13, 6);
 			// The polished face of his hammer (roster.py, wayland()): the one bright thing on him.
 			case "wayland": return new Vector2(42, 7);
+			// The light in the bronze jar hung from her crook (roster.py, sibyl()), out of its mouth.
+			case "sibyl": return new Vector2(6, 9);
 			default: return null;
 		}
 	}
@@ -82,6 +84,7 @@ public static class CharacterVisuals
 			case "dark_wizard":
 			case "merlin":
 			case "wayland":
+			case "sibyl":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

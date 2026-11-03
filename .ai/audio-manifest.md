@@ -5,6 +5,13 @@ is the inventory and the wiring backlog: seventy-one generated `.wav` files in `
 what each one is for, and where in the code it is meant to be triggered. The music - a menu
 theme and nine chapter sets in `assets/music/` - has its own section at the end.
 
+**2026-11-02: 93 files, all wired; the nine mouths.** Three for the Cumaean Sibyl (`.ai/chapter-wizards.md`
+4.3): `hint_sibyl_voice` (her chapter hint), `sibyl_voice` and `sibyl_echo` (the call at the nine mouths,
+one voice per mouth a beat apart through `PlacedSoundSchedule`). All three Normal tier. They are declared
+twins of each other in `analyse.py` - one voice by design, 0.026-0.059 apart - and the nearest OTHER sound
+in the whole set is 0.139 (`hint_lantern_flare`), so `--confuse` still reports 0 undeclared pairs. Rows
+under "Chapter hints".
+
 **2026-11-02: 90 files, all wired; the defeat and its payout.** Eric: "Defeat should have a
 dramatic animation ... It then tallys up the reward with a satisfying payout sound." Three new
 sounds, generated, allowlisted in `SfxCatalog` and played: `player_fall` (the wizard reaching the
@@ -320,6 +327,9 @@ way. Tier Normal: they never duck anything. The caption carries the words; these
 | `hint_lantern_flare.wav` | 2.30 s | -9.0 dBFS | **wired**, Blighted Swamp (a lantern). A flame catching, burning level for a second at a 13 Hz flicker, guttering out in uneven gaps, under a thin cold E5 with a slow wobble. hf 2% |
 | `hint_ice_song.wav` | 2.58 s | -9.0 dBFS | **wired**, Frozen Waste (the ice). Rebuilt 2026-11-01 to be heard as singing (Eric, 0.10.0): a short groan and one crack, then a man singing a six-note line falling through a D minor pentachord (A G F G E D, legato, vowels changing under it, vibrato blooming on the held last note), muffled at 1.6 kHz. The notes are `sfx._ICE_SONG`, which `StageHintCue.IceSongNotes` puts on screen. Nearest sound in the whole set 0.164 (`secret_found`). hf 0% |
 | `hint_caravan_bell.wav` | 2.50 s | -10.0 dBFS | **wired**, Scorched Sands (the caravan). Five strikes of a hollow tin bell with a wooden clapper, at a walking beast's uneven stride, nearly level, one dune echo. A dB under the rest: a bell carries. hf 0% |
+| `hint_sibyl_voice.wav` | 2.55 s | -10.0 dBFS | **wired**, Sunken Cave (the nine mouths, the Cumaean Sibyl). Her line - an old woman intoning three syllables, F#4 rising to A4, G4, a long trembling E4, with a husk of breath through the same resonances - then the cave giving it back six times a beat (0.24 s) apart, each darker (a 7 ms pipe comb, lowpassed lower each time) and quieter, through the far room. The onsets are `sfx._SIBYL_VOICES` = `StageHintCue.SibylVoices`. A declared twin of the two below (one voice by design); nearest other sound in the whole set 0.143 (`hint_lantern_flare`). hf 1% |
+| `sibyl_voice.wav` | 1.25 s | -12.0 dBFS | **wired**, `NineMouthsEvent`: her line out of the true mouth, first in every call, played at that mouth through `PlacedSoundSchedule`. Near and nearly dry - a short stone room, nothing above 3.4 kHz - so the first voice is also the one that sounds like a person. Nearest other sound 0.139 (`hint_lantern_flare`). hf 3% |
+| `sibyl_echo.wav` | 1.60 s | -15.0 dBFS | **wired**, `NineMouthsEvent`: the same line out of each of the other eight mouths, a beat apart, and once out of a mouth that answers. From deep in the rock: lowpassed at 1.3 kHz, a 7 ms pipe comb, a smeared start, a long dark tail. Three dB under hers, because hers is the one to hear. hf 1% |
 | `hint_paper_wind.wav` | 2.20 s | -10.0 dBFS | **wired**, Mystic Ruins (the Five-Pointed Seal, Abe no Seimei). Five gusts, each carrying a strip of paper snapping in the wind (band noise at 1.4-2 kHz chopped at 24-32 Hz, `sfx._PAPER_GUSTS` = `StageHintCue.PaperGusts`), a few dry crackles of the paper burning under the last three, over one thin whistle of wind through the courtyard that rises and falls with them. Nearest in the whole set 0.125 (`ui_open`); a first draft with no whistle, at 2-3 kHz, was 0.074 from `cast_wind`. hf 6% |
 | `hint_anvil.wav` | 2.50 s | -10.0 dBFS | **wired**, The Emberdeep (the great anvil, Wayland the Smith). Four tired blows on an anvil, somewhere below: each the ring of struck steel at a free bar's inharmonic modes (1.24 kHz x 1, 2.76, 5.40, 8.93) over the thud of the hammer landing, and the small rebound tap a smith lets the hammer make 0.11 s after - the gaps lengthening (0.56, 0.60, 0.66 s) and each blow softer (`sfx._ANVIL_STRIKES` = `StageHintCue.AnvilStrikes`, where the sparks come in). Top cut at 3 kHz, a big dark room. Nearest in the whole set 0.180 (`ui_hover`), in the hint category 0.165 is still the closest pair (ice song and caravan bell). hf 2% |
 

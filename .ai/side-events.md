@@ -14,6 +14,7 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 |---|---|---|---|---|
 | Enchanted Forest | **Hold the grove** (`GroveEvent`) | "Every path now leads inward." | **stand still** in a ring for 20 s; leaving drains it at half speed | Bramble Seed |
 | Cursed Dungeon | **The Gaoler's key** (`GaolersKeyEvent`) | "He keeps a wizard in one of these cells." | **carry**: kill the Warden, take its key across the map; three hits knock it loose | Tituba |
+| Sunken Cave | **The nine mouths** (`NineMouthsEvent`) | "His shadow followed the water down into the dark." | **listen**: a crescent of rock with nine mouths; her voice comes out of all of them a beat apart, hers first; stand in hers 2 s. A wrong mouth answers with a flight of Gloomwings and hers moves | the Cumaean Sibyl |
 | Blighted Swamp | **Snuff the lanterns** (`BogLanternsEvent`) | "Nothing living lights them." | **explore**: four lanterns spread over the map, each releasing wisps, then the lantern-tender comes and is fought on its own terms (below) | Contagion |
 | Mystic Ruins | **The Five-Pointed Seal** (`FivePointedSealEvent`) | "The old wards were broken from the inside." | **solve**: four guardian stones round a star cut in a courtyard floor; a step onto a stone's plate turns it and the two beside it a quarter (a puzzle, six to twelve presses, always solvable); all four facing the seal breaks it | Abe no Seimei |
 | Frozen Waste | **The thaw** (`ThawEvent`) | "A wizard lies under the ice." | **fight here**: damage dealt near the block thaws it, fire counts triple | Väinämöinen |
@@ -22,7 +23,8 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 
 Each asks for something different, and none of them is "a harder fight". The Ruins' is the first of
 the chapter wizards' (`.ai/chapter-wizards.md`, section 4.5 and its "Built" note), added 2026-11-01; the Emberdeep's
-the second (4.7, 2026-11-02), and the only one that uses the enemy's own attack. That was the brief: an
+the second (4.7, 2026-11-02), and the only one that uses the enemy's own attack; the Cave's the third (4.3,
+2026-11-02). That was the brief: an
 event that is only a bigger elite is not an encounter.
 
 ## The thaw's lake (2026-11-01)
@@ -107,6 +109,7 @@ All five events resolve through `SideEvent.Succeed`, so all five now get the sam
 | The caravan master | Iron Palisade (spell) | a chest | "The caravan master falls - his chest is yours" |
 | The Five-Pointed Seal | Abe no Seimei (wizard) | a chest | "The seal is broken - a chest was left inside it" |
 | The great anvil | Wayland the Smith (wizard) | a chest | "The chains are broken - a chest was left at the anvil" |
+| The nine mouths | the Cumaean Sibyl (wizard) | a chest | "Her mouth falls quiet - a chest was left in it" |
 
 To photograph any of them: `_UiShot --scene=res://scenes/node_2d_game.tscn --stage=N --win-event`
 (add `--event-chest` for the chest path on a save that lacks the discovery). It sets
@@ -150,9 +153,11 @@ wayfinders 1.5 to 2.2, 66 to 106 degrees apart; every site on open ground with n
 footprint, identical after its chunks were forgotten and reloaded. At 220 px/s with no swarm the
 main site is 28 to 42 s of straight walking; a real walk through the horde is longer, and the
 distance is the price of the trip, which is what the band is for. Stages without an event
-(Cave, Sketchbook) place nothing. The Emberdeep has had the great anvil since 2026-11-02, placed the seal's way
+(Sketchbook) place nothing. The Emberdeep has had the great anvil since 2026-11-02, placed the seal's way
 (open ground over its whole 230 px disc, so the anvil never stands in lava): seeds 4242, 31 and 7 put it 5.9, 5.1 and
-4.3 chunks out. The Ruins has had the Five-Pointed Seal since 2026-11-01: its
+4.3 chunks out. The Cave has had the nine mouths since 2026-11-02, a 300 px open disc found by
+`ExplorePlacer.EventSiteInBand` in a chamber or a hall (3.6 to 5.3 chunks out on four seeds). The Ruins has had
+the Five-Pointed Seal since 2026-11-01: its
 courtyard needs 290 px of open ground, which on the Ruins' walled lattice is only a court (one block in
 eight, `.ai/terrain.md` section 11), so it is placed by `ExplorePlacer.EventSiteInBand`, which sweeps the
 whole band when the ordinary search near the roll finds none. Seeds 4242, 31, 7 and 1001 put it 3.8 to
@@ -200,6 +205,7 @@ warm glow from further off. Warm against a world whose light is all cold.
 | Frozen Waste | **a bearing cairn**, four snow-capped stones with a brass bearing plate on the top one | `bearing-cairn` |
 | Scorched Sands | the Arcane Compass | `arcane-compass` |
 | Mystic Ruins | the Arcane Compass | `arcane-compass` |
+| Sunken Cave | the Arcane Compass | `arcane-compass` |
 
 `SideEventDirector.ForStage` is the table. A chapter without an event has no wayfinder, since
 there is nothing for it to mark. Once secrets exist, what a wayfinder marks is a decision for that
@@ -370,6 +376,7 @@ player walked toward the sound. Fixed slots, no allocation.
 | the thaw | **the song's notes**, laid along the edge in the order sung, higher notes further in, each leaving a frost glint | each sung note (`sfx._ICE_SONG` = `StageHintCue.IceSongNotes`) |
 | the caravan | the bell walking along the edge, swinging, ringing out either side | each strike |
 | the seal | strips of written paper, violet, tumbling in and falling, charring at both ends in their second half | each gust (`sfx._PAPER_GUSTS` = `StageHintCue.PaperGusts`) |
+| the mouths | written leaves, pale with blue ink, blown in flat and fast on a cold draught, the first on the line to her | each voice of the call (`sfx._SIBYL_VOICES` = `StageHintCue.SibylVoices`) |
 
 `hint_ice_song` was rebuilt to be heard as singing (six notes, A G F G E D, `.ai/audio-manifest.md`).
 
@@ -401,6 +408,7 @@ question. `RegressionChecks.ValidateStageHints` warns on any line that contains 
 | Scorched Sands | `caravan_master` | sound | `hint_caravan_bell` (bell) | "A caravan bell, somewhere out on the sand." / "The bell again. Something walks the old road." / "The bell is still moving. It does not stop." |
 | Mystic Ruins | `five_pointed_seal` | sound (Abe no Seimei, unnamed) | `hint_paper_wind` (paper) | "Strips of paper on the wind, in a hand you do not know." / "More paper, burning at the edges as it falls." / "Still the paper comes, from the same quarter." |
 | The Emberdeep | `great_anvil` | sound (Wayland the Smith, unnamed) | `hint_anvil` (sparks) | "Hammer on anvil, slow and steady, somewhere below." / "The hammer again. Whoever swings it is very tired." / "It does not stop. It is not allowed to." |
+| Sunken Cave | `nine_mouths` | sound (the Cumaean Sibyl, unnamed) | `hint_sibyl_voice` (writ) | "Leaves on a cold draught, every one written on." / "A woman's voice from far down, in more places than one." / "The leaves again, written faster now." |
 
 Tituba speaks in her own character: a prisoner taken from Barbados and jailed on an accusation,
 patient (her passive is *Patience*) and nobody's witch - so she asks for help and says she has
@@ -489,6 +497,9 @@ player off his kiting line or is ignored, needs a playtest.
   apron, his hammered-iron wings folded on his back, a brace and a broken shackle on his lamed leg. Opens on
   **Iron Palisade**, the stakes he forged. Passive *Wings*: +10% move speed. Freed in the Emberdeep, the gate
   chapter, so only the Throne counts him.
+- **The Cumaean Sibyl** (2026-11-02), the prophetess of Cumae, old, hooded, a bronze jar of arcane light on
+  her crook. Opens on **Arcane Explosion** - which, alone, keeps its own time until she holds a second spell.
+  Passive *Prophecy*: +3 rerolls a run. Freed at the nine mouths; counted at the Throne's gate only.
 
 Both wear **no player pigment**. The four saturated rows are the starters'. The rescued wear what
 they were held in, so the only saturated thing on them is their staff head. Sprites are in
@@ -510,7 +521,7 @@ A wizard's card on the character select is in one of three states (`CharacterSel
 
 **The rescued wizards are secret until the chapter that holds them opens**: Tituba until the
 Cursed Dungeon (`stage_1`, opened by beating Elderbark), Väinämöinen until the Frozen Waste
-(`stage_5`), Abe no Seimei until the Mystic Ruins (`stage_4`), Wayland the Smith until the Emberdeep (`stage_7`). The reveal is data: `UnlockDefinition.IsSecret` and `RevealStageId`, set through
+(`stage_5`), Abe no Seimei until the Mystic Ruins (`stage_4`), Wayland the Smith until the Emberdeep (`stage_7`), the Cumaean Sibyl until the Sunken Cave (`stage_2`). The reveal is data: `UnlockDefinition.IsSecret` and `RevealStageId`, set through
 `DiscoveryCharacter(..., secretUntilStage:)`. Why that condition:
 
 - Before the chapter opens the player cannot act on anything about him, and the stage list does

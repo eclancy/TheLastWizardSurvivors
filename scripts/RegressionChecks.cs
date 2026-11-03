@@ -91,6 +91,7 @@ public static partial class RegressionChecks
 		ValidateExploreArt(warnings);
 		ValidateStageHints(warnings);
 		ValidateSealPuzzle(warnings);
+		ValidateNineMouths(warnings);
 		ValidateThawArt(warnings);
 		ValidateGravewell(warnings);
 		ValidateCraters(warnings);
@@ -243,6 +244,66 @@ public static partial class RegressionChecks
 		}
 		if (fewest < FivePointedSealEvent.MinPresses || most > 3 * n)
 			warnings.Add($"Seal puzzle: seeded starts take {fewest} to {most} presses; every one should take {FivePointedSealEvent.MinPresses} to {3 * n}.");
+	}
+
+	// THE NINE MOUTHS (NineMouthsEvent, .ai/chapter-wizards.md 4.3). A listening puzzle is only fair if the
+	// call never lies: on every call hers is FIRST and every mouth speaks exactly once (OrderFor, over a few
+	// hundred seeds); a shift never lands where hers was, never on the mouth that answered, and never next door
+	// (ShiftFrom); no two thresholds overlap, so standing in one mouth is never standing in two; the nine strips
+	// tile the painting with no gap and no overlap; the painting is the size the strips assume; and the call's
+	// beat is the one the hint's cue keeps (StageHintCue.SibylVoices, sfx._SIBYL_VOICES).
+	private static void ValidateNineMouths(List<string> warnings)
+	{
+		const int n = NineMouthsEvent.MouthCount;
+		var rng = new RandomNumberGenerator { Seed = 20261102UL };
+		var order = new int[n];
+		for (int trial = 0; trial < 400; trial++)
+		{
+			int first = trial % n;
+			NineMouthsEvent.OrderFor(first, rng, order);
+			var seen = new HashSet<int>(order);
+			if (order[0] != first || seen.Count != n || order.Any(i => i < 0 || i >= n))
+			{
+				warnings.Add($"Nine mouths: a call from mouth {first} came out as [{string.Join(",", order)}]; hers must be first and every mouth speak once.");
+				break;
+			}
+			int answered = (first + 1 + trial % (n - 1)) % n;
+			int next = NineMouthsEvent.ShiftFrom(first, answered, rng);
+			if (next == first || next == answered || Math.Abs(next - first) < 2 || next < 0 || next >= n)
+			{
+				warnings.Add($"Nine mouths: hers shifted from {first} (mouth {answered} answered) to {next}; it must move at least two mouths, and never onto the one that answered.");
+				break;
+			}
+		}
+		for (int i = 0; i + 1 < n; i++)
+		{
+			float d = NineMouthsEvent.MouthOffset(i).DistanceTo(NineMouthsEvent.MouthOffset(i + 1));
+			if (d <= NineMouthsEvent.ThresholdRadius * 2f)
+				warnings.Add($"Nine mouths: thresholds {i} and {i + 1} are {d:0} px apart, under two radii ({NineMouthsEvent.ThresholdRadius * 2f:0}): one spot would stand in both.");
+		}
+		int x = NineMouthsEvent.StripRect(0).Position.X;
+		for (int i = 0; i < n; i++)
+		{
+			Rect2I r = NineMouthsEvent.StripRect(i);
+			if (r.Position.X != x || r.Size.X <= 0)
+				warnings.Add($"Nine mouths: strip {i} starts at column {r.Position.X}, not {x}; the cliff would show a gap or draw a column twice.");
+			x = r.End.X;
+		}
+		const string art = "res://assets/bonelight/world/mouths/mouths-cliff.png";
+		var cliff = ResourceLoader.Exists(art) ? GD.Load<Texture2D>(art) : null;
+		if (cliff == null)
+			warnings.Add($"Nine mouths: {art} is missing or not imported (python tools/art/nine_mouths.py, then import).");
+		else if (cliff.GetWidth() < x || cliff.GetHeight() != NineMouthsEvent.StripRect(0).Size.Y)
+			warnings.Add($"Nine mouths: the painting is {cliff.GetWidth()}x{cliff.GetHeight()}, but the strips cut it to {x}x{NineMouthsEvent.StripRect(0).Size.Y}.");
+		float[] beats = StageHintCue.SibylVoiceBeats;
+		for (int k = 1; k < beats.Length; k++)
+		{
+			if (Math.Abs(beats[k] - beats[k - 1] - NineMouthsEvent.VoiceBeat) > 0.001f)
+			{
+				warnings.Add($"Nine mouths: the hint's leaves come {beats[k] - beats[k - 1]:0.00} s apart; the call's beat is {NineMouthsEvent.VoiceBeat:0.00}.");
+				break;
+			}
+		}
 	}
 
 	// The thaw's lake and block (tools/art/thaw_lake.py, ThawLake, ThawEvent): four textures the shader

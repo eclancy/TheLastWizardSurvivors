@@ -300,6 +300,9 @@ public static class UnlockCatalog
 		// the Throne could count him either way (.ai/chapter-wizards.md 4.7, "Gate").
 		FromEvent("wayland", UnlockKind.Character, "great_anvil", "Chained to his own anvil in the Emberdeep.",
 			secretUntilStage: "stage_7", finalGateOnly: true),
+		// The Cumaean Sibyl, kept behind a cliff of nine mouths under the water in the Sunken Cave (4.3).
+		FromEvent("sibyl", UnlockKind.Character, "nine_mouths", "Heard behind the rock, far down in the Sunken Cave.",
+			secretUntilStage: "stage_2", finalGateOnly: true),
 		FromEvent("iron_palisade", UnlockKind.Spell, "caravan_master", "Carried by the caravan master on the Scorched Sands road."),
 		FromEvent("contagion", UnlockKind.Spell, "bog_lanterns", "Kept by whatever tends the lanterns in the Blighted Swamp."),
 		FromEvent("bramble_seed", UnlockKind.Spell, "the_grove", "Grown back in the corrupted grove of the Enchanted Forest."),

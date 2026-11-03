@@ -341,6 +341,7 @@ the authority on every gate and form (`SpellMeetsGate`), and
 | Laelaps | The Endless Chase | reflect | Cyclone Slash's whirlwind catches every enemy bolt that comes into it and throws it back at the enemy nearest the catch, for three times a blade's cut (`OrbitingBlade.ReflectBolts`) |
 | Seimei | The Five-Pointed Seal | banish | a ward that burns an enemy below a quarter of its health seals it there, harmless; when the ward goes out, all it sealed is gone (elites take a heavy blow, bosses nothing) |
 | Wayland | The Tempered Line | temper | every blow the stakes take hardens the wall, +5% a cut to +100%; full, it rings and cuts everything along it and 72 px either side, at the full-tempered cut, and starts again. Per wall; nothing moved or stopped, so bosses take it as any cut (`IronPalisade.TemperedLineId`) |
+| the Cumaean Sibyl | The Hundred Mouths | echo | each burst sounds her other spells again from where she stands, at 40% - queued two a frame, never a cast, so an echo never charges the burst and is never echoed again (`Player.Echo.cs`) |
 
 **The gate since 2026-11-02.** Eric: "Apotheosis should require the spell to be at Max level, not
 combined with another spell, and ascended." It replaced a named level 4 and level 8 path and the

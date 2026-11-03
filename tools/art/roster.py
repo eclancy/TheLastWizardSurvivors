@@ -139,6 +139,10 @@ ROBES = {
     # (steel's shade) under a leather apron (gold's shade, which is what leather is in this palette).
     # Iron Palisade is in the hammer's face, not on his clothes.
     "wayland": ("R", "r", "q"),         # steel, dark - the shirt; Iron Palisade
+    # The Cumaean Sibyl's mantle: the bone row from its deep end, a dusty grey-blue in shadow - old wool
+    # gone the colour of the cave. Her stola under it is violet's deep end. Arcane Explosion is in the jar
+    # on her staff.
+    "sibyl": ("m", "n", "J"),           # bone, deep - the palla; Arcane Explosion
 }
 
 
@@ -2215,10 +2219,147 @@ def wayland(phase=None):
     return g.rows()
 
 
+def sibyl(phase=None):
+    """Arcane Explosion. The Cumaean Sibyl, the prophetess of the cave at Cumae with a hundred mouths.
+
+    The spell charges off every other cast and bursts out of her - the god's voice breaking out - so she
+    is the one figure in the cast who is LETTING SOMETHING GO that she did not make: her near arm flung
+    out low and open, palm up, and the written leaves she wrote her prophecies on tearing off it on a
+    draught. Granted long life without youth, she is old: stooped forward over her own reach, leaning
+    her weight on a tall staff in the far hand, the hood of her mantle up round a gaunt face.
+
+    The staff is a plain bough with a crook at its head, and from the crook hangs a small bronze jar on a
+    cord - the jar she was kept in, that she shrank to fit - with the light inside it now hers: the
+    arcane ramp breaking out of its mouth and through one crack, the only thing on her that gives off
+    light. Crook and jar set the top of her silhouette on the far side, the leaves trail away on the
+    near side, so she is lopsided the way a person is, never a chess piece.
+
+    The rescued wear no pigment: a dusty grey-blue mantle (the bone row, from its shade end) over a stola
+    of the stone row, near black, to the floor and ragged at the hem; a cord at the waist in old gold.
+    """
+    mid, lit, dark = ROBES["sibyl"]
+    g = G(48)
+    CX = 26
+
+    # THE STOLA: near black, to the floor, fuller behind where she stoops, its hem ragged.
+    mass(g, [(24, 18, 30), (30, 17, 31), (38, 15, 33), (44, 14, 34), (46, 13, 35)], "x", "w", "X")
+    fold(g, [(21, 27), (19, 36), (17, 46)], "X", "w")
+    fold(g, [(27, 29), (29, 38), (31, 46)], "X", "w")
+    fold(g, [(24, 34), (24, 46)], "X", None)
+    tatters(g, [(46, 13, 17), (46, 22, 25), (46, 30, 35)], "X", "x", "o")
+    g.set(20, 45, "X")
+    if phase is not None:
+        # An old woman's walk: short steps, the hem swinging a little toward the leading foot and that
+        # toe showing under it. The staff and the mantle are drawn after, so they stay put.
+        c, _ln, _lf = stride(phase)
+        hem = 1.4 * c
+        sway(g, 34, hem)
+        if abs(c) > 0.5:
+            toe(g, (28 if c > 0 else 17) + int(round(hem)), w=3, shoe=("h", "i", "I"))
+
+    # THE MANTLE (palla): over the head as a hood, across the shoulders, and hanging long down the near
+    # side to below the knee - the off-axis sweep - while the far side is gathered up over the staff arm.
+    mass(g, [(15, 21, 31), (17, 18, 33), (20, 17, 34), (25, 18, 34), (31, 22, 35), (37, 26, 35),
+             (40, 29, 34)], mid, lit, dark)
+    fold(g, [(28, 18), (30, 25), (32, 33), (33, 39)], dark, lit)
+    fold(g, [(24, 19), (25, 26), (27, 32)], dark, lit)
+    fold(g, [(20, 19), (19, 24)], "m", None)
+    tatters(g, [(40, 29, 34), (41, 31, 33)], dark, mid, "o")
+    g.set(34, 38, lit)
+    # The mantle's edge where it crosses her body, lit: it is cloth wrapped round, not a second coat.
+    g.line(20, 21, 27, 31, lit)
+    g.line(21, 21, 28, 31, dark)
+    # The cord at the waist, old gold, its knotted end hanging.
+    g.span(29, 17, 22, "u")
+    g.set(18, 29, "g")
+    g.set(20, 29, "G")
+    g.line(19, 30, 18, 34, "u")
+    g.set(18, 35, "g")
+
+    # THE FAR ARM: up and across to the staff, the sleeve gathered at the elbow.
+    mass(g, [(18, 15, 20), (21, 13, 19), (24, 12, 17)], mid, lit, dark)
+    fold(g, [(17, 19), (14, 23)], dark, lit)
+    g.line(12, 25, 16, 25, "m")
+
+    # THE STAFF: a plain bough, knotted, taller than she is, planted and leant on.
+    shaft(g, 13, 46, 12, 6, "e", "E", "A")
+    for (kx, ky) in ((13, 15), (12, 31), (13, 38)):
+        g.set(kx, ky, "L")                                   # knots, lit
+        g.set(kx + 1, ky + 1, "A")
+    hand(g, 12, 23)
+    g.set(14, 23, "f")
+    g.set(14, 24, "i")
+    # The crook, bent out away from her.
+    for (px, py, pc) in ((12, 5, "e"), (11, 4, "e"), (10, 3, "L"), (9, 3, "e"), (8, 3, "E"), (7, 4, "e"),
+                         (6, 5, "E"), (13, 5, "A"), (12, 4, "A"), (11, 3, "E"), (6, 6, "A")):
+        g.set(px, py, pc)
+
+    # THE JAR: bronze, round-bellied, on a cord from the crook - the jar she was kept in. The light inside
+    # it is hers now: breaking out of its mouth and through one crack in its side.
+    g.set(6, 7, "u")                                         # the cord
+    g.span(8, 5, 7, "u")                                     # the lip
+    g.set(5, 8, "g")
+    g.disc(6.0, 11.0, 2.4, "g")
+    g.span(9, 5, 7, "u")                                     # the neck
+    for (px, py, pc) in ((4, 10, "G"), (4, 11, "G"), (5, 9, "G"), (8, 12, "u"), (7, 13, "u"),
+                         (6, 13, "u"), (5, 13, "u"), (8, 11, "u"), (4, 12, "g")):
+        g.set(px, py, pc)
+    g.set(5, 10, "H")                                        # the bronze's one hot point
+    # The light: out of the mouth, and through the crack down its belly.
+    g.set(6, 8, "Z")
+    g.set(5, 7, "Y")
+    g.set(7, 7, "y")
+    g.set(7, 10, "z")
+    g.set(7, 11, "y")
+    g.set(6, 12, "z")
+    # Motes lifting off the mouth.
+    for (mx, my, mc) in ((8, 5, "y"), (4, 5, "z"), (9, 7, "z")):
+        g.set(mx, my, mc)
+
+    # THE NEAR ARM: flung out low and forward, the wide sleeve falling from it, the hand open palm up.
+    mass(g, [(19, 30, 34), (22, 31, 36), (25, 33, 38), (27, 35, 39)], mid, lit, dark)
+    fold(g, [(32, 20), (35, 25)], dark, lit)
+    g.line(36, 27, 39, 28, "m")                              # the sleeve's mouth, dark inside
+    for (fx, fy, fc) in ((40, 27, "f"), (41, 27, "h"), (42, 27, "h"), (43, 26, "f"), (40, 28, "i"),
+                         (41, 28, "i"), (42, 28, "I")):
+        g.set(fx, fy, fc)
+
+    # THE LEAVES: written leaves tearing off her palm and lifting away on the draught, each a pale lozenge
+    # with the writing a dark stroke down it. Paper, not light - they do not glow.
+    LEAF = {0: [(0, 1, "s"), (1, 0, "S"), (2, 0, "s"), (1, 1, "m"), (2, 1, "k"), (3, 0, "k"), (0, 2, "o")],
+            1: [(0, 0, "S"), (1, 0, "s"), (1, 1, "m"), (2, 1, "s"), (2, 2, "k"), (0, 1, "k")]}
+    for (lx, ly, turn) in ((41, 22, 0), (43, 16, 1), (40, 11, 0)):
+        for (dx, dy, ch) in LEAF[turn]:
+            g.set(lx + dx, ly + dy, ch)
+
+    # THE HOOD: up over her head and pulled forward, deep inside, its lit rim framing the face.
+    mass(g, [(6, 23, 28), (8, 21, 30), (11, 20, 31), (14, 20, 31), (16, 21, 31)], mid, lit, dark)
+    g.span(7, 24, 27, "k")
+    g.set(23, 7, "s")
+    g.set(22, 8, "k")
+    g.set(21, 10, "k")
+    fold(g, [(29, 8), (30, 13)], dark, None)
+    # The opening, in deep shadow, and the face set back in it - old, gaunt, looking out along her reach.
+    for y in range(9, 16):
+        lo = 23 if y < 15 else 24
+        g.span(y, lo, 29, "m")
+    head(g, CX, 10, 2.4, brow="low", gaze=1, mouth="set", eye="narrow")
+    # Age: the cheek drawn in under the bone, and thin white hair escaping the hood at her brow.
+    g.set(CX - 1, 13, "i")
+    g.set(CX + 2, 14, "I")
+    g.set(23, 9, "S")
+    g.set(24, 9, "s")
+    g.set(23, 10, "k")
+    g.set(28, 9, "k")
+    contact(g, 11, 37)
+    return g.rows()
+
+
 WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("stormcaller", stormcaller), ("geomancer", geomancer),
            ("tituba", tituba), ("vainamoinen", vainamoinen), ("dee", dee),
-           ("seimei", seimei), ("wayland", wayland)]
+           ("seimei", seimei), ("wayland", wayland),
+           ("sibyl", sibyl)]
 ENEMIES = [("swarmer", swarmer), ("runner", runner), ("bruiser", bruiser),
            ("shielder", shielder), ("skullsentry", skullsentry), ("lunger", lunger),
            ("slammer", slammer), ("exploder", exploder), ("summoner", summoner),
