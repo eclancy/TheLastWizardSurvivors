@@ -651,6 +651,9 @@ public partial class Player : CharacterBody2D
 		AddToGroup("player");
 		// Bone Fence is a run's, not the process's: every run starts at no bonus, and her passive raises it.
 		Enemy.PlayerKnockbackScale = 1f;
+		// Nobody is turned at the start of a run, and Dragon's Teeth's tally is the run's (Enemy.Turned.cs).
+		Enemy.ResetTurnedTally();
+		ElementalPulse.ResetTeethTally();
 		ResetItemRules();
 		feetBody = GetNodeOrNull<CharacterBody2D>("Feet");
 		feetShape = feetBody?.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
@@ -4116,6 +4119,9 @@ public partial class Player : CharacterBody2D
 		// Damage-over-time for overlapping enemies
 		foreach (var enemy in overlappingEnemies)
 		{
+			// Turned on its own by Dragon's Teeth (Enemy.Turned.cs): for those seconds it is fighting someone else.
+			if (enemy is Enemy turnedToucher && turnedToucher.IsTurned)
+				continue;
 			if (!enemyDamageCooldowns.ContainsKey(enemy))
 				enemyDamageCooldowns[enemy] = DamageCooldownSeconds; // So damage applies on next tick
 
@@ -8798,7 +8804,9 @@ public partial class Player : CharacterBody2D
 		if (body.IsInGroup("enemies"))
 		{
 			overlappingEnemies.Add(body);
-			// Optionally, apply damage immediately
+			// Optionally, apply damage immediately - never from a body turned on its own (Dragon's Teeth).
+			if (body is Enemy { IsTurned: true })
+				return;
 			if (!enemyDamageCooldowns.ContainsKey(body) || enemyDamageCooldowns[body] >= DamageCooldownSeconds)
 			{
 				// The first touch, the same as every touch after it in the contact loop: the Binding

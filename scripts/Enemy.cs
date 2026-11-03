@@ -255,7 +255,9 @@ public partial class Enemy : CharacterBody2D
 
 	private Node2D? player;
 	// Subclasses (BossEnemy) need the same target this one steers toward, without re-resolving it.
-	protected Node2D? TargetPlayer => player;
+	// Null while the body is turned on its own (Dragon's Teeth, Enemy.Turned.cs): a turned caster draws no bolt and a
+	// turned slammer winds up on nobody, so nothing a turned body does can reach him.
+	protected Node2D? TargetPlayer => turnedTimeRemaining > 0f ? null : player;
 	private AnimatedSprite2D? animatedSprite;
 	private Sprite2D? sprite;
 	private int maxHealth = 0;
@@ -441,7 +443,7 @@ public partial class Enemy : CharacterBody2D
 	{
 		int look = 0;
 		if (!isDying && !StatusEffectLayer.Disabled)
-			look = IsFrozen ? 3 : IsFeared ? 4 : IsSlowed ? 2 : poisonTimeRemaining > 0f ? 1 : 0;
+			look = IsFrozen ? 3 : IsTurned ? 5 : IsFeared ? 4 : IsSlowed ? 2 : poisonTimeRemaining > 0f ? 1 : 0;
 		// The walk slows with the body, floored so a heavy slow still visibly walks; a freeze stops it;
 		// a fright scrambles it.
 		float speed = look == 3 ? 0f : look == 4 ? FearedWalkSpeed : look == 2 ? Mathf.Clamp(slowMultiplier, 0.35f, 1f) : 1f;
@@ -454,6 +456,7 @@ public partial class Enemy : CharacterBody2D
 		{
 			3 => FrozenLook,
 			4 => FearedLook,
+			5 => TurnedLook,
 			2 => SlowedLook,
 			1 => PoisonedLook,
 			_ => Colors.White,
@@ -1013,6 +1016,9 @@ public partial class Enemy : CharacterBody2D
 		groundTells?.QueueRedraw();
 		TickAttackIcon((float)delta);
 		TickHitFlash((float)delta);
+		// Dragon's Teeth (Enemy.Turned.cs): a turned body's clock, its target and its blow, before it steers.
+		if (turnedTimeRemaining > 0f)
+			TickTurned((float)delta);
 		// Before any of the branches below, so an enemy that is shocked, knocked back or planted
 		// mid wind-up still has a current reading when it comes to aim.
 		if (player != null && IsInstanceValid(player))
@@ -1159,7 +1165,11 @@ public partial class Enemy : CharacterBody2D
 				// enemy planted mid wind-up, reshapes the steering here rather than re-implementing
 				// the flow field, wander and separation work around it.
 				var steering = AdjustSteering(variedDir, distanceToPlayer);
-				if (ScriptedHeading != Vector2.Zero)
+				// Turned on its own (Dragon's Teeth): it goes for the one it is fighting, over whatever its behaviour or a
+				// side event wanted, and stands still to strike (a zero heading, as a planted wind-up does).
+				if (turnedTimeRemaining > 0f)
+					steering = turnedHeading;
+				else if (ScriptedHeading != Vector2.Zero)
 					steering = ScriptedHeading;
 				// A frightened enemy runs straight back the way it came, at its own speed, over whatever
 				// its behaviour wanted - a caster holding range or a wind-up planting it alike.
@@ -1478,7 +1488,10 @@ public partial class Enemy : CharacterBody2D
 	private void UpdateFacing()
 	{
 		float facingX = 0f;
-		if (player != null && IsInstanceValid(player))
+		// A turned body faces the one it is fighting.
+		if (turnedTimeRemaining > 0f && TurnedTarget is Enemy foe)
+			facingX = foe.GlobalPosition.X - GlobalPosition.X;
+		else if (player != null && IsInstanceValid(player))
 			facingX = player.GlobalPosition.X - GlobalPosition.X;
 		else
 			facingX = Velocity.X;
@@ -1893,7 +1906,11 @@ public partial class Enemy : CharacterBody2D
 	/// </remarks>
 	protected virtual int AdjustIncomingDamage(int amount) => amount;
 
-	public void TakeDamage(int amount, bool isCrit = false)
+	public void TakeDamage(int amount, bool isCrit = false) => ApplyHit(amount, isCrit, null);
+
+	// Every hit an enemy takes: the player's and the world's through TakeDamage, a turned neighbour's blow through
+	// TakeTurnedBlow (Enemy.Turned.cs), which differs only in the colour of its number.
+	private void ApplyHit(int amount, bool isCrit, Color? numberColor)
 	{
 		if (isDying || IsHeld)
 			return;
@@ -1911,7 +1928,7 @@ public partial class Enemy : CharacterBody2D
 		var textStart = FrameProfiler.Begin();
 		if (floatingTextScene != null && DisplaySettings.DamageNumbers)
 		{
-			Color color = isCrit ? new Color(1f, 0.85f, 0.1f, 1f) : new Color(1, 0.2f, 0.2f, 1); // Yellow for crits, red otherwise
+			Color color = numberColor ?? (isCrit ? new Color(1f, 0.85f, 0.1f, 1f) : new Color(1, 0.2f, 0.2f, 1)); // Yellow for crits, red otherwise
 			string text = isCrit ? $"{amount}!" : amount.ToString();
 			// Under the enemy's parent so it persists after the enemy is freed. Pooled - see FloatingText.
 			FloatingText.Show(GetParent(), floatingTextScene, text, color, GlobalPosition, isCrit ? 1.4f : 1f);
@@ -2015,6 +2032,8 @@ public partial class Enemy : CharacterBody2D
 		CollisionLayer = 0;
 		CollisionMask = 0;
 		Velocity = Vector2.Zero;
+		// Sealed or burrowed, it is out of the fight: nor is it fighting its own (Enemy.Turned.cs).
+		EndTurn();
 		if (animatedSprite != null && hideBody)
 			animatedSprite.Visible = false;
 	}
@@ -2025,6 +2044,8 @@ public partial class Enemy : CharacterBody2D
 			return;
 
 		isDying = true;
+		// A turned body that dies lets its slot go at once (Enemy.Turned.cs).
+		EndTurn();
 		var perfStart = FrameProfiler.Begin();
 		RunEvents.RecordKill(EnemyType, IsMiniBoss);
 
@@ -2220,6 +2241,8 @@ public partial class Enemy : CharacterBody2D
 	public override void _ExitTree()
 	{
 		EnemyRegistry.Forget(this);
+		// Freed or taken out of the tree while turned: its slot in Enemy.TurnedCount goes with it.
+		EndTurn();
 		if (animatedSprite != null && IsInstanceValid(animatedSprite))
 			animatedSprite.AnimationFinished -= OnOneShotAnimationFinished;
 		StatusEffectLayer.Current?.Untrack(this);
@@ -2415,6 +2438,8 @@ public partial class Enemy : CharacterBody2D
 		witherFraction = 0f;
 		poisonDamagePerTick = 0;
 		poisonTimeRemaining = 0f;
+		// Nor turned on its own (Enemy.Turned.cs): the ring is a fresh body that has never seen the stone.
+		EndTurn();
 		// And none of its marks, tint or slowed walk either.
 		StatusEffectLayer.Current?.Untrack(this);
 		RefreshStatusLook();

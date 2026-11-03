@@ -1520,6 +1520,10 @@ public partial class _BalanceHarness : Node
 		// The Hungry Hedge (Baba Yaga): how much it has eaten, and how far grown toward its cap.
 		if (player.HungryHedgeFed > 0)
 			GD.Print($"HARNESS HEDGE m={row.Minute} fed={player.HungryHedgeFed} growth={player.HungryHedgeGrowth * 100f:0}%");
+		// Dragon's Teeth (Medea): stones thrown, bodies turned, and what the turned did to their own.
+		if (ElementalPulse.StatStonesThrown > 0)
+			GD.Print($"HARNESS TEETH m={row.Minute} stones={ElementalPulse.StatStonesThrown} turned={ElementalPulse.StatBodiesTurned} "
+				+ $"elites_struck={ElementalPulse.StatStonesStruckElites} blows={Enemy.TurnedBlows} kills={Enemy.TurnedKills} now={Enemy.TurnedCount}");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger
@@ -3699,6 +3703,9 @@ public partial class _BalanceHarness : Node
 		// The Hungry Hedge (Baba Yaga): what it ate, and how near its cap it grew.
 		if (player != null && IsInstanceValid(player) && player.HungryHedgeFed > 0)
 			lines.Add($"  the hungry hedge ate {player.HungryHedgeFed} ({player.HungryHedgeGrowth * 100f:0}% grown)");
+		// Dragon's Teeth (Medea): the stones, and the crowd fighting itself.
+		if (ElementalPulse.StatStonesThrown > 0)
+			lines.Add($"  dragon's teeth threw {ElementalPulse.StatStonesThrown} stones, turned {ElementalPulse.StatBodiesTurned}; the turned landed {Enemy.TurnedBlows} blows and killed {Enemy.TurnedKills}");
 		lines.AddRange(SpellLevelLines());
 		lines.Add("");
 		lines.Add(AscensionSummaryLine());

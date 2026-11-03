@@ -221,6 +221,22 @@ public static class ApotheosisCatalog
 				"Feed: feed it early. It remembers. What it eats never comes off it.",
 				new Color(0.66f, 0.92f, 0.42f), NoVisualScale),
 		},
+		// Medea, freed by paying the Tithe-Reeve's scale in the Fallow Fields (.ai/chapter-wizards.md 4.2). "Turn" was
+		// nobody's: she set the men sown from the dragon's teeth on each other with one thrown stone, and at full growth
+		// her flare throws a stone of light into the crowd - what it strikes turns on its neighbours for three seconds
+		// (ElementalPulse.DragonsTeethId, Enemy.Turned.cs). Nothing is pulled (pull), frightened off (the dark wizard's
+		// Dread), sealed (banish) or lured (double): the crowd is pointed at itself. Elites are struck, not turned; bosses
+		// are never turned. Fire, the one of Solar Flare's two the form deepens; no card on Solar Flare trades either
+		// away (Solar Prominence adds Fire, Daybreak Light). No visual scale: the flare is drawn out of its reach.
+		new()
+		{
+			CharacterId = "medea", SpellId = "solar_flare",
+			Element = Element.Fire, Verb = "turn",
+			Form = Make(ElementalPulse.DragonsTeethId, "Dragon's Teeth", Element.Fire,
+				"At full growth the flare throws a stone of light into the crowd: what it strikes turns on its neighbours for three seconds.",
+				"Turn: one stone, and they fight. Elites are struck, not turned; bosses are never turned.",
+				new Color(1.0f, 0.88f, 0.52f), NoVisualScale),
+		},
 		// The dark wizard, taken on the hardest road (.ai/dark-wizard-playable.md). "Take" was nobody's, and it is
 		// his verb in the fight and in the story: whatever his lanes kill gives up its light too, and it comes
 		// home to be caught in its turn (TakingLanes; TakenLight.MaxInAir in the air at most). Nothing moves the
