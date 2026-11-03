@@ -64,10 +64,17 @@ PLAYER_RAMPS = RAMPS + [
     # metal - the face of Wayland the Smith's hammer. roster.METAL_RAMP, four more control characters
     # (past the whitespace ones: \x10-\x13).
     "\x10\x11\x12\x13",
-    # red - Merlin's sash, the `red` material row (player_merlin.RED_RAMP). Five control characters
-    # past metal's: \x09-\x0d are whitespace, and \x10-\x13 went to Wayland's metal when both landed
-    # on 2026-11-02 (each had taken \x10-\x12, so a hurt flash would step one along the other's ramp).
+    # red - the `red` material row (merlin_concepts.RED_RAMP): Merlin's sash when he was drawn from the
+    # title figure, and the Counsellor's cope (look C) now. Five control characters past metal's:
+    # \x09-\x0d are whitespace, and \x10-\x13 went to Wayland's metal when both landed on 2026-11-02 (each
+    # had taken \x10-\x12, so a hurt flash would step one along the other's ramp).
     "\x14\x15\x16\x17\x18",
+    # ivory and russet - the two rows Merlin's own looks added on 2026-11-02 (merlin_concepts.IVORY_RAMP,
+    # the Crystal Cave's mantle, which ships; RUSSET_RAMP, the Wood's robe). Single bytes past \x80:
+    # \x19-\x1f are skipped because \x1c-\x1f are line boundaries to Python's unicode splitlines(), \x7f
+    # with them, and \x85, which is whitespace (NEL) to unicode, between the two rows.
+    "\x80\x81\x82\x83\x84",
+    "\x86\x87\x88\x89\x8a",
 ]
 
 

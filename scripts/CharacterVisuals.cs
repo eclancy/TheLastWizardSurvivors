@@ -49,9 +49,10 @@ public static class CharacterVisuals
 			// The warm light he took, in his raised hand (tools/art/player_dark_wizard.py, ORB): The Taking's
 			// hands leave from it, the boss's own gesture.
 			case "dark_wizard": return new Vector2(11, 5);
-			// The light in the claw of his forked staff (tools/art/player_merlin.py), the title figure's orb: the ward's
-			// orb leaves from it and comes home to it.
-			case "merlin": return new Vector2(13, 6);
+			// The light in the raw quartz on his staff's head (tools/art/player_merlin.py, the Crystal Cave look): the
+			// ward's orb leaves from it and comes home to it. The generator prints this cell; another of
+			// merlin_concepts.py's looks puts it somewhere else.
+			case "merlin": return new Vector2(10, 7);
 			// The polished face of his hammer (roster.py, wayland()): the one bright thing on him.
 			case "wayland": return new Vector2(42, 7);
 			default: return null;
