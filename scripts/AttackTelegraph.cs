@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The wind-up clock every telegraphed enemy attack runs on: wait out a cooldown, plant for a

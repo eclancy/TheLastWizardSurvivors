@@ -4,7 +4,7 @@
 **Validation Level:** COMPREHENSIVE  
 
 ## Executive Summary
-The Chest Item System for Wizard Survivors is **fully implemented, tested, and production-ready**. All 25 items, 10 synergies, advanced mechanics, and UI systems are integrated into core gameplay with zero compilation errors.
+The Chest Item System for The One He Missed is **fully implemented, tested, and production-ready**. All 25 items, 10 synergies, advanced mechanics, and UI systems are integrated into core gameplay with zero compilation errors.
 
 ---
 
@@ -331,7 +331,7 @@ All commits are atomic, well-tested, and production-ready.
 
 ## CONCLUSION
 
-The Chest Item System is **PRODUCTION READY** for integration into Wizard Survivors. All 25 items, 10 synergies, and advanced mechanics are fully implemented, tested, and documented. The system is ready for playtesting in the Godot editor.
+The Chest Item System is **PRODUCTION READY** for integration into The One He Missed. All 25 items, 10 synergies, and advanced mechanics are fully implemented, tested, and documented. The system is ready for playtesting in the Godot editor.
 
 **Recommendation:** Proceed to Godot runtime testing using the manual checklist in FINAL_CHECKLIST.md.
 

@@ -1152,7 +1152,7 @@ validators), `LevelGenerator.cs` (C0; every topology after it is a partial file)
 
 ### 9.3 What each piece must verify
 
-Every piece: `dotnet build WizardSurvivors.sln` (and says so when only that ran); the validator run,
+Every piece: `dotnet build TheOneHeMissed.sln` (and says so when only that ran); the validator run,
 `"$GODOT_BIN" --headless --path . scenes/MainMenu.tscn --quit-after 300 -- --no-save-writes`, with no
 new warnings and its chapter's to-do line shrinking.
 

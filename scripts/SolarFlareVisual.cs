@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Solar Flare's bespoke visual, replacing the generic PlaceholderShape it used to share with
 // Toxic Spore Burst. PlaceholderShape._Draw() lets Sunburst win over Ring, and SolarFlare.tscn set

@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>One stop on the world map, as tools/art/world_map.py placed it. All in art pixels.</summary>
 public sealed class WorldMapStop

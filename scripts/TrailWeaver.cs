@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Mirefoot: drops a pool of bog behind the player as they walk.
 //

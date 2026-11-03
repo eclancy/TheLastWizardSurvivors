@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// Makes a button visibly alive while an Ascension is waiting: a gold ring that breathes round it,

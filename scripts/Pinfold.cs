@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // FF1, THE PINFOLD - the Fallow Fields' spell vault (.ai/achievements-and-secrets.md 8.2). It pays the
 // Familiar: a stray the Hayward impounded and nobody came for, learned by letting it out.

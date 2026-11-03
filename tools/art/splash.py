@@ -620,14 +620,14 @@ def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
 
 def _vigil_wordmark(c, lettering):
     """THE ONE HE MISSED, in the layout named (tools/art/title_lettering.py). It was the two-line
-    WIZARD SURVIVORS here until the game was renamed on 2026-11-02."""
+    the first title here until the game was renamed on 2026-11-02."""
     title_lettering.draw(c, lettering, "tall")
 
 
 def _clear_for(lettering):
     """The break in the canopy the lettering sits in, (cx, cy, rx, ry), grown from its box.
 
-    WIZARD SURVIVORS was 186 wide and its hole (180, 108, 150, 66) left about 55 columns of sky
+    The first title was 186 wide and its hole (180, 108, 150, 66) left about 55 columns of sky
     beyond each end and 29 rows above and below; the same margins round THE ONE HE MISSED, which is
     272 wide, would open the hole wider than the frame and take every leaf off the title's rows.
     So the hole is the box plus a smaller margin across, at least the old one, and its lobing

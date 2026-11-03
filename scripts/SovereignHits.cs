@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The anointed spell's strikes, crowned where they land (.ai/sovereign-spell.md section 5). Most casts carry

@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 public sealed class LevelUpOption
 {
@@ -49,8 +49,8 @@ public sealed class LevelUpOption
 	// Evolution / Branching Milestone Support (Issue #48 & #49).
 	public bool IsEvolutionMilestone { get; set; } = false;
 	public int MilestoneLevel { get; set; } = 0; // 4 or 8
-	public List<WizardSurvivors.scripts.SpellEvolutionOption> EvolutionChoices { get; set; } = new();
-	public WizardSurvivors.scripts.SpellEvolutionOption SelectedEvolution { get; set; }
+	public List<TheOneHeMissed.scripts.SpellEvolutionOption> EvolutionChoices { get; set; } = new();
+	public TheOneHeMissed.scripts.SpellEvolutionOption SelectedEvolution { get; set; }
 
 	/// <summary>Evolution id to the reason it cannot be taken. Absent means it can.</summary>
 	/// <remarks>
@@ -88,7 +88,7 @@ public sealed class LevelUpOption
 	public bool OffersVariants => Variants != null && Variants.Count > 0 && string.IsNullOrEmpty(VariantId);
 
 	/// <summary>What choosing this card sends (LevelUpMenu.WeaponSelected): the spell, or the spell and its form.</summary>
-	public string Selection => WizardSurvivors.scripts.SpellVariants.Selection(SpellId, VariantId);
+	public string Selection => TheOneHeMissed.scripts.SpellVariants.Selection(SpellId, VariantId);
 
 	/// <summary>
 	/// What a bot sends to take this card without stopping on a page: the card's own selection, or - for a
@@ -311,8 +311,8 @@ public sealed class AscensionRequirement
 	/// element that would satisfy it - an ascension with no element of its own takes any of its
 	/// spell's tags.
 	/// </summary>
-	public WizardSurvivors.scripts.Element? Element { get; set; }
-	public List<WizardSurvivors.scripts.Element> AnyOf { get; set; } = new();
+	public TheOneHeMissed.scripts.Element? Element { get; set; }
+	public List<TheOneHeMissed.scripts.Element> AnyOf { get; set; } = new();
 
 	/// <summary>For a combination's Ingredient gate: the Ascension it names on that parent.</summary>
 	public string PathName { get; set; } = string.Empty;

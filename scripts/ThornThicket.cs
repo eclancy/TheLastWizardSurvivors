@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Thorned Vine's Thicket (ThornVine.ThicketId, its Ascension that deepens Poison, 2026-10-29): where the
 // whip lands, thorny brambles stay on the ground.

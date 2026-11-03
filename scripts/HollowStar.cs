@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Hollow Star: a dark well opened in the thick of the swarm that drags everything round it into one
 // knot, then collapses on what it gathered (issue #64).

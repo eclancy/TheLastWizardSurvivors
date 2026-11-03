@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // WHO DROPS THE GLEANING BELL, AND WHERE IT LANDS (GleaningBell.cs; .ai/passives-and-items.md 8i).
 //

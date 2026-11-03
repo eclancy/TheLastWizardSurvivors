@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Glacial Spike's Glacier Crown (IceSpike.GlacierCrownId, its Ascension that deepens Ice, 2026-10-29):
 // a ring of spikes erupts round the target and stands, and the pack inside is penned. The proposal

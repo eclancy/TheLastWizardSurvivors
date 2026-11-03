@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// One node per arena that draws every meteor crater: the hole (CraterGround) and the fire, smoke and

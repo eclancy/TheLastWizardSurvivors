@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Hollow Choir's note: a sung wave that leaves a voice's cowl and flies at where the wizard stood.
 //

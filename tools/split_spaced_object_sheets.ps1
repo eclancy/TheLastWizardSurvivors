@@ -1,4 +1,4 @@
-Set-Location "C:\Users\Eric\Documents\GitHub\wizard-survivors"
+Set-Location (Join-Path $PSScriptRoot "..")
 Add-Type -AssemblyName System.Drawing
 
 $srcRoot = 'assets\imported\fantasy\source_mirror'

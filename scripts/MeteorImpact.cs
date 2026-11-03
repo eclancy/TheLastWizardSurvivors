@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Meteor Swarm, one meteor of a volley: it streaks in from the upper left onto a point, and on
 // landing hits everything within explosionRadius, opens a crater in the ground and throws burning rock

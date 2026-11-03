@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // A contact sheet of craters for judging scenes/shaders/crater.gdshader and CraterFire by eye, without
 // a crowd standing in them. Photograph it through _UiShot:

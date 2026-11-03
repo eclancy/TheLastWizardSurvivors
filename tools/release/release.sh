@@ -1,21 +1,22 @@
 #!/usr/bin/env bash
-# Publish a new version of Wizard Survivors. Every Windows copy picks it up the next time it
+# Publish a new version of The One He Missed. Every Windows copy picks it up the next time it
 # starts, and every Android copy says on its title screen that it is out.
 #
 #   bash tools/release/release.sh 0.2.0 ["What changed, for players"]
 #   bash tools/release/release.sh --dry-run 0.2.0     everything but the commit, tag, push and release
 #
-# The optional second argument heads the release notes, and ecec.dev/games/wizard-survivors shows
+# The optional second argument heads the release notes, and ecec.dev/games/the-one-he-missed shows
 # it under "What's new". The download instructions are always appended below it, and must keep
 # starting with "Download **": that page strips the paragraph that starts that way.
 #
 # Commits the version bump, tags it, exports the Windows and Linux builds and the Android APK,
-# and makes a GitHub Release with the installer (WizardSurvivors-Setup.exe, built with Inno Setup
+# and makes a GitHub Release with the installer (TheOneHeMissed-Setup.exe, built with Inno Setup
 # from installer.iss), the full zip (the portable version), the small patch zip, the Linux download
-# (WizardSurvivors-linux.tar.gz, with an install.sh) and its patch, the release-signed APK
-# (WizardSurvivors-android.apk) and version.json. ecec.dev/wizard-survivors/version.json
-# redirects to the newest release's version.json, so nothing on ecec.dev needs deploying. See
-# .ai/releasing.md. Ported from DrawFight's tools/release/release.sh.
+# (TheOneHeMissed-linux.tar.gz, with an install.sh) and its patch, the two bridges for copies from
+# before the rename (package.py, BRIDGE), the release-signed APK (TheOneHeMissed-android.apk) and
+# version.json. ecec.dev/the-one-he-missed/version.json - and the game's old address, which copies
+# from before the rename ask - redirects to the newest release's version.json, so nothing on
+# ecec.dev needs deploying. See .ai/releasing.md. Ported from DrawFight's tools/release/release.sh.
 #
 # --dry-run builds every file a release would carry into build/release/ and verifies the APK's
 # signature, then puts project.godot and export_presets.cfg back: no commit, no tag, no push, no
@@ -30,7 +31,7 @@ for arg in "$@"; do
 done
 VERSION="${ARGS[0]:-}"
 CHANGES="${ARGS[1]:-}"
-HOW_TO="Download **WizardSurvivors-Setup.exe** and run it, then play from the Start menu or the desktop. It keeps itself up to date from then on. No installer? WizardSurvivors-windows.zip is the portable version: unzip it anywhere you can write to and run WizardSurvivors.exe. On an Android phone, download WizardSurvivors-android.apk on the phone and open it (allow your browser to install apps when Android asks); the game says on its title screen when a newer version is out. On Linux, download **WizardSurvivors-linux.tar.gz**, unpack it and run **./install.sh** - it adds Wizard Survivors to your app menu and keeps itself up to date too. Download page: https://ecec.dev/wizard-survivors/download"
+HOW_TO="Download **TheOneHeMissed-Setup.exe** and run it, then play from the Start menu or the desktop. It keeps itself up to date from then on. No installer? TheOneHeMissed-windows.zip is the portable version: unzip it anywhere you can write to and run TheOneHeMissed.exe. On an Android phone, download TheOneHeMissed-android.apk on the phone and open it (allow your browser to install apps when Android asks); the game says on its title screen when a newer version is out. On Linux, download **TheOneHeMissed-linux.tar.gz**, unpack it and run **./install.sh** - it adds The One He Missed to your app menu and keeps itself up to date too. (The two -bridge files are for copies installed before the game was renamed, which fetch them by themselves.) Download page: https://ecec.dev/the-one-he-missed/download"
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 	echo "usage: bash tools/release/release.sh [--dry-run] X.Y.Z [\"what changed\"]" >&2
 	exit 1
@@ -83,7 +84,11 @@ GODOT_DATA="$(cygpath -u "${APPDATA:-}" 2>/dev/null || echo "${APPDATA:-}")/Godo
 # Godot export and of keytool, and nowhere else - never into export_presets.cfg, a log, or the
 # command line. Losing either file means no Android copy can ever be updated again; see
 # .ai/releasing.md, "The signing key".
-KEYSTORE="${WIZARDSURVIVORS_KEYSTORE:-$GODOT_DATA/keystores/wizardsurvivors-release.keystore}"
+# KEPT ON PURPOSE, the game's old name: the keystore was made before the rename, and its file name
+# (and the alias inside it, in the secret file) were chosen then. Renaming the files would change
+# nothing that matters - the key is what Android checks - and the alias cannot be renamed without
+# rewriting the keystore, which is the one file that must never be put at risk.
+KEYSTORE="${THEONEHEMISSED_KEYSTORE:-$GODOT_DATA/keystores/wizardsurvivors-release.keystore}"
 KEYSTORE_SECRET="${KEYSTORE%.keystore}.secret"
 [ -f "$KEYSTORE" ] || { echo "release keystore not found: $KEYSTORE - see .ai/releasing.md, \"The signing key\"" >&2; exit 1; }
 [ -f "$KEYSTORE_SECRET" ] || { echo "keystore secret not found: $KEYSTORE_SECRET" >&2; exit 1; }
@@ -133,9 +138,9 @@ fi
 
 CURRENT=$(sed -n 's/^config\/version="\(.*\)"$/\1/p' project.godot)
 if $DRY_RUN; then
-	echo "Wizard Survivors $CURRENT -> $VERSION (dry run: nothing is committed or published)"
+	echo "The One He Missed $CURRENT -> $VERSION (dry run: nothing is committed or published)"
 else
-	echo "Wizard Survivors $CURRENT -> $VERSION"
+	echo "The One He Missed $CURRENT -> $VERSION"
 fi
 
 # --- The story epoch ------------------------------------------------------------------------
@@ -189,7 +194,7 @@ trap restore_versions EXIT
 sed -i "s/^config\/version=\".*\"$/config\/version=\"$VERSION\"/" project.godot
 sed -i "s/^version\/code=[0-9]*$/version\/code=$VERSION_CODE/" export_presets.cfg
 
-dotnet build WizardSurvivors.sln -nologo -v q
+dotnet build TheOneHeMissed.sln -nologo -v q
 rm -rf build/windows build/linux build/release build/android
 mkdir -p build/windows build/linux build/android
 # Godot does not create the export folder itself, and on an export error it can sit there
@@ -208,21 +213,21 @@ export_desktop() { # preset, output file, log
 		fi
 	fi
 }
-export_desktop "Windows Desktop" build/windows/WizardSurvivors.exe build/export.log
-[ -f build/windows/WizardSurvivors.pck ] || { echo "export produced no .pck - see build/export.log" >&2; exit 1; }
+export_desktop "Windows Desktop" build/windows/TheOneHeMissed.exe build/export.log
+[ -f build/windows/TheOneHeMissed.pck ] || { echo "export produced no .pck - see build/export.log" >&2; exit 1; }
 # The same game for Linux. Needs the linux_* export templates (see .ai/releasing.md).
-export_desktop "Linux" build/linux/WizardSurvivors.x86_64 build/export-linux.log
-[ -f build/linux/WizardSurvivors.pck ] || { echo "Linux export produced no .pck - see build/export-linux.log" >&2; exit 1; }
+export_desktop "Linux" build/linux/TheOneHeMissed.x86_64 build/export-linux.log
+[ -f build/linux/TheOneHeMissed.pck ] || { echo "Linux export produced no .pck - see build/export-linux.log" >&2; exit 1; }
 
 python tools/release/package.py "$VERSION" "--progress-epoch=$EPOCH"
 grep -qE "\"progressEpoch\": $EPOCH([^0-9]|\$)" build/release/version.json \
 	|| { echo "build/release/version.json does not carry progressEpoch $EPOCH" >&2; exit 1; }
-# The installer: build/release/WizardSurvivors-Setup.exe, from the same export. The MSYS
+# The installer: build/release/TheOneHeMissed-Setup.exe, from the same export. The MSYS
 # variables stop Git Bash rewriting ISCC's /Q and /D switches into Windows paths (ISCC would
 # then see extra script names). DrawFight and Wizard Wars call it the same way.
 MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$ISCC" /Q "/DAppVersion=$VERSION" tools/release/installer.iss \
 	|| { echo "installer compile failed" >&2; exit 1; }
-[ -f build/release/WizardSurvivors-Setup.exe ] || { echo "ISCC produced no WizardSurvivors-Setup.exe" >&2; exit 1; }
+[ -f build/release/TheOneHeMissed-Setup.exe ] || { echo "ISCC produced no TheOneHeMissed-Setup.exe" >&2; exit 1; }
 
 # --- The Android APK ------------------------------------------------------------------------
 if [ ! -f android/build/libs/release/godot-lib.template_release.aar ]; then
@@ -249,7 +254,7 @@ password_in() {
 	with_signing sh -c 'grep -qF -- "$GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD" "$1"' _ "$1"
 }
 
-APK=build/android/WizardSurvivors.apk
+APK=build/android/TheOneHeMissed.apk
 echo "Exporting the Android APK (a cold Gradle build takes several minutes) ..."
 # The headless export can write the APK and then never exit, so it runs under a timeout and is
 # judged by the APK it wrote, never by its exit code - the signature check below catches a file
@@ -297,8 +302,14 @@ fi
 BADGING=$("$AAPT" dump badging "$APK" 2>/dev/null | sed -n 1p || true)
 echo "$BADGING" | grep -q "versionCode='$VERSION_CODE' versionName='$VERSION'" \
 	|| { echo "$APK has the wrong version: $BADGING" >&2; exit 1; }
-cp "$APK" build/release/WizardSurvivors-android.apk
-printf '%-30s %6.1f MB  (versionCode %s, signer SHA-256 %s)\n' WizardSurvivors-android.apk \
+# The app's identity, which kept the game's old name through the rename on purpose: an APK with any
+# other package id is a second app, which cannot update the one players have, or reach its save.
+# The id is in export_presets.cfg (package/unique_name), where the Godot editor rewrites the file
+# without the comment that says so - this check is the part that cannot be lost.
+echo "$BADGING" | grep -q "^package: name='com.ecec.wizardsurvivors' " \
+	|| { echo "$APK is not package com.ecec.wizardsurvivors: $BADGING - see .ai/releasing.md, The rename" >&2; exit 1; }
+cp "$APK" build/release/TheOneHeMissed-android.apk
+printf '%-30s %6.1f MB  (versionCode %s, signer SHA-256 %s)\n' TheOneHeMissed-android.apk \
 	"$(awk "BEGIN { print $(stat -c %s "$APK") / 1048576 }")" "$VERSION_CODE" "$APK_CERT"
 
 echo "build/release/version.json:"
@@ -322,12 +333,13 @@ if $STORY_RESET; then
 $CHANGES}"
 fi
 
-gh release create "v$VERSION" --repo eclancy/WizardSurvivors \
-	build/release/WizardSurvivors-Setup.exe build/release/WizardSurvivors-windows.zip \
-	build/release/WizardSurvivors-patch.zip build/release/WizardSurvivors-android.apk \
-	build/release/WizardSurvivors-linux.tar.gz build/release/WizardSurvivors-linux-patch.zip \
+gh release create "v$VERSION" --repo eclancy/TheOneHeMissed \
+	build/release/TheOneHeMissed-Setup.exe build/release/TheOneHeMissed-windows.zip \
+	build/release/TheOneHeMissed-patch.zip build/release/TheOneHeMissed-android.apk \
+	build/release/TheOneHeMissed-linux.tar.gz build/release/TheOneHeMissed-linux-patch.zip \
+	build/release/TheOneHeMissed-windows-bridge.zip build/release/TheOneHeMissed-linux-bridge.tar.gz \
 	build/release/version.json \
-	--title "Wizard Survivors $VERSION" \
+	--title "The One He Missed $VERSION" \
 	--notes "${CHANGES:+$CHANGES
 
 }$HOW_TO"

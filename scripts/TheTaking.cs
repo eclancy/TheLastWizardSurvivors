@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE TAKING (.ai/dark-wizard-playable.md section 3): the dark wizard's own spell, the boss's three verbs
 // turned round to face the horde - and since 2026-11-02 a CONJUNCTION (ComboCatalog: Hollow Star's Black Sun

@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Obsidian Spike (the Geomancer's spell, pure Earth since the starter rework): erupts a cluster of
 // black volcanic glass under the target after a short tell, dealing AoE damage at that spot.

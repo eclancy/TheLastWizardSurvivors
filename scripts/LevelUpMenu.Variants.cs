@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE PAGE OF A SPELL'S FORMS (.ai/decisions/2026-10-28-spell-variants.md; .ai/level-up-screen.md, "The
 // page of forms"). A spell with forms (SpellData.Variants - Spiritual Weapon's axe, hammer and sword) is

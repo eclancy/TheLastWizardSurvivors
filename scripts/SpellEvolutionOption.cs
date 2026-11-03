@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 [GlobalClass]
 public partial class SpellEvolutionOption : Resource

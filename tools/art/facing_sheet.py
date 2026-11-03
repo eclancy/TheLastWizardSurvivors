@@ -43,7 +43,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(HERE, "_facing_sheet.png")
 ICONS = [os.path.join(ROOT, "assets", "bonelight", "ui", "spells", n + ".png")
          for n in ("stormsweep-lightning", "sleet-runes-ice")]
-USER = os.path.join(os.environ.get("APPDATA", ""), "Godot", "app_userdata", "Wizard Survivors")
+USER = os.path.join(os.environ.get("APPDATA", ""), "Godot", "app_userdata", "The One He Missed")
 
 BG = (11, 15, 24)
 INK = (220, 232, 255)

@@ -1,5 +1,5 @@
 param(
-    [string]$RepoRoot = 'C:\Users\ericc\Documents\GitHub\wizard-survivors',
+    [string]$RepoRoot = (Join-Path $PSScriptRoot '..'),
     [string]$ManifestPath = 'assets\organized\asset_manifest.json'
 )
 

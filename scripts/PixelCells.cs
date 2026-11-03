@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Squares on the WORLD's 2 px art grid, for effects stamped with DrawRect from a node that stands

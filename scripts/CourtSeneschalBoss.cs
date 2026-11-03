@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Court (stage_12): THE SENESCHAL (.ai/endgame-castle.md 5.6). "He leaves when it suits him.
 // Follow."

@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // BOSS RUSH (issue #12; BossRushCatalog says what the mode is and why it has this shape). The run's
 // half: when each boss arrives, what felling one does, and the numbers the results screen and the save

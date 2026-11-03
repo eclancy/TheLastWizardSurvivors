@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // GATHER (.ai/achievements-and-secrets.md section 5, "Things to gather"): touch every one of a set, in any
 // order, within a run - the Fallen Star's seven shards, three lit lamps, scattered pages. Distinct from

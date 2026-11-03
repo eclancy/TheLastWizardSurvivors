@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Gravewell: a grave opened in the ground on the path of the approaching swarm, which waits, and
 // collapses on whatever walks into it.

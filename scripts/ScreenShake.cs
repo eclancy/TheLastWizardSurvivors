@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // THE RUN'S SCREEN SHAKE (2026-11-01, from playing 0.10.0: "make use of screenshake during boss animations
 // when helpful"). One per run, owned and ticked by Node2DGame (ShakeScreen), so any number of callers can

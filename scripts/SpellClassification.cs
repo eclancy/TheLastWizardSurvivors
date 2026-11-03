@@ -1,4 +1,4 @@
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // How a spell selects where to act.
 public enum SpellTargetingMode

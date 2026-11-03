@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Grep, Glob
 Run a full validation pass and report as four sections: BUILD / VALIDATOR /
 ALLOWLIST DRIFT / NOT RUN.
 
-1. **BUILD** — `dotnet build WizardSurvivors.sln -v q --nologo`. Report errors
+1. **BUILD** — `dotnet build TheOneHeMissed.sln -v q --nologo`. Report errors
    and warnings with file:line.
 
 2. **VALIDATOR** — if the build succeeded, run

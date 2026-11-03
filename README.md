@@ -1,4 +1,4 @@
-# Wizard Survivors
+# The One He Missed
 
 A 2D auto-shooter roguelite in the Vampire Survivors mould: you move, your spells fire
 themselves, and the question every run asks is what you picked and where you stood.
@@ -84,7 +84,7 @@ behaviours and the primitives they share are in
 You need **Godot 4.5 Mono** and the **.NET 9 SDK**.
 
 ```
-dotnet build WizardSurvivors.sln     # ~6s, catches nearly every C# error
+dotnet build TheOneHeMissed.sln      # ~6s, catches nearly every C# error
 godot --path .                       # run it
 ```
 

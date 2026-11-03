@@ -1,6 +1,6 @@
 ---
 name: juice-feel-vfx-polish
-description: Tuning Wizard Survivors game feel — hit stop, damage flash, camera shake, particles, trails, death pops, screen feedback, and the tradeoff between juice and readability in a swarm. Use when a hit feels weak, an effect is noisy, or a spell needs impact.
+description: Tuning the game feel of The One He Missed — hit stop, damage flash, camera shake, particles, trails, death pops, screen feedback, and the tradeoff between juice and readability in a swarm. Use when a hit feels weak, an effect is noisy, or a spell needs impact.
 ---
 
 # Juice, Feel, and VFX Polish

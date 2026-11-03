@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE SOVEREIGN RITE (.ai/sovereign-spell.md, approved by Eric 2026-11-02; SovereignRite holds the numbers).
 //

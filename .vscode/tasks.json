@@ -14,7 +14,7 @@
 			"label": "Build (dotnet)",
 			"type": "shell",
 			"command": "dotnet",
-			"args": ["build", "WizardSurvivors.sln", "-v", "q", "--nologo"],
+			"args": ["build", "TheOneHeMissed.sln", "-v", "q", "--nologo"],
 			"isBackground": false,
 			"problemMatcher": "$msCompile",
 			"group": {

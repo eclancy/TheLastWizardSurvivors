@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Molten Shard projectile's look: a splinter of hot metal, tumbling, shedding sparks, drawn by the
 // bolt it rides on (scenes/MoltenShard.tscn).

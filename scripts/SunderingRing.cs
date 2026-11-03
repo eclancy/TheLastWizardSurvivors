@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Sundering, the Geomancer's Apotheosis (issue #61). Verb: hold - the arena is edited.
 //

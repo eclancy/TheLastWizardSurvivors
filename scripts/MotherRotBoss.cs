@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Chapter 4, the Blighted Swamp: MOTHER ROT.
 //

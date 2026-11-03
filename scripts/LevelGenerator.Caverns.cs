@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // THE CAVERNS TOPOLOGY: the Sunken Cave's ground (.ai/endgame-castle.md 7.3, piece V2). The chapter
 // whose fiction is "dripping tunnels of black rock" stood on the Ruins' open field until this file:

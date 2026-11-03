@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE LIGHT, GOING HOME (.ai/dark-wizard-playable.md section 3). The Taking's second verb: what the hand
 // tears out of a body rises as a warm mote - the light ramp, not his - and drifts back to the wizard who

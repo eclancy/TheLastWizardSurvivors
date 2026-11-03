@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Does standing still do what the cards say? Drives the real game scene, headless, through a fixed
 // script of standing, walking and being shoved, and checks the Brazier's heat, Taproot's stance and

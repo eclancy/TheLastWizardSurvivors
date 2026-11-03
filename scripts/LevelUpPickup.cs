@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Mini-boss reward pickup: grants one level immediately without adding XP.
 public partial class LevelUpPickup : PickupBase

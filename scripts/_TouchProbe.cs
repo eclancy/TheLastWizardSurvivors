@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Does a finger do what a finger should: does a tap press what it lands on, and does a drag move
 // the list without pressing anything?
@@ -17,7 +17,7 @@ using WizardSurvivors.scripts;
 //
 // On the phone, launched by intent (the scene and flags go in the command_line_params extra; the
 // scene must be "--scene,<path>", a bare path is ignored there), with --manual so that adb's real
-// touches do the pressing:
+// touches do the pressing (the package id keeps the game's old name on purpose - export_presets.cfg):
 //   adb shell am start -n com.ecec.wizardsurvivors/com.godot.game.GodotApp --esa command_line_params //     --scene,res://scenes/_TouchProbe.tscn,--,--scene=res://scenes/node_2d_game.tscn,--force-death,--manual,--settle=240
 //
 // It injects InputEventScreenTouch and InputEventScreenDrag through Input.ParseInputEvent, which is

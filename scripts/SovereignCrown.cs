@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The wizard wears the Sovereign Rite (.ai/sovereign-spell.md section 5): a small crown-ring of the anointed

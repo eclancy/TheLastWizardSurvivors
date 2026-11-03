@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>What a boon does. Interpreted by <c>Player.ApplyBoon</c>.</summary>
 /// <remarks>

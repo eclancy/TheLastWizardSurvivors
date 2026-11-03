@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE VAULT WALKS: --secret-probe on a chapter whose spell vault is not a breakable (the Geode Heart's is
 // VaultProbe, in _UiShot.cs). One walk for every vault, and the part each one owes on its own:

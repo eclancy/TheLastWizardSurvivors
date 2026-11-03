@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Chapter 5, the Mystic Ruins: THE ARCHIVIST.
 //

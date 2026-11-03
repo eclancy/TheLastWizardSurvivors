@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Gale Blade projectile's look: a crescent of moving air spinning out and home, drawn by the bolt it
 // rides on (scenes/GaleBlade.tscn).

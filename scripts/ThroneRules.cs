@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE THRONE'S RULES (.ai/endgame-castle.md 6, ChapterRules' hooks). "He is here."
 //

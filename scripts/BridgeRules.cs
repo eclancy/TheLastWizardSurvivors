@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE LAST BRIDGE'S RULES (.ai/endgame-castle.md 3, piece C1). The chapter is a crossing, not a stand:
 // the span falls in behind the player from pace 0:30 (BridgeCollapseFront), most of the garrison comes at

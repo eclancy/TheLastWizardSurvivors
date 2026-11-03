@@ -10,7 +10,7 @@ that is not one of the 50 material tones, 4 lights or 12 element ramps in §3.
 
 ## The name: THE ONE HE MISSED (2026-11-02)
 
-The game was Wizard Survivors. Eric, 2026-11-02: *"The title screen art needs to change because the
+The game was renamed on 2026-11-02. Eric: *"The title screen art needs to change because the
 title changed."* The new name is the premise's own sentence (`.ai/world-and-tone.md`): a dark wizard
 took every wizard who could have stood against him, and you are the one he missed. **The blue-robed
 figure in the ward is that player** - the one wizard he did not take - and he is nobody else: not
@@ -34,7 +34,7 @@ finished art for both screens and writes the comparison sheet to
 
 The stack breaks where the sentence does (the one / he missed), puts the lit phrase alone on top,
 and its two lines come out within eleven pixels of each other, so it reads as one justified block
-the way WIZARD SURVIVORS did (both its lines were 186).
+the way the first title did (both its lines were 186).
 
 What it took:
 
@@ -84,8 +84,7 @@ Regenerate everything with **`python tools/art/splash.py`** (Python 2.7 + PIL, t
 this machine). It writes the shipping PNGs *and* the previews under `tools/art/_splash/`, which is
 gitignored — the candidates live as code, not as files, so a palette change re-renders all seven.
 
-The old `assets/Wizard_Survivors_Title_Screen.png` is **still referenced** by `MainMenu.tscn` and
-`StageSelection.tscn` and cannot be deleted yet. See the manifest for that job.
+The old square title PNG the scenes once pointed at is gone: nothing references it any more.
 
 ## Why the scene is built the way it is
 
@@ -760,7 +759,7 @@ Three things make it cheap, and all three depend on where in the order it happen
   exposed band *and* the floor's cut edge above it toward `occ` in the same sweep that darkens
   the rest of the frame. The seam does not read as a crop because by the time you see it, it is
   the same colour as everything around it.
-- **Before the wordmark.** The lettering (WIZARD SURVIVORS then, THE ONE HE MISSED now) is stamped
+- **Before the wordmark.** The lettering (the first title then, THE ONE HE MISSED now) is stamped
   afterwards and keeps its own height. Had it been lifted with the scene it would sit 30px off the
   top edge.
 - **Every layer by the same amount**, via `Canvas.lift`, so the animation layers still composite

@@ -55,7 +55,7 @@ def word_box(lettering=None):
     """The lettering's box in wide-frame pixels, (x0, y0, x1, y1) with x1/y1 inclusive.
 
     THE ONE HE MISSED, in whichever layout tools/art/title_lettering.py ships (or the one named).
-    The old WIZARD SURVIVORS sat at (5, 3) here, 310 and 279 wide - 620 and 558 canvas units on a
+    The first title sat at (5, 3) here, 310 and 279 wide - 620 and 558 canvas units on a
     1280 screen; the shipping stack is (4, 3), 272 and 261, because THE ONE at 5 is 340 wide and
     would run off the left edge of a 16:9 screen or into the staff."""
     x0, y0, x1, y1 = title_lettering.box(lettering or title_lettering.SHIPPING, "wide")

@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Text.Json;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The story-mode prologue: six generated panels (tools/art/prologue.py), each held a few seconds

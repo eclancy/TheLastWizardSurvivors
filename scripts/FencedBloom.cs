@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // F1, the Fenced Bloom (.ai/stage-secrets.md 6.1): a moonflower somebody kept, behind a fence. Walk one
 // full lap round the pen - outside the fence, up to LapBand px out - and it opens: healed by half, a

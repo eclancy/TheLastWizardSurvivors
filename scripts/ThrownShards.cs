@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// A ring of splinters thrown out of something that breaks: Glacial Spike's Shatter (ice, as the spike

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>A SpellEvolutionOption field, or a group of them that one reader always takes together.</summary>
 [Flags]

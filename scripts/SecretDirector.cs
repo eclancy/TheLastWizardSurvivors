@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The run's half of the stage secrets (issue #20; .ai/stage-secrets.md; .ai/achievements-and-secrets.md
 // sections 5 and 6). Added by Node2DGame beside the SideEventDirector, before the first chunk is

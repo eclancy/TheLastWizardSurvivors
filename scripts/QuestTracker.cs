@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The tracked quests during a run (.ai/quests-and-notes.md): in the LOWER LEFT, at most three, each a

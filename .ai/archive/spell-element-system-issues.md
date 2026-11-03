@@ -6,7 +6,7 @@ This backlog splits the requested direction change into GitHub-sized issues.
 - Issues 1-8 are implemented in code/docs as of the current working tree.
 - Follow-up UI/testing work is implemented: all current spells/passives can be offered for testing, level-up cards show upgrade stat deltas, element passive descriptions are centralized, the gameplay element banner uses colored element badges, the main menu has Spellbook/Achievements views, and the in-run Escape menu has Resume/Restart/Quit plus Run Details/Spellbook/Achievements views.
 - Achievement definitions now drive achievement progress UI and spell unlock rewards; unlock balance is still open because the current default pool is intentionally fully available for testing.
-- Automated validation completed: `dotnet build WizardSurvivors.csproj` succeeds, `godot --headless --quit --path .` loads the project, and `godot --headless --path . --quit-after 3 scenes/node_2d_game.tscn` starts the gameplay scene cleanly.
+- Automated validation completed: `dotnet build TheOneHeMissed.csproj` succeeds, `godot --headless --quit --path .` loads the project, and `godot --headless --path . --quit-after 3 scenes/node_2d_game.tscn` starts the gameplay scene cleanly.
 - Known non-blocking validation note: Godot headless load still reports an existing exit-time resource leak warning.
 - Remaining before final sign-off: manual in-editor playtest of the level-up, element HUD, Escape menu, Spellbook, Achievements, and achievement unlock flows.
 

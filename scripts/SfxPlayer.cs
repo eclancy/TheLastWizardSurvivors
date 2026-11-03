@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The one place sound effects are played from. Registered as an autoload alongside
 // MusicPlayer and SaveManager; see .ai/audio-direction.md section 9.

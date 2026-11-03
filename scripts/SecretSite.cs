@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // What every stage secret is in the world: a code-made Node2D, no scene, that the SecretDirector placed
 // or attached, and that draws its own near tell (.ai/stage-secrets.md 7.1 and 7.3). Behaviour on top of

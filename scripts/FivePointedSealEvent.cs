@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Mystic Ruins' side event: the Five-Pointed Seal (.ai/chapter-wizards.md 4.5).
 //

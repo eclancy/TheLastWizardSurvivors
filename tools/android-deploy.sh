@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build Wizard Survivors for Android, install it on the connected phone, launch it, and stream its
+# Build The One He Missed for Android, install it on the connected phone, launch it, and stream its
 # log. One command for the phone debugging loop.
 #
 #   tools/android-deploy.sh            export, install, launch, then follow the log (Ctrl+C to stop)
@@ -17,8 +17,9 @@
 # success is judged by the APK being written, not by the exit code.
 set -u
 
+# The package id keeps the game's old name on purpose: it is the app's identity (export_presets.cfg).
 PACKAGE="com.ecec.wizardsurvivors"
-APK="build/android/WizardSurvivors.apk"
+APK="build/android/TheOneHeMissed.apk"
 cd "$(dirname "$0")/.." || exit 1
 
 find_adb() {

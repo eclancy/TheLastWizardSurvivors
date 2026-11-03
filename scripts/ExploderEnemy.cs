@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Suicide detonation (issue #33). It runs at the player faster than an ordinary chaser, and once it
 // is close it plants, marks its blast on the ground with a starburst filling over its head, and blows

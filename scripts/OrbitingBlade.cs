@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Cyclone Slash (Wind x2, issue #13): a spinning blade of wind that repeatedly hits everything
 // nearby. Self-contained orbiting-blade pattern (code-created blades) so it doesn't depend on

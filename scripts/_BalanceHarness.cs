@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // A headless run of the real game, played by a bot, reported as numbers.
 //
@@ -3600,7 +3600,7 @@ public partial class _BalanceHarness : Node
 
 		var lines = new List<string>
 		{
-			"Wizard Survivors - balance run",
+			"The One He Missed - balance run",
 			$"  ended        : {why} at {elapsed / 60f:0.00} minutes of game time",
 			$"  character    : {CharacterRoster.GetByIndex(CharacterIndex)?.Name ?? "?"} (index {CharacterIndex})",
 			$"  timescale    : {TimeScale}x   seed: {Seed}",

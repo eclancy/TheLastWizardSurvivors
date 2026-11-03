@@ -100,7 +100,7 @@ public class GodotApp extends GodotActivity {
 		runOnUiThread(updateWindowAppearance);
 	}
 
-	// -- Wizard Survivors: GL surface watchdog --------------------------------------------------
+	// -- The One He Missed: GL surface watchdog -------------------------------------------------
 	// Works around a Godot 4.5.1 engine bug that leaves the game a permanent black screen (see the
 	// phone section of CLAUDE.md). Godot's copy of GLSurfaceView no longer makes the UI thread wait
 	// in surfaceDestroyed, so when the activity stops and restarts while the GL thread is inside

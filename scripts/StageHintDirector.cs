@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Plays the chapter's hints (StageHintCatalog; .ai/side-events.md, "Hints that something is out
 // there"): partway through a run, while a side event of the chapter still holds a wizard or a spell

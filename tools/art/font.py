@@ -202,7 +202,7 @@ DISPLAY = {
         ".#######.",
         "..#####..",
     ],
-    # THE ONE HE MISSED (2026-11-02): the five letters the new title needed that WIZARD SURVIVORS
+    # THE ONE HE MISSED (2026-11-02): the five letters the new title needed that the first title
     # did not. Drawn to the same rules as the rest: two-pixel strokes, two-row slabs, the
     # diagonals of N and M stepping a column every two rows as W's do. T is ten wide so its
     # two-pixel stem can sit on the centre line; M is W turned over, eleven wide like W.

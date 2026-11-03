@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Hunter's Draw arrow in flight: drawn by the bolt it rides on (scenes/HuntersArrow.tscn).
 //

@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // FALLING BEHIND IS FATAL (.ai/run-pacing.md, section 10). Eric, after a playtest: "if they fall
 // behind they should eventually die, change how spawning/moving enemies works so that if the player

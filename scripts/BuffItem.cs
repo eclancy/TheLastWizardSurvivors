@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // One-time Buff Item (issue #25's Bonus Drop Table): grants a short temporary attack-speed and
 // move-speed buff on contact via Player.ApplyTemporaryBuff(). The player calls it the speed potion.

@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // R1, THE BROKEN WARD - the Mystic Ruins' spell vault (.ai/achievements-and-secrets.md 8.7). It pays Kindled
 // Ward, a made light that keeps the dark off him - learned by making an old ward stand again.

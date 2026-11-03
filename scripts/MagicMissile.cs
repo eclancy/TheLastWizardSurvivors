@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 public partial class MagicMissile : Area2D
 {

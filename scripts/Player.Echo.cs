@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE HUNDRED MOUTHS (the Cumaean Sibyl's Apotheosis of Arcane Explosion, the verb ECHO; .ai/chapter-wizards.md
 // 4.3). "Each burst sounds your other spells again from where you stand, at 40% strength." Her cave at Cumae had a

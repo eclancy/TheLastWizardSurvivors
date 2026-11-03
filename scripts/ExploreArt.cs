@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>One sprite strip from tools/art/explore_props.py, with where its foot is.</summary>
 /// <param name="Ground">Rows from the top of a frame to the ground line, in PNG pixels.</param>

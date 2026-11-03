@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>Broad generation topology for a stage archetype.</summary>
 /// <remarks>

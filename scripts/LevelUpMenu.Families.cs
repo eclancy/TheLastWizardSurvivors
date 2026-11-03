@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The card families on the level-up screen: how each kind of choice is marked, and the inks written
 // on it. See CardFamilyArt for the frames and .ai/level-up-screen.md, "The card families".

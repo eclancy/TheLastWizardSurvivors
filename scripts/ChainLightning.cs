@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Dedicated Chain Lightning behavior: a lightning strike that can fork into multiple delayed arcs.
 //

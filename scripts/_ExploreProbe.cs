@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Drives one chapter's exploration headless, from the real game scene, and checks what the side
 // events promise now that they are placed rather than timed (.ai/side-events.md, "Finding the event").

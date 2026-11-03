@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// What Frost Shard's milestones add to the shatter (.ai/spell-roster.md section 2h): the dead standing a

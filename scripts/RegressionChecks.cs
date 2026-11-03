@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 public static partial class RegressionChecks
 {
@@ -72,6 +72,7 @@ public static partial class RegressionChecks
 		ValidateTeachers(warnings);
 		ValidateSlowStartMigration(warnings);
 		ValidateStoryReset(warnings);
+		ValidateUserDataCarryOver(warnings);
 		ValidateChapterDifficulty(warnings);
 		ValidateNoPixelsInText(warnings);
 		ValidateAudio(warnings);
@@ -2904,6 +2905,82 @@ public static partial class RegressionChecks
 					folder.Remove(file);
 			}
 			DirAccess.RemoveAbsolute(dir);
+		}
+	}
+
+	// The rename's save carry-over (UserDataCarryOver, .ai/releasing.md "The rename"), run for real against
+	// scratch folders of this process's own - never the player's user:// folder or the old one beside it:
+	//   - everything is copied, the save included, except the updater's scratch folder;
+	//   - a file the new folder already has is not overwritten, and the old folder is left byte for byte;
+	//   - a second launch copies nothing (the marker), and nor does a new folder holding a save of its own.
+	private static void ValidateUserDataCarryOver(List<string> warnings)
+	{
+		if (!OS.IsDebugBuild())
+			return;
+
+		string root = ProjectSettings.GlobalizePath($"user://carry-over-check-{OS.GetProcessId()}");
+		string old = System.IO.Path.Combine(root, "old");
+		string fresh = System.IO.Path.Combine(root, "new");
+		string inUse = System.IO.Path.Combine(root, "in-use");
+		void Write(string path, string text)
+		{
+			System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+			System.IO.File.WriteAllText(path, text);
+		}
+		string Read(string path) => System.IO.File.Exists(path) ? System.IO.File.ReadAllText(path) : null;
+		string Snapshot(string dir)
+		{
+			var lines = new List<string>();
+			foreach (string file in System.IO.Directory.GetFiles(dir, "*", System.IO.SearchOption.AllDirectories))
+				lines.Add(System.IO.Path.GetRelativePath(dir, file) + "=" + System.IO.File.ReadAllText(file));
+			lines.Sort(System.StringComparer.Ordinal);
+			return string.Join("\n", lines);
+		}
+
+		try
+		{
+			Write(System.IO.Path.Combine(old, "savegame.json"), "{\"TotalCurrency\": 900}");
+			Write(System.IO.Path.Combine(old, "savegame.before-epoch-2.json"), "{\"TotalCurrency\": 12}");
+			Write(System.IO.Path.Combine(old, "logs", "godot.log"), "the old log");
+			Write(System.IO.Path.Combine(old, "playtest_logs", "run", "events.txt"), "deep");
+			Write(System.IO.Path.Combine(old, "update", "files", "TheOneHeMissed.pck"), "scratch");
+			Write(System.IO.Path.Combine(fresh, "logs", "godot.log"), "this launch's log");
+			string before = Snapshot(old);
+
+			var (outcome, files) = UserDataCarryOver.CarryOver(old, fresh);
+			if (outcome != UserDataCarryOver.Outcome.Carried || files != 3)
+				warnings.Add($"Save carry-over: expected 3 files carried, got {outcome} with {files}.");
+			if (Read(System.IO.Path.Combine(fresh, "savegame.json")) != "{\"TotalCurrency\": 900}")
+				warnings.Add("Save carry-over: the save was not copied word for word.");
+			if (Read(System.IO.Path.Combine(fresh, "savegame.before-epoch-2.json")) == null
+				|| Read(System.IO.Path.Combine(fresh, "playtest_logs", "run", "events.txt")) != "deep")
+				warnings.Add("Save carry-over: a file beside the save, or one in a folder, was not copied.");
+			if (Read(System.IO.Path.Combine(fresh, "logs", "godot.log")) != "this launch's log")
+				warnings.Add("Save carry-over: a file the new folder already had was overwritten.");
+			if (System.IO.Directory.Exists(System.IO.Path.Combine(fresh, "update")))
+				warnings.Add("Save carry-over: the updater's scratch folder was copied.");
+			if (Snapshot(old) != before)
+				warnings.Add("Save carry-over: the old folder was changed.");
+
+			System.IO.File.WriteAllText(System.IO.Path.Combine(old, "savegame.json"), "{\"TotalCurrency\": 5}");
+			if (UserDataCarryOver.CarryOver(old, fresh).Outcome != UserDataCarryOver.Outcome.AlreadyCarried
+				|| Read(System.IO.Path.Combine(fresh, "savegame.json")) != "{\"TotalCurrency\": 900}")
+				warnings.Add("Save carry-over: a second launch copied again.");
+
+			Write(System.IO.Path.Combine(inUse, "savegame.json"), "{\"TotalCurrency\": 1}");
+			if (UserDataCarryOver.CarryOver(old, inUse).Outcome != UserDataCarryOver.Outcome.NewFolderHasASave
+				|| Read(System.IO.Path.Combine(inUse, "savegame.json")) != "{\"TotalCurrency\": 1}"
+				|| System.IO.Directory.Exists(System.IO.Path.Combine(inUse, "logs")))
+				warnings.Add("Save carry-over: a folder with a save of its own was copied into.");
+
+			if (UserDataCarryOver.CarryOver(System.IO.Path.Combine(root, "missing"), System.IO.Path.Combine(root, "other")).Outcome
+				!= UserDataCarryOver.Outcome.NoOldFolder)
+				warnings.Add("Save carry-over: a missing old folder did not read as nothing to carry.");
+		}
+		finally
+		{
+			if (System.IO.Directory.Exists(root))
+				System.IO.Directory.Delete(root, recursive: true);
 		}
 	}
 

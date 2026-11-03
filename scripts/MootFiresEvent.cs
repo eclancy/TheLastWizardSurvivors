@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using System.Text.Json;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Broken Circle's side event: relight the circle (.ai/campaign.md section 6, .ai/side-events.md).
 //

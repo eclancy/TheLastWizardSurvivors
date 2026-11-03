@@ -19,7 +19,8 @@ using System.Text;
 /// runs the release-signed build. Node2DGame attaches it at <c>_Ready</c>
 /// (<see cref="AttachIfRequested"/>). On a phone the argument arrives through the launch intent:
 /// <c>adb shell am start -n com.ecec.wizardsurvivors/com.godot.game.GodotApp --esa command_line_params
-/// "--,--profile"</c>, and the lines come out of logcat under the <c>godot</c> tag.</para>
+/// "--,--profile"</c>, and the lines come out of logcat under the <c>godot</c> tag. (The package id keeps
+/// the game's old name on purpose: it is the app's identity - export_presets.cfg.)</para>
 ///
 /// <para><b>How the frame is split.</b> Two instances of this node bracket every callback: the head
 /// runs first (lowest priority) and the tail last (highest), in both <c>_Process</c> and

@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Strokes, cells and discs stamped as pixel art on the world's 2-unit art grid (.ai/art-direction.md

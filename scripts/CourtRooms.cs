@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // THE COURT'S ROOMS (.ai/endgame-castle.md 5.4): one small behaviour per room kind, attached by CourtRules.
 //

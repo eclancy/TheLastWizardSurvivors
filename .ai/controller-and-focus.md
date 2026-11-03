@@ -331,7 +331,8 @@ scrolls from a drag when `DisplayServer.IsTouchscreenAvailable()`, which a machi
 panel answers false. That half is the phone's - `adb shell input swipe` over a list, after checking
 the foreground app. `--manual` stages a screen and injects nothing, for exactly that; on the phone
 the scene and flags go in the launch intent, and the scene must be given as `--scene <path>` -
-a bare positional scene path is ignored there and the game boots to the title:
+a bare positional scene path is ignored there and the game boots to the title (the package id
+keeps the game's old name on purpose - it is the app's identity, `.ai/releasing.md`):
 
 ```
 adb shell am start -n com.ecec.wizardsurvivors/com.godot.game.GodotApp --esa command_line_params --scene,res://scenes/_TouchProbe.tscn,--,--scene=res://scenes/node_2d_game.tscn,--force-death,--manual,--settle=240

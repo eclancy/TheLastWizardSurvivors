@@ -30,7 +30,7 @@ def ramp_rows(colors, n):
 
 
 # --- the title --------------------------------------------------------------
-# THE ONE HE MISSED. The game was Wizard Survivors until 2026-11-02, and the lettering was the same
+# THE ONE HE MISSED. The game had its first title until 2026-11-02, and the lettering was the same
 # DISPLAY face in a two-line stack. Which layout the title screens ship, and the alternates, live in
 # title_lettering.py; this only knows how to set lines of the face.
 TITLE_LINES = ("THE ONE", "HE MISSED")

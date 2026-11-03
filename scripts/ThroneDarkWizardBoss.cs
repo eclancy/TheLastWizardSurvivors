@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE DARK WIZARD (.ai/endgame-castle.md 6.4). The Throne's last fight and the story's end; never named on
 // screen - the banner is his line, "He takes what you have. Take it back."

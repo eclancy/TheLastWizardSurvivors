@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // HIS LIGHT (.ai/dark-wizard-playable.md section 3): The Taking's third verb, what a caught light throws.
 // Two lanes of his dark light cross where the wizard caught it - one along the way the light came home,

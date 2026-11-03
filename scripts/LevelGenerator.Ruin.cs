@@ -1,4 +1,4 @@
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // THE RUIN TOPOLOGY: the Mystic Ruins' broken walls (.ai/endgame-castle.md 7.3, piece V1). The chapter's
 // flavour line always said "broken spires and shattered walls", and it was the open field every other

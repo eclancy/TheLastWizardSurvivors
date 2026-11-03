@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Thorned Vine's Barbed Lash (ThornVine.BarbedLashId, 2026-10-29): the thorns break off in what the vine
 // cuts, and a barbed enemy tears itself open as it walks on.

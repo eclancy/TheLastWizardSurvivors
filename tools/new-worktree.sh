@@ -96,7 +96,7 @@ fi
 cat <<EOF
 
   cd "$DIR"
-  dotnet build WizardSurvivors.sln
+  dotnet build TheOneHeMissed.sln
 
 When you are done, from the main checkout:
 

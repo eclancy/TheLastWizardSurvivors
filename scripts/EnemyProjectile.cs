@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The first thing in this game that shoots back. Until now every enemy dealt damage by touching the
 // player, so the only positioning rule a run ever taught was "do not stand in the swarm". A bolt

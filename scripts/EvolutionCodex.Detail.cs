@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // AN ENTRY'S PAGE (.ai/evolution-codex.md sections 2-4, layout B "the book"): the right page on a PC, the
 // turned page on a phone. A spell's evolutions are a family tree down the page - the base, the level 4

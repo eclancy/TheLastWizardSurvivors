@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE FAR TELL (.ai/stage-secrets.md section 2; .ai/achievements-and-secrets.md 6.4): the ground changes
 // toward a secret - crystals grow commoner toward the Geode Heart, stumps thicken toward the First Tree -

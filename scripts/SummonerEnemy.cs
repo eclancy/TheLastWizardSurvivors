@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Summoner (issue #33). It keeps its distance and periodically calls up a small pack of weak,
 // fast minions around itself.

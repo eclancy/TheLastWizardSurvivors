@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Contagion: a plague put on one enemy that jumps to everything near it when it dies
 // (.ai/side-events.md). Kept by the lantern-tender in the Blighted Swamp.

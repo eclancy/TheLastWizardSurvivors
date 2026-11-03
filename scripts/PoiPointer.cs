@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // An arrow at the edge of the screen for every point of interest that is marked and off screen
 // (.ai/side-events.md, "Finding the event").

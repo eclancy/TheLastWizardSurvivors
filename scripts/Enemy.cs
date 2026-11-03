@@ -1,6 +1,6 @@
 ﻿using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 public partial class Enemy : CharacterBody2D
 {

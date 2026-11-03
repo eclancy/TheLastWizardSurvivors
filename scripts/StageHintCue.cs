@@ -1,6 +1,6 @@
 using System;
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // What a chapter hint shows (StageHintDirector; .ai/side-events.md, "Hints that something is out
 // there"): a few marks in the site's own language coming in from the edge of the screen on the side

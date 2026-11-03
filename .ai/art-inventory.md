@@ -15,7 +15,8 @@ This misses assets referenced only by a string built at runtime, so treat the
 
 ## Current state
 
-The Desktop source folder (`C:\Users\ericc\Desktop\Wizard Survivors Art`) is **already
+The Desktop source folder (`C:\Users\ericc\Desktop\Wizard Survivors Art`, outside the repo and named
+before the game was renamed) is **already
 fully imported** — `assets/organized/asset_manifest.json` records 1625 source files mapped
 into the tree. There is no un-imported art. The gap is between what is imported and what is
 wired up: **113 of 2095 files are referenced by anything.**

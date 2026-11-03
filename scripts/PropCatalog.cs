@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>One curated prop (mine/torture set) with the gameplay flags from its metadata.</summary>
 public sealed class PropEntry

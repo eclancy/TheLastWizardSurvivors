@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // SAGITTARIUS - Hunter's Draw + Starfall, the first combination (.ai/combo-spells.md section 3; ComboCatalog).
 //

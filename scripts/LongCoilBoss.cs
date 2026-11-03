@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Chapter 7, the Scorched Sands: THE LONG COIL.
 //

@@ -42,7 +42,7 @@ def run_validation() -> Tuple[int, int]:
     passed = 0
     failed = 0
     
-    base_path = r"C:\Users\ericc\Documents\GitHub\wizard-survivors.worktrees\game-feature-prompt-and-issue-planning"
+    base_path = os.path.dirname(os.path.abspath(__file__))
     
     checks = [
         # File existence checks

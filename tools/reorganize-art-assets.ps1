@@ -1,6 +1,8 @@
+# SourceRoot keeps the game's old name on purpose: it is a folder on Eric's Desktop, outside the
+# repo, named before the game was renamed (and so is the segment Get-FamilyName drops below).
 param(
     [string]$SourceRoot = 'C:\Users\ericc\Desktop\Wizard Survivors Art',
-    [string]$RepoRoot = 'C:\Users\ericc\Documents\GitHub\wizard-survivors',
+    [string]$RepoRoot = (Join-Path $PSScriptRoot '..'),
     [string]$OutputRoot = 'assets\organized'
 )
 

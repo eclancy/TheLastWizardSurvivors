@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Lattice, the Stormcaller's Apotheosis (issue #61). Verb: link - the field itself conducts.
 //

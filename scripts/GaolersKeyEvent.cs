@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Cursed Dungeon's side event: the Gaoler's key (.ai/side-events.md).
 //

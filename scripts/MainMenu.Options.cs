@@ -2,7 +2,7 @@ using Godot;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The main menu's Options panel: Audio, Display, Gameplay, Story, Testing, then Reset Progress on

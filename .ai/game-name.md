@@ -1,22 +1,31 @@
 # The game's name
 
-**Status: the direction is decided, the exact name is not.** Eric, 2026-11-02: *"The name relevant for
-wizard survivors should be something like the one he missed."* So the name tells the story's premise -
-everyone else was taken, and you were the one he did not get - rather than the genre. Until the exact
-words are picked the game ships as *Wizard Survivors*. Pulled on 2026-11-02 from Eric's Claude Docs page "Game name ideas"
+**Status: decided and done.** The game is **The One He Missed**. Eric, 2026-11-02, first the
+direction - *"The name relevant for [the game] should be something like the one he missed"* - and then
+the word: *"remove all references to wizard survivors from the repo, from the website and from the
+game itself and replace it with the new name of the game"*. So the name tells the story's premise -
+everyone else was taken, and you were the one he did not get - rather than the genre. (The second
+quote is left word for word, old name and all, because it is the decision this page records.)
+
+The rename itself - what changed, what keeps the old name on purpose because changing it would
+strand a copy or a save, and how a copy from before the rename updates across it - is in
+`.ai/releasing.md`, "The rename". The website moved in its own change (EricClancyEngineeringAndCrafts):
+`ecec.dev/the-one-he-missed/`, `/games/the-one-he-missed`, with the old addresses kept for copies
+already installed.
+
+Pulled on 2026-11-02 from Eric's Claude Docs page "Game name ideas"
 (https://claude.ai/artifact/LM9fYy1cs7vbEWRwssepAN), which came from his conversation with Claude Duet
 and a voice call. That page also holds names for Creature Tactics; only this game's are copied here.
 
-## The shortlist
+## The shortlist it was chosen from
 
-Any of them can be a new title or a subtitle after "Wizard Survivors:". All are drawn from the story
-(`.ai/world-and-tone.md`, `.ai/prologue.md`): he strikes the wizards' moot at the Broken Circle and takes
-their light; you are the one he missed, your light down to an ember; you free a wizard in each place, then
-take your spells back in his castle.
+All are drawn from the story (`.ai/world-and-tone.md`, `.ai/prologue.md`): he strikes the wizards'
+moot at the Broken Circle and takes their light; you are the one he missed, your light down to an
+ember; you free a wizard in each place, then take your spells back in his castle.
 
 | name | why |
 |---|---|
-| **The One He Missed** | **the favourite so far.** The line the whole story hangs on; it is already the Court's quatrain ("The one he missed walks every road he made", `.ai/chapter-wizards.md` 4.10) |
+| **The One He Missed** | **chosen.** The line the whole story hangs on; it is already the Court's quatrain ("The one he missed walks every road he made", `.ai/chapter-wizards.md` 4.10) |
 | Last Ember | your light down to an ember while he searches the stones |
 | Emberward | the ember plus the warded circle he broke (and the app icon is already "the burning ward") |
 | Take It Back | the final fight's own words (the Throne's ask is *take it back*, `.ai/endgame-castle.md`) |
@@ -28,8 +37,8 @@ Undercity and Overcity), not this game's.
 
 ## In the same vein
 
-Names "something like the one he missed": each says that he took everyone and missed you. The first is
-still the favourite; the others are for comparing it against.
+Names "something like the one he missed": each says that he took everyone and missed you. They were
+for comparing the favourite against.
 
 | name | note |
 |---|---|
@@ -40,26 +49,10 @@ still the favourite; the others are for comparing it against.
 | The Ember He Missed | joins the favourite to the Last Ember idea |
 | The Last Unbound | the others are sealed, chained and jailed; you are the one still free |
 
-Each can stand alone or follow "Wizard Survivors:" while the old name is still known.
+## Clashes the name brought
 
-## If a name is chosen: what a rename touches
-
-Recorded so the rename is planned, not found out. None of this is done.
-
-- **The save folder moves with `config/name`.** `project.godot`'s `config/name="Wizard Survivors"` is
-  also the `user://` folder (`%APPDATA%/Godot/app_userdata/Wizard Survivors/` on Windows), so changing
-  it alone would leave every player's save, settings and shots behind. Set
-  `application/config/use_custom_user_dir` and `custom_user_dir_name` to the old folder in the same
-  commit, or migrate the files, before anything else.
-- **Android:** `package/name` in `export_presets.cfg` is the label under the icon and is safe to change;
-  `package/unique_name` (`com.ecec.wizardsurvivors`) is the app's identity, and changing it would make
-  a second app that cannot update the first. Keep it.
-- **Windows:** `application/product_name` and `file_description` in `export_presets.cfg`.
-- **Releases and updates:** `tools/release/release.sh`, `install.sh` (which also names the Linux save
-  folder) and `UpdateScreen.cs` (its "Updating Wizard Survivors" title). Every installed copy finds the
-  next build on GitHub Releases (`.ai/releasing.md`), so renaming the repo or the release assets must
-  keep that working.
-- **Bug reports:** `ReportBugScreen.cs` sends `game=Wizard Survivors`, which ecec.dev's intake uses for
-  the email subject, so change both together.
-- **Words:** the title screen art (`tools/art/splash.py`, `splash_wide.py`), `README.md`, the
-  ecec.dev pages (the Spell Index), the store text.
+- **Merlin's deed.** An achievement was already called "The One He Missed" (`AchievementDefinition.cs`,
+  `OneHeMissedId`); now that it is the game's name, the deed is renamed on Merlin's branch. Its id is
+  a save key and does not change.
+- **The title art** spelled the old name in its lettering; it is redrawn by `tools/art/splash.py`,
+  `splash_wide.py` and `hero.py` on the title art branch (`.ai/title-screen.md`).

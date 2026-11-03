@@ -1,9 +1,9 @@
 ---
 name: two-d-art-direction
-description: Defining Wizard Survivors 2D visual direction — sprite and spell-VFX asset briefs, UI icon direction, elemental shape language and palette, silhouette and readability rules for dense top-down swarms, and Godot import notes. Use when creating art briefs or judging whether a visual reads in combat.
+description: Defining the 2D visual direction of The One He Missed — sprite and spell-VFX asset briefs, UI icon direction, elemental shape language and palette, silhouette and readability rules for dense top-down swarms, and Godot import notes. Use when creating art briefs or judging whether a visual reads in combat.
 ---
 
-# 2D Art Direction for Wizard Survivors
+# 2D Art Direction for The One He Missed
 
 Use this skill when you need art direction that supports a readable top-down autoshooter while staying realistic for a lightweight indie content pipeline.
 

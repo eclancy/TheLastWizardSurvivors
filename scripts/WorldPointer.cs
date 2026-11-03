@@ -78,7 +78,7 @@ public partial class WorldPointer : Control
 		float scaleY = direction.Y != 0f ? (inner.Size.Y * 0.5f) / Mathf.Abs(direction.Y) : float.MaxValue;
 		Vector2 at = centre + direction * Mathf.Min(scaleX, scaleY);
 		// Off the tracked quests and the chapter note (HudKeepOut), along the side it is on.
-		at = WizardSurvivors.scripts.HudKeepOut.Avoid(at, inner, Radius + TailLength);
+		at = TheOneHeMissed.scripts.HudKeepOut.Avoid(at, inner, Radius + TailLength);
 
 		// A slow breath, as ChestPointer's, a little quicker: this one is the thing to go to.
 		float pulse = 1f + 0.07f * Mathf.Sin(Time.GetTicksMsec() * 0.006f);

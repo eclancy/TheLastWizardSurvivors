@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Runtime.InteropServices;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Straight strokes drawn as pixel art on the world's 2 px grid (scenes/shaders/spell_strokes.gdshader):

@@ -6,7 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 using HttpClient = System.Net.Http.HttpClient;
 
 /// <summary>
@@ -51,15 +51,16 @@ public partial class ReportBugScreen : CanvasLayer
 	public const string Site = "https://ecec.dev";
 
 	/// <summary>Points the game at another server - a local one, for testing without emailing Eric.</summary>
-	public const string UrlOverrideVariable = "WIZARDSURVIVORS_INTAKE_URL";
+	public const string UrlOverrideVariable = "THEONEHEMISSED_INTAKE_URL";
 
 	private const string Route = "/api/draw/suggest";
 
 	/// <summary>
 	/// The server's allowlist key (intake/server.js, REPORT_GAMES). It must be exactly this string:
-	/// anything else, or nothing, files the report as a DrawFight suggestion.
+	/// anything else, or nothing, files the report as a DrawFight suggestion. Copies from before the
+	/// rename send the game's old name, which the server files under this one (RENAMED_GAMES).
 	/// </summary>
-	public const string GameField = "Wizard Survivors";
+	public const string GameField = "The One He Missed";
 
 	public const int MaxChars = 2000;
 	private const int MaxNameChars = 40;
@@ -594,7 +595,7 @@ public partial class ReportBugScreen : CanvasLayer
 
 		var body = new Label
 		{
-			Text = "Your report is on its way to the person who makes Wizard Survivors.",
+			Text = "Your report is on its way to the person who makes The One He Missed.",
 		};
 		ResponsiveLayout.SetBodyText(body);
 		body.AddThemeColorOverride("font_color", Ink.Ink);
@@ -867,7 +868,7 @@ public partial class ReportBugScreen : CanvasLayer
 		try
 		{
 			using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(timeout) };
-			http.DefaultRequestHeaders.UserAgent.ParseAdd($"WizardSurvivors/{UpdateScreen.CurrentVersion}");
+			http.DefaultRequestHeaders.UserAgent.ParseAdd(UpdateScreen.UserAgent);
 			using var form = new MultipartFormDataContent();
 			foreach (KeyValuePair<string, string> field in fields)
 				form.Add(new StringContent(field.Value ?? string.Empty), field.Key);

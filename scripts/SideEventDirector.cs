@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>One side event a chapter holds: the Discovery site it pays out, and how to make it.</summary>
 public readonly record struct SideEventEntry(string SiteId, Func<SideEvent> Create);

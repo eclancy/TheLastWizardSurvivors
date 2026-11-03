@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Temporary placeholder art (no external image files needed): draws a simple colored circle or
 // ring procedurally via _Draw(), with a shared pulsing glow shader for a bit of visual life.

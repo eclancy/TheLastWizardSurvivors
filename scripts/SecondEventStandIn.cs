@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The stand-in second event: a TOOL-ONLY way to put a second side event in a chapter, so the plumbing for

@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // One optional encounter inside a run, on the chapters that have one (.ai/side-events.md).
 //

@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Mirefoot's bog: every live pool of one trail, drawn as ONE surface on the ground.
 //

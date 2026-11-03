@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // C2, THE GEODE HEART - the Sunken Cave's spell vault, and Eric's giant crystal (.ai/achievements-and-
 // secrets.md 8.4.1): "a giant crystal that needs to be destroyed to find a related spell". It pays Frost

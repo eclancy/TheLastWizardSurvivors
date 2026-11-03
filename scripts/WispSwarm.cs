@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Mirefoot's Will-o'-Wisps (TrailWeaver.WillOWispsId, its Ascension, 2026-10-29): marsh lights rise out of
 // the pools and go looking for something to burn.

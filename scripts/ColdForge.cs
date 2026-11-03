@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // D5, THE COLD FORGE - the Cursed Dungeon's spell vault (.ai/achievements-and-secrets.md 8.5). It pays
 // Molten Shard: the forge that made the shackles, lit again by what dies on its hearth.

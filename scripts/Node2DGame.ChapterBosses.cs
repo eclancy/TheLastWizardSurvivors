@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // BOSSES A CHAPTER SENDS ON ITS OWN SCHEDULE (piece C4, the Throne's procession, .ai/endgame-castle.md 6.3
 // and 11.5).

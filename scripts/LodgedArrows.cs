@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Hunter's Draw's Barbed (.ai/spell-roster.md 2e): the arrows that stopped in an enemy, still in it,

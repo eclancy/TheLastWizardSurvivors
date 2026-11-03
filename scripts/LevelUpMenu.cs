@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 public partial class LevelUpMenu : CanvasLayer
 {
@@ -120,7 +120,7 @@ public partial class LevelUpMenu : CanvasLayer
 	// "Hunter's Draw and Starfall", from the recipe, for the conjunction page's subtitle.
 	private static string ConjunctionParents(LevelUpOption option)
 	{
-		WizardSurvivors.scripts.ComboDefinition recipe = WizardSurvivors.scripts.ComboCatalog.ForId(option?.ComboId);
+		TheOneHeMissed.scripts.ComboDefinition recipe = TheOneHeMissed.scripts.ComboCatalog.ForId(option?.ComboId);
 		return recipe == null ? option?.DisplayName ?? string.Empty : $"{recipe.First.SpellName} and {recipe.Second.SpellName}";
 	}
 
@@ -146,8 +146,8 @@ public partial class LevelUpMenu : CanvasLayer
 		foreach (LevelUpOption option in currentAscensions)
 		{
 			// A combination (ComboCatalog) is in the strip as the Apotheosis is, on a plate of its own.
-			bool conjunction = WizardSurvivors.scripts.ComboCatalog.IsComboOption(option);
-			bool apotheosis = !conjunction && option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
+			bool conjunction = TheOneHeMissed.scripts.ComboCatalog.IsComboOption(option);
+			bool apotheosis = !conjunction && option.MilestoneLevel >= TheOneHeMissed.scripts.ApotheosisCatalog.MilestoneLevel;
 			string form = apotheosis && option.EvolutionChoices.Count > 0 ? option.EvolutionChoices[0].DisplayName : string.Empty;
 			var button = new Button
 			{
@@ -174,7 +174,7 @@ public partial class LevelUpMenu : CanvasLayer
 			button.AddThemeStyleboxOverride("hover", plateLit);
 			button.AddThemeStyleboxOverride("pressed", plateLit);
 			button.AddThemeStyleboxOverride("focus", plateLit);
-			Color ink = conjunction ? WizardSurvivors.scripts.CardFamilyArt.ConjunctionTitle
+			Color ink = conjunction ? TheOneHeMissed.scripts.CardFamilyArt.ConjunctionTitle
 				: apotheosis ? new Color(1.0f, 0.70f, 0.42f) : new Color(1.0f, 0.88f, 0.50f);
 			button.AddThemeColorOverride("font_color", ink);
 			button.AddThemeColorOverride("font_hover_color", ink.Lightened(0.2f));
@@ -1892,8 +1892,8 @@ public partial class LevelUpMenu : CanvasLayer
 	{
 		if (!option.IsEvolutionMilestone || option.MilestoneLevel < 8)
 			return;
-		bool isConjunction = WizardSurvivors.scripts.ComboCatalog.IsComboOption(option);
-		bool isApotheosis = !isConjunction && option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
+		bool isConjunction = TheOneHeMissed.scripts.ComboCatalog.IsComboOption(option);
+		bool isApotheosis = !isConjunction && option.MilestoneLevel >= TheOneHeMissed.scripts.ApotheosisCatalog.MilestoneLevel;
 
 		// So the sweep is cut off at the frame instead of running out over the plate.
 		card.ClipContents = true;
@@ -2104,7 +2104,7 @@ public partial class LevelUpMenu : CanvasLayer
 		// Level 8 is a fork, not a row of cards: the spell above, an arrow down to each path
 		// (BuildAscensionChoicePage, LevelUpMenu.Ascensions.cs). The mutation and the Apotheosis
 		// keep this page.
-		if (option.MilestoneLevel >= 8 && option.MilestoneLevel < WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel)
+		if (option.MilestoneLevel >= 8 && option.MilestoneLevel < TheOneHeMissed.scripts.ApotheosisCatalog.MilestoneLevel)
 		{
 			BuildAscensionChoicePage(option);
 			return;
@@ -2118,9 +2118,9 @@ public partial class LevelUpMenu : CanvasLayer
 		RemoveEvolutionRoot();
 		evolutionCardWidth = 0f;
 
-		bool isConjunction = WizardSurvivors.scripts.ComboCatalog.IsComboOption(option);
+		bool isConjunction = TheOneHeMissed.scripts.ComboCatalog.IsComboOption(option);
 		bool isAscension = option.MilestoneLevel >= 8;
-		bool isApotheosis = !isConjunction && option.MilestoneLevel >= WizardSurvivors.scripts.ApotheosisCatalog.MilestoneLevel;
+		bool isApotheosis = !isConjunction && option.MilestoneLevel >= TheOneHeMissed.scripts.ApotheosisCatalog.MilestoneLevel;
 
 		// Written straight onto the plate's stone, as the hand is: the mutation cards are pages, and a
 		// page on a bigger page was the same background twice (PageInset's remarks).
@@ -2155,7 +2155,7 @@ public partial class LevelUpMenu : CanvasLayer
 		int branchCount = option?.EvolutionChoices?.Count ?? 0;
 		// A combination's stakes in one line: two spells leave, one comes, a slot is freed (.ai/combo-spells.md).
 		// The Sovereign Rite's page is the same plate, its second ingredient the row of held spells.
-		bool isRite = isConjunction && option.ComboId == WizardSurvivors.scripts.SovereignRite.SpellId;
+		bool isRite = isConjunction && option.ComboId == TheOneHeMissed.scripts.SovereignRite.SpellId;
 		headerBox.AddChild(BuildPageSubtitle(isRite
 			? "Choose one spell. Every other spell falls silent and feeds it."
 			: isConjunction

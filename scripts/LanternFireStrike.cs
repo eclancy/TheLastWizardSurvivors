@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // One fire strike the lantern-tender throws (LanternTenderEnemy, .ai/side-events.md): a gobbet of the
 // lanterns' cold flame lobbed out of its lantern in a high arc, onto a spot marked on the ground for

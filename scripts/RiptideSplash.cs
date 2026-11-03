@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Where a Riptide wave breaks over an enemy: a ring of foam, spray thrown up, a dark wet stain.
 // Spawned by RiptideWave on ElementalBolt.Struck, one per enemy the wave pierces - at most the

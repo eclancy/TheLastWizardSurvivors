@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE HAND OF HIS DARK LIGHT (.ai/endgame-castle.md 6.4, "he takes"). Thrown by ThroneDarkWizardBoss every
 // TakingIntervalSeconds after a long tell: a slow hand of his own light that turns toward the wizard and,

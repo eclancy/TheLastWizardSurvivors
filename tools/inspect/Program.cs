@@ -6,7 +6,8 @@ class Program
 {
     static void Main()
     {
-    var asmPath = @"c:\Users\Eric\Documents\GitHub\wizard-survivors\bin\Debug\net8.0\WizardSurvivors.dll"; // this might be a problem
+    // Run from the repo root: dotnet build puts the game's assembly here.
+    var asmPath = System.IO.Path.Combine(Environment.CurrentDirectory, ".godot", "mono", "temp", "bin", "Debug", "TheOneHeMissed.dll");
         Console.WriteLine($"Looking for assembly: {asmPath}");
         if (!System.IO.File.Exists(asmPath)) { Console.WriteLine("Assembly not found"); return; }
         var asm = Assembly.LoadFile(asmPath);

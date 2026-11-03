@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Long Winter, the Frostweaver's Apotheosis (issue #61). Verb: stop - space, not damage.
 //

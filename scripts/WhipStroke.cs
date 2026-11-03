@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // THE STROKE OF A WHIP (2026-10-31), shared by Thorned Vine (ThornVine) and Stormsweep. Eric: "The vine
 // lash ... its animation just rotates, I want it to look more like the real arc of a whip. Similarly, the

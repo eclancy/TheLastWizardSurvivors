@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The ground a blast leaves hurting, drawn as pixel art: Pyroclasm's pool of magma under a Fireball's

@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // A BOSS'S FALL: the presentation that plays on the corpse after Enemy.StartDeath has already paid
 // out, left the "enemies" group and zeroed its collision on the frame the last hit landed. Nothing

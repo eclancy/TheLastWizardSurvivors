@@ -1,6 +1,6 @@
 ---
 name: gameplay-testing
-description: Validating Wizard Survivors gameplay changes — minimal repro steps, manual playtest plans, regression checklists, and balance passes over damage/HP/cooldown/XP numbers. Use after a gameplay change lands, when a bug report needs a repro, or before touching the damage pipeline, spell timers, or element thresholds.
+description: Validating gameplay changes in The One He Missed — minimal repro steps, manual playtest plans, regression checklists, and balance passes over damage/HP/cooldown/XP numbers. Use after a gameplay change lands, when a bug report needs a repro, or before touching the damage pipeline, spell timers, or element thresholds.
 ---
 
 # Gameplay Testing and Balance Workflow

@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The side events' table now that a chapter may hold two (P2, .ai/chapter-wizards.md 6.3): what keeps
 // SideEventDirector's list right, which no build can see and no single run would show. Every line is a

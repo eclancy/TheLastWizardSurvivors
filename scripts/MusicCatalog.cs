@@ -1,4 +1,4 @@
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// One chapter's music: three stems of the same loop, a fourth for its boss fight, and the shared

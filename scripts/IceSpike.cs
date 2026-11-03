@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Glacial Spike: erupts a spike of ice from the ground at a target point. It quickly spurts up
 // (the spritesheet plays forward, fast), deals AoE damage to every enemy within its hit radius at

@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Emberdeep's side event: the great anvil (.ai/chapter-wizards.md 4.7).
 //

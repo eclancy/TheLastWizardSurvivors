@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Bramble Seed: a seed dropped at the player's feet that grows into a thorn patch over several
 // seconds (.ai/side-events.md). Grown back in the corrupted grove of the Enchanted Forest.

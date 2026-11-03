@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Shared element -> display color palette. Used to tint/modulate the temporary placeholder art
 // (reused generic wizard sprites in CharacterSelection, the shared default spell icon in

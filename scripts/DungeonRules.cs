@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using System.Text.Json;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE CURSED DUNGEON IN THE CASTLE (.ai/endgame-castle.md section 4, piece C2). The chapter moved in as it
 // was - its maze, its key, its portal and its boss are the road's own - and it asks one thing of the hooks:

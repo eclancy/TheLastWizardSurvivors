@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // The Familiar: a creature the wizard conjures out of his own light, that keeps by him and fights what
 // comes close (.ai/spell-roster.md, "Familiar"). It is taken in one of THREE FORMS, chosen the first time

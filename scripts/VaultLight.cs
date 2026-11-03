@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE WARM LIGHT OF A SPELL VAULT, as pixel art (.ai/achievements-and-secrets.md 6.4; .ai/art-direction.md
 // sections 1-3). Two things every vault of the Swamp, the Ruins, the Frozen Waste and the Sands draws:

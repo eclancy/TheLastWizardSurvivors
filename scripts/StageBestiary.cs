@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // THE BESTIARY (.ai/bestiary.md): every chapter's own cast, and the single authority on which scene
 // fills which job in which chapter.

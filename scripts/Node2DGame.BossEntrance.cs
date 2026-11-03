@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // A BOSS'S ARRIVAL, the run's half (2026-10-31: "whenever a boss spawns, all of the players spells
 // should stop firing, and you should see an animation of the boss spawning"). The boss plays its own

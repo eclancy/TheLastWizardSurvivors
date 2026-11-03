@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Linq;
 
-namespace WizardSurvivors.scripts
+namespace TheOneHeMissed.scripts
 {
 	public partial class ArcaneExplosion : Area2D
 	{

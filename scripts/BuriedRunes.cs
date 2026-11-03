@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // I2, THE BURIED RUNES - the Frozen Waste's spell vault (.ai/achievements-and-secrets.md 8.8). It pays
 // Sleet Runes, the runes of rime he throws on the wind - learned from three cut under a drift, which the

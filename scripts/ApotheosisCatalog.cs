@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>One wizard's Apotheosis: whose it is, on which spell, and the form it takes.</summary>
 public sealed class ApotheosisDefinition

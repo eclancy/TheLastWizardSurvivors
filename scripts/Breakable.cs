@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // A thing broken by the fighting round it (.ai/achievements-and-secrets.md section 5, "Things to break":
 // the giant crystal, a lightning-split oak, a cracked flagstone, a cart under sand). Every point of damage

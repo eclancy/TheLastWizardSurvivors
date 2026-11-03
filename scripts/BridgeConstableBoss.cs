@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Last Bridge (castle piece C5): THE CONSTABLE (.ai/endgame-castle.md 3.6).
 //

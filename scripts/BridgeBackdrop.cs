@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // HIS CASTLE ON THE HORIZON (.ai/endgame-castle.md 3.4, item 2: "something pulling forward"). In three-
 // quarter view the far distance is up the screen, and the only far distance the bridge shows is the drop:

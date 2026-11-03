@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Everything the results screen shows about a finished run, gathered once by Node2DGame when the

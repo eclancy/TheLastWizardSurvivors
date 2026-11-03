@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // F4, the First Tree - the Enchanted Forest's keepsake (.ai/stage-secrets.md 6.1), and the first found
 // level (issue #20). A barren clearing ten to twelve chunks out, ringed by dead stumps, with a cracked

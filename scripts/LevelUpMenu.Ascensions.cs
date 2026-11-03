@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The level 8 choice, drawn as a TREE: the spell on top, an arrow down to each of its paths. See
 // .ai/level-up-screen.md, section 4e. The ascension browser that used to share these parts was replaced by the

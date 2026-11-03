@@ -1,6 +1,6 @@
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 [GlobalClass]
 public partial class SpellLevelUpgrade : Resource

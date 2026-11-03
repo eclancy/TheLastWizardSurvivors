@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // A CHAPTER'S OWN RULES (.ai/endgame-castle.md 1.9).
 //

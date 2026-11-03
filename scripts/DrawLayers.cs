@@ -1,4 +1,4 @@
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // The draw layers a thing in the world picks from (2026-10-28: "when using the hammer, the hammer
 // itself should be above enemies, but the quake it creates should be underneath their sprites. Same

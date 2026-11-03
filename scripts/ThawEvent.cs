@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Frozen Waste's side event: the thaw (.ai/side-events.md).
 //

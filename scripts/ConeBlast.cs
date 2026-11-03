@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Cone of Cold (Ice x2 double-weight, issue #28): a single-cast cone-shaped burst in the aim/
 // nearest-enemy direction, dealing damage and slowing everything hit. New "cone" archetype - a

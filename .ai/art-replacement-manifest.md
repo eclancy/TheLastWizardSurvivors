@@ -94,7 +94,7 @@ Everything else in the actor tier has already moved to `assets/bonelight/charact
 Pre-date the `organized/` move and are the easiest wins because each has exactly one consumer:
 `Magic_Missile.png`, `magic_missile.png` (two different files for one spell),
 `arcane_explosion.png`, `spiritual_weapon.png`, `ground_tile.png`, and
-`Wizard_Survivors_Title_Screen.png` - the last of which is only still alive because
+the first title's square title PNG - the last of which was only alive because
 `StageSelection.tscn` references it. The title screen itself stopped using it long ago.
 
 ### Fonts
@@ -567,7 +567,7 @@ not a `Label`: `TitleScreen.cs` fades it in a beat after the artwork lands and t
 and there is no Godot font resource for the hand-drawn face the wordmark uses. Any future overlay
 on this screen — a version string, a "continue" line — should follow the same pattern.
 
-It replaces `assets/Wizard_Survivors_Title_Screen.png`, a 1024×1024 square that `TitleScreen.tscn`
+It replaces the first title's square title PNG, a 1024×1024 square that `TitleScreen.tscn`
 drew with `stretch_mode = Keep` — native size, anchored top-left, so it ran 304px off the right
 edge and left a 256px dead band below.
 
@@ -768,7 +768,7 @@ root, with a dissolving flash at the heart. The card tints no longer multiply ov
 Legendary gets a gold rim.
 
 Photographed before (`pb_mm_*`) and after (`pa_mm_*`) in
-`/root/.local/share/godot/app_userdata/Wizard Survivors/` (`_z16`/`_zg` the zoom, `_d` the Enchanted
+`/root/.local/share/godot/app_userdata/The One He Missed/` (`_z16`/`_zg` the zoom, `_d` the Enchanted
 Forest, `_b` the Sketchbook's paper). After: the base spell and every level 8 pairing at `--zoom=1.6`
 on the forest, and the base with three pairings that cover all five cards at both zooms on both floors.
 Before: the base and those three pairings at `--zoom=1.6` on the forest and at the game's zoom on the
@@ -1135,7 +1135,7 @@ too. No wizard's Apotheosis rides on it.
 
 On the Sketchbook's paper the white-hot head is quieter than the tinted orange one was; the hot, mid and
 edge squares behind it carry the streak there. Photographed before (`vis_blasts_b_*ms*`) and after
-(`vis_blasts_a*_ms*`) in `/root/.local/share/godot/app_userdata/Wizard Survivors/`. Still needs eyes: a full
+(`vis_blasts_a*_ms*`) in `/root/.local/share/godot/app_userdata/The One He Missed/`. Still needs eyes: a full
 Orbital Bombardment volley on a phone.
 
 ### Kindled Ward

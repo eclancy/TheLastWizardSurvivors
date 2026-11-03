@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Fireball's Brimstone (the Ascension on <c>fireball_hellfire_nova</c>'s id, .ai/spell-roster.md 2h):

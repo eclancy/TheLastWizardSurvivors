@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The seed an opened Fenced Bloom drops (.ai/stage-secrets.md 6.1, F1 to F4). Walk over it and he
 // carries it, over his head as the Gaoler's key is carried; three hits knock it loose where he stands,

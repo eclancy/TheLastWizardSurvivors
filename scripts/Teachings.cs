@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>The systems a save is taught one at a time (.ai/slow-start.md, section 3).</summary>
 public enum Teaching

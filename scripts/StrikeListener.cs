@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // STRIKE (.ai/stage-secrets.md 7.3; .ai/achievements-and-secrets.md section 5): damage the player lands on
 // enemies near a point. Extracted from the Frozen Waste's thaw (ThawEvent), which was the first thing in

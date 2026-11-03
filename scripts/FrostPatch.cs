@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Glacial Spike's Rimefoot (IceSpike.RimefootId, 2026-10-29): the ground a spike erupted from is left
 // frozen, and whatever crosses it is slowed.

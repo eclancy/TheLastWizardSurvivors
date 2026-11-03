@@ -1,4 +1,4 @@
-# Wizard Survivors - Expanded Chest Item System
+# The One He Missed - Expanded Chest Item System
 ## Complete Documentation Index
 
 ---
@@ -145,7 +145,7 @@
 ## 📋 File Organization
 
 ```
-wizard-survivors/
+TheOneHeMissed/
 ├── scripts/
 │   ├── ChestItemCatalog.cs      ← MODIFIED
 │   ├── Player.cs                 ← MODIFIED
@@ -263,7 +263,7 @@ All extensions use the same ApplyChestItemEffect/RefreshChestSetEffects pattern 
 
 ## 📝 Summary
 
-The Wizard Survivors chest item system has been successfully expanded from a simple 6-item system to a sophisticated 25-item ecosystem with 10 thematic synergies. The implementation maintains 100% backward compatibility while providing clear paths for future enhancements.
+The chest item system of The One He Missed has been successfully expanded from a simple 6-item system to a sophisticated 25-item ecosystem with 10 thematic synergies. The implementation maintains 100% backward compatibility while providing clear paths for future enhancements.
 
 **Status: ✅ COMPLETE & VERIFIED**
 

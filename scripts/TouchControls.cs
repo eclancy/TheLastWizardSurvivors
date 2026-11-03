@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Linq;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// Floating virtual joystick for touch play.

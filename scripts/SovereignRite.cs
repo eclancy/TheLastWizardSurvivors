@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>What the Rite would pour into one spell: the four numbers, as the boon carries them.</summary>
 public readonly record struct SovereignGains(int Fuel, float DamageMultiplier, float CooldownMultiplier,

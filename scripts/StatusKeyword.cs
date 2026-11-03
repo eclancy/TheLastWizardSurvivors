@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 /// <summary>
 /// A status word in a description (KeywordText) that opens what the status does: "Weakened", "Withers",

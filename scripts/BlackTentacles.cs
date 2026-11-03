@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Black Tentacles (Poison + Earth, issue #28): a rift tears open on the densest pack in range,
 // tentacles burst up out of it, and for the rest of the cast they whip at whatever is inside.

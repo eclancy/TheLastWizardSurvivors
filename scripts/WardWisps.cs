@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// Wisp Trail (Kindled Ward's level 4, .ai/spell-roster.md section 2e): the small lights a drifting ward

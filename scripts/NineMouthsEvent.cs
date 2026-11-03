@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The Sunken Cave's side event: the nine mouths (.ai/chapter-wizards.md 4.3).
 //

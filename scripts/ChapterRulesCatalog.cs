@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // WHICH CHAPTERS HAVE RULES OF THEIR OWN (ChapterRules, .ai/endgame-castle.md 1.9), and the one place
 // that is decided. The pattern is SideEventDirector's table: a line per chapter that needs one,

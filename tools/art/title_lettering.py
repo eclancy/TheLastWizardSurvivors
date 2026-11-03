@@ -10,7 +10,7 @@ black ground. It never touches a shipping file; splash.py, splash_wide.py and an
 they draw whichever layout SHIPPING names.
 
 Why the name changed the art (Eric, 2026-11-02: "The title screen art needs to change because the
-title changed"). The game was Wizard Survivors. It is now The One He Missed, from the premise's own
+title changed"). The game was renamed. It is now The One He Missed, from the premise's own
 sentence (.ai/world-and-tone.md): a dark wizard took every wizard who could have stood against him,
 and you are the one he missed. The blue-robed figure in the ward is that player - the one wizard
 he did not take - and the ward's gold is the one warm light left in the wood. The lettering says

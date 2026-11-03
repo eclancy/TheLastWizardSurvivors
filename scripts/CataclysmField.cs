@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // Cataclysm, the Pyromancer's Apotheosis (issue #61). Verb: burn - the crowd is the fuel.
 //

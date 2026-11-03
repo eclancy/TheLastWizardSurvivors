@@ -1,6 +1,6 @@
 using Godot;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // THE GLEANING BELL: walk onto it and every XP orb on the map flies to you.
 //

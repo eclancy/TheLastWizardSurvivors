@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace WizardSurvivors.scripts;
+namespace TheOneHeMissed.scripts;
 
 // Sleet Runes (Ice + Wind): runes of rime cast the way the player is facing, a fast stream of them
 // carried on the wind, aimed at nothing.

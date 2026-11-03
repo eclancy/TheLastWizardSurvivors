@@ -1,5 +1,5 @@
 using Godot;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // The words of a chapter hint (StageHintDirector), fading in on the side of the screen the sound came
 // from, after the cue (StageHintCue) has started to drift in.

@@ -32,9 +32,9 @@ from PIL import Image, ImageDraw
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(HERE, "_meteor_look_sheet.png")
-USER = os.path.join(os.environ.get("APPDATA", ""), "Godot", "app_userdata", "Wizard Survivors")
+USER = os.path.join(os.environ.get("APPDATA", ""), "Godot", "app_userdata", "The One He Missed")
 SITE = os.path.join(os.path.dirname(ROOT), "EricClancyEngineeringAndCrafts", "public", "games",
-                    "wizard-survivors", "sprites")
+                    "the-one-he-missed", "sprites")
 
 BG = (11, 15, 24)
 INK = (220, 232, 255)

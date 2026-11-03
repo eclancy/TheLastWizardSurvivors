@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using WizardSurvivors.scripts;
+using TheOneHeMissed.scripts;
 
 // BC1, THE FALLEN STAR - the Broken Circle's spell vault (.ai/achievements-and-secrets.md 8.3). It pays
 // Starfall: the star that came down on the moot's heath, learned by gathering what was left of it.
