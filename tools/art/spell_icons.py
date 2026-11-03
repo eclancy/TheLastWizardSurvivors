@@ -595,6 +595,82 @@ def the_taking():
     return c
 
 
+def orb_of_ages(sky=True):
+    """Merlin's own (tools/art/player_merlin.py): the orb in his staff's gold fork, inside the ward it
+    ricochets round.
+
+    In the order the eye takes them: the orb - the light ramp, white-hot up and to the left, the subject -
+    held in the gold claw that grows out of the top of the staff (the title screen's staff head, hero.py,
+    two legs up round its flanks and their tips turned in over it); then the thin ring of light round
+    both, the warded circle drawn on the ground; and inside the ring the path the orb traces bouncing off
+    it, the seven-pointed star {7/3}, dimmer than the ring so the ring stays the boundary and the star
+    reads as the line inside it, a point of light where it strikes the ring at each of its seven corners.
+    The star's dense middle is behind the orb, so what shows are its seven spikes.
+
+    `sky` lays the night inside the ward and a rim of arcane round it - the spell's second element, and
+    what keeps a ring of light from vanishing on the new spell's pale page. evolution_icons.py draws it
+    without, because every milestone frame brings its own night.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    lcore, lhot, lmid, ledge = bl.ELEMENTS["light"]
+    gold = bl.MATERIALS["gold"]
+    cx = cy = 15.5
+
+    if sky:
+        c.disc(cx, cy, 15.0, 15.0, bl.ELEMENTS["arcane"][3])
+        c.disc(cx, cy, 14.2, 14.2, bl.tone("arcane", "deep"))
+
+    # The ward: one thin ring of the light's edge stop.
+    c.ring(cx, cy, 13.4, 13.4, ledge)
+
+    # The path: {7/3}, a corner at the top, each corner joined to the third one on.
+    r = 12.4
+    pts = [(cx + math.cos(math.radians(-90.0 + k * 360.0 / 7.0)) * r,
+            cy + math.sin(math.radians(-90.0 + k * 360.0 / 7.0)) * r) for k in range(7)]
+    for k in range(7):
+        (x0, y0), (x1, y1) = pts[k], pts[(k + 3) % 7]
+        c.line(int(round(x0)), int(round(y0)), int(round(x1)), int(round(y1)), bl.tone("amber", "shade"))
+    # Where it strikes the ring: a point of the light's hot stop at each corner.
+    for (x, y) in pts:
+        c.set(int(round(x)), int(round(y)), lhot)
+
+    # The staff's head: a short stub of the shaft from below, the cup it opens into, and the two legs
+    # up round the orb's flanks, tips turned in. Lit on the key side; the far leg a stop down. An
+    # occlusion seam round all of it first, so the gold stands in front of the star's lines rather than
+    # running into them - the two are near enough in hue to merge without one.
+    ox, oy = 15.5, 14.0
+    c.disc(15.5, 14.5, 5.6, 5.6, OCC)
+    c.rect(12, 19, 19, 21, OCC)
+    c.rect(14, 21, 17, 28, OCC)
+    c.rect(15, 20, 15, 27, gold[1])
+    c.rect(16, 20, 16, 27, gold[2])
+    c.set(15, 27, gold[2])
+    c.set(16, 27, gold[3])
+    c.hline(13, 18, 19, gold[2])
+    c.hline(14, 17, 20, gold[2])
+    c.set(13, 19, gold[1])
+    c.set(18, 19, gold[3])
+    c.vline(11, 11, 18, gold[1])
+    c.vline(12, 18, 19, gold[1])
+    c.vline(20, 11, 18, gold[2])
+    c.vline(19, 18, 19, gold[3])
+    c.set(11, 11, gold[0])
+    c.set(11, 12, gold[0])
+    c.set(12, 9, gold[1])           # the tips, turned in over the orb's shoulders
+    c.set(12, 10, gold[1])
+    c.set(19, 9, gold[2])
+    c.set(19, 10, gold[2])
+    c.set(20, 18, gold[3])
+
+    # The orb, in the claw: the light ramp, its core up and to the left. A pixel of the dark between it
+    # and each leg - without that gap the legs are more of the orb's rim and the claw is not there.
+    c.disc(ox, oy, 3.2, 3.4, ledge)
+    c.disc(ox - 0.2, oy - 0.2, 2.5, 2.6, lmid)
+    c.disc(ox - 0.6, oy - 0.6, 1.6, 1.6, lhot)
+    c.disc(ox - 1.0, oy - 1.0, 0.7, 0.7, lcore)
+    return c
+
+
 def _falling_star(c, x, y, trail, light, glint=1):
     """One falling star: a white head with a glint, and a thin trail back up to the upper left,
     cooling down the Light ramp as it goes. The slant is the one the stars fall at in the game."""
@@ -1085,6 +1161,7 @@ ICONS = [
     ("mirefoot-bog", mirefoot, CELL),
     ("kindled-ward-light", kindled_ward, CELL),
     ("the-taking-dark", the_taking, CELL),
+    ("orb-of-ages-light", orb_of_ages, CELL),
     ("gravewell-pit", gravewell, CELL),
     ("unknown", unknown, CELL),
 ]

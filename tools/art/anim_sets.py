@@ -61,6 +61,9 @@ PLAYER_RAMPS = RAMPS + [
     "\x01\x02\x03\x04",
     # light - Abe no Seimei's kindled ward. roster.LIGHT_RAMP, the next four control characters.
     "\x05\x06\x07\x08",
+    # red - Merlin's sash, the `red` material row (player_merlin.RED_RAMP). Five control characters
+    # past \x0d, because \x09-\x0d are whitespace and a row that splits on them falls apart.
+    "\x0e\x0f\x10\x11\x12",
 ]
 
 
