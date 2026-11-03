@@ -637,12 +637,16 @@ public partial class Player : CharacterBody2D
 
 	/// <summary>Run seconds at which Overlooked turned a killing blow aside, or -1 while it has not. For the harness.</summary>
 	public float OverlookedAtSeconds { get; private set; } = -1f;
+	// Bone Fence (Baba Yaga): the share added to every shove and pull her spells give (Enemy.PlayerKnockbackScale).
+	public const float CharacterBoneFenceKnockbackBonus = 0.20f;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
 	public override void _Ready()
 	{
 		AddToGroup("player");
+		// Bone Fence is a run's, not the process's: every run starts at no bonus, and her passive raises it.
+		Enemy.PlayerKnockbackScale = 1f;
 		ResetItemRules();
 		feetBody = GetNodeOrNull<CharacterBody2D>("Feet");
 		feetShape = feetBody?.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
@@ -886,6 +890,10 @@ public partial class Player : CharacterBody2D
 		// the dark wizard missed. An axis no other wizard owns: not armour (the Geomancer), not a dodge on every hit (the
 		// boons' and Darkness's evasion), not a heal (.ai/difficulty-curve.md) - one death, refused, and nothing else.
 		"missed_once",
+		// Baba Yaga (.ai/chapter-wizards.md 4.1): Bone Fence - her hut stands behind a fence of bone, and whatever her
+		// spells shove or drag is thrown that much harder (Enemy.PlayerKnockbackScale). An axis no other wizard owns:
+		// not damage, not speed, the strength of every push. Her own vine pushes nothing; it is a build's passive.
+		"knockback_20",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -940,6 +948,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "missed_once":
 				characterOverlooked = true;
+				return true;
+			case "knockback_20":
+				Enemy.PlayerKnockbackScale = 1f + CharacterBoneFenceKnockbackBonus;
 				return true;
 			default:
 				return false;
@@ -2488,6 +2499,8 @@ public partial class Player : CharacterBody2D
 		{
 			OnChestEnemyKilled();
 			SpreadSingedLock(defeatedEnemy.GlobalPosition);
+			// The Hungry Hedge (Baba Yaga's form): what the vine kills feeds it (Player.HungryHedge.cs).
+			FeedHungryHedge(source);
 		}
 		// Spells deliberately do not knock enemies back. This used to push every enemy on every
 		// spell hit, which shoved the swarm around constantly and made positioning unreadable.
@@ -3747,6 +3760,13 @@ public partial class Player : CharacterBody2D
 	// Stormbound's move speed: on whenever the set is complete (issue #44 dropped "while shielded").
 	private float GetStormboundSpeedMultiplier() =>
 		completedChestSets.Contains(ChestItemCatalog.StormboundSetId) ? 1f + StormboundSpeedBonus : 1f;
+
+	/// <summary>
+	/// His walk on open ground, every bonus in and no crowd in the way: what MovePlayer moves him at before a pack
+	/// slows him. The walking hut (WalkingHutEvent, FleeingMover) bolts at a share of it, so "quicker than his walk"
+	/// stays true for a wizard with Wings or a speed boon.
+	/// </summary>
+	public float WalkingSpeed => Speed * GetWindSpeedMultiplier() * GetStormboundSpeedMultiplier() * boonMoveSpeedMultiplier;
 
 	// Stormbound's other half: a critical hit arcs to the nearest other enemy for a fraction of
 	// the damage. Gated on allowElementalChain so an arc cannot arc again.

@@ -417,7 +417,7 @@ public sealed class ChapelRoom : CourtRoom
 				Vector2 p = enemy.GlobalPosition;
 				if (!inside.HasPoint(p))
 					continue;
-				enemy.ApplyKnockback((outside - p).Normalized() * PushSpeed);
+				enemy.ApplyWorldShove((outside - p).Normalized() * PushSpeed);
 			}
 		}
 		else if (rearmLeft > 0f)

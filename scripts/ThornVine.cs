@@ -62,6 +62,12 @@ namespace TheOneHeMissed.scripts;
 //   - Thicket: the arc the first stroke swept is left a band of thorny brambles on the ground (ThornThicket).
 //   - Hydra Vine: one root rises in the thick of the pack and splits into three heads, each cracking
 //     across a third of the ring round it (Player.FireThornVine, LaunchHead).
+//
+// **The Hungry Hedge** (Baba Yaga's Apotheosis, the verb FEED; .ai/chapter-wizards.md 4.1): every enemy the vine kills
+// feeds it, and every cast after is longer and sweeps a wider arc by what it has eaten, to HedgeReach and HedgeSweep
+// (Feed, reading Player.HungryHedgeGrowth). The vine is drawn out of its own length and arc, so a fed vine is SEEN to
+// be bigger - thicker too, since its width follows its length. Nothing moves or stops anything, so a boss is cut as by
+// any vine.
 public partial class ThornVine : Node2D
 {
 	public const string BarbedLashId = "thorn_vine_amplified_impact";
@@ -69,6 +75,14 @@ public partial class ThornVine : Node2D
 	public const string EntangleId = "thorn_vine_reactive_catalyst";
 	public const string ThicketId = "thorn_vine_titan_cataclysm";
 	public const string HydraVineId = "thorn_vine_infinite_horizon";
+
+	/// <summary>
+	/// The Hungry Hedge, Baba Yaga's Apotheosis (the verb FEED, .ai/chapter-wizards.md 4.1): every enemy the vine kills
+	/// feeds it (Player.HungryHedge.cs), and each cast is longer and sweeps wider by what it has eaten, to these caps.
+	/// </summary>
+	public const string HungryHedgeId = "thorn_vine_hungry_hedge";
+	public const float HedgeReach = 0.6f;
+	public const float HedgeSweep = 0.4f;
 
 	/// <summary>Entangle: how long what the vine cuts is rooted.</summary>
 	public const float EntangleSeconds = 0.6f;
@@ -285,6 +299,7 @@ public partial class ThornVine : Node2D
 	/// </summary>
 	public void Launch(Vector2 caster, Vector2 knot)
 	{
+		Feed();
 		Vector2 toKnot = knot - caster;
 		float distance = toKnot.Length();
 		Vector2 heading = distance > 1f ? toKnot / distance : Vector2.Right;
@@ -294,7 +309,19 @@ public partial class ThornVine : Node2D
 		// spot between the wizard and the pack is blocked, it comes up under the pack instead.
 		if (MazeNavigation.Active?.IsBlockedAt(root) == true)
 			root = knot;
-		Begin(root, heading.Angle(), Mathf.DegToRad(SweepDegrees));
+		Begin(root, heading.Angle(), Mathf.DegToRad(SweepDegrees) * sweepScale);
+	}
+
+	// The Hungry Hedge: as long and as wide as everything it has eaten this run - read once, as the vine comes up.
+	private float sweepScale = 1f;
+
+	private void Feed()
+	{
+		if (!(SpellData?.HasEvolution(HungryHedgeId) ?? false) || PlayerRef == null || !IsInstanceValid(PlayerRef))
+			return;
+		float growth = PlayerRef.HungryHedgeGrowth;
+		length *= 1f + HedgeReach * growth;
+		sweepScale = 1f + HedgeSweep * growth;
 	}
 
 	/// <summary>
@@ -304,8 +331,9 @@ public partial class ThornVine : Node2D
 	/// </summary>
 	public void LaunchHead(Vector2 root, float heading)
 	{
+		Feed();
 		length *= HydraReach;
-		Begin(root, heading, Mathf.DegToRad(HydraHeadSweepDegrees));
+		Begin(root, heading, Mathf.DegToRad(HydraHeadSweepDegrees) * sweepScale);
 	}
 
 	private void Begin(Vector2 root, float heading, float sweepRadians)

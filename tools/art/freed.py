@@ -61,6 +61,7 @@ WIZARDS = [
     ("wayland", ("wayland", "metal", "metal")),
     ("sibyl", ("sibyl", "arcane", "arcane")),
     ("laelaps", ("laelaps", "light", "wind")),
+    ("baba_yaga", ("yaga", "grass", "grass")),
 ]
 
 # Where they stand: the Archmage left of the middle, the freed wizard right of it, turned to him.

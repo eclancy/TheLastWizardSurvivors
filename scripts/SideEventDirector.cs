@@ -99,7 +99,10 @@ public partial class SideEventDirector : Node
 	//   "stage_0" => new(WayfinderKind.Compass, new("the_grove", () => new GroveEvent()), new("my_site", () => new MyEvent())),
 	private static ChapterEvents Chapter(string stageId) => stageId switch
 	{
-		"stage_0" => new(WayfinderKind.Compass, new SideEventEntry("the_grove", () => new GroveEvent())),
+		// The Forest's chapter wizard (.ai/chapter-wizards.md 4.1), the first second event: Baba Yaga, kept in her own
+		// hut and the hut kept walking.
+		"stage_0" => new(WayfinderKind.Compass, new SideEventEntry("the_grove", () => new GroveEvent()),
+			new SideEventEntry("walking_hut", () => new WalkingHutEvent())),
 		"stage_1" => new(WayfinderKind.GaolersMap, new SideEventEntry("gaolers_key", () => new GaolersKeyEvent())),
 		// The Sunken Cave's chapter wizard (.ai/chapter-wizards.md 4.3): the Cumaean Sibyl, behind nine mouths.
 		"stage_2" => new(WayfinderKind.Compass, new SideEventEntry("nine_mouths", () => new NineMouthsEvent())),

@@ -37,6 +37,9 @@ THE ROW ORDER IS AN API: HintCue's order (scripts/StageHintCatalog.cs).
                           ahead of it, with two lines of ink down it instead of a vein; paper in a cold
                           light, from the water ramp's pale end (NineMouthsEvent also blows them out
                           of the mouths in the world)
+  birds    the hut        a bird lifting out of the canopy, four beats of its wings (0-3: up, half, down,
+                          half), then the same four smaller - one further off (4-7): "birds lift out of
+                          the canopy toward her" on each fall of the hut's feet
 
 Each wears its event's far-tell colour (SideEvent.FarTellColor) as its body, so the cue is the
 colour of the light the player will find: wind's ramp for the grove's lichen grey-green, arcane
@@ -91,6 +94,11 @@ def ramp_of(name):
         # things burn (world-and-tone.md, the carve-out).
         f = bl.ELEMENTS["fire"]
         return (f[1], f[2], f[3], f[0])
+    if name == "birds":
+        # The walking hut's far tell is the arcane ramp's mid (WalkingHutEvent.TellColor): his mark, the eye-light in
+        # the horse skull on its gable. Birds put up by its tread, seen against his light.
+        a = bl.ELEMENTS["arcane"]
+        return (a[1], a[2], a[3], a[0])
     if name == "writ":
         # The nine mouths' far tell is the water ramp's blue (NineMouthsEvent.TellColor): the drowned dark.
         # From the ramp's PALE end, a stop up from the others: paper in a cold light, with the ramp's dark
@@ -463,6 +471,41 @@ def paint_writ(mask, writing, tones):
     return c
 
 
+def bird(frame):
+    """A bird beating up out of the canopy, seen from below: a small body, a head forward, and two wings that
+    are a thick stroke from the shoulder to a bent wrist and a thin one on to the tip - up, half, down, half
+    (frames 0-3), the beat that reads as a bird and not a leaf. Frames 4-7 are the same beat at three fifths
+    the size: a bird further off."""
+    k = frame % 4
+    s = 1.0 if frame < 4 else 0.6
+    lift = [-4.2, -1.2, 2.6, -0.4][k]          # where the wingtip is, above or below the shoulder
+    wrist = [-2.6, -0.8, 1.4, -0.2][k]
+    cx, cy = 8.0, 8.6
+
+    def seg(px, py, ax, ay, bx, by):
+        dx, dy = bx - ax, by - ay
+        L = dx * dx + dy * dy
+        t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / L)) if L > 0 else 0.0
+        qx, qy = ax + dx * t, ay + dy * t
+        return math.hypot(px - qx, py - qy)
+
+    def inside(x, y):
+        u, v = (x - cx) / s, (y - cy) / s
+        if (u / 1.6) ** 2 + (v / 1.1) ** 2 <= 1.0:          # the body
+            return True
+        if (u - 0.0) ** 2 + (v + 1.6) ** 2 <= 0.8:          # the head, forward (up the screen)
+            return True
+        if abs(u) <= 0.5 and 0.8 <= v <= 2.6:               # the tail
+            return True
+        for side in (-1.0, 1.0):
+            if seg(u, v, side * 1.0, -0.2, side * 3.6, wrist) <= 0.85:
+                return True
+            if seg(u, v, side * 3.6, wrist, side * 6.6, lift) <= 0.55:
+                return True
+        return False
+    return sampled(inside), set()
+
+
 ROWS = [
     ("leaves", [leaf(f) for f in range(8)]),
     ("echo", [echo(d) for d in range(8)]),
@@ -473,6 +516,7 @@ ROWS = [
     ("paper", [paper(f) for f in range(8)]),
     ("sparks", [spark(f) for f in range(8)]),
     ("writ", [writ(f) for f in range(8)]),
+    ("birds", [bird(f) for f in range(8)]),
 ]
 
 

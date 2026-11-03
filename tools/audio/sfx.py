@@ -1390,6 +1390,64 @@ def hint_sibyl_voice():
     return S.dc_block(_far(out, low=190.0, high=2600.0, size=0.9, mix=0.42, damp=0.6))
 
 
+# The Enchanted Forest's walking hut (.ai/chapter-wizards.md 4.1). Two heavy falls of a great foot a long stride
+# apart, then the timber of the hut creaking as its weight settles: (onset, gain). StageHintCue.HutFalls is the
+# same list of onsets and the creak's start - change one, change both.
+_HUT_FALLS = [(0.10, 1.0), (0.74, 0.9)]
+_HUT_CREAK = (1.02, 0.62)
+
+
+def _hut_fall(seed):
+    """One great foot coming down on the moss: the weight landing (a low thump whose pitch drops as the ground
+    takes it), the ground giving under it (a short dark crunch of earth and old leaves), and the hut above it
+    jarring (a dull knock of wood a beat after). The crunch is what carries on a phone speaker, which has no
+    thump at all; the knock is what says the thing walking is built."""
+    dur = 0.6
+    n = S.n_samples(dur)
+    body = S.env_mul(S.osc("sine", S.sweep(dur, 96.0, 54.0, 0.5), dur), S.decay(n, 5.5))
+    over = S.env_mul(S.osc("sine", S.sweep(0.2, 190.0, 120.0, 0.6), 0.2), S.decay(S.n_samples(0.2), 4.0))
+    cn = S.n_samples(0.24)
+    crunch = S.lowpass(S.bandpass(S.osc("noise", 0, 0.24, seed=seed), 560.0, 0.8), 1900.0, 0.707)
+    crunch = S.env_mul(crunch, S.decay(cn, 5.0))
+    knock = S.partials(230.0, [1.0, 2.31, 3.86], 0.2, amps=[1.0, 0.42, 0.16], decays=[16.0, 22.0, 30.0])
+    return S.layer([(body, 0.0, 1.0), (over, 0.0, 0.5), (crunch, 0.004, 0.5), (knock, 0.05, 0.32)])
+
+
+def _creak(dur, seed):
+    """Timber under strain: stick-slip - a train of tiny clicks whose rate climbs and falls back as the joint
+    gives - rung through a log wall's two resonances, the lower one sliding as the strain moves along it."""
+    n = S.n_samples(dur)
+    clicks = [0.0] * n
+    t = 0.0
+    k = 0
+    while t < dur:
+        i = int(t * S.SR)
+        if i < n:
+            clicks[i] = 1.0 if k % 2 == 0 else -0.8
+        rate = 38.0 + 52.0 * math.sin(math.pi * min(1.0, t / dur)) + 6.0 * math.sin(t * 23.0 + seed)
+        t += 1.0 / rate
+        k += 1
+    low = S.bandpass(clicks, 360.0, 7.0)
+    high = S.bandpass(clicks, 930.0, 9.0)
+    wood = S.mix(S.gain(low, 1.0), S.gain(high, 0.45))
+    return S.env_mul(wood, S.adsr(dur, a=0.08, d=0.1, s=0.8, r=0.22))
+
+
+def hint_hut_step():
+    """The Enchanted Forest: something heavy walking the deep wood, on two legs.
+
+    Baba Yaga's hut, walking its circle. A slow two-beat tread - two falls of a great foot 0.64 s apart, the
+    second a little softer - and then the hut's timbers creaking as its weight settles onto the leg it stands on.
+    Not a boss stomp (those are near, sharp and hit the sub): this is far off, through trees, the top gone at 2.2
+    kHz and the low end held above 50 Hz, with a forest's short, damp room rather than a cave's. The creak sits in
+    wood's own band (360 Hz and 930 Hz), clear of the grove's whispering leaves, which are all air."""
+    items = [(_hut_fall(2201 + i), t, g) for i, (t, g) in enumerate(_HUT_FALLS)]
+    items.append((_creak(0.62, 7), _HUT_CREAK[0], _HUT_CREAK[1]))
+    out = S.pad(S.layer(items), 2.3)
+    out = S.highpass(out, 50.0)
+    return S.dc_block(_far(out, low=50.0, high=2200.0, size=0.55, mix=0.3, damp=0.65))
+
+
 # ---------------------------------------------------------------------------
 # secrets - the light he missed (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9)
 # ---------------------------------------------------------------------------
@@ -1693,6 +1751,7 @@ REGISTRY += [
     ("hint_paper_wind",     "hint",   -10.0, hint_paper_wind,     False),
     ("hint_anvil",          "hint",   -10.0, hint_anvil,          False),
     ("hint_sibyl_voice",    "hint",   -10.0, hint_sibyl_voice,    False),
+    ("hint_hut_step",       "hint",   -10.0, hint_hut_step,       False),
     # The nine mouths' call (NineMouthsEvent): nine voices in two seconds, a call every few seconds, only
     # while the player is at the cliff - the once-a-second row. Hers is the louder of the two because it is
     # the one to hear; the eight echoes come a few dB under it and lose more again to the distance.

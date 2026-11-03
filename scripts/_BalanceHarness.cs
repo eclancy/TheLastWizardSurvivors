@@ -1517,6 +1517,9 @@ public partial class _BalanceHarness : Node
 		// Overlooked (The Archmage's passive): the one killing blow it turned aside, once it has.
 		if (player.OverlookedAtSeconds >= 0f)
 			GD.Print($"HARNESS OVERLOOKED m={row.Minute} at={player.OverlookedAtSeconds:0.0}s");
+		// The Hungry Hedge (Baba Yaga): how much it has eaten, and how far grown toward its cap.
+		if (player.HungryHedgeFed > 0)
+			GD.Print($"HARNESS HEDGE m={row.Minute} fed={player.HungryHedgeFed} growth={player.HungryHedgeGrowth * 100f:0}%");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger
@@ -3693,6 +3696,9 @@ public partial class _BalanceHarness : Node
 		// The Tempered Line (Wayland): how often a wall was struck enough to ring - the form's whole verb.
 		if (IronPalisade.RingsRung > 0)
 			lines.Add($"  the tempered line rang {IronPalisade.RingsRung} times");
+		// The Hungry Hedge (Baba Yaga): what it ate, and how near its cap it grew.
+		if (player != null && IsInstanceValid(player) && player.HungryHedgeFed > 0)
+			lines.Add($"  the hungry hedge ate {player.HungryHedgeFed} ({player.HungryHedgeGrowth * 100f:0}% grown)");
 		lines.AddRange(SpellLevelLines());
 		lines.Add("");
 		lines.Add(AscensionSummaryLine());

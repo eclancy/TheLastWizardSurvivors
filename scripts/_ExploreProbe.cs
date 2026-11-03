@@ -35,6 +35,10 @@ using TheOneHeMissed.scripts;
 //      and stands in the mouth whose voice came first (NineMouthsEvent.LastCallFirst - what a player
 //      hears and sees), never the answer itself. --wrong-mouth first stands in a mouth that was NOT first,
 //      and checks that it answers with a flight and that hers moves.
+//      The Forest's walking hut is HUNTED, at the player's own walking speed, never teleported: the probe walks
+//      at it and holds just inside its startle radius, so it bolts again and again and the bolts really gain on
+//      him. --lose-hut, once the bar is two fifths full, walks straight away past its lose radius and waits
+//      there, and checks the bar held and the hut calmed and stood; then walks back to it and finishes.
 // TWO EVENTS IN A CHAPTER (P2, .ai/chapter-wizards.md 6.3). On a chapter whose list holds more than one - or
 // with --second-event-test[=STAGE], which adds a stand-in second event on this tool run only
 // (SecondEventStandIn) - every placement check runs for every event, each pair of main sites must be at least
@@ -72,6 +76,12 @@ public partial class _ExploreProbe : Node
 	private bool wrongMouth;
 	// --wayfinder-first: with two events, take the wayfinder first (see the header).
 	private bool wayfinderFirst;
+	// --lose-hut: at the walking hut, walk away from it part-way through and come back (see the header).
+	private bool loseHut;
+	private int lostPhase;
+	private float lostClock;
+	private float progressOutside = -1f;
+	private float progressAfterWait = -1f;
 	// Which of the chapter's events is being visited, found and won; and which of them were won.
 	private int cur;
 	private readonly List<bool> wonEvents = new();
@@ -124,6 +134,7 @@ public partial class _ExploreProbe : Node
 			else if (arg.StartsWith("--kill-hammers=")) killHammers = int.Parse(arg.Substring(15));
 			else if (arg == "--wrong-mouth") wrongMouth = true;
 			else if (arg == "--wayfinder-first") wayfinderFirst = true;
+			else if (arg == "--lose-hut") loseHut = true;
 		}
 		ProcessMode = ProcessModeEnum.Always;
 		SaveManager.WritesDisabled = true;
@@ -675,6 +686,22 @@ public partial class _ExploreProbe : Node
 						$"{mouthTrueBefore} -> {mouthTrueAfter}");
 				}
 			}
+			if (e is WalkingHutEvent ran)
+			{
+				Check("the hut fled: it bolted, and the bolts gained on him", ran.BoltsStarted >= 2,
+					$"{ran.BoltsStarted} bolts, {ran.BoltsCut} cut short by the ground, {ran.FreshPrintsLaid} prints laid");
+				Check("its feet left prints, and its old trails were laid", ran.FreshPrintsLaid > 0 && ran.OldPrintCount > 0,
+					$"{ran.FreshPrintsLaid} fresh, {ran.OldPrintCount} old");
+				Check("it tired and knelt", ran.IsTired, $"bar {ran.Progress * 100f:0}%");
+				if (loseHut)
+				{
+					Check("lost: the bar held while he was away", lostPhase == 2 && progressOutside >= 0f
+						&& Mathf.Abs(progressAfterWait - progressOutside) < 0.001f,
+						$"{progressOutside * 100f:0.0}% when he passed its reach, {progressAfterWait * 100f:0.0}% after waiting");
+					Check("lost: it calmed and stood, then was found again and run down", ran.TimesCalmed >= 1 && ran.IsWon,
+						$"calmed {ran.TimesCalmed} time(s)");
+				}
+			}
 			if (e is FivePointedSealEvent seal)
 			{
 				Check("every stone faces the seal", seal.Aligned == FivePointedSealEvent.StoneCount, $"{seal.Steps} presses");
@@ -798,6 +825,9 @@ public partial class _ExploreProbe : Node
 				target = mouths.StandPoint(heard);
 			}
 		}
+		// The walking hut: hunted at his own walk (HuntStep), and stood still while it kneels.
+		if (e is WalkingHutEvent hunt && hunt.IsFound)
+			target = hunt.IsTired ? player.GlobalPosition : HuntStep(hunt, delta);
 		if (target == null)
 		{
 			float best = float.MaxValue;
@@ -846,6 +876,39 @@ public partial class _ExploreProbe : Node
 			else if (!enemy.IsMiniBoss && d < 500f && e is not ThawEvent)
 				enemy.QueueFree();
 		}
+	}
+
+	// One step of the hunt, at the player's own walking speed: to just inside its startle radius on the line to it,
+	// so it bolts whenever it can. With --lose-hut, part-way through: straight away past its lose radius, a wait
+	// there, and back.
+	private Vector2 HuntStep(WalkingHutEvent hunt, float delta)
+	{
+		Vector2 me = player.GlobalPosition;
+		Vector2 toHut = hunt.HutPosition - me;
+		float d = toHut.Length();
+		float step = player.WalkingSpeed * delta;
+		if (loseHut && lostPhase == 0 && hunt.Progress >= 0.4f)
+			lostPhase = 1;
+		if (lostPhase == 1)
+		{
+			if (d <= WalkingHutEvent.KeepRadius)
+				return d > 1f ? me - toHut / d * step : me + Vector2.Down * step;
+			if (progressOutside < 0f)
+				progressOutside = hunt.Progress;
+			if (d < WalkingHutEvent.LoseRadius + 400f)
+				return me - toHut / d * step;
+			lostClock += delta;
+			if (lostClock >= WalkingHutEvent.CalmSeconds + 2f)
+			{
+				progressAfterWait = hunt.Progress;
+				GD.Print($"EXPLOREPROBE lost the hut at {d:0} px for {lostClock:0.0}s: bar {progressOutside * 100f:0.0}% -> {progressAfterWait * 100f:0.0}%, "
+					+ $"fleeing {hunt.IsFleeing}, calmed {hunt.TimesCalmed}; walking back");
+				lostPhase = 2;
+			}
+			return me;
+		}
+		const float Want = WalkingHutEvent.StartleRadius - 40f;
+		return d > Want ? me + toHut / d * Mathf.Min(step, d - Want) : me;
 	}
 
 	// Everything the streamer furnished within radius of a point: children of the chunks' prop

@@ -5,6 +5,11 @@ is the inventory and the wiring backlog: seventy-one generated `.wav` files in `
 what each one is for, and where in the code it is meant to be triggered. The music - a menu
 theme and nine chapter sets in `assets/music/` - has its own section at the end.
 
+**2026-11-03: 94 files, all wired; the walking hut.** One for Baba Yaga (`.ai/chapter-wizards.md` 4.1):
+`hint_hut_step`, her chapter hint - two heavy falls and a timber creak. Normal tier; nearest in the whole set 0.187
+(`spell_explosion`), so `--confuse` still reports 0 undeclared pairs. The hut's own footfalls in the world are
+`impact_earth` through `SfxPlayer.Impact`, no new sound. Row under "Chapter hints".
+
 **2026-11-02: 93 files, all wired; the nine mouths.** Three for the Cumaean Sibyl (`.ai/chapter-wizards.md`
 4.3): `hint_sibyl_voice` (her chapter hint), `sibyl_voice` and `sibyl_echo` (the call at the nine mouths,
 one voice per mouth a beat apart through `PlacedSoundSchedule`). All three Normal tier. They are declared
@@ -332,6 +337,7 @@ way. Tier Normal: they never duck anything. The caption carries the words; these
 | `sibyl_echo.wav` | 1.60 s | -15.0 dBFS | **wired**, `NineMouthsEvent`: the same line out of each of the other eight mouths, a beat apart, and once out of a mouth that answers. From deep in the rock: lowpassed at 1.3 kHz, a 7 ms pipe comb, a smeared start, a long dark tail. Three dB under hers, because hers is the one to hear. hf 1% |
 | `hint_paper_wind.wav` | 2.20 s | -10.0 dBFS | **wired**, Mystic Ruins (the Five-Pointed Seal, Abe no Seimei). Five gusts, each carrying a strip of paper snapping in the wind (band noise at 1.4-2 kHz chopped at 24-32 Hz, `sfx._PAPER_GUSTS` = `StageHintCue.PaperGusts`), a few dry crackles of the paper burning under the last three, over one thin whistle of wind through the courtyard that rises and falls with them. Nearest in the whole set 0.125 (`ui_open`); a first draft with no whistle, at 2-3 kHz, was 0.074 from `cast_wind`. hf 6% |
 | `hint_anvil.wav` | 2.50 s | -10.0 dBFS | **wired**, The Emberdeep (the great anvil, Wayland the Smith). Four tired blows on an anvil, somewhere below: each the ring of struck steel at a free bar's inharmonic modes (1.24 kHz x 1, 2.76, 5.40, 8.93) over the thud of the hammer landing, and the small rebound tap a smith lets the hammer make 0.11 s after - the gaps lengthening (0.56, 0.60, 0.66 s) and each blow softer (`sfx._ANVIL_STRIKES` = `StageHintCue.AnvilStrikes`, where the sparks come in). Top cut at 3 kHz, a big dark room. Nearest in the whole set 0.180 (`ui_hover`), in the hint category 0.165 is still the closest pair (ice song and caravan bell). hf 2% |
+| `hint_hut_step.wav` | 2.30 s | -10.0 dBFS | **wired**, Enchanted Forest (the walking hut, Baba Yaga). Something heavy walking the deep wood, on two legs: two falls of a great foot 0.64 s apart (a low thump falling from 96 to 54 Hz as the ground takes it, a short dark crunch of earth and old leaves round 560 Hz - what carries on a phone - and a dull knock of the hut's timber a beat after), the second softer, then the hut's logs creaking as its weight settles: stick-slip, a train of clicks whose rate rises and falls, rung through a log wall's two resonances (360 and 930 Hz). The onsets are `sfx._HUT_FALLS` and `_HUT_CREAK` = `StageHintCue.HutBeats`, where the birds lift. Top cut at 2.2 kHz, a short damp forest room, nothing under 50 Hz. Nearest in the whole set 0.187 (`spell_explosion`), then 0.197 (`impact_earth`, which the hut's own footfalls play in the world). hf 0% |
 
 | First draft | Collided with | Distance | Fix |
 |---|---|---|---|

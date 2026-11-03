@@ -60,6 +60,8 @@ public static class CharacterVisuals
 			// The orb in the gold claw at the head of his staff (tools/art/player_archmage.py, ORB; the generator prints
 			// (13.4, 5.8)): the title figure's light, where Magic Missile leaves him (Player.CastSpellNow).
 			case "archmage": return new Vector2(13, 6);
+			// The living tip of the thorned vine curling over the head of her pestle (roster.py, yaga()).
+			case "baba_yaga": return new Vector2(16, 3);
 			default: return null;
 		}
 	}
@@ -90,6 +92,7 @@ public static class CharacterVisuals
 			case "wayland":
 			case "sibyl":
 			case "archmage":
+			case "baba_yaga":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

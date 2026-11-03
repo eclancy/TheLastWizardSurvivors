@@ -22,6 +22,8 @@ using TheOneHeMissed.scripts;
 //                 a few on each strike of the tired hammer
 //   the mouths    written leaves blown in fast and flat on a cold draught, one on each voice of the call,
 //                 the first the nearest the line to her
+//   the hut       birds lifting out of the canopy on her side, beating up and away toward her - a few on
+//                 each fall of its feet, one or two more as its timbers creak
 //
 // IN THE WORLD'S LAYERS, HELD TO THE VIEW. The marks are drawn in the world, on the layer over the
 // bodies and under the HUD, so they read as something out there rather than as an interface - but
@@ -41,7 +43,7 @@ public partial class StageHintCue : Node2D
 	public const string SheetPath = "res://assets/bonelight/effects/hint-cues.png";
 	public const int Cell = 16;
 	public const int Columns = 8;
-	public const int Rows = 7;   // HintCue's members, in order
+	public const int Rows = 9;   // HintCue's members, in order
 
 	// x3, the attack icons' size: at x2 a 16 px mark was a speck on the phone.
 	private const float DrawScale = 3f;
@@ -78,6 +80,14 @@ public partial class StageHintCue : Node2D
 
 	/// <summary>The nine mouths' hint beats, for RegressionChecks.ValidateNineMouths (a copy: it cannot be changed through this).</summary>
 	public static float[] SibylVoiceBeats => (float[])SibylVoices.Clone();
+
+	// The walking hut heard from afar (hint_hut_step): two falls of a great foot, then its timbers creaking -
+	// tools/audio/sfx.py _HUT_FALLS and _HUT_CREAK are the same onsets. Birds go up on each.
+	private static readonly float[] HutBeats = { 0.10f, 0.74f, 1.02f };
+	private static readonly int[] BirdsPerBeat = { 3, 3, 2 };
+
+	/// <summary>The walking hut's hint beats, for RegressionChecks.ValidateWalkingHut (a copy).</summary>
+	public static float[] HutBeatTimes => (float[])HutBeats.Clone();
 
 	private struct Mark
 	{
@@ -179,6 +189,7 @@ public partial class StageHintCue : Node2D
 		HintCue.Paper => 110f,
 		HintCue.Sparks => 90f,
 		HintCue.Writ => 120f,
+		HintCue.Birds => 110f,
 		_ => 8f,
 	};
 
@@ -366,6 +377,20 @@ public partial class StageHintCue : Node2D
 				if (nextBeat >= SibylVoices.Length)
 					clock = -1f;
 				break;
+			case HintCue.Birds:
+				while (nextBeat < HutBeats.Length && HutBeats[nextBeat] <= t)
+				{
+					// Put up by the fall: they lift out a little inside the edge and beat up and away, out toward her -
+					// a near one or two, the rest further off and smaller.
+					for (int k = 0; k < BirdsPerBeat[nextBeat]; k++)
+						Spawn((int)HintCue.Birds, k == 0 ? 0 : (random.Next(3) == 0 ? 0 : 4), 1.9f + (float)random.NextDouble() * 0.6f,
+							Jitter(100f), 18f + (float)random.NextDouble() * 22f,
+							inward: -16f - (float)random.NextDouble() * 10f, drift: Jitter(26f), rise: 34f, fadeIn: 0.1f);
+					nextBeat++;
+				}
+				if (nextBeat >= HutBeats.Length)
+					clock = -1f;
+				break;
 			case HintCue.Bell:
 				// The bell walks along the edge, as the caravan walks its road.
 				if (bellSlot < 0)
@@ -506,6 +531,12 @@ public partial class StageHintCue : Node2D
 				// and weaving a little as hot air carries it.
 				column = (m.Glyph + (int)(m.Age * 12f)) % 4 + (m.Age > m.Life * 0.66f ? 4 : 0);
 				at.X += Mathf.Sin(m.Age * 5.3f + m.Phase) * 5f;
+				break;
+			case HintCue.Birds:
+				// Beating its wings (four columns of a beat, near or far), quick at first and settling as it climbs,
+				// and rolling a little from side to side as birds do.
+				column = (m.Glyph >= 4 ? 4 : 0) + (int)(m.Age * (13f - 3f * Mathf.Min(1f, m.Age)) + m.Phase) % 4;
+				at.X += Mathf.Sin(m.Age * 3.7f + m.Phase) * 4f;
 				break;
 			case HintCue.Writ:
 				// Turning over as it is blown, and lifted and dropped by the draught.

@@ -143,6 +143,10 @@ ROBES = {
     # gone the colour of the cave. Her stola under it is violet's deep end. Arcane Explosion is in the jar
     # on her staff.
     "sibyl": ("m", "n", "J"),           # bone, deep - the palla; Arcane Explosion
+    # Baba Yaga's long coat: linen from its dark end, the moss-grey of the deep wood. Her shawl is steel's
+    # shade (iron-grey) and her kerchief stone's near-black. Thorned Vine is in the shoot under her hand and
+    # the tip of the vine climbing her pestle, not on her clothes.
+    "yaga": ("E", "e", "A"),            # linen, deep - the coat; Thorned Vine
 }
 
 
@@ -2355,11 +2359,185 @@ def sibyl(phase=None):
     return g.rows()
 
 
+def yaga(phase=None):
+    """Thorned Vine. Baba Yaga, the witch of the deep wood in the Slavic tales: a hut on hen's legs behind
+    a fence of bone, who tests whoever comes to her door and pays the ones who pass.
+
+    DRAWN SERIOUS (.ai/chapter-wizards.md question 5): tall, gaunt and iron-grey, never a cackling hag. She
+    is the tallest figure in the cast after the Frostweaver and the narrowest - a column a third as wide as
+    she is tall, stooped a little at the shoulders the way a tall old woman is, her face set and level.
+
+    The vine bursts out of the ground beside the pack, so she is the one figure CALLING SOMETHING UP: her
+    near arm reaching down and out, long fingers spread over a thorned shoot rising out of the earth to
+    meet them - the only figure in the cast whose spell comes from below. In her far hand, planted, the
+    pestle she steers her mortar with, taller than she is, the club of its head at the top; a thorned vine
+    climbs it, and its living tip curls out over the head. The tip and the shoot are the spell, grass's
+    ramp, with one bead of poison on a thorn: the only things on her that give off light.
+
+    The rescued wear no pigment: a long coat in linen's dark end (the moss-grey of the deep wood) to the
+    ground, a shawl of iron-grey (steel's shade) fringed at the point, a kerchief of stone's near-black,
+    and her own hair iron-grey, loose over the shoulder. Bone-Leg, as the tales call her: the far foot
+    under the hem is bone.
+    """
+    mid, lit, dark = ROBES["yaga"]
+    g = G(48)
+    CX = 25
+
+    # THE COAT: long and narrow, to the ground, its hem ragged; a little fuller behind, where she stoops.
+    mass(g, [(17, 21, 30), (24, 20, 31), (32, 19, 32), (40, 18, 33), (46, 17, 34)], mid, lit, dark)
+    fold(g, [(23, 20), (22, 31), (20, 46)], dark, lit)
+    fold(g, [(28, 22), (29, 33), (31, 46)], dark, lit)
+    fold(g, [(25, 33), (25, 44)], "A", None)
+    fold(g, [(21, 38), (22, 43)], "A", None)
+    tatters(g, [(46, 17, 19), (46, 26, 28), (46, 32, 34)], "A", "E", "o")
+    for (bx, by) in ((24, 40), (30, 37), (20, 34), (27, 28)):
+        g.set(bx, by, "A")                                         # old stains and darns
+        g.set(bx + 1, by, "e")
+    if phase is None:
+        far_shown, near_shown = True, True
+        hem = 0
+    else:
+        # A tall woman's long, slow step: the hem swings toward the leading foot, and that foot shows
+        # under it - the shod one, or the bone. The pestle and the arms are drawn after, so they hold.
+        c, _ln, _lf = stride(phase)
+        hem = int(round(1.4 * c))
+        sway(g, 34, 1.4 * c)
+        far_shown, near_shown = c < 0.4, c > -0.4
+    # BONE-LEG: the far foot, bone to the ankle under the lifted hem, the toes long.
+    if far_shown:
+        fx = 20 + hem
+        g.set(fx + 1, 43, "s")
+        g.set(fx + 1, 44, "k")
+        g.set(fx + 2, 44, "n")
+        g.span(45, fx, fx + 3, "s")
+        g.set(fx, 45, "S")
+        g.set(fx + 3, 45, "n")
+        g.span(46, fx - 1, fx + 4, "k")
+        g.set(fx - 1, 46, "s")
+        g.set(fx + 1, 46, "n")
+        g.set(fx + 3, 46, "n")
+        g.span(44, fx - 1, fx, "o")                                # the hem's shadow over it
+    # The near foot: a bast shoe, dark, its toe out past the hem.
+    if near_shown:
+        nx = 29 + hem
+        g.set(nx + 3, 44, "o")
+        g.span(45, nx, nx + 3, "N")
+        g.span(46, nx, nx + 4, "j")
+        g.set(nx, 45, "p")
+        g.set(nx + 1, 46, "p")
+        g.set(nx + 4, 45, "J")
+        g.set(nx + 2, 45, "J")
+
+    # THE SHAWL: iron-grey over both shoulders, to a point at her back, fringed along its edges.
+    mass(g, [(15, 21, 29), (17, 19, 31), (20, 18, 32), (23, 19, 31), (26, 21, 28), (28, 23, 26)], "R", "r", "q")
+    fold(g, [(22, 17), (21, 23)], "q", "r")
+    fold(g, [(26, 17), (25, 26)], "q", None)
+    fold(g, [(30, 18), (29, 24)], "q", "r")
+    for (fx2, fy2) in ((19, 24), (20, 26), (22, 28), (23, 29), (26, 29), (28, 27), (30, 25), (31, 24)):
+        g.set(fx2, fy2, "q")                                       # the fringe, knotted, uneven
+        g.set(fx2, fy2 + 1, "o" if (fx2 + fy2) % 3 else "R")
+    g.set(24, 30, "R")
+    g.set(25, 31, "q")
+
+    # THE FAR ARM, up and across to the pestle: a dark sleeve and a long hand round the wood.
+    mass(g, [(17, 17, 21), (20, 15, 20), (23, 14, 18)], mid, lit, dark, rim=False)
+    fold(g, [(19, 19), (16, 22)], dark, None)
+
+    # THE PESTLE, planted: worn wood taller than she is, narrow below and swelling to the club of its
+    # grinding head at the top.
+    shaft(g, 13, 46, 13, 9, "g", "u", "J", width=2)
+    g.set(13, 46, "u")
+    g.set(14, 46, "J")
+    mass(g, [(4, 12, 14), (5, 11, 15), (9, 10, 15), (11, 12, 14)], "u", "g", "J")
+    g.span(11, 12, 14, "J")
+    g.set(13, 7, "J")                                               # a split in the grain
+    g.set(12, 8, "J")
+    g.set(14, 5, "J")
+    hand(g, 14, 22)
+    hand(g, 12, 23)
+    g.set(15, 24, "i")
+    # THE VINE climbing it: a dark stem crossing the wood in a slow spiral, a thorn at every turn, and
+    # one bead of poison on a thorn. Dead wood of the vine is linen's deep end; only the living tip and
+    # leaves are grass, so only they breathe with the idle (RAMPS below).
+    for (y, flip) in ((40, 1), (34, -1), (28, 1), (17, -1), (12, 1)):
+        g.line(13 - flip * 2, y + 1, 13 + flip * 2, y - 1, "A")
+        g.set(13 + flip * 3, y - 2, "o")                            # the thorn
+        g.set(13 - flip * 3, y + 2, "E")
+    g.set(10, 33, "'")                                              # a leaf
+    g.set(9, 32, "`")
+    g.set(17, 16, "'")
+    g.set(18, 15, "`")
+    g.set(16, 11, "(")                                              # the poison, on a thorn
+    g.set(17, 10, ")")
+    # The living tip, curling out over the head.
+    for (tx, ty, tc) in ((14, 3, "`"), (15, 2, "'"), (16, 2, ","), (17, 3, "'"), (17, 4, "B"), (16, 5, ","),
+                         (11, 3, "`"), (10, 2, "'"), (9, 3, ","), (18, 5, "`")):
+        g.set(tx, ty, tc)
+
+    # THE NEAR ARM, reaching down and out: the sleeve falling from it, a bony forearm, and the long
+    # fingers spread over the ground.
+    mass(g, [(17, 29, 32), (21, 30, 34), (25, 32, 36), (27, 33, 37)], mid, lit, dark, rim=False)
+    fold(g, [(31, 19), (34, 25)], dark, lit)
+    g.line(33, 27, 37, 27, "A")                                     # the sleeve's mouth, dark inside
+    for (fx3, fy3, fc) in ((37, 28, "f"), (38, 28, "h"), (38, 29, "i"), (39, 29, "h"),
+                           (39, 30, "f"), (40, 31, "h"), (41, 32, "i"),     # the fingers, long
+                           (38, 30, "h"), (38, 31, "i"), (38, 32, "I"),
+                           (40, 29, "f"), (41, 30, "h"), (42, 31, "i")):
+        g.set(fx3, fy3, fc)
+
+    # THE SHOOT: a thorned vine coming up out of the earth to her hand - the spell. A tear in the ground
+    # at its root, the stem in grass's edge, two leaves, its tip lit.
+    for (sx, sy, sc) in ((41, 46, "`"), (41, 45, "`"), (42, 44, "`"), (42, 43, "'"), (41, 42, "`"),
+                         (40, 41, "`"), (40, 40, "'"), (41, 39, "`"), (41, 38, ","), (40, 37, "'"),
+                         (39, 36, ","), (39, 35, "B"), (38, 34, ",")):
+        g.set(sx, sy, sc)
+    for (lx, ly, lc) in ((43, 42, "'"), (44, 41, "`"), (39, 39, "'"), (38, 38, "`"), (42, 37, "`")):
+        g.set(lx, ly, lc)
+    for (ox, oy) in ((40, 44), (43, 40), (42, 39)):
+        g.set(ox, oy, "o")                                          # thorns
+    g.span(46, 39, 44, "u")                                         # the ground torn open
+    g.set(38, 46, "J")
+    g.set(44, 46, "J")
+    g.set(42, 46, "g")
+
+    # THE HEAD: long and gaunt, the brow low, looking out level past her reaching hand. Not a hag's
+    # grin: the mouth is set.
+    head(g, CX, 9, 2.6, brow="low", gaze=1, mouth="set", eye="narrow")
+    g.set(CX - 2, 12, "i")                                          # the cheek drawn in
+    g.set(CX + 1, 13, "i")                                          # the long nose
+    g.set(CX + 2, 13, "I")
+    g.span(15, 24, 26, "i")                                         # the neck, in shadow
+    g.set(26, 15, "I")
+    # THE KERCHIEF: stone's near-black, over the crown and tied at the nape, its ends hanging.
+    mass(g, [(5, 22, 28), (7, 21, 29), (9, 21, 22), (13, 20, 21)], "N", "p", "j")
+    g.span(8, 22, 29, "N")
+    g.span(9, 28, 29, "j")
+    fold(g, [(23, 6), (27, 5)], "j", "p", side=(0, -1))
+    g.set(20, 12, "J")                                              # the knot
+    g.set(19, 13, "N")
+    g.line(19, 14, 18, 17, "j")
+    g.set(20, 15, "J")
+    # HER HAIR, iron-grey and loose from under the kerchief: long down her back on the far side, past the
+    # shawl's edge - the break in her outline between the shawl and the pestle that is nobody else's - and
+    # a few strands over the near shoulder.
+    for (x0, y0, x1, y1, ch) in ((21, 11, 18, 27, "r"), (20, 12, 17, 25, "t"), (22, 12, 19, 28, "R"),
+                                 (19, 13, 16, 23, "R"), (21, 14, 19, 26, "q")):
+        g.line(x0, y0, x1, y1, ch)
+    for (hx2, hy2, hc) in ((18, 28, "q"), (16, 24, "r"), (17, 26, "R"), (19, 29, "R")):
+        g.set(hx2, hy2, hc)
+    g.line(29, 10, 31, 18, "r")
+    g.line(28, 11, 30, 19, "t")
+    g.set(31, 19, "R")
+    g.set(30, 20, "q")
+    contact(g, 10, 44)
+    return g.rows()
+
+
 WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("stormcaller", stormcaller), ("geomancer", geomancer),
            ("tituba", tituba), ("vainamoinen", vainamoinen), ("dee", dee),
            ("seimei", seimei), ("wayland", wayland),
-           ("sibyl", sibyl)]
+           ("sibyl", sibyl), ("yaga", yaga)]
 ENEMIES = [("swarmer", swarmer), ("runner", runner), ("bruiser", bruiser),
            ("shielder", shielder), ("skullsentry", skullsentry), ("lunger", lunger),
            ("slammer", slammer), ("exploder", exploder), ("summoner", summoner),
