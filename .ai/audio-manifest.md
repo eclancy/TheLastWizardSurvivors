@@ -5,6 +5,12 @@ is the inventory and the wiring backlog: seventy-one generated `.wav` files in `
 what each one is for, and where in the code it is meant to be triggered. The music - a menu
 theme and nine chapter sets in `assets/music/` - has its own section at the end.
 
+**2026-11-03: one more, wired; the granary.** One for Medea (`.ai/chapter-wizards.md` 4.2): `hint_granary_voice`,
+her chapter hint - a woman's voice, low and level, through plank walls. Normal tier; nearest in the whole set 0.164
+(`pickup_health`), then 0.179 (`hint_cell_cry`, Tituba's, the other voice that speaks), so `--confuse` still reports
+0 undeclared pairs. The scale's beam dropping and the bar falling are `impact_metal` and `impact_earth` through
+`SfxPlayer.Impact`, and Dragon's Teeth's stone landing `impact_light`: no new sound. Row under "Chapter hints".
+
 **2026-11-03: 94 files, all wired; the walking hut.** One for Baba Yaga (`.ai/chapter-wizards.md` 4.1):
 `hint_hut_step`, her chapter hint - two heavy falls and a timber creak. Normal tier; nearest in the whole set 0.187
 (`spell_explosion`), so `--confuse` still reports 0 undeclared pairs. The hut's own footfalls in the world are
@@ -338,6 +344,7 @@ way. Tier Normal: they never duck anything. The caption carries the words; these
 | `hint_paper_wind.wav` | 2.20 s | -10.0 dBFS | **wired**, Mystic Ruins (the Five-Pointed Seal, Abe no Seimei). Five gusts, each carrying a strip of paper snapping in the wind (band noise at 1.4-2 kHz chopped at 24-32 Hz, `sfx._PAPER_GUSTS` = `StageHintCue.PaperGusts`), a few dry crackles of the paper burning under the last three, over one thin whistle of wind through the courtyard that rises and falls with them. Nearest in the whole set 0.125 (`ui_open`); a first draft with no whistle, at 2-3 kHz, was 0.074 from `cast_wind`. hf 6% |
 | `hint_anvil.wav` | 2.50 s | -10.0 dBFS | **wired**, The Emberdeep (the great anvil, Wayland the Smith). Four tired blows on an anvil, somewhere below: each the ring of struck steel at a free bar's inharmonic modes (1.24 kHz x 1, 2.76, 5.40, 8.93) over the thud of the hammer landing, and the small rebound tap a smith lets the hammer make 0.11 s after - the gaps lengthening (0.56, 0.60, 0.66 s) and each blow softer (`sfx._ANVIL_STRIKES` = `StageHintCue.AnvilStrikes`, where the sparks come in). Top cut at 3 kHz, a big dark room. Nearest in the whole set 0.180 (`ui_hover`), in the hint category 0.165 is still the closest pair (ice song and caravan bell). hf 2% |
 | `hint_hut_step.wav` | 2.30 s | -10.0 dBFS | **wired**, Enchanted Forest (the walking hut, Baba Yaga). Something heavy walking the deep wood, on two legs: two falls of a great foot 0.64 s apart (a low thump falling from 96 to 54 Hz as the ground takes it, a short dark crunch of earth and old leaves round 560 Hz - what carries on a phone - and a dull knock of the hut's timber a beat after), the second softer, then the hut's logs creaking as its weight settles: stick-slip, a train of clicks whose rate rises and falls, rung through a log wall's two resonances (360 and 930 Hz). The onsets are `sfx._HUT_FALLS` and `_HUT_CREAK` = `StageHintCue.HutBeats`, where the birds lift. Top cut at 2.2 kHz, a short damp forest room, nothing under 50 Hz. Nearest in the whole set 0.187 (`spell_explosion`), then 0.197 (`impact_earth`, which the hut's own footfalls play in the world). hf 0% |
+| `hint_granary_voice.wav` | 2.20 s | -10.0 dBFS | **wired**, Fallow Fields (the Tithe-Reeve's scale, Medea). A woman's voice from the reeve's granary, said, not called: an alto from B-flat 3 down to F-sharp 3, two words, a breath, then the longer line, every phrase falling and almost no vibrato - the cell's cry rises into a question, this does not plead. Six formant syllables (`sfx._GRANARY_SYLLABLES` = `StageHintCue.GranaryVoices`, where her smoke comes in), a breath under the last, and a few soft crackles of herbs smouldering. Through plank walls: top cut at 1.7 kHz, a box resonance at 450 Hz, a short dry timber room. Nearest in the whole set 0.164 (`pickup_health`), then 0.179 (`hint_cell_cry`). hf 0% |
 
 | First draft | Collided with | Distance | Fix |
 |---|---|---|---|

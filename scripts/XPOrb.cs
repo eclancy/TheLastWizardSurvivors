@@ -32,6 +32,9 @@ public partial class XPOrb : Area2D
 	public override void _Ready()
 	{
 		AddToGroup(GroupName);
+		// Fallen within the Tithe-Reeve's reach while his scale is taking its due (TitheScaleEvent): this one is his.
+		if (GranaryTithe.Claims(GlobalPosition))
+			BeginTithe();
 		motionPhase = (GetInstanceId() % 29) * 0.19f;
 		sprite = GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
 		if (sprite != null)
@@ -56,6 +59,12 @@ public partial class XPOrb : Area2D
 		{
 			var first = GetTree().GetFirstNodeInGroup("player");
 			if (first is CharacterBody2D cb) player = cb;
+		}
+		if (tithed)
+		{
+			TickTithe((float)delta);
+			FrameProfiler.End(FrameProfiler.Section.XpOrbs, perfStart);
+			return;
 		}
 		if (player != null)
 		{
@@ -102,7 +111,66 @@ public partial class XPOrb : Area2D
 	/// Fly to the player from wherever this orb is, as if it had come into pickup range. The Spirit
 	/// Mirror (John Dee's Apotheosis) pulls every orb inside its well's reach to him when it closes.
 	/// </summary>
-	public void PullToPlayer() => attracted = true;
+	public void PullToPlayer()
+	{
+		// The reeve's scale holds what it has taken; nothing of his calls it back (GranaryTithe).
+		if (!tithed)
+			attracted = true;
+	}
+
+	// THE TITHE (Medea's prison, TitheScaleEvent; .ai/chapter-wizards.md 4.2). "From arrival, every XP orb that falls
+	// within 320 px of it drifts into its pan instead of to him." An orb that comes into the world inside the reach of
+	// the Tithe-Reeve's scale while it is taking its due (GranaryTithe.Claims, read once, as it lands) is the reeve's:
+	// it lifts off the stubble and drifts up into the pan, slow at first and quickening, over every body as it goes;
+	// his magnet, his feet, the Gleaning Bell and the Spirit Mirror do not touch it. In the pan it is weighed at what it
+	// was worth to him at that moment of the run (Player.XpWorthOf) and is gone. If the scale stops taking before it
+	// gets there - its price met, or the boss come - it falls back to the ground an ordinary orb, and is his.
+	// One bool and one float an orb; nothing allocated.
+	[Export] public float TitheStartSpeed { get; set; } = 70f;
+	[Export] public float TitheAcceleration { get; set; } = 520f;
+	[Export] public float TitheMaxSpeed { get; set; } = 620f;
+	private bool tithed;
+	private float titheSpeed;
+
+	/// <summary>True while this orb is drifting into the Tithe-Reeve's pan.</summary>
+	public bool Tithed => tithed;
+
+	private void BeginTithe()
+	{
+		tithed = true;
+		titheSpeed = TitheStartSpeed;
+		attracted = false;
+		GranaryTithe.OrbsInFlight++;
+		ZIndex = DrawLayers.Air;
+		ZAsRelative = false;
+	}
+
+	private void TickTithe(float delta)
+	{
+		if (!GranaryTithe.Open)
+		{
+			// The scale has stopped taking: it drops back to the ground where it is, an ordinary orb again.
+			tithed = false;
+			GranaryTithe.OrbsInFlight = Math.Max(0, GranaryTithe.OrbsInFlight - 1);
+			ZIndex = 0;
+			ZAsRelative = true;
+			return;
+		}
+		titheSpeed = Mathf.Min(TitheMaxSpeed, titheSpeed + TitheAcceleration * delta);
+		Vector2 pan = GranaryTithe.Pan;
+		float dist = GlobalPosition.DistanceTo(pan);
+		float step = titheSpeed * delta;
+		if (dist > step)
+		{
+			GlobalPosition += (pan - GlobalPosition) / dist * step;
+			return;
+		}
+		GlobalPosition = pan;
+		tithed = false;
+		GranaryTithe.OrbsInFlight = Math.Max(0, GranaryTithe.OrbsInFlight - 1);
+		GranaryTithe.Pay(player is Player weigher && IsInstanceValid(weigher) ? weigher.XpWorthOf(Value) : Value, Value);
+		QueueFree();
+	}
 
 	// THE GLEANING BELL's pull (GleaningBell.cs). PullToPlayer flies an orb in at the magnet's 200 px a
 	// second, which is right for the few inside a well's reach and hopeless for the whole map: an orb
@@ -125,6 +193,9 @@ public partial class XPOrb : Area2D
 	/// </summary>
 	public void Glean()
 	{
+		// Not even the bell calls back what the reeve has taken (GranaryTithe).
+		if (tithed)
+			return;
 		attracted = true;
 		if (gleanSpeed <= 0f)
 			gleanSpeed = Mathf.Max(1f, AttractSpeed);
@@ -165,6 +236,9 @@ public partial class XPOrb : Area2D
 
 	private void OnBodyEntered(Node body)
 	{
+		// The reeve's, on its way to his pan: walking through it does not take it back.
+		if (tithed)
+			return;
 		if (body.IsInGroup("player") && body.HasMethod("AddXp"))
 		{
 			body.Call("AddXp", Value);

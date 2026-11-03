@@ -3219,7 +3219,8 @@ public partial class Node2DGame : Node2D
 
 		foreach (Node node in GetTree().GetNodesInGroup(XPOrb.GroupName))
 		{
-			if (node is not XPOrb orb || orb == farXpBank || orb.IsQueuedForDeletion())
+			// Not one drifting into the Tithe-Reeve's pan (XPOrb.Tithed): it is on its way to be weighed, not left behind.
+			if (node is not XPOrb orb || orb == farXpBank || orb.IsQueuedForDeletion() || orb.Tithed)
 				continue;
 			if (orb.GlobalPosition.DistanceSquaredTo(p) < foldSq)
 				continue;

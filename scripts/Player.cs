@@ -7282,7 +7282,13 @@ public partial class Player : CharacterBody2D
 	/// screen (GameOverScreen). Nothing reads it to decide anything.</summary>
 	public int RunXpGathered { get; private set; }
 
-	public void AddXp(int amount)
+	/// <summary>
+	/// What an orb of <paramref name="amount"/> is worth to him if picked up NOW, in points of his bar: every XP
+	/// bonus and the run's pace (Node2DGame.XpPacing.cs) on it, before the fraction is carried. AddXp banks this;
+	/// the Tithe-Reeve's scale (TitheScaleEvent) weighs what it takes from him by it, so its price is a level at
+	/// that moment of the run.
+	/// </summary>
+	public float XpWorthOf(int amount)
 	{
 		float scaled = amount * growthMultiplier * GetArcaneXpBonusMultiplier() * (1.0f + chestXpBonusPercent);
 		// A point of XP is worth more the further into the run it is picked up (Node2DGame.XpPacing.cs).
@@ -7290,6 +7296,12 @@ public partial class Player : CharacterBody2D
 			scaled *= run.XpPaceMultiplier;
 		if (IsPlaytestModeEnabled)
 			scaled *= 1.15f;
+		return scaled;
+	}
+
+	public void AddXp(int amount)
+	{
+		float scaled = XpWorthOf(amount);
 
 		// The fraction is CARRIED, not rounded away. Every XP bonus used to be rounded per orb, and
 		// nine kills in ten pay a 2 XP orb: 2 x 1.15 rounds back to 2, and so does 2 x 1.25 (banker's

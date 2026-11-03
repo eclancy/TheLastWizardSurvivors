@@ -1448,6 +1448,55 @@ def hint_hut_step():
     return S.dc_block(_far(out, low=50.0, high=2200.0, size=0.55, mix=0.3, damp=0.65))
 
 
+# The Fallow Fields' granary (.ai/chapter-wizards.md 4.2). Medea's voice through the reeve's plank walls: "you there",
+# a breath, then the longer line falling - (onset, length, f0 from, f0 to, vowel). StageHintCue.GranaryVoices is the
+# same list of onsets, a wisp of her smoke on each - change one, change both.
+_GRANARY_SYLLABLES = [
+    (0.00, 0.18, 233.0, 222.0, "oo"),
+    (0.22, 0.38, 247.0, 208.0, "eh"),
+    (0.72, 0.14, 233.0, 228.0, "ah"),
+    (0.88, 0.14, 222.0, 218.0, "eh"),
+    (1.04, 0.16, 210.0, 204.0, "ah"),
+    (1.22, 0.46, 220.0, 185.0, "oh"),
+]
+_GRANARY_VOWELS = {
+    "oo": [(330.0, 4.0, 1.0), (820.0, 6.0, 0.45), (2400.0, 8.0, 0.08)],
+    "eh": [(560.0, 4.0, 1.0), (1700.0, 6.0, 0.5), (2500.0, 8.0, 0.12)],
+    "ah": [(720.0, 4.0, 1.0), (1180.0, 6.0, 0.55), (2500.0, 8.0, 0.1)],
+    "oh": [(480.0, 4.0, 1.0), (880.0, 6.0, 0.5), (2450.0, 8.0, 0.08)],
+}
+
+
+def hint_granary_voice():
+    """The Fallow Fields: a woman's voice from the granary - "You there. The granary, past the furrows."
+
+    Medea, held in the Tithe-Reeve's granary. She speaks, as Tituba does in her cell, but she does not plead: the
+    cell's cry is called high and rises into a question; this is said low and level, an alto (B-flat 3 down to F-sharp
+    3), every phrase FALLING, with almost no vibrato - an order, not a plea. Two words, a breath, then the longer line
+    trailing down. Heard through the reeve's plank walls: the top gone at 1.7 kHz, a hollow box resonance round 450 Hz
+    (a voice inside a timber room, not down a stone corridor), and a short dry room after it. Under the last phrase, a
+    few soft crackles of herbs smouldering low - her smoke, which is the cue. Onsets: _GRANARY_SYLLABLES."""
+    items = []
+    for i, (t, dur, f0, f1, vowel) in enumerate(_GRANARY_SYLLABLES):
+        v = _vowel(S.sweep(dur, f0, f1, 0.8), dur, _GRANARY_VOWELS[vowel], vibrato=0.006, rate=4.8,
+                   attack=0.03, release=0.07 if i < len(_GRANARY_SYLLABLES) - 1 else 0.2, seed=61 + i)
+        items.append((v, t, 1.0 if i != 1 else 0.95))
+    voiced = S.pad(S.layer(items), 2.2)
+    # A breath of the same resonances under the last phrase, as a low voice trails off.
+    tail = S.env_mul(_breath(0.5, [(480.0, 1.0), (880.0, 0.4)], q=3.0, seed=67), S.adsr(0.5, a=0.1, d=0.05, s=0.6, r=0.3))
+    crackles = []
+    for k, t in enumerate((0.34, 0.61, 0.97, 1.31, 1.52, 1.78)):
+        n = S.n_samples(0.03)
+        burst = S.env_mul(S.bandpass(S.osc("noise", 0, 0.03, seed=71 + k), 1500.0 + 140.0 * k, 2.0), S.decay(n, 60.0))
+        crackles.append((burst, t, 0.22 - 0.02 * k))
+    out = S.layer([(voiced, 0.0, 1.0), (tail, 1.35, 0.14)] + crackles)
+    out = S.pad(out, 2.2)
+    out = S.lowpass(out, 1700.0)
+    box = S.bandpass(out, 450.0, 2.2)
+    out = S.mix(out, S.gain(box, 0.55))
+    return S.dc_block(_far(out, low=150.0, high=1900.0, size=0.45, mix=0.24, damp=0.75))
+
+
 # ---------------------------------------------------------------------------
 # secrets - the light he missed (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9)
 # ---------------------------------------------------------------------------
@@ -1752,6 +1801,7 @@ REGISTRY += [
     ("hint_anvil",          "hint",   -10.0, hint_anvil,          False),
     ("hint_sibyl_voice",    "hint",   -10.0, hint_sibyl_voice,    False),
     ("hint_hut_step",       "hint",   -10.0, hint_hut_step,       False),
+    ("hint_granary_voice",  "hint",   -10.0, hint_granary_voice,  False),
     # The nine mouths' call (NineMouthsEvent): nine voices in two seconds, a call every few seconds, only
     # while the player is at the cliff - the once-a-second row. Hers is the louder of the two because it is
     # the one to hear; the eight echoes come a few dB under it and lose more again to the distance.

@@ -82,6 +82,19 @@ public partial class _ExploreProbe : Node
 	private float lostClock;
 	private float progressOutside = -1f;
 	private float progressAfterWait = -1f;
+	// --tithe-level=N: the player is put at level N as he arrives at the Tithe-Reeve's scale, so the price is a real
+	// level's (the probe arrives in the first minute, at level 1, where a level is 10 XP). --tithe-walk-off: once the
+	// pan is two fifths paid he walks 1,500 px off, waits, and comes back - what is paid must stay paid.
+	private int titheLevel;
+	private bool titheWalkOff;
+	private int tithePhase;
+	private float titheClock;
+	private float titheBefore = -1f;
+	private float titheAfter = -1f;
+	private int titheXpAtArrival;
+	private float titheArrivedAt = -1f;
+	private float titheLogNext;
+	private ulong titheLogReal;
 	// Which of the chapter's events is being visited, found and won; and which of them were won.
 	private int cur;
 	private readonly List<bool> wonEvents = new();
@@ -135,6 +148,8 @@ public partial class _ExploreProbe : Node
 			else if (arg == "--wrong-mouth") wrongMouth = true;
 			else if (arg == "--wayfinder-first") wayfinderFirst = true;
 			else if (arg == "--lose-hut") loseHut = true;
+			else if (arg.StartsWith("--tithe-level=")) titheLevel = int.Parse(arg.Substring(14));
+			else if (arg == "--tithe-walk-off") titheWalkOff = true;
 		}
 		ProcessMode = ProcessModeEnum.Always;
 		SaveManager.WritesDisabled = true;
@@ -615,6 +630,18 @@ public partial class _ExploreProbe : Node
 
 	private void Arrive()
 	{
+		// The Tithe-Reeve's price is a level at the moment he comes: put him at the level asked for first.
+		if (Event is TitheScaleEvent && titheLevel > 0)
+		{
+			player.CurrentLevel = titheLevel;
+			player.CurrentXP = 0;
+			player.XPToNextLevel = player.CalculateXPForLevel(titheLevel);
+		}
+		if (Event is TitheScaleEvent)
+		{
+			titheXpAtArrival = player.RunXpGathered;
+			titheArrivedAt = game.RunSeconds;
+		}
 		Teleport(Event.Sites[0].Position + new Vector2(0f, 30f), 20);
 		step = 11;
 	}
@@ -702,6 +729,19 @@ public partial class _ExploreProbe : Node
 						$"calmed {ran.TimesCalmed} time(s)");
 				}
 			}
+			if (e is TitheScaleEvent tithe)
+			{
+				Check("the price was one level's XP at that moment of the run", tithe.Price >= 1f,
+					$"{tithe.Price:0} for level {tithe.LevelAtArrival}");
+				Check("the pan was paid from orbs that fell near it", tithe.IsPaid && tithe.OrbsTaken > 0 && tithe.Paid >= tithe.Price - 0.5f,
+					$"{tithe.Paid:0} of {tithe.Price:0} in {tithe.OrbsTaken} orbs ({tithe.ValueTaken} XP), "
+					+ $"{(titheArrivedAt >= 0f ? game.RunSeconds - titheArrivedAt : 0f):0.0} s after arriving; "
+					+ $"he banked {player.RunXpGathered - titheXpAtArrival} XP from elsewhere meanwhile");
+				Check("the scale stopped taking once it was paid", !GranaryTithe.Open, $"open {GranaryTithe.Open}");
+				if (titheWalkOff)
+					Check("walked off: what was paid stayed paid", tithePhase == 2 && titheBefore >= 0f && titheAfter >= titheBefore - 0.0001f,
+						$"{titheBefore * 100f:0.0}% when he left, {titheAfter * 100f:0.0}% after waiting away");
+			}
 			if (e is FivePointedSealEvent seal)
 			{
 				Check("every stone faces the seal", seal.Aligned == FivePointedSealEvent.StoneCount, $"{seal.Steps} presses");
@@ -750,6 +790,11 @@ public partial class _ExploreProbe : Node
 		}
 		if (completeClock > 240f)
 		{
+			if (e is TitheScaleEvent stuck)
+				notes.Add($"the tithe at 240 s: pan {stuck.Paid:0} of {stuck.Price:0} ({stuck.Progress * 100f:0}%), {stuck.OrbsTaken} orbs weighed, "
+					+ $"{GranaryTithe.OrbsInFlight} in flight, open {GranaryTithe.Open}; {EnemyRegistry.Count} enemies, "
+					+ $"{EnemyRegistry.Snapshot.Count(x => IsInstanceValid(x) && x.GlobalPosition.DistanceTo(stuck.ScaleFoot) < TitheScaleEvent.TitheReach)} within its reach; "
+					+ $"he stands {player.GlobalPosition.DistanceTo(stuck.ScaleFoot):0} px from it");
 			Check($"{Of(cur)}the event can be finished", false, "not finished after 240 s");
 			Finish("gave up");
 			return;
@@ -828,6 +873,39 @@ public partial class _ExploreProbe : Node
 		// The walking hut: hunted at his own walk (HuntStep), and stood still while it kneels.
 		if (e is WalkingHutEvent hunt && hunt.IsFound)
 			target = hunt.IsTired ? player.GlobalPosition : HuntStep(hunt, delta);
+		// The Tithe-Reeve's scale: stand in the yard beside it and let the field come; what dies there pays. With
+		// --tithe-walk-off, part-way through: 1,500 px off, a wait, and back.
+		bool tithing = e is TitheScaleEvent titheRun && titheRun.IsFound && !titheRun.IsPaid;
+		if (e is TitheScaleEvent scaleEvent && scaleEvent.IsFound)
+		{
+			target = scaleEvent.ScaleFoot + new Vector2(-30f, 60f);
+			if (completeClock >= titheLogNext || Time.GetTicksMsec() >= titheLogReal)
+			{
+				titheLogNext = completeClock + 20f;
+				titheLogReal = Time.GetTicksMsec() + 15000;
+				GD.Print($"EXPLOREPROBE tithe at {completeClock:0}s: pan {scaleEvent.Paid:0}/{scaleEvent.Price:0}, {scaleEvent.OrbsTaken} orbs, "
+					+ $"{GranaryTithe.OrbsInFlight} in flight, {EnemyRegistry.Count} enemies, {GetTree().GetNodesInGroup(XPOrb.GroupName).Count} orbs in the world, "
+					+ $"frame {delta * 1000f:0} ms of game time, {Engine.GetFramesPerSecond():0} fps");
+			}
+			if (titheWalkOff && tithePhase == 0 && scaleEvent.Progress >= 0.4f)
+			{
+				tithePhase = 1;
+				titheBefore = scaleEvent.Progress;
+				titheClock = 0f;
+			}
+			if (tithePhase == 1)
+			{
+				target = scaleEvent.ScaleFoot + new Vector2(1500f, 0f);
+				tithing = false;
+				titheClock += delta;
+				if (titheClock >= 5f)
+				{
+					titheAfter = scaleEvent.Progress;
+					GD.Print($"EXPLOREPROBE walked off the scale for {titheClock:0.0}s: pan {titheBefore * 100f:0.0}% -> {titheAfter * 100f:0.0}%; walking back");
+					tithePhase = 2;
+				}
+			}
+		}
 		if (target == null)
 		{
 			float best = float.MaxValue;
@@ -873,7 +951,11 @@ public partial class _ExploreProbe : Node
 			}
 			else if (enemy.IsMiniBoss && d < 140f && e is not GreatAnvilEvent)
 				enemy.TakeDamage(Math.Max(1, enemy.Health / 6 + 50), false);
-			else if (!enemy.IsMiniBoss && d < 500f && e is not ThawEvent)
+			// At the scale they are killed, not cleared: a kill near it drops the orb that pays the tithe.
+			else if (tithing && !enemy.IsMiniBoss && e is TitheScaleEvent paying
+				&& enemy.GlobalPosition.DistanceTo(paying.ScaleFoot) < TitheScaleEvent.TitheReach - 30f)
+				enemy.TakeDamage(enemy.Health + 1, false);
+			else if (!enemy.IsMiniBoss && d < 500f && e is not ThawEvent && !tithing)
 				enemy.QueueFree();
 		}
 	}

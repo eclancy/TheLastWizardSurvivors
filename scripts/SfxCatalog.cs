@@ -126,6 +126,9 @@ public static class SfxCatalog
 	public const string HintSibylVoice = "hint_sibyl_voice";
 	// The walking hut in the Enchanted Forest (WalkingHutEvent): two heavy falls of a great foot and its timbers creaking.
 	public const string HintHutStep = "hint_hut_step";
+	// The Tithe-Reeve's granary in the Fallow Fields (TitheScaleEvent): a woman's voice, level and unhurried, through
+	// plank walls - she speaks, and does not plead.
+	public const string HintGranaryVoice = "hint_granary_voice";
 	// The nine mouths' call in the Sunken Cave (NineMouthsEvent): her voice out of the true mouth, first, and
 	// the cave's echo of it out of the other eight, a beat apart - played at each mouth, so the 2D listener
 	// pans and fades each from where it comes.
@@ -158,6 +161,7 @@ public static class SfxCatalog
 		StageClear, GameOver, MetaUnlock, WaveWarning,
 		PlayerFall, TallyTick, TallyPayout,
 		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep,
+		HintGranaryVoice,
 		SibylVoice, SibylEcho,
 		SecretSeen, SecretFound, SecretShatter,
 	};

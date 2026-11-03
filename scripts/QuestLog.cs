@@ -81,6 +81,9 @@ public static class QuestLog
 		// The witch of the deep wood, kept in her own hut and the hut kept walking its circle for ever (4.1). The Forest
 		// is open on a new save, so this line is on its note from the first run.
 		new Prisoner("baba_yaga", "the one in the walking hut", "Something heavy walks the deep wood, round and round.", "{0}'s hut has knelt at last."),
+		// The sorceress of Colchis, counted among what grows here and held in the reeve's granary against a tithe the
+		// village could never pay (4.2).
+		new Prisoner("medea", "the one in the granary", "Someone is kept in the reeve's granary, counted with the grain.", "{0} has walked out of the granary."),
 		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
 		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.

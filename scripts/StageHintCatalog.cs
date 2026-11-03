@@ -36,6 +36,8 @@ public enum HintCue
 	Writ,
 	/// <summary>Birds lifting out of the canopy on each fall of a great foot (the walking hut).</summary>
 	Birds,
+	/// <summary>A thin cold herb-smoke lying low over the stubble, a wisp on each phrase of her voice (the granary).</summary>
+	Smoke,
 }
 
 /// <summary>One side event's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
@@ -220,6 +222,22 @@ public static class StageHintCatalog
 				"Something heavy walks the deep wood, on two legs.",
 				"The steps again. Too heavy for a man.",
 				"Still walking, round and round.",
+			},
+		},
+		// Medea, counted with the grain in the Tithe-Reeve's granary in the Fallow Fields (.ai/chapter-wizards.md 4.2). She
+		// speaks, as Tituba does, but she does not plead: the granddaughter of the Sun, who has waited out worse men than
+		// the reeve. A thin cold herb-smoke drifts low over the stubble from her side. Never named, never said who.
+		new()
+		{
+			SiteId = "tithe_scale",
+			Voice = HintVoice.Speech,
+			Sound = SfxCatalog.HintGranaryVoice,
+			Cue = HintCue.Smoke,
+			Lines = new[]
+			{
+				"You there. The granary, past the furrows.",
+				"He counts me with the grain. Settle his count.",
+				"Come, or go. I have waited out worse men.",
 			},
 		},
 		// Vainamoinen, the singer, under the ice. He is heard, not named.

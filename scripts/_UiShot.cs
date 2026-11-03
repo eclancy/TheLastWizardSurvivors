@@ -379,6 +379,9 @@ public partial class _UiShot : Node
 	private bool wayfinderTaken;
 	private bool arriveEvent;
 	private bool eventArrived;
+	// --event-progress=F: with --arrive, the begun event's own "progress" float set to F (0-1) - an event photographed
+	// part-way (the Tithe-Reeve's pan part-paid, its beam part-tipped) without the minutes it takes to get there.
+	private float eventProgress = -1f;
 	// --event-index=N: which of the chapter's events (SideEventDirector.EventsFor; 0 its original, 1 a second -
 	// --second-event-test adds a stand-in one on a tool run) --goto=event, --goto=site:N, --win-event and --arrive
 	// mean. --goto=event:N goes to event N's main site whatever this says.
@@ -1797,6 +1800,8 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--arrive")
 				arriveEvent = true;
+			else if (arg.StartsWith("--event-progress="))
+				eventProgress = float.Parse(arg.Substring("--event-progress=".Length), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg.StartsWith("--event-index="))
 				eventIndex = System.Math.Max(0, int.Parse(arg.Substring("--event-index=".Length)));
 			// --zoom=Z: the run camera's zoom (player.tscn's is 0.85), for a map-like view of a stretch
@@ -3032,7 +3037,15 @@ public partial class _UiShot : Node
 				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector arrival)
 			{
 				eventArrived = true;
-				GD.Print(arrival.Start(eventIndex) is SideEvent begun ? $"_UiShot: {begun.GetType().Name} begun where it stands" : "_UiShot: no event to begin");
+				SideEvent begun = arrival.Start(eventIndex);
+				GD.Print(begun != null ? $"_UiShot: {begun.GetType().Name} begun where it stands" : "_UiShot: no event to begin");
+				if (begun != null && eventProgress >= 0f
+					&& begun.GetType().GetField("progress", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic) is System.Reflection.FieldInfo field
+					&& field.FieldType == typeof(float))
+				{
+					field.SetValue(begun, Mathf.Clamp(eventProgress, 0f, 0.99f));
+					GD.Print($"_UiShot: {begun.GetType().Name}'s progress set to {eventProgress:0.00}");
+				}
 			}
 			if (teleportTo is Vector2 target && !teleported && frames >= WarmupFrames / 3
 				&& FindNodeOfType<Player>(GetTree().Root) is Player traveller)
@@ -3277,7 +3290,11 @@ public partial class _UiShot : Node
 			{
 				demoApplied = true;
 				if (demoPlayerLevel > 0)
+				{
 					demo.CurrentLevel = demoPlayerLevel;
+					// And the bar that level has, so what reads it (the Tithe-Reeve's price) sees that level's.
+					demo.XPToNextLevel = demo.CalculateXPForLevel(demoPlayerLevel);
+				}
 				if (demoSpellLevel > 0)
 					demo.GetEquippedSpells()[0].CurrentLevel = demoSpellLevel;
 				if (demoArea > 0f && typeof(Player).GetField("areaMultiplier",
@@ -3914,6 +3931,9 @@ public partial class _UiShot : Node
 		// The walking hut: in front of where its door turns to, so she steps out toward him and not out of his feet.
 		else if (IsInstanceValid(wonEvent) && wonEvent is WalkingHutEvent hutEvent)
 			p.GlobalPosition = hutEvent.StandPoint;
+		// The Tithe-Reeve's scale: in front of the yard, so the doors, the steps and the scale are all on screen.
+		else if (IsInstanceValid(wonEvent) && wonEvent is TitheScaleEvent titheEvent)
+			p.GlobalPosition = titheEvent.StandPoint;
 		else if (IsInstanceValid(wonEvent) && EventSite(wonEvent) is Vector2 site)
 			p.GlobalPosition = site;
 	}

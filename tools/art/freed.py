@@ -62,6 +62,7 @@ WIZARDS = [
     ("sibyl", ("sibyl", "arcane", "arcane")),
     ("laelaps", ("laelaps", "light", "wind")),
     ("baba_yaga", ("yaga", "grass", "grass")),
+    ("medea", ("medea", "light", "light")),
 ]
 
 # Where they stand: the Archmage left of the middle, the freed wizard right of it, turned to him.
