@@ -29,29 +29,68 @@ def ramp_rows(colors, n):
     return out
 
 
-# --- wordmark ---------------------------------------------------------------
-# Both lines are tuned to land on 186px so the block reads as one justified stack.
-TITLE_W = font.measure("WIZARD", font.DISPLAY, 3, 2)
-SUB_W = font.measure("SURVIVORS", font.DISPLAY, 2, 2)
+# --- the title --------------------------------------------------------------
+# THE ONE HE MISSED. The game was Wizard Survivors until 2026-11-02, and the lettering was the same
+# DISPLAY face in a two-line stack. Which layout the title screens ship, and the alternates, live in
+# title_lettering.py; this only knows how to set lines of the face.
+TITLE_LINES = ("THE ONE", "HE MISSED")
+
+
+# The gap between two words, in source pixels: the end of one word to the start of the next. A
+# space glyph inside one string (font.measure) comes to 9 - its 5 columns and a track either side -
+# which is a whole letter, and THE ONE set that way read as two words parked apart. At 6 and under,
+# HE ran into MISSED at scale 3; 7 is the narrowest that still reads as a space.
+WORD_SPACE = 7
+
+
+def _split(words):
+    """(text, colors) pairs -> one pair per word, so every word space is WORD_SPACE."""
+    return [(w, colors) for (text, colors) in words for w in text.split(" ") if w]
+
+
+def line_width(words, scale, track=2):
+    """Width of one line of `words` (a list of (text, colors)) at `scale`."""
+    words = _split(words)
+    w = sum(font.measure(t, font.DISPLAY, scale, track) for (t, _) in words)
+    return w + WORD_SPACE * scale * (len(words) - 1)
+
+
+def lettering(c, cx, y, lines, halo=OCC, shadow=OCC, track=2):
+    """Set the title as `lines`, each centred on cx, the first cap line at y. Returns the bottom of
+    the last line (its drop shadow not counted).
+
+    A line is (scale, words, gap): `words` is a list of (text, colors) set left to right one word
+    space apart, `colors` a top-to-bottom tone list spread over the glyph's rows - so one word can
+    be lit gold and the next cold bone - and `gap` the rows left under the line before the next.
+
+    Every halo goes down before any glyph, so a halo never cuts into the line above it; and the
+    drop shadow grows with the scale, (2, 3) at 3 and up as the old wordmark's first line had it."""
+    placed = []
+    yy = y
+    for (scale, words, gap) in lines:
+        x = cx - line_width(words, scale, track) // 2
+        for (text, colors) in _split(words):
+            placed.append((text, colors, x, yy, scale))
+            x += font.measure(text, font.DISPLAY, scale, track) + WORD_SPACE * scale
+        yy += font.DISPLAY_H * scale + gap
+    if halo:
+        for (text, _, x, ly, scale) in placed:
+            font.outline(c, text, x, ly, font.DISPLAY, halo, scale, track)
+    for (text, colors, x, ly, scale) in placed:
+        off = (2, 3) if scale >= 3 else ((2, 2) if scale == 2 else (1, 1))
+        font.draw(c, text, x, ly, font.DISPLAY, ramp_rows(colors, font.DISPLAY_H), scale, track,
+                  shadow=shadow, shadow_off=off)
+    return yy - lines[-1][2]
 
 
 def wordmark(c, cx, y, top_colors, sub_colors, halo=None, shadow=OCC, gap=8, scales=(3, 2)):
-    """Draw the two-line wordmark centred on cx with its cap-line at y. Returns bottom y.
+    """The title as a plain two-line stack, centred on cx with its cap line at y. Returns bottom y.
 
-    `scales` is the whole-pixel scale of each line. (3, 2) is the phone's, where the two lines
-    come out the same width; the PC title uses a bigger pair (see splash_wide.py)."""
-    ts, ss = scales
-    x1 = cx - font.measure("WIZARD", font.DISPLAY, ts, 2) // 2
-    x2 = cx - font.measure("SURVIVORS", font.DISPLAY, ss, 2) // 2
-    y2 = y + font.DISPLAY_H * ts + gap
-    if halo:
-        font.outline(c, "WIZARD", x1, y, font.DISPLAY, halo, ts, 2)
-        font.outline(c, "SURVIVORS", x2, y2, font.DISPLAY, halo, ss, 2)
-    font.draw(c, "WIZARD", x1, y, font.DISPLAY, ramp_rows(top_colors, font.DISPLAY_H),
-              ts, 2, shadow=shadow, shadow_off=(2, 3))
-    font.draw(c, "SURVIVORS", x2, y2, font.DISPLAY, ramp_rows(sub_colors, font.DISPLAY_H),
-              ss, 2, shadow=shadow, shadow_off=(2, 2))
-    return y2 + font.DISPLAY_H * ss
+    The six unshipped candidate screens in splash.py still call this, so they carry the game's
+    name too; the shipping screens set their lettering through title_lettering.py."""
+    return lettering(c, cx, y, [(scales[0], [(TITLE_LINES[0], top_colors)], gap),
+                                (scales[1], [(TITLE_LINES[1], sub_colors)], 0)],
+                     halo=halo, shadow=shadow)
 
 
 def caption(c, text, cx, y, color, scale=1, track=1, shadow=OCC):
@@ -288,7 +327,7 @@ def bough(c, x, y, ang, length, width, seed=0, dark=None, light=None, leaf_r=16,
 def canopy(c, y0, y1, clear, n, seed=0, dark=None, light=None, width=360, density=1.0):
     """Leaf mass filling a band of sky, with one deliberate hole left in it.
 
-    [H[2J[3J is (cx, cy, rx, ry): the break in the canopy the wordmark sits in. Foliage thickens
+    `clear` is (cx, cy, rx, ry): the break in the canopy the wordmark sits in. Foliage thickens
     with distance from that hole, so the clearing reads as something you are looking up
     through rather than as a gap the artist forgot to fill.
     """

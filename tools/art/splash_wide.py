@@ -34,6 +34,7 @@ import raster
 import splash
 import splashkit as sk
 import title_eyes
+import title_lettering
 
 M, E, OCC = splash.M, splash.E, splash.OCC
 STAGES = splash.STAGES
@@ -47,17 +48,22 @@ SHIPPING = "assets/bonelight/ui/title-screen-wide.png"
 # --- where things are, in WIDE-frame pixels. TitleScreen and MainMenu read the same numbers off the
 # core (core x = wide x - C0, and core (320, 180) is the centre of the screen); keep them in step.
 WARD_X, WARD_Y = C0 + 430, 256     # ward centre, and the figure's feet
-WORD_X, WORD_Y = C0 + 175, 14      # wordmark centre and cap line
-# The wordmark's whole-pixel scales, WIZARD then SURVIVORS. The phone's (3, 2) came out about 380
-# canvas units wide on a 1280 screen and read as small for a PC title; (5, 3) is 1.67x and 1.5x,
-# 620 and 558 units, and still leaves the staff clear of it.
-WORD_SCALES = (5, 3)
-WORD_GAP = 12
-WORD_BOTTOM = WORD_Y + 12 * WORD_SCALES[0] + WORD_GAP + 12 * WORD_SCALES[1] + 2
-WORD_HALF = 156                    # half the WIZARD line, 310 wide
 HORIZON = 200
+
+
+def word_box(lettering=None):
+    """The lettering's box in wide-frame pixels, (x0, y0, x1, y1) with x1/y1 inclusive.
+
+    THE ONE HE MISSED, in whichever layout tools/art/title_lettering.py ships (or the one named).
+    The old WIZARD SURVIVORS sat at (5, 3) here, 310 and 279 wide - 620 and 558 canvas units on a
+    1280 screen; the shipping stack is (4, 3), 272 and 261, because THE ONE at 5 is 340 wide and
+    would run off the left edge of a 16:9 screen or into the staff."""
+    x0, y0, x1, y1 = title_lettering.box(lettering or title_lettering.SHIPPING, "wide")
+    return (x0, y0, x1 - 1, y1 - 1)
+
+
 # Rectangles (x0, y0, x1, y1) the layout puts UI on. The art keeps each one dark and quiet.
-WORD_BOX = (WORD_X - WORD_HALF, WORD_Y, WORD_X + WORD_HALF, WORD_BOTTOM)
+WORD_BOX = word_box()
 MENU_BOX = (C0 + 60, 134, C0 + 290, 240)      # Start Run and the three buttons, under the wordmark
 ARCANE_BOX = (C0 + 430, 8, C0 + 630, 34)      # Arcane Energy readout
 OPTIONS_BOX = (C0 + 12, 292, C0 + 126, 324)   # Options
@@ -153,10 +159,15 @@ EYE_GROUPS = [("near", (C0, 56, C0 + CORE_W, 150), 4),
 # keeps FIGURE_PAD from him); this keeps the canopy straight over his hat clear as well, as before.
 # The slot between the wordmark and the menu is kept too, the wordmark's width: a pair in it sat
 # under the S of SURVIVORS, beside Start Run, and read as part of the type.
-EYE_KEEP_OUT = [WORD_BOX, MENU_BOX, (WORD_BOX[0], WORD_BOX[3], WORD_BOX[2], MENU_BOX[1]),
-                OPTIONS_BOX, DETAIL_BOX, PROMPT_BOX, VERSION_BOX,
-                (C0 + 134, 296, C0 + 318, 320),           # Spell Index and Report a bug
-                (WARD_X - 60, 30, WARD_X + 60, 260)]
+def eye_keep_out(wb):
+    return [wb, MENU_BOX, (min(wb[0], MENU_BOX[0]), min(wb[3], MENU_BOX[1]),
+                           max(wb[2], MENU_BOX[2]), MENU_BOX[1]),
+            OPTIONS_BOX, DETAIL_BOX, PROMPT_BOX, VERSION_BOX,
+            (C0 + 134, 296, C0 + 318, 320),           # Spell Index and Report a bug
+            (WARD_X - 60, 30, WARD_X + 60, 260)]
+
+
+EYE_KEEP_OUT = eye_keep_out(WORD_BOX)
 # Where the common screen shapes cut the frame. The canvas is always 720 tall, so a 16:9 screen
 # shows the core, x 160-800; 16:10 shows 192-768, 3:2 210-750, 21:9 about 53-907 and 3440x1440
 # 50-910. A pair across one of those is one eye and a half at the screen's edge, so none may be.
@@ -169,23 +180,29 @@ EYE_CAPS = [((MENU_BOX[2] + 8, 0, WARD_X - 50, WH), 2),
             ((C0, 0, MENU_BOX[0], WH), 2),
             ((WARD_X + 60, 0, C0 + CORE_W, WH), 5)]
 EYE_SEED = 5
-_EYES = []
+_EYES = {}
 
 
-def wide_eyes():
+def wide_eyes(lettering=None):
     """Where every pair of eyes goes on the wide set: worked out once on the finished layers of the
-    default render and memoised, as splash.vigil_eyes does for the phone."""
-    if _EYES:
-        return _EYES
-    cv = vigil_wide(layers=True, eyes=False)
+    default render and memoised per lettering, as splash.vigil_eyes does for the phone."""
+    lettering = lettering or title_lettering.SHIPPING
+    if lettering in _EYES:
+        return _EYES[lettering]
+    cv = vigil_wide(layers=True, eyes=False, lettering=lettering)
     field = title_eyes.Field(title_eyes.composite(cv, STAGES), title_eyes.blocked(cv),
-                             EYE_KEEP_OUT, SCREEN_EDGES)
-    _EYES.extend(title_eyes.place(field, EYE_GROUPS, EYE_SEED, caps=EYE_CAPS))
-    print("wide eyes: " + title_eyes.report(_EYES))
-    return _EYES
+                             eye_keep_out(word_box(lettering)), SCREEN_EDGES)
+    _EYES[lettering] = title_eyes.place(field, EYE_GROUPS, EYE_SEED, caps=EYE_CAPS)
+    print("wide eyes (%s): %s" % (lettering, title_eyes.report(_EYES[lettering])))
+    return _EYES[lettering]
 
 
-def vigil_wide(beard="mane-spear", layers=False, gain=1.0, phase=0, flicker=1.0, eyes=True):
+def vigil_wide(beard="mane-spear", layers=False, gain=1.0, phase=0, flicker=1.0, eyes=True,
+               lettering=None):
+    lettering = lettering or title_lettering.SHIPPING
+    # The far trees are held low under the lettering so it keeps a plain sky behind it.
+    wb = word_box(lettering)
+    WORD_X, WORD_HALF, WORD_BOTTOM = (wb[0] + wb[2]) // 2, (wb[2] - wb[0]) // 2, wb[3]
     WARD = E["light"]
     GROUND = M["gold"]
     FAR_TONES = [(M["stone"][4], M["stone"][3]), (M["violet"][4], M["violet"][3]),
@@ -414,13 +431,11 @@ def vigil_wide(beard="mane-spear", layers=False, gain=1.0, phase=0, flicker=1.0,
         seen.append(cc)
         splash._darken_rows(cc, 0, WH - 1, lambda x, y: max(edge_t(x, y), ui_pocket_t(x, y)),
                             [None, None, M["stone"][4], OCC], only_opaque=layers)
-    sk.wordmark(T("backB"), WORD_X, WORD_Y,
-                [M["skin"][0], M["skin"][0], M["skin"][1], M["skin"][2], M["skin"][3]],
-                [M["gold"][0], M["gold"][1], M["gold"][2]], halo=OCC, gap=WORD_GAP,
-                scales=WORD_SCALES)
+    # THE ONE HE MISSED (tools/art/title_lettering.py), after the light, never under it.
+    title_lettering.draw(T("backB"), lettering, "wide", C0)
     # The eyes, last of all and only where nothing in front of them is drawn - see splash.vigil.
     if eyes:
-        title_eyes.stamp_all(cv["eyes"], wide_eyes())
+        title_eyes.stamp_all(cv["eyes"], wide_eyes(lettering))
     if layers:
         return cv
     return cv["backA"]
