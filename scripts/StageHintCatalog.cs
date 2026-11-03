@@ -30,6 +30,8 @@ public enum HintCue
 	Bell,
 	/// <summary>Strips of written paper tumbling in, charring at the edges as they fall (the seal).</summary>
 	Paper,
+	/// <summary>Written leaves blown in on a cold draught, one on each voice of the call (the nine mouths).</summary>
+	Writ,
 }
 
 /// <summary>One chapter's hint: what it is for, how it sounds, what it shows, and what its line says.</summary>
@@ -168,6 +170,24 @@ public static class StageHintCatalog
 				"Strips of paper on the wind, in a hand you do not know.",
 				"More paper, burning at the edges as it falls.",
 				"Still the paper comes, from the same quarter.",
+			},
+		},
+		// The Cumaean Sibyl, held behind nine mouths in the Sunken Cave (.ai/chapter-wizards.md 4.3). She wrote her
+		// prophecies on leaves and let the wind have them: written leaves come in on a cold draught, out of
+		// place in a cave, one on each voice of the call, and her voice is heard from far down in more places
+		// than one. A sound, not speech - she is not calling for help. Not named, never said what to do.
+		new()
+		{
+			StageId = "stage_2",
+			SiteId = "nine_mouths",
+			Voice = HintVoice.Sound,
+			Sound = SfxCatalog.HintSibylVoice,
+			Cue = HintCue.Writ,
+			Lines = new[]
+			{
+				"Leaves on a cold draught, every one written on.",
+				"A woman's voice from far down, in more places than one.",
+				"The leaves again, written faster now.",
 			},
 		},
 		// Vainamoinen, the singer, under the ice. He is heard, not named.

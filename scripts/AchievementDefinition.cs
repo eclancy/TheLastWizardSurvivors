@@ -265,6 +265,7 @@ public static class AchievementDefinitions
 		("gaolers_key", "The Open Cell", "Carry the Gaoler's key to the locked cell in the Cursed Dungeon.", "Frees Tituba"),
 		("bog_lanterns", "The Lanterns Out", "Snuff the lanterns of the Blighted Swamp and face what tends them.", "Unlocks Contagion"),
 		("five_pointed_seal", "The Seal Broken", "Turn the four guardian stones to face the seal in the Mystic Ruins.", "Frees Abe no Seimei"),
+		("nine_mouths", "The True Mouth", "Find the one mouth of nine her voice comes out of first, in the Sunken Cave.", "Frees The Cumaean Sibyl"),
 		("the_thaw", "Out of the Ice", "Thaw the wizard out of the ice in the Frozen Waste.", "Frees Väinämöinen"),
 		("caravan_master", "The Caravan Stopped", "Catch the caravan master on the Scorched Sands road.", "Unlocks Iron Palisade"),
 	};

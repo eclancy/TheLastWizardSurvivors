@@ -1287,6 +1287,75 @@ def hint_paper_wind():
     return S.dc_block(_far(S.highpass(out, 180.0), low=180.0, high=2200.0, size=0.45, mix=0.25, damp=0.5))
 
 
+# The Sunken Cave's nine mouths (.ai/chapter-wizards.md 4.3). The Cumaean Sibyl's voice comes out of every
+# mouth in the rock, each a beat later than the last; the first is hers, the rest the cave giving it back.
+# The beat is NineMouthsEvent.VoiceBeat and StageHintCue.SibylVoices - change one, change all three.
+_SIBYL_BEAT = 0.24
+_SIBYL_VOICES = [(0.0, 1.0), (0.24, 0.74), (0.48, 0.6), (0.72, 0.5), (0.96, 0.42), (1.20, 0.35), (1.44, 0.3)]
+
+
+def _sibyl_phrase(seed=0):
+    """Her line, with no words: an old woman's voice intoning three syllables - a vowel rising from F#4 to A4,
+    a step down to G4, and a long E4 that trembles, the way a line is spoken when it is a prophecy and not
+    a sentence. Old: a slow wide vibrato and a husk of breath through the same resonances under every
+    syllable (long life without youth). Lower and slower than the cell's cry, which is called, not
+    intoned."""
+    ah = [(780.0, 4.0, 1.0), (1220.0, 6.0, 0.55), (2600.0, 8.0, 0.14)]
+    oh = [(520.0, 4.0, 1.0), (900.0, 6.0, 0.5), (2500.0, 8.0, 0.1)]
+    eh = [(S.sweep(0.52, 620.0, 470.0), 4.0, 1.0), (S.sweep(0.52, 1900.0, 1100.0), 6.0, 0.45), (2600.0, 8.0, 0.1)]
+    one = _vowel(S.sweep(0.30, 370.0, 440.0, 0.8), 0.30, ah, vibrato=0.02, rate=4.4, attack=0.05, release=0.05, seed=31 + seed)
+    two = _vowel(S.sweep(0.18, 415.0, 392.0), 0.18, oh, vibrato=0.02, rate=4.4, attack=0.03, release=0.05, seed=33 + seed)
+    three = _vowel(S.sweep(0.52, 340.0, 326.0), 0.52, eh, vibrato=0.034, rate=5.2, attack=0.04, release=0.22, seed=35 + seed)
+    voiced = S.layer([(one, 0.0, 1.0), (two, 0.31, 0.85), (three, 0.50, 0.9)])
+    husk = S.layer([
+        (S.env_mul(_breath(0.30, [(780.0, 1.0), (1220.0, 0.5)], q=3.0, seed=41 + seed), S.adsr(0.30, a=0.05, d=0.05, s=0.8, r=0.06)), 0.0, 0.22),
+        (S.env_mul(_breath(0.18, [(520.0, 1.0), (900.0, 0.5)], q=3.0, seed=43 + seed), S.adsr(0.18, a=0.03, d=0.05, s=0.8, r=0.06)), 0.31, 0.2),
+        (S.env_mul(_breath(0.52, [(560.0, 1.0), (1500.0, 0.45)], q=3.0, seed=45 + seed), S.adsr(0.52, a=0.04, d=0.05, s=0.8, r=0.22)), 0.50, 0.24),
+    ])
+    return S.pad(S.layer([(voiced, 0.0, 1.0), (husk, 0.0, 1.0)]), 1.05)
+
+
+def sibyl_voice():
+    """The Sunken Cave, at the nine mouths: her own voice, out of the one mouth that is hers - played at that
+    mouth, first, on every call (NineMouthsEvent). Near and nearly dry: the throat of a cave mouth, a short
+    stone room, nothing above 3.4 kHz. It is the clearest thing in the call, so the first voice is also the
+    one that sounds like a person; the eight after it are the cave (sibyl_echo)."""
+    out = S.pad(_sibyl_phrase(0), 1.25)
+    out = S.reverb(S.lowpass(S.highpass(out, 170.0), 3400.0), size=0.35, damp=0.55, mix=0.16)
+    return S.dc_block(out)
+
+
+def sibyl_echo():
+    """The cave giving her voice back, out of a mouth that is not hers - played at each of the other eight, a
+    beat apart (NineMouthsEvent). The same line from deeper in the rock: its top gone (lowpassed at 1.3
+    kHz), hollowed by a short pipe resonance (a 7 ms comb - a voice down a narrow passage), its start
+    smeared, and a long dark tail. So the call is one person and eight echoes of her, and the person is
+    first: the order and the timbre agree."""
+    phrase = _sibyl_phrase(1)
+    pipe = S.delay(phrase, 0.007, feedback=0.55, mix=0.5, taps=6)
+    smear = S.env_mul(S.pad(pipe, 1.6), S.ramp(S.n_samples(0.09), 0.0, 1.0) + [1.0] * (S.n_samples(1.6) - S.n_samples(0.09)))
+    out = S.reverb(S.lowpass(S.highpass(smear, 240.0), 1300.0), size=0.85, damp=0.7, mix=0.45)
+    return S.dc_block(out)
+
+
+def hint_sibyl_voice():
+    """The Sunken Cave: a woman's voice from far down, in more places than one.
+
+    The call at the nine mouths as it reaches the player across the map: her line once, then the cave
+    giving it back six times, each a beat (_SIBYL_BEAT) after the last and darker and quieter than the one
+    before - many voices a beat apart, the first clearest. Every onset is _SIBYL_VOICES, which
+    StageHintCue.SibylVoices puts a written leaf on screen for. Then the far room every hint has. Not the
+    cell's cry (one voice, called, rising into a question): this is intoned, falling, and multiplied."""
+    items = []
+    for i, (t, g) in enumerate(_SIBYL_VOICES):
+        v = _sibyl_phrase(i)
+        if i > 0:
+            v = S.lowpass(S.delay(v, 0.007, feedback=0.4, mix=0.35, taps=4), 2200.0 - 160.0 * i)
+        items.append((v, t, g))
+    out = S.pad(S.layer(items), 2.55)
+    return S.dc_block(_far(out, low=190.0, high=2600.0, size=0.9, mix=0.42, damp=0.6))
+
+
 # ---------------------------------------------------------------------------
 # secrets - the light he missed (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9)
 # ---------------------------------------------------------------------------
@@ -1588,6 +1657,12 @@ REGISTRY += [
     ("hint_ice_song",       "hint",   -9.0,  hint_ice_song,       False),
     ("hint_caravan_bell",   "hint",   -10.0, hint_caravan_bell,   False),
     ("hint_paper_wind",     "hint",   -10.0, hint_paper_wind,     False),
+    ("hint_sibyl_voice",    "hint",   -10.0, hint_sibyl_voice,    False),
+    # The nine mouths' call (NineMouthsEvent): nine voices in two seconds, a call every few seconds, only
+    # while the player is at the cliff - the once-a-second row. Hers is the louder of the two because it is
+    # the one to hear; the eight echoes come a few dB under it and lose more again to the distance.
+    ("sibyl_voice",         "hint",   -12.0, sibyl_voice,         False),
+    ("sibyl_echo",          "hint",   -15.0, sibyl_echo,          False),
 
     # Secrets. The seen shimmer is once per secret per save and meant to be played AT the site, so
     # it loses 5-6 dB to distance before it is heard; the found sting is a few a run, beside

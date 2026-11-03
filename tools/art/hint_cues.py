@@ -3,7 +3,7 @@
 
 Run: python tools/art/hint_cues.py
 
-One sheet, assets/bonelight/effects/hint-cues.png: six rows (one per cue) of eight 16x16 cells,
+One sheet, assets/bonelight/effects/hint-cues.png: seven rows (one per cue) of eight 16x16 cells,
 authored 1:1 and drawn at x3 by StageHintCue (48 world units, the attack icons' size - x2 was a
 speck on the phone). See .ai/side-events.md, "Hints that something is out there".
 
@@ -79,6 +79,13 @@ def ramp_of(name):
         # The seal's far tell is the arcane ramp's violet (FivePointedSealEvent.TellColor): his light.
         a = bl.ELEMENTS["arcane"]
         return (a[1], a[2], a[3], a[0])
+    if name == "writ":
+        # The nine mouths' far tell is the water ramp's blue (NineMouthsEvent.TellColor): the drowned dark.
+        # From the ramp's PALE end, a stop up from the others: paper in a cold light, with the ramp's dark
+        # end kept for the ink (paint_writ). In the body stop they were blue gems, and the caverns' walls
+        # already hold unlit crystals - a leaf must not read as one.
+        w = bl.ELEMENTS["water"]
+        return (w[0], w[1], w[2], w[0])
     raise ValueError(name)
 
 
@@ -383,6 +390,36 @@ def paint_paper(mask, inner, tones):
     return c
 
 
+def writ(frame):
+    """A written leaf on a cold draught: the grove's leaf turning over (leaf()), but where the grove's has a
+    vein this one has WRITING - two lines of ink marks along it, a mark every other pixel - because the
+    Sibyl wrote her prophecies on leaves and let the wind have them. Turned a quarter-turn ahead of the
+    grove's at each frame, so the two rows never show the same leaf."""
+    mask, _rib = leaf((frame + 2) % 8)
+    angle = ((frame + 2) % 8) * math.pi / 4.0
+    ca, sa = math.cos(angle), math.sin(angle)
+    writing = set()
+    for line in (-1.1, 1.1):
+        for t in range(-8, 9):
+            if t % 2:
+                continue
+            u = t * 0.5
+            px = int(math.floor(8.0 + u * ca - line * sa))
+            py = int(math.floor(8.0 + u * sa + line * ca))
+            if (px, py) in mask and all((px + dx, py + dy) in mask for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                writing.add((px, py))
+    return mask, writing
+
+
+def paint_writ(mask, writing, tones):
+    """The leaf in the tell's ramp, its writing in the ramp's dark end: ink, not a glow."""
+    c = paint(mask, set(), tones)
+    ink = bl.ELEMENTS["water"][3]
+    for p in writing:
+        c.set(p[0], p[1], ink)
+    return c
+
+
 ROWS = [
     ("leaves", [leaf(f) for f in range(8)]),
     ("echo", [echo(d) for d in range(8)]),
@@ -391,6 +428,7 @@ ROWS = [
               glint(0), glint(1), glint(2), glint(3)]),
     ("bell", [bell(-2), bell(-1), bell(0), bell(1), bell(2), ring(0), ring(1), ring(2)]),
     ("paper", [paper(f) for f in range(8)]),
+    ("writ", [writ(f) for f in range(8)]),
 ]
 
 
@@ -459,6 +497,8 @@ def main():
                 c = paint_bell(mask, inner, tones)
             elif name == "paper":
                 c = paint_paper(mask, inner, tones)
+            elif name == "writ":
+                c = paint_writ(mask, inner, tones)
             else:
                 c = paint(mask, inner, tones)
             bad = c.audit()

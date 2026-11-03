@@ -18,6 +18,8 @@ using WizardSurvivors.scripts;
 //   the caravan   the bell swinging as it walks, ringing at each strike
 //   the seal      strips of written paper tumbling in on the wind, charring at the edges as they fall -
 //                 on each gust of the paper wind
+//   the mouths    written leaves blown in fast and flat on a cold draught, one on each voice of the call,
+//                 the first the nearest the line to her
 //
 // IN THE WORLD'S LAYERS, HELD TO THE VIEW. The marks are drawn in the world, on the layer over the
 // bodies and under the HUD, so they read as something out there rather than as an interface - but
@@ -37,7 +39,7 @@ public partial class StageHintCue : Node2D
 	public const string SheetPath = "res://assets/bonelight/effects/hint-cues.png";
 	public const int Cell = 16;
 	public const int Columns = 8;
-	public const int Rows = 6;   // HintCue's members, in order
+	public const int Rows = 7;   // HintCue's members, in order
 
 	// x3, the attack icons' size: at x2 a 16 px mark was a speck on the phone.
 	private const float DrawScale = 3f;
@@ -64,6 +66,12 @@ public partial class StageHintCue : Node2D
 	private static readonly float[] BellStrikes = { 0.0f, 0.36f, 0.80f, 1.13f, 1.58f };
 	// The paper wind's gusts (hint_paper_wind): a strip comes in on each, the flutter between them.
 	private static readonly float[] PaperGusts = { 0.10f, 0.42f, 0.70f, 1.12f, 1.40f };
+	// The nine mouths' call heard from afar (hint_sibyl_voice): her voice, then the cave giving it back a beat
+	// apart (sfx._SIBYL_VOICES, NineMouthsEvent.VoiceBeat) - a written leaf on each.
+	private static readonly float[] SibylVoices = { 0.0f, 0.24f, 0.48f, 0.72f, 0.96f, 1.20f, 1.44f };
+
+	/// <summary>The nine mouths' hint beats, for RegressionChecks.ValidateNineMouths (a copy: it cannot be changed through this).</summary>
+	public static float[] SibylVoiceBeats => (float[])SibylVoices.Clone();
 
 	private struct Mark
 	{
@@ -163,6 +171,7 @@ public partial class StageHintCue : Node2D
 		HintCue.Wisp => 96f,
 		HintCue.Bell => 72f,
 		HintCue.Paper => 110f,
+		HintCue.Writ => 120f,
 		_ => 8f,
 	};
 
@@ -325,6 +334,19 @@ public partial class StageHintCue : Node2D
 				if (nextBeat >= PaperGusts.Length)
 					clock = -1f;
 				break;
+			case HintCue.Writ:
+				while (nextBeat < SibylVoices.Length && SibylVoices[nextBeat] <= t)
+				{
+					// Blown in flat and fast on the draught, not tumbling down as the grove's leaves fall: the first
+					// voice's leaf on the line to her, each echo's further along the edge either way, and fainter.
+					float along = (nextBeat == 0 ? 0f : ((nextBeat % 2 == 0) ? 1f : -1f) * (24f + 16f * nextBeat)) + Jitter(8f);
+					Spawn((int)HintCue.Writ, random.Next(Columns), 2.6f - 0.15f * nextBeat, along, Jitter(8f),
+						inward: 26f, drift: Jitter(10f), rise: 0f, fadeIn: 0.12f);
+					nextBeat++;
+				}
+				if (nextBeat >= SibylVoices.Length)
+					clock = -1f;
+				break;
 			case HintCue.Bell:
 				// The bell walks along the edge, as the caravan walks its road.
 				if (bellSlot < 0)
@@ -459,6 +481,11 @@ public partial class StageHintCue : Node2D
 				// (the same four turns charred, 4-7), and it see-saws as it falls.
 				column = (m.Glyph + (int)(m.Age * 6f)) % 4 + (m.Age > m.Life * 0.5f ? 4 : 0);
 				at.X += Mathf.Sin(m.Age * 2.2f + m.Phase) * 14f;
+				break;
+			case HintCue.Writ:
+				// Turning over as it is blown, and lifted and dropped by the draught.
+				column = (m.Glyph + (int)(m.Age * 9f)) % Columns;
+				at.Y += Mathf.Sin(m.Age * 4.1f + m.Phase) * 6f;
 				break;
 			case HintCue.Bell:
 				if (m.Glyph >= 5)

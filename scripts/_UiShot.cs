@@ -3870,7 +3870,10 @@ public partial class _UiShot : Node
 			return;
 		p.MaxHP = System.Math.Max(p.MaxHP, 100000);
 		p.CurrentHP = p.MaxHP;
-		if (IsInstanceValid(wonEvent) && EventSite(wonEvent) is Vector2 site)
+		// The nine mouths point at nothing once he is there (an arrow would be the answer): stand him in hers.
+		if (IsInstanceValid(wonEvent) && wonEvent is NineMouthsEvent mouths)
+			p.GlobalPosition = mouths.StandPoint(mouths.TrueMouth);
+		else if (IsInstanceValid(wonEvent) && EventSite(wonEvent) is Vector2 site)
 			p.GlobalPosition = site;
 	}
 
