@@ -355,6 +355,9 @@ public partial class Player : CharacterBody2D
 	/// <summary>Rerolls a run gains for each level of Fate Fracture (the shop's "rerolls").</summary>
 	public const int RerollsPerFateFractureLevel = 2;
 
+	/// <summary>Prophecy, the Cumaean Sibyl's passive: rerolls added to the run's pool when she is chosen.</summary>
+	public const int CharacterProphecyRerolls = 3;
+
 	/// <summary>Spends one reroll from the run's pool. False when it is empty.</summary>
 	public bool TrySpendReroll()
 	{
@@ -848,6 +851,10 @@ public partial class Player : CharacterBody2D
 		// The dark wizard (.ai/dark-wizard-playable.md): Dread - his Darkness hits frighten twice as often. Crowd
 		// control as a passive, an axis no other wizard owns, and it never touches damage.
 		"fear_x2",
+		// The Cumaean Sibyl (.ai/chapter-wizards.md 4.3): Prophecy - she sees what is coming, so she may ask
+		// the cards again. Three more rerolls in the run's pool, on top of Fate Fracture's. An axis no other
+		// wizard owns: it touches no number in the fight, only the choices.
+		"rerolls_3",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -889,6 +896,10 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "fear_x2":
 				characterFearScale = CharacterDreadFearScale;
+				return true;
+			case "rerolls_3":
+				// ApplyArcaneUpgrades has already filled the pool from the shop; this goes on top, once.
+				RerollsRemaining += CharacterProphecyRerolls;
 				return true;
 			default:
 				return false;
@@ -1855,7 +1866,7 @@ public partial class Player : CharacterBody2D
 	/// directly, so attunement cannot be forgotten on a new spell.
 	/// </summary>
 	private float GetSpellDamageMultiplier(SpellData spell) =>
-		damageMultiplier * GetAttunementMultiplier(spell) * GetSplitLensMultiplier(spell);
+		damageMultiplier * GetAttunementMultiplier(spell) * GetSplitLensMultiplier(spell) * castDamageScale;
 
 	// The Split Lens's cost: -25% damage - charged only to a spell its +1 projectile reaches (Eric, 0.9.3:
 	// "it should only reduce damage of spells that are affected by the projectile count"). It was a cut to
@@ -4113,6 +4124,9 @@ public partial class Player : CharacterBody2D
 			}
 		}
 		TickWaywiser(furthestFromReady, delta);
+		// The Hundred Mouths' echoes, a few a frame (Player.Echo.cs): after the loop, so an echo never lands
+		// inside the cast that asked for it.
+		TickEchoes((float)delta);
 		FrameProfiler.End(FrameProfiler.Section.PlayerSpells, spellsStart);
 	}
 
@@ -4273,6 +4287,16 @@ public partial class Player : CharacterBody2D
 					existing.CooldownMultiplier = cooldownMultiplier / EffectiveAttackSpeed;
 					existing.DurationMultiplier = durationMultiplier;
 					existing.SetSpellLevel(spell.CurrentLevel);
+					// ALONE, IT KEEPS ITS OWN TIME (.ai/chapter-wizards.md 4.3, 2026-11-02). It charges off the
+					// OTHER spells' casts, and until the Cumaean Sibyl nobody opened on it: whoever took it had a
+					// starting spell to set it off. She has only it until her first level-up, so with nothing
+					// else held that can charge it, its own cooldown sets it off - the old timed pulse - and
+					// the moment a second spell is held it is charge-driven again.
+					if (!HasArcaneCharger())
+					{
+						existing.TriggerNow(null);
+						outcome = CastOutcome.Fired;
+					}
 				}
 			}
 
@@ -5009,6 +5033,21 @@ public partial class Player : CharacterBody2D
 		ArcaneExplosion live = GetChildren().OfType<ArcaneExplosion>().FirstOrDefault();
 		// The cast that filled the charge: Sympathetic Blast goes off in its element.
 		live?.TriggerNow(caster);
+	}
+
+	// Whether anything else held can set Arcane Explosion off: any other equipped spell that is not
+	// silenced for the run or sealed now (every cast of one, whatever it is, charges it). With none, it
+	// keeps its own time (CastSpellNow, "alone").
+	private bool HasArcaneCharger()
+	{
+		foreach (SpellData other in equippedSpells)
+		{
+			if (other == null || other.Id.Equals("arcane_explosion", StringComparison.OrdinalIgnoreCase))
+				continue;
+			if (!other.SilencedBySovereign && !IsSealed(other))
+				return true;
+		}
+		return false;
 	}
 
 	// Levelling the spell makes it come due sooner rather than hit harder-per-second, which keeps

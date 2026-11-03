@@ -1507,6 +1507,9 @@ public partial class _BalanceHarness : Node
 			+ $" dropXp={xpDropped - ledgerLastXpDropped} gotXp={ledgerXpGathered - ledgerLastXpGathered} xpMult={XpMultiplierBesidesPace():0.00}");
 		ledgerLastXpDropped = xpDropped;
 		ledgerLastXpGathered = ledgerXpGathered;
+		// The Hundred Mouths (Player.Echo.cs): how many echoes have sounded, once the form has any to count.
+		if (player.EchoesCast > 0)
+			GD.Print($"HARNESS ECHOES m={row.Minute} cast={player.EchoesCast}");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger

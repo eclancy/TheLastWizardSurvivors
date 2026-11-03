@@ -38,6 +38,8 @@ public static class CharacterRoster
 		// Taken on the hardest road (.ai/dark-wizard-playable.md): the dark wizard himself. Appended, as everyone
 		// after the four is, so every saved index keeps its wizard (index 10).
 		"res://CharacterData_DarkWizard.tres",
+		// The chapter wizards again: the Cumaean Sibyl, freed at the nine mouths in the Sunken Cave (index 11).
+		"res://CharacterData_Sibyl.tres",
 	};
 
 	// Loaded once and held. Every call used to load all seven again, and each load hands back a
