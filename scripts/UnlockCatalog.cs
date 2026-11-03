@@ -360,6 +360,16 @@ public static class UnlockCatalog
 		FromAchievementCharacter("merlin", AchievementDefinitions.OneHeMissedId,
 			"Defeat every chapter's boss on Default or harder.",
 			outsideCampaignGate: true),
+		// THE ONE HE KEPT (.ai/endgame-castle.md decision 11). Nimue, the Lady of the Lake, kept by the dark wizard beside
+		// him to the end, and freed when he falls: the Throne's own deed, Taken Back, pays her (AchievementDefinitions). A
+		// SECRET until the Throne opens - the sealed blank until then, so the last surprise of the road is not on the
+		// character select from the first run - and revealed by the Throne itself: D7, the Oubliette in the Dungeon that
+		// was to turn her card (achievements-and-secrets.md 8.5), is not built, and when it is, its find is the earlier
+		// reveal to add (decision 11's Built note says how). OUTSIDE THE CAMPAIGN GATE, as Laelaps is: the Throne's gate
+		// counts every wizard, and she is freed only by the fall of the man the gate opens onto, so counting her would
+		// close the Throne for ever.
+		FromAchievementCharacter("nimue", "throne_taken_back", "Kept by him to the end. Freed when he falls in the Throne.",
+			secretUntilStage: "stage_13", outsideCampaignGate: true),
 		// His own spell, paid with him and offered to no one else (ExclusiveTo). The hint does not name him.
 		new()
 		{

@@ -316,6 +316,23 @@ public static class ApotheosisCatalog
 				"Double: half of them chase a ghost. Every cast leaves both hands; no boss is fooled.",
 				new Color(0.78f, 0.96f, 1.0f), NoVisualScale),
 		},
+		// Nimue, the Lady of the Lake, freed when the dark wizard falls (.ai/endgame-castle.md decision 11; Eric,
+		// 2026-11-02). "Sever" was decided for her: the sword she gave the king, the final form of the Spirit Sword
+		// (VariantId - an Apotheosis of one form, so an Axe or a Hammer run is never offered it; she opens on the Sword
+		// always, CharacterData.StartingForm). Every cut goes on through everything in a line behind its quarry, and
+		// cuts every enemy bolt on the whole line (SpiritualWeapon.SeverOn). Not a pierce that flies, not a pull or a
+		// shove: nothing on the line is moved, so a boss is struck and never displaced. Light, the one of the spell's two
+		// the form deepens; no card on the Sword trades it away (Soul Siphon adds it, Thousand Cuts adds Arcane beside
+		// it). The usual lift's Scale reaches the sword's reach and the line's width (EvolutionStatReaders).
+		new()
+		{
+			CharacterId = "nimue", SpellId = "spiritual_weapon", VariantId = SpiritualWeapon.SwordId,
+			Element = Element.Light, Verb = "sever",
+			Form = Make(SpiritualWeapon.ExcaliburId, "Excalibur", Element.Light,
+				$"Every cut goes on through everything in a line behind its target, for {SpiritualWeapon.SeverShare * 100f:0}% of the cut, and cuts every enemy bolt on the line.",
+				"Sever: stand so they are lined up behind the one it chooses. Bosses are struck, never moved.",
+				new Color(0.92f, 0.97f, 1.0f)),
+		},
 	};
 
 	// A form's visual lift is a 15% larger spell, but only where the spell's node keeps a visual scale.

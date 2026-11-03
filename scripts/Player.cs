@@ -798,7 +798,9 @@ public partial class Player : CharacterBody2D
 		CurrentHP = MaxHP;
 		Speed *= selectedCharacter.SpeedModifier;
 
-		string startingSelection = selectedCharacter.StartingSpellResource?.Id;
+		// In his own form, for a spell taken in one (CharacterData.StartingSelection: Nimue's Sword); the spell alone
+		// for every other wizard, whose spell has no forms.
+		string startingSelection = selectedCharacter.StartingSelection;
 		if (selectedCharacter.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase)
 			&& !string.IsNullOrWhiteSpace(Global.TestWizardStartingSpellId))
 		{
@@ -916,6 +918,11 @@ public partial class Player : CharacterBody2D
 		// no other wizard owns: not his damage, not his speed, the time he is given to read an attack. A boss's tells
 		// are its fight's timing and are left as drawn (AttackTelegraph.Foreseeable).
 		"windup_15",
+		// Nimue (.ai/endgame-castle.md decision 11): the Scabbard - "ye shall lose no blood, be ye never so sore
+		// wounded" - no one hit takes more than a tenth of her max HP (Player.Scabbard.cs). An axis no other wizard
+		// owns: not a share of every hit (the Geomancer), not a chance of none (evasion), not a death refused (the
+		// Archmage) - the size of a single blow.
+		"hit_cap_10",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -982,6 +989,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "windup_15":
 				AttackTelegraph.ForesightScale = 1f + CharacterForesightWindUpBonus;
+				return true;
+			case "hit_cap_10":
+				characterScabbard = true;
 				return true;
 			default:
 				return false;
@@ -2849,6 +2859,9 @@ public partial class Player : CharacterBody2D
 		}
 		if (shieldPoints > 0 && mitigated > 0)
 			mitigated -= SpendShield(mitigated);
+		// THE SCABBARD (Nimue's passive, Player.Scabbard.cs): no one blow takes more than a tenth of her max HP. On what
+		// would really land, after armour and the shield; before Overlooked and before any HP leaves.
+		mitigated = ApplyScabbard(mitigated);
 		// OVERLOOKED (The Archmage's passive, .ai/protagonist.md): once a run, the blow that would end him misses. After
 		// armour and the shield, so it answers only a blow that would really kill; before any HP leaves, so he keeps the
 		// little he had - it heals nothing (.ai/difficulty-curve.md, the healing budget). Before an extra life, which is

@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_SpiritualWeapon.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/nimue-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/NimueFrames.tres" id="4"]
+
+; Rescued, not a starter: the Throne's kept wizard, the one the dark wizard KEPT beside him to the end, freed when
+; he falls (.ai/endgame-castle.md decision 11). Nimue, the Lady of the Lake, who gave the king his sword and its
+; scabbard and took the sword back. She opens on Spiritual Weapon in its Sword form - fixed, never chosen: the
+; form she opens in is her Apotheosis's (ApotheosisCatalog VariantId, CharacterData.StartingSelection), and her
+; Apotheosis is Excalibur, its final form. Her passive is the Scabbard - "whiles ye have the scabbard upon you, ye
+; shall lose no blood, be ye never so sore wounded" (Malory) - no one hit takes more than a tenth of her health:
+; the one axis no other wizard owns, the size of a single blow. She floats (roster.nimue, anim_sets.hover); the
+; look only, her Feet collider meets water and walls as everyone's does. Her title rides the Craft line ("the Lady
+; of the Lake" under her name), because her name alone does not say who she is and the whole of it does not fit a
+; freed line.
+[resource]
+script = ExtResource("1")
+Id = "nimue"
+Name = "Nimue"
+Craft = "Lady of the Lake"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 1.0
+SpeedModifier = 1.0
+IsUnlocked = true
+StartingPassiveId = "hit_cap_10"
+StartingPassiveName = "The Scabbard"
+StartingPassiveDescription = "No hit deals over 10% of your max HP"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

@@ -69,6 +69,9 @@ public static class CharacterVisuals
 			// The star kindled at the heart of the armillary sphere he holds up (roster.py, nostradamus()): where
 			// Starfall's light is, not the brass rings round it.
 			case "nostradamus": return new Vector2(12, 5);
+			// The blade of the sword she holds upright before her (roster.py, nimue()), halfway up its light: where the
+			// Spirit Sword leaves her and comes home. Her rest pose; the idle lifts her two rows at most.
+			case "nimue": return new Vector2(36, 8);
 			default: return null;
 		}
 	}
@@ -103,6 +106,7 @@ public static class CharacterVisuals
 			case "morgan":
 			case "paracelsus":
 			case "nostradamus":
+			case "nimue":
 				return Colors.White;
 			case "apprentice_wizard":
 			default:

@@ -115,6 +115,18 @@ public partial class Node2DGame
 		return true;
 	}
 
+	/// <summary>
+	/// Every owed reel in turn - freeings first, then lessons, as PlayOwedLessonsThen orders them - and then
+	/// <paramref name="done"/>; at once when nothing is owed. The run that ends the story plays them here, after the
+	/// ending (GameOverScreen.AfterEnding), so the freeing of the one he kept follows his fall's row and credits rather
+	/// than coming before the ending says he fell.
+	/// </summary>
+	private void PlayOwedReelsThen(Action done)
+	{
+		if (!PlayOwedLessonsThen(() => PlayOwedReelsThen(done)))
+			done?.Invoke();
+	}
+
 	// The save learns it now. A --no-save-writes run or a tool scene learns it in memory only (SaveManager).
 	private void TeachAndSave(Teachings.Lesson lesson)
 	{

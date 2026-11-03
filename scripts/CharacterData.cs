@@ -22,6 +22,26 @@ public partial class CharacterData : Resource
     public string FullName => string.IsNullOrWhiteSpace(Craft) ? Name : $"{Name}, {CraftTitle}";
 
     [Export] public SpellData StartingSpellResource { get; set; } = null!;
+
+    /// <summary>
+    /// The form a wizard opens his spell in, for a starting spell taken in forms (SpellData.Variants): the form his
+    /// Apotheosis is the final form OF (ApotheosisDefinition.VariantId), or empty. Nimue opens on Spiritual Weapon as
+    /// the Sword (.ai/endgame-castle.md decision 11) because Excalibur ends the Sword. Read from the catalog rather
+    /// than kept here, so the two can never disagree: a form holds for the run, and a wizard opened in another
+    /// would never meet his gate. Empty for a spell with no forms, which every other wizard opens on.
+    /// </summary>
+    public string StartingFormId =>
+        StartingSpellResource?.HasVariants == true ? ApotheosisCatalog.ForCharacter(Id)?.VariantId ?? string.Empty : string.Empty;
+
+    /// <summary>
+    /// What a run's opening hand asks for: the spell, or "spell:form" when he opens it in a form (SpellVariants.Selection),
+    /// the shape a level-up sends for a new spell taken in one.
+    /// </summary>
+    public string StartingSelection => SpellVariants.Selection(StartingSpellResource?.Id ?? string.Empty, StartingFormId);
+
+    /// <summary>The form he opens in, or null (the spell has none, or he opens it in its default form).</summary>
+    public SpellVariant StartingForm =>
+        string.IsNullOrEmpty(StartingFormId) ? null : StartingSpellResource?.FindVariant(StartingFormId);
     [Export] public float HealthModifier { get; set; } = 1.0f;
     [Export] public float SpeedModifier { get; set; } = 1.0f;
     [Export] public bool IsUnlocked { get; set; } = true;

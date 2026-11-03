@@ -5346,6 +5346,45 @@ def _(sp, c):
     sp.why = "colossal greatsword"
 
 
+@card("spiritual_weapon_sword_excalibur")
+def _(sp, c):
+    """Excalibur (Nimue's Apotheosis, sever): the sword risen out of the water - two rings of the lake round its
+    foot - and its cut going on past its point, a line of light run straight on through two of the swarm in a row,
+    each cut through where the line crosses it. The one quarry and everything behind it."""
+    reset(sp)
+    sp.subject = weapon("sword", box=24.0, angle=-50.0)
+    sp.place = Place(0.6, at=(11.0, 21.0))
+
+    def lake(cv, x):
+        w = E["water"]
+        for (rx, ry, col) in ((6.5, 1.9, w[2]), (3.8, 1.1, w[1])):
+            for k in range(36):
+                a = 2.0 * math.pi * k / 36.0
+                px, py = 8.0 + math.cos(a) * rx, 26.0 + math.sin(a) * ry
+                if py >= 25.6 or k % 3:
+                    cv.set(px, py, col if py >= 25.6 else w[3])
+    U(sp, lake)
+
+    def sever(cv, x):
+        core, hot, mid, edge = E["light"]
+        # The line, from the point on toward the rim: two pixels of light between two of night, so it holds on the
+        # ember plate's gold.
+        pts = [(15.0 + k * 0.8, 16.0 - k * 0.8) for k in range(15)]
+        for (px, py) in pts:
+            cv.set(px - 1, py - 1, OCC)
+            cv.set(px + 1, py + 1, OCC)
+        for k, (px, py) in enumerate(pts):
+            cv.set(px, py, core if k < 3 or k > 11 else hot)
+            cv.set(px + 0.6, py + 0.6, mid)
+        # Two of the swarm on it, one behind the other, each cut through where the line crosses it.
+        for (fx, fy) in ((18.8, 12.2), (23.4, 7.6)):
+            foe(cv, fx, fy, 1.05)
+            for d in range(-2, 3):
+                cv.set(fx + d, fy - d, core if d else hot)
+    O(sp, sever)
+    sp.why = "the cut goes on through the line"
+
+
 @card("spiritual_weapon_sword_thousand_cuts")
 def _(sp, c):
     """Thousand Cuts: the sword and the three cuts of one swing."""

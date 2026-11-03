@@ -138,8 +138,9 @@ public partial class GameOverScreen : CanvasLayer
 
 	// --- the arrival and the count --------------------------------------------------------------
 	// Ending: a victory over the dark wizard lays the ending over the screen first (ThroneEnding), and the
-	// count waits for it.
-	private enum Phase { Cover, Waiting, Tally, Live, Ending }
+	// count waits for it. Reels: after the ending, the reels that run owes (the freeing of the one he kept, any
+	// lesson) play over the hidden screen (AfterEnding), and the count waits for them too.
+	private enum Phase { Cover, Waiting, Tally, Live, Ending, Reels }
 	private Phase phase = Phase.Live;
 	private float phaseAge;
 	private float tallySeconds;
@@ -230,6 +231,19 @@ public partial class GameOverScreen : CanvasLayer
 	/// <summary>The ending over the screen while it plays (a victory over the dark wizard), else null. For _UiShot.</summary>
 	public ThroneEnding Ending { get; private set; }
 
+	/// <summary>
+	/// What plays once the ending is done, before the count: Node2DGame's owed reels (Node2DGame.Lessons.cs,
+	/// PlayOwedReelsThen), handed the call that brings the screen back. The run that ends the story owes the freeing of
+	/// the one he kept (Nimue, freed by his fall - .ai/endgame-castle.md decision 11), and it belongs after the row of
+	/// the freed and the credits, not before the ending as every other run's reels are. Null: the count follows the
+	/// ending at once. While they play the screen is hidden (no button under the reel can take a press) and swallows
+	/// nothing, so the reel's own skip hears every press.
+	/// </summary>
+	public Action<Action> AfterEnding { get; set; }
+
+	/// <summary>True while the reels after the ending play over the hidden screen. For _UiShot.</summary>
+	public bool HeldForReels => phase == Phase.Reels;
+
 	// .ai/endgame-castle.md 6.4: the results of the run that beat him carry the ending - the freed wizards in a
 	// row, then the credits - before the ledger. Once a screen, over everything on it; the count waits.
 	private void ShowEndingIfTheStoryEnds()
@@ -242,10 +256,28 @@ public partial class GameOverScreen : CanvasLayer
 		Ending.Finished += () =>
 		{
 			Ending = null;
-			phase = Phase.Waiting;
-			phaseAge = 0f;
+			if (AfterEnding == null)
+			{
+				phase = Phase.Waiting;
+				phaseAge = 0f;
+				return;
+			}
+			phase = Phase.Reels;
+			Visible = false;
+			AfterEnding(ResumeAfterReels);
 		};
 		AddChild(Ending);
+	}
+
+	// The reels after the ending are done: the screen back, its selection on the footer for a pad, and the count.
+	private void ResumeAfterReels()
+	{
+		if (!IsInstanceValid(this) || phase != Phase.Reels)
+			return;
+		Visible = true;
+		phase = Phase.Waiting;
+		phaseAge = 0f;
+		GetNodeOrNull<MenuNavigator>(MenuNavigator.NodeName)?.Refresh();
 	}
 
 	private static void Clear(Node node)
@@ -1498,6 +1530,9 @@ public partial class GameOverScreen : CanvasLayer
 	public override void _Input(InputEvent @event)
 	{
 		if (!DefeatSequence.IsButton(@event, out bool pressed))
+			return;
+		// The reels after the ending own every press while they play (the hold to skip); the screen is hidden under them.
+		if (phase == Phase.Reels)
 			return;
 		ulong now = Time.GetTicksMsec();
 		if (phase == Phase.Live && now >= quietUntilMsec)

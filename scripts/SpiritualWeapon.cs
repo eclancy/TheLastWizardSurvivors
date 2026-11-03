@@ -130,6 +130,25 @@ public partial class SpiritualWeapon : Node2D
 	public const string GreatswordId = "spiritual_weapon_sword_celestial_greatsword";
 	public const string ThousandCutsId = "spiritual_weapon_sword_thousand_cuts";
 
+	// EXCALIBUR (Nimue's Apotheosis, verb SEVER; .ai/endgame-castle.md decision 11 - Eric, 2026-11-02: "i like that
+	// the lady of the lake keeps spiritual weapon"). The final form of the Sword (ApotheosisDefinition.VariantId), so
+	// only a run that took the Sword - hers always does (CharacterData.StartingForm) - is ever offered it. Every cut
+	// goes on past its quarry: everything in a line behind it, straight on from the wizard through the quarry for
+	// SeverReach (with the player's Area and the form's Scale, to SeverMaxReach), is struck for SeverShare of the
+	// cut, and every enemy bolt anywhere on the whole line from her to its end is cut out of the air. Not a pierce
+	// that flies (nothing travels: the line is struck on the frame the blade lands) and not a pull or a shove:
+	// nothing on the line is moved, so a boss is struck like anyone and never displaced. The sword still chooses the
+	// toughest in reach, so what the line takes is whatever stands behind the one it chose - she aims it by where she
+	// floats. Every sweep is a fixed slot and a segment test against EnemyRegistry's grid; nothing is allocated.
+	public const string ExcaliburId = "spiritual_weapon_sword_excalibur";
+	public const float SeverReach = 300f;
+	public const float SeverMaxReach = 640f;
+	public const float SeverShare = 0.6f;
+	public const float SeverHalfWidth = 14f;
+	private const float SeverGrow = 0.05f;    // the cut running out to the end of the line
+	private const float SeverLife = 0.24f;    // and breaking up behind it
+	private const int MaxSevers = 12;
+
 	public enum Form : byte { Axe, Hammer, Sword }
 
 	/// <summary>The most weapons in the air, whatever the count says. Twin Blades' dagger is not one of them.</summary>
@@ -375,6 +394,15 @@ public partial class SpiritualWeapon : Node2D
 		public bool Live;
 	}
 
+	// Excalibur's cut going on past its quarry: from where it landed out to the end of the line, drawn running out
+	// and then breaking up (DrawSevers).
+	private struct Sever
+	{
+		public Vector2 From, To;
+		public float Width, Age;
+		public bool Live;
+	}
+
 	private struct Echo
 	{
 		public Vector2 At;
@@ -399,7 +427,10 @@ public partial class SpiritualWeapon : Node2D
 	private readonly Slam[] slams = new Slam[MaxSlams];
 	private readonly Zone[] zones = new Zone[MaxZones];
 	private readonly Echo[] echoes = new Echo[MaxEchoes];
-	private int nextMote, nextSlam, nextZone, nextEcho;
+	private readonly Sever[] severs = new Sever[MaxSevers];
+	private int nextMote, nextSlam, nextZone, nextEcho, nextSever;
+	// What one sword blow has struck, so the line of Excalibur never cuts twice what the greatsword already did.
+	private readonly HashSet<Enemy> struckThisBlow = new();
 	private readonly RandomNumberGenerator rng = new();
 	private Node2D air;
 	private Node2D ground;
@@ -435,7 +466,7 @@ public partial class SpiritualWeapon : Node2D
 	private float freezeSeconds;
 	private float knockback = AxeKnockback;
 	private float zoneSeconds;
-	private bool headsman, aftershock, hallowed, whirling, deflect, twin, siphon, flurry, alongBlade, mjolnir;
+	private bool headsman, aftershock, hallowed, whirling, deflect, twin, siphon, flurry, alongBlade, mjolnir, excalibur;
 	private Color tint = Colors.White;
 	private ElementColors.Ramp arcane = ElementColors.GetRamp(Element.Arcane);
 	private ElementColors.Ramp light = ElementColors.GetRamp(Element.Light);
@@ -460,13 +491,22 @@ public partial class SpiritualWeapon : Node2D
 	public static int StatBoltsDeflected { get; private set; }
 	public static int StatDaggerStabs { get; private set; }
 	public static int StatReaims { get; private set; }
+	// Excalibur's: cuts that went on, what they struck past the quarry, and bolts cut on the line.
+	public static int StatSevers { get; private set; }
+	public static int StatSevered { get; private set; }
+	public static int StatSeverBolts { get; private set; }
+
+	/// <summary>Excalibur's numbers since the process began, for the balance harness.</summary>
+	public static string SeverLine() =>
+		$"severs={StatSevers} struck={StatSevered} ({(StatSevers > 0 ? StatSevered / (float)StatSevers : 0f):0.0} a cut) bolts={StatSeverBolts}";
 	public static float StatPeakPace { get; private set; } = 1f;
 
 	/// <summary>One line for the balance report: is it swinging, and how much does each swing reach.</summary>
 	public static string StatsLine() =>
 		$"spirit weapon: {StatSwings} swings, {StatHits} enemies struck ({(StatSwings > 0 ? StatHits / (float)StatSwings : 0f):0.0} a swing); "
 		+ $"{StatBoltsParried} bolts parried ({StatBoltsDeflected} deflected), {StatBoltsCrushed} crushed; {StatExecutions} executions, {StatEchoes} aftershocks; "
-		+ $"{StatDaggerStabs} dagger stabs; {StatReaims} raises re-aimed; swing pace up to x{StatPeakPace:0.00}";
+		+ $"{StatDaggerStabs} dagger stabs; {StatReaims} raises re-aimed; swing pace up to x{StatPeakPace:0.00}"
+		+ (StatSevers > 0 ? $"; Excalibur {SeverLine()}" : "");
 
 	/// <summary>What RegressionChecks cannot see from outside: no part of any swing takes no time. Empty when sound.</summary>
 	public static List<string> CutProblems()
@@ -571,6 +611,7 @@ public partial class SpiritualWeapon : Node2D
 		flurry = spell.HasEvolution(ThousandCutsId);
 		alongBlade = spell.HasEvolution(GreatswordId);
 		mjolnir = spell.HasEvolution(TitansMaulId);
+		excalibur = form == Form.Sword && spell.HasEvolution(ExcaliburId);
 		colossal = spell.HasEvolution(GreatswordId) || spell.HasEvolution(GreataxeId) || spell.HasEvolution(TitansMaulId);
 		pace = form == Form.Sword ? PaceFor(interval) : 1f;
 		StatPeakPace = MathF.Max(StatPeakPace, pace);
@@ -1362,10 +1403,17 @@ public partial class SpiritualWeapon : Node2D
 		Enemy quarry = Alive(w.Target) && w.Target.GlobalPosition.DistanceTo(at) <= reach + RiptideWave.BodyAllowance ? w.Target : null;
 		// The quarry stepped out from under it: the nearest thing the blade came down on, if any.
 		quarry ??= NearestTo(at, reach + RiptideWave.BodyAllowance);
+		struckThisBlow.Clear();
 		if (quarry != null)
+		{
+			struckThisBlow.Add(quarry);
 			Strike(quarry, dealt);
+		}
 		if (alongBlade)
 			StrikeAlongBlade(w, dealt, quarry);
+		if (excalibur)
+			SeverOn(w, quarry != null && IsInstanceValid(quarry) ? quarry.GlobalPosition : at, dealt);
+		struckThisBlow.Clear();
 		// A flash at the point and the light it throws, to the reach it tested.
 		if (arena != null)
 			ImpactDebrisLayer.Spawn(arena, at, MathF.Max(10f, reach * 0.7f), arcane, tint);
@@ -1414,10 +1462,78 @@ public partial class SpiritualWeapon : Node2D
 		}
 		nearBuffer.Clear();
 		foreach (Enemy e in hitBuffer)
+		{
+			struckThisBlow.Add(e);
 			Strike(e, dealt);
+		}
 		hitBuffer.Clear();
 		for (int i = 0; i < 6; i++)
 			AddMote(a.Lerp(b, i / 5f), new Vector2(rng.RandfRange(-30f, 30f), rng.RandfRange(-50f, -10f)), 0.3f,
+				i % 2 == 0 ? light.Core : light.Hot, 4f);
+	}
+
+	// Excalibur: the cut goes on. The line runs straight on from the wizard through where the blade came down, for
+	// the sever's reach past it; everything on it but what this blow already struck takes SeverShare of the cut, and
+	// every bolt on the whole line - from her to its end - is cut out of the air. Nothing is moved, a boss included.
+	private void SeverOn(Weapon w, Vector2 from, int dealt)
+	{
+		Vector2 player = PlayerRef.GlobalPosition;
+		Vector2 dir = from - player;
+		dir = dir.LengthSquared() > 1f ? dir.Normalized() : Dir(w.Angle);
+		float length = MathF.Min(SeverMaxReach, SeverReach * areaMul * scale);
+		float half = SeverHalfWidth * scale + RiptideWave.BodyAllowance;
+		Vector2 to = from + dir * length;
+		int share = Math.Max(1, Mathf.RoundToInt(dealt * SeverShare));
+		StatSevers++;
+
+		Vector2 mid = (from + to) * 0.5f;
+		EnemyRegistry.CollectNear(mid, length * 0.5f + half, nearBuffer);
+		hitBuffer.Clear();
+		foreach (Enemy e in nearBuffer)
+		{
+			if (!Alive(e) || struckThisBlow.Contains(e))
+				continue;
+			Vector2 p = e.GlobalPosition;
+			float u = (p - from).Dot(dir);
+			if (u < -RiptideWave.BodyAllowance || u > length)
+				continue;
+			if ((from + dir * Mathf.Clamp(u, 0f, length)).DistanceSquaredTo(p) <= half * half)
+				hitBuffer.Add(e);
+		}
+		nearBuffer.Clear();
+		foreach (Enemy e in hitBuffer)
+		{
+			if (!Alive(e))
+				continue;
+			struckThisBlow.Add(e);
+			Strike(e, share);
+			StatSevered++;
+		}
+		hitBuffer.Clear();
+
+		// The bolts, on the whole line: from her, through the quarry, to the end.
+		IReadOnlyList<EnemyProjectile> bolts = EnemyProjectile.Live;
+		float whole = from.DistanceTo(player) + length;
+		for (int b = bolts.Count - 1; b >= 0; b--)
+		{
+			EnemyProjectile bolt = bolts[b];
+			if (bolt == null || !IsInstanceValid(bolt) || !bolt.InFlight)
+				continue;
+			Vector2 p = bolt.GlobalPosition;
+			float u = (p - player).Dot(dir);
+			float r = half + bolt.Radius;
+			if (u < -r || u > whole + r || (player + dir * Mathf.Clamp(u, 0f, whole)).DistanceSquaredTo(p) > r * r)
+				continue;
+			bolt.Destroy(Element.Light);
+			StatSeverBolts++;
+			StatBoltsParried++;
+			Sparks(p, 4, light, 80f);
+		}
+
+		severs[nextSever] = new Sever { From = from, To = to, Width = 6f * MathF.Max(1f, scale * 0.8f), Live = true };
+		nextSever = (nextSever + 1) % MaxSevers;
+		for (int i = 0; i < 5; i++)
+			AddMote(from.Lerp(to, (i + 0.5f) / 5f), new Vector2(rng.RandfRange(-25f, 25f), rng.RandfRange(-45f, -15f)), 0.3f,
 				i % 2 == 0 ? light.Core : light.Hot, 4f);
 	}
 
@@ -1888,6 +2004,14 @@ public partial class SpiritualWeapon : Node2D
 			if (slams[i].Age >= slams[i].Life)
 				slams[i].Live = false;
 		}
+		for (int i = 0; i < MaxSevers; i++)
+		{
+			if (!severs[i].Live)
+				continue;
+			severs[i].Age += dt;
+			if (severs[i].Age >= SeverGrow + SeverLife)
+				severs[i].Live = false;
+		}
 	}
 
 	// A colour of the ramp under the spell's tint, with an alpha the canvas's shader reads as coverage.
@@ -1994,6 +2118,7 @@ public partial class SpiritualWeapon : Node2D
 			DrawWeapon(air, dagger, dagger.Pivot, dagger.Angle, 0, new Color(tint.R, tint.G, tint.B, dagger.Alpha));
 		}
 
+		DrawSevers();
 		for (int i = 0; i < MaxMotes; i++)
 		{
 			ref Mote m = ref motes[i];
@@ -2001,6 +2126,38 @@ public partial class SpiritualWeapon : Node2D
 				continue;
 			float f = m.Age / m.Life;
 			air.DrawRect(WhipLimb.Cell(m.At, m.Size), Tinted(m.Colour, f < 0.6f ? 1f : (1f - f) / 0.4f));
+		}
+	}
+
+	// The line of Excalibur: square cells of the light ramp on the grid, running out from where the blade landed to
+	// the end of the line in SeverGrow - white at its running front, cooling down the ramp behind it - and then the
+	// whole line breaking up through the dither from its root outward, so the last of it to go is its far end. Opaque
+	// cells with an alpha the air canvas turns into coverage, as the slash is: never a translucent beam.
+	private void DrawSevers()
+	{
+		for (int i = 0; i < MaxSevers; i++)
+		{
+			ref Sever s = ref severs[i];
+			if (!s.Live)
+				continue;
+			float run = Mathf.Clamp(s.Age / SeverGrow, 0f, 1f);
+			float fade = Mathf.Clamp((s.Age - SeverGrow) / SeverLife, 0f, 1f);
+			float length = s.From.DistanceTo(s.To);
+			float size = WhipLimb.SnapSize(s.Width);
+			float step = MathF.Max(WhipLimb.Grid, size * 0.75f);
+			int n = Math.Max(1, Mathf.CeilToInt(length * run / step));
+			for (int k = 0; k <= n; k++)
+			{
+				float f = k / (float)n * run;
+				// Gone from the root outward as it fades: what is left last is the far end.
+				float left = 1f - fade * 1.6f + f * 0.6f;
+				if (left <= 0f)
+					continue;
+				float front = run - f;
+				Color c = front < 0.12f ? light.Core : front < 0.35f ? light.Hot : f < 0.3f ? light.Edge : light.Mid;
+				float cell = front < 0.12f ? size : WhipLimb.SnapSize(size * (0.5f + 0.5f * (1f - f)));
+				air.DrawRect(WhipLimb.Cell(s.From.Lerp(s.To, f), cell), Tinted(c, Mathf.Clamp(left, 0f, 1f)));
+			}
 		}
 	}
 

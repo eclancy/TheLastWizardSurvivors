@@ -31,6 +31,9 @@ public static class Freeings
 	public static readonly IReadOnlyList<string> WizardIds = new[]
 	{
 		"tituba", "vainamoinen", "seimei", "wayland", "sibyl", "laelaps", "baba_yaga", "morgan", "paracelsus", "nostradamus",
+		// The one he kept (.ai/endgame-castle.md decision 11): freed by his fall in the Throne, so her reel plays after the
+		// ending, not before the results (GameOverScreen.AfterEnding).
+		"nimue",
 	};
 
 	/// <summary>A freeing's reel id in Prologue.Reels: "freed_tituba".</summary>

@@ -100,6 +100,9 @@ public static class QuestLog
 		// The queen in the barge, who carried the dying king over the water: the one who could cross without his
 		// bridge, so he moored her under it (.ai/chapter-wizards.md 4.9). Seen as a light on the water.
 		new Prisoner("morgan", "the woman in the barge", "A lantern on the water under the bridge, where no boat could be.", "{0} has come ashore."),
+		// The Lady of the Lake (.ai/endgame-castle.md decision 11): the one wizard he did not lock in a place, but kept by
+		// him, at the Throne, to the end. Freed by his fall; the Throne note says she is near him until then.
+		new Prisoner("nimue", "the one he kept", "He keeps one wizard by him still, close at hand.", "{0} is out of his keeping."),
 	};
 
 	public static Prisoner PrisonerOf(string characterId) =>

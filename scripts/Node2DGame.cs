@@ -7690,8 +7690,11 @@ public partial class Node2DGame : Node2D
 	// covers the field from below and the defeat's sting has already played (GameOverScreen.CoversFromBelow).
 	private void ShowGameOver(RunReport report, bool afterDefeat = false)
 	{
-		// A lesson owed plays first, after the defeat's sequence and before the results (Node2DGame.Lessons.cs).
-		if (PlayOwedLessonsThen(() => ShowGameOver(report, afterDefeat)))
+		// A lesson owed plays first, after the defeat's sequence and before the results (Node2DGame.Lessons.cs) - except on
+		// the run that ends the story, whose reels (the freeing of the one he kept, freed by his fall) wait for the ending
+		// the results lay over themselves, and play after it (GameOverScreen.AfterEnding, PlayOwedReelsThen).
+		bool endsTheStory = ThroneEnding.EndsTheStory(report?.Result);
+		if (!endsTheStory && PlayOwedLessonsThen(() => ShowGameOver(report, afterDefeat)))
 			return;
 		if (gameOverScene == null)
 		{
@@ -7705,7 +7708,11 @@ public partial class Node2DGame : Node2D
 		AddChild(overlay);
 
 		if (overlay is GameOverScreen gameOver)
+		{
+			if (endsTheStory)
+				gameOver.AfterEnding = PlayOwedReelsThen;
 			gameOver.Present(report);
+		}
 	}
 
 	// The whole run for the results screen (RunReport). Everything in it was already paid and saved

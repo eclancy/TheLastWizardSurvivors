@@ -8050,6 +8050,46 @@
       "tint": "c7f5ff",
       "character": "morgan",
       "verb": "double"
+    },
+    {
+      "spell": "spiritual_weapon",
+      "variant": "spiritual_weapon_sword",
+      "spell_name": "Spirit Sword",
+      "spell_icon": "res://assets/bonelight/ui/spells/spirit-sword-arcane.png",
+      "spell_elements": {
+        "Arcane": 1,
+        "Light": 1
+      },
+      "milestone": 9,
+      "id": "spiritual_weapon_sword_excalibur",
+      "name": "Excalibur",
+      "description": "Every cut goes on through everything in a line behind its target, for 60% of the cut, and cuts every enemy bolt on the line.",
+      "synergy": "Apotheosis",
+      "visual_tag": "Apotheosis",
+      "gains": {
+        "Light": 1
+      },
+      "replaces": "",
+      "effect": "None",
+      "effect_value": 0,
+      "rider": "None",
+      "damage": 1.25,
+      "damage_bonus": 0,
+      "cooldown": 1,
+      "projectiles": 0,
+      "area": 1,
+      "scale": 1.15,
+      "speed": 1,
+      "pierce": 0,
+      "arcs": 0,
+      "branches": 0,
+      "knockback": 0,
+      "slow": 0,
+      "poison": 0,
+      "range": 0,
+      "tint": "ebf7ff",
+      "character": "nimue",
+      "verb": "sever"
     }
   ]
 }

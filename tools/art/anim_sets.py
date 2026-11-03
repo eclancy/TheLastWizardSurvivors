@@ -307,6 +307,54 @@ def walk(pose_fn, bob=2, anchor=WALK_ANCHOR):
     return out
 
 
+# --- the one who floats -----------------------------------------------------------------------
+# Nimue (.ai/endgame-castle.md decision 11; Eric, 2026-11-03: "One of the wizards should float, her feet
+# hanging together and her dress should flow in the wind"). Everyone else's idle breathes from the waist
+# with the feet planted and his walk steps; a figure off the ground has no feet to plant. So her pose
+# function draws her whole at any height and any flutter - pose_fn(wind=, drift=, lift=), roster.nimue - and
+# these frames are drawn from it rather than derived from one frozen pose: the idle BOBS (the whole figure,
+# feet and all, rises two rows and settles, the shadow on the floor narrowing as she rises), and the walk
+# DRIFTS (no step at all; the cloth streams further back, she leans into it, and a shallower, quicker bob).
+# The contract's anchor still holds on every frame: the lowest pixel is the shadow's occlusion line on row
+# cell-1, which is where the ground is; her feet are simply not on it.
+HOVER_IDLE_FRAMES = 12
+HOVER_MOVING_FRAMES = 8
+
+
+def hover(pose_fn):
+    """(idle frames, the player set) for a figure that floats.
+
+    The idle is twelve frames at the cast's idle rate (6 a second, CharacterVisuals.IdleFramesPerSecond):
+    one rise and fall in two seconds, a slow hover rather than a breath, with the cloth through one whole
+    ripple, and the light she carries a stop brighter at the top of the rise (the cast's idle pulse,
+    roster._STEP). The walk is eight frames at 10 a second: the cloth through two ripples, a one-row bob.
+    Hurt and death are derived from the rest pose as everyone's are, so a flinch or a fall reads the same
+    on her as on the cast - and a death squashed to the baseline sinks her to the ground.
+    """
+    import roster
+    tau = 2.0 * math.pi
+    idle = []
+    for i in range(HOVER_IDLE_FRAMES):
+        t = i / float(HOVER_IDLE_FRAMES)
+        lift = int(1.0 - math.cos(tau * t) + 0.5)
+        rows = pose_fn(wind=t, lift=lift)
+        if lift >= 2:
+            rows = ["".join(roster._STEP.get(ch, ch) for ch in line) for line in rows]
+        idle.append(rows)
+    moving = []
+    for i in range(HOVER_MOVING_FRAMES):
+        t = i / float(HOVER_MOVING_FRAMES)
+        lift = int(0.5 * (1.0 - math.cos(tau * t)) + 0.5)
+        moving.append(pose_fn(wind=(2.0 * t) % 1.0, drift=1.0, lift=lift))
+    pose = pose_fn()
+    return idle, [
+        ("idle", idle, True, 6.0),
+        ("moving", moving, True, 10.0),
+        ("hurt", hurt(pose, 2, _PLAYER_POS), False, 12.0),
+        ("death", death(pose, _PLAYER_POS), False, 10.0),
+    ]
+
+
 def player_set(pose, idle_frames, pose_fn=None):
     """The player has no `attack` - spells fire on a timer, so there is nothing to swing.
 
