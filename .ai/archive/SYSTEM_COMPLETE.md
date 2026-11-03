@@ -1,7 +1,7 @@
 # Chest Item System - Complete Implementation Summary
 
 ## Overview
-The chest item system for Wizard Survivors is now **fully implemented and playable**. All 25 items with 10 synergies have been designed, wired into gameplay, and tested for compilation. The system includes an in-run HUD for visibility and all mechanics are functional.
+The chest item system for The One He Missed is now **fully implemented and playable**. All 25 items with 10 synergies have been designed, wired into gameplay, and tested for compilation. The system includes an in-run HUD for visibility and all mechanics are functional.
 
 ## Features Implemented
 

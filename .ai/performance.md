@@ -180,7 +180,8 @@ The phone runs the **release-signed** build: a debug-signed APK fails to install
 environment (`GODOT_ANDROID_KEYSTORE_RELEASE_*`), never on a command line, in a file in the repo or
 in a log - and check the export log does not contain it.
 
-**Command-line arguments did not reach a release build's scene choice.** Launching with
+**Command-line arguments did not reach a release build's scene choice.** Launching with (the
+package id keeps the game's old name on purpose - it is the app's identity, `.ai/releasing.md`)
 `am start -n com.ecec.wizardsurvivors/com.godot.game.GodotApp --esa command_line_params
 "res://scenes/_BalanceHarness.tscn,--,--profile"` opened the title screen. What worked is a
 **temporary measurement build**, never committed: `run/main_scene` set to the harness, and the harness

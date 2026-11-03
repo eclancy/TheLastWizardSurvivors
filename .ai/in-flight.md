@@ -7,7 +7,7 @@ on it, and delete this file once everything below has landed or been dropped.
 ## 1. Released
 
 **0.10.0 is released** (`Release v0.10.0`, 6b3af6e, tag `v0.10.0`, 2026-11-01, from the Windows PC
-by the local session at Eric's request; dry run first; `ecec.dev/wizard-survivors/version.json` serves
+by the local session at Eric's request; dry run first; ecec.dev's `version.json` serves
 it). Releases need this PC: Inno Setup, the Android release keystore and the Android SDK live here
 (`.ai/releasing.md`).
 

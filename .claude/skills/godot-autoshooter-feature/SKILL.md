@@ -1,11 +1,11 @@
 ---
 name: godot-autoshooter-feature
-description: Workflow and guardrails for adding or changing Wizard Survivors gameplay features in Godot 4.5 C# — active spells (SpellData/.tres), passive spells (PassiveSpellEffect), enemies, waves, upgrades, element weights, collision/signal wiring, HUD and progression. Use whenever a task edits scripts/*.cs, scenes/*.tscn, or a root SpellData_*.tres.
+description: Workflow and guardrails for adding or changing gameplay features of The One He Missed in Godot 4.5 C# — active spells (SpellData/.tres), passive spells (PassiveSpellEffect), enemies, waves, upgrades, element weights, collision/signal wiring, HUD and progression. Use whenever a task edits scripts/*.cs, scenes/*.tscn, or a root SpellData_*.tres.
 ---
 
 # Godot Autoshooter Feature Workflow
 
-Use this skill when a task touches core gameplay code in Wizard Survivors and needs to stay aligned with the project's Godot architecture.
+Use this skill when a task touches core gameplay code in The One He Missed and needs to stay aligned with the project's Godot architecture.
 
 ## Project map
 - Player flow lives in `scripts/Player.cs` and the main gameplay scene controller lives in `scripts/Node2DGame.cs`.
@@ -49,5 +49,5 @@ Use this skill when a task touches core gameplay code in Wizard Survivors and ne
 ## Learnings
 - Collision bugs in this project are often mask mismatches, not script logic errors.
 - Passive defensive spells do not need their own scenes by default; the existing player-owned effect pattern is the preferred path.
-- `dotnet build WizardSurvivors.sln` is the fast compile check (~6s). It does **not** validate scene wiring, resource paths, or signal connections — only running Godot does. Say which of the two you actually ran.
+- `dotnet build TheOneHeMissed.sln` is the fast compile check (~6s). It does **not** validate scene wiring, resource paths, or signal connections — only running Godot does. Say which of the two you actually ran.
 - `Global` is a static C# class (`scripts/Global.cs`), not the dead `Global.gd` autoload. Never `GetNode("/root/Global")`.

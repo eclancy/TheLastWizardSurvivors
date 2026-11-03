@@ -160,8 +160,8 @@ Start with: **CHEST_ITEM_EFFECTS.md**
 
 ### Verify It Works
 ```bash
-cd wizard-survivors
-dotnet build WizardSurvivors.csproj
+cd TheOneHeMissed
+dotnet build TheOneHeMissed.csproj
 # Result: Build succeeded, 0 errors
 ```
 
@@ -247,7 +247,7 @@ Synergies: Deathbringer
 
 ## Conclusion
 
-The Wizard Survivors chest item system has been successfully expanded into a sophisticated 25-item ecosystem with 10 thematic synergies. The implementation is:
+The chest item system of The One He Missed has been successfully expanded into a sophisticated 25-item ecosystem with 10 thematic synergies. The implementation is:
 
 ✅ **Complete** - All items, synergies, and effects implemented  
 ✅ **Tested** - Project builds cleanly with zero errors  

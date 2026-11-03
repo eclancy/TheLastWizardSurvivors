@@ -252,7 +252,7 @@ entry - and then reports every number on those branches its script does not read
 dotnet build
 Determining projects to restore...
   All projects are up-to-date for restore.
-  WizardSurvivors -> C:\...\WizardSurvivors.dll
+  TheOneHeMissed -> C:\...\TheOneHeMissed.dll
 
 Build succeeded.
     0 Warning(s)

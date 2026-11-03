@@ -5,7 +5,7 @@ Written because the question was asked directly: *is all purchased art out of th
 **It is now.** When this document was first written the answer was no, and not close. Every piece
 of bought art has since been replaced and `assets/organized/` has been deleted.
 
-**And the repo is public**, at https://github.com/eclancy/WizardSurvivors. History was rewritten
+**And the repo is public**, at https://github.com/eclancy/TheOneHeMissed. History was rewritten
 before it was flipped; section 3 records how and what to watch for. Sections 1 and 2 are the
 record of what was removed and why.
 
@@ -86,7 +86,7 @@ live and are replaced by generated art. `assets/` is now eight directories and n
 ~~**Nine root-level assets predate the generated pipeline** and no document says where they came
 from: `wizard_guy1.png`, `wizard_guy2.png`, `Magic_Missile.png`, `spiritual_weapon.png`,
 `arcane_explosion.png`, `ground_tile.png`, `fireball.wav`, `magic_missile.wav` and
-`Wizard_Survivors_Title_Screen.png`. Several are still referenced — `PlayerFrames.tres` uses both
+`Wizard_Survivors_Title_Screen.png` (the file's real name, from the game's first title). Several are still referenced — `PlayerFrames.tres` uses both
 `wizard_guy` sheets. They need the same treatment.~~
 
 ## 3. History — done, and what it took
@@ -128,7 +128,7 @@ was unreachable cruft that `push` does not send. **The measurement that counts i
 clone of the remote**, which is what a stranger gets:
 
 ```
-git clone --mirror https://github.com/eclancy/WizardSurvivors.git verify.git
+git clone --mirror https://github.com/eclancy/TheOneHeMissed.git verify.git
 ```
 
 **75 MB before, 8.8 MB after, and a path scan across every ref in it returns nothing.**
@@ -140,8 +140,8 @@ but reachable by SHA for a while. Nobody outside ever had those SHAs — the rep
 whole life — so the risk is small, but GitHub Support can purge them on request and it costs
 nothing to ask.
 
-**The backup is at `../WizardSurvivors-prefilter-backup.git`**, a 75 MB mirror taken immediately
-before the first rewrite. It contains everything that was stripped. **It must never be pushed
+**The backup is at `../WizardSurvivors-prefilter-backup.git`** (a local folder, named before the game
+was renamed), a 75 MB mirror taken immediately before the first rewrite. It contains everything that was stripped. **It must never be pushed
 anywhere public.** Delete it once you are satisfied nothing was lost.
 
 ## 4. What is already clean

@@ -490,7 +490,7 @@ The same table as the Fields with `Heath` for `Fields`, the `[10]` boss block, t
 
 ### Verify, per chapter
 
-`dotnet build WizardSurvivors.sln`; `"$GODOT_BIN" --headless --path . scenes/MainMenu.tscn --quit-after
+`dotnet build TheOneHeMissed.sln`; `"$GODOT_BIN" --headless --path . scenes/MainMenu.tscn --quit-after
 300 -- --no-save-writes` - the chapter's bestiary to-do line shortens as creatures land, its campaign
 to-do line names only what is left, and nothing else new appears; `_BossProbe --stage=9|10`; a
 balance-bot run (`scenes/_BalanceHarness.tscn -- --minutes=6 --character=1 --all-unlocked --immortal

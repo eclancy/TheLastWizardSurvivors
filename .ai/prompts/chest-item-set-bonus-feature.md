@@ -5,7 +5,7 @@ Priority: High
 
 ## Feature Prompt
 
-Design and plan a new Wizard Survivors game feature: "Chest Items & Set Bonuses."
+Design and plan a new game feature for The One He Missed: "Chest Items & Set Bonuses."
 
 ### Summary
 Create a chest-based item system where the player finds rare, unique passive items during a run. Each item grants a memorable, identity-rich effect. When the player collects a specific combination of items, a new synergy bonus activates that exceeds the value of the individual items alone. This should feel like a strong Wizard Survival-inspired progression layer without requiring a full rewrite of the existing spell system.
@@ -52,4 +52,4 @@ Create a chest-based item system where the player finds rare, unique passive ite
 - gameplay-qa-and-balance: manual playtests, edge cases, balance reviews, regression checklist
 
 ### Research signal
-The closest genre precedent is the Magic Survival Synergy page, which shows a dedicated synergy book, clue-based discovery, and 3-4 part set completion as a core feature. This is a strong fit for Wizard Survivors and should be treated as a core gameplay pillar rather than a cosmetic extra.
+The closest genre precedent is the Magic Survival Synergy page, which shows a dedicated synergy book, clue-based discovery, and 3-4 part set completion as a core feature. This is a strong fit for The One He Missed and should be treated as a core gameplay pillar rather than a cosmetic extra.

@@ -1,7 +1,7 @@
 # Chest Item System - Deliverables Summary
 
 ## Overview
-A complete, production-ready chest item system for Wizard Survivors (Godot 4.5 C#) featuring 25 unique items, 10 synergy sets, advanced mechanics, and in-run HUD display. All code is integrated into core gameplay loops with zero compilation errors.
+A complete, production-ready chest item system for The One He Missed (Godot 4.5 C#) featuring 25 unique items, 10 synergy sets, advanced mechanics, and in-run HUD display. All code is integrated into core gameplay loops with zero compilation errors.
 
 ---
 

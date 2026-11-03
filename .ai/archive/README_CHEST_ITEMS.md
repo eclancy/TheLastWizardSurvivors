@@ -1,4 +1,4 @@
-# Wizard Survivors - Expanded Chest Item System
+# The One He Missed - Expanded Chest Item System
 ## Executive Summary
 
 ### ✅ IMPLEMENTATION COMPLETE
@@ -186,8 +186,8 @@ All future additions can use the same ApplyChestItemEffect/RefreshChestSetEffect
 
 ### Verify the Implementation
 ```bash
-cd wizard-survivors
-dotnet build WizardSurvivors.csproj
+cd TheOneHeMissed
+dotnet build TheOneHeMissed.csproj
 # Expected: Build succeeded, 0 errors
 ```
 
@@ -208,7 +208,7 @@ dotnet build WizardSurvivors.csproj
 
 ## Conclusion
 
-The Wizard Survivors chest item system has been successfully transformed from a simple 6-item list into a sophisticated 25-item ecosystem with 10 thematic synergies. The expansion maintains balance, provides distinct mechanical roles, and leverages existing assets. The system is ready for playtesting and release, with clear documentation for future developers to extend it further.
+The chest item system of The One He Missed has been successfully transformed from a simple 6-item list into a sophisticated 25-item ecosystem with 10 thematic synergies. The expansion maintains balance, provides distinct mechanical roles, and leverages existing assets. The system is ready for playtesting and release, with clear documentation for future developers to extend it further.
 
 **Status**: ✅ **COMPLETE & VERIFIED**
 
@@ -216,4 +216,4 @@ The Wizard Survivors chest item system has been successfully transformed from a 
 
 **Date**: 2026-08-29  
 **Build**: v1.0 (Stable)  
-**Author**: Copilot (Assisted by Wizard Survivors maintainers)
+**Author**: Copilot (Assisted by the maintainers of The One He Missed)

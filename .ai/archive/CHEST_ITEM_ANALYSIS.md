@@ -166,7 +166,7 @@ Synergies: Deathbringer
 
 ## Comparison to Magic Survival Artifacts
 
-| Aspect | Magic Survival | Wizard Survivors |
+| Aspect | Magic Survival | The One He Missed |
 |--------|---|---|
 | Item Count | 15-20 | 25 |
 | Synergy Sets | 8-10 | 10 |

@@ -2,7 +2,7 @@
 description: Compile-check the C# project with the dotnet CLI
 allowed-tools: Bash(dotnet build:*), Read, Grep, Glob
 ---
-!`dotnet build WizardSurvivors.sln -v q --nologo`
+!`dotnet build TheOneHeMissed.sln -v q --nologo`
 
 Summarize the build output above. For each error or warning, name the file and
 line and the smallest fix that would resolve it. Do not apply any fix unless I

@@ -1,10 +1,10 @@
-﻿# Project Overview â€” Wizard Survivors
+﻿# Project Overview — The One He Missed
 
 ## Project Name
-Wizard Survivors
+The One He Missed
 
 ## Description
-Wizard Survivors is a Vampire Survivorsâ€“like arena survival roguelite built in Godot. The player controls a wizard who automatically or semi-automatically fires spells while surviving waves of enemies. The game emphasizes replayability, modular spell design, and fast iteration.
+The One He Missed is a Vampire Survivors–like arena survival roguelite built in Godot. The player controls a wizard who automatically or semi-automatically fires spells while surviving waves of enemies. The game emphasizes replayability, modular spell design, and fast iteration.
 
 ## Core Concept
 - Player moves to avoid enemies.

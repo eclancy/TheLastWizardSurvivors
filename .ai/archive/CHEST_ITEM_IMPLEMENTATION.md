@@ -1,7 +1,7 @@
 # Expanded Chest Item System - Implementation Complete
 
 ## Summary
-Successfully expanded the Wizard Survivors chest item system from **6 to 25 items** with **10 synergy sets** (4 existing, 6 new). The system maintains backward compatibility while adding significant depth and strategic choice.
+Successfully expanded the chest item system of The One He Missed from **6 to 25 items** with **10 synergy sets** (4 existing, 6 new). The system maintains backward compatibility while adding significant depth and strategic choice.
 
 ---
 

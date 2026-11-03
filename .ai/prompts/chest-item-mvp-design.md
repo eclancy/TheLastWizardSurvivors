@@ -4,7 +4,7 @@ Status: Draft
 Priority: High
 
 ## Goal
-Define a concrete first-pass chest item roster and three synergy sets that fit the existing Wizard Survivors systems and the art already in the repo.
+Define a concrete first-pass chest item roster and three synergy sets that fit the existing systems of The One He Missed and the art already in the repo.
 
 ## Art-first direction
 The feature should use the currently available asset families as the primary design anchor instead of waiting for a full custom art pass. This keeps the feature testable and gives the visual team clear reference points for future polish.

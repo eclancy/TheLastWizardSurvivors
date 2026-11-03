@@ -902,7 +902,7 @@ lands, a found vault still grants its spell and the old Unlocks list shows its d
 
 **Each piece verifies:**
 
-- `dotnet build WizardSurvivors.sln`, and say when only that ran.
+- `dotnet build TheOneHeMissed.sln`, and say when only that ran.
 - The validator run: `"$GODOT_BIN" --headless --path . scenes/MainMenu.tscn --quit-after 300 --
   --no-save-writes` - no new warnings; A1's migration samples pass.
 - A1: a fresh in-memory save can reach the Emberdeep on paper (`ValidateGateReachability`).

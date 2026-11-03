@@ -542,7 +542,7 @@ One agent per group (section 9), each in its own worktree from `content/bestiary
 4. **Summoner:** `MinionScenePath` is your chapter's Fast (`res://scenes/<Prefix><Fast>.tscn`).
    **Swamp only:** set `SpawnScenePath = "res://scenes/SwampBroodling.tscn"` on the root of
    `scenes/MotherRotBoss.tscn`.
-5. **Verify:** `dotnet build WizardSurvivors.sln`; then
+5. **Verify:** `dotnet build TheOneHeMissed.sln`; then
    `"$GODOT_BIN" --headless --path . scenes/MainMenu.tscn --quit-after 300` - your chapter's to-do line
    is shorter by the creatures you drew, and there is no other new warning; then a balance-bot run on
    the chapter (`scenes/_BalanceHarness.tscn -- --minutes=6 --character=1 --all-unlocked --immortal
