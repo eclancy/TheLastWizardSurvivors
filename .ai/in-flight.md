@@ -100,6 +100,12 @@ things come up; strike what lands.**
      damage bonus only, which moves no level, so the Apotheosis is not pulled earlier, but confirm it. Also
      check how a fused Conjunction or a cut spell shifts the slots. The Betrothal Hoop leans the other way (the
      lowest-level spell): check its card reads as clearly beside the new rule.
+   - **No distances in numbers** (Eric, 2026-11-04): the Singed Lock says "within 90". Never show a distance as a
+     number; say close or far ("nearby", "close to you", "far away") and keep the numbers out of the player's
+     sight. Search every player-facing text for pixel distances: item and boon descriptions
+     (`ChestItemCatalog`, `BoonCatalog`), spell cards and level-up lines (`SpellEvolutionCatalog`,
+     `KeywordText`), relics, element tier text, tooltips. If a validator can catch a number followed by a
+     distance word, add it so they cannot come back.
    - **Percentages, never flat numbers** (Eric, 2026-11-04: instead of things like "damage +2", always speak in
      percentages). Every player-facing increase becomes a percentage: the level-up lines a spell's
      `SpellLevelUpgrade` produces (`DamageBonus = 2` reads "+2 damage"; it should read "+17% damage" against
