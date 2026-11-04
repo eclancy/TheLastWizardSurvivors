@@ -87,10 +87,15 @@ things come up; strike what lands.**
    `CLAUDE.md`, and one achievement to earn it (every non-starter spell comes from exactly one). Design first:
    which old passives' ideas are worth keeping as actives, and how each differs from Aegis Ward and from each
    other (`.ai/passives-and-items.md` has why the passives went, `.ai/spell-variety.md` the axes).
-10. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
-11. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
+10. **Art fixes** (Eric, 2026-11-04):
+   - **Aedan's lantern hangs from his staff**, not sitting on top of it: a hook or crook at the staff's head,
+     the lantern swinging below it on its bail. `tools/art/roster.py`, `pyromancer()`; regenerate his sheets and
+     the prologue panels that show him, keep his spell anchor on the lantern (`CharacterVisuals`), and check the
+     select, a run and the prologue at both canvases.
+11. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
+12. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
    launch-plan doc, now carrying the rival motive).
-12. **Housekeeping:**
+13. **Housekeeping:**
    - the README's image and sound counts are stale again after the foliage and Paracelsus (recount from the
      tree, same methods);
    - delete the dead decor cases in `Node2DGame.BuildDecorProps` for every chapter that now has foliage (the
