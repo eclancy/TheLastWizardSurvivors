@@ -17,17 +17,18 @@ using TheOneHeMissed.scripts;
 // shipped ones and cannot drift from them (8h's simulation was a Python re-implementation, which could).
 // What it models around the deal is 8b's carrier economy, read from the same constants the game reads:
 //   - the run's first elite always pays; --elites=18 more pay at DropTable.EliteChestChance, raised by the
-//     Curio Ledger and made certain by the whole Cabinet, as Player.GetEliteChestChance does; --wardens=4
+//     Curio Ledger (and by John Dee's Scattered Library with --john-dee) and made certain by the whole
+//     Cabinet, as Player.GetEliteChestChance does; --wardens=4
 //     always pay. 8b planned 15 more elites (1 + 15 x 65% + 4 = 14.75 chests, "about fifteen"), but that
 //     was before the chapters' elite cadence (ChapterDifficulty.EliteInterval, x0.85 in the Forest): the
 //     ordinary bot killed 19 elites and 4 Wardens on a 15-minute Forest run on 2026-11-02 (8j), so the
 //     default is 18, 16.7 chests before any relic raises it;
-//   - the Hidden Drawer's chest in a chest (DropTable.NestedChestChance), which can chain;
-//   - the Relic Key's fourth card (DropTable.BaseChestOffers + 1).
+//   - the Hidden Drawer's fourth card (DropTable.BaseChestOffers + 1; since 2026-11-03 - it was a chest in a
+//     chest, and the fourth card was the Reliquary Key's, which brings chests to its holder now).
 // --until=M ends the run at pace minute M (a run lost early, or the boss's arrival at 15, the default).
-// It does NOT model: side events' and secrets' chests (chapter-dependent, three at most), John Dee's fifth
-// card (--extra-offers=1 is that), bans, and the Penknife's "nothing to cut" rule (it is dealt like any
-// relic, and no picker ever claims it).
+// It does NOT model: side events' and secrets' chests (chapter-dependent, three at most), bans, the Reliquary
+// Key's pull (it changes where a chest is opened, not how many), and the Penknife's "nothing to cut" rule (it
+// is dealt like any relic, and no picker ever claims it).
 //
 // Three pickers, because how often a set completes depends on who is choosing:
 //   random - any card but the Penknife: a player who does not read the sets.
@@ -43,7 +44,7 @@ using TheOneHeMissed.scripts;
 // the Gimmel Ring, passed to the deal as unavailable), for the before and after.
 //
 // Flags: --runs=N (10000), --seed=N (1), --elites=N (18), --wardens=N (4), --until=M (15),
-// --extra-offers=N (0), --chest-rerolls=N (3), --out=PATH (user://chest_sim.md), --set=ID:piece,piece (a
+// --extra-offers=N (0), --john-dee, --chest-rerolls=N (3), --out=PATH (user://chest_sim.md), --set=ID:piece,piece (a
 // proposal: that set with those pieces, in this count only). The tables are written as Markdown to --out;
 // the console gets one CHESTSIM line per configuration.
 public partial class _ChestSim : Node
@@ -88,6 +89,8 @@ public partial class _ChestSim : Node
 	private int wardens = 4;
 	private float untilMinute = 15f;
 	private int extraOffers;
+	// --john-dee: every run is his, so elites carry a chest at Player.CharacterEliteChestChance more.
+	private bool johnDee;
 	private int chestRerolls = 3;
 	private string outPath = "user://chest_sim.md";
 	// --set=ID:piece,piece - a set's pieces as a proposal would have them, for this simulation only.
@@ -108,6 +111,7 @@ public partial class _ChestSim : Node
 			else if (arg.StartsWith("--wardens=")) wardens = int.Parse(arg.Substring(10));
 			else if (arg.StartsWith("--until=")) untilMinute = float.Parse(arg.Substring(8), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg.StartsWith("--extra-offers=")) extraOffers = int.Parse(arg.Substring(15));
+			else if (arg == "--john-dee") johnDee = true;
 			else if (arg.StartsWith("--chest-rerolls=")) chestRerolls = int.Parse(arg.Substring(16));
 			else if (arg.StartsWith("--out=")) outPath = arg.Substring(6);
 			// --lean=X: a chest offers a piece of a set already started X times as often (ChestItemCatalog.StartedSetLean).
@@ -206,41 +210,35 @@ public partial class _ChestSim : Node
 					continue;
 			}
 
-			// The chest, then whatever the Hidden Drawer finds in it (it counts once claimed: FinishChestClaim).
-			bool another = true;
-			while (another)
+			chests++;
+			int count = DropTable.BaseChestOffers + (ownedSet.Contains(ChestItemCatalog.HiddenDrawer) ? 1 : 0) + extraOffers;
+			List<string> offer = ChestItemCatalog.GetChestItemOptions(owned, rng, count, unavailable, memory);
+			Seen(offer, shownThisRun, tally);
+			while (rerollsLeft > 0 && config.Picker == Picker.Chaser && WantsReroll(offer, ownedSet, completed))
 			{
-				chests++;
-				int count = DropTable.BaseChestOffers + (ownedSet.Contains(ChestItemCatalog.RelicKey) ? 1 : 0) + extraOffers;
-				List<string> offer = ChestItemCatalog.GetChestItemOptions(owned, rng, count, unavailable, memory);
+				rerollsLeft--;
+				tally.RerollsSpent++;
+				offer = ChestItemCatalog.GetChestItemOptions(owned, rng, count, unavailable, memory);
 				Seen(offer, shownThisRun, tally);
-				while (rerollsLeft > 0 && config.Picker == Picker.Chaser && WantsReroll(offer, ownedSet, completed))
-				{
-					rerollsLeft--;
-					tally.RerollsSpent++;
-					offer = ChestItemCatalog.GetChestItemOptions(owned, rng, count, unavailable, memory);
-					Seen(offer, shownThisRun, tally);
-				}
+			}
 
-				string pick = Pick(config.Picker, offer, ownedSet, completed, rng);
-				if (pick != null && ownedSet.Add(pick))
+			string pick = Pick(config.Picker, offer, ownedSet, completed, rng);
+			if (pick != null && ownedSet.Add(pick))
+			{
+				owned.Add(pick);
+				tally.RunsClaimed[pick] = tally.RunsClaimed.GetValueOrDefault(pick) + 1;
+				foreach (int s in setsOfItem[pick])
 				{
-					owned.Add(pick);
-					tally.RunsClaimed[pick] = tally.RunsClaimed.GetValueOrDefault(pick) + 1;
-					foreach (int s in setsOfItem[pick])
+					if (completed[s] || sets[s].RequiredItemIds.Any(id => !ownedSet.Contains(id)))
+						continue;
+					completed[s] = true;
+					setsDone++;
+					if (firstSetChest < 0)
 					{
-						if (completed[s] || sets[s].RequiredItemIds.Any(id => !ownedSet.Contains(id)))
-							continue;
-						completed[s] = true;
-						setsDone++;
-						if (firstSetChest < 0)
-						{
-							firstSetChest = chests;
-							firstSetMinute = at / 60f;
-						}
+						firstSetChest = chests;
+						firstSetMinute = at / 60f;
 					}
 				}
-				another = ownedSet.Contains(ChestItemCatalog.HiddenDrawer) && rng.Randf() < DropTable.NestedChestChance;
 			}
 		}
 
@@ -272,7 +270,8 @@ public partial class _ChestSim : Node
 	{
 		if (completed[CabinetIndex])
 			return 1f;
-		float chance = DropTable.EliteChestChance + (ownedSet.Contains(ChestItemCatalog.CurioLedger) ? Player.CurioLedgerEliteChestChance : 0f);
+		float chance = DropTable.EliteChestChance + (ownedSet.Contains(ChestItemCatalog.CurioLedger) ? Player.CurioLedgerEliteChestChance : 0f)
+			+ (johnDee ? Player.CharacterEliteChestChance : 0f);
 		return Math.Min(1f, chance);
 	}
 
@@ -377,9 +376,10 @@ public partial class _ChestSim : Node
 		var sb = new StringBuilder();
 		sb.AppendLine($"# Chest simulation: {runs} runs a configuration, seed {seed}");
 		sb.AppendLine();
-		sb.AppendLine($"Carriers to minute {untilMinute:0.#}: {carriers.Count(c => c.Elite)} elites (the first always pays, the rest at {DropTable.EliteChestChance:0%}), "
-			+ $"{carriers.Count(c => !c.Elite)} Wardens; "
-			+ $"{DropTable.BaseChestOffers + extraOffers} cards a chest, +1 with the Relic Key. Pool: {ChestItemCatalog.AllItemIds.Count} relics, {sets.Length} sets.");
+		float eliteChance = DropTable.EliteChestChance + (johnDee ? Player.CharacterEliteChestChance : 0f);
+		sb.AppendLine($"Carriers to minute {untilMinute:0.#}: {carriers.Count(c => c.Elite)} elites (the first always pays, the rest at {eliteChance:0%}"
+			+ (johnDee ? ", John Dee's" : string.Empty) + $"), {carriers.Count(c => !c.Elite)} Wardens; "
+			+ $"{DropTable.BaseChestOffers + extraOffers} cards a chest, +1 with the Hidden Drawer. Pool: {ChestItemCatalog.AllItemIds.Count} relics, {sets.Length} sets.");
 		sb.AppendLine();
 
 		sb.AppendLine("## Per configuration");

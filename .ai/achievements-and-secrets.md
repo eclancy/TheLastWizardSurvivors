@@ -85,7 +85,7 @@ Read from `scripts/UnlockCatalog.cs`, `scripts/AchievementDefinition.cs`, `scrip
 | Aedan (Pyromancer), Isbrand (Frostweaver), Thora (Stormcaller), Gabbro (Geomancer) | Starter | |
 | Tituba | Discovery | the Gaoler's key (Dungeon); secret until the Dungeon opens |
 | Väinämöinen | Discovery | the thaw (Frozen Waste); secret until the Waste opens |
-| John Dee | Achievement | The Library at Mortlake: open 30 chests |
+| John Dee | Achievement | The Library at Mortlake: open 30 chests (100 since 2026-11-03, `.ai/passives-and-items.md` 8k) |
 | Laelaps | Achievement | The Coursing (Broken Circle); secret until the Circle opens; outside the campaign gate |
 | Test Wizard | Starter | development sandbox, not counted anywhere |
 

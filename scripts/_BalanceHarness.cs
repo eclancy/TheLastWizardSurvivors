@@ -3556,7 +3556,7 @@ public partial class _BalanceHarness : Node
 			// The bot never claims the Penknife: it would have to name a spell to cut, and cutting
 			// one is never how a plan for more Ascensions goes.
 			List<string> offer = ChestItemCatalog.GetChestItemOptions(player.GetOwnedChestItems(), chestRng,
-				player.HasRelicKey ? 4 : 3, new[] { ChestItemCatalog.ScribesPenknife }, chestOfferMemory);
+				player.ChestOfferCount, new[] { ChestItemCatalog.ScribesPenknife }, chestOfferMemory);
 			if (offer.Count == 0)
 				continue;
 			string pick = SeekAscensions ? PickChestForPlan(offer) : PickChestOrdinary(offer);
@@ -3578,7 +3578,7 @@ public partial class _BalanceHarness : Node
 		if (menu == null || menu.IsQueuedForDeletion())
 			return;
 		List<string> offer = ChestItemCatalog.GetChestItemOptions(player.GetOwnedChestItems(), chestRng,
-			player.HasRelicKey ? 4 : 3, new[] { ChestItemCatalog.ScribesPenknife }, chestOfferMemory);
+			player.ChestOfferCount, new[] { ChestItemCatalog.ScribesPenknife }, chestOfferMemory);
 		if (offer.Count == 0)
 			return;
 		string pick = SeekAscensions ? PickChestForPlan(offer) : PickChestOrdinary(offer);

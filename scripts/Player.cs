@@ -619,8 +619,18 @@ public partial class Player : CharacterBody2D
 	public const float CurioLedgerEliteChestChance = 0.25f;
 	public const int CabinetPartialPickupRadius = 25;
 	public const int CabinetFullPickupRadius = 50;
-	// John Dee's passive: one more relic in every chest (ChestOfferCount).
-	private int characterChestOfferBonus = 0;
+	// The Reliquary Key: a chest this near (plus the pickup radius - PickupReach) comes to whoever holds its key, at
+	// this speed (ChestReward.ComeToKeyHolder) - above a wizard's walk (220), or a chest could never catch a player
+	// walking off: at 180 the first photograph had it trailing him across the field. The key once widened the pickup
+	// radius for everything, a magnet with the wrong name on it; this pulls only what has a lock. Its old fourth card
+	// is the Hidden Drawer's (Eric, 2026-11-03).
+	public const int ReliquaryKeyChestReach = 240;
+	public const float ReliquaryKeyChestSpeed = 320f;
+	// Scattered Library (John Dee): his library was looted and scattered, and the strong ones carry it - a share added
+	// to every elite's chance of a chest (GetEliteChestChance). His old passive, Collector's Eye ("+1 relic to choose
+	// from in every chest"), is the Hidden Drawer's now (Eric, 2026-11-03).
+	public const float CharacterEliteChestChance = 0.20f;
+	private float characterEliteChestChanceBonus = 0f;
 	// Exorcist (Abe no Seimei): the share added to every hit on an elite, a miniboss or a boss.
 	public const float CharacterEliteDamageBonus = 0.15f;
 	private float characterEliteDamageBonus = 0f;
@@ -899,8 +909,8 @@ public partial class Player : CharacterBody2D
 		// The two rescued wizards (.ai/side-events.md). Each is a scaling axis no starter owns.
 		"duration_15",
 		"area_10",
-		// John Dee, the collector: one more relic to choose from in every chest.
-		"chest_options_1",
+		// John Dee, the collector: the strong ones carry his scattered library, so elites drop a chest more often.
+		"elite_chests_20",
 		// Laelaps, the hound that always caught what it hunted: a share of the enemy bolts that reach him
 		// are caught in his jaws (TryCatchBolt, read by EnemyProjectile).
 		"catch_bolts_25",
@@ -991,8 +1001,8 @@ public partial class Player : CharacterBody2D
 			case "area_10":
 				areaMultiplier *= 1.10f;
 				return true;
-			case "chest_options_1":
-				characterChestOfferBonus += 1;
+			case "elite_chests_20":
+				characterEliteChestChanceBonus = CharacterEliteChestChance;
 				return true;
 			case "catch_bolts_25":
 				characterBoltCatchChance = CharacterBoltCatchChance;
@@ -3358,14 +3368,17 @@ public partial class Player : CharacterBody2D
 		RefreshShieldAura();
 	}
 
-	/// <summary>Relic Key widens the chest offer. Read by Node2DGame when it rolls one.</summary>
+	/// <summary>The Reliquary Key brings chests to its holder. Read by every chest on the ground (ChestReward).</summary>
 	public bool HasRelicKey => ownedChestItems.Contains(ChestItemCatalog.RelicKey);
 
+	/// <summary>The Hidden Drawer widens the chest offer by one. Read through ChestOfferCount.</summary>
+	public bool HasHiddenDrawer => ownedChestItems.Contains(ChestItemCatalog.HiddenDrawer);
+
 	/// <summary>
-	/// How many relics a chest offers this player: three, one more with the Relic Key, one more for
-	/// John Dee - five at most, which the chest screen is laid out for on a PC and a phone.
+	/// How many relics a chest offers this player: three, one more with the Hidden Drawer - four at most, inside
+	/// the five the chest screen is laid out for on a PC and a phone.
 	/// </summary>
-	public int ChestOfferCount => DropTable.BaseChestOffers + (HasRelicKey ? 1 : 0) + characterChestOfferBonus;
+	public int ChestOfferCount => DropTable.BaseChestOffers + (HasHiddenDrawer ? 1 : 0);
 
 	// --- Collecting: what three relics used to spend on chests, and the Cabinet of Curiosities ----
 	//
@@ -3377,13 +3390,13 @@ public partial class Player : CharacterBody2D
 	/// <summary>The chance an ordinary kill's orb comes up one size larger (DropTable.GreaterOrbValue).</summary>
 	public float GetGreaterOrbChance() => chestGreaterOrbChance;
 
-	/// <summary>The chance an elite drops a chest: DropTable.EliteChestChance, raised by the Curio Ledger, and certain with the whole Cabinet of Curiosities.</summary>
+	/// <summary>
+	/// The chance an elite drops a chest: DropTable.EliteChestChance, raised by the Curio Ledger and by John Dee's
+	/// Scattered Library, and certain with the whole Cabinet of Curiosities.
+	/// </summary>
 	public float GetEliteChestChance() => completedChestSets.Contains(ChestItemCatalog.CabinetOfCuriositiesSetId)
 		? 1f
-		: Mathf.Min(1f, DropTable.EliteChestChance + chestEliteChestChanceBonus);
-
-	/// <summary>The Hidden Drawer's chance that an opened chest leaves another chest behind.</summary>
-	public float GetNestedChestChance() => ownedChestItems.Contains(ChestItemCatalog.HiddenDrawer) ? DropTable.NestedChestChance : 0f;
+		: Mathf.Min(1f, DropTable.EliteChestChance + chestEliteChestChanceBonus + characterEliteChestChanceBonus);
 
 	public void AddChestItem(string itemId)
 	{
@@ -3464,8 +3477,7 @@ public partial class Player : CharacterBody2D
 		{
 			// Damage items
 			case ChestItemCatalog.RelicKey:
-				// A key that widened your pickup radius was a magnet with the wrong name on it.
-				// Read by Node2DGame when it rolls a chest - see HasRelicKey.
+				// Read by ownership: every chest on the ground asks HasRelicKey whether to come to him.
 				break;
 			case ChestItemCatalog.EmberFlask:
 				chestDamageBonusPercent += 0.12f;
@@ -3548,7 +3560,7 @@ public partial class Player : CharacterBody2D
 				chestEliteChestChanceBonus += CurioLedgerEliteChestChance;
 				break;
 			case ChestItemCatalog.HiddenDrawer:
-				break; // Read by ownership when a chest is claimed - see GetNestedChestChance.
+				break; // Read by ownership when a chest is rolled - see ChestOfferCount.
 
 			// Elemental items
 			case ChestItemCatalog.StormLattice:

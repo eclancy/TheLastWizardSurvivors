@@ -216,7 +216,7 @@ on to the Throne with Tituba still in her cell. So, the simplest fix that keeps 
   her. In his own cells it is stronger, not weaker.
 
 **What it costs, stated plainly:** a new player meets Tituba at chapter 11 of 13, not 5. Väinämöinen
-(chapter 7) becomes the first wizard freed by a side event; John Dee (30 chests) and Laelaps (the
+(chapter 7) becomes the first wizard freed by a side event; John Dee (30 chests then, 100 since 2026-11-03) and Laelaps (the
 Coursing, chapter 3) still come early. Her Apotheosis is late-game play. Saves that already freed her
 keep her, and grandfathered saves can free her in their Dungeon at any time.
 
