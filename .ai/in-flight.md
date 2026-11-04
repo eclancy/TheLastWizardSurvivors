@@ -69,6 +69,11 @@ things come up; strike what lands.**
 8. **Card and item wording** (Eric, 2026-11-04):
    - **The Reliquary Key:** its description should just say that your pickup radius applies to chests (what
      `feat/john-dee-chests` made it do), nothing longer. `ChestItemCatalog`.
+   - **Make a Legendary spell obvious** (Eric, 2026-11-04): today it is only a star after the name ("Solar
+     Flare ★", `Player` where it rolls) and a gold tint, and the star is easy to read as one of the screen's
+     other stars (Ascension, the Codex). Add something to the name - "Legendary Solar Flare", or a gold word
+     and frame on its card - and say once what it means (its element tags count double). Check the level-up
+     card, the loadout strip, the pause screen and the character select for a wizard who starts Legendary.
 9. **Bring back some defensive spells, on Aegis Ward's rules** (Eric, 2026-11-04). The passive defensive spells
    (Thornmail, Stormguard, Frozen Bulwark and the rest) were removed; Aegis Ward stayed because it is an active
    thing - a cooldown and a break, costing a slot like any other spell - not a number sitting on the player
