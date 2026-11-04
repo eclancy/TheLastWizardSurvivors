@@ -40,7 +40,14 @@ Nothing else is said: no title card, no narration, nothing an image is already s
   (cowl, streaming rag, horns and pauldrons, flat shield, loose orb, spear, the hound's line), and one
   or two pixels of cold arcane for eyes (`world-and-tone.md`, "The enemy palette"). They echo the
   chapters' kinds; **nothing in the prologue is from the Sketchbook's cast**, which is the kids' art
-  and is never derived from.
+  and is never derived from. Silhouettes are not solid fills (Eric, 2026-11-03: *"the villains in the
+  silhouette look blocky. give them better detail"*): `creature` draws joints, stance and torn hems, and
+  inside the shape near-occlusion plates parted by occlusion - lames, a helm's slit, seams, folds. The
+  only light on them is his: a one-pixel rim on the edges facing the panel's eclipse or tower
+  (`rim_light`, the `light=` point), the plates' edges facing it caught one stop up (`catch_light`), and
+  the far side let back to occlusion (`form_light`). How much of it a body gets goes by its size
+  (`_Fig.lod`): the tide's flood stays shapes. The procession's knight carries his spear sloped back,
+  because upright its head stood in front of the tower and was lost.
 - **The wizards are the game's own, and never a secret one.** Eric, 2026-11-01, of the anonymous
   robe-and-hat figure that stood in panels 1, 2 and 4: *"In the intro, the wizard silhouettes look
   goofy. Use the silhouettes of the characters in the game."* Each is now cut from his real sprite
@@ -63,7 +70,10 @@ every part - cowl, collar, sleeve, circlet, fingers, key ring - then flattens th
 the Throne's to reveal. He is never named (the Throne's banner does not name him either). The shape is
 the reference for whoever builds `ThroneDarkWizardBoss`'s sprite (`.ai/endgame-castle.md` 6.4): no hat
 brim and no staff, which are the player's; the cowl and the collar of points; the raised hand that
-takes. A later prologue panel may never show more of him than this one does.
+takes. A later prologue panel may never show more of him than this one does. Since 2026-11-03 the outline
+itself carries more (still only outline and rim): a mantle torn into points over the shoulders, a torn
+sleeve, sides that step out at the folds with the rim's dimmest stop carried down them, and a hem in
+tongues - drawn as one smooth bow he read as a cone.
 
 ## The art
 

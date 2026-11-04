@@ -518,108 +518,575 @@ ROBE = {"pyromancer": R[4], "frostweaver": M["azure"][4], "stormcaller": G[4], "
 EYE = (AR[0], AR[1])
 
 
-def creature(c, kind, cx, yb, h, facing=1, body=None, rim=None, eye=True, seed=0):
-    """One of his, as a silhouette: the taxonomy's class attachment survives the solid fill
-    (.ai/art-direction.md section 4) - the swarmer's cowl, the runner's streaming rag, the
-    bruiser's horns and pauldrons, the shielder's flat plane, the caster's loose orb, the
-    knight's spear - and every one wears the same mark, one or two pixels of cold arcane, the
-    only light on anything he raised (.ai/world-and-tone.md). Limbs are strokes, so a large one
-    has joints and weight and does not read as a box with horns on it."""
-    body = body or [OCC, OCC]
-    u = h / 20.0
-    rng = random.Random(seed)
-    s = Cv(int(34 * u) + 8, int(28 * u) + 8)
-    ox, oy = s.w // 2, int(25 * u) + 3
-    f = facing
-    b0, b1 = body
-    j = lambda a: (rng.random() - 0.5) * a
+# HIS CREATURES. Eric, 2026-11-03, of the procession: "the villains in the silhouette look blocky. give them
+# better detail". Each was one solid fill whose outline carried its class attachment and nothing else - a
+# straight-edged mass with nothing inside it, so the guard on the ridge read as a tall flat rectangle with a
+# spear and the bruiser as a slab with horns. They are still silhouettes in occlusion with no colour of their
+# own, drawn now the way .ai/art-direction.md 4b asks of any actor: limbs with joints and a stance, hems torn
+# rather than cut, horns that curve and taper, and inside the shape the breaks a near-occlusion tone can carry
+# - a pauldron's lames, a helm's slit, armour seams, cloth folds - each form parted from the one it overlaps
+# by occlusion. The only light on them is his: a rim on the edges that face his eclipse or his tower
+# (rim_light), the same light caught one stop down along the plate edges that face it (catch_light), and the
+# mark in their eyes. How much of that a body gets goes by its size on the panel (_Fig.lod): the flood's
+# hundreds stay shapes with eyes, the procession's guards and the tide's front rank get all of it.
 
-    def P(pts):
-        return [(ox + f * px_ * u, oy + py_ * u) for (px_, py_) in pts]
 
-    def limb(a, b, a2, b2, r0, r1, col=None):
-        sk._stroke(s, ox + f * a * u, oy + b * u, ox + f * a2 * u, oy + b2 * u,
-                   max(0.5, r0 * u), max(0.5, r1 * u), col or b0)
-    stride = j(2.4)
-    eyes = []
-    if kind == "swarmer":
-        s.poly(P([(-4.2, 0), (-2.6, -0.8), (-1.0, 0.2), (1.2, -0.6), (3.6, 0), (4.0, -6.0), (3.4, -11.0),
-                  (2.2, -14.6), (3.4, -17.6), (1.0, -19.6), (-1.6, -17.2), (-3.4, -12.6), (-4.4, -6.6)]), b0)
-        s.poly(P([(2.2, -14.6), (3.4, -17.6), (1.6, -16.4)]), b1)
-        limb(2.6, -9.0, 5.4 + j(1), -5.0, 0.7, 0.5)
-        eyes = [(1.8, -15.2)]
-    elif kind == "runner":
-        limb(-0.6, -7.6, -3.4 + stride, 0, 1.0, 0.7)
-        limb(0.8, -7.6, 3.6 - stride, 0, 1.0, 0.7)
-        s.poly(P([(-2.4, -7.0), (2.2, -7.6), (4.6, -12.8), (3.8, -15.6), (0.8, -15.0), (-2.0, -11.4)]), b0)
-        s.disc(ox + f * 4.4 * u, oy - 15.6 * u, 1.9 * u, 1.7 * u, b0)
-        s.poly(P([(-1.4, -13.8), (0.6, -14.6), (-6.0, -12.6), (-11.6, -14.0), (-8.6, -10.8), (-12.4, -9.4),
-                  (-6.4, -9.0), (-1.8, -10.4)]), b1)
-        limb(3.0, -13.0, 6.6, -9.6, 0.7, 0.5)
-        eyes = [(5.2, -15.9)]
-    elif kind == "bruiser":
-        limb(-2.2, -7.4, -3.4 - stride * 0.4, 0, 1.6, 1.3)
-        limb(2.2, -7.4, 3.4 + stride * 0.4, 0, 1.6, 1.3)
-        s.poly(P([(-3.8, -6.4), (3.8, -6.4), (6.0, -12.6), (5.0, -16.2), (-5.4, -16.2), (-6.2, -12.4)]), b0)
+class _Inside(Cv):
+    """A view of a figure's canvas that draws only where the figure already is, so whatever goes inside a
+    silhouette - a plate, a seam, a fold - can never widen it."""
+
+    def __init__(self, base):
+        self.w, self.h, self.img, self.px = base.w, base.h, base.img, base.px
+
+    def set(self, x, y, c):
+        if c is None:
+            return
+        x = int(x)
+        y = int(y)
+        if 0 <= x < self.w and 0 <= y < self.h and self.px[x, y][3]:
+            self.px[x, y] = rgb(c)
+
+
+_N8 = ((-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1))
+
+
+def _unit(v):
+    d = math.hypot(v[0], v[1]) or 1.0
+    return (v[0] / d, v[1] / d)
+
+
+def rim_light(s, color, toward, inner=None, cut=0.3, strong=0.72):
+    """Light the edge of a figure that faces a light. A pixel is on the edge when a neighbour is empty, and
+    its outward normal is the sum of the directions to its empty neighbours, so a curved edge is lit as far
+    round as it faces the light and no further - edge_light tests one neighbour, and lit a curve in steps.
+    inner: the pixel inside the edge too, where the edge faces the light squarely (dot over `strong`)."""
+    tx, ty = _unit(toward)
+    px = s.px
+    w, h = s.w, s.h
+    hits = []
+    for y in range(h):
+        for x in range(w):
+            if not px[x, y][3]:
+                continue
+            nx = ny = 0
+            for (dx, dy) in _N8:
+                qx, qy = x + dx, y + dy
+                if not (0 <= qx < w and 0 <= qy < h) or not px[qx, qy][3]:
+                    nx += dx
+                    ny += dy
+            if nx or ny:
+                d = math.hypot(nx, ny)
+                dot = (nx * tx + ny * ty) / d
+                if dot > cut:
+                    hits.append((x, y, nx / d, ny / d, dot))
+    edge = set((x, y) for (x, y, _a, _b, _d) in hits)
+    col = rgb(color)
+    for (x, y, _nx, _ny, _dot) in hits:
+        px[x, y] = col
+    if inner:
+        icol = rgb(inner)
+        for (x, y, nx, ny, dot) in hits:
+            if dot > strong:
+                qx, qy = int(round(x - nx)), int(round(y - ny))
+                if 0 <= qx < w and 0 <= qy < h and px[qx, qy][3] and (qx, qy) not in edge:
+                    px[qx, qy] = icol
+
+
+def catch_light(s, plates, toward, color, base=OCC):
+    """The plates inside a figure catch the light along the edge that faces it: a plate pixel whose
+    neighbour toward the light is the occlusion between forms steps up to `color`. It is what turns a
+    pauldron's lames, a helm's brow and a shield's border into raised edges instead of flat patches."""
+    tx, ty = _unit(toward)
+    dx = 1 if tx > 0.38 else (-1 if tx < -0.38 else 0)
+    dy = 1 if ty > 0.38 else (-1 if ty < -0.38 else 0)
+    want = set(rgb(c) for c in plates)
+    occ = rgb(base)
+    col = rgb(color)
+    px = s.px
+    hits = []
+    for y in range(1, s.h - 1):
+        for x in range(1, s.w - 1):
+            p = px[x, y]
+            if p[3] and p in want and px[x + dx, y + dy] == occ:
+                hits.append((x, y))
+    for (x, y) in hits:
+        px[x, y] = col
+
+
+def form_light(s, plates, toward, centre, radius, deep=OCC):
+    """The side of a figure turned from the light goes back to occlusion: plate pixels past the middle of
+    the body, measured along the light's direction, dither down to `deep`, all of them by the far edge.
+    So the breaks inside a figure gather on the side his light finds and the rest stays a silhouette."""
+    tx, ty = _unit(toward)
+    cx, cy = centre
+    want = set(rgb(c) for c in plates)
+    d = rgb(deep)
+    px = s.px
+    for y in range(s.h):
+        row = TH[y % 8]
+        for x in range(s.w):
+            p = px[x, y]
+            if p[3] and p in want:
+                t = ((x - cx) * tx + (y - cy) * ty) / radius
+                if 0.2 - t * 1.1 > row[x % 8]:
+                    px[x, y] = d
+
+
+class _Fig(object):
+    """One of his creatures on its scratch canvas: its feet at (ox, oy), u canvas pixels to the unit (a body
+    stands about 20 units), x mirrored by facing, and how much detail its size on the panel can carry."""
+
+    def __init__(self, h, facing, seed, tall=38.0, wide=36.0):
+        self.u = u = h / 20.0
+        self.s = Cv(int(wide * u) + 8, int(tall * u) + 8)
+        self.ox = self.s.w // 2
+        self.oy = int((tall - 4.0) * u) + 4
+        self.f = facing
+        self.rng = random.Random(seed)
+        # 0: the flood's hundreds, a shape and its eyes; 1: the joints, a torn hem and a few breaks inside;
+        # 2: the procession's guards, the tide's front rank and the searchers, everything.
+        self.lod = 0 if u < 1.25 else (1 if u < 2.2 else 2)
+        self.inside = _Inside(self.s)
+
+    def T(self, a, b):
+        return (self.ox + self.f * a * self.u, self.oy + b * self.u)
+
+    def j(self, a):
+        return (self.rng.random() - 0.5) * a
+
+    def _c(self, inside):
+        return self.inside if inside else self.s
+
+    def poly(self, pts, col, inside=False):
+        self._c(inside).poly([self.T(a, b) for (a, b) in pts], col)
+
+    def stroke(self, a, b, a2, b2, r0, r1, col, inside=False):
+        x0, y0 = self.T(a, b)
+        x1, y1 = self.T(a2, b2)
+        sk._stroke(self._c(inside), x0, y0, x1, y1, max(0.5, r0 * self.u), max(0.5, r1 * self.u), col)
+
+    def limb(self, pts, radii, col, inside=False):
+        """A jointed limb, joint to joint, tapering through radii (one per point)."""
+        for k in range(len(pts) - 1):
+            self.stroke(pts[k][0], pts[k][1], pts[k + 1][0], pts[k + 1][1], radii[k], radii[k + 1], col, inside)
+
+    def line(self, pts, col, inside=True):
+        c = self._c(inside)
+        for (a, b), (a2, b2) in zip(pts, pts[1:]):
+            x0, y0 = self.T(a, b)
+            x1, y1 = self.T(a2, b2)
+            c.line(x0, y0, x1, y1, col)
+
+    def disc(self, a, b, rx, ry, col, inside=False):
+        x, y = self.T(a, b)
+        self._c(inside).disc(x, y, max(0.5, rx * self.u), max(0.5, ry * self.u), col)
+
+    def dot(self, a, b, col, inside=True):
+        x, y = self.T(a, b)
+        self._c(inside).set(x, y, col)
+
+    def bend(self, p0, p1, p2, n):
+        """n + 1 points along the quadratic curve p0 -> p2 drawn toward p1."""
+        out = []
+        for k in range(n + 1):
+            t = k / float(n)
+            out.append(((1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0],
+                        (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1]))
+        return out
+
+    def ribbon(self, spine, w0, w1):
+        """A strip of cloth along a spine, w0 wide where it is tied and w1 at its torn end, as a polygon."""
+        n = len(spine)
+        left, right = [], []
+        for k, (a, b) in enumerate(spine):
+            pa, pb = spine[max(0, k - 1)]
+            qa, qb = spine[min(n - 1, k + 1)]
+            ta, tb = _unit((qa - pa, qb - pb))
+            w = (w0 + (w1 - w0) * k / float(n - 1)) * 0.5
+            left.append((a - tb * w, b + ta * w))
+            right.append((a + tb * w, b - ta * w))
+        return left + right[::-1]
+
+    def tatter(self, a0, a1, b, n, deep):
+        """A hem from a0 to a1 along row b, torn into n tongues of uneven length."""
+        pts = []
+        for i in range(2 * n + 1):
+            a = a0 + (a1 - a0) * i / (2.0 * n) + self.j(abs(a1 - a0) / (3.0 * n))
+            if i % 2:
+                pts.append((a, b + deep * (0.45 + 0.75 * self.rng.random())))
+            else:
+                pts.append((a, b - deep * 0.3 * self.rng.random()))
+        return pts
+
+
+def _swarmer(F, mass, plate, pose):
+    """Small, hunched, narrow: the pointed cowl, the back bowed under it, one clawed hand out of the cloak."""
+    hem = F.tatter(4.5, -4.7, -0.4, 4 if F.lod else 2, 1.0)
+    F.poly([(1.2, -20.4), (2.6, -19.0), (3.8, -17.3), (3.3, -16.5), (2.5, -15.4), (2.7, -14.0), (3.4, -12.6),
+            (4.2, -10.0), (4.4, -6.6), (4.2, -2.8)] + hem +
+           [(-4.8, -2.8), (-5.2, -6.8), (-5.1, -10.4), (-4.4, -13.4), (-3.0, -15.9), (-1.2, -18.0)], mass)
+    F.limb([(2.4, -11.0), (4.6, -8.8), (6.1, -6.8)], [1.05, 0.75, 0.45], mass)
+    if F.lod:
+        for (a, b) in [(7.2, -6.0), (6.9, -5.1), (6.1, -5.0)]:
+            F.line([(6.1, -6.8), (a, b)], mass, inside=False)
+        # the cowl a shape of its own over the cloak, its edge round the face, the face a hollow in it
+        F.poly([(1.2, -20.4), (2.6, -19.0), (3.8, -17.3), (3.3, -16.5), (2.6, -14.4), (3.4, -12.8), (1.6, -12.2),
+                (-0.6, -12.8), (-2.6, -12.0), (-4.6, -12.8), (-4.4, -13.4), (-3.0, -15.9), (-1.2, -18.0)],
+               plate, inside=True)
+        F.line([(-4.4, -12.9), (-2.6, -12.2), (-0.6, -13.0), (1.6, -12.4), (3.3, -12.9)], mass)
+        F.disc(2.5, -15.6, 0.95, 1.15, mass, inside=True)
+        F.line([(1.4, -19.6), (2.7, -18.4), (3.1, -17.2)], mass)
+        folds = [(-2.8, -11.2, -3.6, -1.0), (0.2, -11.6, -0.4, -0.6)]
+        if F.lod > 1:
+            folds += [(2.6, -10.8, 3.2, -1.6), (-4.4, -9.0, -4.2, -2.6)]
+        for (a, b, a2, b2) in folds:
+            F.line([(a, b), (a2, b2)], plate)
+    return [(2.7, -15.7)], None
+
+
+def _runner(F, mass, plate, pose):
+    """Lean and pitched forward, all legs, a rag streaming off its shoulders behind it, wide and low."""
+    st = F.j(2.4)
+    F.limb([(-0.4, -7.6), (-1.8 + st * 0.4, -4.0), (-3.8 + st, -1.0), (-3.0 + st, 0.0)], [1.05, 0.8, 0.55, 0.45], mass)
+    F.limb([(0.8, -7.6), (3.0 - st * 0.4, -4.6), (2.6 - st, -0.8), (3.8 - st, 0.0)], [1.05, 0.8, 0.55, 0.45], mass)
+    # The rag: three torn strips from the shoulders, each streaming on its own wave, with air between them.
+    spines = [([(1.4, -15.0), (-2.0, -15.6), (-5.2, -14.8 + F.j(0.6)), (-8.4, -15.3), (-11.8, -14.6 + F.j(1.0))], 2.6),
+              ([(1.0, -13.8), (-2.4, -13.2), (-5.6, -12.2 + F.j(0.6)), (-8.6, -12.5), (-10.8, -11.6 + F.j(1.0))], 2.2),
+              ([(0.6, -12.8), (-2.2, -11.4), (-4.8, -10.3 + F.j(0.6)), (-7.2, -10.0 + F.j(0.8))], 1.8)]
+    for (sp, w) in spines:
+        F.poly(F.ribbon(sp, w, 0.6), mass if F.lod else plate)
+    F.poly([(-1.8, -6.8), (1.4, -7.8), (3.0, -9.6), (4.6, -12.0), (5.0, -13.8), (4.0, -15.2), (2.0, -15.0),
+            (0.0, -12.8), (-1.6, -9.8)], mass)
+    F.stroke(3.8, -14.4, 5.0, -15.0, 0.9, 0.8, mass)
+    F.disc(5.6, -15.6, 1.8, 1.6, mass)
+    F.poly([(5.8, -15.2), (7.8, -14.9), (7.3, -13.8), (5.6, -13.9)], mass)
+    F.limb([(1.8, -13.6), (0.0, -11.2), (-0.8, -9.4)], [0.75, 0.6, 0.45], mass)
+    F.limb([(3.6, -13.4), (5.8, -11.6), (7.4, -10.0)], [0.75, 0.6, 0.45], mass)
+    if F.lod:
+        for (a, b) in [(8.4, -9.6), (8.0, -8.8)]:
+            F.line([(7.4, -10.0), (a, b)], mass, inside=False)
+        for (sp, w) in spines:
+            F.poly(F.ribbon(sp[:-1] + [((sp[-2][0] + sp[-1][0]) / 2.0, (sp[-2][1] + sp[-1][1]) / 2.0)], w - 1.2, 0.3),
+                   plate, inside=True)
+        F.line([(-1.6, -8.0), (1.6, -8.8)], plate)                   # the cord at its hips
+        F.line([(0.6, -13.4), (4.2, -14.6)], plate)                  # the knot at its throat
+        if F.lod > 1:
+            F.line([(-1.0, -9.4), (0.6, -12.4), (2.8, -14.6)], plate)  # the spine through the wrapping
+            F.line([(6.0, -14.6), (7.4, -14.4)], plate)              # the jaw
+    return [(6.2, -15.9)], None
+
+
+def _bruiser(F, mass, plate, pose):
+    """Wide, upright, heavy: a horned helm and pauldrons that break the line of its shoulders."""
+    st = F.j(2.4) * 0.4
+    knees = [(-3.2 - st, -3.8), (3.0 + st, -3.8)]
+    for (hip, knee, ank) in [((-2.4, -7.4), knees[0], (-3.4 - st, -0.8)), ((2.2, -7.4), knees[1], (3.4 + st, -0.8))]:
+        F.limb([hip, knee, ank], [1.8, 1.5, 1.2], mass)
+        a = ank[0]
+        F.poly([(a - 1.3, -1.6), (a + 1.6, -1.2), (a + 2.2, 0.0), (a - 1.4, 0.0)], mass)
+    arms = []
+    for sg in (-1, 1):
+        sh, el = (sg * 5.6, -14.0), (sg * 7.0 + (0.4 if sg > 0 else 0.0), -10.6)
+        fist = (sg * 6.8 + (0.9 if sg > 0 else 0.0), -7.6)
+        F.limb([sh, el, fist], [1.4, 1.2, 1.05], mass)
+        F.disc(fist[0], fist[1] + 0.3, 1.45, 1.35, mass)
+        arms.append((sh, el, fist))
+    torso = [(-3.6, -7.2), (3.8, -7.2), (4.4, -9.0), (5.6, -12.0), (5.8, -14.6), (4.4, -16.4), (2.6, -17.0),
+             (-2.2, -17.0), (-4.2, -16.4), (-5.6, -14.6), (-5.4, -12.0), (-4.2, -9.0)]
+    F.poly(torso, mass)
+    hem = F.tatter(3.2, -3.0, -4.0, 3 if F.lod else 1, 0.9)
+    F.poly([(-3.4, -7.8), (3.6, -7.8)] + hem, mass)
+    lames = [(6.4, -13.2, 1.8, 1.0), (6.1, -14.2, 2.2, 1.25), (5.5, -15.4, 2.6, 1.55)]
+    for sg in (-1, 1):
+        for (a, b, rx, ry) in lames:
+            F.disc(sg * a, b, rx, ry, mass)
+    if F.lod:
+        F.poly([(4.6, -16.6), (5.6, -19.0), (6.4, -16.4)], mass)     # a spike on the near shoulder
+        F.poly([(-4.8, -16.4), (-5.4, -18.0), (-6.2, -16.2)], mass)  # and a broken one on the far
+    F.disc(0.8, -18.0, 2.4, 2.3, mass)
+    F.poly([(1.0, -17.2), (3.3, -17.4), (2.9, -15.4), (1.4, -15.6)], mass)
+    horns = []
+    for sg in (-1, 1):
+        pts = F.bend((0.8 + sg * 1.6, -19.2), (0.8 + sg * 5.8, -19.2), (0.8 + sg * 4.4, -24.6), 10 if F.lod else 5)
+        F.limb(pts, [1.0 - 0.8 * k / float(len(pts) - 1) for k in range(len(pts))], mass)
+        horns.append(pts)
+    if F.lod:
+        # the breastplate, its seam off-centre where the body is turned, the belt under it
+        F.poly([(-3.0, -9.0), (3.4, -9.0), (4.6, -11.6), (4.8, -14.4), (3.4, -15.8), (-2.6, -15.8), (-4.6, -14.4),
+                (-4.4, -11.6)], plate, inside=True)
+        F.line([(1.4, -15.6), (1.2, -9.2)], mass)
+        F.line([(-4.4, -12.4), (-1.0, -11.8)], mass)
+        F.poly([(-4.0, -8.3), (4.2, -8.3), (4.2, -7.5), (-4.0, -7.5)], mass, inside=True)
+        F.disc(1.2, -7.9, 0.6, 0.5, plate, inside=True)
+        F.poly([(-2.8, -7.2), (3.0, -7.2)] + [(a, b - 0.9) for (a, b) in hem[1:-1]], plate, inside=True)
+        F.line([(0.4, -7.0), (0.2, -4.4)], mass)
+        # the arms in vambraces below the pauldrons, the gauntlets with their knuckles
+        for (sh, el, fist) in arms:
+            F.limb([el, fist], [0.75, 0.65], plate, inside=True)
+            F.disc(fist[0], fist[1] + 0.3, 1.0, 0.9, plate, inside=True)
+            F.line([(fist[0] - 1.0, fist[1] + 0.7), (fist[0] + 1.0, fist[1] + 0.7)], mass)
+        # the pauldrons in lames, each over the one below it with occlusion between
         for sg in (-1, 1):
-            s.disc(ox + f * sg * 5.2 * u, oy - 15.0 * u, 2.6 * u, 2.0 * u, b1)
-            limb(sg * 6.0, -14.4, sg * 7.0, -8.0, 1.2, 1.0)
-            s.disc(ox + f * sg * 7.0 * u, oy - 7.6 * u, 1.3 * u, 1.3 * u, b0)
-        s.disc(ox + f * 0.8 * u, oy - 17.8 * u, 2.2 * u, 2.2 * u, b0)
-        for sg in (-1, 1):
-            pts = [(0.8 + sg * 1.6, -18.8), (0.8 + sg * 3.6, -20.6), (0.8 + sg * 4.0, -23.6), (0.8 + sg * 2.8, -21.2),
-                   (0.8 + sg * 1.0, -19.8)]
-            s.poly(P(pts), b0)
-        eyes = [(1.6, -18.0), (2.6, -18.0)]
-    elif kind == "shielder":
-        limb(-1.4, -7.0, -2.6 - stride * 0.4, 0, 1.1, 0.9)
-        limb(1.6, -7.0, 2.6 + stride * 0.4, 0, 1.1, 0.9)
-        s.poly(P([(-3.2, -6.4), (3.0, -6.4), (3.6, -13.6), (2.2, -15.6), (-2.6, -15.4), (-3.6, -12.4)]), b0)
-        s.disc(ox + f * 0.6 * u, oy - 17.4 * u, 2.0 * u, 2.1 * u, b0)
-        s.poly(P([(0.6, -19.2), (2.8, -18.4), (0.0, -16.6)]), b0)
-        s.poly(P([(3.6, -16.4), (8.6, -17.0), (8.4, -2.2), (3.8, -1.6)]), b1)      # the plane
-        s.line(ox + f * 3.6 * u, oy - 16.4 * u, ox + f * 3.8 * u, oy - 1.6 * u, b0)
-        eyes = [(1.6, -17.6)]
-    elif kind == "caster":
-        s.poly(P([(-3.8, 0), (-1.6, -0.6), (0.6, 0.2), (3.6, 0), (2.6, -9), (2.4, -14.6), (1.4, -19.6),
-                  (-0.4, -23.4), (-1.6, -20.6), (-2.6, -14.0), (-3.0, -8.0)]), b0)
-        limb(1.8, -15.0, 4.6, -18.6, 0.7, 0.5)
-        orb_x, orb_y = ox + f * 6.0 * u, oy - 22.6 * u
-        s.disc(orb_x, orb_y, 1.5 * u, 1.5 * u, AR[3])
-        s.disc(orb_x - u * 0.4, orb_y - u * 0.4, 0.7 * u, 0.7 * u, AR[2])
-        eyes = [(0.9, -19.0)]
-    elif kind == "knight":
-        limb(-1.6, -8.4, -2.4 - stride * 0.4, 0, 1.2, 1.0)
-        limb(1.6, -8.4, 2.6 + stride * 0.4, 0, 1.2, 1.0)
-        s.poly(P([(-3.4, -7.6), (3.4, -7.6), (4.2, -15.6), (3.0, -17.6), (-3.0, -17.6), (-4.2, -15.4)]), b0)
-        s.poly(P([(-3.0, -8.6), (3.2, -8.6), (4.6, -4.6), (-4.4, -4.4)]), b1)       # tabard skirt
-        s.poly(P([(-1.8, -17.4), (2.2, -17.4), (2.4, -21.4), (0.2, -23.0), (-1.8, -21.6)]), b0)
-        limb(3.2, -15.6, 5.8, -11.4, 1.0, 0.8)
-        s.line(ox + f * 6.0 * u, oy - 0.4 * u, ox + f * 6.4 * u, oy - 27.0 * u, b0)
-        s.line(ox + f * 6.0 * u + 1, oy - 0.4 * u, ox + f * 6.4 * u + 1, oy - 27.0 * u, b0)
-        s.poly(P([(6.4, -27.0), (7.4, -24.4), (6.2, -23.6), (5.4, -24.4)]), b0)
-        eyes = [(1.2, -20.2)]
-    elif kind == "hound":
-        limb(-5.6, -6.4, -6.6 - stride * 0.5, 0, 1.0, 0.7)
-        limb(-3.4, -6.4, -3.0 + stride * 0.5, 0, 1.0, 0.7)
-        limb(3.6, -7.0, 2.6 + stride * 0.5, 0, 1.0, 0.7)
-        limb(5.4, -7.0, 6.4 - stride * 0.5, 0, 1.0, 0.7)
-        s.poly(P([(-7.4, -6.0), (-5.6, -9.4), (3.6, -10.2), (6.6, -12.0), (8.2, -10.6), (6.6, -6.6), (-5.6, -5.0)]), b0)
-        s.poly(P([(6.6, -12.0), (10.6, -11.6), (11.2, -10.2), (8.2, -9.4)]), b0)
-        s.poly(P([(6.8, -12.0), (7.8, -14.4), (8.2, -11.6)]), b0)
-        s.poly(P([(-7.4, -6.0), (-11.6, -9.6), (-7.2, -8.0)]), b0)
-        eyes = [(8.8, -11.0)]
+            for i, (a, b, rx, ry) in enumerate(lames):
+                if F.lod == 1 and i < 2:
+                    continue
+                F.disc(sg * a, b - 0.2, rx + 0.1, ry + 0.2, mass, inside=True)
+                F.disc(sg * a, b - 0.1, rx - 0.45, ry - 0.25, plate, inside=True)
+        # the helm: a dome, the brow band under it, the visor's slit, the cheek guard
+        F.disc(0.6, -18.8, 2.0, 1.4, plate, inside=True)
+        F.line([(-1.6, -17.9), (3.2, -17.9)], mass)
+        F.poly([(1.3, -16.9), (3.1, -17.0), (2.7, -15.6), (1.6, -15.7)], plate, inside=True)
+        F.line([(0.4, -17.3), (3.2, -17.3)], mass)
+        for (a, b) in knees:
+            F.disc(a, b, 1.0, 0.9, plate, inside=True)
+        if F.lod > 1:
+            for pts in horns:
+                for k in (2, 4, 6):
+                    a, b = pts[k]
+                    a2, b2 = pts[k + 1]
+                    F.line([(a, b), ((a + a2) / 2.0, (b + b2) / 2.0)], plate)
+    return [(1.8, -17.3), (2.8, -17.3)], None
+
+
+def _shielder(F, mass, plate, pose):
+    """Medium, rounded, behind a flat plane held to one side: straight edges against a curved body."""
+    st = F.j(2.4) * 0.4
+    for (hip, knee, ank) in [((-1.4, -7.0), (-2.0 - st, -3.6), (-2.6 - st, -0.6)),
+                             ((1.6, -7.0), (2.4 + st, -3.6), (2.6 + st, -0.6))]:
+        F.limb([hip, knee, ank], [1.15, 0.95, 0.8], mass)
+        a = ank[0]
+        F.poly([(a - 0.9, -1.0), (a + 1.2, -0.8), (a + 1.6, 0.0), (a - 1.0, 0.0)], mass)
+    F.limb([(-3.2, -14.2), (-4.2, -11.0), (-3.8, -8.4)], [1.0, 0.85, 0.7], mass)
+    F.disc(-3.8, -7.8, 1.0, 1.0, mass)
+    F.poly([(-2.8, -7.6), (2.6, -7.6), (3.4, -9.4), (3.8, -12.2), (3.2, -14.6), (1.8, -15.8), (-2.0, -15.8),
+            (-3.4, -14.6), (-4.0, -12.0), (-3.6, -9.4)], mass)
+    skirt = F.tatter(3.4, -3.2, -4.6, 4 if F.lod else 2, 0.6)
+    F.poly([(-2.8, -8.2), (2.8, -8.2)] + skirt, mass)
+    F.disc(-2.4, -15.0, 1.5, 1.1, mass)
+    F.disc(0.6, -17.4, 1.9, 2.0, mass)
+    F.poly([(-0.6, -18.8), (0.6, -20.2), (2.4, -19.6), (2.0, -18.4)], mass)
+    if F.lod:
+        F.poly([(-2.4, -9.0), (2.4, -9.0), (3.2, -12.0), (2.6, -14.4), (1.4, -15.2), (-1.8, -15.2), (-3.0, -14.2),
+                (-3.4, -11.8)], plate, inside=True)
+        F.line([(-3.4, -11.6), (-0.4, -10.8), (3.4, -11.6)], mass)
+        F.line([(-3.0, -8.5), (3.0, -8.5)], mass)
+        F.poly([(-2.6, -8.0), (2.8, -8.0)] + [(a, b - 0.7) for (a, b) in skirt[1:-1]], plate, inside=True)
+        F.disc(-2.4, -15.2, 1.1, 0.7, plate, inside=True)
+        F.disc(0.5, -18.0, 1.5, 1.2, plate, inside=True)
+        F.line([(-1.4, -17.3), (2.5, -17.3)], mass)
+        F.line([(2.1, -17.3), (2.2, -15.8)], plate)
+    # The plane, last and nearest: its top corner bitten out at size, a border, a boss, a split plank.
+    top = [(3.6, -16.6), (7.2, -16.9), (7.8, -15.8), (8.8, -15.9)] if F.lod else [(3.6, -16.6), (8.8, -17.0)]
+    shield = top + [(8.6, -2.2), (3.8, -1.6)]
+    F.poly(shield, plate)
+    F.line([(3.6, -16.6), (3.8, -1.6)], mass, inside=False)
+    if F.lod:
+        F.line([(4.5, -15.6), (7.0, -15.8), (7.6, -14.8), (7.9, -14.8), (7.8, -3.0), (4.6, -2.6), (4.5, -15.6)], mass)
+        F.disc(6.2, -9.2, 1.25, 1.25, mass, inside=True)
+        F.disc(6.1, -9.4, 0.6, 0.6, plate, inside=True)
+        if F.lod > 1:
+            F.line([(6.2, -15.6), (6.2, -10.6)], mass)
+            F.line([(6.2, -7.8), (6.1, -2.8)], mass)
+    return [(1.7, -17.0)], None
+
+
+def _caster(F, mass, plate, pose):
+    """Tall and narrow, a hood leaning back off its head, one arm up, the orb loose above the hand."""
+    hem = F.tatter(4.0, -5.2, -0.4, 4 if F.lod else 2, 1.1)
+    F.poly([(-0.8, -24.0), (0.6, -22.0), (1.6, -20.0), (1.0, -19.0), (1.5, -17.8), (2.2, -16.6), (2.6, -13.0),
+            (2.7, -8.4), (3.4, -3.6)] + hem +
+           [(-5.0, -2.2), (-4.0, -5.6), (-3.4, -10.0), (-3.2, -13.6), (-2.8, -17.4), (-2.2, -20.4), (-1.8, -22.4)], mass)
+    F.limb([(1.6, -15.4), (3.4, -14.8), (4.8, -18.6)], [0.85, 0.7, 0.5], mass)
+    if F.lod:
+        # the sleeve falling off the raised forearm, torn
+        F.poly([(2.4, -15.8), (4.2, -17.2), (4.8, -16.8), (4.6, -14.4), (4.2, -11.8 + F.j(0.8)), (3.7, -13.0),
+                (3.1, -11.0 + F.j(0.8)), (2.7, -13.2)], mass)
+        for (a, b) in [(4.4, -20.0), (5.0, -20.4), (5.6, -20.0)]:
+            F.line([(4.8, -18.6), (a, b)], mass, inside=False)
+        F.poly([(-0.8, -24.0), (0.6, -22.0), (1.6, -20.0), (1.0, -19.0), (1.5, -17.8), (0.2, -16.8), (-1.6, -17.0),
+                (-2.8, -17.4), (-2.2, -20.4), (-1.8, -22.4)], plate, inside=True)
+        F.disc(1.0, -19.1, 0.85, 1.2, mass, inside=True)
+        F.line([(-0.6, -23.2), (0.6, -21.6), (1.2, -20.2)], mass)
+        F.line([(-2.8, -17.2), (-1.0, -16.8), (1.0, -16.9), (2.2, -16.4)], mass)
+        F.line([(-3.0, -11.6), (2.6, -12.4)], plate)
+        folds = [(-1.6, -11.0, -3.0, -0.8), (1.0, -11.2, 1.4, -0.6)]
+        if F.lod > 1:
+            folds += [(2.2, -9.0, 3.0, -1.4), (-0.6, -11.8, -1.0, -7.4), (-3.0, -8.0, -4.4, -1.6)]
+            F.line([(2.9, -14.6), (3.6, -12.6)], plate)
+        for (a, b, a2, b2) in folds:
+            F.line([(a, b), (a2, b2)], plate)
+
+    def orb():
+        F.disc(6.2, -22.8, 1.5, 1.5, AR[3])
+        F.disc(5.8, -23.2, 0.7, 0.7, AR[2])
+    return [(1.1, -19.2)], orb
+
+
+def _knight(F, mass, plate, pose):
+    """A guard in plate under a torn cloak, a great helm with a slit in it, and the spear: a long haft, a
+    leaf blade over its lugs, a pennon under them."""
+    st = F.j(2.4) * 0.4
+    # the cloak behind him, off both shoulders, swinging back as he walks
+    cloak_hem = F.tatter(-7.6, -1.6, -1.6, 3 if F.lod else 1, 1.0)
+    cloak = [(-2.6, -17.0), (-4.6, -16.2), (-5.4, -13.4), (-5.8, -10.6), (-6.8, -6.4)] + cloak_hem + \
+            [(-1.2, -5.4), (-0.6, -12.0), (-1.0, -16.0)]
+    F.poly(cloak, mass)
+    legs = [((-1.4, -8.4), (-1.9 - st, -4.4), (-2.4 - st, -0.8)), ((1.4, -8.4), (2.1 + st, -4.4), (2.6 + st, -0.8))]
+    for (hip, knee, ank) in legs:
+        F.limb([hip, knee, ank], [1.2, 1.0, 0.85], mass)
+        a = ank[0]
+        F.poly([(a - 0.9, -1.2), (a + 1.4, -0.9), (a + 1.9, 0.0), (a - 1.0, 0.0)], mass)
+    F.limb([(-3.4, -15.4), (-4.2, -11.8), (-3.8, -8.8)], [1.0, 0.85, 0.75], mass)
+    F.disc(-3.8, -8.2, 0.95, 0.95, mass)
+    # chest broad and the waist drawn in, the tabard flaring under the belt
+    F.poly([(-2.4, -8.6), (2.4, -8.6), (2.7, -10.2), (3.6, -12.8), (4.2, -15.2), (3.6, -16.9), (-3.4, -16.9),
+            (-4.2, -15.0), (-3.4, -12.6), (-2.7, -10.2)], mass)
+    skirt = F.tatter(3.8, -3.4, -4.2, 3 if F.lod else 1, 0.9)
+    F.poly([(-2.6, -9.0), (2.8, -9.0)] + skirt, mass)
+    for (a, b, rx, ry) in [(-3.0, -16.0, 1.8, 1.3), (2.6, -16.2, 2.2, 1.5), (3.0, -15.0, 1.9, 1.3)]:
+        F.disc(a, b, rx, ry, mass)
+    helm = [(-1.7, -17.0), (2.1, -17.0), (2.6, -20.6), (1.6, -22.6), (0.0, -23.2), (-1.6, -22.2), (-2.2, -19.4)]
+    F.poly(helm, mass)
+    F.poly([(-0.6, -23.0), (0.0, -23.9), (1.2, -23.5), (1.4, -22.8)], mass)   # the comb along the crown
+    # The spear, sloped back at the march: upright, its head stood in front of the tower on the ridge
+    # behind him and was lost in it. Along the haft (d) and across it (p): the socket, the lugs, the blade.
+    foot, top = (7.0, 0.2), (3.6, -28.4)
+    d = _unit((top[0] - foot[0], top[1] - foot[1]))
+    p = (-d[1], d[0])
+
+    def at(t, w=0.0):
+        return (top[0] + d[0] * t + p[0] * w, top[1] + d[1] * t + p[1] * w)
+    grip = (foot[0] + (top[0] - foot[0]) * 12.8 / 28.6, -12.6)
+    F.limb([(3.2, -15.4), (4.0, -11.6), grip], [1.0, 0.85, 0.8], mass)
+    F.line([foot, top], mass, inside=False)
+    x0, y0 = F.T(*foot)
+    x1, y1 = F.T(*top)
+    F.s.line(x0 + F.f, y0, x1 + F.f, y1, mass)
+    F.stroke(at(-1.4)[0], at(-1.4)[1], at(0.2)[0], at(0.2)[1], 0.45, 0.45, mass)
+    F.line([at(-0.4, -1.0), at(-0.4, 1.0)], mass, inside=False)
+    F.poly([at(0.0), at(1.2, 0.95), at(4.0), at(1.2, -0.85)], mass)
+    F.disc(grip[0], grip[1], 1.0, 1.0, mass)
+    if F.lod:
+        a, b = at(-0.6)
+        F.poly([(a, b), (a - 3.4, b + 0.4 + F.j(0.4)), (a - 6.2, b + 0.6 + F.j(0.6)), (a - 4.4, b + 1.5),
+                (a - 6.4, b + 2.8 + F.j(0.6)), (a - 3.0, b + 2.4), at(-2.4)], mass)
+        # the cloak's folds, falling from the shoulder
+        for (a, b, a2, b2) in [(-4.4, -15.0, -6.2, -3.0), (-2.6, -15.4, -3.4, -4.8)]:
+            F.line([(a, b), (a2, b2)], plate)
+        # the breastplate and its seam, the belt, the tabard below it torn at one corner
+        F.poly([(-2.2, -9.4), (2.2, -9.4), (2.8, -11.4), (3.6, -14.0), (3.0, -16.0), (-2.6, -16.0), (-3.6, -14.6),
+                (-2.8, -11.4)], plate, inside=True)
+        F.line([(0.9, -15.8), (0.7, -9.6)], mass)
+        F.line([(-3.2, -13.2), (-0.4, -12.6), (3.4, -13.0)], mass)
+        F.poly([(-3.0, -9.6), (3.0, -9.6), (3.0, -8.8), (-3.0, -8.8)], mass, inside=True)
+        F.poly([(-2.2, -8.4), (2.6, -8.4)] + [(a, b - 0.8) for (a, b) in skirt[1:-1]], plate, inside=True)
+        F.line([(0.6, -8.4), (0.4, -4.8)], mass)
+        # the near pauldron's lames, the helm's crown and face plate with the slit between
+        F.disc(2.6, -16.4, 1.7, 1.0, plate, inside=True)
+        F.disc(3.0, -15.0, 1.6, 0.9, mass, inside=True)
+        F.disc(3.0, -15.2, 1.3, 0.6, plate, inside=True)
+        F.poly([(-1.4, -21.0), (2.3, -21.0), (1.5, -22.3), (0.0, -22.8), (-1.3, -22.0)], plate, inside=True)
+        F.poly([(0.3, -19.9), (2.4, -19.9), (2.1, -17.5), (0.5, -17.5)], plate, inside=True)
+        F.line([(-1.8, -20.4), (2.6, -20.4)], mass)
+        for (_hip, (a, b), _ank) in legs:
+            F.disc(a, b, 0.75, 0.7, plate, inside=True)
+        F.line([at(0.4, -0.3), at(3.0, -0.2)], plate)
+        F.line([(a, b + 0.8), (a - 3.6, b + 1.2)], plate)
+        if F.lod > 1:
+            F.line([(0.9, -19.2), (0.9, -18.8)], mass)
+            F.line([(1.7, -19.2), (1.7, -18.8)], mass)
+            for (_hip, (a, b), (a2, b2)) in legs:
+                F.line([(a - 0.2, b + 1.0), (a2, b2 - 0.6)], plate)
+    return [(1.2, -20.4), (2.0, -20.4)], None
+
+
+def _hound_parts(F, mass, plate, pose):
+    """His hound: a deep chest and a high tuck, hind legs that bend back at the hock, hackles along the back,
+    a long head and a sickle tail. pose (sniffing_hound): stride, the head's turn and drop, the tail's angle
+    and the nose's twitch; otherwise it walks."""
+    pose = pose or {}
+    st = pose.get("stride", F.j(2.4))
+    ang, drop, ta, tw = pose.get("head", 0.0), pose.get("drop", 0.0), pose.get("tail", 0.0), pose.get("twitch", 0.0)
+    pivot = (6.8, -10.4)
+
+    def H(a, b):
+        rx, ry = rot(a - pivot[0], b - pivot[1], ang)
+        return (pivot[0] + rx + tw, pivot[1] + ry + drop)
+    hr = [1.3, 0.8, 0.55, 0.5]
+    fr = [1.0, 0.7, 0.55, 0.5]
+    F.limb([(-5.2, -7.6), (-3.8 - st * 0.3, -4.8), (-6.0 - st * 0.5, -2.2), (-5.4 - st * 0.5, 0.0)], hr, mass)
+    F.limb([(3.8, -8.0), (3.6, -5.4), (3.8 + st * 0.5, -1.4), (4.6 + st * 0.5, 0.0)], fr, mass)
+    F.limb([(-5.8, -7.4), (-4.6 + st * 0.3, -4.6), (-7.0 + st * 0.5, -2.0), (-6.2 + st * 0.5, 0.0)], hr, mass)
+    F.limb([(4.6, -8.0), (4.6, -5.4), (4.6 - st * 0.5, -1.4), (5.4 - st * 0.5, 0.0)], fr, mass)
+    base = (-7.6, -8.0)
+    tail = [base] + [(base[0] + rx, base[1] + ry) for (rx, ry) in [rot(-2.8, -1.6, ta), rot(-4.4, 0.6, ta)]]
+    n = 6 if F.lod else 3
+    F.limb(F.bend(tail[0], tail[1], tail[2], n), [0.7 - 0.45 * k / float(n) for k in range(n + 1)], mass)
+    back = [(-7.8, -8.4), (-5.6, -9.2), (-3.0, -10.0), (0.0, -9.8), (3.0, -10.6), (5.4, -11.6)]
+    F.poly(back + [(6.8, -12.0), (7.6, -10.8), (6.6, -9.0), (5.6, -6.6), (3.4, -6.0), (0.6, -7.0), (-2.4, -8.2),
+                   (-4.4, -7.4), (-6.2, -6.2), (-7.8, -6.8)], mass)
+    if F.lod:
+        # the hackles: a short rough ridge of fur up the back from the loin to the withers
+        for k in range(9):
+            t = (k + 0.5) / 9.0
+            a = -2.6 + 7.6 * t
+            b = -9.9 - 1.6 * t
+            F.poly([(a - 0.35, b + 0.4), (a - 0.7 + F.j(0.3), b - 0.35 - 0.35 * F.rng.random()), (a + 0.35, b + 0.3)],
+                   mass)
+    F.limb([(5.6, -9.8), (pivot[0] + 0.4, pivot[1] + drop * 0.7)], [1.6, 1.3], mass)
+    F.poly([H(a, b) for (a, b) in [(6.2, -12.6), (7.6, -13.0), (9.0, -12.4), (11.6, -11.4), (11.4, -10.4),
+                                   (9.6, -10.0), (8.0, -9.4), (6.4, -9.8)]], mass)
+    F.poly([H(a, b) for (a, b) in [(7.2, -12.8), (7.0, -14.4), (8.2, -12.6)]], mass)
+    if F.lod:
+        F.line([(3.4, -10.2), (4.2, -8.4), (3.8, -6.6)], plate)            # the shoulder
+        F.line([(-4.4, -9.4), (-3.6, -7.6), (-4.0, -5.6)], plate)          # the thigh
+        F.line([H(8.0, -12.2), H(11.2, -11.2)], plate)                    # the bridge of the muzzle
+        if F.lod > 1:
+            F.line([(-0.6, -9.2), (0.4, -7.6)], plate)                    # the flank's fur
+            F.line([(1.2, -9.6), (2.0, -7.4)], plate)
+            F.line([H(11.0, -10.6), H(9.0, -10.2)], plate)                # the lip
+    return [H(8.9, -11.0)], None
+
+
+_KINDS = {"swarmer": _swarmer, "runner": _runner, "bruiser": _bruiser, "shielder": _shielder, "caster": _caster,
+          "knight": _knight, "hound": _hound_parts}
+
+
+def creature(c, kind, cx, yb, h, facing=1, body=None, rim=None, eye=True, seed=0, light=None, pose=None):
+    """One of his: the taxonomy's class attachment (.ai/art-direction.md section 4) - the swarmer's cowl,
+    the runner's streaming rag, the bruiser's horns and pauldrons, the shielder's flat plane, the caster's
+    loose orb, the knight's spear, the hound's line - on a body drawn with joints, weight and torn edges,
+    and every one wearing the same mark, one or two pixels of cold arcane, the only light it has of its
+    own (.ai/world-and-tone.md). body: [the mass, the plates inside it]. light: the point in the frame his
+    light comes from (the eclipse, the tower); the rim and the plates' caught edges face it."""
+    mass, plate = body or [OCC, OCC]
+    F = _Fig(h, facing, seed)
+    eyes, after = _KINDS[kind](F, mass, plate, pose)
+    toward = (-0.7, -0.7)
+    if light is not None:
+        toward = (light[0] - cx, light[1] - (yb - h * 0.6))
+    if F.lod and plate != mass:
+        # Caught edges first, then the far side let go: the other way round, every hole the dither
+        # leaves in a plate would catch the light along its own edge.
+        caught = V[3] if F.lod > 1 else V[4]
+        catch_light(F.s, [plate], toward, caught, base=mass)
+        form_light(F.s, [plate, caught], toward, F.T(0, -11.0), 11.0 * F.u, deep=mass)
     if rim:
-        edge_light(s, rim, (-0.7, -0.7))
+        # One pixel, as the wizards beside them are rimmed: a second stop inside it made the guards
+        # brighter than the wizards they lead, and the caster in the hiding brighter than the player.
+        rim_light(F.s, rim, toward)
+    if after:
+        after()
     if eye:
         # Small ones get the arcane row's lit stop alone: massed, its near-white hi read as a sky
         # full of stars rather than as eyes.
-        small = u < 1.3
+        small = F.u < 1.3
         for i, (ex, ey) in enumerate(eyes):
-            s.set(ox + f * ex * u, oy + ey * u, EYE[1] if small or i else EYE[0])
-            if u >= 1.6 and len(eyes) == 1:
-                s.set(ox + f * ex * u + f, oy + ey * u, EYE[1])
-    over(c, s, cx - ox, yb - oy)
+            F.dot(ex, ey, EYE[1] if small or i else EYE[0], inside=False)
+            if F.u >= 1.6 and len(eyes) == 1:
+                x, y = F.T(ex, ey)
+                F.s.set(x + F.f, y, EYE[1])
+    over(c, F.s, cx - F.ox, yb - F.oy)
 
 
 # --------------------------------------------------------------------------- the dark wizard
@@ -671,23 +1138,40 @@ def dark_wizard(c, cx, yb, h):
                  (4.4, -57.0), (3.4, -50.0)]):
         s.poly_shade(P(pts), [V[4], OCC], ang=1.5708, gamma=0.8)
     # --- the cloak: shoulders to the ground, the raised arm's sleeve hanging off its left -----
+    # The hem torn into tongues of uneven length that run on into the ground as his shadow (Eric,
+    # 2026-11-03, of his creatures and this shape with them: "blocky"); a zigzag of even teeth read as a
+    # sawn edge.
     hem = []
     rng = random.Random(64)
     for i in range(23):
         t = i / 22.0
-        hem.append((20.4 - 40.6 * t, (1.6 if i % 2 else -0.6) + rng.random() * 0.9))
+        tongue = i % 3 == 1 or (i % 2 and rng.random() < 0.4)
+        hem.append((20.4 - 40.6 * t + (rng.random() - 0.5) * 0.8,
+                    (2.0 + rng.random() * 1.6) if tongue else (-0.8 + rng.random() * 0.9)))
     # Sloped shoulders and sides that bow outward to the hem: drawn as straight lines from a flat
-    # shoulder line it read as a cabinet with a head on it.
+    # shoulder line it read as a cabinet with a head on it. Drawn as one smooth bow it still read as a
+    # cone; the sides now step out where the cloth falls in folds, so the rim breaks into lengths down
+    # them as it does down a hanging cloak.
     cloak = P([(-4.6, -48.4), (4.6, -48.4), (7.6, -47.2), (9.8, -45.4), (11.0, -42.6), (11.6, -38.0),
-               (12.4, -30.0), (13.8, -20.0), (15.8, -10.6), (18.2, -4.4), (20.0, -1.4)] + hem +
-              [(-19.0, -1.8), (-16.8, -6.8), (-14.8, -14.6), (-13.2, -23.4), (-12.0, -31.4),
-               (-11.2, -38.6), (-10.6, -42.6), (-9.4, -45.4), (-7.4, -47.2)])
+               (12.0, -33.0), (12.6, -27.6), (13.4, -22.0), (14.6, -17.2), (14.2, -14.8), (15.6, -11.2),
+               (16.6, -7.8), (16.3, -6.2), (18.0, -3.8), (20.0, -1.4)] + hem +
+              [(-19.0, -1.8), (-17.2, -4.6), (-17.4, -6.4), (-15.8, -9.8), (-15.0, -14.6), (-14.4, -16.8),
+               (-13.6, -20.6), (-13.2, -23.4), (-12.0, -31.4), (-11.2, -38.6), (-10.6, -42.6), (-9.4, -45.4),
+               (-7.4, -47.2)])
     s.poly_shade(cloak, [V[3], V[4], V[4], OCC], ang=0.95, gamma=0.72)
+    # A mantle over the shoulders, torn along its lower edge into points - the collar's points again,
+    # lower down - standing out past the cloak on his open side and only a little under the raised arm,
+    # where the air between sleeve and side has to stay clear.
+    for pts in ([(4.0, -48.0), (7.6, -47.4), (10.4, -45.8), (12.6, -43.0), (13.8, -39.6), (14.8, -35.2),
+                 (13.4, -37.2), (13.0, -33.6), (11.8, -36.4), (11.2, -34.8), (10.2, -38.0), (6.0, -40.0)],
+                [(-4.0, -48.0), (-7.4, -47.4), (-9.6, -45.6), (-11.0, -43.0), (-11.8, -40.2), (-12.6, -36.8),
+                 (-11.4, -38.4), (-10.8, -36.0), (-10.0, -39.0), (-6.0, -40.0)]):
+        s.poly_shade(P(pts), [V[3], V[4], OCC], ang=0.95, gamma=0.72)
     # The sleeve of the raised arm: a wing of cloth hanging off the forearm, with clear air
     # between it and his side. Joined to the body it read as a stick with a sliver beside it.
     sleeve = P([(-9.6, -46.4), (-12.8, -48.8), (-16.6, -51.8), (-19.6, -53.0), (-20.6, -49.0),
-                (-20.4, -43.0), (-19.0, -36.8), (-17.2, -32.6), (-16.4, -36.6), (-15.0, -41.4),
-                (-12.6, -44.4), (-10.4, -44.0)])
+                (-20.4, -43.0), (-20.0, -38.4), (-19.8, -33.4), (-18.8, -36.2), (-17.6, -31.2), (-16.8, -35.2),
+                (-16.0, -33.6), (-15.4, -38.6), (-15.0, -41.4), (-12.6, -44.4), (-10.4, -44.0)])
     s.poly_shade(sleeve, [V[3], V[4], OCC], ang=0.4, gamma=0.8)
     for (a2, b2) in [(-19.6, -40), (-18.2, -35.4), (-16.0, -40.6)]:
         s.line(ox - 19.4 * u, oy - 51.8 * u, ox + a2 * u, oy + b2 * u, V[3])
@@ -785,6 +1269,10 @@ def dark_wizard(c, cx, yb, h):
     edge_light(s, DK[2], (-1, 0), box=(0, 0, ox + 1 * u, oy - 30 * u))
     edge_light(s, DK[2], (1, 0), box=(ox + 3 * u, 0, s.w, shoulder))
     edge_light(s, DK[3], (1, 0), box=(ox + 3 * u, shoulder, s.w, oy - 20 * u))
+    # The black sun's last reach, its dimmest stop, down both sides to the knee: without it the folds his
+    # sides step out at were lost against the dark ground, and below the waist he was a cone again.
+    edge_light(s, DK[3], (1, 0), box=(ox + 3 * u, oy - 20 * u, s.w, oy - 8 * u))
+    edge_light(s, DK[3], (-1, 0), box=(0, oy - 30 * u, ox - 3 * u, oy - 8 * u))
     over(c, s, cx - ox, yb - oy)
     return (cx - ox + orb[0], yb - oy + orb[1], u)
 
@@ -1143,7 +1631,7 @@ def p_tide():
         x = front_x(y) + 8 + i * 30
         # Rimmed in stone hi, as the locked wizards' silhouettes are (.ai/side-events.md): against
         # the dark mass behind them the full soft rim drew an outline round each.
-        creature(fore, kind, x, y, hgt, facing=-1, body=[OCC, S[4]], rim=S[0], seed=80 + i)
+        creature(fore, kind, x, y, hgt, facing=-1, body=[OCC, S[4]], rim=V[2], seed=80 + i, light=(tx, ty - 78))
     heath(fore, 640, 840, 500, 23, [(OCC, OCC), (OCC, S[4])], scale=1.8)
     layers = dict(back=back, mid=mid, fore=fore)
     finish(layers, 0.75)
@@ -1197,7 +1685,7 @@ def p_taken():
             wrists.append(front or (x + 1, yb - hgt * 0.42))
         else:
             hgt = {"bruiser": 74, "knight": 86, "shielder": 66, "caster": 78, "swarmer": 56, "runner": 58}[kind]
-            creature(mid, kind, x, yb, hgt, facing=1, body=[OCC, S[4]], rim=DK[3], seed=700 + i)
+            creature(mid, kind, x, yb, hgt, facing=1, body=[OCC, S[4]], rim=DK[3], seed=700 + i, light=(sx_, sy_))
         x -= 44 + rng.random() * 10
     # the chain that binds them, one line of his light from wrist to wrist
     for a, b in zip(wrists, wrists[1:]):
@@ -1229,50 +1717,21 @@ MISSED_FPS = 8
 # The panel's hold in Prologue.cs (Beats, "missed"); the frames cover it, the last held after.
 MISSED_SECONDS = 5.4
 MISSED_COLUMNS = 4
+# His light in the hiding: the black sun over the tower on the horizon (p_missed, tower(back, 694, 396, 34)).
+# The searchers are rimmed from it and nothing else; the row of stones and the player stand in the key.
+MISSED_LIGHT = (694, 359)
 
 
-def sniffing_hound(c, x, yb, h, facing, head, stride, twitch=0.0, rim=None):
+def sniffing_hound(c, x, yb, h, facing, head, stride, twitch=0.0, rim=None, light=None):
     """His hound, the tide's (creature "hound") posed to search: head is -1 with its nose to the
     ground, 0 level, +1 lifted to the air; stride swings the legs; twitch nudges the nose."""
-    u = h / 20.0
-    s = Cv(int(34 * u) + 8, int(28 * u) + 8)
-    ox, oy = s.w // 2, int(25 * u) + 3
-    f = facing
-
-    def Q(px_, py_):
-        return (ox + f * px_ * u, oy + py_ * u)
-
-    def limb(a, b, a2, b2, r0, r1):
-        sk._stroke(s, ox + f * a * u, oy + b * u, ox + f * a2 * u, oy + b2 * u, max(0.5, r0 * u),
-                   max(0.5, r1 * u), OCC)
-    limb(-5.6, -6.4, -6.6 - stride * 0.5, 0, 1.0, 0.7)
-    limb(-3.4, -6.4, -3.0 + stride * 0.5, 0, 1.0, 0.7)
-    limb(3.6, -7.0, 2.6 + stride * 0.5, 0, 1.0, 0.7)
-    limb(5.4, -7.0, 6.4 - stride * 0.5, 0, 1.0, 0.7)
-    s.poly([Q(*q) for q in [(-7.4, -6.0), (-5.6, -9.4), (3.6, -10.2), (6.6, -11.4), (7.6, -9.6), (6.6, -6.6),
-                            (-5.6, -5.0)]], OCC)
-    # The tail hangs while it works the ground and comes up when it has something.
-    ta = 0.5 if head < 0 else (-0.3 if head > 0 else 0.0)
-    tail = [(-7.4, -6.0)] + [(-7.4 + rx, -6.0 + ry) for (rx, ry) in
-                             [rot(-4.2, -3.6, ta), rot(0.2, -2.0, ta)]]
-    s.poly([Q(*q) for q in tail], OCC)
-    # The head turns about the top of the neck: down to the ground, up to the air.
-    pivot = (6.8, -10.4)
-    ang = 0.95 if head < 0 else (-0.4 if head > 0 else 0.0)
-    drop = 2.6 if head < 0 else 0.0
-
-    def Hd(px_, py_):
-        rx, ry = rot(px_ - pivot[0], py_ - pivot[1], ang)
-        return Q(pivot[0] + rx + twitch, pivot[1] + ry + drop)
-    limb(5.6, -9.8, pivot[0] + 0.4, pivot[1] + drop * 0.7, 1.6, 1.3)
-    s.poly([Hd(*q) for q in [(6.4, -12.0), (10.6, -11.6), (11.2, -10.2), (8.2, -9.2), (6.2, -9.6)]], OCC)
-    s.poly([Hd(*q) for q in [(6.8, -12.0), (7.8, -14.4), (8.2, -11.6)]], OCC)
-    if rim:
-        edge_light(s, rim, (-0.7, -0.7))
-    ex, ey = Hd(8.9, -11.0)
-    s.set(ex, ey, EYE[0])
-    s.set(ex + f, ey, EYE[1])
-    over(c, s, x - ox, yb - oy)
+    # The tail hangs while it works the ground and comes up when it has something. The head turns about
+    # the top of the neck: down to the ground, up to the air.
+    pose = {"stride": stride, "twitch": twitch,
+            "tail": 0.5 if head < 0 else (-0.3 if head > 0 else 0.0),
+            "head": 0.95 if head < 0 else (-0.4 if head > 0 else 0.0),
+            "drop": 2.6 if head < 0 else 0.0}
+    creature(c, "hound", x, yb, h, facing=facing, body=[OCC, S[4]], rim=rim, seed=53, light=light, pose=pose)
 
 
 def rot(x, y, a):
@@ -1419,13 +1878,13 @@ def p_missed():
         # horizon at 392 to his feet at 538): the two small ones far back, the caster in the gap, the
         # hound a few strides behind him.
         creature(c, "swarmer", 318, 458, 30, facing=_facing_at(t, [0.7, 2.4, 4.0], 1), body=[OCC, S[4]],
-                 rim=S[2], seed=31)
+                 rim=V[3], seed=31, light=MISSED_LIGHT)
         creature(c, "swarmer", 648, 452, 28, facing=_facing_at(t, [1.5, 3.0, 4.5], -1), body=[OCC, S[4]],
-                 rim=S[2], seed=37)
+                 rim=V[3], seed=37, light=MISSED_LIGHT)
         creature(c, "caster", 414, 502, 58, facing=_facing_at(t, [1.1, 3.3], -1), body=[OCC, S[4]],
-                 rim=S[1], seed=41)
+                 rim=V[2], seed=41, light=MISSED_LIGHT)
         hx, head, stride, twitch = _hound_at(t)
-        sniffing_hound(c, hx, 510, 54, -1, head, stride, twitch, rim=S[0])
+        sniffing_hound(c, hx, 510, 54, -1, head, stride, twitch, rim=V[2], light=MISSED_LIGHT)
 
     t_of = frame_t(0.9, CY + 60)
     x0, y0, x1, y1 = MISSED_BOX
