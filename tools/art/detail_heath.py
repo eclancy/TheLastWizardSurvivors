@@ -12,14 +12,16 @@ than as stone:
                   It grows where the ground is wet - on the peat and at the tarns' edges.
   lichen_stones   loose granite, speckled, with a crust of lichen on the lit side.
 
-The foliage pass (2026-11-04, .ai/terrain.md section 13) added four more, laid as clutter by
+The foliage pass (2026-11-04, .ai/terrain.md section 13) added five more, laid as clutter by
 scripts/Foliage.BrokenCircle.cs rather than by GroundDetail's table:
 
   moor_grass      grass combed east by the wind - the one place the wind is drawn, since the detail
                   layer is never mirrored.
   bilberry        low leaves and dusky berries under the gorse at a drift's edge.
   lichen_specks   flat lichen rosettes in the open and on the granite.
-  clitter         angular granite chips on a drift's granite crown, below its tor.
+  clitter         broken granite of every size, rounded by the weather, spilt down a drift from its tor.
+  rock_hump       bedrock breaking the heather, from a knuckle to most of a cell, thicker toward the tor:
+                  the crown's rock, since a floor of slabs under it read as paving.
 
 The ground_detail.py rules hold: material tones only, nothing emissive, the brightest stop a `lit`
 and never a `hi` plane, and nothing round, bright and alone - the XP orbs are lime, lilac and pale
@@ -217,27 +219,79 @@ def lichen_specks(c, r):
         c.set(x - 1, y - 1, LI[2])
 
 
+# Granite lit to dark, as the standing stones and the tors are drawn (props_heath.GRANITE).
+GRANITE = [SK[3], SK[4], ST[0], ST[1], ST[2]]
+
+
+def stone(c, r, x, y, rx, ry, sunk=0.0):
+    """One weathered stone lying in the heather: an outline that wanders (no two alike), lit on its
+    upper-left shoulder and its top, turning into shade and occ underneath, with granite's feldspar
+    fleck. `sunk` buries that share of its height under the turf, so a crown's rock is half in the
+    ground rather than set on it. Heather sprigs grow up round its foot."""
+    wob = [(k, 0.12 / k * (0.4 + r.f()), r.f() * 6.283) for k in (2, 3, 5)]
+    pts = {}
+    cut = y + ry * (1.0 - 2.0 * sunk)
+    for yy in range(int(y - ry) - 1, int(y + ry) + 2):
+        if yy > cut:
+            continue
+        for xx in range(int(x - rx) - 2, int(x + rx) + 3):
+            dx, dy = (xx + 0.5 - x) / rx, (yy + 0.5 - y) / ry
+            a = math.atan2(dy, dx)
+            rad = 1.0 + sum(am * math.sin(k * a + ph) for (k, am, ph) in wob)
+            d = math.sqrt(dx * dx + dy * dy) / rad
+            if d <= 1.0:
+                pts[(xx, yy)] = (dx / rad, dy / rad)
+    for (xx, yy) in sorted(pts):
+        nx, ny = pts[(xx, yy)]
+        v = 0.3 + (-0.55 * nx - 0.45 * ny) * 0.5 + max(0.0, -ny - 0.3) * 0.5
+        tone = GRANITE[max(0, min(4, int((1.0 - v) * 4.0 + 0.5)))]
+        if (xx * 7 + yy * 3) % 11 == 0:
+            tone = SK[4] if nx < 0.3 else ST[0]                  # feldspar
+        if (xx + 1, yy) not in pts or (xx, yy + 1) not in pts:
+            if nx * 0.5 + ny * 0.86 > 0.2:
+                tone = OCC if ny > 0.3 else ST[2]
+        c.set(xx, yy, tone)
+    # the contact, and the turf round the foot
+    bottom = {}
+    for (xx, yy) in pts:
+        bottom[xx] = max(bottom.get(xx, -99), yy)
+    for xx in sorted(bottom):
+        c.set(xx + 1, bottom[xx] + 1, OCC)
+        if r.f() < 0.3:
+            c.set(xx, bottom[xx], VE[4] if r.f() < 0.6 else VI[2])
+
+
 def clitter(c, r):
-    """Clitter: the granite the frost has prised off a tor, lying where it fell on the rise below it -
-    two to four angular chips, lit on their upper-left faces, each on its contact shadow."""
-    cx, cy = spot(r, 11)
-    for k in range(r.i(2, 4)):
-        x, y = cx + r.i(-9, 9), cy + r.i(-7, 7)
-        w = r.i(3, 5) if k == 0 else r.i(2, 3)
-        hgt = r.i(2, 3)
-        skew = r.i(-1, 1)
-        for dx in range(-w, w + 2):
-            c.set(x + dx, y + 1, OCC)
-        for dy in range(-hgt, 1):
-            sh = (skew * (dy + hgt)) // max(1, hgt)
-            for dx in range(-w + sh + (1 if dy == -hgt else 0), w + 1 + sh):
-                if dy == -hgt or dx <= -w + sh + 1:
-                    tone = SK[4] if (dx + k) % 3 else ST[0]
-                elif dy == 0 or dx == w + sh:
-                    tone = ST[2]
-                else:
-                    tone = ST[1] if r.f() > 0.18 else ST[0]
-                c.set(x + dx, y + dy, tone)
+    """Clitter: the granite the frost has prised off a tor, spilt down the drift below it - two to five
+    broken stones of very different sizes, rounded by the weather, the smaller ones half sunk. It was
+    a run of flat angular chips, which read as laid setts."""
+    cx, cy = spot(r, 12)
+    for k in range(r.i(2, 5)):
+        x, y = cx + r.i(-10, 10), cy + r.i(-8, 8)
+        big = k == 0
+        rx = (3.5 + r.f() * 3.0) if big else (1.6 + r.f() * 2.2)
+        stone(c, r, x, y, rx, rx * (0.6 + r.f() * 0.25), sunk=0.0 if big else 0.3 * r.f())
+
+
+def rock_hump(c, r):
+    """Bedrock breaking the heather on a drift: a hump of granite, sometimes two run together, still
+    mostly under the turf - from a knuckle the size of a fist to one most of a cell across - lichened,
+    with heather over its edges. The crown's rock, thickest toward the tor, in place of a floor of
+    slabs (which read as paving)."""
+    cx, cy = spot(r, 14)
+    size = r.f()
+    rx = 4.0 + size * size * 13.0
+    ry = rx * (0.38 + r.f() * 0.18)
+    stone(c, r, cx, cy, rx, ry, sunk=0.25 + r.f() * 0.15)
+    if size > 0.4 and r.f() < 0.6:
+        side = 1 if r.f() < 0.5 else -1
+        stone(c, r, cx + side * rx * 0.8, cy + r.i(0, 2), rx * 0.5, ry * 0.7, sunk=0.35)
+    for k in range(r.i(1, 3)):
+        lx, ly = cx + r.i(-int(rx * 0.5), int(rx * 0.3)), cy - int(ry * 0.4) + r.i(-1, 1)
+        if c.get(lx, ly)[3]:
+            c.set(lx, ly, LI[2])
+            c.set(lx + 1, ly, LI[3])
+            c.set(lx, ly + 1, LI[3])
 
 
 DETAIL_SETS = [
@@ -247,5 +301,6 @@ DETAIL_SETS = [
     ("moor_grass", moor_grass, 4),
     ("bilberry", bilberry, 3),
     ("lichen_specks", lichen_specks, 3),
-    ("clitter", clitter, 3),
+    ("clitter", clitter, 4),
+    ("rock_hump", rock_hump, 5),
 ]

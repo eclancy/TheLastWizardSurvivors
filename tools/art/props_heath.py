@@ -276,45 +276,64 @@ THORN = [VE[3], VE[3], VE[4], OCC]
 BARK = [LN[1], LN[2], LN[3], LN[4], OCC]
 
 
-def granite_block(c, x0, y0, x1, y1, seed, top_rows=3, round_frac=0.38):
-    """One pillow of granite: a block rounded by the weather, its top face seen a little from above and
-    lit, its left face lit, its right face and its undercut in shade, granite's feldspar and mica
-    speckled through it. The outline's lower-right edge is a joint in occ: where it sits on another
-    block, or on the ground, that seam is what makes a tor a stack and not a lump."""
-    w, h = x1 - x0, y1 - y0
-    r = max(2.0, min(w, h) * round_frac)
+def pillow(c, cx, cy, rx, ry, seed, tilt=0.0, p=None):
+    """One woolpack of granite: a pillow the weather has rounded out of a jointed block, the way a
+    Dartmoor tor is built - wider than it is tall, its top turned to the sky, its outline wandering so
+    that no two are alike (three low harmonics of the seed), sheared by `tilt` so a pile can lean. Lit
+    from the upper left: the top and the left shoulder catch the key, the underside turns away into
+    occ where it rests on the pillow below. Granite's feldspar and mica speckle it, and a mottle three
+    pixels across keeps a face from being one flat tone. Returns its pixels, {(x, y): (nx, ny)}.
 
-    def inside(x, y):
-        if x < x0 or x > x1 or y < y0 or y > y1:
-            return False
-        dx = max(x0 + r - x, 0.0, x - (x1 - r))
-        dy = max(y0 + r - y, 0.0, y - (y1 - r))
-        return dx * dx + dy * dy <= r * r
+    It replaced a rounded rectangle (granite_block), which read as a laid brick: a joint is now
+    wherever two pillows meet, never a straight line."""
+    rnd = T.Rng(seed)
+    harm = [(k, (0.13 / k) * (0.5 + rnd.random()), rnd.random() * 6.283) for k in (2, 3, 5, 7)]
+    # a little flatter on top and underneath than an ellipse: a pillow, not a ball, and not a box
+    p = p or (2.0 + rnd.random() * 0.5)
+    pts = {}
+    for y in range(int(cy - ry * 1.3) - 1, int(cy + ry * 1.3) + 2):
+        for x in range(int(cx - rx * 1.4) - 2, int(cx + rx * 1.4) + 3):
+            dy = (y + 0.5 - cy) / ry
+            dx = (x + 0.5 - cx) / rx - tilt * dy
+            a = math.atan2(dy, dx)
+            r = 1.0 + sum(amp * math.sin(k * a + ph) for (k, amp, ph) in harm)
+            d = (abs(dx) ** p + abs(dy) ** p) ** (1.0 / p) / r
+            if d <= 1.0:
+                pts[(x, y)] = (dx / r, dy / r, d)
+    for (x, y) in sorted(pts):
+        nx, ny, d = pts[(x, y)]
+        nz = math.sqrt(max(0.0, 1.0 - d * d))
+        sky = max(0.0, -ny - 0.3)                               # the top, turned up to the key
+        v = 0.31 + (-0.55 * nx - 0.45 * ny) * 0.5 + sky * 0.55 + nz * 0.08
+        v += (T.hash2(x // 3, y // 3, seed + 5) - 0.5) * 0.14
+        hv = T.hash2(x, y, seed)
+        if hv < 0.06:
+            v += 0.2                                            # feldspar
+        elif hv < 0.11:
+            v -= 0.2                                            # mica
+        tone = T.band(GRANITE, v, x, y, 0.3)
+        if any((x + ex, y + ey) not in pts for (ex, ey) in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+            if nx * 0.5 + ny * 0.86 > 0.2:
+                tone = OCC if ny > 0.3 else GRANITE[4]          # turning under, away from the key
+            elif -nx * 0.6 - ny * 0.8 > 0.35 and (x + y) % 3:
+                tone = GRANITE[0]                               # the lit shoulder
+        c.set(x, y, tone)
+    return dict((k, (v[0], v[1])) for (k, v) in pts.items())
 
-    for y in range(y0, y1 + 1):
-        for x in range(x0, x1 + 1):
-            if not inside(x, y):
-                continue
-            u = (x - x0) / float(max(1, w))
-            t = (y - y0) / float(max(1, h))
-            v = 0.74 - 0.52 * u - 0.22 * t
-            if y < y0 + top_rows:
-                v += 0.2
-            if y > y1 - 2:
-                v -= 0.18
-            hv = T.hash2(x, y, seed)
-            if hv < 0.07:
-                v += 0.22                                   # feldspar
-            elif hv < 0.13:
-                v -= 0.22                                   # mica
-            tone = T.band(GRANITE, v, x, y, 0.25)
-            if not inside(x + 1, y + 1) and (not inside(x + 1, y) or not inside(x, y + 1)):
-                tone = OCC if (u > 0.3 or t > 0.5) else GRANITE[3]
-            elif not inside(x - 1, y) or not inside(x, y - 1):
-                if u < 0.6 and t < 0.6:
-                    tone = GRANITE[0] if (x + y) % 3 else GRANITE[1]
-            c.set(x, y, tone)
-    return inside
+
+def overhang(c, upper, below):
+    """The shadow an overhanging pillow casts on the top of the one it rests on: the two rows under its
+    underside, a pixel to the right of it (the key is upper left), wherever they fall on `below`."""
+    lowest = {}
+    for (x, y) in upper:
+        if y > lowest.get(x, -999):
+            lowest[x] = y
+    for x in sorted(lowest):
+        y = lowest[x]
+        for (dy, tone) in ((1, OCC), (2, GRANITE[4])):
+            at = (x + 1, y + dy)
+            if at in below and at not in upper and (dy == 1 or (x + y) % 2):
+                c.set(at[0], at[1], tone)
 
 
 def lichen_crust(c, rnd, cx, cy, n=1):
@@ -327,59 +346,119 @@ def lichen_crust(c, rnd, cx, cy, n=1):
                 c.set(x + dx, y + dy, tone)
 
 
-def tor(seed, w, h, rows):
-    """A tor: granite weathered into a stack of pillows, wider than it is tall, crowning a drift.
+def clitter_stone(c, rnd, cx, base, size, seed):
+    """One stone of the clitter, the frost-broken granite that spills off a tor down its flanks: a
+    small pillow, half sunk, with heather grown up round its foot."""
+    rx = size * (0.9 + rnd.random() * 0.5)
+    ry = size * (0.6 + rnd.random() * 0.3)
+    pillow(c, cx, base - ry * 0.6, rx, ry, seed, tilt=(rnd.random() - 0.5) * 0.4)
+    heather_at_foot(c, int(cx - rx), int(cx + rx), base, seed + 1)
 
-    `rows` is the stack from the ground up, each (height share, width share, centre shift), and every
-    row is split into blocks by vertical joints. Each block sits on the one below with its foot on that
-    block's top face, so the lower block's top shows in front of it: a stack seen a little from above.
-    A low, broad thing on purpose - the only tall single stone on the heath is the Ninth."""
+
+def tor(seed, w, h, stacks):
+    """A tor, the Dartmoor kind: granite weathered along its joints into pillows, stacked in one or more
+    piles on a hump of bedrock, each pile leaning and overhanging its own way, crowning a drift.
+
+    `stacks` is each pile as (centre as a share of the width, base width share, pillows, lean). Each
+    pillow is narrower than the one under it, or now and then WIDER - it overhangs, and casts its shadow
+    on the top it rests on - and sits a little off it the way the pile leans. Under the piles a low hump
+    of bedrock breaks the heather, and the clitter spills off it down both flanks. A low, broad thing on
+    purpose: the only tall single stone on the heath is the Ninth."""
     rnd = T.Rng(seed)
     c = T.Bleed(w, h + FOOT)
     base = h - 1
     cx = w / 2.0
-    T.shade_pool(c, cx + w * 0.12, base + 1, w * 0.56, 4.0, density=0.45)
-    c.disc(cx + 1, base + 1, w * 0.47, 2.6, OCC)
-    floor = base
-    for i, (hs, ws, shift) in enumerate(rows):
-        rh = max(5, int(h * hs))
-        rw = w * ws
-        left = cx + shift * w - rw / 2.0
-        n = 1 if rw < 22 else (2 if rw < 46 else 3)
-        cuts = sorted(left + rw * (k + 0.5 + (rnd.random() - 0.5) * 0.4) / n for k in range(n - 1))
-        edges = [left] + cuts + [left + rw]
+    T.shade_pool(c, cx + w * 0.1, base + 1, w * 0.52, 4.0, density=0.4)
+    c.disc(cx + 1, base + 1, w * 0.44, 2.2, OCC)
+    # the bedrock the piles stand on: one long, low hump and a shoulder of it
+    hump = pillow(c, cx - w * 0.04, base - h * 0.1, w * 0.42, h * 0.13, seed + 1, tilt=0.05, p=2.0)
+    hump.update(pillow(c, cx + w * 0.22, base - h * 0.08, w * 0.2, h * 0.1, seed + 2, p=2.2))
+    for i, (sx, bw, n, lean) in enumerate(stacks):
+        x = w * sx
+        rx = w * bw / 2.0
+        ry = h * (0.1 + rnd.random() * 0.08)
+        top = base - h * 0.14
+        below = hump
         for k in range(n):
-            bx0 = int(T.round2(edges[k])) + (1 if k else 0)
-            bx1 = int(T.round2(edges[k + 1]))
-            # neighbours in a row sit a pixel or two apart in height: weathered, not laid
-            by1 = floor - (rnd.randrange(0, 2) if i else 0)
-            by0 = by1 - rh + rnd.randrange(-1, 2)
-            granite_block(c, bx0, by0, bx1, by1, seed + 17 * i + k, top_rows=3 if i < len(rows) - 1 else 2,
-                          round_frac=0.28)
-            if rnd.random() < 0.7:
-                lichen_crust(c, rnd, (bx0 + bx1) // 2 - 2, by0 + 1, rnd.randrange(1, 3))
-        floor = min(floor, by0) + 2
-    # clitter: the blocks the frost has prised off, lying at the foot
-    for k in range(rnd.randrange(2, 4)):
+            cy = top - ry * 0.62
+            tilt = lean * 0.25 + (rnd.random() - 0.5) * 0.3
+            # Now and then a course has weathered into two along a vertical joint: two pillows side by
+            # side, of different widths and a pixel or two apart in height.
+            if rx > 7 and rnd.random() < 0.4:
+                split = 0.35 + rnd.random() * 0.3
+                lx, rx1 = x - rx * (1 - split), rx * split * 1.05
+                this = pillow(c, lx, cy + rnd.randrange(0, 2), rx * (1 - split) * 1.05, ry, seed + 31 * i + 7 * k,
+                              tilt=tilt)
+                this.update(pillow(c, x + rx * split, cy - rnd.randrange(0, 2), rx1, ry * (0.8 + rnd.random() * 0.3),
+                                   seed + 31 * i + 7 * k + 3, tilt=tilt))
+            else:
+                this = pillow(c, x, cy, rx, ry, seed + 31 * i + 7 * k, tilt=tilt)
+            overhang(c, this, below)
+            if rnd.random() < 0.65:
+                lichen_crust(c, rnd, int(x - rx * 0.3), int(cy - ry * 0.55), rnd.randrange(1, 3))
+            top = cy - ry * 0.78
+            below = this
+            # the next: off-centre the way the pile leans, and narrower - or, now and then, wider, so it
+            # overhangs - and of its own thickness: a tor's courses are not laid to a gauge
+            x += lean * (1.0 + rnd.random() * 1.5) + (rnd.random() - 0.5) * 3.0
+            rx *= (0.6 + rnd.random() * 0.5) if rnd.random() < 0.75 else (1.05 + rnd.random() * 0.2)
+            rx = max(3.5, rx)
+            ry = max(2.4, ry * (0.7 + rnd.random() * 0.55))
+    # clitter down both flanks: bigger near the tor and smaller as it spills out into the heather, a few
+    # lying up on the bedrock, the farthest half sunk
+    for k in range(rnd.randrange(12, 17)):
         side = -1 if k % 2 == 0 else 1
-        bw = rnd.randrange(4, 7)
-        bx = int(cx + side * (w * 0.42 + rnd.random() * 4)) - bw // 2
-        granite_block(c, bx, base - 3, bx + bw, base + 1, seed + 91 + k, top_rows=1, round_frac=0.45)
-    heather_at_foot(c, int(cx - w * 0.46), int(cx + w * 0.46), base, seed + 3)
+        out = 0.3 + rnd.random() * 0.34
+        size = 5.6 - out * 6.0 + rnd.random() * 1.4
+        drop = int(out * 8) - 2 + rnd.randrange(0, 3)
+        clitter_stone(c, rnd, cx + side * w * out, base + drop, max(1.3, size), seed + 101 + k)
+    heather_at_foot(c, int(cx - w * 0.3), int(cx + w * 0.3), base, seed + 3)
     c.anchor_x = int(cx)
     return c
 
 
 def boulder(seed, w, h):
-    """A boulder lying in the heather on a drift's flank: one rounded block of granite, lichened on top."""
+    """A boulder off a tor, lying in the heather on a drift: a pillow come off its pile, half sunk,
+    sometimes with a smaller one beside it, lichened on top, heather grown up round its foot."""
     rnd = T.Rng(seed)
     c = T.Bleed(w, h + FOOT)
     base = h - 1
     cx = w / 2.0
-    T.contact(c, cx + 1, base + 1, w * 0.48)
-    granite_block(c, 1, 2, w - 2, base, seed, top_rows=2, round_frac=0.46)
-    lichen_crust(c, rnd, int(cx) - 2, 3, 2)
-    heather_at_foot(c, 2, w - 3, base + 1, seed + 5)
+    T.contact(c, cx + 1, base + 1, w * 0.46)
+    pillow(c, cx - w * 0.04, base - h * 0.42, w * 0.42, h * 0.46, seed, tilt=(rnd.random() - 0.5) * 0.5)
+    if rnd.random() < 0.6:
+        pillow(c, cx + w * 0.34, base - h * 0.18, w * 0.16, h * 0.2, seed + 3)
+    lichen_crust(c, rnd, int(cx) - 3, int(base - h * 0.78), 2)
+    heather_at_foot(c, 1, w - 2, base, seed + 5)
+    c.anchor_x = int(cx)
+    return c
+
+
+def outcrop(seed, w, h, n):
+    """Bedrock breaking the heather on a drift: `n` low humps of granite run together, so much of them
+    still under the turf that heather grows over their edges. Walked over, like the turf they show
+    through. The crown's rock, thickest where the tor stands, in place of a floor of slabs (which read
+    as paving)."""
+    rnd = T.Rng(seed)
+    c = T.Bleed(w, h + 3)
+    base = h - 1
+    cx = w / 2.0
+    c.disc(cx + 1, base, w * 0.44, 1.6, OCC)
+    for k in range(n):
+        x = w * (0.18 + 0.64 * (k + rnd.random() * 0.6) / max(1, n))
+        rx = w * (0.16 + rnd.random() * 0.14)
+        ry = h * (0.3 + rnd.random() * 0.25)
+        pillow(c, x, base - ry * 0.55, rx, ry, seed + 13 * k, tilt=(rnd.random() - 0.5) * 0.3, p=2.0)
+        if rnd.random() < 0.7:
+            lichen_crust(c, rnd, int(x - rx * 0.3), int(base - ry * 1.1), 1)
+    # the turf over its edges: sprigs along the foot and a few up its flanks
+    heather_at_foot(c, 1, w - 2, base, seed + 7)
+    for k in range(rnd.randrange(3, 6)):
+        x = rnd.randrange(2, w - 2)
+        y = base - rnd.randrange(1, max(2, h // 2))
+        if c.get(x, y)[3]:
+            c.set(x, y, VE[4])
+            c.set(x, y - 1, VI[2] if k % 2 else VE[3])
     c.anchor_x = int(cx)
     return c
 
@@ -534,12 +613,12 @@ SPRITES = [
     ("gorse-1", "bush", lambda: gorse(241, 30, 16), 0),
     ("gorse-2", "bush", lambda: gorse(251, 22, 13), 0),
     # The foliage pass: the ladder, largest first. Tors crown the drifts (a third again as wide as they
-    # block: the rounded flanks are walked past, the foot is not); wind-cut thorns and boulders stand on
-    # their flanks; gorse thickets are the drifts' body and heather clumps their edge.
-    ("tor-1", "tree", lambda: tor(401, 72, 40, [(0.30, 0.94, 0.0), (0.27, 0.74, -0.05), (0.24, 0.52, 0.06),
-                                                 (0.2, 0.3, -0.02)]), 92),
-    ("tor-2", "tree", lambda: tor(409, 58, 44, [(0.27, 0.92, 0.02), (0.25, 0.76, 0.06), (0.23, 0.6, -0.04),
-                                                 (0.21, 0.44, 0.04), (0.18, 0.26, -0.02)]), 76),
+    # block: the rounded flanks and the clitter are walked past, the foot is not); wind-cut thorns and
+    # boulders stand on their flanks; gorse thickets are the drifts' body and heather clumps their edge;
+    # outcrops of bedrock break the heather toward the tor. Each tor's piles are (centre, base width,
+    # pillows, lean): tor-1 two piles leaning apart, tor-2 one tall pile leaning over a low one.
+    ("tor-1", "tree", lambda: tor(401, 72, 40, [(0.32, 0.4, 3, -0.6), (0.62, 0.46, 4, 0.8)]), 92),
+    ("tor-2", "tree", lambda: tor(409, 58, 44, [(0.42, 0.62, 4, 0.7), (0.76, 0.34, 2, -0.5)]), 76),
     ("windthorn-1", "tree", lambda: windthorn(441, 64, 64), 14),
     ("windthorn-2", "tree", lambda: windthorn(449, 52, 54), 12),
     ("windthorn-bare-1", "tree", lambda: windthorn(457, 50, 56, bare=True), 12),
@@ -549,6 +628,9 @@ SPRITES = [
     ("gorse-thicket-2", "bush", lambda: gorse_thicket(467, 46, 24, 2), 0),
     ("heather-clump-1", "bush", lambda: heather_clump(471, 20, 10), 0),
     ("heather-clump-2", "bush", lambda: heather_clump(479, 15, 8), 0),
+    ("outcrop-1", "bush", lambda: outcrop(481, 56, 14, 3), 0),
+    ("outcrop-2", "bush", lambda: outcrop(487, 36, 11, 2), 0),
+    ("outcrop-3", "bush", lambda: outcrop(491, 20, 9, 1), 0),
 ]
 
 PREVIEW = os.path.join(HERE, "_props_heath_preview.png")

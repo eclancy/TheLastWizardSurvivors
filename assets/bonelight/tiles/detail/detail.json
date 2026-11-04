@@ -202,6 +202,12 @@
   {"id": "lichen_specks_2", "set": "lichen_specks", "path": "assets/bonelight/tiles/detail/lichen_specks_2.png"},
   {"id": "clitter_0", "set": "clitter", "path": "assets/bonelight/tiles/detail/clitter_0.png"},
   {"id": "clitter_1", "set": "clitter", "path": "assets/bonelight/tiles/detail/clitter_1.png"},
-  {"id": "clitter_2", "set": "clitter", "path": "assets/bonelight/tiles/detail/clitter_2.png"}
+  {"id": "clitter_2", "set": "clitter", "path": "assets/bonelight/tiles/detail/clitter_2.png"},
+  {"id": "clitter_3", "set": "clitter", "path": "assets/bonelight/tiles/detail/clitter_3.png"},
+  {"id": "rock_hump_0", "set": "rock_hump", "path": "assets/bonelight/tiles/detail/rock_hump_0.png"},
+  {"id": "rock_hump_1", "set": "rock_hump", "path": "assets/bonelight/tiles/detail/rock_hump_1.png"},
+  {"id": "rock_hump_2", "set": "rock_hump", "path": "assets/bonelight/tiles/detail/rock_hump_2.png"},
+  {"id": "rock_hump_3", "set": "rock_hump", "path": "assets/bonelight/tiles/detail/rock_hump_3.png"},
+  {"id": "rock_hump_4", "set": "rock_hump", "path": "assets/bonelight/tiles/detail/rock_hump_4.png"}
   ]
 }

@@ -11,14 +11,15 @@ public static partial class Foliage
 	/// "Heather, granite, and a wind with nothing in its way" (ChapterNotes).
 	/// </summary>
 	/// <remarks>
-	/// THE LADDER, largest first. Tors on a drift's crown, low broad stacks of weathered granite (nothing
-	/// tall and single: that is the Ninth Stone's); wind-cut thorns and boulders on its flanks; the standing
-	/// and fallen stones of the old circles where they always were, out on the open moor; gorse thickets, the
-	/// drifts' body; the old gorse and bramble at their edge; heather clumps where the moor thickens toward
-	/// them; and in the detail layer, moor grass combed east by the wind, bilberry under the gorse, lichen,
-	/// and clitter - the chips the frost prises off a tor - on the granite. Living things on the dark half of
-	/// verdant, stone on the granite the standing stones were drawn in (tools/art/props_heath.py,
-	/// detail_heath.py).
+	/// THE LADDER, largest first. Tors on a drift's crown, Dartmoor's kind: piles of weathered granite
+	/// pillows, leaning and overhanging, clitter spilt down their flanks (nothing tall and single: that is the
+	/// Ninth Stone's); wind-cut thorns and boulders on the drift; the standing and fallen stones of the old
+	/// circles where they always were, out on the open moor; gorse thickets, the drifts' body; the old gorse
+	/// and bramble at their edge; heather clumps where the moor thickens toward them; humps of bedrock breaking
+	/// the turf toward the tor; and in the detail layer, moor grass combed east by the wind, bilberry under the
+	/// gorse, lichen, and more bedrock and clitter of every size toward the crown. The heather runs on under the
+	/// crowns: no floor of slabs. Living things on the dark half of verdant, stone on the granite the standing
+	/// stones were drawn in (tools/art/props_heath.py, detail_heath.py).
 	///
 	/// THE WIND. Every grounded sprite is mirrored at random (Node2DGame.FurnishGroundedSet), so a sprite cannot
 	/// lean one way and keep to it: the thorns are wind-CUT, shorn flat and low, which reads either way. The
@@ -55,10 +56,14 @@ public static partial class Foliage
 			Kind = StageEnvironmentKind.Heath,
 
 			// Measured on the field (Woodland.Validate's 70 x 70 sample, three seeds): 70-72% of the moor is open,
-			// 14-15% is a drift (the stand habitat, over 0.76), the rest the drifts' flanks; the granite crowns,
-			// over 0.84, are 7-8%. Tried first at the Forest's thresholds: a quarter of the moor was drift, and a
-			// PC screen often showed no open ground across it. Tried next with the granite under the whole drift:
-			// in long streaks the outcrop's slabs read as paving, so the granite is the crown, where the tor is.
+			// 14-15% is a drift (the stand habitat, over 0.76), the rest the drifts' flanks; the crowns, over
+			// StandFloor (0.84), are 7-8%. Tried first at the Forest's thresholds: a quarter of the moor was drift,
+			// and a PC screen often showed no open ground across it.
+			//
+			// NO STAND FLOOR. The heather and the moor grass run on under a drift's crown; its rock is the decor
+			// and the detail - outcrops and boulders of very different sizes breaking the turf, thicker toward the
+			// tor. The palette's granite outcrop was laid as the crown's floor first (under the whole drift, then
+			// under the crown alone), and its slabs, edge to edge across a crown, read as cobbled paving.
 			Canopy = new CanopyProfile
 			{
 				Shape = CanopyShape.Own,
@@ -68,11 +73,6 @@ public static partial class Foliage
 				StandStart0 = 0.72f,
 				StandStart1 = 0.8f,
 				StandFloor = 0.84f,
-				// The granite breaking through on a drift's crown: the palette's own outcrop, partly transparent so
-				// the heather shows between its slabs. No clearing floor: the palette's peat and outcrops still fall
-				// where they roll (sorted, every outcrop in the open would be peat, and the peat's cotton-grass is
-				// the brightest clutter on the moor).
-				StandFloorTerrain = "granite",
 				SaltStand = SaltDrift,
 				SaltEdge = SaltRag,
 				SaltGap = SaltChain,
@@ -134,12 +134,12 @@ public static partial class Foliage
 					Count = 240, ClumpSize = 1, Clump = ClumpBase.Tree, Loners = 0.4f, MinSpacing = 240f,
 					Habitat = new Woodland.Habitat(0f, 0.05f, 1f),
 				},
-				// 7. Boulders on the flanks, below the tors they came off.
+				// 7. Boulders come off the tors: sparse on a drift's flanks, thicker toward its crown.
 				new FoliageSet
 				{
 					Grounded = new[] { "boulder-1", "boulder-2" }, Manifest = Manifest,
 					Count = 420, ClumpSize = 2, Clump = ClumpBase.GroundAccent, RadiusMax = 1.2f, Separation = 1.2f,
-					Loners = 0.2f, MinSpacing = 60f, Habitat = new Woodland.Habitat(0.02f, 1f, 0.6f),
+					Loners = 0.2f, MinSpacing = 60f, Habitat = new Woodland.Habitat(0.01f, 0.5f, 1f),
 				},
 				// 8. Heather grown into clumps, where the moor thickens toward a drift.
 				new FoliageSet
@@ -148,13 +148,22 @@ public static partial class Foliage
 					Count = 700, ClumpSize = 4, Clump = ClumpBase.Bush, RadiusMin = 0.5f, RadiusMax = 0.8f, Separation = 0.6f,
 					Loners = 0.1f, MinSpacing = 28f, Habitat = new Woodland.Habitat(0.25f, 1f, 0.4f),
 				},
+				// 9. Bedrock breaking the turf: low humps of granite, a few on the flanks and more toward the tor.
+				// Walked over, like the heather they show through.
+				new FoliageSet
+				{
+					Grounded = new[] { "outcrop-1", "outcrop-2", "outcrop-3", "outcrop-3" }, Manifest = Manifest,
+					Count = 1500, ClumpSize = 3, Clump = ClumpBase.GroundAccent, RadiusMax = 1.4f, Separation = 0.9f,
+					Loners = 0.06f, MinSpacing = 44f, Habitat = new Woodland.Habitat(0f, 0.25f, 1f),
+				},
 			},
 
 			// The bottom rungs (tools/art/detail_heath.py). Moor grass combed by the wind across all the open moor;
-			// heather thickening and bilberry under the gorse at a drift's edge; lichen in the open; and on the
-			// granite crowns, clitter, heather between the slabs and lichen. Not more cotton-grass: its white heads
-			// stand +68 L* over the heather at their brightest, above the cast's rims. Densities are the open
-			// ground's, before the habitat weight (clearing, fringe, stand).
+			// heather thickening and bilberry under the gorse at a drift's edge; lichen in the open; on a drift,
+			// humps of bedrock and clitter of every size, few on the flanks and many toward the crown; and on the
+			// palette's own granite outcrops, heather between the slabs, clitter and lichen. Not more cotton-grass:
+			// its white heads stand +68 L* over the heather at their brightest, above the cast's rims. Densities are
+			// the open ground's, before the habitat weight (clearing, fringe, stand).
 			Clutter = new[]
 			{
 				GroundDetail.Clutter("moor_grass", 0.1f, 5, 1f, 0.7f, 0.3f),
@@ -165,6 +174,8 @@ public static partial class Foliage
 				GroundDetail.Clutter("heather_tufts", 0.06f, 4, 1f, 1f, 1f, "granite"),
 				GroundDetail.Clutter("lichen_specks", 0.03f, 4, 1f, 1f, 1f, "granite"),
 				GroundDetail.Clutter("moor_grass", 0.04f, 5, 1f, 1f, 1f, "peat"),
+				GroundDetail.Clutter("rock_hump", 0.07f, 3, 0f, 0.25f, 1f),
+				GroundDetail.Clutter("clitter", 0.06f, 3, 0.02f, 0.4f, 1f),
 			},
 		};
 

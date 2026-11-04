@@ -1477,6 +1477,12 @@
     "assets/bonelight/tiles/detail/lichen_specks_2.png": [31, 45],
     "assets/bonelight/tiles/detail/clitter_0.png": [0, 46],
     "assets/bonelight/tiles/detail/clitter_1.png": [1, 46],
-    "assets/bonelight/tiles/detail/clitter_2.png": [2, 46]
+    "assets/bonelight/tiles/detail/clitter_2.png": [2, 46],
+    "assets/bonelight/tiles/detail/clitter_3.png": [3, 46],
+    "assets/bonelight/tiles/detail/rock_hump_0.png": [4, 46],
+    "assets/bonelight/tiles/detail/rock_hump_1.png": [5, 46],
+    "assets/bonelight/tiles/detail/rock_hump_2.png": [6, 46],
+    "assets/bonelight/tiles/detail/rock_hump_3.png": [7, 46],
+    "assets/bonelight/tiles/detail/rock_hump_4.png": [8, 46]
   }
 }

@@ -2001,13 +2001,16 @@ the same shares as the C# to the percent.
 |---|---|---|---|
 | clearing (the open moor) | under 0.60-0.68 | 70-72% | the standing and fallen stones as before; moor grass, lichen; the odd heather clump, thorn or boulder |
 | fringe (a drift's flank) | between | about 14% | gorse and bramble, wind-cut thorns, boulders, heather clumps; heather tufts thicken, bilberry |
-| stand (the drift) | over 0.72-0.80 | 14-15% | gorse thickets massed, the tors |
-| the crown | over 0.84 | 7-8% | `granite`, the stand floor, under the tor; clitter, heather and lichen on it |
+| stand (the drift) | over 0.72-0.80 | 14-15% | gorse thickets massed, the tors; bedrock humps, boulders and clitter thickest here |
+| the crown | over 0.84 | 7-8% | no floor of its own: the heather and moor grass run on under the tor |
 
-The stand floor is the palette's own outcrop, partly transparent so the heather shows between its slabs. **Laid under
-the whole drift (14%) its slabs read as paving** in long streaks, so it is the crown only. No clearing floor: sorted,
-every outcrop blob in the open would have become peat, and the peat's cotton-grass is the brightest clutter on the
-moor (hi +68 L\* over the heather).
+**No stand floor: the crown is heather with rock breaking through.** The palette's `granite` outcrop was laid as the
+stand floor first, under the whole drift and then under the crown alone. Its slabs, edge to edge across a crown, read as
+cobbled paving, and the first tors (rounded rectangles in courses) as stacked bricks; the integrator held the merge on
+both, and Eric had just asked for less blocky art. So the heather runs on under a drift, and its rock is decor and detail
+of very different sizes - outcrops of bedrock, boulders, clitter - placed by the habitat, sparse on the flanks and
+thickest in the stand where the tor is. The palette's own granite blobs fall where they always did (they are in the
+before shots too), now with heather tufts and clitter on them.
 
 **The wind.** Every grounded sprite is mirrored by a roll (`FurnishGroundedSet`), so a tree cannot lean one way and
 keep to it; the thorns are wind-CUT instead, shorn flat with the crown streaming down at its lee end, which reads
@@ -2019,15 +2022,25 @@ manifest - a shared change, not made.
 
 | rung | sprites | on screen | where | set |
 |---|---|---|---|---|
-| tors | `tor-1`, `-2` | 164x88, 138x96, block 92 / 76 | a drift's crown, 0.4-0.5 a chunk | 6 |
+| tors | `tor-1`, `-2` | 204x96, 156x100, block 92 / 76 | a drift's crown, 0.4-0.5 a chunk | 6 |
 | wind-cut thorns | `windthorn-1`, `-2`, `windthorn-bare-1` | 110-134 x 120-140 | the flanks, now and then alone; 0.6-0.9 a chunk | 3 (was the shared 250 px dead trees, 0.6) |
 | standing, fallen stones | unchanged | | the open moor, as before; 2.3 and 1.2 a chunk | 0, 1 |
-| boulders | `boulder-1`, `-2` | 48x38, 38x32, block 30 / 22 | the flanks, 1.5 a chunk | 7 |
+| boulders | `boulder-1`, `-2` | 48x40, 38x34, block 30 / 22 | a drift, thicker toward its crown, 1.9 a chunk | 7 |
+| bedrock outcrops | `outcrop-1`, `-2`, `-3` | 112x36, 72x28, 42x24, walked over | a drift, thicker toward its crown | 9 |
 | gorse thickets | `gorse-thicket-1`, `-2` | 120x52, 100x56 | the drift, 6 a chunk | 5 |
 | gorse, bramble | `gorse-1`, `-2`, `bramble-2` | 44-60 | the flanks, 4.7 a chunk (was even) | 2 |
 | heather clumps | `heather-clump-1`, `-2` | 40x32, 32x28 | flanks and open moor, 5 a chunk | 8 |
 | rocks | unchanged | | even, as before | 4 |
-| detail | `moor_grass`, `bilberry`, `lichen_specks`, `clitter` (new); `heather_tufts` (more) | one cell | grass everywhere; heather and bilberry on the flanks; clitter, heather and lichen on the granite | clutter |
+| detail | `moor_grass`, `bilberry`, `lichen_specks`, `clitter`, `rock_hump` (new); `heather_tufts` (more) | one cell | grass everywhere; heather and bilberry on the flanks; bedrock humps and clitter of every size on a drift, thickest toward the crown; heather, clitter and lichen on the palette's granite | clutter |
+
+**The tors are Dartmoor's** (`pillow` in `props_heath.py`): granite weathered along its joints into pillows, each an
+outline that wanders by three low harmonics of its seed (no two alike), a little flatter than an ellipse, sheared so a
+pile leans, lit on its top and left shoulder and turning into occ underneath. A tor is one or two piles on a low hump of
+bedrock; each pillow is narrower than the one under it or, now and then, wider - it overhangs, and casts its shadow on
+the top it rests on - and sometimes a course has split in two along a vertical joint. Clitter spills down both flanks,
+bigger near the tor and smaller and half sunk as it runs out into the heather. A joint is wherever two pillows meet,
+never a straight line. The boulders and the outcrops are the same pillows, alone or run together and mostly under the
+turf.
 
 Granite in the standing stones' own ramp, lichened; living things on the dark half of verdant; heather in violet's
 lit and base. The old gorse's flowers came down a stop (gold's base and shade): with four times the gorse on the
@@ -2046,8 +2059,11 @@ clear it.
 
 | | dL\* | \|dL\*\| | hi |
 |---|---|---|---|
-| `moor_grass` / `bilberry` / `lichen_specks` / `clitter` (new) | +9.7 / +1.5 / +8.9 / +6.1 | 11.2 / 7.7 / 8.9 / 10.8 | +22.3 / +19.3 / +15.6 / +17.4 |
-| `tor-1`, `-2`, `boulder-1`, `-2` (new) | +5.5 to +8.8 | 12.4-12.8 | +22.7 to +25.9 |
+| `moor_grass` / `bilberry` / `lichen_specks` (new) | +9.7 / +1.5 / +8.9 | 11.2 / 7.7 / 8.9 | +22.3 / +19.3 / +15.6 |
+| `clitter` / `rock_hump` (new) | +6.6 / +10.1 | 11.8 / 13.3 | +19.4 / +19.8 |
+| `tor-1`, `-2`, `boulder-1`, `-2` (new) | +5.7 to +9.5 | 11.9-13.2 | +23.2 to +29.0 |
+| `outcrop-1`, `-2`, `-3` (new) | +6.2 to +12.0 | 11.3-14.5 | +24.2 to +34.1 |
+| `standing-stone-1` (old, for scale) | +11.6 | 15.3 | +34.2 |
 | `windthorn-*`, `gorse-thicket-*`, `heather-clump-*` (new) | +0.5 to +5.2 | 4.7-9.2 | +12.6 to +21.9 |
 | `gorse-1`, `-2`, before / after | +5.7, +7.2 | 10.2, 11.2 | +39.1 / +27.8, +56.3 / +34.8 |
 | the shared dead trees (gone) | +10.4, +12.7 | 12.2, 16.4 | +27.5, +23.5 |
@@ -2056,26 +2072,28 @@ clear it.
 **On screen**, `_UiShot --light-probe` at the start, (2600, -1500) and (-3000, 2200) on the PC canvas and the start and
 (2600, -1500) on the phone's, seed 4242, pooled. The heath's cast stand above their ground, as the Fields' do:
 
-| PC | before | after |
+| PC | before | after (the redraw) |
 |---|---|---|
-| bodies: dL\* / hi | +12.1 / +56.7 | +11.0 / +55.9 |
-| XP orbs: dL\* / hi | +38.3 / +82.4 | +40.5 / +86.4 |
-| bushes: cover / \|dL\*\| / hi | 0.4% / 26.3 / +51.1 | 0.9% / 24.2 / +51.0 |
-| detail: cover / \|dL\*\| / hi | 0.8% / 16.4 / +50.0 | 1.3% / 17.8 / +53.1 |
-| trees and rocks: cover / \|dL\*\| / hi | 0.5% / 21.2 / +49.2 | 0.5% / 25.6 / +58.6 |
-| bare floor pattern | 6.6% | 7.7% |
+| bodies: dL\* / hi | +12.1 / +56.7 | +11.1 / +55.6 |
+| XP orbs: dL\* / hi | +38.3 / +82.4 | +41.7 / +86.4 |
+| bushes: cover / \|dL\*\| / hi | 0.4% / 26.3 / +51.1 | 1.1% / 25.7 / +49.9 |
+| detail: cover / \|dL\*\| / hi | 0.8% / 16.4 / +50.0 | 1.4% / 17.1 / +49.5 |
+| trees and rocks: cover / \|dL\*\| / hi | 0.5% / 21.2 / +49.2 | 0.4% / 25.1 / +55.3 |
+| bare floor pattern | 6.6% | 6.6% (7.7% with the granite crowns) |
 
-On the phone the bodies read +12.4 before and +10.9 after (one zone of the after, which the chapter's note card covered,
-left out of both). Bodies standing on a granite crown lose a few L\* against it, as the Forest's do on moss. **The
-layers' hi did not come from the new art**, which tops out at +26: it is the brightest tenth of each layer, and the
+(The redraw's probes ran before the last step up in the crown's rock - outcrops 1000 -> 1500, bedrock humps 0.05 -> 0.07,
+clitter 0.05 -> 0.06 - which places walk-over outcrops and detail only.) On the phone the bodies read +12.4 before and +10.5
+after, with the one zone the chapter's note card covered left out of both; the drop is the short-edge zone, whose bodies
+stand over something lighter (L\* 22) in the after. **The layers' hi did not
+come from the new art**, which tops out at +34 like the old standing stones: it is the brightest tenth of each layer, and the
 layers' brightest things are still the old ones - the cotton-grass, and in "trees and rocks" the bones and bracken of
 the palette's curated prop themes. Where a shared 250 px dead tree stood in frame before (spot b), those few bright
 props are now a larger share of the layer's top tenth.
 
-**Footing and placement.** `--footing-census`, a minute's walk, seeds 4242 and 11: 162 and 188 trunks before, 233 and
-274 after, none within 72 px of anything that blocks (nearest 72.0), no pocket or narrow-mouthed room; `--check-feet`:
-0 frames with the Feet in the ground, 0 stuck checks. The first load's 25 chunks hold 533 props where they held 322,
-and 5,020 detail cells where they held 2,266 (`--placement-hash` `68341949603A9F42`).
+**Footing and placement.** `--footing-census`, a minute's walk, seeds 4242 and 11: 162 and 188 trunks before, 240 and
+304 after (the redraw: the boulders moved toward the crowns), none within 72 px of anything that blocks (nearest 72.0),
+no pocket or narrow-mouthed room; `--check-feet`: 0 frames with the Feet in the ground, 0 stuck checks. The tors keep
+their footprints (92 and 76) through the redraw, so they stand where they stood.
 
 **Checked.** `_ExploreProbe --stage=10 --seed=4242 --fresh-save`: 22 passed, 0 failed - the moot placed on open
 ground, nothing on its footprint, finished. `_UiShot --secret-probe --stage=10` (the Fallen Star, the vault opened and
@@ -2084,7 +2102,8 @@ errors, the one test_wizard warning (`Woodland.Validate` holds the shares above:
 
 **Cost.** `_BalanceHarness --minutes=2 --character=1 --immortal --timescale=1 --stress-swarm --profile=10 --stage=10
 --seed=11 --terrain-seed=4242 --walk=30 --terrain-log`, headless, before (from the move commit) and after back to back
-with no other Godot on the machine:
+with no other Godot on the machine. The after is the first version; the redraw adds the walk-over outcrops (a node each,
+about seven a chunk) and a little more detail, and lays no stand floor. Not re-measured:
 
 | | before | after |
 |---|---|---|
@@ -2101,8 +2120,10 @@ often the trunk plan, which now plans five trunk sets. Between the Forest's (2.0
 **Still needs eyes** (`_shots/foliage-heath/composite-pc.png`, `composite-phone.png`, before | after, held and cleared
 of enemies; the busy rows keep the swarm and its hurt tint):
 
-- **Whether a drift reads as a granite rise or as a patch of paving** - the crown's slabs at play scale (`drift`, `b`).
-- **The tors**: low stacks of slabs; whether they read as stone outcrops, and never as the Waller's carried wall.
+- **The redraw** (`closeup-tor-crown.png`: the blocks on a slab floor beside the pillow tors on heather, at camera 1.6
+  and at play zoom) - whether a tor reads as weathered granite, and a crown as moor with rock breaking through.
+- **The palette's own granite blobs**, unchanged and in the before shots too: slabs with heather between, the same
+  tile that read as paving laid across a crown. Redrawing it is `terrain_heath.py` through the shared `tiles.py`.
 - **The wind-cut thorns**, mirrored at random, so half are flagged one way and half the other.
 - **The moor grass** as the wind: grey-green and small, it may be a texture more than a direction at 540 wide.
 - **The curated prop themes** (`PropThemes` flora and bones, LevelGenerator's palette, shared): the lime bracken and the
