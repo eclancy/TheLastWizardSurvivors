@@ -40,10 +40,19 @@ things come up; strike what lands.**
    `--portrait --safe-area`) and fix by width or wording, or by a shared rule (balance the lines, or keep the
    last two words together) rather than one string at a time; a check in the validator or `_UiShot` would keep
    it from coming back.
-6. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
-7. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
+6. **The title screen's freeze, and its prompt on a phone** (Eric, 2026-11-04). Read `.ai/title-screen.md` first.
+   - **The freeze.** Pressing a key or tapping at "press any button" freezes the game until a run of assets
+     loads (`TitleScreen` adds `MainMenu` over the art only then). Load all of it first, behind a ritual-circle
+     fire loading screen in the game's own art: the warded circle, its fire coming up as the loading runs.
+     Then the title. When the player presses to start, the menu comes up at once. Find what the press actually
+     loads (the `MainMenu` scene, its validator run, fonts and shaders, the save) and measure the hitch before
+     and after, on the PC and on the Pixel 9 (`.ai/performance.md`).
+   - **On a phone, "Tap to start"** in place of "press any button" (`OS.HasFeature("mobile")`, as
+     `TouchControls` decides it).
+7. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
+8. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
    launch-plan doc, now carrying the rival motive).
-8. **Housekeeping:**
+9. **Housekeeping:**
    - the README's image and sound counts are stale again after the foliage and Paracelsus (recount from the
      tree, same methods);
    - delete the dead decor cases in `Node2DGame.BuildDecorProps` for every chapter that now has foliage (the
