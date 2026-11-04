@@ -590,7 +590,9 @@ existing `pit` hazard terrain); the **archers' volleys** over the gate yard befo
 (Achievements in `.ai/achievements-and-secrets.md` 8.12.)
 
 - **The Toll Stone** (touch): coins left on a stone by those who crossed before. 30 Arcane Energy.
-- **The Span Lantern** (linger 2 s, on a bastion): light it and the collapse waits for 30 s.
+- **The Span Lantern** (carry, since 2026-11-03; it was linger 2 s): take a coal from a guard's brazier and
+  carry it out to the dead lantern on its bastion, three hits knocking it loose; lit, the collapse waits for
+  30 s. Changed because Morgan's barge now asks for lamps lit by standing at them (`.ai/unlock-puzzles.md` 3.7).
 - **The Gargoyle's Perch** (strike 500 near a gargoyle on a dead plinth that does not move): it falls
   and a chest is under it.
 - **The Names on the Parapet** (keepsake; gather: five sets of marks scratched into the parapet by

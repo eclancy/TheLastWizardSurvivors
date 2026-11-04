@@ -87,7 +87,8 @@ light goes the other way. A mirror the light reaches shines where it faces. Brin
 onto the sun-disc socket over the tomb's door and the slab slides (the existing win beat). It is the laser
 puzzle in his own legend, and his form is already the Eye of Ra.
 
-- **Facing snaps to eight directions** (*first guess*), so the beam is a readable line and a solution is exact.
+- **Facing snaps to eight directions** (decided: diagonals too, for more routes), so the beam is a readable
+  line and a solution is exact.
 - **The beam passes through bodies and burns them lightly** (decided, Eric: *"the beam should not be stopped
   by the bodies, just burn them lightly as it passes through them"*). *First guess* 3 damage every 0.5 s to
   each body on a lit leg, through `Enemy.TakeDamage` with every argument passed. Terrain stops it; nothing else.
@@ -108,7 +109,7 @@ puzzle in his own legend, and his form is already the Eye of Ra.
   0.5 s tick (`.ai/performance.md`).
 - **Clashes:** Seimei's stones also turn, but by a plate and a quarter at a time; these follow where he stands.
   The Fulgurite (the Sands' vault) is a storm drawn to a glass tree, not a beam.
-- **Open:** eight directions or four; how many mirrors; whether a leg may cross another.
+- **Open:** how many mirrors; whether a leg may cross another.
 - **Size:** M-L.
 
 ### 3.2 Ma Liang - draw the door in one stroke
@@ -136,7 +137,8 @@ line to dodge only pauses it, as now. The insight is where to begin: at a dot wh
   nothing today stops enemies and not the player (enemies mask layers 1, 4 and 5; the player's body meets 1 and
   5, his feet 4). Either a new layer that only enemy masks include (`Enemy.ConfigureEntityCollision`, and every
   mask checked, as `CLAUDE.md` asks), or steering - the household's `AdjustSteering` turned off the ink. A layer
-  is the honest wall; steering is cheaper and leaks. *Recommended:* the layer.
+  is the honest wall; steering is cheaper and leaks. **Decided: a new collision layer** that only enemy masks
+  include; the player's body and feet never meet it.
 - **Clashes:** none. No other ask draws.
 - **Open:** the figure family; how long a line counts as "walked along" before it smudges (*first guess* 40% of it).
 - **Size:** M.
@@ -217,26 +219,28 @@ is to fight on the other side, which costs more: the reeve takes the difference 
 
 **Was:** `ThawEvent` - damage dealt near the block on the frozen lake thaws it; fire counts triple.
 
-**The puzzle (decided: it replaces the thaw).** Round the block stand **five stones, each with its own note**.
-The ice sings a phrase: stones light and sound in turn. **Step on them in the same order.** Three phrases, of
+**The puzzle (decided: it replaces the thaw).** Over the lake round the block are stretched **five great strings
+of ice - a kantele, the instrument he made in the legend - each with its own note** (decided: strings, not
+stones). The ice sings a phrase: strings light and sound in turn. **Step on them in the same order** (a string
+counts where his feet cross it). Three phrases, of
 three, four and five notes (*first guess*: each one the last with a note added, which is kinder to memory). A
 wrong stone replays the phrase; nothing is lost but the time. Each phrase sung back takes the block one thaw
 stage further (it already has four), and the last frees him. The legend's singer, who sang his rivals into the
 bog; and his hint was always "Someone is singing under the ice."
 
-- **How it reads:** each stone lights in its own colour as it sings, and again under his feet when he gets it
+- **How it reads:** each string lights in its own colour as it sings, and again under his feet when he gets it
   right, so it works with the sound off.
-- **The swarm:** the stones stand round the block (*first guess* 200-260 px out), so the phrase is sung on the
-  run through the crowd. An enemy on a stone does not count; only the feet.
+- **The swarm:** the strings fan out from the block (*first guess* 200-260 px long), so the phrase is sung on the
+  run through the crowd. An enemy on a string does not count; only the feet.
 - **The seed:** the phrases.
 - **Stays:** the lake and its shader, the block and its stages, the hint, the deed. **Goes:** the heat, fire's
   triple, the window of clear ice as the place where fighting counts.
-- **New:** five stones (or strings: he made the first kantele), their lit frames, five notes in one voice,
-  checked with `python tools/audio/analyse.py --confuse`.
-- **Clashes: the Broken Ward** (the Ruins' vault) also asks for stones touched in order. It is read from their
-  notches; this is remembered from a phrase. Draw them nothing alike, and keep the order from ever being written
-  on the stones.
-- **Open:** stones or kantele strings; whether a phrase extends the last.
+- **New:** five ice strings drawn on the lake, their lit frames, five plucked notes in one voice, checked with
+  `python tools/audio/analyse.py --confuse`.
+- **Clashes: the Broken Ward** (the Ruins' vault) also asks for things touched in order. It is read from its
+  stones' notches; this is remembered from a phrase, on strings that look nothing like stones - which is why
+  strings were chosen. Never write the order on the strings.
+- **Open:** whether a phrase extends the last.
 - **Size:** M.
 
 ### 3.7 Morgan le Fay - light the lamps ahead
@@ -256,9 +260,12 @@ the barge waits 560 px ahead of the fall.
 - **Failing:** a lamp that goes out before she reaches it only stops her there until it is lit again.
 - **Stays:** the barge, the mooring, the dogs, the landing, the hint, the deed.
 - **New:** the lamps (about five along the drift), their states, a lighting sound.
-- **Clashes: the Span Lantern**, a planned Bridge secret (`.ai/endgame-castle.md` 3.9: "linger 2 s, on a
-  bastion: light it and the collapse waits for 30 s") is the same act on the same bridge. It is not built; it
-  must change its verb or go before this is built.
+- **Clashes: the Span Lantern**, a planned Bridge secret (`.ai/endgame-castle.md` 3.9), was "linger 2 s, on a
+  bastion: light it" - the same act on the same bridge. **Decided: a flame is carried to it instead** - a coal
+  taken from a guard's brazier and carried out to the dead lantern on its bastion, three hits knocking it loose
+  (`SecretSeed`, the carry primitive), and the collapse then waits 30 s. Not struck, which was chosen first: the
+  Gargoyle's Perch already strikes on the Bridge. Carry is free there, and left the events with Tituba's key.
+  `.ai/endgame-castle.md` 3.9 and `.ai/achievements-and-secrets.md` 8.12 say so.
 - **Honest limit:** of the eight this is the least an insight and the most a rhythm. If it plays flat, the
   lever is lamps that light in pairs across the deck, so which side she drifts is chosen.
 - **Size:** S-M.
@@ -280,8 +287,9 @@ it. The three-hit rule goes. The insight is watching the rounds, waiting in a si
 - **The problem to settle first:** an auto-shooter kills whatever its spells reach, and a killable lantern-bearer
   is a puzzle the loadout solves for you. Either the bearers are **untargetable** (`Enemy.SetTargetable(false)`,
   the primitive every burrower rides on), his own jailers under his ward; or **the lanterns hang on the walls and
-  sweep**, with no body at all, and a catch wakes the nearest Warden instead. *Recommended:* untargetable bearers,
-  which keeps "that bearer turns toward you" as decided.
+  sweep**, with no body at all, and a catch wakes the nearest Warden instead. **Decided: untargetable bearers**,
+  which keeps "that bearer turns toward you". They are never in `"enemies"` while they walk their rounds, so no
+  spell aims at them, and they deal no contact damage; the bearer who turns is the one thing that comes for him.
 - **The seed:** the rounds are corridor loops on the maze grid between the Warden's site and the cell, placed so
   a gap in the sweep always exists.
 - **Stays:** the cell, the cry, the Gaoler's map, the Warden and its key, the deed. **Goes:** the three hits.
@@ -334,12 +342,12 @@ Smallest change, and most doubt about the old ask, first:
 
 1. **Paracelsus** (S-M): mostly a removal, and a pilot for "a hazard that hurts only him".
 2. **Medea** (S-M): one more pan of frames and the tilt.
-3. **Ma Liang** (M): after the collision-layer question (3.2) is settled.
+3. **Ma Liang** (M): the new enemy-only collision layer is the risky part; check every mask.
 4. **Baba Yaga** (M): the yard and the cornered test on the existing mover.
-5. **Väinämöinen** (M): five stones, five notes, the phrases.
-6. **Morgan** (S-M): after the Span Lantern's fate is decided.
+5. **Väinämöinen** (M): five ice strings, five notes, the phrases.
+6. **Morgan** (S-M): the Span Lantern is carried to now, so the two no longer meet.
 7. **Imhotep** (M-L): the flagship, the laser puzzle in our world.
-8. **Tituba** (M-L): after the targeting question (3.8) is settled.
+8. **Tituba** (M-L): the patrol, the occluded cone and the untargetable bearers.
 
 Each is one branch and one worktree, built and verified as the events were (`.ai/chapter-wizards.md` section 7):
 `dotnet build`; the validator with `-- --no-save-writes`; `_ExploreProbe --stage=N` solving it on fixed seeds,
@@ -355,13 +363,17 @@ whether a player finds the rule from the objective line and the world alone.
 
 ---
 
-## 7. Open questions for Eric
+## 7. Decided by Eric after the first draft (2026-11-03)
 
-1. **Imhotep:** mirrors facing eight directions or four.
-2. **Ma Liang:** the ink-walls as a new collision layer (an honest wall) or as steering (cheaper, leaks).
-3. **Morgan:** the Span Lantern secret changed or dropped, since it is the same act.
-4. **Tituba:** untargetable lantern-bearers, or lanterns that hang on the walls and sweep.
-5. **Väinämöinen:** stones or kantele strings.
+1. **Imhotep:** mirrors face eight directions.
+2. **Ma Liang:** the ink-walls are a new collision layer, met by enemies only.
+3. **Morgan:** the Span Lantern stays a secret, but a flame is carried to it from a guard's brazier, not
+   lingered at (struck was chosen first and dropped: the Gargoyle's Perch already strikes on the Bridge).
+4. **Tituba:** the lantern-bearers are untargetable.
+5. **Väinämöinen:** kantele strings, not stones.
+
+What is left open is small and in each block's **Open** line: counts, widths and first-guess numbers for the
+build to tune.
 
 ## Sources
 
