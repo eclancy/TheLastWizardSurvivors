@@ -342,10 +342,11 @@ def standing_stone(c, x, yb, w, h, seed, lean=0.0, ramp=None, warm=None, toward=
 # the staff or the hand that carries his light in the game.
 #
 # WHICH OF THEM: the moot and the fall show the wizards a fresh save already sees - the four
-# disciplines and John Dee. The procession ("He took them all") shows every one of them, the secret
-# three as well: Tituba, Vainamoinen and Laelaps are secret on the character select until their
-# chapters open (UnlockCatalog's secretUntilStage), and Eric chose to show them here anyway (2026-11-01,
-# "Show them") - "all" has to mean all, and a dark shape on a ridge names nobody.
+# disciplines and John Dee. The procession ("He took every wizard who might rival him", once "He took
+# them all") shows every one of them, the secret three as well: Tituba, Vainamoinen and Laelaps are
+# secret on the character select until their chapters open (UnlockCatalog's secretUntilStage), and Eric
+# chose to show them here anyway (2026-11-01, "Show them") - "every" has to mean every, and a dark shape
+# on a ridge names nobody.
 CHARS = os.path.join(ROOT, "assets", "bonelight", "characters")
 CELL = 48
 # The rows a wizard stands in on his cell: feet on row 46, the contact line on 47, the hat near row 2.
@@ -1150,7 +1151,7 @@ def p_tide():
 
 
 def p_taken():
-    """4. "He took them all." The game's wizards led away along a ridge against his light, bound
+    """4. "He took every wizard who might rival him." The game's wizards led away along a ridge against his light, bound
     wrist to wrist by his chain, their staves dark, their light drawn out of them toward the tower.
     Silhouettes only, of every wizard in the game, the three the player frees included (Eric)."""
     back, mid, fore = frame(True), frame(), frame()

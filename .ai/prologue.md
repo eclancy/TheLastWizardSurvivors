@@ -15,14 +15,17 @@ choice below comes from it.
 | 1 | The moot (`moot`) | - | The Broken Circle before (`.ai/campaign.md` chapter 3): a ring of standing stones on the heath at night, a warded fire in the middle, and round it five of the game's own wizards (below), each staff burning his own element, each in the deep end of his own colour. The only frame with more than one warm light in it - every light the world had is still in it. |
 | 2 | He comes (`throne`) | *He came here first.* | The same circle under him, and **only his silhouette**: a tall cowled shape inside a collar of points, one arm raised with the wizards' light streaming into his hand, rimmed by an eclipse of his own dark light behind his head. No face, folds, trim or keys. The stones are down, the wizards are on the ground, and the shadow running out of his hem has eyes in it. |
 | 3 | The tide (`tide`) | - | His shadows over the land: a village at the foot of a hill, still lit, and coming over the crest from the tower on the horizon a flood of the things he raised, every one with his mark in its eyes. One of them, horned, in the foreground. |
-| 4 | Taken (`taken`) | *He took them all.* | The wizards led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
+| 4 | Taken (`taken`) | *He took every wizard who might rival him.* | The wizards led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
 | 5 | The one he missed (`missed`) | *You are the one he missed.* | **Animated** (below): the hiding. The broken ring's near stones in a row, and in the row, between two of them, the player - the title's figure, facing us, still as a stone, his light put out to an ember. Beyond the row his creatures search: a hound trots along it nose down, stops at his shoulder and works the air beside him - his ember goes out - and goes on; a caster in the gap watches; two small ones turn their heads; pair by pair the eyes in the dark turn away and back. They never find him. |
 | 6 | The break (`break`) | *You went back for them.* | **Animated.** The freeing (`.ai/cutscenes.md`, built 2026-11-02 from Eric's *"Include a cutscene where the blue robed wizard frees the four starting wizards"*): the four disciplines on their knees in his chain, the Archmage in the middle of them, his light coming up and breaking it, their own lights coming back. |
 | 7 | The five (`five`) | - | The four standing where they knelt, each light his own again, and the Archmage in his warded circle among them. |
 | 8 | The road (`road`) | - | Seen from above and behind: the player small on a road that winds over the heath toward everything he holds, the tower on the far horizon. Then the character select - the player choosing who walks it, any of the five. |
 
 **Four lines, all in the game's own voice.** "He came here first" is the Broken Circle's own card line
-(`.ai/campaign.md`); "You are the one he missed" is the premise's sentence; "You went back for them" is
+(`.ai/campaign.md`); "He took every wizard who might rival him" is the premise's reason, the one thing the
+procession cannot show - why these wizards (Eric, 2026-11-03: the story should "specifically mention that the
+villain was imprisoning any wizard he thought could rival him"; it was "He took them all", which gave none,
+and it makes the next line's one he missed a rival too); "You are the one he missed" is the premise's sentence; "You went back for them" is
 the freeing's, the only thing its picture cannot say - that the one breaking the chain is the player.
 Nothing else is said: no title card, no narration, nothing an image is already saying
 (`world-and-tone.md` tone rule 2).

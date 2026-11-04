@@ -171,8 +171,11 @@ public partial class Prologue : Control
 		new("throne", 5.2f, "He came here first.", new Vector2(0f, 4f), new Vector2(0f, -12f), new Vector2(0f, 10f)),
 		// His shadows over the land, coming down on a village that is still lit.
 		new("tide", 4.6f, null, new Vector2(-3f, 0f), new Vector2(-14f, 4f), new Vector2(-22f, 0f)),
-		// The wizards led away to his tower, their light drawn out of them.
-		new("taken", 5.2f, "He took them all.", new Vector2(2f, 0f), new Vector2(14f, -2f), new Vector2(-20f, 0f)),
+		// The wizards led away to his tower, their light drawn out of them. The line says WHY these wizards (Eric,
+		// 2026-11-03: the story should "specifically mention that the villain was imprisoning any wizard he thought
+		// could rival him"); it was "He took them all", which gave no reason. It sets up the next panel: the one he
+		// missed is a rival too. 41 characters, under the PC's one-line 46 (RegressionChecks.Cutscenes).
+		new("taken", 5.2f, "He took every wizard who might rival him.", new Vector2(2f, 0f), new Vector2(14f, -2f), new Vector2(-20f, 0f)),
 		// The one he missed, hiding among the stones while his creatures search (its box animates). The back
 		// and the mid drift as one, so the searchers never slide on the ground they walk.
 		new("missed", 5.4f, "You are the one he missed.", new Vector2(-4f, 0f), new Vector2(-4f, 0f), new Vector2(14f, 0f)),

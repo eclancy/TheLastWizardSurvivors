@@ -14,8 +14,10 @@ This says what to point the contract at.
 
 ## The premise
 
-A dark wizard has imprisoned every wizard who could have stood against him, and enslaved the land
-with his shadow creatures.
+A dark wizard has imprisoned every wizard he thought could rival him, and enslaved the land with his
+shadow creatures. The reason is said on screen (Eric, 2026-11-03): the prologue's fourth line is *"He took
+every wizard who might rival him"* (`.ai/prologue.md`), and it is why the one he missed matters: a rival
+he did not find.
 
 You are the one he missed.
 
