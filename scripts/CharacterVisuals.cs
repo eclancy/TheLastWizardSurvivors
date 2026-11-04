@@ -21,9 +21,9 @@ public static class CharacterVisuals
 	/// <summary>
 	/// True for a wizard whose sheet is drawn facing LEFT. Player flips the body sprite whenever the
 	/// player moves left, which assumes the art faces right; the Stormcaller is drawn mid-stride to
-	/// the left - cloak and hair streaming out behind her to the right - so she walked backwards in
-	/// every direction. The others are drawn facing right or the viewer. If a wizard is redrawn in
-	/// tools/art/roster.py, check which way the walk cycle strides and keep this in step.
+	/// the left - her hair and the hem of her cloak lifting behind her to the right - so she walked
+	/// backwards in every direction. The others are drawn facing right or the viewer. If a wizard is
+	/// redrawn in tools/art/roster.py, check which way the walk cycle strides and keep this in step.
 	/// </summary>
 	public static bool SpriteFacesLeft(string characterId)
 	{
