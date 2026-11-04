@@ -2,7 +2,8 @@
 
 **2026-11-03: eight of these asks are to be replaced by puzzles** - the walking hut, the Tithe-Reeve's
 scale, the gibbet's cage, the thaw, the dry tomb, the barge, the Gaoler's key and the dotted door
-(`.ai/unlock-puzzles.md`, designed, not built). Until each is built, what is written here is what plays.
+(`.ai/unlock-puzzles.md`, designed). Until each is built, what is written here is what plays. **Built: the gibbet's
+cage** (3.4, 2026-11-04) - its row below says what plays now.
 
 Five chapters each hold one optional encounter, out in the world from the first second of a run,
 for the player to find. Winning it carries out something he took: a wizard in a cell, or a spell.
@@ -22,7 +23,7 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 | Cursed Dungeon | **The Gaoler's key** (`GaolersKeyEvent`) | "He keeps a wizard in one of these cells." | **carry**: kill the Warden, take its key across the map; three hits knock it loose | Tituba |
 | Sunken Cave | **The nine mouths** (`NineMouthsEvent`) | "His shadow followed the water down into the dark." | **listen**: a crescent of rock with nine mouths; her voice comes out of all of them a beat apart, hers first; stand in hers 2 s. A wrong mouth answers with a flight of Gloomwings and hers moves | the Cumaean Sibyl |
 | Blighted Swamp | **Snuff the lanterns** (`BogLanternsEvent`) | "Nothing living lights them." | **explore**: four lanterns spread over the map, each releasing wisps, then the lantern-tender comes and is fought on its own terms (below) | Contagion |
-| Blighted Swamp (second) | **The gibbet's cage** (`GibbetCageEvent`) | "Nothing living lights them." | **escort**: a cage hangs from a gibbet over a pool of rot; hold the winch 2 s and it comes down. He follows your own steps at 75% of your walk to the ferry landing, 1,450-1,750 px off, which the arrow shows; every plain chaser within 250 px goes for him, and the Mired rise across his way every 5 s. 60 health, a bite per touching body every 0.35 s; if he falls the bog takes him back to the cage and the walk starts again | Paracelsus |
+| Blighted Swamp (second) | **The gibbet's cage** (`GibbetCageEvent`) | "Nothing living lights them." | **lead** (`.ai/unlock-puzzles.md` 3.4): a cage hangs from a gibbet over a pool of rot; hold the winch 2 s and it comes down. He follows your own steps at 75% of your walk to the ferry landing, 1,450-1,750 px off, which the arrow shows. Between them, three walls of rot pools, each with one gap (`RotPoolLayout`), that hurt only him - 5 of his 60 the moment his feet are in one and every 0.25 s they stay; your steps glow on the ground ahead of him, and a pool stirs sickly yellow-green when he nears it. Walk back over your steps and he leaves the loop out. Every 5 s the Mired rise in the next gap. Nothing hunts or bites him; if the rot takes him the bog takes him back to the cage and the walk starts again | Paracelsus |
 | Mystic Ruins | **The Five-Pointed Seal** (`FivePointedSealEvent`) | "The old wards were broken from the inside." | **solve**: four guardian stones round a star cut in a courtyard floor; a step onto a stone's plate turns it and the two beside it a quarter (a puzzle, six to twelve presses, always solvable); all four facing the seal breaks it | Abe no Seimei |
 | Frozen Waste | **The thaw** (`ThawEvent`) | "A wizard lies under the ice." | **fight here**: damage dealt near the block thaws it, fire counts triple | Väinämöinen |
 | Scorched Sands | **The caravan master** (`CaravanMasterEvent`) | "The dead still walk the trade road." | **catch**: a walker on a fixed road that never turns toward you and escapes at the end | Iron Palisade |

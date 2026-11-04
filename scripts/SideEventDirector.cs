@@ -239,9 +239,6 @@ public partial class SideEventDirector : Node
 	{
 		PointsOfInterest.Reset();
 		SideEvent.ResetObjectiveLine();
-		// Nobody is being led at the start of a run, whatever the last one left (HuntedEscort's statics are the process's).
-		HuntedEscort.Withdraw();
-		HuntedEscort.ResetTally();
 		logPlacement = OS.GetCmdlineUserArgs().Contains("--explore-log");
 		if (Game == null)
 			return;

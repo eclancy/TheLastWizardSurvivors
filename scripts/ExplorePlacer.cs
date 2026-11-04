@@ -36,6 +36,9 @@ public sealed class ExplorePlacer
 		/// <summary>IsClear, and every point of the disc open too - for a site that draws over its whole
 		/// footprint (the thaw's lake). Null falls back to IsClear.</summary>
 		public Func<Vector2, float, bool> IsClearDense { get; init; }
+		/// <summary>True if a body can stand on this one point (no water, wall or fence): for a site that walks a route
+		/// over its ground on paper (the gibbet's rot pools, RotPoolLayout). Null: everywhere is.</summary>
+		public Func<Vector2, bool> IsWalkable { get; init; }
 		/// <summary>The run's start: distances and bearings are measured from here.</summary>
 		public Vector2 Origin { get; init; }
 		/// <summary>World pixels in one terrain chunk (TerrainStreamer.ChunkTiles x tile size): the unit the bands are in.</summary>
@@ -294,6 +297,9 @@ public sealed class ExplorePlacer
 	/// is drawn over its whole disc and walked to, not only stood on - the gibbet's ferry landing.
 	/// </summary>
 	public bool IsClearDense(Vector2 point, float footprint) => (ground.IsClearDense ?? ground.IsClear)(Snap(point), footprint);
+
+	/// <summary>True if a body can stand on this point (Ground.IsWalkable; everywhere when the ground does not say).</summary>
+	public bool IsWalkable(Vector2 point) => ground.IsWalkable?.Invoke(point) ?? true;
 
 	/// <summary>The nearest corridor cell centre on a maze; the point itself on an open stage.</summary>
 	public Vector2 Snap(Vector2 point)
