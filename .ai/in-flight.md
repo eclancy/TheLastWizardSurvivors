@@ -84,6 +84,13 @@ things come up; strike what lands.**
    - **"Leaves are whispering, though there is no wind."** (Eric, 2026-11-04): the grove's hint line reads
      "Leaves whispering, though there is no wind." (`StageHintCatalog.cs` line 137). While there, read every
      hint and chapter line for the same dropped verb.
+   - **The Gimmel Ring set is confusing** (Eric, 2026-11-04: "highest level spells? What happens when all same
+     level?"). How it works (`Player.ItemRules.cs`, `RebuildPair`): the two equipped spells with the highest
+     level, a Conjunction always counting highest, and on a tie the EARLIER SLOT wins - so with every spell at
+     one level it is the first two slots. Nothing shows which two. Mark the pair wherever the loadout is shown
+     (the strip and the pause screen) while the set or its pieces are held, and say the tie rule in the card's
+     one sentence or its element-card detail. The Betrothal Hoop leans the other way (the lowest-level spell):
+     check its card reads as clearly.
    - **Percentages, never flat numbers** (Eric, 2026-11-04: instead of things like "damage +2", always speak in
      percentages). Every player-facing increase becomes a percentage: the level-up lines a spell's
      `SpellLevelUpgrade` produces (`DamageBonus = 2` reads "+2 damage"; it should read "+17% damage" against
