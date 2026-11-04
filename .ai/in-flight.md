@@ -74,6 +74,10 @@ things come up; strike what lands.**
      other stars (Ascension, the Codex). Add something to the name - "Legendary Solar Flare", or a gold word
      and frame on its card - and say once what it means (its element tags count double). Check the level-up
      card, the loadout strip, the pause screen and the character select for a wizard who starts Legendary.
+   - **Item tags on a line of their own** (Eric, 2026-11-04): on an item set's card, the tags it adds go on
+     their own line at the bottom, not split across the text the way the Thorned Buckler's "Metal / Earth"
+     breaks on a phone. `ChestItemSelectionMenu` and the set rows (`CodexRows`); check at 540x1212
+     `--portrait --safe-area` with `_UiShot --open-chest`, and at 1280x720.
 9. **Bring back some defensive spells, on Aegis Ward's rules** (Eric, 2026-11-04). The passive defensive spells
    (Thornmail, Stormguard, Frozen Bulwark and the rest) were removed; Aegis Ward stayed because it is an active
    thing - a cooldown and a break, costing a slot like any other spell - not a number sitting on the player
