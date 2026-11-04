@@ -32,10 +32,18 @@ things come up; strike what lands.**
 4. **Decisions waiting on Eric:** crits in the damage colours come out near-white and alike (the element's own
    colour, crits marked only by "!" and size, is the alternative); the light pool's depth and Reduce Darkness
    (40% or off); Nimue's and Ma Liang's open items (section 0 below); the Oubliette's voice, never heard.
-5. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
-6. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
+5. **No single word left alone on a line, on PC and on the phone** (Eric, 2026-11-04: "any UI that shows up
+   for text we should try to avoid wrapping single words onto next line. I saw that a number of times in the
+   descriptions of levels when you first start the levels"). First the chapter's opening card (the note shown
+   as a run starts, `ChapterNoteCard` / `ChapterNotes`), then every wrapped text: level-up and modification
+   cards, quest lines, tips, banners. Photograph each at both canvases (`_UiShot`, 1280x720 and 540x1212
+   `--portrait --safe-area`) and fix by width or wording, or by a shared rule (balance the lines, or keep the
+   last two words together) rather than one string at a time; a check in the validator or `_UiShot` would keep
+   it from coming back.
+6. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
+7. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
    launch-plan doc, now carrying the rival motive).
-7. **Housekeeping:**
+8. **Housekeeping:**
    - the README's image and sound counts are stale again after the foliage and Paracelsus (recount from the
      tree, same methods);
    - delete the dead decor cases in `Node2DGame.BuildDecorProps` for every chapter that now has foliage (the
