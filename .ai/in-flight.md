@@ -29,6 +29,13 @@ things come up; strike what lands.**
 3. **The other unlock puzzles** in `.ai/unlock-puzzles.md` (designed and chosen by Eric, not built): Imhotep's
    mirrors, Ma Liang's door in one stroke, Baba Yaga's herded hut, Medea's balanced scale, Väinämöinen's song
    sung back, Morgan's lamps lit ahead, Tituba's key past the lanterns. Paracelsus's (the pilot) is done.
+   - **More hints for unlockables** (Eric, 2026-11-04). His example: in the first chapter, Baba Yaga's walking
+     hut walks a visible path, and that path is drawn on the map, so the player finds it by following tracks.
+     Do this for every unlock: each wizard's event and each secret leaves traces in the world that lead to it
+     (tracks, trails, signs) and something on the map or minimap once seen. Start from what exists - the hint
+     cues and lines (`StageHintCatalog`), the warm-glint and decor-gradient tells (`.ai/stage-secrets.md`), the
+     wayfinder and the quest log epithets - and from the per-event asks in `.ai/unlock-puzzles.md` (Baba Yaga's
+     there is a herded hut), and fit the new traces to each.
 4. **Decisions waiting on Eric:** crits in the damage colours come out near-white and alike (the element's own
    colour, crits marked only by "!" and size, is the alternative); the light pool's depth and Reduce Darkness
    (40% or off); Nimue's and Ma Liang's open items (section 0 below); the Oubliette's voice, never heard.
