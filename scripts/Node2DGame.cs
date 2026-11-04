@@ -1989,7 +1989,6 @@ public partial class Node2DGame : Node2D
 		Node2D propNode;
 		if (entry.IsObstacle)
 		{
-			Vector2 texSize = texture.GetSize() * scale;
 			var body = new StaticBody2D
 			{
 				Position = position,
@@ -1997,15 +1996,12 @@ public partial class Node2DGame : Node2D
 				CollisionMask = 0,
 				YSortEnabled = false,
 			};
+			// Footing.CuratedPropShape: the box the rule that no stand pins the player measures it by.
+			(Vector2 shapeCentre, Vector2 shapeSize) = Footing.CuratedPropShape(texture.GetSize() * scale);
 			var collisionShape = new CollisionShape2D
 			{
-				Position = new Vector2(0f, texSize.Y * 0.20f),
-				Shape = new RectangleShape2D
-				{
-					Size = new Vector2(
-						Mathf.Max(8f, texSize.X * 0.55f),
-						Mathf.Max(6f, texSize.Y * 0.34f)),
-				},
+				Position = shapeCentre,
+				Shape = new RectangleShape2D { Size = shapeSize },
 			};
 			body.AddChild(collisionShape);
 			body.AddChild(sprite);
@@ -2391,16 +2387,12 @@ public partial class Node2DGame : Node2D
 		sprite.FlipV = flipV;
 		sprite.Rotation = rotation;
 
-		Vector2 texSize = texture.GetSize() * scale;
+		// Footing.DecorPropShape: the box the rule that no stand pins the player measures a rock by.
+		(Vector2 shapeCentre, Vector2 shapeSize) = Footing.DecorPropShape(texture.GetSize() * scale);
 		var collisionShape = new CollisionShape2D
 		{
-			Position = new Vector2(0f, texSize.Y * 0.22f),
-			Shape = new RectangleShape2D
-			{
-				Size = new Vector2(
-					Mathf.Max(8f, texSize.X * 0.42f),
-					Mathf.Max(6f, texSize.Y * 0.24f))
-			}
+			Position = shapeCentre,
+			Shape = new RectangleShape2D { Size = shapeSize },
 		};
 
 		propBody.AddChild(collisionShape);
@@ -2923,15 +2915,6 @@ public partial class Node2DGame : Node2D
 	private void FurnishDecorSet(TerrainChunk chunk, Node parent, Rect2 rect, float decorShare, int setIndex)
 	{
 		DecorSetSpec spec = decorChunkSpecs![setIndex];
-		var rng = new RandomNumberGenerator
-		{
-			Seed = LevelGenerator.Hash(terrainSeed, chunk.Coord.X, chunk.Coord.Y, SaltDecor + setIndex),
-		};
-		List<Vector2> positions = spec.Habitat is Woodland.Habitat habitat && terrainStreamer != null && canopyProfile != null
-			? ChunkHabitatScatter(rng, rect, spec.Count * decorShare, spec, habitat)
-			: ChunkScatterPositions(rng, rect, spec.Count * decorShare, spec);
-		if (positions.Count == 0)
-			return;
 
 		// Ghost-like enemies (Boo, wisps, exploders) pass through decor, which Enemy sets up once at
 		// spawn against the decor that exists then. Decor streamed in afterwards has to make the same
@@ -2942,6 +2925,23 @@ public partial class Node2DGame : Node2D
 			if (node is Enemy e && e.IgnoresDecorCollision)
 				(ghosts ??= new List<Enemy>()).Add(e);
 		}
+
+		// A set that stands trunks is placed from the chunk's trunk plan, which the rule that no stand pins
+		// the player has already been kept in (Node2DGame.Footing.cs): the same rolls, made once for the
+		// chunk and every set in it, so a trunk keeps clear of every other set's and every neighbour's.
+		if (IsBlockingSet(setIndex))
+		{
+			FurnishPlannedSet(chunk, parent, setIndex, ghosts);
+			return;
+		}
+
+		var rng = new RandomNumberGenerator
+		{
+			Seed = LevelGenerator.Hash(terrainSeed, chunk.Coord.X, chunk.Coord.Y, SaltDecor + setIndex),
+		};
+		List<Vector2> positions = DecorSetPositions(rng, rect, decorShare, spec);
+		if (positions.Count == 0)
+			return;
 
 		if (spec.Grounded != null)
 		{
@@ -2960,6 +2960,10 @@ public partial class Node2DGame : Node2D
 			float rotation = spec.RandomRotation ? Mathf.DegToRad(rng.RandfRange(-8.0f, 8.0f)) : 0f;
 			if (position.DistanceTo(stageOrigin) < DecorPlayerSafeRadius || IsPropAvoidedAt(position) || IsInLandmark(position)
 				|| IsInExploreReserve(position) || IsNearPlannedHazard(position))
+				continue;
+			// A rock's body is a blocker too, and it yields to the trees (Footing): it keeps the clearance
+			// from every planned trunk, so it never closes a gap a stand left open.
+			if (!ClearsPlannedTrunks(Footing.Box(position, Footing.DecorPropShape(texture.GetSize() * scale))))
 				continue;
 			StaticBody2D body = CreateDecorPropNode(parent, texture, position, scale, flipH, flipV, rotation);
 			if (ghosts != null)
@@ -3048,6 +3052,9 @@ public partial class Node2DGame : Node2D
 				continue;
 			Texture2D texture = LoadPropTexture(entry.ResPath);
 			if (texture == null)
+				continue;
+			// A themed prop that blocks (a fallen log, a barrel) yields to the trees, as a rock does (Footing).
+			if (entry.IsObstacle && !ClearsPlannedTrunks(Footing.Box(position, Footing.CuratedPropShape(texture.GetSize() * scale))))
 				continue;
 			CreateCuratedPropNode(parent, entry, texture, position, scale, flipH);
 		}
@@ -3341,6 +3348,13 @@ public partial class Node2DGame : Node2D
 			result.Add(RandomIn());
 		return result;
 	}
+
+	/// <summary>Where one decor set's members are rolled in one chunk, by its habitat or evenly. The furnishing
+	/// and the trunk plan both ask this, with a generator seeded the same way, so they roll the same.</summary>
+	private List<Vector2> DecorSetPositions(RandomNumberGenerator rng, Rect2 rect, float decorShare, DecorSetSpec spec) =>
+		spec.Habitat is Woodland.Habitat habitat && terrainStreamer != null && canopyProfile != null
+			? ChunkHabitatScatter(rng, rect, spec.Count * decorShare, spec, habitat)
+			: ChunkScatterPositions(rng, rect, spec.Count * decorShare, spec);
 
 	// Where one decor set falls in one chunk: whole clumps, plus the set's share of loners.
 	private static List<Vector2> ChunkScatterPositions(RandomNumberGenerator rng, Rect2 rect, float expected, DecorSetSpec spec)

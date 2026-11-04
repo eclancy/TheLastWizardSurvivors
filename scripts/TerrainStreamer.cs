@@ -52,6 +52,13 @@ public sealed class TerrainChunk
 	/// decor and props of every chunk round it stay off them.
 	/// </summary>
 	public List<StageHazardSpot> HazardPlan { get; set; }
+
+	/// <summary>
+	/// What this chunk's decor sets that stand trunks will place, and the trunks its later neighbours give
+	/// way to (Node2DGame.Footing.cs, the rule that no stand pins the player), or null until somebody asks.
+	/// Pure like the hazard plan, and kept with the data for the same reason: the chunks round it read it.
+	/// </summary>
+	public GroundedPlan GroundedPlan { get; set; }
 }
 
 /// <summary>One stage hazard a chunk will place: where, which kind, and its cycle's offset.</summary>

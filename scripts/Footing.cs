@@ -76,21 +76,19 @@ public static class Footing
 	}
 
 	/// <summary>
-	/// A decor prop's collision box (a rock, a crystal: Node2DGame.CreateDecorPropNode), relative to its node,
-	/// for a texture of this size at its scale.
+	/// A decor prop's collision shape (a rock, a crystal: Node2DGame.CreateDecorPropNode builds its body from
+	/// this), its centre relative to the node and its size, for a texture of this size at its scale.
 	/// </summary>
-	public static Rect2 DecorPropBox(Vector2 texSize)
-	{
-		var size = new Vector2(Mathf.Max(8f, texSize.X * 0.42f), Mathf.Max(6f, texSize.Y * 0.24f));
-		return new Rect2(new Vector2(0f, texSize.Y * 0.22f) - size * 0.5f, size);
-	}
+	public static (Vector2 Centre, Vector2 Size) DecorPropShape(Vector2 texSize) =>
+		(new Vector2(0f, texSize.Y * 0.22f), new Vector2(Mathf.Max(8f, texSize.X * 0.42f), Mathf.Max(6f, texSize.Y * 0.24f)));
 
-	/// <summary>A themed prop's collision box, when it is an obstacle (Node2DGame.CreateCuratedPropNode).</summary>
-	public static Rect2 CuratedPropBox(Vector2 texSize)
-	{
-		var size = new Vector2(Mathf.Max(8f, texSize.X * 0.55f), Mathf.Max(6f, texSize.Y * 0.34f));
-		return new Rect2(new Vector2(0f, texSize.Y * 0.20f) - size * 0.5f, size);
-	}
+	/// <summary>A themed prop's collision shape, when it is an obstacle (Node2DGame.CreateCuratedPropNode).</summary>
+	public static (Vector2 Centre, Vector2 Size) CuratedPropShape(Vector2 texSize) =>
+		(new Vector2(0f, texSize.Y * 0.20f), new Vector2(Mathf.Max(8f, texSize.X * 0.55f), Mathf.Max(6f, texSize.Y * 0.34f)));
+
+	/// <summary>A shape's box in world space, for a node at <paramref name="position"/>.</summary>
+	public static Rect2 Box(Vector2 position, (Vector2 Centre, Vector2 Size) shape) =>
+		new(position + shape.Centre - shape.Size * 0.5f, shape.Size);
 
 	/// <summary>Edge-to-edge distance between two boxes; zero when they touch or overlap.</summary>
 	public static float Gap(Rect2 a, Rect2 b) => PropClusters.RectGap(a, b);
@@ -195,4 +193,28 @@ public static class Footing
 		if (kept.Count < 60)
 			errors.Add($"Footing: the synthetic stand kept only {kept.Count} trunks of 600 - the clearance would empty a wood.");
 	}
+}
+
+/// <summary>One member of a chunk's trunk plan: which decor set, which sprite, where it stands, and its trunk.</summary>
+public readonly record struct PlannedGrounded(int Set, GroundedSprite Art, Vector2 Ground, bool FlipH, Rect2 Trunk)
+{
+	public bool Blocks => Art.Trunk > 0;
+}
+
+/// <summary>
+/// What a chunk's decor sets that stand trunks will place (Node2DGame.Footing.cs), kept with the chunk's data
+/// like its hazard plan: a pure function of the stage seed and the ground, worked out once, because more than
+/// the chunk itself reads it - its later neighbours give way to its trunks, and every prop round it that
+/// blocks keeps clear of them.
+/// </summary>
+public sealed class GroundedPlan
+{
+	/// <summary>Every member the chunk's own rules keep - habitat, ground, landmarks, spacing, and the clearance
+	/// from its own trunks and from the blocking ground - before it gives way to its neighbours.</summary>
+	public readonly List<PlannedGrounded> Raw = new();
+	/// <summary>What the chunk places: the raw plan less any trunk within the clearance of a trunk in an
+	/// earlier neighbour's raw plan. Null until somebody asks.</summary>
+	public List<PlannedGrounded>? Kept;
+	/// <summary>Per set index, for --terrain-log: rolled, off habitat, refused, crowded, cleared out, gave way.</summary>
+	public readonly Dictionary<int, int[]> Tally = new();
 }

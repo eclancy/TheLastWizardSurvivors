@@ -21,6 +21,271 @@ using TheOneHeMissed.scripts;
 // world - which is how the canopy profiles were shown to leave the Forest exactly as it was.
 public partial class Node2DGame
 {
+	// --- The rule: no stand pins the player (Footing) ----------------------------------------------
+	//
+	// Every decor set that stands a trunk (a tree, a standing stone: a GroundedSprite with Trunk > 0) is
+	// placed from one plan per chunk, made from the sets' own rolls in their own order - exactly the rolls
+	// FurnishGroundedSet drew, so a member the rule keeps stands where it always stood - and kept to the rule
+	// as it is made:
+	//
+	//   1. IN ITS CHUNK, a trunk keeps Footing.Clearance from every trunk already kept, of any set, and from
+	//      every blocking cell of the ground (water, wall, fence) round it. One set spacing its own trunks was
+	//      never enough: the Forest's birches stood against its oaks, and its oaks against the ponds.
+	//   2. ACROSS A BORDER, the chunk that comes later (row, then column) gives way: a trunk within the
+	//      clearance of a trunk in an earlier neighbour's raw plan is dropped. A raw plan never shrinks by this
+	//      step's own hand, so nothing is recursive, the answer is the same whichever chunk is furnished first,
+	//      and any two trunks that both stand are the clearance apart (the hazards' rule, HazardPlanFor).
+	//      Only the eight neighbours can reach: no clump spills more than Foliage.MaxClumpReach past its chunk.
+	//   3. THE PROPS THAT BLOCK YIELD: a rock or a themed prop with a body is not placed within the clearance
+	//      of a planned trunk, in its chunk or a neighbour's.
+	//
+	// Bush sets block nothing and are not planned; they scatter as they always did.
+	private bool footingRuleOff;
+	private bool[]? blockingSets;
+
+	/// <summary>True if decor set <paramref name="setIndex"/> stands anything with a trunk.</summary>
+	private bool IsBlockingSet(int setIndex)
+	{
+		if (decorChunkSpecs == null)
+			return false;
+		if (blockingSets == null || blockingSets.Length != decorChunkSpecs.Count)
+			blockingSets = decorChunkSpecs.Select(s => s.Grounded != null && s.Grounded.Any(g => g.Trunk > 0)).ToArray();
+		return blockingSets[setIndex];
+	}
+
+	/// <summary>The chunk's trunk plan before it gives way to its neighbours (see above, steps 1 and the refusals).</summary>
+	private GroundedPlan RawGroundedPlan(TerrainChunk chunk)
+	{
+		if (chunk.GroundedPlan != null)
+			return chunk.GroundedPlan;
+		var plan = new GroundedPlan();
+		chunk.GroundedPlan = plan;
+		if (decorChunkSpecs == null || terrainStreamer == null)
+			return plan;
+
+		float chunkPixels = TerrainStreamer.ChunkTiles * ProceduralTilePixels;
+		var rect = new Rect2(stageOrigin + new Vector2(chunk.MinCell.X, chunk.MinCell.Y) * ProceduralTilePixels,
+			new Vector2(chunkPixels, chunkPixels));
+		float decorShare = (chunkPixels * chunkPixels) / Mathf.Max(1f, 4f * DecorFieldHalfWidth * DecorFieldHalfHeight);
+		Vector2 cellOrigin = terrainStreamer.CellOriginWorld(Vector2I.Zero);
+		TerrainStreamer ground = terrainStreamer;
+		var trunks = new List<Rect2>();
+		var placedInSet = new List<Vector2>();
+
+		for (int setIndex = 0; setIndex < decorChunkSpecs.Count; setIndex++)
+		{
+			if (!IsBlockingSet(setIndex))
+				continue;
+			DecorSetSpec spec = decorChunkSpecs[setIndex];
+			var rng = new RandomNumberGenerator
+			{
+				Seed = LevelGenerator.Hash(terrainSeed, chunk.Coord.X, chunk.Coord.Y, SaltDecor + setIndex),
+			};
+			List<Vector2> positions = DecorSetPositions(rng, rect, decorShare, spec);
+			List<GroundedSprite> sprites = spec.Grounded!;
+			float spacingSq = spec.MinSpacing * spec.MinSpacing;
+			int offHabitat = 0, refused = 0, crowded = 0, clearedOut = 0;
+			placedInSet.Clear();
+			foreach (Vector2 position in positions)
+			{
+				// The rolls FurnishGroundedSet draws, in its order, before any test.
+				GroundedSprite art = sprites[rng.RandiRange(0, sprites.Count - 1)];
+				bool flipH = rng.Randf() < 0.5f;
+				if (spec.Habitat is Woodland.Habitat habitat && rng.Randf() >= HabitatWeightAt(habitat, position))
+				{
+					offHabitat++;
+					continue;
+				}
+				int margin = art.Trunk > 0 ? TreeLandmarkMarginCells : BushLandmarkMarginCells;
+				if (position.DistanceTo(stageOrigin) < DecorPlayerSafeRadius || IsPropAvoidedAt(position) || IsInLandmark(position, margin)
+					|| IsInExploreReserve(position, art.Trunk > 0 ? ExploreTreeMargin : 0f) || IsNearPlannedHazard(position))
+				{
+					refused++;
+					continue;
+				}
+				if (TooNearInSet(position, placedInSet, spacingSq))
+				{
+					crowded++;
+					continue;
+				}
+				Rect2 trunk = default;
+				Vector2 at = position;
+				if (art.Trunk > 0)
+				{
+					trunk = Footing.TrunkRect(at, art.Trunk);
+					if (!footingRuleOff && !TrunkClears(trunk, trunks, cellOrigin))
+					{
+						// One short step away from the nearest thing it stands too close to, and every test again:
+						// a birch against an oak's foot moves off it rather than leaving the stand thinner.
+						if (!TryStepClear(ref at, art, trunks, placedInSet, spacingSq, cellOrigin, out trunk))
+						{
+							clearedOut++;
+							continue;
+						}
+					}
+					trunks.Add(trunk);
+				}
+				placedInSet.Add(at);
+				plan.Raw.Add(new PlannedGrounded(setIndex, art, at, flipH, trunk));
+			}
+			plan.Tally[setIndex] = new[] { positions.Count, offHabitat, refused, crowded, clearedOut, 0 };
+		}
+		return plan;
+	}
+
+	// The furthest a trunk is stepped to clear (TryStepClear): a cell. A trunk that needs more is dropped.
+	private const float FootingStepMax = 48f;
+
+	private static bool TooNearInSet(Vector2 position, List<Vector2> placedInSet, float spacingSq)
+	{
+		foreach (Vector2 other in placedInSet)
+			if (other.DistanceSquaredTo(position) < spacingSq)
+				return true;
+		return false;
+	}
+
+	private bool TrunkClears(Rect2 trunk, List<Rect2> trunks, Vector2 cellOrigin) =>
+		Footing.Clears(trunk, trunks) && Footing.ClearsGround(trunk, cellOrigin, ProceduralTilePixels, terrainStreamer!.IsSolidCell);
+
+	/// <summary>
+	/// A trunk standing too close to something: step it straight away from the nearest offender (another
+	/// trunk, or a blocking cell) by what it lacks, and keep it only if the new spot passes every test the
+	/// old one did - the ground, the landmarks, the reserves, the hazards, its set's spacing and the
+	/// clearance from everything. Pure: the same inputs step it the same way.
+	/// </summary>
+	private bool TryStepClear(ref Vector2 at, GroundedSprite art, List<Rect2> trunks, List<Vector2> placedInSet,
+		float spacingSq, Vector2 cellOrigin, out Rect2 trunk)
+	{
+		Rect2 box = Footing.TrunkRect(at, art.Trunk);
+		trunk = box;
+		float worstGap = float.PositiveInfinity;
+		Rect2 worst = default;
+		foreach (Rect2 other in trunks)
+		{
+			float g = Footing.Gap(box, other);
+			if (g < worstGap) { worstGap = g; worst = other; }
+		}
+		float tile = ProceduralTilePixels;
+		Rect2 reach = box.Grow(Footing.Clearance);
+		for (int cy = Mathf.FloorToInt((reach.Position.Y - cellOrigin.Y) / tile); cy <= Mathf.FloorToInt((reach.End.Y - cellOrigin.Y) / tile); cy++)
+			for (int cx = Mathf.FloorToInt((reach.Position.X - cellOrigin.X) / tile); cx <= Mathf.FloorToInt((reach.End.X - cellOrigin.X) / tile); cx++)
+			{
+				if (!terrainStreamer!.IsSolidCell(cx, cy))
+					continue;
+				var cell = new Rect2(cellOrigin + new Vector2(cx, cy) * tile, new Vector2(tile, tile));
+				float g = Footing.Gap(box, cell);
+				if (g < worstGap) { worstGap = g; worst = cell; }
+			}
+		float lack = Footing.Clearance - worstGap + 1f;
+		if (float.IsPositiveInfinity(worstGap) || lack > FootingStepMax)
+			return false;
+		Vector2 away = box.GetCenter() - worst.GetCenter();
+		away = away.LengthSquared() < 1e-4f ? Vector2.Right : away.Normalized();
+		Vector2 stepped = at + away * lack;
+		int margin = TreeLandmarkMarginCells;
+		if (stepped.DistanceTo(stageOrigin) < DecorPlayerSafeRadius || IsPropAvoidedAt(stepped) || IsInLandmark(stepped, margin)
+			|| IsInExploreReserve(stepped, ExploreTreeMargin) || IsNearPlannedHazard(stepped)
+			|| TooNearInSet(stepped, placedInSet, spacingSq))
+			return false;
+		Rect2 moved = Footing.TrunkRect(stepped, art.Trunk);
+		if (!TrunkClears(moved, trunks, cellOrigin))
+			return false;
+		at = stepped;
+		trunk = moved;
+		return true;
+	}
+
+	// The four neighbours that come before a chunk in (row, column) order: EarlierNeighbours, the hazards'.
+
+	/// <summary>What the chunk places: its raw plan less the trunks an earlier neighbour's raw trunks claim.</summary>
+	private List<PlannedGrounded> KeptGroundedPlan(TerrainChunk chunk)
+	{
+		GroundedPlan plan = RawGroundedPlan(chunk);
+		if (plan.Kept != null)
+			return plan.Kept;
+		var kept = new List<PlannedGrounded>(plan.Raw.Count);
+		foreach (PlannedGrounded member in plan.Raw)
+		{
+			if (member.Blocks && !footingRuleOff && ClaimedByEarlierTrunk(chunk.Coord, member.Trunk))
+			{
+				if (plan.Tally.TryGetValue(member.Set, out int[]? tally))
+					tally[5]++;
+				continue;
+			}
+			kept.Add(member);
+		}
+		plan.Kept = kept;
+		return kept;
+	}
+
+	private bool ClaimedByEarlierTrunk(Vector2I coord, Rect2 trunk)
+	{
+		foreach (Vector2I offset in EarlierNeighbours)
+		{
+			foreach (PlannedGrounded other in RawGroundedPlan(terrainStreamer!.DataFor(coord + offset)).Raw)
+			{
+				if (other.Blocks && Footing.Gap(trunk, other.Trunk) < Footing.Clearance)
+					return true;
+			}
+		}
+		return false;
+	}
+
+	/// <summary>
+	/// True if a blocking box (a rock's, a themed prop's) keeps the clearance from every trunk any chunk round
+	/// it will place. Asks only the chunks a trunk within reach could belong to.
+	/// </summary>
+	private bool ClearsPlannedTrunks(Rect2 box)
+	{
+		if (footingRuleOff || terrainStreamer == null || decorChunkSpecs == null)
+			return true;
+		bool any = false;
+		for (int i = 0; i < decorChunkSpecs.Count && !any; i++)
+			any = IsBlockingSet(i);
+		if (!any)
+			return true;
+		Rect2 reach = box.Grow(Footing.Clearance + Foliage.MaxClumpReach);
+		Vector2I first = terrainStreamer.ChunkOfWorld(reach.Position);
+		Vector2I last = terrainStreamer.ChunkOfWorld(reach.End);
+		for (int cy = first.Y; cy <= last.Y; cy++)
+		{
+			for (int cx = first.X; cx <= last.X; cx++)
+			{
+				foreach (PlannedGrounded member in KeptGroundedPlan(terrainStreamer.DataFor(new Vector2I(cx, cy))))
+				{
+					if (member.Blocks && Footing.Gap(box, member.Trunk) < Footing.Clearance)
+						return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	/// <summary>One planned set's members in one chunk: its trees and whatever else the set stands.</summary>
+	private void FurnishPlannedSet(TerrainChunk chunk, Node parent, int setIndex, List<Enemy>? ghosts)
+	{
+		int placed = 0;
+		foreach (PlannedGrounded member in KeptGroundedPlan(chunk))
+		{
+			if (member.Set != setIndex)
+				continue;
+			placed++;
+			StaticBody2D? body = CreateGroundedDecor(parent, member.Art, member.Ground, member.FlipH);
+			if (body != null && ghosts != null)
+			{
+				foreach (Enemy ghost in ghosts)
+					if (IsInstanceValid(ghost))
+						ghost.AddCollisionExceptionWith(body);
+			}
+		}
+		// --terrain-log: what became of the set's rolls in this chunk, for tuning a stand's density.
+		if (TerrainStreamer.LogTimings && chunk.GroundedPlan!.Tally.TryGetValue(setIndex, out int[]? t))
+			GD.Print($"TERRAIN trunks {decorChunkSpecs![setIndex].Grounded![0].Id} {parent.Name}: {t[0]} rolled, {t[1]} off habitat, "
+				+ $"{t[2]} refused, {t[3]} crowded, {t[4]} cleared out, {t[5]} gave way, {placed} placed");
+	}
+
+	// --- Tools ----------------------------------------------------------------------------------------
+
 	private bool footingCensus;
 	private readonly HashSet<Vector2I> footingCensused = new();
 	private int censusChunks, censusTrunks, censusUnder, censusClosed, censusPockets, censusTrunkPockets;
@@ -38,6 +303,9 @@ public partial class Node2DGame
 	{
 		string[] args = OS.GetCmdlineUserArgs();
 		footingCensus = args.Contains("--footing-census");
+		// Tools only: place the trunks as the pilot did, with no clearance, so the census can show what the
+		// rule changes on the same build.
+		footingRuleOff = args.Contains("--no-footing-rule");
 	}
 
 	/// <summary>Called once the first chunks are furnished: the hash, and the census of what is complete.</summary>
