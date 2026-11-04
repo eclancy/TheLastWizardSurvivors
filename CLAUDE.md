@@ -68,6 +68,13 @@ Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like)
   caravan master) and what each one asks, the two rescued wizards and three found spells they pay
   out, why the ice is never a target, and the schema 10 migration. **Read it before adding an
   event or a Discovery unlock.**
+- `.ai/unlock-puzzles.md` — every wizard's rescue held to Halls of Torment's laser puzzle (the state
+  drawn in the world, one action, a wrong move costs time, generated, solved under the horde): the
+  scorecard of all twelve, and the new asks Eric chose on 2026-11-03 for eight of them (Imhotep routes
+  the sun with mirrors, Ma Liang draws the door in one stroke, Baba Yaga's hut is herded, Paracelsus is
+  led through rot, Medea's scale is balanced, Väinämöinen's song is sung back, Morgan's lamps are lit
+  ahead, Tituba's key slips past lanterns). Designed, not built. **Read it before touching any side
+  event's ask.**
 - `.ai/stage-secrets.md` — the plan for secrets (the Forest's two built, section 12): what a secret is against a side event,
   the warm-glint and decor-gradient tells, what one may pay without moving the Apotheosis (never a
   spell, wizard or boon; four keepsake found levels per #20), seeded placement in the streamed

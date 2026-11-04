@@ -1,5 +1,9 @@
 # Chapter wizards: one held in every place
 
+**2026-11-03: six of the ten asks below are to become puzzles** - Baba Yaga's, Medea's, Paracelsus's,
+Imhotep's, Ma Liang's and Morgan's, with Tituba's and Väinämöinen's in `.ai/side-events.md` -
+`.ai/unlock-puzzles.md`, designed, not built. Seimei, Wayland, the Sibyl and Nostradamus keep theirs.
+
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
