@@ -1,5 +1,9 @@
 # Side events: what the dark wizard keeps in each place
 
+**2026-11-03: eight of these asks are to be replaced by puzzles** - the walking hut, the Tithe-Reeve's
+scale, the gibbet's cage, the thaw, the dry tomb, the barge, the Gaoler's key and the dotted door
+(`.ai/unlock-puzzles.md`, designed, not built). Until each is built, what is written here is what plays.
+
 Five chapters each hold one optional encounter, out in the world from the first second of a run,
 for the player to find. Winning it carries out something he took: a wizard in a cell, or a spell.
 These are the game's first **Discovery** unlocks, the source `UnlockCatalog` declared from the

@@ -884,7 +884,7 @@ run). Listed here as achievements; their places, rooms and art are in the castle
 
 | chapter | secrets |
 |---|---|
-| The Last Bridge | the Toll Stone (touch: 30 Arcane Energy), the Span Lantern (linger: the collapse waits 30 s), the Gargoyle's Perch (strike: a chest), **the Names on the Parapet** (keepsake, gather: 150 Arcane Energy) |
+| The Last Bridge | the Toll Stone (touch: 30 Arcane Energy), the Span Lantern (carry, linger until 2026-11-03: the collapse waits 30 s), the Gargoyle's Perch (strike: a chest), **the Names on the Parapet** (keepsake, gather: 150 Arcane Energy) |
 | Cursed Dungeon | moved into the castle with its chapter: D1 to D7 (8.5), its vault the Cold Forge. (The first draft's Undercroft and its secrets are not built; the Oubliette moved to the Dungeon as D7) |
 | The Court | its rooms are its secrets: the Great Hall, the Chapel, the Library (reveals every secret's hint, 4.3), the Armoury, the Map Room, the Treasury, the Gallery, the Kennels, the Kitchens, the Minstrels' Gallery, the Solar, and **the Keepsake Doors** (one door for every chapter keepsake found) |
 | The Throne | none in the fight (secrets stand down for a boss); its deeds are Feats |
