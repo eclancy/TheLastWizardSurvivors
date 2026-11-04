@@ -87,7 +87,12 @@ things come up; strike what lands.**
    `CLAUDE.md`, and one achievement to earn it (every non-starter spell comes from exactly one). Design first:
    which old passives' ideas are worth keeping as actives, and how each differs from Aegis Ward and from each
    other (`.ai/passives-and-items.md` has why the passives went, `.ai/spell-variety.md` the axes).
-10. **Art fixes** (Eric, 2026-11-04):
+10. **Art and sound fixes** (Eric, 2026-11-04):
+   - **Magic Missile's sound is annoying.** It plays on every dart, every 0.8 s, all run long for the Archmage,
+     and `.ai/audio-direction.md` says a sound's loudness is set by how often it plays. Find which cast and
+     impact sounds it uses (`SfxCatalog`, `SfxPlayer`), then make it quieter, softer and less sharp, with some
+     variation between plays, in `tools/audio/sfx.py` (`python tools/audio/build.py`, then `analyse.py
+     --confuse`). Listen to it in a run before and after.
    - **Aedan's lantern hangs from his staff**, not sitting on top of it: a hook or crook at the staff's head,
      the lantern swinging below it on its bail. `tools/art/roster.py`, `pyromancer()`; regenerate his sheets and
      the prologue panels that show him, keep his spell anchor on the lantern (`CharacterVisuals`), and check the
