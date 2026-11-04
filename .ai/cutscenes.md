@@ -105,8 +105,8 @@ played straight after:
 
 Then the road (unchanged) and the character select, where all five are playable.
 
-**The line** is the prologue's fourth. *He came here first. He took every wizard who might rival him. You are
-the one he missed. You went back for them.* - past tense like the first two, "you" like the third. It says the one thing the
+**The line** is the prologue's fourth. *The wizards' circle. He came here first. He took every wizard who might
+rival him. You are the one he missed. You went back for them.* - past tense like the first two, "you" like the third. It says the one thing the
 picture cannot: that the figure breaking the chain is the player.
 
 **Rules it keeps** (`.ai/prologue.md`): the dark wizard's light is the chain and the black sun over the

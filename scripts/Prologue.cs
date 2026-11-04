@@ -167,8 +167,12 @@ public partial class Prologue : Control
 	{
 		// The circle where the wizards met, every one of their lights still in the world.
 		new("moot", 4.6f, null, new Vector2(-4f, 0f), new Vector2(-10f, 0f), new Vector2(-26f, 0f)),
-		// Him, rising over it, the light going out of them and into his hand.
-		new("throne", 5.2f, "He came here first.", new Vector2(0f, 4f), new Vector2(0f, -12f), new Vector2(0f, 10f)),
+		// Him, rising over it, the light going out of them and into his hand. The line names the place (Eric,
+		// 2026-11-03: "When the story says 'he came here first'... where are they? can we add a little context?"):
+		// the first panel is silent, so "here" was nowhere. It stays one line of the four (RegressionChecks.Cutscenes,
+		// "keep text minimal"), and "He came here first" is kept word for word - the Broken Circle's own note says it
+		// again when the player reaches the stones (ChapterNotes, stage_10). 40 characters.
+		new("throne", 5.2f, "The wizards' circle. He came here first.", new Vector2(0f, 4f), new Vector2(0f, -12f), new Vector2(0f, 10f)),
 		// His shadows over the land, coming down on a village that is still lit.
 		new("tide", 4.6f, null, new Vector2(-3f, 0f), new Vector2(-14f, 4f), new Vector2(-22f, 0f)),
 		// The wizards led away to his tower, their light drawn out of them. The line says WHY these wizards (Eric,
