@@ -2,7 +2,53 @@
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
-## 0. Now (2026-11-03, after the 0.12.0 release)
+## Next week (list started 2026-11-04, after the 0.13.0 release)
+
+**0.13.0 is released** (`Release v0.13.0`, 2143dbe8, tag `v0.13.0`; story epoch still 2, so no reset; both
+feeds serve it; `main` level with it). It carries everything in section 0 below plus the 2026-11-04 work: the
+prologue's six lines and redrawn villains, Thora's flowing cape, foliage in five chapters, the Forest with no
+shooters, the card text and spell reaches, the footing rule's wide-trunk margin, John Dee at 100 chests, and
+Paracelsus's rot-path puzzle. Stopped for Eric's weekly limit (5% left), not finished. **Add to this list as
+things come up; strike what lands.**
+
+**Fixes and changes to start:**
+
+1. **Finish the foliage pass: the Frozen Waste and the Mystic Ruins.** Both builders were stopped mid-work;
+   resume each in its worktree, on `.ai/terrain.md` section 13's recipe (salts assigned: Frozen 0x5CF2-4,
+   Ruins 0x5E02-4). Merge each with `ground_detail.py` re-run for the atlas.
+   - `ws-art-foliage-frozen` (`art/foliage-frozen`): the move (f072c727) and the snow-ghost groves (71d09d5b,
+     "work in progress, not yet measured"), one uncommitted file. Nothing tested.
+   - `ws-art-foliage-ruins` (`art/foliage-ruins`): the move (93844a88, hash proven unchanged) and the
+     overgrown quarters (68ed6cc2), one uncommitted file. Not yet validated, probed, censused or shot.
+   - Both were told what got the Sands and the Heath sent back (rocks as bricks, crowns as paving): check
+     their close-ups for it before merging.
+2. **Play what 0.13.0 shipped unplayed:** Paracelsus's rot-path puzzle (it replaced a working event); the
+   foliage in the Forest, Fields, Swamp, Sands and Broken Circle (does a stand pin you, do the hedges read as
+   hedges, are the Heath's crowns too sparse); the spell reaches; the Forest without shooters; John Dee's chest
+   economy (every other wizard has about a third of a set fewer chests a run).
+3. **The other unlock puzzles** in `.ai/unlock-puzzles.md` (designed and chosen by Eric, not built): Imhotep's
+   mirrors, Ma Liang's door in one stroke, Baba Yaga's herded hut, Medea's balanced scale, Väinämöinen's song
+   sung back, Morgan's lamps lit ahead, Tituba's key past the lanterns. Paracelsus's (the pilot) is done.
+4. **Decisions waiting on Eric:** crits in the damage colours come out near-white and alike (the element's own
+   colour, crits marked only by "!" and size, is the alternative); the light pool's depth and Reduce Darkness
+   (40% or off); Nimue's and Ma Liang's open items (section 0 below); the Oubliette's voice, never heard.
+5. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
+6. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
+   launch-plan doc, now carrying the rival motive).
+7. **Housekeeping:**
+   - the README's image and sound counts are stale again after the foliage and Paracelsus (recount from the
+     tree, same methods);
+   - delete the dead decor cases in `Node2DGame.BuildDecorProps` for every chapter that now has foliage (the
+     recipe leaves that to the integrator);
+   - the Heath's thorns are mirrored both ways (shared sprite mirroring) and its granite blob keeps the slab
+     tile (`tiles.py`, shared);
+   - on this PC's Python 2.7, `build.py` and the icon generators rewrite 43-87 files the committed versions
+     differ from: find out which interpreter wrote the committed ones and settle it;
+   - five old folders beside the repo that git no longer lists as worktrees (`ws-fix-touch-input`,
+     `ws-wip-combo-sagittarius`, `ws-wip-familiar-icons`, `ws-wip-progress-reset`, `ws-wip-spell-visuals`):
+     Eric's call whether to delete.
+
+## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
 (15d35a38): every player's progress restarts the first time it runs, their old save kept as
