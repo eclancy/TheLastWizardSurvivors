@@ -1946,6 +1946,7 @@ the furnishing as the change:
 | frame mean / p95 | 7.9 / 24 ms | 7.0 / 12 ms (another load) |
 | nodes, walking | 1,730-1,940 (mean 1,890) | 2,380-2,750 (mean 2,560) |
 | worst furnish step of a crossing, median / max | 1.7 / 7.3 ms | 8.1 / 16.1 ms, then the fix below |
+| the same, the committed build (machine at 71%, frame mean 16.9 ms) | | 7.9 / 39.5 ms; ground generated inside a furnishing step: 1 chunk in 21 crossings |
 
 About 680 more nodes (a hedge run is one node, a tree three). The furnishing was the finding. `--terrain-log`
 now names any furnishing part over 3 ms and how many chunks of ground it generated: with the rule on, the trunk
@@ -1956,7 +1957,9 @@ rings of data, one chunk a step, before a stage with trunks furnishes (`TerrainS
 them, on the Forest under the same load, the plan's part averaged 4.8 ms where the rule-off run's averaged 5.2,
 and furnishing generated 4 chunks in six crossings. The field itself was made cheaper too: it keeps the last
 lattice cell's nine field centres and each noise's four corners (the same numbers, computed once; the placement
-hashes did not move). **Not measured on the phone**, and the after frame times want a quiet machine.
+hashes did not move). On the committed build the slow furnishing parts are the ground detail (about 90 cells a
+chunk to paint where there were 30) and the hedge set; neither generates ground. **Not measured on the phone**,
+and every after number here wants a quiet machine.
 
 ### Still needs eyes (the spread)
 
