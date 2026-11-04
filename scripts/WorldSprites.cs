@@ -41,10 +41,17 @@ public static class WorldSprites
 	public const float SortLift = 36f;
 
 	/// <summary>Every tree and bush, by id. Missing textures load as null (see RegressionChecks).</summary>
-	public static Dictionary<string, GroundedSprite> LoadTrees()
+	public static Dictionary<string, GroundedSprite> LoadTrees() => LoadManifest(TreesManifest);
+
+	/// <summary>
+	/// Every sprite in a manifest in trees.json's shape - {"sprites": [{id, kind, path, width, height, ground,
+	/// anchor_x, trunk}]} - by id: the shared trees, or a chapter's own (its foliage generator writes one, as
+	/// tools/art/props_heath.py writes heath.json). Missing textures load as null.
+	/// </summary>
+	public static Dictionary<string, GroundedSprite> LoadManifest(string manifestPath)
 	{
 		var result = new Dictionary<string, GroundedSprite>();
-		string text = FileAccess.GetFileAsString(TreesManifest);
+		string text = FileAccess.GetFileAsString(manifestPath);
 		if (string.IsNullOrEmpty(text))
 			return result;
 		using JsonDocument doc = JsonDocument.Parse(text);

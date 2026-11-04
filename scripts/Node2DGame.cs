@@ -717,6 +717,7 @@ public partial class Node2DGame : Node2D
 		// After all three: on an endless stage they only recorded what to scatter, and this is where
 		// the first chunks are painted and furnished with it.
 		LoadInitialTerrain();
+		RunFootingToolsAfterInitialLoad();
 		StartRunOpening();
 		UpdateSpawnScaling();
 		StartChapterRules();
@@ -1348,6 +1349,7 @@ public partial class Node2DGame : Node2D
 		// navigation grid wherever the window reaches - see PlanChunkFeatures.
 		terrainStreamer.PlanFeatures = PlanChunkFeatures;
 		TerrainStreamer.LogTimings = OS.GetCmdlineUserArgs().Contains("--terrain-log");
+		ReadFootingToolFlags();
 
 		// Terrain-aware enemy navigation, on every procedural stage: maze walls and lakes alike. Its
 		// window is the painted square, and it is filled the first time the streamer has loaded round
@@ -1697,6 +1699,7 @@ public partial class Node2DGame : Node2D
 
 		int stageIndex = Global.SelectedStageIdx;
 		var environmentProfile = StageEnvironmentCatalog.GetForStageIndex(stageIndex);
+		canopyProfile = Foliage.CanopyFor(environmentProfile.Kind);
 		List<Texture2D> forestGroundAccents = LoadTexturesFromPaths(
 			"res://assets/bonelight/world/rock-1.png",
 			"res://assets/bonelight/world/rock-2.png");
@@ -1718,6 +1721,17 @@ public partial class Node2DGame : Node2D
 			"res://assets/bonelight/world/rock-1.png",
 			"res://assets/bonelight/world/rock-2.png");
 
+		// A CHAPTER'S FOLIAGE (.ai/terrain.md section 13): a chapter whose foliage declares its decor is
+		// scattered from that, in its order, and never reaches the switch below. Its old case there is then
+		// unreached; it is left for the integrator to delete after the merges, so that the chapters' builders,
+		// working in parallel, never edit this switch.
+		if (Foliage.For(environmentProfile.Kind)?.Decor is { } foliageSets)
+		{
+			foreach (FoliageSet set in foliageSets)
+				CreateFoliageSet(set);
+			return;
+		}
+
 		switch (environmentProfile.Kind)
 		{
 			case StageEnvironmentKind.Sketchbook:
@@ -1737,56 +1751,7 @@ public partial class Node2DGame : Node2D
 					BushClusterRadiusMin * 1.4f, BushClusterRadiusMax * 1.6f,
 					BushClusterCenterSeparation * 1.3f, 0.22f);
 				break;
-			case StageEnvironmentKind.Forest:
-				// THE NUMBERS ARE LARGE BECAUSE THE FIELD IS. Decor scatters over 8400x8400 and the
-				// camera shows 720x1280 - about 1.2% of it - so a hundred objects put roughly one
-				// on screen and the Enchanted Forest had no trees in it for as long as it existed.
-				// These put six to eight in view, which reads as woodland while leaving the open
-				// ground the swarm needs. Measured, not guessed: see .ai/terrain.md section 5.
-				//
-				// CLUSTER SIZE 3, DOWN FROM 8, MATTERS AS MUCH AS THE COUNT. Clustering divides the
-				// count into clumps, so raising the count alone just makes the same few thickets
-				// denser and leaves the ground between them as bare as before. Smaller clumps means
-				// more of them.
-				//
-				// BIGGER TREES, FEWER OF THEM (2026-10, .ai/terrain.md section 10). The trees were
-				// 96 px canopies, the wizard's own height; a grown oak is now 300 px. At the old 430
-				// a screen carried six to eight crowns of that size and the wood was a wall with the
-				// swarm hidden under it. 150 mature trees and 90 young ones put about three big
-				// crowns and two small ones in view - woodland with clearings - and the bushes, which
-				// you walk through, fill the ground between them at the old density.
-				//
-				// STANDS AND CLEARINGS (2026-11-03, the foliage pass: .ai/genre-lessons.md section 2,
-				// .ai/terrain.md section 13). The counts above were spread evenly, so every screen held
-				// the same three crowns and five bushes on the same flat turf. Now each set grows where
-				// it grows in a wood (Woodland): the mature trees mass into stands, the young trees and
-				// the bushes - in three sizes - crowd the stands' fringes where the light gets in, and
-				// the clearings between are left open to fight in. A habitat set's count is its density
-				// INSIDE its habitat (per 8400 x 8400 of it), not an average over the field, so a stand
-				// is as thick in a chunk that holds a sliver of one as in a chunk that is all wood.
-				// Overall a chunk carries about 1.5x the trees and 1.6x the bushes it did, all of it where
-				// the wood is (.ai/terrain.md section 13: the census, the node count and the frame).
-				CreateGroundedDecorSet(GroundedSprites("bush-round-1", "bush-round-2", "bush-wide-1", "bush-berry-1", "bush-berry-2"),
-					700, 4, BushClusterRadiusMin * 0.8f, BushClusterRadiusMax, BushClusterCenterSeparation * 0.8f, 0.04f, 44f,
-					new Woodland.Habitat(0.25f, 1f, 0.45f));
-				// The big oaks twice over: a stand is massed crowns, and the oak's is the widest (240 px).
-				CreateGroundedDecorSet(GroundedSprites("oak-large-1", "oak-large-2", "oak-large-1", "oak-large-2",
-						"oak-medium-1", "oak-medium-2", "fir-1", "fir-2"),
-					1800, 5, StandClusterRadiusMin, StandClusterRadiusMax, StandClusterCenterSeparation, 0.03f, MatureTreeSpacing,
-					new Woodland.Habitat(0f, 0.15f, 1f));
-				CreateGroundedDecorSet(GroundedSprites("birch-1", "birch-2", "sapling-1"),
-					480, 3, TreeClusterRadiusMin * 0.6f, TreeClusterRadiusMax * 0.7f, TreeClusterCenterSeparation * 0.5f, 0.06f, YoungTreeSpacing,
-					new Woodland.Habitat(0.06f, 1f, 0.35f));
-				CreateDecorSet(forestGroundAccents, 240, 0.88f, 1.02f, false, false, -42, -34, true, 3, GroundAccentClusterRadiusMin, GroundAccentClusterRadiusMax, GroundAccentClusterCenterSeparation, 0.05f);
-				// The two new bush sizes come after the rocks: a set's rolls are salted by its place in
-				// this list (FurnishDecorSet), so the rocks stay exactly where they were.
-				CreateGroundedDecorSet(GroundedSprites("bush-small-1", "bush-small-2", "bush-small-3"),
-					420, 4, BushClusterRadiusMin * 0.6f, BushClusterRadiusMax * 0.8f, BushClusterCenterSeparation * 0.6f, 0.08f, 26f,
-					new Woodland.Habitat(0.35f, 1f, 0.3f));
-				CreateGroundedDecorSet(GroundedSprites("bush-large-1", "bush-large-2"),
-					420, 2, BushClusterRadiusMin * 0.6f, BushClusterRadiusMax * 0.9f, BushClusterCenterSeparation * 0.8f, 0.02f, 96f,
-					new Woodland.Habitat(0f, 1f, 0.9f));
-				break;
+			// The Enchanted Forest's decor is its foliage's (Foliage.EnchantedForest.cs), scattered above.
 			case StageEnvironmentKind.Castle:
 				CreateDecorSet(ruins, Math.Max(18, environmentProfile.RuinCount), 0.95f, 1.14f, false, false, -26, -14, true, 3, RuinClusterRadiusMin, RuinClusterRadiusMax, RuinClusterCenterSeparation, 0.06f);
 				CreateDecorSet(forestGroundAccents, 8, 0.72f, 0.90f, false, false, -40, -28, true, 2, GroundAccentClusterRadiusMin * 0.82f, GroundAccentClusterRadiusMax * 0.82f, GroundAccentClusterCenterSeparation * 0.80f, 0.04f);
@@ -2211,14 +2176,15 @@ public partial class Node2DGame : Node2D
 	// MatureTreeSpacing apart, a body slides off one. _MazeProbe on the Forest measured whether that
 	// held (section 10).
 
-	private const float MatureTreeSpacing = 120f;
-	private const float YoungTreeSpacing = 72f;
+	private const float MatureTreeSpacing = Foliage.MatureTreeSpacing;
+	private const float YoungTreeSpacing = Foliage.YoungTreeSpacing;
 	// How far trees and bushes keep from a landmark, in cells: a 300 px crown stood just south of a
 	// garden's fence would hide the garden, and a trunk outside a gate would half close it.
 	private const int TreeLandmarkMarginCells = 3;
 	private const int BushLandmarkMarginCells = 1;
-	// The depth of a trunk's footprint, world px, ending 2 px below the ground line.
-	private const float TrunkFootDepth = 12f;
+	// The depth of a trunk's footprint, world px, ending 2 px below the ground line (Footing, the one place
+	// the trunk's box is described, so the plan, the body and the census agree).
+	private const float TrunkFootDepth = Footing.TrunkFootDepth;
 
 	private Dictionary<string, GroundedSprite>? worldTrees;
 	private ShaderMaterial? canopyMaterial;
@@ -2236,6 +2202,57 @@ public partial class Node2DGame : Node2D
 	{
 		Shader = GD.Load<Shader>("res://scenes/shaders/canopy_fade.gdshader"),
 	};
+
+	// Every manifest in trees.json's shape a chapter's foliage names, loaded once a run (WorldSprites.LoadManifest).
+	private readonly Dictionary<string, Dictionary<string, GroundedSprite>> foliageManifests = new();
+
+	/// <summary>
+	/// One of a chapter's foliage sets (Foliage.&lt;Chapter&gt;.cs), recorded exactly as the switch's calls record
+	/// theirs: a grounded set through CreateGroundedDecorSet, a plain one through CreateDecorSet, the clump
+	/// sizes read off the same exported numbers - so the Forest, moved into its foliage, scatters exactly as
+	/// it did (--placement-hash).
+	/// </summary>
+	private void CreateFoliageSet(FoliageSet set)
+	{
+		(float rmin, float rmax, float separation) = set.Clump switch
+		{
+			ClumpBase.Tree => (TreeClusterRadiusMin, TreeClusterRadiusMax, TreeClusterCenterSeparation),
+			ClumpBase.Stand => (StandClusterRadiusMin, StandClusterRadiusMax, StandClusterCenterSeparation),
+			ClumpBase.GroundAccent => (GroundAccentClusterRadiusMin, GroundAccentClusterRadiusMax, GroundAccentClusterCenterSeparation),
+			ClumpBase.Ruin => (RuinClusterRadiusMin, RuinClusterRadiusMax, RuinClusterCenterSeparation),
+			_ => (BushClusterRadiusMin, BushClusterRadiusMax, BushClusterCenterSeparation),
+		};
+		rmin *= set.RadiusMin;
+		rmax *= set.RadiusMax;
+		separation *= set.Separation;
+
+		if (set.Sprites != null)
+		{
+			CreateDecorSet(LoadTexturesFromPaths(set.Sprites), set.Count, set.MinScale, set.MaxScale, set.RandomRotation,
+				set.AllowYFlip, 0, 0, set.Clustered, set.ClumpSize, rmin, rmax, separation, set.Loners);
+			return;
+		}
+
+		List<GroundedSprite> sprites;
+		if (set.Manifest == WorldSprites.TreesManifest)
+			sprites = GroundedSprites(set.Grounded ?? Array.Empty<string>());
+		else
+		{
+			if (!foliageManifests.TryGetValue(set.Manifest, out Dictionary<string, GroundedSprite>? manifest))
+				foliageManifests[set.Manifest] = manifest = WorldSprites.LoadManifest(set.Manifest);
+			sprites = new List<GroundedSprite>();
+			foreach (string id in set.Grounded ?? Array.Empty<string>())
+			{
+				if (manifest.TryGetValue(id, out GroundedSprite? sprite) && sprite.Texture != null)
+					sprites.Add(sprite);
+				else
+					GD.PushError($"Node2DGame: no sprite '{id}' in {set.Manifest}, or it is not imported. Re-run its generator, then import.");
+			}
+		}
+		if (!set.Clustered)
+			GD.PushError("Node2DGame: a grounded foliage set is always clustered (CreateGroundedDecorSet); Clustered = false is ignored.");
+		CreateGroundedDecorSet(sprites, set.Count, set.ClumpSize, rmin, rmax, separation, set.Loners, set.MinSpacing, set.Habitat);
+	}
 
 	private List<GroundedSprite> GroundedSprites(params string[] ids)
 	{
@@ -2313,7 +2330,7 @@ public partial class Node2DGame : Node2D
 		};
 		body.AddChild(new CollisionShape2D
 		{
-			Position = new Vector2(0f, WorldSprites.SortLift + 2f - TrunkFootDepth * 0.5f),
+			Position = Footing.TrunkFootCentre,
 			Shape = new RectangleShape2D { Size = new Vector2(art.Trunk, TrunkFootDepth) },
 		});
 		body.AddChild(sprite);
@@ -2910,7 +2927,7 @@ public partial class Node2DGame : Node2D
 		{
 			Seed = LevelGenerator.Hash(terrainSeed, chunk.Coord.X, chunk.Coord.Y, SaltDecor + setIndex),
 		};
-		List<Vector2> positions = spec.Habitat is Woodland.Habitat habitat && terrainStreamer != null
+		List<Vector2> positions = spec.Habitat is Woodland.Habitat habitat && terrainStreamer != null && canopyProfile != null
 			? ChunkHabitatScatter(rng, rect, spec.Count * decorShare, spec, habitat)
 			: ChunkScatterPositions(rng, rect, spec.Count * decorShare, spec);
 		if (positions.Count == 0)
@@ -2972,7 +2989,7 @@ public partial class Node2DGame : Node2D
 			// stand loses the members that stand in the clearing. The roll is drawn only for a habitat
 			// set, so every other chapter's sets draw exactly the rolls they always did.
 			if (spec.Habitat is Woodland.Habitat habitat
-				&& rng.Randf() >= Woodland.Weight(habitat, WoodlandCanopyAt(position)))
+				&& rng.Randf() >= HabitatWeightAt(habitat, position))
 			{
 				offHabitat++;
 				continue;
@@ -3249,12 +3266,22 @@ public partial class Node2DGame : Node2D
 	// How finely a chunk's share of a habitat is sampled: a grid of this many points a side.
 	private const int HabitatShareSamples = 6;
 
-	/// <summary>How closed the Forest's canopy is at a world position (Woodland).</summary>
+	// The chapter's canopy (Foliage), set when its decor is built; null on a chapter with none.
+	private CanopyProfile? canopyProfile;
+
+	/// <summary>How closed the chapter's canopy is at a world position (Woodland); 0 with no canopy.</summary>
 	private float WoodlandCanopyAt(Vector2 world)
 	{
+		if (canopyProfile == null)
+			return 0f;
 		Vector2 cell = (world - stageOrigin) / ProceduralTilePixels;
-		return Woodland.Canopy(terrainSeed, cell.X, cell.Y);
+		return Woodland.Canopy(canopyProfile, terrainSeed, cell.X, cell.Y);
 	}
+
+	/// <summary>How a set that grows in this habitat takes to a world position (Woodland.Weight). With no
+	/// canopy every point is open ground (Foliage.Validate refuses a habitat set on such a chapter).</summary>
+	private float HabitatWeightAt(in Woodland.Habitat habitat, Vector2 world) =>
+		canopyProfile == null ? habitat.Clearing : Woodland.Weight(canopyProfile, habitat, WoodlandCanopyAt(world));
 
 	// Where a set that grows in a habitat (Woodland: the Forest's stands, their fringes, the clearings)
 	// falls in one chunk. Three differences from ChunkScatterPositions, which every other set still uses:
@@ -3274,7 +3301,7 @@ public partial class Node2DGame : Node2D
 		float share = 0f;
 		for (int j = 0; j < HabitatShareSamples; j++)
 			for (int i = 0; i < HabitatShareSamples; i++)
-				share += Woodland.Weight(habitat, WoodlandCanopyAt(rect.Position
+				share += HabitatWeightAt(habitat, (rect.Position
 					+ new Vector2((i + 0.5f) / HabitatShareSamples, (j + 0.5f) / HabitatShareSamples) * rect.Size));
 		share /= HabitatShareSamples * HabitatShareSamples;
 		expected *= share;
@@ -3297,7 +3324,7 @@ public partial class Node2DGame : Node2D
 				}
 				// Crowding another clump costs more than any habitat can pay, so a crowded point is
 				// taken only when every candidate is crowded.
-				float score = Woodland.Weight(habitat, WoodlandCanopyAt(candidate)) - (separated ? 0f : 2f);
+				float score = HabitatWeightAt(habitat, candidate) - (separated ? 0f : 2f);
 				if (score > bestScore) { bestScore = score; best = candidate; }
 			}
 			centres.Add(best);
@@ -3581,6 +3608,7 @@ public partial class Node2DGame : Node2D
 		TrackPlayerTravel(d);
 		var terrainStart = FrameProfiler.Begin();
 		UpdateTerrainStreaming();
+		TickFootingCensus();
 		FrameProfiler.End(FrameProfiler.Section.Terrain, terrainStart);
 		UpdateCanopyFade();
 		SweepFarXpOrbs(d);

@@ -168,6 +168,8 @@ public sealed class TerrainStreamer
 	public Vector2I CentreChunk => centre;
 	public int TilePixels => tilePx;
 	public int DataChunkCount => chunks.Count;
+	/// <summary>Every chunk whose data is held, painted or not. Tools only (Node2DGame's footing census).</summary>
+	public IEnumerable<TerrainChunk> DataChunks => chunks.Values;
 	public int PaintedChunkCount => painter.PaintedChunkCount;
 
 	private readonly LevelTilePainter painter;

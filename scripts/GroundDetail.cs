@@ -56,8 +56,12 @@ public static class GroundDetail
 	private static Rule G(string set, float density, int cluster = 6, string terrain = null) =>
 		new(set, Site.Ground, terrain, density, cluster);
 
-	// Clutter: a rule that grows by the wood's canopy (Woodland), on the open floor or on a terrain's fill.
-	private static Rule W(string set, float density, int cluster, float clearing, float fringe, float stand,
+	/// <summary>
+	/// Clutter: a rule that grows by the chapter's canopy (Woodland), on the open floor or on a terrain's
+	/// fill - its density weighted by the habitat (clearing, fringe, stand) where it lands. A chapter's
+	/// clutter is listed in its own Foliage.&lt;Chapter&gt;.cs (ChapterFoliage.Clutter), never in the table below.
+	/// </summary>
+	public static Rule Clutter(string set, float density, int cluster, float clearing, float fringe, float stand,
 		string terrain = null) =>
 		new(set, Site.Ground, terrain, density, cluster, new Woodland.Habitat(clearing, fringe, stand));
 
@@ -87,20 +91,8 @@ public static class GroundDetail
 			new("tufts", Site.Shore, null, 0.052f, 1),
 			new("lilypad", Site.WaterFill, Water, 0.1f, 5),
 			new("lilypad_flower", Site.WaterFill, Water, 0.04f, 5),
-			// THE FOLIAGE PASS (2026-11-03, .ai/genre-lessons.md section 2): the bottom rungs of the size
-			// ladder - short grass across all the open ground, long grass crowding a stand's fringe,
-			// wildflower specks in the clearings, leaf litter on the moss under the trees
-			// (tools/art/detail_forest.py). Several things to a cell, and open turf goes from about one cell
-			// in thirteen carrying something to about one in four in a clearing and one in three on a
-			// fringe - all of the new sets within about ten L* of the turf, so the ground stops reading
-			// flat without anything on it competing with a silhouette or an orb (.ai/terrain.md section 13
-			// measured both). Densities are the open ground's, before the habitat weight (clearing,
-			// fringe, stand).
-			W("grass_short", 0.13f, 5, 1f, 1f, 0.4f), W("grass_tall", 0.11f, 4, 0.1f, 1f, 0.5f),
-			W("specks", 0.03f, 6, 1f, 0.5f, 0.1f), W("pebbles", 0.006f, 1, 1f, 0.6f, 0.3f),
-			W("litter", 0.08f, 5, 0.3f, 0.8f, 1f, "moss"), W("grass_short", 0.03f, 5, 1f, 1f, 0.3f, "moss"),
-			W("grass_short", 0.08f, 5, 1f, 1f, 1f, "meadow"), W("specks", 0.04f, 5, 1f, 1f, 1f, "meadow"),
-			W("grass_tall", 0.04f, 4, 0f, 1f, 0.2f, "meadow"),
+			// THE FOLIAGE PASS (2026-11-03): the Forest's clutter - grass, specks and litter - is its foliage's
+			// (Foliage.EnchantedForest.cs), appended after these, so these keep their indices and their noise.
 		},
 		[StageEnvironmentKind.Swamp] = new[]
 		{
@@ -237,8 +229,25 @@ public static class GroundDetail
 		G("rubble", 0.015f, 1, "cobble"),
 	};
 
-	public static IReadOnlyList<Rule> RulesFor(StageEnvironmentKind kind) =>
-		Rules.TryGetValue(kind, out Rule[] r) ? r : Array.Empty<Rule>();
+	private static readonly Dictionary<StageEnvironmentKind, Rule[]> combined = new();
+
+	/// <summary>
+	/// A stage's rules: its own from the table above, then its foliage's clutter (ChapterFoliage.Clutter).
+	/// Appended, so a chapter's foliage pass never moves an index - a rule's noise is salted by its index.
+	/// </summary>
+	public static IReadOnlyList<Rule> RulesFor(StageEnvironmentKind kind)
+	{
+		if (combined.TryGetValue(kind, out Rule[] known))
+			return known;
+		Rule[] own = Rules.TryGetValue(kind, out Rule[] r) ? r : Array.Empty<Rule>();
+		IReadOnlyList<Rule> clutter = Foliage.For(kind)?.Clutter ?? Array.Empty<Rule>();
+		var all = new Rule[own.Length + clutter.Count];
+		own.CopyTo(all, 0);
+		for (int i = 0; i < clutter.Count; i++)
+			all[own.Length + i] = clutter[i];
+		combined[kind] = all;
+		return all;
+	}
 
 	/// <summary>Every set a stage can paint, for building its tile sources at stage start.</summary>
 	public static IEnumerable<string> SetsFor(StageEnvironmentKind kind)
@@ -253,8 +262,11 @@ public static class GroundDetail
 	public static IEnumerable<string> AllSets()
 	{
 		var seen = new HashSet<string>();
-		foreach (Rule[] rules in Rules.Values)
-			foreach (Rule r in rules)
+		var kinds = new HashSet<StageEnvironmentKind>(Rules.Keys);
+		foreach (ChapterFoliage chapter in Foliage.All)
+			kinds.Add(chapter.Kind);
+		foreach (StageEnvironmentKind kind in kinds)
+			foreach (Rule r in RulesFor(kind))
 				if (seen.Add(r.Set))
 					yield return r.Set;
 	}
@@ -290,6 +302,9 @@ public static class GroundDetail
 		const int n = TerrainStreamer.ChunkTiles;
 		Compiled c = CompiledFor(kind, rules);
 		FillLattice(rules, chunk.MinCell, seed);
+		// The chapter's canopy, for its clutter rules; with none, every cell is open ground (Foliage.Validate
+		// refuses a clutter rule on a chapter with no canopy).
+		CanopyProfile canopy = Foliage.CanopyFor(kind);
 
 		for (int y = 0; y < n; y++)
 		{
@@ -348,10 +363,10 @@ public static class GroundDetail
 					third = Group.Empty;
 
 				double sum = 0;
-				float canopy = float.NaN;
-				string set = Pick(first, rules, wx, wy, roll, ref sum, seed, ref canopy)
-					?? Pick(second, rules, wx, wy, roll, ref sum, seed, ref canopy)
-					?? Pick(third, rules, wx, wy, roll, ref sum, seed, ref canopy);
+				float canopyHere = float.NaN;
+				string set = Pick(first, rules, wx, wy, roll, ref sum, seed, canopy, ref canopyHere)
+					?? Pick(second, rules, wx, wy, roll, ref sum, seed, canopy, ref canopyHere)
+					?? Pick(third, rules, wx, wy, roll, ref sum, seed, canopy, ref canopyHere);
 				if (set != null)
 					setPerCell[i] = set;
 			}
@@ -359,18 +374,22 @@ public static class GroundDetail
 	}
 
 	private static string Pick(Group group, IReadOnlyList<Rule> rules, int wx, int wy, double roll, ref double sum,
-		ulong seed, ref float canopy)
+		ulong seed, CanopyProfile profile, ref float canopy)
 	{
 		foreach (int k in group.Rules)
 		{
 			Rule rule = rules[k];
 			double density = rule.Density * ClusterFactor(k, rule.ClusterCells, wx, wy);
-			if (rule.Habitat is Woodland.Habitat habitat)
+			if (rule.Habitat is Woodland.Habitat habitat && profile != null)
 			{
-				// The wood's canopy at this cell, read once and only by a cell that reached a clutter rule.
+				// The canopy at this cell, read once and only by a cell that reached a clutter rule.
 				if (float.IsNaN(canopy))
-					canopy = Woodland.CanopyAtCell(seed, wx, wy);
-				density *= Woodland.Weight(habitat, canopy);
+					canopy = Woodland.CanopyAtCell(profile, seed, wx, wy);
+				density *= Woodland.Weight(profile, habitat, canopy);
+			}
+			else if (rule.Habitat is Woodland.Habitat open)
+			{
+				density *= open.Clearing;
 			}
 			sum += density;
 			if (roll < sum)
