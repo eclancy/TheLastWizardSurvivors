@@ -76,11 +76,16 @@ things come up; strike what lands.**
 8. **Card and item wording** (Eric, 2026-11-04):
    - **The Reliquary Key:** its description should just say that your pickup radius applies to chests (what
      `feat/john-dee-chests` made it do), nothing longer. `ChestItemCatalog`.
-   - **Make a Legendary spell obvious** (Eric, 2026-11-04): today it is only a star after the name ("Solar
-     Flare ★", `Player` where it rolls) and a gold tint, and the star is easy to read as one of the screen's
-     other stars (Ascension, the Codex). Add something to the name - "Legendary Solar Flare", or a gold word
-     and frame on its card - and say once what it means (its element tags count double). Check the level-up
-     card, the loadout strip, the pause screen and the character select for a wizard who starts Legendary.
+   - **Rename Legendary to Empowered, and make it obvious** (Eric, 2026-11-04). The random chance for a new spell
+     to come stronger (2%, up to 10% with luck; `Player.GetLegendaryChance`) gets a different word, such as
+     **Empowered**, everywhere the player reads it. Today it is only a star after the name ("Solar Flare ★",
+     where it rolls in `Player`) and a gold tint, and the star is easy to read as one of the screen's other
+     stars (Ascension, the Codex). Put the word in the name ("Empowered Solar Flare"), or a gold word and frame
+     on its card, and say once what it means (its element tags count double). Rename what the player sees,
+     not the code or the save: `IsLegendary` and `IsLegendaryStart` stay, since a save and `.tres` files carry
+     them. Search the player-facing text for "Legendary" (cards, the Codex, the character select's
+     "starts Legendary", achievements, the docs' player words). Check the level-up card, the loadout strip, the
+     pause screen and the character select for a wizard who starts Empowered.
    - **"Leaves are whispering, though there is no wind."** (Eric, 2026-11-04): the grove's hint line reads
      "Leaves whispering, though there is no wind." (`StageHintCatalog.cs` line 137). While there, read every
      hint and chapter line for the same dropped verb.
