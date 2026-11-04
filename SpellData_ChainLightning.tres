@@ -13,6 +13,7 @@ DamageBonus = 3
 script = ExtResource("2")
 Level = 3
 ChainArcBonus = 1
+RangeBonus = 40.0
 
 [sub_resource type="Resource" id="Resource_chainlightning_lvl4"]
 script = ExtResource("2")
@@ -23,12 +24,16 @@ DamageBonus = 4
 script = ExtResource("2")
 Level = 6
 ChainArcBonus = 1
+RangeBonus = 40.0
 
 [sub_resource type="Resource" id="Resource_chainlightning_lvl7"]
 script = ExtResource("2")
 Level = 7
 DamageBonus = 5
 
+; STARTING RANGE (Eric, 2026-11-04: "chain lightning range starts too big"): 450 reached past the top and bottom
+; of a PC screen. 320 starts inside it, and the reach grows +40 at levels 3 and 6, to 400. The same range is
+; the reach of Threefold Curses extra bolts (ChainLightning.ThrowVolley); the hops have their own.
 [resource]
 script = ExtResource("1")
 Tagline = "A bolt that leaps enemy to enemy."
@@ -39,7 +44,7 @@ MaxLevel = 8
 BaseDamage = 7
 BaseCooldown = 1.5
 BaseProjectileCount = 1
-BaseRange = 450.0
+BaseRange = 320.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_chainlightning_lvl2"), SubResource("Resource_chainlightning_lvl3"), SubResource("Resource_chainlightning_lvl4"), SubResource("Resource_chainlightning_lvl6"), SubResource("Resource_chainlightning_lvl7")])
 Description = "Arcs a heavy bolt that jumps to a nearby enemy, losing almost no force on the way."
 Icon = ExtResource("3_lightning_icon")

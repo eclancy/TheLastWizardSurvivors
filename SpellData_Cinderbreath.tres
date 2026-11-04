@@ -13,6 +13,8 @@
 ; BaseCooldown is the recharge between burns, not the time between casts. BaseRange is how far the
 ; cone reaches, and it is deliberately short - a flamethrower that outranged a bolt would just be a
 ; better bolt. The trade is that it covers an arc but only at the distance where things can hit you.
+; (2026-11-04, Eric: "cinderbreath too small": 170 barely cleared the bodies touching the player; it
+; starts at 230 and still grows +70 by level 8, to 300, under the bolts 340-420)
 
 [sub_resource type="Resource" id="Resource_cinder_lvl2"]
 script = ExtResource("2")
@@ -61,7 +63,7 @@ MaxLevel = 8
 BaseDamage = 4
 BaseCooldown = 1.4
 BaseProjectileCount = 1
-BaseRange = 170.0
+BaseRange = 230.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_cinder_lvl2"), SubResource("Resource_cinder_lvl3"), SubResource("Resource_cinder_lvl4"), SubResource("Resource_cinder_lvl5"), SubResource("Resource_cinder_lvl6"), SubResource("Resource_cinder_lvl7"), SubResource("Resource_cinder_lvl8")])
 Description = "Throws fire tongue by tongue into a wide arc, then recharges."
 Icon = ExtResource("3_icon")
