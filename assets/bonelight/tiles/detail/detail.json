@@ -189,6 +189,24 @@
   {"id": "cotton_grass_3", "set": "cotton_grass", "path": "assets/bonelight/tiles/detail/cotton_grass_3.png"},
   {"id": "lichen_stones_0", "set": "lichen_stones", "path": "assets/bonelight/tiles/detail/lichen_stones_0.png"},
   {"id": "lichen_stones_1", "set": "lichen_stones", "path": "assets/bonelight/tiles/detail/lichen_stones_1.png"},
-  {"id": "lichen_stones_2", "set": "lichen_stones", "path": "assets/bonelight/tiles/detail/lichen_stones_2.png"}
+  {"id": "lichen_stones_2", "set": "lichen_stones", "path": "assets/bonelight/tiles/detail/lichen_stones_2.png"},
+  {"id": "sand_ripples_0", "set": "sand_ripples", "path": "assets/bonelight/tiles/detail/sand_ripples_0.png"},
+  {"id": "sand_ripples_1", "set": "sand_ripples", "path": "assets/bonelight/tiles/detail/sand_ripples_1.png"},
+  {"id": "sand_ripples_2", "set": "sand_ripples", "path": "assets/bonelight/tiles/detail/sand_ripples_2.png"},
+  {"id": "sand_ripples_3", "set": "sand_ripples", "path": "assets/bonelight/tiles/detail/sand_ripples_3.png"},
+  {"id": "drift_tail_0", "set": "drift_tail", "path": "assets/bonelight/tiles/detail/drift_tail_0.png"},
+  {"id": "drift_tail_1", "set": "drift_tail", "path": "assets/bonelight/tiles/detail/drift_tail_1.png"},
+  {"id": "drift_tail_2", "set": "drift_tail", "path": "assets/bonelight/tiles/detail/drift_tail_2.png"},
+  {"id": "desert_gravel_0", "set": "desert_gravel", "path": "assets/bonelight/tiles/detail/desert_gravel_0.png"},
+  {"id": "desert_gravel_1", "set": "desert_gravel", "path": "assets/bonelight/tiles/detail/desert_gravel_1.png"},
+  {"id": "desert_gravel_2", "set": "desert_gravel", "path": "assets/bonelight/tiles/detail/desert_gravel_2.png"},
+  {"id": "desert_gravel_3", "set": "desert_gravel", "path": "assets/bonelight/tiles/detail/desert_gravel_3.png"},
+  {"id": "rock_chips_0", "set": "rock_chips", "path": "assets/bonelight/tiles/detail/rock_chips_0.png"},
+  {"id": "rock_chips_1", "set": "rock_chips", "path": "assets/bonelight/tiles/detail/rock_chips_1.png"},
+  {"id": "rock_chips_2", "set": "rock_chips", "path": "assets/bonelight/tiles/detail/rock_chips_2.png"},
+  {"id": "bunchgrass_0", "set": "bunchgrass", "path": "assets/bonelight/tiles/detail/bunchgrass_0.png"},
+  {"id": "bunchgrass_1", "set": "bunchgrass", "path": "assets/bonelight/tiles/detail/bunchgrass_1.png"},
+  {"id": "bunchgrass_2", "set": "bunchgrass", "path": "assets/bonelight/tiles/detail/bunchgrass_2.png"},
+  {"id": "bunchgrass_3", "set": "bunchgrass", "path": "assets/bonelight/tiles/detail/bunchgrass_3.png"}
   ]
 }
