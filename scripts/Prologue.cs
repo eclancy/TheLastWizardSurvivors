@@ -190,7 +190,11 @@ public partial class Prologue : Control
 		// THE IMPACT (rule 1): at 2.0 s the light his staff holds bursts and the chain breaks (tools/art/prologue.py,
 		// BREAK_AT and _flare, drawn at the staff's head, art (442, 418)). Speed lines out of it in his warm light, a
 		// shake and a flash, over the burst the generator draws.
-		new("break", 5.4f, "You went back for them.", new Vector2(-3f, 0f), new Vector2(-3f, 0f), new Vector2(12f, 0f),
+		// THE LINE (Eric, 2026-11-03: "i want a heroic sounding line for that panel", in the story's voice and not a call
+		// to action; it was "You went back for them"): what the picture does, said as the turn of the story - his light
+		// bursts, the chain breaks, and the next panel has the four standing. "Your" keeps the one breaking it the
+		// player, and the light is the premise's: he is the only warm light (.ai/world-and-tone.md). 42 characters.
+		new("break", 5.4f, "Your light broke his chain, and they rose.", new Vector2(-3f, 0f), new Vector2(-3f, 0f), new Vector2(12f, 0f),
 			Impact: new PanelImpact(2.0f, new Vector2(442f, 418f), Warm: true)),
 		// The five of them, standing where the four knelt, each light his own again. No line: the road is next, and
 		// then the character select, where any of the five may walk it.

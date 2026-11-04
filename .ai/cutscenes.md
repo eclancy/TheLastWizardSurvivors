@@ -100,14 +100,15 @@ played straight after:
 
 | # | panel | line | what |
 |---|---|---|---|
-| 6 | The break (`break`, 5.4 s) | *You went back for them.* | **Animated.** The hiding's heath, his tower on the horizon. The four disciplines - Aedan the Pyromancer, Gabbro the Geomancer, Isbrand the Frostweaver, Thora the Stormcaller, each his own real sprite (the second frame of his death strip: going down) put three stops into the dark - kneel in a row, bound wrist to wrist by the dark wizard's chain of light, their staves dark, the chain's violet their only lit edge. The Archmage stands in the middle of them, the title's own figure, his light banked as it was in the hiding. At 1.3 s it comes up; at 2.0 s it bursts and the chain breaks - the length behind him first, then the outer two, then the shackles - link by link going out as it flies (the darkness ramp down to violet, then nothing), one link in four falling dead to the ground, and the Archmage's gold is on their edges now. From 3.2 s their own lights come back to them one after another, motes falling out of the sky they were drawn into in panel 4, and each comes up into his own colours a stop at a time. |
+| 6 | The break (`break`, 5.4 s) | *Your light broke his chain, and they rose.* | **Animated.** The hiding's heath, his tower on the horizon. The four disciplines - Aedan the Pyromancer, Gabbro the Geomancer, Isbrand the Frostweaver, Thora the Stormcaller, each his own real sprite (the second frame of his death strip: going down) put three stops into the dark - kneel in a row, bound wrist to wrist by the dark wizard's chain of light, their staves dark, the chain's violet their only lit edge. The Archmage stands in the middle of them, the title's own figure, his light banked as it was in the hiding. At 1.3 s it comes up; at 2.0 s it bursts and the chain breaks - the length behind him first, then the outer two, then the shackles - link by link going out as it flies (the darkness ramp down to violet, then nothing), one link in four falling dead to the ground, and the Archmage's gold is on their edges now. From 3.2 s their own lights come back to them one after another, motes falling out of the sky they were drawn into in panel 4, and each comes up into his own colours a stop at a time. |
 | 7 | The five (`five`, 4.8 s) | - | The same heath and the same places: the four stand where they knelt (the dissolve is the moment they rise), each in their own sprite and colours, each staff burning his own element again, rimmed in the Archmage's gold on the side that faces him. The Archmage in the middle, in his warded circle as on the title. Each light's pool on the ground in the pigment it makes; the dead chain on the ground in front of them. Five lights on the heath where the last two panels had one. |
 
 Then the road (unchanged) and the character select, where all five are playable.
 
-**The line** is the prologue's fourth. *The stones where we used to meet. He came here first. He took every wizard who might
-rival him. You are the one he missed. You went back for them.* - past tense like the first two, "you" like the third. It says the one thing the
-picture cannot: that the figure breaking the chain is the player.
+**The line** is the prologue's fifth. *The stones where we used to meet. He came here first. He took every wizard who might
+rival him. You are the one he missed. Your light broke his chain, and they rose.* - past tense like the first three, "you" like
+the fourth, and heroic (Eric, 2026-11-03: *"i want a heroic sounding line for that panel"*; it was *You went back for them*). It
+says the one thing the picture cannot: that the figure breaking the chain is the player.
 
 **Rules it keeps** (`.ai/prologue.md`): the dark wizard's light is the chain and the black sun over the
 tower, nothing else; the Archmage's is the light ramp and the gold it lands on; the four are their real
@@ -268,7 +269,7 @@ nothing).
 
 ## Needs Eric's eyes
 
-- The line *You went back for them.* - the only new copy in the prologue.
+- The line *Your light broke his chain, and they rose.* (2026-11-03, heroic; it was *You went back for them*).
 - The break at full size on a real screen: whether the four read as kneeling wizards before the light comes
   up (they are dark shapes on cold ground for the first 1.3 s), and whether the burst is too much.
 - The real sprites at x2 beside the Archmage, who is drawn on the panel's finer grid and stands half a

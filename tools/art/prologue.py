@@ -1717,7 +1717,7 @@ def _break_frame(t, him):
 
 
 def p_break():
-    """6. "You went back for them." The hiding's heath again, the tower on its horizon, and the four he
+    """6. "Your light broke his chain, and they rose." The hiding's heath again, the tower on its horizon, and the four he
     could reach - the disciplines, each his own sprite (sprite_figure) put three stops into the dark - on
     their knees in a row, bound wrist to wrist by his chain, its violet their only lit edge, their staves
     dark. The Archmage, the one he missed, stands in the middle of them, the title's own figure, his light
