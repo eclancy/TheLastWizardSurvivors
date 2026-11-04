@@ -709,6 +709,17 @@ SPRITES = [
     ("bush-wide-1", "bush", lambda: leafy_bush(85, 46, 26, 13, 5, 10), 0),
     ("bush-berry-1", "bush", lambda: leafy_bush(87, 32, 20, 9, 4, 8, berry=6), 0),
     ("bush-berry-2", "bush", lambda: leafy_bush(89, 40, 24, 11, 5, 9, berry=8), 0),
+    # THE SIZE LADDER (2026-11-03, the foliage pass: .ai/genre-lessons.md section 2). The five above
+    # are all one size, knee to waist (52-92 px across); a wood has a knee-high shrub at its feet and
+    # a thicket as tall as a man at the edge of every stand. Both are on the darker half of `verdant`
+    # (no `lit` lime), so the smallest is not a bright speck among the flowers and the largest is a
+    # dark mass the stand's edge is built from, not a green beacon: clutter stays below the swarm and
+    # the XP orbs in contrast (.ai/terrain.md section 13 measured it).
+    ("bush-small-1", "bush", lambda: leafy_bush(91, 18, 12, 5, 3, 5, tones=[VE[2], VE[3], VE[4], OCC]), 0),
+    ("bush-small-2", "bush", lambda: leafy_bush(93, 16, 11, 4, 3, 5, tones=[VE[2], VE[3], VE[4], OCC]), 0),
+    ("bush-small-3", "bush", lambda: leafy_bush(95, 22, 13, 6, 3, 6, tones=[VE[2], VE[3], VE[4], OCC]), 0),
+    ("bush-large-1", "bush", lambda: leafy_bush(97, 62, 36, 26, 6, 12, tones=[VE[2], VE[3], VE[4], OCC]), 0),
+    ("bush-large-2", "bush", lambda: leafy_bush(99, 54, 32, 22, 6, 11, tones=[VE[2], VE[3], VE[4], OCC]), 0),
     # Swamp
     ("willow-1", "tree", lambda: willow(101, 118, 130), 28),
     ("willow-2", "tree", lambda: willow(107, 104, 116), 26),

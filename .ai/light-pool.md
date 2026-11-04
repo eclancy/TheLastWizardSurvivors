@@ -237,7 +237,7 @@ Not proposed: the Bridge (the open sky over the abyss), and every open-air chapt
 |---|---|---|
 | `--no-light-pool` | any run | the pool kept out: the "before" of every comparison |
 | `--light-pool=X` | any run | the pool at darkness X in any chapter but the Sketchbook |
-| `--light-probe` | `_UiShot` | section 4's measurement, printed as `LIGHT` lines |
+| `--light-probe` | `_UiShot` | section 4's measurement, printed as `LIGHT` lines; also a `lo dL*` per body, and `LIGHT layer` lines for the detail layer, the bushes and the trees, peeled one at a time and measured the same way (the foliage pass, `.ai/terrain.md` section 13). After a `--teleport` it waits for the ground there |
 | `--light-probe-low-health` | `_UiShot` | the probe, the wizard pinned at a fifth of his health |
 | `--reduce-darkness` | `_UiShot` | the Reduce Darkness switch on, in memory |
 | `--profile` | any run | the frame profiler; the pool's own CPU is its `light=` section |

@@ -16,6 +16,16 @@ using TheOneHeMissed.scripts;
 //   hi dL*            the same for its brightest tenth: the rim, the eyes, the steel
 //   eye L*            its eye-light pixels (blue, saturated): the cold mark every creature carries
 //   x body / room     the shader's multiplier there from the wizard's pool (LightPool.MultiplierAt)
+//   lo dL*            its darkest tenth: a dark silhouette reads by how far UNDER its ground it goes
+//
+// Then the world itself, peeled (the foliage pass, .ai/terrain.md section 13): HUD hidden, then the ground
+// detail, then the bushes, then the trees and rocks, one frame each, and a LIGHT layer line for each of
+// the three measured the same way against what lay under it - so the guardrail "clutter stays lower in
+// contrast than the enemies and the XP orbs" (.ai/genre-lessons.md 2 and 5) is a number set beside the
+// body and orb lines of the same frame; then a LIGHT floor line, the bare floor's own pattern (MeasureFloor).
+// The first frame and the world without the HUD are saved beside the shot as
+// <shot>-probe-bodies.png and <shot>-probe-world.png. After a --teleport it waits for the ground there to
+// stream in, so it can measure anywhere, not only at the start.
 //
 // Run it with and without --no-light-pool on the same --terrain-seed for the before and the after.
 // --light-probe-low-health: the same, the wizard pinned at a fifth of his health, so the shutter frame shows
@@ -32,7 +42,7 @@ public partial class _UiShot
 			|| FindNodeOfType<Player>(GetTree().Root) is not Player hero)
 			return;
 		lightProbeStarted = true;
-		GetTree().Root.AddChild(new LightProbe { Name = "LightProbe", Game = game, Hero = hero, LowHealth = lightProbeLowHealth });
+		GetTree().Root.AddChild(new LightProbe { Name = "LightProbe", Game = game, Hero = hero, LowHealth = lightProbeLowHealth, ShotName = ShotName });
 	}
 
 	private partial class LightProbe : Node
@@ -40,6 +50,7 @@ public partial class _UiShot
 		public Node2DGame Game;
 		public Player Hero;
 		public bool LowHealth;
+		public string ShotName;
 
 		private const int SettleFrames = 45;
 
@@ -79,7 +90,7 @@ public partial class _UiShot
 				return;
 			Hero.MaxHP = Math.Max(Hero.MaxHP, 100000);
 			Hero.CurrentHP = LowHealth ? Hero.MaxHP / 5 : Hero.MaxHP;
-			if (phase >= 3)
+			if (phase > PeelLast)
 				return;
 			// Silent as well as still: no spell of his lights anything while the probe looks.
 			Hero.SetHeldForBossEntrance(true);
@@ -149,6 +160,13 @@ public partial class _UiShot
 			placed.Add(new Placed(orb, zone, true));
 		}
 
+		// THE PEEL. After the bodies are photographed and hidden (A, B), the world is photographed four
+		// more times, one layer hidden before each: the HUD (C, the world alone), the ground detail's
+		// TileMapLayers (D), the bushes - the grounded sprites with no trunk - (E), and the rest of the decor:
+		// trees, rocks, themed props (F). The pixels that change between two frames are that layer's, and
+		// the later frame is what lies under them, so each layer is measured exactly as a body is: its own
+		// L* against the ground under it (MeasureLayer). Added for the foliage pass (.ai/genre-lessons.md 2
+		// and 5): "clutter stays lower in contrast than enemies and XP gems", in numbers.
 		private void OnPostDraw()
 		{
 			if (phase == 0 && frame >= SettleFrames)
@@ -159,24 +177,177 @@ public partial class _UiShot
 						p.Node.Visible = false;
 				GetTree().Paused = true;
 				phase = 1;
+				return;
 			}
-			else if (phase == 1)
+			if (phase < 1 || phase > PeelLast)
+				return;
+			peel.Add(GetViewport().GetTexture().GetImage());
+			if (phase == 1)
+				Hide(GetTree().Root, n => n is CanvasLayer layer && layer.Layer > 0);
+			else if (phase == 2)
+				Hide(GetTree().Root, n => n is TileMapLayer layer && layer.Name == DetailLayerName);
+			else if (phase == 3)
+				Hide(GetTree().Root, n => n is Sprite2D && n.IsInGroup(DecorGroup));
+			else if (phase == 4)
+				Hide(GetTree().Root, n => n is CollisionObject2D && n.IsInGroup(DecorGroup));
+			if (phase < PeelLast)
 			{
-				Image shotB = GetViewport().GetTexture().GetImage();
-				foreach (Placed p in placed)
-					if (IsInstanceValid(p.Node))
-						p.Node.Visible = true;
-				GetTree().Paused = false;
-				phase = 2;
-				Measure(shotA, shotB);
-				phase = 3;
+				phase++;
+				return;
 			}
+			foreach (CanvasItem item in hidden)
+				if (IsInstanceValid(item))
+					item.Visible = true;
+			foreach (Placed p in placed)
+				if (IsInstanceValid(p.Node))
+					p.Node.Visible = true;
+			GetTree().Paused = false;
+			Measure(shotA, peel[0]);
+			GD.Print("LIGHT layers (HUD hidden): cover = share of the frame; dL* = its L* minus the ground under it; "
+				+ "hi / lo = its brightest / darkest tenth minus that ground");
+			MeasureLayer("detail", peel[1], peel[2]);
+			MeasureLayer("bushes", peel[2], peel[3]);
+			MeasureLayer("trees+rocks", peel[3], peel[4]);
+			MeasureFloor(peel[4]);
+			SaveProbeFrames(shotA, peel[1]);
+			phase = PeelLast + 1;
+		}
+
+		private const int PeelLast = 5;
+		private const string DetailLayerName = "Detail";
+		private const string DecorGroup = "decor_props";
+		private readonly List<Image> peel = new();
+		private readonly List<CanvasItem> hidden = new();
+
+		private void Hide(Node n, Func<Node, bool> match)
+		{
+			if (n is CanvasItem item && item.Visible && match(n))
+			{
+				item.Visible = false;
+				hidden.Add(item);
+				return;
+			}
+			if (n is CanvasLayer layer && layer.Visible && match(n))
+			{
+				layer.Visible = false;
+				hiddenLayers.Add(layer);
+				return;
+			}
+			foreach (Node c in n.GetChildren())
+				Hide(c, match);
+		}
+
+		private readonly List<CanvasLayer> hiddenLayers = new();
+
+		private void SaveProbeFrames(Image a, Image world)
+		{
+			foreach (CanvasLayer layer in hiddenLayers)
+				if (IsInstanceValid(layer))
+					layer.Visible = true;
+			string name = string.IsNullOrEmpty(ShotName) ? "light-probe" : ShotName;
+			a.SavePng($"user://{name}-probe-bodies.png");
+			world.SavePng($"user://{name}-probe-world.png");
+			GD.Print($"LIGHT frames saved: {ProjectSettings.GlobalizePath($"user://{name}-probe-bodies.png")} and -probe-world.png");
+		}
+
+		// The bare floor - the ground tiles and their overlays, everything standing on them peeled away - as
+		// texture: each 24 px block's median L* is the floor there, and the pixels more than 4 L* off it are
+		// its pattern (a moss cushion, a speck in the turf). Printed: how much of the frame they cover and how
+		// far off they sit, the busyness a body is read against. The moss under the Forest's stands is busier
+		// than its turf, and this is the number that says by how much.
+		private static void MeasureFloor(Image img)
+		{
+			img.Convert(Image.Format.Rgba8);
+			int w = img.GetWidth(), h = img.GetHeight();
+			byte[] px = img.GetData();
+			const int block = 24;
+			var lum = new float[block * block];
+			var sorted = new float[block * block];
+			double groundSum = 0, offSum = 0;
+			int blocks = 0, off = 0, pixels = 0;
+			for (int by = 0; by + block <= h; by += block)
+			{
+				for (int bx = 0; bx + block <= w; bx += block)
+				{
+					int k = 0;
+					for (int y = by; y < by + block; y++)
+						for (int x = bx; x < bx + block; x++)
+						{
+							int i = (y * w + x) * 4;
+							lum[k++] = Lightness(px[i], px[i + 1], px[i + 2]);
+						}
+					Array.Copy(lum, sorted, lum.Length);
+					Array.Sort(sorted);
+					float median = sorted[sorted.Length / 2];
+					groundSum += median;
+					blocks++;
+					foreach (float l in lum)
+					{
+						pixels++;
+						float d = Math.Abs(l - median);
+						if (d > 4f)
+						{
+							off++;
+							offSum += d;
+						}
+					}
+				}
+			}
+			if (blocks == 0)
+				return;
+			GD.Print($"LIGHT floor (everything on it peeled) | L* {groundSum / blocks:0.0} | pattern cover {100.0 * off / pixels:0.0}% "
+				+ $"| pattern |dL*| {(off > 0 ? offSum / off : 0):0.0}");
+		}
+
+		// One layer of the peel: the pixels that differ between the frame with it and the frame without
+		// it are its own; the second frame at those pixels is the ground it lies on.
+		private static void MeasureLayer(string name, Image with, Image without)
+		{
+			with.Convert(Image.Format.Rgba8);
+			without.Convert(Image.Format.Rgba8);
+			int w = with.GetWidth(), h = with.GetHeight();
+			byte[] pa = with.GetData(), pb = without.GetData();
+			var own = new List<float>();
+			double under = 0, absSum = 0;
+			for (int i = 0; i < w * h * 4; i += 4)
+			{
+				int d = Math.Max(Math.Abs(pa[i] - pb[i]), Math.Max(Math.Abs(pa[i + 1] - pb[i + 1]), Math.Abs(pa[i + 2] - pb[i + 2])));
+				if (d <= 6)
+					continue;
+				float l = Lightness(pa[i], pa[i + 1], pa[i + 2]);
+				float g = Lightness(pb[i], pb[i + 1], pb[i + 2]);
+				own.Add(l);
+				under += g;
+				absSum += Math.Abs(l - g);
+			}
+			if (own.Count == 0)
+			{
+				GD.Print($"LIGHT layer {name,-12} | cover 0.0%");
+				return;
+			}
+			under /= own.Count;
+			own.Sort();
+			double mean = 0;
+			foreach (float l in own)
+				mean += l;
+			mean /= own.Count;
+			int tenth = Math.Max(1, own.Count / 10);
+			double hi = 0, lo = 0;
+			for (int k = 0; k < tenth; k++)
+			{
+				lo += own[k];
+				hi += own[own.Count - 1 - k];
+			}
+			hi /= tenth;
+			lo /= tenth;
+			GD.Print($"LIGHT layer {name,-12} | cover {100.0 * own.Count / (w * h):0.0}% | L* own {mean:0.0} ground {under:0.0} "
+				+ $"| dL* {mean - under:0.0} | |dL*| {absSum / own.Count:0.0} | hi dL* {hi - under:0.0} | lo dL* {lo - under:0.0}");
 		}
 
 		private sealed class Tally
 		{
 			public int Count;
-			public double Body, Ground, Hi, Eye, BodyX, RoomX;
+			public double Body, Ground, Hi, Lo, Eye, BodyX, RoomX;
 			public int EyeCount;
 		}
 
@@ -243,6 +414,10 @@ public partial class _UiShot
 				for (int k = bodyL.Count - top; k < bodyL.Count; k++)
 					hiMean += bodyL[k];
 				hiMean /= top;
+				double loMean = 0;
+				for (int k = 0; k < top; k++)
+					loMean += bodyL[k];
+				loMean /= top;
 				string key = (p.Orb ? "orb  " : "body ") + p.Zone;
 				if (!zones.TryGetValue(key, out Tally t))
 					zones[key] = t = new Tally();
@@ -250,6 +425,7 @@ public partial class _UiShot
 				t.Body += mean;
 				t.Ground += groundSum / groundN;
 				t.Hi += hiMean;
+				t.Lo += loMean;
 				if (eyeN > 0)
 				{
 					t.Eye += eyeSum / eyeN;
@@ -269,7 +445,7 @@ public partial class _UiShot
 				double body = t.Body / t.Count, ground = t.Ground / t.Count, hi = t.Hi / t.Count;
 				string eye = t.EyeCount > 0 ? $"{t.Eye / t.EyeCount:0.0}" : "-";
 				string mult = pool != null ? $" | x body {t.BodyX / t.Count:0.00} room {t.RoomX / t.Count:0.00}" : string.Empty;
-				GD.Print($"LIGHT {z.Key,-16} n={t.Count,2} | L* body {body:0.0} ground {ground:0.0} | dL* {body - ground:0.0} | hi dL* {hi - ground:0.0} | eye L* {eye}{mult}");
+				GD.Print($"LIGHT {z.Key,-16} n={t.Count,2} | L* body {body:0.0} ground {ground:0.0} | dL* {body - ground:0.0} | hi dL* {hi - ground:0.0} | eye L* {eye}{mult} | lo dL* {t.Lo / t.Count - ground:0.0}");
 			}
 		}
 
