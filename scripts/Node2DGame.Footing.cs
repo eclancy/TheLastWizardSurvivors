@@ -12,8 +12,8 @@ using TheOneHeMissed.scripts;
 // side event or secret stands, and the water, wall and fence cells), the POCKETS - ground the player's
 // Feet could stand on that no path from outside reaches, found by a flood fill in the player's own terms
 // (every layer-4 box grown by the Feet, every layer-1 box by the body 29.5 px above them) - and the
-// NARROW-MOUTHED ROOMS: open ground whose every way out is narrower than the clearance, found by the same
-// flood fill with every box grown by half the clearance all round. Each says whether a trunk is in its
+// NARROW-MOUTHED ROOMS: open ground whose every way out is narrower than about 64 px, found by the same
+// flood fill with every box grown by half the clearance less a raster cell all round. Each says whether a trunk is in its
 // wall. With --no-footing-rule the trunks are placed as the pilot placed them, to compare. A chunk is
 // counted once, when it and its eight neighbours are all furnished, so a pair across a border is seen with
 // both of its members in place. It reads the bodies the run made, not the plan that made them.
@@ -470,7 +470,9 @@ public partial class Node2DGame
 			for (int cx = c0.X; cx <= c1.X; cx++)
 				if (ground.IsSolidCell(cx, cy))
 					solidCells.Add(new Rect2(origin + new Vector2(cx, cy) * tile, new Vector2(tile, tile)));
-		float half = Footing.Clearance * 0.5f - 1f;
+		// Half the clearance less a raster cell either side: two boxes exactly the clearance apart (which the rule
+		// allows) otherwise rasterise shut, so a "room" here is one whose every way out is under about 64 px.
+		float half = Footing.Clearance * 0.5f - CensusPixel;
 		(int pockets, int trunkPockets, float area) = CensusPockets(rect, region, near, solidCells,
 			b => b.Kind == BlockBody ? Footing.BodyForbids(b.Box) : Footing.FeetForbids(b.Box), Footing.FeetWidth * Footing.FeetDepth);
 		(int rooms, int trunkRooms, float roomArea) = CensusPockets(rect, region, near, solidCells,

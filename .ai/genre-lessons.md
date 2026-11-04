@@ -51,6 +51,10 @@ edge to edge, a flat dark-teal ground with soft blotches, about eight bushes, on
   one canopy field (`Woodland`) decides stand, fringe and clearing; moss under the stands, the mature trees
   massed in them, bushes in three sizes and the young trees on their fringes, grass tufts, specks and litter in
   the detail layer - all of the new clutter within about ten L\* of the turf, measured.
+- **Spread, 2026-11-03** (Eric: "Spread it now"; `.ai/terrain.md` section 13, from "The groundwork"): the pass is a
+  profile and a file per chapter (`Foliage.<Chapter>.cs`), with a recipe five builders follow in parallel, and no
+  stand may pin the player (every gap a tree is part of is at least 72 px). The Fallow Fields came first, and its
+  stands are not woods: hedgerows round fields, per section 6 - each chapter more itself, not more like the Forest.
 
 ## 3. Landmarks that are only scenery (Wizard Survivors)
 
@@ -129,8 +133,8 @@ edge to edge, a flat dark-teal ground with soft blotches, about eight bushes, on
 ## 11. Recommended order
 
 1. The light pool, with warm spells as their own small lights.
-2. A foliage density pass on the Forest as the pilot. *Built 2026-11-03, awaiting Eric's verdict (`.ai/terrain.md`
-   section 13).*
+2. A foliage density pass on the Forest as the pilot. *Built 2026-11-03 (`.ai/terrain.md` section 13); spread the same
+   day: the shared groundwork and the Fallow Fields' hedgerows, five chapters to follow.*
 3. Non-interactive landmarks per chapter.
 4. Element-coloured damage numbers (Wizard Survivors tints them per spell; ours were red whatever the spell).
    **Built 2026-11-03** (`scripts/DamageNumberInk.cs`; the rule and its edge cases are `.ai/art-direction.md`,

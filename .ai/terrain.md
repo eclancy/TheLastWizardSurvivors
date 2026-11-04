@@ -1543,7 +1543,8 @@ Forest only, as a pilot for Eric to judge** before any other chapter.
 
 `scripts/Woodland.cs`: how closed the canopy is at a point, a pure function of (seed, world cell) - two
 octaves of value noise hashed in world cells (18 and 7 cells), like the detail layer's clustering, so it is
-seam-free and the same on every visit. All three layers that dress the ground read it, so the moss, the
+seam-free and the same on every visit. (Since the groundwork below, these numbers are the Forest's
+`CanopyProfile`, in `Foliage.EnchantedForest.cs`, and the field takes other shapes for other chapters.) All three layers that dress the ground read it, so the moss, the
 trunks, the thickets and the grass agree about where a stand's edge is.
 
 | habitat | canopy | share of the ground | what grows there |
@@ -1561,7 +1562,7 @@ three seeds (18-38% stand, 35-65% clearing) and the open start.
 
 ### The ground: moss under every stand
 
-`LevelGenerator.StampStandFloors` (palette flag `StandFloors`, the Forest's only) lays `moss` on every cell
+`LevelGenerator.StampStandFloors` (the canopy's `StandFloorTerrain`; it was a palette flag, `StandFloors`) lays `moss` on every cell
 whose canopy is over 0.625, before the blobs, so every pond is stamped exactly where it was with the same
 rolls. The moss and meadow blobs are then sorted to where they grow (`SortedForStands`): a meadow blob in a
 stand is moss, a moss blob out in a clearing is meadow - same blob, same roll, same size, only which
@@ -1685,10 +1686,292 @@ Tree): all pass. The validator: 0 errors, the one test_wizard warning.
 
 - **Whether it reads as a wood or a maze.** The bot in the busy shot walked into a stand and was caught
   among the trunks; a wood you pick your way through plays differently from one you run in (section 4). The
-  stands are meant to frame the fight, not hold it.
+  stands are meant to frame the fight, not hold it. *The catching is answered below ("No stand pins the
+  player"): every gap a tree is part of is now at least 72 px. Whether a stand still reads as a wood with its
+  squeezed birches stepped off the oaks is for eyes.*
 - **The moss floor's busyness** under a swarm, above.
 - **Crowns over the gardens.** Trees keep 3 cells from a pen, and an oak just south of one can lay its crown
   over the rail and a gate, more often now that trees mass (the moonflower's glint in the middle still reads).
 - **The start on the phone** is a clearing with little in view vertically; on a PC the wood is at the edges.
 - **The grass at play scale**: green clumps at the turf's own value, told by hue; on the 540-wide shots they
   are a texture more than things.
+
+### The groundwork: the pass made a profile per chapter (2026-11-03)
+
+Eric, on the pilot: "Spread it now". Before five chapters follow the Forest, three things were made shared and
+general, so each is a data change in a chapter's own files.
+
+**A canopy profile per chapter.** `Woodland`'s constants are now a `CanopyProfile` (in `Woodland.cs`): the
+field's SHAPE (`Stands`, the Forest's two octaves of value noise; `Hedgerows`, the Fields' network of hedges
+round fields, below; or `Own`, a pure function the chapter writes in its own file), its lattices, the four
+habitat thresholds and so the shares, the stand floor (its threshold and terrain, and the clearing terrain its
+blobs are sorted against), the start's clearing, its salts, and the share ranges `Woodland.Validate` holds on
+three seeds. Every default is the Forest's, so the Forest's profile names only its two terrains. The palette
+flag `StandFloors` is gone: `LevelGenerator` lays the stand floor wherever the chapter's canopy names one.
+
+**A chapter's whole pass in its own file.** `scripts/Foliage.<Chapter>.cs` builds a `ChapterFoliage`: the
+canopy; `Decor`, every decor set the chapter scatters in scatter order (habitat sets and plain ones alike,
+as `FoliageSet` records: sprite ids and their manifest, count, clump, spacing, habitat); and `Clutter`, the
+ground-detail rules `GroundDetail.RulesFor` appends after the chapter's own (`GroundDetail.Clutter(...)`, the
+pilot's `W`). `Node2DGame.BuildDecorProps` scatters a chapter's `Decor` before its old switch case is reached;
+the Forest's and the Fields' cases are gone from the switch. A grounded set may name any manifest in
+`trees.json`'s shape (`WorldSprites.LoadManifest`), so a chapter's own sprites need nothing shared.
+
+**The proof the Forest did not move.** `--placement-hash` (any scene that runs `Node2DGame`) hashes, after the
+first load, every painted chunk's terrain, roles and flags, its ground detail as `GroundDetail` plans it, and
+every prop under its holder (class, texture, position, flip, scale). On `_BalanceHarness --terrain-seed=4242`
+it printed the same hash before and after the move for the Forest (`2038EBD5D72BD1A0`, 1,021 props, 4,759
+detail cells; and seed 11, `104F3C51B34D1582`) and for the five chapters with no profile (Fields `77CB7309...`,
+Swamp `C191782B...`, Heath `7D47ED08...`, Ruins `8189E2B9...`, Sands `2650A3F4...`).
+
+### No stand pins the player
+
+The pilot's first "needs eyes": the balance bot walked into a stand and was caught among trunks, and the busy
+photograph has the wizard between an oak's foot and a pond. A trunk blocks only its foot, on layer 4, which the
+player meets with his `Feet` (a capsule 56 wide). Spacing a set's own trunks was never enough: the stand's oaks
+and its birches are two sets, and nothing kept a birch off an oak, a trunk off the water, or a trunk off its
+neighbour across a chunk border. Measured (`--footing-census`, below, walking a minute): on the Forest **a
+quarter of the trunks stood within 72 px of another blocker and a fifth within the Feet's 56** - a fifth of the
+trees were half of a wall.
+
+**The rule (`scripts/Footing.cs`), kept by the placement, not tuned:** every trunk keeps `Footing.Clearance`,
+**72 px edge to edge**, from every other blocking footprint - another trunk of any set in any chunk, a water,
+wall or fence cell (whole cells, though a shore's body covers only part of its cell) - and the layer-1 props
+placed after the trees (rocks, the themed props that block) keep the same from every trunk. Why it is a
+guarantee: grow every obstacle by the mover's own half-size and what is left is where he can stand. A trunk's
+grown footprint is a convex box that touches no other grown obstacle, so no chain of touching obstacles - the
+only thing that can wall a place in or narrow a way out below a body's width - passes through a tree. Whatever a
+stand is, every gap a tree is part of is open to the Feet with room to spare. Water, walls and rocks among
+themselves are what they were; a stand adds no corner of its own.
+
+Why 72: the Feet's 56 with 8 px a side (a cell and a half); wider than the widest ordinary body (the tank, 51)
+and than `PropClusters.Gap` (48), the notch a body wedges in - so no pair a trunk is part of is ever a prop
+cluster in the navigation grid either. Against a rock, which meets the player's body 29.5 px above his Feet,
+72 still leaves 17 px vertically and 31 across once both are grown (`Footing.Validate` works it).
+
+**How the placement keeps it (`Node2DGame.Footing.cs`).** Every decor set that stands a trunk is placed from one
+plan per chunk, made from the sets' own rolls in their own order (with the rule switched off,
+`--no-footing-rule`, the plan reproduces the old placement to the same hash), and kept to the rule as it is
+made:
+
+1. In its chunk, a trunk too close to a trunk already kept or to a blocking cell is **stepped once**, up to a
+   cell, straight away from the nearest offender, and kept only if the new spot passes every test the old one
+   did; otherwise dropped. The step keeps the stands as thick as they were.
+2. Across a border **the later chunk gives way** (row, then column), to the earlier neighbours' raw plans -
+   the hazards' rule. A raw plan never shrinks by this step's own hand, so nothing is recursive and the answer
+   is the same whichever chunk is furnished first. Only the eight neighbours can reach:
+   `Foliage.MaxClumpReach` (680 px) caps how far a clump of trees may spill past its chunk, and
+   `Foliage.Validate` holds every set to it.
+3. A rock or a blocking themed prop is not placed within the clearance of a planned trunk, in its chunk or a
+   neighbour's. Rocks yield because the stands are the subject.
+
+The plan is pure and kept with the chunk's data (`TerrainChunk.GroundedPlan`), like the hazard plan. Bush
+sets block nothing and scatter as they always did.
+
+**Measured**, `_BalanceHarness --minutes=1 --timescale=4 --immortal --walk=30 --footing-census`, which counts
+every chunk once its eight neighbours are furnished, reading the bodies the run made (not the plan): each
+trunk's nearest gap to anything that blocks, the POCKETS the Feet can stand in that nothing outside reaches,
+and the NARROW-MOUTHED ROOMS - open ground whose every way out is narrower than about 64 px, found by a flood
+fill at 4 px with every box grown by half the clearance less a raster cell (two boxes exactly the clearance
+apart, which the rule allows, otherwise rasterise shut: the first version counted one such "room" on the Forest
+with the rule on). On the Forest's seed 11 the rule-off run has a room walled by a trunk; the rule-on run none.
+
+| | trunks | under 72 px | under the Feet's 56 | nearest gap | rooms walled by a trunk |
+|---|---|---|---|---|---|
+| Forest 4242, before | 486 in 41 chunks | 121 | 90 | 0 | 1 |
+| Forest 4242, after | 480 in 43 chunks | 0 | 0 | 72.0 | 0 |
+| Forest 11, before / after | 330 / 296 | 104 / 0 | 77 / 0 | 0 / 72.4 | 1 / 0 |
+| Swamp, Heath, Ruins, Sands, rule off / on (same build) | 74, 92, 23, 13 / 70, 90, 19, 13 | 10, 7, 12, 1 / 0 | 7, 4, 9, 1 / 0 | - / 72.0+ | 0 |
+
+The rule applies to every chapter's trunks, profiled or not (the Heath's standing stones are trunks too). On
+the Forest it kept 91% of the oaks and 94% of the birches (the `TERRAIN trunks` tally under `--terrain-log`:
+of 1,050 trunks the old placement stood on a seed-4242 walk, 52 could not be stepped clear and 35 gave way to a
+neighbour), and about 30 rocks and themed props of 1,021 props in the first load yielded. Photographed rule off
+and rule on, the same build, held on the same spots: `_shots/foliage-fields/composite-forest-rule-*.png`.
+`Footing.Validate` (RegressionChecks) holds the numbers above and runs the rule on a synthetic stand of 600
+candidates, every kept pair checked.
+
+### Adding a chapter (the recipe)
+
+Five chapters follow the Forest and the Fields in parallel. Each is a data change in files that are its own.
+
+**Never edit, restructure or reorder these (shared):** `Woodland.cs`, `Foliage.cs` (its `All` already names
+every open-air chapter - Swamp, Ruins, Heath, Frozen Waste, Sands, Emberdeep - by a stand-in file), `Footing.cs`,
+`Node2DGame.Footing.cs`, `Node2DGame.cs` (leave your chapter's old case in `BuildDecorProps`' switch: once your
+foliage has `Decor` it is unreached, and the integrator deletes the dead cases after the merges), `GroundDetail.cs`
+(its table and its compiled groups), `LevelGenerator.cs` (your palette included: the stand floor is the canopy's
+now), `trees.py`, `ground_detail.py`, `tile_atlas.py` and `detail_contrast.py`. A shape the three built-ins cannot
+make is `CanopyShape.Own` in your own file, not a new case in `Woodland.cs`. If you truly need a shared change,
+it is one commit that says why, and the integrator's call.
+
+**Yours (per chapter):**
+
+1. **`scripts/Foliage.<Chapter>.cs`** - replace the stand-in's `Build` with a `ChapterFoliage` whose `Kind` is
+   your `StageEnvironmentKind`:
+   - `Canopy`: a `CanopyProfile`. Pick a shape; give it **its own three salts** (the Forest's are 0x57A2-4, the
+     Fields' 0x58B2-4: take the next free block); set the four habitat thresholds so the clearing ends before
+     the stand starts; a `StandFloorTerrain` (and `ClearingFloorTerrain`, to sort blobs) only if it is one of
+     your palette's blob terrains; then **measure** the shares and set `StandShareMin/Max`,
+     `ClearingShareMin/Max` round what you measured (a deliberately impossible range makes the validator print
+     them). Keep the start's clearing (6 and 16 cells) unless you have measured a reason.
+   - `Decor`: every set your old switch case scattered, **in the same order** - a set's rolls are salted by
+     its index, so keep the sets you do not mean to move at their index and put new ones at the end (the Fields
+     kept its fences and rocks at 3 and 4). Copy each `CreateGroundedDecorSet`/`CreateDecorSet` call's numbers
+     into a `FoliageSet` (`Clump` names the base: `Bush`, `Tree`, `Stand`, `GroundAccent`, `Ruin`; the
+     multipliers are what the call multiplied it by). Before you change anything, check that your chapter's
+     `--placement-hash` is unchanged with only the move done - that is your proof the move was a move.
+     A habitat set's `Count` is its density INSIDE its habitat (per 8400 x 8400 of it).
+   - `Clutter`: `GroundDetail.Clutter(set, density, cluster, clearing, fringe, stand[, terrain])` rules. Never
+     edit your chapter's block in `GroundDetail`'s table: appended clutter moves no older rule.
+2. **Art, in your own generators.** Sprites that stand on a ground line go in a generator of your chapter's
+   (`props_<chapter>.py`, as `props_fields.py` and `props_heath.py`), drawing with `trees.py`'s painters
+   (`Bleed`, `fit`, `crown`, `broadleaf`, `leafy_bush`, `save_grounded`) imported, never edited, and writing a
+   manifest in `trees.json`'s shape beside the PNGs; name it in each set's `Manifest`. A trunk's footprint is
+   the manifest's `trunk` width. Ground detail goes in `tools/art/detail_<chapter>.py`'s `DETAIL_SETS`
+   (`ground_detail.py` appends every module's; a set name already taken is an error). Then
+   `python tools/art/ground_detail.py` in full (it repacks `atlas.png`), `python tools/art/clip_check.py`, and
+   `"$GODOT_BIN" --headless --path . --import`. Commit the PNGs, their `.import`s, the manifest, `detail.json`,
+   `atlas.png`, `atlas.json`, and your `.cs` with its `.uid`. **The atlas is the one shared file every chapter
+   regenerates** - two branches that both did will conflict there; the integrator re-runs `ground_detail.py`
+   after merging rather than picking a side.
+3. **Hold the guardrail.** Clutter lower in contrast than the cast and the XP orbs: measure the art with
+   `python tools/art/detail_contrast.py --on=<your floor>,<your stand floor> <sets and sprites>` and the screen
+   with `_UiShot --light-probe` before and after. Draw living things on a saturated ramp's dark half; no lime,
+   nothing round, bright and alone; stay off the emissive ramps. Read your chapter's secrets
+   (`.ai/achievements-and-secrets.md` section 8, `.ai/stage-secrets.md` section 6) and draw nothing that is one of
+   their tells.
+4. **Verify:** `dotnet build`; the validator (`Woodland.Validate`, `Foliage.Validate`, `Footing.Validate` and
+   `ValidateGroundArt` run in it); `_BalanceHarness ... --footing-census` on two seeds (0 under 72 px);
+   `_ExploreProbe --stage=N --seed=4242 --fresh-save` and your chapter's secret probes; the profiler before and
+   after (`--profile=10 --timescale=1 --stress-swarm --terrain-log`); before and after shots at both canvases,
+   with `--hold` so the wizard stands on the same spot.
+
+### The Fallow Fields: hedgerows, not woods (2026-11-03)
+
+The first chapter on the groundwork (`Foliage.FallowFields.cs`). Section 6 of `.ai/genre-lessons.md` is the
+brief: each chapter told apart at a glance by its ground and its edges, so the spread makes each one more
+itself. *"Fields gone to stubble and thistle between black hedgerows"* (`.ai/campaign.md` section 5): the
+Fields' stands are hedges, and the open ground between them is what the chapter is.
+
+**The field: `CanopyShape.Hedgerows`.** The land is cut into fields round one centre each, a lattice of 30
+cells (1440 px, a little over a PC screen) jittered by three quarters of a cell, and the hedge is the line
+between the two nearest centres - the exact distance to their bisector, so a hedge is one width all along it.
+1 on the line, 0 three and a half cells out, its edge made ragged by a noise at 5 cells, and broken over about
+a third of its length where a third noise, at 7 cells, falls under 0.32. A Python port previewed it first: at
+26 cells, 4 wide and a fifth gap, a fifth of the ground was hedge and nearly every field was shut in.
+
+| habitat | canopy | share | what grows there |
+|---|---|---|---|
+| clearing (the open field) | under 0.10-0.25 | 75-76% | stubble, stooks, the odd briar; returning grass, clods, the old chaff |
+| fringe (the hedge's edge) | between | about 10% | hawthorn and blackthorn bushes, briars; docks, nettles, poppies |
+| stand (the hedge) | over 0.55-0.70 (bank over 0.62) | 13-14% | the hedge itself, the hedgerow oaks and thorns |
+
+The stand floor is `hedge_bank`, the grassy bank the chapter already had, now laid under every hedge; its
+clearing floor is `furrow`, so a bank blob out in a field is ploughed and a ploughed blob under a hedge is bank.
+
+**The ladder** (`tools/art/props_fields.py`, drawn with `trees.py`'s painters, written to `fields.json` in
+`trees.json`'s shape; the stooks and fences, which had no manifest, are listed in it by the convention they
+were drawn to):
+
+| rung | sprites | on screen | where | set |
+|---|---|---|---|---|
+| hedgerow trees | `hedge-oak-1`, `-2`, `field-thorn-1` | 140-260 px | the hedge line, now and then alone | 1 |
+| the hedge | `hedge-1`, `-2`, `-3` | 128-176 x 72-80 | along the line, overlapping into one | 0 |
+| thorn bushes | `thorn-bush-1`, `-2` | 60-68 px | the fringe | 5 |
+| briars | `briar-1`, `-2` | 58-60 x 28-32 | the fringe, straying into the stubble | 6 |
+| stooks | `stook-1`, `-2` (unchanged art) | 52 px | the open field now, not the hedges | 2 |
+| fences, rocks | unchanged, at their old index | | as before | 3, 4 |
+| detail | `fallow_grass`, `weeds` (dock, nettle), `clods` (`detail_fields.py`) | one cell | grass everywhere and thickest at a fringe; weeds on the fringe and bank; clods in the open and on ploughed ground | clutter |
+
+All of it on the dark half of `verdant` (base, shade, deep, occ) - "black hedgerows" - with dead canes in
+gold's shade standing out of the hedges' tops (flesh's shade read as pink wire) and haws in `red`'s lit and base,
+in twos, on the leaf. The old Fields borrowed the Forest's lime bushes and its oaks.
+
+**What it keeps clear.** The Well and the Tithe-Reeve's scale and the Pinfold keep their footprints as every
+set and clutter rule does (`IsInExploreReserve`, trees by 140 px more). Nothing drawn is a tell of the Fields'
+secrets (`.ai/achievements-and-secrets.md` 8.2): no lone upright sheaf (FF2), no straight furrow (FF3), no chaff
+added (FF4's drift), no cross or post (FF5); the Pinfold's broken hurdles and pawprints (FF1) are untouched.
+
+**The guardrail, from the art** (`python tools/art/detail_contrast.py --on=stubble ...`, now able to measure
+any chapter's floor and any folder's sprites), against the stubble's L\* 14:
+
+| | dL\* | \|dL\*\| | hi | lo |
+|---|---|---|---|---|
+| `fallow_grass` / `weeds` / `clods` (new) | +6.8 / +6.2 / -0.9 | 8.1 / 7.7 / 5.4 | +17.3 / +17.3 / +14.0 | -6 to -12 |
+| `hedge-1..3` (new) | +1.2 to +3.1 | 7.6-8.3 | +19.5 to +19.8 | -12.2 |
+| `hedge-oak-1, -2`, `field-thorn-1` (new) | +4.8 to +5.0 | 8.5-9.4 | +29.5 to +34.5 | -12.2 |
+| `thorn-bush`, `briar` (new) | -0.8 to +1.0 | 8.4-10.9 | +17.3 to +20.9 | -12.2 |
+| the Forest's bushes and oaks the Fields borrowed (gone) | +10.8 to +19.1 | 16.9-20.9 | +38.9 to +42.6 | -6 to -12 |
+| `stubble_tufts`, `thistle` (old rules, unchanged) | +16.9, +17.7 | 18.4, 18.5 | +42.9, +47.8 | |
+
+The old stubble tufts and thistles were the brightest clutter on the floor, so the pass adds no more of them:
+the docks' lit leaf tips, at first, measured hi +34 and were taken down a stop.
+
+**On screen**, `_UiShot --light-probe` at the start, (2600, -1500) and (-3000, 2200) on the PC canvas and the start
+and (2600, -1500) on the phone's, seed 4242, pooled (the Fields' cast are linen and gold on a dark floor, so they
+stand ABOVE their ground, where the Forest's stand below it):
+
+| PC (phone) | before | after |
+|---|---|---|
+| bodies: dL\* / hi | +11.8 / +58.2 (+12.6 / +57.6) | +11.7 / +58.0 (+12.4 / +58.3) |
+| XP orbs: dL\* / hi | +34.7 / +79.7 (+41.5 / +81.8) | +34.2 / +78.5 (+41.3 / +81.5) |
+| bushes: cover / \|dL\*\| / hi | 0.8% / 23.2 / +40.9 | 4.4% / 11.7 / +22.9 |
+| trees and rocks: cover / \|dL\*\| / hi | 0.4% / 20.6 / +50.2 | 1.3% / 11.7 / +37.8 |
+| detail: cover / \|dL\*\| / hi | 0.1% / 21.1 / +45.3 | 0.3% / 12.5 / +34.2 |
+| bare floor L\* / pattern | 14.2 / 6.5% | 14.3 / 6.4% |
+
+The cast and the orbs read exactly as before. The foliage covers five times the frame and stands half as far
+from its ground; its brightest tenth is now well under the bodies' and the orbs'.
+
+**Footing and placement.** `--footing-census`, a minute's walk, seeds 4242 and 11: 116 and 102 trunks in 41-42
+chunks, none within 72 px of anything that blocks (nearest 72.4 and 82.5), no pocket or room walled by a trunk;
+`--check-feet`: 0 frames with the Feet in the ground, 0 stuck checks. Per chunk furnished: 17 hedge runs, 2-3
+hedgerow trees, 4-5 thorn bushes, 3-4 briars, 3.7 stooks (the even scatter had 4). The first load's 25 chunks
+hold 951 props where they held 405, and 2,326 detail cells where they held 733 (9% of the cells, against the
+Forest's 19%).
+
+**Checked.** `_ExploreProbe --stage=9 --seed=4242 --fresh-save`: 46 passed, 0 failed - the Well and the
+Tithe-Reeve's scale placed on open ground, nothing on a footprint, both won. `_UiShot --secret-probe --stage=9`
+(the Pinfold, walked to and won): all pass. The Forest, on the rule: `_ExploreProbe --stage=0` 46 passed, and
+`--secret-probe` and `--secret-probe=keepsake` all pass. The validator: 0 errors, the one test_wizard warning.
+
+**Cost.** `_BalanceHarness --minutes=2 --character=1 --immortal --timescale=1 --stress-swarm --profile=10
+--stage=9 --seed=11 --terrain-seed=4242 --walk=30 --terrain-log`, headless. Before was taken with no other Godot
+on the machine; every later attempt shared it with other sessions' (load 45-96%; a back-to-back pair at 74-96%
+measured frame means of 110-204 ms and is thrown away), so read the frame times as noise and the node count and
+the furnishing as the change:
+
+| | before | after |
+|---|---|---|
+| frame mean / p95 | 7.9 / 24 ms | 7.0 / 12 ms (another load) |
+| nodes, walking | 1,730-1,940 (mean 1,890) | 2,380-2,750 (mean 2,560) |
+| worst furnish step of a crossing, median / max | 1.7 / 7.3 ms | 8.1 / 16.1 ms, then the fix below |
+
+About 680 more nodes (a hedge run is one node, a tree three). The furnishing was the finding. `--terrain-log`
+now names any furnishing part over 3 ms and how many chunks of ground it generated: with the rule on, the trunk
+plans asked about ground two chunks past the furnished one, which the streamer had not made yet, and generated
+it inside the furnishing step - on the Forest, 78 chunks of data over six crossings, against none with the rule
+off. Two fixes: a rock asks its neighbours' RAW plans (never their neighbours'), and the streamer prepares two
+rings of data, one chunk a step, before a stage with trunks furnishes (`TerrainStreamer.FurnishDataReach`). After
+them, on the Forest under the same load, the plan's part averaged 4.8 ms where the rule-off run's averaged 5.2,
+and furnishing generated 4 chunks in six crossings. The field itself was made cheaper too: it keeps the last
+lattice cell's nine field centres and each noise's four corners (the same numbers, computed once; the placement
+hashes did not move). **Not measured on the phone**, and the after frame times want a quiet machine.
+
+### Still needs eyes (the spread)
+
+- **The hedgerows as a land.** From the Python preview the network can read as cracked earth rather than fields
+  when the green bank under a hedge is wider than the hedge on it; whether a field framed by hedges reads as a
+  field is for eyes, on the PC and the phone (`_shots/foliage-fields/composite-pc.png`, `composite-phone.png`).
+- **The hedge as one thing.** A hedge is runs of 130-180 px sprites overlapping along the line, with gaps where the
+  keep roll thinned them; whether that reads as a hedge or as a row of bushes.
+- **Stooks and the Last Sheaf.** The stooks now stand in the open field, which is right, and there are as many as
+  before - but FF2's tell, "the only upright sheaf in a cut field", already had to compete with them.
+- **The Forest after the rule** (`composite-forest-rule-*.png`, rule off and on, held on the same spots): 91% of
+  the oaks and 94% of the birches; the birches stepped off the oaks' feet.
+- **The phone**, and **the frame on a quiet machine** (above).
+- **For the integrator:** `atlas.png`, `atlas.json` and `detail.json` are regenerated by every chapter that adds
+  detail art; merge the branches, then re-run `python tools/art/ground_detail.py` and import, rather than picking
+  a side. `props_fields.py`, as it was committed before this pass, already drew `stook-2` 48 pixels different from
+  the committed PNG (the PNG predates the generator or another interpreter drew it); the committed PNG was kept,
+  so re-running the generator rewrites it - check before committing that file.
