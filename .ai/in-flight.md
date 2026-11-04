@@ -74,6 +74,13 @@ things come up; strike what lands.**
      other stars (Ascension, the Codex). Add something to the name - "Legendary Solar Flare", or a gold word
      and frame on its card - and say once what it means (its element tags count double). Check the level-up
      card, the loadout strip, the pause screen and the character select for a wizard who starts Legendary.
+   - **Percentages, never flat numbers** (Eric, 2026-11-04: instead of things like "damage +2", always speak in
+     percentages). Every player-facing increase becomes a percentage: the level-up lines a spell's
+     `SpellLevelUpgrade` produces (`DamageBonus = 2` reads "+2 damage"; it should read "+17% damage" against
+     what the spell does at that level), and the same for boons, relics and anything else that prints a flat
+     gain. Decide what the percentage is of (the spell's damage before the pick is the honest one) and do it in
+     the one place the lines are built (`Player.EnsureRelevantLevelUps` and the card builders), not string by
+     string. `RegressionChecks.ValidateLevelUpReaders` reads those lines; keep it passing.
    - **Clickable element tags look clickable** (Eric, 2026-11-04): give every tag chip that opens its
      element's card (`ElementChip`, `CodexRows.BuildChip`) a small animation that says so, such as a shimmer
      passing over it now and then. Keep it subtle and cheap: many chips can be on one screen, it must not pull
