@@ -131,6 +131,13 @@ things come up; strike what lands.**
    `CLAUDE.md`, and one achievement to earn it (every non-starter spell comes from exactly one). Design first:
    which old passives' ideas are worth keeping as actives, and how each differs from Aegis Ward and from each
    other (`.ai/passives-and-items.md` has why the passives went, `.ai/spell-variety.md` the axes).
+9a. **Play with spell slots** (Eric, 2026-11-04): items and boons that empower particular slots (the first,
+   the last, the slot beside another) and ways to switch which spell sits in which slot during a run. The
+   Gimmel Ring's move to "your first two slots" (item 8) is the first of these; design the family together
+   so the slot is a thing the player arranges on purpose. Read `.ai/passives-and-items.md` (Full Set
+   Enchantments, rarity), `.ai/spell-variety.md` and `.ai/slow-start.md` (a new save holds three slots,
+   `SpellBook`) first; a slot effect must still read on the HUD strip at both canvases, with the slot it
+   touches highlighted.
 10. **Art and sound fixes** (Eric, 2026-11-04):
    - **Magic Missile's sound is annoying.** It plays on every dart, every 0.8 s, all run long for the Archmage,
      and `.ai/audio-direction.md` says a sound's loudness is set by how often it plays. Find which cast and
