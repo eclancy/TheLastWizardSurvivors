@@ -1464,6 +1464,19 @@
     "assets/bonelight/tiles/detail/cotton_grass_3.png": [18, 45],
     "assets/bonelight/tiles/detail/lichen_stones_0.png": [19, 45],
     "assets/bonelight/tiles/detail/lichen_stones_1.png": [20, 45],
-    "assets/bonelight/tiles/detail/lichen_stones_2.png": [21, 45]
+    "assets/bonelight/tiles/detail/lichen_stones_2.png": [21, 45],
+    "assets/bonelight/tiles/detail/moor_grass_0.png": [22, 45],
+    "assets/bonelight/tiles/detail/moor_grass_1.png": [23, 45],
+    "assets/bonelight/tiles/detail/moor_grass_2.png": [24, 45],
+    "assets/bonelight/tiles/detail/moor_grass_3.png": [25, 45],
+    "assets/bonelight/tiles/detail/bilberry_0.png": [26, 45],
+    "assets/bonelight/tiles/detail/bilberry_1.png": [27, 45],
+    "assets/bonelight/tiles/detail/bilberry_2.png": [28, 45],
+    "assets/bonelight/tiles/detail/lichen_specks_0.png": [29, 45],
+    "assets/bonelight/tiles/detail/lichen_specks_1.png": [30, 45],
+    "assets/bonelight/tiles/detail/lichen_specks_2.png": [31, 45],
+    "assets/bonelight/tiles/detail/clitter_0.png": [0, 46],
+    "assets/bonelight/tiles/detail/clitter_1.png": [1, 46],
+    "assets/bonelight/tiles/detail/clitter_2.png": [2, 46]
   }
 }

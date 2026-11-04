@@ -189,6 +189,19 @@
   {"id": "cotton_grass_3", "set": "cotton_grass", "path": "assets/bonelight/tiles/detail/cotton_grass_3.png"},
   {"id": "lichen_stones_0", "set": "lichen_stones", "path": "assets/bonelight/tiles/detail/lichen_stones_0.png"},
   {"id": "lichen_stones_1", "set": "lichen_stones", "path": "assets/bonelight/tiles/detail/lichen_stones_1.png"},
-  {"id": "lichen_stones_2", "set": "lichen_stones", "path": "assets/bonelight/tiles/detail/lichen_stones_2.png"}
+  {"id": "lichen_stones_2", "set": "lichen_stones", "path": "assets/bonelight/tiles/detail/lichen_stones_2.png"},
+  {"id": "moor_grass_0", "set": "moor_grass", "path": "assets/bonelight/tiles/detail/moor_grass_0.png"},
+  {"id": "moor_grass_1", "set": "moor_grass", "path": "assets/bonelight/tiles/detail/moor_grass_1.png"},
+  {"id": "moor_grass_2", "set": "moor_grass", "path": "assets/bonelight/tiles/detail/moor_grass_2.png"},
+  {"id": "moor_grass_3", "set": "moor_grass", "path": "assets/bonelight/tiles/detail/moor_grass_3.png"},
+  {"id": "bilberry_0", "set": "bilberry", "path": "assets/bonelight/tiles/detail/bilberry_0.png"},
+  {"id": "bilberry_1", "set": "bilberry", "path": "assets/bonelight/tiles/detail/bilberry_1.png"},
+  {"id": "bilberry_2", "set": "bilberry", "path": "assets/bonelight/tiles/detail/bilberry_2.png"},
+  {"id": "lichen_specks_0", "set": "lichen_specks", "path": "assets/bonelight/tiles/detail/lichen_specks_0.png"},
+  {"id": "lichen_specks_1", "set": "lichen_specks", "path": "assets/bonelight/tiles/detail/lichen_specks_1.png"},
+  {"id": "lichen_specks_2", "set": "lichen_specks", "path": "assets/bonelight/tiles/detail/lichen_specks_2.png"},
+  {"id": "clitter_0", "set": "clitter", "path": "assets/bonelight/tiles/detail/clitter_0.png"},
+  {"id": "clitter_1", "set": "clitter", "path": "assets/bonelight/tiles/detail/clitter_1.png"},
+  {"id": "clitter_2", "set": "clitter", "path": "assets/bonelight/tiles/detail/clitter_2.png"}
   ]
 }

@@ -12,6 +12,15 @@ than as stone:
                   It grows where the ground is wet - on the peat and at the tarns' edges.
   lichen_stones   loose granite, speckled, with a crust of lichen on the lit side.
 
+The foliage pass (2026-11-04, .ai/terrain.md section 13) added four more, laid as clutter by
+scripts/Foliage.BrokenCircle.cs rather than by GroundDetail's table:
+
+  moor_grass      grass combed east by the wind - the one place the wind is drawn, since the detail
+                  layer is never mirrored.
+  bilberry        low leaves and dusky berries under the gorse at a drift's edge.
+  lichen_specks   flat lichen rosettes in the open and on the granite.
+  clitter         angular granite chips on a drift's granite crown, below its tor.
+
 The ground_detail.py rules hold: material tones only, nothing emissive, the brightest stop a `lit`
 and never a `hi` plane, and nothing round, bright and alone - the XP orbs are lime, lilac and pale
 yellow discs, so the heather's bloom is violet's dull material row in spikes, never a lilac dot, and
@@ -20,7 +29,7 @@ the cotton heads come several to a stalk-tuft, never one.
 import math
 
 import ground_detail
-from ground_detail import LI, LN, OCC, SK, ST, VE, VI, spot
+from ground_detail import GO, LI, LN, OCC, SK, ST, STL, VE, VI, spot
 
 
 def heather_bush(c, x, y, w, r):
@@ -125,8 +134,118 @@ def lichen_stones(c, r):
                 c.set(x + dx, y + dy, LI[t])
 
 
+# --- the foliage pass (2026-11-04, .ai/terrain.md section 13): the bottom rungs ----------------------
+#
+# Clutter, laid by Foliage.BrokenCircle.cs's rules by the drifts' canopy. All of it within about ten L*
+# of the heather, nothing lit above a `lit` stop and nothing round and bright and alone; and nothing
+# black and nothing in a line, because a dotted line of char across the heather is the Fallen Star's
+# trail (BC1), the one thing on the moor that is straight.
+
+def moor_grass(c, r):
+    """Moor grass, combed by the wind: two or three tufts of fine blades, each rising from its root and
+    bending over the same way, its tips near level. EVERY tuft leans east, on every variant - the detail
+    layer is never mirrored, so this is the one place on the heath the wind can be drawn and stay one wind.
+    Linen's shade with its base on the lit blades: grey-green, a moor in no season."""
+    cx, cy = spot(r, 12)
+    for k in range(r.i(2, 3)):
+        x0, y0 = cx + r.i(-9, 7), cy + r.i(-5, 6)
+        for b in range(r.i(6, 9)):
+            bx = x0 + r.i(-3, 2)
+            ln = r.i(8, 14)
+            bend = 0.35 + r.f() * 0.35
+            px, py = float(bx), float(y0)
+            for j in range(ln):
+                t = j / float(ln)
+                # up, then over: the slope flattens toward the tip
+                px += bend * (0.4 + t * 1.6)
+                py -= max(0.15, 1.0 - t * 1.4)
+                x, y = int(round(px)), int(round(py))
+                if j == ln - 1:
+                    tone = LN[2]
+                elif b < 2 and t < 0.6:
+                    tone = LN[2]
+                elif (b + j) % 4 == 0:
+                    tone = VE[4]
+                else:
+                    tone = LN[3]
+                c.set(x, y, tone)
+        c.set(x0 - 1, y0 + 1, OCC)
+        c.set(x0, y0 + 1, OCC)
+        c.set(x0 + 1, y0 + 1, OCC)
+
+
+def bilberry(c, r):
+    """Bilberry, low under the gorse at a drift's edge: wiry stems with small leaves in verdant's shade
+    and deep, and berries in twos and threes - dusky blue-black, steel's shade and deep, never a lone
+    round point (an XP orb is a lone round point)."""
+    cx, cy = spot(r, 12)
+    for k in range(r.i(1, 2)):
+        x0, y0 = cx + r.i(-7, 7), cy + r.i(-4, 5)
+        w = r.i(6, 8)
+        for dx in range(-w, w + 1):
+            hgt = max(1, int((w - abs(dx)) * 0.8) + r.i(0, 1))
+            for j in range(hgt):
+                lit = dx < 0 and j >= hgt - 2
+                if (dx + j) % 3 == 0:
+                    tone = VE[4]
+                else:
+                    tone = VE[3] if lit or (dx * 5 + j) % 7 == 0 else VE[4]
+                c.set(x0 + dx, y0 - j, tone)
+            c.set(x0 + dx, y0 + 1, OCC)
+        for b in range(r.i(2, 3)):
+            bx, by = x0 + r.i(-w + 1, w - 2), y0 - r.i(0, 2)
+            c.set(bx, by, STL[3])
+            c.set(bx + 1, by, STL[4])
+            c.set(bx, by + 1, STL[4])
+            c.set(bx + 1, by + 1, OCC)
+
+
+def lichen_specks(c, r):
+    """Lichen lying flat on the peat and the stones: two to four ragged rosettes, lichen's shade round its
+    base. Flat, so no contact shadow. No gold: a warm fleck on the heath is a secret's glint
+    (.ai/stage-secrets.md section 2), and a small rosette drawn round came out as a plus - a sparkle."""
+    cx, cy = spot(r, 10)
+    for k in range(r.i(2, 4)):
+        x, y = cx + r.i(-10, 10), cy + r.i(-8, 8)
+        rad = r.i(2, 3)
+        for dy in range(-rad, rad + 1):
+            for dx in range(-rad - 1, rad + 2):
+                d = (dx / float(rad + 1.2)) ** 2 + (dy / float(rad + 0.4)) ** 2
+                if d > 1.0 - r.f() * 0.35:
+                    continue
+                c.set(x + dx, y + dy, LI[3] if d < 0.45 else LI[4])
+        c.set(x - 1, y - 1, LI[2])
+
+
+def clitter(c, r):
+    """Clitter: the granite the frost has prised off a tor, lying where it fell on the rise below it -
+    two to four angular chips, lit on their upper-left faces, each on its contact shadow."""
+    cx, cy = spot(r, 11)
+    for k in range(r.i(2, 4)):
+        x, y = cx + r.i(-9, 9), cy + r.i(-7, 7)
+        w = r.i(3, 5) if k == 0 else r.i(2, 3)
+        hgt = r.i(2, 3)
+        skew = r.i(-1, 1)
+        for dx in range(-w, w + 2):
+            c.set(x + dx, y + 1, OCC)
+        for dy in range(-hgt, 1):
+            sh = (skew * (dy + hgt)) // max(1, hgt)
+            for dx in range(-w + sh + (1 if dy == -hgt else 0), w + 1 + sh):
+                if dy == -hgt or dx <= -w + sh + 1:
+                    tone = SK[4] if (dx + k) % 3 else ST[0]
+                elif dy == 0 or dx == w + sh:
+                    tone = ST[2]
+                else:
+                    tone = ST[1] if r.f() > 0.18 else ST[0]
+                c.set(x + dx, y + dy, tone)
+
+
 DETAIL_SETS = [
     ("heather_tufts", heather_tufts, 4),
     ("cotton_grass", cotton_grass, 4),
     ("lichen_stones", lichen_stones, 3),
+    ("moor_grass", moor_grass, 4),
+    ("bilberry", bilberry, 3),
+    ("lichen_specks", lichen_specks, 3),
+    ("clitter", clitter, 3),
 ]
