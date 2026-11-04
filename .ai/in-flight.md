@@ -40,6 +40,11 @@ things come up; strike what lands.**
    `--portrait --safe-area`) and fix by width or wording, or by a shared rule (balance the lines, or keep the
    last two words together) rather than one string at a time; a check in the validator or `_UiShot` would keep
    it from coming back.
+   - **The Archmage's spell line on the character select** (Eric, 2026-11-04): on a phone his starting spell's
+     description runs past one line on the character description page. Shorten it to one line at 540x1212
+     `--portrait --safe-area`. Find which string the details pane shows (Magic Missile's `Description` or
+     `Tagline` in `SpellData.tres`, or the select's own line in `CharacterSelection`), then check the other
+     wizards' lines the same way.
 6. **The title screen's freeze, and its prompt on a phone** (Eric, 2026-11-04). Read `.ai/title-screen.md` first.
    - **The freeze.** Pressing a key or tapping at "press any button" freezes the game until a run of assets
      loads (`TitleScreen` adds `MainMenu` over the art only then). Load all of it first, behind a ritual-circle
