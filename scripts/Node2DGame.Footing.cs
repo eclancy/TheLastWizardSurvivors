@@ -250,6 +250,12 @@ public partial class Node2DGame
 	// trunks (a loner falls inside its chunk). Measured once, from the specs; -1 until then.
 	private float trunkSpill = -1f;
 
+	// Half the widest trunk this stage's blocking sets stand, measured with trunkSpill: how far a trunk's box
+	// reaches past its centre. It was a fixed 16 ("the widest trunk is under 32 px"), true of the Forest's
+	// trees and not of the rocks that came after them - the Sands' tors are up to 64 wide and the Heath's stones
+	// 60 - so a wide rock just past the reach was never asked about. Never under the old 16.
+	private float trunkHalfWidth = 16f;
+
 	/// <summary>
 	/// True if a blocking box (a rock's, a themed prop's) keeps the clearance from every trunk any chunk round
 	/// it will place. Asks only the chunks a trunk within reach could belong to: its own chunk's KEPT plan,
@@ -273,6 +279,8 @@ public partial class Node2DGame
 				any = true;
 				if (decorChunkSpecs[i].Clustered)
 					trunkSpill = Mathf.Max(trunkSpill, decorChunkSpecs[i].ClusterRadiusMax);
+				foreach (GroundedSprite art in decorChunkSpecs[i].Grounded)
+					trunkHalfWidth = Mathf.Max(trunkHalfWidth, art.Trunk * 0.5f);
 			}
 			if (!any)
 				trunkSpill = float.PositiveInfinity;
@@ -280,8 +288,8 @@ public partial class Node2DGame
 		if (float.IsPositiveInfinity(trunkSpill))
 			return true; // nothing on this stage stands a trunk
 		Vector2I own = terrainStreamer.ChunkOfWorld(box.GetCenter());
-		// The widest trunk is under 32 px, so a trunk centre within spill of its chunk keeps its box within spill + 16.
-		Rect2 reach = box.Grow(Footing.Clearance + trunkSpill + 16f);
+		// A trunk centre within spill of its chunk keeps its box within spill + half the widest trunk.
+		Rect2 reach = box.Grow(Footing.Clearance + trunkSpill + trunkHalfWidth);
 		Vector2I first = terrainStreamer.ChunkOfWorld(reach.Position);
 		Vector2I last = terrainStreamer.ChunkOfWorld(reach.End);
 		for (int cy = first.Y; cy <= last.Y; cy++)
