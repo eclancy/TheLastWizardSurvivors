@@ -2963,7 +2963,10 @@ public static class SpellEvolutionCatalog
 	{
 		const int extraTongues = 2;
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.AmplifiedImpact,
-			$"As each burn ends, its fire rolls back into a burst at the tip for {Flamethrower.BackdraftDamageShare:0}x a tongue. +35% damage.",
+			// Said in the player's words (Eric, 2026-11-04: "Backdraft description is confusing"): it was "As each burn
+			// ends, its fire rolls back into a burst at the tip for 3x a tongue" - "burn" and "tongue" are the code's
+			// names for a breath and one flame of it.
+			$"When each breath of fire ends, the far end of the flame explodes for {Flamethrower.BackdraftDamageShare:0}x its damage. +35% damage.",
 			"Power / Burst", "The jet's far end is where the pack is caught - and blown apart.",
 			o => { o.DisplayName = "Backdraft"; o.VisualTag = "Backdraft"; o.DamageMultiplier = 1.35f; }));
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.HyperAcceleration,
