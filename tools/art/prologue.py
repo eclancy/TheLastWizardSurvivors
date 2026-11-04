@@ -1007,7 +1007,7 @@ def p_moot():
 
 
 def p_throne():
-    """2. "The wizards' circle. He came here first." The same circle, under him. His first full look: the only
+    """2. "He came here first." The same circle, under him. His first full look: the only
     figure in the game that sheds dark light. The wizards' light leaves them and goes into his
     hand; the stones go down outward from where he stands."""
     back, mid, fore = frame(True), frame(), frame()
