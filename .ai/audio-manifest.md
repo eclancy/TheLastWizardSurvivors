@@ -5,6 +5,12 @@ is the inventory and the wiring backlog: seventy-one generated `.wav` files in `
 what each one is for, and where in the code it is meant to be triggered. The music - a menu
 theme and nine chapter sets in `assets/music/` - has its own section at the end.
 
+**2026-11-03: one more, wired; the voice below.** One for the Cursed Dungeon's Oubliette (`.ai/endgame-castle.md` 4.4, D7):
+`secret_voice_below`, what answers up the shaft once he has stood on its grate five seconds untouched - a woman's
+voice, wordless, humming and then two open syllables, water dripping at the bottom. Normal tier, -8 dBFS, played at
+the grate. 0 confusable pairs; inside its category 0.294 (`secret_found`), across the whole set 0.158
+(`hint_caravan_bell`), every other voice 0.31 or more (`hint_cell_cry`, the same chapter's, not in the nearest
+twelve). Row under "Secrets". (The count is left to the merge, as the hints' are.)
 **2026-11-03: one more, wired; the dotted door.** One for Ma Liang (`.ai/chapter-wizards.md` 4.8): `hint_brush`, the
 Court's second chapter hint - three strokes of a wet brush along a wall and a drop running off the last. Normal tier;
 nearest in the whole set 0.131 (`spell_beam_loop`), the nearest hint 0.273 (`hint_quatrain`), so `--confuse` still
@@ -398,6 +404,7 @@ sound like one. Nothing in them opens on `palette.transient`, because nothing he
 | `secret_seen.wav` | 2.05 s | -9.0 dBFS | Normal | `SecretDirector`, the moment a secret's near tell is first on screen - the seen mark, recorded into `SaveData.GlimpsedSecretIds` (achievements-and-secrets 4.3, 4.9): **`SfxPlayer.AtPosition(name, site)`**, once per secret per save, with no toast and no text. At the site, not global: the tell is already on screen, so the pan points at nothing he has not seen, and at the ~450 px the mark is taken from Godot's attenuation takes another 5-6 dB off, which is what makes -9 "soft". If stage-secrets 7.7's reading is wanted instead (every approach to a dormant site, every run), it still fits the band: a few a run |
 | `secret_found.wav` | 1.74 s | -8.0 dBFS | Normal | `SecretDirector.Found`, **in place of `event_reward`** at both of its sites there (a secret found again this run - another pen blooming - and a find in a later run). `meta_unlock` stays where it is for a find that changes the save (the page mark the first time; a vault's spell): it is the one sound that means the save changed. `event_reward` then goes back to meaning a side event's chest. Global, under the toast. A few a run - every Forest pen blooms - so beside `event_reward` |
 | `secret_shatter.wav` | 2.30 s | -4.0 dBFS | **Critical** | the Geode Heart's `Breakable` reaching its last stage (the Sunken Cave's vault, C2), as the ring of frost goes out: `SfxPlayer.AtPosition(name, crystal)`. Once a run at most. Then `SecretDirector.Found` plays its own sting a beat later (`meta_unlock` the first time, with Frost Shard; `secret_found` after), so the shatter carries the breaking and the freeze and leaves the reward to that |
+| `secret_voice_below.wav` | 2.70 s | -8.0 dBFS | Normal | **wired**, the Cursed Dungeon's Oubliette (`Oubliette.Answer`): once his feet have been on its grate five seconds without a blow, `SfxPlayer.AtPosition(name, grate)` - only while the one below is still held (Nimue, not named: `UnlockDefinition.RevealSecretId`). Once a run at most. A woman's voice up a long shaft: a closed-mouth hum lifting D4 to F4, then "oh" to G4 and "ah" falling back to D4 and held, the vibrato blooming late; a drop falling into water before the hum, one in the gap, one in the tail; through a 12 ms pipe comb, 120 Hz to 1.5 kHz, a tall stone room. Not called (the cell's cry), not intoned and handed back (the Sibyl), not said (the granary): hummed, once, no echoes. The find waits it out (`Oubliette.VoiceSeconds`, held to the file's length by `ValidateOubliette`), so `meta_unlock` - Critical - never ducks it. Nearest in the whole set 0.158 (`hint_caravan_bell`), then 0.207 (`meta_unlock`). hf 0%, centroid 609 Hz |
 
 What each is:
 

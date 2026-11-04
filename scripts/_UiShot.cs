@@ -1252,6 +1252,20 @@ public partial class _UiShot : Node
 				secretProbeKeepsake = arg.EndsWith("=keepsake");
 				SaveManager.WritesDisabled = true;
 			}
+			// =oubliette: the Cursed Dungeon's D7 walked and worked (_UiShot.Oubliette.cs), not its vault.
+			else if (arg == "--secret-probe=oubliette")
+			{
+				secretProbe = true;
+				secretProbeOubliette = true;
+				SaveManager.WritesDisabled = true;
+			}
+			// --oubliette-stage=N: the Oubliette's count posed a third of the way in (Oubliette.PoseForProbe): 0 at
+			// rest, 1-3 a quarter of the five seconds each, 4 answered (the voice, then the find). With --goto=oubliette.
+			else if (arg.StartsWith("--oubliette-stage="))
+			{
+				oublietteStage = int.Parse(arg.Substring("--oubliette-stage=".Length));
+				SaveManager.WritesDisabled = true;
+			}
 			// --secret=<id>: that secret, if the chapter places it (an anchor, keepsake or vault), stands
 			// beside the spawn instead of where the seed puts it (SecretDirector.PlaceBesideSpawn), so it can
 			// be photographed without the walk (.ai/stage-secrets.md 7.8). Writes off: one worked there saves.
@@ -3662,7 +3676,8 @@ public partial class _UiShot : Node
 				&& FindNodeOfType<Player>(GetTree().Root) is Player secretHero)
 			{
 				secretProbeStarted = true;
-				GetTree().Root.AddChild(probeSecrets.Vault != null && !secretProbeKeepsake
+				GetTree().Root.AddChild(secretProbeOubliette ? new OublietteWalk { Director = probeSecrets, Hero = secretHero }
+					: probeSecrets.Vault != null && !secretProbeKeepsake
 					? NewVaultProbe(probeSecrets, secretHero)
 					: new SecretProbe { Director = probeSecrets, Hero = secretHero });
 			}
@@ -3683,6 +3698,7 @@ public partial class _UiShot : Node
 					crystal.State.Progress = secretStage <= 0 ? 0f : crystal.Needed * (secretStage - 0.5f) / crystal.StageCount;
 				GD.Print($"_UiShot: the vault posed at stage {secretStage}");
 			}
+			PoseOubliette();
 			if (menuQueueProbe && !menuQueueProbeStarted && frames >= WarmupFrames / 2
 				&& FindNodeOfType<Node2DGame>(GetTree().Root) is Node2DGame probeGame
 				&& FindNodeOfType<Player>(GetTree().Root) is Player probePlayer)
@@ -4179,6 +4195,12 @@ public partial class _UiShot : Node
 				: !string.IsNullOrEmpty(SecretDirector.PlaceBesideSpawn) ? secrets.PlacedSite(SecretDirector.PlaceBesideSpawn)
 				: secrets.Vault ?? secrets.Keepsake ?? secrets.Anchor;
 			at = site?.GlobalPosition;
+		}
+		else if (gotoTarget == "oubliette")
+		{
+			// The Dungeon's mid-band site where the seed put it (not beside the spawn: its dead end is the point).
+			SecretDirector secrets = FindNodeOfType<SecretDirector>(GetTree().Root);
+			at = secrets?.PlacedSite(SecretCatalog.OublietteId)?.GlobalPosition;
 		}
 		else if (FindNodeOfType<SideEventDirector>(GetTree().Root) is not SideEventDirector director)
 			return null;

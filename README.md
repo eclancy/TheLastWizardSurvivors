@@ -21,7 +21,7 @@ repository, and most of what follows is about it.
 
 ## The art is code
 
-**3,248 images, 1,441 of them ground tiles**, drawn by 157 Python generators in
+**3,278 images, 1,461 of them ground tiles**, drawn by 159 Python generators in
 [`tools/art/`](tools/art). Not exported from an editor — *drawn in code*, pixel by pixel, against
 a fixed palette. One command rebuilds every image in the game:
 
@@ -36,7 +36,7 @@ colour the palette does not define. The bosses are in
 [`sprite_bosses.py`](tools/art/sprite_bosses.py), the ground in [`tiles.py`](tools/art/tiles.py),
 the relic icons in [`relic_icons.py`](tools/art/relic_icons.py).
 
-**101 sound effects and the music**, synthesised by [`tools/audio/`](tools/audio) — no library, no
+**102 sound effects and the music**, synthesised by [`tools/audio/`](tools/audio) — no library, no
 recordings. The music is a theme for the menus and a set for each of the fourteen chapters, as three
 stems the game fades in and out with the fight - the road's chapters in modes of the same seven notes,
 the castle's taking up notes outside them - with a boss track of its own for eleven of them and one

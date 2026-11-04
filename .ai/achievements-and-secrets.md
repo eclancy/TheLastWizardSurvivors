@@ -742,7 +742,7 @@ it keeps its design.
 | D4 | The Gaoler's Ledger | planned, keepsake | 10-12 | guarded, then touch | a lectern in an empty hall | a chest; the ledger, once (4.3) |
 | D5 | **The Cold Forge** | **new, vault** | 5-7 chunks, in a hall room | **cull**: kill 40 enemies standing on the forge's hearth ring (a 180 px circle in front of the anvil); each kill sets an ember in the dead coals until the forge roars | far: the walls' sconces give way to soot-stained faces and dropped shackles from two chunks out; near: the anvil, with a warm glint on the horn | **Molten Shard**; later runs a chest |
 | D6 | **The Empty Cell** | **new** | mid | **untouched**: stand in the one cell whose door stands open for 4 s without being struck | a cell door open in a corridor of shut ones; the name scratched off the lintel | heal 50%; page. Absence, never a body |
-| D7 | **The Oubliette** | **new** | mid, in a dead-end hall room | **untouched** for 5 s on a grate in the floor | a draught of cold motes rising through the grate; a voice below | 150 Arcane Energy, once; when it is built, the find is the earlier reveal of Nimue (built 2026-11-03, revealed by the Throne opening until then - `.ai/endgame-castle.md`, decision 11, its Built note) |
+| D7 | **The Oubliette** | **built** | mid (5-9 chunks, every run), in a dead end | **untouched** for 5 s on a grate in the floor | a draught of cold motes rising through the grate; a voice below | the earlier reveal of Nimue (her card turns), and the page; the Throne opening is the fallback. Not the 150 Arcane Energy, which was for a road without her |
 
 **D5 built (2026-10-30, `wip/vaults-a`, in the Dungeon as it is now):** `ColdForge.cs`, art
 `tools/art/secret_dungeon.py`. The placer snaps a maze site to a corridor cell, where a 360 px ring does not
@@ -755,6 +755,15 @@ anvil are walked over. The seen mark is taken from the smithy's middle. Probed o
 `--all-unlocked`: all pass, a kill outside the ring lighting nothing. Kills by damage over time that do not
 pass through `Player.DealDamageToEnemy` do not raise `EnemyKilled` and so do not count. Needs eyes: whether
 forty on the hearth is twenty seconds in a real swarm, and whether the ring reads as a place to stand.
+
+**D7 built (2026-11-03, `castle/oubliette`):** `Oubliette.cs`, art in `tools/art/secret_dungeon.py`, the voice
+`secret_voice_below`. Placed by the new `SecretPlacement.Mid` (five to nine chunks out, stream 10, clear of the event,
+keepsake and vault by bearing, kept through the band sweep) at a dead-end cell - a cell with walls on three sides,
+which is how "a dead-end hall room" was read: no cell of a hall can be a dead end. Five seconds with his feet on the
+grate and no blow (`SecretVerb.Untouched`: `Player.DamageTaken`, which a dodge never raises; stepping off starts it
+again too), then the voice from below while she is still held, then the find - which turns Nimue's card through
+`UnlockDefinition.RevealSecretId`, read from `FoundSecretIds`, so no schema change. Freed, she does not answer: "No one
+is held here now". The whole record, decisions and checks: `.ai/endgame-castle.md`, "D7, built".
 
 ### 8.6 Blighted Swamp (`stage_3`) - event: snuff the lanterns (explore)
 

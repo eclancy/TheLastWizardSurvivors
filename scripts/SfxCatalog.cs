@@ -155,6 +155,10 @@ public static class SfxCatalog
 	public const string SecretFound = "secret_found";
 	// SecretShatter: the Sunken Cave's Geode Heart breaking, once a run at most. Critical below.
 	public const string SecretShatter = "secret_shatter";
+	// SecretVoiceBelow: the Cursed Dungeon's Oubliette answering (Oubliette.cs) - a woman's voice up a long shaft,
+	// wordless, played AT the grate once its five untouched seconds are in, and only while someone is still held
+	// below. Once a run at most. Never names her.
+	public const string SecretVoiceBelow = "secret_voice_below";
 
 	private static readonly string[] NonElementNames =
 	{
@@ -172,7 +176,7 @@ public static class SfxCatalog
 		PlayerFall, TallyTick, TallyPayout,
 		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep, HintHullKnock, HintFlaskChime, HintQuatrain, HintTombKnock, HintGranaryVoice, HintBrush,
 		SibylVoice, SibylEcho,
-		SecretSeen, SecretFound, SecretShatter,
+		SecretSeen, SecretFound, SecretShatter, SecretVoiceBelow,
 	};
 
 	// The generator lowercases the enum name, so Element.Darkness is cast_darkness.wav.
