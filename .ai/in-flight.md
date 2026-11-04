@@ -49,6 +49,11 @@ things come up; strike what lands.**
      and after, on the PC and on the Pixel 9 (`.ai/performance.md`).
    - **On a phone, "Tap to start"** in place of "press any button" (`OS.HasFeature("mobile")`, as
      `TouchControls` decides it).
+   - **The phone title's empty middle** (Eric, 2026-11-04): on Android the eyes in the dark are spread as if
+     making room for the title, but the title takes much less room than they leave, so there is a big blank
+     area in the middle of the screen with no eyes. Lower the title and spread the eyes to fill the space.
+     The portrait art and its eye field are generated (`tools/art/splash.py`, `.ai/title-screen.md`): change the
+     generator, re-run it, check it at 540x1212 `--portrait --safe-area`, never edit the PNG.
 7. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
 8. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
    launch-plan doc, now carrying the rival motive).
