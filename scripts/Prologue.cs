@@ -190,15 +190,17 @@ public partial class Prologue : Control
 		// THE IMPACT (rule 1): at 2.0 s the light his staff holds bursts and the chain breaks (tools/art/prologue.py,
 		// BREAK_AT and _flare, drawn at the staff's head, art (442, 418)). Speed lines out of it in his warm light, a
 		// shake and a flash, over the burst the generator draws.
-		// THE LINE (Eric, 2026-11-03: "i want a heroic sounding line for that panel", in the story's voice and not a call
-		// to action; it was "You went back for them"): what the picture does, said as the turn of the story - his light
-		// bursts, the chain breaks, and the next panel has the four standing. "Your" keeps the one breaking it the
-		// player, and the light is the premise's: he is the only warm light (.ai/world-and-tone.md). 42 characters.
-		new("break", 5.4f, "Your light broke his chain, and they rose.", new Vector2(-3f, 0f), new Vector2(-3f, 0f), new Vector2(12f, 0f),
+		// THE LINE (Eric, 2026-11-03): the rescue, and that the four are with you now - "it should sound more like you
+		// rescued them and now they can work with you". In the story's voice, past tense like the lines before it; it
+		// was "You went back for them", then briefly "Your light broke his chain, and they rose" and "...they fought
+		// beside you" (Eric: "they have not fought beside you yet"), then Eric: "stand with you". 41 characters.
+		new("break", 5.4f, "You rescued them, and they stand with you.", new Vector2(-3f, 0f), new Vector2(-3f, 0f), new Vector2(12f, 0f),
 			Impact: new PanelImpact(2.0f, new Vector2(442f, 418f), Warm: true)),
-		// The five of them, standing where the four knelt, each light his own again. No line: the road is next, and
-		// then the character select, where any of the five may walk it.
-		new("five", 4.8f, null, new Vector2(-2f, 0f), new Vector2(-2f, 0f), new Vector2(-14f, 0f)),
+		// The five of them, standing where the four knelt, each light his own again. Its line is the player's goal, told
+		// as story (Eric, 2026-11-03, choosing it): four are free and every other wizard he took is still held - the
+		// road is next, and then the character select, where any of the five may walk it. 46 characters, the PC's
+		// one-line limit exactly.
+		new("five", 4.8f, "Four were free. The rest still waited for you.", new Vector2(-2f, 0f), new Vector2(-2f, 0f), new Vector2(-14f, 0f)),
 		// The road to all of it.
 		new("road", 4.8f, null, new Vector2(0f, 2f), new Vector2(8f, -10f), new Vector2(0f, 16f)),
 	};

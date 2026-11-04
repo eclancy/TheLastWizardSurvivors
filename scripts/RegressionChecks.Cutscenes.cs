@@ -28,10 +28,11 @@ public static partial class RegressionChecks
 				warnings.Add($"Prologue: '{beat.Name}' says more than one line on a PC (46 characters).");
 		}
 		// Three lines were the prologue's rule, and the freeing adds one (Eric: "Overall keep text minimal"); the moot's
-		// adds a fifth, where the story begins (Eric, 2026-11-03: "The stones where we used to meet.").
+		// adds a fifth, where the story begins (Eric, 2026-11-03: "The stones where we used to meet."), and the five's a
+		// sixth, the player's goal ("Four were free. The rest still waited for you.").
 		int lines = reel.Beats.Count(b => !string.IsNullOrEmpty(b.Caption));
-		if (lines > 5)
-			warnings.Add($"Prologue: {lines} panels carry a line; it was written for five at most.");
+		if (lines > 6)
+			warnings.Add($"Prologue: {lines} panels carry a line; it was written for six at most.");
 	}
 
 	// THE FREEINGS (Freeings). Every wizard with a reel is a real, freeable character with a freed line that fits one

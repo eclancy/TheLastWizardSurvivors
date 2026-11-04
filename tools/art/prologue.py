@@ -2176,7 +2176,7 @@ def _break_frame(t, him):
 
 
 def p_break():
-    """6. "Your light broke his chain, and they rose." The hiding's heath again, the tower on its horizon, and the four he
+    """6. "You rescued them, and they stand with you." The hiding's heath again, the tower on its horizon, and the four he
     could reach - the disciplines, each his own sprite (sprite_figure) put three stops into the dark - on
     their knees in a row, bound wrist to wrist by his chain, its violet their only lit edge, their staves
     dark. The Archmage, the one he missed, stands in the middle of them, the title's own figure, his light
@@ -2239,7 +2239,7 @@ def p_break():
 
 
 def p_five():
-    """7. The five of them. The same heath and the same places: the four stand up where they knelt, each
+    """7. "Four were free. The rest still waited for you." The five of them. The same heath and the same places: the four stand up where they knelt, each
     each in their own sprite and colours, each staff burning its own element again - and in the middle, in his
     warded circle, the Archmage.
     His chain lies on the ground in front of them, dead. Five lights on the heath where there was one; no
