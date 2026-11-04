@@ -20,23 +20,34 @@ one of the ten chapter wizards** (`.ai/chapter-wizards.md`), Merlin in a look of
 cutscenes and freeing reels; the cinematic rules; the light pool in the Dungeon and the Cave only
 (Eric: *"Keep to two"*); Boss Rush's shorter arrivals; the chest lean (#44).
 
-**Building now**, one worktree each, cut from 31233f2a, three at a time (section 6: five at once ran
-into the usage limit); the Oubliette and the foliage pilot start as the first three report:
+**Merged since the release** (2026-11-03, each built in its own worktree, three at a time - section 6:
+five at once ran into the usage limit; not in any release yet):
 
-| Branch | Worktree | What |
+| Branch | Merge | What |
 |---|---|---|
-| `fix/tip-overlap` | `ws-fix-tip-overlap` | the onboarding tip drawn over the objective lines; the pause screen's chapter number (section 7) |
-| `feel/damage-colours` | `ws-feel-damage-colours` | damage numbers tinted by the element that dealt them (`.ai/genre-lessons.md` 11.4) |
-| `art/merlin-ring` | `ws-art-merlin-ring` | the Orb of Ages' ring and star on the 2 px grid; its icons in his quartz (`.ai/merlin.md` 7.6) |
-| `castle/oubliette` | `ws-castle-oubliette` | D7, the Oubliette, the earlier reveal of Nimue (`.ai/endgame-castle.md` 4.4) |
-| `art/forest-foliage` | `ws-art-forest-foliage` | the foliage density pilot on the Forest (`.ai/genre-lessons.md` 2); landmarks after it |
+| `art/merlin-ring` | 5f198e1a | the Orb of Ages' ward, star and orb on the 2 px grid; its 7 icons in his quartz (`.ai/merlin.md` 7.6) |
+| `fix/tip-overlap` | 53d400f7 | `HudBand`: the rows under the timer stack, so a tip is never drawn over an objective line; chapters numbered by their place on the road |
+| `feel/damage-colours` | fe26e592 | damage numbers wear the element that dealt them, outlined (`DamageNumberInk`, `.ai/art-direction.md`) |
+| `art/forest-foliage` | e228232c | the Forest pilot: stands, fringes and clearings (`Woodland`), three bush sizes, grass and specks (`.ai/terrain.md` 13) |
+| `castle/oubliette` | c1fc933b | D7, the Oubliette: a grate in a dead-end Dungeon cell, a voice below, Nimue's card turned before the Throne |
 
-Not started: scenery-only landmarks per chapter (after the foliage pilot, same painter); the Play
-Store listing as *The One He Missed: Survivors* (`.ai/game-name.md`, Eric's Play Console).
+Not started: scenery-only landmarks per chapter (after Eric judges the foliage pilot, same painter);
+the foliage pass on the other chapters (likewise); the Play Store listing as *The One He Missed:
+Survivors* (`.ai/game-name.md`, Eric's Play Console).
 
 **Waiting on Eric's eyes** (none of it measurable by a harness):
-- Nimue: the float and its shadow at game size; the Scabbard's size; the sever line in motion; the
-  Throne as her reveal until D7 lands; "the one he kept" and her freed line.
+- The foliage pilot (`_shots/forest-foliage/composite-pc.png`): do the stands frame the fight or trap
+  it (the bot walked into one and was pinned among trunks); the moss under a stand is about 4x the
+  turf's speckle; a crown at the screen edge can hide a gem; on the phone the new grass reads as texture.
+- Damage colours: crits are one stop hotter and come out near-white and alike (Arcane, Metal, Light) -
+  the alternative is the element's own colour with crits marked only by "!" and size; the turned blow
+  is bone grey now; Poison and Lightning sit close; Wind is the dimmest on the Forest.
+- Merlin's ring: the stroke the orb flies is twice as bold; the orb grows with Great Circle; the quartz
+  icon at 32 px.
+- The Oubliette: the voice is measured, never heard; the motes are small; 5 s unstruck against the
+  Dungeon's swarm has not been played; her hint names the Throne before the map shows it.
+- Nimue: the float and its shadow at game size; the Scabbard's size; the sever line in motion; "the one
+  he kept" and her freed line.
 - Ma Liang: whether tracing the door under a crowd on a phone stick is a challenge; the dot numbers on
   a phone; the brush sound; the flask; the Painted Door in a crowd. His Apotheosis came at 7.3 min,
   under the 7.5 floor.
