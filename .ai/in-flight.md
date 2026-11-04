@@ -98,6 +98,11 @@ things come up; strike what lands.**
      impact sounds it uses (`SfxCatalog`, `SfxPlayer`), then make it quieter, softer and less sharp, with some
      variation between plays, in `tools/audio/sfx.py` (`python tools/audio/build.py`, then `analyse.py
      --confuse`). Listen to it in a run before and after.
+   - **Minibosses glow, so they stand out in a crowd** (Eric, 2026-11-04). First check what already marks them
+     (elites' gold markers; `Enemy.IsMiniBoss`; the Boo) and how they read inside a 140-body swarm. Then add a
+     glow or rim: cheap per body (`.ai/performance.md`), above the crowd and still lit under the light pool
+     (`.ai/light-pool.md`), in a colour that is not the player's warm gold or his dark wizard's violet
+     (`.ai/world-and-tone.md`'s enemy palette), and distinct from the bosses' own look.
    - **Aedan's lantern hangs from his staff**, not sitting on top of it: a hook or crook at the staff's head,
      the lantern swinging below it on its bail. `tools/art/roster.py`, `pyromancer()`; regenerate his sheets and
      the prologue panels that show him, keep his spell anchor on the lantern (`CharacterVisuals`), and check the
