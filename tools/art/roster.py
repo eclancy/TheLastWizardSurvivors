@@ -209,7 +209,7 @@ matte.add_ramp("russet", RUSSET)
 
 # Thora's hair: mid, lit, dark, and the sheen where the arc above her catches it - dark auburn,
 # from the deep end of russet. Not her amber: the hood she lost was amber and read as hair, so the
-# hair that replaced it must read as a different thing from the cloak it falls over - another
+# hair that replaced it must read as a different thing from the cape it streams beside - another
 # hue (red against yellow) and another value (L* 21 against the cloak's 43). Near-black was tried
 # and parted from the cloak as well, but sank into the portrait well and the dark grounds, and at
 # game size read as smoke rather than hair.
@@ -502,7 +502,7 @@ def contact(g, x0, x1, y=None):
 # for enemies and which is no better an idea for the player. So each spell now decides how the
 # body STANDS - thrusting, planted, calling down, braced, swaying, walking - before it decides
 # what the body holds, and the set deliberately varies height, width, which hand holds the staff,
-# the staff's angle, and what is on the head (bare and cropped, crown, long hair lifting in the wind,
+# the staff's angle, and what is on the head (bare and cropped, crown, long hair streaming in the wind,
 # rock-browed hood, head-wrap, hat).
 #
 # Two limits from the derived animations (anim_sets.py), which shift and shear the whole cell:
@@ -712,7 +712,7 @@ def pyromancer(phase=None):
 
     The beats that were already right survive: no white beard, brow down, jaw set, a burn scar up
     one cheek from standing too close to his own work, and dark hair cropped short. Bare-headed,
-    as only Thora is besides him - and her hair is the opposite read, long and lifting in her
+    as only Thora is besides him - and her hair is the opposite read, long and streaming in her
     weather.
     """
     g = G(48)
@@ -957,26 +957,28 @@ def stormcaller(phase=None):
 
     Thora, the Stormcaller (Eric, 2026-11-03: "Make her a woman, with hair blowing in the wind").
     The forked staff thrust up overhead in her raised arm, its prongs higher than anything in the
-    cast but the Frostweaver's crown, and a cloak hanging from her shoulders behind her, its hem
-    lifted by the first of the storm she is calling. The only figure with an arm visibly up, and
-    the only one whose hem is torn by her own weather.
+    cast but the Frostweaver's crown, and her cape and hair streaming back in the storm she is
+    calling. The only figure with an arm visibly up, and the only one whose hem is torn by her own
+    weather.
 
-    THE WIND IS A HINT, NOT A GALE (Eric, 2026-11-04: "Make thoras cloak and hair less dramatically
-    blowing. The cape visually doesn't make sense, as if it's completely sideways on her back").
-    The first woman's pass streamed both cloak and hair flat out to leeward, sixteen pixels past her
-    back in level tongues, and a cloth that flies dead level reads as one ATTACHED sideways. So the
-    cloak now does what cloth does: it hangs from the shoulders, under her hair, and falls - and
-    only the last third of it answers the wind, the back of the hem lifted and swept a few pixels
-    to leeward, its underside showing. Its folds run DOWN from the shoulder and fan toward the
-    lifted corner, which is what says where it is fastened.
+    THE WIND, THREE PASSES. The first woman's pass streamed both cloak and hair flat out to leeward,
+    sixteen pixels past her back in level tongues, and a cloth that flies dead level reads as one
+    ATTACHED sideways (Eric, 2026-11-04: "The cape visually doesn't make sense, as if it's completely
+    sideways on her back"). The second hung the cloak straight down and let only two strands of
+    hair lift - right about the fastening, too still for a Stormcaller ("Her cape and all of her
+    hair can flow in the wind rather than a few strands"). So now the whole of both moves, in one
+    wind, without going level: the cape is fastened at BOTH shoulders by a collar standing behind
+    her neck, then billows back in one curved sweep, its trailing corner about forty degrees off the
+    vertical and a little lifted, its lining showing where the cloth turns over toward her. That
+    collar and that angle are what tell the eye where it is fastened.
 
     HER HAIR. The first pass gave this figure a hood blown back off the head, in the cloak's own
     amber, and it read as long hair already - while the few grey pixels under the face (drawn when
     this figure was a man) read as a beard. So the hood is gone and the hair is drawn: bare-headed,
-    falling behind the far cheek and down her back past the shoulder, over the cloak, with three
-    strands of uneven length lifting off it to leeward - the crown, the shoulder, the ends. It is a
-    DIFFERENT ROW from the cloak and a different value - dark auburn over mid amber (HAIR_STORM),
-    its crown caught by the arc above her - so the two masses never merge into one.
+    smooth on the windward side and streaming back from the whole head in six long locks that bend
+    down and back with the cape and taper to points, the lowest crossing the top of the cape. It is
+    a DIFFERENT ROW from the cape and a different value - dark auburn over mid amber (HAIR_STORM),
+    its upper edges caught by the arc above her - so the two masses never merge into one.
 
     Serious, not shouting (the first pass was mid-shout, brow up, mouth open): level brows, a level
     gaze, the mouth closed. A woman's face by its structure rather than by decoration - a narrower
@@ -986,41 +988,58 @@ def stormcaller(phase=None):
     """
     mid, lit, dark = ROBES["stormcaller"]
     g = G(48)
-    # THE CLOAK, hanging behind her from the shoulders. Amber shade with a deep outer edge: one step
-    # under the robe, so a cloth behind her reads as behind her. Its outer edge, (row, x) keyframes:
-    # under the hair at the shoulder, a slight belly where the wind fills it, and the hem lifted at
-    # the back - the edge runs back in under the robe from its corner at row 40, so the bottom of
-    # the cloak is a rising diagonal rather than a level hem on the ground.
-    belly = lag = 0
+    # THE CAPE, fastened at both shoulders and billowing back in one curved sweep. Amber shade with a
+    # deep outer edge: one step under the robe, so a cloth behind her reads as behind her. Its outer
+    # edge, (row, x) keyframes: from under her hair at the shoulder it bellies out and back, and its
+    # hem trails behind and a little up - the line from shoulder to trailing corner runs about
+    # forty degrees off the vertical, never level, which is what tells the eye where it is
+    # fastened. Below the corner the hem runs back in under the robe, a rising diagonal.
+    rip = [0, 0, 0]
     if phase is not None:
-        # Walking, the belly breathes a pixel and the lifted corner trails a quarter-step behind
-        # the hem's swing below it: cloth answering the walk, not a flag snapping.
-        belly = int(round(0.9 * math.sin(2.0 * math.pi * (phase + 0.25))))
-        lag = int(round(1.2 * math.sin(2.0 * math.pi * (phase - 0.15))))
-    edge = [(17, 27), (19, 30), (22, 31), (28, 32), (33, 34 + belly), (36, 36 + belly),
-            (39, 38 + lag), (41, 36 + lag), (44, 31)]
-    cloak_r = {}
+        # Walking, a ripple runs down the cape from the shoulder to the corner, each stretch a beat
+        # behind the one above it - the corner swings two pixels, the belly one.
+        rip = [int(round(a * math.sin(2.0 * math.pi * (phase - 0.14 * k))))
+               for k, a in enumerate((0.8, 1.4, 2.0))]
+    edge = [(17, 28), (19, 32), (22, 35), (26, 38 + rip[0]), (30, 40 + rip[1]),
+            (34, 42 + rip[1]), (37, 43 + rip[2]), (39, 43 + rip[2]), (41, 41 + rip[2]),
+            (43, 37 + rip[1]), (45, 33), (46, 31)]
+    cape_r = {}
     for (ya, xa), (yb, xb) in zip(edge, edge[1:]):
         for y in range(ya, yb + 1):
-            cloak_r[y] = int(round(xa + (xb - xa) * (y - ya) / float(yb - ya)))
-    for y in sorted(cloak_r):
-        r = cloak_r[y]
+            cape_r[y] = int(round(xa + (xb - xa) * (y - ya) / float(yb - ya)))
+    corner = 39
+    for y in sorted(cape_r):
+        r = cape_r[y]
         g.span(y, 22, r, "#")
         g.set(r, y, "$")
-    # Folds hung from the shoulder and fanning toward the lifted corner, each a lit ridge beside a
-    # deep valley; the long one runs the whole drop, the short one only the lower half, so they are
-    # two folds and not a stripe.
-    fold(g, [(26, 20), (28, 26), (31, 33), (35, 39 + lag)], "$", "@")
-    fold(g, [(30, 29), (32, 33), (35, 36 + belly)], "$", "@")
-    # The underside where the hem lifts: a wedge of the lining in shadow along the rising edge,
-    # two pixels deep, so the corner reads as turned up rather than as a cloak cut short.
-    for y in range(40, 45):
-        r = cloak_r[y]
-        g.span(y, r - 2, r, "$")
-    g.set(cloak_r[39], 39, "@")                                     # the corner, catching the key
-    g.set(cloak_r[39] - 1, 39, "#")
-    # Torn by her weather, but only at the hem: two small bites out of the lifted edge.
-    cut(g, (cloak_r[41], 41), (cloak_r[43], 43))
+    # Folds hung from the shoulder: each falls steeply at first and flattens as the wind takes it
+    # back, a lit ridge beside a deep valley. One long fold the whole sweep, one short near the
+    # shoulder and a deep crease where the cape leaves her back - three different lengths, bends and
+    # spacings, so they are folds and not a stripe. (The crease was occlusion first, and read as a
+    # tear through the cloth.)
+    fold(g, [(27, 21), (29, 26), (32, 31), (36, 34), (40, 36 + rip[2])], "$", "@")
+    fold(g, [(32, 22), (35, 25), (38, 27 + rip[1])], "$", "@")
+    fold(g, [(28, 31), (29, 35), (31, 38)], "$", None)
+    # THE LINING, where the sweep turns over toward her: below a crease running from the robe out to
+    # the corner, the inside of the cape faces the key and shows the amber's base, lit along the
+    # turn; the crease is deep, so the two faces of the cloth are always two.
+    def crease(x):
+        # From two rows above the hem by the robe to five above it at the corner: the cloth turns
+        # over most where it trails furthest.
+        return corner + 5 + rip[2] - (x - 30) * (8.0 + rip[2]) / (cape_r[corner] - 30.0)
+    for y in range(corner - 3, 47):
+        r = cape_r.get(y)
+        if r is None:
+            continue
+        for x in range(27, r + 1):
+            cy = crease(x)
+            if g.get(x, y) in (".", "W") or y < cy - 0.5:
+                continue
+            g.set(x, y, "$" if y < cy + 0.5 else ("!" if y < cy + 1.5 else "@"))
+        g.set(r, y, "#" if y > corner else "$")                    # the lining's own far edge
+    g.set(cape_r[corner], corner, "!")                              # the corner, catching the key
+    # Torn by her weather, but only at the hem: two small bites out of the trailing edge.
+    cut(g, (cape_r[41], 41), (cape_r[44], 44))
 
     # THE ROBE, leaning into the wind - the hem is blown out to the right under the cloak. Taken in
     # at the waist (row 26) and out again over the hip, so the outline under the raised arm is a
@@ -1053,6 +1072,16 @@ def stormcaller(phase=None):
         sway(g, 37, hem)
         if abs(c) > 0.5:
             toe(g, (25 if c > 0 else 16) + int(round(hem)), shoe=("p", "N", "o"))
+
+    # THE CAPE'S COLLAR, fastened at both shoulders: it stands up behind her neck from one shoulder
+    # to the other, so the sweep behind her hangs FROM something. Lit along its upper edge, deep
+    # under it where it sits on the robe; the near end tucks under the raised arm.
+    for (y, x0, x1) in ((17, 22, 26), (18, 18, 27), (19, 17, 27)):
+        g.span(y, x0, x1, "#")
+        g.set(x0, y, "@")
+    g.span(17, 23, 25, "@")
+    g.span(20, 23, 26, "$")
+    g.set(17, 19, "$")
 
     # THE RAISED ARM. The sleeve has slid down to the elbow, so the forearm is bare - which is
     # also what makes the arm read as UP rather than as a fold in the cloth.
@@ -1087,57 +1116,81 @@ def stormcaller(phase=None):
     g.set(20, 20, "G")
     g.span(21, 20, 22, "$")                                        # the neckline, in shadow
 
-    # THE HAIR, falling. One mass from the back of the head down past the far shoulder and over the
-    # cloak, parted into strands by a dark line with a lit one beside it, and three strands lifting
-    # off it to leeward - from the crown, the shoulder and the ends, of uneven length and lift, so
-    # the wind is in it without the hair being the wind. Walking, their tips stir a pixel.
+    # THE HAIR, streaming. The whole mass goes back from her head in the cape's wind (Eric,
+    # 2026-11-04: "Her cape and all of her hair can flow in the wind rather than a few strands"):
+    # long locks of uneven length, each a curve from the back of the head that lifts a little, then
+    # bends down and back the way the cape does and tapers to a point. Lit along its upper edge
+    # where the arc catches it, a mid body and a dark under edge, so where two cross there is always
+    # a boundary between them; ground between the tips, because a solid wedge of hair read as a
+    # second cape, a dark one. Walking, a ripple runs out along each lock and its tip moves two
+    # pixels, a beat behind the lock above it.
     hair_mid, hair_lit, hair_dark, hair_sheen = HAIR_STORM
-    flick = [0, 0]
+    wave = [(0.0, 0.0)] * 6
     if phase is not None:
-        flick = [int(round(1.0 * math.sin(2.0 * math.pi * (phase + k / 3.0)))) for k in range(2)]
+        wave = [(1.0 * math.sin(2.0 * math.pi * (phase - k / 6.0)),
+                 2.0 * math.sin(2.0 * math.pi * (phase - k / 6.0 - 0.2))) for k in range(6)]
 
-    def strand(pts, k):
-        # A lock lifting off the fall along a short polyline: out from the fall, a little up, and
-        # its tip dropping again - hair the air is under, not hair the wind is dragging. Two pixels
-        # thick at the root (lit above, dark below) and one at the tip; the tip stirs when walking.
-        (tx, ty) = pts[-1]
-        pts = pts[:-1] + [(tx + flick[k], ty)]
-        total = sum(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(pts, pts[1:]))
-        run = 0.0
-        for (xa, ya), (xb, yb) in zip(pts, pts[1:]):
-            seg = math.hypot(xb - xa, yb - ya)
-            n = max(1, int(math.ceil(seg * 2)))
-            for i in range(n + 1):
-                t = i / float(n)
-                x, y = xa + (xb - xa) * t, ya + (yb - ya) * t
-                along = (run + seg * t) / max(1.0, total)
-                g.set(x, y, hair_mid if along < 0.75 else hair_dark)
-                if along < 0.55:
-                    g.set(x, y + 1, hair_dark)
-                if along < 0.3 and g.get(x, y - 1) not in (hair_mid, hair_dark):
-                    g.set(x, y - 1, hair_lit)
-            run += seg
+    def lock(pts, w0, k, sheen=None, rim=False):
+        # A Catmull-Rom curve through `pts`, w0 half-thick at the root and tapering to a point. Drawn
+        # a column at a time - the top of each column lit, the bottom dark - so a lock bending down
+        # keeps one lit edge and one dark edge rather than a stair of both.
+        dx, dy = wave[k]
+        n = len(pts) - 1
+        pts = [(x + dx * (i / float(n)) ** 1.5, y + dy * (i / float(n)) ** 1.5)
+               for i, (x, y) in enumerate(pts)]
+        ext = [pts[0]] + pts + [pts[-1]]
+        samples = []
+        for s in range(n):
+            p0, p1, p2, p3 = ext[s], ext[s + 1], ext[s + 2], ext[s + 3]
+            for j in range(8):
+                t = j / 8.0
+                t2, t3 = t * t, t * t * t
+                samples.append(tuple(0.5 * (2 * p1[a] + (p2[a] - p0[a]) * t
+                                            + (2 * p0[a] - 5 * p1[a] + 4 * p2[a] - p3[a]) * t2
+                                            + (3 * p1[a] - p0[a] - 3 * p2[a] + p3[a]) * t3)
+                                     for a in (0, 1)))
+        samples.append(pts[-1])
+        cols = {}
+        last = float(len(samples) - 1)
+        for i, (x, y) in enumerate(samples):
+            u = i / last
+            hw = w0 * (1.0 - u) ** 0.8
+            xi = int(round(x))
+            top, bot = int(round(y - hw)), int(round(y + hw))
+            c = cols.get(xi)
+            cols[xi] = (min(top, c[0]), max(bot, c[1]), min(u, c[2])) if c else (top, bot, u)
+        for xi, (top, bot, u) in cols.items():
+            for yy in range(top, bot + 1):
+                g.set(xi, yy, hair_mid)
+            if bot > top:
+                g.set(xi, top, hair_lit)
+                g.set(xi, bot, hair_dark)
+            if sheen and sheen[0] <= u <= sheen[1] and bot - top >= 2:
+                g.set(xi, top + 1, hair_sheen)
+            if rim and u < 0.5 and g.get(xi, top - 1) == ".":
+                g.set(xi, top - 1, "W")
 
-    # The fall: behind the far cheek, past the shoulder, to a point at row 27. No rim: its key side
-    # lies against her face and neck, and a rim there is a white seam through the figure.
-    mass(g, [(9, 24, 26), (11, 25, 28), (16, 25, 30), (20, 25, 29), (24, 26, 30), (27, 27, 28)],
-         hair_mid, hair_lit, hair_dark, rim=False)
-    fold(g, [(27, 12), (27, 18), (28, 24)], hair_dark, hair_lit)
-    g.set(26, 12, hair_sheen)                                      # the arc, catching its crown
-    g.set(26, 18, hair_sheen)                                      # and the turn over the shoulder
-    # Two, of uneven length and lift, lowest first: the ends drifting a little off the point, and
-    # one long lock off the shoulder blade lifting out nearly level. Three of a size, evenly spaced,
-    # were tried first and read as a comb of hooks - the radiator again, in hair.
-    strand([(28, 24), (30, 25), (32, 25), (33, 26)], 1)
-    strand([(29, 15), (31, 14), (33, 13), (35, 13), (36, 14)], 0)
+    # Lowest first, so each lock lies over the one below it. Six of them, no two the same length or
+    # the same bend, their tips at different heights and different distances back.
+    lock([(25, 16), (29, 18), (33, 21), (36, 25)], 1.3, 5)                      # the nape, on the cape
+    lock([(26, 14), (31, 15), (36, 17), (40, 21)], 1.6, 4, sheen=(0.25, 0.45))
+    lock([(26, 12), (32, 12), (38, 14), (43, 18)], 1.9, 3, sheen=(0.15, 0.4))
+    lock([(25, 10), (30, 9), (36, 10), (41, 13)], 1.7, 2, sheen=(0.3, 0.5))
+    lock([(24, 8), (29, 7), (34, 7), (38, 9)], 1.3, 1, rim=True)
+    lock([(22, 8), (26, 6), (30, 6), (33, 7)], 0.9, 0, rim=True)
 
-    # The crown of the head, smooth over the skull and drawn back into the fall.
+    # The crown of the head: smooth on the windward side, drawn back into the locks.
     mass(g, [(8, 19, 23), (9, 18, 24), (11, 18, 25)], hair_mid, hair_lit, hair_dark)
     fold(g, [(20, 9), (24, 11)], hair_dark, hair_lit, side=(0, -1))
     g.set(20, 8, hair_sheen)
     g.set(21, 8, hair_sheen)
     for x in range(19, 22):
         g.set(x, 7, "W")                                           # the key on the front of her head
+    # The fall behind the far cheek, down to the jaw, before the wind takes it.
+    for y in range(12, 17):
+        g.set(25, y, hair_mid)
+        g.set(26, y, hair_dark)
+    g.set(25, 12, hair_lit)
 
     # THE FACE, placed by hand rather than through head(): head() sets a brow band across the full
     # width, which on the men is a hood's or a heavy brow's shadow and on her face was a bar over
