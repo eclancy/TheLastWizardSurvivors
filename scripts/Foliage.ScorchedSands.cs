@@ -107,7 +107,8 @@ public static partial class Foliage
 					Separation = 0.78f, Loners = 0.04f,
 				},
 				// 3. The dead trees: camelthorns on a belt's fringe, in twos or alone, and now and then the dead palm
-				// (one pick in four). About one a chunk (the bleached snags were 0.9, evenly).
+				// (one pick in four). Rarer than the snags they replace: 0.43 a chunk on a walk, where the bleached
+				// snags stood 0.82, evenly.
 				new FoliageSet
 				{
 					Grounded = new[] { "camelthorn-1", "camelthorn-2", "camelthorn-1", "dead-palm-1" }, Manifest = Manifest,

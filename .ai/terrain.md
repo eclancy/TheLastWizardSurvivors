@@ -1978,3 +1978,144 @@ and every after number here wants a quiet machine.
   a side. `props_fields.py`, as it was committed before this pass, already drew `stook-2` 48 pixels different from
   the committed PNG (the PNG predates the generator or another interpreter drew it); the committed PNG was kept,
   so re-running the generator rewrites it - check before committing that file.
+
+### The Scorched Sands: stone, not woods (2026-11-04)
+
+`Foliage.ScorchedSands.cs`, on the groundwork. *"He hid the water. The dead still walk the trade road."* Nothing grows
+thick in the Sands, so what masses there is ROCK: outcrops the wind carved, lying in belts along it, on aprons of
+their own scree, with open sand between them - most of the ground - to fight on. The Forest's stands are woods and
+the Fields' hedgerows; per `.ai/genre-lessons.md` section 6, the Sands' are stone.
+
+**The move first.** The old Desert case was copied set for set into the foliage file and nothing else changed:
+`--placement-hash` printed `5368B7CF463DA1BC` (seed 4242, 202 props, 678 detail cells) and `0CB07B1690F2C78F` (seed
+11) before and after. (The hash had moved from the groundwork's `2650A3F4...` with the footing rule: 204 props to
+202.)
+
+**The field: `CanopyShape.Own`, belts along the wind.** Value noise on a lattice turned by the wind's angle (-0.32
+rad, rising to the right) and stretched along it, 32 cells by 8 (about 1540 x 380 px), three quarters of the field;
+a second noise at 6 cells, a quarter, rags its edge. A belt is a streak, not a round stand, and every belt on a seed
+lies the same way. Previewed first in a Python port (exact: the C# field dumped the same map, cell for cell); at 24 by
+9 the belts read as blobs. Salts 0x5BE2-4 (the third held, unused). The stand floor is the palette's own `rocky_pit`
+(walkable scree, not a hazard); no clearing floor, so the palette's paving and scree blobs fall where they rolled.
+
+| habitat | canopy | share (seeds 4242, 31, 7) | what is there |
+|---|---|---|---|
+| clearing (open sand) | under 0.60-0.68 | 74-79% | ripples, drift tails, the old dry grass and pebbles, the odd scrub |
+| fringe | between | 13-15% | camelthorns, the palm, boulders, thornbush and scrub; gravel, bunch grass |
+| stand (the belt) | over 0.70-0.78 (scree over 0.74) | 8-10% | tors, the ridge, the hoodoo; rock chips on the scree |
+
+**The ladder** (`tools/art/props_sands.py`, `world/sands/sands.json` in `trees.json`'s shape; `detail_sands.py`):
+
+| rung | sprites | on screen | trunk | where | set |
+|---|---|---|---|---|---|
+| outcrops | `tor-1`, `tor-2`, `ridge-1` (a yardang, high at its windward end), `hoodoo-1` | 156-228 x 144-236 | 28-64 | the belts, in twos | 5 |
+| dead trees | `camelthorn-1`, `-2` (flat-topped, black), `dead-palm-1` (one pick in four) | 176-236 | 12-14 | the fringe | 3 (was the bleached snags) |
+| boulders | `boulder-1`, `-2`, undercut | 64-90 | 26-34 | the fringe and among the tors, rarely alone | 6 |
+| scrub | `thornbush-1`, `-2`; the old `dead-bush-1/2`, `dry-scrub-1` | 36-88 | 0 | the fringe, straying into the open | 7; 4 by habitat now |
+| detail | `sand_ripples`, `drift_tail` (open); `desert_gravel`, `bunchgrass` (fringe); `rock_chips` (belt, scree) | a cell | | clutter | |
+
+Stones and crystals keep their sets (0-2) and places. The stone is `flesh`'s dark half - deep for the mass, shade
+for the faces the key finds, base only on a top's lit lip - in blocks with a lit top, a lit face and a dark face, the
+foot undercut where the blown sand grinds (a first pass shaded each block as a rounded lump and drew stacked loaves).
+Not stone or steel: the tomb's beacons are granite pillars and must not have twins on the dunes. The ripples cross the
+wind and the drift tails trail along it (`detail_sands.WIND_ANGLE`, the same angle), so the ground agrees.
+
+**The bleached trees went.** `bleached-tree-1/2` were bone's whole ramp, hi +55 over this floor - the brightest
+standing thing in the chapter and the nearest to the Fulgurite, "the one cold thing on a warm floor" (8.9 asked
+whether the glass reads apart from them). The camelthorns that replace them are black wood (`flesh` deep and shade).
+
+**What it keeps clear.** The caravan's camp and road, the dry tomb and its three beacons, and the Fulgurite keep
+their footprints as every set and clutter rule does (`IsInExploreReserve`, trunks by 140 px more). Nothing drawn is
+a tell of a planned Sands secret (`.ai/stage-secrets.md` 6.7): no wheel or cart (A1), no carved or upright marker
+stone, and a hoodoo is a natural cap, never squared (A2), no reed, nothing green and no cracked earth added (A3's
+gradient runs cracked earth to scrub to reeds), nothing that shimmers (A4), no glass and nothing pale or cold (A5).
+
+**The guardrail, from the art** (`python tools/art/detail_contrast.py --on=sand,rocky_pit ...`), against the sand's L\* 14:
+
+| | dL\* | \|dL\*\| | hi | lo |
+|---|---|---|---|---|
+| `tor-1`, `tor-2`, `ridge-1`, `hoodoo-1` (new) | +3.9 to +10.5 | 11.2-14.3 | +20.3 to +26.3 | -12.2 |
+| `boulder-1`, `-2` (new) | +8.1 to +8.3 | 14.5-14.6 | +26.9 to +28.4 | -12.2 |
+| `camelthorn-1`, `-2`, `dead-palm-1` (new) | +3.1 to +6.3 | 6.7-11.3 | +19.1 to +20.0 | -12.2 |
+| `thornbush-1`, `-2` (new) | +1.8 to +3.2 | 10.4 | +20.0 | -12.2 |
+| `sand_ripples`, `drift_tail`, `desert_gravel`, `rock_chips`, `bunchgrass` (new) | +0.8 to +9.3 | 8.0-11.9 | +14.0 to +20.0 | -12 to +4 |
+| `bleached-tree-1`, `-2` (gone from the chapter) | +34 | 35 | +55 | +4 to +7 |
+| `dead-bush-1`, `dry-scrub-1`, `dry_grass`, `bone_bits` (old, kept) | +11 to +26 | 16-29 | +32 to +38 | |
+
+The new rungs' brightest tenth (+14 to +28) is half the cast's (+50 to +61 on screen) and a third of the orbs'; the
+old scrub and dry grass are now the brightest clutter on the floor, so the pass adds no more of either.
+
+**Footing.** `--footing-census`, a minute's walk: seed 4242, 209 trunks in 39 chunks; seed 11, 257 in 29 - none within 72
+px of anything that blocks (nearest 72.4 and 72.0), no pocket and no narrow-mouthed room walled by a trunk. A belt is a
+broken line of stone you thread, never a wall. Per chunk on a two-minute walk (`--terrain-log`, 134 chunks): 3.6 tors,
+2.1 boulders, 0.43 dead trees (the snags were 0.82), 5.7 thornbush, 3.1 of the old scrub (about 5 a chunk before, evenly).
+**For the integrator:** `Node2DGame.Footing.cs` (`ClearsPlannedTrunks`, "The widest trunk is under 32 px") grows
+a prop's reach by 16 px for a trunk's half-width; the Sands' rocks are up to 64 px wide (the Heath's fallen stones
+60), so a rock or themed prop within that 16 px band of a far chunk's trunk could be missed. The census found none on
+either seed; the margin wants to be the widest trunk's half. Shared code, so not changed here.
+
+**Cost.** `_BalanceHarness --minutes=2 --character=1 --immortal --timescale=1 --stress-swarm --profile=10 --stage=6
+--seed=11 --terrain-seed=4242 --walk=30 --terrain-log`, headless. The before ran with the machine at 100% (other
+sessions' builds and Godots; frame mean 215 ms), the two afters at 20-49% with one other session's Godot, so read the
+frames as the machine and the nodes and furnishing as the change:
+
+| | before | after (two runs) |
+|---|---|---|
+| frame mean / p95 median | 215 / 352 ms (loaded) | 9.1 / 16.8 and 10.2 / 21.1 ms |
+| nodes, walking | 1,240-1,463 (mean 1,349) | 1,647-2,223 (mean 2,021, 2,031) |
+| worst furnish step of a crossing, median / max | 7.9 / 33.4 ms (loaded) | 2.6 / 105.8 and 2.7 / 24.7 ms |
+| ground generated inside a furnishing step | none | 2 chunks, then none |
+
+About 680 more nodes (a trunk is three, a bush one). The 105.8 ms step was one chunk's themed props, (3, 2) - the
+chunk whose themed props were also the slowest before (24 ms under load) - and was 12.8 ms on the second run: a first
+load, not the plan. **Not measured on the phone.**
+
+**On screen**, `_UiShot --light-probe` at the start, (2600, -1500), (-3000, 2200) and a belt at (897, 1953) on the PC
+canvas, the start and the belt on the phone's, seed 4242, pooled - both runs with `--notes-seen=stage_6`, the after on
+the committed build and the before on the moved-only file swapped back in (same hash). The chapter's note card types
+out over the probe's frames and was read into every layer line at three of the four spots (layer "ground" L\* 40-50),
+so the first pair was thrown away. The cast stands ABOVE this floor, as on the Fields:
+
+| PC (phone) | before | after |
+|---|---|---|
+| bodies: dL\* / hi | +12.4 / +54.8 (+14.1 / +58.2) | +13.0 / +55.1 (+15.1 / +60.4) |
+| XP orbs: dL\* / hi | +31.6 / +74.4 (+41.6 / +84.2) | +32.6 / +75.1 (+42.8 / +84.4) |
+| detail: cover / \|dL\*\| / hi | 0.0-0.1% / 15 / +33 (0.1% / 12 / +32) | 0.1-0.2% / 11-12 / +23 to +31 (0.2% / 11 / +22) |
+| bushes: cover / \|dL\*\| / hi | 0.1-0.6% / 17-21 / +35 to +38 | 0.1-0.5% / 11-13 / +19 to +27 |
+| trees and rocks: cover / \|dL\*\| / hi | 0.3% / 35 / +55 (a bleached tree) | 2.1% at the start, 11.2% on the belt (5.2% on the phone) / 14 / +26 |
+| bare floor L\* / pattern | 14.1 / 6.9% (5.4%) | 14.1 / 7.2% (5.8%) |
+
+The cast and the orbs read as before. The stone covers a tenth of a belt's screen at half the bodies' brightest tenth,
+and everything the pass touched stands nearer its floor than what it replaced. On the first load the props went from
+202 to 483 and the detail cells from 678 to 2,162 (8% of the cells; the Fields' are 9%, the Forest's 19%).
+
+**Checked.** `_ExploreProbe --stage=6 --fresh-save`, seeds 4242 and 31: 45 passed, 0 failed each - the caravan's camp and
+the dry tomb on open ground, nothing on a footprint (7 and 11 things within 700 px of the camp, none on it), the
+caravan master caught and all three beacons lit together. (A first run of it with the machine at 100% failed the
+caravan: the probe arrived at 314 s of game time where it had at 66, and the master walked out of reach in 1.4 s; run
+again under less load, and on the moved-only build, it passed.) `_UiShot --secret-probe --stage=6` (the Fulgurite,
+windowed - headless, the warm-up never counts its frames and the bot dies waiting): all 23 pass, the far tell still
+thickening toward the glass, the storm on its hour, the glass drawing the last bolt. The validator: 0 errors, the one
+test_wizard warning (`Woodland.Validate` holds the shares above, `Foliage.Validate` the sets). `clip_check.py`: no art
+runs into its box.
+
+**Tools.** `tools/art/props_sands.py` writes `_props_sands_preview.png` (gitignored): every new sprite on the sand's
+tone beside the old bleached tree and scrub. The photographs are in `_shots/foliage-sands/` beside the repo:
+`composite-pc.png` and `composite-phone.png` (before | after, half size), `frames/` (the probe frames, the held crowd
+shots, the Fulgurite walk, `sands-try3-wide.png` at zoom 0.3), `logs/`, and the scripts that made them.
+
+### Still needs eyes (the Sands)
+
+- **Whether the tors read as rock or as stacked bricks.** At half size in the composite the stacked blocks, each with
+  its dark undercut, make letter-like outlines (C, S). The ridge and the hoodoo read as what they are on their own;
+  whether a belt of them reads as wind-carved stone is for eyes, PC and phone (`composite-pc.png`, rows 4-6).
+- **The belts' density.** About 3.6 tors a chunk, in twos; a belt is a broken line, sparse on purpose. Thicker would
+  wall more of the screen.
+- **The scree under a belt** is the palette's `rocky_pit`, dark cold stones over the sand: it marks the belt from above,
+  but at play scale it reads more as gravel than as rubble shed by red stone.
+- **The camelthorns at 0.43 a chunk** are rarer than the snags they replaced, and the palm rarer still (one pick in
+  four); whether the fringe needs more of them.
+- **For the Hidden Water (A3)**: its gradient is cracked earth, then scrub, then reeds. This pass puts scrub and
+  thornbush on every belt's fringe, so the gradient's middle rung now has a background; it will need to thicken
+  toward the keepsake by more than the fringe does.
+- **The phone**, and the frame on a quiet machine.
