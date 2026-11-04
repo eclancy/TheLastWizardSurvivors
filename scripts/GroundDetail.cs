@@ -43,10 +43,23 @@ public static class GroundDetail
 		WaterEdge,
 	}
 
-	public readonly record struct Rule(string Set, Site Site, string Terrain, float Density, int ClusterCells);
+	/// <summary>
+	/// One set, where it may go and how thickly. A rule with a <see cref="Habitat"/> is the foliage
+	/// pass's CLUTTER (.ai/terrain.md section 13): its density is weighted by the wood's canopy there
+	/// (Woodland - grass thickest on a stand's fringe, litter under the stand, specks in the clearings),
+	/// it is decided only on cells no older rule took (so adding it moved no flower, reed or lily that
+	/// was already on the ground), and it keeps out of a side event's or a secret's footprint.
+	/// </summary>
+	public readonly record struct Rule(string Set, Site Site, string Terrain, float Density, int ClusterCells,
+		Woodland.Habitat? Habitat = null);
 
 	private static Rule G(string set, float density, int cluster = 6, string terrain = null) =>
 		new(set, Site.Ground, terrain, density, cluster);
+
+	// Clutter: a rule that grows by the wood's canopy (Woodland), on the open floor or on a terrain's fill.
+	private static Rule W(string set, float density, int cluster, float clearing, float fringe, float stand,
+		string terrain = null) =>
+		new(set, Site.Ground, terrain, density, cluster, new Woodland.Habitat(clearing, fringe, stand));
 
 	private const string Water = "water";
 
@@ -74,6 +87,20 @@ public static class GroundDetail
 			new("tufts", Site.Shore, null, 0.052f, 1),
 			new("lilypad", Site.WaterFill, Water, 0.1f, 5),
 			new("lilypad_flower", Site.WaterFill, Water, 0.04f, 5),
+			// THE FOLIAGE PASS (2026-11-03, .ai/genre-lessons.md section 2): the bottom rungs of the size
+			// ladder - short grass across all the open ground, long grass crowding a stand's fringe,
+			// wildflower specks in the clearings, leaf litter on the moss under the trees
+			// (tools/art/detail_forest.py). Several things to a cell, and open turf goes from about one cell
+			// in thirteen carrying something to about one in four in a clearing and one in three on a
+			// fringe - all of the new sets within about ten L* of the turf, so the ground stops reading
+			// flat without anything on it competing with a silhouette or an orb (.ai/terrain.md section 13
+			// measured both). Densities are the open ground's, before the habitat weight (clearing,
+			// fringe, stand).
+			W("grass_short", 0.13f, 5, 1f, 1f, 0.4f), W("grass_tall", 0.11f, 4, 0.1f, 1f, 0.5f),
+			W("specks", 0.03f, 6, 1f, 0.5f, 0.1f), W("pebbles", 0.006f, 1, 1f, 0.6f, 0.3f),
+			W("litter", 0.08f, 5, 0.3f, 0.8f, 1f, "moss"), W("grass_short", 0.03f, 5, 1f, 1f, 0.3f, "moss"),
+			W("grass_short", 0.08f, 5, 1f, 1f, 1f, "meadow"), W("specks", 0.04f, 5, 1f, 1f, 1f, "meadow"),
+			W("grass_tall", 0.04f, 4, 0f, 1f, 0.2f, "meadow"),
 		},
 		[StageEnvironmentKind.Swamp] = new[]
 		{
@@ -248,10 +275,12 @@ public static class GroundDetail
 	/// <summary>
 	/// Fill <paramref name="setPerCell"/> (indexed x + y * ChunkTiles) with the detail set for each
 	/// cell of <paramref name="chunk"/>, or null. Cells inside <paramref name="reserved"/> (a
-	/// landmark) are left bare. Allocation-free after the first call: the caller owns the array.
+	/// landmark) are left bare, and <paramref name="siteCell"/>, when given, says which world cells lie
+	/// in a side event's or a secret's footprint: the clutter rules leave those bare too. Allocation-free
+	/// after the first call: the caller owns the array.
 	/// </summary>
 	public static void PlanChunk(TerrainStreamer streamer, TerrainChunk chunk, StageEnvironmentKind kind,
-		ulong seed, Rect2I? reserved, string[] setPerCell)
+		ulong seed, Rect2I? reserved, string[] setPerCell, Func<int, int, bool> siteCell = null)
 	{
 		Array.Clear(setPerCell);
 		IReadOnlyList<Rule> rules = RulesFor(kind);
@@ -279,18 +308,21 @@ public static class GroundDetail
 				AutotileRole role = chunk.Roles[i];
 
 				// Which rules could apply to a cell like this one - precompiled per stage, so a cell
-				// costs a lookup rather than a pass over every rule.
-				Group first, second = Group.Empty;
+				// costs a lookup rather than a pass over every rule. The clutter (third) comes after
+				// both, so it only ever takes a cell the older rules left empty.
+				Group first, second = Group.Empty, third = Group.Empty;
 				if (terrain == null)
 				{
 					first = c.Open;
 					second = c.Shore;
+					third = c.OpenClutter;
 				}
 				else if (role == AutotileRole.Fill)
 				{
 					first = c.Fill.TryGetValue(terrain, out Group g) ? g : Group.Empty;
 					if (terrain == Water)
 						second = c.WaterFill;
+					third = c.FillClutter.TryGetValue(terrain, out Group gc) ? gc : Group.Empty;
 				}
 				else if (terrain == Water && IsEdgeRole(role))
 				{
@@ -306,27 +338,41 @@ public static class GroundDetail
 				// density, so a roll above the group's bound can never land - most cells - and is
 				// skipped before any noise or neighbour is read.
 				double roll = Unit(LevelGenerator.Hash(seed, wx, wy, SaltRoll));
-				if (roll >= first.Bound + second.Bound)
+				if (roll >= first.Bound + second.Bound + third.Bound)
 					continue;
 				// Shore is the expensive question (four neighbours, maybe over a chunk border), so
-				// it is asked only of the few open cells whose roll could still land on a shore rule.
+				// it is asked only of the open cells whose roll could still land on a rule after it.
 				if (second.Rules.Length > 0 && terrain == null && !IsShore(streamer, chunk, x, y))
 					second = Group.Empty;
+				if (third.Rules.Length > 0 && siteCell != null && siteCell(wx, wy))
+					third = Group.Empty;
 
 				double sum = 0;
-				string set = Pick(first, rules, wx, wy, roll, ref sum) ?? Pick(second, rules, wx, wy, roll, ref sum);
+				float canopy = float.NaN;
+				string set = Pick(first, rules, wx, wy, roll, ref sum, seed, ref canopy)
+					?? Pick(second, rules, wx, wy, roll, ref sum, seed, ref canopy)
+					?? Pick(third, rules, wx, wy, roll, ref sum, seed, ref canopy);
 				if (set != null)
 					setPerCell[i] = set;
 			}
 		}
 	}
 
-	private static string Pick(Group group, IReadOnlyList<Rule> rules, int wx, int wy, double roll, ref double sum)
+	private static string Pick(Group group, IReadOnlyList<Rule> rules, int wx, int wy, double roll, ref double sum,
+		ulong seed, ref float canopy)
 	{
 		foreach (int k in group.Rules)
 		{
 			Rule rule = rules[k];
-			sum += rule.Density * ClusterFactor(k, rule.ClusterCells, wx, wy);
+			double density = rule.Density * ClusterFactor(k, rule.ClusterCells, wx, wy);
+			if (rule.Habitat is Woodland.Habitat habitat)
+			{
+				// The wood's canopy at this cell, read once and only by a cell that reached a clutter rule.
+				if (float.IsNaN(canopy))
+					canopy = Woodland.CanopyAtCell(seed, wx, wy);
+				density *= Woodland.Weight(habitat, canopy);
+			}
+			sum += density;
 			if (roll < sum)
 				return rule.Set;
 		}
@@ -344,8 +390,9 @@ public static class GroundDetail
 
 	private sealed class Compiled
 	{
-		public Group Open, Shore, WaterFill, WaterEdge;
+		public Group Open, Shore, WaterFill, WaterEdge, OpenClutter;
 		public readonly Dictionary<string, Group> Fill = new();
+		public readonly Dictionary<string, Group> FillClutter = new();
 	}
 
 	private static readonly Dictionary<StageEnvironmentKind, Compiled> compiled = new();
@@ -362,23 +409,25 @@ public static class GroundDetail
 			{
 				if (!match(rules[k])) continue;
 				idx.Add(k);
-				bound += 3.0 * rules[k].Density;
+				bound += 3.0 * rules[k].Density * (rules[k].Habitat?.Max ?? 1f);
 			}
 			return new Group(idx.ToArray(), bound);
 		}
 		var c = new Compiled
 		{
-			Open = Make(r => r.Site == Site.Ground && r.Terrain == null),
+			Open = Make(r => r.Site == Site.Ground && r.Terrain == null && r.Habitat == null),
 			Shore = Make(r => r.Site == Site.Shore),
 			WaterFill = Make(r => r.Site == Site.WaterFill),
 			WaterEdge = Make(r => r.Site == Site.WaterEdge),
+			OpenClutter = Make(r => r.Site == Site.Ground && r.Terrain == null && r.Habitat != null),
 		};
 		foreach (Rule rule in rules)
 		{
 			if (rule.Site == Site.Ground && rule.Terrain != null && !c.Fill.ContainsKey(rule.Terrain))
 			{
 				string t = rule.Terrain;
-				c.Fill[t] = Make(r => r.Site == Site.Ground && r.Terrain == t);
+				c.Fill[t] = Make(r => r.Site == Site.Ground && r.Terrain == t && r.Habitat == null);
+				c.FillClutter[t] = Make(r => r.Site == Site.Ground && r.Terrain == t && r.Habitat != null);
 			}
 		}
 		compiled[kind] = c;

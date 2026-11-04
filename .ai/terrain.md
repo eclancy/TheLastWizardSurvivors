@@ -1530,3 +1530,165 @@ flower pen byte for byte. Partial runs (`tiles.py basalt lava snow ice`) touch o
 - The Frozen Waste is the lightest open floor in the campaign now. Its cast read darker on it in the
   photographs; the Still Warden's fight and the Rime Guard's cone have not been looked at on snow.
 - The Ruins' open floor (above) if the walls stop being enough.
+
+## 13. Stands and clearings: the Forest's foliage pass (2026-11-03, the pilot)
+
+`.ai/genre-lessons.md` section 2: the Forest read flat - a dark-teal turf with soft blotches, a few bushes,
+a birch and a pond on every screen alike, because every set was scattered evenly. Wizard Survivors packs a
+size ladder: canopy trees massing into dark stands that frame open clearings, round bushes in two or three
+sizes, grass tufts, specks of flowers and pebbles. The principle only; every pixel below is generated. **The
+Forest only, as a pilot for Eric to judge** before any other chapter.
+
+### One field: `Woodland`
+
+`scripts/Woodland.cs`: how closed the canopy is at a point, a pure function of (seed, world cell) - two
+octaves of value noise hashed in world cells (18 and 7 cells), like the detail layer's clustering, so it is
+seam-free and the same on every visit. All three layers that dress the ground read it, so the moss, the
+trunks, the thickets and the grass agree about where a stand's edge is.
+
+| habitat | canopy | share of the ground | what grows there |
+|---|---|---|---|
+| clearing | under 0.47-0.55 | about half | short grass, specks, the flowers as before, a few bushes |
+| fringe | between | about a fifth | bushes of all three sizes, the young trees, long grass |
+| stand | over 0.58-0.66 (moss floor over 0.625) | about 28% | the mature trees, the large thickets, leaf litter |
+
+The three are a partition of one, and `Woodland.Weight` mixes a set's three strengths by them. A stand is a
+screen or two across, so a screen usually shows a clearing framed by wood. Within 6 cells of the start the
+field is pressed into the clearing's range, back to itself by 16 (768 px, half a PC's view), so a run opens
+in the open with the wood at the screen's edges. (Pressed out to 28 cells, the first screen was one empty
+clearing - flatter than before.) `Woodland.Validate` (RegressionChecks) holds the partition, the shares on
+three seeds (18-38% stand, 35-65% clearing) and the open start.
+
+### The ground: moss under every stand
+
+`LevelGenerator.StampStandFloors` (palette flag `StandFloors`, the Forest's only) lays `moss` on every cell
+whose canopy is over 0.625, before the blobs, so every pond is stamped exactly where it was with the same
+rolls. The moss and meadow blobs are then sorted to where they grow (`SortedForStands`): a meadow blob in a
+stand is moss, a moss blob out in a clearing is meadow - same blob, same roll, same size, only which
+walkable floor it is. One thing can move, by a cell: the autotile cleanup settles each outline against its
+neighbours, and inside a stand it now sees moss where it saw bare turf, so a pond's edge there can come out a
+cell different. Placement reads the cleaned ground, and `_ExploreProbe` passes (below).
+
+### The decor: habitat sets
+
+A `DecorSetSpec` may carry a `Woodland.Habitat`, and `ChunkHabitatScatter` then places it, unlike the even
+scatter in three ways: how many follows how much of the chunk is its habitat (a 6 x 6 sample), so its count
+is a density INSIDE its habitat and a chunk with no stand holds no stand trees; a clump is centred on the best
+of ten points of the chunk by the habitat; and each member is kept by the habitat where it lands
+(`FurnishGroundedSet`), so a clump reaching out of its stand thins rather than spilling. Every other
+chapter's sets draw exactly the rolls they did (the keep roll exists only for a habitat set), and the two new
+bush sets come after the rocks in the list, so the rocks are where they were.
+
+| set | count (per 8400 x 8400 of habitat) | clump | habitat (clearing, fringe, stand) | placed a chunk |
+|---|---|---|---|---|
+| oaks (the large ones twice), medium oaks, firs | 1800 | 5, radius 120-320 | 0, 0.15, 1 | 9.0 |
+| birches, sapling | 480 | 3 | 0.06, 1, 0.35 | 3.3 |
+| the five medium bushes | 700 | 4 | 0.25, 1, 0.45 | 7.0 |
+| small bushes (new, 32-44 px) | 420 | 4 | 0.35, 1, 0.3 | 4.3 |
+| large thickets (new, 108-124 px) | 420 | 2 | 0, 1, 0.9 | 4.6 |
+| rocks | 240, even, unchanged | | | |
+
+"Placed a chunk" is the census of 131-139 chunks on a two-minute walk (`--terrain-log`). The even scatter
+rolled 5 mature, 3 young and 10 bushes a chunk, so a chunk now carries about 1.5x the trees and 1.6x the
+bushes, all of it where the wood is. The new bushes (`tools/art/trees.py`) are on the darker half of
+`verdant` - no `lit` lime - so the smallest is not a bright speck and the largest is a dark mass a stand's
+edge is built from: dL\* -9 to -13 under the turf, hi +6 to +10, where the five old bushes are hi +29.
+
+### The ground detail: the bottom rungs
+
+`tools/art/detail_forest.py` (a chapter detail module, appended by `ground_detail.py`): `grass_short` (three
+to five green clumps across the cell), `grass_tall` (two to four long tufts), `specks` (two-pixel heads on
+hair stems), `litter` (leaves and needles lying flat). Nothing is a bent fern: bent bracken is the Pale Hart's
+far tell. A GroundDetail rule may carry a habitat too (`W(...)`), and such a rule is CLUTTER: its density is
+weighted by the canopy; it is decided only on cells no older rule took (a third group, after the open and
+shore groups), so adding it moved no flower, reed or lily; and it keeps out of a side event's or a secret's
+footprint (`PlanChunk`'s `siteCell`, from `IsInExploreReserve`). Open turf goes from about one cell in
+thirteen carrying something to about one in four in a clearing and one in three on a fringe.
+
+### The guardrail, measured
+
+Per set, from the art (`python tools/art/detail_contrast.py`), against the turf's L\* 25:
+
+| set | dL\* | \|dL\*\| | hi | lo |
+|---|---|---|---|---|
+| grass_short (new) | +7.3 | 8.6 | +14.5 | -4.5 |
+| grass_tall (new) | +3.5 | 9.4 | +14.5 | -10.9 |
+| specks (new) | +7.5 | 8.1 | +18.2 | -2.5 |
+| litter (new) | -0.2 | 5.3 | +9.0 | -10.7 |
+| tufts (old) | +7.4 | 10.5 | +25.7 | -10.5 |
+| flowers_mixed (old, density unchanged) | +23.3 | 26.4 | +58.8 | -14.7 |
+
+On screen, `_UiShot --light-probe` at six spots (start, (2600,-1500), (-3000,2200) and a stand at
+(-1791,-255) on the PC canvas; start and stand on the phone's), seed 4242, the same build of the probe
+before and after - about 115 bodies and 50 orbs each way:
+
+| | before | after |
+|---|---|---|
+| bodies: dL\* / hi / lo | -5.1 / +22.7 / -20.0 | -5.1 / +20.5 / -19.2 |
+| XP orbs: dL\* / hi | +28.1 / +73.1 | +28.2 / +72.5 |
+| detail layer: cover / \|dL\*\| / hi | 0.6% / 26.2 / +53.4 | 1.1% / 18.5 / +50.0 |
+| bushes: cover / \|dL\*\| / hi | 0.7% / 23.2 / +48.1 | 1.5% / 20.1 / +39.6 |
+| trees and rocks: cover | 4.6% | 7.5% (1% at the start, 8-15% in the wood) |
+
+The cast reads the same: dark silhouettes 5 under their ground, their darkest tenth 19-20 under it, the rim
+20-23 over it (the hi moves with which creatures the probe drew). The orbs are unchanged. The detail layer
+covers twice the screen and its mean contrast FELL, because what was added sits within ten L\* of the turf;
+its brightest tenth is still the old flowers, as before. The new clutter's hi (+9 to +18) is under the
+bodies' rim and a quarter of the orbs'.
+
+**The floor under a stand is busier.** The moss tile is 20% pattern (pixels over 4 L\* off its median, mean
+11 off) against the turf's 5% (7 off); `LIGHT floor` reads 6% pattern at the start and 11-16% in the wood. A
+dark body reads on it by its rim and its eye-light, as it does on turf, and it now covers about 28% of the
+ground where it was a few blobs.
+
+**Crowns hide more.** At (-3000,2200) two of the probe's orbs stood under a crown at the screen's edge and
+measured dL\* -3.4: the readability cost section 10 accepted for big trees, now concentrated in the stands.
+The fade opens only round the wizard.
+
+### Cost
+
+`_BalanceHarness --minutes=2 --character=1 --immortal --timescale=1 --stress-swarm --profile=10 --stage=0
+--seed=11 --terrain-seed=4242 --walk=30 --terrain-log`, headless, and the same for a minute in a window at the
+phone's canvas for draw calls. Two other sessions' Godots were running during the before and none during the
+after, so the frame totals (9.8 -> 7.0 ms mean) say more about the laptop than the change:
+
+| | before | after |
+|---|---|---|
+| nodes, walking | 2,870-3,450 (mean 3,280) | 3,500-4,710 (mean 4,170) |
+| worst furnish step of a crossing, median / max | 2.0 / 12.5 ms | 2.7 / 16.5 ms |
+| a crossing, all steps, median / max | 57 / 134 ms | 76 / 159 ms |
+| draw calls, phone canvas | 62-75 | 63-93 |
+| fps, phone canvas window (the load above applies) | 44-58 | 58-59 |
+
+About 900 more nodes (three a tree, one a bush) and up to twenty more draw calls (five new bush textures
+among the trees); the detail layer is still one batched TileMapLayer a chunk through the atlas. **Not
+measured on the phone itself.**
+
+### Tools
+
+- `--terrain-log` prints a `TERRAIN habitat` line per habitat set per chunk: rolled, off habitat, refused
+  (water, landmark, footprint, hazard), crowded, placed.
+- `_UiShot --light-probe` peels the world (`.ai/light-pool.md` section 8): `LIGHT layer` lines for the detail,
+  the bushes and the trees, a `LIGHT floor` line, a `lo dL*` on every body; it waits after a `--teleport`.
+- `python tools/art/detail_contrast.py [set ...]`: the same numbers per set, from the art alone.
+- The photographs are in `_shots/forest-foliage/` beside the repo: `composite-pc.png` and
+  `composite-phone.png` (before | after), the probes' `-probe-world.png` frames, and `secrets/`.
+
+### Checked
+
+`_ExploreProbe --stage=0 --seed=4242 --fresh-save`: 46 passed, 0 failed - both events placed on open ground,
+nothing on a footprint, both won. `_UiShot --secret-probe` (the Pale Hart: its prints and bent bracken still
+thicken toward it, 108 of 108 pointing at it) and `--secret-probe=keepsake` (the Fenced Bloom and the First
+Tree): all pass. The validator: 0 errors, the one test_wizard warning.
+
+### Still needs eyes
+
+- **Whether it reads as a wood or a maze.** The bot in the busy shot walked into a stand and was caught
+  among the trunks; a wood you pick your way through plays differently from one you run in (section 4). The
+  stands are meant to frame the fight, not hold it.
+- **The moss floor's busyness** under a swarm, above.
+- **Crowns over the gardens.** Trees keep 3 cells from a pen, and an oak just south of one can lay its crown
+  over the rail and a gate, more often now that trees mass (the moonflower's glint in the middle still reads).
+- **The start on the phone** is a clearing with little in view vertically; on a PC the wood is at the edges.
+- **The grass at play scale**: green clumps at the turf's own value, told by hue; on the 540-wide shots they
+  are a texture more than things.

@@ -47,6 +47,10 @@ edge to edge, a flat dark-teal ground with soft blotches, about eight bushes, on
     in batched quadrants, one node a chunk, so hundreds of tufts cost little.
   - Cluster the bushes, and let the trees mass into stands with clearings between them.
 - **Guardrail:** clutter stays lower in contrast than enemies and XP gems. The silhouette is how the swarm is read.
+- **Piloted on the Forest, 2026-11-03** (`.ai/terrain.md` section 13, for Eric to judge before any other chapter):
+  one canopy field (`Woodland`) decides stand, fringe and clearing; moss under the stands, the mature trees
+  massed in them, bushes in three sizes and the young trees on their fringes, grass tufts, specks and litter in
+  the detail layer - all of the new clutter within about ten L\* of the turf, measured.
 
 ## 3. Landmarks that are only scenery (Wizard Survivors)
 
@@ -125,7 +129,8 @@ edge to edge, a flat dark-teal ground with soft blotches, about eight bushes, on
 ## 11. Recommended order
 
 1. The light pool, with warm spells as their own small lights.
-2. A foliage density pass on the Forest as the pilot.
+2. A foliage density pass on the Forest as the pilot. *Built 2026-11-03, awaiting Eric's verdict (`.ai/terrain.md`
+   section 13).*
 3. Non-interactive landmarks per chapter.
 4. Element-coloured damage numbers (Wizard Survivors tints them per spell; ours are red whatever the spell).
 5. Measure the late-run enemy count against the phone before deciding on more.
