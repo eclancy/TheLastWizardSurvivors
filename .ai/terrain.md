@@ -1961,6 +1961,116 @@ hashes did not move). On the committed build the slow furnishing parts are the g
 chunk to paint where there were 30) and the hedge set; neither generates ground. **Not measured on the phone**,
 and every after number here wants a quiet machine.
 
+### The Blighted Swamp: tree islands in an open fen (2026-11-04)
+
+`Foliage.BlightedSwamp.cs`. *"Reeds, fog, and lanterns nobody living lit. Rot and standing water."* The Forest's
+stands are woods and the Fields' are hedgerows; the Swamp's are **tree islands** - knots of drowned wood standing
+out of an open fen, each ringed with reed beds - and the fen between them, mud and pools and rush, is the ground
+to fight on. The move came first: the old case's three sets, in order, printed the same `--placement-hash` on
+`_BalanceHarness --stage=3` (seed 4242 `7EAAAB63EAF1FBDD`, 261 props, 1,549 detail cells; seed 11 `9F7BED2A6FA7EBB9`)
+before and after on this build. (The hash section 13 quoted for the Swamp predates the footing rule.)
+
+**The field: `CanopyShape.Own`** (`Foliage.BlightedSwamp.Islands`, salts 0x59C2-4). One island site per 16 cells
+(768 px), jittered by 0.3; an island is an oval of radius 2.6-6.4 cells, stretched up to 1.45 and turned at random,
+with a second lobe on three in four, its edge moved a third of a radius by a noise at 5 cells. Whether a site holds
+one runs from 0.3 to 0.95 on a slow noise (three lattice cells), so islands cluster into drowned woods with long
+stretches of open fen between. Reed patches lie out in the fen where a noise at 8 cells is high, rising only to
+0.45: pure fringe, reeds and hummocks and never trees. A Python port previewed it (the first islands, at 12 cells
+with a narrow ring, read as leopard spots); the C# measured the same on `Woodland.Validate`'s sample:
+
+| habitat | canopy | share (4242 / 31 / 7) | what grows there |
+|---|---|---|---|
+| clearing (the open fen) | under 0.08-0.24 | 51 / 48 / 48% | rush, peat clods, the old flowers and tufts, the odd hummock |
+| fringe (reed ring, reed patches) | between | about 30% | reed beds, hummocks, the old sedge tussocks |
+| stand (the island) | over 0.55-0.70 (peat floor over 0.66) | 20 / 21 / 22% | stilt-rooted alders, drowned giants, the willows and snags |
+
+**The ground.** The islands stand on the palette's `dark_dirt`, laid under every one, so a drowned wood stands in
+the dark of its own shade; no clearing floor, so every blob falls where it rolled. **Moss was tried first and
+dropped**: the swamp's moss tile is lichen's teal, and laid under a fifth of the land on brown mud it photographed
+as shallow water - walkable ground that looks like the water you cannot walk into.
+
+**The ladder** (`tools/art/props_swamp.py`, `world/swamp/swamp.json` in `trees.json`'s shape; `detail_swamp.py`):
+
+| rung | sprites | on screen | where | set |
+|---|---|---|---|---|
+| drowned giant | `drowned-giant-1` | 214 x 300 | an island's heart, one tree in five there | 3 |
+| stilt trees | `stilt-tree-1`, `-2` | 180-208 x 236-264 | the islands: a dark ragged crown over roots arching down into the bog, moss hanging from it | 3 |
+| willows, snags | trees.py's, unchanged art | 136-236 | the islands; the snags now and then dead out in the fen | 1, 2 |
+| reed beds | `reed-bed-1..3` | 122-174 x 72-94 | ringing every island and in the fen's reed patches | 4 |
+| hummocks | `hummock-1..3` | 92-126 x 50-58 | the fringe, straying into the fen | 5 |
+| sedge tussocks, shrub | trees.py's, unchanged | 44-72 | the fringe now (were even) | 0 |
+| detail | `rushes`, `duckweed` (on the pools), `peat_clods`, `knees` (cypress knees), `bog_litter`, `rotwood` | one cell | rush everywhere and thickest at a fringe; clods in the fen; knees, litter and rotwood on the islands; duckweed where an island shades a pool | clutter |
+
+Leaf on verdant's dark half, crowns mostly shade and deep; wood and hanging moss in `linen` (lichen's lit, which the
+old snags' beards wear, photographed on the new crowns as blue drips); cattails in gold's shade and deep, as the
+shore's reeds. Island trees clump tight (a Stand clump at half to three quarters of its radius): at full radius a
+clump spilled most of its members into the fen, where the habitat dropped them, and an island held three trees. A
+chunk furnished now holds 5.8 stilt trees, 3.0 willows, 1.7 snags, 12.4 reed beds, 8.3 hummocks and 7.2 tussocks;
+the first load's 25 chunks hold 1,037 props where they held 261, and 3,378 detail cells where they held 1,549.
+
+**What the secrets need left alone** (`.ai/achievements-and-secrets.md` 8.6). Every reed here bends either way at
+random (a bed is upright as a whole): the bog's sedge leaning one way, more of it nearer, is the Swallow-Hole's far
+tell. No puddle of black mud - the hummock's mound was first drawn shade to occ and photographed as one, and is
+linen's base to deep now. No warm or bright point (S2's lantern, S3's wisp), no flower on a pad (S1), nothing
+straight (S6's cut face): the drowned giant's top is a splinter, not a cut, and the knees are cones.
+
+**The guardrail, from the art** (against the mud floor's L\* 22.3 and the peat's 12.4; `detail_contrast.py` reads
+only `<terrain>_fill` tiles and the swamp stands on the `mud` floor style, so a scratch wrapper read `floor_mud_*`
+with its functions): the new clutter dL\* -9 to +3, |dL\*| 8-11, hi -0 to +15 on mud (+10 to +25 on peat); the new
+trees and beds |dL\*| 7.5-10, hi +12 to +15; the hummocks hi +16 to +21. The old sedge tussock is hi +29, the
+shore's reeds +37 and the old flowers and mushrooms +56 to +65, which is why no more of them were added.
+
+**On screen**, `_UiShot --light-probe` at the start, (2600,-1500), (-3000,2200), (1800,1900) and (-2200,-1700) on the
+PC canvas and the start and (2600,-1500) on the phone's, seed 4242, pooled:
+
+| PC (phone) | before | after |
+|---|---|---|
+| bodies: dL\* / hi / lo | +1.8 / +47.5 / -20.6 (+3.4 / +49.3 / -18.2) | +2.9 / +48.7 / -19.5 (+4.0 / +50.1 / -17.8) |
+| XP orbs: dL\* / hi | +30.1 / +73.8 (+34.1 / +75.7) | +31.4 / +76.0 (+34.7 / +76.3) |
+| bushes: cover / \|dL\*\| / hi | 0.5% / 18.3 / +47.8 (0.2% / 28.1 / +45.7) | 3.9% / 13.0 / +27.0 (2.2% / 12.7 / +26.0) |
+| trees and rocks: cover / \|dL\*\| / hi | 1.4% / 13.0 / +33.8 (1.6% / 12.1 / +22.6) | 4.4% / 12.0 / +28.2 (2.2% / 12.2 / +29.4) |
+| detail: cover / \|dL\*\| / hi | 0.4% / 21.4 / +53.3 (0.3% / 21.2 / +50.2) | 0.8% / 17.7 / +48.6 (0.6% / 15.4 / +36.7) |
+| bare floor L\* / pattern | 21.6 / 9.7% (21.6 / 12.8%) | 20.4 / 11.1% (20.2 / 14.7%) |
+
+The cast and the orbs read as before. The bushes cover eight to ten times the frame, nearer their ground (|dL\*| 18-28 -> 13),
+their brightest tenth 20 L\* lower (the old tussocks were the brightest); the trees cover two to three times it, their
+brightest tenth within 7 L\* of before either way; the detail layer's brightest tenth is still the old flowers. **A probe after a `--teleport` outside
+the first load can photograph before its chunks are furnished** (90 frames of settle; the heavier furnishing makes
+it flaky): two test runs at (-3000,2200) and (-2200,-1700) placed 3 and 11 of 28 bodies, and every run in the
+tables above placed all of them.
+
+**Footing.** `--footing-census` (`--minutes=1 --timescale=4 --immortal --walk=30`): seed 4242, 436 trunks in 34
+chunks; seed 11, 253 in 21; none within 72 px of anything that blocks (nearest 72.0), no pocket, no narrow-mouthed
+room.
+
+**Checked.** `_ExploreProbe --stage=3 --seed=4242 --fresh-save`: 53 passed, 0 failed, before and after - the four
+lanterns and the gibbet on open ground, nothing on a footprint, both events won, he walked to the landing. After,
+the probe reached the lanterns at 393 s of game time and the gibbet at 818 s where it had reached them at 44 and
+131: its waits are counted in frames, and the run's frames were slower (other sessions' Godots on the machine, and
+heavier furnishing), so the escort met a late run's swarm - he fell once (119 turned on him) and boarded on the
+second walk with 5 of 60. `_UiShot --secret-probe --stage=3` (the Swallow-Hole): all pass before and after - the
+far tell still thickens toward it, thirty lured, the spell paid. The validator: 0 errors, the one test_wizard warning.
+
+**Cost.** `_BalanceHarness --minutes=2 --character=1 --immortal --timescale=1 --stress-swarm --profile=10 --stage=3
+--seed=11 --terrain-seed=4242 --walk=30 --terrain-log`, headless, before and after back to back - **with one and then
+two other sessions' Godots running (load 40-62%)**, so the frame times are noise: frame median of the ten-second
+windows 13.2 -> 10.2 ms. Nodes walking 1,544-1,735 (mean 1,640) -> 2,260-3,400 (mean 3,010), about 1,370 more (three
+a tree, one a bush or bed); a crossing's steps summed, median 77 -> 159 ms, and its worst furnishing step median 4.0
+-> 5.7 ms (max 75 -> 26, the before's max a stall). The Forest walks at about 4,170. **Not measured on the phone.**
+
+**Still needs eyes** (`_shots/foliage-swamp/composite-pc.png`, `composite-phone.png`, `composite-secret.png`):
+
+- **Islands or spots.** Whether a fen of tree islands reads as a place, or as dark blotches on mud; and whether the
+  peat under them reads as shade or as rot.
+- **The Swallow-Hole's far tell** (`composite-secret.png`). Its leaning sedge and black-mud puddles stood alone on
+  bare mud; now they share the fringe with reed beds, and the hole itself can sit on an island's dark peat, its bank
+  against a dark floor. The probe's count still thickens toward it; whether a player still reads "the reeds lean
+  toward something" is the question. Keeping the islands off it would need the canopy to know the site, a shared
+  hook.
+- **The gardens.** The stand floor is terrain, laid round a landmark as round anything (trees keep off it), so a
+  garden can stand in a patch of dark peat.
+- **The old willows**, bright curtains among the new dark crowns; trees.py's art, kept.
+
 ### Still needs eyes (the spread)
 
 - **The hedgerows as a land.** From the Python preview the network can read as cracked earth rather than fields
