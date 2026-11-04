@@ -668,8 +668,8 @@ Empty Cell - and one added, moved from the first draft's Undercroft:
 - **D7, the Oubliette** (untouched for 5 s on a grate in a dead-end hall room's floor): a voice
   below. If Nimue is built (decision 11) this is where her card stops being a sealed blank and
   becomes a silhouette: someone else is still held here. Until then it pays 150 Arcane Energy, once.
-  *Nimue is built (2026-11-03) and D7 is not: until it is, the Throne opening reveals her (decision 11,
-  its Built note, says how the Oubliette takes that over).*
+  *Built 2026-11-03 ("D7, built", after decision 11's Built note): its find is the earlier reveal of Nimue,
+  the Throne opening the fallback, and it pays the page and nothing else.*
 
 The Gaoler's Ledger now arrives late in the game, and the Court's Library a chapter later reveals the
 hint of every secret, not only the keepsakes. The Ledger keeps its design; its reveal is simply the
@@ -1242,6 +1242,7 @@ she is freed by the same chapter. When D7 is built, its find should be the EARLI
 `UnlockDefinition` beside `RevealStageId` (revealed when either holds), read it in
 `GlobalStatsManager.IsCharacterRevealed`, and leave the Throne as the fallback for a save that never found it.
 The validator's rules on a secret's reveal chapter read only `RevealStageId`, so they stay true.
+*Done that way the same day: "D7, built" below.*
 
 **Why the Scabbard, and why on the bite.** It is the other half of her gift in Malory - "whiles ye have the
 scabbard upon you, ye shall lose no blood, be ye never so sore wounded" - and every other wizard's defence is
@@ -1290,11 +1291,78 @@ its siblings.
 
 **Needs Eric's eyes:** her sprite at game size beside Morgan and the Sibyl (`_shots/wizard-nimue/`), and whether the
 float reads as floating with a shadow this thin; whether the Scabbard on the bite is the right call, and its size (a
-quarter longer between bites); the reveal at the Throne rather than the Oubliette; Taken Back paying her rather than a
+quarter longer between bites); the reveal at the Throne rather than the Oubliette (since D7, the Oubliette first and the Throne as the fallback); Taken Back paying her rather than a
 deed of her own; "the one he kept" and "Nimue is out of his keeping."; whether the freeing template (his tower on
 the horizon, his light still on it) is right for the one reel that plays after his light went out; the sever line's
 look in motion (gold-white cells, a quarter of a second); and Excalibur's 60% against a real horde, where a line can
 hold a dozen.
+
+### D7, built: the Oubliette (2026-11-03, `castle/oubliette`)
+
+Section 4.4's D7, built as written, and the earlier reveal the note above asked for: a grate in the floor of a dead
+end in the Cursed Dungeon, five seconds on it without a blow, a voice below, and Nimue's card turns.
+
+| piece | where |
+|---|---|
+| the secret | `SecretCatalog.CursedDungeon.cs`: `oubliette`, "The Oubliette". Verb `SecretVerb.Untouched` (new: a place held without being struck, `.ai/achievements-and-secrets.md` 5's "untouched"). Pays the page only (`PageOnly`; its deed's row says "Tells of someone else held" through the new `SecretDefinition.RewardText`). Seen line "A grate in the floor of a dead end, and a cold draught rising through it."; found line "A shaft under the gaol's floor, too deep for any light: the cell for someone meant to be forgotten." |
+| where | `SecretPlacement.Mid` (new): one site in stage-secrets' mid band, five to nine chunks out, in every run of its chapter, stream 10, placed after the vault and at least 90 degrees round from the side event, the keepsake and the vault where the circle leaves room. Its `RoomAt` takes only a dead end (`Oubliette.DeadEndAt`: walls on three sides of the maze cell, read at the wall strips half a cell out). Dead ends are rare after the braid pass, and the plain band sweep walked round its ring until it found one - on seed 4242, to 5 degrees off the Gaoler's key's bearing - so the mid band sweeps with `ExplorePlacer.AtBearingInBandKeeping`, which holds the bearing rule through the sweep (90 degrees, then 60, 30, none). Every other placement is untouched: a chapter with no mid site places everything exactly as before, and the Cold Forge's probe passes on 4242 as it did |
+| the site | `Oubliette.cs`, a `SecretSite`, code-made, never in `"enemies"`, not solid: the horde walks over the grate. The grate stands in the dead-end cell's middle, set in the floor at `DrawLayers.Decal` - **darkened with the floor** by the light pool's room pass, because it is part of the gaol. What reads in the dark is what comes out of it: the warm glint far down in the middle gap of the bars (`GroundTell`, over the dark and under every body), and a cold draught of pale motes rising off the bars (`Air`, never darkened, so it shows over the walls from the next corridor before the grate does) - steel's hi, lit and base, never his arcane blue. It reserves the cell and its doorway (230 px), so no trap stands in the one way in. Its far tell: puddles on the flags thickening toward it from a chunk and a half out, and within 1,024 px puddles rimed by the draught's cold |
+| the verb | his feet on the grate (within 44 px of its middle; it is 80 across) for five seconds without a blow. `Player.DamageTaken` starts it again - which a dodge never raises, so a dodged blow is no blow - and so does stepping off. Stillness is not asked as well: the grate is too small to walk about on, and a dead end has one way in, so the five seconds are spent holding its mouth clear. The draught thickens and the glint warms as the count runs; that is the whole of the tell, no bar and no number |
+| the voice | `secret_voice_below` (`tools/audio/sfx.py`, `SfxCatalog.SecretVoiceBelow`): a woman's voice up a long shaft, wordless - a hum lifting D4 to F4, then "oh" to G4 and "ah" falling back to D4 and held, its vibrato blooming late - water dripping at the bottom before, between and after, through a 12 ms pipe comb, the top gone at 1.5 kHz and a tall stone room. It names no one. Played at the grate once the count is in, **only while she is still held**; the find is paid when it has finished (`Oubliette.VoiceSeconds` 2.7, the file's length, which the validator holds), so the Critical `meta_unlock` never ducks it |
+| the reveal | `UnlockDefinition.RevealSecretId` (new), Nimue's set to `oubliette`; `GlobalStatsManager.IsCharacterRevealed` reads it from the save's `FoundSecretIds`, whichever of the two reveals comes first. Derived, as the chapter reveal is: nothing stored but the find, so every screen that asks (the character select, `StageRewards`, the deed rows) turns with it |
+| the art | `tools/art/secret_dungeon.py`: `oubliette-grate.png` (a 36-pixel curb of dressed stone, the straps two pixels wide with four-pixel gaps, the middle gap where the glint is), `puddle-1/2` and `rime-1/2`. 0 off-contract pixels; the Cold Forge's nine sheets re-render byte-identical |
+| the checks | `RegressionChecks.Oubliette.cs` (`ValidateOubliette`): any `RevealSecretId` names a built secret in a chapter BEFORE its reveal chapter, never the deed that frees him, and a save with only that secret found reads him revealed and still locked; the Oubliette is built, mid-band, untouched, page-only, turns exactly Nimue's card with the Throne kept as the fallback, holds five seconds at most, and its voice, grate and far tell exist (the voice no longer than the wait). `_UiShot --secret-probe=oubliette` walks it; `--goto=oubliette` stands at it where the seed put it, `--oubliette-stage=N` poses the count (4 answers it) |
+
+**Decided.**
+
+- **The Throne stays the fallback.** Decision 11 said to leave it, and nothing argued otherwise: the Oubliette is
+  a mid-band secret in one run's dead end, missable by design, and a save that never stands on the grate still sees
+  her card turn when the Throne opens. `RevealStageId` is still `stage_13`; the validator holds that.
+- **A save that already has her revealed** (the Throne open, she still held): the grate works the same - the
+  draught, the five seconds, the voice, "Someone else is still held here" - and pays the page mark; the card was
+  already turned, and nothing turns twice. **A save that has freed her:** no voice. The draught still rises (it is a
+  shaft), the five seconds still find it, and the toast says "No one is held here now" (`Oubliette.NoOneLine`, through
+  the new optional line of `SecretDirector.Found`); the page mark as anyone's. Neither pays anything more.
+- **No migration; the schema stays 22.** The reveal is read from `FoundSecretIds`, which every save has had since
+  schema 17, and it only ever widens what a save shows - a card turned sooner - so nothing an existing save holds is
+  narrowed. No story-epoch question either: a story reset is a fresh save, its found list empty.
+- **The 150 Arcane Energy is not paid.** 4.4 held it "until" Nimue was built; she is, so the find is the reveal and
+  the page. (`ValidateSecretCatalog` would refuse it anyway: only a keepsake pays beyond the page.)
+
+**Where it reads the design, and how.** "A dead-end hall room": a hall (four cells round a knocked-out post) can
+never be a dead end cell - each of its cells has two passages open by construction - and a whole hall with a single
+way in is rarer than the dead ends themselves, so the grate goes in a **dead-end cell**, a cul-de-sac off the
+corridors, and the word "hall" is read as the corridor it ends. "Becomes a silhouette": since 2026-11-02 every
+locked card is a silhouette, a secret one included, so what turns is the line under it - "Not yet discovered."
+becomes her hint ("Kept by him to the end. Freed when he falls in the Throne.").
+
+**Verified.** `dotnet build` (0 errors, the base's 44 warnings). `--import` (the five sheets, the sound, three new
+scripts' `.uid`s, sidecars committed). The validator (`MainMenu.tscn --quit-after 300 -- --no-save-writes`): 0
+errors, 1 warning (test_wizard), and the "1 resources still in use at exit" line the base prints too. `python
+tools/audio/analyse.py --confuse`: 0 confusable pairs; inside its category the voice is 0.294 from `secret_found`, and
+across the whole set its nearest is `hint_caravan_bell` at 0.158, then `meta_unlock` 0.207; every other voice is 0.31
+or more away (`hint_sibyl_voice` 0.312, `hint_ice_song` 0.348; `hint_cell_cry`, the same chapter's, not in the
+nearest twelve). Peak -8 dBFS, hf 0%, centroid 609 Hz. **In Godot, windowed** (`_UiShot` counts its frames on
+`FramePostDraw`, which a headless run never fires): `_UiShot --scene=res://scenes/node_2d_game.tscn --stage=1
+--fresh-save --terrain-seed=4242 --secret-probe=oubliette` - **all pass**: placed 7.9 chunks out at a dead end (its
+mouth north), 99 degrees from the forge and 88 from the event (a later rung: forge and event leave no
+90-degree gap), never a target, not solid, unseen at 654 px and seen from its mouth, the far tell 16 puddles and 9
+rimed within 1,024 px against 12 and none beyond, the count running on the grate (2.52 s after 2.5), a blow starting
+it again, stepping off doing the same, five seconds untouched answering it (5.00 s), the voice rising, the find
+waiting it out, then found, its deed recorded, **Nimue revealed and still locked**, no Arcane Energy, no chest. The
+same with `--open-stages=stage_13` (already revealed: the voice, the page) and `--free-wizards=nimue` (free: no voice,
+"No one is held here now"), and fresh on seeds 31, 777 and 2026 (7.6, 6.1 and 8.5 chunks out; 101-164 degrees from
+the event, 105-125 from the forge). The Cold Forge's own probe on 4242: all pass, placed where it was. Photographed
+at both canvases (`_shots/oubliette/`): the grate and its tell in the dark from the next cell (PC) and two cells
+(phone), the count posed at three quarters, the find's toast, the freed save's toast, and her card before ("Not yet
+discovered.") and after (her hint) in the character select (`--fresh-save` against `--found-secrets=oubliette`).
+
+**Needs Eric's eyes and ears:** the voice - generated and measured, never listened to; whether it reads as someone
+below, and as nobody he has met. The draught's motes at game size (two art pixels at most, so a speck at a phone's
+distance) and whether the glint reads as far down. The rimed puddles, which at screen size may read as white
+squiggles rather than frost. Whether five seconds untouched in a dead end is fair at chapter eleven's swarm - nothing
+has played it. Her hint names the Throne, which a save in the Dungeon has not yet seen on the map. And "Someone else
+is still held here", "No one is held here now" and "Tells of someone else held".
 
 ---
 
