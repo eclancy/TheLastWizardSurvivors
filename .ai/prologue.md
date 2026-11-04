@@ -18,7 +18,7 @@ choice below comes from it.
 | 4 | Taken (`taken`) | *He took every wizard who might rival him.* | The wizards led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
 | 5 | The one he missed (`missed`) | *You are the one he missed.* | **Animated** (below): the hiding. The broken ring's near stones in a row, and in the row, between two of them, the player - the title's figure, facing us, still as a stone, his light put out to an ember. Beyond the row his creatures search: a hound trots along it nose down, stops at his shoulder and works the air beside him - his ember goes out - and goes on; a caster in the gap watches; two small ones turn their heads; pair by pair the eyes in the dark turn away and back. They never find him. |
 | 6 | The break (`break`) | *You rescued them, and they stand with you.* | **Animated.** The freeing (`.ai/cutscenes.md`, built 2026-11-02 from Eric's *"Include a cutscene where the blue robed wizard frees the four starting wizards"*): the four disciplines on their knees in his chain, the Archmage in the middle of them, his light coming up and breaking it, their own lights coming back. |
-| 7 | The five (`five`) | *Four were free. The rest still waited for you.* | The four standing where they knelt, each light his own again, and the Archmage in his warded circle among them. |
+| 7 | The five (`five`) | *Four are free. The rest still wait for you.* | The four standing where they knelt, each light his own again, and the Archmage in his warded circle among them. |
 | 8 | The road (`road`) | - | Seen from above and behind: the player small on a road that winds over the heath toward everything he holds, the tower on the far horizon. Then the character select - the player choosing who walks it, any of the five. |
 
 **Six lines, all in the game's own voice.** The first two are the Broken Circle's own note, word for word,
@@ -33,7 +33,7 @@ and it makes the next line's one he missed a rival too); "You are the one he mis
 you" is the freeing's - the rescue, and that the four are with the player now (Eric, 2026-11-03: *"it should sound
 more like you rescued them and now they can work with you"*; it was "You went back for them", then briefly "Your
 light broke his chain, and they rose"), saying the one thing the picture cannot: that the one breaking the chain
-is the player. "Four were free. The rest still waited for you" is the player's goal told as story (Eric chose
+is the player. "Four are free. The rest still wait for you" is the player's goal told as story (Eric chose
 it), over the five standing, before the road and the character select.
 Nothing else is said: no title card, no narration, nothing an image is already saying
 (`world-and-tone.md` tone rule 2).

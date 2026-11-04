@@ -29,7 +29,7 @@ public static partial class RegressionChecks
 		}
 		// Three lines were the prologue's rule, and the freeing adds one (Eric: "Overall keep text minimal"); the moot's
 		// adds a fifth, where the story begins (Eric, 2026-11-03: "The stones where we used to meet."), and the five's a
-		// sixth, the player's goal ("Four were free. The rest still waited for you.").
+		// sixth, the player's goal ("Four are free. The rest still wait for you.").
 		int lines = reel.Beats.Count(b => !string.IsNullOrEmpty(b.Caption));
 		if (lines > 6)
 			warnings.Add($"Prologue: {lines} panels carry a line; it was written for six at most.");

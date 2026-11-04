@@ -198,9 +198,9 @@ public partial class Prologue : Control
 			Impact: new PanelImpact(2.0f, new Vector2(442f, 418f), Warm: true)),
 		// The five of them, standing where the four knelt, each light his own again. Its line is the player's goal, told
 		// as story (Eric, 2026-11-03, choosing it): four are free and every other wizard he took is still held - the
-		// road is next, and then the character select, where any of the five may walk it. 46 characters, the PC's
-		// one-line limit exactly.
-		new("five", 4.8f, "Four were free. The rest still waited for you.", new Vector2(-2f, 0f), new Vector2(-2f, 0f), new Vector2(-14f, 0f)),
+		// road is next, and then the character select, where any of the five may walk it. Present tense, matching the
+		// break line before it (Eric: "match tenses"). 43 characters, inside the PC one-line 46.
+		new("five", 4.8f, "Four are free. The rest still wait for you.", new Vector2(-2f, 0f), new Vector2(-2f, 0f), new Vector2(-14f, 0f)),
 		// The road to all of it.
 		new("road", 4.8f, null, new Vector2(0f, 2f), new Vector2(8f, -10f), new Vector2(0f, 16f)),
 	};

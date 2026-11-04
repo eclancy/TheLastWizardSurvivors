@@ -2239,7 +2239,7 @@ def p_break():
 
 
 def p_five():
-    """7. "Four were free. The rest still waited for you." The five of them. The same heath and the same places: the four stand up where they knelt, each
+    """7. "Four are free. The rest still wait for you." The five of them. The same heath and the same places: the four stand up where they knelt, each
     each in their own sprite and colours, each staff burning its own element again - and in the middle, in his
     warded circle, the Archmage.
     His chain lies on the ground in front of them, dead. Five lights on the heath where there was one; no
