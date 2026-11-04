@@ -307,13 +307,18 @@ public static class SpellEvolutionCatalog
 		{
 			Id = ArcaneExplosion.SympatheticBlastId,
 			DisplayName = "Sympathetic Blast",
-			Description = "Each blast takes on the spell that set it off: ice slows, lightning staggers, poison poisons, fire hits harder. +20% damage.",
+			// "The spell that set it off" was the code's word for it, not the player's (Eric, 2026-11-04: "What does
+			// Spell that set it off mean? Update wording"). It is the cast that fills the charge (lastCharger,
+			// ArcaneExplosion.SympathyElement): the last spell you cast before the blast. The elements with no status
+			// hit harder (SympathyBareShare), so "others", not "fire". 124 of the 130 (DescriptionBudget).
+			Description = "Takes the element of the last spell you cast: ice slows, lightning staggers, poison poisons, others hit harder. +20% damage.",
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.2f,
 			VisualTag = "SympatheticBlast",
 			ModulateColor = Colors.White,
 			SynergyTag = "Arcane / Loadout",
-			SynergyDescription = "The blast wears whichever spell you cast most."
+			// It said "whichever spell you cast most"; it is the last.
+			SynergyDescription = "The blast wears the last spell you cast."
 		});
 
 		// The element path (ElementPaths): Arcane's branch into Lightning. Its three chain sparks were
@@ -325,7 +330,7 @@ public static class SpellEvolutionCatalog
 			Id = "arcane_explosion_static_nova",
 			BonusElementWeights = new() { { "Lightning", 1 } },
 			DisplayName = "Static Nova",
-			Description = "The blast crackles with static: +20% damage, +1 Lightning tag, and "
+			Description = "The blast crackles with static: +20% damage, and "
 				+ ElementPaths.Describe(ElementRider.Shock, 0f, 0.3f) + ".",
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.2f,
@@ -728,7 +733,7 @@ public static class SpellEvolutionCatalog
 			Id = "fireball_comet",
 			BonusElementWeights = new() { { "Metal", 1 } },
 			DisplayName = "Iron Comet",
-			Description = "The fireball is forged around an iron core: +1 Metal tag, and "
+			Description = "The fireball is forged around an iron core: "
 				+ ElementPaths.Describe(ElementRider.Wither, 0.05f, 0f) + ".",
 			MilestoneLevel = 4,
 			Rider = ElementRider.Wither,
@@ -894,7 +899,7 @@ public static class SpellEvolutionCatalog
 			Id = "chain_lightning_forked_surge",
 			DisplayName = "Storm Surge",
 			// The Water tag stays named: RegressionChecks requires an element path's card to say it.
-			Description = $"The arc splits three ways at every hop for 30% less, up to {ChainLightning.MaxArcsPerCast} arcs a cast. +1 Water tag, and "
+			Description = $"The arc splits three ways at every hop for 30% less, up to {ChainLightning.MaxArcsPerCast} arcs a cast, and "
 				+ ElementPaths.Describe(ElementRider.Slow, surgeDrag, surgeSeconds) + ".",
 			MilestoneLevel = 4,
 			ChainBranchBonus = 2,
@@ -1214,7 +1219,7 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Metal", 1 } },
 			DisplayName = "Reforged",
 			Description = "Each time the ward returns, iron shards fly in to you, cutting what they pass. "
-				+ $"+{(reforgedShield - 1f) * 100f:0}% shield, +1 Metal tag, 12% slower recharge.",
+				+ $"+{(reforgedShield - 1f) * 100f:0}% shield, 12% slower recharge.",
 			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
 			DamageMultiplier = reforgedShield,
@@ -1231,7 +1236,7 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Light", 1 } },
 			DisplayName = "Sun Aegis",
 			// Player.SunAegisFlash, since 2026-10-26. The beams while charged were never built and went.
-			Description = "A breaking shield flashes like the sun, staggering and weakening everything close. Double shield, +1 Light tag.",
+			Description = "A breaking shield flashes like the sun, staggering and weakening everything close. Double shield.",
 			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 8,
 			DamageMultiplier = 2.0f,
@@ -1607,7 +1612,7 @@ public static class SpellEvolutionCatalog
 			Id = "cyclone_slash_razor_gale",
 			BonusElementWeights = new() { { "Metal", 1 } },
 			DisplayName = "Razor Gale",
-			Description = "The blades are edged in steel: +35% damage, +1 Metal tag, and "
+			Description = "The blades are edged in steel: +35% damage, and "
 				+ ElementPaths.Describe(ElementRider.Wither, 0.04f, 0f) + ".",
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.35f,
@@ -1694,7 +1699,7 @@ public static class SpellEvolutionCatalog
 			DisplayName = "Solar Prominence",
 			// Was Scorching Heat: +45% damage and the tag. The game has no burn status, so the heat is now a
 			// thing the flare throws (ElementalPulse.HurlProminences).
-			Description = $"Each pulse hurls {ElementalPulse.ProminenceLoops} loops of fire onto the nearest enemies past its rim, more as it builds. +1 Fire tag, +15% damage, 12% slower.",
+			Description = $"Each pulse hurls {ElementalPulse.ProminenceLoops} loops of fire onto the nearest enemies past its rim, more as it builds. +15% damage, 12% slower.",
 			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.15f,
@@ -1982,7 +1987,7 @@ public static class SpellEvolutionCatalog
 			// went with the reader check, EvolutionStatReaders.)
 			BonusElementWeights = new() { { "Water", 1 } },
 			DisplayName = "Frost Shrapnel",
-			Description = "Meltwater runs through the cone: +30% damage and +1 Water tag.",
+			Description = "Meltwater runs through the cone: +30% damage.",
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.3f,
 			VisualTag = "FrostShrapnel",
@@ -2149,7 +2154,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = "obsidian_spike_umbral_vein",
 			DisplayName = "Umbral Vein",
-			Description = "Black glass drinks the light: +1 Darkness tag, and "
+			Description = "Black glass drinks the light: "
 				+ ElementPaths.Describe(ElementRider.Vulnerable, veinExposure, veinSeconds) + ".",
 			MilestoneLevel = 4,
 			BonusElementWeights = new() { { "Darkness", 1 } },
@@ -3122,9 +3127,10 @@ public static class SpellEvolutionCatalog
 		{
 			Id = $"{spell.Id}_{suffix}",
 			DisplayName = name,
-			// "+1 Fire", not "+1 Fire tag": the card's element chip says the rest, with the count it reaches
-			// (BuildTagGainRow), and the branch has SpellEvolutionOption.DescriptionBudget to say it in.
-			Description = $"{lead}: +1 {element}, +20% damage{riderText}.",
+			// No "+1 Fire" in the text (Eric, 2026-11-04: "If a spell modification adds a tag, it doesn't need the
+			// number indicator in the description"): the card's element chip says it, with the count it reaches
+			// (BuildTagGainRow).
+			Description = $"{lead}: +20% damage{riderText}.",
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.2f,
 			BonusElementWeights = new() { { element.ToString(), 1 } },
@@ -3473,7 +3479,7 @@ public static class SpellEvolutionCatalog
 			Id = Familiar.GrimalkinId,
 			DisplayName = "Grimalkin",
 			Description = $"Its cast speed and evasion x{Familiar.GrimalkinGrants:0.#}, and its Weaken lasts "
-				+ $"{Familiar.CatWeakenSeconds * Familiar.GrimalkinGrants:0.#} s. +1 Arcane tag.",
+				+ $"{Familiar.CatWeakenSeconds * Familiar.GrimalkinGrants:0.#} s.",
 			MilestoneLevel = 4,
 			BonusElementWeights = new() { { "Arcane", 1 } },
 			VisualTag = "Grimalkin",
@@ -3491,7 +3497,7 @@ public static class SpellEvolutionCatalog
 			"What it pounces on, every spell you own hits harder.");
 		sith.DamageMultiplier = 1f;
 		sith.Description = $"What it pounces on takes {Familiar.CaitSithVulnerable * 100f:0}% more from every spell for "
-			+ $"{Familiar.CaitSithVulnerableSeconds:0} s. +1 Darkness tag.";
+			+ $"{Familiar.CaitSithVulnerableSeconds:0} s.";
 		spell.Level4Options.Add(sith);
 
 		spell.Level4Options.Add(new SpellEvolutionOption
@@ -3526,7 +3532,7 @@ public static class SpellEvolutionCatalog
 			Id = Familiar.CathPalugId,
 			DisplayName = "Cath Palug",
 			Description = $"Its cast speed and evasion x{Familiar.CathPalugGrants:0.#} again, and its pounce marks everything "
-				+ $"in a reach {palugReach:0.#}x as wide. +1 Arcane tag.",
+				+ $"in a reach {palugReach:0.#}x as wide.",
 			MilestoneLevel = 8,
 			AreaMultiplier = palugReach,
 			BonusElementWeights = new() { { "Arcane", 1 } },
@@ -3606,7 +3612,7 @@ public static class SpellEvolutionCatalog
 			Id = Stormsweep.BallLightningId,
 			DisplayName = "Ball Lightning",
 			Description = "The crack at the tip throws off a ball of lightning that rolls on, zapping what it passes. "
-				+ $"+{(ballDamage - 1f) * 100f:0}% damage, +1 Lightning tag.",
+				+ $"+{(ballDamage - 1f) * 100f:0}% damage.",
 			MilestoneLevel = 4,
 			DamageMultiplier = ballDamage,
 			BonusElementWeights = new() { { "Lightning", 1 } },
@@ -3689,7 +3695,7 @@ public static class SpellEvolutionCatalog
 			Id = SleetRunes.GreatRuneId,
 			DisplayName = "Great Rune",
 			Description = $"Every {OrdinalWord(SleetRunes.GreatEvery)} rune is great: twice the size, through everything in its line, "
-				+ $"slowing what it strikes. +{(greatDamage - 1f) * 100f:0}% damage, +1 Ice tag.",
+				+ $"slowing what it strikes. +{(greatDamage - 1f) * 100f:0}% damage.",
 			MilestoneLevel = 4,
 			DamageMultiplier = greatDamage,
 			BonusElementWeights = new() { { "Ice", 1 } },

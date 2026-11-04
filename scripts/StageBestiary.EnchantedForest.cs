@@ -8,8 +8,8 @@ public static partial class StageBestiary
 	/// <remarks>
 	/// The first chapter with a cast of its own: the dire wolf, the bramble and the wisp
 	/// (tools/art/foes_forest.py). Wolves are the bulk of it and they are FAST and light - the lesson
-	/// of this wood is that you cannot outrun it - brambles are the wall you go around, and wisps are
-	/// the back line. Everything else here was a crypt creature walking about under the trees; each now
+	/// of this wood is that you cannot outrun it - brambles are the wall you go around, and wisps were
+	/// the back line until 2026-11-04, when nothing here shoots any more (Build's note). Everything else here was a crypt creature walking about under the trees; each now
 	/// has a forest creature designed for its job, and stands in for it until that one is drawn.
 	///
 	/// No heavy. The forest table has never carried a 2.2x band, and adding one would make the
@@ -52,8 +52,13 @@ public static partial class StageBestiary
 			BestiarySlot fast = Planned(BestiaryRole.Fast, Beater, CursedDungeon.GraveRunner);
 			BestiarySlot wall = Own(BestiaryRole.Wall, Bramble);
 			BestiarySlot wolves = Own(BestiaryRole.Extra, DireWolf);
-			BestiarySlot wisps = Own(BestiaryRole.Extra, Wisp);
 
+			// NOTHING IN THE FIRST CHAPTER SHOOTS (Eric, 2026-11-04: "First level should not have enemies that
+			// shoot at you"). The wisp was the back line here, 14% of the table, and the Dryad and the Effigy
+			// stood in the ranged and turret roles; all three are RangedEnemy. The chapter that teaches moving
+			// and kiting asks only that, and the first bolt waits for the chapters after it. An absent role
+			// skips its roll entirely (Node2DGame.SelectEnemyForCurrentStage), as the Sketchbook's do. The
+			// wisp, the Dryad and the Effigy stay drawn and defined, should a later chapter want them.
 			return new ChapterBestiary
 			{
 				StageId = Stage,
@@ -61,22 +66,22 @@ public static partial class StageBestiary
 				{
 					bulk, fast,
 					Absent(BestiaryRole.Heavy, "the forest table has never carried a heavy band; its weight is the bramble wall and the wolves' numbers"),
-					wall, wolves, wisps,
-					Planned(BestiaryRole.Ranged, Dryad, CursedDungeon.Hexer),
-					Planned(BestiaryRole.Turret, Effigy, CursedDungeon.SkullSentry),
+					wall, wolves,
+					Absent(BestiaryRole.Ranged, "nothing in the first chapter shoots (Eric, 2026-11-04)"),
+					Absent(BestiaryRole.Turret, "nothing in the first chapter shoots (Eric, 2026-11-04)"),
 					Planned(BestiaryRole.Charger, Gloamstag, CursedDungeon.CryptLunger),
 					Planned(BestiaryRole.Exploder, Burstpod, CursedDungeon.GraveBloat),
 					Planned(BestiaryRole.Slammer, HollowBear, CursedDungeon.Gravebreaker),
 					Planned(BestiaryRole.Summoner, Huntsman, CursedDungeon.BoneCaller),
 					Planned(BestiaryRole.MiniBoss, Gamekeeper, CursedDungeon.Warden),
 				},
-				// The old Forest case, band for band.
+				// The old Forest case, band for band, but the wisps' 0.14: to the wolves (0.08, the forest's own
+				// lesson) and the bulk (0.06). The bands still sum to one.
 				Table = new[]
 				{
-					Band(wolves, 0.40f, 0.85f),
+					Band(wolves, 0.48f, 0.85f),
 					Band(wall, 0.26f, 1.5f),
-					Band(wisps, 0.14f, 0.8f),
-					Band(bulk, 0.12f, 1.0f),
+					Band(bulk, 0.18f, 1.0f),
 					Band(fast, 0.08f, 0.75f),
 				},
 			};

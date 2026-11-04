@@ -6519,8 +6519,12 @@ public static partial class RegressionChecks
 				{
 					if (evo.ModulateColor == Colors.White)
 						warnings.Add($"Evolution '{evo.Id}' branches '{spell.Id}' into {gain} but keeps the spell's look (no ModulateColor); an element path must look like its element.");
-					if (string.IsNullOrEmpty(evo.Description) || evo.Description.IndexOf(gain, StringComparison.OrdinalIgnoreCase) < 0)
-						warnings.Add($"Evolution '{evo.Id}' branches '{spell.Id}' into {gain} but its description never names the {gain} tag.");
+					// The gain is said by the chip under the card, with the count it reaches (LevelUpMenu.BuildTagGainRow),
+					// so the text must NOT repeat it (Eric, 2026-11-04: "If a spell modification adds a tag, it doesn't
+					// need the number indicator in the description"). This check used to demand the opposite.
+					if (!string.IsNullOrEmpty(evo.Description)
+						&& evo.Description.IndexOf($"+1 {gain}", StringComparison.OrdinalIgnoreCase) >= 0)
+						warnings.Add($"Evolution '{evo.Id}' says +1 {gain} in its description; the tag chip under the card already shows it.");
 				}
 
 				if (evo.Rider == ElementRider.None)
