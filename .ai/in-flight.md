@@ -61,10 +61,15 @@ things come up; strike what lands.**
      it leaves (Eric) - one motion from the title to the menu, not the menu dropped over the art.
      The portrait art and its eye field are generated (`tools/art/splash.py`, `.ai/title-screen.md`): change the
      generator, re-run it, check it at 540x1212 `--portrait --safe-area`, never edit the PNG.
-7. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
-8. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
+7. **The achievement banner says what you did** (Eric, 2026-11-04): when an achievement comes up on screen,
+   show the line for what the player actually did to earn it (its condition, as the achievements menu words
+   it), not only its name and reward ("Achievement - First Blood / Spell recovered - Arcane Explosion"). Find
+   the banner (`Node2DGame.RecordAchievementNow` and the banner it shows, `AchievementDefinition`'s text),
+   keep it to the lines a phone can hold, and check it at both canvases over a run.
+8. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
+9. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
    launch-plan doc, now carrying the rival motive).
-9. **Housekeeping:**
+10. **Housekeeping:**
    - the README's image and sound counts are stale again after the foliage and Paracelsus (recount from the
      tree, same methods);
    - delete the dead decor cases in `Node2DGame.BuildDecorProps` for every chapter that now has foliage (the
