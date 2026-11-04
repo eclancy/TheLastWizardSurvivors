@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Godot;
 
 namespace TheOneHeMissed.scripts;
 
@@ -132,12 +133,14 @@ public static partial class Foliage
 	/// <summary>
 	/// RegressionChecks: one foliage a kind; a habitat (on a set or a clutter rule) only where there is a
 	/// canopy; every set says what it scatters and how many; a set of trees keeps its clumps within
-	/// <see cref="MaxClumpReach"/> of its chunk; a stand floor that is one of the chapter's palette terrains.
-	/// The sprites themselves are held against their manifests by ValidateFoliageArt (it loads them).
+	/// <see cref="MaxClumpReach"/> of its chunk; a stand floor that is one of the chapter's palette terrains;
+	/// and every sprite a set names is in its manifest and imported (a sprite missing there is dropped from
+	/// the set at run time with nothing on screen to say so).
 	/// </summary>
 	public static void Validate(List<string> warnings)
 	{
 		var seen = new HashSet<StageEnvironmentKind>();
+		var manifests = new Dictionary<string, Dictionary<string, GroundedSprite>>();
 		foreach (ChapterFoliage chapter in All)
 		{
 			string who = $"Foliage ({chapter.Kind})";
@@ -169,6 +172,17 @@ public static partial class Foliage
 						warnings.Add($"{what}: a habitat is for grounded sets (trees and bushes) only.");
 					if (set.Grounded != null && set.Clustered && RadiusOf(set.Clump) * set.RadiusMax > MaxClumpReach)
 						warnings.Add($"{what}: its clumps reach {RadiusOf(set.Clump) * set.RadiusMax:0} px past their chunk, over {MaxClumpReach}.");
+					if (set.Grounded != null)
+					{
+						if (!manifests.TryGetValue(set.Manifest, out Dictionary<string, GroundedSprite>? manifest))
+							manifests[set.Manifest] = manifest = WorldSprites.LoadManifest(set.Manifest);
+						foreach (string id in set.Grounded)
+							if (!manifest.TryGetValue(id, out GroundedSprite? sprite) || sprite.Texture == null)
+								warnings.Add($"{what}: '{id}' is not in {set.Manifest}, or its PNG is not imported.");
+					}
+					foreach (string path in set.Sprites ?? Array.Empty<string>())
+						if (!ResourceLoader.Exists(path))
+							warnings.Add($"{what}: no sprite at {path}.");
 				}
 			}
 			foreach (GroundDetail.Rule rule in chapter.Clutter)

@@ -9,9 +9,12 @@ using TheOneHeMissed.scripts;
 // --footing-census (any scene that runs Node2DGame; _BalanceHarness is the usual one) measures, over every
 // chunk furnished in the run, what the stands do to the player's way through: every trunk's nearest gap
 // to any other blocking footprint (another trunk, a rock, a themed prop that blocks, a fence rail, a body a
-// side event or secret stands, and the water, wall and fence cells), and the POCKETS - ground the player's
+// side event or secret stands, and the water, wall and fence cells), the POCKETS - ground the player's
 // Feet could stand on that no path from outside reaches, found by a flood fill in the player's own terms
-// (every layer-4 box grown by the Feet, every layer-1 box by the body 29.5 px above them). A chunk is
+// (every layer-4 box grown by the Feet, every layer-1 box by the body 29.5 px above them) - and the
+// NARROW-MOUTHED ROOMS: open ground whose every way out is narrower than the clearance, found by the same
+// flood fill with every box grown by half the clearance all round. Each says whether a trunk is in its
+// wall. With --no-footing-rule the trunks are placed as the pilot placed them, to compare. A chunk is
 // counted once, when it and its eight neighbours are all furnished, so a pair across a border is seen with
 // both of its members in place. It reads the bodies the run made, not the plan that made them.
 //
@@ -30,7 +33,10 @@ public partial class Node2DGame
 	//
 	//   1. IN ITS CHUNK, a trunk keeps Footing.Clearance from every trunk already kept, of any set, and from
 	//      every blocking cell of the ground (water, wall, fence) round it. One set spacing its own trunks was
-	//      never enough: the Forest's birches stood against its oaks, and its oaks against the ponds.
+	//      never enough: the Forest's birches stood against its oaks, and its oaks against the ponds. A trunk
+	//      that does not clear is stepped once, up to a cell, straight away from the nearest thing it crowds,
+	//      and kept if the new spot passes every test (TryStepClear); otherwise it is dropped. The step is
+	//      what keeps a stand as thick as it was: on the Forest it saved half the trunks the rule would drop.
 	//   2. ACROSS A BORDER, the chunk that comes later (row, then column) gives way: a trunk within the
 	//      clearance of a trunk in an earlier neighbour's raw plan is dropped. A raw plan never shrinks by this
 	//      step's own hand, so nothing is recursive, the answer is the same whichever chunk is furnished first,
@@ -51,6 +57,15 @@ public partial class Node2DGame
 		if (blockingSets == null || blockingSets.Length != decorChunkSpecs.Count)
 			blockingSets = decorChunkSpecs.Select(s => s.Grounded != null && s.Grounded.Any(g => g.Trunk > 0)).ToArray();
 		return blockingSets[setIndex];
+	}
+
+	/// <summary>True if any decor set of this stage stands a trunk, so the footing rule has anything to keep.</summary>
+	private bool AnyBlockingSet()
+	{
+		for (int i = 0; i < (decorChunkSpecs?.Count ?? 0); i++)
+			if (IsBlockingSet(i))
+				return true;
+		return false;
 	}
 
 	/// <summary>The chunk's trunk plan before it gives way to its neighbours (see above, steps 1 and the refusals).</summary>
@@ -231,27 +246,52 @@ public partial class Node2DGame
 		return false;
 	}
 
+	// How far past its own chunk any planned trunk can stand: the widest clump radius of a set that stands
+	// trunks (a loner falls inside its chunk). Measured once, from the specs; -1 until then.
+	private float trunkSpill = -1f;
+
 	/// <summary>
 	/// True if a blocking box (a rock's, a themed prop's) keeps the clearance from every trunk any chunk round
-	/// it will place. Asks only the chunks a trunk within reach could belong to.
+	/// it will place. Asks only the chunks a trunk within reach could belong to: its own chunk's KEPT plan,
+	/// and a neighbour's RAW plan - a superset of what the neighbour keeps, so the answer is never wrong in the
+	/// trunks' favour, and the neighbour's own earlier neighbours are never asked. Asking for their kept plans
+	/// cascaded out to chunks two rings past the data the streamer keeps, generating their ground on the
+	/// furnishing step: on the Fields the worst furnish step of a crossing went from 2.5 to 8 ms.
 	/// </summary>
 	private bool ClearsPlannedTrunks(Rect2 box)
 	{
 		if (footingRuleOff || terrainStreamer == null || decorChunkSpecs == null)
 			return true;
-		bool any = false;
-		for (int i = 0; i < decorChunkSpecs.Count && !any; i++)
-			any = IsBlockingSet(i);
-		if (!any)
-			return true;
-		Rect2 reach = box.Grow(Footing.Clearance + Foliage.MaxClumpReach);
+		if (trunkSpill < 0f)
+		{
+			trunkSpill = 0f;
+			bool any = false;
+			for (int i = 0; i < decorChunkSpecs.Count; i++)
+			{
+				if (!IsBlockingSet(i))
+					continue;
+				any = true;
+				if (decorChunkSpecs[i].Clustered)
+					trunkSpill = Mathf.Max(trunkSpill, decorChunkSpecs[i].ClusterRadiusMax);
+			}
+			if (!any)
+				trunkSpill = float.PositiveInfinity;
+		}
+		if (float.IsPositiveInfinity(trunkSpill))
+			return true; // nothing on this stage stands a trunk
+		Vector2I own = terrainStreamer.ChunkOfWorld(box.GetCenter());
+		// The widest trunk is under 32 px, so a trunk centre within spill of its chunk keeps its box within spill + 16.
+		Rect2 reach = box.Grow(Footing.Clearance + trunkSpill + 16f);
 		Vector2I first = terrainStreamer.ChunkOfWorld(reach.Position);
 		Vector2I last = terrainStreamer.ChunkOfWorld(reach.End);
 		for (int cy = first.Y; cy <= last.Y; cy++)
 		{
 			for (int cx = first.X; cx <= last.X; cx++)
 			{
-				foreach (PlannedGrounded member in KeptGroundedPlan(terrainStreamer.DataFor(new Vector2I(cx, cy))))
+				var coord = new Vector2I(cx, cy);
+				TerrainChunk data = terrainStreamer.DataFor(coord);
+				List<PlannedGrounded> members = coord == own ? KeptGroundedPlan(data) : RawGroundedPlan(data).Raw;
+				foreach (PlannedGrounded member in members)
 				{
 					if (member.Blocks && Footing.Gap(box, member.Trunk) < Footing.Clearance)
 						return false;

@@ -99,25 +99,21 @@ public static class Woodland
 	{
 		float gx = cellX / p.FieldCells, gy = cellY / p.FieldCells;
 		int ix = (int)MathF.Floor(gx), iy = (int)MathF.Floor(gy);
+		float[] centres = FieldCentres(p, seed, ix, iy);
 		float d1 = float.MaxValue, d2 = float.MaxValue;
 		float ax = 0f, ay = 0f, bx = 0f, by = 0f;
-		for (int j = -1; j <= 1; j++)
+		for (int k = 0; k < 9; k++)
 		{
-			for (int i = -1; i <= 1; i++)
+			float px = centres[2 * k], py = centres[2 * k + 1];
+			float d = (px - gx) * (px - gx) + (py - gy) * (py - gy);
+			if (d < d1)
 			{
-				ulong h = LevelGenerator.Hash(seed, ix + i, iy + j, p.SaltStand);
-				float px = ix + i + 0.5f + (Unit(h) - 0.5f) * p.FieldJitter;
-				float py = iy + j + 0.5f + (Unit(LevelGenerator.Mix(h)) - 0.5f) * p.FieldJitter;
-				float d = (px - gx) * (px - gx) + (py - gy) * (py - gy);
-				if (d < d1)
-				{
-					d2 = d1; bx = ax; by = ay;
-					d1 = d; ax = px; ay = py;
-				}
-				else if (d < d2)
-				{
-					d2 = d; bx = px; by = py;
-				}
+				d2 = d1; bx = ax; by = ay;
+				d1 = d; ax = px; ay = py;
+			}
+			else if (d < d2)
+			{
+				d2 = d; bx = px; by = py;
 			}
 		}
 		float sep = MathF.Sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
@@ -196,6 +192,37 @@ public static class Woodland
 		}
 	}
 
+	// THE FIELD IS ASKED PER CELL (the stand floor of every padded chunk, the clutter, the decor), and a cell's
+	// neighbours almost always fall in the same lattice cell as it does: 29 cells in 30 along a row of the
+	// Fields' 30-cell fields. So the last lattice cell's nine field centres, and each noise's last four
+	// corners, are kept and reused - the same numbers, computed once. One copy per thread; the game only
+	// places on the main thread, but nothing here assumes it.
+	[ThreadStatic] private static float[]? centresMemo;
+	[ThreadStatic] private static (ulong Seed, int Salt, int Cells, float Jitter, int X, int Y) centresKey;
+	[ThreadStatic] private static float[]? cornerMemo;
+	[ThreadStatic] private static (ulong Seed, int Salt, int X, int Y)[]? cornerKeys;
+
+	// The centres of the nine fields round lattice cell (ix, iy), x then y, row by row.
+	private static float[] FieldCentres(CanopyProfile p, ulong seed, int ix, int iy)
+	{
+		float[] centres = centresMemo ??= new float[18];
+		var key = (seed, p.SaltStand, p.FieldCells, p.FieldJitter, ix, iy);
+		if (centresKey == key && centresKey.Cells != 0)
+			return centres;
+		int k = 0;
+		for (int j = -1; j <= 1; j++)
+		{
+			for (int i = -1; i <= 1; i++, k++)
+			{
+				ulong h = LevelGenerator.Hash(seed, ix + i, iy + j, p.SaltStand);
+				centres[2 * k] = ix + i + 0.5f + (Unit(h) - 0.5f) * p.FieldJitter;
+				centres[2 * k + 1] = iy + j + 0.5f + (Unit(LevelGenerator.Mix(h)) - 0.5f) * p.FieldJitter;
+			}
+		}
+		centresKey = key;
+		return centres;
+	}
+
 	private static float Smooth(float e0, float e1, float x)
 	{
 		float t = Math.Clamp((x - e0) / (e1 - e0), 0f, 1f);
@@ -210,10 +237,22 @@ public static class Woodland
 		float fx = x - gx, fy = y - gy;
 		fx = fx * fx * (3f - 2f * fx);
 		fy = fy * fy * (3f - 2f * fy);
-		float a = Unit(LevelGenerator.Hash(seed, gx, gy, salt));
-		float b = Unit(LevelGenerator.Hash(seed, gx + 1, gy, salt));
-		float c = Unit(LevelGenerator.Hash(seed, gx, gy + 1, salt));
-		float d = Unit(LevelGenerator.Hash(seed, gx + 1, gy + 1, salt));
+		// Four slots, one per salt's low bits: a profile's three noises never share one.
+		float[] memo = cornerMemo ??= new float[16];
+		(ulong Seed, int Salt, int X, int Y)[] keys = cornerKeys ??= new (ulong, int, int, int)[4];
+		int slot = salt & 3;
+		var key = (seed, salt, gx, gy);
+		// (A fresh slot's key is all zeros, which a real corner can match: its memo is then all zeros too, and
+		// recomputing it costs nothing but the hashes.)
+		if (keys[slot] != key || (memo[4 * slot] == 0f && memo[4 * slot + 1] == 0f && memo[4 * slot + 2] == 0f && memo[4 * slot + 3] == 0f))
+		{
+			memo[4 * slot] = Unit(LevelGenerator.Hash(seed, gx, gy, salt));
+			memo[4 * slot + 1] = Unit(LevelGenerator.Hash(seed, gx + 1, gy, salt));
+			memo[4 * slot + 2] = Unit(LevelGenerator.Hash(seed, gx, gy + 1, salt));
+			memo[4 * slot + 3] = Unit(LevelGenerator.Hash(seed, gx + 1, gy + 1, salt));
+			keys[slot] = key;
+		}
+		float a = memo[4 * slot], b = memo[4 * slot + 1], c = memo[4 * slot + 2], d = memo[4 * slot + 3];
 		float top = a + (b - a) * fx;
 		return top + ((c + (d - c) * fx) - top) * fy;
 	}

@@ -130,10 +130,126 @@ def chaff(c, r):
         c.set(cx + r.i(-8, 8), cy + r.i(-6, 6), GO[2])
 
 
+# --- THE FOLIAGE PASS (2026-11-03, .ai/terrain.md section 13): the bottom rungs of the Fields' ladder ----
+#
+# A field left fallow is not bare stubble: the grass comes back through it, docks and nettles crowd the
+# hedge banks, and the plough's clods lie where it turned them. Three sets, laid as CLUTTER by the
+# chapter's canopy (Foliage.FallowFields.cs): the grass across the open field and thickest at a hedge's
+# fringe, the weeds on the fringe and the bank, the clods out in the open and on the ploughed patches.
+#
+# THE GUARDRAIL (genre-lessons 2 and 5): within about ten L* of the stubble (L* 14), so they are told
+# from it by hue and shape, never by brightness - verdant's shade and deep and linen's shade for grass
+# and leaves, gold's and linen's deep for clods. No verdant base or lit (a lime blade is the old Forest
+# bushes' mistake), nothing round, bright and alone, and no straight line: a furrow ruled dead straight
+# across the others is the Plough in the Furrow's tell (FF3), and chaff drifting one way is the Tithe
+# Barn's (FF4), so neither is drawn here.
+
+
+def scatter_points(r, n, margin, min_gap):
+    """`n` points across the whole cell, `margin` in from its edges, kept `min_gap` apart where the tries
+    allow, so low growth covers a cell rather than sitting in its middle."""
+    pts = []
+    tries = 0
+    while len(pts) < n and tries < n * 20:
+        tries += 1
+        x, y = r.i(margin, GDT.SIZE - 1 - margin), r.i(margin + 3, GDT.SIZE - 1 - margin)
+        if all(abs(x - px) + abs(y - py) >= min_gap for px, py in pts):
+            pts.append((x, y))
+    return pts
+
+
+def fallow_grass(c, r):
+    """Grass coming back through the stubble: three to five low clumps of thin blades, verdant's deep and
+    linen's shade with verdant's shade at the tips - darker and drier than the Forest's turf grass, told
+    from the stubble by its green, not its value."""
+    for (x, y) in scatter_points(r, r.i(3, 5), 5, 12):
+        y = max(y, 10)
+        n = r.i(3, 5)
+        h = r.i(3, 6)
+        for k in range(n):
+            side = k - (n - 1) / 2.0
+            ln = max(2, int(round(h - abs(side))))
+            col = VE[4] if k % 2 else LN[3]
+            for j in range(ln + 1):
+                xx = int(round(x + side * (j + 1) / float(ln + 1) * 2.0))
+                c.set(xx, y - j, VE[3] if j == ln else col)
+        c.set(x, y + 1, OCC)
+
+
+def dock(c, x, y, r):
+    """A dock: four or five broad leaves splayed from one root, their upper edge verdant's shade over its
+    deep (no lit stop: a lit leaf tip measured hi +34 over the stubble, above the cast's rims), and a rusty
+    seed spike - red's shade, which reads as a dock gone to seed and not as a flower."""
+    for (dx, dy, ln) in ((-1, 0, 6), (1, 0, 6), (-1, 1, 5), (1, 1, 5), (0, -1, 4))[:r.i(4, 5)]:
+        for k in range(ln):
+            px = x + dx * k
+            py = y + dy * (k // 2) - (1 if dy < 0 else 0) * k // 2
+            c.set(px, py - 1, VE[3])
+            c.set(px, py, VE[4])
+    if r.f() < 0.7:
+        h = r.i(6, 9)
+        for j in range(1, h):
+            c.set(x, y - j, VE[4] if j < h // 2 else RD[2])
+            if j > h // 2 and j % 2 == 0:
+                c.set(x + 1, y - j, RD[3])
+                c.set(x - 1, y - j + 1, RD[2])
+    c.set(x, y + 1, OCC)
+    c.set(x + 1, y + 1, OCC)
+
+
+def nettle(c, x, y, r):
+    """A nettle: an upright stem with its leaves in pairs, each pair a stop darker than the one above."""
+    h = r.i(7, 10)
+    for j in range(h):
+        c.set(x, y - j, VE[4])
+    for j in range(2, h, 3):
+        tone = VE[3] if j > h // 2 else VE[4]
+        c.set(x - 1, y - j, tone)
+        c.set(x - 2, y - j + 1, tone)
+        c.set(x + 1, y - j, tone)
+        c.set(x + 2, y - j + 1, LN[3])
+    c.set(x, y + 1, OCC)
+
+
+def weeds(c, r):
+    """The hedge bank's weeds: a dock or two and a nettle, the bank's living things on the saturated ramp's
+    dark half."""
+    for k, (x, y) in enumerate(scatter_points(r, r.i(2, 3), 8, 16)):
+        y = max(y, 14)
+        if k % 2 == 0:
+            dock(c, x, y, r)
+        else:
+            nettle(c, x, y, r)
+
+
+def clods(c, r):
+    """Clods the plough turned and nobody harrowed: four to seven lumps lying flat, gold's and linen's deep
+    with one lit pixel on the key side and occlusion under the other, and now and then a stone."""
+    for (x, y) in scatter_points(r, r.i(4, 7), 5, 7):
+        w = r.i(2, 4)
+        body = (GO[4], LN[4], FL[4])[r.i(0, 2)]
+        for dx in range(w):
+            c.set(x + dx, y, body)
+            c.set(x + dx, y + 1, body if dx else LN[4])
+        c.set(x, y - 1, GO[3])
+        c.set(x + w, y + 1, OCC)
+        c.set(x + w - 1, y + 2, OCC)
+    if r.f() < 0.3:
+        x, y = GDT.spot(r, 9)
+        c.set(x, y, LN[2])
+        c.set(x + 1, y, LN[3])
+        c.set(x, y + 1, LN[3])
+        c.set(x + 1, y + 1, LN[4])
+        c.set(x + 2, y + 1, OCC)
+
+
 # set name -> (draw, variants), in ground_detail.SETS' shape.
 DETAIL_SETS = [
     ("stubble_tufts", stubble_tufts, 4),
     ("thistle", thistle, 3),
     ("poppy", poppy, 3),
     ("chaff", chaff, 3),
+    ("fallow_grass", fallow_grass, 5),
+    ("weeds", weeds, 4),
+    ("clods", clods, 4),
 ]
