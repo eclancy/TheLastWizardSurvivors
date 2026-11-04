@@ -54,6 +54,9 @@ Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like)
   `hazard` and `blocking` flags, the four places that have to agree about a blocking terrain,
   and the three water renders that were thrown away. **Read it before touching
   `tools/art/tiles.py`, `LevelTilePainter` or anything that places things on the ground.**
+  Section 13 is the foliage pass: a chapter's canopy, decor and clutter live in its own
+  `scripts/Foliage.<Chapter>.cs` ("Adding a chapter" is the recipe), and no tree may stand within
+  72 px of anything that blocks (`Footing`, "No stand pins the player").
 - `.ai/level-up-screen.md` — the level-up screen: the stone/manuscript split and the plate
   ordering trap that made the level 4 mutation screen unreadable, the torn-page cards and why
   their frame must TILE rather than stretch, how the cards size themselves to the viewport, the

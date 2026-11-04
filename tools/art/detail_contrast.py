@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """How far each ground-detail set and each bush stands out from the ground it lies on, in CIE L*.
-Run: python tools/art/detail_contrast.py [set_or_sprite ...]
+Run: python tools/art/detail_contrast.py [--on=terrain,terrain] [set_or_sprite ...]
+
+`--on` names the fill tiles to measure against, first one first (default the Forest's grass, moss and
+meadow; the Fallow Fields' are stubble, hedge_bank and furrow). A sprite is looked for under every
+folder of assets/bonelight/world, so a chapter's own foliage (world/fields/hedge-1) is measured the
+same way as the shared trees and bushes.
 
 The guardrail of the foliage pass (.ai/genre-lessons.md sections 2 and 5, .ai/terrain.md section 13):
 clutter stays lower in contrast than the enemies and the XP orbs, because reading the swarm is the
@@ -28,7 +33,7 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DETAIL = os.path.join(ROOT, "assets", "bonelight", "tiles", "detail")
 TILES = os.path.join(ROOT, "assets", "bonelight", "tiles")
-TREES = os.path.join(ROOT, "assets", "bonelight", "world", "trees")
+WORLD = os.path.join(ROOT, "assets", "bonelight", "world")
 
 GROUNDS = ("grass", "moss", "meadow")
 BUSHES = ("bush-small-1", "bush-small-2", "bush-small-3", "bush-round-1", "bush-round-2", "bush-wide-1",
@@ -74,22 +79,34 @@ def main(argv):
     sets = {}
     for fr in frames:
         sets.setdefault(fr["set"], []).append(os.path.join(ROOT, fr["path"]))
-    grounds = dict((g, ground_median(g)) for g in GROUNDS)
-    print("ground median L*: " + ", ".join("%s %.1f" % (g, grounds[g]) for g in GROUNDS if grounds[g] is not None))
-    want = argv[1:] or sorted(sets) + list(BUSHES)
+    on = list(GROUNDS)
+    names = []
+    for a in argv[1:]:
+        if a.startswith("--on="):
+            on = a[len("--on="):].split(",")
+        else:
+            names.append(a)
+    grounds = dict((g, ground_median(g)) for g in on)
+    print("ground median L*: " + ", ".join("%s %.1f" % (g, grounds[g]) for g in on if grounds[g] is not None))
+    want = names or sorted(sets) + list(BUSHES)
     print("%-16s %-7s %7s %7s %7s %7s %7s" % ("set", "on", "dL*", "|dL*|", "hi", "lo", "px"))
     for name in want:
+        found = glob.glob(os.path.join(WORLD, "*", name + ".png"))
         if name in sets:
             paths = sets[name]
-        elif os.path.exists(os.path.join(TREES, name + ".png")):
-            paths = [os.path.join(TREES, name + ".png")]
+        elif found:
+            paths = found[:1]
         else:
             print("%-16s not found" % name)
             continue
         vals = opaque_lightness(paths)
         if not vals:
             continue
-        for g in ("grass", "moss") if name in ("litter",) else ("grass",):
+        if "--on=" not in " ".join(argv):
+            against = ("grass", "moss") if name in ("litter",) else ("grass",)
+        else:
+            against = [g for g in on if grounds[g] is not None]
+        for g in against:
             d, a, hi, lo, n = stats(vals, grounds[g])
             print("%-16s %-7s %7.1f %7.1f %7.1f %7.1f %7d" % (name, g, d, a, hi, lo, n // len(paths)))
     return 0

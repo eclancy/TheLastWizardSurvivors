@@ -89,6 +89,8 @@ public static partial class RegressionChecks
 		ValidateWaterShapes(warnings);
 		ValidateGroundArt(warnings);
 		Woodland.Validate(warnings);
+		Footing.Validate(warnings);
+		Foliage.Validate(warnings);
 		ValidateNavigation(warnings);
 		ValidateMazeHazards(warnings);
 		ValidateStageHazards(warnings);

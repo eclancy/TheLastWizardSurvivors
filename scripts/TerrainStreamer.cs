@@ -52,6 +52,13 @@ public sealed class TerrainChunk
 	/// decor and props of every chunk round it stay off them.
 	/// </summary>
 	public List<StageHazardSpot> HazardPlan { get; set; }
+
+	/// <summary>
+	/// What this chunk's decor sets that stand trunks will place, and the trunks its later neighbours give
+	/// way to (Node2DGame.Footing.cs, the rule that no stand pins the player), or null until somebody asks.
+	/// Pure like the hazard plan, and kept with the data for the same reason: the chunks round it read it.
+	/// </summary>
+	public GroundedPlan GroundedPlan { get; set; }
 }
 
 /// <summary>One stage hazard a chunk will place: where, which kind, and its cycle's offset.</summary>
@@ -146,6 +153,16 @@ public sealed class TerrainStreamer
 	/// </summary>
 	public int DataRadius => LoadRadius + 2;
 
+	/// <summary>
+	/// How many rings of chunks round a chunk must have their data before it is furnished: 1, its eight
+	/// neighbours, because a clump may fall over its border. 2 on a stage whose trees keep the footing rule
+	/// (Node2DGame.Footing.cs): a chunk's trunk plan reads its earlier neighbours' plans, whose clumps fall
+	/// over THEIR borders, so it asks about ground two chunks out - and generated it inside its own furnishing
+	/// step when it was not there, one chunk's data at a time and several to a step. Asked for here, it is made
+	/// one chunk a step, like the rest. Never more than DataRadius - LoadRadius, or it would be forgotten again.
+	/// </summary>
+	public int FurnishDataReach { get; set; } = 1;
+
 	/// <summary>Set by --terrain-log: one line per border crossing with step timings and node count.</summary>
 	public static bool LogTimings { get; set; }
 
@@ -168,6 +185,8 @@ public sealed class TerrainStreamer
 	public Vector2I CentreChunk => centre;
 	public int TilePixels => tilePx;
 	public int DataChunkCount => chunks.Count;
+	/// <summary>Every chunk whose data is held, painted or not. Tools only (Node2DGame's footing census).</summary>
+	public IEnumerable<TerrainChunk> DataChunks => chunks.Values;
 	public int PaintedChunkCount => painter.PaintedChunkCount;
 
 	private readonly LevelTilePainter painter;
@@ -423,8 +442,8 @@ public sealed class TerrainStreamer
 		if (!chunk.Populated)
 		{
 			// Furnishing can place a member of a cluster just over the border, and asks the terrain
-			// there; have the neighbours' data ready first, one per step.
-			if (EnsureNeighbourData(coord, start))
+			// there; have the neighbours' data ready first, one per step (FurnishDataReach rings of them).
+			if (EnsureNeighbourData(coord, start, Math.Min(FurnishDataReach, DataRadius - LoadRadius)))
 				return;
 
 			chunk.Props ??= new List<Node>();
@@ -447,12 +466,12 @@ public sealed class TerrainStreamer
 	}
 
 	// Generates one missing neighbour's data and returns true (that was this step), or false when
-	// all eight are there.
-	private bool EnsureNeighbourData(Vector2I coord, long start)
+	// all of them, `reach` rings out, are there.
+	private bool EnsureNeighbourData(Vector2I coord, long start, int reach = 1)
 	{
-		for (int dy = -1; dy <= 1; dy++)
+		for (int dy = -reach; dy <= reach; dy++)
 		{
-			for (int dx = -1; dx <= 1; dx++)
+			for (int dx = -reach; dx <= reach; dx++)
 			{
 				var n = new Vector2I(coord.X + dx, coord.Y + dy);
 				if (chunks.ContainsKey(n)) continue;

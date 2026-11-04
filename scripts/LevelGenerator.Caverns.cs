@@ -542,7 +542,7 @@ public sealed partial class LevelGenerator
 		string[,] floor = walledFloor is { } f && f.GetLength(0) == size ? f : walledFloor = new string[size, size];
 		string[,] read = walledFloorRead is { } r && r.GetLength(0) == size ? r : walledFloorRead = new string[size, size];
 		FillOpenGround(floor, chunk.X0 - ext, chunk.Y0 - ext, chunk.ChunkX, chunk.ChunkY, chunk.ChunkTiles,
-			PaletteFor(chunk.Kind), chunk.Seed, chunk.SafeRadius);
+			chunk.Kind, chunk.Seed, chunk.SafeRadius);
 
 		for (int x = 0; x < size; x++)
 		{

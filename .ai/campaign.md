@@ -234,7 +234,8 @@ is decision 2.
 
 **Ground.** A stubble floor (gold and linen from the deep half - a harvested field under no light),
 furrows of bare ploughed earth, hedge-bank drifts, thistle and poppy detail, mill-ponds (water: the
-one blocker). Hedgerows are bushes laid in long loose drifts; a few field trees stand alone; haycocks
+one blocker). Hedgerows are bushes laid in long loose drifts (since the foliage pass, 2026-11-03: a network of
+dark hedges round fields with gaps, the oaks standing in them, `.ai/terrain.md` section 13); a few field trees stand alone; haycocks
 and fence rails are props. **No hazards** - an open natural chapter is shaped by its enemies
 (`StageEnvironmentProfile.HazardSpikes` stays false). Landmarks yes: a flower pen belongs in a field.
 Bolt element: **earth** (`#C99A5E` body, `#FFF0D8` core) - warm on a cold dark field, and unused by

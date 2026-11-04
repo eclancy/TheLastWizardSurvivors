@@ -104,12 +104,9 @@ public sealed partial class LevelGenerator
 		public float Density = 0.006f;
 		public string[] PropThemes = Array.Empty<string>();
 		public StageTopology Topology = StageTopology.Open;
-		/// <summary>
-		/// The stands of a wood (Woodland): moss laid under every stand before the blobs, and the
-		/// palette's moss and meadow blobs sorted to where they grow - moss under the trees, meadow in
-		/// the clearings. The Forest only, the pilot of the foliage pass (.ai/terrain.md section 13).
-		/// </summary>
-		public bool StandFloors;
+		// The stands of a wood - moss laid under every stand before the blobs, the moss and meadow blobs
+		// sorted to where they grow - are the chapter's canopy's now (CanopyProfile.StandFloorTerrain, in its
+		// Foliage.<Chapter>.cs), not a palette flag, so a chapter's foliage pass edits no palette here.
 	}
 
 	// Terrains that must not generate inside the player's safe zone. The comment always said
@@ -147,9 +144,9 @@ public sealed partial class LevelGenerator
 			Density = 0.0065f,
 			PropThemes = new[] { "flora" },
 			Topology = StageTopology.Open,
-			// THE STANDS (2026-11-03, the foliage pass): the moss is where the trees are, not where a
-			// blob happened to fall, so the ground itself says "wood" and "clearing" before a trunk does.
-			StandFloors = true,
+			// THE STANDS (2026-11-03, the foliage pass): the moss is where the trees are, not where a blob
+			// happened to fall, so the ground itself says "wood" and "clearing" before a trunk does. The
+			// canopy that decides it is the Forest's foliage's (Foliage.EnchantedForest.cs).
 		},
 		// The kids' chapter: a page, and nothing on it but paper. No blobs at all, which is the
 		// only palette here with none - water, moss and lava are things that happen to a PLACE,
@@ -567,7 +564,7 @@ public sealed partial class LevelGenerator
 				GenerateMaze(grid, x0, y0, seed);
 				break;
 			case StageTopology.Open:
-				FillOpenGround(grid, x0, y0, chunkX, chunkY, chunkTiles, palette, seed, safeRadius);
+				FillOpenGround(grid, x0, y0, chunkX, chunkY, chunkTiles, kind, seed, safeRadius);
 				break;
 			default:
 				// A topology in a partial file of its own (see TopologyBuild); built, or it would be Open.
@@ -594,25 +591,25 @@ public sealed partial class LevelGenerator
 	/// the drop either side).
 	/// </summary>
 	private static void FillOpenGround(string[,] grid, int x0, int y0, int chunkX, int chunkY, int chunkTiles,
-		Palette palette, ulong seed, float safeRadius)
+		StageEnvironmentKind kind, ulong seed, float safeRadius)
 	{
+		Palette palette = PaletteFor(kind);
+		// The chapter's canopy (Foliage), when it lays a floor under its stands.
+		CanopyProfile canopy = Foliage.CanopyFor(kind) is { StandFloorTerrain: not null } c ? c : null;
 		int w = grid.GetLength(0);
 		int h = grid.GetLength(1);
 		for (int x = 0; x < w; x++)
 			for (int y = 0; y < h; y++)
 				grid[x, y] = BaseSentinel;
-		if (palette.StandFloors)
-			StampStandFloors(grid, x0, y0, seed);
-		StampBlobs(grid, x0, y0, chunkX, chunkY, chunkTiles, palette, seed, safeRadius);
+		if (canopy != null)
+			StampStandFloors(grid, x0, y0, seed, canopy);
+		StampBlobs(grid, x0, y0, chunkX, chunkY, chunkTiles, palette, seed, safeRadius, canopy);
 	}
 
-	private const string StandFloorTerrain = "moss";
-	private const string ClearingFloorTerrain = "meadow";
-
 	/// <summary>
-	/// Moss under every stand of the wood: each cell whose canopy (Woodland) is over the stand floor's
-	/// threshold. First, so the blobs stamped after it - the ponds above all - land on it exactly where
-	/// they always did, with the same rolls.
+	/// The stand's floor under every stand (the Forest's moss, the Fields' hedge banks): each cell whose
+	/// canopy (Woodland) is over the profile's stand floor. First, so the blobs stamped after it - the ponds
+	/// above all - land on it exactly where they always did, with the same rolls.
 	/// </summary>
 	/// <remarks>
 	/// Per cell from a smooth field, so the edge is the field's contour - a curve a stand wide, not a
@@ -622,32 +619,35 @@ public sealed partial class LevelGenerator
 	/// saw bare turf, so a pond's edge there can come out a cell different. Placement reads the cleaned
 	/// ground (IsExploreGroundClear, LandmarkCells), so it follows; _ExploreProbe on the Forest checks it.
 	/// </remarks>
-	private static void StampStandFloors(string[,] grid, int x0, int y0, ulong seed)
+	private static void StampStandFloors(string[,] grid, int x0, int y0, ulong seed, CanopyProfile canopy)
 	{
 		int w = grid.GetLength(0);
 		int h = grid.GetLength(1);
+		string floor = canopy.StandFloorTerrain;
 		for (int x = 0; x < w; x++)
 			for (int y = 0; y < h; y++)
-				if (Woodland.CanopyAtCell(seed, x + x0, y + y0) > Woodland.StandFloor)
-					grid[x, y] = StandFloorTerrain;
+				if (Woodland.CanopyAtCell(canopy, seed, x + x0, y + y0) > canopy.StandFloor)
+					grid[x, y] = floor;
 	}
 
 	/// <summary>
-	/// A wood's moss and meadow blobs, sorted to where they grow: a meadow blob that falls in a stand is
-	/// moss, a moss blob out in a clearing is meadow, and a moss blob on a stand's fringe stays moss (moss
-	/// creeps out from under the trees). The same blob, the same size and place: only which of the two
-	/// walkable floors it is changes, and the roll that picked it is spent either way.
+	/// The stand's floor and the clearing's, sorted to where they grow (the Forest: a meadow blob that
+	/// falls in a stand is moss, a moss blob out in a clearing is meadow, and a moss blob on a stand's fringe
+	/// stays moss, because moss creeps out from under the trees). The same blob, the same size and place:
+	/// only which of the two walkable floors it is changes, and the roll that picked it is spent either way.
+	/// A clearing blob centred within StandBlobMargin of the stand floor is the stand's: a light patch
+	/// centred just outside a stand would mostly lie inside it.
 	/// </summary>
-	private static BlobSpec SortedForStands(BlobSpec spec, Palette palette, ulong seed, float cx, float cy)
+	private static BlobSpec SortedForStands(BlobSpec spec, Palette palette, CanopyProfile p, ulong seed, float cx, float cy)
 	{
-		if (spec.Terrain != StandFloorTerrain && spec.Terrain != ClearingFloorTerrain)
+		if (spec.Terrain != p.StandFloorTerrain && spec.Terrain != p.ClearingFloorTerrain)
 			return spec;
-		float canopy = Woodland.Canopy(seed, cx, cy);
+		float canopy = Woodland.Canopy(p, seed, cx, cy);
 		string want = spec.Terrain;
-		if (spec.Terrain == ClearingFloorTerrain && canopy > Woodland.StandFloor - StandBlobMargin)
-			want = StandFloorTerrain;
-		else if (spec.Terrain == StandFloorTerrain && Woodland.Clearing(canopy) > 0.5f)
-			want = ClearingFloorTerrain;
+		if (spec.Terrain == p.ClearingFloorTerrain && canopy > p.StandFloor - p.StandBlobMargin)
+			want = p.StandFloorTerrain;
+		else if (spec.Terrain == p.StandFloorTerrain && Woodland.Clearing(p, canopy) > 0.5f)
+			want = p.ClearingFloorTerrain;
 		if (want == spec.Terrain)
 			return spec;
 		foreach (BlobSpec other in palette.Blobs)
@@ -656,14 +656,10 @@ public sealed partial class LevelGenerator
 		return spec;
 	}
 
-	// A meadow blob centred just outside a stand would mostly lie inside it: a light patch half under
-	// the trees. Within this much canopy of the stand floor it is moss too.
-	private const float StandBlobMargin = 0.04f;
-
 	/// <summary><see cref="FillOpenGround"/> for a topology file, from the chunk it was handed.</summary>
 	private static void FillOpenGround(string[,] grid, in TopologyChunk chunk) =>
 		FillOpenGround(grid, chunk.X0, chunk.Y0, chunk.ChunkX, chunk.ChunkY, chunk.ChunkTiles,
-			PaletteFor(chunk.Kind), chunk.Seed, chunk.SafeRadius);
+			chunk.Kind, chunk.Seed, chunk.SafeRadius);
 
 	// --- Hashing ----------------------------------------------------------------------------
 	//
@@ -710,7 +706,7 @@ public sealed partial class LevelGenerator
 	// one global order (row, then column, then index) so that where two blobs overlap, the same one
 	// wins whichever chunk is asking.
 	private static void StampBlobs(string[,] grid, int x0, int y0, int chunkX, int chunkY, int chunkTiles,
-		Palette palette, ulong seed, float safeRadius)
+		Palette palette, ulong seed, float safeRadius, CanopyProfile canopy)
 	{
 		if (palette.Blobs.Length == 0 || palette.Density <= 0f)
 			return;
@@ -735,8 +731,8 @@ public sealed partial class LevelGenerator
 					BlobSpec spec = PickBlob(palette.Blobs, totalWeight, ref rng);
 					float cx = bx * chunkTiles + rng.NextFloat() * chunkTiles;
 					float cy = by * chunkTiles + rng.NextFloat() * chunkTiles;
-					if (palette.StandFloors)
-						spec = SortedForStands(spec, palette, seed, cx, cy);
+					if (canopy?.ClearingFloorTerrain != null)
+						spec = SortedForStands(spec, palette, canopy, seed, cx, cy);
 					float radius = Lerp(spec.MinRadius, spec.MaxRadius, rng.NextFloat());
 					ulong jitterSeed = rng.NextULong();
 					bool excluded = SafeZoneExcludedTerrains.Contains(spec.Terrain);
