@@ -423,10 +423,13 @@ public partial class _UiShot : Node
 	// mean. --goto=event:N goes to event N's main site whatever this says.
 	private int eventIndex;
 	// --escort-at=F: with --win-event on the Swamp's gibbet cage (--event-index=1), at the shutter's lead Paracelsus is let
-	// out through the real release and stood F of the way from the cage to the ferry landing, the player a stride ahead
-	// (GibbetCageEvent.DebugWalkFrom) - 0.5 for the walk, 1 for the punt taking him. Without it --win-event fills the
-	// winch and the cage comes down.
+	// out through the real release and stood F of the way along the way through the rot (RotPoolLayout.Route), the steps
+	// a player keeping ahead of him has walked laid on along it and the player standing where they end
+	// (GibbetCageEvent.DebugWalkFrom) - 0.3 to 0.5 for the walk through a wall's gap, 1 for the punt taking him. Without it
+	// --win-event fills the winch and the cage comes down. --escort-straight lays those steps straight at the landing
+	// instead - the line a player who has not seen the rot walks - so the steps that run into a pool show it.
 	private float? escortAt;
+	private bool escortStraight;
 	private Vector2? escortStand;
 
 	// --teleport=X,Y: moves the player to that world position a third of the way through the warmup,
@@ -1883,6 +1886,8 @@ public partial class _UiShot : Node
 				arriveEvent = true;
 			else if (arg.StartsWith("--escort-at="))
 				escortAt = float.Parse(arg.Substring("--escort-at=".Length), System.Globalization.CultureInfo.InvariantCulture);
+			else if (arg == "--escort-straight")
+				escortStraight = true;
 			else if (arg.StartsWith("--seer-leg="))
 				seerLeg = System.Math.Clamp(int.Parse(arg.Substring("--seer-leg=".Length)), 0, SeersVoiceEvent.Readings - 1);
 			else if (arg == "--seer-desk")
@@ -4267,7 +4272,7 @@ public partial class _UiShot : Node
 				System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
 			if (wonEvent is GibbetCageEvent gibbet && escortAt is float along)
 			{
-				escortStand = gibbet.DebugWalkFrom(along);
+				escortStand = gibbet.DebugWalkFrom(along, escortStraight);
 				GD.Print($"_UiShot: let Paracelsus out, {along * 100f:0}% of the way to the landing at {gibbet.Landing}; the player at {escortStand}");
 			}
 			// The dry tomb: its three beacons lit where they stand, and the real opening runs (the slab, him climbing out).

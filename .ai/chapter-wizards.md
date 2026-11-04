@@ -564,6 +564,11 @@ exactly this). Not measured on the phone.
 **Built (2026-11-03, `wip/wizard-paracelsus`).** The Swamp's second event, after the lanterns, through P2's API as 6.3
 wrote it (one line in `SideEventDirector`, a hint by site, deed words, `FromEvent`, a prisoner row); nothing in P2 changed.
 
+> **Its ask has changed since (2026-11-04): `.ai/unlock-puzzles.md` 3.4, "choose his path", and its Built note.** The
+> escort below - the 250 px hunt, `Enemy.ClassHuntsEscort`, the bites, the "who goes for him" check - is gone; rot pools
+> that hurt only him are on his way instead. `HuntedEscort` is `LedEscort` now, the walking half only. Everything else in
+> this note (him, his passive, the gibbet, the landing, the punt, his clue, his form) still stands.
+
 - **Him.** `CharacterData_Paracelsus.tres`, appended to `CharacterRoster`. Name "Paracelsus", id `paracelsus`.
   `roster.paracelsus()`: the one figure EXAMINING his spell - his near arm raised, a round-bellied flask held up to the
   light at the height of his eyes, his face turned up to it and narrowed, reading the dose; the liquid is the poison

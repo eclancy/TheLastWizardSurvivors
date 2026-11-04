@@ -5730,6 +5730,7 @@ public partial class Node2DGame : Node2D
 		{
 			IsClear = IsExploreGroundClear,
 			IsClearDense = IsExploreGroundClearDense,
+			IsWalkable = p => !IsGroundBlockedAt(p),
 			Origin = stageOrigin,
 			ChunkPixels = TerrainStreamer.ChunkTiles * ProceduralTilePixels,
 			// A maze corridor block plus its wall strip: cell centres are this far apart, and the

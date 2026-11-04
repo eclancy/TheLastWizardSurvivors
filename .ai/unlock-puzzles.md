@@ -3,7 +3,8 @@
 Eric, 2026-11-03: *"what i actually wanted to discuss was making sure all of the character unlocks are fun
 and interesting, like the laser puzzle in halls of torment"*.
 
-**Status: designed with Eric, 2026-11-03; nothing built.** Every rule below that says "decided" was
+**Status: designed with Eric, 2026-11-03. Built: 3.4, Paracelsus (2026-11-04, its "Built" note); the other seven
+are not.** Every rule below that says "decided" was
 chosen by him that day, one question at a time. Eight of the twelve place-held wizards get a new ask; four
 keep theirs. Numbers marked *first guess* are for the build to tune.
 
@@ -193,6 +194,92 @@ changing. **Ordinary chasers stop going for him** (decided): the puzzle is the r
 - **Clashes:** the lanterns (the Swamp's other event) explore; the Swallow-Hole (its vault) lures. No route puzzle.
 - **Open:** a pool's bite; whether the trail ahead is shown (*recommended:* yes, it is the whole read).
 - **Size:** S-M.
+
+**Built (2026-11-04, `claude/sweet-kapitsa-3cbab8`).** `GibbetCageEvent`, `RotPoolLayout` (new), `LedEscort` (was
+`HuntedEscort`); the pools are `rot-pools.png` from `tools/art/gibbet.py` (`rot_pool`), his cough `escort_cough.wav` from
+`tools/audio/sfx.py`. Site, deed, hint, reward, the winch, the landing, the punt and the fall are as they were.
+
+- **What plays.** Hold the winch, the cage comes down, he steps out and follows your own steps at 75% of your walk to
+  the ferry. Between the cage and the landing lie three walls of rot, each a chain of merged pools with one gap and one
+  pool beyond it, the gaps on alternate sides of the straight line (`RotPoolLayout.Roll`). The rot is a warm brown
+  sludge lying on the peat; while he is within 150 px of a pool, or the steps ahead of him run into it, it stirs: the
+  skin goes the poison ramp's sickly yellow-green and bubbles, with a faint glow. Your steps he has not walked yet glow on
+  the ground, pale gold, a shimmer running along them toward you; where they lie in a pool they turn the rot's green.
+  In a pool he coughs (`escort_cough`, at most every 1.1 s), goes the rot's colour, rings roll out round his feet, and
+  his bar appears (it is hidden until the rot has had some of him). Every 5 s three Mired rise in the next gap ahead of
+  you both; they chase you, not him. Nothing hunts or bites him: the 250 px hunt, `Enemy.ClassHuntsEscort` and the
+  bites are gone, and `Enemy`'s chase branch is as it was before 4.4. When the punt takes him, the rot fades off the bog
+  over 2 s.
+- **The Open line, decided in the build.** *A pool's bite:* 5 of his 60 the moment his feet are in one and every 0.25 s
+  they stay - a brush is one or two, a full crossing of a mid-sized pool four or five, so two or three crossings take
+  him. *The trail ahead:* shown, as recommended.
+- **Going back costs time, not him.** Walk back over your steps and the loop you close is one he leaves out
+  (`LedEscort`: a crumb laid within 40 px of one he has not reached, at least four crumbs on, and he steps across from
+  the one to the other), unless the step across would cross a pool or water, when he walks it as you did. That is
+  section 1's "a wrong move costs time, never progress" for a walk: see your steps run into a pool ahead of him, go back
+  and round, and he goes round. The drawn steps and the walked steps are one list (`CopyAhead`), so the trail shows the
+  loop left out.
+- **The proof on paper.** `RotPoolLayout.Generate` rolls until the layout keeps every rule and a flood over a 24 px grid
+  along the line finds a way that keeps 50 px off every pool's edge and a body's half-width off water; failing twelve
+  rolls it takes pools away, largest first, until there is one. `RegressionChecks.ValidateGibbetCage` lays out 24 at
+  every launch (both ends of the walk's length, three bearings, half with a lake) and checks the count, the clear ends,
+  no squeeze, the straight line cut, a way through that never enters a bite or water; and walks `LedEscort` round a
+  lake, up a dead end and back (left out), and up it with the step refused (walked).
+
+**What moved from the block above, and why.**
+
+1. **Six to twelve pools, not six to ten, and the walls reach across the line.** The first build's chains stopped 60 px
+   past the straight line, and a sweep showed the way through was often two legs: one straight line a step to the side
+   threaded every wall's end and the next wall's gap - no weave. Each chain now reaches past its neighbours' gaps by
+   twice the route's clearance, which on the shortest walks (where there is room only for pools up to 176 px) takes
+   eight to twelve pools; chains are drawn from the larger half of the sizes, so the 120 px size is drawn but not used.
+   Ways through are now mostly four to six legs; going round all three walls' ends is open too, and longer.
+2. **No squeezes.** Two pools are merged (overlapping by 40-60 px, enough that their bites meet too) or at least 120 px
+   apart; a 60 px slot that looks passable on a phone and puts him in the rot is never laid.
+3. **The Mired rise in the next gap,** not only "across his way": three across its width every 5 s, so the gap you were
+   heading for is shut for a while. They are the plain spawn as before (not elites); past the last wall they rise
+   across his way as they did.
+4. **The pools must not look like the Swamp's hazard.** The Swamp has no ground hazard (`.ai/terrain.md` section 6's
+   table); what hurts there is Mother Rot's bright rot green and the bodies. So the pools are told apart from the two
+   things they could be mistaken for: the Swamp's own grey-green water (which blocks the player - a pool that looked
+   like it would read as a wall) and anything outlined like lava or a pit. Brown, edgeless, soaked into the peat; the
+   poison green only when stirred, near him.
+5. **His bar is hidden until the rot bites,** and the objective line says why the first time it does ("The rot is
+   choking him - lead him round it"), then warns below 40%.
+6. **The walls are laid across the line from the winch, not the cage door.** The winch is where the player stands to
+   lower the cage and walks on from, 110 px to one side of the door; laid across the door's line, a probe walking
+   straight from the winch slipped through two walls' gaps and took two bites. Across the winch's line, the same
+   straight walk took six (30 of his 60, two pools). `RotPoolLayout.StartClear` went from 240 to 280 so the rot stays
+   180 px off the cage.
+
+**Verified:** `dotnet build`; the validator with `-- --no-save-writes` (0 errors, the known `test_wizard` warning);
+`ValidateGibbetCage` as above, silent (the 24 take 40-140 ms of a debug build; all of `RunAll` took 31 s on the same
+machine). A one-off sweep of the same rules over 3,000 layouts (lengths 1,466-1,798, random bearings; open ground, one
+lake, two lakes): every one had a way through; 4% needed a second roll; three two-lake layouts fell back to taking
+pools away and their straight line then missed the rot; ways mostly 4-6 legs (eight of 3,000 two legs), 1.19x the
+straight line; 354 px of the straight line in a bite on average. `_ExploreProbe --stage=3`, which now plans its own way
+through the gaps from where it stands each time he steps out (`RotPoolLayout.FindRoute` over the pools and the ground)
+and walks it at the player's walk: seeds 4242, 31 and 7 `--fresh-save`, 56 passed and 0 failed each - ways of 4, 6 and
+4 legs, 1,754-2,142 px against 1,541-1,748 straight; he walked 1,721-2,042 px and reached the landing with 60 of 60,
+never in a pool, while bodies were within a touch of him on 20-119 frames and took nothing; 6-9 Mired risen, nearly
+all in the gaps; Paracelsus freed. 4242 `--all-unlocked` (the chest): 50 passed, 0 failed, 60 of 60. 31 `--let-him-fall`:
+58 passed, 0 failed - led into a 232 px pool he took 12 bites and sank, was in the cage again, was lowered again and
+led round in 6 legs with no bite. 7 `--straight`: 56 passed, 0 failed - walked straight from the winch he took 6 bites
+in two pools and reached the landing with 30 of 60.
+`_UiShot --scene=res://scenes/node_2d_game.tscn --stage=3 --win-event --event-index=1 --escort-at=F --terrain-seed=4242`
+(`--escort-at` now stands him on the proved way, with the steps ahead laid along it; `--escort-straight` lays them
+straight at the landing instead): mid-walk at 1280x720 and at 540x1212 `--portrait --safe-area`, him beside a stirred
+pool and the steps round it; the wrong line at 1280x720 (him in a stirred pool, tinted, his bar up, the swarm on the
+player); and the win at both canvases ("Wizard freed - Paracelsus", the punt, the rot fading). A known windowed-GL crash
+in a C# finalizer (`gchandle.is_released()`, `.ai/releasing.md`) took some `_UiShot` launches before any of this ran,
+with the new check switched off as well; each was retried.
+
+**Not verified:** whether it is fun; whether the steps, the stirring and the brown sludge read at a glance in a real
+crowd on a phone (the phone canvas was photographed on a PC, and the 6 px steps are small there); whether a player
+finds "go back over your steps" without being told; the cough by ear; whether eight to twelve pools clutter the
+Swamp's screen; the bite's 5-of-60 against real play. The proof covers water, walls and fences, not trees: each gap is
+kept clear of decor, but elsewhere a trunk is the player's to walk round, as it always was. The probe walks its planned
+way exactly; a person's line wobbles, and the 50 px the way keeps off every pool is all the room for it.
 
 ### 3.5 Medea - balance the scale
 

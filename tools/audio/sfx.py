@@ -1556,6 +1556,23 @@ def hint_flask_chime():
     return S.dc_block(_far(out, low=140.0, high=3200.0, size=0.8, mix=0.36, damp=0.55))
 
 
+def escort_cough():
+    """The gibbet's escort (.ai/unlock-puzzles.md 3.4): Paracelsus stepping into the rot on his way to the ferry.
+
+    The sludge taking his boot - a short wet gulp of the bog, low - and him coughing on what comes up off it, the same
+    tired man's cough as the hint's (_cough), once and hard. Near, not far: he is a stride behind the player, so
+    there is no room on it and the top stays in, where the hint's is across the water. It is the sound of a mistake the
+    player made, and it plays a few times a walk at most (GibbetCageEvent throttles it), so it sits at the once-every-
+    few-seconds level, under a hit."""
+    gd = 0.18
+    gulp = S.osc("sine", S.sweep(gd, 170.0, 90.0, 0.6), gd)
+    gulp = S.env_mul(gulp, S.ad(gd, attack=0.006, curve=3.0))
+    slop = S.env_mul(S.lowpass(S.osc("noise", 0, gd, seed=3501), 900.0, 0.8), S.ad(gd, attack=0.004, curve=5.0))
+    out = S.layer([(gulp, 0.0, 0.7), (slop, 0.0, 0.35), (_cough(3502, 112.0), 0.09, 1.0)])
+    out = S.pad(out, 0.62)
+    return S.dc_block(S.highpass(out, 70.0))
+
+
 # The Court's seer (.ai/chapter-wizards.md 4.10): Nostradamus, reading aloud in one of the rooms of the house - four
 # lines of verse, one quatrain, read as two couplets with a breath between them. The onset of each line, in seconds:
 # StageHintCue.QuatrainLines is the same list (the drifting marks come in on each line) - change one, change both.
@@ -2211,6 +2228,10 @@ REGISTRY += [
     ("hint_hut_step",       "hint",   -10.0, hint_hut_step,       False),
     ("hint_hull_knock",     "hint",   -10.0, hint_hull_knock,     False),
     ("hint_flask_chime",    "hint",   -10.0, hint_flask_chime,    False),
+    # Paracelsus stepping into the rot (GibbetCageEvent): a mistake, a few a walk at most, a stride behind the player -
+    # the once-every-few-seconds row, under a hit; filed with the hints so --confuse holds it against the flask chime,
+    # whose cough it shares.
+    ("escort_cough",        "hint",   -12.0, escort_cough,        False),
     # The Court's seer reading (SeersVoiceEvent): the chapter hint, and in the seek every few seconds from the room
     # his voice is in while the player looks for it - so it sits with the hints, not above them.
     ("hint_quatrain",       "hint",   -10.0, hint_quatrain,       False),
