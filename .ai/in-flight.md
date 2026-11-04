@@ -74,6 +74,11 @@ things come up; strike what lands.**
      other stars (Ascension, the Codex). Add something to the name - "Legendary Solar Flare", or a gold word
      and frame on its card - and say once what it means (its element tags count double). Check the level-up
      card, the loadout strip, the pause screen and the character select for a wizard who starts Legendary.
+   - **Clickable element tags look clickable** (Eric, 2026-11-04): give every tag chip that opens its
+     element's card (`ElementChip`, `CodexRows.BuildChip`) a small animation that says so, such as a shimmer
+     passing over it now and then. Keep it subtle and cheap: many chips can be on one screen, it must not pull
+     the eye from the cards' text, and it must still read on a phone (`.ai/level-up-screen.md` section 4a's
+     contrast rules).
    - **Item tags on a line of their own** (Eric, 2026-11-04): on an item set's card, the tags it adds go on
      their own line at the bottom, not split across the text the way the Thorned Buckler's "Metal / Earth"
      breaks on a phone. `ChestItemSelectionMenu` and the set rows (`CodexRows`); check at 540x1212
