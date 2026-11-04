@@ -1978,3 +1978,132 @@ and every after number here wants a quiet machine.
   a side. `props_fields.py`, as it was committed before this pass, already drew `stook-2` 48 pixels different from
   the committed PNG (the PNG predates the generator or another interpreter drew it); the committed PNG was kept,
   so re-running the generator rewrites it - check before committing that file.
+
+### The Broken Circle: drifts, not woods (2026-11-04)
+
+`Foliage.BrokenCircle.cs`, on the recipe above. *"Heather, granite, and a wind with nothing in its way"*
+(`ChapterNotes`): a high moor is open, so its stands are not woods but DRIFTS - granite rises combed out along the
+wind, a tor on the crown, gorse clothing them, boulders and wind-cut thorns on their flanks - and the open heather
+between them is still most of what the chapter is. Its long sightlines stay long: nothing on it is taller than a
+thorn (about 140 px), and nothing is a tall single slab, which is the Ninth Stone's (`.ai/campaign.md` section 6).
+
+**The move first.** The Heath case's five sets went into the foliage file unchanged (`bramble-2` is listed in
+`heath.json` by reference - `props_heath.py` copies trees.json's row - so the drift set names one manifest), and
+`--placement-hash` printed the same hash before and after: seed 4242 `FA455434BC518DF3`, seed 11 `FB1B343495398E8E`.
+
+**The field: `CanopyShape.Own`, salts 0x5AD2-4.** Two octaves of value noise stretched three to one along a bearing a
+little north of east (30 cells along, 10 across; a chain octave at 12 by 7.2 breaks a run into rises) and one round
+octave at 5 cells for the ragged edge, the middle stretched by 1.6 so the tails reach the open moor and the crowns.
+Each octave keeps its last lattice cell's corners, as Woodland's own field does. A Python port previewed it, and gave
+the same shares as the C# to the percent.
+
+| habitat | canopy | share | what grows there |
+|---|---|---|---|
+| clearing (the open moor) | under 0.60-0.68 | 70-72% | the standing and fallen stones as before; moor grass, lichen; the odd heather clump, thorn or boulder |
+| fringe (a drift's flank) | between | about 14% | gorse and bramble, wind-cut thorns, boulders, heather clumps; heather tufts thicken, bilberry |
+| stand (the drift) | over 0.72-0.80 | 14-15% | gorse thickets massed, the tors |
+| the crown | over 0.84 | 7-8% | `granite`, the stand floor, under the tor; clitter, heather and lichen on it |
+
+The stand floor is the palette's own outcrop, partly transparent so the heather shows between its slabs. **Laid under
+the whole drift (14%) its slabs read as paving** in long streaks, so it is the crown only. No clearing floor: sorted,
+every outcrop blob in the open would have become peat, and the peat's cotton-grass is the brightest clutter on the
+moor (hi +68 L\* over the heather).
+
+**The wind.** Every grounded sprite is mirrored by a roll (`FurnishGroundedSet`), so a tree cannot lean one way and
+keep to it; the thorns are wind-CUT instead, shorn flat with the crown streaming down at its lee end, which reads
+either way round. The wind is drawn where nothing is mirrored: the drifts run along it, and the moor grass in the
+detail layer leans east on every variant. A thorn that leans one way everywhere would need a no-mirror flag in the
+manifest - a shared change, not made.
+
+**The ladder** (`tools/art/props_heath.py`, `heath.json`; `detail_heath.py`):
+
+| rung | sprites | on screen | where | set |
+|---|---|---|---|---|
+| tors | `tor-1`, `-2` | 164x88, 138x96, block 92 / 76 | a drift's crown, 0.4-0.5 a chunk | 6 |
+| wind-cut thorns | `windthorn-1`, `-2`, `windthorn-bare-1` | 110-134 x 120-140 | the flanks, now and then alone; 0.6-0.9 a chunk | 3 (was the shared 250 px dead trees, 0.6) |
+| standing, fallen stones | unchanged | | the open moor, as before; 2.3 and 1.2 a chunk | 0, 1 |
+| boulders | `boulder-1`, `-2` | 48x38, 38x32, block 30 / 22 | the flanks, 1.5 a chunk | 7 |
+| gorse thickets | `gorse-thicket-1`, `-2` | 120x52, 100x56 | the drift, 6 a chunk | 5 |
+| gorse, bramble | `gorse-1`, `-2`, `bramble-2` | 44-60 | the flanks, 4.7 a chunk (was even) | 2 |
+| heather clumps | `heather-clump-1`, `-2` | 40x32, 32x28 | flanks and open moor, 5 a chunk | 8 |
+| rocks | unchanged | | even, as before | 4 |
+| detail | `moor_grass`, `bilberry`, `lichen_specks`, `clitter` (new); `heather_tufts` (more) | one cell | grass everywhere; heather and bilberry on the flanks; clitter, heather and lichen on the granite | clutter |
+
+Granite in the standing stones' own ramp, lichened; living things on the dark half of verdant; heather in violet's
+lit and base. The old gorse's flowers came down a stop (gold's base and shade): with four times the gorse on the
+moor, `gorse-2`'s brightest tenth stood +56 over the heather, as bright as a creature's rim.
+
+**What it keeps clear.** The moot and the Fallen Star's crater keep their footprints as every set and clutter rule
+does (`IsInExploreReserve`); the moot photographs as it did, on open heather (`before-moot` / `after-moot`). Nothing
+drawn is a tell of the Circle's secrets (`.ai/achievements-and-secrets.md` 8.3): no black and nothing in a line (BC1's
+trail is a dotted line of char, the one straight thing on the moor), no warm fleck (the first lichen had gold
+rosettes, which came out as plus signs - a glint - and were cut), no hare-shaped hollow (BC2), no smoke (BC3). BC4's
+tell is lichen thinning toward its stone: the lichen clutter gives it something to thin, and its footprint will
+clear it.
+
+**The guardrail, from the art**, against the heather's L\* 12 (`detail_contrast.py`'s numbers; the heather is
+`floor_heather_*`, which its `--on` cannot name, so a scratch script imported its functions):
+
+| | dL\* | \|dL\*\| | hi |
+|---|---|---|---|
+| `moor_grass` / `bilberry` / `lichen_specks` / `clitter` (new) | +9.7 / +1.5 / +8.9 / +6.1 | 11.2 / 7.7 / 8.9 / 10.8 | +22.3 / +19.3 / +15.6 / +17.4 |
+| `tor-1`, `-2`, `boulder-1`, `-2` (new) | +5.5 to +8.8 | 12.4-12.8 | +22.7 to +25.9 |
+| `windthorn-*`, `gorse-thicket-*`, `heather-clump-*` (new) | +0.5 to +5.2 | 4.7-9.2 | +12.6 to +21.9 |
+| `gorse-1`, `-2`, before / after | +5.7, +7.2 | 10.2, 11.2 | +39.1 / +27.8, +56.3 / +34.8 |
+| the shared dead trees (gone) | +10.4, +12.7 | 12.2, 16.4 | +27.5, +23.5 |
+| `cotton_grass`, `tufts` (old rules, unchanged) | +25.9, +20.8 | 26.7, 20.8 | +67.6, +39.1 |
+
+**On screen**, `_UiShot --light-probe` at the start, (2600, -1500) and (-3000, 2200) on the PC canvas and the start and
+(2600, -1500) on the phone's, seed 4242, pooled. The heath's cast stand above their ground, as the Fields' do:
+
+| PC | before | after |
+|---|---|---|
+| bodies: dL\* / hi | +12.1 / +56.7 | +11.0 / +55.9 |
+| XP orbs: dL\* / hi | +38.3 / +82.4 | +40.5 / +86.4 |
+| bushes: cover / \|dL\*\| / hi | 0.4% / 26.3 / +51.1 | 0.9% / 24.2 / +51.0 |
+| detail: cover / \|dL\*\| / hi | 0.8% / 16.4 / +50.0 | 1.3% / 17.8 / +53.1 |
+| trees and rocks: cover / \|dL\*\| / hi | 0.5% / 21.2 / +49.2 | 0.5% / 25.6 / +58.6 |
+| bare floor pattern | 6.6% | 7.7% |
+
+On the phone the bodies read +12.4 before and +10.9 after (one zone of the after, which the chapter's note card covered,
+left out of both). Bodies standing on a granite crown lose a few L\* against it, as the Forest's do on moss. **The
+layers' hi did not come from the new art**, which tops out at +26: it is the brightest tenth of each layer, and the
+layers' brightest things are still the old ones - the cotton-grass, and in "trees and rocks" the bones and bracken of
+the palette's curated prop themes. Where a shared 250 px dead tree stood in frame before (spot b), those few bright
+props are now a larger share of the layer's top tenth.
+
+**Footing and placement.** `--footing-census`, a minute's walk, seeds 4242 and 11: 162 and 188 trunks before, 233 and
+274 after, none within 72 px of anything that blocks (nearest 72.0), no pocket or narrow-mouthed room; `--check-feet`:
+0 frames with the Feet in the ground, 0 stuck checks. The first load's 25 chunks hold 533 props where they held 322,
+and 5,020 detail cells where they held 2,266 (`--placement-hash` `68341949603A9F42`).
+
+**Checked.** `_ExploreProbe --stage=10 --seed=4242 --fresh-save`: 22 passed, 0 failed - the moot placed on open
+ground, nothing on its footprint, finished. `_UiShot --secret-probe --stage=10` (the Fallen Star, the vault opened and
+Starfall granted): all pass. The validator: 0
+errors, the one test_wizard warning (`Woodland.Validate` holds the shares above: crown 4-13%, open 62-80%).
+
+**Cost.** `_BalanceHarness --minutes=2 --character=1 --immortal --timescale=1 --stress-swarm --profile=10 --stage=10
+--seed=11 --terrain-seed=4242 --walk=30 --terrain-log`, headless, before (from the move commit) and after back to back
+with no other Godot on the machine:
+
+| | before | after |
+|---|---|---|
+| frame mean / p95 | 7.0 / 12.3 ms | 7.2 / 13.3 ms |
+| nodes, walking | 1,680-1,900 (mean 1,840) | 2,110-2,390 (mean 2,280) |
+| worst furnish step of a crossing, median / max | 1.4 / 13.9 ms | 4.5 / 17.8 ms |
+| a crossing, all steps, median | 43 ms | 100 ms |
+
+About 440 more nodes (a bush is one, a trunk three) and four more furnishing parts a chunk; the slowest part is most
+often the trunk plan, which now plans five trunk sets. Between the Forest's (2.0 -> 2.7 ms) and the Fields' (1.7 ->
+8 ms). An interleaved A/B under another session's heavy load (frames of 120-250 ms) put the worst step at 10-11 ->
+16-18 ms and a crossing at 120 -> 260-370 ms. **Not measured on the phone.**
+
+**Still needs eyes** (`_shots/foliage-heath/composite-pc.png`, `composite-phone.png`, before | after, held and cleared
+of enemies; the busy rows keep the swarm and its hurt tint):
+
+- **Whether a drift reads as a granite rise or as a patch of paving** - the crown's slabs at play scale (`drift`, `b`).
+- **The tors**: low stacks of slabs; whether they read as stone outcrops, and never as the Waller's carried wall.
+- **The wind-cut thorns**, mirrored at random, so half are flagged one way and half the other.
+- **The moor grass** as the wind: grey-green and small, it may be a texture more than a direction at 540 wide.
+- **The curated prop themes** (`PropThemes` flora and bones, LevelGenerator's palette, shared): the lime bracken and the
+  bone-white bones are now the brightest things on the heath bar the cotton-grass.
