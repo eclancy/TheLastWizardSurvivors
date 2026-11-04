@@ -66,10 +66,13 @@ things come up; strike what lands.**
    it), not only its name and reward ("Achievement - First Blood / Spell recovered - Arcane Explosion"). Find
    the banner (`Node2DGame.RecordAchievementNow` and the banner it shows, `AchievementDefinition`'s text),
    keep it to the lines a phone can hold, and check it at both canvases over a run.
-8. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
-9. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
+8. **Card and item wording** (Eric, 2026-11-04):
+   - **The Reliquary Key:** its description should just say that your pickup radius applies to chests (what
+     `feat/john-dee-chests` made it do), nothing longer. `ChestItemCatalog`.
+9. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
+10. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
    launch-plan doc, now carrying the rival motive).
-10. **Housekeeping:**
+11. **Housekeeping:**
    - the README's image and sound counts are stale again after the foliage and Paracelsus (recount from the
      tree, same methods);
    - delete the dead decor cases in `Node2DGame.BuildDecorProps` for every chapter that now has foliage (the
