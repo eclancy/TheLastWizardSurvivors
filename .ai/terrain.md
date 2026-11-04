@@ -2014,10 +2014,17 @@ lies the same way. Previewed first in a Python port (exact: the C# field dumped 
 | scrub | `thornbush-1`, `-2`; the old `dead-bush-1/2`, `dry-scrub-1` | 36-88 | 0 | the fringe, straying into the open | 7; 4 by habitat now |
 | detail | `sand_ripples`, `drift_tail` (open); `desert_gravel`, `bunchgrass` (fringe); `rock_chips` (belt, scree) | a cell | | clutter | |
 
-Stones and crystals keep their sets (0-2) and places. The stone is `flesh`'s dark half - deep for the mass, shade
-for the faces the key finds, base only on a top's lit lip - in blocks with a lit top, a lit face and a dark face, the
-foot undercut where the blown sand grinds (a first pass shaded each block as a rounded lump and drew stacked loaves).
-Not stone or steel: the tomb's beacons are granite pillars and must not have twins on the dunes. The ripples cross the
+Stones and crystals keep their sets (0-2) and places. **The stone is weathered, not built** (redrawn 2026-11-04: the
+first pass drew square blocks of `flesh`'s lavender piled in towers with level seams, and the integrator held the merge
+on "stacked bricks", as Eric had just asked for less blocky art). Each rock is masses run together - a pinnacle, an
+overhanging cap, a ridge's head and tail - each an irregular polygon of 7-11 corners at jittered radii, broken into
+facets (the nearest of a scatter of points, each a plane with its own tilted normal, a crease where two meet), its cap
+planed flat along a tilted, broken line, its foot pinched in and dark under the overhang, with wavy uneven bedding,
+pits, joints running down, sand drifted against the foot in the floor's gold, scree, and a fallen piece. In the
+chapter's own sand row (`cast_sands.py`: ochre base, rust shade, maroon deep; lit a pixel at a time on a lip), not
+stone or steel: the tomb's beacons are granite pillars and must not have twins on the dunes. The redraw kept every
+box, ground line, anchor and trunk (`props_sands.save_fixed`; `sands.json` byte for byte), and `--placement-hash` did
+not move: `0304BCBB23EACD11` (seed 4242) and `178E5E0E2F332D49` (seed 11) before it and after. The ripples cross the
 wind and the drift tails trail along it (`detail_sands.WIND_ANGLE`, the same angle), so the ground agrees.
 
 **The bleached trees went.** `bleached-tree-1/2` were bone's whole ramp, hi +55 over this floor - the brightest
@@ -2034,15 +2041,16 @@ gradient runs cracked earth to scrub to reeds), nothing that shimmers (A4), no g
 
 | | dL\* | \|dL\*\| | hi | lo |
 |---|---|---|---|---|
-| `tor-1`, `tor-2`, `ridge-1`, `hoodoo-1` (new) | +3.9 to +10.5 | 11.2-14.3 | +20.3 to +26.3 | -12.2 |
-| `boulder-1`, `-2` (new) | +8.1 to +8.3 | 14.5-14.6 | +26.9 to +28.4 | -12.2 |
+| `tor-1`, `tor-2`, `ridge-1`, `hoodoo-1` (redrawn) | +8.9 to +10.8 | 14.5-15.5 | +29.1 to +31.6 | -12.2 |
+| `boulder-1`, `-2` (redrawn) | +9.0 to +9.6 | 13.7-15.3 | +30.5 to +30.7 | -12.2 |
+| the first pass's blocks, for the record | +3.9 to +10.5 | 11.2-14.6 | +20.3 to +28.4 | -12.2 |
 | `camelthorn-1`, `-2`, `dead-palm-1` (new) | +3.1 to +6.3 | 6.7-11.3 | +19.1 to +20.0 | -12.2 |
 | `thornbush-1`, `-2` (new) | +1.8 to +3.2 | 10.4 | +20.0 | -12.2 |
 | `sand_ripples`, `drift_tail`, `desert_gravel`, `rock_chips`, `bunchgrass` (new) | +0.8 to +9.3 | 8.0-11.9 | +14.0 to +20.0 | -12 to +4 |
 | `bleached-tree-1`, `-2` (gone from the chapter) | +34 | 35 | +55 | +4 to +7 |
 | `dead-bush-1`, `dry-scrub-1`, `dry_grass`, `bone_bits` (old, kept) | +11 to +26 | 16-29 | +32 to +38 | |
 
-The new rungs' brightest tenth (+14 to +28) is half the cast's (+50 to +61 on screen) and a third of the orbs'; the
+The new rungs' brightest tenth (+14 to +32) is about half the cast's (+50 to +61 on screen) and a third of the orbs'; the
 old scrub and dry grass are now the brightest clutter on the floor, so the pass adds no more of either.
 
 **Footing.** `--footing-census`, a minute's walk: seed 4242, 209 trunks in 39 chunks; seed 11, 257 in 29 - none within 72
@@ -2082,10 +2090,11 @@ so the first pair was thrown away. The cast stands ABOVE this floor, as on the F
 | XP orbs: dL\* / hi | +31.6 / +74.4 (+41.6 / +84.2) | +32.6 / +75.1 (+42.8 / +84.4) |
 | detail: cover / \|dL\*\| / hi | 0.0-0.1% / 15 / +33 (0.1% / 12 / +32) | 0.1-0.2% / 11-12 / +23 to +31 (0.2% / 11 / +22) |
 | bushes: cover / \|dL\*\| / hi | 0.1-0.6% / 17-21 / +35 to +38 | 0.1-0.5% / 11-13 / +19 to +27 |
-| trees and rocks: cover / \|dL\*\| / hi | 0.3% / 35 / +55 (a bleached tree) | 2.1% at the start, 11.2% on the belt (5.2% on the phone) / 14 / +26 |
+| trees and rocks: cover / \|dL\*\| / hi | 0.3% / 35 / +55 (a bleached tree) | 1.6% at the start, 9.1% on the belt (4.2% on the phone) / 15 / +30 (the redrawn stone; the first pass's blocks: 2.1%, 11.2%, 5.2% / 14 / +26) |
 | bare floor L\* / pattern | 14.1 / 6.9% (5.4%) | 14.1 / 7.2% (5.8%) |
 
-The cast and the orbs read as before. The stone covers a tenth of a belt's screen at half the bodies' brightest tenth,
+The cast and the orbs read as before (with the redrawn stone: bodies +11.9 / +54.8, orbs +30.8 / +72.8 on the PC;
++14.2 / +59.3 and +42.9 / +84.0 on the phone). The stone covers a tenth of a belt's screen at half the bodies' brightest tenth,
 and everything the pass touched stands nearer its floor than what it replaced. On the first load the props went from
 202 to 483 and the detail cells from 678 to 2,162 (8% of the cells; the Fields' are 9%, the Forest's 19%).
 
@@ -2101,14 +2110,15 @@ runs into its box.
 
 **Tools.** `tools/art/props_sands.py` writes `_props_sands_preview.png` (gitignored): every new sprite on the sand's
 tone beside the old bleached tree and scrub. The photographs are in `_shots/foliage-sands/` beside the repo:
-`composite-pc.png` and `composite-phone.png` (before | after, half size), `frames/` (the probe frames, the held crowd
+`composite-pc.png` and `composite-phone.png` (before | after, half size, after with the redrawn stone), `closeup-rocks.png`
+(the first pass's blocks | the redrawn stone, the same held spots at x2), `frames/` (the probe frames, the held crowd
 shots, the Fulgurite walk, `sands-try3-wide.png` at zoom 0.3), `logs/`, and the scripts that made them.
 
 ### Still needs eyes (the Sands)
 
-- **Whether the tors read as rock or as stacked bricks.** At half size in the composite the stacked blocks, each with
-  its dark undercut, make letter-like outlines (C, S). The ridge and the hoodoo read as what they are on their own;
-  whether a belt of them reads as wind-carved stone is for eyes, PC and phone (`composite-pc.png`, rows 4-6).
+- **The redrawn rocks** (`closeup-rocks.png`, the first pass's blocks against them on the same spot): whether a belt
+  of them reads as weathered stone at play scale, and whether the sand row's ochre sits too near the Thirsting's
+  wrappings - the stone is a stop darker (base on its tops, the cast's base and lit on theirs, with a cold rim).
 - **The belts' density.** About 3.6 tors a chunk, in twos; a belt is a broken line, sparse on purpose. Thicker would
   wall more of the screen.
 - **The scree under a belt** is the palette's `rocky_pit`, dark cold stones over the sand: it marks the belt from above,
