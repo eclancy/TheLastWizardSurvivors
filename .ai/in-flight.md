@@ -74,6 +74,9 @@ things come up; strike what lands.**
      other stars (Ascension, the Codex). Add something to the name - "Legendary Solar Flare", or a gold word
      and frame on its card - and say once what it means (its element tags count double). Check the level-up
      card, the loadout strip, the pause screen and the character select for a wizard who starts Legendary.
+   - **"Leaves are whispering, though there is no wind."** (Eric, 2026-11-04): the grove's hint line reads
+     "Leaves whispering, though there is no wind." (`StageHintCatalog.cs` line 137). While there, read every
+     hint and chapter line for the same dropped verb.
    - **Percentages, never flat numbers** (Eric, 2026-11-04: instead of things like "damage +2", always speak in
      percentages). Every player-facing increase becomes a percentage: the level-up lines a spell's
      `SpellLevelUpgrade` produces (`DamageBonus = 2` reads "+2 damage"; it should read "+17% damage" against
