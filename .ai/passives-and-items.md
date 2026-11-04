@@ -877,7 +877,8 @@ Warden - the first elite's guaranteed chest included), which left a three-piece 
 reach, so the chance is 65%. A collector gets back past the clock: the Curio Ledger puts elites at
 90% (about 18 a run), the whole Cabinet at all of them (about 20), and the Hidden Drawer adds a
 quarter on top (about 25). The first chest comes with the first elite, at about 2:15, instead of at
-0:20.
+0:20. *(Since 2026-11-03 the Drawer adds a card, not a chest, and John Dee's passive puts elites at
+85%: 8k.)*
 
 ### 8c. The three chest-frequency relics pay in bigger orbs
 
@@ -911,9 +912,9 @@ Worm (a real cabinet of curiosities, but not a magic-worker).
 | | |
 |---|---|
 | id / roster | `john_dee`, `CharacterData_JohnDee.tres`, appended to `CharacterRoster` (index 7, `--character=7`) |
-| passive | **Collector's Eye - "+1 relic to choose from in every chest"** (`chest_options_1`). With the Relic Key, five. |
+| passive | **Scattered Library - "+20% chance an elite drops a chest"** (`elite_chests_20`, `Player.CharacterEliteChestChance`): elites at 85%. Since 2026-11-03 (8k); it was **Collector's Eye**, "+1 relic to choose from in every chest" (`chest_options_1`), which is the Hidden Drawer's now. |
 | starting spell | **Hollow Star**, pure Darkness - the pull spell: a well on the densest pack that drags it into one knot. No wizard opened on Darkness, and it is the one spell in the roster that is about *gathering*. It is sold in the shop (160); `GetLevelUpOptions` offers a wizard his own spell whether or not the save owns it, as it does for Tituba. |
-| unlock | Achievement **The Library at Mortlake - "Open 30 chests"** (`mortlake_library`), measured on `Lifetime.TotalChestsOpened`, which every save has kept since schema 8: no new stat, no new save field. Thirty is about two runs that reach the boss on the carried-chest economy. |
+| unlock | Achievement **The Library at Mortlake - "Open 100 chests"** (`mortlake_library`, `AchievementDefinitions.MortlakeChestTarget`), measured on `Lifetime.TotalChestsOpened`, which every save has kept since schema 8: no new stat, no new save field. A hundred is about six runs that reach the boss; it was thirty, about two (8k). |
 | Apotheosis | **Yes - The Spirit Mirror, verb "pull"**, which was on the ADR's unclaimed list. Path: Amplified Impact / Titan Cataclysm, the pair that deepens Darkness. The well opens half again as wide and drags 35% harder, and when it closes every XP orb, potion and flask inside its reach flies to him (`HollowStar.PullLootToPlayer`). |
 | health / speed | x0.95 / x1.04 - an old man who walks to his chests |
 | art | `tools/art/roster.py`, `dee()`: a full set - 4-frame idle, 8-frame walk, hurt, death - derived like every wizard's (`anim_sets.player_set`), 0.91 edges per pixel against the 0.80 floor. A scholar's near-black gown (the stone row: no player pigment, since he is freed, not a starter), a starched ruff, a black skullcap, the long white beard, a girdle book on a chain, his free hand cupped with the well's motes spiralling into it, and the obsidian mirror in a gold ring on his staff - the one thing on him that glows, in the Darkness ramp. The palette had no printable character left, so that ramp is four control characters (`roster.DARKNESS_RAMP`). |
@@ -927,15 +928,18 @@ is the family mark). Its tags are Arcane, whose tiers pay XP, and Darkness, Dee'
 |---|---|---|
 | Lodestone (`lodestone`) | Common | +50 pickup radius. |
 | Curio Ledger (`curio_ledger`) | Uncommon | +25% chance an elite drops a chest (65% without it). |
-| Hidden Drawer (`hidden_drawer`) | Rare (Darkness) | 25% chance a chest you open leaves another chest behind. |
+| Hidden Drawer (`hidden_drawer`) | Rare (Darkness) | Chests offer one more relic to choose from. *(Since 2026-11-03, 8k; it was "25% chance a chest you open leaves another chest behind".)* |
 | two pieces | partial | +25 pickup radius |
 | all three | Full Set Enchantment | **Every elite drops a chest, and +50 pickup radius.** |
 
-The drawer's second chest rises beside the player as a side event's does (1.2 s) and can hold
-another in turn - one in four, then one in sixteen. "+1 option in every chest" is Dee's passive and
-the Relic Key's; a third source would put six pages on a phone, so the Cabinet pays in chests.
+The drawer's second chest rose beside the player as a side event's does (1.2 s) and could hold
+another in turn - one in four, then one in sixteen. "+1 option in every chest" was Dee's passive and
+the Relic Key's; a third source would have put six pages on a phone, so the Cabinet paid in chests.
+**Since 2026-11-03 (8k)** the Drawer is the one source of a fourth card, the Key brings chests to its
+holder, and Dee's passive raises the elite chance - so the Cabinet pays in chests, a card and reach.
 
-**The chest screen with five relics** (Dee holding the Relic Key). Photographed with `_UiShot
+**The chest screen with five relics** (Dee holding the Relic Key; no run can reach five since 2026-11-03 -
+four with the Hidden Drawer is the most - but `ChestItemSelectionMenu` keeps the layout). Photographed with `_UiShot
 --character=7 --give-relics=relic_key,lodestone --open-chest`, with the five relics pinned so the
 worst pages were in it (Frost Jewel's four-piece set, Buckler Thorns' long effect, the Hidden
 Drawer with its partial switching on). As the screen stood, a PC put the five abreast at about 234
@@ -1031,7 +1035,8 @@ chests) is undersold here, and one that pays at once is oversold.
 | a partial, then the full set | the partial is paid once and never refunded; the full effect is on top of it (`RefreshChestSetEffects`) |
 | the piece that completes a set | the set's moment plays when the chest screen closes (#43); the Reliquary pays on the completing chest too |
 | two chests, a chest and a level-up, two level-ups in one step | queued, one screen at a time (above) |
-| the Hidden Drawer's chest | spawned after the claim, rising 1.2 s, so it can never land under an open screen |
+| the Hidden Drawer's chest | spawned after the claim, rising 1.2 s, so it can never land under an open screen (gone since 2026-11-03: the Drawer adds a card, 8k) |
+| a chest coming to the Reliquary Key | only once risen, and it opens on reaching him as walking onto it would - the queue above holds it behind any open screen (8k) |
 | the boss arrives | no chest drops after it (8b) |
 
 **Regression checklist** - after any change to relics, sets or the chest screen:
@@ -1080,7 +1085,8 @@ rarity weights, the fade and the last chest's cards sitting out are the shipped 
 copy). Around the deal it models 8b's carriers from the same constants the game reads - the elite
 chance, the Curio Ledger's +25%, the whole Cabinet's every elite, the Hidden Drawer's chest in a chest,
 the Relic Key's fourth card. It does not model side-event and secret chests, John Dee's fifth card
-(`--extra-offers=1`) or bans; the Penknife is dealt and never claimed. There is **no lean toward a
+(`--extra-offers=1`) or bans; the Penknife is dealt and never claimed. *(Since 2026-11-03: the Drawer's
+fourth card, no chest in a chest, and `--john-dee` for his elite chance - 8k.)* There is **no lean toward a
 started set** (Eric, answer 3). Three pickers, because who chooses decides most of it:
 
 - **random** - any card: a player who does not read the sets (the floor);
@@ -1385,6 +1391,62 @@ screen at a time and resumes the run. `--gleaning-bell=DX,DY --glean-scatter=N [
 photographs it on the ground and the stream. `RegressionChecks` range-checks the `DropTable` numbers;
 `_BalanceHarness` counts it in the drop ledger ("gleaning bell"), and every ring logs a `GLEANING BELL`
 line with the haul.
+
+### 8k. John Dee's chests, the Drawer and the Key (2026-11-03)
+
+Eric, from the unlock-puzzle comparison with Vampire Survivors and Halls of Torment: John Dee at "a bigger
+number. his passive should also be that he makes chests spawn more often", and "john dees old passive of
+getting an extra choice in a chest can replace the item that makes a chest have a chance of producing
+another chest". The Reliquary Key, whose fourth card would then have doubled the Drawer's, takes "chests
+come to you".
+
+| what | before | after |
+|---|---|---|
+| John Dee's unlock | open 30 chests (about two runs) | **open 100** (`AchievementDefinitions.MortlakeChestTarget`, about six) |
+| John Dee's passive | Collector's Eye, +1 relic in every chest | **Scattered Library**, +20% chance an elite drops a chest (85%; `Player.CharacterEliteChestChance`) |
+| Hidden Drawer (Rare) | 25% chance a chest leaves another behind | **+1 relic to choose from in every chest** (`Player.ChestOfferCount`) |
+| Reliquary Key (Common) | +1 relic to choose from in every chest | **a chest within 240, plus the pickup radius, slides to you** at 320/s once risen, and opens on reaching you (`ChestReward.ComeToKeyHolder`) |
+| most cards a chest | five (Dee with the Key) | four (the Drawer) |
+
+**Why 100 and not 150.** Every gate counts John Dee (a Feat names no chapter), so the Emberdeep waits on him.
+A player who beats each of the eight chapters before it at the first try reaches it with about 134 chests
+(the first elite, 18 more at 65% and four Wardens a run); 150 would have held that player at the gate to farm.
+`RegressionChecks.ValidateCollectorEconomy` holds the target under that figure, and holds Dee's chance below
+certain. A save already handed him at 30 keeps him: `AchievementManager.Reconcile` only ever grants.
+
+**The Key's pull** is its own, not the magnet: `MagnetAttracted` stays off, so a vacuum that calls every orb
+home leaves chests where they are. It reads `Player.PickupReach`, so the Lodestone, the Cabinet and the shop's
+magnet stretch it. The Key once widened the pickup radius for everything, which was dropped as "a magnet with
+the wrong name on it"; this pulls only what has a lock.
+
+**Measured** with `_ChestSim --runs=5000` (seed 1, lean 2, today's pool), the base commit against this change:
+
+| picker | chests a run | any set | sets a run | first set (chest) |
+|---|---|---|---|---|
+| random, before | 19.1 | 88.8% | 2.08 | 12 |
+| random, after | 17.9 | 87.4% | 1.72 | 11 |
+| rarest, before | 20.1 | 91.9% | 2.44 | 12 |
+| rarest, after | 17.9 | 86.5% | 1.66 | 12 |
+| chaser, before | 19.9 | 100% | 5.39 | 6 |
+| chaser, after | 18.2 | 100% | 4.76 | 6 |
+| John Dee, random, before (`--extra-offers=1`) | 19.1 | 87.9% | 2.01 | 12 |
+| John Dee, random, after (`--john-dee`) | 21.1 | 96.9% | 2.49 | 12 |
+
+The Drawer's chest in a chest was worth one to two chests a run to whoever took it, so everyone else loses
+that: about a third of a set a run for a random picker, and the rarest picker (which reaches for the Rare
+Drawer) drops from 91.9% to 86.5% - under the 92% the lean of 2 was chosen to restore (8j). John Dee gains
+two chests and half a set a run, which is the point of him. Whether the general loss wants answering (the
+Drawer to Uncommon, or a lean of 2.5) is Eric's call; nothing here changes it.
+
+**The pull's speed is above a walk.** At a first 180/s, `_UiShot --scene=res://scenes/node_2d_game.tscn
+--give-relics=relic_key --drop-chest=200,0 --frames=220` caught the chest trailing a wizard who had walked
+on (his walk is 220); at 320 it reached him and opened, and with no Key the same drop stayed where it fell.
+
+**Verified:** `dotnet build`; the validator (0 errors, the usual test_wizard warning); the two `_ChestSim`
+pairs above; those three photographs (a tool scene, so the chest took its no-menu path). **Not verified:**
+the Key's pull in a real run - a chest sliding through a crowd, whether its opening mid-fight feels like a
+gift or an interruption, and whether 240 is the right reach; Dee's passive in a real run; the character
+select with the new passive line, at both canvases; nothing on the phone.
 
 ### 8f. What needs playing
 

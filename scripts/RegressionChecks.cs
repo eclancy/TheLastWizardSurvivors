@@ -5070,8 +5070,7 @@ public static partial class RegressionChecks
 	private static void ValidateCollectorEconomy(List<string> warnings)
 	{
 		const int ChestPagesLaidOut = 5;
-		int mostOffers = DropTable.BaseChestOffers + 1 // the Relic Key
-			+ CharacterRoster.GetAll().Count(c => c != null && "chest_options_1".Equals(c.StartingPassiveId?.Trim(), StringComparison.OrdinalIgnoreCase));
+		int mostOffers = DropTable.BaseChestOffers + 1; // the Hidden Drawer, the one source since 2026-11-03
 		if (mostOffers > ChestPagesLaidOut)
 			warnings.Add($"A chest can offer {mostOffers} relics, but the chest screen is laid out and measured for {ChestPagesLaidOut}.");
 
@@ -5080,9 +5079,23 @@ public static partial class RegressionChecks
 		float sum = (orb + flask + potion) * (1f + DropTable.LuckScale);
 		if (sum >= 1f || orb <= 0f || flask <= 0f || potion <= 0f)
 			warnings.Add($"DropTable's bonus chances are out of range: {sum:0.000} a kill at full Luck, and each must be above 0.");
-		float elite = DropTable.EliteChestChance, nested = DropTable.NestedChestChance;
-		if (elite <= 0f || elite > 1f || nested >= 1f)
-			warnings.Add("DropTable's chest chances are out of range: an elite's must be in (0, 1], and a nested chest's below 1 or the Hidden Drawer never stops.");
+		float elite = DropTable.EliteChestChance, dee = Player.CharacterEliteChestChance;
+		if (elite <= 0f || elite > 1f)
+			warnings.Add("DropTable's elite chest chance is out of range: it must be in (0, 1].");
+		if (dee <= 0f || elite + dee >= 1f)
+			warnings.Add($"John Dee's Scattered Library puts an elite's chest at {elite + dee:0%}: it must raise it, and stay below certain, or the Curio Ledger and the Cabinet of Curiosities have nothing left to give him.");
+
+		// John Dee is freed by lifetime chests and counted by every gate, so the Emberdeep waits on him. A player who
+		// beats each chapter before it at the first try must already have the chests when he reaches it, or the gate
+		// holds him there to farm: the first elite, 18 more at the elite chance and 4 Wardens a run (_ChestSim's
+		// defaults), times the chapters before the gate. Side-event and secret chests are left out, as slack.
+		StageDefinition gate = StageCatalog.GateChapter;
+		if (gate != null && GlobalStatsManager.CountsTowardGate("john_dee", gate))
+		{
+			float flawlessChestsByGate = StageCatalog.CampaignPositionOf(gate.Id) * (1f + 18f * elite + 4f);
+			if (AchievementDefinitions.MortlakeChestTarget >= flawlessChestsByGate)
+				warnings.Add($"John Dee asks for {AchievementDefinitions.MortlakeChestTarget} chests, but a player who beats every chapter before {gate.DisplayName} at the first try has about {flawlessChestsByGate:0} there; the gate counts him, so it would hold that player to farm chests.");
+		}
 		int bigger = DropTable.GreaterOrbValue;
 		if (bigger <= 2)
 			warnings.Add($"A bigger XP orb is worth {bigger}, no more than the ordinary orb it replaces.");

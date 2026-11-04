@@ -86,7 +86,7 @@ public static class DropTable
 	// --- chests: who carries one ---------------------------------------------------------------
 
 	/// <summary>
-	/// The chance an ordinary elite drops a chest when it dies. Relics raise it. 0.65 puts a run at about
+	/// The chance an ordinary elite drops a chest when it dies. Relics and John Dee raise it. 0.65 puts a run at about
 	/// fifteen chests (one guaranteed elite, about fifteen more killed, four Wardens) against the clock's
 	/// twenty: measured at 0.5 it was twelve (8 elite, 4 Warden), which left the sets too far out of reach.
 	/// </summary>
@@ -103,13 +103,11 @@ public static class DropTable
 	/// <summary>A carried chest that would land closer than this to the player is set out to it.</summary>
 	public const float CarriedChestMinDistance = 90f;
 
-	/// <summary>The Hidden Drawer's chance that an opened chest leaves another behind.</summary>
-	public const float NestedChestChance = 0.25f;
-
-	/// <summary>Seconds the chest found in a chest takes to rise, as a side event's does.</summary>
-	public const float NestedChestRiseSeconds = 1.2f;
-
-	/// <summary>Relics a chest offers before any bonus. The Relic Key and John Dee add one each.</summary>
+	/// <summary>
+	/// Relics a chest offers before any bonus. The Hidden Drawer adds one; it took John Dee's old passive, and the
+	/// Reliquary Key, which gave one too, brings chests to its holder instead (Eric, 2026-11-03). The Drawer's own
+	/// chest-in-a-chest went with it.
+	/// </summary>
 	public const int BaseChestOffers = 3;
 
 	// --- the Gleaning Bell: every XP orb on the map, called home (GleaningBell.cs) -------------------

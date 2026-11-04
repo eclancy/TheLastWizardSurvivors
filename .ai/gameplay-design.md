@@ -788,8 +788,8 @@ every spell, boon and wizard is obtained, and every unlockable has exactly one s
   Charm, and since 2026-10-23 Taproot, the stand-still boon - `.ai/passives-and-items.md` 3c).
 - **Achievement** — rewards each tied to one achievement id: spells, three boons (Untouchable
   grants Umbral Veil, which is evasion — the reward matches what earning it proved) and, since
-  2026-10-22, one wizard: **John Dee**, the collector, freed by *The Library at Mortlake* (open 30
-  chests, lifetime). See `.ai/passives-and-items.md` section 8. Since 2026-10-28 one character who is
+  2026-10-22, one wizard: **John Dee**, the collector, freed by *The Library at Mortlake* (open 100
+  chests, lifetime; 30 until 2026-11-03). See `.ai/passives-and-items.md` section 8. Since 2026-10-28 one character who is
   not a wizard: **Laelaps**, the hound, freed by *The Coursing* (the Familiar taken as a dog runs down
   100 Black Hares in one run of the Broken Circle; `.ai/campaign.md` section 6).
 - **Purchase** — spells bought with Arcane Energy in Arcane Upgrades (the main menu shop, once the
@@ -839,8 +839,9 @@ of the guaranteed floor that spells and boons provide - they are never the floor
 **Chests are carried, not timed** (since 2026-10-22). An elite drops one 65% of the time (the
 run's first elite always does), the Warden and the Sketchbook's ghost always, and a side event pays one;
 there is no chest clock. A collector build acts on that: the Curio Ledger and the Cabinet of
-Curiosities make more elites carry one, the Hidden Drawer hides a second chest in the first, the
-Lodestone widens the pickup radius, and John Dee sees one more relic in every chest. The drop table,
+Curiosities make more elites carry one, the Hidden Drawer shows one more relic in every chest, the
+Lodestone widens the pickup radius, the Reliquary Key brings chests to its holder, and John Dee makes
+elites carry more of them (since 2026-11-03, `.ai/passives-and-items.md` 8k). The drop table,
 the measured counts and the items that used to make chests come more often (they pay in bigger XP
 orbs now) are in `.ai/passives-and-items.md` section 8.
 
@@ -953,7 +954,7 @@ a reroll is a decision about the run, as a ban always was. Prices and the refund
   the first hand sits the second out and is faded. Ban strikes a relic from the run's chest pool
   (`Player.TryBanRelic`; `Player.GetChestUnavailableItems` is what every chest deals around) and,
   as on the level-up, **is the chest's pick**: the chest closes with no relic, though it still counts
-  as opened (the Reliquary's shield, a Hidden Drawer's chest). The two sit on the heading band on a
+  as opened (the Reliquary's shield). The two sit on the heading band on a
   PC, at the foot on a phone, and on the band again for a crowded phone chest (four or five pages),
   where the title steps down a face (`ChestItemSelectionMenu.PlaceCharges`). Hidden while empty.
 

@@ -358,7 +358,8 @@ public static class UnlockCatalog
 		// FREED BY COLLECTING. John Dee's library at Mortlake was looted while he was abroad, and the
 		// dark wizard keeps him the same way - scattered through the chests the player opens. The
 		// collector is earned by collecting: lifetime chests, a stat every save already has.
-		FromAchievementCharacter("john_dee", "mortlake_library", "Open 30 chests across your runs."),
+		FromAchievementCharacter("john_dee", "mortlake_library",
+			$"Open {AchievementDefinitions.MortlakeChestTarget} chests across your runs."),
 		// FREED BY FINISHING HIS CHASE. Laelaps, the hound fated to catch whatever it hunted, set in stone on
 		// the high heath mid-chase; the black hares there are what he was running down. A hound of the
 		// player's own light finishes it for him (the "coursing" deed). Secret until the Broken Circle
@@ -369,7 +370,8 @@ public static class UnlockCatalog
 			+ $"{AchievementDefinitions.CoursingTarget} Black Hares in one run.",
 			secretUntilStage: "stage_10", outsideCampaignGate: true),
 		// TAKEN ON THE HARDEST ROAD (.ai/dark-wizard-playable.md). The dark wizard himself, the reward of beating
-		// him in the Throne on Hardcore (the_taker_taken). Outside the campaign gate - he is not one of the
+		// every chapter's boss on Hardcore, the Throne's among them (the_taker_taken; Eric, 2026-11-03: "all levels on
+		// hardcore"). Outside the campaign gate - he is not one of the
 		// imprisoned, and the Throne cannot wait on the man in it - and never shown until he is taken, so his line
 		// is vague: the whole road (the Throne's gate asks for all of it), the hard way (Hardcore). His spell, The
 		// Taking, is a Conjunction he opens on already made; everyone else makes it, as any recipe (above).

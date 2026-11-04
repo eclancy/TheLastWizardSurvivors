@@ -5,8 +5,8 @@
 [ext_resource type="Texture2D" path="res://assets/bonelight/characters/dee-1.png" id="3"]
 [ext_resource type="SpriteFrames" path="res://scenes/resources/DeeFrames.tres" id="4"]
 
-; Freed by collecting, not a starter: an Achievement unlock ("mortlake_library", open 30 chests).
-; The collector - one more relic in every chest - opening on Hollow Star, the pull spell.
+; Freed by collecting, not a starter: an Achievement unlock ("mortlake_library", open 100 chests).
+; The collector - elites carry his scattered library, so they drop more chests - opening on Hollow Star, the pull spell.
 [resource]
 script = ExtResource("1")
 Id = "john_dee"
@@ -15,9 +15,9 @@ StartingSpellResource = ExtResource("2")
 HealthModifier = 0.95
 SpeedModifier = 1.04
 IsUnlocked = true
-StartingPassiveId = "chest_options_1"
-StartingPassiveName = "Collector's Eye"
-StartingPassiveDescription = "+1 relic to choose from in every chest"
+StartingPassiveId = "elite_chests_20"
+StartingPassiveName = "Scattered Library"
+StartingPassiveDescription = "+20% chance an elite drops a chest"
 IsLegendaryStart = false
 Portrait = ExtResource("3")
 Frames = ExtResource("4")

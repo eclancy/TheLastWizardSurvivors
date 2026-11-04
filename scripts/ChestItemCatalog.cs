@@ -679,7 +679,8 @@ public static class ChestItemCatalog
 			EtherealBlade => "+0.3x critical damage.",
 			SpectralFang => "+15% spell damage to enemies below half health.",
 			ObsidianHeart => "+10% spell damage, -5% movement speed.",
-			RelicKey => "Chests offer one more relic to choose from.",
+			// Was "Chests offer one more relic to choose from", which is the Hidden Drawer's now (Eric, 2026-11-03).
+			RelicKey => $"Chests within {Player.ReliquaryKeyChestReach}, plus your pickup radius, come to you.",
 			AegisSigil => "+8% defense.",
 			IronFang => "Enemies touching you take 6 damage per second.",
 			BasaltCarapace => "Ignores one hit every 10s.",
@@ -699,7 +700,8 @@ public static class ChestItemCatalog
 			LuckyCoin => GreaterOrbClause(Player.SignetRingGreaterOrbChance) + ".",
 			Lodestone => $"+{Player.LodestonePickupRadius} pickup radius.",
 			CurioLedger => $"+{Mathf.RoundToInt(Player.CurioLedgerEliteChestChance * 100f)}% chance an elite drops a chest ({Mathf.RoundToInt(DropTable.EliteChestChance * 100f)}% without it).",
-			HiddenDrawer => $"{Mathf.RoundToInt(DropTable.NestedChestChance * 100f)}% chance a chest you open leaves another chest behind.",
+			// John Dee's old passive, Collector's Eye (Eric, 2026-11-03). It was a 25% chance a chest left another behind.
+			HiddenDrawer => "Chests offer one more relic to choose from.",
 			StormLattice => "+8% critical chance.",
 			InfernoCore => "+12% spell area.",
 			FrozenTear => "+40% ice duration, +15% slow strength.",

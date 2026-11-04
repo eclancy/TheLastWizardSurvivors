@@ -6495,7 +6495,6 @@ public partial class Node2DGame : Node2D
 	public const string ChestSourceElite = "elite";
 	public const string ChestSourceWarden = "warden";
 	public const string ChestSourceGhost = "ghost";
-	public const string ChestSourceNested = "nested";
 	public const string ChestSourceBoss = "boss";
 
 	// What this run's chests have shown, so a card passed over fades (ChestItemCatalog.ShownOfferFade).
@@ -6562,23 +6561,6 @@ public partial class Node2DGame : Node2D
 			return false;
 		lastSpeedPotionAt = timeElapsed;
 		return true;
-	}
-
-	// The Hidden Drawer: a chest just claimed sometimes held another. It rises beside the player the
-	// way a side event's chest does, and it can hold one in turn - a chain, but a short one (one in
-	// four, then one in sixteen).
-	private void TrySpawnNestedChest()
-	{
-		if (player == null || !IsInstanceValid(player) || bossFightActive || runFinished)
-			return;
-		if (spawnRng.Randf() >= player.GetNestedChestChance())
-			return;
-		AddChild(new ChestReward
-		{
-			Position = GetChestSpawnPositionAroundPlayer(),
-			MaterialiseSeconds = DropTable.NestedChestRiseSeconds,
-			Source = ChestSourceNested
-		});
 	}
 
 	public void OpenChestSelectionMenu()
@@ -6709,29 +6691,7 @@ public partial class Node2DGame : Node2D
 		if (player != null && IsInstanceValid(player))
 			player.GrantInvincibility(player.PostMenuInvincibilitySeconds, whiten: false);
 
-		// After the claim, so a Hidden Drawer taken from this very chest already counts.
-		TrySpawnNestedChest();
 		ResumeOrOpenNextMenu();
-	}
-
-	private Vector2 GetChestSpawnPositionAroundPlayer()
-	{
-		if (player == null || !IsInstanceValid(player))
-			return stageOrigin;
-
-		for (int i = 0; i < 12; i++)
-		{
-			float angle = spawnRng.Randf() * Mathf.Tau;
-			float radius = spawnRng.RandfRange(90f, 220f);
-			Vector2 candidate = ClampPositionToStageBounds(player.GlobalPosition + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
-			if (candidate.DistanceTo(player.GlobalPosition) < 80f)
-				continue;
-			if (IsImpassablePosition(candidate))
-				continue;
-			return candidate;
-		}
-
-		return ClampPositionToStageBounds(player.GlobalPosition + new Vector2(0f, -130f));
 	}
 
 	private int GetCurrentEliteEnemyCount()

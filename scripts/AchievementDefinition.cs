@@ -219,6 +219,13 @@ public static class AchievementDefinitions
 	public const int CoursingTarget = 100;
 
 	/// <summary>
+	/// Lifetime chests that free John Dee (The Library at Mortlake). Every gate counts him, so it must stay under what
+	/// a player who beats each chapter at the first try has opened by the Emberdeep - about 134 (eight runs of about
+	/// seventeen); RegressionChecks.ValidateCollectorEconomy holds it there.
+	/// </summary>
+	public const int MortlakeChestTarget = 100;
+
+	/// <summary>
 	/// A side event's deed is "event_" and its site id; a secret's is "secret_" and the secret's id. Made
 	/// from the id rather than written by hand, so a deed can never drift from what it mirrors, and
 	/// prefixed so neither can ever collide with a hand-written deed. Constants, so UnlockCatalog can
@@ -541,18 +548,21 @@ public static class AchievementDefinitions
 			Kind = AchievementKind.Collection,
 			Measure = c => c.Lifetime.ChestItemsCollected.Count, Target = 12,
 		},
-		// The collector's wizard, freed by collecting. Thirty is two runs that reach the boss on the
-		// chest economy where elites carry them (about fifteen a run - .ai/passives-and-items.md,
-		// section 8), and lifetime chests are a stat every save has kept since the campaign began,
-		// so nothing new is recorded and a long-time player is handed him at the end of the next run.
-		// A Feat: it names no chapter, so every gate can count him (GlobalStatsManager.GateWizardIds).
+		// The collector's wizard, freed by collecting. A hundred is about six runs that reach the boss on the chest
+		// economy where elites carry them (about seventeen a run - _ChestSim, .ai/passives-and-items.md section 8);
+		// it was thirty, two runs, which made him a gift rather than a collection (Eric, 2026-11-03). Lifetime chests
+		// are a stat every save has kept since the campaign began, so nothing new is recorded, and a save that was
+		// handed him at thirty keeps him (AchievementManager.Reconcile only ever grants).
+		// A Feat: it names no chapter, so every gate can count him (GlobalStatsManager.GateWizardIds) - which is what
+		// holds the number down. The Emberdeep counts him, and a player who beats each of the eight chapters before it
+		// at the first try reaches it with about 134 chests; 150 would have held that player at its gate to farm.
 		new()
 		{
 			Id = "mortlake_library", DisplayName = "The Library at Mortlake",
-			Description = "Open 30 chests.",
+			Description = $"Open {MortlakeChestTarget} chests.",
 			RewardText = "Frees John Dee", CharacterUnlockId = "john_dee",
 			Category = AchievementCategory.Exploration,
-			Measure = c => c.Lifetime.TotalChestsOpened, Target = 30,
+			Measure = c => c.Lifetime.TotalChestsOpened, Target = MortlakeChestTarget,
 		},
 		// THE COURSING. Laelaps, the hound fated to catch whatever it hunted, was set in stone on the high heath
 		// mid-chase, and the black hares of the Broken Circle are his quarry; a hound of the player's own
