@@ -7,6 +7,7 @@
     {"id": "fallen-stone-1", "kind": "tree", "path": "res://assets/bonelight/world/heath/fallen-stone-1.png", "width": 82, "height": 42, "ground": 28, "anchor_x": 41, "trunk": 60},
     {"id": "fallen-stone-2", "kind": "tree", "path": "res://assets/bonelight/world/heath/fallen-stone-2.png", "width": 62, "height": 36, "ground": 24, "anchor_x": 31, "trunk": 44},
     {"id": "gorse-1", "kind": "bush", "path": "res://assets/bonelight/world/heath/gorse-1.png", "width": 60, "height": 40, "ground": 34, "anchor_x": 31, "trunk": 0},
-    {"id": "gorse-2", "kind": "bush", "path": "res://assets/bonelight/world/heath/gorse-2.png", "width": 44, "height": 34, "ground": 28, "anchor_x": 23, "trunk": 0}
+    {"id": "gorse-2", "kind": "bush", "path": "res://assets/bonelight/world/heath/gorse-2.png", "width": 44, "height": 34, "ground": 28, "anchor_x": 23, "trunk": 0},
+    {"id": "bramble-2", "kind": "bush", "path": "res://assets/bonelight/world/trees/bramble-2.png", "width": 56, "height": 40, "ground": 34, "anchor_x": 29, "trunk": 0}
   ]
 }
