@@ -370,6 +370,13 @@ things come up; strike what lands.**
    `.ai/spell-roster.md` and `.ai/enemy-behaviour.md`. Test actual damage from different player and
    projectile positions, alongside the visible trajectory, at PC and phone sizes.
 
+29. **Reconsider the top timer's plain black background** (Eric, 2026-11-05). Explore styling the
+   background to fit the game's art, or removing it entirely. This is a visual decision to consider;
+   neither option has been selected. Compare both at play size over bright and dark chapters and a
+   crowded fight, on PC and phone, keeping the timer readable and clear of the surrounding HUD.
+   Start with `RunTimerPanel` / `runTimerStyle` in `scripts/Node2DGame.cs`, `.ai/art-direction.md` and
+   the HUD/contrast rules in `.ai/level-up-screen.md`.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
