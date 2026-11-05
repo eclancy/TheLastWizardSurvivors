@@ -402,6 +402,14 @@ things come up; strike what lands.**
    with `scripts/WalkingHutEvent.cs` and `tools/art/walking_hut.py`; change the generator if the art
    needs correcting, then regenerate. Keep the footprints useful as a trail players can follow.
 
+33. **Unlocked wizard's sprite must draw in front of the shine** (Eric, 2026-11-05). Unlocking a
+   character currently puts a shining light over their sprite. Draw the wizard above that light so
+   the character remains clearly visible, with the celebratory shine behind them. Locate the actual
+   unlock presentation and check its sprite/effect draw order or Z layers; if the overlap is in a
+   generated freeing panel, fix the generator's layer order and regenerate. Review `Freeings`,
+   `Prologue`, `.ai/cutscenes.md` and the relevant unlock/rescue effect as needed, then check the
+   animation with several wizard sprites at PC and phone sizes.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
