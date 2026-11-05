@@ -282,6 +282,23 @@ things come up; strike what lands.**
    - Godot reference: [multiple resolutions](https://docs.godotengine.org/en/4.5/tutorials/rendering/multiple_resolutions.html)
      and [DisplayServer](https://docs.godotengine.org/en/4.5/classes/class_displayserver.html).
 
+21. **Use pages for crowded menus; start with Powers** (Eric, 2026-11-05). For menus with many options,
+   consider pages instead of one long scrollbar. In Powers, move the existing sections onto separate
+   pages so a player can go straight to the category they want. Make each option more compact to
+   conserve space: review padding, icon sizes and the arrangement of the description, cost and purchase
+   controls together, while keeping the text readable and the touch targets usable. Keep page controls
+   visible, show which page/category is selected, and support mouse, touch, keyboard and controller.
+   Review PC and phone layouts; assess other long menus individually rather than replacing every list
+   automatically. Start with `scripts/MainMenu.Shop.cs`, `.ai/level-up-screen.md`'s shop section and
+   `.ai/controller-and-focus.md`.
+22. **Rethink the name "Powers"** (Eric, 2026-11-05). He suggested something like "Powerups", but wants
+   a more magic-themed name. The menu sells permanent upgrades and unlockable boons, so the name and a
+   short explanation should make its purpose clear. No replacement has been selected. Candidates from
+   this discussion: **Arcane Mastery**, **Arcane Enhancements**, or **Spellcraft**. Keep the naming
+   distinct from Full Set Enchantments and the planned "Empowered" label for stronger spell rolls.
+   When chosen, update the main-menu entry, shop heading, hints and any other player-facing references
+   consistently; coordinate the wording with item 21's redesign.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
