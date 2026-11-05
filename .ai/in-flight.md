@@ -340,6 +340,18 @@ things come up; strike what lands.**
    keywords for the same issue and confirm that mouse-hover, click/tap and controller descriptions all
    remain readable. Use `.ai/level-up-screen.md`'s typography rules and PC/phone layout checks.
 
+27. **Keyboard input hides the mouse and gives the keyboard control until the mouse is used again**
+   (Eric, 2026-11-05). When playing/navigating with the keyboard, hide the cursor and deactivate mouse
+   hover/selection behavior so a stationary pointer cannot steal the selection, highlight another
+   option or leave a hover tooltip over the keyboard's choice. Restore the cursor and normal mouse
+   interaction when the player intentionally moves or clicks the mouse again; ignore small jitter.
+   This is an in-game input-mode switch, not disabling the operating system's mouse.
+   `CursorVisibility` currently tracks controller input and mouse movement/clicks but has no keyboard
+   case. Coordinate it with `MenuNavigator` and `MenuFocusHighlight.PointerActive` so cursor visibility,
+   focus highlights, hover effects and tooltips agree about the active input. Preserve controller
+   behavior, keyboard text entry and Android touch controls. Test keyboard -> mouse -> keyboard on
+   main-menu lists, level-up/chest choices, the defeat footer and status tooltips (including item 26).
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
