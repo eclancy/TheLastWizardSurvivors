@@ -320,6 +320,17 @@ things come up; strike what lands.**
    (20); a shared resolution/DPI cause is suspected by Eric but remains unconfirmed. Photograph long
    descriptions in Windows fullscreen and smaller windows at different DPI scales, then check portrait.
 
+25. **Add straightforward stat-boost items; simplify confusing effects where it fits** (Eric,
+   2026-11-05). The item pool should include basic, immediately understandable bonuses such as
+   **"Area +X%"**. Other possible examples are damage, movement speed or pickup radius increases;
+   choose the stats and values during the design/balance pass. Review existing confusing item effects
+   and replace them with simple stat increases when that better suits the item. Eric is open to
+   repurposing existing items, so this can improve the current pool as well as add new choices.
+   Keep the percentage wording clear and consistent with item 8, preserve coherent item/set identities,
+   and rebalance the bonus for its rarity and stacking behavior. Start with `ChestItemCatalog`,
+   `Player.ItemRules.cs`, `.ai/passives-and-items.md` and `.ai/spell-variety.md`; keep the cards, Codex
+   descriptions and actual stat effects in agreement. Specific replacements remain to be chosen.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
