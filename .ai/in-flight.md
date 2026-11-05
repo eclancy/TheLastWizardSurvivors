@@ -207,6 +207,24 @@ things come up; strike what lands.**
    - **Rough engineering estimate from this discussion:** a few days for a prototype, around one to
      two weeks for a thoroughly tested implementation; subject to provider and sign-in integration.
 
+15. **Opening cinematic: the invading army must rush over the horizon** (Eric, 2026-11-05).
+   The army currently looks awkward, as if its silhouettes are hovering above a picture rather than
+   rushing over the horizon. Rework the `tide` beat so the bodies belong to the landscape and advance
+   from beyond the crest onto the ground. Check ground contact, perspective, occlusion at the horizon
+   and the movement of the crowd together; shifting a silhouette layer across a static picture is the
+   problem to solve. Start with `scripts/Prologue.cs`, `tools/art/prologue.py` and `.ai/cutscenes.md`.
+   Edit the generator/animation, not the generated PNGs, and review the moving sequence at PC and phone
+   sizes rather than judging a still alone.
+16. **Opening cinematic: give the road toward the dark tower more landmarks** (Eric, 2026-11-05).
+   In the art Eric identifies with "the rest still wait for you", where the wizard travels along a
+   path toward the dark tower, fill the road's surroundings with more landmarks instead of the big,
+   flat, empty plain. Keep the wizard, the route and the distant tower readable while giving the journey
+   places to pass. Inspect both `five` and `road` and their transition: `Prologue.cs` currently puts
+   "Four are free. The rest still wait for you." on `five`, immediately before the uncaptioned `road`
+   beat; the requested visual is the journey toward the tower. Use `tools/art/prologue.py`, following
+   `.ai/world-and-tone.md`, `.ai/art-direction.md` and `.ai/cutscenes.md`; regenerate and review both
+   landscape and portrait compositions. Landmark choices remain to be designed.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
