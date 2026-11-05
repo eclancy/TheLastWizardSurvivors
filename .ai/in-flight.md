@@ -225,6 +225,20 @@ things come up; strike what lands.**
    `.ai/world-and-tone.md`, `.ai/art-direction.md` and `.ai/cutscenes.md`; regenerate and review both
    landscape and portrait compositions. Landmark choices remain to be designed.
 
+17. **Shadow Bolt should become a combination spell** (Eric, 2026-11-05; design and implementation
+   pending). Move Shadow Bolt into the Conjunction roster; its parent spells and recipe are still to
+   be chosen. Treat these as one piece of work:
+   - **Rebalance element-tag availability** around the change. Account for its tags moving out of the
+     ordinary spell pool, and check that builds can still reach the required element tiers and
+     Ascensions before a combination is available. Review spells, boons and items together.
+   - **Scale Shadow Bolt's power** for its new role and the requirements to obtain it, balancing it
+     against the other combination spells.
+   - **Make its visuals much more interesting**, with a distinct combination-spell identity and a
+     payoff that matches the other combinations. Review the moving effect in a crowded run at PC and
+     phone sizes. Update the generators/code that produce the art, not generated PNGs by hand.
+   Start with `.ai/combo-spells.md`, `.ai/gameplay-design.md`, `.ai/spell-roster.md` and
+   `.ai/art-direction.md`; include the existing unlock and save compatibility in the conversion plan.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
