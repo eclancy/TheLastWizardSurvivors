@@ -394,8 +394,9 @@ things come up; strike what lands.**
    the existing activation delay and effect. Start with Taproot in `scripts/BoonCatalog.cs` and any
    shared builder that prints its condition; keep its card and other descriptions consistent.
 
-32. **Walking hut footprints face backward** (Eric, 2026-11-05). When the hut walks north, the
-   chicken toes in its footprints point south. Check the footprint artwork's authored forward axis
+32. **Walking hut footprints face backward in every direction** (Eric, 2026-11-05; clarified after
+   the initial report). The chicken toes point opposite the hut's direction of travel however it is
+   running; northbound tracks pointing south were one example. Check the artwork's authored forward axis
    against the placement rotation/mirroring and the hut's actual direction of travel. Make the tracks
    point the way it walked; verify north, south, east, west and turns in the moving sequence. Start
    with `scripts/WalkingHutEvent.cs` and `tools/art/walking_hut.py`; change the generator if the art
