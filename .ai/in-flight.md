@@ -299,6 +299,17 @@ things come up; strike what lands.**
    When chosen, update the main-menu entry, shop heading, hints and any other player-facing references
    consistently; coordinate the wording with item 21's redesign.
 
+23. **Show the protection after a level-up selection with a small shield animation** (Eric,
+   2026-11-05). When the player chooses a level-up and the run resumes, briefly form a small magical
+   shield around the wizard to show that he cannot be hurt yet. Animate it away when that protection
+   ends, so its visible lifetime matches the actual invulnerability rather than an independent timer.
+   The existing protection is `Player.PostMenuInvincibilitySeconds` (currently 2 seconds), granted in
+   `Node2DGame` through `GrantInvincibility(..., whiten: false)`; do not confuse it with the separate
+   post-level-up spawn grace. Keep the effect small, readable amid spells, and distinct from Aegis
+   Ward so it does not imply the player gained a shield spell. Check the animation at PC and phone
+   sizes, following `.ai/art-direction.md` and `.ai/performance.md`. This is a visual cue for the
+   existing protection, with its duration and gameplay behavior preserved.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
