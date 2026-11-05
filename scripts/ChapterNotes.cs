@@ -211,7 +211,9 @@ public static class ChapterNotes
 				clues.Add(siteClue);
 		}
 
-		if (SecretCatalog.ForStage(stageId).Any(secret => secret.IsVault && !string.IsNullOrEmpty(secret.SpellUnlockId)
+		if (SecretCatalog.ForStage(stageId).Any(secret => Teachings.LessonAt(save, secret.Id) != null))
+			clues.Add("A trail of golden lights leads to a forgotten lesson.");
+		else if (SecretCatalog.ForStage(stageId).Any(secret => secret.IsVault && !string.IsNullOrEmpty(secret.SpellUnlockId)
 			&& (save == null || (!save.HasFoundSecret(secret.Id) && !GlobalStatsManager.IsSpellUnlockedForLevelUp(save, secret.SpellUnlockId)))))
 			clues.Add(VaultClue);
 		return clues;

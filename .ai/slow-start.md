@@ -406,8 +406,16 @@ For the agent who does. Each line is where the change lives, not how.
   lesson to the end of the next.
 - **Locked pages are shown on the strip** (the brief's "locked slots show quietly"), where section 7 said
   never to draw them.
-- **The world map card (`StageRewards`) does not list the page or the lessons.** The teachers are secrets,
-  which the card does not name either.
+- **Teaching landmarks are signposted (2026-11-05).** `Teachings.LessonAt` identifies an unfound teacher
+  that still owes this save a rung, even if its spell is already owned or earlier teachers were skipped.
+  The world-map card says a lesson is hidden here; selecting its secret silhouette opens a gentle clue
+  and explains that learning happens after the run. Other reward silhouettes also open their existing
+  hints, through `ElementTagPopover`, with mouse, touch or controller. The chapter's opening note points
+  out golden lights. `TeachingTrail` draws those lights from near the spawn toward the teacher, only
+  over checked open ground, as one draw node using `SecretSite`'s opaque gold glints. Encountering the
+  light marks a gold POI seal; the chapter's wayfinder also reveals it. The marker keeps the bearing
+  through detours and goes away with the light when the landmark is found. No save schema, teacher
+  placement, puzzle, reward or learning gate changes.
 - **The Codex's Recipes tab is still there on a fresh save**: it holds the Full Set Enchantments too,
   which are open from run 1 (Q6). Only its combinations wait for the Apotheosis.
 - **The Penknife is never taken by the harness bot** (it is kept out of every chest the bot deals), so the

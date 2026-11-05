@@ -81,6 +81,26 @@ public static class Teachings
 	public static Lesson GetById(string id) =>
 		All.FirstOrDefault(l => l.Id.Equals(id ?? string.Empty, StringComparison.OrdinalIgnoreCase));
 
+	/// <summary>The next lesson an unfound teacher can give, including teachers visited out of order.</summary>
+	public static Lesson LessonAt(SaveData data, string secretId)
+	{
+		Lesson teacher = Ladder.FirstOrDefault(l => l.TeacherSecretId.Equals(secretId ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+		if (data == null || teacher == null || TeacherFound(data, teacher))
+			return null;
+		int creditAfterFind = TeachersFound(data) + 1 - Ladder.Count(l => HasLearned(data, l.System));
+		return creditAfterFind <= 0 ? null
+			: Ladder.Where(l => !HasLearned(data, l.System)).Skip(creditAfterFind - 1).FirstOrDefault();
+	}
+
+	/// <summary>A gentle map hint: names no unrecovered spell and gives no puzzle solution.</summary>
+	public static string LandmarkHint(string secretId) => secretId switch
+	{
+		SecretCatalog.PinfoldId => "Something of light is penned in the fields.",
+		SecretCatalog.FallenStarId => "A fallen light lies beyond the standing stones.",
+		SecretCatalog.GeodeHeartId => "A warm light shines inside the cave's crystals.",
+		_ => string.Empty,
+	};
+
 	/// <summary>The secrets that teach, as deeds: the vault deeds of the ladder's three landmarks.</summary>
 	public static IEnumerable<string> TeacherDeedIds =>
 		Ladder.Select(l => AchievementDefinitions.SecretDeedId(l.TeacherSecretId));

@@ -40,6 +40,9 @@ public sealed class PointOfInterest
 	/// <summary>The compass (or the chapter's own wayfinder), not something it reveals.</summary>
 	public bool IsWayfinder { get; }
 
+	/// <summary>A teaching landmark: warm gold, like the light that leads to it.</summary>
+	public bool IsTeaching { get; init; }
+
 	/// <summary>Finished with: a lantern snuffed, an event won or stood down, a wayfinder taken.</summary>
 	public bool Done { get; set; }
 
