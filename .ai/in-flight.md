@@ -377,6 +377,18 @@ things come up; strike what lands.**
    Start with `RunTimerPanel` / `runTimerStyle` in `scripts/Node2DGame.cs`, `.ai/art-direction.md` and
    the HUD/contrast rules in `.ai/level-up-screen.md`.
 
+30. **Magic Missile and other projectile attacks render above the player sprite** (Eric,
+   2026-11-05). Give projectile visuals priority over the player character so they remain visible
+   when crossing or overlapping his sprite. This revises the earlier rule that the player always
+   draws above spells; update the implementation and the corresponding draw-layer documentation
+   together. `DrawLayers` currently puts ordinary airborne effects at `Air` (6), below the player
+   and boss bodies sharing `Foremost` (10). Review the layer split and projectile scene/script Z
+   settings rather than raising only Magic Missile. The request concerns projectiles above the
+   player; review boss layering explicitly when separating the currently shared body layer.
+   Start with `scripts/DrawLayers.cs`, `MagicMissile.cs`, the other projectile visuals and
+   `.ai/art-direction.md` / `.ai/godot-engine.md`. Check casts and projectiles crossing the wizard
+   in motion and in a crowded fight, at PC and phone sizes.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
