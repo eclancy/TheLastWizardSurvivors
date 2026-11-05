@@ -164,7 +164,18 @@ things come up; strike what lands.**
      the lantern swinging below it on its bail. `tools/art/roster.py`, `pyromancer()`; regenerate his sheets and
      the prologue panels that show him, keep his spell anchor on the lantern (`CharacterVisuals`), and check the
      select, a run and the prologue at both canvases.
-11. **Scenery-only landmarks per chapter** (`.ai/genre-lessons.md` 3), after the foliage pass.
+11. **More large landmarks unique to every map** (`.ai/genre-lessons.md` 3; expanded by Eric,
+   2026-11-05), after the foliage pass. Each map should have its own distinctive large scenery,
+   giving the landscape places to notice and recognize. Eric's examples: **large stones with
+   mysterious, unidentifiable carvings, stone circles, and much larger fairy circles**. Give the
+   features substantial scale and a presence in the landscape; design a set suited to each chapter's
+   own terrain and atmosphere. The specific landmarks per map remain to be chosen.
+   - Build on the scenery-only landmark plan: these can enrich the world without every feature
+     needing to be an unlock, a puzzle or a reward. Keep actual secret/event clues readable among them.
+   - Check existing art and generators first (`.ai/art-inventory.md`); draw/generate larger features
+     at their intended scale under `.ai/art-direction.md`. Place them through the terrain/landmark
+     system and respect `.ai/terrain.md`'s footing and clearance rules so a landmark does not trap
+     the player or obstruct an event. Review their scale, variety and navigation in PC and phone runs.
 12. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
    launch-plan doc, now carrying the rival motive).
 13. **Housekeeping:**
