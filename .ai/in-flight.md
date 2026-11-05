@@ -445,6 +445,24 @@ things come up; strike what lands.**
    in item 27. Test a results screen with several different newly unlocked rewards, including an
    overflowing/wrapped icon row, at Windows and phone layouts.
 
+36. **Quitting a run should still show its results and unlock celebrations** (Eric, 2026-11-05).
+   When the player voluntarily quits a run, take them through the results/unlocks screen and any
+   accompanying unlock animations before returning to the menu. Earned unlocks must remain visible
+   and their presentation must not be skipped by the quit path. Check quitting after earning a
+   character, familiar or system unlock, as well as a run with no new unlocks; coordinate with item
+   35's inspectable rewards. This concerns leaving a run through the game's quit action.
+
+37. **Character unlocks introduce familiars and teach Ascensions through a magical artifact**
+   (Eric, 2026-11-05). Eric reports using GPT to change how familiar and Ascension unlocking works;
+   inspect those changes before implementing this follow-up. **The familiar should unlock alongside
+   a character unlock.** Add an animation in which the newly unlocked character shares a special
+   magical artifact with the player, explaining and introducing the unlocking of Ascensions.
+   **Apotheosis and combination spells should have similar interactions** that explain their
+   respective system unlocks through an animated story moment. The particular character, artifact
+   and details of each interaction remain to be chosen. Review the current unlock flow, `Teachings`,
+   `Freeings`, `.ai/slow-start.md` and `.ai/cutscenes.md` together so the new presentations agree with
+   the unlock rules and play after a run, including a voluntarily quit run (item 36).
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
