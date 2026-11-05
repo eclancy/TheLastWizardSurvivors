@@ -422,6 +422,18 @@ things come up; strike what lands.**
    `CharacterData_Archmage.tres`, `.ai/protagonist.md` and `.ai/difficulty-curve.md`; the intended outcome
    is a chance to recover position, with 10 seconds as the proposed starting point for testing.
 
+35. **"Newly unlocked" icons cannot be inspected on Windows** (Eric, 2026-11-05). He cannot click
+   the icons or reach them with the arrow keys to find out what they are. Make each reward icon a
+   usable selection: clicking it, or focusing it with keyboard arrows and activating it, should show
+   the unlocked thing's name and description. Give a focused icon a clear highlight and support
+   controller selection/activation and touch as well.
+   Start with `GameOverScreen.BuildUnlockStrip`, its icon wells and the corresponding `RunUnlockEntry`
+   / `BuildUnlockCard` detail data. Check mouse filters, focus stops, focus neighbors and input routing;
+   the current strip is an `HFlowContainer` with `MouseFilter.Ignore`. Keep Retry and Main menu reachable
+   when moving through the reward icons (items 18-19), and coordinate with the keyboard/mouse switch
+   in item 27. Test a results screen with several different newly unlocked rewards, including an
+   overflowing/wrapped icon row, at Windows and phone layouts.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
