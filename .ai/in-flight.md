@@ -394,6 +394,13 @@ things come up; strike what lands.**
    the existing activation delay and effect. Start with Taproot in `scripts/BoonCatalog.cs` and any
    shared builder that prints its condition; keep its card and other descriptions consistent.
 
+32. **Walking hut footprints face backward** (Eric, 2026-11-05). When the hut walks north, the
+   chicken toes in its footprints point south. Check the footprint artwork's authored forward axis
+   against the placement rotation/mirroring and the hut's actual direction of travel. Make the tracks
+   point the way it walked; verify north, south, east, west and turns in the moving sequence. Start
+   with `scripts/WalkingHutEvent.cs` and `tools/art/walking_hut.py`; change the generator if the art
+   needs correcting, then regenerate. Keep the footprints useful as a trail players can follow.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
