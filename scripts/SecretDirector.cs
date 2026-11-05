@@ -248,6 +248,10 @@ public partial class SecretDirector : Node
 			AddStamp(centre, radius);
 		Game.AddChild(site);
 		placed.Add(site);
+		// Teaching systems must be findable before their faint local decor comes into view. The guide
+		// starts near the spawn, and hands over to the existing POI arrow once its light is encountered.
+		if (Teachings.LessonAt(Save, secret.Id) != null)
+			Game.AddChild(new TeachingTrail { Name = "TeachingTrail", Director = this, Site = site });
 
 		if (logPlacement || beside)
 			GD.Print($"SECRETS stage {StageId}: {secret.DisplayName} ({secret.Placement}) at ({site.Position.X:0},{site.Position.Y:0}), "

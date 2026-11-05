@@ -680,6 +680,12 @@ public partial class WorldMap : Control
 			row.AddChild(BuildSlot(reward, has));
 		}
 		cardBox.AddChild(row);
+		Teachings.Lesson lesson = rewards.Where(r => r.Kind == StageRewardKind.Secret)
+			.Select(r => Teachings.LessonAt(save, r.Id)).FirstOrDefault(l => l != null);
+		string help = lesson == null ? "Select a silhouette for a hint"
+			: Teachings.IsShown(save, lesson.System) ? $"Hidden lesson: {lesson.Name}\nSelect a silhouette for a hint"
+			: "Your next lesson is hidden here.\nSelect a silhouette for a hint";
+		cardBox.AddChild(MakeText(help, ResponsiveLayout.TextRole.Label, InkSoft, "CardHintHelp"));
 		cardBox.AddChild(MakeText($"{found} of {rewards.Count} found", ResponsiveLayout.TextRole.Label, InkSoft, "CardHoldsCount"));
 	}
 
@@ -688,11 +694,13 @@ public partial class WorldMap : Control
 	private Control BuildSlot(StageReward reward, bool found)
 	{
 		List<Texture2D> frames = SlotFrames(reward, found, out int scale);
-		var slot = new PanelContainer
+		var slot = new Button
 		{
 			Name = $"Slot_{reward.Kind}_{reward.Id}",
 			CustomMinimumSize = new Vector2(SlotBox + 8f, SlotBox + 8f),
-			MouseFilter = MouseFilterEnum.Pass,
+			MouseFilter = MouseFilterEnum.Stop,
+			FocusMode = FocusModeEnum.All,
+			MouseDefaultCursorShape = CursorShape.PointingHand,
 			TooltipText = StageRewards.Describe(save, reward, NameOf),
 		};
 		var style = new StyleBoxFlat
@@ -702,14 +710,49 @@ public partial class WorldMap : Control
 		};
 		style.SetBorderWidthAll(2);
 		style.SetCornerRadiusAll(4);
-		slot.AddThemeStyleboxOverride("panel", style);
+		BonelightSkin.StyleButton(slot, BonelightSkin.Emphasis.Normal);
+		slot.AddThemeStyleboxOverride("normal", style);
+		var lit = (StyleBoxFlat)style.Duplicate();
+		lit.BorderColor = InkPlace;
+		slot.AddThemeStyleboxOverride("hover", lit);
+		slot.AddThemeStyleboxOverride("pressed", lit);
 		var center = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+		center.SetAnchorsPreset(LayoutPreset.FullRect);
 		center.AddChild(new PixelArtRect(frames, scale, SlotBox)
 		{
 			FramesPerSecond = CharacterVisuals.IdleFramesPerSecond,
 		});
 		slot.AddChild(center);
+		slot.Pressed += () => ElementTagPopover.Toggle(slot, () => BuildRewardHint(reward));
 		return slot;
+	}
+
+	private PanelContainer BuildRewardHint(StageReward reward)
+	{
+		var ink = CodexRows.Stone;
+		var panel = new PanelContainer { Name = "RewardHint", MouseFilter = MouseFilterEnum.Ignore };
+		var style = new StyleBoxFlat { BgColor = ink.Face, BorderColor = InkPlace };
+		style.SetBorderWidthAll(2);
+		style.SetCornerRadiusAll(6);
+		style.SetContentMarginAll(16);
+		panel.AddThemeStyleboxOverride("panel", style);
+		var column = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+		column.AddThemeConstantOverride("separation", 10);
+		panel.AddChild(column);
+		column.AddChild(CodexRows.MakeText("What he keeps here", ResponsiveLayout.TextRole.Title, ink.Ink));
+		bool secret = reward.Kind is StageRewardKind.Secret or StageRewardKind.Keepsake;
+		string hint = secret && !StageRewards.IsFound(save, reward) && Teachings.LandmarkHint(reward.Id).Length > 0
+			? Teachings.LandmarkHint(reward.Id) : StageRewards.Describe(save, reward, NameOf);
+		column.AddChild(CodexRows.MakeText(hint, ResponsiveLayout.TextRole.Body, ink.Ink));
+		Teachings.Lesson lesson = secret ? Teachings.LessonAt(save, reward.Id) : null;
+		if (lesson != null)
+		{
+			string title = Teachings.IsShown(save, lesson.System) ? $"Teaches {lesson.Name}" : "Teaches your next lesson";
+			column.AddChild(CodexRows.MakeText(title, ResponsiveLayout.TextRole.Label, ink.Reward));
+			column.AddChild(CodexRows.MakeText("Follow the golden lights.\nLearn its lesson when the run ends.",
+				ResponsiveLayout.TextRole.Label, ink.InkSoft));
+		}
+		return panel;
 	}
 
 	/// <summary>
@@ -854,7 +897,10 @@ public partial class WorldMap : Control
 	public override void _Input(InputEvent @event)
 	{
 		// The journal over the map has the keys while it is open: its tabs, not the road.
-		if (view == null || !IsVisibleInTree() || JournalScreen.IsOpen)
+		if (view == null || !IsVisibleInTree() || JournalScreen.IsOpen || ElementTagPopover.IsOpen)
+			return;
+		Control focus = GetViewport().GuiGetFocusOwner();
+		if (focus != null && focus.Name.ToString().StartsWith("Slot_"))
 			return;
 		// Heard before Godot's own focus step, and consumed, so left and right move the map and never
 		// the selection. Echoes included: a held arrow key walks on at the keyboard's own repeat.
@@ -882,6 +928,11 @@ public partial class WorldMap : Control
 	public override void _Notification(int what)
 	{
 		// Android's back button.
+		if (what == NotificationWMGoBackRequest && ElementTagPopover.IsOpen)
+		{
+			ElementTagPopover.Close();
+			return;
+		}
 		if (what == NotificationWMGoBackRequest && (view != null || pageView != null) && !JournalScreen.IsOpen)
 			OnBack();
 	}
@@ -897,6 +948,10 @@ public partial class WorldMap : Control
 
 	private void UpdateRepeat(float delta)
 	{
+		// On the card, left/right walks its hint buttons. Map arrows and compass still change chapter.
+		Control focus = GetViewport().GuiGetFocusOwner();
+		if (ElementTagPopover.IsOpen || (focus != null && focus.Name.ToString().StartsWith("Slot_")))
+			return;
 		int held = HeldPadDirection();
 		if (heldAtOpen)
 		{

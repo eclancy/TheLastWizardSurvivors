@@ -13,6 +13,15 @@ things come up; strike what lands.**
 
 **Fixes and changes to start:**
 
+- **Ascension discovery (2026-11-05, `codex/ascension-guidance`):** built from the archived playtest
+  request first. The world-map's silhouettes open hints, teaching chapters advertise their hidden
+  lesson, the opening note points out golden lights near the start, and encountering those lights
+  gives a persistent gold marker toward the teacher. Applies to all three teaching landmarks and
+  keeps the existing puzzles and post-run lesson reels. Build and content validator passed (0 content
+  errors, the existing Test Wizard warning); all three teacher walkthroughs passed, including lights
+  near spawn, the real landmark bearing and retiring its marker on completion. PC and phone layouts
+  inspected; controller A opens a hint, B closes it. Preparing 0.13.1.
+
 1. **Finish the foliage pass: the Frozen Waste and the Mystic Ruins.** Both builders were stopped mid-work;
    resume each in its worktree, on `.ai/terrain.md` section 13's recipe (salts assigned: Frozen 0x5CF2-4,
    Ruins 0x5E02-4). Merge each with `ground_detail.py` re-run for the atlas.

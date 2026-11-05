@@ -103,6 +103,15 @@ public static partial class RegressionChecks
 			warnings.Add("Teachings: the Sovereign Rite is no longer the Warden of the Deep's deed; its lesson is owed by owning it.");
 
 		var fresh = new SaveData();
+		foreach (Teachings.Lesson teacher in Teachings.Ladder)
+			if (Teachings.LessonAt(fresh, teacher.TeacherSecretId)?.System != Teaching.Ascension
+				|| string.IsNullOrWhiteSpace(Teachings.LandmarkHint(teacher.TeacherSecretId)))
+				warnings.Add($"Teachings: an unlearned save needs an Ascension hint and guidance at {teacher.TeacherSecretId}, even when visited out of order.");
+		// Owning a vault's spell is not evidence of having found its teacher. It must still have a lead.
+		var ownsFamiliar = new SaveData();
+		ownsFamiliar.UnlockedSpellIds.Add("familiar");
+		if (Teachings.LessonAt(ownsFamiliar, SecretCatalog.PinfoldId) == null)
+			warnings.Add("Teachings: owning the Familiar must not hide the Pinfold's lesson guidance.");
 		if (!Teachings.IsShown(fresh, Teaching.Ascension) || Teachings.IsShown(fresh, Teaching.Apotheosis)
 			|| Teachings.IsShown(fresh, Teaching.Conjunctions) || Teachings.Ladder.Any(l => Teachings.HasLearned(fresh, l.System))
 			|| Teachings.Owed(fresh).Count > 0)
@@ -112,6 +121,9 @@ public static partial class RegressionChecks
 		var skipped = new SaveData();
 		skipped.RecordSecretFound(Teachings.Ladder[1].TeacherSecretId);
 		List<Teachings.Lesson> owed = Teachings.Owed(skipped);
+		if (Teachings.LessonAt(skipped, Teachings.Ladder[1].TeacherSecretId) != null
+			|| Teachings.LessonAt(skipped, Teachings.Ladder[0].TeacherSecretId)?.System != Teaching.Apotheosis)
+			warnings.Add("Teachings: a found teacher needs no trail; the next teacher hints the next lesson, including one already owed.");
 		if (owed.Count != 1 || owed[0].System != Teaching.Ascension)
 			warnings.Add($"Teachings: a save that found only the second teacher owes [{string.Join(", ", owed.Select(l => l.Id))}], not the Ascension alone.");
 		Teachings.Teach(skipped, owed.FirstOrDefault());
@@ -120,6 +132,11 @@ public static partial class RegressionChecks
 			warnings.Add("Teachings: once the Ascension is taught, it is learned, nothing more is owed, and only the Apotheosis is shown next.");
 		if (Teachings.Teach(skipped, Teachings.Get(Teaching.Ascension)))
 			warnings.Add("Teachings: a lesson was taught twice.");
+		var taught = new SaveData();
+		foreach (Teachings.Lesson lesson in Teachings.Ladder)
+			Teachings.Teach(taught, lesson);
+		if (Teachings.Ladder.Any(l => Teachings.LessonAt(taught, l.TeacherSecretId) != null))
+			warnings.Add("Teachings: a save taught every lesson should have no teaching trail, even with unfound vaults.");
 		skipped.RecordSecretFound(Teachings.Ladder[0].TeacherSecretId);
 		owed = Teachings.Owed(skipped);
 		if (owed.Count != 1 || owed[0].System != Teaching.Apotheosis)

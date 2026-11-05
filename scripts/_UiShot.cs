@@ -5664,6 +5664,7 @@ public partial class _UiShot : Node
 		private int lastStage;
 		private int chestsBefore;
 		private float struckFor;
+		private TeachingTrail teachingTrail;
 
 		private void Check(string what, bool ok)
 		{
@@ -5773,6 +5774,16 @@ public partial class _UiShot : Node
 					}
 					hadBefore = save.HasFoundSecret(vault.SecretId);
 					Vector2 origin = Director.Game.StageOrigin;
+					teachingTrail = Director.Game.GetChildren().OfType<TeachingTrail>().FirstOrDefault(t => t.Site == vault);
+					if (Teachings.LessonAt(save, vault.SecretId) != null)
+					{
+						Check("an unfound teacher has a trail", teachingTrail != null);
+						if (teachingTrail != null)
+						{
+							Check("the teaching lights begin near spawn", teachingTrail.LightPositions.Any(p => p.DistanceTo(origin) <= 600f));
+							Check("the teaching marker points at the actual seeded landmark", teachingTrail.Point.Position == vault.GlobalPosition);
+						}
+					}
 					float chunks = vault.GlobalPosition.DistanceTo(origin) / 1536f;
 					GD.Print($"VAULTPROBE {vault.SecretId} at {vault.GlobalPosition}, {chunks:0.0} chunks out; save had it found before: {hadBefore}");
 					Check($"it is five to seven chunks out ({chunks:0.00})", chunks >= SecretDirector.VaultMinChunks - 0.3f && chunks <= SecretDirector.VaultMaxChunks + 1.1f);
@@ -5808,6 +5819,8 @@ public partial class _UiShot : Node
 				}
 				case 2:
 				{
+					if (teachingTrail != null)
+						Check("encountered teaching lights keep their direction marker", teachingTrail.Point.Seen && teachingTrail.Point.Marked);
 					Check($"seen at its foot ({Hero.GlobalPosition.DistanceTo(vault.TellPosition):0} px from the glint)", Director.IsGlimpsed(vault.SecretId));
 					Check("and the seen mark is on the save", save.HasGlimpsedSecret(vault.SecretId));
 					// The far tell: crystals thicker near it than far from it, and cracked ones only near.
@@ -5920,6 +5933,11 @@ public partial class _UiShot : Node
 		// the chest only on a save that had found it before.
 		private void CheckPaid()
 		{
+			if (teachingTrail != null)
+			{
+				Check("a found teacher retires its direction marker", teachingTrail.Point.Done && !teachingTrail.Point.Marked);
+				Check("finding the teacher still owes a post-run lesson", Teachings.Owed(save).Count > 0);
+			}
 			string spell = VaultSpellId;
 			Shot("the light reached him: the toast");
 			Check("the vault is opened for the run", vault.IsOpened);
