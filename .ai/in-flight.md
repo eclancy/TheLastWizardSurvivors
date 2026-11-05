@@ -180,6 +180,33 @@ things come up; strike what lands.**
      `ws-wip-combo-sagittarius`, `ws-wip-familiar-icons`, `ws-wip-progress-reset`, `ws-wip-spell-visuals`):
      Eric's call whether to delete.
 
+14. **Optional cross-device saves: Android and Windows** (Eric, 2026-11-05; discussion captured for next
+   week, provider and implementation still to be decided).
+   - **Goal:** the same player's permanent progress follows them between the Android app and the
+     downloadable Windows build. Both already use `SaveData` and `SaveManager`'s `user://savegame.json`.
+     Proposed first scope: unlocks, currency, upgrades, achievements, campaign progress and lessons,
+     synced between runs. Resuming halfway through a run is a separate, larger feature. Keep device
+     settings local (`SaveData.SettingsKeys`).
+   - **Identity:** automatic cloud saves need shared player identity and online storage. A managed
+     sign-in service can handle accounts; players could enable cloud saves optionally and keep playing
+     offline. Device pairing codes are another option, with account recovery to design. Manual save
+     export/import is the smaller alternative and needs no cloud account or hosting bill.
+   - **Protect progress:** keep local saves and backups, add save revisions and detect conflicts when
+     both devices were played offline. Initially offer a clear choice of conflicting saves, preserving
+     both copies. Do not silently merge currency or purchases: spending on the phone must not be undone
+     by an older PC upload. Handle schema migrations, different game versions, and `ProgressEpoch` so an
+     older device cannot overwrite a newer save or revive progress from before a story reset.
+   - **Costs checked 2026-11-05, not a promise of free hosting indefinitely:**
+     [Supabase](https://supabase.com/pricing) has a $0 tier with 50,000 monthly active auth users, 500 MB
+     database storage and 5 GB outgoing traffic; free projects pause after a week of inactivity. Pro
+     starts at $25/month. [PlayFab](https://developer.microsoft.com/en-us/games/products/playfab/pricing/)
+     has a $0 fixed monthly fee on pay-as-you-go, with metered usage charges; its $99/month Standard
+     subscription is optional. Neither provider has been selected or configured. Aim to fit a free tier
+     initially, then estimate costs from actual save size, active players and sync frequency before
+     committing to a service. Avoid uploading on every local save write; batch meaningful checkpoints.
+   - **Rough engineering estimate from this discussion:** a few days for a prototype, around one to
+     two weeks for a thoroughly tested implementation; subject to provider and sign-in integration.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
