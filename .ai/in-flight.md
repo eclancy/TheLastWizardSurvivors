@@ -410,6 +410,18 @@ things come up; strike what lands.**
    `Prologue`, `.ai/cutscenes.md` and the relevant unlock/rescue effect as needed, then check the
    animation with several wizard sprites at PC and phone sizes.
 
+34. **The Archmage's passive should give time to escape after it triggers** (Eric, 2026-11-05;
+   called "archwizard" in the playtest note). When Overlooked turns aside the killing blow, give the
+   player a meaningful invincibility window to get out of the dangerous situation. **Eric's proposed
+   duration is 10 seconds** after activation. The current `Player.OverlookedGraceSeconds` is 2 seconds;
+   its trigger is in `Player.TakeDamage` (`missed_once`, `characterOverlooked` / `overlookedSpent`).
+   Keep the once-per-run trigger and tune this passive's own grace, separately from post-menu protection.
+   Make the active protection clear visually (coordinate with item 23), and test whether the player can
+   actually escape a dense swarm or hazard after activation. Check damage immunity for the full window
+   and its expiry, then update the passive's descriptions/design notes to match. Start with
+   `CharacterData_Archmage.tres`, `.ai/protagonist.md` and `.ai/difficulty-curve.md`; the intended outcome
+   is a chance to recover position, with 10 seconds as the proposed starting point for testing.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
