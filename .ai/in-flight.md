@@ -352,6 +352,24 @@ things come up; strike what lands.**
    behavior, keyboard text entry and Android touch controls. Test keyboard -> mouse -> keyboard on
    main-menu lists, level-up/chest choices, the defeat footer and status tooltips (including item 26).
 
+28. **Magic Missile should fly behind a boss's shield; explore other boss weak-spot interactions**
+   (Eric, 2026-11-05). Against the boss that raises a shield, Magic Missile should travel all the way
+   around and behind it to reach him. Make the route and rear hit visible so the spell's seeking
+   behavior has a satisfying interaction with the defense. The Hayward's frontal hurdle in the
+   Fallow Fields appears to match this report; confirm the boss when reproducing.
+   - **The damage rule matters as well as the flight path:** `HaywardBoss.AdjustIncomingDamage`
+     currently reduces hits according to `PlayerInFront`, using the player's position rather than
+     where a projectile arrives from. Curving the missile behind him alone would still leave its
+     damage guarded while the player stands in front. Design the incoming-hit/guard interaction so
+     actually reaching the exposed side counts, and review the effect on the boss's circling mechanic.
+   - **Review the other bosses' weak spots** for similarly fun Magic Missile interactions. Consider
+     how it finds and reaches an exposed target, and make those choices readable in the missile's
+     motion. Choose interactions per boss, with deliberate handling of their phases and targetability.
+     Parent/branch-specific behavior and any balance changes remain to be designed.
+   Start with `MagicMissile.cs`, `HaywardBoss.cs`, the incoming-damage hook in `Enemy.cs`,
+   `.ai/spell-roster.md` and `.ai/enemy-behaviour.md`. Test actual damage from different player and
+   projectile positions, alongside the visible trajectory, at PC and phone sizes.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
