@@ -310,6 +310,16 @@ things come up; strike what lands.**
    sizes, following `.ai/art-direction.md` and `.ai/performance.md`. This is a visual cue for the
    existing protection, with its duration and gameplay behavior preserved.
 
+24. **Spell descriptions are clipped below their containers on Windows** (Eric, 2026-11-05).
+   Some descriptions extend below the bottom of their container, leaving the lower text unreadable.
+   The exact spell(s) and menu have not been identified yet; inspect the level-up cards, spell/Codex
+   details, pause-screen spell details and character-selection spell descriptions when reproducing.
+   Check text wrapping and minimum heights, fixed-height parents, clipping, scroll reach and layout
+   updates after resizing. Make the whole description readable/reachable while preserving the text's
+   legibility. Investigate alongside the defeat-screen overflow (18) and resolution/display options
+   (20); a shared resolution/DPI cause is suspected by Eric but remains unconfirmed. Photograph long
+   descriptions in Windows fullscreen and smaller windows at different DPI scales, then check portrait.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
