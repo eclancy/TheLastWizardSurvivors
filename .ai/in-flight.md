@@ -239,6 +239,19 @@ things come up; strike what lands.**
    Start with `.ai/combo-spells.md`, `.ai/gameplay-design.md`, `.ai/spell-roster.md` and
    `.ai/art-direction.md`; include the existing unlock and save compatibility in the conversion plan.
 
+18. **Defeat screen runs off the bottom on Windows** (Eric, 2026-11-05). The defeat/results screen
+   trails below the bottom of his screen. Reproduce in `GameOverScreen` at the Windows window sizes,
+   including fullscreen and a smaller window, with enough results/unlocks to exercise the tall case.
+   Keep the content reachable and the Retry / Main menu footer on screen; review the portrait layout
+   as well. Check with `_UiShot --force-death` and a real defeat. Read `.ai/level-up-screen.md` and
+   `.ai/controller-and-focus.md` before changing the layout or its scrolling.
+19. **Defeat screen: Right Arrow from Retry does not reach Main menu** (Eric, 2026-11-05).
+   He cannot navigate from Retry to Main menu by pressing Right Arrow. Reproduce using real keyboard
+   input, then check the focus neighbors, the footer's layout and any input handling that consumes
+   left/right in `GameOverScreen` / `MenuNavigator`. Make Right Arrow move the selection from Retry to
+   Main menu, with Left Arrow returning, and verify the equivalent D-pad/stick navigation and activation.
+   Check alongside item 18 so fixing the overflowing layout does not leave either button unreachable.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
