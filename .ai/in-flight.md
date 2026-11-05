@@ -245,12 +245,42 @@ things come up; strike what lands.**
    Keep the content reachable and the Retry / Main menu footer on screen; review the portrait layout
    as well. Check with `_UiShot --force-death` and a real defeat. Read `.ai/level-up-screen.md` and
    `.ai/controller-and-focus.md` before changing the layout or its scrolling.
+   - **Resolution/scaling investigation (Eric, 2026-11-05):** the resolution appears incorrect to him.
+     Record the selected monitor, desktop resolution, actual window size, logical viewport size and
+     Windows DPI scaling when reproducing. Code inspection suggests a possible layout issue as well:
+     `DisplayProfile` already requests borderless fullscreen; the PC design canvas is 1280x720 with
+     `KeepHeight`. `GameOverScreen.BuildShell` centres a folded panel at its content height, with no
+     overall scroll/height cap around the summary and footer. A minimum height exceeding the available
+     canvas could push the bottom out of view. This is a hypothesis, not a reproduced diagnosis.
 19. **Defeat screen: Right Arrow from Retry does not reach Main menu** (Eric, 2026-11-05).
    He cannot navigate from Retry to Main menu by pressing Right Arrow. Reproduce using real keyboard
    input, then check the focus neighbors, the footer's layout and any input handling that consumes
    left/right in `GameOverScreen` / `MenuNavigator`. Make Right Arrow move the selection from Retry to
    Main menu, with Left Arrow returning, and verify the equivalent D-pad/stick navigation and activation.
    Check alongside item 18 so fixing the overflowing layout does not leave either button unreachable.
+
+20. **Display options and correct fullscreen startup resolution** (Eric, 2026-11-05). Add resolution
+   options to the game and detect the correct display resolution when launching fullscreen; investigate
+   alongside the defeat-screen overflow in item 18.
+   - Offer windowed and borderless fullscreen modes, resolution/window-size choices, and an
+     **Automatic / native display** option. Include monitor selection where multiple monitors exist.
+     Start fullscreen at the selected monitor's desktop resolution by default, and remember the
+     player's chosen mode and window size as device-local settings.
+   - `DisplayProfile` currently requests fullscreen and has an F11 / Alt+Enter toggle, but has no saved
+     resolution selector or monitor preference. Its 1600x900 window override is a windowed default;
+     its 1280x720 `ContentScaleSize` is the UI's design canvas, not the physical monitor resolution.
+     Borderless fullscreen already follows the monitor's desktop size. Keep physical resolution,
+     logical UI size and any UI scaling option distinct.
+   - Check DPI scaling, fullscreen transitions, monitor changes and window decorations/taskbar bounds.
+     Clamp windowed sizes to the chosen monitor's usable area. Reflow menus after size/mode changes;
+     changing resolution alone must not leave the defeat panel or its footer outside the viewport.
+     Provide a timed Keep / Revert step when applying display changes.
+   - Start with `scripts/DisplayProfile.cs`, `project.godot`, the shared Options rows and
+     `ResponsiveLayout`. Preserve Android's portrait layout and the tool scenes' exact screenshot
+     resolutions. Verify smaller Windows windows, native fullscreen, non-16:9 displays and Windows
+     scaling at 100%, 125% and 150%; check the title, gameplay HUD and defeat screen.
+   - Godot reference: [multiple resolutions](https://docs.godotengine.org/en/4.5/tutorials/rendering/multiple_resolutions.html)
+     and [DisplayServer](https://docs.godotengine.org/en/4.5/classes/class_displayserver.html).
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
