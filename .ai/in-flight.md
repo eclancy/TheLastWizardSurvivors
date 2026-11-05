@@ -331,6 +331,15 @@ things come up; strike what lands.**
    `Player.ItemRules.cs`, `.ai/passives-and-items.md` and `.ai/spell-variety.md`; keep the cards, Codex
    descriptions and actual stat effects in agreement. Specific replacements remain to be chosen.
 
+26. **"Freezing" mouse-hover tooltip is extremely wide and shallow** (Eric, 2026-11-05). Hovering
+   the effect keyword opens a very thin, very wide description window. Give the tooltip a sensible
+   width, wrapped text and enough height to read naturally; keep it within the viewport.
+   Inspect `StatusKeyword._MakeCustomTooltip` -> `StatusNotes.BuildCard`: mouse hover returns the card
+   directly, while the click/tap path puts it in `ElementTagPopover`, which applies its own width cap.
+   A missing width constraint on the native hover path is a hypothesis to verify. Check other status
+   keywords for the same issue and confirm that mouse-hover, click/tap and controller descriptions all
+   remain readable. Use `.ai/level-up-screen.md`'s typography rules and PC/phone layout checks.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
