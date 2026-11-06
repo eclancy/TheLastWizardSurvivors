@@ -291,6 +291,16 @@ keep the debug build on the development phone and judge the release APK by its s
 
 ### Rehearsing it: `--dry-run`
 
+2026-11-06: the **0.14.0 rehearsal passed** from `af0b8330`: all nine artifacts built, including
+the release-signed Android APK (versionCode 1400, package identity and release certificate verified).
+Story epoch remains 2. The packaged Windows executable passed keyboard/mouse/controller handoff,
+all 22 Powers entries and category selection, live single-hound/Littermates attacks, native fullscreen,
+saved window sizes, F11 and footer checks. Title preparation took 2,154.7 ms; Enter-to-menu 35.3 ms.
+Source phone/touch/safe-area layouts, Familiar cards, defeat navigation and full content validation
+also passed (0 content errors, one existing Test Wizard warning; C# build 0 errors, 45 existing warnings).
+Package tests used isolated temporary APPDATA with save writes and updates disabled. Windows patch
+contents match the full download, and the Linux binary/installer have executable permissions.
+
 2026-11-06: the **0.13.2 rehearsal passed** from `79cda2d0`: all nine artifacts built, including
 the 109.5 MB signed APK (`versionCode` 1302, package identity and release certificate verified).
 Story epoch stays 2. The packaged Windows executable passed title preparation (1,115.7 ms,
