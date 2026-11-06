@@ -490,9 +490,13 @@ development verification running on the player's main thread, not a resolution p
   a run uses the same preparation and then opens the menu directly, without the title prompt.
 - Removed the duplicate initial shop refresh and achievements-page rebuild. In fresh Windows
   processes, preparation measured about **1.2-1.5 s**, and the opening press **34-44 ms** with keyboard,
-  mouse and pad. Portrait at 540x1212 measured **45 ms** for the press. These are desktop measurements;
-  the Pixel 9 was disconnected, so physical Android timings remain unmeasured. Preparation still
-  includes a roughly half-second first achievements build; the long first-press freeze is gone.
+  mouse and pad. Portrait at 540x1212 measured **45 ms** for the press. The main checkout's first
+  post-build run took **8.7 s** to prepare, the next **4.1 s**, with **105-106 ms** button-to-menu
+  times. Loading duration varies with the checkout/cache and machine load; it is not a fixed
+  1.2-second screen. Preparation still includes synchronous UI work: the first achievements build
+  measured about 0.5 s in the test checkout and 1.8 s in the main checkout. That work is covered by
+  loading, before the title accepts input. These are desktop measurements; the Pixel 9 was
+  disconnected, so physical Android timings remain unmeasured.
 
 `scenes/_TitleLoadProbe.tscn -- --no-save-writes --profile-startup` measures the first rendered menu
 after a real press, failing if the prepared press takes over 250 ms. `--input=mouse` / `--input=pad`

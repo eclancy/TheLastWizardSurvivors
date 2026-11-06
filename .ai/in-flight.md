@@ -68,8 +68,10 @@ things come up; strike what lands.**
      menu draw on Windows, including 12 seconds of developer regression checks. Those checks now
      require `--validate-content`. The menu is loaded and built before the title prompt, behind
      the existing art's animated ritual ward/fire, with a first draw to warm its layout and fonts.
-     Press-to-menu now measures about 34-44 ms on PC (45 ms in desktop portrait); preparation takes
-     about 1.2-1.5 s on this machine. Keyboard/mouse/pad opening, early loading input, direct returns
+     Press-to-menu now measures about 34-44 ms in the test checkout (45 ms in desktop portrait),
+     105-106 ms in the main checkout. Preparation varied from 1.2-1.5 s in the test checkout to
+     4.1-8.7 s in the main checkout; the loader covers that work before accepting title input.
+     Keyboard/mouse/pad opening, early loading input, direct returns
      and failed-load retry passed `_TitleLoadProbe`. See `.ai/title-screen.md` for the timings and
      verification command. **Physical Pixel 9 timing remains pending: no device connected.** The
      phone prompt and composition tasks below remain open.
