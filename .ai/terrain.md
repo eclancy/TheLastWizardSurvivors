@@ -2402,6 +2402,8 @@ collision and drawing consistent. The entrance stays open in navigation and has 
 gate while sealed. A foundation applied to already-painted ground throws rather than leaving stale
 water physics. It is per run, changes no saves, and its decor reserve covers the courtyard.
 
-`terrain_fields.py` also carries optional Fields palette studies. The active look remains `original`
-pending Eric's selection; `fields_studies.py --closer` compares D/E/F without overwriting textures.
-Those variants retain the original marks/rows and remap only existing contract palette stops.
+`terrain_fields.py` also carries optional Fields palette studies. Eric selected **E — Faded Gold**
+on 2026-11-06; `FIELD_LOOK = "faded_gold"` keeps the dark field and original marks/rows while making
+the furrows clearer. The 72 stubble/furrow tiles and shared atlas were regenerated, with tile IDs,
+positions and edge masks preserved. `fields_studies.py --closer` still compares D/E/F without
+overwriting textures. These variants remap only existing contract palette stops.
