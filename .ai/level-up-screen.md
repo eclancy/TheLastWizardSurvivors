@@ -758,6 +758,13 @@ and otherwise as a flow of its words in the label's own size, face, ink and alig
   selected card names in a stone note beside it - below, above, then to either side, never over the
   card's own words - and drops it the moment the pointer is in use, or on a phone with no pad.
 
+**Native status hover cards have their own width constraint** (`StatusKeyword._MakeCustomTooltip`,
+2026-11-05). Cap the card at 420 canvas units with room at the viewport edges, and give its wrapped
+sentence a width before Godot first measures the tooltip. Setting only the panel's minimum width
+left the popup stuck at its initial, enormous height. The click/tap popover and focused-card notes
+still size themselves independently. `_RecoveryProbe --part=tooltip` tests real hover and captures
+both presentations; `--status=Wither` (or another `StatusId`) checks another sentence.
+
 Photograph: `--press-late=StatusKeyword_Weaken` (a keyword's popover; `_UiShot` marks the pointer as in
 use, as a real click does), and any shot whose focused card names a status for the pad note
 (`--focus-late=OptionCard_bone_rattle` on a level-up with `--all-unlocked --force-boon=bone_rattle`).

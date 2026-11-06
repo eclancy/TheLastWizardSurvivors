@@ -118,6 +118,11 @@ on most of these screens but not all: the main menu's Options button is a direct
 while Start Run is buried in a `MarginContainer`, so tree order alone opened the game with Options
 selected.
 
+**The results footer names its horizontal neighbors explicitly** (`GameOverScreen.BuildFooter`,
+2026-11-05): Retry's right is Main menu, and Main menu's left is Retry. Automatic geometric search
+left the selection stuck on these buttons. `_RecoveryProbe --part=footer` exercises real keyboard,
+D-pad and stick input on the paused screen; `--automatic-focus` removes the links to reproduce it.
+
 ## 4. `MenuFocusHighlight`
 
 A ring drawn over whatever the player is pointing at, with a stick or with a mouse. **Hover and

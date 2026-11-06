@@ -263,12 +263,11 @@ things come up; strike what lands.**
      `KeepHeight`. `GameOverScreen.BuildShell` centres a folded panel at its content height, with no
      overall scroll/height cap around the summary and footer. A minimum height exceeding the available
      canvas could push the bottom out of view. This is a hypothesis, not a reproduced diagnosis.
-19. **Defeat screen: Right Arrow from Retry does not reach Main menu** (Eric, 2026-11-05).
-   He cannot navigate from Retry to Main menu by pressing Right Arrow. Reproduce using real keyboard
-   input, then check the focus neighbors, the footer's layout and any input handling that consumes
-   left/right in `GameOverScreen` / `MenuNavigator`. Make Right Arrow move the selection from Retry to
-   Main menu, with Left Arrow returning, and verify the equivalent D-pad/stick navigation and activation.
-   Check alongside item 18 so fixing the overflowing layout does not leave either button unreachable.
+19. ~~**Defeat screen: Right Arrow from Retry does not reach Main menu**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-05:** `GameOverScreen.BuildFooter` explicitly links Retry's right neighbor to
+   Main menu and Main menu's left neighbor to Retry. `_RecoveryProbe --part=footer` checks real
+   keyboard/pad input while paused, in landscape and portrait; removing the links with
+   `--automatic-focus` reproduces the stuck selection. Item 18's overflow investigation stays open.
 
 20. **Display options and correct fullscreen startup resolution** (Eric, 2026-11-05). Add resolution
    options to the game and detect the correct display resolution when launching fullscreen; investigate
@@ -342,14 +341,11 @@ things come up; strike what lands.**
    `Player.ItemRules.cs`, `.ai/passives-and-items.md` and `.ai/spell-variety.md`; keep the cards, Codex
    descriptions and actual stat effects in agreement. Specific replacements remain to be chosen.
 
-26. **"Freezing" mouse-hover tooltip is extremely wide and shallow** (Eric, 2026-11-05). Hovering
-   the effect keyword opens a very thin, very wide description window. Give the tooltip a sensible
-   width, wrapped text and enough height to read naturally; keep it within the viewport.
-   Inspect `StatusKeyword._MakeCustomTooltip` -> `StatusNotes.BuildCard`: mouse hover returns the card
-   directly, while the click/tap path puts it in `ElementTagPopover`, which applies its own width cap.
-   A missing width constraint on the native hover path is a hypothesis to verify. Check other status
-   keywords for the same issue and confirm that mouse-hover, click/tap and controller descriptions all
-   remain readable. Use `.ai/level-up-screen.md`'s typography rules and PC/phone layout checks.
+26. ~~**"Freezing" mouse-hover tooltip is extremely wide and shallow**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-05:** the native status tooltip has a 420-unit card width, constrained to the
+   viewport; its wrapped sentence gets its width before the popup's first size measurement, avoiding
+   an oversized initial height too. All eight status hover/click cards passed `_RecoveryProbe` on
+   PC; Freezing also passed and was visually checked in portrait. The focused-card notes are unchanged.
 
 27. **Keyboard input hides the mouse and gives the keyboard control until the mouse is used again**
    (Eric, 2026-11-05). When playing/navigating with the keyboard, hide the cursor and deactivate mouse
@@ -400,10 +396,9 @@ things come up; strike what lands.**
    `.ai/art-direction.md` / `.ai/godot-engine.md`. Check casts and projectiles crossing the wizard
    in motion and in a crowded fight, at PC and phone sizes.
 
-31. **Taproot wording: "Stand still"** (Eric, 2026-11-05). Replace the visible condition
-   **"Stand still 1.5s"** with **"Stand still"**. Remove the duration from the wording while preserving
-   the existing activation delay and effect. Start with Taproot in `scripts/BoonCatalog.cs` and any
-   shared builder that prints its condition; keep its card and other descriptions consistent.
+31. ~~**Taproot wording: "Stand still"**~~ (Eric, 2026-11-05). **Done, 2026-11-05:** both
+   `BoonCatalog` text builders omit the activation duration. The card says "Stand still: +1.5 HP
+   per second"; the underlying 1.5-second activation delay and regeneration are unchanged.
 
 32. **Walking hut footprints face backward in every direction** (Eric, 2026-11-05; clarified after
    the initial report). The chicken toes point opposite the hut's direction of travel however it is
@@ -421,17 +416,13 @@ things come up; strike what lands.**
    `Prologue`, `.ai/cutscenes.md` and the relevant unlock/rescue effect as needed, then check the
    animation with several wizard sprites at PC and phone sizes.
 
-34. **The Archmage's passive should give time to escape after it triggers** (Eric, 2026-11-05;
-   called "archwizard" in the playtest note). When Overlooked turns aside the killing blow, give the
-   player a meaningful invincibility window to get out of the dangerous situation. **Eric's proposed
-   duration is 10 seconds** after activation. The current `Player.OverlookedGraceSeconds` is 2 seconds;
-   its trigger is in `Player.TakeDamage` (`missed_once`, `characterOverlooked` / `overlookedSpent`).
-   Keep the once-per-run trigger and tune this passive's own grace, separately from post-menu protection.
-   Make the active protection clear visually (coordinate with item 23), and test whether the player can
-   actually escape a dense swarm or hazard after activation. Check damage immunity for the full window
-   and its expiry, then update the passive's descriptions/design notes to match. Start with
-   `CharacterData_Archmage.tres`, `.ai/protagonist.md` and `.ai/difficulty-curve.md`; the intended outcome
-   is a chance to recover position, with 10 seconds as the proposed starting point for testing.
+34. ~~**The Archmage's passive should give time to escape after it triggers**~~ (Eric, 2026-11-05;
+   called "archwizard" in the playtest note). **Done, 2026-11-05:** Overlooked grants **10 seconds**
+   of invincibility, with the existing white visual lasting through it. The character description
+   and `.ai/protagonist.md` explain it; post-menu grace stays two seconds. `_RecoveryProbe
+   --part=overlooked` verified the killing blow is refused without healing, immunity at 9.8 seconds,
+   protection and visual expiry after 10 seconds, resumed damage and the once-per-run limit.
+   Eric can now playtest whether ten seconds feels right for escaping a crowded situation.
 
 35. **"Newly unlocked" icons cannot be inspected on Windows** (Eric, 2026-11-05). He cannot click
    the icons or reach them with the arrow keys to find out what they are. Make each reward icon a
