@@ -413,24 +413,41 @@ For the agent who does. Each line is where the change lives, not how.
   clue. All three teachers have lost the spawn-to-upgrade lights and trail-triggered gold POI arrow.
   The Star and Geode retain their existing local decor gradients. `TeachingTrail` now serves only
   Familiar: intermittent drag furrows, splayed paws and claw scratches, faintly pulsing in grounded
-  gold stops. A bounded, one-off walkable-cell search grows OUT from the pen toward the outskirts,
+  gold stops. The later polish uses six procedurally varied families (partial/staggered paws, claw
+  fans, short/long drag furrows and sideways scuffs), stronger gold and separated toes, with irregular
+  300-520-unit gaps rather than the old 144-unit repetition. A bounded, one-off walkable-cell search grows OUT from the pen toward the outskirts,
   keeping the first evidence at least 1,488 world units from spawn. It never registers a POI. Visible
   clusters redraw at 10 Hz, with no traveling motes, bloom, alpha fade or per-frame terrain search.
   Tiny decor reserves keep newly streamed props off the actual marks.
-- **The Pinfold is walkable and holds essence (2026-11-06).** Its generated 448x352 enclosure replaces
-  the 200x168 pound. Back/floor, energy and front wall have separate sort origins so entering never
-  hides the wizard beneath its floor. Only the walls stamp navigation; the 128-unit entrance has
+- **The Pinfold is walkable and holds essence (2026-11-06, enlarged again at Eric's request).** Its
+  generated enclosure is now 1944x1632, over four times both dimensions of the preceding 448x352
+  version (originally 200x168). Three separate textures stay under 2048px each; pixel size stays x2.
+  Back/floor, energy and front wall have separate sort origins so entering never
+  hides the wizard beneath its floor. Only the walls stamp navigation; the 256-unit entrance has
   a separate physical gate. The existing two guards still bind it; defeat them and touch its latch
   to break the animated seal. Opening the gate grants nothing. Approach the animated center essence
   within 52 units to claim Familiar immediately, saved through the existing secret/deed path; its
-  light curls into the wizard. Repeat runs pay the usual chest. Placement, save schema and post-run
-  system teaching rules stay as before; moving system unlocks to character interactions is item 37.
+  light curls into the wizard. Repeat runs pay the usual chest. The enclosure center is the rolled
+  five-to-seven-chunk site; its front sits 768 units south. A reserved foundation is cleared in the
+  chunk data before painting, and again on regeneration: no pond, hidden fence or procedural flower
+  pen under the larger floor. Twenty-four blue/violet wisps circle its walls and eight circle the
+  carved inner ward; the closed binding dissolves when the gate opens. Wisps cull against the view
+  and draw on the 2-unit grid. Save schema and post-run system teaching rules stay as before;
+  moving system unlocks to character interactions is item 37.
 - **The Codex's Recipes tab is still there on a fresh save**: it holds the Full Set Enchantments too,
   which are open from run 1 (Q6). Only its combinations wait for the Apotheosis.
 - **The Penknife is never taken by the harness bot** (it is kept out of every chest the bot deals), so the
   section 8 count of it is not measured.
 
 ### 10.3 Checked, and not
+
+- **Animation/scale polish:** `_DiscoveryPreview.tscn -- --mode=marks|tracks|pen --no-save-writes`
+  captures 40 actual rendered frames with hidden HUD and a steady camera. `tools/art/discovery_gif.py`
+  encodes and verifies transparent delta GIFs, including pixel-exact recomposition. `marks` arranges
+  all six variants for comparison; `tracks` uses actual world placement/gaps; `pen` zooms out to
+  show the enlarged enclosure and wisps. Build/validator and seed 1234 desktop / seed 17 portrait
+  walks passed, including foundation clearance, gate physics and player movement via real Feet
+  constraints (`Player.MovePlayer`), opening versus claiming, and Familiar's next-level-up availability.
 
 - **2026-11-06 discovery revision:** build and full validator passed (0 errors, existing Test Wizard
   warning). Rendered `_UiShot --secret-probe --fresh-save --stage=9` passed with default terrain,

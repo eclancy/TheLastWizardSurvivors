@@ -123,6 +123,7 @@ public partial class SecretDirector : Node
 	private readonly HashSet<string> glimpsed = new(StringComparer.OrdinalIgnoreCase);
 	private readonly HashSet<string> foundThisRun = new(StringComparer.OrdinalIgnoreCase);
 	private readonly List<(Vector2 Centre, float Radius)> stamps = new();
+	private readonly List<Rect2> foundations = new();
 	private readonly List<(string Kind, string NodeName, string SecretId, Func<Landmark, SecretSite> Create)> landmarkHooks = new();
 	private SecretDefinition installing;
 	private bool hooked;
@@ -338,10 +339,38 @@ public partial class SecretDirector : Node
 	public void StampChunk(TerrainChunk chunk)
 	{
 		TerrainStreamer terrain = Game?.Terrain;
-		if (stamps.Count == 0 || terrain == null || chunk == null)
+		if (terrain == null || chunk == null)
 			return;
 		const int n = TerrainStreamer.ChunkTiles;
 		float half = terrain.TilePixels * 0.5f;
+		foreach (Rect2 plot in foundations)
+		{
+			Rect2 chunkRect = new(terrain.CellOriginWorld(chunk.MinCell), Vector2.One * terrain.TilePixels * n);
+			if (!plot.Intersects(chunkRect)) continue;
+			// Foundations are prepared during placement, before any terrain is painted. They also
+			// suppress a procedural flower pen whose fence would otherwise cross this enclosure.
+			if (chunk.Landmark is Rect2I oldPen)
+				for (int py = 0; py < oldPen.Size.Y; py++)
+					for (int px = 0; px < oldPen.Size.X; px++)
+					{
+						int index = oldPen.Position.X + px - chunk.MinCell.X + (oldPen.Position.Y + py - chunk.MinCell.Y) * n;
+						if (index >= 0 && index < chunk.Flags.Length && FlowerPenLayout.IsFenceCell(px, py))
+							chunk.Flags[index] &= unchecked((byte)~TerrainStreamer.FlagFence);
+					}
+			chunk.Landmark = null;
+			chunk.LandmarkPlanned = true;
+			for (int y = 0; y < n; y++)
+				for (int x = 0; x < n; x++)
+				{
+					Vector2 at = terrain.CellOriginWorld(chunk.MinCell + new Vector2I(x, y)) + Vector2.One * half;
+					if (!plot.HasPoint(at)) continue;
+					int i = x + y * n;
+					chunk.Terrain[i] = null;
+					chunk.Roles[i] = AutotileRole.Fill;
+					chunk.Flags[i] = 0;
+					if (chunk.WallNeighbours != null) chunk.WallNeighbours[i] = 0;
+				}
+		}
 		foreach (var (centre, radius) in stamps)
 		{
 			Vector2I c0 = terrain.CellOfWorld(centre - new Vector2(radius, radius));
@@ -359,6 +388,21 @@ public partial class SecretDirector : Node
 				}
 			}
 		}
+	}
+
+	/// <summary>A large built landmark's ground, prepared before first paint and on every regeneration.</summary>
+	public void PrepareFoundation(Rect2 plot)
+	{
+		foundations.Add(plot);
+		TerrainStreamer terrain = Game.Terrain;
+		Vector2I a = terrain.ChunkOfWorld(plot.Position), b = terrain.ChunkOfWorld(plot.End);
+		for (int y = a.Y; y <= b.Y; y++)
+			for (int x = a.X; x <= b.X; x++)
+			{
+				TerrainChunk chunk = terrain.DataFor(new Vector2I(x, y));
+				if (chunk.PaintStage != 0) throw new InvalidOperationException("Secret foundation must be prepared before terrain painting.");
+				StampChunk(chunk);
+			}
 	}
 
 	private void AddStamp(Vector2 centre, float radius)

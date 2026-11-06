@@ -5791,7 +5791,7 @@ public partial class _UiShot : Node
 						}
 					}
 					else Check("other teachers have no golden route", teachingTrail == null);
-					float chunks = vault.GlobalPosition.DistanceTo(origin) / 1536f;
+					float chunks = (vault is Pinfold enclosure ? enclosure.EssenceCentre : vault.GlobalPosition).DistanceTo(origin) / 1536f;
 					GD.Print($"VAULTPROBE {vault.SecretId} at {vault.GlobalPosition}, {chunks:0.0} chunks out; save had it found before: {hadBefore}");
 					Check($"it is five to seven chunks out ({chunks:0.00})", chunks >= SecretDirector.VaultMinChunks - 0.3f && chunks <= SecretDirector.VaultMaxChunks + 1.1f);
 					Check("it is never a target: not in \"enemies\", nor anything in it",

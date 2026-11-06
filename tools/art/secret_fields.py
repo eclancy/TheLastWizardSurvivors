@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """The Fallow Fields' secrets (.ai/achievements-and-secrets.md 8.2). Run: python tools/art/secret_fields.py
 
-    world/fields/pinfold.png             FF1, the Pinfold (the spell vault), three frames left to right: the
+    world/fields/pinfold-{back,front,open}.png  FF1, the Pinfold (the spell vault), three separate layers:
                                          pound behind (its back and side walls, the trodden floor inside), its
                                          front wall with the barred gate shut, and the front with the gate
                                          swung open. Pinfold.cs draws the essence between back and front
@@ -20,7 +20,7 @@ THE POUND is drystone in the stone row with lichen in its joints, its coping lit
 quarter view: the back wall and both side walls behind, the front wall with the gate in front, so the
 essence - drawn between them - is seen through the bars and over nothing else. The gate is iron bars
 in a timber frame, the one thing in it that is not stone; the latch on its right post carries the glint
-once the guards are down (in code). 224 x 176 art pixels, saved at x2: 448 x 352 on screen.
+once the guards are down (in code). 972 x 816 art pixels, saved at x2: 1944 x 1632 on screen.
 The larger interior is walkable. Its floor and back wall sort separately from its front.
 
 THE LEGACY HOUND strip is retained; the pen now shows essence instead. It is the Pale Hart's kind:
@@ -92,13 +92,13 @@ def blob(c, cx, cy, rx, ry, tones, salt=0):
 
 # --- the pound --------------------------------------------------------------------------------------
 
-PW, PH = 224, 176
-PCX = 112
-BACK_BASE = 40
-FRONT_BASE = 164
-WALL_H = 18
-GATE_X0, GATE_X1 = 80, 144
-LATCH = (146, 152)
+PW, PH = 972, 816
+PCX = PW // 2
+BACK_BASE = 36
+FRONT_BASE = 804
+WALL_H = 26
+GATE_X0, GATE_X1 = PCX - 64, PCX + 64
+LATCH = (GATE_X1 + 2, FRONT_BASE - 12)
 
 
 def stones(c, x0, x1, ybase, height, salt, lit=True):
@@ -163,12 +163,37 @@ def pound_back():
     # the inner shadow along the back wall's foot
     c.hline(12, PW - 13, BACK_BASE + 1, OCC)
     # A worn binding on the floor, quietly framing the essence at the enclosure's center.
-    for k in range(84):
-        a = k * math.pi * 2.0 / 84.0
+    for k in range(160):
+        a = k * math.pi * 2.0 / 160.0
         if k % 9 < 6:
-            x = int(round(PCX + math.cos(a) * 30))
-            y = int(round(102 + math.sin(a) * 18))
+            x = int(round(PCX + math.cos(a) * 60))
+            y = int(round((BACK_BASE + FRONT_BASE) / 2.0 + math.sin(a) * 38))
             c.set(x, y, GO[3] if k % 3 else GO[2])
+    # Worn stone pads and broken bands give this large enclosure its own history, without
+    # stretching the old 2px stonework or filling the walking space with physical clutter.
+    for k in range(52):
+        x = 28 + int(hashed(k, 91) * (PW - 56))
+        y = BACK_BASE + 8 + int(hashed(k, 93) * (FRONT_BASE - BACK_BASE - 16))
+        width = 4 + int(hashed(k, 95) * 8)
+        c.hline(x, x + width, y, ST[3])
+        c.hline(x + 2, x + width - 1, y + 1, ST[4])
+    # Large, worn circles and carved rune stations explain the enclosure's magical binding.
+    cy = (BACK_BASE + FRONT_BASE) // 2
+    for ring in (1, 2, 3):
+        rx, ry = 92 * ring, 72 * ring
+        for k in range(720):
+            if (k + ring * 9) % 37 > 29:
+                continue
+            a = k * math.pi * 2.0 / 720.0
+            x, y = int(round(PCX + math.cos(a) * rx)), int(round(cy + math.sin(a) * ry))
+            c.set(x, y, ST[2] if k % 3 else ST[3])
+            if k % 4: c.set(x, y + 1, ST[4])
+    for k in range(12):
+        a = k * math.pi / 6.0
+        x, y = int(round(PCX + math.cos(a) * 290)), int(round(cy + math.sin(a) * 228))
+        c.poly([(x-9,y),(x,y-7),(x+9,y),(x,y+7)], ST[3])
+        c.line(x-5,y,x+5,y,ST[1])
+        c.line(x,y-4,x,y+4,ST[2])
     return c
 
 
@@ -423,9 +448,11 @@ def main():
     frames = [pound_back(), pound_front(False), pound_front(True)]
     for i, c in enumerate(frames):
         ok = audit("pinfold frame %d" % i, c) and ok
-    img = strip(frames, PW, PH)
-    img.save(os.path.join(OUT, "pinfold.png"))
-    sheets.append(img)
+    # Separate layers stay below 2048px per texture, even on conservative Android GPUs.
+    for name, c in zip(("pinfold-back", "pinfold-front", "pinfold-open"), frames):
+        c.scaled(SCALE).save(os.path.join(OUT, name + ".png"))
+    # Only the ignored contact sheet uses the wide strip.
+    sheets.append(strip(frames, PW, PH))
 
     energy = [essence(p) for p in range(8)]
     for p, c in enumerate(energy):
@@ -461,7 +488,7 @@ def main():
         back = sheets[0].crop((0, 0, PW * SCALE, PH * SCALE))
         front = sheets[0].crop((gate * PW * SCALE, 0, (gate + 1) * PW * SCALE, PH * SCALE))
         img.alpha_composite(back)
-        img.alpha_composite(energy[pose].scaled(SCALE), ((PCX - 32) * SCALE, 51 * SCALE))
+        img.alpha_composite(energy[pose].scaled(SCALE), ((PCX - 32) * SCALE, ((BACK_BASE + FRONT_BASE) // 2 - 51) * SCALE))
         img.alpha_composite(front)
         comp.append(img)
     pad = 10
