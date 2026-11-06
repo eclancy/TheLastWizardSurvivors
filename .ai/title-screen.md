@@ -497,6 +497,12 @@ development verification running on the player's main thread, not a resolution p
   measured about 0.5 s in the test checkout and 1.8 s in the main checkout. That work is covered by
   loading, before the title accepts input. These are desktop measurements; the Pixel 9 was
   disconnected, so physical Android timings remain unmeasured.
+- **0.13.2 packaged Windows check (2026-11-06):** the release executable in a separate temporary
+  `APPDATA` prepared in **1,115.7 ms** (largest preparation draw gap **366.4 ms**), then opened the
+  menu **32.9 ms** after Enter (largest draw gap **16.7 ms**). Prepared Powers, Achievements and
+  Options opened and closed successfully; early loading input did not start a run. This is one
+  measured export run, not a guaranteed loading time. `--no-save-writes --no-update` kept the
+  test isolated from real progress and the published updater.
 
 `scenes/_TitleLoadProbe.tscn -- --no-save-writes --profile-startup` measures the first rendered menu
 after a real press, failing if the prepared press takes over 250 ms. `--input=mouse` / `--input=pad`

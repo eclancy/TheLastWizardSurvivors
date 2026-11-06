@@ -1384,6 +1384,13 @@ and right stick. `_RecoveryProbe --part=results` exercises 24 rewards and a comp
 `--portrait --safe-area --touch` checks portrait/touch. `--part=quit` checks reels and once-only payment,
 with `--no-reels` for an empty run and headless mode for state-only checks.
 
+**0.13.2 Windows export checks (2026-11-06).** The release executable passed the same crowded
+results/unlock inspection/compact resize checks and the rendered quit flow (Baba Yaga freeing,
+Ascension lesson, then results; repeated quit cannot pay twice). `_UiShot` confirmed the tall
+four-card hand scrolls inside its 400-unit band in the export too. Tests used a separate temporary
+`APPDATA` and `--no-save-writes --no-update`. Source portrait/safe-area/injected-touch checks and
+the full opt-in content validator passed; no physical Android device was connected.
+
 **Arriving, and the count.** After a defeat the screen is brought down by the player's press at the
 end of the defeat (`DefeatSequence`, section 6a) and **covers the field from below**: the whole
 layer slides up over 0.42 s (`CoversFromBelow`, `CoverSeconds`). A victory comes up in place, as it
