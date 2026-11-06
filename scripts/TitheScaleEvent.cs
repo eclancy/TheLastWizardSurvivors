@@ -66,7 +66,7 @@ public static class GranaryTithe
 	}
 }
 
-// The Broken Circle's second side event: the Tithe-Reeve's scale (.ai/chapter-wizards.md 4.2).
+// The Fallow Fields' second side event: the Tithe-Reeve's scale (.ai/chapter-wizards.md 4.2).
 //
 // "He takes a tithe of everything that grows here." He counts Medea among what grows: she is held in the reeve's
 // granary against a tithe the village could never pay. The reeve's great scale stands in the granary yard, its door

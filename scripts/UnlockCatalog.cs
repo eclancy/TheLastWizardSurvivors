@@ -337,10 +337,10 @@ public static class UnlockCatalog
 		// three beacons at once. Secret until the Sands open; counted at the Throne's gate only.
 		FromEvent("imhotep", UnlockKind.Character, "tomb_beacons", "Sealed in a dry tomb out on the Scorched Sands.",
 			secretUntilStage: "stage_6", finalGateOnly: true),
-		// Medea's tithe now stands beyond the Broken Circle's stones; Laelaps belongs to the Fields' pen.
+		// Medea's granary remains in the Fields; Laelaps is a separate rescue in the Pinfold.
 		// Counted at the Throne's gate only, as every chapter wizard is.
-		FromEvent("medea", UnlockKind.Character, "tithe_scale", "Held against an unpaid tithe beyond the Broken Circle's stones.",
-			secretUntilStage: "stage_10", finalGateOnly: true),
+		FromEvent("medea", UnlockKind.Character, "tithe_scale", "Counted with the grain in the Fallow Fields.",
+			secretUntilStage: "stage_9", finalGateOnly: true),
 		// Ma Liang, kept in the Court to paint its portraits (4.8): the Court's second event, the door he sketched in the
 		// Gallery traced dot to dot. Secret until the Court opens, and counted at the Throne's gate only, as every chapter
 		// wizard is.
@@ -373,13 +373,10 @@ public static class UnlockCatalog
 		FromAchievementCharacter("dark_wizard", AchievementDefinitions.TakerTakenId,
 			"Something waits for whoever walks the whole road the hard way.",
 			outsideCampaignGate: true, sealedUntilFreed: true),
-		// THE KING-MAKER (.ai/merlin.md). Merlin, the old enchanter, in a look of his own - not the title screen's
-		// blue-robed figure, who is the player, the one the dark wizard missed - playable once every chapter's boss
-		// has fallen on Default or harder. Outside the campaign gate, as Laelaps is: he was never imprisoned, and the gates count
-		// the imprisoned. Not secret: his shape and this line are on the character select from the first run.
-		FromAchievementCharacter("merlin", AchievementDefinitions.OneHeMissedId,
-			"Defeat every chapter's boss on Default or harder.",
-			outsideCampaignGate: true),
+		// Restore the wards where the wizards met to free their keeper. Retain his existing optional
+		// campaign-gate status so changing the source cannot close an existing player's road.
+		FromEvent("merlin", UnlockKind.Character, "the_moot", "Restore the shattered wards of the Broken Circle.",
+			secretUntilStage: "stage_10", outsideCampaignGate: true),
 		// THE ONE HE KEPT (.ai/endgame-castle.md decision 11). Nimue, the Lady of the Lake, kept by the dark wizard beside
 		// him to the end, and freed when he falls: the Throne's own deed, Taken Back, pays her (AchievementDefinitions). A
 		// SECRET - "Not yet discovered." on her card, so the last surprise of the road is not on the character select from
@@ -396,8 +393,9 @@ public static class UnlockCatalog
 			Id = OrbOfAges.SpellId,
 			Kind = UnlockKind.Spell,
 			Source = UnlockSource.Achievement,
-			SourceId = AchievementDefinitions.OneHeMissedId,
-			LockedHint = "One wizard's own: defeat every chapter's boss on Default or harder.",
+			SourceId = AchievementDefinitions.EventDeedId("the_moot"),
+			SiteId = "the_moot",
+			LockedHint = "One wizard's own: restore the shattered wards of the Broken Circle.",
 			ExclusiveTo = "merlin",
 		},
 	};
@@ -463,7 +461,7 @@ public static class UnlockCatalog
 	/// </param>
 	/// <param name="finalGateOnly">A chapter wizard, counted by the Throne's gate alone (<see cref="UnlockDefinition.CountedAtFinalGateOnly"/>).</param>
 	private static UnlockDefinition FromEvent(string id, UnlockKind kind, string siteId, string hint,
-		string secretUntilStage = "", bool finalGateOnly = false) => new()
+		string secretUntilStage = "", bool finalGateOnly = false, bool outsideCampaignGate = false) => new()
 	{
 		Id = id,
 		Kind = kind,
@@ -474,6 +472,7 @@ public static class UnlockCatalog
 		IsSecret = !string.IsNullOrWhiteSpace(secretUntilStage),
 		RevealStageId = secretUntilStage ?? string.Empty,
 		CountedAtFinalGateOnly = finalGateOnly,
+		OutsideCampaignGate = outsideCampaignGate,
 	};
 
 	/// <summary>

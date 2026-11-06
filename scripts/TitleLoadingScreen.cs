@@ -9,12 +9,15 @@ public partial class TitleLoadingScreen : CanvasLayer
 	private PixelArtRect nearFire;
 	private Label caption;
 	private bool failed;
+	private Control art;
+	private ColorRect ground;
+	private Viewport viewport;
 
 	public override void _Ready()
 	{
 		Layer = 180; // Above the title/menu; preparation begins only after the updater finishes.
 		ProcessMode = ProcessModeEnum.Always;
-		var ground = new ColorRect { Color = Color.FromHtml("#05070C"), MouseFilter = Control.MouseFilterEnum.Stop };
+		ground = new ColorRect { Color = Color.FromHtml("#05070C"), MouseFilter = Control.MouseFilterEnum.Stop };
 		ground.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
 		AddChild(ground);
 		var center = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -23,18 +26,33 @@ public partial class TitleLoadingScreen : CanvasLayer
 		var column = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		column.AddThemeConstantOverride("separation", 20);
 		center.AddChild(column);
-		float width = Mathf.Min(720f, ResponsiveLayout.ViewportSize(ground).X - 48f);
-		var art = new Control { Name = "LoadingWard", CustomMinimumSize = new Vector2(width, width * 0.5f), MouseFilter = Control.MouseFilterEnum.Ignore };
+		art = new Control { Name = "LoadingWard", MouseFilter = Control.MouseFilterEnum.Ignore };
 		column.AddChild(art);
 		AddArt(art, "ward", 3, 1.1f);
 		farFire = AddArt(art, "flames-far", 4, 7.7f);
 		nearFire = AddArt(art, "flames-near", 4, 7.7f);
 		farFire.Visible = nearFire.Visible = false;
-		caption = new Label { Name = "LoadingCaption", Text = "Gathering your magic…", HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
+		caption = new Label { Name = "LoadingCaption", Text = "Gathering your magic…", HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart, MouseFilter = Control.MouseFilterEnum.Ignore };
 		ResponsiveLayout.SetFont(caption, ResponsiveLayout.TextRole.Body);
 		caption.AddThemeColorOverride("font_color", Color.FromHtml("#F2DCC4"));
 		column.AddChild(caption);
 		SafeArea.Apply(ground);
+		viewport = GetViewport();
+		viewport.SizeChanged += Layout;
+		Layout();
+	}
+
+	private void Layout()
+	{
+		Vector2 size = ResponsiveLayout.ViewportSize(ground);
+		float width = Mathf.Max(160f, Mathf.Min(920f, Mathf.Min(size.X - 48f, (size.Y - 160f) * 460f / 192f)));
+		art.CustomMinimumSize = new Vector2(width, width * 192f / 460f);
+		caption.GetParent<Control>().CustomMinimumSize = new Vector2(width, 0f);
+	}
+
+	public override void _ExitTree()
+	{
+		if (viewport != null && IsInstanceValid(viewport)) viewport.SizeChanged -= Layout;
 	}
 
 	private static PixelArtRect AddArt(Control parent, string name, int count, float fps)
@@ -43,8 +61,9 @@ public partial class TitleLoadingScreen : CanvasLayer
 		for (int i = 0; i < count; i++)
 			frames[i] = new AtlasTexture
 			{
-				Atlas = ResourceLoader.Load<Texture2D>($"res://assets/bonelight/ui/title/{name}-{i}.png"),
-				Region = new Rect2(0, 520, 360, 180),
+				Atlas = ResourceLoader.Load<Texture2D>($"res://assets/bonelight/ui/title-wide/{name}-{i}.png"),
+				// The wide set contains the whole ward; its portrait counterpart is clipped at both edges.
+				Region = new Rect2(360, 144, 460, 192),
 			};
 		Texture2D[] animation = name == "ward" ? new[] { frames[0], frames[1], frames[2], frames[1] } : frames;
 		var image = new PixelArtRect(animation, 2, 0f) { FramesPerSecond = fps, MouseFilter = Control.MouseFilterEnum.Ignore };

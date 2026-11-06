@@ -471,6 +471,21 @@ for a measurement tool and wrong for a player.
 
 ### Startup preparation and the first-press freeze (2026-11-05)
 
+**2026-11-06 follow-up:** the loader now crops the complete ward from the wide title frames
+(`360,144,460,192`); the portrait ward was itself clipped at both sides. Its responsive box retains
+padding and whole screen pixels. Shop cards and achievement items/rows are built cooperatively
+on the main thread with a 4 ms work budget between draws. The previous seven coarse stages hid a
+3.46 s achievements-page stall inside one frame. All filters use the same row builder in synchronous
+and incremental paths. Loading input stays blocked and retry remains available on failure.
+Fresh-process desktop probes measured about 2.2 s preparation and 97-109 ms maximum loading
+draw gaps after the fix, versus the original 3,456 ms gap. Portrait/safe-area, 4:3, retry and
+return-to-menu paths passed; these measurements are from this PC, not Android hardware.
+
+The root menu now has **Quit** in the lower-right, keyboard/pad reachable to the right of Evolution
+Codex and hidden while a menu panel is open. Portrait utility buttons share a bottom row above the
+safe edge; the difficulty caption sits above them. Desktop keeps its existing utilities on the left,
+with the difficulty caption lifted above Quit. `_TitleLoadProbe --quit` tests the real exit action.
+
 The first press used to synchronously load, instantiate and add `MainMenu`. A real-window probe on
 Windows measured **13,952 ms** from Enter to the first menu draw: **12,048 ms in regression checks**,
 682 ms in spell/character validation, and under a second in the menu's own construction. This was

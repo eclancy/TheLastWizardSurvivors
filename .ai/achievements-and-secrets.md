@@ -1,5 +1,10 @@
 # Achievements and secrets: every spell earned, and much more to find
 
+**Merlin update, 2026-11-06 (Eric):** restoring the Broken Circle's Moot wards now frees Merlin
+and unlocks Orb of Ages, keeping Gilded Mote. Medea's granary stays in the Fields. The former
+Default campaign-completion deed retains its ID but pays 1,000 Arcane Energy as The Road Restored.
+Existing ownership is preserved; old completed Moot deeds reconcile their new rewards.
+
 **2026-11-06 override (Eric):** the Pinfold pays both Familiar and Laelaps after the player frees
 its ghostly hound, cat and bird individually. The central essence pickup is gone. Laelaps' Coursing
 challenge now pays 50 Arcane Energy for 100 Black Hares caught by his hound in one Broken Circle run;

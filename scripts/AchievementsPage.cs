@@ -32,7 +32,7 @@ namespace TheOneHeMissed.scripts;
 /// <see cref="AchievementDefinitions.IsSealed"/>), and what has been seen is the save's
 /// (<see cref="SaveData.HasGlimpsedSecret"/>). The page only sorts and draws.
 /// </remarks>
-public static class AchievementsPage
+public static partial class AchievementsPage
 {
 	public enum PageMode
 	{
@@ -301,9 +301,15 @@ public static class AchievementsPage
 		public readonly List<Item> Items = new();
 		public readonly List<ChapterSecrets> Chapters = new();
 
-		public PageModel(SaveData save, global::RunResult run)
+		public PageModel(SaveData save, global::RunResult run, bool deferred = false)
 		{
 			Save = save;
+			if (!deferred) foreach (int step in Populate(run)) { }
+		}
+
+		public IEnumerable<int> Populate(global::RunResult run)
+		{
+			SaveData save = Save;
 			RunLens lens = run != null ? new RunLens(save, run) : null;
 			AchievementContext lifetime = AchievementContext.ForSave(save);
 			var chapters = new Dictionary<string, ChapterSecrets>(StringComparer.OrdinalIgnoreCase);
@@ -364,6 +370,7 @@ public static class AchievementsPage
 						item.Progress = deed.GetProgress(lifetime);
 				}
 				Items.Add(item);
+				yield return 0;
 			}
 
 			// Campaign order, then the chapters outside it - the stage list's.
@@ -454,97 +461,7 @@ public static class AchievementsPage
 
 	private static void BuildMenu(VBoxContainer list, PageModel page, Filter filter, int columns)
 	{
-		switch (filter)
-		{
-			case Filter.Chapters:
-				BuildChapters(list, page, columns);
-				break;
-			case Filter.Feats:
-				BuildOpenAndDone(list, page.Items.Where(i => i.IsFeat).ToList(), columns, showChapter: false);
-				break;
-			case Filter.Secrets:
-				BuildSecrets(list, page, columns);
-				break;
-			default:
-				BuildAll(list, page, columns);
-				break;
-		}
-	}
-
-	// In progress (closest first), then what is still hidden, then Done.
-	private static void BuildAll(VBoxContainer list, PageModel page, int columns)
-	{
-		var open = page.Items.Where(i => !i.Done && !i.SealedWizard).ToList();
-		if (open.Count > 0)
-			CodexRows.AddSection(list, "In progress", $"{open.Count} to go", CodexRows.Stone, columns,
-				OrderOpen(open).Select(i => ItemRow(i, showChapter: true)));
-
-		var hidden = HiddenRows(page, page.Chapters, page.Items.Where(i => i.SealedWizard), out int hiddenCount);
-		if (hidden.Count > 0)
-			CodexRows.AddSection(list, "Not yet found", $"{hiddenCount} to find", CodexRows.Stone, columns, hidden);
-
-		var done = page.Items.Where(i => i.Done).ToList();
-		if (done.Count > 0)
-			CodexRows.AddSection(list, "Done", $"{done.Count}", CodexRows.Stone, columns,
-				done.Select(i => ItemRow(i, showChapter: true)));
-	}
-
-	private static void BuildOpenAndDone(VBoxContainer list, List<Item> items, int columns, bool showChapter)
-	{
-		var open = items.Where(i => !i.Done && !i.SealedWizard).ToList();
-		var done = items.Where(i => i.Done).ToList();
-		if (open.Count > 0)
-			CodexRows.AddSection(list, "In progress", $"{open.Count} to go", CodexRows.Stone, columns,
-				OrderOpen(open).Select(i => ItemRow(i, showChapter)));
-		if (done.Count > 0)
-			CodexRows.AddSection(list, "Done", $"{done.Count}", CodexRows.Stone, columns,
-				done.Select(i => ItemRow(i, showChapter)));
-	}
-
-	// The world map card's "what it holds" (StageRewards), as a list: one section a chapter, in campaign
-	// order - its deeds, its seen secrets, the count of the rest - with what is done last and quiet.
-	private static void BuildChapters(VBoxContainer list, PageModel page, int columns)
-	{
-		foreach (StageDefinition stage in StageCatalog.InDisplayOrder)
-		{
-			var mine = page.Items.Where(i => !i.IsFeat && SameStage(i.StageId, stage.Id)).ToList();
-			ChapterSecrets secrets = page.ChapterOf(stage.Id);
-			if (mine.Count == 0 && secrets == null)
-				continue;
-
-			var rows = new List<Control>();
-			// Its deeds before its secrets, in the order they are listed (the boss first).
-			rows.AddRange(mine.Where(i => !i.Done && !i.SealedWizard && i.Secret == null).Select(i => ItemRow(i, showChapter: false)));
-			rows.AddRange(mine.Where(i => i.Seen).Select(i => ItemRow(i, showChapter: false)));
-			if (secrets != null && secrets.Sealed.Count > 0)
-				rows.Add(SealedChapterRow(secrets));
-			rows.AddRange(mine.Where(i => i.SealedWizard).Select(SealedWizardRow));
-			rows.AddRange(mine.Where(i => i.Done).Select(i => ItemRow(i, showChapter: false)));
-
-			int total = mine.Count(i => i.Secret == null) + (secrets?.Total ?? 0);
-			int done = mine.Count(i => i.Done && i.Secret == null) + (secrets?.Found ?? 0);
-			CodexRows.AddSection(list, stage.DisplayName, $"{done} of {total}", CodexRows.Stone, columns, rows);
-		}
-	}
-
-	// Each open chapter's seen secrets and the count of its sealed ones, then what has been found.
-	private static void BuildSecrets(VBoxContainer list, PageModel page, int columns)
-	{
-		var rows = new List<Control>();
-		foreach (ChapterSecrets chapter in page.Chapters)
-		{
-			rows.AddRange(page.Items.Where(i => i.Seen && SameStage(i.StageId, chapter.Stage?.Id)).Select(i => ItemRow(i, showChapter: true)));
-			if (chapter.Sealed.Count > 0)
-				rows.Add(SealedChapterRow(chapter));
-		}
-		int left = page.Chapters.Sum(c => c.Total - c.Found);
-		if (rows.Count > 0)
-			CodexRows.AddSection(list, "Still to find", $"{left} to find", CodexRows.Stone, columns, rows);
-
-		var done = page.Items.Where(i => i.Done && i.Secret != null).ToList();
-		if (done.Count > 0)
-			CodexRows.AddSection(list, "Found", $"{done.Count}", CodexRows.Stone, columns,
-				done.Select(i => ItemRow(i, showChapter: true)));
+		foreach (int step in BuildMenuRows(list, page, filter, columns)) { }
 	}
 
 	// --- the pause tab -------------------------------------------------------------------------

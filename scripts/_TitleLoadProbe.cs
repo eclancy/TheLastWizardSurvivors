@@ -10,6 +10,8 @@ public partial class _TitleLoadProbe : Node
 	private ulong largestGap;
 	private bool measuring;
 	private ulong largestPreparationGap;
+	private TitleScreen observedTitle;
+	private float largestGapProgress;
 
 	public override void _Ready()
 	{
@@ -29,7 +31,11 @@ public partial class _TitleLoadProbe : Node
 	{
 		ulong now = Time.GetTicksUsec();
 		if (measuring && previousFrame > 0) largestGap = Math.Max(largestGap, now - previousFrame);
-		else if (previousFrame > 0) largestPreparationGap = Math.Max(largestPreparationGap, now - previousFrame);
+		else if (previousFrame > 0 && now - previousFrame > largestPreparationGap)
+		{
+			largestPreparationGap = now - previousFrame;
+			largestGapProgress = (observedTitle?.FindChild("MainMenu", false, false) as MainMenu)?.PreparationProgress ?? 0f;
+		}
 		previousFrame = now;
 	}
 
@@ -41,6 +47,7 @@ public partial class _TitleLoadProbe : Node
 			bool returning = Array.IndexOf(OS.GetCmdlineUserArgs(), "--returning") >= 0;
 			Global.OpenMenuImmediately = returning;
 			var title = ResourceLoader.Load<PackedScene>("res://scenes/TitleScreen.tscn").Instantiate<TitleScreen>();
+			observedTitle = title;
 			bool failureTest = Array.IndexOf(OS.GetCmdlineUserArgs(), "--failed-load") >= 0;
 			if (failureTest) title.MenuScenePath = "res://scenes/DoesNotExist.tscn";
 			AddChild(title);
@@ -59,6 +66,9 @@ public partial class _TitleLoadProbe : Node
 				}
 				if (!loadingShot && title.FindChild("MainMenu", false, false) is MainMenu { PreparationProgress: >= 0.6f })
 				{
+					var ward = title.FindChild("LoadingWard", true, false) as Control;
+					if (ward == null || !GetViewport().GetVisibleRect().Encloses(ward.GetGlobalRect()))
+						throw new Exception("Loading artwork extends outside the viewport");
 					GetViewport().GetTexture().GetImage().SavePng($"{OS.GetUserDataDir()}/title-loading.png");
 					loadingShot = true;
 				}
@@ -70,7 +80,7 @@ public partial class _TitleLoadProbe : Node
 				}
 			}
 			if (!title.IsPrepared) throw new Exception("Title preparation did not complete");
-			GD.Print($"TITLEPROBE prepared={(Time.GetTicksUsec() - preparationStart) / 1000.0:0.0} ms loading_frames={loadingFrames} max_loading_gap={largestPreparationGap / 1000.0:0.0} ms");
+			GD.Print($"TITLEPROBE prepared={(Time.GetTicksUsec() - preparationStart) / 1000.0:0.0} ms loading_frames={loadingFrames} max_loading_gap={largestPreparationGap / 1000.0:0.0} ms at progress={largestGapProgress:0.00}");
 			await ToSignal(GetTree().CreateTimer(0.3), SceneTreeTimer.SignalName.Timeout);
 			if (!returning && title.FindChild("MainMenu", false, false) is MainMenu { Visible: true })
 				throw new Exception("Loading input leaked through to the title/menu");
@@ -134,14 +144,49 @@ public partial class _TitleLoadProbe : Node
 				if (GetViewport().GuiGetFocusOwner()?.Name != "StartRunButton")
 					throw new Exception("Prepared menu did not focus Start Run");
 				GetViewport().GetTexture().GetImage().SavePng($"{OS.GetUserDataDir()}/title-load-probe.png");
+				var quit = title.FindChild("QuitButton", true, false) as Button;
+				Rect2 screen = GetViewport().GetVisibleRect();
+				if (quit == null || !quit.IsVisibleInTree() || !screen.Encloses(quit.GetGlobalRect())
+					|| quit.GetGlobalRect().GetCenter().X < screen.Size.X * 0.65f
+					|| quit.GetGlobalRect().GetCenter().Y < screen.Size.Y * 0.8f)
+					throw new Exception("Quit is missing or outside the lower-right corner");
+				var codex = title.FindChild("SpellIndexButton", true, false) as Button;
+				codex.GrabFocus();
+				Input.ParseInputEvent(new InputEventKey { Keycode = Key.Right, Pressed = true });
+				Input.ParseInputEvent(new InputEventKey { Keycode = Key.Right, Pressed = false });
+				await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+				if (GetViewport().GuiGetFocusOwner() != quit) throw new Exception("Right from the Codex does not reach Quit");
+				Input.ParseInputEvent(new InputEventKey { Keycode = Key.Left, Pressed = true });
+				Input.ParseInputEvent(new InputEventKey { Keycode = Key.Left, Pressed = false });
+				await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+				if (GetViewport().GuiGetFocusOwner() != codex) throw new Exception("Left from Quit does not return to the Codex");
 				foreach (var panel in new[] { ("ArcaneUpgradesButton", "BackFromArcaneButton"), ("UnlocksButton", "BackFromAchievementsButton"), ("OptionsButton", "BackFromOptionsButton") })
 				{
 					(title.FindChild(panel.Item1, true, false) as Button).EmitSignal(BaseButton.SignalName.Pressed);
 					if (menu.IsAtRoot) throw new Exception($"Prepared menu could not open {panel.Item1}");
+					if (quit.IsVisibleInTree()) throw new Exception("Quit stays visible over a menu panel");
+					if (panel.Item1 == "UnlocksButton")
+					{
+						foreach (AchievementsPage.Filter filter in Enum.GetValues<AchievementsPage.Filter>())
+						{
+							(title.FindChild("AchievementsTab" + filter, true, false) as Button).EmitSignal(BaseButton.SignalName.Pressed);
+							await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+							if (title.FindChild("AchievementList", true, false)?.GetChildCount() == 0)
+								throw new Exception($"Achievements tab {filter} has no sections");
+						}
+						(title.FindChild("AchievementsTabAll", true, false) as Button).EmitSignal(BaseButton.SignalName.Pressed);
+					}
 					(title.FindChild(panel.Item2, true, false) as Button).EmitSignal(BaseButton.SignalName.Pressed);
 					if (!menu.IsAtRoot) throw new Exception($"Prepared menu could not close {panel.Item1}");
 				}
 				GD.Print("TITLEPROBE prepared Powers, Achievements and Options open and close");
+				GD.Print("TITLEPROBE lower-right Quit and keyboard navigation pass");
+				if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--quit") >= 0)
+				{
+					GD.Print("TITLEPROBE activating Quit");
+					quit.EmitSignal(BaseButton.SignalName.Pressed);
+					return;
+				}
 				GetTree().Quit();
 				return;
 			}

@@ -38,6 +38,10 @@ from PIL import Image
 
 import hero
 import prologue as pr
+import merlin_concepts as merlin_art
+
+# Merlin's established ivory cloth is part of the art contract (art-direction.md section 3).
+pr.M["ivory"] = merlin_art.IVORY
 import splashkit as sk
 
 S, V, G, ST, LI = pr.S, pr.V, pr.G, pr.ST, pr.LI
@@ -71,6 +75,7 @@ WIZARDS = [
     # is her light. She floats in the panel as in the game - her sprite's shadow on the ground, her feet off it.
     ("nimue", ("nimue", "light", "light")),
     ("ma_liang", ("maliang", "arcane", "arcane")),
+    ("merlin", ("merlin", "light", "light")),
 ]
 
 # Where they stand: the Archmage left of the middle, the freed wizard right of it, turned to him.

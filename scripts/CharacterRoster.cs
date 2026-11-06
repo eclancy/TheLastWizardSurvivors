@@ -41,7 +41,7 @@ public static class CharacterRoster
 		// after the four is, so every saved index keeps its wizard (index 10).
 		"res://CharacterData_DarkWizard.tres",
 		// Merlin, the old enchanter (.ai/merlin.md), in a look of his own (the title screen's blue-robed figure is the
-		// player), playable once every chapter has fallen on Default or harder. Appended (index 11).
+		// player), freed by restoring the Broken Circle's wards. Appended (index 11).
 		"res://CharacterData_Merlin.tres",
 		// The Emberdeep's chapter wizard (.ai/chapter-wizards.md 4.7): Wayland the Smith, chained to his own anvil.
 		// Appended, so every saved index keeps its wizard (index 12: Merlin took 11 the same day).
@@ -68,7 +68,7 @@ public static class CharacterRoster
 		// The chapter wizards again: Imhotep, freed by kindling the three beacons round his tomb on the Scorched Sands.
 		// Appended, so every saved index keeps its wizard (index 19).
 		"res://CharacterData_Imhotep.tres",
-		// The chapter wizards again: Medea, freed by paying the Tithe-Reeve's scale in the Broken Circle. Appended, so every
+		// The chapter wizards again: Medea, freed by paying the Tithe-Reeve's scale in the Fallow Fields. Appended, so every
 		// saved index keeps its wizard (index 20).
 		"res://CharacterData_Medea.tres",
 		// The Throne's kept wizard (.ai/endgame-castle.md decision 11): Nimue, the Lady of the Lake, the one the dark
@@ -127,7 +127,14 @@ public static class CharacterRoster
 		// A copy, so a caller that sorts or filters its list cannot reorder the roster for everyone.
 		if (loaded != null)
 			return new List<CharacterData>(loaded);
+		foreach (int step in PrepareResources()) { }
+		return new List<CharacterData>(loaded);
+	}
 
+	/// <summary>Warm the lifetime roster cache in small steps on the main thread.</summary>
+	public static IEnumerable<int> PrepareResources()
+	{
+		if (loaded != null) yield break;
 		var result = new List<CharacterData>();
 		foreach (var path in ResourcePaths)
 		{
@@ -143,9 +150,9 @@ public static class CharacterRoster
 			var data = ResourceLoader.Load<CharacterData>(path);
 			if (data != null)
 				result.Add(data);
+			yield return 0;
 		}
 		loaded = result;
-		return new List<CharacterData>(loaded);
 	}
 
 	public static CharacterData GetByIndex(int index)

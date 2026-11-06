@@ -268,7 +268,7 @@ public static class StageHintCatalog
 				"When the last door opens, the house goes dark.",
 			},
 		},
-		// Medea, held in the Tithe-Reeve's granary beyond the Broken Circle's stones (.ai/chapter-wizards.md 4.2). She
+		// Medea, held in the Tithe-Reeve's granary in the Fallow Fields (.ai/chapter-wizards.md 4.2). She
 		// speaks, as Tituba does, but she does not plead: the granddaughter of the Sun, who has waited out worse men than
 		// the reeve. A thin cold herb-smoke drifts low over the stubble from her side. Never named, never said who.
 		new()
@@ -279,7 +279,7 @@ public static class StageHintCatalog
 			Cue = HintCue.Smoke,
 			Lines = new[]
 			{
-				"You there. The granary, beyond the standing stones.",
+				"You there. The granary, past the furrows.",
 				"He counts me with the grain. Settle his count.",
 				"Come, or go. I have waited out worse men.",
 			},

@@ -1,6 +1,11 @@
 # Side events: what the dark wizard keeps in each place
 
-**2026-11-06 placement update:** Medea's `tithe_scale` is now the Broken Circle's second event, after
+**Latest 2026-11-06 update (Eric):** the Broken Circle's existing `the_moot` frees **Merlin** and
+grants Orb of Ages as well as Gilded Mote. The six-stone ward-restoration route and restart rules
+stay intact. Merlin is visibly bound at its center and receives a freeing reel. Medea's `tithe_scale`
+returns to the Fields after `the_well`. Baba Yaga retains the deeper wooded placement described below.
+
+**Earlier 2026-11-06 placement:** Medea's `tithe_scale` was the Broken Circle's second event, after
 `the_moot`; the Fields retain `the_well` and their Pinfold now frees Laelaps. Its existing price,
 art and rescue stay the same; her clue now points beyond standing stones. Baba Yaga's Forest hut
 uses a deeper 6-8 chunk band with wooded surroundings, while keeping the grove/event separation

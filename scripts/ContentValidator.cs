@@ -24,16 +24,23 @@ public static class ContentValidator
 	{
 		if (loadedSpells != null)
 			return loadedSpells;
+		foreach (int step in PrepareSpellResources()) { }
+		return loadedSpells;
+	}
 
-		loadedSpells = new List<SpellData>();
+	/// <summary>Warm the same lifetime cache one resource at a time while the title keeps drawing.</summary>
+	public static IEnumerable<int> PrepareSpellResources()
+	{
+		if (loadedSpells != null) yield break;
+		var result = new List<SpellData>();
 		foreach (string path in SpellResourcePaths)
 		{
 			var spell = ResourceLoader.Load<SpellData>(path);
 			if (spell != null)
-				loadedSpells.Add(spell);
+				result.Add(spell);
+			yield return 0;
 		}
-
-		return loadedSpells;
+		loadedSpells = result;
 	}
 
 	private static List<SpellData> loadedForms;
