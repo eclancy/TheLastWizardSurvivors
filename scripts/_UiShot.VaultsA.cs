@@ -247,6 +247,15 @@ public partial class _UiShot
 					Check("the center cannot be claimed through the sealed gate", !pound.IsOpened);
 					Check("the sealed gate physically blocks entry", PinfoldGateBlocks(pound));
 					Check("the center stays open in the navigation grid", !Director.Game.Terrain.IsFenceAtWorld(pound.EssenceCentre));
+					Check("the enclosure is at least four times the previous dimensions", Pinfold.PoundCell.X >= 448f * 4f && Pinfold.PoundCell.Y >= 352f * 4f);
+					bool floorClear = true;
+					for (int y = -1300; y <= -200; y += 100)
+						for (int x = -800; x <= 800; x += 100)
+						{
+							Vector2I cell = Director.Game.Terrain.CellOfWorld(pound.GlobalPosition + new Vector2(x, y));
+							floorClear &= !Director.Game.Terrain.IsSolidCell(cell.X, cell.Y);
+						}
+					Check("the expanded interior has no water or hidden fence cells", floorClear);
 					Shot("the guards woken, the essence behind the magical seal");
 					// The fight, by the player's own hits (Player.DealDamageToEnemy, the path every spell takes).
 					foreach (Enemy guard in pound.Guards)
@@ -277,15 +286,16 @@ public partial class _UiShot
 				}
 				case 104:
 				{
-					if (++pinfoldApproachFrames > 120)
+					if (++pinfoldApproachFrames > 420)
 					{
 						Check("the center can be reached through the open gate", false);
 						Finish();
 						return;
 					}
 					// Use actual body motion through the gate, not a teleport to the pickup.
-					Vector2 motion = (pound.EssenceCentre - Hero.GlobalPosition).LimitLength(8f);
-					Hero.MoveAndCollide(motion);
+					Input.ActionPress("move_up");
+					Hero.Call("MovePlayer", 1.0 / 60.0);
+					Input.ActionRelease("move_up");
 					stand = Hero.GlobalPosition;
 					if (pound.IsOpened)
 					{

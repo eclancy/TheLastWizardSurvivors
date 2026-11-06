@@ -503,7 +503,12 @@ things come up; strike what lands.**
    decor reserves to keep props off them. No traveling golden lights, near-spawn route or
    trail-triggered POI arrow remains at any of the three teaching landmarks. Unfound map hints
    describe the landscape without advertising an upgrade.
-   - The pen is now 448x352 rather than 200x168, with a binding across its gate and eight-frame
+   - **Later polish (2026-11-06):** six varied mark families, more golden and irregularly spaced
+     300-520 units along the route. Animated studies and actual-spacing captures are generated with
+     `_DiscoveryPreview` and `tools/art/discovery_gif.py`.
+   - The pen was enlarged to 448x352, then to **1944x1632** at Eric's request for at least 4x again.
+     Its foundation clears water/hidden fences before painting and on regeneration. Twenty-four
+     blue/violet wisps circle the walls, eight the carved center ward. It has a binding across its gate and eight-frame
      magical energy at its center. Defeat the existing guards and touch the latch to unseal it;
      walk inside and approach the energy to claim Familiar. Opening the gate alone pays nothing.
      Its interior/entrance are walkable in both physics and navigation, with separate draw origins
@@ -537,6 +542,16 @@ things come up; strike what lands.**
    two-to-four-slot tag budget. Review slot purchases, offer weighting, level caps, full-slot behavior,
    saved loadouts and the boon/level-up UI at Windows and phone sizes. This is next-week design/balance work,
    not implemented in 0.13.2.
+
+42. **Fields terrain palette options** (Eric, 2026-11-06). The tilled soil and dirt look dark,
+   boring and too similar. First studies A/B/C were too far from the original. Closer variants
+   D/E/F keep the original fine stubble and row patterns: **D Soft Umber**, **E Faded Gold**
+   (closest to the original, clearer furrows), **F Cool Loam** (cooler/desaturated). Compare with
+   `python tools/art/fields_studies.py --closer` in `build/visuals/fields-options-close.png`.
+   **Awaiting Eric's palette selection; shipping ground textures remain unchanged.**
+   `terrain_fields.FIELD_LOOK` supports these studies plus the original; regenerate only stubble
+   and furrow with `python tools/art/tiles.py stubble furrow` after choosing. All palette stops
+   are existing contract colours, including the already approved sand-cloth row reused as soil.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 

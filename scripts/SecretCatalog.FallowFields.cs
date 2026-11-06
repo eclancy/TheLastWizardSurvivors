@@ -24,6 +24,7 @@ public static partial class SecretCatalog
 			{
 				IsBuilt = true,
 				CreateSite = () => new global::Pinfold(),
+				Footprint = 1360f,
 				RepeatReward = "Its guards fell again, and a chest was in the pound",
 			},
 		};

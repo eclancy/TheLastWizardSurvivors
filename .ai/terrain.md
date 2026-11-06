@@ -2389,3 +2389,19 @@ of enemies; the busy rows keep the swarm and its hurt tint):
 - **The moor grass** as the wind: grey-green and small, it may be a texture more than a direction at 540 wide.
 - **The curated prop themes** (`PropThemes` flora and bones, LevelGenerator's palette, shared): the lime bracken and the
   bone-white bones are now the brightest things on the heath bar the cotton-grass.
+
+### Large Pinfold foundation (2026-11-06)
+
+The Pinfold's 1944x1632 art now needs a real courtyard, not just a larger image over ponds/fences.
+Its rolled site is the enclosure center; `Pinfold.LayOut` puts the entrance 768 units south and
+calls `SecretDirector.PrepareFoundation` before `LoadInitialTerrain` paints or furnishes anything.
+The foundation clears terrain/flags/roles inside its rectangle and removes overlapping procedural
+flower-pen plans (including cached fence flags). Then the Pinfold's actual walls stamp as usual.
+`StampChunk` repeats clearing first, walls second on regenerated chunks, keeping navigation, water
+collision and drawing consistent. The entrance stays open in navigation and has a separate physical
+gate while sealed. A foundation applied to already-painted ground throws rather than leaving stale
+water physics. It is per run, changes no saves, and its decor reserve covers the courtyard.
+
+`terrain_fields.py` also carries optional Fields palette studies. The active look remains `original`
+pending Eric's selection; `fields_studies.py --closer` compares D/E/F without overwriting textures.
+Those variants retain the original marks/rows and remap only existing contract palette stops.
