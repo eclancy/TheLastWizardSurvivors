@@ -1,6 +1,10 @@
 # Chapter wizards: one held in every place
 
-**Current placement override, 2026-11-06 (Eric):** Laelaps is freed with the three companions in the
+**Latest placement, 2026-11-06 (Eric): Merlin belongs to the Broken Circle.** Restore the Moot's
+shattered council wards to free him and unlock Orb of Ages, keeping Gilded Mote. Medea's granary
+returns to the Fields, alongside the separate Laelaps rescue. This supersedes the interim move below.
+
+**Earlier placement override, 2026-11-06:** Laelaps is freed with the three companions in the
 Fallow Fields' Pinfold, alongside Familiar. Medea's existing tithe-scale rescue moves to the Broken
 Circle as its second side event, replacing that chapter's former Laelaps unlock. Coursing becomes
 a 50 Arcane Energy challenge played as Laelaps. Baba Yaga remains in the Enchanted Forest, but her

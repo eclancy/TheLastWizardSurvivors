@@ -571,6 +571,31 @@ things come up; strike what lands.**
    Regenerate only stubble and furrow with `python tools/art/tiles.py stubble furrow`. All palette stops
    are existing contract colours, including the already approved sand-cloth row reused as soil.
 
+43. **Gods as extended-story unlocks** (Eric, 2026-11-06). Consider gods as the playable characters
+    earned during the extended story. They can start with powerful **existing combination spells,
+    Apotheosis forms, or other advanced spell forms**. This does **not require new spells**: reuse
+    the current spell roster and its evolved forms, then balance each god's starting power, passive
+    and unlock around that later story. This is a future design note, not part of the current Merlin swap.
+
+44. ~~**Merlin at the great meeting place**~~ (Eric, 2026-11-06). **Done.** Restore the Broken Circle's existing
+    Moot wards to free Merlin and unlock his existing Orb of Ages, retaining Gilded Mote. Show him
+    bound at the center and play his freeing reel afterward. Medea's granary belongs back in the
+    Fields, alongside the separate Laelaps rescue. Keep the campaign-completion deed and its saved
+    progress as The Road Restored, with a 1,000 Arcane Energy reward. Preserve existing ownership.
+
+45. ~~**Main menu Quit and loading fixes**~~ (Eric, 2026-11-06). **Done.** Add a lower-right Quit button with
+    mouse, keyboard and controller access. Fit the complete ward artwork on the loading screen
+    (the portrait source itself was clipped at both sides). Break resource caching, shop cards and
+    achievement-page construction into small main-thread steps so loading animation keeps drawing.
+    - Build: 0 errors, the existing 45 warnings. Content validator: 0 errors, the existing Test Wizard
+      warning. Circle seed 1234 freed Merlin (23 checks); Fields seed 2026 freed Medea (46 checks).
+      Merlin's freeing art passed the palette audit with no off-contract pixels.
+    - Real-window title probes passed desktop, portrait/safe-area and 4:3, including retry, return
+      to the menu, early input suppression, all achievement filters, Quit navigation and actual exit.
+      On this PC, the old 3,456 ms loading-frame gap fell to 97-109 ms in the final fresh-process
+      checks; preparation took about 2.2 s. These are desktop measurements, not phone timings.
+      Every loading frame's crop has padding on all four sides. All test saves stayed in memory.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**

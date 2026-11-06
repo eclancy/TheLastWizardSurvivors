@@ -63,8 +63,12 @@ public partial class MootFiresEvent : SideEvent
 	private float restartIn = -1f;
 	private float flareUntil = -1f;
 	private bool handedOver;
+	private AnimatedSprite2D keeper;
+	private ShaderMaterial keeperMaterial;
+	private float freedAt = -1f;
+	public Vector2 MerlinPosition => Sites[0].Position;
 
-	protected override string Announcement => "The stones of the moot stand dark.";
+	protected override string Announcement => "The council wards lie broken. Their keeper is bound at the center.";
 	protected override string ChestLine => "The circle burns again - a chest is left in it";
 
 	protected override string Objective => restartIn >= 0f
@@ -127,6 +131,16 @@ public partial class MootFiresEvent : SideEvent
 	protected override void OnPlaced()
 	{
 		LoadArt();
+		keeperMaterial = new ShaderMaterial { Shader = GD.Load<Shader>("res://scenes/shaders/pinfold_ghost.gdshader") };
+		keeper = new AnimatedSprite2D
+		{
+			Name = "BoundMerlin", SpriteFrames = GD.Load<SpriteFrames>("res://scenes/resources/MerlinFrames.tres"),
+			Scale = Vector2.One * 2f, Offset = new Vector2(0f, -23f),
+			Position = ToLocal(MerlinPosition), Material = keeperMaterial,
+			TextureFilter = TextureFilterEnum.Nearest,
+		};
+		AddChild(keeper);
+		keeper.Play("idle");
 		foreach (Stone stone in stones)
 		{
 			stone.Node = MakeStone(ToLocal(stone.Foot));
@@ -225,6 +239,8 @@ public partial class MootFiresEvent : SideEvent
 			target.Lit = true;
 			if (count >= RunLength)
 			{
+				freedAt = Clock;
+				keeperMaterial.SetShaderParameter("ghosted", false);
 				flareUntil = Clock + 3f;
 				foreach (Stone stone in stones)
 					stone.Lit = true;
@@ -310,6 +326,13 @@ public partial class MootFiresEvent : SideEvent
 	public override void _Process(double delta)
 	{
 		base._Process(delta);
+		if (freedAt >= 0f && keeper != null)
+		{
+			float t = Mathf.Clamp((Clock - freedAt) / 1.2f, 0f, 1f);
+			keeperMaterial.SetShaderParameter("release_amount", t);
+			keeper.Position = SpellInk.Snap(ToLocal(MerlinPosition.Lerp(Player?.GlobalPosition ?? MerlinPosition, t)));
+			keeper.Visible = t < 1f;
+		}
 		if (IsResolved && !handedOver)
 			StandOnTheHeath();
 	}
@@ -339,6 +362,17 @@ public partial class MootFiresEvent : SideEvent
 
 	protected override void DrawLight(CanvasItem light)
 	{
+		if (!Succeeded && NearPlayer(MerlinPosition))
+		{
+			Vector2 at = ToLocal(MerlinPosition);
+			Color seal = new("#6AB8E8");
+			for (int i = 0; i < 12; i++)
+			{
+				float a = i * Mathf.Tau / 12f;
+				PixelInk.Line(light, at + new Vector2(Mathf.Cos(a) * 70f, Mathf.Sin(a) * 34f),
+					at + new Vector2(Mathf.Cos(a + 0.35f) * 70f, Mathf.Sin(a + 0.35f) * 34f), seal, 1);
+			}
+		}
 		// While nobody has come: his cold far tell over the ring's centre, as every event gives off.
 		if (IsDormant)
 		{

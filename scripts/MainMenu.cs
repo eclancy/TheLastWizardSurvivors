@@ -17,6 +17,8 @@ public partial class MainMenu : Control
 	private Button unlocksButton = null!;
 	private Button arcaneUpgradesButton = null!;
 	private Button optionsButton = null!;
+	private Button quitButton = null!;
+	private HBoxContainer portraitUtilities;
 	private Button reportBugButton;
 	private Button backFromArcaneButton = null!;
 	private Button backFromAchievementsButton = null!;
@@ -96,7 +98,7 @@ public partial class MainMenu : Control
 			while (preparation.MoveNext()) { }
 	}
 
-	// The title prepares its hidden menu a stage per frame behind the loading screen. Standalone
+	// The title prepares its hidden menu in bounded main-thread work batches. Standalone
 	// menu scenes keep synchronous readiness for the existing menu/screenshot harnesses.
 	public bool PrepareInSteps { get; set; }
 	public bool IsPrepared { get; private set; }
@@ -108,7 +110,14 @@ public partial class MainMenu : Control
 	{
 		if (!IsPrepared && preparation != null)
 		{
-			try { preparation.MoveNext(); }
+			try
+			{
+				ulong deadline = Time.GetTicksUsec() + 4000;
+				do
+				{
+					if (!preparation.MoveNext()) { preparation.Dispose(); preparation = null; break; }
+				} while (!IsPrepared && Time.GetTicksUsec() < deadline);
+			}
 			catch (Exception ex)
 			{
 				PreparationError = ex.Message;
@@ -142,6 +151,11 @@ public partial class MainMenu : Control
 		// The Spell Index's slot opens the Evolution Codex now; the node keeps its name for the harnesses.
 		spellIndexButton.Text = EvolutionCodex.Title;
 		optionsButton = GetNode<Button>("OptionsButton");
+		quitButton = new Button { Name = "QuitButton", Text = "Quit", FocusMode = FocusModeEnum.All };
+		AddChild(quitButton);
+		BonelightSkin.StyleButton(quitButton, BonelightSkin.Emphasis.Quiet);
+		ResponsiveLayout.SetFont(quitButton, ResponsiveLayout.TextRole.Body);
+		quitButton.Pressed += () => GetTree().Quit();
 		EnsureMenuEnergyReadout();
 		achievementList = achievementsPanel.FindChild("AchievementList", true, false) as VBoxContainer;
 		achievementSummary = achievementsPanel.FindChild("AchievementSummary", true, false) as VBoxContainer;
@@ -170,11 +184,13 @@ public partial class MainMenu : Control
 		// The shop needs its definitions before its cards; the boons' pages read BoonCatalog, not these
 		// entries (the shop's spell pages did, until it stopped selling spells).
 		BuildUpgradeDefinitions();
-		BuildShop();
+		foreach (int step in BuildShopSteps()) yield return step;
 		startup.Mark("shop");
 		PreparationProgress = 5f / 7f;
 		yield return 0;
-		BuildAchievementCards();
+		foreach (int step in ContentValidator.PrepareSpellResources()) yield return step;
+		foreach (int step in CharacterRoster.PrepareResources()) yield return step;
+		foreach (int step in BuildAchievementCardsSteps()) yield return step;
 		startup.Mark("achievements");
 		PreparationProgress = 6f / 7f;
 		yield return 0;
@@ -566,6 +582,7 @@ public partial class MainMenu : Control
 
 	private void OnViewportSizeChanged()
 	{
+		if (quitButton != null && !DisplayProfile.IsPortrait) LayoutUtilityRow();
 		// Options' two columns of sections fold to one as the codex lists do (MainMenu.Options.cs).
 		if (optionsColumns != null && optionsColumns.Columns != CodexRows.ColumnsFor(this))
 		{
@@ -730,6 +747,18 @@ public partial class MainMenu : Control
 	// above it on a 16:9 phone, whose canvas ends at row 1280, between the row and the circle's rim.
 	private void LayoutUtilityRow()
 	{
+		quitButton.SetAnchorsAndOffsetsPreset(LayoutPreset.BottomRight);
+		quitButton.OffsetLeft = -164f;
+		quitButton.OffsetRight = -20f;
+		quitButton.OffsetTop = -76f;
+		quitButton.OffsetBottom = -20f;
+		quitButton.CustomMinimumSize = new Vector2(144f, 56f);
+		optionsButton.FocusNeighborRight = optionsButton.GetPathTo(spellIndexButton);
+		spellIndexButton.FocusNeighborLeft = spellIndexButton.GetPathTo(optionsButton);
+		spellIndexButton.FocusNeighborRight = spellIndexButton.GetPathTo(quitButton);
+		quitButton.FocusNeighborLeft = quitButton.GetPathTo(spellIndexButton);
+		quitButton.FocusNeighborRight = quitButton.GetPathTo(quitButton);
+		quitButton.FocusNeighborTop = quitButton.GetPathTo(unlocksButton);
 		foreach (Button button in new[] { optionsButton, spellIndexButton })
 		{
 			if (button == null)
@@ -745,49 +774,41 @@ public partial class MainMenu : Control
 			PinToWideArt(optionsButton, 12f, 292f, 126f, 324f);
 			PinToWideArt(spellIndexButton, 134f, 296f, 236f, 320f);
 			if (rootDetailLabel != null)
-				PinToWideArt(rootDetailLabel, 470f, 312f, 632f, 352f);
+				PinToWideArt(rootDetailLabel, 470f, 276f, 632f, 308f);
 			return;
 		}
+		LayoutPortraitUtilities();
+	}
 
-		const float RowTop = 528f;     // composition row 1168
-		const float RowBottom = 592f;  // composition row 1232
-		const float Half = 320f;
-		const float Gap = 8f;
-		Button[] row = { optionsButton, spellIndexButton };
-		float width = (Half * 2f - Gap * (row.Length - 1)) / row.Length;
-		for (int i = 0; i < row.Length; i++)
+	private void LayoutPortraitUtilities()
+	{
+		portraitUtilities = new HBoxContainer { Name = "PortraitUtilities", MouseFilter = MouseFilterEnum.Ignore };
+		portraitUtilities.AddThemeConstantOverride("separation", 8);
+		AddChild(portraitUtilities);
+		portraitUtilities.SetAnchorsAndOffsetsPreset(LayoutPreset.BottomWide);
+		portraitUtilities.OffsetLeft = 20f;
+		portraitUtilities.OffsetRight = -20f;
+		portraitUtilities.OffsetTop = -84f;
+		portraitUtilities.OffsetBottom = -20f;
+		foreach (Button button in new[] { optionsButton, spellIndexButton, quitButton })
 		{
-			if (row[i] == null)
-				continue;
-			float left = -Half + i * (width + Gap);
-			row[i].OffsetLeft = left;
-			row[i].OffsetRight = left + width;
-			row[i].OffsetTop = RowTop;
-			row[i].OffsetBottom = RowBottom;
+			button.Reparent(portraitUtilities);
+			button.SetAnchorsAndOffsetsPreset(LayoutPreset.TopLeft);
+			button.CustomMinimumSize = new Vector2(0f, 64f);
+			button.SizeFlagsHorizontal = SizeFlags.ExpandFill;
 		}
-
-		if (rootDetailLabel == null)
-			return;
-		// Above the row there is one line of grass between the row and the bottom flame of the
-		// ward (rows 1132-1160); two lines there ran over the flame, so it says it in one.
-		float halfCanvas = ResponsiveLayout.ViewportSize(this).Y / 2f;
-		float floor = halfCanvas - SafeArea.Insets(GetViewport()).Bottom - 8f;
-		float below = RowBottom + 12f;
-		const float TwoLines = 60f;
-		const float OneLine = 28f;
-		detailOnOneLine = below + TwoLines > floor;
-		float detailHeight = detailOnOneLine ? OneLine : TwoLines;
-		float top = detailOnOneLine ? RowTop - 8f - OneLine : below;
-		rootDetailLabel.AnchorLeft = 0.5f;
-		rootDetailLabel.AnchorRight = 0.5f;
-		rootDetailLabel.AnchorTop = 0.5f;
-		rootDetailLabel.AnchorBottom = 0.5f;
-		rootDetailLabel.OffsetLeft = -Half;
-		rootDetailLabel.OffsetRight = Half;
-		rootDetailLabel.OffsetTop = top;
-		rootDetailLabel.OffsetBottom = top + detailHeight;
+		quitButton.FocusNeighborTop = quitButton.GetPathTo(unlocksButton);
+		if (rootDetailLabel == null) return;
+		detailOnOneLine = true;
+		rootDetailLabel.AnchorLeft = 0f;
+		rootDetailLabel.AnchorRight = rootDetailLabel.AnchorTop = rootDetailLabel.AnchorBottom = 1f;
+		rootDetailLabel.OffsetLeft = 20f;
+		rootDetailLabel.OffsetRight = -20f;
+		rootDetailLabel.OffsetTop = -120f;
+		rootDetailLabel.OffsetBottom = -92f;
 		rootDetailLabel.HorizontalAlignment = HorizontalAlignment.Center;
 	}
+
 
 	private void OnReportBugPressed()
 	{
@@ -835,7 +856,7 @@ public partial class MainMenu : Control
 		// the main screen leaves with the main screen.
 		bool atRoot = panelToShow == mainPanel;
 		// Report a bug is not one of these any more: it lives inside Options, and hiding it here hid it there.
-		foreach (Control utility in new Control[] { optionsButton, spellIndexButton })
+		foreach (Control utility in new Control[] { optionsButton, spellIndexButton, quitButton })
 		{
 			if (utility != null)
 				utility.Visible = atRoot;
@@ -951,6 +972,11 @@ public partial class MainMenu : Control
 	// list is the Secrets tab now (.ai/achievements-and-secrets.md 4.10).
 	private void BuildAchievementCards()
 	{
+		foreach (int step in BuildAchievementCardsSteps()) { }
+	}
+
+	private IEnumerable<int> BuildAchievementCardsSteps()
+	{
 		ClearChildren(achievementList);
 		ClearChildren(achievementSummary);
 		codexColumnsBuilt = CodexRows.ColumnsFor(this);
@@ -959,8 +985,9 @@ public partial class MainMenu : Control
 		AchievementsPage.MarkTab(achievementTabs, AchievementsPage.MenuFilter);
 
 		SaveData data = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
-		AchievementsPage.Result page = AchievementsPage.Build(achievementList, AchievementContext.ForSave(data),
-			AchievementsPage.PageMode.Menu, AchievementsPage.MenuFilter, string.Empty);
+		AchievementsPage.Result page = null;
+		foreach (int step in AchievementsPage.PrepareMenu(achievementList, AchievementContext.ForSave(data),
+			AchievementsPage.MenuFilter, result => page = result)) yield return step;
 		AchievementsPage.LinkTabsToList(achievementTabs, achievementList, AchievementsPage.MenuFilter);
 		// The bar under the count only where there is height for it: on a 720-tall PC canvas the heading,
 		// the subtitle, the count and the tabs already stand over the list, and every unit they take is a

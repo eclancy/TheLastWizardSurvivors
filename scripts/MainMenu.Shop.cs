@@ -320,8 +320,13 @@ public partial class MainMenu
 	/// </remarks>
 	private void BuildShop()
 	{
+		foreach (int step in BuildShopSteps()) { }
+	}
+
+	private IEnumerable<int> BuildShopSteps()
+	{
 		if (upgradeList == null)
-			return;
+			yield break;
 		EnsureShopFrames();
 		ClearChildren(upgradeList);
 		shopRows.Clear();
@@ -337,13 +342,13 @@ public partial class MainMenu
 			var defs = ids.Where(upgradeDefinitions.ContainsKey).Select(id => upgradeDefinitions[id]).ToList();
 			placed.UnionWith(defs.Select(d => d.Id));
 			if (defs.Count > 0)
-				AddShopSection(title, note, defs, narrow, boonSection: false);
+				foreach (int step in AddShopSectionSteps(title, note, defs, narrow, boonSection: false)) yield return step;
 		}
 		var stray = upgradeDefinitions.Values.Where(d => !d.IsBoon && !placed.Contains(d.Id)).ToList();
 		if (stray.Count > 0)
 		{
 			GD.PushWarning($"MainMenu: Arcane Upgrades has no section for {string.Join(", ", stray.Select(d => d.Id))}; listed under More (MainMenu.Shop.cs, UpgradeSections).");
-			AddShopSection("More", string.Empty, stray, narrow, boonSection: false);
+			foreach (int step in AddShopSectionSteps("More", string.Empty, stray, narrow, boonSection: false)) yield return step;
 		}
 
 		SaveData data = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
@@ -351,16 +356,21 @@ public partial class MainMenu
 		if (boons.Count > 0)
 		{
 			bool boonsForSale = boons.Any(d => !GlobalStatsManager.IsBoonUnlocked(data, d.BoonId));
-			AddShopSection(BoonSectionTitle, boonsForSale ? BoonSectionNote : BoonSectionDoneNote, boons, narrow, boonSection: true);
+			foreach (int step in AddShopSectionSteps(BoonSectionTitle, boonsForSale ? BoonSectionNote : BoonSectionDoneNote, boons, narrow, boonSection: true)) yield return step;
 		}
 
 		RefreshUpgradeControls();
 	}
 
-	private void AddShopSection(string title, string note, List<UpgradeDefinition> defs, bool narrow, bool boonSection)
+	private IEnumerable<int> AddShopSectionSteps(string title, string note, List<UpgradeDefinition> defs, bool narrow, bool boonSection)
 	{
-		var cards = defs.Select(d => (Control)BuildShopCard(d, narrow)).ToList();
-		VBoxContainer section = CodexRows.AddSection(upgradeList, title, " ", CodexRows.Stone, shopColumnsBuilt, cards);
+		VBoxContainer section = CodexRows.AddSection(upgradeList, title, " ", CodexRows.Stone, shopColumnsBuilt, Array.Empty<Control>());
+		GridContainer grid = section.GetNode<GridContainer>(CodexRows.SectionRowsName);
+		foreach (UpgradeDefinition def in defs)
+		{
+			grid.AddChild(BuildShopCard(def, narrow));
+			yield return 0;
+		}
 		// The tally CodexRows put in the heading row, filled in by RefreshUpgradeControls.
 		if (section.GetChild(0) is HBoxContainer head && head.GetChildCount() > 1 && head.GetChild(1) is Label tally)
 			shopTallies.Add((tally, defs.Select(d => d.Id).ToArray(), boonSection));

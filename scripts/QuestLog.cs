@@ -101,10 +101,8 @@ public static class QuestLog
 		// Not a prisoner: the one who took them (.ai/dark-wizard-playable.md), taken in his turn on the hardest
 		// road. No held line - he is held nowhere - and once taken the Throne's note says what became of him.
 		new Prisoner("dark_wizard", "the one on the throne", "", "{0} has nothing left to take."),
-		// Not a prisoner either: Merlin, the old enchanter (.ai/merlin.md), earned by the whole road on Default. No
-		// held line - he was never held. Not "the one he missed": that is the player (.ai/world-and-tone.md), and the
-		// game is named for him.
-		new Prisoner("merlin", "the old enchanter", "", "{0} keeps his circle."),
+		// Merlin kept the wizards' gathering; the broken wards now bind him at its center.
+		new Prisoner("merlin", "the keeper of the circle", "A pale enchanter is bound within the broken council wards.", "{0} is free. The circle holds again."),
 		// The queen in the barge, who carried the dying king over the water: the one who could cross without his
 		// bridge, so he moored her under it (.ai/chapter-wizards.md 4.9). Seen as a light on the water.
 		new Prisoner("morgan", "the woman in the barge", "A lantern on the water under the bridge, where no boat could be.", "{0} has come ashore."),

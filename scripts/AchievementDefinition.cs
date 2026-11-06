@@ -247,7 +247,7 @@ public static class AchievementDefinitions
 	public const string TakerTakenId = "the_taker_taken";
 
 	/// <summary>
-	/// The deed that frees Merlin, The King-Maker: every chapter's boss beaten on Default or harder (.ai/merlin.md).
+	/// The Road Restored: every chapter's boss beaten on Default or harder. Merlin now belongs to the Moot.
 	/// The id keeps the deed's first name, "The One He Missed", so a save that has done it keeps it; that name is the
 	/// player's now, and the game's (.ai/world-and-tone.md), never a deed's.
 	/// </summary>
@@ -285,8 +285,8 @@ public static class AchievementDefinitions
 		("the_grove", "The Grove Held", "Hold the corrupted grove in the Enchanted Forest until it grows back.", "Unlocks Bramble Seed"),
 		("walking_hut", "The Hut Run Down", "Keep up with the hut that walks the Enchanted Forest until it tires and kneels.", "Frees Baba Yaga"),
 		("the_well", "The Last Coin", "Keep the last clean well in the Fallow Fields from being fouled.", "Unlocks Wishing Coin"),
-		("tithe_scale", "The Tithe Paid", "Pay the Tithe-Reeve's scale its due beyond the Broken Circle's stones, until the granary opens.", "Frees Medea"),
-		("the_moot", "The Circle Relit", "Relight the runes of the stone circle on the Broken Circle.", "Unlocks Gilded Mote"),
+		("tithe_scale", "The Tithe Paid", "Pay the Tithe-Reeve's scale its due in the Fallow Fields, until the granary opens.", "Frees Medea"),
+		("the_moot", "The Circle Relit", "Restore the shattered council wards of the Broken Circle to free their keeper.", "Frees Merlin, unlocks Orb of Ages and Gilded Mote"),
 		("gaolers_key", "The Open Cell", "Carry the Gaoler's key to the locked cell in the Cursed Dungeon.", "Frees Tituba"),
 		("bog_lanterns", "The Lanterns Out", "Snuff the lanterns of the Blighted Swamp and face what tends them.", "Unlocks Contagion"),
 		("gibbet_cage", "The Ferry Reached", "Lower the gibbet's cage in the Blighted Swamp and bring the man in it to the ferry landing alive.", "Frees Paracelsus"),
@@ -513,21 +513,13 @@ public static class AchievementDefinitions
 			Measure = c => ChaptersClearedAt(c, GlobalStatsManager.PresetRankHardcore),
 			Target = CampaignChapterCount,
 		},
-		// THE KING-MAKER (.ai/merlin.md), for Merlin, who made a king. Eric, 2026-11-02: "maybe unlocked when finishing
-		// the full campaign on medium" - every chapter's boss beaten on Default or harder, counted as the Taker Taken
-		// is, so it too waits for the whole campaign to exist. Named "The One He Missed" while he was drawn as the
-		// title figure; that figure is the player and the game is named for him (Eric, 2026-11-02: "The blue robed
-		// wizard should represent player"), so the deed has a name of Merlin's own and keeps its id. A Feat, listed
-		// from the first run: never a secret, his card shows his shape and this line from the start. He was never
-		// held, so he is outside the campaign gate (UnlockCatalog).
-		// Pays him and his own spell, Orb of Ages, which no other wizard is ever offered (UnlockDefinition.ExclusiveTo).
+		// The campaign-completion deed retains its ID and progress after Merlin moves to the Circle.
+		// Its replacement reward is currency; gods remain an extended-story design note.
 		new()
 		{
-			Id = OneHeMissedId, DisplayName = "The King-Maker",
+			Id = OneHeMissedId, DisplayName = "The Road Restored",
 			Description = "Defeat every chapter's boss on Default or harder.",
-			RewardText = "Unlocks Merlin and Orb of Ages",
-			CharacterUnlockId = "merlin",
-			SpellUnlockId = OrbOfAges.SpellId,
+			RewardText = "1000 Arcane Energy", CurrencyReward = 1000,
 			Category = AchievementCategory.Challenge,
 			Measure = c => ChaptersClearedAt(c, GlobalStatsManager.PresetRankDefault),
 			Target = CampaignChapterCount,

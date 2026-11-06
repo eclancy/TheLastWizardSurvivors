@@ -3612,8 +3612,10 @@ public static partial class RegressionChecks
 		}
 		void Expect(string label, SaveData save, bool merlinFree, bool darkFree)
 		{
-			if (GlobalStatsManager.IsCharacterUnlocked(save, merlin) != merlinFree)
-				warnings.Add($"The whole road: {label} {(merlinFree ? "does not free" : "frees")} Merlin.");
+			if (GlobalStatsManager.IsCharacterUnlocked(save, merlin))
+				warnings.Add($"The whole road: {label} frees Merlin instead of leaving his rescue to the Circle.");
+			if (GlobalStatsManager.IsAchievementUnlocked(save, AchievementDefinitions.OneHeMissedId) != merlinFree)
+				warnings.Add($"The whole road: {label} has the wrong Default campaign-completion result.");
 			if (GlobalStatsManager.IsCharacterUnlocked(save, dark) != darkFree)
 				warnings.Add($"The whole road: {label} {(darkFree ? "does not free" : "frees")} the Dark Wizard.");
 		}
@@ -3642,8 +3644,8 @@ public static partial class RegressionChecks
 		if (StageCatalog.Campaign.Any(s => s.Id.Equals("stage_8", StringComparison.OrdinalIgnoreCase)))
 			warnings.Add("The whole road: the Sketchbook is in the campaign, so Merlin and the Dark Wizard would ask for it; it has no unlocks.");
 		SaveData orbOwned = Walk(_ => D);
-		if (!GlobalStatsManager.IsSpellUnlockedForLevelUp(orbOwned, OrbOfAges.SpellId))
-			warnings.Add("The whole road: every chapter on Default frees Merlin but not his Orb of Ages.");
+		if (GlobalStatsManager.IsSpellUnlockedForLevelUp(orbOwned, OrbOfAges.SpellId))
+			warnings.Add("The whole road: completing the campaign grants Orb of Ages before Merlin's Circle rescue.");
 
 		// Only a boss victory records a clear, and a record never comes down.
 		var record = new SaveData();
@@ -3708,13 +3710,22 @@ public static partial class RegressionChecks
 
 		// Merlin: never secret, never sealed, and Orb of Ages his alone.
 		UnlockDefinition merlinUnlock = UnlockCatalog.GetCharacter(merlin);
-		if (merlinUnlock != null && (merlinUnlock.IsSecret || merlinUnlock.SealedUntilFreed))
-			warnings.Add("The King-Maker: Merlin is secret or sealed; he was never held, and is shown locked from the first run.");
+		if (merlinUnlock?.SiteId != "the_moot" || merlinUnlock.RevealStageId != "stage_10")
+			warnings.Add("Merlin: his rescue must belong to the Broken Circle's Moot.");
 		CharacterData merlinData = CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(merlin, StringComparison.OrdinalIgnoreCase));
 		if (merlinData?.StartingSpellResource?.Id?.Equals(OrbOfAges.SpellId, StringComparison.OrdinalIgnoreCase) != true)
 			warnings.Add("The King-Maker: Merlin does not open on Orb of Ages.");
-		if (AchievementDefinitions.GetById(AchievementDefinitions.OneHeMissedId)?.SpellUnlockId != OrbOfAges.SpellId)
-			warnings.Add("The King-Maker: the deed does not pay Orb of Ages with him.");
+		AchievementDefinition circleRescue = AchievementDefinitions.GetById(AchievementDefinitions.EventDeedId("the_moot"));
+		if (circleRescue?.SpellUnlockId != OrbOfAges.SpellId || circleRescue.CharacterUnlockId != merlin || circleRescue.BoonUnlockId != "gilded_mote")
+			warnings.Add("Merlin: restoring the Circle must grant him, Orb of Ages and Gilded Mote.");
+		AchievementDefinition roadDeed = AchievementDefinitions.GetById(AchievementDefinitions.OneHeMissedId);
+		if (roadDeed?.CurrencyReward != 1000 || !string.IsNullOrEmpty(roadDeed.CharacterUnlockId) || !string.IsNullOrEmpty(roadDeed.SpellUnlockId))
+			warnings.Add("The Road Restored: completing the campaign must pay 1000 Arcane Energy.");
+		var oldCircle = new SaveData();
+		oldCircle.UnlockedAchievementIds.Add(AchievementDefinitions.EventDeedId("the_moot"));
+		AchievementManager.Reconcile(oldCircle);
+		if (!GlobalStatsManager.IsCharacterUnlocked(oldCircle, merlin) || !oldCircle.UnlockedSpellIds.Contains(OrbOfAges.SpellId))
+			warnings.Add("Merlin: a previously completed Circle does not reconcile its new rescue.");
 		if (UnlockCatalog.GrimoireSpellIds.Contains(OrbOfAges.SpellId, StringComparer.OrdinalIgnoreCase))
 			warnings.Add("The King-Maker: The Grimoire Restored counts Orb of Ages, which would put the collection behind the whole road.");
 		foreach (CharacterData who in CharacterRoster.GetAll())
