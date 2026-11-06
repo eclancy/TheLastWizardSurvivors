@@ -13,8 +13,9 @@ namespace TheOneHeMissed.scripts;
 /// <remarks>
 /// <para><b>Owed, not "seen".</b> A wizard is owed his reel the moment a deed frees him
 /// (AchievementManager.GrantUnlocks, <see cref="RecordFreed"/>), and the debt is written into the save
-/// (<see cref="SaveData.FreeingsOwed"/>), so a run quit after the cell was opened still pays it at the end of the
-/// next. It is paid when the reel ends, played through or skipped (<see cref="MarkShown"/>), over the paused run
+/// (<see cref="SaveData.FreeingsOwed"/>). Quitting through the pause menu pays it before that run's results;
+/// closing the app leaves it owed for the next finished run. It is paid when the reel ends, played through
+/// or skipped (<see cref="MarkShown"/>), over the paused run
 /// before the results and before any lesson (Node2DGame.Lessons.cs). A "seen" list would have owed every wizard an
 /// existing save had already freed - six reels in a row at its next run's end - unless a migration wrote them
 /// all seen; a list that only a new freeing writes needs neither, and defaults to nothing owed.</para>

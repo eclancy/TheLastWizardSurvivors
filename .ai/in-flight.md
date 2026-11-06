@@ -255,7 +255,13 @@ things come up; strike what lands.**
    Start with `.ai/combo-spells.md`, `.ai/gameplay-design.md`, `.ai/spell-roster.md` and
    `.ai/art-direction.md`; include the existing unlock and save compatibility in the conversion plan.
 
-18. **Defeat screen runs off the bottom on Windows** (Eric, 2026-11-05). The defeat/results screen
+18. ~~**Defeat screen runs off the bottom on Windows**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-06:** reproduced the unbounded results layout. Header, summary and expanded
+   details now share a bounded scroll area above a pinned Retry / Main menu footer. Resizing
+   rebuilds the responsive layout while preserving the open detail; very narrow canvases stack
+   the footer buttons and summary tiles. `_RecoveryProbe --part=results` passed crowded results,
+   scrolling and footer bounds at 1280x720, portrait with safe areas, and a 480x720 logical canvas.
+   Resolution/monitor settings remain a separate task in item 20. Original report: the defeat/results screen
    trails below the bottom of his screen. Reproduce in `GameOverScreen` at the Windows window sizes,
    including fullscreen and a smaller window, with enough results/unlocks to exercise the tall case.
    Keep the content reachable and the Retry / Main menu footer on screen; review the portrait layout
@@ -267,12 +273,13 @@ things come up; strike what lands.**
      `DisplayProfile` already requests borderless fullscreen; the PC design canvas is 1280x720 with
      `KeepHeight`. `GameOverScreen.BuildShell` centres a folded panel at its content height, with no
      overall scroll/height cap around the summary and footer. A minimum height exceeding the available
-     canvas could push the bottom out of view. This is a hypothesis, not a reproduced diagnosis.
+     canvas could push the bottom out of view. This layout failure is now reproduced and fixed;
+     a separate Windows DPI/monitor problem has not been established.
 19. ~~**Defeat screen: Right Arrow from Retry does not reach Main menu**~~ (Eric, 2026-11-05).
    **Done, 2026-11-05:** `GameOverScreen.BuildFooter` explicitly links Retry's right neighbor to
    Main menu and Main menu's left neighbor to Retry. `_RecoveryProbe --part=footer` checks real
    keyboard/pad input while paused, in landscape and portrait; removing the links with
-   `--automatic-focus` reproduces the stuck selection. Item 18's overflow investigation stays open.
+   `--automatic-focus` reproduces the stuck selection. Item 18's overflow fix followed on 2026-11-06.
 
 20. **Display options and correct fullscreen startup resolution** (Eric, 2026-11-05). Add resolution
    options to the game and detect the correct display resolution when launching fullscreen; investigate
@@ -325,7 +332,13 @@ things come up; strike what lands.**
    sizes, following `.ai/art-direction.md` and `.ai/performance.md`. This is a visual cue for the
    existing protection, with its duration and gameplay behavior preserved.
 
-24. **Spell descriptions are clipped below their containers on Windows** (Eric, 2026-11-05).
+24. ~~**Spell descriptions are clipped below their containers on Windows**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-06:** reproduced tall level-up cards overflowing the wide layout. Wide cards
+   now use the same bounded options scroll as portrait cards, keeping the action footer visible.
+   A tall four-card deal now scrolls 469 units of content inside a 400-unit band at 1280x720;
+   mouse wheel, controller scrolling and Page Up / Page Down reach the lower text. Existing
+   Codex/pause detail scrolls remain in place. Display settings/DPI investigation stays in item 20.
+   Original report:
    Some descriptions extend below the bottom of their container, leaving the lower text unreadable.
    The exact spell(s) and menu have not been identified yet; inspect the level-up cards, spell/Codex
    details, pause-screen spell details and character-selection spell descriptions when reproducing.
@@ -429,7 +442,12 @@ things come up; strike what lands.**
    protection and visual expiry after 10 seconds, resumed damage and the once-per-run limit.
    Eric can now playtest whether ten seconds feels right for escaping a crowded situation.
 
-35. **"Newly unlocked" icons cannot be inspected on Windows** (Eric, 2026-11-05). He cannot click
+35. ~~**"Newly unlocked" icons cannot be inspected on Windows**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-06:** reward icons are focusable buttons opening a named detail with the actual
+   unlock's description (including the earned Ascension branch or Apotheosis form). Back returns
+   focus to its icon; More opens the complete reward list. Mouse, keyboard, controller and injected
+   touch passed, including 24 rewards, wrapped icons, portrait and pinned footer navigation.
+   Original report: he cannot click
    the icons or reach them with the arrow keys to find out what they are. Make each reward icon a
    usable selection: clicking it, or focusing it with keyboard arrows and activating it, should show
    the unlocked thing's name and description. Give a focused icon a clear highlight and support
@@ -441,7 +459,13 @@ things come up; strike what lands.**
    in item 27. Test a results screen with several different newly unlocked rewards, including an
    overflowing/wrapped icon row, at Windows and phone layouts.
 
-36. **Quitting a run should still show its results and unlock celebrations** (Eric, 2026-11-05).
+36. ~~**Quitting a run should still show its results and unlock celebrations**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-06:** pause's **Quit Run** now uses the guarded run-finishing path with a
+   distinct `Quit` outcome and neutral **Run ended** title. It banks rewards once, plays owed
+   character freeings and system lessons, then shows inspectable results. Existing Defeat/Victory
+   enum values and story epoch 2 are preserved. Real rendered freeing + Ascension reels passed;
+   headless checks passed both owed-reel and empty runs, including a repeated quit/payout check.
+   Original request:
    When the player voluntarily quits a run, take them through the results/unlocks screen and any
    accompanying unlock animations before returning to the menu. Earned unlocks must remain visible
    and their presentation must not be skipped by the quit path. Check quitting after earning a

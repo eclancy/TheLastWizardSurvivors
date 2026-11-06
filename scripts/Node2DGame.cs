@@ -4174,7 +4174,7 @@ public partial class Node2DGame : Node2D
 		foreach (Button exit in new[]
 		{
 			MakeEscapeButton("Restart Run", OnEscapeRestartPressed, BonelightSkin.Emphasis.Quiet),
-			MakeEscapeButton("Quit to Menu", OnEscapeQuitPressed, BonelightSkin.Emphasis.Quiet),
+			MakeEscapeButton("Quit Run", OnEscapeQuitPressed, BonelightSkin.Emphasis.Quiet),
 		})
 		{
 			exit.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
@@ -4403,11 +4403,11 @@ public partial class Node2DGame : Node2D
 
 	private void OnEscapeQuitPressed()
 	{
-		GetTree().Paused = false;
-		// The menu lives on the title screen now, so going "back to the menu" means loading
-		// its shell and telling it to skip the press-any-key beat.
-		Global.OpenMenuImmediately = true;
-		GetTree().ChangeSceneToFile("res://scenes/TitleScreen.tscn");
+		DropPauseScreenshot();
+		escapeMenu?.Hide();
+		// Finish once through the same reward/lesson/freeing path as any other run ending.
+		// A voluntary end has results, without playing a death animation or claiming a victory.
+		FinishRunAndReward(RunOutcome.Quit);
 	}
 
 	private void ShowStructuredEscapeDetail(string title, Action<VBoxContainer> buildContent)

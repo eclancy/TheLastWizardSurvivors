@@ -402,8 +402,9 @@ For the agent who does. Each line is where the change lives, not how.
 - **The teachers are landmarks, not bosses** (Eric's answer), and a ladder rather than fixed pairs (the
   table at the top). The Hayward no longer teaches anything; his deed reads "Unlocks Thornseed".
 - **A system is learned when its reel plays, not when its teacher is found.** The run that found it is
-  played as it began, so nothing is usable before it has been explained; a run that is quit owes the
-  lesson to the end of the next.
+  played as it began, so nothing is usable before it has been explained. Since 2026-11-06,
+  **Quit Run** also plays owed lessons before its results. Closing the app leaves the lesson owed
+  to the next finished run.
 - **Locked pages are shown on the strip** (the brief's "locked slots show quietly"), where section 7 said
   never to draw them.
 - **Teaching landmarks are signposted (2026-11-05).** `Teachings.LessonAt` identifies an unfound teacher

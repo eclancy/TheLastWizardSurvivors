@@ -229,6 +229,19 @@ public partial class MenuNavigator : Node
 
 		if (padInput || keyInput)
 			SetPointerActive(false);
+
+		// A description can be taller than one viewport while focus stays on its card. Page keys
+		// give a keyboard the same access as the mouse wheel and the pad's right stick.
+		if (@event is InputEventKey { Pressed: true } page && page.Keycode is Key.Pageup or Key.Pagedown
+			&& !AnotherMenuHasSelection() && GetViewport().GuiGetFocusOwner() is not (LineEdit or TextEdit))
+		{
+			ScrollContainer scroll = ScrollUnderSelection() ?? TallestScroll(menuRoot);
+			if (scroll != null)
+			{
+				scroll.ScrollVertical += Mathf.RoundToInt(scroll.Size.Y * 0.8f) * (page.Keycode == Key.Pagedown ? 1 : -1);
+				GetViewport().SetInputAsHandled();
+			}
+		}
 	}
 
 	public override void _Process(double delta)

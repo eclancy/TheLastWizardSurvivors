@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using TheOneHeMissed.scripts;
 
 // Real keyboard/pad routing, native status tooltips and Overlooked's damage/expiry checks.
-// Run scenes/_RecoveryProbe.tscn with -- --part=footer|tooltip|overlooked --no-save-writes.
+// Run scenes/_RecoveryProbe.tscn with -- --part=footer|tooltip|overlooked|results|quit --no-save-writes.
 public partial class _RecoveryProbe : Node
 {
 	private int failures;
@@ -26,6 +26,8 @@ public partial class _RecoveryProbe : Node
 			if (part == "footer") await Footer();
 			else if (part == "tooltip") await Tooltip();
 			else if (part == "overlooked") await Overlooked();
+			else if (part == "results") await Results();
+			else if (part == "quit") await QuitRun();
 			else throw new Exception($"Unknown part {part}");
 		}
 		catch (Exception ex) { Check(false, ex.ToString()); }
@@ -178,6 +180,127 @@ public partial class _RecoveryProbe : Node
 		Check(player.CurrentHP == 4, "damage resumes after expiry");
 		player.TakeDamage(10000);
 		Check(player.IsDead, "Overlooked cannot trigger a second time");
+	}
+
+	private void CheckFooter(GameOverScreen screen)
+	{
+		Rect2 view = GetViewport().GetVisibleRect();
+		foreach (string name in new[] { "RetryButton", "ContinueButton" })
+		{
+			var button = screen.FindChild(name, true, false) as Control;
+			Rect2 rect = button.GetGlobalRect();
+			Check(rect.Position.X >= 0 && rect.Position.Y >= 0 && rect.End.X <= view.End.X + 1f && rect.End.Y <= view.End.Y + 1f,
+				$"{name} stays inside {view.Size}: {rect}");
+		}
+	}
+
+	private async Task Results()
+	{
+		var report = new RunReport { Result = new RunResult(), CharacterName = "The Archmage", StageName = "The Enchanted Forest", ArcaneEarned = 12345, ArcanePurse = 987654 };
+		for (int i = 0; i < 24; i++)
+			report.Unlocks.Entries.Add(new RunUnlockEntry { Kind = RunUnlockKind.Spell, Id = "familiar", Name = $"Familiar {i + 1}", Source = "Recovered by opening the magically sealed gate." });
+		var screen = ResourceLoader.Load<PackedScene>("res://scenes/GameOverScreen.tscn").Instantiate<GameOverScreen>();
+		AddChild(screen);
+		screen.Present(report);
+		GetTree().Paused = true;
+		await ToSignal(GetTree().CreateTimer(3), SceneTreeTimer.SignalName.Timeout);
+		CheckFooter(screen);
+		var first = screen.FindChild("StripUnlock_Spell_0", true, false) as Button;
+		Check(first != null && first.FocusMode == Control.FocusModeEnum.All, "unlock icons are focus stops");
+		Vector2 at = GetViewport().GetScreenTransform() * first.GetGlobalRect().GetCenter();
+		bool touch = OS.GetCmdlineUserArgs().Contains("--touch");
+		if (touch) Input.ParseInputEvent(new InputEventScreenTouch { Position = at, Index = 0, Pressed = true });
+		else Input.ParseInputEvent(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Position = at, GlobalPosition = at, Pressed = true });
+		await Frames();
+		if (touch) Input.ParseInputEvent(new InputEventScreenTouch { Position = at, Index = 0, Pressed = false });
+		else Input.ParseInputEvent(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Position = at, GlobalPosition = at, Pressed = false });
+		await Frames();
+		Check(screen.FindChild("UnlockDetail", true, false) is Control { Visible: true }, "mouse opens unlock details");
+		Check(Descendants(screen).OfType<Label>().Any(l => l.Text == "Familiar 1" && l.IsVisibleInTree()), "detail names the selected unlock");
+		await Shot("unlock-detail");
+		await KeyPress(Key.Escape);
+		Check(first.HasFocus(), "Back restores focus to the reward icon");
+		await KeyPress(Key.Right);
+		Check(GetViewport().GuiGetFocusOwner()?.Name.ToString().StartsWith("StripUnlock_") == true, "Right Arrow reaches another reward icon");
+		await KeyPress(Key.Enter);
+		Check(screen.FindChild("UnlockDetail", true, false) is Control { Visible: true }, "Enter opens selected unlock");
+		await PadPress(JoyButton.B);
+		await PadPress(JoyButton.A);
+		Check(screen.FindChild("UnlockDetail", true, false) is Control { Visible: true }, "pad A opens selected unlock");
+		await PadPress(JoyButton.B);
+		var more = screen.FindChild("MoreUnlocks", true, false) as Button;
+		more.GrabFocus();
+		await KeyPress(Key.Enter);
+		var scroll = screen.FindChild("ResultsScroll", true, false) as ScrollContainer;
+		int before = scroll.ScrollVertical;
+		await KeyPress(Key.Pagedown);
+		Check(scroll.ScrollVertical > before, "Page Down reaches rewards below the fold");
+		CheckFooter(screen);
+		await Shot("tall-results");
+		if (DisplayServer.GetName() != "headless")
+		{
+			GetTree().Root.MinSize = Vector2I.Zero;
+			GetTree().Root.ContentScaleSize = new Vector2I(480, 720);
+			DisplayServer.WindowSetSize(new Vector2I(480, 720));
+			await ToSignal(GetTree().CreateTimer(0.7), SceneTreeTimer.SignalName.Timeout);
+			GD.Print($"RECOVERY resized window {GetTree().Root.Size}, viewport {GetViewport().GetVisibleRect().Size}");
+			CheckFooter(screen);
+			await Shot("compact-results");
+		}
+	}
+
+	private async Task QuitRun()
+	{
+		var save = GetNode<SaveManager>("/root/SaveManager");
+		var data = new SaveData();
+		bool owesReels = !OS.GetCmdlineUserArgs().Contains("--no-reels");
+		if (owesReels)
+		{
+			data.FoundSecretIds.Add(SecretCatalog.PinfoldId);
+			data.FreeingsOwed.Add("baba_yaga");
+			data.UnlockedCharacterIds.Add("baba_yaga");
+		}
+		save.ReplaceInMemory(data);
+		Global.SelectedCharacterIdx = CharacterRoster.IndexOf("archmage");
+		Global.SelectedStageIdx = 0;
+		var game = ResourceLoader.Load<PackedScene>("res://scenes/node_2d_game.tscn").Instantiate<Node2DGame>();
+		AddChild(game);
+		await Frames(10);
+		game.Call("ToggleEscapeMenu");
+		await Frames(5);
+		var quit = Descendants(game).OfType<Button>().First(b => b.Text == "Quit Run");
+		quit.EmitSignal(BaseButton.SignalName.Pressed);
+		await Frames(5);
+		int banked = data.TotalCurrency;
+		quit.EmitSignal(BaseButton.SignalName.Pressed);
+		Check(data.TotalCurrency == banked, "a second quit cannot pay rewards twice");
+		bool visualReels = DisplayServer.GetName() != "headless";
+		bool sawReel = false;
+		for (int frame = 0; frame < 1200 && Descendants(game).OfType<GameOverScreen>().FirstOrDefault() == null; frame++)
+		{
+			if (Descendants(game).OfType<Prologue>().Any())
+			{
+				if (!sawReel) { await Shot("quit-reel"); sawReel = true; }
+				Input.ParseInputEvent(new InputEventKey { Keycode = Key.Escape, PhysicalKeycode = Key.Escape, Pressed = true });
+			}
+			await Frames(1);
+		}
+		Input.ParseInputEvent(new InputEventKey { Keycode = Key.Escape, PhysicalKeycode = Key.Escape, Pressed = false });
+		var results = Descendants(game).OfType<GameOverScreen>().FirstOrDefault();
+		Check(results != null, "quitting reaches the results screen");
+		Check(GameStats.LastCompletedRunResult?.Outcome == RunOutcome.Quit, "quit is recorded without victory or defeat");
+		Check(GetTree().Paused, "results keep the ended run paused");
+		Check(data.FreeingsOwed.Count == 0, "quit pays the character's owed freeing animation");
+		Check(Teachings.HasLearned(data, Teaching.Ascension) == owesReels, "quit teaches exactly the lesson it owes");
+		if (visualReels && owesReels) Check(sawReel, "quit actually displays the owed reel");
+		if (results != null)
+		{
+			Check(results.Report.Unlocks.Entries.Any(e => e.Kind == RunUnlockKind.Lesson) == owesReels, "results list only a genuinely learned system");
+			await ToSignal(GetTree().CreateTimer(2), SceneTreeTimer.SignalName.Timeout);
+			CheckFooter(results);
+			Check(Descendants(results).OfType<Label>().Any(l => l.Text == "Run ended"), "voluntary quit has its own heading");
+			await Shot("quit-results");
+		}
 	}
 
 	private async Task Shot(string name)
