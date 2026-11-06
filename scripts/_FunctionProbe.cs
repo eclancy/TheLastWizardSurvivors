@@ -223,4 +223,3 @@ public partial class _FunctionProbe : Node
 		Check(sprites.Skip(1).All(s => s.SpriteFrames != sprites[0].SpriteFrames), "only main hound has the Ascension look; companions are pups");
 	}
 }
-

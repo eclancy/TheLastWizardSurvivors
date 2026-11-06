@@ -138,7 +138,6 @@ public partial class MainMenu
 	// something in it was for sale would move the selection with it the moment the last was bought.
 	private const string BoonSectionTitle = "Boons";
 	private const string BoonSectionNote = "Each is bought once, and from then on your level-ups can offer it.";
-	private const string BoonSectionDoneNote = "All bought - every one can turn up at a level-up.";
 
 	// The heading the panel wears (the scene's still says Arcane Upgrades) and the line under it, which
 	// names both kinds of thing on the shelf now that the boons are on it. No "level-ups" in it: on a
@@ -403,12 +402,11 @@ public partial class MainMenu
 			foreach (int step in AddShopSectionSteps("More", string.Empty, stray, narrow, boonSection: false)) yield return step;
 		}
 
-		SaveData data = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
 		var boons = upgradeDefinitions.Values.Where(d => d.IsBoon).ToList();
 		if (boons.Count > 0)
 		{
-			bool boonsForSale = boons.Any(d => !GlobalStatsManager.IsBoonUnlocked(data, d.BoonId));
-			foreach (int step in AddShopSectionSteps(BoonSectionTitle, boonsForSale ? BoonSectionNote : BoonSectionDoneNote, boons, narrow, boonSection: true)) yield return step;
+			// This page is cached, so its note must also remain true after a purchase or progress reset.
+			foreach (int step in AddShopSectionSteps(BoonSectionTitle, BoonSectionNote, boons, narrow, boonSection: true)) yield return step;
 		}
 
 		RefreshUpgradeControls();
