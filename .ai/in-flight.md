@@ -13,6 +13,16 @@ things come up; strike what lands.**
 
 **Fixes and changes to start:**
 
+- **Released 0.13.2 (2026-11-06):** release commit `35e9bdc8`, tag `v0.13.2`; all nine Windows,
+  Linux and signed Android downloads published and verified against the local artifacts. Both
+  update feeds serve 0.13.2 with story epoch 2, so progress is preserved. Carries the title-loading
+  fix and the four quick fixes, plus bounded results/spell cards (18/24), inspectable unlocks (35)
+  and quit-run rewards/animations (36). Rehearsal and full content validator passed; packaged Windows
+  checks passed startup, crowded/compact results, unlock input, long spell cards and rendered owed
+  reels on quit. Final Windows title check: 1,916.3 ms preparation, 52.9 ms Enter-to-menu in this run.
+  Portrait/safe-area/injected-touch checks passed; no physical Android device was connected.
+  Items 39-41 are new next-week notes, including the clarified two starting + two purchasable boon slots.
+
 - **Ascension discovery (2026-11-05, `codex/ascension-guidance`):** built from the archived playtest
   request first. The world-map's silhouettes open hints, teaching chapters advertise their hidden
   lesson, the opening note points out golden lights near the start, and encountering those lights
@@ -515,12 +525,14 @@ things come up; strike what lands.**
    two additional hounds and coordinate with item 39's description cleanup. This is next-week
    work; the rule and balance changes are not implemented in 0.13.2.
 
-41. **Four levelable boons with fewer tags each** (Eric, 2026-11-06). Let the player carry **four
-   boons**. Reduce the number of element tags on each boon to compensate for the additional slot,
-   and make **every boon level up** so boon upgrades diversify the level-up choice pool. Rebalance
+41. **Two starting boon slots, two purchasable slots, and levelable boons with fewer tags** (Eric,
+   2026-11-06, clarified). Keep the initial limit at **two boons**, and let the player **buy up to
+   two additional boon slots**, for a maximum of four. Reduce the number of element tags on each
+   boon to compensate for the higher eventual capacity, and make **every boon level up** so boon
+   upgrades diversify the level-up choice pool. Rebalance
    each boon's starting effect and per-level gains around those upgrades, together with the
-   four-slot tag budget. Review offer weighting, level caps, full-slot behavior, saved loadouts
-   and the boon/level-up UI at Windows and phone sizes. This is next-week design/balance work,
+   two-to-four-slot tag budget. Review slot purchases, offer weighting, level caps, full-slot behavior,
+   saved loadouts and the boon/level-up UI at Windows and phone sizes. This is next-week design/balance work,
    not implemented in 0.13.2.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
