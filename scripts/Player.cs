@@ -646,9 +646,9 @@ public partial class Player : CharacterBody2D
 	// Wings (Wayland the Smith): the share added to his walking speed - the wings he made to get off the island.
 	public const float CharacterWingsSpeedBonus = 0.10f;
 	// Overlooked (The Archmage, .ai/protagonist.md): once a run, the blow that would end him misses (TakeDamage). The
-	// grace after it is a menu's (PostMenuInvincibilitySeconds), and he is drawn white through it, so the miss is seen:
-	// the crowd that landed the blow is still on him, and without it the next touch would end the run anyway.
-	public const float OverlookedGraceSeconds = 2.0f;
+	// ten-second escape window is independent of post-menu grace. He is drawn white through it:
+	// the crowd that landed the blow is still on him, so he needs time to get clear.
+	public const float OverlookedGraceSeconds = 10.0f;
 	private bool characterOverlooked = false;
 	private bool overlookedSpent = false;
 

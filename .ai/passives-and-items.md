@@ -257,7 +257,7 @@ set is three chests deep, so a boon puts the same demand in front of every run.
 | id / name | `taproot`, **Taproot** - an object, like every boon: a root that only feeds once it is in the ground |
 | tags | **Earth, Grass**. Earth first, so its aura (`BoonAura`) and the ring at the feet are earthen; Grass because Grass is the regeneration element and one of the five thin ones (section 3a) |
 | effect | `BoonEffect.StanceRegen`: **stand still 1.5 s (`BoonCatalog.StanceSeconds`), then +1.5 HP a second** until you move. Any step breaks it and the 1.5 s starts again |
-| card | "Stand still 1.5 s: +1.5 HP per second" - "HP per" picks the regen glyph (`StatIcons.KeyFor`) |
+| card | "Stand still: +1.5 HP per second" - "HP per" picks the regen glyph (`StatIcons.KeyFor`); the activation delay stays 1.5 s but is omitted from the wording (Eric, 2026-11-05) |
 | source | **Starter** (see below) |
 | art | `tools/art/boon_icons.py`, `taproot()`: a parsnip-shaped root, three leaves at the crown, a forked root-rune lit in the Earth ramp down its body. Drawn a step down the flesh row, because Earth's backlight is the same warm tan as the row's upper stops and the first, paler root vanished into it |
 

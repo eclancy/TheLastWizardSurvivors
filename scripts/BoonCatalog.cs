@@ -357,7 +357,7 @@ public static class BoonCatalog
 			BoonEffect.Luck => $"+{m:0} Luck: a little more critical-hit chance, more bonus drops, and a better chance of a legendary spell.",
 			BoonEffect.Retaliate => $"When you are hit, every enemy close around you takes {m:0} damage (at most {once}).",
 			BoonEffect.Chill => $"When you are hit, every enemy close around you is slowed to {m * 100f:0}% speed for {Player.BoonChillDurationSeconds:0.#}\u00A0s (at most {once}).",
-			BoonEffect.StanceRegen => $"Stand still for {StanceSeconds:0.#}\u00A0s and you heal {m:0.0} health every second until you move.",
+			BoonEffect.StanceRegen => $"Stand still and you heal {m:0.0} health every second until you move.",
 			BoonEffect.WalkingRecharge => $"While you walk, whichever of your spells is furthest from ready recharges {m * 100f:0}% faster.",
 			BoonEffect.Frighten => $"When you are struck, every enemy close around you is frightened (at most {once}).",
 			_ => string.Empty,
@@ -392,9 +392,8 @@ public static class BoonCatalog
 			BoonEffect.Retaliate => $"{m:0} damage to nearby enemies when struck",
 			BoonEffect.Chill => $"Slows nearby enemies to {m * 100f:0}% when struck",
 			// "HP per" picks the regen glyph (StatIcons.KeyFor); the condition leads, because it is
-			// the part that makes this a different card from Tidewater Flask; and a no-break space
-			// keeps "1.5 s" on one line wherever the card wraps.
-			BoonEffect.StanceRegen => $"Stand still {StanceSeconds:0.#}\u00A0s: +{m:0.0} HP per second",
+			// the part that makes this a different card from Tidewater Flask.
+			BoonEffect.StanceRegen => $"Stand still: +{m:0.0} HP per second",
 			// "cooldown" picks the cooldown glyph (StatIcons.KeyFor); the condition leads, as Taproot's does.
 			BoonEffect.WalkingRecharge => $"Walking: slowest spell's cooldown {m * 100f:0}% faster",
 			// "when struck" picks the reactions' glyph, as Saltbound Chain's and Rimebriar's lines do.

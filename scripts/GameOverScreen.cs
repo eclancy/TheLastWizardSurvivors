@@ -382,6 +382,10 @@ public partial class GameOverScreen : CanvasLayer
 		continueButton = MakeFooterButton("ContinueButton", "Main menu", BonelightSkin.Emphasis.Primary);
 		continueButton.Pressed += OnContinuePressed;
 		footer.AddChild(continueButton);
+		// These destinations are a pair: left/right must stay within the footer regardless of
+		// the surrounding results layout or which section is open.
+		retryButton.FocusNeighborRight = retryButton.GetPathTo(continueButton);
+		continueButton.FocusNeighborLeft = continueButton.GetPathTo(retryButton);
 		return footer;
 	}
 
