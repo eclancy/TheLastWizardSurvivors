@@ -3,12 +3,11 @@ using System;
 using System.Collections.Generic;
 using TheOneHeMissed.scripts;
 
-// A walkable, magically sealed pound. Opening its gate reveals a separate center pickup.
+// A walkable, magically sealed pound. Free each of its three ghostly companions after opening the gate.
 public partial class Pinfold : SecretVault
 {
 	public const float WakeRadius = 520f;
 	public const float LatchReach = 64f;
-	public const float EssenceReach = 52f;
 	public const float GuardHealthMultiplier = 10f;
 	public static readonly BestiaryRole[] GuardRoles = { BestiaryRole.Wall, BestiaryRole.Slammer };
 	public static readonly Vector2 PoundCell = new(1944f, 1632f);
@@ -55,13 +54,34 @@ public partial class Pinfold : SecretVault
 	private Texture2D pound;
 	private Texture2D front;
 	private Texture2D openFront;
-	private Texture2D essence;
 	private Node2D back;
-	private Node2D energy;
 	private Node2D binding;
 	private CollisionShape2D gateCollider;
 	private float clock;
-	private float absorbed = -1f;
+	private SecretToast rescueToast;
+	public const int CaptiveCount = 3;
+	public const float CompanionReach = 84f;
+	private sealed class Captive
+	{
+		public AnimatedSprite2D Sprite;
+		public ShaderMaterial Material;
+		public Vector2 At;
+		public Vector2 FreedAt;
+		public int Goal;
+		public float Wait;
+		public float Released = -1f;
+		public string Animation = "";
+	}
+	private readonly Captive[] captives = new Captive[CaptiveCount];
+	private static readonly Vector2[][] EscapeGoals =
+	{
+		new[] { new Vector2(-840,-1150), new Vector2(-840,-350), new Vector2(-905,-350), new Vector2(-620,-900) },
+		new[] { new Vector2(840,-500), new Vector2(840,-1200), new Vector2(905,-1200), new Vector2(600,-850) },
+		new[] { new Vector2(-350,-1400), new Vector2(500,-1400), new Vector2(500,-1470), new Vector2(100,-700) },
+	};
+	public bool IsCaptiveFreed(int i) => ((State?.Marks ?? 0UL) & (1UL << i)) != 0;
+	public int FreedCount { get { int count = 0; for (int i = 0; i < CaptiveCount; i++) if (IsCaptiveFreed(i)) count++; return count; } }
+	public Vector2 CaptivePosition(int i) => GlobalPosition + captives[i].At;
 	public override void LayOut(ExplorePlacer placer)
 	{
 		// The rolled site is the enclosure CENTER. Reserve/clear its real footprint before paint.
@@ -75,7 +95,6 @@ public partial class Pinfold : SecretVault
 		pound = GD.Load<Texture2D>("res://assets/bonelight/world/fields/pinfold-back.png");
 		front = GD.Load<Texture2D>("res://assets/bonelight/world/fields/pinfold-front.png");
 		openFront = GD.Load<Texture2D>("res://assets/bonelight/world/fields/pinfold-open.png");
-		essence = GD.Load<Texture2D>("res://assets/bonelight/world/fields/pinfold-essence.png");
 		var body = new StaticBody2D { Name = "Walls", CollisionLayer = 1u << (LevelTilePainter.TerrainCollisionLayer - 1), CollisionMask = 0 };
 		foreach (Rect2 wall in Walls)
 			body.AddChild(new CollisionShape2D { Position = wall.GetCenter(), Shape = new RectangleShape2D { Size = wall.Size } });
@@ -86,45 +105,48 @@ public partial class Pinfold : SecretVault
 		back = new Node2D { Name = "Back", Position = new Vector2(0f, -1536f) };
 		back.Draw += DrawBack;
 		AddChild(back);
-		energy = new Node2D { Name = "Essence", Position = CentreOffset };
-		energy.Draw += DrawEnergy;
-		AddChild(energy);
+		Shader ghost = GD.Load<Shader>("res://scenes/shaders/pinfold_ghost.gdshader");
+		string[] forms = { "Hound", "Cat", "Crow" };
+		Vector2[] starts = { new(-500,-1000), new(500,-700), new(0,-1100) };
+		for (int i = 0; i < CaptiveCount; i++)
+		{
+			var material = new ShaderMaterial { Shader = ghost };
+			var sprite = new AnimatedSprite2D
+			{
+				Name = "Ghost" + forms[i], SpriteFrames = GD.Load<SpriteFrames>(Familiar.FramesPath(forms[i])),
+				Scale = Vector2.One * 2f, Offset = new Vector2(0f, -23f),
+				Material = material, TextureFilter = TextureFilterEnum.Nearest,
+				ZAsRelative = i != 2, ZIndex = i == 2 ? DrawLayers.Air : 0,
+			};
+			captives[i] = new Captive { Sprite = sprite, Material = material, At = starts[i] };
+			AddChild(sprite);
+			sprite.Position = starts[i];
+		}
 		binding = new Node2D { Name = "BindingWisps", ZAsRelative = false, ZIndex = DrawLayers.Air };
 		binding.Draw += DrawBinding;
 		AddChild(binding);
+		rescueToast = new SecretToast();
+		AddChild(rescueToast);
 	}
 	public override void _ExitTree()
 	{
 		if (back != null && IsInstanceValid(back)) back.Draw -= DrawBack;
-		if (energy != null && IsInstanceValid(energy)) energy.Draw -= DrawEnergy;
 		if (binding != null && IsInstanceValid(binding)) binding.Draw -= DrawBinding;
 		base._ExitTree();
 	}
 	public override void _Process(double delta)
 	{
 		clock += (float)delta;
-		if (absorbed >= 0f)
-		{
-			absorbed += (float)delta;
-			if (Player != null) energy.Position = CentreOffset.Lerp(ToLocal(Player.GlobalPosition), Mathf.SmoothStep(0f, 1f, Mathf.Min(absorbed / 0.7f, 1f)));
-			energy.Visible = absorbed < 0.7f;
-		}
-		else if (Player != null && State != null && !State.Done && Active)
+		if (Player != null && State != null && !State.Done && Active)
 		{
 			if (State.Step == 0 && Player.GlobalPosition.DistanceTo(GlobalPosition) <= WakeRadius) Wake();
 			if (State.Step == 1 && guards.TrueForAll(IsDown)) State.Step = 2;
 			if (State.Step == 2 && Player.GlobalPosition.DistanceTo(Latch) <= LatchReach) LiftLatch();
-			if (GateOpen && Player.GlobalPosition.DistanceTo(EssenceCentre) <= EssenceReach)
-			{
-				absorbed = 0f;
-				Open(EssenceCentre);
-				SfxPlayer.AtPosition(SfxCatalog.EventReward, EssenceCentre, 0f);
-			}
 		}
+		TickCaptives((float)delta);
 		if (Player != null && Player.GlobalPosition.DistanceSquaredTo(EssenceCentre) < 3200f * 3200f)
 		{
 			QueueRedraw();
-			energy?.QueueRedraw();
 			binding?.QueueRedraw();
 		}
 	}
@@ -148,7 +170,7 @@ public partial class Pinfold : SecretVault
 		gateCollider.SetDeferred(CollisionShape2D.PropertyName.Disabled, true);
 		SfxPlayer.AtPosition(SfxCatalog.EventReward, Latch, 0f);
 	}
-	/// <summary>Open only the gate for a photograph; the essence still has to be approached.</summary>
+	/// <summary>Open only the gate for a photograph; each companion still has to be freed.</summary>
 	public void OpenForProbe() { if (!GateOpen) LiftLatch(); }
 	private void DrawBack()
 	{
@@ -210,12 +232,65 @@ public partial class Pinfold : SecretVault
 			PixelInk.Disc(binding, head + new Vector2(-2f, -2f), 4.5f, core);
 		}
 	}
-	private void DrawEnergy()
+	private static void SetAnimation(Captive c, string name)
 	{
-		if (essence == null || (IsOpened && absorbed < 0f)) return;
-		SpellInk.AlignToWorldGrid(energy);
-		int frame = (int)(clock * 8f) % 8;
-		energy.DrawTextureRectRegion(essence, new Rect2(-64f, -102f, 128f, 128f), new Rect2(frame * 128f, 0f, 128f, 128f));
-		energy.DrawSetTransform(Vector2.Zero);
+		if (c.Animation == name) return;
+		c.Animation = name;
+		c.Sprite.Play(name);
+	}
+	private void TickCaptives(float dt)
+	{
+		if (State == null) return;
+		Vector2 player = Player != null ? ToLocal(Player.GlobalPosition) : Vector2.Inf;
+		bool inside = player.X > -900f && player.X < 900f && player.Y > -1480f && player.Y < -48f;
+		for (int i = 0; i < CaptiveCount; i++)
+		{
+			Captive c = captives[i];
+			if (c == null) continue;
+			if (IsCaptiveFreed(i))
+			{
+				if (c.Released < 0f || c.Released >= 1f) { c.Sprite.Hide(); continue; }
+				c.Released += dt;
+				float t = Mathf.Clamp(c.Released / 1.0f, 0f, 1f);
+				c.At = c.FreedAt.Lerp(Player != null ? player : c.FreedAt, t);
+				c.Material.SetShaderParameter("release_amount", t);
+				c.Sprite.Visible = t < 1f;
+			}
+			else
+			{
+				Vector2 goal = EscapeGoals[i][c.Goal];
+				if (c.Wait > 0f)
+				{
+					c.Wait -= dt;
+					SetAnimation(c, c.Wait > 0.35f ? "pounce" : "idle");
+					if (c.Wait <= 0f) c.Goal = (c.Goal + 1) % EscapeGoals[i].Length;
+				}
+				else
+				{
+					Vector2 move = goal - c.At;
+					c.Sprite.FlipH = move.X < -1f;
+					c.At = c.At.MoveToward(goal, (118f + i * 22f) * dt);
+					SetAnimation(c, "run");
+					if (c.At.DistanceSquaredTo(goal) < 4f) c.Wait = 0.9f;
+				}
+				if (!State.Done && Active && GateOpen && inside && c.At.DistanceTo(player) <= CompanionReach)
+				{
+					State.Marks |= 1UL << i;
+					c.FreedAt = c.At;
+					c.Released = 0f;
+					c.Material.SetShaderParameter("ghosted", false);
+					SfxPlayer.AtPosition(SfxCatalog.EventReward, GlobalPosition + c.At, 0f);
+					if (FreedCount < CaptiveCount)
+						rescueToast.Show(i == 0 ? "The hound is free" : i == 1 ? "The cat is free" : "The bird is free",
+							$"{FreedCount} of {CaptiveCount} companions freed", "", false);
+				}
+			}
+			c.Sprite.Position = SpellInk.Snap(c.At);
+		}
+		if (!State.Done && Active && FreedCount == CaptiveCount)
+		{
+			rescueToast.Hide();
+			Open(EssenceCentre);
+		}
 	}
 }

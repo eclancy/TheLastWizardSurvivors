@@ -1,5 +1,13 @@
 # Chapter wizards: one held in every place
 
+**Current placement override, 2026-11-06 (Eric):** Laelaps is freed with the three companions in the
+Fallow Fields' Pinfold, alongside Familiar. Medea's existing tithe-scale rescue moves to the Broken
+Circle as its second side event, replacing that chapter's former Laelaps unlock. Coursing becomes
+a 50 Arcane Energy challenge played as Laelaps. Baba Yaga remains in the Enchanted Forest, but her
+hut is now 6-8 chunks out in a walkable clearing with mature woodland around at least half a 440 px
+ring. Existing unlocks, deed IDs and campaign-gate membership are preserved. Historical placements
+in the design sections below are superseded by this note.
+
 **2026-11-03: six of the ten asks below are to become puzzles** - Baba Yaga's, Medea's, Paracelsus's,
 Imhotep's, Ma Liang's and Morgan's, with Tituba's and Väinämöinen's in `.ai/side-events.md` -
 `.ai/unlock-puzzles.md`, designed, not built. Seimei, Wayland, the Sibyl and Nostradamus keep theirs.

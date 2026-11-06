@@ -1,5 +1,11 @@
 # Side events: what the dark wizard keeps in each place
 
+**2026-11-06 placement update:** Medea's `tithe_scale` is now the Broken Circle's second event, after
+`the_moot`; the Fields retain `the_well` and their Pinfold now frees Laelaps. Its existing price,
+art and rescue stay the same; her clue now points beyond standing stones. Baba Yaga's Forest hut
+uses a deeper 6-8 chunk band with wooded surroundings, while keeping the grove/event separation
+and open chase clearing. Earlier tables below describe the historical placement.
+
 **2026-11-03: eight of these asks are to be replaced by puzzles** - the walking hut, the Tithe-Reeve's
 scale, the gibbet's cage, the thaw, the dry tomb, the barge, the Gaoler's key and the dotted door
 (`.ai/unlock-puzzles.md`, designed). Until each is built, what is written here is what plays. **Built: the gibbet's

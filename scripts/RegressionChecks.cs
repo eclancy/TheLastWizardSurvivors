@@ -1030,7 +1030,7 @@ public static partial class RegressionChecks
 		ValidateCoursing(warnings);
 	}
 
-	// THE COURSING (AchievementDefinitions "coursing", which frees Laelaps): a Black Hare run down by a hound.
+	// THE COURSING: Laelaps hunts Black Hares in the Circle; the Pinfold now owns his rescue.
 	// What fails silently: the hare's scene naming another EnemyType (Familiar.Strike would count nothing,
 	// and the deed could never be done), the deed's measure not reading the run's count or the lifetime best
 	// (a deed done and never granted), the best not surviving the save, and the hound counted as a wizard
@@ -1051,13 +1051,15 @@ public static partial class RegressionChecks
 		AchievementDefinition deed = AchievementDefinitions.GetById("coursing");
 		if (deed == null)
 		{
-			warnings.Add("Coursing: no 'coursing' achievement; Laelaps can never be freed.");
+			warnings.Add("Coursing: no 'coursing' achievement.");
 			return;
 		}
-		if (!deed.CharacterUnlockId.Equals("laelaps", StringComparison.OrdinalIgnoreCase))
-			warnings.Add($"Coursing: the deed frees '{deed.CharacterUnlockId}', not Laelaps.");
-		var shortRun = new global::RunResult { HaresCoursed = AchievementDefinitions.CoursingTarget - 1, StageId = "stage_10" };
-		var fullRun = new global::RunResult { HaresCoursed = AchievementDefinitions.CoursingTarget, StageId = "stage_10" };
+		if (!string.IsNullOrEmpty(deed.CharacterUnlockId) || deed.CurrencyReward != 50)
+			warnings.Add("Coursing: the hunt must pay 50 Arcane Energy, without a character unlock.");
+		if (AchievementDefinitions.IsListed(deed, new SaveData()))
+			warnings.Add("Coursing: Laelaps' named hunt is shown before his rescue.");
+		var shortRun = new global::RunResult { HaresCoursed = AchievementDefinitions.CoursingTarget - 1, StageId = "stage_10", CharacterId = "laelaps" };
+		var fullRun = new global::RunResult { HaresCoursed = AchievementDefinitions.CoursingTarget, StageId = "stage_10", CharacterId = "laelaps" };
 		if (deed.IsComplete(AchievementContext.ForRun(new SaveData(), shortRun)))
 			warnings.Add($"Coursing: {AchievementDefinitions.CoursingTarget - 1} hares completes the deed; it asks for {AchievementDefinitions.CoursingTarget}.");
 		if (!deed.IsComplete(AchievementContext.ForRun(new SaveData(), fullRun)))
@@ -1065,8 +1067,33 @@ public static partial class RegressionChecks
 		var save = new SaveData();
 		save.Lifetime.Absorb(fullRun);
 		LifetimeStats back = LifetimeStats.FromDictionary(save.Lifetime.ToGodotDictionary());
-		if (back.BestHaresCoursed != AchievementDefinitions.CoursingTarget || !deed.IsComplete(AchievementContext.ForSave(new SaveData { Lifetime = back })))
-			warnings.Add("Coursing: the best run's hares do not survive the save (LifetimeStats.BestHaresCoursed), so the menu would forget the deed.");
+		if (back.BestLaelapsHaresCoursed != AchievementDefinitions.CoursingTarget || !deed.IsComplete(AchievementContext.ForSave(new SaveData { Lifetime = back })))
+			warnings.Add("Coursing: Laelaps' best hunt does not survive the save.");
+		foreach (var wrongRun in new[] {
+			new global::RunResult { HaresCoursed = 999, StageId = "stage_10", CharacterId = "merlin" },
+			new global::RunResult { HaresCoursed = 999, StageId = "stage_9", CharacterId = "laelaps" } })
+		{
+			var wrongSave = new SaveData();
+			wrongSave.Lifetime.Absorb(wrongRun);
+			if (deed.IsComplete(AchievementContext.ForRun(wrongSave, wrongRun)))
+				warnings.Add("Coursing: a different character or chapter can complete Laelaps' hunt.");
+		}
+		if (deed.IsComplete(AchievementContext.ForSave(new SaveData { Lifetime = new LifetimeStats { BestHaresCoursed = 999 } })))
+			warnings.Add("Coursing: an old unrestricted hunt is being counted as Laelaps' hunt.");
+		var rescue = AchievementDefinitions.GetById(AchievementDefinitions.SecretDeedId(SecretCatalog.PinfoldId));
+		if (rescue?.CharacterUnlockId != "laelaps" || rescue.SpellUnlockId != "familiar")
+			warnings.Add("Pinfold: the rescue must unlock both Familiar and Laelaps.");
+		var previousRescue = new SaveData();
+		previousRescue.UnlockedAchievementIds.Add(AchievementDefinitions.SecretDeedId(SecretCatalog.PinfoldId));
+		AchievementManager.Reconcile(previousRescue);
+		if (!GlobalStatsManager.IsCharacterUnlocked(previousRescue, "laelaps") || !previousRescue.UnlockedSpellIds.Contains("familiar"))
+			warnings.Add("Pinfold: a previously completed rescue does not receive its linked unlocks.");
+		var previousHunter = new SaveData();
+		previousHunter.UnlockedCharacterIds.Add("laelaps");
+		previousHunter.UnlockedAchievementIds.Add("coursing");
+		AchievementManager.Reconcile(previousHunter);
+		if (!GlobalStatsManager.IsCharacterUnlocked(previousHunter, "laelaps"))
+			warnings.Add("Coursing: previously earned Laelaps was lost.");
 
 		if (UnlockCatalog.AllWizardIds.Contains("laelaps", StringComparer.OrdinalIgnoreCase))
 			warnings.Add("Coursing: Laelaps is counted by the final chapter's gate (UnlockCatalog.AllWizardIds); he is not a wizard, and his deed is optional.");

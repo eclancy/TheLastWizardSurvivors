@@ -121,12 +121,11 @@ public partial class SideEventDirector : Node
 		"stage_7" => new(WayfinderKind.Compass, new SideEventEntry("great_anvil", () => new GreatAnvilEvent())),
 		// The two early chapters (.ai/campaign.md). The comment between them keeps two agents' edits off
 		// adjacent lines, which is what git calls a conflict.
-		// The Fields' chapter wizard (.ai/chapter-wizards.md 4.2), its second event: Medea, counted with the grain in the
-		// Tithe-Reeve's granary, and the price of her a level's XP paid into his scale.
-		"stage_9" => new(WayfinderKind.Compass, new SideEventEntry("the_well", () => new WellEvent()),
+		// The Fields hold Laelaps in their Pinfold. Medea's scale moves to the Circle as its second event.
+		"stage_9" => new(WayfinderKind.Compass, new SideEventEntry("the_well", () => new WellEvent())),
+		// The Moot retains stream 1; Medea takes stream 3, separately placed beyond the standing stones.
+		"stage_10" => new(WayfinderKind.Compass, new SideEventEntry("the_moot", () => new MootFiresEvent()),
 			new SideEventEntry("tithe_scale", () => new TitheScaleEvent())),
-		// (the Broken Circle's line is below; leave this one as it is)
-		"stage_10" => new(WayfinderKind.Compass, new SideEventEntry("the_moot", () => new MootFiresEvent())),
 		// THE CASTLE (.ai/endgame-castle.md). The chapters' own goals - the bridge's crossing, the Court's rooms,
 		// the Throne's fight - are their ChapterRules' (ChapterRulesCatalog), not here. The lines are written so
 		// that an event designed later is one line's edit, a line apart from its neighbours. The Cursed Dungeon

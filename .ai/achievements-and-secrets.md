@@ -1,5 +1,12 @@
 # Achievements and secrets: every spell earned, and much more to find
 
+**2026-11-06 override (Eric):** the Pinfold pays both Familiar and Laelaps after the player frees
+its ghostly hound, cat and bird individually. The central essence pickup is gone. Laelaps' Coursing
+challenge now pays 50 Arcane Energy for 100 Black Hares caught by his hound in one Broken Circle run;
+it appears after owning Laelaps. Existing character ownership and completed deeds remain intact.
+Previously completed Pinfold deeds reconcile both unlocks. This explicitly permits a wizard reward
+for this secret, superseding the older no-wizard-secret rule below.
+
 Eric, 2026-10-29:
 
 > "Unlocking all non-default-unlocked spells should be something that you get through achievements.

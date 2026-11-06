@@ -508,9 +508,11 @@ things come up; strike what lands.**
      `_DiscoveryPreview` and `tools/art/discovery_gif.py`.
    - The pen was enlarged to 448x352, then to **1944x1632** at Eric's request for at least 4x again.
      Its foundation clears water/hidden fences before painting and on regeneration. Twenty-four
-     blue/violet wisps circle the walls, eight the carved center ward. It has a binding across its gate and eight-frame
-     magical energy at its center. Defeat the existing guards and touch the latch to unseal it;
-     walk inside and approach the energy to claim Familiar. Opening the gate alone pays nothing.
+       blue/violet wisps circle the walls, eight the carved center ward. It has a binding across its gate.
+       **Updated 2026-11-06:** the center energy pickup is replaced by a drained, ghostly hound, cat and
+       bird. They run around and try the walls. Defeat the existing guards, touch the latch, then walk up
+       to each companion inside. Each regains color and dissolves toward the player; all three are
+       required to unlock **Familiar and Laelaps**. Opening the gate or reaching the center pays nothing.
      Its interior/entrance are walkable in both physics and navigation, with separate draw origins
      keeping the floor behind the player. Repeat visits pay the existing chest, once.
    - Desktop and portrait/safe-area walkthroughs passed, with default terrain and seeds 17/2026,
@@ -518,6 +520,18 @@ things come up; strike what lands.**
      The Star and Geode walkthroughs passed without a golden route. Full content validator:
      0 errors, the existing Test Wizard warning. Art palette audit passed. System teaching after a
      run stays intact; item 37's character-taught redesign remains separate.
+     - **Wizard placement update (2026-11-06):** Laelaps moves from the Broken Circle's Coursing deed
+       to this rescue. Coursing now asks Laelaps' hound to catch 100 Black Hares in a Circle run and
+       pays 50 Arcane Energy. Medea's existing tithe-scale event moves from the Fields to the Circle;
+       its hint refers to standing stones. Baba Yaga's hut stays in the Forest but is placed 6-8 chunks
+       out, with mature woodland around at least half its surrounding ring. Existing ownership and
+       completed deeds are retained; a previously completed Pinfold also reconciles Laelaps.
+     - **Validation of the companion update:** build passed with the existing 45 warnings; full
+       content validator returned 0 errors and its existing Test Wizard warning. Rendered portrait
+       (seed 17) and desktop repeat (seed 2026) Pinfold walkthroughs passed: three separate rescues,
+       no gate-only reward, Familiar + Laelaps on completion, exactly one repeat chest. Broken Circle
+       seed 1234 completed both events and freed Medea (46 checks); Forest seeds 17/2026 passed
+       wooded placement and the entire hut rescue (47 checks each). All saves stayed in memory.
 
 39. **Clarify Familiar spell-card descriptions** (Eric, 2026-11-06). Familiar descriptions on the
    cards are confusing and sometimes read like run-on sentences. Rewrite them as short, clear

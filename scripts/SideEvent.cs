@@ -78,6 +78,8 @@ public abstract partial class SideEvent : Node2D
 	/// site is still recorded as the event's (ExplorePlacer.FixedSite).
 	/// </summary>
 	public virtual bool PlacedByChapterRules => false;
+	public virtual float PlacementMinChunks => SideEventDirector.EventMinChunks;
+	public virtual float PlacementMaxChunks => SideEventDirector.EventMaxChunks;
 
 	/// <summary>How close to any of its sites the player must come for the event to begin.</summary>
 	protected virtual float ArrivalRadius => 380f;

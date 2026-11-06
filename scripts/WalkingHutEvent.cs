@@ -61,6 +61,11 @@ public partial class WalkingHutEvent : SideEvent
 
 	/// <summary>Its circle while nobody has come: round the placed site, this far out.</summary>
 	public const float CircleRadius = 200f;
+	public const float DeepWoodMinChunks = 6f;
+	public const float DeepWoodMaxChunks = 8f;
+	public const float WoodlandRingRadius = 440f;
+	public override float PlacementMinChunks => DeepWoodMinChunks;
+	public override float PlacementMaxChunks => DeepWoodMaxChunks;
 
 	/// <summary>World px between two falls of its feet: one print each.</summary>
 	public const float FallSpacing = 56f;
@@ -161,7 +166,9 @@ public partial class WalkingHutEvent : SideEvent
 	/// </summary>
 	public override void PlaceSites(ExplorePlacer placer)
 	{
-		home = AddSite(placer.EventSiteInBand(SiteFootprint, dense: true)).Position;
+		home = AddSite(placer.EventSiteInBand(SiteFootprint, dense: true,
+			also: p => placer.HasWoodedSurrounds(p, WoodlandRingRadius),
+			minChunks: DeepWoodMinChunks, maxChunks: DeepWoodMaxChunks)).Position;
 		oldPrints.Clear();
 		// The ring it has worn: it walks it with the angle rising (clockwise on screen), so the toes point that way.
 		int round = Mathf.CeilToInt(Mathf.Tau * CircleRadius / FallSpacing);

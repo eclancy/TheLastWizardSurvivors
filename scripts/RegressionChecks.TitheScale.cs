@@ -11,10 +11,11 @@ public static partial class RegressionChecks
 {
 	private static void ValidateTitheScale(List<string> warnings)
 	{
-		// Her event is the Fields' SECOND, after the well, so the well keeps its stream and its place on every seed.
-		IReadOnlyList<SideEventEntry> fields = SideEventDirector.TableEventsFor("stage_9");
-		if (fields.Count < 2 || fields[0].SiteId != "the_well" || fields[1].SiteId != "tithe_scale")
-			warnings.Add($"Tithe scale: the Fallow Fields' line must be the well, then the tithe scale (is {string.Join(", ", fields.Select(f => f.SiteId))}).");
+		// Laelaps now belongs to the Fields' pen; Medea fills the Circle's wizard slot.
+		IReadOnlyList<SideEventEntry> circle = SideEventDirector.TableEventsFor("stage_10");
+		if (circle.Count != 2 || circle[0].SiteId != "the_moot" || circle[1].SiteId != "tithe_scale"
+			|| SideEventDirector.HoldsSite("stage_9", "tithe_scale"))
+			warnings.Add("Tithe scale: Medea must be the Broken Circle's second event, after the Moot.");
 
 		// The beam: the tithe pan comes DOWN frame by frame as it fills, and the dropped frame is lower than all of them;
 		// every bowl stays inside the scale's cell (tools/art/tithe_scale.py draws it from the same numbers).

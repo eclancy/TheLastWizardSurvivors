@@ -32,7 +32,7 @@ public static class CharacterRoster
 		// Appended, never inserted - Global.SelectedCharacterIdx and the balance harness's
 		// --character=N both index this list.
 		"res://CharacterData_JohnDee.tres",
-		// Freed by finishing his chase (the "coursing" deed): Laelaps, the hound, on Cyclone Slash. Appended
+		// Freed with the Pinfold's three companions: Laelaps, the hound, on Cyclone Slash. Appended
 		// for the reason John Dee was.
 		"res://CharacterData_Laelaps.tres",
 		// The chapter wizards (.ai/chapter-wizards.md), appended so every saved index keeps its wizard.
@@ -68,7 +68,7 @@ public static class CharacterRoster
 		// The chapter wizards again: Imhotep, freed by kindling the three beacons round his tomb on the Scorched Sands.
 		// Appended, so every saved index keeps its wizard (index 19).
 		"res://CharacterData_Imhotep.tres",
-		// The chapter wizards again: Medea, freed by paying the Tithe-Reeve's scale in the Fallow Fields. Appended, so every
+		// The chapter wizards again: Medea, freed by paying the Tithe-Reeve's scale in the Broken Circle. Appended, so every
 		// saved index keeps its wizard (index 20).
 		"res://CharacterData_Medea.tres",
 		// The Throne's kept wizard (.ai/endgame-castle.md decision 11): Nimue, the Lady of the Lake, the one the dark
