@@ -1396,7 +1396,8 @@ public partial class LevelUpMenu : CanvasLayer
 			return "BOON - PERMANENT, NO SLOT";
 		if (option.SpellId == Player.MarginaliaId)
 			return "A note in the margin";
-		string kind = option.IsPassive ? "Passive" : "Attack";
+		string kind = option.SpellId == "familiar" && option.VariantId == Familiar.CatId
+			? "Support" : option.IsPassive ? "Passive" : "Attack";
 		return FamilyOf(option) switch
 		{
 			CardFamily.Mutation => $"Mutation · {kind}",

@@ -64,6 +64,55 @@ public partial class MainMenu
 	private readonly List<(Label Tally, string[] Ids, bool Boons)> shopTallies = new();
 	private ScrollContainer upgradeScroll = null!;
 	private int shopColumnsBuilt;
+	private readonly List<(string Title, VBoxContainer View)> shopPages = new();
+	private OptionButton shopCategory;
+	private Label shopPageNumber;
+	private int activeShopPage;
+
+	// Kept outside the scroll. A short page always has a way forward, including on a phone.
+	private void EnsureShopPager()
+	{
+		if (shopCategory != null) return;
+		var host = upgradeScroll.GetParent();
+		var pager = new HBoxContainer { Name = "ShopPager" };
+		pager.AddThemeConstantOverride("separation", 8);
+		Button previous = new() { Name = "ShopPrevious", Text = "Previous", CustomMinimumSize = new Vector2(112, 52) };
+		Button next = new() { Name = "ShopNext", Text = "Next", CustomMinimumSize = new Vector2(88, 52) };
+		shopCategory = new OptionButton { Name = "ShopCategory", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(180, 52) };
+		shopPageNumber = new Label { Name = "ShopPageNumber", VerticalAlignment = VerticalAlignment.Center };
+		ResponsiveLayout.SetFont(shopCategory, ResponsiveLayout.TextRole.Body);
+		ResponsiveLayout.SetFont(shopPageNumber, ResponsiveLayout.TextRole.Label);
+		previous.Pressed += () => ShowShopPage(activeShopPage - 1);
+		next.Pressed += () => ShowShopPage(activeShopPage + 1);
+		shopCategory.ItemSelected += index =>
+		{
+			string category = shopCategory.GetItemText((int)index);
+			ShowShopPage(shopPages.FindIndex(p => p.Title == category));
+		};
+		pager.AddChild(previous);
+		pager.AddChild(shopCategory);
+		pager.AddChild(shopPageNumber);
+		pager.AddChild(next);
+		host.AddChild(pager);
+		host.MoveChild(pager, upgradeScroll.GetIndex());
+		BonelightSkin.ApplyButtonSet(new[] { previous, next });
+	}
+
+	private void ShowShopPage(int index)
+	{
+		if (shopPages.Count == 0) return;
+		activeShopPage = (index % shopPages.Count + shopPages.Count) % shopPages.Count;
+		Control focus = GetViewport().GuiGetFocusOwner();
+		bool focusWasCard = focus != null && upgradeList.IsAncestorOf(focus);
+		for (int i = 0; i < shopPages.Count; i++)
+			shopPages[i].View.Visible = i == activeShopPage;
+		for (int i = 0; i < shopCategory.ItemCount; i++)
+			if (shopCategory.GetItemText(i) == shopPages[activeShopPage].Title)
+				shopCategory.Select(i);
+		shopPageNumber.Text = $"{activeShopPage + 1} / {shopPages.Count}";
+		upgradeScroll.ScrollVertical = 0;
+		if (focusWasCard) OpenShopAtTop();
+	}
 
 	// The upgrades by what they do. An id that is registered and listed in no section still gets a
 	// card, in a last "More" section, with a warning - a new upgrade must never vanish from the shop
@@ -125,9 +174,9 @@ public partial class MainMenu
 	private const string SpellPageLitPath = "res://assets/bonelight/ui/ui-spell-page-lit.png";
 	private const string UpgradeIconRoot = "res://assets/bonelight/ui/upgrades/";
 
-	// The socket is 80 drawn (40 authored, upgrade_socket in ui_frames.py) and the icon inside it 64.
-	private const float SocketSize = 80f;
-	private const float IconSize = 64f;
+		// Smaller sockets leave more of a short shop page for the words.
+	private const float SocketSize = 64f;
+	private const float IconSize = 48f;
 	// The plate is two lines - the price, then what pressing it does - inside the stone button's
 	// iron band, which takes about ten units of each edge.
 	private const float PlateHeight = 74f;
@@ -328,13 +377,16 @@ public partial class MainMenu
 		if (upgradeList == null)
 			yield break;
 		EnsureShopFrames();
+		EnsureShopPager();
 		ClearChildren(upgradeList);
 		shopRows.Clear();
 		shopTallies.Clear();
+		shopPages.Clear();
+		shopCategory.Clear();
 		shopColumnsBuilt = CodexRows.ColumnsFor(this);
 		bool narrow = ResponsiveLayout.IsNarrow(this);
 
-		upgradeList.AddChild(CodexRows.BuildSummary(PowersIntro, CodexRows.Stone));
+		shopCategory.TooltipText = PowersIntro;
 
 		var placed = new HashSet<string>();
 		foreach ((string title, string note, string[] ids) in UpgradeSections)
@@ -360,25 +412,35 @@ public partial class MainMenu
 		}
 
 		RefreshUpgradeControls();
+		ShowShopPage(activeShopPage);
 	}
 
 	private IEnumerable<int> AddShopSectionSteps(string title, string note, List<UpgradeDefinition> defs, bool narrow, bool boonSection)
 	{
-		VBoxContainer section = CodexRows.AddSection(upgradeList, title, " ", CodexRows.Stone, shopColumnsBuilt, Array.Empty<Control>());
-		GridContainer grid = section.GetNode<GridContainer>(CodexRows.SectionRowsName);
-		foreach (UpgradeDefinition def in defs)
+		shopCategory.AddItem(title);
+		// Two cards per page: one desktop row, two phone rows. The current category, purse,
+		// page controls and Back stay on screen rather than living at the end of a long list.
+		for (int offset = 0; offset < defs.Count; offset += 2)
 		{
-			grid.AddChild(BuildShopCard(def, narrow));
-			yield return 0;
-		}
-		// The tally CodexRows put in the heading row, filled in by RefreshUpgradeControls.
-		if (section.GetChild(0) is HBoxContainer head && head.GetChildCount() > 1 && head.GetChild(1) is Label tally)
-			shopTallies.Add((tally, defs.Select(d => d.Id).ToArray(), boonSection));
-		if (!string.IsNullOrEmpty(note))
-		{
-			Label line = CodexRows.MakeText(note, ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
-			section.AddChild(line);
-			section.MoveChild(line, 2);
+			VBoxContainer section = CodexRows.AddSection(upgradeList, title, " ", CodexRows.Stone, shopColumnsBuilt, Array.Empty<Control>());
+			section.Name = "ShopPage" + shopPages.Count;
+			section.Visible = false;
+			shopPages.Add((title, section));
+			GridContainer grid = section.GetNode<GridContainer>(CodexRows.SectionRowsName);
+			foreach (UpgradeDefinition def in defs.Skip(offset).Take(2))
+			{
+				grid.AddChild(BuildShopCard(def, narrow));
+				yield return 0;
+			}
+			// The tally CodexRows put in the heading row, filled in by RefreshUpgradeControls.
+			if (section.GetChild(0) is HBoxContainer head && head.GetChildCount() > 1 && head.GetChild(1) is Label tally)
+				shopTallies.Add((tally, defs.Select(d => d.Id).ToArray(), boonSection));
+			if (!string.IsNullOrEmpty(note))
+			{
+				Label line = CodexRows.MakeText(note, ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
+				section.AddChild(line);
+				section.MoveChild(line, 2);
+			}
 		}
 	}
 
@@ -422,16 +484,16 @@ public partial class MainMenu
 		card.FocusStop = stop;
 
 		var padding = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		padding.AddThemeConstantOverride("margin_left", 22);
-		padding.AddThemeConstantOverride("margin_right", 22);
-		padding.AddThemeConstantOverride("margin_top", 18);
+		padding.AddThemeConstantOverride("margin_left", 18);
+		padding.AddThemeConstantOverride("margin_right", 18);
+		padding.AddThemeConstantOverride("margin_top", 14);
 		// The foot of a page (.ai/level-up-screen.md 2e): the frame's inner border plus the air a card
 		// has over its head, so the plate never sits on the rule.
 		padding.AddThemeConstantOverride("margin_bottom", CardFamilyArt.FootInset(boon ? CardFamily.NewSpell : CardFamily.Upgrade));
 		card.AddChild(padding);
 
 		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		line.AddThemeConstantOverride("separation", 16);
+		line.AddThemeConstantOverride("separation", 12);
 		padding.AddChild(line);
 
 		row.IconBox = boon ? BuildBoonIconBox(entry) : BuildSocket(def.Id, card);
@@ -579,9 +641,10 @@ public partial class MainMenu
 		};
 		var socket = new TextureRect
 		{
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
 			Texture = GD.Load<Texture2D>(SocketPath),
 			Size = new Vector2(SocketSize, SocketSize),
-			StretchMode = TextureRect.StretchModeEnum.Keep,
+			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
 			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
 			MouseFilter = Control.MouseFilterEnum.Ignore,
 		};
@@ -594,11 +657,11 @@ public partial class MainMenu
 			GD.PushWarning($"MainMenu: no Arcane Upgrade icon at {UpgradeIconRoot}{id}.png (tools/art/upgrade_icons.py)");
 		box.AddChild(new TextureRect
 		{
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
 			Texture = icon ?? StatIcons.Load("generic"),
 			Position = new Vector2((SocketSize - IconSize) / 2f, (SocketSize - IconSize) / 2f),
 			Size = new Vector2(IconSize, IconSize),
-			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-			StretchMode = TextureRect.StretchModeEnum.KeepCentered,
+			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
 			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
 			MouseFilter = Control.MouseFilterEnum.Ignore,
 		});

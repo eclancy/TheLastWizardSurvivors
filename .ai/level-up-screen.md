@@ -1004,6 +1004,12 @@ a PC plate (6.9:1 against 3:1 at 24px).
 
 ## 4f. Arcane Upgrades: the shop is the same book
 
+**0.14.0 paging (2026-11-06):** Powers now shows two cards per page, one desktop row or two phone
+rows. The category selector jumps to a category's first page; Previous/Next walk and wrap through
+all pages, with an overall page count. The purse, page controls and Back remain outside the scroll.
+All cards are prepared once behind the title loader; page turns and purchases reuse them. Socket
+and icon sizes are 64/48, with narrower card padding. Prices, ceilings and purchase rules are unchanged.
+
 **One menu, Powers, since 2026-10-30.** The shop sells no spells: every spell that is not a starter
 is earned through an achievement (`.ai/achievements-and-secrets.md` 2.4, decision 2). For two days
 (from 2026-10-28, Eric: "let's separate powers (passive buffs we can buy) in a different menu from

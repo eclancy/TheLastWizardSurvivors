@@ -328,6 +328,9 @@ things come up; strike what lands.**
    Review PC and phone layouts; assess other long menus individually rather than replacing every list
    automatically. Start with `scripts/MainMenu.Shop.cs`, `.ai/level-up-screen.md`'s shop section and
    `.ai/controller-and-focus.md`.
+   **Implemented for 0.14.0:** fixed category selector, Previous/Next and page count; two cards per
+   page, smaller icons and padding, with the purse and Back outside the scroll.
+
 22. **Rethink the name "Powers"** (Eric, 2026-11-05). He suggested something like "Powerups", but wants
    a more magic-themed name. The menu sells permanent upgrades and unlockable boons, so the name and a
    short explanation should make its purpose clear. No replacement has been selected. Candidates from
@@ -391,6 +394,9 @@ things come up; strike what lands.**
    focus highlights, hover effects and tooltips agree about the active input. Preserve controller
    behavior, keyboard text entry and Android touch controls. Test keyboard -> mouse -> keyboard on
    main-menu lists, level-up/chest choices, the defeat footer and status tooltips (including item 26).
+
+   **Implemented for 0.14.0:** shared keyboard/controller/pointer state, cursor hiding, stale-hover
+   and tooltip suppression, deliberate movement/click/touch recovery, and dynamic-control handling.
 
 28. **Magic Missile should fly behind a boss's shield; explore other boss weak-spot interactions**
    (Eric, 2026-11-05). Against the boss that raises a shield, Magic Missile should travel all the way
@@ -544,13 +550,19 @@ things come up; strike what lands.**
    card text, not just the base description, at Windows and phone widths so appended effects do
    not turn back into a run-on sentence.
 
+   **Implemented for 0.14.0:** shorter form descriptions/traits and mutation/Ascension descriptions;
+   the hound card explicitly states that only Littermates adds pups.
+
 40. **Littermates is the only way to gain multiple hound familiars** (Eric, 2026-11-06). A hound
    Familiar should otherwise remain one hound. **Littermates grants two additional hounds** (three
    total from the normal single hound); other upgrades/effects must not independently add hounds.
    Audit the hound's count sources, upgrade paths and stacking interactions, and rebalance its
    damage and other relevant stats around this rule. Keep the card wording explicit about the
    two additional hounds and coordinate with item 39's description cleanup. This is next-week
-   work; the rule and balance changes are not implemented in 0.13.2.
+   work, now implemented for 0.14.0: the level-three second hound is removed. One hound takes over
+   the former pair's damage budget from level three (48, rising to 88 at level eight).
+   Littermates adds two pups and reduces every hound's bite damage by 55%: 1.35 times the single
+   hound's total before overkill/travel, close to the former pack's budget. Crow/cat counts stay unchanged.
 
 41. **Two starting boon slots, two purchasable slots, and levelable boons with fewer tags** (Eric,
    2026-11-06, clarified). Keep the initial limit at **two boons**, and let the player **buy up to

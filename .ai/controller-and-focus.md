@@ -1,5 +1,15 @@
 # Controller support and the selection highlight
 
+**0.14.0 keyboard/mouse handoff (2026-11-06):** CursorVisibility owns the shared pointer state.
+Keyboard/pad hides the cursor and temporarily ignores Control mouse filters, including native
+children, so stale hover and tooltips cannot compete with focus. Intentional mouse movement (3 px),
+click or touch restores the original filters; jitter does not. Newly added/reparented controls
+follow the same state. Android keeps touch filters active. Text entry and keyboard focus are
+unchanged. Native buttons require mouse-enter before their first waking click; the input observer
+refreshes native hover and routes that click once, consuming its original to prevent double buys.
+MenuNavigator observes events before its own routing because children receive input before autoloads.
+The _FunctionProbe scene exercises real GUI events, text entry, dynamic controls and shop paging.
+
 How an Xbox pad plays this game, what the input map actually binds, and why menu highlighting is
 one idea rather than two.
 

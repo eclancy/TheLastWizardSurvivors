@@ -525,9 +525,10 @@ public partial class MainMenu : Control
 	private void OnArcaneUpgradesPressed()
 	{
 		RefreshArcaneEnergy();
-		// Rebuilt on every visit rather than refreshed, so what each section's note says is true NOW
-		// (the boons' changes once the last is bought - MainMenu.Shop.cs).
-		BuildShop();
+		if (CodexRows.ColumnsFor(this) != shopColumnsBuilt)
+			BuildShop();
+		else
+			RefreshUpgradeControls();
 		ShowPanel(arcaneUpgradesPanel);
 		OpenShopAtTop();
 	}

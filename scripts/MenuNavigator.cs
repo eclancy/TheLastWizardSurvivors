@@ -181,6 +181,7 @@ public partial class MenuNavigator : Node
 
 	public override void _Input(InputEvent @event)
 	{
+		if (CursorVisibility.ObserveInput(@event)) return;
 		// A FINGER ON A LIST. The release is handled before the visibility check on purpose: a tap
 		// that closes this screen hides it before the finger lifts, and a list left with FollowFocus
 		// off would stop following the stick for the rest of its life.
@@ -217,7 +218,8 @@ public partial class MenuNavigator : Node
 		// WHICH DEVICE IS DRIVING, and nothing else. This method used to also decide whether the
 		// screen was allowed to have a selection at all, and to EAT the press that created one.
 		// Both were wrong; see the remarks on SetPointerActive and Bootstrap.
-		if (@event is InputEventMouseMotion motion && motion.Relative.LengthSquared() >= MouseWakeDistanceSquared)
+		if ((@event is InputEventMouseMotion motion && motion.Relative.LengthSquared() >= MouseWakeDistanceSquared)
+			|| @event is InputEventMouseButton { Pressed: true })
 		{
 			SetPointerActive(true);
 			return;
@@ -537,7 +539,7 @@ public partial class MenuNavigator : Node
 	/// </remarks>
 	private void SetPointerActive(bool value)
 	{
-		MenuFocusHighlight.PointerActive = value;
+		CursorVisibility.SetPointerActive(value);
 
 		// Compared against what THIS navigator last acted on, not against the static. Every
 		// navigator in the tree sees the same input events, so guarding on the static would let the
