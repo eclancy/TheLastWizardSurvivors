@@ -452,16 +452,34 @@ things come up; strike what lands.**
    character, familiar or system unlock, as well as a run with no new unlocks; coordinate with item
    35's inspectable rewards. This concerns leaving a run through the game's quit action.
 
-37. **Character unlocks introduce familiars and teach Ascensions through a magical artifact**
-   (Eric, 2026-11-05). Eric reports using GPT to change how familiar and Ascension unlocking works;
-   inspect those changes before implementing this follow-up. **The familiar should unlock alongside
-   a character unlock.** Add an animation in which the newly unlocked character shares a special
-   magical artifact with the player, explaining and introducing the unlocking of Ascensions.
-   **Apotheosis and combination spells should have similar interactions** that explain their
-   respective system unlocks through an animated story moment. The particular character, artifact
-   and details of each interaction remain to be chosen. Review the current unlock flow, `Teachings`,
-   `Freeings`, `.ai/slow-start.md` and `.ai/cutscenes.md` together so the new presentations agree with
-   the unlock rules and play after a run, including a voluntarily quit run (item 36).
+37. **Unlocking characters teaches Ascension, Apotheosis and combination spells** (Eric,
+   2026-11-05; corrected from the earlier familiar note). **Ascension should unlock from a character
+   unlock:** in an animation, that newly unlocked character shares special magical knowledge with
+   the player, explaining and unlocking Ascension. **Apotheosis and combination spells should each
+   unlock through a similar character interaction.** Which characters teach each system and the
+   details of their animations remain to be chosen. Familiar discovery is a separate event (item 38).
+   Eric reports using GPT to change how familiar and Ascension unlocking works; inspect those
+   changes before implementing this follow-up. Review the current unlock flow, `Teachings`,
+   `Freeings`, `.ai/slow-start.md` and `.ai/cutscenes.md` together: move these system unlocks to the
+   character interactions, update their hints/lesson text and keep the presentations consistent
+   with the unlock rules. Play the owed animations after a run, including a voluntarily quit run
+   (item 36).
+
+38. **Familiar discovery: subtle golden paw prints leading to a much larger magically sealed pen**
+   (Eric, 2026-11-05). Replace the bright glowing trail visible immediately upon spawning with
+   **more inconspicuous, softly glowing golden paw prints**, starting some distance away from spawn.
+   The player should discover the prints while exploring and follow them to the pen, rather than
+   see an obvious trail as soon as the run starts. The distance and visual intensity remain to be
+   tuned in play.
+   - **Make the pen much bigger.** Its gate is magically sealed, and a magical essence is visibly
+     held inside while the gate is locked. Unlocking the gate releases it and unlocks the Familiar
+     spell. Review the existing gate-unlocking mechanic when implementing; keep the essence, seal
+     and opening readable as one event.
+   - Review the Familiar/Pinfold event and the recently added discovery guidance together. Keep
+     this separate from item 37's character-taught system unlocks. Update the art generators,
+     placement/clearance, hints and unlock presentation to match; inspect the larger enclosure and
+     the trail in PC and phone runs. Check that the prints begin outside the immediate spawn view,
+     lead coherently to the gate, and stay subtle but discoverable on the chapter's ground.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
