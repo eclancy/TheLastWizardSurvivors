@@ -91,7 +91,41 @@ public partial class MainMenu : Control
 
 	public override void _Ready()
 	{
+		preparation = PrepareMenu().GetEnumerator();
+		if (!PrepareInSteps)
+			while (preparation.MoveNext()) { }
+	}
+
+	// The title prepares its hidden menu a stage per frame behind the loading screen. Standalone
+	// menu scenes keep synchronous readiness for the existing menu/screenshot harnesses.
+	public bool PrepareInSteps { get; set; }
+	public bool IsPrepared { get; private set; }
+	public string PreparationError { get; private set; }
+	public float PreparationProgress { get; private set; }
+	private IEnumerator<int> preparation;
+
+	public override void _Process(double delta)
+	{
+		if (!IsPrepared && preparation != null)
+		{
+			try { preparation.MoveNext(); }
+			catch (Exception ex)
+			{
+				PreparationError = ex.Message;
+				GD.PushError($"MainMenu preparation failed: {ex}");
+				preparation.Dispose();
+				preparation = null;
+			}
+		}
+	}
+
+	private IEnumerable<int> PrepareMenu()
+	{
+		var startup = new StartupTrace("MainMenu");
 		ContentValidator.ValidateAtStartup(this);
+		startup.Mark("validation");
+		PreparationProgress = 1f / 7f;
+		yield return 0;
 		mainPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/MainPanel");
 		arcaneUpgradesPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel");
 		optionsPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/OptionsPanel");
@@ -121,14 +155,29 @@ public partial class MainMenu : Control
 		// container tree, and the paths have to resolve against the scene as it was authored.
 		LayoutAroundTitleArt();
 		LayoutUtilityRow();
+		startup.Mark("bind controls + layout");
+		PreparationProgress = 2f / 7f;
+		yield return 0;
 		BuildOptions();
+		startup.Mark("options");
+		PreparationProgress = 3f / 7f;
+		yield return 0;
 		ApplyMenuSkin();
+		startup.Mark("skin");
+		PreparationProgress = 4f / 7f;
+		yield return 0;
 
 		// The shop needs its definitions before its cards; the boons' pages read BoonCatalog, not these
 		// entries (the shop's spell pages did, until it stopped selling spells).
 		BuildUpgradeDefinitions();
 		BuildShop();
+		startup.Mark("shop");
+		PreparationProgress = 5f / 7f;
+		yield return 0;
 		BuildAchievementCards();
+		startup.Mark("achievements");
+		PreparationProgress = 6f / 7f;
+		yield return 0;
 
 		startRunButton.Pressed += OnStartRunPressed;
 		spellIndexButton.Pressed += OnCodexPressed;
@@ -140,8 +189,8 @@ public partial class MainMenu : Control
 		backFromOptionsButton.Pressed += ShowMainPanel;
 
 		RefreshArcaneEnergy();
-		RefreshUpgradeControls();
-		RefreshAchievementCards();
+		// BuildShop already refreshes its rows; BuildAchievementCards just built the save's page.
+		// Repeating those here rebuilt the entire achievements page a second time during startup.
 		ShowMainPanel();
 		PlayMenuMusic();
 
@@ -156,10 +205,14 @@ public partial class MainMenu : Control
 		SafeArea.Apply(this);
 		MenuNavigator.Attach(this, startRunButton);
 		GetViewport().SizeChanged += OnViewportSizeChanged;
+		startup.Mark("navigation + signals");
+		PreparationProgress = 1f;
+		IsPrepared = true;
 	}
 
 	public override void _ExitTree()
 	{
+		preparation?.Dispose();
 		if (GetViewport() is Viewport viewport)
 			viewport.SizeChanged -= OnViewportSizeChanged;
 	}

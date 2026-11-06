@@ -64,12 +64,15 @@ things come up; strike what lands.**
      `Tagline` in `SpellData.tres`, or the select's own line in `CharacterSelection`), then check the other
      wizards' lines the same way.
 6. **The title screen's freeze, and its prompt on a phone** (Eric, 2026-11-04). Read `.ai/title-screen.md` first.
-   - **The freeze.** Pressing a key or tapping at "press any button" freezes the game until a run of assets
-     loads (`TitleScreen` adds `MainMenu` over the art only then). Load all of it first, behind a ritual-circle
-     fire loading screen in the game's own art: the warded circle, its fire coming up as the loading runs.
-     Then the title. When the player presses to start, the menu comes up at once. Find what the press actually
-     loads (the `MainMenu` scene, its validator run, fonts and shaders, the save) and measure the hitch before
-     and after, on the PC and on the Pixel 9 (`.ai/performance.md`).
+   - ~~**The freeze.**~~ **Fixed, 2026-11-05:** measured about 14 seconds from the first press to a
+     menu draw on Windows, including 12 seconds of developer regression checks. Those checks now
+     require `--validate-content`. The menu is loaded and built before the title prompt, behind
+     the existing art's animated ritual ward/fire, with a first draw to warm its layout and fonts.
+     Press-to-menu now measures about 34-44 ms on PC (45 ms in desktop portrait); preparation takes
+     about 1.2-1.5 s on this machine. Keyboard/mouse/pad opening, early loading input, direct returns
+     and failed-load retry passed `_TitleLoadProbe`. See `.ai/title-screen.md` for the timings and
+     verification command. **Physical Pixel 9 timing remains pending: no device connected.** The
+     phone prompt and composition tasks below remain open.
    - **On a phone, "Tap to start"** in place of "press any button" (`OS.HasFeature("mobile")`, as
      `TouchControls` decides it).
    - **The phone title's empty middle** (Eric, 2026-11-04): on Android the eyes in the dark are spread as if

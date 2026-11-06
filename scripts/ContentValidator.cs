@@ -114,13 +114,18 @@ public static class ContentValidator
 
 	public static void ValidateAtStartup(Node context)
 	{
-		if (hasRun)
+		// This is the development test suite, including image reads, simulations and scene probes.
+		// Never run it on a player's first menu/run. Keep the full check available explicitly.
+		if (hasRun || Array.IndexOf(OS.GetCmdlineUserArgs(), "--validate-content") < 0)
 			return;
 
 		hasRun = true;
+		var startup = new StartupTrace("ContentValidator");
 		ContentValidationSummary summary = ValidateSpellAndCharacterData();
+		startup.Mark("spell + character data");
 		foreach (string warning in RegressionChecks.RunAll())
 			summary.Warnings.Add($"Regression: {warning}");
+		startup.Mark("regression checks");
 		if (summary.Errors.Count == 0 && summary.Warnings.Count == 0)
 		{
 			GD.Print("ContentValidator: all spell and character resources passed validation.");

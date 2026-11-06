@@ -300,7 +300,7 @@ session**, the validator run below included.
 
 ## Validation
 
-- `ContentValidator.ValidateAtStartup()` runs from `scripts/MainMenu.cs:88` and `scripts/Node2DGame.cs:224`, and folds in `RegressionChecks.RunAll()`. Output goes to the Godot console as `ContentValidator:` lines. **There is no way to run it without launching Godot.** Run it as `"$GODOT_BIN" --headless --path . scenes/MainMenu.tscn --quit-after 300 -- --no-save-writes` (see the schema note above for why the flag).
+- `ContentValidator.ValidateAtStartup()` is **explicitly opt-in with `--validate-content`**, from `MainMenu` or `Node2DGame`, and folds in `RegressionChecks.RunAll()`. It must not run during normal player startup: the suite froze the first title-to-menu press for about 14 seconds (2026-11-05). Output goes to the Godot console as `ContentValidator:` lines. **There is no way to run it without launching Godot.** Run it as `"$GODOT_BIN" --headless --path . scenes/MainMenu.tscn --quit-after 300 -- --no-save-writes --validate-content` (see the schema note above for why writes are disabled). Include the validation flag when a harness run is also intended to run the full validator.
 - `scripts/ChestItemIntegrationTest.cs` is a `Node` you attach to a scene; it asserts in `_Ready()`.
 - `validate_chest_system.py` **cannot run** — this machine has only Python 2.7 and the script is Python 3.
 - There is no CI, no test framework, and no `dotnet test`. Don't invent one without asking.

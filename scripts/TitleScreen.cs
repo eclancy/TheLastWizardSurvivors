@@ -68,6 +68,16 @@ public partial class TitleScreen : Control
 
 	private bool transitioned = false;
 	private Control menuInstance;
+	[Export(PropertyHint.File, "*.tscn")] public string MenuScenePath { get; set; } = "res://scenes/MainMenu.tscn";
+	private TitleLoadingScreen loadingScreen;
+	private MainMenu preparedMenu;
+	private bool preparing;
+	private bool menuRequested;
+	private bool warmingMenu;
+	private int warmFrames;
+	private bool startupFailed;
+	/// <summary>Only true once resources, menu construction and its first draw have completed.</summary>
+	public bool IsPrepared { get; private set; }
 
 	// True while the update check is laid over the screen. Input is ignored until it is done, so
 	// a key pressed while "Checking for updates..." is up cannot open the menu underneath it.
@@ -88,11 +98,13 @@ public partial class TitleScreen : Control
 		// seen the title beat and should not have to press a key to get past it again.
 		bool openMenuNow = Global.OpenMenuImmediately;
 		Global.OpenMenuImmediately = false;
+		pendingOpenMenu = openMenuNow;
 
 		SetUpAnimation();
 		AddVersionLabel();
 		PlacePrompt();
 		GetViewport().SizeChanged += PlacePrompt;
+		GetNode<CanvasItem>("TitleImage/Prompt").Visible = false;
 
 		// The phone cannot update itself, so it only says when there is something newer, and never
 		// holds the title up to do it. See UpdateBanner and .ai/releasing.md, "Android".
@@ -112,7 +124,7 @@ public partial class TitleScreen : Control
 			return;
 		}
 
-		StartTitle(openMenuNow);
+		BeginPreparation();
 	}
 
 	public override void _ExitTree()
@@ -174,6 +186,95 @@ public partial class TitleScreen : Control
 	private void OnUpdateFinished()
 	{
 		updating = false;
+		BeginPreparation();
+	}
+
+	private void BeginPreparation()
+	{
+		preparing = true;
+		startupFailed = false;
+		warmingMenu = false;
+		menuRequested = false;
+		loadingScreen = new TitleLoadingScreen { Name = "TitleLoadingScreen" };
+		AddChild(loadingScreen);
+		// Single worker, as SceneTransition uses. Never touch the live scene tree from that worker.
+		Error result = ResourceLoader.LoadThreadedRequest(MenuScenePath, "PackedScene", false);
+		if (result == Error.Ok)
+			menuRequested = true;
+		else
+			PreparationFailed($"Menu resource request failed: {result}");
+	}
+
+	private void PreparationFailed(string message)
+	{
+		startupFailed = true;
+		GD.PushError($"TitleScreen: {message}");
+		loadingScreen.ShowFailure(() =>
+		{
+			loadingScreen.QueueFree();
+			if (preparedMenu != null && IsInstanceValid(preparedMenu)) preparedMenu.QueueFree();
+			preparedMenu = null;
+			menuInstance = null;
+			BeginPreparation();
+		});
+	}
+
+	private void TickPreparation()
+	{
+		if (!preparing || startupFailed) return;
+		if (preparedMenu == null)
+		{
+			if (!menuRequested) return;
+			var progress = new Godot.Collections.Array();
+			ResourceLoader.ThreadLoadStatus status = ResourceLoader.LoadThreadedGetStatus(MenuScenePath, progress);
+			if (progress.Count > 0) loadingScreen.SetProgress((float)progress[0].AsDouble() * 0.3f);
+			if (status == ResourceLoader.ThreadLoadStatus.InProgress) return;
+			if (status != ResourceLoader.ThreadLoadStatus.Loaded)
+			{
+				PreparationFailed($"Menu resource load ended as {status}");
+				return;
+			}
+			if (ResourceLoader.LoadThreadedGet(MenuScenePath) is not PackedScene scene)
+			{
+				PreparationFailed("Menu resource is not a scene.");
+				return;
+			}
+			Node instance = scene.Instantiate();
+			if (instance is not MainMenu menu)
+			{
+				instance.Free();
+				PreparationFailed("The menu scene has no MainMenu root.");
+				return;
+			}
+			preparedMenu = menu;
+			preparedMenu.PrepareInSteps = true;
+			preparedMenu.Visible = false;
+			menuInstance = preparedMenu;
+			AddChild(preparedMenu);
+			return;
+		}
+		if (!string.IsNullOrEmpty(preparedMenu.PreparationError))
+		{
+			PreparationFailed(preparedMenu.PreparationError);
+			return;
+		}
+		loadingScreen.SetProgress(0.3f + 0.7f * preparedMenu.PreparationProgress);
+		if (!preparedMenu.IsPrepared) return;
+		if (!warmingMenu)
+		{
+			// Draw behind the opaque loading layer so layout, glyphs and materials are ready before
+			// the player is invited to press. No fixed loading delay, just the necessary draw frames.
+			preparedMenu.Visible = true;
+			warmingMenu = true;
+			warmFrames = 2;
+			return;
+		}
+		if (--warmFrames > 0) return;
+		preparedMenu.Visible = false;
+		loadingScreen.QueueFree();
+		loadingScreen = null;
+		preparing = false;
+		IsPrepared = true;
 		StartTitle(pendingOpenMenu);
 	}
 
@@ -213,6 +314,7 @@ public partial class TitleScreen : Control
 		// whole screen at 0.96 and 0.28 opacity before the title art drew; both are from the
 		// pre-Bonelight asset set and they fought the composition. The title art is now a
 		// single 360x640 image rendered at a whole x2 (see .ai/art-direction.md section 1).
+		GetNode<CanvasItem>("TitleImage/Prompt").Visible = !openMenuNow;
 		FadeInPrompt();
 
 		// Route menu music through the MusicPlayer autoload so it plays continuously from the title
@@ -498,12 +600,13 @@ public partial class TitleScreen : Control
 
 	public override void _Process(double delta)
 	{
+		TickPreparation();
 		float dt = (float)delta;
 
 		// The strip belongs to the title and the root menu; over a full-screen panel it would cover
 		// that panel's heading.
 		if (updateBanner != null)
-			updateBanner.SetHiddenByMenu(menuInstance is MainMenu menu && IsInstanceValid(menu) && !menu.IsAtRoot);
+			updateBanner.SetHiddenByMenu(preparing || (menuInstance is MainMenu menu && IsInstanceValid(menu) && !menu.IsAtRoot));
 
 		// The flames and the figure share one clock on purpose. The rim and bounce on the
 		// wizard are the light those flames are throwing, so driven off a second timer they
@@ -625,13 +728,15 @@ public partial class TitleScreen : Control
 
 	public override void _Input(InputEvent @event)
 	{
-		if (transitioned || updating || noticeOpen) return;
+		if (transitioned || updating || preparing || !IsPrepared || noticeOpen) return;
 		// A tap on the update strip's Download or Later is for the strip, not "press any button".
 		if (@event is InputEventMouseButton press && updateBanner != null && IsInstanceValid(updateBanner) && updateBanner.Covers(press.Position))
 			return;
 		if ((@event is InputEventKey ek && ek.Pressed) || (@event is InputEventMouseButton mb && mb.Pressed) || (@event is InputEventJoypadButton jb && jb.Pressed))
 		{
 			transitioned = true;
+			// Revealing the prepared menu must not also activate its now-focused Start Run button.
+			GetViewport().SetInputAsHandled();
 			ShowMenu();
 		}
 	}
@@ -649,18 +754,9 @@ public partial class TitleScreen : Control
 	/// </remarks>
 	private void ShowMenu()
 	{
-		if (menuInstance != null && IsInstanceValid(menuInstance))
-			return;
-
-		var scene = ResourceLoader.Load<PackedScene>("res://scenes/MainMenu.tscn");
-		if (scene == null)
-		{
-			GD.PushError("TitleScreen: could not load res://scenes/MainMenu.tscn");
-			return;
-		}
-
-		menuInstance = scene.Instantiate<Control>();
-		AddChild(menuInstance);
+		if (!IsPrepared || menuInstance == null || !IsInstanceValid(menuInstance)) return;
+		menuInstance.Visible = true;
+		MenuNavigator.Attach(menuInstance);
 
 		// The prompt and the menu say the same thing, so only one may be on screen. The breathing
 		// tween is left running; it only touches modulate on a node nobody can see.
