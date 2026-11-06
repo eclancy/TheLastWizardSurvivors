@@ -4192,6 +4192,11 @@ public partial class _UiShot : Node
 				}
 			}
 		}
+		else if (gotoTarget == "tracks")
+		{
+			TeachingTrail trail = FindNodeOfType<TeachingTrail>(GetTree().Root);
+			at = trail?.TrackPositions.Count > 0 ? trail.TrackPositions[trail.TrackPositions.Count / 2] : null;
+		}
 		else if (gotoTarget == "secret")
 		{
 			// The secret --secret= put beside the spawn, or else the chapter's vault, keepsake or anchor.
@@ -5775,15 +5780,17 @@ public partial class _UiShot : Node
 					hadBefore = save.HasFoundSecret(vault.SecretId);
 					Vector2 origin = Director.Game.StageOrigin;
 					teachingTrail = Director.Game.GetChildren().OfType<TeachingTrail>().FirstOrDefault(t => t.Site == vault);
-					if (Teachings.LessonAt(save, vault.SecretId) != null)
+					if (vault is Pinfold)
 					{
-						Check("an unfound teacher has a trail", teachingTrail != null);
+						Check("Familiar has environmental tracks", teachingTrail != null);
 						if (teachingTrail != null)
 						{
-							Check("the teaching lights begin near spawn", teachingTrail.LightPositions.Any(p => p.DistanceTo(origin) <= 600f));
-							Check("the teaching marker points at the actual seeded landmark", teachingTrail.Point.Position == vault.GlobalPosition);
+							Check("tracks begin outside the opening view", teachingTrail.TrackPositions.Count > 0 && teachingTrail.TrackPositions.All(p => p.DistanceTo(origin) >= TeachingTrail.StartDistance - 48f));
+							Check("tracks reach the pen's entrance", teachingTrail.TrackPositions.Any(p => p.DistanceTo(((Pinfold)vault).Entrance) < 240f));
+							Check("tracks stay on walkable terrain", teachingTrail.TrackPositions.All(p => !Director.Game.Terrain.IsSolidCell(Director.Game.Terrain.CellOfWorld(p).X, Director.Game.Terrain.CellOfWorld(p).Y)));
 						}
 					}
+					else Check("other teachers have no golden route", teachingTrail == null);
 					float chunks = vault.GlobalPosition.DistanceTo(origin) / 1536f;
 					GD.Print($"VAULTPROBE {vault.SecretId} at {vault.GlobalPosition}, {chunks:0.0} chunks out; save had it found before: {hadBefore}");
 					Check($"it is five to seven chunks out ({chunks:0.00})", chunks >= SecretDirector.VaultMinChunks - 0.3f && chunks <= SecretDirector.VaultMaxChunks + 1.1f);
@@ -5820,7 +5827,7 @@ public partial class _UiShot : Node
 				case 2:
 				{
 					if (teachingTrail != null)
-						Check("encountered teaching lights keep their direction marker", teachingTrail.Point.Seen && teachingTrail.Point.Marked);
+						Check("tracks never reveal a direction arrow", !PointsOfInterest.Live.Any(p => p.IsTeaching));
 					Check($"seen at its foot ({Hero.GlobalPosition.DistanceTo(vault.TellPosition):0} px from the glint)", Director.IsGlimpsed(vault.SecretId));
 					Check("and the seen mark is on the save", save.HasGlimpsedSecret(vault.SecretId));
 					// The far tell: crystals thicker near it than far from it, and cracked ones only near.
@@ -5935,7 +5942,7 @@ public partial class _UiShot : Node
 		{
 			if (teachingTrail != null)
 			{
-				Check("a found teacher retires its direction marker", teachingTrail.Point.Done && !teachingTrail.Point.Marked);
+				Check("claiming the essence retires its tracks", teachingTrail.Retired);
 				Check("finding the teacher still owes a post-run lesson", Teachings.Owed(save).Count > 0);
 			}
 			string spell = VaultSpellId;

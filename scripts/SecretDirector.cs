@@ -248,9 +248,9 @@ public partial class SecretDirector : Node
 			AddStamp(centre, radius);
 		Game.AddChild(site);
 		placed.Add(site);
-		// Teaching systems must be findable before their faint local decor comes into view. The guide
-		// starts near the spawn, and hands over to the existing POI arrow once its light is encountered.
-		if (Teachings.LessonAt(Save, secret.Id) != null)
+		// The Familiar leaves physical evidence away from spawn. Other landmarks retain their own
+		// local decor gradients; no teaching landmark gets a golden route or a trail-triggered arrow.
+		if (site is Pinfold)
 			Game.AddChild(new TeachingTrail { Name = "TeachingTrail", Director = this, Site = site });
 
 		if (logPlacement || beside)

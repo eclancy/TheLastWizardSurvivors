@@ -217,6 +217,10 @@ public partial class _UiShot
 		}
 
 		// --- FF1, the Pinfold: guarded --------------------------------------------------------------------
+		private int pinfoldApproachFrames;
+		private bool PinfoldGateBlocks(Pinfold pound) => Hero.GetWorld2D().DirectSpaceState.IntersectRay(
+			PhysicsRayQueryParameters2D.Create(pound.Entrance, pound.EssenceCentre,
+				1u << (LevelTilePainter.TerrainCollisionLayer - 1))).Count > 0;
 
 		private void WorkPinfold(Pinfold pound)
 		{
@@ -232,7 +236,7 @@ public partial class _UiShot
 					GD.Print($"VAULTPROBE the guards: {string.Join(", ", guards.Where(IsInstanceValid).Select(g => g.SceneFilePath.GetFile()))}");
 					Check("the pound is not in \"enemies\" and the latch is not lit while they stand", !pound.IsInGroup("enemies") && !pound.GuardsDown);
 					// At the latch while they stand: it does not lift.
-					stand = pound.Latch + new Vector2(0f, 36f);
+					stand = pound.Latch + new Vector2(0f, 48f);
 					step++;
 					wait = 0.6f;
 					return;
@@ -240,7 +244,10 @@ public partial class _UiShot
 				case 101:
 				{
 					Check("the latch does not lift while its guards stand", !pound.GateOpen);
-					Shot("the guards woken, the hound behind the bars");
+					Check("the center cannot be claimed through the sealed gate", !pound.IsOpened);
+					Check("the sealed gate physically blocks entry", PinfoldGateBlocks(pound));
+					Check("the center stays open in the navigation grid", !Director.Game.Terrain.IsFenceAtWorld(pound.EssenceCentre));
+					Shot("the guards woken, the essence behind the magical seal");
 					// The fight, by the player's own hits (Player.DealDamageToEnemy, the path every spell takes).
 					foreach (Enemy guard in pound.Guards)
 						if (IsInstanceValid(guard))
@@ -253,16 +260,39 @@ public partial class _UiShot
 				{
 					Check("both guards are down", pound.Guards.All(g => !IsInstanceValid(g) || g.IsDying || g.Health <= 0));
 					// He is standing at the latch: with the guards down it lifts at once.
-					Check("with them down, the latch lifts and the hound gets up", pound.GuardsDown && pound.GateOpen);
+					Check("with them down, the gate unseals", pound.GuardsDown && pound.GateOpen);
+					Check("opening the gate alone does not grant Familiar", !pound.IsOpened && (hadBefore || !InSpellPool()));
 					step++;
 					wait = 0.75f;
 					return;
 				}
 				case 103:
 				{
-					Shot("the gate open, the hound running to him");
-					step = 6;
-					wait = 1.4f;
+					Shot("the gate open, the essence still waits in the center");
+					Check("unsealing removes the gate's physical barrier", !PinfoldGateBlocks(pound));
+					stand = pound.Entrance;
+					Hero.GlobalPosition = stand;
+					step = 104;
+					return;
+				}
+				case 104:
+				{
+					if (++pinfoldApproachFrames > 120)
+					{
+						Check("the center can be reached through the open gate", false);
+						Finish();
+						return;
+					}
+					// Use actual body motion through the gate, not a teleport to the pickup.
+					Vector2 motion = (pound.EssenceCentre - Hero.GlobalPosition).LimitLength(8f);
+					Hero.MoveAndCollide(motion);
+					stand = Hero.GlobalPosition;
+					if (pound.IsOpened)
+					{
+						Check("walking through the gate reaches and claims the center", stand.DistanceTo(pound.EssenceCentre) <= Pinfold.EssenceReach + 8f);
+						step = 6;
+						wait = 1.4f;
+					}
 					return;
 				}
 			}

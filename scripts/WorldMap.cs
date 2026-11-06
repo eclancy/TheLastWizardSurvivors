@@ -744,14 +744,6 @@ public partial class WorldMap : Control
 		string hint = secret && !StageRewards.IsFound(save, reward) && Teachings.LandmarkHint(reward.Id).Length > 0
 			? Teachings.LandmarkHint(reward.Id) : StageRewards.Describe(save, reward, NameOf);
 		column.AddChild(CodexRows.MakeText(hint, ResponsiveLayout.TextRole.Body, ink.Ink));
-		Teachings.Lesson lesson = secret ? Teachings.LessonAt(save, reward.Id) : null;
-		if (lesson != null)
-		{
-			string title = Teachings.IsShown(save, lesson.System) ? $"Teaches {lesson.Name}" : "Teaches your next lesson";
-			column.AddChild(CodexRows.MakeText(title, ResponsiveLayout.TextRole.Label, ink.Reward));
-			column.AddChild(CodexRows.MakeText("Follow the golden lights.\nLearn its lesson when the run ends.",
-				ResponsiveLayout.TextRole.Label, ink.InkSoft));
-		}
 		return panel;
 	}
 

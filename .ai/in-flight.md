@@ -495,21 +495,24 @@ things come up; strike what lands.**
    with the unlock rules. Play the owed animations after a run, including a voluntarily quit run
    (item 36).
 
-38. **Familiar discovery: subtle golden paw prints leading to a much larger magically sealed pen**
-   (Eric, 2026-11-05). Replace the bright glowing trail visible immediately upon spawning with
-   **more inconspicuous, softly glowing golden paw prints**, starting some distance away from spawn.
-   The player should discover the prints while exploring and follow them to the pen, rather than
-   see an obvious trail as soon as the run starts. The distance and visual intensity remain to be
-   tuned in play.
-   - **Make the pen much bigger.** Its gate is magically sealed, and a magical essence is visibly
-     held inside while the gate is locked. Unlocking the gate releases it and unlocks the Familiar
-     spell. Review the existing gate-unlocking mechanic when implementing; keep the essence, seal
-     and opening readable as one event.
-   - Review the Familiar/Pinfold event and the recently added discovery guidance together. Keep
-     this separate from item 37's character-taught system unlocks. Update the art generators,
-     placement/clearance, hints and unlock presentation to match; inspect the larger enclosure and
-     the trail in PC and phone runs. Check that the prints begin outside the immediate spawn view,
-     lead coherently to the gate, and stay subtle but discoverable on the chapter's ground.
+38. ~~**Familiar discovery: subtle tracks and a larger magically sealed pen**~~ (Eric, 2026-11-05;
+   refined 2026-11-06). **Done, 2026-11-06:** ground-level drag furrows, splayed paws and claw
+   scratches suggest a dog resisted being dragged. They pulse faintly in opaque gold stops and
+   begin outside the opening view (at least 1,488 world units from spawn). A bounded, one-off
+   search lays the intermittent marks through reachable ground toward the actual pen, with tiny
+   decor reserves to keep props off them. No traveling golden lights, near-spawn route or
+   trail-triggered POI arrow remains at any of the three teaching landmarks. Unfound map hints
+   describe the landscape without advertising an upgrade.
+   - The pen is now 448x352 rather than 200x168, with a binding across its gate and eight-frame
+     magical energy at its center. Defeat the existing guards and touch the latch to unseal it;
+     walk inside and approach the energy to claim Familiar. Opening the gate alone pays nothing.
+     Its interior/entrance are walkable in both physics and navigation, with separate draw origins
+     keeping the floor behind the player. Repeat visits pay the existing chest, once.
+   - Desktop and portrait/safe-area walkthroughs passed, with default terrain and seeds 17/2026,
+     including first unlock, center approach, no premature grant, repeat chest, and retired tracks.
+     The Star and Geode walkthroughs passed without a golden route. Full content validator:
+     0 errors, the existing Test Wizard warning. Art palette audit passed. System teaching after a
+     run stays intact; item 37's character-taught redesign remains separate.
 
 39. **Clarify Familiar spell-card descriptions** (Eric, 2026-11-06). Familiar descriptions on the
    cards are confusing and sometimes read like run-on sentences. Rewrite them as short, clear
