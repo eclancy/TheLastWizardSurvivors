@@ -450,8 +450,9 @@ a fifth finger, and run past the far side of the fingers it was one again.
 
 ## The title screen is also the menu
 
-Pressing a key no longer changes scene. `TitleScreen.ShowMenu` instantiates `MainMenu.tscn` and adds
-it as a **child**, then hides the prompt.
+Pressing a key no longer changes scene. `TitleScreen.ShowMenu` reveals its **already prepared child**
+`MainMenu`, gives it focus and hides the prompt. The opening press is consumed so it cannot also
+activate Start Run.
 
 The reason is the animation. Swapping scenes tore the artwork down and rebuilt it, which restarted
 every layer in `SetUpAnimation` - so although both screens showed the same picture, the handoff read
@@ -460,13 +461,46 @@ never stopped moving.
 
 **Everything that used to return to the main menu now loads this scene instead**, setting
 `Global.OpenMenuImmediately = true` first: `CharacterSelection` (back), `GameOverScreen`, and
-`Node2DGame` (quit to menu). `_Ready` reads the flag, clears it, and opens the menu at the end of
-its work - last, deliberately, because everything the menu draws over has to exist first. Without
+`Node2DGame` (quit to menu). `_Ready` reads the flag, clears it, and opens the menu after preparation
+finishes - last, deliberately, because everything the menu draws over has to exist first. Without
 the flag the player would press a key to dismiss the title beat after every single run.
 
 `MainMenu` is therefore never loaded standalone in the shipping game. `scripts/_UiShot.cs` still
 loads it directly for screenshots and will show the menu against a black ground, which is correct
 for a measurement tool and wrong for a player.
+
+### Startup preparation and the first-press freeze (2026-11-05)
+
+The first press used to synchronously load, instantiate and add `MainMenu`. A real-window probe on
+Windows measured **13,952 ms** from Enter to the first menu draw: **12,048 ms in regression checks**,
+682 ms in spell/character validation, and under a second in the menu's own construction. This was
+development verification running on the player's main thread, not a resolution problem.
+
+- **The full validator is opt-in:** `--validate-content` runs it once from `MainMenu` or
+  `Node2DGame`. Keep using it for verification (see `CLAUDE.md`); normal launches run no regression
+  suite. `--profile-startup` prints the resource/validation/menu-stage timings.
+- **After the updater finishes**, `TitleScreen` displays `TitleLoadingScreen`, requests the menu
+  scene with the threaded loader, and only retrieves it once loaded. It builds the hidden menu in
+  seven main-thread stages (`MainMenu.PrepareInSteps`); standalone menu harnesses stay synchronous.
+- The loading art reuses the generated title's ward and flame frames, cropped through
+  `AtlasTexture`, drawn by `PixelArtRect` at whole screen pixels. Fire appears in two groups as
+  resource/menu stages complete. No new PNGs, fabricated percentage or minimum loading duration.
+- The completed menu is drawn behind the opaque loader for layout/font/material warmup, hidden,
+  then the title starts. Loading inputs are consumed; failure offers **Try again**. A return from
+  a run uses the same preparation and then opens the menu directly, without the title prompt.
+- Removed the duplicate initial shop refresh and achievements-page rebuild. In fresh Windows
+  processes, preparation measured about **1.2-1.5 s**, and the opening press **34-44 ms** with keyboard,
+  mouse and pad. Portrait at 540x1212 measured **45 ms** for the press. These are desktop measurements;
+  the Pixel 9 was disconnected, so physical Android timings remain unmeasured. Preparation still
+  includes a roughly half-second first achievements build; the long first-press freeze is gone.
+
+`scenes/_TitleLoadProbe.tscn -- --no-save-writes --profile-startup` measures the first rendered menu
+after a real press, failing if the prepared press takes over 250 ms. `--input=mouse` / `--input=pad`
+/ `--input=touch`, `--returning`, `--failed-load`, `--reset-notice` and
+`--portrait --safe-area` cover input, direct returns, retry and portrait. It sends early presses
+during loading and verifies they neither skip preparation nor activate Start Run. It also opens and
+closes the prepared Powers, Achievements and Options panels. The only save used is an in-memory
+fresh one.
 
 ### How the menu is laid out against the artwork
 
