@@ -209,6 +209,10 @@ public class SaveData
 	/// <summary>A dark chapter's dark lifted to DisplaySettings.ReducedDarknessScale (LightPool, 2026-11-03). No
 	/// schema bump, like the shake: an older save has the key missing and keeps the default, off.</summary>
 	public bool ReduceDarkness { get; set; } = false;
+	public bool Fullscreen { get; set; } = true;
+	/// <summary>Zero means an automatically fitted window. Fullscreen always uses the display's native size.</summary>
+	public int WindowWidth { get; set; }
+	public int WindowHeight { get; set; }
 
 	/// <summary>
 	/// Taught the Ascension outside the campaign's own record (GlobalStatsManager.HasLearnedAscension):
@@ -282,6 +286,7 @@ public class SaveData
 	public static readonly string[] SettingsKeys =
 	{
 		"MasterVolume", "MusicVolume", "SfxVolume", "AudioMuted", "ShowDamageNumbers", "ReduceScreenShake", "ReduceDarkness",
+		"Fullscreen", "WindowWidth", "WindowHeight",
 		"EnableGameplayOnboardingTips", "HasToggledOnboardingTipsAtLeastOnce",
 		"PlaytestModeEnabled", "BalancePresetId", "PlaytestChecklistState",
 	};
@@ -1287,6 +1292,9 @@ public class SaveData
 			["ShowDamageNumbers"] = ShowDamageNumbers,
 			["ReduceScreenShake"] = ReduceScreenShake,
 			["ReduceDarkness"] = ReduceDarkness,
+			["Fullscreen"] = Fullscreen,
+			["WindowWidth"] = WindowWidth,
+			["WindowHeight"] = WindowHeight,
 			["AscensionLearned"] = AscensionLearned,
 			["LessonsLearned"] = lessonsLearned,
 			["FullBookKept"] = FullBookKept,
@@ -1583,6 +1591,9 @@ public class SaveData
 			result.ReduceScreenShake = root["ReduceScreenShake"].AsBool();
 		if (root.ContainsKey("ReduceDarkness"))
 			result.ReduceDarkness = root["ReduceDarkness"].AsBool();
+		if (root.ContainsKey("Fullscreen")) result.Fullscreen = root["Fullscreen"].AsBool();
+		if (root.ContainsKey("WindowWidth")) result.WindowWidth = System.Math.Max(0, root["WindowWidth"].AsInt32());
+		if (root.ContainsKey("WindowHeight")) result.WindowHeight = System.Math.Max(0, root["WindowHeight"].AsInt32());
 		if (root.ContainsKey("AscensionLearned"))
 			result.AscensionLearned = root["AscensionLearned"].AsBool();
 		if (root.ContainsKey("FullBookKept"))

@@ -198,7 +198,7 @@ def wide_eyes(lettering=None):
 
 
 def vigil_wide(beard="mane-spear", layers=False, gain=1.0, phase=0, flicker=1.0, eyes=True,
-               lettering=None):
+               lettering=None, wordmark=True):
     lettering = lettering or title_lettering.SHIPPING
     # The far trees are held low under the lettering so it keeps a plain sky behind it.
     wb = word_box(lettering)
@@ -432,7 +432,8 @@ def vigil_wide(beard="mane-spear", layers=False, gain=1.0, phase=0, flicker=1.0,
         splash._darken_rows(cc, 0, WH - 1, lambda x, y: max(edge_t(x, y), ui_pocket_t(x, y)),
                             [None, None, M["stone"][4], OCC], only_opaque=layers)
     # THE ONE HE MISSED (tools/art/title_lettering.py), after the light, never under it.
-    title_lettering.draw(T("backB"), lettering, "wide", C0)
+    if wordmark:
+        title_lettering.draw(T("backB"), lettering, "wide", C0)
     # The eyes, last of all and only where nothing in front of them is drawn - see splash.vigil.
     if eyes:
         title_eyes.stamp_all(cv["eyes"], wide_eyes(lettering))

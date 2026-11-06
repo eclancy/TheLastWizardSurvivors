@@ -582,6 +582,7 @@ public partial class MainMenu : Control
 
 	private void OnViewportSizeChanged()
 	{
+		RefreshScreenOptions();
 		if (quitButton != null && !DisplayProfile.IsPortrait) LayoutUtilityRow();
 		// Options' two columns of sections fold to one as the codex lists do (MainMenu.Options.cs).
 		if (optionsColumns != null && optionsColumns.Columns != CodexRows.ColumnsFor(this))
@@ -731,59 +732,13 @@ public partial class MainMenu : Control
 		control.OffsetBottom = bottomRow - ArtHalfHeight;
 	}
 
-	// The foot of the screen: Options in its corner, then the Evolution Codex - the two things on this
-	// screen that are not about the next run - and the difficulty readout. Report a bug stood third in
-	// this row until 2026-11-02; it is in Options now (MainMenu.Options.cs).
-	//
-	// On a PC they are one row on the dark grass under the menu column, left to right from the
-	// OPTIONS_BOX corner, and the preset keeps DETAIL_BOX in the opposite corner. The two quiet
-	// buttons end at core x 318, which keeps them clear of the ward circle's left rim and its
-	// flame at about x 320 and rows 245-285.
-	//
-	// On a phone the two share one row across the grass (rows 1168-1232), each 316 wide and
-	// 64 tall - comfortably over the 48-unit touch floor. That row used to hold Options on the left
-	// and the preset readout on the right, with Report a bug squeezed under Options; the readout now
-	// goes under the row where a tall phone (the Pixel 9: rows to about 1410) has open ground, or
-	// above it on a 16:9 phone, whose canvas ends at row 1280, between the row and the circle's rim.
+	// One bottom row, with the same height and baseline for every utility button. Desktop leaves
+	// space before Quit; portrait shares the available width. The version and difficulty sit above.
 	private void LayoutUtilityRow()
 	{
-		quitButton.SetAnchorsAndOffsetsPreset(LayoutPreset.BottomRight);
-		quitButton.OffsetLeft = -164f;
-		quitButton.OffsetRight = -20f;
-		quitButton.OffsetTop = -76f;
-		quitButton.OffsetBottom = -20f;
-		quitButton.CustomMinimumSize = new Vector2(144f, 56f);
-		optionsButton.FocusNeighborRight = optionsButton.GetPathTo(spellIndexButton);
-		spellIndexButton.FocusNeighborLeft = spellIndexButton.GetPathTo(optionsButton);
-		spellIndexButton.FocusNeighborRight = spellIndexButton.GetPathTo(quitButton);
-		quitButton.FocusNeighborLeft = quitButton.GetPathTo(spellIndexButton);
-		quitButton.FocusNeighborRight = quitButton.GetPathTo(quitButton);
-		quitButton.FocusNeighborTop = quitButton.GetPathTo(unlocksButton);
-		foreach (Button button in new[] { optionsButton, spellIndexButton })
-		{
-			if (button == null)
-				continue;
-			button.AnchorLeft = 0.5f;
-			button.AnchorRight = 0.5f;
-			button.AnchorTop = 0.5f;
-			button.AnchorBottom = 0.5f;
-		}
-
-		if (!DisplayProfile.IsPortrait)
-		{
-			PinToWideArt(optionsButton, 12f, 292f, 126f, 324f);
-			PinToWideArt(spellIndexButton, 134f, 296f, 236f, 320f);
-			if (rootDetailLabel != null)
-				PinToWideArt(rootDetailLabel, 470f, 276f, 632f, 308f);
-			return;
-		}
-		LayoutPortraitUtilities();
-	}
-
-	private void LayoutPortraitUtilities()
-	{
-		portraitUtilities = new HBoxContainer { Name = "PortraitUtilities", MouseFilter = MouseFilterEnum.Ignore };
-		portraitUtilities.AddThemeConstantOverride("separation", 8);
+		if (portraitUtilities != null) return;
+		portraitUtilities = new HBoxContainer { Name = "BottomUtilities", MouseFilter = MouseFilterEnum.Ignore };
+		portraitUtilities.AddThemeConstantOverride("separation", 12);
 		AddChild(portraitUtilities);
 		portraitUtilities.SetAnchorsAndOffsetsPreset(LayoutPreset.BottomWide);
 		portraitUtilities.OffsetLeft = 20f;
@@ -794,9 +749,22 @@ public partial class MainMenu : Control
 		{
 			button.Reparent(portraitUtilities);
 			button.SetAnchorsAndOffsetsPreset(LayoutPreset.TopLeft);
-			button.CustomMinimumSize = new Vector2(0f, 64f);
-			button.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+			button.CustomMinimumSize = new Vector2(DisplayProfile.IsPortrait ? 0f : 200f, 64f);
+			button.SizeFlagsVertical = SizeFlags.Fill;
+			button.SizeFlagsHorizontal = DisplayProfile.IsPortrait ? SizeFlags.ExpandFill : SizeFlags.Fill;
+			ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
 		}
+		if (!DisplayProfile.IsPortrait)
+		{
+			var space = new Control { MouseFilter = MouseFilterEnum.Ignore, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+			portraitUtilities.AddChild(space);
+			portraitUtilities.MoveChild(space, 2);
+		}
+		optionsButton.FocusNeighborRight = optionsButton.GetPathTo(spellIndexButton);
+		spellIndexButton.FocusNeighborLeft = spellIndexButton.GetPathTo(optionsButton);
+		spellIndexButton.FocusNeighborRight = spellIndexButton.GetPathTo(quitButton);
+		quitButton.FocusNeighborLeft = quitButton.GetPathTo(spellIndexButton);
+		quitButton.FocusNeighborRight = quitButton.GetPathTo(quitButton);
 		quitButton.FocusNeighborTop = quitButton.GetPathTo(unlocksButton);
 		if (rootDetailLabel == null) return;
 		detailOnOneLine = true;
@@ -806,7 +774,7 @@ public partial class MainMenu : Control
 		rootDetailLabel.OffsetRight = -20f;
 		rootDetailLabel.OffsetTop = -120f;
 		rootDetailLabel.OffsetBottom = -92f;
-		rootDetailLabel.HorizontalAlignment = HorizontalAlignment.Center;
+		rootDetailLabel.HorizontalAlignment = DisplayProfile.IsPortrait ? HorizontalAlignment.Center : HorizontalAlignment.Right;
 	}
 
 

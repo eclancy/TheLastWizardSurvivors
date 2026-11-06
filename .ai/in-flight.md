@@ -294,6 +294,11 @@ things come up; strike what lands.**
 20. **Display options and correct fullscreen startup resolution** (Eric, 2026-11-05). Add resolution
    options to the game and detect the correct display resolution when launching fullscreen; investigate
    alongside the defeat-screen overflow in item 18.
+   **Core implemented 2026-11-06 (item 46):** Eric chose native fullscreen plus selectable window sizes.
+   Saved mode/window-size controls, display fitting, non-16:9 expansion and the aligned menu footer
+   are built. Native 2736x1824 fullscreen and 16:9/16:10/4:3/ultrawide windows were checked.
+   The broader explicit monitor picker, timed-revert UI and separate OS-DPI sweeps below remain
+   follow-up work; the current menu uses the monitor containing its window.
    - Offer windowed and borderless fullscreen modes, resolution/window-size choices, and an
      **Automatic / native display** option. Include monitor selection where multiple monitors exist.
      Start fullscreen at the selected monitor's desktop resolution by default, and remember the
@@ -595,6 +600,20 @@ things come up; strike what lands.**
       On this PC, the old 3,456 ms loading-frame gap fell to 97-109 ms in the final fresh-process
       checks; preparation took about 2.2 s. These are desktop measurements, not phone timings.
       Every loading frame's crop has padding on all four sides. All test saves stayed in memory.
+
+46. ~~**Aligned bottom buttons, saved window sizes and native fullscreen without bars**~~ (Eric,
+    2026-11-06). **Done.** Options, Evolution Codex and Quit share a baseline, button height and
+    bottom inset. Options starts with Display: fullscreen toggle, window-size dropdown and native
+    resolution readout. Fullscreen always uses the current monitor's native size; the dropdown is
+    available in windowed mode and choices fit the usable desktop. Mode and window-size preferences
+    survive saves and story resets; F11/Alt+Enter use the same settings. Desktop expands the canvas
+    instead of letterboxing taller displays. The title's generated forest and lettering are separate
+    layers, allowing the forest to cover the extra area while its core composition stays placed.
+    - Build and content validation passed (0 errors, existing 45 build warnings / Test Wizard warning).
+      Real-window checks cover native 2736x1824 fullscreen, 1280x720, 1280x800, 1024x768 and 1600x720,
+      F11 round trips, saved preferences, aligned/in-bounds buttons, and full viewport/art coverage.
+      Portrait/safe-area controller navigation and Quit still pass. A 4:3 gameplay render fills the
+      window. Generated title layers have zero off-contract colors. All test saves stayed in memory.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
