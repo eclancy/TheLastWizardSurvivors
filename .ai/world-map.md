@@ -23,10 +23,9 @@ then the world map, then the run. Read with `.ai/campaign.md` (the order), `.ai/
 ## 1. The world
 
 **Reward hints (2026-11-05):** the chapter card's silhouettes are buttons, usable by mouse, touch and
-controller. They open the existing reward hint in `ElementTagPopover`. A teaching chapter also advertises
-its hidden lesson; its secret's hint describes the landmark gently, names the next system only when
-`Teachings.IsShown` allows it, and explains the golden trail and post-run lesson. See `.ai/slow-start.md`
-10.2 for the trail and its persistent gold POI marker.
+controller. They open the existing reward hint in `ElementTagPopover`. Since 2026-11-06, an unfound
+teaching landmark gives only its environmental clue: no "Teaches your next lesson" advertisement or
+instruction to follow golden lights. See `.ai/slow-start.md` 10.2 for the Familiar's ground tracks.
 
 **One picture, generated** (`tools/art/world_map.py`, never a hand-edited PNG): an overworld seen from
 above, 2112x840 art pixels drawn at x2 (1680 until the castle grew it east, section 18), in the Bonelight palette and under the same key from the upper
