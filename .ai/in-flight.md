@@ -501,6 +501,28 @@ things come up; strike what lands.**
      the trail in PC and phone runs. Check that the prints begin outside the immediate spawn view,
      lead coherently to the gate, and stay subtle but discoverable on the chapter's ground.
 
+39. **Clarify Familiar spell-card descriptions** (Eric, 2026-11-06). Familiar descriptions on the
+   cards are confusing and sometimes read like run-on sentences. Rewrite them as short, clear
+   sentences that distinguish the familiar's behavior from upgrade effects. Inspect the composed
+   card text, not just the base description, at Windows and phone widths so appended effects do
+   not turn back into a run-on sentence.
+
+40. **Littermates is the only way to gain multiple hound familiars** (Eric, 2026-11-06). A hound
+   Familiar should otherwise remain one hound. **Littermates grants two additional hounds** (three
+   total from the normal single hound); other upgrades/effects must not independently add hounds.
+   Audit the hound's count sources, upgrade paths and stacking interactions, and rebalance its
+   damage and other relevant stats around this rule. Keep the card wording explicit about the
+   two additional hounds and coordinate with item 39's description cleanup. This is next-week
+   work; the rule and balance changes are not implemented in 0.13.2.
+
+41. **Four levelable boons with fewer tags each** (Eric, 2026-11-06). Let the player carry **four
+   boons**. Reduce the number of element tags on each boon to compensate for the additional slot,
+   and make **every boon level up** so boon upgrades diversify the level-up choice pool. Rebalance
+   each boon's starting effect and per-level gains around those upgrades, together with the
+   four-slot tag budget. Review offer weighting, level caps, full-slot behavior, saved loadouts
+   and the boon/level-up UI at Windows and phone sizes. This is next-week design/balance work,
+   not implemented in 0.13.2.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**

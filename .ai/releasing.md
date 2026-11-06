@@ -291,6 +291,14 @@ keep the debug build on the development phone and judge the release APK by its s
 
 ### Rehearsing it: `--dry-run`
 
+2026-11-06: the **0.13.2 rehearsal passed** from `79cda2d0`: all nine artifacts built, including
+the 109.5 MB signed APK (`versionCode` 1302, package identity and release certificate verified).
+Story epoch stays 2. The packaged Windows executable passed title preparation (1,115.7 ms,
+32.9 ms Enter-to-menu in this run), crowded/compact results and reward inspection, rendered
+quit-run freeing + lesson, and tall level-up card scrolling. Tests used isolated temporary
+`APPDATA` and disabled save writes/updates. Source portrait/touch/safe-area and full content
+validation also passed; there was no connected Android device for an on-device playtest.
+
 ```sh
 bash tools/release/release.sh --dry-run 0.3.1
 ```
