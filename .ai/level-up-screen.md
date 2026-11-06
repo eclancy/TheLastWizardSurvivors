@@ -1357,13 +1357,32 @@ rule, then its page in a scroll (`SectionScroll`). Back, **B**, Escape or Androi
 puts the selection on Back, so a pad walks down into the page from its top. Every page is built with
 the summary and kept, so opening is a visibility change.
 
-**Layout.** One code path for both canvases. Folded, the panel is only as tall as the summary and
-sits in the middle of the screen between two spacers (on a PC 1080 wide at most; on a phone the
-full width); with a section open the spacers go and the panel takes the whole height so the section
-has room to scroll. The panel sits in a full-rect `Frame`, which `SafeArea.Apply` insets on a phone.
+**Layout (2026-11-06).** The panel fills the available height and puts its header and summary/detail
+inside one `ResultsScroll`. Retry and Main menu live outside that scroll and stay on-screen when
+unlocks make the summary tall. Below 1120 canvas units the header stacks; below 540 the headline
+tiles and footer buttons stack too. Resizing across those thresholds rebuilds the layout and keeps
+the open section/detail. The panel sits in a full-rect `Frame`, inset by `SafeArea.Apply` on a phone.
 Every container ignores the mouse so a finger drag reaches the scroll (`TouchScroll` via
 `MenuNavigator.Attach`); inside a section each reward card, spell row and the breakdown is a stop
 (`MakeCardClickOverlay` with the mouse ignored, as `CodexRows` does), so the stick walks the lists.
+
+**Unlock inspection (2026-11-06).** Each icon is a button with mouse/touch and keyboard/pad activation.
+It opens a detail page with the reward's name, kind, effect and source; Back/B/Escape restores focus
+to its icon. The overflow button opens the full Rewards list. Ascension and Apotheosis entries carry
+their actual run variant's description in the transient `RunUnlockEntry.Description`.
+
+**Voluntary run endings (2026-11-06).** Pause's **Quit Run** uses `FinishRunAndReward(RunOutcome.Quit)`:
+it records and banks the run once, plays owed freeings/lessons, then shows **Run ended** and the usual
+reward tally. It plays no death sequence and awards no boss victory. `Quit` is appended to the enum
+so the existing Defeat/Victory values stay stable; telemetry records the distinct outcome.
+
+**Long spell cards on Windows (2026-11-06).** `LevelUpMenu.EnsureOptionsScroll` now wraps the hand on
+both canvases. A four-card hand plus the charge/Ascension rows formerly exceeded the panel height;
+now a 469-unit hand scrolls within its 400-unit band, with the action footer pinned. Page Up/Down
+provides keyboard access to long card, Codex, pause and results text alongside the existing wheel
+and right stick. `_RecoveryProbe --part=results` exercises 24 rewards and a compact 480x720 canvas;
+`--portrait --safe-area --touch` checks portrait/touch. `--part=quit` checks reels and once-only payment,
+with `--no-reels` for an empty run and headless mode for state-only checks.
 
 **Arriving, and the count.** After a defeat the screen is brought down by the player's press at the
 end of the defeat (`DefeatSequence`, section 6a) and **covers the field from below**: the whole

@@ -123,6 +123,10 @@ selected.
 left the selection stuck on these buttons. `_RecoveryProbe --part=footer` exercises real keyboard,
 D-pad and stick input on the paused screen; `--automatic-focus` removes the links to reproduce it.
 
+**Page Up / Page Down scroll the focused control's list**, or the screen's tallest list if focus
+is on its footer (2026-11-06). This lets a keyboard read the foot of a spell card taller than its
+viewport, matching the mouse wheel and right stick. Text fields retain their own page-key handling.
+
 ## 4. `MenuFocusHighlight`
 
 A ring drawn over whatever the player is pointing at, with a stick or with a mouse. **Hover and

@@ -31,7 +31,7 @@ public enum Teaching
 ///
 /// <para><b>Learned means shown.</b> Finding a teacher makes a lesson <i>owed</i> (<see cref="Owed"/>); it is
 /// LEARNED when its cutscene plays, after the run that found it and before the results (Node2DGame,
-/// <see cref="Teach"/>). A run that is quit owes it to the end of the next. So a system is never usable before
+/// <see cref="Teach"/>). Quitting a run also plays its owed lesson before the results. So a system is never usable before
 /// it has been explained, and the run that found the teacher is played as it began (Player reads the flags
 /// once, at the start).</para>
 ///

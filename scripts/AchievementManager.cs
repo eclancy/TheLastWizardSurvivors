@@ -54,6 +54,8 @@ public sealed class RunUnlockEntry
 	public string Name { get; init; } = string.Empty;
 	/// <summary>How it was earned, in a few words: "Unlock completed: Slayer", "Elderbark defeated".</summary>
 	public string Source { get; init; } = string.Empty;
+	/// <summary>What a newly revealed path/form does, captured from that run's actual variant.</summary>
+	public string Description { get; init; } = string.Empty;
 	/// <summary>The spell an ascension path belongs to, for its icon when the path has none.</summary>
 	public string SpellId { get; init; } = string.Empty;
 	/// <summary>A picture to use instead of the kind's own (an ascension branch's icon).</summary>

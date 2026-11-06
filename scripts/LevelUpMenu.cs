@@ -254,7 +254,7 @@ public partial class LevelUpMenu : CanvasLayer
 	public override void _Ready()
 	{
 		CenterMenuPanel();
-		EnsureNarrowOptionsScroll();
+		EnsureOptionsScroll();
 		ApplyMenuSkin();
 
 		rerollButton = GetNodeOrNull<Button>("Panel/VBoxContainer/RerollButton");
@@ -917,18 +917,17 @@ public partial class LevelUpMenu : CanvasLayer
 		FocusSpotlight.Attach(container);
 	}
 
-	// Drops a ScrollContainer between the panel's VBox and the Options grid on a phone.
+	// Keeps the Options grid inside a ScrollContainer on both desktop and phone.
 	//
 	// A stacked option is not just its 300-tall card: the element-tier rows sit *beside* the card
 	// as siblings in the same grid, so three options come to roughly 1200 units - more than any
 	// portrait screen. Without somewhere to scroll, the overflow pushed Reroll and Skip off the
 	// bottom edge, where they could not be tapped at all. Reroll and Skip stay outside the scroll
 	// so they remain pinned and reachable however tall the options get.
-	private void EnsureNarrowOptionsScroll()
+	private void EnsureOptionsScroll()
 	{
-		if (!ResponsiveLayout.IsNarrow(this))
-			return;
-
+		// Wide hands can overflow too: long spell text plus the Ascension/charge rows must
+		// scroll inside the panel instead of stretching it and clipping the descriptions/footer.
 		// Null once wrapped, so this is safe to call more than once.
 		var options = GetNodeOrNull<Control>("Panel/VBoxContainer/Options");
 		if (options?.GetParent() is not Control vbox)
@@ -953,7 +952,7 @@ public partial class LevelUpMenu : CanvasLayer
 
 	private Control GetOptionsContainer()
 	{
-		// Direct path first; once EnsureNarrowOptionsScroll has reparented the grid under a
+		// Direct path first; once EnsureOptionsScroll has reparented the grid under a
 		// ScrollContainer this misses and the recursive search below finds it by name.
 		var node = GetNodeOrNull<Control>("Panel/VBoxContainer/Options");
 		if (node != null) return node;

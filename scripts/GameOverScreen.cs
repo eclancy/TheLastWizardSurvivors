@@ -28,9 +28,8 @@ using TheOneHeMissed.scripts;
 ///      one in place of the summary; Back, B or Escape folds it again.
 ///   4. Where to go: Retry, or the main menu.
 ///
-/// Folded, the panel is only as tall as the summary and sits in the middle of the screen; with a
-/// section open it takes the whole height and the section scrolls. Every number the screen showed
-/// before is in one of the sections - folded, not removed.
+/// The header and summary/details share one scrolling pane inside the screen. Retry and Main menu
+/// stay outside it, always reachable. Every number is still in one of the sections.
 ///
 /// AFTER A DEFEAT the screen is brought down by the player's press at the end of the defeat
 /// (DefeatSequence) and COVERS the field from below (CoversFromBelow); the defeat has played the
@@ -105,8 +104,6 @@ public partial class GameOverScreen : CanvasLayer
 	public bool CoversFromBelow { get; set; }
 
 	// --- the shell, built once ----------------------------------------------------------------
-	private Control topSpacer;
-	private Control bottomSpacer;
 	private PanelContainer panel;
 	private VBoxContainer column;
 	private VBoxContainer headerHost;
@@ -156,8 +153,9 @@ public partial class GameOverScreen : CanvasLayer
 
 	public override void _Ready()
 	{
-		narrow = ResponsiveLayout.IsNarrow(this);
+		narrow = ResponsiveLayout.ViewportSize(this).X < 1120f;
 		BuildShell();
+		GetViewport().SizeChanged += ResizeResults;
 
 		// Clear of the phone's rounded corners and camera hole; nothing on desktop (SafeArea).
 		SafeArea.Apply(this);
@@ -184,6 +182,34 @@ public partial class GameOverScreen : CanvasLayer
 		}
 	}
 
+	public override void _ExitTree() => GetViewport().SizeChanged -= ResizeResults;
+
+	private void ResizeResults()
+	{
+		if (report == null) return;
+		bool nowNarrow = ResponsiveLayout.ViewportSize(this).X < 1120f;
+		bool stackedFooter = ResponsiveLayout.ViewportSize(this).X < 540f;
+		if (nowNarrow == narrow && (footer is VBoxContainer) == stackedFooter)
+		{
+			if (!narrow) panel.CustomMinimumSize = new Vector2(Mathf.Min(MaxPanelWidth, ResponsiveLayout.ViewportSize(this).X - 40f), 0f);
+			return;
+		}
+		int wasOpen = openSection;
+		RunUnlockEntry shown = selectedUnlock;
+		string sourceName = unlockReturnFocus != null && IsInstanceValid(unlockReturnFocus) ? unlockReturnFocus.Name.ToString() : "";
+		foreach (string name in new[] { "Frame", "Dim" })
+			if (GetNodeOrNull<Node>(name) is Node node) { RemoveChild(node); node.QueueFree(); }
+		narrow = nowNarrow;
+		BuildShell();
+		unlockDetail = null;
+		Present(report);
+		if (wasOpen >= 0) OpenSection(wasOpen);
+		else if (wasOpen == -2 && shown != null)
+			OpenUnlock(shown, FindChild(sourceName, true, false) as Control ?? sections[0].Opener);
+		MenuNavigator.Attach(this, continueButton);
+		SafeArea.Apply(this);
+	}
+
 	/// <summary>Builds the screen from a finished run. Safe to call again: it rebuilds.</summary>
 	public void Present(RunReport runReport)
 	{
@@ -195,6 +221,9 @@ public partial class GameOverScreen : CanvasLayer
 		Clear(bodyHost);
 		stripIcons.Clear();
 		sections.Clear();
+		unlockDetail = null;
+		unlockReturnFocus = null;
+		selectedUnlock = null;
 		openSection = -1;
 		energyValue = null;
 		purseLine = null;
@@ -211,7 +240,8 @@ public partial class GameOverScreen : CanvasLayer
 			// After a defeat the sequence played game_over as DEFEAT landed. A win is stage_clear - it
 			// was game_over too, a descent with no resolution, under the word Victory.
 			if (!CoversFromBelow)
-				SfxPlayer.Global(report.Result.Outcome == RunOutcome.Victory ? SfxCatalog.StageClear : SfxCatalog.GameOver);
+				SfxPlayer.Global(report.Result.Outcome == RunOutcome.Victory ? SfxCatalog.StageClear
+					: report.Result.Outcome == RunOutcome.Quit ? SfxCatalog.UiClose : SfxCatalog.GameOver);
 		}
 		// Built at its final figures, then wound back to nothing if the count is still to run: a frame
 		// that never animates (a harness re-presenting after the count) still says the right thing.
@@ -290,8 +320,7 @@ public partial class GameOverScreen : CanvasLayer
 	}
 
 	// ============================================================================================
-	// The shell: a dim over the run, the stone panel - centred at its own height while folded, the
-	// whole height with a section open - a header, a body and the buttons.
+	// The shell: bounded stone panel, scrolling header/body, and a pinned footer.
 	// ============================================================================================
 
 	private void BuildShell()
@@ -314,12 +343,7 @@ public partial class GameOverScreen : CanvasLayer
 		stack.AddThemeConstantOverride("separation", 0);
 		frame.AddChild(stack);
 
-		// The two spacers share what the folded panel does not take, which centres it; with a
-		// section open they go and the panel fills the height (ApplyFold).
-		topSpacer = new Control { Name = "TopSpacer", MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsVertical = Control.SizeFlags.ExpandFill };
-		stack.AddChild(topSpacer);
-
-		panel = new PanelContainer { Name = "Panel" };
+		panel = new PanelContainer { Name = "Panel", SizeFlagsVertical = Control.SizeFlags.ExpandFill };
 		panel.AddThemeStyleboxOverride("panel", BonelightSkin.PanelStyle(BonelightSkin.Register.Stone));
 		if (!narrow)
 		{
@@ -330,16 +354,20 @@ public partial class GameOverScreen : CanvasLayer
 		}
 		stack.AddChild(panel);
 
-		bottomSpacer = new Control { Name = "BottomSpacer", MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsVertical = Control.SizeFlags.ExpandFill };
-		stack.AddChild(bottomSpacer);
-
 		column = new VBoxContainer { Name = "Column" };
 		column.AddThemeConstantOverride("separation", narrow ? 12 : 10);
 		panel.AddChild(column);
 
+		// Only the content scrolls; the footer always fits inside the viewport, even when a run
+		// earns enough unlocks to make the folded summary taller than the screen.
+		var content = new VBoxContainer { Name = "ResultsContent", MouseFilter = Control.MouseFilterEnum.Ignore };
+		content.AddThemeConstantOverride("separation", narrow ? 12 : 10);
+		sectionScroll = Scroll("ResultsScroll", content);
+		sectionScroll.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
+		column.AddChild(sectionScroll);
 		headerHost = new VBoxContainer { Name = "Header" };
 		headerHost.AddThemeConstantOverride("separation", 10);
-		column.AddChild(headerHost);
+		content.AddChild(headerHost);
 
 		bodyHost = new MarginContainer
 		{
@@ -347,13 +375,12 @@ public partial class GameOverScreen : CanvasLayer
 			SizeFlagsVertical = Control.SizeFlags.ExpandFill,
 			MouseFilter = Control.MouseFilterEnum.Ignore,
 		};
-		column.AddChild(bodyHost);
+		content.AddChild(bodyHost);
 
 		column.AddChild(BuildFooter());
 	}
 
-	// Folded: the summary, the panel at its own height between the spacers. Open: one section, the
-	// panel the whole height so the section has room to scroll.
+	// Show the summary or a section; both use the same bounded scroll above the footer.
 	private void ApplyFold()
 	{
 		bool open = openSection >= 0;
@@ -361,14 +388,14 @@ public partial class GameOverScreen : CanvasLayer
 			summaryView.Visible = !open;
 		if (sectionView != null)
 			sectionView.Visible = open;
-		topSpacer.Visible = !open;
-		bottomSpacer.Visible = !open;
-		panel.SizeFlagsVertical = open ? Control.SizeFlags.ExpandFill : Control.SizeFlags.ShrinkCenter;
 	}
 
+	private BoxContainer footer;
 	private Control BuildFooter()
 	{
-		var footer = new HBoxContainer { Name = "Footer", Alignment = BoxContainer.AlignmentMode.Center };
+		footer = ResponsiveLayout.ViewportSize(this).X < 540f ? new VBoxContainer() : new HBoxContainer();
+		footer.Name = "Footer";
+		footer.Alignment = BoxContainer.AlignmentMode.Center;
 		footer.AddThemeConstantOverride("separation", 16);
 
 		// The same restart the pause screen's Restart runs: unpause, reload the run scene with the
@@ -430,26 +457,24 @@ public partial class GameOverScreen : CanvasLayer
 		var title = new Label
 		{
 			Name = "OutcomeTitle",
-			Text = won ? "Victory" : "Defeat",
+			Text = won ? "Victory" : result.Outcome == RunOutcome.Quit ? "Run ended" : "Defeat",
 			VerticalAlignment = VerticalAlignment.Center,
 			HorizontalAlignment = narrow ? HorizontalAlignment.Center : HorizontalAlignment.Left,
 			SizeFlagsHorizontal = narrow ? Control.SizeFlags.ExpandFill : Control.SizeFlags.ShrinkBegin,
 			CustomMinimumSize = new Vector2(0f, ResponsiveLayout.MinTouchTarget),
 		};
 		ResponsiveLayout.SetFont(title, ResponsiveLayout.TextRole.Display);
-		title.AddThemeColorOverride("font_color", won ? VictoryInk : DefeatInk);
+		title.AddThemeColorOverride("font_color", won ? VictoryInk : result.Outcome == RunOutcome.Quit ? Stone.Heading : DefeatInk);
 		bandRow.AddChild(title);
 
 		Label where = CodexRows.MakeText(BuildWhereLine(), ResponsiveLayout.TextRole.Label, Stone.InkSoft);
 		where.Name = "OutcomeWhere";
 		where.AutowrapMode = TextServer.AutowrapMode.WordSmart;
 
-		var tiles = new HBoxContainer
-		{
-			Name = "Headline",
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-		};
+		BoxContainer tiles = ResponsiveLayout.ViewportSize(this).X < 540f ? new VBoxContainer() : new HBoxContainer();
+		tiles.Name = "Headline";
+		tiles.MouseFilter = Control.MouseFilterEnum.Ignore;
+		tiles.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 		tiles.AddThemeConstantOverride("separation", narrow ? 8 : 10);
 		tiles.AddChild(BuildTimeTile(result, won));
 		tiles.AddChild(BuildHeadlineTile("xp", result.FinalPlayerLevel.ToString(CultureInfo.InvariantCulture), "Level reached"));
@@ -527,7 +552,7 @@ public partial class GameOverScreen : CanvasLayer
 		string caption;
 		if (won)
 			caption = string.IsNullOrWhiteSpace(boss) ? "Boss defeated" : $"Defeated {boss}";
-		else if (report.BossReached)
+		else if (report.BossReached && result.Outcome != RunOutcome.Quit)
 			caption = string.IsNullOrWhiteSpace(boss) ? "Fell to the boss" : $"Fell to {boss}";
 		else
 			caption = clocked ? $"Boss at {FormatTime(arrival)}" : null;
@@ -685,8 +710,9 @@ public partial class GameOverScreen : CanvasLayer
 		text.AddThemeConstantOverride("separation", 2);
 		line.AddChild(text);
 
-		var amount = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		amount.AddThemeConstantOverride("separation", 10);
+		var amount = new HFlowContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		amount.AddThemeConstantOverride("h_separation", 10);
+		amount.AddThemeConstantOverride("v_separation", 2);
 		// The final figure is set here and wound back to nothing by the tally (WindBackForTally), so a
 		// screen that never counts still says the right thing. The heading face at the Display size:
 		// it is the number the screen is for.
@@ -711,8 +737,7 @@ public partial class GameOverScreen : CanvasLayer
 		return card;
 	}
 
-	// Every unlock as its picture alone, under the New seal; the names, kinds and how each was earned
-	// are one press away in Rewards. Wraps rather than runs off a phone.
+	// Reward pictures are buttons: each opens its name, effect and source. Overflow opens Rewards.
 	private Control BuildUnlockStrip(List<RunUnlockEntry> entries)
 	{
 		var strip = new HFlowContainer { Name = "UnlockStrip", MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -725,20 +750,60 @@ public partial class GameOverScreen : CanvasLayer
 		int most = narrow ? StripMaxIconsNarrow : StripMaxIconsWide;
 		foreach (RunUnlockEntry entry in entries.Take(most))
 		{
+			var button = new Button
+			{
+				Name = $"StripUnlock_{entry.Kind}_{stripIcons.Count}",
+				CustomMinimumSize = new Vector2(80f, 80f),
+				FocusMode = Control.FocusModeEnum.All,
+				TooltipText = entry.Name,
+				MouseDefaultCursorShape = Control.CursorShape.PointingHand,
+			};
+			BonelightSkin.StyleButton(button);
 			Control well = IconWell(UnlockIcon(entry), 64f, NewEdge);
-			well.Name = $"StripUnlock_{entry.Kind}";
-			stripIcons.Add(well);
-			strip.AddChild(well);
+			well.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+			BonelightSkin.MakeSubtreeClickThrough(well);
+			button.AddChild(well);
+			button.Pressed += () => OpenUnlock(entry, button);
+			stripIcons.Add(button);
+			strip.AddChild(button);
 		}
 		if (entries.Count > most)
 		{
-			Label more = CodexRows.MakeText($"+{entries.Count - most} more", ResponsiveLayout.TextRole.Label, Stone.InkSoft);
-			more.AutowrapMode = TextServer.AutowrapMode.Off;
-			more.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+			var more = new Button { Name = "MoreUnlocks", Text = $"+{entries.Count - most} more", FocusMode = Control.FocusModeEnum.All };
+			ResponsiveLayout.SetFont(more, ResponsiveLayout.TextRole.Label);
+			BonelightSkin.StyleButton(more);
+			more.Pressed += () => OpenSection(0);
 			stripIcons.Add(more);
 			strip.AddChild(more);
 		}
 		return strip;
+	}
+
+	private Control unlockReturnFocus;
+	private Control unlockDetail;
+	private RunUnlockEntry selectedUnlock;
+
+	private void OpenUnlock(RunUnlockEntry entry, Control source)
+	{
+		unlockReturnFocus = source;
+		selectedUnlock = entry;
+		openSection = -2;
+		foreach (Section section in sections) section.Page.Visible = false;
+		if (unlockDetail != null && IsInstanceValid(unlockDetail))
+		{
+			unlockDetail.GetParent()?.RemoveChild(unlockDetail);
+			unlockDetail.QueueFree();
+		}
+		unlockDetail = BuildUnlockCard(entry);
+		unlockDetail.Name = "UnlockDetail";
+		sectionPages.AddChild(unlockDetail);
+		sectionTitle.Text = entry.Name;
+		summaryView.Visible = false;
+		sectionView.Visible = true;
+		sectionScroll.ScrollVertical = 0;
+		sectionBack.GrabFocus();
+		GetNodeOrNull<MenuNavigator>(MenuNavigator.NodeName)?.Rescan();
+		SfxPlayer.Global(SfxCatalog.UiOpen);
 	}
 
 	// One row of the summary: a picture, the section's name, a line of what is in it, and a chevron. The
@@ -842,6 +907,7 @@ public partial class GameOverScreen : CanvasLayer
 
 	// The section in place of the summary: Back and its name over a rule, then its page in a scroll.
 	// Every page is built with the summary and kept, so opening one is a visibility change.
+	private VBoxContainer sectionPages;
 	private Control BuildSectionView()
 	{
 		var view = new VBoxContainer
@@ -869,7 +935,7 @@ public partial class GameOverScreen : CanvasLayer
 		head.AddChild(sectionBack);
 		sectionTitle = CodexRows.MakeText(string.Empty, ResponsiveLayout.TextRole.Title, Stone.Heading);
 		sectionTitle.Name = "SectionTitle";
-		sectionTitle.AutowrapMode = TextServer.AutowrapMode.Off;
+		sectionTitle.AutowrapMode = TextServer.AutowrapMode.WordSmart;
 		sectionTitle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 		sectionTitle.VerticalAlignment = VerticalAlignment.Center;
 		head.AddChild(sectionTitle);
@@ -877,14 +943,13 @@ public partial class GameOverScreen : CanvasLayer
 		view.AddChild(new ColorRect { Color = Stone.Rule, CustomMinimumSize = new Vector2(0, 2), MouseFilter = Control.MouseFilterEnum.Ignore });
 
 		var pages = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		sectionPages = pages;
 		foreach (Section section in sections)
 		{
 			section.Page.Visible = false;
 			pages.AddChild(section.Page);
 		}
-		sectionScroll = Scroll("SectionScroll", pages);
-		sectionScroll.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
-		view.AddChild(sectionScroll);
+		view.AddChild(pages);
 		return view;
 	}
 
@@ -893,6 +958,7 @@ public partial class GameOverScreen : CanvasLayer
 		if (index < 0 || index >= sections.Count)
 			return;
 		openSection = index;
+		if (unlockDetail != null && IsInstanceValid(unlockDetail)) unlockDetail.Visible = false;
 		for (int i = 0; i < sections.Count; i++)
 			sections[i].Page.Visible = i == index;
 		sectionTitle.Text = sections[index].Title;
@@ -906,14 +972,16 @@ public partial class GameOverScreen : CanvasLayer
 
 	private void CloseSection()
 	{
-		if (openSection < 0)
+		if (openSection == -1)
 			return;
 		int was = openSection;
 		openSection = -1;
 		ApplyFold();
 		SfxPlayer.Global(SfxCatalog.UiBack);
 		// Back on the row it was opened from.
-		if (was < sections.Count && IsInstanceValid(sections[was].Opener))
+		if (was == -2 && unlockReturnFocus != null && IsInstanceValid(unlockReturnFocus))
+			unlockReturnFocus.GrabFocus();
+		else if (was >= 0 && was < sections.Count && IsInstanceValid(sections[was].Opener))
 			sections[was].Opener.GrabFocus();
 		GetNodeOrNull<MenuNavigator>(MenuNavigator.NodeName)?.Rescan();
 	}
@@ -1017,11 +1085,24 @@ public partial class GameOverScreen : CanvasLayer
 		text.AddChild(CodexRows.MakeText(entry.Name, ResponsiveLayout.TextRole.Body, Stone.Ink));
 		if (!string.IsNullOrWhiteSpace(entry.Source))
 			text.AddChild(CodexRows.MakeText(entry.Source, ResponsiveLayout.TextRole.Label, Stone.InkSoft));
+		string description = UnlockDescription(entry);
+		if (!string.IsNullOrWhiteSpace(description) && description != entry.Source)
+			text.AddChild(KeywordText.Wrap(CodexRows.MakeText(description, ResponsiveLayout.TextRole.Body, Stone.Ink)));
 		if (entry.Currency > 0)
 			text.AddChild(GlyphLine("energy", $"+{Count(entry.Currency)} Arcane Energy", Stone.Reward));
 
 		return card;
 	}
+
+	private static string UnlockDescription(RunUnlockEntry entry) => !string.IsNullOrWhiteSpace(entry.Description) ? entry.Description : entry.Kind switch
+	{
+		RunUnlockKind.Spell => ContentValidator.LoadAllSpells().FirstOrDefault(s => s.Id.Equals(entry.Id, StringComparison.OrdinalIgnoreCase))?.Description,
+		RunUnlockKind.Wizard => CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(entry.Id, StringComparison.OrdinalIgnoreCase))?.StartingPassiveDescription,
+		RunUnlockKind.Boon => BoonCatalog.GetById(entry.Id)?.Description,
+		RunUnlockKind.Chapter => StageCatalog.GetById(entry.Id)?.FlavorText,
+		RunUnlockKind.Deed => AchievementDefinitions.GetById(entry.Id)?.Description,
+		_ => entry.Source,
+	};
 
 	// The New seal: the mutation page's red wax seal and the word, in the flag ink. Every card in
 	// Rewards is new by construction - nothing is listed that the save already had - so the seal is
