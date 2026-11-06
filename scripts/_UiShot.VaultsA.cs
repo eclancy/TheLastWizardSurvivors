@@ -256,7 +256,8 @@ public partial class _UiShot
 							floorClear &= !Director.Game.Terrain.IsSolidCell(cell.X, cell.Y);
 						}
 					Check("the expanded interior has no water or hidden fence cells", floorClear);
-					Shot("the guards woken, the essence behind the magical seal");
+					Shot("the guards woken, three ghosts behind the magical seal");
+					Check("none can be freed through the sealed gate", pound.FreedCount == 0);
 					// The fight, by the player's own hits (Player.DealDamageToEnemy, the path every spell takes).
 					foreach (Enemy guard in pound.Guards)
 						if (IsInstanceValid(guard))
@@ -277,7 +278,7 @@ public partial class _UiShot
 				}
 				case 103:
 				{
-					Shot("the gate open, the essence still waits in the center");
+					Shot("the gate open, the three companions still wait");
 					Check("unsealing removes the gate's physical barrier", !PinfoldGateBlocks(pound));
 					stand = pound.Entrance;
 					Hero.GlobalPosition = stand;
@@ -297,12 +298,31 @@ public partial class _UiShot
 					Hero.Call("MovePlayer", 1.0 / 60.0);
 					Input.ActionRelease("move_up");
 					stand = Hero.GlobalPosition;
-					if (pound.IsOpened)
+					if (stand.Y <= pound.GlobalPosition.Y - 240f)
 					{
-						Check("walking through the gate reaches and claims the center", stand.DistanceTo(pound.EssenceCentre) <= Pinfold.EssenceReach + 8f);
-						step = 6;
-						wait = 1.4f;
+						Check("walking through the gate enters the pen without granting the reward", !pound.IsOpened && pound.FreedCount == 0);
+						step = 105;
 					}
+					return;
+				}
+				case 105:
+				case 106:
+				case 107:
+				{
+					int captive = step - 105;
+					if (pound.IsCaptiveFreed(captive))
+					{
+						Check($"companion {captive + 1} freed on approach", pound.FreedCount == captive + 1);
+						Check("the reward waits for all three companions", pound.IsOpened == (captive == 2));
+						if (captive == 2)
+						{
+							Check("freeing all three also unlocks Laelaps", GlobalStatsManager.IsCharacterUnlocked(GetNode<SaveManager>("/root/SaveManager").Data, "laelaps"));
+							step = 6;
+							wait = 1.4f;
+						}
+						else step++;
+					}
+					else stand = pound.CaptivePosition(captive);
 					return;
 				}
 			}

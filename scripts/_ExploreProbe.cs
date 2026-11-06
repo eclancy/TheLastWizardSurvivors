@@ -458,9 +458,11 @@ public partial class _ExploreProbe : Node
 			{
 				Vector2 p = e.Sites[i].Position;
 				float d = p.DistanceTo(origin);
-				float min = SideEventDirector.EventMinChunks * chunk - slack;
+				float min = e.PlacementMinChunks * chunk - slack;
 				// The lanterns are a chain from the first, so later ones may lie a mire's reach further.
-				float max = SideEventDirector.EventMaxChunks * chunk + slack + (i > 0 ? 2200f : 0f);
+				float max = e.PlacementMaxChunks * chunk + slack + (i > 0 ? 2200f : 0f);
+				if (i == 0 && e is WalkingHutEvent)
+					Check("the hut is surrounded by deep woodland", game.CreateExplorePlacer(0, 6f, 8f).HasWoodedSurrounds(p, WalkingHutEvent.WoodlandRingRadius));
 				Check($"{Of(e.Index)}site {i} ({e.Sites[i].Glyph}) is in the event band", d >= min && d <= max, $"{d:0} px = {d / chunk:0.0} chunks");
 				bool open = terrain == null || (!terrain.IsBlockedAtWorld(p) && !terrain.IsWallAtWorld(p)
 					&& !terrain.IsFenceAtWorld(p) && !terrain.IsHazardAtWorld(p));

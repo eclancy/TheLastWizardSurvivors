@@ -66,7 +66,7 @@ public static class GranaryTithe
 	}
 }
 
-// The Fallow Fields' second side event: the Tithe-Reeve's scale (.ai/chapter-wizards.md 4.2).
+// The Broken Circle's second side event: the Tithe-Reeve's scale (.ai/chapter-wizards.md 4.2).
 //
 // "He takes a tithe of everything that grows here." He counts Medea among what grows: she is held in the reeve's
 // granary against a tithe the village could never pay. The reeve's great scale stands in the granary yard, its door
@@ -81,7 +81,7 @@ public static class GranaryTithe
 //
 // NO FAILURE, ONLY A PRICE. Walking off keeps what is paid: the pan never empties, the arrow stays on the scale, and
 // whatever falls near it later goes on the count - nothing drains, nothing locks, nothing comes at him for it. There
-// is no ring of enemies either: what pays the tithe is the field's own crowd, killed where the reeve can count it.
+// is no ring of enemies either: what pays the tithe is the chapter's own crowd, killed where the reeve can count it.
 //
 // Every SideEvent rule holds: placed by seed, dormant until he arrives, nothing timed by the pace clock, nothing it
 // places in "enemies" (the scale and the granary are sprites with no collision, sorted at their feet as the hut is),

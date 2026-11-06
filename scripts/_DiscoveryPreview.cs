@@ -66,6 +66,8 @@ public partial class _DiscoveryPreview : Node
 				camera.Zoom = Vector2.One * 0.95f;
 			}
 			camera.GlobalPosition = viewAt;
+			// The overview reveals many more terrain chunks than the normal play camera.
+			await Frames(80);
 			await ToSignal(GetTree().CreateTimer(1.5), SceneTreeTimer.SignalName.Timeout);
 			GD.Print($"DISCOVERY PREVIEW {mode}, {trail.TrackPositions.Count} marks, pen {Pinfold.PoundCell}");
 			for (int frame = 0; frame < 40; frame++)

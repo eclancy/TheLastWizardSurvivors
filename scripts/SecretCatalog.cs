@@ -128,6 +128,8 @@ public sealed record SecretDefinition
 	/// sources that spell from this secret's deed; RegressionChecks holds the two to each other.
 	/// </summary>
 	public string SpellUnlockId { get; init; } = "";
+	/// <summary>An accompanying rescue, currently the Pinfold's Laelaps. Existing spell rewards stay intact.</summary>
+	public string CharacterUnlockId { get; init; } = "";
 	/// <summary>The spell's display name, for the deed's reward line. Checked against the spell's resource.</summary>
 	public string SpellName { get; init; } = "";
 	/// <summary>
@@ -295,6 +297,7 @@ public static partial class SecretCatalog
 			Description = secret.FoundLine,
 			RewardText = RewardTextFor(secret),
 			SpellUnlockId = secret.MetaReward == SecretMetaReward.Spell ? secret.SpellUnlockId ?? "" : "",
+			CharacterUnlockId = secret.CharacterUnlockId,
 			Category = AchievementCategory.Exploration,
 			Kind = AchievementKind.Secret,
 			Visibility = AchievementVisibility.Hidden,
@@ -312,6 +315,7 @@ public static partial class SecretCatalog
 	// teaches the Ascension, so the lesson a vault gives depends on the order a save finds them in.
 	private static string RewardTextFor(SecretDefinition secret) => secret.MetaReward switch
 	{
+		SecretMetaReward.Spell when secret.CharacterUnlockId == "laelaps" => "Unlocks Familiar and frees Laelaps",
 		SecretMetaReward.PageOnly when !string.IsNullOrWhiteSpace(secret.RewardText) => secret.RewardText,
 		SecretMetaReward.Spell when Teachings.IsTeacherDeed(AchievementDefinitions.SecretDeedId(secret.Id))
 			=> $"Frees {secret.SpellName} and teaches a lesson",

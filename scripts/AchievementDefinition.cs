@@ -101,6 +101,8 @@ public sealed class AchievementDefinition
 	/// <summary>A boon this achievement grants, if any. Same role as SpellUnlockId.</summary>
 	public string BoonUnlockId { get; init; } = string.Empty;
 	public string CharacterUnlockId { get; init; } = string.Empty;
+	/// <summary>A named-character challenge is listed only after that character is owned.</summary>
+	public string RequiredCharacterId { get; init; } = string.Empty;
 	public int CurrencyReward { get; init; }
 
 	/// <summary>
@@ -208,7 +210,7 @@ public sealed class AchievementDefinition
 public static class AchievementDefinitions
 {
 	/// <summary>
-	/// How many Black Hares a hound must run down in one run of the Broken Circle to free Laelaps (the
+	/// How many Black Hares Laelaps' hound must run down in one run of the Broken Circle (the
 	/// "coursing" deed). Measured in real time on the Circle, opening on the hound (seed 11, 15 minutes):
 	/// the --survivor bot, which spread its picks over six spells and never levelled the hound, coursed 116
 	/// of 344 hares - a third of them, the rest falling to its other spells; the same bot taking only the
@@ -283,7 +285,7 @@ public static class AchievementDefinitions
 		("the_grove", "The Grove Held", "Hold the corrupted grove in the Enchanted Forest until it grows back.", "Unlocks Bramble Seed"),
 		("walking_hut", "The Hut Run Down", "Keep up with the hut that walks the Enchanted Forest until it tires and kneels.", "Frees Baba Yaga"),
 		("the_well", "The Last Coin", "Keep the last clean well in the Fallow Fields from being fouled.", "Unlocks Wishing Coin"),
-		("tithe_scale", "The Tithe Paid", "Pay the Tithe-Reeve's scale its due in the Fallow Fields, until the granary opens.", "Frees Medea"),
+		("tithe_scale", "The Tithe Paid", "Pay the Tithe-Reeve's scale its due beyond the Broken Circle's stones, until the granary opens.", "Frees Medea"),
 		("the_moot", "The Circle Relit", "Relight the runes of the stone circle on the Broken Circle.", "Unlocks Gilded Mote"),
 		("gaolers_key", "The Open Cell", "Carry the Gaoler's key to the locked cell in the Cursed Dungeon.", "Frees Tituba"),
 		("bog_lanterns", "The Lanterns Out", "Snuff the lanterns of the Blighted Swamp and face what tends them.", "Unlocks Contagion"),
@@ -564,24 +566,23 @@ public static class AchievementDefinitions
 			Category = AchievementCategory.Exploration,
 			Measure = c => c.Lifetime.TotalChestsOpened, Target = MortlakeChestTarget,
 		},
-		// THE COURSING. Laelaps, the hound fated to catch whatever it hunted, was set in stone on the high heath
-		// mid-chase, and the black hares of the Broken Circle are his quarry; a hound of the player's own
-		// light finishing the chase frees him. Only a kill by the Familiar taken as a dog counts
+		// THE COURSING. An optional hunt for Laelaps after his rescue in the Fields. Only a kill by the Familiar taken as a dog counts
 		// (Familiar.Strike), and only a Black Hare - the Circle's fast body and the Warrener's summons - so
 		// the deed names one map, one form and one quarry. Measured over one run (RunEvents, then the
 		// lifetime best), so the menu shows the best run so far and the pause screen this run's count.
-		// A Road deed of the Circle: it names the chapter, and frees a wizard secret until the Circle opens.
+		// A Road deed of the Circle, paying currency rather than a second rescue.
 		new()
 		{
 			Id = "coursing", DisplayName = "The Coursing",
-			Description = $"In the Broken Circle, let your Familiar, taken as a hound, run down {CoursingTarget} Black Hares in one run.",
-			RewardText = "Frees Laelaps", CharacterUnlockId = "laelaps",
+			RequiredCharacterId = "laelaps",
+			Description = $"As Laelaps in the Broken Circle, let your hound Familiar run down {CoursingTarget} Black Hares in one run.",
+			RewardText = "50 Arcane Energy", CurrencyReward = 50,
 			Category = AchievementCategory.Challenge,
 			Kind = AchievementKind.Road,
 			Visibility = AchievementVisibility.ChapterOpen,
 			StageId = "stage_10",
-			SealedLine = SomeoneHeldIn("stage_10"),
-			Measure = c => Math.Max(c.Lifetime.BestHaresCoursed, c.Run?.HaresCoursed ?? 0),
+			Measure = c => Math.Max(c.Lifetime.BestLaelapsHaresCoursed,
+				c.Run?.CharacterId == "laelaps" && c.Run.StageId == "stage_10" ? c.Run.HaresCoursed : 0),
 			Target = CoursingTarget,
 		},
 		new()
@@ -760,6 +761,9 @@ public static class AchievementDefinitions
 	public static bool IsListed(AchievementDefinition deed, SaveData save)
 	{
 		if (deed == null || !IsChapterBuilt(deed))
+			return false;
+		if (!string.IsNullOrEmpty(deed.RequiredCharacterId)
+			&& !GlobalStatsManager.IsCharacterUnlocked(save, deed.RequiredCharacterId))
 			return false;
 		switch (deed.Visibility)
 		{

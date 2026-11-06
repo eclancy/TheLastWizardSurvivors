@@ -94,8 +94,8 @@ public static class QuestLog
 		new Prisoner("medea", "the one in the granary", "Someone is kept in the reeve's granary, counted with the grain.", "{0} has walked out of the granary."),
 		// The painter kept to paint the portraits in the Gallery (4.8), who drew himself a door and was never let finish it.
 		new Prisoner("ma_liang", "the painter in the gallery", "Along the walls a line of wet paint keeps running.", "{0} has stepped out of his door."),
-		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
-		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
+		// The hound's light is bound with the other companions inside the Fields' sealed pen.
+		new Prisoner("laelaps", "the hound in the pen", "Three pale companions pace a sealed pen beyond the furrows.", "{0} runs free with his companions."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.
 		new Prisoner("john_dee", "the scattered scholar", "", "{0} has his library back."),
 		// Not a prisoner: the one who took them (.ai/dark-wizard-playable.md), taken in his turn on the hardest

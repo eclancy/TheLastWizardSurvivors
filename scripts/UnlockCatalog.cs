@@ -337,11 +337,10 @@ public static class UnlockCatalog
 		// three beacons at once. Secret until the Sands open; counted at the Throne's gate only.
 		FromEvent("imhotep", UnlockKind.Character, "tomb_beacons", "Sealed in a dry tomb out on the Scorched Sands.",
 			secretUntilStage: "stage_6", finalGateOnly: true),
-		// Medea, counted with the grain in the Tithe-Reeve's granary in the Fallow Fields (4.2). Secret until the Fields
-		// open: the second chapter, opened by Elderbark, so a new save has no way to know she is there (section 1).
+		// Medea's tithe now stands beyond the Broken Circle's stones; Laelaps belongs to the Fields' pen.
 		// Counted at the Throne's gate only, as every chapter wizard is.
-		FromEvent("medea", UnlockKind.Character, "tithe_scale", "Counted with the grain in the Fallow Fields.",
-			secretUntilStage: "stage_9", finalGateOnly: true),
+		FromEvent("medea", UnlockKind.Character, "tithe_scale", "Held against an unpaid tithe beyond the Broken Circle's stones.",
+			secretUntilStage: "stage_10", finalGateOnly: true),
 		// Ma Liang, kept in the Court to paint its portraits (4.8): the Court's second event, the door he sketched in the
 		// Gallery traced dot to dot. Secret until the Court opens, and counted at the Throne's gate only, as every chapter
 		// wizard is.
@@ -360,15 +359,11 @@ public static class UnlockCatalog
 		// collector is earned by collecting: lifetime chests, a stat every save already has.
 		FromAchievementCharacter("john_dee", "mortlake_library",
 			$"Open {AchievementDefinitions.MortlakeChestTarget} chests across your runs."),
-		// FREED BY FINISHING HIS CHASE. Laelaps, the hound fated to catch whatever it hunted, set in stone on
-		// the high heath mid-chase; the black hares there are what he was running down. A hound of the
-		// player's own light finishes it for him (the "coursing" deed). Secret until the Broken Circle
-		// opens - a hint naming a heath the player cannot reach is a spoiler with nothing to act on - and
-		// outside the campaign gate: he is not a wizard, and the deed is optional (OutsideCampaignGate).
-		FromAchievementCharacter("laelaps", "coursing",
-			"The Coursing: in the Broken Circle, let your Familiar, taken as a hound, run down "
-			+ $"{AchievementDefinitions.CoursingTarget} Black Hares in one run.",
-			secretUntilStage: "stage_10", outsideCampaignGate: true),
+		// Free the hound, cat and bird in the Pinfold to earn both Familiar and Laelaps.
+		// Keep his existing optional campaign-gate status so this change cannot close a player's road.
+		FromAchievementCharacter("laelaps", AchievementDefinitions.SecretDeedId(SecretCatalog.PinfoldId),
+			"Hidden somewhere in the Fallow Fields.",
+			secretUntilStage: "stage_9", outsideCampaignGate: true),
 		// TAKEN ON THE HARDEST ROAD (.ai/dark-wizard-playable.md). The dark wizard himself, the reward of beating
 		// every chapter's boss on Hardcore, the Throne's among them (the_taker_taken; Eric, 2026-11-03: "all levels on
 		// hardcore"). Outside the campaign gate - he is not one of the
