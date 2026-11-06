@@ -163,7 +163,7 @@ def body_hedge_bank(c):
 # Reuse the existing sand-cloth ramp (art-direction section 3); no arbitrary desaturation colours.
 matte.add_ramp("sand", ["#D8CCA4", "#A88C62", "#7C6040", "#54362E", "#341E24"])
 bl.MATERIALS.setdefault("sand", ["#D8CCA4", "#A88C62", "#7C6040", "#54362E", "#341E24"])
-FIELD_LOOK = "original"
+FIELD_LOOK = "faded_gold"
 FIELD_LOOKS = {
     # soil, shadow, ridge, straw, fallow ground, fallow patch
     "weathered": ("#54362E", "#341E24", "#7C6040", "#A88C62", "#46544C", "#2C3834"),

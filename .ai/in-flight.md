@@ -543,14 +543,18 @@ things come up; strike what lands.**
    saved loadouts and the boon/level-up UI at Windows and phone sizes. This is next-week design/balance work,
    not implemented in 0.13.2.
 
-42. **Fields terrain palette options** (Eric, 2026-11-06). The tilled soil and dirt look dark,
+42. ~~**Fields terrain palette options**~~ (Eric, 2026-11-06). **Applied: E — Faded Gold.**
+   Eric selected the original dark field with clearer furrows. Regenerated the 36 stubble and 36
+   furrow tiles plus the shared atlas, keeping the original texture patterns, edge masks and layout.
+   Palette generation, tile/atlas mask checks, in-game inspection and full content validation passed
+   (0 errors, the existing Test Wizard warning).
+   The tilled soil and dirt looked dark,
    boring and too similar. First studies A/B/C were too far from the original. Closer variants
    D/E/F keep the original fine stubble and row patterns: **D Soft Umber**, **E Faded Gold**
    (closest to the original, clearer furrows), **F Cool Loam** (cooler/desaturated). Compare with
    `python tools/art/fields_studies.py --closer` in `build/visuals/fields-options-close.png`.
-   **Awaiting Eric's palette selection; shipping ground textures remain unchanged.**
-   `terrain_fields.FIELD_LOOK` supports these studies plus the original; regenerate only stubble
-   and furrow with `python tools/art/tiles.py stubble furrow` after choosing. All palette stops
+   `terrain_fields.FIELD_LOOK` is now `faded_gold`; the other studies and original remain available.
+   Regenerate only stubble and furrow with `python tools/art/tiles.py stubble furrow`. All palette stops
    are existing contract colours, including the already approved sand-cloth row reused as soil.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
