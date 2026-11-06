@@ -181,6 +181,9 @@ public partial class _TitleLoadProbe : Node
 				}
 				GD.Print("TITLEPROBE prepared Powers, Achievements and Options open and close");
 				GD.Print("TITLEPROBE lower-right Quit and keyboard navigation pass");
+				CheckFooter(title);
+				if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--display-options") >= 0)
+					await CheckDisplayOptions(title);
 				if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--quit") >= 0)
 				{
 					GD.Print("TITLEPROBE activating Quit");
@@ -193,5 +196,97 @@ public partial class _TitleLoadProbe : Node
 			throw new Exception("Menu did not appear");
 		}
 		catch (Exception ex) { GD.PrintErr(ex); GetTree().Quit(1); }
+	}
+
+	private void CheckFooter(TitleScreen title)
+	{
+		Rect2? first = null;
+		foreach (string name in new[] { "OptionsButton", "SpellIndexButton", "QuitButton" })
+		{
+			Rect2 rect = (title.FindChild(name, true, false) as Button).GetGlobalRect();
+			if (!GetViewport().GetVisibleRect().Encloses(rect)) throw new Exception($"{name} extends off screen");
+			if (first is Rect2 baseline && (Math.Abs(rect.Position.Y - baseline.Position.Y) > 1f || Math.Abs(rect.Size.Y - baseline.Size.Y) > 1f))
+				throw new Exception("Bottom buttons do not share one baseline and height");
+			first = rect;
+		}
+	}
+
+	private void CheckFilledWindow(TitleScreen title)
+	{
+		Rect2 drawn = GetViewport().GetFinalTransform() * GetViewport().GetVisibleRect();
+		Vector2I physical = DisplayServer.WindowGetSize();
+		if (drawn.Position.Length() > 1f || drawn.End.DistanceTo(physical) > 2f)
+			throw new Exception($"Viewport leaves bars: {drawn}, window {physical}");
+		var background = title.FindChild("LandscapeBackdrop", false, false) as Control;
+		if (background == null || !background.GetGlobalRect().Grow(1f).Encloses(GetViewport().GetVisibleRect()))
+			throw new Exception("The title forest does not cover the expanded viewport");
+	}
+
+	private async Task DrawFrames(int count = 8)
+	{
+		for (int i = 0; i < count; i++) await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+	}
+
+	private async Task CheckDisplayOptions(TitleScreen title)
+	{
+		(title.FindChild("OptionsButton", true, false) as Button).EmitSignal(BaseButton.SignalName.Pressed);
+		var fullscreen = title.FindChild("FullscreenToggle", true, false) as CheckButton;
+		var sizes = title.FindChild("WindowResolution", true, false) as OptionButton;
+		if (fullscreen == null || sizes == null) throw new Exception("Display controls are missing");
+		fullscreen.ButtonPressed = true;
+		await DrawFrames();
+		if (!DisplayProfile.IsFullscreen || DisplayServer.WindowGetSize() != DisplayProfile.NativeResolution || !sizes.Disabled)
+			throw new Exception("Fullscreen is not native, or window sizes remain enabled");
+		CheckFilledWindow(title);
+		fullscreen.GrabFocus();
+		Input.ParseInputEvent(new InputEventKey { Keycode = Key.Down, Pressed = true });
+		Input.ParseInputEvent(new InputEventKey { Keycode = Key.Down, Pressed = false });
+		await DrawFrames(1);
+		if (GetViewport().GuiGetFocusOwner()?.Name != "DamageNumbersToggle")
+			throw new Exception("Fullscreen navigation gets stuck on the disabled window-size control");
+		GetViewport().GetTexture().GetImage().SavePng($"{OS.GetUserDataDir()}/fullscreen-options.png");
+		(title.FindChild("BackFromOptionsButton", true, false) as Button).EmitSignal(BaseButton.SignalName.Pressed);
+		await DrawFrames();
+		CheckFooter(title);
+		GetViewport().GetTexture().GetImage().SavePng($"{OS.GetUserDataDir()}/fullscreen-native.png");
+		(title.FindChild("OptionsButton", true, false) as Button).EmitSignal(BaseButton.SignalName.Pressed);
+		fullscreen.ButtonPressed = false;
+		await DrawFrames();
+		if (DisplayProfile.IsFullscreen || sizes.Disabled) throw new Exception("Windowed mode did not enable size selection");
+		fullscreen.GrabFocus();
+		Input.ParseInputEvent(new InputEventKey { Keycode = Key.Down, Pressed = true });
+		Input.ParseInputEvent(new InputEventKey { Keycode = Key.Down, Pressed = false });
+		await DrawFrames(1);
+		if (GetViewport().GuiGetFocusOwner() != sizes) throw new Exception("Windowed navigation skips the resolution chooser");
+		int choice = 1;
+		for (int i = 1; i < sizes.ItemCount; i++) if (sizes.GetItemText(i) == "1280 × 720") choice = i;
+		string[] dimensions = sizes.GetItemText(choice).Split('×');
+		Vector2I wanted = new(int.Parse(dimensions[0].Trim()), int.Parse(dimensions[1].Trim()));
+		sizes.Select(choice);
+		sizes.EmitSignal(OptionButton.SignalName.ItemSelected, choice);
+		await DrawFrames();
+		if (DisplayServer.WindowGetSize() != wanted) throw new Exception("The selected window resolution was not applied");
+		SaveData saved = SaveData.FromVariant(GetNode<SaveManager>("/root/SaveManager").Data.ToGodotDictionary());
+		if (saved.Fullscreen || saved.WindowWidth != wanted.X || saved.WindowHeight != wanted.Y)
+			throw new Exception("Display preferences did not survive serialization");
+		GetViewport().GetTexture().GetImage().SavePng($"{OS.GetUserDataDir()}/resolution-options.png");
+		(title.FindChild("BackFromOptionsButton", true, false) as Button).EmitSignal(BaseButton.SignalName.Pressed);
+		foreach (Vector2I size in new[] { new Vector2I(1280,720), new Vector2I(1280,800), new Vector2I(1024,768), new Vector2I(1600,720) })
+		{
+			DisplayServer.WindowSetSize(size);
+			await DrawFrames();
+			CheckFilledWindow(title);
+			CheckFooter(title);
+			GetViewport().GetTexture().GetImage().SavePng($"{OS.GetUserDataDir()}/display-{size.X}x{size.Y}.png");
+		}
+		for (int i = 0; i < 2; i++)
+		{
+			Input.ParseInputEvent(new InputEventKey { Keycode = Key.F11, Pressed = true });
+			Input.ParseInputEvent(new InputEventKey { Keycode = Key.F11, Pressed = false });
+			await DrawFrames();
+		}
+		if (DisplayServer.WindowGetSize() != wanted || DisplayProfile.IsFullscreen)
+			throw new Exception("F11 did not restore the selected window size");
+		GD.Print("TITLEPROBE native fullscreen, saved window sizes, F11, filled aspect ratios and aligned footer pass");
 	}
 }

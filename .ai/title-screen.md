@@ -450,6 +450,28 @@ a fifth finger, and run past the far side of the fingers it was one again.
 
 ## The title screen is also the menu
 
+### Desktop sizes and bottom controls (2026-11-06)
+
+Desktop now uses **Expand**, preserving the picture's proportions while filling 16:9, 16:10,
+4:3, 3:2 and ultrawide windows. Keep Height letterboxed taller screens. Fullscreen uses the
+current display's native size with Godot's exclusive-fullscreen mode. Options starts with Display:
+Fullscreen, a window-size dropdown (disabled in fullscreen), then the native resolution readout.
+Automatic fits a 1600x900 window to the usable desktop; explicit sizes are filtered to fit, and
+an oversized preference from another display is clamped. F11/Alt+Enter use the same saved mode
+and restore the selected window size. SaveData.Fullscreen/WindowWidth/WindowHeight are settings,
+preserved by story resets and optional when loading older saves. Tool launches keep their requested
+window geometry. Mobile retains the portrait canvas and its existing scaling.
+
+**The footer is one row:** Options, Evolution Codex, flexible space, Quit on desktop; three equal
+buttons on portrait. Heights and baselines match, with consistent bottom insets. The version and
+difficulty sit above the row. The footer remains safe-area-aware and keyboard/pad navigable.
+
+**Artwork coverage:** `python tools/art/title_backdrop.py` generates a static forest without
+lettering and a separate lettering layer from the existing wide generator. The forest covers the
+expanded viewport with nearest filtering and whole screen pixels when extra coverage is needed;
+the wordmark, wizard and ward keep their core layout. The eyes move with their forest. Existing
+wide animation frames and the portrait artwork are unchanged by the generator.
+
 Pressing a key no longer changes scene. `TitleScreen.ShowMenu` reveals its **already prepared child**
 `MainMenu`, gives it focus and hides the prompt. The opening press is consumed so it cannot also
 activate Start Run.

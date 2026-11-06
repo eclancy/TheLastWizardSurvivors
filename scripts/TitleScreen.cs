@@ -40,6 +40,7 @@ public partial class TitleScreen : Control
 
 	private Texture2D[] flamesFar, flamesNear, figure, ward;
 	private TextureRect flamesFarRect, flamesNearRect, figureRect, wardRect;
+	private TextureRect landscapeBackdrop;
 
 	private float flameClock, wardClock;
 	private int flameStep, wardStep;                // walks 0,1,2,1 so the pulse turns round rather than snapping
@@ -104,6 +105,7 @@ public partial class TitleScreen : Control
 		AddVersionLabel();
 		PlacePrompt();
 		GetViewport().SizeChanged += PlacePrompt;
+		GetViewport().SizeChanged += FitLandscapeBackdrop;
 		GetNode<CanvasItem>("TitleImage/Prompt").Visible = false;
 
 		// The phone cannot update itself, so it only says when there is something newer, and never
@@ -132,6 +134,7 @@ public partial class TitleScreen : Control
 		var viewport = GetViewport();
 		if (viewport != null)
 			viewport.SizeChanged -= PlacePrompt;
+		if (viewport != null && IsInstanceValid(viewport)) viewport.SizeChanged -= FitLandscapeBackdrop;
 	}
 
 	// PRESS ANY BUTTON sits near the bottom of what the screen actually shows, not at a fixed row
@@ -293,10 +296,10 @@ public partial class TitleScreen : Control
 			AnchorRight = 0f,
 			AnchorTop = 1f,
 			AnchorBottom = 1f,
-			OffsetLeft = 14f,
-			OffsetRight = 214f,
-			OffsetTop = -40f,
-			OffsetBottom = -12f,
+			OffsetLeft = 20f,
+			OffsetRight = 220f,
+			OffsetTop = -120f,
+			OffsetBottom = -92f,
 			VerticalAlignment = VerticalAlignment.Bottom,
 			MouseFilter = MouseFilterEnum.Ignore,
 		};
@@ -564,13 +567,40 @@ public partial class TitleScreen : Control
 		image.OffsetRight = WideArtHalfWidth;
 		image.OffsetTop = -WideArtHalfHeight;
 		image.OffsetBottom = WideArtHalfHeight;
-		image.Texture = LoadLayer("back-a");
-		SetStatic("TitleImage/BackB", "back-b");
-		SetStatic("TitleImage/Fore", "fore");
+		image.Texture = LoadLayer("lettering");
+		GetNode<CanvasItem>("TitleImage/BackB").Hide();
+		GetNode<CanvasItem>("TitleImage/Fore").Hide();
+		landscapeBackdrop = new TextureRect
+		{
+			Name = "LandscapeBackdrop", Texture = LoadLayer("backdrop"),
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, TextureFilter = TextureFilterEnum.Nearest,
+			MouseFilter = MouseFilterEnum.Ignore,
+		};
+		AddChild(landscapeBackdrop);
+		MoveChild(landscapeBackdrop, image.GetIndex());
+		FitLandscapeBackdrop();
 		Show(flamesFarRect, flamesFar, 0);
 		Show(flamesNearRect, flamesNear, 0);
 		Show(figureRect, figure, 0);
 		Show(wardRect, ward, 0);
+	}
+
+	private void FitLandscapeBackdrop()
+	{
+		if (landscapeBackdrop?.Texture == null) return;
+		Vector2 view = GetViewportRect().Size;
+		Vector2 source = landscapeBackdrop.Texture.GetSize();
+		float pixelsPerUnit = GetViewport().GetFinalTransform().X.Length();
+		float cover = Mathf.Max(2f, Mathf.Max(view.X / source.X, view.Y / source.Y));
+		// Existing 16:9 composition stays at x2. Extra coverage uses whole screen pixels.
+		if (cover > 2f) cover = Mathf.Ceil(cover * pixelsPerUnit) / pixelsPerUnit;
+		Vector2 drawn = source * cover;
+		landscapeBackdrop.Position = ((view - drawn) * 0.5f * pixelsPerUnit).Round() / pixelsPerUnit;
+		landscapeBackdrop.Size = drawn;
+		Control image = GetNode<Control>("TitleImage");
+		Control eyes = GetNode<Control>("TitleImage/Eyes");
+		eyes.Position = landscapeBackdrop.Position - image.Position;
+		eyes.Scale = Vector2.One * (cover / ArtScale);
 	}
 
 	private void SetStatic(string path, string layer)

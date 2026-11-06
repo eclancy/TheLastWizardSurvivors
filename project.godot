@@ -37,7 +37,7 @@ window/size/viewport_height.mobile=1280
 window/size/window_width_override=1600
 window/size/window_height_override=900
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep_height"
+window/stretch/aspect="expand"
 window/stretch/aspect.mobile="keep_width"
 window/handheld/orientation=1
 
