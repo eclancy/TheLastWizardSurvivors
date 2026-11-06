@@ -1028,6 +1028,25 @@ public static partial class RegressionChecks
 				warnings.Add($"Familiar: '{form.SelectedVariantId}' {(grants ? "grants" : "grants nothing")}; only the cat grants the wizard anything.");
 		}
 		ValidateCoursing(warnings);
+		// Every level and branch must honor the pack rule; Amount is intentionally absent from
+		// FireFamiliar. Test the resource as well as the live probe, so a later table edit cannot
+		// quietly return the level-three second hound.
+		SpellData dog = ContentValidator.LoadAllSpellForms().FirstOrDefault(s => s.SelectedVariantId == Familiar.DogId);
+		if (dog != null)
+		foreach (SpellEvolutionOption four in dog.Level4Options)
+		foreach (SpellEvolutionOption eight in dog.Level8Options)
+		{
+			var run = (SpellData)dog.Duplicate();
+			run.ApplyEvolution(four);
+			run.ApplyEvolution(eight);
+			for (int level = 1; level <= 8; level++)
+			{
+				run.CurrentLevel = level;
+				int expectedCount = level >= 4 && four.Id == Familiar.LittermatesId ? 3 : 1;
+				if (run.GetProjectileCountAtLevel(level) != expectedCount)
+					warnings.Add($"Familiar: {four.Id}/{eight.Id} at level {level} must have {expectedCount} hounds.");
+			}
+		}
 	}
 
 	// THE COURSING: Laelaps hunts Black Hares in the Circle; the Pinfold now owns his rescue.

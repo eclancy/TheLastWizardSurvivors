@@ -3295,8 +3295,10 @@ public static class SpellEvolutionCatalog
 		// and the axe's 475; at +10%, 480 - the dog the most damage of the three forms, at the band's top.
 		const float greatDamage = 1.2f;
 		const float greatJaws = 1.4f;
-		const int littermates = 1;
-		const float litterDamage = 0.85f;
+		const int littermates = 2;
+		// One hound now carries the former pair's bite budget. Three at 45% keep the pack's
+		// total near the old three at 85%, while trading heavy bites for coverage and bolt catches.
+		const float litterDamage = 0.45f;
 		const float cerberusDamage = 1.1f;
 		const float annwnDamage = 2.2f;
 		const float annwnJaws = 1.5f;
@@ -3306,7 +3308,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.GreatHoundId,
 			DisplayName = "Great Hound",
-			Description = $"It grows into a great hound: +{(greatDamage - 1f) * 100f:0}% damage, jaws {(greatJaws - 1f) * 100f:0}% wider to maul what stands beside its quarry.",
+			Description = $"Bites deal +{(greatDamage - 1f) * 100f:0}% damage. Jaws are {(greatJaws - 1f) * 100f:0}% wider, catching enemies beside its target.",
 			MilestoneLevel = 4,
 			DamageMultiplier = greatDamage,
 			AreaMultiplier = greatJaws,
@@ -3325,17 +3327,14 @@ public static class SpellEvolutionCatalog
 			"The hound runs cold",
 			"Whatever it bites is dragged to a crawl.");
 		rime.AreaMultiplier = rimeBreath;
-		rime.Description += $" Frost breath: jaws {(rimeBreath - 1f) * 100f:0}% wider.";
+		rime.Description = $"Bite damage +{(rime.DamageMultiplier - 1f) * 100f:0}%. Slows enemies by {(1f - rime.RiderMagnitude) * 100f:0}% for {rime.RiderSeconds:0.#} s. Jaw width +{(rimeBreath - 1f) * 100f:0}%.";
 		spell.Level4Options.Add(rime);
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = Familiar.LittermatesId,
 			DisplayName = "Littermates",
-			// Since 2026-10-30 every hound after the first is a pup (Familiar.ResolvePackLook): taken at level 4,
-			// with the level 3 hound already out, that is the main hound and two pups.
-			Description = $"+{littermates} hound; every hound after the first is a pup with its own quarry. "
-				+ $"Every hound bites {(1f - litterDamage) * 100f:0}% softer.",
+			Description = $"Adds {littermates} pups: 3 hounds total. Each hunts its own target. All hounds deal {(1f - litterDamage) * 100f:0}% less bite damage.",
 			MilestoneLevel = 4,
 			ProjectileCountBonus = littermates,
 			DamageMultiplier = litterDamage,
@@ -3349,7 +3348,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.CerberusId,
 			DisplayName = "Cerberus",
-			Description = $"Three heads: every bite is {Familiar.CerberusHeads} - its quarry and the two beside it - for +{(cerberusDamage - 1f) * 100f:0}% damage.",
+			Description = $"Each bite hits up to {Familiar.CerberusHeads} enemies near its target. Bite damage +{(cerberusDamage - 1f) * 100f:0}%.",
 			MilestoneLevel = 8,
 			DamageMultiplier = cerberusDamage,
 			BonusElementWeights = new() { { "Arcane", 1 } },
@@ -3368,7 +3367,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.AnnwnId,
 			DisplayName = "Hound of Annwn",
-			Description = $"A white hound of the otherworld: bites {(annwnDamage - 1f) * 100f:0}% harder and {(annwnJaws - 1f) * 100f:0}% wider, elites and bosses first, {Familiar.AnnwnEliteMultiplier:0.#}x on them.",
+			Description = $"Hunts elites and bosses first, dealing {Familiar.AnnwnEliteMultiplier:0.#}x damage to them. Bite damage +{(annwnDamage - 1f) * 100f:0}%, jaw width +{(annwnJaws - 1f) * 100f:0}%.",
 			MilestoneLevel = 8,
 			DamageMultiplier = annwnDamage,
 			AreaMultiplier = annwnJaws,
@@ -3401,7 +3400,7 @@ public static class SpellEvolutionCatalog
 			Id = Familiar.RavenId,
 			// 2026-10-30, Eric: "'Raven of your light' doesn't make sense. Rename this and describe it differently."
 			DisplayName = "Great Raven",
-			Description = $"It grows into a great raven: {(ravenDamage - 1f) * 100f:0}% harder, its beak {(ravenBeak - 1f) * 100f:0}% wider to catch what is beside its target.",
+			Description = $"Pecks deal +{(ravenDamage - 1f) * 100f:0}% damage. Its beak is {(ravenBeak - 1f) * 100f:0}% wider, hitting enemies beside its target.",
 			MilestoneLevel = 4,
 			DamageMultiplier = ravenDamage,
 			AreaMultiplier = ravenBeak,
@@ -3422,8 +3421,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.MurderId,
 			DisplayName = "Murder of Crows",
-			Description = $"The flock grows: +{murder} crow, each with its own quarry; every crow pecks "
-				+ $"{(1f - murderDamage) * 100f:0}% softer.",
+			Description = $"Adds {murder} crow with its own target. All crows deal {(1f - murderDamage) * 100f:0}% less peck damage.",
 			MilestoneLevel = 4,
 			ProjectileCountBonus = murder,
 			DamageMultiplier = murderDamage,
@@ -3440,7 +3438,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.MorriganId,
 			DisplayName = "The Morrigan",
-			Description = $"A peck kills any enemy under {Familiar.MorriganExecuteFraction * 100f:0}% health outright, and lands {Familiar.MorriganEliteMultiplier:0.#}x on elites. +{(morriganDamage - 1f) * 100f:0}% damage.",
+			Description = $"Peck damage +{(morriganDamage - 1f) * 100f:0}%. Below {Familiar.MorriganExecuteFraction * 100f:0}% health, ordinary enemies die instantly; elites and bosses take {Familiar.MorriganEliteMultiplier:0.#}x damage.",
 			MilestoneLevel = 8,
 			DamageMultiplier = morriganDamage,
 			BonusElementWeights = new() { { "Arcane", 1 } },
@@ -3454,7 +3452,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.GriffinId,
 			DisplayName = "Griffin",
-			Description = $"A griffin: each swoop strikes all along its line for +{(griffinDamage - 1f) * 100f:0}% damage, {(griffinCooldown - 1f) * 100f:0}% less often than pecks.",
+			Description = $"Swoops through every enemy along its path. Damage +{(griffinDamage - 1f) * 100f:0}%; time between attacks +{(griffinCooldown - 1f) * 100f:0}%.",
 			MilestoneLevel = 8,
 			DamageMultiplier = griffinDamage,
 			CooldownMultiplier = griffinCooldown,

@@ -2012,6 +2012,14 @@ reading its health lost (10,425 against Riposte's 780) as the card's.
 
 ## 2g. The Familiar - the dog, the crow and the cat (2026-10-28)
 
+**0.14.0 hound revision (2026-11-06):** the dog stays at one hound at every level and Ascension.
+Only Littermates adds companions: two pups, three hounds total. Amount still adds none. Level one
+and two stay at 16 and 20 damage; level three becomes 48, and each later level adds 8 (88 at level
+eight), moving the former pair's damage budget into one bite. Littermates makes every bite 55%
+softer: three at 45% gives 1.35 times one hound, compared with the old pack's 1.275 times the
+two-hound budget. Crow and cat numbers are unchanged. The older measurements below describe the
+previous two-hound progression. Cards use short sentences and explicitly name the Littermates rule.
+
 Eric: *"when you FIRST take familiar, you should be able to select your familiar. each has it's own
 advantages - crow moves faster, cat gives passive bonuses, dog does the most direct damage. they each
 have their own mutations/ascensions"*. The second spell on the forms mechanism

@@ -200,10 +200,10 @@ public partial class MenuFocusHighlight : Control
 
 	private void Refresh()
 	{
-		// Hover always draws. Focus draws only when the pointer is not the thing being used, which
+		// Hover draws only for pointer input. Focus draws for keyboard/pad navigation, which
 		// is what keeps a pad user from seeing their selection ringed in one place and the mouse
 		// cursor ringing another.
-		bool wanted = (hovered || (focused && !PointerActive)) && !IsWatchedDisabled();
+		bool wanted = (PointerActive ? hovered : focused) && !IsWatchedDisabled();
 		if (wanted == Visible)
 			return;
 

@@ -5650,7 +5650,7 @@ public partial class Player : CharacterBody2D
 
 	// The Familiar (scripts/Familiar.cs): a pack of hounds that lives in the arena all run. The cooldown
 	// casts nothing itself - it hands every hound one bite, so it IS the bite rate, and keeps the pack
-	// current through level-ups and milestones. Amount is more hounds. Maintained, never Fired: there is
+	// current through level-ups and milestones. Littermates adds hounds; Amount adds none. Maintained, never Fired: there is
 	// no moment of casting to cue; each bite snaps on its own.
 	private Familiar? familiarPack;
 
@@ -5666,11 +5666,8 @@ public partial class Player : CharacterBody2D
 			arena.AddChild(TagSpell(familiarPack));
 		}
 
-		// One hound to start; the second is the level 3 upgrade (SpellData_Familiar.tres), a third is
-		// Littermates. Amount - the shop's, a relic's - adds none: added from level 1 it handed a save
-		// with Amount bought two hounds before the spell had earned one (Eric, 2026-10-28: "you should
-		// only start with one familiar, getting 2 of them should be an upgrade"), and a hound is a whole
-		// second attacker, not one more bolt. The pack grows by the spell's own levels and milestones.
+		// Hounds stay at one unless Littermates adds two pups. The crow keeps its own level-up
+		// count; the cat stays alone. Amount from shops, relics or elements adds no companions.
 		int hounds = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel));
 		// The creatures and their effects are drawn in their own colours and repaint their element path
 		// themselves, so they take only a Legendary's gold from the visual tint, never a node scale.
@@ -8339,7 +8336,7 @@ public partial class Player : CharacterBody2D
 	{
 		// A form that deals no damage (the Familiar's cat, 2026-10-31) shows none rather than "DMG 0".
 		var parts = new List<string>();
-		if (form.GetDamageAtLevel(1) > 0)
+		if (form.BaseDamage > 0)
 			parts.Add($"DMG {form.GetDamageAtLevel(1)}");
 		parts.Add($"CD {form.GetCooldownAtLevel(1):0.0#}s");
 		int count = form.GetProjectileCountAtLevel(1);
