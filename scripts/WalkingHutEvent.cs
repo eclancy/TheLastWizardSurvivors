@@ -208,13 +208,15 @@ public partial class WalkingHutEvent : SideEvent
 		oldPrints.Add(new Print { At = at, Direction = PrintDirection(travel), LaidAt = -1f });
 
 	/// <summary>
-	/// The sheet column for a print laid walking along <paramref name="travel"/>. A bird's print is an arrow that points
-	/// BACK along its walk (the heel is the point, the toes the fletching), and a player reads an arrow before he reads a
-	/// foot - so the hut's prints are laid toes-back, and every one of them points the way it went: they lead to it.
+	/// The sheet column for a print laid walking along <paramref name="travel"/>: the middle toe points the way
+	/// it walked. (They were laid toes-back at first - the print read as an arrow onward, the heel its point -
+	/// but a chicken track whose toes point away from its walk reads as backwards tracks however it runs;
+	/// Eric, 2026-11-05: "the toes point opposite the hut's direction of travel". The trail still leads to it,
+	/// the way real tracks do: by being followed in the direction the toes point.)
 	/// </summary>
 	public static int PrintDirection(Vector2 travel)
 	{
-		float a = travel.Angle() + Mathf.Pi;
+		float a = travel.Angle();
 		int k = Mathf.RoundToInt(a / (Mathf.Pi / 4f));
 		return ((k % 8) + 8) % 8;
 	}
