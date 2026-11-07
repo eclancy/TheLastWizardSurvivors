@@ -510,6 +510,18 @@ public partial class SecretDirector : Node
 	/// <summary>True once this secret's tell has been seen, this run or any before (for probes and the pause page).</summary>
 	public bool IsGlimpsed(string secretId) => glimpsed.Contains(secretId);
 
+	/// <summary>
+	/// The teaching trail was stepped on (TeachingTrail.TickBeacon): the site counts as seen exactly
+	/// as walking to its tell would - the glimpse reaches the save, and the secret_seen breath plays
+	/// once, which is the "noticed" moment's own cue.
+	/// </summary>
+	public void NoticeTrail(SecretSite site)
+	{
+		if (site == null || glimpsed.Contains(site.SecretId))
+			return;
+		Glimpse(site);
+	}
+
 	// --- rewards ----------------------------------------------------------------------------------------
 
 	/// <summary>

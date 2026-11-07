@@ -741,8 +741,10 @@ public partial class WorldMap : Control
 		panel.AddChild(column);
 		column.AddChild(CodexRows.MakeText("What he keeps here", ResponsiveLayout.TextRole.Title, ink.Ink));
 		bool secret = reward.Kind is StageRewardKind.Secret or StageRewardKind.Keepsake;
+		// A glimpsed landmark's hint stops being coy (Teachings.LandmarkHint, in-flight 49).
+		bool glimpsed = save?.HasGlimpsedSecret(reward.Id) == true;
 		string hint = secret && !StageRewards.IsFound(save, reward) && Teachings.LandmarkHint(reward.Id).Length > 0
-			? Teachings.LandmarkHint(reward.Id) : StageRewards.Describe(save, reward, NameOf);
+			? Teachings.LandmarkHint(reward.Id, glimpsed) : StageRewards.Describe(save, reward, NameOf);
 		column.AddChild(CodexRows.MakeText(hint, ResponsiveLayout.TextRole.Body, ink.Ink));
 		return panel;
 	}

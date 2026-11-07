@@ -5826,8 +5826,11 @@ public partial class _UiShot : Node
 				}
 				case 2:
 				{
+					// The 2026-11-06 rule was "never an arrow"; since 2026-11-07 (in-flight 49) the rule
+					// is "subtle until found, obvious once noticed": the teaching marker is marked
+					// exactly when the trail has been noticed - here, by standing at the tell itself.
 					if (teachingTrail != null)
-						Check("tracks never reveal a direction arrow", !PointsOfInterest.Live.Any(p => p.IsTeaching));
+						Check("the teaching marker follows noticing", PointsOfInterest.Live.Any(p => p.IsTeaching && p.Marked) == teachingTrail.Noticed);
 					Check($"seen at its foot ({Hero.GlobalPosition.DistanceTo(vault.TellPosition):0} px from the glint)", Director.IsGlimpsed(vault.SecretId));
 					Check("and the seen mark is on the save", save.HasGlimpsedSecret(vault.SecretId));
 					// The far tell: crystals thicker near it than far from it, and cracked ones only near.
