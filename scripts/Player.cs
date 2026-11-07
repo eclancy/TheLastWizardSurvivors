@@ -1184,8 +1184,9 @@ public partial class Player : CharacterBody2D
 	{
 		if (!spellCatalog.ContainsKey("magic_missile"))
 		{
-			// SpellData.tres's numbers (12 every 0.8 s since the 2026-11-03 nerf, .ai/protagonist.md section 8).
-			AddSpellToCatalog(CreateFallbackSpellData("magic_missile", "Magic Missile", 12, 0.8f, 1, 500f, "Fires a fast projectile at nearby enemies."));
+			// SpellData.tres's numbers (a fan of three at 5 a dart every 0.8 s since 2026-11-07; the
+			// cadence is the 2026-11-03 nerf, .ai/protagonist.md section 8).
+			AddSpellToCatalog(CreateFallbackSpellData("magic_missile", "Magic Missile", 5, 0.8f, 3, 340f, "Looses a fan of seeking darts at nearby enemies."));
 		}
 
 		if (!spellCatalog.ContainsKey("aegis_ward"))
@@ -4438,19 +4439,26 @@ public partial class Player : CharacterBody2D
 
 			for (int p = 0; p < shots && magicMissileTargets.Count > 0; p++)
 			{
-				// One missile per enemy, nearest first. These home, so fanning them by
-				// angle would only bend them back onto the same body - spreading the
-				// volley across targets is what actually makes extra missiles count.
-				// Wraps when the crowd is thinner than the volley.
+				// One missile per enemy, nearest first - spreading the volley across targets is what
+				// makes extra missiles count. Wraps when the crowd is thinner than the volley.
 				Node2D shotTarget = magicMissileTargets[p % magicMissileTargets.Count];
 				if (!IsInstanceValid(shotTarget))
 					continue;
 
-				// A count's darts leave fanned off their marks, alternately to either side, and curve in: the volley
-				// opens like a hand before it closes on them. An orb never homes, so it is loosed straight.
+				// Every volley's darts leave fanned off their marks and curve in: the volley opens like a
+				// hand before it closes on them - the indirect path (Eric, 2026-11-07), and what keeps
+				// three darts at one body from flying stacked down one line. A count fans alternately to
+				// either side (its hand is as wide as the crowd); an ordinary volley fans from its centre.
+				// An orb never homes, so it is loosed straight.
 				Vector2 aim = shotTarget.GlobalPosition;
-				if (counting && !orbs && aim != from)
-					aim = from + (aim - from).Normalized().Rotated(Mathf.DegToRad(p % 2 == 0 ? MagicMissile.CountFanDegrees : -MagicMissile.CountFanDegrees)) * 32f;
+				if (!orbs && aim != from)
+				{
+					float off = counting
+						? (p % 2 == 0 ? MagicMissile.CountFanDegrees : -MagicMissile.CountFanDegrees)
+						: (p - (shots - 1) * 0.5f) * MagicMissile.VolleyFanDegrees;
+					if (off != 0f)
+						aim = from + (aim - from).Normalized().Rotated(Mathf.DegToRad(off)) * 32f;
+				}
 
 				var missile = MagicMissileScene.Instantiate<Area2D>();
 				missile.Position = from;
