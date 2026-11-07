@@ -47,6 +47,18 @@ New-Item -ItemType Directory -Path $scratchProfile -Force | Out-Null
 $priorAppData = $env:APPDATA
 try {
     $env:APPDATA = $scratchProfile
+    # MainLoop probes have no SaveManager/autoloads, so each fresh process truly starts cold.
+    foreach ($order in @("unlocks", "achievements")) {
+        $log = Join-Path $work ("catalog-" + $order + ".log")
+        $arguments = @("--headless", "--log-file", $log, "--script", "res://scripts/_UnlockStartupProbe.cs",
+            "--", "--no-save-writes")
+        if ($order -eq "achievements") { $arguments += "--achievements-first" }
+        Invoke-CheckProcess $exe $arguments $log
+        if (-not (Select-String -LiteralPath $log -Pattern "UNLOCKPROBE $order first: PASS" -Quiet)) {
+            throw "Cold catalog check did not complete: $log"
+        }
+        Write-Output "catalog-${order}: PASS"
+    }
     $cases = @(
         @{ Name = "apk-assets"; Extra = @("--stress-gc", "--asset-pack=$assetPack") },
         @{ Name = "resource-failure"; Extra = @("--failed-load") },

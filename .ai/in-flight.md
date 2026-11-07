@@ -627,7 +627,13 @@ things come up; strike what lands.**
       Portrait/safe-area controller navigation and Quit still pass. A 4:3 gameplay render fills the
       window. Generated title layers have zero off-contract colors. All test saves stayed in memory.
 
-47. **Android 0.14.0 fails to reach the menu** (Eric, 2026-11-06). **Open: cause not yet identified.**
+47. **Android 0.14.0 fails to reach the menu** (Eric, 2026-11-06). **Cause identified on the Pixel 9:**
+    UnlockCatalog's Laelaps/Orb of Ages initializers called AchievementDefinitions methods, whose
+    static list enumerates the still-unassigned unlock definitions. Mono initialized achievements
+    on the method call; Windows' runtime deferred it and masked the cycle. Use the existing const
+    deed prefixes instead, keeping IDs/rewards unchanged. `_UnlockStartupProbe` uses a MainLoop
+    without autoloads to check both cold initialization orders in separate processes; the phone-free
+    script now includes both. Native signed-update verification is pending.
     The phone shows "The menu could not be loaded" and Try again. Windows clean/existing-save
     launches and a real 0.13.2-to-0.14.0 update did not reproduce it. APK menu assets and script
     registration are present. Phone-free release-engine/portrait tests with APK assets, GC stress,

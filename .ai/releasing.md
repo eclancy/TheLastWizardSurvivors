@@ -294,12 +294,14 @@ keep the debug build on the development phone and judge the release APK by its s
 **Phone-free startup checks (2026-11-06):** `pwsh -File tools/android-startup-check.ps1` extracts
 the real APK's assets, exports the current code with the Windows release engine, and checks a
 portrait/safe-area menu with desktop display controls and debug-only options absent. It covers
-cold preparation with forced garbage collection, return-to-menu, a missing scene, and an injected
+cold catalog initialization in both orders (without autoloads), preparation with forced garbage
+collection, return-to-menu, a missing scene, and an injected
 menu-construction exception. Both failure paths must display a cause, copy a complete report
 (including native loader errors), and recover through Retry. Profiles and logs stay under
 `build/android-startup-check/`; save writes and update checks are disabled. `-SkipExport` reuses
 the fixture when its code is unchanged. This is asset/UI regression coverage, **not an Android
-runtime or ARM64/GPU test**. An Android 0.14.0 startup failure remains unconfirmed by these checks.
+runtime or ARM64/GPU test**. The Android 0.14.0 failure was traced on the phone to a circular
+unlock/achievement initializer masked by Windows' deferred static initialization.
 The loading error screen now includes its stage and Copy error details; native errors are captured
 only during startup, in a bounded thread-safe buffer, so a phone can report failures without adb.
 
