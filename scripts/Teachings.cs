@@ -92,12 +92,23 @@ public static class Teachings
 			: Ladder.Where(l => !HasLearned(data, l.System)).Skip(creditAfterFind - 1).FirstOrDefault();
 	}
 
-	/// <summary>A gentle map hint: names no unrecovered spell and gives no puzzle solution.</summary>
-	public static string LandmarkHint(string secretId) => secretId switch
+	/// <summary>
+	/// A gentle map hint: names no unrecovered spell and gives no puzzle solution. Once the save has
+	/// glimpsed the landmark - its trail stepped on, or its tell seen - the hint sharpens: past that
+	/// point the player is not discovering THAT it exists, only finding the way back (in-flight 49,
+	/// "subtle until found, obvious once noticed").
+	/// </summary>
+	public static string LandmarkHint(string secretId, bool glimpsed = false) => secretId switch
 	{
-		SecretCatalog.PinfoldId => "Something of light is penned in the fields.",
-		SecretCatalog.FallenStarId => "A fallen light lies beyond the standing stones.",
-		SecretCatalog.GeodeHeartId => "A warm light shines inside the cave's crystals.",
+		SecretCatalog.PinfoldId => glimpsed
+			? "Golden tracks cross the furrows; they lead to the sealed pen."
+			: "Something of light is penned in the fields.",
+		SecretCatalog.FallenStarId => glimpsed
+			? "The fallen star waits beyond the standing stones, where you saw it."
+			: "A fallen light lies beyond the standing stones.",
+		SecretCatalog.GeodeHeartId => glimpsed
+			? "The warm geode waits among the cave's crystals, where you saw it."
+			: "A warm light shines inside the cave's crystals.",
 		_ => string.Empty,
 	};
 

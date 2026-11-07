@@ -27,13 +27,27 @@ public partial class TeachingTrail : Node2D
 	private float clock;
 	private float redrawAt;
 
+	// THE BEACON (Eric, 2026-11-07, in-flight 49: "subtle until found, obvious once noticed"; his
+	// 2026-11-06 ask that so important a clue look out of place and be more obvious). The tracks stay
+	// quiet - but the first touch of any mark raises the pen's teaching marker (PoiPointer's warm
+	// arrow on the seal glyph), and a save that has glimpsed the pen before starts every later run
+	// already noticing: a death never takes the noticing back.
+	private PointOfInterest beacon;
+	private float noticeCheckAt;
+	private const float NoticeRadius = 150f;
+
+	/// <summary>True once the trail has been noticed and the teaching marker is up. For the probes.</summary>
+	public bool Noticed => beacon != null && beacon.Seen;
+
 	public override void _Ready()
 	{
 		ZAsRelative = false;
 		ZIndex = DrawLayers.Decal;
 		ulong started = Time.GetTicksUsec();
 		BuildTracks();
-		GD.Print($"Familiar tracks: {tracks.Count} clusters, {(Time.GetTicksUsec() - started) / 1000f:0.0} ms; no direction marker");
+		if (tracks.Count > 0 && Site != null)
+			beacon = PointsOfInterest.Add(new PointOfInterest(Site.TellPosition, "seal") { IsTeaching = true });
+		GD.Print($"Familiar tracks: {tracks.Count} clusters, {(Time.GetTicksUsec() - started) / 1000f:0.0} ms; marker down until noticed");
 	}
 	private void BuildTracks()
 	{
@@ -96,11 +110,41 @@ public partial class TeachingTrail : Node2D
 		if (Site.State.Done || Director.FoundThisRun(Site.SecretId))
 		{
 			Retired = true;
+			if (beacon != null)
+				beacon.Done = true;
 			QueueRedraw();
 			return;
 		}
 		clock += (float)delta;
+		TickBeacon();
 		if (clock >= redrawAt) { redrawAt = clock + 0.1f; QueueRedraw(); }
+	}
+
+	// Four times a second, never per frame: a dozen distance checks at most.
+	private void TickBeacon()
+	{
+		if (beacon == null || beacon.Seen)
+			return;
+		// Glimpsed before - at the pen itself, or on an earlier run: already noticing.
+		if (Director.IsGlimpsed(Site.SecretId))
+		{
+			beacon.Seen = true;
+			return;
+		}
+		if (clock < noticeCheckAt)
+			return;
+		noticeCheckAt = clock + 0.25f;
+		if (Director.Game?.RunPlayer is not Player player)
+			return;
+		Vector2 at = player.GlobalPosition;
+		for (int i = 0; i < tracks.Count; i++)
+		{
+			if (at.DistanceSquaredTo(tracks[i]) > NoticeRadius * NoticeRadius)
+				continue;
+			Director.NoticeTrail(Site);
+			beacon.Seen = true;
+			return;
+		}
 	}
 	private static float MarkHash(int index, int salt)
 	{
