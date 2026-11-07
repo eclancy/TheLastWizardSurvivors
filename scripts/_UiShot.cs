@@ -5670,6 +5670,7 @@ public partial class _UiShot : Node
 		private int chestsBefore;
 		private float struckFor;
 		private TeachingTrail teachingTrail;
+		private bool trailNoticeChecked;
 
 		private void Check(string what, bool ok)
 		{
@@ -5813,7 +5814,18 @@ public partial class _UiShot : Node
 					Vector2 to = stand - Hero.GlobalPosition;
 					float left = to.Length();
 					float toTell = Hero.GlobalPosition.DistanceTo(vault.TellPosition);
-					if (toTell > SecretDirector.SeenRadius + 50f && toTell <= SecretDirector.SeenRadius + 562f)
+					// A teaching trail glimpses at its tracks (in-flight 49: noticing the golden
+					// evidence IS being near it), so once it has noticed, "far from the glint" no
+					// longer means "unseen" - instead check the noticing happened AT a track. The
+					// walk covers 512 px between the beacon's quarter-second ticks, so allow that.
+					bool noticedTrail = teachingTrail != null && teachingTrail.Noticed;
+					if (noticedTrail && !trailNoticeChecked && teachingTrail.TrackPositions.Count > 0)
+					{
+						trailNoticeChecked = true;
+						float toTrack = teachingTrail.TrackPositions.Min(p => Hero.GlobalPosition.DistanceTo(p));
+						Check($"the trail was noticed at its tracks ({toTrack:0} px from the nearest)", toTrack <= 700f);
+					}
+					if (!noticedTrail && toTell > SecretDirector.SeenRadius + 50f && toTell <= SecretDirector.SeenRadius + 562f)
 						Check($"not seen at {toTell:0} px from its glint", !Director.IsGlimpsed(vault.SecretId));
 					Hero.GlobalPosition += left <= 512f ? to : to / left * 512f;
 					wait = 0.1f;
