@@ -171,7 +171,7 @@ public partial class LevelTilePainter : Node2D
 
 				if (_groundSources.Count > 0)
 				{
-					int gs = _groundSources[_rng.RandiRange(0, _groundSources.Count - 1)];
+					int gs = _groundSources[VariantAt(coord, _groundSources.Count)];
 					PutTile(_groundLayer, coord, gs);
 				}
 
@@ -217,6 +217,32 @@ public partial class LevelTilePainter : Node2D
 
 	/// <summary>Seed for the per-tile variant choice. Same seed, same tile, same variant.</summary>
 	public ulong VariantSeed { get; set; }
+
+	// GROUND VARIANTS COME IN FIELDS, not per-cell confetti (Eric, 2026-11-07, in-flight 59: the
+	// lighter patches "can be much bigger to give the effect of biomes or fields"). A smooth value
+	// noise over the world cells picks each cell's variant, so one variant holds for a field-sized
+	// patch (~26 cells, about 830 world px) and gives way to the next along a soft, unagridded edge;
+	// a dash of per-cell grain keeps a patch from reading as one stamped tile. Pure hashes of the
+	// world cell, so a chunk repainted - or reached from the far side - is identical, and both paint
+	// paths (the fixed arena and the streamed chunks) agree.
+	private const float PatchCells = 26f;
+
+	private int VariantAt(Vector2I coord, int variants)
+	{
+		float fx = coord.X / PatchCells, fy = coord.Y / PatchCells;
+		int x0 = Mathf.FloorToInt(fx), y0 = Mathf.FloorToInt(fy);
+		float tx = fx - x0, ty = fy - y0;
+		tx = tx * tx * (3f - 2f * tx);
+		ty = ty * ty * (3f - 2f * ty);
+		float v00 = PatchCorner(x0, y0), v10 = PatchCorner(x0 + 1, y0);
+		float v01 = PatchCorner(x0, y0 + 1), v11 = PatchCorner(x0 + 1, y0 + 1);
+		float v = Mathf.Lerp(Mathf.Lerp(v00, v10, tx), Mathf.Lerp(v01, v11, tx), ty);
+		float grain = (LevelGenerator.Hash(VariantSeed, coord.X, coord.Y, 0x6A11) & 1023) / 1023f;
+		v = Mathf.Clamp(v * 0.85f + grain * 0.15f, 0f, 0.999f);
+		return (int)(v * variants);
+	}
+
+	private float PatchCorner(int x, int y) => (LevelGenerator.Hash(VariantSeed, x, y, 0x51AB) & 65535) / 65535f;
 
 	/// <summary>Number of chunks currently painted.</summary>
 	public int PaintedChunkCount => _chunkNodes.Count;
@@ -264,8 +290,7 @@ public partial class LevelTilePainter : Node2D
 				for (int x = 0; x < size; x++)
 				{
 					var coord = new Vector2I(minCell.X + x, minCell.Y + y);
-					ulong h = LevelGenerator.Hash(VariantSeed, coord.X, coord.Y, 0x6A11);
-					PutTile(ground, coord, _groundSources[(int)(h % (ulong)variants)]);
+					PutTile(ground, coord, _groundSources[VariantAt(coord, variants)]);
 				}
 			}
 		}

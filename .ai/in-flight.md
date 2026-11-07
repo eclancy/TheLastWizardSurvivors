@@ -729,6 +729,13 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     at the well - the fouled water turns clean and rises with light, the coin (on later wins, the
     chest) is drawn visibly up out of it and flies to the player, with a brief hold so it registers.
     Then check every side event for the same missing moment at its own site.
+    **Built 2026-11-07 (`feat/event-payoffs`):** the well's win beat - the water climbs clean and lit
+    out of the mouth, the fouled pips wash clean, and the drawn-up glint arcs to the exact spot the
+    reward column rises at (SideEvent.Succeed takes an exact spot now). **Audited:** all fourteen
+    events already raise their column at their own site, so the remaining polish is per-site state
+    changes at the win, each its own small beat when its site has a state to show: the grove could
+    visibly bloom, the Gaoler's cell door swing, the thaw's ice visibly fall away, the scale settle
+    level. Worth one beat per chapter pass, not a blocker.
 59. **World and terrain** (Eric, 2026-11-06/07): Baba Yaga's hut is solid - the player cannot walk
     through it; the farm patch's large dandelion hides a secret (a certain spell cast near it?); the
     Dandelion Grove is too common - why is it in more than one map?; a plant overhanging water drew
