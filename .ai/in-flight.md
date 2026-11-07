@@ -638,8 +638,10 @@ things come up; strike what lands.**
     without autoloads to check both cold initialization orders in separate processes; the phone-free
     script now includes both. Release-signed 0.14.1 updated the Pixel 9 in place and reached the
     menu, Powers, Achievements and Options; 33 Arcane Energy, earned deeds and bought pages remain.
-    Eric spotted the title version/prompt overlap and requested more prominent bottom paging;
-    both layout fixes are included before publication and awaiting final device verification.
+    Eric spotted the title version/prompt overlap and requested more prominent bottom paging.
+    Both layout fixes pass desktop/portrait title and input probes, including short/tall phone
+    layouts. The final signed APK is installed on the Pixel 9 and starts a normal Forest run;
+    the phone is back under Eric's control. Windows release-engine menu checks also pass.
     The phone shows "The menu could not be loaded" and Try again. Windows clean/existing-save
     launches and a real 0.13.2-to-0.14.0 update did not reproduce it. APK menu assets and script
     registration are present. Phone-free release-engine/portrait tests with APK assets, GC stress,
