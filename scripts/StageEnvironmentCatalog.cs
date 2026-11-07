@@ -123,6 +123,14 @@ public sealed class StageEnvironmentProfile
 	public string WaterStyle { get; init; } = "pool";
 
 	/// <summary>
+	/// Whether the player can wade this chapter's water (in-flight 59: water is heavy going, not a
+	/// wall - LevelTilePainter.WaterCollisionLayer, Player.WaterWadeSpeedMultiplier). False only
+	/// where "water" is water in style alone: the Bridge's abyss, which nobody walks into and out of.
+	/// The swarm never wades either way.
+	/// </summary>
+	public bool WaterWalkable { get; init; } = true;
+
+	/// <summary>
 	/// Whether spike plates are scattered. Built things: only where somebody built them
 	/// (Node2DGame.BuildStageHazards). An open natural chapter is shaped by its enemies, not traps.
 	/// </summary>
@@ -588,6 +596,8 @@ public static class StageEnvironmentCatalog
 			WeatherOffset = new Vector2(-140f, -100f),
 			IntroTint = new Color(0.90f, 0.94f, 1.0f, 1.0f),
 			WaterStyle = "abyss",
+			// The drop is "water" in style alone: wading off the bridge is not a thing.
+			WaterWalkable = false,
 		}
 		,
 

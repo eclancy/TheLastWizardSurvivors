@@ -949,6 +949,10 @@ public partial class Enemy : CharacterBody2D
 		// Water and maze walls moved off layer 1 onto their own (LevelTilePainter.TerrainCollisionLayer)
 		// so the player could meet them with his feet. Enemies still stop at them exactly as before.
 		SetCollisionMaskValue(LevelTilePainter.TerrainCollisionLayer, true);
+		// Water then moved off the walls' layer onto ITS own, so the player could wade it
+		// (in-flight 59). For the swarm nothing changed: a lake stops it, a shove toward one
+		// slides along the shore, and the flow field routes round it as it always has.
+		SetCollisionMaskValue(LevelTilePainter.WaterCollisionLayer, true);
 		// The one layer the player's body masks besides decor: what he cannot shove, he slides off.
 		SetCollisionLayerValue(BlockerCollisionLayer, BlocksPlayer);
 		// And what the swarm cannot overlap: see the note above.

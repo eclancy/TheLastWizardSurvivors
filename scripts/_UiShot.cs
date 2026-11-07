@@ -3061,8 +3061,13 @@ public partial class _UiShot : Node
 				if (!shorePlaced && frames >= WarmupFrames / 3 && (teleportTo == null || teleported))
 					PlaceAtShore(push);
 				// Before placement, stand still; after it, walk into the water and keep walking.
-				Press("move_right", "move_left", shorePlaced ? push.X : 0f);
-				Press("move_down", "move_up", shorePlaced ? push.Y : 0f);
+				// Wadeable water no longer stops him (in-flight 59), so there the walk stops itself
+				// the moment wading begins: the report then measures where the boots stood as the
+				// wade took hold, against the drawn shore - the alignment this probe exists for.
+				bool walk = shorePlaced
+					&& !(FindNodeOfType<Player>(GetTree().Root) is Player wader && wader.IsWading);
+				Press("move_right", "move_left", walk ? push.X : 0f);
+				Press("move_down", "move_up", walk ? push.Y : 0f);
 			}
 			else if (hold && teleported)
 				HoldPosition();
@@ -5001,10 +5006,17 @@ public partial class _UiShot : Node
 		// terrain layer; the nearest is where the feet would meet the shore.
 		float tile = terrain.TilePixels;
 		Vector2 cell = terrain.CellOriginWorld(shoreCell);
+		Vector2 Centre2(Vector2I c) => terrain.CellOriginWorld(c) + new Vector2(tile, tile) * 0.5f;
 		bool wall = terrain.IsWallAtWorld(cell + new Vector2(tile, tile) * 0.5f);
 		Vector2I d = shoreDirection ?? Vector2I.Zero;
 		PhysicsDirectSpaceState2D space = player.GetWorld2D().DirectSpaceState;
-		var query = new PhysicsPointQueryParameters2D { CollisionMask = 1u << (LevelTilePainter.TerrainCollisionLayer - 1) };
+		// Both layers: walls and the abyss on TerrainCollisionLayer, wadeable water on its own
+		// (in-flight 59) - the drawn line is what the boots are measured against either way.
+		var query = new PhysicsPointQueryParameters2D
+		{
+			CollisionMask = (1u << (LevelTilePainter.TerrainCollisionLayer - 1))
+				| (1u << (LevelTilePainter.WaterCollisionLayer - 1)),
+		};
 		bool Solid(Vector2 p)
 		{
 			query.Position = p;
@@ -5034,6 +5046,13 @@ public partial class _UiShot : Node
 			+ $" footprint centre {player.FootPosition}; {(wall ? "wall" : "water")} collision found"
 			+ $" {(clearance == float.MaxValue ? "nowhere within 40 px" : $"{clearance:0.0} px beyond the boots' {edge} edge")}"
 			+ " (negative = boots over the water)");
+		// Whether the wade took hold is half the measurement now (in-flight 59): on a water shore
+		// the walk stops itself when IsWading flips, so the clearance above is where the slow
+		// began against the drawn line, and this says the flip really was the reason he stopped
+		// (a trunk in the lane also stops him, on a mostly dry cell).
+		GD.Print($"_UiShot: SHORE wading at the shutter: {player.IsWading};"
+			+ $" foot cell blocked: {terrain.IsBlockedAtWorld(player.FootPosition)};"
+			+ $" shore cell centre {Centre2(shoreCell)}");
 	}
 
 	private static string Truncate(string text)

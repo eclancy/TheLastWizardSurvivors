@@ -7339,7 +7339,25 @@ public partial class Player : CharacterBody2D
 		CrowdPushCount = pushing;
 		float crowdSpeedMultiplier = Mathf.Clamp(1.0f - (pushing * CrowdSlowPerEnemy), CrowdSlowFloor, 1.0f);
 
-		_velocity = input * Speed * GetWindSpeedMultiplier() * GetStormboundSpeedMultiplier() * crowdSpeedMultiplier * boonMoveSpeedMultiplier;
+		// Wading (in-flight 59): water is not a wall for him any more, just heavy going. His feet
+		// no longer mask the water's layer (LevelTilePainter.WaterCollisionLayer), so the shore
+		// does not stop them; this is the cost. The swarm still cannot follow him in, which is the
+		// trade - a slow escape no enemy can take. Asked of the water's own collision polygons at
+		// his boots, not of the cell flag: the polygons are the drawn water (WaterShape), while a
+		// shoreline cell's flag is mostly dry bank at a rounded corner, and the slow must begin at
+		// the water the player can SEE, not a stride early. The Bridge's abyss is never on this
+		// layer, so it never reads as wadeable.
+		wadeQuery ??= new PhysicsPointQueryParameters2D
+		{
+			CollisionMask = 1u << (LevelTilePainter.WaterCollisionLayer - 1),
+			CollideWithAreas = false,
+			CollideWithBodies = true,
+		};
+		wadeQuery.Position = FootPosition;
+		IsWading = GetWorld2D().DirectSpaceState.IntersectPoint(wadeQuery, 1).Count > 0;
+		float wadeSpeedMultiplier = IsWading ? WaterWadeSpeedMultiplier : 1.0f;
+
+		_velocity = input * Speed * GetWindSpeedMultiplier() * GetStormboundSpeedMultiplier() * crowdSpeedMultiplier * wadeSpeedMultiplier * boonMoveSpeedMultiplier;
 		Velocity = _velocity;
 		Vector2 start = GlobalPosition;
 		MoveAndSlide();
@@ -7358,6 +7376,16 @@ public partial class Player : CharacterBody2D
 	// a pack he commits to is one he gets out of, but it is never free.
 	[Export] public float CrowdSlowPerEnemy { get; set; } = 0.12f;
 	[Export] public float CrowdSlowFloor { get; set; } = 0.55f;
+
+	// Heavier than the deepest crowd (floor 0.55): at the 220 base speed he wades at 99 px/s,
+	// slower than any chaser, so water is never a place the swarm cannot punish - only a crossing
+	// the swarm must route around while he pays for it in time.
+	[Export] public float WaterWadeSpeedMultiplier { get; set; } = 0.45f;
+
+	/// <summary>True while his boots stand in wadeable water (in-flight 59; the Bridge's abyss never counts).</summary>
+	public bool IsWading { get; private set; }
+	// Reused every physics frame (one point against the water bodies; the one per-frame query he makes).
+	private PhysicsPointQueryParameters2D wadeQuery;
 
 	/// <summary>The velocity his last step achieved while walking, zero while standing.</summary>
 	public Vector2 ShoveVelocity { get; private set; }

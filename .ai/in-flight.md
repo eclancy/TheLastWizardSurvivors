@@ -744,6 +744,14 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     blocking-terrain authorities in `.ai/terrain.md` must move together); the hut's art gets four
     sides so it can turn as it runs and always fall facing the camera, door in view (fold into item
     3's Baba Yaga ask).
+    **Built 2026-11-07 (`feat/water-pass`):** the water half. Wading - water's shore polygons moved
+    to their own layer (`WaterCollisionLayer` 6), which the feet don't mask; the player wades at
+    0.45x speed (`IsWading`), the swarm still stops and routes round, placement and the flow field
+    unchanged, and the Bridge's abyss opts out (`StageEnvironmentProfile.WaterWalkable = false`).
+    Rounder bodies - water blobs take a smooth two-lobe rim wobble instead of the per-tile hash
+    jitter. Overhang - trees keep 48 px and bushes 24 px of water clearance in `IsPropAvoidedAt`.
+    Still open here: the dandelion secret, the Grove's spread, and the hut asks (solid, four-sided)
+    folded into item 3.
 60. **Audio** (Eric, 2026-11-06): the shield-break noise is annoying - deeper, like cracking glass
     (`tools/audio/sfx.py`); battle music per chapter still reads to Eric as the menu's music - check
     what section 3a item 7's per-chapter stems actually play in a run.

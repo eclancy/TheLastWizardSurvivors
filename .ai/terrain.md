@@ -25,15 +25,29 @@ terrain added later.
 Two independent flags, both read from `assets/bonelight/tiles/tiles.json`:
 
 - **`hazard`** — standing in it hurts you. Lava and pits. Checked by `IsHazardAtWorld`.
-- **`blocking`** — you cannot walk into it. Water. Checked by `IsBlockedAtWorld`, and enforced by
-  a real collision body.
+- **`blocking`** — the swarm cannot walk into it, and nothing is placed in it. Water. Checked by
+  `IsBlockedAtWorld`, and enforced by a real collision body.
 
 Water is not a hazard and lava is not a blocker, which is why these cannot be one flag. A hazard
 only works if you *can* step in it.
 
-Water's collision is the polygons it is drawn from (`WaterShape`, section 3), on the same physics
-layer the maze walls use (layer 4, below), and **shaped to the shore, not the cell**: a shoreline
-cell is part water and part bank, and a full-cell body would stop the player short of water on
+**The player wades blocking water** (in-flight 59, 2026-11-07): his feet do not mask the water's
+layer, so the shore does not stop him - he just moves at `Player.WaterWadeSpeedMultiplier` (0.45,
+heavier than the deepest crowd) while his boots stand in it. Whether they do is asked of the
+water's own collision polygons (one point query on the water layer in `Player.MovePlayer`), never
+of the cell flag: the polygons are the drawn water, while a rounded corner's cell is mostly dry
+bank, and the slow must begin at the water he can see, not a stride early. The swarm
+still cannot follow, which is the trade: a slow crossing no enemy can take. Everything else about
+`blocking` is unchanged - placement, prop avoidance and the flow field still treat water as
+"not here". The one chapter where water must stop the player too is the Bridge, whose drop is
+water in style alone (`abyss`): `StageEnvironmentProfile.WaterWalkable = false` keeps its
+collision on the walls' layer, which his feet mask, so it stops him like a wall and never reads
+as wadeable.
+
+Water's collision is the polygons it is drawn from (`WaterShape`, section 3), on its own physics
+layer (`LevelTilePainter.WaterCollisionLayer`, 6 - the walls' layer 4 when `WaterWalkable` is
+false), and **shaped to the shore, not the cell**: a shoreline
+cell is part water and part bank, and a full-cell body would stop an enemy short of water on
 ground that plainly looks walkable - the most annoying kind of invisible wall. Those polygons
 never leave the water cells, so every cell-level authority below still describes them truthfully.
 
@@ -86,9 +100,11 @@ are on layer 4 and meet his boots. Rocks, crystals and the themed props are stil
 
 Four things follow from it:
 
-- **Anything that must stop at water or a wall masks layer 4.** Today that is the feet and
-  `Enemy.ConfigureEntityCollision`. A new moving body that masks only layer 1 walks across lakes,
-  through tree trunks and through garden fences, which are on layer 4 too (section 10).
+- **Anything that must stop at walls masks layer 4; anything that must also stop at wadeable
+  water masks layer 6 too** (`LevelTilePainter.WaterCollisionLayer`). The feet mask only layer 4 -
+  that is the wading mechanism - while `Enemy.ConfigureEntityCollision` masks both. A new moving
+  body that masks only layer 1 walks across lakes, through tree trunks and through garden fences
+  (which are on layer 4, section 10).
 - **Moving something else means moving it through its own body.** The player shoves ordinary
   enemies out of his way (`Enemy.ComputePlayerShove`, `.ai/enemy-behaviour.md` section 8), and the
   shove is added to the enemy's own `MoveAndSlide`, so it meets the ground the enemy masks and a
@@ -104,10 +120,19 @@ shore, or a maze wall on stage 1, and logs how far the drawn boots stopped from 
 line: 0 px south, +4 north, -2 east and west, where the boots' widest frame is 60 px against the
 56 px footprint and the 2 px sit in the shore's dithered fade) and `_BalanceHarness --check-feet`
 (no frame of several two-minute walks on the Swamp (stage 3) and the maze (stage 1) had the
-footprint inside the ground, and no enemy stood in water or a wall).
+footprint inside the ground, and no enemy stood in water or a wall). Two notes since the wading
+(in-flight 59): `--shore` needs `--frames=150` or so - the default 10-frame warmup ends the walk
+25 px in - and on a water shore the walk now stops itself the moment `IsWading` flips, so the
+clearance is where the wade began against the drawn line (-12 px measured on the Swamp) and the
+report says whether wading, a trunk or a wall is what stopped him. `--check-feet` measured
+2026-11-07 on the Swamp at the 131 cap: the player 0 of 1492 frames overlapping terrain, enemies
+0 of 111172 enemy-frames with a centre inside a water polygon; the cell-level "enemies inside
+water or a wall" count runs 1-3 at a crowded shore because a rounded corner's water cell is
+mostly dry bank now - pressure, not failure.
 
-**Enemies are blocked by water too.** They mask layer 4, as the player's feet do, so a
-lake is a mutual obstacle exactly as a wall is. They used to steer straight at the player and pile
+**Enemies are blocked by water, and the player is not.** They mask layers 4 and 6 both, so a
+lake stops the swarm exactly as a wall does, while the player's feet (layer 4 only) wade through.
+They used to steer straight at the player and pile
 up on the near shore; they now route round it on the same navigation field the maze uses
 (section 9).
 

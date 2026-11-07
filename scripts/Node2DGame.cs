@@ -258,6 +258,12 @@ public partial class Node2DGame : Node2D
 	private TerrainStreamer? terrainStreamer;
 	// Read-only, for the debug harnesses (_UiShot --shore) that need to find a shoreline.
 	public TerrainStreamer? Terrain => terrainStreamer;
+
+	// Whether the player is wading is asked of the water's collision polygons, not of any cell
+	// flag: Player.MovePlayer point-queries LevelTilePainter.WaterCollisionLayer at his boots,
+	// so the slow begins exactly at the drawn shore (in-flight 59). There is deliberately no
+	// cell-level "is this wadeable water" helper - a rounded corner's cell is mostly dry bank,
+	// and two authorities would disagree there.
 	// The chapter's own rules (ChapterRules, .ai/endgame-castle.md 1.9), or null for a chapter with none -
 	// every chapter of the road. Asked at seven hook points, each marked "Hook N" where it is asked.
 	private ChapterRules? chapterRules;
@@ -1321,6 +1327,8 @@ public partial class Node2DGame : Node2D
 		// Which water art (tools/art/water.py): a forest pond, swamp murk, the Frozen Waste's black
 		// water with an ice shelf, or a stone pool. Each chapter's profile says which.
 		levelPainter.WaterStyle = StageEnvironmentCatalog.Get(kind).WaterStyle;
+		// Whether the player can wade it (in-flight 59) - false only for the Bridge's abyss.
+		levelPainter.WaterWalkable = StageEnvironmentCatalog.Get(kind).WaterWalkable;
 		// Which wall art the chapter's walls are drawn with: the jail set unless it has its own
 		// (StageEnvironmentProfile.WallSet, .ai/endgame-castle.md 1.9).
 		levelPainter.WallArtSet = StageEnvironmentCatalog.Get(kind).WallSet;
@@ -2324,14 +2332,28 @@ public partial class Node2DGame : Node2D
 
 	// True where no prop, decor or stage hazard may stand: a hazard tile or a terrain in
 	// PropAvoidTerrains (water, ice, lava, pit, maze wall).
-	private bool IsPropAvoidedAt(Vector2 position)
+	private bool IsPropAvoidedAt(Vector2 position, float waterClearance = 0f)
 	{
 		if (terrainStreamer == null)
 			return false;
 		if (terrainStreamer.IsHazardAtWorld(position))
 			return true;
 		string terrain = terrainStreamer.TerrainAtWorld(position);
-		return terrain != null && PropAvoidTerrains.Contains(terrain);
+		if (terrain != null && PropAvoidTerrains.Contains(terrain))
+			return true;
+		// A wide plant's leaves reach past its cell: a bush beside a pond drew over the water and
+		// the shore read as jagged (in-flight 59). Greenery passes its canopy's reach here - four
+		// compass samples keep it that far off the water, while rocks and clutter still hug shores.
+		if (waterClearance > 0f)
+			for (int i = 0; i < 4; i++)
+			{
+				Vector2 at = position + new Vector2(
+					i == 0 ? waterClearance : i == 1 ? -waterClearance : 0f,
+					i == 2 ? waterClearance : i == 3 ? -waterClearance : 0f);
+				if (terrainStreamer.IsBlockedAtWorld(at))
+					return true;
+			}
+		return false;
 	}
 
 	// parent is the game itself for the one-shot fallback, or a chunk's prop holder when streaming.
@@ -2982,7 +3004,8 @@ public partial class Node2DGame : Node2D
 				continue;
 			}
 			int margin = art.Trunk > 0 ? TreeLandmarkMarginCells : BushLandmarkMarginCells;
-			if (position.DistanceTo(stageOrigin) < DecorPlayerSafeRadius || IsPropAvoidedAt(position) || IsInLandmark(position, margin)
+			if (position.DistanceTo(stageOrigin) < DecorPlayerSafeRadius
+				|| IsPropAvoidedAt(position, art.Trunk > 0 ? 48f : 24f) || IsInLandmark(position, margin)
 				|| IsInExploreReserve(position, art.Trunk > 0 ? ExploreTreeMargin : 0f) || IsNearPlannedHazard(position))
 			{
 				refused++;

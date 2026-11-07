@@ -647,9 +647,12 @@ public partial class _BalanceHarness : Node
 			feetTouchQuery = Probe(1f);
 		}
 		PhysicsDirectSpaceState2D space = player.GetWorld2D().DirectSpaceState;
+		// Walls AND water: wadeable water moved to its own layer (in-flight 59), and an enemy
+		// standing in either is still the failure this counts.
 		enemyTerrainQuery ??= new PhysicsPointQueryParameters2D
 		{
-			CollisionMask = 1u << (LevelTilePainter.TerrainCollisionLayer - 1),
+			CollisionMask = (1u << (LevelTilePainter.TerrainCollisionLayer - 1))
+				| (1u << (LevelTilePainter.WaterCollisionLayer - 1)),
 			CollideWithAreas = false,
 		};
 		foreach (Node node in GetTree().GetNodesInGroup("enemies"))
@@ -1005,8 +1008,11 @@ public partial class _BalanceHarness : Node
 			if (CheckFeet)
 			{
 				// And the other half of moving the ground to its own physics layer: enemies must
-				// still be stopped by it. An enemy body is far wider than a water tile's shore inset,
-				// so its centre on a water or wall cell means it walked into one.
+				// still be stopped by it. CELL-level: since the rounder shores (in-flight 59), a
+				// corner water cell can be mostly dry bank, so an enemy pressed onto that bank
+				// counts here without being in the water - a few of a crowd at a shore is pressure,
+				// not failure. The next line's point-in-polygon count is the truth about actual
+				// water: that one must stay zero.
 				int enemiesIn = 0, enemiesAll = 0;
 				if (Node2DGame.Current?.Terrain is TerrainStreamer terrain)
 					foreach (Node node in GetTree().GetNodesInGroup("enemies"))
