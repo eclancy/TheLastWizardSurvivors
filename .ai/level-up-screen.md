@@ -1010,6 +1010,12 @@ all pages, with an overall page count. The purse, page controls and Back remain 
 All cards are prepared once behind the title loader; page turns and purchases reuse them. Socket
 and icon sizes are 64/48, with narrower card padding. Prices, ceilings and purchase rules are unchanged.
 
+**0.14.1 navigation (Eric, 2026-11-07):** the category selector has its own full-width row above
+the cards. Previous page / Next page are large, equal-width 72-unit buttons at the bottom,
+with a gold Page N / Total between them. Back shares the row on desktop and sits below on a phone.
+The scroll takes the remaining height so
+navigation is always visible, including on a short screen.
+
 **One menu, Powers, since 2026-10-30.** The shop sells no spells: every spell that is not a starter
 is earned through an achievement (`.ai/achievements-and-secrets.md` 2.4, decision 2). For two days
 (from 2026-10-28, Eric: "let's separate powers (passive buffs we can buy) in a different menu from

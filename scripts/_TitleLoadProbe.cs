@@ -138,6 +138,12 @@ public partial class _TitleLoadProbe : Node
 					throw new Exception("Story-reset dismissal did not clear the in-memory notice");
 				GD.Print("TITLEPROBE story-reset notice shown and dismissed");
 			}
+			var version = title.GetNode<Label>("Version");
+			var prompt = title.GetNode<Control>("TitleImage/Prompt");
+			if (!GetViewport().GetVisibleRect().Encloses(version.GetGlobalRect())
+				|| (!returning && version.GetGlobalRect().Intersects(prompt.GetGlobalRect().Grow(8f))))
+				throw new Exception("Version label overlaps the prompt or extends off screen");
+			GD.Print("TITLEPROBE version label clears the title prompt");
 			ulong start = Time.GetTicksUsec();
 			measuring = true;
 			bool startedRun = false;

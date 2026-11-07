@@ -330,6 +330,9 @@ things come up; strike what lands.**
    `.ai/controller-and-focus.md`.
    **Implemented for 0.14.0:** fixed category selector, Previous/Next and page count; two cards per
    page, smaller icons and padding, with the purse and Back outside the scroll.
+   **0.14.1 follow-up (Eric, 2026-11-07):** move Previous/Next to the bottom and make them obvious:
+   large equal-width Previous page / Next page controls and a gold page count; Back sits below on
+   phones and alongside on desktop, leaving room for the cards.
 
 22. **Rethink the name "Powers"** (Eric, 2026-11-05). He suggested something like "Powerups", but wants
    a more magic-themed name. The menu sells permanent upgrades and unlockable boons, so the name and a
@@ -633,7 +636,10 @@ things come up; strike what lands.**
     on the method call; Windows' runtime deferred it and masked the cycle. Use the existing const
     deed prefixes instead, keeping IDs/rewards unchanged. `_UnlockStartupProbe` uses a MainLoop
     without autoloads to check both cold initialization orders in separate processes; the phone-free
-    script now includes both. Native signed-update verification is pending.
+    script now includes both. Release-signed 0.14.1 updated the Pixel 9 in place and reached the
+    menu, Powers, Achievements and Options; 33 Arcane Energy, earned deeds and bought pages remain.
+    Eric spotted the title version/prompt overlap and requested more prominent bottom paging;
+    both layout fixes are included before publication and awaiting final device verification.
     The phone shows "The menu could not be loaded" and Try again. Windows clean/existing-save
     launches and a real 0.13.2-to-0.14.0 update did not reproduce it. APK menu assets and script
     registration are present. Phone-free release-engine/portrait tests with APK assets, GC stress,
