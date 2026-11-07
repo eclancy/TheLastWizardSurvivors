@@ -330,7 +330,7 @@ things come up; strike what lands.**
    `.ai/controller-and-focus.md`.
    **Implemented for 0.14.0:** fixed category selector, Previous/Next and page count; two cards per
    page, smaller icons and padding, with the purse and Back outside the scroll.
-   **0.14.1 follow-up (Eric, 2026-11-07):** move Previous/Next to the bottom and make them obvious:
+   **0.14.2 follow-up (Eric, 2026-11-07):** move Previous/Next to the bottom and make them obvious:
    large equal-width Previous page / Next page controls and a gold page count; Back sits below on
    phones and alongside on desktop, leaving room for the cards.
 
