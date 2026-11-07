@@ -297,7 +297,7 @@ public partial class _BalanceHarness : Node
 	// Mirrors the caps in MainMenu.BuildUpgradeDefinitions (the shop has no catalog of its own to read).
 	private static readonly (string Id, int Cap)[] FullShopCaps =
 	{
-		("damage", 8), ("recovery", 8), ("cooldowns", 8), ("area", 7), ("attack_speed", 8),
+		("damage", 8), ("recovery", 8), ("area", 7), ("attack_speed", 16),
 		("duration", 6), ("amount", 4), ("movespeed", 8), ("magnet", 7), ("growth", 6), ("greed", 8),
 		("extra_lives", 3), ("vitality", 10), ("luck", 20), ("crit_chance", 20),
 	};
@@ -1091,8 +1091,8 @@ public partial class _BalanceHarness : Node
 	// Avarice is currency, and the last two are what a player buys once the rest is full.
 	private static readonly (string Id, int Base, int Step, int Cap)[] FarmedPowers =
 	{
-		("damage", 30, 20, 8), ("vitality", 25, 20, 10), ("recovery", 15, 10, 8), ("cooldowns", 35, 25, 8),
-		("attack_speed", 35, 25, 8), ("area", 30, 20, 7), ("amount", 60, 40, 4), ("movespeed", 20, 15, 8),
+		("damage", 30, 20, 8), ("vitality", 25, 20, 10), ("recovery", 15, 10, 8),
+		("attack_speed", 35, 25, 16), ("area", 30, 20, 7), ("amount", 60, 40, 4), ("movespeed", 20, 15, 8),
 		("magnet", 25, 20, 7), ("growth", 30, 20, 6), ("extra_lives", 120, 80, 3), ("duration", 25, 20, 6),
 	};
 

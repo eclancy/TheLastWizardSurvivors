@@ -2180,7 +2180,7 @@ public partial class _UiShot : Node
 
 	// The --demo-shop purse is 155: Gravewell (150) and Hunter's Draw (140) can be bought, Hollow
 	// Star (160) and Kindled Ward (170) cannot; Runes of Ruin and Vitality are at their maximum;
-	// Emberheart, Chronoweave and Phoenix Oath are affordable, Proscription, Hoarded Insight and
+	// Emberheart, Tempest Rhythm and Phoenix Oath are affordable, Proscription, Hoarded Insight and
 	// Fortune Thread are not; Molten Shard is owned; Redaction is not yet available (a fresh book);
 	// Eternal Wick is one affordable level (125) from its last, so --press-late=...,Buy_duration
 	// photographs the seal being stamped.
@@ -2191,7 +2191,7 @@ public partial class _UiShot : Node
 		data.ArcaneUpgradeLevels["duration"] = 5;
 		data.ArcaneUpgradeLevels["vitality"] = 10;
 		data.ArcaneUpgradeLevels["recovery"] = 3;
-		data.ArcaneUpgradeLevels["cooldowns"] = 2;
+		data.ArcaneUpgradeLevels["attack_speed"] = 2;
 		data.ArcaneUpgradeLevels["amount"] = 1;
 		data.ArcaneUpgradeLevels["rerolls"] = 1;
 		data.ArcaneUpgradeLevels["bans"] = 1;

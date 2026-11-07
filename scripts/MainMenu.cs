@@ -903,9 +903,12 @@ public partial class MainMenu : Control
 		// Re-priced with what a level pays (.ai/difficulty-curve.md, section 5; SaveData.RepricedPowers
 		// refunds the difference to levels bought before).
 		RegisterUpgrade("recovery", "Emberheart", $"+{Player.EmberheartRegenPerLevel * 60f:0} HP regen a minute", 15, 10, 8);
-		RegisterUpgrade("cooldowns", "Chronoweave", "-5% cooldown time", 35, 25, 8);
+		// Chronoweave (-5% cooldown a level, 8 levels) was merged into Tempest Rhythm on 2026-11-07
+		// (Eric: cooldown and attack speed read as the same lever twice, especially here). Schema 23
+		// converts bought Chronoweave levels one for one. +8% a level over 16 levels keeps a save
+		// that had maxed both within about 8% of its old cast rate (0.44x the base wait vs 0.41x).
 		RegisterUpgrade("area", "Aether Bloom", "+8% area and range", 30, 20, 7);
-		RegisterUpgrade("attack_speed", "Tempest Rhythm", "+6% attack speed", 35, 25, 8);
+		RegisterUpgrade("attack_speed", "Tempest Rhythm", "+8% attack speed", 35, 25, 16);
 		RegisterUpgrade("duration", "Eternal Wick", "+10% effect duration", 25, 20, 6);
 		RegisterUpgrade("amount", "Twinstar Sigil", "+1 projectile for every spell that fires them", 60, 40, 4);
 		RegisterUpgrade("movespeed", "Fleetfoot Glyph", "+5% movement speed", 20, 15, 8);

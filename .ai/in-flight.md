@@ -657,6 +657,84 @@ things come up; strike what lands.**
     20% reduction in shield recharge time. Replaced the Bolts tag and the vague "twice as long"
     synergy line with plain wording. Mechanics and balance are unchanged.
 
+## Chat-only notes recovered 2026-11-07 (Eric: "Don't allow any to slip through")
+
+The 2026-11-06/07 playtest notes Eric gave in chat after asking for chat-only notes, swept back out
+of the session transcript on 2026-11-07 at his ask - chat notes do not survive context compaction
+(Prismatic Spray was nearly lost). Already released in 0.15.0: Magic Missile's fan of three faster,
+curving darts; launched bodies dying on landing; Taproot's roots; the hut's toes pointing the way it
+walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
+
+49. **Finding the teachers: "subtle until found, obvious once noticed"** (Eric, 2026-11-06/07). The
+    hurdle/track clues "don't strike me unique... the clue should look magical, or out of place, and
+    be more obvious"; and **a short cinematic at the start of every chapter until its major secret
+    is found - above all the Fallow Fields' Ascension teacher**. Fold with 0.13.1's guidance (the
+    map hints, the retired golden route) and pick the amplification after Eric plays 0.15.0 - e.g. a
+    persistent marker or map pin once any track has been touched.
+50. **The Sovereign Rite activates both Ascension paths on the crowned spell** (Eric, 2026-11-07;
+    building, `feat/haste-merge-sovereign-twin`). At crowning - and at the Ascension pick, if
+    crowned before level 8 - the spell gains its unchosen level-8 branch too. **Test note (Eric):
+    check this does not break anything on any spell** - every spell crowned with both branches
+    live, by regression check and by play; some branch pairs were designed as either/or.
+51. **Merge cooldown and attack speed in the Powers** (Eric, 2026-11-07; building, same branch).
+    Chronoweave (-5% cooldown) and Tempest Rhythm (+6% attack speed) read as the same lever twice.
+    Retire Chronoweave, convert bought levels into Tempest Rhythm up to its cap, refund the rest
+    (schema 23). Per-spell cooldown stats and card lines stay - only the global pair merges.
+52. **Mechanics that play on tags and slots** (Eric, 2026-11-06/07): items and spells that reward
+    different tags in every slot; **Prismatic Spray** - bonus effects for all the different tags
+    across your spells; **Sympathetic Blast takes the element of your leftmost spell**; spells that
+    specifically work around critting. Design as one family with 9a's slot play.
+53. **The second half of the campaign** (Eric, 2026-11-06/07, expanding item 43): once every spell
+    and character is unlocked and the main boss beaten, further chapters are "excuses to keep trying
+    new spell combinations on new maps so it feels fresh" - achievements welcome, unlocks not
+    required. The gods (item 43) arrive here, each starting with a combination spell as their
+    default. Themes still to design.
+54. **Wording and card fixes** (Eric, 2026-11-06): Waywiser - say what "slowest spell" means
+    (longest cooldown?); Reforged - "iron shards cut enemies as it is rebuilt" (it read as cutting
+    the player); Chalice Cup confusing - and is it useful at all after 15 kills?; the granary's
+    "counted with grain" and "settle his count" lines reworded; "Kills wither enemies" - should it
+    be "withered"?; Skipstone's "for 90% more" - 90% more of what?; the Handoff description is
+    confusing (find which card he means); Attunement is confusing - revisit the mechanic or its
+    words; a tag that would pass six slots just says "Max"; an item set's card always shows every
+    set effect (Eric: "Just show all effects always, we can save room in other ways").
+55. **Visual and HUD fixes** (Eric, 2026-11-06): Aegis Ward's shield bigger than the player (it
+    hovers at the chest); the Archmage's sprite leans back - stand him straight; the Raven's
+    highlight is too bright; the level-up Codex button is misaligned vertically; spell icons brought
+    up to the spells' own art quality (Meteor Swarm first); on the phone the element tags sit under
+    the timer - move them, and the spell icons up near the tags; the top health bars touch (boss vs
+    player); Hollow Star draws over foliage and over Black Tentacles (fold into item 30's layer
+    pass); unlocked portraits sort above locked on the character select; the chapter-opening scroll
+    says how to dismiss it, works on a controller, goes away by itself after a few moments, and is
+    smaller.
+56. **Gameplay fixes** (Eric, 2026-11-06): XP orbs never fail to catch the player - they speed up
+    until they arrive; Meteor Swarm always targets different enemies, and with one in range the rest
+    scatter; a boss entrance clears the field - lingering rifts stayed up, Cinderbreath's fire
+    stayed on screen, and enemies and XP orbs should not draw during the cinematic; boons stop
+    filling level-ups once every spell is maxed, with the two-boon cap (fold into item 41);
+    Elderbark wants more reach and harder hits; spending a revive gets a quick, dramatic animation;
+    the Codex must not take item/recipe clicks while a spell's page is open; a tracked mission that
+    cannot be done in this chapter is not shown there.
+57. **The Hayward's fight** (Eric, 2026-11-06; fold into item 28): combo attacks - a swing, a
+    charge, then his back vulnerable; hitting the shield shows a shield mark and plays a different
+    sound, so the player knows the damage is cut; slowed he turns slower; stunned he cannot turn.
+58. **Side events pay off at their own site** (Eric, 2026-11-06, "Yes, both"): the well's win plays
+    at the well - the fouled water turns clean and rises with light, the coin (on later wins, the
+    chest) is drawn visibly up out of it and flies to the player, with a brief hold so it registers.
+    Then check every side event for the same missing moment at its own site.
+59. **World and terrain** (Eric, 2026-11-06/07): Baba Yaga's hut is solid - the player cannot walk
+    through it; the farm patch's large dandelion hides a secret (a certain spell cast near it?); the
+    Dandelion Grove is too common - why is it in more than one map?; a plant overhanging water drew
+    a jagged shoreline; ground patches bigger on average, so the light patches read as biomes or
+    fields; water bodies rounder, and walkable - the player just slows heavily (the four
+    blocking-terrain authorities in `.ai/terrain.md` must move together); the hut's art gets four
+    sides so it can turn as it runs and always fall facing the camera, door in view (fold into item
+    3's Baba Yaga ask).
+60. **Audio** (Eric, 2026-11-06): the shield-break noise is annoying - deeper, like cracking glass
+    (`tools/audio/sfx.py`); battle music per chapter still reads to Eric as the menu's music - check
+    what section 3a item 7's per-chapter stems actually play in a run.
+61. **"Pay the tithe" shows the payment** (Eric, 2026-11-06): XP visibly sucked into the granary's
+    machine, so what to do is legible without the text.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
