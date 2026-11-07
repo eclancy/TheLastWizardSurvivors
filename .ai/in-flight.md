@@ -642,6 +642,7 @@ things come up; strike what lands.**
     Both layout fixes pass desktop/portrait title and input probes, including short/tall phone
     layouts. The final signed APK is installed on the Pixel 9 and starts a normal Forest run;
     the phone is back under Eric's control. Windows release-engine menu checks also pass.
+    Eric confirmed that the upper-left version and bottom page controls look right on the phone.
     The phone shows "The menu could not be loaded" and Try again. Windows clean/existing-save
     launches and a real 0.13.2-to-0.14.0 update did not reproduce it. APK menu assets and script
     registration are present. Phone-free release-engine/portrait tests with APK assets, GC stress,
@@ -649,6 +650,12 @@ things come up; strike what lands.**
     Added stage-specific errors, bounded native startup-error capture and Copy error details, so
     the next failed launch can be reported without connecting a phone. Fixed failure cleanup
     disconnecting a viewport signal before it had been connected. No save schema or epoch changes.
+
+48. **Clarify Rampart's description** (Eric, 2026-11-07). "Enemy bolts" means shots fired by
+    enemies. Each intercepted shot drains shield points equal to half that shot's damage (rounded
+    up), not half the shield's capacity. The card now states that cost explicitly and calls out the
+    20% reduction in shield recharge time. Replaced the Bolts tag and the vague "twice as long"
+    synergy line with plain wording. Mechanics and balance are unchanged.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
