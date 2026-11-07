@@ -20,6 +20,7 @@ public static partial class RegressionChecks
 		ValidateComboCatalog(warnings);
 		ValidateCodex(warnings);
 		ValidateSovereignRite(warnings);
+		ValidateSovereignTwin(warnings);
 		ValidateChestSetPresentation(warnings);
 		ValidateFullSetObjects(warnings);
 		ValidateTomeRelics(warnings);
@@ -71,6 +72,7 @@ public static partial class RegressionChecks
 		ValidateAchievementMigration(warnings);
 		ValidateRetiredChargeRefund(warnings);
 		ValidateDifficultyMigration(warnings);
+		ValidateChronoweaveMerge(warnings);
 		ValidateSpellBook(warnings);
 		ValidateTeachers(warnings);
 		ValidatePrologueReel(warnings);
@@ -3084,6 +3086,33 @@ public static partial class RegressionChecks
 			warnings.Add("Ascension: a brand-new save has already learned it; a landmark should teach it (Teachings).");
 	}
 
+	// Schema 23 (Eric, 2026-11-07): Chronoweave's levels become Tempest Rhythm's, one for one, with the
+	// purse untouched unless a level falls past the 16-level cap - then it pays back what it cost.
+	private static void ValidateChronoweaveMerge(List<string> warnings)
+	{
+		var save = new SaveData { SchemaVersion = 22, TotalCurrency = 10 };
+		save.ArcaneUpgradeLevels["cooldowns"] = 8;
+		save.ArcaneUpgradeLevels["attack_speed"] = 8;
+		save.Migrate(log: false);
+		save.ArcaneUpgradeLevels.TryGetValue("attack_speed", out int merged);
+		if (save.ArcaneUpgradeLevels.ContainsKey("cooldowns") || merged != 16 || save.TotalCurrency != 10)
+			warnings.Add($"Migration: schema 23 should turn Chronoweave 8 + Tempest 8 into Tempest 16 with the purse untouched; got {merged}, purse {save.TotalCurrency}.");
+		int purse = save.TotalCurrency;
+		save.Migrate(log: false);
+		if (save.TotalCurrency != purse || save.ArcaneUpgradeLevels["attack_speed"] != 16)
+			warnings.Add("Migration: a second schema 23 migration moved levels or paid a refund again.");
+
+		// Past the cap (a found level could put Tempest over 8 one day): the dearest levels pay back.
+		var full = new SaveData { SchemaVersion = 22 };
+		full.ArcaneUpgradeLevels["cooldowns"] = 8;
+		full.ArcaneUpgradeLevels["attack_speed"] = 12;
+		full.Migrate(log: false);
+		const int expected = (35 + 4 * 25) + (35 + 5 * 25) + (35 + 6 * 25) + (35 + 7 * 25);
+		full.ArcaneUpgradeLevels.TryGetValue("attack_speed", out int capped);
+		if (capped != 16 || full.TotalCurrency != expected)
+			warnings.Add($"Migration: schema 23 with Tempest 12 should cap at 16 and refund {expected} for the four levels past it; got {capped}, purse {full.TotalCurrency}.");
+	}
+
 	// The difficulty curve's table (.ai/difficulty-curve.md, section 4): every playable road chapter has a
 	// row; every multiplier is positive; enemy damage is never under 1 (under it a touch can roll nothing
 	// and read as a dodge) and never eases along the road; the first chapter is the easiest by health.
@@ -5693,6 +5722,54 @@ public static partial class RegressionChecks
 	//     spell's own readers move with the boon and come back without it;
 	//   - the boon carries damage, cooldown, area or scale and amount and nothing else, so no effect, rider,
 	//     slow, knockback or execute reaches a boss through it.
+	// The Rite's second path (Eric, 2026-11-07, in-flight item 50): a crowned spell holds BOTH of its
+	// level-8 Ascensions. Every spell with a choice is put through it here - crowned, ascended down
+	// its first branch, and the stat readers walked with both branches live - so a pair that cannot
+	// coexist is reported at startup rather than discovered mid-run. What this cannot judge is feel:
+	// item 50's test note (every spell crowned, in play) still stands.
+	private static void ValidateSovereignTwin(List<string> warnings)
+	{
+		foreach (SpellData spell in ContentValidator.LoadAllSpells())
+		{
+			IReadOnlyList<SpellEvolutionOption> options = spell.GetEvolutionOptionsForLevel(8);
+			if (options == null || options.Count < 2)
+				continue;
+
+			SpellEvolutionOption keptPick = spell.SelectedLevel8Evolution;
+			string keptPickId = spell.SelectedLevel8EvolutionId;
+			SpellEvolutionOption keptBoon = spell.SovereignBoon;
+			SpellEvolutionOption[] keptTwins = spell.SovereignTwinAscensions;
+			try
+			{
+				spell.SovereignBoon = SovereignRite.BuildBoon(spell, 0);
+				spell.ApplyEvolution(options[0]);
+				if ((spell.SovereignTwinAscensions?.Length ?? 0) != options.Count - 1)
+					warnings.Add($"Sovereign twin: '{spell.Id}' crowned and ascended holds {spell.SovereignTwinAscensions?.Length ?? 0} twin paths, not {options.Count - 1}.");
+				for (int i = 1; i < options.Count; i++)
+				{
+					if (!spell.HasEvolution(options[i].Id))
+						warnings.Add($"Sovereign twin: '{spell.Id}' crowned does not own its unchosen branch '{options[i].Id}'.");
+				}
+				// The readers walk every milestone at once; a throw or a buffer overrun here would be
+				// a crash on the crowned spell's first cast.
+				spell.GetDamageAtLevel(spell.MaxLevel);
+				spell.GetCooldownAtLevel(spell.MaxLevel);
+				spell.GetElementWeights();
+			}
+			catch (Exception e)
+			{
+				warnings.Add($"Sovereign twin: '{spell.Id}' with both branches live threw {e.GetType().Name}: {e.Message}");
+			}
+			finally
+			{
+				spell.SelectedLevel8Evolution = keptPick;
+				spell.SelectedLevel8EvolutionId = keptPickId;
+				spell.SovereignBoon = keptBoon;
+				spell.SovereignTwinAscensions = keptTwins;
+			}
+		}
+	}
+
 	private static void ValidateSovereignRite(List<string> warnings)
 	{
 		const string label = "Sovereign Rite";
