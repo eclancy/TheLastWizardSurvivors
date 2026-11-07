@@ -40,6 +40,15 @@ public partial class LevelTilePainter : Node2D
 	/// </summary>
 	public const int TerrainCollisionLayer = 4;
 
+	/// <summary>
+	/// The physics layer water's shore polygons are on, apart from the walls (in-flight 59: water is
+	/// walkable for the player, who just wades heavily - Player.WaterWadeSpeedMultiplier). Enemies
+	/// mask this layer as well as TerrainCollisionLayer, so a lake still stops and routes the swarm;
+	/// the player's Feet mask only TerrainCollisionLayer, so his boots pass the shore and he wades.
+	/// Anything else that must stop at water but not at walls masks this one.
+	/// </summary>
+	public const int WaterCollisionLayer = 6;
+
 	private string[] BuildMetadataPaths()
 	{
 		var paths = new System.Collections.Generic.List<string> { MetadataPath };
@@ -513,6 +522,13 @@ public partial class LevelTilePainter : Node2D
 	/// <summary>Which water art to use: "forest", "swamp", "frozen" or "pool" (tools/art/water.py).</summary>
 	public string WaterStyle { get; set; } = "pool";
 
+	/// <summary>
+	/// Whether this chapter's water is wadeable (StageEnvironmentProfile.WaterWalkable). Wadeable
+	/// water collides on WaterCollisionLayer, which the player's feet do not mask; the Bridge's
+	/// abyss stays on TerrainCollisionLayer and stops him like a wall.
+	/// </summary>
+	public bool WaterWalkable { get; set; } = true;
+
 	private WaterShape _waterShape;
 	private WaterSurface.Builder _waterBuilder;
 	private ShaderMaterial _waterMaterial;
@@ -555,8 +571,11 @@ public partial class LevelTilePainter : Node2D
 		_waterPrepared = null;
 		if (!_chunkNodes.TryGetValue(chunk, out Node2D root))
 			return;
+		// Wadeable water goes on its own layer, which the player's feet do not mask - that is the
+		// whole wading mechanism (see WaterCollisionLayer above). The abyss keeps the walls' layer.
 		WaterSurface node = _waterBuilder.Finish(_waterShape, minCell, root, EnsureWaterMaterial(),
-			GlobalTransform, GetWorld2D().Space, 1u << (TerrainCollisionLayer - 1));
+			GlobalTransform, GetWorld2D().Space,
+			1u << ((WaterWalkable ? WaterCollisionLayer : TerrainCollisionLayer) - 1));
 		// Under the detail layer if it is already there (reeds and lilypads sit on the water).
 		Node detail = root.GetNodeOrNull("Detail");
 		if (detail != null)
