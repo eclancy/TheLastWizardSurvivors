@@ -627,6 +627,15 @@ things come up; strike what lands.**
       Portrait/safe-area controller navigation and Quit still pass. A 4:3 gameplay render fills the
       window. Generated title layers have zero off-contract colors. All test saves stayed in memory.
 
+47. **Android 0.14.0 fails to reach the menu** (Eric, 2026-11-06). **Open: cause not yet identified.**
+    The phone shows "The menu could not be loaded" and Try again. Windows clean/existing-save
+    launches and a real 0.13.2-to-0.14.0 update did not reproduce it. APK menu assets and script
+    registration are present. Phone-free release-engine/portrait tests with APK assets, GC stress,
+    and both injected resource/construction failures pass. These do not validate Android's runtime.
+    Added stage-specific errors, bounded native startup-error capture and Copy error details, so
+    the next failed launch can be reported without connecting a phone. Fixed failure cleanup
+    disconnecting a viewport signal before it had been connected. No save schema or epoch changes.
+
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
