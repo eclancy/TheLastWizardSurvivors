@@ -1203,14 +1203,14 @@ public static class SpellEvolutionCatalog
 		{
 			Id = AegisWard.RampartId,
 			DisplayName = "Rampart",
-			Description = $"The ward stands off you as a dome: enemy bolts break on it, costing the shield {AegisWard.RampartCost * 100f:0}%. "
-				+ $"{(1f - rampartCooldown) * 100f:0}% shorter recharge.",
+			Description = $"Blocks enemy shots. Each blocked shot costs {AegisWard.RampartCost * 100f:0}% of its damage in shield points. "
+				+ $"Shield recharges {(1f - rampartCooldown) * 100f:0}% sooner.",
 			MilestoneLevel = 4,
 			CooldownMultiplier = rampartCooldown,
 			VisualTag = "Rampart",
 			ModulateColor = new Color(0.5f, 0.85f, 1.0f),
-			SynergyTag = "Guard / Bolts",
-			SynergyDescription = "Against shooters the shield lasts twice as long, and you see what it stops."
+			SynergyTag = "Guard / Shots",
+			SynergyDescription = "Stops enemy shots before they reach you."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
