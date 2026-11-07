@@ -78,15 +78,34 @@ public partial class TitleLoadingScreen : CanvasLayer
 		nearFire.Visible = progress >= 0.7f;
 	}
 
-	public void ShowFailure(Action retry)
+	public void ShowFailure(string error, string report, Action retry)
 	{
 		failed = true;
+		// Failure needs room for readable details and recovery actions on a short screen.
+		art.Visible = false;
 		caption.Text = "The menu could not be loaded.";
+		var details = new Label
+		{
+			Name = "StartupErrorDetails",
+			Text = error.Length > 400 ? error.Substring(0, 397) + "..." : error,
+			AutowrapMode = TextServer.AutowrapMode.WordSmart,
+			HorizontalAlignment = HorizontalAlignment.Center,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+		};
+		ResponsiveLayout.SetFont(details, ResponsiveLayout.TextRole.Label);
+		caption.GetParent().AddChild(details);
 		var button = new Button { Name = "RetryLoading", Text = "Try again", FocusMode = Control.FocusModeEnum.All };
+		button.CustomMinimumSize = new Vector2(0, 56);
 		BonelightSkin.StyleButton(button, BonelightSkin.Emphasis.Primary);
 		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Body);
 		caption.GetParent().AddChild(button);
 		button.Pressed += retry;
+		var copy = new Button { Name = "CopyStartupError", Text = "Copy error details", CustomMinimumSize = new Vector2(0, 56) };
+		BonelightSkin.StyleButton(copy, BonelightSkin.Emphasis.Quiet);
+		ResponsiveLayout.SetFont(copy, ResponsiveLayout.TextRole.Body);
+		caption.GetParent().AddChild(copy);
+		copy.Pressed += () => { DisplayServer.ClipboardSet(report); copy.Text = "Error details copied"; };
+		MenuNavigator.Attach(this, button);
 		button.GrabFocus();
 	}
 

@@ -77,8 +77,10 @@ public partial class TitleScreen : Control
 	private bool warmingMenu;
 	private int warmFrames;
 	private bool startupFailed;
+	private StartupDiagnostics startupDiagnostics;
 	/// <summary>Only true once resources, menu construction and its first draw have completed.</summary>
 	public bool IsPrepared { get; private set; }
+	public string StartupErrorReport { get; private set; } = string.Empty;
 
 	// True while the update check is laid over the screen. Input is ignored until it is done, so
 	// a key pressed while "Checking for updates..." is up cannot open the menu underneath it.
@@ -131,6 +133,7 @@ public partial class TitleScreen : Control
 
 	public override void _ExitTree()
 	{
+		StopStartupDiagnostics();
 		var viewport = GetViewport();
 		if (viewport != null)
 			viewport.SizeChanged -= PlacePrompt;
@@ -194,8 +197,15 @@ public partial class TitleScreen : Control
 
 	private void BeginPreparation()
 	{
+		if (startupDiagnostics == null)
+		{
+			startupDiagnostics = new StartupDiagnostics();
+			OS.AddLogger(startupDiagnostics);
+		}
+		startupDiagnostics.Clear();
 		preparing = true;
 		startupFailed = false;
+		StartupErrorReport = string.Empty;
 		warmingMenu = false;
 		menuRequested = false;
 		loadingScreen = new TitleLoadingScreen { Name = "TitleLoadingScreen" };
@@ -212,7 +222,12 @@ public partial class TitleScreen : Control
 	{
 		startupFailed = true;
 		GD.PushError($"TitleScreen: {message}");
-		loadingScreen.ShowFailure(() =>
+		string stage = preparedMenu?.PreparationStage ?? "Menu scene";
+		StartupErrorReport = $"The One He Missed {UpdateScreen.CurrentVersion}\n"
+			+ $"Platform: {OS.GetName()}\nRenderer: {DisplayServer.GetName()}\nStage: {stage}\n"
+			+ $"Scene: {MenuScenePath}\nError: {message}\n{preparedMenu?.PreparationException}\n"
+			+ $"Engine errors:\n{startupDiagnostics?.Snapshot()}";
+		loadingScreen.ShowFailure($"{stage}: {message}", StartupErrorReport, () =>
 		{
 			loadingScreen.QueueFree();
 			if (preparedMenu != null && IsInstanceValid(preparedMenu)) preparedMenu.QueueFree();
@@ -278,7 +293,16 @@ public partial class TitleScreen : Control
 		loadingScreen = null;
 		preparing = false;
 		IsPrepared = true;
+		StopStartupDiagnostics();
 		StartTitle(pendingOpenMenu);
+	}
+
+	private void StopStartupDiagnostics()
+	{
+		if (startupDiagnostics == null) return;
+		OS.RemoveLogger(startupDiagnostics);
+		startupDiagnostics.Dispose();
+		startupDiagnostics = null;
 	}
 
 	/// <summary>

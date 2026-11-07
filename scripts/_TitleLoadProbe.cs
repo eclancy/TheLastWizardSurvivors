@@ -43,12 +43,28 @@ public partial class _TitleLoadProbe : Node
 	{
 		try
 		{
+			if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--release-portrait") >= 0)
+			{
+				if (OS.IsDebugBuild() || !DisplayProfile.IsPortrait || DisplayProfile.DesktopControlsAvailable)
+					throw new Exception("This check requires the release engine and a portrait canvas");
+				GD.Print("TITLEPROBE release engine, portrait layout and no desktop display controls");
+			}
+			foreach (string arg in OS.GetCmdlineUserArgs())
+				if (arg.StartsWith("--asset-pack="))
+				{
+					if (!ProjectSettings.LoadResourcePack(arg.Substring("--asset-pack=".Length)))
+						throw new Exception("Could not mount the exported asset pack");
+					GD.Print("TITLEPROBE testing exported asset pack");
+				}
 			ulong preparationStart = Time.GetTicksUsec();
 			bool returning = Array.IndexOf(OS.GetCmdlineUserArgs(), "--returning") >= 0;
 			Global.OpenMenuImmediately = returning;
 			var title = ResourceLoader.Load<PackedScene>("res://scenes/TitleScreen.tscn").Instantiate<TitleScreen>();
 			observedTitle = title;
 			bool failureTest = Array.IndexOf(OS.GetCmdlineUserArgs(), "--failed-load") >= 0;
+			bool preparationFailure = Array.IndexOf(OS.GetCmdlineUserArgs(), "--failed-preparation") >= 0;
+			if (preparationFailure)
+				GetNode<SaveManager>("/root/SaveManager").Data.ArcaneUpgradeLevels = null;
 			if (failureTest) title.MenuScenePath = "res://scenes/DoesNotExist.tscn";
 			AddChild(title);
 			int loadingFrames = 0;
@@ -57,9 +73,32 @@ public partial class _TitleLoadProbe : Node
 			for (; !title.IsPrepared && loadingFrames < 3600; loadingFrames++)
 			{
 				await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-				if (failureTest && !retried && title.FindChild("RetryLoading", true, false) is Button retry)
+				if ((failureTest || preparationFailure) && !retried && title.FindChild("RetryLoading", true, false) is Button retry)
 				{
 					GD.Print("TITLEPROBE load failure offers retry");
+					var details = title.FindChild("StartupErrorDetails", true, false) as Label;
+					string expected = preparationFailure ? "NullReferenceException" : "DoesNotExist";
+					if (details == null || string.IsNullOrWhiteSpace(details.Text) || !title.StartupErrorReport.Contains(expected))
+						throw new Exception("Failure screen omitted the loading error");
+					if (failureTest && !title.StartupErrorReport.Contains("Cannot open file"))
+						throw new Exception("Failure report omitted the native resource-loader error");
+					var copy = title.FindChild("CopyStartupError", true, false) as Button;
+					if (copy == null) throw new Exception("Failure screen omitted Copy error details");
+					string clipboardBefore = DisplayServer.ClipboardGet();
+					try
+					{
+						copy.EmitSignal(BaseButton.SignalName.Pressed);
+						await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+						string copied = DisplayServer.ClipboardGet().Replace("\r\n", "\n");
+						if (copied != title.StartupErrorReport.Replace("\r\n", "\n"))
+							throw new Exception($"Failure screen did not copy the full error report ({copied.Length}/{title.StartupErrorReport.Length} characters)");
+					}
+					finally { DisplayServer.ClipboardSet(clipboardBefore); }
+					foreach (Control control in new Control[] { retry, copy, details })
+						if (!GetViewport().GetVisibleRect().Encloses(control.GetGlobalRect()))
+							throw new Exception("Failure recovery controls extend outside the viewport");
+					GD.Print("TITLEPROBE failure details, copy and recovery controls pass");
+					if (preparationFailure) GetNode<SaveManager>("/root/SaveManager").ReplaceInMemory(new SaveData());
 					title.MenuScenePath = "res://scenes/MainMenu.tscn";
 					retry.EmitSignal(BaseButton.SignalName.Pressed);
 					retried = true;
@@ -73,7 +112,12 @@ public partial class _TitleLoadProbe : Node
 					loadingShot = true;
 				}
 				// Repeated early presses must not skip preparation or choose Start Run underneath it.
-				if (!title.IsPrepared)
+				if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--stress-gc") >= 0 && loadingFrames % 5 == 0)
+				{
+					GC.Collect();
+					GC.WaitForPendingFinalizers();
+				}
+				if (!title.IsPrepared && Array.IndexOf(OS.GetCmdlineUserArgs(), "--no-early-input") < 0)
 				{
 					Input.ParseInputEvent(new InputEventKey { Keycode = Key.Enter, PhysicalKeycode = Key.Enter, Pressed = true });
 					Input.ParseInputEvent(new InputEventKey { Keycode = Key.Enter, PhysicalKeycode = Key.Enter, Pressed = false });

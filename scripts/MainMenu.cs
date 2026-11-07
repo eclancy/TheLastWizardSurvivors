@@ -103,8 +103,11 @@ public partial class MainMenu : Control
 	public bool PrepareInSteps { get; set; }
 	public bool IsPrepared { get; private set; }
 	public string PreparationError { get; private set; }
+	public string PreparationStage { get; private set; } = "Menu controls";
+	public string PreparationException { get; private set; }
 	public float PreparationProgress { get; private set; }
 	private IEnumerator<int> preparation;
+	private Viewport preparedViewport;
 
 	public override void _Process(double delta)
 	{
@@ -121,6 +124,7 @@ public partial class MainMenu : Control
 			catch (Exception ex)
 			{
 				PreparationError = ex.Message;
+				PreparationException = ex.ToString();
 				GD.PushError($"MainMenu preparation failed: {ex}");
 				preparation.Dispose();
 				preparation = null;
@@ -131,10 +135,12 @@ public partial class MainMenu : Control
 	private IEnumerable<int> PrepareMenu()
 	{
 		var startup = new StartupTrace("MainMenu");
+		PreparationStage = "Content validation";
 		ContentValidator.ValidateAtStartup(this);
 		startup.Mark("validation");
 		PreparationProgress = 1f / 7f;
 		yield return 0;
+		PreparationStage = "Menu controls";
 		mainPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/MainPanel");
 		arcaneUpgradesPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel");
 		optionsPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/OptionsPanel");
@@ -172,10 +178,12 @@ public partial class MainMenu : Control
 		startup.Mark("bind controls + layout");
 		PreparationProgress = 2f / 7f;
 		yield return 0;
+		PreparationStage = "Options";
 		BuildOptions();
 		startup.Mark("options");
 		PreparationProgress = 3f / 7f;
 		yield return 0;
+		PreparationStage = "Menu styling";
 		ApplyMenuSkin();
 		startup.Mark("skin");
 		PreparationProgress = 4f / 7f;
@@ -183,17 +191,22 @@ public partial class MainMenu : Control
 
 		// The shop needs its definitions before its cards; the boons' pages read BoonCatalog, not these
 		// entries (the shop's spell pages did, until it stopped selling spells).
+		PreparationStage = "Powers";
 		BuildUpgradeDefinitions();
 		foreach (int step in BuildShopSteps()) yield return step;
 		startup.Mark("shop");
 		PreparationProgress = 5f / 7f;
 		yield return 0;
+		PreparationStage = "Spell catalog";
 		foreach (int step in ContentValidator.PrepareSpellResources()) yield return step;
+		PreparationStage = "Wizard catalog";
 		foreach (int step in CharacterRoster.PrepareResources()) yield return step;
+		PreparationStage = "Achievements";
 		foreach (int step in BuildAchievementCardsSteps()) yield return step;
 		startup.Mark("achievements");
 		PreparationProgress = 6f / 7f;
 		yield return 0;
+		PreparationStage = "Menu navigation";
 
 		startRunButton.Pressed += OnStartRunPressed;
 		spellIndexButton.Pressed += OnCodexPressed;
@@ -220,7 +233,8 @@ public partial class MainMenu : Control
 		// Clear of the phone's rounded corners and camera hole; nothing on desktop (SafeArea).
 		SafeArea.Apply(this);
 		MenuNavigator.Attach(this, startRunButton);
-		GetViewport().SizeChanged += OnViewportSizeChanged;
+		preparedViewport = GetViewport();
+		preparedViewport.SizeChanged += OnViewportSizeChanged;
 		startup.Mark("navigation + signals");
 		PreparationProgress = 1f;
 		IsPrepared = true;
@@ -229,8 +243,8 @@ public partial class MainMenu : Control
 	public override void _ExitTree()
 	{
 		preparation?.Dispose();
-		if (GetViewport() is Viewport viewport)
-			viewport.SizeChanged -= OnViewportSizeChanged;
+		if (preparedViewport != null && IsInstanceValid(preparedViewport))
+			preparedViewport.SizeChanged -= OnViewportSizeChanged;
 	}
 
 	private void ApplyMenuSkin()
