@@ -94,6 +94,15 @@ public partial class _FunctionProbe : Node
 		Rect2 view = GetViewport().GetVisibleRect();
 		foreach (Control control in new Control[] { selector, next, previous, back })
 			Check(view.Encloses(control.GetGlobalRect()), $"{control.Name} stays inside the viewport");
+		var scroll = menu.FindChild("UpgradeScroll", true, false) as ScrollContainer;
+		Check(previous.GetGlobalRect().Position.Y >= scroll.GetGlobalRect().End.Y
+			&& (ResponsiveLayout.IsNarrow(menu)
+				? next.GetGlobalRect().End.Y <= back.GetGlobalRect().Position.Y
+				: Math.Abs(next.GlobalPosition.Y - back.GlobalPosition.Y) < 1f),
+			"Powers page controls stay at the bottom, with Back below on phones or alongside on desktop");
+		Check(previous.Size.Y >= 72 && next.Size.Y >= 72
+			&& previous.Size.X >= 200 && next.Size.X >= 200,
+			"Powers page controls have large, prominent touch targets");
 		var seen = new HashSet<string>();
 		for (int i = 0; i < pages.Length; i++)
 		{

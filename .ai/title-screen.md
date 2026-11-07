@@ -463,8 +463,10 @@ preserved by story resets and optional when loading older saves. Tool launches k
 window geometry. Mobile retains the portrait canvas and its existing scaling.
 
 **The footer is one row:** Options, Evolution Codex, flexible space, Quit on desktop; three equal
-buttons on portrait. Heights and baselines match, with consistent bottom insets. The version and
-difficulty sit above the row. The footer remains safe-area-aware and keyboard/pad navigable.
+buttons on portrait. Heights and baselines match, with consistent bottom insets. Difficulty sits
+above the row. The version sits in the upper-left safe-area corner on both title and menu:
+raising it above the footer had put it over PRESS ANY BUTTON on the phone (Eric, 2026-11-07).
+The footer remains safe-area-aware and keyboard/pad navigable.
 
 **Artwork coverage:** `python tools/art/title_backdrop.py` generates a static forest without
 lettering and a separate lettering layer from the existing wide generator. The forest covers the
@@ -862,8 +864,8 @@ each end (the node is anchored to the bottom of `TitleImage`, so it had to move 
 bottom band). That put the 360x20 strip on authored rows **590-610**. **It has since moved
 again**: it is bigger (scale 3, a 360x24 strip) and `TitleScreen.PlacePrompt` puts it near the
 bottom of whatever the screen shows - see the knobs table. The clearance is 88 canvas units
-rather than just enough for a rounded corner because the version label sits 12-40 units off the
-bottom (36 more under SafeArea on a phone), and at 60 the label ended up beside the P.
+rather than just enough for a rounded corner, leaving breathing room under the prompt. The version
+label now sits in the upper-left safe area, independently of the prompt and main-menu footer.
 
 **The glow draws in front of the metal.** The fork was drawn over the bloom so the claw would not
 be swallowed, which put a hard gold cutout across the front of the light source — the one thing
@@ -973,7 +975,7 @@ the two 160-column side bands to `occ` at the frame edge.
 | Evolution Codex | (134,296)-(236,320) | no pocket of its own; a quiet button on the dark grass, clear of the ward's left rim and flame. Report a bug stood beside it until 2026-11-02 and is in Options now |
 | difficulty | (470,312)-(632,352) | `DETAIL_BOX`, right-aligned; one line since the next-run gain line went (2026-11-02) |
 | PRESS ANY BUTTON | rows 322-346, centred | `PROMPT_BOX`; `TitleScreen.WidePromptBottomRow` = 346 |
-| version label | (4,338)-(48,356) | `VERSION_BOX`; where `AddVersionLabel` lands on a 16:9 screen |
+| version label | top-left, canvas offsets (20,20)-(220,48), plus safe-area insets | `AddVersionLabel`; the old bottom-left `VERSION_BOX` pocket is unused |
 
 **Every one of those boxes is a dark pocket in the art** (`ui_pocket_t`), soft-edged and only as
 dark as it needs - held at full strength with a short fade, the empty ones read as black panels

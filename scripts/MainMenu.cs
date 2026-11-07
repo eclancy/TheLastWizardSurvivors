@@ -597,6 +597,7 @@ public partial class MainMenu : Control
 
 	private void OnViewportSizeChanged()
 	{
+		LayoutShopPager();
 		RefreshScreenOptions();
 		if (quitButton != null && !DisplayProfile.IsPortrait) LayoutUtilityRow();
 		// Options' two columns of sections fold to one as the codex lists do (MainMenu.Options.cs).
@@ -748,7 +749,7 @@ public partial class MainMenu : Control
 	}
 
 	// One bottom row, with the same height and baseline for every utility button. Desktop leaves
-	// space before Quit; portrait shares the available width. The version and difficulty sit above.
+	// space before Quit; portrait shares the available width. Difficulty sits above the row.
 	private void LayoutUtilityRow()
 	{
 		if (portraitUtilities != null) return;

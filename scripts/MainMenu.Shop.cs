@@ -67,21 +67,26 @@ public partial class MainMenu
 	private readonly List<(string Title, VBoxContainer View)> shopPages = new();
 	private OptionButton shopCategory;
 	private Label shopPageNumber;
+	private HBoxContainer shopPager;
 	private int activeShopPage;
 
-	// Kept outside the scroll. A short page always has a way forward, including on a phone.
+	// Category above the cards; large page-turn controls below them, always outside the scroll.
 	private void EnsureShopPager()
 	{
-		if (shopCategory != null) return;
+		if (shopCategory != null) { LayoutShopPager(); return; }
 		var host = upgradeScroll.GetParent();
 		var pager = new HBoxContainer { Name = "ShopPager" };
-		pager.AddThemeConstantOverride("separation", 8);
-		Button previous = new() { Name = "ShopPrevious", Text = "Previous", CustomMinimumSize = new Vector2(112, 52) };
-		Button next = new() { Name = "ShopNext", Text = "Next", CustomMinimumSize = new Vector2(88, 52) };
+		shopPager = pager;
+		pager.AddThemeConstantOverride("separation", 12);
+		Button previous = new() { Name = "ShopPrevious", Text = "Previous page", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(200, 72) };
+		Button next = new() { Name = "ShopNext", Text = "Next page", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(200, 72) };
 		shopCategory = new OptionButton { Name = "ShopCategory", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(180, 52) };
-		shopPageNumber = new Label { Name = "ShopPageNumber", VerticalAlignment = VerticalAlignment.Center };
+		shopPageNumber = new Label { Name = "ShopPageNumber", VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
 		ResponsiveLayout.SetFont(shopCategory, ResponsiveLayout.TextRole.Body);
 		ResponsiveLayout.SetFont(shopPageNumber, ResponsiveLayout.TextRole.Label);
+		ResponsiveLayout.SetFont(previous, ResponsiveLayout.TextRole.Body);
+		ResponsiveLayout.SetFont(next, ResponsiveLayout.TextRole.Body);
+		shopPageNumber.AddThemeColorOverride("font_color", PurseInk);
 		previous.Pressed += () => ShowShopPage(activeShopPage - 1);
 		next.Pressed += () => ShowShopPage(activeShopPage + 1);
 		shopCategory.ItemSelected += index =>
@@ -90,12 +95,31 @@ public partial class MainMenu
 			ShowShopPage(shopPages.FindIndex(p => p.Title == category));
 		};
 		pager.AddChild(previous);
-		pager.AddChild(shopCategory);
 		pager.AddChild(shopPageNumber);
 		pager.AddChild(next);
+		host.AddChild(shopCategory);
+		host.MoveChild(shopCategory, upgradeScroll.GetIndex());
 		host.AddChild(pager);
-		host.MoveChild(pager, upgradeScroll.GetIndex());
+		host.MoveChild(pager, backFromArcaneButton.GetIndex());
 		BonelightSkin.ApplyButtonSet(new[] { previous, next });
+		LayoutShopPager();
+	}
+
+	private void LayoutShopPager()
+	{
+		if (shopPager == null) return;
+		Node host = upgradeScroll.GetParent();
+		// A wide screen needs the vertical space for its cards; a phone has room for Back below.
+		if (ResponsiveLayout.IsNarrow(this))
+		{
+			if (backFromArcaneButton.GetParent() == shopPager)
+			{
+				backFromArcaneButton.Reparent(host);
+				host.MoveChild(backFromArcaneButton, shopPager.GetIndex() + 1);
+			}
+		}
+		else if (backFromArcaneButton.GetParent() != shopPager)
+			backFromArcaneButton.Reparent(shopPager);
 	}
 
 	private void ShowShopPage(int index)
@@ -109,7 +133,7 @@ public partial class MainMenu
 		for (int i = 0; i < shopCategory.ItemCount; i++)
 			if (shopCategory.GetItemText(i) == shopPages[activeShopPage].Title)
 				shopCategory.Select(i);
-		shopPageNumber.Text = $"{activeShopPage + 1} / {shopPages.Count}";
+		shopPageNumber.Text = $"Page {activeShopPage + 1} / {shopPages.Count}";
 		upgradeScroll.ScrollVertical = 0;
 		if (focusWasCard) OpenShopAtTop();
 	}

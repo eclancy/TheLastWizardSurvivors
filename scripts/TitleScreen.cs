@@ -148,8 +148,8 @@ public partial class TitleScreen : Control
 	// Rows are the 360x840 art's own (tools/art/splash.py). The strip is PromptRows tall; its
 	// bottom goes PromptLowestRow at the lowest, which on a Pixel 9 leaves 44 rows (88 canvas
 	// units) under it, and otherwise PromptClearance above the bottom of the screen. That much,
-	// not just the rounded corners: AddVersionLabel puts the version 12-40 units off the bottom,
-	// raised a further 36 by SafeArea on a phone, and at less clearance it sat beside the P. It never climbs above PromptHighestRow, the row it used to sit on just under the
+	// not just the rounded corners. The version now has its own upper-left safe-area corner.
+	// The prompt never climbs above PromptHighestRow, the row it used to sit on just under the
 	// ward, so a short or landscape window cannot pull it up over the figure. Whole art rows only,
 	// so the strip stays on the same pixel grid as the art it is drawn over.
 	private const int ArtRows = 840;
@@ -306,7 +306,7 @@ public partial class TitleScreen : Control
 	}
 
 	/// <summary>
-	/// The version, small and quiet in the bottom-left corner, so a player can say which copy
+	/// The version, small and quiet in the top-left corner, so a player can say which copy
 	/// they are on. It is a child of the screen rather than of TitleImage: it sits on the ground
 	/// (or in the letterbox, on a tall phone) instead of being scaled into the x2 artwork.
 	/// </summary>
@@ -318,17 +318,17 @@ public partial class TitleScreen : Control
 			Text = $"v{UpdateScreen.CurrentVersion}",
 			AnchorLeft = 0f,
 			AnchorRight = 0f,
-			AnchorTop = 1f,
-			AnchorBottom = 1f,
+			AnchorTop = 0f,
+			AnchorBottom = 0f,
 			OffsetLeft = 20f,
 			OffsetRight = 220f,
-			OffsetTop = -120f,
-			OffsetBottom = -92f,
+			OffsetTop = 20f,
+			OffsetBottom = 48f,
 			VerticalAlignment = VerticalAlignment.Bottom,
 			MouseFilter = MouseFilterEnum.Ignore,
 		};
 		AddChild(version);
-		// Bottom-left is exactly where a phone rounds its corner off.
+		// Clear the phone's rounded corner and camera cutout, away from the title prompt/footer.
 		SafeArea.ApplyTo(version);
 		ResponsiveLayout.SetFont(version, ResponsiveLayout.TextRole.Micro);
 		// BonelightSkin's quiet menu tone: there to be found, not to be read on the way past.
