@@ -749,7 +749,8 @@ public partial class GroundSpike : Node2D, IPaintsElementPath
 			Enemy e = launched[i];
 			if (e == null)
 				break;
-			if (!IsInstanceValid(e) || e.IsDying || !e.IsAirborne)
+			// A dying body keeps its shadow: killed mid-air it finishes the arc and dies on landing.
+			if (!IsInstanceValid(e) || !e.IsAirborne)
 				continue;
 			Transform2D xf = e.GlobalTransform;
 			Vector2 feet = xf.Origin + new Vector2(0f, e.StatusFxGeometry.FeetY * xf.X.Length()) - GlobalPosition;

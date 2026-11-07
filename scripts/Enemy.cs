@@ -15,6 +15,12 @@ public partial class Enemy : CharacterBody2D
 	private float airborneTime = 0f;
 	private float airborneDuration = 0f;
 	private float airborneHeight = 0f;
+	// Killed while thrown up: the corpse finishes its arc and the death strip waits for the landing
+	// (Eric, 2026-11-07: a body Deep Strata launches must not die until it hits the ground). Only
+	// presentation waits - the rewards, the group leave and the collision zeroing all still happen
+	// on the killing frame, in StartDeath. _Process ticks the rest of the flight, since a corpse's
+	// _PhysicsProcess is off.
+	private bool dyingInAir = false;
 	// While it flies it is drawn over everything in the air (DrawLayers.Air) and under the floating
 	// numbers: among y-sorted bodies a body thrown up was lost behind its neighbours' heads, and at Air
 	// it was lost behind the very glass (Obsidian Spike) or arm (Black Tentacles) that threw it.
@@ -674,6 +680,10 @@ public partial class Enemy : CharacterBody2D
 
 	public override void _Ready()
 	{
+		// Overriding _Process turns idle processing on for every body; only a corpse falling out of
+		// the air uses it (dyingInAir), so it stays off until StartDeath needs it. Without this every
+		// one of a 140-strong swarm would pay an interop call a frame for nothing.
+		SetProcess(false);
 		maxHealth = Health;
 		drawsItself = ClassDrawsItself(GetType());
 		if (ClassDrawsGroundTells(GetType()))
@@ -2248,7 +2258,9 @@ public partial class Enemy : CharacterBody2D
 
 		// Before the group leave and the collision zeroing below, while GlobalPosition still
 		// means something. The sound is allowed to outlast the corpse - it gates nothing.
-		PlayDeathSound();
+		// A body killed in the air pops when it lands instead, with its death strip.
+		if (airborneTime <= 0f)
+			PlayDeathSound();
 
 		if (HasSignal("killed"))
 			EmitSignal("killed");
@@ -2280,15 +2292,47 @@ public partial class Enemy : CharacterBody2D
 		// animation that never advances never finishes, so a corpse killed frozen would never free.
 		StatusEffectLayer.Current?.Untrack(this);
 		RefreshStatusLook();
-		// Killed in the air (ApplyLaunch): it drops, rather than playing its death hung where it was.
+		// Killed in the air (ApplyLaunch): the corpse finishes its arc and dies when it lands,
+		// rather than playing its death hung in the air or snapped to the ground. Everything
+		// gameplay has already happened above, on this frame - only the fall, the death sound
+		// and the death strip wait. A corpse's _PhysicsProcess is off, so _Process ticks the
+		// rest of the flight; the shock shake is dropped so the fall is the pure arc.
 		if (airborneTime > 0f)
 		{
-			airborneTime = 0f;
-			ZIndex = groundedZIndex;
-			UpdateShockVisual(0f);
+			shockTimeRemaining = 0f;
+			dyingInAir = true;
+			SetProcess(true);
+			FrameProfiler.End(FrameProfiler.Section.EnemyDeath, perfStart);
+			return;
 		}
 		FrameProfiler.End(FrameProfiler.Section.EnemyDeath, perfStart);
+		BeginDeathPresentation();
+	}
 
+	// Only a body killed mid-air runs this (StartDeath turns it on; _Ready turns it off): what is
+	// left of the arc, then the landing - the grounded z, the death pop, the death strip.
+	public override void _Process(double delta)
+	{
+		if (!dyingInAir)
+		{
+			SetProcess(false);
+			return;
+		}
+		airborneTime = MathF.Max(0f, airborneTime - (float)delta);
+		UpdateShockVisual(0f);
+		if (airborneTime > 0f)
+			return;
+		dyingInAir = false;
+		SetProcess(false);
+		ZIndex = groundedZIndex;
+		PlayDeathSound();
+		BeginDeathPresentation();
+	}
+
+	// The corpse's presentation - the staged fall, the death strip, or the deferred free - shared by
+	// the killing frame and the end of a dying body's airborne arc (dyingInAir above).
+	private void BeginDeathPresentation()
+	{
 		// A body that stages its own fall (BossEnemy, BossDeath) takes the corpse from here. Everything
 		// that is gameplay - the rewards, the group, the collision - has already happened above, on
 		// this frame, so what follows is presentation only. Tint and punch go back to rest first, for
