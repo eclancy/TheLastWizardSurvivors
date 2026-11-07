@@ -23,8 +23,10 @@ public class SaveData
 	// Dungeon moved from fifth into the castle, so what each save could enter is written down under the
 	// old order, and the Dungeon itself is kept in GrandfatheredStageIds - entry, and evidence of nothing.
 	// 22 is the slow start's (.ai/slow-start.md, section 6): a played save keeps its six pages
-	// (FullBookKept) and every system it could already use (LessonsLearned).
-	public const int CurrentSchemaVersion = 22;
+	// (FullBookKept) and every system it could already use (LessonsLearned). 23 merges Chronoweave
+	// into Tempest Rhythm (Eric, 2026-11-07): bought cooldown levels become attack-speed levels one
+	// for one, any past the new 16-level cap refunded at what they cost.
+	public const int CurrentSchemaVersion = 23;
 	public const int CampaignSchemaVersion = 8;
 	private const int MaxTelemetryHistory = 25;
 
@@ -440,6 +442,9 @@ public class SaveData
 		if (SchemaVersion < 22)
 			MigrateToSlowStart();
 
+		if (SchemaVersion < 23)
+			MigrateChronoweaveIntoTempestRhythm();
+
 		if (log)
 			GD.Print($"SaveData: migrated schema {from} -> {CurrentSchemaVersion}; " +
 				$"{UnlockedSpellIds.Count} spells, {UnlockedBoonIds.Count} boons, {UnlockedCharacterIds.Count} wizards, " +
@@ -749,6 +754,40 @@ public class SaveData
 		}
 		TotalCurrency += refund;
 		return refund;
+	}
+
+	/// <summary>
+	/// Schema 23 (Eric, 2026-11-07: "merge cooldown and attack speed - confusing to have both,
+	/// especially in the power ups"). Chronoweave (-5% cooldown a level) is retired; Tempest Rhythm
+	/// (+8% attack speed a level, cap 16) is the one clock Power. Nothing anybody had is taken away:
+	/// every Chronoweave level becomes a Tempest Rhythm level, both upgrades having always cost the
+	/// same (35 + 25 a level, frozen here the way RetiredLevelUpCharges freezes prices), and any
+	/// level past the new cap is refunded at the top of the price curve - the levels past the cap
+	/// were the dearest bought. Returns (moved, refund), for the validator.
+	/// </summary>
+	internal (int Moved, int Refund) MigrateChronoweaveIntoTempestRhythm()
+	{
+		const string Retired = "cooldowns";
+		const string Kept = "attack_speed";
+		const int Cap = 16;
+		const int BaseCost = 35;
+		const int CostPerLevel = 25;
+		if (!ArcaneUpgradeLevels.TryGetValue(Retired, out int levels) || levels <= 0)
+		{
+			ArcaneUpgradeLevels.Remove(Retired);
+			return (0, 0);
+		}
+		ArcaneUpgradeLevels.TryGetValue(Kept, out int kept);
+		int room = Cap - kept > 0 ? Cap - kept : 0;
+		int moved = levels < room ? levels : room;
+		if (moved > 0)
+			ArcaneUpgradeLevels[Kept] = kept + moved;
+		int refund = 0;
+		for (int n = levels - 1; n >= moved; n--)
+			refund += BaseCost + n * CostPerLevel;
+		ArcaneUpgradeLevels.Remove(Retired);
+		TotalCurrency += refund;
+		return (moved, refund);
 	}
 
 	/// <summary>

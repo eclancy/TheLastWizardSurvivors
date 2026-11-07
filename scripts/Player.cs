@@ -1078,7 +1078,6 @@ public partial class Player : CharacterBody2D
 
 		int damageLevel = GetLevel("damage");
 		int recoveryLevel = GetLevel("recovery");
-		int cooldownLevel = GetLevel("cooldowns");
 		int areaLevel = GetLevel("area");
 		int attackSpeedLevel = GetLevel("attack_speed");
 		int durationLevel = GetLevel("duration");
@@ -1092,9 +1091,12 @@ public partial class Player : CharacterBody2D
 
 		damageMultiplier = 1.0f + (damageLevel * 0.08f);
 		recoveryPerSecond = recoveryLevel * EmberheartRegenPerLevel;
-		cooldownMultiplier = MathF.Max(0.35f, 1.0f - (cooldownLevel * 0.05f));
+		// Chronoweave merged into Tempest Rhythm, 2026-11-07 (schema 23): the shop no longer moves
+		// this. The baseline is reset here so the refresh stays idempotent; the Frostweaver's
+		// cooldown_reduction_10 passive still multiplies into it afterwards, as it always did.
+		cooldownMultiplier = 1.0f;
 		areaMultiplier = 1.0f + (areaLevel * 0.08f);
-		attackSpeedMultiplier = 1.0f + (attackSpeedLevel * 0.06f);
+		attackSpeedMultiplier = 1.0f + (attackSpeedLevel * 0.08f);
 		durationMultiplier = 1.0f + (durationLevel * 0.10f);
 		amountBonus = amountLevel;
 		growthMultiplier = 1.0f + (growthLevel * 0.10f);
