@@ -157,6 +157,9 @@ public static class UnlockCatalog
 	// already do something: a lobbed explosion, a cone, a chaining arc, a ground eruption. That
 	// pulled these four out of the achievement rewards, which is why the block below hands those
 	// four achievements spells promoted from the shop instead.
+	// AchievementDefinitions builds its list from this catalog. Initializers here may use its
+	// const IDs/prefixes, but must never call its methods: Mono can initialize that type on a
+	// method call, before Definitions has been assigned, and poison both types for the launch.
 	private static readonly UnlockDefinition[] Definitions =
 	{
 		// The Fire opener is a flamethrower rather than a lobbed bolt. A cone you hold while the
@@ -361,7 +364,7 @@ public static class UnlockCatalog
 			$"Open {AchievementDefinitions.MortlakeChestTarget} chests across your runs."),
 		// Free the hound, cat and bird in the Pinfold to earn both Familiar and Laelaps.
 		// Keep his existing optional campaign-gate status so this change cannot close a player's road.
-		FromAchievementCharacter("laelaps", AchievementDefinitions.SecretDeedId(SecretCatalog.PinfoldId),
+		FromAchievementCharacter("laelaps", AchievementDefinitions.SecretDeedPrefix + SecretCatalog.PinfoldId,
 			"Hidden somewhere in the Fallow Fields.",
 			secretUntilStage: "stage_9", outsideCampaignGate: true),
 		// TAKEN ON THE HARDEST ROAD (.ai/dark-wizard-playable.md). The dark wizard himself, the reward of beating
@@ -393,7 +396,7 @@ public static class UnlockCatalog
 			Id = OrbOfAges.SpellId,
 			Kind = UnlockKind.Spell,
 			Source = UnlockSource.Achievement,
-			SourceId = AchievementDefinitions.EventDeedId("the_moot"),
+			SourceId = AchievementDefinitions.EventDeedPrefix + "the_moot",
 			SiteId = "the_moot",
 			LockedHint = "One wizard's own: restore the shattered wards of the Broken Circle.",
 			ExclusiveTo = "merlin",
