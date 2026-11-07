@@ -53,6 +53,14 @@ public partial class WellEvent : SideEvent
 	private float waveTimer;
 	private float lastBearing;
 	private float foulFlash;
+	// THE WIN BEAT (Eric, 2026-11-06, "Yes, both"; in-flight 58): the well's own moment before the
+	// reward column - the water rises clean and lit out of the mouth, the fouled pips wash clean,
+	// then the drawn-up glint (the coin; on later wins, what becomes the chest) arcs to the exact
+	// spot the column will rise at. A brief hold, so the save registers at the place that was saved.
+	private float winBeat = -1f;
+	private Vector2 winSpot;
+	private const float WinRiseSeconds = 0.8f;
+	private const float WinArcSeconds = 0.9f;
 	private readonly List<Enemy> walkers = new();
 	private readonly RandomNumberGenerator rng = new();
 	private Sprite2D sprite;
@@ -174,10 +182,19 @@ public partial class WellEvent : SideEvent
 			return;
 		}
 
-		if (progress >= 1f)
+		if (progress >= 1f && winBeat < 0f)
 		{
 			ReleaseWalkers();
-			Succeed(well);
+			winSpot = ChooseRewardSpot(well);
+			winBeat = 0f;
+			// The water's own cue as it clears; the reward's own sound still comes with the column.
+			SfxPlayer.AtPosition(SfxCatalog.SecretSeen, well, 0f);
+		}
+		if (winBeat >= 0f)
+		{
+			winBeat += delta;
+			if (winBeat >= WinRiseSeconds + WinArcSeconds)
+				Succeed(winSpot, exact: true);
 		}
 	}
 
@@ -240,11 +257,42 @@ public partial class WellEvent : SideEvent
 		for (int k = 0; k < FoulSteps; k++)
 		{
 			Vector2 p = c + new Vector2((k - (FoulSteps - 1) * 0.5f) * 16f, 22f);
-			bool on = k < fouled;
+			// The win beat washes every fouled pip clean: the water is saved, and the row says so.
+			bool on = k < fouled && winBeat < 0f;
 			bool newest = on && k == fouled - 1 && foulFlash > 0f;
 			float r = newest ? 7f : 5f;
 			DrawCircle(p, r, on ? new Color(Fouled, 1f) : new Color(Water, 0.85f));
 			DrawArc(p, r, 0f, Mathf.Tau, 12, on ? new Color(0.30f, 0.42f, 0.24f, 0.9f) : new Color(0f, 0f, 0f, 0.6f), 1.5f);
+		}
+
+		// The win beat at the well itself: clean water climbing out of the mouth, brighter as it
+		// rises, then the glint drawn up and arcing to where the reward column rises (Succeed).
+		if (winBeat >= 0f)
+		{
+			Vector2 mouth = c + new Vector2(0f, -34f);
+			float rise = Mathf.Clamp(winBeat / WinRiseSeconds, 0f, 1f);
+			for (int k = 0; k < 4; k++)
+			{
+				float h = rise * (26f + k * 9f);
+				Vector2 foot = mouth + new Vector2(k * 7f - 10.5f, 4f);
+				DrawLine(foot, foot + new Vector2(0f, -h), new Color(Water, 0.55f - k * 0.08f), 3f);
+			}
+			DrawCircle(mouth + new Vector2(0f, -rise * 8f), 10f + rise * 6f, new Color(Water, 0.30f + 0.25f * rise));
+			if (winBeat > WinRiseSeconds)
+			{
+				float u = Mathf.Clamp((winBeat - WinRiseSeconds) / WinArcSeconds, 0f, 1f);
+				Vector2 to = ToLocal(winSpot);
+				Vector2 glint = mouth.Lerp(to, u) + new Vector2(0f, -Mathf.Sin(u * Mathf.Pi) * 90f);
+				// A short tail behind it, thinning - the pixel-pass rule: size, never alpha fade alone.
+				for (int t = 1; t <= 3; t++)
+				{
+					float back = Mathf.Max(0f, u - t * 0.06f);
+					Vector2 tail = mouth.Lerp(to, back) + new Vector2(0f, -Mathf.Sin(back * Mathf.Pi) * 90f);
+					DrawCircle(tail, 4f - t, new Color(SecretSite.GoldLit, 0.7f - t * 0.18f));
+				}
+				DrawCircle(glint, 7f, new Color(SecretSite.GoldBase, 0.9f));
+				DrawCircle(glint, 4f, SecretSite.GoldHi);
+			}
 		}
 		// The tethers: a faint dashed line from each walker to the well, so the ones going for it
 		// can be told from the ones going for him.
