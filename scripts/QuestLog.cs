@@ -95,7 +95,10 @@ public static class QuestLog
 		// The painter kept to paint the portraits in the Gallery (4.8), who drew himself a door and was never let finish it.
 		new Prisoner("ma_liang", "the painter in the gallery", "Along the walls a line of wet paint keeps running.", "{0} has stepped out of his door."),
 		// The hound's light is bound with the other companions inside the Fields' sealed pen.
-		new Prisoner("laelaps", "the hound in the pen", "Three pale companions pace a sealed pen beyond the furrows.", "{0} runs free with his companions."),
+		// The freed line names him as the myth does - the hound no quarry escapes - rather than the old
+		// "{0} runs free with his companions.", which read as if Laelaps were a fourth animal beside the
+		// three in the pen (Eric, 2026-11-07: the unlock text was weird). He IS the hound of the three.
+		new Prisoner("laelaps", "the hound in the pen", "Three pale companions pace a sealed pen beyond the furrows.", "{0} runs free. Nothing he chases escapes."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.
 		new Prisoner("john_dee", "the scattered scholar", "", "{0} has his library back."),
 		// Not a prisoner: the one who took them (.ai/dark-wizard-playable.md), taken in his turn on the hardest

@@ -20,7 +20,7 @@ public static partial class SecretCatalog
 			// Guarded: both guards down frees the gate; then approach each trapped companion inside.
 			Vault(PinfoldId, Stage, "The Pinfold", SecretVerb.Guarded, "familiar", "Familiar",
 				seen: "Drag marks and splayed paw prints lead to a stone pen. A hound, a cat and a bird pace behind its magical seal, their color drained.",
-				found: "The Hayward's pound held three companions as pale ghosts. Its guards fell, the binding broke, and you freed each of them. Laelaps runs free, and Familiar is yours.") with
+				found: "The Hayward's pound held three companions as pale ghosts. Its guards fell, the binding broke, and you freed them all. The hound is Laelaps, who catches all he chases; the three now answer your call. Familiar is yours.") with
 			{
 				IsBuilt = true,
 				CreateSite = () => new global::Pinfold(),

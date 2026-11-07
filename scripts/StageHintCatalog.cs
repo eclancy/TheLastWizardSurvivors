@@ -134,7 +134,7 @@ public static class StageHintCatalog
 			Cue = HintCue.Leaves,
 			Lines = new[]
 			{
-				"Leaves whispering, though there is no wind.",
+				"Leaves are whispering, though there is no wind.",
 				"The whisper again. Something out there still grows.",
 				"Fainter now, the whispering. It has not stopped.",
 			},
