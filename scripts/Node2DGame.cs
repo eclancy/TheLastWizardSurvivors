@@ -566,7 +566,13 @@ public partial class Node2DGame : Node2D
 			uiOverlay.AddChild(new LoadoutHud { Name = "LoadoutHud", Holder = player });
 			// The tracked quests, in the lower left (QuestTracker, .ai/quests-and-notes.md). Before the
 			// SafeArea pass below, so it is moved in from a phone's corner with the rest of the HUD.
-			questTracker = new QuestTracker { Name = "QuestTracker" };
+			questTracker = new QuestTracker
+			{
+				Name = "QuestTracker",
+				// A tracked quest done in some other chapter is not shown over this run (Eric,
+				// 2026-11-06); the quest log menu still lists every tracked quest.
+				CurrentStageId = StageCatalog.GetByIndex(Global.SelectedStageIdx)?.Id ?? string.Empty,
+			};
 			uiOverlay.AddChild(questTracker);
 
 			var runTimerPanel = new PanelContainer
@@ -4758,7 +4764,7 @@ public partial class Node2DGame : Node2D
 			if (boon.Effect == BoonEffect.WalkingRecharge && player != null)
 				box.AddChild(BuildDetailLabel(player.WaywiserWindingSpellName is string winding
 					? $"Winding: {winding}."
-					: "Not winding - walk to wind your slowest spell.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
+					: "Not winding - walk to wind the spell furthest from ready.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
 			// The element tags it adds to the run, as the same chips the level-up card showed when it
 			// was taken - "why is my Water at 3" was a question the pause screen could not answer.
 			if (BuildPauseTagChips(boon.ElementWeights) is Control chips)
@@ -6242,9 +6248,12 @@ public partial class Node2DGame : Node2D
 			AnchorLeft = 0f,
 			AnchorRight = 1f,
 			OffsetLeft = 24f,
-			OffsetTop = 44f,
+			// 56, not 44: the bar spans the whole width, and at 44 its left end sat on the player's
+			// health bar, whose box ends at y 50 (Eric, 2026-11-06: "Boss health bar touches player
+			// health bar"). 50 plus the band's own Gap. HudBand steps everything under it down with it.
+			OffsetTop = 56f,
 			OffsetRight = -24f,
-			OffsetBottom = 44f + 34f
+			OffsetBottom = 56f + 34f
 		};
 		uiOverlay.AddChild(bossHudRoot);
 		SafeArea.ApplyTo(bossHudRoot);

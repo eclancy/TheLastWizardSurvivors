@@ -659,6 +659,14 @@ things come up; strike what lands.**
 
 ## Chat-only notes recovered 2026-11-07 (Eric: "Don't allow any to slip through")
 
+**2026-11-07, Eric: "all large pieces have my go."** Every held large piece is cleared to build -
+the water pass, the ground biomes, Baba Yaga's four-sided solid hut, the remaining unlock puzzles,
+the per-chapter landmarks, Shadow Bolt as a Conjunction, the boon-slot rework (41), the tag/slot
+suite (52), the second-half campaign (53), cross-device saves (14; a provider sign-up still needs
+his account, so the manual export/import half goes first), the opening-cinematic reworks (15, 16),
+the side-event payoff beats (58) and the teacher-discovery amplification (49, without waiting on
+his playtest). Sequencing is the integrator's; release whenever a piece is finished and validated.
+
 The 2026-11-06/07 playtest notes Eric gave in chat after asking for chat-only notes, swept back out
 of the session transcript on 2026-11-07 at his ask - chat notes do not survive context compaction
 (Prismatic Spray was nearly lost). Already released in 0.15.0: Magic Missile's fan of three faster,

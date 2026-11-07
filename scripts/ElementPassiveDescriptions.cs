@@ -6,6 +6,9 @@ public static class ElementPassiveDescriptions
 {
 	public static string GetProgressLabel(int count)
 	{
+		// Past the last tier there is nothing left to count toward: a tag that would push past 6
+		// says so instead of pretending at a seventh (Eric, 2026-11-06: "it should just say Max").
+		if (count > 6) return "Max";
 		int threshold = GetDisplayedThresholdForCount(count);
 		return $"{Mathf.Min(count, threshold)}/{threshold}";
 	}

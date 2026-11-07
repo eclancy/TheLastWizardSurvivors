@@ -2077,7 +2077,9 @@ public static class SpellEvolutionCatalog
 			Id = MeteorImpact.SkipstoneId,
 			BonusElementWeights = new() { { "Earth", 1 } },
 			DisplayName = "Skipstone",
-			Description = $"Every meteor glances off the ground and bounds on to land again, for {MeteorImpact.SkipDamageShare * 100f:0}% more. +35% damage.",
+			// "For 90% more" was wrong as well as vague (Eric, 2026-11-06): the bounce deals a SHARE
+			// of the meteor's damage (MeteorImpact.SkipDamageShare), not an increase.
+			Description = $"Every meteor glances off the ground and lands again; the second strike deals {MeteorImpact.SkipDamageShare * 100f:0}% of the first's. +35% damage.",
 			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.35f,
@@ -2927,7 +2929,7 @@ public static class SpellEvolutionCatalog
 			"Heat / Burst", "Hold a ray on something big, and the pack round it goes up with it.",
 			o => { o.DisplayName = "Flashpoint"; o.VisualTag = "Flashpoint"; o.DamageMultiplier = 1.2f; o.AreaMultiplier = 1.3f; }));
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.HyperAcceleration,
-			$"When a ray's target falls, its heat jumps to the nearest enemy, {(ScorchingRayBeam.MaxHandoffs == 1 ? "once" : $"up to {ScorchingRayBeam.MaxHandoffs} times")} a cast, and holds into the next. Rays strike 25% faster.",
+			$"When a ray's target dies, the ray swings to the nearest enemy and keeps the heat it built, {(ScorchingRayBeam.MaxHandoffs == 1 ? "once" : $"up to {ScorchingRayBeam.MaxHandoffs} times")} a cast. Rays strike 25% faster.",
 			"Heat / Chain", "The heat you built on an elite is not lost when it dies.",
 			o => { o.DisplayName = "Handoff"; o.VisualTag = "Handoff"; o.SpeedMultiplier = 1.25f; }));
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.ReactiveCatalyst,

@@ -18,6 +18,11 @@ public partial class XPOrb : Area2D
 
 	private CharacterBody2D? player = null;
 	private bool attracted = false;
+	// How long this orb has been chasing, and how hard the chase ramps. AttractSpeed (200) starts
+	// under the wizard's own walk (Player.Speed is 220 before any boon), so a flat-speed orb could
+	// trail a moving player forever (Eric, 2026-11-06): it speeds up until it finally wins.
+	private float chaseSeconds;
+	private const float ChaseAcceleration = 240f;
 	private AnimatedSprite2D? sprite = null;
 	private Vector2 spriteBasePosition = Vector2.Zero;
 	// The orb art is authored 16x16 and drawn at the contract's x2, which the scene sets. The
@@ -79,11 +84,13 @@ public partial class XPOrb : Area2D
 			if (dist < dynamicAttractDistance) attracted = true;
 			if (attracted)
 			{
-				float speed = AttractSpeed;
+				float speed = AttractSpeed + ChaseAcceleration * chaseSeconds;
+				chaseSeconds += (float)delta;
 				if (gleanSpeed > 0f)
 				{
 					gleanSpeed = Mathf.Min(GleanMaxSpeed, gleanSpeed + GleanAcceleration * (float)delta);
-					speed = gleanSpeed;
+					// The glean keeps its own ramp; the chase ramp stands in wherever it is faster.
+					speed = Mathf.Max(speed, gleanSpeed);
 				}
 				float step = speed * (float)delta;
 				// Never past him: at a gleaned orb's speed one frame's step can be longer than what is

@@ -172,9 +172,10 @@ public partial class CharacterSelection : Control
 		}
 
 		// Laid out in the screen's own order, not the roster's: The Archmage first (CharacterRoster.SelectionOrder;
-		// Eric, 2026-11-02: "He should be the first one on the list"), the rest as the roster lists them. Every card
+		// Eric, 2026-11-02: "He should be the first one on the list"), then every unlocked wizard above the locked
+		// and sealed ones (Eric, 2026-11-06), roster order within each band - OrderBy is stable. Every card
 		// still carries its ROSTER index, which is what Global.SelectedCharacterIdx and the run read.
-		foreach (int i in CharacterRoster.SelectionOrder())
+		foreach (int i in CharacterRoster.SelectionOrder().OrderBy(index => cardStates[index] == CardState.Unlocked ? 0 : 1))
 		{
 			if (!IsSelectable(i))
 				continue;

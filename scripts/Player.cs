@@ -7184,13 +7184,28 @@ public partial class Player : CharacterBody2D
 		CollectEnemiesInRange(castRange);
 		if (aimCandidates.Count == 0)
 			aimCandidates.Add(nearest);
+		// Every meteor of a volley takes a DIFFERENT enemy, dealt at random without replacement
+		// (Eric, 2026-11-06: "Meteors should always target different enemies"); once the crowd is
+		// spent, the extras strike random ground in reach instead of stacking on the one body.
+		int undealt = aimCandidates.Count;
 		for (int i = 0; i < count; i++)
 		{
-			Node2D target = aimCandidates[combatRng.RandiRange(0, aimCandidates.Count - 1)];
+			Node2D target = null;
+			if (undealt > 0)
+			{
+				int pick = combatRng.RandiRange(0, undealt - 1);
+				target = aimCandidates[pick];
+				aimCandidates[pick] = aimCandidates[undealt - 1];
+				aimCandidates[undealt - 1] = target;
+				undealt--;
+			}
 			var impact = scene.Instantiate<Node2D>();
 			var script = impact as MeteorImpact;
 			float delay = i * stagger;
-			Vector2 at = target.GlobalPosition;
+			Vector2 at = target != null
+				? target.GlobalPosition
+				: GlobalPosition + Vector2.FromAngle(combatRng.RandfRange(0f, Mathf.Tau))
+					* combatRng.RandfRange(castRange * 0.25f, castRange * 0.9f);
 			if (barrage)
 				at = BarrageSpot(nearest.GlobalPosition, densest.GlobalPosition, blast, castRange, i);
 			if (script != null)

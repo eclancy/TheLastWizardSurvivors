@@ -129,10 +129,13 @@ public partial class QuestTracker : VBoxContainer
 		return true;
 	}
 
+	/// <summary>The chapter this run plays, so a quest done elsewhere is not shown (QuestLog.Tracked).</summary>
+	public string CurrentStageId { get; set; } = string.Empty;
+
 	/// <summary>Reads the tracked quests again and redraws what changed. Once a second, not per frame.</summary>
 	public void Refresh(SaveData save, AchievementContext context)
 	{
-		List<Quest> quests = QuestLog.Tracked(save, context);
+		List<Quest> quests = QuestLog.Tracked(save, context, CurrentStageId);
 		shown.Clear();
 		shown.AddRange(quests);
 		while (entries.Count < quests.Count)

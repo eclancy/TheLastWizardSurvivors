@@ -657,7 +657,9 @@ public static class ChestItemCatalog
 	public static readonly string BindingThreadDescription =
 		$"An enemy that touches you is Weakened: it deals {Mathf.RoundToInt(Player.BindingThreadWeaken * 100f)}% less for {Player.BindingThreadSeconds:0} s.";
 	public static readonly string SingedLockDescription =
-		$"Kills Wither enemies within {Player.SingedLockRadius:0} by {Mathf.RoundToInt(Player.SingedLockWither * 100f)}% of their max health.";
+		// No numeric distance (Eric, 2026-11-04: close/far only), and "Kills Wither enemies" read
+		// backwards (2026-11-06); "Withered" is the status keyword, so the card link still binds.
+		$"Each kill leaves nearby enemies Withered, taking {Mathf.RoundToInt(Player.SingedLockWither * 100f)}% of their max health.";
 	// The Gimmel Ring: one short sentence each, one idea, no parentheses (Eric, 2026-11-02).
 	public static readonly string FedeHoopDescription =
 		$"Your two highest-level spells deal {Percent(Player.FedeHoopBonus)} damage.";
@@ -691,7 +693,9 @@ public static class ChestItemCatalog
 			HeartOfRenewal => $"+{Player.HeartOfRenewalRegenPerSecond * 60f:0} health regeneration a minute.",
 			Phylactery => "One revive per stage, at 25% health.",
 			// It said "+1 maximum health per kill, up to +50", and has only ever healed (Player.OnChestEnemyKilled).
-			EssenceChalice => $"Each of the run's first {Player.EssenceChaliceKillHeals} kills heals 1 HP.",
+			// Says plainly that it is spent after the first kills (Eric, 2026-11-06: "is it even
+			// useful after 15 kills?" - no, beyond its set; the healing budget keeps it early-only).
+			EssenceChalice => $"Each of the run's first {Player.EssenceChaliceKillHeals} kills heals 1 HP. After them, it serves its set.",
 			QuicksilverPendant => "+15% movement speed.",
 			HasteRune => "+12% attack speed.",
 			CompassRose => "+15% XP.",
