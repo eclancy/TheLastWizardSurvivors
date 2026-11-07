@@ -1010,7 +1010,7 @@ all pages, with an overall page count. The purse, page controls and Back remain 
 All cards are prepared once behind the title loader; page turns and purchases reuse them. Socket
 and icon sizes are 64/48, with narrower card padding. Prices, ceilings and purchase rules are unchanged.
 
-**0.14.1 navigation (Eric, 2026-11-07):** the category selector has its own full-width row above
+**0.14.2 navigation (Eric, 2026-11-07):** the category selector has its own full-width row above
 the cards. Previous page / Next page are large, equal-width 72-unit buttons at the bottom,
 with a gold Page N / Total between them. Back shares the row on desktop and sits below on a phone.
 The scroll takes the remaining height so
