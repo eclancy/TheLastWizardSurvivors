@@ -395,7 +395,8 @@ public static class BoonCatalog
 			// the part that makes this a different card from Tidewater Flask.
 			BoonEffect.StanceRegen => $"Stand still: +{m:0.0} HP per second",
 			// "cooldown" picks the cooldown glyph (StatIcons.KeyFor); the condition leads, as Taproot's does.
-			BoonEffect.WalkingRecharge => $"Walking: slowest spell's cooldown {m * 100f:0}% faster",
+			// "Slowest spell" read as a riddle (Eric, 2026-11-06): name the real rule, furthest from ready.
+			BoonEffect.WalkingRecharge => $"Walking: the spell furthest from ready winds {m * 100f:0}% faster",
 			// "when struck" picks the reactions' glyph, as Saltbound Chain's and Rimebriar's lines do.
 			BoonEffect.Frighten => "Frightens nearby enemies when struck",
 			_ => string.Empty,

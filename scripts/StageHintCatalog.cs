@@ -280,8 +280,10 @@ public static class StageHintCatalog
 			Lines = new[]
 			{
 				"You there. The granary, past the furrows.",
-				"He counts me with the grain. Settle his count.",
-				"Come, or go. I have waited out worse men.",
+				// Plain words for the riddle, naming the scale the event asks about; the last line is
+				// Eric's pick (2026-11-06: "I have outlasted kings is great").
+				"He tallies me like a sack of grain. Balance his scale.",
+				"Come, or go. I have outlasted kings.",
 			},
 		},
 		// Ma Liang, kept in the Court's Gallery to paint its portraits (.ai/chapter-wizards.md 4.8). A brush is heard drawing

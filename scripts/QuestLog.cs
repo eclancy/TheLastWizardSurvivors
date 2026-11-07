@@ -91,7 +91,9 @@ public static class QuestLog
 		new Prisoner("imhotep", "the builder in the dry tomb", "Something knocks, stone on stone, under the sand.", "{0} walks in the sun again."),
 		// The sorceress of Colchis, counted among what grows here and held in the reeve's granary against a tithe the
 		// village could never pay (4.2).
-		new Prisoner("medea", "the one in the granary", "Someone is kept in the reeve's granary, counted with the grain.", "{0} has walked out of the granary."),
+		// "Counted with the grain" read as a riddle (Eric, 2026-11-06): say the tally plainly, and let
+		// the hint name the scale the event actually asks the player to balance.
+		new Prisoner("medea", "the one in the granary", "Someone is locked in the reeve's granary, tallied like grain.", "{0} has walked out of the granary."),
 		// The painter kept to paint the portraits in the Gallery (4.8), who drew himself a door and was never let finish it.
 		new Prisoner("ma_liang", "the painter in the gallery", "Along the walls a line of wet paint keeps running.", "{0} has stepped out of his door."),
 		// The hound's light is bound with the other companions inside the Fields' sealed pen.
@@ -381,8 +383,11 @@ public static class QuestLog
 	/// <summary>
 	/// What the HUD shows: the tracked quests in the order they were tracked, at most
 	/// <see cref="MaxTracked"/>, each deed once (the next wizard and the same deed tracked by hand are one).
+	/// With <paramref name="currentStageId"/> (the run's chapter), a quest done in some OTHER chapter is
+	/// left off - it cannot advance here, so it says nothing but noise (Eric, 2026-11-06). The quest log
+	/// menu passes none and lists everything; a quest whose StageId is empty is done anywhere and always shows.
 	/// </summary>
-	public static List<Quest> Tracked(SaveData save, AchievementContext context)
+	public static List<Quest> Tracked(SaveData save, AchievementContext context, string currentStageId = null)
 	{
 		var quests = new List<Quest>();
 		if (save == null)
@@ -391,6 +396,9 @@ public static class QuestLog
 		{
 			Quest quest = Resolve(id, save, context);
 			if (quest == null)
+				continue;
+			if (!string.IsNullOrEmpty(currentStageId) && !string.IsNullOrEmpty(quest.StageId)
+				&& !quest.StageId.Equals(currentStageId, StringComparison.OrdinalIgnoreCase))
 				continue;
 			if (quests.Any(q => q.Deed != null && quest.Deed != null && q.Deed.Id == quest.Deed.Id))
 				continue;

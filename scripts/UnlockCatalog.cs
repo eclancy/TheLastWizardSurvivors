@@ -342,7 +342,7 @@ public static class UnlockCatalog
 			secretUntilStage: "stage_6", finalGateOnly: true),
 		// Medea's granary remains in the Fields; Laelaps is a separate rescue in the Pinfold.
 		// Counted at the Throne's gate only, as every chapter wizard is.
-		FromEvent("medea", UnlockKind.Character, "tithe_scale", "Counted with the grain in the Fallow Fields.",
+		FromEvent("medea", UnlockKind.Character, "tithe_scale", "Tallied like grain in the Fallow Fields.",
 			secretUntilStage: "stage_9", finalGateOnly: true),
 		// Ma Liang, kept in the Court to paint its portraits (4.8): the Court's second event, the door he sketched in the
 		// Gallery traced dot to dot. Secret until the Court opens, and counted at the Throne's gate only, as every chapter
