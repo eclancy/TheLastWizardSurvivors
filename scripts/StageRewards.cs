@@ -87,7 +87,10 @@ public static class StageRewards
 	private static List<StageReward> Build()
 	{
 		var result = new List<StageReward>();
-		foreach (StageDefinition stage in StageCatalog.All)
+		// Every chapter, in the order the world reaches it: the campaign, the far shore after it (.ai/second-half.md
+		// 7), then the chapters outside both. A far chapter's card is derived exactly as a road chapter's is - its
+		// warden's deed (its god), its side event, its secrets - so nothing here names the far shore.
+		foreach (StageDefinition stage in StageCatalog.InDisplayOrder)
 		{
 			var mine = new List<StageReward>();
 			void Add(StageReward reward)

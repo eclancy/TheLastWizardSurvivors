@@ -1879,6 +1879,20 @@ public partial class Node2DGame : Node2D
 				// and gatehouses, the Court's rooms, the throne) and is placed by its ChapterRules, so its
 				// agent never edits this switch.
 				break;
+			// THE FAR SHORE (.ai/second-half.md 4.2, marked by F0): a far chapter's decor is its foliage
+			// (Foliage.<Chapter>.cs) and its rules' set pieces. If one needs a case here, it is its piece's
+			// alone, replacing its comment line.
+			// F3: case StageEnvironmentKind.WhiteDowns:
+			// (F6's line is below; leave this one as it is)
+			// F6: case StageEnvironmentKind.DrownedShore:
+			// (F7's line is below; leave this one as it is)
+			// F7: case StageEnvironmentKind.ThreeWays:
+			// (F8's line is below; leave this one as it is)
+			// F8: case StageEnvironmentKind.TwelfthHour:
+			// (F9's line is below; leave this one as it is)
+			// F9: case StageEnvironmentKind.ThunderFell:
+			// (F10's line is below; leave this one as it is)
+			// F10: case StageEnvironmentKind.BronzeIsle:
 			default:
 				// Today that is the Cave (and the placeholder room). Crystals and rubble as before;
 				// what grows underground is bramble and the odd dead tree where the roof has fallen

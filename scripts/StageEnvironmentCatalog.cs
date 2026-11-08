@@ -25,6 +25,22 @@ public enum StageEnvironmentKind
 	Court,
 	/// <summary>The Throne (stage_13): one closed hall. Its own ground is piece C4 (.ai/endgame-castle.md 6).</summary>
 	Throne,
+	// THE FAR SHORE (.ai/second-half.md 4.2, marked by F0). Each far chapter borrows a road chapter's kind
+	// (StageCatalog) until its piece adds its own here - replacing its comment line - with a profile, a palette
+	// and a detail block of its own (their slots are marked the same way in this file, LevelGenerator and
+	// GroundDetail), then sets its StageCatalog entry to it. Not declared ahead: every value of this enum is held
+	// to a profile and to the ground validators, so a kind with no ground behind it would be a fault.
+	// F3: WhiteDowns,
+	// (F6's line is below; leave this one as it is)
+	// F6: DrownedShore,
+	// (F7's line is below; leave this one as it is)
+	// F7: ThreeWays,
+	// (F8's line is below; leave this one as it is)
+	// F8: TwelfthHour,
+	// (F9's line is below; leave this one as it is)
+	// F9: ThunderFell,
+	// (F10's line is below; leave this one as it is)
+	// F10: BronzeIsle,
 }
 
 public sealed class StageEnvironmentProfile
@@ -668,6 +684,21 @@ public static class StageEnvironmentCatalog
 			IntroTint = new Color(0.90f, 0.86f, 0.98f, 1.0f),
 			WallSet = "throne_wall",
 		}
+		,
+
+		// THE FAR SHORE (.ai/second-half.md 4.2, marked by F0): each chapter's profile block, its piece's alone,
+		// replacing its comment line (the kind is added in the enum above at the same time).
+		// F3: [StageEnvironmentKind.WhiteDowns] = new StageEnvironmentProfile(...),
+		// (F6's line is below; leave this one as it is)
+		// F6: [StageEnvironmentKind.DrownedShore] = ...,
+		// (F7's line is below; leave this one as it is)
+		// F7: [StageEnvironmentKind.ThreeWays] = ...,
+		// (F8's line is below; leave this one as it is)
+		// F8: [StageEnvironmentKind.TwelfthHour] = ... (its Darkness, and the dawn that lifts it, section 7),
+		// (F9's line is below; leave this one as it is)
+		// F9: [StageEnvironmentKind.ThunderFell] = ...,
+		// (F10's line is below; leave this one as it is)
+		// F10: [StageEnvironmentKind.BronzeIsle] = ...,
 	};
 
 	public static StageEnvironmentProfile Get(StageEnvironmentKind kind)

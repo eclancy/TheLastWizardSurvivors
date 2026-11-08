@@ -217,6 +217,20 @@ public static class GroundDetail
 		{
 			G("cracks", 0.004f, 1),
 		},
+
+		// THE FAR SHORE (.ai/second-half.md 4.2, marked by F0): each chapter's detail block, its piece's alone,
+		// replacing its comment line.
+		// F3: [StageEnvironmentKind.WhiteDowns] = new[] { ... },
+		// (F6's line is below; leave this one as it is)
+		// F6: [StageEnvironmentKind.DrownedShore] = ...,
+		// (F7's line is below; leave this one as it is)
+		// F7: [StageEnvironmentKind.ThreeWays] = ...,
+		// (F8's line is below; leave this one as it is)
+		// F8: [StageEnvironmentKind.TwelfthHour] = ...,
+		// (F9's line is below; leave this one as it is)
+		// F9: [StageEnvironmentKind.ThunderFell] = ...,
+		// (F10's line is below; leave this one as it is)
+		// F10: [StageEnvironmentKind.BronzeIsle] = ...,
 	};
 
 	private static Rule[] RuinsRules() => new[]

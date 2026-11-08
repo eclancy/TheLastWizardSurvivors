@@ -256,6 +256,9 @@ public static class AchievementDefinitions
 	/// <summary>The Throne's boss, the dark wizard (BossCatalog).</summary>
 	public const string ThroneBossId = "throne_dark_wizard";
 
+	/// <summary>Taken Back, the Throne's clear: a third of the far shore's gate (GlobalStatsManager.HasTakenBackTheThrone).</summary>
+	public const string TakenBackId = "throne_taken_back";
+
 	/// <summary>
 	/// The whole road at a difficulty: how many of the campaign's chapters have had their boss beaten on the preset
 	/// of <paramref name="rank"/> or harder (SaveData.MaxDifficultyCleared, with the run that is ending folded in -
@@ -299,6 +302,19 @@ public static class AchievementDefinitions
 		("the_barge", "The Way Lit", "Light the dead lamps along the Last Bridge ahead of the barge below until it comes in to its landing.", "Frees Morgan le Fay"),
 		("seers_voice", "The Last Reading", "Follow the voice reading room to room through the Court until you find the reader.", "Frees Nostradamus"),
 		("dotted_door", "The Door Inked In", "Ink every line of the door sketched in the Court's Gallery, in one stroke.", "Frees Ma Liang"),
+		// THE FAR SHORE (.ai/second-half.md 4.3, marked by F0): one side event a chapter, paying Arcane Energy and a
+		// keepsake - never a spell, boon or wizard. Each piece replaces its own comment line with its words.
+		// F3 (White Downs)
+		// (F6's line is below; leave this one as it is)
+		// F6 (Drowned Shore)
+		// (F7's line is below; leave this one as it is)
+		// F7 (Three Ways)
+		// (F8's line is below; leave this one as it is)
+		// F8 (Twelfth Hour)
+		// (F9's line is below; leave this one as it is)
+		// F9 (Thunder Fell)
+		// (F10's line is below; leave this one as it is)
+		// F10 (Bronze Isle)
 	};
 
 	private const float TenMinutes = 600f;
@@ -483,7 +499,7 @@ public static class AchievementDefinitions
 		// her by the reconcile at the end of its next run (AchievementManager.Reconcile), which owes her freeing too.
 		new()
 		{
-			Id = "throne_taken_back", DisplayName = "Taken Back",
+			Id = TakenBackId, DisplayName = "Taken Back",
 			Description = "Defeat the boss of the Throne.",
 			RewardText = "Frees Nimue and 1,000 Arcane Energy", CurrencyReward = 1000,
 			CharacterUnlockId = "nimue",
@@ -535,6 +551,21 @@ public static class AchievementDefinitions
 		// The Hayward taught the Ascension until the slow start (2026-11-02); a landmark teaches it now (Teachings).
 		BossClearBoon("fields_hurdled", "Round the Hurdle", "fields_hayward", "the Fallow Fields", "thornseed", "Thornseed"),
 		BossClearBoon("circle_unclosed", "Out of the Ring", "heath_ninth_stone", "the Broken Circle", "shadegrease", "Shadegrease"),
+		// THE FAR SHORE'S CHAPTER CLEARS (.ai/second-half.md 4.3, marked by F0): each warden's deed pays its god -
+		// the one unlock a far chapter carries - and is that god's one source (UnlockCatalog). Not listed until its
+		// chapter is playable (IsChapterBuilt), and sorted after the campaign's (CampaignRankOfStage). A line a
+		// chapter, each its piece's alone: replace your comment line with your deed; leave the others as they are.
+		// F3 (White Downs): the Unstrung Hunter's deed, freeing Artemis.
+		// (F6's line is below; leave this one as it is)
+		// F6 (Drowned Shore): the Weir's deed, freeing Manannan mac Lir.
+		// (F7's line is below; leave this one as it is)
+		// F7 (Three Ways): the Three-Faced's deed, freeing Hecate.
+		// (F8's line is below; leave this one as it is)
+		// F8 (Twelfth Hour): the Eclipse's deed, freeing Ra.
+		// (F9's line is below; leave this one as it is)
+		// F9 (Thunder Fell): the Still Eye's deed, freeing Ukko.
+		// (F10's line is below; leave this one as it is)
+		// F10 (Bronze Isle): Talos's deed, freeing Hephaestus.
 		// The Sketchbook has no deed at all (Eric, 2026-11-02: "the sketchbook should not have any unlocks
 		// or any achievements"). Its clear, Best Drawing (400 Arcane Energy), was the last; the kids' chapter
 		// is played for itself. RegressionChecks.ValidateSketchbookHoldsNothing keeps it that way.
@@ -615,6 +646,15 @@ public static class AchievementDefinitions
 			Measure = c => GlobalStatsManager.GetGrimoireSpellCount(c.Save),
 			Target = UnlockCatalog.GrimoireSpellIds.Count(),
 		},
+		// THE FAR SHORE'S HALF-WIDE FEATS (.ai/second-half.md 4.3, marked by F0), Arcane Energy only. Section 9
+		// names a piece for the first alone; the others are given to the piece that can first measure them.
+		// F4: Under the Far Sky - make tonight's Conjunction (section 5).
+		// (the next line is F4's too; leave this one as it is)
+		// F4: Every Conjunction Known - every recipe made once, measured live against ComboCatalog.Fusions.
+		// (F10's line is below; leave this one as it is)
+		// F10: Every Seat Lit - all six gods rekindled.
+		// (F10's second line is below; leave this one as it is)
+		// F10: All the Gods' Forms - each god's Apotheosis taken.
 	}).Concat(SideEventDeeds()).Concat(SecretDeeds()).Concat(CombinationDeeds()).ToList();
 
 	/// <summary>
@@ -850,9 +890,11 @@ public static class AchievementDefinitions
 		return index >= 0 ? CampaignRankOfStage(StageCatalog.GetByIndex(index).Id) : int.MaxValue;
 	}
 
+	// The campaign's chapters in their order, then the far shore's after them (StageCatalog.OrderedPositionOf), then
+	// anything outside both.
 	private static int CampaignRankOfStage(string stageId)
 	{
-		int position = StageCatalog.CampaignPositionOf(stageId);
+		int position = StageCatalog.OrderedPositionOf(stageId);
 		return position >= 0 ? position : int.MaxValue;
 	}
 

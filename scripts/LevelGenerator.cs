@@ -382,6 +382,22 @@ public sealed partial class LevelGenerator
 			PropThemes = Array.Empty<string>(),
 			Topology = StageTopology.Authored,
 		},
+
+		// THE FAR SHORE (.ai/second-half.md 4.2, marked by F0): each chapter's palette block, its piece's alone,
+		// replacing its comment line. Two shapes the road lacks belong here as topologies in partial files (the
+		// pattern below): the Drowned Shore's tide channels and the Three Ways' hedged roads, both the lattice
+		// drawn another way (endgame-castle.md 7.3).
+		// F3: [StageEnvironmentKind.WhiteDowns] = new Palette { ... },
+		// (F6's line is below; leave this one as it is)
+		// F6: [StageEnvironmentKind.DrownedShore] = ... (LevelGenerator.<Tide>.cs),
+		// (F7's line is below; leave this one as it is)
+		// F7: [StageEnvironmentKind.ThreeWays] = ... (LevelGenerator.<Hedge>.cs),
+		// (F8's line is below; leave this one as it is)
+		// F8: [StageEnvironmentKind.TwelfthHour] = ...,
+		// (F9's line is below; leave this one as it is)
+		// F9: [StageEnvironmentKind.ThunderFell] = ...,
+		// (F10's line is below; leave this one as it is)
+		// F10: [StageEnvironmentKind.BronzeIsle] = ... (the walled yards),
 	};
 
 	// --- Topologies in partial files ------------------------------------------------------------

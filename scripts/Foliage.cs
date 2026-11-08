@@ -116,6 +116,19 @@ public static partial class Foliage
 		FrozenWaste.Build(),
 		ScorchedSands.Build(),
 		Emberdeep.Build(),
+		// THE FAR SHORE (.ai/second-half.md 4.3, marked by F0): each chapter's piece writes Foliage.<Chapter>.cs
+		// (.ai/terrain.md 13, "Adding a chapter") and replaces its own comment line with its Build().
+		// F3: WhiteDowns.Build(),
+		// (F6's line is below; leave this one as it is)
+		// F6: DrownedShore.Build(),
+		// (F7's line is below; leave this one as it is)
+		// F7: ThreeWays.Build(),
+		// (F8's line is below; leave this one as it is)
+		// F8: TwelfthHour.Build(),
+		// (F9's line is below; leave this one as it is)
+		// F9: ThunderFell.Build(),
+		// (F10's line is below; leave this one as it is)
+		// F10: BronzeIsle.Build(),
 	}.Where(c => c != null).Select(c => c!).ToArray();
 
 	/// <summary>The chapter's foliage, or null when it has none.</summary>

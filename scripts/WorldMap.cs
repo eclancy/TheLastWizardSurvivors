@@ -223,7 +223,8 @@ public partial class WorldMap : Control
 			// The map unrolls as the campaign is won (Eric, 2026-10-31: "you should only unlock the map as
 			// you defeat the previous level"): a chapter is not a stop, not on the compass and not lit on
 			// the map until its previous boss has fallen (GlobalStatsManager.IsChapterRevealed).
-			if (!rush && StageCatalog.IsInCampaign(stage) && !GlobalStatsManager.IsChapterRevealed(save, stage))
+			// The far shore unrolls the same way, from Taken Back (.ai/second-half.md 6.2).
+			if (!rush && StageCatalog.IsInEitherOrder(stage) && !GlobalStatsManager.IsChapterRevealed(save, stage))
 				continue;
 			WorldMapStop placed = layout.Get(rush ? WorldMapLayout.BossRushId : stage.Id);
 			if (placed == null)
@@ -256,11 +257,13 @@ public partial class WorldMap : Control
 	/// THE STOP-ORDER RULE (.ai/endgame-castle.md 8, .ai/world-map.md 6): the order the road visits the
 	/// world's stops, west to east. The campaign up to and including its gate chapter (the Emberdeep); the
 	/// Boss Rush, whose seat is on the gate chapter's summit (<paramref name="withRush"/>: only once it is a
-	/// stop); the rest of the campaign, the castle across the water; and last any chapter outside the
-	/// campaign that is open from the start (none today - one held until the campaign is finished is on
+	/// stop); the rest of the campaign, the castle across the water; the far shore past his rock, in its own
+	/// order (.ai/second-half.md 7: "+ [far shore] before [outside]"); and last any chapter outside both
+	/// orders that is open from the start (none today - one held until the campaign is finished is on
 	/// the page instead). Read by <see cref="BuildStops"/> and by RegressionChecks.ValidateWorldMap, which
 	/// holds tools/art/world_map.py's PLACES to it - otherwise the road would run back from the tower to
-	/// the summit. A campaign with no gate chapter puts the rush after its last chapter, as before.
+	/// the summit. A campaign with no gate chapter puts the rush after its last chapter, as before. The far
+	/// shore has no PLACES yet (piece F5 draws it), so its chapters are left off quietly until then.
 	/// </summary>
 	public static List<(StageDefinition Stage, bool Rush)> RoadOrder(bool withRush)
 	{
@@ -278,7 +281,9 @@ public partial class WorldMap : Control
 		}
 		if (!rushPlaced)
 			order.Add((BossRushCatalog.Arena, true));
-		foreach (StageDefinition stage in StageCatalog.All.Where(s => !StageCatalog.IsInCampaign(s) && !s.AfterCampaign))
+		foreach (StageDefinition stage in StageCatalog.FarShore)
+			order.Add((stage, false));
+		foreach (StageDefinition stage in StageCatalog.All.Where(s => !StageCatalog.IsInEitherOrder(s) && !s.AfterCampaign))
 			order.Add((stage, false));
 		return order;
 	}
@@ -292,7 +297,10 @@ public partial class WorldMap : Control
 	private WorldMapCompass.Mark MarkFor(Stop stop, int index)
 	{
 		int position = stop.IsBossRush ? -1 : StageCatalog.CampaignPositionOf(stop.Stage.Id);
-		bool outside = !stop.IsBossRush && position < 0;
+		// A far chapter is numbered in its own order, and the crossing of the dark sea is a break on the strip
+		// as the stops outside both orders are (.ai/second-half.md 7; the look is piece F5's).
+		int far = stop.IsBossRush || position >= 0 ? -1 : StageCatalog.FarShorePositionOf(stop.Stage.Id);
+		bool outside = IsOutside(stop);
 		return new WorldMapCompass.Mark
 		{
 			Kind = stop.IsBossRush ? WorldMapCompass.MarkKind.Rush
@@ -300,12 +308,15 @@ public partial class WorldMap : Control
 				: stop.Look != WorldMapView.StopLook.Open ? WorldMapCompass.MarkKind.Locked
 				: stop.Cleared ? WorldMapCompass.MarkKind.Cleared
 				: WorldMapCompass.MarkKind.Open,
-			Caption = position >= 0 ? (position + 1).ToString() : string.Empty,
-			BreakBefore = outside && index > 0 && !IsOutside(stops[index - 1]),
+			Caption = position >= 0 ? (position + 1).ToString() : far >= 0 ? (far + 1).ToString() : string.Empty,
+			BreakBefore = index > 0
+				&& ((outside && !IsOutside(stops[index - 1])) || (far >= 0 && !IsFarShore(stops[index - 1]))),
 		};
 	}
 
-	private static bool IsOutside(Stop stop) => !stop.IsBossRush && !StageCatalog.IsInCampaign(stop.Stage);
+	private static bool IsOutside(Stop stop) => !stop.IsBossRush && !StageCatalog.IsInEitherOrder(stop.Stage);
+
+	private static bool IsFarShore(Stop stop) => !stop.IsBossRush && StageCatalog.IsOnFarShore(stop.Stage);
 
 	private int ResolveStartIndex()
 	{
@@ -614,8 +625,12 @@ public partial class WorldMap : Control
 		// yet (the castle's, until piece C8) is not one to count - "Chapter 1 of 13" over ten places
 		// would name three the player cannot find.
 		int chapters = StageCatalog.Campaign.Count(s => layout.Get(s.Id) != null);
+		// Across the water, its own count: "Far Shore 1 of 6" (.ai/second-half.md 7), the drawn ones only.
+		int far = stop.IsBossRush || position >= 0 ? -1 : StageCatalog.FarShorePositionOf(stage.Id);
+		int farChapters = StageCatalog.FarShore.Count(s => layout.Get(s.Id) != null);
 		string where = stop.IsBossRush ? "The summit, over his forge"
 			: position >= 0 ? $"Chapter {position + 1} of {chapters}"
+			: far >= 0 ? $"Far Shore {far + 1} of {farChapters}"
 			: StageCatalog.OffRoadPlace;
 		cardBox.AddChild(MakeText(where, ResponsiveLayout.TextRole.Label, InkPlace, "CardWhere"));
 		var name = MakeText(stop.IsBossRush ? "Boss Rush" : stage.DisplayName, ResponsiveLayout.TextRole.Title, Ink, "CardName");

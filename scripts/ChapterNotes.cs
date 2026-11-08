@@ -135,6 +135,45 @@ public static class ChapterNotes
 			"Squared paper underfoot. It smells of pencil.",
 			"He has never been here.",
 		},
+		// THE FAR SHORE (.ai/second-half.md 4.2). Written by F0 from each chapter's ground and corruption line, so
+		// the note is there the day the chapter flips; each block is its chapter's piece's to rewrite. The god held
+		// there adds his held line from QuestLog.Prisoners, as a wizard does.
+		// Far Shore 1 The White Downs (F3) - "No moon has risen here since he came."
+		["stage_14"] = new[]
+		{
+			"White turf and flint, and a sky with no moon in it.",
+			"Chalk dust and cold dew. A hound is cut into the hill.",
+		},
+		// Far Shore 2 The Drowned Shore (F6) - "The sea was told to stay out."
+		["stage_15"] = new[]
+		{
+			"Wet sand to the edge of sight, and the sea standing off.",
+			"Weed, salt and old wrecks. The tide never comes in.",
+		},
+		// Far Shore 3 The Three Ways (F7) - "Every torch at every crossing is out."
+		["stage_16"] = new[]
+		{
+			"Every road forks in three, and every torch is cold.",
+			"Yew and cold pitch. Offerings left at every fork.",
+		},
+		// Far Shore 4 The Twelfth Hour (F8) - "The sun did not rise."
+		["stage_17"] = new[]
+		{
+			"Black sand and a still river, in a night with no end.",
+			"Cold stone and old incense. The east is waiting.",
+		},
+		// Far Shore 5 The Thunder Fell (F9) - "The storm was told never to break."
+		["stage_18"] = new[]
+		{
+			"Bare granite above the trees, and a storm that will not break.",
+			"Ozone and wet lichen. The cairns hum before it strikes.",
+		},
+		// Far Shore 6 The Bronze Isle (F10) - "The god's forge is cold."
+		["stage_19"] = new[]
+		{
+			"Bronze gone green, and anvils as tall as houses.",
+			"Cold slag and old oil. Nothing here has burned since he came.",
+		},
 	};
 
 	// What a side event holds when it is not a wizard (a wizard's line is his held line, QuestLog.Prisoners),
@@ -147,6 +186,18 @@ public static class ChapterNotes
 		["caravan_master"] = "A bell on the old road. Something still walks it.",
 		["the_well"] = "Something glints at the bottom of the well.",
 		["the_moot"] = "Embers still glow somewhere among the stones.",
+		// THE FAR SHORE (marked by F0): each far chapter's side event pays a keepsake, so each wants a clue.
+		// F3 (White Downs)
+		// (F6's line is below; leave this one as it is)
+		// F6 (Drowned Shore)
+		// (F7's line is below; leave this one as it is)
+		// F7 (Three Ways)
+		// (F8's line is below; leave this one as it is)
+		// F8 (Twelfth Hour)
+		// (F9's line is below; leave this one as it is)
+		// F9 (Thunder Fell)
+		// (F10's line is below; leave this one as it is)
+		// F10 (Bronze Isle)
 	};
 
 	// A spell vault (SecretCatalog, IsVault) the save has not opened. One line for the chapter however many
@@ -256,8 +307,8 @@ public static class ChapterNotes
 
 	/// <summary>
 	/// The chapters in the journal: every one whose note has been shown, and every one the save has played
-	/// (a save from before the notes has been to places it has no note for yet), in the road's order and then
-	/// the chapters outside it.
+	/// (a save from before the notes has been to places it has no note for yet), in the road's order, then the
+	/// far shore's, then the chapters outside both (StageCatalog.InDisplayOrder).
 	/// </summary>
 	public static List<StageDefinition> JournalChapters(SaveData save)
 	{
