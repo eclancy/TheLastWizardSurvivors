@@ -129,16 +129,20 @@ public partial class XPOrb : Area2D
 	// THE TITHE (Medea's prison, TitheScaleEvent; .ai/chapter-wizards.md 4.2). "From arrival, every XP orb that falls
 	// within 320 px of it drifts into its pan instead of to him." An orb that comes into the world inside the reach of
 	// the Tithe-Reeve's scale while it is taking its due (GranaryTithe.Claims, read once, as it lands) is the reeve's:
-	// it lifts off the stubble and drifts up into the pan, slow at first and quickening, over every body as it goes;
-	// his magnet, his feet, the Gleaning Bell and the Spirit Mirror do not touch it. In the pan it is weighed at what it
-	// was worth to him at that moment of the run (Player.XpWorthOf) and is gone. If the scale stops taking before it
-	// gets there - its price met, or the boss come - it falls back to the ground an ordinary orb, and is his.
-	// One bool and one float an orb; nothing allocated.
+	// it lifts off the stubble and drifts up into the pan on its side of the post (Medea's balance: left of it the left
+	// pan, right the right), slow at first and quickening, over every body as it goes; his magnet, his feet, the
+	// Gleaning Bell and the Spirit Mirror do not touch it. In the pan it is weighed at what it was worth to him at that
+	// moment of the run (Player.XpWorthOf) and is gone. If the scale stops taking before it gets there - held level,
+	// or the boss come - it falls back to the ground an ordinary orb, and is his. A bool, a float and an int an orb;
+	// nothing allocated.
 	[Export] public float TitheStartSpeed { get; set; } = 70f;
 	[Export] public float TitheAcceleration { get; set; } = 520f;
 	[Export] public float TitheMaxSpeed { get; set; } = 620f;
 	private bool tithed;
 	private float titheSpeed;
+	// Which pan it is bound for (Medea's balance, unlock-puzzles.md 3.5): the side of the post it LANDED on, -1 left,
+	// +1 right, decided once as it is claimed - where he fought, not where it drifts.
+	private int titheSide = 1;
 
 	/// <summary>True while this orb is drifting into the Tithe-Reeve's pan.</summary>
 	public bool Tithed => tithed;
@@ -146,6 +150,7 @@ public partial class XPOrb : Area2D
 	private void BeginTithe()
 	{
 		tithed = true;
+		titheSide = GranaryTithe.SideOf(GlobalPosition);
 		titheSpeed = TitheStartSpeed;
 		attracted = false;
 		GranaryTithe.OrbsInFlight++;
@@ -165,20 +170,20 @@ public partial class XPOrb : Area2D
 			return;
 		}
 		titheSpeed = Mathf.Min(TitheMaxSpeed, titheSpeed + TitheAcceleration * delta);
-		Vector2 pan = GranaryTithe.Pan;
+		Vector2 pan = GranaryTithe.PanFor(titheSide);
 		float dist = GlobalPosition.DistanceTo(pan);
 		float step = titheSpeed * delta;
 		if (dist > step)
 		{
 			GlobalPosition += (pan - GlobalPosition) / dist * step;
-			// Where it is now, for the stream of motes the event draws between it and the pan (item 61).
-			GranaryTithe.ReportFlight(GlobalPosition);
+			// Where it is now, for the stream of motes the event draws between it and its pan (item 61).
+			GranaryTithe.ReportFlight(GlobalPosition, titheSide);
 			return;
 		}
 		GlobalPosition = pan;
 		tithed = false;
 		GranaryTithe.OrbsInFlight = Math.Max(0, GranaryTithe.OrbsInFlight - 1);
-		GranaryTithe.Pay(player is Player weigher && IsInstanceValid(weigher) ? weigher.XpWorthOf(Value) : Value, Value);
+		GranaryTithe.Pay(player is Player weigher && IsInstanceValid(weigher) ? weigher.XpWorthOf(Value) : Value, Value, titheSide);
 		QueueFree();
 	}
 

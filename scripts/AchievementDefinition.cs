@@ -285,7 +285,7 @@ public static class AchievementDefinitions
 		("the_grove", "The Grove Held", "Hold the corrupted grove in the Enchanted Forest until it grows back.", "Unlocks Bramble Seed"),
 		("walking_hut", "The Hut Herded Home", "Drive the walking hut of the Enchanted Forest into the bone-fenced yard.", "Frees Baba Yaga"),
 		("the_well", "The Last Coin", "Keep the last clean well in the Fallow Fields from being fouled.", "Unlocks Wishing Coin"),
-		("tithe_scale", "The Tithe Paid", "Pay the Tithe-Reeve's scale its due in the Fallow Fields, until the granary opens.", "Frees Medea"),
+		("tithe_scale", "The Scale Held Level", "Fill both pans of the Tithe-Reeve's scale in the Fallow Fields and hold its beam level.", "Frees Medea"),
 		("the_moot", "The Circle Relit", "Restore the shattered council wards of the Broken Circle to free their keeper.", "Frees Merlin, unlocks Orb of Ages and Gilded Mote"),
 		("gaolers_key", "The Open Cell", "Carry the Gaoler's key to the locked cell in the Cursed Dungeon.", "Frees Tituba"),
 		("bog_lanterns", "The Lanterns Out", "Snuff the lanterns of the Blighted Swamp and face what tends them.", "Unlocks Contagion"),
