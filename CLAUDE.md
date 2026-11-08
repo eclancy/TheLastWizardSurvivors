@@ -98,6 +98,11 @@ Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like)
   non-starter spell earned through an achievement (feats, chapter deeds, secret spell vaults), the
   achievements menu, the secret catalogue, and the castle chapters after the Emberdeep. Read them before
   touching `UnlockCatalog`, the shop, secrets or the campaign order.
+- `.ai/second-half.md` — the campaign's second half, designed 2026-11-07 for Eric's review and not built:
+  the far shore across the dark sea, six gods (each named in a freed wizard's legend) opening on a
+  Conjunction at level 1 as the Dark Wizard does, the far sky naming a Conjunction every run, and why the
+  far shore must be its own order, never appended to `CampaignOrder`. **Read it before adding a god, a
+  chapter after the Throne, or a Conjunction a character opens on.**
 - `.ai/title-screen.md` — the shipping title screen: how the scene avoids fractional scaling, the draw order, every knob, and four bugs not to reintroduce. **Read it before touching `TitleScreen.tscn`, `tools/art/splash.py` or `tools/art/hero.py`.** The art is generated, not painted: edit the generator and re-run it, never the PNG.
 - `.ai/game-name.md` — the name: something like *The One He Missed* (Eric; exact words not picked), the ideas, and what a rename
   touches, above all that `config/name` is also the save folder.

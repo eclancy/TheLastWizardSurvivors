@@ -606,6 +606,8 @@ things come up; strike what lands.**
     Apotheosis forms, or other advanced spell forms**. This does **not require new spells**: reuse
     the current spell roster and its evolved forms, then balance each god's starting power, passive
     and unlock around that later story. This is a future design note, not part of the current Merlin swap.
+    **Designed with item 53 (2026-11-07): `.ai/second-half.md`**, docs only, for Eric's review - six gods,
+    each named in a freed wizard's legend, opening on a Conjunction at level 1 as the Dark Wizard does.
 
 44. ~~**Merlin at the great meeting place**~~ (Eric, 2026-11-06). **Done.** Restore the Broken Circle's existing
     Moot wards to free Merlin and unlock his existing Orb of Ages, retaining Gilded Mote. Show him
@@ -707,6 +709,9 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     new spell combinations on new maps so it feels fresh" - achievements welcome, unlocks not
     required. The gods (item 43) arrive here, each starting with a combination spell as their
     default. Themes still to design.
+    **Designed (2026-11-07): `.ai/second-half.md`**, docs only, nothing built - the far shore across the
+    dark sea, six chapters each a god's seat, the far sky naming a Conjunction every run, the gate,
+    the teaching order, and fifteen questions for Eric (its section 8) before any of it is built.
 54. **Wording and card fixes** (Eric, 2026-11-06): Waywiser - say what "slowest spell" means
     (longest cooldown?); Reforged - "iron shards cut enemies as it is rebuilt" (it read as cutting
     the player); Chalice Cup confusing - and is it useful at all after 15 kills?; the granary's
