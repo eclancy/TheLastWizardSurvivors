@@ -1,7 +1,8 @@
 # The game's name
 
-**2026-11-08: renamed again - in the game and the repo's files, built the same day; the repo, website, store and
-folders still to do (`.ai/in-flight.md` item 62).** Eric: the game, the store, the repo, the website and the folders are
+**2026-11-08: renamed again - in the game and the repo's files, then the GitHub repo (`eclancy/TheLastWizardSurvivors`)
+and the website (`ecec.dev/the-last-wizard-survivors/`, website PR #54), all the same day; the store listing and the
+local folders still to do (`.ai/in-flight.md` item 62).** Eric: the game, the store, the repo, the website and the folders are
 to be **The Last Wizard: Survivors** (*"on the game, the name should be 'The Last Wizard: Survivors'"*). It came out
 of the store-title discussion of 2026-11-07, which also recorded its risks - an exact-title Play app "The Last
 Wizard" (Hosted Games' interactive fiction, a different genre) and a same-genre Play app "Wizard Survivors"
@@ -36,7 +37,8 @@ What was built in the game (2026-11-08):
   (`tools/art/title_lettering.py`, `.ai/title-screen.md` "The name"), with an L drawn into the DISPLAY face.
 - **Kept, as keys rather than names:** `config/name` (the save folder), the bug report's `game` field (the
   intake's allowlist key), the `TheOneHeMissed` namespace, solution, assembly, release files, env vars and
-  User-Agent, and the ecec.dev addresses. The story's own "the one he missed" (the prologue's line, the
+  User-Agent. The old ecec.dev addresses copies have baked in (`/the-one-he-missed/` and `/wizard-survivors/`,
+  `version.json` and `download`) answer forever; every other old address is a 301. The story's own "the one he missed" (the prologue's line, the
   Court's quatrain) is the premise and stays.
 
 **Status (2026-11-02): decided and done.** The game is **The One He Missed**. Eric, 2026-11-02, first the

@@ -68,12 +68,13 @@ things come up; strike what lands.**
    foliage in the Forest, Fields, Swamp, Sands and Broken Circle (does a stand pin you, do the hedges read as
    hedges, are the Heath's crowns too sparse); the spell reaches; the Forest without shooters; John Dee's chest
    economy (every other wizard has about a third of a set fewer chests a run).
-3. **The other unlock puzzles** in `.ai/unlock-puzzles.md` (designed and chosen by Eric, not built): Imhotep's
-   mirrors and Tituba's key past the lanterns. Paracelsus's (the pilot) is done, and five more are **built
-   2026-11-07/08**: **Baba Yaga's herded hut** (`feat/baba-yaga-hut`, the Built note in 3.3), together with item
-   59's hut asks (solid, four-sided, falls facing the camera); **Medea's balanced scale** (`feat/medea-scale`,
-   3.5); **Väinämöinen's song sung back** (3.6); **Morgan's lamps lit ahead** (3.7); and **Ma Liang's door in
-   one stroke** (`feat/ma-liang-door`, 3.2).
+3. **The unlock puzzles** in `.ai/unlock-puzzles.md` (designed and chosen by Eric): **all eight built.**
+   Paracelsus's (the pilot) first, then **2026-11-07/08**: **Baba Yaga's herded hut** (`feat/baba-yaga-hut`, the
+   Built note in 3.3), together with item 59's hut asks (solid, four-sided, falls facing the camera); **Medea's
+   balanced scale** (`feat/medea-scale`, 3.5); **Väinämöinen's song sung back** (3.6); **Morgan's lamps lit
+   ahead** (3.7); **Ma Liang's door in one stroke** (`feat/ma-liang-door`, 3.2); and on 2026-11-08 **Imhotep's
+   mirrors routing the sun** (3.1) and **Tituba's key slipped past the lanterns** (3.8), both merged and first
+   released in 0.21.0. What every one still needs is a person playing it: whether the rule is found unaided.
    - **More hints for unlockables** (Eric, 2026-11-04). His example: in the first chapter, Baba Yaga's walking
      hut walks a visible path, and that path is drawn on the map, so the player finds it by following tracks.
      Do this for every unlock: each wizard's event and each secret leaves traces in the world that lead to it
@@ -867,7 +868,12 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     **F0 built and merged 2026-11-08** (f36a6b73; `second-half.md` section 9, "F0, built"): `FarShoreOrder`,
     `StageGate.FarShore`, six stand-in chapters (`stage_14`-`stage_19`) nobody can enter, every reader taught
     both orders, `ValidateFarShore`, and a marked block in each shared registry for F1-F10 so the slices can be
-    built in parallel. Next: F1, the god plumbing, alone.
+    built in parallel. **F1 built and merged 2026-11-08** (df82ecb5, squashed: the agent branch's commit carried
+    another session's message through a shared scratchpad; "F1, built" in `second-half.md`): a god is data -
+    `UnlockCatalog.FromGod`, any recipe an opener, `SeatClear`, the rekindled reel's far-shore ground. **Building
+    now, in parallel: F2 (Artemis) and F3 (the White Downs)**; then F5 (reel E and the map), F4 after F2.
+    Agents now each get a scratch folder of their own: sharing one, two rewrote each other's `commit-msg.txt`
+    and `godot.sh`.
 54. **Wording and card fixes** (Eric, 2026-11-06): Waywiser - say what "slowest spell" means
     (longest cooldown?); Reforged - "iron shards cut enemies as it is rebuilt" (it read as cutting
     the player); Chalice Cup confusing - and is it useful at all after 15 kills?; the granary's
@@ -967,8 +973,13 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     locally, this chat name, and on the game, the name should be 'The Last Wizard: Survivors'"). **The game and the
     repo's files: built 2026-11-08** (`.ai/game-name.md` lists what changed and what was kept as a key;
     `.ai/releasing.md`, "The second rename"). The USPTO knockout search came back clear the same day
-    (`.ai/game-name.md`). Still to do: the repo and the website (each asked right before), the Play listing
-    (Eric's), the local folders (last). A second rename;
+    (`.ai/game-name.md`). **The repo: renamed 2026-11-08** to `eclancy/TheLastWizardSurvivors` (Eric: "Yes, change
+    the GitHub repo and the website"); both old slugs redirect, `version.json` and the API checked by curl. The
+    game asks `ecec.dev/the-last-wizard-survivors/version.json` from 0.21.0. **The website: moved 2026-11-08**
+    (website PR #54, deployed before 0.21.0 as it had to be - `.ai/releasing.md`, "The second rename"): new pages
+    at `/the-last-wizard-survivors/` and `/games/the-last-wizard-survivors`, the old `version.json` and `download`
+    pairs answering directly forever, every other old address a 301. Still to do: the Play listing (Eric's), the
+    local folders (last). A second rename;
     read `.ai/releasing.md` "The rename" and `.ai/game-name.md` first - the first one's list of what keeps the old
     name on purpose ALL still holds, and now "The One He Missed" joins it wherever changing it would strand a copy
     or a save. The pieces, in order:
