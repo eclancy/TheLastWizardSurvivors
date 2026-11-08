@@ -74,13 +74,14 @@ public static partial class RegressionChecks
 				warnings.Add($"Walking hut: left {WalkingHutEvent.LoseRadius + 600f:0} px behind, it did not calm and stand (fleeing {mover.Fleeing}, speed {mover.Speed:0}).");
 		}
 
-		// Its prints point the way it went: a print's arrow is its heel, opposite its middle toe (walking_hut.py).
+		// Its toes point the way it walked (Eric, 2026-11-05: toes-back read as backwards tracks however
+		// it ran): a print's middle toe is its column's own angle (walking_hut.py).
 		foreach (Vector2 travel in new[] { Vector2.Right, Vector2.Down, Vector2.Left, Vector2.Up, new Vector2(1f, 1f).Normalized() })
 		{
 			int column = WalkingHutEvent.PrintDirection(travel);
-			float arrow = Mathf.DegToRad(column * 45f + 180f);
-			if (Mathf.Abs(Mathf.AngleDifference(arrow, travel.Angle())) > 0.01f)
-				warnings.Add($"Walking hut: a print laid walking {travel} uses column {column}, whose arrow points {Mathf.RadToDeg(arrow) % 360f:0} deg, not the way it went.");
+			float toe = Mathf.DegToRad(column * 45f);
+			if (Mathf.Abs(Mathf.AngleDifference(toe, travel.Angle())) > 0.01f)
+				warnings.Add($"Walking hut: a print laid walking {travel} uses column {column}, whose middle toe points {Mathf.RadToDeg(toe) % 360f:0} deg, not the way it walked.");
 		}
 
 		// The hint's cue is the birds, on the sound's beats (sfx.py _HUT_FALLS and _HUT_CREAK: 0.10, 0.74, 1.02).

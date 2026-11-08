@@ -258,6 +258,12 @@ public partial class Node2DGame : Node2D
 	private TerrainStreamer? terrainStreamer;
 	// Read-only, for the debug harnesses (_UiShot --shore) that need to find a shoreline.
 	public TerrainStreamer? Terrain => terrainStreamer;
+
+	// Whether the player is wading is asked of the water's collision polygons, not of any cell
+	// flag: Player.MovePlayer point-queries LevelTilePainter.WaterCollisionLayer at his boots,
+	// so the slow begins exactly at the drawn shore (in-flight 59). There is deliberately no
+	// cell-level "is this wadeable water" helper - a rounded corner's cell is mostly dry bank,
+	// and two authorities would disagree there.
 	// The chapter's own rules (ChapterRules, .ai/endgame-castle.md 1.9), or null for a chapter with none -
 	// every chapter of the road. Asked at seven hook points, each marked "Hook N" where it is asked.
 	private ChapterRules? chapterRules;
@@ -566,7 +572,13 @@ public partial class Node2DGame : Node2D
 			uiOverlay.AddChild(new LoadoutHud { Name = "LoadoutHud", Holder = player });
 			// The tracked quests, in the lower left (QuestTracker, .ai/quests-and-notes.md). Before the
 			// SafeArea pass below, so it is moved in from a phone's corner with the rest of the HUD.
-			questTracker = new QuestTracker { Name = "QuestTracker" };
+			questTracker = new QuestTracker
+			{
+				Name = "QuestTracker",
+				// A tracked quest done in some other chapter is not shown over this run (Eric,
+				// 2026-11-06); the quest log menu still lists every tracked quest.
+				CurrentStageId = StageCatalog.GetByIndex(Global.SelectedStageIdx)?.Id ?? string.Empty,
+			};
 			uiOverlay.AddChild(questTracker);
 
 			var runTimerPanel = new PanelContainer
@@ -1315,6 +1327,8 @@ public partial class Node2DGame : Node2D
 		// Which water art (tools/art/water.py): a forest pond, swamp murk, the Frozen Waste's black
 		// water with an ice shelf, or a stone pool. Each chapter's profile says which.
 		levelPainter.WaterStyle = StageEnvironmentCatalog.Get(kind).WaterStyle;
+		// Whether the player can wade it (in-flight 59) - false only for the Bridge's abyss.
+		levelPainter.WaterWalkable = StageEnvironmentCatalog.Get(kind).WaterWalkable;
 		// Which wall art the chapter's walls are drawn with: the jail set unless it has its own
 		// (StageEnvironmentProfile.WallSet, .ai/endgame-castle.md 1.9).
 		levelPainter.WallArtSet = StageEnvironmentCatalog.Get(kind).WallSet;
@@ -2318,14 +2332,28 @@ public partial class Node2DGame : Node2D
 
 	// True where no prop, decor or stage hazard may stand: a hazard tile or a terrain in
 	// PropAvoidTerrains (water, ice, lava, pit, maze wall).
-	private bool IsPropAvoidedAt(Vector2 position)
+	private bool IsPropAvoidedAt(Vector2 position, float waterClearance = 0f)
 	{
 		if (terrainStreamer == null)
 			return false;
 		if (terrainStreamer.IsHazardAtWorld(position))
 			return true;
 		string terrain = terrainStreamer.TerrainAtWorld(position);
-		return terrain != null && PropAvoidTerrains.Contains(terrain);
+		if (terrain != null && PropAvoidTerrains.Contains(terrain))
+			return true;
+		// A wide plant's leaves reach past its cell: a bush beside a pond drew over the water and
+		// the shore read as jagged (in-flight 59). Greenery passes its canopy's reach here - four
+		// compass samples keep it that far off the water, while rocks and clutter still hug shores.
+		if (waterClearance > 0f)
+			for (int i = 0; i < 4; i++)
+			{
+				Vector2 at = position + new Vector2(
+					i == 0 ? waterClearance : i == 1 ? -waterClearance : 0f,
+					i == 2 ? waterClearance : i == 3 ? -waterClearance : 0f);
+				if (terrainStreamer.IsBlockedAtWorld(at))
+					return true;
+			}
+		return false;
 	}
 
 	// parent is the game itself for the one-shot fallback, or a chunk's prop holder when streaming.
@@ -2976,7 +3004,8 @@ public partial class Node2DGame : Node2D
 				continue;
 			}
 			int margin = art.Trunk > 0 ? TreeLandmarkMarginCells : BushLandmarkMarginCells;
-			if (position.DistanceTo(stageOrigin) < DecorPlayerSafeRadius || IsPropAvoidedAt(position) || IsInLandmark(position, margin)
+			if (position.DistanceTo(stageOrigin) < DecorPlayerSafeRadius
+				|| IsPropAvoidedAt(position, art.Trunk > 0 ? 48f : 24f) || IsInLandmark(position, margin)
 				|| IsInExploreReserve(position, art.Trunk > 0 ? ExploreTreeMargin : 0f) || IsNearPlannedHazard(position))
 			{
 				refused++;
@@ -4174,7 +4203,7 @@ public partial class Node2DGame : Node2D
 		foreach (Button exit in new[]
 		{
 			MakeEscapeButton("Restart Run", OnEscapeRestartPressed, BonelightSkin.Emphasis.Quiet),
-			MakeEscapeButton("Quit to Menu", OnEscapeQuitPressed, BonelightSkin.Emphasis.Quiet),
+			MakeEscapeButton("Quit Run", OnEscapeQuitPressed, BonelightSkin.Emphasis.Quiet),
 		})
 		{
 			exit.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
@@ -4403,11 +4432,11 @@ public partial class Node2DGame : Node2D
 
 	private void OnEscapeQuitPressed()
 	{
-		GetTree().Paused = false;
-		// The menu lives on the title screen now, so going "back to the menu" means loading
-		// its shell and telling it to skip the press-any-key beat.
-		Global.OpenMenuImmediately = true;
-		GetTree().ChangeSceneToFile("res://scenes/TitleScreen.tscn");
+		DropPauseScreenshot();
+		escapeMenu?.Hide();
+		// Finish once through the same reward/lesson/freeing path as any other run ending.
+		// A voluntary end has results, without playing a death animation or claiming a victory.
+		FinishRunAndReward(RunOutcome.Quit);
 	}
 
 	private void ShowStructuredEscapeDetail(string title, Action<VBoxContainer> buildContent)
@@ -4758,7 +4787,7 @@ public partial class Node2DGame : Node2D
 			if (boon.Effect == BoonEffect.WalkingRecharge && player != null)
 				box.AddChild(BuildDetailLabel(player.WaywiserWindingSpellName is string winding
 					? $"Winding: {winding}."
-					: "Not winding - walk to wind your slowest spell.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
+					: "Not winding - walk to wind the spell furthest from ready.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
 			// The element tags it adds to the run, as the same chips the level-up card showed when it
 			// was taken - "why is my Water at 3" was a question the pause screen could not answer.
 			if (BuildPauseTagChips(boon.ElementWeights) is Control chips)
@@ -5749,6 +5778,8 @@ public partial class Node2DGame : Node2D
 		{
 			IsClear = IsExploreGroundClear,
 			IsClearDense = IsExploreGroundClearDense,
+			IsWalkable = p => !IsGroundBlockedAt(p),
+			IsWooded = p => canopyProfile != null && WoodlandCanopyAt(p) >= canopyProfile.StandStart0,
 			Origin = stageOrigin,
 			ChunkPixels = TerrainStreamer.ChunkTiles * ProceduralTilePixels,
 			// A maze corridor block plus its wall strip: cell centres are this far apart, and the
@@ -6240,9 +6271,12 @@ public partial class Node2DGame : Node2D
 			AnchorLeft = 0f,
 			AnchorRight = 1f,
 			OffsetLeft = 24f,
-			OffsetTop = 44f,
+			// 56, not 44: the bar spans the whole width, and at 44 its left end sat on the player's
+			// health bar, whose box ends at y 50 (Eric, 2026-11-06: "Boss health bar touches player
+			// health bar"). 50 plus the band's own Gap. HudBand steps everything under it down with it.
+			OffsetTop = 56f,
 			OffsetRight = -24f,
-			OffsetBottom = 44f + 34f
+			OffsetBottom = 56f + 34f
 		};
 		uiOverlay.AddChild(bossHudRoot);
 		SafeArea.ApplyTo(bossHudRoot);
@@ -6514,7 +6548,6 @@ public partial class Node2DGame : Node2D
 	public const string ChestSourceElite = "elite";
 	public const string ChestSourceWarden = "warden";
 	public const string ChestSourceGhost = "ghost";
-	public const string ChestSourceNested = "nested";
 	public const string ChestSourceBoss = "boss";
 
 	// What this run's chests have shown, so a card passed over fades (ChestItemCatalog.ShownOfferFade).
@@ -6581,23 +6614,6 @@ public partial class Node2DGame : Node2D
 			return false;
 		lastSpeedPotionAt = timeElapsed;
 		return true;
-	}
-
-	// The Hidden Drawer: a chest just claimed sometimes held another. It rises beside the player the
-	// way a side event's chest does, and it can hold one in turn - a chain, but a short one (one in
-	// four, then one in sixteen).
-	private void TrySpawnNestedChest()
-	{
-		if (player == null || !IsInstanceValid(player) || bossFightActive || runFinished)
-			return;
-		if (spawnRng.Randf() >= player.GetNestedChestChance())
-			return;
-		AddChild(new ChestReward
-		{
-			Position = GetChestSpawnPositionAroundPlayer(),
-			MaterialiseSeconds = DropTable.NestedChestRiseSeconds,
-			Source = ChestSourceNested
-		});
 	}
 
 	public void OpenChestSelectionMenu()
@@ -6728,29 +6744,7 @@ public partial class Node2DGame : Node2D
 		if (player != null && IsInstanceValid(player))
 			player.GrantInvincibility(player.PostMenuInvincibilitySeconds, whiten: false);
 
-		// After the claim, so a Hidden Drawer taken from this very chest already counts.
-		TrySpawnNestedChest();
 		ResumeOrOpenNextMenu();
-	}
-
-	private Vector2 GetChestSpawnPositionAroundPlayer()
-	{
-		if (player == null || !IsInstanceValid(player))
-			return stageOrigin;
-
-		for (int i = 0; i < 12; i++)
-		{
-			float angle = spawnRng.Randf() * Mathf.Tau;
-			float radius = spawnRng.RandfRange(90f, 220f);
-			Vector2 candidate = ClampPositionToStageBounds(player.GlobalPosition + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
-			if (candidate.DistanceTo(player.GlobalPosition) < 80f)
-				continue;
-			if (IsImpassablePosition(candidate))
-				continue;
-			return candidate;
-		}
-
-		return ClampPositionToStageBounds(player.GlobalPosition + new Vector2(0f, -130f));
 	}
 
 	private int GetCurrentEliteEnemyCount()

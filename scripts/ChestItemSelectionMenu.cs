@@ -1040,9 +1040,9 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 		piecesRow.AddChild(count);
 		nameColumn.AddChild(piecesRow);
 
-		// Brief (a relic in two sets): the partial is shown only when this claim is
-		// what switches it on.
-		if (hasPartial && (!brief || reachesPartial))
+		// Always shown, even brief (a relic in two sets): Eric, 2026-11-06 - "Just show all effects
+		// always, we can save room in other ways."
+		if (hasPartial)
 		{
 			bool partialHeld = owned >= set.PartialItemCount;
 			string partialText = string.Join(", ", set.PartialEffects.Select(e => $"{e.Label} {e.Value}"));
@@ -1064,10 +1064,8 @@ public partial class ChestItemSelectionMenu : CanvasLayer
 		if (set.ElementTags != null && set.ElementTags.Length > 0)
 			fullText += " " + string.Join(", ", set.ElementTags.Select(t => $"+{t.Weight} {t.Element}")) + ".";
 		string fullTier = hasPartial ? $"All {total}" : $"Both";
-		// Five abreast, or four or more stacked on a phone, the full tier is the news only when this
-		// claim is what completes it.
-		if (crowded && !completes)
-			return box;
+		// The full tier used to vanish on crowded pages unless this claim completed it; every effect
+		// is always shown now (Eric, 2026-11-06: "Just show all effects always").
 		column.AddChild(completes
 			? BuildTierLine(fullTier + ", now:", fullText, InkGain, Ink)
 			: BuildTierLine(fullTier + ":", fullText, InkSoft, Ink));

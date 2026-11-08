@@ -211,7 +211,16 @@ public static class ChapterNotes
 				clues.Add(siteClue);
 		}
 
-		if (SecretCatalog.ForStage(stageId).Any(secret => secret.IsVault && !string.IsNullOrEmpty(secret.SpellUnlockId)
+		SecretDefinition teacher = SecretCatalog.ForStage(stageId).FirstOrDefault(secret => Teachings.LessonAt(save, secret.Id) != null);
+		if (teacher != null)
+		{
+			// Glimpsed on an earlier run, the clue stops being coy (Teachings.LandmarkHint).
+			bool glimpsed = save?.HasGlimpsedSecret(teacher.Id) == true;
+			clues.Add(teacher.Id == SecretCatalog.PinfoldId && !glimpsed
+				? "Something struggled through the stubble."
+				: Teachings.LandmarkHint(teacher.Id, glimpsed));
+		}
+		else if (SecretCatalog.ForStage(stageId).Any(secret => secret.IsVault && !string.IsNullOrEmpty(secret.SpellUnlockId)
 			&& (save == null || (!save.HasFoundSecret(secret.Id) && !GlobalStatsManager.IsSpellUnlockedForLevelUp(save, secret.SpellUnlockId)))))
 			clues.Add(VaultClue);
 		return clues;

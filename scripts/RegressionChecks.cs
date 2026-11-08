@@ -20,6 +20,7 @@ public static partial class RegressionChecks
 		ValidateComboCatalog(warnings);
 		ValidateCodex(warnings);
 		ValidateSovereignRite(warnings);
+		ValidateSovereignTwin(warnings);
 		ValidateChestSetPresentation(warnings);
 		ValidateFullSetObjects(warnings);
 		ValidateTomeRelics(warnings);
@@ -71,12 +72,14 @@ public static partial class RegressionChecks
 		ValidateAchievementMigration(warnings);
 		ValidateRetiredChargeRefund(warnings);
 		ValidateDifficultyMigration(warnings);
+		ValidateChronoweaveMerge(warnings);
 		ValidateSpellBook(warnings);
 		ValidateTeachers(warnings);
 		ValidatePrologueReel(warnings);
 		ValidateFreeings(warnings);
 		ValidateCinematicRules(warnings);
 		ValidateSlowStartMigration(warnings);
+		ValidateShadowBoltMigration(warnings);
 		ValidateStoryReset(warnings);
 		ValidateUserDataCarryOver(warnings);
 		ValidateChapterDifficulty(warnings);
@@ -1028,9 +1031,28 @@ public static partial class RegressionChecks
 				warnings.Add($"Familiar: '{form.SelectedVariantId}' {(grants ? "grants" : "grants nothing")}; only the cat grants the wizard anything.");
 		}
 		ValidateCoursing(warnings);
+		// Every level and branch must honor the pack rule; Amount is intentionally absent from
+		// FireFamiliar. Test the resource as well as the live probe, so a later table edit cannot
+		// quietly return the level-three second hound.
+		SpellData dog = ContentValidator.LoadAllSpellForms().FirstOrDefault(s => s.SelectedVariantId == Familiar.DogId);
+		if (dog != null)
+		foreach (SpellEvolutionOption four in dog.Level4Options)
+		foreach (SpellEvolutionOption eight in dog.Level8Options)
+		{
+			var run = (SpellData)dog.Duplicate();
+			run.ApplyEvolution(four);
+			run.ApplyEvolution(eight);
+			for (int level = 1; level <= 8; level++)
+			{
+				run.CurrentLevel = level;
+				int expectedCount = level >= 4 && four.Id == Familiar.LittermatesId ? 3 : 1;
+				if (run.GetProjectileCountAtLevel(level) != expectedCount)
+					warnings.Add($"Familiar: {four.Id}/{eight.Id} at level {level} must have {expectedCount} hounds.");
+			}
+		}
 	}
 
-	// THE COURSING (AchievementDefinitions "coursing", which frees Laelaps): a Black Hare run down by a hound.
+	// THE COURSING: Laelaps hunts Black Hares in the Circle; the Pinfold now owns his rescue.
 	// What fails silently: the hare's scene naming another EnemyType (Familiar.Strike would count nothing,
 	// and the deed could never be done), the deed's measure not reading the run's count or the lifetime best
 	// (a deed done and never granted), the best not surviving the save, and the hound counted as a wizard
@@ -1051,13 +1073,15 @@ public static partial class RegressionChecks
 		AchievementDefinition deed = AchievementDefinitions.GetById("coursing");
 		if (deed == null)
 		{
-			warnings.Add("Coursing: no 'coursing' achievement; Laelaps can never be freed.");
+			warnings.Add("Coursing: no 'coursing' achievement.");
 			return;
 		}
-		if (!deed.CharacterUnlockId.Equals("laelaps", StringComparison.OrdinalIgnoreCase))
-			warnings.Add($"Coursing: the deed frees '{deed.CharacterUnlockId}', not Laelaps.");
-		var shortRun = new global::RunResult { HaresCoursed = AchievementDefinitions.CoursingTarget - 1, StageId = "stage_10" };
-		var fullRun = new global::RunResult { HaresCoursed = AchievementDefinitions.CoursingTarget, StageId = "stage_10" };
+		if (!string.IsNullOrEmpty(deed.CharacterUnlockId) || deed.CurrencyReward != 50)
+			warnings.Add("Coursing: the hunt must pay 50 Arcane Energy, without a character unlock.");
+		if (AchievementDefinitions.IsListed(deed, new SaveData()))
+			warnings.Add("Coursing: Laelaps' named hunt is shown before his rescue.");
+		var shortRun = new global::RunResult { HaresCoursed = AchievementDefinitions.CoursingTarget - 1, StageId = "stage_10", CharacterId = "laelaps" };
+		var fullRun = new global::RunResult { HaresCoursed = AchievementDefinitions.CoursingTarget, StageId = "stage_10", CharacterId = "laelaps" };
 		if (deed.IsComplete(AchievementContext.ForRun(new SaveData(), shortRun)))
 			warnings.Add($"Coursing: {AchievementDefinitions.CoursingTarget - 1} hares completes the deed; it asks for {AchievementDefinitions.CoursingTarget}.");
 		if (!deed.IsComplete(AchievementContext.ForRun(new SaveData(), fullRun)))
@@ -1065,8 +1089,33 @@ public static partial class RegressionChecks
 		var save = new SaveData();
 		save.Lifetime.Absorb(fullRun);
 		LifetimeStats back = LifetimeStats.FromDictionary(save.Lifetime.ToGodotDictionary());
-		if (back.BestHaresCoursed != AchievementDefinitions.CoursingTarget || !deed.IsComplete(AchievementContext.ForSave(new SaveData { Lifetime = back })))
-			warnings.Add("Coursing: the best run's hares do not survive the save (LifetimeStats.BestHaresCoursed), so the menu would forget the deed.");
+		if (back.BestLaelapsHaresCoursed != AchievementDefinitions.CoursingTarget || !deed.IsComplete(AchievementContext.ForSave(new SaveData { Lifetime = back })))
+			warnings.Add("Coursing: Laelaps' best hunt does not survive the save.");
+		foreach (var wrongRun in new[] {
+			new global::RunResult { HaresCoursed = 999, StageId = "stage_10", CharacterId = "merlin" },
+			new global::RunResult { HaresCoursed = 999, StageId = "stage_9", CharacterId = "laelaps" } })
+		{
+			var wrongSave = new SaveData();
+			wrongSave.Lifetime.Absorb(wrongRun);
+			if (deed.IsComplete(AchievementContext.ForRun(wrongSave, wrongRun)))
+				warnings.Add("Coursing: a different character or chapter can complete Laelaps' hunt.");
+		}
+		if (deed.IsComplete(AchievementContext.ForSave(new SaveData { Lifetime = new LifetimeStats { BestHaresCoursed = 999 } })))
+			warnings.Add("Coursing: an old unrestricted hunt is being counted as Laelaps' hunt.");
+		var rescue = AchievementDefinitions.GetById(AchievementDefinitions.SecretDeedId(SecretCatalog.PinfoldId));
+		if (rescue?.CharacterUnlockId != "laelaps" || rescue.SpellUnlockId != "familiar")
+			warnings.Add("Pinfold: the rescue must unlock both Familiar and Laelaps.");
+		var previousRescue = new SaveData();
+		previousRescue.UnlockedAchievementIds.Add(AchievementDefinitions.SecretDeedId(SecretCatalog.PinfoldId));
+		AchievementManager.Reconcile(previousRescue);
+		if (!GlobalStatsManager.IsCharacterUnlocked(previousRescue, "laelaps") || !previousRescue.UnlockedSpellIds.Contains("familiar"))
+			warnings.Add("Pinfold: a previously completed rescue does not receive its linked unlocks.");
+		var previousHunter = new SaveData();
+		previousHunter.UnlockedCharacterIds.Add("laelaps");
+		previousHunter.UnlockedAchievementIds.Add("coursing");
+		AchievementManager.Reconcile(previousHunter);
+		if (!GlobalStatsManager.IsCharacterUnlocked(previousHunter, "laelaps"))
+			warnings.Add("Coursing: previously earned Laelaps was lost.");
 
 		if (UnlockCatalog.AllWizardIds.Contains("laelaps", StringComparer.OrdinalIgnoreCase))
 			warnings.Add("Coursing: Laelaps is counted by the final chapter's gate (UnlockCatalog.AllWizardIds); he is not a wizard, and his deed is optional.");
@@ -2791,7 +2840,7 @@ public static partial class RegressionChecks
 				AscensionLearned = true, BossRushBestFelled = 3, BossRushBestClearSeconds = 412f,
 				// Every setting off its default, so "kept" cannot pass by coincidence.
 				MasterVolume = 0.3f, MusicVolume = 0.2f, SfxVolume = 0.6f, AudioMuted = true, ShowDamageNumbers = false,
-				ReduceScreenShake = true, ReduceDarkness = true,
+				ReduceScreenShake = true, ReduceDarkness = true, Fullscreen = false, WindowWidth = 1280, WindowHeight = 800,
 				EnableGameplayOnboardingTips = false, HasToggledOnboardingTipsAtLeastOnce = true,
 				PlaytestModeEnabled = true, BalancePresetId = GlobalStatsManager.BalancePresetHardcore,
 			};
@@ -3036,6 +3085,33 @@ public static partial class RegressionChecks
 			warnings.Add("Migration: a save that never played a run should start with the Ascension sealed, as a new save does.");
 		if (Teachings.HasLearned(new SaveData(), Teaching.Ascension))
 			warnings.Add("Ascension: a brand-new save has already learned it; a landmark should teach it (Teachings).");
+	}
+
+	// Schema 23 (Eric, 2026-11-07): Chronoweave's levels become Tempest Rhythm's, one for one, with the
+	// purse untouched unless a level falls past the 16-level cap - then it pays back what it cost.
+	private static void ValidateChronoweaveMerge(List<string> warnings)
+	{
+		var save = new SaveData { SchemaVersion = 22, TotalCurrency = 10 };
+		save.ArcaneUpgradeLevels["cooldowns"] = 8;
+		save.ArcaneUpgradeLevels["attack_speed"] = 8;
+		save.Migrate(log: false);
+		save.ArcaneUpgradeLevels.TryGetValue("attack_speed", out int merged);
+		if (save.ArcaneUpgradeLevels.ContainsKey("cooldowns") || merged != 16 || save.TotalCurrency != 10)
+			warnings.Add($"Migration: schema 23 should turn Chronoweave 8 + Tempest 8 into Tempest 16 with the purse untouched; got {merged}, purse {save.TotalCurrency}.");
+		int purse = save.TotalCurrency;
+		save.Migrate(log: false);
+		if (save.TotalCurrency != purse || save.ArcaneUpgradeLevels["attack_speed"] != 16)
+			warnings.Add("Migration: a second schema 23 migration moved levels or paid a refund again.");
+
+		// Past the cap (a found level could put Tempest over 8 one day): the dearest levels pay back.
+		var full = new SaveData { SchemaVersion = 22 };
+		full.ArcaneUpgradeLevels["cooldowns"] = 8;
+		full.ArcaneUpgradeLevels["attack_speed"] = 12;
+		full.Migrate(log: false);
+		const int expected = (35 + 4 * 25) + (35 + 5 * 25) + (35 + 6 * 25) + (35 + 7 * 25);
+		full.ArcaneUpgradeLevels.TryGetValue("attack_speed", out int capped);
+		if (capped != 16 || full.TotalCurrency != expected)
+			warnings.Add($"Migration: schema 23 with Tempest 12 should cap at 16 and refund {expected} for the four levels past it; got {capped}, purse {full.TotalCurrency}.");
 	}
 
 	// The difficulty curve's table (.ai/difficulty-curve.md, section 4): every playable road chapter has a
@@ -3585,8 +3661,10 @@ public static partial class RegressionChecks
 		}
 		void Expect(string label, SaveData save, bool merlinFree, bool darkFree)
 		{
-			if (GlobalStatsManager.IsCharacterUnlocked(save, merlin) != merlinFree)
-				warnings.Add($"The whole road: {label} {(merlinFree ? "does not free" : "frees")} Merlin.");
+			if (GlobalStatsManager.IsCharacterUnlocked(save, merlin))
+				warnings.Add($"The whole road: {label} frees Merlin instead of leaving his rescue to the Circle.");
+			if (GlobalStatsManager.IsAchievementUnlocked(save, AchievementDefinitions.OneHeMissedId) != merlinFree)
+				warnings.Add($"The whole road: {label} has the wrong Default campaign-completion result.");
 			if (GlobalStatsManager.IsCharacterUnlocked(save, dark) != darkFree)
 				warnings.Add($"The whole road: {label} {(darkFree ? "does not free" : "frees")} the Dark Wizard.");
 		}
@@ -3615,8 +3693,8 @@ public static partial class RegressionChecks
 		if (StageCatalog.Campaign.Any(s => s.Id.Equals("stage_8", StringComparison.OrdinalIgnoreCase)))
 			warnings.Add("The whole road: the Sketchbook is in the campaign, so Merlin and the Dark Wizard would ask for it; it has no unlocks.");
 		SaveData orbOwned = Walk(_ => D);
-		if (!GlobalStatsManager.IsSpellUnlockedForLevelUp(orbOwned, OrbOfAges.SpellId))
-			warnings.Add("The whole road: every chapter on Default frees Merlin but not his Orb of Ages.");
+		if (GlobalStatsManager.IsSpellUnlockedForLevelUp(orbOwned, OrbOfAges.SpellId))
+			warnings.Add("The whole road: completing the campaign grants Orb of Ages before Merlin's Circle rescue.");
 
 		// Only a boss victory records a clear, and a record never comes down.
 		var record = new SaveData();
@@ -3681,13 +3759,22 @@ public static partial class RegressionChecks
 
 		// Merlin: never secret, never sealed, and Orb of Ages his alone.
 		UnlockDefinition merlinUnlock = UnlockCatalog.GetCharacter(merlin);
-		if (merlinUnlock != null && (merlinUnlock.IsSecret || merlinUnlock.SealedUntilFreed))
-			warnings.Add("The King-Maker: Merlin is secret or sealed; he was never held, and is shown locked from the first run.");
+		if (merlinUnlock?.SiteId != "the_moot" || merlinUnlock.RevealStageId != "stage_10")
+			warnings.Add("Merlin: his rescue must belong to the Broken Circle's Moot.");
 		CharacterData merlinData = CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(merlin, StringComparison.OrdinalIgnoreCase));
 		if (merlinData?.StartingSpellResource?.Id?.Equals(OrbOfAges.SpellId, StringComparison.OrdinalIgnoreCase) != true)
 			warnings.Add("The King-Maker: Merlin does not open on Orb of Ages.");
-		if (AchievementDefinitions.GetById(AchievementDefinitions.OneHeMissedId)?.SpellUnlockId != OrbOfAges.SpellId)
-			warnings.Add("The King-Maker: the deed does not pay Orb of Ages with him.");
+		AchievementDefinition circleRescue = AchievementDefinitions.GetById(AchievementDefinitions.EventDeedId("the_moot"));
+		if (circleRescue?.SpellUnlockId != OrbOfAges.SpellId || circleRescue.CharacterUnlockId != merlin || circleRescue.BoonUnlockId != "gilded_mote")
+			warnings.Add("Merlin: restoring the Circle must grant him, Orb of Ages and Gilded Mote.");
+		AchievementDefinition roadDeed = AchievementDefinitions.GetById(AchievementDefinitions.OneHeMissedId);
+		if (roadDeed?.CurrencyReward != 1000 || !string.IsNullOrEmpty(roadDeed.CharacterUnlockId) || !string.IsNullOrEmpty(roadDeed.SpellUnlockId))
+			warnings.Add("The Road Restored: completing the campaign must pay 1000 Arcane Energy.");
+		var oldCircle = new SaveData();
+		oldCircle.UnlockedAchievementIds.Add(AchievementDefinitions.EventDeedId("the_moot"));
+		AchievementManager.Reconcile(oldCircle);
+		if (!GlobalStatsManager.IsCharacterUnlocked(oldCircle, merlin) || !oldCircle.UnlockedSpellIds.Contains(OrbOfAges.SpellId))
+			warnings.Add("Merlin: a previously completed Circle does not reconcile its new rescue.");
 		if (UnlockCatalog.GrimoireSpellIds.Contains(OrbOfAges.SpellId, StringComparer.OrdinalIgnoreCase))
 			warnings.Add("The King-Maker: The Grimoire Restored counts Orb of Ages, which would put the collection behind the whole road.");
 		foreach (CharacterData who in CharacterRoster.GetAll())
@@ -5072,8 +5159,7 @@ public static partial class RegressionChecks
 	private static void ValidateCollectorEconomy(List<string> warnings)
 	{
 		const int ChestPagesLaidOut = 5;
-		int mostOffers = DropTable.BaseChestOffers + 1 // the Relic Key
-			+ CharacterRoster.GetAll().Count(c => c != null && "chest_options_1".Equals(c.StartingPassiveId?.Trim(), StringComparison.OrdinalIgnoreCase));
+		int mostOffers = DropTable.BaseChestOffers + 1; // the Hidden Drawer, the one source since 2026-11-03
 		if (mostOffers > ChestPagesLaidOut)
 			warnings.Add($"A chest can offer {mostOffers} relics, but the chest screen is laid out and measured for {ChestPagesLaidOut}.");
 
@@ -5082,9 +5168,23 @@ public static partial class RegressionChecks
 		float sum = (orb + flask + potion) * (1f + DropTable.LuckScale);
 		if (sum >= 1f || orb <= 0f || flask <= 0f || potion <= 0f)
 			warnings.Add($"DropTable's bonus chances are out of range: {sum:0.000} a kill at full Luck, and each must be above 0.");
-		float elite = DropTable.EliteChestChance, nested = DropTable.NestedChestChance;
-		if (elite <= 0f || elite > 1f || nested >= 1f)
-			warnings.Add("DropTable's chest chances are out of range: an elite's must be in (0, 1], and a nested chest's below 1 or the Hidden Drawer never stops.");
+		float elite = DropTable.EliteChestChance, dee = Player.CharacterEliteChestChance;
+		if (elite <= 0f || elite > 1f)
+			warnings.Add("DropTable's elite chest chance is out of range: it must be in (0, 1].");
+		if (dee <= 0f || elite + dee >= 1f)
+			warnings.Add($"John Dee's Scattered Library puts an elite's chest at {elite + dee:0%}: it must raise it, and stay below certain, or the Curio Ledger and the Cabinet of Curiosities have nothing left to give him.");
+
+		// John Dee is freed by lifetime chests and counted by every gate, so the Emberdeep waits on him. A player who
+		// beats each chapter before it at the first try must already have the chests when he reaches it, or the gate
+		// holds him there to farm: the first elite, 18 more at the elite chance and 4 Wardens a run (_ChestSim's
+		// defaults), times the chapters before the gate. Side-event and secret chests are left out, as slack.
+		StageDefinition gate = StageCatalog.GateChapter;
+		if (gate != null && GlobalStatsManager.CountsTowardGate("john_dee", gate))
+		{
+			float flawlessChestsByGate = StageCatalog.CampaignPositionOf(gate.Id) * (1f + 18f * elite + 4f);
+			if (AchievementDefinitions.MortlakeChestTarget >= flawlessChestsByGate)
+				warnings.Add($"John Dee asks for {AchievementDefinitions.MortlakeChestTarget} chests, but a player who beats every chapter before {gate.DisplayName} at the first try has about {flawlessChestsByGate:0} there; the gate counts him, so it would hold that player to farm chests.");
+		}
 		int bigger = DropTable.GreaterOrbValue;
 		if (bigger <= 2)
 			warnings.Add($"A bigger XP orb is worth {bigger}, no more than the ordinary orb it replaces.");
@@ -5577,6 +5677,40 @@ public static partial class RegressionChecks
 		}
 	}
 
+	// SCHEMA 24 (SaveData.MigrateShadowBoltToConjunction; built as 23 in parallel with the Chronoweave
+	// merge, renumbered at the merge since saves already carried 23): Shadow Bolt became a Conjunction, and a save that
+	// owned it - through the Gaoler's deed, or an explicit grant from the pre-campaign grandfathering - keeps
+	// it: its recipe's Feat is recorded done. A save that never owned it gets nothing, and a second migration
+	// changes nothing.
+	private static void ValidateShadowBoltMigration(List<string> warnings)
+	{
+		SaveData At22(Action<SaveData> shape)
+		{
+			var save = new SaveData { SchemaVersion = 22 };
+			shape(save);
+			save.Migrate(log: false);
+			return save;
+		}
+		string feat = ComboCatalog.FeatId("shadow_bolt");
+
+		SaveData gaoler = At22(s => s.UnlockedAchievementIds.Add("castle_conqueror"));
+		if (!GlobalStatsManager.IsAchievementUnlocked(gaoler, feat) || !GlobalStatsManager.IsSpellUnlockedForLevelUp(gaoler, "shadow_bolt"))
+			warnings.Add("Shadow Bolt migration: a save with the Gaoler's deed done should keep the spell through its recipe's Feat.");
+		gaoler.SchemaVersion = 22;
+		int deeds = gaoler.UnlockedAchievementIds.Count;
+		gaoler.Migrate(log: false);
+		if (gaoler.UnlockedAchievementIds.Count != deeds)
+			warnings.Add("Shadow Bolt migration: a second migration changed the save.");
+
+		SaveData grandfathered = At22(s => s.UnlockedSpellIds.Add("shadow_bolt"));
+		if (!GlobalStatsManager.IsAchievementUnlocked(grandfathered, feat))
+			warnings.Add("Shadow Bolt migration: a save granted the spell outright (pre-campaign grandfathering) should keep it.");
+
+		SaveData without = At22(_ => { });
+		if (GlobalStatsManager.IsAchievementUnlocked(without, feat))
+			warnings.Add("Shadow Bolt migration: a save that never owned the spell was handed its Feat.");
+	}
+
 	// THE CONJUNCTION A WIZARD OPENS ON (ComboDefinition.StartsFusedFor; the dark wizard's The Taking, Eric
 	// 2026-11-02): the wizard exists and opens on it; it levels 1 to the Ascension level on a line at every level
 	// whose numbers its script reads; and his form names it and opens at its max level alone - shut a level short,
@@ -5623,6 +5757,54 @@ public static partial class RegressionChecks
 	//     spell's own readers move with the boon and come back without it;
 	//   - the boon carries damage, cooldown, area or scale and amount and nothing else, so no effect, rider,
 	//     slow, knockback or execute reaches a boss through it.
+	// The Rite's second path (Eric, 2026-11-07, in-flight item 50): a crowned spell holds BOTH of its
+	// level-8 Ascensions. Every spell with a choice is put through it here - crowned, ascended down
+	// its first branch, and the stat readers walked with both branches live - so a pair that cannot
+	// coexist is reported at startup rather than discovered mid-run. What this cannot judge is feel:
+	// item 50's test note (every spell crowned, in play) still stands.
+	private static void ValidateSovereignTwin(List<string> warnings)
+	{
+		foreach (SpellData spell in ContentValidator.LoadAllSpells())
+		{
+			IReadOnlyList<SpellEvolutionOption> options = spell.GetEvolutionOptionsForLevel(8);
+			if (options == null || options.Count < 2)
+				continue;
+
+			SpellEvolutionOption keptPick = spell.SelectedLevel8Evolution;
+			string keptPickId = spell.SelectedLevel8EvolutionId;
+			SpellEvolutionOption keptBoon = spell.SovereignBoon;
+			SpellEvolutionOption[] keptTwins = spell.SovereignTwinAscensions;
+			try
+			{
+				spell.SovereignBoon = SovereignRite.BuildBoon(spell, 0);
+				spell.ApplyEvolution(options[0]);
+				if ((spell.SovereignTwinAscensions?.Length ?? 0) != options.Count - 1)
+					warnings.Add($"Sovereign twin: '{spell.Id}' crowned and ascended holds {spell.SovereignTwinAscensions?.Length ?? 0} twin paths, not {options.Count - 1}.");
+				for (int i = 1; i < options.Count; i++)
+				{
+					if (!spell.HasEvolution(options[i].Id))
+						warnings.Add($"Sovereign twin: '{spell.Id}' crowned does not own its unchosen branch '{options[i].Id}'.");
+				}
+				// The readers walk every milestone at once; a throw or a buffer overrun here would be
+				// a crash on the crowned spell's first cast.
+				spell.GetDamageAtLevel(spell.MaxLevel);
+				spell.GetCooldownAtLevel(spell.MaxLevel);
+				spell.GetElementWeights();
+			}
+			catch (Exception e)
+			{
+				warnings.Add($"Sovereign twin: '{spell.Id}' with both branches live threw {e.GetType().Name}: {e.Message}");
+			}
+			finally
+			{
+				spell.SelectedLevel8Evolution = keptPick;
+				spell.SelectedLevel8EvolutionId = keptPickId;
+				spell.SovereignBoon = keptBoon;
+				spell.SovereignTwinAscensions = keptTwins;
+			}
+		}
+	}
+
 	private static void ValidateSovereignRite(List<string> warnings)
 	{
 		const string label = "Sovereign Rite";

@@ -155,9 +155,11 @@ public partial class Node2DGame
 			AnchorLeft = 0f,
 			AnchorRight = 1f,
 			OffsetLeft = 24f,
-			OffsetTop = 44f,
+			// 56 with the chapter boss's bar (Node2DGame.ConfigureBossHud): at 44 it touched the
+			// player's health bar, whose box ends at y 50.
+			OffsetTop = 56f,
 			OffsetRight = -24f,
-			OffsetBottom = 44f + 34f
+			OffsetBottom = 56f + 34f
 		};
 		uiOverlay.AddChild(bossHudRoot);
 		SafeArea.ApplyTo(bossHudRoot);

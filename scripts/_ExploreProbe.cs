@@ -48,12 +48,17 @@ using TheOneHeMissed.scripts;
 //      start again. --arrive-late waits for the fall to pass the barge's mooring before coming, and checks it
 //      slipped its mooring and waits ahead of the fall, its arrow with it. Pair it with --bridge-front=-6000
 //      (the front started 6,000 px ahead of the start) to keep the wait short.
-//      The Swamp's gibbet cage is ESCORTED: the probe holds the winch, then walks toward the ferry landing at the
-//      player's own walking speed and waits whenever Paracelsus falls more than a few strides behind, so he really walks
-//      the whole way on the player's steps. The swarm round him is cleared only every few seconds, so the bog's Mired and
-//      the trickle get to him and bite. --let-him-fall, once he is out the first time, stops the player's spells and the
-//      clearing and raises a ring of Mired on him, and checks he falls, sinks, is in the cage again and is lowered and led
-//      out again from the cage - and then finishes the walk.
+//      The Swamp's gibbet cage is LED ROUND THE ROT (.ai/unlock-puzzles.md 3.4): the probe holds the winch, and each time
+//      Paracelsus steps out it plans its own way from where it stands to the ferry landing through the gaps in the rot
+//      (RotPoolLayout.FindRoute over the pools it can see and the ground - what a player who has seen the pools does) and
+//      walks it at the player's own walking speed, waiting whenever he falls more than a few strides behind, so he really
+//      walks the whole way on the player's steps. The swarm is cleared only every few seconds, so the Mired the bog raises
+//      in the gaps and the trickle are round them both; the probe counts the frames a body was within a touch of him, and
+//      checks that nothing took anything from him but the rot. --straight, on his first walk only, walks straight at the
+//      landing round water as the old escort did, through whatever rot is on the line, and checks the rot bit him (the
+//      wrong approach); then leads him round on the next. --let-him-fall, once he is out the first time, leads him into
+//      the largest pool near him and walks a small ring in it until the rot has all of him, and checks he falls, sinks, is
+//      in the cage again and is lowered and led out again from the cage - and then leads him round to the landing.
 //      The Court's seer (--stage=12) is SOUGHT, at the player's own walking speed, never teleported: once a room is
 //      found empty the probe stands and waits for the voice, and when it reads it walks the shortest way through the
 //      halls (the building's own grid, CourtLayout) to where the reading came from - what a player who knows the
@@ -114,13 +119,24 @@ public partial class _ExploreProbe : Node
 	private float beaconWentOutAt = -1f;
 	private bool beaconWentCold;
 	private int lostPhase;
-	// --let-him-fall: at the gibbet's cage, let the swarm have him once (see the header).
+	// --let-him-fall: at the gibbet's cage, let the rot have him once (see the header). --straight: walk his first walk
+	// straight at the landing, through the rot.
 	private bool letHimFall;
-	private bool fallSetUp;
-	private bool fallRestored;
+	private bool straightThrough;
 	private bool backInCageAfterFall;
 	private float escortClearClock;
 	private int escortWaits;
+	// The way the probe planned through the rot for the walk under way, and the leg it is on; the pool it led him into.
+	private Vector2[] escortRoute;
+	private int escortLeg;
+	private int fallPool = -1;
+	private float fallRing;
+	// What the straight walk cost him, and the frames a body was within a touch of him while he walked (the old bite's
+	// 46 px), against what he lost to anything but the rot.
+	private int straightBites = -1;
+	private bool straightReachedLanding;
+	private int closeFrames;
+	private int escortReleasesSeen;
 	private float lostClock;
 	private float progressOutside = -1f;
 	private float progressAfterWait = -1f;
@@ -202,6 +218,7 @@ public partial class _ExploreProbe : Node
 			else if (arg.StartsWith("--fall-behind=")) fallBehind = float.Parse(arg.Substring(14), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg == "--arrive-late") arriveLate = true;
 			else if (arg == "--let-him-fall") letHimFall = true;
+			else if (arg == "--straight") straightThrough = true;
 			else if (arg == "--let-beacon-die") letBeaconDie = true;
 			else if (arg.StartsWith("--tithe-level=")) titheLevel = int.Parse(arg.Substring(14));
 			else if (arg == "--tithe-walk-off") titheWalkOff = true;
@@ -441,9 +458,11 @@ public partial class _ExploreProbe : Node
 			{
 				Vector2 p = e.Sites[i].Position;
 				float d = p.DistanceTo(origin);
-				float min = SideEventDirector.EventMinChunks * chunk - slack;
+				float min = e.PlacementMinChunks * chunk - slack;
 				// The lanterns are a chain from the first, so later ones may lie a mire's reach further.
-				float max = SideEventDirector.EventMaxChunks * chunk + slack + (i > 0 ? 2200f : 0f);
+				float max = e.PlacementMaxChunks * chunk + slack + (i > 0 ? 2200f : 0f);
+				if (i == 0 && e is WalkingHutEvent)
+					Check("the hut is surrounded by deep woodland", game.CreateExplorePlacer(0, 6f, 8f).HasWoodedSurrounds(p, WalkingHutEvent.WoodlandRingRadius));
 				Check($"{Of(e.Index)}site {i} ({e.Sites[i].Glyph}) is in the event band", d >= min && d <= max, $"{d:0} px = {d / chunk:0.0} chunks");
 				bool open = terrain == null || (!terrain.IsBlockedAtWorld(p) && !terrain.IsWallAtWorld(p)
 					&& !terrain.IsFenceAtWorld(p) && !terrain.IsHazardAtWorld(p));
@@ -1050,12 +1069,30 @@ public partial class _ExploreProbe : Node
 				Check("the winch lowered the cage and he stepped out", led.Releases >= 1, $"{led.Releases} time(s)");
 				Check("he followed the player's steps to the landing", led.BestProgress >= 0.99f && led.Walked > GibbetCageEvent.LandingMin * 0.8f,
 					$"{led.Walked:0} px walked, best {led.BestProgress * 100f:0}% of the way; the probe waited for him {escortWaits} frame(s) and turned off water {escortDetours} time(s)");
-				Check("the swarm went for him", HuntedEscort.TurnedOnHim > 0,
-					$"{HuntedEscort.TurnedOnHim} turned on him, {led.BitesTaken} bites for {led.DamageTaken}, {led.Risen} Mired risen; {led.Health} of {GibbetCageEvent.HealthMax} left");
+				RotPoolLayout rot = led.Rot;
+				Check("the rot was laid between the cage and the landing, with a way through it on paper",
+					rot != null && rot.Pools.Count >= 3 && rot.Pools.Count <= RotPoolLayout.MaxCount && rot.Route != null,
+					rot == null ? "no layout" : $"{rot.Pools.Count} pools, roll {rot.Attempts}{(rot.Trimmed ? " (trimmed)" : "")}, "
+						+ $"{(rot.Route == null ? "no way through" : $"{rot.Route.Length - 1} legs")}{(rot.RouteOnGround ? "" : " on open ground")}");
+				Check("the straight line from the winch to the landing runs through the rot", rot != null && rot.CrossesBite(led.WayStart, led.Landing));
+				// --straight: a walk ends at the landing or in a fall, so if he never fell the straight walk was the one that
+				// reached the landing, and every bite he took was on it.
+				straightReachedLanding = straightThrough && led.Falls == 0;
+				if (straightReachedLanding)
+					straightBites = led.RotTicks;
+				if (!straightReachedLanding)
+					Check("led round the rot: the walk that reached the landing took no bite from it", led.RotTicksThisWalk == 0,
+						$"{led.RotTicksThisWalk} bites on that walk, {led.RotTicks} in all ({led.PoolEntries} pools stepped in), {led.LoopsLeftOut} loops left out");
+				Check("nothing but the rot touched him", led.Health == GibbetCageEvent.HealthMax - led.RotTicksThisWalk * GibbetCageEvent.RotDamage,
+					$"{led.Health} of {GibbetCageEvent.HealthMax} left; a body within a touch of him on {closeFrames} frame(s); {led.Risen} Mired risen, {led.RisenInGaps} of them in the gaps");
+				if (straightThrough)
+					Check("straight: walked straight at the landing, the rot bit him", straightBites > 0,
+						$"{straightBites} bites ({straightBites * GibbetCageEvent.RotDamage} of his {GibbetCageEvent.HealthMax}), "
+						+ (straightReachedLanding ? "and he reached the landing" : "and he fell"));
 				Check("the punt took him", led.IsWon);
 				if (letHimFall)
 				{
-					Check("let fall: he fell and the bog took him back to the cage", led.Falls >= 1 && backInCageAfterFall,
+					Check("let fall: the rot had all of him, and the bog took him back to the cage", led.Falls >= 1 && backInCageAfterFall,
 						$"{led.Falls} fall(s), back in the cage: {backInCageAfterFall}");
 					Check("let fall: the cage was lowered again and the walk began again from it", led.Releases >= 2,
 						$"{led.Releases} releases");
@@ -1345,39 +1382,39 @@ public partial class _ExploreProbe : Node
 		}
 	}
 
-	// One step of the escort. While the cage hangs: stand at the winch. While he walks: toward the landing at the
-	// player's own walking speed, waiting while he is more than a few strides behind, the swarm cleared only every few
-	// seconds. With --let-him-fall, the first time he is out: hold still, the player's spells stopped, the clearing
-	// stopped, and a ring of the chapter's Mired raised on him until the bog takes him.
+	// One step of the escort. While the cage hangs: stand at the winch. While he walks: LEAD him round the rot - a way
+	// planned from where the probe stands, once per walk, through the gaps (RotPoolLayout.FindRoute), walked at the
+	// player's own walking speed, waiting while he is more than a few strides behind; the swarm cleared only every few
+	// seconds. --straight, his first walk: straight at the landing (StraightStep). --let-him-fall, his first walk: into
+	// the largest pool near him, and a small ring walked in it until the rot has him.
 	private Vector2 EscortStep(GibbetCageEvent escort, float delta, out bool clear)
 	{
 		clear = false;
 		Vector2 me = player.GlobalPosition;
-		if (escort.IsSinking && escort.Falls > 0 && !fallRestored)
+		if (escort.IsSinking)
 		{
-			// He is going under: the player may fight again, and everything on him is cleared.
-			fallRestored = true;
-			player.ProcessMode = ProcessModeEnum.Inherit;
 			clear = true;
 			return me;
 		}
-		if (fallRestored && escort.IsHanging && escort.Falls > 0)
+		if (escort.IsHanging && escort.Falls > 0)
 			backInCageAfterFall = true;
 		if (escort.IsHanging)
 			return escort.WinchPoint + new Vector2(0f, 8f);
 		if (!escort.IsWalking)
 			return me;
-		if (letHimFall && escort.Falls == 0)
+		// A new walk: plan again from here.
+		if (escort.Releases != escortReleasesSeen)
 		{
-			if (!fallSetUp)
+			escortReleasesSeen = escort.Releases;
+			escortRoute = null;
+		}
+		foreach (Enemy body in EnemyRegistry.Snapshot)
+		{
+			if (body.GlobalPosition.DistanceSquaredTo(escort.HimAt) < 46f * 46f)
 			{
-				fallSetUp = true;
-				player.ProcessMode = ProcessModeEnum.Disabled;
-				for (int k = 0; k < 8; k++)
-					game.SpawnEventEnemy(BestiaryRole.Bulk, escort.HimAt + Vector2.FromAngle(k * Mathf.Tau / 8f) * 150f, 1f, false);
-				GD.Print($"EXPLOREPROBE let him fall: eight Mired raised on him at ({escort.HimAt.X:0},{escort.HimAt.Y:0}), the player's spells stopped");
+				closeFrames++;
+				break;
 			}
-			return me;
 		}
 		escortClearClock += delta;
 		if (escortClearClock >= 5f)
@@ -1385,14 +1422,72 @@ public partial class _ExploreProbe : Node
 			escortClearClock = 0f;
 			clear = true;
 		}
-		Vector2 toLanding = escort.Landing + new Vector2(0f, -40f) - me;
-		float d = toLanding.Length();
 		if (me.DistanceTo(escort.HimAt) > 150f)
 		{
 			escortWaits++;
 			return me;
 		}
 		float step = player.WalkingSpeed * delta;
+		if (letHimFall && escort.Falls == 0)
+			return IntoTheRot(escort, me, step);
+		if (straightThrough && escort.Releases == 1)
+		{
+			straightBites = escort.RotTicks;
+			return StraightStep(escort, me, step);
+		}
+		if (escortRoute == null)
+		{
+			escortRoute = RotPoolLayout.FindRoute(escort.Rot?.Pools ?? Array.Empty<RotPoolLayout.Pool>(), me,
+				escort.Landing + new Vector2(0f, -40f), p => !game.IsGroundBlockedAt(p), RotPoolLayout.RouteClearance);
+			escortLeg = 1;
+			float length = 0f;
+			for (int i = 1; escortRoute != null && i < escortRoute.Length; i++)
+				length += escortRoute[i - 1].DistanceTo(escortRoute[i]);
+			GD.Print(escortRoute == null
+				? "EXPLOREPROBE escort: no way round the rot from here - walking straight"
+				: $"EXPLOREPROBE escort: planned a way round the rot from ({me.X:0},{me.Y:0}), {escortRoute.Length - 1} legs, {length:0} px "
+					+ $"(straight: {me.DistanceTo(escort.Landing):0} px)");
+		}
+		if (escortRoute == null)
+			return StraightStep(escort, me, step);
+		while (escortLeg < escortRoute.Length && me.DistanceTo(escortRoute[escortLeg]) <= 4f)
+			escortLeg++;
+		Vector2 goal = escortLeg < escortRoute.Length ? escortRoute[escortLeg] : escort.Landing + new Vector2(0f, -40f);
+		return me.MoveToward(goal, step);
+	}
+
+	// --let-him-fall: to the largest pool near him (the nearest of the largest), and once at its middle a small ring
+	// walked round it, so the steps he follows stay in the rot until it has all of him.
+	private Vector2 IntoTheRot(GibbetCageEvent escort, Vector2 me, float step)
+	{
+		RotPoolLayout rot = escort.Rot;
+		if (rot == null || rot.Pools.Count == 0)
+			return me;
+		if (fallPool < 0)
+		{
+			fallPool = 0;
+			for (int i = 1; i < rot.Pools.Count; i++)
+			{
+				RotPoolLayout.Pool p = rot.Pools[i], best = rot.Pools[fallPool];
+				if (p.Radius > best.Radius
+					|| (p.Radius == best.Radius && p.Centre.DistanceTo(escort.HimAt) < best.Centre.DistanceTo(escort.HimAt)))
+					fallPool = i;
+			}
+			GD.Print($"EXPLOREPROBE let him fall: leading him into the rot at ({rot.Pools[fallPool].Centre.X:0},{rot.Pools[fallPool].Centre.Y:0}), "
+				+ $"{rot.Pools[fallPool].Radius * 2f:0} px across");
+		}
+		Vector2 centre = rot.Pools[fallPool].Centre;
+		if (me.DistanceTo(centre) > 44f && fallRing == 0f)
+			return me.MoveToward(centre, step);
+		fallRing += step / 40f;
+		return me.MoveToward(centre + Vector2.FromAngle(fallRing) * 40f, step);
+	}
+
+	// Straight at the landing at his own walk, round water: the old escort's walk, through whatever rot is on the line.
+	private Vector2 StraightStep(GibbetCageEvent escort, Vector2 me, float step)
+	{
+		Vector2 toLanding = escort.Landing + new Vector2(0f, -40f) - me;
+		float d = toLanding.Length();
 		if (d <= 4f)
 			return me;
 		// Walked as a player walks: round water and walls, not through them - his feet test the ground a stride ahead,

@@ -619,8 +619,18 @@ public partial class Player : CharacterBody2D
 	public const float CurioLedgerEliteChestChance = 0.25f;
 	public const int CabinetPartialPickupRadius = 25;
 	public const int CabinetFullPickupRadius = 50;
-	// John Dee's passive: one more relic in every chest (ChestOfferCount).
-	private int characterChestOfferBonus = 0;
+	// The Reliquary Key: a chest this near (plus the pickup radius - PickupReach) comes to whoever holds its key, at
+	// this speed (ChestReward.ComeToKeyHolder) - above a wizard's walk (220), or a chest could never catch a player
+	// walking off: at 180 the first photograph had it trailing him across the field. The key once widened the pickup
+	// radius for everything, a magnet with the wrong name on it; this pulls only what has a lock. Its old fourth card
+	// is the Hidden Drawer's (Eric, 2026-11-03).
+	public const int ReliquaryKeyChestReach = 240;
+	public const float ReliquaryKeyChestSpeed = 320f;
+	// Scattered Library (John Dee): his library was looted and scattered, and the strong ones carry it - a share added
+	// to every elite's chance of a chest (GetEliteChestChance). His old passive, Collector's Eye ("+1 relic to choose
+	// from in every chest"), is the Hidden Drawer's now (Eric, 2026-11-03).
+	public const float CharacterEliteChestChance = 0.20f;
+	private float characterEliteChestChanceBonus = 0f;
 	// Exorcist (Abe no Seimei): the share added to every hit on an elite, a miniboss or a boss.
 	public const float CharacterEliteDamageBonus = 0.15f;
 	private float characterEliteDamageBonus = 0f;
@@ -636,9 +646,9 @@ public partial class Player : CharacterBody2D
 	// Wings (Wayland the Smith): the share added to his walking speed - the wings he made to get off the island.
 	public const float CharacterWingsSpeedBonus = 0.10f;
 	// Overlooked (The Archmage, .ai/protagonist.md): once a run, the blow that would end him misses (TakeDamage). The
-	// grace after it is a menu's (PostMenuInvincibilitySeconds), and he is drawn white through it, so the miss is seen:
-	// the crowd that landed the blow is still on him, and without it the next touch would end the run anyway.
-	public const float OverlookedGraceSeconds = 2.0f;
+	// ten-second escape window is independent of post-menu grace. He is drawn white through it:
+	// the crowd that landed the blow is still on him, so he needs time to get clear.
+	public const float OverlookedGraceSeconds = 10.0f;
 	private bool characterOverlooked = false;
 	private bool overlookedSpent = false;
 
@@ -899,8 +909,8 @@ public partial class Player : CharacterBody2D
 		// The two rescued wizards (.ai/side-events.md). Each is a scaling axis no starter owns.
 		"duration_15",
 		"area_10",
-		// John Dee, the collector: one more relic to choose from in every chest.
-		"chest_options_1",
+		// John Dee, the collector: the strong ones carry his scattered library, so elites drop a chest more often.
+		"elite_chests_20",
 		// Laelaps, the hound that always caught what it hunted: a share of the enemy bolts that reach him
 		// are caught in his jaws (TryCatchBolt, read by EnemyProjectile).
 		"catch_bolts_25",
@@ -991,8 +1001,8 @@ public partial class Player : CharacterBody2D
 			case "area_10":
 				areaMultiplier *= 1.10f;
 				return true;
-			case "chest_options_1":
-				characterChestOfferBonus += 1;
+			case "elite_chests_20":
+				characterEliteChestChanceBonus = CharacterEliteChestChance;
 				return true;
 			case "catch_bolts_25":
 				characterBoltCatchChance = CharacterBoltCatchChance;
@@ -1068,7 +1078,6 @@ public partial class Player : CharacterBody2D
 
 		int damageLevel = GetLevel("damage");
 		int recoveryLevel = GetLevel("recovery");
-		int cooldownLevel = GetLevel("cooldowns");
 		int areaLevel = GetLevel("area");
 		int attackSpeedLevel = GetLevel("attack_speed");
 		int durationLevel = GetLevel("duration");
@@ -1082,9 +1091,12 @@ public partial class Player : CharacterBody2D
 
 		damageMultiplier = 1.0f + (damageLevel * 0.08f);
 		recoveryPerSecond = recoveryLevel * EmberheartRegenPerLevel;
-		cooldownMultiplier = MathF.Max(0.35f, 1.0f - (cooldownLevel * 0.05f));
+		// Chronoweave merged into Tempest Rhythm, 2026-11-07 (schema 23): the shop no longer moves
+		// this. The baseline is reset here so the refresh stays idempotent; the Frostweaver's
+		// cooldown_reduction_10 passive still multiplies into it afterwards, as it always did.
+		cooldownMultiplier = 1.0f;
 		areaMultiplier = 1.0f + (areaLevel * 0.08f);
-		attackSpeedMultiplier = 1.0f + (attackSpeedLevel * 0.06f);
+		attackSpeedMultiplier = 1.0f + (attackSpeedLevel * 0.08f);
 		durationMultiplier = 1.0f + (durationLevel * 0.10f);
 		amountBonus = amountLevel;
 		growthMultiplier = 1.0f + (growthLevel * 0.10f);
@@ -1174,8 +1186,9 @@ public partial class Player : CharacterBody2D
 	{
 		if (!spellCatalog.ContainsKey("magic_missile"))
 		{
-			// SpellData.tres's numbers (12 every 0.8 s since the 2026-11-03 nerf, .ai/protagonist.md section 8).
-			AddSpellToCatalog(CreateFallbackSpellData("magic_missile", "Magic Missile", 12, 0.8f, 1, 500f, "Fires a fast projectile at nearby enemies."));
+			// SpellData.tres's numbers (a fan of three at 5 a dart every 0.8 s since 2026-11-07; the
+			// cadence is the 2026-11-03 nerf, .ai/protagonist.md section 8).
+			AddSpellToCatalog(CreateFallbackSpellData("magic_missile", "Magic Missile", 5, 0.8f, 3, 340f, "Looses a fan of seeking darts at nearby enemies."));
 		}
 
 		if (!spellCatalog.ContainsKey("aegis_ward"))
@@ -1225,8 +1238,7 @@ public partial class Player : CharacterBody2D
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_FrostShard.tres"));
 		if (!spellCatalog.ContainsKey("riptide"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Riptide.tres"));
-		if (!spellCatalog.ContainsKey("shadow_bolt"))
-			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_ShadowBolt.tres"));
+		// Shadow Bolt is a Conjunction since 2026-11-07 (ComboCatalog): never in the catalog, made in the strip.
 		if (!spellCatalog.ContainsKey("thorn_vine"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_ThornVine.tres"));
 		if (!spellCatalog.ContainsKey("gale_blade"))
@@ -1423,8 +1435,10 @@ public partial class Player : CharacterBody2D
 				tags |= SpellScalingTag.ProjectileSpeed | SpellScalingTag.Pierce | SpellScalingTag.Slow | SpellScalingTag.Range;
 				break;
 			case "shadow_bolt":
-				// No ProjectileSpeed: the curse is a chain, it does not fly (ValidateLevelUpReaders).
-				tags |= SpellScalingTag.Chain | SpellScalingTag.Dot;
+				// The Conjunction (ComboCatalog): the bolt leaps the thickest pack and the curse is a dot.
+				// No scaling tags: it is terminal, so a tag's generated level-up line would reach nothing
+				// (ValidateLevelUpReaders) - its numbers are its frozen parents'.
+				targeting = SpellTargetingMode.MultiTarget;
 				shape = SpellDamageShape.ChainJump;
 				break;
 			case "thorn_vine":
@@ -3358,14 +3372,17 @@ public partial class Player : CharacterBody2D
 		RefreshShieldAura();
 	}
 
-	/// <summary>Relic Key widens the chest offer. Read by Node2DGame when it rolls one.</summary>
+	/// <summary>The Reliquary Key brings chests to its holder. Read by every chest on the ground (ChestReward).</summary>
 	public bool HasRelicKey => ownedChestItems.Contains(ChestItemCatalog.RelicKey);
 
+	/// <summary>The Hidden Drawer widens the chest offer by one. Read through ChestOfferCount.</summary>
+	public bool HasHiddenDrawer => ownedChestItems.Contains(ChestItemCatalog.HiddenDrawer);
+
 	/// <summary>
-	/// How many relics a chest offers this player: three, one more with the Relic Key, one more for
-	/// John Dee - five at most, which the chest screen is laid out for on a PC and a phone.
+	/// How many relics a chest offers this player: three, one more with the Hidden Drawer - four at most, inside
+	/// the five the chest screen is laid out for on a PC and a phone.
 	/// </summary>
-	public int ChestOfferCount => DropTable.BaseChestOffers + (HasRelicKey ? 1 : 0) + characterChestOfferBonus;
+	public int ChestOfferCount => DropTable.BaseChestOffers + (HasHiddenDrawer ? 1 : 0);
 
 	// --- Collecting: what three relics used to spend on chests, and the Cabinet of Curiosities ----
 	//
@@ -3377,13 +3394,13 @@ public partial class Player : CharacterBody2D
 	/// <summary>The chance an ordinary kill's orb comes up one size larger (DropTable.GreaterOrbValue).</summary>
 	public float GetGreaterOrbChance() => chestGreaterOrbChance;
 
-	/// <summary>The chance an elite drops a chest: DropTable.EliteChestChance, raised by the Curio Ledger, and certain with the whole Cabinet of Curiosities.</summary>
+	/// <summary>
+	/// The chance an elite drops a chest: DropTable.EliteChestChance, raised by the Curio Ledger and by John Dee's
+	/// Scattered Library, and certain with the whole Cabinet of Curiosities.
+	/// </summary>
 	public float GetEliteChestChance() => completedChestSets.Contains(ChestItemCatalog.CabinetOfCuriositiesSetId)
 		? 1f
-		: Mathf.Min(1f, DropTable.EliteChestChance + chestEliteChestChanceBonus);
-
-	/// <summary>The Hidden Drawer's chance that an opened chest leaves another chest behind.</summary>
-	public float GetNestedChestChance() => ownedChestItems.Contains(ChestItemCatalog.HiddenDrawer) ? DropTable.NestedChestChance : 0f;
+		: Mathf.Min(1f, DropTable.EliteChestChance + chestEliteChestChanceBonus + characterEliteChestChanceBonus);
 
 	public void AddChestItem(string itemId)
 	{
@@ -3464,8 +3481,7 @@ public partial class Player : CharacterBody2D
 		{
 			// Damage items
 			case ChestItemCatalog.RelicKey:
-				// A key that widened your pickup radius was a magnet with the wrong name on it.
-				// Read by Node2DGame when it rolls a chest - see HasRelicKey.
+				// Read by ownership: every chest on the ground asks HasRelicKey whether to come to him.
 				break;
 			case ChestItemCatalog.EmberFlask:
 				chestDamageBonusPercent += 0.12f;
@@ -3548,7 +3564,7 @@ public partial class Player : CharacterBody2D
 				chestEliteChestChanceBonus += CurioLedgerEliteChestChance;
 				break;
 			case ChestItemCatalog.HiddenDrawer:
-				break; // Read by ownership when a chest is claimed - see GetNestedChestChance.
+				break; // Read by ownership when a chest is rolled - see ChestOfferCount.
 
 			// Elemental items
 			case ChestItemCatalog.StormLattice:
@@ -4349,7 +4365,7 @@ public partial class Player : CharacterBody2D
 	// It is an extra cast: his own cooldown on the spell is untouched, and it does not charge Arcane Explosion.
 	public static readonly HashSet<string> BlackCatCastable = new(StringComparer.OrdinalIgnoreCase)
 	{
-		"magic_missile", "fireball", "riptide", "shadow_bolt", "gale_blade", "molten_shard", "chain_lightning",
+		"magic_missile", "fireball", "riptide", "gale_blade", "molten_shard", "chain_lightning",
 		"void_lance", "glacial_spike", "obsidian_spike", "meteor_swarm", "thorn_vine", "toxic_spore_burst",
 		"black_tentacles", "contagion", "bramble_seed", "gravewell", "iron_palisade", "hollow_star", "kindled_ward",
 		"sleet_runes",
@@ -4426,19 +4442,26 @@ public partial class Player : CharacterBody2D
 
 			for (int p = 0; p < shots && magicMissileTargets.Count > 0; p++)
 			{
-				// One missile per enemy, nearest first. These home, so fanning them by
-				// angle would only bend them back onto the same body - spreading the
-				// volley across targets is what actually makes extra missiles count.
-				// Wraps when the crowd is thinner than the volley.
+				// One missile per enemy, nearest first - spreading the volley across targets is what
+				// makes extra missiles count. Wraps when the crowd is thinner than the volley.
 				Node2D shotTarget = magicMissileTargets[p % magicMissileTargets.Count];
 				if (!IsInstanceValid(shotTarget))
 					continue;
 
-				// A count's darts leave fanned off their marks, alternately to either side, and curve in: the volley
-				// opens like a hand before it closes on them. An orb never homes, so it is loosed straight.
+				// Every volley's darts leave fanned off their marks and curve in: the volley opens like a
+				// hand before it closes on them - the indirect path (Eric, 2026-11-07), and what keeps
+				// three darts at one body from flying stacked down one line. A count fans alternately to
+				// either side (its hand is as wide as the crowd); an ordinary volley fans from its centre.
+				// An orb never homes, so it is loosed straight.
 				Vector2 aim = shotTarget.GlobalPosition;
-				if (counting && !orbs && aim != from)
-					aim = from + (aim - from).Normalized().Rotated(Mathf.DegToRad(p % 2 == 0 ? MagicMissile.CountFanDegrees : -MagicMissile.CountFanDegrees)) * 32f;
+				if (!orbs && aim != from)
+				{
+					float off = counting
+						? (p % 2 == 0 ? MagicMissile.CountFanDegrees : -MagicMissile.CountFanDegrees)
+						: (p - (shots - 1) * 0.5f) * MagicMissile.VolleyFanDegrees;
+					if (off != 0f)
+						aim = from + (aim - from).Normalized().Rotated(Mathf.DegToRad(off)) * 32f;
+				}
 
 				var missile = MagicMissileScene.Instantiate<Area2D>();
 				missile.Position = from;
@@ -4605,7 +4628,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals("bramble_seed", StringComparison.OrdinalIgnoreCase)) outcome = FireBrambleSeed(spell, BrambleSeedScene);
 		else if (spell.Id.Equals("cinderbreath", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshFlamethrower(spell, CinderbreathScene);
 		else if (spell.Id.Equals("riptide", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, RiptideScene);
-		else if (spell.Id.Equals("shadow_bolt", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, ShadowBoltScene);
+		else if (spell.Id.Equals(ShadowBolt.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireShadowBolt(spell);
 		else if (spell.Id.Equals("thorn_vine", StringComparison.OrdinalIgnoreCase)) outcome = FireThornVine(spell, ThornVineScene);
 		else if (spell.Id.Equals("gale_blade", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, GaleBladeScene);
 		else if (spell.Id.Equals("molten_shard", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, MoltenShardScene, BoltAim.RandomInRange);
@@ -5638,7 +5661,7 @@ public partial class Player : CharacterBody2D
 
 	// The Familiar (scripts/Familiar.cs): a pack of hounds that lives in the arena all run. The cooldown
 	// casts nothing itself - it hands every hound one bite, so it IS the bite rate, and keeps the pack
-	// current through level-ups and milestones. Amount is more hounds. Maintained, never Fired: there is
+	// current through level-ups and milestones. Littermates adds hounds; Amount adds none. Maintained, never Fired: there is
 	// no moment of casting to cue; each bite snaps on its own.
 	private Familiar? familiarPack;
 
@@ -5654,11 +5677,8 @@ public partial class Player : CharacterBody2D
 			arena.AddChild(TagSpell(familiarPack));
 		}
 
-		// One hound to start; the second is the level 3 upgrade (SpellData_Familiar.tres), a third is
-		// Littermates. Amount - the shop's, a relic's - adds none: added from level 1 it handed a save
-		// with Amount bought two hounds before the spell had earned one (Eric, 2026-10-28: "you should
-		// only start with one familiar, getting 2 of them should be an upgrade"), and a hound is a whole
-		// second attacker, not one more bolt. The pack grows by the spell's own levels and milestones.
+		// Hounds stay at one unless Littermates adds two pups. The crow keeps its own level-up
+		// count; the cat stays alone. Amount from shops, relics or elements adds no companions.
 		int hounds = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel));
 		// The creatures and their effects are drawn in their own colours and repaint their element path
 		// themselves, so they take only a Legendary's gold from the visual tint, never a node scale.
@@ -7165,13 +7185,28 @@ public partial class Player : CharacterBody2D
 		CollectEnemiesInRange(castRange);
 		if (aimCandidates.Count == 0)
 			aimCandidates.Add(nearest);
+		// Every meteor of a volley takes a DIFFERENT enemy, dealt at random without replacement
+		// (Eric, 2026-11-06: "Meteors should always target different enemies"); once the crowd is
+		// spent, the extras strike random ground in reach instead of stacking on the one body.
+		int undealt = aimCandidates.Count;
 		for (int i = 0; i < count; i++)
 		{
-			Node2D target = aimCandidates[combatRng.RandiRange(0, aimCandidates.Count - 1)];
+			Node2D target = null;
+			if (undealt > 0)
+			{
+				int pick = combatRng.RandiRange(0, undealt - 1);
+				target = aimCandidates[pick];
+				aimCandidates[pick] = aimCandidates[undealt - 1];
+				aimCandidates[undealt - 1] = target;
+				undealt--;
+			}
 			var impact = scene.Instantiate<Node2D>();
 			var script = impact as MeteorImpact;
 			float delay = i * stagger;
-			Vector2 at = target.GlobalPosition;
+			Vector2 at = target != null
+				? target.GlobalPosition
+				: GlobalPosition + Vector2.FromAngle(combatRng.RandfRange(0f, Mathf.Tau))
+					* combatRng.RandfRange(castRange * 0.25f, castRange * 0.9f);
 			if (barrage)
 				at = BarrageSpot(nearest.GlobalPosition, densest.GlobalPosition, blast, castRange, i);
 			if (script != null)
@@ -7305,7 +7340,25 @@ public partial class Player : CharacterBody2D
 		CrowdPushCount = pushing;
 		float crowdSpeedMultiplier = Mathf.Clamp(1.0f - (pushing * CrowdSlowPerEnemy), CrowdSlowFloor, 1.0f);
 
-		_velocity = input * Speed * GetWindSpeedMultiplier() * GetStormboundSpeedMultiplier() * crowdSpeedMultiplier * boonMoveSpeedMultiplier;
+		// Wading (in-flight 59): water is not a wall for him any more, just heavy going. His feet
+		// no longer mask the water's layer (LevelTilePainter.WaterCollisionLayer), so the shore
+		// does not stop them; this is the cost. The swarm still cannot follow him in, which is the
+		// trade - a slow escape no enemy can take. Asked of the water's own collision polygons at
+		// his boots, not of the cell flag: the polygons are the drawn water (WaterShape), while a
+		// shoreline cell's flag is mostly dry bank at a rounded corner, and the slow must begin at
+		// the water the player can SEE, not a stride early. The Bridge's abyss is never on this
+		// layer, so it never reads as wadeable.
+		wadeQuery ??= new PhysicsPointQueryParameters2D
+		{
+			CollisionMask = 1u << (LevelTilePainter.WaterCollisionLayer - 1),
+			CollideWithAreas = false,
+			CollideWithBodies = true,
+		};
+		wadeQuery.Position = FootPosition;
+		IsWading = GetWorld2D().DirectSpaceState.IntersectPoint(wadeQuery, 1).Count > 0;
+		float wadeSpeedMultiplier = IsWading ? WaterWadeSpeedMultiplier : 1.0f;
+
+		_velocity = input * Speed * GetWindSpeedMultiplier() * GetStormboundSpeedMultiplier() * crowdSpeedMultiplier * wadeSpeedMultiplier * boonMoveSpeedMultiplier;
 		Velocity = _velocity;
 		Vector2 start = GlobalPosition;
 		MoveAndSlide();
@@ -7324,6 +7377,16 @@ public partial class Player : CharacterBody2D
 	// a pack he commits to is one he gets out of, but it is never free.
 	[Export] public float CrowdSlowPerEnemy { get; set; } = 0.12f;
 	[Export] public float CrowdSlowFloor { get; set; } = 0.55f;
+
+	// Heavier than the deepest crowd (floor 0.55): at the 220 base speed he wades at 99 px/s,
+	// slower than any chaser, so water is never a place the swarm cannot punish - only a crossing
+	// the swarm must route around while he pays for it in time.
+	[Export] public float WaterWadeSpeedMultiplier { get; set; } = 0.45f;
+
+	/// <summary>True while his boots stand in wadeable water (in-flight 59; the Bridge's abyss never counts).</summary>
+	public bool IsWading { get; private set; }
+	// Reused every physics frame (one point against the water bodies; the one per-frame query he makes).
+	private PhysicsPointQueryParameters2D wadeQuery;
 
 	/// <summary>The velocity his last step achieved while walking, zero while standing.</summary>
 	public Vector2 ShoveVelocity { get; private set; }
@@ -7658,6 +7721,14 @@ public partial class Player : CharacterBody2D
 			if (IsInstanceValid(sagittarius))
 				sagittarius.QueueFree();
 			sagittarius = null;
+		}
+
+		// Shadow Bolt's node lives in the arena too, with the curse and the beat it carries.
+		if (spell.Id.Equals(ShadowBolt.SpellId, StringComparison.OrdinalIgnoreCase) && shadowBolt != null)
+		{
+			if (IsInstanceValid(shadowBolt))
+				shadowBolt.QueueFree();
+			shadowBolt = null;
 		}
 
 		// The pack lives in the arena too - and what the cat granted goes with it.
@@ -8327,7 +8398,7 @@ public partial class Player : CharacterBody2D
 	{
 		// A form that deals no damage (the Familiar's cat, 2026-10-31) shows none rather than "DMG 0".
 		var parts = new List<string>();
-		if (form.GetDamageAtLevel(1) > 0)
+		if (form.BaseDamage > 0)
 			parts.Add($"DMG {form.GetDamageAtLevel(1)}");
 		parts.Add($"CD {form.GetCooldownAtLevel(1):0.0#}s");
 		int count = form.GetProjectileCountAtLevel(1);

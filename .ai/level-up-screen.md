@@ -706,8 +706,10 @@ Measured with `_UiShot`, which now prints each page's needed height against what
 three-relic chest tried fits a 1280x720 PC with room to spare (worst 585 of 595, Tithe of Wormwood
 with its set's partial held), the Reliquary Key's four fit (worst 591), and a phone fits three
 including The Crown (1296 of 1347). **Only a four-relic chest on a phone scrolls**, by about 90px.
+(Since 2026-11-03 the fourth card is the Hidden Drawer's, and four is the most a chest offers:
+`.ai/passives-and-items.md` 8k.)
 
-**Five relics** (John Dee with the Relic Key, 2026-10-22): five abreast on a PC broke names mid-word
+**Five relics** (John Dee with the Relic Key, 2026-10-22; unreachable since 2026-11-03, the layout kept): five abreast on a PC broke names mid-word
 and needed 856 of 595, so `fiveAbreast` sets the name at the Label size, the art at 48 and the set
 art at 40, the margins at 12, and shows a set's full tier only when the claim completes it - worst
 575 of 595 after. On a phone five stacked pages scroll by about 460px. `.ai/passives-and-items.md`
@@ -755,6 +757,13 @@ and otherwise as a flow of its words in the label's own size, face, ink and alig
 - **On a pad**, `StatusNotes` (one watcher for the game, on `GuiFocusChanged`) lists every status the
   selected card names in a stone note beside it - below, above, then to either side, never over the
   card's own words - and drops it the moment the pointer is in use, or on a phone with no pad.
+
+**Native status hover cards have their own width constraint** (`StatusKeyword._MakeCustomTooltip`,
+2026-11-05). Cap the card at 420 canvas units with room at the viewport edges, and give its wrapped
+sentence a width before Godot first measures the tooltip. Setting only the panel's minimum width
+left the popup stuck at its initial, enormous height. The click/tap popover and focused-card notes
+still size themselves independently. `_RecoveryProbe --part=tooltip` tests real hover and captures
+both presentations; `--status=Wither` (or another `StatusId`) checks another sentence.
 
 Photograph: `--press-late=StatusKeyword_Weaken` (a keyword's popover; `_UiShot` marks the pointer as in
 use, as a real click does), and any shot whose focused card names a status for the pad note
@@ -994,6 +1003,18 @@ its target; the weakest are the Fire chip on a phone node (4.9:1) and the gold-l
 a PC plate (6.9:1 against 3:1 at 24px).
 
 ## 4f. Arcane Upgrades: the shop is the same book
+
+**0.14.0 paging (2026-11-06):** Powers now shows two cards per page, one desktop row or two phone
+rows. The category selector jumps to a category's first page; Previous/Next walk and wrap through
+all pages, with an overall page count. The purse, page controls and Back remain outside the scroll.
+All cards are prepared once behind the title loader; page turns and purchases reuse them. Socket
+and icon sizes are 64/48, with narrower card padding. Prices, ceilings and purchase rules are unchanged.
+
+**0.14.2 navigation (Eric, 2026-11-07):** the category selector has its own full-width row above
+the cards. Previous page / Next page are large, equal-width 72-unit buttons at the bottom,
+with a gold Page N / Total between them. Back shares the row on desktop and sits below on a phone.
+The scroll takes the remaining height so
+navigation is always visible, including on a short screen.
 
 **One menu, Powers, since 2026-10-30.** The shop sells no spells: every spell that is not a starter
 is earned through an achievement (`.ai/achievements-and-secrets.md` 2.4, decision 2). For two days
@@ -1348,13 +1369,39 @@ rule, then its page in a scroll (`SectionScroll`). Back, **B**, Escape or Androi
 puts the selection on Back, so a pad walks down into the page from its top. Every page is built with
 the summary and kept, so opening is a visibility change.
 
-**Layout.** One code path for both canvases. Folded, the panel is only as tall as the summary and
-sits in the middle of the screen between two spacers (on a PC 1080 wide at most; on a phone the
-full width); with a section open the spacers go and the panel takes the whole height so the section
-has room to scroll. The panel sits in a full-rect `Frame`, which `SafeArea.Apply` insets on a phone.
+**Layout (2026-11-06).** The panel fills the available height and puts its header and summary/detail
+inside one `ResultsScroll`. Retry and Main menu live outside that scroll and stay on-screen when
+unlocks make the summary tall. Below 1120 canvas units the header stacks; below 540 the headline
+tiles and footer buttons stack too. Resizing across those thresholds rebuilds the layout and keeps
+the open section/detail. The panel sits in a full-rect `Frame`, inset by `SafeArea.Apply` on a phone.
 Every container ignores the mouse so a finger drag reaches the scroll (`TouchScroll` via
 `MenuNavigator.Attach`); inside a section each reward card, spell row and the breakdown is a stop
 (`MakeCardClickOverlay` with the mouse ignored, as `CodexRows` does), so the stick walks the lists.
+
+**Unlock inspection (2026-11-06).** Each icon is a button with mouse/touch and keyboard/pad activation.
+It opens a detail page with the reward's name, kind, effect and source; Back/B/Escape restores focus
+to its icon. The overflow button opens the full Rewards list. Ascension and Apotheosis entries carry
+their actual run variant's description in the transient `RunUnlockEntry.Description`.
+
+**Voluntary run endings (2026-11-06).** Pause's **Quit Run** uses `FinishRunAndReward(RunOutcome.Quit)`:
+it records and banks the run once, plays owed freeings/lessons, then shows **Run ended** and the usual
+reward tally. It plays no death sequence and awards no boss victory. `Quit` is appended to the enum
+so the existing Defeat/Victory values stay stable; telemetry records the distinct outcome.
+
+**Long spell cards on Windows (2026-11-06).** `LevelUpMenu.EnsureOptionsScroll` now wraps the hand on
+both canvases. A four-card hand plus the charge/Ascension rows formerly exceeded the panel height;
+now a 469-unit hand scrolls within its 400-unit band, with the action footer pinned. Page Up/Down
+provides keyboard access to long card, Codex, pause and results text alongside the existing wheel
+and right stick. `_RecoveryProbe --part=results` exercises 24 rewards and a compact 480x720 canvas;
+`--portrait --safe-area --touch` checks portrait/touch. `--part=quit` checks reels and once-only payment,
+with `--no-reels` for an empty run and headless mode for state-only checks.
+
+**0.13.2 Windows export checks (2026-11-06).** The release executable passed the same crowded
+results/unlock inspection/compact resize checks and the rendered quit flow (Baba Yaga freeing,
+Ascension lesson, then results; repeated quit cannot pay twice). `_UiShot` confirmed the tall
+four-card hand scrolls inside its 400-unit band in the export too. Tests used a separate temporary
+`APPDATA` and `--no-save-writes --no-update`. Source portrait/safe-area/injected-touch checks and
+the full opt-in content validator passed; no physical Android device was connected.
 
 **Arriving, and the count.** After a defeat the screen is brought down by the player's press at the
 end of the defeat (`DefeatSequence`, section 6a) and **covers the field from below**: the whole

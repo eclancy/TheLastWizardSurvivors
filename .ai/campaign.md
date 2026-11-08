@@ -317,12 +317,11 @@ wallers, warreners, and the stewards who kept the moot for the wizards. It answe
 premise leaves open - how one man took them all - with a place, and it does it at chapter 3, early
 enough to matter for everything after.
 
-**Whose prison: a relic.** The circle was warded, and a fleck of the ward is still lit in the stones:
-the **Gilded Mote** (*"A fleck of the warded circle, still lit"* - again the boon's own line). The
-person this place could hold is decision 2 (Merlin, who in the legend raised a stone circle and was
-sealed in stone, was the obvious one, and the reason the chapter is built to take him later. Since
-2026-11-02 Merlin is earned by the whole road, never held - `.ai/merlin.md` - and Laelaps is the
-Circle's).
+**Whose prison: Merlin** (Eric, 2026-11-06). The keeper of the gathering is bound at the circle's
+center. Restore its shattered council wards to free him and unlock Orb of Ages. The **Gilded Mote**,
+a fleck of the old ward, remains a reward of the same event. Laelaps is now rescued with Familiar in
+the Fields' Pinfold. The historical Coursing description below is superseded: play as Laelaps and
+have a hound Familiar catch 100 Black Hares in one Circle run for 50 Arcane Energy.
 
 **Ground.** Heather (violet, deep half) over peat (stone and linen deep), granite outcrops and scree
 (`rocky_pit` is already walkable scree), cotton-grass and lichen detail, peat-dark tarns (water: the
@@ -373,7 +372,7 @@ mark in the split. *"It closes the circle on you. Find the gap and get out befor
 **The side event: Relight the circle** (`MootFiresEvent`, site `the_moot`, wayfinder Compass). Nine
 standing stones in a ring about a chunk across - solid decor, never targets. One stone's rune lights;
 reach it within about six seconds and the next lights, never a neighbour; six in a row and the circle
-relights and leaves the **Gilded Mote**. Miss one and the runes go dark and the count starts again,
+relights, frees **Merlin**, and grants **Orb of Ages and Gilded Mote**. Miss one and the runes go dark and the count starts again,
 each restart sending a wave. **What it asks: follow** - a route set by the event, against the clock,
 through the swarm. The grove asks the player to stay, the lanterns to explore in any order; this is
 neither.

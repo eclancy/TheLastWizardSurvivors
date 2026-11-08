@@ -600,7 +600,7 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		}
 
 		// Every creature in the look its place in the pack asks for: the first the main look, the rest the
-		// pack's. Taking Littermates turns the level 3 hound into a pup; an Ascension makes only the first
+		// pack's. Littermates adds two pups; an Ascension makes only the first
 		// the legendary creature.
 		for (int i = 0; i < hounds.Count; i++)
 		{

@@ -31,7 +31,7 @@ public enum Teaching
 ///
 /// <para><b>Learned means shown.</b> Finding a teacher makes a lesson <i>owed</i> (<see cref="Owed"/>); it is
 /// LEARNED when its cutscene plays, after the run that found it and before the results (Node2DGame,
-/// <see cref="Teach"/>). A run that is quit owes it to the end of the next. So a system is never usable before
+/// <see cref="Teach"/>). Quitting a run also plays its owed lesson before the results. So a system is never usable before
 /// it has been explained, and the run that found the teacher is played as it began (Player reads the flags
 /// once, at the start).</para>
 ///
@@ -80,6 +80,37 @@ public static class Teachings
 
 	public static Lesson GetById(string id) =>
 		All.FirstOrDefault(l => l.Id.Equals(id ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+
+	/// <summary>The next lesson an unfound teacher can give, including teachers visited out of order.</summary>
+	public static Lesson LessonAt(SaveData data, string secretId)
+	{
+		Lesson teacher = Ladder.FirstOrDefault(l => l.TeacherSecretId.Equals(secretId ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+		if (data == null || teacher == null || TeacherFound(data, teacher))
+			return null;
+		int creditAfterFind = TeachersFound(data) + 1 - Ladder.Count(l => HasLearned(data, l.System));
+		return creditAfterFind <= 0 ? null
+			: Ladder.Where(l => !HasLearned(data, l.System)).Skip(creditAfterFind - 1).FirstOrDefault();
+	}
+
+	/// <summary>
+	/// A gentle map hint: names no unrecovered spell and gives no puzzle solution. Once the save has
+	/// glimpsed the landmark - its trail stepped on, or its tell seen - the hint sharpens: past that
+	/// point the player is not discovering THAT it exists, only finding the way back (in-flight 49,
+	/// "subtle until found, obvious once noticed").
+	/// </summary>
+	public static string LandmarkHint(string secretId, bool glimpsed = false) => secretId switch
+	{
+		SecretCatalog.PinfoldId => glimpsed
+			? "Golden tracks cross the furrows; they lead to the sealed pen."
+			: "Something of light is penned in the fields.",
+		SecretCatalog.FallenStarId => glimpsed
+			? "The fallen star waits beyond the standing stones, where you saw it."
+			: "A fallen light lies beyond the standing stones.",
+		SecretCatalog.GeodeHeartId => glimpsed
+			? "The warm geode waits among the cave's crystals, where you saw it."
+			: "A warm light shines inside the cave's crystals.",
+		_ => string.Empty,
+	};
 
 	/// <summary>The secrets that teach, as deeds: the vault deeds of the ladder's three landmarks.</summary>
 	public static IEnumerable<string> TeacherDeedIds =>

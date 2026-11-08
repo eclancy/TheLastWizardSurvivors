@@ -12,11 +12,12 @@ using System;
 //    brightens as it catches, from the Fire mid toward its white-hot core, and once the heat is
 //    full a soft glow spreads under him and sparks lift off the ring. Walking puts the embers out
 //    one by one, which is the cooling the set's card describes, at the speed it describes.
-//  - TAPROOT'S STANCE. An earthen ring a little wider than the embers, drawn round from the front
-//    as the still clock fills, then closed and breathing, with four roots reaching out of it, once
-//    the stance has taken hold. It vanishes the moment he moves, because the stance is all or
-//    nothing where the heat cools on a slope - the two read differently because they behave
-//    differently.
+//  - TAPROOT'S STANCE. Roots growing out of the ground at his feet, fanned across the FRONT where
+//    the player can see them: each creeps outward as the still clock fills, and at the hold they
+//    are full length and breathing, with small rootlets off their knees. (It was an earthen ring
+//    whose two arcs met at the BACK - the moment it completed was hidden behind the sprite; Eric,
+//    2026-11-07.) It vanishes the moment he moves, because the stance is all or nothing where the
+//    heat cools on a slope - the two read differently because they behave differently.
 //
 // The Fire and Earth rows of the emissive ramp (.ai/art-direction.md section 3): elements are
 // light, not pigment, and their cores are white-hot. Every mark is laid over a darker stroke of the
@@ -180,48 +181,54 @@ public partial class StanceGlow : Node2D
 		}
 	}
 
-	// Building: two arcs from the front round both sides, meeting at the back when the stance takes
-	// hold. Rooted: the whole ring, breathing, and four roots reaching out of it.
+	// The roots' fan: angles off the front of the ellipse (RingUnit[0], straight down the screen),
+	// a full length each, and which side its crook bends - all constants, so the same roots grow
+	// every time and nothing allocates. The spread stays inside the lower half of the ellipse, in
+	// front of the boots, where the sprite cannot hide it.
+	private const int Roots = 6;
+	private static readonly float[] RootOffset = { -1.25f, -0.75f, -0.25f, 0.25f, 0.75f, 1.25f };
+	private static readonly float[] RootLength = { 13f, 17f, 12f, 16f, 11f, 15f };
+	private static readonly float[] RootSide = { 1f, -1f, 1f, -1f, 1f, -1f };
+
+	// Building: each root creeps out of the ground at the boots, front first, its length the gauge
+	// of the still clock. Rooted: full length, breathing, with a rootlet off each knee.
 	private void DrawStance()
 	{
-		float sweep = rooted ? 1f : stance;
-		float alpha = rooted ? 0.75f + 0.15f * MathF.Sin(clock * 2.2f) : 0.30f + 0.25f * stance;
-		int segments = Mathf.Clamp(Mathf.RoundToInt(sweep * RingSegments / 2f), 1, RingSegments / 2);
-		// RingUnit[0] is the front (straight down the screen); the arcs walk outward from it.
-		for (int side = -1; side <= 1; side += 2)
+		float alpha = rooted ? 0.75f + 0.15f * MathF.Sin(clock * 2.2f) : 0.35f + 0.4f * stance;
+		for (int r = 0; r < Roots; r++)
 		{
-			for (int s = 0; s < segments; s++)
-			{
-				Vector2 a = StancePoint(s * side);
-				Vector2 b = StancePoint((s + 1) * side);
-				DrawLine(a, b, new Color(EarthEdge, 0.7f * alpha), 3.2f);
-				DrawLine(a, b, new Color(rooted ? EarthHot : EarthMid, alpha), 1.6f);
-			}
+			// A slight stagger, middle roots first, so the fan reads as growth rather than a switch.
+			float grow = rooted ? 1f : Mathf.Clamp(stance * 1.3f - MathF.Abs(RootOffset[r]) * 0.16f, 0f, 1f);
+			if (grow <= 0f)
+				continue;
+
+			float angle = Mathf.Pi / 2f + RootOffset[r];
+			// Where it breaks the ground (just outside the boots) and the way it grows: radially out
+			// of the feet ellipse, with a crook at the knee so it reads as a root, not a spoke.
+			Vector2 unit = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
+			Vector2 from = new Vector2(unit.X * StanceRadiusX * 0.55f, unit.Y * StanceRadiusY * 0.55f);
+			Vector2 dir = new Vector2(unit.X * StanceRadiusX, unit.Y * StanceRadiusY).Normalized();
+			Vector2 side = new Vector2(-dir.Y, dir.X) * RootSide[r];
+			float len = RootLength[r] * grow;
+			// Rooted, the tips stir a little with the breath, so "held" never reads as a still image.
+			float stir = rooted ? MathF.Sin(clock * 2.2f + r * 1.9f) * 0.8f : 0f;
+			Vector2 knee = from + dir * (len * 0.45f) + side * 1.6f;
+			Vector2 tip = knee + dir * (len * 0.55f) + side * (stir - 2.2f);
+
+			// The mound it breaks out of, then the root: a darker stroke under a lit one, like the rest.
+			DrawCircle(from, 1.8f, new Color(EarthEdge, 0.8f * alpha));
+			DrawLine(from, knee, new Color(EarthEdge, 0.8f * alpha), 3.4f);
+			DrawLine(knee, tip, new Color(EarthEdge, 0.7f * alpha), 2.6f);
+			DrawLine(from, knee, new Color(rooted ? EarthHot : EarthMid, alpha), 1.7f);
+			DrawLine(knee, tip, new Color(EarthMid, 0.85f * alpha), 1.2f);
+
+			if (!rooted)
+				continue;
+			// The rootlet off the knee, the hold's own mark: it only exists once the stance has taken.
+			Vector2 sprout = knee + (dir + side * 0.9f).Normalized() * 4f;
+			DrawLine(knee, sprout, new Color(EarthEdge, 0.7f * alpha), 2f);
+			DrawLine(knee, sprout, new Color(EarthMid, 0.8f * alpha), 1f);
 		}
-
-		if (!rooted)
-			return;
-
-		// The roots: out from the ring at the four diagonals, each with a crook, darker at the tip.
-		for (int r = 0; r < 4; r++)
-		{
-			int index = (RingSegments / 8) + r * (RingSegments / 4);
-			Vector2 unit = RingUnit[index];
-			Vector2 from = new Vector2(unit.X * StanceRadiusX, unit.Y * StanceRadiusY);
-			Vector2 outward = new Vector2(unit.X, unit.Y * 0.45f).Normalized();
-			Vector2 knee = from + outward * 5f + new Vector2(0f, 1.5f);
-			Vector2 tip = knee + outward * 4f + new Vector2(outward.Y * 2f, 0f);
-			DrawLine(from, knee, new Color(EarthEdge, 0.8f * alpha), 3f);
-			DrawLine(knee, tip, new Color(EarthEdge, 0.7f * alpha), 2.4f);
-			DrawLine(from, knee, new Color(EarthMid, alpha), 1.4f);
-			DrawLine(knee, tip, new Color(EarthMid, 0.8f * alpha), 1.1f);
-		}
-	}
-
-	private Vector2 StancePoint(int index)
-	{
-		Vector2 unit = RingUnit[(index % RingSegments + RingSegments) % RingSegments];
-		return new Vector2(unit.X * StanceRadiusX, unit.Y * StanceRadiusY);
 	}
 
 	// A filled ellipse without allocating a polygon: a circle under a squashing transform. Only

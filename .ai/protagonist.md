@@ -69,9 +69,10 @@ Pyromancer), regeneration (the Frostweaver), cooldowns (the Stormcaller), armour
 scarce). It is the premise as a rule: he was missed once, and he is missed once more.
 
 How it works (`Player.TakeDamage`): after armour and the shield, so only a blow that would really kill is turned;
-before any HP leaves, so he keeps the little he had - nothing is healed. Then two seconds of grace, drawn white
+before any HP leaves, so he keeps the little he had - nothing is healed. Then ten seconds of grace, drawn white
 (`OverlookedGraceSeconds`), because the crowd that landed the blow is still on him and the next touch would end
-the run anyway. The dodge's ghosting and sound mark it. It comes before an extra life, which is kept for later.
+the run anyway. Eric extended this escape window from two to ten seconds on 2026-11-05; post-menu grace
+stays two seconds. The dodge's ghosting and sound mark it. It comes before an extra life, which is kept for later.
 The `DamageTaken` signal has already gone out: he was struck at, as a dodge is not. The character select's line
 takes the evasion glyph (`StatIcons.KeyFor`: " misses").
 

@@ -91,20 +91,23 @@ public static class QuestLog
 		new Prisoner("imhotep", "the builder in the dry tomb", "Something knocks, stone on stone, under the sand.", "{0} walks in the sun again."),
 		// The sorceress of Colchis, counted among what grows here and held in the reeve's granary against a tithe the
 		// village could never pay (4.2).
-		new Prisoner("medea", "the one in the granary", "Someone is kept in the reeve's granary, counted with the grain.", "{0} has walked out of the granary."),
+		// "Counted with the grain" read as a riddle (Eric, 2026-11-06): say the tally plainly, and let
+		// the hint name the scale the event actually asks the player to balance.
+		new Prisoner("medea", "the one in the granary", "Someone is locked in the reeve's granary, tallied like grain.", "{0} has walked out of the granary."),
 		// The painter kept to paint the portraits in the Gallery (4.8), who drew himself a door and was never let finish it.
 		new Prisoner("ma_liang", "the painter in the gallery", "Along the walls a line of wet paint keeps running.", "{0} has stepped out of his door."),
-		// The hound fated to catch whatever it hunted, set in stone mid-chase on the heath.
-		new Prisoner("laelaps", "the hound in the stone", "A hound of stone stands mid-leap, still chasing.", "{0} has run his chase out."),
+		// The hound's light is bound with the other companions inside the Fields' sealed pen.
+		// The freed line names him as the myth does - the hound no quarry escapes - rather than the old
+		// "{0} runs free with his companions.", which read as if Laelaps were a fourth animal beside the
+		// three in the pen (Eric, 2026-11-07: the unlock text was weird). He IS the hound of the three.
+		new Prisoner("laelaps", "the hound in the pen", "Three pale companions pace a sealed pen beyond the furrows.", "{0} runs free. Nothing he chases escapes."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.
 		new Prisoner("john_dee", "the scattered scholar", "", "{0} has his library back."),
 		// Not a prisoner: the one who took them (.ai/dark-wizard-playable.md), taken in his turn on the hardest
 		// road. No held line - he is held nowhere - and once taken the Throne's note says what became of him.
 		new Prisoner("dark_wizard", "the one on the throne", "", "{0} has nothing left to take."),
-		// Not a prisoner either: Merlin, the old enchanter (.ai/merlin.md), earned by the whole road on Default. No
-		// held line - he was never held. Not "the one he missed": that is the player (.ai/world-and-tone.md), and the
-		// game is named for him.
-		new Prisoner("merlin", "the old enchanter", "", "{0} keeps his circle."),
+		// Merlin kept the wizards' gathering; the broken wards now bind him at its center.
+		new Prisoner("merlin", "the keeper of the circle", "A pale enchanter is bound within the broken council wards.", "{0} is free. The circle holds again."),
 		// The queen in the barge, who carried the dying king over the water: the one who could cross without his
 		// bridge, so he moored her under it (.ai/chapter-wizards.md 4.9). Seen as a light on the water.
 		new Prisoner("morgan", "the woman in the barge", "A lantern on the water under the bridge, where no boat could be.", "{0} has come ashore."),
@@ -380,8 +383,11 @@ public static class QuestLog
 	/// <summary>
 	/// What the HUD shows: the tracked quests in the order they were tracked, at most
 	/// <see cref="MaxTracked"/>, each deed once (the next wizard and the same deed tracked by hand are one).
+	/// With <paramref name="currentStageId"/> (the run's chapter), a quest done in some OTHER chapter is
+	/// left off - it cannot advance here, so it says nothing but noise (Eric, 2026-11-06). The quest log
+	/// menu passes none and lists everything; a quest whose StageId is empty is done anywhere and always shows.
 	/// </summary>
-	public static List<Quest> Tracked(SaveData save, AchievementContext context)
+	public static List<Quest> Tracked(SaveData save, AchievementContext context, string currentStageId = null)
 	{
 		var quests = new List<Quest>();
 		if (save == null)
@@ -390,6 +396,9 @@ public static class QuestLog
 		{
 			Quest quest = Resolve(id, save, context);
 			if (quest == null)
+				continue;
+			if (!string.IsNullOrEmpty(currentStageId) && !string.IsNullOrEmpty(quest.StageId)
+				&& !quest.StageId.Equals(currentStageId, StringComparison.OrdinalIgnoreCase))
 				continue;
 			if (quests.Any(q => q.Deed != null && quest.Deed != null && q.Deed.Id == quest.Deed.Id))
 				continue;

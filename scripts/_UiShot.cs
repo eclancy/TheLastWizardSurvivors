@@ -423,10 +423,13 @@ public partial class _UiShot : Node
 	// mean. --goto=event:N goes to event N's main site whatever this says.
 	private int eventIndex;
 	// --escort-at=F: with --win-event on the Swamp's gibbet cage (--event-index=1), at the shutter's lead Paracelsus is let
-	// out through the real release and stood F of the way from the cage to the ferry landing, the player a stride ahead
-	// (GibbetCageEvent.DebugWalkFrom) - 0.5 for the walk, 1 for the punt taking him. Without it --win-event fills the
-	// winch and the cage comes down.
+	// out through the real release and stood F of the way along the way through the rot (RotPoolLayout.Route), the steps
+	// a player keeping ahead of him has walked laid on along it and the player standing where they end
+	// (GibbetCageEvent.DebugWalkFrom) - 0.3 to 0.5 for the walk through a wall's gap, 1 for the punt taking him. Without it
+	// --win-event fills the winch and the cage comes down. --escort-straight lays those steps straight at the landing
+	// instead - the line a player who has not seen the rot walks - so the steps that run into a pool show it.
 	private float? escortAt;
+	private bool escortStraight;
 	private Vector2? escortStand;
 
 	// --teleport=X,Y: moves the player to that world position a third of the way through the warmup,
@@ -1883,6 +1886,8 @@ public partial class _UiShot : Node
 				arriveEvent = true;
 			else if (arg.StartsWith("--escort-at="))
 				escortAt = float.Parse(arg.Substring("--escort-at=".Length), System.Globalization.CultureInfo.InvariantCulture);
+			else if (arg == "--escort-straight")
+				escortStraight = true;
 			else if (arg.StartsWith("--seer-leg="))
 				seerLeg = System.Math.Clamp(int.Parse(arg.Substring("--seer-leg=".Length)), 0, SeersVoiceEvent.Readings - 1);
 			else if (arg == "--seer-desk")
@@ -2175,7 +2180,7 @@ public partial class _UiShot : Node
 
 	// The --demo-shop purse is 155: Gravewell (150) and Hunter's Draw (140) can be bought, Hollow
 	// Star (160) and Kindled Ward (170) cannot; Runes of Ruin and Vitality are at their maximum;
-	// Emberheart, Chronoweave and Phoenix Oath are affordable, Proscription, Hoarded Insight and
+	// Emberheart, Tempest Rhythm and Phoenix Oath are affordable, Proscription, Hoarded Insight and
 	// Fortune Thread are not; Molten Shard is owned; Redaction is not yet available (a fresh book);
 	// Eternal Wick is one affordable level (125) from its last, so --press-late=...,Buy_duration
 	// photographs the seal being stamped.
@@ -2186,7 +2191,7 @@ public partial class _UiShot : Node
 		data.ArcaneUpgradeLevels["duration"] = 5;
 		data.ArcaneUpgradeLevels["vitality"] = 10;
 		data.ArcaneUpgradeLevels["recovery"] = 3;
-		data.ArcaneUpgradeLevels["cooldowns"] = 2;
+		data.ArcaneUpgradeLevels["attack_speed"] = 2;
 		data.ArcaneUpgradeLevels["amount"] = 1;
 		data.ArcaneUpgradeLevels["rerolls"] = 1;
 		data.ArcaneUpgradeLevels["bans"] = 1;
@@ -3056,8 +3061,13 @@ public partial class _UiShot : Node
 				if (!shorePlaced && frames >= WarmupFrames / 3 && (teleportTo == null || teleported))
 					PlaceAtShore(push);
 				// Before placement, stand still; after it, walk into the water and keep walking.
-				Press("move_right", "move_left", shorePlaced ? push.X : 0f);
-				Press("move_down", "move_up", shorePlaced ? push.Y : 0f);
+				// Wadeable water no longer stops him (in-flight 59), so there the walk stops itself
+				// the moment wading begins: the report then measures where the boots stood as the
+				// wade took hold, against the drawn shore - the alignment this probe exists for.
+				bool walk = shorePlaced
+					&& !(FindNodeOfType<Player>(GetTree().Root) is Player wader && wader.IsWading);
+				Press("move_right", "move_left", walk ? push.X : 0f);
+				Press("move_down", "move_up", walk ? push.Y : 0f);
 			}
 			else if (hold && teleported)
 				HoldPosition();
@@ -4187,6 +4197,11 @@ public partial class _UiShot : Node
 				}
 			}
 		}
+		else if (gotoTarget == "tracks")
+		{
+			TeachingTrail trail = FindNodeOfType<TeachingTrail>(GetTree().Root);
+			at = trail?.TrackPositions.Count > 0 ? trail.TrackPositions[trail.TrackPositions.Count / 2] : null;
+		}
 		else if (gotoTarget == "secret")
 		{
 			// The secret --secret= put beside the spawn, or else the chapter's vault, keepsake or anchor.
@@ -4267,7 +4282,7 @@ public partial class _UiShot : Node
 				System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
 			if (wonEvent is GibbetCageEvent gibbet && escortAt is float along)
 			{
-				escortStand = gibbet.DebugWalkFrom(along);
+				escortStand = gibbet.DebugWalkFrom(along, escortStraight);
 				GD.Print($"_UiShot: let Paracelsus out, {along * 100f:0}% of the way to the landing at {gibbet.Landing}; the player at {escortStand}");
 			}
 			// The dry tomb: its three beacons lit where they stand, and the real opening runs (the slab, him climbing out).
@@ -4991,10 +5006,17 @@ public partial class _UiShot : Node
 		// terrain layer; the nearest is where the feet would meet the shore.
 		float tile = terrain.TilePixels;
 		Vector2 cell = terrain.CellOriginWorld(shoreCell);
+		Vector2 Centre2(Vector2I c) => terrain.CellOriginWorld(c) + new Vector2(tile, tile) * 0.5f;
 		bool wall = terrain.IsWallAtWorld(cell + new Vector2(tile, tile) * 0.5f);
 		Vector2I d = shoreDirection ?? Vector2I.Zero;
 		PhysicsDirectSpaceState2D space = player.GetWorld2D().DirectSpaceState;
-		var query = new PhysicsPointQueryParameters2D { CollisionMask = 1u << (LevelTilePainter.TerrainCollisionLayer - 1) };
+		// Both layers: walls and the abyss on TerrainCollisionLayer, wadeable water on its own
+		// (in-flight 59) - the drawn line is what the boots are measured against either way.
+		var query = new PhysicsPointQueryParameters2D
+		{
+			CollisionMask = (1u << (LevelTilePainter.TerrainCollisionLayer - 1))
+				| (1u << (LevelTilePainter.WaterCollisionLayer - 1)),
+		};
 		bool Solid(Vector2 p)
 		{
 			query.Position = p;
@@ -5024,6 +5046,13 @@ public partial class _UiShot : Node
 			+ $" footprint centre {player.FootPosition}; {(wall ? "wall" : "water")} collision found"
 			+ $" {(clearance == float.MaxValue ? "nowhere within 40 px" : $"{clearance:0.0} px beyond the boots' {edge} edge")}"
 			+ " (negative = boots over the water)");
+		// Whether the wade took hold is half the measurement now (in-flight 59): on a water shore
+		// the walk stops itself when IsWading flips, so the clearance above is where the slow
+		// began against the drawn line, and this says the flip really was the reason he stopped
+		// (a trunk in the lane also stops him, on a mostly dry cell).
+		GD.Print($"_UiShot: SHORE wading at the shutter: {player.IsWading};"
+			+ $" foot cell blocked: {terrain.IsBlockedAtWorld(player.FootPosition)};"
+			+ $" shore cell centre {Centre2(shoreCell)}");
 	}
 
 	private static string Truncate(string text)
@@ -5659,6 +5688,8 @@ public partial class _UiShot : Node
 		private int lastStage;
 		private int chestsBefore;
 		private float struckFor;
+		private TeachingTrail teachingTrail;
+		private bool trailNoticeChecked;
 
 		private void Check(string what, bool ok)
 		{
@@ -5768,7 +5799,19 @@ public partial class _UiShot : Node
 					}
 					hadBefore = save.HasFoundSecret(vault.SecretId);
 					Vector2 origin = Director.Game.StageOrigin;
-					float chunks = vault.GlobalPosition.DistanceTo(origin) / 1536f;
+					teachingTrail = Director.Game.GetChildren().OfType<TeachingTrail>().FirstOrDefault(t => t.Site == vault);
+					if (vault is Pinfold)
+					{
+						Check("Familiar has environmental tracks", teachingTrail != null);
+						if (teachingTrail != null)
+						{
+							Check("tracks begin outside the opening view", teachingTrail.TrackPositions.Count > 0 && teachingTrail.TrackPositions.All(p => p.DistanceTo(origin) >= TeachingTrail.StartDistance - 48f));
+							Check("tracks reach the pen's entrance", teachingTrail.TrackPositions.Any(p => p.DistanceTo(((Pinfold)vault).Entrance) < 240f));
+							Check("tracks stay on walkable terrain", teachingTrail.TrackPositions.All(p => !Director.Game.Terrain.IsSolidCell(Director.Game.Terrain.CellOfWorld(p).X, Director.Game.Terrain.CellOfWorld(p).Y)));
+						}
+					}
+					else Check("other teachers have no golden route", teachingTrail == null);
+					float chunks = (vault is Pinfold enclosure ? enclosure.EssenceCentre : vault.GlobalPosition).DistanceTo(origin) / 1536f;
 					GD.Print($"VAULTPROBE {vault.SecretId} at {vault.GlobalPosition}, {chunks:0.0} chunks out; save had it found before: {hadBefore}");
 					Check($"it is five to seven chunks out ({chunks:0.00})", chunks >= SecretDirector.VaultMinChunks - 0.3f && chunks <= SecretDirector.VaultMaxChunks + 1.1f);
 					Check("it is never a target: not in \"enemies\", nor anything in it",
@@ -5790,7 +5833,18 @@ public partial class _UiShot : Node
 					Vector2 to = stand - Hero.GlobalPosition;
 					float left = to.Length();
 					float toTell = Hero.GlobalPosition.DistanceTo(vault.TellPosition);
-					if (toTell > SecretDirector.SeenRadius + 50f && toTell <= SecretDirector.SeenRadius + 562f)
+					// A teaching trail glimpses at its tracks (in-flight 49: noticing the golden
+					// evidence IS being near it), so once it has noticed, "far from the glint" no
+					// longer means "unseen" - instead check the noticing happened AT a track. The
+					// walk covers 512 px between the beacon's quarter-second ticks, so allow that.
+					bool noticedTrail = teachingTrail != null && teachingTrail.Noticed;
+					if (noticedTrail && !trailNoticeChecked && teachingTrail.TrackPositions.Count > 0)
+					{
+						trailNoticeChecked = true;
+						float toTrack = teachingTrail.TrackPositions.Min(p => Hero.GlobalPosition.DistanceTo(p));
+						Check($"the trail was noticed at its tracks ({toTrack:0} px from the nearest)", toTrack <= 700f);
+					}
+					if (!noticedTrail && toTell > SecretDirector.SeenRadius + 50f && toTell <= SecretDirector.SeenRadius + 562f)
 						Check($"not seen at {toTell:0} px from its glint", !Director.IsGlimpsed(vault.SecretId));
 					Hero.GlobalPosition += left <= 512f ? to : to / left * 512f;
 					wait = 0.1f;
@@ -5803,6 +5857,11 @@ public partial class _UiShot : Node
 				}
 				case 2:
 				{
+					// The 2026-11-06 rule was "never an arrow"; since 2026-11-07 (in-flight 49) the rule
+					// is "subtle until found, obvious once noticed": the teaching marker is marked
+					// exactly when the trail has been noticed - here, by standing at the tell itself.
+					if (teachingTrail != null)
+						Check("the teaching marker follows noticing", PointsOfInterest.Live.Any(p => p.IsTeaching && p.Marked) == teachingTrail.Noticed);
 					Check($"seen at its foot ({Hero.GlobalPosition.DistanceTo(vault.TellPosition):0} px from the glint)", Director.IsGlimpsed(vault.SecretId));
 					Check("and the seen mark is on the save", save.HasGlimpsedSecret(vault.SecretId));
 					// The far tell: crystals thicker near it than far from it, and cracked ones only near.
@@ -5915,6 +5974,11 @@ public partial class _UiShot : Node
 		// the chest only on a save that had found it before.
 		private void CheckPaid()
 		{
+			if (teachingTrail != null)
+			{
+				Check("claiming the essence retires its tracks", teachingTrail.Retired);
+				Check("finding the teacher still owes a post-run lesson", Teachings.Owed(save).Count > 0);
+			}
 			string spell = VaultSpellId;
 			Shot("the light reached him: the toast");
 			Check("the vault is opened for the run", vault.IsOpened);

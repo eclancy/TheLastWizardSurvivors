@@ -1590,8 +1590,11 @@ on the ground is Cinderbreath's. The flock is every ward the spell may hold, not
 orbit of contact blades (Cyclone Slash's): the wards hang back on their ring and go out to meet what
 comes, so the burn still does the work.
 
-**Shadow Bolt** (`ChainLightning`, which Chain Lightning also runs - every hook is switched on by a Shadow
-Bolt id, so Chain Lightning is untouched - and `ShadowCurse`). It had no row: hand-written, almost all
+**Shadow Bolt** - **a Conjunction since 2026-11-07** (Void Lance + Contagion, `.ai/combo-spells.md`
+section 7, `scripts/ShadowBolt.cs`): it left the ordinary pool and this kit left the catalog; the
+section below is the spell as it was, kept for the record. (`ChainLightning`, which Chain Lightning
+also runs - every hook was switched on by a Shadow Bolt id, so Chain Lightning is untouched - and
+`ShadowCurse`). It had no row: hand-written, almost all
 numbers. Its cards now come from what it is - shadow lightning that arcs far, hits softly and leaves a
 trail - and stay the debuff half of the chain pair (section 3):
 
@@ -2011,6 +2014,14 @@ three minutes later than Riposte's, against a later, denser crowd - rerun it at 
 reading its health lost (10,425 against Riposte's 780) as the card's.
 
 ## 2g. The Familiar - the dog, the crow and the cat (2026-10-28)
+
+**0.14.0 hound revision (2026-11-06):** the dog stays at one hound at every level and Ascension.
+Only Littermates adds companions: two pups, three hounds total. Amount still adds none. Level one
+and two stay at 16 and 20 damage; level three becomes 48, and each later level adds 8 (88 at level
+eight), moving the former pair's damage budget into one bite. Littermates makes every bite 55%
+softer: three at 45% gives 1.35 times one hound, compared with the old pack's 1.275 times the
+two-hound budget. Crow and cat numbers are unchanged. The older measurements below describe the
+previous two-hound progression. Cards use short sentences and explicitly name the Littermates rule.
 
 Eric: *"when you FIRST take familiar, you should be able to select your familiar. each has it's own
 advantages - crow moves faster, cat gives passive bonuses, dog does the most direct damage. they each

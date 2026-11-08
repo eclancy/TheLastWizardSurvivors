@@ -134,7 +134,7 @@ public static class StageHintCatalog
 			Cue = HintCue.Leaves,
 			Lines = new[]
 			{
-				"Leaves whispering, though there is no wind.",
+				"Leaves are whispering, though there is no wind.",
 				"The whisper again. Something out there still grows.",
 				"Fainter now, the whispering. It has not stopped.",
 			},
@@ -268,7 +268,7 @@ public static class StageHintCatalog
 				"When the last door opens, the house goes dark.",
 			},
 		},
-		// Medea, counted with the grain in the Tithe-Reeve's granary in the Fallow Fields (.ai/chapter-wizards.md 4.2). She
+		// Medea, held in the Tithe-Reeve's granary in the Fallow Fields (.ai/chapter-wizards.md 4.2). She
 		// speaks, as Tituba does, but she does not plead: the granddaughter of the Sun, who has waited out worse men than
 		// the reeve. A thin cold herb-smoke drifts low over the stubble from her side. Never named, never said who.
 		new()
@@ -280,8 +280,10 @@ public static class StageHintCatalog
 			Lines = new[]
 			{
 				"You there. The granary, past the furrows.",
-				"He counts me with the grain. Settle his count.",
-				"Come, or go. I have waited out worse men.",
+				// Plain words for the riddle, naming the scale the event asks about; the last line is
+				// Eric's pick (2026-11-06: "I have outlasted kings is great").
+				"He tallies me like a sack of grain. Balance his scale.",
+				"Come, or go. I have outlasted kings.",
 			},
 		},
 		// Ma Liang, kept in the Court's Gallery to paint its portraits (.ai/chapter-wizards.md 4.8). A brush is heard drawing

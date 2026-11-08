@@ -1,0 +1,116 @@
+using Godot;
+using System;
+using TheOneHeMissed.scripts;
+
+/// <summary>The title's ward and fire, reused while the menu is actually being prepared.</summary>
+public partial class TitleLoadingScreen : CanvasLayer
+{
+	private PixelArtRect farFire;
+	private PixelArtRect nearFire;
+	private Label caption;
+	private bool failed;
+	private Control art;
+	private ColorRect ground;
+	private Viewport viewport;
+
+	public override void _Ready()
+	{
+		Layer = 180; // Above the title/menu; preparation begins only after the updater finishes.
+		ProcessMode = ProcessModeEnum.Always;
+		ground = new ColorRect { Color = Color.FromHtml("#05070C"), MouseFilter = Control.MouseFilterEnum.Stop };
+		ground.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+		AddChild(ground);
+		var center = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		center.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+		ground.AddChild(center);
+		var column = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		column.AddThemeConstantOverride("separation", 20);
+		center.AddChild(column);
+		art = new Control { Name = "LoadingWard", MouseFilter = Control.MouseFilterEnum.Ignore };
+		column.AddChild(art);
+		AddArt(art, "ward", 3, 1.1f);
+		farFire = AddArt(art, "flames-far", 4, 7.7f);
+		nearFire = AddArt(art, "flames-near", 4, 7.7f);
+		farFire.Visible = nearFire.Visible = false;
+		caption = new Label { Name = "LoadingCaption", Text = "Gathering your magic…", HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart, MouseFilter = Control.MouseFilterEnum.Ignore };
+		ResponsiveLayout.SetFont(caption, ResponsiveLayout.TextRole.Body);
+		caption.AddThemeColorOverride("font_color", Color.FromHtml("#F2DCC4"));
+		column.AddChild(caption);
+		SafeArea.Apply(ground);
+		viewport = GetViewport();
+		viewport.SizeChanged += Layout;
+		Layout();
+	}
+
+	private void Layout()
+	{
+		Vector2 size = ResponsiveLayout.ViewportSize(ground);
+		float width = Mathf.Max(160f, Mathf.Min(920f, Mathf.Min(size.X - 48f, (size.Y - 160f) * 460f / 192f)));
+		art.CustomMinimumSize = new Vector2(width, width * 192f / 460f);
+		caption.GetParent<Control>().CustomMinimumSize = new Vector2(width, 0f);
+	}
+
+	public override void _ExitTree()
+	{
+		if (viewport != null && IsInstanceValid(viewport)) viewport.SizeChanged -= Layout;
+	}
+
+	private static PixelArtRect AddArt(Control parent, string name, int count, float fps)
+	{
+		var frames = new Texture2D[count];
+		for (int i = 0; i < count; i++)
+			frames[i] = new AtlasTexture
+			{
+				Atlas = ResourceLoader.Load<Texture2D>($"res://assets/bonelight/ui/title-wide/{name}-{i}.png"),
+				// The wide set contains the whole ward; its portrait counterpart is clipped at both edges.
+				Region = new Rect2(360, 144, 460, 192),
+			};
+		Texture2D[] animation = name == "ward" ? new[] { frames[0], frames[1], frames[2], frames[1] } : frames;
+		var image = new PixelArtRect(animation, 2, 0f) { FramesPerSecond = fps, MouseFilter = Control.MouseFilterEnum.Ignore };
+		image.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+		parent.AddChild(image);
+		return image;
+	}
+
+	public void SetProgress(float progress)
+	{
+		farFire.Visible = progress >= 0.35f;
+		nearFire.Visible = progress >= 0.7f;
+	}
+
+	public void ShowFailure(string error, string report, Action retry)
+	{
+		failed = true;
+		// Failure needs room for readable details and recovery actions on a short screen.
+		art.Visible = false;
+		caption.Text = "The menu could not be loaded.";
+		var details = new Label
+		{
+			Name = "StartupErrorDetails",
+			Text = error.Length > 400 ? error.Substring(0, 397) + "..." : error,
+			AutowrapMode = TextServer.AutowrapMode.WordSmart,
+			HorizontalAlignment = HorizontalAlignment.Center,
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+		};
+		ResponsiveLayout.SetFont(details, ResponsiveLayout.TextRole.Label);
+		caption.GetParent().AddChild(details);
+		var button = new Button { Name = "RetryLoading", Text = "Try again", FocusMode = Control.FocusModeEnum.All };
+		button.CustomMinimumSize = new Vector2(0, 56);
+		BonelightSkin.StyleButton(button, BonelightSkin.Emphasis.Primary);
+		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Body);
+		caption.GetParent().AddChild(button);
+		button.Pressed += retry;
+		var copy = new Button { Name = "CopyStartupError", Text = "Copy error details", CustomMinimumSize = new Vector2(0, 56) };
+		BonelightSkin.StyleButton(copy, BonelightSkin.Emphasis.Quiet);
+		ResponsiveLayout.SetFont(copy, ResponsiveLayout.TextRole.Body);
+		caption.GetParent().AddChild(copy);
+		copy.Pressed += () => { DisplayServer.ClipboardSet(report); copy.Text = "Error details copied"; };
+		MenuNavigator.Attach(this, button);
+		button.GrabFocus();
+	}
+
+	public override void _Input(InputEvent @event)
+	{
+		if (!failed) GetViewport().SetInputAsHandled();
+	}
+}

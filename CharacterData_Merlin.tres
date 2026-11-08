@@ -7,8 +7,8 @@
 
 ; Merlin, the old enchanter (.ai/merlin.md), in a look of his own (tools/art/player_merlin.py): the title
 ; screen's blue-robed figure is the player, the one the dark wizard missed. Eric, 2026-11-02: "merlin is perfect,
-; as one that uses his magic to protect others." Playable once every chapter's boss has fallen on Default or
-; harder (The King-Maker, id the_one_he_missed); outside the campaign gate, since he was never imprisoned. He opens
+; as one that uses his magic to protect others." Freed by restoring the Broken Circle's council wards.
+; His existing optional campaign-gate membership is retained. He opens
 ; on Orb of Ages, his alone (UnlockDefinition.ExclusiveTo): a ward drawn where he stands and the light on his
 ; staff ricocheting in it. His passive is Warding Hand: whatever touches him is thrown back.
 [resource]

@@ -64,6 +64,79 @@ public partial class MainMenu
 	private readonly List<(Label Tally, string[] Ids, bool Boons)> shopTallies = new();
 	private ScrollContainer upgradeScroll = null!;
 	private int shopColumnsBuilt;
+	private readonly List<(string Title, VBoxContainer View)> shopPages = new();
+	private OptionButton shopCategory;
+	private Label shopPageNumber;
+	private HBoxContainer shopPager;
+	private int activeShopPage;
+
+	// Category above the cards; large page-turn controls below them, always outside the scroll.
+	private void EnsureShopPager()
+	{
+		if (shopCategory != null) { LayoutShopPager(); return; }
+		var host = upgradeScroll.GetParent();
+		var pager = new HBoxContainer { Name = "ShopPager" };
+		shopPager = pager;
+		pager.AddThemeConstantOverride("separation", 12);
+		Button previous = new() { Name = "ShopPrevious", Text = "Previous page", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(200, 72) };
+		Button next = new() { Name = "ShopNext", Text = "Next page", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(200, 72) };
+		shopCategory = new OptionButton { Name = "ShopCategory", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(180, 52) };
+		shopPageNumber = new Label { Name = "ShopPageNumber", VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
+		ResponsiveLayout.SetFont(shopCategory, ResponsiveLayout.TextRole.Body);
+		ResponsiveLayout.SetFont(shopPageNumber, ResponsiveLayout.TextRole.Label);
+		ResponsiveLayout.SetFont(previous, ResponsiveLayout.TextRole.Body);
+		ResponsiveLayout.SetFont(next, ResponsiveLayout.TextRole.Body);
+		shopPageNumber.AddThemeColorOverride("font_color", PurseInk);
+		previous.Pressed += () => ShowShopPage(activeShopPage - 1);
+		next.Pressed += () => ShowShopPage(activeShopPage + 1);
+		shopCategory.ItemSelected += index =>
+		{
+			string category = shopCategory.GetItemText((int)index);
+			ShowShopPage(shopPages.FindIndex(p => p.Title == category));
+		};
+		pager.AddChild(previous);
+		pager.AddChild(shopPageNumber);
+		pager.AddChild(next);
+		host.AddChild(shopCategory);
+		host.MoveChild(shopCategory, upgradeScroll.GetIndex());
+		host.AddChild(pager);
+		host.MoveChild(pager, backFromArcaneButton.GetIndex());
+		BonelightSkin.ApplyButtonSet(new[] { previous, next });
+		LayoutShopPager();
+	}
+
+	private void LayoutShopPager()
+	{
+		if (shopPager == null) return;
+		Node host = upgradeScroll.GetParent();
+		// A wide screen needs the vertical space for its cards; a phone has room for Back below.
+		if (ResponsiveLayout.IsNarrow(this))
+		{
+			if (backFromArcaneButton.GetParent() == shopPager)
+			{
+				backFromArcaneButton.Reparent(host);
+				host.MoveChild(backFromArcaneButton, shopPager.GetIndex() + 1);
+			}
+		}
+		else if (backFromArcaneButton.GetParent() != shopPager)
+			backFromArcaneButton.Reparent(shopPager);
+	}
+
+	private void ShowShopPage(int index)
+	{
+		if (shopPages.Count == 0) return;
+		activeShopPage = (index % shopPages.Count + shopPages.Count) % shopPages.Count;
+		Control focus = GetViewport().GuiGetFocusOwner();
+		bool focusWasCard = focus != null && upgradeList.IsAncestorOf(focus);
+		for (int i = 0; i < shopPages.Count; i++)
+			shopPages[i].View.Visible = i == activeShopPage;
+		for (int i = 0; i < shopCategory.ItemCount; i++)
+			if (shopCategory.GetItemText(i) == shopPages[activeShopPage].Title)
+				shopCategory.Select(i);
+		shopPageNumber.Text = $"Page {activeShopPage + 1} / {shopPages.Count}";
+		upgradeScroll.ScrollVertical = 0;
+		if (focusWasCard) OpenShopAtTop();
+	}
 
 	// The upgrades by what they do. An id that is registered and listed in no section still gets a
 	// card, in a last "More" section, with a warning - a new upgrade must never vanish from the shop
@@ -75,7 +148,7 @@ public partial class MainMenu
 		("Spell book", "Room for more spells in every run.",
 			new[] { SpellBook.ShopUpgradeId }),
 		("Power", "Every spell you cast, harder and more often.",
-			new[] { "damage", "cooldowns", "attack_speed", "area", "duration", "amount", "crit_chance" }),
+			new[] { "damage", "attack_speed", "area", "duration", "amount", "crit_chance" }),
 		("Survival", "Staying alive long enough to use it.",
 			new[] { "vitality", "recovery", "extra_lives", "movespeed" }),
 		("Fortune", "What each run gives back.",
@@ -89,7 +162,6 @@ public partial class MainMenu
 	// something in it was for sale would move the selection with it the moment the last was bought.
 	private const string BoonSectionTitle = "Boons";
 	private const string BoonSectionNote = "Each is bought once, and from then on your level-ups can offer it.";
-	private const string BoonSectionDoneNote = "All bought - every one can turn up at a level-up.";
 
 	// The heading the panel wears (the scene's still says Arcane Upgrades) and the line under it, which
 	// names both kinds of thing on the shelf now that the boons are on it. No "level-ups" in it: on a
@@ -125,9 +197,9 @@ public partial class MainMenu
 	private const string SpellPageLitPath = "res://assets/bonelight/ui/ui-spell-page-lit.png";
 	private const string UpgradeIconRoot = "res://assets/bonelight/ui/upgrades/";
 
-	// The socket is 80 drawn (40 authored, upgrade_socket in ui_frames.py) and the icon inside it 64.
-	private const float SocketSize = 80f;
-	private const float IconSize = 64f;
+		// Smaller sockets leave more of a short shop page for the words.
+	private const float SocketSize = 64f;
+	private const float IconSize = 48f;
 	// The plate is two lines - the price, then what pressing it does - inside the stone button's
 	// iron band, which takes about ten units of each edge.
 	private const float PlateHeight = 74f;
@@ -320,16 +392,24 @@ public partial class MainMenu
 	/// </remarks>
 	private void BuildShop()
 	{
+		foreach (int step in BuildShopSteps()) { }
+	}
+
+	private IEnumerable<int> BuildShopSteps()
+	{
 		if (upgradeList == null)
-			return;
+			yield break;
 		EnsureShopFrames();
+		EnsureShopPager();
 		ClearChildren(upgradeList);
 		shopRows.Clear();
 		shopTallies.Clear();
+		shopPages.Clear();
+		shopCategory.Clear();
 		shopColumnsBuilt = CodexRows.ColumnsFor(this);
 		bool narrow = ResponsiveLayout.IsNarrow(this);
 
-		upgradeList.AddChild(CodexRows.BuildSummary(PowersIntro, CodexRows.Stone));
+		shopCategory.TooltipText = PowersIntro;
 
 		var placed = new HashSet<string>();
 		foreach ((string title, string note, string[] ids) in UpgradeSections)
@@ -337,38 +417,52 @@ public partial class MainMenu
 			var defs = ids.Where(upgradeDefinitions.ContainsKey).Select(id => upgradeDefinitions[id]).ToList();
 			placed.UnionWith(defs.Select(d => d.Id));
 			if (defs.Count > 0)
-				AddShopSection(title, note, defs, narrow, boonSection: false);
+				foreach (int step in AddShopSectionSteps(title, note, defs, narrow, boonSection: false)) yield return step;
 		}
 		var stray = upgradeDefinitions.Values.Where(d => !d.IsBoon && !placed.Contains(d.Id)).ToList();
 		if (stray.Count > 0)
 		{
 			GD.PushWarning($"MainMenu: Arcane Upgrades has no section for {string.Join(", ", stray.Select(d => d.Id))}; listed under More (MainMenu.Shop.cs, UpgradeSections).");
-			AddShopSection("More", string.Empty, stray, narrow, boonSection: false);
+			foreach (int step in AddShopSectionSteps("More", string.Empty, stray, narrow, boonSection: false)) yield return step;
 		}
 
-		SaveData data = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
 		var boons = upgradeDefinitions.Values.Where(d => d.IsBoon).ToList();
 		if (boons.Count > 0)
 		{
-			bool boonsForSale = boons.Any(d => !GlobalStatsManager.IsBoonUnlocked(data, d.BoonId));
-			AddShopSection(BoonSectionTitle, boonsForSale ? BoonSectionNote : BoonSectionDoneNote, boons, narrow, boonSection: true);
+			// This page is cached, so its note must also remain true after a purchase or progress reset.
+			foreach (int step in AddShopSectionSteps(BoonSectionTitle, BoonSectionNote, boons, narrow, boonSection: true)) yield return step;
 		}
 
 		RefreshUpgradeControls();
+		ShowShopPage(activeShopPage);
 	}
 
-	private void AddShopSection(string title, string note, List<UpgradeDefinition> defs, bool narrow, bool boonSection)
+	private IEnumerable<int> AddShopSectionSteps(string title, string note, List<UpgradeDefinition> defs, bool narrow, bool boonSection)
 	{
-		var cards = defs.Select(d => (Control)BuildShopCard(d, narrow)).ToList();
-		VBoxContainer section = CodexRows.AddSection(upgradeList, title, " ", CodexRows.Stone, shopColumnsBuilt, cards);
-		// The tally CodexRows put in the heading row, filled in by RefreshUpgradeControls.
-		if (section.GetChild(0) is HBoxContainer head && head.GetChildCount() > 1 && head.GetChild(1) is Label tally)
-			shopTallies.Add((tally, defs.Select(d => d.Id).ToArray(), boonSection));
-		if (!string.IsNullOrEmpty(note))
+		shopCategory.AddItem(title);
+		// Two cards per page: one desktop row, two phone rows. The current category, purse,
+		// page controls and Back stay on screen rather than living at the end of a long list.
+		for (int offset = 0; offset < defs.Count; offset += 2)
 		{
-			Label line = CodexRows.MakeText(note, ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
-			section.AddChild(line);
-			section.MoveChild(line, 2);
+			VBoxContainer section = CodexRows.AddSection(upgradeList, title, " ", CodexRows.Stone, shopColumnsBuilt, Array.Empty<Control>());
+			section.Name = "ShopPage" + shopPages.Count;
+			section.Visible = false;
+			shopPages.Add((title, section));
+			GridContainer grid = section.GetNode<GridContainer>(CodexRows.SectionRowsName);
+			foreach (UpgradeDefinition def in defs.Skip(offset).Take(2))
+			{
+				grid.AddChild(BuildShopCard(def, narrow));
+				yield return 0;
+			}
+			// The tally CodexRows put in the heading row, filled in by RefreshUpgradeControls.
+			if (section.GetChild(0) is HBoxContainer head && head.GetChildCount() > 1 && head.GetChild(1) is Label tally)
+				shopTallies.Add((tally, defs.Select(d => d.Id).ToArray(), boonSection));
+			if (!string.IsNullOrEmpty(note))
+			{
+				Label line = CodexRows.MakeText(note, ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
+				section.AddChild(line);
+				section.MoveChild(line, 2);
+			}
 		}
 	}
 
@@ -412,16 +506,16 @@ public partial class MainMenu
 		card.FocusStop = stop;
 
 		var padding = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		padding.AddThemeConstantOverride("margin_left", 22);
-		padding.AddThemeConstantOverride("margin_right", 22);
-		padding.AddThemeConstantOverride("margin_top", 18);
+		padding.AddThemeConstantOverride("margin_left", 18);
+		padding.AddThemeConstantOverride("margin_right", 18);
+		padding.AddThemeConstantOverride("margin_top", 14);
 		// The foot of a page (.ai/level-up-screen.md 2e): the frame's inner border plus the air a card
 		// has over its head, so the plate never sits on the rule.
 		padding.AddThemeConstantOverride("margin_bottom", CardFamilyArt.FootInset(boon ? CardFamily.NewSpell : CardFamily.Upgrade));
 		card.AddChild(padding);
 
 		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		line.AddThemeConstantOverride("separation", 16);
+		line.AddThemeConstantOverride("separation", 12);
 		padding.AddChild(line);
 
 		row.IconBox = boon ? BuildBoonIconBox(entry) : BuildSocket(def.Id, card);
@@ -569,9 +663,10 @@ public partial class MainMenu
 		};
 		var socket = new TextureRect
 		{
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
 			Texture = GD.Load<Texture2D>(SocketPath),
 			Size = new Vector2(SocketSize, SocketSize),
-			StretchMode = TextureRect.StretchModeEnum.Keep,
+			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
 			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
 			MouseFilter = Control.MouseFilterEnum.Ignore,
 		};
@@ -584,11 +679,11 @@ public partial class MainMenu
 			GD.PushWarning($"MainMenu: no Arcane Upgrade icon at {UpgradeIconRoot}{id}.png (tools/art/upgrade_icons.py)");
 		box.AddChild(new TextureRect
 		{
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
 			Texture = icon ?? StatIcons.Load("generic"),
 			Position = new Vector2((SocketSize - IconSize) / 2f, (SocketSize - IconSize) / 2f),
 			Size = new Vector2(IconSize, IconSize),
-			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-			StretchMode = TextureRect.StretchModeEnum.KeepCentered,
+			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
 			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
 			MouseFilter = Control.MouseFilterEnum.Ignore,
 		});
@@ -965,9 +1060,8 @@ public partial class MainMenu
 		{
 			"damage" => ("Spell damage", Times(1f + l * 0.08f)),
 			"recovery" => ("Regen", $"{l * Player.EmberheartRegenPerLevel * 60f:0} HP a minute"),
-			"cooldowns" => ("Cooldowns", Times(MathF.Max(0.35f, 1f - l * 0.05f))),
 			"area" => ("Area and range", Times(1f + l * 0.08f)),
-			"attack_speed" => ("Attack speed", Times(1f + l * 0.06f)),
+			"attack_speed" => ("Attack speed", Times(1f + l * 0.08f)),
 			"duration" => ("Effect duration", Times(1f + l * 0.10f)),
 			"amount" => ("Projectiles", $"+{l}"),
 			"movespeed" => ("Move speed", Times(1f + l * 0.05f)),
@@ -994,7 +1088,6 @@ public partial class MainMenu
 		SpellBook.ShopUpgradeId => "todo",
 		"damage" => "damage",
 		"recovery" => "regen",
-		"cooldowns" => "cooldown",
 		"area" => "area",
 		"attack_speed" => "cooldown",
 		"duration" => "duration",

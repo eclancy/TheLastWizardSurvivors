@@ -2,7 +2,773 @@
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
-## 0. Now (2026-11-03, after the 0.12.0 release)
+## Next week (list started 2026-11-04, after the 0.13.0 release)
+
+**0.13.0 is released** (`Release v0.13.0`, 2143dbe8, tag `v0.13.0`; story epoch still 2, so no reset; both
+feeds serve it; `main` level with it). It carries everything in section 0 below plus the 2026-11-04 work: the
+prologue's six lines and redrawn villains, Thora's flowing cape, foliage in five chapters, the Forest with no
+shooters, the card text and spell reaches, the footing rule's wide-trunk margin, John Dee at 100 chests, and
+Paracelsus's rot-path puzzle. Stopped for Eric's weekly limit (5% left), not finished. **Add to this list as
+things come up; strike what lands.**
+
+**Fixes and changes to start:**
+
+- **Released 0.13.2 (2026-11-06):** release commit `35e9bdc8`, tag `v0.13.2`; all nine Windows,
+  Linux and signed Android downloads published and verified against the local artifacts. Both
+  update feeds serve 0.13.2 with story epoch 2, so progress is preserved. Carries the title-loading
+  fix and the four quick fixes, plus bounded results/spell cards (18/24), inspectable unlocks (35)
+  and quit-run rewards/animations (36). Rehearsal and full content validator passed; packaged Windows
+  checks passed startup, crowded/compact results, unlock input, long spell cards and rendered owed
+  reels on quit. Final Windows title check: 1,916.3 ms preparation, 52.9 ms Enter-to-menu in this run.
+  Portrait/safe-area/injected-touch checks passed; no physical Android device was connected.
+  Items 39-41 are new next-week notes, including the clarified two starting + two purchasable boon slots.
+
+- **Ascension discovery (2026-11-05, `codex/ascension-guidance`):** built from the archived playtest
+  request first. The world-map's silhouettes open hints, teaching chapters advertise their hidden
+  lesson, the opening note points out golden lights near the start, and encountering those lights
+  gives a persistent gold marker toward the teacher. Applies to all three teaching landmarks and
+  keeps the existing puzzles and post-run lesson reels. Build and content validator passed (0 content
+  errors, the existing Test Wizard warning); all three teacher walkthroughs passed, including lights
+  near spawn, the real landmark bearing and retiring its marker on completion. PC and phone layouts
+  inspected; controller A opens a hint, B closes it. **Released in 0.13.1**, tag `v0.13.1`, release
+  commit `993092ad`; all nine downloads published. Story epoch remains 2, so no reset. The signed
+  APK passed the release rehearsal's certificate and version checks before publication.
+
+1. **Finish the foliage pass: the Frozen Waste and the Mystic Ruins.** Both builders were stopped mid-work;
+   resume each in its worktree, on `.ai/terrain.md` section 13's recipe (salts assigned: Frozen 0x5CF2-4,
+   Ruins 0x5E02-4). Merge each with `ground_detail.py` re-run for the atlas.
+   - `ws-art-foliage-frozen` (`art/foliage-frozen`): the move (f072c727) and the snow-ghost groves (71d09d5b,
+     "work in progress, not yet measured"), one uncommitted file. Nothing tested.
+   - `ws-art-foliage-ruins` (`art/foliage-ruins`): the move (93844a88, hash proven unchanged) and the
+     overgrown quarters (68ed6cc2), one uncommitted file. Not yet validated, probed, censused or shot.
+   - Both were told what got the Sands and the Heath sent back (rocks as bricks, crowns as paving): check
+     their close-ups for it before merging.
+2. **Play what 0.13.0 shipped unplayed:** Paracelsus's rot-path puzzle (it replaced a working event); the
+   foliage in the Forest, Fields, Swamp, Sands and Broken Circle (does a stand pin you, do the hedges read as
+   hedges, are the Heath's crowns too sparse); the spell reaches; the Forest without shooters; John Dee's chest
+   economy (every other wizard has about a third of a set fewer chests a run).
+3. **The other unlock puzzles** in `.ai/unlock-puzzles.md` (designed and chosen by Eric, not built): Imhotep's
+   mirrors, Ma Liang's door in one stroke, Baba Yaga's herded hut, Medea's balanced scale, Väinämöinen's song
+   sung back, Morgan's lamps lit ahead, Tituba's key past the lanterns. Paracelsus's (the pilot) is done.
+   - **More hints for unlockables** (Eric, 2026-11-04). His example: in the first chapter, Baba Yaga's walking
+     hut walks a visible path, and that path is drawn on the map, so the player finds it by following tracks.
+     Do this for every unlock: each wizard's event and each secret leaves traces in the world that lead to it
+     (tracks, trails, signs) and something on the map or minimap once seen. Start from what exists - the hint
+     cues and lines (`StageHintCatalog`), the warm-glint and decor-gradient tells (`.ai/stage-secrets.md`), the
+     wayfinder and the quest log epithets - and from the per-event asks in `.ai/unlock-puzzles.md` (Baba Yaga's
+     there is a herded hut), and fit the new traces to each.
+4. **Decisions waiting on Eric:** crits in the damage colours come out near-white and alike (the element's own
+   colour, crits marked only by "!" and size, is the alternative); the light pool's depth and Reduce Darkness
+   (40% or off); Nimue's and Ma Liang's open items (section 0 below); the Oubliette's voice, never heard.
+5. **No single word left alone on a line, on PC and on the phone** (Eric, 2026-11-04: "any UI that shows up
+   for text we should try to avoid wrapping single words onto next line. I saw that a number of times in the
+   descriptions of levels when you first start the levels"). First the chapter's opening card (the note shown
+   as a run starts, `ChapterNoteCard` / `ChapterNotes`), then every wrapped text: level-up and modification
+   cards, quest lines, tips, banners. Photograph each at both canvases (`_UiShot`, 1280x720 and 540x1212
+   `--portrait --safe-area`) and fix by width or wording, or by a shared rule (balance the lines, or keep the
+   last two words together) rather than one string at a time; a check in the validator or `_UiShot` would keep
+   it from coming back.
+   - **The Archmage's spell line on the character select** (Eric, 2026-11-04): on a phone his starting spell's
+     description runs past one line on the character description page. Shorten it to one line at 540x1212
+     `--portrait --safe-area`. Find which string the details pane shows (Magic Missile's `Description` or
+     `Tagline` in `SpellData.tres`, or the select's own line in `CharacterSelection`), then check the other
+     wizards' lines the same way.
+6. **The title screen's freeze, and its prompt on a phone** (Eric, 2026-11-04). Read `.ai/title-screen.md` first.
+   - ~~**The freeze.**~~ **Fixed, 2026-11-05:** measured about 14 seconds from the first press to a
+     menu draw on Windows, including 12 seconds of developer regression checks. Those checks now
+     require `--validate-content`. The menu is loaded and built before the title prompt, behind
+     the existing art's animated ritual ward/fire, with a first draw to warm its layout and fonts.
+     Press-to-menu now measures about 34-44 ms in the test checkout (45 ms in desktop portrait),
+     105-106 ms in the main checkout. Preparation varied from 1.2-1.5 s in the test checkout to
+     4.1-8.7 s in the main checkout; the loader covers that work before accepting title input.
+     Keyboard/mouse/pad opening, early loading input, direct returns
+     and failed-load retry passed `_TitleLoadProbe`. See `.ai/title-screen.md` for the timings and
+     verification command. **Physical Pixel 9 timing remains pending: no device connected.** The
+     phone prompt and composition tasks below remain open.
+   - **On a phone, "Tap to start"** in place of "press any button" (`OS.HasFeature("mobile")`, as
+     `TouchControls` decides it).
+   - **The phone title's empty middle** (Eric, 2026-11-04): on Android the eyes in the dark are spread as if
+     making room for the title, but the title takes much less room than they leave, so there is a big blank
+     area in the middle of the screen with no eyes. Lower the title and spread the eyes to fill the space.
+     Then, when the player presses start, the title moves up the screen and the menu's buttons fill the room
+     it leaves (Eric) - one motion from the title to the menu, not the menu dropped over the art.
+     The portrait art and its eye field are generated (`tools/art/splash.py`, `.ai/title-screen.md`): change the
+     generator, re-run it, check it at 540x1212 `--portrait --safe-area`, never edit the PNG.
+7. **The achievement banner says what you did** (Eric, 2026-11-04): when an achievement comes up on screen,
+   show the line for what the player actually did to earn it (its condition, as the achievements menu words
+   it), not only its name and reward ("Achievement - First Blood / Spell recovered - Arcane Explosion"). Find
+   the banner (`Node2DGame.RecordAchievementNow` and the banner it shows, `AchievementDefinition`'s text),
+   keep it to the lines a phone can hold, and check it at both canvases over a run.
+8. **Card and item wording** (Eric, 2026-11-04):
+   - **The Reliquary Key:** its description should just say that your pickup radius applies to chests (what
+     `feat/john-dee-chests` made it do), nothing longer. `ChestItemCatalog`.
+   - **Rename Legendary to Empowered, and make it obvious** (Eric, 2026-11-04). The random chance for a new spell
+     to come stronger (2%, up to 10% with luck; `Player.GetLegendaryChance`) gets a different word, such as
+     **Empowered**, everywhere the player reads it. Today it is only a star after the name ("Solar Flare ★",
+     where it rolls in `Player`) and a gold tint, and the star is easy to read as one of the screen's other
+     stars (Ascension, the Codex). Put the word in the name ("Empowered Solar Flare"), or a gold word and frame
+     on its card, and say once what it means (its element tags count double). Rename what the player sees,
+     not the code or the save: `IsLegendary` and `IsLegendaryStart` stay, since a save and `.tres` files carry
+     them. Search the player-facing text for "Legendary" (cards, the Codex, the character select's
+     "starts Legendary", achievements, the docs' player words). Check the level-up card, the loadout strip, the
+     pause screen and the character select for a wizard who starts Empowered.
+   - **"Leaves are whispering, though there is no wind."** (Eric, 2026-11-04): the grove's hint line reads
+     "Leaves whispering, though there is no wind." (`StageHintCatalog.cs` line 137). While there, read every
+     hint and chapter line for the same dropped verb.
+   - **The Gimmel Ring set is confusing** (Eric, 2026-11-04: "highest level spells? What happens when all same
+     level?"). How it works (`Player.ItemRules.cs`, `RebuildPair`): the two equipped spells with the highest
+     level, a Conjunction always counting highest, and on a tie the EARLIER SLOT wins - so with every spell at
+     one level it is the first two slots. Nothing shows which two.
+     **Eric's change:** make it simply **the first two slots**, and highlight those two slots wherever the
+     loadout is shown (the HUD strip, the pause screen, the level-up and chest screens' loadout) while the set or
+     any of its pieces is held. Every Gimmel card then says "your first two spell slots". `RebuildPair` becomes
+     slots 0 and 1, with no ranking. Check what the first slot holds: usually the wizard's own spell. It is a
+     damage bonus only, which moves no level, so the Apotheosis is not pulled earlier, but confirm it. Also
+     check how a fused Conjunction or a cut spell shifts the slots. The Betrothal Hoop leans the other way (the
+     lowest-level spell): check its card reads as clearly beside the new rule.
+   - **No distances in numbers** (Eric, 2026-11-04): the Singed Lock says "within 90". Never show a distance as a
+     number; say close or far ("nearby", "close to you", "far away") and keep the numbers out of the player's
+     sight. Search every player-facing text for pixel distances: item and boon descriptions
+     (`ChestItemCatalog`, `BoonCatalog`), spell cards and level-up lines (`SpellEvolutionCatalog`,
+     `KeywordText`), relics, element tier text, tooltips. If a validator can catch a number followed by a
+     distance word, add it so they cannot come back.
+   - **Percentages, never flat numbers** (Eric, 2026-11-04: instead of things like "damage +2", always speak in
+     percentages). Every player-facing increase becomes a percentage: the level-up lines a spell's
+     `SpellLevelUpgrade` produces (`DamageBonus = 2` reads "+2 damage"; it should read "+17% damage" against
+     what the spell does at that level), and the same for boons, relics and anything else that prints a flat
+     gain. Decide what the percentage is of (the spell's damage before the pick is the honest one) and do it in
+     the one place the lines are built (`Player.EnsureRelevantLevelUps` and the card builders), not string by
+     string. `RegressionChecks.ValidateLevelUpReaders` reads those lines; keep it passing.
+   - **Clickable element tags look clickable** (Eric, 2026-11-04): give every tag chip that opens its
+     element's card (`ElementChip`, `CodexRows.BuildChip`) a small animation that says so, such as a shimmer
+     passing over it now and then. Keep it subtle and cheap: many chips can be on one screen, it must not pull
+     the eye from the cards' text, and it must still read on a phone (`.ai/level-up-screen.md` section 4a's
+     contrast rules).
+   - **Item tags on a line of their own** (Eric, 2026-11-04): on an item set's card, the tags it adds go on
+     their own line at the bottom, not split across the text the way the Thorned Buckler's "Metal / Earth"
+     breaks on a phone. `ChestItemSelectionMenu` and the set rows (`CodexRows`); check at 540x1212
+     `--portrait --safe-area` with `_UiShot --open-chest`, and at 1280x720.
+9. **Bring back some defensive spells, on Aegis Ward's rules** (Eric, 2026-11-04). The passive defensive spells
+   (Thornmail, Stormguard, Frozen Bulwark and the rest) were removed; Aegis Ward stayed because it is an active
+   thing - a cooldown and a break, costing a slot like any other spell - not a number sitting on the player
+   (`UnlockCatalog`'s note at `aegis_ward`). Any defensive spell that comes back must be the same: a real spell
+   in a slot, with a visible cooldown and a way to fail or break, its own aim, cadence and demand
+   (`.ai/spell-roster.md`), the element-tag rules, a `SpellData` `.tres` and the new-spell recipe in
+   `CLAUDE.md`, and one achievement to earn it (every non-starter spell comes from exactly one). Design first:
+   which old passives' ideas are worth keeping as actives, and how each differs from Aegis Ward and from each
+   other (`.ai/passives-and-items.md` has why the passives went, `.ai/spell-variety.md` the axes).
+9a. **Play with spell slots** (Eric, 2026-11-04): items and boons that empower particular slots (the first,
+   the last, the slot beside another) and ways to switch which spell sits in which slot during a run. The
+   Gimmel Ring's move to "your first two slots" (item 8) is the first of these; design the family together
+   so the slot is a thing the player arranges on purpose. Read `.ai/passives-and-items.md` (Full Set
+   Enchantments, rarity), `.ai/spell-variety.md` and `.ai/slow-start.md` (a new save holds three slots,
+   `SpellBook`) first; a slot effect must still read on the HUD strip at both canvases, with the slot it
+   touches highlighted.
+10. **Art and sound fixes** (Eric, 2026-11-04):
+   - **Magic Missile's sound is annoying.** It plays on every dart, every 0.8 s, all run long for the Archmage,
+     and `.ai/audio-direction.md` says a sound's loudness is set by how often it plays. Find which cast and
+     impact sounds it uses (`SfxCatalog`, `SfxPlayer`), then make it quieter, softer and less sharp, with some
+     variation between plays, in `tools/audio/sfx.py` (`python tools/audio/build.py`, then `analyse.py
+     --confuse`). Listen to it in a run before and after.
+   - **Minibosses glow, so they stand out in a crowd** (Eric, 2026-11-04). First check what already marks them
+     (elites' gold markers; `Enemy.IsMiniBoss`; the Boo) and how they read inside a 140-body swarm. Then add a
+     glow or rim: cheap per body (`.ai/performance.md`), above the crowd and still lit under the light pool
+     (`.ai/light-pool.md`), in a colour that is not the player's warm gold or his dark wizard's violet
+     (`.ai/world-and-tone.md`'s enemy palette), and distinct from the bosses' own look.
+   - **Aedan's lantern hangs from his staff**, not sitting on top of it: a hook or crook at the staff's head,
+     the lantern swinging below it on its bail. `tools/art/roster.py`, `pyromancer()`; regenerate his sheets and
+     the prologue panels that show him, keep his spell anchor on the lantern (`CharacterVisuals`), and check the
+     select, a run and the prologue at both canvases.
+11. **More large landmarks unique to every map** (`.ai/genre-lessons.md` 3; expanded by Eric,
+   2026-11-05), after the foliage pass. Each map should have its own distinctive large scenery,
+   giving the landscape places to notice and recognize. Eric's examples: **large stones with
+   mysterious, unidentifiable carvings, stone circles, and much larger fairy circles**. Give the
+   features substantial scale and a presence in the landscape; design a set suited to each chapter's
+   own terrain and atmosphere. The specific landmarks per map remain to be chosen.
+   - Build on the scenery-only landmark plan: these can enrich the world without every feature
+     needing to be an unlock, a puzzle or a reward. Keep actual secret/event clues readable among them.
+   - Check existing art and generators first (`.ai/art-inventory.md`); draw/generate larger features
+     at their intended scale under `.ai/art-direction.md`. Place them through the terrain/landmark
+     system and respect `.ai/terrain.md`'s footing and clearance rules so a landmark does not trap
+     the player or obstruct an event. Review their scale, variety and navigation in PC and phone runs.
+12. **The Play Store listing** as *The One He Missed: Survivors* (Eric's Play Console; the copy is in the
+   launch-plan doc, now carrying the rival motive).
+13. **Housekeeping:**
+   - the README's image and sound counts are stale again after the foliage and Paracelsus (recount from the
+     tree, same methods);
+   - delete the dead decor cases in `Node2DGame.BuildDecorProps` for every chapter that now has foliage (the
+     recipe leaves that to the integrator);
+   - the Heath's thorns are mirrored both ways (shared sprite mirroring) and its granite blob keeps the slab
+     tile (`tiles.py`, shared);
+   - on this PC's Python 2.7, `build.py` and the icon generators rewrite 43-87 files the committed versions
+     differ from: find out which interpreter wrote the committed ones and settle it;
+   - five old folders beside the repo that git no longer lists as worktrees (`ws-fix-touch-input`,
+     `ws-wip-combo-sagittarius`, `ws-wip-familiar-icons`, `ws-wip-progress-reset`, `ws-wip-spell-visuals`):
+     Eric's call whether to delete.
+
+14. **Optional cross-device saves: Android and Windows** (Eric, 2026-11-05; discussion captured for next
+   week, provider and implementation still to be decided).
+   - **Goal:** the same player's permanent progress follows them between the Android app and the
+     downloadable Windows build. Both already use `SaveData` and `SaveManager`'s `user://savegame.json`.
+     Proposed first scope: unlocks, currency, upgrades, achievements, campaign progress and lessons,
+     synced between runs. Resuming halfway through a run is a separate, larger feature. Keep device
+     settings local (`SaveData.SettingsKeys`).
+   - **Identity:** automatic cloud saves need shared player identity and online storage. A managed
+     sign-in service can handle accounts; players could enable cloud saves optionally and keep playing
+     offline. Device pairing codes are another option, with account recovery to design. Manual save
+     export/import is the smaller alternative and needs no cloud account or hosting bill.
+   - **Protect progress:** keep local saves and backups, add save revisions and detect conflicts when
+     both devices were played offline. Initially offer a clear choice of conflicting saves, preserving
+     both copies. Do not silently merge currency or purchases: spending on the phone must not be undone
+     by an older PC upload. Handle schema migrations, different game versions, and `ProgressEpoch` so an
+     older device cannot overwrite a newer save or revive progress from before a story reset.
+   - **Costs checked 2026-11-05, not a promise of free hosting indefinitely:**
+     [Supabase](https://supabase.com/pricing) has a $0 tier with 50,000 monthly active auth users, 500 MB
+     database storage and 5 GB outgoing traffic; free projects pause after a week of inactivity. Pro
+     starts at $25/month. [PlayFab](https://developer.microsoft.com/en-us/games/products/playfab/pricing/)
+     has a $0 fixed monthly fee on pay-as-you-go, with metered usage charges; its $99/month Standard
+     subscription is optional. Neither provider has been selected or configured. Aim to fit a free tier
+     initially, then estimate costs from actual save size, active players and sync frequency before
+     committing to a service. Avoid uploading on every local save write; batch meaningful checkpoints.
+   - **Rough engineering estimate from this discussion:** a few days for a prototype, around one to
+     two weeks for a thoroughly tested implementation; subject to provider and sign-in integration.
+
+15. **Opening cinematic: the invading army must rush over the horizon** (Eric, 2026-11-05).
+   The army currently looks awkward, as if its silhouettes are hovering above a picture rather than
+   rushing over the horizon. Rework the `tide` beat so the bodies belong to the landscape and advance
+   from beyond the crest onto the ground. Check ground contact, perspective, occlusion at the horizon
+   and the movement of the crowd together; shifting a silhouette layer across a static picture is the
+   problem to solve. Start with `scripts/Prologue.cs`, `tools/art/prologue.py` and `.ai/cutscenes.md`.
+   Edit the generator/animation, not the generated PNGs, and review the moving sequence at PC and phone
+   sizes rather than judging a still alone.
+16. **Opening cinematic: give the road toward the dark tower more landmarks** (Eric, 2026-11-05).
+   In the art Eric identifies with "the rest still wait for you", where the wizard travels along a
+   path toward the dark tower, fill the road's surroundings with more landmarks instead of the big,
+   flat, empty plain. Keep the wizard, the route and the distant tower readable while giving the journey
+   places to pass. Inspect both `five` and `road` and their transition: `Prologue.cs` currently puts
+   "Four are free. The rest still wait for you." on `five`, immediately before the uncaptioned `road`
+   beat; the requested visual is the journey toward the tower. Use `tools/art/prologue.py`, following
+   `.ai/world-and-tone.md`, `.ai/art-direction.md` and `.ai/cutscenes.md`; regenerate and review both
+   landscape and portrait compositions. Landmark choices remain to be designed.
+
+17. ~~**Shadow Bolt should become a combination spell**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-07** (`.ai/combo-spells.md` section 7): Shadow Bolt is the third Conjunction -
+   Void Lance at 8 down Cosmic Collapse + Contagion at 8 down Pandemic, verb *fester*. A bolt of
+   void leaps the thickest pack laying the curse (poisoned, slowed, exposed, the old identity); on
+   Pandemic's beat every cursed body caves in and the curse spreads, all of it bounded (no enemy
+   twice a cast, 24 cursed at once, one hit an enemy a beat). New `scripts/ShadowBolt.cs` draws it
+   (SpellStrokes arcs, feet rings with rot motes that swell on the beat, imploding void discs); the
+   old five-card chain kit left the catalog, `castle_conqueror` pays only Bone Rattle, schema 23
+   keeps the spell for every save that owned it (`MigrateShadowBoltToConjunction`), and
+   `ValidateElementReachability` holds the Darkness/Poison floor after the tags left the pool.
+   Numbers are first guesses against section 2's 1.2x target - the harness band
+   (`--seek-combo=shadow_bolt`) and an eyes-on crowd check at both canvases remain. Original ask:
+   move Shadow Bolt into the Conjunction roster; parents and recipe to be chosen; as one piece:
+   - **Rebalance element-tag availability** around the change. Account for its tags moving out of the
+     ordinary spell pool, and check that builds can still reach the required element tiers and
+     Ascensions before a combination is available. Review spells, boons and items together.
+   - **Scale Shadow Bolt's power** for its new role and the requirements to obtain it, balancing it
+     against the other combination spells.
+   - **Make its visuals much more interesting**, with a distinct combination-spell identity and a
+     payoff that matches the other combinations. Review the moving effect in a crowded run at PC and
+     phone sizes. Update the generators/code that produce the art, not generated PNGs by hand.
+   Start with `.ai/combo-spells.md`, `.ai/gameplay-design.md`, `.ai/spell-roster.md` and
+   `.ai/art-direction.md`; include the existing unlock and save compatibility in the conversion plan.
+
+18. ~~**Defeat screen runs off the bottom on Windows**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-06:** reproduced the unbounded results layout. Header, summary and expanded
+   details now share a bounded scroll area above a pinned Retry / Main menu footer. Resizing
+   rebuilds the responsive layout while preserving the open detail; very narrow canvases stack
+   the footer buttons and summary tiles. `_RecoveryProbe --part=results` passed crowded results,
+   scrolling and footer bounds at 1280x720, portrait with safe areas, and a 480x720 logical canvas.
+   Resolution/monitor settings remain a separate task in item 20. Original report: the defeat/results screen
+   trails below the bottom of his screen. Reproduce in `GameOverScreen` at the Windows window sizes,
+   including fullscreen and a smaller window, with enough results/unlocks to exercise the tall case.
+   Keep the content reachable and the Retry / Main menu footer on screen; review the portrait layout
+   as well. Check with `_UiShot --force-death` and a real defeat. Read `.ai/level-up-screen.md` and
+   `.ai/controller-and-focus.md` before changing the layout or its scrolling.
+   - **Resolution/scaling investigation (Eric, 2026-11-05):** the resolution appears incorrect to him.
+     Record the selected monitor, desktop resolution, actual window size, logical viewport size and
+     Windows DPI scaling when reproducing. Code inspection suggests a possible layout issue as well:
+     `DisplayProfile` already requests borderless fullscreen; the PC design canvas is 1280x720 with
+     `KeepHeight`. `GameOverScreen.BuildShell` centres a folded panel at its content height, with no
+     overall scroll/height cap around the summary and footer. A minimum height exceeding the available
+     canvas could push the bottom out of view. This layout failure is now reproduced and fixed;
+     a separate Windows DPI/monitor problem has not been established.
+19. ~~**Defeat screen: Right Arrow from Retry does not reach Main menu**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-05:** `GameOverScreen.BuildFooter` explicitly links Retry's right neighbor to
+   Main menu and Main menu's left neighbor to Retry. `_RecoveryProbe --part=footer` checks real
+   keyboard/pad input while paused, in landscape and portrait; removing the links with
+   `--automatic-focus` reproduces the stuck selection. Item 18's overflow fix followed on 2026-11-06.
+
+20. **Display options and correct fullscreen startup resolution** (Eric, 2026-11-05). Add resolution
+   options to the game and detect the correct display resolution when launching fullscreen; investigate
+   alongside the defeat-screen overflow in item 18.
+   **Core implemented 2026-11-06 (item 46):** Eric chose native fullscreen plus selectable window sizes.
+   Saved mode/window-size controls, display fitting, non-16:9 expansion and the aligned menu footer
+   are built. Native 2736x1824 fullscreen and 16:9/16:10/4:3/ultrawide windows were checked.
+   The broader explicit monitor picker, timed-revert UI and separate OS-DPI sweeps below remain
+   follow-up work; the current menu uses the monitor containing its window.
+   - Offer windowed and borderless fullscreen modes, resolution/window-size choices, and an
+     **Automatic / native display** option. Include monitor selection where multiple monitors exist.
+     Start fullscreen at the selected monitor's desktop resolution by default, and remember the
+     player's chosen mode and window size as device-local settings.
+   - `DisplayProfile` currently requests fullscreen and has an F11 / Alt+Enter toggle, but has no saved
+     resolution selector or monitor preference. Its 1600x900 window override is a windowed default;
+     its 1280x720 `ContentScaleSize` is the UI's design canvas, not the physical monitor resolution.
+     Borderless fullscreen already follows the monitor's desktop size. Keep physical resolution,
+     logical UI size and any UI scaling option distinct.
+   - Check DPI scaling, fullscreen transitions, monitor changes and window decorations/taskbar bounds.
+     Clamp windowed sizes to the chosen monitor's usable area. Reflow menus after size/mode changes;
+     changing resolution alone must not leave the defeat panel or its footer outside the viewport.
+     Provide a timed Keep / Revert step when applying display changes.
+   - Start with `scripts/DisplayProfile.cs`, `project.godot`, the shared Options rows and
+     `ResponsiveLayout`. Preserve Android's portrait layout and the tool scenes' exact screenshot
+     resolutions. Verify smaller Windows windows, native fullscreen, non-16:9 displays and Windows
+     scaling at 100%, 125% and 150%; check the title, gameplay HUD and defeat screen.
+   - Godot reference: [multiple resolutions](https://docs.godotengine.org/en/4.5/tutorials/rendering/multiple_resolutions.html)
+     and [DisplayServer](https://docs.godotengine.org/en/4.5/classes/class_displayserver.html).
+
+21. **Use pages for crowded menus; start with Powers** (Eric, 2026-11-05). For menus with many options,
+   consider pages instead of one long scrollbar. In Powers, move the existing sections onto separate
+   pages so a player can go straight to the category they want. Make each option more compact to
+   conserve space: review padding, icon sizes and the arrangement of the description, cost and purchase
+   controls together, while keeping the text readable and the touch targets usable. Keep page controls
+   visible, show which page/category is selected, and support mouse, touch, keyboard and controller.
+   Review PC and phone layouts; assess other long menus individually rather than replacing every list
+   automatically. Start with `scripts/MainMenu.Shop.cs`, `.ai/level-up-screen.md`'s shop section and
+   `.ai/controller-and-focus.md`.
+   **Implemented for 0.14.0:** fixed category selector, Previous/Next and page count; two cards per
+   page, smaller icons and padding, with the purse and Back outside the scroll.
+   **0.14.2 follow-up (Eric, 2026-11-07):** move Previous/Next to the bottom and make them obvious:
+   large equal-width Previous page / Next page controls and a gold page count; Back sits below on
+   phones and alongside on desktop, leaving room for the cards.
+
+22. **Rethink the name "Powers"** (Eric, 2026-11-05). He suggested something like "Powerups", but wants
+   a more magic-themed name. The menu sells permanent upgrades and unlockable boons, so the name and a
+   short explanation should make its purpose clear. No replacement has been selected. Candidates from
+   this discussion: **Arcane Mastery**, **Arcane Enhancements**, or **Spellcraft**. Keep the naming
+   distinct from Full Set Enchantments and the planned "Empowered" label for stronger spell rolls.
+   When chosen, update the main-menu entry, shop heading, hints and any other player-facing references
+   consistently; coordinate the wording with item 21's redesign.
+
+23. **Show the protection after a level-up selection with a small shield animation** (Eric,
+   2026-11-05). When the player chooses a level-up and the run resumes, briefly form a small magical
+   shield around the wizard to show that he cannot be hurt yet. Animate it away when that protection
+   ends, so its visible lifetime matches the actual invulnerability rather than an independent timer.
+   The existing protection is `Player.PostMenuInvincibilitySeconds` (currently 2 seconds), granted in
+   `Node2DGame` through `GrantInvincibility(..., whiten: false)`; do not confuse it with the separate
+   post-level-up spawn grace. Keep the effect small, readable amid spells, and distinct from Aegis
+   Ward so it does not imply the player gained a shield spell. Check the animation at PC and phone
+   sizes, following `.ai/art-direction.md` and `.ai/performance.md`. This is a visual cue for the
+   existing protection, with its duration and gameplay behavior preserved.
+
+24. ~~**Spell descriptions are clipped below their containers on Windows**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-06:** reproduced tall level-up cards overflowing the wide layout. Wide cards
+   now use the same bounded options scroll as portrait cards, keeping the action footer visible.
+   A tall four-card deal now scrolls 469 units of content inside a 400-unit band at 1280x720;
+   mouse wheel, controller scrolling and Page Up / Page Down reach the lower text. Existing
+   Codex/pause detail scrolls remain in place. Display settings/DPI investigation stays in item 20.
+   Original report:
+   Some descriptions extend below the bottom of their container, leaving the lower text unreadable.
+   The exact spell(s) and menu have not been identified yet; inspect the level-up cards, spell/Codex
+   details, pause-screen spell details and character-selection spell descriptions when reproducing.
+   Check text wrapping and minimum heights, fixed-height parents, clipping, scroll reach and layout
+   updates after resizing. Make the whole description readable/reachable while preserving the text's
+   legibility. Investigate alongside the defeat-screen overflow (18) and resolution/display options
+   (20); a shared resolution/DPI cause is suspected by Eric but remains unconfirmed. Photograph long
+   descriptions in Windows fullscreen and smaller windows at different DPI scales, then check portrait.
+
+25. **Add straightforward stat-boost items; simplify confusing effects where it fits** (Eric,
+   2026-11-05). The item pool should include basic, immediately understandable bonuses such as
+   **"Area +X%"**. Other possible examples are damage, movement speed or pickup radius increases;
+   choose the stats and values during the design/balance pass. Review existing confusing item effects
+   and replace them with simple stat increases when that better suits the item. Eric is open to
+   repurposing existing items, so this can improve the current pool as well as add new choices.
+   Keep the percentage wording clear and consistent with item 8, preserve coherent item/set identities,
+   and rebalance the bonus for its rarity and stacking behavior. Start with `ChestItemCatalog`,
+   `Player.ItemRules.cs`, `.ai/passives-and-items.md` and `.ai/spell-variety.md`; keep the cards, Codex
+   descriptions and actual stat effects in agreement. Specific replacements remain to be chosen.
+
+26. ~~**"Freezing" mouse-hover tooltip is extremely wide and shallow**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-05:** the native status tooltip has a 420-unit card width, constrained to the
+   viewport; its wrapped sentence gets its width before the popup's first size measurement, avoiding
+   an oversized initial height too. All eight status hover/click cards passed `_RecoveryProbe` on
+   PC; Freezing also passed and was visually checked in portrait. The focused-card notes are unchanged.
+
+27. **Keyboard input hides the mouse and gives the keyboard control until the mouse is used again**
+   (Eric, 2026-11-05). When playing/navigating with the keyboard, hide the cursor and deactivate mouse
+   hover/selection behavior so a stationary pointer cannot steal the selection, highlight another
+   option or leave a hover tooltip over the keyboard's choice. Restore the cursor and normal mouse
+   interaction when the player intentionally moves or clicks the mouse again; ignore small jitter.
+   This is an in-game input-mode switch, not disabling the operating system's mouse.
+   `CursorVisibility` currently tracks controller input and mouse movement/clicks but has no keyboard
+   case. Coordinate it with `MenuNavigator` and `MenuFocusHighlight.PointerActive` so cursor visibility,
+   focus highlights, hover effects and tooltips agree about the active input. Preserve controller
+   behavior, keyboard text entry and Android touch controls. Test keyboard -> mouse -> keyboard on
+   main-menu lists, level-up/chest choices, the defeat footer and status tooltips (including item 26).
+
+   **Implemented for 0.14.0:** shared keyboard/controller/pointer state, cursor hiding, stale-hover
+   and tooltip suppression, deliberate movement/click/touch recovery, and dynamic-control handling.
+
+28. **Magic Missile should fly behind a boss's shield; explore other boss weak-spot interactions**
+   (Eric, 2026-11-05). Against the boss that raises a shield, Magic Missile should travel all the way
+   around and behind it to reach him. Make the route and rear hit visible so the spell's seeking
+   behavior has a satisfying interaction with the defense. The Hayward's frontal hurdle in the
+   Fallow Fields appears to match this report; confirm the boss when reproducing.
+   - **The damage rule matters as well as the flight path:** `HaywardBoss.AdjustIncomingDamage`
+     currently reduces hits according to `PlayerInFront`, using the player's position rather than
+     where a projectile arrives from. Curving the missile behind him alone would still leave its
+     damage guarded while the player stands in front. Design the incoming-hit/guard interaction so
+     actually reaching the exposed side counts, and review the effect on the boss's circling mechanic.
+   - **Review the other bosses' weak spots** for similarly fun Magic Missile interactions. Consider
+     how it finds and reaches an exposed target, and make those choices readable in the missile's
+     motion. Choose interactions per boss, with deliberate handling of their phases and targetability.
+     Parent/branch-specific behavior and any balance changes remain to be designed.
+   Start with `MagicMissile.cs`, `HaywardBoss.cs`, the incoming-damage hook in `Enemy.cs`,
+   `.ai/spell-roster.md` and `.ai/enemy-behaviour.md`. Test actual damage from different player and
+   projectile positions, alongside the visible trajectory, at PC and phone sizes.
+
+29. **Reconsider the top timer's plain black background** (Eric, 2026-11-05). Explore styling the
+   background to fit the game's art, or removing it entirely. This is a visual decision to consider;
+   neither option has been selected. Compare both at play size over bright and dark chapters and a
+   crowded fight, on PC and phone, keeping the timer readable and clear of the surrounding HUD.
+   Start with `RunTimerPanel` / `runTimerStyle` in `scripts/Node2DGame.cs`, `.ai/art-direction.md` and
+   the HUD/contrast rules in `.ai/level-up-screen.md`.
+
+30. **Magic Missile and other projectile attacks render above the player sprite** (Eric,
+   2026-11-05). Give projectile visuals priority over the player character so they remain visible
+   when crossing or overlapping his sprite. This revises the earlier rule that the player always
+   draws above spells; update the implementation and the corresponding draw-layer documentation
+   together. `DrawLayers` currently puts ordinary airborne effects at `Air` (6), below the player
+   and boss bodies sharing `Foremost` (10). Review the layer split and projectile scene/script Z
+   settings rather than raising only Magic Missile. The request concerns projectiles above the
+   player; review boss layering explicitly when separating the currently shared body layer.
+   Start with `scripts/DrawLayers.cs`, `MagicMissile.cs`, the other projectile visuals and
+   `.ai/art-direction.md` / `.ai/godot-engine.md`. Check casts and projectiles crossing the wizard
+   in motion and in a crowded fight, at PC and phone sizes.
+
+31. ~~**Taproot wording: "Stand still"**~~ (Eric, 2026-11-05). **Done, 2026-11-05:** both
+   `BoonCatalog` text builders omit the activation duration. The card says "Stand still: +1.5 HP
+   per second"; the underlying 1.5-second activation delay and regeneration are unchanged.
+
+32. **Walking hut footprints face backward in every direction** (Eric, 2026-11-05; clarified after
+   the initial report). The chicken toes point opposite the hut's direction of travel however it is
+   running; northbound tracks pointing south were one example. Check the artwork's authored forward axis
+   against the placement rotation/mirroring and the hut's actual direction of travel. Make the tracks
+   point the way it walked; verify north, south, east, west and turns in the moving sequence. Start
+   with `scripts/WalkingHutEvent.cs` and `tools/art/walking_hut.py`; change the generator if the art
+   needs correcting, then regenerate. Keep the footprints useful as a trail players can follow.
+
+33. **Unlocked wizard's sprite must draw in front of the shine** (Eric, 2026-11-05). Unlocking a
+   character currently puts a shining light over their sprite. Draw the wizard above that light so
+   the character remains clearly visible, with the celebratory shine behind them. Locate the actual
+   unlock presentation and check its sprite/effect draw order or Z layers; if the overlap is in a
+   generated freeing panel, fix the generator's layer order and regenerate. Review `Freeings`,
+   `Prologue`, `.ai/cutscenes.md` and the relevant unlock/rescue effect as needed, then check the
+   animation with several wizard sprites at PC and phone sizes.
+
+34. ~~**The Archmage's passive should give time to escape after it triggers**~~ (Eric, 2026-11-05;
+   called "archwizard" in the playtest note). **Done, 2026-11-05:** Overlooked grants **10 seconds**
+   of invincibility, with the existing white visual lasting through it. The character description
+   and `.ai/protagonist.md` explain it; post-menu grace stays two seconds. `_RecoveryProbe
+   --part=overlooked` verified the killing blow is refused without healing, immunity at 9.8 seconds,
+   protection and visual expiry after 10 seconds, resumed damage and the once-per-run limit.
+   Eric can now playtest whether ten seconds feels right for escaping a crowded situation.
+
+35. ~~**"Newly unlocked" icons cannot be inspected on Windows**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-06:** reward icons are focusable buttons opening a named detail with the actual
+   unlock's description (including the earned Ascension branch or Apotheosis form). Back returns
+   focus to its icon; More opens the complete reward list. Mouse, keyboard, controller and injected
+   touch passed, including 24 rewards, wrapped icons, portrait and pinned footer navigation.
+   Original report: he cannot click
+   the icons or reach them with the arrow keys to find out what they are. Make each reward icon a
+   usable selection: clicking it, or focusing it with keyboard arrows and activating it, should show
+   the unlocked thing's name and description. Give a focused icon a clear highlight and support
+   controller selection/activation and touch as well.
+   Start with `GameOverScreen.BuildUnlockStrip`, its icon wells and the corresponding `RunUnlockEntry`
+   / `BuildUnlockCard` detail data. Check mouse filters, focus stops, focus neighbors and input routing;
+   the current strip is an `HFlowContainer` with `MouseFilter.Ignore`. Keep Retry and Main menu reachable
+   when moving through the reward icons (items 18-19), and coordinate with the keyboard/mouse switch
+   in item 27. Test a results screen with several different newly unlocked rewards, including an
+   overflowing/wrapped icon row, at Windows and phone layouts.
+
+36. ~~**Quitting a run should still show its results and unlock celebrations**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-06:** pause's **Quit Run** now uses the guarded run-finishing path with a
+   distinct `Quit` outcome and neutral **Run ended** title. It banks rewards once, plays owed
+   character freeings and system lessons, then shows inspectable results. Existing Defeat/Victory
+   enum values and story epoch 2 are preserved. Real rendered freeing + Ascension reels passed;
+   headless checks passed both owed-reel and empty runs, including a repeated quit/payout check.
+   Original request:
+   When the player voluntarily quits a run, take them through the results/unlocks screen and any
+   accompanying unlock animations before returning to the menu. Earned unlocks must remain visible
+   and their presentation must not be skipped by the quit path. Check quitting after earning a
+   character, familiar or system unlock, as well as a run with no new unlocks; coordinate with item
+   35's inspectable rewards. This concerns leaving a run through the game's quit action.
+
+37. **Unlocking characters teaches Ascension, Apotheosis and combination spells** (Eric,
+   2026-11-05; corrected from the earlier familiar note). **Ascension should unlock from a character
+   unlock:** in an animation, that newly unlocked character shares special magical knowledge with
+   the player, explaining and unlocking Ascension. **Apotheosis and combination spells should each
+   unlock through a similar character interaction.** Which characters teach each system and the
+   details of their animations remain to be chosen. Familiar discovery is a separate event (item 38).
+   Eric reports using GPT to change how familiar and Ascension unlocking works; inspect those
+   changes before implementing this follow-up. Review the current unlock flow, `Teachings`,
+   `Freeings`, `.ai/slow-start.md` and `.ai/cutscenes.md` together: move these system unlocks to the
+   character interactions, update their hints/lesson text and keep the presentations consistent
+   with the unlock rules. Play the owed animations after a run, including a voluntarily quit run
+   (item 36).
+
+38. ~~**Familiar discovery: subtle tracks and a larger magically sealed pen**~~ (Eric, 2026-11-05;
+   refined 2026-11-06). **Done, 2026-11-06:** ground-level drag furrows, splayed paws and claw
+   scratches suggest a dog resisted being dragged. They pulse faintly in opaque gold stops and
+   begin outside the opening view (at least 1,488 world units from spawn). A bounded, one-off
+   search lays the intermittent marks through reachable ground toward the actual pen, with tiny
+   decor reserves to keep props off them. No traveling golden lights, near-spawn route or
+   trail-triggered POI arrow remains at any of the three teaching landmarks. Unfound map hints
+   describe the landscape without advertising an upgrade.
+   - **Later polish (2026-11-06):** six varied mark families, more golden and irregularly spaced
+     300-520 units along the route. Animated studies and actual-spacing captures are generated with
+     `_DiscoveryPreview` and `tools/art/discovery_gif.py`.
+   - The pen was enlarged to 448x352, then to **1944x1632** at Eric's request for at least 4x again.
+     Its foundation clears water/hidden fences before painting and on regeneration. Twenty-four
+       blue/violet wisps circle the walls, eight the carved center ward. It has a binding across its gate.
+       **Updated 2026-11-06:** the center energy pickup is replaced by a drained, ghostly hound, cat and
+       bird. They run around and try the walls. Defeat the existing guards, touch the latch, then walk up
+       to each companion inside. Each regains color and dissolves toward the player; all three are
+       required to unlock **Familiar and Laelaps**. Opening the gate or reaching the center pays nothing.
+     Its interior/entrance are walkable in both physics and navigation, with separate draw origins
+     keeping the floor behind the player. Repeat visits pay the existing chest, once.
+   - Desktop and portrait/safe-area walkthroughs passed, with default terrain and seeds 17/2026,
+     including first unlock, center approach, no premature grant, repeat chest, and retired tracks.
+     The Star and Geode walkthroughs passed without a golden route. Full content validator:
+     0 errors, the existing Test Wizard warning. Art palette audit passed. System teaching after a
+     run stays intact; item 37's character-taught redesign remains separate.
+     - **Wizard placement update (2026-11-06):** Laelaps moves from the Broken Circle's Coursing deed
+       to this rescue. Coursing now asks Laelaps' hound to catch 100 Black Hares in a Circle run and
+       pays 50 Arcane Energy. Medea's existing tithe-scale event moves from the Fields to the Circle;
+       its hint refers to standing stones. Baba Yaga's hut stays in the Forest but is placed 6-8 chunks
+       out, with mature woodland around at least half its surrounding ring. Existing ownership and
+       completed deeds are retained; a previously completed Pinfold also reconciles Laelaps.
+     - **Validation of the companion update:** build passed with the existing 45 warnings; full
+       content validator returned 0 errors and its existing Test Wizard warning. Rendered portrait
+       (seed 17) and desktop repeat (seed 2026) Pinfold walkthroughs passed: three separate rescues,
+       no gate-only reward, Familiar + Laelaps on completion, exactly one repeat chest. Broken Circle
+       seed 1234 completed both events and freed Medea (46 checks); Forest seeds 17/2026 passed
+       wooded placement and the entire hut rescue (47 checks each). All saves stayed in memory.
+
+39. **Clarify Familiar spell-card descriptions** (Eric, 2026-11-06). Familiar descriptions on the
+   cards are confusing and sometimes read like run-on sentences. Rewrite them as short, clear
+   sentences that distinguish the familiar's behavior from upgrade effects. Inspect the composed
+   card text, not just the base description, at Windows and phone widths so appended effects do
+   not turn back into a run-on sentence.
+
+   **Implemented for 0.14.0:** shorter form descriptions/traits and mutation/Ascension descriptions;
+   the hound card explicitly states that only Littermates adds pups.
+
+40. **Littermates is the only way to gain multiple hound familiars** (Eric, 2026-11-06). A hound
+   Familiar should otherwise remain one hound. **Littermates grants two additional hounds** (three
+   total from the normal single hound); other upgrades/effects must not independently add hounds.
+   Audit the hound's count sources, upgrade paths and stacking interactions, and rebalance its
+   damage and other relevant stats around this rule. Keep the card wording explicit about the
+   two additional hounds and coordinate with item 39's description cleanup. This is next-week
+   work, now implemented for 0.14.0: the level-three second hound is removed. One hound takes over
+   the former pair's damage budget from level three (48, rising to 88 at level eight).
+   Littermates adds two pups and reduces every hound's bite damage by 55%: 1.35 times the single
+   hound's total before overkill/travel, close to the former pack's budget. Crow/cat counts stay unchanged.
+
+41. **Two starting boon slots, two purchasable slots, and levelable boons with fewer tags** (Eric,
+   2026-11-06, clarified). Keep the initial limit at **two boons**, and let the player **buy up to
+   two additional boon slots**, for a maximum of four. Reduce the number of element tags on each
+   boon to compensate for the higher eventual capacity, and make **every boon level up** so boon
+   upgrades diversify the level-up choice pool. Rebalance
+   each boon's starting effect and per-level gains around those upgrades, together with the
+   two-to-four-slot tag budget. Review slot purchases, offer weighting, level caps, full-slot behavior,
+   saved loadouts and the boon/level-up UI at Windows and phone sizes. This is next-week design/balance work,
+   not implemented in 0.13.2.
+
+42. ~~**Fields terrain palette options**~~ (Eric, 2026-11-06). **Applied: E — Faded Gold.**
+   Eric selected the original dark field with clearer furrows. Regenerated the 36 stubble and 36
+   furrow tiles plus the shared atlas, keeping the original texture patterns, edge masks and layout.
+   Palette generation, tile/atlas mask checks, in-game inspection and full content validation passed
+   (0 errors, the existing Test Wizard warning).
+   The tilled soil and dirt looked dark,
+   boring and too similar. First studies A/B/C were too far from the original. Closer variants
+   D/E/F keep the original fine stubble and row patterns: **D Soft Umber**, **E Faded Gold**
+   (closest to the original, clearer furrows), **F Cool Loam** (cooler/desaturated). Compare with
+   `python tools/art/fields_studies.py --closer` in `build/visuals/fields-options-close.png`.
+   `terrain_fields.FIELD_LOOK` is now `faded_gold`; the other studies and original remain available.
+   Regenerate only stubble and furrow with `python tools/art/tiles.py stubble furrow`. All palette stops
+   are existing contract colours, including the already approved sand-cloth row reused as soil.
+
+43. **Gods as extended-story unlocks** (Eric, 2026-11-06). Consider gods as the playable characters
+    earned during the extended story. They can start with powerful **existing combination spells,
+    Apotheosis forms, or other advanced spell forms**. This does **not require new spells**: reuse
+    the current spell roster and its evolved forms, then balance each god's starting power, passive
+    and unlock around that later story. This is a future design note, not part of the current Merlin swap.
+
+44. ~~**Merlin at the great meeting place**~~ (Eric, 2026-11-06). **Done.** Restore the Broken Circle's existing
+    Moot wards to free Merlin and unlock his existing Orb of Ages, retaining Gilded Mote. Show him
+    bound at the center and play his freeing reel afterward. Medea's granary belongs back in the
+    Fields, alongside the separate Laelaps rescue. Keep the campaign-completion deed and its saved
+    progress as The Road Restored, with a 1,000 Arcane Energy reward. Preserve existing ownership.
+
+45. ~~**Main menu Quit and loading fixes**~~ (Eric, 2026-11-06). **Done.** Add a lower-right Quit button with
+    mouse, keyboard and controller access. Fit the complete ward artwork on the loading screen
+    (the portrait source itself was clipped at both sides). Break resource caching, shop cards and
+    achievement-page construction into small main-thread steps so loading animation keeps drawing.
+    - Build: 0 errors, the existing 45 warnings. Content validator: 0 errors, the existing Test Wizard
+      warning. Circle seed 1234 freed Merlin (23 checks); Fields seed 2026 freed Medea (46 checks).
+      Merlin's freeing art passed the palette audit with no off-contract pixels.
+    - Real-window title probes passed desktop, portrait/safe-area and 4:3, including retry, return
+      to the menu, early input suppression, all achievement filters, Quit navigation and actual exit.
+      On this PC, the old 3,456 ms loading-frame gap fell to 97-109 ms in the final fresh-process
+      checks; preparation took about 2.2 s. These are desktop measurements, not phone timings.
+      Every loading frame's crop has padding on all four sides. All test saves stayed in memory.
+
+46. ~~**Aligned bottom buttons, saved window sizes and native fullscreen without bars**~~ (Eric,
+    2026-11-06). **Done.** Options, Evolution Codex and Quit share a baseline, button height and
+    bottom inset. Options starts with Display: fullscreen toggle, window-size dropdown and native
+    resolution readout. Fullscreen always uses the current monitor's native size; the dropdown is
+    available in windowed mode and choices fit the usable desktop. Mode and window-size preferences
+    survive saves and story resets; F11/Alt+Enter use the same settings. Desktop expands the canvas
+    instead of letterboxing taller displays. The title's generated forest and lettering are separate
+    layers, allowing the forest to cover the extra area while its core composition stays placed.
+    - Build and content validation passed (0 errors, existing 45 build warnings / Test Wizard warning).
+      Real-window checks cover native 2736x1824 fullscreen, 1280x720, 1280x800, 1024x768 and 1600x720,
+      F11 round trips, saved preferences, aligned/in-bounds buttons, and full viewport/art coverage.
+      Portrait/safe-area controller navigation and Quit still pass. A 4:3 gameplay render fills the
+      window. Generated title layers have zero off-contract colors. All test saves stayed in memory.
+
+47. **Android 0.14.0 fails to reach the menu** (Eric, 2026-11-06). **Cause identified on the Pixel 9:**
+    UnlockCatalog's Laelaps/Orb of Ages initializers called AchievementDefinitions methods, whose
+    static list enumerates the still-unassigned unlock definitions. Mono initialized achievements
+    on the method call; Windows' runtime deferred it and masked the cycle. Use the existing const
+    deed prefixes instead, keeping IDs/rewards unchanged. `_UnlockStartupProbe` uses a MainLoop
+    without autoloads to check both cold initialization orders in separate processes; the phone-free
+    script now includes both. Release-signed 0.14.1 updated the Pixel 9 in place and reached the
+    menu, Powers, Achievements and Options; 33 Arcane Energy, earned deeds and bought pages remain.
+    Eric spotted the title version/prompt overlap and requested more prominent bottom paging.
+    Both layout fixes pass desktop/portrait title and input probes, including short/tall phone
+    layouts. The final signed APK is installed on the Pixel 9 and starts a normal Forest run;
+    the phone is back under Eric's control. Windows release-engine menu checks also pass.
+    Eric confirmed that the upper-left version and bottom page controls look right on the phone.
+    The phone shows "The menu could not be loaded" and Try again. Windows clean/existing-save
+    launches and a real 0.13.2-to-0.14.0 update did not reproduce it. APK menu assets and script
+    registration are present. Phone-free release-engine/portrait tests with APK assets, GC stress,
+    and both injected resource/construction failures pass. These do not validate Android's runtime.
+    Added stage-specific errors, bounded native startup-error capture and Copy error details, so
+    the next failed launch can be reported without connecting a phone. Fixed failure cleanup
+    disconnecting a viewport signal before it had been connected. No save schema or epoch changes.
+
+48. **Clarify Rampart's description** (Eric, 2026-11-07). "Enemy bolts" means shots fired by
+    enemies. Each intercepted shot drains shield points equal to half that shot's damage (rounded
+    up), not half the shield's capacity. The card now states that cost explicitly and calls out the
+    20% reduction in shield recharge time. Replaced the Bolts tag and the vague "twice as long"
+    synergy line with plain wording. Mechanics and balance are unchanged.
+
+## Chat-only notes recovered 2026-11-07 (Eric: "Don't allow any to slip through")
+
+**2026-11-07, Eric: "all large pieces have my go."** Every held large piece is cleared to build -
+the water pass, the ground biomes, Baba Yaga's four-sided solid hut, the remaining unlock puzzles,
+the per-chapter landmarks, Shadow Bolt as a Conjunction, the boon-slot rework (41), the tag/slot
+suite (52), the second-half campaign (53), cross-device saves (14; a provider sign-up still needs
+his account, so the manual export/import half goes first), the opening-cinematic reworks (15, 16),
+the side-event payoff beats (58) and the teacher-discovery amplification (49, without waiting on
+his playtest). Sequencing is the integrator's; release whenever a piece is finished and validated.
+
+The 2026-11-06/07 playtest notes Eric gave in chat after asking for chat-only notes, swept back out
+of the session transcript on 2026-11-07 at his ask - chat notes do not survive context compaction
+(Prismatic Spray was nearly lost). Already released in 0.15.0: Magic Missile's fan of three faster,
+curving darts; launched bodies dying on landing; Taproot's roots; the hut's toes pointing the way it
+walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
+
+49. **Finding the teachers: "subtle until found, obvious once noticed"** (Eric, 2026-11-06/07). The
+    hurdle/track clues "don't strike me unique... the clue should look magical, or out of place, and
+    be more obvious"; and **a short cinematic at the start of every chapter until its major secret
+    is found - above all the Fallow Fields' Ascension teacher**. Fold with 0.13.1's guidance (the
+    map hints, the retired golden route) and pick the amplification after Eric plays 0.15.0 - e.g. a
+    persistent marker or map pin once any track has been touched.
+50. **The Sovereign Rite activates both Ascension paths on the crowned spell** (Eric, 2026-11-07;
+    building, `feat/haste-merge-sovereign-twin`). At crowning - and at the Ascension pick, if
+    crowned before level 8 - the spell gains its unchosen level-8 branch too. **Test note (Eric):
+    check this does not break anything on any spell** - every spell crowned with both branches
+    live, by regression check and by play; some branch pairs were designed as either/or.
+51. **Merge cooldown and attack speed in the Powers** (Eric, 2026-11-07; building, same branch).
+    Chronoweave (-5% cooldown) and Tempest Rhythm (+6% attack speed) read as the same lever twice.
+    Retire Chronoweave, convert bought levels into Tempest Rhythm up to its cap, refund the rest
+    (schema 23). Per-spell cooldown stats and card lines stay - only the global pair merges.
+52. **Mechanics that play on tags and slots** (Eric, 2026-11-06/07): items and spells that reward
+    different tags in every slot; **Prismatic Spray** - bonus effects for all the different tags
+    across your spells; **Sympathetic Blast takes the element of your leftmost spell**; spells that
+    specifically work around critting. Design as one family with 9a's slot play.
+53. **The second half of the campaign** (Eric, 2026-11-06/07, expanding item 43): once every spell
+    and character is unlocked and the main boss beaten, further chapters are "excuses to keep trying
+    new spell combinations on new maps so it feels fresh" - achievements welcome, unlocks not
+    required. The gods (item 43) arrive here, each starting with a combination spell as their
+    default. Themes still to design.
+54. **Wording and card fixes** (Eric, 2026-11-06): Waywiser - say what "slowest spell" means
+    (longest cooldown?); Reforged - "iron shards cut enemies as it is rebuilt" (it read as cutting
+    the player); Chalice Cup confusing - and is it useful at all after 15 kills?; the granary's
+    "counted with grain" and "settle his count" lines reworded; "Kills wither enemies" - should it
+    be "withered"?; Skipstone's "for 90% more" - 90% more of what?; the Handoff description is
+    confusing (find which card he means); Attunement is confusing - revisit the mechanic or its
+    words; a tag that would pass six slots just says "Max"; an item set's card always shows every
+    set effect (Eric: "Just show all effects always, we can save room in other ways").
+55. **Visual and HUD fixes** (Eric, 2026-11-06): Aegis Ward's shield bigger than the player (it
+    hovers at the chest); the Archmage's sprite leans back - stand him straight; the Raven's
+    highlight is too bright; the level-up Codex button is misaligned vertically; spell icons brought
+    up to the spells' own art quality (Meteor Swarm first); on the phone the element tags sit under
+    the timer - move them, and the spell icons up near the tags; the top health bars touch (boss vs
+    player); Hollow Star draws over foliage and over Black Tentacles (fold into item 30's layer
+    pass); unlocked portraits sort above locked on the character select; the chapter-opening scroll
+    says how to dismiss it, works on a controller, goes away by itself after a few moments, and is
+    smaller.
+56. **Gameplay fixes** (Eric, 2026-11-06): XP orbs never fail to catch the player - they speed up
+    until they arrive; Meteor Swarm always targets different enemies, and with one in range the rest
+    scatter; a boss entrance clears the field - lingering rifts stayed up, Cinderbreath's fire
+    stayed on screen, and enemies and XP orbs should not draw during the cinematic; boons stop
+    filling level-ups once every spell is maxed, with the two-boon cap (fold into item 41);
+    Elderbark wants more reach and harder hits; spending a revive gets a quick, dramatic animation;
+    the Codex must not take item/recipe clicks while a spell's page is open; a tracked mission that
+    cannot be done in this chapter is not shown there.
+57. **The Hayward's fight** (Eric, 2026-11-06; fold into item 28): combo attacks - a swing, a
+    charge, then his back vulnerable; hitting the shield shows a shield mark and plays a different
+    sound, so the player knows the damage is cut; slowed he turns slower; stunned he cannot turn.
+58. **Side events pay off at their own site** (Eric, 2026-11-06, "Yes, both"): the well's win plays
+    at the well - the fouled water turns clean and rises with light, the coin (on later wins, the
+    chest) is drawn visibly up out of it and flies to the player, with a brief hold so it registers.
+    Then check every side event for the same missing moment at its own site.
+    **Built 2026-11-07 (`feat/event-payoffs`):** the well's win beat - the water climbs clean and lit
+    out of the mouth, the fouled pips wash clean, and the drawn-up glint arcs to the exact spot the
+    reward column rises at (SideEvent.Succeed takes an exact spot now). **Audited:** all fourteen
+    events already raise their column at their own site, so the remaining polish is per-site state
+    changes at the win, each its own small beat when its site has a state to show: the grove could
+    visibly bloom, the Gaoler's cell door swing, the thaw's ice visibly fall away, the scale settle
+    level. Worth one beat per chapter pass, not a blocker.
+59. **World and terrain** (Eric, 2026-11-06/07): Baba Yaga's hut is solid - the player cannot walk
+    through it; the farm patch's large dandelion hides a secret (a certain spell cast near it?); the
+    Dandelion Grove is too common - why is it in more than one map?; a plant overhanging water drew
+    a jagged shoreline; ground patches bigger on average, so the light patches read as biomes or
+    fields; water bodies rounder, and walkable - the player just slows heavily (the four
+    blocking-terrain authorities in `.ai/terrain.md` must move together); the hut's art gets four
+    sides so it can turn as it runs and always fall facing the camera, door in view (fold into item
+    3's Baba Yaga ask).
+    **Built 2026-11-07 (`feat/water-pass`):** the water half. Wading - water's shore polygons moved
+    to their own layer (`WaterCollisionLayer` 6), which the feet don't mask; the player wades at
+    0.45x speed (`IsWading`), the swarm still stops and routes round, placement and the flow field
+    unchanged, and the Bridge's abyss opts out (`StageEnvironmentProfile.WaterWalkable = false`).
+    Rounder bodies - water blobs take a smooth two-lobe rim wobble instead of the per-tile hash
+    jitter. Overhang - trees keep 48 px and bushes 24 px of water clearance in `IsPropAvoidedAt`.
+    Still open here: the dandelion secret, the Grove's spread, and the hut asks (solid, four-sided)
+    folded into item 3.
+60. **Audio** (Eric, 2026-11-06): the shield-break noise is annoying - deeper, like cracking glass
+    (`tools/audio/sfx.py`); battle music per chapter still reads to Eric as the menu's music - check
+    what section 3a item 7's per-chapter stems actually play in a run.
+61. **"Pay the tithe" shows the payment** (Eric, 2026-11-06): XP visibly sucked into the granary's
+    machine, so what to do is legible without the text.
+
+## 0. Then (2026-11-03, after the 0.12.0 release)
 
 **0.12.0 is released** (`Release v0.12.0`, 31233f2a, tag `v0.12.0`), with **story epoch 2**
 (15d35a38): every player's progress restarts the first time it runs, their old save kept as
@@ -200,6 +966,21 @@ builds to 120 and seven.
    melody back at pace minute 5, a boss layer per chapter, a 1 s menu handover; +2.6 MB per release zip.
    Open: the melody leaves at 0:24 until minute 5; no melody under the boss layer; the castle's stems
    left for their flip. The menu's music should give way to more interesting, thematic battle music for each level.
+   **Checked 2026-11-07 (the audio batch; this is item 60's stems question, answered)**: the stems play
+   exactly as designed and the menu-ish read is by construction, not a bug. A headless Forest run logs
+   `set 'forest' started at bar one, 4 stems locked (forest_bed 0 dB, forest_pulse 0 dB, forest_lead
+   0 dB, forest_boss -80 dB), in over 0 s, solo out over 1 s` - battle percussion from the first
+   downbeat, the theme gone in a second - and then `run music lead out at 00:24`. That second line is
+   the diagnosis: the lead is the only stem that carries a chapter's identity (the flute, the brass,
+   the shawm, the music box), and it rests from 0:24 until an elite or pace minute 5, the longest
+   unbroken stretch of a run. What remains is the bed - which is still the menu theme's own
+   instruments (strings, drone, choir; `analyse.py --music` puts every bed's centroid at 584-681 Hz
+   against the menu theme's 614, same bands, same seven notes) - plus drums. So minutes ~0:30-5:00
+   read as "the menu theme with drums", in every chapter. Three fixes, Eric's pick, none made because
+   each needs ears: (a) code only - shorten the lead's rest (`Node2DGame.MusicLeadLateRunPaceMinutes`,
+   `MusicOpeningLeadSeconds`), or let the hook return one section per loop; (b) re-voice each bed away
+   from the menu's palette (scoring + re-render of eleven beds); (c) re-voice the MENU theme instead -
+   one piece, one render - so the strings-drone-choir bed reads as the game's sound, not the menu's.
    And **the Elder God Maw opens with a deep, scary crash** (a new generated sound, by
    `.ai/audio-direction.md`).
 8. **Ground per chapter** (merged: the Emberdeep on cracked basalt with smouldering seams and molten

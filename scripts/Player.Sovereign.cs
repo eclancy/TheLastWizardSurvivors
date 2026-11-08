@@ -137,6 +137,10 @@ public partial class Player
 		sovereignElement = SfxCatalog.DominantElement(target);
 		target.Name = SovereignRite.SovereignName(target.Name);
 		target.SovereignBoon = SovereignRite.BuildBoon(target, 0);
+		// The crown's second gift (Eric, 2026-11-07, in-flight 50): the crowned spell gains its
+		// unchosen Ascension too - both level-8 paths at once. If it has not ascended yet, the twin
+		// arrives with the pick instead (SpellData.ApplyEvolution calls this again).
+		target.RefreshSovereignTwin();
 		// A Conjunction's script reads its frozen parents' numbers (Sagittarius: the arrows from the bow's, the
 		// stars from the rain's), so they carry the same boon - one object, rewritten in place with the fuel.
 		foreach (SpellData parent in target.ComboParents ?? Array.Empty<SpellData>())

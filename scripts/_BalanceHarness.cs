@@ -297,7 +297,7 @@ public partial class _BalanceHarness : Node
 	// Mirrors the caps in MainMenu.BuildUpgradeDefinitions (the shop has no catalog of its own to read).
 	private static readonly (string Id, int Cap)[] FullShopCaps =
 	{
-		("damage", 8), ("recovery", 8), ("cooldowns", 8), ("area", 7), ("attack_speed", 8),
+		("damage", 8), ("recovery", 8), ("area", 7), ("attack_speed", 16),
 		("duration", 6), ("amount", 4), ("movespeed", 8), ("magnet", 7), ("growth", 6), ("greed", 8),
 		("extra_lives", 3), ("vitality", 10), ("luck", 20), ("crit_chance", 20),
 	};
@@ -647,9 +647,12 @@ public partial class _BalanceHarness : Node
 			feetTouchQuery = Probe(1f);
 		}
 		PhysicsDirectSpaceState2D space = player.GetWorld2D().DirectSpaceState;
+		// Walls AND water: wadeable water moved to its own layer (in-flight 59), and an enemy
+		// standing in either is still the failure this counts.
 		enemyTerrainQuery ??= new PhysicsPointQueryParameters2D
 		{
-			CollisionMask = 1u << (LevelTilePainter.TerrainCollisionLayer - 1),
+			CollisionMask = (1u << (LevelTilePainter.TerrainCollisionLayer - 1))
+				| (1u << (LevelTilePainter.WaterCollisionLayer - 1)),
 			CollideWithAreas = false,
 		};
 		foreach (Node node in GetTree().GetNodesInGroup("enemies"))
@@ -1005,8 +1008,11 @@ public partial class _BalanceHarness : Node
 			if (CheckFeet)
 			{
 				// And the other half of moving the ground to its own physics layer: enemies must
-				// still be stopped by it. An enemy body is far wider than a water tile's shore inset,
-				// so its centre on a water or wall cell means it walked into one.
+				// still be stopped by it. CELL-level: since the rounder shores (in-flight 59), a
+				// corner water cell can be mostly dry bank, so an enemy pressed onto that bank
+				// counts here without being in the water - a few of a crowd at a shore is pressure,
+				// not failure. The next line's point-in-polygon count is the truth about actual
+				// water: that one must stay zero.
 				int enemiesIn = 0, enemiesAll = 0;
 				if (Node2DGame.Current?.Terrain is TerrainStreamer terrain)
 					foreach (Node node in GetTree().GetNodesInGroup("enemies"))
@@ -1091,8 +1097,8 @@ public partial class _BalanceHarness : Node
 	// Avarice is currency, and the last two are what a player buys once the rest is full.
 	private static readonly (string Id, int Base, int Step, int Cap)[] FarmedPowers =
 	{
-		("damage", 30, 20, 8), ("vitality", 25, 20, 10), ("recovery", 15, 10, 8), ("cooldowns", 35, 25, 8),
-		("attack_speed", 35, 25, 8), ("area", 30, 20, 7), ("amount", 60, 40, 4), ("movespeed", 20, 15, 8),
+		("damage", 30, 20, 8), ("vitality", 25, 20, 10), ("recovery", 15, 10, 8),
+		("attack_speed", 35, 25, 16), ("area", 30, 20, 7), ("amount", 60, 40, 4), ("movespeed", 20, 15, 8),
 		("magnet", 25, 20, 7), ("growth", 30, 20, 6), ("extra_lives", 120, 80, 3), ("duration", 25, 20, 6),
 	};
 
@@ -3556,7 +3562,7 @@ public partial class _BalanceHarness : Node
 			// The bot never claims the Penknife: it would have to name a spell to cut, and cutting
 			// one is never how a plan for more Ascensions goes.
 			List<string> offer = ChestItemCatalog.GetChestItemOptions(player.GetOwnedChestItems(), chestRng,
-				player.HasRelicKey ? 4 : 3, new[] { ChestItemCatalog.ScribesPenknife }, chestOfferMemory);
+				player.ChestOfferCount, new[] { ChestItemCatalog.ScribesPenknife }, chestOfferMemory);
 			if (offer.Count == 0)
 				continue;
 			string pick = SeekAscensions ? PickChestForPlan(offer) : PickChestOrdinary(offer);
@@ -3578,7 +3584,7 @@ public partial class _BalanceHarness : Node
 		if (menu == null || menu.IsQueuedForDeletion())
 			return;
 		List<string> offer = ChestItemCatalog.GetChestItemOptions(player.GetOwnedChestItems(), chestRng,
-			player.HasRelicKey ? 4 : 3, new[] { ChestItemCatalog.ScribesPenknife }, chestOfferMemory);
+			player.ChestOfferCount, new[] { ChestItemCatalog.ScribesPenknife }, chestOfferMemory);
 		if (offer.Count == 0)
 			return;
 		string pick = SeekAscensions ? PickChestForPlan(offer) : PickChestOrdinary(offer);

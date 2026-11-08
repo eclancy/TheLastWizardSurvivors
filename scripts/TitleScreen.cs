@@ -40,6 +40,7 @@ public partial class TitleScreen : Control
 
 	private Texture2D[] flamesFar, flamesNear, figure, ward;
 	private TextureRect flamesFarRect, flamesNearRect, figureRect, wardRect;
+	private TextureRect landscapeBackdrop;
 
 	private float flameClock, wardClock;
 	private int flameStep, wardStep;                // walks 0,1,2,1 so the pulse turns round rather than snapping
@@ -68,6 +69,18 @@ public partial class TitleScreen : Control
 
 	private bool transitioned = false;
 	private Control menuInstance;
+	[Export(PropertyHint.File, "*.tscn")] public string MenuScenePath { get; set; } = "res://scenes/MainMenu.tscn";
+	private TitleLoadingScreen loadingScreen;
+	private MainMenu preparedMenu;
+	private bool preparing;
+	private bool menuRequested;
+	private bool warmingMenu;
+	private int warmFrames;
+	private bool startupFailed;
+	private StartupDiagnostics startupDiagnostics;
+	/// <summary>Only true once resources, menu construction and its first draw have completed.</summary>
+	public bool IsPrepared { get; private set; }
+	public string StartupErrorReport { get; private set; } = string.Empty;
 
 	// True while the update check is laid over the screen. Input is ignored until it is done, so
 	// a key pressed while "Checking for updates..." is up cannot open the menu underneath it.
@@ -88,11 +101,14 @@ public partial class TitleScreen : Control
 		// seen the title beat and should not have to press a key to get past it again.
 		bool openMenuNow = Global.OpenMenuImmediately;
 		Global.OpenMenuImmediately = false;
+		pendingOpenMenu = openMenuNow;
 
 		SetUpAnimation();
 		AddVersionLabel();
 		PlacePrompt();
 		GetViewport().SizeChanged += PlacePrompt;
+		GetViewport().SizeChanged += FitLandscapeBackdrop;
+		GetNode<CanvasItem>("TitleImage/Prompt").Visible = false;
 
 		// The phone cannot update itself, so it only says when there is something newer, and never
 		// holds the title up to do it. See UpdateBanner and .ai/releasing.md, "Android".
@@ -112,14 +128,16 @@ public partial class TitleScreen : Control
 			return;
 		}
 
-		StartTitle(openMenuNow);
+		BeginPreparation();
 	}
 
 	public override void _ExitTree()
 	{
+		StopStartupDiagnostics();
 		var viewport = GetViewport();
 		if (viewport != null)
 			viewport.SizeChanged -= PlacePrompt;
+		if (viewport != null && IsInstanceValid(viewport)) viewport.SizeChanged -= FitLandscapeBackdrop;
 	}
 
 	// PRESS ANY BUTTON sits near the bottom of what the screen actually shows, not at a fixed row
@@ -130,8 +148,8 @@ public partial class TitleScreen : Control
 	// Rows are the 360x840 art's own (tools/art/splash.py). The strip is PromptRows tall; its
 	// bottom goes PromptLowestRow at the lowest, which on a Pixel 9 leaves 44 rows (88 canvas
 	// units) under it, and otherwise PromptClearance above the bottom of the screen. That much,
-	// not just the rounded corners: AddVersionLabel puts the version 12-40 units off the bottom,
-	// raised a further 36 by SafeArea on a phone, and at less clearance it sat beside the P. It never climbs above PromptHighestRow, the row it used to sit on just under the
+	// not just the rounded corners. The version now has its own upper-left safe-area corner.
+	// The prompt never climbs above PromptHighestRow, the row it used to sit on just under the
 	// ward, so a short or landscape window cannot pull it up over the figure. Whole art rows only,
 	// so the strip stays on the same pixel grid as the art it is drawn over.
 	private const int ArtRows = 840;
@@ -174,11 +192,121 @@ public partial class TitleScreen : Control
 	private void OnUpdateFinished()
 	{
 		updating = false;
+		BeginPreparation();
+	}
+
+	private void BeginPreparation()
+	{
+		if (startupDiagnostics == null)
+		{
+			startupDiagnostics = new StartupDiagnostics();
+			OS.AddLogger(startupDiagnostics);
+		}
+		startupDiagnostics.Clear();
+		preparing = true;
+		startupFailed = false;
+		StartupErrorReport = string.Empty;
+		warmingMenu = false;
+		menuRequested = false;
+		loadingScreen = new TitleLoadingScreen { Name = "TitleLoadingScreen" };
+		AddChild(loadingScreen);
+		// Single worker, as SceneTransition uses. Never touch the live scene tree from that worker.
+		Error result = ResourceLoader.LoadThreadedRequest(MenuScenePath, "PackedScene", false);
+		if (result == Error.Ok)
+			menuRequested = true;
+		else
+			PreparationFailed($"Menu resource request failed: {result}");
+	}
+
+	private void PreparationFailed(string message)
+	{
+		startupFailed = true;
+		GD.PushError($"TitleScreen: {message}");
+		string stage = preparedMenu?.PreparationStage ?? "Menu scene";
+		StartupErrorReport = $"The One He Missed {UpdateScreen.CurrentVersion}\n"
+			+ $"Platform: {OS.GetName()}\nRenderer: {DisplayServer.GetName()}\nStage: {stage}\n"
+			+ $"Scene: {MenuScenePath}\nError: {message}\n{preparedMenu?.PreparationException}\n"
+			+ $"Engine errors:\n{startupDiagnostics?.Snapshot()}";
+		loadingScreen.ShowFailure($"{stage}: {message}", StartupErrorReport, () =>
+		{
+			loadingScreen.QueueFree();
+			if (preparedMenu != null && IsInstanceValid(preparedMenu)) preparedMenu.QueueFree();
+			preparedMenu = null;
+			menuInstance = null;
+			BeginPreparation();
+		});
+	}
+
+	private void TickPreparation()
+	{
+		if (!preparing || startupFailed) return;
+		if (preparedMenu == null)
+		{
+			if (!menuRequested) return;
+			var progress = new Godot.Collections.Array();
+			ResourceLoader.ThreadLoadStatus status = ResourceLoader.LoadThreadedGetStatus(MenuScenePath, progress);
+			if (progress.Count > 0) loadingScreen.SetProgress((float)progress[0].AsDouble() * 0.3f);
+			if (status == ResourceLoader.ThreadLoadStatus.InProgress) return;
+			if (status != ResourceLoader.ThreadLoadStatus.Loaded)
+			{
+				PreparationFailed($"Menu resource load ended as {status}");
+				return;
+			}
+			if (ResourceLoader.LoadThreadedGet(MenuScenePath) is not PackedScene scene)
+			{
+				PreparationFailed("Menu resource is not a scene.");
+				return;
+			}
+			Node instance = scene.Instantiate();
+			if (instance is not MainMenu menu)
+			{
+				instance.Free();
+				PreparationFailed("The menu scene has no MainMenu root.");
+				return;
+			}
+			preparedMenu = menu;
+			preparedMenu.PrepareInSteps = true;
+			preparedMenu.Visible = false;
+			menuInstance = preparedMenu;
+			AddChild(preparedMenu);
+			return;
+		}
+		if (!string.IsNullOrEmpty(preparedMenu.PreparationError))
+		{
+			PreparationFailed(preparedMenu.PreparationError);
+			return;
+		}
+		loadingScreen.SetProgress(0.3f + 0.7f * preparedMenu.PreparationProgress);
+		if (!preparedMenu.IsPrepared) return;
+		if (!warmingMenu)
+		{
+			// Draw behind the opaque loading layer so layout, glyphs and materials are ready before
+			// the player is invited to press. No fixed loading delay, just the necessary draw frames.
+			preparedMenu.Visible = true;
+			warmingMenu = true;
+			warmFrames = 2;
+			return;
+		}
+		if (--warmFrames > 0) return;
+		preparedMenu.Visible = false;
+		loadingScreen.QueueFree();
+		loadingScreen = null;
+		preparing = false;
+		IsPrepared = true;
+		StopStartupDiagnostics();
 		StartTitle(pendingOpenMenu);
 	}
 
+	private void StopStartupDiagnostics()
+	{
+		if (startupDiagnostics == null) return;
+		OS.RemoveLogger(startupDiagnostics);
+		startupDiagnostics.Dispose();
+		startupDiagnostics = null;
+	}
+
 	/// <summary>
-	/// The version, small and quiet in the bottom-left corner, so a player can say which copy
+	/// The version, small and quiet in the top-left corner, so a player can say which copy
 	/// they are on. It is a child of the screen rather than of TitleImage: it sits on the ground
 	/// (or in the letterbox, on a tall phone) instead of being scaled into the x2 artwork.
 	/// </summary>
@@ -190,17 +318,17 @@ public partial class TitleScreen : Control
 			Text = $"v{UpdateScreen.CurrentVersion}",
 			AnchorLeft = 0f,
 			AnchorRight = 0f,
-			AnchorTop = 1f,
-			AnchorBottom = 1f,
-			OffsetLeft = 14f,
-			OffsetRight = 214f,
-			OffsetTop = -40f,
-			OffsetBottom = -12f,
+			AnchorTop = 0f,
+			AnchorBottom = 0f,
+			OffsetLeft = 20f,
+			OffsetRight = 220f,
+			OffsetTop = 20f,
+			OffsetBottom = 48f,
 			VerticalAlignment = VerticalAlignment.Bottom,
 			MouseFilter = MouseFilterEnum.Ignore,
 		};
 		AddChild(version);
-		// Bottom-left is exactly where a phone rounds its corner off.
+		// Clear the phone's rounded corner and camera cutout, away from the title prompt/footer.
 		SafeArea.ApplyTo(version);
 		ResponsiveLayout.SetFont(version, ResponsiveLayout.TextRole.Micro);
 		// BonelightSkin's quiet menu tone: there to be found, not to be read on the way past.
@@ -213,6 +341,7 @@ public partial class TitleScreen : Control
 		// whole screen at 0.96 and 0.28 opacity before the title art drew; both are from the
 		// pre-Bonelight asset set and they fought the composition. The title art is now a
 		// single 360x640 image rendered at a whole x2 (see .ai/art-direction.md section 1).
+		GetNode<CanvasItem>("TitleImage/Prompt").Visible = !openMenuNow;
 		FadeInPrompt();
 
 		// Route menu music through the MusicPlayer autoload so it plays continuously from the title
@@ -462,13 +591,40 @@ public partial class TitleScreen : Control
 		image.OffsetRight = WideArtHalfWidth;
 		image.OffsetTop = -WideArtHalfHeight;
 		image.OffsetBottom = WideArtHalfHeight;
-		image.Texture = LoadLayer("back-a");
-		SetStatic("TitleImage/BackB", "back-b");
-		SetStatic("TitleImage/Fore", "fore");
+		image.Texture = LoadLayer("lettering");
+		GetNode<CanvasItem>("TitleImage/BackB").Hide();
+		GetNode<CanvasItem>("TitleImage/Fore").Hide();
+		landscapeBackdrop = new TextureRect
+		{
+			Name = "LandscapeBackdrop", Texture = LoadLayer("backdrop"),
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, TextureFilter = TextureFilterEnum.Nearest,
+			MouseFilter = MouseFilterEnum.Ignore,
+		};
+		AddChild(landscapeBackdrop);
+		MoveChild(landscapeBackdrop, image.GetIndex());
+		FitLandscapeBackdrop();
 		Show(flamesFarRect, flamesFar, 0);
 		Show(flamesNearRect, flamesNear, 0);
 		Show(figureRect, figure, 0);
 		Show(wardRect, ward, 0);
+	}
+
+	private void FitLandscapeBackdrop()
+	{
+		if (landscapeBackdrop?.Texture == null) return;
+		Vector2 view = GetViewportRect().Size;
+		Vector2 source = landscapeBackdrop.Texture.GetSize();
+		float pixelsPerUnit = GetViewport().GetFinalTransform().X.Length();
+		float cover = Mathf.Max(2f, Mathf.Max(view.X / source.X, view.Y / source.Y));
+		// Existing 16:9 composition stays at x2. Extra coverage uses whole screen pixels.
+		if (cover > 2f) cover = Mathf.Ceil(cover * pixelsPerUnit) / pixelsPerUnit;
+		Vector2 drawn = source * cover;
+		landscapeBackdrop.Position = ((view - drawn) * 0.5f * pixelsPerUnit).Round() / pixelsPerUnit;
+		landscapeBackdrop.Size = drawn;
+		Control image = GetNode<Control>("TitleImage");
+		Control eyes = GetNode<Control>("TitleImage/Eyes");
+		eyes.Position = landscapeBackdrop.Position - image.Position;
+		eyes.Scale = Vector2.One * (cover / ArtScale);
 	}
 
 	private void SetStatic(string path, string layer)
@@ -498,12 +654,13 @@ public partial class TitleScreen : Control
 
 	public override void _Process(double delta)
 	{
+		TickPreparation();
 		float dt = (float)delta;
 
 		// The strip belongs to the title and the root menu; over a full-screen panel it would cover
 		// that panel's heading.
 		if (updateBanner != null)
-			updateBanner.SetHiddenByMenu(menuInstance is MainMenu menu && IsInstanceValid(menu) && !menu.IsAtRoot);
+			updateBanner.SetHiddenByMenu(preparing || (menuInstance is MainMenu menu && IsInstanceValid(menu) && !menu.IsAtRoot));
 
 		// The flames and the figure share one clock on purpose. The rim and bounce on the
 		// wizard are the light those flames are throwing, so driven off a second timer they
@@ -625,13 +782,15 @@ public partial class TitleScreen : Control
 
 	public override void _Input(InputEvent @event)
 	{
-		if (transitioned || updating || noticeOpen) return;
+		if (transitioned || updating || preparing || !IsPrepared || noticeOpen) return;
 		// A tap on the update strip's Download or Later is for the strip, not "press any button".
 		if (@event is InputEventMouseButton press && updateBanner != null && IsInstanceValid(updateBanner) && updateBanner.Covers(press.Position))
 			return;
 		if ((@event is InputEventKey ek && ek.Pressed) || (@event is InputEventMouseButton mb && mb.Pressed) || (@event is InputEventJoypadButton jb && jb.Pressed))
 		{
 			transitioned = true;
+			// Revealing the prepared menu must not also activate its now-focused Start Run button.
+			GetViewport().SetInputAsHandled();
 			ShowMenu();
 		}
 	}
@@ -649,18 +808,9 @@ public partial class TitleScreen : Control
 	/// </remarks>
 	private void ShowMenu()
 	{
-		if (menuInstance != null && IsInstanceValid(menuInstance))
-			return;
-
-		var scene = ResourceLoader.Load<PackedScene>("res://scenes/MainMenu.tscn");
-		if (scene == null)
-		{
-			GD.PushError("TitleScreen: could not load res://scenes/MainMenu.tscn");
-			return;
-		}
-
-		menuInstance = scene.Instantiate<Control>();
-		AddChild(menuInstance);
+		if (!IsPrepared || menuInstance == null || !IsInstanceValid(menuInstance)) return;
+		menuInstance.Visible = true;
+		MenuNavigator.Attach(menuInstance);
 
 		// The prompt and the menu say the same thing, so only one may be on screen. The breathing
 		// tween is left running; it only touches modulate on a node nobody can see.

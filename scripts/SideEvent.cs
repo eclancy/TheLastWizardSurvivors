@@ -78,6 +78,8 @@ public abstract partial class SideEvent : Node2D
 	/// site is still recorded as the event's (ExplorePlacer.FixedSite).
 	/// </summary>
 	public virtual bool PlacedByChapterRules => false;
+	public virtual float PlacementMinChunks => SideEventDirector.EventMinChunks;
+	public virtual float PlacementMaxChunks => SideEventDirector.EventMaxChunks;
 
 	/// <summary>How close to any of its sites the player must come for the event to begin.</summary>
 	protected virtual float ArrivalRadius => 380f;
@@ -414,8 +416,15 @@ public abstract partial class SideEvent : Node2D
 	private const float RewardMinDistance = 80f;
 	private const float RewardMaxDistance = 200f;
 
+	/// <summary>
+	/// The spot <see cref="Succeed"/> would raise its column at, chosen once - so an event that plays
+	/// a win beat of its own first (the well's rising coin) can aim the beat at the exact spot and
+	/// then call <c>Succeed(spot, exact: true)</c>.
+	/// </summary>
+	protected Vector2 ChooseRewardSpot(Vector2 near) => RewardSpotNear(near);
+
 	/// <summary>The player won. Grants the site's discovery, or a chest once it is exhausted.</summary>
-	protected void Succeed(Vector2 rewardPosition)
+	protected void Succeed(Vector2 rewardPosition, bool exact = false)
 	{
 		if (state == State.Resolved)
 			return;
@@ -428,7 +437,7 @@ public abstract partial class SideEvent : Node2D
 		// Every one of the five events comes through here, so all five get the same beat: a column
 		// of light where the reward arrives, near the player, and a heading-sized line saying what it
 		// was (.ai/side-events.md, "How a win shows").
-		Vector2 spot = RewardSpotNear(rewardPosition);
+		Vector2 spot = exact ? rewardPosition : RewardSpotNear(rewardPosition);
 		PhantasmRise.Play(Game, spot);
 		Succeeded = true;
 

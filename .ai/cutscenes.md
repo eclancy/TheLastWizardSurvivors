@@ -174,8 +174,8 @@ line who has no reel, so a new chapter wizard is caught: give him a row in `free
 
 - **Owed when a deed frees him.** `AchievementManager.GrantUnlocks`, the one place a deed grants a wizard,
   calls `Freeings.RecordFreed`, which writes his id into `SaveData.FreeingsOwed`. A side event's deed is
-  completed and saved the moment the cell opens (`CompleteNow`), so **a run quit after the freeing still
-  owes the reel**, and pays it at the end of the next run.
+  completed and saved the moment the cell opens (`CompleteNow`). Since 2026-11-06, **Quit Run**
+  plays that reel before its results too; closing the app leaves it owed to the next finished run.
 - **Played at the run's end, before the results and before any lesson** (`Node2DGame.Lessons.cs`,
   `PlayOwedFreeingThen`): embedded over the paused run on the lessons' canvas layer, one at a time, the
   story before the systems. Each one, played through or skipped, pays its debt (`Freeings.MarkShown`) and

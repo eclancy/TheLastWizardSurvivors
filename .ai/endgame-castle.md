@@ -216,7 +216,7 @@ on to the Throne with Tituba still in her cell. So, the simplest fix that keeps 
   her. In his own cells it is stronger, not weaker.
 
 **What it costs, stated plainly:** a new player meets Tituba at chapter 11 of 13, not 5. Väinämöinen
-(chapter 7) becomes the first wizard freed by a side event; John Dee (30 chests) and Laelaps (the
+(chapter 7) becomes the first wizard freed by a side event; John Dee (30 chests then, 100 since 2026-11-03) and Laelaps (the
 Coursing, chapter 3) still come early. Her Apotheosis is late-game play. Saves that already freed her
 keep her, and grandfathered saves can free her in their Dungeon at any time.
 
@@ -590,7 +590,9 @@ existing `pit` hazard terrain); the **archers' volleys** over the gate yard befo
 (Achievements in `.ai/achievements-and-secrets.md` 8.12.)
 
 - **The Toll Stone** (touch): coins left on a stone by those who crossed before. 30 Arcane Energy.
-- **The Span Lantern** (linger 2 s, on a bastion): light it and the collapse waits for 30 s.
+- **The Span Lantern** (carry, since 2026-11-03; it was linger 2 s): take a coal from a guard's brazier and
+  carry it out to the dead lantern on its bastion, three hits knocking it loose; lit, the collapse waits for
+  30 s. Changed because Morgan's barge now asks for lamps lit by standing at them (`.ai/unlock-puzzles.md` 3.7).
 - **The Gargoyle's Perch** (strike 500 near a gargoyle on a dead plinth that does not move): it falls
   and a chest is under it.
 - **The Names on the Parapet** (keepsake; gather: five sets of marks scratched into the parapet by

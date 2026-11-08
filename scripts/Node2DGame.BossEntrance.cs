@@ -202,7 +202,10 @@ public partial class Node2DGame
 	private bool cameraHome;
 	private bool cinematicPanBegun;
 	private float cinematicZoomVelocity;
-	private readonly List<Enemy> heldForBossEntrance = new();
+	// Each held body with whether it was visible when the hold took it (a burrowed body is not),
+	// so the letting-go restores exactly what was there. Hidden, not just frozen: the arrival is
+	// a cinematic, and a field of frozen bodies read as a bug (Eric, 2026-11-06).
+	private readonly List<(Enemy Body, bool WasVisible)> heldForBossEntrance = new();
 	private Camera2D? entranceCamera;
 
 	// The camera's own state while the cinematic has it: the zoom it found, the factor and kick written on
@@ -394,6 +397,7 @@ public partial class Node2DGame
 		player?.SetHeldForBossEntrance(true);
 		HoldOrdinaryBodies();
 		FreezePlayerSpells(true);
+		ShowXpOrbs(false);
 		EnsureLetterbox();
 	}
 
@@ -476,20 +480,38 @@ public partial class Node2DGame
 		BossEnemy.LetLandedBodiesFight();
 		if (player != null && IsInstanceValid(player))
 			player.SetHeldForBossEntrance(false);
-		foreach (Enemy body in heldForBossEntrance)
+		foreach ((Enemy body, bool wasVisible) in heldForBossEntrance)
 		{
-			if (body != null && IsInstanceValid(body))
-				body.SetHeld(false);
+			if (body == null || !IsInstanceValid(body))
+				continue;
+			body.Visible = wasVisible;
+			body.SetHeld(false);
 		}
 		heldForBossEntrance.Clear();
 		FreezePlayerSpells(false);
+		ShowXpOrbs(true);
+	}
+
+	// XP orbs leave the stage for the arrival with everything else (Eric, 2026-11-06: "XP orbs
+	// should stop rendering during the cinematic"). Nothing to remember per orb: an orb is never
+	// hidden any other way, so the letting-go simply shows the group.
+	private void ShowXpOrbs(bool shown)
+	{
+		foreach (Node node in GetTree().GetNodesInGroup(XPOrb.GroupName))
+		{
+			if (node is CanvasItem orb && IsInstanceValid(orb))
+				orb.Visible = shown;
+		}
 	}
 
 	// What the player's spells already put in the world stands still for the arrival (Player.SpellGroup):
 	// holding the fire loop stopped new casts, but the Familiar kept biting, the Spiritual Weapon kept
 	// swinging and bolts already out kept flying (Eric, 2026-11-02: "I'm still seeing spells firing on
 	// cutscenes"). Disabled, not freed: each takes up again exactly where it stood, at the mode it had.
-	private readonly List<(Node Node, ProcessModeEnum Mode)> frozenSpells = new();
+	// HIDDEN as well since 2026-11-07: a frozen effect still drew (Cinderbreath's fire sat on screen
+	// through an arrival, a lingering rift stood through one - Eric, 2026-11-06), so each goes off the
+	// stage too and comes back exactly as visible as it was.
+	private readonly List<(Node Node, ProcessModeEnum Mode, bool WasVisible)> frozenSpells = new();
 
 	private void FreezePlayerSpells(bool freeze)
 	{
@@ -499,15 +521,21 @@ public partial class Node2DGame
 			{
 				if (!IsInstanceValid(node) || node.ProcessMode == ProcessModeEnum.Disabled)
 					continue;
-				frozenSpells.Add((node, node.ProcessMode));
+				bool wasVisible = node is CanvasItem item && item.Visible;
+				frozenSpells.Add((node, node.ProcessMode, wasVisible));
 				node.ProcessMode = ProcessModeEnum.Disabled;
+				if (node is CanvasItem canvas)
+					canvas.Visible = false;
 			}
 			return;
 		}
-		foreach ((Node node, ProcessModeEnum mode) in frozenSpells)
+		foreach ((Node node, ProcessModeEnum mode, bool wasVisible) in frozenSpells)
 		{
-			if (IsInstanceValid(node))
-				node.ProcessMode = mode;
+			if (!IsInstanceValid(node))
+				continue;
+			node.ProcessMode = mode;
+			if (node is CanvasItem canvas)
+				canvas.Visible = wasVisible;
 		}
 		frozenSpells.Clear();
 	}
@@ -521,7 +549,9 @@ public partial class Node2DGame
 			if (node is not Enemy body || body is BossEnemy || body.IsHeld || !IsInstanceValid(body))
 				continue;
 			body.SetHeld(true);
-			heldForBossEntrance.Add(body);
+			heldForBossEntrance.Add((body, body.Visible));
+			// Off the stage, not just frozen: the arrival is the boss's alone (Eric, 2026-11-06).
+			body.Visible = false;
 		}
 	}
 

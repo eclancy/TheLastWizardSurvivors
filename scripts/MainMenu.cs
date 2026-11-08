@@ -17,6 +17,8 @@ public partial class MainMenu : Control
 	private Button unlocksButton = null!;
 	private Button arcaneUpgradesButton = null!;
 	private Button optionsButton = null!;
+	private Button quitButton = null!;
+	private HBoxContainer portraitUtilities;
 	private Button reportBugButton;
 	private Button backFromArcaneButton = null!;
 	private Button backFromAchievementsButton = null!;
@@ -91,7 +93,54 @@ public partial class MainMenu : Control
 
 	public override void _Ready()
 	{
+		preparation = PrepareMenu().GetEnumerator();
+		if (!PrepareInSteps)
+			while (preparation.MoveNext()) { }
+	}
+
+	// The title prepares its hidden menu in bounded main-thread work batches. Standalone
+	// menu scenes keep synchronous readiness for the existing menu/screenshot harnesses.
+	public bool PrepareInSteps { get; set; }
+	public bool IsPrepared { get; private set; }
+	public string PreparationError { get; private set; }
+	public string PreparationStage { get; private set; } = "Menu controls";
+	public string PreparationException { get; private set; }
+	public float PreparationProgress { get; private set; }
+	private IEnumerator<int> preparation;
+	private Viewport preparedViewport;
+
+	public override void _Process(double delta)
+	{
+		if (!IsPrepared && preparation != null)
+		{
+			try
+			{
+				ulong deadline = Time.GetTicksUsec() + 4000;
+				do
+				{
+					if (!preparation.MoveNext()) { preparation.Dispose(); preparation = null; break; }
+				} while (!IsPrepared && Time.GetTicksUsec() < deadline);
+			}
+			catch (Exception ex)
+			{
+				PreparationError = ex.Message;
+				PreparationException = ex.ToString();
+				GD.PushError($"MainMenu preparation failed: {ex}");
+				preparation.Dispose();
+				preparation = null;
+			}
+		}
+	}
+
+	private IEnumerable<int> PrepareMenu()
+	{
+		var startup = new StartupTrace("MainMenu");
+		PreparationStage = "Content validation";
 		ContentValidator.ValidateAtStartup(this);
+		startup.Mark("validation");
+		PreparationProgress = 1f / 7f;
+		yield return 0;
+		PreparationStage = "Menu controls";
 		mainPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/MainPanel");
 		arcaneUpgradesPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/ArcaneUpgradesPanel");
 		optionsPanel = GetNode<Control>("MarginContainer/VBoxContainer/Content/OptionsPanel");
@@ -108,6 +157,11 @@ public partial class MainMenu : Control
 		// The Spell Index's slot opens the Evolution Codex now; the node keeps its name for the harnesses.
 		spellIndexButton.Text = EvolutionCodex.Title;
 		optionsButton = GetNode<Button>("OptionsButton");
+		quitButton = new Button { Name = "QuitButton", Text = "Quit", FocusMode = FocusModeEnum.All };
+		AddChild(quitButton);
+		BonelightSkin.StyleButton(quitButton, BonelightSkin.Emphasis.Quiet);
+		ResponsiveLayout.SetFont(quitButton, ResponsiveLayout.TextRole.Body);
+		quitButton.Pressed += () => GetTree().Quit();
 		EnsureMenuEnergyReadout();
 		achievementList = achievementsPanel.FindChild("AchievementList", true, false) as VBoxContainer;
 		achievementSummary = achievementsPanel.FindChild("AchievementSummary", true, false) as VBoxContainer;
@@ -121,14 +175,38 @@ public partial class MainMenu : Control
 		// container tree, and the paths have to resolve against the scene as it was authored.
 		LayoutAroundTitleArt();
 		LayoutUtilityRow();
+		startup.Mark("bind controls + layout");
+		PreparationProgress = 2f / 7f;
+		yield return 0;
+		PreparationStage = "Options";
 		BuildOptions();
+		startup.Mark("options");
+		PreparationProgress = 3f / 7f;
+		yield return 0;
+		PreparationStage = "Menu styling";
 		ApplyMenuSkin();
+		startup.Mark("skin");
+		PreparationProgress = 4f / 7f;
+		yield return 0;
 
 		// The shop needs its definitions before its cards; the boons' pages read BoonCatalog, not these
 		// entries (the shop's spell pages did, until it stopped selling spells).
+		PreparationStage = "Powers";
 		BuildUpgradeDefinitions();
-		BuildShop();
-		BuildAchievementCards();
+		foreach (int step in BuildShopSteps()) yield return step;
+		startup.Mark("shop");
+		PreparationProgress = 5f / 7f;
+		yield return 0;
+		PreparationStage = "Spell catalog";
+		foreach (int step in ContentValidator.PrepareSpellResources()) yield return step;
+		PreparationStage = "Wizard catalog";
+		foreach (int step in CharacterRoster.PrepareResources()) yield return step;
+		PreparationStage = "Achievements";
+		foreach (int step in BuildAchievementCardsSteps()) yield return step;
+		startup.Mark("achievements");
+		PreparationProgress = 6f / 7f;
+		yield return 0;
+		PreparationStage = "Menu navigation";
 
 		startRunButton.Pressed += OnStartRunPressed;
 		spellIndexButton.Pressed += OnCodexPressed;
@@ -140,8 +218,8 @@ public partial class MainMenu : Control
 		backFromOptionsButton.Pressed += ShowMainPanel;
 
 		RefreshArcaneEnergy();
-		RefreshUpgradeControls();
-		RefreshAchievementCards();
+		// BuildShop already refreshes its rows; BuildAchievementCards just built the save's page.
+		// Repeating those here rebuilt the entire achievements page a second time during startup.
 		ShowMainPanel();
 		PlayMenuMusic();
 
@@ -155,13 +233,18 @@ public partial class MainMenu : Control
 		// Clear of the phone's rounded corners and camera hole; nothing on desktop (SafeArea).
 		SafeArea.Apply(this);
 		MenuNavigator.Attach(this, startRunButton);
-		GetViewport().SizeChanged += OnViewportSizeChanged;
+		preparedViewport = GetViewport();
+		preparedViewport.SizeChanged += OnViewportSizeChanged;
+		startup.Mark("navigation + signals");
+		PreparationProgress = 1f;
+		IsPrepared = true;
 	}
 
 	public override void _ExitTree()
 	{
-		if (GetViewport() is Viewport viewport)
-			viewport.SizeChanged -= OnViewportSizeChanged;
+		preparation?.Dispose();
+		if (preparedViewport != null && IsInstanceValid(preparedViewport))
+			preparedViewport.SizeChanged -= OnViewportSizeChanged;
 	}
 
 	private void ApplyMenuSkin()
@@ -456,9 +539,10 @@ public partial class MainMenu : Control
 	private void OnArcaneUpgradesPressed()
 	{
 		RefreshArcaneEnergy();
-		// Rebuilt on every visit rather than refreshed, so what each section's note says is true NOW
-		// (the boons' changes once the last is bought - MainMenu.Shop.cs).
-		BuildShop();
+		if (CodexRows.ColumnsFor(this) != shopColumnsBuilt)
+			BuildShop();
+		else
+			RefreshUpgradeControls();
 		ShowPanel(arcaneUpgradesPanel);
 		OpenShopAtTop();
 	}
@@ -513,6 +597,9 @@ public partial class MainMenu : Control
 
 	private void OnViewportSizeChanged()
 	{
+		LayoutShopPager();
+		RefreshScreenOptions();
+		if (quitButton != null && !DisplayProfile.IsPortrait) LayoutUtilityRow();
 		// Options' two columns of sections fold to one as the codex lists do (MainMenu.Options.cs).
 		if (optionsColumns != null && optionsColumns.Columns != CodexRows.ColumnsFor(this))
 		{
@@ -661,80 +748,51 @@ public partial class MainMenu : Control
 		control.OffsetBottom = bottomRow - ArtHalfHeight;
 	}
 
-	// The foot of the screen: Options in its corner, then the Evolution Codex - the two things on this
-	// screen that are not about the next run - and the difficulty readout. Report a bug stood third in
-	// this row until 2026-11-02; it is in Options now (MainMenu.Options.cs).
-	//
-	// On a PC they are one row on the dark grass under the menu column, left to right from the
-	// OPTIONS_BOX corner, and the preset keeps DETAIL_BOX in the opposite corner. The two quiet
-	// buttons end at core x 318, which keeps them clear of the ward circle's left rim and its
-	// flame at about x 320 and rows 245-285.
-	//
-	// On a phone the two share one row across the grass (rows 1168-1232), each 316 wide and
-	// 64 tall - comfortably over the 48-unit touch floor. That row used to hold Options on the left
-	// and the preset readout on the right, with Report a bug squeezed under Options; the readout now
-	// goes under the row where a tall phone (the Pixel 9: rows to about 1410) has open ground, or
-	// above it on a 16:9 phone, whose canvas ends at row 1280, between the row and the circle's rim.
+	// One bottom row, with the same height and baseline for every utility button. Desktop leaves
+	// space before Quit; portrait shares the available width. Difficulty sits above the row.
 	private void LayoutUtilityRow()
 	{
-		foreach (Button button in new[] { optionsButton, spellIndexButton })
+		if (portraitUtilities != null) return;
+		portraitUtilities = new HBoxContainer { Name = "BottomUtilities", MouseFilter = MouseFilterEnum.Ignore };
+		portraitUtilities.AddThemeConstantOverride("separation", 12);
+		AddChild(portraitUtilities);
+		portraitUtilities.SetAnchorsAndOffsetsPreset(LayoutPreset.BottomWide);
+		portraitUtilities.OffsetLeft = 20f;
+		portraitUtilities.OffsetRight = -20f;
+		portraitUtilities.OffsetTop = -84f;
+		portraitUtilities.OffsetBottom = -20f;
+		foreach (Button button in new[] { optionsButton, spellIndexButton, quitButton })
 		{
-			if (button == null)
-				continue;
-			button.AnchorLeft = 0.5f;
-			button.AnchorRight = 0.5f;
-			button.AnchorTop = 0.5f;
-			button.AnchorBottom = 0.5f;
+			button.Reparent(portraitUtilities);
+			button.SetAnchorsAndOffsetsPreset(LayoutPreset.TopLeft);
+			button.CustomMinimumSize = new Vector2(DisplayProfile.IsPortrait ? 0f : 200f, 64f);
+			button.SizeFlagsVertical = SizeFlags.Fill;
+			button.SizeFlagsHorizontal = DisplayProfile.IsPortrait ? SizeFlags.ExpandFill : SizeFlags.Fill;
+			ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
 		}
-
 		if (!DisplayProfile.IsPortrait)
 		{
-			PinToWideArt(optionsButton, 12f, 292f, 126f, 324f);
-			PinToWideArt(spellIndexButton, 134f, 296f, 236f, 320f);
-			if (rootDetailLabel != null)
-				PinToWideArt(rootDetailLabel, 470f, 312f, 632f, 352f);
-			return;
+			var space = new Control { MouseFilter = MouseFilterEnum.Ignore, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+			portraitUtilities.AddChild(space);
+			portraitUtilities.MoveChild(space, 2);
 		}
-
-		const float RowTop = 528f;     // composition row 1168
-		const float RowBottom = 592f;  // composition row 1232
-		const float Half = 320f;
-		const float Gap = 8f;
-		Button[] row = { optionsButton, spellIndexButton };
-		float width = (Half * 2f - Gap * (row.Length - 1)) / row.Length;
-		for (int i = 0; i < row.Length; i++)
-		{
-			if (row[i] == null)
-				continue;
-			float left = -Half + i * (width + Gap);
-			row[i].OffsetLeft = left;
-			row[i].OffsetRight = left + width;
-			row[i].OffsetTop = RowTop;
-			row[i].OffsetBottom = RowBottom;
-		}
-
-		if (rootDetailLabel == null)
-			return;
-		// Above the row there is one line of grass between the row and the bottom flame of the
-		// ward (rows 1132-1160); two lines there ran over the flame, so it says it in one.
-		float halfCanvas = ResponsiveLayout.ViewportSize(this).Y / 2f;
-		float floor = halfCanvas - SafeArea.Insets(GetViewport()).Bottom - 8f;
-		float below = RowBottom + 12f;
-		const float TwoLines = 60f;
-		const float OneLine = 28f;
-		detailOnOneLine = below + TwoLines > floor;
-		float detailHeight = detailOnOneLine ? OneLine : TwoLines;
-		float top = detailOnOneLine ? RowTop - 8f - OneLine : below;
-		rootDetailLabel.AnchorLeft = 0.5f;
-		rootDetailLabel.AnchorRight = 0.5f;
-		rootDetailLabel.AnchorTop = 0.5f;
-		rootDetailLabel.AnchorBottom = 0.5f;
-		rootDetailLabel.OffsetLeft = -Half;
-		rootDetailLabel.OffsetRight = Half;
-		rootDetailLabel.OffsetTop = top;
-		rootDetailLabel.OffsetBottom = top + detailHeight;
-		rootDetailLabel.HorizontalAlignment = HorizontalAlignment.Center;
+		optionsButton.FocusNeighborRight = optionsButton.GetPathTo(spellIndexButton);
+		spellIndexButton.FocusNeighborLeft = spellIndexButton.GetPathTo(optionsButton);
+		spellIndexButton.FocusNeighborRight = spellIndexButton.GetPathTo(quitButton);
+		quitButton.FocusNeighborLeft = quitButton.GetPathTo(spellIndexButton);
+		quitButton.FocusNeighborRight = quitButton.GetPathTo(quitButton);
+		quitButton.FocusNeighborTop = quitButton.GetPathTo(unlocksButton);
+		if (rootDetailLabel == null) return;
+		detailOnOneLine = true;
+		rootDetailLabel.AnchorLeft = 0f;
+		rootDetailLabel.AnchorRight = rootDetailLabel.AnchorTop = rootDetailLabel.AnchorBottom = 1f;
+		rootDetailLabel.OffsetLeft = 20f;
+		rootDetailLabel.OffsetRight = -20f;
+		rootDetailLabel.OffsetTop = -120f;
+		rootDetailLabel.OffsetBottom = -92f;
+		rootDetailLabel.HorizontalAlignment = DisplayProfile.IsPortrait ? HorizontalAlignment.Center : HorizontalAlignment.Right;
 	}
+
 
 	private void OnReportBugPressed()
 	{
@@ -782,7 +840,7 @@ public partial class MainMenu : Control
 		// the main screen leaves with the main screen.
 		bool atRoot = panelToShow == mainPanel;
 		// Report a bug is not one of these any more: it lives inside Options, and hiding it here hid it there.
-		foreach (Control utility in new Control[] { optionsButton, spellIndexButton })
+		foreach (Control utility in new Control[] { optionsButton, spellIndexButton, quitButton })
 		{
 			if (utility != null)
 				utility.Visible = atRoot;
@@ -845,9 +903,12 @@ public partial class MainMenu : Control
 		// Re-priced with what a level pays (.ai/difficulty-curve.md, section 5; SaveData.RepricedPowers
 		// refunds the difference to levels bought before).
 		RegisterUpgrade("recovery", "Emberheart", $"+{Player.EmberheartRegenPerLevel * 60f:0} HP regen a minute", 15, 10, 8);
-		RegisterUpgrade("cooldowns", "Chronoweave", "-5% cooldown time", 35, 25, 8);
+		// Chronoweave (-5% cooldown a level, 8 levels) was merged into Tempest Rhythm on 2026-11-07
+		// (Eric: cooldown and attack speed read as the same lever twice, especially here). Schema 23
+		// converts bought Chronoweave levels one for one. +8% a level over 16 levels keeps a save
+		// that had maxed both within about 8% of its old cast rate (0.44x the base wait vs 0.41x).
 		RegisterUpgrade("area", "Aether Bloom", "+8% area and range", 30, 20, 7);
-		RegisterUpgrade("attack_speed", "Tempest Rhythm", "+6% attack speed", 35, 25, 8);
+		RegisterUpgrade("attack_speed", "Tempest Rhythm", "+8% attack speed", 35, 25, 16);
 		RegisterUpgrade("duration", "Eternal Wick", "+10% effect duration", 25, 20, 6);
 		RegisterUpgrade("amount", "Twinstar Sigil", "+1 projectile for every spell that fires them", 60, 40, 4);
 		RegisterUpgrade("movespeed", "Fleetfoot Glyph", "+5% movement speed", 20, 15, 8);
@@ -898,6 +959,11 @@ public partial class MainMenu : Control
 	// list is the Secrets tab now (.ai/achievements-and-secrets.md 4.10).
 	private void BuildAchievementCards()
 	{
+		foreach (int step in BuildAchievementCardsSteps()) { }
+	}
+
+	private IEnumerable<int> BuildAchievementCardsSteps()
+	{
 		ClearChildren(achievementList);
 		ClearChildren(achievementSummary);
 		codexColumnsBuilt = CodexRows.ColumnsFor(this);
@@ -906,8 +972,9 @@ public partial class MainMenu : Control
 		AchievementsPage.MarkTab(achievementTabs, AchievementsPage.MenuFilter);
 
 		SaveData data = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
-		AchievementsPage.Result page = AchievementsPage.Build(achievementList, AchievementContext.ForSave(data),
-			AchievementsPage.PageMode.Menu, AchievementsPage.MenuFilter, string.Empty);
+		AchievementsPage.Result page = null;
+		foreach (int step in AchievementsPage.PrepareMenu(achievementList, AchievementContext.ForSave(data),
+			AchievementsPage.MenuFilter, result => page = result)) yield return step;
 		AchievementsPage.LinkTabsToList(achievementTabs, achievementList, AchievementsPage.MenuFilter);
 		// The bar under the count only where there is height for it: on a 720-tall PC canvas the heading,
 		// the subtitle, the count and the tabs already stand over the list, and every unit they take is a

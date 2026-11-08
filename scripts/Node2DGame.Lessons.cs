@@ -12,8 +12,8 @@ using TheOneHeMissed.scripts;
 // ladder order.
 //
 // The run itself was played as it began (Player reads the flags once, at the start), and the results list the
-// lesson beside what else the run paid (RunUnlockKind.Lesson). A run that is quit owes the lesson to the end
-// of the next one. Headless runs - the harness, the probes - teach without the reel, so no tool waits ten
+// lesson beside what else the run paid (RunUnlockKind.Lesson). Quitting uses this same end-of-run flow.
+// Headless runs - the harness, the probes - teach without the reel, so no tool waits ten
 // seconds on a picture nobody sees.
 public partial class Node2DGame
 {

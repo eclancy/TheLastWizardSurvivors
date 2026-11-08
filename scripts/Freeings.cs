@@ -13,15 +13,16 @@ namespace TheOneHeMissed.scripts;
 /// <remarks>
 /// <para><b>Owed, not "seen".</b> A wizard is owed his reel the moment a deed frees him
 /// (AchievementManager.GrantUnlocks, <see cref="RecordFreed"/>), and the debt is written into the save
-/// (<see cref="SaveData.FreeingsOwed"/>), so a run quit after the cell was opened still pays it at the end of the
-/// next. It is paid when the reel ends, played through or skipped (<see cref="MarkShown"/>), over the paused run
+/// (<see cref="SaveData.FreeingsOwed"/>). Quitting through the pause menu pays it before that run's results;
+/// closing the app leaves it owed for the next finished run. It is paid when the reel ends, played through
+/// or skipped (<see cref="MarkShown"/>), over the paused run
 /// before the results and before any lesson (Node2DGame.Lessons.cs). A "seen" list would have owed every wizard an
 /// existing save had already freed - six reels in a row at its next run's end - unless a migration wrote them
 /// all seen; a list that only a new freeing writes needs neither, and defaults to nothing owed.</para>
 ///
 /// <para><b>Who.</b> The wizards held in a place and freed there (<see cref="WizardIds"/>): each chapter's
-/// prisoner and Laelaps, set in stone on the heath. Not John Dee, who is freed by collecting and never stood in a
-/// place to be seen freed; not Merlin or the dark wizard, who were never held. A wizard added here needs a row in
+/// prisoner, including Merlin in the Circle and Laelaps in the Fields' pen. Not John Dee, who is freed by collecting
+/// and never stood in a place to be seen freed; not the dark wizard. A wizard added here needs a row in
 /// tools/art/freed.py's WIZARDS and a freed line in QuestLog.Prisoners, which the reel says
 /// (RegressionChecks.ValidateFreeings says what is missing).</para>
 /// </remarks>
@@ -36,6 +37,7 @@ public static class Freeings
 		// The one he kept (.ai/endgame-castle.md decision 11): freed by his fall in the Throne, so her reel plays after the
 		// ending, not before the results (GameOverScreen.AfterEnding).
 		"nimue",
+		"merlin",
 	};
 
 	/// <summary>A freeing's reel id in Prologue.Reels: "freed_tituba".</summary>

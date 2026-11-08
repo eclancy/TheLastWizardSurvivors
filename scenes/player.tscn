@@ -149,8 +149,10 @@ frame_progress = 0.782167
 ; translucent tint that put every pixel of it off its ramp (the pixel-art pass, 2026-11-01).
 [node name="ShieldAura" type="AnimatedSprite2D" parent="."]
 visible = false
-position = Vector2(-2, 4)
-scale = Vector2(1, 1)
+position = Vector2(0, 2)
+; x2, the world grid's own pixel (every other effect draws 2px art pixels): at x1 the ring sat
+; inside his chest instead of around him (Eric, 2026-11-06: "bigger than the player").
+scale = Vector2(2, 2)
 sprite_frames = ExtResource("23_shieldaura")
 animation = &"active"
 autoplay = "active"

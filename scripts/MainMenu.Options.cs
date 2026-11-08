@@ -5,7 +5,7 @@ using System.Linq;
 using TheOneHeMissed.scripts;
 
 /// <summary>
-/// The main menu's Options panel: Audio, Display, Gameplay, Story, Testing, then Reset Progress on
+/// The main menu's Options panel: Display, Audio, Gameplay, Story, Testing, then Reset Progress on
 /// its own at the foot.
 /// </summary>
 /// <remarks>
@@ -88,8 +88,9 @@ public partial class MainMenu
 
 		List<Control> audio = SettingsRows.AudioRows(this, ink);
 		List<Control> display = SettingsRows.DisplayRows(this, ink);
-		CodexRows.AddSection(left, SettingsRows.Audio, null, ink, 1, audio);
+		if (DisplayProfile.DesktopControlsAvailable) display.InsertRange(0, BuildScreenOptions(ink));
 		CodexRows.AddSection(left, SettingsRows.Display, null, ink, 1, display);
+		CodexRows.AddSection(left, SettingsRows.Audio, null, ink, 1, audio);
 
 		// FEEDBACK: Report a bug, which stood at the foot of the main menu beside Options and the Codex
 		// until Eric moved it here (2026-11-02: "Report a bug can be in options").
@@ -155,7 +156,7 @@ public partial class MainMenu
 
 		list.AddChild(BuildResetProgress(ink));
 
-		optionsLeftRows = audio.Concat(display).Concat(feedback).Select(FocusStopsIn).Where(row => row.Count > 0).ToList();
+		optionsLeftRows = display.Concat(audio).Concat(feedback).Select(FocusStopsIn).Where(row => row.Count > 0).ToList();
 		optionsRightRows = gameplay.Concat(story).Concat(testing).Select(FocusStopsIn).Where(row => row.Count > 0).ToList();
 		ChainOptionsFocus();
 	}
@@ -175,8 +176,10 @@ public partial class MainMenu
 		List<List<List<Control>>> columns = optionsColumns.Columns > 1
 			? new() { optionsLeftRows, optionsRightRows }
 			: new() { optionsLeftRows.Concat(optionsRightRows).ToList() };
-		foreach (List<List<Control>> rows in columns)
+		foreach (List<List<Control>> column in columns)
 		{
+			List<List<Control>> rows = column.Select(row => row.Where(stop => stop is not BaseButton button || !button.Disabled).ToList())
+				.Where(row => row.Count > 0).ToList();
 			for (int i = 0; i < rows.Count; i++)
 			{
 				foreach (Control stop in rows[i])

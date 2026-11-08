@@ -95,6 +95,12 @@ public partial class MagicMissile : Area2D
 	public const int CountOrbs = 6;
 	/// <summary>How far off its mark each dart of a count leaves, alternately to either side, before it curves in.</summary>
 	public const float CountFanDegrees = 40f;
+	/// <summary>
+	/// The ordinary volley's fan: how far off its mark each dart leaves per step from the volley's centre,
+	/// before the homing curves it in. The indirect path (Eric, 2026-11-07) - three darts at one body leave
+	/// as a hand and close on it from three sides, instead of flying stacked down one line.
+	/// </summary>
+	public const float VolleyFanDegrees = 26f;
 	/// <summary>The burst of arcane sparks off the staff's head that a count leaves by.</summary>
 	public const float CountFlareRadius = 46f;
 
@@ -108,7 +114,8 @@ public partial class MagicMissile : Area2D
 
 	[Export] public SpellData SpellData { get; set; }
 	[Export] public int CurrentLevel { get; set; } = 1;
-	[Export] public float BaseSpeed { get; set; } = 400f;
+	// 400 until 2026-11-07 (Eric: the darts should "move faster"); the level 7 upgrade still adds its 120.
+	[Export] public float BaseSpeed { get; set; } = 560f;
 	[Export] public float BaseDuration { get; set; } = 5.0f;
 	[Export] public float BaseArea { get; set; } = 16.0f;
 	[Export] public int BasePierce { get; set; } = 0;

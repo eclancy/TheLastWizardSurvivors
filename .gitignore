@@ -44,3 +44,10 @@ tools/audio/_music_preview/
 
 # Exported game builds and release zips (tools/release/) - published as GitHub Releases, never committed.
 build/
+
+# Codex (GPT) session setup - its local agent instructions and config, not project content. AGENTS.md
+# duplicates CLAUDE.md for that tool, and the repo root keeps CLAUDE.md and README.md as its only .md
+# files; release.sh refuses untracked files, so these are ignored rather than committed.
+AGENTS.md
+.codex/
+.agents/

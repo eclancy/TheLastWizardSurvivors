@@ -191,7 +191,8 @@ public partial class VoidLance : Area2D
 	// damage across CollapseRadius times the evolutions' Area. It promised this and the lance had no
 	// end blast at all until 2026-10-26; since 2026-10-29 the hole is drawn - a disc of void at the tip
 	// that swells and then caves in on itself while the lance stands - where it was a spray of debris.
-	private const float CollapseRadius = 60f;
+	// Public since 2026-11-07: the Shadow Bolt Conjunction's cave-ins are shares of this burst (ShadowBolt.CaveInAll).
+	public const float CollapseRadius = 60f;
 	private const float CollapseSeconds = 0.5f;
 
 	private void CollapseAtTerminus()

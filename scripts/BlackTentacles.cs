@@ -1218,7 +1218,8 @@ public partial class BlackTentacles : Node2D
 		for (int k = 0; k < MaxFlings; k++)
 		{
 			Enemy e = flung[k];
-			if (e == null || !IsInstanceValid(e) || e.IsDying || !e.IsAirborne)
+			// A dying body keeps its shadow: killed mid-air it finishes the arc and dies on landing.
+			if (e == null || !IsInstanceValid(e) || !e.IsAirborne)
 				continue;
 			float lift = e.AirborneLift / FlingHeight;
 			GroundSpike.DrawAirShadow(shadows, FeetOf(e), 11f - 4f * lift, 0.55f - 0.2f * lift);
@@ -1238,7 +1239,7 @@ public partial class BlackTentacles : Node2D
 		for (int k = 0; k < MaxFlings && fling; k++)
 		{
 			Enemy e = flung[k];
-			if (e == null || !IsInstanceValid(e) || e.IsDying || !e.IsAirborne)
+			if (e == null || !IsInstanceValid(e) || !e.IsAirborne)
 				continue;
 			float u = Mathf.Clamp(1f - (flungLandsAt[k] - age) / FlingSeconds, 0f, 1f);
 			Vector2 now = e.GlobalPosition - GlobalPosition;

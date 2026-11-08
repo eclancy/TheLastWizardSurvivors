@@ -17,15 +17,16 @@ public static partial class SecretCatalog
 
 		internal static SecretDefinition[] Build() => new[]
 		{
-			// Guarded: arriving wakes two of the Fields' own as elites; both down, the latch lifts and the
-			// hound runs to him (Pinfold.cs). The pound's walls are solid ground.
+			// Guarded: both guards down frees the gate; then approach each trapped companion inside.
 			Vault(PinfoldId, Stage, "The Pinfold", SecretVerb.Guarded, "familiar", "Familiar",
-				seen: "A walled stone pound with a barred gate. Behind the bars a hound of warm light lies with its head on its paws.",
-				found: "The Hayward's pound, and a stray he kept in it. Its guards fell, the latch lifted, and the hound ran to you.") with
+				seen: "Drag marks and splayed paw prints lead to a stone pen. A hound, a cat and a bird pace behind its magical seal, their color drained.",
+				found: "The Hayward's pound held three companions as pale ghosts. Its guards fell, the binding broke, and you freed them all. The hound is Laelaps, who catches all he chases; the three now answer your call. Familiar is yours.") with
 			{
 				IsBuilt = true,
 				CreateSite = () => new global::Pinfold(),
-				RepeatReward = "Its guards fell again, and a chest was in the pound",
+				Footprint = 1360f,
+				CharacterUnlockId = "laelaps",
+				RepeatReward = "The three companions are free again; a chest waits in the pound",
 			},
 		};
 	}
