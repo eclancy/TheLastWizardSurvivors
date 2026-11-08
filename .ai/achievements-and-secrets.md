@@ -738,7 +738,7 @@ taken out of order. Needs eyes: whether a dotted line of char reads as a trail i
   game's loudest secret sound and plays once; per `.ai/audio-direction.md`'s loudness table, a sound
   that rare may sit above a hit.
 
-### 8.5 Cursed Dungeon (`stage_1`) - event: the Gaoler's key (carry)
+### 8.5 Cursed Dungeon (`stage_1`) - event: the Gaoler's key (slip past; a carry until 2026-11-08, `.ai/unlock-puzzles.md` 3.8)
 
 **In the castle now** (`.ai/endgame-castle.md` 1.3 and section 4): chapter 11 of 13, between the Last
 Bridge and the Court, unchanged but for its place. Its secrets move with it, its vault (the Cold

@@ -83,6 +83,15 @@ using TheOneHeMissed.scripts;
 //      guard and the trickle are round it. --wrong-string, once the first phrase is sung back and one note of the second,
 //      steps on a string that is not the next, and checks the phrase is sung again, its pips emptied, and the first phrase
 //      still sung back.
+//      The Cursed Dungeon's Gaoler's key (--stage=1) is SLIPPED PAST THE LANTERNS (.ai/unlock-puzzles.md 3.8): the probe
+//      bleeds the Warden from beside it at its post (never standing where its key will fall), then, as a player who has
+//      watched the rounds plays it - each bearer's loop and where on it the bearer is now, both on screen - plans a way
+//      from where it stands to the key and home to the cell through the dark (GaolSlip.Search over the layout's walk graph,
+//      with the planner's slightly larger lantern), waiting wherever it is dark until a light has passed, and walks it feet
+//      first at 200 px a second. Whenever a bearer is off its round it first gets out of that light and waits. The swarm
+//      is cleared only every 5 s. --into-cone: once the key is in hand it walks into the nearest lit cone instead, and
+//      checks the key fell where he stood, that bearer turned toward him and came for him, gave up and went back to its
+//      round - and then takes the key back and slips home.
 //      The Court's dotted door (its second event) is TRACED at the player's own walking speed, never teleported along
 //      it: from where it arrives the probe walks to dot 1 and then along the line a stride ahead of the ink, feet first
 //      (Player.FootPosition, what the trace reads), and logs how long it took and how much of the household came in at
@@ -287,7 +296,9 @@ public partial class _ExploreProbe : Node
 			else if (arg == "--step-off") stepOffDoor = true;
 			else if (arg == "--wrong-string") wrongString = true;
 			else if (arg == "--wrong-start") wrongStart = true;
+			else if (arg == "--into-cone") intoCone = true;
 		}
+		GaolersKeyEvent.LogLayout = true;
 		// The gibbet's cage says each change of phase, each rising and each fall (a run says nothing).
 		GibbetCageEvent.LogPhases = true;
 		ProcessMode = ProcessModeEnum.Always;
@@ -1387,6 +1398,8 @@ public partial class _ExploreProbe : Node
 				else
 					Check("no string was stepped on out of turn", thawSnap.Wrongs == 0, $"{thawSnap.Wrongs} wrong");
 			}
+			if (e is GaolersKeyEvent gaolDone)
+				GaolResults(gaolDone);
 			if (e is FivePointedSealEvent seal)
 			{
 				Check("every stone faces the seal", seal.Aligned == FivePointedSealEvent.StoneCount, $"{seal.Steps} presses");
@@ -1591,6 +1604,9 @@ public partial class _ExploreProbe : Node
 		// The dotted door: traced, dot to dot, at his own walk (TraceStep).
 		if (e is DottedDoorEvent tracing && tracing.IsFound)
 			target = TraceStep(tracing, delta);
+		// The Gaoler's key: the Warden bled at its post, then slipped past the lanterns at his own walk (SlipStep).
+		if (e is GaolersKeyEvent gaolRun && gaolRun.IsFound)
+			target = SlipStep(gaolRun, delta, out clearSwarm);
 		// The thaw: listened to, then sung back at his own walk (SingStep); the swarm cleared only every 6 s.
 		if (e is ThawEvent thawing && thawing.IsFound)
 		{
