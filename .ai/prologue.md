@@ -1,6 +1,6 @@
 # The prologue
 
-The story-mode introduction: eight illustrated panels, about 36 seconds, mostly without words. Built
+The story-mode introduction: eight illustrated panels, about 38 seconds, mostly without words. Built
 2026-10-31 from Eric's request: *"When you first open up story mode, there should be an introduction
 to the story, mostly told through art, introducing the final boss and his dark creatures taking over
 the land, and kidnapping the other wizards."* And then: *"Overall keep text minimal."*
@@ -14,12 +14,12 @@ choice below comes from it.
 |---|---|---|---|
 | 1 | The moot (`moot`) | *The stones where we used to meet.* | The Broken Circle before (`.ai/campaign.md` chapter 3): a ring of standing stones on the heath at night, a warded fire in the middle, and round it five of the game's own wizards (below), each staff burning his own element, each in the deep end of his own colour. The only frame with more than one warm light in it - every light the world had is still in it. |
 | 2 | He comes (`throne`) | *He came here first.* | The same circle under him, and **only his silhouette**: a tall cowled shape inside a collar of points, one arm raised with the wizards' light streaming into his hand, rimmed by an eclipse of his own dark light behind his head. No face, folds, trim or keys. The stones are down, the wizards are on the ground, and the shadow running out of his hem has eyes in it. |
-| 3 | The tide (`tide`) | - | His shadows over the land: a village at the foot of a hill, still lit, and coming over the crest from the tower on the horizon a flood of the things he raised, every one with his mark in its eyes. One of them, horned, in the foreground. |
+| 3 | The tide (`tide`) | - | **Animated** (2026-11-07, Eric: the army must *rush* over the horizon, not sit as a layer sliding over a picture). His shadows over the land: a village at the foot of a hill, still lit and quiet for a breath - then heads come up behind the crest, clipped by the ridge line, the wave bursts over it (the panel's impact beat: cold speed lines, a shake, his violet), and the flood pours down the slope toward the village, every body on its own lane with its feet on the ground, growing as it comes, the front rank striding up big by the village as the panel ends. The last frame is the old still: the flood arrived. Every one of them wears his mark in its eyes. |
 | 4 | Taken (`taken`) | *He took every wizard who might rival him.* | The wizards led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
 | 5 | The one he missed (`missed`) | *You are the one he missed.* | **Animated** (below): the hiding. The broken ring's near stones in a row, and in the row, between two of them, the player - the title's figure, facing us, still as a stone, his light put out to an ember. Beyond the row his creatures search: a hound trots along it nose down, stops at his shoulder and works the air beside him - his ember goes out - and goes on; a caster in the gap watches; two small ones turn their heads; pair by pair the eyes in the dark turn away and back. They never find him. |
 | 6 | The break (`break`) | *You rescued them, and they stand with you.* | **Animated.** The freeing (`.ai/cutscenes.md`, built 2026-11-02 from Eric's *"Include a cutscene where the blue robed wizard frees the four starting wizards"*): the four disciplines on their knees in his chain, the Archmage in the middle of them, his light coming up and breaking it, their own lights coming back. |
 | 7 | The five (`five`) | *Four are free. The rest still wait for you.* | The four standing where they knelt, each light his own again, and the Archmage in his warded circle among them. |
-| 8 | The road (`road`) | - | Seen from above and behind: the player small on a road that winds over the heath toward everything he holds, the tower on the far horizon. Then the character select - the player choosing who walks it, any of the five. |
+| 8 | The road (`road`) | - | Seen from above and behind: the player small on a road that winds over the heath toward everything he holds, the tower on the far horizon. Since 2026-11-07 (Eric: landmarks in place of the empty plain) the road passes the places the campaign visits, in campaign order, nearest first: the west wood's boughs, the Fields' hedged strips and barn, the Broken Circle's ring (eight stones and the walker's gap), the scarp over the Sunken Cave, the Swamp's pools and snags, the Ruins' colonnade and keep, the Waste's pale peaks, the Sands' dunes, and the Emberdeep's black bluffs that the road threads just under the tower. No lit window among them - the player's light is the only warm light on the road. Then the character select - the player choosing who walks it, any of the five. |
 
 **Six lines, all in the game's own voice.** The first two are the Broken Circle's own note, word for word,
 split across the moot and his coming: *"The stones where we used to meet."* / *"He came here first."* The moot
@@ -119,16 +119,19 @@ and the ward's construction from `splash.vigil`. New here: the standing stones, 
 silhouettes and the searching hound (`sniffing_hound`), the dark wizard, the black sun, the tower and
 the player from behind (`player_back`).
 
-**The animated panels.** The break (panel 6) animates the same way, in its own box (`BREAK_BOX`; each
-animated panel's box, clock and atlas width are in `ANIMS`); `.ai/cutscenes.md` says what moves. Panel 5's
-moving part is one box of its mid layer (`MISSED_BOX`, 368x112 at
-296,400), drawn at 8 frames a second over the panel's 5.4 s and written as `missed-anim.png` (an atlas,
-four frames a row) with `missed-anim.json` (the box, the clock, and a timeline of one atlas frame per
-tick, so a held frame is stored once). Each frame is the WHOLE mid layer inside the box - the searchers
-and the stones and the player standing in front of them - so laid over the still mid layer it is the
-scene at that moment, and outside the box nothing moves. Every edge and size is a multiple of 8, so the
-dissolve's Bayer threshold, read from the atlas's own pixel, matches the mid layer's under it: the box
-dissolves with the panel, pixel for pixel, with no seam. About 7 MB of texture while the panel is up.
+**The animated panels.** Three panels animate, each in its own box of its mid layer (`ANIMS` holds each
+one's box, clock and atlas width): the tide's rush (`TIDE_BOX`, 560x272 at 400,328 - the whole flood, so
+its still mid layer is empty), the hiding's searchers (`MISSED_BOX`, 368x112 at 296,400) and the break's
+chain (`BREAK_BOX`; `.ai/cutscenes.md` says what moves). Each is drawn at 8 frames a second over the
+panel's hold and written as `<name>-anim.png` (an atlas, four frames a row) with `<name>-anim.json` (the
+box, the clock, and a timeline of one atlas frame per tick, so a held frame is stored once). Each frame
+is the WHOLE mid layer inside the box - so laid over the still mid layer it is the scene at that moment,
+and outside the box nothing moves. Every edge and size is a multiple of 8, so the dissolve's Bayer
+threshold, read from the atlas's own pixel, matches the mid layer's under it: the box dissolves with the
+panel, pixel for pixel, with no seam. The hiding is about 7 MB of texture while its panel is up; the tide,
+which animates its whole flood, about 23 (446 KB on disk - flat colours compress well). The tide's bodies
+are rendered once per (kind, size, seed, light) and pasted along their lanes (`creature_fig`,
+`_TIDE_CACHE`), or the 45 frames would re-draw 1,600 creatures each.
 
 ## The scene
 
@@ -156,7 +159,8 @@ dissolves with the panel, pixel for pixel, with no seam. About 7 MB of texture w
 - **An impact beat** (`Beat.Impact`, a `PanelImpact`): at a time on the panel's own clock, speed lines
   thrown out of an art point (`SpeedLines`, one art pixel thick on the art grid), a shake of the stage
   through `ScreenShake` (so Reduce Screen Shake), and a dithered flash (`DitherFlash`), warm for the
-  Archmage's light, violet for the dark wizard's. Only the break has one: the chain breaking, at 2.0 s.
+  Archmage's light, violet for the dark wizard's. Two panels have one: the tide's wave bursting over the
+  crest at 1.4 s (cold - the one impact that is his), and the chain breaking in the break, at 2.0 s.
 - **Captions** are a `Label` in the display face (Cinzel), bone over an occlusion outline, near the
   foot of the screen: on a PC over frame rows ~560-600, on a phone ~690-790, both darkened ground. A
   line fades in after 0.9 s and is gone before the next dissolve starts, so it never sits over two
@@ -232,16 +236,19 @@ xvfb-run -a -s "-screen 0 1400x1300x24" "$GODOT_BIN" --path . --resolution 1280x
 ```
 
 Add `--resolution 540x1212 ... --portrait --safe-area` for the Pixel 9 canvas. At 60 fps the panels sit
-mid-hold at frames 138, 396, 642, 900, 1176, 1452 (the break, animated: see `.ai/cutscenes.md`), 1716
-and 1962; frame 255 is mid-dissolve from the first to the second, and the whole thing ends at about
-frame 2148. The hiding starts dissolving in at frame
-1008, so its moment `t` seconds in is frame `1008 + 60t`: `--frames=1068 --burst=4,60` takes it at 1,
+mid-hold at frames 138, 396, 672 (the tide, animated), 954, 1236, 1512 (the break, animated: see
+`.ai/cutscenes.md`), 1776 and 2022; frame 255 is mid-dissolve from the first to the second, and the
+whole thing ends at about frame 2280. The tide starts dissolving in at frame 504, so its moment `t`
+seconds in is frame `504 + 60t`: `--frames=600 --burst=5,42` takes the rush at 1.6, 2.3, 3.0, 3.7 and
+4.4 s (the wave over the crest, the pour, the flood mid-slope, the front rank arriving). The hiding
+starts dissolving in at frame
+1068, so its moment `t` seconds in is frame `1068 + 60t`: `--frames=1128 --burst=4,60` takes it at 1,
 2, 3 and 4 s (the hound arriving, sniffing at his shoulder, standing, gone past). `--frames=138
---burst=6,258` takes the first six panels in one run.
+--burst=6,276` takes the first six panels in one run.
 
 ## Not done
 
-- Only the hiding and the break animate. The others are still but for drift (no flicker on the fire, no
-  blinking eyes); the animated box would carry any of them if it is wanted.
+- Only the tide, the hiding and the break animate. The others are still but for drift (no flicker on
+  the fire, no blinking eyes); the animated box would carry any of them if it is wanted.
 - No pad has been held on the skip prompt and no phone has played it; both are reasoned from
   `MenuNavigator` and `BaseButton` and tested with an injected key.

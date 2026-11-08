@@ -26,7 +26,7 @@ using TheOneHeMissed.scripts;
 /// whole screen pixels. Only the caption and the skip prompt fade - type on its own layer, as the
 /// title's prompt does.</para>
 ///
-/// <para><b>One panel moves</b> (the hiding, "missed"): a box of its mid layer is swapped frame by frame
+/// <para><b>Three panels move</b> (the tide's rush, the hiding, the break): a box of the mid layer is swapped frame by frame
 /// on a clock from an atlas, <c>&lt;name&gt;-anim.png</c>, by the timeline in <c>&lt;name&gt;-anim.json</c>
 /// (<see cref="AnimSpec"/>) - the title's frame-swap, never a tint. Any panel the generator gives the
 /// pair to animates the same way.</para>
@@ -121,9 +121,11 @@ public partial class Prologue : Control
 	/// panel's own clock (the one its animated box runs on), speed lines thrown out of <paramref name="Art"/> (an art
 	/// pixel of the frame, on the mid layer), a shake of <paramref name="ShakePx"/> canvas units through Reduce Screen
 	/// Shake, and a dithered flash - in the warm light, the Archmage's, when <paramref name="Warm"/>, else the dark
-	/// wizard's cold violet. Only where something lands: most panels are calm, and have none.
+	/// wizard's cold violet. <paramref name="FlashScale"/> scales the flash's density and reach alone (the tide's
+	/// burst takes a dimmer pulse, so the break stays the prologue's biggest light). Only where something lands:
+	/// most panels are calm, and have none.
 	/// </summary>
-	public readonly record struct PanelImpact(float At, Vector2 Art, bool Warm, float ShakePx = 8f);
+	public readonly record struct PanelImpact(float At, Vector2 Art, bool Warm, float ShakePx = 8f, float FlashScale = 1f);
 
 	// THE KEN BURNS MOVES (rules 3 and 5). Each layer's drift eases in and out (a smoothstep) and is still at both
 	// ends: the panel holds as it dissolves in and a beat after (DriftStillIn) before anything moves, and comes to
@@ -173,8 +175,17 @@ public partial class Prologue : Control
 		new("moot", 4.6f, "The stones where we used to meet.", new Vector2(-4f, 0f), new Vector2(-10f, 0f), new Vector2(-26f, 0f)),
 		// Him, rising over it, the light going out of them and into his hand.
 		new("throne", 5.2f, "He came here first.", new Vector2(0f, 4f), new Vector2(0f, -12f), new Vector2(0f, 10f)),
-		// His shadows over the land, coming down on a village that is still lit.
-		new("tide", 4.6f, null, new Vector2(-3f, 0f), new Vector2(-14f, 4f), new Vector2(-22f, 0f)),
+		// His shadows over the land, coming down on a village that is still lit. THE RUSH (Eric, 2026-11-05: the
+		// army must rush over the horizon; the old beat slid the whole crowd across a still picture as one layer):
+		// its box animates (tools/art/prologue.py, TIDE_BOX) - the slope empty for a breath, heads behind the
+		// crest, the wave over it, the flood down the slope, the front rank looming by the village as the panel
+		// ends. Back and mid drift as ONE, so the flood never slides on the ground it runs on; the motion is the
+		// bodies' own. THE IMPACT (rule 1): at 1.4 s the wave bursts over the crest (TIDE_BURST) - cold speed
+		// lines out of the ridge, a shake, his violet: the one impact that is his, not the player's. Its point,
+		// (600, 404), is crest inside the 360x360 square both canvases show, so the phone sees the burst too -
+		// and a step west of the tower's column, so the burst is the wave's and not the tower exploding.
+		new("tide", 5.6f, null, new Vector2(-6f, 0f), new Vector2(-6f, 0f), new Vector2(-20f, 0f),
+			Impact: new PanelImpact(1.4f, new Vector2(600f, 404f), Warm: false, ShakePx: 7f, FlashScale: 0.6f)),
 		// The wizards led away to his tower, their light drawn out of them. The line says WHY these wizards (Eric,
 		// 2026-11-03: the story should "specifically mention that the villain was imprisoning any wizard he thought
 		// could rival him"); it was "He took them all", which gave no reason. It sets up the next panel: the one he
@@ -201,8 +212,10 @@ public partial class Prologue : Control
 		// road is next, and then the character select, where any of the five may walk it. Present tense, matching the
 		// break line before it (Eric: "match tenses"). 43 characters, inside the PC one-line 46.
 		new("five", 4.8f, "Four are free. The rest still wait for you.", new Vector2(-2f, 0f), new Vector2(-2f, 0f), new Vector2(-14f, 0f)),
-		// The road to all of it.
-		new("road", 4.8f, null, new Vector2(0f, 2f), new Vector2(8f, -10f), new Vector2(0f, 16f)),
+		// The road to all of it, past the places the campaign visits in its own order (Eric, 2026-11-05: landmarks
+		// in place of the empty plain; tools/art/prologue.py, "THE JOURNEY'S LANDMARKS"): held a little longer and
+		// pushed a little deeper, so the eye has time to walk the road the drift pans along.
+		new("road", 5.4f, null, new Vector2(0f, 3f), new Vector2(8f, -10f), new Vector2(0f, 18f)),
 	};
 
 	// THE LESSONS (.ai/slow-start.md, "The lessons"; tools/art/lessons.py). Each explains one system in two
@@ -846,7 +859,8 @@ void fragment() {
 			(uint)(index * 7919 + 17), SpeedLines.Motion.Outward);
 		panelShake.Kick(impact.ShakePx, ImpactShakeSeconds);
 		// White at the light while it is young, the ramp's own far stop (gold, or violet) out from it.
-		panelFlash.Flash(ramp.Core, far, ImpactFlashDensity, ImpactFlashSeconds, at, ImpactFlashReach);
+		panelFlash.Flash(ramp.Core, far, ImpactFlashDensity * impact.FlashScale, ImpactFlashSeconds,
+			at, ImpactFlashReach * impact.FlashScale);
 		fx.QueueRedraw();
 	}
 
