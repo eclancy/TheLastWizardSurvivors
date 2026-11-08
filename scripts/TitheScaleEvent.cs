@@ -31,6 +31,35 @@ public static class GranaryTithe
 	/// <summary>Orbs on their way to the pan right now. Kept by XPOrb.</summary>
 	public static int OrbsInFlight { get; set; }
 
+	// THE FLIGHTS, SEEN (Eric, 2026-11-06; in-flight 61): each orb on its way re-reports where it is every
+	// frame, into fixed slots the event draws its stream of motes from. Re-published rather than held, so an
+	// orb that dies mid-flight simply stops reporting and there is no slot to leak. Nothing is allocated.
+	public const int FlightSlots = 16;
+	private static readonly Vector2[] flightAt = new Vector2[FlightSlots];
+	private static ulong flightFrame;
+	private static int flightCount;
+
+	/// <summary>An orb on its way says where it is this frame (XPOrb.TickTithe).</summary>
+	public static void ReportFlight(Vector2 at)
+	{
+		if (!Open)
+			return;
+		ulong frame = Engine.GetProcessFrames();
+		if (frame != flightFrame)
+		{
+			flightFrame = frame;
+			flightCount = 0;
+		}
+		if (flightCount < FlightSlots)
+			flightAt[flightCount++] = at;
+	}
+
+	/// <summary>How many orbs reported this frame: what the stream is drawn from (TitheScaleEvent).</summary>
+	public static int Flights => Open && Engine.GetProcessFrames() == flightFrame ? flightCount : 0;
+
+	/// <summary>Where flight <paramref name="i"/> is, in world space.</summary>
+	public static Vector2 FlightPosition(int i) => flightAt[Math.Clamp(i, 0, FlightSlots - 1)];
+
 	public static void OpenAt(Vector2 centre, Vector2 pan, float reach)
 	{
 		Open = true;
@@ -50,6 +79,8 @@ public static class GranaryTithe
 	{
 		Open = false;
 		OrbsInFlight = 0;
+		flightCount = 0;
+		flightFrame = 0;
 	}
 
 	/// <summary>Whether an orb landing at <paramref name="at"/> is the reeve's.</summary>
@@ -172,6 +203,9 @@ public partial class TitheScaleEvent : SideEvent
 	private int levelAtArrival;
 	// Seconds since the pan was paid, or below 0 while it is still taking.
 	private float paidFor = -1f;
+	// The weigh beat (in-flight 61): seconds since the pan last took an orb, or below 0 before the first.
+	private float paidFlash = -1f;
+	private int orbsFlashed;
 	private bool succeeded;
 	private float freedFor;
 	private Vector2 yard;
@@ -274,12 +308,23 @@ public partial class TitheScaleEvent : SideEvent
 		levelAtArrival = Player?.CurrentLevel ?? 1;
 		price = Mathf.Max(1f, (Player?.XPToNextLevel ?? 10) * PriceInLevels);
 		progress = 0f;
+		paidFlash = -1f;
+		orbsFlashed = 0;
 		GranaryTithe.OpenAt(ScaleFoot, PanWorld(0), TitheReach);
 		GD.Print($"TitheScaleEvent: the reeve's price is {price:0} (level {levelAtArrival}); the pan takes what falls within {TitheReach:0} px");
 	}
 
 	protected override void Tick(float delta)
 	{
+		// Each orb the pan takes flashes there (in-flight 61): the weigh, seen landing. Before the paid
+		// branch, so the last orb's flash still plays into the beam's drop.
+		if (GranaryTithe.OrbsTaken > orbsFlashed)
+		{
+			orbsFlashed = GranaryTithe.OrbsTaken;
+			paidFlash = 0f;
+		}
+		else if (paidFlash >= 0f)
+			paidFlash += delta;
 		if (paidFor >= 0f)
 		{
 			Paying(delta);
@@ -395,8 +440,8 @@ public partial class TitheScaleEvent : SideEvent
 	// --- drawing ---------------------------------------------------------------------------------------
 
 	// On the ground while the scale is taking: the edge of its reach, filling as the pan does, brighter while he is
-	// inside it - so where a kill pays the reeve is never a guess. Between the pan and each orb on its way, nothing:
-	// the orb is seen going.
+	// inside it - so where a kill pays the reeve is never a guess. The orbs' own flight is dressed in DrawLight:
+	// the bare orb alone read as one more drifting orb (Eric, 2026-11-06; in-flight 61).
 	public override void _Draw()
 	{
 		if (Player == null || IsDormant || IsResolved || paidFor >= 0f || !NearPlayer(ScaleFoot))
@@ -426,6 +471,57 @@ public partial class TitheScaleEvent : SideEvent
 			float held = paidFor >= 0f ? Mathf.Clamp(1f - paidFor / 1.5f, 0f, 1f) : progress;
 			ExploreArt.DrawGlow(light, pan, 30f + 40f * held, new Color(TellColor, (0.10f + 0.3f * held) * Flicker(6)));
 			ExploreArt.DrawGlow(light, pan, 10f + 8f * held, new Color(TellColor.Lerp(Colors.White, 0.5f), 0.25f + 0.35f * held));
+			// THE PAYMENT, SEEN (Eric, 2026-11-06; in-flight 61): the pan's pull on show, each orb on its
+			// way tethered to it under a stream of motes, and a flash as each is weighed - the XP is
+			// visibly sucked into the machine, so PAY is legible without the objective line's words.
+			if (paidFor < 0f)
+			{
+				DrawDrawnIn(light, pan);
+				int flights = GranaryTithe.Flights;
+				for (int i = 0; i < flights; i++)
+				{
+					Vector2 orb = ToLocal(GranaryTithe.FlightPosition(i));
+					light.DrawLine(orb, pan, new Color(TellColor, 0.12f), 2f);
+					// Three motes flowing up the tether, shrinking as the pan takes them in
+					// (the pixel-pass rule: size, never alpha fade alone).
+					for (int k = 0; k < 3; k++)
+					{
+						float u = (Clock * 1.5f + k / 3f + i * 0.37f) % 1f;
+						ExploreArt.DrawGlow(light, orb.Lerp(pan, u), 11f - 6f * u, new Color(TellColor, 0.30f - 0.10f * u));
+					}
+				}
+			}
+			if (paidFlash >= 0f && paidFlash < PayFlashSeconds)
+			{
+				// The weigh: a burst at the pan and a ring closing onto it - taken, counted.
+				float u = paidFlash / PayFlashSeconds;
+				ExploreArt.DrawGlow(light, pan, 24f + 26f * u, new Color(TellColor, 0.45f * (1f - u)));
+				light.DrawArc(pan, 8f + 26f * (1f - u), 0f, Mathf.Tau, 24,
+					new Color(TellColor.Lerp(Colors.White, 0.6f), 0.8f * (1f - u * 0.5f)), 2.5f);
+			}
+		}
+	}
+
+	/// <summary>How long each weighed orb's flash at the pan lasts.</summary>
+	private const float PayFlashSeconds = 0.4f;
+
+	// The machine's pull, on show from the first second it takes (in-flight 61): faint motes drawn up
+	// out of the yard's air into the pan, so what the scale does is read off the scale itself before
+	// the first orb falls. From the clock alone, the smoke's way: nothing kept, nothing allocated.
+	private void DrawDrawnIn(CanvasItem light, Vector2 pan)
+	{
+		const int motes = 5;
+		const float period = 2.8f;
+		for (int i = 0; i < motes; i++)
+		{
+			float t = (Clock / period + i / (float)motes) % 1f;
+			// Each mote comes in on its own slowly wandering bearing, flattened toward the ground and
+			// starting low off the stubble, so the pull reads as up-and-in rather than a halo.
+			float bearing = i * 1.257f + Mathf.Sin(Clock * 0.13f + i * 2.1f) * 0.8f;
+			float r = (1f - t) * 120f;
+			Vector2 p = pan + new Vector2(Mathf.Cos(bearing) * r, Mathf.Sin(bearing) * r * 0.45f + (1f - t) * 46f);
+			float fade = Mathf.Sin(t * Mathf.Pi);
+			ExploreArt.DrawGlow(light, p, 3f + 7f * (1f - t), new Color(TellColor, 0.14f * fade));
 		}
 	}
 

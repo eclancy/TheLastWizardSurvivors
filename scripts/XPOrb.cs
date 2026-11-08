@@ -171,6 +171,8 @@ public partial class XPOrb : Area2D
 		if (dist > step)
 		{
 			GlobalPosition += (pan - GlobalPosition) / dist * step;
+			// Where it is now, for the stream of motes the event draws between it and the pan (item 61).
+			GranaryTithe.ReportFlight(GlobalPosition);
 			return;
 		}
 		GlobalPosition = pan;

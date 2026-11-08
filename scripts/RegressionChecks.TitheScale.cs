@@ -43,10 +43,15 @@ public static partial class RegressionChecks
 			GranaryTithe.Pay(16f, 10);
 			if (Math.Abs(GranaryTithe.Taken - 19.2f) > 0.001f || GranaryTithe.OrbsTaken != 2 || GranaryTithe.ValueTaken != 12)
 				warnings.Add($"Tithe scale: the pan weighed {GranaryTithe.Taken} in {GranaryTithe.OrbsTaken} orbs ({GranaryTithe.ValueTaken} XP), expected 19.2 in 2 (12 XP).");
+			// The stream (in-flight 61): a reported flight is seen the same frame, and a closed scale streams nothing.
+			GranaryTithe.ReportFlight(foot);
+			if (GranaryTithe.Flights != 1 || GranaryTithe.FlightPosition(0) != foot)
+				warnings.Add("Tithe scale: an orb reporting its flight must be seen by the pan's stream (GranaryTithe.Flights).");
 			GranaryTithe.Close();
 			GranaryTithe.Pay(5f, 2);
-			if (GranaryTithe.Claims(foot) || Math.Abs(GranaryTithe.Taken - 19.2f) > 0.001f)
-				warnings.Add("Tithe scale: a closed scale must claim nothing and weigh nothing.");
+			GranaryTithe.ReportFlight(foot);
+			if (GranaryTithe.Claims(foot) || Math.Abs(GranaryTithe.Taken - 19.2f) > 0.001f || GranaryTithe.Flights != 0)
+				warnings.Add("Tithe scale: a closed scale must claim nothing, weigh nothing and stream nothing.");
 		}
 		if (TitheScaleEvent.PriceInLevels <= 0f)
 			warnings.Add($"Tithe scale: the price must be a share of a level greater than none (is {TitheScaleEvent.PriceInLevels}).");
