@@ -776,8 +776,9 @@ public static class CodexRows
 			else if (HidesWizard(deed, save))
 			{
 				// His name is his reward (.ai/side-events.md, "Secret wizards"): until he is free the
-				// row says only that someone is, and shows his shape - the character select's card.
-				entry.Meta = "Frees someone";
+				// row says only that someone is, and shows his shape - the character select's card. A god's says
+				// "Rekindles someone" (QuestLog.HiddenRewardLine).
+				entry.Meta = QuestLog.HiddenRewardLine(deed.CharacterUnlockId);
 				// One sealed until he is free (the dark wizard) shows the seal, never his shape.
 				Texture2D portrait = UnlockCatalog.GetCharacter(deed.CharacterUnlockId)?.SealedUntilFreed == true
 					? null : WizardPortrait(deed.CharacterUnlockId);

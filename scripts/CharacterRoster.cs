@@ -77,6 +77,11 @@ public static class CharacterRoster
 		// The chapter wizards again: Ma Liang, the Court's second, freed by tracing the door he sketched on the Gallery's end
 		// wall, dot to dot (.ai/chapter-wizards.md 4.8). Appended, so every saved index keeps its wizard (index 22).
 		"res://CharacterData_MaLiang.tres",
+		// THE GODS OF THE FAR SHORE (.ai/second-half.md 3.2; F2, F6-F10). APPENDED HERE, AT THE END, IN THE ORDER THEIR
+		// PIECES MERGE - never into a slot kept for them, and never in the doc's order if a later god merges first. A
+		// roster index is what a save, Global.SelectedCharacterIdx and --character=N keep, so the first god to merge
+		// takes index 23 whoever it is, and each line says the index it took, as every line above does. (No slots are
+		// marked here on purpose: a slot held for a god that merges late would be an index nobody can play.)
 	};
 
 	/// <summary>

@@ -78,12 +78,29 @@ public static class CharacterVisuals
 			case "nimue": return new Vector2(36, 8);
 			// The crow of light lifting off the tip of his brush (roster.py, maliang()), its body: what he painted.
 			case "ma_liang": return new Vector2(42, 7);
+			// THE GODS OF THE FAR SHORE (.ai/second-half.md 3.3; plumbing F1): where each god's light is in its 48 cell
+			// (its own tools/art/player_<god>.py prints it). Each god's piece replaces its own comment line.
+			// F2: case "artemis": the crescent at her brow.
+			// (F6's line is below; leave this one as it is)
+			// F6: case "manannan": the lit spray at his cloak's hem.
+			// (F7's line is below; leave this one as it is)
+			// F7: case "hecate": one of her two torches.
+			// (F8's line is below; leave this one as it is)
+			// F8: case "ra": the sun-disc over his head.
+			// (F9's line is below; leave this one as it is)
+			// F9: case "ukko": the crackle on his hammer's head.
+			// (F10's line is below; leave this one as it is)
+			// F10: case "hephaestus": the last coal in his tongs.
 			default: return null;
 		}
 	}
 
 	public static Color GetCharacterTint(string characterId)
 	{
+		// A god of the far shore is drawn to the contract like every rescued wizard, so it renders untinted by rule
+		// (UnlockCatalog.IsGod), and no god's piece needs a line below.
+		if (UnlockCatalog.IsGod(characterId))
+			return Colors.White;
 		switch ((characterId ?? string.Empty).Trim().ToLowerInvariant())
 		{
 			// EVERY CHARACTER WITH ART OF ITS OWN RENDERS UNTINTED. The tints below existed because

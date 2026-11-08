@@ -146,6 +146,7 @@ public partial class CharacterSelection : Control
 
 		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
 		apotheosisShown = Teachings.IsShown(saveManager?.Data, Teaching.Apotheosis);
+		conjunctionsLearned = Teachings.HasLearned(saveManager?.Data, Teaching.Conjunctions);
 
 		for (int i = 0; i < characters.Count; i++)
 		{
@@ -169,7 +170,10 @@ public partial class CharacterSelection : Control
 			cardStates.Add(state);
 			// The dark wizard is not on the roster at all until he is free - no card, no seal, no shape
 			// (Eric, 2026-11-02: "the dark wizard shouldn't show up, even in silhouette, until he's unlocked").
-			if (!unlocked && UnlockCatalog.GetCharacter(character.Id)?.SealedUntilFreed == true)
+			// Nor is a god of the far shore until its seat opens (.ai/second-half.md 6.2: nothing of the far shore is
+			// on show before its gate, and only the god of a seat that is open): then it is an ordinary lock, its
+			// silhouette carrying its held line (UnlockCatalog.FromGod), and the other gods stay off the screen.
+			if (!unlocked && IsHiddenUntilRevealed(saveManager?.Data, character.Id))
 				hiddenUntilFreed.Add(i);
 		}
 
@@ -436,6 +440,20 @@ public partial class CharacterSelection : Control
 	// Whether the cards may name a wizard's Apotheosis (Teachings.IsShown), read once per build of the roster.
 	private static bool apotheosisShown = true;
 
+	// Whether a card may call the spell a character opens on a Conjunction (Teachings.HasLearned): only once the save
+	// has been taught what one is, so the word is never a locked system on show.
+	private static bool conjunctionsLearned = true;
+
+	/// <summary>
+	/// The key of the line naming what a character opens on: "Conjunction" for one who opens on a Conjunction already
+	/// made (ComboCatalog.OpenerFor - the dark wizard, every god of the far shore: .ai/second-half.md 3.4, a god's card
+	/// line) on a save that has learned them, "Spell" for everyone else.
+	/// </summary>
+	public static string OpeningKey(CharacterData character, bool learned) =>
+		learned && ComboCatalog.OpenerFor(character?.Id) is ComboDefinition recipe
+			&& recipe.Id.Equals(character.StartingSpellResource?.Id ?? string.Empty, StringComparison.OrdinalIgnoreCase)
+			? "Conjunction" : "Spell";
+
 	private static Control BuildFacts(CharacterData character, CardState state)
 	{
 		if (state != CardState.Unlocked)
@@ -463,7 +481,7 @@ public partial class CharacterSelection : Control
 		}
 
 		if (character.StartingSpellResource is SpellData spell)
-			Add("Spell", BuildSpellValue(StartingSpellIcon(character) ?? spell.Icon, StartingSpellName(character)));
+			Add(OpeningKey(character, conjunctionsLearned), BuildSpellValue(StartingSpellIcon(character) ?? spell.Icon, StartingSpellName(character)));
 		// The wizard's final form, named where he is chosen (Eric's playtest, 2026-11-01: "make it clearer
 		// that apotheosis is an option"), in the ember register the strip's button and the ascension
 		// browser's entry wear. The name only: what the form does stays sealed until a run first offers
@@ -863,8 +881,20 @@ public partial class CharacterSelection : Control
 	private static bool IsHiddenFromSelection(CharacterData character) =>
 		string.Equals(character?.Id, "test_wizard", System.StringComparison.OrdinalIgnoreCase);
 
-	// Roster indices held off the screen until they are free (the dark wizard): never selectable either.
+	// Roster indices held off the screen until they are free (the dark wizard) or revealed (a god whose seat is not
+	// open): never selectable either.
 	private readonly HashSet<int> hiddenUntilFreed = new();
+
+	/// <summary>
+	/// A locked character the screen leaves out entirely, card and all: one sealed until he is free (the dark wizard),
+	/// or a god of the far shore whose seat has not opened (GlobalStatsManager.IsCharacterRevealed). Read for a locked
+	/// character only; the caller has already asked whether he is free.
+	/// </summary>
+	public static bool IsHiddenUntilRevealed(SaveData save, string characterId)
+	{
+		UnlockDefinition who = UnlockCatalog.GetCharacter(characterId);
+		return who != null && (who.SealedUntilFreed || (who.IsGod && !GlobalStatsManager.IsCharacterRevealed(save, characterId)));
+	}
 
 	private bool IsSelectable(int idx) =>
 		idx >= 0 && idx < characters.Count && !IsHiddenFromSelection(characters[idx]) && !hiddenUntilFreed.Contains(idx);

@@ -335,6 +335,8 @@ public static partial class RegressionChecks
 				todo.Add("no warden in BossCatalog");
 			else if (boss.IsOnStandIn)
 				todo.Add($"its warden fights as '{ShortScenePath(boss.StandInScenePath)}' until '{ShortScenePath(boss.ScenePath)}' exists");
+			if (UnlockCatalog.GodSeatedAt(stage.Id) == null)
+				todo.Add("no god seated here (UnlockCatalog.FromGod)");
 			if (string.IsNullOrWhiteSpace(StageRewards.WardenDeed(stage)?.CharacterUnlockId))
 				todo.Add("no deed frees its god when its warden falls");
 			if (StageBestiary.ForStageId(stage.Id) == null)

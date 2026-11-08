@@ -7396,8 +7396,9 @@ public partial class Node2DGame : Node2D
 		}
 		if (!string.IsNullOrWhiteSpace(deed.BoonUnlockId))
 			parts.Add($"Boon found - {BoonCatalog.GetById(deed.BoonUnlockId)?.Name ?? deed.BoonUnlockId}");
+		// "God rekindled - Artemis" for a god of the far shore (QuestLog.PaidLine, the one wording).
 		if (!string.IsNullOrWhiteSpace(deed.CharacterUnlockId))
-			parts.Add($"Wizard freed - {CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(deed.CharacterUnlockId, StringComparison.OrdinalIgnoreCase))?.Name ?? deed.CharacterUnlockId}");
+			parts.Add(QuestLog.PaidLine(deed.CharacterUnlockId));
 		if (deed.CurrencyReward > 0)
 			parts.Add($"Arcane Energy - {deed.CurrencyReward}");
 		// Survivor's page (SpellBook): said only where it grows the book - a kept or bought-out book is full.

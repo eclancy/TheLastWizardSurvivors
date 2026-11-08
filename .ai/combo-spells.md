@@ -460,7 +460,8 @@ combination spells wouldn't have levels normally"); his Apotheosis treats its le
 fuses it as any recipe and gets it whole, at level 8, with nothing left to take - a fused Conjunction still never
 levels. Its numbers are its own table's at the level held, not two frozen parents' (he never held any): the
 departure from section 2's "read once from both parents", and the reason its fused copy is simply its level 8.
-`RegressionChecks.ValidateStartingConjunction` holds the exception.
+`RegressionChecks.ValidateOpeners` holds the exception, for every opener (since F1 of `.ai/second-half.md`, the
+gods open on their own Conjunctions the same way).
 
 ---
 

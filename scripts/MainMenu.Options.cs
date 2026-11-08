@@ -147,11 +147,11 @@ public partial class MainMenu
 			story.Add(SettingsRows.BuildButtonRow(replay));
 		}
 		// And the freeing of every wizard this save has freed (Freeings, .ai/cutscenes.md). A wizard still held is
-		// never listed: his name is his reward (QuestLog).
+		// never listed: his name is his reward (QuestLog). A god's reads "Rekindled: Artemis" (QuestLog.ReplayLabel).
 		foreach (string wizardId in Freeings.Watchable(save))
 		{
 			string reel = Freeings.ReelIdFor(wizardId);
-			Button replay = SettingsRows.BuildActionButton($"Freed: {QuestLog.NameOf(wizardId)}", "WatchFreeing_" + wizardId);
+			Button replay = SettingsRows.BuildActionButton(QuestLog.ReplayLabel(wizardId), "WatchFreeing_" + wizardId);
 			replay.Pressed += () => Prologue.Play(this, Prologue.After.Menu, reel);
 			story.Add(SettingsRows.BuildButtonRow(replay));
 		}

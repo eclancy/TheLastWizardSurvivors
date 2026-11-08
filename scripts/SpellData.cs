@@ -90,6 +90,15 @@ public partial class SpellData : Resource
     /// <summary>True for a combination's own spell (ComboCatalog), template or run's copy.</summary>
     public bool IsCombination => ComboCatalog.IsCombination(Id);
 
+    /// <summary>
+    /// A combination carrying no frozen parents: the Conjunction a character OPENED on (ComboDefinition.StartsFusedFor -
+    /// the dark wizard's The Taking, a god's own), held from the first frame and levelled on cards. Every number it has
+    /// is its own level table's, because nobody ever held its parents (.ai/second-half.md 3.4). A combination's script
+    /// that builds itself from <see cref="ComboParents"/> when fused must read its own table when this is true - the
+    /// "table path" a god's Conjunction needs (Sagittarius's, F2) - or the god opens on a spell that cannot fire.
+    /// </summary>
+    public bool ReadsOwnTable => IsCombination && (ComboParents == null || ComboParents.Length == 0);
+
     /// <summary>A combination's parent by spell id, as frozen at the fusion; null on anything else.</summary>
     public SpellData ComboParent(string spellId)
     {

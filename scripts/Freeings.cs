@@ -24,7 +24,8 @@ namespace TheOneHeMissed.scripts;
 /// prisoner, including Merlin in the Circle and Laelaps in the Fields' pen. Not John Dee, who is freed by collecting
 /// and never stood in a place to be seen freed; not the dark wizard. A wizard added here needs a row in
 /// tools/art/freed.py's WIZARDS and a freed line in QuestLog.Prisoners, which the reel says
-/// (RegressionChecks.ValidateFreeings says what is missing).</para>
+/// (RegressionChecks.ValidateFreeings says what is missing). A god of the far shore needs the same, its row in
+/// freed.py's GODS instead: its reel is a REKINDLING, on the far shore's ground (<see cref="GroundFor"/>).</para>
 /// </remarks>
 public static class Freeings
 {
@@ -38,7 +39,34 @@ public static class Freeings
 		// ending, not before the results (GameOverScreen.AfterEnding).
 		"nimue",
 		"merlin",
+		// THE GODS OF THE FAR SHORE (.ai/second-half.md 6.3; plumbing F1): each god's REKINDLING, the same template on
+		// the far shore's own ground (GroundFor; tools/art/freed.py, GODS) - the white cliffs, his rock across the
+		// water with the tower unlit, and the light coming down into the god. Owed, paid and replayed as any freeing.
+		// Each god's piece replaces its own comment line (and adds its row to freed.py's GODS); leave the others.
+		// F2: "artemis",
+		// (F6's line is below; leave this one as it is)
+		// F6: "manannan",
+		// (F7's line is below; leave this one as it is)
+		// F7: "hecate",
+		// (F8's line is below; leave this one as it is)
+		// F8: "ra",
+		// (F9's line is below; leave this one as it is)
+		// F9: "ukko",
+		// (F10's line is below; leave this one as it is)
+		// F10: "hephaestus",
 	};
+
+	/// <summary>The ground every wizard's freeing shares (freed-back.png, freed-fore.png): the heath, his tower lit far off.</summary>
+	public const string FreedGround = "freed";
+
+	/// <summary>The ground every god's rekindling shares (rekindled-back.png, rekindled-fore.png): the far shore's cliffs.</summary>
+	public const string RekindledGround = "rekindled";
+
+	/// <summary>
+	/// The shared ground a reel stands its mid layer on (Prologue.Beat.Ground): the far shore's for a god
+	/// (UnlockCatalog.IsGod), the heath's for everyone else. One place, so the reel and the validator agree.
+	/// </summary>
+	public static string GroundFor(string wizardId) => UnlockCatalog.IsGod(wizardId) ? RekindledGround : FreedGround;
 
 	/// <summary>A freeing's reel id in Prologue.Reels: "freed_tituba".</summary>
 	public const string ReelPrefix = "freed_";

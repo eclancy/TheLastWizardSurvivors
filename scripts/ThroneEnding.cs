@@ -106,11 +106,13 @@ public partial class ThroneEnding : Control
 
 	// Every wizard the save holds, in the roster's order; the one played this run among them. A run with no
 	// save to read (a tool's) stands the whole roster. Never the dark wizard himself: the row is everyone he
-	// took, and he is the one whose light went out (.ai/dark-wizard-playable.md) - even on a run he walked.
+	// took, and he is the one whose light went out (.ai/dark-wizard-playable.md) - even on a run he walked. Never a
+	// god of the far shore either (UnlockCatalog.IsGod): the gods' light was out across the water, never in his
+	// hand, and a save that has rekindled one and walks the Throne again must not stand her among the wizards.
 	private static List<CharacterData> Wizards()
 	{
 		SaveData save = (Engine.GetMainLoop() as SceneTree)?.Root?.GetNodeOrNull<SaveManager>("SaveManager")?.Data;
-		var ids = new HashSet<string>(UnlockCatalog.AllCharacterIds, StringComparer.OrdinalIgnoreCase);
+		var ids = new HashSet<string>(UnlockCatalog.AllCharacterIds.Where(id => !UnlockCatalog.IsGod(id)), StringComparer.OrdinalIgnoreCase);
 		ids.Remove(DarkWizardId);
 		return CharacterRoster.GetAll()
 			.Where(c => c != null && ids.Contains(c.Id) && (save == null || GlobalStatsManager.IsCharacterUnlocked(save, c.Id)))

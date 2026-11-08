@@ -171,6 +171,14 @@ disciplines are freed in the prologue. `RegressionChecks.ValidateFreeings` repor
 line who has no reel, so a new chapter wizard is caught: give him a row in `freed.py`'s `WIZARDS` and in
 `Freeings.WizardIds`.
 
+**The gods' rekindlings** (`.ai/second-half.md` 6.3, plumbing built in F1) are the same reel on a second shared
+ground, `rekindled-back.png` / `rekindled-fore.png`: the far shore's cliff-top at night under no moon, the white
+cliffs going away along the coast, and between the two figures, out on the dark sea, his rock with the tower
+unlit. The god's light comes **down** out of the sky into it, a column narrowing as it lands; no chain.
+`Freeings.GroundFor` picks the ground (a god is `UnlockCatalog.IsGod`), and a god's row goes in `freed.py`'s `GODS`
+rather than `WIZARDS`. `python tools/art/freed.py --preview --stand-in=medea` draws the template with a wizard
+standing in, preview only, for judging it before a god is drawn.
+
 ### When, and the gate
 
 - **Owed when a deed frees him.** `AchievementManager.GrantUnlocks`, the one place a deed grants a wizard,

@@ -384,6 +384,22 @@ public static class ApotheosisCatalog
 				"Displace: move the knot, not the kill. Elites and bosses never go through a door.",
 				new Color(0.91f, 0.75f, 1.0f), NoVisualScale),
 		},
+		// THE GODS' FORMS (.ai/second-half.md 3.2-3.4; plumbing F1). Each god's Apotheosis is the final form of the
+		// Conjunction it opens on (ComboDefinition.StartsFusedFor), so its gate is that spell's max level alone
+		// (OnStartingConjunction), as the dark wizard's is; each claims a verb no form or Conjunction owns, and deepens
+		// only the god's element, which its Conjunction must already carry. Each god's piece writes its own entry in its
+		// own slot; leave the others as they are.
+		// F2: Artemis on Sagittarius - The Hunter's Moon (hunt), Light.
+		// (F6's entry is below; leave this one as it is)
+		// F6: Manannan mac Lir on Maelstrom - Wave-Sweeper (ebb), Water.
+		// (F7's entry is below; leave this one as it is)
+		// F7: Hecate on Dark Lens - Trivia (cross), Arcane.
+		// (F8's entry is below; leave this one as it is)
+		// F8: Ra on Orrery - The Barque of Millions of Years (rise), Fire.
+		// (F9's entry is below; leave this one as it is)
+		// F9: Ukko on Hailfront - The Driven Storm (drive), Lightning.
+		// (F10's entry is below; leave this one as it is)
+		// F10: Hephaestus on Anvil Line - The Bronze Net (snare), Metal.
 	};
 
 	// A form's visual lift is a 15% larger spell, but only where the spell's node keeps a visual scale.
@@ -447,19 +463,27 @@ public static class ApotheosisCatalog
 	/// player's half, <see cref="MinimumPlayerLevel"/>, is the caller's (Player.TryBuildApotheosisOffer).
 	/// </summary>
 	/// <remarks>
-	/// ONE EXCEPTION, the wizard who OPENS on a Conjunction (<see cref="OnStartingConjunction"/>: the dark wizard's
-	/// The Taking, ComboDefinition.StartsFusedFor). His spell is combined from the first moment and has no
+	/// ONE EXCEPTION, a character who OPENS on a Conjunction (<see cref="OnStartingConjunction"/>: the dark wizard's
+	/// The Taking, each god's own; ComboDefinition.StartsFusedFor). His spell is combined from the first moment and has no
 	/// Ascension of its own to take - a Conjunction never ascends - so for that one spell "ascended" is its max
 	/// level (Eric, 2026-11-02: it starts at level 1 and levels up), and "not combined" means not fused again,
 	/// which a Conjunction never is. Anyone else who holds it made it by fusing, and it is no starting spell of
 	/// theirs, so it is never offered a form (the CharacterId check in <see cref="ForSpell"/>).
 	/// </remarks>
-	public static bool SpellMeetsGate(ApotheosisDefinition definition, SpellData spell, bool fusedAway)
+	public static bool SpellMeetsGate(ApotheosisDefinition definition, SpellData spell, bool fusedAway) =>
+		SpellMeetsGate(definition, spell, fusedAway, ComboCatalog.ForId(definition?.SpellId));
+
+	/// <summary>
+	/// <see cref="SpellMeetsGate(ApotheosisDefinition, SpellData, bool)"/> with the Conjunction the form's spell is
+	/// handed in rather than looked up (null for a spell that is none) - the same rule, for a god RegressionChecks
+	/// builds outside the catalog to prove a god can be added as data.
+	/// </summary>
+	public static bool SpellMeetsGate(ApotheosisDefinition definition, SpellData spell, bool fusedAway, ComboDefinition recipe)
 	{
 		if (definition == null || spell == null || spell.IsApotheosis || fusedAway
 			|| !spell.Id.Equals(definition.SpellId, StringComparison.OrdinalIgnoreCase))
 			return false;
-		if (OnStartingConjunction(definition))
+		if (OnStartingConjunction(definition, recipe))
 			return spell.CurrentLevel >= spell.MaxLevel;
 		return !IsCombined(spell)
 			&& (string.IsNullOrEmpty(definition.VariantId)
@@ -469,9 +493,15 @@ public static class ApotheosisCatalog
 	}
 
 	/// <summary>
-	/// True for a form whose spell is a Conjunction its wizard opens on, already made (the dark wizard's The
-	/// Taking): its gate is max level alone (<see cref="SpellMeetsGate"/>).
+	/// True for a form whose spell is a Conjunction its character opens on, already made (the dark wizard's The
+	/// Taking, each god's own): its gate is max level alone (<see cref="SpellMeetsGate(ApotheosisDefinition, SpellData, bool)"/>).
+	/// Every opener in ComboCatalog, whoever he is - nothing here names one.
 	/// </summary>
 	public static bool OnStartingConjunction(ApotheosisDefinition definition) =>
-		definition != null && ComboCatalog.StartsFused(ComboCatalog.ForId(definition.SpellId), definition.CharacterId);
+		OnStartingConjunction(definition, ComboCatalog.ForId(definition?.SpellId));
+
+	/// <summary>The same, with the Conjunction handed in (see the four-argument SpellMeetsGate).</summary>
+	public static bool OnStartingConjunction(ApotheosisDefinition definition, ComboDefinition recipe) =>
+		definition != null && recipe != null && recipe.Id.Equals(definition.SpellId ?? string.Empty, StringComparison.OrdinalIgnoreCase)
+		&& ComboCatalog.StartsFused(recipe, definition.CharacterId);
 }

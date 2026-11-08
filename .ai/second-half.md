@@ -11,7 +11,8 @@ it does not require new spells - reuse the current roster and its evolved forms,
 starting power, passive and unlock around that later story.
 
 **Status: design for Eric's review, 2026-11-07; accepted 2026-11-07/08 (section 8). F0, the plumbing, is built
-(2026-11-08, section 9, "F0, built"); nothing playable yet.** Section 8 is the list of decisions that are his;
+(2026-11-08, section 9, "F0, built"), and F1, the god plumbing (2026-11-08, "F1, built"): a god can be added as
+data; nothing playable yet.** Section 8 is the list of decisions that are his;
 every other choice below is a recommendation he can overturn.
 
 Read first: `.ai/world-and-tone.md` (the premise this extends, the enemy palette, why the player is alone),
@@ -48,7 +49,7 @@ Each line is a rule already in the game, where it lives, and what it decides her
 | *"He is never on screen until he is"* - and he has fallen | tone rule 5; `endgame-castle.md` 6.4 | **no successor villain.** The far shore's antagonist is the order he left behind, impersonal, as the horde always was |
 | You are alone: everyone who could help is in a cell | `world-and-tone.md`, "Why you are alone" | after the Throne the wizards are free and have gone home with their light (`cutscenes.md` D, the homecoming). The far shore is nobody's home but a god's, and the gods are out. The player crosses alone |
 | Each Apotheosis owns a verb no other form or Conjunction owns | `ApotheosisCatalog`, `RegressionChecks.ValidateApotheosisCatalog` / `ValidateComboCatalog` | every god's form claims a new verb (3.2) |
-| One wizard opens on a Conjunction, at level 1 of its own table | `ComboDefinition.StartsFusedFor` (`scripts/ComboCatalog.cs`), `Player.AddStartingConjunction`, `ApotheosisCatalog.OnStartingConjunction`, `ValidateStartingConjunction` | the gods follow that exact precedent (3.4) |
+| One wizard opens on a Conjunction, at level 1 of its own table | `ComboDefinition.StartsFusedFor` (`scripts/ComboCatalog.cs`), `Player.AddStartingConjunction`, `ApotheosisCatalog.OnStartingConjunction`, `ValidateOpeners` (was `ValidateStartingConjunction`; every opener since F1) | the gods follow that exact precedent (3.4) |
 | Every chapter has its own cast | `StageBestiary.<Chapter>.cs`, `ValidateBestiary`, `.ai/bestiary.md` | six new casts |
 | One locked system on show at a time; a system is learned when its post-run reel plays | `Teachings` (`IsShown`, `Ladder`, `Rite`), `slow-start.md` | the far shore is invisible until the Throne is won; its one system is taught by its first god (6.2) |
 | Every character has exactly one source | `UnlockCatalog`, `ValidateUnlockCatalog` | each god is paid by one deed (6.1) |
@@ -473,7 +474,7 @@ less, **M** a few days, **L** a week or more.
 | # | piece | size | needs | done when |
 |---|---|---|---|---|
 | F0 | **Far-shore plumbing**: `FarShoreOrder`, `StageGate.FarShore`, six stand-in chapters `IsPlayable = false`, `PreviousChapter` per order, `QuestLog` / `StageRewards` / `ChapterNotes` / `WorldMap` reading both orders, `ValidateFarShore` | L | - | the far shore exists, nobody can enter it, and the Dark Wizard's and The Road Restored's targets have not moved. **Built 2026-11-08** ("F0, built", below) |
-| F1 | **God plumbing**: any recipe as an opener with its own table; `OnStartingConjunction` and `ValidateStartingConjunction` over every opener; the god's card lines; the rekindled reel's far-shore ground in `freed.py` | M | F0 | a god can be added as data |
+| F1 | **God plumbing**: any recipe as an opener with its own table; `OnStartingConjunction` and `ValidateStartingConjunction` over every opener; the god's card lines; the rekindled reel's far-shore ground in `freed.py` | M | F0 | a god can be added as data. **Built 2026-11-08** ("F1, built", below) |
 | F2 | **Artemis**: Sagittarius's table path, The Hunter's Moon, Far-Shooting, her sheet (`tools/art/player_*.py`, 48 cell, idle / move / hurt / death), icons, reel layer, catalog rows | M | F1 | the first god, playable everywhere |
 | F3 | **The White Downs**: chalk tiles and barrows, its cast, the Unstrung Hunter, music, foliage, one side event, two secrets, its difficulty row | L | F0 | the first far chapter |
 | F4 | **The far sky**: `Teaching.FarSky` and its reel, tonight's recipe, the favour, card and pause lines, the Feat, `_BalanceHarness --far-sky` and the section 5 measurement | M | F0, F2 | the half's system, measured |
@@ -586,3 +587,132 @@ it is" line between neighbours, so two pieces' edits never touch adjacent lines.
 as the castle's stand-ins did). No phone canvas, because F0 drew nothing. `_BalanceHarness` was not run either:
 no code on a road run's path changed except the order-aware lookups, which answer as before for every campaign
 chapter.
+
+### F1, built (2026-11-08, branch `worktree-agent-acd7f256fda5321a7`, on `main-ff86ni` after F0)
+
+A god can be added as data. No god is in the game yet (F2 adds Artemis), nothing a player sees has changed
+except one card line for the dark wizard (below), the Dark Wizard opens exactly as before, **no save schema step**
+(still 25), and the story epoch is not raised.
+
+**What a god is, in the code.** A character whose `UnlockCatalog` line is `FromGod(id, seat, held line)`. The seat
+(`UnlockDefinition.SeatStageId`) is the one declaration; `UnlockCatalog.IsGod`, `Gods` and `GodSeatedAt` read it,
+and everything a god does differently from a wizard asks `IsGod` rather than keeping a list. `FromGod` sets what
+every god shares: its source is its seat's warden deed (`AchievementDefinitions.SeatDeedId(seat)`, "seat_stage_14"),
+it is secret until the seat opens, and it is outside every gate (`OutsideCampaignGate`; the far shore's own gate
+never counts anything paid on the far shore, `CountsTowardFarShore`).
+
+**The opener, any recipe.** The machinery was already general in shape (`StartsFusedFor`, `AddStartingConjunction`,
+`LevelStartingConjunction`, `TryFuse` handing a fused copy the table's last level, `OnStartingConjunction`); F1 made
+the rest of it so. `ComboCatalog.Openers` and `OpenerFor(character)`; `ComboDefinition.IsOpener`;
+`SpellData.ReadsOwnTable` (a Conjunction carrying no frozen parents - the copy a character opened on - whose script
+must read its own table: Sagittarius's table path, F2's code, branches on it). `ApotheosisCatalog.SpellMeetsGate`
+and `OnStartingConjunction` take the recipe as an argument too (the old signatures look it up), so a god built outside
+the catalog is judged by the same rule. `ValidateStartingConjunction` became `ValidateOpeners`
+(`RegressionChecks.Gods.cs`), over every opener: its character exists, starts with it and opens on one spell; it
+levels 1-8 with a line at every level and the cards take it all the way; at most three elements; its form is its
+opener's alone (checked against the whole roster, not the Pyromancer), deepens an element it carries, opens at its
+max level and not one short. And the other direction, which nothing held: **a character whose starting spell is a
+Conjunction must be its opener**, or `Player.ApplySelectedCharacter` asks to fuse it, is refused, and he holds
+nothing. `ValidateStartingCharacters` lets an opener's Conjunction carry three elements (Sagittarius, Dark Lens,
+Orrery and Hailfront do); every other freed wizard keeps the two-element ceiling.
+
+**The god's card lines** (one wording, `QuestLog`): the quest card "Rekindle the huntress" / "Artemis is rekindled"
+(`FreeTitle`, `FreedTitle`), the run's paid line "God rekindled - Artemis" (`PaidLine`, `Node2DGame.PaidLine`), a
+locked god's deed row "Rekindles someone" (`HiddenRewardLine`, `CodexRows`), Options > Story "Rekindled: Artemis"
+(`ReplayLabel`), and a deed's reward verb `RekindlesVerb`. The character select leaves a god **off the screen** until
+its seat opens (`CharacterSelection.IsHiddenUntilRevealed`, the dark wizard's rule widened: 6.2, nothing of the far
+shore on show), then shows its silhouette with its held line (`FromGod`'s third argument, held word for word to its
+`QuestLog.Prisoners` held line). The line naming what a character opens on reads **"Conjunction"** rather than
+"Spell" for every opener on a save that has learned Conjunctions (`CharacterSelection.OpeningKey`) - the dark
+wizard's card included, the one visible change. A god renders untinted by rule (`CharacterVisuals`), and never stands
+in the Throne ending's row of the wizards he took (`ThroneEnding.Wizards`).
+
+**The rekindling reel.** `tools/art/freed.py` draws a second shared ground, `rekindled-back.png` /
+`rekindled-fore.png` (assets/bonelight/ui/freed/, imported): the far shore at night under no moon, the cliff-top
+downland with its broken chalk brink, the white cliffs going away along the coast to the right (the nearest at the
+PC's right edge, their far end low behind the god on a phone), and out on the dark sea between the two figures his
+rock with the tower **unlit**. `p_rekindled` is the god's mid layer: the god's own sprite, its light coming **down**
+out of the sky in a column that narrows as it lands, no chain, the Archmage beside it. `GODS` is empty and marked;
+`--stand-in=medea` draws the template with a wizard standing in, preview only. `Freeings.GroundFor` picks the ground
+for a god, and `Prologue.FreedReel` reads it, so a god's reel is its row in `Freeings.WizardIds` and in `GODS`.
+
+**The seat deed.** `AchievementDefinitions.SeatClear(seat, name, boss id, god's name)` builds a far warden's deed: id
+`SeatDeedId(seat)`, "Defeat the boss of the White Downs.", "Rekindles Artemis", the god it pays read from the
+catalog (`GodSeatedAt`). **A god's piece and its chapter's piece may merge in either order**: a chapter before its
+god pays nobody and keeps its to-do line ("no god seated here", new in `ReportFarShoreToDo`); a god before its
+chapter's deed is let through `ValidateUnlockCatalog` (its deed not yet written) and `ValidateSecret` (revealed by a
+chapter not yet playable - which is exactly what keeps it off the character select) while its seat is unbuilt, and
+`ValidateGods` makes the missing deed a fault the day the seat is playable.
+
+**What a god's piece writes now (the recipe F2 follows).** Data, plus the spell and passive code that is that god's
+own:
+
+1. `CharacterData_<God>.tres` (Id, Name, `StartingSpellResource` = its Conjunction's SpellData, passive id, name and
+   description, health and speed, Portrait and Frames) and its sheet (`tools/art/player_<god>.py`).
+2. `CharacterRoster`: its path appended at the end in merge order, the line saying the index it took (23 for the first).
+3. `ComboCatalog`: `StartsFusedFor = "<god>"` on its recipe - F2 in Sagittarius's block, F6-F10 in their own recipe
+   block in their slot.
+4. Its Conjunction's resource levelled 1-8 with a line at every level, and its script reading that table when
+   `SpellData.ReadsOwnTable` (Sagittarius's table path is F2's code; the five unbuilt ones are built table-first).
+5. `ApotheosisCatalog`: its form in its slot (a verb nobody owns, +1 of the god's element, which its Conjunction
+   carries), the form's behaviour in the spell's script, and its `EvolutionStatReaders` reach.
+6. `UnlockCatalog`: `FromGod("<god>", "<seat>", "<held line>")` in its slot.
+7. `QuestLog.Prisoners`: its row in F0's slot - epithet, the same held line, the rekindled line with `{0}`, 46
+   characters at most with the name in it.
+8. `Freeings.WizardIds`: its id in its slot; `tools/art/freed.py`: its row in `GODS`; run it and import.
+9. `CharacterVisuals.GetStaffTipCell`: its light's cell in its slot.
+10. Its passive: a `StartingPassiveId` in `Player.CharacterPassiveBonusIds`, read where its axis lives.
+
+The seat's deed is the chapter's piece's line: `SeatClear("<seat>", "<name>", "<boss id>", "<God name>")` in F0's
+F3/F6-F10 slot in `AchievementDefinitions`. What a god's piece does **not** write: any character-select, quest,
+results, reel or gate code - all of it asks `IsGod`.
+
+**Who owns what (the blocks F1 marked).** A comment slot a piece, a "leave this one as it is" line between
+neighbours, as F0's.
+
+| piece | edits only its own line in |
+|---|---|
+| F2 | `ComboCatalog` (Sagittarius's block: its `StartsFusedFor`), `ApotheosisCatalog` (the gods' forms), `UnlockCatalog` (the gods' lines), `Freeings.WizardIds`, `freed.py` `GODS`, `CharacterVisuals.GetStaffTipCell` |
+| F6-F10 | the same five, and in `ComboCatalog` its own recipe block in the gods' Conjunctions slots (between The Taking and the Sovereign Rite, which stays last) |
+| every god | `CharacterRoster`: **no slots** - appended at the end in the order the gods merge (a roster index is what a save and `--character=N` keep); the comment there says so |
+
+`CharacterVisuals` was not on section 9's list; it is marked because its staff-tip switch is a per-god line and two
+gods' pieces appending to it would collide.
+
+**Verified.**
+
+- `dotnet build`: 0 errors, 49 warnings (the baseline's count).
+- The validator (`MainMenu.tscn --quit-after 300 -- --no-save-writes --validate-content`): **0 errors and 1
+  warning** (`test_wizard`), the baseline's, with `ValidateOpeners`, `ValidateGods` and `ValidateGodsAsData` in it.
+  It prints `gods as data - a complete god built from data alone passes on The White Downs (0 complaints), and 16 of
+  16 broken ones are refused`: a scratch god, built in `RegressionChecks` and never in a shipped catalog (a `FromGod`
+  line, a CharacterData, a copy of The Taking's recipe naming it as its opener, a form, a Prisoners row, a reel on the
+  far shore's ground, a seat deed), passes every god and opener check, passes with no seat deed while the seat is
+  unbuilt, and is refused with any of sixteen parts missing or wrong (no row, a card line that is not its held line,
+  a rekindled line without its name or too long, no reel, a reel on the heath, a recipe naming another opener, a
+  Conjunction with no table or a level line missing, a starting spell that is not its Conjunction, no form, a form
+  on an element its Conjunction lacks, a seat on the road, inside a gate, on show before its seat, a seat deed
+  rekindling someone else). The scratch objects are disposed as they are made: left to the finalizer they were
+  reported as leaked at exit, which the first run showed and the second does not.
+- **Shown to fire on the real catalogs**, in a scratch build that was not committed: Sagittarius given
+  `StartsFusedFor = "artemis"`, F2's `FromGod` line written with nothing else of her, and The Taking's
+  `StartsFusedFor` taken away. New lines: "Combination 'sagittarius' is opened on by 'artemis', who does not start
+  with it", "Combination 'sagittarius' levels to 1; a Conjunction a character opens on levels to 8 off its own
+  table", "Openers: 'dark_wizard' starts with the Conjunction 'the_taking', which does not name him ... hold
+  nothing", and "God 'artemis' has no CharacterData in CharacterRoster / no Apotheosis on its Conjunction / no
+  QuestLog.Prisoners row / no rekindling reel"; the White Downs' to-do dropped "no god seated here"; and no "points at
+  achievement 'seat_stage_14', which does not exist". That run also showed `ValidateSecret` refusing a god whose seat
+  is unbuilt, which would have stopped F2 merging before F3; it now lets a god through, as above.
+- The dark wizard (`_BalanceHarness --minutes=3 --character=10 --all-unlocked --no-save-writes`, before and after):
+  all three runs (one before, two after) open "Equipped spell The Taking at level 1 (a Conjunction he opens on,
+  levelling to 8)" and take Gale Blade with the first card. How long the bot then lives varied - the clock at 3.0
+  minutes before, dead at 2.7 and 1.9 after - which is the default bot without `--immortal` on this seed
+  (`dark-wizard-playable.md` 6: it "dies inside two minutes ... so that run says nothing") on a machine shared with
+  other agents' Godot runs. Nothing on a run's path changed but the wording of the paid line and a tint lookup.
+- `freed.py`: 0 off-contract pixels on both grounds and the stand-in; the twelve freeings' layers regenerate
+  byte-identical. Looked at in both views (PC 1280x720 crop, Pixel 9 tall crop).
+
+**Not run, and for whom.** No god exists, so nothing a god does was played: its card, its quest, its reel and its
+run are F2's to see. `_UiShot` of the character select was not taken, so the dark wizard's "Conjunction" line on a
+save that has learned them is unseen on screen (a build and the validator only prove it compiles and is reached).
+The rekindled ground has been judged with a wizard standing in for a god, not with a god.

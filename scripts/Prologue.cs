@@ -256,13 +256,15 @@ public partial class Prologue : Control
 
 	// THE FREEINGS (.ai/cutscenes.md; tools/art/freed.py; Freeings). One panel each, made once as a template: the
 	// shared ground, and a mid layer per wizard - the Archmage beside the one he has freed, that wizard's own light
-	// coming back to him. Its line is the wizard's freed line from QuestLog.Prisoners, with his name in it.
+	// coming back to him. Its line is the wizard's freed line from QuestLog.Prisoners, with his name in it. A god's
+	// rekindling (.ai/second-half.md 6.3) is the same reel on the far shore's ground (Freeings.GroundFor), its line the
+	// god's rekindled line.
 	private static Reel FreedReel(string wizardId) =>
 		new(Freeings.ReelIdFor(wizardId), FreedFolder,
 			new[]
 			{
 				new Beat("freed-" + wizardId, 6.0f, QuestLog.PrisonerOf(wizardId)?.FreedLine,
-					new Vector2(2f, 0f), new Vector2(2f, 0f), new Vector2(-14f, 0f), Ground: "freed"),
+					new Vector2(2f, 0f), new Vector2(2f, 0f), new Vector2(-14f, 0f), Ground: Freeings.GroundFor(wizardId)),
 			},
 			wizardId);
 

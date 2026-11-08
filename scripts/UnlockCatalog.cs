@@ -126,6 +126,18 @@ public sealed class UnlockDefinition
 	/// Spells only.
 	/// </summary>
 	public string ExclusiveTo { get; init; } = string.Empty;
+
+	/// <summary>
+	/// A GOD of the far shore (.ai/second-half.md 3 and 6): the far chapter whose seat it holds, and whose warden's
+	/// deed rekindles it (<see cref="AchievementDefinitions.SeatDeedId"/>). Empty for everyone else - a non-empty seat
+	/// is what makes a character a god (<see cref="UnlockCatalog.IsGod"/>), so nothing else keeps a list of them.
+	/// Written only by <see cref="UnlockCatalog"/>'s FromGod, which also sets what every god shares: secret until
+	/// its seat opens, outside every gate. Characters only.
+	/// </summary>
+	public string SeatStageId { get; init; } = string.Empty;
+
+	/// <summary>A god of the far shore (<see cref="SeatStageId"/>).</summary>
+	public bool IsGod => Kind == UnlockKind.Character && !string.IsNullOrWhiteSpace(SeatStageId);
 }
 
 /// <summary>
@@ -399,6 +411,22 @@ public static class UnlockCatalog
 		// would close the Throne for ever.
 		FromAchievementCharacter("nimue", "throne_taken_back", "Kept by him to the end. Freed when he falls in the Throne.",
 			secretUntilStage: "stage_13", outsideCampaignGate: true, revealSecret: SecretCatalog.OublietteId),
+		// THE GODS OF THE FAR SHORE (.ai/second-half.md 3.2, 6.1-6.3; plumbing F1). One line a god, FromGod(id, seat,
+		// held line): rekindled by its seat's warden (the deed AchievementDefinitions.SeatClear writes for that chapter),
+		// hidden from the character select until its seat opens and then a silhouette carrying its held line - the same
+		// words as its QuestLog.Prisoners row, which the validator holds together - and outside every gate. Each god's
+		// piece replaces its own comment line; leave the others as they are.
+		// F2: FromGod("artemis", "stage_14", "No moon rises over the White Downs."),
+		// (F6's line is below; leave this one as it is)
+		// F6: FromGod("manannan", "stage_15", "The sea stands off the Drowned Shore and will not come in."),
+		// (F7's line is below; leave this one as it is)
+		// F7: FromGod("hecate", "stage_16", "Every torch at the Three Ways is cold."),
+		// (F8's line is below; leave this one as it is)
+		// F8: FromGod("ra", "stage_17", "It has been the twelfth hour here since he came."),
+		// (F9's line is below; leave this one as it is)
+		// F9: FromGod("ukko", "stage_18", "The storm on the Fell will not break."),
+		// (F10's line is below; leave this one as it is)
+		// F10: FromGod("hephaestus", "stage_19", "The forge on the Bronze Isle is cold."),
 		// His own spell, paid with him and offered to no one else (ExclusiveTo). The hint does not name him.
 		new()
 		{
@@ -461,6 +489,32 @@ public static class UnlockCatalog
 		RevealSecretId = revealSecret ?? string.Empty,
 		OutsideCampaignGate = outsideCampaignGate,
 		SealedUntilFreed = sealedUntilFreed,
+	};
+
+	/// <summary>
+	/// A GOD of the far shore (.ai/second-half.md 3.2, 6.1-6.3): rekindled when its seat's warden falls, so its one
+	/// source is that chapter's warden deed, whose id is made from the seat (<see cref="AchievementDefinitions.SeatDeedId"/>,
+	/// a const prefix, never a call - see the warning on <c>Definitions</c>). Everything every god shares is set here
+	/// once, so a god's line in the catalog is its id, its seat and its held line:
+	///   - SECRET until its seat opens (<see cref="UnlockDefinition.RevealStageId"/>): the character select does not
+	///     show it at all before then (6.2: nothing of the far shore is on show before the gate), and afterwards shows its
+	///     silhouette carrying <paramref name="heldLine"/>, which must be its QuestLog.Prisoners held line word for word;
+	///   - OUTSIDE EVERY GATE (<see cref="UnlockDefinition.OutsideCampaignGate"/>): a god is not one of the imprisoned
+	///     wizards. No road gate counts it, and the far shore's gate never waits on anything paid on the far shore
+	///     (GlobalStatsManager.CountsTowardFarShore).
+	/// Public so RegressionChecks can build a god that is not in the catalog and prove it would pass as data.
+	/// </summary>
+	public static UnlockDefinition FromGod(string godId, string seatStageId, string heldLine) => new()
+	{
+		Id = godId,
+		Kind = UnlockKind.Character,
+		Source = UnlockSource.Achievement,
+		SourceId = AchievementDefinitions.SeatDeedPrefix + (seatStageId ?? string.Empty).Trim(),
+		LockedHint = heldLine,
+		IsSecret = true,
+		RevealStageId = seatStageId ?? string.Empty,
+		OutsideCampaignGate = true,
+		SeatStageId = seatStageId ?? string.Empty,
 	};
 
 	/// <summary>
@@ -602,6 +656,17 @@ public static class UnlockCatalog
 		Definitions.Where(d => d.Kind == UnlockKind.Character
 			&& !d.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase))
 			.Select(d => d.Id);
+
+	/// <summary>True for a god of the far shore (<see cref="UnlockDefinition.IsGod"/>): the one place that is asked.</summary>
+	public static bool IsGod(string characterId) => GetCharacter(characterId)?.IsGod == true;
+
+	/// <summary>Every god, in catalog order (the order their pieces merged).</summary>
+	public static IEnumerable<UnlockDefinition> Gods => Definitions.Where(d => d.IsGod);
+
+	/// <summary>The god whose seat is this far chapter, or null - its warden's deed rekindles it (AchievementDefinitions.SeatClear).</summary>
+	public static UnlockDefinition GodSeatedAt(string stageId) =>
+		string.IsNullOrWhiteSpace(stageId) ? null
+			: Definitions.FirstOrDefault(d => d.IsGod && d.SeatStageId.Equals(stageId.Trim(), StringComparison.OrdinalIgnoreCase));
 
 	/// <summary>Every boon, in catalog order.</summary>
 	public static IEnumerable<string> AllBoonIds =>

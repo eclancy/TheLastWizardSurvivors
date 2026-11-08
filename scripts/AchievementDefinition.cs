@@ -241,6 +241,16 @@ public static class AchievementDefinitions
 	public static string SecretDeedId(string secretId) => SecretDeedPrefix + (secretId ?? string.Empty).Trim();
 
 	/// <summary>
+	/// A far chapter's warden deed - the one that rekindles its god (.ai/second-half.md 4.3) - is "seat_" and the
+	/// chapter's stage id ("seat_stage_14"). Made from the seat, so the god's unlock (UnlockCatalog.FromGod) and the
+	/// chapter's deed (<see cref="SeatClear"/>) name the same deed without either piece knowing the other's words: a
+	/// god's piece and its chapter's piece may merge in either order.
+	/// </summary>
+	public const string SeatDeedPrefix = "seat_";
+
+	public static string SeatDeedId(string stageId) => SeatDeedPrefix + (stageId ?? string.Empty).Trim();
+
+	/// <summary>
 	/// The deed that takes the dark wizard: every chapter's boss beaten on Hardcore (.ai/dark-wizard-playable.md;
 	/// Eric, 2026-11-02, "dark wizard should unlock after defeating all stages on hard mode").
 	/// </summary>
@@ -958,6 +968,34 @@ public static class AchievementDefinitions
 		Visibility = AchievementVisibility.ChapterOpen,
 		StageId = StageOfBoss(bossId),
 		BossId = bossId,
+		Measure = c => c.Lifetime.HasDefeatedBoss(bossId) ? 1f : 0f,
+		Target = 1,
+	};
+
+	/// <summary>
+	/// A far chapter's warden deed, which rekindles the god whose seat it is (.ai/second-half.md 4.3, 6.3; plumbing F1).
+	/// A chapter's piece writes one line in its marked slot in <see cref="All"/> ("THE FAR SHORE'S CHAPTER CLEARS") -
+	/// <c>SeatClear("stage_14", "...", "&lt;boss id&gt;",
+	/// "Artemis")</c> - and nothing else: the id is the seat's (<see cref="SeatDeedId"/>, which the god's
+	/// UnlockCatalog.FromGod line names too), and the god it pays is read from the catalog
+	/// (UnlockCatalog.GodSeatedAt), so a chapter that merges before its god pays nobody and says so on the far
+	/// shore's to-do line until the god lands. <paramref name="godName"/> is written out rather than loaded, as a
+	/// recipe's names are, because a save migration builds this list before any resource is
+	/// (RegressionChecks.ValidateGods holds it to the god's CharacterData).
+	/// </summary>
+	public static AchievementDefinition SeatClear(string stageId, string name, string bossId, string godName) => new()
+	{
+		Id = SeatDeedId(stageId),
+		DisplayName = name,
+		Description = $"Defeat the boss of {ChapterPhrase(stageId)}.",
+		RewardText = $"{QuestLog.RekindlesVerb} {godName}",
+		CharacterUnlockId = UnlockCatalog.GodSeatedAt(stageId)?.Id ?? string.Empty,
+		Category = AchievementCategory.Exploration,
+		Kind = AchievementKind.Road,
+		Visibility = AchievementVisibility.ChapterOpen,
+		StageId = stageId ?? string.Empty,
+		BossId = bossId ?? string.Empty,
+		SealedLine = SomeoneHeldIn(stageId),
 		Measure = c => c.Lifetime.HasDefeatedBoss(bossId) ? 1f : 0f,
 		Target = 1,
 	};

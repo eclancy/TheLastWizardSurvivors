@@ -68,15 +68,22 @@ public sealed class ComboDefinition
 	public bool IsRite { get; init; }
 
 	/// <summary>
-	/// The one wizard who OPENS on this Conjunction, already made (.ai/dark-wizard-playable.md; Eric, 2026-11-02:
-	/// "he should start with a powerful combination spell" that "should be at level 1, and level up, even though
-	/// combination spells wouldn't have levels normally"). His copy starts at level 1 and takes cards to its
-	/// MaxLevel off its own level table (Player.AddStartingConjunction, LevelStartingConjunction), and his
-	/// Apotheosis counts its max level as ascended (ApotheosisCatalog.OnStartingConjunction). Everyone else makes
-	/// it by fusing, as any recipe, and gets it already whole - at its MaxLevel, nothing left to take
-	/// (Player.TryFuse) - so a fused Conjunction still never levels. Empty on every other recipe.
+	/// The one character who OPENS on this Conjunction, already made: the dark wizard on The Taking
+	/// (.ai/dark-wizard-playable.md; Eric, 2026-11-02: "he should start with a powerful combination spell" that "should
+	/// be at level 1, and level up, even though combination spells wouldn't have levels normally"), and each god of the
+	/// far shore on its own (.ai/second-half.md 3.4). His copy starts at level 1 and takes cards to its MaxLevel off
+	/// ITS OWN LEVEL TABLE (Player.AddStartingConjunction, LevelStartingConjunction) - he never held the parents a fused
+	/// copy freezes (SpellData.ComboParents), so its script must read its numbers from the table when it carries no
+	/// parents (SpellData.ReadsOwnTable) - and his Apotheosis counts its max level as ascended
+	/// (ApotheosisCatalog.OnStartingConjunction). Everyone else makes it by fusing, as any recipe, and gets it already
+	/// whole - at its MaxLevel, nothing left to take (Player.TryFuse) - so a fused Conjunction still never levels, and
+	/// a fused copy is simply the table's last level. Empty on every other recipe. At most one character a recipe and
+	/// one recipe a character; RegressionChecks.ValidateOpeners holds every opener to all of it.
 	/// </summary>
 	public string StartsFusedFor { get; init; } = string.Empty;
+
+	/// <summary>True when a character opens on this Conjunction (<see cref="StartsFusedFor"/>).</summary>
+	public bool IsOpener => !string.IsNullOrWhiteSpace(StartsFusedFor);
 
 	public IEnumerable<ComboIngredient> Ingredients
 	{
@@ -209,6 +216,9 @@ public static class ComboCatalog
 			},
 			ResourcePath = "res://SpellData_Sagittarius.tres",
 			SynergyTag = "Conjunction / Converge",
+			// F2's line (Artemis opens on it, .ai/second-half.md 3.2): StartsFusedFor = "artemis", with its level
+			// table in SpellData_Sagittarius.tres and the path that reads it (SpellData.ReadsOwnTable). No other piece
+			// edits this recipe.
 		},
 		// Shadow Bolt (.ai/combo-spells.md section 7; in-flight item 17, Eric 2026-11-05): once an ordinary
 		// chain spell, moved whole into the Conjunction roster - the void given the plague's hunger. Cosmic
@@ -260,6 +270,20 @@ public static class ComboCatalog
 			SynergyTag = "Conjunction / Seize",
 			StartsFusedFor = "dark_wizard",
 		},
+		// THE GODS' CONJUNCTIONS (.ai/second-half.md 3.2, 3.4; plumbing F1): each a recipe every wizard may fuse - a
+		// new Conjunction in every pool - and the one its god opens on (StartsFusedFor). Built table-first: its
+		// resource levels 1 to 8 for the god, and a fused copy is the table's level 8 (The Taking's rule, taken as the
+		// rule). Each piece writes its own recipe block in its own slot; leave the others as they are.
+		// F6: Maelstrom (fling) - Riptide's Tidal Wall + Cyclone Slash's Vortex Reaper; StartsFusedFor = "manannan".
+		// (F7's block is below; leave this one as it is)
+		// F7: Dark Lens (refract) - Scorching Ray's Prism + Void Lance's Witching Hour; StartsFusedFor = "hecate".
+		// (F8's block is below; leave this one as it is)
+		// F8: Orrery (orbit) - Solar Flare's Daybreak Avatar + Hollow Star's Black Sun; StartsFusedFor = "ra".
+		// (F9's block is below; leave this one as it is)
+		// F9: Hailfront (advance) - Stormsweep's Thunderclap + Sleet Runes' Sigil Fan; StartsFusedFor = "ukko".
+		// (F10's block is below; leave this one as it is)
+		// F10: Anvil Line (ricochet) - Molten Shard's Forge Swarm + Iron Palisade's Iron Ring; StartsFusedFor = "hephaestus".
+		// (the Sovereign Rite is below; leave it last)
 		// The Sovereign Rite (.ai/sovereign-spell.md section 3): the Rite and whichever active spell it is
 		// pointed at. Every other active spell falls silent and pours its levels into that one.
 		new()
@@ -295,11 +319,18 @@ public static class ComboCatalog
 
 	/// <summary>
 	/// True when <paramref name="characterId"/> opens on this Conjunction already made, and levels it
-	/// (<see cref="ComboDefinition.StartsFusedFor"/>): the dark wizard's The Taking.
+	/// (<see cref="ComboDefinition.StartsFusedFor"/>): the dark wizard's The Taking, each god's own.
 	/// </summary>
 	public static bool StartsFused(ComboDefinition recipe, string characterId) =>
 		recipe != null && !string.IsNullOrEmpty(recipe.StartsFusedFor)
 		&& recipe.StartsFusedFor.Equals(characterId ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+
+	/// <summary>Every recipe a character opens on (<see cref="ComboDefinition.IsOpener"/>), in catalog order.</summary>
+	public static IEnumerable<ComboDefinition> Openers => Definitions.Where(d => d.IsOpener);
+
+	/// <summary>The Conjunction this character opens on, or null: the dark wizard's The Taking, a god's own.</summary>
+	public static ComboDefinition OpenerFor(string characterId) =>
+		string.IsNullOrWhiteSpace(characterId) ? null : Definitions.FirstOrDefault(d => StartsFused(d, characterId.Trim()));
 
 	/// <summary>The recipe a derived Feat mirrors, or null.</summary>
 	public static ComboDefinition ForFeat(string achievementId) =>

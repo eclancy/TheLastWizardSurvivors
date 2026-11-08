@@ -133,13 +133,44 @@ public static class QuestLog
 	public static Prisoner PrisonerOf(string characterId) =>
 		Prisoners.FirstOrDefault(p => p.CharacterId.Equals(characterId ?? string.Empty, StringComparison.OrdinalIgnoreCase));
 
-	/// <summary>"the accused" - or, with no row for him, "a wizard", so a new wizard is never named by accident.</summary>
-	public static string EpithetOf(string characterId) => PrisonerOf(characterId)?.Epithet ?? "a wizard";
+	/// <summary>"the accused" - or, with no row for him, "a wizard" ("a god"), so a new one is never named by accident.</summary>
+	public static string EpithetOf(string characterId) =>
+		PrisonerOf(characterId)?.Epithet ?? (UnlockCatalog.IsGod(characterId) ? "a god" : "a wizard");
 
 	/// <summary>A character's display name, for the lines written once he is free.</summary>
 	public static string NameOf(string characterId) =>
 		CharacterRoster.GetAll().FirstOrDefault(c => c.Id.Equals(characterId ?? string.Empty, StringComparison.OrdinalIgnoreCase))?.Name
 		?? characterId ?? string.Empty;
+
+	// --- how a freeing is said ---------------------------------------------------------------------
+	// A wizard is FREED: he was in a cell, a cage, a seal. A god of the far shore is REKINDLED (.ai/second-half.md 2,
+	// "the half's word for freed: nobody unlocks a cell"): its light comes home to its seat. Every card that says a
+	// character came free asks here - the quest card, the deed row, the line the run pays out, Options' replay -
+	// so a god added as data (UnlockCatalog.FromGod) is worded as one everywhere at once, and no screen keeps its
+	// own copy of the word.
+
+	/// <summary>The reward verb a deed that rekindles a god leads with ("Rekindles Artemis"). A const: the deeds' list reads it while it is built.</summary>
+	public const string RekindlesVerb = "Rekindles";
+
+	/// <summary>The quest still to do: "Free the accused", "Rekindle the huntress" - by epithet, never by name.</summary>
+	public static string FreeTitle(string characterId) =>
+		(UnlockCatalog.IsGod(characterId) ? "Rekindle " : "Free ") + EpithetOf(characterId);
+
+	/// <summary>The quest done: "Tituba is free", "Artemis is rekindled".</summary>
+	public static string FreedTitle(string characterId) =>
+		$"{NameOf(characterId)} is {(UnlockCatalog.IsGod(characterId) ? "rekindled" : "free")}";
+
+	/// <summary>What a deed paid, as the run's line says it: "Wizard freed - John Dee", "God rekindled - Artemis".</summary>
+	public static string PaidLine(string characterId) =>
+		$"{(UnlockCatalog.IsGod(characterId) ? "God rekindled" : "Wizard freed")} - {NameOf(characterId)}";
+
+	/// <summary>A deed row's reward while its character is still locked, naming nobody: "Frees someone", "Rekindles someone".</summary>
+	public static string HiddenRewardLine(string characterId) =>
+		UnlockCatalog.IsGod(characterId) ? RekindlesVerb + " someone" : "Frees someone";
+
+	/// <summary>Options > Story's button to watch a freeing again: "Freed: Tituba", "Rekindled: Artemis".</summary>
+	public static string ReplayLabel(string characterId) =>
+		$"{(UnlockCatalog.IsGod(characterId) ? "Rekindled" : "Freed")}: {NameOf(characterId)}";
 
 	/// <summary>
 	/// The line a chapter note carries about whoever is held in <paramref name="stageId"/>: his held line
@@ -316,10 +347,10 @@ public static class QuestLog
 		string title = deed.DisplayName;
 		if (!string.IsNullOrEmpty(wizard))
 		{
-			// Named only once he is out; until then, by what he is.
+			// Named only once he is out; until then, by what he is. A god is rekindled, not freed (FreeTitle).
 			title = GlobalStatsManager.IsCharacterUnlocked(save, wizard)
-				? $"{NameOf(wizard)} is free"
-				: "Free " + EpithetOf(wizard);
+				? FreedTitle(wizard)
+				: FreeTitle(wizard);
 		}
 		return new Quest
 		{
