@@ -121,8 +121,14 @@ All five events resolve through `SideEvent.Succeed`, so all five now get the sam
   name after (Eric, 2026-10-31); a chest reads in the event's own words
   (`ChestLine`). The label is now inset by `SafeArea.ApplyTo`; it never was, and on a phone the
   objective line sat on the XP bar.
-- **The grove blooms** for three seconds after it is held - every crown swells and a third leaf
-  appears - and then fades, instead of vanishing on the winning frame.
+- **A site with a state shows it before it pays** (in-flight 58, the well's pattern: a 1-2 s beat
+  at the site on `SecretSeen`, then `Succeed(spot, exact: true)` at the exact spot the beat aimed
+  at): the well's water climbs clean and the glint arcs out; the grove blooms - the crowns leaf out
+  one by one round the ring under a green wave, and the bloom lingers three seconds after instead
+  of vanishing on the winning frame; the Gaoler's key turns in the lock, the barred gate swings
+  open on its hinge and the cell's gloom lightens, its light spilling out; the thaw's ice falls
+  away - a crack, chips falling and melting, meltwater running out as the block goes. The scale
+  settling level is Medea's redesign; the hut's kneel is its own beat already.
 
 | event | first win pays | every later win pays | chest line |
 |---|---|---|---|

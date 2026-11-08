@@ -28,6 +28,15 @@ public partial class GaolersKeyEvent : SideEvent
 	private int hitsWhileCarrying;
 	private float unlockProgress;
 	private bool listening;
+	// THE WIN BEAT (in-flight 58): the cell is opened at the cell. The key turns in the lock and
+	// nothing moves (the pause before anything does), then the barred gate swings open on its left
+	// hinge, the gloom inside lightens and the one sitting there is gone - held open a moment, and
+	// only then does the reward column rise, at the exact spot the beat chose.
+	private float winBeat = -1f;
+	private Vector2 winSpot;
+	private const float WinTurnSeconds = 0.35f;
+	private const float WinSwingSeconds = 0.9f;
+	private const float WinHoldSeconds = 0.45f;
 
 	protected override string Announcement => "A Warden is carrying a cell key.";
 	protected override string ChestLine => "The cell stands empty - a chest was left in it";
@@ -81,6 +90,15 @@ public partial class GaolersKeyEvent : SideEvent
 
 	protected override void Tick(float delta)
 	{
+		// The beat: the lock has turned - the door swings and holds before the reward comes.
+		if (winBeat >= 0f)
+		{
+			winBeat += delta;
+			if (winBeat >= WinTurnSeconds + WinSwingSeconds + WinHoldSeconds)
+				Succeed(winSpot, exact: true);
+			return;
+		}
+
 		switch (step)
 		{
 			case Step.HuntWarden:
@@ -109,7 +127,10 @@ public partial class GaolersKeyEvent : SideEvent
 					if (unlockProgress >= 1f)
 					{
 						Listen(false);
-						Succeed(cellPosition);
+						winSpot = ChooseRewardSpot(cellPosition);
+						winBeat = 0f;
+						// The lock's own cue as the key turns; the reward's sound still comes with the column.
+						SfxPlayer.AtPosition(SfxCatalog.SecretSeen, cellPosition, 0f);
 					}
 				}
 				else
@@ -123,7 +144,8 @@ public partial class GaolersKeyEvent : SideEvent
 	// DamageTaken fires after the dodge roll, so a dodged hit does not shake the key loose.
 	private void OnPlayerDamaged(int amount)
 	{
-		if (step != Step.Carrying || IsResolved)
+		// Once the lock has turned the key is spent: a hit during the beat cannot shake it loose.
+		if (step != Step.Carrying || IsResolved || winBeat >= 0f)
 			return;
 		hitsWhileCarrying++;
 		if (hitsWhileCarrying < HitsToDrop)
@@ -165,27 +187,92 @@ public partial class GaolersKeyEvent : SideEvent
 		if (IsResolved)
 			return;
 
-		// The cell: a dark recess behind bars, with the shape of someone sitting inside.
+		// The beat's two movements: the key's turn, then the gate's swing (eased, so it lands softly).
+		float turn = winBeat < 0f ? 0f : Mathf.Clamp(winBeat / WinTurnSeconds, 0f, 1f);
+		float open = winBeat < 0f ? 0f : Mathf.SmoothStep(0f, 1f, Mathf.Clamp((winBeat - WinTurnSeconds) / WinSwingSeconds, 0f, 1f));
+
+		// The cell: a dark recess behind bars, with the shape of someone sitting inside. As the door
+		// opens the gloom lightens and the sitter is gone - carried out, not kept.
 		Vector2 c = ToLocal(cellPosition);
-		DrawRect(new Rect2(c - new Vector2(30f, 34f), new Vector2(60f, 60f)), Gloom);
-		DrawCircle(c + new Vector2(0f, -6f), 6f, new Color(0.16f, 0.15f, 0.20f));
-		DrawRect(new Rect2(c + new Vector2(-8f, 0f), new Vector2(16f, 20f)), new Color(0.16f, 0.15f, 0.20f));
-		for (int i = 0; i < 6; i++)
+		DrawRect(new Rect2(c - new Vector2(30f, 34f), new Vector2(60f, 60f)), Gloom.Lerp(new Color(0.15f, 0.18f, 0.24f, 0.45f), open));
+		if (open < 1f)
 		{
-			float x = -27f + i * 10.8f;
-			DrawLine(c + new Vector2(x, -34f), c + new Vector2(x, 26f), Iron, 3f);
-			DrawLine(c + new Vector2(x - 1f, -34f), c + new Vector2(x - 1f, 26f), IronLit, 1f);
+			Color sitter = new Color(0.16f, 0.15f, 0.20f, 1f - open);
+			DrawCircle(c + new Vector2(0f, -6f), 6f, sitter);
+			DrawRect(new Rect2(c + new Vector2(-8f, 0f), new Vector2(16f, 20f)), sitter);
+		}
+		if (open <= 0f)
+		{
+			for (int i = 0; i < 6; i++)
+			{
+				float x = -27f + i * 10.8f;
+				DrawLine(c + new Vector2(x, -34f), c + new Vector2(x, 26f), Iron, 3f);
+				DrawLine(c + new Vector2(x - 1f, -34f), c + new Vector2(x - 1f, 26f), IronLit, 1f);
+			}
+		}
+		else
+		{
+			// The gate of six bars and its two rails swings on its bottom-left hinge, out and clear of
+			// the doorway, and lies open there through the hold.
+			Vector2 hinge = c + new Vector2(-32f, 26f);
+			float angle = -1.45f * open;
+			float cos = Mathf.Cos(angle);
+			float sin = Mathf.Sin(angle);
+			Vector2 Swing(Vector2 offset) => hinge + new Vector2(offset.X * cos - offset.Y * sin, offset.X * sin + offset.Y * cos);
+			for (int i = 0; i < 6; i++)
+			{
+				float x = -27f + i * 10.8f + 32f;
+				DrawLine(Swing(new Vector2(x, -60f)), Swing(new Vector2(x, 0f)), Iron, 3f);
+			}
+			DrawLine(Swing(new Vector2(5f, -60f)), Swing(new Vector2(59f, -60f)), IronLit, 2f);
+			DrawLine(Swing(new Vector2(5f, 0f)), Swing(new Vector2(59f, 0f)), IronLit, 2f);
 		}
 		DrawRect(new Rect2(c - new Vector2(32f, 36f), new Vector2(64f, 64f)), Iron, false, 3f);
-		if (step == Step.Carrying)
+		if (step == Step.Carrying && winBeat < 0f)
 			DrawProgressArc(cellPosition, CellRadius, unlockProgress, Brass);
 
-		if (step == Step.KeyOnGround)
+		if (winBeat >= 0f && open <= 0f)
+		{
+			// The key in the lock, turning, before anything moves.
+			DrawSetTransform(c + new Vector2(24f, -4f), -1.3f * turn, Vector2.One);
+			DrawKey(Vector2.Zero);
+			DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
+		}
+		else if (step == Step.KeyOnGround)
 			DrawKey(ToLocal(keyPosition));
-		else if (step == Step.Carrying && Player != null)
+		else if (step == Step.Carrying && winBeat < 0f && Player != null)
 			// Clear of the hat: the event draws under the actors now (SideEvent), so a key at the
 			// crown of his head would be behind it.
 			DrawKey(ToLocal(Player.GlobalPosition) + new Vector2(0f, -64f));
+	}
+
+	// The far tell while it waits (base). Once the door swings, the cell's own light spills out of
+	// the opening: what he kept in the dark is lit on its way out.
+	protected override void DrawLight(CanvasItem light)
+	{
+		base.DrawLight(light);
+		if (winBeat < 0f || IsResolved || !NearPlayer(cellPosition))
+			return;
+		float open = Mathf.Clamp((winBeat - WinTurnSeconds) / WinSwingSeconds, 0f, 1f);
+		if (open <= 0f)
+			return;
+		Vector2 c = ToLocal(cellPosition);
+		ExploreArt.DrawGlow(light, c + new Vector2(0f, -4f), 50f + 70f * open, new Color(TellColor, 0.22f * open));
+		ExploreArt.DrawShaft(light, c + new Vector2(0f, 26f), 14f, 150f * open, new Color(TellColor, 0.30f * open));
+	}
+
+	/// <summary>
+	/// _UiShot --win-event: the key already in hand at the cell door, so the real unlock runs - the
+	/// fill, the key's turn, the gate's swing - instead of Succeed called straight (the Warden it
+	/// would have taken the key from simply never wakes to miss it).
+	/// </summary>
+	public void PoseCarryForPhoto()
+	{
+		if (IsResolved || winBeat >= 0f)
+			return;
+		step = Step.Carrying;
+		hitsWhileCarrying = 0;
+		Listen(true);
 	}
 
 	private void DrawKey(Vector2 at)

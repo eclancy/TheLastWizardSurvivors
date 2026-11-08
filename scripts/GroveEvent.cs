@@ -26,6 +26,13 @@ public partial class GroveEvent : SideEvent
 	private float progress;
 	private float pressureTimer;
 	private bool inside;
+	// THE WIN BEAT (in-flight 58): the grove's own moment at the grove, before the reward - the
+	// crowns leaf out one after another round the ring while a wave of green runs out across its
+	// floor, and only then does the column rise, at the exact spot the beat was aimed at. The bloom
+	// then lingers (BloomSeconds) instead of the grove vanishing on the winning frame.
+	private float winBeat = -1f;
+	private Vector2 winSpot;
+	private const float WinBeatSeconds = 1.4f;
 
 	protected override string Announcement => "There is a grove in the wood that has not quite died.";
 	protected override string ChestLine => "The grove holds - a chest rises from it";
@@ -54,6 +61,15 @@ public partial class GroveEvent : SideEvent
 
 	protected override void Tick(float delta)
 	{
+		// The beat: the grove is held - no more pressure, no more drain - and it blooms before it pays.
+		if (winBeat >= 0f)
+		{
+			winBeat += delta;
+			if (winBeat >= WinBeatSeconds)
+				Succeed(winSpot, exact: true);
+			return;
+		}
+
 		inside = PlayerWithin(grove, RingRadius);
 		if (inside)
 		{
@@ -71,7 +87,13 @@ public partial class GroveEvent : SideEvent
 		}
 
 		if (progress >= 1f)
-			Succeed(grove);
+		{
+			progress = 1f;
+			winSpot = ChooseRewardSpot(grove);
+			winBeat = 0f;
+			// The grove's own cue as it comes back; the reward's own sound still comes with the column.
+			SfxPlayer.AtPosition(SfxCatalog.SecretSeen, grove, 0f);
+		}
 	}
 
 	private static readonly Color Bark = new Color(0.16f, 0.12f, 0.10f);
@@ -85,21 +107,33 @@ public partial class GroveEvent : SideEvent
 
 	public override void _Draw()
 	{
+		// One clock from the moment the hold filled: the beat runs it from 0, the linger carries it on.
+		float sinceWin = -1f;
 		float alpha = 1f;
-		float bloom = 0f;
 		if (IsResolved)
 		{
 			if (!Succeeded || SecondsSinceResolved >= BloomSeconds)
 				return;
 			float t = SecondsSinceResolved / BloomSeconds;
 			alpha = t < 0.6f ? 1f : 1f - (t - 0.6f) / 0.4f;
-			// Every crown swells once as the grove comes back, then settles.
-			bloom = Mathf.Sin(Mathf.Clamp(SecondsSinceResolved / 0.5f, 0f, 1f) * Mathf.Pi);
+			sinceWin = WinBeatSeconds + SecondsSinceResolved;
 		}
+		else if (winBeat >= 0f)
+		{
+			sinceWin = winBeat;
+		}
+		// Every crown swells once as the grove comes back, then settles.
+		float bloom = sinceWin < 0f ? 0f : Mathf.Sin(Mathf.Clamp(sinceWin / 0.7f, 0f, 1f) * Mathf.Pi);
 
 		Vector2 c = ToLocal(grove);
 		// The ground inside the ring greens as it grows back.
 		DrawCircle(c, RingRadius, new Color(Rot.Lerp(Growth, progress), (0.20f + progress * 0.15f) * alpha));
+		// The beat's wave: a rim of green running out from the centre to the trees, then gone.
+		if (sinceWin >= 0f && sinceWin < 1.0f)
+		{
+			float run = sinceWin / 1.0f;
+			DrawArc(c, (RingRadius + 10f) * run, 0f, Mathf.Tau, 48, new Color(Growth, 0.7f * (1f - run)), 5f);
+		}
 
 		Color bark = new Color(Bark, alpha);
 		Color barkLit = new Color(BarkLit, alpha);
@@ -113,16 +147,17 @@ public partial class GroveEvent : SideEvent
 			DrawLine(p + new Vector2(0f, 14f), p + new Vector2(0f, -18f), bark, 5f);
 			DrawLine(p + new Vector2(0f, -6f), p + new Vector2(-9f, -16f), barkLit, 2f);
 			DrawLine(p + new Vector2(0f, -10f), p + new Vector2(8f, -20f), barkLit, 2f);
-			if (progress > (i + 1f) / (TreeCount + 1f) || IsResolved)
+			if (progress > (i + 1f) / (TreeCount + 1f) || sinceWin >= 0f)
 			{
 				DrawCircle(p + new Vector2(-9f, -17f), leaf, growth);
 				DrawCircle(p + new Vector2(8f, -21f), leaf, growth);
-				if (IsResolved)
+				// The third leaf comes to each crown in turn round the ring, as the wave reaches it.
+				if (sinceWin >= 0.15f + i * 0.09f)
 					DrawCircle(p + new Vector2(0f, -24f), leaf * 0.9f, growth);
 			}
 		}
 
-		if (!IsResolved)
+		if (!IsResolved && winBeat < 0f)
 			DrawProgressArc(grove, RingRadius, progress, Growth, 4f);
 	}
 }

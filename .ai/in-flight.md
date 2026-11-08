@@ -746,6 +746,20 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     changes at the win, each its own small beat when its site has a state to show: the grove could
     visibly bloom, the Gaoler's cell door swing, the thaw's ice visibly fall away, the scale settle
     level. Worth one beat per chapter pass, not a blocker.
+    **Built 2026-11-07 (`claude/optimistic-merkle-56681f`):** the three named beats, each the well's
+    shape (a short beat at the site on SecretSeen, then `Succeed(spot, exact: true)`). The grove
+    blooms before it pays - the crowns leaf out in turn round the ring under a green wave, and the
+    bloom still lingers after. The Gaoler's key turns in the lock (a pause before anything moves),
+    then the barred gate swings open on its bottom hinge, the gloom lightens, the sitter is gone and
+    the cell's light spills out. The thaw's ice falls away - a crack and a held breath, then chips
+    fall off the block and melt, meltwater runs out at its foot and the block fades with them.
+    `_UiShot --win-event` now runs the real path for the cell and the thaw too (photo hooks beside
+    the tomb's). Re-audited the rest: the seal keeps its turned stones, the anvil its burst chains,
+    the tomb opens its slab, the mouths/door/moot/gibbet have their own endings - no other site is
+    missing a state at the win (the scale's settle is Medea's redesign, the hut's kneel its own
+    branch). Verified: build 0 errors; validator 0 errors / 1 known warning; `_ExploreProbe` stages
+    0, 1, 5 all green through the beats; all three photographed. Not verified: feel at speed, sound
+    mix in a real run.
 59. **World and terrain** (Eric, 2026-11-06/07): Baba Yaga's hut is solid - the player cannot walk
     through it; the farm patch's large dandelion hides a secret (a certain spell cast near it?); the
     Dandelion Grove is too common - why is it in more than one map?; a plant overhanging water drew

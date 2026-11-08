@@ -32,6 +32,15 @@ public partial class ThawEvent : SideEvent
 	private Vector2 block;
 	private float heat;
 	private float guardTimer;
+	// THE WIN BEAT (in-flight 58): the ice visibly falls away at the block. A deep crack and a held
+	// breath with nothing moving, then the block breaks - chips of ice fall off its face and melt
+	// where they land, the block itself fades as they go, meltwater runs out round its foot - and
+	// only then does the reward column rise, at the exact spot the beat chose.
+	private float winBeat = -1f;
+	private Vector2 winSpot;
+	private const float WinCrackSeconds = 0.4f;
+	private const float WinFallSeconds = 1.1f;
+	private const int ChipCount = 10;
 	// The hits that warm it: the StrikeListener every breakable secret uses was extracted from here
 	// (.ai/achievements-and-secrets.md section 5), and the thaw counts through it exactly as it did.
 	private StrikeListener strike;
@@ -124,6 +133,14 @@ public partial class ThawEvent : SideEvent
 			iceBlock.Visible = false;
 			return;
 		}
+		// The beat: the block goes with its chips - fading as they fall, gone when they have landed.
+		if (winBeat >= 0f)
+		{
+			float fall = Mathf.Clamp((winBeat - WinCrackSeconds) / WinFallSeconds, 0f, 1f);
+			iceBlock.Modulate = new Color(1f, 1f, 1f, 1f - fall);
+			iceBlock.Visible = fall < 1f;
+			return;
+		}
 		glintClock += (float)delta;
 		float cycle = GlintFrameSeconds * (GlintFrames - 1) + GlintRestSeconds;
 		int glint = Mathf.Min(GlintFrames - 1, Mathf.FloorToInt((glintClock % cycle) / GlintFrameSeconds));
@@ -150,6 +167,16 @@ public partial class ThawEvent : SideEvent
 
 	protected override void Tick(float delta)
 	{
+		// The beat: the ice has given - no more guards, no more heat to count - and it falls away
+		// before the reward comes.
+		if (winBeat >= 0f)
+		{
+			winBeat += delta;
+			if (winBeat >= WinCrackSeconds + WinFallSeconds)
+				Succeed(winSpot, exact: true);
+			return;
+		}
+
 		if (PlayerWithin(block, WarmthRadius))
 			heat += WarmthPerSecond * delta;
 
@@ -167,12 +194,22 @@ public partial class ThawEvent : SideEvent
 
 		if (heat >= HeatNeeded)
 		{
+			heat = HeatNeeded;
 			StopListening();
-			Succeed(block);
+			winSpot = ChooseRewardSpot(block);
+			winBeat = 0f;
+			// The ice's own cue as it gives; the reward's sound still comes with the column.
+			SfxPlayer.AtPosition(SfxCatalog.SecretSeen, block, 0f);
 		}
 	}
 
 	private void StopListening() => strike?.Stop();
+
+	/// <summary>
+	/// _UiShot --win-event: the heat filled, so the real path runs - the crack, the chips, the ice
+	/// falling away - instead of Succeed called straight past the beat.
+	/// </summary>
+	public void FillHeatForPhoto() => heat = HeatNeeded;
 
 	public override void _ExitTree()
 	{
@@ -190,9 +227,43 @@ public partial class ThawEvent : SideEvent
 	{
 		if (IsResolved)
 			return;
-		// The progress, on the ice round the block's foot. The reach of the heat is not ringed: it is
-		// where the light under the ice is (ThawLake).
-		DrawProgressArc(block + new Vector2(0f, -4f), 64f, Mathf.Clamp(heat / HeatNeeded, 0f, 1f), Warm);
+		if (winBeat < 0f)
+		{
+			// The progress, on the ice round the block's foot. The reach of the heat is not ringed: it is
+			// where the light under the ice is (ThawLake).
+			DrawProgressArc(block + new Vector2(0f, -4f), 64f, Mathf.Clamp(heat / HeatNeeded, 0f, 1f), Warm);
+			return;
+		}
+
+		// The beat on the ice: meltwater running out round the foot while the chips come down. Each
+		// chip is a pure function of its index and the clock - nothing allocated, nothing kept.
+		Vector2 c = ToLocal(block);
+		float fall = Mathf.Clamp((winBeat - WinCrackSeconds) / WinFallSeconds, 0f, 1f);
+		if (fall <= 0f)
+			return;
+		DrawCircle(c, 10f + 36f * fall, new Color(0.30f, 0.52f, 0.62f, 0.26f * (1f - 0.4f * fall)));
+		DrawArc(c, 16f + 52f * fall, 0f, Mathf.Tau, 32, new Color(IceMid, 0.5f * (1f - fall)), 3f);
+		for (int i = 0; i < ChipCount; i++)
+		{
+			float t = Mathf.Max(0f, fall * WinFallSeconds - (i % 5) * 0.06f);
+			if (t <= 0f)
+				continue;
+			float sx = ((i * 37) % 11 - 5) * 4f;
+			float sy = -(16f + ((i * 53) % 10) * 8f);
+			float vx = (i % 2 == 0 ? 1f : -1f) * (14f + (i * 29) % 22);
+			Vector2 p = c + new Vector2(sx + vx * t, sy - 30f * t + 150f * t * t);
+			// Size carries the fade, never alpha alone (the pixel-pass rule).
+			float r = 3f - 1.6f * fall;
+			float ground = 4f + (i % 3) * 3f;
+			if (p.Y >= c.Y + ground)
+			{
+				// Landed: a melt pip on the ice, thinning away.
+				DrawCircle(new Vector2(p.X, c.Y + ground), r + 1.5f, new Color(0.35f, 0.58f, 0.68f, 0.5f * (1f - fall)));
+				continue;
+			}
+			DrawCircle(p, r + 1f, new Color(IceMid, 0.85f));
+			DrawCircle(p, r * 0.5f, new Color(0.92f, 0.99f, 1f, 0.9f));
+		}
 	}
 
 	// The far tell, and a glow round him that breathes - found things breathe, his things flicker, and
@@ -211,7 +282,15 @@ public partial class ThawEvent : SideEvent
 		float t = Mathf.Clamp(heat / HeatNeeded, 0f, 1f);
 		// A wide, faint breath over the lake; the bright light round him is under the ice (ThawLake).
 		ExploreArt.DrawGlow(light, c, 260f, new Color(IceMid, 0.06f * breath));
-		if (t > 0f)
-			ExploreArt.DrawGlow(light, c + new Vector2(0f, -48f), 70f + 30f * t, new Color(FireEdge, 0.28f * t));
+		float warm = t;
+		if (winBeat >= 0f)
+		{
+			// The crack: one cold flash out of the block; then the warmth dies with the ice.
+			if (winBeat < 0.55f)
+				ExploreArt.DrawGlow(light, c + new Vector2(0f, -48f), 60f + 200f * winBeat, new Color(IceMid, 0.5f * (1f - winBeat / 0.55f)));
+			warm = t * (1f - Mathf.Clamp((winBeat - WinCrackSeconds) / WinFallSeconds, 0f, 1f));
+		}
+		if (warm > 0f)
+			ExploreArt.DrawGlow(light, c + new Vector2(0f, -48f), 70f + 30f * t, new Color(FireEdge, 0.28f * warm));
 	}
 }
