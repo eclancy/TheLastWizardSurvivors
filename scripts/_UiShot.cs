@@ -4288,6 +4288,13 @@ public partial class _UiShot : Node
 			// The dry tomb: its three beacons lit where they stand, and the real opening runs (the slab, him climbing out).
 			else if (wonEvent is TombBeaconsEvent kindled)
 				kindled.KindleForPhoto(TombBeaconsEvent.BeaconCount);
+			// The thaw and the cell win through their own beats (in-flight 58), so the real path must run:
+			// the heat filled lets Tick start the crack and the fall; the carry posed at the door lets the
+			// unlock fill and the gate swing. Pair with --fx-lead (the cell needs ~120: 1.2 s of unlock first).
+			else if (wonEvent is ThawEvent thawing)
+				thawing.FillHeatForPhoto();
+			else if (wonEvent is GaolersKeyEvent unlocking)
+				unlocking.PoseCarryForPhoto();
 			else if (progress != null && progress.FieldType == typeof(float))
 				progress.SetValue(wonEvent, 0.999f);
 			else
