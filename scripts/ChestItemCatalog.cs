@@ -374,12 +374,13 @@ public static class ChestItemCatalog
 			RequiredItemIds = new[] { StormLattice, EtherealBlade, CrackedPrism },
 			// The speed is unconditional since 2026-11-02 (issue #44): "while shielded" made it a third of a set
 			// most runs never saw, and the sweep found the set no help to survival (.ai/passives-and-items.md 8g).
-			Description = "+10% crit chance. Every critical hit arcs to the nearest enemy within 170 for half its damage, and you move 10% faster.",
+			// "A nearby enemy", never "within 170": a distance on a card is a word, not a number (Eric, 2026-11-04).
+			Description = "+10% crit chance. Every critical hit arcs to a nearby enemy for half its damage, and you move 10% faster.",
 			IconPath = SetIconRoot + "stormbound.png",
 			Effects = new[]
 			{
 				new ChestSetEffect { Label = "Crit chance", Value = "+10%" },
-				new ChestSetEffect { Label = "Crits arc to a 2nd enemy", Value = "50% damage, 170 range" },
+				new ChestSetEffect { Label = "Crits arc to a 2nd enemy", Value = "50% damage, nearby" },
 				new ChestSetEffect { Label = "Move speed", Value = "+10%" }
 			}
 		},
@@ -391,12 +392,13 @@ public static class ChestItemCatalog
 			ElementTags = new[] { ("Earth", 1), ("Metal", 1) },
 			Name = "The Thorned Buckler",
 			RequiredItemIds = new[] { ProtectiveWard, IronFang, HoarfrostNail },
-			Description = "Take 15% less damage. While you are below 30% HP, every hit that hurts you strikes all enemies within 120 for 8 damage + 3 per player level.",
+			// "Close around you", never "within 120" (Eric, 2026-11-04) - the Retaliate boons' wording.
+			Description = "Take 15% less damage. While you are below 30% HP, every hit that hurts you strikes all enemies close around you for 8 damage + 3 per player level.",
 			IconPath = SetIconRoot + "bastion_of_spikes.png",
 			Effects = new[]
 			{
 				new ChestSetEffect { Label = "Damage taken", Value = "-15%" },
-				new ChestSetEffect { Label = "Retaliate when hit below 30% HP", Value = "8 + 3/level damage, 120 range" }
+				new ChestSetEffect { Label = "Retaliate when hit below 30% HP", Value = "8 + 3 per level, close around you" }
 			}
 		},
 		// New sets
@@ -505,16 +507,16 @@ public static class ChestItemCatalog
 		{
 			Id = CabinetOfCuriositiesSetId,
 			PartialItemCount = 2,
-			PartialEffects = new[] { new ChestSetEffect { Label = "Pickup radius", Value = $"+{Player.CabinetPartialPickupRadius}" } },
+			PartialEffects = new[] { new ChestSetEffect { Label = "Pickup radius", Value = Player.PickupRadiusPercent(Player.CabinetPartialPickupRadius) } },
 			ElementTags = new[] { ("Arcane", 1), ("Darkness", 1) },
 			Name = "The Cabinet of Curiosities",
 			RequiredItemIds = new[] { Lodestone, CurioLedger, HiddenDrawer },
-			Description = $"Every elite drops a chest, and +{Player.CabinetFullPickupRadius} pickup radius.",
+			Description = $"Every elite drops a chest, and {Player.PickupRadiusPercent(Player.CabinetFullPickupRadius)} pickup radius.",
 			IconPath = SetIconRoot + "cabinet_of_curiosities.png",
 			Effects = new[]
 			{
 				new ChestSetEffect { Label = "Elites that drop a chest", Value = "all of them" },
-				new ChestSetEffect { Label = "Pickup radius", Value = $"+{Player.CabinetFullPickupRadius}" }
+				new ChestSetEffect { Label = "Pickup radius", Value = Player.PickupRadiusPercent(Player.CabinetFullPickupRadius) }
 			}
 		},
 		// THE POPPET (.ai/new-items.md section 3). "Debuffs" are Slow (a root too), Poison, Vulnerable and
@@ -656,6 +658,7 @@ public static class ChestItemCatalog
 		$"Critical hits make their target Vulnerable: {Percent(Player.PrickingPinVulnerable)} damage taken for {Player.PrickingPinSeconds:0} s.";
 	public static readonly string BindingThreadDescription =
 		$"An enemy that touches you is Weakened: it deals {Mathf.RoundToInt(Player.BindingThreadWeaken * 100f)}% less for {Player.BindingThreadSeconds:0} s.";
+	// "Near them", never "within 90": a distance on a card is a word, not a number (Eric, 2026-11-04).
 	public static readonly string SingedLockDescription =
 		// No numeric distance (Eric, 2026-11-04: close/far only), and "Kills Wither enemies" read
 		// backwards (2026-11-06); "Withered" is the status keyword, so the card link still binds.
@@ -682,7 +685,8 @@ public static class ChestItemCatalog
 			SpectralFang => "+15% spell damage to enemies below half health.",
 			ObsidianHeart => "+10% spell damage, -5% movement speed.",
 			// Was "Chests offer one more relic to choose from", which is the Hidden Drawer's now (Eric, 2026-11-03).
-			RelicKey => $"Chests within {Player.ReliquaryKeyChestReach}, plus your pickup radius, come to you.",
+			// And just this (Eric, 2026-11-04): your pickup radius applies to chests, nothing longer.
+			RelicKey => "Your pickup radius applies to chests: they come to you.",
 			AegisSigil => "+8% defense.",
 			IronFang => "Enemies touching you take 6 damage per second.",
 			BasaltCarapace => "Ignores one hit every 10s.",
@@ -702,7 +706,7 @@ public static class ChestItemCatalog
 			// Was "Chests appear 20% more often" - which also added 20 points to every kill's bonus
 			// drop chance. Chests come from elites now (DropTable).
 			LuckyCoin => GreaterOrbClause(Player.SignetRingGreaterOrbChance) + ".",
-			Lodestone => $"+{Player.LodestonePickupRadius} pickup radius.",
+			Lodestone => $"{Player.PickupRadiusPercent(Player.LodestonePickupRadius)} pickup radius.",
 			CurioLedger => $"+{Mathf.RoundToInt(Player.CurioLedgerEliteChestChance * 100f)}% chance an elite drops a chest ({Mathf.RoundToInt(DropTable.EliteChestChance * 100f)}% without it).",
 			// John Dee's old passive, Collector's Eye (Eric, 2026-11-03). It was a 25% chance a chest left another behind.
 			HiddenDrawer => "Chests offer one more relic to choose from.",

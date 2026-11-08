@@ -184,24 +184,53 @@ public static class KeywordText
 	{
 		foreach (string word in segment.Split(' ', StringSplitOptions.RemoveEmptyEntries))
 		{
-			int start = 0, end = word.Length;
-			while (start < end && Punctuation.IndexOf(word[start]) >= 0)
-				start++;
-			while (end > start && Punctuation.IndexOf(word[end - 1]) >= 0)
-				end--;
-			string core = word.Substring(start, end - start);
-			StatusId? status = MatchStatus(core, tokens.Count == 0);
-			// Punctuation straight after a chip ("+1 Poison," -> the comma) rides on the chip.
-			if (status == null && start == end && tokens.Count > 0 && tokens[^1].Kind == TokenKind.Tag && tokens[^1].After.Length == 0)
+			// A no-break space binds a line's last two words against the widow rule
+			// (ResponsiveLayout.NoWidow). The pair stays one token - one label, never wrapped
+			// apart - unless a half of it names a status, whose keyword must keep working: the
+			// pair is then split again, and the keyword wins over the binding.
+			if (word.Contains(' '))
 			{
-				Token chip = tokens[^1];
-				tokens[^1] = chip with { After = word };
-				continue;
+				string[] halves = word.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+				if (halves.Any(half => MatchStatus(TrimCore(half), tokens.Count == 0) != null))
+				{
+					foreach (string half in halves)
+						AddWord(tokens, half);
+					continue;
+				}
 			}
-			tokens.Add(status is StatusId id
-				? new Token(TokenKind.Status, core, word.Substring(0, start), word.Substring(end), id, default, 0)
-				: new Token(TokenKind.Word, word, "", "", default, default, 0));
+			AddWord(tokens, word);
 		}
+	}
+
+	private static string TrimCore(string word)
+	{
+		int start = 0, end = word.Length;
+		while (start < end && Punctuation.IndexOf(word[start]) >= 0)
+			start++;
+		while (end > start && Punctuation.IndexOf(word[end - 1]) >= 0)
+			end--;
+		return word.Substring(start, end - start);
+	}
+
+	private static void AddWord(List<Token> tokens, string word)
+	{
+		int start = 0, end = word.Length;
+		while (start < end && Punctuation.IndexOf(word[start]) >= 0)
+			start++;
+		while (end > start && Punctuation.IndexOf(word[end - 1]) >= 0)
+			end--;
+		string core = word.Substring(start, end - start);
+		StatusId? status = MatchStatus(core, tokens.Count == 0);
+		// Punctuation straight after a chip ("+1 Poison," -> the comma) rides on the chip.
+		if (status == null && start == end && tokens.Count > 0 && tokens[^1].Kind == TokenKind.Tag && tokens[^1].After.Length == 0)
+		{
+			Token chip = tokens[^1];
+			tokens[^1] = chip with { After = word };
+			return;
+		}
+		tokens.Add(status is StatusId id
+			? new Token(TokenKind.Status, core, word.Substring(0, start), word.Substring(end), id, default, 0)
+			: new Token(TokenKind.Word, word, "", "", default, default, 0));
 	}
 
 	/// <summary>True when <paramref name="text"/> names a status or an element tag this helper would draw.</summary>

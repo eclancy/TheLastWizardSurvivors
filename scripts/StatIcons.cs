@@ -73,7 +73,9 @@ public static class StatIcons
 			return "chain";
 		if (t.Contains("pickup") || t.Contains("magnet"))
 			return "magnet";
-		if (t.Contains("projectile speed"))
+		// "Faster projectiles" is the speed line with no number on it (Player.FormatSpellEffectUpgrade):
+		// it must take the speed glyph before the projectile-count test below can claim it.
+		if (t.Contains("projectile speed") || t.Contains("faster projectile"))
 			return "speed";
 		// Black Tentacles counts its projectiles as tentacles, Toxic Spore Burst as mushrooms, Meteor
 		// Swarm as meteors and Starfall as stars (Player.ProjectileNoun). "stars " only at the start:
@@ -189,7 +191,9 @@ public static class StatIcons
 
 		var label = new Label
 		{
-			Text = expand ? Expand(text) : text,
+			// The last two words bound together (ResponsiveLayout.NoWidow): a wrapped stat line never
+			// leaves a single word on a line of its own (Eric, 2026-11-04).
+			Text = ResponsiveLayout.NoWidow(expand ? Expand(text) : text),
 			AutowrapMode = wrap ? TextServer.AutowrapMode.WordSmart : TextServer.AutowrapMode.Off,
 			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
 			VerticalAlignment = VerticalAlignment.Center,

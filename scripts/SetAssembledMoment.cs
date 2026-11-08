@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TheOneHeMissed.scripts;
 
 /// <summary>
@@ -174,16 +175,20 @@ public partial class SetAssembledMoment : CanvasLayer
 	{
 		if (deed == null)
 			return;
+		// What the player DID leads (Eric, 2026-11-04: the banner should say what you did, not only the
+		// name and the reward): the deed's ask, in the words the achievements menu uses for it, with
+		// what it pays as the quiet last line under it.
+		string did = deed.Description?.Trim() ?? string.Empty;
 		Enqueue(new Moment
 		{
 			Object = reward,
-			// Kind first, name after, as every reward line reads now: "Achievement - Survivor", then what
-			// it pays, "Spell recovered - Hollow Star". No kicker above it: the title already says what it is.
-			// A no-break space keeps "Achievement -" together, so a long name wraps after the dash, not at it.
+			// Kind first, name after, as every reward line reads now: "Achievement - Survivor". No
+			// kicker above it: the title already says what it is. A no-break space keeps
+			// "Achievement -" together, so a long name wraps after the dash, not at it.
 			Title = $"Achievement\u00A0- {deed.DisplayName}",
 			TitleRole = ResponsiveLayout.TextRole.Title,
-			Effect = string.IsNullOrWhiteSpace(rewardLine) ? deed.Description : rewardLine,
-			Note = note ?? string.Empty,
+			Effect = did.Length > 0 ? did : rewardLine ?? string.Empty,
+			Note = did.Length > 0 && !string.IsNullOrWhiteSpace(rewardLine) ? rewardLine : note ?? string.Empty,
 			// The sound of the save changing (SfxCatalog.MetaUnlock), not of a spell evolving.
 			Sound = SfxCatalog.MetaUnlock,
 		});
@@ -191,6 +196,10 @@ public partial class SetAssembledMoment : CanvasLayer
 
 	/// <summary>True while a moment is playing or waiting. For the harness.</summary>
 	public bool IsBusy => showing != null || pending.Count > 0;
+
+	// A multi-line text (PaidLine pays two things as two lines) bound line by line.
+	private static string BindLines(string text) =>
+		string.IsNullOrEmpty(text) ? text ?? string.Empty : string.Join('\n', text.Split('\n').Select(ResponsiveLayout.NoWidow));
 
 	private void Enqueue(Moment moment)
 	{
@@ -217,10 +226,12 @@ public partial class SetAssembledMoment : CanvasLayer
 		objectIcon.Texture = showing.Object;
 		kicker.Text = showing.Kicker;
 		kicker.Visible = showing.Kicker.Length > 0;
-		title.Text = showing.Title;
+		// Every wrapping line keeps its last two words together (ResponsiveLayout.NoWidow), so the
+		// plate never wraps a single word onto a line of its own; the reward lines come in one a line.
+		title.Text = ResponsiveLayout.NoWidow(showing.Title);
 		ResponsiveLayout.SetFont(title, showing.TitleRole);
-		effect.Text = showing.Effect;
-		note.Text = showing.Note;
+		effect.Text = BindLines(showing.Effect);
+		note.Text = BindLines(showing.Note);
 		note.Visible = showing.Note.Length > 0;
 
 		foreach (TextureRect old in pieces)

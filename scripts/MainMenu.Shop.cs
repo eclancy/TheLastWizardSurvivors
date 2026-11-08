@@ -1065,7 +1065,9 @@ public partial class MainMenu
 			"duration" => ("Effect duration", Times(1f + l * 0.10f)),
 			"amount" => ("Projectiles", $"+{l}"),
 			"movespeed" => ("Move speed", Times(1f + l * 0.05f)),
-			"magnet" => ("Pickup radius", $"+{l * 20}"),
+			// A percentage, never a flat distance (Eric, 2026-11-04): 20 px a level over the reach
+			// every pickup starts with (Player.BasePickupAttractDistance).
+			"magnet" => ("Pickup radius", Player.PickupRadiusPercent(l * 20f)),
 			"growth" => ("XP gain", Times(1f + l * 0.10f)),
 			"greed" => ("Arcane Energy", Times(1f + l * 0.10f)),
 			"extra_lives" => ("Revives per run", $"{l}"),

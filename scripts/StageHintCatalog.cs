@@ -246,7 +246,7 @@ public static class StageHintCatalog
 			Cue = HintCue.Vapour,
 			Lines = new[]
 			{
-				"A man coughing, far out on the bog.",
+				"A man is coughing, far out on the bog.",
 				"Glass rings across the water, like a tapped flask.",
 				"The coughing again. Weaker.",
 			},
@@ -297,7 +297,7 @@ public static class StageHintCatalog
 			Cue = HintCue.Paint,
 			Lines = new[]
 			{
-				"A brushstroke drawing itself along the wall.",
+				"A brushstroke draws itself along the wall.",
 				"Another line, wet, running the same way.",
 				"The paint is still running.",
 			},

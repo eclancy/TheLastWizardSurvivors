@@ -336,11 +336,15 @@ public static partial class SecretCatalog
 		_ => "",
 	};
 
+	// Each level's gain in the shop's own words (MainMenu.Shop.UpgradeStat): built from the constants
+	// Player.ApplyArcaneUpgrades reads where one exists, and never a pixel distance or a code word
+	// (Eric, 2026-11-04) - the magnet's 20 px a level is a share of the reach every pickup starts
+	// with (Player.BasePickupAttractDistance).
 	private static string StatName(string upgradeId) => upgradeId switch
 	{
 		"vitality" => "Vitality (+5 max HP)",
-		"recovery" => "Recovery (+0.4 HP/s)",
-		"magnet" => "Magnet (+20 pickup radius)",
+		"recovery" => $"Recovery (+{Player.EmberheartRegenPerLevel * 60f:0} HP a minute)",
+		"magnet" => $"Magnet ({Player.PickupRadiusPercent(20f)} pickup radius)",
 		"movespeed" => "Move Speed (+5%)",
 		_ => upgradeId,
 	};

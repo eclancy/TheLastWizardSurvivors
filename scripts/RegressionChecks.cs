@@ -7685,6 +7685,9 @@ public static partial class RegressionChecks
 	{
 		if (string.IsNullOrWhiteSpace(name) || string.IsNullOrEmpty(line))
 			return false;
+		// The widow rule binds a label's last two words with a no-break space (ResponsiveLayout.NoWidow):
+		// read it as the space it stands for, or "Baba Yaga" would slip past the audit.
+		line = line.Replace(' ', ' ');
 		string plain = new string(name.Normalize(System.Text.NormalizationForm.FormD)
 			.Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
 			.ToArray());

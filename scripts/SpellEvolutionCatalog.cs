@@ -1176,7 +1176,7 @@ public static class SpellEvolutionCatalog
 			Id = "thornmail_iron_brambles",
 			BonusElementWeights = new() { { "Earth", 1 } },
 			DisplayName = "Iron Brambles",
-			Description = "Increases retaliation range by +50% and grants +2 flat armor.",
+			Description = "Increases retaliation range by +50%, and every hit you take deals 2 less damage.",
 			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 4,
 			RangeBonus = 50f,
@@ -2144,7 +2144,7 @@ public static class SpellEvolutionCatalog
 			Id = SporeMushroom.LingeringRotId,
 			DisplayName = "Lingering Rot",
 			Description = $"Each burst leaves a spore cloud as wide as itself for {SporeMushroom.CloudSeconds:0.#}s "
-				+ "that keeps poisoning anything inside. Poison +1 per tick.",
+				+ "that keeps poisoning anything inside. Poison +1 a second.",
 			MilestoneLevel = 4,
 			PoisonTickBonus = 1,
 			BonusElementWeights = new() { { "Poison", 1 } },

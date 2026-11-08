@@ -60,7 +60,9 @@ things come up; strike what lands.**
 4. **Decisions waiting on Eric:** crits in the damage colours come out near-white and alike (the element's own
    colour, crits marked only by "!" and size, is the alternative); the light pool's depth and Reduce Darkness
    (40% or off); Nimue's and Ma Liang's open items (section 0 below); the Oubliette's voice, never heard.
-5. **No single word left alone on a line, on PC and on the phone** (Eric, 2026-11-04: "any UI that shows up
+5. **[BUILT 2026-11-07, merged for 0.19.0: one shared `ResponsiveLayout.NoWidow` rule binds a wrapping
+   line's last two words - chapter note, quest tracker, taglines, stat lines, banner, tips, the plate.]**
+   **No single word left alone on a line, on PC and on the phone** (Eric, 2026-11-04: "any UI that shows up
    for text we should try to avoid wrapping single words onto next line. I saw that a number of times in the
    descriptions of levels when you first start the levels"). First the chapter's opening card (the note shown
    as a run starts, `ChapterNoteCard` / `ChapterNotes`), then every wrapped text: level-up and modification
@@ -94,12 +96,16 @@ things come up; strike what lands.**
      it leaves (Eric) - one motion from the title to the menu, not the menu dropped over the art.
      The portrait art and its eye field are generated (`tools/art/splash.py`, `.ai/title-screen.md`): change the
      generator, re-run it, check it at 540x1212 `--portrait --safe-area`, never edit the PNG.
-7. **The achievement banner says what you did** (Eric, 2026-11-04): when an achievement comes up on screen,
+7. **[BUILT 2026-11-07, merged for 0.19.0: the plate reads "Achievement - name / the deed's ask / reward".]**
+   **The achievement banner says what you did** (Eric, 2026-11-04): when an achievement comes up on screen,
    show the line for what the player actually did to earn it (its condition, as the achievements menu words
    it), not only its name and reward ("Achievement - First Blood / Spell recovered - Arcane Explosion"). Find
    the banner (`Node2DGame.RecordAchievementNow` and the banner it shows, `AchievementDefinition`'s text),
    keep it to the lines a phone can hold, and check it at both canvases over a run.
-8. **Card and item wording** (Eric, 2026-11-04):
+8. **[MOSTLY BUILT 2026-11-07, merged for 0.19.0: honest percentages from the cast's own getters, close/far
+   words, the Reliquary Key's exact line, the dropped verbs. Left: Legendary->Empowered, the Gimmel Ring's slot
+   wording, the chip shimmer, the tag lines, and the Archmage's phone spell line.]**
+   **Card and item wording** (Eric, 2026-11-04):
    - **The Reliquary Key:** its description should just say that your pickup radius applies to chests (what
      `feat/john-dee-chests` made it do), nothing longer. `ChestItemCatalog`.
    - **Rename Legendary to Empowered, and make it obvious** (Eric, 2026-11-04). The random chance for a new spell

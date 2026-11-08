@@ -206,6 +206,24 @@ public static class ResponsiveLayout
 		label.CustomMinimumSize = new Vector2(0f, 0f);
 	}
 
+	/// <summary>
+	/// Keeps a wrapping line's last two words together, so no single word is ever wrapped onto a
+	/// line of its own (Eric, 2026-11-04, the chapter notes): the shared rule, applied where a
+	/// label's text is set rather than string by string. The last space becomes a no-break space,
+	/// which WordSmart never breaks on; a one- or two-word text comes back unchanged.
+	/// </summary>
+	public static string NoWidow(string text)
+	{
+		if (string.IsNullOrEmpty(text))
+			return text;
+		int last = text.LastIndexOf(' ');
+		// The space before the last word, only when at least two words stand before it - binding a
+		// two-word text is a no-op, and a trailing space is not a word break.
+		if (last <= 0 || last == text.Length - 1 || text.IndexOf(' ') == last)
+			return text;
+		return text[..last] + ' ' + text[(last + 1)..];
+	}
+
 	// Minimum edge length for anything the player taps. Apple's HIG asks for 44pt and Material
 	// for 48dp; 48 base units at this viewport lands comfortably above both on a real handset.
 	public const float MinTouchTarget = 48f;
