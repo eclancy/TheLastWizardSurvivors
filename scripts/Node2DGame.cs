@@ -5391,9 +5391,13 @@ public partial class Node2DGame : Node2D
 
 		// The menu can open while standing inside a swarm; without a grace period the player takes
 		// contact damage on the first physics tick after unpausing, before they can react. Not drawn
-		// white (Player.GrantInvincibility): a pick is not something happening to him.
+		// white (Player.GrantInvincibility): a pick is not something happening to him. The small
+		// ward is the grace made visible, and it ends when the grace does (item 23).
 		if (player != null && IsInstanceValid(player))
+		{
 			player.GrantInvincibility(player.PostMenuInvincibilitySeconds, whiten: false);
+			PostPickWard.Show(player);
+		}
 
 		ResumeOrOpenNextMenu();
 	}
@@ -6740,9 +6744,13 @@ public partial class Node2DGame : Node2D
 		}
 
 		// Same hazard as the level-up menu: the chest is picked up mid-run, often with enemies
-		// already touching the player, so give the same grace period on the way out - unwhitened too.
+		// already touching the player, so give the same grace period on the way out - unwhitened
+		// too, and wearing the same small ward (item 23).
 		if (player != null && IsInstanceValid(player))
+		{
 			player.GrantInvincibility(player.PostMenuInvincibilitySeconds, whiten: false);
+			PostPickWard.Show(player);
+		}
 
 		ResumeOrOpenNextMenu();
 	}
