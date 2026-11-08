@@ -6,6 +6,18 @@ public partial class SaveManager : Node
 {
 	public const string SavePath = "user://savegame.json";
 
+	/// <summary>
+	/// The save file this launch actually plays against: <see cref="SavePath"/>, unless the user
+	/// argument <c>--save-file=&lt;path&gt;</c> pointed it elsewhere. The override is a testing door
+	/// (set before the load, like everything here): it lets a windowed run exercise flows that write
+	/// the save - the export/import rehearsal above all - against a throwaway file, with writes on,
+	/// while the real save never enters play. Every read, write, backup and import goes through this.
+	/// </summary>
+	public static string ActiveSavePath { get; private set; } = SavePath;
+
+	/// <summary>The user argument that points this launch at another save file. Testing only.</summary>
+	public const string SaveFileArgPrefix = "--save-file=";
+
 	public SaveData Data { get; private set; } = new();
 
 	/// <summary>
@@ -37,11 +49,19 @@ public partial class SaveManager : Node
 		// branch that has not shipped is a schema the released build will never upgrade again.
 		if (IsWriteProtectedLaunch())
 			WritesDisabled = true;
+		foreach (string arg in OS.GetCmdlineUserArgs())
+		{
+			if (!arg.StartsWith(SaveFileArgPrefix, System.StringComparison.Ordinal))
+				continue;
+			ActiveSavePath = arg.Substring(SaveFileArgPrefix.Length);
+			GD.Print($"SaveManager: this launch plays against {ActiveSavePath} (--save-file); the real save is out of play.");
+		}
 		// Before the load, and only when this launch may write: on a desktop a save from before the game was
 		// renamed is in the user:// folder of its old name, and the first launch under the new one copies it
 		// across (UserDataCarryOver). A tool run that did it would leave a stale copy for the real first
-		// launch to find and trust, while the player's live save moved on without it.
-		if (!WritesDisabled)
+		// launch to find and trust, while the player's live save moved on without it. A --save-file run is
+		// playing somewhere else entirely, so it has no business copying into the real folder either.
+		if (!WritesDisabled && ActiveSavePath == SavePath)
 			UserDataCarryOver.Run();
 		Data = LoadGame();
 		// The display switches are read on hot paths (a damage number per hit), so they are held as
@@ -93,10 +113,10 @@ public partial class SaveManager : Node
 	/// </remarks>
 	public bool ResetProgress()
 	{
-		if (!WritesDisabled && FileAccess.FileExists(SavePath))
+		if (!WritesDisabled && FileAccess.FileExists(ActiveSavePath))
 		{
-			string backup = ResetBackupPathFor(SavePath);
-			if (!WriteText(backup, FileAccess.GetFileAsString(SavePath)))
+			string backup = ResetBackupPathFor(ActiveSavePath);
+			if (!WriteText(backup, FileAccess.GetFileAsString(ActiveSavePath)))
 			{
 				GD.PushError($"SaveManager: the save could not be kept at {backup}, so progress was NOT reset.");
 				return false;
@@ -114,13 +134,33 @@ public partial class SaveManager : Node
 	{
 		if (WritesDisabled)
 			return;
-		WriteSave(SavePath, Data);
+		WriteSave(ActiveSavePath, Data);
 	}
 
 	public SaveData LoadGame()
 	{
-		Data = LoadFrom(SavePath, writes: !WritesDisabled);
+		Data = LoadFrom(ActiveSavePath, writes: !WritesDisabled);
 		return Data;
+	}
+
+	/// <summary>
+	/// Replaces this save with an exported file's progress (SaveTransfer.ImportInto: the old file
+	/// kept first, the device's settings kept local), then reloads through the real load path, so an
+	/// older file migrates exactly as a local save would. Null on success, otherwise what went wrong
+	/// in the player's words - then nothing changed.
+	/// </summary>
+	public string ImportSave(string incomingJson)
+	{
+		// A launch that may not write the save may not replace it either - and the fabricated save a
+		// tool run holds in memory would make every view of the result a lie anyway.
+		if (WritesDisabled)
+			return "Importing is off for this launch.";
+		string error = SaveTransfer.ImportInto(ActiveSavePath, incomingJson);
+		if (error != null)
+			return error;
+		Data = LoadFrom(ActiveSavePath, writes: true);
+		DisplaySettings.ApplyFromSave(Data);
+		return null;
 	}
 
 	/// <summary>
@@ -194,6 +234,12 @@ public partial class SaveManager : Node
 	/// -3 - never overwritten, so every reset can be undone by hand.
 	/// </summary>
 	public static string ResetBackupPathFor(string savePath) => FreeBackupPath(savePath, "before-reset");
+
+	/// <summary>
+	/// Where an import keeps the save it replaced: user://savegame.before-import.json, then -2, -3 -
+	/// never overwritten, so every import can be undone by hand (SaveTransfer).
+	/// </summary>
+	public static string ImportBackupPathFor(string savePath) => FreeBackupPath(savePath, "before-import");
 
 	private static string FreeBackupPath(string savePath, string label)
 	{
