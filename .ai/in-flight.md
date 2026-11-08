@@ -587,6 +587,21 @@ things come up; strike what lands.**
    saved loadouts and the boon/level-up UI at Windows and phone sizes. This is next-week design/balance work,
    not implemented in 0.13.2.
 
+   **Built 2026-11-07** (`.ai/passives-and-items.md` 3d is the full design note). Slots:
+   `Player.BaseBoonSlots` 2, `MaxBoonSlots` 4; the shop's **Reliquary Shelf** (Powers → Level-ups,
+   150 then 300 AE) sells the third and fourth. Levels: picking an owned boon levels it, to
+   `BoonCatalog.MaxLevel` 3; **level 2 of almost every boon is the old flat value** (Bone Rattle
+   starts at it instead - a shorter fright reads as a flicker), Chill's per-level is negative
+   (55% → 45% → 35% speed). Tags: one per boon, each keeping its FIRST tag so no icon moved;
+   `ValidateElementReachability` still passes against the four-slot cap. Cards: a held boon's card
+   is "Level up · Boon" with pips and the delta line; the pause screen names the level. Rarity
+   untouched (one boon card at most, `BoonOfferChance` 0.22). **Schema 25**
+   (`MigrateToBoonRework`, proved by `ValidateBoonSlotMigration`): a played save is granted both
+   shop slots - its runs all held six. Verified: build 0 errors; validator 0 errors / the
+   test_wizard warning; an 8-minute `--all-unlocked --immortal` bot filled both slots and levelled
+   both boons to 2; `_UiShot` shots of the new-boon card, the level card and the phone layout all
+   read. Not verified: a real played save's migration in-game, and feel at the four-slot endgame.
+
 42. ~~**Fields terrain palette options**~~ (Eric, 2026-11-06). **Applied: E — Faded Gold.**
    Eric selected the original dark field with clearer furrows. Regenerated the 36 stubble and 36
    furrow tiles plus the shared atlas, keeping the original texture patterns, edge masks and layout.

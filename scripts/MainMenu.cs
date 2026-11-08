@@ -931,6 +931,12 @@ public partial class MainMenu : Control
 		RegisterUpgrade(GlobalStatsManager.CurationUpgradeId, "Redaction",
 			"One more spell may be set aside from the level-up pool", 80, 40, 1);
 		upgradeDefinitions[GlobalStatsManager.CurationUpgradeId].HasPoolScaledMaxLevel = true;
+		// The boon rework's two bought slots (in-flight item 41): a run starts with two
+		// (Player.BaseBoonSlots) and these are the third and fourth. Priced under Bound Pages
+		// (200 + 200): a boon slot admits a rarer, smaller pick than a spell slot. Ships frozen -
+		// a later re-price refunds through SaveData.RepricedPowers like any Power's.
+		RegisterUpgrade(GlobalStatsManager.BoonSlotsUpgradeId, "Reliquary Shelf",
+			"+1 boon slot in every run", 150, 150, Player.MaxBoonSlots - Player.BaseBoonSlots);
 
 		// The boons the catalog prices, driven by UnlockCatalog rather than a hand-kept list. No screen
 		// sold them until 2026-10-26, so Quicksilver Bead, Deepwater Pearl and Saltbound Chain -

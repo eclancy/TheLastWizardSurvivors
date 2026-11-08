@@ -307,8 +307,14 @@ public partial class Player : CharacterBody2D
 
 	/// <summary>Bolts caught by the character's own jaws this run (Laelaps), for the balance report.</summary>
 	public static int StatBoltsCaughtInJaws { get; private set; }
-	// Boons. Permanent for the run, never levelled, and held apart from the spell loadout.
+	// Boons. Permanent for the run and held apart from the spell loadout; each levels to
+	// BoonCatalog.MaxLevel when picked again (the rework, in-flight item 41). The list keeps the
+	// order they were taken in - the pause screen lists them in it - and the levels sit beside it.
 	private readonly List<string> ownedBoonIds = new();
+	private readonly Dictionary<string, int> boonLevels = new(StringComparer.OrdinalIgnoreCase);
+	// How many boons this run can hold: BaseBoonSlots plus the shop's bought slots, set once in
+	// ApplyArcaneUpgrades. Starts at the base so a tool scene that never loads a save still has slots.
+	private int boonSlotCount = BaseBoonSlots;
 	private float boonArmorPercent = 0f;
 	private float boonEvasionPercent = 0f;
 	private int boonLuckBonus = 0;
@@ -526,13 +532,18 @@ public partial class Player : CharacterBody2D
 	// last milestone for good. Set once in ApplySelectedCharacter.
 	private string signatureSpellId = string.Empty;
 
-	/// <summary>How many boons a run can hold.</summary>
+	/// <summary>How many boon slots a new save's run holds.</summary>
 	/// <remarks>
-	/// Six, mirroring the spell slots, so a run is two loadouts of six rather than one loadout and
-	/// a growing pile. The cap is also what keeps element tags honest: boons carry tags, and
+	/// Two to start and four at most (the boon rework, Eric 2026-11-06, in-flight item 41): the
+	/// other two are bought in the shop (GlobalStatsManager.BoonSlotsUpgradeId), and boons level
+	/// instead of piling up. The cap is also what keeps element tags honest: boons carry tags, and
 	/// uncapped tagged boons would put every element capstone within reach at once.
 	/// </remarks>
-	public const int MaxBoonSlots = 6;
+	public const int BaseBoonSlots = 2;
+
+	/// <summary>The most boon slots a run can ever hold: the base two plus both shop slots.</summary>
+	/// <remarks>ValidateElementReachability counts boon carriers against this, the reachable best.</remarks>
+	public const int MaxBoonSlots = 4;
 
 	private const SpellScalingTag CoreDamageScaling =
 		SpellScalingTag.Damage | SpellScalingTag.Cooldown;
@@ -1115,6 +1126,10 @@ public partial class Player : CharacterBody2D
 		ApotheosisLearned = Teachings.HasLearned(saveManager.Data, Teaching.Apotheosis);
 		ConjunctionsLearned = Teachings.HasLearned(saveManager.Data, Teaching.Conjunctions);
 		bookPages = SpellBook.PagesFor(saveManager.Data);
+		// The run's boon slots: the base two plus the shop's Reliquary Shelf levels, capped at four
+		// (the boon rework, in-flight item 41). A found level would stack through GetLevel like any
+		// Power's, but the cap is the cap.
+		boonSlotCount = Math.Min(MaxBoonSlots, BaseBoonSlots + GetLevel(GlobalStatsManager.BoonSlotsUpgradeId));
 
 		float moveSpeedMultiplier = 1.0f + (moveSpeedLevel * 0.05f);
 		Speed *= moveSpeedMultiplier;
@@ -1771,80 +1786,106 @@ public partial class Player : CharacterBody2D
 	public bool HasBoon(string id) =>
 		ownedBoonIds.Any(b => b.Equals(id, StringComparison.OrdinalIgnoreCase));
 
-	public bool CanTakeMoreBoons => ownedBoonIds.Count < MaxBoonSlots;
+	/// <summary>The held level of a boon: 0 when not held, else 1 to <see cref="BoonCatalog.MaxLevel"/>.</summary>
+	public int GetBoonLevel(string id) =>
+		boonLevels.TryGetValue(id ?? string.Empty, out int level) ? level : 0;
 
-	/// <summary>Takes a boon permanently. Returns false if it is unknown, held, or the slots are full.</summary>
+	/// <summary>How many boons this run can hold: the base two plus the shop's bought slots.</summary>
+	public int BoonSlotCount => boonSlotCount;
+
+	public bool CanTakeMoreBoons => ownedBoonIds.Count < boonSlotCount;
+
+	/// <summary>
+	/// Takes a boon, or levels one already held (the rework, in-flight item 41: picking an owned
+	/// boon levels it). Returns false if it is unknown, at its cap, or new with the slots full.
+	/// </summary>
 	public bool TryAddBoon(string id)
 	{
 		BoonDefinition definition = BoonCatalog.GetById(id);
-		if (definition == null || HasBoon(definition.Id) || !CanTakeMoreBoons)
+		if (definition == null)
 			return false;
 
-		ownedBoonIds.Add(definition.Id);
-		ApplyBoon(definition);
+		int level = GetBoonLevel(definition.Id);
+		if (level >= BoonCatalog.MaxLevel)
+			return false;
+		if (level == 0 && !CanTakeMoreBoons)
+			return false;
+
+		if (level == 0)
+			ownedBoonIds.Add(definition.Id);
+		boonLevels[definition.Id] = level + 1;
+		ApplyBoonStep(definition, level, level + 1);
 		RaiseLoadoutChanged();
 		return true;
 	}
 
-	// Applied once, on acquisition. A boon has no levels, so there is nothing to re-apply later and
-	// nothing to tick - which is the whole reason they need no node and no per-frame cost. The one
-	// exception is the stance boon, whose condition (standing still) is read every frame: one
-	// comparison in the regen sum, and the StanceGlow node the Brazier shares.
-	private void ApplyBoon(BoonDefinition definition)
+	// Applied on acquisition (0 -> 1) and again per level, as the STEP between the two levels'
+	// magnitudes - never the whole value twice. Nothing ticks: a boon still needs no node and no
+	// per-frame cost. The one exception is the stance boon, whose condition (standing still) is
+	// read every frame: one comparison in the regen sum, and the StanceGlow node the Brazier shares.
+	private void ApplyBoonStep(BoonDefinition definition, int fromLevel, int toLevel)
 	{
+		// Level 0 means "not held yet": the step to level 1 applies the base magnitude whole.
+		float previous = fromLevel <= 0 ? 0f : BoonCatalog.MagnitudeAt(definition, fromLevel);
+		float next = BoonCatalog.MagnitudeAt(definition, toLevel);
+		float step = next - previous;
 		switch (definition.Effect)
 		{
 			case BoonEffect.Armor:
-				boonArmorPercent += definition.Magnitude;
+				boonArmorPercent += step;
 				break;
 			case BoonEffect.MaxHealth:
-				MaxHP += Mathf.RoundToInt(definition.Magnitude);
-				CurrentHP += Mathf.RoundToInt(definition.Magnitude);
+				MaxHP += Mathf.RoundToInt(step);
+				CurrentHP += Mathf.RoundToInt(step);
 				break;
 			case BoonEffect.Regen:
-				recoveryPerSecond += definition.Magnitude;
+				recoveryPerSecond += step;
 				break;
 			case BoonEffect.MoveSpeed:
-				boonMoveSpeedMultiplier += definition.Magnitude;
+				boonMoveSpeedMultiplier += step;
 				break;
+			// The three multipliers stack multiplicatively with everything else, so a level steps
+			// them by the RATIO of the two levels' factors - adding the step would quietly change
+			// how a boon composes with the shop's levels the moment it levelled.
 			case BoonEffect.SpellDamage:
-				damageMultiplier *= 1f + definition.Magnitude;
+				damageMultiplier *= (1f + next) / (1f + previous);
 				break;
 			case BoonEffect.SpellArea:
-				areaMultiplier *= 1f + definition.Magnitude;
+				areaMultiplier *= (1f + next) / (1f + previous);
 				break;
 			case BoonEffect.CooldownReduction:
-				cooldownMultiplier *= 1f - definition.Magnitude;
+				cooldownMultiplier *= (1f - next) / (1f - previous);
 				break;
 			case BoonEffect.PickupRadius:
-				magnetBonus += Mathf.RoundToInt(definition.Magnitude);
+				magnetBonus += Mathf.RoundToInt(step);
 				break;
 			case BoonEffect.Evasion:
-				boonEvasionPercent += definition.Magnitude;
+				boonEvasionPercent += step;
 				break;
 			case BoonEffect.Luck:
-				boonLuckBonus += Mathf.RoundToInt(definition.Magnitude);
+				boonLuckBonus += Mathf.RoundToInt(step);
 				break;
 			case BoonEffect.Retaliate:
-				boonRetaliateDamage += Mathf.RoundToInt(definition.Magnitude);
+				boonRetaliateDamage += Mathf.RoundToInt(step);
 				break;
 			case BoonEffect.Chill:
 				// The strongest slow wins rather than the slows multiplying, matching how
-				// Enemy.ApplySlow already resolves overlapping sources.
-				boonChillMultiplier = Mathf.Min(boonChillMultiplier, definition.Magnitude);
+				// Enemy.ApplySlow already resolves overlapping sources. A level only ever lowers
+				// the multiplier (MagnitudePerLevel is negative), so Min also carries the level.
+				boonChillMultiplier = Mathf.Min(boonChillMultiplier, next);
 				break;
 			case BoonEffect.StanceRegen:
 				// Nothing to apply now: the regen is read each frame against StillSeconds, and the
 				// stance ring at the feet is what tells the player it has taken hold.
-				boonStanceRegenPerSecond += definition.Magnitude;
+				boonStanceRegenPerSecond += step;
 				EnsureStanceGlow();
 				break;
 			// Read where they act: the firing loop (TickWaywiser) and the reaction (TriggerBoonReactions).
 			case BoonEffect.WalkingRecharge:
-				boonWalkingRecharge = Mathf.Max(boonWalkingRecharge, definition.Magnitude);
+				boonWalkingRecharge = Mathf.Max(boonWalkingRecharge, next);
 				break;
 			case BoonEffect.Frighten:
-				boonFrightenSeconds = Mathf.Max(boonFrightenSeconds, definition.Magnitude);
+				boonFrightenSeconds = Mathf.Max(boonFrightenSeconds, next);
 				break;
 		}
 
@@ -8186,49 +8227,63 @@ public partial class Player : CharacterBody2D
 		// The element the player holds most of. A boon carrying it is the likelier one to be dealt
 		// (BoonOwnElementWeight) - see below.
 		int deepestCount = baselineElementCounts.Count > 0 ? baselineElementCounts.Values.Max() : 0;
-		if (CanTakeMoreBoons)
+		foreach (BoonDefinition boon in BoonCatalog.All)
 		{
-			foreach (BoonDefinition boon in BoonCatalog.All)
+			// A boon is a candidate as a NEW pick while a slot is open, and as a LEVEL once held
+			// (the rework, in-flight item 41: picking an owned boon levels it, to BoonCatalog.MaxLevel).
+			// Both ride the same rarity: one boon card at most, BoonOfferChance's call.
+			int heldLevel = GetBoonLevel(boon.Id);
+			if (heldLevel >= BoonCatalog.MaxLevel)
+				continue;
+			if (heldLevel == 0 && !CanTakeMoreBoons)
+				continue;
+
+			if (heldLevel == 0 && !GlobalStatsManager.IsBoonUnlocked(saveManager?.Data, boon.Id))
+				continue;
+
+			var boonOption = new LevelUpOption
 			{
-				if (HasBoon(boon.Id))
-					continue;
+				SpellId = boon.Id,
+				DisplayName = boon.Name,
+				Description = boon.Description,
+				// A new boon's card shows what it does; a level's shows what the level adds,
+				// in the upgrade cards' delta register.
+				StatSummary = heldLevel == 0 ? BoonCatalog.DescribeEffect(boon) : string.Empty,
+				UpgradeSummary = heldLevel == 0 ? string.Empty : BoonCatalog.DescribeLevelGain(boon, heldLevel + 1),
+				Icon = BonelightSkin.LoadTextureSafe(boon.IconPath),
+				IsBoon = true,
+				IsNewUnlock = heldLevel == 0,
+				NextLevel = heldLevel + 1,
+				MaxLevel = BoonCatalog.MaxLevel,
+			};
 
-				if (!GlobalStatsManager.IsBoonUnlocked(saveManager?.Data, boon.Id))
-					continue;
-
-				var boonOption = new LevelUpOption
+			foreach (var (elementName, weight) in boon.ElementWeights)
+			{
+				int baseline = baselineElementCounts.TryGetValue(
+					Enum.Parse<Element>(elementName, true), out int existing) ? existing : 0;
+				boonOption.SpellElementTags[elementName] = weight;
+				// A held boon's tag is already in the baseline: a level deepens the effect, never
+				// the element (BoonDefinition.ElementWeights' remarks), so only a new pick previews
+				// a contribution.
+				if (heldLevel == 0)
 				{
-					SpellId = boon.Id,
-					DisplayName = boon.Name,
-					Description = boon.Description,
-					StatSummary = BoonCatalog.DescribeEffect(boon),
-					Icon = BonelightSkin.LoadTextureSafe(boon.IconPath),
-					IsBoon = true,
-					IsNewUnlock = true,
-					NextLevel = 1,
-					MaxLevel = 1,
-				};
-
-				foreach (var (elementName, weight) in boon.ElementWeights)
-				{
-					int baseline = baselineElementCounts.TryGetValue(
-						Enum.Parse<Element>(elementName, true), out int existing) ? existing : 0;
-					boonOption.SpellElementTags[elementName] = weight;
 					boonOption.ElementContribution[elementName] = weight;
 					boonOption.ResultingElementCounts[elementName] = baseline + weight;
 				}
-
-				// Rare boons must not close the thin elements. Water, Grass, Light, Metal and Darkness
-				// reach their tiers partly through boons (.ai/passives-and-items.md section 3a), and
-				// with one boon every four or five level-ups drawn evenly from fourteen, a Water build
-				// would see about one Water boon a run. So the boon that IS dealt leans toward the
-				// element the player is deepest in: how OFTEN a boon appears is unchanged, only WHICH.
-				bool carriesDeepest = deepestCount > 0 && boon.ElementWeights.Any(e =>
-					baselineElementCounts.TryGetValue(Enum.Parse<Element>(e.Element, true), out int held)
-					&& held >= deepestCount);
-				boonCandidates.Add(boonOption);
-				boonWeights.Add(carriesDeepest ? BoonOwnElementWeight : 1f);
+				else
+					boonOption.ResultingElementCounts[elementName] = baseline;
 			}
+
+			// Rare boons must not close the thin elements. Water, Grass, Light, Metal and Darkness
+			// reach their tiers partly through boons (.ai/passives-and-items.md section 3a), and
+			// with one boon every four or five level-ups drawn evenly from fourteen, a Water build
+			// would see about one Water boon a run. So the boon that IS dealt leans toward the
+			// element the player is deepest in: how OFTEN a boon appears is unchanged, only WHICH.
+			bool carriesDeepest = deepestCount > 0 && boon.ElementWeights.Any(e =>
+				baselineElementCounts.TryGetValue(Enum.Parse<Element>(e.Element, true), out int held)
+				&& held >= deepestCount);
+			boonCandidates.Add(boonOption);
+			boonWeights.Add(carriesDeepest ? BoonOwnElementWeight : 1f);
 		}
 
 		// Bans are applied to the assembled candidate list rather than inside each build loop, so

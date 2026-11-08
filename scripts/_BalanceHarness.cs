@@ -3729,7 +3729,9 @@ public partial class _BalanceHarness : Node
 			lines.Add("  loadout      : " + string.Join(", ",
 				player.GetEquippedSpells().Where(s => s != null).Select(s => $"{s.Id} L{s.CurrentLevel}")));
 			var boons = player.GetOwnedBoonIds();
-			lines.Add("  boons        : " + (boons.Count > 0 ? string.Join(", ", boons) : "none"));
+			// With the held level (boons level since item 41), as the loadout line writes a spell's.
+			lines.Add("  boons        : " + (boons.Count > 0
+				? string.Join(", ", boons.Select(b => $"{b} L{player.GetBoonLevel(b)}")) : "none"));
 			lines.Add("  relics       : " + string.Join(", ", player.GetOwnedChestItems()));
 			lines.Add("  ascension standing (what held back each spell that did not ascend):");
 			lines.AddRange(DescribeAscensionStanding());

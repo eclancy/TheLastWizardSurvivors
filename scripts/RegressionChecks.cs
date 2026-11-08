@@ -73,6 +73,7 @@ public static partial class RegressionChecks
 		ValidateRetiredChargeRefund(warnings);
 		ValidateDifficultyMigration(warnings);
 		ValidateChronoweaveMerge(warnings);
+		ValidateBoonSlotMigration(warnings);
 		ValidateSpellBook(warnings);
 		ValidateTeachers(warnings);
 		ValidatePrologueReel(warnings);
@@ -3114,6 +3115,36 @@ public static partial class RegressionChecks
 			warnings.Add($"Migration: schema 23 with Tempest 12 should cap at 16 and refund {expected} for the four levels past it; got {capped}, purse {full.TotalCurrency}.");
 	}
 
+	// Schema 25, the boon rework's (item 41): a save that has played is granted both Reliquary Shelf
+	// levels - its runs all held six boon slots, so asking it to buy back capacity would be the quiet
+	// confiscation every migration exists to prevent - and a fresh save is granted nothing.
+	private static void ValidateBoonSlotMigration(List<string> warnings)
+	{
+		var played = new SaveData { SchemaVersion = 24, TotalCurrency = 10 };
+		played.Lifetime.TotalRuns = 1;
+		played.Migrate(log: false);
+		played.ArcaneUpgradeLevels.TryGetValue(GlobalStatsManager.BoonSlotsUpgradeId, out int granted);
+		if (granted != 2 || played.TotalCurrency != 10)
+			warnings.Add($"Migration: schema 25 should grant a played save both boon slots with the purse untouched; got {granted}, purse {played.TotalCurrency}.");
+		played.Migrate(log: false);
+		played.ArcaneUpgradeLevels.TryGetValue(GlobalStatsManager.BoonSlotsUpgradeId, out int again);
+		if (again != 2)
+			warnings.Add($"Migration: a second schema 25 migration changed the granted boon slots to {again}.");
+
+		var fresh = new SaveData { SchemaVersion = 24 };
+		fresh.Migrate(log: false);
+		if (fresh.ArcaneUpgradeLevels.ContainsKey(GlobalStatsManager.BoonSlotsUpgradeId))
+			warnings.Add("Migration: schema 25 granted boon slots to a save that never played a run.");
+
+		// A played save that somehow already holds a level tops up to two, never past.
+		var topped = new SaveData { SchemaVersion = 24 };
+		topped.Lifetime.TotalRuns = 3;
+		topped.ArcaneUpgradeLevels[GlobalStatsManager.BoonSlotsUpgradeId] = 1;
+		topped.Migrate(log: false);
+		if (topped.ArcaneUpgradeLevels[GlobalStatsManager.BoonSlotsUpgradeId] != 2)
+			warnings.Add($"Migration: schema 25 should top a held boon-slot level up to 2; got {topped.ArcaneUpgradeLevels[GlobalStatsManager.BoonSlotsUpgradeId]}.");
+	}
+
 	// The difficulty curve's table (.ai/difficulty-curve.md, section 4): every playable road chapter has a
 	// row; every multiplier is positive; enemy damage is never under 1 (under it a touch can roll nothing
 	// and read as a dodge) and never eases along the road; the first chapter is the easiest by health.
@@ -6143,6 +6174,31 @@ public static partial class RegressionChecks
 				if (weight != 1)
 					warnings.Add($"Boon '{boon.Id}' carries {element} at weight {weight}; boons carry one instance per element.");
 			}
+
+			// The rework's tag budget (item 41): one tag per boon, paid for the four-slot cap. A
+			// second tag added back quietly re-widens every build's element reach.
+			if (boon.ElementWeights.Length != 1)
+				warnings.Add($"Boon '{boon.Id}' carries {boon.ElementWeights.Length} element tags; the rework's budget is exactly one.");
+
+			// Every boon levels (item 41), and each level must move its number the right way:
+			// Chill is a speed multiplier, so it falls with levels and must stay above zero.
+			if (boon.Effect == BoonEffect.Chill)
+			{
+				if (boon.MagnitudePerLevel >= 0f)
+					warnings.Add($"Boon '{boon.Id}' is a Chill whose levels do not lower the speed multiplier.");
+				if (BoonCatalog.MagnitudeAt(boon, BoonCatalog.MaxLevel) <= 0f)
+					warnings.Add($"Boon '{boon.Id}' slows below zero speed at its cap; a negative multiplier reverses enemies.");
+			}
+			else if (boon.MagnitudePerLevel <= 0f)
+				warnings.Add($"Boon '{boon.Id}' has no per-level gain, so picking it again would spend a level-up on nothing.");
+
+			// The level card's delta line fails as silently as the stat line does: an effect missing
+			// from DescribeLevelGain's switch deals a card that names no gain at all.
+			for (int level = 2; level <= BoonCatalog.MaxLevel; level++)
+			{
+				if (string.IsNullOrWhiteSpace(BoonCatalog.DescribeLevelGain(boon, level)))
+					warnings.Add($"Boon '{boon.Id}' has an empty level-{level} gain line; BoonCatalog.DescribeLevelGain has no arm for {boon.Effect}.");
+			}
 		}
 	}
 
@@ -6168,8 +6224,10 @@ public static partial class RegressionChecks
 
 	private static void ValidateElementReachability(List<string> warnings)
 	{
-		// Two pools with two separate caps: spells fill six slots, boons fill six of their own.
-		// Summing them as one pool would let a six-boon element borrow spell slots it cannot use.
+		// Two pools with two separate caps: spells fill six slots, boons fill at most four of their
+		// own (Player.MaxBoonSlots, the base two plus both shop slots - reachability counts the best
+		// a player can buy). Summing them as one pool would let a boon-heavy element borrow spell
+		// slots it cannot use.
 		var spellContributions = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
 		var boonContributions = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
 		// The second pass (.ai/achievements-and-secrets.md 6.3, item 5): only what a player has on the

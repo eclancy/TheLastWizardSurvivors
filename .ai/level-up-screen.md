@@ -317,9 +317,11 @@ time, we do not need to see the level up animation pips"): a lone breathing sock
 six empty ones says nothing the word "Attack" under the name does not, and on a PC it cost the card
 the 20 its chips now stand clear of the frame with (2e). The mutation card in the hand has none
 either: it is a milestone, named as one ("Mutation · Attack"), the seal and the glow say so, and
-its level is the ceremony rather than a step. A boon never levels, and a branch on the evolution
-page is not a level. So the one moving pip on the screen is on the card that improves something
-already held - which, with the rubric and the "Level up" line, is what marks it.
+its level is the ceremony rather than a step. A branch on the evolution
+page is not a level. So the moving pip on the screen is on the card that improves something
+already held - which, with the rubric and the "Level up" line, is what marks it. *(Since the boon
+rework - `.ai/passives-and-items.md` 3d - a HELD boon's card is exactly that and wears the pips
+too; a new boon's card stays pipless, like a new spell's.)*
 
 Calm: a one-second eased cycle (`0.5 - 0.5 cos`), on `Time.GetTicksMsec`, which runs while the
 level-up has the tree paused, so every row on screen breathes together. While the card is hovered,

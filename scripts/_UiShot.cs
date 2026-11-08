@@ -3990,7 +3990,11 @@ public partial class _UiShot : Node
 				break;
 			scribe.TryAddBoon(boon.Id);
 		}
-		GD.Print($"_UiShot: every spell at its card cap, {scribe.GetOwnedBoonIds().Count} boons held");
+		// Boons level since the rework (item 41): a photo of "nothing left to take" needs the held
+		// ones at their cap too, or the hand deals a boon level-up instead of the card being shot.
+		foreach (string id in scribe.GetOwnedBoonIds().ToList())
+			while (scribe.TryAddBoon(id)) { }
+		GD.Print($"_UiShot: every spell at its card cap, {scribe.GetOwnedBoonIds().Count} boons held at their caps");
 	}
 
 	// The press at the end of the defeat, once its card is armed (see defeatPress): a press and its

@@ -1393,7 +1393,8 @@ public partial class LevelUpMenu : CanvasLayer
 	private static string TypeLabelText(LevelUpOption option)
 	{
 		if (option.IsBoon)
-			return "BOON - PERMANENT, NO SLOT";
+			// A held boon's card is an upgrade and says so, like a spell's "Level up · Attack".
+			return option.IsNewUnlock ? "BOON - PERMANENT, NO SLOT" : "Level up · Boon";
 		if (option.SpellId == Player.MarginaliaId)
 			return "A note in the margin";
 		string kind = option.SpellId == "familiar" && option.VariantId == Familiar.CatId
@@ -1535,15 +1536,19 @@ public partial class LevelUpMenu : CanvasLayer
 	// ones, which says nothing the word "Attack" under its name does not, and on a PC it cost the
 	// card the 20 its chips now stand clear of the frame with. The mutation card in the hand has none
 	// either - it is a milestone, named as one ("Mutation · Attack"), the wax seal and the glow say
-	// so, and its level is the ceremony rather than a step - and nor have a boon (it never levels)
-	// or a branch on the evolution page. So the one moving pip on the screen is on the card that
-	// improves something already held, which is what it was asked for.
+	// so, and its level is the ceremony rather than a step - and nor has a branch on the evolution
+	// page. So the moving pip on the screen is on the card that improves something already held,
+	// which is what it was asked for - and since the boon rework (item 41) a HELD boon's card is
+	// exactly that, so it wears them too.
 	//
 	// Gold base on the page, ring and held fill at 3.8:1 as a graphic (tools/art/ui_contrast.py,
 	// "pips"); the becoming pip rises to gold lit. The gold leaf (#B88A1F) it used was 2.4:1.
 	private Control BuildLevelPips(LevelUpOption option, BaseButton card)
 	{
-		if (FamilyOf(option) != CardFamily.Upgrade || option.MaxLevel <= 1)
+		// A boon card earns pips the same way since boons level (in-flight item 41) - but, like a
+		// spell's, only once the boon is held: a new boon's card stays pipless, as a new spell's does.
+		bool boonLevelUp = option.IsBoon && !option.IsNewUnlock;
+		if ((FamilyOf(option) != CardFamily.Upgrade && !boonLevelUp) || option.MaxLevel <= 1)
 			return null;
 
 		int count = option.MaxLevel;

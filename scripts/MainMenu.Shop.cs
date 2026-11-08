@@ -153,8 +153,10 @@ public partial class MainMenu
 			new[] { "vitality", "recovery", "extra_lives", "movespeed" }),
 		("Fortune", "What each run gives back.",
 			new[] { "magnet", "growth", "greed", "luck" }),
+		// The Reliquary Shelf sits here rather than under Survival: a boon slot is one more thing a
+		// level-up can offer, the same lever as a reroll or a ban.
 		("Level-ups", "More say over what each level-up offers you.",
-			new[] { "rerolls", "bans", GlobalStatsManager.CurationUpgradeId }),
+			new[] { "rerolls", "bans", GlobalStatsManager.BoonSlotsUpgradeId, GlobalStatsManager.CurationUpgradeId }),
 	};
 
 	// The boons for sale (UnlockCatalog.PurchasableBoons), the last section of Powers whether or not
@@ -1075,6 +1077,7 @@ public partial class MainMenu
 			"luck" => ("Luck", $"+{l}"),
 			"crit_chance" => ("Crit chance", $"+{Math.Min(75, l * 3)}%"),
 			GlobalStatsManager.CurationUpgradeId => ("Spells set aside", $"{l}"),
+			GlobalStatsManager.BoonSlotsUpgradeId => ("Boon slots", $"{Player.BaseBoonSlots + Math.Min(l, Player.MaxBoonSlots - Player.BaseBoonSlots)}"),
 			// The value is rewritten with the save's own book where the card is refreshed (RefreshUpgradeControls).
 			SpellBook.ShopUpgradeId => ("Spells held", $"+{l}"),
 			_ => ("Level", $"{l}"),
