@@ -2512,10 +2512,11 @@ public partial class Player : CharacterBody2D
 	/// Raised for every hit the player lands on an enemy: where it landed, how much, and which spell.
 	/// </summary>
 	/// <remarks>
-	/// Read by side events that react to the fighting around them rather than to being hit - the
-	/// Frozen Waste's ice thaws from the damage dealt beside it. That is what lets the ice stay out
-	/// of the "enemies" group, and so out of every targeting path: a breakable must never be a
-	/// target (see .ai/side-events.md). Subscribers unsubscribe in _ExitTree; it is static.
+	/// Read by what reacts to the fighting around it rather than to being hit - every breakable
+	/// (StrikeListener), the first of which was the Frozen Waste's ice, which thawed from the damage
+	/// dealt beside it until it became a sing-back (.ai/unlock-puzzles.md 3.6). That is what lets a
+	/// breakable stay out of the "enemies" group, and so out of every targeting path: it must never be
+	/// a target (see .ai/side-events.md). Subscribers unsubscribe in _ExitTree; it is static.
 	/// </remarks>
 	public static event Action<Vector2, int, SpellData> EnemyDamagedAt;
 

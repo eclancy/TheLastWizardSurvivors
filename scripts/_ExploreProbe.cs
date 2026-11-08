@@ -75,6 +75,14 @@ using TheOneHeMissed.scripts;
 //      the probe goes to the nearest cold one, stands in its reach until it catches, and on to the next, so the 25 s
 //      clock is run against a real walk. --let-beacon-die, once the first has caught, stands off at the tomb (outside
 //      every reach) until the wind puts it out, checks it went cold, and then lights all three.
+//      The Frozen Waste's thaw (--stage=5) is SUNG BACK (.ai/unlock-puzzles.md 3.6), at the player's own walking speed,
+//      never teleported: the probe stands where it is while the ice sings, remembers the strings in the order they lit
+//      (ThawEvent.SungStringAt - what a player watching saw, never the song itself), and once the ice listens walks to
+//      each in turn by Kantele.Route - in to the open ice round the block and out across the string - feet first, the
+//      pips under the block (ThawEvent.Answered) saying which note it is on. The swarm is cleared only every 6 s, so the
+//      guard and the trickle are round it. --wrong-string, once the first phrase is sung back and one note of the second,
+//      steps on a string that is not the next, and checks the phrase is sung again, its pips emptied, and the first phrase
+//      still sung back.
 //      The Court's dotted door (its second event) is TRACED at the player's own walking speed, never teleported along
 //      it: from where it arrives the probe walks to dot 1 and then along the line a stride ahead of the ink, feet first
 //      (Player.FootPosition, what the trace reads), and logs how long it took and how much of the household came in at
@@ -175,6 +183,27 @@ public partial class _ExploreProbe : Node
 	// Her stop when he came, and how many dark lamps the fall had borne her past before that.
 	private int bargeFirstStop = -1;
 	private int bargeBorneAtArrival;
+	// --wrong-string: at the thaw, step on a string out of turn first (see the header).
+	private bool wrongString;
+	// The thaw as the probe knows it: the strings it saw lit in this singing, the way it is walking and to which note,
+	// and the thaw's story at its last living tick (the event frees itself before the results run, as the hut does).
+	private readonly int[] thawHeard = new int[Kantele.SongLength];
+	private int thawHeardCount;
+	private int thawSingingSeen = -1;
+	private readonly Vector2[] thawWay = new Vector2[4];
+	private int thawWayLength;
+	private int thawLeg;
+	private (int Phrase, int Answered, int Wrongs, int Singing) thawPlannedFor = (-1, -1, -1, -1);
+	private int thawWrongTarget = -1;
+	private int thawPhrasesBeforeWrong = -1;
+	private int thawSingingsBeforeWrong = -1;
+	private int thawSingingsAfterWrong = -1;
+	private int thawPhrasesAfterWrong = -1;
+	private float thawWalked;
+	private float thawClearClock;
+	private int thawStrayTouches;
+	private (bool Seen, int Phrases, int Singings, int Wrongs, int Notes) thawSnap;
+	private int thawSnapCur = -1;
 	// --tithe-level=N: the player is put at level N as he arrives at the Tithe-Reeve's scale, so the price is a real
 	// level's (the probe arrives in the first minute, at level 1, where a level is 10 XP). --tithe-walk-off: once the
 	// pan is two fifths paid he walks 1,500 px off, waits, and comes back - what is paid must stay paid.
@@ -256,6 +285,7 @@ public partial class _ExploreProbe : Node
 			else if (arg.StartsWith("--tithe-level=")) titheLevel = int.Parse(arg.Substring(14));
 			else if (arg == "--tithe-walk-off") titheWalkOff = true;
 			else if (arg == "--step-off") stepOffDoor = true;
+			else if (arg == "--wrong-string") wrongString = true;
 		}
 		// The gibbet's cage says each change of phase, each rising and each fall (a run says nothing).
 		GibbetCageEvent.LogPhases = true;
@@ -1326,6 +1356,25 @@ public partial class _ExploreProbe : Node
 						$"the ink never fell below {traceLowest:0} px after the pause");
 				}
 			}
+			if (e is ThawEvent || (thawSnap.Seen && cur == thawSnapCur))
+			{
+				Check("the song was sung back, all three phrases", thawSnap.Phrases == Kantele.PhraseCount,
+					$"{thawSnap.Phrases} of {Kantele.PhraseCount} sung back; {thawSnap.Singings} singings, {thawSnap.Notes} notes sung by the ice, "
+					+ $"{thawWalked:0} px walked");
+				Check("from what the ice showed: every way it walked to a string sounded that string", thawStrayTouches == 0,
+					$"{thawStrayTouches} way(s) walked with nothing sounding at the end");
+				if (wrongString)
+				{
+					Check("a string out of turn sang the phrase again", thawSnap.Wrongs >= 1 && thawSingingsAfterWrong > thawSingingsBeforeWrong,
+						$"string {thawWrongTarget}: {thawSnap.Wrongs} wrong, singings {thawSingingsBeforeWrong} -> {thawSingingsAfterWrong}");
+					Check("and lost nothing sung back: the first phrase stayed sung, only the one under way began again",
+						thawPhrasesBeforeWrong == 1 && thawPhrasesAfterWrong == 1 && thawSnap.Phrases == Kantele.PhraseCount,
+						$"{thawPhrasesBeforeWrong} phrase(s) sung back when it went wrong, {thawPhrasesAfterWrong} when the ice sang again; "
+						+ $"all {thawSnap.Phrases} by the end");
+				}
+				else
+					Check("no string was stepped on out of turn", thawSnap.Wrongs == 0, $"{thawSnap.Wrongs} wrong");
+			}
 			if (e is FivePointedSealEvent seal)
 			{
 				Check("every stone faces the seal", seal.Aligned == FivePointedSealEvent.StoneCount, $"{seal.Steps} presses");
@@ -1530,6 +1579,15 @@ public partial class _ExploreProbe : Node
 		// The dotted door: traced, dot to dot, at his own walk (TraceStep).
 		if (e is DottedDoorEvent tracing && tracing.IsFound)
 			target = TraceStep(tracing, delta);
+		// The thaw: listened to, then sung back at his own walk (SingStep); the swarm cleared only every 6 s.
+		if (e is ThawEvent thawing && thawing.IsFound)
+		{
+			target = SingStep(thawing, delta);
+			thawClearClock += delta;
+			clearSwarm = thawClearClock >= 6f;
+			if (clearSwarm)
+				thawClearClock = 0f;
+		}
 		if (target == null)
 		{
 			float best = float.MaxValue;
@@ -1581,7 +1639,7 @@ public partial class _ExploreProbe : Node
 				&& enemy.GlobalPosition.DistanceTo(paying.ScaleFoot) < TitheScaleEvent.TitheReach - 30f
 				&& GranaryTithe.SideOf(enemy.GlobalPosition) == titheSide)
 				enemy.TakeDamage(enemy.Health + 1, false);
-			else if (!enemy.IsMiniBoss && d < 500f && e is not ThawEvent && clearSwarm && !tithing)
+			else if (!enemy.IsMiniBoss && d < 500f && clearSwarm && !tithing)
 				enemy.QueueFree();
 		}
 	}
@@ -1780,6 +1838,85 @@ public partial class _ExploreProbe : Node
 
 	// One step of the trace at his own walking speed, by the feet: to dot 1, then along the line a stride ahead of the ink.
 	// With --step-off, once two fifths is inked: off the line, a wait, and back to where the ink ends.
+	// --- the thaw: sung back --------------------------------------------------------------------------------
+
+	// One step of the sing-back. While the ice sings: stand, and remember the strings in the order they light. While it
+	// listens: walk to the next note's string by Kantele.Route at the player's own walk, feet first; the pips (Answered)
+	// say which note is next. --wrong-string: the first time it listens, a string that is not the phrase's first.
+	private Vector2 SingStep(ThawEvent thaw, float delta)
+	{
+		Vector2 feetOffset = player.FootPosition - player.GlobalPosition;
+		Vector2 feet = player.FootPosition - thaw.Block;
+		thawSnapCur = cur;
+		thawSnap = (true, thaw.PhrasesSung, thaw.Singings, thaw.Wrongs, thaw.SungNotes);
+		// A new singing: forget the last one, and remember this one as it lights.
+		if (thaw.Singings != thawSingingSeen)
+		{
+			thawSingingSeen = thaw.Singings;
+			thawHeardCount = 0;
+			if (thawSingingsBeforeWrong >= 0 && thawSingingsAfterWrong < 0 && thaw.Singings > thawSingingsBeforeWrong)
+			{
+				thawSingingsAfterWrong = thaw.Singings;
+				thawPhrasesAfterWrong = thaw.PhrasesSung;
+				GD.Print($"EXPLOREPROBE thaw: the ice sang it again after the wrong string ({thawPhrasesAfterWrong} phrase(s) still sung back, "
+					+ $"{thaw.Answered} of the phrase under way)");
+			}
+		}
+		while (thawHeardCount < thaw.SungThisSinging)
+		{
+			thawHeard[thawHeardCount] = thaw.SungStringAt(thawHeardCount);
+			thawHeardCount++;
+		}
+		if (!thaw.IsListening)
+			return thaw.Block + feet - feetOffset;
+
+		int length = thaw.PhraseLength;
+		if (thawHeardCount < length)
+			return thaw.Block + feet - feetOffset;      // it missed a note: wait for the ice to sing it again
+		var now = (thaw.PhrasesSung, thaw.Answered, thaw.Wrongs, thaw.Singings);
+		// The way walked a second ago and the ice has not moved on: the note it walked for never sounded.
+		if (now == thawPlannedFor && thawLeg >= thawWayLength && thawWayDoneAt >= 0f && completeClock - thawWayDoneAt > 1f)
+		{
+			thawStrayTouches++;
+			thawWayDoneAt = -1f;
+			GD.Print($"EXPLOREPROBE thaw: walked the way to a string and nothing sounded (feet at {feet})");
+		}
+		if (now != thawPlannedFor)
+		{
+			thawPlannedFor = now;
+			thawWayDoneAt = -1f;
+			int note = thawHeard[Math.Clamp(thaw.Answered, 0, length - 1)];
+			if (wrongString && thaw.Wrongs == 0 && thaw.PhrasesSung == 1 && thaw.Answered == 1)
+			{
+				// A leap from the note it should be, so the way there touches nothing else either.
+				note = (note + 2) % Kantele.StringCount;
+				thawWrongTarget = note;
+				thawPhrasesBeforeWrong = thaw.PhrasesSung;
+				thawSingingsBeforeWrong = thaw.Singings;
+				GD.Print($"EXPLOREPROBE thaw: heard {string.Join(" ", thawHeard.Take(length))}, one sung back; stepping on string {note} next, out of turn");
+			}
+			else if (thaw.Answered == 0)
+				GD.Print($"EXPLOREPROBE thaw: phrase {thaw.PhrasesSung + 1} heard as {string.Join(" ", thawHeard.Take(length))}; singing it back");
+			thawWayLength = Kantele.Route(feet, note, thawWay);
+			thawLeg = 0;
+		}
+		if (thawLeg >= thawWayLength)
+			return thaw.Block + feet - feetOffset;
+		Vector2 next = feet.MoveToward(thawWay[thawLeg], player.WalkingSpeed * delta);
+		thawWalked += feet.DistanceTo(next);
+		if (next.DistanceTo(thawWay[thawLeg]) < 0.01f)
+		{
+			thawLeg++;
+			// The way is walked and the ice heard nothing: the note it walked for never sounded. Checked a frame later
+			// (the event reads the feet after this step has put them there), on the next call, by the plan not moving on.
+			if (thawLeg >= thawWayLength)
+				thawWayDoneAt = completeClock;
+		}
+		return thaw.Block + next - feetOffset;
+	}
+
+	private float thawWayDoneAt = -1f;
+
 	private Vector2 TraceStep(DottedDoorEvent door, float delta)
 	{
 		traceClock += delta;

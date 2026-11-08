@@ -36,7 +36,7 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 | Blighted Swamp | **Snuff the lanterns** (`BogLanternsEvent`) | "Nothing living lights them." | **explore**: four lanterns spread over the map, each releasing wisps, then the lantern-tender comes and is fought on its own terms (below) | Contagion |
 | Blighted Swamp (second) | **The gibbet's cage** (`GibbetCageEvent`) | "Nothing living lights them." | **lead** (`.ai/unlock-puzzles.md` 3.4): a cage hangs from a gibbet over a pool of rot; hold the winch 2 s and it comes down. He follows your own steps at 75% of your walk to the ferry landing, 1,450-1,750 px off, which the arrow shows. Between them, three walls of rot pools, each with one gap (`RotPoolLayout`), that hurt only him - 5 of his 60 the moment his feet are in one and every 0.25 s they stay; your steps glow on the ground ahead of him, and a pool stirs sickly yellow-green when he nears it. Walk back over your steps and he leaves the loop out. Every 5 s the Mired rise in the next gap. Nothing hunts or bites him; if the rot takes him the bog takes him back to the cage and the walk starts again | Paracelsus |
 | Mystic Ruins | **The Five-Pointed Seal** (`FivePointedSealEvent`) | "The old wards were broken from the inside." | **solve**: four guardian stones round a star cut in a courtyard floor; a step onto a stone's plate turns it and the two beside it a quarter (a puzzle, six to twelve presses, always solvable); all four facing the seal breaks it | Abe no Seimei |
-| Frozen Waste | **The thaw** (`ThawEvent`) | "A wizard lies under the ice." | **fight here**: damage dealt near the block thaws it, fire counts triple | Väinämöinen |
+| Frozen Waste | **The thaw** (`ThawEvent`) | "A wizard lies under the ice." | **sing back** (unlock-puzzles.md 3.6, built 2026-11-07): over the frozen lake, fanned out from the block to the shore, five strings of ice - a kantele - each with its own note (A3 D4 F4 C5 A5, low to high clockwise) and its own colour along it. Once he is on the lake the ice sings a phrase: the strings light and sound in turn. Step on them in the same order (his feet, never an enemy's; the open ice round the block is the way between two that are not side by side). Three phrases, of three, four and five notes, each the last with a note added; each sung back takes the block a thaw stage further and the last frees him. A wrong string replays the phrase and loses nothing sung back; walking off forgets only the phrase under way. The heat, fire's triple and the window as the place where fighting counts are gone | Väinämöinen |
 | Scorched Sands | **The caravan master** (`CaravanMasterEvent`) | "The dead still walk the trade road." | **catch**: a walker on a fixed road that never turns toward you and escapes at the end | Iron Palisade |
 | Scorched Sands (second) | **The dry tomb** (`TombBeaconsEvent`) | "He hid the water." | **kindle**: three cold beacons on the dunes 700 px apart round a sealed tomb; stand by one 1.5 s to light it, a lit one burns 25 s before the wind puts it out, and the light draws six of the dead in at it. All three alight at once and the slab slides aside. Any order | Imhotep |
 | The Emberdeep | **The great anvil** (`GreatAnvilEvent`) | "His forge, at the end of the road." | **bait**: four chains staked out from the anvil Wayland is chained to; only the forge's own Trip-Hammers break them - a slam that lands on a stake breaks its chain | Wayland the Smith |
@@ -69,8 +69,10 @@ The light grows with the heat, a warm glow grows in the block, and once he is ou
 - **Placed on open ground, all of it.** The footprint is 360 px; eight points on a ring that wide are 280
   px apart, so the thaw alone places through `IsExploreGroundClearDense` (rings and points every 80 px,
   opt-in, so no other site moved). `_ExploreProbe --stage=5`: 22 passed on seeds 4242 and 31.
-- **Its rules are unchanged**: damage near the block thaws it, fire counts triple, the ice is never a
-  target. The objective arrow points at the top of the block, so its chevron is not on his face
+- **Its rules were unchanged by the lake**: damage near the block thawed it, fire counted triple, the ice is
+  never a target. **Since 2026-11-07 it is sung back instead** (`.ai/unlock-puzzles.md` 3.6): the kantele's five
+  strings lie over this lake (`tools/art/kantele.py`, a child sprite of `ThawLake`), the light under the ice grows
+  with the phrases sung back rather than with the heat, and the window of clear ice is only where the light is. The objective arrow points at the top of the block, so its chevron is not on his face
   (`PoiPointer` now treats an objective within 140 px of a place as on it).
 - Checked by `RegressionChecks.ValidateThawArt`. Not checked: the shader's cost on the phone.
 
@@ -170,7 +172,7 @@ events:
 
 | what | band (chunks of 1536 px from the start) | bearing | footprint |
 |---|---|---|---|
-| the event's main site | **4 to 6** (6,100 to 9,200 px) | seeded | the event's own (grove ring + 70, the thaw's heat radius, the cell's 110, a lantern's pool + 40, the camp 140) |
+| the event's main site | **4 to 6** (6,100 to 9,200 px) | seeded | the event's own (grove ring + 70, the thaw's lake and bank, 360, the cell's 110, a lantern's pool + 40, the camp 140) |
 | the bog lanterns' other three | a chain: each **760 to 1,100 px** from the last, never within 650 of another, all within 2,200 of the first | seeded | |
 | the caravan's road | 2,000 px from the camp, the first of twelve bearings whose whole length is open ground | seeded | a 72 px strip, reserved |
 | the wayfinder | **1.5 to 2.5** (2,300 to 3,800 px) | seeded, at least **75 degrees** off the event's | 90 |
@@ -576,9 +578,11 @@ chapter's line in `SideEventDirector` is a list, its original event first:
 
 - **Nothing an event places joins `"enemies"` unless it is an enemy.** Every targeting path
   iterates that group, and an ice block or a lantern in it would pull the whole loadout off the
-  swarm. This is the breakables rule, and **the thaw is built around it**: the ice is never a
-  target. It listens to `Player.EnemyDamagedAt` and warms from hits landed near it, which is how
-  "only area damage and fire break it" works without a breakable-object system.
+  swarm. This is the breakables rule, and **the thaw was built around it**: the ice is never a
+  target. It listened to `Player.EnemyDamagedAt` and warmed from hits landed near it, which is how
+  "only area damage and fire break it" worked without a breakable-object system (`StrikeListener` keeps
+  that for every breakable). Since 2026-11-07 it is sung back on strings of ice (`.ai/unlock-puzzles.md`
+  3.6) and listens to nothing: the strings are drawn, and only the player's feet are read.
 - **Anything an enemy drops for the player to reach goes through `ReachablePoint`.** Enemies are
   not held to the bounds the player is. The first Gaoler's key fell where the Warden died, outside
   the player's clamp, and could not be picked up.

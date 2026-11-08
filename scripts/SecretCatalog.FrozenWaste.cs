@@ -5,8 +5,9 @@ public static partial class SecretCatalog
 	public const string BuriedRunesId = "buried_runes";
 
 	/// <summary>
-	/// The Frozen Waste (stage_5): .ai/achievements-and-secrets.md 8.8. Its side event is the thaw (fight
-	/// near), so no strike here: that is the thaw's.
+	/// The Frozen Waste (stage_5): .ai/achievements-and-secrets.md 8.8. Its side event is the thaw, which was
+	/// "fight near" when these were planned (so no strike here) and is "sing it back" since 2026-11-07
+	/// (.ai/unlock-puzzles.md 3.6): strings stepped on in a heard order, which no secret here asks either.
 	/// </summary>
 	/// <remarks>
 	/// Built: I2 the Buried Runes, the spell vault (2026-10-30) - stillness, then touch. To build: I1

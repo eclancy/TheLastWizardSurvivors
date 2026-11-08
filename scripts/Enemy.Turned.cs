@@ -29,7 +29,7 @@ using TheOneHeMissed.scripts;
 // WHERE ITS BLOWS GO. A blow is TurnedBlowShare of the STRIKER's own health - a man of the sown field is as strong
 // against his neighbour as he is - straight into the target's TakeDamage, never through Player.DealDamageToEnemy:
 // no crit, no damage multiplier, no Vulnerable, no on-hit or on-kill rider (lifesteal, the chalice, the Hungry
-// Hedge's feeding, the spell's damage tally), and no Player.EnemyDamagedAt, so the thaw is never warmed by it. It
+// Hedge's feeding, the spell's damage tally), and no Player.EnemyDamagedAt, so no breakable is ever struck by it. It
 // is not scaled by ScaleOutgoingDamage either: that is the rule for what an enemy deals the PLAYER (the chapter's
 // EnemyDamage and Weaken), and this is dealt to one of its own. A death it causes is still a death - Enemy.StartDeath
 // counts the kill (RunEvents.RecordKill), tells the player (OnEnemyDiedAt) and drops the orb, exactly as a poison

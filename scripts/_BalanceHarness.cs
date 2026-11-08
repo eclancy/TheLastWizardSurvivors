@@ -2350,7 +2350,8 @@ public partial class _BalanceHarness : Node
 			GD.Print($"HARNESS explore: t={elapsed:0.0}s heading {leg}, {player.GlobalPosition.DistanceTo(target.Value):0} px away in a straight line");
 		}
 
-		// Standing on it: the grove holds and the ice thaws with the bot in place.
+		// Standing on it: the grove holds with the bot in place. (The thaw is sung back since 2026-11-07,
+		// .ai/unlock-puzzles.md 3.6; standing on the block wins nothing there, and _ExploreProbe sings it.)
 		if (player.FootPosition.DistanceTo(target.Value) < 24f)
 		{
 			foreach (string a in MoveActions)

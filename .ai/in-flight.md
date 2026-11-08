@@ -69,11 +69,11 @@ things come up; strike what lands.**
    hedges, are the Heath's crowns too sparse); the spell reaches; the Forest without shooters; John Dee's chest
    economy (every other wizard has about a third of a set fewer chests a run).
 3. **The other unlock puzzles** in `.ai/unlock-puzzles.md` (designed and chosen by Eric, not built): Imhotep's
-   mirrors, Ma Liang's door in one stroke, Väinämöinen's song
-   sung back, Morgan's lamps lit ahead, Tituba's key past the lanterns. Paracelsus's (the pilot) is done,
-   and two more are **built 2026-11-07**: **Baba Yaga's herded hut** (`feat/baba-yaga-hut`, the Built note in
-   3.3), together with item 59's hut asks (solid, four-sided, falls facing the camera); and **Medea's balanced
-   scale** (`feat/medea-scale`, the Built note in 3.5).
+   mirrors, Ma Liang's door in one stroke, Tituba's key past the lanterns. Paracelsus's (the pilot) is done,
+   and four more are **built 2026-11-07/08**: **Baba Yaga's herded hut** (`feat/baba-yaga-hut`, the Built note in
+   3.3), together with item 59's hut asks (solid, four-sided, falls facing the camera); **Medea's balanced
+   scale** (`feat/medea-scale`, the Built note in 3.5); **Väinämöinen's song sung back** (3.6); and **Morgan's
+   lamps lit ahead** (3.7).
    - **More hints for unlockables** (Eric, 2026-11-04). His example: in the first chapter, Baba Yaga's walking
      hut walks a visible path, and that path is drawn on the map, so the player finds it by following tracks.
      Do this for every unlock: each wizard's event and each secret leaves traces in the world that lead to it

@@ -1257,6 +1257,118 @@ def hint_ice_song():
     return S.dc_block(_far(out, low=105.0, high=2200.0, size=0.8, mix=0.4, damp=0.6))
 
 
+# The thaw's kantele (ThawEvent, Kantele; .ai/unlock-puzzles.md 3.6, "sing it back"): its five strings of ice, in
+# semitones from A4, low to high - the order they lie clockwise round the block. A3 D4 F4 C5 A5: the D minor seventh
+# his song lives in, opened out over two octaves, so any phrase on them is a broken chord and never a sour note, and
+# every step is three semitones or more - a step the ear names as higher or lower without training (the pentachord
+# the hint walks, D E F G A, has a semitone in it, E to F, which a phrase sung back cannot afford).
+#
+# WHY SPREAD, NOT STACKED. Stacked thirds (D4 F4 A4 C5 E5) were tried first: one note in each of five neighbouring
+# bands of analyse.py's profile, the notes 0.35-0.6 apart - but a plucked note is most of its energy in the band its
+# pitch falls in, and two of those bands belong to UI tones that also just fall (ui_pause in A4's, ui_open and
+# ui_back in E5's), which measured 0.07-0.09 from the strings whatever their overtones, shimmer or lake did. Opened
+# out, the five skip both bands. Kantele.Notes (scripts/Kantele.cs) names the files.
+_KANTELE = [-12, -7, -4, 3, 12]
+
+
+def _ice_pluck(i):
+    """String i of the kantele, plucked (0 the lowest).
+
+    One voice, five strings: a string's harmonic stack, let go a hair sharp and settling (a plucked string does),
+    struck near its end so the overtones are bright at the start - nearly as strong as the note, as a kantele's are
+    - and go before it; a little glass in it - ice's own inharmonic ratios (2.76, 5.40, the element voice's), very
+    quiet and quick - and a short pick. The lower the string, the thicker: darker, ringing longer; the higher, the
+    thinner, brighter and shorter. That is what a real kantele does.
+
+    THE SHIMMER. Each string is a doubled course, its two strands a hair apart, so the note beats at _ICE_BEAT_HZ as
+    it rings: ice ringing the way a glass rim does. A plain pluck falls as one smooth exponential, a bell's shape too.
+
+    THE LAKE. Sound in a sheet of ice disperses - the high part arrives first and the low after - so a frozen lake
+    answers a knock with a falling, eerie "pew". A quarter of a second after the pluck, quiet, from three times the
+    note down to it: the one thing about these strings that is the lake's. Open air over the ice: a small room.
+    Lowpassed at 4.2 kHz."""
+    t = i / 4.0
+    f = _hz(_KANTELE[i])
+    dur = 1.6
+    n = S.n_samples(dur)
+    glide = S.n_samples(0.035)
+    pitch = S.ramp(glide, f * 1.012, f, 0.5) + [f] * (n - glide)
+    ring = 2.4 + 2.4 * t
+    amps = [1.0, 0.78, 0.56, 0.4, 0.26 + 0.06 * t, 0.15 + 0.06 * t]
+    decays = [ring * k for k in [1.0, 1.2, 1.5, 1.9, 2.4, 3.0]]
+    body = S.partials(pitch, [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dur, amps=amps, decays=decays)
+    # The second strand of the course: the fundamental again, BEAT_HZ above it, nearly as loud.
+    detune = (f + _ICE_BEAT_HZ) / f
+    strand = S.partials([p * detune for p in pitch], [1.0], dur, amps=[0.8], decays=[ring])
+    glass = S.partials(pitch, [2.76, 5.40], dur, amps=[0.09, 0.045], decays=[ring * 5.0, ring * 8.0])
+    pn = S.n_samples(0.012)
+    pick = S.bandpass(S.osc("noise", 0, 0.012, seed=1201 + i), 1100.0 + 1300.0 * t, 1.3)
+    pick = S.env_mul(pick, S.decay(pn, 4.0))
+    # The lake carrying it away (the docstring's THE LAKE).
+    cd = 0.4
+    chirp = S.osc("sine", S.sweep(cd, f * 3.0, f, 0.45), cd)
+    chirp = S.env_mul(chirp, S.ramp(S.n_samples(0.02), 0.0, 1.0) + S.decay(S.n_samples(cd) - S.n_samples(0.02), 2.2))
+    out = S.layer([(body, 0.0, 1.0), (strand, 0.0, 1.0), (glass, 0.0, 1.0), (pick, 0.0, 0.35),
+                   (chirp, _ICE_CHIRP_AT, 0.32)])
+    out = S.lowpass(out, 4200.0)
+    return S.dc_block(S.reverb(out, size=0.45, damp=0.5, mix=0.16))
+
+
+# How fast every string's doubled course beats (_ice_pluck): the same on all five, so they shimmer alike.
+_ICE_BEAT_HZ = 3.4
+
+# When the lake's chirp follows each pluck (_ice_pluck), seconds.
+_ICE_CHIRP_AT = 0.24
+
+
+def ice_string_1():
+    """The kantele's lowest string, A3 - the thickest, the fire-coloured one."""
+    return _ice_pluck(0)
+
+
+def ice_string_2():
+    """D4, the lightning-coloured string."""
+    return _ice_pluck(1)
+
+
+def ice_string_3():
+    """F4, the grass-coloured string."""
+    return _ice_pluck(2)
+
+
+def ice_string_4():
+    """C5, the water-coloured string."""
+    return _ice_pluck(3)
+
+
+def ice_string_5():
+    """A5, the highest and thinnest, the arcane-coloured one."""
+    return _ice_pluck(4)
+
+
+def ice_string_wrong():
+    """A string of the thaw's kantele stepped on out of turn: struck, and choked.
+
+    The wrong answer must never be heard as a sixth note. So it is low, dull and unmusical: a knock of ice, then
+    the string slapping it and chattering - two pitches a semitone apart (G3 and G#3, between none of the strings'
+    notes) beating against each other through a buzz gated at 28 Hz, dying in a third of a second -
+    and a dry crack of the ice under it. No ring, no pitch to sing back."""
+    dur = 0.5
+    n = S.n_samples(dur)
+    kn = S.n_samples(0.07)
+    knock = S.env_mul(S.osc("sine", S.sweep(0.07, 150.0, 80.0), 0.07), S.decay(kn, 3.0))
+    bd = 0.36
+    bn = S.n_samples(bd)
+    buzz = S.mix(S.osc("saw", _hz(-14), bd), S.osc("saw", _hz(-13), bd, phase=0.3))
+    buzz = S.lowpass(S.gate(buzz, 28.0, duty=0.55, seed=1211), 1300.0)
+    buzz = S.env_mul(buzz, S.ramp(S.n_samples(0.01), 0.0, 1.0) + S.decay(bn - S.n_samples(0.01), 2.6))
+    cn = S.n_samples(0.05)
+    crack = S.lowpass(S.bandpass(S.osc("noise", 0, 0.05, seed=1213), 1500.0, 2.0), 2600.0)
+    crack = S.env_mul(crack, S.decay(cn, 5.0))
+    out = S.pad(S.layer([(knock, 0.0, 0.9), (buzz, 0.015, 0.55), (crack, 0.0, 0.4)]), dur)
+    return S.dc_block(S.reverb(out, size=0.3, damp=0.6, mix=0.1))
+
+
 def _camel_bell(freq, dur, seed):
     """One strike of a hollow tin bell and its wooden clapper. Lower, duller and shorter than
     every other bell in the set: those are struck glass and bronze, this is a pot on a rope."""
@@ -2283,6 +2395,16 @@ REGISTRY += [
     # the one to hear; the eight echoes come a few dB under it and lose more again to the distance.
     ("sibyl_voice",         "hint",   -12.0, sibyl_voice,         False),
     ("sibyl_echo",          "hint",   -15.0, sibyl_echo,          False),
+    # The thaw's kantele (ThawEvent, .ai/unlock-puzzles.md 3.6): the ice sings a phrase of three to five notes on its
+    # strings every few seconds while he is at the lake, and he plucks them back - the once-a-second row, at a cast's
+    # level, because the phrase IS the puzzle and must carry over the swarm. Filed with the hints so --confuse holds
+    # them against hint_ice_song, the same singer's. The wrong answer comes a few times a puzzle at most.
+    ("ice_string_1",        "hint",   -11.0, ice_string_1,        False),
+    ("ice_string_2",        "hint",   -11.0, ice_string_2,        False),
+    ("ice_string_3",        "hint",   -11.0, ice_string_3,        False),
+    ("ice_string_4",        "hint",   -11.0, ice_string_4,        False),
+    ("ice_string_5",        "hint",   -11.0, ice_string_5,        False),
+    ("ice_string_wrong",    "hint",   -12.0, ice_string_wrong,    False),
 
     # Secrets. The seen shimmer is once per secret per save and meant to be played AT the site, so
     # it loses 5-6 dB to distance before it is heard; the found sting is a few a run, beside
