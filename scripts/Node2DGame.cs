@@ -593,13 +593,10 @@ public partial class Node2DGame : Node2D
 				MouseFilter = Control.MouseFilterEnum.Ignore
 			};
 
-			var runTimerStyle = new StyleBoxFlat
-			{
-				BgColor = new Color(0.08f, 0.10f, 0.14f, 0.76f),
-				BorderColor = new Color(0.24f, 0.30f, 0.42f, 0.88f)
-			};
-			runTimerStyle.SetCornerRadiusAll(7);
-			runTimerStyle.SetBorderWidthAll(1);
+			// No box behind it (Eric, 2026-11-08: "remove it, just make sure the numbers are still visible"): an empty
+			// style with the old margins, so the panel keeps its size and nothing in the band under it moves; the
+			// digits carry their own dark outline instead, as the HUD's numerals and the damage numbers do.
+			var runTimerStyle = new StyleBoxEmpty();
 			runTimerStyle.SetContentMarginAll(5);
 			runTimerPanel.AddThemeStyleboxOverride("panel", runTimerStyle);
 
@@ -614,6 +611,10 @@ public partial class Node2DGame : Node2D
 				Modulate = new Color(0.95f, 0.98f, 1.0f, 0.98f)
 			};
 			ResponsiveLayout.SetFont(runTimerLabel, ResponsiveLayout.TextRole.Body);
+			runTimerLabel.AddThemeColorOverride("font_outline_color", DamageNumberInk.Outline);
+			runTimerLabel.AddThemeConstantOverride("outline_size", 6);
+			runTimerLabel.AddThemeColorOverride("font_shadow_color", new Color(0f, 0f, 0f, 0.55f));
+			runTimerLabel.AddThemeConstantOverride("shadow_offset_y", 2);
 			runTimerPanel.AddChild(runTimerLabel);
 			uiOverlay.AddChild(runTimerPanel);
 
