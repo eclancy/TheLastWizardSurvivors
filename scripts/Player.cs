@@ -2768,6 +2768,10 @@ public partial class Player : CharacterBody2D
 
 	public bool IsInvincible => invincibilityTimeRemaining > 0f;
 
+	/// <summary>What is left of the grace, for the mark that shows it (PostPickWard): the ward's
+	/// visible lifetime is the protection's, never a clock of its own (in-flight item 23).</summary>
+	public float InvincibilitySecondsRemaining => invincibilityTimeRemaining;
+
 	/// <summary>
 	/// True while a boss arrives (Node2DGame holds it for BossEnemy's entrance): every spell's timer is
 	/// HELD where it was - not reset, so each spell goes off when the fight starts exactly as far into

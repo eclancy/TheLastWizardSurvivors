@@ -318,6 +318,18 @@ things come up; strike what lands.**
    are built. Native 2736x1824 fullscreen and 16:9/16:10/4:3/ultrawide windows were checked.
    The broader explicit monitor picker, timed-revert UI and separate OS-DPI sweeps below remain
    follow-up work; the current menu uses the monitor containing its window.
+   **Monitor picker and timed Keep / Revert built 2026-11-07:** a Monitor dropdown in Options'
+   Display section, shown only with more than one monitor ("Automatic (current monitor)" is -1,
+   the OS's own placement, which is what every save had); `SaveData.MonitorIndex` is a settings
+   key, no schema bump, applied at startup *before* fullscreen (fullscreen binds to the window's
+   current screen) and ignored when stale. Every change made from those controls - mode, window
+   size, monitor - now applies and then opens `DisplayConfirm`, a 10-second Keep / Revert step
+   over the menu: Keep closes it; Revert, B/Escape or the clock running out restores the prior
+   mode, size and screen (`DisplayProfile.Snapshot`/`Restore`), so a change that leaves the screen
+   unreadable undoes itself. F11/Alt+Enter stays immediate. `_UiShot --fake-monitors=N`
+   photographs the row on a one-monitor machine and `--show-display-confirm` the step. Still
+   hardware checks only a real desk can run: the OS-DPI sweeps (100/125/150%) and a real second
+   monitor (this machine has one).
    - Offer windowed and borderless fullscreen modes, resolution/window-size choices, and an
      **Automatic / native display** option. Include monitor selection where multiple monitors exist.
      Start fullscreen at the selected monitor's desktop resolution by default, and remember the
@@ -338,7 +350,7 @@ things come up; strike what lands.**
    - Godot reference: [multiple resolutions](https://docs.godotengine.org/en/4.5/tutorials/rendering/multiple_resolutions.html)
      and [DisplayServer](https://docs.godotengine.org/en/4.5/classes/class_displayserver.html).
 
-21. **Use pages for crowded menus; start with Powers** (Eric, 2026-11-05). For menus with many options,
+21. ~~**Use pages for crowded menus; start with Powers**~~ (Eric, 2026-11-05). For menus with many options,
    consider pages instead of one long scrollbar. In Powers, move the existing sections onto separate
    pages so a player can go straight to the category they want. Make each option more compact to
    conserve space: review padding, icon sizes and the arrangement of the description, cost and purchase
@@ -352,6 +364,12 @@ things come up; strike what lands.**
    **0.14.2 follow-up (Eric, 2026-11-07):** move Previous/Next to the bottom and make them obvious:
    large equal-width Previous page / Next page controls and a gold page count; Back sits below on
    phones and alongside on desktop, leaving room for the cards.
+   **Follow-up done** (49b522b0, 2026-11-07): the pager row sits under the cards outside the scroll -
+   equal-width Previous page / Next page (ExpandFill, 200x72 minimum) around the gold page count
+   (PurseInk) - and `LayoutShopPager` reparents Back into the row on desktop and below it on a
+   phone. Eric confirmed the bottom page controls look right on the phone (item 47). Nothing of
+   item 21 remains; the page strip pattern is `EnsureShopPager`/`ShowShopPage` in
+   `MainMenu.Shop.cs` for the next crowded menu to copy.
 
 22. **Rethink the name "Powers"** (Eric, 2026-11-05). He suggested something like "Powerups", but wants
    a more magic-themed name. The menu sells permanent upgrades and unlockable boons, so the name and a
@@ -361,7 +379,7 @@ things come up; strike what lands.**
    When chosen, update the main-menu entry, shop heading, hints and any other player-facing references
    consistently; coordinate the wording with item 21's redesign.
 
-23. **Show the protection after a level-up selection with a small shield animation** (Eric,
+23. ~~**Show the protection after a level-up selection with a small shield animation**~~ (Eric,
    2026-11-05). When the player chooses a level-up and the run resumes, briefly form a small magical
    shield around the wizard to show that he cannot be hurt yet. Animate it away when that protection
    ends, so its visible lifetime matches the actual invulnerability rather than an independent timer.
@@ -371,6 +389,14 @@ things come up; strike what lands.**
    Ward so it does not imply the player gained a shield spell. Check the animation at PC and phone
    sizes, following `.ai/art-direction.md` and `.ai/performance.md`. This is a visual cue for the
    existing protection, with its duration and gameplay behavior preserved.
+   **Done, 2026-11-07:** `PostPickWard`, a code-created Node2D child of the player, spawned at both
+   quiet-grace sites (level-up close and chest close in `Node2DGame`). A thin violet ring on the
+   Arcane ramp, radius 22 against Aegis Ward's 52 dome, drawn with `PixelInk` on the 2 px grid at
+   `ForemostAir`, forming over 0.3 s with two orbiting glints. It reads
+   `Player.InvincibilitySecondsRemaining` every frame - no clock of its own - so its dissolve ends
+   on the frame the grace does, and a chest straight after a level-up extends the one ward rather
+   than stacking a second. Photographed at both canvases through `--force-levelup` (the forced
+   level-up's auto-dismissal resumes the run wearing it). Duration and gameplay unchanged.
 
 24. ~~**Spell descriptions are clipped below their containers on Windows**~~ (Eric, 2026-11-05).
    **Done, 2026-11-06:** reproduced tall level-up cards overflowing the wide layout. Wide cards
@@ -405,7 +431,7 @@ things come up; strike what lands.**
    an oversized initial height too. All eight status hover/click cards passed `_RecoveryProbe` on
    PC; Freezing also passed and was visually checked in portrait. The focused-card notes are unchanged.
 
-27. **Keyboard input hides the mouse and gives the keyboard control until the mouse is used again**
+27. ~~**Keyboard input hides the mouse and gives the keyboard control until the mouse is used again**~~
    (Eric, 2026-11-05). When playing/navigating with the keyboard, hide the cursor and deactivate mouse
    hover/selection behavior so a stationary pointer cannot steal the selection, highlight another
    option or leave a hover tooltip over the keyboard's choice. Restore the cursor and normal mouse
@@ -419,6 +445,10 @@ things come up; strike what lands.**
 
    **Implemented for 0.14.0:** shared keyboard/controller/pointer state, cursor hiding, stale-hover
    and tooltip suppression, deliberate movement/click/touch recovery, and dynamic-control handling.
+   **Verified complete 2026-11-07:** `CursorVisibility.ObserveInput` covers the keyboard case
+   (`InputEventKey` beside pad input hides the pointer; a 3 px mouse move, click or touch restores
+   it), filters are restored per control, and `.ai/controller-and-focus.md` records the behaviour.
+   Nothing of item 27 remains.
 
 28. **Magic Missile should fly behind a boss's shield; explore other boss weak-spot interactions**
    (Eric, 2026-11-05). Against the boss that raises a shield, Magic Missile should travel all the way
