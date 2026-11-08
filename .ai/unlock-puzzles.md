@@ -302,6 +302,21 @@ is to fight on the other side, which costs more: the reeve takes the difference 
   (*first guess* 1.6 levels), so a bad start cannot cost a run.
 - **Size:** S-M.
 
+**Built (2026-11-07, `feat/medea-scale`).** As decided, both open questions at their first guesses
+(`LevelBand` 10%, `CapInLevels` 1.6). The scale's sheet is seven frames (tools/art/tithe_scale.py): left-heavy by
+three steps, level, right-heavy by three - level has its own frame, so it reads as a state, never a near miss - and
+the reeve's weight is gone for a second empty pan. A needle stands square to the beam and leans to the heavier pan;
+a forked iron cap on the post head holds the level mark, which lights (and runs a ring round itself as the 3 s
+fill) once the price is met and the beam is inside the band. An orb takes its side as it LANDS (`GranaryTithe.SideOf`,
+the line down through the post) and flies to that pan; the ground ring is split by a dashed line through the post,
+each half filling from the bottom toward half the price. At the cap the scale claims nothing more and the beam
+eases level over 1.2 s while a smoke of light lifts off the heavier pan - the reeve keeping the difference. The
+hold counts only while level and starts over otherwise. `FrameForDifference` is shared by the beam and the
+validator, so the picture and the rule cannot disagree. `ValidateTitheScale` checks the frames run left- to
+right-heavy with level truly level, the binning, sides, the cap, and closed-scale silence; `_ExploreProbe
+--stage=9` plays it as a reader of the beam would - fight on the lighter side (killing only there), step out of
+the reach to hold once level.
+
 ### 3.6 Väinämöinen - sing it back
 
 **Was:** `ThawEvent` - damage dealt near the block on the frozen lake thaws it; fire counts triple.

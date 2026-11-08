@@ -16,41 +16,72 @@ public static partial class RegressionChecks
 			|| SideEventDirector.HoldsSite("stage_10", "tithe_scale"))
 			warnings.Add("Tithe scale: Medea must remain the Fields' second event, after the well.");
 
-		// The beam: the tithe pan comes DOWN frame by frame as it fills, and the dropped frame is lower than all of them;
-		// every bowl stays inside the scale's cell (tools/art/tithe_scale.py draws it from the same numbers).
-		float lastY = float.MinValue;
+		// The beam (Medea's balance, unlock-puzzles.md 3.5): frame by frame the LEFT pan rises and the right falls, the
+		// level frame has them at one height, and every bowl stays inside the scale's cell (tools/art/tithe_scale.py
+		// draws it from the same numbers).
+		float lastLeft = float.MaxValue, lastRight = float.MinValue;
 		for (int f = 0; f < TitheScaleEvent.ScaleFrames; f++)
 		{
-			Vector2 bowl = TitheScaleEvent.PanAuthored(f);
-			if (bowl.X < 8f || bowl.X > 56f || bowl.Y < 4f || bowl.Y > 74f)
-				warnings.Add($"Tithe scale: frame {f}'s pan ({bowl}) is outside the scale's 64x80 cell, or too near its edge for the bowl.");
-			if (bowl.Y <= lastY)
-				warnings.Add($"Tithe scale: frame {f}'s pan is not lower than frame {f - 1}'s; the beam must tip toward the tithe as it fills.");
-			lastY = bowl.Y;
+			for (int side = -1; side <= 1; side += 2)
+			{
+				Vector2 bowl = TitheScaleEvent.PanAuthored(f, side);
+				if (bowl.X < 8f || bowl.X > 56f || bowl.Y < 4f || bowl.Y > 74f)
+					warnings.Add($"Tithe scale: frame {f}'s {(side < 0 ? "left" : "right")} pan ({bowl}) is outside the scale's 64x80 cell, or too near its edge for the bowl.");
+			}
+			float l = TitheScaleEvent.PanAuthored(f, -1).Y, r = TitheScaleEvent.PanAuthored(f, 1).Y;
+			if (l >= lastLeft || r <= lastRight)
+				warnings.Add($"Tithe scale: frame {f} does not tip further toward the right than frame {f - 1}; the frames must run left-heavy to right-heavy.");
+			lastLeft = l;
+			lastRight = r;
+			if (f == TitheScaleEvent.LevelFrame && Mathf.Abs(l - r) > 0.01f)
+				warnings.Add($"Tithe scale: the level frame ({f}) hangs its pans at {l:0.0} and {r:0.0}; level means level.");
 		}
 
+		// The beam reads the rule: inside the band is the level frame, each side of it tips toward the heavier pan, and
+		// the band is the same LevelBand the hold is counted against (FrameForDifference is shared by both).
+		if (TitheScaleEvent.FrameForDifference(0f) != TitheScaleEvent.LevelFrame
+			|| TitheScaleEvent.FrameForDifference(TitheScaleEvent.LevelBand * 0.99f) != TitheScaleEvent.LevelFrame
+			|| TitheScaleEvent.FrameForDifference(TitheScaleEvent.LevelBand * 1.5f) >= TitheScaleEvent.LevelFrame
+			|| TitheScaleEvent.FrameForDifference(-TitheScaleEvent.LevelBand * 1.5f) <= TitheScaleEvent.LevelFrame
+			|| TitheScaleEvent.FrameForDifference(5f) != 0 || TitheScaleEvent.FrameForDifference(-5f) != TitheScaleEvent.ScaleFrames - 1)
+			warnings.Add("Tithe scale: the beam's frame must be level inside the band and tip toward the heavier pan outside it, to the end frames.");
+		if (TitheScaleEvent.LevelBand <= 0f || TitheScaleEvent.LevelBand >= 0.5f || TitheScaleEvent.HoldSeconds <= 0f
+			|| TitheScaleEvent.CapInLevels <= TitheScaleEvent.PriceInLevels * (1f + TitheScaleEvent.LevelBand))
+			warnings.Add($"Tithe scale: the balance's numbers must leave room to play - band {TitheScaleEvent.LevelBand}, hold {TitheScaleEvent.HoldSeconds} s, "
+				+ $"cap {TitheScaleEvent.CapInLevels} levels above a price of {TitheScaleEvent.PriceInLevels} plus the band.");
+
 		// The tithe on paper, through the same static the orbs ask: an orb inside the reach is the reeve's and one
-		// outside it is not; what reaches the pan is weighed; once closed, nothing is claimed or weighed. Left closed.
+		// outside it is not, and goes to the pan on ITS side of the post; what reaches a pan is weighed there; past the
+		// cap nothing more is claimed; once closed, nothing is claimed or weighed. Left closed.
 		bool wasOpen = GranaryTithe.Open;
 		if (!wasOpen)
 		{
 			Vector2 foot = new(1000f, 1000f);
-			GranaryTithe.OpenAt(foot, foot + new Vector2(-48f, -82f), TitheScaleEvent.TitheReach);
+			GranaryTithe.OpenAt(foot, foot + new Vector2(-48f, -82f), foot + new Vector2(48f, -82f), TitheScaleEvent.TitheReach, 30f);
 			if (!GranaryTithe.Claims(foot + new Vector2(TitheScaleEvent.TitheReach - 1f, 0f))
 				|| GranaryTithe.Claims(foot + new Vector2(0f, TitheScaleEvent.TitheReach + 1f)))
 				warnings.Add($"Tithe scale: an orb must be the reeve's inside {TitheScaleEvent.TitheReach} px of the scale and his own outside it.");
-			GranaryTithe.Pay(3.2f, 2);
-			GranaryTithe.Pay(16f, 10);
-			if (Math.Abs(GranaryTithe.Taken - 19.2f) > 0.001f || GranaryTithe.OrbsTaken != 2 || GranaryTithe.ValueTaken != 12)
-				warnings.Add($"Tithe scale: the pan weighed {GranaryTithe.Taken} in {GranaryTithe.OrbsTaken} orbs ({GranaryTithe.ValueTaken} XP), expected 19.2 in 2 (12 XP).");
-			// The stream (in-flight 61): a reported flight is seen the same frame, and a closed scale streams nothing.
-			GranaryTithe.ReportFlight(foot);
-			if (GranaryTithe.Flights != 1 || GranaryTithe.FlightPosition(0) != foot)
-				warnings.Add("Tithe scale: an orb reporting its flight must be seen by the pan's stream (GranaryTithe.Flights).");
+			if (GranaryTithe.SideOf(foot + new Vector2(-1f, 200f)) != -1 || GranaryTithe.SideOf(foot + new Vector2(1f, -200f)) != 1)
+				warnings.Add("Tithe scale: an orb landing left of the post must be bound for the left pan, and right for the right.");
+			GranaryTithe.Pay(3.2f, 2, -1);
+			GranaryTithe.Pay(16f, 10, 1);
+			if (Math.Abs(GranaryTithe.TakenLeft - 3.2f) > 0.001f || Math.Abs(GranaryTithe.TakenRight - 16f) > 0.001f
+				|| Math.Abs(GranaryTithe.Taken - 19.2f) > 0.001f || GranaryTithe.OrbsTaken != 2 || GranaryTithe.ValueTaken != 12)
+				warnings.Add($"Tithe scale: the pans weighed {GranaryTithe.TakenLeft} and {GranaryTithe.TakenRight} in {GranaryTithe.OrbsTaken} orbs "
+					+ $"({GranaryTithe.ValueTaken} XP), expected 3.2 and 16 in 2 (12 XP).");
+			// The stream (in-flight 61): a reported flight is seen the same frame, bound for its pan.
+			GranaryTithe.ReportFlight(foot, -1);
+			if (GranaryTithe.Flights != 1 || GranaryTithe.FlightPosition(0) != foot || GranaryTithe.FlightSide(0) != -1)
+				warnings.Add("Tithe scale: an orb reporting its flight must be seen by its pan's stream (GranaryTithe.Flights).");
+			// The cap: past it the reeve claims nothing more.
+			GranaryTithe.Pay(12f, 6, -1);
+			if (!GranaryTithe.Capped || GranaryTithe.Claims(foot))
+				warnings.Add($"Tithe scale: past the cap ({GranaryTithe.Taken:0.0} of 30) the reeve must take nothing more.");
+			float before = GranaryTithe.Taken;
 			GranaryTithe.Close();
-			GranaryTithe.Pay(5f, 2);
-			GranaryTithe.ReportFlight(foot);
-			if (GranaryTithe.Claims(foot) || Math.Abs(GranaryTithe.Taken - 19.2f) > 0.001f || GranaryTithe.Flights != 0)
+			GranaryTithe.Pay(5f, 2, 1);
+			GranaryTithe.ReportFlight(foot, 1);
+			if (GranaryTithe.Claims(foot) || Math.Abs(GranaryTithe.Taken - before) > 0.001f || GranaryTithe.Flights != 0)
 				warnings.Add("Tithe scale: a closed scale must claim nothing, weigh nothing and stream nothing.");
 		}
 		if (TitheScaleEvent.PriceInLevels <= 0f)
@@ -62,7 +93,7 @@ public static partial class RegressionChecks
 			warnings.Add($"Tithe scale: the granary hint's beats must be the voice's six syllables in order from 0 (are {string.Join(", ", beats)}).");
 
 		CheckTitheSheet(warnings, "res://assets/bonelight/world/granary/granary.png", new Vector2(96 * TitheScaleEvent.GranaryFrames, 96), "the granary, barred, ajar and open");
-		CheckTitheSheet(warnings, "res://assets/bonelight/world/granary/scale.png", new Vector2(64 * TitheScaleEvent.ScaleFrames, 80), "the scale, filling and dropped");
+		CheckTitheSheet(warnings, "res://assets/bonelight/world/granary/scale.png", new Vector2(64 * TitheScaleEvent.ScaleFrames, 80), "the scale, left-heavy through level to right-heavy");
 
 		// DRAGON'S TEETH: the turn's numbers keep the sentence - three seconds, a stone turns no more than the arena
 		// holds, a body strikes only what it can reach, and a blow is a real share of a body but never all of it.

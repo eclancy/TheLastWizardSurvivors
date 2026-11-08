@@ -158,6 +158,12 @@ public partial class _ExploreProbe : Node
 	private float titheClock;
 	private float titheBefore = -1f;
 	private float titheAfter = -1f;
+	// The balance (3.5): which side of the post the probe fights on, how many holds it began, and whether it ever had
+	// to correct an unlevel beam after the price was met (the puzzle actually posed, not just paid).
+	private int titheSide = -1;
+	private int titheHoldsSeen;
+	private float titheHoldWas;
+	private bool titheLevelledAfterMet;
 	private int titheXpAtArrival;
 	private float titheArrivedAt = -1f;
 	private float titheLogNext;
@@ -1022,7 +1028,12 @@ public partial class _ExploreProbe : Node
 				wonEvents[cur] = won;
 			// The chapter's last event: nothing at all is marked any more. An earlier one: nothing of it is.
 			bool last = director == null || cur >= director.Events.Count - 1;
-			Check($"{Of(cur)}no arrows are left once it is over", last ? !PointsOfInterest.AnyMarked : e == null || !e.Sites.Any(s => s.Marked));
+			// A teaching landmark's marker is not an event's arrow: noticing the Familiar's golden tracks raises the
+			// Pinfold's on purpose and keeps it up until the pen is found (in-flight 49, TeachingTrail's beacon), which
+			// a probe walking the Fallow Fields can do in passing. Any other marked point is a leak.
+			Check($"{Of(cur)}no arrows are left once it is over",
+				last ? !PointsOfInterest.Live.Any(p => p.Marked && !p.IsTeaching) : e == null || !e.Sites.Any(s => s.Marked),
+				string.Join(", ", PointsOfInterest.Live.Where(p => p.Marked).Select(p => $"{p.Glyph}{(p.IsTeaching ? " (teaching, allowed)" : "")} at {p.Position}")));
 			if (e is GreatAnvilEvent forge)
 			{
 				Check("every chain is broken", forge.ChainsBroken == GreatAnvilEvent.StakeCount,
@@ -1129,11 +1140,17 @@ public partial class _ExploreProbe : Node
 			{
 				Check("the price was one level's XP at that moment of the run", tithe.Price >= 1f,
 					$"{tithe.Price:0} for level {tithe.LevelAtArrival}");
-				Check("the pan was paid from orbs that fell near it", tithe.IsPaid && tithe.OrbsTaken > 0 && tithe.Paid >= tithe.Price - 0.5f,
-					$"{tithe.Paid:0} of {tithe.Price:0} in {tithe.OrbsTaken} orbs ({tithe.ValueTaken} XP), "
+				Check("the pans held the price between them, from orbs that fell near the scale", tithe.IsPaid && tithe.OrbsTaken > 0 && tithe.Paid >= tithe.Price - 0.5f,
+					$"{tithe.PaidLeft:0} left + {tithe.PaidRight:0} right = {tithe.Paid:0} of {tithe.Price:0} in {tithe.OrbsTaken} orbs ({tithe.ValueTaken} XP), "
 					+ $"{(titheArrivedAt >= 0f ? game.RunSeconds - titheArrivedAt : 0f):0.0} s after arriving; "
 					+ $"he banked {player.RunXpGathered - titheXpAtArrival} XP from elsewhere meanwhile");
-				Check("the scale stopped taking once it was paid", !GranaryTithe.Open, $"open {GranaryTithe.Open}");
+				Check("it was won LEVEL: the pans within the band of each other, or settled by the cap",
+					tithe.IsSettled || Mathf.Abs(tithe.PaidLeft - tithe.PaidRight) <= TitheScaleEvent.LevelBand * tithe.Price + 0.5f,
+					$"difference {Mathf.Abs(tithe.PaidLeft - tithe.PaidRight):0} of a {TitheScaleEvent.LevelBand * tithe.Price:0} band{(tithe.IsSettled ? ", settled by the cap" : "")}; "
+					+ $"{titheHoldsSeen} hold(s) begun, {(titheLevelledAfterMet ? "had to level it after the price was met" : "level as soon as the price was met")}");
+				Check("it never took more than the cap", tithe.Paid <= tithe.Price * TitheScaleEvent.CapInLevels + 40f,
+					$"{tithe.Paid:0} against a cap of {tithe.Price * TitheScaleEvent.CapInLevels:0} (orbs already in flight may land past it)");
+				Check("the scale stopped taking once it was held level", !GranaryTithe.Open, $"open {GranaryTithe.Open}");
 				if (titheWalkOff)
 					Check("walked off: what was paid stayed paid", tithePhase == 2 && titheBefore >= 0f && titheAfter >= titheBefore - 0.0001f,
 						$"{titheBefore * 100f:0.0}% when he left, {titheAfter * 100f:0.0}% after waiting away");
@@ -1200,7 +1217,8 @@ public partial class _ExploreProbe : Node
 		if (completeClock > (e is SeersVoiceEvent ? 480f : 240f))
 		{
 			if (e is TitheScaleEvent stuck)
-				notes.Add($"the tithe at 240 s: pan {stuck.Paid:0} of {stuck.Price:0} ({stuck.Progress * 100f:0}%), {stuck.OrbsTaken} orbs weighed, "
+				notes.Add($"the tithe at 240 s: pans {stuck.PaidLeft:0} | {stuck.PaidRight:0} of {stuck.Price:0} ({stuck.PaidShare * 100f:0}%, "
+					+ $"{(stuck.PriceMet ? (stuck.IsLevel ? $"level, held {stuck.LevelHeld:0.0} s" : "met but unlevel") : "short")}), {stuck.OrbsTaken} orbs weighed, "
 					+ $"{GranaryTithe.OrbsInFlight} in flight, open {GranaryTithe.Open}; {EnemyRegistry.Count} enemies, "
 					+ $"{EnemyRegistry.Snapshot.Count(x => IsInstanceValid(x) && x.GlobalPosition.DistanceTo(stuck.ScaleFoot) < TitheScaleEvent.TitheReach)} within its reach; "
 					+ $"he stands {player.GlobalPosition.DistanceTo(stuck.ScaleFoot):0} px from it");
@@ -1292,24 +1310,38 @@ public partial class _ExploreProbe : Node
 		// The dry tomb: kindled at his own walk (KindleStep), and stood still while it opens.
 		if (e is TombBeaconsEvent beacons && beacons.IsFound)
 			target = beacons.IsOpening ? player.GlobalPosition : KindleStep(beacons, delta);
-		// The Tithe-Reeve's scale: stand in the yard beside it and let the field come; what dies there pays. With
-		// --tithe-walk-off, part-way through: 1,500 px off, a wait, and back.
+		// The Tithe-Reeve's scale, BALANCED (unlock-puzzles.md 3.5), as a player who reads the beam plays it: fight on
+		// the lighter pan's side of the post (only what dies on HIS side is killed - a player's spells hit near him),
+		// and once the pans hold the price and the beam is level, step out of the reach and stop killing there, so the
+		// beam holds for the three seconds. With --tithe-walk-off, part-way through: 1,500 px off, a wait, and back.
 		bool tithing = e is TitheScaleEvent titheRun && titheRun.IsFound && !titheRun.IsPaid;
 		if (e is TitheScaleEvent scaleEvent && scaleEvent.IsFound)
 		{
-			target = scaleEvent.ScaleFoot + new Vector2(-30f, 60f);
+			bool hold = scaleEvent.PriceMet && scaleEvent.IsLevel;
+			titheSide = scaleEvent.LighterSide;
+			target = hold
+				? scaleEvent.ScaleFoot + new Vector2(0f, TitheScaleEvent.TitheReach + 140f)
+				: scaleEvent.ScaleFoot + new Vector2(titheSide * 170f, 60f);
+			if (hold)
+			{
+				tithing = false;
+				titheHoldsSeen += scaleEvent.LevelHeld > 0f && titheHoldWas <= 0f ? 1 : 0;
+			}
+			titheHoldWas = scaleEvent.LevelHeld;
+			if (scaleEvent.PriceMet && !scaleEvent.IsLevel)
+				titheLevelledAfterMet = true;
 			if (completeClock >= titheLogNext || Time.GetTicksMsec() >= titheLogReal)
 			{
 				titheLogNext = completeClock + 20f;
 				titheLogReal = Time.GetTicksMsec() + 15000;
-				GD.Print($"EXPLOREPROBE tithe at {completeClock:0}s: pan {scaleEvent.Paid:0}/{scaleEvent.Price:0}, {scaleEvent.OrbsTaken} orbs, "
-					+ $"{GranaryTithe.OrbsInFlight} in flight, {EnemyRegistry.Count} enemies, {GetTree().GetNodesInGroup(XPOrb.GroupName).Count} orbs in the world, "
-					+ $"frame {delta * 1000f:0} ms of game time, {Engine.GetFramesPerSecond():0} fps");
+				GD.Print($"EXPLOREPROBE tithe at {completeClock:0}s: pans {scaleEvent.PaidLeft:0} | {scaleEvent.PaidRight:0} of {scaleEvent.Price:0}, "
+					+ $"{(hold ? $"HOLDING {scaleEvent.LevelHeld:0.0}s" : $"fighting {(titheSide < 0 ? "left" : "right")}")}, {scaleEvent.OrbsTaken} orbs, "
+					+ $"{GranaryTithe.OrbsInFlight} in flight, {EnemyRegistry.Count} enemies, frame {delta * 1000f:0} ms, {Engine.GetFramesPerSecond():0} fps");
 			}
-			if (titheWalkOff && tithePhase == 0 && scaleEvent.Progress >= 0.4f)
+			if (titheWalkOff && tithePhase == 0 && scaleEvent.PaidShare >= 0.4f)
 			{
 				tithePhase = 1;
-				titheBefore = scaleEvent.Progress;
+				titheBefore = scaleEvent.PaidShare;
 				titheClock = 0f;
 			}
 			if (tithePhase == 1)
@@ -1319,8 +1351,8 @@ public partial class _ExploreProbe : Node
 				titheClock += delta;
 				if (titheClock >= 5f)
 				{
-					titheAfter = scaleEvent.Progress;
-					GD.Print($"EXPLOREPROBE walked off the scale for {titheClock:0.0}s: pan {titheBefore * 100f:0.0}% -> {titheAfter * 100f:0.0}%; walking back");
+					titheAfter = scaleEvent.PaidShare;
+					GD.Print($"EXPLOREPROBE walked off the scale for {titheClock:0.0}s: pans {titheBefore * 100f:0.0}% -> {titheAfter * 100f:0.0}%; walking back");
 					tithePhase = 2;
 				}
 			}
@@ -1373,9 +1405,11 @@ public partial class _ExploreProbe : Node
 			}
 			else if (enemy.IsMiniBoss && d < 140f && e is not GreatAnvilEvent)
 				enemy.TakeDamage(Math.Max(1, enemy.Health / 6 + 50), false);
-			// At the scale they are killed, not cleared: a kill near it drops the orb that pays the tithe.
+			// At the scale they are killed, not cleared: a kill near it drops the orb that pays the tithe - only on the
+			// side of the post the probe fights on, as a player's spells hit near him (the balance, 3.5).
 			else if (tithing && !enemy.IsMiniBoss && e is TitheScaleEvent paying
-				&& enemy.GlobalPosition.DistanceTo(paying.ScaleFoot) < TitheScaleEvent.TitheReach - 30f)
+				&& enemy.GlobalPosition.DistanceTo(paying.ScaleFoot) < TitheScaleEvent.TitheReach - 30f
+				&& GranaryTithe.SideOf(enemy.GlobalPosition) == titheSide)
 				enemy.TakeDamage(enemy.Health + 1, false);
 			else if (!enemy.IsMiniBoss && d < 500f && e is not ThawEvent && clearSwarm && !tithing)
 				enemy.QueueFree();

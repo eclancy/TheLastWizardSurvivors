@@ -4,7 +4,7 @@
 Run: python tools/art/tithe_scale.py
 
     world/granary/granary.png   the reeve's granary, three frames: barred, the bar fallen and the doors ajar, open
-    world/granary/scale.png     his great scale, six frames: the beam tipping as the tithe pan fills, then dropped
+    world/granary/scale.png     his great scale, seven frames: the beam from left-heavy through level to right-heavy
     ui/poi/poi-scale.png        the arrow's pictogram for it
     tools/art/_tithe_scale_preview.png   (gitignored) for looking at
 
@@ -23,11 +23,13 @@ The doors are 40 rows tall and she is about 42: she stoops through them, as she 
   frame 2  open: the doors swung out, the dark inside and the sacks in it
 
 THE SCALE. A great balance on an oak post bound with iron, on a footing of field stones: an iron beam on a pin at
-the post's head, a pan hung on three chains at each end - the TITHE pan on the left, empty, and on the right the
-reeve's weight, a squat iron block with his notch cut in it. Iron and oak and nothing lit: the light the pan
-gathers is code (the event's glow). 64x80, column 32, row 79. The beam's geometry is TitheScaleEvent's (PIVOT,
-ARM, HANG, TILTS below are Pivot, Arm, Hang and Tilts there - change one, change both): frames 0-4 tip the tithe
-pan from high toward level as it fills, frame 5 is the beam dropped, the pan down and the weight up.
+the post's head, a pan hung on three chains at each end, both empty - Medea's balance (unlock-puzzles.md 3.5,
+built 2026-11-07): the reeve's weight is gone, and what falls on each side of the post fills that side's pan. A
+needle stands up from the pin square to the beam, so it leans to the heavier pan, and a forked iron cap over it
+holds the level mark the needle sits in only when the beam is level (the event lights it). Iron and oak and
+nothing lit: the light the pans gather is code (the event's glow). 64x80, column 32, row 79. The beam's geometry
+is TitheScaleEvent's (PIVOT, ARM, HANG, TILTS below are Pivot, Arm, Hang and Tilts there - change one, change
+both): frames 0-2 tip the LEFT pan down by degrees, frame 3 is level, frames 4-6 tip the RIGHT pan down.
 """
 from __future__ import division, print_function
 
@@ -304,7 +306,13 @@ SMID = 32
 PIVOT = (32.0, 13.0)
 ARM = 24.0
 HANG = 27.0
-TILTS = [-15.0, -11.5, -8.0, -4.5, -1.5, 21.0]
+# Medea's balance (unlock-puzzles.md 3.5, 2026-11-07): two pans, the reeve's weight gone. Positive tilts the LEFT
+# pan down. Frame 3 is level - its own frame, so "level" reads as a state, not a near miss - and the event bins
+# the pans' difference into these seven (TitheScaleEvent.Tilts and LevelFrame mirror them).
+TILTS = [18.0, 12.0, 6.0, 0.0, -6.0, -12.0, -18.0]
+LEVEL_FRAME = 3
+NEEDLE = 9                    # the balance's pointer, up from the pin, perpendicular to the beam
+MARK_Y = 2                    # the level mark: an iron cap on the post head the needle points into
 
 
 def chain(c, x0, y0, x1, y1):
@@ -372,7 +380,20 @@ def scale(frame):
     px, py = PIVOT
     c.rect(int(px) - 3, int(py) + 1, int(px) + 3, int(py) + 4, STL[3])
     c.hline(int(px) - 3, int(px) + 3, int(py) + 1, STL[2])
+    # the level mark: a forked iron cap held over the pin on two thin stays, a notch in its middle that the
+    # needle stands in only when the beam is level (the event lights it then)
+    for sx in (int(px) - 4, int(px) + 4):
+        for y in range(MARK_Y + 2, int(py)):
+            c.set(sx, y, STL[3])
+    c.hline(int(px) - 4, int(px) - 1, MARK_Y, STL[2])
+    c.hline(int(px) + 1, int(px) + 4, MARK_Y, STL[2])
+    c.hline(int(px) - 4, int(px) + 4, MARK_Y + 1, STL[3])
+    c.set(int(px), MARK_Y + 1, OCC)
     a = math.radians(TILTS[frame])
+    # the needle: up from the pin, square to the beam, so it leans toward the heavier pan
+    nx, ny = -math.sin(a), -math.cos(a)
+    for i in range(1, NEEDLE + 1):
+        c.set(int(round(px + nx * i)), int(round(py + ny * i)), STL[1] if i > NEEDLE - 2 else STL[2])
     lx, ly = px - ARM * math.cos(a), py + ARM * math.sin(a)
     rx, ry = px + ARM * math.cos(a), py - ARM * math.sin(a)
     # the beam: iron, lit along its top, thickest at the pin
@@ -388,13 +409,14 @@ def scale(frame):
             c.set(int(round(x)), int(round(y)) + 1, STL[3])
     c.set(int(px), int(py), STL[0])
     c.set(int(px), int(py) - 1, STL[1])
-    # the ends: a hook each, and the chains down to the pans
-    for (ex, ey, weight) in ((lx, ly, False), (rx, ry, True)):
+    # the ends: a hook each, and the chains down to the pans - both empty dishes now: the reeve's weight is gone,
+    # and what the player gives up on each side of the post is the only weight there is (3.5)
+    for (ex, ey) in ((lx, ly), (rx, ry)):
         c.set(int(round(ex)), int(round(ey)) + 1, STL[3])
         bx, by = ex, ey + HANG
         for off in (-7, 0, 7):
             chain(c, ex, ey + 1, bx + off, by - 1)
-        pan(c, bx, by, weight)
+        pan(c, bx, by, False)
     return c
 
 
@@ -402,7 +424,8 @@ def scale_pan_positions():
     out = []
     for f in range(len(TILTS)):
         a = math.radians(TILTS[f])
-        out.append((round(PIVOT[0] - ARM * math.cos(a), 2), round(PIVOT[1] + ARM * math.sin(a) + HANG, 2)))
+        out.append(((round(PIVOT[0] - ARM * math.cos(a), 2), round(PIVOT[1] + ARM * math.sin(a) + HANG, 2)),
+                    (round(PIVOT[0] + ARM * math.cos(a), 2), round(PIVOT[1] - ARM * math.sin(a) + HANG, 2))))
     return out
 
 
