@@ -44,7 +44,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 EXPORT = os.path.join(ROOT, "build", "windows")
 LINUX = os.path.join(ROOT, "build", "linux")
 OUT = os.path.join(ROOT, "build", "release")
-REPO = "eclancy/TheOneHeMissed"
+REPO = "eclancy/TheLastWizardSurvivors"
 # Every file a release carries starts with this, and so do the program, its .pck and the .NET
 # folder (the assembly is named the same). ecec.dev's download page reads the part before the last
 # "-" of the files' names as the program's name and the Linux install folder, so install.sh's APP
@@ -113,7 +113,7 @@ upgrades, and survive each chapter long enough to face the boss at its end.
 The game updates itself: every time it starts, it checks for a new version and installs it.
 Keep this folder somewhere you can write to, like Documents or the Desktop, so it can.
 
-Made at https://ecec.dev - download page: https://ecec.dev/the-one-he-missed/download
+Made at https://ecec.dev - download page: https://ecec.dev/the-last-wizard-survivors/download
 """
 
 
@@ -139,7 +139,7 @@ upgrades, and survive each chapter long enough to face the boss at its end.
 The game updates itself: every time it starts, it checks for a new version and installs it.
 To remove it: ~/.local/share/TheOneHeMissed/install.sh --uninstall  (your save is kept)
 
-Made at https://ecec.dev - download page: https://ecec.dev/the-one-he-missed/download
+Made at https://ecec.dev - download page: https://ecec.dev/the-last-wizard-survivors/download
 """
 
 

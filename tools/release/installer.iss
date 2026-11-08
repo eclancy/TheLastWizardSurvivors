@@ -25,7 +25,7 @@ AppVersion={#AppVersion}
 ; Apps & features shows the name alone; the version has its own column there.
 UninstallDisplayName=The Last Wizard: Survivors
 AppPublisher=ECEC
-AppPublisherURL=https://ecec.dev/games/the-one-he-missed
+AppPublisherURL=https://ecec.dev/games/the-last-wizard-survivors
 ; Paths below are relative to the repo root.
 SourceDir=..\..
 PrivilegesRequired=lowest

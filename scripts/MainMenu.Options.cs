@@ -415,7 +415,7 @@ public partial class MainMenu
 			return;
 		}
 		OpenSaveFileDialog("Export save", FileDialog.FileModeEnum.SaveFile,
-			$"the-one-he-missed-save-{Time.GetDateStringFromSystem()}.json",
+			$"the-last-wizard-survivors-save-{Time.GetDateStringFromSystem()}.json",
 			exportSaveButton,
 			path =>
 			{

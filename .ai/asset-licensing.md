@@ -5,7 +5,7 @@ Written because the question was asked directly: *is all purchased art out of th
 **It is now.** When this document was first written the answer was no, and not close. Every piece
 of bought art has since been replaced and `assets/organized/` has been deleted.
 
-**And the repo is public**, at https://github.com/eclancy/TheOneHeMissed. History was rewritten
+**And the repo is public**, at https://github.com/eclancy/TheLastWizardSurvivors (named TheOneHeMissed until 2026-11-08, and WizardSurvivors before that; GitHub redirects both). History was rewritten
 before it was flipped; section 3 records how and what to watch for. Sections 1 and 2 are the
 record of what was removed and why.
 
@@ -128,7 +128,7 @@ was unreachable cruft that `push` does not send. **The measurement that counts i
 clone of the remote**, which is what a stranger gets:
 
 ```
-git clone --mirror https://github.com/eclancy/TheOneHeMissed.git verify.git
+git clone --mirror https://github.com/eclancy/TheLastWizardSurvivors.git verify.git
 ```
 
 **75 MB before, 8.8 MB after, and a path scan across every ref in it returns nothing.**

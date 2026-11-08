@@ -359,8 +359,11 @@ session**, the validator run below included.
   the game), the export presets' Windows product name and Android label, the installer, the Linux menu
   entry and the title art. **`config/name` stays "The One He Missed"**: Godot names the desktop save
   folder after it, and Windows forbids the ":" in a folder name. So do the bug report's `game` key, the
-  `TheOneHeMissed` namespace, solution, assembly and release file names, the env vars and the ecec.dev
-  addresses. New text that names the game reads `DisplayProfile.GameTitle`, never a literal.
+  `TheOneHeMissed` namespace, solution, assembly and release file names and the env vars. New text that
+  names the game reads `DisplayProfile.GameTitle`, never a literal. **The repo and the website moved the
+  same day**: `eclancy/TheLastWizardSurvivors` (GitHub redirects both old slugs) and
+  `ecec.dev/the-last-wizard-survivors/`; the old `version.json` and `download` addresses answer forever, and
+  the website must be live before a release that asks the new one (`.ai/releasing.md`, "The second rename").
 - **The application icon is drawn by `tools/art/icon_concepts.py`, design E (the burning ward).**
   `python tools/art/app_icon.py` writes `icon.png` (the Godot project manager, via `config/icon`),
   `icon.ico` (the exported Windows binary, via `config/windows_native_icon`, carrying the

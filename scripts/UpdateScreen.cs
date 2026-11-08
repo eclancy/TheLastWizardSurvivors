@@ -14,7 +14,7 @@ using HttpClient = System.Net.Http.HttpClient;
 /// if there is one, installs it and restarts - no questions. Ported from DrawFight, where it was
 /// built and tested end to end first.
 ///
-/// How a release is laid out is in .ai/releasing.md. In short: ecec.dev/the-one-he-missed/version.json
+/// How a release is laid out is in .ai/releasing.md. In short: ecec.dev/the-last-wizard-survivors/version.json
 /// redirects to the newest GitHub Release's version.json, which names, under "builds", a small patch
 /// (the .pck and the game's own DLL - everything a normal change touches) and the full download
 /// (needed only when the Godot engine itself changed) for Windows and for Linux. GitHub serves the
@@ -46,9 +46,10 @@ public partial class UpdateScreen : Control
 {
 	/// <summary>The one address baked into every copy of the game. It is on ecec.dev rather than
 	/// GitHub so where releases live can change without stranding old copies. Copies from before the
-	/// rename have the game's old address baked in instead, and ecec.dev answers it the same way,
-	/// forever.</summary>
-	public const string VersionUrl = "https://ecec.dev/the-one-he-missed/version.json";
+	/// renames have the game's old addresses baked in instead - /wizard-survivors/ up to 0.11.0,
+	/// /the-one-he-missed/ from 0.12.0 to 0.20.0 - and ecec.dev answers them the same way, forever
+	/// (.ai/releasing.md, "The second rename").</summary>
+	public const string VersionUrl = "https://ecec.dev/the-last-wizard-survivors/version.json";
 
 	/// <summary>Points a build at a test server instead - see .ai/releasing.md.</summary>
 	public const string UrlOverrideVariable = "THEONEHEMISSED_UPDATE_URL";
@@ -127,7 +128,7 @@ public partial class UpdateScreen : Control
 			["version"] = parts[0],
 			["engine"] = "test",
 			["builds"] = new System.Collections.Generic.Dictionary<string, object> { ["windows"] = nothing, ["linux"] = nothing },
-			["android"] = "https://ecec.dev/the-one-he-missed/download",
+			["android"] = "https://ecec.dev/the-last-wizard-survivors/download",
 		};
 		if (parts.Length > 1 && int.TryParse(parts[1], out int epoch))
 			release["progressEpoch"] = epoch;

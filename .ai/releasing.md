@@ -13,11 +13,11 @@ its title screen that the new version is out and offers the APK.
 
 | What | Where | Why |
 |---|---|---|
-| The download page | `ecec.dev/the-one-he-missed/download` (in the EricClancyEngineeringAndCrafts repo) | the page people are sent; it offers the installer, with the zip as the portable fallback |
-| The game files | GitHub Releases on `eclancy/TheOneHeMissed` | GitHub serves release downloads free with no bandwidth limit, so the droplet's 1 TB a month is left alone |
-| The update check | `ecec.dev/the-one-he-missed/version.json` | an nginx 302 to `github.com/eclancy/TheOneHeMissed/releases/latest/download/version.json` |
-| The old update check | the game's old address, `/wizard-survivors/version.json` | the same 302, kept forever by the website for copies from before the rename (see "The rename") |
-| "What's new" | `ecec.dev/games/the-one-he-missed` | shows the newest release's notes, minus the download paragraph |
+| The download page | `ecec.dev/the-last-wizard-survivors/download` (in the EricClancyEngineeringAndCrafts repo) | the page people are sent; it offers the installer, with the zip as the portable fallback |
+| The game files | GitHub Releases on `eclancy/TheLastWizardSurvivors` (`TheOneHeMissed` and `WizardSurvivors` before it; GitHub redirects both) | GitHub serves release downloads free with no bandwidth limit, so the droplet's 1 TB a month is left alone |
+| The update check | `ecec.dev/the-last-wizard-survivors/version.json` | an nginx 302 to `github.com/eclancy/TheLastWizardSurvivors/releases/latest/download/version.json` |
+| The old update checks | the game's old addresses, `/wizard-survivors/version.json` (copies up to 0.11.0) and `/the-one-he-missed/version.json` (0.12.0 to 0.20.0) | the same 302, kept forever by the website for copies from before the renames (see "The rename" and "The second rename") |
+| "What's new" | `ecec.dev/games/the-last-wizard-survivors` | shows the newest release's notes, minus the download paragraph |
 
 The update address is on ecec.dev, not GitHub, because it is the one address compiled into every
 copy ever downloaded (`UpdateScreen.VersionUrl`). Behind a redirect, the releases can move
@@ -237,7 +237,7 @@ what was published, it is what the monotonic check compares against, and
 
 ### How players install it
 
-On the phone: open `ecec.dev/the-one-he-missed/download`, tap **Download for Android**, open the
+On the phone: open `ecec.dev/the-last-wizard-survivors/download`, tap **Download for Android**, open the
 downloaded `TheOneHeMissed-android.apk`, and when Android asks, allow the browser to install
 unknown apps (Settings > *Allow from this source*), then **Install**. Play Protect may warn that
 it does not recognise the app, because it is not from the Play Store: *More details*, *Install
@@ -353,7 +353,7 @@ bash tools/release/release.sh 0.2.0 "Two new spells. The Gaoler hits less hard."
 ```
 
 The quoted text is optional: it is what players see under "What's new" on
-`ecec.dev/games/the-one-he-missed`, so write it for them. Leave it out and the release just says
+`ecec.dev/games/the-last-wizard-survivors`, so write it for them. Leave it out and the release just says
 how to download. The script always appends a paragraph starting `Download **` below it; that page
 strips the paragraph that starts that way, so **keep that wording when editing the script**.
 
@@ -570,12 +570,22 @@ still holds, and these join it, kept as **The One He Missed / TheOneHeMissed** o
 |---|---|
 | `config/name` | it names the desktop `user://` folder, so changing it moves every save - and Windows forbids the new name's ":" in a folder name. `use_custom_user_dir` is no way round: Godot puts that folder straight under `%APPDATA%` |
 | The release file names (`TheOneHeMissed.exe`, `.pck`, `-Setup.exe`, `-windows.zip`, `-linux.tar.gz`, `-android.apk`) and the install folders | what every copy's updater looks for in a download and restarts, and what ecec.dev's download page links |
-| `ecec.dev/the-one-he-missed/version.json` and `/download` | baked into every copy from 0.12.0; a new address is added beside them, never instead |
+| `ecec.dev/the-one-he-missed/version.json` and `/download` | baked into every copy from 0.12.0 to 0.20.0; the website answers them directly, forever, as it does the `/wizard-survivors/` pair |
 | The bug report's `game` field | the intake's allowlist key (`REPORT_GAMES`); the confirmation text a player reads says the new name |
 | The `.desktop` file's name, `theonehemissed.desktop` | so an update replaces the entry rather than adding a second |
 | The shortcuts' old names | `installer.iss` `[InstallDelete]` removes "The One He Missed.lnk" so an upgrade in place leaves only the new pair, named "The Last Wizard - Survivors" because ":" cannot be in a file name |
 
 No bridge is needed: the program keeps its file name, so the next release updates every copy the ordinary way.
+
+**The repo and the website moved too, the same day** (Eric: *"Yes, change the GitHub repo and the website"*). The
+repo is `eclancy/TheLastWizardSurvivors`; GitHub redirects both old slugs, release downloads and the API included
+(checked with curl the moment it was renamed: `TheOneHeMissed` and `WizardSurvivors` both reach the newest
+`version.json`). The site moved to `ecec.dev/the-last-wizard-survivors/` and `/games/the-last-wizard-survivors`
+(EricClancyEngineeringAndCrafts, its `docs/DEPLOYMENT.md` 7a); every older address is a 301 to the new one except
+the two pairs copies have baked in, which answer directly. **The game asks the new address from 0.21.0**
+(`UpdateScreen.VersionUrl`), so **the website must be deployed before 0.21.0 is released** - a copy asking an
+address the site does not answer yet finds no update and goes to its title, and stays on its version until it
+does. `package.py`'s `REPO` and `release.sh`'s `gh release create --repo` name the new slug.
 
 ### Saves: copied once, the old folder left alone
 

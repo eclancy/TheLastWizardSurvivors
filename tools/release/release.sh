@@ -5,7 +5,7 @@
 #   bash tools/release/release.sh 0.2.0 ["What changed, for players"]
 #   bash tools/release/release.sh --dry-run 0.2.0     everything but the commit, tag, push and release
 #
-# The optional second argument heads the release notes, and ecec.dev/games/the-one-he-missed shows
+# The optional second argument heads the release notes, and ecec.dev/games/the-last-wizard-survivors shows
 # it under "What's new". The download instructions are always appended below it, and must keep
 # starting with "Download **": that page strips the paragraph that starts that way.
 #
@@ -14,8 +14,8 @@
 # from installer.iss), the full zip (the portable version), the small patch zip, the Linux download
 # (TheOneHeMissed-linux.tar.gz, with an install.sh) and its patch, the two bridges for copies from
 # before the rename (package.py, BRIDGE), the release-signed APK (TheOneHeMissed-android.apk) and
-# version.json. ecec.dev/the-one-he-missed/version.json - and the game's old address, which copies
-# from before the rename ask - redirects to the newest release's version.json, so nothing on
+# version.json. ecec.dev/the-last-wizard-survivors/version.json - and the game's two old addresses,
+# which copies from before the renames ask - redirects to the newest release's version.json, so nothing on
 # ecec.dev needs deploying. See .ai/releasing.md. Ported from DrawFight's tools/release/release.sh.
 #
 # --dry-run builds every file a release would carry into build/release/ and verifies the APK's
@@ -31,7 +31,7 @@ for arg in "$@"; do
 done
 VERSION="${ARGS[0]:-}"
 CHANGES="${ARGS[1]:-}"
-HOW_TO="Download **TheOneHeMissed-Setup.exe** and run it, then play from the Start menu or the desktop. It keeps itself up to date from then on. No installer? TheOneHeMissed-windows.zip is the portable version: unzip it anywhere you can write to and run TheOneHeMissed.exe. On an Android phone, download TheOneHeMissed-android.apk on the phone and open it (allow your browser to install apps when Android asks); the game says on its title screen when a newer version is out. On Linux, download **TheOneHeMissed-linux.tar.gz**, unpack it and run **./install.sh** - it adds The Last Wizard: Survivors to your app menu and keeps itself up to date too. (The two -bridge files are for copies installed before the game was renamed, which fetch them by themselves.) Download page: https://ecec.dev/the-one-he-missed/download"
+HOW_TO="Download **TheOneHeMissed-Setup.exe** and run it, then play from the Start menu or the desktop. It keeps itself up to date from then on. No installer? TheOneHeMissed-windows.zip is the portable version: unzip it anywhere you can write to and run TheOneHeMissed.exe. On an Android phone, download TheOneHeMissed-android.apk on the phone and open it (allow your browser to install apps when Android asks); the game says on its title screen when a newer version is out. On Linux, download **TheOneHeMissed-linux.tar.gz**, unpack it and run **./install.sh** - it adds The Last Wizard: Survivors to your app menu and keeps itself up to date too. (The two -bridge files are for copies installed before the game was renamed, which fetch them by themselves.) Download page: https://ecec.dev/the-last-wizard-survivors/download"
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 	echo "usage: bash tools/release/release.sh [--dry-run] X.Y.Z [\"what changed\"]" >&2
 	exit 1
@@ -333,7 +333,7 @@ if $STORY_RESET; then
 $CHANGES}"
 fi
 
-gh release create "v$VERSION" --repo eclancy/TheOneHeMissed \
+gh release create "v$VERSION" --repo eclancy/TheLastWizardSurvivors \
 	build/release/TheOneHeMissed-Setup.exe build/release/TheOneHeMissed-windows.zip \
 	build/release/TheOneHeMissed-patch.zip build/release/TheOneHeMissed-android.apk \
 	build/release/TheOneHeMissed-linux.tar.gz build/release/TheOneHeMissed-linux-patch.zip \
