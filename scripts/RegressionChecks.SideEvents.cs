@@ -290,25 +290,39 @@ public static partial class RegressionChecks
 		};
 	}
 
-	// THE BARGE (BargeEvent, .ai/chapter-wizards.md 4.9), what no build sees: that keeping pace can be won against
-	// the Last Bridge's fall from any arrival he is ahead of - its drift faster than the fall and slower than his
-	// walk - and that on every seed the bridge's own rules moor it under one of its spans, on the water beside the
-	// deck, with its whole drift inside that span and in the water all the way; that a mooring the fall has taken
-	// still leaves it a whole drift before the castle wall; that its reach fits the deck it is measured along; and
-	// that the hint's beats are the sound's.
+	// THE BARGE (BargeEvent, .ai/chapter-wizards.md 4.9; its lamps since 2026-11-07, .ai/unlock-puzzles.md 3.7), what no
+	// build sees. Its numbers: her drift clear of the fall and slower than his walk, a lamp outlasting one stretch and
+	// not three. On every seed: moored under one of its spans on the water beside the deck, its row of lamps on clear
+	// deck at the parapet on her side (never in a gatehouse, at a jog or beside a hole), her whole drift inside the span
+	// and on the water all the way, and room before the castle wall for her landing however far the fall bears her.
+	// And ON PAPER, with the event's own rule (BargeDrift) and a paper player walking the deck at his walk, from where
+	// he arrives: lighting the next two ahead of her - never one that would burn out before she reached it, which on a
+	// long stretch (past a hole, through a gatehouse) means waiting to light it - lands her without once leaving her in
+	// the dark; lighting the whole row in one run ahead and waiting at
+	// her landing does not - a lamp goes out before she reaches it and she waits in the dark; the same rhythm against
+	// the fall from the tightest arrival lands her and never lets the fall within RestLead of her; and lighting only
+	// her first lamp and then nothing lets the fall bear her on past dark lamps without losing what she set out from -
+	// her landing moves on one lamp for each - until the rhythm, taken up again, lands her there.
 	private static void ValidateBarge(List<string> warnings)
 	{
 		const string at = "Barge (the Last Bridge)";
 		float walk = 220f;
+		float stretch = BargeEvent.LampSpacing / BargeEvent.DriftSpeed;
 		if (BargeEvent.DriftSpeed <= BridgeRules.FrontSpeed * 1.1f)
-			warnings.Add($"{at}: it drifts at {BargeEvent.DriftSpeed:0} px a second, not clear of the fall's {BridgeRules.FrontSpeed:0.0}; keeping pace would walk him into the drop from a late arrival.");
+			warnings.Add($"{at}: it drifts at {BargeEvent.DriftSpeed:0} px a second, not clear of the fall's {BridgeRules.FrontSpeed:0.0}; under way, the fall would catch her.");
 		if (BargeEvent.DriftSpeed >= walk * 0.5f)
-			warnings.Add($"{at}: it drifts at {BargeEvent.DriftSpeed:0} px a second, more than half his walk; keeping pace is a race, not an escort.");
-		if (BargeEvent.Reach * 2f < BargeEvent.DriftSpeed * BargeEvent.OutOfReachSeconds)
-			warnings.Add($"{at}: its reach ({BargeEvent.Reach:0} either side) is less than the ground it covers in the {BargeEvent.OutOfReachSeconds:0} s grace.");
-		// Moored where the fall has taken its mooring, it waits RestLead ahead of the fall - which stops at the gate
-		// yard's mouth - and a whole drift must still fit before the castle wall.
-		if (BridgeBand.GateYardMouth + BargeEvent.RestLead + BargeEvent.DriftLength > BridgeBand.End - 300f)
+			warnings.Add($"{at}: it drifts at {BargeEvent.DriftSpeed:0} px a second, more than half his walk; he could never get ahead of her to light a lamp.");
+		if (BargeEvent.BurnSeconds <= stretch + BargeEvent.LightSeconds)
+			warnings.Add($"{at}: a lamp burns {BargeEvent.BurnSeconds:0} s, no longer than one stretch ({stretch:0} s); a lamp lit as she sets out goes out before she reaches it.");
+		if (BargeEvent.BurnSeconds >= 3f * stretch)
+			warnings.Add($"{at}: a lamp burns {BargeEvent.BurnSeconds:0} s, three stretches or more ({3f * stretch:0} s); the whole row lit at once would carry her in, and there is no rhythm to find.");
+		if (BargeEvent.GutterSeconds <= 0f || BargeEvent.GutterSeconds >= BargeEvent.BurnSeconds * 0.5f)
+			warnings.Add($"{at}: a lamp gutters for {BargeEvent.GutterSeconds:0.0} s of its {BargeEvent.BurnSeconds:0} s; the warning should be a short last part of the burn.");
+		if (BargeEvent.LightRadius < 40f || BargeEvent.LampInset + BargeEvent.LightRadius > BridgeBand.Find(BridgeBand.PieceKind.Gatehouse, 0).HalfWidthPx)
+			warnings.Add($"{at}: a lamp's reach ({BargeEvent.LightRadius:0} px) is too small to stand in, or reaches past a narrow deck's middle.");
+		// Waiting ahead of the stopped fall - which stops at the gate yard's mouth - a whole drift must still fit before
+		// the castle wall.
+		if (BridgeBand.GateYardMouth + BargeEvent.RestLead + BargeEvent.DriftLength > BridgeBand.End - BargeEvent.LastLampFromEnd)
 			warnings.Add($"{at}: a barge waiting ahead of the stopped fall has no room for a whole drift before the castle wall.");
 		foreach (int index in BargeEvent.MooringSpans)
 		{
@@ -319,9 +333,11 @@ public static partial class RegressionChecks
 
 		int before = PointsOfInterest.Live.Count;
 		var ground = new ExplorePlacer.Ground { IsClear = (_, _) => true, Origin = Vector2.Zero, ChunkPixels = 1536f };
-		int sides = 0, layouts = 0;
+		int sides = 0, layouts = 0, slid = 0;
 		var spans = new HashSet<int>();
-		string fault = null;
+		string fault = null, paper = null;
+		float slowest = 0f, worstLead = float.MaxValue;
+		int fewestAtWall = int.MaxValue;
 		try
 		{
 			for (int k = 0; k < 64; k++)
@@ -331,31 +347,87 @@ public static partial class RegressionChecks
 				var barge = new BargeEvent();
 				barge.PlaceSites(placer);
 				layouts++;
+				var row = new float[barge.LampCount];
+				for (int i = 0; i < row.Length; i++)
+					row[i] = barge.LampAlong(i);
+				int side = barge.Side;
 				int piece = BridgeBand.PieceIndexAt(barge.MooringS);
 				BridgeBand.Piece p = piece >= 0 ? BridgeBand.Pieces[piece] : default;
-				if (piece < 0 || p.Kind != BridgeBand.PieceKind.Span || System.Array.IndexOf(BargeEvent.MooringSpans, p.Index) < 0)
+				if (row.Length <= BargeEvent.LampsPerDrift)
+					fault ??= $"seed {seed}: a row of only {row.Length} lamps";
+				else if (piece < 0 || p.Kind != BridgeBand.PieceKind.Span || Array.IndexOf(BargeEvent.MooringSpans, p.Index) < 0)
 					fault ??= $"seed {seed}: moored {barge.MooringS:0} px along, not under one of its spans";
 				else
 				{
 					spans.Add(p.Index);
-					if (barge.MooringS + BargeEvent.DriftLength > p.S1 - BargeEvent.LandingBeforeSpanEnd + 0.5f)
-						fault ??= $"seed {seed}: its drift runs past the end of span {p.Index + 1}";
+					if (row[BargeEvent.LampsPerDrift] > p.S1 - BargeEvent.LandingBeforeSpanEnd + 0.5f)
+						fault ??= $"seed {seed}: her landing at {row[BargeEvent.LampsPerDrift]:0} px runs past the end of span {p.Index + 1}";
+					if (row[0] != barge.MooringS)
+						fault ??= $"seed {seed}: moored at {barge.MooringS:0} px, not beside her first lamp ({row[0]:0})";
 				}
-				if (barge.Side > 0)
+				if (side > 0)
 					sides++;
-				// In the water beside the deck, never on it, for the whole of the drift.
-				for (float s = barge.MooringS; s <= barge.MooringS + BargeEvent.DriftLength; s += 100f)
+				// The row: each lamp where a lamp may stand, its foot and the deck he lights it from on the deck, one
+				// spacing apart at least and never a long dark gap in it.
+				for (int i = 0; i < row.Length && fault == null; i++)
 				{
-					float t = BargeEvent.TrackAcross(s, barge.Side);
-					if (Mathf.Abs(t) < BridgeBand.HalfWidthAt(s) + 40f)
-					{
-						fault ??= $"seed {seed}: at {s:0} px along it rides {Mathf.Abs(t):0} px out, on the deck (the shore is at {BridgeBand.HalfWidthAt(s):0})";
-						break;
-					}
+					float s = row[i];
+					float foot = BargeEvent.LampAcross(s, side);
+					if (!BargeEvent.LampMayStand(s, side))
+						fault = $"seed {seed}: lamp {i} at {s:0} px stands where a lamp may not";
+					else if (!BridgeBand.IsOnDeck(BridgeBand.LocalAt(s, foot), 20f) || !BridgeBand.IsOnDeck(BridgeBand.LocalAt(s, foot - side * BargeEvent.LightRadius), 20f))
+						fault = $"seed {seed}: lamp {i} at {s:0} px is not on the deck, or he cannot stand by it";
+					else if (i > 0 && (s - row[i - 1] < BargeEvent.LampSpacing - 0.5f || s - row[i - 1] > BargeEvent.LampSpacing + 1100f))
+						fault = $"seed {seed}: lamps {i - 1} and {i} are {s - row[i - 1]:0} px apart";
+					if (i > 0 && i <= BargeEvent.LampsPerDrift && s - row[i - 1] > BargeEvent.LampSpacing + 1f)
+						slid++;
 				}
+				// In the water beside the deck, never on it, for the whole of the drift.
+				for (float s = barge.MooringS; fault == null && row.Length > BargeEvent.LampsPerDrift && s <= row[BargeEvent.LampsPerDrift]; s += 100f)
+				{
+					float t = BargeEvent.TrackAcross(s, side);
+					if (Mathf.Abs(t) < BridgeBand.HalfWidthAt(s) + 40f)
+						fault = $"seed {seed}: at {s:0} px along it rides {Mathf.Abs(t):0} px out, on the deck (the shore is at {BridgeBand.HalfWidthAt(s):0})";
+				}
+				// However far the fall bears her - it stops at the gate yard's mouth - lamps are left to light before the wall.
+				float furthest = BridgeBand.GateYardMouth + BargeEvent.RestLead;
+				int beyond = 0;
+				foreach (float s in row)
+					if (s > furthest)
+						beyond++;
+				fewestAtWall = Math.Min(fewestAtWall, beyond);
 				if (placer.EventBearing is float bearing && float.IsNaN(bearing))
 					fault ??= $"seed {seed}: its site was placed without a bearing, so the wayfinder could not keep off it";
 				barge.Free();
+
+				if (fault != null || paper != null || row.Length <= BargeEvent.LampsPerDrift)
+					continue;
+				// ON PAPER, from where he arrives (a little behind her).
+				PaperBarge two = PlayBargeOnPaper(row, PaperPolicy.TwoAhead, float.NaN, 150f);
+				if (!two.Landed || two.Drift.DarkStops > 0)
+					paper = $"seed {seed}: lighting the next two ahead of her (never one that would burn out before she reached it) "
+						+ (two.Landed ? $"left her waiting in the dark {two.Drift.DarkStops} times" : $"did not land her in 150 s (she set out from {two.Drift.SetOutFrom})");
+				else
+					slowest = Mathf.Max(slowest, two.Seconds);
+				PaperBarge all = PlayBargeOnPaper(row, PaperPolicy.LightAll, float.NaN, 150f);
+				if (paper == null && (all.Landed || all.Drift.DarkStops == 0 || all.Drift.TimesWentOut == 0))
+					paper = $"seed {seed}: lighting the whole row in one run ahead and waiting at her landing "
+						+ (all.Landed ? $"landed her in {all.Seconds:0} s" : "never left her waiting in the dark") + " - there is no rhythm to find";
+				// Against the fall, from the tightest arrival: the fall RestLead behind her as he comes.
+				float tight = row[0] - BargeEvent.RestLead;
+				PaperBarge fall = PlayBargeOnPaper(row, PaperPolicy.TwoAhead, tight, 200f);
+				if (paper == null && !fall.Landed)
+					paper = $"seed {seed}: from the tightest arrival, lighting the next two ahead did not land her in 200 s";
+				if (paper == null && fall.MinLead < BargeEvent.RestLead - 1f)
+					paper = $"seed {seed}: the fall came within {fall.MinLead:0} px of her (she keeps {BargeEvent.RestLead:0})";
+				worstLead = Mathf.Min(worstLead, fall.MinLead);
+				// Idle after her first lamp, until the fall has borne her past two dark ones; then the rhythm.
+				PaperBarge idle = PlayBargeOnPaper(row, PaperPolicy.IdleThenTwoAhead, tight, 300f);
+				if (paper == null && (!idle.Landed || idle.BorneBeforeResuming < 2 || idle.SetOutWhenBorne != 1
+						|| idle.LandedAt != BargeEvent.LampsPerDrift + idle.Drift.BornePast || idle.MinLead < BargeEvent.RestLead - 1f))
+					paper = $"seed {seed}: left idle after her first lamp, the fall bore her past {idle.BorneBeforeResuming} dark lamps with "
+						+ $"{idle.SetOutWhenBorne} set out from, and taken up again she {(idle.Landed ? $"landed at lamp {idle.LandedAt}" : "never landed")} "
+						+ $"(borne past {idle.Drift.BornePast} in all; the fall's nearest {idle.MinLead:0} px)";
 			}
 		}
 		finally
@@ -365,10 +437,19 @@ public static partial class RegressionChecks
 		}
 		if (fault != null)
 			warnings.Add($"{at}: {fault}.");
+		if (paper != null)
+			warnings.Add($"{at}: on paper, {paper}.");
 		if (spans.Count < BargeEvent.MooringSpans.Length)
 			warnings.Add($"{at}: {layouts} seeds moored it under only {spans.Count} of its {BargeEvent.MooringSpans.Length} spans.");
 		if (sides == 0 || sides == layouts)
 			warnings.Add($"{at}: {layouts} seeds moored it on one side of the bridge every time.");
+		if (fewestAtWall < 3)
+			warnings.Add($"{at}: borne by the fall to the gate yard, a row has only {fewestAtWall} lamps left before the castle wall.");
+		// The measurements, on a clean pass only (a fault stops the paper play, and the warning above says what it found).
+		if (fault == null && paper == null)
+			GD.Print($"RegressionChecks: the barge on paper over {layouts} seeds - the next two ahead lands her in {slowest:0} s at most, never in the dark; "
+				+ $"lighting the whole row at once never does; {slid} lamps of the drift stepped along past a hole; "
+				+ $"the fall's nearest from the tightest arrival {worstLead:0} px; {fewestAtWall} lamps at least past the furthest the fall bears her.");
 
 		// The hint's mist comes in on the knocks of the hull (StageHintCue.HullKnocks = sfx._HULL_KNOCKS): every beat
 		// inside the sound, in order.
@@ -383,5 +464,93 @@ public static partial class RegressionChecks
 				break;
 			}
 		}
+	}
+
+	// How the paper player plays the barge (ValidateBarge): the next two ahead of her; the whole row in one run ahead,
+	// then wait at her landing; or her first lamp only, idle until the fall has borne her past two dark lamps, then the
+	// next two ahead.
+	private enum PaperPolicy { TwoAhead, LightAll, IdleThenTwoAhead }
+
+	private struct PaperBarge
+	{
+		public bool Landed;
+		public float Seconds;
+		public int LandedAt;
+		public float MinLead;
+		public int BorneBeforeResuming;
+		public int SetOutWhenBorne;
+		public BargeDrift Drift;
+	}
+
+	// A paper player on the Last Bridge: only his place along it, walking at his walk to the lamp his policy names and
+	// lighting it by standing there, against the event's own rule (BargeDrift), stepped twenty times a second, from a
+	// little behind her. frontStart is where the fall is as he arrives, px along, or NaN for a fall not yet moving.
+	private static PaperBarge PlayBargeOnPaper(float[] row, PaperPolicy policy, float frontStart, float limitSeconds)
+	{
+		const float dt = 0.05f;
+		const float walk = 220f;
+		var drift = new BargeDrift(row);
+		var result = new PaperBarge { Drift = drift, MinLead = float.MaxValue, LandedAt = -1, BorneBeforeResuming = -1, SetOutWhenBorne = -1 };
+		bool falling = !float.IsNaN(frontStart);
+		float front = frontStart;
+		float me = row[0] - 200f;
+		bool idle = policy == PaperPolicy.IdleThenTwoAhead;
+		for (float t = 0f; t < limitSeconds; t += dt)
+		{
+			if (falling)
+				front += BridgeRules.FrontSpeed * dt;
+			float push = falling ? front + BargeEvent.RestLead : float.NegativeInfinity;
+			float goal;
+			if (drift.Landed)
+				goal = drift.BargeS;
+			else if (policy == PaperPolicy.LightAll)
+			{
+				// The next dark lamp of her stretch ahead of him; none left, and he waits at her landing.
+				goal = PaperLamp(drift, drift.Stop, drift.Landing - 1, me - 1f) is int next ? row[next] : row[drift.Landing];
+			}
+			else if (idle && drift.SetOutFrom == 0)
+				goal = row[drift.Stop];
+			else if (idle)
+			{
+				goal = me;
+				if (drift.BornePast >= 2)
+				{
+					idle = false;
+					result.BorneBeforeResuming = drift.BornePast;
+					result.SetOutWhenBorne = drift.SetOutFrom;
+				}
+			}
+			else if (PaperLamp(drift, drift.Stop, Math.Min(drift.Stop + 1, drift.Landing - 1), float.NegativeInfinity) is int next)
+			{
+				// Never one she will not reach before it burns out (a long stretch past a hole or a gatehouse): he waits a
+				// stride short of it until she is near enough.
+				bool tooEarly = (row[next] - drift.BargeS) / BargeEvent.DriftSpeed > BargeEvent.BurnSeconds - 3f;
+				goal = tooEarly ? row[next] - 110f : row[next];
+			}
+			else
+				goal = drift.BargeS;
+			me = Mathf.MoveToward(me, goal, walk * dt);
+			int near = BargeDrift.IndexNear(row, me);
+			drift.Step(dt, Mathf.Abs(row[near] - me) <= BargeEvent.LightRadius * 0.5f ? near : -1, push);
+			if (falling)
+				result.MinLead = Mathf.Min(result.MinLead, drift.BargeS - front);
+			if (drift.Landed && Mathf.Abs(me - drift.BargeS) <= BargeEvent.Reach)
+			{
+				result.Landed = true;
+				result.Seconds = t;
+				result.LandedAt = drift.Stop;
+				break;
+			}
+		}
+		return result;
+	}
+
+	// The first dark lamp from..to (inclusive) at or past along, or null.
+	private static int? PaperLamp(BargeDrift drift, int from, int to, float along)
+	{
+		for (int i = Math.Max(0, from); i <= to && i < drift.LampS.Length; i++)
+			if (drift.BurnLeft[i] <= 0f && drift.LampS[i] >= along)
+				return i;
+		return null;
 	}
 }

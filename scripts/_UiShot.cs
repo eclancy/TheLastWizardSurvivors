@@ -414,6 +414,10 @@ public partial class _UiShot : Node
 	// --beacons-lit=N: with --arrive on the Scorched Sands' dry tomb (--event-index=1), N of its beacons lit (their clocks
 	// staggered) the moment it is begun, so the fires, the clock rings and the objective's count are photographed.
 	private int beaconsLit;
+	// --lamps-lit=N: with --arrive on the Last Bridge, the barge posed part-way (BargeEvent.PoseForPhoto): set out from
+	// her first lamp and on her way to the next, the N lamps ahead of her lit (their clocks staggered), so the lamps, their
+	// clocks, the lit water and the first dark lamp past them are photographed. Stand him with --goto=barge:ALONG,FROMSHORE.
+	private int lampsLit;
 	// --event-progress=F: with --arrive, the begun event's own "progress" float set to F (0-1) - an event photographed
 	// part-way (the Tithe-Reeve's pan part-paid, its beam part-tipped) without the minutes it takes to get there.
 	private float eventProgress = -1f;
@@ -1916,6 +1920,8 @@ public partial class _UiShot : Node
 				seerRead = true;
 			else if (arg.StartsWith("--beacons-lit="))
 				beaconsLit = System.Math.Max(0, int.Parse(arg.Substring("--beacons-lit=".Length)));
+			else if (arg.StartsWith("--lamps-lit="))
+				lampsLit = System.Math.Max(0, int.Parse(arg.Substring("--lamps-lit=".Length)));
 			else if (arg.StartsWith("--event-progress="))
 				eventProgress = float.Parse(arg.Substring("--event-progress=".Length), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg == "--paint-flask")
@@ -3219,6 +3225,11 @@ public partial class _UiShot : Node
 					lighting.KindleForPhoto(beaconsLit);
 					GD.Print($"_UiShot: {beaconsLit} of the tomb's beacons lit");
 				}
+				if (lampsLit > 0 && begunEvent is BargeEvent lamps)
+				{
+					lamps.PoseForPhoto(lampsLit);
+					GD.Print($"_UiShot: the barge set out from lamp {lamps.Drift.Stop - 1}, {lampsLit} lamps ahead of her lit, her landing lamp {lamps.Drift.Landing}");
+				}
 				if (begunEvent != null && eventProgress >= 0f
 					&& begunEvent.GetType().GetField("progress", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic) is System.Reflection.FieldInfo field
 					&& field.FieldType == typeof(float))
@@ -4188,7 +4199,7 @@ public partial class _UiShot : Node
 		// The walking hut: in front of where its door turns to, so she steps out toward him and not out of his feet.
 		else if (IsInstanceValid(wonEvent) && wonEvent is WalkingHutEvent hutEvent)
 			p.GlobalPosition = hutEvent.StandPoint;
-		// The barge rides on the water: stand on the deck level with it, where a player keeping pace would be.
+		// The barge rides on the water: stand on the deck level with it, where he meets her at her landing.
 		else if (IsInstanceValid(wonEvent) && wonEvent is BargeEvent barge)
 			p.GlobalPosition = barge.StandPoint(-60f);
 		// The gibbet's cage, once --escort-at has let him out: a stride ahead of him toward the landing.

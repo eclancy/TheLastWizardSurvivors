@@ -40,15 +40,20 @@ using TheOneHeMissed.scripts;
 //      flees toward the mouth and in, and it checks the hut knelt INSIDE the yard. --lose-hut, once two
 //      fifths driven, walks straight away past its lose radius and waits there, and checks it calmed and
 //      stood where it was left; then herds again and finishes.
-//      The Last Bridge's barge (--stage=11) is KEPT PACE WITH: placed by the bridge's band, not the explore
-//      bands, so its placement is checked against the bridge's rules (moored under a span, on the water beside
-//      the deck, the wayfinder on the deck ahead of the start); then the probe comes level with it and stays
-//      level - a little behind it, on its side of the deck - for the whole drift, and checks it stayed ahead of
-//      the fall. --fall-behind=S stops following for S seconds a third of the way in: under the barge's grace
-//      (6 s) it must recover and win in one drift, over it the drift must fail, drift back, and be won from the
-//      start again. --arrive-late waits for the fall to pass the barge's mooring before coming, and checks it
-//      slipped its mooring and waits ahead of the fall, its arrow with it. Pair it with --bridge-front=-6000
-//      (the front started 6,000 px ahead of the start) to keep the wait short.
+//      The Last Bridge's barge (--stage=11) is LIT AHEAD (.ai/unlock-puzzles.md 3.7): placed by the bridge's band, not the
+//      explore bands, so its placement is checked against the bridge's rules (moored under a span, on the water beside the
+//      deck, every lamp of her drift on open deck at the parapet on her side, the wayfinder on the deck ahead of the start);
+//      then the probe comes to her and plays the lamps as a player who has learned them would - at his own walking speed,
+//      along the deck, he lights the next two dark lamps ahead of her (never one she would not reach before it burnt out: on
+//      a long stretch he waits a stride short of it) and walks back to her while they burn - and checks she
+//      came in after five lit lamps without once waiting in the dark, and stayed ahead of the fall. --light-all is the wrong
+//      approach: the whole of her stretch lit in one run ahead, then he waits at her landing; it checks a lamp went out
+//      before she reached it and she waited in the dark, then he goes back, relights, and she lands with what she had set
+//      out from kept. --let-fall lights her first lamp only and waits at her landing while the fall bears her on past two
+//      dark lamps; it checks her landing moved on one lamp for each and her one set-out was kept, then plays it out.
+//      --arrive-late waits for the fall to pass the barge's mooring before coming, and checks she was borne off it and waits
+//      ahead of the fall, her arrow with her. Pair it with --bridge-front=-6000 (the front started 6,000 px ahead of the
+//      start) to keep the wait short. Every leg checks she never let the fall within her lead (BargeEvent.RestLead).
 //      The Swamp's gibbet cage is LED ROUND THE ROT (.ai/unlock-puzzles.md 3.4): the probe holds the winch, and each time
 //      Paracelsus steps out it plans its own way from where it stands to the ferry landing through the gaps in the rot
 //      (RotPoolLayout.FindRoute over the pools it can see and the ground - what a player who has seen the pools does) and
@@ -146,15 +151,30 @@ public partial class _ExploreProbe : Node
 	private (bool Seen, int Bolts, int Cut, int Prints, int OldPrints, bool Tired, bool Won,
 		int Calmed, float Drive, Vector2 HutAt, Vector2 Yard) hutSnap;
 	private int hutSnapCur = -1;
-	// The Last Bridge's barge: --fall-behind=S and --arrive-late (see the header).
-	private float fallBehind;
+	// The Last Bridge's barge: --light-all, --let-fall and --arrive-late (see the header).
+	private bool lightAll;
+	private bool letFall;
 	private bool arriveLate;
-	private float bargeHeld = -1f;
 	private float bargeWait;
 	private float bargeLeadMin = float.MaxValue;
-	private bool bargeOutSeen;
-	private float bargeOutMax;
-	private Vector2 fellBackTo;
+	private float bargeWaterLeadMin = float.MaxValue;
+	// The longest frame seen while she is out, game seconds: the probe reads the fall's place on its own frame, which can
+	// come after the pace clock has moved and before the event has pushed her on that frame, so her lead can read one
+	// frame of the fall short of RestLead (6 px at timescale 4 and 20 fps) without the rule ever letting it nearer.
+	private float bargeMaxFrame;
+	// Where the wrong approach and the idle leg have got to (0 playing them, 1 waiting at her landing, 2 playing it out),
+	// and what they saw: the lamp she stopped at in the dark, what she had set out from, the landing the fall moved on.
+	private int bargePhase;
+	private float bargeLitAllBy;
+	private float bargeStalled;
+	private int bargeStallLamp = -1;
+	private int bargeStallSetOut = -1;
+	private int bargeStallWentOut;
+	private int bargeBornePast;
+	private int bargeLandingWhenBorne = -1;
+	// Her stop when he came, and how many dark lamps the fall had borne her past before that.
+	private int bargeFirstStop = -1;
+	private int bargeBorneAtArrival;
 	// --tithe-level=N: the player is put at level N as he arrives at the Tithe-Reeve's scale, so the price is a real
 	// level's (the probe arrives in the first minute, at level 1, where a level is 10 XP). --tithe-walk-off: once the
 	// pan is two fifths paid he walks 1,500 px off, waits, and comes back - what is paid must stay paid.
@@ -227,7 +247,8 @@ public partial class _ExploreProbe : Node
 			else if (arg == "--wrong-mouth") wrongMouth = true;
 			else if (arg == "--wayfinder-first") wayfinderFirst = true;
 			else if (arg == "--lose-hut") loseHut = true;
-			else if (arg.StartsWith("--fall-behind=")) fallBehind = float.Parse(arg.Substring(14), System.Globalization.CultureInfo.InvariantCulture);
+			else if (arg == "--light-all") lightAll = true;
+			else if (arg == "--let-fall") letFall = true;
 			else if (arg == "--arrive-late") arriveLate = true;
 			else if (arg == "--let-him-fall") letHimFall = true;
 			else if (arg == "--straight") straightThrough = true;
@@ -299,7 +320,7 @@ public partial class _ExploreProbe : Node
 		}
 		// After a teleport, nothing is compared until the streamer has painted and furnished every
 		// chunk round the new spot: a snapshot taken half-way would differ from the next for no reason.
-		// Not while keeping pace with the barge (step 34): it walks, and a frame skipped there is a frame left behind.
+		// Not while lighting the barge's lamps (step 34): he walks, and a frame skipped there is a frame left behind.
 		if (step >= 4 && step != 34 && game.Terrain != null && !game.Terrain.IsSettled && settleFrames < 2000)
 		{
 			settleFrames++;
@@ -383,7 +404,7 @@ public partial class _ExploreProbe : Node
 				BargeArrive();
 				break;
 			case 34:
-				BargeKeepPace((float)delta);
+				BargeLightLamps((float)delta);
 				break;
 		}
 	}
@@ -595,6 +616,20 @@ public partial class _ExploreProbe : Node
 		Check("the wayfinder is on the deck, ahead of the start, in its band along the bridge",
 			BridgeBand.IsOnDeck(w - game.StageOrigin, 40f) && ws >= SideEventDirector.WayfinderMinChunks * chunk - 1f
 			&& ws <= SideEventDirector.WayfinderMaxChunks * chunk + 1f, $"{ws:0} px along = {ws / chunk:0.0} chunks");
+		// Her lamps: the first beside her mooring, and every lamp of her drift on open deck at the parapet on her side,
+		// with the deck he stands on to light it open too.
+		Check("her first lamp stands beside her mooring", barge.LampCount > BargeEvent.LampsPerDrift && Mathf.Abs(barge.LampAlong(0) - barge.MooringS) < 0.01f,
+			$"{barge.LampCount} lamps in the row");
+		bool lampsOpen = true;
+		string lampsAt = "";
+		for (int i = 0; i <= BargeEvent.LampsPerDrift && i < barge.LampCount; i++)
+		{
+			Vector2 foot = barge.LampFoot(i), stand = barge.LampStand(i);
+			lampsAt += (i > 0 ? ", " : "") + $"{barge.LampAlong(i):0}";
+			if (terrain != null && (terrain.IsBlockedAtWorld(foot) || terrain.IsHazardAtWorld(foot) || terrain.IsBlockedAtWorld(stand) || terrain.IsHazardAtWorld(stand)))
+				lampsOpen = false;
+		}
+		Check("every lamp of her drift stands on open deck", lampsOpen, $"along {lampsAt} px");
 		Check("the event is dormant", barge.IsDormant);
 		Check("nothing is marked before it is seen or revealed", !PointsOfInterest.AnyMarked);
 		siteAtStart = new List<Vector2> { site };
@@ -658,76 +693,121 @@ public partial class _ExploreProbe : Node
 			Teleport(DeckLevelWith(barge, -200f), 10);
 			return;
 		}
-		Check("it begins when the player comes level with it", barge.IsFound, $"t={game.RunSeconds:0.0}s, pace {game.PaceSeconds:0}");
+		Check("it begins when the player comes near it", barge.IsFound, $"t={game.RunSeconds:0.0}s, pace {game.PaceSeconds:0}");
+		bargeFirstStop = barge.Drift.Stop;
+		bargeBorneAtArrival = barge.Drift.BornePast;
+		notes.Add($"met her at lamp {bargeFirstStop} of the row ({barge.BargeS:0} px along), her landing lamp {barge.Drift.Landing}; "
+			+ $"borne past {bargeBorneAtArrival} before he came; the fall at {Bridge.FrontS:0}");
 		string line = barge.ObjectiveShown;
 		Check("the objective line is up", !string.IsNullOrEmpty(line), string.IsNullOrEmpty(line) ? "no line" : line);
 		completeClock = 0f;
 		step = 34;
 	}
 
-	// Level with it, a little behind, on its side of the deck: every frame, as a player walking beside it would be.
-	// --fall-behind=S stops for S seconds a third of the way in.
-	private void BargeKeepPace(float delta)
+	// The lamps (.ai/unlock-puzzles.md 3.7), played as a player who has learned them would: at his own walking speed,
+	// never teleported, along the deck in the bridge's own coordinates (so a walk never cuts across the drop at a jog),
+	// he lights the next two dark lamps ahead of her - from her stop to the one after, never past her landing, and never
+	// one she would not reach before it burnt out (he waits a stride short of that one) - and with both burning walks back
+	// to her, level with her, until she is in; then stands level with her at her landing.
+	// --light-all first lights the whole of her stretch in one run ahead and waits at her landing, until she has
+	// waited in the dark 4 s at a lamp that went out before she reached it; then plays as above. --let-fall lights her
+	// first lamp only, then waits at her landing while the fall bears her on past two dark lamps; then plays as above.
+	// The swarm within 500 px of him is cleared every frame, as before: what is measured is the rule, not the fight.
+	private void BargeLightLamps(float delta)
 	{
 		var barge = (BargeEvent)Event;
+		BargeDrift drift = barge?.Drift;
 		completeClock += delta;
-		if (barge == null || barge.IsWon)
+		if (barge == null || barge.IsWon || drift == null)
 		{
-			Check("it came ashore: the event was won", barge == null || barge.IsWon, $"{completeClock:0.0} s of game time after arriving");
-			Check("he stayed ahead of the fall all the way", bargeLeadMin > 0f, $"closest {bargeLeadMin:0} px ahead of it");
-			if (fallBehind > 0f)
-			{
-				bool over = fallBehind > BargeEvent.OutOfReachSeconds;
-				Check(over ? "falling behind longer than its grace failed the drift, and it drifted back" : "falling behind for less than its grace was forgiven",
-					over ? barge.DriftsFailed >= 1 : barge.DriftsFailed == 0 && bargeOutSeen,
-					$"{barge.DriftsFailed} drift(s) failed; out of reach {bargeOutMax:0.0} s at most; held back {fallBehind:0.0} s");
-			}
-			else
-				Check("kept pace in one drift", barge.DriftsFailed == 0, $"{barge.DriftsFailed} failed");
-			SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
-			if (barge != null && !barge.PaysChest && save != null)
-				Check("'morgan' is freed, in memory", GlobalStatsManager.IsCharacterUnlocked(save, "morgan"), $"writes {(SaveManager.WritesDisabled ? "off" : "ON")}");
-			else if (barge != null)
-				Check("it paid a chest (she is already free on this save)", barge.PaysChest);
-			Check("no arrows are left once it is over", !PointsOfInterest.AnyMarked);
-			Finish("event over");
+			BargeResults(barge);
 			return;
 		}
 		if (completeClock > 300f)
 		{
-			Check("the event can be finished", false, $"not finished after 300 s ({barge.Progress * 100f:0}% of a drift, {barge.DriftsFailed} failed)");
+			Check("the event can be finished", false, $"not finished after 300 s ({barge.Progress * 100f:0}% of a drift, set out from {drift?.SetOutFrom ?? 0}, "
+				+ $"waited in the dark {drift?.DarkStops ?? 0} times)");
 			Finish("gave up");
 			return;
 		}
 		bargeLeadMin = Mathf.Min(bargeLeadMin, Bridge.AlongOf(player.GlobalPosition) - Bridge.FrontS);
-		if (barge.SecondsOutOfReach > 0f)
+		if (Bridge.FrontMoving)
+			bargeWaterLeadMin = Mathf.Min(bargeWaterLeadMin, drift.BargeS - Bridge.FrontS);
+		bargeMaxFrame = Mathf.Max(bargeMaxFrame, delta);
+
+		Vector2 goal;
+		if (drift.Landed)
+			goal = barge.StandPoint(-60f);
+		else if (lightAll && bargePhase == 0)
 		{
-			bargeOutSeen = true;
-			bargeOutMax = Mathf.Max(bargeOutMax, barge.SecondsOutOfReach);
+			// One run ahead: the next dark lamp of her stretch ahead of him; none left, and he waits at her landing.
+			float me = Bridge.AlongOf(player.FootPosition);
+			int? next = null;
+			for (int i = drift.Stop; i < drift.Landing; i++)
+				if (drift.BurnLeft[i] <= 0f && barge.LampAlong(i) >= me - 30f)
+				{
+					next = i;
+					break;
+				}
+			if (next is int n)
+				goal = barge.LampStand(n);
+			else
+			{
+				bargePhase = 1;
+				bargeLitAllBy = completeClock;
+				notes.Add($"lit the whole of her stretch in one run ahead by {completeClock:0.0} s (her stop lamp {drift.Stop}, landing {drift.Landing})");
+				goal = barge.LampStand(drift.Landing);
+			}
 		}
-		// Held back: from a third of the way in, for --fall-behind seconds, he falls back out of its reach - a pack
-		// in his way, a step back from it - and stands there; then he catches it up.
-		if (fallBehind > 0f && bargeHeld < 0f && barge.IsDrifting && barge.Progress >= 0.33f)
+		else if (lightAll && bargePhase == 1)
 		{
-			bargeHeld = 0f;
-			fellBackTo = DeckLevelWith(barge, -(BargeEvent.Reach + 140f));
-			notes.Add($"fell back out of reach at {barge.Progress * 100f:0}% of the drift, for {fallBehind:0.0} s");
+			goal = barge.LampStand(drift.Landing);
+			bargeStalled = drift.WaitingInDark ? bargeStalled + delta : 0f;
+			if (bargeStalled >= 4f)
+			{
+				bargePhase = 2;
+				bargeStallLamp = drift.Stop;
+				bargeStallSetOut = drift.SetOutFrom;
+				bargeStallWentOut = drift.TimesWentOut;
+				notes.Add($"the whole row lit at once: she waits in the dark at lamp {drift.Stop} ({drift.SetOutFrom} set out from) at {completeClock:0.0} s; "
+					+ $"{drift.TimesWentOut} lamps went out; going back to relight");
+			}
 		}
-		if (bargeHeld >= 0f && bargeHeld < fallBehind)
+		else if (letFall && bargePhase == 0 && drift.SetOutFrom >= 1)
 		{
-			bargeHeld += delta;
-			player.GlobalPosition = fellBackTo;
+			// He waits far ahead, at her landing, and the fall comes on behind her.
+			goal = barge.LampStand(drift.Landing);
+			if (drift.BornePast >= 2)
+			{
+				bargePhase = 2;
+				bargeBornePast = drift.BornePast;
+				bargeStallSetOut = drift.SetOutFrom;
+				bargeLandingWhenBorne = drift.Landing;
+				notes.Add($"left idle after her first lamp: the fall bore her past {drift.BornePast} dark lamps by {completeClock:0.0} s; "
+					+ $"set out from {drift.SetOutFrom}, her landing now lamp {drift.Landing}; taking the lamps up again");
+			}
 		}
-		else if (barge.IsReturning)
-		{
-			// It drifts back to its mooring: he walks back with it, and waits there.
-			player.GlobalPosition = DeckLevelWith(barge, -60f);
-		}
+		else if (letFall && bargePhase == 0)
+			goal = barge.LampStand(drift.Stop);
 		else
 		{
-			player.GlobalPosition = DeckLevelWith(barge, -90f);
+			int? next = null;
+			int last = Math.Min(drift.Stop + 1, drift.Landing - 1);
+			for (int i = drift.Stop; i <= last; i++)
+				if (drift.BurnLeft[i] <= 0f)
+				{
+					next = i;
+					break;
+				}
+			// A lamp she will not reach before it burns out (a long stretch: past a hole, through a gatehouse) is not lit
+			// yet: he waits a stride short of its reach until she is near enough - what a player learns from watching one
+			// go out ahead of her.
+			if (next is int far && (barge.LampAlong(far) - drift.BargeS) / BargeEvent.DriftSpeed > BargeEvent.BurnSeconds - 3f)
+				goal = Bridge.WorldAt(barge.LampAlong(far) - 110f, Bridge.AcrossOf(barge.LampStand(far)));
+			else
+				goal = next is int n ? barge.LampStand(n) : barge.StandPoint(-40f, 200f);
 		}
-		player.Velocity = Vector2.Zero;
+		WalkOnDeck(goal, delta);
 		foreach (Enemy enemy in EnemyRegistry.Snapshot)
 		{
 			if (!IsInstanceValid(enemy) || enemy.IsDying || enemy.IsMiniBoss)
@@ -735,6 +815,69 @@ public partial class _ExploreProbe : Node
 			if (enemy.GlobalPosition.DistanceTo(player.GlobalPosition) < 500f)
 				enemy.QueueFree();
 		}
+	}
+
+	// One step of his walk toward a point on the deck (where his FEET should be), at his walking speed, in the bridge's
+	// own coordinates: along and across at once, then held a stride inside the shore of wherever he now is, so he
+	// never walks over the drop where the deck narrows.
+	private void WalkOnDeck(Vector2 feetGoal, float delta)
+	{
+		Vector2 feetOffset = player.FootPosition - player.GlobalPosition;
+		Vector2 me = player.FootPosition;
+		float s = Bridge.AlongOf(me), t = Bridge.AcrossOf(me);
+		float gs = Bridge.AlongOf(feetGoal), gt = Bridge.AcrossOf(feetGoal);
+		var cur = new Vector2(s, t).MoveToward(new Vector2(gs, gt), player.WalkingSpeed * delta);
+		float half = Mathf.Max(0f, BridgeBand.HalfWidthAt(cur.X) - 60f);
+		cur.Y = Mathf.Clamp(cur.Y, -half, half);
+		player.GlobalPosition = Bridge.WorldAt(cur.X, cur.Y) - feetOffset;
+		player.Velocity = Vector2.Zero;
+	}
+
+	private void BargeResults(BargeEvent barge)
+	{
+		BargeDrift drift = barge?.Drift;
+		Check("she came ashore: the event was won", barge == null || barge.IsWon, $"{completeClock:0.0} s of game time after arriving");
+		Check("he stayed ahead of the fall all the way", bargeLeadMin > 0f, $"closest {bargeLeadMin:0} px ahead of it");
+		if (bargeWaterLeadMin < float.MaxValue)
+		{
+			float frameOfFall = BridgeRules.FrontSpeed * bargeMaxFrame;
+			Check("she never let the fall within her lead", bargeWaterLeadMin >= BargeEvent.RestLead - frameOfFall - 2f,
+				$"the fall's nearest to her {bargeWaterLeadMin:0} px (she keeps {BargeEvent.RestLead:0}, less one frame of the fall: {frameOfFall:0.0} px)");
+		}
+		if (drift != null)
+		{
+			notes.Add($"lamps lit {drift.TimesLit}, gone out {drift.TimesWentOut}; she waited in the dark {drift.DarkStops} times and was borne past {drift.BornePast}; in at lamp {drift.Stop}");
+			Check("she set out from five lit lamps, and the next was her landing", drift.SetOutFrom == BargeEvent.LampsPerDrift
+				&& drift.Stop == bargeFirstStop + BargeEvent.LampsPerDrift + drift.BornePast - bargeBorneAtArrival,
+				$"set out from {drift.SetOutFrom}; in at lamp {drift.Stop}, first met at lamp {bargeFirstStop}, borne past {drift.BornePast}");
+			if (lightAll)
+			{
+				Check("lighting the whole row at once left her waiting in the dark", bargePhase == 2,
+					bargePhase == 2 ? $"at lamp {bargeStallLamp}, {bargeStallSetOut} set out from, {bargeStallWentOut} lamps out, the row lit by {bargeLitAllBy:0.0} s" : "she never stopped");
+				Check("what she had set out from stayed set out from: she landed after relighting", bargePhase == 2 && bargeStallSetOut >= 1
+					&& drift.SetOutFrom == BargeEvent.LampsPerDrift, $"{bargeStallSetOut} when she stopped, {drift.SetOutFrom} at the end");
+			}
+			else if (letFall)
+			{
+				Check("left idle, the fall bore her on past dark lamps", bargePhase == 2 && bargeBornePast >= 2, $"{bargeBornePast} borne past");
+				Check("her landing moved on one lamp for each, and what she had set out from was kept", bargePhase == 2 && bargeStallSetOut == 1
+					&& bargeLandingWhenBorne == bargeFirstStop + BargeEvent.LampsPerDrift + bargeBornePast - bargeBorneAtArrival,
+					$"set out from {bargeStallSetOut}; landing lamp {bargeLandingWhenBorne} (first met at {bargeFirstStop})");
+			}
+			else if (!arriveLate)
+				Check("lighting the next two ahead, she never waited in the dark", drift.DarkStops == 0 && drift.BornePast == 0,
+					$"{drift.DarkStops} dark stops, borne past {drift.BornePast}");
+			else
+				Check("from a late arrival she set out from lamps ahead of the fall", drift.SetOutFrom == BargeEvent.LampsPerDrift && bargeFirstStop > 0,
+					$"first met at lamp {bargeFirstStop}");
+		}
+		SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
+		if (barge != null && !barge.PaysChest && save != null)
+			Check("'morgan' is freed, in memory", GlobalStatsManager.IsCharacterUnlocked(save, "morgan"), $"writes {(SaveManager.WritesDisabled ? "off" : "ON")}");
+		else if (barge != null)
+			Check("it paid a chest (she is already free on this save)", barge.PaysChest);
+		Check("no arrows are left once it is over", !PointsOfInterest.AnyMarked);
+		Finish("event over");
 	}
 
 	private void SendAway()

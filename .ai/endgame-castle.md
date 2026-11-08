@@ -603,11 +603,15 @@ existing `pit` hazard terrain); the **archers' volleys** over the gate yard befo
 
 ### 3.10 Its side event: the barge (2026-11-03)
 
-The one castle chapter with a side event: Morgan le Fay's barge, moored under the second or third span and kept
-pace with for 2,000 px of drift (`.ai/chapter-wizards.md` 4.9, "Built"). It is placed by the band, not the explore
-bands, and it reads the front: its drift (40 px a second) outruns the fall's 31, and a mooring the fall has taken is
-slipped - the barge waits 560 px ahead of the fall. Its wayfinder is on the deck ahead of the start (hook 10), and the
-strip under the timer steps aside while its line speaks. `_ExploreProbe --stage=11` drives it.
+The one castle chapter with a side event: Morgan le Fay's barge, moored under the second or third span. Since
+2026-11-07 its ask is the parapet's lamps (`.ai/unlock-puzzles.md` 3.7, "Built"; it was keeping pace with 2,000 px of
+drift, `.ai/chapter-wizards.md` 4.9): a row of dead lamps on her side, about 400 px apart; she drifts only as far as
+they are lit and sets out from a lamp only while it burns. It is placed by the band, not the explore bands, and it
+reads the front: under way she outruns the fall (40 px a second against 31), and waiting at a dark lamp with the fall
+within 560 px of her she is borne on past it - her landing moves on a lamp, nothing she set out from is lost - so the
+lamp row runs on to the castle wall, and lamps keep out of the gatehouses' narrows and off the broken spans' holes. Its
+lamps outlast the event and go with the deck (`BridgeRules.KeepWithDeck`). Its wayfinder is on the deck ahead of the
+start (hook 10), and the strip under the timer steps aside while its line speaks. `_ExploreProbe --stage=11` drives it.
 
 ## 4. Cursed Dungeon, in the castle (`stage_1`)
 
