@@ -27,7 +27,8 @@ meets the scene's black ground invisibly. Nothing is ever stretched to fit.
 LAYERS. Each panel is back (opaque) + mid + fore (transparent), so Prologue.cs can drift them at
 different rates. The drift is a few art pixels over the whole panel; every layer is drawn out to
 the frame edge so a drift never uncovers anything. A panel may also have one animated box of its
-mid layer, <name>-anim.png and <name>-anim.json (write_anim; only "missed" does).
+mid layer, <name>-anim.png and <name>-anim.json (write_anim; the tide's rush, the hiding's
+searchers and the break's chain).
 """
 
 from __future__ import division, print_function
@@ -1052,19 +1053,13 @@ _KINDS = {"swarmer": _swarmer, "runner": _runner, "bruiser": _bruiser, "shielder
           "knight": _knight, "hound": _hound_parts}
 
 
-def creature(c, kind, cx, yb, h, facing=1, body=None, rim=None, eye=True, seed=0, light=None, pose=None):
-    """One of his: the taxonomy's class attachment (.ai/art-direction.md section 4) - the swarmer's cowl,
-    the runner's streaming rag, the bruiser's horns and pauldrons, the shielder's flat plane, the caster's
-    loose orb, the knight's spear, the hound's line - on a body drawn with joints, weight and torn edges,
-    and every one wearing the same mark, one or two pixels of cold arcane, the only light it has of its
-    own (.ai/world-and-tone.md). body: [the mass, the plates inside it]. light: the point in the frame his
-    light comes from (the eclipse, the tower); the rim and the plates' caught edges face it."""
+def creature_fig(kind, h, facing, body, rim, eye, seed, toward, pose=None):
+    """The drawn figure of one creature on its own scratch canvas (a _Fig), apart from where it stands:
+    what creature() composites, split out so the tide's rush can render a body once and paste it on
+    every frame it walks through (its cache keys on everything this takes)."""
     mass, plate = body or [OCC, OCC]
     F = _Fig(h, facing, seed)
     eyes, after = _KINDS[kind](F, mass, plate, pose)
-    toward = (-0.7, -0.7)
-    if light is not None:
-        toward = (light[0] - cx, light[1] - (yb - h * 0.6))
     if F.lod and plate != mass:
         # Caught edges first, then the far side let go: the other way round, every hole the dither
         # leaves in a plate would catch the light along its own edge.
@@ -1086,6 +1081,20 @@ def creature(c, kind, cx, yb, h, facing=1, body=None, rim=None, eye=True, seed=0
             if F.u >= 1.6 and len(eyes) == 1:
                 x, y = F.T(ex, ey)
                 F.s.set(x + F.f, y, EYE[1])
+    return F
+
+
+def creature(c, kind, cx, yb, h, facing=1, body=None, rim=None, eye=True, seed=0, light=None, pose=None):
+    """One of his: the taxonomy's class attachment (.ai/art-direction.md section 4) - the swarmer's cowl,
+    the runner's streaming rag, the bruiser's horns and pauldrons, the shielder's flat plane, the caster's
+    loose orb, the knight's spear, the hound's line - on a body drawn with joints, weight and torn edges,
+    and every one wearing the same mark, one or two pixels of cold arcane, the only light it has of its
+    own (.ai/world-and-tone.md). body: [the mass, the plates inside it]. light: the point in the frame his
+    light comes from (the eclipse, the tower); the rim and the plates' caught edges face it."""
+    toward = (-0.7, -0.7)
+    if light is not None:
+        toward = (light[0] - cx, light[1] - (yb - h * 0.6))
+    F = creature_fig(kind, h, facing, body, rim, eye, seed, toward, pose)
     over(c, F.s, cx - F.ox, yb - F.oy)
 
 
@@ -1554,12 +1563,164 @@ def p_throne():
     return layers
 
 
+# THE TIDE RUSHES OVER THE HORIZON (Eric, 2026-11-05: the army read as "silhouettes hovering above a
+# picture" - the whole crowd was one layer drifting across a still land, and nothing about it rushed).
+# The flood is the panel's animated box now, the hiding's machinery (write_anim): the slope starts
+# empty under the lit village; heads come up BEHIND the crest, clipped by the ridge line, so the hill
+# itself hides them; then the mass pours over and down the slope, every body on its own lane with its
+# feet on the ground, growing as it comes; and the front rank strides up big by the village as the
+# panel ends. The final frame is the old still - the flood arrived - held under the dissolve to the
+# procession. Prologue.cs drifts back and mid as one, so the crowd never slides on the ground it runs.
+TIDE_BOX = (400, 328, 960, 600)
+TIDE_FPS = 8
+# The panel's hold in Prologue.cs (Beats, "tide"); the frames cover it, the last held after.
+TIDE_SECONDS = 5.6
+TIDE_COLUMNS = 4
+# The rush's clock: the village alone for a breath, then the first heads behind the crest, then the
+# wave - the panel's impact beat (Prologue.cs) fires its cold speed lines and shake at TIDE_BURST,
+# while the wave is still rising over the ridge.
+TIDE_FIRST = 1.1
+TIDE_BURST = 1.4
+TIDE_RISE = 0.45           # seconds a body takes to come up over the crest
+TIDE_FLOW = 0.55           # the slope's fall line: a body walks this far left for every row down
+TIDE_SPEED = (22.0, 0.34)  # v = 22 + 0.34 * (y - 372) art px/s: far bodies slow, the near ones a rush
+
+
+def _tide_bodies(crest, front_x):
+    """The flood, body by body: each one's final place is drawn from the old still's distribution, and
+    its lane walked back up the fall line to the crest it came over, so the end of the rush is the
+    picture the panel always ended on. The deepest halts spawn first - the first over the crest are the
+    furthest down the slope at the end - and the shallowest last, so the ridge keeps boiling until the
+    dissolve takes the panel."""
+    rng = random.Random(55)
+    v0, a = TIDE_SPEED
+    C = v0 / a
+    kinds = ["swarmer", "swarmer", "swarmer", "runner", "bruiser", "shielder", "caster", "knight", "hound"]
+    halts = []
+    for _ in range(1500):
+        y = 372 + rng.random() ** 1.1 * 228
+        x = front_x(y) + rng.random() ** 0.8 * (FW + 40 - front_x(y))
+        if y < crest(x) + 4:
+            continue
+        halts.append((x, min(y, 594.0), False))
+    for _ in range(90):                                 # the broken front, a few strides out
+        y = 400 + rng.random() * 190
+        halts.append((front_x(y) - rng.random() * 26, min(y, 594.0), True))
+    bodies = []
+    for (xh, yh, stray) in halts:
+        h_at = 7.0 + (yh - 372.0) * 0.09
+        xh = max(xh, 406.0 + h_at)                      # whole bodies inside the box's left edge
+        x0 = xh
+        for _ in range(3):                              # the lane's crest: the fall line, inverted
+            x0 = xh + TIDE_FLOW * (yh - crest(x0))
+        y0 = crest(x0)
+        if yh <= y0 + 2:
+            continue
+        kind = pick(rng, kinds)
+        fast = 1.3 if (stray or kind in ("runner", "hound")) else 0.92 + rng.random() * 0.22
+        travel = math.log((yh - 372.0 + C) / max(1.0, y0 - 372.0 + C)) / (a * fast)
+        bodies.append({"kind": kind, "x0": x0, "y0": y0, "yh": yh, "fast": fast, "travel": travel,
+                       "seed": ri(rng, 0, 16), "jh": rng.random() * 3.0, "ph": rng.random() * 6.283,
+                       "stride": 5.0 + rng.random() * 3.5, "jt": (rng.random() - 0.5) * 0.24})
+    bodies.sort(key=lambda b: -b["yh"])
+    n = float(max(1, len(bodies) - 1))
+    for i, b in enumerate(bodies):
+        u = i / n
+        b["ts"] = max(TIDE_FIRST, TIDE_FIRST + 0.05 + (u ** 0.85) * (4.75 - TIDE_FIRST) + b.pop("jt"))
+    return bodies
+
+
+def _tide_pose(b, t):
+    """Where a body stands at panel time t - (x, yb, h, rise, v) - or None before its turn. While it
+    rises its feet are still on the far side of the hill; then the flow down the fall line, the halt at
+    its place in the old still, and a slow creep after, so the arrived crowd never freezes."""
+    tau = t - b["ts"]
+    if tau < 0.0:
+        return None
+    v0, a = TIDE_SPEED
+    C = v0 / a
+    rise = min(1.0, tau / TIDE_RISE)
+    v = 0.0
+    if rise < 1.0:
+        y = b["y0"]
+    else:
+        tt = tau - TIDE_RISE
+        if tt <= b["travel"]:
+            y = 372.0 + (b["y0"] - 372.0 + C) * math.exp(a * b["fast"] * tt) - C
+            v = (v0 + a * (y - 372.0)) * b["fast"]
+        else:
+            y = min(b["yh"] + 3.0, b["yh"] + (tt - b["travel"]) * 2.2)
+            v = 2.2
+        y = min(y, 594.0)
+    h = 7.0 + max(0.0, y - 372.0) * 0.09 + b["jh"]
+    x = b["x0"] - TIDE_FLOW * (y - b["y0"]) + math.sin(t * 0.9 + b["ph"]) * 1.4
+    yb = y + (1.0 - rise) * h
+    if rise >= 1.0 and v > 3.0:
+        yb += round(math.sin(t * b["stride"] + b["ph"]) * min(1.4, h * 0.05))
+    return (x, yb, h, rise, v)
+
+
+_TIDE_CACHE = {}
+
+
+def _tide_paste(c, b, x, yb, h, rise, crest, light):
+    """One body of the flood onto the frame. Rendered once per (kind, size, seed, light) and pasted
+    everywhere that body walks (creature_fig); a body still coming up keeps only what shows above the
+    ridge line - the hill occludes the rest, which is what makes the crest a horizon."""
+    hi = max(6, int(round(h)))
+    dx, dy = light[0] - x, light[1] - (yb - h * 0.6)
+    nrm = math.hypot(dx, dy) or 1.0
+    q = (0 if abs(dx) < nrm * 0.33 else (1 if dx > 0 else -1),
+         0 if abs(dy) < nrm * 0.33 else (1 if dy > 0 else -1))
+    key = (b["kind"], hi, b["seed"], q)
+    F = _TIDE_CACHE.get(key)
+    if F is None:
+        F = _TIDE_CACHE[key] = creature_fig(b["kind"], hi, -1, [OCC, S[4]], None, True, b["seed"], q)
+    ox = int(round(x)) - F.ox
+    oy = int(round(yb)) - F.oy
+    if rise >= 1.0:
+        if hi >= 12:
+            c.hline(x - hi * 0.16, x + hi * 0.16, yb + 1, OCC)
+        over(c, F.s, ox, oy)
+        return
+    px = F.s.px
+    ridge = [int(crest(ox + xx)) - 1 for xx in range(F.s.w)]
+    for yy in range(F.s.h):
+        fy = oy + yy
+        if fy < 0 or fy >= c.h:
+            continue
+        for xx in range(F.s.w):
+            fx = ox + xx
+            if 0 <= fx < c.w and fy <= ridge[xx]:
+                p = px[xx, yy]
+                if p[3]:
+                    c.px[fx, fy] = p
+
+
+def _tide_dust(c, fr, x, yb, h, v):
+    """Kicked ground behind a rushing body - a few pale pixels, gone next frame - and a short streak
+    off the fastest: the rush said on the ground as well as by the stride."""
+    if v < 34.0 or h < 12.0:
+        return
+    for _ in range(2 if v < 70.0 else 3):
+        c.set(x + 3 + fr.random() * (3.0 + h * 0.2), yb - fr.random() * 2.5,
+              S[4] if fr.random() < 0.75 else V[4])
+    if v > 70.0 and h >= 16.0:
+        c.hline(x + 4, x + 8 + fr.random() * 4.0, yb - h * 0.45, S[4])
+
+
+# The front rank, nearest the village: the seven big enough to name, exactly where the still always
+# had them - but they ARRIVE, striding out of the mass over the last seconds, growing as they come.
+TIDE_RANK = [("hound", 0, 30), ("runner", 14, 44), ("swarmer", 34, 40), ("bruiser", 6, 58),
+             ("caster", 40, 54), ("knight", 22, 62), ("shielder", 48, 50)]
+
+
 def p_tide():
     """3. His shadows over the land. A village at the foot of a hill, still lit; over the crest
-    behind it, from the tower on the horizon, a tide of the things he raised comes down the
-    slope toward it. Up close they are the chapters' kinds - cowl, horns, spear, shield, the
-    caster's loose orb - and every one of them wears his mark in its eyes. Massed, they are
-    a dark flood with a thousand of those eyes in it."""
+    behind it, from the tower on the horizon, a tide of the things he raised bursts and comes
+    down the slope toward it (animated: TIDE_BOX). Up close they are the chapters' kinds - cowl,
+    horns, spear, shield, the caster's loose orb - and every one of them wears his mark in its
+    eyes. Massed, they are a dark flood with a thousand of those eyes in it."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 400, [OCC, S[4], V[4], V[3], V[2], V[2]])
     stars(back, (0, 0, FW, 300), 300, 8, colors=[K[1], K[2], V[0]])
@@ -1601,40 +1762,75 @@ def p_tide():
         y = 520 + rng.random() * 50
         sk._clump(back, x, y, 6, 5, 22, rng, OCC, S[4])
 
-    # THE TIDE: everything right of a leading edge that runs from the crest down to the village.
+    # THE TIDE: everything right of a leading edge that runs from the crest down to the village -
+    # at the end. Until then it RUSHES: the frames below, over an empty slope (the mid layer holds
+    # nothing inside the box; the searching machinery is the hiding's, write_anim).
     def front_x(y):
         return 548 - (y - 380) * 0.55 + math.sin(y * 0.05) * 8
 
-    kinds = ["swarmer", "swarmer", "swarmer", "runner", "bruiser", "shielder", "caster", "knight", "hound"]
-    bodies = []
-    for _ in range(1500):
-        y = 372 + rng.random() ** 1.1 * 228
-        x = front_x(y) + rng.random() ** 0.8 * (FW + 40 - front_x(y))
-        if y < crest(x) - 4 and rng.random() < 0.85:
-            continue
-        bodies.append((y, x))
-    for _ in range(90):                                 # the broken front, a few strides out
-        y = 400 + rng.random() * 190
-        bodies.append((y, front_x(y) - rng.random() * 26))
-    bodies.sort()
-    for (y, x) in bodies:
-        hgt = 7 + (y - 372) * 0.09 + rng.random() * 3
-        creature(mid, pick(rng, kinds), x, y, hgt, facing=-1, body=[OCC, S[4]], seed=ri(rng, 0, 99999))
-    # the nearest, at the camera: a horned one, cut by the frame, looking where they are going
-    # The front rank, nearest the village: a few of them big enough to name, in profile and rimmed
-    # by the key. One giant figure in the foreground was tried twice - from behind a horned one is
-    # two round shapes with no face, and cut by the frame a knight is a pole - and neither read.
-    for i, (kind, dy, hgt) in enumerate([("hound", 0, 30), ("runner", 14, 44), ("swarmer", 34, 40),
-                                         ("bruiser", 6, 58), ("caster", 40, 54), ("knight", 22, 62),
-                                         ("shielder", 48, 50)]):
-        y = 548 + dy
-        x = front_x(y) + 8 + i * 30
-        # Rimmed in stone hi, as the locked wizards' silhouettes are (.ai/side-events.md): against
-        # the dark mass behind them the full soft rim drew an outline round each.
-        creature(fore, kind, x, y, hgt, facing=-1, body=[OCC, S[4]], rim=V[2], seed=80 + i, light=(tx, ty - 78))
+    bodies = _tide_bodies(crest, front_x)
+    light = (tx, ty - 78)
+
+    def rank_pose(i, dy, hgt, t):
+        """The front rank's stride in: eased from up the slope, settling where the still had it, a
+        slow creep after - and rimmed in stone hi (.ai/side-events.md), as the still rimmed it:
+        against the dark mass behind them the full soft rim drew an outline round each."""
+        yf = 548 + dy
+        xf = front_x(yf) + 8 + i * 30
+        t0 = 2.9 + i * 0.14
+        if t < t0:
+            return None
+        u = min(1.0, (t - t0) / 2.0)
+        s_ = u * u * (3 - 2 * u)
+        reach = 88.0
+        y = yf - reach * (1.0 - s_) + max(0.0, t - t0 - 2.0) * 2.0
+        y = min(y, yf + 4.0)
+        x = xf + TIDE_FLOW * (yf - y)
+        h = hgt * min(1.0, 0.55 + 0.45 * (y - (yf - reach)) / reach)
+        v = 0.0 if u >= 1.0 else reach * 1.5 / 2.0
+        return (x, y, h, v)
+
+    def tide_frame(t, k):
+        c = Cv(FW, FH)
+        fr = random.Random(9000 + k)
+        draws = []
+        for b in bodies:
+            pose = _tide_pose(b, t)
+            if pose is not None:
+                draws.append((pose[1], 0, b, pose))
+        for i, (kind, dy, hgt) in enumerate(TIDE_RANK):
+            rp = rank_pose(i, dy, hgt, t)
+            if rp is not None:
+                draws.append((rp[1], 1, i, rp))
+        draws.sort(key=lambda d: (d[0], d[1]))
+        for (_, big, who, pose) in draws:
+            if big:
+                x, yb, h, v = pose
+                bob = round(math.sin(t * 6.0 + who * 1.7) * 1.0) if v > 3.0 else 0
+                kind = TIDE_RANK[who][0]
+                c.hline(x - h * 0.18, x + h * 0.18, yb + 1, OCC)
+                creature(c, kind, x, yb + bob, int(round(h)), facing=-1, body=[OCC, S[4]],
+                         rim=V[2], seed=80 + who, light=light)
+                _tide_dust(c, fr, x, yb, h, v * 1.6)
+            else:
+                x, yb, h, rise, v = pose
+                _tide_paste(c, who, x, yb, h, rise, crest, light)
+                if rise >= 1.0:
+                    _tide_dust(c, fr, x, yb, h, v)
+        return c
+
+    t_of = frame_t(0.75)
+    bx0, by0, bx1, by1 = TIDE_BOX
+    frames = []
+    for k in range(int(math.ceil(TIDE_SECONDS * TIDE_FPS))):
+        t = (k + 0.5) / TIDE_FPS
+        c = tide_frame(t, k)
+        darken(c, t_of, [S[4], OCC], box=TIDE_BOX)
+        frames.append(c.img.crop((bx0, by0, bx1, by1)))
     heath(fore, 640, 840, 500, 23, [(OCC, OCC), (OCC, S[4])], scale=1.8)
     layers = dict(back=back, mid=mid, fore=fore)
     finish(layers, 0.75)
+    layers["anim"] = frames
     return layers
 
 
@@ -2310,6 +2506,116 @@ def p_road():
         sk._clump(back, x, y, 9, 6, 30, rng, OCC, S[4])
     back.poly([(700, 352), (702, 318), (708, 316), (709, 300), (716, 302), (718, 324), (726, 326), (728, 352)], OCC)
     back.line(702, 318, 708, 316, V[3])
+
+    # THE JOURNEY'S LANDMARKS (Eric, 2026-11-05: "more landmarks instead of the big, flat, empty
+    # plain"). The places the campaign visits, passed in campaign order, nearest first, so the road
+    # he looks down IS the game ahead of him (.ai/world-map.md's places, .ai/campaign.md's order):
+    # the west wood the road leaves (the trees on the fore below), the Fields' hedged strips and
+    # barn, the Broken Circle's ring on its knoll - eight stones and the walker's gap - the scarp
+    # over the Sunken Cave's mouth, the Swamp's pools and dead snags, the Ruins' fallen colonnade
+    # (the broken keep beyond it), the Waste's pale peaks, the Sands' crescent dunes, and last the
+    # Emberdeep's black bluffs, which the road threads just under his tower. Dark places in a dark
+    # land: silhouette and stone, never a lit window - the player's light is the only warm light
+    # on the road (.ai/prologue.md, "The player is the light"). All on the back layer, the road's
+    # own, so nothing slides on the ground; only the wood's near trees ride the fore's parallax.
+
+    # The Fallow Fields, south of the road as the map has them: three hedged strips and the barn.
+    for (fx, fy, fw_, fh_) in [(334, 522, 92, 13), (352, 541, 104, 12), (336, 557, 84, 11)]:
+        drop = -0.05
+        back.poly([(fx, fy), (fx + fw_, fy + fw_ * drop), (fx + fw_, fy + fw_ * drop + fh_),
+                   (fx, fy + fh_)], V[4])
+        for r_ in range(2, fh_, 3):
+            back.line(fx + 1, fy + r_, fx + fw_ - 1, fy + fw_ * drop + r_, S[4])
+        rngh = random.Random(77 + fx)
+        for e_ in range(0, fw_, 6):                     # the hedge round each strip, in bumps
+            back.disc(fx + e_, fy + e_ * drop - 1 + rngh.random(), 1.6, 1.0, OCC)
+            back.disc(fx + e_ + 3, fy + fh_ + (e_ + 3) * drop + 1 + rngh.random(), 1.6, 1.0, OCC)
+    bx_, by_, bw = 447, 538, 16                         # the farmstead, empty: no lit window here
+    back.rect(bx_ - bw / 2, by_ - 7, bx_ + bw / 2, by_, S[4])
+    back.rect(bx_ + bw * 0.08, by_ - 7, bx_ + bw / 2, by_, OCC)
+    back.poly([(bx_ - bw / 2 - 2, by_ - 7), (bx_ + bw / 2 + 2, by_ - 7), (bx_ + 1, by_ - 13)], OCC)
+    back.line(bx_ - bw / 2 - 2, by_ - 7, bx_ + 1, by_ - 13, V[4])
+    back.hline(bx_ - bw / 2, bx_ + bw / 2, by_ + 1, OCC)
+
+    # The Broken Circle, up on its knoll: eight stones and the gap where the ninth stood (it walks).
+    back.disc(599, 468, 36, 11, V[4])
+    back.disc(597, 466, 30, 9, S[4])
+    ring = []
+    for k in range(9):
+        if k == 2:
+            continue
+        ang = -math.pi / 2 + k * 2 * math.pi / 9.0
+        ring.append((466 + math.sin(ang) * 7.5, 598 + math.cos(ang) * 24, k))
+    for (sy_, sx_, k) in sorted(ring):
+        hh = max(6.0, 10 + (k * 7 % 5) - (sy_ - 466) * 0.35)
+        standing_stone(back, sx_, sy_, max(3.5, hh * 0.42), hh, 510 + k,
+                       lean=((k * 11 % 7) - 3) * 0.05, ramp=[S[2], S[3], S[4], OCC, OCC],
+                       broken=k in (4, 7))
+
+    # The scarp over the Sunken Cave: a pale broken lip, the face under it, the mouth a black notch.
+    lip = lambda x: 429 + math.sin(x * 0.13) * 1.5 - (x - 352) * 0.03
+    for x in range(352, 430):
+        yt = int(lip(x))
+        back.set(x, yt - 1, S[3])
+        for d_ in range(0, 9):
+            back.set(x, yt + d_, S[4] if dith(x, yt + d_, 0.55) else V[4])
+    back.poly([(384, 438), (386, 432), (391, 430), (396, 433), (398, 438)], OCC)
+
+    # The Blighted Swamp: two cold pools, the moon on the near one, and the dead snags over them.
+    back.disc(543, 414, 11, 3, S[4])
+    back.disc(541, 413, 7, 2, S[3])
+    back.disc(568, 408, 8, 2.5, S[4])
+    back.disc(567, 408, 5, 1.5, S[3])
+    back.hline(538, 545, 413, S[2])
+    for (bx2, bh2, arm) in [(527, 9, 1), (536, 13, -1), (551, 10, 1), (562, 14, -1), (575, 9, 1), (583, 12, -1)]:
+        yb2 = 419 - (583 - bx2) * 0.04
+        back.vline(bx2, yb2 - bh2, yb2, OCC)
+        back.line(bx2, yb2 - bh2 + 3, bx2 + arm * 3, yb2 - bh2 + 1, OCC)
+        if bh2 > 10:
+            back.line(bx2, yb2 - bh2 + 6, bx2 - arm * 2, yb2 - bh2 + 5, OCC)
+
+    # The Mystic Ruins, this side of their keep: a fallen colonnade, one lintel still up.
+    for i_, (cx2, ch2) in enumerate([(613, 9), (621, 12), (630, 7), (639, 11), (647, 5)]):
+        yb2 = 394 - i_ * 0.6
+        back.rect(cx2, yb2 - ch2, cx2 + 2, yb2, S[4])
+        back.vline(cx2, yb2 - ch2, yb2, S[3])
+        back.set(cx2, yb2 - ch2, S[2])
+        back.hline(cx2 - 1, cx2 + 3, yb2 + 1, OCC)
+    back.line(613, 384, 622, 382, S[3])
+    back.line(613, 385, 622, 383, S[4])
+    back.disc(635, 396, 3, 1.3, S[4])
+    back.disc(634, 396, 2, 0.9, S[3])
+
+    # The Frozen Waste's peaks, pale over the western hills; the snow flank catches the key.
+    for (px2, pw2, ph2) in [(346, 15, 12), (368, 21, 17), (396, 13, 10)]:
+        back.poly([(px2 - pw2 * 0.5, 361), (px2 - pw2 * 0.08, 361 - ph2),
+                   (px2 + pw2 * 0.14, 361 - ph2 + 2), (px2 + pw2 * 0.5, 361)], S[4])
+        back.line(px2 - pw2 * 0.08, 361 - ph2, px2 - pw2 * 0.5, 361, S[2])
+        back.set(px2 - pw2 * 0.08, 360 - ph2, S[1])
+
+    # The Scorched Sands: three crescent dunes, their slip faces falling into shadow.
+    for (dx2, dl2, db2, dy2) in [(626, 22, 3.0, 351), (642, 26, 3.6, 355), (660, 17, 2.4, 348)]:
+        for j_ in range(dl2):
+            t_ = j_ / float(dl2)
+            xx2 = dx2 + j_
+            yy2 = dy2 - math.sin(t_ * math.pi) * db2
+            back.set(xx2, yy2, S[3] if t_ < 0.65 else S[4])
+            back.set(xx2, yy2 + 1, OCC)
+
+    # The Emberdeep's gate: two black basalt bluffs either side of the road's last bend, violet in
+    # their stone as the mountain has (never an ember - no warm light on the road but his).
+    for pts_ in [[(534, 331), (538, 312), (547, 304), (556, 308), (562, 319), (562, 331)],
+                 [(592, 342), (597, 325), (604, 317), (614, 313), (623, 320), (629, 334), (630, 342)]]:
+        back.poly(pts_, OCC)
+        xs_ = [p[0] for p in pts_]
+        ys_ = [p[1] for p in pts_]
+        for yy2 in range(int(min(ys_)), int(max(ys_)) + 1):
+            for xx2 in range(int(min(xs_)), int(max(xs_)) + 1):
+                if back.get(xx2, yy2)[:3] == rgb(OCC)[:3] and dith(xx2, yy2, 0.22):
+                    back.set(xx2, yy2, V[4])
+        back.line(pts_[1][0], pts_[1][1], pts_[2][0], pts_[2][1], V[4])
+        back.set(pts_[2][0], pts_[2][1] - 1, V[3])
+
     # the road, an S from the bottom of the frame to the far hills
     road = [(500, 840), (488, 740), (452, 650), (500, 580), (560, 520), (520, 460), (480, 410), (520, 372),
             (560, 340), (590, 304)]
@@ -2347,8 +2653,19 @@ def p_road():
     py_ = 566
     px_ = min(pts, key=lambda p: abs(p[1] - py_))[0]
     back.radial(px_, py_ + 2, 80, 26, [G[3], G[3], G[4], G[4], None])
+    # the wood's edge either side of the road where it leaves the frame: the Enchanted Forest is
+    # the first chapter, so the journey starts at the trees
+    rngw = random.Random(79)
+    for _ in range(14):
+        sk._clump(back, 300 + rngw.random() * 118, 598 + rngw.random() * 64, 11, 7, 34, rngw, OCC, S[4])
+    for _ in range(11):
+        sk._clump(back, 574 + rngw.random() * 104, 606 + rngw.random() * 62, 11, 7, 34, rngw, OCC, S[4])
     player_back(mid, px_, py_, 50)
     heath(fore, 640, 840, 700, 43, [(OCC, OCC), (OCC, S[4])], scale=1.8)
+    # the wood's near boughs on the fore, trunks well off the road, crowns under the player's row
+    for i_, (tx2, ty2, th2, sp2) in enumerate([(334, 748, 88, 52), (408, 710, 48, 30),
+                                               (596, 716, 52, 33), (668, 752, 92, 56)]):
+        sk.tree(fore, tx2, ty2, th2 * 2.0, sp2 * 2.0, seed=70 + i_, dark=OCC, light=OCC, vines=False)
     layers = dict(back=back, mid=mid, fore=fore)
     finish(layers, 0.8)
     return layers
@@ -2357,9 +2674,10 @@ def p_road():
 PANELS = [("moot", p_moot), ("throne", p_throne), ("tide", p_tide), ("taken", p_taken),
           ("missed", p_missed), ("break", p_break), ("five", p_five), ("road", p_road)]
 
-# The animated panels' boxes, clocks and atlas widths (write_anim): the hiding's searchers, and the chain
-# breaking.
-ANIMS = {"missed": (MISSED_BOX, MISSED_FPS, MISSED_COLUMNS), "break": (BREAK_BOX, BREAK_FPS, 4)}
+# The animated panels' boxes, clocks and atlas widths (write_anim): the tide's rush over the crest,
+# the hiding's searchers, and the chain breaking.
+ANIMS = {"missed": (MISSED_BOX, MISSED_FPS, MISSED_COLUMNS), "break": (BREAK_BOX, BREAK_FPS, 4),
+         "tide": (TIDE_BOX, TIDE_FPS, TIDE_COLUMNS)}
 
 
 # =========================================================================== output

@@ -149,9 +149,9 @@ public partial class _PrologueProbe : Node
 					Check("menu has Start Run (third visit)", PressButton("StartRunButton"));
 					Next();
 					break;
-				// Untouched, it plays to its end (about 36 s) and goes on into story mode by itself - through the
-				// freeing (.ai/cutscenes.md): after the hiding the chain breaks (21.5 s in), then the five stand (26.2 s).
-				case 12 when at == 1350:
+				// Untouched, it plays to its end (about 38 s) and goes on into story mode by itself - through the
+				// freeing (.ai/cutscenes.md): after the hiding the chain breaks (22.5 s in), then the five stand (27.2 s).
+				case 12 when at == 1410:
 					Check("the freeing follows the hiding: the chain breaks", Scene == Prologue.ScenePath && HasPanel("Panel_break"));
 					Next();
 					break;

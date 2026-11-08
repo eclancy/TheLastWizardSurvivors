@@ -243,22 +243,37 @@ things come up; strike what lands.**
      two weeks for a thoroughly tested implementation; subject to provider and sign-in integration.
 
 15. **Opening cinematic: the invading army must rush over the horizon** (Eric, 2026-11-05).
-   The army currently looks awkward, as if its silhouettes are hovering above a picture rather than
-   rushing over the horizon. Rework the `tide` beat so the bodies belong to the landscape and advance
-   from beyond the crest onto the ground. Check ground contact, perspective, occlusion at the horizon
-   and the movement of the crowd together; shifting a silhouette layer across a static picture is the
-   problem to solve. Start with `scripts/Prologue.cs`, `tools/art/prologue.py` and `.ai/cutscenes.md`.
-   Edit the generator/animation, not the generated PNGs, and review the moving sequence at PC and phone
-   sizes rather than judging a still alone.
+   **Built, 2026-11-07** (`.ai/prologue.md`): the tide is the prologue's third animated panel
+   (`TIDE_BOX`, 45 ticks at 8 fps over a 5.6 s hold). The slope starts empty under the lit village;
+   heads come up BEHIND the crest, clipped by the ridge line; the wave bursts over it at 1.4 s with
+   the panel's new impact beat (cold speed lines, a shake, his violet - the one impact that is his);
+   the flood pours down the slope, every body on its own lane with contact shadows, dust and stride
+   bob, growing with perspective; the seven-strong front rank strides up by the village as the panel
+   ends, and the final frame is the old still. Back and mid now drift as one, so the crowd never
+   slides on its ground (the old bug: the whole army was one layer drifting across a still picture).
+   Bodies render once per (kind, size, seed, light) and are pasted along their lanes; the atlas is
+   37 unique frames, 446 KB on disk, ~23 MB while the panel is up. Build, import and full validator
+   passed (0 errors, the test_wizard warning); PC/portrait screenshots taken. **The moving rush at
+   full speed still needs Eric's eyes** - fps, burst timing and whether the shake lands.
+   Original ask: the army looked as if its silhouettes hovered above a picture; rework the `tide`
+   beat so the bodies belong to the landscape and advance from beyond the crest onto the ground.
 16. **Opening cinematic: give the road toward the dark tower more landmarks** (Eric, 2026-11-05).
-   In the art Eric identifies with "the rest still wait for you", where the wizard travels along a
-   path toward the dark tower, fill the road's surroundings with more landmarks instead of the big,
-   flat, empty plain. Keep the wizard, the route and the distant tower readable while giving the journey
-   places to pass. Inspect both `five` and `road` and their transition: `Prologue.cs` currently puts
-   "Four are free. The rest still wait for you." on `five`, immediately before the uncaptioned `road`
-   beat; the requested visual is the journey toward the tower. Use `tools/art/prologue.py`, following
-   `.ai/world-and-tone.md`, `.ai/art-direction.md` and `.ai/cutscenes.md`; regenerate and review both
-   landscape and portrait compositions. Landmark choices remain to be designed.
+   **Built, 2026-11-07** (`.ai/prologue.md`): the road now passes the places the campaign visits, in
+   campaign order, nearest first, so the pan reads as the whole game ahead (the world map's places
+   were the vocabulary): the west wood's near boughs flanking where the road leaves the frame, the
+   Fallow Fields' three hedged strips and empty barn, the Broken Circle's ring on its knoll (eight
+   stones and the walker's gap, as the map draws it), the scarp over the Sunken Cave's mouth, the
+   Blighted Swamp's cold pools and dead snags, the Mystic Ruins' fallen colonnade before their keep,
+   the Frozen Waste's pale peaks, the Scorched Sands' crescent dunes, and the Emberdeep's two black
+   basalt bluffs that the road threads just under the tower. All silhouette and stone on the back
+   layer (nothing slides on the ground; only the wood's near trees ride the fore's parallax), no lit
+   window among them - the player's pool stays the road's only warm light. Everything but the dunes
+   and far keep sits inside the 360-wide square the phone shows. The hold grew to 5.4 s so the eye
+   can walk the road. Build, import and full validator passed (0 errors, the test_wizard warning);
+   PC/portrait screenshots taken. **Composition still needs Eric's eyes** - whether the landmarks
+   crowd the road and whether each reads as its chapter at x2.
+   Original ask: fill the big, flat, empty plain around the road with landmarks, keeping the wizard,
+   the route and the distant tower readable; `five` and `road` and their transition inspected.
 
 17. ~~**Shadow Bolt should become a combination spell**~~ (Eric, 2026-11-05).
    **Done, 2026-11-07** (`.ai/combo-spells.md` section 7): Shadow Bolt is the third Conjunction -
