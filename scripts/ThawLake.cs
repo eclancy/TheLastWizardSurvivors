@@ -64,7 +64,7 @@ public partial class ThawLake : Sprite2D
 		material.SetShaderParameter("lit_tex", lit);
 		material.SetShaderParameter("bright_tex", bright);
 		material.SetShaderParameter("data_tex", data);
-		return new ThawLake
+		var made = new ThawLake
 		{
 			Name = "ThawLake",
 			Texture = lake,
@@ -80,7 +80,31 @@ public partial class ThawLake : Sprite2D
 			ZIndex = DrawLayers.Ground - 2,
 			ZAsRelative = false,
 		};
+
+		// THE KANTELE (.ai/unlock-puzzles.md 3.6): five strings of ice stretched over it from the block to the shore,
+		// at rest - each with its note's colour on its pin and its stake (tools/art/kantele.py; Kantele says where they
+		// lie). The lake's child, so it lies exactly over it at the same x2 and stays with it once he is free. Over the
+		// craters and pools a spell leaves (they are on the ice; the strings are stretched above it) and under the
+		// strings as they sound (ThawEvent's, one above) and every slam's tell.
+		Texture2D strings = Load(StringsFile);
+		if (strings == null)
+			GD.PushError("ThawLake: thaw-strings.png is missing or not imported (python tools/art/kantele.py, then import); "
+				+ "the thaw's strings will not be seen at rest.");
+		else
+			made.AddChild(new Sprite2D
+			{
+				Name = "Strings",
+				Texture = strings,
+				Centered = true,
+				TextureFilter = TextureFilterEnum.Nearest,
+				ZIndex = DrawLayers.GroundTell - 2,
+				ZAsRelative = false,
+			});
+		return made;
 	}
+
+	/// <summary>The kantele's strings at rest, laid over the lake texel for texel (tools/art/kantele.py).</summary>
+	public const string StringsFile = "thaw-strings.png";
 
 	private static Texture2D Load(string file)
 	{

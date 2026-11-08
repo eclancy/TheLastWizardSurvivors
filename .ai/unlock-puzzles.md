@@ -3,8 +3,8 @@
 Eric, 2026-11-03: *"what i actually wanted to discuss was making sure all of the character unlocks are fun
 and interesting, like the laser puzzle in halls of torment"*.
 
-**Status: designed with Eric, 2026-11-03. Built: 3.4, Paracelsus (2026-11-04, its "Built" note); the other seven
-are not.** Every rule below that says "decided" was
+**Status: designed with Eric, 2026-11-03. Built: 3.3 Baba Yaga, 3.4 Paracelsus, 3.5 Medea and 3.6 Väinämöinen
+(each its "Built" note); the other four are not.** Every rule below that says "decided" was
 chosen by him that day, one question at a time. Eight of the twelve place-held wizards get a new ask; four
 keep theirs. Numbers marked *first guess* are for the build to tune.
 
@@ -358,6 +358,97 @@ bog; and his hint was always "Someone is singing under the ice."
   strings were chosen. Never write the order on the strings.
 - **Open:** whether a phrase extends the last.
 - **Size:** M.
+
+**Built (2026-11-07, `claude/bold-cray-4910f6`).** `ThawEvent` (rewritten), `Kantele` (new: where the strings lie, the
+songs, `StringFeet` - the feet on them - and `SingBack` - the answer on paper), `ThawLake` (lays the strings over the
+lake). The strings at rest are `thaw-strings.png` from `tools/art/kantele.py` (new; it reads the lake's geometry from
+`thaw_lake.py` without re-running it); the notes are `ice_string_1`-`5` and `ice_string_wrong` from `tools/audio/sfx.py`
+(`.ai/audio-manifest.md`, 2026-11-07). Site, deed, hint, reward, the lake and its shader, the block and its four stages,
+the guard (four every 5 s while he is at the lake) and the win beat are as they were. Schema: none. The heat, fire's
+triple and `StrikeListener` are gone from the thaw (the listener stays for the breakables).
+
+- **What plays.** Five strings of ice fan out from the block to the shore at fixed bearings (lower left, upper left,
+  upper right, lower right, straight down - the two upper ones flank the block's top), low to high clockwise: A3 D4 F4
+  C5 A5, in fire, lightning, grass, water and arcane - each string its colour end to end at rest (the body in the
+  note's dark edge tone under a pale ice highlight, its tuning pin by the block and the bead on its ice stake at the
+  shore in the note's bright tones), the two lowest the thickest. Once he is within 380 px the strings shimmer once (a breath), then
+  the ice sings the phrase: each string lights in its colour from its pin out, shakes, and sounds, 0.6 s apart. A row
+  of hollow pips under the block counts the notes, each going white as it is sung. Then the ice listens: a string
+  counts when his feet touch it, and the one he touches lights in its colour from his feet outward, sounds, and fills
+  the next pip in its colour. Right to the end of the phrase and the strings it used ring together, rising, the block
+  cracks a stage and a glint crosses it; 2 s later the next phrase is sung. A wrong string goes dull and rattles
+  (`ice_string_wrong`), the pips empty, and 1.3 s later the phrase is sung again; phrases sung back stay sung. The
+  third sung back strums all five and the old win beat runs - the crack, the chips, the column.
+- **The Open line, decided in the build.** *Whether a phrase extends the last:* yes, the first guess - one song of
+  five notes, sung back three, four and five long.
+- **What else the build decided.**
+  1. **The strings are 145-194 px, not 200-260.** The lake is 640x512 and the block in its middle; from 80 px out
+     (clear of the block's foot, so its pins show) to 0.88 of the ellipse (the shore's bays come in to 0.92) is what
+     there is. The two flanking the block's top and the one straight down are the short ones.
+  2. **Only the phrases are seeded** (3.6: "the seed: the phrases"). The strings always lie where they lie, so the art
+     is one drawn sheet and the code reads the same three numbers (`Kantele` and `kantele.py`, change one, change both;
+     `ValidateThawStrings` samples the texture along every string the code lays down). One roll in `PlaceSites`, after
+     the site, as the seal rolls its stones, so the lake never moves for it.
+  3. **The rules of a song** (`Kantele.Fault`): no string twice running (stepping off and back on is not something a
+     player reads as a note); the first phrase three different strings with a **leap** in it - two strings not side by
+     side - so walking round the lake never sings a phrase back; at least four of the five strings in the song. 600 of
+     the 3,125 five-note songs keep them; a roll picks one.
+  4. **A string counts where his feet touch it**: the feet's own way since the last frame, tested as a segment against
+     the string (12 px either side), so one long frame over it is still a touch and a slow machine tunnels nothing; a
+     move of more than 600 px in one frame is a teleport and touches nothing. A touched string is spent until the feet
+     are 30 px off it, so standing on one is one note. Only while the ice listens: during the song a touch is ice
+     underfoot.
+  5. **The way between two strings that are not side by side is the hub**: the strings stop 80 px short of the block,
+     and that ring of open ice reaches every gap. `Kantele.Route` is the way a player who has seen them walks - into the
+     middle of the gap he is in, in to the block, out beside the next string and across it - and both the probe and
+     the validator walk it.
+  6. **When it sings.** Within 380 px of the block; past 640 it falls silent and forgets the phrase under way (never a
+     phrase sung back). Listening with nothing sung back for 8 s, or with part of it and no right note for 14 s, it
+     sings again. All real seconds; nothing reads the pace clock.
+  7. **The notes are spread, not stacked.** Stacked thirds, D4 F4 A4 C5 E5, were built first: every step a band of the
+     audit and the notes 0.35-0.6 apart, but A4 and E5 measured 0.064-0.089 from three UI tones on their pitches
+     (`ui_pause`, `ui_open`'s bell on E5, `ui_back`) through four constructs. A3 D4 F4 C5 A5 is the same D minor seventh
+     the hint's song lives in, opened over two octaves; every step is three semitones or more.
+  8. **The order is never written.** The pips count and fill with the colours he sang back, never the ones to come.
+  9. **The strings are coloured along their length at rest**, not only at their pins: with steel bodies and coloured
+     pins the five read as one pale thing on the phone canvas (compared side by side in the build). The body is the
+     note's dark edge tone, so the lit string - core, mid, a glow on the light layer, shaking - is far the brighter.
+  10. **Drawn layers.** The strings at rest are the lake's child at `GroundTell - 2`, the strings as they sound the
+      event's at `GroundTell - 1`: over a spell's craters and pools (they are on the ice; the strings are stretched over
+      it), under every body and every slam's tell. The pips are drawn with the sounding strings.
+
+**Verified:** `dotnet build`; the validator with `-- --no-save-writes` (0 errors, the known `test_wizard` warning),
+which now runs `RegressionChecks.ValidateThawStrings`: the strings inside the shore, 120 px or longer, pins far enough
+apart to pass between; `thaw-strings.png` the lake's size and drawn where `Kantele` lays every string (nine points along
+each); the six notes allowlisted and on disk; at least 100 songs keep the rules (600 do) and every one offered keeps
+them; 64 rolled songs each sung back by walking `Kantele.Route` in 6 px steps through `StringFeet` - every note touched
+exactly once, nothing else touched, all three phrases sung back, the longest whole song under 7,000 px; a wrong first
+string empties the phrase and a wrong string in the second keeps the first sung back; a walk round the block at
+mid-string, both ways, two turns, sings no phrase back for any of the 64; shuffling on a string rings it once; a
+teleport touches nothing; one 400 px step over a string still touches it. Audio: `python tools/audio/analyse.py
+--confuse` 0 confusable pairs, and the six against the whole registry 0.111 at nearest (`.ai/audio-manifest.md`,
+2026-11-07). `_ExploreProbe --stage=5`, which learns each phrase only from the strings as they light
+(`ThawEvent.SungStringAt`) and walks `Kantele.Route` at the player's own walk, feet first: seed 4242 `--fresh-save` 26
+passed, 0 failed, twice (song 0 4 1 2 0, 43 s of game time from arrival, 5,298-5,843 px walked, no wrong string, Väinämöinen freed);
+seed 7 `--fresh-save` 26/0 (0 2 3 0 4); seed 4242 `--all-unlocked` 25/0 (the chest); seed 31 `--fresh-save
+--wrong-string` 27/0 - with the first phrase sung back and one note of the second, string 2 out of turn: the pips
+emptied, the ice sang the second phrase again 1.3 s later with the first still sung back, and all three were sung back
+(4 singings). `_UiShot --scene=res://scenes/node_2d_game.tscn --stage=5 --terrain-seed=4242` (windowed): the song
+mid-phrase (`--goto=event --goto-offset=-120,100 --arrive --hold --frames=150`), mid-solve at 1280x720
+(`--sing-pose=1,2`: the second phrase, two of four sung back, the bottom string lit under his feet) and at 540x1212
+`--portrait --safe-area` (`--sing-pose=2,3`), and the win (`--win-event --fx-lead=50`: all five strings struck as the
+block falls, the line "The ice gives", no arrow). `--sing-pose=P,N` is new for this.
+
+**Not verified:** whether it is fun; **the notes by ear** - nobody has heard the five plucks, the beating doubled
+course, the lake's falling chirp after each (`_ICE_CHIRP_AT`, quiet, and the one part that could read as a laser), or
+whether the wrong string sounds wrong rather than like a sixth note; whether A3 to A5 (two octaves, an A at each end)
+is easy to sing back by ear, or the stacked thirds would have been better despite the audit; whether the five colours
+part in a real crowd on a phone, and for a red-green colour-blind player fire, lightning and grass (position and
+thickness are the other channels); whether a player finds "step on the strings in that order" from the objective line
+and the first wrong string's rattle without being told; the 0.6 s beat, the 8 s and 14 s waits and the 380/640 px reach
+against real play; how crowded the hub gets with the guard spawning four every 5 s at 280 px - the probe clears the
+swarm every 6 s and teleports through bodies, so it never had to weave. The harness's `--explore` walker stands on an
+event's arrow and no longer wins the thaw.
 
 ### 3.7 Morgan le Fay - light the lamps ahead
 

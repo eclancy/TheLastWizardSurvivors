@@ -4,7 +4,8 @@ using TheOneHeMissed.scripts;
 
 // STRIKE (.ai/stage-secrets.md 7.3; .ai/achievements-and-secrets.md section 5): damage the player lands on
 // enemies near a point. Extracted from the Frozen Waste's thaw (ThawEvent), which was the first thing in
-// the game to be broken by the fighting round it rather than by being hit - and that is the rule this
+// the game to be broken by the fighting round it rather than by being hit (the thaw itself is sung back now,
+// .ai/unlock-puzzles.md 3.6, and no longer listens) - and that is the rule this
 // carries for everything breakable after it: the thing is NEVER a target and never joins "enemies", so no
 // spell is ever aimed at it and the loadout stays on the swarm. The swarm is always at the player's feet,
 // so standing beside the thing and fighting IS breaking it.
@@ -65,7 +66,7 @@ public sealed class StrikeListener
 		Struck?.Invoke(weighted, where);
 	}
 
-	/// <summary>The thaw's rule, for anything that wants fire to count three times: true when the spell carries Fire.</summary>
+	/// <summary>The old thaw's rule, kept for anything that wants fire to count three times: true when the spell carries Fire.</summary>
 	public static bool IsFire(SpellData source) =>
 		source?.ElementWeights != null && source.ElementWeights.ContainsKey("Fire");
 }

@@ -415,6 +415,13 @@ public partial class _UiShot : Node
 	// standing with his feet on the line where the ink ends; --door-open=S instead inks it whole S seconds before the
 	// shutter, so the shot is that far into its ending (the door painted at 0.4, open by 1.1, him stepping out to 2.05).
 	private float doorTrace = -1f;
+	// --sing-pose=P,N: the Frozen Waste's thaw (.ai/unlock-puzzles.md 3.6) listening for phrase P (0-2) with N notes of it
+	// sung back, the last of them lit under his feet and him standing on that string (ThawEvent.PoseForPhoto) - the
+	// puzzle photographed mid-solve. A few frames before the shutter, so the string is still bright. With --goto=event
+	// --arrive (the ice sings first, from the arrival, so --frames past it shows the song instead).
+	private int singPosePhrase = -1;
+	private int singPoseAnswered;
+	private bool singPosed;
 	private float doorOpenAt = -1f;
 	private bool doorDone;
 	// --paint-flask: Ma Liang's Paint What Is Needed (--character=19) - a blow that leaves him below a quarter of his
@@ -1912,6 +1919,12 @@ public partial class _UiShot : Node
 				eventProgress = float.Parse(arg.Substring("--event-progress=".Length), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg == "--paint-flask")
 				paintFlask = true;
+			else if (arg.StartsWith("--sing-pose="))
+			{
+				string[] pn = arg.Substring("--sing-pose=".Length).Split(',');
+				singPosePhrase = System.Math.Clamp(int.Parse(pn[0]), 0, Kantele.PhraseCount - 1);
+				singPoseAnswered = pn.Length > 1 ? System.Math.Max(0, int.Parse(pn[1])) : 1;
+			}
 			else if (arg.StartsWith("--door-trace="))
 				doorTrace = Mathf.Clamp(float.Parse(arg.Substring("--door-trace=".Length), System.Globalization.CultureInfo.InvariantCulture), 0f, 1f);
 			else if (arg.StartsWith("--door-open="))
@@ -3266,6 +3279,18 @@ public partial class _UiShot : Node
 				teleported = false;
 				GD.Print($"_UiShot: the dotted door traced to {f:0.00} ({door.DotsInked} dots) at {door.DoorCentre}; standing at {feetAt}");
 			}
+			// The thaw, mid-solve: posed late for the same reason, his feet on the string he just sang back.
+			if (singPosePhrase >= 0 && !singPosed && frames >= Mathf.Max(WarmupFrames / 3 + 2, WarmupFrames - 6)
+				&& FindNodeOfType<SideEventDirector>(GetTree().Root) is SideEventDirector thawDirector
+				&& thawDirector.Events.OfType<ThawEvent>().FirstOrDefault() is ThawEvent singing && singing.IsFound
+				&& FindNodeOfType<Player>(GetTree().Root) is Player singer)
+			{
+				singPosed = true;
+				Vector2 feetAt = singing.PoseForPhoto(singPosePhrase, singPoseAnswered);
+				teleportTo = feetAt - (singer.FootPosition - singer.GlobalPosition);
+				teleported = false;
+				GD.Print($"_UiShot: the thaw listening for phrase {singing.PhrasesSung + 1} with {singing.Answered} of {singing.PhraseLength} sung back; his feet at {feetAt}");
+			}
 			if (teleportTo is Vector2 target && !teleported && frames >= WarmupFrames / 3
 				&& FindNodeOfType<Player>(GetTree().Root) is Player traveller)
 			{
@@ -4309,10 +4334,10 @@ public partial class _UiShot : Node
 			else if (wonEvent is TombBeaconsEvent kindled)
 				kindled.KindleForPhoto(TombBeaconsEvent.BeaconCount);
 			// The thaw and the cell win through their own beats (in-flight 58), so the real path must run:
-			// the heat filled lets Tick start the crack and the fall; the carry posed at the door lets the
+			// every phrase sung back lets Tick start the crack and the fall; the carry posed at the door lets the
 			// unlock fill and the gate swing. Pair with --fx-lead (the cell needs ~120: 1.2 s of unlock first).
 			else if (wonEvent is ThawEvent thawing)
-				thawing.FillHeatForPhoto();
+				thawing.SingAllForPhoto();
 			else if (wonEvent is GaolersKeyEvent unlocking)
 				unlocking.PoseCarryForPhoto();
 			else if (progress != null && progress.FieldType == typeof(float))

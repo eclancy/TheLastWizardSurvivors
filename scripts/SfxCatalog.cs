@@ -150,6 +150,15 @@ public static class SfxCatalog
 	// The gibbet's escort (GibbetCageEvent, .ai/unlock-puzzles.md 3.4): Paracelsus stepping into the rot on his way to the
 	// ferry - the bog's wet gulp and his cough. A mistake the player made; throttled, a few a walk at most.
 	public const string EscortCough = "escort_cough";
+	// The thaw's kantele (ThawEvent, Kantele; .ai/unlock-puzzles.md 3.6): its five strings of ice, low to high - each
+	// played where the string lies, as the ice sings a phrase and as he steps on them in turn - and the choked one a
+	// string gives when it is stepped on out of turn. Throttled by the song itself: a note every 0.6 s at most.
+	public const string IceString1 = "ice_string_1";
+	public const string IceString2 = "ice_string_2";
+	public const string IceString3 = "ice_string_3";
+	public const string IceString4 = "ice_string_4";
+	public const string IceString5 = "ice_string_5";
+	public const string IceStringWrong = "ice_string_wrong";
 
 	// --- secrets (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9 and 8.4.1) ------
 	// Generated and allowlisted, not yet played: the secret agents wire them as they build the sites.
@@ -182,6 +191,7 @@ public static class SfxCatalog
 		PlayerFall, TallyTick, TallyPayout,
 		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep, HintHullKnock, HintFlaskChime, HintQuatrain, HintTombKnock, HintGranaryVoice, HintBrush,
 		SibylVoice, SibylEcho, EscortCough,
+		IceString1, IceString2, IceString3, IceString4, IceString5, IceStringWrong,
 		SecretSeen, SecretFound, SecretShatter, SecretVoiceBelow,
 	};
 

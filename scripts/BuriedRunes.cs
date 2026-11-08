@@ -18,7 +18,7 @@ using TheOneHeMissed.scripts;
 // glint on it ("a cut rune catching his light"). Walk away and the wind comes back, but a stone once shown
 // stays shown (a mistake resets, never locks). Then touch all three, in any order: each one dug clear, its
 // cut fills with Ice's light. The hold is two seconds, inside the five a secret may ask; it is not the
-// thaw's verb (fight near the ice) and never a strike.
+// thaw's verb (sing back: strings stepped on in a heard order, unlock-puzzles.md 3.6) and never a strike.
 //
 // PAYS. The third dug, the light leaves it and goes to him (SecretVault.Open): Sleet Runes the first time
 // ever, granted and saved at once and offered from the next level-up; in a later run a chest from the secret

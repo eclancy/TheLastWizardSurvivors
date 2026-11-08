@@ -118,6 +118,7 @@ public static partial class RegressionChecks
 		ValidateTitheScale(warnings);
 		ValidateOubliette(warnings);
 		ValidateThawArt(warnings);
+		ValidateThawStrings(warnings);
 		ValidateGravewell(warnings);
 		ValidateCraters(warnings);
 		ValidateEvolutionIcons(warnings);
