@@ -12,6 +12,15 @@ and `config/name` names the save folder, so `config/name` stays "The One He Miss
 new name is shown everywhere a player sees one (window title, store, labels, art, text). The section below is
 the first rename's record, and stays as it was.
 
+**The USPTO knockout search (2026-11-08, tmsearch.uspto.gov, live and dead marks, every class):** nothing for
+LAST WIZARD or WIZARD SURVIVORS. The search ranks by relevance rather than matching phrases, so it was calibrated
+first: "vampire survivors" puts VAMPIRE SURVIVORS (Poncle Limited, live, classes 9, 16, 25, 28 and 41) first,
+while "last wizard" puts plain WIZARD marks first and no mark containing LAST anywhere near the top. The bare
+words are crowded - many WIZARD and SURVIVORS marks, a few live in class 9 - which is what a two-word title is
+for. This is a knockout search, not a clearance opinion: it does not cover other countries' registers or
+unregistered use, and unregistered use is where the two risks above live (the interactive-fiction app titled
+"The Last Wizard", the "Wizard Survivors" app).
+
 What was built in the game (2026-11-08):
 
 - **`DisplayProfile.GameTitle`** is the name in code. `DisplayProfile._EnterTree` sets the window title from it
