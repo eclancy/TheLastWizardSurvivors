@@ -3296,7 +3296,7 @@ public partial class _UiShot : Node
 				// Through the ordinary teleport (below, this frame), so --hold keeps him there against the run's steering.
 				teleportTo = feetAt - (tracer.FootPosition - tracer.GlobalPosition);
 				teleported = false;
-				GD.Print($"_UiShot: the dotted door traced to {f:0.00} ({door.DotsInked} dots) at {door.DoorCentre}; standing at {feetAt}");
+				GD.Print($"_UiShot: the dotted door traced to {f:0.00} ({door.LinesInked} of {door.LineCount} lines, {door.WallsStanding} ink-walls) at {door.DoorCentre}; standing at {feetAt}");
 			}
 			// The thaw, mid-solve: posed late for the same reason, his feet on the string he just sang back.
 			if (singPosePhrase >= 0 && !singPosed && frames >= Mathf.Max(WarmupFrames / 3 + 2, WarmupFrames - 6)

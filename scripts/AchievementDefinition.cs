@@ -298,7 +298,7 @@ public static class AchievementDefinitions
 		("great_anvil", "The Chains Struck", "Bring the forge's own hammers down on the four chains in the Emberdeep.", "Frees Wayland the Smith"),
 		("the_barge", "The Way Lit", "Light the dead lamps along the Last Bridge ahead of the barge below until it comes in to its landing.", "Frees Morgan le Fay"),
 		("seers_voice", "The Last Reading", "Follow the voice reading room to room through the Court until you find the reader.", "Frees Nostradamus"),
-		("dotted_door", "The Door Inked In", "Trace the door sketched in the Court's Gallery, dot to dot, until it is inked in.", "Frees Ma Liang"),
+		("dotted_door", "The Door Inked In", "Ink every line of the door sketched in the Court's Gallery, in one stroke.", "Frees Ma Liang"),
 	};
 
 	private const float TenMinutes = 600f;

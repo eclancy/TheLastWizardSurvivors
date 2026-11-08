@@ -144,6 +144,32 @@ line to dodge only pauses it, as now. The insight is where to begin: at a dot wh
 - **Open:** the figure family; how long a line counts as "walked along" before it smudges (*first guess* 40% of it).
 - **Size:** M.
 
+**Built (2026-11-07/08, `feat/ma-liang-door`).** `DoorFigure` (the family and the geometry) and `DoorStroke` (the
+rule, pure, one step a frame) in `scripts/DoorFigure.cs`; `DottedDoorEvent` keeps its site, deed, hint, reward,
+household and ending. **The family** is found at first use from a pool of 22 lines over eight dots (the jambs'
+feet, the springs, the crown, a centred ring, the sill's middle, a keystone): the four outline lines always, three
+to six more, five to seven dots, connected, exactly two odd dots, no line within 44 px of a dot it does not end at,
+no two lines overlapping or leaving a dot under 30 degrees apart - **317 figures, evenly 7 to 10 lines** (a sweep
+chose the ring centred and the keystone added; off-centre it was 30 figures of nearly all 7 lines), mirrored or
+not by the seed. Pair and line-dot conflicts are precomputed, so a candidate is bit tests and there is no table to
+drift from the rules. **The rule:** walking a line dot to dot within 30 px inks it; the stroke goes on only from
+the pen's dot; walking along an inked line for 40% of it (away from its dots - a fifth of the line at most, or the
+80 px lines could never smudge) smudges everything back to charcoal; a stroke begins only out of the dot his feet
+last stood on (a walk out of one end of a short line could otherwise read as the other), and until its first line
+is inked it can be begun afresh elsewhere, so a line brushed on the way to the chosen start costs nothing. **The
+walls:** each inked line raises thin segments on a new layer, `LevelTilePainter.EnemyOnlyCollisionLayer` (7) -
+enemies mask it, the player never does; not the water's layer 6, which the wade check queries at his boots. They
+go with a smudge, a stand-down and the door. **Drawn** by code on the event's ground layer (charcoal, ink, the wet
+head, dots lit when every line into them is inked, the smudge sliding and thinning over 1.1 s); the old numbered
+sketch sheet is no longer drawn, the painted door still is. **Proof:** `ValidateDottedDoor` over all 634 figures
+on paper (the true stroke from an odd dot inks all with no smudge, no even start covers one, every wrong start ends
+stuck and smudges walked back, stepping off pauses, crossing is not walking); three bugs it caught before any run
+(Hierholzer's spliced output from a wrong start, a line begun from its far end, the short-line smudge guard).
+`_ExploreProbe --stage=12` plays it as a player who has seen the insight - re-planning from the pen if a line was
+inked on the way, walking the ink on purpose from a dead end - and `--wrong-start` / `--step-off` exercise the
+smudge and the pause live. Still for eyes: whether the odd dots are findable by counting at a glance under the
+household's pressure, and whether the ink-walls' shelter reads as his brush making the drawing real.
+
 ### 3.3 Baba Yaga - herd the hut into her yard
 
 **Was:** `WalkingHutEvent` - the hut walks its circle; within 420 px it bolts; stay within 520 px for 30 s and

@@ -953,6 +953,8 @@ public partial class Enemy : CharacterBody2D
 		// (in-flight 59). For the swarm nothing changed: a lake stops it, a shove toward one
 		// slides along the shore, and the flow field routes round it as it always has.
 		SetCollisionMaskValue(LevelTilePainter.WaterCollisionLayer, true);
+		// And the walls only the swarm meets (Ma Liang's inked lines): the player crosses them, enemies do not.
+		SetCollisionMaskValue(LevelTilePainter.EnemyOnlyCollisionLayer, true);
 		// The one layer the player's body masks besides decor: what he cannot shove, he slides off.
 		SetCollisionLayerValue(BlockerCollisionLayer, BlocksPlayer);
 		// And what the swarm cannot overlap: see the note above.
