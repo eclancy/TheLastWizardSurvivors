@@ -93,7 +93,7 @@ The questions as they were put:
 | 3 | Sunken Cave | **the Cumaean Sibyl** | Arcane | Arcane Explosion | **echo** | The Hundred Mouths | **listen** for the true mouth | none (R1 if Ma Liang too) |
 | 4 | Blighted Swamp | **Paracelsus** | Poison | Contagion | **distil** | The Dose | **escort** him to the ferry | none |
 | 5 | Mystic Ruins | **Abe no Seimei** | Light | Kindled Ward | **banish** | The Five-Pointed Seal | **solve** the four stones | none |
-| 6 | Scorched Sands | **Imhotep** | Fire | Fireball | **blind** | Eye of Ra | **kindle** three beacons at once | R1 |
+| 6 | Scorched Sands | **Imhotep** | Fire | Fireball | **blind** | Eye of Ra | **aim** bronze mirrors to bring the sun to his door (was kindle three beacons; `.ai/unlock-puzzles.md` 3.1) | R1 |
 | 7 | The Emberdeep | **Wayland the Smith** | Metal | Iron Palisade | **temper** | The Tempered Line | **bait** the hammers onto his chains | none |
 | 8 | The Court (second event; was the Sketchbook) | **Ma Liang** | Arcane | Familiar (crow) | **displace** | The Painted Door | **trace** the dotted door | R1; P2 |
 | 9 | The Last Bridge | **Morgan le Fay** | Ice (Ice+Wind) | Sleet Runes | **double** | Fata Morgana | **light the lamps ahead** of her barge (was keep pace; `.ai/unlock-puzzles.md` 3.7) | R2 (R1 on Stormsweep) |
@@ -123,10 +123,10 @@ and none is "a harder fight".
 | **listen** | Cave | one of nine cave mouths is hers; the voice reaches you from it first | the moot lights its next stone; here nothing lights, you hear |
 | **escort** | Swamp | he follows you to the ferry; the bog goes for him | the key is a thing you carry; he is a person they hunt |
 | **solve** | Ruins | turn four stones to face the seal | the Broken Ward is an order; this is a state (keep it apart in art) |
-| **kindle** | Sands | three beacons burn 25 s each; have all three alight at once | the moot is in order against a clock; this is all at once, any order |
+| **aim** | Sands | turn bronze mirrors - each faces away from where he stands - until the sun goes mirror to mirror onto the disc over the tomb's door (since 2026-11-08, `.ai/unlock-puzzles.md` 3.1; it was kindle three beacons at once) | the seal's stones turn a quarter when a plate is stepped on, and face the seal; these follow his feet, eight ways, and pass the light on |
 | **bait** | Emberdeep | only his own forge's hammers break his chains; bring their slams to the stakes | nothing: the only ask that uses the enemy's attacks |
 | **trace** | Court (the Gallery) | walk a door sketched in charcoal dot to dot | nothing else is a drawn line |
-| **light ahead** | Last Bridge | she drifts only as far as the parapet's lamps are lit, and a lamp burns 20 s: light the next ones ahead of her, not the whole row (since 2026-11-07, `.ai/unlock-puzzles.md` 3.7; it was keep pace) | the dry tomb's beacons are lit together, any order; these are lit in turn, ahead of something moving, and lit too early they are out by the time she gets there |
+| **light ahead** | Last Bridge | she drifts only as far as the parapet's lamps are lit, and a lamp burns 20 s: light the next ones ahead of her, not the whole row (since 2026-11-07, `.ai/unlock-puzzles.md` 3.7; it was keep pace) | the moot's stones are lit in its order against a clock; these are lit in turn, ahead of something moving, and lit too early they are out by the time she gets there |
 | **seek** | Court | his voice comes from a room; reach it, and it comes from another | the hart is seen; he is only heard, through walls |
 
 Every one inherits `side-events.md`'s rules: placed from the seed 4-6 chunks out (the castle's two by
@@ -813,6 +813,13 @@ measured and not heard; and the form's numbers - the bot took it at 9.9 minutes,
   `hint_tomb_knock`, slow stone on stone under hissing sand. Lines: *"Far off in the dunes, a slow
   knocking, stone on stone."* / *"The knocking again, from under the sand."* / *"Slower now. It has not
   stopped."*
+
+> **Its ask has changed since (2026-11-08): `.ai/unlock-puzzles.md` 3.1, "route the sun", and its Built note.** The
+> beacons are gone - the kindling, the 25 s burn and its gutter, the six of the dead their light drew, `--let-beacon-die` -
+> and bronze mirrors stand round the tomb instead: each faces away from where he stands, a lit one shines where it faces,
+> and the sun brought mirror to mirror onto the winged disc over the door slides the slab (`SunMirrors`). The class keeps
+> its name and the site its id (`tomb_beacons`); its deed is *The Sun Let In*. Everything else in this note (him, his
+> passive, the tomb and its opening, his clue, his form) still stands.
 
 **Built (2026-11-03, `wip/wizard-imhotep`).** The Sands' second event, after the caravan, through P2's API exactly as
 6.3 wrote it (one line in `SideEventDirector`, a hint by site, deed words, `FromEvent`, a prisoner row). Nothing in P2

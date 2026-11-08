@@ -344,8 +344,9 @@ public static class UnlockCatalog
 		// to room. Secret until the Court opens, and counted at the Throne's gate only, as every chapter wizard is.
 		FromEvent("nostradamus", UnlockKind.Character, "seers_voice", "Heard reading aloud, room to room, in the Court.",
 			secretUntilStage: "stage_12", finalGateOnly: true),
-		// Imhotep, sealed in a dry tomb beside the road the water left on the Scorched Sands (4.6), freed by lighting its
-		// three beacons at once. Secret until the Sands open; counted at the Throne's gate only.
+		// Imhotep, sealed in a dry tomb beside the road the water left on the Scorched Sands (4.6), freed by turning its
+		// bronze mirrors until the sun reaches the disc over its door (unlock-puzzles 3.1). Secret until the Sands open;
+		// counted at the Throne's gate only.
 		FromEvent("imhotep", UnlockKind.Character, "tomb_beacons", "Sealed in a dry tomb out on the Scorched Sands.",
 			secretUntilStage: "stage_6", finalGateOnly: true),
 		// Medea's granary remains in the Fields; Laelaps is a separate rescue in the Pinfold.

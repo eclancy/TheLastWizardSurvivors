@@ -3,8 +3,8 @@
 Eric, 2026-11-03: *"what i actually wanted to discuss was making sure all of the character unlocks are fun
 and interesting, like the laser puzzle in halls of torment"*.
 
-**Status: designed with Eric, 2026-11-03. Built: 3.3 Baba Yaga, 3.4 Paracelsus, 3.5 Medea, 3.6 Väinämöinen and
-3.7 Morgan le Fay (each its "Built" note); the other three are not.** Every rule below that says "decided" was
+**Status: designed with Eric, 2026-11-03. Built: 3.1 Imhotep, 3.2 Ma Liang, 3.3 Baba Yaga, 3.4 Paracelsus, 3.5 Medea,
+3.6 Väinämöinen and 3.7 Morgan le Fay (each its "Built" note); 3.8 Tituba is not.** Every rule below that says "decided" was
 chosen by him that day, one question at a time. Eight of the twelve place-held wizards get a new ask; four
 keep theirs. Numbers marked *first guess* are for the build to tune.
 
@@ -113,7 +113,121 @@ puzzle in his own legend, and his form is already the Eye of Ra.
 - **Open:** how many mirrors; whether a leg may cross another.
 - **Size:** M-L.
 
-### 3.2 Ma Liang - draw the door in one stroke
+**Built (2026-11-08, `worktree-agent-a9156a2847e34170c`).** `SunMirrors` (new: the layout, the rule, the light and the proof,
+pure, in `scripts/SunMirrors.cs`) and `TombBeaconsEvent` (rewritten; the class keeps its name as the site keeps its id,
+`tomb_beacons`, so its deed, hint, reward, the tomb, the slab's opening, his climb out of the stair and the hand-over to the
+run are as they were). The mirror at eight facings, the winged sun-disc dark and lit, and the arrow's pictogram are
+`tools/art/tomb_beacons.py`'s (`mirror.png`, `socket.png`, `poi-tomb.png`); `beacon.png` is retired with its sidecar. The
+light and its shaft are drawn by code. Sounds `mirror_turn` and `sun_arrive` (`tools/audio/sfx.py`). Schema: none.
+
+- **What plays.** Sunlight falls from the upper left, where the key light is, in a wide warm shaft onto one bronze mirror
+  on a granite stand - the source - and pools on the sand under it. Four or five more mirrors stand round the tomb, 340 px
+  or more apart. Each disc stands upright on a bronze spindle and faces one of eight ways; its face (polished, catching the
+  key) shows toward the camera, its back (dark bronze, a boss and a ring) away, a narrow ellipse edge-on, so a facing reads
+  from the stand as well as from the light. Within **140 px** of a mirror its disc swings, an eighth at a time, to face
+  away from his feet, and a faint dashed ring on the sand shows the reach while he is near; the objective line says "The
+  mirror turns away from you - walk round it to aim it" while he is inside one. A mirror the light reaches shines where it
+  faces: a warm gold line in the air (the light element's ramp - edge, mid, a hot heart), motes running along it from the
+  source toward where it ends, so its direction reads at a glance; it ends on the next mirror's disc (which flares), on
+  terrain (a small splash), or runs out after **760 px**, fading over its last 140. The light passes through bodies and
+  burns each one on a lit leg for **3 every 0.5 s**. Brought onto the winged sun-disc on the cornice over the door, the
+  disc lights, the slab slides (the beacons' 0.5, 1.0, 1.5 s) and he climbs out into the column of light. The mirrors stay
+  standing as he left them, the disc lit. The arrow points at the tomb from far off and, among the mirrors, at the mirror
+  the light ends on - never which way to turn it.
+- **The Open line, decided in the build.** *How many mirrors:* five or six in all - the source and four or five more
+  (3.1's "four to six more", where "three or four legs" plus "one or two decoys" would allow three): three legs take two
+  decoys, four legs one or two. *Whether a leg may cross another:* no. No leg of the solution crosses another or comes
+  within **110 px** of a leg it does not meet or of a mirror not at its ends, so the route reads as one line across the
+  sand; a decoy keeps 110 px off every leg too.
+- **What else the build decided.**
+  1. **Legs 340-540 px**, not "at least 300": with mirrors 340 px apart a player walking in to one from just outside its
+     reach (170 px out) is still 30 px outside the next one's, so turning one never turns another.
+  2. **The light is one table, worked out at placement** (`SunMirrors.HitFrom`): for every mirror and facing, where the beam
+     ends, cast against the same ground test a body is held to (`Node2DGame.IsGroundBlockedAt`, every 8 px). The run never
+     casts a beam; it re-traces the chain through the table only when a facing changes, and the proof reads the same table.
+  3. **What stops the light.** Another mirror (passing within 18 px of its foot), which lights; the disc, within 22 px of
+     the tomb's foot and **only from the front** (travelling north, north-east or north-west: it faces south); the tomb's body
+     (168 x 110 px behind its foot), from behind and the sides; terrain. Not bodies. A beam that falls on a mirror already
+     lit ends there.
+  4. **The turning holds by 7 degrees** past the half-way line between two facings, so standing on the line does not set a
+     disc chattering; nearer than 16 px to the stand it holds (the stand is solid anyway: a trunk's footprint on the
+     blocking layer, as the beacons' pillars had).
+  5. **The burn goes through `EnemyRegistry.CollectNear`, not `ForEachNear`** as 3.1 wrote: a burn can kill, a kill can
+     start another walk of the registry (a Frost Shard), and `ForEachNear`'s visitor shares one index buffer that walk
+     would clear. `CollectNear` fills the event's own list, allocation-free once warm, on the 0.5 s tick, as Sleet Runes
+     and the Aegis Ward burn a segment. A body's feet within 24 px of a lit leg's line on the ground are in the light; a
+     body on two legs is burned once a tick. Through `Enemy.TakeDamage(3, false)`, both arguments.
+  6. **The light's height is 64 px**: the mirror's disc is 32 art rows over its foot and the sun-disc's middle is on the
+     tomb's row 32, so a beam leaves one disc and lands on the other at the same height (`SunMirrors.BeamHeight`).
+  7. **The start.** Every path mirror faces wrong, and where a decoy hangs off the source the source faces into it: from the
+     first moment the light is seen going mirror to mirror - into a dead end.
+  8. **He arrives** at the tomb (420 px, as before) or within 260 px of any mirror, so a player who follows the light to the
+     source has arrived there, before his feet can turn anything.
+  9. **Decor keeps off** every mirror (90 px) and the solution's legs (46 px every 80); the mirrors keep off the caravan's
+     footprints through a new `ExplorePlacer.IsOffOtherSites`. The tomb is swept for through the band where a layout fits
+     (`EventSiteInBand`'s `also`, 16 rolls a candidate), on a 200 px footprint, no longer the 494 px the beacons' triangle
+     took. `Generate` itself allows 80 rolls.
+
+**Verified:** `dotnet build` (0 errors); the validator with `-- --no-save-writes` (0 errors, the known `test_wizard`
+warning), which now runs `RegressionChecks.ValidateTombBeacons` as the mirrors' proof. It covers four things:
+- **The rule.** Standing behind a mirror sets every facing from every start (72 cases). Out of reach, or on the stand, it
+  holds. The hysteresis holds a facing to 1.5 degrees inside its 29.5 and gives way 1.5 past it.
+- **The light.** It lands on the disc from the front and on both diagonals, and is stopped by the tomb's body from behind
+  and from the side. Along the foot it never lands on the disc. A mirror in the way catches it, a ridge 200 px ahead stops
+  it at 208 px, and with nothing in its way it runs its 760 px.
+- **The seed, 80 tombs** - 40 on open ground, 24 by a lake 180-300 px across, 16 by a 1,400 px ridge of rock - each
+  rolled twice. All laid, every one the same twice; 52 of three legs and 28 of four, 65 of five mirrors and 15 of six;
+  the slowest kept on roll 28. Every one keeps its shape and is proved: solvable with exactly its path's mirrors, its
+  start dark, no single wrong facing of a path mirror reaching the disc, every decoy able to catch light. The walk -
+  in from just outside each path mirror's reach to behind it and out, 6 px a step, every mirror answering his feet -
+  brings the light to the disc on every one. 52 ms.
+- **The rest.** The art at its sizes, the two sounds allowlisted, the hint unchanged.
+
+Audio: `python tools/audio/build.py` (112 files, every other one byte-identical) and `analyse.py --confuse`, 0 confusable
+pairs (`.ai/audio-manifest.md`, 2026-11-08).
+
+`_ExploreProbe --stage=6` now AIMS. It works out the fewest mirrors to the disc from what a player sees (the event's beams,
+`SunMirrors.ShortestRoute`), walks round to just outside each mirror's reach on the line behind it, in until it faces the
+right way and back out, and walks round every other mirror's reach on the way, at his own walk. Its final runs:
+
+| seed | save | passed, failed | route | on the disc after arriving | walked | burns |
+|---|---|---|---|---|---|---|
+| 4242 | `--fresh-save` | 49, 0 | 3 mirrors, 3 turns, all meant | 11.7 s | 2,651 px | 51 |
+| 4242 | `--all-unlocked` (the chest) | 43, 0 | 3 mirrors, 3 turns, all meant | 11.8 s | 2,654 px | 65 |
+| 7 | `--fresh-save` | 49, 0 | 3 mirrors, 3 turns, all meant | 13.6 s | 3,075 px | 61 |
+| 11 | `--fresh-save` | 49, 0 | 3 mirrors, 3 turns, all meant | 10.5 s | 2,279 px | 37 |
+| 2026 | `--fresh-save` | 49, 0 | 3 mirrors, 3 turns, all meant; the light began in a decoy off the source | 10.9 s | 2,416 px | 49 |
+| 31 | `--fresh-save --decoy-first` | 51, 0 | 3 mirrors, 4 turns, all meant | 15.6 s | 3,519 px | 37 |
+
+- **On every run:** it began dark, the route was walked once (no re-plan), the swarm was cleared only every 6 s, and
+  Imhotep was freed in memory, his deed recorded by its site, on every fresh save.
+- **The decoy leg:** with `--decoy-first` the source was first turned into decoy 4 - the light went there and stopped, the
+  disc dark - then turned back, and the route finished.
+- **The probe's first walk failed on seed 31,** and the failure was the probe's, not the rule's. It went round other mirrors
+  toward a point beside them, and a chord between two points 40 px outside a reach dips inside it: it swung the source on
+  its way to the next mirror and the light was lost. It now walks round on the circle. It re-plans if the disc is dark
+  at the end, as a player watching the light would; that never happened on the final runs. Its new check - every facing
+  change was one it meant - holds it to that.
+- **`_UiShot`** (windowed), `--stage=6 --terrain-seed=4242 --event-index=1`. Mid-solve with `--arrive --mirrors-aimed=2
+  --goto=event:1 --hold --frames=150` at 1280x720 (`--goto-offset=420,80`) and at 540x1212 `--portrait --safe-area`
+  (`420,0`): the sunlight's shaft, two lit legs, mirror 2 sending it west, the arrow over mirror 2, the reach rings.
+  The win with `--win-event --fx-lead=130 --frames=300` (a lead past two thirds of the frames fires before the event
+  starts): "Wizard freed - Imhotep", the slab open, the disc lit, the whole route drawn onto it as it fades.
+  `--mirrors-aimed=N` is new (it replaces `--beacons-lit`).
+
+**Not verified:**
+- **Whether it is fun**, or whether a player finds "it turns away from me" from the turning alone and the objective line.
+- **Mirrors disturbed in passing.** A player walking straight from one mirror to the next will sometimes pass through a
+  third's reach and swing it. The probe walks round them; a person may not. The light shows it at once, and the turn is
+  heard, but it could read as the puzzle undoing itself - the first thing to watch in a playtest.
+- **The read on a phone in a real crowd:** the two canvases were photographed on a PC, with the chapter's arrival card
+  over a third of the screen, and the light is a thin line among the bodies.
+- **The sounds by ear.** Nobody has heard the turn or the arrival.
+- **The burn's 3 every 0.5 s against real play.**
+- **Four-leg layouts live:** every probed seed rolled three legs. Live, four-leg layouts look rarer than on paper -
+  the Sands' ground and the band's 16 rolls a site favour the shorter path - though the proof walks 28 of them.
+- **Light over water.** Water stops the light because it stops a body (`IsGroundBlockedAt`). If the Sands' oases should
+  let it across, the ground test is the one line to change.
 
 **Was:** `DottedDoorEvent` - a door sketched on the Gallery floor with fifteen numbered dots; walk them in order
 within 30 px. Its own Built note: "whether tracing is a real ask".

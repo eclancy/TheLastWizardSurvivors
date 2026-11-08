@@ -411,9 +411,10 @@ public partial class _UiShot : Node
 	private bool seerRead;
 	private bool seerMoved;
 	private bool seerReadDone;
-	// --beacons-lit=N: with --arrive on the Scorched Sands' dry tomb (--event-index=1), N of its beacons lit (their clocks
-	// staggered) the moment it is begun, so the fires, the clock rings and the objective's count are photographed.
-	private int beaconsLit;
+	// --mirrors-aimed=N: with --arrive on the Scorched Sands' dry tomb (--event-index=1), the first N mirrors of the light's
+	// path turned to their facings in the solution the moment it is begun (TombBeaconsEvent.AimForPhoto), so the light is
+	// photographed carried N legs across the sand; N of the path's length or more puts it on the disc and opens the tomb.
+	private int mirrorsAimed;
 	// --lamps-lit=N: with --arrive on the Last Bridge, the barge posed part-way (BargeEvent.PoseForPhoto): set out from
 	// her first lamp and on her way to the next, the N lamps ahead of her lit (their clocks staggered), so the lamps, their
 	// clocks, the lit water and the first dark lamp past them are photographed. Stand him with --goto=barge:ALONG,FROMSHORE.
@@ -1925,8 +1926,8 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--seer-read")
 				seerRead = true;
-			else if (arg.StartsWith("--beacons-lit="))
-				beaconsLit = System.Math.Max(0, int.Parse(arg.Substring("--beacons-lit=".Length)));
+			else if (arg.StartsWith("--mirrors-aimed="))
+				mirrorsAimed = System.Math.Max(0, int.Parse(arg.Substring("--mirrors-aimed=".Length)));
 			else if (arg.StartsWith("--lamps-lit="))
 				lampsLit = System.Math.Max(0, int.Parse(arg.Substring("--lamps-lit=".Length)));
 			else if (arg.StartsWith("--event-progress="))
@@ -3233,10 +3234,10 @@ public partial class _UiShot : Node
 				eventArrived = true;
 				SideEvent begunEvent = arrival.Start(eventIndex);
 				GD.Print(begunEvent is SideEvent begun ? $"_UiShot: {begun.GetType().Name} begun where it stands" : "_UiShot: no event to begin");
-				if (beaconsLit > 0 && begunEvent is TombBeaconsEvent lighting)
+				if (mirrorsAimed > 0 && begunEvent is TombBeaconsEvent aiming)
 				{
-					lighting.KindleForPhoto(beaconsLit);
-					GD.Print($"_UiShot: {beaconsLit} of the tomb's beacons lit");
+					aiming.AimForPhoto(mirrorsAimed);
+					GD.Print($"_UiShot: the first {mirrorsAimed} of the tomb's {aiming.Layout?.Legs} path mirrors aimed; the light goes through {aiming.LitCount}");
 				}
 				if (lampsLit > 0 && begunEvent is BargeEvent lamps)
 				{
@@ -4364,9 +4365,10 @@ public partial class _UiShot : Node
 				escortStand = gibbet.DebugWalkFrom(along, escortStraight);
 				GD.Print($"_UiShot: let Paracelsus out, {along * 100f:0}% of the way to the landing at {gibbet.Landing}; the player at {escortStand}");
 			}
-			// The dry tomb: its three beacons lit where they stand, and the real opening runs (the slab, him climbing out).
-			else if (wonEvent is TombBeaconsEvent kindled)
-				kindled.KindleForPhoto(TombBeaconsEvent.BeaconCount);
+			// The dry tomb: every mirror of the path turned true, so the light is on the disc and the real opening runs (the
+			// slab, him climbing out).
+			else if (wonEvent is TombBeaconsEvent aimed)
+				aimed.AimForPhoto(aimed.Layout?.Legs ?? 0);
 			// The thaw and the cell win through their own beats (in-flight 58), so the real path must run:
 			// every phrase sung back lets Tick start the crack and the fall; the carry posed at the door lets the
 			// unlock fill and the gate swing. Pair with --fx-lead (the cell needs ~120: 1.2 s of unlock first).

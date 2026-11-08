@@ -1,19 +1,25 @@
 # -*- coding: utf-8 -*-
-"""The Scorched Sands' second side event art: the dry tomb and its three beacons, where Imhotep is sealed
-(.ai/chapter-wizards.md 4.6).
+"""The Scorched Sands' second side event art: the dry tomb and its bronze mirrors, where Imhotep is sealed
+(.ai/chapter-wizards.md 4.6; the mirrors since 2026-11-08, .ai/unlock-puzzles.md 3.1, "route the sun").
 
 Run: python tools/art/tomb_beacons.py
 
     world/tomb/tomb.png         the tomb, 88x72 a frame, four frames: sealed (his mark on the slab), the slab a
                                 third aside, two thirds, and open on the stair going down into the dark
-    world/tomb/beacon.png       a signal beacon, 28x52 a frame, eight frames: cold, kindling (embers), burning
-                                (four flickers), and guttering (two) as the dry wind gets into it
-    ui/poi/poi-tomb.png         the arrow's pictogram: a beacon burning on its pillar
+    world/tomb/mirror.png       a bronze mirror on a granite stand, 32x48 a frame, eight frames: facing east,
+                                south-east, south (toward the camera), south-west, west, north-west, north, north-east -
+                                SunMirrors' facings 0-7, in its order
+    world/tomb/socket.png       the winged sun-disc over the tomb's door, 30x14 a frame, two frames: dark, and lit
+    ui/poi/poi-tomb.png         the arrow's pictogram: a mirror on its stand with the sun's ray on it
     tools/art/_tomb_beacons_preview.png   (gitignored) for looking at
 
 "He hid the water." The builder who could find water in the desert and raise it is sealed in a dry tomb beside
-the road the water left. Three signal beacons stand on the dunes round it, about 700 px apart, cold. Light all
-three at once and the slab slides aside (TombBeaconsEvent).
+the road the water left. Sunlight falls through a gap in the dunes onto one bronze mirror; more stand on the
+sand between it and the tomb. Turn them so the light goes mirror to mirror onto the sun-disc over the door, and the
+slab slides aside (TombBeaconsEvent, SunMirrors).
+
+world/tomb/beacon.png is no longer written or read: the three beacons were the ask until 2026-11-08, and the
+mirrors replaced them (the file and its sidecar were removed with them).
 
 THE TOMB IS BUILT, THE SEAL IS HIS. A mastaba front of sandstone courses - gold's dark end, the colour of the
 dunes' stone in this drained light, never the Sands' sand cloth (cast_sands.py), which is what his chapter's dead
@@ -21,14 +27,23 @@ are wrapped in - a cornice over the door, sand drifted against both corners. The
 granite (stone's row), and on it his mark: the one cold light, in the arcane ramp, where the far tell stands up
 from. When the slab slides into the wall, the mark goes with it.
 
-THE BEACONS ARE THE WIZARDS' LIGHT. A pillar of the same granite, a bronze fire-basket on it. Cold, the basket
-holds charred wood and nothing else. Lit, it burns in fire's ramp - warm light, which in this world belongs to
-what he does not have - and as the wind gets into it the flames sink and gutter before they go out.
+THE MIRRORS CARRY THE WIZARDS' LIGHT. A granite stand (the slab's stone, as the beacons' pillars were), and on it,
+on a bronze spindle it turns about, a disc of polished bronze - gold's ramp, which is a light source and never
+stepped (.ai/art-direction.md 2, "Matte, not wet"). Its face catches the key from the upper left; its back is dark
+bronze with a boss and a ring. Seen in the 3/4 view the disc is an upright circle: full face toward the camera, an
+ellipse at the diagonals, a sliver of rim edge-on, its back when it faces away - so its facing reads from the stand
+as well as from the beam the game draws out of it. The sunlight it carries is drawn by the game, not here: a warm
+gold line (the light element's ramp) in the air layer, and the light is the wizards' - warm - never his.
 
-NOT THE MOOT. The Broken Circle's stones are a ring of nine lit one at a time in his order against a clock;
-these are three fires on posts, any order, each its own clock, and what matters is that they burn together.
+THE SOCKET is the winged sun-disc of a temple door, set on the cornice over the slab: dark relief in the
+sandstone's shade until the light is on it, then the light's ramp in the disc and gold in the wings. Its middle is
+on the tomb's row 32, 32 rows over the foot, and a mirror's disc is 32 rows over its own foot: both are 64 world px
+up at x2 (SunMirrors.BeamHeight), so a beam from a mirror's face lands on the disc's middle.
 
-Every sheet is authored 1:1 and drawn by the game at x2 (Sprite2D Scale 2); the tomb and the beacons sort with the
+NOT THE SEAL. The Ruins' stones turn a quarter when a plate is stepped on; these turn to face away from wherever he
+stands, eight ways.
+
+Every sheet is authored 1:1 and drawn by the game at x2 (Sprite2D Scale 2); the tomb and the mirrors sort with the
 bodies at their feet. Python 2.7 and PIL, as every generator here.
 """
 from __future__ import division, print_function
@@ -228,52 +243,44 @@ def tomb(frame):
     return c
 
 
-# --- the beacon --------------------------------------------------------------------------------------
+# --- the mirrors -------------------------------------------------------------------------------------
 
-BEACON_W, BEACON_H = 28, 52
-BEACON_FOOT = 48
-BEACON_MIDDLE = 14
-BASKET_Y = 22           # the basket's rim: where the fire sits (TombBeaconsEvent draws its light from here)
-
-
-def flame(c, frame, height):
-    """Tongues of fire rising out of the basket: white at the root, hot, then mid, the edge at the tips, each
-    tongue leaning and forking by frame so four frames flicker. height 1 is a full fire, less is guttering."""
-    rng = random.Random(400 + frame)
-    tongues = [(-4, 0.62), (-1, 1.0), (2, 0.86), (5, 0.55)]
-    for i, (dx, h) in enumerate(tongues):
-        lean = [-1, 0, 1, 0][(frame + i) % 4]
-        top = int(round(17 * h * height * (0.88 + 0.12 * ((frame * 3 + i) % 4) / 3.0)))
-        for k in range(top):
-            y = BASKET_Y - 1 - k
-            t = k / float(max(1, top))
-            x = BEACON_MIDDLE + dx + int(round(lean * t * t * 3))
-            half = max(0, int(round((1.0 - t) * 2.2)))
-            for xx in range(x - half, x + half + 1):
-                if t < 0.25:
-                    col = FIRE[0] if abs(xx - x) < half - 1 and i in (1, 2) else FIRE[1]
-                elif t < 0.55:
-                    col = FIRE[1] if abs(xx - x) < half else FIRE[2]
-                elif t < 0.8:
-                    col = FIRE[2]
-                else:
-                    col = FIRE[3]
-                if c.get(xx, y)[3] == 0 or t < 0.5:
-                    c.set(xx, y, col)
-    for _ in range(int(3 * height) + 1):                     # sparks lifting off it
-        sx = BEACON_MIDDLE + rng.randint(-5, 5)
-        sy = BASKET_Y - int(18 * height) - rng.randint(1, 6)
-        if sy > 1:
-            c.set(sx, sy, FIRE[2] if rng.random() < 0.5 else FIRE[3])
+MIRROR_W, MIRROR_H = 32, 48
+MIRROR_FOOT = 44        # the row its base stands on: the sort point (TombBeaconsEvent's MirrorFoot)
+MIRROR_MIDDLE = 16
+FACE_Y = 12             # the disc's middle: 32 rows over the foot, 64 world px at x2 (SunMirrors.BeamHeight)
+FACE_R = 8              # the disc's radius: 17 px across, 34 world px
+FACE_TILT = 0.5         # how much of a line on the ground the 3/4 view shows (a disc's width seen across it)
+FACE_THICK = 2.0        # the disc's thickness, which is all of it that shows edge-on
+FACINGS = 8             # SunMirrors.Facings: 0 east, then a quarter-turn's half at a time clockwise on screen
+EDGE_HALF = 2.6         # edge-on (east, west), the half-width the disc is drawn at - see _disc_point
 
 
-def beacon(frame):
-    """A signal beacon: a square pillar of granite on a stepped base, and on it a bronze fire-basket of bars.
-    frame 0 cold (charred wood in the basket), 1 kindling (embers under the wood), 2-5 burning, 6-7 guttering."""
-    c = raster.Canvas(BEACON_W, BEACON_H)
-    m = BEACON_MIDDLE
-    # THE BASE: two steps of cut stone.
-    for (y0, y1, hw) in ((44, BEACON_FOOT, 9), (40, 43, 7)):
+def _disc_point(facing, s, t, w):
+    """Where a point of the disc lands on the sheet: s across its face (-1 to 1), t up it (-1 to 1), w through its
+    thickness (+ toward the side it faces). The disc stands upright, its face turned toward `facing` on the ground.
+
+    Edge-on (east or west) the true projection is a line one thickness wide, which read as a pole, not a mirror. So
+    there the disc is drawn as if turned a few degrees toward the camera: a narrow upright ellipse whose polished face
+    shows on the side it points to and whose rim shows on the other - east and west are told apart at a glance."""
+    a = facing * math.pi / 4.0
+    nx, ny = math.cos(a), math.sin(a)                  # its facing, on the ground (y down: 2 is south, the camera)
+    ux, uy = -ny * FACE_R, nx * FACE_R * FACE_TILT     # its horizontal diameter, seen from above and the south
+    if abs(ny) < 0.01:
+        ux, uy = nx * EDGE_HALF, 0.0
+    px = MIRROR_MIDDLE + s * ux + w * nx
+    py = FACE_Y + s * uy - t * FACE_R + w * ny * FACE_TILT
+    return px, py
+
+
+def mirror(facing):
+    """A bronze mirror on a granite stand, its disc turned toward `facing` (0 east, 1 south-east, 2 south - toward the
+    camera - 3 south-west, 4 west, 5 north-west, 6 north, 7 north-east). The disc stands upright on a bronze spindle
+    and turns about it, so the stand never changes; only the disc does."""
+    c = raster.Canvas(MIRROR_W, MIRROR_H)
+    m = MIRROR_MIDDLE
+    # THE STAND: two steps of cut granite, a squat pillar with its left face lit, a capital.
+    for (y0, y1, hw) in ((41, MIRROR_FOOT, 8), (38, 40, 6)):
         for y in range(y0, y1 + 1):
             for x in range(m - hw, m + hw + 1):
                 c.set(x, y, ST[2])
@@ -281,70 +288,143 @@ def beacon(frame):
             c.set(m + hw, y, ST[3])
         c.hline(m - hw, m + hw, y0, ST[1])
         c.set(m - hw, y0, ST[0])
-    # THE PILLAR: square, tapering a little, its left face lit and its right in shade, a joint or two.
-    for y in range(26, 40):
-        hw = 4 if y > 30 else 3
+    for y in range(26, 38):
+        hw = 3 if y > 29 else 2
         for x in range(m - hw, m + hw + 1):
-            c.set(x, y, ST[1] if x < m - 1 else (ST[2] if x < m + 2 else ST[3]))
-        c.set(m - hw, y, ST[0] if y % 5 else ST[1])
+            c.set(x, y, ST[1] if x < m else (ST[2] if x < m + 2 else ST[3]))
+        c.set(m - hw, y, ST[0] if y % 4 else ST[1])
         c.set(m + hw, y, ST[4])
-    for (jy) in (30, 35):
-        c.hline(m - 3, m + 4, jy, ST[3])
-    c.set(m + 1, 33, ST[3])
-    c.set(m - 2, 37, ST[2])
-    # THE BASKET: a bronze bowl of bars on the pillar's head, its rim lit.
-    for y in range(BASKET_Y, 26):
-        t = (y - BASKET_Y) / 3.0
-        hw = int(round(7 - 3 * t))
+    c.hline(m - 2, m + 3, 32, ST[3])
+    c.set(m + 1, 35, ST[3])
+    for y in (23, 24, 25):                                  # the capital, wider than the shaft
+        hw = 5 if y < 25 else 4
         for x in range(m - hw, m + hw + 1):
-            c.set(x, y, GD[3] if (x - m) % 3 else GD[2])
-        c.set(m - hw, y, GD[1])
-        c.set(m + hw, y, GD[4])
-    c.hline(m - 7, m + 7, BASKET_Y, GD[1])
-    c.set(m - 7, BASKET_Y, GD[0])
-    c.set(m + 7, BASKET_Y, GD[2])
-    # What is in it.
-    if frame == 0:
-        for (x, y, col) in ((m - 4, 21, ST[4]), (m - 3, 21, ST[3]), (m - 1, 20, ST[4]), (m, 21, ST[3]), (m + 2, 20, ST[3]),
-                            (m + 3, 21, ST[4]), (m + 5, 21, ST[4]), (m + 1, 21, ST[4]), (m - 2, 19, ST[3]), (m + 1, 19, ST[4])):
-            c.set(x, y, col)
-    elif frame == 1:
-        for (x, y, col) in ((m - 4, 21, ST[4]), (m - 3, 21, FIRE[3]), (m - 1, 20, ST[4]), (m, 21, FIRE[2]), (m + 2, 20, ST[3]),
-                            (m + 3, 21, FIRE[3]), (m + 5, 21, ST[4]), (m + 1, 21, FIRE[3]), (m - 2, 19, ST[3]),
-                            (m + 1, 19, FIRE[3]), (m, 18, FIRE[3]), (m - 1, 17, FIRE[3])):
-            c.set(x, y, col)
-    else:
-        burning = frame <= 5
-        flame(c, (frame - 2) % 4, 1.0 if burning else (0.5 if frame == 6 else 0.34))
-        for (x, y, col) in ((m - 4, 21, FIRE[3]), (m + 4, 21, FIRE[3]), (m - 2, 21, FIRE[2]), (m + 2, 21, FIRE[2])):
+            c.set(x, y, ST[2])
+        c.set(m - hw, y, ST[1])
+        c.set(m + hw, y, ST[3])
+    c.hline(m - 5, m + 5, 23, ST[1])
+    c.set(m - 5, 23, ST[0])
+    # THE SPINDLE: bronze, from the capital up to the disc's foot, a collar where it goes into the stone.
+    for y in range(FACE_Y + FACE_R, 23):
+        c.set(m, y, GD[2])
+        c.set(m - 1, y, GD[1])
+    c.hline(m - 2, m + 2, 22, GD[1])
+    c.set(m + 2, 22, GD[3])
+
+    # THE DISC. Its rim first, all the way through its thickness; then the side of it the camera sees - the polished
+    # face when it is turned toward the south at all (or edge-on, see _disc_point), its back when it is turned away.
+    a = facing * math.pi / 4.0
+    toward = math.sin(a)                                # > 0: the face is turned toward the camera
+    if abs(toward) < 0.01:
+        toward = 0.2
+    steps = 48
+    for i in range(steps + 1):
+        ang = 2.0 * math.pi * i / steps
+        s, t = math.cos(ang), math.sin(ang)
+        for k in range(5):
+            w = -FACE_THICK / 2.0 + FACE_THICK * k / 4.0
+            px, py = _disc_point(facing, s, t, w)
+            # The rim's lit edge is its upper-left (the key), the rest bronze in shade.
+            c.set(int(round(px)), int(round(py)), GD[2] if (s * -1 + t) > 0.3 and abs(toward) < 0.9 else GD[3])
+    side = FACE_THICK / 2.0 if toward > 0 else -FACE_THICK / 2.0
+    n = 40
+    for i in range(-n, n + 1):
+        for j in range(-n, n + 1):
+            s, t = i / float(n), j / float(n)
+            r = math.sqrt(s * s + t * t)
+            if r > 1.0:
+                continue
+            px, py = _disc_point(facing, s, t, side)
+            x, y = int(round(px)), int(round(py))
+            dx, dy = px - m, py - FACE_Y
+            if toward > 0:
+                # The polished face: bronze lit, a bevel round it, the key's light across its upper left and a little
+                # shade at its lower right - a plane of light, never a glint.
+                if r > 0.84:
+                    col = GD[2]
+                elif dx + dy < -0.42 * FACE_R * 1.4:
+                    col = GD[0]
+                elif dx + dy > 0.62 * FACE_R * 1.4:
+                    col = GD[2]
+                else:
+                    col = GD[1]
+            else:
+                # The back: dark bronze, a raised ring and a boss in the middle, the boss's top-left catching the key.
+                if r > 0.86 or 0.5 < r < 0.6:
+                    col = GD[4]
+                elif r < 0.2:
+                    col = GD[1] if (dx + dy) < 0 else GD[2]
+                else:
+                    col = GD[3]
             c.set(x, y, col)
     outline(c, skip_down=True)
-    for x in range(m - 10, m + 11):
-        c.set(x, BEACON_FOOT + 1, OCC)
+    for x in range(m - 9, m + 10):                           # the contact shadow
+        c.set(x, MIRROR_FOOT + 1, OCC)
+    return c
+
+
+# --- the socket --------------------------------------------------------------------------------------
+
+SOCKET_W, SOCKET_H = 30, 14
+SOCKET_MIDDLE_X, SOCKET_MIDDLE_Y = 15, 7      # its middle sits on the tomb's (TOMB_MIDDLE, 32)
+LIGHT = bl.ELEMENTS["light"]                  # core, hot, mid, edge: the sun on the disc
+
+
+def socket(lit):
+    """The winged sun-disc over the door: a disc with a ring round it, and a wing either side of it, feathered in
+    bands that taper and droop toward the tips. Dark, it is relief cut in the sandstone's shade; lit, the disc burns
+    in the light's ramp and the wings in gold."""
+    c = raster.Canvas(SOCKET_W, SOCKET_H)
+    cx, cy = SOCKET_MIDDLE_X, SOCKET_MIDDLE_Y
+    for side in (-1, 1):
+        for k in range(10):
+            x = cx + side * (5 + k)
+            top = cy - 3 + k // 4                      # the upper edge falls toward the tip
+            bottom = cy + 3 - k // 3                   # the lower edge rises: the wing tapers
+            for y in range(top, bottom + 1):
+                band = (y - top) % 2 == 0
+                if lit:
+                    col = GD[0] if y == top else (GD[1] if band else GD[2])
+                else:
+                    col = GD[2] if y == top else (GD[3] if band else GD[4])
+                c.set(x, y, col)
+    for y in range(cy - 5, cy + 6):
+        for x in range(cx - 5, cx + 6):
+            d = math.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+            if d > 5.2:
+                continue
+            if lit:
+                col = LIGHT[0] if d < 1.6 else (LIGHT[1] if d < 3.0 else (LIGHT[2] if d < 4.2 else LIGHT[3]))
+            else:
+                col = GD[4] if d < 1.6 else (GD[3] if d < 4.2 else GD[2])
+            if not lit and d < 4.2 and (x - cx) + (y - cy) < -2:
+                col = GD[2]                            # the dark disc's upper left catching the key
+            c.set(x, y, col)
+    outline(c)
     return c
 
 
 # --- the pictogram -----------------------------------------------------------------------------------
 
 GLYPH = [
-    ".....f......",
-    "....ff.f....",
-    "....fhff....",
-    "...fhhhf....",
-    "...fhhhf....",
-    "..bbbbbbb...",
-    "...bbbbb....",
-    ".....s......",
-    ".....s......",
-    ".....s......",
-    "....sss.....",
-    "...sssss....",
+    "r...........",
+    ".r..bbbb....",
+    "..rbhhhhb...",
+    "...rhhhhb...",
+    "...bhhhlb...",
+    "...bhhllb...",
+    "....bbbb....",
+    "......s.....",
+    "......s.....",
+    "......s.....",
+    ".....sss....",
+    "....sssss...",
 ]
 
 
 def glyph():
     c = raster.Canvas(12, 12)
-    pal = {"f": FIRE[2], "h": FIRE[1], "b": GD[1], "s": ST[1]}
+    pal = {"r": LIGHT[3], "b": GD[2], "h": GD[0], "l": GD[1], "s": ST[1]}
     for y, row in enumerate(GLYPH):
         for x, ch in enumerate(row):
             if ch != ".":
@@ -379,34 +459,43 @@ def main():
             os.makedirs(d)
     ok = True
     tombs = [tomb(f) for f in range(4)]
-    beacons = [beacon(f) for f in range(8)]
+    mirrors = [mirror(f) for f in range(FACINGS)]
+    sockets = [socket(False), socket(True)]
     for i, cv in enumerate(tombs):
         ok = _audit("tomb %d" % i, cv) and ok
-    for i, cv in enumerate(beacons):
-        ok = _audit("beacon %d" % i, cv) and ok
+    for i, cv in enumerate(mirrors):
+        ok = _audit("mirror %d" % i, cv) and ok
+    for i, cv in enumerate(sockets):
+        ok = _audit("socket %d" % i, cv) and ok
     _strip(tombs).save(os.path.join(OUT_WORLD, "tomb.png"))
-    _strip(beacons).save(os.path.join(OUT_WORLD, "beacon.png"))
+    _strip(mirrors).save(os.path.join(OUT_WORLD, "mirror.png"))
+    _strip(sockets).save(os.path.join(OUT_WORLD, "socket.png"))
     g = glyph()
     ok = _audit("glyph tomb", g) and ok
     g.scaled(2).save(os.path.join(OUT_UI, "poi-tomb.png"))
 
-    # The preview: the four tomb frames and the eight beacon frames at x4 on the Sands' dark ground, then the
-    # tomb at x2 with a beacon either side as the event stands them (not to the 404 px ring, which is too big).
+    # The preview: the four tomb frames at x4, the eight mirror frames and the two sockets under them, then the
+    # sealed tomb at x4 with the lit socket set on its cornice where the game sets it.
     bg = (46, 34, 18, 255)
     z = 4
-    W = max(TOMB_W * z * 4, BEACON_W * z * 8) + 40
-    H = TOMB_H * z + BEACON_H * z + 60
+    W = max(TOMB_W * z * 4, MIRROR_W * z * 8) + 40
+    H = TOMB_H * z * 2 + MIRROR_H * z + SOCKET_H * z + 100
     sheet = Image.new("RGBA", (W, H), bg)
     for i, cv in enumerate(tombs):
         sheet.alpha_composite(cv.scaled(z), (10 + i * TOMB_W * z, 10))
-    for i, cv in enumerate(beacons):
-        sheet.alpha_composite(cv.scaled(z), (10 + i * BEACON_W * z, TOMB_H * z + 30))
+    for i, cv in enumerate(mirrors):
+        sheet.alpha_composite(cv.scaled(z), (10 + i * MIRROR_W * z, TOMB_H * z + 30))
+    for i, cv in enumerate(sockets):
+        sheet.alpha_composite(cv.scaled(z), (10 + i * (SOCKET_W + 4) * z, TOMB_H * z + MIRROR_H * z + 50))
+    y0 = TOMB_H * z + MIRROR_H * z + SOCKET_H * z + 70
+    sheet.alpha_composite(tombs[0].scaled(z), (10, y0))
+    sheet.alpha_composite(sockets[1].scaled(z), (10 + (TOMB_MIDDLE - SOCKET_MIDDLE_X) * z, y0 + (32 - SOCKET_MIDDLE_Y) * z))
     sheet.alpha_composite(g.scaled(8), (W - 120, H - 110))
     sheet.convert("RGB").save(PREVIEW)
-    print("  tomb 4, beacon 8, glyph poi-tomb")
+    print("  tomb 4, mirror 8, socket 2, glyph poi-tomb")
     if not ok:
         return 1
-    print("tomb and beacons written, palette clean")
+    print("tomb and mirrors written, palette clean")
     return 0
 
 

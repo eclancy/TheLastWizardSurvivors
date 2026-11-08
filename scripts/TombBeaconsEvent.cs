@@ -3,67 +3,62 @@ using System;
 using System.Collections.Generic;
 using TheOneHeMissed.scripts;
 
-// The Scorched Sands' second side event: the dry tomb and its three beacons (.ai/chapter-wizards.md 4.6).
+// The Scorched Sands' second side event: the dry tomb (.ai/chapter-wizards.md 4.6), and since 2026-11-08 its bronze
+// mirrors (.ai/unlock-puzzles.md 3.1, "route the sun"). The class keeps the beacons' name, as the site keeps its id
+// (tomb_beacons), its deed, its hint and its reward: a save that freed him keeps him, and a new save is asked this.
 //
 // "He hid the water." The builder who could find water in the desert and raise it - Imhotep, architect of the first
 // pyramid, physician, High Priest of Ra - is sealed in a dry tomb beside the road the water left, his mark on its
-// slab. Three signal beacons stand on the dunes round it, BeaconSpacing apart, cold.
+// slab, a winged sun-disc on the cornice over its door.
 //
-// What it asks: KINDLE. Stand by a beacon for KindleSeconds and it catches; a lit beacon burns BurnSeconds before the
-// dry wind puts it out. With all three alight at once, the slab slides into the wall and he climbs out. The order is
-// the player's: three fires, each its own clock, and the question is the route - which one first, and how to get
-// through the dead between them before the first goes out. The moot (MootFiresEvent) is the nearest thing in the
-// game and its opposite: there the circle lights its next stone and he runs to it in its order; here nothing tells
-// him where to go next, and what matters is that the three burn together.
+// WHAT IT ASKS: AIM. Sunlight falls through a gap in the dunes onto one bronze mirror, the source; four or five more
+// stand on the sand round the tomb (SunMirrors, rolled from the seed). A mirror faces one of eight ways, and while he
+// stands within reach of it, it swings to face AWAY from him: walk round it and its face follows, and its light goes
+// the other way. A mirror the light reaches shines where it faces. Bring the light mirror to mirror onto the sun-disc
+// and the slab slides into the wall - the beacons' win beat, unchanged. It is the Halls of Torment laser puzzle in his
+// own legend; his form is already the Eye of Ra.
 //
-// THE LIGHT DRAWS THE DEAD. When a beacon catches, WaveSize of the chapter's own come in at it out of the dark
-// (SpawnRing round the beacon) - so the beacon he has just lit is the worst place to stand, and the way to the next
-// runs through whatever the last one called.
+// THE LIGHT BURNS. It passes through bodies and burns each one on a lit leg for BurnDamage every BurnSeconds (3.1,
+// Eric: "the beam should not be stopped by the bodies, just burn them lightly as it passes through them"); only terrain,
+// the tomb and the mirrors stop it. So the light is a weapon while he works, which pays for the minute it takes.
 //
-// NOTHING LOCKS, NOTHING IS LOST. A beacon that goes out is cold again and can be lit again, as often as it takes;
-// kindling one he steps off drains back rather than resetting. Nothing here fails the event.
+// NOTHING LOCKS, NOTHING IS LOST. A wrong facing sends the light somewhere useless; turn it back. Every layout is
+// proved on paper (SunMirrors.Proves): solvable with exactly its path's mirrors, and no single mirror turned wrong
+// reaches the socket.
 //
-// NOTHING HERE IS A TARGET. The tomb and the beacons are sprites sorted among the bodies at their feet, never in
-// "enemies". A beacon's pillar has a trunk's footprint on the ground's physics layer, as the moot's stones do, so
-// the boots and the swarm meet it; the tomb blocks nothing (it is a facade on the sand, like the nine mouths' rock),
-// so nothing can be wedged behind it. Both outlast the event: won or stood down they are handed to the run.
+// NOTHING HERE IS A TARGET. The tomb, the mirrors and the socket are sprites sorted among the bodies at their feet,
+// never in "enemies". A mirror's stand has a trunk's footprint on the ground's physics layer, as the beacons' pillars
+// did, so the boots and the swarm meet it; it does not stop the light (a mirror catches it). The tomb blocks nothing.
+// All of it outlasts the event: won or stood down it is handed to the run.
 //
-// Art: tools/art/tomb_beacons.py (world/tomb/: the tomb's four frames, the beacon's eight, poi-tomb). His mark on the
-// slab is the one cold light, and the far tell stands up from it; the beacons' fire is warm, the wizards' light.
+// Art: tools/art/tomb_beacons.py (world/tomb/: the tomb's four frames, the mirror's eight facings, the socket's two,
+// poi-tomb). The light is drawn here: a warm gold line in the air layer (the wizards' light is warm, his is cold,
+// .ai/world-and-tone.md), the shaft of sunlight on the source on the light layer. His mark on the slab stays the one
+// cold light, where the far tell stands up from. Sound: mirror_turn as a facing changes, sun_arrive as the light lands
+// on a mirror and on the disc (tools/audio/sfx.py).
 public partial class TombBeaconsEvent : SideEvent
 {
-	/// <summary>The beacons round the tomb (4.6: three).</summary>
-	public const int BeaconCount = 3;
+	/// <summary>What the light does to a body on a lit leg, and how often (3.1: first guess 3 every 0.5 s).</summary>
+	public const int BurnDamage = 3;
+	public const float BurnSeconds = 0.5f;
 
-	/// <summary>World px between two beacons (4.6: about 700). They stand on a triangle round the tomb.</summary>
-	public const float BeaconSpacing = 700f;
+	/// <summary>A body whose feet are this near a lit leg's line on the ground is in the light.</summary>
+	public const float BurnReach = 24f;
 
-	/// <summary>How far each beacon stands from the tomb: the triangle's circumradius, BeaconSpacing / sqrt(3).</summary>
-	public const float RingRadius = 404.1452f;
+	/// <summary>He has come when he is this near any mirror - a player who follows the light to the source arrives there.</summary>
+	public const float MirrorArrival = 260f;
 
-	/// <summary>Seconds of standing by a cold beacon to light it (4.6: 1.5).</summary>
-	public const float KindleSeconds = 1.5f;
+	// How fast a turned disc swings round to its new facing on screen (the light moves at once).
+	private const float SwingStepSeconds = 0.05f;
+	// The fewest seconds between two turning sounds, and between two arrivals of the light.
+	private const float TurnSoundGap = 0.14f;
+	private const float ArriveSoundGap = 0.2f;
+	// The last stretch of a beam that runs out with nothing in its way, which fades.
+	private const float FadeTail = 140f;
+	// The rolls the band's sweep allows a candidate tomb before it moves on (the chosen one's layout is kept).
+	private const int SiteAttempts = 16;
 
-	/// <summary>"Stand by one": this close to its foot.</summary>
-	public const float KindleRadius = 100f;
-
-	/// <summary>Kindling he steps off drains at this share of the rate it fills - back, not to nothing at once.</summary>
-	public const float KindleDrainShare = 0.5f;
-
-	/// <summary>Seconds a lit beacon burns before the dry wind puts it out (4.6: 25).</summary>
-	public const float BurnSeconds = 25f;
-
-	/// <summary>The last seconds of a burn, when the flames sink and gutter: the clock made visible on the fire itself.</summary>
-	public const float GutterSeconds = 5f;
-
-	/// <summary>The dead the light draws when a beacon catches, and how far out they come in from.</summary>
-	public const int WaveSize = 6;
-	public const float WaveRadius = 420f;
-
-	/// <summary>A beacon's pillar on the ground's physics layer: a trunk's, so a body slides off it.</summary>
-	public const float BeaconFootRadius = 14f;
-
-	protected override string Announcement => "Three cold beacons stand round a sealed tomb in the sand.";
+	protected override string Announcement => "Bronze mirrors stand on the sand round a sealed tomb.";
 	protected override string ChestLine => "The tomb stands open - a chest was left on its stair";
 
 	protected override string Objective
@@ -73,78 +68,76 @@ public partial class TombBeaconsEvent : SideEvent
 			if (IsResolved)
 				return string.Empty;
 			if (openFor >= 0f)
-				return "The tomb opens";
-			int lit = LitCount;
-			if (lit == 0)
-				return $"Light the three beacons together  (0 of {BeaconCount} alight)";
-			float soonest = float.MaxValue;
-			foreach (Beacon b in beacons)
-				if (b.Lit)
-					soonest = Mathf.Min(soonest, b.BurnLeft);
-			return $"Light the three beacons together  ({lit} of {BeaconCount} alight, {Mathf.CeilToInt(soonest)}s)";
+				return "The sun is on the disc - the tomb opens";
+			if (dark)
+				return string.Empty;
+			if (nearMirror >= 0)
+				return "The mirror turns away from you - walk round it to aim it";
+			return "Bring the sunlight, mirror to mirror, to the sun-disc over the tomb door";
 		}
 	}
 
-	// Away from the tomb, the tomb; at it, the nearest beacon still cold - the arrow never says which order, only where
-	// the nearest cold fire is. Once all three burn, the tomb again. Null once it is over: that is what says it is over.
+	// Away from the whole layout, the tomb. Among it, where the light ends now: the mirror to turn next, or the dead end it
+	// went into - never which way to turn it, and never a mirror the light has not reached.
 	protected override Vector2? PointerTarget
 	{
 		get
 		{
 			if (IsResolved)
 				return null;
-			if (Player == null || openFor >= 0f || !PlayerWithin(tombAt, RingRadius + 320f))
+			if (Player == null || layout == null || openFor >= 0f || dark || chainLength == 0 || !PlayerAmongMirrors())
 				return tombAt + MarkOffset;
-			Beacon best = null;
-			float bestD = float.MaxValue;
-			foreach (Beacon b in beacons)
-			{
-				if (b.Lit)
-					continue;
-				float d = b.Foot.DistanceSquaredTo(Player.GlobalPosition);
-				if (d < bestD)
-				{
-					bestD = d;
-					best = b;
-				}
-			}
-			return best != null ? best.Foot + new Vector2(0f, -60f) : tombAt + MarkOffset;
+			return Face(layout.Mirrors[chain[chainLength - 1]]);
 		}
 	}
 
 	protected override string SiteGlyph => "tomb";
-	// The whole triangle is kept clear of decor and stands on open ground.
-	protected override float SiteFootprint => RingRadius + 90f;
-	// He has come when the tomb and the near beacon are on screen.
+	// The tomb and its door: the mirrors keep their own ground (SunMirrors.MirrorFootprint), reserved below.
+	protected override float SiteFootprint => 200f;
+	// He has come when the tomb is on screen (or, HasArrived, when he is at any mirror).
 	protected override float ArrivalRadius => 420f;
 	// His mark on the slab: the arcane ramp's mid #C08CFF, cold, his light.
 	protected override Color TellColor => new(0.753f, 0.549f, 1.0f);
 
-	// The beacons' fire: fire's ramp (bonelight.ELEMENTS["fire"]) - core, hot, mid, edge.
-	private static readonly Color FireCore = new(1f, 0.957f, 0.816f);
-	private static readonly Color FireHot = new(1f, 0.784f, 0.282f);
-	private static readonly Color FireMid = new(0.910f, 0.478f, 0.102f);
-	private static readonly Color FireEdge = new(0.722f, 0.220f, 0.102f);
+	// The sun: the light element's ramp (bonelight.ELEMENTS["light"]) - core, hot, mid, edge. Warm gold.
+	private static readonly Color SunCore = new(1f, 1f, 1f);
+	private static readonly Color SunHot = new(1f, 0.973f, 0.847f);
+	private static readonly Color SunMid = new(1f, 0.941f, 0.659f);
+	private static readonly Color SunEdge = new(1f, 0.776f, 0.235f);
 
 	// --- state ---------------------------------------------------------------------------------------
 
-	private sealed class Beacon
+	private sealed class MirrorStand
 	{
-		public Vector2 Foot;
 		public Node2D Node;
 		public Sprite2D Sprite;
-		public float Kindle;        // 0 to 1 while cold
-		public float BurnLeft;      // seconds, above 0 while lit
-		public float WentOutAt = -100f;
-		public float Phase;
-		public bool Lit => BurnLeft > 0f;
+		public int Shown;
+		public float Swing;
 	}
 
-	private readonly List<Beacon> beacons = new();
+	private SunMirrors layout;
+	private readonly List<MirrorStand> stands = new();
+	private int[] facing;
+	private bool[] lit;
+	private bool[] wasLit;
+	private float[] litFor;
+	private int[] chain;
+	private int chainLength;
+	private bool socketLit;
+	private int nearMirror = -1;
+	private bool dark;
+	private float burnClock;
+	private float lastTurnSound = -10f;
+	private float lastArriveSound = -10f;
+	private readonly List<Enemy> burnBuffer = new(64);
+	private readonly HashSet<ulong> burned = new();
+
 	private Vector2 tombAt;
 	private Node2D tombNode;
 	private Sprite2D tombSprite;
+	private Sprite2D socketSprite;
 	private Sprite2D him;
+	private Node2D beamNode;
 	private float openFor = -1f;
 	private float freedFor;
 	private bool succeeded;
@@ -153,32 +146,31 @@ public partial class TombBeaconsEvent : SideEvent
 	/// <summary>The tomb's foot (the site). For the probe and _UiShot.</summary>
 	public Vector2 TombPosition => tombAt;
 
-	/// <summary>Where beacon <paramref name="i"/> stands (its foot). For the probe and _UiShot.</summary>
-	public Vector2 BeaconAt(int i) => beacons[i].Foot;
+	/// <summary>The run's mirrors: where they stand, the path, the solution, every beam on paper. For the probe.</summary>
+	public SunMirrors Layout => layout;
 
-	public bool IsLit(int i) => beacons[i].Lit;
-	public float KindleOf(int i) => beacons[i].Kindle;
-	public float BurnLeftOf(int i) => beacons[i].BurnLeft;
+	public int MirrorCount => layout?.MirrorCount ?? 0;
+	public Vector2 MirrorAt(int i) => layout.Mirrors[i];
+	public int FacingOf(int i) => facing[i];
+	public bool IsLit(int i) => lit[i];
 
-	/// <summary>How many burn now.</summary>
-	public int LitCount
-	{
-		get
-		{
-			int n = 0;
-			foreach (Beacon b in beacons)
-				if (b.Lit)
-					n++;
-			return n;
-		}
-	}
+	/// <summary>How many mirrors the light goes through now, the source included.</summary>
+	public int LitCount => chainLength;
 
-	/// <summary>Tallies for the probe: beacons caught, beacons the wind put out, the dead the light drew.</summary>
-	public int TimesLit { get; private set; }
-	public int TimesWentOut { get; private set; }
-	public int DeadDrawn { get; private set; }
+	/// <summary>The mirror the light ends at now.</summary>
+	public int LightEndsAt => chainLength > 0 ? chain[chainLength - 1] : 0;
 
-	/// <summary>True from the moment all three burn together: the slab is sliding, or he is out.</summary>
+	/// <summary>True while the light is on the sun-disc.</summary>
+	public bool SocketLit => socketLit;
+
+	/// <summary>Tallies for the probe: facings changed, mirrors (and decoys) the light newly reached, burns dealt.</summary>
+	public int TimesTurned { get; private set; }
+	public int MirrorsCaught { get; private set; }
+	public int DecoysCaught { get; private set; }
+	public int BurnHits { get; private set; }
+	public int BurnTicks { get; private set; }
+
+	/// <summary>True from the moment the light reaches the disc: the slab is sliding, or he is out.</summary>
 	public bool IsOpening => openFor >= 0f;
 
 	/// <summary>Where to stand to photograph the opening: down and to one side of the door, so he climbs out toward
@@ -188,76 +180,127 @@ public partial class TombBeaconsEvent : SideEvent
 	// --- placement -----------------------------------------------------------------------------------
 
 	/// <summary>
-	/// The tomb on open ground over the whole triangle (the band swept for one, as the seal's courtyard is), then the
-	/// three beacons on it, the triangle turned by the site so a seed lays out the same three - each walked in or out
-	/// along its spoke to open ground if it fell on rock or water, as the moot's stones are.
+	/// The tomb on open ground in the band, swept for where a layout of mirrors fits round it (SunMirrors.Generate, from a
+	/// seed drawn before anything is tested); then the decor kept off every mirror and every leg of the light's path.
 	/// </summary>
 	public override void PlaceSites(ExplorePlacer placer)
 	{
-		tombAt = AddSite(placer.EventSiteInBand(SiteFootprint)).Position;
-		beacons.Clear();
-		int seed = Mathf.Abs((int)(tombAt.X * 7f + tombAt.Y * 13f));
-		float phase = (seed % 360) * Mathf.Pi / 180f;
-		for (int i = 0; i < BeaconCount; i++)
+		ulong seed = ((ulong)(placer.NextFloat() * 4294967295f) << 32) | (ulong)(placer.NextFloat() * 4294967295f);
+		var ground = new SunMirrors.Ground
 		{
-			float a = phase + i * Mathf.Tau / BeaconCount;
-			Vector2 at = tombAt + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * RingRadius;
-			beacons.Add(new Beacon { Foot = OpenAlongSpoke(placer, at), Phase = i * 0.37f });
+			// The same test the light is held to in the run: what stops a body stops the light (Node2DGame.IsGroundBlockedAt).
+			Blocked = p => !placer.IsWalkable(p),
+			Clear = placer.IsClear,
+			Allowed = placer.IsOffOtherSites,
+		};
+		SunMirrors found = null;
+		Vector2 site = placer.EventSiteInBand(SiteFootprint,
+			also: p => (found = SunMirrors.Generate(p, seed, ground, maxAttempts: SiteAttempts)) != null);
+		tombAt = AddSite(site).Position;
+		layout = found != null && found.Tomb == tombAt ? found : SunMirrors.Generate(tombAt, seed, ground);
+		if (layout == null)
+		{
+			GD.PushWarning($"TombBeaconsEvent: no layout of mirrors on open ground round the tomb at {tombAt}; laying one without the footprints.");
+			layout = SunMirrors.Generate(tombAt, seed, ground, relaxed: true);
 		}
+		if (layout == null)
+		{
+			GD.PushError($"TombBeaconsEvent: no layout of mirrors round the tomb at {tombAt} keeps the light off the terrain; laying one on open ground.");
+			layout = SunMirrors.Generate(tombAt, seed, SunMirrors.Ground.Open, relaxed: true);
+		}
+		// Decor keeps off every mirror and every leg of the light's path (Node2DGame.ReserveExploreGround).
+		foreach (Vector2 m in layout.Mirrors)
+			placer.Reserve(m, SunMirrors.MirrorFootprint * 0.9f);
+		for (int k = 0; k < layout.Legs; k++)
+		{
+			Vector2 a = layout.Mirrors[layout.Path[k]];
+			Vector2 b = k + 1 < layout.Legs ? layout.Mirrors[layout.Path[k + 1]] : tombAt;
+			float len = a.DistanceTo(b);
+			for (float s = 80f; s < len - 40f; s += 80f)
+				placer.Reserve(a + (b - a) * (s / len), 46f);
+		}
+
+		int n = layout.MirrorCount;
+		facing = new int[n];
+		for (int i = 0; i < n; i++)
+			facing[i] = layout.Start[i];
+		lit = new bool[n];
+		wasLit = new bool[n];
+		litFor = new float[n];
+		chain = new int[n];
+		Relight(sound: false);
 	}
 
-	private Vector2 OpenAlongSpoke(ExplorePlacer placer, Vector2 at)
+	// Among the mirrors: near the tomb or any mirror.
+	private bool PlayerAmongMirrors()
 	{
-		Vector2 spoke = (at - tombAt).Normalized();
-		foreach (float d in new[] { 0f, -50f, 50f, -100f, 100f })
-		{
-			Vector2 p = at + spoke * d;
-			if (placer.IsClear(p, 50f))
-				return p;
-		}
-		return at;
+		if (PlayerWithin(tombAt, 700f))
+			return true;
+		foreach (Vector2 m in layout.Mirrors)
+			if (PlayerWithin(m, 700f))
+				return true;
+		return false;
+	}
+
+	protected override bool HasArrived()
+	{
+		if (base.HasArrived())
+			return true;
+		if (layout == null || IsResolved)
+			return false;
+		foreach (Vector2 m in layout.Mirrors)
+			if (PlayerWithin(m, MirrorArrival))
+				return true;
+		return false;
 	}
 
 	// --- what stands there ---------------------------------------------------------------------------
 
 	private const string TombPath = "res://assets/bonelight/world/tomb/tomb.png";
-	private const string BeaconPath = "res://assets/bonelight/world/tomb/beacon.png";
+	private const string MirrorPath = "res://assets/bonelight/world/tomb/mirror.png";
+	private const string SocketPath = "res://assets/bonelight/world/tomb/socket.png";
 	private const string HimPath = "res://assets/bonelight/characters/imhotep-1.png";
 
-	// tools/art/tomb_beacons.py: the tomb 88x72 a frame, its middle on column 44, its foot on row 64; the beacon 28x52,
-	// its middle on column 14, its foot on row 48, the basket's rim on row 22. Drawn at x2.
+	// tools/art/tomb_beacons.py: the tomb 88x72 a frame, its middle on column 44, its foot on row 64; the mirror 32x48,
+	// its middle on column 16, its foot on row 44, its disc's middle on row 12; the socket 30x14 with its middle at (15, 7),
+	// set on the tomb's (44, 32). Drawn at x2.
 	private const int TombW = 88;
 	private const int TombMiddle = 44;
 	private const int TombFoot = 64;
-	private const int BeaconW = 28;
-	private const int BeaconMiddle = 14;
-	private const int BeaconFoot = 48;
-	private const int BasketRow = 22;
-	// The beacon's frames (tomb_beacons.py beacon()).
-	private const int FrameCold = 0;
-	private const int FrameKindling = 1;
-	private const int FrameBurning = 2;
-	private const int FrameGutter = 6;
+	private const int MirrorW = 32;
+	private const int MirrorMiddle = 16;
+	private const int MirrorFoot = 44;
+	private const int SocketW = 30;
+	private const int SocketMiddleX = 15;
+	private const int SocketMiddleY = 7;
+	// The socket sorts a hair in front of the tomb's front (it is on it), and is lifted to the tomb's row 32 by its offset.
+	private const float SocketSortAhead = 2f;
+	private const float MirrorStandRadius = 14f;
 
 	// His mark on the slab, from the tomb's foot, in world px (the art at x2): column 44, row 49.
 	private static readonly Vector2 MarkOffset = new(0f, -30f);
-	// Where the fire sits on a beacon, from its foot: the basket's rim, and a little above it for the flame's heart.
-	private static readonly Vector2 FireOffset = new(0f, -(BeaconFoot - BasketRow) * 2f - 10f);
 
-	// The opening, seconds after all three caught: the slab slides a third, two thirds, away; he climbs out; free.
+	// The opening, seconds after the light reached the disc: the slab slides a third, two thirds, away; he climbs out; free.
 	private const float SlideThirdAt = 0.5f;
 	private const float SlideTwoThirdsAt = 1.0f;
 	private const float OpenAt = 1.5f;
 	private const float ClimbAt = 1.7f;
 	private const float FreedAt = 2.7f;
 
+	// A mirror's disc, and the sun-disc: BeamHeight over their feet, on the world's whole pixels the sprites are on.
+	private static Vector2 Face(Vector2 foot) => new(Mathf.Round(foot.X), Mathf.Round(foot.Y) - SunMirrors.BeamHeight);
+
+	/// <summary>The sun-disc's middle in the world. For the probe and _UiShot.</summary>
+	public Vector2 SocketFace => Face(tombAt);
+
 	protected override void OnPlaced()
 	{
 		TextureFilter = TextureFilterEnum.Nearest;
-		Texture2D tombTex = ResourceLoader.Exists(TombPath) ? GD.Load<Texture2D>(TombPath) : null;
-		Texture2D beaconTex = ResourceLoader.Exists(BeaconPath) ? GD.Load<Texture2D>(BeaconPath) : null;
-		Texture2D himTex = ResourceLoader.Exists(HimPath) ? GD.Load<Texture2D>(HimPath) : null;
-		if (tombTex == null || beaconTex == null || himTex == null)
+		Texture2D tombTex = Load(TombPath);
+		Texture2D mirrorTex = Load(MirrorPath);
+		Texture2D socketTex = Load(SocketPath);
+		Texture2D himTex = Load(HimPath);
+		if (tombTex == null || mirrorTex == null || socketTex == null || himTex == null)
 			GD.PushError("TombBeaconsEvent: the tomb's art is missing or not imported (python tools/art/tomb_beacons.py, then import).");
 
 		tombNode = new Node2D
@@ -282,6 +325,23 @@ public partial class TombBeaconsEvent : SideEvent
 			};
 			tombNode.AddChild(tombSprite);
 		}
+		if (socketTex != null)
+		{
+			// The winged sun-disc on the cornice: its middle on the tomb's row 32, BeamHeight over the foot.
+			socketSprite = new Sprite2D
+			{
+				Name = "Socket",
+				Texture = socketTex,
+				Hframes = Math.Max(1, socketTex.GetWidth() / SocketW),
+				Centered = false,
+				Scale = new Vector2(2f, 2f),
+				TextureFilter = TextureFilterEnum.Nearest,
+				Position = new Vector2(0f, SocketSortAhead),
+				Offset = new Vector2(-SocketMiddleX,
+					(WorldSprites.SortLift - SocketSortAhead - SunMirrors.BeamHeight) / 2f - SocketMiddleY),
+			};
+			tombNode.AddChild(socketSprite);
+		}
 		if (himTex != null)
 		{
 			// Him, for the moment he climbs out: the same sheet as his portrait (48 cell, feet on row 46), sorted a pixel
@@ -301,26 +361,31 @@ public partial class TombBeaconsEvent : SideEvent
 		}
 		AddChild(tombNode);
 
-		foreach (Beacon b in beacons)
+		for (int i = 0; i < layout.MirrorCount; i++)
 		{
-			b.Node = new Node2D
+			Vector2 foot = layout.Mirrors[i];
+			var stand = new MirrorStand
 			{
-				Name = "Beacon",
-				Position = new Vector2(Mathf.Round(b.Foot.X), Mathf.Round(b.Foot.Y - WorldSprites.SortLift)),
-				ZIndex = 5,
-			};
-			if (beaconTex != null)
-			{
-				b.Sprite = new Sprite2D
+				Node = new Node2D
 				{
-					Texture = beaconTex,
-					Hframes = Math.Max(1, beaconTex.GetWidth() / BeaconW),
+					Name = i == 0 ? "SourceMirror" : $"Mirror{i}",
+					Position = new Vector2(Mathf.Round(foot.X), Mathf.Round(foot.Y - WorldSprites.SortLift)),
+					ZIndex = 5,
+				},
+				Shown = facing[i],
+			};
+			if (mirrorTex != null)
+			{
+				stand.Sprite = new Sprite2D
+				{
+					Texture = mirrorTex,
+					Hframes = Math.Max(1, mirrorTex.GetWidth() / MirrorW),
 					Centered = false,
 					Scale = new Vector2(2f, 2f),
 					TextureFilter = TextureFilterEnum.Nearest,
-					Offset = new Vector2(-BeaconMiddle, WorldSprites.SortLift / 2f - BeaconFoot),
+					Offset = new Vector2(-MirrorMiddle, WorldSprites.SortLift / 2f - MirrorFoot),
 				};
-				b.Node.AddChild(b.Sprite);
+				stand.Node.AddChild(stand.Sprite);
 			}
 			var body = new StaticBody2D
 			{
@@ -328,32 +393,43 @@ public partial class TombBeaconsEvent : SideEvent
 				CollisionLayer = 1u << (LevelTilePainter.TerrainCollisionLayer - 1),
 				CollisionMask = 0,
 			};
-			body.AddChild(new CollisionShape2D { Shape = new CircleShape2D { Radius = BeaconFootRadius } });
-			b.Node.AddChild(body);
-			AddChild(b.Node);
+			body.AddChild(new CollisionShape2D { Shape = new CircleShape2D { Radius = MirrorStandRadius } });
+			stand.Node.AddChild(body);
+			AddChild(stand.Node);
+			stands.Add(stand);
 		}
+
+		// The light, in the air over every body (.ai/godot-engine.md, "Draw layers"): never under them, never sorted among them.
+		beamNode = new Node2D
+		{
+			Name = "Sunlight",
+			ZIndex = DrawLayers.Air,
+			ZAsRelative = false,
+			TextureFilter = TextureFilterEnum.Nearest,
+		};
+		beamNode.Draw += DrawBeams;
+		AddChild(beamNode);
 		ShowFrames();
 	}
 
-	// --- the rules -----------------------------------------------------------------------------------
-
-	protected override void DormantTick(float delta)
+	public override void _ExitTree()
 	{
-		// He has come close to a beacon before the tomb (the site is the tomb; arriving there is caught by the base).
-		if (Player == null)
-			return;
-		foreach (Beacon b in beacons)
-		{
-			if (PlayerWithin(b.Foot, KindleRadius + 180f))
-			{
-				Arrive();
-				return;
-			}
-		}
+		if (beamNode != null && IsInstanceValid(beamNode))
+			beamNode.Draw -= DrawBeams;
+		base._ExitTree();
 	}
+
+	private static Texture2D Load(string path) => ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
+
+	// --- the rules -----------------------------------------------------------------------------------
 
 	protected override void Begin()
 	{
+		GD.Print($"TombBeaconsEvent: {layout.MirrorCount} mirrors ({layout.Legs} on the path, {layout.DecoyCount} decoy(s)), "
+			+ $"the fewest that reach the disc {layout.FewestMirrors()}, rolled on attempt {layout.Attempts}"
+			+ (layout.Relaxed ? " (relaxed)" : "") + $"; the light starts through {chainLength} mirror(s). From the tomb: "
+			+ string.Join(", ", System.Linq.Enumerable.Select(System.Linq.Enumerable.Range(0, layout.MirrorCount),
+				i => $"{i}{(layout.IsDecoy(i) ? " (decoy)" : "")} at {(layout.Mirrors[i] - tombAt).X:0},{(layout.Mirrors[i] - tombAt).Y:0}")));
 		ShowFrames();
 	}
 
@@ -364,54 +440,111 @@ public partial class TombBeaconsEvent : SideEvent
 			Opening(delta);
 			return;
 		}
-		foreach (Beacon b in beacons)
+		Player player = Player;
+		if (player == null || dark)
+			return;
+
+		// THE ONE ACTION: within reach, a mirror faces away from his feet (SunMirrors.FacingAway).
+		Vector2 feet = player.FootPosition;
+		bool changed = false;
+		nearMirror = -1;
+		for (int i = 0; i < layout.MirrorCount; i++)
 		{
-			if (b.Lit)
-			{
-				b.BurnLeft -= delta;
-				if (b.BurnLeft <= 0f)
-					GoOut(b);
+			Vector2 at = layout.Mirrors[i];
+			if (feet.DistanceSquaredTo(at) <= SunMirrors.Reach * SunMirrors.Reach)
+				nearMirror = i;
+			int f = SunMirrors.FacingAway(at, feet, facing[i]);
+			if (f == facing[i])
 				continue;
-			}
-			if (PlayerWithin(b.Foot, KindleRadius))
+			facing[i] = f;
+			changed = true;
+			TimesTurned++;
+			if (Clock - lastTurnSound >= TurnSoundGap)
 			{
-				b.Kindle += delta / KindleSeconds;
-				if (b.Kindle >= 1f)
-					Light(b);
+				lastTurnSound = Clock;
+				SfxPlayer.AtPosition(SfxCatalog.MirrorTurn, at, 0.05f);
 			}
-			else if (b.Kindle > 0f)
-				b.Kindle = Mathf.Max(0f, b.Kindle - delta * KindleDrainShare / KindleSeconds);
 		}
-		if (LitCount == BeaconCount)
+		if (changed)
+			Relight(sound: true);
+
+		burnClock += delta;
+		if (burnClock >= BurnSeconds)
 		{
-			// All three together: the slab goes. The fires hold while it does - they are what opened it.
+			burnClock -= BurnSeconds;
+			Burn();
+		}
+
+		if (socketLit)
+		{
+			// The light on the disc: the slab goes. The mirrors hold where they are while it does - they are what opened it.
 			openFor = 0f;
 			SfxPlayer.Impact(Element.Earth, tombAt);
+			GD.Print($"TombBeaconsEvent: the sun is on the disc through {chainLength} mirror(s), {TimesTurned} turn(s) after arriving.");
 		}
 		ShowFrames();
 	}
 
-	private void Light(Beacon b)
+	// The light traced again from the source (SunMirrors.Trace, on the table worked out at placement: no beam is cast in
+	// the run), and every mirror it newly reaches sounds and flares.
+	private void Relight(bool sound)
 	{
-		b.Kindle = 0f;
-		b.BurnLeft = BurnSeconds;
-		TimesLit++;
-		SfxPlayer.Cast(Element.Fire, b.Foot + FireOffset);
-		// The light draws the dead in at it out of the dark. Not on the last of the three: then the tomb opens.
-		if (LitCount < BeaconCount)
+		int n = layout.MirrorCount;
+		Array.Copy(lit, wasLit, n);
+		bool wasSocket = socketLit;
+		socketLit = layout.Trace(facing, chain, out chainLength);
+		Array.Clear(lit, 0, n);
+		for (int k = 0; k < chainLength; k++)
+			lit[chain[k]] = true;
+		for (int i = 0; i < n; i++)
 		{
-			SpawnRing(b.Foot, WaveSize, WaveRadius);
-			DeadDrawn += WaveSize;
+			if (!lit[i] || wasLit[i])
+				continue;
+			litFor[i] = 0f;
+			if (!sound)
+				continue;
+			MirrorsCaught++;
+			if (layout.IsDecoy(i))
+				DecoysCaught++;
+			if (Clock - lastArriveSound >= ArriveSoundGap)
+			{
+				lastArriveSound = Clock;
+				SfxPlayer.AtPosition(SfxCatalog.SunArrive, layout.Mirrors[i], 0.03f);
+			}
 		}
+		if (socketLit && !wasSocket && sound)
+			SfxPlayer.AtPosition(SfxCatalog.SunArrive, tombAt, 0f);
 	}
 
-	private void GoOut(Beacon b)
+	// The light burns every body on a lit leg, once a tick however many legs it stands on: the registry's broad phase into
+	// this event's own list (CollectNear - a burn can kill, and a kill can start another walk of the registry, which
+	// ForEachNear's shared buffer would not survive), then the live position against the leg's line on the ground.
+	private void Burn()
 	{
-		b.BurnLeft = 0f;
-		b.Kindle = 0f;
-		b.WentOutAt = Clock;
-		TimesWentOut++;
-		SfxPlayer.Cast(Element.Wind, b.Foot + FireOffset);
+		if (chainLength == 0)
+			return;
+		BurnTicks++;
+		burned.Clear();
+		for (int k = 0; k < chainLength; k++)
+		{
+			int m = chain[k];
+			Vector2 a = layout.Mirrors[m];
+			Vector2 b = layout.BeamEnd(m, facing[m]);
+			EnemyRegistry.CollectNear((a + b) * 0.5f, a.DistanceTo(b) * 0.5f + BurnReach, burnBuffer);
+			foreach (Enemy enemy in burnBuffer)
+			{
+				if (enemy == null || !IsInstanceValid(enemy) || enemy.IsDying)
+					continue;
+				if (SunMirrors.DistanceToSegment(enemy.GlobalPosition, a, b) > BurnReach)
+					continue;
+				if (!burned.Add(enemy.GetInstanceId()))
+					continue;
+				// Every argument passed: Godot matches a duck-typed Call by count, but this is a typed call either way.
+				enemy.TakeDamage(BurnDamage, false);
+				BurnHits++;
+			}
+			burnBuffer.Clear();
+		}
 	}
 
 	private void Opening(float delta)
@@ -426,60 +559,80 @@ public partial class TombBeaconsEvent : SideEvent
 	}
 
 	/// <summary>
-	/// Lights the first <paramref name="count"/> beacons where they stand, as if he had stood by each, with the later
-	/// ones lit later (their clocks staggered), and lets the real path run from there - all three, and the tomb opens.
-	/// For _UiShot (--beacons-lit, --win-event); a run never calls it.
+	/// Turns the first <paramref name="legs"/> mirrors of the path to their facings in the solution, as if he had stood
+	/// behind each, and lets the real path run from there - all of them, and the light is on the disc and the tomb opens.
+	/// For _UiShot (--mirrors-aimed, --win-event); a run never calls it.
 	/// </summary>
-	public void KindleForPhoto(int count)
+	public void AimForPhoto(int legs)
 	{
 		if (IsDormant)
 			Arrive();
-		for (int i = 0; i < Math.Min(count, beacons.Count); i++)
+		for (int k = 0; k < Math.Min(legs, layout.Legs); k++)
 		{
-			if (beacons[i].Lit)
-				continue;
-			beacons[i].BurnLeft = BurnSeconds - (count - 1 - i) * 7.5f;
-			TimesLit++;
+			int m = layout.Path[k];
+			facing[m] = layout.Solution[m];
+			stands[m].Shown = facing[m];
 		}
+		Relight(sound: false);
 		ShowFrames();
 	}
 
 	protected override void OnStoodDown()
 	{
-		foreach (Beacon b in beacons)
-			b.BurnLeft = 0f;
+		dark = true;
 		ShowFrames();
 	}
 
 	public override void _Process(double delta)
 	{
 		base._Process(delta);
+		float dt = (float)delta;
+		if (layout != null)
+		{
+			for (int i = 0; i < stands.Count; i++)
+			{
+				litFor[i] += dt;
+				MirrorStand s = stands[i];
+				if (s.Shown == facing[i])
+				{
+					s.Swing = 0f;
+					continue;
+				}
+				// The disc swings round the short way, an eighth at a time.
+				s.Swing += dt;
+				while (s.Swing >= SwingStepSeconds && s.Shown != facing[i])
+				{
+					s.Swing -= SwingStepSeconds;
+					int ahead = SunMirrors.Wrap(facing[i] - s.Shown);
+					s.Shown = SunMirrors.Wrap(s.Shown + (ahead <= 4 ? 1 : -1));
+				}
+			}
+		}
+		beamNode?.QueueRedraw();
 		if (Succeeded && him != null && IsInstanceValid(him))
 		{
-			freedFor += (float)delta;
+			freedFor += dt;
 			ShowFrames();
 		}
-		else if (!IsResolved && IsFound)
+		else
 			ShowFrames();
 		if (IsResolved && SecondsSinceResolved >= 4.5f && !handedOver)
 			StandOnTheSand();
 	}
 
-	// The tomb and the beacons outlast the event: the base frees this node a few seconds after it resolves, and they go
-	// to the run so they keep standing where they are - the tomb open, the fires burnt down to embers.
+	// The tomb and the mirrors outlast the event: the base frees this node a few seconds after it resolves, and they go to
+	// the run so they keep standing where they are - the tomb open and its disc lit, each mirror as he left it.
 	private void StandOnTheSand()
 	{
 		handedOver = true;
 		if (Game == null || !IsInstanceValid(Game))
 			return;
-		foreach (Beacon b in beacons)
+		foreach (MirrorStand s in stands)
 		{
-			if (b.Node == null || !IsInstanceValid(b.Node))
+			if (s.Node == null || !IsInstanceValid(s.Node))
 				continue;
-			if (b.Sprite != null && IsInstanceValid(b.Sprite))
-				b.Sprite.Frame = Succeeded ? FrameKindling : FrameCold;
-			b.Node.Reparent(Game, true);
-			b.Node.ZIndex = 0;
+			s.Node.Reparent(Game, true);
+			s.Node.ZIndex = 0;
 		}
 		if (tombNode != null && IsInstanceValid(tombNode))
 		{
@@ -492,22 +645,13 @@ public partial class TombBeaconsEvent : SideEvent
 
 	private void ShowFrames()
 	{
-		foreach (Beacon b in beacons)
+		foreach (MirrorStand s in stands)
 		{
-			if (b.Sprite == null || !IsInstanceValid(b.Sprite))
-				continue;
-			int frame;
-			if (b.Lit)
-			{
-				int flicker = (int)((Clock + b.Phase) * 8f) % 4;
-				frame = b.BurnLeft > GutterSeconds || openFor >= 0f
-					? FrameBurning + flicker
-					: FrameGutter + flicker % 2;
-			}
-			else
-				frame = b.Kindle > 0f ? FrameKindling : FrameCold;
-			b.Sprite.Frame = Mathf.Clamp(frame, 0, b.Sprite.Hframes - 1);
+			if (s.Sprite != null && IsInstanceValid(s.Sprite))
+				s.Sprite.Frame = Mathf.Clamp(s.Shown, 0, s.Sprite.Hframes - 1);
 		}
+		if (socketSprite != null && IsInstanceValid(socketSprite))
+			socketSprite.Frame = Mathf.Clamp(socketLit || openFor >= 0f ? 1 : 0, 0, socketSprite.Hframes - 1);
 		if (tombSprite != null && IsInstanceValid(tombSprite))
 		{
 			int t = openFor < SlideThirdAt ? 0 : openFor < SlideTwoThirdsAt ? 1 : openFor < OpenAt ? 2 : 3;
@@ -549,26 +693,75 @@ public partial class TombBeaconsEvent : SideEvent
 
 	// --- drawing -------------------------------------------------------------------------------------
 
-	// On the ground round each beacon, while it runs: the reach to stand in, a dashed track; filling as it is kindled;
-	// draining as it burns down - the clock on the ground, the guttering on the fire.
-	public override void _Draw()
+	// How strongly the light shows: full while it runs, fading over two seconds once the event is over, nothing once the
+	// boss has stood it down.
+	private float LightStrength => dark ? 0f : IsResolved ? Mathf.Clamp(1f - SecondsSinceResolved / 2f, 0f, 1f) : 1f;
+
+	// The legs of light, in the air: a haze, the beam, its white heart, and motes running along it from the source toward
+	// where it ends - so which way the light is going reads at a glance. A beam that runs out fades over its last stretch.
+	private void DrawBeams()
 	{
-		if (IsResolved || !IsFound || openFor >= 0f || Player == null)
+		float strength = LightStrength;
+		if (layout == null || strength <= 0f || Player == null)
 			return;
-		foreach (Beacon b in beacons)
+		for (int k = 0; k < chainLength; k++)
 		{
-			if (!NearPlayer(b.Foot))
+			int m = chain[k];
+			int f = facing[m];
+			Vector2 a = layout.Mirrors[m];
+			Vector2 b = layout.BeamEnd(m, f);
+			if (!NearPlayer(a) && !NearPlayer(b))
 				continue;
-			bool standing = PlayerWithin(b.Foot, KindleRadius);
-			if (b.Lit)
+			SunMirrors.End end = layout.HitFrom(m, f).Kind;
+			Vector2 from = beamNode.ToLocal(Face(a));
+			Vector2 to = beamNode.ToLocal(end == SunMirrors.End.Socket ? SocketFace : Face(b));
+			float len = from.DistanceTo(to);
+			if (len < 1f)
+				continue;
+			Vector2 u = (to - from) / len;
+			float solid = end == SunMirrors.End.Open ? Mathf.Max(0f, len - FadeTail) : len;
+			DrawLegStretch(from, from + u * solid, strength);
+			if (solid < len)
 			{
-				float left = Mathf.Clamp(b.BurnLeft / BurnSeconds, 0f, 1f);
-				DrawProgressArc(b.Foot, KindleRadius, left, b.BurnLeft > GutterSeconds ? FireHot : FireEdge, 3f, 0.24f);
+				const int pieces = 5;
+				float piece = (len - solid) / pieces;
+				for (int p = 0; p < pieces; p++)
+					DrawLegStretch(from + u * (solid + p * piece), from + u * (solid + (p + 1) * piece), strength * (1f - (p + 0.5f) / pieces));
 			}
-			else
-				DrawProgressArc(b.Foot, KindleRadius, b.Kindle, FireMid, 3f, standing ? 0.42f : 0.24f);
+			float phase = Mathf.PosMod(Clock * 260f + k * 37f, 96f);
+			for (float s = phase; s < solid - 10f; s += 96f)
+				beamNode.DrawLine(from + u * s, from + u * (s + 10f), new Color(SunCore, 0.95f * strength), 4f);
 		}
 	}
+
+	private void DrawLegStretch(Vector2 a, Vector2 b, float strength)
+	{
+		beamNode.DrawLine(a, b, new Color(SunEdge, 0.22f * strength), 10f);
+		beamNode.DrawLine(a, b, new Color(SunMid, 0.95f * strength), 4f);
+		beamNode.DrawLine(a, b, new Color(SunHot, 0.9f * strength), 2f);
+	}
+
+	// On the ground round a mirror he is near: its reach, a faint dashed ring, brighter while he is inside it - where his
+	// feet turn it. Under every body.
+	public override void _Draw()
+	{
+		if (layout == null || IsResolved || !IsFound || dark || openFor >= 0f || Player == null)
+			return;
+		for (int i = 0; i < layout.MirrorCount; i++)
+		{
+			Vector2 m = layout.Mirrors[i];
+			if (!PlayerWithin(m, SunMirrors.Reach + 160f))
+				continue;
+			DrawProgressArc(m, SunMirrors.Reach, 0f, SunEdge, 2f, nearMirror == i ? 0.6f : 0.3f);
+		}
+	}
+
+	// The sunlight's shaft onto the source, falling from the upper left where the key light is; a pool of it on the sand;
+	// a glow along every lit leg and on every lit disc, a flare where the light has just arrived; the disc over the door
+	// when the light is on it. And his cold mark on the slab, the far tell, as before.
+	private static readonly Vector2 SunFrom = new Vector2(-0.42f, -1f).Normalized();
+	private readonly Vector2[] shaft = new Vector2[4];
+	private readonly Color[] shaftColours = new Color[4];
 
 	protected override void DrawLight(CanvasItem light)
 	{
@@ -576,54 +769,63 @@ public partial class TombBeaconsEvent : SideEvent
 		if (IsResolved && SecondsSinceResolved > 2f)
 			return;
 		if (IsDormant)
-		{
-			// While nobody has come: his cold far tell over the slab, and nothing at the beacons - they are cold.
 			DrawFarTell(light, mark, TellColor, Flicker(3));
-			return;
-		}
-		if (openFor < OpenAt && !IsResolved && NearPlayer(mark))
+		else if (openFor < OpenAt && !IsResolved && NearPlayer(mark))
 		{
 			float strength = openFor >= 0f ? Mathf.Clamp(1f - openFor / OpenAt, 0f, 1f) * 0.4f : 0.4f;
 			DrawFarTell(light, mark, TellColor, strength * Flicker(3));
-			Vector2 m = ToLocal(mark);
-			ExploreArt.DrawGlow(light, m, 14f, new Color(TellColor.Lerp(Colors.White, 0.4f), 0.5f * Flicker(1)));
+			ExploreArt.DrawGlow(light, ToLocal(mark), 14f, new Color(TellColor.Lerp(Colors.White, 0.4f), 0.5f * Flicker(1)));
+		}
+		if (layout == null)
+			return;
+		float sun = LightStrength;
+		if (sun <= 0f)
+			return;
+
+		Vector2 source = layout.Mirrors[0];
+		if (NearPlayer(source))
+		{
+			Vector2 face = ToLocal(Face(source));
+			Vector2 side = new(-SunFrom.Y, SunFrom.X);
+			shaft[0] = face + side * 12f;
+			shaft[1] = face - side * 12f;
+			shaft[2] = face + SunFrom * 1100f - side * 80f;
+			shaft[3] = face + SunFrom * 1100f + side * 80f;
+			shaftColours[0] = shaftColours[1] = new Color(SunEdge, 0.30f * sun);
+			shaftColours[2] = shaftColours[3] = new Color(SunEdge, 0f);
+			light.DrawPolygon(shaft, shaftColours);
+			ExploreArt.DrawGlow(light, ToLocal(source), 90f, new Color(SunEdge, 0.16f * sun));
+		}
+		for (int k = 0; k < chainLength; k++)
+		{
+			int m = chain[k];
+			Vector2 a = layout.Mirrors[m];
+			Vector2 b = layout.BeamEnd(m, facing[m]);
+			if (!NearPlayer(a) && !NearPlayer(b))
+				continue;
+			SunMirrors.End end = layout.HitFrom(m, facing[m]).Kind;
+			Vector2 from = ToLocal(Face(a));
+			Vector2 to = ToLocal(end == SunMirrors.End.Socket ? SocketFace : Face(b));
+			if (end == SunMirrors.End.Open)
+				to = from + (to - from) * Mathf.Max(0f, 1f - FadeTail / Mathf.Max(1f, from.DistanceTo(to)));
+			light.DrawLine(from, to, new Color(SunEdge, 0.10f * sun), 28f);
+			float flare = Mathf.Clamp(1f - litFor[m] / 0.6f, 0f, 1f);
+			ExploreArt.DrawGlow(light, from, 34f + 50f * flare, new Color(SunHot, (0.35f + 0.4f * flare) * sun));
+			if (end == SunMirrors.End.Blocked)
+				ExploreArt.DrawGlow(light, to, 26f, new Color(SunEdge, 0.3f * sun));
+		}
+		if ((socketLit || openFor >= 0f) && NearPlayer(tombAt))
+		{
+			Vector2 disc = ToLocal(SocketFace);
+			ExploreArt.DrawGlow(light, disc, 80f, new Color(SunEdge, 0.28f * sun));
+			ExploreArt.DrawGlow(light, disc, 26f, new Color(SunCore, 0.6f * sun));
 		}
 		if (openFor >= 0f && NearPlayer(tombAt))
 		{
-			// The door open: the beacons' light falls into it, and the day comes in on the stair.
+			// The door open: the sun's light falls into it, and the day comes in on the stair.
 			float a = Mathf.Clamp((openFor - SlideThirdAt) / (OpenAt - SlideThirdAt), 0f, 1f);
 			Vector2 door = ToLocal(tombAt + new Vector2(0f, -20f));
-			ExploreArt.DrawGlow(light, door, 90f, new Color(FireHot, 0.18f * a));
-		}
-		foreach (Beacon b in beacons)
-		{
-			if (!NearPlayer(b.Foot))
-				continue;
-			Vector2 fire = ToLocal(b.Foot + FireOffset);
-			if (b.Lit)
-			{
-				// Warm, and sinking as the wind gets in: a full fire's light until the gutter, then less and less.
-				float burn = b.BurnLeft > GutterSeconds || openFor >= 0f ? 1f : 0.35f + 0.65f * b.BurnLeft / GutterSeconds;
-				float f = burn * (0.85f + 0.15f * Mathf.Sin((Clock + b.Phase) * 9.1f) * Mathf.Sin((Clock + b.Phase) * 4.3f));
-				ExploreArt.DrawGlow(light, fire, 150f * burn, new Color(FireMid, 0.16f * f));
-				ExploreArt.DrawGlow(light, fire, 46f, new Color(FireHot, 0.5f * f));
-				ExploreArt.DrawGlow(light, ToLocal(b.Foot), 110f * burn, new Color(FireEdge, 0.12f * f));
-				// Seen from beyond the edge of the screen: a column over each fire.
-				ExploreArt.DrawShaft(light, fire, 14f, 420f * burn, new Color(FireMid, 0.28f * f));
-				ExploreArt.DrawShaft(light, fire, 4f, 380f * burn, new Color(FireCore, 0.36f * f));
-			}
-			else
-			{
-				// Cold: only a faint cold glow on the basket, so the three can be found by their light before they burn.
-				float k = Mathf.Clamp(b.Kindle, 0f, 1f);
-				ExploreArt.DrawGlow(light, fire, 60f, new Color(TellColor, 0.07f));
-				if (k > 0f)
-					ExploreArt.DrawGlow(light, fire, 20f + 26f * k, new Color(FireEdge, 0.45f * k));
-				// Just gone out: a wisp of the light still going up off it.
-				float since = Clock - b.WentOutAt;
-				if (since < 1.6f)
-					ExploreArt.DrawShaft(light, fire, 6f, 120f * (1f - since / 1.6f), new Color(FireEdge, 0.25f * (1f - since / 1.6f)));
-			}
+			ExploreArt.DrawGlow(light, door, 90f, new Color(SunEdge, 0.18f * a * sun));
 		}
 	}
 }

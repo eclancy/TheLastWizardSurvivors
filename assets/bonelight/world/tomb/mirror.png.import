@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bje5bvoy0h453"
-path="res://.godot/imported/beacon.png-e6dda26b864a3c0de90c3df8fa6adf7e.ctex"
+uid="uid://dbsa0ym3iqrro"
+path="res://.godot/imported/mirror.png-d0bfb424fb4c857127561eccad6397e0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bonelight/world/tomb/beacon.png"
-dest_files=["res://.godot/imported/beacon.png-e6dda26b864a3c0de90c3df8fa6adf7e.ctex"]
+source_file="res://assets/bonelight/world/tomb/mirror.png"
+dest_files=["res://.godot/imported/mirror.png-d0bfb424fb4c857127561eccad6397e0.ctex"]
 
 [params]
 

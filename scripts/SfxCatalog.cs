@@ -159,6 +159,12 @@ public static class SfxCatalog
 	public const string IceString4 = "ice_string_4";
 	public const string IceString5 = "ice_string_5";
 	public const string IceStringWrong = "ice_string_wrong";
+	// The dry tomb's mirrors (TombBeaconsEvent, SunMirrors; .ai/unlock-puzzles.md 3.1, "route the sun"). MirrorTurn: a
+	// bronze disc swinging round on its spindle in a stone socket, as his feet turn it - played at the mirror, at most every
+	// 0.14 s however fast he walks round it. SunArrive: the sunlight landing on a mirror it had not reached, and on the
+	// sun-disc over the door - played where it lands, at most every 0.2 s.
+	public const string MirrorTurn = "mirror_turn";
+	public const string SunArrive = "sun_arrive";
 
 	// --- secrets (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9 and 8.4.1) ------
 	// Generated and allowlisted, not yet played: the secret agents wire them as they build the sites.
@@ -192,6 +198,7 @@ public static class SfxCatalog
 		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep, HintHullKnock, HintFlaskChime, HintQuatrain, HintTombKnock, HintGranaryVoice, HintBrush,
 		SibylVoice, SibylEcho, EscortCough,
 		IceString1, IceString2, IceString3, IceString4, IceString5, IceStringWrong,
+		MirrorTurn, SunArrive,
 		SecretSeen, SecretFound, SecretShatter, SecretVoiceBelow,
 	};
 
@@ -203,8 +210,8 @@ public static class SfxCatalog
 	private static string[] allNames;
 
 	// Every sound the game expects to exist: the 64 named above, the three hurt variants, and
-	// the twelve casts and twelve impacts derived from the element enum. 91 in total, which is
-	// exactly what tools/audio/build.py reports writing (counted 2026-11-07, with boss_block).
+	// the twelve casts and twelve impacts derived from the element enum. tools/audio/build.py reports
+	// writing 112 (counted 2026-11-08, with the dry tomb's mirror_turn and sun_arrive).
 	public static string[] AllNames
 	{
 		get

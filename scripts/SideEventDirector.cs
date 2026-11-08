@@ -113,8 +113,8 @@ public partial class SideEventDirector : Node
 		// The first chapter wizard (.ai/chapter-wizards.md 4.5): Abe no Seimei, sealed in his own star.
 		"stage_4" => new(WayfinderKind.Compass, new SideEventEntry("five_pointed_seal", () => new FivePointedSealEvent())),
 		"stage_5" => new(WayfinderKind.BearingCairn, new SideEventEntry("the_thaw", () => new ThawEvent())),
-		// The Sands' chapter wizard (.ai/chapter-wizards.md 4.6), its second event: Imhotep, sealed in a dry tomb with
-		// three cold beacons round it.
+		// The Sands' chapter wizard (.ai/chapter-wizards.md 4.6), its second event: Imhotep, sealed in a dry tomb whose
+		// door opens to the sun brought to it by bronze mirrors (.ai/unlock-puzzles.md 3.1; the site keeps the beacons' id).
 		"stage_6" => new(WayfinderKind.Compass, new SideEventEntry("caravan_master", () => new CaravanMasterEvent()),
 			new SideEventEntry("tomb_beacons", () => new TombBeaconsEvent())),
 		// The Emberdeep's chapter wizard (.ai/chapter-wizards.md 4.7): Wayland the Smith, chained to his own anvil.
