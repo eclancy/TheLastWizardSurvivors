@@ -428,6 +428,23 @@ things come up; strike what lands.**
    Start with `MagicMissile.cs`, `HaywardBoss.cs`, the incoming-damage hook in `Enemy.cs`,
    `.ai/spell-roster.md` and `.ai/enemy-behaviour.md`. Test actual damage from different player and
    projectile positions, alongside the visible trajectory, at PC and phone sizes.
+   **Built 2026-11-07 (`claude/nostalgic-lalande-4db33d`, with item 57), the Hayward first:**
+   - **The damage rule:** `Enemy` carries a one-hit origin channel (`NoteIncomingHitOrigin` →
+     `IncomingHitFrom`, armed and cleared per hit so nothing stale leaks onto the next);
+     `Player.DealDamageToEnemy` takes an optional `hitFrom` and arms it. The Hayward's
+     `AdjustIncomingDamage` judges a hit by its arrival when the dealer named one, else by the
+     player's position exactly as before - so circling is unchanged for the auto-aimed roster,
+     and only a projectile that genuinely reached the open side is paid for it.
+   - **The flight:** `IGuardedBoss` (facing, half-angle, `GuardCovers`) is the read Magic Missile
+     steers by (`FlankAim`): inside the guarded front plus an 18 deg margin the dart chases a
+     waypoint stepped 55 deg the shorter way round a 120 px ring, then dives in - the visible bend
+     round the hurdle. Its lock is not dropped at range mid-detour (duration still bounds it), and
+     every Magic Missile hit (dart, splash, grind, orb burst) names its origin.
+   - **Still open:** the other bosses' weak spots (the item's second half) - which fights want a
+     Magic Missile interaction of their own, per-phase handling, and any Ascension-specific
+     behaviour - remain to be designed; nothing but the Hayward implements `IGuardedBoss` yet.
+     Damage from different positions verified by the rule's construction and the probe's drain
+     (fallback path); the visible trajectory at PC and phone sizes still needs eyes.
 
 29. **Reconsider the top timer's plain black background** (Eric, 2026-11-05). Explore styling the
    background to fit the game's art, or removing it entirely. This is a visual decision to consider;
@@ -735,6 +752,25 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
 57. **The Hayward's fight** (Eric, 2026-11-06; fold into item 28): combo attacks - a swing, a
     charge, then his back vulnerable; hitting the shield shows a shield mark and plays a different
     sound, so the player knows the damage is cut; slowed he turns slower; stunned he cannot turn.
+    **Built 2026-11-07 (`claude/nostalgic-lalande-4db33d`, with item 28):** the fight is the combo
+    now. The cone swing's resolve primes a charge (`AttackTelegraph.Prime`, so it chains without
+    skipping its tell): a lane aimed once at the player, planted for 45% of a 1.5 s wind-up, then
+    driven down at 4.5x his walk, hurting where it passes (the Gaoler's run rule); its resolve
+    leaves him SPENT for 2.6 s - planted, no turn, no attack, the whole open side drawn as a
+    pulsing gold arc with chevrons at his back, paying x1.3 (`SpentRearMultiplier`). A cut hit
+    stamps a little woven-panel mark where it arrived and plays the new `boss_block` (wood, not
+    the element, −13 dBFS, throttled 90 ms); his tracking turn is scaled by `Enemy.PaceShare`, so
+    slowed he turns slower and held or frozen he cannot turn. Phase 3 quickens the charge x0.85
+    and cuts the spent window x0.7 (floored at 1.6 s). `ValidateBossPatterns` holds every beat's
+    number (tell fraction inside 0-1, charge over 1x, a spent window that exists), and the probe
+    now prints the combo's beats (`HaywardBoss.SwingsBegun/ChargesBegun/SpentWindowsEntered/
+    HitsTurned`, `_BossProbe` "the combo"). Measured 2026-11-07: at `--drain=6` he dies through
+    both thresholds with every swing chained (2 swings, 2 charges, 2 spent) and 115 hits turned;
+    at `--cc=none` against a standing wizard, 6 swings, 6 charges, 6 spent windows in the test's
+    45 s - the generic "12 attacks begun" is exactly those pairs. The default probe still runs
+    out of clock, as the doc says it always has (the hurdle cuts the probe's own drain). Whether
+    the lane and the gold open arc READ still needs eyes - `_UiShot` has no flag that reaches a
+    boss fight, so no photograph exists.
 58. **Side events pay off at their own site** (Eric, 2026-11-06, "Yes, both"): the well's win plays
     at the well - the fouled water turns clean and rises with light, the coin (on later wins, the
     chest) is drawn visibly up out of it and flies to the player, with a brief hold so it registers.

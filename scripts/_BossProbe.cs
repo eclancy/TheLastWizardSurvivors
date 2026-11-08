@@ -484,6 +484,7 @@ public partial class _BossProbe : Node
 		}
 
 		TrackChoir(delta);
+		TrackHayward();
 
 		foreach (BossEnemy body in bodies)
 		{
@@ -621,6 +622,33 @@ public partial class _BossProbe : Node
 				notes.Add($"a voice was sung back up at {elapsed:0.0}s");
 			}
 		}
+	}
+
+	// THE HAYWARD'S COMBO (2026-11-07, .ai/in-flight.md 57): the beats as the fight runs them,
+	// snapshotted while the body is valid - an attack count alone cannot say whether the swing
+	// chained into its charge, or whether the charge really left him spent.
+	private (int Swings, int Charges, int Rings, int Spent, int Turned) haywardBeats;
+	private bool sawHayward;
+
+	private void TrackHayward()
+	{
+		foreach (BossEnemy body in bodies)
+		{
+			if (body is not HaywardBoss hayward)
+				continue;
+			sawHayward = true;
+			haywardBeats = (hayward.SwingsBegun, hayward.ChargesBegun, hayward.RingSwingsBegun,
+				hayward.SpentWindowsEntered, hayward.HitsTurned);
+		}
+	}
+
+	private string HaywardSummary()
+	{
+		if (!sawHayward)
+			return null;
+		return $"{haywardBeats.Swings} swings, {haywardBeats.Charges} charges chained, "
+			+ $"{haywardBeats.Spent} spent windows, {haywardBeats.Rings} ring swings; "
+			+ $"{haywardBeats.Turned} hits turned by the hurdle";
 	}
 
 	private string ChoirSummary()
@@ -1171,6 +1199,8 @@ public partial class _BossProbe : Node
 			+ $" (ground {heldOnGround}, a prop {heldOnProp}, a body {heldOnBody}); {heldTouchingNothing} more touched nothing");
 		if (ChoirSummary() is string choir)
 			GD.Print($"  the choir      : {choir}");
+		if (HaywardSummary() is string combo)
+			GD.Print($"  the combo      : {combo}");
 		if (DarkWizardSummary() is string dark)
 			GD.Print($"  the dark wizard: {dark}");
 		foreach (string note in notes)

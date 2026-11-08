@@ -4954,6 +4954,25 @@ public static partial class RegressionChecks
 				warnings.AddRange(darkWizard.TuningProblems());
 				break;
 
+			// The Hayward's combo (.ai/in-flight.md 57): a swing, a charge, then his back open.
+			// Each number below is one beat of it, and the value that would silently cancel it.
+			case HaywardBoss hayward:
+				if (hayward.GuardedDamageMultiplier <= 0f || hayward.GuardedDamageMultiplier >= 1f)
+					warnings.Add($"Hayward's hurdle cuts frontal hits to x{hayward.GuardedDamageMultiplier}; at 0 the front is invulnerable and at 1 the guard does nothing.");
+				if (hayward.ChargeTellFraction <= 0f || hayward.ChargeTellFraction >= 1f)
+					warnings.Add($"Hayward has ChargeTellFraction {hayward.ChargeTellFraction}; at 0 he runs with no planted tell and at 1 he never runs at all.");
+				if (hayward.ChargeSpeedMultiplier <= 1f)
+					warnings.Add($"Hayward charges at {hayward.ChargeSpeedMultiplier}x his walk, so the lane promises a drive he never delivers.");
+				if (hayward.ChargeWindUpSeconds <= 0f)
+					warnings.Add("Hayward's charge has no wind-up, so the lane lands with no warning at all.");
+				if (hayward.SpentSeconds <= 0f)
+					warnings.Add("Hayward's combo ends in no spent window, so the open back it promises never exists.");
+				if (hayward.SpentRearMultiplier < 1f)
+					warnings.Add($"Hayward's open back takes x{hayward.SpentRearMultiplier} while he is spent; under 1 the combo's payoff punishes taking it.");
+				if (hayward.ShoveHalfAngleDegrees >= 90f || hayward.ShoveHalfAngleDegrees > hayward.GuardHalfAngleDegrees)
+					warnings.Add($"Hayward's shove ({hayward.ShoveHalfAngleDegrees} deg) is wider than his guard ({hayward.GuardHalfAngleDegrees} deg), so it hurts ground the hurdle does not block.");
+				break;
+
 			case GaolerBoss gaoler:
 				// Below 0 there is no planted tell before the charge; at 1 the charge never
 				// happens, because the wind-up ends before it starts moving.

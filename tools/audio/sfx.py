@@ -606,6 +606,26 @@ def boss_roar():
     return S.dc_block(S.reverb(S.drive(out, 3.4), size=0.9, damp=0.3, mix=0.34))
 
 
+def boss_block():
+    """A boss's guard turning a spell (the Hayward's hurdle, HaywardBoss.AdjustIncomingDamage):
+    the cut hit's own voice, so the small number has a sound that says WHY. Wood, not element -
+    a dull tok of staked withies (a noise knock through a 640 Hz wooden band) over the panel's
+    box mode falling 185 to 150 Hz, with one fast comb for the weave's rattle. Short, no ring,
+    nothing below 95 Hz, top cut at 2.4 kHz: it can play several times a second under a fast
+    build (SfxPlayer.BossBlock throttles at 90 ms), so it sits in the once-a-second row and
+    leaves the element identity to the impact it plays beside. Not the anvil (struck steel) and
+    not the hull (hollow and double): one dry knock on a staked panel."""
+    dur = 0.16
+    n = S.n_samples(dur)
+    tok = S.env_mul(S.bandpass(S.osc("noise", 0, dur, seed=211), 640.0, 2.6), S.expdecay(n, 22.0))
+    box = S.env_mul(S.osc("sine", S.sweep(dur, 185.0, 150.0, 0.5), dur), S.expdecay(n, 13.0))
+    out = S.layer([(tok, 0.0, 1.0), (box, 0.0, 0.75)])
+    # The weave's rattle: a very short comb, as the hull knock's hollow is built.
+    out = S.delay(out, 0.006, feedback=0.4, mix=0.3, taps=3)
+    out = S.highpass(S.lowpass(out, 2400.0), 95.0)
+    return S.dc_block(out)
+
+
 def boss_death():
     dur = 2.4
     n = S.n_samples(dur)
@@ -2196,6 +2216,7 @@ REGISTRY += [
     ("enemy_melee",         "enemy",  -12.0, enemy_melee,         False),
     ("elite_spawn",         "enemy",  -8.0,  elite_spawn,         False),
     ("boss_roar",           "enemy",  -4.0,  boss_roar,           False),
+    ("boss_block",          "enemy",  -13.0, boss_block,          False),
     ("boss_death",          "enemy",  -3.0,  boss_death,          False),
 
     ("pickup_xp",           "pickup", -23.0, pickup_xp,           False),
