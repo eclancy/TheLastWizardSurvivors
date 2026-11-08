@@ -52,6 +52,16 @@ things come up; strike what lands.**
      stillness beats (the stones show on arrival) with or without this foliage, and failed on the move commit too.
    - `ws-art-foliage-ruins` (`art/foliage-ruins`): the move (93844a88, hash proven unchanged) and the
      overgrown quarters (68ed6cc2), one uncommitted file. Not yet validated, probed, censused or shot.
+     **Built (2026-11-07), ready to merge.** The uncommitted file was the moved-only version swapped in for the
+     before photographs, and was dropped. Main merged in (the atlas re-run by `ground_detail.py`); the quarters
+     made denser after a zoom-0.3 look showed scattered pieces, not massed ruin (standing ruin 1500 -> 2100,
+     rubble 1300 -> 2000 in fours, the quarters' ivy and roots up a third). Validator 0 errors and 1 warning;
+     footing census 0 trunks under 72 px and no pockets on two seeds; `--check-feet` 0 frames in the ground;
+     `_ExploreProbe` 25/0 on seeds 4242 and 31; the Broken Ward's `--secret-probe` all 33 pass. `.ai/terrain.md`
+     section 13, "The Mystic Ruins", has the numbers and what still needs eyes (does a quarter read as ruin with
+     stone at the floor's value; are the piers broken walls or a brick stack -
+     `_shots/foliage-ruins/closeup.png`). **Not this pass:** `clip_check.py` flags the Fields' Pinfold art (two
+     cut edges, `pinfold-front.png` and `pinfold-open.png`, from main).
    - Both were told what got the Sands and the Heath sent back (rocks as bricks, crowns as paving): check
      their close-ups for it before merging.
 2. **Play what 0.13.0 shipped unplayed:** Paracelsus's rot-path puzzle (it replaced a working event); the

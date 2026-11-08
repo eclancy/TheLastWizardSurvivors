@@ -2557,6 +2557,197 @@ keep the swarm and its hurt tint; `frozen-plain-final-pc.png` in the user folder
   stand.
 - **The phone**, and the frame on a quiet machine.
 
+### The Mystic Ruins: overgrown quarters, not woods (2026-11-04, finished 2026-11-07)
+
+`Foliage.MysticRuins.cs`, on the recipe above. *"Our old seat of learning. The wards broke from inside." "Dust and cold
+ash. The stones still hum."* (`ChapterNotes`). The Forest's stands are woods, the Fields' hedgerows, the Sands' wind-cut
+stone; the Ruins' are THE RUIN ITSELF where it has fallen in and the growth has taken it - overgrown quarters of the old
+seat of learning, thickest along the lines its walls stood on - with the open flags between them, most of the ground, to
+fight on. Built in two sittings: the first builder was stopped after the commit of the pass, with the probes run but not
+written up; the second merged main (the shared atlas re-run by `ground_detail.py`), raised the quarters' density
+(below), measured again and wrote this.
+
+**The move first.** The old Ruins case's four sets (stones, crystals, the gnarled and dead trees, brambles) went into the
+foliage file in their order, and `--placement-hash` on `_BalanceHarness --stage=4` printed the same hash before and after:
+seed 4242 `1ECFBE7EC2530EA8` (266 props, 819 detail cells), seed 11 `A880E5405A6B6CD9` (273, 778). The moved-only file
+swapped back in later printed it again, and is what the before photographs ran on.
+
+**The field: `CanopyShape.Own`, salts 0x5E02-4.** A value noise at 13 cells (624 px) with an edge noise at 5 (three tenths)
+decides where the ruin has fallen in. On top, the maze lattice the Ruin topology stands on (section 11: eight-tile units,
+the wall strip at tiles 3 and 4 mod 8, its middle on the line 4.0 in Woodland's cells, where cell (0, 0)'s corner is the
+start) pulls the field up along its wall lines and lets the middle of a passage stay clearer, as rubble lies at the foot
+of what shed it: full on a line, gone 2.6 cells off it (the middle of a six-tile passage), weighted 0.42 and wandering
+on a third noise at 9 cells, so not every line of a quarter is heaped. A trunk keeps 72 px off a standing wall
+(Footing), so on a line whose wall still stands the line's growth is walk-over rubble and clutter, and on a line whose
+wall fell its last piers stand: the fragments stand where the walls ran. The lattice's numbers are `LevelGenerator`'s
+private `MazeUnit` and `MazeLatticeShift`, copied; if they change, the rubble gathers beside the walls instead of along
+them and nothing breaks.
+
+| habitat | canopy | share | what is there |
+|---|---|---|---|
+| clearing (the open flags) | under 0.52-0.58 | 67-68% | cold ash; the old rules' rubble, cracks, pebbles, moss seams and flowers as before; the odd heap or fallen drum |
+| fringe (a quarter's edge) | between | about 16% | plinths, fallen columns and capitals, rubble and ivy mounds, brambles; weeds in the cracks, mossed chips |
+| stand (the quarter) | over 0.60-0.66 (core over 0.64) | about 16% | the standing ruin and the gnarled trees, rubble thickest; ivy runners and roots over the flags |
+
+Measured on `Woodland.Validate`'s 70 x 70 sample on three seeds and a Python port of the field; the validator holds it to
+11-22% core and 58-76% open.
+
+**No stand floor, on purpose.** The palette's overgrowth was the obvious floor (grass and moss over the stone), but the
+chapter's old rules lay its brightest clutter on it - white and violet flowers and clover, hi +55 to +78 over the flags,
+the brightest things on this floor after the cast and the orbs - and laid under every quarter it would spread them over a
+sixth of the ground where today they lie on the odd blob. Its `dark_dirt` carries the old mushrooms, and its `cobble` is a
+carpet of even stones (paving, which sent the Heath back). So a quarter is read by what stands and lies in it; the
+ground, and everything placed by it (the Five-Pointed Seal's court, the Broken Ward's ring), is exactly what it was.
+
+**The ladder** (`tools/art/props_ruins.py`, `world/ruins/ruins.json` in `trees.json`'s shape; `detail_ruins.py`):
+
+| rung | sprites | on screen | trunk | where | set |
+|---|---|---|---|---|---|
+| the standing ruin | `wall-run-1`, `-2` (a fallen wall's last pier, its courses stepping down), `colonnade-1` (one column on its broken step, a stump beside it), `root-wall-1` (a tree grown out of a wall's top), `spire-stump-1` (a round tower's stump, one pick in eight) | 116-206 x 148-262 | 36-88 | the quarters, in twos | 4 |
+| trees in the stones | `gnarled-1`, `-2`, `dead-tree-1` (trees.py, unchanged) | | | the quarters and their edges, a few | 2 (was even) |
+| the empty plinth | `plinth-1`: a statue's plinth, only the feet left, broken at the ankle | 84 x 114 | 56 | a quarter's edge and the open, mostly alone | 7 |
+| fallen columns | `drums-1`, `-2` (a column lying in its drums, rolled apart), `capital-1` (sunk to its neck) | 72-194 x 46-52 | 0 | a quarter's edge, now and then out on the flags | 5 |
+| rubble | `rubble-1`, `-2` (broken blocks, each at its own angle), `ivy-mound-1` | 70-94 x 46-58 | 0 | the quarters and their edges, a few in the open | 6 |
+| brambles | `bramble-1`, `-2` (trees.py, unchanged) | | 0 | a quarter's edge, straying out | 3 (was even) |
+| detail | `cold_ash` (open), `crack_weeds`, `moss_chips` (edges), `ivy_runners`, `root_runs` (quarters) | a cell | | clutter | |
+
+The stones and crystals keep their sets (0, 1) and their places. **Ruined, never built**: ruins are worked stone, so there is
+masonry, but every course is its own height and every block its own width, the joints never line up two courses running,
+each block is shaded on its own with a chipped arris, tops break off block by block, whole blocks are missing, sunk or
+pushed out, and the ends crumble into the rubble at their foot. **The stone is the walls' own** (`ruin_walls.py`'s model: a
+lit top over a face in shade), on the stone row's lit, base, shade and deep - never `hi` as a plane - so the fragments
+belong to the walls they fell from and the chapter's statuary, lit in `stone.hi` and `lit`, stays the lighter stone. The
+growth is verdant's shade and deep (its base a leaf at a time: as a plane it photographed as a lime beacon), the roots
+grave linen like the gnarled trees'.
+
+**What it keeps clear.** The Five-Pointed Seal's court and the Broken Ward's ring keep their footprints as every set and
+clutter rule does (`IsInExploreReserve`, trunks by 140 px more). Nothing drawn is the cast - no lone pillar on a base (the
+Breach Obelisk), no slab on an upright (the Lintel-Bearer), no urn, no statue (the plinth is empty: the Warded Statues
+stepped down off it), no paper (the Loose Folio, the Misfiled Page) - or a tell of a secret (`.ai/stage-secrets.md` 6.5):
+no notched or pale stone and no carved fragment on the ground (the Broken Ward's far tell), no statue's head (the Statue's
+Eye), no lone door frame, arch or dial (the Sundial Vault), no benches or lectern, nothing warm, lit or glinting.
+
+**Denser quarters (2026-11-07).** Photographed at zoom 0.3 on the merged build, the first pass's quarters read as scattered
+pieces, not massed ruin: the walls and the 72 px rule let 2.4 standing pieces a chunk through of 11.7 rolled (4.9 off
+habitat, 1.7 refused by the walls and reserves, 0.9 crowded, 1.7 cleared out by the rule), and the stone stands so near the
+floor's value that a quarter is told by how much is in it. So the standing ruin went from 1500 to 2100, the rubble from
+1300 in threes to 2000 in fours and as thick in a quarter as on its edge (stand weight 0.8 to 1), and the quarters' ivy
+and roots from 0.055 and 0.03 to 0.075 and 0.04. The open flags are untouched. On a minute's walk (`--terrain-log`, 53
+chunks) the standing ruin now places 2.8 a chunk (of 16.2 rolled, 7.9 fall off habitat and the walls and the rule take
+most of the rest) and the rubble 13.4 (was 6.8); the trees, plinths, fallen columns and brambles are where they were (0.9,
+0.5, 1.6, 2.0). So the standing ruin is held by the walls and the 72 px rule more than by its count, and what the raise
+mostly bought is the rubble, which is the right rung to thicken: it blocks nothing.
+
+**The guardrail, from the art** (`python tools/art/detail_contrast.py --on=ruinstone,overgrowth ...`), against the flags'
+L\* 9.2:
+
+| | dL\* | \|dL\*\| | hi |
+|---|---|---|---|
+| the standing ruin, plinth, drums, capital, rubble, ivy mound (new) | -0.5 to +2.4 | 4.3-6.9 | +7.8 to +14.9 |
+| `root-wall-1` (new; its crown) | +6.0 | 9.0 | +23.3 |
+| `cold_ash`, `crack_weeds`, `moss_chips`, `ivy_runners`, `root_runs` (new) | +1.4 to +10.5 | 7.1-13.6 | +13.1 to +27.8 |
+| `gnarled-1`, `-2`, `dead-tree-1`, `bramble-1`, `-2` (old, now by habitat) | +7.7 to +15.5 | 12.4-18.1 | +25.9 to +30.6 |
+| `tufts`, `clover`, `flowers_violet`, `flowers_white` (old rules, unchanged) | +23.6 to +47.5 | 23.6-48.2 | +41.9 to +78.3 |
+
+Everything the pass drew stands nearer the floor than the trees and brambles it already had, and a fifth to a half of the
+old flowers' brightest tenth.
+
+**On screen**, `_UiShot --light-probe` at the start, (-2943, 2049) and two quarters by the canopy, (2817, -1407) and
+(-1023, -1023), on the PC canvas, and the start and the first quarter on the phone's; seed 4242, pooled, with the
+chapter note's clues cleared (`--notes-seen=all --free-wizards=seimei --own-spells=kindled_ward`) so its card does not
+type over the frames. Before and after on the same build (before the merge, the moved-only file swapped back in for the
+before):
+
+| PC (phone) | before | after (the first pass) |
+|---|---|---|
+| bodies: dL\* / hi | +14.9 / +59.1 (+16.3 / +62.4) | +14.7 / +59.0 (+15.6 / +60.4) |
+| XP orbs: dL\* / hi | +38.1 / +82.1 (+47.9 / +86.8) | +38.1 / +82.6 (+46.0 / +84.8) |
+| trees and rocks: cover | 0.3-0.5% off the start, 1.3% at it | 2.2% at (-2943, 2049), 4.9-6.6% in a quarter (3.1% on the phone), 1.8% at the start |
+| trees and rocks: \|dL\*\| / hi | 15-50 / +27 to +59 | 10-14 / +25 to +47 |
+| bushes: cover / \|dL\*\| | 0.1-0.9% / 12-45 | 0.2-2.2% / 10-22 |
+| bare floor L\* / pattern | 9.8 / 25.8% | 9.8 / 25.8% (no floor laid) |
+
+The cast stands above this floor, as on the Fields and the Sands, and reads as before; so do the orbs. What the pass
+added covers up to a sixteenth of a quarter's screen with its brightest tenth well under the bodies' (+25 to +47 against
++59), and the trees' and the bushes' layers fell in mean contrast, because what was added sits within a few L\* of the
+flags.
+
+The denser quarters, the same spots on the merged build (so against the before on another build: main's ground moved the
+floor's pattern from 25.8% to 27.5%, and the probe drew 61 bodies, not 76):
+
+| PC (phone) | the denser quarters |
+|---|---|
+| bodies: dL\* / hi | +16.8 / +62.4 (+16.4 / +61.0) |
+| XP orbs: dL\* / hi | +41.9 / +86.8 (+47.1 / +88.3) |
+| trees and rocks: cover / \|dL\*\| / hi | 9.0% and 6.5% in the quarters (4.0% on the phone), 1.8-2.1% elsewhere / 8-12 / +22 to +29 |
+| bushes (the rubble and fallen columns): cover / \|dL\*\| / hi | 2.1-2.8% in the quarters, 1.5% at (-2943, 2049) / 7-12 / +12 to +39 |
+| bare floor L\* / pattern | 9.7 / 27.5% |
+
+A quarter's screen is now about a tenth standing stone and a fortieth rubble, their brightest tenth under half the
+bodies', and the cast and the orbs read as they did. (The phone's start shows a trees-and-rocks hi of +73 before, after and
+denser alike: the palette's curated props, not this pass.)
+
+**Footing.** `--footing-census`, a minute's walk at timescale 4: before the merge, seed 4242 79 trunks in 27 chunks and seed
+11 94 in 32; on the merged build, the first pass 28 in 9 and 36 in 12, and the denser quarters (two minutes) 63 in 21 and
+67 in 18 - none within 72 px of anything that blocks (nearest 72.0), no pocket and no narrow-mouthed room walled by a
+trunk, on any of them. `--check-feet`, walking a bearing for three minutes (`--immortal --walk=30`): 0 of 1,509 frames
+with the Feet in the ground and 0 stuck checks on the denser quarters (the first pass, merged: 0 of 1,515, 0). Holding its
+ground for three minutes (`--immortal`, no walk): 0 of 1,505, 0.
+
+**The plain run, and the kite bot against a wall.** `--minutes=3 --stage=4 --check-feet` with no `--immortal` says little
+here: on the first pass it died at 0:23 on the chapter's difficulty curve, before the harness's first 30 s report. On the
+denser build it lived to 2:30 and stood the whole time at (349, 389), its Feet against something on 1,207 of 1,214 frames
+and in it on none. Photographed on the same seed (1234, `logs3/kite-spot.txt`): the thing is one of the maze's own
+standing walls (section 11), between it and the origin, which the kite mover walks straight at when nothing is near and
+has no stuck handling for (the immortal and walking movers have). The bot, not the ruin; no ruin piece is in that frame
+within reach.
+
+**Placement.** On the merged build, the first pass: seed 4242 `534732C798A4233B` (560 props, 2,033 detail cells; the move's
+266 and 819 were on the build before the merge), seed 11 `4FA47B0AF6D41324` (482, 1,930). The denser quarters: seed 4242
+`FBBB2D703AA72ABD` (745 props, 2,170 detail cells), seed 11 `5665EF0A88154587` (595, 2,014).
+
+**Checked.** `_ExploreProbe --stage=4 --fresh-save`, seeds 4242 and 31: 25 passed, 0 failed each, on the merged build with
+the first pass and again with the denser one - the Five-Pointed Seal placed, every stone turned to
+face it, Abe no Seimei freed. The validator: 0 errors, the one test_wizard warning (`Woodland.Validate` holds the shares,
+`Foliage.Validate` the sets, `Footing.Validate` the rule). `clip_check.py`: no Ruins art runs into its box (the two cut
+edges it reports are the Fields' Pinfold, `pinfold-front.png` and `pinfold-open.png`, from main).
+`_UiShot --scene=res://scenes/node_2d_game.tscn --secret-probe --stage=4` (the Broken Ward, windowed): **all 33 pass on
+the merged build with the denser quarters** - placed 6.3 chunks out, never a target, unseen until he is near, its far tell
+52 within a chunk against 25 beyond, every stone on open ground, the five lit in their order and the ward raised. (Before
+the merge, on the first sitting's build, it failed 8 - every touched stone lit none - before the pass as after it, on the
+moved-only file too: the vault, then unfinished on main, not the foliage. Main has since fixed it.)
+
+**Cost.** `_BalanceHarness --minutes=1 --character=1 --immortal --timescale=1 --stress-swarm --profile=10 --stage=4
+--seed=11 --terrain-seed=4242 --walk=30 --terrain-log`, headless, before and after the first pass on the build before the
+merge: nodes while walking 1,729-1,944 (mean 1,795) to 2,210-2,324 (mean 2,293); frame mean 9.0 to 7.9 ms (the machine,
+not the change). About 500 more nodes, a trunk three and a bush one. The denser quarters, the same command on the merged
+build: nodes 2,042-2,561 (mean 2,310); its frames (mean 446 ms) were taken with the machine saturated by other sessions
+and say nothing. **Not measured on the phone, and the frame not on a quiet machine.**
+
+**Tools.** `tools/art/props_ruins.py` writes `_props_ruins_preview.png` (gitignored): every new sprite on the flags' tone
+beside the old trees and bramble. The photographs are in `_shots/foliage-ruins/` beside the repo: `composite-pc.png` and
+`composite-phone.png` (before | the first pass, half size), `closeup.png` (the first pass's pieces at x2 and the new sprites
+beside the cast), `composite-pc-before-dense.png` and `composite-phone-before-dense.png` (before | the denser quarters, two
+builds), `wide-q1.png` (the first pass | the denser quarters at zoom 0.3, the same spot, the merged build),
+`closeup-dense-q1.png` (a denser quarter at x2: two tower stumps, a gnarled tree, rubble), `logs/` (the
+first sitting), `logs2/` (the merged build, the first pass), `logs3/` (the denser quarters), and the scripts that made
+them (`probe.sh TAG`, `checks2.sh`, `checks3.sh`, `composite.py BEFORE AFTER`, `closeup.py`, `summarize.py`).
+
+### Still needs eyes (the Ruins)
+
+- **Whether a quarter reads as fallen-in ruin at play scale.** The stone stands at the floor's own value (dL\* about +1, hi
+  +8 to +15), so a quarter is told by its ivy, its shadows and how much of it there is; the denser numbers are a first
+  answer, not a measured one.
+- **Masonry is still masonry.** The Sands and the Heath went back for stacked bricks and paving. A ruin is cut stone, and the
+  pieces are drawn ruined block by block (`closeup.png`), but whether a pier reads as a broken wall or as a brick stack is
+  for eyes.
+- **The tree in the wall** (`root-wall-1`) carries the brightest new pixels, its crown at hi +23.
+- **One sprite per piece.** The ladder has one tower stump, one colonnade and one tree-in-a-wall, and a clump of two can
+  stand two of the same side by side (`closeup-dense-q1.png`, two tower stumps by the pen). With more standing ruin that
+  is seen more often; a second variant of each is a generator change in `props_ruins.py`.
+- **The rubble along the fallen walls' lines**: whether the lattice pull reads as "the walls ran here" or as noise.
+- **The phone**, and the frame on a quiet machine.
+
 ### Large Pinfold foundation (2026-11-06)
 
 The Pinfold's 1944x1632 art now needs a real courtyard, not just a larger image over ponds/fences.
