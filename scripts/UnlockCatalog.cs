@@ -416,7 +416,8 @@ public static class UnlockCatalog
 		// hidden from the character select until its seat opens and then a silhouette carrying its held line - the same
 		// words as its QuestLog.Prisoners row, which the validator holds together - and outside every gate. Each god's
 		// piece replaces its own comment line; leave the others as they are.
-		// F2: FromGod("artemis", "stage_14", "No moon rises over the White Downs."),
+		// Artemis, the huntress (F2): rekindled by the White Downs' warden; opens on Sagittarius (ComboCatalog).
+		FromGod("artemis", "stage_14", "No moon rises over the White Downs."),
 		// (F6's line is below; leave this one as it is)
 		// F6: FromGod("manannan", "stage_15", "The sea stands off the Drowned Shore and will not come in."),
 		// (F7's line is below; leave this one as it is)

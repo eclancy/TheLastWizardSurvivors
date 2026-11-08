@@ -1115,7 +1115,7 @@ public partial class ElementalBolt : Area2D
 		damage = OverrideDamage >= 0
 			? OverrideDamage
 			: Math.Max(1, Mathf.RoundToInt((SpellData?.GetDamageAtLevel(CurrentLevel) ?? 1) * DamageMultiplier));
-		range = SpellData?.GetRangeAtLevel(CurrentLevel) ?? 500f;
+		range = SpellData?.GetReachAtLevel(CurrentLevel) ?? 500f;
 		// The evolutions' SpeedMultiplier as well as the level table's flat ProjectileSpeed: Hyper
 		// Acceleration promised "+25% projectile speed" to every bolt here and nothing read it.
 		speed = MathF.Max(1f, (BaseSpeed + (SpellData?.GetEffectValueAtLevel(SpellEffect.ProjectileSpeed, CurrentLevel) ?? 0f))

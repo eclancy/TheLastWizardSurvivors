@@ -82,6 +82,8 @@ public static class CharacterRoster
 		// roster index is what a save, Global.SelectedCharacterIdx and --character=N keep, so the first god to merge
 		// takes index 23 whoever it is, and each line says the index it took, as every line above does. (No slots are
 		// marked here on purpose: a slot held for a god that merges late would be an index nobody can play.)
+		// Artemis, the huntress (F2), rekindled on the White Downs, on Sagittarius: the first god to merge (index 23).
+		"res://CharacterData_Artemis.tres",
 	};
 
 	/// <summary>

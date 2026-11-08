@@ -329,7 +329,7 @@ public static class EvolutionStatReaders
 		// carries (SpellData.ComboParents), whose own milestones ride on the rain and the arrows.
 		["sagittarius"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Pierce
 				| EvolutionStat.Speed | EvolutionStat.Knockback | EvolutionStat.Rider | EvolutionStat.Amount,
-			"Sagittarius.Cloudburst, Loose and Freeze, through Player.FireSagittarius: the rain is a Starfall on the frozen Starfall (Amount is more stars, so more archers), the arrows are Hunter's Draw's on the frozen Hunter's Draw, every hit credited to the combination",
+			"Sagittarius.Cloudburst, Loose and Freeze, through Player.FireSagittarius: the rain is a Starfall on the frozen Starfall (Amount is more stars, so more archers), the arrows are Hunter's Draw's on the frozen Hunter's Draw, every hit credited to the combination. Artemis's copy (the table path, SpellData.ReadsOwnTable) rains on its own level table - Damage a star's hit and the arrows' (TableArrowShare), Cooldown the cloudburst, Projectiles the stars, Range the rain's width, AreaSize each burst - and the Hunter's Moon's Damage reaches both; its behaviour by id (HuntersMoonId) in Sagittarius.Hunt",
 			SpellEffect.AreaSize, SpellEffect.ProjectileSpeed, SpellEffect.Pierce, SpellEffect.CritChance, SpellEffect.CritDamage),
 		["mirefoot"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Area | EvolutionStat.Speed | EvolutionStat.Slow
 				| EvolutionStat.Rider,

@@ -97,7 +97,9 @@ WIZARDS = [
 # Freeings.WizardIds lists them. Each god's piece replaces its own comment line once its sprite exists
 # (tools/art/player_<god>.py); leave the others as they are.
 GODS = [
-    # F2: ("artemis", ("artemis", <her light's ramp in the sprite>, "light")),
+    # Artemis (F2, tools/art/player_artemis.py): the crescent at her brow is her light, in the light ramp, and the light
+    # that comes down into it is the moon's.
+    ("artemis", ("artemis", "light", "light")),
     # (F6's line is below; leave this one as it is)
     # F6: ("manannan", ("manannan", <his light's ramp in the sprite>, "water")),
     # (F7's line is below; leave this one as it is)

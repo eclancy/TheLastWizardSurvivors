@@ -419,6 +419,13 @@ thin arc pulls taut between the two lit stars furthest apart as the draw fills. 
 `spell_sagittarius` (a bowstring, then a G major chord rolled upward in glass partials, -11 dBFS). Held,
 never loosed, while a boss arrives. Running Shot does not carry: it fires from the wizard.
 
+**Since F2 of `.ai/second-half.md` (2026-11-08) Artemis opens on it** (`StartsFusedFor = "artemis"`), at level 1
+of a table in `SpellData_Sagittarius.tres` that her copy reads because it carries no parents
+(`SpellData.ReadsOwnTable`): the rain is a Starfall on the Conjunction's own numbers, the lines are on from level 1
+(`Starfall.Linked`), and the arrows are 0.7 of a star's hit, loosed from Hunter's Draw down Hunter's Mark at her level.
+Its level 8 is this section's plain fused copy. A fused copy is unchanged except that it now arrives at level 8 of 8, The
+Taking's rule. Her Apotheosis on it is The Hunter's Moon (hunt); `.ai/second-half.md` section 9, "F2, built".
+
 **Measured (2026-11-01): the recipe did not land inside a 15-minute run.** `_BalanceHarness
 --seek-combo=sagittarius --all-unlocked --immortal --circle=180`, Laelaps (Cyclone Slash, so neither parent
 is his own), timescale 2-3:

@@ -7171,7 +7171,7 @@
       "milestone": 4,
       "id": "toxic_spore_lingering_rot",
       "name": "Lingering Rot",
-      "description": "Each burst leaves a spore cloud as wide as itself for 3.5s that keeps poisoning anything inside. Poison \u002B1 per tick.",
+      "description": "Each burst leaves a spore cloud as wide as itself for 3.5s that keeps poisoning anything inside. Poison \u002B1 a second.",
       "synergy": "Poison / Zone",
       "visual_tag": "LingeringRot",
       "gains": {
@@ -8392,6 +8392,47 @@
       "tint": "e8bfff",
       "character": "ma_liang",
       "verb": "displace"
+    },
+    {
+      "spell": "sagittarius",
+      "variant": "",
+      "spell_name": "Sagittarius",
+      "spell_icon": "res://assets/bonelight/ui/spells/sagittarius-light.png",
+      "spell_elements": {
+        "Light": 1,
+        "Metal": 1,
+        "Wind": 1
+      },
+      "milestone": 9,
+      "id": "sagittarius_hunters_moon",
+      "name": "The Hunter\u0027s Moon",
+      "description": "When your quarry falls, the mark passes to the strongest in reach and every lit star looses again.",
+      "synergy": "Apotheosis",
+      "visual_tag": "Apotheosis",
+      "gains": {
+        "Light": 1
+      },
+      "replaces": "",
+      "effect": "None",
+      "effect_value": 0,
+      "rider": "None",
+      "damage": 1.25,
+      "damage_bonus": 0,
+      "cooldown": 1,
+      "projectiles": 0,
+      "area": 1,
+      "scale": 1,
+      "speed": 1,
+      "pierce": 0,
+      "arcs": 0,
+      "branches": 0,
+      "knockback": 0,
+      "slow": 0,
+      "poison": 0,
+      "range": 0,
+      "tint": "f0f2ff",
+      "character": "artemis",
+      "verb": "hunt"
     }
   ]
 }

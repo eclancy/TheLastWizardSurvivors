@@ -1,33 +1,97 @@
-[gd_resource type="Resource" script_class="SpellData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="SpellData" load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/SpellLevelUpgrade.cs" id="2"]
 [ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/sagittarius-light.png" id="2_icon"]
 
 ; Sagittarius - Hunter's Draw + Starfall, the first COMBINATION (.ai/combo-spells.md section 3, ComboCatalog).
 ;
-; Never a level-up card and never in the spell catalog: it is made only in the Ascension strip, from Hunter's
-; Draw at level 8 down Hunter's Mark and Starfall at level 8 down Constellation (Player.TryFuse). It is terminal,
-; so it has one level and no milestones.
+; Never a level-up card and never in the spell catalog for anyone but Artemis. Everyone else makes it in the
+; Ascension strip, from Hunter's Draw at level 8 down Hunter's Mark and Starfall at level 8 down Constellation
+; (Player.TryFuse), and gets it whole: its copy carries the two parents frozen as they were at the fusion
+; (SpellData.ComboParents), Sagittarius.Freeze rewrites the numbers below from the frozen Starfall and clears the
+; table, and it never levels.
 ;
-; The numbers below are a stand-in for the card and the Spell Index. A run's copy carries its two parents frozen
-; as they were at the fusion (SpellData.ComboParents), and Sagittarius.Freeze sets the cooldown, the stars, the
-; range and one star's damage from the frozen Starfall; the arrows are read from the frozen Hunter's Draw as they
-; fly. These are Starfall's at level 8 with Constellation: 22 a star, 8 stars every 0.68 s over a 270 px rain.
+; ARTEMIS OPENS ON IT (.ai/second-half.md 3.4, F2; ComboDefinition.StartsFusedFor): made, at level 1 of the table
+; below, and every card levels it to 8. She never held its parents, so her copy carries none
+; (SpellData.ReadsOwnTable) and Player.FireSagittarius reads this table instead: the rain is a Starfall on these
+; numbers - BaseDamage one star's hit, BaseCooldown the cloudburst, BaseProjectileCount the stars a cloudburst lets
+; fall (the most archers it lights), BaseRange the rain's width, the AreaSize lines each star's burst (px) - and
+; every arrow is Sagittarius.TableArrowShare (0.7) of a star's hit, scaled by the draw as always, loosed from a bow
+; that levels with her (Hunter's Draw down Hunter's Mark at this spell's level: its pierce, reach, nock and size;
+; Player.SagittariusTableBow). The lines between the stars are Constellation's from level 1: the archer's figure is
+; the recipe, not a level.
 ;
-; ElementWeights are the two parents' base tags summed. A run's copy carries the two parents' CURRENT weights
-; summed instead (ComboCatalog.SumWeights): Metal 2, Wind 1, Light 2 after Heavy Draw and Shooting Stars, say.
-; The one kind of spell allowed three elements; never four (ComboCatalog.MaxElements).
+; Its level 8 is the fused copy's numbers - Starfall's level 8 with Constellation: 22 a star, 8 stars every 0.68 s
+; over a 270 px rain, +9 px a burst - as The Taking's level 8 is the copy anyone else fuses; the big level 8 is the
+; parent's own shape (Constellation doubles Starfall's hit). Damage at the even levels, a star at the odd ones and at
+; 8, the rain wider at 4 and 7, each burst bigger at 3, 5 and 7, the cadence at every even level: a line at every
+; level (RegressionChecks.ValidateOpeners). A star of 5 at level 1 rather than 6 is the measured one: the default bot
+; at minute 8 had it at level 3 doing 38% of her damage, where 6 made it 46% (the Dark Wizard's The Taking: 29% at
+; level 2). .ai/second-half.md, "F2, built".
+;
+; ElementWeights are the two parents' base tags summed (Metal, Wind, Light). A fused copy carries the parents'
+; CURRENT weights summed instead (ComboCatalog.SumWeights). The one kind of spell allowed three; never four.
+[sub_resource type="Resource" id="Resource_sagittarius_lvl2"]
+script = ExtResource("2")
+Level = 2
+DamageBonus = 1
+CooldownBonus = -0.06
+
+[sub_resource type="Resource" id="Resource_sagittarius_lvl3"]
+script = ExtResource("2")
+Level = 3
+ProjectileCountBonus = 1
+Effect = 7
+EffectValue = 3.0
+
+[sub_resource type="Resource" id="Resource_sagittarius_lvl4"]
+script = ExtResource("2")
+Level = 4
+DamageBonus = 3
+CooldownBonus = -0.06
+RangeBonus = 15.0
+
+[sub_resource type="Resource" id="Resource_sagittarius_lvl5"]
+script = ExtResource("2")
+Level = 5
+ProjectileCountBonus = 1
+Effect = 7
+EffectValue = 3.0
+
+[sub_resource type="Resource" id="Resource_sagittarius_lvl6"]
+script = ExtResource("2")
+Level = 6
+DamageBonus = 4
+CooldownBonus = -0.1
+
+[sub_resource type="Resource" id="Resource_sagittarius_lvl7"]
+script = ExtResource("2")
+Level = 7
+ProjectileCountBonus = 1
+RangeBonus = 15.0
+Effect = 7
+EffectValue = 3.0
+
+[sub_resource type="Resource" id="Resource_sagittarius_lvl8"]
+script = ExtResource("2")
+Level = 8
+DamageBonus = 9
+CooldownBonus = -0.1
+ProjectileCountBonus = 1
+
 [resource]
 script = ExtResource("1")
 Tagline = "Walk the stars. Stop. Loose."
 Id = "sagittarius"
 Name = "Sagittarius"
 CurrentLevel = 1
-MaxLevel = 1
-BaseDamage = 22
-BaseCooldown = 0.68
-BaseProjectileCount = 8
-BaseRange = 270.0
+MaxLevel = 8
+BaseDamage = 5
+BaseCooldown = 1.0
+BaseProjectileCount = 4
+BaseRange = 240.0
+LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_sagittarius_lvl2"), SubResource("Resource_sagittarius_lvl3"), SubResource("Resource_sagittarius_lvl4"), SubResource("Resource_sagittarius_lvl5"), SubResource("Resource_sagittarius_lvl6"), SubResource("Resource_sagittarius_lvl7"), SubResource("Resource_sagittarius_lvl8")])
 TargetingMode = 4
 Description = "Stars that fall while you walk stay lit and join into an archer. Stop, and every lit star looses at the quarry you have marked."
 Icon = ExtResource("2_icon")

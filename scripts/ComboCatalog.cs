@@ -216,9 +216,11 @@ public static class ComboCatalog
 			},
 			ResourcePath = "res://SpellData_Sagittarius.tres",
 			SynergyTag = "Conjunction / Converge",
-			// F2's line (Artemis opens on it, .ai/second-half.md 3.2): StartsFusedFor = "artemis", with its level
-			// table in SpellData_Sagittarius.tres and the path that reads it (SpellData.ReadsOwnTable). No other piece
-			// edits this recipe.
+			// Artemis opens on it (.ai/second-half.md 3.2-3.4, F2): made, at level 1 of its own table in
+			// SpellData_Sagittarius.tres, which Sagittarius reads when it carries no frozen parents
+			// (SpellData.ReadsOwnTable; Player.FireSagittarius's table path). Anyone else still fuses it from the two
+			// parents and flies the frozen ones, as before. No other piece edits this recipe.
+			StartsFusedFor = "artemis",
 		},
 		// Shadow Bolt (.ai/combo-spells.md section 7; in-flight item 17, Eric 2026-11-05): once an ordinary
 		// chain spell, moved whole into the Conjunction roster - the void given the plague's hunger. Cosmic

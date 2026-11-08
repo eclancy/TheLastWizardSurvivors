@@ -682,6 +682,9 @@ public partial class Player : CharacterBody2D
 	// A share of the whole reach, magnets and shop levels included, so it stays a fifth more however far it has grown.
 	public const float CharacterSurveyorReachBonus = 0.20f;
 	private float characterPickupReachScale = 1f;
+	// Far-Shooting (Artemis, .ai/second-half.md 3.2): the share added to every spell's reach - how far it finds its
+	// target and how far its shot flies to it (SpellData.ReachScale, read through GetReachAtLevel).
+	public const float CharacterFarShootingReachBonus = 0.15f;
 	// Rejuvenation (Medea): the share added to every heal (Heal), and the carry that keeps a one-point heal's share.
 	public const float CharacterRejuvenationBonus = 0.20f;
 	private float characterHealingBonus = 0f;
@@ -698,6 +701,10 @@ public partial class Player : CharacterBody2D
 		Enemy.PlayerPoisonScale = 1f;
 		// Foresight likewise: no wind-up is lengthened until his passive says so.
 		AttackTelegraph.ForesightScale = 1f;
+		// Far-Shooting likewise: every spell reaches as far as its range says until her passive says otherwise.
+		SpellData.ReachScale = 1f;
+		// The Hunter's Moon's tallies are a run's (the harness reads them).
+		Sagittarius.ResetHuntTallies();
 		// The Eye of Ra's tallies are a run's too (the harness reads them).
 		Fireball.ResetEyeOfRaTallies();
 		// Nobody is turned at the start of a run, and Dragon's Teeth's tally is the run's (Enemy.Turned.cs).
@@ -989,6 +996,11 @@ public partial class Player : CharacterBody2D
 		// wizard owns: not a heal over time (the Frostweaver), not a death refused (the Archmage), not a revive made
 		// whole (Morgan) - one flask's worth, at the moment it is needed, and taken like any flask.
 		"paint_flask",
+		// Artemis, the first god of the far shore (.ai/second-half.md 3.2): Far-Shooting - Homer's word for her, the one
+		// who shoots from afar - every spell finds its target and flies to it 15% farther (SpellData.ReachScale, read
+		// through GetReachAtLevel wherever a range is a reach and never where it is a size). An axis no wizard owns: not
+		// area (a burst, a cone, the rain are as wide as ever), not speed, not damage - how far off the fight is joined.
+		"reach_15",
 	};
 
 	private bool ApplyCharacterPassiveBonus(string passiveId)
@@ -1067,6 +1079,9 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "paint_flask":
 				characterPaintsFlask = true;
+				return true;
+			case "reach_15":
+				SpellData.ReachScale = 1f + CharacterFarShootingReachBonus;
 				return true;
 			default:
 				return false;
@@ -4571,7 +4586,7 @@ public partial class Player : CharacterBody2D
 			// level upgrades can both grant projectiles, and the old literal meant any
 			// that did were silently ignored for this spell alone.
 			int projectileCount = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
-			float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+			float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 			// NOT ONE MISSED (The Archmage's Apotheosis, count; MagicMissile.NotOneMissedId): every CountEvery-th volley
 			// is a count - a dart at every enemy in reach, nearest first, up to the count's cap, one each. The clock only
 			// moves on a volley that flew, so a cast into an empty field never spends the count.
@@ -4753,7 +4768,7 @@ public partial class Player : CharacterBody2D
 				}
 				if (nearest != null)
 				{
-					float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+					float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 					if (minDist <= castRange)
 					{
 						var fireball = FireballScene.Instantiate<Area2D>();
@@ -4927,7 +4942,7 @@ public partial class Player : CharacterBody2D
 
 		// Hunter's Mark: once fully drawn, the bow swings onto the quarry it will mark.
 		Node2D aimTarget = (huntersDrawCharge >= 0.999f && spell.HasEvolution(BoltEvolutions.HuntersMarkId)
-			? FindStrongestEnemy(spell.GetRangeAtLevel(spell.CurrentLevel)) : null) ?? FindHuntersDrawTarget(spell);
+			? FindStrongestEnemy(spell.GetReachAtLevel(spell.CurrentLevel)) : null) ?? FindHuntersDrawTarget(spell);
 		Vector2 aim = aimTarget != null
 			? (aimTarget.GlobalPosition - GlobalPosition)
 			: new Vector2(lastHorizontalFacing >= 0 ? 1f : -1f, 0f);
@@ -4940,7 +4955,7 @@ public partial class Player : CharacterBody2D
 	// projectile spell, so a low-level bow simply cannot reach across the arena.
 	private Node2D FindHuntersDrawTarget(SpellData spell)
 	{
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		Node2D nearest = null;
 		float minDist = float.MaxValue;
 		foreach (var e in EnemyRegistry.Snapshot)
@@ -4973,7 +4988,7 @@ public partial class Player : CharacterBody2D
 
 		charge = Mathf.Clamp(charge, 0f, 1f);
 		bool fullDraw = charge >= 0.999f;
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 
 		// Hunter's Mark: a full draw goes for the strongest enemy in reach and marks it - it takes more
 		// from everything while the mark lasts, and every arrow of this volley seeks it.
@@ -5163,7 +5178,7 @@ public partial class Player : CharacterBody2D
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null) return CastOutcome.NoTarget;
 
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		if (minDist > castRange) return CastOutcome.NoTarget;
 
 		// Forge Swarm (Molten Shard's level 8, BoltEvolutions): a cast forges shards into a ring round
@@ -5349,7 +5364,7 @@ public partial class Player : CharacterBody2D
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null) return CastOutcome.NoTarget;
 
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		if (minDist > castRange) return CastOutcome.NoTarget;
 
 		var chain = scene.Instantiate<Area2D>();
@@ -5382,7 +5397,7 @@ public partial class Player : CharacterBody2D
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null) return CastOutcome.NoTarget;
 
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		if (minDist > castRange) return CastOutcome.NoTarget;
 
 		bool clockwork = spell.HasEvolution(VoidLance.WitchingHourId);
@@ -5627,7 +5642,7 @@ public partial class Player : CharacterBody2D
 		if (arena == null) return CastOutcome.NoTarget;
 
 		int level = spell.CurrentLevel;
-		float reach = spell.GetRangeAtLevel(level);
+		float reach = spell.GetReachAtLevel(level);
 		int hands = Math.Max(1, spell.GetProjectileCountAtLevel(level) + AmountFor(spell));
 		takingQuarries.Clear();
 		for (int i = 0; i < hands; i++)
@@ -5955,7 +5970,7 @@ public partial class Player : CharacterBody2D
 		Node2D arena = GetParent<Node2D>();
 		if (arena == null) return CastOutcome.NoTarget;
 
-		float range = MathF.Max(60f, spell.GetRangeAtLevel(spell.CurrentLevel));
+		float range = MathF.Max(60f, spell.GetReachAtLevel(spell.CurrentLevel));
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null || minDist > range) return CastOutcome.NoTarget;
 
@@ -6105,7 +6120,7 @@ public partial class Player : CharacterBody2D
 		if (scene == null) return CastOutcome.NoTarget;
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null) return CastOutcome.NoTarget;
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		if (minDist > castRange) return CastOutcome.NoTarget;
 		Node2D centre = FindDensestEnemy(castRange) ?? nearest;
 
@@ -6225,7 +6240,7 @@ public partial class Player : CharacterBody2D
 		if (scene == null) return CastOutcome.NoTarget;
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null) return CastOutcome.NoTarget;
-		if (minDist > spell.GetRangeAtLevel(spell.CurrentLevel)) return CastOutcome.NoTarget;
+		if (minDist > spell.GetReachAtLevel(spell.CurrentLevel)) return CastOutcome.NoTarget;
 		Node2D arena = GetParent<Node2D>();
 		if (arena == null) return CastOutcome.NoTarget;
 
@@ -6238,7 +6253,7 @@ public partial class Player : CharacterBody2D
 		if (walls > 1)
 		{
 			EnemyTargeting.CollectNearest(GetTree(), GlobalPosition, EnemyTargeting.MaxPick, magicMissileTargets,
-				spell.GetRangeAtLevel(spell.CurrentLevel), exclude: nearest);
+				spell.GetReachAtLevel(spell.CurrentLevel), exclude: nearest);
 			sporeSpots[0] = (nearest.GlobalPosition - GlobalPosition).Normalized();
 			int raised = 1;
 			float minDot = MathF.Cos(Mathf.DegToRad(WallSpreadDegrees));
@@ -6331,7 +6346,7 @@ public partial class Player : CharacterBody2D
 		if (scene == null) return CastOutcome.NoTarget;
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null) return CastOutcome.NoTarget;
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		if (minDist > castRange) return CastOutcome.NoTarget;
 		if ((FindRandomEnemy(castRange) ?? nearest) is not Enemy carrier) return CastOutcome.NoTarget;
 		Node2D arena = GetParent<Node2D>();
@@ -6565,7 +6580,7 @@ public partial class Player : CharacterBody2D
 		if (scene == null) return CastOutcome.NoTarget;
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null) return CastOutcome.NoTarget;
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		if (minDist > castRange) return CastOutcome.NoTarget;
 		Node2D arena = GetParent<Node2D>();
 		if (arena == null) return CastOutcome.NoTarget;
@@ -6669,7 +6684,7 @@ public partial class Player : CharacterBody2D
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null) return CastOutcome.NoTarget;
 
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		if (minDist > castRange) return CastOutcome.NoTarget;
 
 		Node2D arena = GetParent<Node2D>();
@@ -6864,7 +6879,7 @@ public partial class Player : CharacterBody2D
 		}
 		if (nearest == null) return CastOutcome.NoTarget;
 
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		if (minDist > castRange) return CastOutcome.NoTarget;
 
 		// One eruption per projectile, each under a DIFFERENT enemy, nearest first. The spell used to
@@ -7012,7 +7027,7 @@ public partial class Player : CharacterBody2D
 		if (scene == null) return CastOutcome.NoTarget;
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null) return CastOutcome.NoTarget;
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		if (minDist > castRange) return CastOutcome.NoTarget;
 
 		var zone = scene.Instantiate<Node2D>();
@@ -7131,7 +7146,7 @@ public partial class Player : CharacterBody2D
 		if (scene == null) return CastOutcome.NoTarget;
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null) return CastOutcome.NoTarget;
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		if (minDist > castRange) return CastOutcome.NoTarget;
 
 		Node2D knot = FindDensestEnemy(castRange) ?? nearest;
@@ -7217,7 +7232,7 @@ public partial class Player : CharacterBody2D
 		// The nearest-in-range check comes before the sort. A spell with nothing in reach is now
 		// retried every frame until something arrives (CastOutcome.NoTarget), and a linear scan is
 		// what that should cost - not a LINQ sort of the whole horde.
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null || minDist > castRange) return CastOutcome.NoTarget;
 
@@ -7328,7 +7343,7 @@ public partial class Player : CharacterBody2D
 		if (scene == null) return CastOutcome.NoTarget;
 		FindNearestEnemy(out var nearest, out var minDist);
 		if (nearest == null) return CastOutcome.NoTarget;
-		float castRange = spell.GetRangeAtLevel(spell.CurrentLevel);
+		float castRange = spell.GetReachAtLevel(spell.CurrentLevel);
 		// Nothing in reach: stay ready, as every other aimed spell does, rather than dropping the volley
 		// round the player's own feet as it used to.
 		if (minDist > castRange) return CastOutcome.NoTarget;
@@ -8981,6 +8996,8 @@ public partial class Player : CharacterBody2D
 		"toxic_spore_burst" => "Mushrooms",
 		"meteor_swarm" => "Meteors",
 		"starfall" => "Stars",
+		// Artemis's own (the table path): a star a cloudburst lets fall is one archer more.
+		"sagittarius" => "Stars",
 		"stormsweep" => "Sweeps",
 		"sleet_runes" => "Runes",
 		// The Familiar counts in its form's noun (Hounds, Crows, Cats - SpellVariant.CountNoun); this is the

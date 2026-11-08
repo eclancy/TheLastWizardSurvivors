@@ -1550,6 +1550,10 @@ public partial class _BalanceHarness : Node
 		// and bosses (struck, never stopped).
 		if (Starfall.ForeseenStars > 0)
 			GD.Print($"HARNESS QUATRAINS m={row.Minute} foreseen={Starfall.ForeseenStars} stopped={Starfall.WindUpsStopped} on_elites={Starfall.ForeseenOnElites}");
+		// The Hunter's Moon (Artemis, Sagittarius.HuntersMoonId): volleys loosed under it, marked quarries that fell and
+		// passed the mark on, and of those the falls that had stars left to loose again.
+		if (Sagittarius.HuntVolleys > 0)
+			GD.Print($"HARNESS HUNT m={row.Minute} volleys={Sagittarius.HuntVolleys} passes={Sagittarius.HuntPasses} revolleys={Sagittarius.HuntRevolleys}");
 		// The Eye of Ra (Imhotep): flares so far, bodies blinded by them, elites seared instead, and how many are blind now.
 		if (Fireball.FlaresThisRun > 0)
 		{

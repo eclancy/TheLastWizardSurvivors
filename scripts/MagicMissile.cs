@@ -761,7 +761,7 @@ public partial class MagicMissile : Area2D
 		}
 
 		damage = Math.Max(1, Mathf.RoundToInt((SpellData?.GetDamageAtLevel(CurrentLevel) ?? 1) * DamageMultiplier));
-		range = SpellData?.GetRangeAtLevel(CurrentLevel) ?? 500f;
+		range = SpellData?.GetReachAtLevel(CurrentLevel) ?? 500f;
 		speed = MathF.Max(1f, BaseSpeed + (SpellData?.GetEffectValueAtLevel(SpellEffect.ProjectileSpeed, CurrentLevel) ?? 0f));
 		duration = MathF.Max(0f, BaseDuration * DurationMultiplier);
 		pierce = Math.Max(0, BasePierce + (SpellData != null ? SpellData.GetPierceAtLevel(CurrentLevel) : 0));

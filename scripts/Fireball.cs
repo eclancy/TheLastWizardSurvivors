@@ -408,7 +408,7 @@ public partial class Fireball : Area2D
 	{
 		float areaSizeBonus = SpellData?.GetEffectValueAtLevel(SpellEffect.AreaSize, CurrentLevel) ?? 0f;
 		damage = Math.Max(1, Mathf.RoundToInt((SpellData?.GetDamageAtLevel(CurrentLevel) ?? 6) * DamageMultiplier));
-		range = SpellData?.GetRangeAtLevel(CurrentLevel) ?? 400f;
+		range = SpellData?.GetReachAtLevel(CurrentLevel) ?? 400f;
 		// The evolutions' speed (Armageddon Sun's slow drift) and Area (Hellfire Nova, Armageddon Sun)
 		// as well as the player's. Both cards promised them and neither reached the blast until
 		// 2026-10-26; their ScaleMultiplier had been growing the drawing over an unchanged hit.
