@@ -29,7 +29,7 @@ card's one line (`StageCatalog.CorruptionText`) is what each event is built from
 | chapter | event | the line it comes from | what it asks | reward |
 |---|---|---|---|---|
 | Enchanted Forest | **Hold the grove** (`GroveEvent`) | "Every path now leads inward." | **stand still** in a ring for 20 s; leaving drains it at half speed | Bramble Seed |
-| Enchanted Forest (second) | **The walking hut** (`WalkingHutEvent`) | "Every path now leads inward." | **hunt**: a hut on hen's legs walks its circle in the deep wood; within 420 px it turns its back and bolts, quicker than you for 2 s, then slower. Keep within 520 px of it for 30 s (the bar holds when you are not) and it tires, kneels and opens its door | Baba Yaga |
+| Enchanted Forest (second) | **The walking hut** (`WalkingHutEvent`) | "Every path now leads inward." | **herd** (unlock-puzzles.md 3.3, built 2026-11-07): a hut on hen's legs walks its circle in the deep wood; within 420 px it turns its back and bolts, quicker than you for 2 s, then slower - and fleeing you is how you steer it. Near its circle stands her yard, a bone fence with one gap between the two brightest skull lanterns, facing away from the circle. Drive it through the gap and it has nowhere left to run: it kneels and opens its door. The 30 s bar and its band are gone; losing it still costs nothing (it calms and stands, its prints lead back) | Baba Yaga |
 | Fallow Fields (second) | **The Tithe-Reeve's scale** (`TitheScaleEvent`) | "He takes a tithe of everything that grows here." | **pay**: from arrival every XP orb that falls within 320 px of the reeve's great scale drifts into its pan instead of to you; when the pan holds one level's XP at that moment of the run the beam drops, the bar falls from the granary door and she steps out. Walking off keeps what is paid; nothing fails | Medea |
 | Cursed Dungeon | **The Gaoler's key** (`GaolersKeyEvent`) | "He keeps a wizard in one of these cells." | **carry**: kill the Warden, take its key across the map; three hits knock it loose | Tituba |
 | Sunken Cave | **The nine mouths** (`NineMouthsEvent`) | "His shadow followed the water down into the dark." | **listen**: a crescent of rock with nine mouths; her voice comes out of all of them a beat apart, hers first; stand in hers 2 s. A wrong mouth answers with a flight of Gloomwings and hers moves | the Cumaean Sibyl |
@@ -611,7 +611,7 @@ chapter's line in `SideEventDirector` is a list, its original event first:
   Passive *Prophecy*: +3 rerolls a run. Freed at the nine mouths; counted at the Throne's gate only.
 - **Baba Yaga** (2026-11-03), the witch of the deep wood, tall, gaunt and iron-grey, a pestle in her hand with a
   thorned vine climbing it. Opens on **Thorned Vine** (two elements, R2), Elderbark's deed. Passive *Bone Fence*:
-  +20% to every shove and pull her spells give. Freed by running her walking hut down, the Forest's second event;
+  +20% to every shove and pull her spells give. Freed by herding her walking hut into the bone yard, the Forest's second event;
   counted at the Throne's gate only. **Never secret**: the Forest is open on a new save, so she is a silhouette
   from the first run.
 - **Paracelsus** (2026-11-03), the Swiss physician who wrote that the dose makes the poison: stocky, heavy-jawed, a

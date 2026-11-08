@@ -35,10 +35,11 @@ using TheOneHeMissed.scripts;
 //      and stands in the mouth whose voice came first (NineMouthsEvent.LastCallFirst - what a player
 //      hears and sees), never the answer itself. --wrong-mouth first stands in a mouth that was NOT first,
 //      and checks that it answers with a flight and that hers moves.
-//      The Forest's walking hut is HUNTED, at the player's own walking speed, never teleported: the probe walks
-//      at it and holds just inside its startle radius, so it bolts again and again and the bolts really gain on
-//      him. --lose-hut, once the bar is two fifths full, walks straight away past its lose radius and waits
-//      there, and checks the bar held and the hut calmed and stood; then walks back to it and finishes.
+//      The Forest's walking hut is HERDED (unlock-puzzles.md 3.3), at the player's own walking speed, never
+//      teleported: the probe stands on the far side of the hut from the yard's gap and presses, so the hut
+//      flees toward the mouth and in, and it checks the hut knelt INSIDE the yard. --lose-hut, once two
+//      fifths driven, walks straight away past its lose radius and waits there, and checks it calmed and
+//      stood where it was left; then herds again and finishes.
 //      The Last Bridge's barge (--stage=11) is KEPT PACE WITH: placed by the bridge's band, not the explore
 //      bands, so its placement is checked against the bridge's rules (moored under a span, on the water beside
 //      the deck, the wayfinder on the deck ahead of the start); then the probe comes level with it and stays
@@ -138,8 +139,13 @@ public partial class _ExploreProbe : Node
 	private int closeFrames;
 	private int escortReleasesSeen;
 	private float lostClock;
-	private float progressOutside = -1f;
-	private float progressAfterWait = -1f;
+	private Vector2 hutPosOutside = Vector2.Inf;
+	private Vector2 hutPosAfterWait = Vector2.Inf;
+	// The hut's story at its last living tick (see the dispatch note): the results run after the
+	// event has freed itself.
+	private (bool Seen, int Bolts, int Cut, int Prints, int OldPrints, bool Tired, bool Won,
+		int Calmed, float Drive, Vector2 HutAt, Vector2 Yard) hutSnap;
+	private int hutSnapCur = -1;
 	// The Last Bridge's barge: --fall-behind=S and --arrive-late (see the header).
 	private float fallBehind;
 	private bool arriveLate;
@@ -461,8 +467,15 @@ public partial class _ExploreProbe : Node
 				float min = e.PlacementMinChunks * chunk - slack;
 				// The lanterns are a chain from the first, so later ones may lie a mire's reach further.
 				float max = e.PlacementMaxChunks * chunk + slack + (i > 0 ? 2200f : 0f);
-				if (i == 0 && e is WalkingHutEvent)
+				if (i == 0 && e is WalkingHutEvent hutPlaced)
+				{
 					Check("the hut is surrounded by deep woodland", game.CreateExplorePlacer(0, 6f, 8f).HasWoodedSurrounds(p, WalkingHutEvent.WoodlandRingRadius));
+					// Her yard stands a real drive out (3.3: 600-900 px, the widening retries a
+					// little further), never beside the circle where driving it in is a stroll.
+					float drive = hutPlaced.YardCentre.DistanceTo(p);
+					Check($"her yard stands a drive from the circle", drive >= WalkingHutEvent.YardDriveMin - 50f
+						&& drive <= WalkingHutEvent.YardDriveMax + 3f * 130f + 50f, $"{drive:0} px");
+				}
 				Check($"{Of(e.Index)}site {i} ({e.Sites[i].Glyph}) is in the event band", d >= min && d <= max, $"{d:0} px = {d / chunk:0.0} chunks");
 				bool open = terrain == null || (!terrain.IsBlockedAtWorld(p) && !terrain.IsWallAtWorld(p)
 					&& !terrain.IsFenceAtWorld(p) && !terrain.IsHazardAtWorld(p));
@@ -1048,20 +1061,22 @@ public partial class _ExploreProbe : Node
 						$"{mouthTrueBefore} -> {mouthTrueAfter}");
 				}
 			}
-			if (e is WalkingHutEvent ran)
+			if (e is WalkingHutEvent || (hutSnap.Seen && cur == hutSnapCur))
 			{
-				Check("the hut fled: it bolted, and the bolts gained on him", ran.BoltsStarted >= 2,
-					$"{ran.BoltsStarted} bolts, {ran.BoltsCut} cut short by the ground, {ran.FreshPrintsLaid} prints laid");
-				Check("its feet left prints, and its old trails were laid", ran.FreshPrintsLaid > 0 && ran.OldPrintCount > 0,
-					$"{ran.FreshPrintsLaid} fresh, {ran.OldPrintCount} old");
-				Check("it tired and knelt", ran.IsTired, $"bar {ran.Progress * 100f:0}%");
+				Check("the hut fled: it bolted, and the bolts gained on him", hutSnap.Bolts >= 2,
+					$"{hutSnap.Bolts} bolts, {hutSnap.Cut} cut short by the ground, {hutSnap.Prints} prints laid");
+				Check("its feet left prints, and its old trails were laid", hutSnap.Prints > 0 && hutSnap.OldPrints > 0,
+					$"{hutSnap.Prints} fresh, {hutSnap.OldPrints} old");
+				Check("driven into her yard, it knelt", hutSnap.Tired
+					&& hutSnap.HutAt.DistanceTo(hutSnap.Yard) <= WalkingHutEvent.YardRadius,
+					$"drive {hutSnap.Drive * 100f:0}%, {hutSnap.HutAt.DistanceTo(hutSnap.Yard):0} px from the yard's middle");
 				if (loseHut)
 				{
-					Check("lost: the bar held while he was away", lostPhase == 2 && progressOutside >= 0f
-						&& Mathf.Abs(progressAfterWait - progressOutside) < 0.001f,
-						$"{progressOutside * 100f:0.0}% when he passed its reach, {progressAfterWait * 100f:0.0}% after waiting");
-					Check("lost: it calmed and stood, then was found again and run down", ran.TimesCalmed >= 1 && ran.IsWon,
-						$"calmed {ran.TimesCalmed} time(s)");
+					Check("lost: once calm it stood where it was", lostPhase == 2 && hutPosOutside != Vector2.Inf
+						&& hutPosAfterWait.DistanceTo(hutPosOutside) < 60f,
+						$"moved {(hutPosOutside == Vector2.Inf ? float.NaN : hutPosAfterWait.DistanceTo(hutPosOutside)):0} px after calming");
+					Check("lost: it calmed and stood, then was found again and driven in", hutSnap.Calmed >= 1 && hutSnap.Won,
+						$"calmed {hutSnap.Calmed} time(s)");
 				}
 			}
 			if (e is GibbetCageEvent led)
@@ -1197,14 +1212,19 @@ public partial class _ExploreProbe : Node
 			Finish(Multi ? "every event over" : "event over");
 			return;
 		}
-		if (completeClock > (e is SeersVoiceEvent ? 480f : 240f))
+		// The hut's herd has a validator-checked two-minute drive; losing it on purpose (--lose-hut)
+		// adds the walk out past its lose radius, the calm wait, the walk back and a second drive,
+		// which an honest player-paced probe cannot do in the plain 240 s.
+		float completeBudget = e is SeersVoiceEvent ? 480f
+			: e is WalkingHutEvent && loseHut ? 480f : 240f;
+		if (completeClock > completeBudget)
 		{
 			if (e is TitheScaleEvent stuck)
 				notes.Add($"the tithe at 240 s: pan {stuck.Paid:0} of {stuck.Price:0} ({stuck.Progress * 100f:0}%), {stuck.OrbsTaken} orbs weighed, "
 					+ $"{GranaryTithe.OrbsInFlight} in flight, open {GranaryTithe.Open}; {EnemyRegistry.Count} enemies, "
 					+ $"{EnemyRegistry.Snapshot.Count(x => IsInstanceValid(x) && x.GlobalPosition.DistanceTo(stuck.ScaleFoot) < TitheScaleEvent.TitheReach)} within its reach; "
 					+ $"he stands {player.GlobalPosition.DistanceTo(stuck.ScaleFoot):0} px from it");
-			Check($"{Of(cur)}the event can be finished", false, "not finished after 240 s");
+			Check($"{Of(cur)}the event can be finished", false, $"not finished after {completeBudget:0} s");
 			Finish("gave up");
 			return;
 		}
@@ -1279,9 +1299,16 @@ public partial class _ExploreProbe : Node
 				target = mouths.StandPoint(heard);
 			}
 		}
-		// The walking hut: hunted at his own walk (HuntStep), and stood still while it kneels.
+		// The walking hut: herded at his own walk (HuntStep), and stood still while it kneels. Its
+		// story is kept as a snapshot every tick, because the event frees itself a few seconds
+		// after resolving (SideEvent's win-line linger) - usually before the results run.
 		if (e is WalkingHutEvent hunt && hunt.IsFound)
+		{
 			target = hunt.IsTired ? player.GlobalPosition : HuntStep(hunt, delta);
+			hutSnapCur = cur;
+			hutSnap = (true, hunt.BoltsStarted, hunt.BoltsCut, hunt.FreshPrintsLaid, hunt.OldPrintCount,
+				hunt.IsTired, hunt.IsWon, hunt.TimesCalmed, hunt.DriveProgress, hunt.HutPosition, hunt.YardCentre);
+		}
 		// The gibbet's cage: the winch held, then led to the ferry at his own walk (EscortStep).
 		bool clearSwarm = true;
 		if (e is GibbetCageEvent escort && escort.IsFound)
@@ -1519,34 +1546,44 @@ public partial class _ExploreProbe : Node
 	// One step of the hunt, at the player's own walking speed: to just inside its startle radius on the line to it,
 	// so it bolts whenever it can. With --lose-hut, part-way through: straight away past its lose radius, a wait
 	// there, and back.
+	// Herding, at his own walk (unlock-puzzles.md 3.3): stand on the far side of the hut from where it should
+	// go, and it flees where you want. The goal is the gap's mouth until the hut stands at it, then the yard's
+	// middle; the press point is just inside the startle radius on the line through the hut from the goal.
+	// With --lose-hut, once two fifths driven: straight away past its lose radius, a wait (it must calm and
+	// stand where it was left, prints leading back), then the herding again.
 	private Vector2 HuntStep(WalkingHutEvent hunt, float delta)
 	{
 		Vector2 me = player.GlobalPosition;
-		Vector2 toHut = hunt.HutPosition - me;
+		Vector2 hutAt = hunt.HutPosition;
+		Vector2 toHut = hutAt - me;
 		float d = toHut.Length();
 		float step = player.WalkingSpeed * delta;
-		if (loseHut && lostPhase == 0 && hunt.Progress >= 0.4f)
+		if (loseHut && lostPhase == 0 && hunt.DriveProgress >= 0.4f)
 			lostPhase = 1;
 		if (lostPhase == 1)
 		{
-			if (d <= WalkingHutEvent.KeepRadius)
-				return d > 1f ? me - toHut / d * step : me + Vector2.Down * step;
-			if (progressOutside < 0f)
-				progressOutside = hunt.Progress;
 			if (d < WalkingHutEvent.LoseRadius + 400f)
-				return me - toHut / d * step;
+				return d > 1f ? me - toHut / d * step : me + Vector2.Down * step;
+			// It treads on until it calms; the promise is that once CALM it stands where it is.
+			// So the mark is set at its first calm, and the drift measured from there.
+			if (hutPosOutside == Vector2.Inf && !hunt.IsFleeing)
+				hutPosOutside = hutAt;
 			lostClock += delta;
-			if (lostClock >= WalkingHutEvent.CalmSeconds + 2f)
+			if (lostClock >= WalkingHutEvent.CalmSeconds + 4f && hutPosOutside != Vector2.Inf)
 			{
-				progressAfterWait = hunt.Progress;
-				GD.Print($"EXPLOREPROBE lost the hut at {d:0} px for {lostClock:0.0}s: bar {progressOutside * 100f:0.0}% -> {progressAfterWait * 100f:0.0}%, "
-					+ $"fleeing {hunt.IsFleeing}, calmed {hunt.TimesCalmed}; walking back");
+				hutPosAfterWait = hutAt;
+				GD.Print($"EXPLOREPROBE lost the hut at {d:0} px for {lostClock:0.0}s: it moved "
+					+ $"{hutPosAfterWait.DistanceTo(hutPosOutside):0} px after calming, "
+					+ $"fleeing {hunt.IsFleeing}, calmed {hunt.TimesCalmed}; herding again");
 				lostPhase = 2;
 			}
 			return me;
 		}
-		const float Want = WalkingHutEvent.StartleRadius - 40f;
-		return d > Want ? me + toHut / d * Mathf.Min(step, d - Want) : me;
+		bool atMouth = hutAt.DistanceTo(hunt.YardGapMouth) <= 150f
+			|| hutAt.DistanceTo(hunt.YardCentre) <= WalkingHutEvent.YardRadius;
+		Vector2 goal = atMouth ? hunt.YardCentre : hunt.YardGapMouth;
+		Vector2 press = hutAt + (hutAt - goal).Normalized() * (WalkingHutEvent.StartleRadius - 60f);
+		return me + (press - me).LimitLength(step);
 	}
 
 	// --- the dotted door: traced ----------------------------------------------------------------------
