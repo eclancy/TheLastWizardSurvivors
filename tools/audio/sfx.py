@@ -457,15 +457,33 @@ def player_shield_absorb():
 
 
 def player_shield_break():
+    """Deeper, like cracking glass (Eric, in-flight item 60, 2026-11-06: the old one - the ice
+    stack on 1200 Hz under a 6 kHz lid - was annoying). The CRACK leads: a mid-band snap over a
+    low split falling to 90 Hz (the low band is the player's; the sub stays the explosion's and
+    the boss's), then the same inharmonic glass ratios struck once on 500->400 Hz with the 12.1
+    partial gone, the debris band an octave down, and the lid at 4.2 kHz. Still one stack struck
+    once in 0.65 s - secret_shatter owns the cascade, and his shield going must never sound like
+    a vault breaking."""
     dur = 0.65
-    n = S.n_samples(dur)
-    shatter = S.partials(S.sweep(dur, 1200, 900, 1.0), [1.0, 2.76, 5.40, 8.93, 12.1], dur,
-                         amps=[1.0, 0.7, 0.5, 0.32, 0.2], decays=[3.0, 4.0, 5.5, 7.0, 9.0])
-    shatter = S.lowpass(shatter, 6000, 0.707)
-    debris = S.lowpass(S.highpass(S.osc("noise", 0, dur, seed=89), 2200), 5500, 0.707)
+    snap_dur = 0.06
+    snap = S.bandpass(S.osc("noise", 0, snap_dur, seed=89), 1400.0, 1.1)
+    snap = S.env_mul(S.lowpass(snap, 3800.0), S.expdecay(S.n_samples(snap_dur), 9.0))
+    split_dur = 0.32
+    split = S.osc("sine", S.sweep(split_dur, 240.0, 90.0, 0.5), split_dur)
+    split = S.env_mul(split, S.expdecay(S.n_samples(split_dur), 7.0))
+    shatter = S.partials(S.sweep(dur, 500, 400, 1.0), [1.0, 2.76, 5.40, 8.93], dur,
+                         amps=[1.0, 0.65, 0.42, 0.22], decays=[3.0, 4.5, 6.0, 8.5])
+    debris = S.lowpass(S.highpass(S.osc("noise", 0, dur, seed=93), 1000), 3200, 0.707)
     debris = S.gate(debris, 60.0, 0.45, seed=97)
-    out = S.mix(S.gain(shatter, 0.85), S.gain(S.env_mul(debris, S.decay(n, 2.4)), 0.4))
-    return S.dc_block(S.reverb(out, size=0.7, mix=0.3))
+    debris = S.env_mul(debris, S.decay(S.n_samples(dur), 2.4))
+    out = S.layer([
+        (snap, 0.0, 0.8),
+        (split, 0.0, 0.7),
+        (shatter, 0.0, 0.9),
+        (debris, 0.0, 0.35),
+    ])
+    out = S.lowpass(out, 4200, 0.707)
+    return S.dc_block(S.reverb(out, size=0.7, mix=0.28))
 
 
 def player_death():

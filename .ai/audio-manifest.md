@@ -5,6 +5,13 @@ is the inventory and the wiring backlog: seventy-one generated `.wav` files in `
 what each one is for, and where in the code it is meant to be triggered. The music - a menu
 theme and nine chapter sets in `assets/music/` - has its own section at the end.
 
+**2026-11-07: the shield break, deeper.** `player_shield_break` rebuilt (Eric, in-flight item 60: "annoying -
+deeper, like cracking glass"). No new file and no wiring change: the crack now leads (a mid-band snap over a low
+split falling to 90 Hz), the glass stack dropped from 1200→900 Hz to 500→400 Hz with the 12.1 partial gone, the
+debris band came down an octave (1.0-3.2 kHz, was 2.2-5.5), and the lid from 6 to 4.2 kHz. Measured: centroid
+3.8 kHz → 1.46 kHz, hf 32% → 8%. Still one stack struck once in 0.65 s at −8 dBFS (`secret_shatter` keeps the
+cascade); nearest neighbour `player_death` at 0.184, `--confuse` 0 confusable pairs.
+
 **2026-11-04: one more, wired; the rot on his way.** One for Paracelsus's walk (`.ai/unlock-puzzles.md` 3.4):
 `escort_cough`, played when he steps into a rot pool and again every 1.1 s he stays in one (`GibbetCageEvent`) - a
 short wet gulp of the bog and the hint's own tired cough (`_cough`), once and hard, near and dry where the hint's is far

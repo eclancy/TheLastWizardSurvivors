@@ -956,6 +956,21 @@ builds to 120 and seven.
    melody back at pace minute 5, a boss layer per chapter, a 1 s menu handover; +2.6 MB per release zip.
    Open: the melody leaves at 0:24 until minute 5; no melody under the boss layer; the castle's stems
    left for their flip. The menu's music should give way to more interesting, thematic battle music for each level.
+   **Checked 2026-11-07 (the audio batch; this is item 60's stems question, answered)**: the stems play
+   exactly as designed and the menu-ish read is by construction, not a bug. A headless Forest run logs
+   `set 'forest' started at bar one, 4 stems locked (forest_bed 0 dB, forest_pulse 0 dB, forest_lead
+   0 dB, forest_boss -80 dB), in over 0 s, solo out over 1 s` - battle percussion from the first
+   downbeat, the theme gone in a second - and then `run music lead out at 00:24`. That second line is
+   the diagnosis: the lead is the only stem that carries a chapter's identity (the flute, the brass,
+   the shawm, the music box), and it rests from 0:24 until an elite or pace minute 5, the longest
+   unbroken stretch of a run. What remains is the bed - which is still the menu theme's own
+   instruments (strings, drone, choir; `analyse.py --music` puts every bed's centroid at 584-681 Hz
+   against the menu theme's 614, same bands, same seven notes) - plus drums. So minutes ~0:30-5:00
+   read as "the menu theme with drums", in every chapter. Three fixes, Eric's pick, none made because
+   each needs ears: (a) code only - shorten the lead's rest (`Node2DGame.MusicLeadLateRunPaceMinutes`,
+   `MusicOpeningLeadSeconds`), or let the hook return one section per loop; (b) re-voice each bed away
+   from the menu's palette (scoring + re-render of eleven beds); (c) re-voice the MENU theme instead -
+   one piece, one render - so the strings-drone-choir bed reads as the game's sound, not the menu's.
    And **the Elder God Maw opens with a deep, scary crash** (a new generated sound, by
    `.ai/audio-direction.md`).
 8. **Ground per chapter** (merged: the Emberdeep on cracked basalt with smouldering seams and molten
