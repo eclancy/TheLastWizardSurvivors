@@ -39,6 +39,17 @@ things come up; strike what lands.**
    Ruins 0x5E02-4). Merge each with `ground_detail.py` re-run for the atlas.
    - `ws-art-foliage-frozen` (`art/foliage-frozen`): the move (f072c727) and the snow-ghost groves (71d09d5b,
      "work in progress, not yet measured"), one uncommitted file. Nothing tested.
+     **Built (2026-11-07), ready for the integrator to merge:** the left-over tuning committed as found (5fcd94ba);
+     main merged (1e078335 - the atlas the only conflict, `ground_detail.py` re-run in full); imported, and
+     `props_frozen.py` reproduces every committed sprite byte for byte. Measured and written up in `.ai/terrain.md`
+     13, "The Frozen Waste: snow ghosts, not woods". Validator 0 errors, 1 warning (test_wizard); footing census on
+     seeds 4242 and 11, 0 trunks under 72 px, no pocket or narrow room; `--check-feet` three minutes walking and
+     kiting, 0 frames in the ground, 0 stuck checks; `_ExploreProbe --stage=5` 23 passed, 0 failed; light probe: the
+     cast and the orbs read as before, the new art tops out at +24 over the snow. Close-ups checked for bricks and
+     paving: the ghosts are pillowed lumps, the boulders split rounded granite. Shots: `_shots/foliage-frozen/`
+     (`composite-pc.png`, `composite-phone.png`, before | after on the same build). The old Ice case in
+     `BuildDecorProps` is left for the integrator. **Found, not this pass's:** the Buried Runes' vault walk fails its
+     stillness beats (the stones show on arrival) with or without this foliage, and failed on the move commit too.
    - `ws-art-foliage-ruins` (`art/foliage-ruins`): the move (93844a88, hash proven unchanged) and the
      overgrown quarters (68ed6cc2), one uncommitted file. Not yet validated, probed, censused or shot.
    - Both were told what got the Sands and the Heath sent back (rocks as bricks, crowns as paving): check
