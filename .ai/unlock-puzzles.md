@@ -3,8 +3,8 @@
 Eric, 2026-11-03: *"what i actually wanted to discuss was making sure all of the character unlocks are fun
 and interesting, like the laser puzzle in halls of torment"*.
 
-**Status: designed with Eric, 2026-11-03. Built: 3.4, Paracelsus (2026-11-04, its "Built" note); the other seven
-are not.** Every rule below that says "decided" was
+**Status: designed with Eric, 2026-11-03. Built: 3.3 Baba Yaga, 3.4 Paracelsus, 3.5 Medea and 3.7 Morgan le Fay
+(each its "Built" note); the other four are not.** Every rule below that says "decided" was
 chosen by him that day, one question at a time. Eight of the twelve place-held wizards get a new ask; four
 keep theirs. Numbers marked *first guess* are for the build to tune.
 
@@ -385,6 +385,71 @@ the barge waits 560 px ahead of the fall.
 - **Honest limit:** of the eight this is the least an insight and the most a rhythm. If it plays flat, the
   lever is lamps that light in pairs across the deck, so which side she drifts is chosen.
 - **Size:** S-M.
+
+**Built (2026-11-07, `claude/compassionate-hellman-1d6e08`).** As decided, every first guess taken: a lamp lights after
+1 s with his feet within 60 px of its foot, burns 20 s and gutters for its last 5. The particulars:
+
+- **The row.** Five lamps 400 px apart along the parapet on her side, the first beside her mooring, and the sixth is
+  her landing - its lamp already lit in her own cold light (wind's ramp, her lantern's colour), so the row reads from
+  where she waits, through the warm ones he has lit, to one cold light where she is going. A lamp stands on the deck
+  40 px in from the shore, never in a gatehouse's narrows, never within 120 px of a piece's end, and never where a
+  broken span's hole is beside the parapet (its foot and the deck he lights it from both clear the hole by its radius
+  and 100 px); a lamp that would stand there steps on along the bridge (`BargeEvent.LayLamps`, `LampMayStand`), and a
+  mooring whose row would then land her past the span's end is drawn back along the span. Over 64 seeds 23 lamps of
+  the drift stepped past a hole; a stretch is then longer than 400 px, which only changes when to light its lamp.
+- **The rule** is one pure class, `BargeDrift`, that the event and the validator both step. She sets out from her
+  stop the moment its lamp burns (that counts) and drifts on to the next at 40 px a second; at a dark lamp she waits in
+  the dark. Lighting is only for the lamps of her stretch (her stop to before her landing), and only a dark one: a
+  burning lamp is not topped up, so lighting early is never free. After five lit set-outs she is in at the next lamp
+  and comes ashore when he is level with her (within 260 px along the bridge, as before). The first lamp is beside
+  her as he arrives, so the one action is learned on the first try: stand there, it lights, she moves.
+- **The fall (open in the design, decided here).** She never lets the span's fall within 560 px of her (the old
+  `RestLead`). Waiting at a dark lamp with it that near, she is **borne on** past the lamp at the fall's pace; that
+  lamp does not count, so her landing moves on one lamp, and every set-out she had stays counted - a wrong move costs
+  time, never progress, and nothing locks. Under way she outruns it. Before he comes the same rule moves her off a
+  mooring the fall reached. So the row runs on to the castle wall (only her stretch is ever drawn; a lamp the landing
+  moves onto fades up out of the mist), and at least five lamps stand past the furthest the fall can bear her.
+- **How it reads.** The lamp: an iron standard on a stone plinth with a four-sided lantern, ten frames
+  (`tools/art/barge_lamps.py`: dead, kindling, four burning, two guttering, two of hers). On the floor round each lamp
+  of her stretch, a ring that fills as he lights it, and round a burning one its clock running down, hot then the
+  edge's red once it gutters. On the light layer, each burning lamp's flame and its pools on the deck and the water,
+  and **the lit water**: from her to the first dark lamp at or past her stop, the stretch she can drift, drawn on the
+  strait in warm light - a dark lamp visibly ends it. Her lantern's ring fills toward her landing. The reach's two
+  dashed lines are drawn only once she is in and he is not level with her.
+- **Its words.** "Light the lamp beside the barge" / "Light the lamps ahead of the barge (n more)" / "The barge waits
+  in the dark - light its lamp" / "The fall drives the barge on - light the lamp ahead of it" / "The barge has come in
+  - meet it at its landing". The arrow points at the lamp she waits at, at her landing, or at her when he is far
+  from her - never at the next dark lamp while she is under way, which is the puzzle. The deed keeps `the_barge` and
+  is called *The Way Lit*. Schema: none.
+- **Stays:** the barge, its art, its track and mooring, the dogs (a pair from 1,050 px ahead of her every 7 s while
+  she is out), the hint, the reward. **Goes:** the reach she had to be kept within, the 6 s grace, the drift back.
+- **After the win** the lamps stay standing, embers where one burned, and go with the deck when the fall reaches them
+  (`BridgeRules.KeepWithDeck`), as the parapets do.
+- **Proven.** `ValidateBarge` lays 64 seeds' rows and plays each on paper with `BargeDrift`: the next two ahead
+  (never one she would not reach before it burnt out) lands her in 69 s at most and never leaves her in the dark;
+  the whole stretch lit in one run ahead, then waiting at her landing, never lands her - a lamp goes out before she
+  reaches it; the rhythm from the tightest arrival lands her and the fall never comes nearer than 560 px; and left
+  idle after her first lamp, the fall bears her past dark lamps, her landing moves on one for each and her one set-out
+  is kept. Breaking the rhythm on purpose (a 32 s burn) raised both warnings. `_ExploreProbe --stage=11` plays it
+  walking (the final runs, on the final code): `--fresh-save` 25/25 (in at lamp 5 52 s after arriving, never in the
+  dark, Morgan freed), `--all-unlocked` 25/25 (the chest), `--light-all` 26/26 (the row lit by 11.5 s; lamps 3 and 4
+  went out ahead of her; she waited in the dark at lamp 3 with three set-outs, kept when he relit), `--let-fall
+  --bridge-front=-14000` 26/26 (borne past two dark lamps, landing lamp 5 to 7 past the gatehouse, the fall's nearest
+  560 px), `--arrive-late --bridge-front=-6000` 27/27 (borne three lamps before he came, met at lamp 3, in at lamp 8).
+  The probe allows her lead one frame of the fall (it reads the fall on its own frame, which can come before the event
+  has pushed her on that frame: 554 px was read once at a 0.2 s frame), and `--seed=2` 25/25 (moored on span 2's north-west
+  side, its fourth lamp stepped 740 px past the hole onto open deck, never in the dark). The first `--arrive-late` run
+  is why the probe waits a stride short of a lamp she will not reach before it burns out: lighting "the next two" lit
+  the lamp past a gatehouse too early and it went out ahead of her - the puzzle working, and now the paper player's
+  rule too. `_UiShot --stage=11 --terrain-seed=4242 --notes-seen=all --arrive --lamps-lit=1 --goto=barge:280,60
+  --goto-offset=0,0 --hold --frames=150` photographs it mid-solve at 1280x720 and at the phone's 540x1212 `--portrait
+  --safe-area` (the lit band was first drawn as a dotted line of glows and was made one band); the arrival (the arrow
+  over the lamp beside her) was photographed too. The win beat is the old barge's, unchanged, and was not retaken.
+- **Not built:** a bespoke lighting sound (a lamp catching is the beacons' fire cast, going out their wind cast; a
+  tools/audio ask), and the honest limit's lever (lamps in pairs across the deck).
+- **Needs eyes:** whether the lit water reads as "she can go this far" at a glance in a crowd, above all on a phone,
+  where the barge and the lamp ahead are rarely on one narrow canvas; whether the guttering is seen in time to matter;
+  and whether it plays as a rhythm or as busywork - nobody has walked it under the bridge's horde.
 
 ### 3.8 Tituba - slip past the lanterns
 

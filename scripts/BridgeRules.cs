@@ -68,6 +68,13 @@ public partial class BridgeRules : ChapterRules
 
 	/// <summary>Hold the front where it is for <paramref name="paceSeconds"/> more (the Span Lantern, C9).</summary>
 	public void HoldFront(float paceSeconds) => holdRemaining += Mathf.Max(0f, paceSeconds);
+
+	// What stands on the deck that is not the furniture and outlives whatever put it there - the barge's lamps, once its
+	// event is over (BargeEvent) - each hidden once the fall has passed it, as a parapet is (BridgeFurniture's slack).
+	private readonly List<(Node2D Node, float S)> keptWithDeck = new();
+
+	/// <summary>Keep <paramref name="node"/>, standing <paramref name="s"/> px along, until the fall takes the deck under it.</summary>
+	public void KeepWithDeck(Node2D node, float s) => keptWithDeck.Add((node, s));
 	private float holdRemaining;
 	private float lastPace = -1f;
 
@@ -182,6 +189,13 @@ public partial class BridgeRules : ChapterRules
 			}
 		}
 		furniture?.UpdateFade(player);
+		if (keptWithDeck.Count > 0 && FrontMoving)
+		{
+			float fallen = FrontS;
+			foreach ((Node2D node, float s) in keptWithDeck)
+				if (s + 34f < fallen && IsInstanceValid(node) && node.Visible)
+					node.Visible = false;
+		}
 
 		objectiveRedraw -= d;
 		if (objective != null && objectiveRedraw <= 0f)

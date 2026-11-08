@@ -96,7 +96,7 @@ The questions as they were put:
 | 6 | Scorched Sands | **Imhotep** | Fire | Fireball | **blind** | Eye of Ra | **kindle** three beacons at once | R1 |
 | 7 | The Emberdeep | **Wayland the Smith** | Metal | Iron Palisade | **temper** | The Tempered Line | **bait** the hammers onto his chains | none |
 | 8 | The Court (second event; was the Sketchbook) | **Ma Liang** | Arcane | Familiar (crow) | **displace** | The Painted Door | **trace** the dotted door | R1; P2 |
-| 9 | The Last Bridge | **Morgan le Fay** | Ice (Ice+Wind) | Sleet Runes | **double** | Fata Morgana | **keep pace** with her barge | R2 (R1 on Stormsweep) |
+| 9 | The Last Bridge | **Morgan le Fay** | Ice (Ice+Wind) | Sleet Runes | **double** | Fata Morgana | **light the lamps ahead** of her barge (was keep pace; `.ai/unlock-puzzles.md` 3.7) | R2 (R1 on Stormsweep) |
 | 10 | The Court | **Nostradamus** | Light | Starfall | **foresee** | The Quatrains | **seek** his voice room to room | R1 |
 
 Four open on a spell found in their own chapter (Thorned Vine, Contagion, Kindled Ward, Fireball), so
@@ -126,7 +126,7 @@ and none is "a harder fight".
 | **kindle** | Sands | three beacons burn 25 s each; have all three alight at once | the moot is in order against a clock; this is all at once, any order |
 | **bait** | Emberdeep | only his own forge's hammers break his chains; bring their slams to the stakes | nothing: the only ask that uses the enemy's attacks |
 | **trace** | Court (the Gallery) | walk a door sketched in charcoal dot to dot | nothing else is a drawn line |
-| **keep pace** | Last Bridge | stay level with her drifting barge to the gate | the caravan is caught; the barge must be accompanied |
+| **light ahead** | Last Bridge | she drifts only as far as the parapet's lamps are lit, and a lamp burns 20 s: light the next ones ahead of her, not the whole row (since 2026-11-07, `.ai/unlock-puzzles.md` 3.7; it was keep pace) | the dry tomb's beacons are lit together, any order; these are lit in turn, ahead of something moving, and lit too early they are out by the time she gets there |
 | **seek** | Court | his voice comes from a room; reach it, and it comes from another | the hart is seen; he is only heard, through walls |
 
 Every one inherits `side-events.md`'s rules: placed from the seed 4-6 chunks out (the castle's two by
@@ -1223,6 +1223,14 @@ met by the bot, which cannot be hurt); nothing on the phone.
   boat again, nearer the bridge."* / *"Its lantern is still lit."*
 
 **Built (2026-11-03, `wip/wizard-morgan`).** The design above, with the changes listed under "What moved".
+
+> **Its ask has changed since (2026-11-07): `.ai/unlock-puzzles.md` 3.7, "light the lamps ahead", and its Built note.**
+> Keeping pace is gone - the reach she must be kept within, the 6 s grace, the drift back to the mooring and the two
+> dashed lines across the deck - and a row of dead lamps on the parapet on her side is the ask instead: she drifts
+> only as far as they are lit, and sets out from a lamp only while it burns. Her deed keeps its id (`the_barge`) and is
+> called *The Way Lit* now. "Out of reach 6 s and it drifts back" (What moved, 2) and its dashed lines are history;
+> everything else in this note - her, Avalon, the barge, its placement and track, the slipped mooring (now: she is
+> borne on ahead of the fall), her clue, her form - still stands.
 
 - **Her.** `CharacterData_Morgan.tres`, appended to `CharacterRoster`. Name "Morgan le Fay", id `morgan`.
   `roster.morgan()`: tall and upright, a queen standing INTO the wind off the strait - her near arm raised level
