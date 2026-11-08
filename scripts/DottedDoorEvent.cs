@@ -8,12 +8,17 @@ using TheOneHeMissed.scripts;
 // portraits are his work, done under orders, and his brush paints nothing real while it is held. He drew himself a door
 // in the Gallery's end wall and was never let finish it."
 //
-// WHAT IT ASKS: TRACE. At the Gallery's west end a door is sketched in charcoal, an arch about 300 px tall, fifteen dots
-// along its outline, numbered. From the first dot, the player walks the line dot to dot: wherever his feet stay within
-// TraceTolerance of it, his own light follows them as ink (the pen), dot after dot lighting as it passes. Stepping off
-// the line only pauses it - the ink stays where it got to and nothing ever resets - and he picks the line up again where
-// the ink ends. The last dot inks the whole door in: it is painted, red lacquer and gold studs, a real door; it opens on
-// his light and Ma Liang steps out of it, and goes into the column of light.
+// WHAT IT ASKS: ONE STROKE (.ai/unlock-puzzles.md 3.2, Eric 2026-11-03; built 2026-11-07). At the Gallery's west end a
+// door is sketched in charcoal, an arch about 300 px tall: five to seven dots joined by seven to ten faint lines - its
+// jambs and arch, and the run's own lintel, sill, brace or ring (DoorFigure, rolled from the seed). INK EVERY LINE
+// EXACTLY ONCE: walking a line dot to dot within the tolerance inks it in his light; the stroke goes on only from the
+// dot the ink has reached; walking ALONG a line already inked smudges the whole drawing back to charcoal and the
+// stroke starts again anywhere (DoorStroke). Stepping off a line to dodge only pauses it. Every figure has exactly two
+// dots where an odd number of lines meet, and the stroke must begin at one of them: the insight is where to begin.
+// What his brush finishes becomes real - each inked line is a wall the household cannot cross (layer
+// EnemyOnlyCollisionLayer; he walks his own lines freely), so the drawing shelters him as it grows; the walls go
+// with the ink when it smudges or when the door opens. The last line inks the whole door in: it is painted, red
+// lacquer and gold studs, a real door; it opens on his light and Ma Liang steps out of it, into the column of light.
 //
 // WHERE: not the band. The Court is one building (CourtLayout), and the door is in it - on the Gallery's floor at its
 // west end, three cells in from the end wall and on the room's middle row, under the first frame of the row of portraits
@@ -27,29 +32,23 @@ using TheOneHeMissed.scripts;
 // own (the Seneschal's household comes the same way, .ai/endgame-castle.md 5.6). Not elites: nothing here must be
 // killed; they are only what pushes him off the line. Nothing is timed by the pace clock and nothing fails.
 //
-// Nothing here is a body: the drawing lies on the floor (DrawLayers.Ground), he is a sprite y-sorted at his feet, never
-// in "enemies", with no collision.
+// Nothing here is a target: the drawing lies on the floor (DrawLayers.Ground), he is a sprite y-sorted at his feet,
+// never in "enemies". Its only collision is the ink-walls, on a layer only enemies mask.
 public partial class DottedDoorEvent : SideEvent
 {
 	/// <summary>The room the door is drawn in.</summary>
 	public const string RoomId = "gallery";
 
-	// --- the door's path, in world px: tools/art/painted_door.py's HALF_W, HALF_H and ARCH_R at x2 ---------------------
-	public const float HalfWidth = 80f;
-	public const float HalfHeight = 150f;
-	public const float ArchRadius = 80f;
+	// --- the door's outline, in world px: tools/art/painted_door.py's HALF_W, HALF_H and ARCH_R at x2 (DoorFigure's) --
+	public const float HalfWidth = DoorFigure.HalfWidth;
+	public const float HalfHeight = DoorFigure.HalfHeight;
+	public const float ArchRadius = DoorFigure.ArchRadius;
 
-	/// <summary>The dots along the outline, numbered from the left jamb's foot to the right's.</summary>
-	public const int DotCount = 15;
+	/// <summary>How near a line his feet must stay for the ink to follow them.</summary>
+	public const float TraceTolerance = DoorStroke.Tolerance;
 
-	/// <summary>How near the line his feet must stay for the ink to follow them.</summary>
-	public const float TraceTolerance = 30f;
-
-	/// <summary>How far along the line ahead of the ink a step may take it in one frame (a chord, not a jump).</summary>
-	public const float PenLookAhead = 120f;
-
-	/// <summary>How far behind the ink his feet may be and still count as on the line.</summary>
-	public const float PenLookBack = 30f;
+	/// <summary>How long the smudge runs and fades, so a mistake is seen (3.2: about a second).</summary>
+	public const float SmudgeSeconds = 1.1f;
 
 	/// <summary>Where the door's middle stands: this many cells in from the Gallery's west wall, on its middle row.</summary>
 	public const float CellsFromWestWall = 3f;
@@ -73,81 +72,6 @@ public partial class DottedDoorEvent : SideEvent
 	public const float FreedAt = StepOutAt + StepOutSeconds;
 	private const float StepOutDistance = 40f;
 
-	public static float JambLength => 2f * HalfHeight - ArchRadius;
-	public static float ArcLength => Mathf.Pi * ArchRadius;
-	public static float PathLength => 2f * JambLength + ArcLength;
-
-	/// <summary>The point <paramref name="s"/> world px along the outline from the left jamb's foot, relative to the door's middle.</summary>
-	public static Vector2 PathPoint(float s)
-	{
-		s = Mathf.Clamp(s, 0f, PathLength);
-		if (s <= JambLength)
-			return new Vector2(-HalfWidth, HalfHeight - s);
-		if (s <= JambLength + ArcLength)
-		{
-			float a = Mathf.Pi + (s - JambLength) / ArchRadius;
-			float spring = -HalfHeight + ArchRadius;
-			return new Vector2(ArchRadius * Mathf.Cos(a), spring + ArchRadius * Mathf.Sin(a));
-		}
-		return new Vector2(HalfWidth, -HalfHeight + ArchRadius + (s - JambLength - ArcLength));
-	}
-
-	/// <summary>How far along the outline dot <paramref name="k"/> (0-based) stands.</summary>
-	public static float DotArc(int k) => k * PathLength / (DotCount - 1);
-
-	/// <summary>The point of the outline between arcs <paramref name="from"/> and <paramref name="to"/> nearest <paramref name="rel"/>.</summary>
-	public static float NearestArc(Vector2 rel, float from, float to, out float distance)
-	{
-		float best = from;
-		distance = float.MaxValue;
-		from = Mathf.Max(0f, from);
-		to = Mathf.Min(PathLength, to);
-		// Every 2 px, and the window's far end itself, so the last dot can always be reached.
-		for (float s = from; ; s = Mathf.Min(to, s + 2f))
-		{
-			float d = PathPoint(s).DistanceTo(rel);
-			if (d < distance)
-			{
-				distance = d;
-				best = s;
-			}
-			if (s >= to)
-				break;
-		}
-		return best;
-	}
-
-	/// <summary>
-	/// THE TRACE RULE, one step: where the ink is after his feet stand at <paramref name="feetRel"/> (relative to the
-	/// door's middle). Before it has begun, only the first dot begins it. After, the nearest point of the line a little
-	/// behind the ink to a chord's length ahead of it, within the tolerance, carries the ink to it - never back, so a
-	/// step off the line pauses it and nothing resets. Pure: the validator traces it on paper.
-	/// </summary>
-	public static (float Pen, bool Begun, bool OnLine) Step(float pen, bool begun, Vector2 feetRel)
-	{
-		if (!begun)
-		{
-			bool atFirst = feetRel.DistanceTo(PathPoint(0f)) <= TraceTolerance;
-			return (0f, atFirst, atFirst);
-		}
-		float s = NearestArc(feetRel, pen - PenLookBack, pen + PenLookAhead, out float d);
-		if (d > TraceTolerance)
-			return (pen, true, false);
-		return (Mathf.Max(pen, s), true, true);
-	}
-
-	/// <summary>How many dots the ink has reached at <paramref name="pen"/>.</summary>
-	public static int DotsReached(float pen, bool begun)
-	{
-		if (!begun)
-			return 0;
-		int n = 0;
-		for (int k = 0; k < DotCount; k++)
-			if (DotArc(k) <= pen + 0.5f)
-				n++;
-		return n;
-	}
-
 	protected override string SiteGlyph => "door";
 
 	// The Court's building places it, not the band.
@@ -162,7 +86,7 @@ public partial class DottedDoorEvent : SideEvent
 	// His paint: the arcane ramp's hot stop, a stop paler than the seer's violet in the same house.
 	protected override Color TellColor => new(0.910f, 0.753f, 1.0f);
 
-	protected override string Announcement => "A door sketched in charcoal, its dots numbered";
+	protected override string Announcement => "A door sketched in charcoal. Ink it in one stroke";
 
 	protected override string Objective
 	{
@@ -170,16 +94,24 @@ public partial class DottedDoorEvent : SideEvent
 		{
 			if (inked)
 				return "The door is inked in";
-			if (!begun)
-				return $"Trace the door from dot 1 (0 of {DotCount})";
-			if (!onLine)
-				return $"Back to the line - dot {Mathf.Min(DotsInked + 1, DotCount)}";
-			return $"Trace the door dot to dot ({DotsInked} of {DotCount})";
+			if (stroke == null)
+				return string.Empty;
+			if (smudgedFor >= 0f && smudgedFor < 2.5f && !stroke.Begun)
+				return "Smudged - begin again from any dot";
+			if (!stroke.Begun)
+				return $"Ink every line of the door once, in one stroke (0 of {figure.LineCount})";
+			if (stroke.Stuck)
+				return "No line left from here - walk the ink to smudge it";
+			if (!stroke.OnLine)
+				return $"Back to the line ({stroke.InkedCount} of {figure.LineCount})";
+			return $"Ink every line once ({stroke.InkedCount} of {figure.LineCount})";
 		}
 	}
 
-	// The arrow (off screen only) is on the first dot until it is begun, then on the ink while he is off the line.
-	protected override Vector2? PointerTarget => inked ? null : !begun ? DotWorld(0) : onLine ? null : PenWorld;
+	// The arrow (off screen only) is on the door until it is begun - never on a dot, which would give the start away -
+	// then on where the ink ends while he is off the line.
+	protected override Vector2? PointerTarget => inked || stroke == null ? null
+		: !stroke.Begun ? centre : stroke.OnLine ? null : PenWorld;
 
 	protected override string ChestLine => "He left something in the doorway - a chest";
 
@@ -191,11 +123,17 @@ public partial class DottedDoorEvent : SideEvent
 	/// <summary>The door's middle in world px.</summary>
 	public Vector2 DoorCentre => centre;
 
-	/// <summary>Dot <paramref name="k"/> (0-based) in world px.</summary>
-	public Vector2 DotWorld(int k) => centre + PathPoint(DotArc(Mathf.Clamp(k, 0, DotCount - 1)));
+	/// <summary>The run's figure, and the stroke being drawn on it. For the probes.</summary>
+	public DoorFigure Figure => figure;
+	public DoorStroke Stroke => stroke;
 
-	/// <summary>Where the ink has got to, in world px.</summary>
-	public Vector2 PenWorld => centre + PathPoint(pen);
+	/// <summary>Dot <paramref name="d"/> in world px.</summary>
+	public Vector2 DotWorld(DoorFigure.Dot d) => centre + figure.DotPosition(d);
+
+	/// <summary>Where the ink has got to, in world px: the head of the line in hand, or the dot the pen is at.</summary>
+	public Vector2 PenWorld => stroke == null || !stroke.Begun ? centre
+		: stroke.Active >= 0 ? centre + figure.Point(stroke.Active, stroke.ActiveFrom, stroke.ActiveT)
+		: DotWorld(stroke.Pen);
 
 	/// <summary>The Gallery's floor, for the probe: null off the Court.</summary>
 	public CourtLayout Court => court;
@@ -215,6 +153,10 @@ public partial class DottedDoorEvent : SideEvent
 
 	public override void PlaceSites(ExplorePlacer placer)
 	{
+		// The run's figure, from the placer's seed: one of the family, mirrored or not (DoorFigure.Roll).
+		ulong seed = ((ulong)(placer.NextFloat() * 4294967295f) << 32) | (ulong)(placer.NextFloat() * 4294967295f);
+		figure = DoorFigure.Roll(seed);
+		stroke = new DoorStroke(figure);
 		court = CourtLayout.Load(placer.Origin);
 		if (DoorCentreIn(court) is Vector2 c)
 		{
@@ -228,30 +170,46 @@ public partial class DottedDoorEvent : SideEvent
 		AddSite(centre);
 	}
 
-	// --- the trace ----------------------------------------------------------------------------------------------
+	// --- the stroke ---------------------------------------------------------------------------------------------
 
-	private float pen;
-	private bool begun;
-	private bool onLine;
+	private DoorFigure figure;
+	private DoorStroke stroke;
+	private bool everBegun;
 	private bool inked;
 	private float inkedFor;
 	private float householdClock;
-	private float offLineFor;
+	// Seconds since the drawing last smudged, below 0 before; and which lines were inked when it did, to draw the run.
+	private float smudgedFor = -1f;
+	private bool[] smudgedLines;
+	// The ink made real: one body per inked line, on the layer only enemies mask.
+	private StaticBody2D[] inkWalls;
 
-	/// <summary>How far the ink has got along the outline (world px).</summary>
-	public float Pen => pen;
+	/// <summary>True once a stroke has ever begun (a smudge does not take it back: the household knows).</summary>
+	public bool TraceBegun => everBegun;
 
-	/// <summary>True once he has stood on the first dot.</summary>
-	public bool TraceBegun => begun;
+	/// <summary>True while his feet are on the line in hand.</summary>
+	public bool OnLine => stroke != null && stroke.OnLine;
 
-	/// <summary>True while his feet are on the line (within the tolerance, near the ink).</summary>
-	public bool OnLine => onLine;
-
-	/// <summary>True once the last dot is reached and the door inked in.</summary>
+	/// <summary>True once the last line is inked and the door inked in.</summary>
 	public bool IsInked => inked;
 
-	/// <summary>Dots the ink has reached.</summary>
-	public int DotsInked => DotsReached(pen, begun);
+	/// <summary>Lines inked in the stroke now, and the figure's whole count.</summary>
+	public int LinesInked => stroke?.InkedCount ?? 0;
+	public int LineCount => figure?.LineCount ?? 0;
+
+	/// <summary>Times the drawing smudged, and ink-walls standing now. For the probe.</summary>
+	public int Smudges => stroke?.Smudges ?? 0;
+	public int WallsStanding
+	{
+		get
+		{
+			int n = 0;
+			if (inkWalls != null)
+				foreach (StaticBody2D w in inkWalls)
+					if (w != null && IsInstanceValid(w)) n++;
+			return n;
+		}
+	}
 
 	/// <summary>Times he left the line after it had begun, and the seconds spent off it. For the probe.</summary>
 	public int StepOffs { get; private set; }
@@ -288,32 +246,36 @@ public partial class DottedDoorEvent : SideEvent
 			return;
 		}
 
-		bool wasOn = onLine;
-		bool wasBegun = begun;
-		(pen, begun, onLine) = Step(pen, begun, player.FootPosition - centre);
-		if (begun && !wasBegun)
+		if (smudgedFor >= 0f)
+			smudgedFor += delta;
+		bool wasOn = stroke.OnLine;
+		int inHand = stroke.Active;
+		switch (stroke.Step(player.FootPosition - centre))
 		{
-			SfxPlayer.AtPosition(SfxCatalog.BearingFound, DotWorld(0), 0.02f);
-			GD.Print($"DottedDoorEvent: the trace begun at dot 1 ({DotWorld(0).X:0},{DotWorld(0).Y:0}).");
+			case StrokeEvent.Begun:
+				everBegun = true;
+				SfxPlayer.AtPosition(SfxCatalog.BearingFound, DotWorld(stroke.Pen), 0.02f);
+				GD.Print($"DottedDoorEvent: a stroke begun at {stroke.Pen} (figure {figure.Index}{(figure.Mirrored ? ", mirrored" : "")}, "
+					+ $"{figure.LineCount} lines, odd dots {figure.OddDots}).");
+				break;
+			case StrokeEvent.Inked:
+				RaiseWall(LastInked());
+				SfxPlayer.AtPosition(SfxCatalog.HintBrush, DotWorld(stroke.Pen), 0.02f);
+				break;
+			case StrokeEvent.Smudged:
+				SmudgeOut();
+				break;
+			case StrokeEvent.Done:
+				InkIn();
+				return;
 		}
-		if (begun && wasOn && !onLine)
+		if (stroke.Begun && wasOn && !stroke.OnLine && inHand >= 0)
 			StepOffs++;
-		if (begun && !onLine)
-		{
-			offLineFor += delta;
+		if (stroke.Begun && !stroke.OnLine)
 			SecondsOffLine += delta;
-		}
-		else
-			offLineFor = 0f;
 
-		if (begun && pen >= PathLength - 0.5f)
-		{
-			InkIn();
-			return;
-		}
-
-		// The household, while the trace is begun and he is in the Gallery.
-		if (begun && (court == null || court.RoomAt(player.FootPosition)?.Id == RoomId))
+		// The household, once a stroke has ever begun and while he is in the Gallery.
+		if (everBegun && (court == null || court.RoomAt(player.FootPosition)?.Id == RoomId))
 		{
 			householdClock -= delta;
 			if (householdClock <= 0f)
@@ -343,17 +305,81 @@ public partial class DottedDoorEvent : SideEvent
 		}
 	}
 
+	// The line the last Inked event closed: the one inked whose wall is not up yet.
+	private int LastInked()
+	{
+		for (int l = 0; l < figure.LineCount; l++)
+			if (stroke.IsInked(l) && (inkWalls?[l] == null || !IsInstanceValid(inkWalls[l])))
+				return l;
+		return -1;
+	}
+
+	// His brush makes what it paints real (3.2): an inked line becomes a wall the household cannot cross. Thin segments
+	// along it, on the layer only enemies mask - the player walks his own lines. Arcs as short chords.
+	private void RaiseWall(int line)
+	{
+		if (line < 0 || Game == null)
+			return;
+		inkWalls ??= new StaticBody2D[figure.LineCount];
+		var body = new StaticBody2D
+		{
+			Name = $"InkWall{line}",
+			CollisionLayer = 1u << (LevelTilePainter.EnemyOnlyCollisionLayer - 1),
+			CollisionMask = 0,
+			Position = centre,
+		};
+		int pieces = figure.KindOf(line) == DoorFigure.Kind.Arc ? 6 : 1;
+		DoorFigure.Dot from = figure.EndA(line);
+		for (int k = 0; k < pieces; k++)
+			body.AddChild(new CollisionShape2D
+			{
+				Shape = new SegmentShape2D
+				{
+					A = figure.Point(line, from, k / (float)pieces),
+					B = figure.Point(line, from, (k + 1) / (float)pieces),
+				},
+			});
+		Game.AddChild(body);
+		inkWalls[line] = body;
+	}
+
+	private void DropWalls()
+	{
+		if (inkWalls == null)
+			return;
+		for (int l = 0; l < inkWalls.Length; l++)
+		{
+			if (inkWalls[l] != null && IsInstanceValid(inkWalls[l]))
+				inkWalls[l].QueueFree();
+			inkWalls[l] = null;
+		}
+	}
+
+	// Walked along the ink: the drawing runs and fades back to charcoal (drawn over SmudgeSeconds from what was inked),
+	// the walls go with it, and the stroke starts again from any dot.
+	private void SmudgeOut()
+	{
+		smudgedLines ??= new bool[figure.LineCount];
+		for (int l = 0; l < figure.LineCount; l++)
+			smudgedLines[l] = inkWalls != null && inkWalls[l] != null && IsInstanceValid(inkWalls[l]);
+		smudgedFor = 0f;
+		DropWalls();
+		SfxPlayer.AtPosition(SfxCatalog.EnemyMelee, centre, 0.04f);
+		GD.Print($"DottedDoorEvent: smudged (smudge {stroke.Smudges}) - walked along an inked line.");
+	}
+
 	private void InkIn()
 	{
 		inked = true;
 		inkedFor = 0f;
-		pen = PathLength;
-		onLine = true;
-		// The impact beat (.ai/cutscenes.md, the cinematic rules): the last dot closes the drawing - a short shake through
+		// The door opens: the walls go with the ink, into the painted door.
+		DropWalls();
+		// The impact beat (.ai/cutscenes.md, the cinematic rules): the last line closes the drawing - a short shake through
 		// Reduce Shake (ScreenShake.Kick), the brush's sound, and the ink running round the whole door in a flash.
 		Game?.ShakeScreen(5f, 0.3f);
 		SfxPlayer.AtPosition(SfxCatalog.HintBrush, centre, 0f);
-		GD.Print($"DottedDoorEvent: the last dot - the door inked in after {StepOffs} step(s) off the line, {SecondsOffLine:0.0} s off it.");
+		GD.Print($"DottedDoorEvent: the last line - the door inked in after {StepOffs} step(s) off the line, {SecondsOffLine:0.0} s off it, "
+			+ $"{stroke.Smudges} smudge(s).");
 	}
 
 	private void TickEnding(float delta)
@@ -368,8 +394,8 @@ public partial class DottedDoorEvent : SideEvent
 				SfxPlayer.AtPosition(SfxCatalog.EventReward, centre, 0.02f);
 			inkedSprite.Frame = frame;
 		}
-		if (sketchSprite != null && IsInstanceValid(sketchSprite))
-			sketchSprite.Modulate = new Color(1f, 1f, 1f, Mathf.Clamp(1f - inkedFor / InkSeconds, 0f, 1f));
+		if (inkedFor < InkSeconds)
+			QueueRedraw();   // the drawn figure fades under the painted door (_Draw)
 		if (inkedFor >= StepOutAt && him == null)
 			ShowHim();
 		if (him != null && IsInstanceValid(him) && !Succeeded)
@@ -383,15 +409,20 @@ public partial class DottedDoorEvent : SideEvent
 			Succeed(him != null && IsInstanceValid(him) ? him.GlobalPosition : centre + new Vector2(0f, HalfHeight));
 	}
 
-	/// <summary>For _UiShot: the trace carried to <paramref name="fraction"/> of the outline as if walked, begun if not.</summary>
+	/// <summary>For _UiShot: <paramref name="fraction"/> of a true stroke's lines inked as if walked, walls up; whole
+	/// inks the door in.</summary>
 	public void DebugTraceTo(float fraction)
 	{
 		if (IsDormant)
 			Arrive();
-		begun = true;
-		onLine = true;
-		pen = Mathf.Clamp(fraction, 0f, 1f) * PathLength;
-		if (pen >= PathLength - 0.5f)
+		int lines = Mathf.RoundToInt(Mathf.Clamp(fraction, 0f, 1f) * figure.LineCount);
+		DropWalls();
+		stroke.DebugInk(lines);
+		everBegun = true;
+		for (int l = 0; l < figure.LineCount; l++)
+			if (stroke.IsInked(l))
+				RaiseWall(l);
+		if (stroke.IsDone)
 			InkIn();
 	}
 
@@ -407,25 +438,23 @@ public partial class DottedDoorEvent : SideEvent
 	private const int HimCell = 48;
 
 	private Node2D house;
-	private Sprite2D sketchSprite;
 	private Sprite2D inkedSprite;
 	private Sprite2D him;
 	private float freedFor;
 
 	protected override void OnPlaced()
 	{
-		Texture2D sketchTex = Load(ArtDir + "door-sketch.png");
+		// The charcoal figure is drawn by code (_Draw, on the event's own ground layer under the bodies), since every
+		// run's is its own; the painted door it becomes is still art.
 		Texture2D inkedTex = Load(ArtDir + "door-inked.png");
-		if (sketchTex == null || inkedTex == null)
+		if (inkedTex == null)
 		{
 			GD.PushError("DottedDoorEvent: the door's art is missing or not imported (python tools/art/painted_door.py, then import).");
 			return;
 		}
 		house = new Node2D { Name = "DottedDoor", YSortEnabled = true };
-		sketchSprite = Floor("Sketch", sketchTex, 1);
 		inkedSprite = Floor("Inked", inkedTex, 4);
 		inkedSprite.Visible = false;
-		house.AddChild(sketchSprite);
 		house.AddChild(inkedSprite);
 		// In the run's world at its origin, so its children stand at world positions: the event's sibling, which stays
 		// (the door open on his light) after the win.
@@ -491,7 +520,8 @@ public partial class DottedDoorEvent : SideEvent
 		}
 	}
 
-	protected override void OnStoodDown() { }
+	// The boss has come: the drawing stops, and its walls go with it, so nothing of it outlives the event.
+	protected override void OnStoodDown() => DropWalls();
 
 	// --- the ink ------------------------------------------------------------------------------------------------
 
@@ -500,30 +530,65 @@ public partial class DottedDoorEvent : SideEvent
 	private static readonly Color InkEdge = new(0.478f, 0.247f, 0.831f); // arcane edge (#7A3FD4)
 	private static readonly Color InkCore = new(1.0f, 0.941f, 1.0f);    // arcane core (#FFF0FF)
 
+	// Charcoal on the oak: the figure as he finds it.
+	private static readonly Color Charcoal = new(0.18f, 0.165f, 0.155f, 0.9f);
+	private static readonly Color CharcoalEdge = new(0.35f, 0.325f, 0.30f, 0.55f);
+
+	// Everything on the world's 2 px grid, as the sketch's pixels were: charcoal lines and dots for the whole figure;
+	// his light along each inked line (the mid stop with the edge under it) and along the line in hand up to the ink,
+	// the hot stop at its wet head; a dot lit once every line into it is inked; and after a smudge the ink running and
+	// fading off what was drawn. On the event's ground layer: over the floor, under every body.
 	public override void _Draw()
 	{
-		if (!begun || inked || !NearPlayer(centre))
+		if (figure == null || !NearPlayer(centre))
 			return;
-		// His light along the line behind his feet, stamped on the world's 2 px grid as the sketch's pixels are: the mid
-		// stop with the edge under it, the hot one at the wet head of the stroke. Over the charcoal, under the bodies.
 		Vector2 origin = ToLocal(centre);
-		for (float s = 0f; s <= pen; s += 2f)
+		if (inked)
 		{
-			Vector2 p = PathPoint(s);
-			var cell = new Vector2(Mathf.Floor(p.X / 2f) * 2f, Mathf.Floor(p.Y / 2f) * 2f) + origin;
-			bool head = s > pen - 10f;
-			DrawRect(new Rect2(cell + new Vector2(0f, 2f), new Vector2(2f, 2f)), InkEdge);
-			DrawRect(new Rect2(cell, new Vector2(2f, 2f)), head ? InkHot : InkMid);
+			// The drawing fades into the painted door.
+			float fade = Mathf.Clamp(1f - inkedFor / InkSeconds, 0f, 1f);
+			if (fade > 0f)
+				for (int l = 0; l < figure.LineCount; l++)
+					StampLine(origin, l, figure.EndA(l), 1f, new Color(InkMid, fade), new Color(InkEdge, fade), -1f);
+			return;
 		}
-		// The dots reached, inked: a 6 px point of his light over each charcoal one.
-		for (int k = 0; k < DotCount; k++)
+		for (int l = 0; l < figure.LineCount; l++)
+			StampLine(origin, l, figure.EndA(l), 1f, Charcoal, CharcoalEdge, -1f);
+		if (smudgedFor >= 0f && smudgedFor < SmudgeSeconds && smudgedLines != null)
 		{
-			if (DotArc(k) > pen + 0.5f)
-				break;
-			Vector2 d = PathPoint(DotArc(k));
-			var cell = new Vector2(Mathf.Floor(d.X / 2f) * 2f, Mathf.Floor(d.Y / 2f) * 2f) + origin;
-			DrawRect(new Rect2(cell - new Vector2(2f, 2f), new Vector2(6f, 6f)), InkMid);
-			DrawRect(new Rect2(cell, new Vector2(2f, 2f)), InkCore);
+			// The run: the ink slides a little down the boards and thins out, so a mistake is seen happen.
+			float u = smudgedFor / SmudgeSeconds;
+			Vector2 slide = origin + new Vector2(0f, 2f * Mathf.Floor(u * 4f));
+			for (int l = 0; l < figure.LineCount; l++)
+				if (smudgedLines[l])
+					StampLine(slide, l, figure.EndA(l), 1f, new Color(InkMid, 0.85f * (1f - u)), new Color(InkEdge, 0.6f * (1f - u)), -1f);
+		}
+		for (int l = 0; l < figure.LineCount; l++)
+			if (stroke.IsInked(l))
+				StampLine(origin, l, figure.EndA(l), 1f, InkMid, InkEdge, -1f);
+		if (stroke.Active >= 0)
+			StampLine(origin, stroke.Active, stroke.ActiveFrom, stroke.ActiveT, InkMid, InkEdge, 10f);
+		foreach (DoorFigure.Dot d in figure.Dots)
+		{
+			Vector2 p = figure.DotPosition(d);
+			var cell = new Vector2(Mathf.Floor(p.X / 2f) * 2f, Mathf.Floor(p.Y / 2f) * 2f) + origin;
+			bool lit = stroke.DotDone(d);
+			DrawRect(new Rect2(cell - new Vector2(2f, 2f), new Vector2(6f, 6f)), lit ? InkMid : Charcoal);
+			DrawRect(new Rect2(cell, new Vector2(2f, 2f)), lit ? InkCore : CharcoalEdge);
+		}
+	}
+
+	// One line, from `from`, up to `upTo` (0 to 1) of its length, 2 px a stamp; the last `head` px in the hot stop.
+	private void StampLine(Vector2 origin, int line, DoorFigure.Dot from, float upTo, Color body, Color under, float head)
+	{
+		float len = figure.Length(line);
+		float end = Mathf.Clamp(upTo, 0f, 1f) * len;
+		for (float s = 0f; s <= end; s += 2f)
+		{
+			Vector2 p = figure.Point(line, from, s / len);
+			var cell = new Vector2(Mathf.Floor(p.X / 2f) * 2f, Mathf.Floor(p.Y / 2f) * 2f) + origin;
+			DrawRect(new Rect2(cell + new Vector2(0f, 2f), new Vector2(2f, 2f)), under);
+			DrawRect(new Rect2(cell, new Vector2(2f, 2f)), head > 0f && s > end - head ? InkHot : body);
 		}
 	}
 
@@ -538,9 +603,15 @@ public partial class DottedDoorEvent : SideEvent
 			return;
 		if (!inked)
 		{
-			// The wet head of the stroke, where he must pick it up: brighter while he is off the line.
-			Vector2 headAt = ToLocal(begun ? PenWorld : DotWorld(0));
-			float f = Flicker(3) * (onLine ? 0.7f : 1f);
+			// Before a stroke, a soft light over the whole drawing - never on a dot, which would give the start away.
+			// After, the wet head of the stroke, where he picks it up: brighter while he is off the line.
+			if (stroke == null || !stroke.Begun)
+			{
+				ExploreArt.DrawGlow(light, ToLocal(centre), 150f, new Color(TellColor, 0.10f * Flicker(3)));
+				return;
+			}
+			Vector2 headAt = ToLocal(PenWorld);
+			float f = Flicker(3) * (stroke.OnLine ? 0.7f : 1f);
 			ExploreArt.DrawGlow(light, headAt, 70f, new Color(TellColor, 0.22f * f));
 			ExploreArt.DrawGlow(light, headAt, 24f, new Color(InkCore, 0.35f * f));
 			return;

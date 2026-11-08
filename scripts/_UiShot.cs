@@ -3264,7 +3264,7 @@ public partial class _UiShot : Node
 				// Through the ordinary teleport (below, this frame), so --hold keeps him there against the run's steering.
 				teleportTo = feetAt - (tracer.FootPosition - tracer.GlobalPosition);
 				teleported = false;
-				GD.Print($"_UiShot: the dotted door traced to {f:0.00} ({door.DotsInked} dots) at {door.DoorCentre}; standing at {feetAt}");
+				GD.Print($"_UiShot: the dotted door traced to {f:0.00} ({door.LinesInked} of {door.LineCount} lines, {door.WallsStanding} ink-walls) at {door.DoorCentre}; standing at {feetAt}");
 			}
 			if (teleportTo is Vector2 target && !teleported && frames >= WarmupFrames / 3
 				&& FindNodeOfType<Player>(GetTree().Root) is Player traveller)

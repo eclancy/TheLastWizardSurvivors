@@ -235,6 +235,7 @@ public partial class _ExploreProbe : Node
 			else if (arg.StartsWith("--tithe-level=")) titheLevel = int.Parse(arg.Substring(14));
 			else if (arg == "--tithe-walk-off") titheWalkOff = true;
 			else if (arg == "--step-off") stepOffDoor = true;
+			else if (arg == "--wrong-start") wrongStart = true;
 		}
 		// The gibbet's cage says each change of phase, each rising and each fall (a run says nothing).
 		GibbetCageEvent.LogPhases = true;
@@ -445,9 +446,11 @@ public partial class _ExploreProbe : Node
 				Vector2 at = drawn.Sites[0].Position;
 				Check("the door is drawn on the Gallery's floor", drawn.Court != null && drawn.Court.RoomAt(at)?.Id == DottedDoorEvent.RoomId
 					&& at.DistanceTo(drawn.DoorCentre) < 0.01f, $"({at.X:0},{at.Y:0})");
-				bool dotsOnFloor = Enumerable.Range(0, DottedDoorEvent.DotCount).All(k => drawn.Court != null
-					&& drawn.Court.IsFloor(drawn.DotWorld(k)) && drawn.Court.RoomAt(drawn.DotWorld(k))?.Id == DottedDoorEvent.RoomId);
-				Check("every one of its dots is on the Gallery's floor", dotsOnFloor, $"{DottedDoorEvent.DotCount} dots, {DottedDoorEvent.PathLength:0} px of line");
+				DoorFigure fig = drawn.Figure;
+				bool dotsOnFloor = fig != null && fig.Dots.All(d => drawn.Court != null
+					&& drawn.Court.IsFloor(drawn.DotWorld(d)) && drawn.Court.RoomAt(drawn.DotWorld(d))?.Id == DottedDoorEvent.RoomId);
+				Check("every one of its dots is on the Gallery's floor", dotsOnFloor,
+					fig == null ? "no figure" : $"figure {fig.Index}{(fig.Mirrored ? " mirrored" : "")}: {fig.Dots.Count()} dots, {fig.LineCount} lines, odd dots {fig.OddDots}");
 				Check("the door stands on the building's floor", game.IsExploreGroundClear(at, 40f));
 				continue;
 			}
@@ -1172,15 +1175,24 @@ public partial class _ExploreProbe : Node
 			}
 			if (e is DottedDoorEvent traced)
 			{
-				Check("the door was traced dot to dot and inked in", traced.IsInked && traced.DotsInked == DottedDoorEvent.DotCount && traced.IsWon,
-					$"{traced.DotsInked} of {DottedDoorEvent.DotCount} dots, {traceWalked:0} px walked for {DottedDoorEvent.PathLength:0} px of line, "
+				Check("the door was inked in one stroke", traced.IsInked && traced.LinesInked == traced.LineCount && traced.IsWon,
+					$"{traced.LinesInked} of {traced.LineCount} lines (figure {traced.Figure?.Index}), {traced.Smudges} smudge(s) "
+				+ $"({traceDeliberateSmudges} walked on purpose from a dead end), {traceReplans} re-plan(s) from the pen, {traceWalked:0} px walked, "
 					+ $"begun {traceBegunAt:0.0} s and inked {traceInkedAt:0.0} s after arriving; {traced.HouseholdCalled} of the household came in at its doors");
+				Check("the inked lines stood as walls while it grew, and went with the door", traceMaxWalls >= 1 && traced.WallsStanding == 0,
+					$"up to {traceMaxWalls} ink-wall(s) at once, {traced.WallsStanding} left standing");
 				if (stepOffDoor)
 				{
 					Check("stepped off: the ink waited where it was", traceHeld >= 0f && Mathf.Abs(traceAfterWait - traceHeld) < 0.01f && traced.StepOffs >= 1,
-						$"held at {traceHeld:0} px, {traceAfterWait:0} px after {StepOffWait:0} s off the line; {traced.StepOffs} step(s) off, {traced.SecondsOffLine:0.0} s off it");
+						$"held at {traceHeld:0.00} lines, {traceAfterWait:0.00} after {StepOffWait:0} s off the line; {traced.StepOffs} step(s) off, {traced.SecondsOffLine:0.0} s off it");
 					Check("stepped off: picked up where it paused and finished, nothing reset", traced.IsInked && traceLowest >= traceHeld - 0.01f,
-						$"the ink never fell below {traceLowest:0} px after the pause");
+						$"the ink never fell below {traceLowest:0.00} lines after the pause");
+				}
+				if (wrongStart)
+				{
+					Check("a wrong start ran out of lines and, walked back along the ink, smudged", traceWrongSmudged && traced.Smudges >= 1,
+						$"stuck after {traceWrongInked} line(s); smudged {traced.Smudges} time(s)");
+					Check("the smudge took its walls with it", traceWallsAfterSmudge == 0, $"{traceWallsAfterSmudge} ink-wall(s) left standing after it");
 				}
 			}
 			if (e is FivePointedSealEvent seal)
@@ -1623,8 +1635,10 @@ public partial class _ExploreProbe : Node
 	// --- the dotted door: traced ----------------------------------------------------------------------
 
 	private bool stepOffDoor;
+	private bool wrongStart;
 	private int traceOffPhase;
 	private Vector2 traceOffPoint;
+	private Vector2 traceOffFrom;
 	private float traceOffClock;
 	private float traceHeld = -1f;
 	private float traceAfterWait = -1f;
@@ -1633,63 +1647,205 @@ public partial class _ExploreProbe : Node
 	private float traceClock;
 	private float traceBegunAt = -1f;
 	private float traceInkedAt = -1f;
+	private int traceMaxWalls;
 	private const float StepOffWait = 3f;
+	// The plan (one stroke, as lines walked from dots), and the wrong start's legs: 0 walking it, 1 walking back, 2 done.
+	private List<(int Line, DoorFigure.Dot From)> tracePlan;
+	private int wrongPhase;
+	private bool traceWrongSmudged;
+	// Walking the ink on purpose to smudge it: the line, walked out from the pen's end, how far, and the smudge count
+	// before, so the walk knows when it has worked.
+	private int backLine = -1;
+	private DoorFigure.Dot backFrom;
+	private float backT;
+	private int smudgesBefore;
+	private int traceReplans;
+	private int traceDeliberateSmudges;
+	private int traceWrongInked;
+	private int traceWallsAfterSmudge = -1;
 
-	// One step of the trace at his own walking speed, by the feet: to dot 1, then along the line a stride ahead of the ink.
-	// With --step-off, once two fifths is inked: off the line, a wait, and back to where the ink ends.
+	// How far the stroke has got, in lines (whole lines inked, and the share of the one in hand).
+	private static float TraceProgress(DottedDoorEvent door) =>
+		door.Stroke == null ? 0f : door.Stroke.InkedCount + (door.Stroke.Active >= 0 ? door.Stroke.ActiveT : 0f);
+
+	// One step of the one-stroke door at his own walking speed, by the feet, as a player who has seen the insight walks
+	// it: from an odd dot (DoorFigure.StrokeFrom), line after line, a stride ahead of the ink. With --step-off, once two
+	// fifths is inked, mid-line: off the line square to it, a wait, and back to where the ink ends. With --wrong-start:
+	// first from an even dot, greedily, until no line is left at the pen; then back along the last line inked, which
+	// smudges it; then the true stroke.
 	private Vector2 TraceStep(DottedDoorEvent door, float delta)
 	{
 		traceClock += delta;
 		if (door.TraceBegun && traceBegunAt < 0f)
 			traceBegunAt = traceClock;
+		traceMaxWalls = Math.Max(traceMaxWalls, door.WallsStanding);
 		if (door.IsInked)
 		{
 			if (traceInkedAt < 0f)
 				traceInkedAt = traceClock;
 			return player.GlobalPosition;            // stand while it is painted and he steps out
 		}
+		DoorFigure fig = door.Figure;
+		DoorStroke stroke = door.Stroke;
+		if (fig == null || stroke == null)
+			return player.GlobalPosition;
 		if (traceOffPhase >= 3)
-			traceLowest = Mathf.Min(traceLowest, door.Pen);
+			traceLowest = Mathf.Min(traceLowest, TraceProgress(door));
 		Vector2 feetOffset = player.FootPosition - player.GlobalPosition;
 		Vector2 feet = player.FootPosition;
-		Vector2 goal;
-		if (!door.TraceBegun)
-			goal = door.DotWorld(0);
-		else
+		Vector2 centre = door.DoorCentre;
+
+		if (tracePlan == null)
 		{
-			if (stepOffDoor && traceOffPhase == 0 && door.Pen >= DottedDoorEvent.PathLength * 0.4f)
+			if (wrongStart && wrongPhase == 0)
 			{
-				traceOffPhase = 1;
-				traceHeld = door.Pen;
-				// Into the door's middle, over open boards: the door stands 64 px off the end wall, and a step off outward
-				// from its jamb or its arch would be into the wall, which the body cannot stand in.
-				Vector2 inward = door.DoorCentre + new Vector2(0f, 40f) - door.PenWorld;
-				inward = inward.LengthSquared() > 1f ? inward.Normalized() : Vector2.Right;
-				traceOffPoint = door.PenWorld + inward * 130f;
-				GD.Print($"EXPLOREPROBE trace: stepping off the line at {door.Pen:0} px ({door.DotsInked} dots), to ({traceOffPoint.X:0},{traceOffPoint.Y:0})");
-			}
-			if (traceOffPhase == 1 || traceOffPhase == 2)
-			{
-				goal = traceOffPoint;
-				if (traceOffPhase == 1 && feet.DistanceTo(traceOffPoint) < 2f)
-				{
-					traceOffPhase = 2;
-					traceOffClock = 0f;
-				}
-				if (traceOffPhase == 2 && (traceOffClock += delta) >= StepOffWait)
-				{
-					traceAfterWait = door.Pen;
-					traceOffPhase = 3;
-					GD.Print($"EXPLOREPROBE trace: {StepOffWait:0} s off the line, the ink at {door.Pen:0} px (held at {traceHeld:0}); back to it");
-				}
+				DoorFigure.Dot even = fig.Dots.First(d => fig.Degree(d) % 2 == 0);
+				tracePlan = GreedyStroke(fig, even);
+				GD.Print($"EXPLOREPROBE trace: the WRONG start, from even dot {even}: {tracePlan.Count} of {fig.LineCount} lines before it runs out");
 			}
 			else
-				goal = door.DoorCentre + DottedDoorEvent.PathPoint(Mathf.Min(DottedDoorEvent.PathLength, door.Pen + 24f));
+			{
+				(DoorFigure.Dot odd, _) = fig.OddDots;
+				tracePlan = fig.StrokeFrom(odd);
+				GD.Print($"EXPLOREPROBE trace: the stroke from odd dot {odd}: figure {fig.Index}{(fig.Mirrored ? " mirrored" : "")}, {fig.LineCount} lines");
+			}
+		}
+
+		Vector2 goal;
+		if (backLine >= 0)
+		{
+			// Along an inked line from the pen's end, on purpose: walking the ink smudges it, and the stroke begins again.
+			if (stroke.Smudges > smudgesBefore)
+			{
+				backLine = -1;
+				tracePlan = null;
+				if (wrongStart && wrongPhase == 1)
+				{
+					traceWrongSmudged = true;
+					traceWallsAfterSmudge = door.WallsStanding;
+					wrongPhase = 2;
+				}
+				else
+					traceDeliberateSmudges++;
+				GD.Print($"EXPLOREPROBE trace: walking the ink smudged it ({door.WallsStanding} ink-walls left); now the true stroke");
+				return player.GlobalPosition;
+			}
+			float len = fig.Length(backLine);
+			if (feet.DistanceTo(centre + fig.Point(backLine, backFrom, backT)) < 3f)
+				backT = Mathf.Min(1f, backT + 24f / len);
+			goal = centre + fig.Point(backLine, backFrom, backT);
+		}
+		else if (traceOffPhase == 1 || traceOffPhase == 2)
+		{
+			goal = traceOffPoint;
+			if (traceOffPhase == 1 && feet.DistanceTo(traceOffPoint) < 2f)
+			{
+				traceOffPhase = 2;
+				traceOffClock = 0f;
+			}
+			if (traceOffPhase == 2 && (traceOffClock += delta) >= StepOffWait)
+			{
+				traceAfterWait = TraceProgress(door);
+				traceOffPhase = 3;
+				GD.Print($"EXPLOREPROBE trace: {StepOffWait:0} s off the line, the ink at {traceAfterWait:0.00} lines (held at {traceHeld:0.00}); back to it");
+			}
+		}
+		else if (traceOffPhase == 3 && feet.DistanceTo(traceOffFrom) > 3f && stroke.Active >= 0 && !stroke.OnLine)
+			goal = traceOffFrom;                     // back the way he came, square to the line
+		else
+		{
+			// Re-plan from where the stroke really is (outside the wrong start's own leg): a line inked on the way here -
+			// a player crossing the drawing does it too - may still finish from the pen; if it cannot, walk the ink.
+			if (stroke.Begun && stroke.Active < 0 && !(wrongStart && wrongPhase == 0))
+			{
+				List<(int Line, DoorFigure.Dot From)> rest = fig.StrokeFrom(stroke.Pen, stroke.InkedLines());
+				if (rest == null)
+				{
+					StartBackWalk(fig, stroke);
+					GD.Print($"EXPLOREPROBE trace: {stroke.InkedCount} line(s) inked but no stroke finishes from {stroke.Pen}; walking the ink");
+					return player.GlobalPosition;
+				}
+				if (rest.Count > 0 && (tracePlan.Count == 0 || tracePlan.FindIndex(p => !stroke.IsInked(p.Line)) is int at
+					&& (at < 0 || tracePlan[at].From != stroke.Pen)))
+				{
+					traceReplans++;
+					GD.Print($"EXPLOREPROBE trace: re-planned from the pen at {stroke.Pen}: {rest.Count} line(s) to go");
+				}
+				tracePlan = rest;
+			}
+			int k = tracePlan.FindIndex(p => !stroke.IsInked(p.Line));
+			if (k < 0)
+			{
+				// The wrong start has run out of lines at the pen: it is stuck. Walk the ink back.
+				if (wrongStart && wrongPhase == 0)
+				{
+					traceWrongInked = stroke.InkedCount;
+					wrongPhase = 1;
+					StartBackWalk(fig, stroke);
+					GD.Print($"EXPLOREPROBE trace: stuck after {stroke.InkedCount} line(s) (stroke says stuck: {stroke.Stuck})");
+				}
+				return player.GlobalPosition;
+			}
+			(int line, DoorFigure.Dot from) = tracePlan[k];
+			float len = fig.Length(line);
+			if (stepOffDoor && traceOffPhase == 0 && stroke.Active == line && TraceProgress(door) >= fig.LineCount * 0.4f
+				&& stroke.ActiveT > 0.3f && stroke.ActiveT < 0.7f)
+			{
+				// Square off the line, to the side nearer the drawing's middle (open boards; outside a jamb is the wall).
+				traceOffPhase = 1;
+				traceHeld = TraceProgress(door);
+				traceOffFrom = door.PenWorld;
+				Vector2 along = (fig.Point(line, from, Mathf.Min(1f, stroke.ActiveT + 0.05f)) - fig.Point(line, from, stroke.ActiveT)).Normalized();
+				Vector2 side = along.Orthogonal();
+				Vector2 a = traceOffFrom + side * 130f, b = traceOffFrom - side * 130f;
+				traceOffPoint = a.DistanceTo(centre) < b.DistanceTo(centre) ? a : b;
+				GD.Print($"EXPLOREPROBE trace: stepping off the line at {traceHeld:0.00} lines, to ({traceOffPoint.X:0},{traceOffPoint.Y:0})");
+				goal = traceOffPoint;
+			}
+			else if (stroke.Active == line)
+				goal = centre + fig.Point(line, from, Mathf.Min(1f, stroke.ActiveT + 24f / len));
+			else if (feet.DistanceTo(centre + fig.DotPosition(from)) > 4f)
+				goal = centre + fig.DotPosition(from);   // to the line's first dot
+			else
+				goal = centre + fig.Point(line, from, Mathf.Min(1f, 30f / len));
 		}
 		float step = player.WalkingSpeed * delta;
 		Vector2 next = feet.MoveToward(goal, step);
 		traceWalked += feet.DistanceTo(next);
 		return next - feetOffset;
+	}
+
+	// To smudge it on purpose: an inked line out of the pen's dot, walked from that end.
+	private void StartBackWalk(DoorFigure fig, DoorStroke stroke)
+	{
+		for (int l = 0; l < fig.LineCount; l++)
+			if (stroke.IsInked(l) && fig.Touches(l, stroke.Pen))
+			{
+				backLine = l;
+				backFrom = stroke.Pen;
+				backT = 0f;
+				smudgesBefore = stroke.Smudges;
+				return;
+			}
+	}
+
+	// The wrong approach, as a player who has not seen it plays: from a dot, any line not yet walked, until none is left.
+	private static List<(int Line, DoorFigure.Dot From)> GreedyStroke(DoorFigure fig, DoorFigure.Dot start)
+	{
+		var plan = new List<(int, DoorFigure.Dot)>();
+		var used = new bool[fig.LineCount];
+		DoorFigure.Dot at = start;
+		while (true)
+		{
+			int next = -1;
+			for (int l = 0; l < fig.LineCount; l++)
+				if (!used[l] && fig.Touches(l, at)) { next = l; break; }
+			if (next < 0)
+				return plan;
+			used[next] = true;
+			plan.Add((next, at));
+			at = fig.Other(next, at);
+		}
 	}
 
 	// --- the seer: sought through the house ------------------------------------------------------------

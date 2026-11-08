@@ -49,6 +49,14 @@ public partial class LevelTilePainter : Node2D
 	/// </summary>
 	public const int WaterCollisionLayer = 6;
 
+	/// <summary>
+	/// Walls only the swarm meets (unlock-puzzles.md 3.2: Ma Liang's inked lines, which his brush makes real so the
+	/// drawing shelters the player as it grows). Enemies mask it (Enemy.ConfigureEntityCollision); the player's body
+	/// and feet never do, so he walks the lines he is inking. Not the water's layer: the player's wade check queries
+	/// layer 6 at his boots, and an ink wall there would slow him on every line he traced.
+	/// </summary>
+	public const int EnemyOnlyCollisionLayer = 7;
+
 	private string[] BuildMetadataPaths()
 	{
 		var paths = new System.Collections.Generic.List<string> { MetadataPath };
