@@ -66,25 +66,26 @@ public static partial class Foliage
 		{
 			Kind = StageEnvironmentKind.Ice,
 
-			// Measured on the field (Woodland.Validate's 70 x 70 sample, three seeds): 11-13% of the ground is a
-			// grove's heart and 67-71% the open waste, the rest the groves' fringes and lees. The start's clearing
+			// Measured on the field (Woodland.Validate's 70 x 70 sample, seeds 4242, 31, 7): 14-16% of the ground
+			// is a grove's heart and 63-67% the open waste, the rest the groves' fringes and lees. (At thresholds two
+			// points higher, 11-13% heart, a grove held five ghosts and read as a clump, not a grove.) The start's clearing
 			// is the Forest's (6 and 16 cells): a run opens on open snow with the nearest groves at the screen's edge.
 			Canopy = new CanopyProfile
 			{
 				Shape = CanopyShape.Own,
 				Own = Field,
-				ClearingEnd0 = 0.55f,
-				ClearingEnd1 = 0.63f,
-				StandStart0 = 0.66f,
-				StandStart1 = 0.74f,
-				StandFloor = 0.70f,
+				ClearingEnd0 = 0.53f,
+				ClearingEnd1 = 0.61f,
+				StandStart0 = 0.64f,
+				StandStart1 = 0.72f,
+				StandFloor = 0.68f,
 				SaltStand = SaltGrove,
 				SaltEdge = SaltEdge,
 				SaltGap = SaltSpare,
-				StandShareMin = 0.07f,
-				StandShareMax = 0.18f,
-				ClearingShareMin = 0.60f,
-				ClearingShareMax = 0.80f,
+				StandShareMin = 0.09f,
+				StandShareMax = 0.21f,
+				ClearingShareMin = 0.56f,
+				ClearingShareMax = 0.74f,
 			},
 
 			Decor = new[]
@@ -111,15 +112,16 @@ public static partial class Foliage
 					Count = 6, ClumpSize = 2, Clump = ClumpBase.GroundAccent, RadiusMin = 0.60f, RadiusMax = 0.60f,
 					Separation = 0.70f, Loners = 0.04f,
 				},
-				// 3. The snow ghosts, massed in a grove's heart. Clumped tight (a Stand clump at half to three
-				// quarters of its radius), as the Swamp's islands taught: at full radius a clump spills into the open,
-				// where the habitat drops it. The rule that no stand pins the player (Footing) keeps every gap a
-				// trunk is part of at least 72 px, so a grove is a mass you thread, never a wall.
+				// 3. The snow ghosts, massed in a grove's heart and its inner fringe. Clumped tight (a Stand clump at a
+				// third to a half of its radius), as the Swamp's islands taught: at three quarters, three in five of the
+				// ghosts rolled fell off the grove and the habitat dropped them. The rule that no stand pins the player
+				// (Footing) keeps every gap a trunk is part of at least 72 px, so a grove is a mass you thread, never a
+				// wall.
 				new FoliageSet
 				{
 					Grounded = new[] { "rime-spruce-1", "rime-spruce-2", "rime-spruce-3" }, Manifest = Manifest,
-					Count = 7000, ClumpSize = 5, Clump = ClumpBase.Stand, RadiusMin = 0.5f, RadiusMax = 0.75f, Separation = 0.6f,
-					Loners = 0.05f, MinSpacing = 96f, Habitat = new Woodland.Habitat(0f, 0.15f, 1f),
+					Count = 7000, ClumpSize = 6, Clump = ClumpBase.Stand, RadiusMin = 0.35f, RadiusMax = 0.55f, Separation = 0.5f,
+					Loners = 0.05f, MinSpacing = 96f, Habitat = new Woodland.Habitat(0f, 0.3f, 1f),
 				},
 				// 4. Snow-laden spruce spires at a grove's edge, where the load is lighter, and now and then among the
 				// ghosts - fewer than the ghosts: at as many, a grove photographed as a plantation of dark spires.
