@@ -764,7 +764,7 @@ Two consequences worth knowing:
 |---|---|---|---|---|
 | Aedan, the Pyromancer | Fire | Fireball | Slow lob, explodes on impact | +10% spell damage |
 | Isbrand, the Frostweaver | Ice | Cone of Cold | Cone in front, slows what it touches | +0.5 HP/sec |
-| Thora, the Stormcaller | Lightning | Chain Lightning | Arcs between nearby enemies | -10% cooldowns |
+| Levina, the Stormcaller | Lightning | Chain Lightning | Arcs between nearby enemies | -10% cooldowns |
 | Gabbro, the Geomancer | Earth | Obsidian Spike | Erupts under the target, no travel time | -1 damage per hit taken |
 | The Archmage | Arcane | Magic Missile | A homing dart at the nearest enemy, from the light on his staff | Overlooked: once a run, the blow that would end him misses |
 

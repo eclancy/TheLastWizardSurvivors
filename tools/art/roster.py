@@ -193,7 +193,7 @@ ROBES = {
     "maliang": ("R", "r", "q"),      # steel, washed and dark - the jacket; Familiar
 }
 
-# RUSSET, madder-dyed wool and auburn hair: Thora's hair (stormcaller()). The same five bytes and
+# RUSSET, madder-dyed wool and auburn hair: Levina's hair (stormcaller()). The same five bytes and
 # colours as merlin_concepts.RUSSET_RAMP, which had the row first for Merlin's Wood robe; anim_sets
 # lists the ramp once (PLAYER_RAMPS), so a hurt flash and a death step her hair along it. They must
 # stay identical - change one, change both. Hue 21 -> 327, redder and deeper than flesh (so a face
@@ -207,7 +207,7 @@ RUSSET_RAMP = RU0 + RU1 + RU2 + RU3 + RU4
 # had happened to import Merlin's module first, and build.py does not.
 matte.add_ramp("russet", RUSSET)
 
-# Thora's hair: mid, lit, dark, and the sheen where the arc above her catches it - dark auburn,
+# Levina's hair: mid, lit, dark, and the sheen where the arc above her catches it - dark auburn,
 # from the deep end of russet. Not her amber: the hood she lost was amber and read as hair, so the
 # hair that replaced it must read as a different thing from the cape it streams beside - another
 # hue (red against yellow) and another value (L* 21 against the cloak's 43). Near-black was tried
@@ -712,7 +712,7 @@ def pyromancer(phase=None):
 
     The beats that were already right survive: no white beard, brow down, jaw set, a burn scar up
     one cheek from standing too close to his own work, and dark hair cropped short. Bare-headed,
-    as only Thora is besides him - and her hair is the opposite read, long and streaming in her
+    as only Levina is besides him - and her hair is the opposite read, long and streaming in her
     weather.
     """
     g = G(48)
@@ -955,7 +955,7 @@ def frostweaver(phase=None):
 def stormcaller(phase=None):
     """Chain Lightning - the arc comes down from above and jumps. So she is CALLING it down.
 
-    Thora, the Stormcaller (Eric, 2026-11-03: "Make her a woman, with hair blowing in the wind").
+    Levina, the Stormcaller (Eric, 2026-11-03: "Make her a woman, with hair blowing in the wind").
     The forked staff thrust up overhead in her raised arm, its prongs higher than anything in the
     cast but the Frostweaver's crown, and her cape and hair streaming back in the storm she is
     calling. The only figure with an arm visibly up, and the only one whose hem is torn by her own

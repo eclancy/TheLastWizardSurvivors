@@ -246,7 +246,7 @@ title figure he had been drawn from became the player's alone: undyed warm wool 
 the shipped look's mantle: warmer than bone (cold, every beard), paler than sand cloth, L\* 93 / 83 / 67 / 42 / 23,
 its shade turning toward indigo through the warm side (hue 37 -> 13 -> 325) at 0.22 saturation. Russet is the
 alternate look's robe: redder and deeper than flesh, darker and browner than ember. Neither is player pigment.
-**Russet is also Thora's hair** (2026-11-03, the Stormcaller redrawn as a woman, `tools/art/roster.py`
+**Russet is also Levina's hair** (2026-11-03, the Stormcaller redrawn as a woman, `tools/art/roster.py`
 `HAIR_STORM`): from its deep end, dark auburn, chosen to part from her amber cloak in hue and in value both, where
 near-black hair sank into the portrait well. roster.py carries the same five bytes and colours and registers the
 row with `matte` too, so it is settled whichever generator runs first.

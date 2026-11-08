@@ -51,7 +51,7 @@ import splashkit as sk
 import roster
 
 # The rows the panels' pigments step along. bonelight.py's, plus the rows a player sprite wears that
-# bonelight.py keeps out of its contract on purpose (art-direction.md section 3, matte.add_ramp): Thora's
+# bonelight.py keeps out of its contract on purpose (art-direction.md section 3, matte.add_ramp): Levina's
 # russet hair (roster.RUSSET, 2026-11-03). The freeing draws the real sprites, so without it her hair
 # stayed lit while the others knelt in the dark, and audited off-contract.
 M = dict(bl.MATERIALS, russet=roster.RUSSET)

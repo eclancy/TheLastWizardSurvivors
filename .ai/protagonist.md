@@ -28,7 +28,7 @@ prologue: the player, the one wizard the dark wizard did not take. *"You are the
 (`.ai/world-and-tone.md`). He was to stay story only - title, prologue, lessons - and Eric reversed that the same
 day: he is playable from the first run, the fifth starter, first on the character select.
 
-He is **not** a discipline (Aedan the Pyromancer, Isbrand the Frostweaver, Thora the Stormcaller and Gabbro the
+He is **not** a discipline (Aedan the Pyromancer, Isbrand the Frostweaver, Levina the Stormcaller and Gabbro the
 Geomancer carry a craft as their title, `CharacterData.Craft`; his name is already one) and **not** a prisoner (the
 rescued are historic and legendary people with a cell somewhere). Nobody took him, so
 nobody frees him: he is simply yours from the start. He is **not Merlin** either: Merlin was given this figure

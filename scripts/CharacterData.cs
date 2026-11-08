@@ -10,7 +10,7 @@ public partial class CharacterData : Resource
 
     // The discipline a wizard is named FOR, when the Name is a name of their own (Eric, 2026-11-03: "Let's give
     // names to the four original elemental wizards"): "Pyromancer" for Aedan, "Frostweaver" for Isbrand,
-    // "Stormcaller" for Thora, "Geomancer" for Gabbro. The character select carries it under the name as a
+    // "Stormcaller" for Levina, "Geomancer" for Gabbro. The character select carries it under the name as a
     // title, so the craft a starter is chosen by is never lost. Empty for everyone whose Name already says what
     // they are - The Archmage, and the rescued, who are historic or legendary people (.ai/world-and-tone.md).
     [Export] public string Craft { get; set; } = string.Empty;

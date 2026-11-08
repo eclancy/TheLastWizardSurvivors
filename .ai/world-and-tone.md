@@ -73,7 +73,10 @@ this - a life the player can look up. An archetype has nothing to be taken from;
 
 **The four you begin with are people too, with their craft as a title.** Since 2026-11-03 (Eric:
 "Let's give names to the four original elemental wizards") they carry original names of their own -
-**Aedan, the Pyromancer; Isbrand, the Frostweaver; Thora, the Stormcaller; Gabbro, the Geomancer.**
+**Aedan, the Pyromancer; Isbrand, the Frostweaver; Levina, the Stormcaller; Gabbro, the Geomancer.**
+(The Stormcaller was **Thora** until 2026-11-08, when Eric asked for a new name: Thora is simply Thor's
+feminine, a legendary echo the rule below keeps off the four. **Levina** is from *levin*, the old English word
+for lightning - hidden in the name as "little fire" is in Aedan's and ice in Isbrand's.)
 The name is who they are and the discipline is what they are: the character select's card and heading
 say the name, and the line under it says the craft (`CharacterData.Name` and `CharacterData.Craft`),
 so the role a player picks them by is never lost. Their names are invented on purpose - not historic,
