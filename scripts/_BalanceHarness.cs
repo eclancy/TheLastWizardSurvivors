@@ -3715,6 +3715,9 @@ public partial class _BalanceHarness : Node
 			SpiritualWeapon.StatSwings > 0 ? "  " + SpiritualWeapon.StatsLine() : "",
 			// Aegis Ward (2026-10-29): the bolts its Rampart broke, its Reforged shards and the strikes it reflected.
 			AegisWard.HasStats ? "  " + AegisWard.StatsLine() : "",
+			// The defensive returns (in-flight item 9): the storm's breaks and the veil's swallowed hits.
+			Stormguard.HasStats ? "  " + Stormguard.StatsLine() : "",
+			GloamVeil.HasStats ? "  " + GloamVeil.StatsLine() : "",
 			$"  stage        : {Global.SelectedStageIdx}; spawned " + string.Join(", ", spawnedByType.Select(p => $"{p.Key} {p.Value}")),
 		};
 		lines.AddRange(DropLedger());

@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="SpellData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/SpellLevelUpgrade.cs" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/gloam-veil-dark.png" id="3_icon"]
+
+; Gloam Veil, returned on Aegis Ward's rules (in-flight item 9). BaseDamage is the tear's lash,
+; and BaseRange is HOW FAR THE WIZARD MUST WALK to weave a torn veil back - the spell's cadence
+; is distance, not time (scripts/GloamVeil.cs), so its Range lines level the walk DOWN and
+; Player.BuildSpellUpgradeSummary words them as a share, never a distance. BaseCooldown is only
+; the refresh tick that keeps its stats current.
+
+[sub_resource type="Resource" id="Resource_gloam_lvl2"]
+script = ExtResource("2")
+Level = 2
+RangeBonus = -40.0
+
+[sub_resource type="Resource" id="Resource_gloam_lvl4"]
+script = ExtResource("2")
+Level = 4
+DamageBonus = 4
+RangeBonus = -50.0
+
+[sub_resource type="Resource" id="Resource_gloam_lvl6"]
+script = ExtResource("2")
+Level = 6
+RangeBonus = -50.0
+
+[sub_resource type="Resource" id="Resource_gloam_lvl8"]
+script = ExtResource("2")
+Level = 8
+DamageBonus = 6
+RangeBonus = -60.0
+
+[resource]
+script = ExtResource("1")
+Tagline = "Veils one hit; walk to re-weave."
+Id = "gloam_veil"
+Name = "Gloam Veil"
+CurrentLevel = 1
+MaxLevel = 8
+BaseDamage = 10
+BaseCooldown = 6.0
+BaseProjectileCount = 1
+BaseRange = 440.0
+LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_gloam_lvl2"), SubResource("Resource_gloam_lvl4"), SubResource("Resource_gloam_lvl6"), SubResource("Resource_gloam_lvl8")])
+Description = "Weaves a veil that swallows the next hit whole. The tear gusts the pack away and carries you free; walking weaves it back."
+Icon = ExtResource("3_icon")
+ElementWeights = {
+"Darkness": 1,
+"Wind": 1
+}

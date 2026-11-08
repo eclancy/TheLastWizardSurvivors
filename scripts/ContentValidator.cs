@@ -76,6 +76,8 @@ public static class ContentValidator
 	{
 		"res://SpellData.tres",
 		"res://SpellData_AegisWard.tres",
+		"res://SpellData_Stormguard.tres",
+		"res://SpellData_GloamVeil.tres",
 		"res://SpellData_ArcaneExplosion.tres",
 		"res://SpellData_SpiritualWeapon.tres",
 		"res://SpellData_Fireball.tres",
