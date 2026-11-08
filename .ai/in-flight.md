@@ -864,6 +864,10 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     question 10, a Muster, stays open until F4 measures it). Greenlit to build in `second-half.md` section 9's
     order: F0's plumbing first and alone, then the god plumbing, then the slices; the five new Conjunctions
     (Maelstrom, Dark Lens, Orrery, Hailfront, Anvil Line) can be built ahead of their chapters.
+    **F0 built and merged 2026-11-08** (f36a6b73; `second-half.md` section 9, "F0, built"): `FarShoreOrder`,
+    `StageGate.FarShore`, six stand-in chapters (`stage_14`-`stage_19`) nobody can enter, every reader taught
+    both orders, `ValidateFarShore`, and a marked block in each shared registry for F1-F10 so the slices can be
+    built in parallel. Next: F1, the god plumbing, alone.
 54. **Wording and card fixes** (Eric, 2026-11-06): Waywiser - say what "slowest spell" means
     (longest cooldown?); Reforged - "iron shards cut enemies as it is rebuilt" (it read as cutting
     the player); Chalice Cup confusing - and is it useful at all after 15 kills?; the granary's
