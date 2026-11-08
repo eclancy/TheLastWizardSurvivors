@@ -2415,6 +2415,148 @@ of enemies; the busy rows keep the swarm and its hurt tint):
 - **The curated prop themes** (`PropThemes` flora and bones, LevelGenerator's palette, shared): the lime bracken and the
   bone-white bones are now the brightest things on the heath bar the cotton-grass.
 
+### The Frozen Waste: snow ghosts, not woods (2026-11-04, finished 2026-11-07)
+
+`Foliage.FrozenWaste.cs`, on the recipe above. *"A wizard lies under the ice, and the cold stands guard"*: a waste is
+open, so its stands are not woods but GROVES OF SNOW GHOSTS - spruce buried standing in snow and rime until each is a
+hunched white column with its top hooked over (crown snow-load, *tykky*: Väinämöinen is under the ice here) - lying
+across the wind, each trailing a lee where the dead and the low things shelter. The open waste between them is most
+of the ground, to fight on. Two builders: the first made the move, the field, the art and the tuning and was stopped
+before measuring; the second merged main (the water pass), regenerated the atlas and measured.
+
+**The move first** (f072c727). The Ice case's three sets (stones, crystals, small stones) went into the foliage file
+unchanged and `--placement-hash` printed the same hash before and after: seed 4242 `77B906E323FE43CF` (64 props, 1,018
+detail cells), seed 11 `AF0E7582A677E49A`. The old case is left in the switch for the integrator.
+
+**The field: `CanopyShape.Own`, salts 0x5CF2-4** (the third held, unused). Value noise on a lattice turned to the drift
+field's wind (`drift_field.gdshader`, toward the west-south-west, the sastrugi lie along it): 12 cells along the wind
+and 22 across, so a grove is a little longer across the wind than along it; the same noise read 4 cells upwind at 0.85
+strength, so every grove trails a lee downwind where its fringe runs longer; a 5-cell noise at a quarter of the weight
+rags the edge. A Python port previewed it first (`_shots/foliage-frozen/tools/frozen_field.py`): at 10 by 26 the groves
+ran together into streaks, a waste that read as the Sands' belts. Each noise keeps its last lattice cell's corners.
+
+| habitat | canopy | share (seeds 4242, 31, 7) | what grows there |
+|---|---|---|---|
+| clearing (the open waste) | under 0.53-0.61 | 63-67% | the stones and crystals as before; frosted stalks; a rimed snag, a boulder or a shrub now and then |
+| fringe and lee | between | about a fifth | snow-laden spruce, rimed snags, frost-split boulders, dwarf birch and juniper; half-buried stones |
+| stand (a grove's heart) | over 0.64-0.72 | 14-16% | the snow ghosts massed, a spire among them; needle litter and fallen bough snow |
+
+At thresholds two points higher (11-13% heart) a grove held five ghosts and read as a clump, not a grove. **No stand
+floor**: the palette's only blobs are its ice and its open water, and every prop avoids the ice, so a grove stands on
+snow.
+
+**The ladder** (`tools/art/props_frozen.py`, `frozen.json`; `detail_frost.py`). Sets 0-2 keep their indices:
+
+| rung | sprites | on screen | where | set | placed a chunk (4242, 11) |
+|---|---|---|---|---|---|
+| snow ghosts | `rime-spruce-1..3` | 120-138 x 216-264, trunk 16-18 | a grove's heart and inner fringe, clumps of six at a third to a half of a stand's radius | 3 | 6.3, 11.8 |
+| snow-laden spires | `snow-spruce-1`, `-2` | 100-108 x 206-242, trunk 12-14 | a grove's edge, now and then among the ghosts; fewer than the ghosts (at as many, a grove photographed as a plantation of dark spires) | 4 | 1.6, 2.3 |
+| rimed snags | `rimed-snag-1`, `-2` | 88-104 x 164-192 | the fringe and the lee, in twos or alone, now and then in the open | 5 | 0.7, 0.9 |
+| frost-split boulders | `frost-boulder-1..3` | 68-130 x 48-92, block 24-46 | the fringe, among the groves, once in a long while alone | 6 | 2.1, 3.0 |
+| dwarf birch, juniper | `snow-shrub-1..3` | 68-80 x 38-64, walked through | the fringe, straying into the open | 7 | 7.7, 9.8 |
+| stones, crystals | unchanged | | even, as before | 0-2 | |
+| detail | `frost_stalks`, `buried_stones`, `needle_litter`, `bough_snow` (new) | one cell | stalks in the open; stones on a fringe; litter and bough snow under a grove | clutter |
+
+At three quarters of a stand's radius, three in five of the ghosts rolled fell off the grove and the habitat dropped
+them; at a third to a half they keep to it. The snow on all of it is the bone row's SHADE in the light and steel's shade
+and deep in the shadow, with the bone row's base only on the crown of a lit lump: pale things a step over the floor,
+where the cast are dark bodies at the floor's own value with a rim, so the two never read alike. Every mass is an
+irregular lump of its own (a pillow of snow knobbled by rime, a granite mass broken into facets), never a course of
+blocks: the Sands' and the Heath's first passes were sent back as "bricks" and "paving".
+
+**What it keeps clear.** The thaw's lake, the Buried Runes' drift field and every other site keep their footprints
+(`IsInExploreReserve`). The ice is never a target (`.ai/side-events.md`): nothing here is a body. Nothing drawn is a
+tell of the chapter's secrets (`.ai/stage-secrets.md` 6.6, `.ai/achievements-and-secrets.md` 8.8): no track or
+footprint (I1), no flat or cut stone and no free-standing drift (I2; the drift here is heaped against a foot, and every
+sprite is flipped at random), nothing warm (I1, I3), no clear ice (I4), no stones piled on one another (the bearing
+cairn, the chapter's wayfinder).
+
+**The guardrail, from the art** (`detail_contrast.py` through `_shots/foliage-frozen/snow_contrast.py`, which reads the
+floor from `floor_snow_*`), against the snow's L\* 26.9:
+
+| | dL\* | \|dL\*\| | hi |
+|---|---|---|---|
+| `frost_stalks` / `buried_stones` / `needle_litter` / `bough_snow` (new) | -5.2 / -0.5 / -12.0 / +2.8 | 8.5 / 9.3 / 12.0 / 10.9 | +16.6 / +19.3 / -9.1 / +19.3 |
+| `rime-spruce-1..3` (new) | +11.7 to +12.5 | 16.5-17.2 | +19.5 to +19.6 |
+| `snow-spruce-1`, `-2` (new) | -9.8, -10.9 | 16.7, 16.8 | +23.9, +23.8 |
+| `rimed-snag-*`, `frost-boulder-*`, `snow-shrub-*` (new) | -8.7 to +1.5 | 10.1-16.7 | +10.4 to +21.3 |
+| `sastrugi`, `snow`, `frost`, `ice_shards` (old rules, unchanged) | +1.4 / +24.7 / +17.0 / +7.8 | 9.2 / 24.7 / 17.0 / 21.1 | +19.3 / +40.2 / +53.1 / +53.1 |
+
+Everything new tops out at +24, under the cast's rim (+44 to +52) and the orbs (+66 to +70).
+
+**On screen**, `_UiShot --light-probe` at the start and two groves, (1857, 1185) and (-639, 3105), on the PC canvas, and
+the start and the first grove on the phone's, seed 4242, pooled. The before is THIS build with the chapter's foliage cut
+back to its three old sets and no clutter (`Decor[..3]`, `Clutter[..0]`, built, shot, reverted), so the ground and main's
+rounder ponds are the same in both:
+
+| PC | before | after |
+|---|---|---|
+| bodies: dL\* / hi / lo | -0.0 / +49.9 / -23.3 | -1.1 / +48.3 / -24.1 |
+| XP orbs: dL\* / hi | +23.5 / +69.1 | +21.5 / +66.4 |
+| detail: cover / \|dL\*\| / hi | 0.4% / 24.5 / +47.3 | 0.5% / 22.5 / +46.7 |
+| bushes: cover / \|dL\*\| / hi | 0.2% / 27.9 / +41.8 | 0.5% / 23.1 / +39.6 |
+| trees and rocks: cover / \|dL\*\| / hi | 0.4% / 31.0 / +51.3 | 6.2% / 19.6 / +33.4 (8.7% in a grove) |
+| bare floor pattern | 3.4% | 3.3% |
+
+On the phone the bodies read +0.3 / +51.1 before and +0.3 / +50.6 after, the orbs +29.3 / +71.0 and +28.0 / +70.4, and
+trees and rocks go from 0.2% of the screen to 5.1% with their brightest tenth falling from +37 to +33. The cast reads as
+it did: dark bodies at the floor's own value, ringed by a rim 48-51 over it. The trees-and-rocks layer covers fifteen
+times the screen and its contrast FELL - its brightest things were the old crystals and stones, and a snow ghost is +12
+with its brightest tenth +20. The detail and bushes layers' brightest tenth is old things, as bright in the before where
+none of the new art is (the old snow drifts and frost, the Buried Runes' far-tell drifts, the palette's bones). **Crowns
+hide orbs**: at the second grove one of the probe's orbs stood under a ghost and was not counted (24 -> 23), the cost
+section 10 accepted for big trees, now massed in the groves. In a crowd (`composite-pc.png`, the last row) the bodies
+read dark on the pale ghosts.
+
+**Footing and placement.** `--footing-census`, a minute's walk at timescale 4, seeds 4242 and 11: 91 and 323 trunks in
+12 and 17 chunks, none within 72 px of anything that blocks (nearest 72.0), no pocket, no narrow-mouthed room. (Other
+sessions' Godots had the machine, so the walk covered less ground than the first builder's runs on an earlier tuning:
+182 and 374 trunks in 40 and 36 chunks, also none under 72.) The terrain log over about 60 furnished chunks a seed gives
+the "placed a chunk" column above. Of the 33-57 ghosts rolled a chunk, 16-22 fall off their habitat, 4-8 are refused
+(water, a site's footprint), 7-14 are crowded by the 96 px spacing and under one is stepped clear or gives way to the
+footing rule: the groves' density is the spacing's, not the rule's. `--check-feet`, three minutes, walking (`--walk=30
+--immortal`) and kiting (`--immortal`): 0 frames with the Feet in the ground, 0 stuck checks, both; the same walk with
+the foliage cut out, 0 and 0. (A first run beside two other harnesses ran at 2-11 fps and logged 2 stuck checks: the
+walker's half-second test against a clamped physics step, gone when run alone.)
+
+**Checked.** `_ExploreProbe --stage=5 --seed=4242 --fresh-save`: 23 passed, 0 failed, as before the pass - the thaw
+placed on open ground, nothing on its footprint, won. The validator: 0 errors, the one test_wizard warning
+(`Woodland.Validate` holds the shares: heart 9-21%, open 56-74%). `clip_check.py`: none of this art cut (the two cut
+edges it reports are the Pinfold's, from main). **The Buried Runes' walk** (`_UiShot --secret-probe --stage=5`) places
+the vault, never a target, its far tell thickening toward it, and it opens and pays Sleet Runes; but its stillness beats
+FAIL - the stones show on arrival, before he has stood still - and they fail the same with this pass's foliage cut out on
+the same build (5 failures), and failed on the move commit before any of it (7). Not this pass's; a follow-up for
+`BuriedRunes.cs` or the walk.
+
+**Cost.** `_BalanceHarness --minutes=2 --character=1 --immortal --timescale=1 --stress-swarm --profile=10 --stage=5
+--seed=11 --terrain-seed=4242 --walk=30 --terrain-log`, the foliage cut out and in on this build, back to back. Other
+sessions' Godots held the machine throughout (frames of 300-700 ms), so only the node count means anything here:
+
+| | before (cut out) | after |
+|---|---|---|
+| nodes, walking | 912-1,044 (mean 972) | 1,507-2,724 (mean 1,951) |
+
+The first builder measured on a quieter machine, on main before the merge and an earlier tuning (ghosts in clumps of
+five at half to three quarters of a stand's radius): frame mean 7.6 -> 8.5 ms, p95 15.9 -> 21.3 ms, nodes 1,084 -> 2,669,
+worst furnish step of a crossing median 1.2 -> 2.9 ms (max 1.5 -> 29.2), a crossing 29 -> 80 ms. About a thousand more
+nodes (three a trunk, one a bush), still under the Forest's 4,170; the chapter had almost nothing to furnish before (64
+props on the first load). **Not measured on the phone**, and the frame cost wants a quiet machine.
+
+**Still needs eyes** (`_shots/foliage-frozen/composite-pc.png`, `composite-phone.png`, before | after, held; the crowd rows
+keep the swarm and its hurt tint; `frozen-plain-final-pc.png` in the user folder is a fresh save's first frame):
+
+- **Whether a snow ghost reads as a spruce buried in snow** at play scale, or as a pale blob. The hooked top is its
+  tell; the pillows are lit flat (little shading inside a lump), so close up they read as snow more than as a tree.
+- **The open waste.** Two thirds of the ground is open snow on purpose, and the first screen is the start's clearing; on
+  seed 4242 it holds one spire and a shrub, on the fresh save's map a grove at the screen's edge. Whether the open needs
+  more of the bottom rungs (the frosted stalks are 0.03 a cell before the habitat weight).
+- **Pale masses among dark bodies.** A ghost is the palest large thing on the floor (+12) where the cast sits at the
+  floor's value; the crowd shots read, but the Rime Guard's cone and the Still Warden's fight have not been looked at in
+  a grove, and the thaw's lake fight has not been looked at beside one.
+- **The crown fade** in a grove: the wizard among ghosts dithers the nearest out, and a grove is denser than a Forest
+  stand.
+- **The phone**, and the frame on a quiet machine.
+
 ### Large Pinfold foundation (2026-11-06)
 
 The Pinfold's 1944x1632 art now needs a real courtyard, not just a larger image over ponds/fences.
