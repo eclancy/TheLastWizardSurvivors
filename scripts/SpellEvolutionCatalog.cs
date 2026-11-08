@@ -78,9 +78,8 @@ public static class SpellEvolutionCatalog
 			case "chain_lightning":
 				SetupChainLightningEvolutions(spell);
 				break;
-			case "shadow_bolt":
-				SetupShadowBoltEvolutions(spell);
-				break;
+			// shadow_bolt is a Conjunction since 2026-11-07 (ComboCatalog): terminal, no milestones - and
+			// IsCombination returns above before any case is reached.
 			case "gale_blade":
 				SetupGaleBladeEvolutions(spell);
 				break;
@@ -980,111 +979,6 @@ public static class SpellEvolutionCatalog
 			ModulateColor = new Color(1.0f, 0.98f, 0.86f),
 			SynergyTag = "Lightning / Single target",
 			SynergyDescription = "Ascension: the anti-elite answer - whatever walks at you first is held and burned while the chain goes on."
-		});
-	}
-
-	// Shadow Bolt is the DEBUFF half. It barely kills anything on its own and is not meant to - its
-	// job is to make the other five spells hit harder, so every option here adds or deepens a
-	// debuff rather than adding damage. The one exception carries damage as its cost of admission.
-	//
-	// EVERY CARD ITS OWN (.ai/spell-roster.md section 2e, built 2026-10-29). The cards were hand-written
-	// and almost all numbers; each now changes what the curse does where you can see it, from what the
-	// spell already is - shadow lightning that arcs far, hits softly and leaves a trail - and its numbers
-	// ride along: a sigil that the next hit breaks, paths of rot along the arcs, the fork, a pall of night
-	// where the curse ends, three curses at once. The ids stay, so every save's choices and the Ascension
-	// browser carry over. The behaviour and its numbers are ChainLightning's (BlackSigilId and the rest,
-	// switched on by these ids alone, so Chain Lightning is untouched) and ShadowCurse's.
-	private static void SetupShadowBoltEvolutions(SpellData spell)
-	{
-		// Level 4 (3 choices)
-		spell.Level4Options.Add(new SpellEvolutionOption
-		{
-			Id = "shadow_bolt_withering_mark",
-			BonusElementWeights = new() { { "Darkness", 1 } },
-			DisplayName = "Black Sigil",
-			Description = $"The cursed wear a sigil: your next other spell to hit one bursts it for {ChainLightning.SigilBurstDamageShare:0}x the bolt, spreading the curse.",
-			MilestoneLevel = 4,
-			Effect = SpellEffect.Vulnerability,
-			EffectValue = 0.12f,
-			VisualTag = "BlackSigil",
-			ModulateColor = new Color(0.72f, 0.36f, 0.92f),
-			SynergyTag = "Darkness / Vulnerability",
-			SynergyDescription = "Every other spell you own sets the sigils off: the busier the loadout, the further the curse spreads."
-		});
-
-		spell.Level4Options.Add(new SpellEvolutionOption
-		{
-			Id = "shadow_bolt_creeping_rot",
-			BonusElementWeights = new() { { "Poison", 1 } },
-			DisplayName = "Creeping Rot",
-			Description = $"Every arc leaves a path of rot for {ChainLightning.RotPathSeconds:0.#}s that poisons, slows and exposes whatever crosses it.",
-			MilestoneLevel = 4,
-			PoisonTickBonus = 4,
-			// The drag as Effect SlowPower, which ChainLightning reads (0.72 to 0.57 of their speed).
-			// It was a SlowMagnitudeBonus, which nothing on this spell reads, until 2026-10-26.
-			Effect = SpellEffect.SlowPower,
-			EffectValue = 0.15f,
-			VisualTag = "CreepingRot",
-			ModulateColor = new Color(0.45f, 0.72f, 0.30f),
-			SynergyTag = "Poison / Control",
-			SynergyDescription = "The survival option - the ground between you and the pack is cursed, and a crowd that cannot close cannot hit you."
-		});
-
-		spell.Level4Options.Add(new SpellEvolutionOption
-		{
-			Id = "shadow_bolt_spreading_dark",
-			DisplayName = "Spreading Dark",
-			// The cap is named on the card (ChainLightning.MaxArcsPerCast, 2026-10-31): with the fork a cast runs
-			// into it within two or three jumps, so "two hops further" is only the whole truth beside it. One
-			// sentence, the one number (the designer, 2026-10-31: "Overall keep text minimal").
-			Description = $"The curse forks at every jump and runs two hops further, up to {ChainLightning.MaxArcsPerCast} arcs a curse.",
-			MilestoneLevel = 4,
-			ChainBranchBonus = 1,
-			ChainArcBonus = 2,
-			VisualTag = "SpreadingDark",
-			ModulateColor = new Color(0.35f, 0.16f, 0.52f),
-			SynergyTag = "Darkness / Spread",
-			SynergyDescription = "More bodies debuffed rather than heavier debuffs. Wants a wide crowd."
-		});
-
-		// Level 8 (2 choices)
-		spell.Level8Options.Add(new SpellEvolutionOption
-		{
-			Id = "shadow_bolt_anathema",
-			// No BonusElementWeights. Element growth on a hybrid happens at level 4; granting one
-			// here as well would let a player who took the matching level 4 option reach three of
-			// a single element, which only a pure spell may do.
-			DisplayName = "Anathema",
-			// +45% damage of its own as well (2026-10-26): x2.76 of the spell at level 7 with it, at --enemy-hp=10.
-			// Cut to what it does and one number (2026-10-31, "keep text minimal"); the +20% damage taken and
-			// the two hops still ride along, as the numbers below.
-			Description = $"Where the curse ends, a pall of night hangs for {ChainLightning.PallSeconds:0}s, cursing and striking everything under it.",
-			DamageMultiplier = 1.45f,
-			MilestoneLevel = 8,
-			Effect = SpellEffect.Vulnerability,
-			EffectValue = 0.20f,
-			ChainArcBonus = 2,
-			VisualTag = "Anathema",
-			ModulateColor = new Color(0.86f, 0.30f, 1.0f),
-			SynergyTag = "Darkness / Vulnerability",
-			SynergyDescription = "Ascension: every chain ends in a patch of night your other spells hit harder in."
-		});
-
-		spell.Level8Options.Add(new SpellEvolutionOption
-		{
-			Id = "shadow_bolt_plaguebearer",
-			// No BonusElementWeights. Element growth on a hybrid happens at level 4; granting one
-			// here as well would let a player who took the matching level 4 option reach three of
-			// a single element, which only a pure spell may do.
-			DisplayName = "Threefold Curse",
-			Description = $"{ChainLightning.ThreefoldCurses} curses leave the staff at once, each chaining on its own for up to {ChainLightning.MaxArcsPerCast} arcs.",
-			MilestoneLevel = 8,
-			PoisonTickBonus = 8,
-			DamageMultiplier = 1.2f,
-			VisualTag = "ThreefoldCurse",
-			ModulateColor = new Color(0.52f, 0.84f, 0.34f),
-			SynergyTag = "Poison / Damage",
-			SynergyDescription = "Ascension: the curse fans out across the front of the pack, and kills through poison rather than impact."
 		});
 	}
 

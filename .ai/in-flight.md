@@ -251,9 +251,19 @@ things come up; strike what lands.**
    `.ai/world-and-tone.md`, `.ai/art-direction.md` and `.ai/cutscenes.md`; regenerate and review both
    landscape and portrait compositions. Landmark choices remain to be designed.
 
-17. **Shadow Bolt should become a combination spell** (Eric, 2026-11-05; design and implementation
-   pending). Move Shadow Bolt into the Conjunction roster; its parent spells and recipe are still to
-   be chosen. Treat these as one piece of work:
+17. ~~**Shadow Bolt should become a combination spell**~~ (Eric, 2026-11-05).
+   **Done, 2026-11-07** (`.ai/combo-spells.md` section 7): Shadow Bolt is the third Conjunction -
+   Void Lance at 8 down Cosmic Collapse + Contagion at 8 down Pandemic, verb *fester*. A bolt of
+   void leaps the thickest pack laying the curse (poisoned, slowed, exposed, the old identity); on
+   Pandemic's beat every cursed body caves in and the curse spreads, all of it bounded (no enemy
+   twice a cast, 24 cursed at once, one hit an enemy a beat). New `scripts/ShadowBolt.cs` draws it
+   (SpellStrokes arcs, feet rings with rot motes that swell on the beat, imploding void discs); the
+   old five-card chain kit left the catalog, `castle_conqueror` pays only Bone Rattle, schema 23
+   keeps the spell for every save that owned it (`MigrateShadowBoltToConjunction`), and
+   `ValidateElementReachability` holds the Darkness/Poison floor after the tags left the pool.
+   Numbers are first guesses against section 2's 1.2x target - the harness band
+   (`--seek-combo=shadow_bolt`) and an eyes-on crowd check at both canvases remain. Original ask:
+   move Shadow Bolt into the Conjunction roster; parents and recipe to be chosen; as one piece:
    - **Rebalance element-tag availability** around the change. Account for its tags moving out of the
      ordinary spell pool, and check that builds can still reach the required element tiers and
      Ascensions before a combination is available. Review spells, boons and items together.

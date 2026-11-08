@@ -77,6 +77,7 @@ public static partial class RegressionChecks
 		ValidateFreeings(warnings);
 		ValidateCinematicRules(warnings);
 		ValidateSlowStartMigration(warnings);
+		ValidateShadowBoltMigration(warnings);
 		ValidateStoryReset(warnings);
 		ValidateUserDataCarryOver(warnings);
 		ValidateChapterDifficulty(warnings);
@@ -5645,6 +5646,39 @@ public static partial class RegressionChecks
 				&& ComboCatalog.ForId(spell.Id) == null)
 				warnings.Add($"Spell '{spell.Id}' is unlocked by a Conjunction Feat but has no recipe in ComboCatalog.");
 		}
+	}
+
+	// SCHEMA 23 (SaveData.MigrateShadowBoltToConjunction): Shadow Bolt became a Conjunction, and a save that
+	// owned it - through the Gaoler's deed, or an explicit grant from the pre-campaign grandfathering - keeps
+	// it: its recipe's Feat is recorded done. A save that never owned it gets nothing, and a second migration
+	// changes nothing.
+	private static void ValidateShadowBoltMigration(List<string> warnings)
+	{
+		SaveData At22(Action<SaveData> shape)
+		{
+			var save = new SaveData { SchemaVersion = 22 };
+			shape(save);
+			save.Migrate(log: false);
+			return save;
+		}
+		string feat = ComboCatalog.FeatId("shadow_bolt");
+
+		SaveData gaoler = At22(s => s.UnlockedAchievementIds.Add("castle_conqueror"));
+		if (!GlobalStatsManager.IsAchievementUnlocked(gaoler, feat) || !GlobalStatsManager.IsSpellUnlockedForLevelUp(gaoler, "shadow_bolt"))
+			warnings.Add("Shadow Bolt migration: a save with the Gaoler's deed done should keep the spell through its recipe's Feat.");
+		gaoler.SchemaVersion = 22;
+		int deeds = gaoler.UnlockedAchievementIds.Count;
+		gaoler.Migrate(log: false);
+		if (gaoler.UnlockedAchievementIds.Count != deeds)
+			warnings.Add("Shadow Bolt migration: a second migration changed the save.");
+
+		SaveData grandfathered = At22(s => s.UnlockedSpellIds.Add("shadow_bolt"));
+		if (!GlobalStatsManager.IsAchievementUnlocked(grandfathered, feat))
+			warnings.Add("Shadow Bolt migration: a save granted the spell outright (pre-campaign grandfathering) should keep it.");
+
+		SaveData without = At22(_ => { });
+		if (GlobalStatsManager.IsAchievementUnlocked(without, feat))
+			warnings.Add("Shadow Bolt migration: a save that never owned the spell was handed its Feat.");
 	}
 
 	// THE CONJUNCTION A WIZARD OPENS ON (ComboDefinition.StartsFusedFor; the dark wizard's The Taking, Eric

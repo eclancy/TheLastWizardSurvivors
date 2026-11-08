@@ -24,7 +24,7 @@ public class SaveData
 	// old order, and the Dungeon itself is kept in GrandfatheredStageIds - entry, and evidence of nothing.
 	// 22 is the slow start's (.ai/slow-start.md, section 6): a played save keeps its six pages
 	// (FullBookKept) and every system it could already use (LessonsLearned).
-	public const int CurrentSchemaVersion = 22;
+	public const int CurrentSchemaVersion = 23;
 	public const int CampaignSchemaVersion = 8;
 	private const int MaxTelemetryHistory = 25;
 
@@ -439,6 +439,9 @@ public class SaveData
 
 		if (SchemaVersion < 22)
 			MigrateToSlowStart();
+
+		if (SchemaVersion < 23)
+			MigrateShadowBoltToConjunction();
 
 		if (log)
 			GD.Print($"SaveData: migrated schema {from} -> {CurrentSchemaVersion}; " +
@@ -967,6 +970,42 @@ public class SaveData
 	private static readonly string[] SlowStartLadderIds = { "ascension", "apotheosis", "conjunctions" };
 	private const string SlowStartRiteSpellId = "sovereign_rite";
 	private const string SlowStartRiteLessonId = "sovereign_rite";
+
+	/// <summary>
+	/// Schema 23: Shadow Bolt became a Conjunction (in-flight item 17; .ai/combo-spells.md section 7). Its
+	/// old source, the Gaoler's deed, pays only Bone Rattle now, and the spell is made in a run from Void
+	/// Lance and Contagion. A save that owned it keeps it: its recipe's derived Feat is recorded done -
+	/// quietly, as schema 19 recorded owned facts - so the spell stays granted, its Spell Index page keeps
+	/// its name, and the recipe is known rather than offered as new. No Arcane Energy changes hands (the
+	/// Feat pays the spell and nothing else). Frozen ids below, never the live catalogs. True when it did
+	/// anything (RegressionChecks.ValidateShadowBoltMigration).
+	/// </summary>
+	internal bool MigrateShadowBoltToConjunction()
+	{
+		bool owned = UnlockedAchievementIds.Contains(ShadowBoltOldDeedId, System.StringComparer.OrdinalIgnoreCase)
+			|| UnlockedSpellIds.Contains(ShadowBoltSpellId, System.StringComparer.OrdinalIgnoreCase);
+		if (!owned)
+			return false;
+		bool changed = false;
+		if (!UnlockedAchievementIds.Contains(ShadowBoltFeatId, System.StringComparer.OrdinalIgnoreCase))
+		{
+			UnlockedAchievementIds.Add(ShadowBoltFeatId);
+			changed = true;
+		}
+		// The deed done is granted its unlock, as schema 19 reconciled: a save whose Gaoler fell before
+		// spells were written into UnlockedSpellIds still owns this one.
+		if (!UnlockedSpellIds.Contains(ShadowBoltSpellId, System.StringComparer.OrdinalIgnoreCase))
+		{
+			UnlockedSpellIds.Add(ShadowBoltSpellId);
+			changed = true;
+		}
+		return changed;
+	}
+
+	// Schema 23's frozen ids: the spell, the deed that paid it until then, and its recipe's derived Feat.
+	private const string ShadowBoltSpellId = "shadow_bolt";
+	private const string ShadowBoltOldDeedId = "castle_conqueror";
+	private const string ShadowBoltFeatId = "conjunction_shadow_bolt";
 
 	/// <summary>
 	/// Schema 19: every spell that is not a starter is an achievement's (.ai/achievements-and-secrets.md

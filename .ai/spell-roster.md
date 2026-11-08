@@ -1590,8 +1590,11 @@ on the ground is Cinderbreath's. The flock is every ward the spell may hold, not
 orbit of contact blades (Cyclone Slash's): the wards hang back on their ring and go out to meet what
 comes, so the burn still does the work.
 
-**Shadow Bolt** (`ChainLightning`, which Chain Lightning also runs - every hook is switched on by a Shadow
-Bolt id, so Chain Lightning is untouched - and `ShadowCurse`). It had no row: hand-written, almost all
+**Shadow Bolt** - **a Conjunction since 2026-11-07** (Void Lance + Contagion, `.ai/combo-spells.md`
+section 7, `scripts/ShadowBolt.cs`): it left the ordinary pool and this kit left the catalog; the
+section below is the spell as it was, kept for the record. (`ChainLightning`, which Chain Lightning
+also runs - every hook was switched on by a Shadow Bolt id, so Chain Lightning is untouched - and
+`ShadowCurse`). It had no row: hand-written, almost all
 numbers. Its cards now come from what it is - shadow lightning that arcs far, hits softly and leaves a
 trail - and stay the debuff half of the chain pair (section 3):
 

@@ -7,7 +7,9 @@ the first draft: *"combination spells should require two fully ascended other sp
 ascensions."*
 
 **Status: sections 0, 2 and 3 are built (2026-11-01, `wip/combo-sagittarius`) - the system and
-Sagittarius; section 6 says how. Section 4's nine are still proposals.** There is no spell called
+Sagittarius; section 6 says how. Section 7 is built too (2026-11-07): Shadow Bolt, once an ordinary
+chain spell, converted whole into the third fusion recipe (in-flight item 17). Section 4's nine are
+still proposals.** There is no spell called
 Constellation: it is one of **Starfall's** two level 8 Ascensions (the stars stay lit where they fell,
 joined by lines of light that cut). So Sagittarius is **Hunter's Draw + Starfall**, and its recipe names
 Constellation.
@@ -459,3 +461,79 @@ fuses it as any recipe and gets it whole, at level 8, with nothing left to take 
 levels. Its numbers are its own table's at the level held, not two frozen parents' (he never held any): the
 departure from section 2's "read once from both parents", and the reason its fused copy is simply its level 8.
 `RegressionChecks.ValidateStartingConjunction` holds the exception.
+
+---
+
+## 7. Shadow Bolt - Void Lance + Contagion (fester). Built 2026-11-07
+
+Eric, 2026-11-05 (in-flight item 17): *"Shadow Bolt should become a combination spell"* - move it
+into the Conjunction roster, rebalance the element tags it takes out of the ordinary pool, scale its
+power for the new role, and make its visuals much more interesting. This section is the conversion.
+
+**Needs:** Void Lance at level 8 with **Cosmic Collapse** (`void_lance_cosmic_collapse`, no element)
+and Contagion at level 8 with **Pandemic** (`contagion_titan_cataclysm`, +Poison).
+
+**Why those two.** Void Lance is the roster's bolt of shadow already, and Cosmic Collapse ends it in
+a black hole; Contagion is the spell that moves body to body, and Pandemic is the whole infected
+crowd going off on one beat. Fused, the void is given the plague's hunger: the bolt itself leaps
+from body to body - the old Shadow Bolt's chain silhouette, kept - and what it curses caves in on
+Pandemic's beat, spreading the curse as it goes. With Witching Hour the lance never ends, so there
+is no hole to seed; with Plague Wind the plague drifts instead of beating: either seals the recipe.
+
+| | Shadow Bolt |
+|---|---|
+| **aim** | the thickest pack in reach: of the enemies in cast range, the one with the most neighbours within a leap |
+| **cadence** | the bolt on the frozen lance's cooldown; the cave-ins on Pandemic's shared 2 s beat, all at once |
+| **demand** | feed it density. The curse spreads only through the cave-ins' reach, so a scattered line starves it and a pack sustains it - Contagion's inheritance |
+| **payload** | the bolt leaps through up to 6 bodies, each struck and cursed (poisoned, slowed 0.72x, +18% damage taken - the old spell's identity, now the curse's); on each beat every cursed body caves in, striking itself and all round it and festering onto the 2 nearest clean bodies |
+| **look** | jagged strokes of the Darkness ramp body to body (SpellStrokes); a dark ring with three motes of rot at every carrier's feet, all swelling together before the beat (Pandemic's tell); each cave-in a disc of void that swells and falls in, its rim white-hot as it closes (Cosmic Collapse's own timing), with thin rot strokes out to the newly cursed |
+| **sound** | none yet, as the old spell had none: its voice belongs to the audio pass (`.ai/audio-manifest.md`) |
+| **elements** | Arcane 1, Darkness 1, Poison 1 - the old Darkness + Poison kept, Arcane joining. Pandemic deepens Poison and Dread Darkness: still three. **Marsh Fever** (Contagion's Water path) would make four: not offered |
+
+**More than the sum.** The lance hits one line once; the plague needs deaths to move and a pack to
+die in. Fused, neither limit holds: the bolt seeds six bodies in a breath, and the beat keeps the
+field erupting - wave after wave of small collapses walking outward through the crowd - without a
+single kill. The payoff moment is the whole screen blinking dark on one heartbeat.
+
+**Bounded**, because the spell it replaces once made 9,841 arcs from one cast (`.ai/spell-roster.md`,
+"a cast is capped"): no enemy is struck twice by one cast's bolt; at most 24 bodies carry the curse
+at once (`MaxCursed`, Contagion's own MaxInfected - the cap is the epidemic's intensity, not a total,
+so the oldest curse ends early when it is full); a beat hits each enemy on the field at most once
+(Pandemic's rule); each cave-in festers onto at most 2. The beat and the casts walk
+`EnemyRegistry.Snapshot`; per-frame work is drawing alone.
+
+**First-guess numbers** (`scenes/ShadowBolt.tscn`): each leap 0.75 of the frozen lance's strike
+(Cosmic Collapse's x2.4 folded in); each cave-in 0.5 of it across 0.55 of the lance's collapse burst;
+the curse's poison the frozen plague's dose for the plague's mark length. Unmeasured against section
+2's 1.2x target: measure with `_BalanceHarness --seek-combo=shadow_bolt --all-unlocked --immortal`
+and `_UiShot --demo-combo=shadow_bolt:fuse`, as Sagittarius was.
+
+**The conversion.** What moving an owned spell into the roster touched, beyond section 6's recipe
+checklist:
+
+- **The unlock moved.** The Gaoler's deed (`castle_conqueror`) pays only Bone Rattle now;
+  `UnlockCatalog.FromCombination("shadow_bolt")` is the spell's one source, its derived Feat
+  "Conjunction: Shadow Bolt". Paracelsus cannot make it (Contagion is his starting spell).
+- **Schema 23** (`SaveData.MigrateShadowBoltToConjunction`): a save that owned Shadow Bolt - the
+  Gaoler's deed done, or the spell granted outright by the pre-campaign grandfathering - has the
+  recipe's Feat recorded done, quietly, as schema 19 recorded owned facts. It keeps the spell, its
+  Spell Index page keeps its name, and no Arcane Energy changes hands.
+  `RegressionChecks.ValidateShadowBoltMigration` holds it.
+- **The old kit went with it.** The five milestone cards (Black Sigil, Creeping Rot, Spreading Dark,
+  Anathema, Threefold Curse) left `SpellEvolutionCatalog` - a Conjunction is terminal - and the new
+  `scripts/ShadowBolt.cs` replaced `ChainLightning.cs` as the spell's script. The shadow-bolt hooks
+  in ChainLightning and ShadowCurse are inert, kept rather than torn out of the tuned chain path; a
+  save's `SeenAscensionIds` may hold the old ids, which nothing reads as live options.
+- **The element pool.** The ordinary pool loses its only Darkness+Poison hybrid. What remains:
+  Darkness on Hollow Star (pure, deepens to 3), Void Lance, Gravewell and Obsidian Spike's branch;
+  Poison on Contagion (pure, deepens), Thorn Vine, Toxic Spore Burst and Black Tentacles - and the
+  boons and relics (Bone Rattle, Wormwood Tithe and the rest). `ValidateElementReachability` still
+  holds the floor: every element reaches its tier-6 capstone, on the road, after the move. Before a
+  fusion is available nothing waits on the lost tags - since 2026-11-02 no Ascension or Apotheosis
+  gate reads element tiers (the gate is the wizard's own spell at max level, plus player level 21).
+- **The Test Wizard** lost it as an opener and the balance bot's Black Cat no longer casts it (a
+  Conjunction without frozen parents cannot fire); `_BossProbe`'s darkness probe is Hollow Star now.
+
+**What no harness checks:** whether the fused spell reads at a glance as its two parents, and
+whether the beat's swell-then-collapse stays readable in a 140-body swarm at both canvases -
+`_UiShot --demo-combo=shadow_bolt:fuse` photographs it, but judging it still needs eyes.
