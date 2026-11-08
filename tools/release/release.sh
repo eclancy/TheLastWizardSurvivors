@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Publish a new version of The One He Missed. Every Windows copy picks it up the next time it
+# Publish a new version of The Last Wizard: Survivors. Every Windows copy picks it up the next time it
 # starts, and every Android copy says on its title screen that it is out.
 #
 #   bash tools/release/release.sh 0.2.0 ["What changed, for players"]
@@ -31,7 +31,7 @@ for arg in "$@"; do
 done
 VERSION="${ARGS[0]:-}"
 CHANGES="${ARGS[1]:-}"
-HOW_TO="Download **TheOneHeMissed-Setup.exe** and run it, then play from the Start menu or the desktop. It keeps itself up to date from then on. No installer? TheOneHeMissed-windows.zip is the portable version: unzip it anywhere you can write to and run TheOneHeMissed.exe. On an Android phone, download TheOneHeMissed-android.apk on the phone and open it (allow your browser to install apps when Android asks); the game says on its title screen when a newer version is out. On Linux, download **TheOneHeMissed-linux.tar.gz**, unpack it and run **./install.sh** - it adds The One He Missed to your app menu and keeps itself up to date too. (The two -bridge files are for copies installed before the game was renamed, which fetch them by themselves.) Download page: https://ecec.dev/the-one-he-missed/download"
+HOW_TO="Download **TheOneHeMissed-Setup.exe** and run it, then play from the Start menu or the desktop. It keeps itself up to date from then on. No installer? TheOneHeMissed-windows.zip is the portable version: unzip it anywhere you can write to and run TheOneHeMissed.exe. On an Android phone, download TheOneHeMissed-android.apk on the phone and open it (allow your browser to install apps when Android asks); the game says on its title screen when a newer version is out. On Linux, download **TheOneHeMissed-linux.tar.gz**, unpack it and run **./install.sh** - it adds The Last Wizard: Survivors to your app menu and keeps itself up to date too. (The two -bridge files are for copies installed before the game was renamed, which fetch them by themselves.) Download page: https://ecec.dev/the-one-he-missed/download"
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 	echo "usage: bash tools/release/release.sh [--dry-run] X.Y.Z [\"what changed\"]" >&2
 	exit 1
@@ -138,9 +138,9 @@ fi
 
 CURRENT=$(sed -n 's/^config\/version="\(.*\)"$/\1/p' project.godot)
 if $DRY_RUN; then
-	echo "The One He Missed $CURRENT -> $VERSION (dry run: nothing is committed or published)"
+	echo "The Last Wizard: Survivors $CURRENT -> $VERSION (dry run: nothing is committed or published)"
 else
-	echo "The One He Missed $CURRENT -> $VERSION"
+	echo "The Last Wizard: Survivors $CURRENT -> $VERSION"
 fi
 
 # --- The story epoch ------------------------------------------------------------------------
@@ -339,7 +339,7 @@ gh release create "v$VERSION" --repo eclancy/TheOneHeMissed \
 	build/release/TheOneHeMissed-linux.tar.gz build/release/TheOneHeMissed-linux-patch.zip \
 	build/release/TheOneHeMissed-windows-bridge.zip build/release/TheOneHeMissed-linux-bridge.tar.gz \
 	build/release/version.json \
-	--title "The One He Missed $VERSION" \
+	--title "The Last Wizard: Survivors $VERSION" \
 	--notes "${CHANGES:+$CHANGES
 
 }$HOW_TO"

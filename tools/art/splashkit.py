@@ -30,10 +30,11 @@ def ramp_rows(colors, n):
 
 
 # --- the title --------------------------------------------------------------
-# THE ONE HE MISSED. The game had its first title until 2026-11-02, and the lettering was the same
-# DISPLAY face in a two-line stack. Which layout the title screens ship, and the alternates, live in
-# title_lettering.py; this only knows how to set lines of the face.
-TITLE_LINES = ("THE ONE", "HE MISSED")
+# THE LAST WIZARD: SURVIVORS. The game had its first title until 2026-11-02 and was The One He
+# Missed until 2026-11-08, both set in the same DISPLAY face. Which layout the title screens ship,
+# and the alternates, live in title_lettering.py; this only knows how to set lines of the face.
+# The colon is never set: on its own line the subtitle already reads as one.
+TITLE_LINES = ("THE LAST WIZARD", "SURVIVORS")
 
 
 # The gap between two words, in source pixels: the end of one word to the start of the next. A
@@ -83,11 +84,12 @@ def lettering(c, cx, y, lines, halo=OCC, shadow=OCC, track=2):
     return yy - lines[-1][2]
 
 
-def wordmark(c, cx, y, top_colors, sub_colors, halo=None, shadow=OCC, gap=8, scales=(3, 2)):
+def wordmark(c, cx, y, top_colors, sub_colors, halo=None, shadow=OCC, gap=8, scales=(2, 2)):
     """The title as a plain two-line stack, centred on cx with its cap line at y. Returns bottom y.
 
     The six unshipped candidate screens in splash.py still call this, so they carry the game's
-    name too; the shipping screens set their lettering through title_lettering.py."""
+    name too; the shipping screens set their lettering through title_lettering.py. Scale 2 on both
+    lines: THE LAST WIZARD at 3 is 447 wide, past the 360 frame (298 at 2, SURVIVORS 186)."""
     return lettering(c, cx, y, [(scales[0], [(TITLE_LINES[0], top_colors)], gap),
                                 (scales[1], [(TITLE_LINES[1], sub_colors)], 0)],
                      halo=halo, shadow=shadow)

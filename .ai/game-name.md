@@ -1,6 +1,7 @@
 # The game's name
 
-**2026-11-08: renamed again, to be built.** Eric: the game, the store, the repo, the website and the folders are
+**2026-11-08: renamed again - in the game and the repo's files, built the same day; the repo, website, store and
+folders still to do (`.ai/in-flight.md` item 62).** Eric: the game, the store, the repo, the website and the folders are
 to be **The Last Wizard: Survivors** (*"on the game, the name should be 'The Last Wizard: Survivors'"*). It came out
 of the store-title discussion of 2026-11-07, which also recorded its risks - an exact-title Play app "The Last
 Wizard" (Hosted Games' interactive fiction, a different genre) and a same-genre Play app "Wizard Survivors"
@@ -10,6 +11,24 @@ The plan, piece by piece, is `.ai/in-flight.md` item 62; the one trap is that ":
 and `config/name` names the save folder, so `config/name` stays "The One He Missed" as an internal identifier and the
 new name is shown everywhere a player sees one (window title, store, labels, art, text). The section below is
 the first rename's record, and stays as it was.
+
+What was built in the game (2026-11-08):
+
+- **`DisplayProfile.GameTitle`** is the name in code. `DisplayProfile._EnterTree` sets the window title from it
+  (Godot titles the window from `config/name` first, so the first frame of a windowed launch can still show the
+  old one), and every line that names the game reads it: the update screen, the bug report's confirmation, the
+  startup error report, the save export's file filter, the ending's credits, the balance report.
+- **The labels:** the Windows product name and file description and the Android label in `export_presets.cfg`
+  (and the 42 `godot_project_name_string.xml` files the Gradle export rewrites from it); the installer's
+  `AppName`, uninstall name and shortcuts; the Linux menu entry. **A shortcut is a file and Windows forbids ":"
+  in a file name, so the Windows shortcuts are "The Last Wizard - Survivors"**, and the installer retires the
+  old "The One He Missed" pair so an upgrade in place does not leave both.
+- **The title art**: THE LAST in the ward's gold at scale 3, WIZARD in bone at 4, SURVIVORS in bone at 2
+  (`tools/art/title_lettering.py`, `.ai/title-screen.md` "The name"), with an L drawn into the DISPLAY face.
+- **Kept, as keys rather than names:** `config/name` (the save folder), the bug report's `game` field (the
+  intake's allowlist key), the `TheOneHeMissed` namespace, solution, assembly, release files, env vars and
+  User-Agent, and the ecec.dev addresses. The story's own "the one he missed" (the prologue's line, the
+  Court's quatrain) is the premise and stays.
 
 **Status (2026-11-02): decided and done.** The game is **The One He Missed**. Eric, 2026-11-02, first the
 direction - *"The name relevant for [the game] should be something like the one he missed"* - and then

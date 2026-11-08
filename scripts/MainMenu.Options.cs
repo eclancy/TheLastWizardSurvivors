@@ -482,7 +482,7 @@ public partial class MainMenu
 			FileMode = mode,
 			Access = FileDialog.AccessEnum.Filesystem,
 			UseNativeDialog = true,
-			Filters = new[] { "*.json ; The One He Missed save" },
+			Filters = new[] { $"*.json ; {DisplayProfile.GameTitle} save" },
 		};
 		string start = OS.GetSystemDir(OS.SystemDir.Downloads);
 		if (!string.IsNullOrEmpty(start))

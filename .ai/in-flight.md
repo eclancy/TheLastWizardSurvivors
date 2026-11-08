@@ -960,7 +960,10 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
 61. **"Pay the tithe" shows the payment** (Eric, 2026-11-06): XP visibly sucked into the granary's
     machine, so what to do is legible without the text.
 62. **Rename the game "The Last Wizard: Survivors"** (Eric, 2026-11-08: "update the website, the repo, the folders
-    locally, this chat name, and on the game, the name should be 'The Last Wizard: Survivors'"). A second rename;
+    locally, this chat name, and on the game, the name should be 'The Last Wizard: Survivors'"). **The game and the
+    repo's files: built 2026-11-08** (`.ai/game-name.md` lists what changed and what was kept as a key;
+    `.ai/releasing.md`, "The second rename"). Still to do: the USPTO check, then the repo and the website (each
+    asked right before), the Play listing (Eric's), the local folders (last). A second rename;
     read `.ai/releasing.md` "The rename" and `.ai/game-name.md` first - the first one's list of what keeps the old
     name on purpose ALL still holds, and now "The One He Missed" joins it wherever changing it would strand a copy
     or a save. The pieces, in order:

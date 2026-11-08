@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Mono synthesis primitives for the SFX set of The One He Missed.
+"""Mono synthesis primitives for the SFX set of The Last Wizard: Survivors.
 
 Python 2.7, standard library only - this machine has no numpy, no ffmpeg and no audio
 encoder, so everything here is written against lists of floats and the stdlib wave module.

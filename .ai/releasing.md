@@ -556,6 +556,27 @@ intake variables (`THEONEHEMISSED_UPDATE_URL`, `..._INTAKE_URL`, `..._KEYSTORE`)
 the bug report's `game`, the URLs and the repo slug (`eclancy/TheOneHeMissed`) - took the new name.
 The title's lettering is redrawn on its own branch (`.ai/title-screen.md`).
 
+### The second rename (2026-11-08): The Last Wizard: Survivors
+
+The game was renamed again (`.ai/game-name.md`), and this time **nothing an installed copy or a save depends on
+moved**: only what a player reads. `DisplayProfile.GameTitle` holds the name; the window title, the export
+presets' Windows product name and file description, the Android label (`package/name`, and the 42
+`android/build/res/values*/godot_project_name_string.xml` the Gradle export rewrites from it - kept in step so
+the export leaves the tree clean), the installer's `AppName`, `UninstallDisplayName` and shortcuts, the Linux
+`.desktop` `Name`, the how-to-play files and the GitHub release title say it. Everything in the table above
+still holds, and these join it, kept as **The One He Missed / TheOneHeMissed** on purpose:
+
+| What | Why it cannot change |
+|---|---|
+| `config/name` | it names the desktop `user://` folder, so changing it moves every save - and Windows forbids the new name's ":" in a folder name. `use_custom_user_dir` is no way round: Godot puts that folder straight under `%APPDATA%` |
+| The release file names (`TheOneHeMissed.exe`, `.pck`, `-Setup.exe`, `-windows.zip`, `-linux.tar.gz`, `-android.apk`) and the install folders | what every copy's updater looks for in a download and restarts, and what ecec.dev's download page links |
+| `ecec.dev/the-one-he-missed/version.json` and `/download` | baked into every copy from 0.12.0; a new address is added beside them, never instead |
+| The bug report's `game` field | the intake's allowlist key (`REPORT_GAMES`); the confirmation text a player reads says the new name |
+| The `.desktop` file's name, `theonehemissed.desktop` | so an update replaces the entry rather than adding a second |
+| The shortcuts' old names | `installer.iss` `[InstallDelete]` removes "The One He Missed.lnk" so an upgrade in place leaves only the new pair, named "The Last Wizard - Survivors" because ":" cannot be in a file name |
+
+No bridge is needed: the program keeps its file name, so the next release updates every copy the ordinary way.
+
 ### Saves: copied once, the old folder left alone
 
 On a desktop Godot names the `user://` folder after `application/config/name`, so the rename moved

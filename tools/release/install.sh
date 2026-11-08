@@ -1,5 +1,5 @@
 #!/bin/sh
-# The One He Missed for Linux: puts the game in your home folder and adds it to your app menu.
+# The Last Wizard: Survivors for Linux: puts the game in your home folder and adds it to your app menu.
 #
 #   ./install.sh               install, or update an installed copy
 #   ./install.sh --uninstall   take it out again (your save is kept)
@@ -12,7 +12,10 @@ set -e
 # The same as the start of every release file's name (TheOneHeMissed-linux.tar.gz): ecec.dev's
 # download page tells people the game installs itself to ~/.local/share/<that name>.
 APP=TheOneHeMissed
-TITLE="The One He Missed"
+TITLE="The Last Wizard: Survivors"
+# KEPT ON PURPOSE: the save folder is named after project.godot's config/name, which stayed The One
+# He Missed when the game was renamed again on 2026-11-08 so that no save would move.
+SAVE_NAME="The One He Missed"
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 HERE=$(cd "$(dirname "$0")" && pwd)
 DEST="$DATA/$APP"
@@ -30,7 +33,7 @@ if [ "$1" = "--uninstall" ]; then
 	rm -f "$MENU"
 	if [ -f "$OLD_DEST/install.sh" ]; then rm -rf "$OLD_DEST"; fi
 	rm -f "$OLD_MENU"
-	echo "$TITLE is uninstalled. Your save is still in ~/.local/share/godot/app_userdata/$TITLE."
+	echo "$TITLE is uninstalled. Your save is still in ~/.local/share/godot/app_userdata/$SAVE_NAME."
 	exit 0
 fi
 

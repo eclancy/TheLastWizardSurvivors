@@ -1,9 +1,9 @@
 ---
 name: ui-ux-polish
-description: Refining The One He Missed's HUD clarity, menu flow, upgrade and level-up card presentation, reroll/swap/remove flows, input feedback, and accessibility. Use for work on LevelUpMenu, ChestItemSelectionMenu, MainMenu, CharacterSelection, StageSelection, or the in-run HUD.
+description: Refining The Last Wizard: Survivors' HUD clarity, menu flow, upgrade and level-up card presentation, reroll/swap/remove flows, input feedback, and accessibility. Use for work on LevelUpMenu, ChestItemSelectionMenu, MainMenu, CharacterSelection, StageSelection, or the in-run HUD.
 ---
 
-# UI/UX Polish for The One He Missed
+# UI/UX Polish for The Last Wizard: Survivors
 
 Use this skill when the game is mechanically complete but the interface still feels unclear, crowded, or awkward.
 

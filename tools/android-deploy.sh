@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build The One He Missed for Android, install it on the connected phone, launch it, and stream its
+# Build The Last Wizard: Survivors for Android, install it on the connected phone, launch it, and stream its
 # log. One command for the phone debugging loop.
 #
 #   tools/android-deploy.sh            export, install, launch, then follow the log (Ctrl+C to stop)

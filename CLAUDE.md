@@ -1,4 +1,4 @@
-# The One He Missed — agent instructions
+# The Last Wizard: Survivors — agent instructions
 
 Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like).
 `scripts/` (~80 `.cs`) and `scenes/` (~40 `.tscn`) are **flat** — no subdirectories. `.tres` resources and `Global.gd` live at the **repo root**, not in a resources folder.
@@ -104,8 +104,8 @@ Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like)
   far shore must be its own order, never appended to `CampaignOrder`. **Read it before adding a god, a
   chapter after the Throne, or a Conjunction a character opens on.**
 - `.ai/title-screen.md` — the shipping title screen: how the scene avoids fractional scaling, the draw order, every knob, and four bugs not to reintroduce. **Read it before touching `TitleScreen.tscn`, `tools/art/splash.py` or `tools/art/hero.py`.** The art is generated, not painted: edit the generator and re-run it, never the PNG.
-- `.ai/game-name.md` — the name: something like *The One He Missed* (Eric; exact words not picked), the ideas, and what a rename
-  touches, above all that `config/name` is also the save folder.
+- `.ai/game-name.md` — the name: *The Last Wizard: Survivors* since 2026-11-08 (*The One He Missed* before), the ideas, and
+  what a rename touches, above all that `config/name` is also the save folder.
 - `.ai/genre-lessons.md` — what Wizard Survivors (Jam Studios) and Vampire Survivors teach us: the player as the
   light, foliage density, scenery landmarks, the scale of the chaos, menus, payoff moments, trailers.
 - **The backlog lives on GitHub**, not in this repo — `gh issue list`, or the `/issue` command. `.ai/issues/` was migrated there and removed. Several open issues predate work that has since landed, so check the code before assuming one is still open.
@@ -354,6 +354,13 @@ session**, the validator run below included.
   the update "bridge" in `tools/release/package.py`, `installer.iss` and `install.sh`. **Never
   rename those.** The full list and the update transition are in `.ai/releasing.md`, "The rename".
   The local checkout folder (`WizardSurvivors/`) was not renamed either.
+- **And renamed again on 2026-11-08, to *The Last Wizard: Survivors*** - but only where a player reads
+  a name: `DisplayProfile.GameTitle` (the window title, set at startup, and every line of text that names
+  the game), the export presets' Windows product name and Android label, the installer, the Linux menu
+  entry and the title art. **`config/name` stays "The One He Missed"**: Godot names the desktop save
+  folder after it, and Windows forbids the ":" in a folder name. So do the bug report's `game` key, the
+  `TheOneHeMissed` namespace, solution, assembly and release file names, the env vars and the ecec.dev
+  addresses. New text that names the game reads `DisplayProfile.GameTitle`, never a literal.
 - **The application icon is drawn by `tools/art/icon_concepts.py`, design E (the burning ward).**
   `python tools/art/app_icon.py` writes `icon.png` (the Godot project manager, via `config/icon`),
   `icon.ico` (the exported Windows binary, via `config/windows_native_icon`, carrying the

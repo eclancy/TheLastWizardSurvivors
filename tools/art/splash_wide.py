@@ -54,7 +54,7 @@ HORIZON = 200
 def word_box(lettering=None):
     """The lettering's box in wide-frame pixels, (x0, y0, x1, y1) with x1/y1 inclusive.
 
-    THE ONE HE MISSED, in whichever layout tools/art/title_lettering.py ships (or the one named).
+    The title, in whichever layout tools/art/title_lettering.py ships (or the one named).
     The first title sat at (5, 3) here, 310 and 279 wide - 620 and 558 canvas units on a
     1280 screen; the shipping stack is (4, 3), 272 and 261, because THE ONE at 5 is 340 wide and
     would run off the left edge of a 16:9 screen or into the staff."""
@@ -431,7 +431,7 @@ def vigil_wide(beard="mane-spear", layers=False, gain=1.0, phase=0, flicker=1.0,
         seen.append(cc)
         splash._darken_rows(cc, 0, WH - 1, lambda x, y: max(edge_t(x, y), ui_pocket_t(x, y)),
                             [None, None, M["stone"][4], OCC], only_opaque=layers)
-    # THE ONE HE MISSED (tools/art/title_lettering.py), after the light, never under it.
+    # The title (tools/art/title_lettering.py), after the light, never under it.
     if wordmark:
         title_lettering.draw(T("backB"), lettering, "wide", C0)
     # The eyes, last of all and only where nothing in front of them is drawn - see splash.vigil.

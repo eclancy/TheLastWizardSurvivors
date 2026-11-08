@@ -284,13 +284,13 @@ public partial class UpdateScreen : Control
 					question.QueueFree();
 					question = null;
 				}
-				title.Text = "Updating The One He Missed";
+				title.Text = $"Updating {DisplayProfile.GameTitle}";
 				detail.Text = $"Getting version {newVersion}...  {Mathf.RoundToInt(progress * 100.0f)}%";
 				ShowBar(progress);
 				break;
 
 			case Phase.Installing:
-				title.Text = "Updating The One He Missed";
+				title.Text = $"Updating {DisplayProfile.GameTitle}";
 				detail.Text = "Nearly done - the game will restart by itself.";
 				ShowBar(1f);
 				break;

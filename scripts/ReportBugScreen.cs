@@ -58,7 +58,9 @@ public partial class ReportBugScreen : CanvasLayer
 	/// <summary>
 	/// The server's allowlist key (intake/server.js, REPORT_GAMES). It must be exactly this string:
 	/// anything else, or nothing, files the report as a DrawFight suggestion. Copies from before the
-	/// rename send the game's old name, which the server files under this one (RENAMED_GAMES).
+	/// rename send the game's old name, which the server files under this one (RENAMED_GAMES). KEPT ON
+	/// PURPOSE when the game was renamed again on 2026-11-08: it is a key, not a name a player reads, and
+	/// the text below says DisplayProfile.GameTitle instead.
 	/// </summary>
 	public const string GameField = "The One He Missed";
 
@@ -595,7 +597,7 @@ public partial class ReportBugScreen : CanvasLayer
 
 		var body = new Label
 		{
-			Text = "Your report is on its way to the person who makes The One He Missed.",
+			Text = $"Your report is on its way to the person who makes {DisplayProfile.GameTitle}.",
 		};
 		ResponsiveLayout.SetBodyText(body);
 		body.AddThemeColorOverride("font_color", Ink.Ink);

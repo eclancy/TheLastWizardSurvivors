@@ -223,7 +223,7 @@ public partial class TitleScreen : Control
 		startupFailed = true;
 		GD.PushError($"TitleScreen: {message}");
 		string stage = preparedMenu?.PreparationStage ?? "Menu scene";
-		StartupErrorReport = $"The One He Missed {UpdateScreen.CurrentVersion}\n"
+		StartupErrorReport = $"{DisplayProfile.GameTitle} {UpdateScreen.CurrentVersion}\n"
 			+ $"Platform: {OS.GetName()}\nRenderer: {DisplayServer.GetName()}\nStage: {stage}\n"
 			+ $"Scene: {MenuScenePath}\nError: {message}\n{preparedMenu?.PreparationException}\n"
 			+ $"Engine errors:\n{startupDiagnostics?.Snapshot()}";

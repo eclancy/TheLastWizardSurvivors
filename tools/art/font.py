@@ -276,6 +276,23 @@ DISPLAY = {
         "##.......##",
         "##.......##",
     ],
+    # THE LAST WIZARD: SURVIVORS (2026-11-08): the one letter the third title needed that neither
+    # earlier one did. E without its arms: the two-pixel stem, the two-row slab at the foot, eight
+    # wide so LAST sets with the same rhythm as THE beside it.
+    "L": [
+        "##......",
+        "##......",
+        "##......",
+        "##......",
+        "##......",
+        "##......",
+        "##......",
+        "##......",
+        "##......",
+        "##......",
+        "########",
+        "########",
+    ],
     " ": ["....."] * 12,
 }
 

@@ -1,11 +1,11 @@
 ---
 name: level-design-wave-balance
-description: Shaping stage pacing, enemy wave curves, spawn density and composition, difficulty ramps, elite/miniboss/boss timing, and encounter tuning for The One He Missed. Use when a stage feels flat, spiky, or too safe, when adding an enemy to the wave ecosystem, or when tuning early/mid/late run pacing.
+description: Shaping stage pacing, enemy wave curves, spawn density and composition, difficulty ramps, elite/miniboss/boss timing, and encounter tuning for The Last Wizard: Survivors. Use when a stage feels flat, spiky, or too safe, when adding an enemy to the wave ecosystem, or when tuning early/mid/late run pacing.
 ---
 
 # Level Design and Wave Balance
 
-Use this skill when shaping how a run of The One He Missed escalates: spawn density, enemy mix, elite timing, and stage-specific pacing.
+Use this skill when shaping how a run of The Last Wizard: Survivors escalates: spawn density, enemy mix, elite timing, and stage-specific pacing.
 
 ## Where the spawn system lives
 

@@ -1,11 +1,11 @@
 ---
 name: godot-autoshooter-feature
-description: Workflow and guardrails for adding or changing gameplay features of The One He Missed in Godot 4.5 C# — active spells (SpellData/.tres), passive spells (PassiveSpellEffect), enemies, waves, upgrades, element weights, collision/signal wiring, HUD and progression. Use whenever a task edits scripts/*.cs, scenes/*.tscn, or a root SpellData_*.tres.
+description: Workflow and guardrails for adding or changing gameplay features of The Last Wizard: Survivors in Godot 4.5 C# — active spells (SpellData/.tres), passive spells (PassiveSpellEffect), enemies, waves, upgrades, element weights, collision/signal wiring, HUD and progression. Use whenever a task edits scripts/*.cs, scenes/*.tscn, or a root SpellData_*.tres.
 ---
 
 # Godot Autoshooter Feature Workflow
 
-Use this skill when a task touches core gameplay code in The One He Missed and needs to stay aligned with the project's Godot architecture.
+Use this skill when a task touches core gameplay code in The Last Wizard: Survivors and needs to stay aligned with the project's Godot architecture.
 
 ## Project map
 - Player flow lives in `scripts/Player.cs` and the main gameplay scene controller lives in `scripts/Node2DGame.cs`.

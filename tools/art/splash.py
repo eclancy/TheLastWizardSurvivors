@@ -187,7 +187,7 @@ def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
                                 (86, 452, 66, 40, 241)]),
     }
     wd = WOODS[wood]
-    # Which layout of THE ONE HE MISSED goes on (tools/art/title_lettering.py). Only the
+    # Which layout of the title goes on (tools/art/title_lettering.py). Only the
     # comparison sheet passes anything but the shipping one.
     lettering = lettering or title_lettering.SHIPPING
     _tone_rng = random.Random(9631)
@@ -619,8 +619,8 @@ def vigil(beard="mane-spear", ward=None, ground=None, wood="open",
 
 
 def _vigil_wordmark(c, lettering):
-    """THE ONE HE MISSED, in the layout named (tools/art/title_lettering.py). It was the two-line
-    the first title here until the game was renamed on 2026-11-02."""
+    """The title, in the layout named (tools/art/title_lettering.py): THE LAST WIZARD SURVIVORS since
+    2026-11-08, THE ONE HE MISSED before that, and the first title's two-line stack before 2026-11-02."""
     title_lettering.draw(c, lettering, "tall")
 
 

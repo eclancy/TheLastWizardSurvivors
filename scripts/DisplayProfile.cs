@@ -24,6 +24,14 @@ public partial class DisplayProfile : Node
 	public static readonly Vector2I LandscapeCanvas = new(1280, 720);
 	public static readonly Vector2I PortraitCanvas = new(720, 1280);
 
+	/// <summary>
+	/// The game's name as a player reads it (Eric, 2026-11-08): the window title, set below, and every line
+	/// of text that names the game. NOT project.godot's config/name, which stays "The One He Missed": Godot
+	/// names the desktop save folder after it, so changing it moves every save, and Windows forbids this
+	/// name's ":" in a folder name anyway (.ai/game-name.md; .ai/releasing.md, "The rename").
+	/// </summary>
+	public const string GameTitle = "The Last Wizard: Survivors";
+
 	/// <summary>True on a phone, or on a desktop launched with --portrait.</summary>
 	public static bool IsPortrait { get; private set; }
 
@@ -39,6 +47,9 @@ public partial class DisplayProfile : Node
 					screenCountOverride = Math.Max(0, fake);
 
 		Window root = GetTree().Root;
+		// Godot titles the window from config/name before any autoload runs; this is the earliest the
+		// game's own name can replace it. The taskbar and Alt+Tab read the same title.
+		root.Title = GameTitle;
 		if (IsPortrait)
 		{
 			root.ContentScaleSize = PortraitCanvas;

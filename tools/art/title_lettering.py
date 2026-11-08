@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The title's lettering: THE ONE HE MISSED, in three layouts, one of which ships.
+"""The title's lettering: THE LAST WIZARD: SURVIVORS, in three layouts, one of which ships.
 
 Run: python tools/art/title_lettering.py
 
@@ -16,6 +16,12 @@ and you are the one he missed. The blue-robed figure in the ward is that player 
 he did not take - and the ward's gold is the one warm light left in the wood. The lettering says
 the same thing in the only way type can without a tagline: THE ONE is lit in the ward's gold, and
 everything else is set in cold bone, the colour of the world he left.
+
+Renamed again on 2026-11-08 (Eric: "on the game, the name should be 'The Last Wizard: Survivors'"),
+for a name that says what the game is to someone scrolling a store. The premise reads the same:
+the last wizard is the one he missed. So the rule carries over word for word - the phrase that
+names the player, THE LAST, is lit in the ward's gold, and the rest is cold bone - and the genre
+word SURVIVORS is the subtitle, set smallest. The colon is never set; its own line does its work.
 
 Each layout is given twice, in the coordinates its screen is authored in:
   tall  the 360x640 Vigil composition (splash.vigil), before it is grown into the 840 frame;
@@ -52,39 +58,45 @@ BONE = [M["skin"][0], M["skin"][0], M["skin"][1], M["skin"][2], M["skin"][3]]
 # lit phrase the brighter top it needs to lead.
 GOLD = [M["gold"][0], M["gold"][0], M["gold"][1], M["gold"][1], M["gold"][2]]
 
+# Widths at track 2, in source pixels before the scale: THE LAST 80, WIZARD 62, SURVIVORS 93,
+# THE LAST WIZARD on one line 149. So at scales 3, 4 and 2 the stack's lines come to 240, 248 and
+# 186 - the first two within eight pixels of each other, and SURVIVORS the first title's own 186.
 LAYOUTS = {
-    # SHIPS. Two lines, THE ONE over HE MISSED, at scales 4 and 3: 272 and 261 wide, so the block
-    # reads as one justified stack the way the old one did (WIZARD and SURVIVORS both came to 186).
-    # The words break where the sentence does - the one / he missed - and the break puts the lit
-    # phrase on top, alone on its line. One size on both screens: on a phone it fills the break in
-    # the canopy across most of its width, on a PC it stands in the left third over the menu.
+    # SHIPS. Three lines: THE LAST in gold at scale 3, WIZARD in bone at 4, SURVIVORS in bone at 2.
+    # The name proper is the justified pair on top and the genre word sits under it as a subtitle,
+    # the way the first title's SURVIVORS sat under WIZARD. One layout on both screens. A third line
+    # makes the block 124 rows on a PC, where the menu column starts at row 134 (MainMenu.PinToWideArt)
+    # and the old two-line block ended at 116; so there the gaps close to 5 and the cap line rises
+    # to 6, which leaves the box ending at about 126 - eight rows clear of Start Run.
     "stack": dict(
         name="A  STACK",
-        note="THE ONE over HE MISSED - scales 4 and 3",
-        tall=dict(cx=180, y=58, lines=[(4, [("THE ONE", GOLD)], 9), (3, [("HE MISSED", BONE)], 0)]),
-        wide=dict(cx=175, y=16, lines=[(4, [("THE ONE", GOLD)], 13), (3, [("HE MISSED", BONE)], 0)])),
-    # A poster: the one word that carries the premise set big and lit, and the rest of the sentence
-    # small and cold round it. The strongest single shape of the three, and the hardest to read as
-    # a sentence - it says ONE first and the title second.
-    "ember": dict(
-        name="B  EMBER",
-        note="THE, ONE, HE MISSED - scales 2, 5 and 2",
-        tall=dict(cx=180, y=44, lines=[(2, [("THE", BONE)], 5), (5, [("ONE", GOLD)], 7),
-                                       (2, [("HE MISSED", BONE)], 0)]),
-        wide=dict(cx=175, y=8, lines=[(2, [("THE", BONE)], 5), (5, [("ONE", GOLD)], 7),
-                                      (2, [("HE MISSED", BONE)], 0)])),
-    # An inscription: one quiet line across the top of the picture, so the scene carries the screen
-    # and the name is read rather than looked at. On a PC it runs over the clearing at scale 3; a
-    # phone has room for it only at scale 2 with the tracking taken in, which is small for a title.
+        note="THE LAST, WIZARD, SURVIVORS - scales 3, 4 and 2",
+        tall=dict(cx=180, y=30, lines=[(3, [("THE LAST", GOLD)], 8), (4, [("WIZARD", BONE)], 9),
+                                       (2, [("SURVIVORS", BONE)], 0)]),
+        wide=dict(cx=175, y=6, lines=[(3, [("THE LAST", GOLD)], 5), (4, [("WIZARD", BONE)], 5),
+                                      (2, [("SURVIVORS", BONE)], 0)])),
+    # A poster: WIZARD set big, THE LAST lit and small over it, SURVIVORS small under it. The
+    # strongest single shape, and the one a store thumbnail reads first - but THE LAST at scale 2
+    # is a scrap over a word that big, which is what sank the same shape for THE ONE.
+    "crown": dict(
+        name="B  CROWN",
+        note="THE LAST, WIZARD, SURVIVORS - scales 2, 5 and 2",
+        tall=dict(cx=180, y=34, lines=[(2, [("THE LAST", GOLD)], 6), (5, [("WIZARD", BONE)], 8),
+                                       (2, [("SURVIVORS", BONE)], 0)]),
+        wide=dict(cx=175, y=8, lines=[(2, [("THE LAST", GOLD)], 5), (5, [("WIZARD", BONE)], 6),
+                                      (2, [("SURVIVORS", BONE)], 0)])),
+    # An inscription: the name on one line with SURVIVORS under it, so the scene carries the screen
+    # and the name is read rather than looked at. A phone fits THE LAST WIZARD only at scale 2; on
+    # a PC it runs at 3 across the clearing and over the staff's orb.
     "line": dict(
         name="C  LINE",
-        note="One line - scale 3 on a PC, 2 on a phone",
-        tall=dict(cx=180, y=92, track=1,
-                  lines=[(2, [("THE", BONE), ("ONE", GOLD), ("HE MISSED", BONE)], 0)]),
-        wide=dict(cx=320, y=20,
-                  lines=[(3, [("THE", BONE), ("ONE", GOLD), ("HE MISSED", BONE)], 0)])),
+        note="THE LAST WIZARD on one line - scale 3 on a PC, 2 on a phone",
+        tall=dict(cx=180, y=80, lines=[(2, [("THE", BONE), ("LAST", GOLD), ("WIZARD", BONE)], 7),
+                                       (2, [("SURVIVORS", BONE)], 0)]),
+        wide=dict(cx=320, y=14, lines=[(3, [("THE", BONE), ("LAST", GOLD), ("WIZARD", BONE)], 8),
+                                       (2, [("SURVIVORS", BONE)], 0)])),
 }
-ORDER = ("stack", "ember", "line")
+ORDER = ("stack", "crown", "line")
 SHIPPING = "stack"
 
 SIZES = {"tall": (360, 640), "wide": (960, 360)}

@@ -90,8 +90,8 @@ PATCH = [NAME + ".pck", DATA + "/" + NAME + ".dll", DATA + "/" + NAME + ".deps.j
 
 # The controls are the input map in project.godot (move_*, ui_*, pause). The README has no
 # controls section, so this is the one place they are written down for a player.
-HOW_TO_PLAY = u"""The One He Missed
-=================
+HOW_TO_PLAY = u"""The Last Wizard: Survivors
+==========================
 
 You are a lone wizard in a haunted wood, and the dead keep coming. You only move - your spells
 cast themselves. Gather what the fallen leave behind to level up, choose new spells and
@@ -117,8 +117,8 @@ Made at https://ecec.dev - download page: https://ecec.dev/the-one-he-missed/dow
 """
 
 
-HOW_TO_PLAY_LINUX = u"""The One He Missed
-=================
+HOW_TO_PLAY_LINUX = u"""The Last Wizard: Survivors
+==========================
 
 You are a lone wizard in a haunted wood, and the dead keep coming. You only move - your spells
 cast themselves. Gather what the fallen leave behind to level up, choose new spells and

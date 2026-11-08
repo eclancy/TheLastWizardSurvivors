@@ -26,14 +26,29 @@ screens in the coordinates that screen is authored in, and `SHIPPING` names the 
 finished art for both screens and writes the comparison sheet to
 `tools/art/_title_lettering/comparison.png` (gitignored; PC 16:9 above, Pixel 9 below, at 1x):
 
+**Renamed again on 2026-11-08: THE LAST WIZARD SURVIVORS** (`.ai/game-name.md`). The rule carries over:
+the phrase that names the player - THE LAST, the last wizard being the one he missed - is lit in the
+ward's gold, the rest is cold bone, and the genre word is the subtitle. The colon is never set; its own
+line does its work. The three layouts now:
+
 | | Layout | Why not |
 |---|---|---|
-| **A, ships** | **Stack**: THE ONE over HE MISSED, scales 4 and 3 (272 and 261 wide), the same on both screens | - |
-| B | **Ember**: THE, then ONE at scale 5, then HE MISSED, the small words in bone | the strongest single shape, but it says ONE first and the title second, and THE at scale 2 is a scrap over a word that big |
-| C | **Line**: THE ONE HE MISSED on one line, scale 3 on a PC and 2 on a phone | the quietest, and on a phone it fits only at scale 2 with the tracking taken in - small print for a title; on a PC it runs across the canopy and right over the staff's orb |
+| **A, ships** | **Stack**: THE LAST (gold, scale 3, 240 wide), WIZARD (bone, 4, 248), SURVIVORS (bone, 2, 186) | - |
+| B | **Crown**: THE LAST at 2, WIZARD at 5 (310 wide), SURVIVORS at 2 | the strongest thumbnail, but THE LAST at scale 2 is a scrap over a word that big - the reason the same shape lost for THE ONE |
+| C | **Line**: THE LAST WIZARD on one line over SURVIVORS, scale 3 on a PC, 2 on a phone | small print on a phone; on a PC SURVIVORS lands right on the staff's orb |
 
-The stack breaks where the sentence does (the one / he missed), puts the lit phrase alone on top,
-and its two lines come out within eleven pixels of each other, so it reads as one justified block
+The stack's top pair come out within eight pixels of each other, and SURVIVORS is the first title's own
+186. **Where it sits:** phone, cap line at composition row 30 and box bottom 157, under the old 157 and 13
+clear of Start Run at 170; PC, cap line 6, gaps closed to 5, box bottom 126 - eight rows clear of the menu
+column at 134 (the old two-line block left 18; a third line costs ten). **One glyph was drawn**: L, in
+`font.py`, E without its arms. The comparison sheet (`python tools/art/title_lettering.py`) shows all three.
+
+The THE ONE HE MISSED layouts (2026-11-02 to 11-08), for the record: A, a stack, THE ONE over HE MISSED
+at scales 4 and 3 (272 and 261 wide), shipped; B, ONE alone at scale 5 between small words; C, the
+sentence on one line.
+
+The stack broke where the sentence does (the one / he missed), put the lit phrase alone on top,
+and its two lines came out within eleven pixels of each other, so it read as one justified block
 the way the first title did (both its lines were 186).
 
 What it took:
@@ -76,7 +91,7 @@ What it took:
 | `tools/art/splash.py` | generates both PNGs, plus the six unused candidates |
 | `tools/art/hero.py` | the title-size player figure |
 | `tools/art/title_eyes.py` | the eyes: a pair's shape and tones, the blink frames, where pairs may go, and the sheet and positions it writes. Shared by both sets |
-| `tools/art/title_lettering.py` | THE ONE HE MISSED: the three layouts, which one ships, and the comparison sheet. See "The name" above |
+| `tools/art/title_lettering.py` | the title (THE LAST WIZARD SURVIVORS): the three layouts, which one ships, and the comparison sheet. See "The name" above |
 | `tools/art/splashkit.py` | trees, boulders, candles, lettering, sigils, skull, moon |
 | `tools/art/raster.py`, `tools/art/font.py` | drawing primitives and the two pixel faces |
 
