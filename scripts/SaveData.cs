@@ -29,7 +29,10 @@ public class SaveData
 	// onto the Conjunction (in-flight 17): a save that owned the old spell or its deed is granted
 	// the new Feat, so nothing it earned is confiscated. (The branch that built it numbered it 23,
 	// not knowing 23 was taken; players' saves already carry 23, so it has to be 24.)
-	public const int CurrentSchemaVersion = 24;
+	// 25 is the boon rework's (in-flight 41): runs hold two boon slots now and the shop sells the
+	// third and fourth, so a save that has played - every run it played held six - is granted both
+	// Reliquary Shelf levels rather than being asked to buy back capacity it had.
+	public const int CurrentSchemaVersion = 25;
 	public const int CampaignSchemaVersion = 8;
 	private const int MaxTelemetryHistory = 25;
 
@@ -457,6 +460,9 @@ public class SaveData
 		if (SchemaVersion < 24)
 			MigrateShadowBoltToConjunction();
 
+		if (SchemaVersion < 25)
+			MigrateToBoonRework();
+
 		if (log)
 			GD.Print($"SaveData: migrated schema {from} -> {CurrentSchemaVersion}; " +
 				$"{UnlockedSpellIds.Count} spells, {UnlockedBoonIds.Count} boons, {UnlockedCharacterIds.Count} wizards, " +
@@ -800,6 +806,27 @@ public class SaveData
 		ArcaneUpgradeLevels.Remove(Retired);
 		TotalCurrency += refund;
 		return (moved, refund);
+	}
+
+	/// <summary>
+	/// Schema 25, the boon rework's (in-flight item 41). Runs used to hold six boon slots; they hold
+	/// two now, and the shop's Reliquary Shelf sells the third and fourth. Nothing anybody had is
+	/// taken away: a save that has played a run - every run it played held the six - is granted both
+	/// shop slots outright, the same played-save test schema 20 grants AscensionLearned on. A fresh
+	/// save never held the capacity, so it buys them like any Power. Returns the levels granted,
+	/// for the validator.
+	/// </summary>
+	internal int MigrateToBoonRework()
+	{
+		if ((Lifetime?.TotalRuns ?? 0) <= 0 && (RunTelemetryHistory?.Count ?? 0) <= 0)
+			return 0;
+
+		ArcaneUpgradeLevels.TryGetValue(GlobalStatsManager.BoonSlotsUpgradeId, out int held);
+		const int BothSlots = 2;
+		if (held >= BothSlots)
+			return 0;
+		ArcaneUpgradeLevels[GlobalStatsManager.BoonSlotsUpgradeId] = BothSlots;
+		return BothSlots - held;
 	}
 
 	/// <summary>

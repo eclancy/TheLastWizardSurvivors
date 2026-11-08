@@ -860,17 +860,22 @@ which still counts six (`Player.MaxSpellSlots`): a relic most runs never see can
 The full reasoning is in `.ai/passives-and-items.md` section 4b.
 
 ### Boons
-Permanent, never levelled, and held in **six slots of their own** (`Player.MaxBoonSlots`) beside
-the six spell slots. A boon is taken once and lasts the run.
+Permanent for the run, held in **slots of their own** beside the six spell slots: **two to start,
+four at most** (`Player.BaseBoonSlots`, `Player.MaxBoonSlots`), the third and fourth bought in the
+shop as the Reliquary Shelf (the boon rework, Eric 2026-11-06, in-flight item 41 —
+`.ai/passives-and-items.md` section 3d). A boon lasts the run, and picking an owned one **levels
+it**, to level 3 (`BoonCatalog.MaxLevel`).
 
 - **They do not compete for a spell slot.** That is what separates them from the passive spells
   they replaced, and it means a level-up with a full spell book still has something to offer
   besides upgrades.
-- **They carry element tags**, which is how the thinner elements reach their thresholds at all.
-  The roster is deliberately weighted toward Metal, Water, Light, Grass and Darkness, because
-  those five got most of their carriers from passive spells.
-- **They never level**, so each has to be worth taking the moment it is offered. There is no level
-  8 to borrow against.
+- **They carry element tags** — one each since the rework — which is how the thinner elements
+  reach their thresholds at all. The roster is deliberately weighted toward Metal, Water, Light,
+  Grass and Darkness, because those five got most of their carriers from passive spells. A tag
+  does not deepen with the boon's level.
+- **They level, but level 1 must still be worth taking.** Level 2 of almost every boon is the old
+  flat value, so the climb is one step down and one step up from what shipped; nothing is
+  back-loaded.
 
 **Passive spells are gone.** All eleven (`PassiveSpellEffect` and its subclasses) were removed at
 save schema 9. What went with them, and where it landed:

@@ -81,8 +81,9 @@ This proposes **17 items**: 12 relics making up **four new Full Set Enchantments
   / 0.08), how big its effect is, and its tags. **Common and Uncommon relics carry no tag. A Rare
   carries one, and a Relic one or two.** A completed set grants two tags. Neither counts toward
   `ValidateElementReachability`, so the floor is spells and boons only.
-- **Boons**: there are six slots, a boon never levels so it must be worth taking the moment it
-  is offered, it has two tags and never the same element twice, it has exactly one source
+- **Boons**: two slots to start and four at most (the rework, `.ai/passives-and-items.md` 3d), a
+  boon levels to 3 but must be worth taking at level 1, it has exactly one tag (the trim paid for
+  the bought slots) and exactly one source
   (`ValidateBoonSources`), and its icon needs an `ELEMENT` entry in `boon_icons.py`. The draw is a
   chance (`BoonOfferChance` 0.22) and then a choice among the boons, leaning toward the player's
   deepest element, so **every new boon dilutes the others**.

@@ -4776,12 +4776,16 @@ public partial class Node2DGame : Node2D
 
 			var box = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
 			box.AddThemeConstantOverride("separation", 3);
-			box.AddChild(BuildDetailLabel(boon.Name, PauseInk.Ink, ResponsiveLayout.TextRole.Body));
-			box.AddChild(KeywordText.Wrap(BuildDetailLabel(BoonCatalog.DescribeEffect(boon), PauseInk.InkSoft, ResponsiveLayout.TextRole.Label)));
+			// The held level in the name line (boons level since item 41), "of 3" so the room to
+			// grow is said even at level 1.
+			int boonLevel = Math.Max(1, player?.GetBoonLevel(id) ?? 1);
+			box.AddChild(BuildDetailLabel($"{boon.Name} \u2014 Level {boonLevel} of {BoonCatalog.MaxLevel}",
+				PauseInk.Ink, ResponsiveLayout.TextRole.Body));
+			box.AddChild(KeywordText.Wrap(BuildDetailLabel(BoonCatalog.DescribeEffect(boon, boonLevel), PauseInk.InkSoft, ResponsiveLayout.TextRole.Label)));
 			// A stance boon pays only while it holds, so say whether it held when the game paused.
 			if (boon.Effect == BoonEffect.StanceRegen && player != null)
 				box.AddChild(BuildDetailLabel(player.IsStanceRooted
-					? $"Rooted: +{boon.Magnitude:0.0} HP per second now."
+					? $"Rooted: +{BoonCatalog.MagnitudeAt(boon, boonLevel):0.0} HP per second now."
 					: $"Not rooted - stand still {BoonCatalog.StanceSeconds:0.#}\u00A0s.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
 			// The walking boon winds one spell, and which one changes as the timers do: say which it was.
 			if (boon.Effect == BoonEffect.WalkingRecharge && player != null)

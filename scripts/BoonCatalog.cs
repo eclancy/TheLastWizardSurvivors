@@ -85,6 +85,15 @@ public sealed class BoonDefinition
 	public required string Description { get; init; }
 
 	/// <summary>Element tags, same rules as a spell: never the same element twice.</summary>
+	/// <remarks>
+	/// ONE tag per boon since the boon rework (Eric, 2026-11-06, in-flight item 41). Boons carried
+	/// two each when the cap was six; with two slots to start and four at most, two tags per boon
+	/// would let two boons move four elements at once, and the trim is what pays for the extra
+	/// capacity. The tag kept is each boon's FIRST - the element its icon is already lit in
+	/// (tools/art/boon_icons.py bakes that light into the PNG), so no art moved. The tag does not
+	/// deepen as the boon levels: a boon is one carrier at any level, as a spell is.
+	/// <c>RegressionChecks.ValidateBoonRework</c> holds the one-tag rule.
+	/// </remarks>
 	public required (string Element, int Weight)[] ElementWeights { get; init; }
 
 	/// <summary>Where the boon's 64px icon lives, drawn by tools/art/boon_icons.py.</summary>
@@ -100,23 +109,35 @@ public sealed class BoonDefinition
 	public string IconPath => $"res://assets/bonelight/ui/boons/{Id}.png";
 
 	public required BoonEffect Effect { get; init; }
+
+	/// <summary>The effect at level 1. See <see cref="BoonCatalog.MagnitudeAt"/> for a held level.</summary>
 	public required float Magnitude { get; init; }
+
+	/// <summary>
+	/// What each level past the first adds to <see cref="Magnitude"/>. Negative where smaller is
+	/// stronger (Chill's speed multiplier). Level 2 of almost every boon equals what the boon did
+	/// before boons levelled, so a player who takes one pick on an old favourite feels no change.
+	/// </summary>
+	public required float MagnitudePerLevel { get; init; }
 }
 
 /// <summary>
-/// Boons: permanent, non-levelling pickups that sit beside the spell loadout.
+/// Boons: permanent pickups that sit beside the spell loadout, each levelling up to
+/// <see cref="MaxLevel"/> when an owned one is picked again.
 /// </summary>
 /// <remarks>
-/// See `.ai/passives-and-items.md`. Two rules shape every entry here.
+/// See `.ai/passives-and-items.md`. Three rules shape every entry here.
 ///
-/// **A boon never levels**, so it has to be worth taking the moment it is offered. A spell can be
-/// weak at level 1 because level 8 justifies it; a boon has no level 8 to borrow against.
+/// **A boon levels, but must still be worth taking at level 1** (the rework, Eric 2026-11-06,
+/// in-flight item 41 - boons never levelled before it). Level 1 is most of the effect and the
+/// levels are a modest climb, never a back-loaded promise: level 2 of almost every boon is what
+/// the boon did before levels existed, so the floor the roster was balanced on still holds.
 ///
 /// **A boon does not occupy a spell slot.** The six spell slots are what make a spell choice a
 /// decision; a boon competing for one would just be a passive spell again, which is the thing
-/// these replace. Boons have their own six slots - see <c>Player.MaxBoonSlots</c> - and that cap is
-/// what keeps element tags honest, because uncapped tagged boons would put every capstone within
-/// reach at once.
+/// these replace. Boons have their own slots - two to start, four with both shop slots
+/// (<c>Player.BaseBoonSlots</c>, <c>Player.MaxBoonSlots</c>) - and that cap is what keeps element
+/// tags honest, because uncapped tagged boons would put every capstone within reach at once.
 ///
 /// **The roster is deliberately lopsided toward Metal, Water, Light, Grass and Darkness.** Those
 /// five elements get most of their carriers from passive spells today, and passive spells are being
@@ -132,22 +153,22 @@ public static class BoonCatalog
 		{
 			Id = "iron_rivets", Name = "Iron Rivets",
 			Description = "Plates riveted over what the robe does not cover.",
-			ElementWeights = new[] { ("Metal", 1), ("Earth", 1) },
-			Effect = BoonEffect.Armor, Magnitude = 0.08f,
+			ElementWeights = new[] { ("Metal", 1) },
+			Effect = BoonEffect.Armor, Magnitude = 0.06f, MagnitudePerLevel = 0.02f,
 		},
 		new()
 		{
 			Id = "quicksilver_bead", Name = "Quicksilver Bead",
 			Description = "It never stops moving, and neither do your hands.",
-			ElementWeights = new[] { ("Metal", 1), ("Lightning", 1) },
-			Effect = BoonEffect.CooldownReduction, Magnitude = 0.08f,
+			ElementWeights = new[] { ("Metal", 1) },
+			Effect = BoonEffect.CooldownReduction, Magnitude = 0.06f, MagnitudePerLevel = 0.02f,
 		},
 		new()
 		{
 			Id = "sunsteel_filament", Name = "Sunsteel Filament",
 			Description = "A thread of drawn light, warm to the touch.",
-			ElementWeights = new[] { ("Light", 1), ("Metal", 1) },
-			Effect = BoonEffect.Armor, Magnitude = 0.08f,
+			ElementWeights = new[] { ("Light", 1) },
+			Effect = BoonEffect.Armor, Magnitude = 0.06f, MagnitudePerLevel = 0.02f,
 		},
 
 		// --- Water ------------------------------------------------------------------
@@ -155,9 +176,10 @@ public static class BoonCatalog
 		{
 			Id = "tidewater_flask", Name = "Tidewater Flask",
 			Description = "Salt water that closes what it is poured on.",
-			ElementWeights = new[] { ("Water", 1), ("Ice", 1) },
-			// 0.6 a second (36 a minute) until the healing budget (.ai/difficulty-curve.md, section 5).
-			Effect = BoonEffect.Regen, Magnitude = 0.15f,
+			ElementWeights = new[] { ("Water", 1) },
+			// 0.4 to 0.8 a second until the healing budget (.ai/difficulty-curve.md, section 5):
+			// level 3 (0.2) is a third over the old flat flask, paid for by two more picks.
+			Effect = BoonEffect.Regen, Magnitude = 0.10f, MagnitudePerLevel = 0.05f,
 		},
 		// Was a third +8% Armor boon, alongside Iron Rivets and Sunsteel Filament. That redundancy
 		// was an artifact of unifying damage reduction: the three used to sit on three different
@@ -165,21 +187,21 @@ public static class BoonCatalog
 		// quietly turned them into three copies of one card. Five of thirteen boons on two effects,
 		// against six slots, meant a likely draw of the same card twice.
 		//
-		// It keeps its Water and Metal tags - Water has exactly one spell carrier in the game and
-		// cannot afford to lose a boon - and changes only what it does.
+		// Water-tagged (its first tag, the light its icon is baked in). It carried Metal too until
+		// the one-tag trim; Metal keeps Iron Rivets and Quicksilver Bead.
 		new()
 		{
 			Id = "saltbound_chain", Name = "Saltbound Chain",
 			Description = "Crusted links that lash out at whatever strikes you.",
-			ElementWeights = new[] { ("Water", 1), ("Metal", 1) },
-			Effect = BoonEffect.Retaliate, Magnitude = 12f,
+			ElementWeights = new[] { ("Water", 1) },
+			Effect = BoonEffect.Retaliate, Magnitude = 8f, MagnitudePerLevel = 4f,
 		},
 		new()
 		{
 			Id = "deepwater_pearl", Name = "Deepwater Pearl",
 			Description = "Things drift toward it.",
-			ElementWeights = new[] { ("Water", 1), ("Arcane", 1) },
-			Effect = BoonEffect.PickupRadius, Magnitude = 40f,
+			ElementWeights = new[] { ("Water", 1) },
+			Effect = BoonEffect.PickupRadius, Magnitude = 30f, MagnitudePerLevel = 10f,
 		},
 
 		// --- Light ------------------------------------------------------------------
@@ -187,15 +209,15 @@ public static class BoonCatalog
 		{
 			Id = "lantern_oil", Name = "Lantern Oil",
 			Description = "Burns brighter than it should.",
-			ElementWeights = new[] { ("Light", 1), ("Fire", 1) },
-			Effect = BoonEffect.SpellDamage, Magnitude = 0.10f,
+			ElementWeights = new[] { ("Light", 1) },
+			Effect = BoonEffect.SpellDamage, Magnitude = 0.08f, MagnitudePerLevel = 0.02f,
 		},
 		new()
 		{
 			Id = "gilded_mote", Name = "Gilded Mote",
 			Description = "A fleck of the warded circle, still lit.",
-			ElementWeights = new[] { ("Light", 1), ("Arcane", 1) },
-			Effect = BoonEffect.MaxHealth, Magnitude = 20f,
+			ElementWeights = new[] { ("Light", 1) },
+			Effect = BoonEffect.MaxHealth, Magnitude = 15f, MagnitudePerLevel = 5f,
 		},
 
 		// --- Grass ------------------------------------------------------------------
@@ -203,15 +225,15 @@ public static class BoonCatalog
 		{
 			Id = "mossgrown_charm", Name = "Mossgrown Charm",
 			Description = "Older than the occupation, and still growing.",
-			ElementWeights = new[] { ("Grass", 1), ("Earth", 1) },
-			Effect = BoonEffect.MaxHealth, Magnitude = 25f,
+			ElementWeights = new[] { ("Grass", 1) },
+			Effect = BoonEffect.MaxHealth, Magnitude = 20f, MagnitudePerLevel = 5f,
 		},
 		new()
 		{
 			Id = "thornseed", Name = "Thornseed",
 			Description = "It puts out roots wherever a spell lands.",
-			ElementWeights = new[] { ("Grass", 1), ("Poison", 1) },
-			Effect = BoonEffect.SpellArea, Magnitude = 0.12f,
+			ElementWeights = new[] { ("Grass", 1) },
+			Effect = BoonEffect.SpellArea, Magnitude = 0.09f, MagnitudePerLevel = 0.03f,
 		},
 
 		// --- Darkness ---------------------------------------------------------------
@@ -219,36 +241,35 @@ public static class BoonCatalog
 		{
 			Id = "shadegrease", Name = "Shadegrease",
 			Description = "Nothing quite gets hold of you.",
-			ElementWeights = new[] { ("Darkness", 1), ("Wind", 1) },
-			Effect = BoonEffect.MoveSpeed, Magnitude = 0.08f,
+			ElementWeights = new[] { ("Darkness", 1) },
+			Effect = BoonEffect.MoveSpeed, Magnitude = 0.06f, MagnitudePerLevel = 0.02f,
 		},
 		new()
 		{
 			Id = "wishing_coin", Name = "Wishing Coin",
 			Description = "Thrown into still water by someone who is not coming back.",
-			ElementWeights = new[] { ("Water", 1), ("Light", 1) },
-			Effect = BoonEffect.Luck, Magnitude = 3f,
+			ElementWeights = new[] { ("Water", 1) },
+			Effect = BoonEffect.Luck, Magnitude = 2f, MagnitudePerLevel = 1f,
 		},
 
 		// --- Ice ---------------------------------------------------------------------
 		//
-		// Tagged Ice and Grass rather than Ice and Water. Water already draws four of its seven tag
-		// sources from boons and does not need a fifth; Grass is the only element in the game with
-		// no chest item carrying its tag, so a boon is the cheapest place to widen it.
+		// Ice-tagged (its first tag, its icon's light). Its Grass second tag went with the one-tag
+		// trim; Grass keeps Mossgrown Charm and Thornseed.
 		new()
 		{
 			Id = "rimebriar", Name = "Rimebriar",
 			Description = "Frost-blackened thorns close around anything that reaches you.",
-			ElementWeights = new[] { ("Ice", 1), ("Grass", 1) },
-			Effect = BoonEffect.Chill, Magnitude = 0.45f,
+			ElementWeights = new[] { ("Ice", 1) },
+			Effect = BoonEffect.Chill, Magnitude = 0.55f, MagnitudePerLevel = -0.10f,
 		},
 
 		new()
 		{
 			Id = "umbral_veil", Name = "Umbral Veil",
 			Description = "A hand's width of somewhere else.",
-			ElementWeights = new[] { ("Darkness", 1), ("Ice", 1) },
-			Effect = BoonEffect.Evasion, Magnitude = 0.05f,
+			ElementWeights = new[] { ("Darkness", 1) },
+			Effect = BoonEffect.Evasion, Magnitude = 0.04f, MagnitudePerLevel = 0.01f,
 		},
 
 		// --- Earth: the stance -------------------------------------------------------
@@ -260,20 +281,19 @@ public static class BoonCatalog
 		// change nothing against exactly the hits standing still invites, and the card would lie
 		// to the one player who took it. Regeneration is the stat that answers chip.
 		//
-		// 1.5 HP a second is 2.5 times Tidewater Flask's always-on 0.6, the same premium the
-		// conditional relics carry over their unconditional cousins (Protective Ward's +15% Armor
-		// while shielded against Iron Rivets' +8%; Ironhide Cloak's +20% while healthy) - and it
-		// sits between Grass tier 2 (1) and tier 4 (2), so it never outranks the element.
+		// 1 a second at level 1 and 2 at level 3: it climbs from Grass tier 2's regen (1) to tier
+		// 4's (2) and never past the element, with the old flat 1.5 as its middle level - the same
+		// premium the conditional relics carry over their unconditional cousins, earned by levels
+		// now rather than granted at the door.
 		//
-		// Named as an object, like every boon (a root, not a "stance"), and tagged Earth then Grass:
-		// Earth first, so the aura and the ring at the feet are earthen; Grass because Grass is the
-		// regeneration element and one of the five thin ones (.ai/passives-and-items.md, section 3a).
+		// Named as an object, like every boon (a root, not a "stance"), and tagged Earth: the aura
+		// and the ring at the feet are earthen. Its Grass second tag went with the one-tag trim.
 		new()
 		{
 			Id = "taproot", Name = "Taproot",
 			Description = "It only feeds once it is in the ground.",
-			ElementWeights = new[] { ("Earth", 1), ("Grass", 1) },
-			Effect = BoonEffect.StanceRegen, Magnitude = TaprootRegenPerSecond,
+			ElementWeights = new[] { ("Earth", 1) },
+			Effect = BoonEffect.StanceRegen, Magnitude = TaprootRegenPerSecond, MagnitudePerLevel = TaprootRegenPerLevel,
 		},
 
 		// --- Wind: the walk -----------------------------------------------------------
@@ -281,13 +301,13 @@ public static class BoonCatalog
 		// Walking is the one condition nothing paid (.ai/new-items.md section 7): Taproot pays a stand, this
 		// pays a kite, and holding both means whichever you are doing pays. It winds ONE spell - the one
 		// furthest from ready - so it suits a build with one big slow spell (Meteor Swarm, Starfall). A
-		// starter because Lightning has the thinnest floor in the game. Wind first: its light is the wheel's.
+		// starter because Lightning had the thinnest floor in the game. Wind-tagged: its light is the wheel's.
 		new()
 		{
 			Id = "waywiser", Name = "Waywiser",
 			Description = "A wheel that counts the road, and pays out for every turn.",
-			ElementWeights = new[] { ("Wind", 1), ("Lightning", 1) },
-			Effect = BoonEffect.WalkingRecharge, Magnitude = 0.5f,
+			ElementWeights = new[] { ("Wind", 1) },
+			Effect = BoonEffect.WalkingRecharge, Magnitude = 0.4f, MagnitudePerLevel = 0.1f,
 		},
 
 		// --- Darkness: the third reaction ----------------------------------------------
@@ -295,12 +315,15 @@ public static class BoonCatalog
 		// Saltbound Chain hurts, Rimebriar slows and this scatters: a reactive build gets three answers on
 		// one pulse. It gives #69's Fear a carrier that is not a Darkness spell. The Gaoler's deed pays it,
 		// since a jailer carries a rattle.
+		//
+		// The one boon whose level 1 is the old flat value rather than its level 2: a fright under
+		// Player.FearSeconds (1.5s) reads as a flicker, so the levels climb from there instead.
 		new()
 		{
 			Id = "bone_rattle", Name = "Bone Rattle",
 			Description = "Shake it, and whatever is close remembers it is afraid.",
-			ElementWeights = new[] { ("Darkness", 1), ("Lightning", 1) },
-			Effect = BoonEffect.Frighten, Magnitude = Player.FearSeconds,
+			ElementWeights = new[] { ("Darkness", 1) },
+			Effect = BoonEffect.Frighten, Magnitude = Player.FearSeconds, MagnitudePerLevel = 0.5f,
 		},
 	};
 
@@ -312,7 +335,17 @@ public static class BoonCatalog
 	/// </remarks>
 	public const float StanceSeconds = 1.5f;
 
-	private const float TaprootRegenPerSecond = 1.5f;
+	private const float TaprootRegenPerSecond = 1.0f;
+	private const float TaprootRegenPerLevel = 0.5f;
+
+	/// <summary>
+	/// Every boon's level cap. One number for the whole roster on purpose: the card pips, the pause
+	/// screen and the level-up pool all read it, and a per-boon cap would be fourteen numbers for a
+	/// distinction no boon has earned. Three keeps a two-slot run to at most six boon picks - the
+	/// same count the old six flat slots allowed - and level 2 is the old flat value, so the climb
+	/// is one step down and one step up from what shipped.
+	/// </summary>
+	public const int MaxLevel = 3;
 
 	public static IReadOnlyList<BoonDefinition> All => Definitions;
 
@@ -326,9 +359,19 @@ public static class BoonCatalog
 
 	public static bool IsBoon(string id) => GetById(id) != null;
 
+	/// <summary>The boon's magnitude at a held level, clamped to the roster's cap.</summary>
+	public static float MagnitudeAt(BoonDefinition definition, int level)
+	{
+		if (definition == null)
+			return 0f;
+		int held = Math.Clamp(level, 1, MaxLevel);
+		return definition.Magnitude + (held - 1) * definition.MagnitudePerLevel;
+	}
+
 	/// <summary>
 	/// What the boon does, said plainly as a sentence, with its number: the shop's line, and anywhere
-	/// a player has room to read rather than glance.
+	/// a player has room to read rather than glance. <paramref name="level"/> picks the held level's
+	/// numbers; the shop and a level-up's new-boon card read level 1.
 	/// </summary>
 	/// <remarks>
 	/// The shop led with the flavour and ended on the effect, and three boons never said how much:
@@ -336,13 +379,13 @@ public static class BoonCatalog
 	/// names what changes for the player in the game's own words - a hit, your spells, the orbs - and
 	/// the reactions say how near and how often, which is the part nobody could guess.
 	/// </remarks>
-	public static string ExplainEffect(BoonDefinition definition)
+	public static string ExplainEffect(BoonDefinition definition, int level = 1)
 	{
 		if (definition == null)
 			return string.Empty;
 
-		float m = definition.Magnitude;
-		string once = Player.BoonReactionCooldownSeconds <= 1f ? "once a second" : $"once every {Player.BoonReactionCooldownSeconds:0.#}\u00A0s";
+		float m = MagnitudeAt(definition, level);
+		string once = Player.BoonReactionCooldownSeconds <= 1f ? "once a second" : $"once every {Player.BoonReactionCooldownSeconds:0.#} s";
 		return definition.Effect switch
 		{
 			BoonEffect.Armor => $"Every hit you take does {m * 100f:0}% less damage.",
@@ -358,7 +401,7 @@ public static class BoonCatalog
 			BoonEffect.Evasion => $"A {m * 100f:0}% chance to dodge a hit completely.",
 			BoonEffect.Luck => $"+{m:0} Luck: a little more critical-hit chance, more bonus drops, and a better chance of a legendary spell.",
 			BoonEffect.Retaliate => $"When you are hit, every enemy close around you takes {m:0} damage (at most {once}).",
-			BoonEffect.Chill => $"When you are hit, every enemy close around you is slowed to {m * 100f:0}% speed for {Player.BoonChillDurationSeconds:0.#}\u00A0s (at most {once}).",
+			BoonEffect.Chill => $"When you are hit, every enemy close around you is slowed to {m * 100f:0}% speed for {Player.BoonChillDurationSeconds:0.#} s (at most {once}).",
 			BoonEffect.StanceRegen => $"Stand still and you heal {m:0.0} health every second until you move.",
 			BoonEffect.WalkingRecharge => $"While you walk, whichever of your spells is furthest from ready recharges {m * 100f:0}% faster.",
 			BoonEffect.Frighten => $"When you are struck, every enemy close around you is frightened (at most {once}).",
@@ -366,19 +409,19 @@ public static class BoonCatalog
 		};
 	}
 
-	/// <summary>The boon's effect as a stat line, with no flavour.</summary>
+	/// <summary>The boon's effect as a stat line, with no flavour, at a held level.</summary>
 	/// <remarks>
 	/// A boon's Description carries a sentence of flavour and the number together, which was fine
 	/// while the level-up card printed prose. The card shows stats only now, and a boon has no
 	/// SpellData to read them off, so the line is rebuilt from the effect and the magnitude here -
 	/// the one place that already knows what a magnitude means for each effect.
 	/// </remarks>
-	public static string DescribeEffect(BoonDefinition definition)
+	public static string DescribeEffect(BoonDefinition definition, int level = 1)
 	{
 		if (definition == null)
 			return string.Empty;
 
-		float m = definition.Magnitude;
+		float m = MagnitudeAt(definition, level);
 		return definition.Effect switch
 		{
 			BoonEffect.Armor => $"+{m * 100f:0}% Armor",
@@ -401,6 +444,40 @@ public static class BoonCatalog
 			BoonEffect.WalkingRecharge => $"Walking: the spell furthest from ready winds {m * 100f:0}% faster",
 			// "when struck" picks the reactions' glyph, as Saltbound Chain's and Rimebriar's lines do.
 			BoonEffect.Frighten => "Frightens nearby enemies when struck",
+			_ => string.Empty,
+		};
+	}
+
+	/// <summary>
+	/// What the next level adds, for the level-up card of an owned boon - the same register as a
+	/// spell upgrade's delta lines (Player.BuildSpellUpgradeSummary): the change for a stat that
+	/// adds, the new value for an effect whose whole number is the point.
+	/// </summary>
+	public static string DescribeLevelGain(BoonDefinition definition, int nextLevel)
+	{
+		if (definition == null)
+			return string.Empty;
+
+		float step = definition.MagnitudePerLevel;
+		float next = MagnitudeAt(definition, nextLevel);
+		return definition.Effect switch
+		{
+			BoonEffect.Armor => $"Armor +{step * 100f:0}%",
+			BoonEffect.MaxHealth => $"Max HP +{step:0}",
+			BoonEffect.Regen => $"+{step:0.0} HP per second more",
+			BoonEffect.MoveSpeed => $"Move Speed +{step * 100f:0}%",
+			BoonEffect.SpellDamage => $"Spell Damage +{step * 100f:0}%",
+			BoonEffect.SpellArea => $"Spell Area +{step * 100f:0}%",
+			BoonEffect.CooldownReduction => $"Cooldowns -{step * 100f:0}% more",
+			BoonEffect.PickupRadius => $"Pickup Radius +{step:0}",
+			BoonEffect.Evasion => $"Evasion +{step * 100f:0}%",
+			BoonEffect.Luck => $"Luck +{step:0}",
+			BoonEffect.Retaliate => $"Damage when struck +{step:0}",
+			// The multiplier's whole value is the effect, so the card says where it lands.
+			BoonEffect.Chill => $"Slows nearby enemies to {next * 100f:0}% when struck",
+			BoonEffect.StanceRegen => $"Stand still: +{next:0.0} HP per second",
+			BoonEffect.WalkingRecharge => $"Walking: winds the spell furthest from ready {next * 100f:0}% faster",
+			BoonEffect.Frighten => $"Fright lasts {next:0.0} s",
 			_ => string.Empty,
 		};
 	}

@@ -80,14 +80,16 @@ caught the dead economy.
 
 ---
 
-## 3. Boons — permanent, non-levelling
+## 3. Boons — permanent, levelling since the rework (section 3d)
 
 The replacement for the defensive half of the passive roster.
 
-**What they are.** A boon is taken once and lasts the run. It has no levels, no upgrade path, and
-no "it gets better later" — so **every boon must be worth taking at face value, the moment it is
-offered.** That is the whole design constraint, and it is a harder writing problem than a levelled
-spell: a spell can be weak at level 1 because level 8 justifies it, and a boon cannot.
+**What they are.** A boon is taken once and lasts the run. *(Superseded in part, 2026-11-07: boons
+level now — section 3d. The face-value rule below still holds at level 1.)* It had no levels, no
+upgrade path, and no "it gets better later" — so **every boon must be worth taking at face value,
+the moment it is offered.** That is the whole design constraint, and it is a harder writing problem
+than a levelled spell: a spell can be weak at level 1 because level 8 justifies it, and a boon
+cannot.
 
 **What they are not.** They do not occupy spell slots. The six slots are for spells; that is what
 makes a slot a decision. A boon that competed for a slot would just be a passive spell again.
@@ -111,7 +113,9 @@ The details, and why the reliquary window went from pale glass to night glass, a
 `level-up-screen.md` section 2b. **A new boon needs an `ELEMENT` entry in `boon_icons.py`** (and
 an `INLAYS` entry if its object is all material), or its icon fails to generate.
 
-**Boons are capped at six** — decided, and it mirrors the six spell slots. A run is therefore about
+**Boons are capped at six** — *(Superseded, 2026-11-07: two slots to start, four at most, and the
+boons level — section 3d. The tag-honesty reasoning below still carries the cap, whatever its
+number.)* — decided, and it mirrors the six spell slots. A run is therefore about
 two loadouts of six, and the cap is what makes the sixth boon a choice rather than an accumulation.
 It is also what keeps element tags honest: uncapped boons carrying tags would make every capstone
 reachable at once. The reasoning behind the alternatives is kept below because the cap is a number
@@ -294,6 +298,39 @@ work; until it lands, read every "boons" column in this document as optimistic f
 Saltbound Chain - from 2026-10-26, and since 2026-10-30 they are the last section of its one menu,
 Powers, the shop having stopped selling spells; the other four are chapter deeds. See
 `.ai/achievements-and-secrets.md` 1.3 and 2.4, and `.ai/level-up-screen.md` 4f.)*
+
+### 3d. The boon rework: two slots, two bought, and levels (2026-11-07, in-flight item 41)
+
+Eric, 2026-11-06, clarified: keep the initial limit at **two boons**, sell **up to two more slots**
+for a maximum of four, trim each boon's tags to compensate for the bought capacity, and make
+**every boon level up** so boon upgrades diversify the level-up pool. What that became:
+
+- **Slots.** `Player.BaseBoonSlots` (2) plus the shop's **Reliquary Shelf**
+  (`GlobalStatsManager.BoonSlotsUpgradeId`, under Powers → Level-ups: 150 AE, then 300), capped at
+  `Player.MaxBoonSlots` (4). `ValidateElementReachability` counts boon carriers against the four a
+  player can buy, not the two a save starts with — the shop slot is a `Purchase`, so it is on the
+  road.
+- **Levels.** Picking an owned boon levels it (`Player.TryAddBoon`), to `BoonCatalog.MaxLevel` (3).
+  Each `BoonDefinition` carries `Magnitude` (level 1) and `MagnitudePerLevel`, and **level 2 of
+  almost every boon is the old flat value** — one step down, one step up from what shipped, so the
+  roster's old balance point survives as the middle level. The one exception is Bone Rattle, whose
+  level 1 keeps the old 1.5 s fright (shorter reads as a flicker) and climbs by 0.5 s. Chill's
+  per-level is negative (a speed multiplier falls as it strengthens: 55% → 45% → 35%). A two-slot
+  run has at most six boon picks — the same count the old six flat slots allowed.
+- **Tags.** One element tag per boon, each keeping its **first** tag — the element its icon's light
+  is already baked in (`tools/art/boon_icons.py`), so no art moved. A tag does not deepen with the
+  boon's level: a boon is one carrier at any level. The trim and the one-tag rule are held by
+  `ValidateBoonSources`; what each boon dropped is noted in `BoonCatalog`.
+- **The cards.** A new boon's card is unchanged (plaque, stat line, "BOON - PERMANENT, NO SLOT").
+  A held boon's card is an upgrade and says so ("Level up · Boon"), shows the delta in the upgrade
+  register (`BoonCatalog.DescribeLevelGain`), and wears level pips like a spell upgrade's. The
+  pause screen's Boons section names the held level ("— Level 2 of 3") and reads the level's
+  numbers. Rarity is untouched: one boon card at most per hand, `BoonOfferChance`'s call, new pick
+  and level alike.
+- **The migration.** Schema 25 (`SaveData.MigrateToBoonRework`, proved by
+  `ValidateBoonSlotMigration`): a save that has played a run is granted both Reliquary Shelf levels
+  outright — every run it played held six slots, and asking it to buy back capacity would be a
+  quiet confiscation (the schema-20 played-save test). A fresh save buys them.
 
 ---
 

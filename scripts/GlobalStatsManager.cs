@@ -111,6 +111,13 @@ public static class GlobalStatsManager
 
 	public const string CurationUpgradeId = "curation";
 
+	/// <summary>
+	/// The shop's Reliquary Shelf: each level is one more boon slot in every run, above
+	/// Player.BaseBoonSlots and up to Player.MaxBoonSlots (the boon rework, in-flight item 41).
+	/// Schema 25 grants both levels to a save that had played - its runs all held six slots.
+	/// </summary>
+	public const string BoonSlotsUpgradeId = "boon_slots";
+
 	public static int GetUnlockedSpellCount(SaveData data) =>
 		UnlockCatalog.AllSpellIds.Count(id => IsSpellUnlockedForLevelUp(data, id));
 
