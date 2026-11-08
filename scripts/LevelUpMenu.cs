@@ -1380,7 +1380,9 @@ public partial class LevelUpMenu : CanvasLayer
 		var line = new Label
 		{
 			Name = "Tagline",
-			Text = option.Tagline,
+			// Last two words bound (ResponsiveLayout.NoWidow): "Breathes fire in a wide / arc." left
+			// "arc." alone on a line of the three-across card (Eric, 2026-11-04 - no single-word wraps).
+			Text = ResponsiveLayout.NoWidow(option.Tagline),
 			HorizontalAlignment = alignment,
 			AutowrapMode = TextServer.AutowrapMode.WordSmart,
 			MouseFilter = Control.MouseFilterEnum.Ignore,

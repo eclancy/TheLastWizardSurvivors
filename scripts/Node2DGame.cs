@@ -6350,7 +6350,9 @@ public partial class Node2DGame : Node2D
 			panel.Modulate = Colors.White;
 		}
 
-		stageIntroLabel.Text = text;
+		// Each line's last two words bound (ResponsiveLayout.NoWidow): a banner never wraps a single
+		// word onto a line of its own (Eric, 2026-11-04).
+		stageIntroLabel.Text = string.Join('\n', text.Split('\n').Select(ResponsiveLayout.NoWidow));
 		stageIntroLabel.Modulate = tint;
 		// Where it goes is the band's (HudBand): under the boss's bar while there is one - the bar was once
 		// drawn over the banner's top line, the boss's own name, on the one frame it is announced - under a
@@ -7687,7 +7689,8 @@ public partial class Node2DGame : Node2D
 			return;
 		}
 
-		onboardingTipLabel.Text = OnboardingTips[onboardingTipIndex].Text;
+		// The tip wraps at 640 wide: its last two words stay together (ResponsiveLayout.NoWidow).
+		onboardingTipLabel.Text = ResponsiveLayout.NoWidow(OnboardingTips[onboardingTipIndex].Text);
 		onboardingTipLabel.Visible = true;
 		onboardingTipTimer = 0f;
 		onboardingTipIndex++;

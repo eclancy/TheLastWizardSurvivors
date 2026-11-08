@@ -161,7 +161,9 @@ public partial class ChapterNoteCard : CanvasLayer
 		{
 			var line = new Label
 			{
-				Text = text,
+				// The last two words bound together, so a wrap never leaves one word alone on a line
+				// (Eric, 2026-11-04 - he saw it on these notes first). Words keeps the raw lines.
+				Text = ResponsiveLayout.NoWidow(text),
 				MouseFilter = Control.MouseFilterEnum.Ignore,
 				AutowrapMode = TextServer.AutowrapMode.WordSmart,
 				VisibleRatio = 0f,

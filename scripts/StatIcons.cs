@@ -191,7 +191,9 @@ public static class StatIcons
 
 		var label = new Label
 		{
-			Text = expand ? Expand(text) : text,
+			// The last two words bound together (ResponsiveLayout.NoWidow): a wrapped stat line never
+			// leaves a single word on a line of its own (Eric, 2026-11-04).
+			Text = ResponsiveLayout.NoWidow(expand ? Expand(text) : text),
 			AutowrapMode = wrap ? TextServer.AutowrapMode.WordSmart : TextServer.AutowrapMode.Off,
 			SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
 			VerticalAlignment = VerticalAlignment.Center,

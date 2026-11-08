@@ -154,9 +154,11 @@ public partial class QuestTracker : VBoxContainer
 				continue;
 			bool changed = view.Key.Length > 0;
 			view.Key = key;
-			view.Title.Text = quest.Title;
+			// Last two words bound (ResponsiveLayout.NoWidow): "Defeat the boss of the Enchanted /
+			// Forest" left "Forest" alone on a line (Eric, 2026-11-04 - no single-word wraps).
+			view.Title.Text = ResponsiveLayout.NoWidow(quest.Title);
 			view.Title.AddThemeColorOverride("font_color", quest.Done ? DoneInk : TitleInk);
-			view.Step.Text = step;
+			view.Step.Text = ResponsiveLayout.NoWidow(step);
 			// A quest that moved on or was finished while on screen: one gold breath, so the change is seen.
 			if (changed && !held)
 			{
