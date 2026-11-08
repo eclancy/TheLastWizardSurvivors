@@ -2103,6 +2103,25 @@ public partial class Enemy : CharacterBody2D
 	/// </remarks>
 	protected virtual int AdjustIncomingDamage(int amount) => amount;
 
+	// Where the next hit arrives from, when its dealer says (Player.DealDamageToEnemy's hitFrom):
+	// a curving projectile strikes from where IT is, not from where the player stands, and the
+	// Hayward's hurdle judges a hit by its arrival (.ai/in-flight.md 28). Armed for exactly one
+	// hit and cleared with it, so nothing stale can misjudge the hit after.
+	private Vector2? pendingHitFrom;
+
+	/// <summary>
+	/// Where the hit now being applied arrived from, readable inside <see cref="AdjustIncomingDamage"/>.
+	/// Null for a hit whose dealer named no origin - judge those by the player's position, as the
+	/// Hayward always did.
+	/// </summary>
+	protected Vector2? IncomingHitFrom { get; private set; }
+
+	/// <summary>
+	/// Arms the origin of the very next hit. Call immediately before TakeHit/TakeDamage, as
+	/// Player.DealDamageToEnemy does; it covers that one hit only.
+	/// </summary>
+	public void NoteIncomingHitOrigin(Vector2 from) => pendingHitFrom = from;
+
 	public void TakeDamage(int amount, bool isCrit = false) => ApplyHit(amount, isCrit, null);
 
 	/// <summary>
@@ -2121,10 +2140,17 @@ public partial class Enemy : CharacterBody2D
 	// blow through TakeTurnedBlow (Enemy.Turned.cs). They differ only in the colour of the number.
 	private void ApplyHit(int amount, bool isCrit, Color? numberColor)
 	{
+		// The armed origin covers this hit alone, whether or not it lands.
+		IncomingHitFrom = pendingHitFrom;
+		pendingHitFrom = null;
 		if (isDying || IsHeld)
+		{
+			IncomingHitFrom = null;
 			return;
+		}
 
 		amount = AdjustIncomingDamage(amount);
+		IncomingHitFrom = null;
 		if (amount > 0)
 			GameStats.RecordDamageDealt(amount);
 

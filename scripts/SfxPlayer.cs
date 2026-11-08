@@ -50,6 +50,9 @@ public partial class SfxPlayer : Node
 	private const int EnemyDeathGapMs = 45;
 	private const int ImpactGapMs = 55;
 	private const int CastGapMs = 80;
+	// A boss's guard turning hits: a fast build pounds the front several times a frame, and the
+	// knock is a read, not a counter - one wooden tok per beat says "cut", forty say nothing.
+	private const int BossBlockGapMs = 90;
 	// How long a gap breaks the XP collection streak, in milliseconds.
 	private const ulong XpStreakResetMs = 600;
 	// Where the ladder tops out. A long streak that kept climbing would end up somewhere only
@@ -402,6 +405,16 @@ public partial class SfxPlayer : Node
 	{
 		string name = SfxCatalog.ImpactFor(element);
 		Get()?.PlayAt(name, position, 0.06f, name, ImpactGapMs);
+	}
+
+	/// <summary>
+	/// A boss's guard turning a hit (the Hayward's hurdle, HaywardBoss.AdjustIncomingDamage): wood,
+	/// not the element, so the player hears WHY the number went small. Throttled here rather than at
+	/// the caller, like an impact.
+	/// </summary>
+	public static void BossBlock(Vector2 position)
+	{
+		Get()?.PlayAt(SfxCatalog.BossBlock, position, 0.07f, SfxCatalog.BossBlock, BossBlockGapMs);
 	}
 
 	public static void Cast(Element element, Vector2 position)

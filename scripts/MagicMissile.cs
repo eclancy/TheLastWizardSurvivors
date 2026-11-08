@@ -309,7 +309,16 @@ public partial class MagicMissile : Area2D
 		if (target != null && IsInstanceValid(target))
 		{
 			if (target is not Node2D targetNode) return;
-			var toTarget = targetNode.GlobalPosition - GlobalPosition;
+			Vector2 aim = targetNode.GlobalPosition;
+			// THE WAY ROUND A GUARD (.ai/in-flight.md 28): against a boss holding a directional
+			// guard (the Hayward's hurdle), the dart does what the player cannot do from where he
+			// stands - it swings wide of the guarded front and comes in on the open side. The
+			// detour IS the read: the dart visibly bends round the hurdle, and the strike it earns
+			// lands from behind, where the guard's own damage rule (AdjustIncomingDamage, judging
+			// the hit by IncomingHitFrom) pays it in full.
+			if (!orb && target is IGuardedBoss guarded && guarded.GuardActive)
+				aim = FlankAim(targetNode.GlobalPosition, guarded);
+			var toTarget = aim - GlobalPosition;
 			if (toTarget.Length() > 0)
 			{
 				var tdir = toTarget.Normalized();
@@ -320,9 +329,11 @@ public partial class MagicMissile : Area2D
 			}
 		}
 
-		// If missile has travelled beyond its range from spawn, drop any target lock.
+		// If missile has travelled beyond its range from spawn, drop any target lock - unless it is
+		// mid-detour round a guard, which is longer than the straight line the range was drawn for;
+		// the dart's duration still bounds it.
 		float travelled = (GlobalPosition - spawnPosition).Length();
-		if (travelled > range)
+		if (travelled > range && !(target is IGuardedBoss flanked && flanked.GuardActive))
 		{
 			target = null;
 		}
@@ -367,7 +378,9 @@ public partial class MagicMissile : Area2D
 			return;
 		if (struckCount < struck.Length)
 			struck[struckCount++] = enemy;
-		(PlayerRef as Player)?.DealDamageToEnemy(enemy, damage, CritBonus, source: SpellData);
+		// The dart's own position is the hit's origin: a guarded boss judges it by where it
+		// arrived from, which is what makes the flight round the hurdle worth taking.
+		(PlayerRef as Player)?.DealDamageToEnemy(enemy, damage, CritBonus, source: SpellData, hitFrom: GlobalPosition);
 		TriggerOnHitEffects(enemy);
 		pierceCount++;
 
@@ -443,6 +456,37 @@ public partial class MagicMissile : Area2D
 		thread.Stitch(GlobalPosition);
 	}
 
+	// --- The way round a guard (.ai/in-flight.md 28) -------------------------------------------------
+
+	// How far past the guard's edge counts as "open". The boss turns toward the player while the
+	// dart flies, so a dart that dived in exactly at the edge would arrive guarded again; the margin
+	// buys it the turn the boss makes during the dive.
+	private const float FlankMarginDegrees = 18f;
+	// How far round the ring each frame's waypoint sits from the dart's own bearing. The dart chases
+	// a point that stays ahead of it round the circle, which is what draws the arc.
+	private const float FlankStepDegrees = 55f;
+	// The ring the detour is flown on: outside the boss's body and his guard arc (the Hayward's
+	// spans about 104 px), inside the dart's homing comfort.
+	private const float FlankRingRadius = 120f;
+
+	// Where the dart aims this frame against a guarded boss: straight at him once its own bearing is
+	// clear of the guarded front, else a waypoint on a ring round him, stepped the shorter way toward
+	// the open side. Recomputed every frame, so a guard that turns is answered in flight.
+	private Vector2 FlankAim(Vector2 bossAt, IGuardedBoss guarded)
+	{
+		Vector2 off = GlobalPosition - bossAt;
+		float distance = off.Length();
+		if (distance < 1f)
+			return bossAt;
+		Vector2 bearing = off / distance;
+		if (MathF.Abs(guarded.GuardFacing.AngleTo(bearing)) >= guarded.GuardHalfAngleRadians + Mathf.DegToRad(FlankMarginDegrees))
+			return bossAt;
+		// Which way round is shorter: the side of the facing the dart is already on.
+		float side = guarded.GuardFacing.Cross(bearing) >= 0f ? 1f : -1f;
+		Vector2 ringDir = bearing.Rotated(side * Mathf.DegToRad(FlankStepDegrees));
+		return bossAt + ringDir * MathF.Max(FlankRingRadius, MathF.Min(distance, FlankRingRadius * 1.5f));
+	}
+
 	// The Crit tag's level line (Effect CritChance), shown on the level-up card and passed to no hit
 	// until 2026-10-26.
 	private float CritBonus => SpellData?.GetEffectValueAtLevel(SpellEffect.CritChance, CurrentLevel) ?? 0f;
@@ -472,7 +516,7 @@ public partial class MagicMissile : Area2D
 			{
 				if (e is Node2D n2d && n2d != hitTarget && GlobalPosition.DistanceTo(n2d.GlobalPosition) <= splashRadius)
 				{
-					(PlayerRef as Player)?.DealDamageToEnemy(n2d, splashDamage, source: SpellData);
+					(PlayerRef as Player)?.DealDamageToEnemy(n2d, splashDamage, source: SpellData, hitFrom: GlobalPosition);
 				}
 			}
 			if (GetParent() is Node2D arena)
@@ -511,7 +555,7 @@ public partial class MagicMissile : Area2D
 		{
 			if (!IsInstanceValid(enemy) || enemy.IsDying || at.DistanceTo(enemy.GlobalPosition) > reach + BodyAllowance)
 				continue;
-			player.DealDamageToEnemy(enemy, damage, CritBonus, source: SpellData);
+			player.DealDamageToEnemy(enemy, damage, CritBonus, source: SpellData, hitFrom: at);
 			first ??= enemy;
 			if (threaded && struckCount < struck.Length && !HasStruck(enemy))
 				struck[struckCount++] = enemy;
@@ -579,7 +623,7 @@ public partial class MagicMissile : Area2D
 			foreach (Enemy enemy in scratch)
 			{
 				if (IsInstanceValid(enemy) && !enemy.IsDying && at.DistanceTo(enemy.GlobalPosition) <= reach + BodyAllowance)
-					player.DealDamageToEnemy(enemy, burst, CritBonus, source: SpellData);
+					player.DealDamageToEnemy(enemy, burst, CritBonus, source: SpellData, hitFrom: at);
 			}
 			scratch.Clear();
 		}

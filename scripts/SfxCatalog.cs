@@ -69,6 +69,9 @@ public static class SfxCatalog
 	public const string EnemyMelee = "enemy_melee";
 	public const string EliteSpawn = "elite_spawn";
 	public const string BossRoar = "boss_roar";
+	// A boss's guard turning a hit (the Hayward's hurdle): wood where a landed hit is the element,
+	// so the player HEARS why the number went small (.ai/in-flight.md 57). SfxPlayer.BossBlock.
+	public const string BossBlock = "boss_block";
 	public const string BossDeath = "boss_death";
 
 	// --- pickups and progression -------------------------------------------
@@ -171,7 +174,7 @@ public static class SfxCatalog
 		PlayerHurt, PlayerDodge, PlayerHeal, PlayerShieldAbsorb,
 		PlayerShieldBreak, PlayerDeath, PlayerLowHealth,
 		EnemyDeathSmall, EnemyDeathHeavy, EnemyShoot, EnemyMelee,
-		EliteSpawn, BossRoar, BossDeath,
+		EliteSpawn, BossRoar, BossBlock, BossDeath,
 		PickupXp, PickupHealth, PickupMagnet, PickupHaste, EventReward, BearingFound, LevelUp, ChestOpen, SpellEvolve,
 		CardAppear, CardSelect, Reroll,
 		UiHover, UiClick, UiBack, UiDenied, UiOpen, UiClose, UiPause,
@@ -189,9 +192,9 @@ public static class SfxCatalog
 
 	private static string[] allNames;
 
-	// Every sound the game expects to exist: the 63 named above, the three hurt variants, and
-	// the twelve casts and twelve impacts derived from the element enum. 90 in total, which is
-	// exactly what tools/audio/build.py reports writing (counted 2026-11-02, with the defeat's three).
+	// Every sound the game expects to exist: the 64 named above, the three hurt variants, and
+	// the twelve casts and twelve impacts derived from the element enum. 91 in total, which is
+	// exactly what tools/audio/build.py reports writing (counted 2026-11-07, with boss_block).
 	public static string[] AllNames
 	{
 		get

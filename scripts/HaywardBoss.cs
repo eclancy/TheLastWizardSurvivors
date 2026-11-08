@@ -15,20 +15,39 @@ using TheOneHeMissed.scripts;
 // Elderbark asked the player to stand and deliver; this one asks him to move with intent, and
 // teaches the sidestep the Gaoler asks at chapter 5 and the orbit the Archivist asks at 7.
 //
-// THE SHOVE: a cone in front, driven along the hurdle's facing - so it lands only where he is
-// blocking, and the ground that is bad to stand on (your hits are wasted there) is the ground that
-// hurts. He only winds it up when the player is in front and in reach, and plants while he does,
-// with his facing locked: a cone that kept turning through its tell would have no sideways to step
-// to (GroundSlamAttack.Facing).
+// THE COMBO (Eric, 2026-11-06, .ai/in-flight.md 57): a swing, a charge, then his back vulnerable.
 //
-// PHASE 2, at half health: he turns faster, and every third attack is a full SWING - a ring all
-// round him - so hugging his back is answered too. The swing also comes due early when the player
+//   1. THE SWING - a cone in front, driven along the hurdle's facing, so it lands only where he is
+//      blocking: the ground that is bad to stand on (your hits are wasted there) is the ground that
+//      hurts. He only winds it up at a player in front and in reach, plants, and his facing locks -
+//      a cone that kept turning through its tell would have no sideways to step to.
+//   2. THE CHARGE - the swing's resolve primes it (AttackTelegraph.Prime, so it chains at once but
+//      never skips its own tell): a lane aimed once at the player, a planted tell for the first
+//      ChargeTellFraction of its wind-up, then he drives the hurdle down it at ChargeSpeedMultiplier.
+//      The lane travels with him and hurts where he passes (TickRunOver), exactly the Gaoler's run.
+//      The aim is the one fast turn he has, and it is paid for with the longest tell in the fight.
+//   3. SPENT - the charge ends with the hurdle driven into the ground and him hanging on it: for
+//      SpentSeconds he cannot turn, walk or attack, and the whole unguarded side is drawn as a hot
+//      open arc that takes SpentRearMultiplier. The side-step that dodged the charge leaves the
+//      player standing at his back - the combo's answer IS its reward.
+//
+// HITTING THE SHIELD IS TOLD TWICE (item 57): a cut hit flares the guard arc, stamps a little
+// woven-panel mark where the hit arrived, and plays boss_block - wood, not the element - so the
+// small number has both a mark and a sound that say WHY.
+//
+// SLOWED HE TURNS SLOWER, HELD HE CANNOT TURN (item 57): the hurdle comes round at the pace the
+// body has (Enemy.PaceShare), so Ice buys circling time and a stagger pins the guard still.
+//
+// PHASE 2, at half health: he turns faster, and every third opener is a full SWING - a ring all
+// round him - so hugging his back is answered too. The ring also comes due early when the player
 // has stood behind him in reach for a while, or a player glued to his back would never see it.
 //
-// Built from the shared primitives only: GroundSlamAttack as a Cone and a Ring, AdjustSteering for
-// the plant, and Enemy.AdjustIncomingDamage - the one shared hook the fight needed, and nothing else
-// in Enemy.cs. Read with .ai/enemy-behaviour.md, "The eight chapter bosses".
-public partial class HaywardBoss : BossEnemy
+// Built from the shared primitives only: GroundSlamAttack as a Cone, a Line and a Ring,
+// AdjustSteering for the plant and the run, and two shared hooks on Enemy - AdjustIncomingDamage,
+// and the hit-origin channel (IncomingHitFrom) item 28 added so a seeking dart that flies round
+// the hurdle (MagicMissile.FlankAim, IGuardedBoss) is paid in full for arriving behind it.
+// Read with .ai/enemy-behaviour.md, "The ten chapter bosses".
+public partial class HaywardBoss : BossEnemy, IGuardedBoss
 {
 	/// <summary>Half-angle of the front his hurdle covers. Hits are cut while the player is inside it.</summary>
 	[Export] public float GuardHalfAngleDegrees { get; set; } = 60f;
@@ -57,6 +76,29 @@ public partial class HaywardBoss : BossEnemy
 	/// <summary>Where the fight changes.</summary>
 	[Export] public float PhaseTwoHealthFraction { get; set; } = 0.5f;
 
+	// --- The combo's charge and the spent window (.ai/in-flight.md 57) ---------------------------
+
+	/// <summary>The charge's whole wind-up: the planted tell, then the run. The fight's longest.</summary>
+	[Export] public float ChargeWindUpSeconds { get; set; } = 1.5f;
+
+	/// <summary>Share of the wind-up spent planted before he runs. ValidateBossPatterns holds it inside 0-1.</summary>
+	[Export] public float ChargeTellFraction { get; set; } = 0.45f;
+
+	/// <summary>The run's speed, over his walk. His walk is 70; the wizard's 220, so the lane must be left, not outrun.</summary>
+	[Export] public float ChargeSpeedMultiplier { get; set; } = 4.5f;
+
+	/// <summary>The lane's drawn (and hit) length. It travels with him, so this is reach ahead, not total ground.</summary>
+	[Export] public float ChargeLaneLength { get; set; } = 300f;
+
+	/// <summary>The lane's half-width: the hurdle is a fence panel, wider than his shoulders.</summary>
+	[Export] public float ChargeHalfWidth { get; set; } = 42f;
+
+	/// <summary>Seconds he hangs spent on the driven hurdle after the charge: no turn, no walk, no attack.</summary>
+	[Export] public float SpentSeconds { get; set; } = 2.6f;
+
+	/// <summary>What a hit on the open side is worth while he is spent. The combo's payoff window.</summary>
+	[Export] public float SpentRearMultiplier { get; set; } = 1.3f;
+
 	// The hurdle's facing, a world direction. Starts toward the player at _Ready and only ever turns
 	// at the turn rate.
 	private Vector2 guardFacing = Vector2.Right;
@@ -66,10 +108,22 @@ public partial class HaywardBoss : BossEnemy
 	private float behindSeconds;
 	private bool swingDue;
 	private bool swinging;
+	// The combo's spine: the swing's resolve sets chargeNext, the charge's wind-up is charging, and
+	// its resolve leaves spentRemaining on the clock.
+	private bool chargeNext;
+	private bool charging;
+	private bool chargeHitLanded;
+	private float spentRemaining;
+	// Runs while he is spent, for the open arc's pulse.
+	private float spentClock;
 	// Seconds left on the brief flare drawn along the guarded front when a hit is cut. The read that
 	// tells a player WHY the numbers went small.
 	private float blockFlash;
-	private float guardHalfAngleRadians;
+	// The little woven-panel mark stamped where a cut hit arrived (item 57's shield mark): its clock
+	// and the world angle, boss to arrival, it is drawn at.
+	private float blockMarkSeconds;
+	private float blockMarkAngle;
+	private float guardHalfAngleRadians = Mathf.DegToRad(60f);
 	private AnimatedSprite2D? sprite;
 	private readonly RandomNumberGenerator damageRng = new();
 
@@ -77,6 +131,10 @@ public partial class HaywardBoss : BossEnemy
 	private static readonly Color ShoveColor = new(0.94f, 0.68f, 0.26f);
 	// The swing is the same verb's other answer, a shade hotter so the ring and the cone read apart.
 	private static readonly Color SwingColor = new(1.0f, 0.5f, 0.22f);
+	// The charge's lane: the hottest of the three, because it is the beat that really moves.
+	private static readonly Color ChargeColor = new(1.0f, 0.42f, 0.18f);
+	// The spent window's open side: gold, an offer rather than a warning.
+	private static readonly Color OpenColor = new(1.0f, 0.82f, 0.36f);
 	private static readonly Color GuardColor = new(0.86f, 0.74f, 0.48f);
 
 	// The drawn guard: a dashed arc on the ground round his feet, spanning the guarded front. The
@@ -88,6 +146,9 @@ public partial class HaywardBoss : BossEnemy
 	private const float GuardArcRadiusY = 46f;
 	private const int GuardArcDashes = 9;
 	private const float BlockFlashSeconds = 0.18f;
+	private const float BlockMarkTotalSeconds = 0.35f;
+	// How far a body reaches past the lane's half-width for the run-over (DeepWardenBoss's number).
+	private const float RunOverBodyRadius = 30f;
 
 	protected override GroundSlamAttack BuildSlam() =>
 		new(SlamIntervalSeconds, SlamTelegraphSeconds, SlamRadius, SlamDamage, ShoveColor)
@@ -121,8 +182,8 @@ public partial class HaywardBoss : BossEnemy
 				guardFacing = toPlayer.Normalized();
 		}
 		// The shove must land only where he blocks: a cone wider than the guard would hurt a player
-		// who had already stepped out of the front. RegressionChecks has no case for this boss (it
-		// is a shared file), so the rule is held here.
+		// who had already stepped out of the front. ValidateBossPatterns holds this and the combo's
+		// numbers too; this catches a bad scene tweak in an ordinary run, where the validator is off.
 		if (ShoveHalfAngleDegrees >= 90f || ShoveHalfAngleDegrees > GuardHalfAngleDegrees)
 			GD.PushError($"HaywardBoss: ShoveHalfAngleDegrees {ShoveHalfAngleDegrees} must be under 90 and within the guard's {GuardHalfAngleDegrees}.");
 	}
@@ -136,6 +197,10 @@ public partial class HaywardBoss : BossEnemy
 			Speed *= 1.25f;
 			SlamIntervalSeconds *= 0.75f;
 			Slam.IntervalSeconds = SlamIntervalSeconds;
+			// The temper narrows the combo too: a quicker charge and less of him spent on it. The
+			// window never closes entirely - the payoff is the fight's promise, not a phase's.
+			ChargeWindUpSeconds = Mathf.Max(1.0f, ChargeWindUpSeconds * 0.85f);
+			SpentSeconds = Mathf.Max(1.6f, SpentSeconds * 0.7f);
 			SetBaseModulate(new Color(1.0f, 0.72f, 0.60f));
 			return;
 		}
@@ -148,8 +213,24 @@ public partial class HaywardBoss : BossEnemy
 		Slam.Prime();
 	}
 
-	/// <summary>The way the hurdle faces, a world direction. For probes and photographs.</summary>
+	/// <summary>The way the hurdle faces, a world direction. For probes, photographs and the dart's detour.</summary>
 	public Vector2 GuardFacing => guardFacing;
+
+	/// <summary>The hurdle is up for the whole fight (IGuardedBoss; the spent window opens the BACK, not the front).</summary>
+	public bool GuardActive => !IsDying;
+
+	/// <summary>Half-angle of the guarded front, radians (IGuardedBoss).</summary>
+	public float GuardHalfAngleRadians => guardHalfAngleRadians;
+
+	/// <summary>Whether a hit arriving from <paramref name="worldPoint"/> lands on the hurdle (IGuardedBoss).</summary>
+	public bool GuardCovers(Vector2 worldPoint)
+	{
+		Vector2 offset = worldPoint - GlobalPosition;
+		// On his centre is behind the hurdle, as standing on him always counted as in front.
+		if (offset.LengthSquared() < 1f)
+			return true;
+		return Mathf.Abs(guardFacing.AngleTo(offset)) <= guardHalfAngleRadians;
+	}
 
 	/// <summary>True while the player stands inside the guarded front.</summary>
 	public bool PlayerInFront
@@ -157,28 +238,67 @@ public partial class HaywardBoss : BossEnemy
 		get
 		{
 			Node2D target = TargetPlayer;
-			if (target == null || !IsInstanceValid(target))
-				return false;
-			Vector2 toPlayer = target.GlobalPosition - GlobalPosition;
-			if (toPlayer.LengthSquared() < 1f)
-				return true;
-			return Mathf.Abs(guardFacing.AngleTo(toPlayer)) <= guardHalfAngleRadians;
+			return target != null && IsInstanceValid(target) && GuardCovers(target.GlobalPosition);
 		}
 	}
 
-	// THE HURDLE. Position, not projectile direction: every spell aims itself, so where the player
-	// stands is the only choice he has, and it is the one this fight is about. Rounded by chance,
-	// not to nearest, as Enemy.ScaleOutgoingDamage is - a 3-damage hit at x0.2 must average 0.6, not
-	// round to 1 every time and make the hurdle a 33% cut against small hits.
+	/// <summary>True while he hangs spent on the driven hurdle. For the probe.</summary>
+	public bool IsSpent => spentRemaining > 0f;
+
+	// The combo's beats as they happen, for _BossProbe (the Choir's and the dark wizard's pattern):
+	// an attack count alone cannot say whether the swing actually chained into its charge.
+	public int SwingsBegun { get; private set; }
+	public int ChargesBegun { get; private set; }
+	public int RingSwingsBegun { get; private set; }
+	public int SpentWindowsEntered { get; private set; }
+	/// <summary>Hits the hurdle cut (each stamped a mark and knocked), for the probe.</summary>
+	public int HitsTurned { get; private set; }
+
+	// THE HURDLE. A hit whose dealer named where it arrived from (a dart that flew round,
+	// Enemy.IncomingHitFrom) is judged by its arrival, so reaching the open side counts however the
+	// player stands (.ai/in-flight.md 28); every other hit is judged by where the player stands,
+	// which is the only choice an auto-aimed spell gives him. Rounded by chance, not to nearest, as
+	// Enemy.ScaleOutgoingDamage is - a 3-damage hit at x0.2 must average 0.6, not round to 1 every
+	// time and make the hurdle a 33% cut against small hits.
 	protected override int AdjustIncomingDamage(int amount)
 	{
-		if (amount <= 0 || !PlayerInFront)
+		if (amount <= 0)
 			return amount;
 
-		float scaled = amount * Mathf.Clamp(GuardedDamageMultiplier, 0f, 1f);
+		Vector2? from = IncomingHitFrom;
+		bool onGuard = from is Vector2 origin ? GuardCovers(origin) : PlayerInFront;
+		if (!onGuard)
+		{
+			// Spent (the combo's third beat): the open side pays extra, so the window the charge
+			// bought is a burst window rather than only a safe one.
+			return spentRemaining > 0f && SpentRearMultiplier > 1f
+				? RoundByChance(amount * SpentRearMultiplier)
+				: amount;
+		}
+
+		MarkBlockedHit(from);
+		return RoundByChance(amount * Mathf.Clamp(GuardedDamageMultiplier, 0f, 1f));
+	}
+
+	private int RoundByChance(float scaled)
+	{
 		int whole = Mathf.FloorToInt(scaled);
-		blockFlash = BlockFlashSeconds;
 		return damageRng.Randf() < scaled - whole ? whole + 1 : whole;
+	}
+
+	// A cut hit is told twice over the number (item 57): the guard arc flares with a woven-panel
+	// mark stamped where the hit arrived, and boss_block plays - wood, not the element.
+	private void MarkBlockedHit(Vector2? from)
+	{
+		blockFlash = BlockFlashSeconds;
+		Vector2 at = from ?? (TargetPlayer is Node2D target && IsInstanceValid(target)
+			? target.GlobalPosition
+			: GlobalPosition + guardFacing);
+		Vector2 toHit = at - GlobalPosition;
+		blockMarkAngle = toHit.LengthSquared() > 0.01f ? toHit.Angle() : guardFacing.Angle();
+		blockMarkSeconds = BlockMarkTotalSeconds;
+		HitsTurned++;
+		SfxPlayer.BossBlock(GlobalPosition);
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -187,6 +307,14 @@ public partial class HaywardBoss : BossEnemy
 		base._PhysicsProcess(delta);
 		if (blockFlash > 0f)
 			blockFlash -= dt;
+		if (blockMarkSeconds > 0f)
+			blockMarkSeconds -= dt;
+		if (spentRemaining > 0f)
+		{
+			spentRemaining -= dt;
+			spentClock += dt;
+		}
+		TickRunOver();
 		TickTurn(dt);
 		TickBackHugging(dt);
 		// The sprite can only face left or right, and Enemy faces it toward the player the moment he
@@ -198,6 +326,10 @@ public partial class HaywardBoss : BossEnemy
 
 	private void TickTurn(float dt)
 	{
+		// Spent: the hurdle is driven into the ground and he hangs on it - he cannot bring it round,
+		// which is the whole of what the window pays.
+		if (spentRemaining > 0f)
+			return;
 		// Locked through a wind-up: the shove goes where the hurdle pointed when it began.
 		if (Slam != null && Slam.IsWindingUp)
 			return;
@@ -208,15 +340,38 @@ public partial class HaywardBoss : BossEnemy
 		if (toPlayer.LengthSquared() < 1f)
 			return;
 		float diff = guardFacing.AngleTo(toPlayer);
-		float step = Mathf.DegToRad(turnRate) * dt;
+		// At the pace the body has (item 57): slowed he turns slower, held or frozen he cannot turn
+		// at all. PaceShare is the same number his walk already obeys, so the two never disagree.
+		float step = Mathf.DegToRad(turnRate) * PaceShare * dt;
 		guardFacing = guardFacing.Rotated(Mathf.Clamp(diff, -step, step)).Normalized();
 	}
 
+	// The charge hurts where it passes, not only where it stops (the Gaoler's rule): a player it ran
+	// through would be behind it by the time the telegraph resolves.
+	private void TickRunOver()
+	{
+		if (!charging || chargeHitLanded || Slam == null || !Slam.IsWindingUp || Slam.WindUpProgress < ChargeTellFraction)
+			return;
+
+		Node2D target = TargetPlayer;
+		if (target == null || !IsInstanceValid(target) || !target.HasMethod("TakeDamage"))
+			return;
+
+		if (GlobalPosition.DistanceTo(target.GlobalPosition) > ChargeHalfWidth + RunOverBodyRadius)
+			return;
+
+		chargeHitLanded = true;
+		int dealt = ScaleOutgoingDamage(SlamDamage);
+		if (dealt > 0)
+			target.Call("TakeDamage", dealt);
+	}
+
 	// Phase 2 only: standing in reach behind him brings the swing due, so the answer to "go round"
-	// is never "and then stand there forever".
+	// is never "and then stand there forever". Never mid-combo, and never while he is spent: the
+	// spent window is the combo's promised payoff, and a ring inside it would make the promise a lie.
 	private void TickBackHugging(float dt)
 	{
-		if (!phaseTwo || swingDue)
+		if (!phaseTwo || swingDue || chargeNext || charging || spentRemaining > 0f)
 			return;
 		Node2D target = TargetPlayer;
 		if (target == null || !IsInstanceValid(target))
@@ -229,6 +384,12 @@ public partial class HaywardBoss : BossEnemy
 
 	protected override bool WantsToAttack(Node2D target, float distanceToPlayer)
 	{
+		// Spent: he hangs on the hurdle and asks nothing. The window is the player's.
+		if (spentRemaining > 0f)
+			return false;
+		// The combo chains: the primed charge follows the swing wherever the player stepped.
+		if (chargeNext)
+			return true;
 		if (swingDue)
 			return distanceToPlayer <= SwingRadius;
 		// The shove: only at a player in front and in reach of the hurdle.
@@ -238,22 +399,46 @@ public partial class HaywardBoss : BossEnemy
 	protected override void OnAttackStarted(Node2D target)
 	{
 		PlayAttackAnimation();
+		if (chargeNext)
+		{
+			chargeNext = false;
+			charging = true;
+			chargeHitLanded = false;
+			swinging = false;
+			ChargesBegun++;
+			Slam.Shape = TelegraphShape.Line;
+			Slam.Radius = ChargeLaneLength;
+			Slam.HalfWidth = ChargeHalfWidth;
+			Slam.WarningColor = ChargeColor;
+			Slam.WindUpSeconds = ChargeWindUpSeconds;
+			if (target != null && IsInstanceValid(target))
+				Slam.AimAt(GlobalPosition, target.GlobalPosition);
+			// He swings the hurdle onto the lane as the tell begins: the one fast turn he has, paid
+			// for with the fight's longest planted tell, and the guard goes with the panel - whoever
+			// steps out of the lane is beside him, off the hurdle.
+			guardFacing = Slam.Facing;
+			return;
+		}
 		swinging = swingDue;
 		if (swinging)
 		{
+			RingSwingsBegun++;
 			Slam.Shape = TelegraphShape.Ring;
 			Slam.Radius = SwingRadius;
 			Slam.WarningColor = SwingColor;
+			Slam.WindUpSeconds = SlamTelegraphSeconds;
 			swingDue = false;
 			behindSeconds = 0f;
 			attacksSinceSwing = 0;
 		}
 		else
 		{
+			SwingsBegun++;
 			Slam.Shape = TelegraphShape.Cone;
 			Slam.Radius = SlamRadius;
 			Slam.HalfAngleDegrees = ShoveHalfAngleDegrees;
 			Slam.WarningColor = ShoveColor;
+			Slam.WindUpSeconds = SlamTelegraphSeconds;
 			// Along the hurdle, not at the player: it is the hurdle being driven forward.
 			Slam.Facing = guardFacing;
 			if (phaseTwo && ++attacksSinceSwing >= SwingEvery - 1)
@@ -261,11 +446,115 @@ public partial class HaywardBoss : BossEnemy
 		}
 	}
 
+	protected override void OnAttackResolved(Node2D target)
+	{
+		if (charging)
+		{
+			// The run already paid where it passed; the resolve only pays whoever stands in the
+			// lane's last frame, exactly once (the Warden of the Deep's rule).
+			if (!chargeHitLanded)
+				base.OnAttackResolved(target);
+			charging = false;
+			// Beat three: the hurdle is in the ground and his back is open.
+			spentRemaining = SpentSeconds;
+			spentClock = 0f;
+			behindSeconds = 0f;
+			SpentWindowsEntered++;
+			return;
+		}
+
+		base.OnAttackResolved(target);
+		// The swing's resolve primes the charge - the chain skips only the wait, never a tell
+		// (AttackTelegraph.Prime). A ring is the back-hugging answer, not a combo opener.
+		if (!swinging)
+		{
+			chargeNext = true;
+			Slam.Prime();
+		}
+	}
+
+	// Planted for the cone's and the ring's tells (the base rule); the charge instead plants for its
+	// own tell and then runs the lane, and spent he stands on the driven hurdle.
+	protected override bool PlantsDuringWindUp => !charging;
+
+	protected override Vector2 AdjustSteering(Vector2 chaseDirection, float distanceToPlayer)
+	{
+		if (spentRemaining > 0f)
+			return Vector2.Zero;
+		if (charging && Slam != null && Slam.IsWindingUp)
+		{
+			// Plant for the tell, then drive the hurdle down the lane. Not re-aimed: a lane that
+			// curved could not be stepped out of, and stepping out of it is the answer.
+			return Slam.WindUpProgress < ChargeTellFraction
+				? Vector2.Zero
+				: Slam.Facing * ChargeSpeedMultiplier;
+		}
+		return base.AdjustSteering(chaseDirection, distanceToPlayer);
+	}
+
 	// The guard is an arc on the ground, under every body, with the slam over it (Enemy.DrawGroundTells).
 	protected override void DrawGroundTells(CanvasItem floor)
 	{
 		DrawGuard(floor);
+		DrawSpentOpening(floor);
+		DrawBlockMark(floor);
 		base.DrawGroundTells(floor);
+	}
+
+	// Spent: the open side drawn as its own arc - gold, pulsing, spanning everything the hurdle does
+	// not cover - so the weak spot is SEEN, not inferred from small numbers stopping.
+	private void DrawSpentOpening(CanvasItem floor)
+	{
+		if (IsDying || spentRemaining <= 0f)
+			return;
+		// Breathe while the window is open; fold away over its last half second.
+		float pulse = 0.72f + 0.28f * Mathf.Sin(spentClock * 9f);
+		float closing = Mathf.Clamp(spentRemaining / 0.5f, 0f, 1f);
+		var color = new Color(OpenColor, 0.55f * pulse * closing);
+		float rearAngle = guardFacing.Angle() + Mathf.Pi;
+		float rearHalf = Mathf.Pi - guardHalfAngleRadians;
+		float start = rearAngle - rearHalf;
+		float span = rearHalf * 2f;
+		const int dashes = 11;
+		const int stepsPerDash = 4;
+		for (int k = 0; k < dashes; k++)
+		{
+			float a0 = start + k * span / dashes;
+			float a1 = a0 + span / dashes * 0.6f;
+			for (int i = 0; i < stepsPerDash; i++)
+			{
+				Vector2 p0 = OnGround(a0 + (a1 - a0) * i / stepsPerDash, 1.1f);
+				Vector2 p1 = OnGround(a0 + (a1 - a0) * (i + 1) / stepsPerDash, 1.1f);
+				floor.DrawLine(p0, p1, color, 4f);
+			}
+		}
+		// Two chevrons pointing in at the dead centre of his back: "here".
+		Vector2 mid = OnGround(rearAngle, 1.1f);
+		Vector2 inward = (GuardArcCentre - mid).Normalized();
+		Vector2 side = new(-inward.Y, inward.X);
+		for (int c = 0; c < 2; c++)
+		{
+			Vector2 tip = mid + inward * (10f + 12f * c);
+			floor.DrawLine(tip - inward * 8f + side * 7f, tip, color, 3f);
+			floor.DrawLine(tip - inward * 8f - side * 7f, tip, color, 3f);
+		}
+	}
+
+	// The shield mark (item 57): a little woven panel stamped where a cut hit arrived, popping as it
+	// fades, so each turned hit has a mark as well as a sound.
+	private void DrawBlockMark(CanvasItem floor)
+	{
+		if (IsDying || blockMarkSeconds <= 0f)
+			return;
+		float life = Mathf.Clamp(blockMarkSeconds / BlockMarkTotalSeconds, 0f, 1f);
+		Vector2 at = OnGround(blockMarkAngle, 1.04f) + new Vector2(0f, -14f);
+		var ink = new Color(1f, 0.92f, 0.62f, 0.95f * life);
+		float w = 8f + 3f * (1f - life);
+		float h = 6f + 2f * (1f - life);
+		// The panel's frame, and two stakes through it: the hurdle in miniature.
+		floor.DrawRect(new Rect2(at - new Vector2(w, h), new Vector2(w * 2f, h * 2f)), ink, false, 2f);
+		floor.DrawLine(at + new Vector2(-w * 0.35f, -h), at + new Vector2(-w * 0.35f, h), ink, 2f);
+		floor.DrawLine(at + new Vector2(w * 0.35f, -h), at + new Vector2(w * 0.35f, h), ink, 2f);
 	}
 
 	// The guarded front as a dashed arc on the ground: faint at rest, bright for a moment when it

@@ -5,6 +5,11 @@ is the inventory and the wiring backlog: seventy-one generated `.wav` files in `
 what each one is for, and where in the code it is meant to be triggered. The music - a menu
 theme and nine chapter sets in `assets/music/` - has its own section at the end.
 
+**2026-11-07: `boss_block`.** One new file, wired on arrival (the enemies table below): a boss's
+guard turning a hit, the Hayward's hurdle first (in-flight item 57 - "hitting the shield ... plays
+a different sound, so the player knows the damage is cut"). 91 files in `assets/sfx/` now, which is
+what `tools/audio/build.py` reports and `SfxCatalog.AllNames` counts.
+
 **2026-11-07: the shield break, deeper.** `player_shield_break` rebuilt (Eric, in-flight item 60: "annoying -
 deeper, like cracking glass"). No new file and no wiring change: the crack now leads (a mid-band snap over a low
 split falling to 90 Hz), the glass stack dropped from 1200→900 Hz to 500→400 Hz with the 12.1 partial gone, the
@@ -318,6 +323,7 @@ Trigger points map onto the damage pipeline in `CLAUDE.md`, and the order matter
 | `enemy_melee.wav` | 0.27 s | −12.0 dBFS | a contact hit landing on the player, paired with `player_hurt` |
 | `elite_spawn.wav` | 0.90 s | −8.0 dBFS | an elite entering the field |
 | `boss_roar.wav` | 1.80 s | −4.0 dBFS | boss spawn and phase change (`BossEnemy.cs`) |
+| `boss_block.wav` | 0.16 s | −13.0 dBFS | **wired** (2026-11-07): a boss's guard turning a hit — the Hayward's hurdle (`HaywardBoss.MarkBlockedHit` → `SfxPlayer.BossBlock`, throttled to one per 90 ms). A dry wooden tok (a 640 Hz woody band over a 185→150 Hz box mode, a 6 ms comb for the weave), nothing below 95 Hz, top cut 2.4 kHz: wood where a landed hit is the element, so the cut number has a sound that says why. Not the anvil (steel, a rebound) and not the hull (hollow, double) |
 | `boss_death.wav` | 2.43 s | −3.0 dBFS | `BossEnemy.StartDeath` (`scripts/BossEnemy.cs:141`) |
 
 `StartDeath` drops rewards and leaves the `"enemies"` group in the same frame, before the

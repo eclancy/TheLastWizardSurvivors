@@ -2509,7 +2509,13 @@ public partial class Player : CharacterBody2D
 	/// chain's steel - or a spell's hit that is deliberately not credited to it (ElementalBolt's splash).
 	/// Colour only: it changes nothing the hit does.
 	/// </param>
-	public int DealDamageToEnemy(Node enemy, int baseDamage, float bonusCritChance = 0f, bool allowElementalChain = true, SpellData source = null, Element? numberElement = null)
+	/// <param name="hitFrom">
+	/// Where the hit arrives from, when the dealer is somewhere the player is not: a projectile's own
+	/// position at the strike. A boss with a directional guard (the Hayward's hurdle) judges the hit by
+	/// it (Enemy.NoteIncomingHitOrigin, .ai/in-flight.md 28); left null, the guard reads the player's
+	/// position, as it always did. Nothing else consumes it.
+	/// </param>
+	public int DealDamageToEnemy(Node enemy, int baseDamage, float bonusCritChance = 0f, bool allowElementalChain = true, SpellData source = null, Element? numberElement = null, Vector2? hitFrom = null)
 	{
 		if (source != null && enemy is Node2D impactTarget && IsInstanceValid(impactTarget))
 		{
@@ -2596,6 +2602,8 @@ public partial class Player : CharacterBody2D
 
 		if (enemy is Enemy struck)
 		{
+			if (hitFrom is Vector2 origin)
+				struck.NoteIncomingHitOrigin(origin);
 			// The number wears the element of what dealt it (DamageNumberInk). GetNumberElement is cached on the
 			// spell, so this is a few reference compares and an array read - nothing allocated per hit.
 			struck.TakeHit(finalDamage, isCrit, DamageNumberInk.For(numberElement ?? source?.GetNumberElement(), isCrit));
