@@ -1,6 +1,16 @@
 # The game's name
 
-**Status: decided and done.** The game is **The One He Missed**. Eric, 2026-11-02, first the
+**2026-11-08: renamed again, to be built.** Eric: the game, the store, the repo, the website and the folders are
+to be **The Last Wizard: Survivors** (*"on the game, the name should be 'The Last Wizard: Survivors'"*). It came out
+of the store-title discussion of 2026-11-07, which also recorded its risks - an exact-title Play app "The Last
+Wizard" (Hosted Games' interactive fiction, a different genre) and a same-genre Play app "Wizard Survivors"
+(YouJustPlay, May 2025) whose words it puts side by side, which Google Play's impersonation policy is the thing to
+mind - and the safeguards: a USPTO search before the public steps, and art that looks nothing like that app's.
+The plan, piece by piece, is `.ai/in-flight.md` item 62; the one trap is that ":" cannot be in a Windows folder name
+and `config/name` names the save folder, so the save folder is pinned to "The One He Missed". The section below is
+the first rename's record, and stays as it was.
+
+**Status (2026-11-02): decided and done.** The game is **The One He Missed**. Eric, 2026-11-02, first the
 direction - *"The name relevant for [the game] should be something like the one he missed"* - and then
 the word: *"remove all references to wizard survivors from the repo, from the website and from the
 game itself and replace it with the new name of the game"*. So the name tells the story's premise -

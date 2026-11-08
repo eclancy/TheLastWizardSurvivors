@@ -84,6 +84,9 @@ things come up; strike what lands.**
 4. **Decisions waiting on Eric:** crits in the damage colours come out near-white and alike (the element's own
    colour, crits marked only by "!" and size, is the alternative); the light pool's depth and Reduce Darkness
    (40% or off); Nimue's and Ma Liang's open items (section 0 below); the Oubliette's voice, never heard.
+   **Decided 2026-11-08 (Eric):** crits take the element's own colour, marked only by "!" and size; the light
+   pool's depth stays as the previews show it, Reduce Darkness stays at 40%, and every fire and light spell is a
+   light source (`.ai/light-pool.md` section 3's unwired list, all of it). To build: the decisions batch.
 5. **[BUILT 2026-11-07, merged for 0.19.0: one shared `ResponsiveLayout.NoWidow` rule binds a wrapping
    line's last two words - chapter note, quest tracker, taglines, stat lines, banner, tips, the plate.]**
    **No single word left alone on a line, on PC and on the phone** (Eric, 2026-11-04: "any UI that shows up
@@ -440,7 +443,10 @@ things come up; strike what lands.**
    item 21 remains; the page strip pattern is `EnsureShopPager`/`ShowShopPage` in
    `MainMenu.Shop.cs` for the next crowded menu to copy.
 
-22. **Rethink the name "Powers"** (Eric, 2026-11-05). He suggested something like "Powerups", but wants
+22. **[2026-11-08: Eric asked to brainstorm it; down to **Arcana** (recommended - pairs with Arcane Energy, unused
+   in the game's vocabulary) or **Talents**. Ruled out as already used: Attunement, Discipline, Kindling, Teaching,
+   Insight. Awaiting his pick.]**
+   **Rethink the name "Powers"** (Eric, 2026-11-05). He suggested something like "Powerups", but wants
    a more magic-themed name. The menu sells permanent upgrades and unlockable boons, so the name and a
    short explanation should make its purpose clear. No replacement has been selected. Candidates from
    this discussion: **Arcane Mastery**, **Arcane Enhancements**, or **Spellcraft**. Keep the naming
@@ -554,7 +560,9 @@ things come up; strike what lands.**
      Damage from different positions verified by the rule's construction and the probe's drain
      (fallback path); the visible trajectory at PC and phone sizes still needs eyes.
 
-29. **Reconsider the top timer's plain black background** (Eric, 2026-11-05). Explore styling the
+29. **[Decided 2026-11-08 (Eric): "remove it, just make sure the numbers are still visible" - no background, an
+   outline or shadow on the digits instead, checked over bright and dark chapters on both canvases.]**
+   **Reconsider the top timer's plain black background** (Eric, 2026-11-05). Explore styling the
    background to fit the game's art, or removing it entirely. This is a visual decision to consider;
    neither option has been selected. Compare both at play size over bright and dark chapters and a
    crowded fight, on PC and phone, keeping the timer readable and clear of the surrounding HUD.
@@ -951,6 +959,32 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     what section 3a item 7's per-chapter stems actually play in a run.
 61. **"Pay the tithe" shows the payment** (Eric, 2026-11-06): XP visibly sucked into the granary's
     machine, so what to do is legible without the text.
+62. **Rename the game "The Last Wizard: Survivors"** (Eric, 2026-11-08: "update the website, the repo, the folders
+    locally, this chat name, and on the game, the name should be 'The Last Wizard: Survivors'"). A second rename;
+    read `.ai/releasing.md` "The rename" and `.ai/game-name.md` first - the first one's list of what keeps the old
+    name on purpose ALL still holds, and now "The One He Missed" joins it wherever changing it would strand a copy
+    or a save. The pieces, in order:
+    - **The save folder must not move.** Godot names the desktop `user://` folder after `config/name`, and Windows
+      forbids ":" in a folder name. Pin it: `application/config/use_custom_user_dir=true` with
+      `custom_user_dir_name="The One He Missed"`, so every save stays exactly where it is and no carry-over is
+      needed. Prove it on a copy of a real save folder before anything ships.
+    - **The game:** `config/name`, the window title, the Android label (`package/name`; never the package id), every
+      player-facing line, the title screen's lettering (`tools/art/splash.py`, `splash_wide.py`, `hero.py`), the
+      icon's text if any, `README.md`, `CLAUDE.md`, `.ai/game-name.md`. Internal identifiers (`TheOneHeMissed`
+      namespace, assembly, solution, release file names, env vars, the keystore) keep the old name if changing them
+      would break updates; decide each against `.ai/releasing.md`.
+    - **Updates:** `ecec.dev/the-one-he-missed/version.json` is baked into every copy since 0.12.0 and must answer
+      forever, as `/wizard-survivors/` still does. Any new address is added beside it, never instead.
+    - **The repo** (`eclancy/TheOneHeMissed`): GitHub redirects a renamed repo's URLs, release downloads included,
+      but confirm the feed and the download page still resolve after; outward-facing - ask Eric right before.
+    - **The website** (EricClancyEngineeringAndCrafts): new pages and paths, the old ones kept answering;
+      outward-facing - ask right before.
+    - **The Play listing:** Eric's, in the Play Console.
+    - **Local folders:** the checkout and its sibling worktrees - LAST, when no session is running, since renaming
+      them under a session breaks it. Eric's to do, or with every session stopped.
+    - **This chat's name:** done 2026-11-08.
+    - Before the public steps: the USPTO check of the name (classes 9 and 41), and an icon and screenshots that look
+      nothing like the "Wizard Survivors" Play app's, per the 2026-11-07 store-title discussion.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 

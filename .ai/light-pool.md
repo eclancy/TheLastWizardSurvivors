@@ -108,6 +108,7 @@ Wired in the prototype:
 | Solar Flare's burst (`SolarFlareVisual`) | 1.6 x the reach | fades with the burst |
 | Meteor Swarm (`MeteorImpact`): the falling star, the impact's flash, the magma crater | 2 x the blast | grows as it falls, flashes, 0.45 while it burns |
 
+**Decided 2026-11-08 (Eric: "fire and light spells will act as light sources"): wire every one below.**
 `LightPool.IsWarm(element)` is the rule: fire and light. **Not wired yet**, and each is one line in its own
 `_Process`: Scorching Ray, Starfall, Molten Shard, Orb of Ages, Spiritual Weapon, Sagittarius, Aegis Ward,
 the ground fires (`EmberGround`, `CinderGround`, `CraterLayer`'s fire, `BrimstoneLayer`), the Dungeon's flame
@@ -245,6 +246,10 @@ Not proposed: the Bridge (the open sky over the abyss), and every open-air chapt
 The shots are in `_shots/light-pool/` beside the repo (not in it).
 
 ## 9. What needs Eric's eyes
+
+**Decided 2026-11-08 (Eric):** items 1 and 4 - the depth stays as the preview pictures show it ("preview pictures
+looked good as it is"), and Reduce Darkness stays at 40%, not off. And section 3's unwired warm spells are all to be
+wired: every fire and light spell is a light source.
 
 1. **How dark.** `RoomFloor` 0.24 and `BodyFloor` 0.66 were chosen for readability first. The swarm at the
    edge is deliberately brighter than the floor it stands on - lit figures coming out of a dark room, not
