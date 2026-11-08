@@ -3,7 +3,7 @@
 
 Run: python tools/art/walking_hut.py
 
-    world/hut/hut.png          the hut on hen's legs, 96x128 a frame, fourteen frames (WalkingHutEvent.Frame*):
+    world/hut/hut.png          the hut on hen's legs, 96x128 a frame, twenty-four frames (WalkingHutEvent.Frame*):
                                  0-5   walking, its back to him (the windowless back wall, a shuttered gable)
                                  6-7   standing, breathing - the legs set, the body settling a pixel
                                  8     turning: the long wall side on, the hen's legs seen as legs
@@ -11,6 +11,8 @@ Run: python tools/art/walking_hut.py
                                  10-11 kneeling: the legs folding under it, the body coming down
                                  12    knelt, the door ajar
                                  13    knelt, the door open, the dark inside
+                                 14-19 walking toward the camera, the shut door in view (item 59: four sides)
+                                 20-23 walking side on, the legs scissoring (flipped in the event for the other way)
     world/hut/hut-prints.png   its three-toed print, 16x16 a cell: eight directions (0 east, clockwise every 45
                                degrees, the middle toe pointing that way) fresh, then the same eight old
     ui/poi/poi-hut.png         the arrow's pictogram: a hut on two legs
@@ -450,23 +452,28 @@ def legs_folding(g, drop, fold):
         foot(g, ax, ay, flip=side)
 
 
-def legs_side(g, drop):
+def legs_side(g, drop, stride=None):
     """Side on: the legs as a hen's, the drumstick, the hock bent back, the shank forward to the foot - the far
-    leg a stop darker behind the near."""
+    leg a stop darker behind the near. stride None stands; else 0..1 round one step: the legs scissor in
+    antiphase, the swinging foot a few rows up with its toes off the ground (item 59: it turns as it runs)."""
     hy = SILL + drop + 1
+    s = 0.0 if stride is None else math.sin(2.0 * math.pi * stride)
     for i, (hx, ax) in enumerate(((44, 52), (54, 62))):
         far = i == 0
-        roster.mass(g, [(hy, hx - 6, hx + 7), (hy + 8, hx - 5, hx + 6), (hy + 14, hx - 1, hx + 3)],
+        phase = -s if far else s
+        swing = 0 if stride is None else int(round(8 * phase))
+        lift = 0 if stride is None else int(round(3 * max(0.0, phase)))
+        roster.mass(g, [(hy, hx - 6, hx + 7), (hy + 8, hx - 5, hx + 6), (hy + 14, hx - 1 + swing // 3, hx + 3 + swing // 3)],
                     "j" if far else FEATHER[1], "N" if far else FEATHER[0], "J" if far else FEATHER[2], rim=False)
-        hock = (hx - 2, hy + 24)
-        roster.shaft(g, hx + 1, hy + 14, hock[0], hock[1], "k" if far else SCALE[0], "n" if far else SCALE[1],
+        hock = (hx - 2 + swing // 2, hy + 24)
+        roster.shaft(g, hx + 1 + swing // 3, hy + 14, hock[0], hock[1], "k" if far else SCALE[0], "n" if far else SCALE[1],
                      "m", width=3)
-        roster.shaft(g, hock[0], hock[1], ax, FEET - 3, "k" if far else SCALE[0], "n" if far else SCALE[1], "m", width=3)
+        roster.shaft(g, hock[0], hock[1], ax + swing, FEET - 3 - lift, "k" if far else SCALE[0], "n" if far else SCALE[1], "m", width=3)
         for (tx, ty) in ((10, 1), (6, 2)):
-            g.line(ax, FEET - 2, ax + tx, FEET - 2 + ty - 1, "n" if far else SCALE[1])
-            g.set(ax + tx + 1, FEET - 2 + ty - 1, "o")
-        g.line(ax, FEET - 2, ax - 4, FEET - 1, "n")
-        g.set(ax - 5, FEET - 1, "o")
+            g.line(ax + swing, FEET - 2 - lift, ax + swing + tx, FEET - 2 - lift + ty - 1, "n" if far else SCALE[1])
+            g.set(ax + swing + tx + 1, FEET - 2 - lift + ty - 1, "o")
+        g.line(ax + swing, FEET - 2 - lift, ax + swing - 4, FEET - 1 - lift, "n")
+        g.set(ax + swing - 5, FEET - 1 - lift, "o")
 
 
 def contact(g, x0, x1):
@@ -499,6 +506,21 @@ def frame(kind, t=0.0):
         legs_standing(g, 0)
         body_front(g, 0, 0)
         contact(g, 26, 70)
+    elif kind == "front_walk":
+        # The back walk's gait with the door wall toward us: it walks down-screen (item 59, four sides).
+        s = math.sin(2.0 * math.pi * t)
+        lift = (max(0.0, s), max(0.0, -s))
+        bob = -int(round(2 * abs(s)))
+        sway = int(round(1.5 * math.cos(2.0 * math.pi * t)))
+        legs_standing(g, bob, lift, sway)
+        body_front(g, bob, 0)
+        contact(g, 26, 70)
+    elif kind == "side_walk":
+        # Side on and striding: the legs scissor, the body down a pixel on each fall.
+        bob = -int(round(1.5 * abs(math.sin(2.0 * math.pi * t))))
+        legs_side(g, bob, stride=t)
+        body_side(g, bob)
+        contact(g, 30, 76)
     elif kind == "kneel":
         drop = int(round(KNEEL_DROP * t))
         legs_folding(g, drop, t)
@@ -518,6 +540,9 @@ def frames():
     out += [frame("front")]
     out += [frame("kneel", 0.5), frame("kneel", 1.0)]
     out += [frame("door", 1), frame("door", 2)]
+    # Appended (item 59: four sides, so it can turn as it runs) - the old indices never move.
+    out += [frame("front_walk", i / 6.0) for i in range(6)]   # 14-19
+    out += [frame("side_walk", i / 4.0) for i in range(4)]    # 20-23
     return out
 
 
@@ -652,12 +677,13 @@ def main():
     # The preview: the frames at x2 on the Forest's moss, the prints at x4, the glyph at x6.
     z = 2
     pw = W * z * 7 + 80
-    canvas = Image.new("RGBA", (pw, H * z * 2 + 260), (34, 52, 46, 255))
+    rows_of_frames = (len(fr) + 6) // 7
+    canvas = Image.new("RGBA", (pw, H * z * rows_of_frames + 260), (34, 52, 46, 255))
     for i in range(len(fr)):
         im = render(fr[i]).resize((W * z, H * z), Image.NEAREST)
         canvas.alpha_composite(im, (10 + (i % 7) * (W * z + 10), 10 + (i // 7) * (H * z + 10)))
-    canvas.alpha_composite(prints.resize((PRINT * 8 * 4, PRINT * 2 * 4), Image.NEAREST), (10, H * z * 2 + 40))
-    canvas.alpha_composite(g.scaled(6), (PRINT * 8 * 4 + 40, H * z * 2 + 40))
+    canvas.alpha_composite(prints.resize((PRINT * 8 * 4, PRINT * 2 * 4), Image.NEAREST), (10, H * z * rows_of_frames + 40))
+    canvas.alpha_composite(g.scaled(6), (PRINT * 8 * 4 + 40, H * z * rows_of_frames + 40))
     canvas.convert("RGB").save(PREVIEW)
 
     print("  hut %d frames (%dx%d), prints 16, glyph poi-hut" % (len(fr), W, H))

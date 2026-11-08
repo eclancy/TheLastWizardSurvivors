@@ -9,40 +9,55 @@ public static partial class RegressionChecks
 {
 	private static void ValidateWalkingHut(List<string> warnings)
 	{
-		// The radii nest: it startles inside the ring the bar fills in (so there is a band to walk in), and is lost
-		// only well outside it. It bolts quicker than his walk and strides slower, as the design says.
-		if (!(WalkingHutEvent.StartleRadius < WalkingHutEvent.KeepRadius && WalkingHutEvent.KeepRadius < WalkingHutEvent.LoseRadius))
-			warnings.Add($"Walking hut: the radii must nest, startle {WalkingHutEvent.StartleRadius} < keep {WalkingHutEvent.KeepRadius} < lose {WalkingHutEvent.LoseRadius}.");
+		// The radii nest, and it bolts quicker than his walk and strides slower, as the design says.
+		if (!(WalkingHutEvent.StartleRadius < WalkingHutEvent.LoseRadius))
+			warnings.Add($"Walking hut: the radii must nest, startle {WalkingHutEvent.StartleRadius} < lose {WalkingHutEvent.LoseRadius}.");
 		if (WalkingHutEvent.BoltShare <= 1f || WalkingHutEvent.TiredBoltShare <= 1f || WalkingHutEvent.StrideShare >= 1f || WalkingHutEvent.BoltSeconds <= 0f)
 			warnings.Add($"Walking hut: a bolt must be quicker than his walk ({WalkingHutEvent.BoltShare}) and the stride after it slower ({WalkingHutEvent.StrideShare}).");
+		if (WalkingHutEvent.YardGapWidth < 100f || WalkingHutEvent.CorneredRadius <= 0f || WalkingHutEvent.CorneredRadius >= WalkingHutEvent.YardRadius)
+			warnings.Add($"Walking hut: the yard must admit the hut (gap {WalkingHutEvent.YardGapWidth}) and corner it inside the ring (cornered {WalkingHutEvent.CorneredRadius} of {WalkingHutEvent.YardRadius}).");
 
-		// Chased on paper on open ground at the base walk, two ways: straight at it (the naive chase, which startles it
-		// every time it can) and holding in the band between the radii (the chase that reads it). Both must fill the
-		// bar in a run's reasonable stretch; the naive one must have startled it more than once.
-		foreach (bool reads in new[] { false, true })
+		// Herded on paper (unlock-puzzles.md 3.3): her yard 750 px from the circle, its one gap facing away.
+		// A herding chase - press from the far side of the hut, the gap's mouth first, then the middle - must
+		// drive it in in under two minutes on open ground, and a straight chase must never get it in: running
+		// straight at it just moves it, and the fence has no way in on the side it is pushed from.
 		{
-			var mover = NewChaseMover(_ => false);
-			Vector2 him = mover.Position + new Vector2(0f, 600f);
-			float bar = 0f, t = 0f;
-			const float Dt = 1f / 60f;
-			while (bar < WalkingHutEvent.HuntSeconds && t < 240f)
+			Vector2 yard = new(0f, 750f);
+			float gapAngle = Mathf.Pi / 2f; // facing away from the circle at the origin
+			Vector2 mouth = yard + Vector2.FromAngle(gapAngle) * (WalkingHutEvent.YardRadius + 70f);
+			foreach (bool herds in new[] { true, false })
 			{
-				mover.Step(Dt, him, 220f);
-				Vector2 to = mover.Position - him;
-				float d = to.Length();
-				float want = reads ? (WalkingHutEvent.StartleRadius + WalkingHutEvent.KeepRadius) * 0.5f : 0f;
-				if (d > want + 2f)
-					him += to / d * MathF.Min(220f * Dt, d - want);
-				if (d <= WalkingHutEvent.KeepRadius)
-					bar += Dt;
-				t += Dt;
+				var mover = NewChaseMover(_ => false);
+				// The fence as the event tests it: the step's segment against the ring, every way but the gap.
+				FleeingMover theMover = mover;
+				mover.IsBlocked = at => CrossesPaperFence(theMover.Position, at, yard, gapAngle);
+				Vector2 him = mover.Position + new Vector2(0f, -600f);
+				float t = 0f;
+				const float Dt = 1f / 60f;
+				bool driven = false;
+				while (!driven && t < 180f)
+				{
+					mover.Tire = Mathf.Clamp(1f - (mover.Position.DistanceTo(yard) - WalkingHutEvent.CorneredRadius)
+						/ (750f - WalkingHutEvent.CorneredRadius), 0f, 1f);
+					mover.Step(Dt, him, 220f);
+					Vector2 hut = mover.Position;
+					Vector2 press = herds
+						? hut + (hut - (hut.DistanceTo(mouth) <= 150f || hut.DistanceTo(yard) <= WalkingHutEvent.YardRadius
+							? yard : mouth)).Normalized() * (WalkingHutEvent.StartleRadius - 60f)
+						: hut;
+					him += (press - him).LimitLength(220f * Dt);
+					driven = hut.DistanceTo(yard) <= WalkingHutEvent.CorneredRadius;
+					t += Dt;
+				}
+				if (herds && !driven)
+					warnings.Add($"Walking hut: a herding chase on open ground never drove it into the yard ({t:0} s; it stood {NewChaseMover(_ => false).Position.DistanceTo(yard):0} px out at the start).");
+				else if (herds && t > 120f)
+					warnings.Add($"Walking hut: a herding chase took {t:0} s to drive it in; it should be well under two minutes.");
+				if (!herds && driven)
+					warnings.Add($"Walking hut: a STRAIGHT chase drove it into the yard in {t:0} s; the gap faces away, so only herding should.");
+				if (herds && driven && mover.BoltsStarted < 2)
+					warnings.Add($"Walking hut: the herding drive startled it {mover.BoltsStarted} time(s); it should bolt again and again.");
 			}
-			if (bar < WalkingHutEvent.HuntSeconds)
-				warnings.Add($"Walking hut: a {(reads ? "band-holding" : "straight")} chase on open ground never filled the bar ({bar:0.0} of {WalkingHutEvent.HuntSeconds} s in {t:0} s).");
-			else if (t > 120f)
-				warnings.Add($"Walking hut: a {(reads ? "band-holding" : "straight")} chase took {t:0} s to fill a {WalkingHutEvent.HuntSeconds} s bar; it should be well under two minutes.");
-			if (!reads && mover.BoltsStarted < 2)
-				warnings.Add($"Walking hut: a straight chase startled it {mover.BoltsStarted} time(s); it should bolt again and again.");
 		}
 
 		// Water across its way cuts a bolt short, and it never walks into it: a wall of water east of x = 300 and him
@@ -92,8 +107,22 @@ public static partial class RegressionChecks
 			warnings.Add("Walking hut: its hint must be hint_hut_step with the birds cue.");
 
 		// The art, at the sizes the event reads it at (tools/art/walking_hut.py).
-		CheckSheet(warnings, "res://assets/bonelight/world/hut/hut.png", new Vector2(96 * 14, 128), "the hut's fourteen 96x128 frames");
+		CheckSheet(warnings, "res://assets/bonelight/world/hut/hut.png", new Vector2(96 * 24, 128), "the hut's twenty-four 96x128 frames");
 		CheckSheet(warnings, "res://assets/bonelight/world/hut/hut-prints.png", new Vector2(16 * 8, 16 * 2), "its prints, eight ways fresh and old");
+	}
+
+	// The paper fence, with the event's own semantics (WalkingHutEvent.CrossesFence): the step's segment
+	// against the yard's ring, blocked everywhere but the gap.
+	private static bool CrossesPaperFence(Vector2 from, Vector2 to, Vector2 yard, float gapAngle)
+	{
+		float a = from.DistanceTo(yard);
+		float b = to.DistanceTo(yard);
+		if ((a < WalkingHutEvent.YardRadius) == (b < WalkingHutEvent.YardRadius))
+			return false;
+		float t = Mathf.Clamp((WalkingHutEvent.YardRadius - a) / (b - a), 0f, 1f);
+		Vector2 crossing = from.Lerp(to, t);
+		float gapHalf = (WalkingHutEvent.YardGapWidth * 0.5f - 8f) / WalkingHutEvent.YardRadius;
+		return Mathf.Abs(Mathf.AngleDifference((crossing - yard).Angle(), gapAngle)) > gapHalf;
 	}
 
 	private static FleeingMover NewChaseMover(Func<Vector2, bool> blocked) => new()

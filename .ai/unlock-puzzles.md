@@ -170,6 +170,20 @@ it stops, turns, kneels and the door opens (the existing win beat). The 30 s bar
   else is herded.
 - **Size:** M.
 
+**Built (2026-11-07, `feat/baba-yaga-hut`).** As decided, with these particulars: the yard is a 260 px ring of
+bone posts (fence collision on the blocking ground's layer, so boots and the swarm meet it; the hut's own
+ground probe tests each step as a SEGMENT against the ring, so the thin fence can never be probed past), its
+120 px gap facing away from the circle, the two gap posts carrying skull lanterns lit in the hut's violet
+(`DrawLight`). Entering `CorneredRadius` (the ring less 34 px) fires the existing tired beat unchanged - stop,
+turn, kneel, the door, her. The bar, the band and `KeepRadius`/`HuntSeconds` are gone; `mover.Tire` now rises
+with `DriveProgress`, so its bolts dull as it is pressed. The hut also got the rest of item 59: four-sided art
+(front and side walk cycles appended to the sheet, facing picked from its heading with hysteresis) and a solid
+feet box - and it still falls facing the camera, door in view, as the kneel frames always did.
+`ValidateWalkingHut` now herds it on paper into a yard 750 px out (must corner it under two minutes) and runs
+the same straight chase (must never corner it); `_ExploreProbe --stage=0` herds it live - 42 checks green, the
+`--lose-hut` leg checks it calms and stands where it was left. Not built: the driven-in sound (reuses the
+Earth impact for now; a bespoke creak-and-settle is a tools/audio ask for later).
+
 ### 3.4 Paracelsus - choose his path
 
 **Was:** `GibbetCageEvent` - hold the winch 2 s; he follows your steps at 75% of your walk to the ferry

@@ -10,12 +10,14 @@ using TheOneHeMissed.scripts;
 // clearing in the deep wood, on hen's legs, its back to whoever comes - as in the tales, where the traveller has to
 // ask it to turn its back to the forest and its front to him.
 //
-// What it asks: HUNT. Every other thing in the game that is found waits for you; this walks away. Within
-// StartleRadius it turns its back and strides off, quicker than his walk for two seconds, then slower than him
-// (FleeingMover, the primitive section 7 asked for: SecretMover inverted). A bar fills while he is within
-// KeepRadius of it and HOLDS while he is not - nothing drains. At HuntSeconds of keeping up it tires: it stops,
-// turns its door to him, kneels, and she steps out. Water or trunks across its way cut a bolt short, so a hut
-// run into a lake is a hut caught; the 100 px between the two radii is where a player who reads it walks.
+// What it asks: HERD (.ai/unlock-puzzles.md 3.3, Eric 2026-11-03). Every other thing in the game that is found
+// waits for you; this runs from you - and running from you is how you steer it. Within StartleRadius it turns
+// its back and strides off, quicker than his walk for two seconds, then slower than him (FleeingMover, the
+// primitive section 7 asked for: SecretMover inverted). Near its circle stands HER YARD: a fence of bones round
+// a clearing with one way in, the gap between the two brightest skull lanterns, facing away from the circle.
+// Stand on the far side of the hut and it flees where you want; trees, water and the fence itself are the walls
+// you herd with. Driven through the gap it has nowhere left to run: it stops, turns its door to him, kneels,
+// and she steps out. The old 30 s bar and its band are gone - the yard is the whole ask.
 //
 // NOTHING LOCKS, NOTHING IS LOST. Losing it costs nothing: past LoseRadius it soon calms and stands where it is,
 // the bar held, the gold arrow still on it, and its prints lead back - every fall lays a fresh three-toed print,
@@ -23,10 +25,12 @@ using TheOneHeMissed.scripts;
 // trails of them spiral in through the moss to the worn ring of its circle: the prints are its far tell before
 // the light is.
 //
-// NOTHING HERE IS A BODY. The hut is a sprite sorted among the bodies by its feet and moved by FleeingMover; it is
-// never in "enemies", has no collision layer, and is never a target. The trunks it is stopped by are asked of the
-// physics (layer 4, the blocking ground's) at the one point ahead of its feet, and the water and the walls of the
-// streamer's own data, so it is stopped by what stops the player's boots.
+// THE HUT IS NEVER A TARGET. It is a sprite sorted among the bodies by its feet and moved by FleeingMover; it is
+// never in "enemies" and nothing can hit it. Since item 59 it IS solid: one box at its feet on the blocking
+// ground's layer (layer 4), so the player's boots and the swarm stop at it as at a trunk - but it has no other
+// collision and takes no damage. The trunks it is itself stopped by are asked of the
+// physics (layer 4, the blocking ground's) at the one point ahead of its feet - its own box excluded - and the
+// water and the walls of the streamer's own data, so it is stopped by what stops the player's boots.
 //
 // Art: tools/art/walking_hut.py (world/hut/: the hut's fourteen frames on a 96x128 cell, its prints, poi-hut). The
 // one light on it is his mark in the eyes of the horse skull on its gable, and the far tell stands up from there.
@@ -35,11 +39,18 @@ public partial class WalkingHutEvent : SideEvent
 	/// <summary>Within this it turns its back and strides away (4.1: 420).</summary>
 	public const float StartleRadius = 420f;
 
-	/// <summary>Within this the bar fills (4.1: 520); outside it the bar holds.</summary>
-	public const float KeepRadius = 520f;
+	/// <summary>Her yard (unlock-puzzles.md 3.3): a bone fence round a clearing this far out, one way in.</summary>
+	public const float YardRadius = 130f;
 
-	/// <summary>Seconds of keeping up before it tires (4.1: 30).</summary>
-	public const float HuntSeconds = 30f;
+	/// <summary>The one way in: this much of the ring left open, between the two brightest lanterns.</summary>
+	public const float YardGapWidth = 120f;
+
+	/// <summary>How far the hut must be driven: the yard stands this far from its circle, gap facing away.</summary>
+	public const float YardDriveMin = 600f;
+	public const float YardDriveMax = 900f;
+
+	/// <summary>Inside this of the yard's middle it is cornered: it stops, turns, kneels.</summary>
+	public const float CorneredRadius = YardRadius - 34f;
 
 	/// <summary>
 	/// A bolt: how long, and how much quicker than his walk (4.1: quicker for 2 s), easing to TiredBoltShare as the bar
@@ -78,9 +89,7 @@ public partial class WalkingHutEvent : SideEvent
 	protected override string ChestLine => "The hut kneels - a chest was left at its door";
 	protected override string Objective => IsResolved ? string.Empty
 		: tiredFor >= 0f ? "The hut kneels"
-		: Player != null && Player.GlobalPosition.DistanceTo(mover.Position) <= KeepRadius
-			? $"Keep up with the walking hut  ({Mathf.RoundToInt(progress * 100f)}%)"
-			: $"Get close to the walking hut  ({Mathf.RoundToInt(progress * 100f)}%)";
+		: "Drive the hut into the bone-fenced yard";
 	// The hut itself, wherever it has got to - aimed at its walls, not its feet, so the chevron is not on its toes.
 	// On it while it kneels too: the arrow going null is what says an event is over (SideEvent, the probes), and she
 	// has not stepped out yet.
@@ -107,16 +116,31 @@ public partial class WalkingHutEvent : SideEvent
 		CircleRadius = CircleRadius,
 	};
 
-	// The bar, 0 to 1. Named "progress" because _UiShot --win-event fills a float field of that name and lets the real
-	// path run (the hut tires, turns, kneels and she steps out).
+	// Kept only for _UiShot --win-event, which fills a float field of this name and lets the real path run (the
+	// hut tires where it stands, turns, kneels and she steps out). Nothing accrues it any more: the bar is gone.
 	private float progress;
 	// Seconds since it tired, or below 0 while it is still walking.
 	private float tiredFor = -1f;
 	private bool succeeded;
 	private Vector2 home;
+	// Her yard (unlock-puzzles.md 3.3): where it stands, and the way in - the gap's middle, as an angle from
+	// its centre, always facing away from the circle. driveStart is the hut-to-yard distance when the herding
+	// began, for DriveProgress.
+	private Vector2 yard;
+	private float gapAngle;
+	private float driveStart = -1f;
+	private readonly List<Vector2> lanternPosts = new();
 
 	/// <summary>Where the hut stands now (its feet). For the probe and _UiShot.</summary>
 	public Vector2 HutPosition => mover.Position;
+
+	/// <summary>The yard's middle, and the mouth of its one gap, just outside the ring. For the probe.</summary>
+	public Vector2 YardCentre => yard;
+	public Vector2 YardGapMouth => yard + Vector2.FromAngle(gapAngle) * (YardRadius + 70f);
+
+	/// <summary>0 to 1: how far the hut has been driven from where the herding found it. For the probe.</summary>
+	public float DriveProgress => driveStart <= 0f ? 0f
+		: Mathf.Clamp(1f - (mover.Position.DistanceTo(yard) - CorneredRadius) / (driveStart - CorneredRadius), 0f, 1f);
 
 	/// <summary>The bar: 0 to 1. For the probe.</summary>
 	public float Progress => progress;
@@ -169,6 +193,26 @@ public partial class WalkingHutEvent : SideEvent
 		home = AddSite(placer.EventSiteInBand(SiteFootprint, dense: true,
 			also: p => placer.HasWoodedSurrounds(p, WoodlandRingRadius),
 			minChunks: DeepWoodMinChunks, maxChunks: DeepWoodMaxChunks)).Position;
+		// Her yard, placed with the circle (unlock-puzzles.md 3.3): a drive of 600-900 px away on
+		// clear ground, and its one gap facing AWAY from the circle - the hut cannot be pushed
+		// straight in from where it walks; it has to be taken round. Placed by its own ring search,
+		// asking only for the clearing the fence itself stands in (trees OUTSIDE the fence are the
+		// walls he herds with): placer.Near with the full footprint found nothing at this reach in
+		// the deep wood and fell back beside the circle, which made the drive a stroll.
+		yard = Vector2.Inf;
+		for (int widen = 0; widen <= 2 && yard == Vector2.Inf; widen++)
+			for (int k = 0; k < 24 && yard == Vector2.Inf; k++)
+			{
+				float bearing = placer.NextFloat() * Mathf.Tau;
+				float step = Mathf.Lerp(YardDriveMin, YardDriveMax, placer.NextFloat()) + widen * 130f;
+				Vector2 candidate = placer.Snap(home + Vector2.FromAngle(bearing) * step);
+				if (placer.IsClear(candidate, YardRadius + 40f - widen * 12f))
+					yard = placer.FixedSite(candidate, YardRadius + 60f);
+			}
+		if (yard == Vector2.Inf)
+			yard = placer.Near(home, YardDriveMin, YardDriveMax, YardRadius + 40f,
+				System.Array.Empty<Vector2>(), 0f, home, YardDriveMax + 500f);
+		gapAngle = (yard - home).Angle();
 		oldPrints.Clear();
 		// The ring it has worn: it walks it with the angle rising (clockwise on screen), so the toes point that way.
 		int round = Mathf.CeilToInt(Mathf.Tau * CircleRadius / FallSpacing);
@@ -243,6 +287,13 @@ public partial class WalkingHutEvent : SideEvent
 	private const int FrameKnelt = 11;
 	private const int FrameAjar = 12;
 	private const int FrameOpen = 13;
+	// The four sides (item 59: it turns as it runs). Appended after the original fourteen, so a stale
+	// sheet shows the old back-walk everywhere rather than garbage; the side walk faces right and is
+	// flipped for left.
+	private const int FrameFrontWalk = 14;
+	private const int FrontWalkFrames = 6;
+	private const int FrameSideWalk = 20;
+	private const int SideWalkFrames = 4;
 
 	// Where the skull's eyes are on each kind of frame, from its feet, in world px (the art at x2).
 	private static readonly Vector2 EyesStanding = new(-4f, -242f);
@@ -265,6 +316,7 @@ public partial class WalkingHutEvent : SideEvent
 	private Node2D hutRoot;
 	private Sprite2D hut;
 	private Sprite2D her;
+	private StaticBody2D hutBody;
 	private Texture2D printsTex;
 	private float walkedSinceFall;
 	private int footSide = 1;
@@ -272,6 +324,10 @@ public partial class WalkingHutEvent : SideEvent
 	private float freedFor;
 	private Vector2 skullAt;
 	private PhysicsShapeQueryParameters2D trunkQuery;
+
+	// Which wall it shows while walking (PlaceHut); the tired beat ignores it and turns to front.
+	private const int FacingBack = 0, FacingFront = 1, FacingSide = 2;
+	private int facing = FacingBack;
 
 	protected override void OnPlaced()
 	{
@@ -311,6 +367,24 @@ public partial class WalkingHutEvent : SideEvent
 			Visible = false,
 		};
 		hutRoot.AddChild(her);
+		// Solid (item 59: the player cannot walk through it): one box at its feet on the blocking
+		// ground's layer, so his boots and the swarm stop at it exactly as at a trunk, while in the
+		// three-quarter view he still stands behind its walls. It moves with the feet (PlaceHut),
+		// and stays when it kneels - a knelt hut is furniture, not a doorway to walk through.
+		// Its own ground probe excludes it (Blocked), or it would stand at bay from itself.
+		hutBody = new StaticBody2D
+		{
+			Name = "HutBody",
+			CollisionLayer = 1u << (LevelTilePainter.TerrainCollisionLayer - 1),
+			CollisionMask = 0,
+		};
+		hutBody.AddChild(new CollisionShape2D
+		{
+			Shape = new RectangleShape2D { Size = new Vector2(96f, 22f) },
+			Position = new Vector2(0f, -8f),
+		});
+		hutRoot.AddChild(hutBody);
+		BuildYard();
 		PlaceHut();
 		// In the run's world at its origin, so its children stand at world positions; it is the event's sibling and
 		// stays, knelt with its door open, after the win.
@@ -325,6 +399,8 @@ public partial class WalkingHutEvent : SideEvent
 			return false;
 		if (Game.IsGroundBlockedAt(at) || MazeNavigation.Active?.IsBlockedAt(at) == true)
 			return true;
+		if (CrossesFence(mover.Position, at))
+			return true;
 		PhysicsDirectSpaceState2D space = GetWorld2D()?.DirectSpaceState;
 		if (space == null)
 			return false;
@@ -334,9 +410,117 @@ public partial class WalkingHutEvent : SideEvent
 			CollisionMask = 1u << (LevelTilePainter.TerrainCollisionLayer - 1),
 			CollideWithAreas = false,
 			CollideWithBodies = true,
+			// Not its own feet: the hut's solid box rides at its probe's reach, and a mover that
+			// finds itself across every way it wants stands at bay for good.
+			Exclude = hutBody != null && IsInstanceValid(hutBody)
+				? new Godot.Collections.Array<Rid> { hutBody.GetRid() }
+				: new Godot.Collections.Array<Rid>(),
 		};
 		trunkQuery.Transform = new Transform2D(0f, at);
 		return space.IntersectShape(trunkQuery, 1).Count > 0;
+	}
+
+	// The yard's fence, analytically: the mover probes ONE point ahead, and a probe point landing past a thin
+	// fence would read as a way through. So the step is tested as a segment against the ring itself - crossing
+	// it anywhere but the gap is blocked, however long the step. The player and the swarm meet the fence as
+	// bodies; only the hut needs this, because only the hut moves by the probe.
+	private bool CrossesFence(Vector2 from, Vector2 to)
+	{
+		float a = from.DistanceTo(yard);
+		float b = to.DistanceTo(yard);
+		if ((a < YardRadius) == (b < YardRadius))
+			return false;
+		// Where the step crosses the ring, near enough: the point on the segment at the ring's share of the way.
+		float t = Mathf.Clamp((YardRadius - a) / (b - a), 0f, 1f);
+		Vector2 crossing = from.Lerp(to, t);
+		float gapHalf = (YardGapWidth * 0.5f - 8f) / YardRadius;
+		return Mathf.Abs(Mathf.AngleDifference((crossing - yard).Angle(), gapAngle)) > gapHalf;
+	}
+
+	// Her yard: the ring of bone posts with its one gap, the two lantern posts flanking it, and the fence's
+	// collision - chord boxes on the blocking ground's layer, so the player's boots and the swarm meet it
+	// exactly as the player's own fence rails are met. The ground under it is reserved at placement
+	// (ExplorePlacer.Keep), so no tree stands in the clearing.
+	private const float PostSpacing = 30f;
+	private void BuildYard()
+	{
+		var fence = new StaticBody2D
+		{
+			Name = "YardFence",
+			Position = yard,
+			CollisionLayer = 1u << (LevelTilePainter.TerrainCollisionLayer - 1),
+			CollisionMask = 0,
+		};
+		int posts = Mathf.CeilToInt(Mathf.Tau * YardRadius / PostSpacing);
+		float gapHalf = YardGapWidth * 0.5f / YardRadius;
+		lanternPosts.Clear();
+		// First find the gap's two flanks - the post nearest each edge of the way in - so exactly
+		// two posts carry the skull lanterns (3.3, "the gap between the two BRIGHTEST").
+		int flankA = -1, flankB = -1;
+		float nearestA = float.MaxValue, nearestB = float.MaxValue;
+		for (int i = 0; i < posts; i++)
+		{
+			float off = Mathf.AngleDifference(i * Mathf.Tau / posts, gapAngle);
+			if (Mathf.Abs(off) < gapHalf)
+				continue;
+			if (off > 0f && off < nearestA) { nearestA = off; flankA = i; }
+			if (off < 0f && -off < nearestB) { nearestB = -off; flankB = i; }
+		}
+		for (int i = 0; i < posts; i++)
+		{
+			float a = i * Mathf.Tau / posts;
+			if (Mathf.Abs(Mathf.AngleDifference(a, gapAngle)) < gapHalf)
+				continue;
+			Vector2 local = Vector2.FromAngle(a) * YardRadius;
+			fence.AddChild(new CollisionShape2D
+			{
+				Shape = new RectangleShape2D { Size = new Vector2(PostSpacing + 8f, 12f) },
+				Position = local,
+				Rotation = a + Mathf.Pi / 2f,
+			});
+			bool lantern = i == flankA || i == flankB;
+			var post = new BonePost { Position = yard + local, Lantern = lantern, Tell = TellColor,
+				RailTo = Vector2.FromAngle(a + Mathf.Tau / posts) * YardRadius - local };
+			if (lantern)
+				lanternPosts.Add(post.Position);
+			hutRoot.AddChild(post);
+		}
+		hutRoot.AddChild(fence);
+	}
+
+	// One post of the bone fence, standing in the run's y-sort: a femur on end, a rail of bone to the next
+	// post, and on the two gap posts a skull whose glow DrawLight carries. Code-drawn, no scene, drawn once.
+	private sealed partial class BonePost : Node2D
+	{
+		public bool Lantern;
+		public Color Tell;
+		public Vector2 RailTo;
+		private static readonly Color BoneLit = new("#CFC9B8");
+		private static readonly Color BoneShade = new("#8F897A");
+		private static readonly Color Dark = new("#3B3730");
+
+		public override void _Draw()
+		{
+			// The rail first, waist high toward the next post (each post draws its own half from both ends).
+			PixelInk.Line(this, new Vector2(0f, -10f), RailTo * 0.55f + new Vector2(0f, -10f), BoneShade, 2, 0.9f);
+			PixelInk.Line(this, new Vector2(0f, -11f), RailTo * 0.55f + new Vector2(0f, -11f), BoneLit, 1, 0.5f);
+			// The femur: shaft, the knobs at its head, the shadow at its foot.
+			PixelInk.Cell(this, new Vector2(0f, 0f), Dark, 0.8f);
+			PixelInk.Line(this, new Vector2(0f, -1f), new Vector2(0f, -(Lantern ? 26f : 17f)), BoneShade, 3, 1f);
+			PixelInk.Line(this, new Vector2(-1f, -2f), new Vector2(-1f, -(Lantern ? 25f : 16f)), BoneLit, 1, 0.75f);
+			float top = Lantern ? -26f : -17f;
+			PixelInk.Disc(this, new Vector2(-2f, top - 2f), 2.4f, BoneLit);
+			PixelInk.Disc(this, new Vector2(2f, top - 1f), 2.1f, BoneShade);
+			if (!Lantern)
+				return;
+			// The skull on it, looking into the gap: a knob of bone with the one cold light in its eyes.
+			PixelInk.Disc(this, new Vector2(0f, top - 7f), 4.4f, BoneLit);
+			PixelInk.Disc(this, new Vector2(0f, top - 5f), 2.6f, BoneShade);
+			PixelInk.Cell(this, new Vector2(-2f, top - 8f), Dark, 1f);
+			PixelInk.Cell(this, new Vector2(2f, top - 8f), Dark, 1f);
+			PixelInk.Cell(this, new Vector2(-2f, top - 8f), Tell, 0.9f);
+			PixelInk.Cell(this, new Vector2(2f, top - 8f), Tell, 0.9f);
+		}
 	}
 
 	// --- the rules -------------------------------------------------------------------------------------
@@ -366,13 +550,16 @@ public partial class WalkingHutEvent : SideEvent
 			Tired(delta);
 			return;
 		}
-		mover.Tire = progress;
+		if (driveStart <= 0f)
+			driveStart = Mathf.Max(CorneredRadius + 50f, mover.Position.DistanceTo(yard));
+		// Its bolts dull as it is pressed toward the yard: the nearer the fence, the less run it
+		// has left in it. Replaces the bar's tiring.
+		mover.Tire = DriveProgress;
 		Walk(delta);
-		if (Player != null && PlayerWithin(mover.Position, KeepRadius))
-			progress = Mathf.Min(1f, progress + delta / HuntSeconds);
-		if (progress >= 1f)
+		// Driven through the gap (or _UiShot --win-event filled `progress`): it has nowhere left to
+		// run. It stops where it stands, turns its door to him, kneels, and she steps out.
+		if (mover.Position.DistanceTo(yard) <= CorneredRadius || progress >= 1f)
 		{
-			// Tired: it stops where it is and will not run again.
 			tiredFor = 0f;
 			mover.Stopped = true;
 			SfxPlayer.Impact(Element.Earth, mover.Position);
@@ -444,6 +631,8 @@ public partial class WalkingHutEvent : SideEvent
 	private void PlaceHut()
 	{
 		Vector2 foot = SpellInk.Snap(mover.Position);
+		if (hutBody != null && IsInstanceValid(hutBody))
+			hutBody.Position = foot;
 		if (hut == null || !IsInstanceValid(hut))
 		{
 			skullAt = foot + EyesStanding;
@@ -467,10 +656,30 @@ public partial class WalkingHutEvent : SideEvent
 		}
 		else if (mover.Speed > 1f)
 		{
-			frame = FrameWalk + ((int)(walkPhase * WalkFrames) % WalkFrames);
-			// Its back is to him whichever way it goes; it leans the way it walks.
-			if (Mathf.Abs(mover.Heading.X) > 0.2f)
-				hut.FlipH = mover.Heading.X < 0f;
+			// The side it shows is a fact of its heading, not a choice (item 59: four sides, so it
+			// can turn as it runs): away up the screen is its back, down the screen is its front -
+			// the shut door honestly in view - and across is the side sheet, flipped to lead with
+			// its feet. Hysteresis at the diagonals: it keeps the sheet it has until the heading
+			// clearly crosses, so a wavering flee does not flicker between walls.
+			Vector2 h = mover.Heading;
+			if (Mathf.Abs(h.Y) > Mathf.Abs(h.X) * 1.15f)
+				facing = h.Y < 0f ? FacingBack : FacingFront;
+			else if (Mathf.Abs(h.X) > Mathf.Abs(h.Y) * 1.15f)
+				facing = FacingSide;
+			if (facing == FacingSide)
+			{
+				frame = FrameSideWalk + ((int)(walkPhase * SideWalkFrames) % SideWalkFrames);
+				eyes = EyesSide;
+				hut.FlipH = h.X < 0f;
+			}
+			else
+			{
+				frame = (facing == FacingFront ? FrameFrontWalk : FrameWalk)
+					+ ((int)(walkPhase * WalkFrames) % WalkFrames);
+				// It leans the way it walks.
+				if (Mathf.Abs(h.X) > 0.2f)
+					hut.FlipH = h.X < 0f;
+			}
 		}
 		else
 			frame = FrameStand + ((int)(Clock / 0.7f) % 2);
@@ -540,11 +749,7 @@ public partial class WalkingHutEvent : SideEvent
 				DrawPrint(p.At, p.Direction, old: Clock - p.LaidAt > FreshSeconds);
 			}
 		}
-		if (IsFound && !IsResolved && tiredFor < 0f)
-		{
-			bool inside = PlayerWithin(mover.Position, KeepRadius);
-			DrawProgressArc(mover.Position, KeepRadius, progress, TellColor, 3f, inside ? 0.42f : 0.24f);
-		}
+		// No arc any more: the yard and its lanterns are the goal, and they draw themselves.
 	}
 
 	private void DrawPrint(Vector2 world, int direction, bool old)
@@ -558,6 +763,17 @@ public partial class WalkingHutEvent : SideEvent
 	// the hunt is on. And always, near, the eyes themselves - his mark, a cold point each.
 	protected override void DrawLight(CanvasItem light)
 	{
+		// The gap's lanterns: the two brightest things in the clearing, and the way in is between
+		// them (3.3). They burn until she is free.
+		if (!IsResolved || freedFor <= 1.5f)
+			foreach (Vector2 post in lanternPosts)
+			{
+				if (!NearPlayer(post))
+					continue;
+				Vector2 skullTop = ToLocal(post + new Vector2(0f, -33f));
+				ExploreArt.DrawGlow(light, skullTop, 40f, new Color(TellColor, 0.4f * Flicker(3)));
+				ExploreArt.DrawGlow(light, skullTop, 13f, new Color(TellColor.Lerp(Colors.White, 0.45f), 0.65f * Flicker(6)));
+			}
 		if (IsResolved && freedFor > 1.5f)
 			return;
 		if (!NearPlayer(skullAt))

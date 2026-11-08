@@ -283,7 +283,7 @@ public static class AchievementDefinitions
 	private static readonly (string Site, string Name, string Description, string Reward)[] SideEventWords =
 	{
 		("the_grove", "The Grove Held", "Hold the corrupted grove in the Enchanted Forest until it grows back.", "Unlocks Bramble Seed"),
-		("walking_hut", "The Hut Run Down", "Keep up with the hut that walks the Enchanted Forest until it tires and kneels.", "Frees Baba Yaga"),
+		("walking_hut", "The Hut Herded Home", "Drive the walking hut of the Enchanted Forest into the bone-fenced yard.", "Frees Baba Yaga"),
 		("the_well", "The Last Coin", "Keep the last clean well in the Fallow Fields from being fouled.", "Unlocks Wishing Coin"),
 		("tithe_scale", "The Tithe Paid", "Pay the Tithe-Reeve's scale its due in the Fallow Fields, until the granary opens.", "Frees Medea"),
 		("the_moot", "The Circle Relit", "Restore the shattered council wards of the Broken Circle to free their keeper.", "Frees Merlin, unlocks Orb of Ages and Gilded Mote"),

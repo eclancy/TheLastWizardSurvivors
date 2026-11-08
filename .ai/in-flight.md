@@ -48,8 +48,10 @@ things come up; strike what lands.**
    hedges, are the Heath's crowns too sparse); the spell reaches; the Forest without shooters; John Dee's chest
    economy (every other wizard has about a third of a set fewer chests a run).
 3. **The other unlock puzzles** in `.ai/unlock-puzzles.md` (designed and chosen by Eric, not built): Imhotep's
-   mirrors, Ma Liang's door in one stroke, Baba Yaga's herded hut, Medea's balanced scale, Väinämöinen's song
-   sung back, Morgan's lamps lit ahead, Tituba's key past the lanterns. Paracelsus's (the pilot) is done.
+   mirrors, Ma Liang's door in one stroke, Medea's balanced scale, Väinämöinen's song
+   sung back, Morgan's lamps lit ahead, Tituba's key past the lanterns. Paracelsus's (the pilot) is done,
+   and **Baba Yaga's herded hut is built 2026-11-07** (`feat/baba-yaga-hut`, the Built note in 3.3) together
+   with item 59's hut asks: solid, four-sided, falls facing the camera.
    - **More hints for unlockables** (Eric, 2026-11-04). His example: in the first chapter, Baba Yaga's walking
      hut walks a visible path, and that path is drawn on the map, so the player finds it by following tracks.
      Do this for every unlock: each wizard's event and each secret leaves traces in the world that lead to it
@@ -766,8 +768,10 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     unchanged, and the Bridge's abyss opts out (`StageEnvironmentProfile.WaterWalkable = false`).
     Rounder bodies - water blobs take a smooth two-lobe rim wobble instead of the per-tile hash
     jitter. Overhang - trees keep 48 px and bushes 24 px of water clearance in `IsPropAvoidedAt`.
-    Still open here: the dandelion secret, the Grove's spread, and the hut asks (solid, four-sided)
-    folded into item 3.
+    **Built 2026-11-07 (`feat/baba-yaga-hut`):** the hut asks, with item 3's herded-yard puzzle -
+    solid (a feet box on the blocking layer), four-sided (front and side walk cycles, facing from
+    its heading), and it falls facing the camera as the kneel frames always did.
+    Still open here: the dandelion secret and the Grove's spread.
 60. **Audio** (Eric, 2026-11-06): the shield-break noise is annoying - deeper, like cracking glass
     (`tools/audio/sfx.py`); battle music per chapter still reads to Eric as the menu's music - check
     what section 3a item 7's per-chapter stems actually play in a run.
