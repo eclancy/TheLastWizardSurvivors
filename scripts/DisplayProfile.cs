@@ -33,6 +33,11 @@ public partial class DisplayProfile : Node
 			|| Array.IndexOf(OS.GetCmdlineUserArgs(), "--portrait") >= 0
 			|| Array.IndexOf(OS.GetCmdlineArgs(), "--portrait") >= 0;
 
+		if (SaveManager.IsToolSceneLaunch())
+			foreach (string arg in OS.GetCmdlineUserArgs())
+				if (arg.StartsWith("--fake-monitors=") && int.TryParse(arg.Substring("--fake-monitors=".Length), out int fake))
+					screenCountOverride = Math.Max(0, fake);
+
 		Window root = GetTree().Root;
 		if (IsPortrait)
 		{
@@ -48,6 +53,11 @@ public partial class DisplayProfile : Node
 		// F11 and Alt+Enter work over every screen, the pause screen and the level-up included.
 		ProcessMode = ProcessModeEnum.Always;
 		askedFullscreen = StartsFullscreen();
+		// The chosen monitor first, while the window is still windowed: fullscreen takes the window's
+		// current screen, so moving first is what makes the preference hold. A stale index (the monitor
+		// was unplugged) is ignored and the window stays where the OS put it.
+		if (DesktopControlsAvailable && !SaveManager.IsToolSceneLaunch())
+			MoveToScreen(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data.MonitorIndex ?? -1);
 		if (askedFullscreen)
 			DisplayServer.WindowSetMode(DisplayServer.WindowMode.ExclusiveFullscreen);
 		else if (DesktopControlsAvailable && !SaveManager.IsToolSceneLaunch())
@@ -118,6 +128,80 @@ public partial class DisplayProfile : Node
 			new(2560,1440), new(2560,1600), new(3440,1440), new(3840,2160),
 		};
 		return sizes.Where(s => s.X <= usable.X - 32 && s.Y <= usable.Y - 64).OrderBy(s => s.X).ThenBy(s => s.Y).ToList();
+	}
+
+	/// <summary>
+	/// Everything the Options screen's display controls can change, as it stands now: the saved
+	/// preferences and the screen the window actually sits on (which a saved -1 does not name).
+	/// Taken before a change so the timed Keep / Revert step (DisplayConfirm) can put it all back.
+	/// </summary>
+	public readonly struct DisplayState
+	{
+		public readonly bool Fullscreen;
+		public readonly int WindowWidth, WindowHeight, MonitorIndex, Screen;
+
+		public DisplayState(SaveData data)
+		{
+			Fullscreen = data?.Fullscreen ?? IsFullscreen;
+			WindowWidth = data?.WindowWidth ?? 0;
+			WindowHeight = data?.WindowHeight ?? 0;
+			MonitorIndex = data?.MonitorIndex ?? -1;
+			Screen = DisplayServer.WindowGetCurrentScreen();
+		}
+	}
+
+	public static DisplayState Snapshot(Node context) =>
+		new(context?.GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data);
+
+	/// <summary>Puts a snapshot back: the saved fields, the screen, the mode. One save write.</summary>
+	public static void Restore(Node context, DisplayState state)
+	{
+		if (!DesktopControlsAvailable) return;
+		SaveManager manager = context?.GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (manager != null)
+		{
+			manager.Data.Fullscreen = state.Fullscreen;
+			manager.Data.WindowWidth = state.WindowWidth;
+			manager.Data.WindowHeight = state.WindowHeight;
+			manager.Data.MonitorIndex = state.MonitorIndex;
+		}
+		MoveToScreen(state.Screen);
+		if (state.Fullscreen) DisplayServer.WindowSetMode(DisplayServer.WindowMode.ExclusiveFullscreen);
+		else ToWindow(manager?.Data);
+		manager?.SaveGame();
+	}
+
+	/// <summary>The monitors a player can choose between, only asked for when there is more than one.</summary>
+	public static int ScreenCount => screenCountOverride > 0 ? screenCountOverride : DisplayServer.GetScreenCount();
+
+	// Tool-scene seam: _UiShot --fake-monitors=N photographs the Options monitor row on a
+	// one-monitor machine. Only what the menu SHOWS reads it; moving the window stays
+	// bounds-checked against the real screens (MoveToScreen), so a fake pick moves nothing.
+	private static int screenCountOverride;
+
+	public static void StoreMonitor(Node context, int index)
+	{
+		if (!DesktopControlsAvailable) return;
+		SaveManager manager = context?.GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (manager != null) manager.Data.MonitorIndex = index;
+		MoveToScreen(index);
+		// A windowed game is re-fitted and re-centred: the new monitor's usable area may be smaller.
+		if (!IsFullscreen) ToWindow(manager?.Data);
+		manager?.SaveGame();
+	}
+
+	// Moves the window to that screen, through windowed mode when it is fullscreen - fullscreen is
+	// bound to the screen it was entered on, so it is left, moved and entered again. -1 and a stale
+	// index move nothing.
+	private static void MoveToScreen(int index)
+	{
+		if (index < 0 || index >= DisplayServer.GetScreenCount()
+			|| index == DisplayServer.WindowGetCurrentScreen())
+			return;
+		bool fullscreen = IsFullscreen;
+		if (fullscreen) DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+		DisplayServer.WindowSetCurrentScreen(index);
+		if (fullscreen) DisplayServer.WindowSetMode(DisplayServer.WindowMode.ExclusiveFullscreen);
 	}
 
 	public static void StoreFullscreen(Node context, bool fullscreen)

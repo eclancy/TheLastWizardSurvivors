@@ -218,6 +218,10 @@ public class SaveData
 	/// <summary>Zero means an automatically fitted window. Fullscreen always uses the display's native size.</summary>
 	public int WindowWidth { get; set; }
 	public int WindowHeight { get; set; }
+	/// <summary>The monitor the game puts itself on (DisplayProfile). -1 means wherever the OS put the
+	/// window; a stale index (monitor unplugged) is ignored, not clamped. No schema bump, like the
+	/// other display settings: an older save has the key missing and keeps the default.</summary>
+	public int MonitorIndex { get; set; } = -1;
 
 	/// <summary>
 	/// Taught the Ascension outside the campaign's own record (GlobalStatsManager.HasLearnedAscension):
@@ -291,7 +295,7 @@ public class SaveData
 	public static readonly string[] SettingsKeys =
 	{
 		"MasterVolume", "MusicVolume", "SfxVolume", "AudioMuted", "ShowDamageNumbers", "ReduceScreenShake", "ReduceDarkness",
-		"Fullscreen", "WindowWidth", "WindowHeight",
+		"Fullscreen", "WindowWidth", "WindowHeight", "MonitorIndex",
 		"EnableGameplayOnboardingTips", "HasToggledOnboardingTipsAtLeastOnce",
 		"PlaytestModeEnabled", "BalancePresetId", "PlaytestChecklistState",
 	};
@@ -1378,6 +1382,7 @@ public class SaveData
 			["Fullscreen"] = Fullscreen,
 			["WindowWidth"] = WindowWidth,
 			["WindowHeight"] = WindowHeight,
+			["MonitorIndex"] = MonitorIndex,
 			["AscensionLearned"] = AscensionLearned,
 			["LessonsLearned"] = lessonsLearned,
 			["FullBookKept"] = FullBookKept,
@@ -1677,6 +1682,7 @@ public class SaveData
 		if (root.ContainsKey("Fullscreen")) result.Fullscreen = root["Fullscreen"].AsBool();
 		if (root.ContainsKey("WindowWidth")) result.WindowWidth = System.Math.Max(0, root["WindowWidth"].AsInt32());
 		if (root.ContainsKey("WindowHeight")) result.WindowHeight = System.Math.Max(0, root["WindowHeight"].AsInt32());
+		if (root.ContainsKey("MonitorIndex")) result.MonitorIndex = System.Math.Max(-1, root["MonitorIndex"].AsInt32());
 		if (root.ContainsKey("AscensionLearned"))
 			result.AscensionLearned = root["AscensionLearned"].AsBool();
 		if (root.ContainsKey("FullBookKept"))

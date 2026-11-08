@@ -46,6 +46,10 @@ public partial class _UiShot : Node
 	private string focusLate;
 	private bool focusLateDone;
 
+	// --show-display-confirm (see the flag's remark where it is parsed).
+	private bool showDisplayConfirm;
+	private bool displayConfirmShown;
+
 	// --demo-shop: a fresh in-memory save with a known purse and a spread of Arcane Upgrade levels -
 	// one row at its maximum, some affordable, some not, one spell owned - so the shop's before and
 	// after photographs show the same states (.ai/level-up-screen.md, "Arcane Upgrades").
@@ -1469,6 +1473,11 @@ public partial class _UiShot : Node
 			// menu on a black ground, which shows the layout but not what it sits on.
 			else if (arg == "--open-menu")
 				Global.OpenMenuImmediately = true;
+			// The timed Keep / Revert step after a display change (DisplayConfirm), opened over
+			// whatever is up with a do-nothing revert, so both canvases' layouts can be
+			// photographed without actually changing the window.
+			else if (arg == "--show-display-confirm")
+				showDisplayConfirm = true;
 			// --found-secrets=id,id: marks those stage secrets found in the in-memory save (writes off),
 			// to photograph the achievements page's found secrets.
 			// --seen-secrets=id,id: marks those secrets SEEN - their near tell on screen once, not yet
@@ -3771,6 +3780,13 @@ public partial class _UiShot : Node
 		{
 			codexOpened = true;
 			OpenCodexForShot();
+			frames = 0;
+			return;
+		}
+		if (showDisplayConfirm && !displayConfirmShown)
+		{
+			displayConfirmShown = true;
+			DisplayConfirm.Open(this, revert: () => { });
 			frames = 0;
 			return;
 		}
