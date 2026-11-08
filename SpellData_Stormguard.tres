@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="SpellData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/SpellLevelUpgrade.cs" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/stormguard-lightning.png" id="3_icon"]
+
+; Stormguard, returned on Aegis Ward's rules (in-flight item 9). BaseDamage is the thunderclap,
+; BaseCooldown is how long the storm takes to gather, and BaseRange is the clap's reach - the
+; blows the player takes are what bring it down (scripts/Stormguard.cs).
+
+[sub_resource type="Resource" id="Resource_stormguard_lvl2"]
+script = ExtResource("2")
+Level = 2
+DamageBonus = 4
+
+[sub_resource type="Resource" id="Resource_stormguard_lvl4"]
+script = ExtResource("2")
+Level = 4
+DamageBonus = 5
+CooldownBonus = -1.0
+
+[sub_resource type="Resource" id="Resource_stormguard_lvl6"]
+script = ExtResource("2")
+Level = 6
+DamageBonus = 6
+
+[sub_resource type="Resource" id="Resource_stormguard_lvl8"]
+script = ExtResource("2")
+Level = 8
+DamageBonus = 8
+CooldownBonus = -1.5
+
+[resource]
+script = ExtResource("1")
+Tagline = "Blows you take bring the storm."
+Id = "stormguard"
+Name = "Stormguard"
+CurrentLevel = 1
+MaxLevel = 8
+BaseDamage = 12
+BaseCooldown = 9.0
+BaseProjectileCount = 1
+BaseRange = 150.0
+LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_stormguard_lvl2"), SubResource("Resource_stormguard_lvl4"), SubResource("Resource_stormguard_lvl6"), SubResource("Resource_stormguard_lvl8")])
+Description = "Gathers a storm overhead. The blows you take bring it down: a thunderclap that throws the pack back and soaks it in slowing rain."
+Icon = ExtResource("3_icon")
+ElementWeights = {
+"Lightning": 1,
+"Water": 1
+}

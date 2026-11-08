@@ -86,6 +86,13 @@ public static class SpellEvolutionCatalog
 			case "aegis_ward":
 				SetupAegisWardEvolutions(spell);
 				break;
+			// The defensive returns, on Aegis Ward's rules (in-flight item 9).
+			case Stormguard.SpellId:
+				SetupStormguardEvolutions(spell);
+				break;
+			case GloamVeil.SpellId:
+				SetupGloamVeilEvolutions(spell);
+				break;
 			case "thornmail_barrier":
 				SetupThornmailEvolutions(spell);
 				break;
@@ -1153,6 +1160,167 @@ public static class SpellEvolutionCatalog
 			ModulateColor = new Color(0.6f, 1.0f, 0.5f),
 			SynergyTag = "Metal / Poison",
 			SynergyDescription = "Ascension: Lethal radial crystal burst upon shield break."
+		});
+	}
+
+	// Stormguard (scripts/Stormguard.cs, in-flight item 9): the cooldown gathers a storm, the blows
+	// the player takes break it - a thunderclap, a shove and slowing rain. A hybrid, so its
+	// milestones deepen each half once (Charged Air's Lightning, Eye of the Storm's Water,
+	// ValidateElementPaths). Every number here is one the script reads (EvolutionStatReaders):
+	// damage and area through the clap, knockback through GetKnockbackBonusAtLevel, the slow
+	// through GetSlowMagnitudeAtLevel, and the three behaviours by id.
+	private static void SetupStormguardEvolutions(SpellData spell)
+	{
+		// Level 4 (3 choices)
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Stormguard.ChargedAirId,
+			BonusElementWeights = new() { { "Lightning", 1 } },
+			DisplayName = "Charged Air",
+			Description = "The air itself is charged: the storm breaks after one blow fewer. 12% slower to gather.",
+			CooldownMultiplier = AttunementGainCooldownCost,
+			MilestoneLevel = 4,
+			VisualTag = "ChargedAir",
+			ModulateColor = new Color(1.0f, 0.95f, 0.5f),
+			SynergyTag = "Lightning / Trigger",
+			SynergyDescription = "Deepens Lightning. The storm answers sooner."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Stormguard.StormfrontId,
+			DisplayName = "Stormfront",
+			Description = "The clap rolls 35% farther and throws the pack much harder.",
+			MilestoneLevel = 4,
+			AreaMultiplier = 1.35f,
+			KnockbackBonus = 120f,
+			VisualTag = "Stormfront",
+			ModulateColor = new Color(0.6f, 0.8f, 1.0f),
+			SynergyTag = "Wide / Force",
+			SynergyDescription = "A broader break that clears more of the press."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Stormguard.DownpourId,
+			DisplayName = "Downpour",
+			Description = "The rain falls harder: its slow deepens by 20% and outlasts the clap.",
+			MilestoneLevel = 4,
+			SlowMagnitudeBonus = 0.2f,
+			VisualTag = "Downpour",
+			ModulateColor = new Color(0.45f, 0.65f, 0.95f),
+			SynergyTag = "Water / Control",
+			SynergyDescription = "What the break soaks stays slowed longer."
+		});
+
+		// Level 8 (2 choices)
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Stormguard.EyeId,
+			BonusElementWeights = new() { { "Water", 1 } },
+			DisplayName = "Eye of the Storm",
+			Description = "The break leaves the storm's eye: for a few seconds enemy shots die at its edge and the rain keeps falling inside. +50% clap.",
+			CooldownMultiplier = AttunementGainCooldownCost,
+			MilestoneLevel = 8,
+			DamageMultiplier = 1.5f,
+			VisualTag = "EyeOfTheStorm",
+			ModulateColor = new Color(0.5f, 0.85f, 1.0f),
+			SynergyTag = "Water / Guard",
+			SynergyDescription = "Ascension: a calm that shots cannot cross."
+		});
+
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Stormguard.RollingThunderId,
+			DisplayName = "Rolling Thunder",
+			Description = "The thunder rolls: a second clap follows the first at three quarters of its weight. +50% clap.",
+			MilestoneLevel = 8,
+			DamageMultiplier = 1.5f,
+			VisualTag = "RollingThunder",
+			ModulateColor = new Color(0.95f, 0.9f, 0.55f),
+			SynergyTag = "Lightning / Echo",
+			SynergyDescription = "Ascension: every break lands twice."
+		});
+	}
+
+	// Gloam Veil (scripts/GloamVeil.cs, in-flight item 9): one hit swallowed whole, walked back; the
+	// tear is a gust that shoves, lashes and carries the wizard free. A hybrid, so its milestones
+	// deepen each half once (Night's Cloth's Darkness, Tailwind's Wind). Every number is one the
+	// script reads: damage through the lash, knockback through GetKnockbackBonusAtLevel, the walk
+	// through GetRangeAtLevel (Tailwind's RangeBonus shortens it), and the behaviours by id.
+	private static void SetupGloamVeilEvolutions(SpellData spell)
+	{
+		// Level 4 (3 choices)
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = GloamVeil.NightsClothId,
+			BonusElementWeights = new() { { "Darkness", 1 } },
+			DisplayName = "Night's Cloth",
+			// The hybrid's deepening price (AttunementGainCooldownCost elsewhere) is charged in the
+			// WALK here, not the cooldown - the veil's cooldown decides nothing, its Range does.
+			Description = "While the veil is torn, shots that would find you die in the gloom at your shoulder. The heavier cloth re-weaves a little later.",
+			RangeBonus = 50f,
+			MilestoneLevel = 4,
+			VisualTag = "NightsCloth",
+			ModulateColor = new Color(0.55f, 0.35f, 0.8f),
+			SynergyTag = "Darkness / Guard",
+			SynergyDescription = "Deepens Darkness. Torn is not defenceless."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = GloamVeil.TailwindId,
+			BonusElementWeights = new() { { "Wind", 1 } },
+			DisplayName = "Tailwind",
+			// The deepening price is folded into the walk: the gain is -90, charged 50, netting -40.
+			Description = "The tear's gust throws much harder, and the walk re-weaves the veil about 10% sooner.",
+			MilestoneLevel = 4,
+			KnockbackBonus = 140f,
+			RangeBonus = -40f,
+			VisualTag = "Tailwind",
+			ModulateColor = new Color(0.7f, 0.95f, 0.85f),
+			SynergyTag = "Wind / Recovery",
+			SynergyDescription = "Deepens Wind. The veil comes back with the stride."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = GloamVeil.RazorHemId,
+			DisplayName = "Razor Hem",
+			Description = "The tear's lash cuts 60% deeper.",
+			MilestoneLevel = 4,
+			DamageMultiplier = 1.6f,
+			VisualTag = "RazorHem",
+			ModulateColor = new Color(0.8f, 0.75f, 0.9f),
+			SynergyTag = "Edge / Lash",
+			SynergyDescription = "A veil that costs the pack to tear."
+		});
+
+		// Level 8 (2 choices)
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = GloamVeil.SecondSkinId,
+			DisplayName = "Second Skin",
+			Description = "The veil is woven double: it swallows two hits before it is bare. +30% lash.",
+			MilestoneLevel = 8,
+			DamageMultiplier = 1.3f,
+			VisualTag = "SecondSkin",
+			ModulateColor = new Color(0.5f, 0.45f, 0.7f),
+			SynergyTag = "Darkness / Depth",
+			SynergyDescription = "Ascension: two veils, walked back one by one."
+		});
+
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = GloamVeil.HourOfGloamId,
+			DisplayName = "Hour of Gloam",
+			Description = "The tear dims the world: everything the gust touches is weakened for a while, and the lash cuts twice as deep.",
+			MilestoneLevel = 8,
+			DamageMultiplier = 2.0f,
+			VisualTag = "HourOfGloam",
+			ModulateColor = new Color(0.45f, 0.3f, 0.6f),
+			SynergyTag = "Darkness / Weaken",
+			SynergyDescription = "Ascension: what tears the veil fights the duller for it."
 		});
 	}
 

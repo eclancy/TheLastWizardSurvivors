@@ -1221,6 +1221,9 @@ SPELLS = {
     "familiar_cat":      dict(paint=image(lambda: familiar.cat_portrait()), travel=None, tip=(16, 19), rows=()),
     "stormsweep":        dict(paint=lambda: si.stormsweep(sky=False), travel=None, tip=(26, 20), rows=("lightning",)),
     "sleet_runes":       dict(paint=lambda: si.sleet_runes(sky=False), travel=(0.83, -0.56), tip=(22, 11), rows=("ice", "wind")),
+    # The defensive returns (in-flight item 9): the storm the blows bring down, the veil walked back.
+    "stormguard":        dict(paint=si.stormguard, travel=None, tip=(14, 24), rows=("lightning", "water", "steel"), dark=True),
+    "gloam_veil":        dict(paint=si.gloam_veil, travel=None, tip=(6, 20), rows=("darkness", "wind"), dark=True),
 }
 
 def subject_of(card):
@@ -2235,6 +2238,146 @@ def _(sp, c):
             cv.line(bx, by, ex, ey, a[1])
             cv.set(ex, ey, a[0])
     U(sp, shards)
+
+
+# --- Stormguard (in-flight item 9) -----------------------------------------------------------------
+
+@card("stormguard_eye")
+def _(sp, c):
+    """Eye of the Storm: the break leaves a calm the shots cannot cross - the storm inside a still
+    ring of water, two enemy bolts stopping dead on it."""
+    reset(sp)
+    sp.back = "water"
+    sp.place = Place(0.72)
+
+    def eye(cv, x):
+        w, dk = E["water"], E["darkness"]
+        for d in range(0, 360, 4):
+            t = math.radians(d)
+            cv.set(C0 + math.cos(t) * 13.0, C0 + math.sin(t) * 13.0, w[1] if d % 24 == 0 else w[3])
+        # Two bolts in from outside, dying at the rim: a dark tail, no burst - they just end.
+        for d in (-35, 150):
+            t = math.radians(d)
+            bx, by = C0 + math.cos(t) * 13.0, C0 + math.sin(t) * 13.0
+            ox, oy = C0 + math.cos(t) * 17.5, C0 + math.sin(t) * 17.5
+            cv.line(ox, oy, bx + math.cos(t) * 1.2, by + math.sin(t) * 1.2, dk[2])
+            cv.set(bx, by, w[0])
+    O(sp, eye)
+    sp.why = "the calm ring shots die on"
+
+
+@card("stormguard_rolling_thunder")
+def _(sp, c):
+    """Rolling Thunder: the clap lands twice - a second bolt and a second burst beside the first,
+    a beat behind it."""
+    reset(sp)
+    sp.place = Place(0.9, dx=-1.5)
+
+    def echo(cv, x):
+        l = E["lightning"]
+        path = [(24, 10), (23, 12), (22, 14), (23, 16), (21, 18), (22, 20)]
+        for (px, py) in path:
+            cv.set(px, py, l[2])
+            cv.set(px + 1, py, l[3])
+        m_glint(cv, 21.5, 22.5, 2, l)
+        m_glint(cv, 12, 24, 3, l)
+    O(sp, echo)
+    sp.why = "the echo bolt a beat behind"
+
+
+# --- Gloam Veil (in-flight item 9) -----------------------------------------------------------------
+
+@card("gloam_veil_nights_cloth")
+def _(sp, c):
+    """Night's Cloth: while the veil is torn, shots die in the gloom - a bolt's tail fading to
+    nothing inside a deeper dark."""
+    reset(sp)
+    sp.back = "darkness"
+    # The veil small and low: the card is about the gloom round it, not the cloth.
+    sp.place = Place(0.56, dy=3.0)
+
+    def gloom(cv, x):
+        dk = E["darkness"]
+        # Three bolts in from outside, their tails breaking into fading dashes: swallowed, not broken.
+        for (ox, oy, steps) in ((27.0, 4.0, 3), (4.0, 6.0, 3), (28.0, 24.0, 2)):
+            ux, uy = _unit((C0 - ox, C0 + 3.0 - oy))
+            for s in range(steps):
+                a0 = (ox + ux * s * 4.0, oy + uy * s * 4.0)
+                a1 = (ox + ux * (s * 4.0 + 2.2), oy + uy * (s * 4.0 + 2.2))
+                cv.line(a0[0], a0[1], a1[0], a1[1], dk[1 + s if 1 + s < 4 else 3])
+        # The gloom they died in: a wide occluded pool under the veil.
+        cv.disc(C0, C0 + 3.0, 5.2, 3.6, OCC)
+        cv.set(C0 - 2, C0 + 2, dk[3])
+    O(sp, gloom)
+    sp.why = "shots fading into the gloom"
+
+
+@card("gloam_veil_razor_hem")
+def _(sp, c):
+    """Razor Hem: the ribbon edged in blades - pale razor ticks along the hem and one slash."""
+    reset(sp)
+    sp.place = Place(0.9)
+
+    def hem(cv, x):
+        m, w = E["metal"], E["wind"]
+        # Razor teeth all along the hem: bright metal blades standing off the ribbon's edge.
+        for d in range(0, 360, 30):
+            t = math.radians(d + 8)
+            bx, by = C0 + math.cos(t) * 10.5, C0 + math.sin(t) * 10.5
+            ex, ey = C0 + math.cos(t) * 15.0, C0 + math.sin(t) * 15.0
+            px, py = -math.sin(t) * 1.1, math.cos(t) * 1.1
+            cv.poly([(bx - px, by - py), (ex, ey), (bx + px, by + py)], m[2])
+            cv.line(bx, by, ex, ey, m[1])
+            cv.set(ex, ey, m[0])
+        # Two crossing slashes: the cut the hem costs whatever tears it.
+        cv.line(7, 26, 26, 19, w[1])
+        cv.line(9, 19, 24, 27, w[2])
+        cv.set(26, 19, w[0])
+    O(sp, hem)
+    sp.why = "razors along the hem"
+
+
+@card("gloam_veil_second_skin")
+def _(sp, c):
+    """Second Skin: the veil woven double - a second, smaller ring of cloth inside the first."""
+    reset(sp)
+    sp.place = Place(0.94)
+
+    def inner(cv, x):
+        dk, w = E["darkness"], E["wind"]
+        for (a0, a1) in ((30, 130), (170, 270), (300, 350)):
+            for d in range(a0, a1, 4):
+                t = math.radians(d)
+                frac = (d - a0) / float(a1 - a0)
+                cv.set(C0 + math.cos(t) * 6.5, C0 + math.sin(t) * 6.5, dk[1] if frac < 0.3 else dk[2])
+            t0 = math.radians(a0)
+            cv.set(C0 + math.cos(t0) * 6.5, C0 + math.sin(t0) * 6.5, w[1])
+    O(sp, inner)
+    sp.why = "a second ply inside the first"
+
+
+@card("gloam_veil_hour_of_gloam")
+def _(sp, c):
+    """Hour of Gloam: the tear dims the world - the veil's dark washing outward in waves over two
+    enemies gone faint under it."""
+    reset(sp)
+    sp.back = "darkness"
+    sp.place = Place(0.78)
+
+    def dusk(cv, x):
+        dk = E["darkness"]
+        for r, tone in ((15.0, dk[3]), (17.5, dk[2])):
+            for d in range(0, 360, 5):
+                t = math.radians(d)
+                px, py = C0 + math.cos(t) * r, C0 + math.sin(t) * r * 0.92
+                if 0 <= px <= 31 and 0 <= py <= 31:
+                    cv.set(px, py, tone)
+        for (qx, qy) in ((6.0, 24.0), (26.0, 23.0)):
+            quarry(cv, qx, qy, 3.2)
+            # Gone faint: the dark washes back over the body.
+            cv.disc(qx, qy, 2.0, 1.6, dk[3])
+    U(sp, dusk)
+    sp.why = "the world dimmed round the tear"
 
 
 # --- Arcane Explosion ------------------------------------------------------------------------------

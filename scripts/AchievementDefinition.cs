@@ -373,6 +373,10 @@ public static class AchievementDefinitions
 		ElementAdept("poison_adept", "Poison Adept", "Poison", "toxic_spore_burst", "Toxic Spore Burst"),
 		ElementAdept("earth_adept", "Earth Adept", "Earth", "black_tentacles", "Black Tentacles"),
 		ElementAdept("wind_adept", "Wind Adept", "Wind", "gale_blade", "Gale Blade"),
+		// The defensive returns (in-flight item 9): two more adepts in the five's exact shape,
+		// paying the storm that answers Lightning and the veil that answers Darkness.
+		ElementAdept("lightning_adept", "Lightning Adept", "Lightning", "stormguard", "Stormguard"),
+		ElementAdept("darkness_adept", "Darkness Adept", "Darkness", "gloam_veil", "Gloam Veil"),
 
 		// --- Challenge -------------------------------------------------------------------------
 		new()

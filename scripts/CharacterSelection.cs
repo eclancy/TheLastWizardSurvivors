@@ -19,6 +19,8 @@ public partial class CharacterSelection : Control
 		("cinderbreath", "res://SpellData_Cinderbreath.tres"),
 		("mirefoot", "res://SpellData_Mirefoot.tres"),
 		("kindled_ward", "res://SpellData_KindledWard.tres"),
+		("stormguard", "res://SpellData_Stormguard.tres"),
+		("gloam_veil", "res://SpellData_GloamVeil.tres"),
 		("gravewell", "res://SpellData_Gravewell.tres"),
 		("hollow_star", "res://SpellData_HollowStar.tres"),
 		("starfall", "res://SpellData_Starfall.tres"),

@@ -53,7 +53,10 @@ public static class StatIcons
 
 		if (t.Contains("crit"))
 			return "crit";
-		if (t.Contains("cooldown") || t.StartsWith("cd ") || t.Contains("attack speed") || t.Contains("cast speed"))
+		// "Re-weaves 9% sooner": Gloam Veil's recharge is a walk, not a timer, but it is still the
+		// line that says how soon the spell is back, so it takes the recharge glyph.
+		if (t.Contains("cooldown") || t.StartsWith("cd ") || t.Contains("attack speed") || t.Contains("cast speed")
+			|| t.Contains("re-weave"))
 			return "cooldown";
 		if (t.Contains("poison") || t.Contains("dot ") || t.Contains("venom"))
 			return "poison";

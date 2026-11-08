@@ -157,6 +157,22 @@ things come up; strike what lands.**
    `CLAUDE.md`, and one achievement to earn it (every non-starter spell comes from exactly one). Design first:
    which old passives' ideas are worth keeping as actives, and how each differs from Aegis Ward and from each
    other (`.ai/passives-and-items.md` has why the passives went, `.ai/spell-variety.md` the axes).
+   - **Built, 2026-11-07** (`.ai/spell-roster.md` "The defensive returns"): two spells, both on Aegis Ward's
+     no-scene shape (a code-made arena node, the spell's state on Player's pipeline). **Stormguard**
+     (Lightning+Water, the old aura's idea): the cooldown gathers a storm, and three blows taken - counted
+     pre-mitigation beside the reactive boons - break it as a thunderclap, shove and slowing rain; it fails
+     while regathering and over a player nobody touches. **Gloam Veil** (Darkness+Wind, Blur's idea): swallows
+     the next hit whole, whatever its size, like a dodge (no signal, no reactions); the tear's gust shoves,
+     lashes and carries the wizard free, and the veil is RE-WOVEN BY WALKING (its Range is the walk, worded as
+     a share, never a distance); it fails standing still, and a touch spends it as fully as a boss blow. Each
+     has five milestones of its own (both halves deepened, `ValidateElementPaths`), ten generated evolution
+     icons and two spell icons, and each is paid by a new element-adept Feat in the five's exact shape:
+     **Lightning Adept** and **Darkness Adept** (no save change - `BestElementCount` already carries both).
+     Verified: build 0 errors; full validator 0 errors, the Test Wizard warning only; harness runs opening on
+     each (storm: 7 breaks from 22 blows, 93 clap hits; veil: 4 hits swallowed, 3 walked re-weaves, 30 gust
+     hits); the level-4 screen photographed at 1280x720. Not yet verified: no eyes-on crowd check of either
+     effect in a real windowed run, no phone-canvas pass, numbers are first guesses, and the two adept feats
+     have not been earned in real play.
 9a. **Play with spell slots** (Eric, 2026-11-04): items and boons that empower particular slots (the first,
    the last, the slot beside another) and ways to switch which spell sits in which slot during a run. The
    Gimmel Ring's move to "your first two slots" (item 8) is the first of these; design the family together

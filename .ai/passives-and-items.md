@@ -9,6 +9,17 @@
 > damage and recharges on its cooldown, and it costs a spell slot like anything else. A shield is a
 > thing that forms, breaks and returns - it was never a number sitting on the player, which is what
 > the passive roster was made of.
+>
+> **And on its rules, two more (in-flight item 9, 2026-11-07).** **Stormguard** keeps the old
+> aura's idea as an active: its cooldown gathers a storm and the blows the player takes bring it
+> down - a thunderclap that throws the pack back and soaks it in slowing rain - so it can fail two
+> ways (regathering, or never being struck). **Gloam Veil** keeps Blur's idea as an active: a veil
+> that swallows the next hit whole, whatever its size, and is re-woven by *walking* - the
+> anti-Aegis, strong against the boss's blow and spent whole by a touch. Both are earned (Lightning
+> Adept and Darkness Adept), and both carry the thin elements on purpose: Lightning+Water and
+> Darkness+Wind. The reactive boons below are untouched - they answer being *hurt* with small
+> pulses on a shared clock; the spells are build-around pieces with levels, milestones and a slot's
+> cost. `scripts/Stormguard.cs`, `scripts/GloamVeil.cs`, both on Aegis Ward's no-scene shape.
 
 Three changes, planned together because they share one budget: **element tags**.
 

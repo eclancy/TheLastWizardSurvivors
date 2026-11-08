@@ -68,7 +68,7 @@ Please read the [`NOTICE`](NOTICE) file before doing anything with that folder.
 |---|---|
 | Chapters | 13 campaign chapters plus the Sketchbook, each ending in a boss |
 | Bosses | 14 — among them a hurdle that must be walked round, a stone circle that closes on you, three bodies that must all be silent at the same moment, one that sheds pieces of itself, a burrower, one that quotes four of the others, a steward who flees through the walls and must be hunted room to room, and the dark wizard himself, who seals your spells until you take them back |
-| Spells | 39, with evolutions and level-up branches |
+| Spells | 41, with evolutions and level-up branches |
 | Wizards | 21, and one hound who is not a wizard |
 | Relics | 40 — 38 in 13 Full Set Enchantments, and 2 that act on the spell book itself |
 | Boons | 17 |

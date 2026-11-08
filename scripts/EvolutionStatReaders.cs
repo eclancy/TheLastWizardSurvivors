@@ -199,6 +199,14 @@ public static class EvolutionStatReaders
 		["hunters_draw"] = R(Bolt | EvolutionStat.Amount, "ElementalBolt, ArrowRain and Player.LooseHuntersVolley (Amount is more arrows a volley; Knockback is Heavy Draw's, on a full draw; Running Shot, Barbed, Rain of Arrows and Hunter's Mark by id)", BoltEffects),
 		["aegis_ward"] = R(Core,
 			"the aegis_ward branch of Player._PhysicsProcess: damage is the shield, cooldown the recharge; Player.CrystalShellBurst on a break"),
+		// The defensive returns (in-flight item 9). Stormguard: the clap's damage and reach, the
+		// gathering's cooldown, the shove and the rain's slow. Gloam Veil reads NO cooldown - its
+		// cadence is the walk (Range is WeaveDistance, levelled DOWN) - so no auto cooldown line is
+		// generated for it (Player.EnsureRelevantLevelUps) and no card may promise one.
+		[Stormguard.SpellId] = R(Core | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Knockback | EvolutionStat.Slow,
+			"Stormguard.Break and Clap: damage and Range x Area are the thunderclap, cooldown the gathering, knockback its shove, SlowMagnitude the rain; Charged Air, Downpour's longer rain, Eye of the Storm and Rolling Thunder by id"),
+		[GloamVeil.SpellId] = R(EvolutionStat.Damage | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Knockback,
+			"GloamVeil.Tear and WeaveDistance: damage is the tear's lash, Range the walk that re-weaves (negative bonuses shorten it), Area the gust's reach, knockback its shove; Night's Cloth, Tailwind, Second Skin and Hour of Gloam by id"),
 		["void_lance"] = R(Core | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Scale,
 			"VoidLance.RefreshComputedStats and CollapseAtTerminus (hit at its drawn scale; Area is the collapse; its hits pass their source since 2026-10-28, but no card of its carries a rider; Abyssal Scar, Void Glaive, Dread and Witching Hour by id, through VoidScars and Player.FireVoidLanceSpell)",
 			SpellEffect.ZoneDuration),

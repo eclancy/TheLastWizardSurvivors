@@ -107,6 +107,23 @@ weights summed - the one kind of spell allowed three, never four.
 |---|---|---|---|---|---|---|---|
 | 33 | **Sagittarius** (Hunter's Draw - Hunter's Mark + Starfall - Constellation; `scripts/Sagittarius.cs`) | Metal+Wind+Light | **from the ground he has walked, inward, on the mark** (a full draw marks the strongest in reach; unmarked, the enemy nearest him) | the rain falls as always; **every star landing while the bow is drawn stays lit** (16 at most); **the loose when he stops** | **walk the rain round the crowd, then stop** | **a converging volley** - one piercing arrow from every lit star - with Constellation's lines while he walks | long |
 
+### The defensive returns (2026-11-07, in-flight item 9)
+
+Two of the removed passives' ideas brought back as actives, on Aegis Ward's rules: a real spell in
+a slot, a visible state, a way to fail or break, and a signature of its own against row 6 and
+against each other. Aegis soaks many small hits on a timer and asks nothing; the storm answers
+being struck and asks you to stand; the veil refuses one hit of any size and asks you to move.
+`.ai/passives-and-items.md` has why the passives went and what the reactive boons already took.
+
+| # | spell | element | aim | cadence | demand | payload | band |
+|---|---|---|---|---|---|---|---|
+| 34 | **Stormguard** (`scripts/Stormguard.cs`) | Lightning+Water | the pack round him when it breaks | **gathers on the cooldown, broken by blows taken** | **stand your ground** | **thunderclap**: burst + shove + slowing rain | close |
+| 35 | **Gloam Veil** (`scripts/GloamVeil.cs`) | Darkness+Wind | self | **re-woven by distance walked** (the Mirefoot family), spent by one hit | keep moving | **one hit refused**; the tear a gust that shoves, lashes and carries him free | self |
+
+Both are earned through the two element adepts the first five never covered (Lightning Adept,
+Darkness Adept), and both carry thin elements: Lightning and Water are the roster's thinnest
+ordinary carriers, and Darkness lost Shadow Bolt to the Conjunctions.
+
 ### Hollow Star - the spell that moves the swarm (issue #64)
 
 Every other spell takes the enemies where it finds them. Hollow Star opens a well on the densest pack

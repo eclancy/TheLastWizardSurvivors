@@ -214,6 +214,10 @@ public static class UnlockCatalog
 		FromAchievement("toxic_spore_burst", "poison_adept", "End a run with 4 Poison instances."),
 		FromAchievement("black_tentacles", "earth_adept", "End a run with 4 Earth instances."),
 		FromAchievement("gale_blade", "wind_adept", "End a run with 4 Wind instances."),
+		// The defensive returns (in-flight item 9), each paid by its own element's adept Feat - the
+		// two adepts the five above never covered. Stormguard answers Lightning, the veil Darkness.
+		FromAchievement("stormguard", "lightning_adept", "End a run with 4 Lightning instances."),
+		FromAchievement("gloam_veil", "darkness_adept", "End a run with 4 Darkness instances."),
 		FromAchievement("thorn_vine", "forest_cleared", "Defeat the boss of the Enchanted Forest."),
 		// Shadow Bolt was the Gaoler's second prize until 2026-11-07; it is a Conjunction now (below, with
 		// the other combinations), and a save that owned it keeps it (SaveData.MigrateShadowBoltToConjunction).

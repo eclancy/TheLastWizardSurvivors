@@ -1154,6 +1154,106 @@ def sleet_runes(sky=True):
     return c
 
 
+def stormguard():
+    """Stormguard: the storm that the blows you take bring down (in-flight item 9).
+
+    Three things, in the order the eye takes them: the bolt - the lightning ramp, the brightest
+    thing on the plate, struck down the middle - then the cloud bank it falls from, steel lit on
+    its upper-left lobes (the key light), and the rain under the bank, short falling strokes of
+    water that say the clap soaks as well as strikes. The bolt ends in a small burst above the
+    ground rather than running off the cell: the break happens AROUND the wizard, not on the sky.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    lcore, lhot, lmid, ledge = bl.ELEMENTS["lightning"]
+    wcore, whot, wmid, wedge = bl.ELEMENTS["water"]
+
+    # The cloud bank: three overlapping lobes across the top, shaded steel, lit upper-left.
+    for (cx, cy, r) in ((8.0, 7.5, 5.2), (16.0, 6.0, 6.2), (24.0, 7.5, 5.0)):
+        c.disc(cx, cy, r, r * 0.78, bl.tone("steel", "shade"))
+    for (cx, cy, r) in ((7.0, 6.0, 3.4), (14.5, 4.6, 4.0)):
+        c.disc(cx, cy, r, r * 0.7, bl.tone("steel", "base"))
+    c.disc(6.2, 4.8, 1.8, 1.4, bl.tone("steel", "lit"))
+    # The bank's dark underside, where the rain leaves it.
+    for x in range(3, 29):
+        c.set(x, 10, bl.tone("steel", "deep"))
+
+    # The rain: short slanted strokes under the bank, thinning toward the ground.
+    for i in range(14):
+        x0 = 3.5 + (i * 2.1) % 25.0
+        y0 = 12.0 + ((i * 5) % 4)
+        length = 3 if i % 3 else 4
+        tone_r = wmid if i % 2 else wedge
+        for s in range(length):
+            c.set(x0 - s * 0.4, y0 + s * 1.3, tone_r)
+    for i in range(6):
+        x0 = 5.0 + i * 4.3
+        c.set(x0, 24.0 + (i % 3), whot)
+
+    # The bolt: white-hot, two elbows, down the middle and brightest of all - drawn last so the
+    # rain never crosses it. A one-pixel edge of the ramp's gold keeps it from bleeding into rain.
+    path = [(17, 8), (16, 10), (15, 12), (16, 14), (14, 16), (15, 18), (13, 20), (14, 22)]
+    for (x, y) in path:
+        c.set(x + 1, y, ledge)
+        c.set(x, y, lhot)
+    for (x, y) in path[2:6]:
+        c.set(x, y, lcore)
+    # The burst where it lands: a small star of core and hot, above the cell's floor.
+    bx, by = 14.0, 24.0
+    c.set(bx, by, lcore)
+    for (dx, dy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        c.set(bx + dx, by + dy, lhot)
+    for (dx, dy) in ((2, 0), (-2, 0), (0, 2)):
+        c.set(bx + dx, by + dy, lmid)
+    return c
+
+
+def gloam_veil():
+    """Gloam Veil: the veil of dusk and wind that swallows one hit whole (in-flight item 9).
+
+    The veil is drawn as what it is in play: ribbons of dusk circling a gap, nothing inside them -
+    the wizard's place, kept empty so the icon reads as a guard and not a creature. The ribbons use
+    the LIGHT end of the darkness ramp (on a near-black plate the dark end vanishes - Hollow Star's
+    lesson), each with a pale fleck of wind at its leading tip, and one ribbon is torn: a notch on
+    the lower right with its frayed ends flicked outward, the one hit the veil has already paid.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    dcore, dhot, dmid, dedge = bl.ELEMENTS["darkness"]
+    wcore, whot, wmid, wedge = bl.ELEMENTS["wind"]
+    cx = cy = CELL / 2.0 - 0.5
+    r = 11.0
+
+    # Three ribbon arcs, swept clockwise, lit at the leading end and darkening along the tail.
+    # The third arc stops short: the tear.
+    arcs = ((math.radians(250.0), math.radians(95.0)),
+            (math.radians(10.0), math.radians(95.0)),
+            (math.radians(130.0), math.radians(62.0)))
+    for k, (start, sweep) in enumerate(arcs):
+        steps = int(sweep / 0.06)
+        for i in range(steps + 1):
+            t = i / float(steps)
+            a = start + t * sweep
+            rr = r + 0.9 * math.sin(a * 3.0 + k)
+            tone_r = dhot if t < 0.3 else (dmid if t < 0.7 else dedge)
+            c.set(cx + math.cos(a) * rr, cy + math.sin(a) * rr, tone_r)
+            if t < 0.55:
+                c.set(cx + math.cos(a) * (rr - 1.0), cy + math.sin(a) * (rr - 1.0), dmid if t < 0.3 else dedge)
+        # The wind in it: a pale fleck at the leading tip of each ribbon.
+        tip = start
+        c.set(cx + math.cos(tip) * r, cy + math.sin(tip) * r, whot)
+        c.set(cx + math.cos(tip) * (r + 1.0), cy + math.sin(tip) * (r + 1.0), wmid)
+
+    # The tear, lower right: the third ribbon's frayed ends flicked outward from the gap.
+    frays = ((math.radians(196.0), 1.5), (math.radians(204.0), 2.5), (math.radians(212.0), 1.8))
+    for (a, out) in frays:
+        c.set(cx + math.cos(a) * (r + out), cy + math.sin(a) * (r + out), dhot)
+        c.set(cx + math.cos(a) * (r + out + 1.2), cy + math.sin(a) * (r + out + 1.2), wmid)
+
+    # One brightest thread on the upper-left of the circle - the key light.
+    a0 = math.radians(225.0)
+    c.set(cx + math.cos(a0) * r, cy + math.sin(a0) * r, dcore)
+    return c
+
+
 def _spirit(kind):
     """Spiritual Weapon's forms, one card icon each (SpellVariant.Icon): the weapon itself on the
     wizard's violet night, drawn by tools/art/spirit_weapons.py, which draws the weapons the game swings."""
@@ -1187,6 +1287,8 @@ ICONS = [
     ("the-taking-dark", the_taking, CELL),
     ("orb-of-ages-light", orb_of_ages, CELL),
     ("gravewell-pit", gravewell, CELL),
+    ("stormguard-lightning", stormguard, CELL),
+    ("gloam-veil-dark", gloam_veil, CELL),
     ("unknown", unknown, CELL),
 ]
 

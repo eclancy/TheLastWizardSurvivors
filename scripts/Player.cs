@@ -1194,6 +1194,13 @@ public partial class Player : CharacterBody2D
 		if (!spellCatalog.ContainsKey("aegis_ward"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_AegisWard.tres"));
 
+		// The defensive returns, on Aegis Ward's rules (in-flight item 9): a storm the blows you
+		// take bring down, and a veil that swallows one hit and is walked back.
+		if (!spellCatalog.ContainsKey(Stormguard.SpellId))
+			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Stormguard.tres"));
+		if (!spellCatalog.ContainsKey(GloamVeil.SpellId))
+			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_GloamVeil.tres"));
+
 		if (!spellCatalog.ContainsKey("arcane_explosion"))
 		{
 			AddSpellToCatalog(CreateFallbackSpellData("arcane_explosion", "Arcane Explosion", 5, 1.5f, 1, 100f, "Creates a blast around the caster that damages nearby enemies."));
@@ -2902,6 +2909,14 @@ public partial class Player : CharacterBody2D
 			return;
 		}
 
+		// Gloam Veil (the Blur idea, returned on Aegis Ward's rules - in-flight item 9): the woven
+		// veil swallows the hit whole - no signal, no HP loss, no reactions, exactly like a dodge -
+		// and the tear answers it (GloamVeil.Tear: the gust). After Basalt Carapace on purpose:
+		// the relic recharges on its own clock, the veil must be walked back, so the relic spends
+		// first and the veil holds.
+		if (amount > 0 && TryConsumeGloamVeil())
+			return;
+
 		// Wrath Amulet: being hit is what arms it. A flat damage bonus is the most common effect in
 		// the relic pool; one that only pays out once they have reached you is a different item.
 		if (amount > 0 && ownedChestItems.Contains(ChestItemCatalog.WrathAmulet))
@@ -2915,6 +2930,11 @@ public partial class Player : CharacterBody2D
 		// which is backwards for effects sold as part of a defensive build.
 		if (amount > 0)
 			TriggerBoonReactions();
+
+		// Stormguard counts the same blows the boons answer, for the same reason (in-flight item 9:
+		// the storm is brought down by being struck, not by being hurt).
+		if (amount > 0)
+			NotifyStormguardStruck();
 
 		int mitigated = Math.Max(0, amount);
 		// One reduction step, not three. Applied before the shield pool so a shield absorbs what
@@ -4000,6 +4020,72 @@ public partial class Player : CharacterBody2D
 	// Aegis Ward's milestones that show (scripts/AegisWard.cs): the Rampart's bolt guard, the Reforged
 	// shards and Reflective Plating's shaft. Made with the spell's first cast, in the arena.
 	private AegisWard? aegisWard;
+	private Stormguard? stormguard;
+	private GloamVeil? gloamVeil;
+
+	/// <summary>Whether a spell with this id is in one of his slots. The arena nodes the defensive
+	/// spells leave behind (Stormguard, GloamVeil) ask it so a cut spell stops drawing and guarding.</summary>
+	public bool HasEquippedSpell(string spellId) =>
+		!string.IsNullOrWhiteSpace(spellId) && equippedSpells.Any(
+			s => s != null && s.Id.Equals(spellId, StringComparison.OrdinalIgnoreCase));
+
+	// Stormguard and Gloam Veil follow Aegis Ward's shape exactly: no scene, one code-made node in
+	// the arena that runs and draws the spell (in-flight item 9). Their damage/area multipliers are
+	// refreshed on every cast tick, so a chest pickup reaches them within one cooldown.
+	private Stormguard? EnsureStormguard(SpellData spell)
+	{
+		if (stormguard == null || !IsInstanceValid(stormguard))
+		{
+			if (GetParent() is not Node2D arena)
+				return null;
+			stormguard = new Stormguard { Name = "Stormguard", PlayerRef = this };
+			arena.AddChild(TagSpell(stormguard));
+		}
+		stormguard.SpellData = spell;
+		stormguard.DamageMultiplier = GetSpellDamageMultiplier(spell);
+		stormguard.AreaMultiplier = GetEffectiveAreaMultiplier();
+		return stormguard;
+	}
+
+	private GloamVeil? EnsureGloamVeil(SpellData spell)
+	{
+		if (gloamVeil == null || !IsInstanceValid(gloamVeil))
+		{
+			if (GetParent() is not Node2D arena)
+				return null;
+			gloamVeil = new GloamVeil { Name = "GloamVeil", PlayerRef = this };
+			arena.AddChild(TagSpell(gloamVeil));
+		}
+		gloamVeil.SpellData = spell;
+		gloamVeil.DamageMultiplier = GetSpellDamageMultiplier(spell);
+		gloamVeil.AreaMultiplier = GetEffectiveAreaMultiplier();
+		return gloamVeil;
+	}
+
+	// A blow for the storm to count (TakeDamage, pre-mitigation). Only while the spell is really
+	// his to answer with: equipped, not silenced by the Rite, not under the dark wizard's seal.
+	private void NotifyStormguardStruck()
+	{
+		if (stormguard == null || !IsInstanceValid(stormguard))
+			return;
+		SpellData spell = equippedSpells.FirstOrDefault(
+			s => s != null && s.Id.Equals(Stormguard.SpellId, StringComparison.OrdinalIgnoreCase));
+		if (spell == null || IsSilenced(spell) || IsSealed(spell))
+			return;
+		stormguard.NotifyStruck();
+	}
+
+	// The veil's spend (TakeDamage). True when a woven veil swallowed the hit.
+	private bool TryConsumeGloamVeil()
+	{
+		if (gloamVeil == null || !IsInstanceValid(gloamVeil))
+			return false;
+		SpellData spell = equippedSpells.FirstOrDefault(
+			s => s != null && s.Id.Equals(GloamVeil.SpellId, StringComparison.OrdinalIgnoreCase));
+		if (spell == null || IsSilenced(spell) || IsSealed(spell))
+			return false;
+		return gloamVeil.TryConsume();
+	}
 
 	private AegisWard? EnsureAegisWard(SpellData aegis)
 	{
@@ -4510,6 +4596,23 @@ public partial class Player : CharacterBody2D
 			if (outcome == CastOutcome.Fired)
 				ward?.Reforge(Mathf.RoundToInt(spell.GetDamageAtLevel(spell.CurrentLevel) * GetSpellDamageMultiplier(spell)),
 					GetEffectiveAreaMultiplier());
+		}
+		else if (spell.Id.Equals(Stormguard.SpellId, StringComparison.OrdinalIgnoreCase))
+		{
+			// The whole spell: the cooldown GATHERS the storm, and the blows the player takes
+			// bring it down (TakeDamage -> Stormguard.NotifyStruck). Gathering is the cast; a
+			// storm already overhead is kept current, as Aegis Ward topping up a full pool is.
+			Stormguard? storm = EnsureStormguard(spell);
+			outcome = storm != null && storm.Arm() ? CastOutcome.Fired : CastOutcome.Maintained;
+		}
+		else if (spell.Id.Equals(GloamVeil.SpellId, StringComparison.OrdinalIgnoreCase))
+		{
+			// The veil's cadence is distance, not time (GloamVeil.WeaveDistance): this tick only
+			// keeps its stats current. The first cast makes the node, which comes woven - the one
+			// moment the cooldown puts something into the world.
+			bool had = gloamVeil != null && IsInstanceValid(gloamVeil);
+			EnsureGloamVeil(spell);
+			outcome = had ? CastOutcome.Maintained : CastOutcome.Fired;
 		}
 		else if (spell.Id.Equals("arcane_explosion", StringComparison.OrdinalIgnoreCase))
 		{
@@ -8754,7 +8857,20 @@ public partial class Player : CharacterBody2D
 			if (upgrade.PoisonTickBonus != 0)
 				parts.Add($"Poison tick {FormatSigned(upgrade.PoisonTickBonus)}");
 			if (MathF.Abs(upgrade.RangeBonus) > 0.001f)
-				parts.Add($"Range {FormatSigned(upgrade.RangeBonus)}");
+			{
+				// Gloam Veil's Range is the WALK that re-weaves it (GloamVeil.WeaveDistance), and a
+				// distance is never shown as a number (in-flight item 8): the card says what the
+				// level does - the veil comes back sooner - as a share of the walk it replaces.
+				if (spell.Id.Equals(GloamVeil.SpellId, StringComparison.OrdinalIgnoreCase))
+				{
+					float before = MathF.Max(1f, spell.GetRangeAtLevel(nextLevel - 1));
+					parts.Add($"Re-weaves {Mathf.RoundToInt(-upgrade.RangeBonus / before * 100f)}% sooner");
+				}
+				else
+				{
+					parts.Add($"Range {FormatSigned(upgrade.RangeBonus)}");
+				}
+			}
 			if (upgrade.Effect == SpellEffect.AreaSize && AreaSizeIsShare(spell) && MathF.Abs(upgrade.EffectValue) > 0.001f)
 				parts.Add(FormatAreaLine(upgrade.EffectValue));
 			else if (upgrade.Effect != SpellEffect.None && MathF.Abs(upgrade.EffectValue) > 0.001f)
