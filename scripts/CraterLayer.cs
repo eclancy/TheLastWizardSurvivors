@@ -29,6 +29,12 @@ public partial class CraterLayer : Node2D
 	// How much of the spell's tint reaches the fire: enough to say which evolution, not so much that a
 	// red multiply drowns the white-hot heart (Magma Craters' 1.0, 0.35, 0.1 made every flame flat red).
 	private const float FireTintShare = 0.3f;
+	// A crater is a light in a dark chapter (LightPool, .ai/light-pool.md section 3) while it is hot: out to this
+	// multiple of its radius, as bright as its molten heat (CraterGround.HeatAt, the glow the bowl is drawn with),
+	// so it flashes as it opens, holds while a Magma Crater burns and dies as it cools. A crater outlives the meteor
+	// that made it (whose own light is the fall, the flash and the burn, MeteorImpact), so this is what lights the
+	// cooling, the skips and every fragment of a Breakup.
+	private const float LightReach = 1.6f;
 
 	private struct Crater
 	{
@@ -126,6 +132,9 @@ public partial class CraterLayer : Node2D
 				live--;
 				continue;
 			}
+			if (LightPool.Lit)
+				LightPool.Light(craters[i].At, craters[i].Radius * LightReach,
+					0.55f * CraterGround.HeatAt(craters[i].Age, craters[i].Burn, CoolSeconds, craters[i].Seed));
 			// Insertion by y: at most forty, and nearly sorted from the frame before.
 			int k = orderCount++;
 			while (k > 0 && craters[order[k - 1]].At.Y > craters[i].At.Y)

@@ -306,6 +306,8 @@ public partial class ElementalPulse : Area2D
 	// at the eased distance.
 	public const float SunDogScreenShare = 0.72f;
 	private const float SunDogReturnRate = 5f;
+	// How far a mock sun's light carries in a dark chapter: a few times its halo (DrawSunDogs).
+	private const float SunDogLightReach = 64f;
 	private float sunDogDistance = -1f;
 	private Vector2 sunDogAxis = Vector2.Right;
 
@@ -346,6 +348,12 @@ public partial class ElementalPulse : Area2D
 			: Mathf.Lerp(sunDogDistance, target, 1f - MathF.Exp(-SunDogReturnRate * delta));
 		sunDogGlow.Visible = true;
 		sunDogGlow.QueueRedraw();
+		// Each mock sun is a small sun's light in a dark chapter (LightPool, .ai/light-pool.md section 3), where it hangs.
+		if (LightPool.Lit)
+		{
+			LightPool.Light(GlobalPosition - sunDogAxis * sunDogDistance, SunDogLightReach, 0.6f);
+			LightPool.Light(GlobalPosition + sunDogAxis * sunDogDistance, SunDogLightReach, 0.6f);
+		}
 	}
 
 	private void EnsureSunDogs()
@@ -595,6 +603,9 @@ public partial class ElementalPulse : Area2D
 			}
 			if (p.Age >= ProminenceFlight + ProminenceFade)
 				p.Live = false;
+			// Burning gas is a light in a dark chapter (LightPool): at its head in flight, out over its burst as it lands.
+			else if (LightPool.Lit)
+				LightPool.Light(ArcPoint(p, MathF.Min(1f, p.Age / ProminenceFlight)), p.Landed ? p.Burst * 2f : 56f, 0.7f);
 			prominences[i] = p;
 		}
 		// One more redraw after the last has gone, to clear it.
@@ -801,6 +812,10 @@ public partial class ElementalPulse : Area2D
 			}
 			if (s.Age >= TeethFlight + TeethFade)
 				s.Live = false;
+			// A stone of the sun's light is a light in a dark chapter (LightPool): in flight, then out over its broken ring.
+			else if (LightPool.Lit)
+				LightPool.Light(StonePoint(s, MathF.Min(1f, s.Age / TeethFlight)), s.Landed ? TeethStrikeRadius * 1.4f : 48f,
+					s.Landed ? 0.7f * (1f - (s.Age - TeethFlight) / TeethFade) : 0.6f);
 			stones[i] = s;
 		}
 		// The turned are marked while any is (DrawTurned), so the canvas redraws for them too.

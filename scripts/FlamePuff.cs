@@ -39,6 +39,7 @@ public partial class FlamePuff : Node2D
 	[Export] public float HitRadius { get; set; } = 20f;
 	// How far a tongue's light carries in a dark chapter, as a multiple of its reach (LightPool).
 	private const float LightReach = 3.2f;
+	private bool warmLight = true;
 
 	public int Damage { get; set; } = 4;
 	public SpellData SpellData { get; set; }
@@ -95,7 +96,10 @@ public partial class FlamePuff : Node2D
 	public override void _Ready()
 	{
 		ZIndex = 5;
-		Material = MaterialFor(SpellData?.GetBranchElement());
+		Element? path = SpellData?.GetBranchElement();
+		Material = MaterialFor(path);
+		// Fire lights a dark chapter's room; Hellbreath's black fire does not (LightPool.IsWarm).
+		warmLight = path is not Element branch || LightPool.IsWarm(branch);
 		seed = (GetInstanceId() % 997) / 997f;
 	}
 
@@ -142,7 +146,8 @@ public partial class FlamePuff : Node2D
 		{
 			QueueRedraw();
 			// Each tongue is a small light in a dark chapter (LightPool), guttering as it goes.
-			LightPool.Light(GlobalPosition, HitRadius * LightReach, 0.75f * (1f - age / Lifetime));
+			if (warmLight)
+				LightPool.Light(GlobalPosition, HitRadius * LightReach, 0.75f * (1f - age / Lifetime));
 		}
 	}
 

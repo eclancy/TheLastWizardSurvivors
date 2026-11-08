@@ -195,6 +195,24 @@ public partial class OrbOfAges : Node2D
 		UpdateLook();
 	}
 
+	// THE ORB IS A LIGHT in a dark chapter (LightPool, .ai/light-pool.md section 3): the light on his staff's head,
+	// sent round the ring, lighting the floor it crosses - out to OrbLightReach, grown with the orb as the ward
+	// grows it, until it is home in his hand. Pushed from _Process, not from the flight in _PhysicsProcess: a light
+	// is asked for every frame it shows, and a frame with no physics step would drop it and flicker on a fast screen.
+	private const float OrbLightReach = 72f;
+
+	public override void _Process(double delta)
+	{
+		if (phase == Phase.Fading || !LightPool.Lit)
+			return;
+		float size = MathF.Max(1f, Radius / Player.OrbWardRadius);
+		foreach (Orb orb in orbs)
+		{
+			if (!orb.Home)
+				LightPool.Light(orb.At, OrbLightReach * size, 0.8f);
+		}
+	}
+
 	private void Stand(float dt)
 	{
 		if (!IsLive(PlayerRef))

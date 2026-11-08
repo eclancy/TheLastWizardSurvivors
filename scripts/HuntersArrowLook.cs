@@ -42,10 +42,21 @@ public partial class HuntersArrowLook : Node2D
 		// Gilded for a Legendary - and for Sagittarius's volley (a combination's arrow: ElementalBolt.DamageSource),
 		// whose arrows streak gold with a white point from every lit star (.ai/combo-spells.md section 3).
 		material.SetShaderParameter(ParamGilded, (bolt?.SpellData?.IsLegendary ?? false) || (bolt?.DamageSource?.IsCombination ?? false));
+		// That gold is light: in a dark chapter each of Sagittarius's arrows carries a light to the mark (LightPool,
+		// .ai/light-pool.md section 3). Hunter's Draw's own arrows are iron and wind, and light nothing.
+		warmLight = bolt?.DamageSource is SpellData source && source.IsCombination && LightPool.CarriesWarm(source);
 		Refresh();
 	}
 
-	public override void _Process(double delta) => Refresh();
+	private bool warmLight;
+	private const float LightReach = 64f;
+
+	public override void _Process(double delta)
+	{
+		Refresh();
+		if (warmLight)
+			LightPool.Light(GlobalPosition, LightReach, 0.6f);
+	}
 
 	private void Refresh()
 	{

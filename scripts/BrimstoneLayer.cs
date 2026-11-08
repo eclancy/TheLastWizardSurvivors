@@ -36,6 +36,11 @@ public partial class BrimstoneLayer : Node2D
 	private const float SpitSpeed = 430f;
 	private const int MaxStones = 8;
 	private const int MaxSpits = 32;
+	// A burning stone is a light in a dark chapter (LightPool, .ai/light-pool.md section 3): a few times its glow's
+	// width, throbbing and flaring with the glow drawn under it and cooling with it; a spit is a small fireball's
+	// light in flight, and its burst lights itself (FireburstLayer).
+	private const float StoneLightReach = 90f;
+	private const float SpitLightReach = 40f;
 
 	private struct Stone
 	{
@@ -157,6 +162,13 @@ public partial class BrimstoneLayer : Node2D
 					if (SpitFrom(s))
 						s.Flare = 1f;
 				}
+				// The glow _Draw lays under it, as a light.
+				if (LightPool.Lit)
+				{
+					float left = Mathf.Clamp((StoneSeconds - s.Age) / 0.5f, 0f, 1f);
+					float throb = 0.5f + 0.5f * MathF.Sin(s.Age * 9f + (s.Seed % 7));
+					LightPool.Light(s.At, StoneLightReach, 0.8f * (0.35f + 0.25f * throb + 0.4f * s.Flare) * left);
+				}
 			}
 			stones[i] = s;
 		}
@@ -172,6 +184,8 @@ public partial class BrimstoneLayer : Node2D
 				p.Live = false;
 				Land(p);
 			}
+			else
+				LightPool.Light(p.From.Lerp(p.To, p.Age / p.Flight), SpitLightReach, 0.5f);
 			spits[i] = p;
 		}
 		QueueRedraw();

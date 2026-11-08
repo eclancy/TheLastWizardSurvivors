@@ -37,13 +37,13 @@ namespace TheOneHeMissed.scripts;
 // its outline, and still the one number in the photographs that had to be looked for. Moving Poison
 // instead keeps both bright.
 //
-// A CRIT burns one stop hotter, toward the white-hot core (the art direction's rule that a spell going
-// off reads white-hot first), and keeps the "!" and the 1.4x size it always had - so a crit is told
-// apart three ways and still says which spell it was. It used to be gold for every spell.
+// A CRIT is written in its element's own ink, told apart only by the "!" and the 1.4x size it always
+// had (Eric, 2026-11-08). It used to burn one stop hotter toward the white-hot core, and every
+// element's crit came out near-white and alike - which said "crit" and lost which spell it was. Before
+// that it was gold for every spell.
 //
 // Damage with no element (Bastion of Spikes, the Iron Fang, the Sketchbook's dog, a spell that names
-// no element) keeps the red every number was, and its crit takes ember's hi - the player row it belongs
-// to - one step toward white. A turned enemy's blow on its own kind - not his hit at all - is written in
+// no element) keeps the red every number was, crit or not. A turned enemy's blow on its own kind - not his hit at all - is written in
 // bone, the horde's own colourless material (TurnedBlow); its old warm gold was Light's gold now.
 //
 // Per hit this is two array reads: the inks are built once, here, from ElementColors.GetRamp.
@@ -61,11 +61,8 @@ public static class DamageNumberInk
 	/// <summary>The floor every ink is held to against <see cref="Outline"/>: WCAG 2 body text.</summary>
 	public const float ContrastFloor = 4.5f;
 
-	/// <summary>A hit with no element: the red every number used to be.</summary>
+	/// <summary>A hit with no element: the red every number used to be. Its crit is the same red.</summary>
 	public static readonly Color Untyped = new(1f, 0.2f, 0.2f, 1f);
-
-	/// <summary>An untyped crit: ember's hi (#FFC0A8), the player row's step toward white.</summary>
-	public static readonly Color UntypedCrit = new(1f, 192f / 255f, 168f / 255f, 1f);
 
 	/// <summary>
 	/// A turned enemy's blow on one of its own (Enemy.TakeTurnedBlow): bone's base (#9AA4B8), the horde's own
@@ -102,9 +99,6 @@ public static class DamageNumberInk
 		_ => RampStop.Mid,
 	};
 
-	/// <summary>A crit's stop: one toward the core from the ordinary one.</summary>
-	public static RampStop CritStopFor(Element element) => (RampStop)Math.Max(0, (int)StopFor(element) - 1);
-
 	public static Color StopColor(ElementColors.Ramp ramp, RampStop stop) => stop switch
 	{
 		RampStop.Core => ramp.Core,
@@ -113,26 +107,27 @@ public static class DamageNumberInk
 		_ => ramp.Edge,
 	};
 
-	private static readonly Color[] Inks = BuildInks(crit: false);
-	private static readonly Color[] CritInks = BuildInks(crit: true);
+	private static readonly Color[] Inks = BuildInks();
 
-	private static Color[] BuildInks(bool crit)
+	private static Color[] BuildInks()
 	{
 		Array elements = Enum.GetValues(typeof(Element));
 		var inks = new Color[elements.Length];
 		foreach (Element element in elements)
-			inks[(int)element] = StopColor(ElementColors.GetRamp(element), crit ? CritStopFor(element) : StopFor(element));
+			inks[(int)element] = StopColor(ElementColors.GetRamp(element), StopFor(element));
 		return inks;
 	}
 
 	/// <summary>
-	/// The ink for a hit of <paramref name="element"/> (null: no element), crit or not. Allocation-free:
-	/// this is read once per hit in a full swarm.
+	/// The ink for a hit of <paramref name="element"/> (null: no element). A crit is written in the SAME ink: it is
+	/// told apart by its "!" and its 1.4x size alone (Eric, 2026-11-08), so it still says which spell it was. The
+	/// argument stays so every call site keeps reading as "this hit, crit or not". Allocation-free: read once per hit
+	/// in a full swarm.
 	/// </summary>
 	public static Color For(Element? element, bool crit)
 	{
 		if (element is Element e && (uint)e < (uint)Inks.Length)
-			return crit ? CritInks[(int)e] : Inks[(int)e];
-		return crit ? UntypedCrit : Untyped;
+			return Inks[(int)e];
+		return Untyped;
 	}
 }

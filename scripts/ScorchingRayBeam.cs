@@ -312,7 +312,39 @@ public partial class ScorchingRayBeam : Node2D
 	{
 		if (phase == BeamPhase.Idle)
 			return;
+		Advance(delta);
+		ShedLight();
+	}
 
+	// A LIGHT ALONG THE BEAM in a dark chapter (LightPool, .ai/light-pool.md section 3). A laser lights the
+	// room down its whole length, not at one end, so it is a string of lights from the hands to the strike
+	// (LightPool.LightAlong), the strike brighter and wider where the splash is; both come and go with the
+	// beam. After it the scorch's cracks glow on the floor for a moment, a small light cooling with them.
+	// Reach a few times the beam's sheath, grown as the beam is by its heat and by Sunlance's lance.
+	private const float BeamLightReach = 64f;
+	private const float ScorchLightReach = 56f;
+
+	private void ShedLight()
+	{
+		if (!LightPool.Lit)
+			return;
+		float reach = BeamLightReach * (1f + 0.5f * Heat) * (sunlance ? 1.5f : 1f);
+		if (BeamOn)
+		{
+			float cover = phase == BeamPhase.Extending ? 1f : beamAlpha;
+			LightPool.LightAlong(beamFrom, beamTo, reach, 0.6f * cover);
+			LightPool.Light(beamTo, reach * 1.4f, 0.85f * cover);
+		}
+		else if (phase == BeamPhase.Afterglow && impactTime >= 0f)
+		{
+			// ScorchMark's glow: gone at six tenths of its cooling.
+			float glow = 1f - Mathf.Clamp(afterglow / (ScorchSeconds * 0.6f), 0f, 1f);
+			LightPool.Light(splashAt, ScorchLightReach * (1f + 0.5f * Heat), 0.5f * glow);
+		}
+	}
+
+	private void Advance(double delta)
+	{
 		shimmerTime += (float)delta;
 		// Sunlance's band of flames is drawn while it sweeps (that is when it burns) and goes out after.
 		sweepGlow = phase == BeamPhase.Sweeping ? 1f : MathF.Max(0f, sweepGlow - (float)delta / 0.12f);
