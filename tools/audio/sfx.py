@@ -1904,6 +1904,73 @@ def hint_tomb_knock():
     return S.dc_block(_far(out, low=60.0, high=2600.0, size=0.4, mix=0.22, damp=0.7))
 
 
+# The modes of a thin bronze disc held at its middle (a circular plate's: 1 : 1.59 : 2.14 : 2.30 : 2.65) - the mirrors'
+# own ring, which mirror_turn and sun_arrive share so the two read as one object.
+_BRONZE_PLATE = [1.0, 1.59, 2.14, 2.30, 2.65]
+
+
+def mirror_turn():
+    """The dry tomb's mirrors (TombBeaconsEvent, .ai/unlock-puzzles.md 3.1): a bronze disc swung round on its spindle
+    in a granite socket, as his feet turn it.
+
+    THE DISC IS THE SOUND. As it swings the bronze shivers: its plate modes on 470 Hz, gliding up a little (to 505 Hz)
+    over the first tenth of a second as the turn carries it, then ringing down in a third of a second - a short,
+    dry metal "shing", the mirrors' own voice, which sun_arrive's ring shares. Under its start the spindle grips and
+    lets go in the stone - a STICK-SLIP of four dry grains of grit low in the stone's band (380-460 Hz), quickening. Not
+    the tomb's knock (dead stone struck, three blows a second apart, under running sand) and not a lantern catching (a
+    band of noise opening upward and held): a drag that ends in metal. The first draft was the grind alone, eight grains
+    round 900 Hz, and measured 0.084 from hint_lantern_flare; the ring is what tells them apart. Plays at most every
+    0.14 s, so it stays in the once-a-second row's quiet end; lowpassed at 3.2 kHz, nothing under 120 Hz."""
+    dur = 0.46
+    grains = []
+    t = 0.0
+    for i, gap in enumerate([0.03, 0.022, 0.017, 0.014]):
+        gd = 0.02
+        g = S.bandpass(S.osc("noise", 0, gd, seed=3401 + i), 380.0 + 26.0 * i, 2.2)
+        g = S.env_mul(g, S.ad(gd, attack=0.002, curve=3.5))
+        grains.append((g, t, 0.6 + 0.12 * i))
+        t += gap
+    ring_d = 0.42
+    rn = S.n_samples(ring_d)
+    glide = S.n_samples(0.1)
+    pitch = S.ramp(glide, 470.0, 505.0, 0.6) + [505.0] * (rn - glide)
+    ring = S.partials(pitch, _BRONZE_PLATE, ring_d, amps=[1.0, 0.7, 0.5, 0.42, 0.3],
+                      decays=[6.0, 7.5, 9.0, 10.0, 12.0])
+    ring = S.env_mul(ring, S.ramp(S.n_samples(0.012), 0.0, 1.0) + [1.0] * (rn - S.n_samples(0.012)))
+    out = S.pad(S.layer(grains + [(ring, 0.03, 0.75)]), dur)
+    out = S.lowpass(S.highpass(out, 120.0), 3200.0)
+    return S.dc_block(S.reverb(out, size=0.25, damp=0.6, mix=0.1))
+
+
+def sun_arrive():
+    """The sunlight landing on a mirror it had not reached, and on the sun-disc over the tomb's door
+    (TombBeaconsEvent): the light catching, warm and rising - the wizards' light, which is warm.
+
+    A breath of air drawn up through a band that rises from 700 Hz to 2.2 kHz (the light arriving along the beam),
+    then a warm chord swelling out of it - F4 A4 C5, sine voices each doubled a hair sharp so it shimmers - over the
+    mirrors' own bronze ring on 349 Hz, and it fades in a second. Not cast_light (a struck bell on G5: a blow, then the
+    ring): this has no strike at all, it swells. Not meta_unlock (stacked fifths, swelling for two seconds and more) or
+    bearing_found (a needle and an open fifth): a major triad, short. Lowpassed at 4.6 kHz."""
+    dur = 1.2
+    air_d = 0.22
+    air = S.bandpass(S.osc("noise", 0, air_d, seed=3421), 1300.0, 1.4)
+    air = S.mix(air, S.bandpass(S.osc("noise", 0, air_d, seed=3423), 2100.0, 2.0))
+    air = S.env_mul(air, S.ramp(S.n_samples(air_d * 0.7), 0.0, 1.0, 1.6) + S.decay(S.n_samples(air_d) - S.n_samples(air_d * 0.7), 2.0))
+    chord_d = 1.05
+    voices = []
+    for i, f in enumerate([349.23, 440.0, 523.25]):
+        tone = S.mix(S.osc("sine", f, chord_d), S.osc("sine", f * 1.004, chord_d, phase=0.25))
+        tone = S.env_mul(tone, S.ramp(S.n_samples(0.09), 0.0, 1.0, 0.7)
+                         + S.decay(S.n_samples(chord_d) - S.n_samples(0.09), 2.4))
+        voices.append((tone, 0.08 + 0.025 * i, 0.5 - 0.08 * i))
+    ring = S.partials(349.23, _BRONZE_PLATE, chord_d, amps=[1.0, 0.5, 0.32, 0.22, 0.14],
+                      decays=[3.0, 4.0, 5.5, 6.0, 7.0])
+    ring = S.env_mul(ring, S.ramp(S.n_samples(0.06), 0.0, 1.0) + [1.0] * (S.n_samples(chord_d) - S.n_samples(0.06)))
+    out = S.pad(S.layer([(air, 0.0, 0.5)] + voices + [(ring, 0.1, 0.18)]), dur)
+    out = S.lowpass(out, 4600.0)
+    return S.dc_block(S.reverb(out, size=0.5, damp=0.5, mix=0.2))
+
+
 # The Fallow Fields' granary (.ai/chapter-wizards.md 4.2). Medea's voice through the reeve's plank walls: "you there",
 # a breath, then the longer line falling - (onset, length, f0 from, f0 to, vowel). StageHintCue.GranaryVoices is the
 # same list of onsets, a wisp of her smoke on each - change one, change both.
@@ -2405,6 +2472,12 @@ REGISTRY += [
     ("ice_string_4",        "hint",   -11.0, ice_string_4,        False),
     ("ice_string_5",        "hint",   -11.0, ice_string_5,        False),
     ("ice_string_wrong",    "hint",   -12.0, ice_string_wrong,    False),
+    # The dry tomb's mirrors (TombBeaconsEvent, .ai/unlock-puzzles.md 3.1): a disc turning as his feet swing it - every
+    # eighth of a turn while he walks round one, throttled to 0.14 s, so the quiet end of the once-a-second row; and the
+    # light landing on a mirror or on the sun-disc, a few times a puzzle - a cast's level. Filed with the hints so --confuse
+    # holds the turn against hint_tomb_knock, the same tomb's stone.
+    ("mirror_turn",         "hint",   -15.0, mirror_turn,         False),
+    ("sun_arrive",          "hint",   -11.0, sun_arrive,          False),
 
     # Secrets. The seen shimmer is once per secret per save and meant to be played AT the site, so
     # it loses 5-6 dB to distance before it is heard; the found sting is a few a run, beside

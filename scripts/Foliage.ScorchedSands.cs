@@ -24,7 +24,7 @@ public static partial class Foliage
 	/// where they were; every older detail rule keeps its index. The dead trees (3) are the camelthorns now,
 	/// not the sun-bleached snags - bone-pale wood, hi +55 over this floor, was the nearest thing in the
 	/// chapter to the Fulgurite's glass tree, "the one cold thing on a warm floor" - and they and the old
-	/// scrub (4) grow by habitat. The caravan's road, the dry tomb and its beacons' walk, and the Fulgurite keep
+	/// scrub (4) grow by habitat. The caravan's road, the dry tomb with its mirrors and the light's path, and the Fulgurite keep
 	/// their footprints clear as every set and clutter rule does (Node2DGame.IsInExploreReserve, trunks by 140
 	/// px more). Nothing here is a tell of a planned secret (.ai/stage-secrets.md 6.7): no wheel, no carved
 	/// stone in a line, no reed or green, no cracked earth added, nothing that shimmers, no glass.

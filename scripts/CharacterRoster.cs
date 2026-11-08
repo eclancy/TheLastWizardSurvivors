@@ -65,7 +65,7 @@ public static class CharacterRoster
 		// The chapter wizards again: Nostradamus, freed by seeking his voice from room to room of the Court until he
 		// is found at his desk (.ai/chapter-wizards.md 4.10). Appended, so every saved index keeps its wizard (index 18).
 		"res://CharacterData_Nostradamus.tres",
-		// The chapter wizards again: Imhotep, freed by kindling the three beacons round his tomb on the Scorched Sands.
+		// The chapter wizards again: Imhotep, freed by turning the mirrors round his tomb on the Scorched Sands to the sun.
 		// Appended, so every saved index keeps its wizard (index 19).
 		"res://CharacterData_Imhotep.tres",
 		// The chapter wizards again: Medea, freed by paying the Tithe-Reeve's scale in the Fallow Fields. Appended, so every

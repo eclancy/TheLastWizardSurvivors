@@ -254,7 +254,8 @@ public static class ApotheosisCatalog
 				"Foresee: it falls before they strike. Elites and bosses are struck, never stopped.",
 				new Color(0.84f, 0.80f, 1.0f), NoVisualScale),
 		},
-		// Imhotep, freed by kindling the three beacons round his dry tomb on the Scorched Sands (.ai/chapter-wizards.md 4.6).
+		// Imhotep, freed by bringing the sun to his dry tomb's door with its bronze mirrors on the Scorched Sands
+		// (.ai/chapter-wizards.md 4.6, .ai/unlock-puzzles.md 3.1).
 		// "Blind" was nobody's: the High Priest of Ra lifts the sun on his palm, and his blast flares like it - whatever sees
 		// it loses him for two seconds and wanders (Fireball.EyeOfRaId, Enemy.ApplyBlind). Not fear (the dark wizard's
 		// Dread): a frightened body runs from him, a blinded one has no idea where he is. Elites are seared by the flare

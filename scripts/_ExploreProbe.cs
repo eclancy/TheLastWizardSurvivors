@@ -71,10 +71,15 @@ using TheOneHeMissed.scripts;
 //      house does - and logs, per leg, how long the voice took, how far the walls made the walk against the straight
 //      line the sound promised, and how long it took. The Court's events are placed by its rooms, not the bands, so
 //      the band check is the rooms' there, and the probe's far points are kept on the building's floor.
-//      The Sands' dry tomb is KINDLED, walked at the player's own walking speed from beacon to beacon, never teleported:
-//      the probe goes to the nearest cold one, stands in its reach until it catches, and on to the next, so the 25 s
-//      clock is run against a real walk. --let-beacon-die, once the first has caught, stands off at the tomb (outside
-//      every reach) until the wind puts it out, checks it went cold, and then lights all three.
+//      The Sands' dry tomb is AIMED (.ai/unlock-puzzles.md 3.1, "route the sun"), at the player's own walking speed, never
+//      teleported: the probe works out the fewest mirrors from the source to the sun-disc from what a player sees - where
+//      each mirror stands and which way each could send the light (SunMirrors.ShortestRoute over the event's own beams) -
+//      and then, mirror by mirror in the light's order, walks round to the far side of it from where its light must go,
+//      just outside its reach, walks in behind it until it faces away from him the right way, and walks back out the same
+//      line, so his feet never sweep it round; between mirrors it walks round every other mirror's reach. The swarm is
+//      cleared only every 6 s, so bodies walk through the light and it burns them. --decoy-first, when the light reaches
+//      a path mirror that could send it into a decoy, turns that mirror into the decoy first and checks the light went
+//      there and stopped, the disc dark - then turns it back and finishes.
 //      The Frozen Waste's thaw (--stage=5) is SUNG BACK (.ai/unlock-puzzles.md 3.6), at the player's own walking speed,
 //      never teleported: the probe stands where it is while the ice sings, remembers the strings in the order they lit
 //      (ThawEvent.SungStringAt - what a player watching saw, never the song itself), and once the ice listens walks to
@@ -127,11 +132,29 @@ public partial class _ExploreProbe : Node
 	private bool wayfinderFirst;
 	// --lose-hut: at the walking hut, walk away from it part-way through and come back (see the header).
 	private bool loseHut;
-	// --let-beacon-die: at the dry tomb, let the first beacon burn out before lighting the three (see the header).
-	private bool letBeaconDie;
-	private int beaconPhase;
-	private float beaconWentOutAt = -1f;
-	private bool beaconWentCold;
+	// --decoy-first: at the dry tomb, send the light into a decoy before the true route (see the header).
+	private bool decoyFirst;
+	// The tomb as the probe plays it: the route it worked out, the step it is on and where in the step (0 round to the
+	// approach, 1 in behind the mirror, 2 back out), the decoy detour, and what it saw.
+	private List<(int Mirror, int Facing)> aimRoute;
+	private int aimLeg;
+	private int aimPhase;
+	private (int Mirror, int Facing, int Decoy) aimDecoy = (-1, -1, -1);
+	private int aimDecoyPhase;
+	private bool aimDecoyLit;
+	private bool aimDecoyDiscDark;
+	private bool aimStartedDark;
+	private float aimClearClock;
+	private float aimWalked;
+	private int aimDetourFrames;
+	private float aimLitAt = -1f;
+	// Mirrors walked in behind and turned on purpose, and times the route had to be walked again.
+	private int aimTurnsMeant;
+	private int aimReplans;
+	private int aimFacingBefore = -1;
+	private (bool Seen, int Turned, int Caught, int Decoys, int Burns, int BurnTicks, bool Opening, bool Won, int Legs, int Mirrors,
+		int Fewest, bool Proved, string Why, int LitThrough) tombSnap;
+	private int tombSnapCur = -1;
 	private int lostPhase;
 	// --let-him-fall: at the gibbet's cage, let the rot have him once (see the header). --straight: walk his first walk
 	// straight at the landing, through the rot.
@@ -281,7 +304,7 @@ public partial class _ExploreProbe : Node
 			else if (arg == "--arrive-late") arriveLate = true;
 			else if (arg == "--let-him-fall") letHimFall = true;
 			else if (arg == "--straight") straightThrough = true;
-			else if (arg == "--let-beacon-die") letBeaconDie = true;
+			else if (arg == "--decoy-first") decoyFirst = true;
 			else if (arg.StartsWith("--tithe-level=")) titheLevel = int.Parse(arg.Substring(14));
 			else if (arg == "--tithe-walk-off") titheWalkOff = true;
 			else if (arg == "--step-off") stepOffDoor = true;
@@ -1110,6 +1133,20 @@ public partial class _ExploreProbe : Node
 							return p;
 					}
 			}
+			// The dry tomb's mirrors stand up to 2,000 px round it and he arrives at any of them (MirrorArrival): the first
+			// of sixteen bearings 900 px out that keeps well off every one.
+			if (Event is TombBeaconsEvent mirrored && mirrored.Layout != null)
+			{
+				for (int k = 0; k < 16; k++)
+				{
+					Vector2 p = first + Vector2.FromAngle(Mathf.Pi / 2f + k * Mathf.Tau / 16f) * 900f;
+					bool clear = true;
+					for (int i = 0; i < mirrored.MirrorCount && clear; i++)
+						clear = p.DistanceTo(mirrored.MirrorAt(i)) > TombBeaconsEvent.MirrorArrival + 200f;
+					if (clear)
+						return p;
+				}
+			}
 			return first + (away.LengthSquared() > 1f ? away.Normalized() : Vector2.Down) * 900f;
 		}
 	}
@@ -1309,22 +1346,29 @@ public partial class _ExploreProbe : Node
 				foreach (string leg in seekLog)
 					notes.Add(leg);
 			}
-			if (e is TombBeaconsEvent tomb)
+			if (e is TombBeaconsEvent || (tombSnap.Seen && cur == tombSnapCur))
 			{
-				float spread = float.MaxValue;
-				for (int i = 0; i < TombBeaconsEvent.BeaconCount; i++)
-					for (int j = i + 1; j < TombBeaconsEvent.BeaconCount; j++)
-						spread = Mathf.Min(spread, tomb.BeaconAt(i).DistanceTo(tomb.BeaconAt(j)));
-				Check("the beacons stand about 700 px apart round the tomb", spread >= TombBeaconsEvent.BeaconSpacing - 120f,
-					$"nearest pair {spread:0} px");
-				Check("all three burned together and the tomb opened", tomb.IsOpening && tomb.IsWon,
-					$"{tomb.TimesLit} kindled, {tomb.TimesWentOut} put out by the wind, {tomb.DeadDrawn} of the dead drawn to the light");
-				if (letBeaconDie)
+				Check("the layout was proved on paper: solvable with exactly its path's mirrors, and no fewer",
+					tombSnap.Proved && tombSnap.Fewest == tombSnap.Legs,
+					$"{tombSnap.Mirrors} mirrors, {tombSnap.Legs} on the path, the fewest that reach the disc {tombSnap.Fewest}"
+					+ (tombSnap.Why != null ? $" - {tombSnap.Why}" : ""));
+				Check("it began dark: the mirrors as he found them did not bring the light to the disc", aimStartedDark);
+				Check("the light was carried mirror to mirror onto the sun-disc, and the tomb opened", tombSnap.Opening && tombSnap.Won,
+					$"through {tombSnap.LitThrough} mirror(s) on a route of {aimRoute?.Count ?? 0}; {tombSnap.Turned} facing change(s), "
+					+ $"{tombSnap.Caught} mirror(s) newly lit; {aimWalked:0} px walked, {aimDetourFrames} frame(s) walking round another "
+					+ $"mirror's reach; on the disc {aimLitAt:0.0} s after arriving");
+				Check("it was carried through exactly the route's mirrors", aimRoute != null && tombSnap.LitThrough == aimRoute.Count,
+					$"{tombSnap.LitThrough} lit at the end, the route {aimRoute?.Count ?? 0}");
+				Check("walking in behind a mirror turned it, and walking round the others turned none of them",
+					tombSnap.Turned == aimTurnsMeant && aimReplans == 0,
+					$"{tombSnap.Turned} facing change(s) for {aimTurnsMeant} meant; the route walked again {aimReplans} time(s)");
+				Check("the light burned the bodies it passed through", tombSnap.Burns > 0,
+					$"{tombSnap.Burns} burn(s) of {TombBeaconsEvent.BurnDamage} over {tombSnap.BurnTicks} tick(s) of {TombBeaconsEvent.BurnSeconds} s");
+				if (decoyFirst)
 				{
-					Check("a beacon left burning went out on the wind, and went cold", beaconWentCold && tomb.TimesWentOut >= 1,
-						$"out at {beaconWentOutAt:0.0}s after arriving");
-					Check("and it was lit again with the other two", tomb.TimesLit >= TombBeaconsEvent.BeaconCount + 1,
-						$"{tomb.TimesLit} kindled in all");
+					Check("decoy first: the light went into the decoy and stopped there, the disc dark", aimDecoyLit && aimDecoyDiscDark
+						&& tombSnap.Decoys >= 1, $"mirror {aimDecoy.Mirror} turned to {aimDecoy.Facing} into decoy {aimDecoy.Decoy}; {tombSnap.Decoys} decoy(s) lit");
+					Check("decoy first: turned back, it cost only the walk - the light went on to the disc", tombSnap.Won);
 				}
 			}
 			if (e is TitheScaleEvent tithe)
@@ -1538,9 +1582,33 @@ public partial class _ExploreProbe : Node
 		// The seer: listened for, then walked to through the halls (SeekStep).
 		if (e is SeersVoiceEvent sought && sought.IsFound)
 			target = SeekStep(sought, delta);
-		// The dry tomb: kindled at his own walk (KindleStep), and stood still while it opens.
-		if (e is TombBeaconsEvent beacons && beacons.IsFound)
-			target = beacons.IsOpening ? player.GlobalPosition : KindleStep(beacons, delta);
+		// The dry tomb: aimed mirror by mirror at his own walk (AimStep), and stood still while it opens; the swarm cleared
+		// only every 6 s, so bodies walk through the light. Its story is kept as a snapshot every tick (the hut's reason).
+		if (e is TombBeaconsEvent mirrors && mirrors.IsFound)
+		{
+			target = mirrors.IsOpening ? player.GlobalPosition : AimStep(mirrors, delta);
+			aimClearClock += delta;
+			clearSwarm = aimClearClock >= 6f;
+			if (clearSwarm)
+				aimClearClock = 0f;
+			if (mirrors.IsOpening && aimLitAt < 0f)
+			{
+				aimLitAt = completeClock;
+				// The last turn opens the tomb on the frame it is made, before AimStep sees him reach the stand point: count
+				// it here, or the tally of turns meant is one short of the turns made.
+				if (aimRoute != null && aimLeg < aimRoute.Count && aimPhase == 1)
+				{
+					(int m, int f) = aimRoute[aimLeg];
+					if (mirrors.FacingOf(m) == f && aimFacingBefore != f)
+						aimTurnsMeant++;
+				}
+			}
+			SunMirrors laid = mirrors.Layout;
+			bool proved = laid.Proves(out string why);
+			tombSnapCur = cur;
+			tombSnap = (true, mirrors.TimesTurned, mirrors.MirrorsCaught, mirrors.DecoysCaught, mirrors.BurnHits, mirrors.BurnTicks,
+				mirrors.IsOpening, mirrors.IsWon, laid.Legs, laid.MirrorCount, laid.FewestMirrors(), proved, why, mirrors.LitCount);
+		}
 		// The Tithe-Reeve's scale, BALANCED (unlock-puzzles.md 3.5), as a player who reads the beam plays it: fight on
 		// the lighter pan's side of the post (only what dies on HIS side is killed - a player's spells hit near him),
 		// and once the pans hold the price and the beam is level, step out of the reach and stop killing there, so the
@@ -2244,47 +2312,160 @@ public partial class _ExploreProbe : Node
 		return path;
 	}
 
-	// One step of the kindling, at the player's own walking speed: to the nearest cold beacon, into its reach, and held
-	// there until it catches. With --let-beacon-die, once the first has caught: to the tomb (404 px from every beacon,
-	// outside every reach) until the wind has put that one out, and then on.
-	private Vector2 KindleStep(TombBeaconsEvent tomb, float delta)
+	// One step of the aiming, at the player's own walking speed, his FEET placed (the rule reads them): the route worked out
+	// once from what a player sees (SunMirrors.ShortestRoute over the event's beams), then for each mirror in the light's
+	// order - round to the point just outside its reach on the line behind it, in to where he stands to turn it, held until
+	// it faces the way the light must go, and back out the same line. Between mirrors he walks round every other mirror's
+	// reach, as a player who has seen them turn would. --decoy-first: when the route comes to a path mirror that could
+	// send the light into a decoy, that mirror is turned into the decoy first, and back.
+	private Vector2 AimStep(TombBeaconsEvent tomb, float delta)
 	{
-		Vector2 me = player.GlobalPosition;
+		Vector2 feet = player.FootPosition;
+		Vector2 toBody = player.GlobalPosition - feet;
 		float step = player.WalkingSpeed * delta;
-		if (letBeaconDie && beaconPhase == 0 && tomb.TimesLit >= 1)
-			beaconPhase = 1;
-		if (beaconPhase == 1)
+		SunMirrors layout = tomb.Layout;
+		if (aimRoute == null)
 		{
-			if (tomb.TimesWentOut >= 1)
+			aimStartedDark = !tomb.SocketLit;
+			aimRoute = layout.ShortestRoute();
+			if (aimRoute == null)
 			{
-				beaconWentOutAt = completeClock;
-				beaconWentCold = tomb.LitCount == 0;
-				GD.Print($"EXPLOREPROBE a beacon went out on the wind {completeClock:0.0}s after arriving; lit now: {tomb.LitCount}; lighting all three");
-				beaconPhase = 2;
+				GD.Print("EXPLOREPROBE the tomb: no route of mirrors to the disc on paper");
+				return player.GlobalPosition;
 			}
-			else
-				return me.MoveToward(tomb.TombPosition, step);
+			if (decoyFirst)
+			{
+				foreach ((int m, int _) in aimRoute)
+				{
+					for (int f = 0; f < SunMirrors.Facings && aimDecoy.Mirror < 0; f++)
+					{
+						SunMirrors.Hit h = layout.HitFrom(m, f);
+						if (h.Kind == SunMirrors.End.Mirror && layout.IsDecoy(h.Mirror))
+							aimDecoy = (m, f, h.Mirror);
+					}
+					if (aimDecoy.Mirror >= 0)
+						break;
+				}
+			}
+			GD.Print($"EXPLOREPROBE the tomb: {layout.MirrorCount} mirrors, {layout.Legs} on the path; the route worked out from the sand: "
+				+ string.Join(" -> ", aimRoute.Select(r => $"{r.Mirror}@{r.Facing}")) + " -> disc"
+				+ (aimDecoy.Mirror >= 0 ? $"; first mirror {aimDecoy.Mirror} into decoy {aimDecoy.Decoy} ({aimDecoy.Facing})" : ""));
 		}
-		int best = -1;
-		float bestD = float.MaxValue;
-		for (int i = 0; i < TombBeaconsEvent.BeaconCount; i++)
+		// The route walked and the light not on the disc: something turned a mirror he had set. Walk it again, as a player
+		// who watches the light would - every mirror already right is passed by.
+		if (aimLeg >= aimRoute.Count)
 		{
-			if (tomb.IsLit(i))
+			if (tomb.SocketLit || tomb.IsOpening)
+				return player.GlobalPosition;
+			aimReplans++;
+			aimLeg = 0;
+			GD.Print($"EXPLOREPROBE the tomb: the route walked and the disc dark (the light goes through {tomb.LitCount}); walking it again");
+		}
+
+		// This step: the route's, or the decoy's when the route has come to the mirror the decoy hangs off. A mirror that
+		// already faces the way the route wants is passed by.
+		(int mirror, int facing) = aimRoute[aimLeg];
+		bool detour = decoyFirst && aimDecoyPhase == 0 && aimDecoy.Mirror == mirror;
+		if (detour)
+			facing = aimDecoy.Facing;
+		else if (aimPhase == 0 && tomb.FacingOf(mirror) == facing)
+		{
+			aimLeg++;
+			return player.GlobalPosition;
+		}
+		Vector2 at = tomb.MirrorAt(mirror);
+		Vector2 approach = SunMirrors.StandPoint(at, facing, SunMirrors.ApproachDistance + 10f);
+		Vector2 stand = SunMirrors.StandPoint(at, facing);
+		Vector2 next = feet;
+		switch (aimPhase)
+		{
+			case 0:
+				next = WalkRoundMirrors(tomb, feet, approach, step);
+				if (next.DistanceTo(approach) < 1f)
+				{
+					aimPhase = 1;
+					aimFacingBefore = tomb.FacingOf(mirror);
+				}
+				break;
+			case 1:
+				next = feet.MoveToward(stand, step);
+				if (feet.DistanceTo(stand) < 4f && tomb.FacingOf(mirror) == facing)
+				{
+					aimPhase = 2;
+					if (aimFacingBefore != facing)
+						aimTurnsMeant++;
+				}
+				break;
+			default:
+				next = feet.MoveToward(approach, step);
+				if (next.DistanceTo(approach) < 1f)
+				{
+					aimPhase = 0;
+					if (detour)
+					{
+						aimDecoyPhase = 1;
+						aimDecoyLit = tomb.IsLit(aimDecoy.Decoy) && tomb.LightEndsAt == aimDecoy.Decoy;
+						aimDecoyDiscDark = !tomb.SocketLit;
+						GD.Print($"EXPLOREPROBE decoy first: mirror {mirror} turned to {facing}; the light ends at {tomb.LightEndsAt} "
+							+ $"(decoy {aimDecoy.Decoy} lit: {tomb.IsLit(aimDecoy.Decoy)}), the disc {(tomb.SocketLit ? "LIT" : "dark")}; turning it back");
+					}
+					else
+					{
+						GD.Print($"EXPLOREPROBE mirror {mirror} faces {tomb.FacingOf(mirror)}; the light goes through {tomb.LitCount}, "
+							+ $"the disc {(tomb.SocketLit ? "lit" : "dark")} ({completeClock:0.0} s after arriving)");
+						aimLeg++;
+					}
+				}
+				break;
+		}
+		aimWalked += feet.DistanceTo(next);
+		return next + toBody;
+	}
+
+	// A step toward `goal` that never comes within a mirror's reach: where the straight line would pass within 12 px of
+	// one, round it on a circle 40 px outside its reach - to the tangent point first, then ALONG the circle, a step's arc
+	// at a time, until the line to the goal is clear. (Toward a point beside it was the first walk, and a chord between
+	// two points on that circle dips inside the reach: seed 31 swung the source round on the way to the next mirror.)
+	private Vector2 WalkRoundMirrors(TombBeaconsEvent tomb, Vector2 feet, Vector2 goal, float step)
+	{
+		const float Keep = SunMirrors.Reach + 12f;
+		const float Round = SunMirrors.Reach + 40f;
+		int blocker = -1;
+		float nearest = float.MaxValue;
+		Vector2 ab = goal - feet;
+		for (int i = 0; i < tomb.MirrorCount; i++)
+		{
+			Vector2 c = tomb.MirrorAt(i);
+			if (c.DistanceTo(goal) <= Keep || SunMirrors.DistanceToSegment(c, feet, goal) >= Keep)
 				continue;
-			float d = tomb.BeaconAt(i).DistanceTo(me);
-			if (d < bestD)
+			float t = (c - feet).Dot(ab);
+			if (t < nearest)
 			{
-				bestD = d;
-				best = i;
+				nearest = t;
+				blocker = i;
 			}
 		}
-		if (best < 0)
-			return me;
-		// Into the reach on the side he comes from, short of the pillar, and stand there.
-		Vector2 foot = tomb.BeaconAt(best);
-		Vector2 from = (me - foot).LengthSquared() > 1f ? (me - foot).Normalized() : Vector2.Down;
-		Vector2 stand = foot + from * (TombBeaconsEvent.KindleRadius * 0.55f);
-		return me.MoveToward(stand, step);
+		if (blocker < 0)
+			return feet.MoveToward(goal, step);
+		aimDetourFrames++;
+		Vector2 centre = tomb.MirrorAt(blocker);
+		Vector2 out_ = feet - centre;
+		float dist = out_.Length();
+		// Which way round: the side the goal is on.
+		float turn = Mathf.Sign(out_.Cross(goal - centre));
+		if (turn == 0f)
+			turn = 1f;
+		if (dist <= Round + 2f)
+		{
+			// On the circle (or inside it, pushed out to it): a step's arc along it.
+			float angle = Mathf.Atan2(out_.Y, out_.X) + turn * step / Round;
+			return centre + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * Round;
+		}
+		// Off it: to the tangent point on the goal's side.
+		float alpha = Mathf.Acos(Mathf.Clamp(Round / dist, -1f, 1f));
+		float toward = Mathf.Atan2(out_.Y, out_.X) + turn * alpha;
+		Vector2 tangent = centre + new Vector2(Mathf.Cos(toward), Mathf.Sin(toward)) * Round;
+		return feet.MoveToward(tangent, step);
 	}
 
 	// Everything the streamer furnished within radius of a point: children of the chunks' prop

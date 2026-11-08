@@ -126,6 +126,22 @@ public sealed class ExplorePlacer
 		return this;
 	}
 
+	/// <summary>
+	/// True if a footprint round <paramref name="point"/> overlaps none of the earlier events' footprints this placer was
+	/// told to keep off (<see cref="Avoiding"/>) - the footprint half of <see cref="KeepsSiteRule"/>, without the bearing
+	/// half, which is about the main site alone. For what an event lays out round its site (the dry tomb's mirrors, which
+	/// reach up to 2,000 px from the tomb and must not stand on the caravan's road).
+	/// </summary>
+	public bool IsOffOtherSites(Vector2 point, float footprint)
+	{
+		foreach (var (centre, radius) in keepOff)
+		{
+			if (centre.DistanceTo(point) < radius + footprint)
+				return false;
+		}
+		return true;
+	}
+
 	/// <summary>True when this placer's event site has bearings to keep away from (it is a chapter's later event).</summary>
 	public bool HasSiteRule => avoidBearings.Count > 0 || keepOff.Count > 0;
 
