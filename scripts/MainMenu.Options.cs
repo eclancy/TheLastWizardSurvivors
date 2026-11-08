@@ -41,6 +41,13 @@ public partial class MainMenu
 	private Label runLogStatus;
 	private Control runLogStatusRow;
 
+	// The Save section (SaveTransfer, .ai/in-flight.md item 14): the save as a file the player can
+	// carry between devices by hand. The status line answers the last press, like the run logs'.
+	private Button exportSaveButton;
+	private Button importSaveButton;
+	private Label saveTransferStatus;
+	private Control saveTransferStatusRow;
+
 	// Two-press reset, no dialog: the first press arms it and relabels, the second wipes. An accidental
 	// single press must never be able to destroy a save.
 	private Button resetProgressButton;
@@ -99,6 +106,23 @@ public partial class MainMenu
 		var feedback = new List<Control> { SettingsRows.BuildButtonRow(reportBugButton) };
 		CodexRows.AddSection(left, SettingsRows.Feedback, null, ink, 1, feedback);
 
+		// SAVE: the save as a file, for carrying progress between devices by hand (.ai/in-flight.md
+		// item 14's first stage - no accounts, no sync service). Export copies the save file where
+		// the player chooses; Import reads one back, confirms on a screen of its own and keeps the
+		// old save beside the new one. Settings stay the device's (SaveData.SettingsKeys).
+		exportSaveButton = SettingsRows.BuildActionButton("Export save", "ExportSaveButton");
+		exportSaveButton.Pressed += OnExportSavePressed;
+		importSaveButton = SettingsRows.BuildActionButton("Import save", "ImportSaveButton");
+		importSaveButton.Pressed += OnImportSavePressed;
+		saveTransferStatus = CodexRows.MakeText(string.Empty, ResponsiveLayout.TextRole.Label, ink.InkMeta);
+		saveTransferStatus.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+		saveTransferStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+		saveTransferStatusRow = new MarginContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore, Visible = false };
+		saveTransferStatusRow.AddThemeConstantOverride("margin_left", 8);
+		saveTransferStatusRow.AddChild(saveTransferStatus);
+		var saveRows = new List<Control> { SettingsRows.BuildButtonRow(exportSaveButton, importSaveButton), saveTransferStatusRow };
+		CodexRows.AddSection(left, SettingsRows.Save, null, ink, 1, saveRows);
+
 		// GAMEPLAY: what changes how a run plays. The difficulty was a dropdown called "Run Difficulty
 		// Curve", which the root menu's corner called "Preset" - one name now, the one a player would use.
 		// The Gameplay Tips switch is gone (Eric, 2026-11-02): it only ever mattered until the onboarding
@@ -156,7 +180,7 @@ public partial class MainMenu
 
 		list.AddChild(BuildResetProgress(ink));
 
-		optionsLeftRows = display.Concat(audio).Concat(feedback).Select(FocusStopsIn).Where(row => row.Count > 0).ToList();
+		optionsLeftRows = display.Concat(audio).Concat(feedback).Concat(saveRows).Select(FocusStopsIn).Where(row => row.Count > 0).ToList();
 		optionsRightRows = gameplay.Concat(story).Concat(testing).Select(FocusStopsIn).Where(row => row.Count > 0).ToList();
 		ChainOptionsFocus();
 	}
@@ -361,5 +385,129 @@ public partial class MainMenu
 		Directory.CreateDirectory(logsDir);
 		OS.ShellOpen($"file:///{logsDir.Replace('\\', '/')}");
 		ShowRunLogStatus(string.Empty);
+	}
+
+	private void ShowSaveTransferStatus(string text)
+	{
+		if (saveTransferStatus == null || saveTransferStatusRow == null)
+			return;
+		saveTransferStatus.Text = text;
+		saveTransferStatusRow.Visible = !string.IsNullOrEmpty(text);
+	}
+
+	private void OnExportSavePressed()
+	{
+		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (saveManager == null)
+			return;
+		// Export reads the save FILE (SaveTransfer), and in a write-protected launch the file and the
+		// fabricated save in memory disagree - so the whole section sits this launch out.
+		if (SaveManager.WritesDisabled)
+		{
+			ShowSaveTransferStatus("Off for this launch.");
+			return;
+		}
+		// Flush, so the file carries what the player is looking at (a setting changed seconds ago).
+		saveManager.SaveGame();
+		if (!Godot.FileAccess.FileExists(SaveManager.ActiveSavePath))
+		{
+			ShowSaveTransferStatus("There is no save to export yet.");
+			return;
+		}
+		OpenSaveFileDialog("Export save", FileDialog.FileModeEnum.SaveFile,
+			$"the-one-he-missed-save-{Time.GetDateStringFromSystem()}.json",
+			exportSaveButton,
+			path =>
+			{
+				string error = SaveTransfer.ExportTo(SaveManager.ActiveSavePath, path);
+				ShowSaveTransferStatus(error ?? $"Exported to {path.GetFile()}.");
+			});
+	}
+
+	private void OnImportSavePressed()
+	{
+		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (saveManager == null)
+			return;
+		if (SaveManager.WritesDisabled)
+		{
+			ShowSaveTransferStatus("Off for this launch.");
+			return;
+		}
+		OpenSaveFileDialog("Import save", FileDialog.FileModeEnum.OpenFile, null, importSaveButton, path =>
+		{
+			string json = Godot.FileAccess.FileExists(path) ? Godot.FileAccess.GetFileAsString(path) : null;
+			SaveTransfer.Inspection look = SaveTransfer.Inspect(json);
+			if (look.Verdict != SaveTransfer.Verdict.Ok)
+			{
+				ShowSaveTransferStatus(SaveTransfer.MessageFor(look.Verdict));
+				return;
+			}
+			ShowSaveTransferStatus(string.Empty);
+			// Beside the menu, like Report a bug: a screen under this menu's root would be inside
+			// its navigator too, and two navigators would both step the same selection.
+			Node host = GetParent() ?? (Node)this;
+			SaveImportConfirm.Open(host, saveManager.Data, look.Preview,
+				replace: () => saveManager.ImportSave(look.RawJson),
+				onDone: ReturnToRebuiltMenu,
+				onClosed: () =>
+				{
+					if (IsInstanceValid(importSaveButton) && importSaveButton.IsVisibleInTree())
+						importSaveButton.GrabFocus();
+				});
+		});
+	}
+
+	// Everything on the menu is a view over the save, and after an import every one of them is
+	// stale - the Story section's reels included, which only a rebuild re-lists. So the way every
+	// return-to-menu path does it: TitleScreen again, with the menu already open.
+	private void ReturnToRebuiltMenu()
+	{
+		Global.OpenMenuImmediately = true;
+		GetTree().ChangeSceneToFile("res://scenes/TitleScreen.tscn");
+	}
+
+	/// <summary>
+	/// The system's own file picker where there is one (Windows, macOS, Linux; Android's since
+	/// Godot 4.5), and Godot's drawn dialog where there is not - UseNativeDialog falls back by
+	/// itself. Beside the menu, so the fallback dialog is not inside this menu's navigator.
+	/// </summary>
+	private void OpenSaveFileDialog(string title, FileDialog.FileModeEnum mode, string fileName,
+		Button opener, System.Action<string> picked)
+	{
+		var dialog = new FileDialog
+		{
+			Name = "SaveTransferDialog",
+			Title = title,
+			FileMode = mode,
+			Access = FileDialog.AccessEnum.Filesystem,
+			UseNativeDialog = true,
+			Filters = new[] { "*.json ; The One He Missed save" },
+		};
+		string start = OS.GetSystemDir(OS.SystemDir.Downloads);
+		if (!string.IsNullOrEmpty(start))
+			dialog.CurrentDir = start;
+		if (!string.IsNullOrEmpty(fileName))
+			dialog.CurrentFile = fileName;
+		void Refocus()
+		{
+			if (IsInstanceValid(opener) && opener.IsVisibleInTree())
+				opener.GrabFocus();
+		}
+		dialog.FileSelected += path =>
+		{
+			dialog.QueueFree();
+			Refocus();
+			picked(path);
+		};
+		dialog.Canceled += () =>
+		{
+			dialog.QueueFree();
+			Refocus();
+		};
+		Node host = GetParent() ?? (Node)this;
+		host.AddChild(dialog);
+		// The size is the fallback dialog's; a native picker takes its own.
+		dialog.PopupCenteredRatio(0.8f);
 	}
 }

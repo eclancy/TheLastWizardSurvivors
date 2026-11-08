@@ -278,6 +278,23 @@ things come up; strike what lands.**
      committing to a service. Avoid uploading on every local save write; batch meaningful checkpoints.
    - **Rough engineering estimate from this discussion:** a few days for a prototype, around one to
      two weeks for a thoroughly tested implementation; subject to provider and sign-in integration.
+   - **First stage built, 2026-11-07 (manual export/import; no accounts, no service):** Options has
+     a Save section - "Export save" copies the save file where the player chooses, "Import save"
+     reads one back (`SaveTransfer`, native file pickers via `FileDialog.UseNativeDialog`; Android's
+     SAF picker arrived with Godot 4.5 and still needs a device test). Import inspects the file
+     first - not a save, a newer build's schema or epoch, or an earlier story epoch are refused in
+     player words before any confirm - then `SaveImportConfirm` shows the file against this device
+     (playtime, victories, wizards, chapters, achievements, Arcane Energy), selection resting on
+     "Keep my save". A confirmed import keeps the replaced save beside the new one
+     (`savegame.before-import.json`, never overwritten), writes the file's progress with THIS
+     device's settings (`SaveData.SettingsKeys` stay local), reloads through `SaveManager.LoadFrom`
+     so an older file migrates exactly as a local save would, and rebuilds the menu. Export reads
+     the save FILE, and both buttons sit out a `SaveManager.WritesDisabled` launch, so a tool run's
+     fabricated save is never exportable. `RegressionChecks.ValidateSaveTransfer` proves the whole
+     disk roundtrip against scratch files; `--save-file=<path>` (SaveManager) points a windowed run
+     at a throwaway save for rehearsals; `_UiShot --import-confirm` photographs the confirm screen.
+     Still owed: one hands-on pass through the Windows file dialogs, and the Android device test.
+     The cloud sync above (accounts, providers, conflicts) remains open.
 
 15. **Opening cinematic: the invading army must rush over the horizon** (Eric, 2026-11-05).
    **Built, 2026-11-07** (`.ai/prologue.md`): the tide is the prologue's third animated panel

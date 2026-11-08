@@ -31,6 +31,7 @@ public static class SettingsRows
 	public const string Story = "Story";
 	public const string Testing = "Testing";
 	public const string Feedback = "Feedback";
+	public const string Save = "Save";
 
 	/// <summary>
 	/// Whether this copy shows the tester's knobs (Playtest Mode, the run logs) and honours Playtest Mode at

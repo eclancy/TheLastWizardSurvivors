@@ -144,6 +144,12 @@ public partial class _UiShot : Node
 	// count of failures as its exit code. Run it headless; it photographs nothing.
 	private bool menuQueueProbe;
 	private bool menuQueueProbeStarted;
+
+	// --import-confirm: the import confirm screen (SaveImportConfirm) opened after the warmup, fed a
+	// fabricated incoming save against whatever the launch holds - so both canvases can be
+	// photographed without a file dialog, and no save is anywhere in danger (the replace is a no-op).
+	private bool importConfirm;
+	private bool importConfirmShown;
 	// --secret-probe (issue #20): walks a lap round the nearest flower pen, takes the seed the bloom
 	// drops to the First Tree and plants it, checking each step (PASS/FAIL, exit code = failures) and
 	// saving a picture of each as secret-N.png. Writes are off: the save it checks is in memory.
@@ -1478,6 +1484,8 @@ public partial class _UiShot : Node
 			// photographed without actually changing the window.
 			else if (arg == "--show-display-confirm")
 				showDisplayConfirm = true;
+			else if (arg == "--import-confirm")
+				importConfirm = true;
 			// --found-secrets=id,id: marks those stage secrets found in the in-memory save (writes off),
 			// to photograph the achievements page's found secrets.
 			// --seen-secrets=id,id: marks those secrets SEEN - their near tell on screen once, not yet
@@ -3770,6 +3778,21 @@ public partial class _UiShot : Node
 				}
 				return;
 			}
+		}
+		if (importConfirm && !importConfirmShown)
+		{
+			importConfirmShown = true;
+			SaveData current = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data ?? new SaveData();
+			// A file plainly ahead of a fresh launch's save, so the comparison reads at a glance.
+			var incoming = new SaveData { TotalCurrency = 4150 };
+			incoming.Lifetime.TotalPlaytimeSeconds = 47f * 3600f + 23f * 60f;
+			incoming.Lifetime.TotalVictories = 11;
+			incoming.UnlockedCharacterIds.AddRange(new[] { "imhotep", "ma_liang", "baba_yaga", "paracelsus", "medea" });
+			incoming.UnlockedStageIds.AddRange(new[] { "stage_1", "stage_2", "stage_3", "stage_4" });
+			incoming.UnlockedAchievementIds.AddRange(new[] { "survivor", "gaoler_down", "event_grove" });
+			SaveImportConfirm.Open(GetTree().Root, current, incoming, () => null, () => { }, () => { });
+			frames = 0;
+			return;
 		}
 		if (codexDump && !codexDumped)
 		{

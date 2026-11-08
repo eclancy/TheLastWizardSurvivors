@@ -82,6 +82,7 @@ public static partial class RegressionChecks
 		ValidateSlowStartMigration(warnings);
 		ValidateShadowBoltMigration(warnings);
 		ValidateStoryReset(warnings);
+		ValidateSaveTransfer(warnings);
 		ValidateUserDataCarryOver(warnings);
 		ValidateChapterDifficulty(warnings);
 		ValidateNoPixelsInText(warnings);
