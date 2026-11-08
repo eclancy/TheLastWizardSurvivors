@@ -269,7 +269,12 @@ run on record, the re-priced Fate Fracture and Emberheart levels refunded,
 what a save could enter under the old order is written down, the Dungeon itself into
 `GrandfatheredStageIds` - entry and evidence of nothing, `.ai/endgame-castle.md` 1.5,
 `ValidateDungeonMove`); 22 is the slow start's (`MigrateToSlowStart`: `FullBookKept` and the three ladder
-lessons for a played save, `ValidateSlowStartMigration`). Steps 8-16 read frozen
+lessons for a played save, `ValidateSlowStartMigration`); 23 merges the Chronoweave shop Power into
+Tempest Rhythm (`MigrateChronoweaveIntoTempestRhythm`: cooldown levels become attack-speed levels one
+for one at the frozen prices, overflow refunded dearest-first, `ValidateChronoweaveMerge`); 24 moves
+Shadow Bolt onto its Conjunction's Feat (`MigrateShadowBoltToConjunction`, `ValidateShadowBoltMigration` -
+**built as "23" on a parallel branch and renumbered at the merge: two branches bumping the schema at once
+WILL collide, so check `CurrentSchemaVersion` on main before numbering a migration**). Steps 8-16 read frozen
 schema-18 lists, never the live catalog, and `ValidateAchievementMigration` runs sample saves through all of it.
 
 **A branch with a schema bump migrates the developer's REAL save the moment any Godot run in it

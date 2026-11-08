@@ -30,7 +30,7 @@ public partial class CharacterSelection : Control
 		("bramble_seed", "res://SpellData_BrambleSeed.tres"),
 		("frost_shard", "res://SpellData_FrostShard.tres"),
 		("riptide", "res://SpellData_Riptide.tres"),
-		("shadow_bolt", "res://SpellData_ShadowBolt.tres"),
+		// shadow_bolt left this list on 2026-11-07: a Conjunction cannot open a run (no frozen parents).
 		("thorn_vine", "res://SpellData_ThornVine.tres"),
 		("gale_blade", "res://SpellData_GaleBlade.tres"),
 		("solar_flare", "res://SpellData_SolarFlare.tres"),

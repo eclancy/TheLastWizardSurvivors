@@ -215,7 +215,8 @@ public static class UnlockCatalog
 		FromAchievement("black_tentacles", "earth_adept", "End a run with 4 Earth instances."),
 		FromAchievement("gale_blade", "wind_adept", "End a run with 4 Wind instances."),
 		FromAchievement("thorn_vine", "forest_cleared", "Defeat the boss of the Enchanted Forest."),
-		FromAchievement("shadow_bolt", "castle_conqueror", "Defeat the boss of the Cursed Dungeon."),
+		// Shadow Bolt was the Gaoler's second prize until 2026-11-07; it is a Conjunction now (below, with
+		// the other combinations), and a save that owned it keeps it (SaveData.MigrateShadowBoltToConjunction).
 		// The Gaoler's deed pays a second thing, as the Long Coil's does: the third reactive boon, since a
 		// jailer carries a rattle (.ai/new-items.md section 7).
 		FromAchievementBoon("bone_rattle", "castle_conqueror", "Defeat the boss of the Cursed Dungeon."),
@@ -258,6 +259,9 @@ public static class UnlockCatalog
 		// out so this list stays the one place every spell's source is read from; RegressionChecks holds the
 		// two lists together.
 		FromCombination("sagittarius"),
+		// Shadow Bolt (Void Lance's Cosmic Collapse and Contagion's Pandemic): the Gaoler's old prize, a
+		// Conjunction since 2026-11-07 (in-flight item 17; .ai/combo-spells.md section 7).
+		FromCombination(ShadowBolt.SpellId),
 		// The Taking (Hollow Star's Black Sun and Kindled Ward's Pyre), the dark wizard's own: he opens on it made
 		// (ComboDefinition.StartsFusedFor); anyone else makes it, and its Feat pays it, as any recipe.
 		FromCombination(TheTaking.SpellId),

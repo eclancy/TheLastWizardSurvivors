@@ -1,84 +1,40 @@
-[gd_resource type="Resource" script_class="SpellData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="SpellData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
-[ext_resource type="Script" path="res://scripts/SpellLevelUpgrade.cs" id="2"]
 [ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/shadow-bolt-darkness.png" id="3_icon"]
 
-[sub_resource type="Resource" id="Resource_shadowbolt_lvl2"]
-script = ExtResource("2")
-Level = 2
-ChainChanceBonus = 0.15
-
-[sub_resource type="Resource" id="Resource_shadowbolt_lvl3"]
-script = ExtResource("2")
-Level = 3
-ChainChanceBonus = 0.18
-Effect = 20
-EffectValue = 0.06
-
-[sub_resource type="Resource" id="Resource_shadowbolt_lvl4"]
-script = ExtResource("2")
-Level = 4
-PoisonTickBonus = 3
-
-[sub_resource type="Resource" id="Resource_shadowbolt_lvl5"]
-script = ExtResource("2")
-Level = 5
-ChainArcBonus = 2
-
-[sub_resource type="Resource" id="Resource_shadowbolt_lvl6"]
-script = ExtResource("2")
-Level = 6
-Effect = 9
-EffectValue = 0.10
-
-[sub_resource type="Resource" id="Resource_shadowbolt_lvl7"]
-script = ExtResource("2")
-Level = 7
-ChainBranchBonus = 1
-
-[sub_resource type="Resource" id="Resource_shadowbolt_lvl8"]
-script = ExtResource("2")
-Level = 8
-ChainChanceBonus = 0.20
-
-[sub_resource type="Resource" id="Resource_shadowbolt_lvl9"]
-script = ExtResource("2")
-Level = 9
-PoisonTickBonus = 3
-
-[sub_resource type="Resource" id="Resource_shadowbolt_lvl10"]
-script = ExtResource("2")
-Level = 10
-ChainArcBonus = 2
-
-[sub_resource type="Resource" id="Resource_shadowbolt_lvl11"]
-script = ExtResource("2")
-Level = 11
-Effect = 20
-EffectValue = 0.08
-
-[sub_resource type="Resource" id="Resource_shadowbolt_lvl12"]
-script = ExtResource("2")
-Level = 12
-ChainBranchBonus = 2
-
+; Shadow Bolt - Void Lance + Contagion, the third COMBINATION (.ai/combo-spells.md section 7, ComboCatalog;
+; in-flight item 17). Until 2026-11-07 it was an ordinary chain spell; Eric moved it into the Conjunction
+; roster, and a save that owned it keeps it (SaveData.MigrateShadowBoltToConjunction, schema 23).
+;
+; Never a level-up card and never in the spell catalog: it is made only in the Ascension strip, from Void
+; Lance at level 8 down Cosmic Collapse and Contagion at level 8 down Pandemic (Player.TryFuse). It is
+; terminal, so it has one level and no milestones.
+;
+; The numbers below are a stand-in for the card and the Spell Index. A run's copy carries its two parents
+; frozen as they were at the fusion (SpellData.ComboParents), and ShadowBolt.Freeze sets the cooldown, the
+; range and one leap's hit from the frozen lance; the curse and the beat are read from both parents as it
+; fires (scripts/ShadowBolt.cs).
+;
+; ElementWeights are the two parents' base tags summed. A run's copy carries the two parents' CURRENT
+; weights summed instead (ComboCatalog.SumWeights): Arcane 1, Darkness 2, Poison 1 after Dread, say. The
+; one kind of spell allowed three elements; never four, so Marsh Fever (+Water) refuses the fusion.
 [resource]
 script = ExtResource("1")
-Tagline = "Arcs that poison, slow and expose."
+Tagline = "Cursed, they cave in together."
 Id = "shadow_bolt"
 Name = "Shadow Bolt"
 CurrentLevel = 1
-MaxLevel = 12
-BaseDamage = 2
-BaseCooldown = 1.3
-BaseProjectileCount = 2
-BaseRange = 450.0
-LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_shadowbolt_lvl2"), SubResource("Resource_shadowbolt_lvl3"), SubResource("Resource_shadowbolt_lvl4"), SubResource("Resource_shadowbolt_lvl5"), SubResource("Resource_shadowbolt_lvl6"), SubResource("Resource_shadowbolt_lvl7"), SubResource("Resource_shadowbolt_lvl8"), SubResource("Resource_shadowbolt_lvl9"), SubResource("Resource_shadowbolt_lvl10"), SubResource("Resource_shadowbolt_lvl11"), SubResource("Resource_shadowbolt_lvl12")])
-Description = "Shadow lightning that arcs far and hits softly, leaving everything it touches poisoned, slowed and exposed."
+MaxLevel = 1
+BaseDamage = 34
+BaseCooldown = 1.6
+BaseProjectileCount = 6
+BaseRange = 500.0
+TargetingMode = 4
+Description = "A bolt of void leaps through the pack, cursing all it touches. On one beat, every cursed body caves in and the curse spreads."
 Icon = ExtResource("3_icon")
 ElementWeights = {
+"Arcane": 1,
 "Darkness": 1,
 "Poison": 1
 }
-

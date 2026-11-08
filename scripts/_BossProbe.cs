@@ -820,8 +820,10 @@ public partial class _BossProbe : Node
 
 	private static SpellData darknessProbe;
 
+	// Hollow Star since 2026-11-07: the probe only needs a Darkness-tagged spell to read the boss's
+	// multiplier with, and Shadow Bolt is a Conjunction now (ComboCatalog) rather than a pool spell.
 	private static SpellData DarknessProbeSpell() =>
-		darknessProbe ??= ResourceLoader.Load<SpellData>("res://SpellData_ShadowBolt.tres");
+		darknessProbe ??= ResourceLoader.Load<SpellData>("res://SpellData_HollowStar.tres");
 
 	// After he falls: every seal let go, the dark lifted; then the way home, and the ending over the results.
 	private void TrackDarkWizardFall()

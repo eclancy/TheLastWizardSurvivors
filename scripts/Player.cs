@@ -1238,8 +1238,7 @@ public partial class Player : CharacterBody2D
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_FrostShard.tres"));
 		if (!spellCatalog.ContainsKey("riptide"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Riptide.tres"));
-		if (!spellCatalog.ContainsKey("shadow_bolt"))
-			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_ShadowBolt.tres"));
+		// Shadow Bolt is a Conjunction since 2026-11-07 (ComboCatalog): never in the catalog, made in the strip.
 		if (!spellCatalog.ContainsKey("thorn_vine"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_ThornVine.tres"));
 		if (!spellCatalog.ContainsKey("gale_blade"))
@@ -1436,8 +1435,10 @@ public partial class Player : CharacterBody2D
 				tags |= SpellScalingTag.ProjectileSpeed | SpellScalingTag.Pierce | SpellScalingTag.Slow | SpellScalingTag.Range;
 				break;
 			case "shadow_bolt":
-				// No ProjectileSpeed: the curse is a chain, it does not fly (ValidateLevelUpReaders).
-				tags |= SpellScalingTag.Chain | SpellScalingTag.Dot;
+				// The Conjunction (ComboCatalog): the bolt leaps the thickest pack and the curse is a dot.
+				// No scaling tags: it is terminal, so a tag's generated level-up line would reach nothing
+				// (ValidateLevelUpReaders) - its numbers are its frozen parents'.
+				targeting = SpellTargetingMode.MultiTarget;
 				shape = SpellDamageShape.ChainJump;
 				break;
 			case "thorn_vine":
@@ -4364,7 +4365,7 @@ public partial class Player : CharacterBody2D
 	// It is an extra cast: his own cooldown on the spell is untouched, and it does not charge Arcane Explosion.
 	public static readonly HashSet<string> BlackCatCastable = new(StringComparer.OrdinalIgnoreCase)
 	{
-		"magic_missile", "fireball", "riptide", "shadow_bolt", "gale_blade", "molten_shard", "chain_lightning",
+		"magic_missile", "fireball", "riptide", "gale_blade", "molten_shard", "chain_lightning",
 		"void_lance", "glacial_spike", "obsidian_spike", "meteor_swarm", "thorn_vine", "toxic_spore_burst",
 		"black_tentacles", "contagion", "bramble_seed", "gravewell", "iron_palisade", "hollow_star", "kindled_ward",
 		"sleet_runes",
@@ -4627,7 +4628,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals("bramble_seed", StringComparison.OrdinalIgnoreCase)) outcome = FireBrambleSeed(spell, BrambleSeedScene);
 		else if (spell.Id.Equals("cinderbreath", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshFlamethrower(spell, CinderbreathScene);
 		else if (spell.Id.Equals("riptide", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, RiptideScene);
-		else if (spell.Id.Equals("shadow_bolt", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, ShadowBoltScene);
+		else if (spell.Id.Equals(ShadowBolt.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireShadowBolt(spell);
 		else if (spell.Id.Equals("thorn_vine", StringComparison.OrdinalIgnoreCase)) outcome = FireThornVine(spell, ThornVineScene);
 		else if (spell.Id.Equals("gale_blade", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, GaleBladeScene);
 		else if (spell.Id.Equals("molten_shard", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, MoltenShardScene, BoltAim.RandomInRange);
@@ -7720,6 +7721,14 @@ public partial class Player : CharacterBody2D
 			if (IsInstanceValid(sagittarius))
 				sagittarius.QueueFree();
 			sagittarius = null;
+		}
+
+		// Shadow Bolt's node lives in the arena too, with the curse and the beat it carries.
+		if (spell.Id.Equals(ShadowBolt.SpellId, StringComparison.OrdinalIgnoreCase) && shadowBolt != null)
+		{
+			if (IsInstanceValid(shadowBolt))
+				shadowBolt.QueueFree();
+			shadowBolt = null;
 		}
 
 		// The pack lives in the arena too - and what the cat granted goes with it.

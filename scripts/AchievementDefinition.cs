@@ -406,14 +406,15 @@ public static class AchievementDefinitions
 
 		// --- Exploration: chapters, bosses and relics ------------------------------------------
 		BossClear("forest_cleared", "Forest Cleared", "forest_treant", "the Enchanted Forest", "thorn_vine", "Thorned Vine"),
-		// Two things since the first wave of new items (.ai/new-items.md section 7): Shadow Bolt, and Bone
-		// Rattle - a jailer carries a rattle.
+		// Bone Rattle, since a jailer carries a rattle (.ai/new-items.md section 7). It paid Shadow Bolt too
+		// until 2026-11-07, when that became a Conjunction (ComboCatalog; a save that owned it keeps it,
+		// SaveData.MigrateShadowBoltToConjunction).
 		new()
 		{
 			Id = "castle_conqueror", DisplayName = "Dungeon Conqueror",
 			Description = "Defeat the boss of the Cursed Dungeon.",
-			RewardText = "Unlocks Shadow Bolt and Bone Rattle",
-			SpellUnlockId = "shadow_bolt", BoonUnlockId = "bone_rattle",
+			RewardText = "Unlocks Bone Rattle",
+			BoonUnlockId = "bone_rattle",
 			Category = AchievementCategory.Exploration,
 			Kind = AchievementKind.Road,
 			Visibility = AchievementVisibility.ChapterOpen,

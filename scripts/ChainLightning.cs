@@ -56,9 +56,11 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 	public Player PlayerRef { get; set; }
 
 	// SHADOW BOLT'S CARDS, EACH ITS OWN (.ai/spell-roster.md section 2e, built 2026-10-29). Shadow Bolt
-	// runs on this script, and every hook below is switched on by one of its milestone ids, which no
-	// Chain Lightning ever holds - Chain Lightning's behaviour is untouched. Each card changes what the
-	// curse does where you can see it, and the numbers ride along; what it leaves behind is ShadowCurse's.
+	// ran on this script until 2026-11-07, when it became a Conjunction with a script of its own
+	// (ShadowBolt.cs, ComboCatalog, in-flight item 17): no spell holds these milestone ids any more, so
+	// every hook below is inert. They are kept, not cut, because the hooks are threaded through the cast
+	// path this spell's own cards still run on, and tearing them out risks the tuned chain for dead code's
+	// sake - Chain Lightning's behaviour is untouched either way. What they left behind was ShadowCurse's.
 	//
 	// Black Sigil: everything the curse touches wears a sigil at its feet; the next hit it takes from any
 	// spell breaks it in a burst of shadow that lays the curse on everything near.
