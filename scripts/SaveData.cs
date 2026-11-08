@@ -23,8 +23,13 @@ public class SaveData
 	// Dungeon moved from fifth into the castle, so what each save could enter is written down under the
 	// old order, and the Dungeon itself is kept in GrandfatheredStageIds - entry, and evidence of nothing.
 	// 22 is the slow start's (.ai/slow-start.md, section 6): a played save keeps its six pages
-	// (FullBookKept) and every system it could already use (LessonsLearned).
-	public const int CurrentSchemaVersion = 22;
+	// (FullBookKept) and every system it could already use (LessonsLearned). 23 merges Chronoweave
+	// into Tempest Rhythm (Eric, 2026-11-07): bought cooldown levels become attack-speed levels one
+	// for one, any past the new 16-level cap refunded at what they cost. 24 is Shadow Bolt's move
+	// onto the Conjunction (in-flight 17): a save that owned the old spell or its deed is granted
+	// the new Feat, so nothing it earned is confiscated. (The branch that built it numbered it 23,
+	// not knowing 23 was taken; players' saves already carry 23, so it has to be 24.)
+	public const int CurrentSchemaVersion = 24;
 	public const int CampaignSchemaVersion = 8;
 	private const int MaxTelemetryHistory = 25;
 
@@ -209,6 +214,10 @@ public class SaveData
 	/// <summary>A dark chapter's dark lifted to DisplaySettings.ReducedDarknessScale (LightPool, 2026-11-03). No
 	/// schema bump, like the shake: an older save has the key missing and keeps the default, off.</summary>
 	public bool ReduceDarkness { get; set; } = false;
+	public bool Fullscreen { get; set; } = true;
+	/// <summary>Zero means an automatically fitted window. Fullscreen always uses the display's native size.</summary>
+	public int WindowWidth { get; set; }
+	public int WindowHeight { get; set; }
 
 	/// <summary>
 	/// Taught the Ascension outside the campaign's own record (GlobalStatsManager.HasLearnedAscension):
@@ -282,6 +291,7 @@ public class SaveData
 	public static readonly string[] SettingsKeys =
 	{
 		"MasterVolume", "MusicVolume", "SfxVolume", "AudioMuted", "ShowDamageNumbers", "ReduceScreenShake", "ReduceDarkness",
+		"Fullscreen", "WindowWidth", "WindowHeight",
 		"EnableGameplayOnboardingTips", "HasToggledOnboardingTipsAtLeastOnce",
 		"PlaytestModeEnabled", "BalancePresetId", "PlaytestChecklistState",
 	};
@@ -434,6 +444,14 @@ public class SaveData
 
 		if (SchemaVersion < 22)
 			MigrateToSlowStart();
+
+		if (SchemaVersion < 23)
+			MigrateChronoweaveIntoTempestRhythm();
+
+		// 24: Shadow Bolt onto the Conjunction. Its branch numbered this 23 in parallel with the
+		// Chronoweave merge; saves in the wild already carry 23, so it runs as 24.
+		if (SchemaVersion < 24)
+			MigrateShadowBoltToConjunction();
 
 		if (log)
 			GD.Print($"SaveData: migrated schema {from} -> {CurrentSchemaVersion}; " +
@@ -747,6 +765,40 @@ public class SaveData
 	}
 
 	/// <summary>
+	/// Schema 23 (Eric, 2026-11-07: "merge cooldown and attack speed - confusing to have both,
+	/// especially in the power ups"). Chronoweave (-5% cooldown a level) is retired; Tempest Rhythm
+	/// (+8% attack speed a level, cap 16) is the one clock Power. Nothing anybody had is taken away:
+	/// every Chronoweave level becomes a Tempest Rhythm level, both upgrades having always cost the
+	/// same (35 + 25 a level, frozen here the way RetiredLevelUpCharges freezes prices), and any
+	/// level past the new cap is refunded at the top of the price curve - the levels past the cap
+	/// were the dearest bought. Returns (moved, refund), for the validator.
+	/// </summary>
+	internal (int Moved, int Refund) MigrateChronoweaveIntoTempestRhythm()
+	{
+		const string Retired = "cooldowns";
+		const string Kept = "attack_speed";
+		const int Cap = 16;
+		const int BaseCost = 35;
+		const int CostPerLevel = 25;
+		if (!ArcaneUpgradeLevels.TryGetValue(Retired, out int levels) || levels <= 0)
+		{
+			ArcaneUpgradeLevels.Remove(Retired);
+			return (0, 0);
+		}
+		ArcaneUpgradeLevels.TryGetValue(Kept, out int kept);
+		int room = Cap - kept > 0 ? Cap - kept : 0;
+		int moved = levels < room ? levels : room;
+		if (moved > 0)
+			ArcaneUpgradeLevels[Kept] = kept + moved;
+		int refund = 0;
+		for (int n = levels - 1; n >= moved; n--)
+			refund += BaseCost + n * CostPerLevel;
+		ArcaneUpgradeLevels.Remove(Retired);
+		TotalCurrency += refund;
+		return (moved, refund);
+	}
+
+	/// <summary>
 	/// The Powers whose price came down with what a level pays (.ai/difficulty-curve.md): (base cost, cost
 	/// per level) as the shop priced them before and after. Frozen here, as RetiredLevelUpCharges is, so
 	/// the refund never moves with a later price.
@@ -962,6 +1014,42 @@ public class SaveData
 	private static readonly string[] SlowStartLadderIds = { "ascension", "apotheosis", "conjunctions" };
 	private const string SlowStartRiteSpellId = "sovereign_rite";
 	private const string SlowStartRiteLessonId = "sovereign_rite";
+
+	/// <summary>
+	/// Schema 23: Shadow Bolt became a Conjunction (in-flight item 17; .ai/combo-spells.md section 7). Its
+	/// old source, the Gaoler's deed, pays only Bone Rattle now, and the spell is made in a run from Void
+	/// Lance and Contagion. A save that owned it keeps it: its recipe's derived Feat is recorded done -
+	/// quietly, as schema 19 recorded owned facts - so the spell stays granted, its Spell Index page keeps
+	/// its name, and the recipe is known rather than offered as new. No Arcane Energy changes hands (the
+	/// Feat pays the spell and nothing else). Frozen ids below, never the live catalogs. True when it did
+	/// anything (RegressionChecks.ValidateShadowBoltMigration).
+	/// </summary>
+	internal bool MigrateShadowBoltToConjunction()
+	{
+		bool owned = UnlockedAchievementIds.Contains(ShadowBoltOldDeedId, System.StringComparer.OrdinalIgnoreCase)
+			|| UnlockedSpellIds.Contains(ShadowBoltSpellId, System.StringComparer.OrdinalIgnoreCase);
+		if (!owned)
+			return false;
+		bool changed = false;
+		if (!UnlockedAchievementIds.Contains(ShadowBoltFeatId, System.StringComparer.OrdinalIgnoreCase))
+		{
+			UnlockedAchievementIds.Add(ShadowBoltFeatId);
+			changed = true;
+		}
+		// The deed done is granted its unlock, as schema 19 reconciled: a save whose Gaoler fell before
+		// spells were written into UnlockedSpellIds still owns this one.
+		if (!UnlockedSpellIds.Contains(ShadowBoltSpellId, System.StringComparer.OrdinalIgnoreCase))
+		{
+			UnlockedSpellIds.Add(ShadowBoltSpellId);
+			changed = true;
+		}
+		return changed;
+	}
+
+	// Schema 23's frozen ids: the spell, the deed that paid it until then, and its recipe's derived Feat.
+	private const string ShadowBoltSpellId = "shadow_bolt";
+	private const string ShadowBoltOldDeedId = "castle_conqueror";
+	private const string ShadowBoltFeatId = "conjunction_shadow_bolt";
 
 	/// <summary>
 	/// Schema 19: every spell that is not a starter is an achievement's (.ai/achievements-and-secrets.md
@@ -1287,6 +1375,9 @@ public class SaveData
 			["ShowDamageNumbers"] = ShowDamageNumbers,
 			["ReduceScreenShake"] = ReduceScreenShake,
 			["ReduceDarkness"] = ReduceDarkness,
+			["Fullscreen"] = Fullscreen,
+			["WindowWidth"] = WindowWidth,
+			["WindowHeight"] = WindowHeight,
 			["AscensionLearned"] = AscensionLearned,
 			["LessonsLearned"] = lessonsLearned,
 			["FullBookKept"] = FullBookKept,
@@ -1583,6 +1674,9 @@ public class SaveData
 			result.ReduceScreenShake = root["ReduceScreenShake"].AsBool();
 		if (root.ContainsKey("ReduceDarkness"))
 			result.ReduceDarkness = root["ReduceDarkness"].AsBool();
+		if (root.ContainsKey("Fullscreen")) result.Fullscreen = root["Fullscreen"].AsBool();
+		if (root.ContainsKey("WindowWidth")) result.WindowWidth = System.Math.Max(0, root["WindowWidth"].AsInt32());
+		if (root.ContainsKey("WindowHeight")) result.WindowHeight = System.Math.Max(0, root["WindowHeight"].AsInt32());
 		if (root.ContainsKey("AscensionLearned"))
 			result.AscensionLearned = root["AscensionLearned"].AsBool();
 		if (root.ContainsKey("FullBookKept"))

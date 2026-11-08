@@ -1,5 +1,21 @@
 # Chapter wizards: one held in every place
 
+**Latest placement, 2026-11-06 (Eric): Merlin belongs to the Broken Circle.** Restore the Moot's
+shattered council wards to free him and unlock Orb of Ages, keeping Gilded Mote. Medea's granary
+returns to the Fields, alongside the separate Laelaps rescue. This supersedes the interim move below.
+
+**Earlier placement override, 2026-11-06:** Laelaps is freed with the three companions in the
+Fallow Fields' Pinfold, alongside Familiar. Medea's existing tithe-scale rescue moves to the Broken
+Circle as its second side event, replacing that chapter's former Laelaps unlock. Coursing becomes
+a 50 Arcane Energy challenge played as Laelaps. Baba Yaga remains in the Enchanted Forest, but her
+hut is now 6-8 chunks out in a walkable clearing with mature woodland around at least half a 440 px
+ring. Existing unlocks, deed IDs and campaign-gate membership are preserved. Historical placements
+in the design sections below are superseded by this note.
+
+**2026-11-03: six of the ten asks below are to become puzzles** - Baba Yaga's, Medea's, Paracelsus's,
+Imhotep's, Ma Liang's and Morgan's, with Tituba's and Väinämöinen's in `.ai/side-events.md` -
+`.ai/unlock-puzzles.md`, designed, not built. Seimei, Wayland, the Sibyl and Nostradamus keep theirs.
+
 Eric, 2026-11-01: *"Let's begin adding a character unlockable on every level, with a unique unlockable
 character theme on each level that is unique to that level."*
 
@@ -559,6 +575,11 @@ exactly this). Not measured on the phone.
 
 **Built (2026-11-03, `wip/wizard-paracelsus`).** The Swamp's second event, after the lanterns, through P2's API as 6.3
 wrote it (one line in `SideEventDirector`, a hint by site, deed words, `FromEvent`, a prisoner row); nothing in P2 changed.
+
+> **Its ask has changed since (2026-11-04): `.ai/unlock-puzzles.md` 3.4, "choose his path", and its Built note.** The
+> escort below - the 250 px hunt, `Enemy.ClassHuntsEscort`, the bites, the "who goes for him" check - is gone; rot pools
+> that hurt only him are on his way instead. `HuntedEscort` is `LedEscort` now, the walking half only. Everything else in
+> this note (him, his passive, the gibbet, the landing, the punt, his clue, his form) still stands.
 
 - **Him.** `CharacterData_Paracelsus.tres`, appended to `CharacterRoster`. Name "Paracelsus", id `paracelsus`.
   `roster.paracelsus()`: the one figure EXAMINING his spell - his near arm raised, a round-bellied flask held up to the

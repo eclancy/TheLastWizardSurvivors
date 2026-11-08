@@ -16,7 +16,7 @@ public partial class ChestReward : PickupBase
 	public bool Opened { get; private set; }
 
 	/// <summary>
-	/// What paid this chest out - "elite", "warden", "ghost", "side event", "nested" - for the balance
+	/// What paid this chest out - "elite", "warden", "ghost", "side event" - for the balance
 	/// harness's drop ledger. A label only: nothing in the game reads it.
 	/// </summary>
 	public string Source { get; set; } = string.Empty;
@@ -40,6 +40,8 @@ public partial class ChestReward : PickupBase
 
 	// A chest is a deliberate reward, not a consumable to hoover up: it holds its spawn position
 	// and waits for the player to walk into it, rather than flying to them like XP and health.
+	// The one exception is the Reliquary Key (ComeToKeyHolder), and it is its own pull, not the magnet:
+	// a vacuum that calls every orb home (PullToPlayer) still leaves a chest where it is.
 	public override void _Ready()
 	{
 		MagnetAttracted = false;
@@ -62,7 +64,10 @@ public partial class ChestReward : PickupBase
 	{
 		base._Process(delta);
 		if (!materialising)
+		{
+			ComeToKeyHolder((float)delta);
 			return;
+		}
 
 		materialiseAge += (float)delta;
 		float t = Mathf.Clamp(materialiseAge / MaterialiseSeconds, 0f, 1f);
@@ -94,6 +99,30 @@ public partial class ChestReward : PickupBase
 			Modulate = Colors.White;
 			Monitoring = true;
 		}
+	}
+
+	// The Reliquary Key (Eric, 2026-11-03: "chests come to you"): once it has risen, a chest within the key's
+	// reach slides to whoever holds it and opens on reaching him, as walking onto it would. The reach answers the
+	// pickup radius (Player.PickupReach), so the Lodestone and the shop's magnet stretch it too. Nothing here
+	// allocates; the player is looked up once.
+	private Player keyHolder;
+
+	private void ComeToKeyHolder(float delta)
+	{
+		if (Opened)
+			return;
+		if (keyHolder != null && !IsInstanceValid(keyHolder))
+			keyHolder = null;
+		keyHolder ??= GetTree().GetFirstNodeInGroup("player") as Player;
+		if (keyHolder == null || !keyHolder.HasRelicKey)
+			return;
+
+		Vector2 toHolder = keyHolder.GlobalPosition - GlobalPosition;
+		float reach = keyHolder.PickupReach(Player.ReliquaryKeyChestReach);
+		float distance = toHolder.Length();
+		if (distance > reach || distance < 0.01f)
+			return;
+		GlobalPosition += toHolder / distance * Mathf.Min(Player.ReliquaryKeyChestSpeed * delta, distance);
 	}
 
 	private void SetupVisual()

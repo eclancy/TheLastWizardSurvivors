@@ -1,32 +1,19 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scripts/ChainLightning.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/ShadowBolt.cs" id="1"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_shadowbolt"]
-radius = 5.0
-
-[node name="ShadowBolt" type="Area2D"]
-collision_mask = 2
+; Shadow Bolt, the third combination (scripts/ShadowBolt.cs, .ai/combo-spells.md section 7): one node in the
+; arena at its origin that carries the bolt's leaps, the festering curse and Pandemic's beat. No sprite and no
+; collision shape: the leaps and the cave-ins measure their own reach against EnemyRegistry.Snapshot, and what
+; is drawn is what hits. Until 2026-11-07 this scene was the ordinary chain spell (an Area2D on
+; ChainLightning.cs); the conversion is in-flight item 17.
+;
+; BoltShare, CollapseShare, CollapseReachShare, FesterSpread and MaxCursed are the combination's own
+; multipliers on its parents' numbers. Section 7's first guesses: 0.75, 0.5, 0.55, 2, 24.
+[node name="ShadowBolt" type="Node2D"]
 script = ExtResource("1")
-ArcDuration = 0.08
-BounceDelay = 0.08
-ChainRadius = 320.0
-ChainDamageMultiplier = 0.6
-UseChainChance = true
-BaseChainChance = 0.5
-GuaranteedSlow = true
-SlowMultiplier = 0.72
-SlowDuration = 2.5
-GuaranteedVulnerable = true
-VulnerableBonus = 0.18
-VulnerableDuration = 3.5
-GuaranteedPoison = true
-PoisonDamagePerTick = 2
-PoisonDuration = 3.0
-SpawnResidualAuraTrail = true
-ResidualAuraDuration = 0.65
-ResidualAuraWidthScale = 1.5
-BaseLineWidth = 4.0
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("CircleShape2D_shadowbolt")
+BoltShare = 0.75
+CollapseShare = 0.5
+CollapseReachShare = 0.55
+FesterSpread = 2
+MaxCursed = 24

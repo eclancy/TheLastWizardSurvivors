@@ -267,10 +267,12 @@ public partial class HollowStar : Node2D, IPaintsElementPath
 	public override void _Ready()
 	{
 		// Under the enemies it is dragging, so the knot reads as bodies over a hole - which z 1 never was:
-		// the actors are at 0, so the well was painted over them and over the wizard. On the ground layer
-		// the craters use since 2026-10-28 (over the terrain and the walkable decals).
+		// the actors are at 0, so the well was painted over them and over the wizard. ABOVE the ground
+		// layer the craters and Black Tentacles' pit use (-15) and above the foliage decals since
+		// 2026-11-07 (Eric: the star vanished under foliage and under the tentacles) - one step below
+		// GroundTell (-1), so an enemy's warning paint still beats the well it is drawn across.
 		ZAsRelative = false;
-		ZIndex = DrawLayers.Ground;
+		ZIndex = DrawLayers.GroundTell - 1;
 		debrisSeed = (uint)(GetInstanceId() % 100003);
 		if (SpellData?.GetBranchElement() is Element branch)
 		{

@@ -183,7 +183,13 @@ public static class EvolutionStatReaders
 			"Player.OnEnemyDiedAt and ShatterAt: a shatter on every death, so it casts nothing on its cooldown (projectiles past the first are Ice Flurry's flung shards; Ice Statues, Avalanche and Meltwater by id, through FrostShatter)",
 			SpellEffect.Freeze, SpellEffect.AreaSize, SpellEffect.SlowPower, SpellEffect.SlowDuration, SpellEffect.CritDamage),
 		["chain_lightning"] = R(Chain, "ChainLightning.cs (Storm Reach's long leaps, Return Stroke, Cascade's kills and Electrocution by id, through Electrocutions)", ChainEffects),
-		["shadow_bolt"] = R(Chain, "ChainLightning.cs, which ShadowBolt.tscn runs (Black Sigil, Creeping Rot, Anathema and Threefold Curse by id, through ShadowCurse)", ChainEffects),
+		// Shadow Bolt, the third combination (ComboCatalog) since 2026-11-07: terminal, so no card reaches it.
+		// The bolt's leaps, the festering curse and the beat run in ShadowBolt.cs on the two frozen parents it
+		// carries (SpellData.ComboParents), every hit credited to the combination.
+		["shadow_bolt"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area
+				| EvolutionStat.Slow | EvolutionStat.Rider | EvolutionStat.Amount,
+			"ShadowBolt.Cast, CaveInAll and Freeze, through Player.FireShadowBolt: the bolt's hit and the cave-ins are shares of the frozen Void Lance's strike, the curse's poison, reach and length the frozen Contagion's, the beat Pandemic's (Amount is more leaps a cast)",
+			SpellEffect.AreaSize, SpellEffect.ZoneDuration, SpellEffect.DotDamage, SpellEffect.CritDamage),
 		// The four bolts' own cards (BoltEvolutions, 2026-10-29) are behaviours read by id; their numbers
 		// ride on the fields below.
 		["gale_blade"] = R(Bolt, "ElementalBolt (Returning; Eddy, Hooked Throw, Live Wire, Thunderhead and Squall by id)", BoltEffects),

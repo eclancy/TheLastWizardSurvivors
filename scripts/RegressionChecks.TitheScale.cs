@@ -11,10 +11,10 @@ public static partial class RegressionChecks
 {
 	private static void ValidateTitheScale(List<string> warnings)
 	{
-		// Her event is the Fields' SECOND, after the well, so the well keeps its stream and its place on every seed.
 		IReadOnlyList<SideEventEntry> fields = SideEventDirector.TableEventsFor("stage_9");
-		if (fields.Count < 2 || fields[0].SiteId != "the_well" || fields[1].SiteId != "tithe_scale")
-			warnings.Add($"Tithe scale: the Fallow Fields' line must be the well, then the tithe scale (is {string.Join(", ", fields.Select(f => f.SiteId))}).");
+		if (fields.Count != 2 || fields[0].SiteId != "the_well" || fields[1].SiteId != "tithe_scale"
+			|| SideEventDirector.HoldsSite("stage_10", "tithe_scale"))
+			warnings.Add("Tithe scale: Medea must remain the Fields' second event, after the well.");
 
 		// The beam: the tithe pan comes DOWN frame by frame as it fills, and the dropped frame is lower than all of them;
 		// every bowl stays inside the scale's cell (tools/art/tithe_scale.py draws it from the same numbers).
@@ -43,10 +43,15 @@ public static partial class RegressionChecks
 			GranaryTithe.Pay(16f, 10);
 			if (Math.Abs(GranaryTithe.Taken - 19.2f) > 0.001f || GranaryTithe.OrbsTaken != 2 || GranaryTithe.ValueTaken != 12)
 				warnings.Add($"Tithe scale: the pan weighed {GranaryTithe.Taken} in {GranaryTithe.OrbsTaken} orbs ({GranaryTithe.ValueTaken} XP), expected 19.2 in 2 (12 XP).");
+			// The stream (in-flight 61): a reported flight is seen the same frame, and a closed scale streams nothing.
+			GranaryTithe.ReportFlight(foot);
+			if (GranaryTithe.Flights != 1 || GranaryTithe.FlightPosition(0) != foot)
+				warnings.Add("Tithe scale: an orb reporting its flight must be seen by the pan's stream (GranaryTithe.Flights).");
 			GranaryTithe.Close();
 			GranaryTithe.Pay(5f, 2);
-			if (GranaryTithe.Claims(foot) || Math.Abs(GranaryTithe.Taken - 19.2f) > 0.001f)
-				warnings.Add("Tithe scale: a closed scale must claim nothing and weigh nothing.");
+			GranaryTithe.ReportFlight(foot);
+			if (GranaryTithe.Claims(foot) || Math.Abs(GranaryTithe.Taken - 19.2f) > 0.001f || GranaryTithe.Flights != 0)
+				warnings.Add("Tithe scale: a closed scale must claim nothing, weigh nothing and stream nothing.");
 		}
 		if (TitheScaleEvent.PriceInLevels <= 0f)
 			warnings.Add($"Tithe scale: the price must be a share of a level greater than none (is {TitheScaleEvent.PriceInLevels}).");

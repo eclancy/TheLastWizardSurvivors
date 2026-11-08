@@ -36,6 +36,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import tiles as T
+import matte
+import bonelight as bl
 
 SIZE = T.SIZE
 OCC = T.OCC
@@ -61,7 +63,7 @@ STUBBLE_ROWS = 4          # rows of cut stalks per tile: one every 12 px
 FURROWS = 4               # ridges per tile, likewise
 
 
-def body_stubble(c):
+def legacy_stubble(c):
     """A harvested field: cut stalks standing in rows on dark soil.
 
     Gold's deep stop for the soil, soft patches of linen's deep where the straw has rotted down,
@@ -100,7 +102,7 @@ def body_stubble(c):
         tuft(c, inside(1, 1141, 6), inside(2, 1143, 6), LN[4], LN[3], LN[2])
 
 
-def body_furrow(c):
+def legacy_furrow(c):
     """Bare ploughed earth: four ridges of turned soil with a dark trough between each.
 
     The ridge is the stubble's own soil, gold's deep stop, with its top lit a stop up where the key
@@ -156,6 +158,81 @@ def body_hedge_bank(c):
     scatter(c, 4, 1231, 3, lambda cv, x, y, k: leaf(cv, x, y, (GD[3], FL[3], GD[2])[k % 3], FL[4], k))
     if T.VARIANT == 3:
         pebble(c, inside(2, 1241, 5), inside(5, 1243, 5), 2)
+
+
+# Reuse the existing sand-cloth ramp (art-direction section 3); no arbitrary desaturation colours.
+matte.add_ramp("sand", ["#D8CCA4", "#A88C62", "#7C6040", "#54362E", "#341E24"])
+bl.MATERIALS.setdefault("sand", ["#D8CCA4", "#A88C62", "#7C6040", "#54362E", "#341E24"])
+FIELD_LOOK = "faded_gold"
+FIELD_LOOKS = {
+    # soil, shadow, ridge, straw, fallow ground, fallow patch
+    "weathered": ("#54362E", "#341E24", "#7C6040", "#A88C62", "#46544C", "#2C3834"),
+    "harvest": ("#54362E", "#341E24", "#7C6040", "#A88C62", "#7C6040", "#54362E"),
+    "silver": ("#2C3834", "#1A2220", "#46544C", "#A2B0A0", "#626E84", "#38404F"),
+}
+NEAR_LOOKS = {
+    # Per-painter remaps of the ORIGINAL texture, retaining all its marks and narrow rows.
+    "soft_umber": ({"#2E2208": "#341E24", "#543F10": "#54362E", "#8A6A1E": "#7C6040"},
+                   {"#2E2208": "#54362E", "#543F10": "#7C6040", "#1A2220": "#2C3834"}),
+    "faded_gold": ({"#2E2208": "#2E2208", "#543F10": "#54362E", "#8A6A1E": "#7C6040"},
+                   {"#2E2208": "#543F10", "#543F10": "#7C6040", "#1A2220": "#341E24"}),
+    "cool_loam": ({"#2E2208": "#1A2220", "#543F10": "#54362E", "#8A6A1E": "#8A6A1E"},
+                  {"#2E2208": "#2C3834", "#543F10": "#54362E", "#1A2220": "#1A2220"}),
+}
+
+
+def near_original(c, painter, layer):
+    painter(c)
+    mapping = {T.raster.rgb(a): T.raster.rgb(b) for a, b in NEAR_LOOKS[FIELD_LOOK][layer].items()}
+    for y in range(SIZE):
+        for x in range(SIZE):
+            old = c.get(x, y)
+            if old in mapping:
+                c.set(x, y, mapping[old])
+
+
+def body_stubble(c):
+    if FIELD_LOOK in NEAR_LOOKS:
+        return near_original(c, legacy_stubble, 0)
+    if FIELD_LOOK == "original":
+        return legacy_stubble(c)
+    soil, shadow, ridge, straw, ground, patch = FIELD_LOOKS[FIELD_LOOK]
+    c.rect(0, 0, SIZE - 1, SIZE - 1, ground)
+    # Broad, quiet tonal patches replace per-pixel grit; stalks break into irregular cut tufts.
+    clumps(c, 4, 3, 7, patch, 2101, fill=0.25, shared=0.0)
+    for k in range(13):
+        x, y = inside(k, 2111, 5), inside(k + 4, 2113, 5)
+        for n in range(2 + int(hashed(k, 0, 2115) * 3)):
+            sx = x + n * 2 - 3
+            height = 2 + int(hashed(k, n, 2117) * 3)
+            c.line(sx, y, sx + (1 if n % 2 else 0), y - height, ridge)
+            if n % 3 == 0:
+                c.set(sx, y - height, straw)
+    # A few loose straws lie across the cut stalks; most of the tile stays simple.
+    for k in range(3):
+        x, y = inside(k, 2121, 7), inside(k + 2, 2123, 7)
+        c.line(x, y, x + 4 + k % 3, y - 1, ridge)
+
+
+def body_furrow(c):
+    if FIELD_LOOK in NEAR_LOOKS:
+        return near_original(c, legacy_furrow, 1)
+    if FIELD_LOOK == "original":
+        return legacy_furrow(c)
+    soil, shadow, ridge, straw, ground, patch = FIELD_LOOKS[FIELD_LOOK]
+    c.rect(0, 0, SIZE - 1, SIZE - 1, soil)
+    # Three broad ridges with small broken clods, rather than four thin near-black stripes.
+    for row in range(3):
+        for x in range(SIZE):
+            top = row * 16 + 4 + int(round(math.sin(x * 2.0 * math.pi / SIZE + row) * 1.2))
+            for j in range(2):
+                c.set(x, (top + j) % SIZE, ridge)
+            for j in range(7, 10):
+                c.set(x, (top + j) % SIZE, shadow)
+    for k in range(8):
+        x, y = inside(k, 2151, 5), inside(k + 3, 2153, 5)
+        c.hline(x, x + 2 + k % 3, y, ridge if k % 2 else shadow)
+        c.hline(x + 1, x + 2, y + 1, soil)
 
 
 # terrain -> (painter, rim tone for a hard edge): all soft, so no rim.

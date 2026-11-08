@@ -112,7 +112,8 @@ public partial class Node2DGame
 					continue;
 				}
 				int margin = art.Trunk > 0 ? TreeLandmarkMarginCells : BushLandmarkMarginCells;
-				if (position.DistanceTo(stageOrigin) < DecorPlayerSafeRadius || IsPropAvoidedAt(position) || IsInLandmark(position, margin)
+				if (position.DistanceTo(stageOrigin) < DecorPlayerSafeRadius
+					|| IsPropAvoidedAt(position, art.Trunk > 0 ? 48f : 24f) || IsInLandmark(position, margin)
 					|| IsInExploreReserve(position, art.Trunk > 0 ? ExploreTreeMargin : 0f) || IsNearPlannedHazard(position))
 				{
 					refused++;
@@ -198,7 +199,7 @@ public partial class Node2DGame
 		away = away.LengthSquared() < 1e-4f ? Vector2.Right : away.Normalized();
 		Vector2 stepped = at + away * lack;
 		int margin = TreeLandmarkMarginCells;
-		if (stepped.DistanceTo(stageOrigin) < DecorPlayerSafeRadius || IsPropAvoidedAt(stepped) || IsInLandmark(stepped, margin)
+		if (stepped.DistanceTo(stageOrigin) < DecorPlayerSafeRadius || IsPropAvoidedAt(stepped, 48f) || IsInLandmark(stepped, margin)
 			|| IsInExploreReserve(stepped, ExploreTreeMargin) || IsNearPlannedHazard(stepped)
 			|| TooNearInSet(stepped, placedInSet, spacingSq))
 			return false;

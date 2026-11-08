@@ -157,8 +157,6 @@ public static partial class RegressionChecks
 		const float chunk = 1536f;
 		// The bands are where the roll lands; the open-ground search may move a site up to 1600 px (_ExploreProbe's slack).
 		const float slack = 1700f;
-		float min = SideEventDirector.EventMinChunks * chunk - slack;
-		float max = SideEventDirector.EventMaxChunks * chunk + slack;
 		int layouts = 0, apart = 0, outOfBand = 0;
 		float closest = 180f;
 		string firstFault = null;
@@ -184,7 +182,9 @@ public static partial class RegressionChecks
 						// An event its chapter places (the barge, on the Last Bridge's band) is held to its own rules
 						// (ValidateBarge), not to the explore band.
 						// The Court's rooms are its building's, not the band's (SideEvent.PlacedByChapterRules).
-						if (!laid[i].Event.PlacedByChapterRules && (d < min || d > max))
+						float eventMin = laid[i].Event.PlacementMinChunks * chunk - slack;
+						float eventMax = laid[i].Event.PlacementMaxChunks * chunk + slack;
+						if (!laid[i].Event.PlacedByChapterRules && (d < eventMin || d > eventMax))
 						{
 							outOfBand++;
 							firstFault ??= $"seed {seed}{(maze ? " (maze)" : "")}: event {i}'s site {d / chunk:0.0} chunks out";

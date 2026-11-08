@@ -1,5 +1,7 @@
 using Godot;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using TheOneHeMissed.scripts;
 
 /// <summary>
@@ -7,9 +9,8 @@ using TheOneHeMissed.scripts;
 /// </summary>
 /// <remarks>
 /// The game was laid out for one shape only - a 720x1280 portrait canvas - and a PC ran it in a tall
-/// narrow window. Now a PC gets a 1280x720 landscape canvas (stretch aspect keep_height, so a wider
-/// monitor gets more width, never a smaller game) and a phone keeps 720x1280 (keep_width). The short
-/// side is 720 on both, which is what keeps every font size and touch target the same physical size.
+/// narrow window. A PC now gets a 1280x720 base canvas that expands to its display's shape without
+/// letterboxing. A phone keeps 720x1280 (keep_width). Fullscreen is native; saved sizes apply to windows.
 ///
 /// project.godot carries the same split as feature-tag overrides (".mobile") so the very first frame
 /// on a phone is already portrait; this node is what makes it switchable - <c>--portrait</c> on the
@@ -41,14 +42,16 @@ public partial class DisplayProfile : Node
 		else
 		{
 			root.ContentScaleSize = LandscapeCanvas;
-			root.ContentScaleAspect = Window.ContentScaleAspectEnum.KeepHeight;
+			root.ContentScaleAspect = Window.ContentScaleAspectEnum.Expand;
 		}
 
 		// F11 and Alt+Enter work over every screen, the pause screen and the level-up included.
 		ProcessMode = ProcessModeEnum.Always;
 		askedFullscreen = StartsFullscreen();
 		if (askedFullscreen)
-			DisplayServer.WindowSetMode(DisplayServer.WindowMode.Fullscreen);
+			DisplayServer.WindowSetMode(DisplayServer.WindowMode.ExclusiveFullscreen);
+		else if (DesktopControlsAvailable && !SaveManager.IsToolSceneLaunch())
+			ToWindow(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data);
 		if (DisplayServer.GetName() != "headless")
 			CallDeferred(MethodName.LogWindow);
 	}
@@ -65,15 +68,17 @@ public partial class DisplayProfile : Node
 	// screen's size instead. Godot consumes its own flags (--windowed, --resolution, --position): none
 	// of them reaches OS.GetCmdlineArgs, so they cannot be read here. What can be: every tool is an
 	// underscore scene (SaveManager.IsToolSceneLaunch), the phone canvas (IsPortrait, the phone and
-	// --portrait), headless, and the user argument "-- --windowed" for a window by hand. Fullscreen is
-	// the borderless kind, so alt-tab still works.
-	private static bool StartsFullscreen() =>
+	// --portrait), headless, and the user argument "-- --windowed" for a window by hand. Saved preferences
+	// control normal launches; tools retain their requested capture sizes.
+	private bool StartsFullscreen() =>
 		!IsPortrait
 		&& DisplayServer.GetName() != "headless"
 		&& !SaveManager.IsToolSceneLaunch()
+		&& (GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data.Fullscreen ?? true)
 		&& Array.IndexOf(OS.GetCmdlineUserArgs(), "--windowed") < 0;
 
-	// F11 or Alt+Enter: fullscreen to a window and back, for this session. Read in _Input, before the
+	// F11 or Alt+Enter: fullscreen to the preferred window and back, saved with the other display settings.
+	// Read in _Input, before the
 	// menus: Enter is ui_accept, and a menu would otherwise press its focused button on Alt+Enter.
 	public override void _Input(InputEvent @event)
 	{
@@ -84,27 +89,68 @@ public partial class DisplayProfile : Node
 		if (!toggle)
 			return;
 		GetViewport().SetInputAsHandled();
-		DisplayServer.WindowMode mode = DisplayServer.WindowGetMode();
-		if (mode is DisplayServer.WindowMode.Fullscreen or DisplayServer.WindowMode.ExclusiveFullscreen)
-			ToWindow();
-		else
-			DisplayServer.WindowSetMode(DisplayServer.WindowMode.Fullscreen);
+		StoreFullscreen(this, !IsFullscreen);
 		CallDeferred(MethodName.LogWindow);
 	}
 
-	// Out of fullscreen into the window the project opens (window_width/height_override, 1600x900), no
-	// larger than nine tenths of the screen, centred. A game that started fullscreen was never shown in a
-	// window, so there is no window size to go back to, and it came back the size of the screen.
-	private static void ToWindow()
+	// Auto windows fit the usable desktop; explicit preferences are clamped if the display changed.
+	public static bool DesktopControlsAvailable => !IsPortrait && DisplayServer.GetName() != "headless";
+	public static bool IsFullscreen => DisplayServer.WindowGetMode() is DisplayServer.WindowMode.Fullscreen or DisplayServer.WindowMode.ExclusiveFullscreen;
+	public static Vector2I NativeResolution => DisplayServer.ScreenGetSize(DisplayServer.WindowGetCurrentScreen());
+
+	public static Vector2I FitWindow(Vector2I wanted, Vector2I usable)
+	{
+		Vector2I available = new(Math.Max(320, usable.X - 32), Math.Max(240, usable.Y - 64));
+		if (wanted.X <= 0 || wanted.Y <= 0)
+		{
+			wanted = new Vector2I(1600, 900);
+			available = new Vector2I(Mathf.RoundToInt(available.X * 0.9f), Mathf.RoundToInt(available.Y * 0.9f));
+		}
+		float fit = Mathf.Min(1f, Mathf.Min(available.X / (float)wanted.X, available.Y / (float)wanted.Y));
+		return new Vector2I(Mathf.RoundToInt(wanted.X * fit), Mathf.RoundToInt(wanted.Y * fit));
+	}
+
+	public static List<Vector2I> WindowSizeChoices(Vector2I usable)
+	{
+		Vector2I[] sizes = {
+			new(960,540), new(1024,576), new(1024,768), new(1152,648), new(1280,720), new(1280,800),
+			new(1366,768), new(1440,900), new(1600,900), new(1680,1050), new(1920,1080), new(1920,1200),
+			new(2560,1440), new(2560,1600), new(3440,1440), new(3840,2160),
+		};
+		return sizes.Where(s => s.X <= usable.X - 32 && s.Y <= usable.Y - 64).OrderBy(s => s.X).ThenBy(s => s.Y).ToList();
+	}
+
+	public static void StoreFullscreen(Node context, bool fullscreen)
+	{
+		if (!DesktopControlsAvailable) return;
+		SaveManager manager = context?.GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (manager != null) manager.Data.Fullscreen = fullscreen;
+		if (fullscreen) DisplayServer.WindowSetMode(DisplayServer.WindowMode.ExclusiveFullscreen);
+		else ToWindow(manager?.Data);
+		manager?.SaveGame();
+	}
+
+	public static void StoreWindowSize(Node context, Vector2I size)
+	{
+		SaveManager manager = context?.GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (manager == null || !DesktopControlsAvailable) return;
+		manager.Data.WindowWidth = size.X;
+		manager.Data.WindowHeight = size.Y;
+		if (!IsFullscreen) ToWindow(manager.Data);
+		manager.SaveGame();
+	}
+
+	private static void ToWindow(SaveData data)
 	{
 		DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
 		int screen = DisplayServer.WindowGetCurrentScreen();
 		Rect2I usable = DisplayServer.ScreenGetUsableRect(screen);
-		var wanted = new Vector2I(
-			(int)ProjectSettings.GetSetting("display/window/size/window_width_override", 1600),
-			(int)ProjectSettings.GetSetting("display/window/size/window_height_override", 900));
-		float fit = Mathf.Min(1f, Mathf.Min(usable.Size.X * 0.9f / wanted.X, usable.Size.Y * 0.9f / wanted.Y));
-		var size = new Vector2I(Mathf.RoundToInt(wanted.X * fit), Mathf.RoundToInt(wanted.Y * fit));
+		var size = FitWindow(new Vector2I(data?.WindowWidth ?? 0, data?.WindowHeight ?? 0), usable.Size);
+		if (data != null && data.WindowWidth > 0 && data.WindowHeight > 0)
+		{
+			data.WindowWidth = size.X;
+			data.WindowHeight = size.Y;
+		}
 		DisplayServer.WindowSetSize(size);
 		DisplayServer.WindowSetPosition(usable.Position + (usable.Size - size) / 2);
 	}

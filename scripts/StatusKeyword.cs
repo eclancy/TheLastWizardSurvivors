@@ -80,5 +80,22 @@ public partial class StatusKeyword : Button
 	}
 
 	// The hover card on a PC is the card a click opens, built by the same code.
-	public override GodotObject _MakeCustomTooltip(string forText) => StatusNotes.BuildCard(Status);
+	public override GodotObject _MakeCustomTooltip(string forText)
+	{
+		var card = StatusNotes.BuildCard(Status);
+		// Native TooltipPanel windows measure their contents before containers have laid them out.
+		// Give the wrapped sentence its width up front, or its initial one-word-per-line height
+		// can permanently inflate the popup even after the card has wrapped correctly.
+		float width = Mathf.Min(420f, ResponsiveLayout.ViewportSize(this).X - 40f);
+		card.CustomMinimumSize = new Vector2(Mathf.Max(1f, width), 0f);
+		foreach (Node node in card.FindChildren("*", "Label", true, false))
+		{
+			if (node is Label { AutowrapMode: not TextServer.AutowrapMode.Off } label)
+			{
+				label.CustomMinimumSize = new Vector2(Mathf.Max(1f, width - 32f), 0f);
+				label.Size = label.CustomMinimumSize;
+			}
+		}
+		return card;
+	}
 }

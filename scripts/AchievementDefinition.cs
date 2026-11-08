@@ -101,6 +101,8 @@ public sealed class AchievementDefinition
 	/// <summary>A boon this achievement grants, if any. Same role as SpellUnlockId.</summary>
 	public string BoonUnlockId { get; init; } = string.Empty;
 	public string CharacterUnlockId { get; init; } = string.Empty;
+	/// <summary>A named-character challenge is listed only after that character is owned.</summary>
+	public string RequiredCharacterId { get; init; } = string.Empty;
 	public int CurrencyReward { get; init; }
 
 	/// <summary>
@@ -208,7 +210,7 @@ public sealed class AchievementDefinition
 public static class AchievementDefinitions
 {
 	/// <summary>
-	/// How many Black Hares a hound must run down in one run of the Broken Circle to free Laelaps (the
+	/// How many Black Hares Laelaps' hound must run down in one run of the Broken Circle (the
 	/// "coursing" deed). Measured in real time on the Circle, opening on the hound (seed 11, 15 minutes):
 	/// the --survivor bot, which spread its picks over six spells and never levelled the hound, coursed 116
 	/// of 344 hares - a third of them, the rest falling to its other spells; the same bot taking only the
@@ -217,6 +219,13 @@ public static class AchievementDefinitions
 	/// the fixed-fps bench, which understates the hound, came in a short opening.)
 	/// </summary>
 	public const int CoursingTarget = 100;
+
+	/// <summary>
+	/// Lifetime chests that free John Dee (The Library at Mortlake). Every gate counts him, so it must stay under what
+	/// a player who beats each chapter at the first try has opened by the Emberdeep - about 134 (eight runs of about
+	/// seventeen); RegressionChecks.ValidateCollectorEconomy holds it there.
+	/// </summary>
+	public const int MortlakeChestTarget = 100;
 
 	/// <summary>
 	/// A side event's deed is "event_" and its site id; a secret's is "secret_" and the secret's id. Made
@@ -238,7 +247,7 @@ public static class AchievementDefinitions
 	public const string TakerTakenId = "the_taker_taken";
 
 	/// <summary>
-	/// The deed that frees Merlin, The King-Maker: every chapter's boss beaten on Default or harder (.ai/merlin.md).
+	/// The Road Restored: every chapter's boss beaten on Default or harder. Merlin now belongs to the Moot.
 	/// The id keeps the deed's first name, "The One He Missed", so a save that has done it keeps it; that name is the
 	/// player's now, and the game's (.ai/world-and-tone.md), never a deed's.
 	/// </summary>
@@ -277,7 +286,7 @@ public static class AchievementDefinitions
 		("walking_hut", "The Hut Run Down", "Keep up with the hut that walks the Enchanted Forest until it tires and kneels.", "Frees Baba Yaga"),
 		("the_well", "The Last Coin", "Keep the last clean well in the Fallow Fields from being fouled.", "Unlocks Wishing Coin"),
 		("tithe_scale", "The Tithe Paid", "Pay the Tithe-Reeve's scale its due in the Fallow Fields, until the granary opens.", "Frees Medea"),
-		("the_moot", "The Circle Relit", "Relight the runes of the stone circle on the Broken Circle.", "Unlocks Gilded Mote"),
+		("the_moot", "The Circle Relit", "Restore the shattered council wards of the Broken Circle to free their keeper.", "Frees Merlin, unlocks Orb of Ages and Gilded Mote"),
 		("gaolers_key", "The Open Cell", "Carry the Gaoler's key to the locked cell in the Cursed Dungeon.", "Frees Tituba"),
 		("bog_lanterns", "The Lanterns Out", "Snuff the lanterns of the Blighted Swamp and face what tends them.", "Unlocks Contagion"),
 		("gibbet_cage", "The Ferry Reached", "Lower the gibbet's cage in the Blighted Swamp and bring the man in it to the ferry landing alive.", "Frees Paracelsus"),
@@ -397,14 +406,15 @@ public static class AchievementDefinitions
 
 		// --- Exploration: chapters, bosses and relics ------------------------------------------
 		BossClear("forest_cleared", "Forest Cleared", "forest_treant", "the Enchanted Forest", "thorn_vine", "Thorned Vine"),
-		// Two things since the first wave of new items (.ai/new-items.md section 7): Shadow Bolt, and Bone
-		// Rattle - a jailer carries a rattle.
+		// Bone Rattle, since a jailer carries a rattle (.ai/new-items.md section 7). It paid Shadow Bolt too
+		// until 2026-11-07, when that became a Conjunction (ComboCatalog; a save that owned it keeps it,
+		// SaveData.MigrateShadowBoltToConjunction).
 		new()
 		{
 			Id = "castle_conqueror", DisplayName = "Dungeon Conqueror",
 			Description = "Defeat the boss of the Cursed Dungeon.",
-			RewardText = "Unlocks Shadow Bolt and Bone Rattle",
-			SpellUnlockId = "shadow_bolt", BoonUnlockId = "bone_rattle",
+			RewardText = "Unlocks Bone Rattle",
+			BoonUnlockId = "bone_rattle",
 			Category = AchievementCategory.Exploration,
 			Kind = AchievementKind.Road,
 			Visibility = AchievementVisibility.ChapterOpen,
@@ -504,21 +514,13 @@ public static class AchievementDefinitions
 			Measure = c => ChaptersClearedAt(c, GlobalStatsManager.PresetRankHardcore),
 			Target = CampaignChapterCount,
 		},
-		// THE KING-MAKER (.ai/merlin.md), for Merlin, who made a king. Eric, 2026-11-02: "maybe unlocked when finishing
-		// the full campaign on medium" - every chapter's boss beaten on Default or harder, counted as the Taker Taken
-		// is, so it too waits for the whole campaign to exist. Named "The One He Missed" while he was drawn as the
-		// title figure; that figure is the player and the game is named for him (Eric, 2026-11-02: "The blue robed
-		// wizard should represent player"), so the deed has a name of Merlin's own and keeps its id. A Feat, listed
-		// from the first run: never a secret, his card shows his shape and this line from the start. He was never
-		// held, so he is outside the campaign gate (UnlockCatalog).
-		// Pays him and his own spell, Orb of Ages, which no other wizard is ever offered (UnlockDefinition.ExclusiveTo).
+		// The campaign-completion deed retains its ID and progress after Merlin moves to the Circle.
+		// Its replacement reward is currency; gods remain an extended-story design note.
 		new()
 		{
-			Id = OneHeMissedId, DisplayName = "The King-Maker",
+			Id = OneHeMissedId, DisplayName = "The Road Restored",
 			Description = "Defeat every chapter's boss on Default or harder.",
-			RewardText = "Unlocks Merlin and Orb of Ages",
-			CharacterUnlockId = "merlin",
-			SpellUnlockId = OrbOfAges.SpellId,
+			RewardText = "1000 Arcane Energy", CurrencyReward = 1000,
 			Category = AchievementCategory.Challenge,
 			Measure = c => ChaptersClearedAt(c, GlobalStatsManager.PresetRankDefault),
 			Target = CampaignChapterCount,
@@ -541,37 +543,39 @@ public static class AchievementDefinitions
 			Kind = AchievementKind.Collection,
 			Measure = c => c.Lifetime.ChestItemsCollected.Count, Target = 12,
 		},
-		// The collector's wizard, freed by collecting. Thirty is two runs that reach the boss on the
-		// chest economy where elites carry them (about fifteen a run - .ai/passives-and-items.md,
-		// section 8), and lifetime chests are a stat every save has kept since the campaign began,
-		// so nothing new is recorded and a long-time player is handed him at the end of the next run.
-		// A Feat: it names no chapter, so every gate can count him (GlobalStatsManager.GateWizardIds).
+		// The collector's wizard, freed by collecting. A hundred is about six runs that reach the boss on the chest
+		// economy where elites carry them (about seventeen a run - _ChestSim, .ai/passives-and-items.md section 8);
+		// it was thirty, two runs, which made him a gift rather than a collection (Eric, 2026-11-03). Lifetime chests
+		// are a stat every save has kept since the campaign began, so nothing new is recorded, and a save that was
+		// handed him at thirty keeps him (AchievementManager.Reconcile only ever grants).
+		// A Feat: it names no chapter, so every gate can count him (GlobalStatsManager.GateWizardIds) - which is what
+		// holds the number down. The Emberdeep counts him, and a player who beats each of the eight chapters before it
+		// at the first try reaches it with about 134 chests; 150 would have held that player at its gate to farm.
 		new()
 		{
 			Id = "mortlake_library", DisplayName = "The Library at Mortlake",
-			Description = "Open 30 chests.",
+			Description = $"Open {MortlakeChestTarget} chests.",
 			RewardText = "Frees John Dee", CharacterUnlockId = "john_dee",
 			Category = AchievementCategory.Exploration,
-			Measure = c => c.Lifetime.TotalChestsOpened, Target = 30,
+			Measure = c => c.Lifetime.TotalChestsOpened, Target = MortlakeChestTarget,
 		},
-		// THE COURSING. Laelaps, the hound fated to catch whatever it hunted, was set in stone on the high heath
-		// mid-chase, and the black hares of the Broken Circle are his quarry; a hound of the player's own
-		// light finishing the chase frees him. Only a kill by the Familiar taken as a dog counts
+		// THE COURSING. An optional hunt for Laelaps after his rescue in the Fields. Only a kill by the Familiar taken as a dog counts
 		// (Familiar.Strike), and only a Black Hare - the Circle's fast body and the Warrener's summons - so
 		// the deed names one map, one form and one quarry. Measured over one run (RunEvents, then the
 		// lifetime best), so the menu shows the best run so far and the pause screen this run's count.
-		// A Road deed of the Circle: it names the chapter, and frees a wizard secret until the Circle opens.
+		// A Road deed of the Circle, paying currency rather than a second rescue.
 		new()
 		{
 			Id = "coursing", DisplayName = "The Coursing",
-			Description = $"In the Broken Circle, let your Familiar, taken as a hound, run down {CoursingTarget} Black Hares in one run.",
-			RewardText = "Frees Laelaps", CharacterUnlockId = "laelaps",
+			RequiredCharacterId = "laelaps",
+			Description = $"As Laelaps in the Broken Circle, let your hound Familiar run down {CoursingTarget} Black Hares in one run.",
+			RewardText = "50 Arcane Energy", CurrencyReward = 50,
 			Category = AchievementCategory.Challenge,
 			Kind = AchievementKind.Road,
 			Visibility = AchievementVisibility.ChapterOpen,
 			StageId = "stage_10",
-			SealedLine = SomeoneHeldIn("stage_10"),
-			Measure = c => Math.Max(c.Lifetime.BestHaresCoursed, c.Run?.HaresCoursed ?? 0),
+			Measure = c => Math.Max(c.Lifetime.BestLaelapsHaresCoursed,
+				c.Run?.CharacterId == "laelaps" && c.Run.StageId == "stage_10" ? c.Run.HaresCoursed : 0),
 			Target = CoursingTarget,
 		},
 		new()
@@ -750,6 +754,9 @@ public static class AchievementDefinitions
 	public static bool IsListed(AchievementDefinition deed, SaveData save)
 	{
 		if (deed == null || !IsChapterBuilt(deed))
+			return false;
+		if (!string.IsNullOrEmpty(deed.RequiredCharacterId)
+			&& !GlobalStatsManager.IsCharacterUnlocked(save, deed.RequiredCharacterId))
 			return false;
 		switch (deed.Visibility)
 		{

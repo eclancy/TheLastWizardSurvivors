@@ -132,6 +132,8 @@ public partial class Player
 		// from the spell itself are set from them here, once.
 		if (recipe.Id.Equals(Sagittarius.SpellId, StringComparison.OrdinalIgnoreCase))
 			Sagittarius.Freeze(combo);
+		else if (recipe.Id.Equals(ShadowBolt.SpellId, StringComparison.OrdinalIgnoreCase))
+			ShadowBolt.Freeze(combo);
 
 		int slot = equippedSpells.IndexOf(first);
 		DropForFusion(first);
@@ -348,5 +350,34 @@ public partial class Player
 		sagittarius.Cloudburst(spell, bow, rain, stars, interval, nock, GetEffectiveAreaMultiplier(),
 			GetSpellDamageMultiplier(spell), durationMultiplier, GetSpellVisualTint(rain, paintsOwnPath: true));
 		return CastOutcome.Maintained;
+	}
+
+	// --- Shadow Bolt (scripts/ShadowBolt.cs) ----------------------------------------------------------------
+
+	private ShadowBolt shadowBolt;
+
+	// The cooldown is the bolt: each cast hurls one at the thickest pack in reach and keeps the node - the
+	// curse, the beat and everything drawn - current. The cave-ins run in the node, on Pandemic's own beat.
+	private CastOutcome FireShadowBolt(SpellData spell)
+	{
+		if (ShadowBoltScene == null || GetParent() is not Node2D arena)
+			return CastOutcome.NoTarget;
+		SpellData lance = spell.ComboParent(ShadowBolt.LanceSpellId);
+		SpellData plague = spell.ComboParent(ShadowBolt.PlagueSpellId);
+		if (lance == null || plague == null)
+		{
+			GD.PushError("Player: Shadow Bolt carries no frozen parents (SpellData.ComboParents); it was not made by a fusion.");
+			return CastOutcome.NoTarget;
+		}
+		if (shadowBolt == null || !IsInstanceValid(shadowBolt))
+		{
+			shadowBolt = ShadowBoltScene.Instantiate<ShadowBolt>();
+			shadowBolt.PlayerRef = this;
+			arena.AddChild(TagSpell(shadowBolt));
+		}
+		int leaps = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
+		return shadowBolt.Cast(spell, lance, plague, leaps, spell.GetRangeAtLevel(spell.CurrentLevel),
+			GetEffectiveAreaMultiplier(), GetSpellDamageMultiplier(spell), durationMultiplier)
+			? CastOutcome.Fired : CastOutcome.NoTarget;
 	}
 }

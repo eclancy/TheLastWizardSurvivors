@@ -71,6 +71,13 @@ Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like)
   caravan master) and what each one asks, the two rescued wizards and three found spells they pay
   out, why the ice is never a target, and the schema 10 migration. **Read it before adding an
   event or a Discovery unlock.**
+- `.ai/unlock-puzzles.md` — every wizard's rescue held to Halls of Torment's laser puzzle (the state
+  drawn in the world, one action, a wrong move costs time, generated, solved under the horde): the
+  scorecard of all twelve, and the new asks Eric chose on 2026-11-03 for eight of them (Imhotep routes
+  the sun with mirrors, Ma Liang draws the door in one stroke, Baba Yaga's hut is herded, Paracelsus is
+  led through rot, Medea's scale is balanced, Väinämöinen's song is sung back, Morgan's lamps are lit
+  ahead, Tituba's key slips past lanterns). Designed, not built. **Read it before touching any side
+  event's ask.**
 - `.ai/stage-secrets.md` — the plan for secrets (the Forest's two built, section 12): what a secret is against a side event,
   the warm-glint and decor-gradient tells, what one may pay without moving the Apotheosis (never a
   spell, wizard or boon; four keepsake found levels per #20), seeded placement in the streamed
@@ -214,7 +221,8 @@ Order matters, and passive-spell work depends on it:
 - **Layer 3** (`collision_layer = 3`): player body + HurtBox (`player.tscn`). **The body's mask is 17 (layers 1 and 5), not 3**: it meets decor and the blockers but not ordinary enemies, which it shoves aside instead (`Enemy.ComputePlayerShove`, `.ai/enemy-behaviour.md`). The HurtBox still finds every enemy for contact damage.
 - Weapon `Area2D` scenes (`MagicMissile.tscn`, `ArcaneExplosion.tscn`) use `collision_mask = 2` to detect enemies.
 - **Layer 5** (bit value 16): blockers - every enemy with `IsMiniBoss` (elites, minibosses, bosses, and the Boo) also sits here, so the player's body still stops at them. Weapons find them on layer 2 as before.
-- **Layer 4** (bit value 8, `LevelTilePainter.TerrainCollisionLayer`): blocking ground - water, maze walls, tree-trunk footprints and the flower pen's fence rails. Bushes have no collision; the old decor props still on layer 1 meet the body. Masked by enemies (`Enemy.ConfigureEntityCollision`) and by the player's `Feet` collider only: the player meets the ground with his boots and everything else with his body, in two movement passes (`Player.MovePlayer`). Enemy bolts do not use physics for walls (`MazeNavigation.IsSolidAt`). See `.ai/terrain.md`.
+- **Layer 4** (bit value 8, `LevelTilePainter.TerrainCollisionLayer`): blocking ground - maze walls, tree-trunk footprints, the flower pen's fence rails, and the Bridge's abyss. Bushes have no collision; the old decor props still on layer 1 meet the body. Masked by enemies (`Enemy.ConfigureEntityCollision`) and by the player's `Feet` collider only: the player meets the ground with his boots and everything else with his body, in two movement passes (`Player.MovePlayer`). Enemy bolts do not use physics for walls (`MazeNavigation.IsSolidAt`). See `.ai/terrain.md`.
+- **Layer 6** (bit value 32, `LevelTilePainter.WaterCollisionLayer`): wadeable water. Masked by enemies, **not** by the player's `Feet` - that is how he wades (heavy slow, `Player.WaterWadeSpeedMultiplier`, `IsWading`). A chapter whose "water" must stop him too (the Bridge's abyss) sets `StageEnvironmentProfile.WaterWalkable = false`, which keeps its polygons on layer 4. Anything new that must stop at water but not walls masks this layer.
 
 Changing a node's `collision_layer` requires updating **every** `collision_mask` that must detect it — in `.tscn` files *and* runtime-created areas (search `new Area2D()`). Prefer `IsInGroup("enemies")` for gameplay logic; use layers only for physics separation.
 
@@ -261,7 +269,12 @@ run on record, the re-priced Fate Fracture and Emberheart levels refunded,
 what a save could enter under the old order is written down, the Dungeon itself into
 `GrandfatheredStageIds` - entry and evidence of nothing, `.ai/endgame-castle.md` 1.5,
 `ValidateDungeonMove`); 22 is the slow start's (`MigrateToSlowStart`: `FullBookKept` and the three ladder
-lessons for a played save, `ValidateSlowStartMigration`). Steps 8-16 read frozen
+lessons for a played save, `ValidateSlowStartMigration`); 23 merges the Chronoweave shop Power into
+Tempest Rhythm (`MigrateChronoweaveIntoTempestRhythm`: cooldown levels become attack-speed levels one
+for one at the frozen prices, overflow refunded dearest-first, `ValidateChronoweaveMerge`); 24 moves
+Shadow Bolt onto its Conjunction's Feat (`MigrateShadowBoltToConjunction`, `ValidateShadowBoltMigration` -
+**built as "23" on a parallel branch and renumbered at the merge: two branches bumping the schema at once
+WILL collide, so check `CurrentSchemaVersion` on main before numbering a migration**). Steps 8-16 read frozen
 schema-18 lists, never the live catalog, and `ValidateAchievementMigration` runs sample saves through all of it.
 
 **A branch with a schema bump migrates the developer's REAL save the moment any Godot run in it
@@ -293,7 +306,7 @@ session**, the validator run below included.
 
 ## Validation
 
-- `ContentValidator.ValidateAtStartup()` runs from `scripts/MainMenu.cs:88` and `scripts/Node2DGame.cs:224`, and folds in `RegressionChecks.RunAll()`. Output goes to the Godot console as `ContentValidator:` lines. **There is no way to run it without launching Godot.** Run it as `"$GODOT_BIN" --headless --path . scenes/MainMenu.tscn --quit-after 300 -- --no-save-writes` (see the schema note above for why the flag).
+- `ContentValidator.ValidateAtStartup()` is **explicitly opt-in with `--validate-content`**, from `MainMenu` or `Node2DGame`, and folds in `RegressionChecks.RunAll()`. It must not run during normal player startup: the suite froze the first title-to-menu press for about 14 seconds (2026-11-05). Output goes to the Godot console as `ContentValidator:` lines. **There is no way to run it without launching Godot.** Run it as `"$GODOT_BIN" --headless --path . scenes/MainMenu.tscn --quit-after 300 -- --no-save-writes --validate-content` (see the schema note above for why writes are disabled). Include the validation flag when a harness run is also intended to run the full validator.
 - `scripts/ChestItemIntegrationTest.cs` is a `Node` you attach to a scene; it asserts in `_Ready()`.
 - `validate_chest_system.py` **cannot run** — this machine has only Python 2.7 and the script is Python 3.
 - There is no CI, no test framework, and no `dotnet test`. Don't invent one without asking.

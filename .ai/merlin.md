@@ -1,5 +1,15 @@
 # Merlin, the old enchanter
 
+**2026-11-06 decision (Eric), superseding the historical unlock below:** Merlin is now held at the
+Broken Circle, the great meeting place. Restoring the existing Moot's council wards frees him and
+unlocks his existing Orb of Ages, alongside the existing Gilded Mote. His kit is unchanged. He has a
+bound world sprite and the standard post-run freeing reel. Medea's granary returns to the Fields.
+The former campaign-completion deed keeps its ID and progress but becomes **The Road Restored**,
+paying 1,000 Arcane Energy. Existing Merlin/Orb ownership is retained; old completed Moot deeds
+reconcile the new rewards. Merlin keeps his existing optional campaign-gate membership for compatibility.
+Gods with powerful existing combination/Apotheosis starters are a future extended-story idea
+recorded in `.ai/in-flight.md` item 43; no new spells or gods are part of this change.
+
 Eric, 2026-11-02: *"the blue robed wizard should be his own character. maybe unlocked when finishing the full
 campaign on medium? maybe he can have a starter spell that no one else has (therefore able to try a new
 apotheosis no one else can get)"*, and then *"merlin is perfect, as one that uses his magic to protect others."*

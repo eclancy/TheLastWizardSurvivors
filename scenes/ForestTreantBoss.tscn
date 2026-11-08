@@ -21,6 +21,12 @@ EnemySpacingRadius = 96.0
 MinPlayerSeparation = 34.0
 BossId = "forest_treant"
 BossDisplayName = "Elderbark, the Treant"
+; Eric, 2026-11-06: "Elderbarks attacks should have more range and hit harder." The class defaults
+; (150/4 slam, 54/3 roots) stay the other bosses' baseline; only his scene takes the heavier hand.
+SlamRadius = 210.0
+SlamDamage = 6
+RootRadius = 66.0
+RootDamage = 4
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 modulate = Color(0.52, 0.66, 0.4, 1)

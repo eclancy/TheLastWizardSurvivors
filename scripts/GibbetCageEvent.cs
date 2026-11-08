@@ -8,26 +8,32 @@ using TheOneHeMissed.scripts;
 // breathing it." The physician who wrote that the dose makes the poison hangs in an iron cage from a gibbet over a pool
 // of her rot, coughing.
 //
-// What it asks: ESCORT. Every other thing in the game the player brings somewhere is carried (the Gaoler's key); this
-// one is a person, and the bog goes for him. Hold the winch WinchSeconds and the cage comes down; he steps out and
-// follows the player - at FollowShare of his walk, along the player's own steps (HuntedEscort) - to the ferry landing,
-// LandingMin to LandingMax px off, which the objective arrow shows. Every plain chaser within HuntedEscort.HuntRadius
-// of him goes for him instead of the player (Enemy's chase branch); while he walks, the Mired rise out of the bog across
-// his way every RiseSeconds. Each body touching him bites every BiteSeconds, through ScaleOutgoingDamage like a touch on
-// the player, off a bar of HealthMax drawn over his head. At the landing the Ferryman's empty punt takes him.
+// What it asks: LEAD - choose his path (.ai/unlock-puzzles.md 3.4). Hold the winch WinchSeconds and the cage comes down;
+// he steps out and follows the player - at FollowShare of his walk, along the player's own steps (LedEscort) - to the
+// ferry landing, LandingMin to LandingMax px off, which the objective arrow shows. Between the cage and the landing the
+// bog is cut by her rot (RotPoolLayout): three walls of pools, each with one gap, that hurt HIM and not the player. The
+// player can wade them; he cannot, and he walks exactly where the player walked, so the route the player walks is the
+// route he takes and the puzzle is finding the way through. The player's steps glow on the ground for the stretch he
+// has not walked yet - his path, seen ahead - and turn the rot's sickly colour where they run through a pool; a pool
+// stirs and bubbles while he is near it. Every RiseSeconds the Mired come up in the next gap ahead of them both, so the
+// safe line keeps changing. Nothing goes for him and nothing bites him: 3.4 took out the 250 px hunt and the bites,
+// because the puzzle is the route, not guarding him.
 //
-// NOTHING IS LOST BUT THE WALK. If he falls, the bog takes him back: he sinks where he stands, and he is in the cage
-// again, hoisted, with the winch to hold again and the walk to start again from the cage. The bar is full again with
-// him. Nothing locks.
+// A WRONG MOVE COSTS TIME. Walk into a pool and back out the way you came and he never goes in: the steps you took
+// back close a loop he leaves out (LedEscort). Lead him through one and he coughs, his bar shows and the rot takes
+// RotDamage off it at once and every RotTickSeconds he stays in. At the landing the Ferryman's empty punt takes him.
 //
-// NOTHING HERE IS A BODY. He is a sprite sorted among the bodies by his feet and walked by HuntedEscort; he is never in
-// "enemies", has no collision layer and is never a target (the swarm goes for him through HuntedEscort's statics, not
-// through physics). The gibbet, the cage, the pool, the landing and the punt are drawings: none of them blocks
-// anything, as the seal's stones and the nine mouths' cliff do not.
+// NOTHING IS LOST BUT THE WALK. If the rot takes all of him, the bog takes him back: he sinks where he stands, and he is
+// in the cage again, hoisted, with the winch to hold again and the walk to start again from the cage. The bar is full
+// again with him, and the pools are where they were. Nothing locks.
+//
+// NOTHING HERE IS A BODY. He is a sprite sorted among the bodies by his feet and walked by LedEscort; he is never in
+// "enemies", has no collision layer and is never a target. The gibbet, the cage, the pools, the landing and the punt
+// are drawings: none of them blocks anything, as the seal's stones and the nine mouths' cliff do not.
 //
 // Art: tools/art/gibbet.py (world/gibbet/). The one light on any of it is his mark on the cage's lock, in the arcane
 // ramp's violet, and the far tell stands up from there; Paracelsus's own sprite (roster.paracelsus) is drawn into the
-// cage and the punt, and walks between them as his own sheets.
+// cage and the punt, and walks between them as his own sheets. The pools are rot-pools.png; the steps draw themselves.
 public partial class GibbetCageEvent : SideEvent
 {
 	/// <summary>Seconds of holding the winch before the cage comes down (4.4: 2).</summary>
@@ -47,34 +53,38 @@ public partial class GibbetCageEvent : SideEvent
 	public const float FollowShare = 0.75f;
 
 	/// <summary>
-	/// His bar, in the touches it takes (4.4: "a health bar scaled like the event enemies"). A fixed pool, not one grown
-	/// with the run's spawn health as an event enemy's is: an enemy's health is chewed by the player's damage, which grows
-	/// over a run, but his is chewed by the swarm's touches, which do not - one touch is ContactDamage through
-	/// ScaleOutgoingDamage (the chapter's x1.15 here) at minute 3 and at minute 13. What grows is how many reach him, and
-	/// that is the walk getting harder by itself. 60 is a few seconds of three bodies on him.
+	/// His bar. A fixed pool, as it was when the swarm bit him (4.4's "What moved" 1): the rot's bite does not grow over a
+	/// run, so neither does what he can take of it.
 	/// </summary>
 	public const int HealthMax = 60;
 
 	/// <summary>
-	/// Each body touching him bites this often (the player's own touches come every 0.2 s), and a body this near his feet
-	/// is touching him. First guess 0.5 s and 38 px (Enemy.MinPlayerSeparation holds a chaser at 27): measured with eight
-	/// Mired raised round him and nothing killing them, they took 20 s to bring him down - the swarm's own spacing
-	/// (Enemy.EnemySpacingRadius) spreads a ring of them past 38, so only one or two of eight were ever biting. At 46 and
-	/// 0.35 a crowd on him brings him down in seconds, which is what "the bog goes for him" has to mean.
+	/// What the rot takes from him: RotDamage the moment his feet are in a pool's bite, and again every RotTickSeconds
+	/// they stay (3.4 left "a pool's bite" open). A brush with an edge is one or two of these; walked straight across
+	/// the middle of a mid-sized pool he is in it for about a second, four or five - a third of him. Twelve in all, so
+	/// two or three full crossings take him, and every step the player takes back from a pool before he reaches it is
+	/// free.
 	/// </summary>
-	public const float BiteSeconds = 0.35f;
-	public const float BiteRadius = 46f;
+	public const int RotDamage = 5;
+	public const float RotTickSeconds = 0.25f;
 
-	/// <summary>The bog goes for him: while he walks, this many of the chapter's Mired rise across his way this often.</summary>
+	/// <summary>A pool stirs - the skin goes sickly and bubbles - while his feet are within this of its edge.</summary>
+	public const float StirReach = 150f;
+
+	/// <summary>He coughs on stepping into the rot, and again this often while he stays in it.</summary>
+	public const float CoughSeconds = 1.1f;
+
+	/// <summary>The bog closes the way: while he walks, this many of the chapter's Mired rise in the next gap this often.</summary>
 	public const float RiseSeconds = 5f;
 	public const int RiseCount = 3;
+	// Past the last wall, there is no gap ahead: they rise across his way, this far ahead of him, as they always did.
 	public const float RiseMin = 220f;
 	public const float RiseMax = 300f;
 
 	/// <summary>
 	/// A riser's health, as a share of the run's ordinary spawn health: the bog's own, sturdier than the trickle. At 1 the
-	/// first probe runs' loadout burned every one down before it came within the hunt's reach; at 3 they live long enough
-	/// to make the player clear the road.
+	/// first probe runs' loadout burned every one down before it came near; at 3 they stand in the gap long enough to
+	/// make the player choose: through them, or round the wall.
 	/// </summary>
 	public const float RiseHealth = 3f;
 
@@ -90,9 +100,12 @@ public partial class GibbetCageEvent : SideEvent
 			? $"Hold the winch  ({Mathf.RoundToInt(winch * 100f)}%)"
 			: "Lower the cage at the winch",
 		Phase.Lowering or Phase.Opening => "The cage comes down",
-		Phase.Walking => health < HealthMax * 0.4f && biters > 0
-			? $"They are on him - get him to the ferry  ({Mathf.RoundToInt(WalkProgress * 100f)}%)"
-			: $"Lead him to the ferry landing  ({Mathf.RoundToInt(WalkProgress * 100f)}%)",
+		// The first time the rot takes him the line says why; the steps on the ground have been saying how.
+		Phase.Walking => inPool >= 0
+			? $"The rot is choking him - lead him round it  ({Mathf.RoundToInt(WalkProgress * 100f)}%)"
+			: health < HealthMax * 0.4f
+				? $"He cannot take much more of the rot  ({Mathf.RoundToInt(WalkProgress * 100f)}%)"
+				: $"Lead him to the ferry landing  ({Mathf.RoundToInt(WalkProgress * 100f)}%)",
 		Phase.Sinking => "The bog is taking him back",
 		_ => "The punt takes him",
 	};
@@ -118,41 +131,68 @@ public partial class GibbetCageEvent : SideEvent
 	private Phase phase = Phase.Hanging;
 	private float phaseFor;
 	private Vector2 landing;
+	private RotPoolLayout layout;
 	private float walkFrom = 1f;
 	// The winch's hold, 0 to 1. Named "progress" because _UiShot --win-event fills a float field of that name and lets
 	// the real path run - here that is the winch, so the cage comes down and he steps out.
 	private float progress;
 	private float winch { get => progress; set => progress = value; }
 	private int health = HealthMax;
-	private float biteClock;
-	private int biters;
+	// The pool his feet are in (RotPoolLayout.PoolUnder), -1 for none; the clock to its next bite; the cough's.
+	private int inPool = -1;
+	private float rotClock;
+	private float coughClock;
 	private float riseClock;
 	private float hurtFlash;
 	private float takenBackFor = -1f;
 	private const float TakenBackLineSeconds = 3.5f;
 	private bool succeeded;
 
-	private readonly HuntedEscort him = new() { SpeedShare = FollowShare, FollowGap = 64f };
+	private readonly LedEscort him;
+
+	public GibbetCageEvent()
+	{
+		// He leaves a loop the player closed out only if the step across it keeps out of the rot and off the water.
+		him = new LedEscort { SpeedShare = FollowShare, FollowGap = 64f, MayCut = MayStepAcross };
+	}
 
 	// Tallies, for the probe.
 	/// <summary>How often the cage was lowered and he stepped out.</summary>
 	public int Releases { get; private set; }
 	/// <summary>How often the bog took him back.</summary>
 	public int Falls { get; private set; }
-	/// <summary>Bites that landed on him, and what they took, over the whole event.</summary>
-	public int BitesTaken { get; private set; }
-	public int DamageTaken { get; private set; }
-	/// <summary>The Mired the bog raised round him.</summary>
+	/// <summary>Times he stepped into a pool, the rot's bites on him and what they took, over the whole event.</summary>
+	public int PoolEntries { get; private set; }
+	public int RotTicks { get; private set; }
+	public int RotTaken { get; private set; }
+	/// <summary>The rot's bites on him on the walk now under way (or the last one), from the cage door.</summary>
+	public int RotTicksThisWalk { get; private set; }
+	/// <summary>The Mired the bog raised in his way.</summary>
 	public int Risen { get; private set; }
+	/// <summary>How many of those rose in a gap in the rot rather than across his way.</summary>
+	public int RisenInGaps { get; private set; }
 	/// <summary>The furthest he got toward the landing on any walk, 0 to 1.</summary>
 	public float BestProgress { get; private set; }
 	/// <summary>How far he walked, over every walk.</summary>
 	public float Walked { get; private set; }
+	/// <summary>Loops the player walked and closed that he left out, on this walk.</summary>
+	public int LoopsLeftOut => him.LoopsLeftOut;
 
 	/// <summary>Where the winch is held from (its foot).</summary>
 	public Vector2 WinchPoint => MainSite + new Vector2(-92f, 0f);
 	/// <summary>The ferry landing: the foot of its jetty, on the bank.</summary>
 	public Vector2 Landing => landing;
+	/// <summary>Where he steps out of the cage onto the bank, and the walk is measured from.</summary>
+	public Vector2 Door => MainSite + new Vector2(16f, 44f);
+	/// <summary>
+	/// Where the way to the ferry starts, for the rot: the winch, where the player stands to lower the cage and walks on
+	/// from. The walls are laid across the line from here, because that is the straight walk a player makes - laid
+	/// across the line from the door instead, a probe walking straight from the winch slipped through two walls' gaps
+	/// (the winch is 110 px to the side of the door) and the rot had two bites of him.
+	/// </summary>
+	public Vector2 WayStart => WinchPoint;
+	/// <summary>The rot on his way, and the way through it proved on paper when it was laid (RotPoolLayout).</summary>
+	public RotPoolLayout Rot => layout;
 	/// <summary>Where he stands (his feet).</summary>
 	public Vector2 HimAt => him.Position;
 	/// <summary>True while he is out of the cage and following.</summary>
@@ -161,13 +201,10 @@ public partial class GibbetCageEvent : SideEvent
 	public bool IsBoarding => phase == Phase.Boarding;
 	public bool IsSinking => phase == Phase.Sinking;
 	public int Health => health;
-	/// <summary>Bodies on him at the last bite.</summary>
-	public int Biters => biters;
+	/// <summary>True while his feet are in a pool's bite.</summary>
+	public bool InRot => inPool >= 0;
 	/// <summary>0 at the cage, 1 at the landing: how much of the way he has come on this walk.</summary>
 	public float WalkProgress => walkFrom <= 1f ? 0f : Mathf.Clamp(1f - him.Position.DistanceTo(landing) / walkFrom, 0f, 1f);
-
-	/// <summary>Where to stand to photograph him walking: a stride ahead of him toward the landing.</summary>
-	public Vector2 StandPoint => him.Position + (landing - him.Position).Normalized() * 90f;
 
 	// --- placement ------------------------------------------------------------------------------------------
 
@@ -175,7 +212,9 @@ public partial class GibbetCageEvent : SideEvent
 	/// The gibbet on open ground through the band (the seal's and the hut's sweep), then the landing a walk from it:
 	/// LandingMin to LandingMax off at a seeded bearing, the first of twenty-four that is open ground and off every
 	/// earlier event's footprint (the lanterns'), else the first open one. Not a site: nothing is found there, and
-	/// nothing points at it until he walks. Reserved, so no tree stands on the jetty.
+	/// nothing points at it until he walks. Reserved, so no tree stands on the jetty. Then the rot between them, from
+	/// this placer's own rolls (RotPoolLayout): each pool and each wall's gap reserved, so no tree grows out of the
+	/// sludge or stands in the one way through a wall.
 	/// </summary>
 	public override void PlaceSites(ExplorePlacer placer)
 	{
@@ -198,7 +237,22 @@ public partial class GibbetCageEvent : SideEvent
 		landing = kept ?? open ?? placer.Near(cage, LandingMin, LandingMax, footprint, new[] { cage }, LandingMin, cage, LandingMax + 200f);
 		if (kept != null || open != null)
 			placer.Reserve(landing, footprint);
+
+		ulong seed = ((ulong)(placer.NextFloat() * 4294967295f) << 32) | (ulong)(placer.NextFloat() * 4294967295f);
+		layout = RotPoolLayout.Generate(WayStart, landing, seed, placer.IsWalkable);
+		for (int i = 0; i < layout.Pools.Count; i++)
+			placer.Reserve(layout.Pools[i].Centre, layout.Pools[i].Radius);
+		for (int i = 0; i < layout.Openings.Count; i++)
+			placer.Reserve(layout.Openings[i].Centre, layout.Openings[i].Width * 0.5f);
+		if (LogPhases)
+			GD.Print($"GIBBET rot: {layout.Pools.Count} pools in {RotPoolLayout.Walls} walls, roll {layout.Attempts}"
+				+ (layout.Trimmed ? " (trimmed)" : "") + (layout.Route != null ? $", a way through in {layout.Route.Length - 1} legs" : ", NO way through")
+				+ (layout.RouteOnGround ? " on the ground" : " on open ground (the ground shut the box)"));
 	}
+
+	// LedEscort.MayCut: a loop is left out only if the step across it keeps out of the rot and off the water.
+	private bool MayStepAcross(Vector2 from, Vector2 to) =>
+		(layout == null || !layout.CrossesBite(from, to)) && (Game == null || !Game.IsGroundBlockedAt(from.Lerp(to, 0.5f)));
 
 	// --- what stands there -------------------------------------------------------------------------------------
 
@@ -243,7 +297,7 @@ public partial class GibbetCageEvent : SideEvent
 	private Sprite2D himSprite;
 	private Sprite2D punt;
 	private Node2D bar;
-	private Texture2D poolTex, landingTex, linkTex, idleTex, walkTex;
+	private Texture2D poolTex, landingTex, linkTex, idleTex, walkTex, rotTex;
 	private float hang = HangHeight;
 	private float walkPhase;
 	private float crankTurn;
@@ -254,6 +308,15 @@ public partial class GibbetCageEvent : SideEvent
 	private readonly Vector2[] riseAt = new Vector2[RiseMarks];
 	private readonly float[] riseAge = new float[RiseMarks];
 	private int riseNext;
+
+	// His path, seen ahead: the crumbs he has still to walk (LedEscort.CopyAhead), at most StepsDrawn of them - 2,400 px,
+	// more than a screen - refreshed once a frame while he walks, and which pools any of them lie in.
+	private const int StepsDrawn = 120;
+	private readonly Vector2[] ahead = new Vector2[StepsDrawn];
+	private readonly long[] aheadIds = new long[StepsDrawn];
+	private readonly bool[] aheadInRot = new bool[StepsDrawn];
+	private int aheadCount;
+	private int poolsOnPath;
 
 	private static Texture2D Load(string name)
 	{
@@ -269,12 +332,13 @@ public partial class GibbetCageEvent : SideEvent
 		Texture2D gibbetTex = Load("gibbet.png"), cageTex = Load("gibbet-cage.png"), puntTex = Load("landing-punt.png");
 		poolTex = Load("gibbet-pool.png");
 		landingTex = Load("landing.png");
+		rotTex = Load("rot-pools.png");
 		linkTex = ResourceLoader.Exists("res://assets/bonelight/world/anvil/anvil-link.png")
 			? GD.Load<Texture2D>("res://assets/bonelight/world/anvil/anvil-link.png") : null;
 		idleTex = ResourceLoader.Exists(HimPath) ? GD.Load<Texture2D>(HimPath) : null;
 		walkTex = ResourceLoader.Exists(HimWalkPath) ? GD.Load<Texture2D>(HimWalkPath) : null;
 		if (gibbetTex == null || cageTex == null || puntTex == null || poolTex == null || landingTex == null || linkTex == null
-			|| idleTex == null || walkTex == null)
+			|| idleTex == null || walkTex == null || rotTex == null)
 		{
 			GD.PushError("GibbetCageEvent: the gibbet's art is missing or not imported (python tools/art/gibbet.py, then import).");
 			return;
@@ -295,7 +359,7 @@ public partial class GibbetCageEvent : SideEvent
 		punt = Grounded(puntTex, PuntW, PuntMiddle, PuntFoot, "Punt");
 		root.AddChild(punt);
 		punt.Position = new Vector2(PuntAt.X, PuntAt.Y - WorldSprites.SortLift);
-		// His bar, over the bodies and their icons: only while he walks.
+		// His bar, over the bodies and their icons: only while he walks and the rot has had some of him.
 		bar = new Node2D { Name = "HisBar", ZAsRelative = false, ZIndex = DrawLayers.AttackIcon, Visible = false };
 		bar.Draw += DrawBar;
 		AddChild(bar);
@@ -318,7 +382,6 @@ public partial class GibbetCageEvent : SideEvent
 
 	public override void _ExitTree()
 	{
-		HuntedEscort.Withdraw();
 		if (chain != null && IsInstanceValid(chain))
 			chain.Draw -= DrawChain;
 		if (bar != null && IsInstanceValid(bar))
@@ -343,6 +406,7 @@ public partial class GibbetCageEvent : SideEvent
 		if (takenBackFor >= 0f)
 			takenBackFor += delta;
 		hurtFlash = Mathf.Max(0f, hurtFlash - delta);
+		coughClock = Mathf.Max(0f, coughClock - delta);
 		for (int i = 0; i < RiseMarks; i++)
 			riseAge[i] += delta;
 		switch (phase)
@@ -379,7 +443,7 @@ public partial class GibbetCageEvent : SideEvent
 		PlaceHim();
 	}
 
-	/// <summary>Prints each change of phase, each rising and each fall. Set by _ExploreProbe.</summary>
+	/// <summary>Prints the rot's layout and each change of phase, each rising and each fall. Set by _ExploreProbe.</summary>
 	public static bool LogPhases { get; set; }
 
 	private void Enter(Phase next)
@@ -387,7 +451,8 @@ public partial class GibbetCageEvent : SideEvent
 		if (LogPhases)
 			GD.Print($"GIBBET {phase} -> {next} at t={Clock:0.0}s: him ({him.Position.X:0},{him.Position.Y:0}), landing ({landing.X:0},{landing.Y:0}), "
 				+ $"player ({Player?.GlobalPosition.X:0},{Player?.GlobalPosition.Y:0}), health {health}, "
-				+ $"{WalkProgress * 100f:0}% of the way, {BitesTaken} bites, {Risen} risen, {HuntedEscort.TurnedOnHim} turned");
+				+ $"{WalkProgress * 100f:0}% of the way, {RotTicksThisWalk} rot bites this walk ({RotTicks} in all, {PoolEntries} pools stepped in), "
+				+ $"{him.LoopsLeftOut} loops left out, {Risen} risen ({RisenInGaps} in gaps)");
 		phase = next;
 		phaseFor = 0f;
 	}
@@ -413,16 +478,17 @@ public partial class GibbetCageEvent : SideEvent
 	// The door is open and he has stepped out onto the bank: he follows from here.
 	private void Release()
 	{
-		Vector2 out_ = MainSite + new Vector2(16f, 44f);
-		him.Reset(out_);
-		walkFrom = Mathf.Max(1f, out_.DistanceTo(landing));
+		him.Reset(Door);
+		walkFrom = Mathf.Max(1f, Door.DistanceTo(landing));
 		health = HealthMax;
-		biteClock = 0f;
-		biters = 0;
+		inPool = -1;
+		rotClock = 0f;
+		RotTicksThisWalk = 0;
+		aheadCount = 0;
+		poolsOnPath = 0;
 		riseClock = RiseSeconds * 0.6f;
 		Releases++;
 		Enter(Phase.Walking);
-		HuntedEscort.Publish(him.Position);
 	}
 
 	private void TickWalk(float delta)
@@ -431,10 +497,10 @@ public partial class GibbetCageEvent : SideEvent
 		if (moved > 0f)
 			walkPhase += moved / 112f;
 		Walked += moved;
-		HuntedEscort.Publish(him.Position);
 		BestProgress = Mathf.Max(BestProgress, WalkProgress);
+		ReadPathAhead();
 
-		// The bog goes for him.
+		// The bog closes the way.
 		riseClock += delta;
 		if (riseClock >= RiseSeconds)
 		{
@@ -442,27 +508,28 @@ public partial class GibbetCageEvent : SideEvent
 			Rise();
 		}
 
-		// What is on him bites.
-		biteClock += delta;
-		if (biteClock >= BiteSeconds)
+		// The rot: a bite the moment his feet are in a pool, and every RotTickSeconds they stay.
+		int under = layout?.PoolUnder(him.Position) ?? -1;
+		if (under >= 0)
 		{
-			biteClock -= BiteSeconds;
-			var bites = new Bites { At = him.Position, RadiusSquared = BiteRadius * BiteRadius };
-			EnemyRegistry.ForEachNear(him.Position, BiteRadius + EnemyRegistry.StalenessMargin, ref bites);
-			biters = bites.Biters;
-			if (bites.Damage > 0)
+			if (inPool < 0)
 			{
-				health -= bites.Damage;
-				BitesTaken += bites.Biters;
-				DamageTaken += bites.Damage;
-				hurtFlash = 0.14f;
-				if (health <= 0)
-				{
-					health = 0;
-					Fall();
-					return;
-				}
+				PoolEntries++;
+				rotClock = RotTickSeconds;
 			}
+			inPool = under;
+			rotClock += delta;
+			while (rotClock >= RotTickSeconds)
+			{
+				rotClock -= RotTickSeconds;
+				if (TakeRot())
+					return;
+			}
+		}
+		else
+		{
+			inPool = -1;
+			rotClock = 0f;
 		}
 
 		// At the ferry: he is at the landing's foot, or the player is and he is close behind him (the bank there is the
@@ -471,43 +538,141 @@ public partial class GibbetCageEvent : SideEvent
 			|| (PlayerWithin(landing, BoardRadius) && him.Position.DistanceTo(Player.GlobalPosition) <= him.FollowGap + 40f);
 		if (atLanding)
 		{
-			HuntedEscort.Withdraw();
 			boardFrom = him.Position;
 			BestProgress = 1f;
+			inPool = -1;
 			Enter(Phase.Boarding);
 		}
 	}
 
-	/// <summary>
-	/// For _UiShot: out of the cage now, through the real release, and stood <paramref name="along"/> of the way from the
-	/// cage door to the landing (1 puts him within BoardRadius, so the punt takes him on the next step). Returns where the
-	/// player should stand: a stride ahead of him toward the landing. A run never calls it.
-	/// </summary>
-	public Vector2 DebugWalkFrom(float along)
+	// One bite of the rot. True if it was the last of him.
+	private bool TakeRot()
 	{
-		if (phase != Phase.Walking)
-			Release();
-		Vector2 door = MainSite + new Vector2(16f, 44f);
-		Vector2 at = along >= 1f ? landing + (door - landing).Normalized() * (BoardRadius * 0.5f) : door.Lerp(landing, Mathf.Clamp(along, 0f, 1f));
-		him.Reset(at);
-		HuntedEscort.Publish(at);
-		PlaceHim();
-		return at + (landing - at).Normalized() * 90f;
+		health -= RotDamage;
+		RotTicks++;
+		RotTicksThisWalk++;
+		RotTaken += RotDamage;
+		hurtFlash = 0.14f;
+		if (coughClock <= 0f)
+		{
+			coughClock = CoughSeconds;
+			SfxPlayer.AtPosition(SfxCatalog.EscortCough, him.Position);
+		}
+		if (health > 0)
+			return false;
+		health = 0;
+		Fall();
+		return true;
 	}
 
-	// The chapter's Mired breaking the surface AHEAD of him, across his way to the landing - the bog's own, not the run's
-	// spawn table. Ahead, not round him: nothing in the swarm is half his walk, so a ring raised round him only ever
-	// fell behind (the first probe runs: six risen, none came within the hunt's 250 px). Spread over 140 degrees of
-	// the way he is going, so the player has to clear the road, not stand over him.
+	// His path ahead, for the drawing: the crumbs he has still to walk, which of them lie in the rot, and which pools.
+	private void ReadPathAhead()
+	{
+		aheadCount = him.CopyAhead(ahead, aheadIds);
+		poolsOnPath = 0;
+		for (int k = 0; k < aheadCount; k++)
+		{
+			int pool = layout?.PoolUnder(ahead[k]) ?? -1;
+			aheadInRot[k] = pool >= 0;
+			if (pool >= 0 && pool < 32)
+				poolsOnPath |= 1 << pool;
+		}
+	}
+
+	/// <summary>
+	/// For _UiShot: out of the cage now, through the real release, and stood <paramref name="along"/> of the way along
+	/// the route proved through the rot (RotPoolLayout.Route), with the steps a player keeping ahead of him has walked
+	/// and he has not laid on along it for DebugLead px (1 puts him within BoardRadius of the landing, so the punt takes
+	/// him on the next step). <paramref name="straight"/> lays those steps straight at the landing instead, through
+	/// whatever rot is in the way. Returns where the player should stand: where those steps end. A run never calls it.
+	/// </summary>
+	public Vector2 DebugWalkFrom(float along, bool straight = false)
+	{
+		// Always a fresh walk: _UiShot holds the player on the arrow's target until now, and once he is out that is the
+		// landing, so the steps he had were one straight line through every wall and the rot had most of him.
+		Release();
+		Vector2[] route = layout?.Route;
+		if (along >= 1f || route == null || route.Length < 2)
+		{
+			Vector2 at = along >= 1f ? landing + (Door - landing).Normalized() * (BoardRadius * 0.5f) : WayStart.Lerp(landing, Mathf.Clamp(along, 0f, 1f));
+			him.Reset(at);
+			PlaceHim();
+			return at + (landing - at).Normalized() * 90f;
+		}
+		float total = 0f;
+		var corners = new System.Text.StringBuilder();
+		for (int i = 1; i < route.Length; i++)
+		{
+			total += route[i - 1].DistanceTo(route[i]);
+			if (i < route.Length - 1)
+				corners.Append($" {total:0}");
+		}
+		GD.Print($"GibbetCageEvent: the way through the rot is {total:0} px in {route.Length - 1} legs, its corners at{corners} px");
+		float from = total * Mathf.Clamp(along, 0f, 1f);
+		float to = Mathf.Min(total, from + DebugLead);
+		// Straight, he stands on the straight line from the winch instead, where a player walking at the arrow has led him.
+		Vector2 start = straight ? WayStart.Lerp(landing, Mathf.Clamp(along, 0f, 1f)) : OnRoute(route, from);
+		him.Reset(start);
+		Vector2 heading = (landing - start).Normalized();
+		Vector2 Step(float s) => straight ? start + heading * (s - from) : OnRoute(route, s);
+		for (float s = from; s < to; s += LedEscort.CrumbSpacing * 0.5f)
+			him.Record(Step(s));
+		Vector2 stand = Step(to);
+		him.Record(stand);
+		ReadPathAhead();
+		PlaceHim();
+		return stand;
+	}
+
+	private const float DebugLead = 420f;
+
+	private static Vector2 OnRoute(Vector2[] route, float distance)
+	{
+		for (int i = 1; i < route.Length; i++)
+		{
+			float leg = route[i - 1].DistanceTo(route[i]);
+			if (distance <= leg)
+				return route[i - 1].Lerp(route[i], leg > 0f ? distance / leg : 0f);
+			distance -= leg;
+		}
+		return route[^1];
+	}
+
+	// How far along the way to the landing a point is, from where the way starts (the winch).
+	private float AlongWay(Vector2 point) => (point - WayStart).Dot((landing - WayStart).Normalized());
+
+	// The chapter's Mired breaking the surface where the way is: in the first gap in the rot further along than he or the
+	// player has come, across it - so the gap the player meant to take is shut for a while, and the line keeps changing.
+	// Past the last wall there is no gap ahead, and they rise across his way as they always did: spread over 140 degrees
+	// of the way he is going, RiseMin to RiseMax ahead of him. Nothing in them is aimed at him; they chase the player.
 	private void Rise()
 	{
 		if (Game == null)
 			return;
+		float passed = Mathf.Max(AlongWay(him.Position), AlongWay(Player.GlobalPosition)) + 60f;
+		int gap = -1;
+		for (int i = 0; layout != null && i < layout.Openings.Count; i++)
+		{
+			float at = AlongWay(layout.Openings[i].Centre);
+			if (at > passed && (gap < 0 || at < AlongWay(layout.Openings[gap].Centre)))
+				gap = i;
+		}
 		float ahead = (landing - him.Position).Angle();
 		for (int i = 0; i < RiseCount; i++)
 		{
-			float angle = ahead + Mathf.DegToRad(-70f + 140f * (i + 0.5f) / RiseCount) + (float)GD.RandRange(-0.25, 0.25);
-			Vector2 at = him.Position + Vector2.FromAngle(angle) * (float)GD.RandRange(RiseMin, RiseMax);
+			Vector2 at;
+			if (gap >= 0)
+			{
+				RotPoolLayout.Opening opening = layout.Openings[gap];
+				float share = (i + 0.5f) / RiseCount - 0.5f;
+				at = opening.Centre + opening.Across * (opening.Width * 0.7f * share)
+					+ opening.Across.Orthogonal() * (float)GD.RandRange(-20.0, 20.0);
+			}
+			else
+			{
+				float angle = ahead + Mathf.DegToRad(-70f + 140f * (i + 0.5f) / RiseCount) + (float)GD.RandRange(-0.25, 0.25);
+				at = him.Position + Vector2.FromAngle(angle) * (float)GD.RandRange(RiseMin, RiseMax);
+			}
 			Enemy risen = Game.SpawnEventEnemy(BestiaryRole.Bulk, at, RiseHealth, false);
 			if (risen == null)
 				continue;
@@ -518,38 +683,19 @@ public partial class GibbetCageEvent : SideEvent
 			if (risen.GlobalPosition.DistanceSquaredTo(at) > 60f * 60f && !Game.IsGroundBlockedAt(at))
 				risen.GlobalPosition = at;
 			Risen++;
+			if (gap >= 0)
+				RisenInGaps++;
 			riseAt[riseNext] = risen.GlobalPosition;
 			riseAge[riseNext] = 0f;
 			riseNext = (riseNext + 1) % RiseMarks;
 		}
 	}
 
-	// Allocation-free: every body touching him, by its live position, bites once.
-	private struct Bites : INeighbourVisitor
-	{
-		public Vector2 At;
-		public float RadiusSquared;
-		public int Damage;
-		public int Biters;
-
-		public void Visit(Enemy enemy, Vector2 position)
-		{
-			if (enemy.IsDying || enemy.GlobalPosition.DistanceSquaredTo(At) > RadiusSquared)
-				return;
-			int bite = enemy.ScaleOutgoingDamage(Math.Max(1, enemy.ContactDamage));
-			if (bite <= 0)
-				return;
-			Damage += bite;
-			Biters++;
-			enemy.PlayAttackAnimation();
-		}
-	}
-
-	// He has fallen: the bog takes him.
+	// The rot has had all of him: the bog takes him.
 	private void Fall()
 	{
-		HuntedEscort.Withdraw();
 		Falls++;
+		inPool = -1;
 		Enter(Phase.Sinking);
 		SfxPlayer.Impact(Element.Poison, him.Position);
 	}
@@ -561,6 +707,8 @@ public partial class GibbetCageEvent : SideEvent
 		health = HealthMax;
 		winch = 0f;
 		takenBackFor = 0f;
+		aheadCount = 0;
+		poolsOnPath = 0;
 		Enter(Phase.Hanging);
 	}
 
@@ -586,7 +734,6 @@ public partial class GibbetCageEvent : SideEvent
 
 	protected override void OnStoodDown()
 	{
-		HuntedEscort.Withdraw();
 		if (himSprite != null && IsInstanceValid(himSprite))
 			himSprite.Visible = false;
 		if (bar != null && IsInstanceValid(bar))
@@ -633,7 +780,8 @@ public partial class GibbetCageEvent : SideEvent
 	{
 		if (himSprite == null || !IsInstanceValid(himSprite))
 			return;
-		bar.Visible = phase == Phase.Walking;
+		// His bar only once the rot has had some of him, or while it has him: until then there is nothing to read in it.
+		bar.Visible = phase == Phase.Walking && (health < HealthMax || inPool >= 0);
 		bar.QueueRedraw();
 		Vector2 at;
 		bool walking = false;
@@ -645,7 +793,7 @@ public partial class GibbetCageEvent : SideEvent
 			{
 				// Stepping down out of the open door onto the bank.
 				float t = Mathf.Clamp((phaseFor - OpenSeconds) / StepOutSeconds, 0f, 1f);
-				at = MainSite.Lerp(MainSite + new Vector2(16f, 44f), t * t * (3f - 2f * t));
+				at = MainSite.Lerp(Door, t * t * (3f - 2f * t));
 				walking = true;
 				break;
 			}
@@ -690,8 +838,10 @@ public partial class GibbetCageEvent : SideEvent
 		if (sunk > 0)
 			himSprite.RegionRect = new Rect2(0, 0, 48 * himSprite.Hframes, 48 - sunk);
 		himSprite.Offset = new Vector2(-24f, WorldSprites.SortLift / 2f - 46f + sunk);
+		// In the rot he goes the sickly colour of it; a bite flashes him.
 		float flash = hurtFlash > 0f ? 1f : 0f;
-		himSprite.Modulate = new Color(1f, 1f - 0.45f * flash, 1f - 0.45f * flash, alpha);
+		Color tint = inPool >= 0 && phase == Phase.Walking ? new Color(0.86f, 1f, 0.7f) : Colors.White;
+		himSprite.Modulate = new Color(tint.R, tint.G * (1f - 0.45f * flash), tint.B * (1f - 0.45f * flash), alpha);
 	}
 
 	// The punt at its mooring, or drifting off with him into the fog (t 0 to 1), fading as it goes.
@@ -728,8 +878,8 @@ public partial class GibbetCageEvent : SideEvent
 		}
 	}
 
-	// His bar, over his head while he walks: the bar's track in occlusion, what he has left in a warm pale gold (he is a
-	// person, not one of his), the bite just taken flashing white.
+	// His bar, over his head once the rot has had some of him: the bar's track in occlusion, what he has left in a warm
+	// pale gold (he is a person, not one of his), the bite just taken flashing white.
 	private void DrawBar()
 	{
 		if (phase != Phase.Walking)
@@ -746,12 +896,25 @@ public partial class GibbetCageEvent : SideEvent
 
 	// --- drawing on the ground -----------------------------------------------------------------------------------
 
-	// The rot pool under the gibbet, the landing's black water and jetty, and the mud where the Mired broke the surface.
-	// World units: the node is at the run's origin.
+	// The steps ahead of him: the light ramp's hot and mid stops on the peat (warm, his - the bar's family), and where
+	// they run through the rot, the poison ramp's mid on its edge, so the trail itself says "he will be in it here".
+	private static readonly Color StepWarm = new(1f, 0.973f, 0.847f);          // light #FFF8D8
+	private static readonly Color StepWarmEdge = new(0.545f, 0.38f, 0.07f);    // under it: gold's shade-to-base, so it holds on pale ground
+	private static readonly Color StepRot = new(0.706f, 0.878f, 0.29f);        // poison #B4E04A
+	private static readonly Color StepRotEdge = new(0.18f, 0.133f, 0.031f);    // gold's deep, the sludge under it
+	private static readonly Color GlowWarm = new(1f, 0.776f, 0.235f);          // light's edge #FFC63C
+	private static readonly Color GlowRot = new(0.42f, 0.58f, 0.125f);         // poison's edge #6B9420
+
+	// How long the rot takes to fade off the bog after the punt has taken him (the event is freed a few seconds on).
+	private const float RotFadeSeconds = 2f;
+
+	// The rot pools on his way, the rot pool under the gibbet, the landing's black water and jetty, the steps ahead of
+	// him, and the mud where the Mired broke the surface. World units: the node is at the run's origin.
 	public override void _Draw()
 	{
 		if (Player == null)
 			return;
+		DrawRot();
 		if (poolTex != null && NearPlayer(PoolAt))
 		{
 			int f = (int)(Clock / 0.45f) % PoolFrames;
@@ -763,6 +926,8 @@ public partial class GibbetCageEvent : SideEvent
 			Vector2 at = SpellInk.Snap(ToLocal(landing)) - LandingFootArt * 2f;
 			DrawTextureRect(landingTex, new Rect2(at, new Vector2(LandingW * 2f, LandingH * 2f)), false);
 		}
+		if (phase == Phase.Walking && !IsResolved)
+			DrawSteps();
 		// The Mired coming up: a ring of the bog's own dark spreading out and going, where each broke the surface.
 		for (int i = 0; i < RiseMarks; i++)
 		{
@@ -775,6 +940,16 @@ public partial class GibbetCageEvent : SideEvent
 			DrawArc(ToLocal(riseAt[i]) + new Vector2(0f, -2f), r - 3f, Mathf.Pi, Mathf.Tau, 12,
 				new Color(0.706f, 0.878f, 0.290f, 0.35f * (1f - age / 0.8f)), 2f);
 		}
+		// The rot round his feet while it has him: two rings of its sickly edge rolling out.
+		if (phase == Phase.Walking && inPool >= 0)
+		{
+			Vector2 feet = SpellInk.Snap(ToLocal(him.Position));
+			for (int k = 0; k < 2; k++)
+			{
+				float t = (Clock * 1.6f + k * 0.5f) % 1f;
+				DrawArc(feet, 12f + 22f * t, 0f, Mathf.Tau, 18, new Color(GlowRot, 0.8f * (1f - t)), 2f);
+			}
+		}
 		// The winch's hold, filling along a dashed ring round its foot while the cage hangs.
 		if (IsFound && !IsResolved && phase == Phase.Hanging)
 		{
@@ -783,9 +958,73 @@ public partial class GibbetCageEvent : SideEvent
 		}
 	}
 
+	// The rot on his way: each pool still, or stirred and bubbling while he is near it or his path ahead runs into it;
+	// fading off the bog once the punt has him.
+	private void DrawRot()
+	{
+		if (rotTex == null || layout == null)
+			return;
+		float alpha = IsResolved ? Mathf.Clamp(1f - SecondsSinceResolved / RotFadeSeconds, 0f, 1f) : 1f;
+		if (alpha <= 0f)
+			return;
+		const int cell = RotPoolLayout.ArtCell;
+		var size = new Vector2(cell * 2f, cell * 2f);
+		var modulate = new Color(1f, 1f, 1f, alpha);
+		for (int i = 0; i < layout.Pools.Count; i++)
+		{
+			RotPoolLayout.Pool pool = layout.Pools[i];
+			if (!NearPlayer(pool.Centre))
+				continue;
+			int frame = IsStirred(i) ? 1 + ((int)(Clock / 0.22f) + i) % (RotPoolLayout.ArtFrames - 1) : 0;
+			Vector2 centre = SpellInk.Snap(ToLocal(pool.Centre));
+			DrawSetTransform(centre, 0f, new Vector2(pool.Flip ? -1f : 1f, 1f));
+			DrawTextureRectRegion(rotTex, new Rect2(-size / 2f, size), new Rect2(frame * cell, pool.ArtRow * cell, cell, cell), modulate);
+		}
+		DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
+	}
+
+	private bool IsStirred(int pool)
+	{
+		if (phase != Phase.Walking || layout == null)
+			return false;
+		RotPoolLayout.Pool p = layout.Pools[pool];
+		float reach = p.Radius + StirReach;
+		return him.Position.DistanceSquaredTo(p.Centre) < reach * reach || (pool < 32 && (poolsOnPath & (1 << pool)) != 0);
+	}
+
+	// His path, seen ahead: each crumb he has still to walk as a small mark beside the line, left and right in turn by
+	// the crumb's own number (so a mark holds still as he walks), a shimmer running along them toward the player.
+	private void DrawSteps()
+	{
+		Vector2 player = Player.GlobalPosition;
+		for (int k = 0; k < aheadCount; k++)
+		{
+			Vector2 p = ahead[k];
+			if (p.DistanceSquaredTo(player) > 1500f * 1500f)
+				continue;
+			Vector2 dir = ahead[Math.Min(k + 1, aheadCount - 1)] - ahead[Math.Max(k - 1, 0)];
+			dir = dir.LengthSquared() > 0.01f ? dir.Normalized() : him.Heading;
+			float side = (aheadIds[k] & 1) == 0 ? 1f : -1f;
+			Vector2 at = SpellInk.Snap(ToLocal(p + dir.Orthogonal() * (5f * side)));
+			float shimmer = StepShimmer(aheadIds[k]);
+			bool rot = aheadInRot[k];
+			Color edge = rot ? StepRotEdge : StepWarmEdge;
+			Color core = rot ? StepRot : StepWarm;
+			// A 6 px mark (three art pixels) on a darker cross a pixel wider: at 4 px the first photographs lost it on the
+			// phone's canvas.
+			DrawRect(new Rect2(at - new Vector2(5f, 3f), new Vector2(10f, 6f)), new Color(edge, 0.6f * shimmer));
+			DrawRect(new Rect2(at - new Vector2(3f, 5f), new Vector2(6f, 10f)), new Color(edge, 0.6f * shimmer));
+			DrawRect(new Rect2(at - new Vector2(3f, 3f), new Vector2(6f, 6f)), new Color(core, 0.95f * shimmer));
+		}
+	}
+
+	// 0.55 to 1: a brighter beat running along the steps from him toward the player, about two a second.
+	private float StepShimmer(long id) => 0.55f + 0.45f * Mathf.Max(0f, Mathf.Sin(Clock * 5f - id * 0.45f));
+
 	// The far tell stands up from his mark on the cage's lock, wherever the cage hangs: full while nobody has come, dim
 	// once he has; out once he is out. And always, near, the lock itself - a cold point. While he walks, a faint column
-	// over the landing too, so the far end of the walk is seen at the edge of the screen before the arrow is needed.
+	// over the landing too, so the far end of the walk is seen at the edge of the screen before the arrow is needed; the
+	// steps ahead of him glowing; and a sickly glow over every pool that is stirred.
 	protected override void DrawLight(CanvasItem light)
 	{
 		if (cage == null || !IsInstanceValid(cage))
@@ -802,6 +1041,23 @@ public partial class GibbetCageEvent : SideEvent
 		}
 		if (phase == Phase.Walking && NearPlayer(landing))
 			DrawFarTell(light, JettyEnd, new Color(0.706f, 0.835f, 0.9f), 0.35f);
+		if (phase == Phase.Walking && layout != null)
+		{
+			for (int i = 0; i < layout.Pools.Count; i++)
+			{
+				if (IsStirred(i) && NearPlayer(layout.Pools[i].Centre))
+					ExploreArt.DrawGlow(light, ToLocal(layout.Pools[i].Centre), layout.Pools[i].Radius * 1.1f,
+						new Color(GlowRot, 0.16f * Flicker(5 + i)));
+			}
+			Vector2 player = Player.GlobalPosition;
+			for (int k = 0; k < aheadCount; k += 2)
+			{
+				if (ahead[k].DistanceSquaredTo(player) > 1500f * 1500f)
+					continue;
+				ExploreArt.DrawGlow(light, ToLocal(ahead[k]), 18f,
+					new Color(aheadInRot[k] ? GlowRot : GlowWarm, (aheadInRot[k] ? 0.45f : 0.32f) * StepShimmer(aheadIds[k])));
+			}
+		}
 		// The dose in his flask, his own light, while he walks.
 		if ((phase == Phase.Walking || phase == Phase.Boarding && phaseFor < BoardWalkSeconds) && himSprite != null && himSprite.Visible)
 		{

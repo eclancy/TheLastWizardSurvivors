@@ -450,8 +450,33 @@ a fifth finger, and run past the far side of the fingers it was one again.
 
 ## The title screen is also the menu
 
-Pressing a key no longer changes scene. `TitleScreen.ShowMenu` instantiates `MainMenu.tscn` and adds
-it as a **child**, then hides the prompt.
+### Desktop sizes and bottom controls (2026-11-06)
+
+Desktop now uses **Expand**, preserving the picture's proportions while filling 16:9, 16:10,
+4:3, 3:2 and ultrawide windows. Keep Height letterboxed taller screens. Fullscreen uses the
+current display's native size with Godot's exclusive-fullscreen mode. Options starts with Display:
+Fullscreen, a window-size dropdown (disabled in fullscreen), then the native resolution readout.
+Automatic fits a 1600x900 window to the usable desktop; explicit sizes are filtered to fit, and
+an oversized preference from another display is clamped. F11/Alt+Enter use the same saved mode
+and restore the selected window size. SaveData.Fullscreen/WindowWidth/WindowHeight are settings,
+preserved by story resets and optional when loading older saves. Tool launches keep their requested
+window geometry. Mobile retains the portrait canvas and its existing scaling.
+
+**The footer is one row:** Options, Evolution Codex, flexible space, Quit on desktop; three equal
+buttons on portrait. Heights and baselines match, with consistent bottom insets. Difficulty sits
+above the row. The version sits in the upper-left safe-area corner on both title and menu:
+raising it above the footer had put it over PRESS ANY BUTTON on the phone (Eric, 2026-11-07).
+The footer remains safe-area-aware and keyboard/pad navigable.
+
+**Artwork coverage:** `python tools/art/title_backdrop.py` generates a static forest without
+lettering and a separate lettering layer from the existing wide generator. The forest covers the
+expanded viewport with nearest filtering and whole screen pixels when extra coverage is needed;
+the wordmark, wizard and ward keep their core layout. The eyes move with their forest. Existing
+wide animation frames and the portrait artwork are unchanged by the generator.
+
+Pressing a key no longer changes scene. `TitleScreen.ShowMenu` reveals its **already prepared child**
+`MainMenu`, gives it focus and hides the prompt. The opening press is consumed so it cannot also
+activate Start Run.
 
 The reason is the animation. Swapping scenes tore the artwork down and rebuilt it, which restarted
 every layer in `SetUpAnimation` - so although both screens showed the same picture, the handoff read
@@ -460,13 +485,71 @@ never stopped moving.
 
 **Everything that used to return to the main menu now loads this scene instead**, setting
 `Global.OpenMenuImmediately = true` first: `CharacterSelection` (back), `GameOverScreen`, and
-`Node2DGame` (quit to menu). `_Ready` reads the flag, clears it, and opens the menu at the end of
-its work - last, deliberately, because everything the menu draws over has to exist first. Without
+`Node2DGame` (quit to menu). `_Ready` reads the flag, clears it, and opens the menu after preparation
+finishes - last, deliberately, because everything the menu draws over has to exist first. Without
 the flag the player would press a key to dismiss the title beat after every single run.
 
 `MainMenu` is therefore never loaded standalone in the shipping game. `scripts/_UiShot.cs` still
 loads it directly for screenshots and will show the menu against a black ground, which is correct
 for a measurement tool and wrong for a player.
+
+### Startup preparation and the first-press freeze (2026-11-05)
+
+**2026-11-06 follow-up:** the loader now crops the complete ward from the wide title frames
+(`360,144,460,192`); the portrait ward was itself clipped at both sides. Its responsive box retains
+padding and whole screen pixels. Shop cards and achievement items/rows are built cooperatively
+on the main thread with a 4 ms work budget between draws. The previous seven coarse stages hid a
+3.46 s achievements-page stall inside one frame. All filters use the same row builder in synchronous
+and incremental paths. Loading input stays blocked and retry remains available on failure.
+Fresh-process desktop probes measured about 2.2 s preparation and 97-109 ms maximum loading
+draw gaps after the fix, versus the original 3,456 ms gap. Portrait/safe-area, 4:3, retry and
+return-to-menu paths passed; these measurements are from this PC, not Android hardware.
+
+The root menu now has **Quit** in the lower-right, keyboard/pad reachable to the right of Evolution
+Codex and hidden while a menu panel is open. Portrait utility buttons share a bottom row above the
+safe edge; the difficulty caption sits above them. Desktop keeps its existing utilities on the left,
+with the difficulty caption lifted above Quit. `_TitleLoadProbe --quit` tests the real exit action.
+
+The first press used to synchronously load, instantiate and add `MainMenu`. A real-window probe on
+Windows measured **13,952 ms** from Enter to the first menu draw: **12,048 ms in regression checks**,
+682 ms in spell/character validation, and under a second in the menu's own construction. This was
+development verification running on the player's main thread, not a resolution problem.
+
+- **The full validator is opt-in:** `--validate-content` runs it once from `MainMenu` or
+  `Node2DGame`. Keep using it for verification (see `CLAUDE.md`); normal launches run no regression
+  suite. `--profile-startup` prints the resource/validation/menu-stage timings.
+- **After the updater finishes**, `TitleScreen` displays `TitleLoadingScreen`, requests the menu
+  scene with the threaded loader, and only retrieves it once loaded. It builds the hidden menu in
+  seven main-thread stages (`MainMenu.PrepareInSteps`); standalone menu harnesses stay synchronous.
+- The loading art reuses the generated title's ward and flame frames, cropped through
+  `AtlasTexture`, drawn by `PixelArtRect` at whole screen pixels. Fire appears in two groups as
+  resource/menu stages complete. No new PNGs, fabricated percentage or minimum loading duration.
+- The completed menu is drawn behind the opaque loader for layout/font/material warmup, hidden,
+  then the title starts. Loading inputs are consumed; failure offers **Try again**. A return from
+  a run uses the same preparation and then opens the menu directly, without the title prompt.
+- Removed the duplicate initial shop refresh and achievements-page rebuild. In fresh Windows
+  processes, preparation measured about **1.2-1.5 s**, and the opening press **34-44 ms** with keyboard,
+  mouse and pad. Portrait at 540x1212 measured **45 ms** for the press. The main checkout's first
+  post-build run took **8.7 s** to prepare, the next **4.1 s**, with **105-106 ms** button-to-menu
+  times. Loading duration varies with the checkout/cache and machine load; it is not a fixed
+  1.2-second screen. Preparation still includes synchronous UI work: the first achievements build
+  measured about 0.5 s in the test checkout and 1.8 s in the main checkout. That work is covered by
+  loading, before the title accepts input. These are desktop measurements; the Pixel 9 was
+  disconnected, so physical Android timings remain unmeasured.
+- **0.13.2 packaged Windows check (2026-11-06):** the release executable in a separate temporary
+  `APPDATA` prepared in **1,115.7 ms** (largest preparation draw gap **366.4 ms**), then opened the
+  menu **32.9 ms** after Enter (largest draw gap **16.7 ms**). Prepared Powers, Achievements and
+  Options opened and closed successfully; early loading input did not start a run. This is one
+  measured export run, not a guaranteed loading time. `--no-save-writes --no-update` kept the
+  test isolated from real progress and the published updater.
+
+`scenes/_TitleLoadProbe.tscn -- --no-save-writes --profile-startup` measures the first rendered menu
+after a real press, failing if the prepared press takes over 250 ms. `--input=mouse` / `--input=pad`
+/ `--input=touch`, `--returning`, `--failed-load`, `--reset-notice` and
+`--portrait --safe-area` cover input, direct returns, retry and portrait. It sends early presses
+during loading and verifies they neither skip preparation nor activate Start Run. It also opens and
+closes the prepared Powers, Achievements and Options panels. The only save used is an in-memory
+fresh one.
 
 ### How the menu is laid out against the artwork
 
@@ -781,8 +864,8 @@ each end (the node is anchored to the bottom of `TitleImage`, so it had to move 
 bottom band). That put the 360x20 strip on authored rows **590-610**. **It has since moved
 again**: it is bigger (scale 3, a 360x24 strip) and `TitleScreen.PlacePrompt` puts it near the
 bottom of whatever the screen shows - see the knobs table. The clearance is 88 canvas units
-rather than just enough for a rounded corner because the version label sits 12-40 units off the
-bottom (36 more under SafeArea on a phone), and at 60 the label ended up beside the P.
+rather than just enough for a rounded corner, leaving breathing room under the prompt. The version
+label now sits in the upper-left safe area, independently of the prompt and main-menu footer.
 
 **The glow draws in front of the metal.** The fork was drawn over the bloom so the claw would not
 be swallowed, which put a hard gold cutout across the front of the light source — the one thing
@@ -892,7 +975,7 @@ the two 160-column side bands to `occ` at the frame edge.
 | Evolution Codex | (134,296)-(236,320) | no pocket of its own; a quiet button on the dark grass, clear of the ward's left rim and flame. Report a bug stood beside it until 2026-11-02 and is in Options now |
 | difficulty | (470,312)-(632,352) | `DETAIL_BOX`, right-aligned; one line since the next-run gain line went (2026-11-02) |
 | PRESS ANY BUTTON | rows 322-346, centred | `PROMPT_BOX`; `TitleScreen.WidePromptBottomRow` = 346 |
-| version label | (4,338)-(48,356) | `VERSION_BOX`; where `AddVersionLabel` lands on a 16:9 screen |
+| version label | top-left, canvas offsets (20,20)-(220,48), plus safe-area insets | `AddVersionLabel`; the old bottom-left `VERSION_BOX` pocket is unused |
 
 **Every one of those boxes is a dark pocket in the art** (`ui_pocket_t`), soft-edged and only as
 dark as it needs - held at full strength with a short fade, the empty ones read as black panels

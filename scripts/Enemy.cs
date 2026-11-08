@@ -15,6 +15,12 @@ public partial class Enemy : CharacterBody2D
 	private float airborneTime = 0f;
 	private float airborneDuration = 0f;
 	private float airborneHeight = 0f;
+	// Killed while thrown up: the corpse finishes its arc and the death strip waits for the landing
+	// (Eric, 2026-11-07: a body Deep Strata launches must not die until it hits the ground). Only
+	// presentation waits - the rewards, the group leave and the collision zeroing all still happen
+	// on the killing frame, in StartDeath. _Process ticks the rest of the flight, since a corpse's
+	// _PhysicsProcess is off.
+	private bool dyingInAir = false;
 	// While it flies it is drawn over everything in the air (DrawLayers.Air) and under the floating
 	// numbers: among y-sorted bodies a body thrown up was lost behind its neighbours' heads, and at Air
 	// it was lost behind the very glass (Obsidian Spike) or arm (Black Tentacles) that threw it.
@@ -660,31 +666,6 @@ public partial class Enemy : CharacterBody2D
 		return draws;
 	}
 
-	// THE HUNTED (HuntedEscort, .ai/chapter-wizards.md 4.4): which classes go for an escorted person near them. A body
-	// whose steering is the plain chase - the base AdjustSteering - does: it walks at whoever it wants and bites. One
-	// with a behaviour of its own does not, because that behaviour is aimed at the player: a caster holds range from
-	// him and shoots at him, a lunger's dash and a slammer's ring are measured against him, an exploder goes off on
-	// him. Turning their feet to the escort and leaving their aim on the player would put a caster at his side firing
-	// past him. And every boss overrides it (BossEnemy does), so no boss ever retargets. Measured once per class.
-	private static readonly System.Collections.Generic.Dictionary<Type, bool> huntsEscortByType = new();
-
-	/// <summary>Whether bodies of <paramref name="type"/> go for an escorted person within HuntedEscort.HuntRadius.</summary>
-	public static bool ClassHuntsEscort(Type type)
-	{
-		if (!huntsEscortByType.TryGetValue(type, out bool hunts))
-		{
-			var steer = type.GetMethod(nameof(AdjustSteering), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
-				null, new[] { typeof(Vector2), typeof(float) }, null);
-			hunts = steer != null && steer.DeclaringType == typeof(Enemy) && !typeof(BossEnemy).IsAssignableFrom(type);
-			huntsEscortByType[type] = hunts;
-		}
-		return hunts;
-	}
-
-	private bool huntsEscort;
-	// Whether the last chase step went for the escort rather than the player, so the switch re-aims at once.
-	private bool wasHuntingEscort;
-
 	private static bool ClassDrawsItself(Type type)
 	{
 		if (!drawsItselfByType.TryGetValue(type, out bool draws))
@@ -699,9 +680,12 @@ public partial class Enemy : CharacterBody2D
 
 	public override void _Ready()
 	{
+		// Overriding _Process turns idle processing on for every body; only a corpse falling out of
+		// the air uses it (dyingInAir), so it stays off until StartDeath needs it. Without this every
+		// one of a 140-strong swarm would pay an interop call a frame for nothing.
+		SetProcess(false);
 		maxHealth = Health;
 		drawsItself = ClassDrawsItself(GetType());
-		huntsEscort = ClassHuntsEscort(GetType());
 		if (ClassDrawsGroundTells(GetType()))
 		{
 			groundTells = new Node2D { Name = "GroundTells", ZAsRelative = false, ZIndex = DrawLayers.GroundTell };
@@ -965,6 +949,10 @@ public partial class Enemy : CharacterBody2D
 		// Water and maze walls moved off layer 1 onto their own (LevelTilePainter.TerrainCollisionLayer)
 		// so the player could meet them with his feet. Enemies still stop at them exactly as before.
 		SetCollisionMaskValue(LevelTilePainter.TerrainCollisionLayer, true);
+		// Water then moved off the walls' layer onto ITS own, so the player could wade it
+		// (in-flight 59). For the swarm nothing changed: a lake stops it, a shove toward one
+		// slides along the shore, and the flow field routes round it as it always has.
+		SetCollisionMaskValue(LevelTilePainter.WaterCollisionLayer, true);
 		// The one layer the player's body masks besides decor: what he cannot shove, he slides off.
 		SetCollisionLayerValue(BlockerCollisionLayer, BlocksPlayer);
 		// And what the swarm cannot overlap: see the note above.
@@ -1174,19 +1162,6 @@ public partial class Enemy : CharacterBody2D
 			// Read once: each position read is a call into the engine, per body per step.
 			Vector2 here = GlobalPosition;
 			Vector2 playerPosition = player.GlobalPosition;
-			// THE HUNTED (HuntedEscort): within its radius of a person the player is leading, a plain chaser goes
-			// for him instead - he is the target of everything below, the chase, the ring slot and the stand-off.
-			// One flag test while nobody is being led; one distance while someone is.
-			bool huntingEscort = false;
-			if (HuntedEscort.Active && huntsEscort && here.DistanceSquaredTo(HuntedEscort.Target) <= HuntedEscort.HuntRadiusSquared)
-			{
-				playerPosition = HuntedEscort.Target;
-				huntingEscort = true;
-				if (!wasHuntingEscort)
-					HuntedEscort.NoteTurned();
-			}
-			bool switchedTarget = huntingEscort != wasHuntingEscort;
-			wasHuntingEscort = huntingEscort;
 			Vector2 playerOffset = playerPosition - here;
 			float distanceToPlayer = playerOffset.Length();
 
@@ -1210,7 +1185,7 @@ public partial class Enemy : CharacterBody2D
 				// Both staggers below key off this; read once, and the id held from _Ready - each is a
 				// call into the engine, per body per step.
 				ulong staggerTick = Engine.GetPhysicsFrames() + instanceId;
-				bool reaim = !hasCachedApproachDir || switchedTarget
+				bool reaim = !hasCachedApproachDir
 					|| staggerTick % (ulong)refreshInterval == 0;
 				if (reaim)
 				{
@@ -2287,7 +2262,9 @@ public partial class Enemy : CharacterBody2D
 
 		// Before the group leave and the collision zeroing below, while GlobalPosition still
 		// means something. The sound is allowed to outlast the corpse - it gates nothing.
-		PlayDeathSound();
+		// A body killed in the air pops when it lands instead, with its death strip.
+		if (airborneTime <= 0f)
+			PlayDeathSound();
 
 		if (HasSignal("killed"))
 			EmitSignal("killed");
@@ -2319,15 +2296,47 @@ public partial class Enemy : CharacterBody2D
 		// animation that never advances never finishes, so a corpse killed frozen would never free.
 		StatusEffectLayer.Current?.Untrack(this);
 		RefreshStatusLook();
-		// Killed in the air (ApplyLaunch): it drops, rather than playing its death hung where it was.
+		// Killed in the air (ApplyLaunch): the corpse finishes its arc and dies when it lands,
+		// rather than playing its death hung in the air or snapped to the ground. Everything
+		// gameplay has already happened above, on this frame - only the fall, the death sound
+		// and the death strip wait. A corpse's _PhysicsProcess is off, so _Process ticks the
+		// rest of the flight; the shock shake is dropped so the fall is the pure arc.
 		if (airborneTime > 0f)
 		{
-			airborneTime = 0f;
-			ZIndex = groundedZIndex;
-			UpdateShockVisual(0f);
+			shockTimeRemaining = 0f;
+			dyingInAir = true;
+			SetProcess(true);
+			FrameProfiler.End(FrameProfiler.Section.EnemyDeath, perfStart);
+			return;
 		}
 		FrameProfiler.End(FrameProfiler.Section.EnemyDeath, perfStart);
+		BeginDeathPresentation();
+	}
 
+	// Only a body killed mid-air runs this (StartDeath turns it on; _Ready turns it off): what is
+	// left of the arc, then the landing - the grounded z, the death pop, the death strip.
+	public override void _Process(double delta)
+	{
+		if (!dyingInAir)
+		{
+			SetProcess(false);
+			return;
+		}
+		airborneTime = MathF.Max(0f, airborneTime - (float)delta);
+		UpdateShockVisual(0f);
+		if (airborneTime > 0f)
+			return;
+		dyingInAir = false;
+		SetProcess(false);
+		ZIndex = groundedZIndex;
+		PlayDeathSound();
+		BeginDeathPresentation();
+	}
+
+	// The corpse's presentation - the staged fall, the death strip, or the deferred free - shared by
+	// the killing frame and the end of a dying body's airborne arc (dyingInAir above).
+	private void BeginDeathPresentation()
+	{
 		// A body that stages its own fall (BossEnemy, BossDeath) takes the corpse from here. Everything
 		// that is gameplay - the rewards, the group, the collision - has already happened above, on
 		// this frame, so what follows is presentation only. Tint and punch go back to rest first, for

@@ -210,6 +210,31 @@ public static class ComboCatalog
 			ResourcePath = "res://SpellData_Sagittarius.tres",
 			SynergyTag = "Conjunction / Converge",
 		},
+		// Shadow Bolt (.ai/combo-spells.md section 7; in-flight item 17, Eric 2026-11-05): once an ordinary
+		// chain spell, moved whole into the Conjunction roster - the void given the plague's hunger. Cosmic
+		// Collapse is the lance ending in a black hole; Pandemic is the whole infected crowd going off on one
+		// beat. Fused, a bolt of void leaps body to body laying the festering curse (poisoned, slowed and
+		// exposed, the old spell's identity), and on each beat every cursed body caves in and passes it on.
+		// With Witching Hour there is no hole to seed, with Plague Wind no shared beat: either seals it.
+		// Contagion is Paracelsus's starting spell (The Dose is his Apotheosis on it): not his to make.
+		new()
+		{
+			Id = ShadowBolt.SpellId,
+			Name = "Shadow Bolt",
+			Verb = "fester",
+			First = new ComboIngredient
+			{
+				SpellId = ShadowBolt.LanceSpellId, AscensionId = VoidLance.CollapseId,
+				SpellName = "Void Lance", AscensionName = "Cosmic Collapse",
+			},
+			Second = new ComboIngredient
+			{
+				SpellId = ShadowBolt.PlagueSpellId, AscensionId = Contagion.PandemicId,
+				SpellName = "Contagion", AscensionName = "Pandemic",
+			},
+			ResourcePath = "res://SpellData_ShadowBolt.tres",
+			SynergyTag = "Conjunction / Fester",
+		},
 		// The Taking (.ai/dark-wizard-playable.md): the dark wizard's own, and the one Conjunction a wizard opens
 		// on. His darkness and the light he took: Black Sun is a dark star that pulls and collapses again and
 		// again, Pyre a kindled light grown into a small sun. Together, a hand of his dark light seizes the

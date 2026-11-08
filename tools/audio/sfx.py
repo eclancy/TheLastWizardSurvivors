@@ -457,15 +457,33 @@ def player_shield_absorb():
 
 
 def player_shield_break():
+    """Deeper, like cracking glass (Eric, in-flight item 60, 2026-11-06: the old one - the ice
+    stack on 1200 Hz under a 6 kHz lid - was annoying). The CRACK leads: a mid-band snap over a
+    low split falling to 90 Hz (the low band is the player's; the sub stays the explosion's and
+    the boss's), then the same inharmonic glass ratios struck once on 500->400 Hz with the 12.1
+    partial gone, the debris band an octave down, and the lid at 4.2 kHz. Still one stack struck
+    once in 0.65 s - secret_shatter owns the cascade, and his shield going must never sound like
+    a vault breaking."""
     dur = 0.65
-    n = S.n_samples(dur)
-    shatter = S.partials(S.sweep(dur, 1200, 900, 1.0), [1.0, 2.76, 5.40, 8.93, 12.1], dur,
-                         amps=[1.0, 0.7, 0.5, 0.32, 0.2], decays=[3.0, 4.0, 5.5, 7.0, 9.0])
-    shatter = S.lowpass(shatter, 6000, 0.707)
-    debris = S.lowpass(S.highpass(S.osc("noise", 0, dur, seed=89), 2200), 5500, 0.707)
+    snap_dur = 0.06
+    snap = S.bandpass(S.osc("noise", 0, snap_dur, seed=89), 1400.0, 1.1)
+    snap = S.env_mul(S.lowpass(snap, 3800.0), S.expdecay(S.n_samples(snap_dur), 9.0))
+    split_dur = 0.32
+    split = S.osc("sine", S.sweep(split_dur, 240.0, 90.0, 0.5), split_dur)
+    split = S.env_mul(split, S.expdecay(S.n_samples(split_dur), 7.0))
+    shatter = S.partials(S.sweep(dur, 500, 400, 1.0), [1.0, 2.76, 5.40, 8.93], dur,
+                         amps=[1.0, 0.65, 0.42, 0.22], decays=[3.0, 4.5, 6.0, 8.5])
+    debris = S.lowpass(S.highpass(S.osc("noise", 0, dur, seed=93), 1000), 3200, 0.707)
     debris = S.gate(debris, 60.0, 0.45, seed=97)
-    out = S.mix(S.gain(shatter, 0.85), S.gain(S.env_mul(debris, S.decay(n, 2.4)), 0.4))
-    return S.dc_block(S.reverb(out, size=0.7, mix=0.3))
+    debris = S.env_mul(debris, S.decay(S.n_samples(dur), 2.4))
+    out = S.layer([
+        (snap, 0.0, 0.8),
+        (split, 0.0, 0.7),
+        (shatter, 0.0, 0.9),
+        (debris, 0.0, 0.35),
+    ])
+    out = S.lowpass(out, 4200, 0.707)
+    return S.dc_block(S.reverb(out, size=0.7, mix=0.28))
 
 
 def player_death():
@@ -1556,6 +1574,23 @@ def hint_flask_chime():
     return S.dc_block(_far(out, low=140.0, high=3200.0, size=0.8, mix=0.36, damp=0.55))
 
 
+def escort_cough():
+    """The gibbet's escort (.ai/unlock-puzzles.md 3.4): Paracelsus stepping into the rot on his way to the ferry.
+
+    The sludge taking his boot - a short wet gulp of the bog, low - and him coughing on what comes up off it, the same
+    tired man's cough as the hint's (_cough), once and hard. Near, not far: he is a stride behind the player, so
+    there is no room on it and the top stays in, where the hint's is across the water. It is the sound of a mistake the
+    player made, and it plays a few times a walk at most (GibbetCageEvent throttles it), so it sits at the once-every-
+    few-seconds level, under a hit."""
+    gd = 0.18
+    gulp = S.osc("sine", S.sweep(gd, 170.0, 90.0, 0.6), gd)
+    gulp = S.env_mul(gulp, S.ad(gd, attack=0.006, curve=3.0))
+    slop = S.env_mul(S.lowpass(S.osc("noise", 0, gd, seed=3501), 900.0, 0.8), S.ad(gd, attack=0.004, curve=5.0))
+    out = S.layer([(gulp, 0.0, 0.7), (slop, 0.0, 0.35), (_cough(3502, 112.0), 0.09, 1.0)])
+    out = S.pad(out, 0.62)
+    return S.dc_block(S.highpass(out, 70.0))
+
+
 # The Court's seer (.ai/chapter-wizards.md 4.10): Nostradamus, reading aloud in one of the rooms of the house - four
 # lines of verse, one quatrain, read as two couplets with a breath between them. The onset of each line, in seconds:
 # StageHintCue.QuatrainLines is the same list (the drifting marks come in on each line) - change one, change both.
@@ -2211,6 +2246,10 @@ REGISTRY += [
     ("hint_hut_step",       "hint",   -10.0, hint_hut_step,       False),
     ("hint_hull_knock",     "hint",   -10.0, hint_hull_knock,     False),
     ("hint_flask_chime",    "hint",   -10.0, hint_flask_chime,    False),
+    # Paracelsus stepping into the rot (GibbetCageEvent): a mistake, a few a walk at most, a stride behind the player -
+    # the once-every-few-seconds row, under a hit; filed with the hints so --confuse holds it against the flask chime,
+    # whose cough it shares.
+    ("escort_cough",        "hint",   -12.0, escort_cough,        False),
     # The Court's seer reading (SeersVoiceEvent): the chapter hint, and in the seek every few seconds from the room
     # his voice is in while the player looks for it - so it sits with the hints, not above them.
     ("hint_quatrain",       "hint",   -10.0, hint_quatrain,       False),

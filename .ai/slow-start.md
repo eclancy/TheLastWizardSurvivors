@@ -402,18 +402,63 @@ For the agent who does. Each line is where the change lives, not how.
 - **The teachers are landmarks, not bosses** (Eric's answer), and a ladder rather than fixed pairs (the
   table at the top). The Hayward no longer teaches anything; his deed reads "Unlocks Thornseed".
 - **A system is learned when its reel plays, not when its teacher is found.** The run that found it is
-  played as it began, so nothing is usable before it has been explained; a run that is quit owes the
-  lesson to the end of the next.
+  played as it began, so nothing is usable before it has been explained. Since 2026-11-06,
+  **Quit Run** also plays owed lessons before its results. Closing the app leaves the lesson owed
+  to the next finished run.
 - **Locked pages are shown on the strip** (the brief's "locked slots show quietly"), where section 7 said
   never to draw them.
-- **The world map card (`StageRewards`) does not list the page or the lessons.** The teachers are secrets,
-  which the card does not name either.
+- **Environmental discovery (2026-11-06; replaces the 2026-11-05 golden guidance).** Unfound map
+  silhouettes still open gentle landmark clues with mouse, touch or controller, but no longer
+  advertise a major lesson or tell the player to follow lights. The opening note uses an environmental
+  clue. All three teachers have lost the spawn-to-upgrade lights and trail-triggered gold POI arrow.
+  The Star and Geode retain their existing local decor gradients. `TeachingTrail` now serves only
+  Familiar: intermittent drag furrows, splayed paws and claw scratches, faintly pulsing in grounded
+  gold stops. The later polish uses six procedurally varied families (partial/staggered paws, claw
+  fans, short/long drag furrows and sideways scuffs), stronger gold and separated toes, with irregular
+  300-520-unit gaps rather than the old 144-unit repetition. A bounded, one-off walkable-cell search grows OUT from the pen toward the outskirts,
+  keeping the first evidence at least 1,488 world units from spawn. It never registers a POI. Visible
+  clusters redraw at 10 Hz, with no traveling motes, bloom, alpha fade or per-frame terrain search.
+  Tiny decor reserves keep newly streamed props off the actual marks.
+- **The Pinfold is walkable and holds essence (2026-11-06, enlarged again at Eric's request).** Its
+  generated enclosure is now 1944x1632, over four times both dimensions of the preceding 448x352
+  version (originally 200x168). Three separate textures stay under 2048px each; pixel size stays x2.
+  Back/floor, energy and front wall have separate sort origins so entering never
+  hides the wizard beneath its floor. Only the walls stamp navigation; the 256-unit entrance has
+  a separate physical gate. The existing two guards still bind it; defeat them and touch its latch
+  to break the animated seal. Opening the gate grants nothing. Approach the animated center essence
+  within 52 units to claim Familiar immediately, saved through the existing secret/deed path; its
+  light curls into the wizard. Repeat runs pay the usual chest. The enclosure center is the rolled
+  five-to-seven-chunk site; its front sits 768 units south. A reserved foundation is cleared in the
+  chunk data before painting, and again on regeneration: no pond, hidden fence or procedural flower
+  pen under the larger floor. Twenty-four blue/violet wisps circle its walls and eight circle the
+  carved inner ward; the closed binding dissolves when the gate opens. Wisps cull against the view
+  and draw on the 2-unit grid. Save schema and post-run system teaching rules stay as before;
+  moving system unlocks to character interactions is item 37.
 - **The Codex's Recipes tab is still there on a fresh save**: it holds the Full Set Enchantments too,
   which are open from run 1 (Q6). Only its combinations wait for the Apotheosis.
 - **The Penknife is never taken by the harness bot** (it is kept out of every chest the bot deals), so the
   section 8 count of it is not measured.
 
 ### 10.3 Checked, and not
+
+- **Animation/scale polish:** `_DiscoveryPreview.tscn -- --mode=marks|tracks|pen --no-save-writes`
+  captures 40 actual rendered frames with hidden HUD and a steady camera. `tools/art/discovery_gif.py`
+  encodes and verifies transparent delta GIFs, including pixel-exact recomposition. `marks` arranges
+  all six variants for comparison; `tracks` uses actual world placement/gaps; `pen` zooms out to
+  show the enlarged enclosure and wisps. Build/validator and seed 1234 desktop / seed 17 portrait
+  walks passed, including foundation clearance, gate physics and player movement via real Feet
+  constraints (`Player.MovePlayer`), opening versus claiming, and Familiar's next-level-up availability.
+
+- **2026-11-06 discovery revision:** build and full validator passed (0 errors, existing Test Wizard
+  warning). Rendered `_UiShot --secret-probe --fresh-save --stage=9` passed with default terrain,
+  seed 1234, seed 17 in portrait/safe-area, and seed 2026 on a repeat visit. Checks include no
+  spawn-visible marks/arrow, walkable track cells, physical gate collision/removal, no reward for
+  gate opening, actual body motion into the center, immediate Familiar ownership/pool access,
+  and one repeat chest. Stage 2/10 vault walkthroughs passed without golden guidance. Track routing
+  measured 55-116 ms once per run here (bounded at 12,000 searched cells); no per-frame route work.
+  `--goto=tracks --goto-offset=0,0` photographs the ground evidence. These screenshot probes need
+  a rendered window because they advance on `FramePostDraw`; use headless mode for the content
+  validator instead. No physical Android device was connected. Older checks below are historical.
 
 - `dotnet build` clean; the validator: 0 errors and 4 warnings, the same four as before.
 - `_UiShot`, both canvases: the three-page strip (one held, two empty, three locked), the shop's Spell

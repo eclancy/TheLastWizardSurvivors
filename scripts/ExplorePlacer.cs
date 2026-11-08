@@ -36,6 +36,11 @@ public sealed class ExplorePlacer
 		/// <summary>IsClear, and every point of the disc open too - for a site that draws over its whole
 		/// footprint (the thaw's lake). Null falls back to IsClear.</summary>
 		public Func<Vector2, float, bool> IsClearDense { get; init; }
+		/// <summary>True if a body can stand on this one point (no water, wall or fence): for a site that walks a route
+		/// over its ground on paper (the gibbet's rot pools, RotPoolLayout). Null: everywhere is.</summary>
+		public Func<Vector2, bool> IsWalkable { get; init; }
+		/// <summary>True inside mature woodland; optional for placement probes and chapters without canopy.</summary>
+		public Func<Vector2, bool> IsWooded { get; init; }
 		/// <summary>The run's start: distances and bearings are measured from here.</summary>
 		public Vector2 Origin { get; init; }
 		/// <summary>World pixels in one terrain chunk (TerrainStreamer.ChunkTiles x tile size): the unit the bands are in.</summary>
@@ -70,6 +75,16 @@ public sealed class ExplorePlacer
 
 	/// <summary>World pixels in one terrain chunk: the unit the bands are in.</summary>
 	public float ChunkPixels => ground.ChunkPixels;
+
+	/// <summary>A clearing with mature woodland on at least half its surrounding ring.</summary>
+	public bool HasWoodedSurrounds(Vector2 at, float radius)
+	{
+		if (ground.IsWooded == null) return true;
+		int wooded = 0;
+		for (int i = 0; i < 8; i++)
+			if (ground.IsWooded(at + Direction(i * Mathf.Tau / 8f) * radius)) wooded++;
+		return wooded >= 4;
+	}
 
 	/// <summary>The next roll in this placer's stream, 0 to 1.</summary>
 	public float NextFloat() => rng.NextFloat();
@@ -295,6 +310,9 @@ public sealed class ExplorePlacer
 	/// </summary>
 	public bool IsClearDense(Vector2 point, float footprint) => (ground.IsClearDense ?? ground.IsClear)(Snap(point), footprint);
 
+	/// <summary>True if a body can stand on this point (Ground.IsWalkable; everywhere when the ground does not say).</summary>
+	public bool IsWalkable(Vector2 point) => ground.IsWalkable?.Invoke(point) ?? true;
+
 	/// <summary>The nearest corridor cell centre on a maze; the point itself on an open stage.</summary>
 	public Vector2 Snap(Vector2 point)
 	{
@@ -358,10 +376,12 @@ public sealed class ExplorePlacer
 	/// fallback. Opt-in: every site placed before is placed exactly as it was.
 	/// </summary>
 	public Vector2 EventSiteInBand(float footprint, bool dense = false,
-		IReadOnlyList<(Vector2 Centre, float Radius)> keepOff = null, Func<Vector2, bool> also = null)
+		IReadOnlyList<(Vector2 Centre, float Radius)> keepOff = null, Func<Vector2, bool> also = null,
+		float? minChunks = null, float? maxChunks = null)
 	{
+		float min = minChunks ?? EventMinChunks, max = maxChunks ?? EventMaxChunks;
 		float bearing = RollEventBearing();
-		float distance = Mathf.Lerp(EventMinChunks, EventMaxChunks, NextFloat()) * ground.ChunkPixels;
+		float distance = Mathf.Lerp(min, max, NextFloat()) * ground.ChunkPixels;
 		float searchFrom = NextFloat() * Mathf.Tau;
 		if (float.IsNaN(EventBearing))
 			EventBearing = bearing;
@@ -374,9 +394,15 @@ public sealed class ExplorePlacer
 		// A chapter's later event keeps round from the earlier ones however far the sweep goes (no-op for the first).
 		test = WithSiteRule(test);
 		Vector2 candidate = ground.Origin + Direction(bearing) * distance;
+		if (minChunks.HasValue || maxChunks.HasValue)
+		{
+			Func<Vector2, float, bool> allowed = test;
+			test = (p, f) => p.DistanceTo(ground.Origin) >= min * ground.ChunkPixels
+				&& p.DistanceTo(ground.Origin) <= max * ground.ChunkPixels && allowed(p, f);
+		}
 		if (TrySearch(candidate, footprint, searchFrom, null, 0f, test, out Vector2 found))
 			return Keep(found, footprint);
-		if (TrySweepBand(bearing, distance, EventMinChunks, EventMaxChunks, footprint, test, out found))
+		if (TrySweepBand(bearing, distance, min, max, footprint, test, out found))
 		{
 			EventBearing = Mathf.Atan2(found.Y - ground.Origin.Y, found.X - ground.Origin.X);
 			return Keep(found, footprint);

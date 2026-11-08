@@ -13,6 +13,9 @@ Run: python tools/art/gibbet.py
     world/gibbet/gibbet-pool.png   the rot pool under it, 84x40 a frame, three frames of its bubbles (a ground decal)
     world/gibbet/landing.png       the ferry landing: black water, its reeds, and the jetty out over it, 120x84 (a decal)
     world/gibbet/landing-punt.png  the Ferryman's punt, 54x56 a frame: 0 empty, its pole laid in it; 1 him standing in it
+    world/gibbet/rot-pools.png     the rot pools on his way to the ferry (.ai/unlock-puzzles.md 3.4), 132x132 a frame: a
+                                   row for each of six sizes and two shapes (size * 2 + shape), four frames across -
+                                   0 still, 1-3 stirred and bubbling while he is near (a ground decal, rot_pool)
     ui/poi/poi-gibbet.png          the arrow's pictogram: a gibbet with its cage
     tools/art/_gibbet_preview.png  (gitignored) for looking at
 
@@ -72,6 +75,13 @@ LW, LH = 120, 84              # the landing
 LANDING_FOOT = (58, 78)       # the jetty's foot on the bank
 UW, UH = 54, 56               # the punt: short, so it lies in the water beside the jetty and not across it
 U_MID, U_FOOT = 27, 46
+# The rot pools on his way (.ai/unlock-puzzles.md 3.4): six sizes, two shapes of each, a cell square on its middle.
+# RotPoolLayout.Radii is these x2 (world px) and RotPoolLayout.ArtCell is RC - change one, change both.
+ROT_RADII = (30, 37, 44, 51, 58, 65)
+ROT_SHAPES = 2
+RC = 132
+ROT_FRAMES = 4                # 0 still; 1-3 stirred, bubbling, while he is near
+BITE_SHARE = 0.86             # the bank never comes inside this share of the radius: RotPoolLayout.BiteShare
 
 PAL = dict(roster.PALETTE)
 # Lichen, for the scum on the rot and the ripples on the black water: the contract's row, on bytes of this file's own
@@ -79,6 +89,9 @@ PAL = dict(roster.PALETTE)
 LI0, LI1, LI2, LI3, LI4 = "\xa1", "\xa2", "\xa3", "\xa4", "\xa5"
 PAL.update({LI0: bl.MATERIALS["lichen"][0], LI1: bl.MATERIALS["lichen"][1], LI2: bl.MATERIALS["lichen"][2],
             LI3: bl.MATERIALS["lichen"][3], LI4: bl.MATERIALS["lichen"][4]})
+# Gold's deep stop, for the rot pools on his way (rot_pool): roster has gold's hi to shade, not its deep.
+GD4 = "\xa6"
+PAL.update({GD4: bl.MATERIALS["gold"][4]})
 RD = roster.RD0, roster.RD1, roster.RD2, roster.RD3, roster.RD4
 
 
@@ -409,6 +422,114 @@ def pool(frame):
     return g.rows()
 
 
+# --- the rot on his way ----------------------------------------------------------------------------------------
+
+def rot_pool(size, shape, frame):
+    """A pool of her rot on the way to the ferry, which hurts him and not the player (GibbetCageEvent, RotPoolLayout).
+
+    NOT THE SWAMP'S WATER, AND NOT A HAZARD. The bog's own water is grey-green murk in a shore (water.py's `swamp`),
+    and it stops the player; this is a warm brown sludge lying ON the peat - a surface, not a hole: no shore, no
+    waterline, no lit lip to make a bowl of it, its edge soaking dark into the ground round it. Gold's shade with
+    blotches of its deep and a skin of dull scum (gold's base), so it reads as something you could wade, and the player
+    can. Nothing that hurts the player in this game looks like it: lava and pits are outlined, Mother Rot's slam is her
+    bright rot green, the lanterns' tell is a column of light.
+
+    STILL OR STIRRED. Frame 0 is the pool lying still, brown and dull. Frames 1-3 are the pool stirred, while he is
+    near it: the whole skin turns the poison ramp's sickly yellow-green and bubbles of it swell and burst through - the
+    one thing on the bog that wakes when he comes, which is the read that it is his danger.
+
+    THE RADIUS IS THE HIT, from inside. The bank wanders between BITE_SHARE and 1.0 of the radius and never past it;
+    RotPoolLayout bites at BITE_SHARE of the radius (its BiteShare), so his feet are in sludge you can see before it
+    takes anything from him."""
+    R = ROT_RADII[size]
+    g = Grid(RC, RC)
+    c = RC / 2.0 - 0.5
+    rnd = random.Random(503 + size * 17 + shape * 131)
+    harm = [(k, rnd.uniform(0.0, 2 * math.pi), rnd.uniform(0.4, 1.0)) for k in (2, 3, 4, 7)]
+    total = sum(a for _, _, a in harm)
+
+    def bank(angle):
+        w = sum(a * math.sin(k * angle + ph) for k, ph, a in harm) / total
+        return R * ((1.0 + BITE_SHARE) / 2.0 + (1.0 - BITE_SHARE) / 2.0 * w)
+
+    # Hollows of the deep in the sludge: a few seeded blobs, each an ellipse at its own angle - shapes, never a wave
+    # pattern (crossed waves came out as rows of polka dots) and never a per-pixel hash.
+    hollows = []
+    for _ in range(2 + R // 13):
+        a = rnd.uniform(0, 2 * math.pi)
+        rr = math.sqrt(rnd.uniform(0.0, 1.0)) * 0.62 * R
+        hollows.append((c + math.cos(a) * rr, c + math.sin(a) * rr, rnd.uniform(2.5, 2.0 + R * 0.09),
+                        rnd.uniform(1.5, 2.6), rnd.uniform(0, math.pi)))
+
+    def deep(x, y):
+        for (px, py, rx, ry, rot) in hollows:
+            qx = (x - px) * math.cos(rot) + (y - py) * math.sin(rot)
+            qy = -(x - px) * math.sin(rot) + (y - py) * math.cos(rot)
+            if (qx / rx) ** 2 + (qy / ry) ** 2 <= 1.0:
+                return True
+        return False
+
+    # The skin of scum: seeded patches, each an ellipse lying at its own angle.
+    patches = []
+    for _ in range(3 + R // 8):
+        a = rnd.uniform(0, 2 * math.pi)
+        rr = math.sqrt(rnd.uniform(0.0, 1.0)) * 0.68 * R
+        patches.append((c + math.cos(a) * rr, c + math.sin(a) * rr, rnd.uniform(3.0, 2.5 + R * 0.14),
+                        rnd.uniform(1.6, 3.0), rnd.uniform(-0.6, 0.6)))
+    stirred = frame > 0
+    for y in range(RC):
+        for x in range(RC):
+            dx, dy = x - c, y - c
+            r = math.hypot(dx, dy)
+            edge = bank(math.atan2(dy, dx))
+            if r > edge:
+                continue
+            d = r / edge
+            if d > 0.95:
+                # Where it soaks into the peat: broken, one pixel in four - a soaked edge, not an outline.
+                if (x + y) % 2 == 0 and y % 2 == 0:
+                    g.set(x, y, GD4)
+                continue
+            if d > 0.9:
+                if (x + y) % 2 == 0:
+                    g.set(x, y, GD4)
+                continue
+            ch = GD4 if (d > 0.86 and (x + y) % 2 == 0) or (d < 0.8 and deep(x, y)) else "u"
+            for (px, py, rx, ry, rot) in patches:
+                qx = (x - px) * math.cos(rot) + (y - py) * math.sin(rot)
+                qy = -(x - px) * math.sin(rot) + (y - py) * math.cos(rot)
+                e = (qx / rx) ** 2 + (qy / ry) ** 2
+                if e <= 1.0 and d < 0.86:
+                    ch = "_" if stirred else "g"
+                    # Stirred, the patch's upper lip catches the sickly light.
+                    if stirred and e > 0.4 and qy < 0:
+                        ch = ")"
+                    break
+            g.set(x, y, ch)
+    if not stirred:
+        return g.rows()
+    # The bubbles, stirred: each swells (a dome), shows its lit cap, and bursts (a broken ring), on its own phase.
+    for _ in range(4 + R // 8):
+        a = rnd.uniform(0, 2 * math.pi)
+        rr = rnd.uniform(0.0, 0.7) * R
+        bx, by, ph = int(round(c + math.cos(a) * rr)), int(round(c + math.sin(a) * rr)), rnd.randint(0, 2)
+        s = (frame - 1 + ph) % 3
+        if s == 0:
+            g.set(bx, by, "_")
+            g.set(bx + 1, by, "_")
+            g.set(bx, by - 1, ")")
+        elif s == 1:
+            for (ox, oy) in ((-1, 0), (2, 0), (0, -1), (1, -1), (0, 1), (1, 1)):
+                g.set(bx + ox, by + oy, ")")
+            g.set(bx, by, "_")
+            g.set(bx + 1, by, "_")
+            g.set(bx, by - 1, "(")
+        else:
+            for (ox, oy) in ((-2, 0), (3, 0), (0, -2), (1, 2), (-1, -1), (2, 1)):
+                g.set(bx + ox, by + oy, "_")
+    return g.rows()
+
+
 # --- the landing ---------------------------------------------------------------------------------------------
 
 def landing():
@@ -602,13 +723,21 @@ def main():
     for name, sheet in sheets:
         ok = _audit_img(name, sheet) and ok
         sheet.save(os.path.join(OUT_WORLD, name + ".png"))
+    # The rot pools: a row for each size and shape (size * ROT_SHAPES + shape), its frames across. Decals: no rim light.
+    rot = Image.new("RGBA", (RC * ROT_FRAMES, RC * len(ROT_RADII) * ROT_SHAPES), (0, 0, 0, 0))
+    for size in range(len(ROT_RADII)):
+        for shape in range(ROT_SHAPES):
+            row = size * ROT_SHAPES + shape
+            rot.alpha_composite(strip([rot_pool(size, shape, f) for f in range(ROT_FRAMES)], RC, RC, finish=False), (0, row * RC))
+    ok = _audit_img("rot-pools", rot) and ok
+    rot.save(os.path.join(OUT_WORLD, "rot-pools.png"))
     g = glyph()
     ok = _audit_img("glyph", g.img) and ok
     g.scaled(2).save(os.path.join(OUT_UI, "poi-gibbet.png"))
 
     # The preview: everything at x3 on the Swamp's bog ground.
     z = 3
-    canvas = Image.new("RGBA", (1280, 900), (26, 34, 32, 255))
+    canvas = Image.new("RGBA", (1280, 1240), (26, 34, 32, 255))
     x = 10
     for name, sheet in sheets:
         im = sheet.resize((sheet.size[0] * z, sheet.size[1] * z), Image.NEAREST)
@@ -620,8 +749,14 @@ def main():
         canvas.alpha_composite(im, (x, y))
         x += im.size[0] + 20
     canvas.alpha_composite(g.scaled(6), (1180, 820))
+    # The rot pools at the world's x2, on the Swamp's own peat (linen base): the middle size, still then stirred.
+    peat = Image.new("RGBA", (1280, 320), (0x46, 0x54, 0x4C, 255))
+    canvas.alpha_composite(peat, (0, 910))
+    for f in range(ROT_FRAMES):
+        cell = rot.crop((f * RC, 2 * ROT_SHAPES * RC, (f + 1) * RC, (2 * ROT_SHAPES + 1) * RC))
+        canvas.alpha_composite(cell.resize((RC * 2, RC * 2), Image.NEAREST), (10 + f * 300, 940))
     canvas.convert("RGB").save(PREVIEW)
-    print("  gibbet 4, cage 4, pool 3, landing 1, punt 2, glyph poi-gibbet")
+    print("  gibbet 4, cage 4, pool 3, landing 1, punt 2, rot pools %d x %d, glyph poi-gibbet" % (len(ROT_RADII) * ROT_SHAPES, ROT_FRAMES))
     if not ok:
         return 1
     print("gibbet written, palette clean")

@@ -121,11 +121,10 @@ public partial class SideEventDirector : Node
 		"stage_7" => new(WayfinderKind.Compass, new SideEventEntry("great_anvil", () => new GreatAnvilEvent())),
 		// The two early chapters (.ai/campaign.md). The comment between them keeps two agents' edits off
 		// adjacent lines, which is what git calls a conflict.
-		// The Fields' chapter wizard (.ai/chapter-wizards.md 4.2), its second event: Medea, counted with the grain in the
-		// Tithe-Reeve's granary, and the price of her a level's XP paid into his scale.
+		// Medea's granary belongs in the Fields; the Pinfold also holds Laelaps and his companions.
 		"stage_9" => new(WayfinderKind.Compass, new SideEventEntry("the_well", () => new WellEvent()),
 			new SideEventEntry("tithe_scale", () => new TitheScaleEvent())),
-		// (the Broken Circle's line is below; leave this one as it is)
+		// Restoring the Moot's shattered wards frees Merlin, the keeper of the gathering.
 		"stage_10" => new(WayfinderKind.Compass, new SideEventEntry("the_moot", () => new MootFiresEvent())),
 		// THE CASTLE (.ai/endgame-castle.md). The chapters' own goals - the bridge's crossing, the Court's rooms,
 		// the Throne's fight - are their ChapterRules' (ChapterRulesCatalog), not here. The lines are written so
@@ -239,9 +238,6 @@ public partial class SideEventDirector : Node
 	{
 		PointsOfInterest.Reset();
 		SideEvent.ResetObjectiveLine();
-		// Nobody is being led at the start of a run, whatever the last one left (HuntedEscort's statics are the process's).
-		HuntedEscort.Withdraw();
-		HuntedEscort.ResetTally();
 		logPlacement = OS.GetCmdlineUserArgs().Contains("--explore-log");
 		if (Game == null)
 			return;

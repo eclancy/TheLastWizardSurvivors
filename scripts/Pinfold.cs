@@ -3,275 +3,294 @@ using System;
 using System.Collections.Generic;
 using TheOneHeMissed.scripts;
 
-// FF1, THE PINFOLD - the Fallow Fields' spell vault (.ai/achievements-and-secrets.md 8.2). It pays the
-// Familiar: a stray the Hayward impounded and nobody came for, learned by letting it out.
-//
-// SEES. From two chunks out, broken hurdles in the stubble and a dog's prints, all pointing one way (its
-// FarTell, LeanToward) - toward a walled stone pound with a barred gate. Behind the bars a hound of warm
-// light lies with its head on its paws, breathing: the near tell, the only warm thing in the field.
-//
-// DOES. Guarded. Coming within WakeRadius wakes two of the Fields' own - the Tithe-Reeve's men, a Rick
-// and a Haymaker from the chapter's roster (StageBestiary), as elites through Node2DGame.SpawnEventEnemy,
-// so they are as hard as the run is and RespawnEnemy never recycles them. While either stands, the latch
-// is dead iron. When both are down the latch takes the glint; walk to it and it lifts, the gate swings in,
-// and the hound gets up and runs to him. A fight of a few seconds and a touch: inside the vault's twenty.
-//
-// PAYS. When the hound reaches him the vault opens (SecretVault.Open): the first time ever the Familiar,
-// granted and saved at once, offered from the next level-up; in a later run the same guards and the same
-// gate pay a chest from the secret budget.
-//
-// The pound is solid ground - a body on the terrain layer round its walls, its cells stamped into the
-// navigation flags (SolidFootprints) - so feet and bodies stop at the walls and the horde routes round.
-// It is never a target and never in "enemies"; the guards are, being the field's own. Its progress lives
-// in the run state: State.Step 0 asleep, 1 guards woken, 2 guards down; State.Done opened.
-//
-// Art: tools/art/secret_fields.py (the pound in three layers, the hound's fourteen frames, the hurdles
-// and the prints), on the world's 2-unit grid; what flies is drawn in opaque stops and fades by dither.
+// A walkable, magically sealed pound. Free each of its three ghostly companions after opening the gate.
 public partial class Pinfold : SecretVault
 {
-	/// <summary>Coming this near the pound wakes its guards.</summary>
-	public const float WakeRadius = 420f;
-
-	/// <summary>Walking this near the latch, with the guards down, lifts it.</summary>
+	public const float WakeRadius = 520f;
 	public const float LatchReach = 64f;
-
-	/// <summary>The guards' health, times the run's ordinary spawn health (elites: the bog's tender is 22).</summary>
 	public const float GuardHealthMultiplier = 10f;
-
-	/// <summary>The two guards (8.2: "the Tithe-Reeve's men"): the Rick and the Haymaker.</summary>
 	public static readonly BestiaryRole[] GuardRoles = { BestiaryRole.Wall, BestiaryRole.Slammer };
-
-	private const string PoundPath = "res://assets/bonelight/world/fields/pinfold.png";
-	private const string HoundPath = "res://assets/bonelight/world/fields/pinfold-hound.png";
-
-	// The strips (secret_fields.py at x2). The pound: three 200 x 168 frames - behind, the front shut, the
-	// front open - its front wall's foot (art row 78) on the node, so it y-sorts by the wall the player
-	// stands in front of. The hound: fourteen 80 x 64 frames (lying, lying, standing, four running; then
-	// facing left), lying behind the gate at (-40, -64); its head at (20, -16). The latch at (28, -20).
-	private static readonly Vector2 PoundCell = new(200f, 168f);
-	private static readonly Vector2 PoundAnchor = new(-100f, -156f);
-	private static readonly Vector2 HoundCell = new(80f, 64f);
-	private static readonly Vector2 HoundLying = new(-40f, -64f);
-	private static readonly Vector2 HoundHead = new(20f, -16f);
-	private static readonly Vector2 LatchOffset = new(28f, -20f);
-	private static readonly Vector2 HoundFootInCell = new(40f, 58f);
-	private const int HoundPoses = 7;
-
-	/// <summary>The walls, in node space: the body that stops feet and bodies.</summary>
-	private static readonly Rect2 Walls = new(-88f, -92f, 176f, 92f);
-
+	public static readonly Vector2 PoundCell = new(1944f, 1632f);
+	private static readonly Vector2 PoundAnchor = new(-972f, -1608f);
+	private static readonly Vector2 LatchOffset = new(132f, -24f);
+	private static readonly Vector2 CentreOffset = new(0f, -768f);
+	private static readonly Rect2[] Walls =
+	{
+		new(-960f, -1544f, 1920f, 16f), new(-960f, -1536f, 16f, 1544f),
+		new(944f, -1536f, 16f, 1544f), new(-960f, -8f, 832f, 16f), new(128f, -8f, 832f, 16f),
+	};
 	private static readonly SecretFarTell Tell = new()
 	{
-		Textures = new[]
-		{
-			"res://assets/bonelight/world/fields/hurdle-broken-1.png",
-			"res://assets/bonelight/world/fields/hurdle-broken-2.png",
-			"res://assets/bonelight/world/fields/pawprints-1.png",
-		},
-		NearTextures = new[]
-		{
-			"res://assets/bonelight/world/fields/pawprints-1.png",
-			"res://assets/bonelight/world/fields/pawprints-2.png",
-		},
-		InnerRadius = SecretCatalog.VaultFootprint,
-		NearRadius = 1536f,
-		OuterRadius = 3072f,
-		PeakPerChunk = 40,
-		NearShare = 0.75f,
-		FootFromBottom = 4f,
-		LeanToward = true,
+		Textures = new[] { "res://assets/bonelight/world/fields/hurdle-broken-1.png", "res://assets/bonelight/world/fields/hurdle-broken-2.png", "res://assets/bonelight/world/fields/pawprints-1.png" },
+		NearTextures = new[] { "res://assets/bonelight/world/fields/pawprints-1.png", "res://assets/bonelight/world/fields/pawprints-2.png" },
+		InnerRadius = SecretCatalog.VaultFootprint, NearRadius = 1536f, OuterRadius = 3072f,
+		PeakPerChunk = 40, NearShare = 0.75f, FootFromBottom = 4f, LeanToward = true,
 	};
-
 	public override SecretFarTell FarTell => Tell;
-
-	public override IEnumerable<(Vector2 Centre, float Radius)> SolidFootprints => new[] { (Position + new Vector2(0f, -46f), 84f) };
-
-	/// <summary>The near tell is the hound's light behind the bars.</summary>
-	public override Vector2 TellPosition => GlobalPosition + HoundHead;
-
-	/// <summary>The latch, in world pixels: where he touches it.</summary>
+	public override Vector2 TellPosition => GlobalPosition + new Vector2(0f, -40f);
 	public Vector2 Latch => GlobalPosition + LatchOffset;
-
-	/// <summary>The guards it woke this run (for the probe). Empty until he arrives.</summary>
+	public Vector2 EssenceCentre => GlobalPosition + CentreOffset;
+	public Vector2 Entrance => GlobalPosition + new Vector2(0f, 64f);
 	public IReadOnlyList<Enemy> Guards => guards;
-
-	/// <summary>True once the guards are woken and both are down: the latch will lift.</summary>
 	public bool GuardsDown => State != null && State.Step >= 2;
-
-	/// <summary>True once the latch has lifted this run.</summary>
-	public bool GateOpen => running >= 0f || IsOpened;
-
+	public bool GateOpen => State?.Step >= 3 || IsOpened;
+	public override IEnumerable<(Vector2 Centre, float Radius)> SolidFootprints
+	{
+		get
+		{
+			// Stamp only walls: the enclosure's interior and entrance must remain walkable.
+			foreach (Rect2 wall in Walls)
+			{
+				Vector2 a = wall.GetCenter();
+				bool horizontal = wall.Size.X > wall.Size.Y;
+				float span = (horizontal ? wall.Size.X : wall.Size.Y) - 16f;
+				int count = Mathf.CeilToInt(span / 32f);
+				for (int i = 0; i <= count; i++)
+					yield return (Position + a + (horizontal ? Vector2.Right : Vector2.Down) * (-span * 0.5f + span * i / count), 34f);
+			}
+		}
+	}
 	private readonly List<Enemy> guards = new();
 	private Texture2D pound;
-	private Texture2D hound;
-	private Node2D effects;
+	private Texture2D front;
+	private Texture2D openFront;
+	private Node2D back;
+	private Node2D binding;
+	private CollisionShape2D gateCollider;
 	private float clock;
-	private float running = -1f;       // seconds since the latch lifted, while the hound runs to him
-	private Vector2 runFrom;
-
-	private const float StandSeconds = 0.45f;
-	private const float RunSeconds = 0.9f;
+	private SecretToast rescueToast;
+	public const int CaptiveCount = 3;
+	public const float CompanionReach = 84f;
+	private sealed class Captive
+	{
+		public AnimatedSprite2D Sprite;
+		public ShaderMaterial Material;
+		public Vector2 At;
+		public Vector2 FreedAt;
+		public int Goal;
+		public float Wait;
+		public float Released = -1f;
+		public string Animation = "";
+	}
+	private readonly Captive[] captives = new Captive[CaptiveCount];
+	private static readonly Vector2[][] EscapeGoals =
+	{
+		new[] { new Vector2(-840,-1150), new Vector2(-840,-350), new Vector2(-905,-350), new Vector2(-620,-900) },
+		new[] { new Vector2(840,-500), new Vector2(840,-1200), new Vector2(905,-1200), new Vector2(600,-850) },
+		new[] { new Vector2(-350,-1400), new Vector2(500,-1400), new Vector2(500,-1470), new Vector2(100,-700) },
+	};
+	public bool IsCaptiveFreed(int i) => ((State?.Marks ?? 0UL) & (1UL << i)) != 0;
+	public int FreedCount { get { int count = 0; for (int i = 0; i < CaptiveCount; i++) if (IsCaptiveFreed(i)) count++; return count; } }
+	public Vector2 CaptivePosition(int i) => GlobalPosition + captives[i].At;
+	public override void LayOut(ExplorePlacer placer)
+	{
+		// The rolled site is the enclosure CENTER. Reserve/clear its real footprint before paint.
+		Position -= CentreOffset;
+		Director.PrepareFoundation(new Rect2(Position + new Vector2(-1008f, -1584f), new Vector2(2016f, 1776f)));
+	}
 
 	public override void _Ready()
 	{
-		pound = ResourceLoader.Exists(PoundPath) ? GD.Load<Texture2D>(PoundPath) : null;
-		hound = ResourceLoader.Exists(HoundPath) ? GD.Load<Texture2D>(HoundPath) : null;
-		if (pound == null || hound == null)
-			GD.PushError("Pinfold: its art is missing; re-run python tools/art/secret_fields.py, then import.");
-
-		var body = new StaticBody2D
-		{
-			Name = "Walls",
-			CollisionLayer = 1u << (LevelTilePainter.TerrainCollisionLayer - 1),
-			CollisionMask = 0,
-		};
-		body.AddChild(new CollisionShape2D { Position = Walls.GetCenter(), Shape = new RectangleShape2D { Size = Walls.Size } });
+		YSortEnabled = true;
+		pound = GD.Load<Texture2D>("res://assets/bonelight/world/fields/pinfold-back.png");
+		front = GD.Load<Texture2D>("res://assets/bonelight/world/fields/pinfold-front.png");
+		openFront = GD.Load<Texture2D>("res://assets/bonelight/world/fields/pinfold-open.png");
+		var body = new StaticBody2D { Name = "Walls", CollisionLayer = 1u << (LevelTilePainter.TerrainCollisionLayer - 1), CollisionMask = 0 };
+		foreach (Rect2 wall in Walls)
+			body.AddChild(new CollisionShape2D { Position = wall.GetCenter(), Shape = new RectangleShape2D { Size = wall.Size } });
+		gateCollider = new CollisionShape2D { Name = "Gate", Shape = new RectangleShape2D { Size = new Vector2(256f, 16f) } };
+		body.AddChild(gateCollider);
 		AddChild(body);
-
-		effects = new Node2D
+		// Separate sort origins: back/floor before someone INSIDE, front wall after them.
+		back = new Node2D { Name = "Back", Position = new Vector2(0f, -1536f) };
+		back.Draw += DrawBack;
+		AddChild(back);
+		Shader ghost = GD.Load<Shader>("res://scenes/shaders/pinfold_ghost.gdshader");
+		string[] forms = { "Hound", "Cat", "Crow" };
+		Vector2[] starts = { new(-500,-1000), new(500,-700), new(0,-1100) };
+		for (int i = 0; i < CaptiveCount; i++)
 		{
-			Name = "Light",
-			ZIndex = DrawLayers.Air,
-			ZAsRelative = false,
-			TopLevel = true,
-			Material = SpellInk.DitherByCell,
-		};
-		effects.Draw += DrawEffects;
-		AddChild(effects);
-		effects.GlobalPosition = Vector2.Zero;
+			var material = new ShaderMaterial { Shader = ghost };
+			var sprite = new AnimatedSprite2D
+			{
+				Name = "Ghost" + forms[i], SpriteFrames = GD.Load<SpriteFrames>(Familiar.FramesPath(forms[i])),
+				Scale = Vector2.One * 2f, Offset = new Vector2(0f, -23f),
+				Material = material, TextureFilter = TextureFilterEnum.Nearest,
+				ZAsRelative = i != 2, ZIndex = i == 2 ? DrawLayers.Air : 0,
+			};
+			captives[i] = new Captive { Sprite = sprite, Material = material, At = starts[i] };
+			AddChild(sprite);
+			sprite.Position = starts[i];
+		}
+		binding = new Node2D { Name = "BindingWisps", ZAsRelative = false, ZIndex = DrawLayers.Air };
+		binding.Draw += DrawBinding;
+		AddChild(binding);
+		rescueToast = new SecretToast();
+		AddChild(rescueToast);
 	}
-
 	public override void _ExitTree()
 	{
-		if (effects != null && IsInstanceValid(effects))
-			effects.Draw -= DrawEffects;
+		if (back != null && IsInstanceValid(back)) back.Draw -= DrawBack;
+		if (binding != null && IsInstanceValid(binding)) binding.Draw -= DrawBinding;
 		base._ExitTree();
 	}
-
 	public override void _Process(double delta)
 	{
-		float dt = (float)delta;
-		clock += dt;
-		Player player = Player;
-		SecretDirector.SiteState state = State;
-
-		if (running >= 0f)
+		clock += (float)delta;
+		if (Player != null && State != null && !State.Done && Active)
 		{
-			running += dt;
-			if (running >= StandSeconds + RunSeconds)
-			{
-				running = -1f;
-				// Rewards in flight are paid even if the boss has come meanwhile (stage-secrets section 4).
-				Open(GlobalPosition + new Vector2(0f, 110f));
-			}
+			if (State.Step == 0 && Player.GlobalPosition.DistanceTo(GlobalPosition) <= WakeRadius) Wake();
+			if (State.Step == 1 && guards.TrueForAll(IsDown)) State.Step = 2;
+			if (State.Step == 2 && Player.GlobalPosition.DistanceTo(Latch) <= LatchReach) LiftLatch();
 		}
-		else if (player != null && state != null && !state.Done && Active)
-		{
-			float d = player.GlobalPosition.DistanceTo(GlobalPosition);
-			if (state.Step == 0 && d <= WakeRadius)
-				Wake();
-			else if (state.Step == 1 && guards.TrueForAll(IsDown))
-				state.Step = 2;
-			else if (state.Step == 2 && player.GlobalPosition.DistanceTo(Latch) <= LatchReach)
-				LiftLatch();
-		}
-
-		if (player != null && player.GlobalPosition.DistanceSquaredTo(GlobalPosition) < 1600f * 1600f)
+		TickCaptives((float)delta);
+		if (Player != null && Player.GlobalPosition.DistanceSquaredTo(EssenceCentre) < 3200f * 3200f)
 		{
 			QueueRedraw();
-			effects?.QueueRedraw();
+			binding?.QueueRedraw();
 		}
 	}
-
 	private static bool IsDown(Enemy guard) => guard == null || !IsInstanceValid(guard) || guard.IsDying || guard.Health <= 0;
-
-	// He has come: the Tithe-Reeve's men step out from either side of the pound.
 	private void Wake()
 	{
 		State.Step = 1;
 		guards.Clear();
-		Node2DGame game = Director.Game;
 		for (int i = 0; i < GuardRoles.Length; i++)
 		{
-			Vector2 at = game.ReachablePoint(GlobalPosition + new Vector2(i == 0 ? -170f : 170f, 40f));
-			Enemy guard = game.SpawnEventEnemy(GuardRoles[i], at, GuardHealthMultiplier, true);
-			if (guard != null)
-				guards.Add(guard);
+			Vector2 at = Director.Game.ReachablePoint(GlobalPosition + new Vector2(i == 0 ? -300f : 300f, 64f));
+			Enemy guard = Director.Game.SpawnEventEnemy(GuardRoles[i], at, GuardHealthMultiplier, true);
+			if (guard != null) guards.Add(guard);
 		}
 		SfxPlayer.AtPosition(SfxCatalog.EliteSpawn, GlobalPosition, 0f);
-		// Nobody to fight (a chapter with neither role would be a roster bug, reported there): the latch is free.
-		if (guards.Count == 0)
-			State.Step = 2;
+		if (guards.Count == 0) State.Step = 2;
 	}
-
 	private void LiftLatch()
 	{
-		running = 0f;
-		runFrom = GlobalPosition + new Vector2(0f, -6f);
+		State.Step = 3;
+		gateCollider.SetDeferred(CollisionShape2D.PropertyName.Disabled, true);
 		SfxPlayer.AtPosition(SfxCatalog.EventReward, Latch, 0f);
 	}
-
-	/// <summary>The guards down and the latch lifted, now: for _UiShot's photographs.</summary>
-	public void OpenForProbe()
+	/// <summary>Open only the gate for a photograph; each companion still has to be freed.</summary>
+	public void OpenForProbe() { if (!GateOpen) LiftLatch(); }
+	private void DrawBack()
 	{
-		if (State.Step < 2)
-			State.Step = 2;
-		if (!GateOpen)
-			LiftLatch();
+		if (pound == null) return;
+		SpellInk.AlignToWorldGrid(back);
+		back.DrawTextureRectRegion(pound, new Rect2(PoundAnchor - back.Position, PoundCell), new Rect2(Vector2.Zero, PoundCell));
+		back.DrawSetTransform(Vector2.Zero);
 	}
-
-	// The pound and, between its back and its front, the hound lying behind the bars - on the world's grid
-	// (AlignToWorldGrid shifts the drawing by under a pixel; the walls do not move).
 	public override void _Draw()
 	{
-		if (pound == null)
-			return;
+		if (pound == null) return;
 		SpellInk.AlignToWorldGrid(this);
-		DrawTextureRectRegion(pound, new Rect2(PoundAnchor, PoundCell), new Rect2(Vector2.Zero, PoundCell));
-		if (!GateOpen && hound != null)
-		{
-			// Lying, its head on its paws, breathing - a slow breath, never a flicker.
-			int pose = ((int)(clock / (GlintPeriod * 0.5f))) % 2;
-			DrawTextureRectRegion(hound, new Rect2(HoundLying, HoundCell), new Rect2(new Vector2(pose * HoundCell.X, 0f), HoundCell));
-		}
-		int front = GateOpen ? 2 : 1;
-		DrawTextureRectRegion(pound, new Rect2(PoundAnchor, PoundCell), new Rect2(new Vector2(front * PoundCell.X, 0f), PoundCell));
+		DrawTextureRectRegion(GateOpen ? openFront : front, new Rect2(PoundAnchor, PoundCell), new Rect2(Vector2.Zero, PoundCell));
 		DrawSetTransform(Vector2.Zero);
+		if (GateOpen) return;
+		Color seal = new("#6AB8E8");
+		float pulse = 0.4f + 0.5f * Breath(clock);
+		PixelInk.Line(this, new Vector2(-124f, -50f), new Vector2(124f, -6f), seal, 1, pulse);
+		PixelInk.Line(this, new Vector2(-124f, -6f), new Vector2(124f, -50f), seal, 1, pulse);
+		for (int x = -120; x <= 120; x += 24)
+		{
+			PixelInk.Line(this, new Vector2(x - 4, -24), new Vector2(x, -30), seal, 1, pulse);
+			PixelInk.Line(this, new Vector2(x, -30), new Vector2(x + 4, -24), seal, 1, pulse);
+		}
+		if (GuardsDown) DrawGlint(this, LatchOffset, clock, 0.6f);
 	}
-
-	// World units: the canvas is TopLevel at the origin, through the dither material.
-	private void DrawEffects()
+	private Vector2 WispAt(float phase, bool inner = false)
 	{
-		if (!GateOpen)
-		{
-			// The hound's light through the bars; and the latch's, once there is nobody left to keep it.
-			DrawGlint(effects, GlobalPosition + HoundHead, clock, 0.8f);
-			if (GuardsDown)
-				DrawGlint(effects, Latch, clock + 0.6f, 1f);
-			return;
-		}
-		if (running < 0f || hound == null || Player is not Player player)
-			return;
-
-		// It gets up, then runs to him: long and low, four frames to a stride, facing the way it goes.
-		Vector2 target = player.GlobalPosition + new Vector2(0f, 10f);
+		if (inner)
+			return CentreOffset + new Vector2(Mathf.Cos(phase * Mathf.Tau) * 540f,
+				Mathf.Sin(phase * Mathf.Tau) * 410f - 24f + Mathf.Sin(phase * 80f + clock) * 14f);
+		// A rounded rectangular circuit follows the actual walls, rather than cutting across the pen.
+		float distance = Mathf.PosMod(phase, 1f) * 6912f;
 		Vector2 at;
-		int pose;
-		if (running < StandSeconds)
+		if (distance < 1920f) at = new(-960f + distance, -1536f);
+		else if ((distance -= 1920f) < 1536f) at = new(960f, -1536f + distance);
+		else if ((distance -= 1536f) < 1920f) at = new(960f - distance, 0f);
+		else at = new(-960f, -(distance - 1920f));
+		return at + new Vector2(Mathf.Sin(phase * Mathf.Tau * 31f + clock * 0.7f) * 12f,
+			-48f + Mathf.Cos(clock * 1.6f + phase * 19f) * 18f + Mathf.Cos(phase * Mathf.Tau * 31f) * 10f);
+	}
+	private void DrawBinding()
+	{
+		if (GateOpen) return;
+		Color blue = new("#6AB8E8"), violet = new("#E8C0FF"), core = new("#DCF4FF");
+		Rect2 visible = GetViewportRect().Grow(140f);
+		Transform2D canvas = GetViewport().GetCanvasTransform();
+		for (int i = 0; i < 32; i++)
 		{
-			at = runFrom;
-			pose = 2;
+			bool inner = i >= 24;
+			float phase = inner ? (i - 24) / 8f + clock / 22f : i / 24f + clock / 80f;
+			Color body = i % 3 == 0 ? violet : blue;
+			Vector2 head = WispAt(phase, inner);
+			if (!visible.HasPoint(canvas * (binding.GlobalPosition + head))) continue;
+			for (int k = 7; k >= 1; k--)
+				PixelInk.Line(binding, WispAt(phase - k * 0.002f, inner), WispAt(phase - (k - 1) * 0.002f, inner), body, k < 3 ? 3 : 1, 1f - k / 9f);
+			PixelInk.Disc(binding, head, 15f, body, 0.18f);
+			PixelInk.Disc(binding, head, 9f, body, 0.85f);
+			PixelInk.Disc(binding, head + new Vector2(-2f, -2f), 4.5f, core);
 		}
-		else
+	}
+	private static void SetAnimation(Captive c, string name)
+	{
+		if (c.Animation == name) return;
+		c.Animation = name;
+		c.Sprite.Play(name);
+	}
+	private void TickCaptives(float dt)
+	{
+		if (State == null) return;
+		Vector2 player = Player != null ? ToLocal(Player.GlobalPosition) : Vector2.Inf;
+		bool inside = player.X > -900f && player.X < 900f && player.Y > -1480f && player.Y < -48f;
+		for (int i = 0; i < CaptiveCount; i++)
 		{
-			float t = Mathf.Clamp((running - StandSeconds) / RunSeconds, 0f, 1f);
-			at = runFrom.Lerp(target, t * t * (3f - 2f * t));
-			pose = 3 + ((int)(running * 12f)) % 4;
+			Captive c = captives[i];
+			if (c == null) continue;
+			if (IsCaptiveFreed(i))
+			{
+				if (c.Released < 0f || c.Released >= 1f) { c.Sprite.Hide(); continue; }
+				c.Released += dt;
+				float t = Mathf.Clamp(c.Released / 1.0f, 0f, 1f);
+				c.At = c.FreedAt.Lerp(Player != null ? player : c.FreedAt, t);
+				c.Material.SetShaderParameter("release_amount", t);
+				c.Sprite.Visible = t < 1f;
+			}
+			else
+			{
+				Vector2 goal = EscapeGoals[i][c.Goal];
+				if (c.Wait > 0f)
+				{
+					c.Wait -= dt;
+					SetAnimation(c, c.Wait > 0.35f ? "pounce" : "idle");
+					if (c.Wait <= 0f) c.Goal = (c.Goal + 1) % EscapeGoals[i].Length;
+				}
+				else
+				{
+					Vector2 move = goal - c.At;
+					c.Sprite.FlipH = move.X < -1f;
+					c.At = c.At.MoveToward(goal, (118f + i * 22f) * dt);
+					SetAnimation(c, "run");
+					if (c.At.DistanceSquaredTo(goal) < 4f) c.Wait = 0.9f;
+				}
+				if (!State.Done && Active && GateOpen && inside && c.At.DistanceTo(player) <= CompanionReach)
+				{
+					State.Marks |= 1UL << i;
+					c.FreedAt = c.At;
+					c.Released = 0f;
+					c.Material.SetShaderParameter("ghosted", false);
+					SfxPlayer.AtPosition(SfxCatalog.EventReward, GlobalPosition + c.At, 0f);
+					if (FreedCount < CaptiveCount)
+						rescueToast.Show(i == 0 ? "The hound is free" : i == 1 ? "The cat is free" : "The bird is free",
+							$"{FreedCount} of {CaptiveCount} companions freed", "", false);
+				}
+			}
+			c.Sprite.Position = SpellInk.Snap(c.At);
 		}
-		bool left = target.X < runFrom.X;
-		int frame = pose + (left ? HoundPoses : 0);
-		Vector2 corner = SpellInk.Snap(at - HoundFootInCell);
-		effects.DrawTextureRectRegion(hound, new Rect2(corner, HoundCell), new Rect2(new Vector2(frame * HoundCell.X, 0f), HoundCell));
-		DrawGlint(effects, at + new Vector2(left ? -14f : 14f, -40f), 0.6f, 1f);
+		if (!State.Done && Active && FreedCount == CaptiveCount)
+		{
+			rescueToast.Hide();
+			Open(EssenceCentre);
+		}
 	}
 }

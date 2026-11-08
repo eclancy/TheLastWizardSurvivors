@@ -5,8 +5,10 @@ using TheOneHeMissed.scripts;
 
 /// <summary>
 /// One chunk's open water: a distance field drawn by scenes/shaders/water_surface.gdshader, and
-/// the layer-4 collision body the feet and the enemies stop against - both from the same
-/// WaterShape polygons. One node a chunk, freed with it. See .ai/terrain.md section 3.
+/// the collision body the enemies stop against - both from the same WaterShape polygons. Wadeable
+/// water sits on LevelTilePainter.WaterCollisionLayer, which the player's feet do not mask, so he
+/// wades it (in-flight 59); the Bridge's abyss keeps TerrainCollisionLayer and stops him like a
+/// wall. One node a chunk, freed with it. See .ai/terrain.md section 3.
 /// </summary>
 /// <remarks>
 /// THE FIELD. A 6 px grid of signed distances to the shore (positive in the water), clamped to
@@ -19,7 +21,8 @@ using TheOneHeMissed.scripts;
 /// under 1 ms a chunk on the Swamp in a debug build.
 ///
 /// THE BODY. A server-side static body (PhysicsServer2D, no nodes): one convex shape per partial
-/// cell and one rectangle per run of whole-water cells, on LevelTilePainter.TerrainCollisionLayer.
+/// cell and one rectangle per run of whole-water cells, on the layer the painter passes in (see
+/// the summary above).
 /// It used to be a polygon on each water TILE's source; a tile can only carry one shape for every
 /// cell that uses it, and a smooth shore is different in every cell.
 /// </remarks>

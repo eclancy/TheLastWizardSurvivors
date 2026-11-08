@@ -1,5 +1,15 @@
 # Controller support and the selection highlight
 
+**0.14.0 keyboard/mouse handoff (2026-11-06):** CursorVisibility owns the shared pointer state.
+Keyboard/pad hides the cursor and temporarily ignores Control mouse filters, including native
+children, so stale hover and tooltips cannot compete with focus. Intentional mouse movement (3 px),
+click or touch restores the original filters; jitter does not. Newly added/reparented controls
+follow the same state. Android keeps touch filters active. Text entry and keyboard focus are
+unchanged. Native buttons require mouse-enter before their first waking click; the input observer
+refreshes native hover and routes that click once, consuming its original to prevent double buys.
+MenuNavigator observes events before its own routing because children receive input before autoloads.
+The _FunctionProbe scene exercises real GUI events, text entry, dynamic controls and shop paging.
+
 How an Xbox pad plays this game, what the input map actually binds, and why menu highlighting is
 one idea rather than two.
 
@@ -117,6 +127,15 @@ Three behaviours worth knowing before changing it:
 on most of these screens but not all: the main menu's Options button is a direct child of the root
 while Start Run is buried in a `MarginContainer`, so tree order alone opened the game with Options
 selected.
+
+**The results footer names its horizontal neighbors explicitly** (`GameOverScreen.BuildFooter`,
+2026-11-05): Retry's right is Main menu, and Main menu's left is Retry. Automatic geometric search
+left the selection stuck on these buttons. `_RecoveryProbe --part=footer` exercises real keyboard,
+D-pad and stick input on the paused screen; `--automatic-focus` removes the links to reproduce it.
+
+**Page Up / Page Down scroll the focused control's list**, or the screen's tallest list if focus
+is on its footer (2026-11-06). This lets a keyboard read the foot of a spell card taller than its
+viewport, matching the mouse wheel and right stick. Text fields retain their own page-key handling.
 
 ## 4. `MenuFocusHighlight`
 

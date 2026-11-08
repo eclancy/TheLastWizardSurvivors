@@ -78,9 +78,8 @@ public static class SpellEvolutionCatalog
 			case "chain_lightning":
 				SetupChainLightningEvolutions(spell);
 				break;
-			case "shadow_bolt":
-				SetupShadowBoltEvolutions(spell);
-				break;
+			// shadow_bolt is a Conjunction since 2026-11-07 (ComboCatalog): terminal, no milestones - and
+			// IsCombination returns above before any case is reached.
 			case "gale_blade":
 				SetupGaleBladeEvolutions(spell);
 				break;
@@ -983,111 +982,6 @@ public static class SpellEvolutionCatalog
 		});
 	}
 
-	// Shadow Bolt is the DEBUFF half. It barely kills anything on its own and is not meant to - its
-	// job is to make the other five spells hit harder, so every option here adds or deepens a
-	// debuff rather than adding damage. The one exception carries damage as its cost of admission.
-	//
-	// EVERY CARD ITS OWN (.ai/spell-roster.md section 2e, built 2026-10-29). The cards were hand-written
-	// and almost all numbers; each now changes what the curse does where you can see it, from what the
-	// spell already is - shadow lightning that arcs far, hits softly and leaves a trail - and its numbers
-	// ride along: a sigil that the next hit breaks, paths of rot along the arcs, the fork, a pall of night
-	// where the curse ends, three curses at once. The ids stay, so every save's choices and the Ascension
-	// browser carry over. The behaviour and its numbers are ChainLightning's (BlackSigilId and the rest,
-	// switched on by these ids alone, so Chain Lightning is untouched) and ShadowCurse's.
-	private static void SetupShadowBoltEvolutions(SpellData spell)
-	{
-		// Level 4 (3 choices)
-		spell.Level4Options.Add(new SpellEvolutionOption
-		{
-			Id = "shadow_bolt_withering_mark",
-			BonusElementWeights = new() { { "Darkness", 1 } },
-			DisplayName = "Black Sigil",
-			Description = $"The cursed wear a sigil: your next other spell to hit one bursts it for {ChainLightning.SigilBurstDamageShare:0}x the bolt, spreading the curse.",
-			MilestoneLevel = 4,
-			Effect = SpellEffect.Vulnerability,
-			EffectValue = 0.12f,
-			VisualTag = "BlackSigil",
-			ModulateColor = new Color(0.72f, 0.36f, 0.92f),
-			SynergyTag = "Darkness / Vulnerability",
-			SynergyDescription = "Every other spell you own sets the sigils off: the busier the loadout, the further the curse spreads."
-		});
-
-		spell.Level4Options.Add(new SpellEvolutionOption
-		{
-			Id = "shadow_bolt_creeping_rot",
-			BonusElementWeights = new() { { "Poison", 1 } },
-			DisplayName = "Creeping Rot",
-			Description = $"Every arc leaves a path of rot for {ChainLightning.RotPathSeconds:0.#}s that poisons, slows and exposes whatever crosses it.",
-			MilestoneLevel = 4,
-			PoisonTickBonus = 4,
-			// The drag as Effect SlowPower, which ChainLightning reads (0.72 to 0.57 of their speed).
-			// It was a SlowMagnitudeBonus, which nothing on this spell reads, until 2026-10-26.
-			Effect = SpellEffect.SlowPower,
-			EffectValue = 0.15f,
-			VisualTag = "CreepingRot",
-			ModulateColor = new Color(0.45f, 0.72f, 0.30f),
-			SynergyTag = "Poison / Control",
-			SynergyDescription = "The survival option - the ground between you and the pack is cursed, and a crowd that cannot close cannot hit you."
-		});
-
-		spell.Level4Options.Add(new SpellEvolutionOption
-		{
-			Id = "shadow_bolt_spreading_dark",
-			DisplayName = "Spreading Dark",
-			// The cap is named on the card (ChainLightning.MaxArcsPerCast, 2026-10-31): with the fork a cast runs
-			// into it within two or three jumps, so "two hops further" is only the whole truth beside it. One
-			// sentence, the one number (the designer, 2026-10-31: "Overall keep text minimal").
-			Description = $"The curse forks at every jump and runs two hops further, up to {ChainLightning.MaxArcsPerCast} arcs a curse.",
-			MilestoneLevel = 4,
-			ChainBranchBonus = 1,
-			ChainArcBonus = 2,
-			VisualTag = "SpreadingDark",
-			ModulateColor = new Color(0.35f, 0.16f, 0.52f),
-			SynergyTag = "Darkness / Spread",
-			SynergyDescription = "More bodies debuffed rather than heavier debuffs. Wants a wide crowd."
-		});
-
-		// Level 8 (2 choices)
-		spell.Level8Options.Add(new SpellEvolutionOption
-		{
-			Id = "shadow_bolt_anathema",
-			// No BonusElementWeights. Element growth on a hybrid happens at level 4; granting one
-			// here as well would let a player who took the matching level 4 option reach three of
-			// a single element, which only a pure spell may do.
-			DisplayName = "Anathema",
-			// +45% damage of its own as well (2026-10-26): x2.76 of the spell at level 7 with it, at --enemy-hp=10.
-			// Cut to what it does and one number (2026-10-31, "keep text minimal"); the +20% damage taken and
-			// the two hops still ride along, as the numbers below.
-			Description = $"Where the curse ends, a pall of night hangs for {ChainLightning.PallSeconds:0}s, cursing and striking everything under it.",
-			DamageMultiplier = 1.45f,
-			MilestoneLevel = 8,
-			Effect = SpellEffect.Vulnerability,
-			EffectValue = 0.20f,
-			ChainArcBonus = 2,
-			VisualTag = "Anathema",
-			ModulateColor = new Color(0.86f, 0.30f, 1.0f),
-			SynergyTag = "Darkness / Vulnerability",
-			SynergyDescription = "Ascension: every chain ends in a patch of night your other spells hit harder in."
-		});
-
-		spell.Level8Options.Add(new SpellEvolutionOption
-		{
-			Id = "shadow_bolt_plaguebearer",
-			// No BonusElementWeights. Element growth on a hybrid happens at level 4; granting one
-			// here as well would let a player who took the matching level 4 option reach three of
-			// a single element, which only a pure spell may do.
-			DisplayName = "Threefold Curse",
-			Description = $"{ChainLightning.ThreefoldCurses} curses leave the staff at once, each chaining on its own for up to {ChainLightning.MaxArcsPerCast} arcs.",
-			MilestoneLevel = 8,
-			PoisonTickBonus = 8,
-			DamageMultiplier = 1.2f,
-			VisualTag = "ThreefoldCurse",
-			ModulateColor = new Color(0.52f, 0.84f, 0.34f),
-			SynergyTag = "Poison / Damage",
-			SynergyDescription = "Ascension: the curse fans out across the front of the pack, and kills through poison rather than impact."
-		});
-	}
-
 	// Gale Blade: a blade thrown out past its target and back to the hand, cutting on both legs
 	// (ElementalBolt, Returning). It left the chain archetype to Chain Lightning and Shadow Bolt, and its
 	// cards were a strike's numbers - damage, crit, crit damage, speed - until 2026-10-29
@@ -1203,14 +1097,14 @@ public static class SpellEvolutionCatalog
 		{
 			Id = AegisWard.RampartId,
 			DisplayName = "Rampart",
-			Description = $"The ward stands off you as a dome: enemy bolts break on it, costing the shield {AegisWard.RampartCost * 100f:0}%. "
-				+ $"{(1f - rampartCooldown) * 100f:0}% shorter recharge.",
+			Description = $"Blocks enemy shots. Each blocked shot costs {AegisWard.RampartCost * 100f:0}% of its damage in shield points. "
+				+ $"Shield recharges {(1f - rampartCooldown) * 100f:0}% sooner.",
 			MilestoneLevel = 4,
 			CooldownMultiplier = rampartCooldown,
 			VisualTag = "Rampart",
 			ModulateColor = new Color(0.5f, 0.85f, 1.0f),
-			SynergyTag = "Guard / Bolts",
-			SynergyDescription = "Against shooters the shield lasts twice as long, and you see what it stops."
+			SynergyTag = "Guard / Shots",
+			SynergyDescription = "Stops enemy shots before they reach you."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
@@ -2077,7 +1971,9 @@ public static class SpellEvolutionCatalog
 			Id = MeteorImpact.SkipstoneId,
 			BonusElementWeights = new() { { "Earth", 1 } },
 			DisplayName = "Skipstone",
-			Description = $"Every meteor glances off the ground and bounds on to land again, for {MeteorImpact.SkipDamageShare * 100f:0}% more. +35% damage.",
+			// "For 90% more" was wrong as well as vague (Eric, 2026-11-06): the bounce deals a SHARE
+			// of the meteor's damage (MeteorImpact.SkipDamageShare), not an increase.
+			Description = $"Every meteor glances off the ground and lands again; the second strike deals {MeteorImpact.SkipDamageShare * 100f:0}% of the first's. +35% damage.",
 			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.35f,
@@ -2927,7 +2823,7 @@ public static class SpellEvolutionCatalog
 			"Heat / Burst", "Hold a ray on something big, and the pack round it goes up with it.",
 			o => { o.DisplayName = "Flashpoint"; o.VisualTag = "Flashpoint"; o.DamageMultiplier = 1.2f; o.AreaMultiplier = 1.3f; }));
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.HyperAcceleration,
-			$"When a ray's target falls, its heat jumps to the nearest enemy, {(ScorchingRayBeam.MaxHandoffs == 1 ? "once" : $"up to {ScorchingRayBeam.MaxHandoffs} times")} a cast, and holds into the next. Rays strike 25% faster.",
+			$"When a ray's target dies, the ray swings to the nearest enemy and keeps the heat it built, {(ScorchingRayBeam.MaxHandoffs == 1 ? "once" : $"up to {ScorchingRayBeam.MaxHandoffs} times")} a cast. Rays strike 25% faster.",
 			"Heat / Chain", "The heat you built on an elite is not lost when it dies.",
 			o => { o.DisplayName = "Handoff"; o.VisualTag = "Handoff"; o.SpeedMultiplier = 1.25f; }));
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.ReactiveCatalyst,
@@ -2963,7 +2859,10 @@ public static class SpellEvolutionCatalog
 	{
 		const int extraTongues = 2;
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.AmplifiedImpact,
-			$"As each burn ends, its fire rolls back into a burst at the tip for {Flamethrower.BackdraftDamageShare:0}x a tongue. +35% damage.",
+			// Said in the player's words (Eric, 2026-11-04: "Backdraft description is confusing"): it was "As each burn
+			// ends, its fire rolls back into a burst at the tip for 3x a tongue" - "burn" and "tongue" are the code's
+			// names for a breath and one flame of it.
+			$"When each breath of fire ends, the far end of the flame explodes for {Flamethrower.BackdraftDamageShare:0}x its damage. +35% damage.",
 			"Power / Burst", "The jet's far end is where the pack is caught - and blown apart.",
 			o => { o.DisplayName = "Backdraft"; o.VisualTag = "Backdraft"; o.DamageMultiplier = 1.35f; }));
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.HyperAcceleration,
@@ -3292,8 +3191,10 @@ public static class SpellEvolutionCatalog
 		// and the axe's 475; at +10%, 480 - the dog the most damage of the three forms, at the band's top.
 		const float greatDamage = 1.2f;
 		const float greatJaws = 1.4f;
-		const int littermates = 1;
-		const float litterDamage = 0.85f;
+		const int littermates = 2;
+		// One hound now carries the former pair's bite budget. Three at 45% keep the pack's
+		// total near the old three at 85%, while trading heavy bites for coverage and bolt catches.
+		const float litterDamage = 0.45f;
 		const float cerberusDamage = 1.1f;
 		const float annwnDamage = 2.2f;
 		const float annwnJaws = 1.5f;
@@ -3303,7 +3204,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.GreatHoundId,
 			DisplayName = "Great Hound",
-			Description = $"It grows into a great hound: +{(greatDamage - 1f) * 100f:0}% damage, jaws {(greatJaws - 1f) * 100f:0}% wider to maul what stands beside its quarry.",
+			Description = $"Bites deal +{(greatDamage - 1f) * 100f:0}% damage. Jaws are {(greatJaws - 1f) * 100f:0}% wider, catching enemies beside its target.",
 			MilestoneLevel = 4,
 			DamageMultiplier = greatDamage,
 			AreaMultiplier = greatJaws,
@@ -3322,17 +3223,14 @@ public static class SpellEvolutionCatalog
 			"The hound runs cold",
 			"Whatever it bites is dragged to a crawl.");
 		rime.AreaMultiplier = rimeBreath;
-		rime.Description += $" Frost breath: jaws {(rimeBreath - 1f) * 100f:0}% wider.";
+		rime.Description = $"Bite damage +{(rime.DamageMultiplier - 1f) * 100f:0}%. Slows enemies by {(1f - rime.RiderMagnitude) * 100f:0}% for {rime.RiderSeconds:0.#} s. Jaw width +{(rimeBreath - 1f) * 100f:0}%.";
 		spell.Level4Options.Add(rime);
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = Familiar.LittermatesId,
 			DisplayName = "Littermates",
-			// Since 2026-10-30 every hound after the first is a pup (Familiar.ResolvePackLook): taken at level 4,
-			// with the level 3 hound already out, that is the main hound and two pups.
-			Description = $"+{littermates} hound; every hound after the first is a pup with its own quarry. "
-				+ $"Every hound bites {(1f - litterDamage) * 100f:0}% softer.",
+			Description = $"Adds {littermates} pups: 3 hounds total. Each hunts its own target. All hounds deal {(1f - litterDamage) * 100f:0}% less bite damage.",
 			MilestoneLevel = 4,
 			ProjectileCountBonus = littermates,
 			DamageMultiplier = litterDamage,
@@ -3346,7 +3244,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.CerberusId,
 			DisplayName = "Cerberus",
-			Description = $"Three heads: every bite is {Familiar.CerberusHeads} - its quarry and the two beside it - for +{(cerberusDamage - 1f) * 100f:0}% damage.",
+			Description = $"Each bite hits up to {Familiar.CerberusHeads} enemies near its target. Bite damage +{(cerberusDamage - 1f) * 100f:0}%.",
 			MilestoneLevel = 8,
 			DamageMultiplier = cerberusDamage,
 			BonusElementWeights = new() { { "Arcane", 1 } },
@@ -3365,7 +3263,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.AnnwnId,
 			DisplayName = "Hound of Annwn",
-			Description = $"A white hound of the otherworld: bites {(annwnDamage - 1f) * 100f:0}% harder and {(annwnJaws - 1f) * 100f:0}% wider, elites and bosses first, {Familiar.AnnwnEliteMultiplier:0.#}x on them.",
+			Description = $"Hunts elites and bosses first, dealing {Familiar.AnnwnEliteMultiplier:0.#}x damage to them. Bite damage +{(annwnDamage - 1f) * 100f:0}%, jaw width +{(annwnJaws - 1f) * 100f:0}%.",
 			MilestoneLevel = 8,
 			DamageMultiplier = annwnDamage,
 			AreaMultiplier = annwnJaws,
@@ -3398,7 +3296,7 @@ public static class SpellEvolutionCatalog
 			Id = Familiar.RavenId,
 			// 2026-10-30, Eric: "'Raven of your light' doesn't make sense. Rename this and describe it differently."
 			DisplayName = "Great Raven",
-			Description = $"It grows into a great raven: {(ravenDamage - 1f) * 100f:0}% harder, its beak {(ravenBeak - 1f) * 100f:0}% wider to catch what is beside its target.",
+			Description = $"Pecks deal +{(ravenDamage - 1f) * 100f:0}% damage. Its beak is {(ravenBeak - 1f) * 100f:0}% wider, hitting enemies beside its target.",
 			MilestoneLevel = 4,
 			DamageMultiplier = ravenDamage,
 			AreaMultiplier = ravenBeak,
@@ -3419,8 +3317,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.MurderId,
 			DisplayName = "Murder of Crows",
-			Description = $"The flock grows: +{murder} crow, each with its own quarry; every crow pecks "
-				+ $"{(1f - murderDamage) * 100f:0}% softer.",
+			Description = $"Adds {murder} crow with its own target. All crows deal {(1f - murderDamage) * 100f:0}% less peck damage.",
 			MilestoneLevel = 4,
 			ProjectileCountBonus = murder,
 			DamageMultiplier = murderDamage,
@@ -3437,7 +3334,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.MorriganId,
 			DisplayName = "The Morrigan",
-			Description = $"A peck kills any enemy under {Familiar.MorriganExecuteFraction * 100f:0}% health outright, and lands {Familiar.MorriganEliteMultiplier:0.#}x on elites. +{(morriganDamage - 1f) * 100f:0}% damage.",
+			Description = $"Peck damage +{(morriganDamage - 1f) * 100f:0}%. Below {Familiar.MorriganExecuteFraction * 100f:0}% health, ordinary enemies die instantly; elites and bosses take {Familiar.MorriganEliteMultiplier:0.#}x damage.",
 			MilestoneLevel = 8,
 			DamageMultiplier = morriganDamage,
 			BonusElementWeights = new() { { "Arcane", 1 } },
@@ -3451,7 +3348,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = Familiar.GriffinId,
 			DisplayName = "Griffin",
-			Description = $"A griffin: each swoop strikes all along its line for +{(griffinDamage - 1f) * 100f:0}% damage, {(griffinCooldown - 1f) * 100f:0}% less often than pecks.",
+			Description = $"Swoops through every enemy along its path. Damage +{(griffinDamage - 1f) * 100f:0}%; time between attacks +{(griffinCooldown - 1f) * 100f:0}%.",
 			MilestoneLevel = 8,
 			DamageMultiplier = griffinDamage,
 			CooldownMultiplier = griffinCooldown,

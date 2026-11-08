@@ -24,16 +24,23 @@ public static class ContentValidator
 	{
 		if (loadedSpells != null)
 			return loadedSpells;
+		foreach (int step in PrepareSpellResources()) { }
+		return loadedSpells;
+	}
 
-		loadedSpells = new List<SpellData>();
+	/// <summary>Warm the same lifetime cache one resource at a time while the title keeps drawing.</summary>
+	public static IEnumerable<int> PrepareSpellResources()
+	{
+		if (loadedSpells != null) yield break;
+		var result = new List<SpellData>();
 		foreach (string path in SpellResourcePaths)
 		{
 			var spell = ResourceLoader.Load<SpellData>(path);
 			if (spell != null)
-				loadedSpells.Add(spell);
+				result.Add(spell);
+			yield return 0;
 		}
-
-		return loadedSpells;
+		loadedSpells = result;
 	}
 
 	private static List<SpellData> loadedForms;
@@ -114,13 +121,18 @@ public static class ContentValidator
 
 	public static void ValidateAtStartup(Node context)
 	{
-		if (hasRun)
+		// This is the development test suite, including image reads, simulations and scene probes.
+		// Never run it on a player's first menu/run. Keep the full check available explicitly.
+		if (hasRun || Array.IndexOf(OS.GetCmdlineUserArgs(), "--validate-content") < 0)
 			return;
 
 		hasRun = true;
+		var startup = new StartupTrace("ContentValidator");
 		ContentValidationSummary summary = ValidateSpellAndCharacterData();
+		startup.Mark("spell + character data");
 		foreach (string warning in RegressionChecks.RunAll())
 			summary.Warnings.Add($"Regression: {warning}");
+		startup.Mark("regression checks");
 		if (summary.Errors.Count == 0 && summary.Warnings.Count == 0)
 		{
 			GD.Print("ContentValidator: all spell and character resources passed validation.");

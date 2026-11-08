@@ -100,7 +100,8 @@ public partial class PoiPointer : Control
 
 	private void DrawBadge(Vector2 at, Vector2 direction, PointOfInterest point, float pulse)
 	{
-		Color rim = point.IsWayfinder ? FoundRim : HisRim;
+		bool warm = point.IsWayfinder || point.IsTeaching;
+		Color rim = warm ? FoundRim : HisRim;
 		Vector2 side = new Vector2(-direction.Y, direction.X);
 		// The tail first, from under the badge's rim out toward the place. A diamond's edge is
 		// nearest along the diagonals, so the root sits a little inside the half-width.
@@ -109,7 +110,7 @@ public partial class PoiPointer : Control
 		tail[2] = at + direction * (BadgeHalf - 8f) - side * 7f;
 		DrawColoredPolygon(tail, new Color(rim, 0.6f + 0.4f * pulse));
 
-		Texture2D badge = point.IsWayfinder ? badgeFound : badgeHis;
+		Texture2D badge = warm ? badgeFound : badgeHis;
 		if (badge != null)
 		{
 			DrawTexture(badge, at + new Vector2(-BadgeHalf, -BadgeHalf + 2f), new Color(Shadow, Shadow.A));

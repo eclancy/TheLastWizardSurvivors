@@ -7,12 +7,12 @@
 [sub_resource type="Resource" id="Resource_mm_lvl2"]
 script = ExtResource("2_5s5xv")
 Level = 2
-DamageBonus = 2
+DamageBonus = 1
 
 [sub_resource type="Resource" id="Resource_mm_lvl3"]
 script = ExtResource("2_5s5xv")
 Level = 3
-DamageBonus = 2
+DamageBonus = 1
 CooldownBonus = -0.05
 RangeBonus = 40.0
 
@@ -32,23 +32,28 @@ RangeBonus = 40.0
 ; Magic Missile, The Archmage's opener (.ai/protagonist.md). Pure Arcane since 2026-11-02; NERFED 2026-11-03 (Eric:
 ; "Nerf magic missile") from 10 every 0.5 s to 12 every 0.8 s. The cadence is the nerf: every cast charges Arcane
 ; Explosion, and a dart every half second set it off nearly nonstop; damage alone (10 -> 8, -> 7) did not move it.
+; A FAN OF THREE since 2026-11-07 (Eric: "shoot 3 projectiles at the start, and move faster", with an indirect
+; path): BaseProjectileCount 3, the per-dart damage cut 12 -> 5 (15 a cast, a quarter over the old 12) and the
+; level 2/3 damage steps cut 2 -> 1 a dart so a cast's growth stays near the old line. The cadence nerf stands.
+; The fan itself - every volley leaving off its marks and curving in - is Player.CastSpellNow; the dart speed
+; is MagicMissile.BaseSpeed.
 
 ; STARTING RANGE (Eric, 2026-11-04: "Arcane missile and chain lightning range starts too big"): 500 reached past
 ; the top and bottom of a PC screen (about 425 px from the player at zoom 0.85), so a level 1 dart flew at
 ; things the player could not see. 340 starts inside it and the reach grows +40 at levels 3 and 7, to 420.
 [resource]
 script = ExtResource("1_43iml")
-Tagline = "Darts at the nearest enemy."
+Tagline = "Three darts seek the nearest foes."
 Id = "magic_missile"
 Name = "Magic Missile"
 CurrentLevel = 1
 MaxLevel = 8
-BaseDamage = 12
+BaseDamage = 5
 BaseCooldown = 0.8
-BaseProjectileCount = 1
+BaseProjectileCount = 3
 BaseRange = 340.0
 LevelUpgrades = Array[ExtResource("2_5s5xv")]([SubResource("Resource_mm_lvl2"), SubResource("Resource_mm_lvl3"), SubResource("Resource_mm_lvl5"), SubResource("Resource_mm_lvl7")])
-Description = "Fires a fast projectile at nearby enemies."
+Description = "Looses a fan of seeking darts at nearby enemies."
 Icon = ExtResource("3_icon")
 ElementWeights = {
 "Arcane": 1

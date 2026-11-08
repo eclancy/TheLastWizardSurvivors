@@ -291,6 +291,38 @@ keep the debug build on the development phone and judge the release APK by its s
 
 ### Rehearsing it: `--dry-run`
 
+**Phone-free startup checks (2026-11-06):** `pwsh -File tools/android-startup-check.ps1` extracts
+the real APK's assets, exports the current code with the Windows release engine, and checks a
+portrait/safe-area menu with desktop display controls and debug-only options absent. It covers
+cold catalog initialization in both orders (without autoloads), preparation with forced garbage
+collection, return-to-menu, a missing scene, and an injected
+menu-construction exception. Both failure paths must display a cause, copy a complete report
+(including native loader errors), and recover through Retry. Profiles and logs stay under
+`build/android-startup-check/`; save writes and update checks are disabled. `-SkipExport` reuses
+the fixture when its code is unchanged. This is asset/UI regression coverage, **not an Android
+runtime or ARM64/GPU test**. The Android 0.14.0 failure was traced on the phone to a circular
+unlock/achievement initializer masked by Windows' deferred static initialization.
+The loading error screen now includes its stage and Copy error details; native errors are captured
+only during startup, in a bounded thread-safe buffer, so a phone can report failures without adb.
+
+2026-11-06: the **0.14.0 rehearsal passed** from `af0b8330`: all nine artifacts built, including
+the release-signed Android APK (versionCode 1400, package identity and release certificate verified).
+Story epoch remains 2. The packaged Windows executable passed keyboard/mouse/controller handoff,
+all 22 Powers entries and category selection, live single-hound/Littermates attacks, native fullscreen,
+saved window sizes, F11 and footer checks. Title preparation took 2,154.7 ms; Enter-to-menu 35.3 ms.
+Source phone/touch/safe-area layouts, Familiar cards, defeat navigation and full content validation
+also passed (0 content errors, one existing Test Wizard warning; C# build 0 errors, 45 existing warnings).
+Package tests used isolated temporary APPDATA with save writes and updates disabled. Windows patch
+contents match the full download, and the Linux binary/installer have executable permissions.
+
+2026-11-06: the **0.13.2 rehearsal passed** from `79cda2d0`: all nine artifacts built, including
+the 109.5 MB signed APK (`versionCode` 1302, package identity and release certificate verified).
+Story epoch stays 2. The packaged Windows executable passed title preparation (1,115.7 ms,
+32.9 ms Enter-to-menu in this run), crowded/compact results and reward inspection, rendered
+quit-run freeing + lesson, and tall level-up card scrolling. Tests used isolated temporary
+`APPDATA` and disabled save writes/updates. Source portrait/touch/safe-area and full content
+validation also passed; there was no connected Android device for an on-device playtest.
+
 ```sh
 bash tools/release/release.sh --dry-run 0.3.1
 ```

@@ -157,6 +157,9 @@ public static class UnlockCatalog
 	// already do something: a lobbed explosion, a cone, a chaining arc, a ground eruption. That
 	// pulled these four out of the achievement rewards, which is why the block below hands those
 	// four achievements spells promoted from the shop instead.
+	// AchievementDefinitions builds its list from this catalog. Initializers here may use its
+	// const IDs/prefixes, but must never call its methods: Mono can initialize that type on a
+	// method call, before Definitions has been assigned, and poison both types for the launch.
 	private static readonly UnlockDefinition[] Definitions =
 	{
 		// The Fire opener is a flamethrower rather than a lobbed bolt. A cone you hold while the
@@ -212,7 +215,8 @@ public static class UnlockCatalog
 		FromAchievement("black_tentacles", "earth_adept", "End a run with 4 Earth instances."),
 		FromAchievement("gale_blade", "wind_adept", "End a run with 4 Wind instances."),
 		FromAchievement("thorn_vine", "forest_cleared", "Defeat the boss of the Enchanted Forest."),
-		FromAchievement("shadow_bolt", "castle_conqueror", "Defeat the boss of the Cursed Dungeon."),
+		// Shadow Bolt was the Gaoler's second prize until 2026-11-07; it is a Conjunction now (below, with
+		// the other combinations), and a save that owned it keeps it (SaveData.MigrateShadowBoltToConjunction).
 		// The Gaoler's deed pays a second thing, as the Long Coil's does: the third reactive boon, since a
 		// jailer carries a rattle (.ai/new-items.md section 7).
 		FromAchievementBoon("bone_rattle", "castle_conqueror", "Defeat the boss of the Cursed Dungeon."),
@@ -255,6 +259,9 @@ public static class UnlockCatalog
 		// out so this list stays the one place every spell's source is read from; RegressionChecks holds the
 		// two lists together.
 		FromCombination("sagittarius"),
+		// Shadow Bolt (Void Lance's Cosmic Collapse and Contagion's Pandemic): the Gaoler's old prize, a
+		// Conjunction since 2026-11-07 (in-flight item 17; .ai/combo-spells.md section 7).
+		FromCombination(ShadowBolt.SpellId),
 		// The Taking (Hollow Star's Black Sun and Kindled Ward's Pyre), the dark wizard's own: he opens on it made
 		// (ComboDefinition.StartsFusedFor); anyone else makes it, and its Feat pays it, as any recipe.
 		FromCombination(TheTaking.SpellId),
@@ -337,10 +344,9 @@ public static class UnlockCatalog
 		// three beacons at once. Secret until the Sands open; counted at the Throne's gate only.
 		FromEvent("imhotep", UnlockKind.Character, "tomb_beacons", "Sealed in a dry tomb out on the Scorched Sands.",
 			secretUntilStage: "stage_6", finalGateOnly: true),
-		// Medea, counted with the grain in the Tithe-Reeve's granary in the Fallow Fields (4.2). Secret until the Fields
-		// open: the second chapter, opened by Elderbark, so a new save has no way to know she is there (section 1).
+		// Medea's granary remains in the Fields; Laelaps is a separate rescue in the Pinfold.
 		// Counted at the Throne's gate only, as every chapter wizard is.
-		FromEvent("medea", UnlockKind.Character, "tithe_scale", "Counted with the grain in the Fallow Fields.",
+		FromEvent("medea", UnlockKind.Character, "tithe_scale", "Tallied like grain in the Fallow Fields.",
 			secretUntilStage: "stage_9", finalGateOnly: true),
 		// Ma Liang, kept in the Court to paint its portraits (4.8): the Court's second event, the door he sketched in the
 		// Gallery traced dot to dot. Secret until the Court opens, and counted at the Throne's gate only, as every chapter
@@ -358,31 +364,26 @@ public static class UnlockCatalog
 		// FREED BY COLLECTING. John Dee's library at Mortlake was looted while he was abroad, and the
 		// dark wizard keeps him the same way - scattered through the chests the player opens. The
 		// collector is earned by collecting: lifetime chests, a stat every save already has.
-		FromAchievementCharacter("john_dee", "mortlake_library", "Open 30 chests across your runs."),
-		// FREED BY FINISHING HIS CHASE. Laelaps, the hound fated to catch whatever it hunted, set in stone on
-		// the high heath mid-chase; the black hares there are what he was running down. A hound of the
-		// player's own light finishes it for him (the "coursing" deed). Secret until the Broken Circle
-		// opens - a hint naming a heath the player cannot reach is a spoiler with nothing to act on - and
-		// outside the campaign gate: he is not a wizard, and the deed is optional (OutsideCampaignGate).
-		FromAchievementCharacter("laelaps", "coursing",
-			"The Coursing: in the Broken Circle, let your Familiar, taken as a hound, run down "
-			+ $"{AchievementDefinitions.CoursingTarget} Black Hares in one run.",
-			secretUntilStage: "stage_10", outsideCampaignGate: true),
+		FromAchievementCharacter("john_dee", "mortlake_library",
+			$"Open {AchievementDefinitions.MortlakeChestTarget} chests across your runs."),
+		// Free the hound, cat and bird in the Pinfold to earn both Familiar and Laelaps.
+		// Keep his existing optional campaign-gate status so this change cannot close a player's road.
+		FromAchievementCharacter("laelaps", AchievementDefinitions.SecretDeedPrefix + SecretCatalog.PinfoldId,
+			"Hidden somewhere in the Fallow Fields.",
+			secretUntilStage: "stage_9", outsideCampaignGate: true),
 		// TAKEN ON THE HARDEST ROAD (.ai/dark-wizard-playable.md). The dark wizard himself, the reward of beating
-		// him in the Throne on Hardcore (the_taker_taken). Outside the campaign gate - he is not one of the
+		// every chapter's boss on Hardcore, the Throne's among them (the_taker_taken; Eric, 2026-11-03: "all levels on
+		// hardcore"). Outside the campaign gate - he is not one of the
 		// imprisoned, and the Throne cannot wait on the man in it - and never shown until he is taken, so his line
 		// is vague: the whole road (the Throne's gate asks for all of it), the hard way (Hardcore). His spell, The
 		// Taking, is a Conjunction he opens on already made; everyone else makes it, as any recipe (above).
 		FromAchievementCharacter("dark_wizard", AchievementDefinitions.TakerTakenId,
 			"Something waits for whoever walks the whole road the hard way.",
 			outsideCampaignGate: true, sealedUntilFreed: true),
-		// THE KING-MAKER (.ai/merlin.md). Merlin, the old enchanter, in a look of his own - not the title screen's
-		// blue-robed figure, who is the player, the one the dark wizard missed - playable once every chapter's boss
-		// has fallen on Default or harder. Outside the campaign gate, as Laelaps is: he was never imprisoned, and the gates count
-		// the imprisoned. Not secret: his shape and this line are on the character select from the first run.
-		FromAchievementCharacter("merlin", AchievementDefinitions.OneHeMissedId,
-			"Defeat every chapter's boss on Default or harder.",
-			outsideCampaignGate: true),
+		// Restore the wards where the wizards met to free their keeper. Retain his existing optional
+		// campaign-gate status so changing the source cannot close an existing player's road.
+		FromEvent("merlin", UnlockKind.Character, "the_moot", "Restore the shattered wards of the Broken Circle.",
+			secretUntilStage: "stage_10", outsideCampaignGate: true),
 		// THE ONE HE KEPT (.ai/endgame-castle.md decision 11). Nimue, the Lady of the Lake, kept by the dark wizard beside
 		// him to the end, and freed when he falls: the Throne's own deed, Taken Back, pays her (AchievementDefinitions). A
 		// SECRET - "Not yet discovered." on her card, so the last surprise of the road is not on the character select from
@@ -399,8 +400,9 @@ public static class UnlockCatalog
 			Id = OrbOfAges.SpellId,
 			Kind = UnlockKind.Spell,
 			Source = UnlockSource.Achievement,
-			SourceId = AchievementDefinitions.OneHeMissedId,
-			LockedHint = "One wizard's own: defeat every chapter's boss on Default or harder.",
+			SourceId = AchievementDefinitions.EventDeedPrefix + "the_moot",
+			SiteId = "the_moot",
+			LockedHint = "One wizard's own: restore the shattered wards of the Broken Circle.",
 			ExclusiveTo = "merlin",
 		},
 	};
@@ -466,7 +468,7 @@ public static class UnlockCatalog
 	/// </param>
 	/// <param name="finalGateOnly">A chapter wizard, counted by the Throne's gate alone (<see cref="UnlockDefinition.CountedAtFinalGateOnly"/>).</param>
 	private static UnlockDefinition FromEvent(string id, UnlockKind kind, string siteId, string hint,
-		string secretUntilStage = "", bool finalGateOnly = false) => new()
+		string secretUntilStage = "", bool finalGateOnly = false, bool outsideCampaignGate = false) => new()
 	{
 		Id = id,
 		Kind = kind,
@@ -477,6 +479,7 @@ public static class UnlockCatalog
 		IsSecret = !string.IsNullOrWhiteSpace(secretUntilStage),
 		RevealStageId = secretUntilStage ?? string.Empty,
 		CountedAtFinalGateOnly = finalGateOnly,
+		OutsideCampaignGate = outsideCampaignGate,
 	};
 
 	/// <summary>

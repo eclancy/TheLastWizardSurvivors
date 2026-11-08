@@ -764,16 +764,41 @@ public sealed partial class LevelGenerator
 		int minY = Math.Max(0, (int)MathF.Floor(cy - radius - 2) - y0);
 		int maxY = Math.Min(h - 1, (int)MathF.Ceiling(cy + radius + 2) - y0);
 
+		// Water gets a SMOOTH rim (in-flight 59: "water bodies rounder"): the per-tile hash below
+		// makes a ragged edge, which reads as undergrowth on a grass patch and as a glitch on a
+		// shoreline - single-cell inlets and islands that WaterShape then faithfully draws as
+		// jagged. A pond's rim is instead a low wobble of the radius AROUND the blob - two slow
+		// sine lobes, phases from the blob's own seed - so it is deterministic from every chunk
+		// that stamps it and continuous along the shore. Everything else keeps the ragged edge.
+		bool smoothRim = terrain == "water";
+		float phaseA = 0f, phaseB = 0f, wobble = 0f;
+		if (smoothRim)
+		{
+			var rim = new Rng(jitterSeed);
+			phaseA = rim.NextFloat() * MathF.Tau;
+			phaseB = rim.NextFloat() * MathF.Tau;
+			wobble = radius * 0.22f;
+		}
+
 		for (int x = minX; x <= maxX; x++)
 		{
 			int tx = x + x0;
 			for (int y = minY; y <= maxY; y++)
 			{
 				int ty = y + y0;
-				// The ragged edge, from the tile's own hash: the same tile gets the same jitter
-				// from every chunk that stamps it.
-				var cell = new Rng(Hash(jitterSeed, tx, ty, SaltJitter));
-				float jitter = cell.NextFloat() * 2.4f - 1.2f;
+				float jitter;
+				if (smoothRim)
+				{
+					float angle = MathF.Atan2(ty - cy, tx - cx);
+					jitter = MathF.Sin(angle * 2f + phaseA) * wobble + MathF.Sin(angle * 3f + phaseB) * wobble * 0.5f;
+				}
+				else
+				{
+					// The ragged edge, from the tile's own hash: the same tile gets the same jitter
+					// from every chunk that stamps it.
+					var cell = new Rng(Hash(jitterSeed, tx, ty, SaltJitter));
+					jitter = cell.NextFloat() * 2.4f - 1.2f;
+				}
 				float dist = MathF.Sqrt((tx - cx) * (tx - cx) + (ty - cy) * (ty - cy));
 				if (dist > radius + jitter) continue;
 

@@ -1,5 +1,17 @@
 # Achievements and secrets: every spell earned, and much more to find
 
+**Merlin update, 2026-11-06 (Eric):** restoring the Broken Circle's Moot wards now frees Merlin
+and unlocks Orb of Ages, keeping Gilded Mote. Medea's granary stays in the Fields. The former
+Default campaign-completion deed retains its ID but pays 1,000 Arcane Energy as The Road Restored.
+Existing ownership is preserved; old completed Moot deeds reconcile their new rewards.
+
+**2026-11-06 override (Eric):** the Pinfold pays both Familiar and Laelaps after the player frees
+its ghostly hound, cat and bird individually. The central essence pickup is gone. Laelaps' Coursing
+challenge now pays 50 Arcane Energy for 100 Black Hares caught by his hound in one Broken Circle run;
+it appears after owning Laelaps. Existing character ownership and completed deeds remain intact.
+Previously completed Pinfold deeds reconcile both unlocks. This explicitly permits a wizard reward
+for this secret, superseding the older no-wizard-secret rule below.
+
 Eric, 2026-10-29:
 
 > "Unlocking all non-default-unlocked spells should be something that you get through achievements.
@@ -85,7 +97,7 @@ Read from `scripts/UnlockCatalog.cs`, `scripts/AchievementDefinition.cs`, `scrip
 | Aedan (Pyromancer), Isbrand (Frostweaver), Thora (Stormcaller), Gabbro (Geomancer) | Starter | |
 | Tituba | Discovery | the Gaoler's key (Dungeon); secret until the Dungeon opens |
 | Väinämöinen | Discovery | the thaw (Frozen Waste); secret until the Waste opens |
-| John Dee | Achievement | The Library at Mortlake: open 30 chests |
+| John Dee | Achievement | The Library at Mortlake: open 30 chests (100 since 2026-11-03, `.ai/passives-and-items.md` 8k) |
 | Laelaps | Achievement | The Coursing (Broken Circle); secret until the Circle opens; outside the campaign gate |
 | Test Wizard | Starter | development sandbox, not counted anywhere |
 
@@ -660,7 +672,7 @@ follows a hart that runs from him at all, and whether 250 lets him catch up on t
 
 | id | secret | status | where | how it is found | tell | pays |
 |---|---|---|---|---|---|---|
-| FF1 | **The Pinfold** | **new, vault** | 5-7 chunks | **guarded**: a walled stone pound (the Hayward's pinfold, `campaign.md` 5) with a hound of warm light lying behind a barred gate. Arriving wakes two elites from the Fields' own table (the Tithe-Reeve's men); when both are dead, touch the latch and the hound runs to him | far: broken hurdles and a trail of pawprints toward it, two chunks out; near: the hound's light through the bars | **the Familiar**; later runs a chest |
+| FF1 | **The Pinfold** | **built; revised 2026-11-06** | 5-7 chunks | **guarded**: a larger, walkable 1944x1632 stone pen, blue/violet binding wisps, a bound gate and animated magical essence at its center. Two of the Fields' elites hold the gate; defeat them, touch the latch, then enter and approach the center to unlock Familiar. Opening the gate alone pays nothing | six varied gold drag/paw/claw/scuff families pulse with irregular 300-520-unit gaps on the ground, starting outside the opening view; no golden route or trail-triggered arrow. Local broken hurdles and old prints remain | **the Familiar** on center approach; later runs a chest |
 | FF2 | **The Last Sheaf** | **new** | near | **linger** 3 s: the one sheaf still standing in a stubble field (the last sheaf, left for luck) | the only upright sheaf in a cut field | heal 50% and 60 s of doubled pickup radius; drops the sheaf token for FF4 |
 | FF3 | **The Plough in the Furrow** | **new** | mid | **follow** a single straight furrow (a trail) to where the plough was left in it | a furrow that runs dead straight across every other | a chest |
 | FF4 | **The Tithe Barn** | **new, keepsake** | 10-12 chunks | **carry** the last sheaf into the empty tithe barn: his tithe, given back | the barn's doors stand open on nothing; chaff drifts toward it from three chunks | full heal; **150 Arcane Energy**, once |
@@ -884,7 +896,7 @@ run). Listed here as achievements; their places, rooms and art are in the castle
 
 | chapter | secrets |
 |---|---|
-| The Last Bridge | the Toll Stone (touch: 30 Arcane Energy), the Span Lantern (linger: the collapse waits 30 s), the Gargoyle's Perch (strike: a chest), **the Names on the Parapet** (keepsake, gather: 150 Arcane Energy) |
+| The Last Bridge | the Toll Stone (touch: 30 Arcane Energy), the Span Lantern (carry, linger until 2026-11-03: the collapse waits 30 s), the Gargoyle's Perch (strike: a chest), **the Names on the Parapet** (keepsake, gather: 150 Arcane Energy) |
 | Cursed Dungeon | moved into the castle with its chapter: D1 to D7 (8.5), its vault the Cold Forge. (The first draft's Undercroft and its secrets are not built; the Oubliette moved to the Dungeon as D7) |
 | The Court | its rooms are its secrets: the Great Hall, the Chapel, the Library (reveals every secret's hint, 4.3), the Armoury, the Map Room, the Treasury, the Gallery, the Kennels, the Kitchens, the Minstrels' Gallery, the Solar, and **the Keepsake Doors** (one door for every chapter keepsake found) |
 | The Throne | none in the fight (secrets stand down for a boss); its deeds are Feats |

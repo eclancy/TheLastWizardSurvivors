@@ -6,7 +6,9 @@ using System.Linq;
 public enum RunOutcome
 {
 	Defeat,
-	Victory
+	Victory,
+	// Appended: existing saves persist Defeat=0 and Victory=1.
+	Quit
 }
 
 public class RunSpellSnapshot

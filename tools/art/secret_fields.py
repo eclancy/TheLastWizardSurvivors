@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """The Fallow Fields' secrets (.ai/achievements-and-secrets.md 8.2). Run: python tools/art/secret_fields.py
 
-    world/fields/pinfold.png             FF1, the Pinfold (the spell vault), three frames left to right: the
+    world/fields/pinfold-{back,front,open}.png  FF1, the Pinfold (the spell vault), three separate layers:
                                          pound behind (its back and side walls, the trodden floor inside), its
                                          front wall with the barred gate shut, and the front with the gate
-                                         swung open. Pinfold.cs draws the hound between the back and the front
+                                         swung open. Pinfold.cs draws the essence between back and front
+    world/fields/pinfold-essence.png     eight 128x128 frames of imprisoned magical energy
     world/fields/pinfold-hound.png       the hound of warm light, fourteen 40-cell frames: lying (two, a
                                          breath), standing, running (four), facing right; then the same
                                          seven facing left
@@ -12,18 +13,18 @@
     world/fields/pawprints-1.png, -2     fallen - and a dog's prints, drawn pointing right (LeanToward)
     tools/art/_secret_fields_preview.png (gitignored) on the stubble, for looking at
 
-"A walled stone pound with a barred gate. Behind the bars a hound of warm light lies with its head on its
-paws." The Hayward's pinfold (.ai/campaign.md 5): the parish pound where strays were held until somebody
-paid for them. Nobody came for this one. The Familiar is learned from it.
+The Hayward's pinfold (.ai/campaign.md 5): the parish pound where strays were held until somebody
+paid for them. A creature's essence is magically bound inside. Walk in and approach it to learn Familiar.
 
 THE POUND is drystone in the stone row with lichen in its joints, its coping lit along the top, in three-
 quarter view: the back wall and both side walls behind, the front wall with the gate in front, so the
-hound - drawn in code between them - is seen through the bars and over nothing else. The gate is iron bars
+essence - drawn between them - is seen through the bars and over nothing else. The gate is iron bars
 in a timber frame, the one thing in it that is not stone; the latch on its right post carries the glint
-once the guards are down (in code). 100 x 84 art pixels, saved at x2: 200 x 168 on screen, "large" as a
-vault is (6.4).
+once the guards are down (in code). 972 x 816 art pixels, saved at x2: 1944 x 1632 on screen.
+The larger interior is walkable. Its floor and back wall sort separately from its front.
 
-THE HOUND is the Pale Hart's kind: a light, not a body, drawn wholly from the warm rows - gold and the
+THE LEGACY HOUND strip is retained; the pen now shows essence instead. It is the Pale Hart's kind:
+a light, not a body, drawn wholly from the warm rows - gold and the
 Light element's ramp - with no rim and no outline. Lying, its head is on its paws; running, it is long and
 low, the familiar's dog seen as the light it is (tools/art/familiar.py draws the creature it becomes).
 """
@@ -91,13 +92,13 @@ def blob(c, cx, cy, rx, ry, tones, salt=0):
 
 # --- the pound --------------------------------------------------------------------------------------
 
-PW, PH = 100, 84
-PCX = 50
-BACK_BASE = 34          # the back wall's foot
-FRONT_BASE = 78         # the front wall's foot: Pinfold.cs puts this row a little south of the node
-WALL_H = 14
-GATE_X0, GATE_X1 = 38, 62
-LATCH = (64, 68)        # the latch on the gate's right post: the glint, and where he touches it
+PW, PH = 972, 816
+PCX = PW // 2
+BACK_BASE = 36
+FRONT_BASE = 804
+WALL_H = 26
+GATE_X0, GATE_X1 = PCX - 64, PCX + 64
+LATCH = (GATE_X1 + 2, FRONT_BASE - 12)
 
 
 def stones(c, x0, x1, ybase, height, salt, lit=True):
@@ -161,6 +162,38 @@ def pound_back():
         stones(c, x, x + 4, FRONT_BASE, WALL_H, 3 if lit else 4, lit)
     # the inner shadow along the back wall's foot
     c.hline(12, PW - 13, BACK_BASE + 1, OCC)
+    # A worn binding on the floor, quietly framing the essence at the enclosure's center.
+    for k in range(160):
+        a = k * math.pi * 2.0 / 160.0
+        if k % 9 < 6:
+            x = int(round(PCX + math.cos(a) * 60))
+            y = int(round((BACK_BASE + FRONT_BASE) / 2.0 + math.sin(a) * 38))
+            c.set(x, y, GO[3] if k % 3 else GO[2])
+    # Worn stone pads and broken bands give this large enclosure its own history, without
+    # stretching the old 2px stonework or filling the walking space with physical clutter.
+    for k in range(52):
+        x = 28 + int(hashed(k, 91) * (PW - 56))
+        y = BACK_BASE + 8 + int(hashed(k, 93) * (FRONT_BASE - BACK_BASE - 16))
+        width = 4 + int(hashed(k, 95) * 8)
+        c.hline(x, x + width, y, ST[3])
+        c.hline(x + 2, x + width - 1, y + 1, ST[4])
+    # Large, worn circles and carved rune stations explain the enclosure's magical binding.
+    cy = (BACK_BASE + FRONT_BASE) // 2
+    for ring in (1, 2, 3):
+        rx, ry = 92 * ring, 72 * ring
+        for k in range(720):
+            if (k + ring * 9) % 37 > 29:
+                continue
+            a = k * math.pi * 2.0 / 720.0
+            x, y = int(round(PCX + math.cos(a) * rx)), int(round(cy + math.sin(a) * ry))
+            c.set(x, y, ST[2] if k % 3 else ST[3])
+            if k % 4: c.set(x, y + 1, ST[4])
+    for k in range(12):
+        a = k * math.pi / 6.0
+        x, y = int(round(PCX + math.cos(a) * 290)), int(round(cy + math.sin(a) * 228))
+        c.poly([(x-9,y),(x,y-7),(x+9,y),(x,y+7)], ST[3])
+        c.line(x-5,y,x+5,y,ST[1])
+        c.line(x,y-4,x,y+4,ST[2])
     return c
 
 
@@ -353,6 +386,42 @@ def pawprints(k):
     return c
 
 
+def essence(pose):
+    """An imprisoned creature's light: three curling ribbons around a quiet, breathing heart.
+    Eight authored frames, opaque palette stops, on the same x2 grid as the pen."""
+    c = raster.Canvas(64, 64, None)
+    phase = pose * math.pi / 4.0
+    breath = (1.0 - math.cos(phase)) * 0.5
+    # A broken pool, not a filled glowing disc.
+    for k in range(44):
+        a = k * math.pi * 2.0 / 44.0
+        x = int(round(32 + math.cos(a) * 20))
+        y = int(round(51 + math.sin(a) * 5))
+        if (k + pose) % 5 < 3:
+            c.set(x, y, GO[2] if k % 3 else GO[1])
+    for strand in range(3):
+        previous = None
+        for k in range(35):
+            t = k / 34.0
+            a = phase + strand * math.pi * 2 / 3.0 + t * 5.8
+            radius = 4 + 12 * math.sin(t * math.pi)
+            x = int(round(32 + math.sin(a) * radius))
+            y = int(round(50 - t * 36 + math.cos(a) * 3))
+            ink = LT[2] if strand == 0 else GO[1] if strand == 1 else GO[2]
+            if previous:
+                c.line(previous[0], previous[1], x, y, ink)
+            if (k + pose + strand) % 7 == 0:
+                c.set(x + 1, y, LT[1])
+            previous = (x, y)
+    blob(c, 32, 33, 4 + breath, 6 + breath * 2, [LT[0], LT[1], GO[1], GO[2]])
+    # Loosened sparks climb, without soft alpha or a screen-filling halo.
+    for k in range(5):
+        x = 23 + int(hashed(k, 81) * 19)
+        y = 48 - ((pose * 3 + k * 9) % 39)
+        c.set(x, y, GO[1] if k % 2 else LT[1])
+    return c
+
+
 # --- out ----------------------------------------------------------------------------------------------
 
 def audit(name, c):
@@ -379,9 +448,16 @@ def main():
     frames = [pound_back(), pound_front(False), pound_front(True)]
     for i, c in enumerate(frames):
         ok = audit("pinfold frame %d" % i, c) and ok
-    img = strip(frames, PW, PH)
-    img.save(os.path.join(OUT, "pinfold.png"))
-    sheets.append(img)
+    # Separate layers stay below 2048px per texture, even on conservative Android GPUs.
+    for name, c in zip(("pinfold-back", "pinfold-front", "pinfold-open"), frames):
+        c.scaled(SCALE).save(os.path.join(OUT, name + ".png"))
+    # Only the ignored contact sheet uses the wide strip.
+    sheets.append(strip(frames, PW, PH))
+
+    energy = [essence(p) for p in range(8)]
+    for p, c in enumerate(energy):
+        ok = audit("pinfold-essence %d" % p, c) and ok
+    strip(energy, 64, 64).save(os.path.join(OUT, "pinfold-essence.png"))
 
     frames, img = hound_strip()
     for p, c in zip(HOUND_POSES, frames):
@@ -405,16 +481,14 @@ def main():
     print("  pinfold      3 frames at %dx%d, hound %d frames at %dx%d, 2 hurdles, 2 prints"
           % (PW * SCALE, PH * SCALE, len(HOUND_POSES) * 2, DW * SCALE, DH * SCALE))
 
-    # The preview: the pound composed (back, the hound lying, the front shut; then open with the hound
-    # standing), and every sheet, on the stubble's tone.
+    # The pen composed with two distinct essence frames, then all the source sheets.
     comp = []
     for gate, pose in ((1, 0), (2, 2)):
         img = Image.new("RGBA", (PW * SCALE, PH * SCALE), (0, 0, 0, 0))
         back = sheets[0].crop((0, 0, PW * SCALE, PH * SCALE))
         front = sheets[0].crop((gate * PW * SCALE, 0, (gate + 1) * PW * SCALE, PH * SCALE))
-        dog = sheets[1].crop((pose * DW * SCALE, 0, (pose + 1) * DW * SCALE, DH * SCALE))
         img.alpha_composite(back)
-        img.alpha_composite(dog, ((PCX - DW // 2) * SCALE, (FRONT_BASE - 3 - DFOOT) * SCALE))
+        img.alpha_composite(energy[pose].scaled(SCALE), ((PCX - 32) * SCALE, ((BACK_BASE + FRONT_BASE) // 2 - 51) * SCALE))
         img.alpha_composite(front)
         comp.append(img)
     pad = 10

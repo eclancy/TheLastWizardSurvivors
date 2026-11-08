@@ -144,6 +144,9 @@ public static class SfxCatalog
 	// pans and fades each from where it comes.
 	public const string SibylVoice = "sibyl_voice";
 	public const string SibylEcho = "sibyl_echo";
+	// The gibbet's escort (GibbetCageEvent, .ai/unlock-puzzles.md 3.4): Paracelsus stepping into the rot on his way to the
+	// ferry - the bog's wet gulp and his cough. A mistake the player made; throttled, a few a walk at most.
+	public const string EscortCough = "escort_cough";
 
 	// --- secrets (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9 and 8.4.1) ------
 	// Generated and allowlisted, not yet played: the secret agents wire them as they build the sites.
@@ -175,7 +178,7 @@ public static class SfxCatalog
 		StageClear, GameOver, MetaUnlock, WaveWarning,
 		PlayerFall, TallyTick, TallyPayout,
 		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep, HintHullKnock, HintFlaskChime, HintQuatrain, HintTombKnock, HintGranaryVoice, HintBrush,
-		SibylVoice, SibylEcho,
+		SibylVoice, SibylEcho, EscortCough,
 		SecretSeen, SecretFound, SecretShatter, SecretVoiceBelow,
 	};
 

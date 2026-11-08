@@ -36,7 +36,7 @@ colour the palette does not define. The bosses are in
 [`sprite_bosses.py`](tools/art/sprite_bosses.py), the ground in [`tiles.py`](tools/art/tiles.py),
 the relic icons in [`relic_icons.py`](tools/art/relic_icons.py).
 
-**102 sound effects and the music**, synthesised by [`tools/audio/`](tools/audio) — no library, no
+**103 sound effects and the music**, synthesised by [`tools/audio/`](tools/audio) — no library, no
 recordings. The music is a theme for the menus and a set for each of the fourteen chapters, as three
 stems the game fades in and out with the fight - the road's chapters in modes of the same seven notes,
 the castle's taking up notes outside them - with a boss track of its own for eleven of them and one

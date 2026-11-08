@@ -210,10 +210,11 @@ public partial class Prologue : Control
 	// the system does; the picture says what it feels like. Ids are Teachings' lesson ids.
 	private static readonly Beat[] AscensionBeats =
 	{
-		// What he missed, giving up its light to the one he missed: the find that taught it.
-		new("ascension-gift", 5.0f, "What he missed kept what the wizards knew.", new Vector2(-3f, 0f), new Vector2(-8f, -6f), new Vector2(-18f, 0f)),
+		// The find giving up its light to the one he missed. Reworded 2026-11-07 (Eric: the old
+		// "What he missed kept what the wizards knew." read as a riddle at the moment of the lesson).
+		new("ascension-gift", 5.0f, "He took the wizards, but not what they knew.", new Vector2(-3f, 0f), new Vector2(-8f, -6f), new Vector2(-18f, 0f)),
 		// A spell's light climbing seven marks and branching at the eighth.
-		new("ascension-rise", 6.0f, "At level 7 a spell may ascend one path.", new Vector2(0f, 3f), new Vector2(0f, -12f), new Vector2(0f, 12f)),
+		new("ascension-rise", 6.0f, "At level 7 a spell may ascend down one path.", new Vector2(0f, 3f), new Vector2(0f, -12f), new Vector2(0f, 12f)),
 	};
 
 	private static readonly Beat[] ApotheosisBeats =

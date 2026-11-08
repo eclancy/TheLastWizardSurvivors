@@ -217,6 +217,10 @@ public partial class _UiShot
 		}
 
 		// --- FF1, the Pinfold: guarded --------------------------------------------------------------------
+		private int pinfoldApproachFrames;
+		private bool PinfoldGateBlocks(Pinfold pound) => Hero.GetWorld2D().DirectSpaceState.IntersectRay(
+			PhysicsRayQueryParameters2D.Create(pound.Entrance, pound.EssenceCentre,
+				1u << (LevelTilePainter.TerrainCollisionLayer - 1))).Count > 0;
 
 		private void WorkPinfold(Pinfold pound)
 		{
@@ -232,7 +236,7 @@ public partial class _UiShot
 					GD.Print($"VAULTPROBE the guards: {string.Join(", ", guards.Where(IsInstanceValid).Select(g => g.SceneFilePath.GetFile()))}");
 					Check("the pound is not in \"enemies\" and the latch is not lit while they stand", !pound.IsInGroup("enemies") && !pound.GuardsDown);
 					// At the latch while they stand: it does not lift.
-					stand = pound.Latch + new Vector2(0f, 36f);
+					stand = pound.Latch + new Vector2(0f, 48f);
 					step++;
 					wait = 0.6f;
 					return;
@@ -240,7 +244,20 @@ public partial class _UiShot
 				case 101:
 				{
 					Check("the latch does not lift while its guards stand", !pound.GateOpen);
-					Shot("the guards woken, the hound behind the bars");
+					Check("the center cannot be claimed through the sealed gate", !pound.IsOpened);
+					Check("the sealed gate physically blocks entry", PinfoldGateBlocks(pound));
+					Check("the center stays open in the navigation grid", !Director.Game.Terrain.IsFenceAtWorld(pound.EssenceCentre));
+					Check("the enclosure is at least four times the previous dimensions", Pinfold.PoundCell.X >= 448f * 4f && Pinfold.PoundCell.Y >= 352f * 4f);
+					bool floorClear = true;
+					for (int y = -1300; y <= -200; y += 100)
+						for (int x = -800; x <= 800; x += 100)
+						{
+							Vector2I cell = Director.Game.Terrain.CellOfWorld(pound.GlobalPosition + new Vector2(x, y));
+							floorClear &= !Director.Game.Terrain.IsSolidCell(cell.X, cell.Y);
+						}
+					Check("the expanded interior has no water or hidden fence cells", floorClear);
+					Shot("the guards woken, three ghosts behind the magical seal");
+					Check("none can be freed through the sealed gate", pound.FreedCount == 0);
 					// The fight, by the player's own hits (Player.DealDamageToEnemy, the path every spell takes).
 					foreach (Enemy guard in pound.Guards)
 						if (IsInstanceValid(guard))
@@ -253,16 +270,59 @@ public partial class _UiShot
 				{
 					Check("both guards are down", pound.Guards.All(g => !IsInstanceValid(g) || g.IsDying || g.Health <= 0));
 					// He is standing at the latch: with the guards down it lifts at once.
-					Check("with them down, the latch lifts and the hound gets up", pound.GuardsDown && pound.GateOpen);
+					Check("with them down, the gate unseals", pound.GuardsDown && pound.GateOpen);
+					Check("opening the gate alone does not grant Familiar", !pound.IsOpened && (hadBefore || !InSpellPool()));
 					step++;
 					wait = 0.75f;
 					return;
 				}
 				case 103:
 				{
-					Shot("the gate open, the hound running to him");
-					step = 6;
-					wait = 1.4f;
+					Shot("the gate open, the three companions still wait");
+					Check("unsealing removes the gate's physical barrier", !PinfoldGateBlocks(pound));
+					stand = pound.Entrance;
+					Hero.GlobalPosition = stand;
+					step = 104;
+					return;
+				}
+				case 104:
+				{
+					if (++pinfoldApproachFrames > 420)
+					{
+						Check("the center can be reached through the open gate", false);
+						Finish();
+						return;
+					}
+					// Use actual body motion through the gate, not a teleport to the pickup.
+					Input.ActionPress("move_up");
+					Hero.Call("MovePlayer", 1.0 / 60.0);
+					Input.ActionRelease("move_up");
+					stand = Hero.GlobalPosition;
+					if (stand.Y <= pound.GlobalPosition.Y - 240f)
+					{
+						Check("walking through the gate enters the pen without granting the reward", !pound.IsOpened && pound.FreedCount == 0);
+						step = 105;
+					}
+					return;
+				}
+				case 105:
+				case 106:
+				case 107:
+				{
+					int captive = step - 105;
+					if (pound.IsCaptiveFreed(captive))
+					{
+						Check($"companion {captive + 1} freed on approach", pound.FreedCount == captive + 1);
+						Check("the reward waits for all three companions", pound.IsOpened == (captive == 2));
+						if (captive == 2)
+						{
+							Check("freeing all three also unlocks Laelaps", GlobalStatsManager.IsCharacterUnlocked(GetNode<SaveManager>("/root/SaveManager").Data, "laelaps"));
+							step = 6;
+							wait = 1.4f;
+						}
+						else step++;
+					}
+					else stand = pound.CaptivePosition(captive);
 					return;
 				}
 			}
