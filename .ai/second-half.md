@@ -421,6 +421,13 @@ Cross-checked on this tip (`main-ff86ni`, merged 2026-11-07).
 
 ## 8. Open decisions for Eric
 
+**Decided 2026-11-07 (Eric: "Accept them" - every recommendation below taken as written).** Where a
+question carried no "(recommended)": **2** keeps the six as proposed (Artemis, Manannán mac Lir, Hecate, Ra,
+Ukko, Hephaestus); **15** names the half and its stretch of the map **The Far Shore**. **10 stays open** -
+whether far-shore runs open with a Muster depends on how late tonight's recipe lands, which is measured in
+F4 (`_BalanceHarness --far-sky`, section 5) before anyone decides it. So the half is greenlit to build, F0
+first and alone (section 9).
+
 1. **The premise.** The gods lived on the light the wizards carried and went dark when he took it, and his
    castle stands between the land and the far shore so it could never cross back (recommended) - or the
    gods had slept since long before him, and the light going home wakes them?

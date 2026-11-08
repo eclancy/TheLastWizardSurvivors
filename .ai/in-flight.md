@@ -825,6 +825,10 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     **Designed (2026-11-07): `.ai/second-half.md`**, docs only, nothing built - the far shore across the
     dark sea, six chapters each a god's seat, the far sky naming a Conjunction every run, the gate,
     the teaching order, and fifteen questions for Eric (its section 8) before any of it is built.
+    **Decided 2026-11-07: Eric accepted every recommendation** (the six gods kept, "The Far Shore" the name;
+    question 10, a Muster, stays open until F4 measures it). Greenlit to build in `second-half.md` section 9's
+    order: F0's plumbing first and alone, then the god plumbing, then the slices; the five new Conjunctions
+    (Maelstrom, Dark Lens, Orrery, Hailfront, Anvil Line) can be built ahead of their chapters.
 54. **Wording and card fixes** (Eric, 2026-11-06): Waywiser - say what "slowest spell" means
     (longest cooldown?); Reforged - "iron shards cut enemies as it is rebuilt" (it read as cutting
     the player); Chalice Cup confusing - and is it useful at all after 15 kills?; the granary's
