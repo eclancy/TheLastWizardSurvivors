@@ -167,6 +167,38 @@ public partial class AegisWard : Node2D
 		drewLastFrame = any;
 	}
 
+	// THE WARD'S LIGHT IN THE DARK (LightPool, .ai/light-pool.md section 3). What the ward draws in Light's ramp is a
+	// light in a dark chapter: the stretch of the dome a bolt breaks on, flaring and dying with it, and Reflective
+	// Plating's shaft, a band of light out to the enemy it strikes with a flash where it lands. Reforged's shards are
+	// iron and light nothing. Pushed from _Process, every frame they show: this node's clocks run in _PhysicsProcess,
+	// and a light asked for only there would drop out on every frame without a physics step and flicker.
+	private const float DomeLightReach = 64f;
+	private const float ShaftLightReach = 48f;
+
+	public override void _Process(double delta)
+	{
+		if (!LightPool.Lit || PlayerRef == null || !IsInstanceValid(PlayerRef))
+			return;
+		Vector2 centre = PlayerRef.GlobalPosition;
+		for (int i = 0; i < MaxFlashes; i++)
+		{
+			if (!flashes[i].Live)
+				continue;
+			float fade = 1f - flashes[i].Age / DomeFlashSeconds;
+			LightPool.Light(centre + Vector2.FromAngle(flashes[i].Angle) * RampartRadius, DomeLightReach, 0.7f * fade);
+		}
+		for (int i = 0; i < MaxShafts; i++)
+		{
+			if (!shafts[i].Live)
+				continue;
+			Shaft s = shafts[i];
+			float cover = s.Age < ShaftHoldSeconds ? 1f : 1f - (s.Age - ShaftHoldSeconds) / (ShaftSeconds - ShaftHoldSeconds);
+			Vector2 head = s.From.Lerp(s.To, Mathf.Clamp(s.Age / ShaftShootSeconds, 0f, 1f));
+			LightPool.LightAlong(s.From, head, ShaftLightReach, 0.6f * cover);
+			LightPool.Light(head, ShaftLightReach * 1.3f, 0.75f * cover);
+		}
+	}
+
 	// --- Rampart ---------------------------------------------------------------------------------
 
 	// Every enemy bolt in flight that has reached the dome while the shield holds breaks on it: no hit on

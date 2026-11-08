@@ -103,18 +103,62 @@ Wired in the prototype:
 |---|---|---|
 | Fireball in flight (`Fireball`) | 4.5 x the drawn ball (~95 world units) | 0.9 |
 | Every fire burst (`FireburstLayer`: Fireball, Cluster Bombs, Hellfire, the sun and gold styles) | 2.2 x the blast | fades with the burst |
-| Cinderbreath's tongues (`FlamePuff`) | 3.2 x the hit radius | 0.75, guttering |
+| Cinderbreath's tongues (`FlamePuff`), unless Hellbreath turned the fire black (since 2026-11-08) | 3.2 x the hit radius | 0.75, guttering |
 | Kindled Ward's motes (`KindledWard`), unless Rimelight took it into the ice | 90 x the ward's growth | 0.8 |
 | Solar Flare's burst (`SolarFlareVisual`) | 1.6 x the reach | fades with the burst |
 | Meteor Swarm (`MeteorImpact`): the falling star, the impact's flash, the magma crater | 2 x the blast | grows as it falls, flashes, 0.45 while it burns |
 
 **Decided 2026-11-08 (Eric: "fire and light spells will act as light sources"): wire every one below.**
-`LightPool.IsWarm(element)` is the rule: fire and light. **Not wired yet**, and each is one line in its own
-`_Process`: Scorching Ray, Starfall, Molten Shard, Orb of Ages, Spiritual Weapon, Sagittarius, Aegis Ward,
+~~Not wired yet: Scorching Ray, Starfall, Molten Shard, Orb of Ages, Spiritual Weapon, Sagittarius, Aegis Ward,
 the ground fires (`EmberGround`, `CinderGround`, `CraterLayer`'s fire, `BrimstoneLayer`), the Dungeon's flame
-vents (`StageHazard`), and The Taking's lights (`TakenLight`), which move in `_PhysicsProcess`: a light pushed
-there skips every frame without a physics step and would flicker on a fast screen, so it needs a `_Process`
-of its own.
+vents (`StageHazard`), and The Taking's lights (`TakenLight`).~~ Wired 2026-11-08, every one from its own
+`_Process`. Reach in world units; a brightness that "fades" follows what is drawn, so no light outlasts its
+effect.
+
+| Source | Reach | Brightness |
+|---|---|---|
+| Scorching Ray (`ScorchingRayBeam`): a string of lights down the beam, the strike, then the scorch | 64 along the beam (x1.5 at full heat, x1.5 again under Sunlance), 1.4 x that at the strike; 56 the scorch | 0.6 along, 0.85 the strike, both with the beam; 0.5 cooling with the scorch's glow |
+| Starfall (`Starfall`), unless Frostfall repainted it in ice: the falling stars, every landing, a heavy star's fuse, the shooting stars, the Constellation's lit stars | 56 falling (72 heavy, 40 a skip); 2.2 x the radius a landing struck; 72 a shooting star; 48 a lit star (60 held by Sagittarius's draw) | 0.55 falling; 0.8 flashing out with the landing (0.5 a spark's); 0.5 to 0.9 as a fuse swells; 0.75 shooting; 0.45 lit (0.6 held) |
+| Molten Shard (`MoltenShardLook`): in flight, lodged (Magma Core), held in the forged ring | 3.5 x the shard's drawn half-length | 0.6; a lodged core 0.5 heating to 0.9 |
+| Slag Trail and Caldera (`MoltenSlag`) | 44 along the slag's live stretch; 1.8 x the pool as it wells | 0.5, dimming as the newest slag cools; 0.6, out over the pool's last second |
+| Orb of Ages (`OrbOfAges`) | 72 x the orb's growth with the ward | 0.8 until it is home |
+| Spiritual Weapon (`SpiritualWeapon`), unless Mjolnir traded its Light for Lightning: every weapon and the dagger, Hallowed Ground, Excalibur's line | 4 x the drawing's grip-to-middle (104, 224 colossal, 68 the dagger); 1.4 x a holy floor; 56 along the line | 0.6 with the weapon (0.5 the dagger); 0.45, out over the floor's last half second; 0.7 fading as the line breaks up |
+| Sagittarius (`Sagittarius`, `HuntersArrowLook`): the string between the two lit stars it spans, and every gold arrow of the loose; its stars are Starfall's, above | 48 along the string; 64 an arrow | 0.25 rising to 0.7 with the draw; 0.6 |
+| Aegis Ward (`AegisWard`): the stretch of dome a bolt breaks on, Reflective Plating's shaft (Reforged's shards are iron, and light nothing) | 64 the dome; 48 along the shaft, 62 where it lands | 0.7 fading with the flash; 0.6 and 0.75 with the shaft |
+| Cinderbreath's ground (`CinderGround`), unless Hellbreath: Ember Wake's embers, Dragon's Breath's wall, Backdraft's blaze | 2.5 x an ember; 64 along the wall; 2.2 x the blaze | 0.45 guttering out; 0.7 catching and going out with the wall; 0.8 dying over 0.8 s |
+| Meteor craters (`CraterLayer`): every crater, the skips' and Breakup's included, after the meteor has gone | 1.6 x the crater | 0.55 x its molten heat (`CraterGround.HeatAt`, what the bowl is drawn with) |
+| Brimstone (`BrimstoneLayer`): each stone, and each spit in flight (its burst is `FireburstLayer`'s) | 90; 40 | 0.8 x the stone's glow, throbbing, flaring as it spits, cooling; 0.5 |
+| The flame vents (`StageHazard.LightReach`, 120 on `FlameVent.tscn` and 0 on the spikes; `ValidateStageHazards` reports a vent at 0) | 120 | up to 0.35 with the tell, 0.8 guttering while it burns, out as it cools, nothing asleep |
+| The Taking's lights (`TakenLight`); its lanes are his dark light, and light nothing | 64, or 2.5 x its pyre if wider, x the mote's swell | 0.7 x the mote's own alpha: its gutter, its flare when caught |
+
+Found by the same sweep and wired, a line each:
+
+| Source | Reach | Brightness |
+|---|---|---|
+| Cataclysm, the Pyromancer's Apotheosis (`CataclysmField`) | 1.6 x the crater | 0.5 x its heat |
+| Hollow Star under Eclipse (`HollowStar`), its Light path | 1.8 x the collapse radius | 0.35 rising to 0.75 with the well's heat |
+| Toxic Spore Burst under Ember Caps (`SporeMushroom`), which trades Poison for Fire | 1.6 x the cap | 0.5, out with its flames |
+| Solar Flare's Sun Dogs, Solar Prominence and Dragon's Teeth (`ElementalPulse`) | 64 a sun dog; 56 a loop in flight, 2 x its burst landing; 48 a stone in flight, 1.4 x its strike landing | 0.6; 0.7; 0.6, then 0.7 fading |
+
+How they are wired, and the rules a new one follows:
+
+- **`_Process`, never `_PhysicsProcess`.** A light pushed from the physics step skips every frame without one and
+  flickers on a fast screen. Orb of Ages, Aegis Ward, the vents and The Taking's lights move there, so each has
+  a small `_Process` of its own that pushes the light from where the physics left it.
+- **A line is `LightPool.LightAlong`**: up to `AlongLights` (4) lights at the middles of equal stretches, each
+  reaching the stretch's length if that is more than asked, so a long beam is one band and not beads.
+- **The element the effect is drawn in decides.** `LightPool.IsWarm(element)` where a path repaints it (Starfall's
+  Frostfall, Hellbreath, Rimelight); `LightPool.CarriesWarm(spell)` - the spell's elements after its trades -
+  where a milestone trades Light away (Mjolnir). Both read once per cast or per node, never per frame.
+- **Lit evenly, nothing runs.** Every loop that shed lights is behind `LightPool.Lit`, one static read.
+- **The sixteen are contested now.** A late run in the Dungeon asks for more than sixteen a frame; the weakest
+  (reach x brightness) give way, so embers, spits and lit stars go first and a fireball or a beam stays.
+
+Not lit, on purpose or not yet: `EmberGround` no longer exists (Ember Wake's embers are `CinderGround`'s;
+`FlamePuff.EmberGround` is a `CinderGround`); Corona Discharge's sunbeams (drawn by `SolarFlareVisual`, which
+lights only its burst); Sun Aegis's flash (`Player.SunAegisFlash`, an `ImpactDebrisLayer` burst with no node to
+hold a light); the hammer's slam (the hammer lights its own landing); the Brazier's embers (`StanceGlow`, an
+item set's, at his feet, inside his own pool); and `ImpactDebrisLayer`'s debris, which every element shares.
 
 ## 4. Readability, measured
 
@@ -249,7 +293,7 @@ The shots are in `_shots/light-pool/` beside the repo (not in it).
 
 **Decided 2026-11-08 (Eric):** items 1 and 4 - the depth stays as the preview pictures show it ("preview pictures
 looked good as it is"), and Reduce Darkness stays at 40%, not off. And section 3's unwired warm spells are all to be
-wired: every fire and light spell is a light source.
+wired: every fire and light spell is a light source (done the same day; section 3's second table).
 
 1. **How dark.** `RoomFloor` 0.24 and `BodyFloor` 0.66 were chosen for readability first. The swarm at the
    edge is deliberately brighter than the floor it stands on - lit figures coming out of a dark room, not

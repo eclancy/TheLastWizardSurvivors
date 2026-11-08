@@ -51,7 +51,27 @@ public partial class MoltenShardLook : Node2D
 		Refresh();
 	}
 
-	public override void _Process(double delta) => Refresh();
+	public override void _Process(double delta)
+	{
+		Refresh();
+		ShedLight();
+	}
+
+	// HOT METAL IS A LIGHT in a dark chapter (LightPool, .ai/light-pool.md section 3): a few times the shard's
+	// half-length round it, in flight and held in the forged ring alike, and brighter as a lodged core heats
+	// toward its eruption (Magma Core), which FireburstLayer then lights. Molten Shard has no element path, so
+	// it is always fire.
+	private const float LightReach = 3.5f;
+
+	private void ShedLight()
+	{
+		if (bolt == null || !LightPool.Lit)
+			return;
+		// The drawn half-length in world units: the hit radius at the bolt's scale, and a body.
+		float halfLength = Mathf.Max(2f, drawnRadius) * Mathf.Abs(bolt.GlobalScale.X) + RiptideWave.BodyAllowance;
+		float brightness = drawnMode == 1 ? 0.5f + 0.4f * drawnHeat : 0.6f;
+		LightPool.Light(GlobalPosition, halfLength * LightReach, brightness);
+	}
 
 	private void Refresh()
 	{

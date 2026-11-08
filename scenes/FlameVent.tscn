@@ -17,6 +17,7 @@ ActiveSeconds = 1.3
 FallSeconds = 0.3
 DamageInterval = 0.5
 LoopWhileActive = true
+LightReach = 120.0
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 scale = Vector2(1, 1)

@@ -108,6 +108,9 @@ public partial class CataclysmField : Node2D
 			if (!craters[i].Live) continue;
 			craters[i].Age += dt;
 			if (craters[i].Age >= CraterSeconds) craters[i].Live = false;
+			// A burning crater lights a dark chapter's room (LightPool, .ai/light-pool.md section 3), as its bowl glows.
+			else if (LightPool.Lit)
+				LightPool.Light(craters[i].At, CraterRadius * 1.6f, 0.5f * CraterGround.HeatAt(craters[i].Age, BurnSeconds, CoolSeconds, craters[i].Seed));
 		}
 
 		for (int n = 0; n < OpensPerFrame && pending.Count > 0; n++)

@@ -190,18 +190,39 @@ public partial class TakenLight : Node2D
 		caught = wasCaught;
 	}
 
+	// How the mote stands this frame: its size and how much of it shows. Caught, it flares wide and goes; left, it
+	// shrinks to a point; in its last second it gutters, a blink that quickens as it goes out. The drawing and the
+	// light it throws both read it, so the light can never outlast or outshine the mote.
+	private void Look(out float scale, out float alpha)
+	{
+		float u = ending >= 0f ? Mathf.Clamp(ending / EndSeconds, 0f, 1f) : 0f;
+		scale = ending < 0f ? Mathf.Clamp(age / 0.15f, 0.3f, 1f) : caught ? 1f + 1.2f * u : 1f - u;
+		alpha = ending < 0f ? 1f : 1f - u;
+		if (ending < 0f && lifeLeft < 1f && MathF.Sin(age * (18f + 20f * (1f - lifeLeft))) < -0.3f)
+			alpha *= 0.45f;
+	}
+
+	// A WARM LIGHT IN THE DARK (LightPool, .ai/light-pool.md section 3): what he took is the light ramp, not his, so
+	// in a dark chapter it lights the floor it drifts over on its way home - out past the pyre it sears, with the
+	// mote's own swell, gutter and flare. Pushed from _Process: the mote moves in _PhysicsProcess, and a light asked
+	// for only there drops out on every frame without a physics step and flickers on a fast screen.
+	private const float LightReach = 64f;
+
+	public override void _Process(double delta)
+	{
+		if (!LightPool.Lit)
+			return;
+		Look(out float scale, out float alpha);
+		if (alpha > 0f && scale > 0f)
+			LightPool.Light(GlobalPosition, MathF.Max(LightReach, setup.BurnRadius * 2.5f) * scale, 0.7f * alpha);
+	}
+
 	// A warm mote of the light ramp on the 2 px grid: a white-hot heart in an amber flame, two sparks
-	// turning round it, guttering through its last second. Caught, it flares wide and goes; left, it shrinks
-	// to a point.
+	// turning round it, guttering through its last second (Look).
 	public override void _Draw()
 	{
 		ElementColors.Ramp light = ElementColors.GetRamp(Element.Light);
-		float u = ending >= 0f ? Mathf.Clamp(ending / EndSeconds, 0f, 1f) : 0f;
-		float scale = ending < 0f ? Mathf.Clamp(age / 0.15f, 0.3f, 1f) : caught ? 1f + 1.2f * u : 1f - u;
-		float alpha = ending < 0f ? 1f : 1f - u;
-		// The last second: it gutters, a blink that quickens as it goes out.
-		if (ending < 0f && lifeLeft < 1f && MathF.Sin(age * (18f + 20f * (1f - lifeLeft))) < -0.3f)
-			alpha *= 0.45f;
+		Look(out float scale, out float alpha);
 		if (alpha <= 0f || scale <= 0f)
 			return;
 		float pulse = 0.5f + 0.5f * MathF.Sin(age * 6f);

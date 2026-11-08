@@ -700,6 +700,10 @@ public partial class HollowStar : Node2D, IPaintsElementPath
 			}
 		}
 		wellCore = core;
+		// Eclipse burns in Light's ramp round its black core: a light in a dark chapter (LightPool, .ai/light-pool.md
+		// section 3), out past the collapse it rings, brightest as the well heats. Darkness's own well lights nothing.
+		if (eclipse && LightPool.Lit)
+			LightPool.Light(GlobalPosition, CollapseRadius * 1.8f, 0.35f + 0.4f * MathF.Min(1f, heat));
 		wellMaterial.SetShaderParameter(ParamHeatRadius, CollapseRadius);
 		wellMaterial.SetShaderParameter(ParamHeat, heat);
 		wellMaterial.SetShaderParameter(ParamPullRadius, PullRadius);

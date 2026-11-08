@@ -271,6 +271,8 @@ public partial class Starfall : Node2D, IPaintsElementPath
 	private int fallCount;
 	private float linger = LingerSeconds;
 	private ElementColors.Ramp ramp = ElementColors.GetRamp(Element.Light);
+	// Whether the rain lights a dark chapter's room (LightPool): starlight does, Frostfall's ice does not.
+	private bool warmLight = true;
 	private Color tint = Colors.White;
 
 	// The drizzle clock: stars owed by the last cloudburst, and the gap between two of them.
@@ -369,7 +371,9 @@ public partial class Starfall : Node2D, IPaintsElementPath
 		}
 		streakHalf = StreakHalfWidth * MathF.Sqrt(MathF.Max(0.25f, starRadius / BaseStarRadius));
 		linger = LingerSeconds * MathF.Max(0.1f, durationMultiplier);
-		ramp = ElementColors.GetRamp(spell.GetBranchElement() ?? Element.Light);
+		Element look = spell.GetBranchElement() ?? Element.Light;
+		ramp = ElementColors.GetRamp(look);
+		warmLight = LightPool.IsWarm(look);
 		tint = visualTint;
 		PaintTones();
 
@@ -388,6 +392,8 @@ public partial class Starfall : Node2D, IPaintsElementPath
 		TickStars(dt);
 		if (linking || liveLinks > 0)
 			TickConstellation(dt);
+		if (warmLight && LightPool.Lit)
+			ShedLight();
 		QueueRedraw();
 		skyTrails?.QueueRedraw();
 		ground?.QueueRedraw();
@@ -1015,6 +1021,66 @@ public partial class Starfall : Node2D, IPaintsElementPath
 		float lengthSquared = ab.LengthSquared();
 		float t = lengthSquared > 0.0001f ? Mathf.Clamp((p - a).Dot(ab) / lengthSquared, 0f, 1f) : 0f;
 		return p.DistanceSquaredTo(a + ab * t);
+	}
+
+	// --- the light it throws ----------------------------------------------------------------------
+	//
+	// STARLIGHT IN THE DARK (LightPool, .ai/light-pool.md section 3). In a dark chapter every star is a small
+	// light: a falling one lights the ground under it as it comes, a landing flares out past its burst and dies
+	// with it, a heavy star brightens as it swells, a shooting star carries a light across the rain, and the
+	// Constellation's lit stars glow where they fell. The pool keeps the strongest sixteen and culls what is off
+	// the screen, so a heavy rain costs one walk of the fixed slots - and none at all where the chapter is lit.
+	private const float FallingLightReach = 56f;
+	private const float HeavyLightReach = 72f;
+	private const float SkipLightReach = 40f;
+	private const float StreakLightReach = 72f;
+	private const float LitStarLightReach = 48f;
+	// A landing's flash, as a multiple of the radius it struck (FireburstLayer's 2.2 for a burst).
+	private const float LandingLightReach = 2.2f;
+
+	private void ShedLight()
+	{
+		for (int i = 0; i < MaxStars; i++)
+		{
+			if (!stars[i].Live)
+				continue;
+			ref Star s = ref stars[i];
+			if (s.Kind == StarKind.Streak)
+			{
+				if (s.Phase != Phase.Landed)
+					LightPool.Light(s.Origin.Lerp(s.Land, Mathf.Clamp(s.Age / MathF.Max(0.0001f, s.Fall), 0f, 1f)), StreakLightReach, 0.75f);
+				continue;
+			}
+			switch (s.Phase)
+			{
+				case Phase.Falling:
+					// A spark is a fleck; its landing is its light.
+					if (s.Kind == StarKind.Spark)
+						break;
+					HeadOf(s, out Vector2 head, out _);
+					float reach = s.Kind == StarKind.Heavy ? HeavyLightReach : s.Kind == StarKind.Skip ? SkipLightReach : FallingLightReach;
+					LightPool.Light(head, reach, 0.55f * FadeIn(s));
+					break;
+				case Phase.Fuse:
+					float swell = Mathf.Clamp(s.PhaseAge / FuseSeconds, 0f, 1f);
+					LightPool.Light(s.Land, s.Radius * Mathf.Lerp(1.2f, LandingLightReach, swell), 0.5f + 0.4f * swell);
+					break;
+				default:
+					float flash = 1f - Mathf.Clamp(s.PhaseAge / ImpactDebris.LifeSeconds, 0f, 1f);
+					LightPool.Light(s.Land, s.Radius * LandingLightReach, (s.Kind == StarKind.Spark ? 0.5f : 0.8f) * flash * flash);
+					break;
+			}
+		}
+		if (!linking && liveLinks <= 0)
+			return;
+		for (int j = 0; j < MaxLit; j++)
+		{
+			if (!lit[j].Live)
+				continue;
+			float fade = Mathf.Clamp(MathF.Min(lit[j].Age / 0.1f, (lit[j].Life - lit[j].Age) / 0.3f), 0f, 1f);
+			// A held star (Sagittarius's draw) burns a step brighter, as it is drawn.
+			LightPool.Light(lit[j].At, LitStarLightReach * (lit[j].Held ? 1.25f : 1f), (lit[j].Held ? 0.6f : 0.45f) * fade);
+		}
 	}
 
 	// --- drawing ----------------------------------------------------------------------------------

@@ -159,6 +159,48 @@ public partial class Sagittarius : Node2D
 	public override void _Process(double delta)
 	{
 		arcLayer?.QueueRedraw();
+		ShedLight();
+	}
+
+	// THE STRING IS A LIGHT in a dark chapter (LightPool, .ai/light-pool.md section 3): a band of light between the
+	// two lit stars it spans, brightening as the draw fills. Pushed here, every frame it is drawn, not from the draw's
+	// clock in _PhysicsProcess (a frame with no physics step would drop it). The stars light themselves (Starfall),
+	// and so do the arrows of the loose (HuntersArrowLook).
+	private const float StringLightReach = 48f;
+
+	private void ShedLight()
+	{
+		if (!LightPool.Lit || sky == null || charge <= 0f || nockLeft > 0f)
+			return;
+		if (StringEnds(out Vector2 from, out Vector2 to))
+			LightPool.LightAlong(from, to, StringLightReach, 0.25f + 0.45f * charge);
+	}
+
+	// The two lit stars furthest apart, which the string spans. False with fewer than two lit. Allocates nothing.
+	private bool StringEnds(out Vector2 from, out Vector2 to)
+	{
+		from = to = Vector2.Zero;
+		int n = sky.CollectLit(drawn);
+		if (n < 2)
+			return false;
+		int a = 0, b = 1;
+		float widest = -1f;
+		for (int i = 0; i < n; i++)
+		{
+			for (int j = i + 1; j < n; j++)
+			{
+				float d = drawn[i].DistanceSquaredTo(drawn[j]);
+				if (d > widest)
+				{
+					widest = d;
+					a = i;
+					b = j;
+				}
+			}
+		}
+		from = drawn[a];
+		to = drawn[b];
+		return true;
 	}
 
 	// --- the draw ---------------------------------------------------------------------------------------------
@@ -353,26 +395,8 @@ public partial class Sagittarius : Node2D
 	{
 		if (arcLayer == null || sky == null || charge <= 0f || nockLeft > 0f || PlayerRef == null || !IsInstanceValid(PlayerRef))
 			return;
-		int n = sky.CollectLit(drawn);
-		if (n < 2)
+		if (!StringEnds(out Vector2 from, out Vector2 to))
 			return;
-		int a = 0, b = 1;
-		float widest = -1f;
-		for (int i = 0; i < n; i++)
-		{
-			for (int j = i + 1; j < n; j++)
-			{
-				float d = drawn[i].DistanceSquaredTo(drawn[j]);
-				if (d > widest)
-				{
-					widest = d;
-					a = i;
-					b = j;
-				}
-			}
-		}
-		Vector2 from = drawn[a];
-		Vector2 to = drawn[b];
 		Vector2 span = to - from;
 		float length = span.Length();
 		if (length < 8f)

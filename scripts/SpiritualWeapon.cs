@@ -467,6 +467,8 @@ public partial class SpiritualWeapon : Node2D
 	private float knockback = AxeKnockback;
 	private float zoneSeconds;
 	private bool headsman, aftershock, hallowed, whirling, deflect, twin, siphon, flurry, alongBlade, mjolnir, excalibur;
+	// Whether it lights a dark chapter's room (LightPool): while the spell carries Light, which Mjolnir trades away.
+	private bool warmLight = true;
 	private Color tint = Colors.White;
 	private ElementColors.Ramp arcane = ElementColors.GetRamp(Element.Arcane);
 	private ElementColors.Ramp light = ElementColors.GetRamp(Element.Light);
@@ -613,6 +615,8 @@ public partial class SpiritualWeapon : Node2D
 		mjolnir = spell.HasEvolution(TitansMaulId);
 		excalibur = form == Form.Sword && spell.HasEvolution(ExcaliburId);
 		colossal = spell.HasEvolution(GreatswordId) || spell.HasEvolution(GreataxeId) || spell.HasEvolution(TitansMaulId);
+		// Every form is a weapon of light - but Mjolnir trades the hammer's Light for Lightning, and that one lights nothing.
+		warmLight = LightPool.CarriesWarm(spell);
 		pace = form == Form.Sword ? PaceFor(interval) : 1f;
 		StatPeakPace = MathF.Max(StatPeakPace, pace);
 		if (tint != visualTint || armed == false)
@@ -816,6 +820,8 @@ public partial class SpiritualWeapon : Node2D
 		TickZones(dt);
 		TickFx(dt);
 		TickShake(dt);
+		if (warmLight && LightPool.Lit)
+			ShedLight();
 		siphonWindow -= dt;
 		if (siphonWindow <= 0f)
 		{
@@ -1920,6 +1926,37 @@ public partial class SpiritualWeapon : Node2D
 				e.ApplySlow(1f - HallowSlow, HallowTick * 2.5f);
 			}
 			nearBuffer.Clear();
+		}
+	}
+
+	// --- the light it throws -------------------------------------------------------------------------------
+	//
+	// A WEAPON OF LIGHT IS A LIGHT in a dark chapter (LightPool, .ai/light-pool.md section 3). Each weapon lights the
+	// floor round it wherever it hangs or swings - a few times the grip-to-middle of its drawing, so a colossal one
+	// lights twice as far and the dagger less - fading in and out with it; Hallowed Ground's holy floor glows while it
+	// stands; Excalibur's line is a band of light from where the blade landed to its running front, gone as it breaks
+	// up. Fixed slots, walked once; nothing at all where the chapter is lit.
+	private const float WeaponLightReach = 4f;
+	private const float SeverLightReach = 56f;
+
+	private void ShedLight()
+	{
+		foreach (Weapon w in weapons)
+			LightPool.Light(w.Pivot + Dir(w.Angle) * CentreOf(w), CentreOf(w) * WeaponLightReach, 0.6f * w.Alpha);
+		if (dagger != null)
+			LightPool.Light(dagger.Pivot + Dir(dagger.Angle) * CentreOf(dagger), CentreOf(dagger) * WeaponLightReach, 0.5f * dagger.Alpha);
+		for (int i = 0; i < MaxZones; i++)
+		{
+			if (zones[i].Live)
+				LightPool.Light(zones[i].At, zones[i].Radius * 1.4f, 0.45f * Mathf.Clamp(zones[i].Left / 0.5f, 0f, 1f));
+		}
+		for (int i = 0; i < MaxSevers; i++)
+		{
+			if (!severs[i].Live)
+				continue;
+			float run = Mathf.Clamp(severs[i].Age / SeverGrow, 0f, 1f);
+			float fade = Mathf.Clamp((severs[i].Age - SeverGrow) / SeverLife, 0f, 1f);
+			LightPool.LightAlong(severs[i].From, severs[i].From.Lerp(severs[i].To, run), SeverLightReach, 0.7f * (1f - fade));
 		}
 	}
 

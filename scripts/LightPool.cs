@@ -142,6 +142,27 @@ public partial class LightPool : Node2D
 	/// </summary>
 	public static void ColdLight(Vector2 at, float radius, float brightness = 1f) => Push(at, radius, brightness, false);
 
+	/// <summary>The most lights <see cref="LightAlong"/> strings along one line.</summary>
+	public const int AlongLights = 4;
+
+	/// <summary>
+	/// A warm light along the line <paramref name="a"/> to <paramref name="b"/> this frame: a beam, a wall of
+	/// fire, a trail of slag lights the room the whole way, not at one end. Up to <see cref="AlongLights"/>
+	/// lights at the middles of equal stretches of it, each reaching <paramref name="reach"/> - or the stretch's
+	/// length, on a line too long for that many, so their pools still run together into one band. Allocates
+	/// nothing; a no-op where the chapter is lit.
+	/// </summary>
+	public static void LightAlong(Vector2 a, Vector2 b, float reach, float brightness = 1f)
+	{
+		if (driver == null || brightness <= 0.02f)
+			return;
+		float length = a.DistanceTo(b);
+		int n = Math.Clamp((int)MathF.Ceiling(length / MathF.Max(1f, reach)), 1, AlongLights);
+		float radius = MathF.Max(reach, length / n);
+		for (int i = 0; i < n; i++)
+			Push(a.Lerp(b, (i + 0.5f) / n), radius, brightness, true);
+	}
+
 	private static void Push(Vector2 at, float radius, float brightness, bool warm)
 	{
 		if (driver == null || brightness <= 0.02f || radius <= 2f)
@@ -232,6 +253,23 @@ public partial class LightPool : Node2D
 	/// premise's own line (.ai/world-and-tone.md): the only warm light on screen is his, and what he made.
 	/// </summary>
 	public static bool IsWarm(Element element) => element == Element.Fire || element == Element.Light;
+
+	/// <summary>
+	/// Whether a spell names fire or light among its elements now, its milestones' trades counted - so
+	/// Spiritual Weapon's Mjolnir, which trades the hammer's Light for Lightning, does not. It walks Godot
+	/// dictionaries and allocates (SpellData.GetElementWeights): ask once per cast or per node, never per frame.
+	/// </summary>
+	public static bool CarriesWarm(SpellData spell)
+	{
+		if (spell == null)
+			return false;
+		foreach (Element element in spell.GetElementWeights().Keys)
+		{
+			if (IsWarm(element))
+				return true;
+		}
+		return false;
+	}
 
 	// The chapters that are lit under open sky (Eric, 2026-11-03: the light pool is for "certain levels ...
 	// like the dungeons"), and the Sketchbook, which is the kids' and is never touched.

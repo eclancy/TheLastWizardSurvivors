@@ -279,6 +279,10 @@ public partial class SporeMushroom : Node2D
 				caps[i].Since += dt;
 				if (caps[i].Since >= AfterBurstSeconds())
 					caps[i].Live = false;
+				// Ember Caps' burning patches light a dark chapter's room round the cap (LightPool, .ai/light-pool.md
+				// section 3), going out as their flames do; a Poison cap's cloud lights nothing.
+				else if (patchesPerCap > 0 && caps[i].Since < sow.EmberSeconds && LightPool.Lit)
+					LightPool.Light(ToGlobal(caps[i].At), caps[i].Radius * 1.6f, 0.5f * Fade(caps[i].Since, sow.EmberSeconds, 0.5f));
 			}
 		}
 

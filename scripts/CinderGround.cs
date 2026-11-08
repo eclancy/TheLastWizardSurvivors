@@ -90,8 +90,16 @@ public partial class CinderGround : Node2D
 	/// <summary>The element path's repaint for the flames (Hellbreath), or null for plain fire.</summary>
 	public ShaderMaterial PathMaterial
 	{
-		set => Material = value;
+		set
+		{
+			Material = value;
+			// Kept with the repaint, every cooldown (Flamethrower): fire lights a dark chapter's room, and
+			// Hellbreath's black fire does not (LightPool.IsWarm).
+			warmLight = SpellData?.GetBranchElement() is not Element path || LightPool.IsWarm(path);
+		}
 	}
+
+	private bool warmLight = true;
 
 	public override void _Ready()
 	{
@@ -185,6 +193,8 @@ public partial class CinderGround : Node2D
 			if (bursts[i].Age >= BurstSeconds) bursts[i].Live = false;
 			else live++;
 		}
+		if (warmLight && LightPool.Lit)
+			ShedLight();
 
 		QueueRedraw();
 		ground.QueueRedraw();
@@ -200,6 +210,38 @@ public partial class CinderGround : Node2D
 			return;
 		tick = TickSeconds;
 		Burn();
+	}
+
+	// FIRE ON THE GROUND IS A LIGHT in a dark chapter (LightPool, .ai/light-pool.md section 3): every ember a
+	// small light guttering as it goes out, every wall a band of light along it (LightPool.LightAlong) that
+	// catches and goes out with its flames, every backdraft's blaze a flare dying with its glow. The fixed slots
+	// this node already walks; the pool keeps the strongest sixteen and culls what is off the screen.
+	private const float EmberLightReach = 2.5f;
+	private const float WallLightReach = 64f;
+	private const float BurstLightReach = 2.2f;
+
+	private void ShedLight()
+	{
+		for (int i = 0; i < MaxEmbers; i++)
+		{
+			if (embers[i].Live)
+				LightPool.Light(embers[i].At, embers[i].Radius * EmberLightReach,
+					0.45f * Mathf.Clamp((embers[i].Life - embers[i].Age) / EmberFadeSeconds, 0f, 1f));
+		}
+		for (int i = 0; i < MaxWalls; i++)
+		{
+			if (!walls[i].Live)
+				continue;
+			float caught = Mathf.Clamp(walls[i].Age / WallCatchSeconds, 0f, 1f);
+			float fade = Mathf.Clamp((walls[i].Life - walls[i].Age) / WallGoingOutSeconds, 0f, 1f);
+			LightPool.LightAlong(walls[i].A, walls[i].B, WallLightReach, 0.7f * caught * fade);
+		}
+		for (int i = 0; i < MaxBursts; i++)
+		{
+			if (bursts[i].Live)
+				LightPool.Light(bursts[i].At, bursts[i].Radius * BurstLightReach,
+					0.8f * (1f - Mathf.Clamp(bursts[i].Age / 0.8f, 0f, 1f)));
+		}
 	}
 
 	// One pass over the swarm a tick: a body in several embers is burned once by the embers, and once

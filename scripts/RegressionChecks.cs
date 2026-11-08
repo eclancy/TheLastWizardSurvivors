@@ -1459,12 +1459,15 @@ public static partial class RegressionChecks
 		{
 			var scene = GD.Load<PackedScene>(path);
 			Node root = scene?.Instantiate();
-			if (root is not StageHazard)
+			if (root is not StageHazard hazard)
 			{
 				warnings.Add($"Hazards: {path} did not load as a StageHazard.");
 				root?.Free();
 				continue;
 			}
+			// The vent's fire lights the dark chapters (LightPool); a property mistyped in the scene is dropped silently.
+			if (path.EndsWith("FlameVent.tscn", StringComparison.Ordinal) && hazard.LightReach <= 0f)
+				warnings.Add($"Hazards: {path} casts no light (StageHazard.LightReach is 0), so its fire leaves a dark chapter unlit.");
 			var sprite = root.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
 			var area = root.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
 			SpriteFrames frames = sprite?.SpriteFrames;

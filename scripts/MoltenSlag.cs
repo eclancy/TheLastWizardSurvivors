@@ -165,6 +165,8 @@ public partial class MoltenSlag : Node2D
 			QueueFree();
 			return;
 		}
+		if (LightPool.Lit)
+			ShedLight();
 
 		tick -= dt;
 		if (tick > 0f)
@@ -176,6 +178,32 @@ public partial class MoltenSlag : Node2D
 			BurnPool();
 		else
 			BurnTrail();
+	}
+
+	// MOLTEN METAL IS A LIGHT in a dark chapter (LightPool, .ai/light-pool.md section 3). The pool lights the
+	// room out past its bank while it is molten and goes dark over its last second, as it skins over (the
+	// shader's cooling, DrawPool); the slag is a band of light along its live stretch (LightPool.LightAlong),
+	// from the oldest point still burning to the newest, dimming once the shard has gone and the line cools.
+	private const float PoolLightReach = 1.8f;
+	private const float SlagLightReach = 44f;
+
+	private void ShedLight()
+	{
+		if (isPool)
+		{
+			float molten = Mathf.Clamp(life - clock, 0f, 1f);
+			LightPool.Light(centre, PoolRadiusNow() * PoolLightReach, 0.6f * molten);
+			return;
+		}
+		if (count < 2)
+			return;
+		int newest = (head - 1 + MaxPoints) % MaxPoints;
+		int oldest = (head - count + MaxPoints) % MaxPoints;
+		// Points go out in the order they were laid, so the first still burning is a short step from the oldest.
+		for (int k = 0; k < count - 1 && clock - born[oldest] >= life; k++)
+			oldest = (oldest + 1) % MaxPoints;
+		float heat = 1f - Mathf.Clamp((clock - born[newest]) / life, 0f, 1f);
+		LightPool.LightAlong(points[oldest], points[newest], SlagLightReach, 0.5f * heat);
 	}
 
 	private float PoolRadiusNow()

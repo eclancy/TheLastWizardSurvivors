@@ -52,6 +52,12 @@ public partial class StageHazard : Area2D
 	/// <summary>How long a non-looping `active` animation takes to play through before holding its last frame.</summary>
 	[Export] public float ActiveShootSeconds { get; set; } = 0.08f;
 
+	/// <summary>
+	/// How far its fire lights a dark chapter's room while it burns (LightPool, .ai/light-pool.md section 3), in
+	/// world units; 0 for a hazard that is not fire. Set on the flame vent's scene, where the grate is 76 wide.
+	/// </summary>
+	[Export] public float LightReach { get; set; } = 0f;
+
 	private static readonly StringName AnimIdle = "idle";
 	private static readonly StringName AnimTell = "tell";
 	private static readonly StringName AnimActive = "active";
@@ -129,6 +135,30 @@ public partial class StageHazard : Area2D
 		damageTimer = 0f;
 		player!.TakeDamage(Damage);
 		BitesLanded++;
+	}
+
+	// THE VENT'S FIRE IS A LIGHT in a dark chapter (the Dungeon's vents): rising with the tell as the slots heat,
+	// full and guttering while it burns, dying as it cools, and nothing while it sleeps. Pushed from _Process, every
+	// frame it shows - the cycle's clock runs in _PhysicsProcess, and a light asked for only there drops out on
+	// every frame without a physics step and flickers on a fast screen (.ai/light-pool.md section 3).
+	public override void _Process(double delta)
+	{
+		if (LightReach <= 0f || phase == Phase.Dormant || !LightPool.Lit)
+			return;
+		float duration = phase switch
+		{
+			Phase.Rising => RiseSeconds,
+			Phase.Active => ActiveSeconds,
+			_ => FallSeconds
+		};
+		float progress = duration <= 0f ? 1f : Mathf.Clamp(phaseTimer / duration, 0f, 1f);
+		float brightness = phase switch
+		{
+			Phase.Rising => 0.35f * progress,
+			Phase.Active => 0.8f * (0.9f + 0.1f * MathF.Sin(phaseTimer * 23f)),
+			_ => 0.8f * (1f - progress)
+		};
+		LightPool.Light(GlobalPosition, LightReach, brightness);
 	}
 
 	/// <summary>Bites landed on the player this process, for _BalanceHarness --check-feet: proof the boots test fires.</summary>
