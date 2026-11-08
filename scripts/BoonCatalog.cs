@@ -352,7 +352,9 @@ public static class BoonCatalog
 			BoonEffect.SpellDamage => $"All your spells deal {m * 100f:0}% more damage.",
 			BoonEffect.SpellArea => $"All your spells cover {m * 100f:0}% more area.",
 			BoonEffect.CooldownReduction => $"All your spells recharge {m * 100f:0}% faster.",
-			BoonEffect.PickupRadius => $"XP and drops fly to you from further away: +{m:0} pickup range.",
+			// A percentage, never a flat distance (Eric, 2026-11-04): the share of the reach every
+			// pickup starts with (Player.BasePickupAttractDistance).
+			BoonEffect.PickupRadius => $"XP and drops fly to you from further away: {Player.PickupRadiusPercent(m)} pickup range.",
 			BoonEffect.Evasion => $"A {m * 100f:0}% chance to dodge a hit completely.",
 			BoonEffect.Luck => $"+{m:0} Luck: a little more critical-hit chance, more bonus drops, and a better chance of a legendary spell.",
 			BoonEffect.Retaliate => $"When you are hit, every enemy close around you takes {m:0} damage (at most {once}).",
@@ -386,7 +388,7 @@ public static class BoonCatalog
 			BoonEffect.SpellDamage => $"+{m * 100f:0}% Spell Damage",
 			BoonEffect.SpellArea => $"+{m * 100f:0}% Spell Area",
 			BoonEffect.CooldownReduction => $"-{m * 100f:0}% Cooldowns",
-			BoonEffect.PickupRadius => $"+{m:0} Pickup Radius",
+			BoonEffect.PickupRadius => $"{Player.PickupRadiusPercent(m)} Pickup Radius",
 			BoonEffect.Evasion => $"+{m * 100f:0}% Evasion",
 			BoonEffect.Luck => $"+{m:0} Luck",
 			BoonEffect.Retaliate => $"{m:0} damage to nearby enemies when struck",

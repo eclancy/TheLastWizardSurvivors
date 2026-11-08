@@ -134,7 +134,7 @@ public static class StageHintCatalog
 			Cue = HintCue.Leaves,
 			Lines = new[]
 			{
-				"Leaves whispering, though there is no wind.",
+				"Leaves are whispering, though there is no wind.",
 				"The whisper again. Something out there still grows.",
 				"Fainter now, the whispering. It has not stopped.",
 			},
@@ -246,7 +246,7 @@ public static class StageHintCatalog
 			Cue = HintCue.Vapour,
 			Lines = new[]
 			{
-				"A man coughing, far out on the bog.",
+				"A man is coughing, far out on the bog.",
 				"Glass rings across the water, like a tapped flask.",
 				"The coughing again. Weaker.",
 			},
@@ -295,7 +295,7 @@ public static class StageHintCatalog
 			Cue = HintCue.Paint,
 			Lines = new[]
 			{
-				"A brushstroke drawing itself along the wall.",
+				"A brushstroke draws itself along the wall.",
 				"Another line, wet, running the same way.",
 				"The paint is still running.",
 			},

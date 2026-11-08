@@ -70,7 +70,7 @@ public static class ChapterNotes
 		// 4 Sunken Cave - "His shadow followed the water down into the dark."
 		["stage_2"] = new[]
 		{
-			"Water dripping everywhere, and my light the only light.",
+			"Water drips everywhere, and my light is the only light.",
 			"Cold, wet stone. It smells like old coins.",
 		},
 		// 11 Cursed Dungeon (fifth until piece C2 moved it into the castle) - "He keeps a wizard in one of

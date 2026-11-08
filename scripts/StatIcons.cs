@@ -73,7 +73,9 @@ public static class StatIcons
 			return "chain";
 		if (t.Contains("pickup") || t.Contains("magnet"))
 			return "magnet";
-		if (t.Contains("projectile speed"))
+		// "Faster projectiles" is the speed line with no number on it (Player.FormatSpellEffectUpgrade):
+		// it must take the speed glyph before the projectile-count test below can claim it.
+		if (t.Contains("projectile speed") || t.Contains("faster projectile"))
 			return "speed";
 		// Black Tentacles counts its projectiles as tentacles, Toxic Spore Burst as mushrooms, Meteor
 		// Swarm as meteors and Starfall as stars (Player.ProjectileNoun). "stars " only at the start:

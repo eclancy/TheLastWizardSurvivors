@@ -626,6 +626,13 @@ public partial class Player : CharacterBody2D
 	// is the Hidden Drawer's (Eric, 2026-11-03).
 	public const int ReliquaryKeyChestReach = 240;
 	public const float ReliquaryKeyChestSpeed = 320f;
+	// Every pickup starts coming to the player from this far (the AttractDistance export default on
+	// XPOrb and PickupBase): the base a magnet bonus is a share OF when a card prints it. A card
+	// never shows a distance in pixels (Eric, 2026-11-04), so a flat bonus reads as a percentage
+	// of this instead ("+63% pickup radius" for the Lodestone's 50).
+	public const float BasePickupAttractDistance = 80f;
+	/// <summary>A flat magnet bonus as the percentage the cards print: 50 -> "+63%".</summary>
+	public static string PickupRadiusPercent(float bonus) => $"+{Mathf.RoundToInt(bonus * 100f / BasePickupAttractDistance)}%";
 	// Scattered Library (John Dee): his library was looted and scattered, and the strong ones carry it - a share added
 	// to every elite's chance of a chest (GetEliteChestChance). His old passive, Collector's Eye ("+1 relic to choose
 	// from in every chest"), is the Hidden Drawer's now (Eric, 2026-11-03).
@@ -8655,7 +8662,7 @@ public partial class Player : CharacterBody2D
 
 		float range = spell.GetRangeAtLevel(1);
 		if (range > 0.5f)
-			parts.Add($"RNG {range:0}");
+			parts.Add($"Range: {RangeWord(range)}");
 
 		int projectiles = spell.GetProjectileCountAtLevel(1);
 		if (projectiles > 1)
@@ -8670,17 +8677,26 @@ public partial class Player : CharacterBody2D
 			return string.Empty;
 
 		var parts = new List<string>();
+		// Damage, cooldown and range read as percentages of what the spell does at its current level
+		// (Eric, 2026-11-04: "+2 damage" says nothing; "+17% damage" is the honest gain). Measured
+		// through the same getters a cast reads, so milestone multipliers sit on both sides of the
+		// division, and measured once per stat however many rows the level holds.
+		bool damageSaid = false, cooldownSaid = false, rangeSaid = false;
 		foreach (SpellLevelUpgrade upgrade in spell.LevelUpgrades.Where(u => u != null && u.Level == nextLevel))
 		{
-			if (upgrade.DamageBonus != 0)
+			if (upgrade.DamageBonus != 0 && !damageSaid)
 			{
+				damageSaid = true;
 				// Aegis Ward stores its shield strength in the damage field so it can ride the same
 				// level-up pipeline as everything else. The card has to tell the truth about it.
 				bool isShield = spell.Id.Equals("aegis_ward", StringComparison.OrdinalIgnoreCase);
-				parts.Add($"{(isShield ? "Shield" : "Damage")} {FormatSigned(upgrade.DamageBonus)}");
+				parts.Add($"{(isShield ? "Shield" : "Damage")} {PercentDelta(spell.GetDamageAtLevel(nextLevel - 1), spell.GetDamageAtLevel(nextLevel))}");
 			}
-			if (MathF.Abs(upgrade.CooldownBonus) > 0.001f)
-				parts.Add($"Cooldown {FormatSigned(upgrade.CooldownBonus)}s");
+			if (MathF.Abs(upgrade.CooldownBonus) > 0.001f && !cooldownSaid)
+			{
+				cooldownSaid = true;
+				parts.Add($"Cooldown {PercentDelta(spell.GetCooldownAtLevel(nextLevel - 1), spell.GetCooldownAtLevel(nextLevel))}");
+			}
 			if (upgrade.ProjectileCountBonus != 0)
 				parts.Add($"{ProjectileNoun(spell) ?? "Projectiles"} {FormatSigned(upgrade.ProjectileCountBonus)}");
 			if (upgrade.ChainArcBonus != 0)
@@ -8689,13 +8705,17 @@ public partial class Player : CharacterBody2D
 				parts.Add($"Branch arcs {FormatSigned(upgrade.ChainBranchBonus)}");
 			if (MathF.Abs(upgrade.ChainChanceBonus) > 0.001f)
 				parts.Add($"Chain chance {FormatSigned(upgrade.ChainChanceBonus * 100f)}%");
+			// The poison a hit leaves ticks once a second (Enemy.PoisonTickInterval), so "a second"
+			// is the tick, in the player's words.
 			if (upgrade.PoisonTickBonus != 0)
-				parts.Add($"Poison tick {FormatSigned(upgrade.PoisonTickBonus)}");
-			if (MathF.Abs(upgrade.RangeBonus) > 0.001f)
-				parts.Add($"Range {FormatSigned(upgrade.RangeBonus)}");
-			if (upgrade.Effect == SpellEffect.AreaSize && AreaSizeIsShare(spell) && MathF.Abs(upgrade.EffectValue) > 0.001f)
-				parts.Add(FormatAreaLine(upgrade.EffectValue));
-			else if (upgrade.Effect != SpellEffect.None && MathF.Abs(upgrade.EffectValue) > 0.001f)
+				parts.Add($"Poison {FormatSigned(upgrade.PoisonTickBonus)} a second");
+			if (MathF.Abs(upgrade.RangeBonus) > 0.001f && !rangeSaid)
+			{
+				rangeSaid = true;
+				float before = spell.GetRangeAtLevel(nextLevel - 1);
+				parts.Add(before > 0.5f ? $"Range {PercentDelta(before, spell.GetRangeAtLevel(nextLevel))}" : "Longer range");
+			}
+			if (upgrade.Effect != SpellEffect.None && MathF.Abs(upgrade.EffectValue) > 0.001f)
 				parts.Add(FormatSpellEffectUpgrade(upgrade.Effect, upgrade.EffectValue));
 		}
 
@@ -8730,18 +8750,30 @@ public partial class Player : CharacterBody2D
 		_ => null,
 	};
 
-	// Spells whose level table's Area lines (Effect AreaSize) are a SHARE of the blow's reach rather than
-	// pixels, and say so as a percentage ("Area +15%"): a size on a card is a percentage, never pixels
-	// (2026-10-28, Eric: "never mention px, add a %"). Spiritual Weapon's forms read it that way
-	// (SpiritualWeapon.Arm); the other spells' lines are another pass's.
-	private static bool AreaSizeIsShare(SpellData spell) =>
-		spell != null && spell.Id.Equals("spiritual_weapon", StringComparison.OrdinalIgnoreCase);
+	// A reach on a card is a word, never pixels (Eric, 2026-11-04: say close or far and keep the
+	// numbers out of the player's sight). The buckets sit on the roster's own spread (60-620), and
+	// "very long" is a reach past the ~420 px the camera shows above and below the wizard.
+	private static string RangeWord(float range) =>
+		range <= 130f ? "short" : range <= 300f ? "medium" : range <= 460f ? "long" : "very long";
 
-	private static string FormatAreaLine(float share) => $"Area {FormatSigned(Mathf.RoundToInt(share * 100f))}%";
+	// The honest percentage of a level-up's gain: the stat before the pick against the stat after,
+	// rounded - but never to zero while something changed, or the card would say the pick does nothing.
+	private static string PercentDelta(float before, float after)
+	{
+		if (before <= 0.001f)
+			return after > before ? "+1%" : "-1%";
+		int pct = Mathf.RoundToInt((after - before) * 100f / before);
+		if (pct == 0 && MathF.Abs(after - before) > 0.0001f)
+			pct = after > before ? 1 : -1;
+		return $"{FormatSigned(pct)}%";
+	}
 
 	private static string FormatSigned(int value) => value > 0 ? $"+{value}" : value.ToString();
 	private static string FormatSigned(float value) => value > 0 ? $"+{value:0.##}" : value.ToString("0.##");
 
+	// Every line in the player's words and units (Eric, 2026-11-04): a share prints as a percentage, a
+	// pixel figure with no base a card could honestly divide by (knockback, flight speed, Black
+	// Tentacles' pixel-valued Area) prints as a plain word instead of a number.
 	private static string FormatSpellEffectUpgrade(SpellEffect effect, float value)
 	{
 		return effect switch
@@ -8750,14 +8782,19 @@ public partial class Player : CharacterBody2D
 			SpellEffect.Chain => $"Chain jumps {FormatSigned(Mathf.RoundToInt(value))}",
 			SpellEffect.Freeze => $"Freeze {FormatSigned(value)}s",
 			SpellEffect.Burn => $"Burn {FormatSigned(value)}",
-			SpellEffect.Knockback => $"Knockback {FormatSigned(value)}",
+			SpellEffect.Knockback => "Stronger knockback",
 			SpellEffect.CritChance => $"Crit chance {FormatSigned(value * 100f)}%",
-			SpellEffect.AreaSize => $"Area {FormatSigned(value)}",
-			SpellEffect.ProjectileSpeed => $"Projectile speed {FormatSigned(value)}",
+			// A fraction is a share of the blow's reach ("Area +16%", Spiritual Weapon's reading); a
+			// value past 1 is pixels added to a base only the spell's scene knows, so no honest
+			// percentage exists and the card says the direction instead.
+			SpellEffect.AreaSize => MathF.Abs(value) < 1f ? $"Area {FormatSigned(Mathf.RoundToInt(value * 100f))}%" : "Wider area",
+			SpellEffect.ProjectileSpeed => "Faster projectiles",
 			SpellEffect.SlowPower => $"Slow strength {FormatSigned(value * 100f)}%",
 			SpellEffect.SlowDuration => $"Slow duration {FormatSigned(value)}s",
 			SpellEffect.RootDuration => $"Root duration {FormatSigned(value)}s",
-			SpellEffect.DotDamage => $"DoT per tick {FormatSigned(Mathf.RoundToInt(value))}",
+			// The poison a hit leaves ticks once a second (Enemy.PoisonTickInterval): "a second" is
+			// the tick, with no code word on the card.
+			SpellEffect.DotDamage => $"Poison {FormatSigned(Mathf.RoundToInt(value))} a second",
 			SpellEffect.ZoneDuration => $"Zone duration {FormatSigned(value)}s",
 			// What a spell grants the wizard (the Familiar's cat): a share of every spell's cast speed, and
 			// of the hits he slips. Percentages, as a share always is on a card.
