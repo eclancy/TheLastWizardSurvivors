@@ -128,11 +128,14 @@ public static partial class Foliage
 				// 4. The standing ruin: fallen walls' last piers, a colonnade's remains, a tree grown out of a wall, and
 				// rarest, the stump of a round tower (one pick in eight). Massed in the quarters; the rule that no stand
 				// pins the player (Footing) keeps every gap between them, and between them and the walls, at least 72 px.
+				// 2100 (was 1500, 2026-11-07): at 1500 the walls and the 72 px rule left 2.4 a chunk, and at zoom 0.3 the
+				// quarters read as scattered pieces, not as massed ruin. The stone sits near the floor's own value, so a
+				// quarter is told by how much stands in it.
 				new FoliageSet
 				{
 					Grounded = new[] { "wall-run-1", "wall-run-2", "colonnade-1", "wall-run-1", "root-wall-1", "wall-run-2", "colonnade-1", "spire-stump-1" },
 					Manifest = Manifest,
-					Count = 1500, ClumpSize = 2, Clump = ClumpBase.Stand, RadiusMin = 0.35f, RadiusMax = 0.55f, Separation = 0.6f,
+					Count = 2100, ClumpSize = 2, Clump = ClumpBase.Stand, RadiusMin = 0.35f, RadiusMax = 0.55f, Separation = 0.6f,
 					Loners = 0.15f, MinSpacing = 130f, Habitat = new Woodland.Habitat(0f, 0.15f, 1f),
 				},
 				// 5. A fallen column lying in its pieces, and a capital sunk where it fell: on a quarter's edge, now and then
@@ -144,11 +147,13 @@ public static partial class Foliage
 					Habitat = new Woodland.Habitat(0.06f, 1f, 0.45f),
 				},
 				// 6. Heaps of broken blocks and rubble the ivy has taken: the edges and the quarters, a few out in the open.
+				// 2000 in fours, as thick in a quarter as on its edge (was 1300 in threes, stand 0.8; 2026-11-07, as set 4):
+				// walked over, so it thickens a quarter without narrowing a way through it.
 				new FoliageSet
 				{
 					Grounded = new[] { "rubble-1", "rubble-2", "ivy-mound-1", "rubble-2" }, Manifest = Manifest,
-					Count = 1300, ClumpSize = 3, Clump = ClumpBase.Bush, RadiusMin = 0.6f, RadiusMax = 0.8f, Separation = 0.7f,
-					Loners = 0.1f, MinSpacing = 44f, Habitat = new Woodland.Habitat(0.07f, 1f, 0.8f),
+					Count = 2000, ClumpSize = 4, Clump = ClumpBase.Bush, RadiusMin = 0.6f, RadiusMax = 0.8f, Separation = 0.7f,
+					Loners = 0.1f, MinSpacing = 44f, Habitat = new Woodland.Habitat(0.07f, 1f, 1f),
 				},
 				// 7. A statue's empty plinth, the feet broken off at the ankle: where the statues stood - the edges of the
 				// quarters and the open courts - and alone. The chapter's Warded Statues stepped down off them.
@@ -169,8 +174,9 @@ public static partial class Foliage
 				GroundDetail.Clutter("cold_ash", 0.03f, 6, 1f, 0.35f, 0f),
 				GroundDetail.Clutter("crack_weeds", 0.03f, 4, 0.35f, 1f, 0.6f),
 				GroundDetail.Clutter("moss_chips", 0.035f, 3, 0.1f, 1f, 0.8f),
-				GroundDetail.Clutter("ivy_runners", 0.055f, 4, 0f, 0.5f, 1f),
-				GroundDetail.Clutter("root_runs", 0.03f, 2, 0f, 0.3f, 1f),
+				// The quarters' two, raised with sets 4 and 6 (2026-11-07; were 0.055 and 0.03).
+				GroundDetail.Clutter("ivy_runners", 0.075f, 4, 0f, 0.5f, 1f),
+				GroundDetail.Clutter("root_runs", 0.04f, 2, 0f, 0.3f, 1f),
 			},
 		};
 
@@ -203,9 +209,9 @@ public static partial class Foliage
 			return t * t * (3f - 2f * t);
 		}
 
-		// The field is asked per cell (the clutter and the decor), and a cell's
-		// neighbours almost always share its lattice cell, so each noise keeps its last four corners - the same
-		// numbers, computed once (the Sands' field does the same). One copy per thread.
+		// The field is asked per cell (the clutter and the decor), and a cell's neighbours almost always share its
+		// lattice cell, so each noise keeps its last four corners - the same numbers, computed once (the Sands' field
+		// does the same). One copy per thread.
 		[ThreadStatic] private static float[]? corners;
 		[ThreadStatic] private static (ulong Seed, int X, int Y, bool Set)[]? cornerKeys;
 
