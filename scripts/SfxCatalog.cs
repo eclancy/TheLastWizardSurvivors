@@ -165,6 +165,10 @@ public static class SfxCatalog
 	// sun-disc over the door - played where it lands, at most every 0.2 s.
 	public const string MirrorTurn = "mirror_turn";
 	public const string SunArrive = "sun_arrive";
+	// The Gaoler's key (GaolersKeyEvent, .ai/unlock-puzzles.md 3.8): a lantern-bearer's light falls on him with the key - its
+	// shutter thrown wide and the cold flame flaring, and the key ringing on the flagstones. A mistake the player made, once a
+	// catch; the light then holds on him, so it cannot repeat until he has stepped off the key and taken it up again.
+	public const string LanternCatch = "lantern_catch";
 
 	// --- secrets (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9 and 8.4.1) ------
 	// Generated and allowlisted, not yet played: the secret agents wire them as they build the sites.
@@ -197,7 +201,7 @@ public static class SfxCatalog
 		PlayerFall, TallyTick, TallyPayout,
 		HintGroveWhisper, HintCellCry, HintLanternFlare, HintIceSong, HintCaravanBell, HintPaperWind, HintAnvil, HintSibylVoice, HintHutStep, HintHullKnock, HintFlaskChime, HintQuatrain, HintTombKnock, HintGranaryVoice, HintBrush,
 		SibylVoice, SibylEcho, EscortCough,
-		IceString1, IceString2, IceString3, IceString4, IceString5, IceStringWrong,
+		IceString1, IceString2, IceString3, IceString4, IceString5, IceStringWrong, LanternCatch,
 		MirrorTurn, SunArrive,
 		SecretSeen, SecretFound, SecretShatter, SecretVoiceBelow,
 	};

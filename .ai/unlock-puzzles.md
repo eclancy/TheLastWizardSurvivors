@@ -3,8 +3,8 @@
 Eric, 2026-11-03: *"what i actually wanted to discuss was making sure all of the character unlocks are fun
 and interesting, like the laser puzzle in halls of torment"*.
 
-**Status: designed with Eric, 2026-11-03. Built: 3.1 Imhotep, 3.2 Ma Liang, 3.3 Baba Yaga, 3.4 Paracelsus, 3.5 Medea,
-3.6 Väinämöinen and 3.7 Morgan le Fay (each its "Built" note); 3.8 Tituba is not.** Every rule below that says "decided" was
+**Status: designed with Eric, 2026-11-03. Built: all eight - 3.1 Imhotep, 3.2 Ma Liang, 3.3 Baba Yaga, 3.4 Paracelsus,
+3.5 Medea, 3.6 Väinämöinen, 3.7 Morgan le Fay and 3.8 Tituba (each its "Built" note).** Every rule below that says "decided" was
 chosen by him that day, one question at a time. Eight of the twelve place-held wizards get a new ask; four
 keep theirs. Numbers marked *first guess* are for the build to tune.
 
@@ -710,6 +710,145 @@ it. The three-hit rule goes. The insight is watching the rounds, waiting in a si
 - **Clashes:** the Oubliette (untouched on a grate) and the planned Alarm Bell are different acts. Carry
   disappears from the events; the First Tree secret still carries.
 - **Size:** M-L.
+
+**Built (2026-11-08, `worktree-agent-ad4f992193e0573e9`).** `GaolersKeyEvent` (rewritten), `GaolRounds.cs` (new: `GaolGround`
+the lattice as the rounds read it, `GaolRound` one round, `GaolLayout` the seed and its proof, `GaolWalk` the walk graph,
+`GaolSweep` what a round lights, `GaolSlip` the time-stepped search, `KeyCarry` the key's rule), `LanternCone` (new: the
+cone), `LanternBearer` (new: the bearer). The lantern is `gaol-lantern.png` from `tools/art/gaol_lantern.py` (new); the
+catch is `lantern_catch.wav` from `tools/audio/sfx.py` (`.ai/audio-manifest.md`, 2026-11-08). Site, deed id, hint,
+reward, the Gaoler's map, the cell's art and its win beat are as they were; the deed's line now reads "Slip the Gaoler's
+key past his lantern-bearers to the locked cell in the Cursed Dungeon." Schema: none. The three hits and the
+`DamageTaken` listener are gone.
+
+- **What plays.** Reaching the cell wakes the Warden at its post, four to six cells' walk away (1,536-2,304 px of
+  corridor), on the far side of the cell from the stage's start where the maze allows. Between the post and the cell,
+  one to three lantern-bearers walk their rounds: each a loop of four to twelve cells crossing or running beside the way
+  home, walked centre to centre at 80 px/s, its lantern held out in front and throwing a cone of cold light 300 px ahead,
+  30 degrees either side, stopped by the walls. Its lantern turns into a corner half a second before its feet do
+  (`GaolRound.LookAhead`), so a turn is seen coming. The bearers walk from the chapter's first seconds - dormant too - so
+  their lights are moving in the corridors round the cell before anyone comes for it; their light catches nothing until
+  the key is carried. Kill the Warden; the key falls where it fell. Carry it home: caught in a cone, the key drops where
+  he stands, the catch sounds (`lantern_catch`), and THAT bearer turns on him. Take it back when the light has passed
+  and slip home; the lock turns as before (the unlock, the gate, Tituba). As the key turns, every lantern gutters out.
+- **The Warden keeps its post (decided in the build).** A Warden that chased him, as the old one did, would come to him
+  at the cell and drop the key at the door, with no rounds between. So it holds its post (`Enemy.ScriptedHeading`'s
+  hold), leaves it for him only once he is within 640 px of it (`GuardRadius`), never follows him past 520 px from it
+  (`LeashRadius`) and walks back by the corridors when he draws it further. The key always lies on the far side of the
+  gaol. In every probe run it fell 8-110 px from its post.
+- **The cone: what is drawn is what catches.** `LanternCone`'s shape is a `GroundSlamAttack` with `TelegraphShape.Cone`,
+  and `Contains()` is asked first, always. The walls are laid on once, as a reach table: 25 rays fanned edge to edge,
+  each marched out in 12 px steps to the first wall. The light layer draws that fan (a triangle a pair of rays, bright at
+  the lantern and thinning to the far end, a brighter rim where the light lands on the floor or meets a wall), and
+  `Covers` reads the same table, taking the shorter of the two rays either side of a point. So nothing is caught outside
+  what is drawn; where a wall's corner falls between two rays the fan reaches a sliver further than the catch (one ray's
+  gap at most, 13 px at the far end), and the sliver is the player's. A catch is tested at his feet
+  (`Player.FootPosition`) against the light he saw - the event reads the cones before the bearers move that frame.
+- **Untargetable, by not being an enemy at all (decided: untargetable; how, decided in the build).** A bearer is a plain
+  `Node2D` the event walks: no group, no health, no collision shape, nothing on any physics layer. No spell can aim at it,
+  no area finds it, and touching it is not contact damage - and no other code path can ever make it a target, which
+  `Enemy.SetTargetable(false)` on an enemy would only promise as long as everything respected it. The probe checks every
+  frame that none is in `"enemies"` or the registry.
+- **The bearer who turns - "the one thing that comes for him" (decided in the build).** Its round stops; its lantern
+  flares white-hot (frame 0 of the sheet) and swings onto him; while its light is on him it comes after him down the
+  corridors - the swarm's own flow field, which is built toward him - at seven tenths of his walk, so walking away always
+  loses it, and if it reaches him (60 px, feet to feet, its light on him) it strikes him with the lantern, 4 damage
+  before the chapter's scale (5 in the Dungeon), once a second, the first only 0.7 s after it turned. **It does not see
+  round corners:** the moment he is out of its light it walks to where it last saw him and stands there swinging its
+  lantern, looking; catch him in it again and it comes on. Out of its light 2 s, or 10 s after it turned whatever he
+  does, it gives up and walks back by the corridors to the nearest cell of its round at one and a half times its round's
+  pace, its light thrown ahead of it and live again (it is on duty: a key carried into it is caught), and takes its
+  round up there. So the way to lose it is the puzzle's own move: step out of the light into the dark, and wait. The
+  first build turned its lantern on him wherever he was, through walls; a corner never lost it, only outwalking its
+  300 px reach did, at 44 px a second, and the probe's `--into-cone` on seed 31 ran its ten seconds out doing that. Even
+  seeing only what its light falls on, in that seed's long straight corridors with no side passage near the catch,
+  outwalking it took 8.6-9.8 s against the ten-second cap, so it walks at seven tenths of his pace now (was four fifths)
+  and gives up after 2 s out of its light (was 2.5).
+  Nothing is ever lost but the key's place and the time. While a bearer is turned the line under the timer says
+  "A lantern-bearer has seen you - get out of its light".
+  Not being an enemy, it has no Weaken to scale its blow (nothing can hit it to put one there): the chapter's damage
+  scale is its only multiplier, and `Player.TakeDamage` runs the dodge and every mitigation as for any hit.
+- **Taking a lost key up.** A key that fell in the light cannot be taken up until he has stepped 70 px off it
+  (`KeyCarry.RearmRadius`); taken up again inside the light, it falls again on the same frame. Without the first rule,
+  standing on it in a cone would pick it up and lose it every frame.
+- **The seed (`GaolLayout.Generate`).** The post: a cell four to six steps from the cell, on the far side from the start
+  where one exists. The rounds: the shortest loop through each open passage near the way (four to twelve cells, never
+  through the cell or the post), those that cross the way first and short before long; up to three that share no cell.
+  Each roll is kept only if the cautious walker below slips through at four phase sets (its own and three a turned
+  bearer could come back in); of those, the roll that bites a straight walk home hardest, a second round counting for a
+  quarter of a bite. Over 40 layouts of real maze ground: 12 with one round, 18 with two, 10 with three; none with none;
+  a straight walk home at a random moment caught 57% of the time on average, and 10 of the 40 (a quarter) under the
+  50% target - the maze round those cells has no second loop clear of the first. Built at 60-90 ms a layout on a desktop
+  release build, off the main thread (below).
+- **The proof (`RegressionChecks.ValidateGaolersKey`).** The walker of `GaolSlip` walks the walk graph - cell centres and
+  a point every 24 px along each open passage, the middle of the corridors - one point every 0.12 s (200 px/s against his
+  220), may stand still wherever it is dark, picks the key up only in the dark, and is home once it has stood at the
+  cell's door, dark, for the lock's 1.2 s. It plans against a lantern 24 px longer and 4 degrees wider than the bearers'
+  (`GaolSlip.PlanningCone`), so a way it finds keeps a margin of dark. The bearers' places on their loops are quantised
+  to their 9.6 px tick, 40 to a cell, so every loop is a whole number of ticks. The validator: (1) the numbers - a bearer
+  well under his walk, turned and walking back too, the proof's walker under it, the ticks whole, the dwell as long as
+  the lock; (2) on real maze ground, up to 160 lanterns aimed every way and 120 points round each: nothing caught outside the drawn fan, nothing
+  drawn lit and more than a ray's gap inside it spared, nothing caught behind a wall; (3) a straight walk through a cone
+  with the key drops it on the first lit step, where he stood, not to be taken up until he steps off; taken up again in
+  the light it falls again at once; a walk behind the lantern, or behind a wall it lights up to, drops nothing; (4)
+  twelve gaols laid on maze ground exactly as the event lays them (walls baked, then nothing else read - any question
+  outside the bake is counted, and must be none), each a closed set of disjoint loops off the cell and the post, the post
+  four to six steps out, and each searched again at eight phase sets the generator never tried, along the way home and
+  its side passages ONLY (`GaolLayout.WayHeKnows` - the shortest way, and each cell beside it as a dead end to stand in,
+  nothing round): every one must slip through. 96 of 96 do, 49 of them by standing in the dark with the key while a light
+  passes. A one-off sweep of the same over 40 layouts and 12 phase sets each: 480 of 480, 238 standing in the dark, 54 of
+  those in a side passage. And three quarters of the gaols must bite a straight walk home at least half the time.
+- **Off the main thread.** All in one frame the gaol cost 313 ms on a desktop debug build. Now the walls round the cell
+  (the cells within eight of it and one round them, about 23,000 tiles) are read a slice a frame (`GaolGround.BakeStep`,
+  3,500 tiles, seven frames, 9-112 ms in all, at most a chunk or two of the streamer's data made in any one frame), and
+  the rest runs on a worker that reads nothing but that array (`GaolGround.BakedOnly`); the bearers step out when it is
+  done, about a quarter to two and a half seconds into the run, five chunks from the player. A player who arrived first
+  would wait for it in `Begin`; no real one can. The lanterns' cones aim against the same baked array every frame.
+- **Light.** The cones are drawn additively on `DrawLayers.Air` (`ZAsRelative` false), in his arcane cyan, the turned one
+  whiter; over every body and under only icons and numbers, so in the Dungeon's dark they are the brightest thing on
+  screen. Two of `LightPool`'s cold lights a bearer (at the lantern, and halfway down the cone) lift the room's dark under
+  them so the floor is lit, not only washed. A dropped key has a faint pool of the event's own cold round it - never
+  warm, which is a secret's tell.
+- **The bearer's body.** The Warden's own sheet (`WardenEnemyFrames`, the chapter's jailer) at x2 against the Warden's
+  2.7 and its elite size, tinted cold - a lesser turnkey of the same gaol - with the lantern (a steel cage round the
+  jail's cold flame, four frames: a flare and three flickers) held at its hip on the light layer.
+
+**Verified:** `dotnet build` (0 errors, none of the warnings in these files); the validator with `-- --no-save-writes`
+(see the report); `ValidateGaolersKey` as above; `python tools/audio/analyse.py --confuse` 0 confusable pairs.
+`_ExploreProbe --stage=1` hunts the Warden from beside it at its post, then plays the slip as a player who has watched the
+rounds - each bearer's loop and its place on it, both on screen, never more - planning on the way he knows (his own way to
+the key and from it home, and the side passages off them; the rest of the region only if that holds no way) with the
+planner's cautious lantern, walking it feet first at 200 px/s, the swarm cleared only every 5 s. On the final code: seed
+4242 `--fresh-save` 27/0 (two rounds of six; slipped home in 9.5 s, no catch), seed 31 `--fresh-save` 27/0 (rounds of ten
+and four, kept as the best of its rolls at a 46% bite; 9.7 s, no catch), seed 7 `--fresh-save` 27/0 (three rounds of four;
+stood 9.6 s in the dark with the key while the lights passed, then slipped through; no catch); each frees Tituba. Seed 7
+again at `--timescale=1`, 27/0 (8.8 s standing in the dark with the key, no catch). Seed 4242 `--all-unlocked` 26/0 (the chest; no catch). `--into-cone` (with the key
+in hand, into the nearest lit cone on purpose): seed 4242 31/0 - the key fell exactly where he stood, that bearer's lantern
+swung to within 2 degrees of him, it left its round and followed him 797 px (to 50 px of him), lost him round a corner and
+gave up 6.8 s after the catch, was back on its round at 14.7 s, and he took the key back and slipped home with no second
+catch; seed 31 31/0 - caught in a long straight corridor with no side passage near, it followed him and its ten seconds
+ran out before the probe was out of its light 2 s (a traced run caught elsewhere on the same seed lost it round a corner
+in 6.3 s), back on its round 20.7 s after the catch, the key taken back and slipped home with no second catch. Which of
+its two endings ends a chase depends on where it is: the probe's retreat (out of the hunter's light and sight, never past
+it) is a heuristic, and a player may well do better or worse.
+
+The probe found three things only it could, each fixed in the probe and none in the rule: at timescale 4 a frame is up to
+0.4 s of game time, and it stepped over the key without ever standing within its 30 px (the frame that passes a planned
+pickup now stands on it); it stood him for the end of the frame while the event tests the cones aimed on the frame
+before, one frame ahead of the light - and at 24 fps under load seed 7 was caught once that way (it now stands him where
+the plan says for the moment the bearers are at); and its retreat would not cross the light it stood in, so it fled
+straight down a lit corridor. And it found one thing in the rule: the first turned bearer tracked him through walls, and
+on seed 31 a corner never lost it - so it no longer does (above).
+
+**Not verified - needs eyes:** whether it is fun, and whether a player finds "wait for the light to pass" from the line
+under the timer ("keep out of the lanterns' light") and the first catch without being told; whether the cones read at a
+glance in a full swarm on a phone, and whether the bearers - the Warden's sheet, smaller and colder, with a lantern - are
+ever taken for the Warden while he hunts it; the catch by ear; the blow's 5 against real play; whether a one-round gaol
+(about three in ten) plays as a puzzle or as a timing; the cost of three cones' 25 triangles each and their marches on a
+phone (the marches read the baked array). Photographed only standing: `_UiShot --scene=res://scenes/node_2d_game.tscn
+--stage=1 --terrain-seed=4242 --fresh-save --goto=event --goto-offset=500,120 --arrive --hold --frames=300`, at 1280x720
+and at 540x1212 `--portrait --safe-area` - two bearers on their rounds between the cell and the post, each cone the
+brightest thing on the dark floor, one cut off by the wall beside it; neither the catch, the chase nor the won cell was
+photographed, and there is no `_UiShot` pose for them yet.
 
 ---
 

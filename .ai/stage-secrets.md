@@ -383,7 +383,8 @@ for 20 s). So: no long holds here.
 
 ### 6.2 Cursed Dungeon (`stage_1`)
 
-*"He keeps a wizard in one of these cells."* Side event: **the Gaoler's key** (carry). The maze:
+*"He keeps a wizard in one of these cells."* Side event: **the Gaoler's key** (slip past - it was a carry until 2026-11-08,
+`.ai/unlock-puzzles.md` 3.8). The maze:
 every site snaps to a cell, and **no secret ever moves a wall** (walls are terrain, collision and
 the navigation window at once).
 
@@ -706,7 +707,7 @@ Tells here are pencil marks, not warm glints.
 | chapter | side event verb | secrets (verb) | keepsake pays |
 |---|---|---|---|
 | Enchanted Forest | stand still | Fenced Bloom (circle), Fairy Ring (touch), Outward Path (sequence), **First Tree** (carry) | Vitality |
-| Cursed Dungeon | carry | Chalk Marks (follow), Alarm Bell (touch, risk), Hollow Flagstone (strike), **Gaoler's Ledger** (guarded) | the ledger |
+| Cursed Dungeon | slip past (carry until 2026-11-08) | Chalk Marks (follow), Alarm Bell (touch, risk), Hollow Flagstone (strike), **Gaoler's Ledger** (guarded) | the ledger |
 | Sunken Cave | none (#62 proposed) | Cold Lamps (linger), Crystal Vein (strike), **Choir Loft** (untouched) | Magnet |
 | Blighted Swamp | explore | Lily Crossing (touch), Living Lantern (carry), Warm Wisp (follow), **Sunken Chapel** | 150 AE |
 | Mystic Ruins | none | Broken Ward (sequence), Misfiled Page (follow), **Sundial Vault** (hour), Statue's Eye (strike) | Movespeed |

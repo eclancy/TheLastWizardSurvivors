@@ -1706,6 +1706,61 @@ def hint_flask_chime():
     return S.dc_block(_far(out, low=140.0, high=3200.0, size=0.8, mix=0.36, damp=0.55))
 
 
+def _key_clink(seed, freq):
+    """A small iron key striking the flagstones: the bow's ring - a stiff bar's inharmonic modes, gone in a fifth of a
+    second - over the tick of the stone it lands on."""
+    dur = 0.2
+    ring = S.partials(freq, [1.0, 2.76, 5.40], dur, amps=[1.0, 0.42, 0.14], decays=[16.0, 24.0, 32.0])
+    tn = S.n_samples(0.01)
+    tick = S.env_mul(S.lowpass(S.bandpass(S.osc("noise", 0, 0.01, seed=seed), 2100.0, 1.2), 4500.0), S.decay(tn, 6.0))
+    return S.lowpass(S.layer([(ring, 0.0, 0.75), (tick, 0.0, 0.6)]), 5000.0)
+
+
+def lantern_catch():
+    """The Gaoler's key (.ai/unlock-puzzles.md 3.8): a lantern-bearer's light falls on him while he carries the key.
+
+    Three things, in the order they happen. The lantern's shutter thrown wide - a dry clack of iron on iron with a knock
+    under it. His cold flame FLARING behind the glass - a breath of flame swelling and RISING (where player_death falls)
+    and burning a third of a second before it settles, a soft whump under it and a faint glass tone over it: the gaol's
+    light, cold, the same as its sconces. And the key hitting the flagstones and bouncing once, each strike a smaller,
+    higher clink. A mistake the player made, a few times a puzzle at most - the once-a-minute row, a step under a hurt,
+    because it must carry over the swarm and say at once what was lost. Dry and close: it is at his feet, so no room on it.
+    Nothing below 140 Hz; the clinks lowpassed under the ceiling.
+
+    Measured against the whole registry, not only the hints (2026-11-08): a tonal B4-E5 swell came out 0.081 from
+    ice_string_4; a quick bright whoosh, 0.070 from reroll and 0.095 from hint_flask_chime; a low swell with the clack
+    quieted, 0.064 from player_death. As it stands its nearest is player_death at 0.126 and hint_lantern_flare at 0.144."""
+    sd = 0.07
+    sn = S.n_samples(sd)
+    clack = S.bandpass(S.osc("noise", 0, sd, seed=4101), 1800.0, 1.4)
+    clack = S.lowpass(S.env_mul(clack, S.decay(sn, 7.0)), 4800.0)
+    knock = S.env_mul(S.osc("sine", S.sweep(sd, 240.0, 170.0), sd), S.decay(sn, 5.0))
+    shutter = S.layer([(clack, 0.0, 0.9), (knock, 0.0, 0.55)])
+
+    # The flare swells, then BURNS a third of a second, flickering as the Swamp's lanterns do (hint_lantern_flare, 13 Hz),
+    # before it settles: held, not struck - which is what keeps it clear of the clicks and plucks round it in the set.
+    fd = 0.62
+    fn = S.n_samples(fd)
+    breath = S.lowpass(S.bandpass(S.osc("noise", 0, fd, seed=4103), S.sweep(fd, 320.0, 1100.0, 0.6), 1.2), 2400.0)
+    breath = S.tremolo(breath, 13.0, 0.35)
+    whump = S.osc("sine", S.sweep(fd, 180.0, 340.0, 0.5), fd)
+    glass = S.osc("sine", _hz(19), fd)
+    rise = S.n_samples(0.15)
+    hold = S.n_samples(0.3)
+    swell = S.ramp(rise, 0.1, 1.0, 0.8) + [1.0] * hold + S.decay(fn - rise - hold, 2.2)
+    glint = S.ramp(S.n_samples(0.25), 0.0, 1.0) + S.decay(fn - S.n_samples(0.25), 2.6)
+    flare = S.mix(S.env_mul(breath, swell), S.gain(S.env_mul(whump, swell), 0.4), S.gain(S.env_mul(glass, glint), 0.14))
+
+    out = S.layer([
+        (shutter, 0.0, 0.95),
+        (flare, 0.03, 1.0),
+        (_key_clink(4105, 1397.0), 0.17, 0.55),
+        (_key_clink(4107, 1568.0), 0.31, 0.35),
+    ])
+    out = S.pad(out, 0.82)
+    return S.dc_block(S.highpass(out, 140.0))
+
+
 def escort_cough():
     """The gibbet's escort (.ai/unlock-puzzles.md 3.4): Paracelsus stepping into the rot on his way to the ferry.
 
@@ -2450,6 +2505,10 @@ REGISTRY += [
     # the once-every-few-seconds row, under a hit; filed with the hints so --confuse holds it against the flask chime,
     # whose cough it shares.
     ("escort_cough",        "hint",   -12.0, escort_cough,        False),
+    # The Gaoler's key (GaolersKeyEvent, .ai/unlock-puzzles.md 3.8): a lantern's light falls on him with the key - a mistake,
+    # a few times a puzzle at most, at his feet: the once-a-minute row, a step under a hurt. Filed with the hints so
+    # --confuse holds it against hint_cell_cry and hint_lantern_flare, the chapter's and the Swamp's lantern.
+    ("lantern_catch",       "hint",   -9.0,  lantern_catch,       False),
     # The Court's seer reading (SeersVoiceEvent): the chapter hint, and in the seek every few seconds from the room
     # his voice is in while the player looks for it - so it sits with the hints, not above them.
     ("hint_quatrain",       "hint",   -10.0, hint_quatrain,       False),

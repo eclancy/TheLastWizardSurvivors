@@ -290,7 +290,7 @@ public static class AchievementDefinitions
 		("the_well", "The Last Coin", "Keep the last clean well in the Fallow Fields from being fouled.", "Unlocks Wishing Coin"),
 		("tithe_scale", "The Scale Held Level", "Fill both pans of the Tithe-Reeve's scale in the Fallow Fields and hold its beam level.", "Frees Medea"),
 		("the_moot", "The Circle Relit", "Restore the shattered council wards of the Broken Circle to free their keeper.", "Frees Merlin, unlocks Orb of Ages and Gilded Mote"),
-		("gaolers_key", "The Open Cell", "Carry the Gaoler's key to the locked cell in the Cursed Dungeon.", "Frees Tituba"),
+		("gaolers_key", "The Open Cell", "Slip the Gaoler's key past his lantern-bearers to the locked cell in the Cursed Dungeon.", "Frees Tituba"),
 		("bog_lanterns", "The Lanterns Out", "Snuff the lanterns of the Blighted Swamp and face what tends them.", "Unlocks Contagion"),
 		("gibbet_cage", "The Ferry Reached", "Lower the gibbet's cage in the Blighted Swamp and bring the man in it to the ferry landing alive.", "Frees Paracelsus"),
 		("five_pointed_seal", "The Seal Broken", "Turn the four guardian stones to face the seal in the Mystic Ruins.", "Frees Abe no Seimei"),
