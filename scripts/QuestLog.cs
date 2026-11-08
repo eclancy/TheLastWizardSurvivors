@@ -114,6 +114,20 @@ public static class QuestLog
 		// The Lady of the Lake (.ai/endgame-castle.md decision 11): the one wizard he did not lock in a place, but kept by
 		// him, at the Throne, to the end. Freed by his fall; the Throne note says she is near him until then.
 		new Prisoner("nimue", "the one he kept", "He keeps one wizard by him still, close at hand.", "{0} is out of his keeping."),
+		// THE GODS OF THE FAR SHORE (.ai/second-half.md 6.3, marked by F0): epithet, held line, rekindled line - the
+		// doc's table. Each god's piece replaces its own comment line once its god is in UnlockCatalog (a row naming
+		// a character the catalog does not is a validator fault, so none is written ahead of its god).
+		// F2: new Prisoner("artemis", "the huntress", ...),
+		// (F6's line is below; leave this one as it is)
+		// F6: new Prisoner("manannan", "the one who walks the waves", ...),
+		// (F7's line is below; leave this one as it is)
+		// F7: new Prisoner("hecate", "the one at the three ways", ...),
+		// (F8's line is below; leave this one as it is)
+		// F8: new Prisoner("ra", "the sun that did not rise", ...),
+		// (F9's line is below; leave this one as it is)
+		// F9: new Prisoner("ukko", "the old man of the sky", ...),
+		// (F10's line is below; leave this one as it is)
+		// F10: new Prisoner("hephaestus", "the smith of the gods", ...),
 	};
 
 	public static Prisoner PrisonerOf(string characterId) =>
@@ -185,13 +199,14 @@ public static class QuestLog
 
 	// A wizard freed anywhere comes after the road: he needs no chapter, so he is never what stops the
 	// player going on, and pointing at him first would send a new save to open chests rather than down
-	// the road the story is about.
+	// the road the story is about. The road is both orders: the campaign's chapters, then the far shore's
+	// (StageCatalog.OrderedPositionOf), so anyone freed across the water ranks after everyone on the land.
 	private static int ChainRank(UnlockDefinition wizard)
 	{
 		string chapter = GlobalStatsManager.RescueChapterOf(wizard);
 		if (string.IsNullOrWhiteSpace(chapter))
 			return int.MaxValue - 1;
-		int position = StageCatalog.CampaignPositionOf(chapter);
+		int position = StageCatalog.OrderedPositionOf(chapter);
 		return position >= 0 ? position : int.MaxValue;
 	}
 
@@ -253,11 +268,14 @@ public static class QuestLog
 		};
 	}
 
-	/// <summary>The first playable chapter before <paramref name="target"/> whose boss still stands.</summary>
+	/// <summary>
+	/// The first playable chapter before <paramref name="target"/> whose boss still stands - walking the campaign,
+	/// then the far shore, so a target across the water points first at whatever on the land still stands.
+	/// </summary>
 	private static StageDefinition Frontier(SaveData save, StageDefinition target)
 	{
-		int end = StageCatalog.CampaignPositionOf(target.Id);
-		IReadOnlyList<StageDefinition> road = StageCatalog.Campaign;
+		int end = StageCatalog.OrderedPositionOf(target.Id);
+		IReadOnlyList<StageDefinition> road = StageCatalog.Campaign.Concat(StageCatalog.FarShore).ToList();
 		for (int i = 0; i < road.Count && (end < 0 || i < end); i++)
 		{
 			StageDefinition stage = road[i];
@@ -330,7 +348,8 @@ public static class QuestLog
 		StageDefinition stage = StageCatalog.GetById(deed.StageId);
 		if (stage == null)
 			return true;
-		return StageCatalog.IsInCampaign(stage)
+		// Either order unrolls on the map (the far shore from Taken Back, .ai/second-half.md 6.2).
+		return StageCatalog.IsInEitherOrder(stage)
 			? GlobalStatsManager.IsChapterRevealed(save, stage)
 			: GlobalStatsManager.IsStageAvailable(save, stage);
 	}

@@ -383,7 +383,15 @@ public static class GlobalStatsManager
 			return false;
 		int position = StageCatalog.CampaignPositionOf(stage.Id);
 		if (position < 0)
-			return false;
+		{
+			// THE FAR SHORE (.ai/second-half.md 6.2): nothing of it on show before Taken Back - the Throne is the
+			// locked thing on show until then. Once the Throne is won its first stop is shown under its seal, as a
+			// gate chapter is once its previous boss falls; every later far chapter once it is earned.
+			if (!StageCatalog.IsOnFarShore(stage))
+				return false;
+			return IsStageEarned(data, stage)
+				|| (stage.Gate == StageGate.FarShore && HasTakenBackTheThrone(data));
+		}
 		return position == 0
 			|| IsStageEarned(data, stage)
 			|| IsGrandfathered(data, stage)
@@ -516,29 +524,40 @@ public static class GlobalStatsManager
 		{
 			StageGate.Open => !stage.AfterCampaign || HasReachedAfterCampaign(data, stage),
 			StageGate.PreviousBossAndWizards => IsStageUnlocked(data, stage.Id)
-				|| HasPassedInCampaign(data, stage)
+				|| HasPassedInOrder(data, stage)
 				|| IsGateMet(data, stage),
+			// The far shore's first chapter (.ai/second-half.md 6.1): rules 1 and 2 as a gate chapter keeps them,
+			// and the whole road behind it in place of rule 3.
+			StageGate.FarShore => IsStageUnlocked(data, stage.Id)
+				|| HasPassedInOrder(data, stage)
+				|| IsFarShoreGateMet(data),
 			_ => IsStageUnlocked(data, stage.Id)
-				|| HasPassedInCampaign(data, stage)
+				|| HasPassedInOrder(data, stage)
 				|| HasClearedPreviousChapter(data, stage),
 		};
 	}
 
-	/// <summary>Rule 2 of <see cref="IsStageEarned"/>: a boss-gated chapter later in the campaign is open.</summary>
-	public static bool HasPassedInCampaign(SaveData data, StageDefinition stage)
+	/// <summary>
+	/// Rule 2 of <see cref="IsStageEarned"/>: a boss-gated chapter later in the same order - the campaign's, or
+	/// the far shore's - is open. Never across the two: a far chapter opened says nothing about the road.
+	/// </summary>
+	public static bool HasPassedInOrder(SaveData data, StageDefinition stage)
 	{
 		if (data == null || stage == null)
 			return false;
 
-		int position = StageCatalog.CampaignPositionOf(stage.Id);
+		bool far = StageCatalog.IsOnFarShore(stage);
+		int position = far ? StageCatalog.FarShorePositionOf(stage.Id) : StageCatalog.CampaignPositionOf(stage.Id);
 		if (position < 0)
 			return false;
 
 		foreach (string id in data.UnlockedStageIds)
 		{
 			StageDefinition opened = StageCatalog.GetById(id);
-			if (opened != null && opened.Gate == StageGate.PreviousBoss
-				&& StageCatalog.CampaignPositionOf(opened.Id) > position)
+			if (opened == null || opened.Gate != StageGate.PreviousBoss)
+				continue;
+			int at = far ? StageCatalog.FarShorePositionOf(opened.Id) : StageCatalog.CampaignPositionOf(opened.Id);
+			if (at > position)
 				return true;
 		}
 		return false;
@@ -557,6 +576,10 @@ public static class GlobalStatsManager
 	/// kill counts once the Dungeon is on the road, and it does then: a save that finished the old campaign
 	/// takes the Court the day the Constable falls - a generous skip of one fight it has already won,
 	/// accepted in the doc. Recursive down the castle to the gate, which is never chained.
+	///
+	/// The far shore is a chain from its first chapter (.ai/second-half.md 6.1, "every later far chapter opens on
+	/// the one before it"): a far boss counts only once its own chapter is on the save's far shore, down to the
+	/// first, whose gate is the whole road.
 	/// </remarks>
 	public static bool HasClearedPreviousChapter(SaveData data, StageDefinition stage)
 	{
@@ -564,7 +587,109 @@ public static class GlobalStatsManager
 		BossDefinition boss = previous != null ? BossCatalog.ForStageIndex(previous.Index) : null;
 		if (boss == null || data?.Lifetime == null || !data.Lifetime.HasDefeatedBoss(boss.Id))
 			return false;
-		return !IsPastFirstGate(stage) || IsStageEarned(data, previous);
+		bool chained = IsPastFirstGate(stage) || StageCatalog.IsOnFarShore(stage);
+		return !chained || IsStageEarned(data, previous);
+	}
+
+	// --- The far shore's gate (.ai/second-half.md 6.1) ----------------------------------------------
+	// Eric's words for the half are "once every spell and character is unlocked and the main boss beaten", taken
+	// as the doc recommends and he accepted (2026-11-07, decision 5): Taken Back, The Grimoire Restored and every
+	// wizard a place on the road holds, Merlin and Laelaps with them - not the Dark Wizard (every chapter on
+	// Hardcore: a difficulty) and not John Dee (100 chests: a grind), neither a place. It is a gate kind of its own
+	// (StageGate.FarShore) because its "previous chapter" is the whole road, and it stands in the far shore's own
+	// order, so nothing here moves what the campaign's deeds count.
+
+	/// <summary>
+	/// Taken Back: the dark wizard has fallen in the Throne - the deed done, or his fall in the lifetime record
+	/// (the deed's own measure), so a save whose deed has not been evaluated yet is not held back by it.
+	/// </summary>
+	public static bool HasTakenBackTheThrone(SaveData data) =>
+		data != null && (IsAchievementUnlocked(data, AchievementDefinitions.TakenBackId)
+			|| (data.Lifetime != null && data.Lifetime.HasDefeatedBoss(AchievementDefinitions.ThroneBossId)));
+
+	/// <summary>
+	/// The Grimoire Restored: the deed done, or every spell it counts owned now. The deed alone would keep a save
+	/// out until its next run's end evaluated it; the live count alone would close the shore to a save that had
+	/// met it the day a spell was added - which RecordMetFarShore makes moot once the shore is built.
+	/// </summary>
+	public static bool HasRestoredGrimoire(SaveData data) =>
+		data != null && (IsAchievementUnlocked(data, AchievementDefinitions.GrimoireRestoredId) || AllSpellsUnlocked(data));
+
+	/// <summary>The wizards the far shore's gate counts, in catalog order (<see cref="CountsTowardFarShore"/>).</summary>
+	public static IEnumerable<string> FarShoreWizardIds =>
+		UnlockCatalog.AllCharacterIds.Where(CountsTowardFarShore);
+
+	/// <summary>
+	/// Whether the far shore's gate waits on this character: he is freed by a deed done in a PLACE on the road -
+	/// a campaign chapter's warden, its side event, or a secret there. That is every chapter wizard, Tituba and
+	/// Vainamoinen, Merlin (the moot) and Laelaps (the Pinfold), and Nimue, whom Taken Back frees anyway. It is not
+	/// the Dark Wizard (his deed is the road on Hardcore, done nowhere), not John Dee (a Feat of chests, no
+	/// place), not a starter, and never anyone freed on the far shore itself, which no gate before it may wait on.
+	/// </summary>
+	/// <remarks>
+	/// The doc calls this "every wizard a place holds - which the Throne's gate already asks". In the code the
+	/// Throne's gate also counts John Dee (every gate counts a Feat's wizard, GateWizardIds), so a save that won the
+	/// Throne has him anyway; the far shore's own rule leaves him out, as the doc says, rather than inherit him.
+	/// </remarks>
+	public static bool CountsTowardFarShore(string characterId)
+	{
+		UnlockDefinition who = UnlockCatalog.GetCharacter(characterId);
+		if (who == null || who.Source != UnlockSource.Achievement)
+			return false;
+		AchievementDefinition deed = UnlockCatalog.SourceDeedOf(who);
+		if (deed == null || StageCatalog.CampaignPositionOf(deed.StageId) < 0)
+			return false;
+		return !string.IsNullOrWhiteSpace(deed.BossId) || !string.IsNullOrWhiteSpace(deed.SiteId)
+			|| !string.IsNullOrWhiteSpace(deed.SecretId);
+	}
+
+	/// <summary>The far shore's gate, live: the Throne taken back, every spell recovered, every wizard it counts free.</summary>
+	public static bool IsFarShoreGateMet(SaveData data) =>
+		HasTakenBackTheThrone(data) && HasRestoredGrimoire(data)
+		&& FarShoreWizardIds.All(id => IsCharacterUnlocked(data, id));
+
+	/// <summary>
+	/// What the far shore's gate still waits on, in the lock line's words (StageCatalog.FarShoreLockedHintFor):
+	/// "take back the Throne", "recover 3 more spells", "free the accused and a wizard". Wizards by epithet while
+	/// revealed and only "a wizard" while sealed - never by name (<see cref="HeldGateWizards"/>' rule). Empty once met.
+	/// </summary>
+	public static List<string> FarShoreGateMissing(SaveData data)
+	{
+		var missing = new List<string>();
+		if (!HasTakenBackTheThrone(data))
+			missing.Add("take back the Throne");
+		if (!HasRestoredGrimoire(data))
+		{
+			int left = RemainingSpellCount(data);
+			missing.Add(left == 1 ? "recover 1 more spell" : $"recover {left} more spells");
+		}
+		List<string> held = FarShoreWizardIds
+			.Where(id => !IsCharacterUnlocked(data, id))
+			.Select(id => IsCharacterRevealed(data, id) ? QuestLog.EpithetOf(id) : "a wizard")
+			.ToList();
+		if (held.Count > 0)
+			missing.Add("free " + string.Join(", ", held));
+		return missing;
+	}
+
+	/// <summary>
+	/// Writes the far shore's first chapter into the save's opened list once its gate is met, so a spell or a
+	/// wizard added to the road later can never close it again - <see cref="RecordMetGates"/>' reason, for the
+	/// far shore's gate. Only adds, and only a PLAYABLE chapter: nothing unbuilt is ever written into a save
+	/// (.ai/endgame-castle.md 1.9), so while the White Downs are a stand-in this writes nothing. Returns what it
+	/// wrote, for the results screen (AchievementManager).
+	/// </summary>
+	public static List<StageDefinition> RecordMetFarShore(SaveData data)
+	{
+		var opened = new List<StageDefinition>();
+		if (data == null)
+			return opened;
+		foreach (StageDefinition shore in StageCatalog.FarShore.Where(s => s.Gate == StageGate.FarShore))
+		{
+			if (shore.IsPlayable && !IsStageUnlocked(data, shore.Id) && IsFarShoreGateMet(data) && UnlockStage(data, shore.Id))
+				opened.Add(shore);
+		}
+		return opened;
 	}
 
 	/// <summary>A campaign chapter after the first gate chapter (the castle's, and the Dungeon since C2).</summary>

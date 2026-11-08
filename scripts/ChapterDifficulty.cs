@@ -74,6 +74,16 @@ public static class ChapterDifficultyCatalog
 		new() { StageId = "stage_1", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
 		new() { StageId = "stage_12", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
 		new() { StageId = "stage_13", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
+		// THE FAR SHORE (.ai/second-half.md 4.3, decision 11 accepted 2026-11-07): the castle's row, held flat across
+		// the half - it is a place to try builds, and Hardcore is the climb. Read after the campaign's by
+		// ValidateChapterDifficulty, so a far row may never ease below the Throne's damage. Each row is its chapter's
+		// piece's (F3, F6-F10) to retune; none is playable yet.
+		new() { StageId = "stage_14", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
+		new() { StageId = "stage_15", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
+		new() { StageId = "stage_16", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
+		new() { StageId = "stage_17", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
+		new() { StageId = "stage_18", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
+		new() { StageId = "stage_19", EnemyHealth = 3.80f, EnemyDamage = 1.35f, EliteInterval = 0.75f, ElitePower = 1.65f },
 	};
 
 	public static IReadOnlyList<ChapterDifficulty> All => Table;

@@ -287,6 +287,19 @@ public static partial class StageBestiary
 		Bridge.Build(),
 		Court.Build(),
 		Throne.Build(),
+		// THE FAR SHORE (.ai/second-half.md 4.2, marked by F0): each chapter's piece writes
+		// StageBestiary.<Chapter>.cs and replaces its own comment line with its Build().
+		// F3: WhiteDowns.Build(),
+		// (F6's line is below; leave this one as it is)
+		// F6: DrownedShore.Build(),
+		// (F7's line is below; leave this one as it is)
+		// F7: ThreeWays.Build(),
+		// (F8's line is below; leave this one as it is)
+		// F8: TwelfthHour.Build(),
+		// (F9's line is below; leave this one as it is)
+		// F9: ThunderFell.Build(),
+		// (F10's line is below; leave this one as it is)
+		// F10: BronzeIsle.Build(),
 	};
 
 	public static ChapterBestiary? ForStageId(string stageId)

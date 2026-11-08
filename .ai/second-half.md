@@ -10,8 +10,9 @@ They can start with powerful existing combination spells, Apotheosis forms or ot
 it does not require new spells - reuse the current roster and its evolved forms, then balance each god's
 starting power, passive and unlock around that later story.
 
-**Status: design for Eric's review, 2026-11-07. Docs only - nothing here is built.** Section 8 is the list
-of decisions that are his; every other choice below is a recommendation he can overturn.
+**Status: design for Eric's review, 2026-11-07; accepted 2026-11-07/08 (section 8). F0, the plumbing, is built
+(2026-11-08, section 9, "F0, built"); nothing playable yet.** Section 8 is the list of decisions that are his;
+every other choice below is a recommendation he can overturn.
 
 Read first: `.ai/world-and-tone.md` (the premise this extends, the enemy palette, why the player is alone),
 `.ai/combo-spells.md` (the Conjunctions, sections 2, 4 and 6), `.ai/dark-wizard-playable.md` section 6 (the
@@ -471,7 +472,7 @@ less, **M** a few days, **L** a week or more.
 
 | # | piece | size | needs | done when |
 |---|---|---|---|---|
-| F0 | **Far-shore plumbing**: `FarShoreOrder`, `StageGate.FarShore`, six stand-in chapters `IsPlayable = false`, `PreviousChapter` per order, `QuestLog` / `StageRewards` / `ChapterNotes` / `WorldMap` reading both orders, `ValidateFarShore` | L | - | the far shore exists, nobody can enter it, and the Dark Wizard's and The Road Restored's targets have not moved |
+| F0 | **Far-shore plumbing**: `FarShoreOrder`, `StageGate.FarShore`, six stand-in chapters `IsPlayable = false`, `PreviousChapter` per order, `QuestLog` / `StageRewards` / `ChapterNotes` / `WorldMap` reading both orders, `ValidateFarShore` | L | - | the far shore exists, nobody can enter it, and the Dark Wizard's and The Road Restored's targets have not moved. **Built 2026-11-08** ("F0, built", below) |
 | F1 | **God plumbing**: any recipe as an opener with its own table; `OnStartingConjunction` and `ValidateStartingConjunction` over every opener; the god's card lines; the rekindled reel's far-shore ground in `freed.py` | M | F0 | a god can be added as data |
 | F2 | **Artemis**: Sagittarius's table path, The Hunter's Moon, Far-Shooting, her sheet (`tools/art/player_*.py`, 48 cell, idle / move / hurt / death), icons, reel layer, catalog rows | M | F1 | the first god, playable everywhere |
 | F3 | **The White Downs**: chalk tiles and barrows, its cast, the Unstrung Hunter, music, foliage, one side event, two secrets, its difficulty row | L | F0 | the first far chapter |
@@ -498,3 +499,90 @@ and `_UiShot --demo-combo=<id>:fuse`; for a god `--seek-apotheosis` (the form af
 far sky feels like an invitation or a chore; whether each far chapter feels fresh, which is Eric's own word
 for the point of the half; whether the favour makes the planned run too easy to still be a plan; and
 whether a rekindling reads as the light coming *home* rather than as a second freeing.
+
+### F0, built (2026-11-08, branch `worktree-agent-a299769b7da06a5b5`, on `main-ff86ni` at v0.20.0)
+
+The far shore exists, nobody can enter it, and the Dark Wizard's and The Road Restored's targets have not
+moved (both still 13, the campaign's count). All six chapters are `IsPlayable = false`, so no save, screen or
+run reaches them; every chapter of the road plays exactly as it did. **No save schema step** (still 25), and
+the story epoch is not raised.
+
+**Where it lives.**
+
+| piece of F0 | where |
+|---|---|
+| the six chapters | `StageCatalog`: `stage_14` the White Downs to `stage_19` the Bronze Isle, appended, with 4.2's names, ground lines and corruption lines. Each borrows a road chapter's `EnvironmentKind` as its stand-in ground (Heath, Swamp, Forest, Desert, Ice, Castle) |
+| the second order | `StageCatalog.FarShoreOrder` (a line a chapter), read through `FarShore`, `FarShoreOrderIds`, `FarShorePositionOf`, `IsOnFarShore`, `IsInEitherOrder` and `OrderedPositionOf` (the campaign's chapters, then the far shore's). `InDisplayOrder` is campaign, far shore, outside. `ChapterPlace` says "Far Shore N" |
+| `PreviousChapter` / `ChapterOpenedBy` | read the order a chapter stands in, skipping an unbuilt one as before. The far shore's first chapter has no previous chapter; the Throne's fall opens nothing |
+| the gate | `StageGate.FarShore` (first far chapter only; the other five are `PreviousBoss` in the far order). `GlobalStatsManager`: `IsStageEarned` (rules 1 and 2 as a gate chapter keeps them, then `IsFarShoreGateMet`), `HasPassedInOrder` (was `HasPassedInCampaign`, now never across the two orders), the far shore chained like the castle in `HasClearedPreviousChapter`, `HasTakenBackTheThrone`, `HasRestoredGrimoire`, `FarShoreWizardIds` / `CountsTowardFarShore`, `FarShoreGateMissing`, `RecordMetFarShore` (called from `AchievementManager` after `RecordMetGates`, playable chapters only) |
+| the reveal (6.2) | `IsChapterRevealed`: nothing of the far shore before Taken Back; then the first stop; every later one once earned |
+| the lock line | `StageCatalog.FarShoreLockedHint` and `FarShoreLockedHintFor(save)`, which names only what is missing ("Sealed — recover 3 more spells"), wizards by epithet |
+| the readers | `WorldMap` (`RoadOrder` is `[campaign to the gate] + [rush] + [the castle] + [far shore] + [outside]`; reveal, compass caption and break, "Far Shore N of M" on the card), `QuestLog` (chain rank, frontier and `IsOffered` across both orders), `StageRewards` (built in that order), `ChapterNotes` (journal in that order), `AchievementDefinitions` (far deeds sort after the campaign's) |
+| notes, music, difficulty | `ChapterNotes`: a two-line note for each far chapter, a first draft from 4.2 that its piece may rewrite. `MusicCatalog`: six planned sets, `downs`, `drowned`, `ways`, `twelfth`, `fell`, `bronze`, each on a road set until rendered (Heath, Cave, Ruins, Sands, Frozen, Emberdeep), because `ValidateMusic` wants a row for every chapter. `ChapterDifficultyCatalog`: the castle's row for all six (question 11, held flat), and `ValidateChapterDifficulty` walks the far order after the campaign's |
+| null lines | `SideEventDirector`: `"stage_14" => null` to `"stage_19" => null`. `ChapterRulesCatalog`: the same six, with `stage_15`, `stage_17` and `stage_18` added to `Designed` (section 7's tide and sluices, dawn, fronts) |
+| the validators | `RegressionChecks.FarShore.cs` (new): `ValidateFarShore` in `RunAll`, and `ValidateFarShoreGateReachability`, called at the end of `ValidateGateReachability`. `ValidateCampaign` lets a far chapter be gated other than `Open` outside the campaign, and refuses `FarShore` inside it. `ValidateWorldMap`'s off-picture check covers both orders |
+
+**The gate as built.** "Every wizard a place holds" is `CountsTowardFarShore`: a character whose source deed
+is done in a campaign chapter by its warden, its side event or a secret there. That is every chapter wizard,
+Tituba, Väinämöinen, Merlin, Laelaps, and Nimue (whom Taken Back frees anyway). It is not the Dark Wizard (his
+deed is a difficulty, done nowhere), John Dee (a Feat), a starter, or anyone freed on the far shore. **One thing
+the doc did not know:** in the code the Throne's gate already counts John Dee (every gate counts a Feat's
+wizard), so a save that has won the Throne has him anyway. The far shore's own rule leaves him out as 6.1 says,
+and the difference never shows. Taken Back reads the deed or his fall in the lifetime record, and the Grimoire
+reads the deed or every spell owned, so a save is not held back by a deed not yet evaluated.
+
+**Decisions F0 made.**
+
+1. **No world map places.** The map is F5's. `ValidateWorldMap` already lets an unplayable chapter stand off
+   the map (`.ai/endgame-castle.md` 11.4, decision 1) and `WorldMap.BuildStops` leaves it out quietly, so
+   `tools/art/world_map.py` was not touched. A missing place is on each chapter's far-shore to-do line, and a
+   chapter that flips without one is a fault.
+2. **No new `StageEnvironmentKind`.** Every value of that enum is held to a profile and by five ground
+   validators, so a kind with no ground behind it would be a fault. Each chapter borrows a road kind until its
+   piece adds its own, in a slot marked for it.
+3. **No bosses, casts or deeds.** A boss needs a deed that pays it, and a far warden's deed pays its god, which
+   is F1 and after. A stand-in boss with an Arcane deed would have been a deed to rewrite later. Their slots
+   are marked.
+4. **The far-shore to-do is printed, not warned.** One `RegressionChecks: far shore to-do` line a chapter (warden,
+   god's deed, cast, borrowed ground, music, side event, rules where designed, secrets, map place). It becomes a
+   **warning** the moment a chapter is playable, so no far chapter can flip with a stand-in left. Six chapters
+   are a long build, and six standing warnings would hide real ones, so the validator stays at its baseline
+   (0 errors, 1 warning: `test_wizard`).
+5. **Notes and difficulty rows now.** The validator asks for them only of playable chapters, but writing them now
+   means no flip can lose them, and `ValidateFarShore` holds every far chapter to both.
+
+**Who owns what (the marked blocks).** Every slot is a comment line naming its piece, with a "leave this one as
+it is" line between neighbours, so two pieces' edits never touch adjacent lines.
+
+| piece | edits only its own block in |
+|---|---|
+| F1 | god plumbing is its own to mark: `ComboCatalog` openers, `ApotheosisCatalog` forms, `UnlockCatalog` god entries, `Freeings.WizardIds`, `CharacterRoster`. **Gods are appended to `CharacterRoster` in the order they merge, never into pre-marked slots**: a roster index is what a save and `--character=N` keep |
+| F2 (Artemis), and the god in F6-F10 | `QuestLog.Prisoners`, its god's line (epithet, held, rekindled from 6.3) |
+| F3, F6-F10 (each chapter) | `StageCatalog`, its own entry (its `EnvironmentKind`, then `IsPlayable = true` last); `StageEnvironmentKind` and the profile slot in `StageEnvironmentCatalog`; `LevelGenerator` palette; `GroundDetail`; `Node2DGame.BuildDecorProps` (only if needed); `BossCatalog` `[14]`-`[19]`; `AchievementDefinitions`, its warden's deed and its side event's words; `StageBestiary.All`; `SecretCatalog.Defined`; `Foliage.All`; `StageHintCatalog`; `ChapterNotes`, its note and its site clue; `SideEventDirector` and `ChapterRulesCatalog`, its null line; `MusicCatalog`, its set and row; `ChapterDifficultyCatalog`, its row |
+| F4 | `AchievementDefinitions`: Under the Far Sky and Every Conjunction Known, in the slots marked F4 (`Teachings` and the far sky are its own files) |
+| F5 | `tools/art/world_map.py` alone. `RoadOrder` already places the far shore, and the card and compass already read it |
+| F10 | `AchievementDefinitions`: Every Seat Lit and All the Gods' Forms. Section 9 named no piece for these two, so they are given to the piece that can first measure them |
+
+**Verified.**
+
+- `dotnet build`: 0 errors, 49 warnings (the baseline's count).
+- The validator (`MainMenu.tscn --quit-after 300 -- --no-save-writes --validate-content`): **0 errors and 1
+  warning** (`test_wizard`), the baseline's, with `ValidateFarShore` and the far-shore gate reachability inside
+  it. The walk proves a brand-new save that does everything on the campaign earns the White Downs' gate. Each
+  half is proved needed (no Throne; one spell short; each counted wizard held), and the Dark Wizard and John Dee
+  are proved not needed. `ValidateGateReachability` still passes for the Emberdeep and the Throne.
+- **Shown to fire** by breaking what they guard, in a scratch build that was not committed:
+  - `stage_15` added to `CampaignOrder`: "in CampaignOrder too", "FinalChapter is a far chapter", and the whole
+    road no longer finishable.
+  - The Bronze Isle flipped playable: "playable but still has stand-ins" and "no playable far chapter before it".
+  - The Grimoire dropped from the gate: "opens with 'arcane_explosion' still unrecovered".
+  - The first stop revealed without Taken Back: "a new save is shown The White Downs".
+- `_UiShot --scene=res://scenes/WorldMap.tscn --all-unlocked --map-at=stage_13` at 1280x720, windowed. On a save
+  with everything, whose opened list holds `stage_14`-`stage_19`, the map still ends at the Throne ("Chapter 13 of
+  13", compass 10-13). No far stop, no mark, no error. The old `StageSelection` list hides any chapter that
+  `IsStageAvailable` refuses, and an unplayable chapter is always refused.
+
+**Not run.** No far chapter as a run (`--stage=14` would play the borrowed ground with the Cursed Dungeon's cast,
+as the castle's stand-ins did). No phone canvas, because F0 drew nothing. `_BalanceHarness` was not run either:
+no code on a road run's path changed except the order-aware lookups, which answer as before for every campaign
+chapter.

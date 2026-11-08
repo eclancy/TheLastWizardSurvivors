@@ -144,6 +144,18 @@ public static class AchievementManager
 				Source = "Every wizard on the road is free",
 			});
 		}
+		// The far shore's first chapter, once its gate is met and it is built (.ai/second-half.md 6.1): written
+		// open for good, as a gate chapter is. Writes nothing while the White Downs are a stand-in.
+		foreach (StageDefinition shore in GlobalStatsManager.RecordMetFarShore(data))
+		{
+			summary.Entries.Add(new RunUnlockEntry
+			{
+				Kind = RunUnlockKind.Chapter,
+				Id = shore.Id,
+				Name = shore.DisplayName,
+				Source = "Every spell recovered and every wizard free",
+			});
+		}
 
 		return summary;
 	}

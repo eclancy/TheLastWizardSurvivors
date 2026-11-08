@@ -163,6 +163,28 @@ public static class MusicCatalog
 	/// <summary>The Throne: the heaviest piece. A minor with B flat and G sharp, 4/4 at 104 in half time, 27.7 s.</summary>
 	public static readonly MusicSet Throne = PlannedChapter("throne", Emberdeep);
 
+	// THE FAR SHORE (.ai/second-half.md 4.3, F0): six planned sets, each playing the nearest road chapter's set
+	// until its own stems are rendered (tools/audio/music_<id>.py, then import) - which switches it on with no
+	// edit here. Each line is its chapter's piece's (F3, F6-F10) if the stand-in or the summary changes.
+
+	/// <summary>The White Downs (F3), planned. The Broken Circle's set until rendered.</summary>
+	public static readonly MusicSet Downs = PlannedChapter("downs", Heath);
+
+	/// <summary>The Drowned Shore (F6), planned. The Sunken Cave's set until rendered.</summary>
+	public static readonly MusicSet Drowned = PlannedChapter("drowned", Cave);
+
+	/// <summary>The Three Ways (F7), planned. The Mystic Ruins' set until rendered.</summary>
+	public static readonly MusicSet Ways = PlannedChapter("ways", Ruins);
+
+	/// <summary>The Twelfth Hour (F8), planned. The Scorched Sands' set until rendered.</summary>
+	public static readonly MusicSet Twelfth = PlannedChapter("twelfth", Sands);
+
+	/// <summary>The Thunder Fell (F9), planned. The Frozen Waste's set until rendered.</summary>
+	public static readonly MusicSet Fell = PlannedChapter("fell", Frozen);
+
+	/// <summary>The Bronze Isle (F10), planned. The Emberdeep's set until rendered.</summary>
+	public static readonly MusicSet Bronze = PlannedChapter("bronze", Emberdeep);
+
 	/// <summary>
 	/// The set any chapter without its own row plays. Every chapter has one today; the fallback
 	/// stays because a chapter in the wrong key is a better failure than a chapter in silence -
@@ -187,6 +209,13 @@ public static class MusicCatalog
 		[11] = Bridge,
 		[12] = Court,
 		[13] = Throne,
+		// The far shore (F0): a row a chapter, its piece's.
+		[14] = Downs,
+		[15] = Drowned,
+		[16] = Ways,
+		[17] = Twelfth,
+		[18] = Fell,
+		[19] = Bronze,
 	};
 
 	// A planned chapter names its boss layer too: it plays the shared loop until <id>_boss.wav is

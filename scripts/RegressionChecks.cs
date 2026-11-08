@@ -69,6 +69,7 @@ public static partial class RegressionChecks
 		ValidateCampaignMigration(warnings);
 		ValidateDungeonMove(warnings);
 		ValidateGateReachability(warnings);
+		ValidateFarShore(warnings);
 		ValidateAchievementMigration(warnings);
 		ValidateRetiredChargeRefund(warnings);
 		ValidateDifficultyMigration(warnings);
@@ -834,9 +835,9 @@ public static partial class RegressionChecks
 				warnings.Add($"World map: the road reaches {name} before {lastName}, against the stop order (WorldMap.RoadOrder) - reorder PLACES in tools/art/world_map.py.");
 			last = Math.Max(last, stop.ArcLength);
 			lastName = name;
-			if (!isRush && StageCatalog.IsInCampaign(stage)
+			if (!isRush && StageCatalog.IsInEitherOrder(stage)
 				&& (!stop.OnMap || stop.Focus.X < 0 || stop.Focus.Y < 0 || stop.Focus.X > map.Size.X || stop.Focus.Y > map.Size.Y))
-				warnings.Add($"World map: {stage.DisplayName} is a campaign chapter but stands off the world picture.");
+				warnings.Add($"World map: {stage.DisplayName} is a chapter of the road or the far shore but stands off the world picture.");
 		}
 		// Eric, 2026-10-30: "sketchbook level should not be attached to the map ... it shows up as its own
 		// separate map". A stop for it would put it back in the road's flow and on the compass.
@@ -2610,8 +2611,11 @@ public static partial class RegressionChecks
 		foreach (StageDefinition stage in StageCatalog.All)
 		{
 			bool inCampaign = StageCatalog.IsInCampaign(stage);
-			if (!inCampaign && stage.Gate != StageGate.Open)
+			// The far shore is an order of its own (.ai/second-half.md 7): its gates are ValidateFarShore's.
+			if (!inCampaign && !StageCatalog.IsOnFarShore(stage) && stage.Gate != StageGate.Open)
 				warnings.Add($"Campaign: {stage.DisplayName} ({stage.Id}) is outside the order but gated {stage.Gate}, so nothing could ever open it.");
+			if (inCampaign && stage.Gate == StageGate.FarShore)
+				warnings.Add($"Campaign: {stage.DisplayName} is on the campaign's road but gated FarShore, which only the far shore's first chapter is.");
 			if (inCampaign && stage.Gate == StageGate.Open && StageCatalog.CampaignPositionOf(stage.Id) > 0)
 				warnings.Add($"Campaign: {stage.DisplayName} is in the middle of the order but always open, so the chapters before it gate nothing.");
 			// Reached once the campaign is finished (the Sketchbook's page, .ai/world-map.md section 4): it
@@ -3152,12 +3156,13 @@ public static partial class RegressionChecks
 
 	// The difficulty curve's table (.ai/difficulty-curve.md, section 4): every playable road chapter has a
 	// row; every multiplier is positive; enemy damage is never under 1 (under it a touch can roll nothing
-	// and read as a dodge) and never eases along the road; the first chapter is the easiest by health.
+	// and read as a dodge) and never eases along the road; the first chapter is the easiest by health. The far
+	// shore is read after the campaign (.ai/second-half.md 7), so its rows never ease below the Throne's.
 	private static void ValidateChapterDifficulty(List<string> warnings)
 	{
 		float lastDamage = 1f;
 		ChapterDifficulty first = null;
-		foreach (StageDefinition stage in StageCatalog.Campaign)
+		foreach (StageDefinition stage in StageCatalog.Campaign.Concat(StageCatalog.FarShore))
 		{
 			if (!stage.IsPlayable)
 				continue;
@@ -3650,6 +3655,9 @@ public static partial class RegressionChecks
 					warnings.Add($"Gate reachability: {gate.DisplayName} opens with '{missing}' still held.");
 			}
 		}
+
+		// The far shore's gate, the same two ways (.ai/second-half.md 7; RegressionChecks.FarShore.cs).
+		ValidateFarShoreGateReachability(warnings);
 	}
 
 	// THE WHOLE ROAD, TWICE (.ai/dark-wizard-playable.md, .ai/merlin.md). Eric, 2026-11-02: the Dark Wizard "should

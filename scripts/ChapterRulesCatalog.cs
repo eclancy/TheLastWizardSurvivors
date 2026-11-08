@@ -31,6 +31,21 @@ public static class ChapterRulesCatalog
 		// The Throne (piece C4): the pinned pace clock, the Muster, the procession, the throne and the doors
 		// behind it as the way home (ThroneRules.cs, ThroneProcession.cs).
 		"stage_13" => () => new ThroneRules(),
+		// THE FAR SHORE (.ai/second-half.md 7, F0): a pre-placed null line per chapter, each its piece's to fill if
+		// its chapter needs rules. Three are designed (Designed, below): the Drowned Shore's tide and the Weir's
+		// sluices, the Twelfth Hour's dawn on the pace clock, the Thunder Fell's storm fronts.
+		// F3: the White Downs (rules only if the barrows need placing).
+		"stage_14" => null,
+		// F6: the Drowned Shore - designed.
+		"stage_15" => null,
+		// F7: the Three Ways (rules only if the hedged roads need them).
+		"stage_16" => null,
+		// F8: the Twelfth Hour - designed.
+		"stage_17" => null,
+		// F9: the Thunder Fell - designed.
+		"stage_18" => null,
+		// F10: the Bronze Isle (rules only if the walled yards or Talos's rim need them).
+		"stage_19" => null,
 		_ => null,
 	};
 
@@ -41,7 +56,9 @@ public static class ChapterRulesCatalog
 	/// </summary>
 	public static IReadOnlyList<string> Designed => DesignedIds;
 
-	private static readonly string[] DesignedIds = { "stage_11", "stage_12", "stage_13" };
+	// The castle's three, and the far shore's three designed (.ai/second-half.md 7; RegressionChecks.ValidateFarShore
+	// names each on its to-do line until its line above is filled).
+	private static readonly string[] DesignedIds = { "stage_11", "stage_12", "stage_13", "stage_15", "stage_17", "stage_18" };
 
 	/// <summary>True for a chapter whose rules are designed but whose line is still the null placeholder.</summary>
 	public static bool IsAwaitingRules(string stageId) =>

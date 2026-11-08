@@ -21,6 +21,15 @@ public enum StageGate
 	/// The boss alone never writes the chapter open (StageCatalog.ChapterOpenedBy skips it).
 	/// </summary>
 	PreviousBossAndWizards,
+	/// <summary>
+	/// The far shore's first chapter (.ai/second-half.md 6.1): opened by Taken Back (the Throne won), The
+	/// Grimoire Restored (every spell recovered) and every wizard a place on the road holds, Merlin and Laelaps
+	/// among them - never the Dark Wizard (a difficulty) or John Dee (a grind). It stands in the far shore's own
+	/// order (StageCatalog.FarShore), never in the campaign's, so it has no previous chapter: its gate is the
+	/// whole road behind it, read by GlobalStatsManager.IsFarShoreGateMet. Every later far chapter is
+	/// <see cref="PreviousBoss"/> in the far shore's order.
+	/// </summary>
+	FarShore,
 }
 
 public sealed class StageDefinition
@@ -266,6 +275,96 @@ public static class StageCatalog
 			// Flipped 2026-11-02 with the Court (Eric: "You can switch all of that on").
 			IsPlayable = true,
 		},
+		// THE FAR SHORE (.ai/second-half.md; Eric accepted section 8 on 2026-11-08, the half named "The Far Shore").
+		// Six gods' seats across the dark sea, east of his rock: new ids, appended, never renumbered (campaign.md 3).
+		// They stand in FarShoreOrder below, NEVER in CampaignOrder - appending them there would add six Hardcore
+		// clears to the Dark Wizard's deed and to The Road Restored, and hold the Sketchbook shut until the far
+		// shore was done (section 7). Built by F0 as stand-ins: not playable, so no save, screen or run reaches
+		// them, and each borrows another chapter's ground (EnvironmentKind) until its own piece gives it one.
+		//
+		// EACH ENTRY IS ITS OWN PIECE'S (section 9): F3 the White Downs, F6 the Drowned Shore, F7 the Three Ways,
+		// F8 the Twelfth Hour, F9 the Thunder Fell, F10 the Bronze Isle. A piece edits only its own block - its
+		// EnvironmentKind once its ground exists, and IsPlayable = true LAST, once RegressionChecks' far shore
+		// to-do line for it is gone. The texts are section 4.2's; the corruption line is its column.
+		new()
+		{
+			// F3's block.
+			Id = "stage_14", Index = 14,
+			DisplayName = "The White Downs",
+			TerrainCategory = "Chalk downland",
+			FlavorText = "Chalk downland at night: white turf, flint and barrows, and a hound and a hart cut in the hills.",
+			CorruptionText = "No moon has risen here since he came.",
+			// Stand-in ground: the Broken Circle's heath, the nearest open upland.
+			EnvironmentKind = StageEnvironmentKind.Heath,
+			Gate = StageGate.FarShore,
+			IsPlayable = false,
+		},
+		new()
+		{
+			// F6's block.
+			Id = "stage_15", Index = 15,
+			DisplayName = "The Drowned Shore",
+			TerrainCategory = "Tide sand and channel",
+			FlavorText = "The seabed the tide left: ribbed wet sand, weed and wrecks, and the sea standing off at the horizon.",
+			CorruptionText = "The sea was told to stay out.",
+			// Stand-in ground: the Swamp's standing water and reed.
+			EnvironmentKind = StageEnvironmentKind.Swamp,
+			Gate = StageGate.PreviousBoss,
+			IsPlayable = false,
+		},
+		new()
+		{
+			// F7's block.
+			Id = "stage_16", Index = 16,
+			DisplayName = "The Three Ways",
+			TerrainCategory = "Hedged roads",
+			FlavorText = "A dry night country of roads that fork in three, yew hedge between them and a cold torch at every fork.",
+			CorruptionText = "Every torch at every crossing is out.",
+			// Stand-in ground: the Forest's, for its hedges.
+			EnvironmentKind = StageEnvironmentKind.Forest,
+			Gate = StageGate.PreviousBoss,
+			IsPlayable = false,
+		},
+		new()
+		{
+			// F8's block.
+			Id = "stage_17", Index = 17,
+			DisplayName = "The Twelfth Hour",
+			TerrainCategory = "Black sand avenue",
+			FlavorText = "An avenue of sphinxes and pylon gates on black sand beside a still river, in a night that has not ended.",
+			CorruptionText = "The sun did not rise.",
+			// Stand-in ground: the Sands'. Its darkness and the dawn on the pace clock are F8's (section 7).
+			EnvironmentKind = StageEnvironmentKind.Desert,
+			Gate = StageGate.PreviousBoss,
+			IsPlayable = false,
+		},
+		new()
+		{
+			// F9's block.
+			Id = "stage_18", Index = 18,
+			DisplayName = "The Thunder Fell",
+			TerrainCategory = "Bare granite fell",
+			FlavorText = "Bare granite above the treeline, cairns and lightning-split pines, under a storm that never breaks.",
+			CorruptionText = "The storm was told never to break.",
+			// Stand-in ground: the Frozen Waste's, high and bare.
+			EnvironmentKind = StageEnvironmentKind.Ice,
+			Gate = StageGate.PreviousBoss,
+			IsPlayable = false,
+		},
+		new()
+		{
+			// F10's block.
+			Id = "stage_19", Index = 19,
+			DisplayName = "The Bronze Isle",
+			TerrainCategory = "Bronze yards",
+			FlavorText = "A god's workshop island gone cold: bronze yards in verdigris, anvils as tall as houses, dead bellows.",
+			CorruptionText = "The god's forge is cold.",
+			// Stand-in ground: the Cursed Dungeon's walled lattice, for the walled yards. No lava, ever: the
+			// Emberdeep is his forge, this is a god's put out (section 4.2).
+			EnvironmentKind = StageEnvironmentKind.Castle,
+			Gate = StageGate.PreviousBoss,
+			IsPlayable = false,
+		},
 	};
 
 	// THE CAMPAIGN, IN THE ORDER IT IS PLAYED - and the only place that order is written.
@@ -308,7 +407,27 @@ public static class StageCatalog
 		"stage_13", // 13 The Throne - the procession, then him (the Seneschal and every wizard first; not yet playable)
 	};
 
+	// THE FAR SHORE, IN THE ORDER IT IS PLAYED (.ai/second-half.md 4.2, 7) - the second order, and the only place
+	// it is written. Kept apart from CampaignOrder on purpose: GlobalStatsManager.ChaptersClearedAt counts every
+	// chapter of the Campaign for the Dark Wizard's Hardcore deed and The Road Restored, and LastPlayableChapter
+	// (what opens the Sketchbook) is the campaign's, so neither moves when the far shore grows. RegressionChecks'
+	// ValidateFarShore holds that no id is in both.
+	//
+	// The first is gated FarShore (Taken Back, every spell, every wizard a place holds); every later one opens on
+	// the boss of the playable far chapter before it - PreviousChapter and ChapterOpenedBy read the order a
+	// chapter is in, and skip an unbuilt one, as the campaign's do. A line a chapter, each its piece's alone.
+	private static readonly string[] FarShoreOrder =
+	{
+		"stage_14", // 1 The White Downs - the Unstrung Hunter; Artemis (F3 the chapter, F2 the god)
+		"stage_15", // 2 The Drowned Shore - the Weir; Manannan mac Lir (F6)
+		"stage_16", // 3 The Three Ways - the Three-Faced; Hecate (F7)
+		"stage_17", // 4 The Twelfth Hour - the Eclipse; Ra (F8)
+		"stage_18", // 5 The Thunder Fell - the Still Eye; Ukko (F9)
+		"stage_19", // 6 The Bronze Isle - Talos; Hephaestus (F10)
+	};
+
 	private static StageDefinition[] campaign;
+	private static StageDefinition[] farShore;
 
 	public static IReadOnlyList<StageDefinition> All => Stages;
 
@@ -321,19 +440,53 @@ public static class StageCatalog
 	/// <summary>The raw order, ids as written, for validation - including any id that names no stage.</summary>
 	public static IReadOnlyList<string> CampaignOrderIds => CampaignOrder;
 
+	/// <summary>The far shore's chapters in the order they are played (.ai/second-half.md 4.2). Never in <see cref="Campaign"/>.</summary>
+	public static IReadOnlyList<StageDefinition> FarShore =>
+		farShore ??= FarShoreOrder.Select(GetById).Where(s => s != null).ToArray();
+
+	/// <summary>The far shore's raw order, ids as written, for validation.</summary>
+	public static IReadOnlyList<string> FarShoreOrderIds => FarShoreOrder;
+
 	/// <summary>
-	/// Every stage in the order the stage select lists them: the campaign as it is played, then the
-	/// chapters outside it in roster order.
+	/// Every stage in the order the stage select lists them: the campaign as it is played, then the far
+	/// shore as it is played, then the chapters outside both in roster order.
 	/// </summary>
 	public static IEnumerable<StageDefinition> InDisplayOrder =>
-		Campaign.Concat(Stages.Where(s => !IsInCampaign(s)));
+		Campaign.Concat(FarShore).Concat(Stages.Where(s => !IsInEitherOrder(s)));
 
-	/// <summary>0-based position in the campaign, or -1 for a chapter outside it.</summary>
-	public static int CampaignPositionOf(string stageId)
+	/// <summary>0-based position on the far shore, or -1 for a chapter not on it.</summary>
+	public static int FarShorePositionOf(string stageId) => PositionIn(FarShore, stageId);
+
+	public static bool IsOnFarShore(StageDefinition stage) => stage != null && FarShorePositionOf(stage.Id) >= 0;
+
+	/// <summary>A chapter of either order - the campaign or the far shore - rather than one outside both (the Sketchbook).</summary>
+	public static bool IsInEitherOrder(StageDefinition stage) => IsInCampaign(stage) || IsOnFarShore(stage);
+
+	/// <summary>
+	/// 0-based position across both orders: the campaign's chapters, then the far shore's after them. -1 for a
+	/// chapter outside both. For whatever lists every chapter in the order it is reached (the quest chain, the
+	/// deeds page) - never for a gate, which reads the order its own chapter is in.
+	/// </summary>
+	public static int OrderedPositionOf(string stageId)
+	{
+		int position = CampaignPositionOf(stageId);
+		if (position >= 0)
+			return position;
+		int far = FarShorePositionOf(stageId);
+		return far >= 0 ? Campaign.Count + far : -1;
+	}
+
+	// The order a chapter stands in, for the two rules that walk it (PreviousChapter, ChapterOpenedBy): the
+	// campaign's, the far shore's, or none.
+	private static IReadOnlyList<StageDefinition> OrderOf(string stageId) =>
+		CampaignPositionOf(stageId) >= 0 ? Campaign
+		: FarShorePositionOf(stageId) >= 0 ? FarShore
+		: Array.Empty<StageDefinition>();
+
+	private static int PositionIn(IReadOnlyList<StageDefinition> order, string stageId)
 	{
 		if (string.IsNullOrWhiteSpace(stageId))
 			return -1;
-		IReadOnlyList<StageDefinition> order = Campaign;
 		for (int i = 0; i < order.Count; i++)
 		{
 			if (order[i].Id.Equals(stageId.Trim(), StringComparison.OrdinalIgnoreCase))
@@ -342,6 +495,9 @@ public static class StageCatalog
 		return -1;
 	}
 
+	/// <summary>0-based position in the campaign, or -1 for a chapter outside it (the far shore's included).</summary>
+	public static int CampaignPositionOf(string stageId) => PositionIn(Campaign, stageId);
+
 	public static bool IsInCampaign(StageDefinition stage) => stage != null && CampaignPositionOf(stage.Id) >= 0;
 
 	/// <summary>What the world map's card says over a chapter that is not on the road (the Sketchbook).</summary>
@@ -349,14 +505,18 @@ public static class StageCatalog
 
 	/// <summary>
 	/// Where a chapter is, in the words the world map's card uses over its name (WorldMap.RebuildCard): "Chapter N"
-	/// by its place on the road (CampaignOrder), or <see cref="OffRoadPlace"/> for one outside it. The pause screen
-	/// and the results numbered chapters by their roster index, so the Fallow Fields, second on the road, called
-	/// itself Chapter 10 under a map that said "Chapter 2 of 10".
+	/// by its place on the road (CampaignOrder), "Far Shore N" by its place across the water (FarShoreOrder), or
+	/// <see cref="OffRoadPlace"/> for one outside both. The pause screen and the results numbered chapters by their
+	/// roster index, so the Fallow Fields, second on the road, called itself Chapter 10 under a map that said
+	/// "Chapter 2 of 10".
 	/// </summary>
 	public static string ChapterPlace(StageDefinition stage)
 	{
 		int position = stage == null ? -1 : CampaignPositionOf(stage.Id);
-		return position >= 0 ? $"Chapter {position + 1}" : OffRoadPlace;
+		if (position >= 0)
+			return $"Chapter {position + 1}";
+		int far = stage == null ? -1 : FarShorePositionOf(stage.Id);
+		return far >= 0 ? $"Far Shore {far + 1}" : OffRoadPlace;
 	}
 
 	/// <summary>The campaign's last chapter - the one his seat is in.</summary>
@@ -398,8 +558,10 @@ public static class StageCatalog
 
 	/// <summary>
 	/// The chapter whose boss opens <paramref name="stage"/> (or, for a gate chapter, is half its gate):
-	/// the nearest PLAYABLE chapter before it in the campaign. Null for the first chapter, for a chapter
-	/// outside the campaign, and for one that is not boss-gated.
+	/// the nearest PLAYABLE chapter before it in the order it stands in - the campaign's, or the far shore's
+	/// (.ai/second-half.md 7). Null for the first chapter of either order (the far shore's first is opened by
+	/// the whole road, <see cref="StageGate.FarShore"/>, not by a boss), for a chapter outside both, and for one
+	/// that is not boss-gated. Never a chapter of the other order.
 	/// </summary>
 	/// <remarks>
 	/// Playable, because a chapter that is not built yet has no boss anyone can beat. Skipping it is
@@ -410,29 +572,33 @@ public static class StageCatalog
 	{
 		if (stage == null || !IsBossGated(stage.Gate))
 			return null;
-		int position = CampaignPositionOf(stage.Id);
+		IReadOnlyList<StageDefinition> order = OrderOf(stage.Id);
+		int position = PositionIn(order, stage.Id);
 		for (int i = position - 1; i >= 0; i--)
 		{
-			if (Campaign[i].IsPlayable)
-				return Campaign[i];
+			if (order[i].IsPlayable)
+				return order[i];
 		}
 		return null;
 	}
 
 	/// <summary>
 	/// The chapter that beating <paramref name="stageId"/>'s boss opens: the nearest playable,
-	/// boss-gated chapter after it in the campaign. Null when the next chapter is opened some other
-	/// way or the stage is outside the campaign - and for a gate chapter, whose boss is only half of
-	/// it: a victory that wrote the gate into the opened list would open it without the wizards.
+	/// boss-gated chapter after it in the order it stands in. Null when the next chapter is opened some other
+	/// way or the stage is outside both orders - and for a gate chapter, whose boss is only half of
+	/// it: a victory that wrote the gate into the opened list would open it without the wizards. So the
+	/// Throne's fall opens nothing: the far shore is another order, and its first chapter's gate is
+	/// <see cref="StageGate.FarShore"/>.
 	/// </summary>
 	public static StageDefinition ChapterOpenedBy(string stageId)
 	{
-		int position = CampaignPositionOf(stageId);
+		IReadOnlyList<StageDefinition> order = OrderOf(stageId);
+		int position = PositionIn(order, stageId);
 		if (position < 0)
 			return null;
-		for (int i = position + 1; i < Campaign.Count; i++)
+		for (int i = position + 1; i < order.Count; i++)
 		{
-			StageDefinition next = Campaign[i];
+			StageDefinition next = order[i];
 			if (!next.IsPlayable)
 				continue;
 			return next.Gate == StageGate.PreviousBoss ? next : null;
@@ -464,6 +630,8 @@ public static class StageCatalog
 					? $"Sealed — defeat {MidSentence(gateBoss.DisplayName)} in the {StripArticle(before.DisplayName)} and free every wizard{road}"
 					: $"Sealed — free every wizard{road}";
 			}
+			case StageGate.FarShore:
+				return FarShoreLockedHint;
 			case StageGate.PreviousBoss:
 				StageDefinition previous = PreviousChapter(stage);
 				if (previous == null)
@@ -489,10 +657,33 @@ public static class StageCatalog
 	public static string LockedHintFor(StageDefinition stage, SaveData save)
 	{
 		string hint = LockedHintFor(stage);
-		if (save == null || stage == null || !stage.IsPlayable || stage.Gate != StageGate.PreviousBossAndWizards)
+		if (save == null || stage == null || !stage.IsPlayable)
+			return hint;
+		if (stage.Gate == StageGate.FarShore)
+			return FarShoreLockedHintFor(save);
+		if (stage.Gate != StageGate.PreviousBossAndWizards)
 			return hint;
 		List<string> held = GlobalStatsManager.HeldGateWizards(save, stage);
 		return held.Count == 0 ? hint : $"{hint}. Still held: {string.Join(", ", held)}";
+	}
+
+	/// <summary>The far shore's lock with no save in hand: the whole of its gate (.ai/second-half.md 6.1).</summary>
+	public const string FarShoreLockedHint = "Sealed — take back the Throne, recover every spell and free every wizard";
+
+	/// <summary>
+	/// The far shore's lock on this save: only what it still lacks (GlobalStatsManager.FarShoreGateMissing) -
+	/// "Sealed — recover 3 more spells" is the first stop's line once the Throne is won (6.2). Wizards by epithet,
+	/// never by name. Public apart from <see cref="LockedHintFor(StageDefinition, SaveData)"/>, which answers "still
+	/// being built" while the White Downs are unbuilt, so the validator can read the line the day they open.
+	/// </summary>
+	public static string FarShoreLockedHintFor(SaveData save)
+	{
+		List<string> missing = GlobalStatsManager.FarShoreGateMissing(save);
+		if (missing.Count == 0)
+			return FarShoreLockedHint;
+		string said = missing.Count == 1 ? missing[0]
+			: string.Join(", ", missing.Take(missing.Count - 1)) + " and " + missing[missing.Count - 1];
+		return "Sealed — " + said;
 	}
 
 	// "the The Emberdeep" is what a hint built from a name that already carries its article reads as.

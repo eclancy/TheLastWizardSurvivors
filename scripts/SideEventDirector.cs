@@ -142,6 +142,20 @@ public partial class SideEventDirector : Node
 			new SideEventEntry("dotted_door", () => new DottedDoorEvent())),
 		// (the Throne's line is below)
 		"stage_13" => null,
+		// THE FAR SHORE (.ai/second-half.md 4.3, F0): one side event a chapter, held to unlock-puzzles.md's rule and
+		// paying Arcane Energy and a keepsake. Each line is its chapter's piece's; the comments keep them apart.
+		// F3: the White Downs.
+		"stage_14" => null,
+		// F6: the Drowned Shore.
+		"stage_15" => null,
+		// F7: the Three Ways.
+		"stage_16" => null,
+		// F8: the Twelfth Hour.
+		"stage_17" => null,
+		// F9: the Thunder Fell.
+		"stage_18" => null,
+		// F10: the Bronze Isle.
+		"stage_19" => null,
 		_ => null,
 	};
 

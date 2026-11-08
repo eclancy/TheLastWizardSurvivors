@@ -227,6 +227,19 @@ public static partial class SecretCatalog
 		Bridge.Build(),
 		Court.Build(),
 		Throne.Build(),
+		// THE FAR SHORE (.ai/second-half.md 4.3, marked by F0): two or three secrets a chapter, in
+		// SecretCatalog.<Chapter>.cs; each piece replaces its own comment line with its Build().
+		// F3: WhiteDowns.Build(),
+		// (F6's line is below; leave this one as it is)
+		// F6: DrownedShore.Build(),
+		// (F7's line is below; leave this one as it is)
+		// F7: ThreeWays.Build(),
+		// (F8's line is below; leave this one as it is)
+		// F8: TwelfthHour.Build(),
+		// (F9's line is below; leave this one as it is)
+		// F9: ThunderFell.Build(),
+		// (F10's line is below; leave this one as it is)
+		// F10: BronzeIsle.Build(),
 	}.SelectMany(chapter => chapter).ToArray();
 
 	/// <summary>Every secret in the world: the built ones. What the screens and the world map count.</summary>

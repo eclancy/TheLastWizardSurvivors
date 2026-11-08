@@ -363,6 +363,19 @@ public static class StageHintCatalog
 				"Slower now. It has not stopped.",
 			},
 		},
+		// THE FAR SHORE (.ai/second-half.md 4.3, marked by F0): each chapter's side event wants its hint; each
+		// piece replaces its own comment line with its new() block.
+		// F3 (White Downs)
+		// (F6's line is below; leave this one as it is)
+		// F6 (Drowned Shore)
+		// (F7's line is below; leave this one as it is)
+		// F7 (Three Ways)
+		// (F8's line is below; leave this one as it is)
+		// F8 (Twelfth Hour)
+		// (F9's line is below; leave this one as it is)
+		// F9 (Thunder Fell)
+		// (F10's line is below; leave this one as it is)
+		// F10 (Bronze Isle)
 	};
 
 	/// <summary>Every hint written - the real ones; a tool run's stand-in is answered by <see cref="ForSite"/> alone.</summary>

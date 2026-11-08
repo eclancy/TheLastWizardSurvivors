@@ -240,7 +240,21 @@ public static class BossCatalog
 			// seconds; a player who takes them back deals more.
 			Health = 30000,
 			ArcaneVictoryBonus = 450
-		}
+		},
+		// THE FAR SHORE'S WARDENS (.ai/second-half.md 4.2, marked by F0). None yet: a boss needs a deed that pays it
+		// (its god's, AchievementDefinitions), and the gods are F1's and after. Each chapter's piece replaces its own
+		// comment line with its block; a far chapter with no boss here is on its to-do line (ValidateFarShore).
+		// [14] F3: the Unstrung Hunter - "put a barrow between you".
+		// (F6's line is below; leave this one as it is)
+		// [15] F6: the Weir - "keep to the high ground".
+		// (F7's line is below; leave this one as it is)
+		// [16] F7: the Three-Faced - "stand where no face looks".
+		// (F8's line is below; leave this one as it is)
+		// [17] F8: the Eclipse - "bring it the light, then strike".
+		// (F9's line is below; leave this one as it is)
+		// [18] F9: the Still Eye - "stay in the eye as it moves".
+		// (F10's line is below; leave this one as it is)
+		// [19] F10: Talos - "get to the heel".
 	};
 
 	/// <summary>
