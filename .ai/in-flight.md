@@ -964,15 +964,21 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     read `.ai/releasing.md` "The rename" and `.ai/game-name.md` first - the first one's list of what keeps the old
     name on purpose ALL still holds, and now "The One He Missed" joins it wherever changing it would strand a copy
     or a save. The pieces, in order:
-    - **The save folder must not move.** Godot names the desktop `user://` folder after `config/name`, and Windows
-      forbids ":" in a folder name. Pin it: `application/config/use_custom_user_dir=true` with
-      `custom_user_dir_name="The One He Missed"`, so every save stays exactly where it is and no carry-over is
-      needed. Prove it on a copy of a real save folder before anything ships.
-    - **The game:** `config/name`, the window title, the Android label (`package/name`; never the package id), every
-      player-facing line, the title screen's lettering (`tools/art/splash.py`, `splash_wide.py`, `hero.py`), the
-      icon's text if any, `README.md`, `CLAUDE.md`, `.ai/game-name.md`. Internal identifiers (`TheOneHeMissed`
-      namespace, assembly, solution, release file names, env vars, the keystore) keep the old name if changing them
-      would break updates; decide each against `.ai/releasing.md`.
+    - **The save folder must not move - so `config/name` stays "The One He Missed".** Godot names the desktop
+      `user://` folder after `config/name` (`%APPDATA%\Godot\app_userdata\<name>`), and Windows forbids ":" in a
+      folder name. NOT `use_custom_user_dir`: Godot puts a custom dir directly under `%APPDATA%`, which would move
+      every save (corrected 2026-11-08 before anything was built). Instead `config/name` becomes an internal
+      identifier, kept like the Android package id, and the name is shown everywhere a player sees one: the
+      window title set at startup (`GetWindow().Title`), the Android label (`package/name`), the Windows product
+      name and file description (the export preset), the Linux `.desktop` Name (`install.sh`), the installer's
+      display name (`installer.iss`, never its `AppId`).
+    - **The game:** every player-facing line (the update screen, the bug report's confirmation, the startup error
+      report, the save-export filter; NOT the story's own "the one he missed" - the Court's quatrain and the
+      ending's line stay, they are the premise), the title screen's lettering (`tools/art/splash.py`,
+      `splash_wide.py`, `hero.py`), `README.md`, `CLAUDE.md`, `.ai/game-name.md`. Internal identifiers
+      (`TheOneHeMissed` namespace, assembly, solution, release file names, env vars, the keystore, the bug report's
+      `game` field if the intake keys on it) keep the old name where changing them would break updates; decide each
+      against `.ai/releasing.md`.
     - **Updates:** `ecec.dev/the-one-he-missed/version.json` is baked into every copy since 0.12.0 and must answer
       forever, as `/wizard-survivors/` still does. Any new address is added beside it, never instead.
     - **The repo** (`eclancy/TheOneHeMissed`): GitHub redirects a renamed repo's URLs, release downloads included,
