@@ -832,8 +832,53 @@ def pages():
 
 
 # The shop's order (MainMenu.BuildUpgradeDefinitions), which is also the preview sheet's.
+def boon_slots():
+    """Reliquary Shelf: a wall shelf with one closed reliquary on it and, beside it, an empty arched niche
+    holding nothing but his light - the boon slot still to be filled (+1 boon slot, item 41)."""
+    c = raster.Canvas(CELL, CELL, None)
+    w_hi, w_lit, w_base, w_shade, w_deep = _ramp("amber")
+    g_hi, g_lit, g_base, g_shade, g_deep = _ramp("gold")
+    # The shelf: a plank lit along its top, on two brackets.
+    c.hline(3, 28, 20, w_lit)
+    c.hline(3, 28, 21, w_base)
+    c.hline(3, 28, 22, w_shade)
+    c.set(3, 20, w_hi)
+    for bx in (7, 23):
+        for (dy, half) in ((0, 2), (1, 2), (2, 1), (3, 1), (4, 0)):
+            c.hline(bx - half, bx + half, 23 + dy, w_shade if dy < 2 else w_deep)
+    # The reliquary: a gold casket with a hump of a lid, lit on its upper left, a violet stone in its face.
+    c.rect(5, 13, 14, 19, g_base)
+    c.hline(5, 14, 13, g_lit)
+    c.vline(5, 13, 19, g_lit)
+    c.vline(14, 14, 19, g_shade)
+    c.hline(5, 14, 19, g_deep)
+    for (x0, x1, y) in ((7, 12, 10), (6, 13, 11), (5, 14, 12)):
+        c.hline(x0, x1, y, g_lit if y == 10 else g_base)
+    c.set(7, 10, g_hi)
+    c.hline(5, 14, 16, g_shade)                        # the lid's seam
+    c.rect(9, 14, 10, 15, T("violet", "base"))
+    c.set(9, 14, T("violet", "lit"))
+    c.hline(5, 14, 20, w_shade)                        # its shadow on the plank
+    # The empty niche: an arch cut into the wall, dark inside, and in it only the cold point of his light.
+    for y in range(9, 20):
+        half = 4 if y > 11 else (3 if y > 9 else 2)
+        c.hline(21 - half, 21 + half, y, T("stone", "deep"))
+    c.vline(17, 12, 19, g_shade)
+    c.vline(25, 12, 19, g_shade)
+    c.set(18, 10, g_shade)
+    c.set(18, 11, g_shade)
+    c.set(24, 10, g_shade)
+    c.set(24, 11, g_shade)
+    c.hline(19, 23, 9, g_shade)
+    c.set(21, 14, E("arcane", "hot"))
+    for (x, y) in ((20, 14), (22, 14), (21, 13), (21, 15)):
+        c.set(x, y, E("arcane", "mid"))
+    return c
+
+
 ICONS = [
     ("pages", pages),
+    ("boon_slots", boon_slots),
     ("damage", damage),
     ("recovery", recovery),
     ("cooldowns", cooldowns),

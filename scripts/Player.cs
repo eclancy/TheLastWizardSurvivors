@@ -8953,8 +8953,6 @@ public partial class Player : CharacterBody2D
 				else
 					parts.Add(before > 0.5f ? $"Range {PercentDelta(before, spell.GetRangeAtLevel(nextLevel))}" : "Longer range");
 			}
-			// An area share prints as a percentage for every spell (FormatSpellEffectUpgrade, the
-			// text-polish sweep), so the branch-era AreaSizeIsShare special case is not needed.
 			if (upgrade.Effect != SpellEffect.None && MathF.Abs(upgrade.EffectValue) > 0.001f)
 				parts.Add(FormatSpellEffectUpgrade(upgrade.Effect, upgrade.EffectValue));
 		}
