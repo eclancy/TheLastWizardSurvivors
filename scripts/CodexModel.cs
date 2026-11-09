@@ -120,7 +120,7 @@ public sealed class CodexNode
 	public List<(Element Element, int Weight)> Elements = new();
 	/// <summary>Whose final form it is ("Aedan" - the wizard's name, not his craft), on an Apotheosis node.</summary>
 	public string Owner = string.Empty;
-	/// <summary>Not a name to search for (the Sovereign Rite's "any active spell you hold").</summary>
+	/// <summary>Not a name to search for (an ingredient that is no spell or relic of its own; none since 2026-11-08).</summary>
 	public bool Unsearchable;
 
 	public bool Revealed => State != CodexNodeState.Sealed;
@@ -775,7 +775,8 @@ public sealed class CodexModel
 				return null;
 			foreach (ComboDefinition recipe in ComboCatalog.Naming(spellId, ascensionId))
 			{
-				if (!ComboCatalog.IsKnown(recipe, save))
+				// Known from one half once the Conjunctions lesson is learned (ConjunctionLadder.IsShown, rung I).
+				if (!ConjunctionLadder.IsShown(recipe, save))
 					continue;
 				ComboIngredient partner = ComboCatalog.PartnerOf(recipe, spellId);
 				if (partner != null)
@@ -897,7 +898,16 @@ public sealed class CodexModel
 					chips.Add(new CodexChip { Text = $"You {Math.Min(gate.Have, gate.Need)}/{gate.Need}", Met = gate.Met, Have = gate.Have, Need = gate.Need });
 					break;
 				case AscensionRequirementKind.Element:
-					chips.AddRange(ElementChips(gate, measured: true));
+					// Tonight's recipe's named path on the far shore (FarSky.WaiverLine): met, and says why.
+					if (gate.Waived)
+						chips.Add(new CodexChip { Text = FarSky.WaiverLine, Met = true });
+					else
+					{
+						chips.AddRange(ElementChips(gate, measured: true));
+						// The partner's share beside the player's own count (rung III of .ai/conjunction-progression.md).
+						if (gate.Shared > 0)
+							chips.Add(new CodexChip { Text = $"{gate.SharedBy} +{gate.Shared}", Met = gate.Met, Have = gate.Shared, Need = gate.Need });
+					}
 					break;
 				case AscensionRequirementKind.Learned:
 					// Where it is learned (Teachings.SealedLine), when the gate says.
@@ -918,6 +928,9 @@ public sealed class CodexModel
 					break;
 				case AscensionRequirementKind.ElementCeiling:
 					chips.Add(new CodexChip { Text = "A fourth element", Met = false, Closed = true });
+					break;
+				case AscensionRequirementKind.Fuel:
+					chips.Add(new CodexChip { Text = $"{Math.Min(gate.Have, gate.Need)}/{gate.Need} levels of fuel", Met = gate.Met, Have = gate.Have, Need = gate.Need });
 					break;
 			}
 			return chips;
@@ -1016,19 +1029,14 @@ public sealed class CodexModel
 		{
 			foreach (ComboDefinition recipe in ComboCatalog.All)
 			{
-				// One locked thing on show at a time (Teachings.IsShown, Eric's Q8): the Rite once it is owned or
-				// Conjunctions are learned, and the recipes once the Apotheosis is.
-				if (recipe.IsRite)
-				{
-					if (Teachings.IsShown(save, Teaching.SovereignRite))
-						yield return RiteEntry(recipe);
-					continue;
-				}
+				// One locked thing on show at a time (Teachings.IsShown, Eric's Q8): the recipes once the Apotheosis
+				// is learned - the Sovereign Rite among them since 2026-11-08, a recipe like any other.
 				if (!Teachings.IsShown(save, Teaching.Conjunctions))
 					continue;
 				SpellData template = ComboCatalog.Template(recipe);
 				ComboPreview preview = context.Combos?.FirstOrDefault(c => c != null && c.Id.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase));
-				bool known = ComboCatalog.IsKnown(recipe, save) || preview != null;
+				// Known from one half once the Conjunctions lesson is learned (ConjunctionLadder.IsShown, rung I).
+				bool known = ConjunctionLadder.IsShown(recipe, save) || preview != null;
 				bool made = ComboCatalog.IsMet(recipe, save) || preview?.Taken == true;
 				bool revealed = made || preview?.Revealed == true || preview?.Offered == true;
 				var card = new CodexRecipe
@@ -1063,8 +1071,15 @@ public sealed class CodexModel
 				else if (made && !inRun)
 					result.Note = "Made";
 				foreach (AscensionRequirement gate in preview?.Requirements ?? new List<AscensionRequirement>())
-					if (gate.Kind is AscensionRequirementKind.OwnSpell or AscensionRequirementKind.ElementCeiling)
+					if (gate.Kind is AscensionRequirementKind.OwnSpell or AscensionRequirementKind.ElementCeiling
+						or AscensionRequirementKind.PlayerLevel or AscensionRequirementKind.Fuel)
 						result.Chips.AddRange(Chips(gate));
+				// The Sovereign Rite's late gate, out of a run: your level and the fuel, unmeasured (SovereignRite).
+				if (recipe.IsRite && preview == null)
+				{
+					result.Chips.Add(new CodexChip { Text = $"You {SovereignRite.MinimumPlayerLevel}", Need = SovereignRite.MinimumPlayerLevel });
+					result.Chips.Add(new CodexChip { Text = $"{SovereignRite.MinimumFuel} levels of fuel", Need = SovereignRite.MinimumFuel });
+				}
 				card.Result = result;
 
 				var entry = new CodexEntry
@@ -1099,82 +1114,6 @@ public sealed class CodexModel
 			}
 		}
 
-		// THE SOVEREIGN RITE (.ai/sovereign-spell.md): not two Ascensions but the Rite and whichever active spell it
-		// is pointed at, so neither ingredient asks for level 8. The Rite carries its own gate - your level, the
-		// active spells held, the fuel the others would pour in (every OTHER active spell's level) - read from
-		// SovereignRite, never copied; the second ingredient is "any active spell you hold", with nothing to load
-		// or look up; the result is that spell, anointed. Measured in a run, the rule as written otherwise.
-		private CodexEntry RiteEntry(ComboDefinition recipe)
-		{
-			SpellData template = ComboCatalog.Template(recipe);
-			bool known = ComboCatalog.IsKnown(recipe, save);
-			bool made = ComboCatalog.IsMet(recipe, save);
-			bool riteHeld = Held(recipe.First.SpellId) != null;
-			var rite = new CodexNode
-			{
-				Id = recipe.First.SpellId,
-				SpellId = recipe.First.SpellId,
-				Milestone = -1,
-				Name = recipe.First.SpellName,
-				Line = template?.Description ?? string.Empty,
-				Icon = template?.Icon,
-				State = riteHeld ? CodexNodeState.Taken : CodexNodeState.Known,
-			};
-			if (inRun)
-			{
-				List<SpellData> active = SovereignRite.ActiveSpells(context.HeldSpells).ToList();
-				int fuel = active.Count == 0 ? 0 : active.Max(target => SovereignRite.FuelFor(target, active));
-				int level = context.PlayerLevel;
-				rite.Chips.Add(new CodexChip { Text = $"You {Math.Min(level, SovereignRite.MinimumPlayerLevel)}/{SovereignRite.MinimumPlayerLevel}", Met = level >= SovereignRite.MinimumPlayerLevel, Have = level, Need = SovereignRite.MinimumPlayerLevel });
-				rite.Chips.Add(new CodexChip { Text = $"{Math.Min(active.Count, SovereignRite.MinimumActiveSpells)}/{SovereignRite.MinimumActiveSpells} active spells", Met = active.Count >= SovereignRite.MinimumActiveSpells, Have = active.Count, Need = SovereignRite.MinimumActiveSpells });
-				rite.Chips.Add(new CodexChip { Text = $"{Math.Min(fuel, SovereignRite.MinimumFuel)}/{SovereignRite.MinimumFuel} levels of fuel", Met = fuel >= SovereignRite.MinimumFuel, Have = fuel, Need = SovereignRite.MinimumFuel });
-			}
-			else
-			{
-				rite.Chips.Add(new CodexChip { Text = $"You {SovereignRite.MinimumPlayerLevel}", Need = SovereignRite.MinimumPlayerLevel });
-				rite.Chips.Add(new CodexChip { Text = $"{SovereignRite.MinimumActiveSpells} active spells", Need = SovereignRite.MinimumActiveSpells });
-				rite.Chips.Add(new CodexChip { Text = $"{SovereignRite.MinimumFuel} levels of fuel", Need = SovereignRite.MinimumFuel });
-			}
-			var anySpell = new CodexNode
-			{
-				Id = "any_active_spell",
-				Milestone = -1,
-				Name = recipe.Second.SpellName,
-				Line = "The spell the Rite is pointed at.",
-				State = CodexNodeState.Known,
-				Unsearchable = true,
-			};
-			var result = new CodexNode
-			{
-				Id = recipe.Id,
-				SpellId = recipe.Id,
-				Milestone = ComboCatalog.MilestoneLevel,
-				Name = $"{SovereignRite.NamePrefix}<your spell>",
-				Line = template?.Description ?? string.Empty,
-				Icon = template?.Icon,
-				NameAlwaysShown = true,
-				State = CodexNodeState.Known,
-			};
-			var card = new CodexRecipe { Id = recipe.Id, Kind = CodexKind.Combination, Made = made, Result = result };
-			card.Ingredients.Add(rite);
-			card.Ingredients.Add(anySpell);
-			var entry = new CodexEntry
-			{
-				Id = recipe.Id,
-				Kind = CodexKind.Combination,
-				Name = recipe.Name,
-				Line = string.IsNullOrWhiteSpace(template?.Tagline) ? template?.Description ?? string.Empty : template.Tagline,
-				Icon = template?.Icon,
-				Discovered = known,
-				Owned = made,
-				Hint = UnlockCatalog.GetLockedHint(recipe.First.SpellId, UnlockKind.Spell),
-				KindLine = "Conjunction",
-				Recipe = card,
-			};
-			entry.State = !known ? CodexState.Undiscovered : inRun ? CodexState.Known : made ? CodexState.Owned : CodexState.Known;
-			return entry;
-		}
-
 		private CodexNode IngredientNode(ComboDefinition recipe, ComboIngredient part, ComboPreview preview)
 		{
 			AscensionRequirement gate = preview?.Requirements?.FirstOrDefault(r => r.Kind == AscensionRequirementKind.Ingredient
@@ -1199,6 +1138,9 @@ public sealed class CodexModel
 				: new CodexChip { Text = $"{part.SpellName} L8" });
 			if (gate?.Closed == true)
 				node.Note = "Took the other path";
+			// The half not yet found, by the hint its own locked page wears (rung I: known from one half).
+			else if (save != null && !ConjunctionLadder.Owns(save, part))
+				node.Note = UnlockCatalog.GetLockedHint(part.SpellId, UnlockKind.Spell);
 			return node;
 		}
 
@@ -1282,7 +1224,6 @@ public sealed class CodexModel
 				{
 					CodexEntry part = entries.FirstOrDefault(e => e.Id.Equals(ingredient.OpensEntryId, StringComparison.OrdinalIgnoreCase));
 					// A recipe the save does not know is not named on its ingredient: its partner may be a secret.
-					// The Sovereign Rite is its own first ingredient: it is not "used in" itself.
 					if (part == null || part == recipe || !recipe.Discovered || part.UsedIn.Contains(recipe.Id))
 						continue;
 					part.UsedIn.Add(recipe.Id);

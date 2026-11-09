@@ -23,7 +23,6 @@ public static partial class RegressionChecks
 		ValidateGodsAsData(warnings);
 		ValidateCodex(warnings);
 		ValidateSovereignRite(warnings);
-		ValidateSovereignTwin(warnings);
 		ValidateChestSetPresentation(warnings);
 		ValidateFullSetObjects(warnings);
 		ValidateTomeRelics(warnings);
@@ -75,6 +74,8 @@ public static partial class RegressionChecks
 		ValidateDungeonMove(warnings);
 		ValidateGateReachability(warnings);
 		ValidateFarShore(warnings);
+		// Every chapter's run length: the road 15 minutes, the far shore 20 (RegressionChecks.RunLength.cs).
+		ValidateRunLengths(warnings);
 		ValidateAchievementMigration(warnings);
 		ValidateRetiredChargeRefund(warnings);
 		ValidateDifficultyMigration(warnings);
@@ -84,11 +85,15 @@ public static partial class RegressionChecks
 		ValidateTeachers(warnings);
 		// F4, the far sky (RegressionChecks.FarSky.cs).
 		ValidateFarSky(warnings);
+		// The Conjunction ladder (RegressionChecks.Ladder.cs; .ai/conjunction-progression.md).
+		ValidateConjunctionLadder(warnings);
+		ValidatePinnedRecipeMigration(warnings);
 		ValidatePrologueReel(warnings);
 		ValidateFreeings(warnings);
 		ValidateCinematicRules(warnings);
 		ValidateSlowStartMigration(warnings);
 		ValidateShadowBoltMigration(warnings);
+		ValidateRiteMigration(warnings);
 		ValidateStoryReset(warnings);
 		ValidateSaveTransfer(warnings);
 		ValidateUserDataCarryOver(warnings);
@@ -5534,7 +5539,7 @@ public static partial class RegressionChecks
 			// Not combined, the structural half: a fusion never takes a wizard's own spell, so his is never
 			// fused in the first place (ComboCatalog.Evaluate's ComboSeal.OwnSpell). Both parents held at level
 			// 8 down the named Ascensions, to show the seal is what stops it rather than an unmet parent.
-			foreach (ComboDefinition recipe in ComboCatalog.All.Where(r => !r.IsRite && r.Ingredients.Any(x =>
+			foreach (ComboDefinition recipe in ComboCatalog.All.Where(r => r.Ingredients.Any(x =>
 				x != null && x.SpellId.Equals(definition.SpellId, StringComparison.OrdinalIgnoreCase))))
 			{
 				var loadout = recipe.Ingredients.Select(x => new SpellData
@@ -5551,7 +5556,7 @@ public static partial class RegressionChecks
 		// A Conjunction's own spell is never anyone's to transform: no form names one, and the gate refuses it -
 		// except the one a character opens on (ComboDefinition.StartsFusedFor), whose form is his alone and whose gate
 		// ValidateOpeners holds.
-		foreach (ComboDefinition recipe in ComboCatalog.All.Where(r => !r.IsRite))
+		foreach (ComboDefinition recipe in ComboCatalog.All)
 		{
 			if (ApotheosisCatalog.All.Any(d => d.SpellId.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase)
 				&& !ComboCatalog.StartsFused(recipe, d.CharacterId)))
@@ -5597,12 +5602,11 @@ public static partial class RegressionChecks
 		foreach (ChestSetDefinition set in ChestItemCatalog.Sets)
 			expected.Add((set.Id, CodexKind.FullSet));
 		// One locked thing on show at a time (Teachings.IsShown, .ai/slow-start.md Q8): a fresh save is shown no
-		// combination, so every recipe - the Rite's included - is looked for on a save that has learned the
-		// Ascension and the Apotheosis and owns the Rite, where each must be.
+		// combination, so every recipe - the Rite's included, a recipe like the rest since 2026-11-08 - is looked
+		// for on a save that has learned the Ascension and the Apotheosis, where each must be.
 		var taught = new SaveData();
 		Teachings.Teach(taught, Teachings.Get(Teaching.Ascension));
 		Teachings.Teach(taught, Teachings.Get(Teaching.Apotheosis));
-		taught.UnlockedSpellIds.Add(SovereignRite.SpellId);
 		CodexModel shown = CodexModel.Build(CodexContext.ForSave(taught));
 		foreach ((string id, CodexKind kind) in expected)
 		{
@@ -5705,9 +5709,6 @@ public static partial class RegressionChecks
 				warnings.Add($"{label} does not name two parents.");
 				continue;
 			}
-			// The Sovereign Rite fuses nothing and names no Ascension: ValidateSovereignRite holds it.
-			if (recipe.IsRite)
-				continue;
 			if (recipe.First.SpellId.Equals(recipe.Second.SpellId, StringComparison.OrdinalIgnoreCase))
 				warnings.Add($"{label} names '{recipe.First.SpellId}' as both parents; a combination is two distinct spells.");
 
@@ -5848,82 +5849,33 @@ public static partial class RegressionChecks
 	// THE CONJUNCTION A CHARACTER OPENS ON moved to RegressionChecks.Gods.cs (ValidateOpeners, ValidateOpener), where
 	// it walks every opener - the dark wizard's The Taking and each god's - rather than the one it was written for.
 
-	// THE SOVEREIGN RITE (.ai/sovereign-spell.md, SovereignRite, Player.Sovereign.cs): what a build cannot see.
-	//   - the gate and the per-fuel numbers are the doc's (sections 3 and 4), and the gate can be met at all;
-	//   - it is the one rite in ComboCatalog, its second ingredient any active spell, its resource registered,
-	//     terminal and elementless, and it is paid by the Warden of the Deep's Road deed - the end of the road,
-	//     so nothing on a new save reaches it early - and never counted by The Grimoire Restored;
-	//   - a passive (and the defensive spells) is never silenced, never fuel, never anointed;
-	//   - the fuel reaches the spell through the one path every milestone does (SpellData.CollectActive): a
-	//     spell's own readers move with the boon and come back without it;
-	//   - the boon carries damage, cooldown, area or scale and amount and nothing else, so no effect, rider,
-	//     slow, knockback or execute reaches a boss through it.
-	// The Rite's second path (Eric, 2026-11-07, in-flight item 50): a crowned spell holds BOTH of its
-	// level-8 Ascensions. Every spell with a choice is put through it here - crowned, ascended down
-	// its first branch, and the stat readers walked with both branches live - so a pair that cannot
-	// coexist is reported at startup rather than discovered mid-run. What this cannot judge is feel:
-	// item 50's test note (every spell crowned, in play) still stands.
-	private static void ValidateSovereignTwin(List<string> warnings)
-	{
-		foreach (SpellData spell in ContentValidator.LoadAllSpells())
-		{
-			IReadOnlyList<SpellEvolutionOption> options = spell.GetEvolutionOptionsForLevel(8);
-			if (options == null || options.Count < 2)
-				continue;
-
-			SpellEvolutionOption keptPick = spell.SelectedLevel8Evolution;
-			string keptPickId = spell.SelectedLevel8EvolutionId;
-			SpellEvolutionOption keptBoon = spell.SovereignBoon;
-			SpellEvolutionOption[] keptTwins = spell.SovereignTwinAscensions;
-			try
-			{
-				spell.SovereignBoon = SovereignRite.BuildBoon(spell, 0);
-				spell.ApplyEvolution(options[0]);
-				if ((spell.SovereignTwinAscensions?.Length ?? 0) != options.Count - 1)
-					warnings.Add($"Sovereign twin: '{spell.Id}' crowned and ascended holds {spell.SovereignTwinAscensions?.Length ?? 0} twin paths, not {options.Count - 1}.");
-				for (int i = 1; i < options.Count; i++)
-				{
-					if (!spell.HasEvolution(options[i].Id))
-						warnings.Add($"Sovereign twin: '{spell.Id}' crowned does not own its unchosen branch '{options[i].Id}'.");
-				}
-				// The readers walk every milestone at once; a throw or a buffer overrun here would be
-				// a crash on the crowned spell's first cast.
-				spell.GetDamageAtLevel(spell.MaxLevel);
-				spell.GetCooldownAtLevel(spell.MaxLevel);
-				spell.GetElementWeights();
-			}
-			catch (Exception e)
-			{
-				warnings.Add($"Sovereign twin: '{spell.Id}' with both branches live threw {e.GetType().Name}: {e.Message}");
-			}
-			finally
-			{
-				spell.SelectedLevel8Evolution = keptPick;
-				spell.SelectedLevel8EvolutionId = keptPickId;
-				spell.SovereignBoon = keptBoon;
-				spell.SovereignTwinAscensions = keptTwins;
-			}
-		}
-	}
-
+	// THE SOVEREIGN RITE (.ai/sovereign-spell.md section 9; SovereignRite, SovereignRiteCaster, Player.Sovereign.cs):
+	// what a build cannot see, beyond what ValidateComboCatalog already holds it to as a recipe of two spells.
+	//   - the gate and the per-fuel numbers are the doc's, and the gate can be met in a book at all;
+	//   - it is the one rite in ComboCatalog and among the fusions; it is paid by its own Feat - no longer the
+	//     Warden of the Deep's deed - and never counted by The Grimoire Restored; it has no lesson and no reel of
+	//     its own (Eric, 2026-11-08: "it just unlocks with combination spells"); nobody opens on it; the far sky
+	//     never names it;
+	//   - a passive (and the defensive spells) is never fuel; a fused Conjunction is worth its parents' levels;
+	//   - the fuel reaches the Rite and its frozen parents through the one path every milestone does
+	//     (SpellData.CollectActive), moves exactly what the doc says, and comes back without the boon; the boon
+	//     carries nothing else, so no effect, rider, slow, knockback or execute reaches a boss through it.
 	private static void ValidateSovereignRite(List<string> warnings)
 	{
 		const string label = "Sovereign Rite";
-		if (SovereignRite.MinimumPlayerLevel != 28 || SovereignRite.MinimumActiveSpells != 3 || SovereignRite.MinimumFuel != 16)
-			warnings.Add($"{label}: the gate is level {SovereignRite.MinimumPlayerLevel}, {SovereignRite.MinimumActiveSpells} active spells and {SovereignRite.MinimumFuel} fuel; .ai/sovereign-spell.md (sections 3 and 8, as tuned) says 28, 3 and 16. Change the doc with it, or put it back.");
-		if (!Mathf.IsEqualApprox(SovereignRite.DamagePerFuel, 0.005f) || !Mathf.IsEqualApprox(SovereignRite.CooldownPerFuel, 0.008f)
-			|| !Mathf.IsEqualApprox(SovereignRite.CooldownFloor, 0.70f) || !Mathf.IsEqualApprox(SovereignRite.AreaPerFuel, 0.01f)
-			|| !Mathf.IsEqualApprox(SovereignRite.AreaCap, 1.40f) || SovereignRite.FuelPerAmount != 20)
-			warnings.Add($"{label}: the power per level of fuel is not section 4's as tuned (+0.5% damage, -0.8% cooldown to -30%, +1% area to +40%, +1 amount per 20).");
-		// The gate can be met: the fuel behind one spell is the others' levels, at most eight each.
-		if (SovereignRite.MinimumActiveSpells > Player.MaxSpellSlots
-			|| SovereignRite.MinimumFuel > (Player.MaxSpellSlots - 1) * Player.AscensionSpellLevel
-			|| SovereignRite.MinimumFuel > (SovereignRite.MinimumActiveSpells - 1) * Player.AscensionSpellLevel + (Player.MaxSpellSlots - SovereignRite.MinimumActiveSpells) * Player.AscensionSpellLevel)
-			warnings.Add($"{label}: the gate asks for more fuel or spells than a {Player.MaxSpellSlots}-slot book can hold.");
+		if (SovereignRite.MinimumPlayerLevel != 28 || SovereignRite.MinimumFuel != 16)
+			warnings.Add($"{label}: the gate is level {SovereignRite.MinimumPlayerLevel} and {SovereignRite.MinimumFuel} fuel; .ai/sovereign-spell.md (section 9) says 28 and 16. Change the doc with it, or put it back.");
+		if (!Mathf.IsEqualApprox(SovereignRite.DamagePerFuel, RiteDamagePerFuel) || !Mathf.IsEqualApprox(SovereignRite.CooldownPerFuel, RiteCooldownPerFuel)
+			|| !Mathf.IsEqualApprox(SovereignRite.CooldownFloor, 0.70f) || !Mathf.IsEqualApprox(SovereignRite.AreaPerFuel, RiteAreaPerFuel)
+			|| !Mathf.IsEqualApprox(SovereignRite.AreaCap, 1.40f) || SovereignRite.FuelPerAmount != RiteFuelPerAmount)
+			warnings.Add($"{label}: the power per level of fuel is not section 9's as tuned ({RiteDamagePerFuel * 100f:0.#}% damage, -{RiteCooldownPerFuel * 100f:0.#}% cooldown to -30%, +{RiteAreaPerFuel * 100f:0.#}% area to +40%, +1 blast per {RiteFuelPerAmount}).");
+		// The gate can be met: its two parents and every other page at level 8.
+		if (SovereignRite.MinimumFuel > (Player.MaxSpellSlots - 2) * Player.AscensionSpellLevel)
+			warnings.Add($"{label}: the gate asks for {SovereignRite.MinimumFuel} fuel, more than a {Player.MaxSpellSlots}-slot book can hold beside its two parents.");
 		if (SovereignRite.MinimumPlayerLevel < ApotheosisCatalog.MinimumPlayerLevel)
 			warnings.Add($"{label}: offered at level {SovereignRite.MinimumPlayerLevel}, before the Apotheosis's {ApotheosisCatalog.MinimumPlayerLevel}; it is the latest thing a run is offered.");
 
-		// The recipe and its resource.
+		// The recipe: the one rite, a fusion like the rest, opened on by nobody, never the far sky's.
 		List<ComboDefinition> rites = ComboCatalog.All.Where(r => r.IsRite).ToList();
 		ComboDefinition rite = ComboCatalog.Rite;
 		if (rites.Count != 1 || rite == null || !rite.IsRite)
@@ -5931,120 +5883,172 @@ public static partial class RegressionChecks
 			warnings.Add($"{label}: ComboCatalog holds {rites.Count} rites, and '{SovereignRite.SpellId}' must be the one.");
 			return;
 		}
-		if (rite.Second == null || !rite.Second.AnyActiveSpell || !string.IsNullOrEmpty(rite.Second.SpellId) || rite.First == null || rite.First.AnyActiveSpell)
-			warnings.Add($"{label}: its recipe must be the Rite and any active spell (ComboIngredient.AnyActiveSpell on the second, a spell id on neither).");
-		if (ComboCatalog.Fusions.Any(r => r.IsRite))
-			warnings.Add($"{label} is listed among the fusions.");
-		SpellData template = ContentValidator.LoadAllSpells().FirstOrDefault(s => s.Id.Equals(SovereignRite.SpellId, StringComparison.OrdinalIgnoreCase));
-		if (template == null)
-			warnings.Add($"{label} has no SpellData in ContentValidator.SpellResourcePaths ({rite.ResourcePath}).");
-		else
-		{
-			if (!template.ResourcePath.Equals(rite.ResourcePath, StringComparison.OrdinalIgnoreCase) || !template.Name.Equals(rite.Name, StringComparison.Ordinal))
-				warnings.Add($"{label}'s resource is {template.ResourcePath} named '{template.Name}'; ComboCatalog names {rite.ResourcePath}, '{rite.Name}'.");
-			if (template.MaxLevel != 1 || (template.LevelUpgrades?.Count ?? 0) > 0 || (template.ElementWeights?.Count ?? 0) > 0)
-				warnings.Add($"{label}'s resource must be terminal and elementless: one level, no level-ups, no element (the spell it anoints keeps its own).");
-			if (template.Description.Length > 130)
-				warnings.Add($"{label}'s description is {template.Description.Length} characters; a description holds 130.");
-		}
+		if (!ComboCatalog.Fusions.Contains(rite))
+			warnings.Add($"{label} is not among ComboCatalog.Fusions; it is a recipe of two spells like the rest.");
+		if (rite.IsOpener)
+			warnings.Add($"{label}: '{rite.StartsFusedFor}' opens on it; the capstone is made, never opened on.");
+		if (FarSky.MayName(rite, new SaveData(), string.Empty, null, out _))
+			warnings.Add($"{label}: the far sky may name it; it is the capstone and never tonight's recipe (FarSky.MayName).");
 
-		// The unlock: the Warden of the Deep's deed, at the end of the road.
+		// The unlock: its own Feat, as every recipe's; the Warden of the Deep's deed pays it no longer.
 		UnlockDefinition unlock = UnlockCatalog.GetSpell(SovereignRite.SpellId);
-		AchievementDefinition deed = UnlockCatalog.SourceDeedOf(unlock);
-		if (unlock == null || unlock.Source != UnlockSource.Achievement || deed == null || deed.Kind != AchievementKind.Road
-			|| !SovereignRite.SpellId.Equals(deed.SpellUnlockId, StringComparison.OrdinalIgnoreCase))
-			warnings.Add($"{label} must be the reward of a Road deed that grants it (UnlockCatalog, AchievementDefinitions).");
-		else
-		{
-			BossDefinition boss = BossCatalog.GetById(deed.BossId);
-			StageDefinition gate = StageCatalog.GateChapter;
-			int at = StageCatalog.CampaignPositionOf(deed.StageId);
-			if (boss == null || gate == null || at < 0 || at < StageCatalog.CampaignPositionOf(gate.Id))
-				warnings.Add($"{label} is paid by '{deed.Id}' in chapter '{deed.StageId}', before the end of the road ({gate?.Id}); a new save must not reach it early.");
-		}
+		if (unlock == null || unlock.Source != UnlockSource.Achievement
+			|| !ComboCatalog.FeatId(SovereignRite.SpellId).Equals(unlock.SourceId, StringComparison.OrdinalIgnoreCase))
+			warnings.Add($"{label} must be the reward of its own Feat '{ComboCatalog.FeatId(SovereignRite.SpellId)}' (UnlockCatalog.FromCombination).");
+		AchievementDefinition warden = AchievementDefinitions.GetById("emberdeep_ended");
+		if (warden == null || SovereignRite.SpellId.Equals(warden.SpellUnlockId, StringComparison.OrdinalIgnoreCase)
+			|| warden.RewardText.Contains("Sovereign", StringComparison.OrdinalIgnoreCase))
+			warnings.Add($"{label}: the Warden of the Deep's deed still pays or names it; since 2026-11-08 its own Feat does.");
 		if (UnlockCatalog.GrimoireSpellIds.Contains(SovereignRite.SpellId, StringComparer.OrdinalIgnoreCase))
 			warnings.Add($"{label} is counted by The Grimoire Restored; a combination is made, not recovered.");
-		AchievementDefinition feat = AchievementDefinitions.GetById(ComboCatalog.FeatId(SovereignRite.SpellId));
-		if (feat == null || !string.IsNullOrEmpty(feat.SpellUnlockId) || !feat.CompletesInRun || feat.Visibility != AchievementVisibility.Recipe
-			|| !feat.DisplayName.Equals($"Conjunction: {rite.Name}", StringComparison.Ordinal))
-			warnings.Add($"{label}'s Feat 'Conjunction: {rite.Name}' must exist, complete in the run, be listed as a recipe and grant no spell (the Road deed grants the Rite).");
+		// No lesson, no reel (Eric, 2026-11-08: "soveriegn rite also doesn't need an animation to learn").
+		if (Teachings.GetById(SovereignRite.SpellId) != null || Prologue.Reels.ContainsKey(SovereignRite.SpellId))
+			warnings.Add($"{label} has a lesson or a reel again; it unlocks with Conjunctions and needs none.");
 
-		// Passives and the defensive spells: never silenced, never fuel, never anointed.
-		foreach (string id in SovereignRite.DefensiveSpellIds.Concat(SovereignRite.RefusedTargetIds))
+		// Passives and the defensive spells: never silenced, never fuel.
+		foreach (string id in SovereignRite.DefensiveSpellIds)
 		{
 			if (!ContentValidator.LoadAllSpells().Any(s => s.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
-				warnings.Add($"{label} names '{id}' (defensive or refused), which is no spell.");
+				warnings.Add($"{label} names '{id}' as defensive, which is no spell.");
 		}
-		var all = ContentValidator.LoadAllSpells().Where(s => s != null && !ComboCatalog.IsCombination(s.Id)).ToList();
+		var all = ContentValidator.LoadAllSpells().Where(s => s != null).ToList();
 		foreach (SpellData spell in all)
 		{
 			bool passive = spell.IsPassive || SovereignRite.DefensiveSpellIds.Contains(spell.Id, StringComparer.OrdinalIgnoreCase);
-			if (passive && (!SovereignRite.IsPassiveForRite(spell) || SovereignRite.RefusalFor(spell) == null
-				|| SovereignRite.ActiveSpells(new[] { spell }).Any()))
-				warnings.Add($"{label} would silence, count or anoint '{spell.Id}', a passive or defensive spell.");
-		}
-		// A loadout with a shield in it: the shield is no fuel and is not counted among the three.
-		var loadout = new List<SpellData>();
-		foreach (string id in new[] { "aegis_ward", "magic_missile", "fireball", "chain_lightning" })
-		{
-			if (all.FirstOrDefault(s => s.Id == id)?.Duplicate(true) is SpellData copy)
-			{
-				copy.CurrentLevel = 8;
-				loadout.Add(copy);
-			}
-		}
-		if (loadout.Count == 4)
-		{
-			SpellData target = loadout[1];
-			if (SovereignRite.FuelFor(target, loadout) != 16 || SovereignRite.ActiveSpells(loadout).Count() != 3)
-				warnings.Add($"{label}: a book of Aegis Ward and three level 8 spells gives {SovereignRite.FuelFor(target, loadout)} fuel and {SovereignRite.ActiveSpells(loadout).Count()} active; the shield must be neither.");
-			if (!SovereignRite.MeetsGate(SovereignRite.MinimumPlayerLevel, loadout) || SovereignRite.MeetsGate(SovereignRite.MinimumPlayerLevel - 1, loadout))
-				warnings.Add($"{label}: MeetsGate does not open at exactly level {SovereignRite.MinimumPlayerLevel} for three level 8 spells.");
+			if (passive && (!SovereignRite.IsPassiveForRite(spell) || SovereignRite.ActiveSpells(new[] { spell }).Any()))
+				warnings.Add($"{label} would silence or count '{spell.Id}', a passive or defensive spell.");
 		}
 
-		// The one stat path, and nothing else in it.
-		foreach (SpellData form in ContentValidator.LoadAllSpellForms())
+		// The fuel: a book of the two parents, Aegis Ward and two other spells at level 8 is the gate's 16, the shield
+		// none of it; a fused Conjunction is worth its frozen parents' levels.
+		SpellData At8(string id)
 		{
-			if (form == null || ComboCatalog.IsCombination(form.Id) || SovereignRite.RefusalFor(form) != null)
-				continue;
-			var spell = (SpellData)form.Duplicate(true);
-			SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
-			spell.CurrentLevel = spell.MaxLevel;
-			int level = spell.CurrentLevel;
-			int damage = spell.GetDamageAtLevel(level);
-			float cooldown = spell.GetCooldownAtLevel(level);
-			float area = spell.GetAreaMultiplierAtLevel(level);
-			float scale = spell.GetScaleMultiplier();
-			int amount = spell.GetProjectileCountAtLevel(level);
-			const int fuel = 40;
-			SpellEvolutionOption boon = SovereignRite.BuildBoon(spell, fuel);
-			SovereignGains gains = SovereignRite.GainsFor(spell, fuel);
-			string who = $"{label} on '{ContentValidator.Label(spell)}'";
-			if (boon.Effect != SpellEffect.None || boon.EffectValue != 0f || boon.Rider != ElementRider.None
-				|| boon.SlowMagnitudeBonus != 0f || boon.KnockbackBonus != 0f || boon.PierceBonus != 0 || boon.ChainArcBonus != 0
-				|| boon.ChainBranchBonus != 0 || boon.PoisonTickBonus != 0 || boon.DamageBonus != 0 || boon.RangeBonus != 0f
-				|| boon.CooldownBonus != 0f || !Mathf.IsEqualApprox(boon.SpeedMultiplier, 1f) || (boon.BonusElementWeights?.Count ?? 0) > 0
-				|| !string.IsNullOrEmpty(boon.ReplacesElement) || boon.ModulateColor != Colors.White || !string.IsNullOrEmpty(boon.VisualTag))
-				warnings.Add($"{who}: the boon carries something besides damage, cooldown, area or scale and amount - a crowd-control or execute path a boss could meet.");
-			if (gains.CooldownMultiplier < SovereignRite.CooldownFloor - 0.0001f || gains.AreaMultiplier > SovereignRite.AreaCap + 0.0001f
-				|| gains.ScaleMultiplier > SovereignRite.AreaCap + 0.0001f || (gains.AreaMultiplier > 1f && gains.ScaleMultiplier > 1f))
-				warnings.Add($"{who}: the gains pass their floor or cap, or grow both area and scale.");
-
-			spell.SovereignBoon = boon;
-			bool moved = spell.GetDamageAtLevel(level) == Math.Max(1, Mathf.RoundToInt(damage * gains.DamageMultiplier))
-				&& Mathf.IsEqualApprox(spell.GetCooldownAtLevel(level), MathF.Max(0.05f, cooldown * gains.CooldownMultiplier))
-				&& Mathf.IsEqualApprox(spell.GetAreaMultiplierAtLevel(level), area * gains.AreaMultiplier)
-				&& Mathf.IsEqualApprox(spell.GetScaleMultiplier(), scale * gains.ScaleMultiplier)
-				&& spell.GetProjectileCountAtLevel(level) == Math.Max(1, amount + gains.AmountBonus);
-			bool elementsKept = spell.GetElementWeights().Count == form.GetElementWeights().Count;
-			spell.SovereignBoon = null;
-			bool back = spell.GetDamageAtLevel(level) == damage && Mathf.IsEqualApprox(spell.GetCooldownAtLevel(level), cooldown)
-				&& spell.GetProjectileCountAtLevel(level) == amount;
-			if (!moved || !back)
-				warnings.Add($"{who}: the fuel does not reach (or does not leave) the spell's own stat readers through SpellData.CollectActive.");
-			if (!elementsKept)
-				warnings.Add($"{who}: anointing changed the spell's elements; the Rite never moves a tier.");
+			if (all.FirstOrDefault(s => s.Id.Equals(id, StringComparison.OrdinalIgnoreCase))?.Duplicate(true) is not SpellData copy)
+				return null;
+			SpellEvolutionCatalog.EnsureEvolutionCoverage(copy);
+			copy.CurrentLevel = copy.MaxLevel;
+			return copy;
 		}
+		SpellData blast = At8(rite.First.SpellId);
+		SpellData grave = At8(rite.Second.SpellId);
+		SpellData ward = At8("aegis_ward");
+		SpellData fire = At8("fireball");
+		SpellData chain = At8("chain_lightning");
+		if (blast == null || grave == null || ward == null || fire == null || chain == null)
+		{
+			warnings.Add($"{label}: a parent, Aegis Ward, Fireball or Chain Lightning is missing from the spells; the fuel cannot be checked.");
+			return;
+		}
+		var book = new List<SpellData> { blast, grave, ward, fire, chain };
+		int fuel = SovereignRite.FuelFrom(book, blast, grave);
+		if (fuel != 16 || !SovereignRite.MeetsGate(SovereignRite.MinimumPlayerLevel, fuel) || SovereignRite.MeetsGate(SovereignRite.MinimumPlayerLevel - 1, fuel)
+			|| SovereignRite.MeetsGate(SovereignRite.MinimumPlayerLevel, fuel - 1))
+			warnings.Add($"{label}: the parents, Aegis Ward and two level 8 spells give {fuel} fuel, and the gate must open at exactly level {SovereignRite.MinimumPlayerLevel} and {SovereignRite.MinimumFuel} fuel; the shield and the parents are no fuel.");
+		var fused = new SpellData { Id = "sagittarius", CurrentLevel = 1, MaxLevel = 1, ComboParents = new[] { At8("hunters_draw"), At8("starfall") } };
+		if (fused.ComboParents.All(p => p != null) && SovereignRite.FuelOf(fused) != fused.ComboParents.Sum(p => p.CurrentLevel))
+			warnings.Add($"{label}: a fused Conjunction is worth {SovereignRite.FuelOf(fused)} fuel, not its two parents' levels; it would be a trap to hold one.");
+
+		// The one stat path: the Rite made from its two parents, then the boon at a full book's 40 fuel on it and
+		// both frozen parents, as Player.Crown puts it - and nothing else in the boon.
+		SpellEvolutionOption resonance = blast.Level8Options?.FirstOrDefault(o => o.Id == rite.First.AscensionId);
+		SpellEvolutionOption massGrave = grave.Level8Options?.FirstOrDefault(o => o.Id == rite.Second.AscensionId);
+		if (ComboCatalog.Template(rite)?.Duplicate(true) is not SpellData made || resonance == null || massGrave == null)
+		{
+			warnings.Add($"{label}: its resource, Resonance or Mass Grave is missing; the stat path cannot be checked.");
+			return;
+		}
+		blast.ApplyEvolution(resonance);
+		grave.ApplyEvolution(massGrave);
+		made.ComboParents = new[] { blast, grave };
+		SovereignRiteCaster.Freeze(made);
+		if (!Mathf.IsEqualApprox(made.BaseCooldown, grave.GetCooldownAtLevel(grave.CurrentLevel)) || made.BaseRange != grave.GetRangeAtLevel(grave.CurrentLevel))
+			warnings.Add($"{label}: SovereignRiteCaster.Freeze did not take the cooldown and the reach from the frozen Gravewell.");
+		int blastDamage = blast.GetDamageAtLevel(blast.CurrentLevel);
+		int graveDamage = grave.GetDamageAtLevel(grave.CurrentLevel);
+		float blastArea = blast.GetAreaMultiplierAtLevel(blast.CurrentLevel);
+		float graveArea = grave.GetAreaMultiplierAtLevel(grave.CurrentLevel);
+		float cooldown = made.GetCooldownAtLevel(1);
+		int count = made.GetProjectileCountAtLevel(1);
+		const int fullBook = 40;
+		SpellEvolutionOption boon = SovereignRite.BuildBoon(made, fullBook);
+		SovereignGains gains = SovereignRite.GainsFor(made, fullBook);
+		if (boon.Effect != SpellEffect.None || boon.EffectValue != 0f || boon.Rider != ElementRider.None
+			|| boon.SlowMagnitudeBonus != 0f || boon.KnockbackBonus != 0f || boon.PierceBonus != 0 || boon.ChainArcBonus != 0
+			|| boon.ChainBranchBonus != 0 || boon.PoisonTickBonus != 0 || boon.DamageBonus != 0 || boon.RangeBonus != 0f
+			|| boon.CooldownBonus != 0f || !Mathf.IsEqualApprox(boon.SpeedMultiplier, 1f) || (boon.BonusElementWeights?.Count ?? 0) > 0
+			|| !string.IsNullOrEmpty(boon.ReplacesElement) || boon.ModulateColor != Colors.White || !string.IsNullOrEmpty(boon.VisualTag))
+			warnings.Add($"{label}: the boon carries something besides damage, cooldown, area and amount - a crowd-control or execute path a boss could meet.");
+		if (gains.DamageMultiplier <= 1f || gains.CooldownMultiplier >= 1f || gains.AreaMultiplier <= 1f || gains.AmountBonus != fullBook / SovereignRite.FuelPerAmount
+			|| gains.CooldownMultiplier < SovereignRite.CooldownFloor - 0.0001f || gains.AreaMultiplier > SovereignRite.AreaCap + 0.0001f
+			|| !Mathf.IsEqualApprox(gains.ScaleMultiplier, 1f))
+			warnings.Add($"{label}: at {fullBook} fuel it gains {SovereignRite.GainLine(gains)}; its row (EvolutionStatReaders) must take damage, cooldown, area and amount, inside their floor and cap, and no scale.");
+
+		made.SovereignBoon = blast.SovereignBoon = grave.SovereignBoon = boon;
+		bool Near(int a, int b) => Math.Abs(a - b) <= 1;
+		bool moved = Near(blast.GetDamageAtLevel(blast.CurrentLevel), Mathf.RoundToInt(blastDamage * gains.DamageMultiplier))
+			&& Near(grave.GetDamageAtLevel(grave.CurrentLevel), Mathf.RoundToInt(graveDamage * gains.DamageMultiplier))
+			&& Mathf.IsEqualApprox(blast.GetAreaMultiplierAtLevel(blast.CurrentLevel), blastArea * gains.AreaMultiplier)
+			&& Mathf.IsEqualApprox(grave.GetAreaMultiplierAtLevel(grave.CurrentLevel), graveArea * gains.AreaMultiplier)
+			&& Mathf.IsEqualApprox(made.GetCooldownAtLevel(1), MathF.Max(0.05f, cooldown * gains.CooldownMultiplier))
+			&& made.GetProjectileCountAtLevel(1) == count + gains.AmountBonus;
+		bool elementsKept = made.GetElementWeights().Count == ComboCatalog.Template(rite).GetElementWeights().Count;
+		made.SovereignBoon = blast.SovereignBoon = grave.SovereignBoon = null;
+		bool back = blast.GetDamageAtLevel(blast.CurrentLevel) == blastDamage && grave.GetDamageAtLevel(grave.CurrentLevel) == graveDamage
+			&& Mathf.IsEqualApprox(made.GetCooldownAtLevel(1), cooldown) && made.GetProjectileCountAtLevel(1) == count;
+		if (!moved || !back)
+			warnings.Add($"{label}: the fuel does not reach (or does not leave) the Rite's and its frozen parents' stat readers through SpellData.CollectActive.");
+		if (!elementsKept)
+			warnings.Add($"{label}: the boon changed the Rite's elements; the fuel never moves a tier.");
+	}
+
+	// Section 9's fuel table as tuned: the validator's copy, so a change to SovereignRite is a change to the doc too.
+	private const float RiteDamagePerFuel = 0.005f;
+	private const float RiteCooldownPerFuel = 0.008f;
+	private const float RiteAreaPerFuel = 0.01f;
+	private const int RiteFuelPerAmount = 40;
+
+	// SCHEMA 26 (SaveData.MigrateRiteToConjunction): the Sovereign Rite became a recipe of its own, paid by its Feat,
+	// and the Warden of the Deep's deed pays only Arcane Energy. A save that owned the Rite - the spell itself, the
+	// Warden's deed done, or the Warden beaten - keeps it: its Feat is recorded done and the spell stays. A save that
+	// never had it gets nothing, a second migration changes nothing, and the retired lesson is owed by nobody.
+	private static void ValidateRiteMigration(List<string> warnings)
+	{
+		SaveData At25(Action<SaveData> shape)
+		{
+			var save = new SaveData { SchemaVersion = 25 };
+			shape(save);
+			save.Migrate(log: false);
+			return save;
+		}
+		string feat = ComboCatalog.FeatId(SovereignRite.SpellId);
+		bool Kept(SaveData s) => GlobalStatsManager.IsAchievementUnlocked(s, feat) && GlobalStatsManager.IsSpellUnlockedForLevelUp(s, SovereignRite.SpellId);
+
+		SaveData owned = At25(s => { s.UnlockedSpellIds.Add(SovereignRite.SpellId); s.LessonsLearned.Add(SovereignRite.SpellId); });
+		if (!Kept(owned))
+			warnings.Add("Rite migration: a save that owned the Sovereign Rite should keep it through its recipe's Feat.");
+		if (Teachings.Owed(owned).Count > 0)
+			warnings.Add("Rite migration: a save taught the Rite's retired lesson owes a lesson for it.");
+		owned.SchemaVersion = 25;
+		int deeds = owned.UnlockedAchievementIds.Count;
+		int spells = owned.UnlockedSpellIds.Count;
+		owned.Migrate(log: false);
+		if (owned.UnlockedAchievementIds.Count != deeds || owned.UnlockedSpellIds.Count != spells)
+			warnings.Add("Rite migration: a second migration changed the save.");
+
+		SaveData deedDone = At25(s => s.UnlockedAchievementIds.Add("emberdeep_ended"));
+		if (!Kept(deedDone))
+			warnings.Add("Rite migration: a save with the Warden of the Deep's deed done (which paid the Rite) should keep the Rite.");
+		SaveData beaten = At25(s => s.Lifetime.BossesDefeated.Add("emberdeep_warden"));
+		if (!Kept(beaten))
+			warnings.Add("Rite migration: a save that beat the Warden of the Deep, owed the Rite at its next reconcile, should keep it.");
+		if (beaten.TotalCurrency != 0)
+			warnings.Add("Rite migration: Arcane Energy changed hands; the step only grants what was owned.");
+
+		SaveData without = At25(_ => { });
+		if (GlobalStatsManager.IsAchievementUnlocked(without, feat) || GlobalStatsManager.IsSpellUnlockedForLevelUp(without, SovereignRite.SpellId))
+			warnings.Add("Rite migration: a save that never owned the Rite was handed it or its Feat.");
+		if (GlobalStatsManager.IsSpellUnlockedForLevelUp(beaten, "gravewell") && !GlobalStatsManager.IsSpellUnlockedForLevelUp(At25(_ => { }), "gravewell"))
+			warnings.Add("Rite migration: the step granted a parent; it keeps the Rite and grants nothing else.");
 	}
 
 	private static void ValidateSpellEvolutionCoverage(List<string> warnings)
@@ -6946,8 +6950,7 @@ public static partial class RegressionChecks
 		// Every form of a spell taken in one, against its form's row (EvolutionStatReaders.TryGet(SpellData)).
 		foreach (SpellData spell in ContentValidator.LoadAllSpellForms())
 		{
-			// The Sovereign Rite casts nothing and is never held; it has no script to read a field.
-			if (spell == null || string.IsNullOrWhiteSpace(spell.Id) || ComboCatalog.ForId(spell.Id)?.IsRite == true)
+			if (spell == null || string.IsNullOrWhiteSpace(spell.Id))
 				continue;
 			if (!EvolutionStatReaders.TryGet(spell, out SpellStatReaders readers))
 			{

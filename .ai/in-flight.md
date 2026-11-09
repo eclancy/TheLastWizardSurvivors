@@ -845,6 +845,8 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     crowned before level 8 - the spell gains its unchosen level-8 branch too. **Test note (Eric):
     check this does not break anything on any spell** - every spell crowned with both branches
     live, by regression check and by play; some branch pairs were designed as either/or.
+    **Removed 2026-11-08:** the Rite became a two-spell Conjunction (`.ai/sovereign-spell.md` section 9),
+    so the crowned spell is the Rite itself, which never ascends - the twin had nothing left to double.
 51. **Merge cooldown and attack speed in the Powers** (Eric, 2026-11-07; building, same branch).
     Chronoweave (-5% cooldown) and Tempest Rhythm (+6% attack speed) read as the same lever twice.
     Retire Chronoweave, convert bought levels into Tempest Rhythm up to its cap, refund the rest

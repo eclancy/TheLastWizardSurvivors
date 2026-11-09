@@ -2161,10 +2161,10 @@ public partial class LevelUpMenu : CanvasLayer
 		// to compare what was on screen. One short line: the heading says what kind of page it is.
 		int branchCount = option?.EvolutionChoices?.Count ?? 0;
 		// A combination's stakes in one line: two spells leave, one comes, a slot is freed (.ai/combo-spells.md).
-		// The Sovereign Rite's page is the same plate, its second ingredient the row of held spells.
+		// The Sovereign Rite's are bigger - every other spell falls silent and feeds it (.ai/sovereign-spell.md 9).
 		bool isRite = isConjunction && option.ComboId == TheOneHeMissed.scripts.SovereignRite.SpellId;
 		headerBox.AddChild(BuildPageSubtitle(isRite
-			? "Choose one spell. Every other spell falls silent and feeds it."
+			? $"{ConjunctionParents(option)} become one. Every other spell falls silent and feeds it."
 			: isConjunction
 			? $"{ConjunctionParents(option)} become one spell. One slot is freed."
 			: isApotheosis
@@ -2196,7 +2196,7 @@ public partial class LevelUpMenu : CanvasLayer
 			columnMargin.AddThemeConstantOverride("margin_bottom", 4);
 			scroll.AddChild(columnMargin);
 			var cardsColumn = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-			// Closer for the Rite's column of up to six, so five fit a phone without scrolling.
+			// Closer for a column of more than three, so five fit a phone without scrolling.
 			cardsColumn.AddThemeConstantOverride("separation", option.EvolutionChoices.Count > 3 ? 10 : 16);
 			columnMargin.AddChild(cardsColumn);
 
@@ -2207,7 +2207,7 @@ public partial class LevelUpMenu : CanvasLayer
 				card.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 				cardsColumn.AddChild(card);
 			}
-			if (!isApotheosis && (!isConjunction || isRite))
+			if (!isApotheosis && !isConjunction)
 				FocusSpotlight.Attach(cardsColumn);
 		}
 		else
@@ -2242,7 +2242,7 @@ public partial class LevelUpMenu : CanvasLayer
 			cardsRow.AddThemeConstantOverride("separation", 14);
 			rowMargin.AddChild(cardsRow);
 
-			// The Rite's row holds a card per active spell, up to six: narrower cards so the row fits the canvas.
+			// A row of more than three: narrower cards so the row fits the canvas.
 			evolutionCardWidth = option.EvolutionChoices.Count > 3
 				? Mathf.Max(150f, (GetViewport().GetVisibleRect().Size.X - 96f) / option.EvolutionChoices.Count - 14f)
 				: CardWidth;
@@ -2256,8 +2256,8 @@ public partial class LevelUpMenu : CanvasLayer
 				cardsRow.AddChild(card);
 			}
 			// Not on the Apotheosis: one form, and its ember plate's element line would dim below 4.5:1.
-			// Nor on a combination's page, which holds one card too - but the Rite's holds a row.
-			if (!isApotheosis && (!isConjunction || isRite))
+			// Nor on a combination's page, which holds one card too.
+			if (!isApotheosis && !isConjunction)
 				FocusSpotlight.Attach(cardsRow);
 		}
 
@@ -2275,9 +2275,6 @@ public partial class LevelUpMenu : CanvasLayer
 		};
 		BonelightSkin.StyleButton(backButton);
 		root.AddChild(backButton);
-		// The Rite's page: B (or Escape, or Android's back) is Back too - nothing is spent (.ai/sovereign-spell.md 3).
-		if (isRite)
-			MenuBackListener.Attach(root, () => backButton.EmitSignal(BaseButton.SignalName.Pressed));
 	}
 
 	// Swaps between the normal level-up list and the evolution overlay. Hiding the normal view
@@ -2619,6 +2616,8 @@ public partial class LevelUpMenu : CanvasLayer
 		Control narrowElements = BuildTagGainRow(evo, option, FlowContainer.AlignmentMode.Begin, family);
 		if (narrowElements != null)
 			text.AddChild(narrowElements);
+		if (BuildRecipeSealMark(option, evo, centred: false) is Control narrowSeal)
+			text.AddChild(narrowSeal);
 		// No advice line here either (BuildEvolutionOptionCard).
 
 		return root;
@@ -2660,7 +2659,7 @@ public partial class LevelUpMenu : CanvasLayer
 		}
 	}
 
-	// The width a branch card is built at: CardWidth, or narrower for a row of more than three (the Rite's).
+	// The width a branch card is built at: CardWidth, or narrower for a row of more than three.
 	private float evolutionCardWidth;
 
 	private Control BuildEvolutionOptionCard(LevelUpOption option, SpellEvolutionOption evo, Action onPressed)
@@ -2720,7 +2719,7 @@ public partial class LevelUpMenu : CanvasLayer
 			MouseFilter = Control.MouseFilterEnum.Ignore
 		};
 		ResponsiveLayout.SetFont(title, ResponsiveLayout.TextRole.Title);
-		// A row narrower than three-wide (the Rite's): a step down, so "Sovereign Magic Missile" takes two lines, not three.
+		// A row of narrower cards than three-wide: a step down, so a long name takes two lines, not three.
 		if (cardWidth < CardWidth)
 			title.AddThemeFontSizeOverride("font_size", 22);
 		title.AddThemeColorOverride("font_color", TitleInk(family));
@@ -2767,6 +2766,8 @@ public partial class LevelUpMenu : CanvasLayer
 		Control wideElements = BuildTagGainRow(evo, option, FlowContainer.AlignmentMode.Center, family);
 		if (wideElements != null)
 			content.AddChild(wideElements);
+		if (BuildRecipeSealMark(option, evo, centred: true) is Control wideSeal)
+			content.AddChild(wideSeal);
 
 		// No advice line ("Synergizes with raw damage and attack speed - the shards fly straight, so
 		// ..."): two or three lines a card that pushed the level 8 paths below a 1280x720 screen, saying

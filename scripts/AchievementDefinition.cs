@@ -499,7 +499,9 @@ public static partial class AchievementDefinitions
 		},
 		BossClear("cave_choir_silenced", "Silence in the Deep", "cave_choir", "the Sunken Cave", "riptide", "Riptide"),
 		BossClear("swamp_cleansed", "Cut the Rot Out", "swamp_mother", "the Blighted Swamp", "mirefoot", "Mirefoot"),
-		BossClear("ruins_delver", "Ruins Delver", "ruins_sentinel", "the Mystic Ruins", "spiritual_weapon", "Spiritual Weapon"),
+		// The Archivist teaches rung III of the Conjunction ladder (ConjunctionLadder.PairShareDeedId; Teachings.PairSharesLesson):
+		// "teaches a lesson", the one locked thing it puts on show (.ai/conjunction-progression.md section 3).
+		BossClear("ruins_delver", "Ruins Delver", "ruins_sentinel", "the Mystic Ruins", "spiritual_weapon", "Spiritual Weapon", "teaches a lesson"),
 		BossClearBoon("waste_thawed", "Broke the Guard", "frost_warden", "the Frozen Waste", "rimebriar", "Rimebriar"),
 		// Two things since schema 19: the boon it always paid, and Fireball, moved here from the Warden of
 		// the Deep's deed - a spell only the far side of the old final gate paid, while that gate counted
@@ -522,15 +524,14 @@ public static partial class AchievementDefinitions
 		// The gate chapter's own deed pays Arcane Energy since schema 19 - its Fireball moved to the Long
 		// Coil - and opens the castle (.ai/endgame-castle.md) once it is built. A save that had done it
 		// keeps its Fireball and is not paid the 300: reconciling pays unlocks, never currency.
-		// Since 2026-11-02 it also pays the Sovereign Rite (.ai/sovereign-spell.md section 3): the end of the
-		// road, so nothing on a new save reaches it early. A save that has beaten the Warden is handed it by
-		// the reconcile at the end of its next run (AchievementManager.Reconcile) - no schema step.
+		// From 2026-11-02 to 2026-11-08 it also paid the Sovereign Rite. The Rite is a Conjunction since, paid by its
+		// own Feat (.ai/sovereign-spell.md section 9), so the deed is back to its Arcane Energy; a save that beat the
+		// Warden keeps the Rite (SaveData.MigrateRiteToConjunction, schema 26).
 		new()
 		{
 			Id = "emberdeep_ended", DisplayName = "The Long Road Back",
 			Description = "Defeat the boss of the Emberdeep.",
-			RewardText = "Unlocks the Sovereign Rite and 300 Arcane Energy", CurrencyReward = 300,
-			SpellUnlockId = SovereignRite.SpellId,
+			RewardText = "300 Arcane Energy", CurrencyReward = 300,
 			Category = AchievementCategory.Exploration,
 			Kind = AchievementKind.Road,
 			Visibility = AchievementVisibility.ChapterOpen,
@@ -791,34 +792,16 @@ public static partial class AchievementDefinitions
 		foreach (ComboDefinition recipe in ComboCatalog.All)
 		{
 			string id = ComboCatalog.FeatId(recipe.Id);
-			// The Rite's row: the Warden of the Deep's deed pays the Rite itself, so its Feat - met the first
-			// time the strip offers it - pays Arcane Energy, and its line is the gate rather than two Ascensions.
-			if (recipe.IsRite)
-			{
-				yield return new AchievementDefinition
-				{
-					Id = id,
-					DisplayName = $"Conjunction: {recipe.Name}",
-					Description = $"In one run, reach level {SovereignRite.MinimumPlayerLevel} holding {SovereignRite.MinimumActiveSpells} active spells and the {recipe.Name}.",
-					RewardText = $"{SovereignRiteFeatCurrency} Arcane Energy",
-					CurrencyReward = SovereignRiteFeatCurrency,
-					Category = AchievementCategory.Mastery,
-					Kind = AchievementKind.Feat,
-					Visibility = AchievementVisibility.Recipe,
-					CompletesInRun = true,
-					ComboId = recipe.Id,
-					SealedName = "Conjunction: ???",
-					SealedReward = "???",
-					Measure = c => c.Save != null && GlobalStatsManager.IsAchievementUnlocked(c.Save, id) ? 1f : 0f,
-					Target = 1,
-				};
-				continue;
-			}
+			// The Sovereign Rite's Feat is met the first time the strip offers it, as every recipe's is - and the
+			// strip waits for its late gate too, so its line names the gate (SovereignRite.MeetsGate).
+			string gate = recipe.IsRite
+				? $", at level {SovereignRite.MinimumPlayerLevel} with {SovereignRite.MinimumFuel} other spell levels"
+				: string.Empty;
 			yield return new AchievementDefinition
 			{
 				Id = id,
 				DisplayName = $"Conjunction: {recipe.Name}",
-				Description = $"In one run, take {recipe.First.SpellName} down {recipe.First.AscensionName} and {recipe.Second.SpellName} down {recipe.Second.AscensionName}.",
+				Description = $"In one run, take {recipe.First.SpellName} down {recipe.First.AscensionName} and {recipe.Second.SpellName} down {recipe.Second.AscensionName}{gate}.",
 				RewardText = $"Unlocks {recipe.Name}",
 				SpellUnlockId = recipe.Id,
 				Category = AchievementCategory.Mastery,
@@ -833,9 +816,6 @@ public static partial class AchievementDefinitions
 			};
 		}
 	}
-
-	/// <summary>What the Sovereign Rite's Feat pays: the Rite itself is the Warden of the Deep's.</summary>
-	public const int SovereignRiteFeatCurrency = 250;
 
 	/// <summary>Whether a side event's site has words written for its deed. For the validator.</summary>
 	public static bool HasSideEventWords(string siteId) => WordsFor(siteId).Site != null;
@@ -894,7 +874,9 @@ public static partial class AchievementDefinitions
 			case AchievementVisibility.ChapterOpen:
 				return !IsSealed(deed, save);
 			case AchievementVisibility.Recipe:
-				return save != null && ComboCatalog.IsKnown(ComboCatalog.ForId(deed.ComboId), save);
+				// Known from one half once the Conjunctions lesson is learned (ConjunctionLadder.IsShown, rung I); the
+				// row still reads "Conjunction: ???" until made (CodexRows.DeedEntry). The Rite too, a recipe like any.
+				return save != null && ConjunctionLadder.IsShown(ComboCatalog.ForId(deed.ComboId), save);
 			case AchievementVisibility.FarSky:
 				return save != null && Teachings.HasLearned(save, Teaching.FarSky);
 			case AchievementVisibility.Endless:
@@ -1010,12 +992,13 @@ public static partial class AchievementDefinitions
 	// Boss ids are matched exactly now. They used to be matched by *substring* against terms like
 	// "forest" and "castle", guarded only by a validator warning - so a boss id that happened to
 	// contain another's keyword would silently grant the wrong spell.
-	private static AchievementDefinition BossClear(string id, string name, string bossId, string place, string spellId, string spellName) => new()
+	private static AchievementDefinition BossClear(string id, string name, string bossId, string place, string spellId, string spellName,
+		string alsoReward = "") => new()
 	{
 		Id = id,
 		DisplayName = name,
 		Description = $"Defeat the boss of {place}.",
-		RewardText = $"Unlocks {spellName}",
+		RewardText = $"Unlocks {spellName}{(string.IsNullOrEmpty(alsoReward) ? "" : " and " + alsoReward)}",
 		SpellUnlockId = spellId,
 		Category = AchievementCategory.Exploration,
 		Kind = AchievementKind.Road,

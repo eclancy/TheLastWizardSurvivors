@@ -163,8 +163,12 @@ public partial class _BossProbe : Node
 
 		game = ResourceLoader.Load<PackedScene>("res://scenes/node_2d_game.tscn").Instantiate();
 		// Set before the add so _Ready sees it: the boss phase is gated on this and fifteen real
-		// minutes of survival is not a test anyone runs twice.
+		// minutes of survival is not a test anyone runs twice. A clock set before the add is a tool's own,
+		// and Node2DGame.ResolveRunLength leaves it alone: the chapter's own length (twenty minutes on the far
+		// shore, StageCatalog.VictorySecondsFor) still sets the XP curve, and the pace clock still reaches its
+		// end state when the boss arrives, as on any chapter.
 		game.Set("TimerVictorySeconds", BossTimerSeconds);
+		GD.Print($"BOSSPROBE the chapter's clock is {StageCatalog.VictorySecondsFor(StageCatalog.GetByIndex(StageIndex)?.Id) / 60f:0.#} minutes; shortened to {BossTimerSeconds:0.#} s");
 		AddChild(game);
 	}
 

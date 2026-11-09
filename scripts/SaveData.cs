@@ -32,7 +32,14 @@ public class SaveData
 	// 25 is the boon rework's (in-flight 41): runs hold two boon slots now and the shop sells the
 	// third and fourth, so a save that has played - every run it played held six - is granted both
 	// Reliquary Shelf levels rather than being asked to buy back capacity it had.
-	public const int CurrentSchemaVersion = 25;
+	// 26 is the Sovereign Rite's move onto its own recipe (Eric, 2026-11-08; .ai/sovereign-spell.md
+	// section 9): Arcane Explosion and Gravewell made one, paid by its Feat rather than the Warden of
+	// the Deep's deed. A save that owned the Rite, did that deed or beat the Warden keeps it - its
+	// Feat is recorded done, as 24 did for Shadow Bolt.
+	// 27 is the Conjunction ladder's (.ai/conjunction-progression.md, rung I): PinnedRecipeId, the one recipe the
+	// player has pinned. A save from before has pinned nothing, so the step only makes that explicit. (Built as 26 in
+	// parallel with the Rite's; the Rite reached the trunk first, so the pin is 27.)
+	public const int CurrentSchemaVersion = 27;
 	public const int CampaignSchemaVersion = 8;
 	private const int MaxTelemetryHistory = 25;
 
@@ -184,6 +191,14 @@ public class SaveData
 	public List<string> TrackedQuestIds { get; set; } = new() { QuestLog.NextWizardId };
 
 	/// <summary>
+	/// The one Conjunction the player has pinned (ConjunctionLadder, rung I of .ai/conjunction-progression.md): a
+	/// recipe's id, or empty. Its checklist is on the pause screen and its next step one line in the quest corner.
+	/// Pinned from the Codex; read only once the Conjunctions lesson is learned (ConjunctionLadder.Pinned). Schema 27
+	/// added it and pins nothing (MigrateToPinnedRecipe).
+	/// </summary>
+	public string PinnedRecipeId { get; set; } = string.Empty;
+
+	/// <summary>
 	/// The chapters whose note (ChapterNotes) has been shown, as stage ids: a note shows on the first entry
 	/// to its chapter and then only in the journal. No schema bump - additive, empty by default - so an
 	/// existing save reads each chapter's note once, on its next run there, as it did the prologue.
@@ -256,9 +271,10 @@ public class SaveData
 
 	/// <summary>
 	/// The lessons given (Teachings): the systems this save has been taught, each by its post-run cutscene,
-	/// by id ("ascension", "apotheosis", "conjunctions", "sovereign_rite"). A system is usable once its id is
-	/// here (the Ascension also by <see cref="AscensionLearned"/>). Schema 22 writes the first three for a
-	/// played save that could already use them, so it never sees the cutscenes.
+	/// by id ("ascension", "apotheosis", "conjunctions", "far_sky"). A system is usable once its id is here
+	/// (the Ascension also by <see cref="AscensionLearned"/>). Schema 22 writes the first three for a played
+	/// save that could already use them, so it never sees the cutscenes. "sovereign_rite" may still be here
+	/// from the Rite's retired lesson (2026-11-08); nothing reads it.
 	/// </summary>
 	public List<string> LessonsLearned { get; set; } = new();
 
@@ -483,6 +499,13 @@ public class SaveData
 
 		if (SchemaVersion < 25)
 			MigrateToBoonRework();
+
+		if (SchemaVersion < 26)
+			MigrateRiteToConjunction();
+
+		// 27: the Conjunction ladder's pin (.ai/conjunction-progression.md, rung I). Adds the field and pins nothing.
+		if (SchemaVersion < 27)
+			MigrateToPinnedRecipe();
 
 		if (log)
 			GD.Print($"SaveData: migrated schema {from} -> {CurrentSchemaVersion}; " +
@@ -837,6 +860,16 @@ public class SaveData
 	/// save never held the capacity, so it buys them like any Power. Returns the levels granted,
 	/// for the validator.
 	/// </summary>
+	/// <summary>
+	/// Schema 27: the Conjunction ladder's pin (ConjunctionLadder.Pin). Nothing is credited or taken: a save from before
+	/// had no pin, so it has none now - written down rather than left to a default, so a stray value in an older file
+	/// (there is none to find) could never pin a recipe the player did not choose. RegressionChecks.ValidatePinnedRecipeMigration.
+	/// </summary>
+	internal void MigrateToPinnedRecipe()
+	{
+		PinnedRecipeId = string.Empty;
+	}
+
 	internal int MigrateToBoonRework()
 	{
 		if ((Lifetime?.TotalRuns ?? 0) <= 0 && (RunTelemetryHistory?.Count ?? 0) <= 0)
@@ -1102,6 +1135,47 @@ public class SaveData
 	private const string ShadowBoltSpellId = "shadow_bolt";
 	private const string ShadowBoltOldDeedId = "castle_conqueror";
 	private const string ShadowBoltFeatId = "conjunction_shadow_bolt";
+
+	/// <summary>
+	/// Schema 26: the Sovereign Rite became a Conjunction of its own (Eric, 2026-11-08; .ai/sovereign-spell.md
+	/// section 9) - Arcane Explosion down Resonance and Gravewell down Mass Grave, made in a run and paid by its
+	/// recipe's derived Feat - and the Warden of the Deep's deed pays only its Arcane Energy now. A save that owned
+	/// the Rite keeps it, as schema 24 kept Shadow Bolt: the spell stays granted and its Feat is recorded done -
+	/// quietly, so the recipe is known rather than offered as new, its Codex page keeps its name, and no Arcane
+	/// Energy changes hands. "Owned" is the spell in the save, the Warden's deed done, or the Warden beaten (the
+	/// deed promised the Rite to a save that beat him, paid at the reconcile after its next run, which a save
+	/// migrated before that run has not had). What the Rite needed to be MADE changes for everyone - its two
+	/// parents, and Conjunctions learned - and that is the design, not a confiscation: this grants neither parent
+	/// and teaches nothing. Frozen ids below, never the live catalogs. True when it did anything
+	/// (RegressionChecks.ValidateRiteMigration).
+	/// </summary>
+	internal bool MigrateRiteToConjunction()
+	{
+		bool owned = UnlockedSpellIds.Contains(RiteSpellId, System.StringComparer.OrdinalIgnoreCase)
+			|| UnlockedAchievementIds.Contains(RiteOldDeedId, System.StringComparer.OrdinalIgnoreCase)
+			|| (Lifetime?.HasDefeatedBoss(RiteOldBossId) ?? false);
+		if (!owned)
+			return false;
+		bool changed = false;
+		if (!UnlockedAchievementIds.Contains(RiteFeatId, System.StringComparer.OrdinalIgnoreCase))
+		{
+			UnlockedAchievementIds.Add(RiteFeatId);
+			changed = true;
+		}
+		if (!UnlockedSpellIds.Contains(RiteSpellId, System.StringComparer.OrdinalIgnoreCase))
+		{
+			UnlockedSpellIds.Add(RiteSpellId);
+			changed = true;
+		}
+		return changed;
+	}
+
+	// Schema 26's frozen ids: the Rite, the deed that paid it from 2026-11-02 to 2026-11-08, that deed's boss, and
+	// the recipe's derived Feat.
+	private const string RiteSpellId = "sovereign_rite";
+	private const string RiteOldDeedId = "emberdeep_ended";
+	private const string RiteOldBossId = "emberdeep_warden";
+	private const string RiteFeatId = "conjunction_sovereign_rite";
 
 	/// <summary>
 	/// Schema 19: every spell that is not a starter is an achievement's (.ai/achievements-and-secrets.md
@@ -1444,6 +1518,7 @@ public class SaveData
 			["FullBookKept"] = FullBookKept,
 			["FreeingsOwed"] = freeingsOwed,
 			["BalancePresetId"] = BalancePresetId,
+			["PinnedRecipeId"] = PinnedRecipeId ?? string.Empty,
 			["PlaytestChecklistState"] = playtestChecklistState
 		};
 	}
@@ -1782,6 +1857,9 @@ public class SaveData
 
 		if (root.ContainsKey("BalancePresetId"))
 			result.BalancePresetId = GlobalStatsManager.NormalizeBalancePresetId(root["BalancePresetId"].AsString());
+		// Schema 27 (rung I of the Conjunction ladder): the one recipe pinned, or empty.
+		if (root.ContainsKey("PinnedRecipeId") && root["PinnedRecipeId"].VariantType == Variant.Type.String)
+			result.PinnedRecipeId = root["PinnedRecipeId"].AsString().Trim();
 
 		if (root.ContainsKey("PlaytestChecklistState"))
 		{

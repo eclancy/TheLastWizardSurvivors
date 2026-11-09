@@ -43,7 +43,11 @@ public partial class Node2DGame : Node2D
 	// 15 minutes since 2026-10-16 (30, briefly 20, before that) - the reference run itself, so RunPace
 	// is 1 and every paced number plays exactly as it was tuned. The XP curve was rebalanced alongside
 	// (Player.XpCostPerLevel), because levels are paid by kills, not by the clock (.ai/run-pacing.md).
-	[Export] public float TimerVictorySeconds { get; set; } = 900.0f;
+	// THE CHAPTER'S OWN since 2026-11-09 (Eric: "still make the far shore longer"): left at ChapterRunLength,
+	// it is read from StageCatalog.VictorySecondsFor as the run starts (ResolveRunLength, Node2DGame.RunLength.cs)
+	// - 900 on the road, 1200 on the far shore. A tool that wants its own clock (_BossProbe's six seconds) sets
+	// it before the add and is left alone; a chapter's rules may set 0 (the Throne: no clocked boss).
+	[Export] public float TimerVictorySeconds { get; set; } = ChapterRunLength;
 
 	// The run every pacing number in this file was tuned against. They keep their meaning as
 	// positions on THAT run - "the Lunger arrives at 90 s" means 10% of the way in - and the pace
@@ -487,6 +491,8 @@ public partial class Node2DGame : Node2D
 		bestiary = LoadBestiaryForStage();
 		player = GetNode<Player>("CharacterBody2D"); // Strongly typed YES
 		stageOrigin = player?.GlobalPosition ?? Vector2.Zero;
+		// The chapter's run length, and the XP curve that follows it, before anything reads the pace (Node2DGame.RunLength.cs).
+		ResolveRunLength();
 		// A wizard who opens on a spell with forms chooses it first (Node2DGame.OpeningForm.cs). Deferred so the run is
 		// built under it, and asked before anything a chapter defers here (the Throne's Muster) so it is the first screen.
 		Callable.From(() => OpenOpeningFormIfOwed()).CallDeferred();
@@ -742,6 +748,8 @@ public partial class Node2DGame : Node2D
 		StartChapterRules();
 		// F4, the far sky: tonight's Conjunction for this run, if any (Node2DGame.FarSky.cs).
 		StartFarSky();
+		// Rung IV of the Conjunction ladder: the recipe Nostradamus foretold, dealt by the far sky's favour (Node2DGame.Ladder.cs).
+		StartForetold();
 		// Endless: whether this run can go on past its warden (Node2DGame.Endless.cs).
 		InitEndless();
 	}
@@ -4530,6 +4538,8 @@ public partial class Node2DGame : Node2D
 			if (BuildFarSkySection() is Control farSky) sections.AddChild(farSky);
 			// Endless: the night and what it has made of the field (Node2DGame.Endless.cs).
 			if (BuildEndlessSection() is Control night) sections.AddChild(night);
+			// Rung I of the Conjunction ladder: the pinned recipe's checklist (Node2DGame.Ladder.cs).
+			if (BuildPinnedRecipeSection() is Control pinned) sections.AddChild(pinned);
 			sections.AddChild(BuildCharacterPassiveSection());
 			// "Your ... this run", in the Spell Index's own words (Attacks, Passives): this tab is
 			// the spells in hand, the Spell Index tab is every spell there is, and the two headings
@@ -7298,6 +7308,7 @@ public partial class Node2DGame : Node2D
 
 		QuestLog.Prune(data);
 		questTracker?.Refresh(data, AchievementContext.ForSave(data));
+		RefreshPinnedRecipeLine();
 		float opening = 0f;
 		if (questTracker != null && questTracker.Count > 0)
 		{
@@ -7396,7 +7407,10 @@ public partial class Node2DGame : Node2D
 		AchievementContext projected = AchievementContext.Projected(data, SnapshotRunResult());
 		// The corner's counts move on the same one-second reading the achievement moment fires on.
 		if (tracking)
+		{
 			questTracker!.Refresh(data, projected);
+			RefreshPinnedRecipeLine();
+		}
 		if (achievementWatch.Count == 0)
 			return;
 		for (int i = 0; i < achievementWatch.Count; i++)

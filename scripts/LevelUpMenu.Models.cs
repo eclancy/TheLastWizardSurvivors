@@ -59,6 +59,19 @@ public sealed class LevelUpOption
 	/// choices one run and three the next and conclude the game was being random at them.
 	/// </remarks>
 	public Dictionary<string, string> EvolutionLockReason { get; set; } = new();
+
+	/// <summary>
+	/// A level 4 page's paths that would seal a shown recipe by making its pair name a fourth element: evolution id to
+	/// the recipe's name ("Sagittarius"). The card says "Seals Sagittarius" (rung I of .ai/conjunction-progression.md,
+	/// Player.NoteRecipeSeals). Absent means the path seals nothing.
+	/// </summary>
+	public Dictionary<string, string> RecipeSeals { get; set; } = new();
+
+	/// <summary>
+	/// Evolution ids open only because the far sky waives their element gate (Player.FarSkyWaivesElementGate): the
+	/// level 8 page says so on the path, so the player sees why it is offered.
+	/// </summary>
+	public HashSet<string> ElementGateWaived { get; set; } = new();
 	public string SynergyTag { get; set; } = string.Empty;
 	public string SynergyDescription { get; set; } = string.Empty;
 
@@ -297,6 +310,11 @@ public enum AscensionRequirementKind
 	OwnSpell,
 	/// <summary>A combination whose parents name four elements between them: never offered. Always Closed.</summary>
 	ElementCeiling,
+	/// <summary>
+	/// The Sovereign Rite's fuel gate (SovereignRite.MinimumFuel): the levels every active spell but its two parents
+	/// holds, which fall silent and feed it once it is made.
+	/// </summary>
+	Fuel,
 }
 
 /// <summary>One gate on an ascension, with how far along the player is.</summary>
@@ -325,6 +343,20 @@ public sealed class AscensionRequirement
 	/// <summary>For a Learned gate: where the system is learned (Teachings.SealedLine). Empty otherwise.</summary>
 	public string Line { get; set; } = string.Empty;
 
-	public bool Met => Have >= Need;
-	public int Missing => System.Math.Max(0, Need - Have);
+	/// <summary>
+	/// An element gate the far sky waives (Player.FarSkyWaivesElementGate, decision 10 of .ai/second-half.md): tonight's
+	/// recipe's named Ascension on a far-shore run. Met whatever Have says; set only when Have alone would not meet it.
+	/// </summary>
+	public bool Waived { get; set; }
+
+	/// <summary>
+	/// An element gate's share from the recipe's other parent (rung III of .ai/conjunction-progression.md, "the pair shares
+	/// its light"; ConjunctionLadder.PairShareFor): counted toward <see cref="Need"/> beside <see cref="Have"/>, which stays
+	/// the player's own count. Zero, and <see cref="SharedBy"/> empty, everywhere the rule does not apply.
+	/// </summary>
+	public int Shared { get; set; }
+	public string SharedBy { get; set; } = string.Empty;
+
+	public bool Met => Waived || Have + Shared >= Need;
+	public int Missing => Waived ? 0 : System.Math.Max(0, Need - Have - Shared);
 }

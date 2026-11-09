@@ -311,6 +311,12 @@ public partial class _UiShot : Node
 	// --show-ascension: the same page at milestone 8, the Ascension choice. Same reflection route,
 	// so the two evolution pages can be compared side by side.
 	private int mutationMilestone = 4;
+	// --far-sky-page (F4, decision 10; pair with --far-sky=ID on a far-shore --stage): tonight's first parent is put in
+	// the book at its card cap, the wizard at level 18, and the page shown is the REAL Ascension offer
+	// (Player.GetAscensionOffers) rather than --show-ascension's made-up one, so the far sky's waived path carries its
+	// line ("The far sky waives its element") and the page's other paths keep their element locks.
+	private bool farSkyPage;
+	private SpellData farSkyPageSpell;
 	// --show-variant=SPELL_ID: the page of a spell's forms (SpellData.Variants; LevelUpMenu.Variants.cs)
 	// over a forced level-up. The hand is re-dealt as that spell's own card (Player.BuildNewSpellOffer,
 	// whether or not the save owns the spell), and the card is PRESSED through the menu's own path - the
@@ -1051,11 +1057,11 @@ public partial class _UiShot : Node
 	// through the same entry point the strip uses (Player.TryAddOrLevelSpell), for a photograph of it firing.
 	private string demoCombo;
 	private bool demoComboFuse;
-	// --demo-sovereign[=SPELL]: the Sovereign Rite's gate met (.ai/sovereign-spell.md section 3) - the Rite
-	// owned in the in-memory save, the player at its level, and every held spell raised to
-	// --demo-spell-level (6 if unset) - so a level-up offers it on the strip; with =SPELL, that held spell is
-	// anointed at once through the strip's own entry point ("sovereign_rite:SPELL"), for the HUD and the
-	// crowned casts. Hold the spells with --demo-spells.
+	// --demo-sovereign[=fuse]: the Sovereign Rite's recipe and late gate met (.ai/sovereign-spell.md section 9) - the
+	// player at its level, every held spell raised to --demo-spell-level (8 if unset) for the fuel, and its two parents
+	// put in the book as --demo-combo=sovereign_rite puts them - so a level-up offers it on the strip; with =fuse, made
+	// at once through the strip's own entry point, for the moment it is made, the crown and the sealed slots. Hold the
+	// other spells with --demo-spells (leave the book two pages for the parents), and pass --learned=all.
 	private string demoSovereign;
 	private bool demoApplied;
 	// --seen-ascensions=a,b,...: which ascension paths the in-memory save has SEEN (AscensionSightings),
@@ -1301,7 +1307,7 @@ public partial class _UiShot : Node
 			}
 			// THE SLOW START (.ai/slow-start.md), in memory only:
 			//   --learned=a,b    : those lessons taught (Teachings ids: ascension, apotheosis, conjunctions,
-			//                      sovereign_rite, or "all"), so the one-at-a-time sealing can be shot per rung.
+			//                      far_sky, or "all"), so the one-at-a-time sealing can be shot per rung.
 			//   --reel=<id>      : the lesson Prologue.tscn plays (with --scene=res://scenes/Prologue.tscn).
 			//   --find-secret=id : that secret found a quarter of the way in, as its site would find it - the
 			//                      toast, and for a teacher the lesson's line on it; --force-victory then plays
@@ -1411,13 +1417,18 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--demo-unlocks")
 				demoUnlocks = true;
-			else if (arg == "--show-ascension")
+			else if (arg == "--show-ascension" || arg == "--far-sky-page")
 			{
 				ShowMutation = true;
 				mutationMilestone = 8;
 				ForceLevelUp = true;
 				KeepLevelUp = true;
+				farSkyPage |= arg == "--far-sky-page";
 			}
+			// --far-sky-setup: --far-sky-page's state (the parent at its cap, the wizard at 18) without the page, for
+			// --open-codex=<parent id>, whose Ascension row then carries the waiver.
+			else if (arg == "--far-sky-setup")
+				farSkyPage = true;
 			else if (arg == "--pad-y")
 				padY = true;
 			else if (arg == "--open-pause")
@@ -1485,6 +1496,22 @@ public partial class _UiShot : Node
 			// F4, the far sky (FarSky.ToolOverride): --far-sky=ID names that recipe on any chapter, =off nothing.
 			else if (arg.StartsWith("--far-sky="))
 				FarSky.ToolOverride = arg.Substring("--far-sky=".Length).Trim();
+			// THE CONJUNCTION LADDER (.ai/conjunction-progression.md), applied after any save the flags build (below).
+			else if (arg == "--ladder-learned")
+				ladderLearned = true;
+			else if (arg.StartsWith("--pin="))
+				ladderPin = arg.Substring("--pin=".Length).Trim();
+			else if (arg.StartsWith("--foretell="))
+				ConjunctionLadder.ForetellToolOverride = arg.Substring("--foretell=".Length).Trim();
+			else if (arg == "--free-foreteller")
+				ladderFreeForeteller = true;
+			else if (arg.StartsWith("--seal-page="))
+			{
+				ladderSealSpellId = arg.Substring("--seal-page=".Length).Trim();
+				ShowMutation = true;
+				ForceLevelUp = true;
+				KeepLevelUp = true;
+			}
 			// Gameplay wants hundreds of frames before there is a crowd worth photographing, and
 			// at 1x that is ten real seconds of waiting per shot.
 			else if (arg.StartsWith("--timescale="))
@@ -1990,6 +2017,7 @@ public partial class _UiShot : Node
 
 		if (demoShop)
 			ReplaceSave(BuildDemoShopSave());
+		ApplyLadderShotArgs();
 
 		// Status shots keep the player alive from the first frame. A death would end the run and pay
 		// its Arcane Energy into the real save, so writes are off too.
@@ -2103,7 +2131,8 @@ public partial class _UiShot : Node
 		{
 			GlobalStatsManager.UnlockStage(data, stage.Id);
 			if (BossCatalog.ForStageIndex(stage.Index) is BossDefinition boss)
-				data.Lifetime.Absorb(new RunResult { Outcome = RunOutcome.Victory, BossId = boss.Id, StageId = stage.Id, TimeSurvived = 900f });
+				// Won at the chapter's own boss time (StageCatalog.VictorySecondsFor): 15:00 on the road, 20:00 across the water.
+				data.Lifetime.Absorb(new RunResult { Outcome = RunOutcome.Victory, BossId = boss.Id, StageId = stage.Id, TimeSurvived = StageCatalog.VictorySecondsFor(stage.Id) });
 		}
 		foreach (SecretDefinition secret in SecretCatalog.All)
 			data.RecordSecretFound(secret.Id);
@@ -3369,8 +3398,15 @@ public partial class _UiShot : Node
 				&& owner.GetEquippedSpells().Count > 0)
 			{
 				mutationShown = true;
-				SpellData spell = owner.GetEquippedSpells()[0];
-				var option = new LevelUpOption
+				SpellData spell = farSkyPageSpell ?? LadderSealSpell(owner) ?? owner.GetEquippedSpells()[0];
+				// --far-sky-page: the real offer, with its locks and the far sky's waiver, when the strip has one.
+				LevelUpOption real = farSkyPage
+					? owner.GetAscensionOffers().FirstOrDefault(o => o.SpellId == spell.Id && !ComboCatalog.IsComboOption(o))
+					: null;
+				if (farSkyPage)
+					GD.Print(real == null ? "_UiShot: --far-sky-page found no real Ascension offer; showing the made-up page"
+						: $"_UiShot: --far-sky-page - real offer, waived [{string.Join(",", real.ElementGateWaived)}], locked [{string.Join(",", real.EvolutionLockReason.Keys)}]");
+				var option = real ?? new LevelUpOption
 				{
 					SpellId = spell.Id,
 					DisplayName = spell.Name,
@@ -3388,6 +3424,9 @@ public partial class _UiShot : Node
 					option.SpellElementTags[pair.Key.ToString()] = pair.Value;
 				if (lockBranch && option.EvolutionChoices.Count > 1)
 					option.EvolutionLockReason[option.EvolutionChoices[^1].Id] = "Requires 4 Darkness tags (1/4)";
+				// --seal-page (rung I of the Conjunction ladder): the level 4 page's "Seals ..." marks, as the real offer has them.
+				if (mutationMilestone == 4)
+					owner.MarkRecipeSeals(option, spell);
 				typeof(LevelUpMenu).GetMethod("BuildEvolutionSelectionButtons",
 						System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
 					?.Invoke(menu, new object[] { option });
@@ -3585,6 +3624,19 @@ public partial class _UiShot : Node
 			{
 				scrolled = true;
 				ScrollAll(GetTree().Root);
+			}
+			// --far-sky-page: tonight's first parent at its card cap and the wizard past the Ascension's level gate.
+			if (farSkyPage && farSkyPageSpell == null && frames >= WarmupFrames / 4
+				&& FindNodeOfType<Player>(GetTree().Root) is Player sky && sky.FarSkyRecipe != null)
+			{
+				ComboIngredient parent = sky.FarSkyRecipe.First;
+				if (!sky.GetEquippedSpells().Any(s => s != null && s.Id == parent.SpellId))
+					sky.TryAddOrLevelSpell(parent.SpellId);
+				farSkyPageSpell = sky.GetEquippedSpells().FirstOrDefault(s => s != null && s.Id == parent.SpellId);
+				if (farSkyPageSpell != null)
+					farSkyPageSpell.CurrentLevel = Player.CardLevelCap(farSkyPageSpell);
+				sky.CurrentLevel = System.Math.Max(sky.CurrentLevel, Player.AscensionMinimumPlayerLevel + 1);
+				GD.Print($"_UiShot: --far-sky-page - {farSkyPageSpell?.Name ?? parent.SpellId} at level {farSkyPageSpell?.CurrentLevel}, player level {sky.CurrentLevel}");
 			}
 			if ((demoPlayerLevel > 0 || demoSpellLevel > 0 || demoSpells.Length > 0 || demoEvolutions.Length > 0 || demoCombo != null || demoSovereign != null) && !demoApplied && frames >= WarmupFrames / 4
 				&& FindNodeOfType<Player>(GetTree().Root) is Player demo && demo.GetEquippedSpells().Count > 0)
@@ -4743,15 +4795,16 @@ public partial class _UiShot : Node
 
 	private void ApplyDemoSovereign(Player player)
 	{
-		if (GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is SaveData save)
-			GlobalStatsManager.UnlockSpell(save, SovereignRite.SpellId);
 		player.CurrentLevel = System.Math.Max(player.CurrentLevel, SovereignRite.MinimumPlayerLevel);
-		int level = demoSpellLevel > 0 ? demoSpellLevel : 6;
+		player.XPToNextLevel = player.CalculateXPForLevel(player.CurrentLevel);
+		int level = demoSpellLevel > 0 ? demoSpellLevel : 8;
 		foreach (SpellData spell in player.GetEquippedSpells())
 			spell.CurrentLevel = System.Math.Min(spell.MaxLevel, System.Math.Max(spell.CurrentLevel, level));
 		GD.Print($"_UiShot: Sovereign Rite gate - player level {player.CurrentLevel}, {player.GetEquippedSpells().Count} spells at level {level}");
-		if (!string.IsNullOrEmpty(demoSovereign))
-			GD.Print($"_UiShot: Sovereign Rite on {demoSovereign} {(player.TryAddOrLevelSpell($"{SovereignRite.SpellId}:{demoSovereign}") ? "taken" : "REFUSED")}");
+		// The two parents, as --demo-combo=sovereign_rite[:fuse] puts them, made at once with =fuse.
+		demoCombo = SovereignRite.SpellId;
+		demoComboFuse = demoSovereign == "fuse";
+		ApplyDemoCombo(player);
 	}
 
 	private void ApplyDemoCombo(Player player)

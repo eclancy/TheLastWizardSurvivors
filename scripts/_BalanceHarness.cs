@@ -85,20 +85,36 @@ public partial class _BalanceHarness : Node
 	// --all-unlocked --immortal. The report's FAR SKY line and the summary's farSky= say when the recipe was made, in
 	// the run's PACE minutes (Node2DGame.PaceSeconds), and how many cards the favour put in a hand.
 	private string farSkyArg;
+	// THE CONJUNCTION LADDER (.ai/conjunction-progression.md section 4's measurement; ConjunctionLadder):
+	//   --kindred=N     rung II: Kindred Draw at level N this run, whatever the save bought (ConjunctionLadder.KindredToolLevel).
+	//   --planner       --farmed, as a planner stands there: the lessons the road behind him has taught (the farmed save
+	//                   finds the teachers but never plays their reels, so it had learned nothing), and the rerolls and
+	//                   bans a planner buys (Fate Fracture 5, Proscription 3, as --all-unlocked holds them).
+	//   --curate=N      N spells set aside in the Spell Index, as N Redactions allow - never one of --seek-combo's
+	//                   parents or the wizard's own, never below the pool's floor (GlobalStatsManager.MinimumOfferablePool).
+	//   --foretell=ID|off  rung IV: Nostradamus foretells that recipe on any chapter (ConjunctionLadder.ForetellToolOverride);
+	//                   its parents dealt by the far sky's favour, without the sky's payout. FORETOLD log lines.
+	//   --pair-shares[=half|full|off]  rung III: the pair shares its light this run whatever the save has learned, at the
+	//                   strength it ships at (half since the measurement: the partner counting at most 1); =full the
+	//                   doc's first strength, =half the shipped one, =off never. Each Ascension the share opened is
+	//                   logged as a PAIR SHARES line.
+	// The summary's ladder= says what was on (kindred level and cards leaned, curated count).
+	private bool planner;
+	private int curate;
 	// --stop-when-made: end the run the moment the --far-sky / --seek-combo recipe is made - the measurement's one
 	// number is when, and a swarm at the cap runs at a few frames a second.
 	private bool stopWhenMade;
-	// --seek-sovereign (.ai/sovereign-spell.md section 6; pair with --all-unlocked --immortal): a planned
-	// build (it switches on --seek-ascensions; with --policy=ordinary, the ordinary build) that takes the Sovereign Rite once the spell it wants is open.
-	// --anoint=top (the default) wants the spell that dealt the most in the last minute, =own the wizard's
-	// starting spell, =ID that spell; it waits up to --anoint-wait for that one, then takes the best open. Reports when the strip first offered the Rite, when it was taken and at
-	// what player level and fuel, and the loadout's damage a second over the 60 s before against the 60 s
-	// after (the doc's target: about 1.3).
+	// --seek-combo=sovereign_rite (.ai/sovereign-spell.md sections 6 and 9; pair with --all-unlocked --immortal; --seek-sovereign
+	// says the same): the planner above, aimed at the Rite's two parents, which takes the Rite the moment the strip offers
+	// it (its late gate met too). Since 2026-11-08 the Rite is a recipe of two spells, so there is no spell to point it at
+	// and no --anoint. Reports when the strip first offered it, when it was taken and at what player level and fuel, and
+	// the whole loadout's damage a second over the 60 s before against the Rite's own over the 60 s after (the doc's
+	// target: about 1.3), with every source's after it for comparison.
 	[Export] public bool SeekSovereign { get; set; }
-	[Export] public string AnointPolicy { get; set; } = "top";
-	// --anoint-wait=S: seconds of run time the planner waits after the first offer for the spell it wants to
-	// open (its fuel to reach the gate) before taking the best spell that is open. Default 240.
-	[Export] public float AnointWaitSeconds { get; set; } = 240f;
+
+	// True when the run is seeking the Sovereign Rite, by either flag.
+	private bool SeekingRite => SeekSovereign
+		|| (!string.IsNullOrEmpty(SeekCombo) && SeekCombo.Equals(SovereignRite.SpellId, StringComparison.OrdinalIgnoreCase));
 	// --policy=ordinary: the GOOD ORDINARY policy (PickOrdinary) - fill the book, leaning toward the
 	// element it already holds most of, then level its strongest spells; takes every Ascension the
 	// moment it is offered; argues with no roll. The default policy below is not this: it levels the
@@ -361,9 +377,7 @@ public partial class _BalanceHarness : Node
 			else if (arg == "--far-sky") farSkyArg = string.Empty;
 			else if (arg.StartsWith("--far-sky=")) farSkyArg = arg.Substring(10).Trim();
 			else if (arg == "--stop-when-made") stopWhenMade = true;
-			else if (arg == "--seek-sovereign") SeekSovereign = true;
-			else if (arg.StartsWith("--anoint=")) AnointPolicy = arg.Substring(9).Trim();
-			else if (arg.StartsWith("--anoint-wait=")) AnointWaitSeconds = float.Parse(arg.Substring(14));
+			else if (arg == "--seek-sovereign") { SeekSovereign = true; SeekCombo = SovereignRite.SpellId; SeekAscensions = true; }
 			else if (arg == "--policy=ordinary") OrdinaryPolicy = true;
 			else if (arg == "--full-shop") FullShop = true;
 			else if (arg == "--all-unlocked") AllUnlocked = true;
@@ -414,6 +428,18 @@ public partial class _BalanceHarness : Node
 			// the A/B of .ai/slow-start.md section 8 on one tree. No page opens mid-run under it.
 			else if (arg.StartsWith("--slots=")) SpellBook.ToolOverride = int.Parse(arg.Substring(8));
 			else if (arg == "--farmed") Farmed = true;
+			else if (arg == "--planner") { planner = true; Farmed = true; }
+			else if (arg.StartsWith("--curate=")) curate = Math.Max(0, int.Parse(arg.Substring(9)));
+			else if (arg.StartsWith("--kindred=")) ConjunctionLadder.KindredToolLevel = Math.Clamp(int.Parse(arg.Substring(10)), 0, ConjunctionLadder.KindredDrawLevels);
+			else if (arg.StartsWith("--foretell=")) ConjunctionLadder.ForetellToolOverride = arg.Substring(11).Trim();
+			else if (arg == "--pair-shares") ConjunctionLadder.PairShareToolOverride = true;
+			else if (arg.StartsWith("--pair-shares="))
+			{
+				string how = arg.Substring(14).Trim();
+				ConjunctionLadder.PairShareToolOverride = !how.Equals("off", StringComparison.OrdinalIgnoreCase);
+				if (how.Equals("half", StringComparison.OrdinalIgnoreCase) || how.Equals("full", StringComparison.OrdinalIgnoreCase))
+					ConjunctionLadder.PairShareHalf = how.Equals("half", StringComparison.OrdinalIgnoreCase);
+			}
 			else if (arg.StartsWith("--arcane=")) FarmedArcane = int.Parse(arg.Substring(9));
 			else if (arg.StartsWith("--stop-need=")) StopNeed = float.Parse(arg.Substring(12), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg.StartsWith("--stop-overrun=")) StopOverrunSeconds = float.Parse(arg.Substring(15), System.Globalization.CultureInfo.InvariantCulture);
@@ -425,9 +451,6 @@ public partial class _BalanceHarness : Node
 			// --endless, --leave-at=N (_BalanceHarness.Endless.cs).
 			else if (TryParseEndlessArg(arg)) { }
 		}
-		// --seek-sovereign plans as --seek-ascensions does, unless --policy=ordinary asks for the ordinary build.
-		if (SeekSovereign && !OrdinaryPolicy)
-			SeekAscensions = true;
 
 		// Immune to the pause. A level-up pauses the tree, and a driver that pauses with it can
 		// never make the choice that would unpause it.
@@ -502,6 +525,7 @@ public partial class _BalanceHarness : Node
 		// --endless: the save, whichever it is now, made one that can hold this chapter through the night.
 		OpenEndlessOnSave();
 		ApplyFarSkyArg();
+		ApplyLadderArgs();
 
 		game = ResourceLoader.Load<PackedScene>("res://scenes/node_2d_game.tscn").Instantiate();
 		// --seed is the run's seed too: the ground, the side event, the secrets and a chapter's own rules
@@ -1056,7 +1080,8 @@ public partial class _BalanceHarness : Node
 		if (SeekApotheosis || SeekAscensions) TrackTier();
 		if (!string.IsNullOrEmpty(SeekCombo)) TrackCombo();
 		TrackFarSky();
-		if (SeekSovereign) TrackSovereign();
+		TrackLadderMet();
+		if (SeekingRite) TrackSovereign();
 		TrackSpellLevel((float)delta);
 		TrackAscensions();
 		TickPaceLedger();
@@ -1244,7 +1269,17 @@ public partial class _BalanceHarness : Node
 			data.ArcaneUpgradeLevels[bought] = (data.ArcaneUpgradeLevels.TryGetValue(bought, out int had) ? had : 0) + 1;
 			left -= bestCost;
 		}
-		metaLabel = $"farmed(road {behind.Count},arcane {budget},book {SpellBook.PagesFor(data)})";
+		if (planner)
+		{
+			// The reels the road behind him owed, played: each found teacher's lesson, lowest rung first (Teachings.Owed).
+			for (List<Teachings.Lesson> owed = Teachings.Owed(data); owed.Count > 0; owed = Teachings.Owed(data))
+				if (!Teachings.Teach(data, owed[0]))
+					break;
+			data.ArcaneUpgradeLevels["rerolls"] = Math.Max(5, data.ArcaneUpgradeLevels.TryGetValue("rerolls", out int r) ? r : 0);
+			data.ArcaneUpgradeLevels["bans"] = Math.Max(3, data.ArcaneUpgradeLevels.TryGetValue("bans", out int b) ? b : 0);
+			GD.Print($"HARNESS planner: lessons {string.Join(",", data.LessonsLearned)}; rerolls 5, bans 3");
+		}
+		metaLabel = $"{(planner ? "planner" : "farmed")}(road {behind.Count},arcane {budget},book {SpellBook.PagesFor(data)})";
 		GD.Print($"HARNESS farmed save at {stage.DisplayName}: {behind.Count} chapters behind it, {spells} spells and {boons} boons from deeds,"
 			+ $" {budget - left} of {budget} Arcane on Powers: "
 			+ string.Join(", ", FarmedPowers.Select(p => $"{p.Id} {(data.ArcaneUpgradeLevels.TryGetValue(p.Id, out int n) ? n : 0)}")));
@@ -2540,15 +2575,9 @@ public partial class _BalanceHarness : Node
 			}
 		}
 
-		// --seek-sovereign: the Rite once the spell it wants is open; everything else as planned.
-		if (SeekSovereign && PickSovereign(ascensions) is string rite)
-		{
-			Act(menu, rite);
-			return;
-		}
-		// No other policy takes the Rite: a planner waiting for its spell would otherwise have it taken for
-		// him by the policy below, and a run without --seek-sovereign plays as it did before the Rite existed.
-		if (ascensions.Any(o => o.ComboId == SovereignRite.SpellId))
+		// No policy takes the Rite but the one seeking it (--seek-combo=sovereign_rite): it silences the whole book, so a
+		// run without the flag plays as it did before the Rite existed.
+		if (!SeekingRite && ascensions.Any(o => o.ComboId == SovereignRite.SpellId))
 			ascensions = ascensions.Where(o => o.ComboId != SovereignRite.SpellId).ToList();
 
 		// --seek-combo first: its parents' Ascensions and the combination are its own to choose.
@@ -2972,6 +3001,14 @@ public partial class _BalanceHarness : Node
 		return lines;
 	}
 
+	// The highest level reached by game second t (1 before the first level-up).
+	private int LevelAt(float t) => levelReachedAt.Count == 0 ? 0 : levelReachedAt.Where(p => p.Value <= t).Select(p => p.Key).DefaultIfEmpty(1).Max();
+
+	// When this run's boss arrives: the chapter's own run length (StageCatalog.VictorySecondsFor), as the run read it.
+	private float RunLengthSeconds => game is Node2DGame run && IsInstanceValid(run) && run.TimerVictorySeconds > 0f
+		? run.TimerVictorySeconds
+		: StageCatalog.VictorySecondsFor(StageCatalog.GetByIndex(Global.SelectedStageIdx)?.Id);
+
 	// One line a script can turn into a table.
 	private string AscensionSummaryLine()
 	{
@@ -2988,14 +3025,17 @@ public partial class _BalanceHarness : Node
 			+ $" maxPressure={(paceLedger.Count > 0 ? paceLedger.Max(r => r.Pressure) : 0f):0.00}"
 			+ $" folds={paceLedger.Sum(r => r.Folds)} round={paceLedger.Sum(r => r.SentRound)}{ShadowSummary()}"
 			+ $" meta={metaLabel} boss={BossSummary()} overrun={(overrunAt < 0f ? "-" : $"{overrunAt / 60f:0.0}")}"
-			+ $" at15={(levelReachedAt.Count == 0 ? 0 : levelReachedAt.Where(p => p.Value <= 900f).Select(p => p.Key).DefaultIfEmpty(1).Max())}"
+			+ $" at15={LevelAt(900f)}"
+			// The build the boss meets, at the chapter's own arrival (StageCatalog.VictorySecondsFor: 15:00 on the road, 20:00 on
+			// the far shore); run= is that length in minutes. at15 stays the level at fifteen real minutes, comparable across both.
+			+ $" run={RunLengthSeconds / 60f:0.#} atBoss={LevelAt(RunLengthSeconds)}"
 			+ $"{HealthLedgerSummary()}{HealingSummary()}"
 			+ $" ascOffered={(ascensionFirstOfferedAt.Count == 0 ? "-" : $"{ascensionFirstOfferedAt.Values.Min() / 60f:0.0}")}"
 			+ $" ascensions={ascensionsTaken.Count} at=[{string.Join(",", ascensionsTaken.Select(a => $"{a.At / 60f:0.0}"))}]"
 			+ $" apotheosis={(apotheosisTakenAt < 0f ? "-" : $"{apotheosisTakenAt / 60f:0.0}")}"
 			+ $" level={player?.CurrentLevel ?? 0} L10={Level(10)} L17={Level(17)} L20={Level(20)} L23={Level(23)} L26={Level(26)} L29={Level(29)}"
 			+ $" atCap={reachedCardCapAt.Count} slots={player?.GetEquippedSpells().Count ?? 0}/{player?.SpellSlots ?? Player.MaxSpellSlots}"
-			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}{SovereignSummary()}{FarSkySummary()}{EndlessSummary()}";
+			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}{SovereignSummary()}{FarSkySummary()}{LadderSummary()}{EndlessSummary()}";
 	}
 
 	// --- the GOOD ORDINARY policy (--policy=ordinary) ------------------------------------------
@@ -3258,73 +3298,58 @@ public partial class _BalanceHarness : Node
 		return Choose(best);
 	}
 
-	// --- --seek-sovereign (.ai/sovereign-spell.md section 6) ------------------------------------------------
+	// --- --seek-combo=sovereign_rite (.ai/sovereign-spell.md sections 6 and 9) -----------------------------------
 
 	private float sovereignOfferedAt = -1f;
 	private float sovereignTakenAt = -1f;
 	private int sovereignOfferedLevel = -1;
-	private string sovereignTarget = string.Empty;
+	private int sovereignTakenLevel = -1;
 	private int sovereignFuelAtTaking;
 	private string sovereignLoadoutAtTaking = string.Empty;
 	private float nextSovereignSample;
 	// A sample a second: the run's spell damage, in total and by spell, for the rate before and after.
 	private readonly List<(float At, long Total, Dictionary<string, long> BySpell)> sovereignSamples = new();
 
-	// The Rite on the strip: logged the first time, taken at once, pointed by --anoint.
-	private string PickSovereign(IReadOnlyList<LevelUpOption> ascensions)
+	// Both of the Rite's parents met and the fuel still short of its gate: the planner's cue to level the rest.
+	private bool EvaluateRiteFuelShort(ComboDefinition recipe)
 	{
-		LevelUpOption rite = ascensions.FirstOrDefault(o => o.ComboId == SovereignRite.SpellId);
-		if (rite == null || player == null)
-			return null;
-		if (sovereignOfferedAt < 0f)
+		if (player == null)
+			return false;
+		ComboStanding standing = player.EvaluateCombo(recipe);
+		return standing.FirstMet && standing.SecondMet
+			&& SovereignRite.FuelFrom(player.GetEquippedSpells(), standing.FirstHeld, standing.SecondHeld) < SovereignRite.MinimumFuel;
+	}
+
+	// The Rite on the strip, taken (PickTowardCombo): what the report reads. The fuel is the book's then, as the
+	// fusion finds it - every active spell but the two parents.
+	private void NoteRiteTaken()
+	{
+		if (player == null)
+			return;
+		ComboDefinition recipe = ComboCatalog.Rite;
+		List<SpellData> book = player.GetEquippedSpells().ToList();
+		SpellData first = book.FirstOrDefault(s => s != null && s.Id == recipe.First.SpellId);
+		SpellData second = book.FirstOrDefault(s => s != null && s.Id == recipe.Second.SpellId);
+		sovereignTakenAt = elapsed;
+		sovereignTakenLevel = player.CurrentLevel;
+		sovereignFuelAtTaking = SovereignRite.FuelFrom(book, first, second);
+		sovereignLoadoutAtTaking = string.Join(",", book.Select(s => $"{s.Id}@{s.CurrentLevel}"));
+		GD.Print($"HARNESS SOVEREIGN RITE taken at t={elapsed:0}s ({elapsed / 60f:0.0} min), player level {player.CurrentLevel}, fuel {sovereignFuelAtTaking}, loadout {sovereignLoadoutAtTaking}");
+	}
+
+	private void TrackSovereign()
+	{
+		if (player == null)
+			return;
+		// The strip's own rule, without building the strip (Player.IsComboOffered).
+		if (sovereignOfferedAt < 0f && ComboCatalog.Rite is ComboDefinition rite && player.IsComboOffered(rite))
 		{
 			sovereignOfferedAt = elapsed;
 			sovereignOfferedLevel = player.CurrentLevel;
 			GD.Print($"HARNESS SOVEREIGN RITE first offered at t={elapsed:0}s ({elapsed / 60f:0.0} min), player level {player.CurrentLevel}, "
 				+ $"loadout {string.Join(",", player.GetEquippedSpells().Select(s => $"{s.Id}@{s.CurrentLevel}"))}");
 		}
-		var open = rite.EvolutionChoices.Where(c => !rite.EvolutionLockReason.ContainsKey(c.Id)).Select(c => c.Id).ToList();
-		// The spell the plan wants, locked or not: a planner who wants his best spell anointed waits for the fuel
-		// behind it (the gate counts the OTHER spells' levels, so the strongest is often the last to open). A
-		// spell the Rite refuses outright is never the wish.
-		var wishable = rite.EvolutionChoices.Select(c => c.Id)
-			.Where(id => SovereignRite.RefusalFor(player.GetEquippedSpells().FirstOrDefault(s => s.Id == id)) == null).ToList();
-		string wish = AnointPolicy switch
-		{
-			"own" => wishable.FirstOrDefault(id => id == player.SelectedCharacter?.StartingSpellResource?.Id),
-			"top" => wishable.Count > 0 ? TopSpellLastMinute(wishable) : null,
-			_ => wishable.FirstOrDefault(id => id == AnointPolicy),
-		};
-		string target = wish != null && open.Contains(wish) ? wish : null;
-		// --anoint-wait: how long the planner holds out for it before taking the best that is open.
-		if (target == null && elapsed - sovereignOfferedAt >= AnointWaitSeconds && open.Count > 0)
-			target = TopSpellLastMinute(open);
-		if (target == null)
-			return null;
-		sovereignTarget = target;
-		sovereignTakenAt = elapsed;
-		sovereignFuelAtTaking = SovereignRite.FuelFor(player.GetEquippedSpells().FirstOrDefault(s => s.Id == target), player.GetEquippedSpells());
-		sovereignLoadoutAtTaking = string.Join(",", player.GetEquippedSpells().Select(s => $"{s.Id}@{s.CurrentLevel}"));
-		GD.Print($"HARNESS SOVEREIGN RITE taken at t={elapsed:0}s ({elapsed / 60f:0.0} min), player level {player.CurrentLevel}: {target} anointed, fuel {sovereignFuelAtTaking}");
-		return $"{SovereignRite.SpellId}:{target}";
-	}
-
-	// The open choice that dealt the most over the last minute (or the run so far).
-	private string TopSpellLastMinute(List<string> open)
-	{
-		if (sovereignSamples.Count == 0)
-			return open[0];
-		var last = sovereignSamples[^1];
-		var from = sovereignSamples.LastOrDefault(s => s.At <= last.At - 60f);
-		if (from.BySpell == null)
-			from = sovereignSamples[0];
-		return open.OrderByDescending(id => (last.BySpell.TryGetValue(id, out long b) ? b : 0)
-			- (from.BySpell.TryGetValue(id, out long a) ? a : 0)).First();
-	}
-
-	private void TrackSovereign()
-	{
-		if (player == null || elapsed < nextSovereignSample)
+		if (elapsed < nextSovereignSample)
 			return;
 		nextSovereignSample = elapsed + 1f;
 		var bySpell = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
@@ -3344,30 +3369,30 @@ public partial class _BalanceHarness : Node
 
 	private string SovereignSummary()
 	{
-		if (!SeekSovereign)
+		if (!SeekingRite)
 			return string.Empty;
 		string At(float t) => t < 0f ? "-" : $"{t / 60f:0.0}";
 		string rates = "-";
 		if (sovereignTakenAt >= 0f && sovereignSamples.Count > 2)
 		{
-			float Rate(float from, float to)
+			// Every source's damage a second over a window, or one source's.
+			float Rate(float from, float to, string id = null)
 			{
 				var span = sovereignSamples.Where(s => s.At >= from && s.At <= to).ToList();
-				return span.Count > 1 ? (span[^1].Total - span[0].Total) / Math.Max(1f, span[^1].At - span[0].At) : 0f;
+				if (span.Count < 2)
+					return 0f;
+				long a = id == null ? span[0].Total : span[0].BySpell.TryGetValue(id, out long x) ? x : 0;
+				long b = id == null ? span[^1].Total : span[^1].BySpell.TryGetValue(id, out long y) ? y : 0;
+				return (b - a) / Math.Max(1f, span[^1].At - span[0].At);
 			}
+			// The doc's ratio: the Rite ALONE over the minute after, against the whole loadout over the minute before.
 			float before = Rate(sovereignTakenAt - 60f, sovereignTakenAt);
-			float after = Rate(sovereignTakenAt + 1f, sovereignTakenAt + 61f);
-			// The anointed spell's own share of the minute before: what it gained alone is after / (share x before).
-			var window = sovereignSamples.Where(s => s.At >= sovereignTakenAt - 60f && s.At <= sovereignTakenAt).ToList();
-			float share = 0f;
-			if (window.Count > 1 && window[^1].Total > window[0].Total)
-				share = ((window[^1].BySpell.TryGetValue(sovereignTarget, out long b1) ? b1 : 0)
-					- (window[0].BySpell.TryGetValue(sovereignTarget, out long a1) ? a1 : 0)) / (float)(window[^1].Total - window[0].Total);
-			rates = $"{before:0}/s->{after:0}/s(x{(before > 0f ? after / before : 0f):0.00}) share={share:0.00}";
+			float rite = Rate(sovereignTakenAt + 1f, sovereignTakenAt + 61f, SovereignRite.SpellId);
+			float everything = Rate(sovereignTakenAt + 1f, sovereignTakenAt + 61f);
+			rates = $"{before:0}/s->{rite:0}/s(x{(before > 0f ? rite / before : 0f):0.00}) allAfter={everything:0}/s";
 		}
-		return $" sovereign={AnointPolicy} sovOffered={At(sovereignOfferedAt)}@L{sovereignOfferedLevel} sovTaken={At(sovereignTakenAt)}"
-			+ $" anointed={(string.IsNullOrEmpty(sovereignTarget) ? "-" : sovereignTarget)} fuel={sovereignFuelAtTaking}->{player?.SovereignFuel ?? 0}"
-			+ $" sovDps={rates} sovLoadout=[{sovereignLoadoutAtTaking}]";
+		return $" sovereign=rite sovOffered={At(sovereignOfferedAt)}@L{sovereignOfferedLevel} sovTaken={At(sovereignTakenAt)}@L{sovereignTakenLevel}"
+			+ $" fuel={sovereignFuelAtTaking}->{player?.SovereignFuel ?? 0} sovDps={rates} sovLoadout=[{sovereignLoadoutAtTaking}]";
 	}
 
 	// --- --seek-combo (.ai/combo-spells.md section 2: "Measure with _BalanceHarness --seek-combo=<id>") -------
@@ -3406,6 +3431,9 @@ public partial class _BalanceHarness : Node
 		{
 			SpellData held = player.GetEquippedSpells().FirstOrDefault(s => s != null && s.Id.Equals(ingredient.SpellId, StringComparison.OrdinalIgnoreCase));
 			if (held != null && !string.IsNullOrEmpty(held.SelectedLevel8EvolutionId))
+				continue;
+			// The far sky waives this path's element gate (decision 10): nothing to chase for it.
+			if (player.FarSkyWaivesElementGate(ingredient.SpellId, ingredient.AscensionId))
 				continue;
 			SpellData template = held ?? ContentValidator.LoadAllSpells().FirstOrDefault(s => s.Id.Equals(ingredient.SpellId, StringComparison.OrdinalIgnoreCase));
 			SpellEvolutionOption named = ComboCatalog.Level8OptionsOf(template, ingredient).FirstOrDefault(o => o.Id == ingredient.AscensionId);
@@ -3448,6 +3476,8 @@ public partial class _BalanceHarness : Node
 				comboFirstOfferedAt = elapsed;
 			comboTakenAt = elapsed;
 			GD.Print($"HARNESS COMBINATION {recipe.Name} offered and taken at t={elapsed:0}s ({elapsed / 60f:0.0} min), player level {player.CurrentLevel}");
+			if (recipe.IsRite)
+				NoteRiteTaken();
 			return $"{made.SpellId}:{made.EvolutionChoices[0].Id}";
 		}
 
@@ -3461,6 +3491,32 @@ public partial class _BalanceHarness : Node
 		}
 		// The parents' other Ascensions are never taken: the planner below only sees the rest of the strip.
 		var otherAscensions = ascensions.Where(o => !parentIds.Contains(o.SpellId) && !ComboCatalog.IsComboOption(o)).ToList();
+
+		// The Sovereign Rite, both parents met: what it waits for now is its fuel (SovereignRite.MeetsGate), and every
+		// level on another active spell is one. A player planning the Rite takes those levels before a boon, fishes
+		// for them with his rerolls, and ascends another spell when it is offered (its eighth level is fuel too).
+		if (recipe.IsRite && sovereignTakenAt < 0f && EvaluateRiteFuelShort(recipe))
+		{
+			LevelUpOption otherUp = otherAscensions.FirstOrDefault(o => o.MilestoneLevel == Player.AscensionSpellLevel
+				&& o.EvolutionChoices.Any(e => !o.EvolutionLockReason.ContainsKey(e.Id)));
+			if (otherUp != null)
+				return $"{otherUp.SpellId}:{otherUp.EvolutionChoices.First(e => !otherUp.EvolutionLockReason.ContainsKey(e.Id)).Id}";
+			LevelUpOption fuelCard = options
+				.Where(o => !o.IsBoon && o.SpellId != Player.MarginaliaId && !parentIds.Contains(o.SpellId)
+					&& !SovereignRite.DefensiveSpellIds.Contains(o.SpellId) && (!o.IsNewUnlock || !player.IsSpellBookFull))
+				.OrderBy(o => o.IsNewUnlock)
+				.ThenByDescending(o => o.NextLevel)
+				.FirstOrDefault();
+			if (fuelCard != null)
+				return fuelCard.IsEvolutionMilestone && fuelCard.EvolutionChoices?.Count > 0
+					? $"{fuelCard.SpellId}:{fuelCard.EvolutionChoices[0].Id}"
+					: fuelCard.AutoChoice(Variant);
+			if (charges != null && charges.Rerolls > 0 && rerollsThisLevel < PlannedRerollsPerLevelUp)
+			{
+				rerollsThisLevel++;
+				return RerollAction;
+			}
+		}
 
 		// A parent's card: into the book first, then toward its cap. Its mutation keeps the pair inside three
 		// elements - a deepening, or the untagged path - never an element path that would bring a fourth.
@@ -3530,8 +3586,8 @@ public partial class _BalanceHarness : Node
 			if (comboParentAscendedAt.Count == 2 && bothParentsAscendedAt < 0f)
 				bothParentsAscendedAt = elapsed;
 		}
-		// The strip's own rule (ComboCatalog.Evaluate), not a strip built every frame.
-		if (comboFirstOfferedAt < 0f && player.EvaluateCombo(recipe).Ready)
+		// The strip's own rule (Player.IsComboOffered: the recipe, and the Rite's late gate), not a strip built every frame.
+		if (comboFirstOfferedAt < 0f && player.IsComboOffered(recipe))
 		{
 			comboFirstOfferedAt = elapsed;
 			GD.Print($"HARNESS COMBINATION {recipe.Name} first offered at t={elapsed:0}s ({elapsed / 60f:0.0} min)");
@@ -3575,9 +3631,12 @@ public partial class _BalanceHarness : Node
 
 	// --- --far-sky (.ai/second-half.md section 5: "Measured before it ships") -----------------------------------
 	// Every time below is the run's PACE minute (Node2DGame.PaceSeconds), which is what the doc's "by about minute
-	// 10" means: on a fifteen-minute run it is the clock, on a pinned chapter it is not.
+	// 10" means: on a fifteen-minute run it is the clock, on a pinned chapter it is not - and on the far shore's
+	// twenty-minute run (StageCatalog.FarShoreRunSeconds) pace minute 10 is real 13:20, so the made time is also
+	// given in real minutes (madeReal=).
 
 	private float farSkyMadeAtPace = -1f;
+	private float farSkyMadeAtReal = -1f;
 	private float farSkyOfferedAtPace = -1f;
 	private readonly Dictionary<string, float> farSkyInBookAtPace = new(StringComparer.OrdinalIgnoreCase);
 	private readonly Dictionary<string, float> farSkyAscendedAtPace = new(StringComparer.OrdinalIgnoreCase);
@@ -3609,6 +3668,64 @@ public partial class _BalanceHarness : Node
 			: $"HARNESS FAR SKY forced: '{id}' is tonight's Conjunction on this chapter, favour on");
 	}
 
+	// --curate and --kindred, once the save is in place.
+	private void ApplyLadderArgs()
+	{
+		if (ConjunctionLadder.KindredToolLevel is int kindred)
+			GD.Print($"HARNESS LADDER Kindred Draw at level {kindred} (x{ConjunctionLadder.KindredMultiplier(kindred):0} as often)");
+		if (curate <= 0 || GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is not SaveData save)
+			return;
+		SaveManager.WritesDisabled = true;
+		CharacterData who = CharacterRoster.GetByIndex(CharacterIndex);
+		var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		if (who?.StartingSpellResource != null)
+			keep.Add(who.StartingSpellResource.Id);
+		if (ComboTarget() is ComboDefinition target)
+			foreach (ComboIngredient parent in target.Ingredients)
+				keep.Add(parent.SpellId);
+		// The planner's set-aside: spells his plan never wants, last in the book's order first (a stable, seedless pick).
+		var aside = new List<string>();
+		foreach (string id in UnlockCatalog.AllSpellIds.Reverse())
+		{
+			if (aside.Count >= curate || GlobalStatsManager.GetCurationSlotCapacity(save) <= GlobalStatsManager.GetRemovedSpellCount(save))
+				break;
+			if (keep.Contains(id) || ComboCatalog.IsCombination(id) || !GlobalStatsManager.IsSpellUnlockedForLevelUp(save, id)
+				|| !UnlockCatalog.MayBeOffered(id, who?.Id) || GlobalStatsManager.IsSpellRemovedFromPool(save, id))
+				continue;
+			save.RemovedSpellIds.Add(id);
+			aside.Add(id);
+		}
+		curated = aside.Count;
+		GD.Print($"HARNESS LADDER curated {aside.Count} of {curate} asked: {string.Join(",", aside)}");
+	}
+
+	private int curated;
+
+	// Every fusion the strip offers, the first pace minute it does (the guard rail, cell E: "a recipe met in at most
+	// one run in five" - met is offered, as the recipe's Feat counts it). Read once a tick; a handful of recipes.
+	private readonly Dictionary<string, float> ladderMetAtPace = new(StringComparer.OrdinalIgnoreCase);
+
+	private void TrackLadderMet()
+	{
+		if (player == null || !IsInstanceValid(player))
+			return;
+		foreach (ComboDefinition recipe in ComboCatalog.Fusions)
+		{
+			if (ladderMetAtPace.ContainsKey(recipe.Id))
+				continue;
+			ComboStanding standing = player.EvaluateCombo(recipe);
+			if (standing.Ready || (standing.Taken && !ComboCatalog.StartsFused(recipe, player.SelectedCharacter?.Id)))
+				ladderMetAtPace[recipe.Id] = PaceMinutesNow;
+		}
+	}
+
+	// " ladder=kindred2,leaned14,curated8"
+	private string LadderSummary() =>
+		$" ladder=kindred{player?.KindredDrawLevel ?? 0},leaned{player?.KindredLeanedCards ?? 0},curated{curated}{(planner ? ",planner" : "")}"
+		+ $",pairShares{(player?.PairSharesLearned == true ? (ConjunctionLadder.PairShareHalf ? "Half" : "On") : "Off")},opened{player?.PairSharesOpened ?? 0}"
+		+ $",foretold{(player?.ForetoldRecipe != null ? "=" + player.ForetoldRecipe.Id + (player.ForetoldMade ? "@made" : "") : "-")}"
+		+ $" met=[{string.Join(",", ladderMetAtPace.Select(p => $"{p.Key}@{p.Value:0.0}"))}]";
+
 	private void TrackFarSky()
 	{
 		ComboDefinition recipe = player?.FarSkyRecipe ?? (string.IsNullOrEmpty(SeekCombo) ? null : ComboTarget());
@@ -3629,6 +3746,7 @@ public partial class _BalanceHarness : Node
 		if (made && farSkyMadeAtPace < 0f)
 		{
 			farSkyMadeAtPace = pace;
+			farSkyMadeAtReal = elapsed / 60f;
 			GD.Print($"HARNESS FAR SKY {recipe.Name} made at pace minute {pace:0.0} (t={elapsed:0}s), player level {player.CurrentLevel}"
 				+ $", favour {(player.FarSkyRecipe != null ? "on" : "off")}");
 			if (stopWhenMade)
@@ -3646,7 +3764,7 @@ public partial class _BalanceHarness : Node
 		string Each(Dictionary<string, float> at) => string.Join(",", recipe.Ingredients.Select(i =>
 			$"{i.SpellId}@{(at.TryGetValue(i.SpellId, out float t) ? $"{t:0.0}" : "-")}"));
 		return $" farSky={recipe.Id} favour={(player?.FarSkyRecipe != null ? "on" : "off")} inBook=[{Each(farSkyInBookAtPace)}]"
-			+ $" ascended=[{Each(farSkyAscendedAtPace)}] offeredPace={At(farSkyOfferedAtPace)} madePace={At(farSkyMadeAtPace)}"
+			+ $" ascended=[{Each(farSkyAscendedAtPace)}] offeredPace={At(farSkyOfferedAtPace)} madePace={At(farSkyMadeAtPace)} madeReal={At(farSkyMadeAtReal)}"
 			+ $" favoured={player?.FarSkyFavouredCards ?? 0}";
 	}
 

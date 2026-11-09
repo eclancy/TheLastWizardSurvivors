@@ -93,11 +93,11 @@ public static class EndlessCatalog
 	/// THE SHIM every "past the boss" rule of endless reads: when this chapter's warden walks in, in real seconds of run
 	/// clock. The pace clamp (Node2DGame.PaceMinutes), the returning warden's quarter hour and the first night's end
 	/// (Node2DGame.Endless.cs) all come through here and nowhere else, never a literal 900 or TimerVictorySeconds read
-	/// beside it. Today the reference run, 900 on every chapter (Node2DGame.TimerVictorySeconds' value); the far shore's
-	/// per-chapter run length (StageCatalog.VictorySecondsFor, another piece's) is to be pointed at from here when the
-	/// two merge - one line.
+	/// beside it. It reads the chapter's own run length (StageCatalog.VictorySecondsFor, the far shore's piece, merged
+	/// 2026-11-09): 900 on every road chapter and so every endless one, 1200 on the far shore - which is never endless
+	/// (question 5), so a twenty-minute night is a rule kept, not a case played.
 	/// </summary>
-	public static float ChapterVictorySeconds(string stageId) => global::Node2DGame.ReferenceRunSeconds;
+	public static float ChapterVictorySeconds(string stageId) => StageCatalog.VictorySecondsFor(stageId);
 
 	// --- The night's strength (section 1.5) -----------------------------------------------------------------------
 	//

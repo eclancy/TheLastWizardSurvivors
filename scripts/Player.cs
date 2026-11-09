@@ -60,6 +60,8 @@ public partial class Player : CharacterBody2D
 	[Export] public PackedScene FrostShardScene { get; set; }
 	[Export] public PackedScene RiptideScene { get; set; }
 	[Export] public PackedScene ShadowBoltScene { get; set; }
+	// The Sovereign Rite's caster (scenes/SovereignRite.tscn, SovereignRiteCaster; Player.Sovereign.cs).
+	[Export] public PackedScene SovereignRiteScene { get; set; }
 	[Export] public PackedScene ThornVineScene { get; set; }
 	[Export] public PackedScene GaleBladeScene { get; set; }
 	[Export] public PackedScene MoltenShardScene { get; set; }
@@ -1147,6 +1149,10 @@ public partial class Player : CharacterBody2D
 		AscensionLearned = Teachings.HasLearned(saveManager.Data, Teaching.Ascension);
 		ApotheosisLearned = Teachings.HasLearned(saveManager.Data, Teaching.Apotheosis);
 		ConjunctionsLearned = Teachings.HasLearned(saveManager.Data, Teaching.Conjunctions);
+		// Kindred Draw, rung II of the Conjunction ladder (Player.Ladder.cs): a shop Power, read once here.
+		ReadKindredDraw(GetLevel(ConjunctionLadder.KindredDrawId));
+		// Rung III, the pair shares its light: the Archivist's lesson, read once here (Player.Ladder.cs).
+		ReadPairShares(saveManager.Data);
 		bookPages = SpellBook.PagesFor(saveManager.Data);
 		// The run's boon slots: the base two plus the shop's Reliquary Shelf levels, capped at four
 		// (the boon rework, in-flight item 41). A found level would stack through GetLevel like any
@@ -4808,6 +4814,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals("cinderbreath", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshFlamethrower(spell, CinderbreathScene);
 		else if (spell.Id.Equals("riptide", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, RiptideScene);
 		else if (spell.Id.Equals(ShadowBolt.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireShadowBolt(spell);
+		else if (spell.Id.Equals(SovereignRite.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireSovereignRite(spell);
 		else if (spell.Id.Equals("thorn_vine", StringComparison.OrdinalIgnoreCase)) outcome = FireThornVine(spell, ThornVineScene);
 		else if (spell.Id.Equals("gale_blade", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, GaleBladeScene);
 		else if (spell.Id.Equals("molten_shard", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, MoltenShardScene, BoltAim.RandomInRange);
@@ -7702,15 +7709,13 @@ public partial class Player : CharacterBody2D
 		}
 
 		// A combination is not in the spell catalog - it is never a card - and is made only by fusing its
-		// two parents, from the strip (Player.Combinations.cs, ComboCatalog).
-		// The Sovereign Rite is a Conjunction too, but its second half names the spell it anoints
-		// ("sovereign_rite:fireball", Player.Sovereign.cs), and nothing is fused.
+		// two parents, from the strip (Player.Combinations.cs, ComboCatalog) - the Sovereign Rite among them.
 		// The one exception is a Conjunction this wizard opened on (the dark wizard's The Taking): it levels on
 		// cards and takes his Apotheosis, so its selection is a level or his form, never a fusion.
 		if (HeldStartingConjunction(spellId) is SpellData opening)
 			return LevelStartingConjunction(opening, evolutionId);
 		if (ComboCatalog.ForId(spellId) is ComboDefinition combination)
-			return combination.IsRite ? TryAnoint(evolutionId) : TryFuse(combination);
+			return TryFuse(combination);
 
 		SpellData spellTemplate = ResolveSpellTemplate(spellId);
 		if (spellTemplate == null)
@@ -8205,11 +8210,9 @@ public partial class Player : CharacterBody2D
 			offers.Add(option);
 		}
 		// The combinations whose recipes this loadout meets (ComboCatalog, Player.Combinations.cs): after
-		// every spell's own, since both parents are already at level 8 and offer nothing of their own.
+		// every spell's own, since both parents are already at level 8 and offer nothing of their own. The
+		// Sovereign Rite is one of them, once its late gate holds too (Player.Sovereign.cs).
 		offers.AddRange(BuildComboOffers());
-		// The Sovereign Rite, on the same plate, once the save owns it and the run meets its gate (Player.Sovereign.cs).
-		if (TryBuildSovereignOffer() is LevelUpOption rite)
-			offers.Add(rite);
 		return offers;
 	}
 
@@ -8318,6 +8321,8 @@ public partial class Player : CharacterBody2D
 						// Not gated on element, unlike the Ascension: level 4 is where a build is still
 						// being chosen, and gating it would just stall the player.
 						option.UpgradeSummary = "✦ SPELL MUTATION (Level 4) - Choose a mechanical mutation!";
+						// "Seals Sagittarius" on a path that would make a shown recipe name four elements (Player.Ladder.cs).
+						NoteRecipeSeals(option, equipped);
 					}
 				}
 
@@ -8433,6 +8438,9 @@ public partial class Player : CharacterBody2D
 		RemoveBanned(boonCandidates, boonWeights);
 		// The Betrothal Hoop leans the upgrade group toward the lowest-level spell (Player.ItemRules.cs).
 		WeightLowestUpgrades(heldUpgrades, heldUpgradeWeights);
+		// Kindred Draw (Player.Ladder.cs): a held parent's partner, and both parents' upgrades, leaned on. Not in a browse.
+		if (!browseAll)
+			ApplyKindredDrawLean(candidates, weights, heldUpgrades, heldUpgradeWeights);
 		// The far sky's favour (Player.FarSky.cs): tonight's two parents' cards, taken out of both pools to be dealt
 		// first - before the roll that decides whether held upgrades are in the hand, which they bypass. Not in a browse.
 		List<LevelUpOption> favoured = browseAll ? new List<LevelUpOption>()
@@ -8847,11 +8855,14 @@ public partial class Player : CharacterBody2D
 
 			// Measured once and worded from the measurement, so the checklist the browser draws and
 			// the sentence the locked level 8 card is stamped with cannot disagree.
-			AscensionRequirement elementGate = EvaluateElementGate(evo, spell, counts);
+			// With the pair's share beside the player's own count (rung III, Player.Ladder.cs).
+			AscensionRequirement elementGate = EvaluateElementGateInRun(evo, spell, counts);
 			if (elementGate != null)
 			{
+				// Waived by the far sky (Player.FarSky.cs) only where it would otherwise stand unmet, so the row says so.
+				elementGate.Waived = !elementGate.Met && FarSkyWaivesElementGate(spell.Id, evo.Id);
 				info.Requirements.Add(elementGate);
-				string gate = DescribeUnmetElementGate(evo, spell, counts);
+				string gate = elementGate.Waived ? null : DescribeUnmetGate(elementGate);
 				if (gate != null)
 					info.UnmetRequirements.Add(gate);
 			}
@@ -8894,9 +8905,23 @@ public partial class Player : CharacterBody2D
 			if (gates.Count == 0)
 				continue; // Nothing to be deep in; leave it available.
 
-			string unmet = DescribeUnmetElementGate(evo, spell, currentCounts);
+			// The pair's share counts beside the player's own tags (rung III, Player.Ladder.cs); the far sky's waiver
+			// below applies only where the gate still stands unmet, so the two never stack.
+			AscensionRequirement measured = EvaluateElementGateInRun(evo, spell, currentCounts);
+			string unmet = DescribeUnmetGate(measured);
 			if (unmet == null)
+			{
+				if (measured != null && measured.Shared > 0 && measured.Have < measured.Need)
+					NotePairShareOpened(spell, evo);
 				continue;
+			}
+
+			// Tonight's recipe's named path on a far-shore run (Player.FarSky.cs): open, and the page says why.
+			if (FarSkyWaivesElementGate(spell?.Id, evo.Id))
+			{
+				option.ElementGateWaived.Add(evo.Id);
+				continue;
+			}
 
 			option.EvolutionLockReason[evo.Id] = unmet;
 		}

@@ -156,8 +156,9 @@ falling back to him out of the sky. The chain is off him: two lengths on the gro
 light going out of them, the shackles open, the last of it falling from his wrist.
 
 **The line is his freed line** from `QuestLog.Prisoners`, his name in it: *Tituba's cell stands open.*,
-*Väinämöinen sings above the ice now.*, *Abe no Seimei keeps his own wards again.*, *Wayland the Smith has
-put his hammer down.*, *The Cumaean Sibyl speaks with one voice again.*, *Laelaps has run his chase out.*
+*Väinämöinen sings above the ice now.*, *Abe no Seimei's wards are his own again.*, *Wayland the Smith rests his
+hammer.*, *The Cumaean Sibyl speaks with one voice again.*, *Laelaps runs free.* (Eric reworded several in the story
+review of 2026-11-08, below.)
 Those lines were written in the game's voice for the chapter notes; the reel says them once, at the moment
 they become true. A locked wizard's name is his reward, and this is the moment he is paid it.
 
@@ -310,6 +311,38 @@ imported, an animated box's atlas beside its manifest, one line each, four lines
 in it; every held prisoner has one; on sample saves the deed owes it, a save and a load keep it, a second
 completion does not owe it twice, the reel pays it, and a wizard freed before the reels existed owes
 nothing).
+
+## The story review (2026-11-08)
+
+Eric reviewed every story panel on a generated review page (each panel photographed from the game mid-hold, its line
+editable, and a box for how the picture should change; the generator is a scratch script, the page lives in the
+gitignored `tools/art/_story_review/`). His line changes, word for word:
+
+| panel | was | now |
+|---|---|---|
+| freeing, Abe no Seimei | {0} keeps his own wards again. | {0}'s wards are his own again. |
+| freeing, Wayland | {0} has put his hammer down. | {0} rests his hammer. |
+| freeing, Laelaps | {0} runs free. Nothing he chases escapes. | {0} runs free. |
+| freeing, Nostradamus | {0} has closed his book. | {0} rests his eyes. |
+| freeing, Medea | {0} has walked out of the granary. | {0} is free from her prison. |
+| freeing, Nimue | {0} is out of his keeping. | {0} is freed from his grasp. |
+| the Ascension, panel 2 | At level 7 a spell may ascend down one path. | Spells may now ascend after max level. |
+| the Apotheosis, panel 1 | Your wizard's own spell has a final form. | The wizards unlock an ancient power. |
+| the Apotheosis, panel 2 | Ascend it and take it to its last level. | Your wizard's starting spell has a final form. |
+| Conjunctions, panel 1 | Two ascended spells may become one. | The whole is greater than the sum of its parts (no full stop: 46 characters) |
+| Conjunctions, panel 2 | Linked rings mark a path with a partner. | Two ascended spells may now become one. |
+
+Also from the review, and done the same day: Wayland's held line ("Someone below is chained to the anvil and cannot stop
+forging.", he asked that it say he is a slave there), prologue panel 2 redrawn in three passes (the dark wizard in front,
+lifting the four out of the stone circle one by one), John Dee taken out of panels 1 and 4 (he read the purple wizard as
+the player), and the Sovereign Rite's lesson removed (the Rite became an ordinary Conjunction, `.ai/sovereign-spell.md`).
+
+**The prologue's second round** - his notes, to be drawn and shown to him before they merge: the tide moves after "He
+took every wizard who might rival him." and becomes a town overrun by shadows with its people running, his tower and its
+glowing eye in the distance, under a new line "There was no one left to defend them."; the hiding wizard hides properly
+instead of standing in the open; the break shows his creatures closing in once the chain is broken, the four visible,
+under "You rescued four - they now stand with you."; the five is removed and folded into the road, the wizard smaller on
+the map, under "The rest still wait for you."; and the Ascension lesson's first panel moves the wizard up out of the line.
 
 ## Needs Eric's eyes
 

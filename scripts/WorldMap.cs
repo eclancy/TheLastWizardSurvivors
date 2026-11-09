@@ -595,12 +595,17 @@ public partial class WorldMap : Control
 		ResponsiveLayout.SetFont(startButton, ResponsiveLayout.TextRole.Body);
 		BonelightSkin.StyleButton(startButton, BonelightSkin.Emphasis.Primary);
 		startButton.Pressed += TryStart;
+		// Rung IV of the Conjunction ladder: Nostradamus's foretelling, over Enter (WorldMap.Foretell.cs).
+		column.AddChild(BuildForetellButton());
 		column.AddChild(startButton);
 
 		// Left and right move the map, never the selection: every focus stop's sideways neighbour is
 		// itself, so neither Godot's step nor MenuNavigator's held-stick repeat can walk it off. Up and
 		// down go round the stops: Start, then the Sketchbook (once there is one), then Back.
 		var ring = new List<Button> { startButton };
+		// The foretelling, when shown; hidden, Godot passes over it to the next stop.
+		if (foretellButton != null)
+			ring.Add(foretellButton);
 		if (pageButton != null)
 			ring.Add(pageButton);
 		if (journalButton != null)
@@ -701,6 +706,7 @@ public partial class WorldMap : Control
 			: open ? $"Enter {WithArticle(stage.DisplayName)}"
 			: "Locked";
 		startButton.TooltipText = open || stop.IsBossRush ? string.Empty : StageCatalog.LockedHintFor(stage, save);
+		RefreshForetell(stop, open);
 	}
 
 	private void AddRewards(StageDefinition stage)

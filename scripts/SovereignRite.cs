@@ -5,52 +5,56 @@ using Godot;
 
 namespace TheOneHeMissed.scripts;
 
-/// <summary>What the Rite would pour into one spell: the four numbers, as the boon carries them.</summary>
+/// <summary>What the Rite's fuel pours into it: the four numbers, as the boon carries them.</summary>
 public readonly record struct SovereignGains(int Fuel, float DamageMultiplier, float CooldownMultiplier,
 	float AreaMultiplier, float ScaleMultiplier, int AmountBonus);
 
 /// <summary>
-/// The single authority on the Sovereign Rite's numbers and rules (.ai/sovereign-spell.md, approved by Eric
-/// 2026-11-02): who may be anointed, what counts as fuel, what the fuel buys, and when the strip offers it.
+/// The single authority on the Sovereign Rite's numbers and rules (.ai/sovereign-spell.md): its late gate, what
+/// counts as fuel, what the fuel buys, and who is never silenced.
 /// </summary>
 /// <remarks>
-/// The Rite is a Conjunction (ComboCatalog.SovereignRiteId) whose second ingredient is whichever active spell
-/// the player points it at. Taken once, late: every OTHER active spell falls silent for the rest of the run
-/// (Player.IsSilenced), and the one it anoints gains from every level those silenced spells hold - their
-/// levels are its fuel, and they keep levelling (an upgrade card for one reads "+1 fuel to Sovereign X").
+/// <para><b>Since 2026-11-08 it is an ordinary two-spell Conjunction</b> (Eric: "the soverign rite should be a
+/// combination spell itself - pick two spells that make sense to combine to create this"): Arcane Explosion down
+/// Resonance and Gravewell down Mass Grave, made one in the Ascension strip like every recipe (ComboCatalog), its
+/// payload a crowned blast that opens a great grave (SovereignRiteCaster). And it "doesn't need an animation to
+/// learn. it just unlocks with combination spells": no lesson of its own - a save that has learned Conjunctions
+/// is offered it as one more recipe.</para>
 ///
-/// The gain is a milestone the spell carries (SpellData.SovereignBoon), so it reaches every stat reader
-/// through the one list they all walk (SpellData.CollectActive) - no reader names the Rite. It carries
-/// damage, cooldown, area (or, for a spell that has no area, its drawn scale) and amount, and nothing else:
-/// no effect, no rider, no slow, no knockback. So it cannot open a crowd-control or an execute path on a
-/// boss; bosses take its damage in full and every clamp they have still applies
-/// (RegressionChecks.ValidateSovereignRite holds both).
+/// <para>What still makes it the Rite: it is LATE (the strip waits for <see cref="MinimumPlayerLevel"/> and for
+/// <see cref="MinimumFuel"/> levels across the other active spells, so it is never a trap), and making it
+/// SILENCES every other active spell for the rest of the run (Player.IsSilenced). Their levels - and every level
+/// they gain afterwards, on plain "+1 fuel" cards - are its fuel.</para>
+///
+/// <para>The gain is a milestone the Rite carries (SpellData.SovereignBoon), shared with its two frozen parents,
+/// so it reaches every stat reader through the one list they all walk (SpellData.CollectActive) - no reader names
+/// the Rite. It carries damage, cooldown, area and amount and nothing else: no effect, no rider, no slow, no
+/// knockback. So it cannot open a crowd-control or an execute path on a boss (RegressionChecks.ValidateSovereignRite).</para>
 /// </remarks>
 public static class SovereignRite
 {
 	/// <summary>The Rite's own id: its SpellData (SpellData_SovereignRite.tres), its recipe and its unlock entry.</summary>
 	public const string SpellId = "sovereign_rite";
 
-	/// <summary>The boon's id, as SpellData.HasEvolution would read it (it never does: the Rite is no branch).</summary>
+	/// <summary>The boon's id, as SpellData.HasEvolution would read it (it never does: the boon is no branch).</summary>
 	public const string BoonId = "sovereign_rite_boon";
 
-	// --- the offer (section 3) ------------------------------------------------------------------------
+	// --- the gate (section 3) ------------------------------------------------------------------------------
 
-	/// <summary>The player level the strip waits for. 25 in the doc's first draft; moved by section 6's
-	/// measurement so a planned build is first offered it at minute 11-12 (section 8, "Tuned").</summary>
+	/// <summary>The player level the strip waits for: Eric's "can't unlock until late in the game". 25 in the
+	/// first draft; 28 since section 6's measurement put a planned build's first offer at minute 10-12.</summary>
 	public const int MinimumPlayerLevel = 28;
 
-	/// <summary>Active spells held, the anointed one among them.</summary>
-	public const int MinimumActiveSpells = 3;
-
-	/// <summary>The fuel the chosen spell must be offered: the other active spells' levels, summed.</summary>
+	/// <summary>
+	/// The fuel the fusion must find: the levels of every active spell held besides the two parents, summed. Two
+	/// other spells at level 8 is the least that meets it, so the Rite is never taken onto an empty book.
+	/// </summary>
 	public const int MinimumFuel = 16;
 
-	// --- the power (section 4), per level of fuel -------------------------------------------------------
+	// --- the power (section 4), per level of fuel ---------------------------------------------------------------
 
-	// Section 4 started at 7%, which made the build's main spell, anointed at the gate's 16 fuel, x2.3-3.0 the
-	// whole loadout against a 1.3 target: the cooldown, area and amount steps carry most of that on their own.
-	// Tuned by section 6's measurement to 0.5%, which measured x1.34-1.44 (section 8, "Tuned").
+	// Retuned 2026-11-08 for the Rite as its own spell (.ai/sovereign-spell.md section 9): the measured ratio is
+	// the Rite alone against the whole loadout it silenced, target about 1.3.
 	public const float DamagePerFuel = 0.005f;
 	public const float CooldownPerFuel = 0.008f;
 	/// <summary>The cooldown never falls below this share of what it was (-30%).</summary>
@@ -58,30 +62,20 @@ public static class SovereignRite
 	public const float AreaPerFuel = 0.01f;
 	/// <summary>The area never grows past this (+40%).</summary>
 	public const float AreaCap = 1.40f;
-	/// <summary>One more projectile, strike or tentacle for every this many levels of fuel. 10 in section 4's
-	/// draft, which kept a spell that reads an amount (Cinderbreath's tongues) over the target however far the
-	/// damage was cut; at 20 the gate's 16 fuel gives none and a full book's 40 gives two.</summary>
-	public const int FuelPerAmount = 20;
-
-	/// <summary>"Sovereign Cinderbreath": what the anointed spell is called for the rest of the run.</summary>
-	public const string NamePrefix = "Sovereign ";
+	/// <summary>
+	/// One more crowned blast (and its grave) a cast for every this many levels of fuel. 20 in the first build,
+	/// where one more was a tongue or a bolt; for the Rite one more is a whole second blast and grave, which at 20
+	/// doubled it within a minute of the fusion (fuel climbs four levels in that minute on a late book). At 40 only
+	/// a full book - five other spells at level 8 - lets a second fall (section 9.5).
+	/// </summary>
+	public const int FuelPerAmount = 40;
 
 	/// <summary>
-	/// The spells the Rite counts as passive: never silenced, never fuel, never anointed. SpellData.IsPassive
-	/// is set on nothing since boons replaced the passive spells, so the doc's "wards, auras, the defensive
-	/// spells" is today the one shield: Aegis Ward costs a slot but is not an attack (UnlockCatalog's note).
+	/// The spells the Rite counts as passive: never silenced, never fuel. SpellData.IsPassive is set on nothing
+	/// since boons replaced the passive spells, so the doc's "wards, auras, the defensive spells" is today the
+	/// one shield: Aegis Ward costs a slot but is not an attack (UnlockCatalog's note).
 	/// </summary>
 	public static readonly string[] DefensiveSpellIds = { "aegis_ward" };
-
-	/// <summary>
-	/// Spells the Rite will not anoint, and why. Each is fed by the other spells' casts or kills, which the
-	/// Rite silences, so anointed it would be the whole run's damage gone for a spell that no longer goes off.
-	/// </summary>
-	private static readonly Dictionary<string, string> RefusedTargets = new(StringComparer.OrdinalIgnoreCase)
-	{
-		["arcane_explosion"] = "Charged by the casts it would silence",
-		["frost_shard"] = "Shatters only what other spells kill",
-	};
 
 	/// <summary>True for a spell the Rite leaves alone: a passive, or a defensive spell.</summary>
 	public static bool IsPassiveForRite(SpellData spell) =>
@@ -91,33 +85,39 @@ public static class SovereignRite
 	public static IEnumerable<SpellData> ActiveSpells(IEnumerable<SpellData> loadout) =>
 		(loadout ?? Enumerable.Empty<SpellData>()).Where(s => s != null && !string.IsNullOrEmpty(s.Id) && !IsPassiveForRite(s));
 
-	/// <summary>The fuel <paramref name="target"/> would have from this loadout: every OTHER active spell's level.</summary>
-	public static int FuelFor(SpellData target, IEnumerable<SpellData> loadout) =>
-		ActiveSpells(loadout).Where(s => !ReferenceEquals(s, target)).Sum(s => Math.Max(0, s.CurrentLevel));
-
-	/// <summary>Why the Rite will not anoint this spell, or null when it will.</summary>
-	public static string RefusalFor(SpellData spell)
+	/// <summary>
+	/// The fuel one held spell is worth: its level - or, for a Conjunction made by fusing, the levels of the two
+	/// frozen parents it carries (sixteen), since a fusion is two spells' levels in one slot and counting it as one
+	/// level would make every earlier Conjunction a trap. A Conjunction a wizard opened on (SpellData.ReadsOwnTable)
+	/// has its own level table, and its level is its fuel.
+	/// </summary>
+	public static int FuelOf(SpellData spell)
 	{
 		if (spell == null)
-			return "No spell";
-		if (IsPassiveForRite(spell))
-			return "Not an attack";
-		return RefusedTargets.TryGetValue(spell.Id, out string why) ? why : null;
+			return 0;
+		if (spell.ComboParents is { Length: > 0 } parents)
+			return parents.Sum(p => Math.Max(0, p?.CurrentLevel ?? 0));
+		return Math.Max(0, spell.CurrentLevel);
 	}
 
-	/// <summary>The ids the Rite refuses to anoint, for the validator.</summary>
-	public static IEnumerable<string> RefusedTargetIds => RefusedTargets.Keys;
+	/// <summary>
+	/// The fuel the loadout pours into the Rite: every active spell's worth (<see cref="FuelOf"/>) but those
+	/// named in <paramref name="besides"/> - the Rite itself once made, or its two parents before the fusion.
+	/// </summary>
+	public static int FuelFrom(IEnumerable<SpellData> loadout, params SpellData[] besides) =>
+		ActiveSpells(loadout).Where(s => !besides.Any(b => ReferenceEquals(b, s))).Sum(FuelOf);
+
+	/// <summary>Whether the strip may offer the Rite now: the player's level, and the fuel the fusion would find.</summary>
+	public static bool MeetsGate(int playerLevel, int fuel) =>
+		playerLevel >= MinimumPlayerLevel && fuel >= MinimumFuel;
 
 	/// <summary>
-	/// What <paramref name="fuel"/> buys <paramref name="spell"/>: damage on every spell; cooldown, area and
-	/// amount only on a spell whose script reads them (EvolutionStatReaders), so a card never promises a
-	/// number its spell ignores. A spell with no area of its own grows its drawn scale instead, which is its
-	/// reach on a bolt; never both, which would compound.
+	/// What <paramref name="fuel"/> buys the Rite: damage, cooldown, area and amount, each only where its script
+	/// reads it (EvolutionStatReaders' row), so a number is never promised that nothing reads.
 	/// </summary>
 	public static SovereignGains GainsFor(SpellData spell, int fuel)
 	{
 		fuel = Math.Max(0, fuel);
-		// A spell with no row in the table (none today: ValidateEvolutionReaders wants one) is promised damage only.
 		EvolutionStat stats = EvolutionStatReaders.TryGet(spell, out SpellStatReaders readers) ? readers.Stats : EvolutionStat.Damage;
 		float damage = (stats & EvolutionStat.Damage) != 0 ? 1f + DamagePerFuel * fuel : 1f;
 		float cooldown = (stats & EvolutionStat.Cooldown) != 0 ? MathF.Max(CooldownFloor, 1f - CooldownPerFuel * fuel) : 1f;
@@ -154,7 +154,7 @@ public static class SovereignRite
 		boon.ProjectileCountBonus = gains.AmountBonus;
 	}
 
-	/// <summary>"x1.2 damage, -30% cooldown, +40% area, +2 amount": a chooser card's line, the numbers that apply.</summary>
+	/// <summary>"x1.2 damage, -30% cooldown, +40% area, +2 amount": what a fuel buys, the numbers that apply.</summary>
 	public static string GainLine(SovereignGains gains)
 	{
 		var parts = new List<string>();
@@ -170,18 +170,4 @@ public static class SovereignRite
 			parts.Add($"+{gains.AmountBonus} amount");
 		return string.Join(", ", parts);
 	}
-
-	/// <summary>The anointed spell's name: "Sovereign Cinderbreath" (the legendary star, if any, stays at the end).</summary>
-	public static string SovereignName(string name) =>
-		string.IsNullOrEmpty(name) || name.StartsWith(NamePrefix, StringComparison.Ordinal) ? name ?? string.Empty : NamePrefix + name;
-
-	/// <summary>
-	/// Whether the strip may offer the Rite to this loadout now (section 3): the player level, three active
-	/// spells, and at least one of them that the Rite will anoint with <see cref="MinimumFuel"/> behind it.
-	/// The save's ownership and "not taken yet" are the caller's (Player.TryBuildSovereignOffer).
-	/// </summary>
-	public static bool MeetsGate(int playerLevel, IReadOnlyCollection<SpellData> loadout) =>
-		playerLevel >= MinimumPlayerLevel
-		&& ActiveSpells(loadout).Count() >= MinimumActiveSpells
-		&& ActiveSpells(loadout).Any(s => RefusalFor(s) == null && FuelFor(s, loadout) >= MinimumFuel);
 }

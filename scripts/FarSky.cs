@@ -79,7 +79,9 @@ public static class FarSky
 		why = string.Empty;
 		if (recipe == null || recipe.IsRite)
 		{
-			why = "not a recipe of two spells";
+			// The Rite became a fusion of two spells on 2026-11-08 (.ai/sovereign-spell.md); it is still never tonight's
+			// recipe, because it is the capstone that silences the rest of the loadout.
+			why = "the Sovereign Rite, the capstone, is never tonight's recipe";
 			return false;
 		}
 		if (ComboCatalog.StartsFused(recipe, characterId))
@@ -160,6 +162,28 @@ public static class FarSky
 		if (ToolOverride != null)
 			return ToolOverride.Equals(Off, StringComparison.OrdinalIgnoreCase) ? null : ComboCatalog.ForId(ToolOverride) is { IsRite: false } forced ? forced : null;
 		return StageCatalog.IsOnFarShore(stage) ? Tonight(save, character) : null;
+	}
+
+	/// <summary>
+	/// The words on a path whose element gate the far sky waives - on the level 8 page and in the Codex's Ascension row.
+	/// The card language of the "Joins ..." line beside it: no number, no code word.
+	/// </summary>
+	public const string WaiverLine = "The far sky waives its element";
+
+	/// <summary>
+	/// THE WAIVER (decision 10 of .ai/second-half.md; Eric, 2026-11-08: "Waive element gate", in place of a Muster). True
+	/// only for one of the two Ascensions <paramref name="recipe"/> names, on its own parent, on a far-shore run, while
+	/// the recipe is live - neither made nor sealed. It waives the "four of the path's element" gate and nothing else:
+	/// the spell still reaches its card cap, the player still reaches level 17 (Player.AscensionMinimumPlayerLevel), and
+	/// the recipe still asks both parents at 8 down both named paths. Every other path on the page keeps its gate.
+	/// </summary>
+	public static bool WaivesElementGate(ComboDefinition recipe, bool onFarShore, bool recipeLive, string spellId, string ascensionId)
+	{
+		if (recipe == null || recipe.IsRite || !onFarShore || !recipeLive
+			|| string.IsNullOrEmpty(spellId) || string.IsNullOrEmpty(ascensionId))
+			return false;
+		return recipe.Ingredients.Any(i => i.SpellId.Equals(spellId, StringComparison.OrdinalIgnoreCase)
+			&& i.AscensionId.Equals(ascensionId, StringComparison.OrdinalIgnoreCase));
 	}
 
 	/// <summary>"Sagittarius - Hunter's Draw (Hunter's Mark) and Starfall (Constellation)": the recipe and how it is made.</summary>

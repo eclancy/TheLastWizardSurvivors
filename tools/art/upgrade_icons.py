@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Arcane Upgrade icons. Run: python tools/art/upgrade_icons.py
 
-Twenty 32x32 icons, one per permanent upgrade sold in the main menu's Arcane Upgrades shop
+Twenty-one 32x32 icons, one per permanent upgrade sold in the main menu's Arcane Upgrades shop
 (MainMenu.BuildUpgradeDefinitions), rendered at x2 to the 32x32 UI cell in art-direction.md
 section 1 - the cell the spell and boon icons use. The ids are the shop's ids, and the C# loads
 res://assets/bonelight/ui/upgrades/<id>.png by them: rename one here and rename it there.
@@ -876,6 +876,42 @@ def boon_slots():
     return c
 
 
+def kindred_draw():
+    """Kindred Draw: a gold ring held, and its partner - a ring of arcane light - drawn in to it along a thread.
+
+    Rung II of .ai/conjunction-progression.md: hold one spell of a known Conjunction and its partner comes to the
+    hand more often. The two linked rings are the game's Conjunction mark (stat_icons.py's 'conjunction'); here they
+    are not linked yet - the second is on its way, the thread taut between them - which is what the Power does.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    g_hi, g_lit, g_base, g_shade, g_deep = _ramp("gold")
+    # The held ring: solid gold, lower left, lit from the upper left like any object.
+    cx, cy, r = 11, 19, 7
+    c.ring(cx, cy, r, r, g_shade, thick=3)
+    for deg in range(0, 360, 4):
+        a = math.radians(deg)
+        facing = math.cos(a - math.radians(225.0))
+        tone = g_hi if facing > 0.75 else (g_lit if facing > 0.15 else (g_deep if facing < -0.55 else g_base))
+        c.set(cx + math.cos(a) * (r - 0.5), cy + math.sin(a) * (r - 0.5), tone)
+        c.set(cx + math.cos(a) * (r - 2.5), cy + math.sin(a) * (r - 2.5), g_deep if facing > 0.2 else g_base)
+    # The partner: a ring of arcane light, upper right, coming in - emissive, so its core is the hot tone.
+    px, py, pr = 22, 9, 5
+    c.ring(px, py, pr, pr, E("arcane", "mid"), thick=2)
+    for deg in range(0, 360, 6):
+        a = math.radians(deg)
+        c.set(px + math.cos(a) * (pr - 0.5), py + math.sin(a) * (pr - 0.5), E("arcane", "hot"))
+    _glint(c, px - 3, py - 3, "arcane")
+    # The thread that draws it in: from the gold ring's rim to the partner's, a taut line of light.
+    for i in range(0, 8):
+        x, y = 16 + i * 0.75, 14 - i * 0.75
+        c.set(x, y, E("light", "hot" if i % 2 else "mid"))
+    # The way it is drawn: two motes on the thread, nearer the held ring.
+    c.set(17, 13, E("light", "core"))
+    c.set(19, 11, E("arcane", "core"))
+    _shadow(c, 11, 6)
+    return c
+
+
 ICONS = [
     ("pages", pages),
     ("boon_slots", boon_slots),
@@ -897,6 +933,7 @@ ICONS = [
     ("luck", luck),
     ("crit_chance", crit_chance),
     ("curation", curation),
+    ("kindred_draw", kindred_draw),
 ]
 
 

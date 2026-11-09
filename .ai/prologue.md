@@ -228,7 +228,8 @@ impact beat: the tide's burst, a few seconds on, is the one that is his.
 
 Since the slow start (`.ai/slow-start.md` section 10) `Prologue.cs` plays **reels**: the prologue is the
 reel `prologue`, and each system a save is taught has one of two panels (`Prologue.Reels`: `ascension`,
-`apotheosis`, `conjunctions`, `sovereign_rite`), drawn by `tools/art/lessons.py` into
+`apotheosis`, `conjunctions`, `far_sky`; `sovereign_rite` until 2026-11-08, when the Rite became a
+Conjunction with no lesson of its own), drawn by `tools/art/lessons.py` into
 `assets/bonelight/ui/lessons/` on this frame, with these layers, this audit and these pieces. A lesson is
 held longer than a prologue panel (5-6 s), because its line is the lesson, and every line fits one line on
 a PC (`ValidateTeachers`: 46 characters). It plays two ways: over the paused run before the results

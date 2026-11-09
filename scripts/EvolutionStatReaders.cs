@@ -190,6 +190,14 @@ public static class EvolutionStatReaders
 				| EvolutionStat.Slow | EvolutionStat.Rider | EvolutionStat.Amount,
 			"ShadowBolt.Cast, CaveInAll and Freeze, through Player.FireShadowBolt: the bolt's hit and the cave-ins are shares of the frozen Void Lance's strike, the curse's poison, reach and length the frozen Contagion's, the beat Pandemic's (Amount is more leaps a cast)",
 			SpellEffect.AreaSize, SpellEffect.ZoneDuration, SpellEffect.DotDamage, SpellEffect.CritDamage),
+		// The Sovereign Rite, the capstone combination (ComboCatalog) since 2026-11-08: terminal, so no card reaches it;
+		// its fuel does, as a milestone of its own (SpellData.SovereignBoon) shared with its frozen parents. The blast,
+		// the grave and the echo run in SovereignRiteCaster.cs on the two frozen parents it carries, every hit
+		// credited to the combination. No Scale: the blast and the grave draw themselves out of the radius they hit.
+		["sovereign_rite"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
+				| EvolutionStat.Rider | EvolutionStat.Amount,
+			"SovereignRiteCaster.Cast, OpenGrave and Freeze, through Player.FireSovereignRite: the blast's hit and reach are the frozen Arcane Explosion's, the grave is a GravewellTrap on the frozen Gravewell's numbers (Mass Grave's width, hold and drain; its Speed how fast it opens), the cooldown and the reach the frozen Gravewell's; Amount (the fuel's +1 per 20, and the player's) is more blasts a cast",
+			SpellEffect.AreaSize, SpellEffect.RootDuration, SpellEffect.CritDamage),
 		// The four bolts' own cards (BoltEvolutions, 2026-10-29) are behaviours read by id; their numbers
 		// ride on the fields below.
 		["gale_blade"] = R(Bolt, "ElementalBolt (Returning; Eddy, Hooked Throw, Live Wire, Thunderhead and Squall by id)", BoltEffects),

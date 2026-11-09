@@ -1,4 +1,4 @@
-[gd_scene load_steps=41 format=3 uid="uid://blm05dwe1lxph"]
+[gd_scene load_steps=42 format=3 uid="uid://blm05dwe1lxph"]
 
 [ext_resource type="Script" uid="uid://c03i6ui7vfdm0" path="res://scripts/Player.cs" id="1_qhqgy"]
 [ext_resource type="PackedScene" uid="uid://c5me6ajqighyl" path="res://scenes/MagicMissile.tscn" id="2_qlg0r"]
@@ -26,6 +26,7 @@
 [ext_resource type="PackedScene" path="res://scenes/BrambleSeed.tscn" id="31_brambleseed"]
 [ext_resource type="PackedScene" path="res://scenes/Riptide.tscn" id="23_riptide"]
 [ext_resource type="PackedScene" path="res://scenes/ShadowBolt.tscn" id="7_shadowbolt"]
+[ext_resource type="PackedScene" path="res://scenes/SovereignRite.tscn" id="7_sovereignrite"]
 [ext_resource type="PackedScene" path="res://scenes/ThornVine.tscn" id="8_thornvine"]
 [ext_resource type="PackedScene" path="res://scenes/GaleBlade.tscn" id="9_galeblade"]
 [ext_resource type="PackedScene" path="res://scenes/MoltenShard.tscn" id="10_moltenshard"]
@@ -99,6 +100,7 @@ ContagionScene = ExtResource("30_contagion")
 BrambleSeedScene = ExtResource("31_brambleseed")
 RiptideScene = ExtResource("23_riptide")
 ShadowBoltScene = ExtResource("7_shadowbolt")
+SovereignRiteScene = ExtResource("7_sovereignrite")
 ThornVineScene = ExtResource("8_thornvine")
 GaleBladeScene = ExtResource("9_galeblade")
 MoltenShardScene = ExtResource("10_moltenshard")
