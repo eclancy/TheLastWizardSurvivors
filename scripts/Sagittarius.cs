@@ -33,16 +33,45 @@ namespace TheOneHeMissed.scripts;
 // stars furthest apart (this node's own stroke); on the loose every star flares (Starfall.Flare), a gold
 // arrow streaks from each to the mark, and the lines flash once and go out. One sound per loose, never one an
 // arrow: a bowstring and a glass chord, Light's voice (SfxCatalog.SpellSagittarius).
+//
+// TWO WAYS TO HOLD IT (.ai/second-half.md 3.4, F2). Fused, as above: the frozen parents ride on the spell. OPENED ON,
+// by Artemis (ComboDefinition.StartsFusedFor): she never held the parents, so her copy carries none
+// (SpellData.ReadsOwnTable) and levels 1 to 8 off its own table. Then the rain is a Starfall on the Conjunction's own
+// numbers (Player.FireSagittarius hands the spell itself in as the rain), the lines are the recipe's whatever the
+// level (Starfall.Linked), and every arrow is TableArrowShare of one star's hit, loosed from a bow that levels with her
+// (Player.SagittariusTableBow: Hunter's Draw down Hunter's Mark at her level, for its pierce, speed, reach, size and
+// nock - a fused copy's frozen bow at her level 8).
+// Everything after the cloudburst - the draw, the mark, the loose - is the one code path for both.
+//
+// THE HUNTER'S MOON (HuntersMoonId, Artemis's Apotheosis, verb hunt; .ai/second-half.md 3.3): "When your quarry
+// falls, the mark passes to the strongest in reach and every lit star looses again." Every loose under it marks what
+// it was loosed at, and does not put its stars out: each stays lit for a lit star's linger with one shot left
+// (Starfall.LooseLit, FlareLoosed). When the quarry falls - to anything - the mark passes to the strongest in reach
+// and every star with a shot left looses at it, with the draw the stop was loosed with, and then goes out. Each star
+// at most twice a stop (HuntShotsPerStar), so a stop is at most twice MaxLitStars arrows; the mark goes on passing
+// kill to kill while there is anyone in reach, so the next stop looses at it.
 public partial class Sagittarius : Node2D
 {
 	public const string SpellId = "sagittarius";
 	public const string BowSpellId = "hunters_draw";
 	public const string RainSpellId = "starfall";
 
+	/// <summary>Artemis's Apotheosis on it (ApotheosisCatalog, verb hunt).</summary>
+	public const string HuntersMoonId = "sagittarius_hunters_moon";
+
+	/// <summary>The most times one lit star looses in a stop under the Hunter's Moon (3.3: "each star at most twice a stop").</summary>
+	public const int HuntShotsPerStar = 2;
+
 	// --- the combination's own multipliers (tuned in scenes/Sagittarius.tscn) -------------------------------
 
 	/// <summary>Each arrow's share of Hunter's Draw's level 8 arrow, before the draw scales it. Section 3: 0.8.</summary>
 	[Export] public float ArrowShare { get; set; } = 0.8f;
+
+	/// <summary>
+	/// The table path's arrow (Artemis's copy): each arrow's share of ONE STAR'S hit at her level, before the draw scales
+	/// it. 0.7 makes her level 8 a fused copy's: 0.7 of 22 is 15.4, where the fused bow's 19 at 0.8 is 15.2.
+	/// </summary>
+	[Export] public float TableArrowShare { get; set; } = 0.7f;
 
 	/// <summary>Each star's share of Starfall's level 8 star (its lines are Constellation's share of that).</summary>
 	[Export] public float StarShare { get; set; } = 1.0f;
@@ -74,10 +103,17 @@ public partial class Sagittarius : Node2D
 	private Vector2 lastPosition;
 	private bool tracking;
 
-	// What the last cloudburst handed over for the arrows.
+	// What the last cloudburst handed over for the arrows: one arrow's hit before the draw scales it (the frozen bow's
+	// times ArrowShare, or a star's times TableArrowShare on the table path), and the player's terms on it.
+	private float arrowBaseDamage = 1f;
 	private float arrowDamageMultiplier = 1f;
 	private float areaMultiplier = 1f;
 	private float durationMultiplier = 1f;
+
+	// The Hunter's Moon: whether the spell holds it, and the draw the stop was loosed with (the hunt's second volley
+	// flies with it - the bow has been let down since).
+	private bool hunting;
+	private float huntDraw;
 
 	// The archers, collected at the loose; the two stars the taut arc spans, every frame. No allocation.
 	private const int ArcherBuffer = 32;
@@ -110,6 +146,9 @@ public partial class Sagittarius : Node2D
 	/// <summary>
 	/// The fire loop's cooldown, as Starfall's: <paramref name="stars"/> to let fall over the next
 	/// <paramref name="interval"/>, and the numbers the arrows will fly with. Keeps the node current.
+	/// <paramref name="frozenBow"/> and <paramref name="frozenRain"/> are the two parents frozen at the fusion - or, on
+	/// the table path (the combination carries no parents: Artemis's copy), the bow at her level and the combination
+	/// itself, whose table is the rain's.
 	/// </summary>
 	public void Cloudburst(SpellData combination, SpellData frozenBow, SpellData frozenRain, int stars, float interval,
 		float nock, float playerArea, float damageMultiplier, float duration, Color visualTint)
@@ -122,7 +161,11 @@ public partial class Sagittarius : Node2D
 		nockSeconds = nock;
 		areaMultiplier = playerArea;
 		durationMultiplier = duration;
-		arrowDamageMultiplier = damageMultiplier * ArrowShare;
+		arrowDamageMultiplier = damageMultiplier;
+		arrowBaseDamage = combination.ReadsOwnTable
+			? combination.GetDamageAtLevel(combination.CurrentLevel) * TableArrowShare
+			: bow.GetDamageAtLevel(bow.CurrentLevel) * ArrowShare;
+		hunting = combination.HasEvolution(HuntersMoonId);
 
 		if (sky == null || !IsInstanceValid(sky))
 		{
@@ -138,6 +181,8 @@ public partial class Sagittarius : Node2D
 		}
 		sky.DamageSource = combination;
 		sky.HeldCap = Math.Max(1, MaxLitStars);
+		// The archer's figure is the recipe's: lit stars and their lines on the table path too.
+		sky.Linked = true;
 		sky.Cloudburst(frozenRain, stars, interval, playerArea, damageMultiplier * StarShare, duration, visualTint);
 	}
 
@@ -276,7 +321,7 @@ public partial class Sagittarius : Node2D
 	// fatigue clock stopped, as Hunter's Draw keeps a draw with nothing to shoot.
 	private bool Loose(float drawn)
 	{
-		float castRange = bow.GetRangeAtLevel(bow.CurrentLevel);
+		float castRange = Reach();
 		drawn = Mathf.Clamp(drawn, 0f, 1f);
 		bool fullDraw = drawn >= 0.999f;
 
@@ -286,17 +331,42 @@ public partial class Sagittarius : Node2D
 		if (fullDraw && PlayerRef.FindStrongestEnemyWithin(castRange) is Enemy strongest)
 			marked = strongest;
 		Node2D target = marked ?? NearestToWizard(castRange);
-		int count = target == null ? 0 : sky.CollectLit(archers);
+		// Under the Hunter's Moon each star may loose twice a stop (Starfall.LooseLit); otherwise every lit star once.
+		int count = target == null ? 0 : hunting ? sky.LooseLit(archers, 0, HuntShotsPerStar) : sky.CollectLit(archers);
 		if (target == null || count == 0)
 		{
 			holdSeconds = 0f;
 			return false;
 		}
-		// A full draw marks (or marks again, for the full five seconds) whatever it chose.
-		if (fullDraw && marked != null)
+		// A full draw marks (or marks again, for the full five seconds) whatever it chose. Under the Hunter's Moon every
+		// volley marks what it was loosed at: that is the quarry whose fall passes the mark on.
+		if (hunting && marked == null)
+			marked = target as Enemy;
+		if (marked != null && (fullDraw || hunting))
 			Mark(marked);
 
-		int arrowDamage = Math.Max(1, Mathf.RoundToInt(bow.GetDamageAtLevel(bow.CurrentLevel) * arrowDamageMultiplier
+		Volley(target, marked, count, drawn);
+		huntDraw = drawn;
+
+		charge = 0f;
+		holdSeconds = 0f;
+		stillSeconds = 0f;
+		tracking = false;
+		nockLeft = nockSeconds;
+		sky.HoldKindled = false;
+		return true;
+	}
+
+	// The mark's reach: the bow's, with the wizard's own Far-Shooting on it (SpellData.ReachScale, Artemis's).
+	private float Reach() => bow.GetReachAtLevel(bow.CurrentLevel);
+
+	// One volley: an arrow from each of the first `count` archers at the target, homing when it is marked, each the
+	// arrow's hit scaled by the draw; then the stars flare - out, or (under the Hunter's Moon) out only once they have
+	// loosed twice - and one sound, at the wizard.
+	private void Volley(Node2D target, Enemy marked, int count, float drawn)
+	{
+		bool fullDraw = drawn >= 0.999f;
+		int arrowDamage = Math.Max(1, Mathf.RoundToInt(arrowBaseDamage * arrowDamageMultiplier
 			* Mathf.Lerp(PlayerRef.HuntersDrawMinDamageMultiplier, PlayerRef.HuntersDrawMaxDamageMultiplier, drawn)));
 		float speedScale = Mathf.Lerp(PlayerRef.HuntersDrawMinSpeedMultiplier, 1f, drawn);
 		int pierceBonus = fullDraw ? PlayerRef.HuntersDrawFullDrawPierceBonus : 0;
@@ -335,17 +405,34 @@ public partial class Sagittarius : Node2D
 			arrow.Shoot(from, from + heading.Normalized() * MathF.Max(heading.Length(), 400f), marked);
 		}
 
-		sky.Flare();
-		// One sound a loose, at the wizard - the bow is his - never one an arrow.
+		if (hunting)
+		{
+			sky.FlareLoosed(HuntShotsPerStar, Starfall.LingerSeconds * MathF.Max(0.1f, durationMultiplier));
+			HuntVolleys++;
+		}
+		else
+		{
+			sky.Flare();
+		}
+		// One sound a volley, at the wizard - the bow is his - never one an arrow.
 		SfxPlayer.Instance?.PlayAt(SfxCatalog.SpellSagittarius, PlayerRef.GlobalPosition, 0.05f, SfxCatalog.SpellSagittarius, 120);
+	}
 
-		charge = 0f;
-		holdSeconds = 0f;
-		stillSeconds = 0f;
-		tracking = false;
-		nockLeft = nockSeconds;
-		sky.HoldKindled = false;
-		return true;
+	/// <summary>Volleys loosed under the Hunter's Moon this run, the stops' and the hunt's (the balance harness reads it).</summary>
+	public static int HuntVolleys { get; set; }
+
+	/// <summary>Times a marked quarry fell under the Hunter's Moon and the mark passed on (the harness reads it).</summary>
+	public static int HuntPasses { get; set; }
+
+	/// <summary>Of those, the times a star had a shot left and the stars loosed again at the next quarry.</summary>
+	public static int HuntRevolleys { get; set; }
+
+	/// <summary>A run's tallies start at nothing (Player._Ready, as the Eye of Ra's do).</summary>
+	public static void ResetHuntTallies()
+	{
+		HuntVolleys = 0;
+		HuntPasses = 0;
+		HuntRevolleys = 0;
 	}
 
 	private void Mark(Enemy enemy)
@@ -361,8 +448,36 @@ public partial class Sagittarius : Node2D
 		if (quarry == null)
 			return;
 		quarryLeft -= dt;
-		if (quarryLeft <= 0f || !IsInstanceValid(quarry) || quarry.IsDying)
+		if (!IsInstanceValid(quarry))
+		{
 			quarry = null;
+			return;
+		}
+		if (quarry.IsDying)
+		{
+			// THE HUNTER'S MOON: the quarry fell while it was still marked - to her arrows or to anything else.
+			quarry = null;
+			if (hunting && quarryLeft > 0f && !PlayerRef.HeldForBossEntrance)
+				Hunt();
+			return;
+		}
+		if (quarryLeft <= 0f)
+			quarry = null;
+	}
+
+	// The mark passes to the strongest in reach, and every star with a shot left looses at it with the draw its stop
+	// was loosed with - then those stars go out. With no star left the mark still passes, and the next stop looses at it.
+	private void Hunt()
+	{
+		if (sky == null || PlayerRef.FindStrongestEnemyWithin(Reach()) is not Enemy next)
+			return;
+		Mark(next);
+		HuntPasses++;
+		int count = sky.LooseLit(archers, 1, HuntShotsPerStar);
+		if (count <= 0)
+			return;
+		HuntRevolleys++;
+		Volley(next, next, count, huntDraw);
 	}
 
 	private Enemy LiveQuarry() => quarry != null && IsInstanceValid(quarry) && !quarry.IsDying && quarryLeft > 0f ? quarry : null;

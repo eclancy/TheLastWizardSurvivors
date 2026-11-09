@@ -208,6 +208,9 @@ public partial class Starfall : Node2D, IPaintsElementPath
 		public bool Held;
 		public float Born;
 		public float Flare;
+		// Sagittarius under the Hunter's Moon (Sagittarius.HuntersMoonId): how many times this star has loosed an
+		// arrow - at most twice a stop, the second time at the quarry the mark passed to (LooseLit, FlareLoosed).
+		public int Shots;
 	}
 
 	// A line knows its two stars by slot and seed, and lives exactly as long as the shorter-lived of
@@ -247,6 +250,14 @@ public partial class Starfall : Node2D, IPaintsElementPath
 
 	/// <summary>The most stars held lit at once; one more puts the oldest out.</summary>
 	public int HeldCap { get; set; } = MaxLit;
+
+	/// <summary>
+	/// The Constellation's lit stars and lines whatever spell carries the rain: Sagittarius's archer's figure is the
+	/// recipe, not a level. A fused copy's frozen Starfall has Constellation already; the copy Artemis opens on rains
+	/// on her Conjunction's own table (SpellData.ReadsOwnTable), which names no Starfall milestone, so Sagittarius
+	/// sets this. False on plain Starfall, which then links only down Constellation, as it always has.
+	/// </summary>
+	public bool Linked { get; set; }
 
 	/// <summary>How long a lit star's flare lasts on the loose: a landing twinkle's length.</summary>
 	public const float FlareSeconds = TwinkleSeconds;
@@ -360,7 +371,7 @@ public partial class Starfall : Node2D, IPaintsElementPath
 			* playerArea * spell.GetAreaMultiplierAtLevel(level));
 		rainRadius = MathF.Max(60f, spell.GetRangeAtLevel(level));
 		bursting = spell.HasEvolution(StarburstId);
-		linking = spell.HasEvolution(ConstellationId);
+		linking = Linked || spell.HasEvolution(ConstellationId);
 		shooting = spell.HasEvolution(ShootingStarsId);
 		skipping = spell.HasEvolution(SkippingStarsId);
 		foreseeing = spell.HasEvolution(QuatrainsId);
@@ -931,6 +942,55 @@ public partial class Starfall : Node2D, IPaintsElementPath
 				continue;
 			links[j].Flash = FlareSeconds;
 			links[j].Life = MathF.Min(links[j].Life, links[j].Age + FlareSeconds);
+		}
+	}
+
+	// --- the Hunter's Moon (Sagittarius.HuntersMoonId, Artemis's Apotheosis) ----------------------------------
+	//
+	// Under the form a loose does not put the stars out: each lit star may loose twice a stop, the second time at
+	// the quarry the mark passes to when the first one falls. These two are the whole of it on this side - which
+	// stars may loose now, and what a loose leaves lit - and the plain loose (CollectLit, Flare) is untouched.
+
+	/// <summary>
+	/// The stars that loose now, up to <paramref name="into"/>'s length: every lit star not going out that has loosed
+	/// at least <paramref name="minShots"/> and fewer than <paramref name="maxShots"/> times this stop, each counted as
+	/// having loosed once more. A star in the middle of its flare is still an archer here (the hunt's second volley
+	/// can follow a kill within a flare). Allocates nothing.
+	/// </summary>
+	public int LooseLit(Vector2[] into, int minShots, int maxShots)
+	{
+		int n = 0;
+		for (int j = 0; j < MaxLit && n < into.Length; j++)
+		{
+			if (!lit[j].Live || lit[j].Life - lit[j].Age <= OutSeconds || lit[j].Shots < minShots || lit[j].Shots >= maxShots)
+				continue;
+			lit[j].Shots++;
+			into[n++] = lit[j].At;
+		}
+		return n;
+	}
+
+	/// <summary>
+	/// After a loose under the Hunter's Moon: every star that loosed flares; one that has loosed
+	/// <paramref name="maxShots"/> times goes out with its flare, and one with a shot left stays lit, no longer held,
+	/// for <paramref name="keepSeconds"/> more - the hunt's window. Its lines flash once and follow their stars.
+	/// </summary>
+	public void FlareLoosed(int maxShots, float keepSeconds)
+	{
+		for (int j = 0; j < MaxLit; j++)
+		{
+			if (!lit[j].Live || lit[j].Shots <= 0)
+				continue;
+			lit[j].Held = false;
+			lit[j].Flare = FlareSeconds;
+			lit[j].Life = lit[j].Shots >= maxShots
+				? MathF.Min(lit[j].Life, lit[j].Age + FlareSeconds)
+				: lit[j].Age + MathF.Max(FlareSeconds, keepSeconds);
+		}
+		for (int j = 0; j < MaxLinks; j++)
+		{
+			if (links[j].Live)
+				links[j].Flash = FlareSeconds;
 		}
 	}
 

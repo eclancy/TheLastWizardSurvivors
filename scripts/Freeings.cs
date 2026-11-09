@@ -43,7 +43,8 @@ public static class Freeings
 		// the far shore's own ground (GroundFor; tools/art/freed.py, GODS) - the white cliffs, his rock across the
 		// water with the tower unlit, and the light coming down into the god. Owed, paid and replayed as any freeing.
 		// Each god's piece replaces its own comment line (and adds its row to freed.py's GODS); leave the others.
-		// F2: "artemis",
+		// Artemis (F2): the light coming down into the crescent at her brow.
+		"artemis",
 		// (F6's line is below; leave this one as it is)
 		// F6: "manannan",
 		// (F7's line is below; leave this one as it is)

@@ -1110,7 +1110,7 @@ public partial class ScorchingRayBeam : Node2D
 		damage = Math.Max(1, Mathf.RoundToInt((SpellData?.GetDamageAtLevel(CurrentLevel) ?? 3) * DamageMultiplier));
 		speed = MathF.Max(0.25f, SpellData?.GetSpeedMultiplier() ?? 1f);
 		pierce = SpellData?.GetPierceAtLevel(CurrentLevel) ?? 0;
-		range = SpellData?.GetRangeAtLevel(CurrentLevel) ?? 450f;
+		range = SpellData?.GetReachAtLevel(CurrentLevel) ?? 450f;
 		// No burst at all until an evolution's Area grows one: the base ray strikes one enemy.
 		float evolvedArea = SpellData?.GetAreaMultiplierAtLevel(CurrentLevel) ?? 1f;
 		splashRadius = evolvedArea > 1.001f ? BaseSplashRadius * evolvedArea * AreaMultiplier : 0f;

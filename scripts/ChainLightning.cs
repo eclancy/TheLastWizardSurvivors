@@ -256,7 +256,7 @@ public partial class ChainLightning : Area2D, IPaintsElementPath
 		PackedScene packed = string.IsNullOrEmpty(SceneFilePath) ? null : ResourceLoader.Load<PackedScene>(SceneFilePath);
 		if (packed == null || parent == null || !IsInstanceValid(parent))
 			return;
-		float range = SpellData?.GetRangeAtLevel(CurrentLevel) ?? 450f;
+		float range = SpellData?.GetReachAtLevel(CurrentLevel) ?? 450f;
 		Vector2 from = playerNode.GlobalPosition;
 		Node2D previous = firstTarget;
 		for (int n = 1; n < ThreefoldCurses; n++)

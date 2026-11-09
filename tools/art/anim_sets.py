@@ -272,7 +272,10 @@ WALK_BOB = {"pyromancer": 2, "stormcaller": 2, "vainamoinen": 2,
             # A queen's measured walk, upright, under a peplos to the ground.
             "medea": 1,
             # The youngest in the cast, light on his feet in straw sandals: the full two-row bob of the striders.
-            "maliang": 2}
+            "maliang": 2,
+            # The huntress, bare-legged in a short chiton (tools/art/player_artemis.py): a long hunter's stride, the
+            # full two-row bob.
+            "artemis": 2}
 
 # The waist. Everything above this row is the same drawing in every frame and only rises with
 # the bob; everything below it is redrawn per frame by the pose function. It is the same row the

@@ -389,7 +389,22 @@ public static class ApotheosisCatalog
 		// (OnStartingConjunction), as the dark wizard's is; each claims a verb no form or Conjunction owns, and deepens
 		// only the god's element, which its Conjunction must already carry. Each god's piece writes its own entry in its
 		// own slot; leave the others as they are.
-		// F2: Artemis on Sagittarius - The Hunter's Moon (hunt), Light.
+		// Artemis, the huntress, rekindled on the White Downs (.ai/second-half.md 3.3; F2). "Hunt" was nobody's: her
+		// Conjunction's volley converges on a marked quarry, and her final form runs it on - when the quarry falls the mark
+		// passes to the strongest in reach and every lit star looses again (Sagittarius.HuntersMoonId; Starfall.LooseLit),
+		// each star at most twice a stop. Not a link (nothing is joined), not a pull or a turn (nothing moves): a kill
+		// names the next quarry. A boss is marked and struck like anyone, never held. Light, the god's element, which
+		// Sagittarius carries (Starfall's); the Conjunction has no milestones, so nothing can trade it away. No visual
+		// scale: the stars draw themselves out of the radius they hit, and the arrows are the bow's size.
+		new()
+		{
+			CharacterId = "artemis", SpellId = Sagittarius.SpellId,
+			Element = Element.Light, Verb = "hunt",
+			Form = Make(Sagittarius.HuntersMoonId, "The Hunter's Moon", Element.Light,
+				"When your quarry falls, the mark passes to the strongest in reach and every lit star looses again.",
+				"Hunt: every volley marks its quarry, and its fall names the next. Each star looses twice a stop at most.",
+				new Color(0.94f, 0.95f, 1.0f), NoVisualScale),
+		},
 		// (F6's entry is below; leave this one as it is)
 		// F6: Manannan mac Lir on Maelstrom - Wave-Sweeper (ebb), Water.
 		// (F7's entry is below; leave this one as it is)

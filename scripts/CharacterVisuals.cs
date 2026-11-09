@@ -80,7 +80,9 @@ public static class CharacterVisuals
 			case "ma_liang": return new Vector2(42, 7);
 			// THE GODS OF THE FAR SHORE (.ai/second-half.md 3.3; plumbing F1): where each god's light is in its 48 cell
 			// (its own tools/art/player_<god>.py prints it). Each god's piece replaces its own comment line.
-			// F2: case "artemis": the crescent at her brow.
+			// The crescent at her brow, its bowl (tools/art/player_artemis.py prints (27.0, 5.7)): a spell she casts from
+			// herself leaves from her light. Sagittarius leaves from the stars, not from her.
+			case "artemis": return new Vector2(27, 6);
 			// (F6's line is below; leave this one as it is)
 			// F6: case "manannan": the lit spray at his cloak's hem.
 			// (F7's line is below; leave this one as it is)

@@ -546,7 +546,7 @@ public partial class Familiar : Node2D, IPaintsElementPath
 			_ => BaseBiteRadius,
 		};
 		biteRadius = MathF.Max(8f, strike * areaMul);
-		huntRange = MathF.Max(80f, spell.GetRangeAtLevel(level));
+		huntRange = MathF.Max(80f, spell.GetReachAtLevel(level));
 		leapReach = kind switch
 		{
 			Kind.Crow => CrowStoopReach,

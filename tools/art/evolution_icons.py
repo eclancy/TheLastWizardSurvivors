@@ -1213,6 +1213,9 @@ SPELLS = {
     # its own.
     "orb_of_ages":       dict(paint=lambda: si.orb_of_ages(sky=False), travel=None, tip=(15, 6), rows=("amber", "light")),
     "starfall":          dict(paint=lambda: si.starfall(sky=False), travel=(0.75, 1), tip=(21, 22), rows=("light",)),
+    # Artemis's own (.ai/second-half.md 3.3): the archer's figure of lit stars, every arrow converging on the quarry in
+    # the middle (the tip). Drawn without its night, as Starfall is; its one card, The Hunter's Moon, draws its own.
+    "sagittarius":       dict(paint=lambda: si.sagittarius(sky=False), travel=None, tip=(16, 16), rows=("light",)),
     "familiar":          dict(paint=image(lambda: familiar.portrait()), travel=(1, 0), tip=(27, 19), rows=()),
     # The Familiar is taken in a form too (a dog, a crow or a cat), each its own subject, drawn by
     # tools/art/familiar.py's portraits with the calm eye (familiar.calm_eye).
@@ -4473,6 +4476,56 @@ def _(sp, c):
         cv.disc(C0, C0, 1.6, 1.6, a[1])
         cv.set(C0, C0, a[0])
     O(sp, count)
+
+
+# --- Sagittarius -----------------------------------------------------------------------------------
+
+@card("sagittarius_hunters_moon")
+def _(sp, c):
+    """The Hunter's Moon (Artemis's Apotheosis, hunt): the moon lying on its back over the hunt, the way it rides at her
+    brow; the quarry that fell, low on the left, its mark gone dark; the mark passed along a thin line of light to the
+    next quarry, and every star round the rim loosing at it again - gold shafts, white heads, all converging on the one
+    marked body. The kill names the next, and the stars loose twice."""
+    reset(sp)
+    sp.place = Place(0.0001)
+
+    def hunt(cv, x):
+        light = E["light"]
+        core, hot, mid, edge = light
+        a = E["arcane"]
+        # The moon: a bold crescent on the left, opening toward the hunt, white at its thickest.
+        mx, my, r = 12.0, 14.5, 7.0
+        for yy in range(int(my - r) - 1, int(my + r) + 2):
+            for xx in range(int(mx - r) - 1, int(mx + r) + 2):
+                inside = (xx - mx) ** 2 + (yy - my) ** 2 <= r * r
+                bite = (xx - (mx + 3.6)) ** 2 + (yy - (my - 1.2)) ** 2 <= (r - 0.6) ** 2
+                if inside and not bite:
+                    d = math.hypot(xx - mx, yy - my) / r
+                    cv.set(xx, yy, core if xx < mx - 3.5 else hot if d > 0.8 or xx < mx - 1 else mid)
+        # The fallen quarry, low on the left under the moon: a dark body, its eye-light gone.
+        cv.disc(9.0, 25.0, 1.8, 1.3, a[3])
+        cv.set(9.0, 25.0, OCC)
+        # The next, marked, low on the right: a dark body rimmed in the eye-light, the mark's arrowheads round it.
+        qx, qy = 22.0, 21.0
+        cv.disc(qx, qy, 2.2, 2.2, a[2])
+        cv.disc(qx, qy, 1.2, 1.2, OCC)
+        for (dx, dy) in ((0, -1), (1, 0), (0, 1), (-1, 0)):
+            cv.set(qx + dx * 4.0, qy + dy * 4.0, GOLD[0])
+        # Two arrows loosed again at it - out of the moon's cup and from a star high on the right: gold shafts and
+        # white heads, stopping short of the mark.
+        for (sx, sy, star) in ((15.0, 13.0, False), (25.0, 8.0, True)):
+            if star:
+                cv.set(sx, sy, core)
+                for (dx, dy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    cv.set(sx + dx, sy + dy, mid)
+            dx, dy = qx - sx, qy - sy
+            n = math.hypot(dx, dy)
+            ux, uy = dx / n, dy / n
+            cv.line(sx + ux * 1.5, sy + uy * 1.5, qx - ux * 4.2, qy - uy * 4.2, GOLD[1])
+            cv.set(qx - ux * 3.4, qy - uy * 3.4, core)
+            cv.set(qx - ux * 4.2 - uy, qy - uy * 4.2 + ux, hot)
+            cv.set(qx - ux * 4.2 + uy, qy - uy * 4.2 - ux, hot)
+    O(sp, hunt)
 
 
 # --- Meteor Swarm ----------------------------------------------------------------------------------

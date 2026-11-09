@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
+[ext_resource type="Resource" path="res://SpellData_Sagittarius.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/characters/artemis-1.png" id="3"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/ArtemisFrames.tres" id="4"]
+
+; Rekindled, not freed: Artemis, the huntress and the moon, the first god of the far shore (.ai/second-half.md 3.2-3.4;
+; F2). Named in the legend of Laelaps - she gave the hound to Procris - and rekindled when the White Downs' warden falls
+; (UnlockCatalog.FromGod, the seat deed AchievementDefinitions.SeatClear writes for stage_14). Hidden from the character
+; select until her seat opens, then a silhouette with her held line. Her sheet is tools/art/player_artemis.py.
+;
+; She opens on Sagittarius, made, at level 1 of its own table (ComboDefinition.StartsFusedFor), as the Dark Wizard
+; opens on The Taking: a bow and the stars as archers. Her Apotheosis on it is The Hunter's Moon (hunt). Her passive is
+; Far-Shooting: every spell finds its target and flies to it 15% farther (SpellData.ReachScale) - an axis no wizard
+; owns, and none of it damage. Lighter than the wizards and quicker on her feet: 0.90 health, 1.08 speed, the first
+; guesses of the doc's table - and walking is half of what her spell asks.
+[resource]
+script = ExtResource("1")
+Id = "artemis"
+Name = "Artemis"
+StartingSpellResource = ExtResource("2")
+HealthModifier = 0.9
+SpeedModifier = 1.08
+IsUnlocked = true
+StartingPassiveId = "reach_15"
+StartingPassiveName = "Far-Shooting"
+StartingPassiveDescription = "Spells find their targets 15% farther off"
+IsLegendaryStart = false
+Portrait = ExtResource("3")
+Frames = ExtResource("4")

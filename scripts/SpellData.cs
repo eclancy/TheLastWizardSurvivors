@@ -410,6 +410,24 @@ public partial class SpellData : Resource
         return MathF.Max(0.0f, range);
     }
 
+    /// <summary>
+    /// The wizard's reach on every spell: how far past its range a spell finds and reaches its target. 1 for every
+    /// wizard but Artemis, whose Far-Shooting makes it 1.15 (Player.ApplyCharacterPassiveBonus, "reach_15"; .ai/second-half.md
+    /// 3.2). A run's, not the process's: Player._Ready sets it back to 1 before the passive raises it, as Bone Fence's
+    /// Enemy.PlayerKnockbackScale is. Read only through <see cref="GetReachAtLevel"/>, never by the cards or the
+    /// validators, which read the range as written.
+    /// </summary>
+    public static float ReachScale { get; set; } = 1f;
+
+    /// <summary>
+    /// The range as a REACH - how far the spell looks for its target and how far its shot flies to it - with the
+    /// wizard's <see cref="ReachScale"/> on it. For the readers whose range is that (every cast that finds a target,
+    /// and the bolts, missiles, fireballs, rays and hunters that must fly as far as it found one); a range that is a
+    /// size instead (a cone's length, a burst's radius, the rain's width, the veil's walk) stays
+    /// <see cref="GetRangeAtLevel"/>, so Far-Shooting is never an area bonus in disguise.
+    /// </summary>
+    public float GetReachAtLevel(int level) => GetRangeAtLevel(level) * ReachScale;
+
     public int GetPierceAtLevel(int level)
     {
         int pierce = (int)MathF.Round(GetEffectValueAtLevel(SpellEffect.Pierce, level));

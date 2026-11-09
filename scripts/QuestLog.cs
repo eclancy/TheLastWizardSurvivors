@@ -117,7 +117,8 @@ public static class QuestLog
 		// THE GODS OF THE FAR SHORE (.ai/second-half.md 6.3, marked by F0): epithet, held line, rekindled line - the
 		// doc's table. Each god's piece replaces its own comment line once its god is in UnlockCatalog (a row naming
 		// a character the catalog does not is a validator fault, so none is written ahead of its god).
-		// F2: new Prisoner("artemis", "the huntress", ...),
+		// Artemis (F2): the huntress and the moon. Her seat has had no moon since he came; rekindled, she hunts it again.
+		new Prisoner("artemis", "the huntress", "No moon rises over the White Downs.", "{0} hunts the White Downs again."),
 		// (F6's line is below; leave this one as it is)
 		// F6: new Prisoner("manannan", "the one who walks the waves", ...),
 		// (F7's line is below; leave this one as it is)

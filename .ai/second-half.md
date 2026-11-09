@@ -11,8 +11,9 @@ it does not require new spells - reuse the current roster and its evolved forms,
 starting power, passive and unlock around that later story.
 
 **Status: design for Eric's review, 2026-11-07; accepted 2026-11-07/08 (section 8). F0, the plumbing, is built
-(2026-11-08, section 9, "F0, built"), and F1, the god plumbing (2026-11-08, "F1, built"): a god can be added as
-data; nothing playable yet.** Section 8 is the list of decisions that are his;
+(2026-11-08, section 9, "F0, built"), F1, the god plumbing (2026-11-08, "F1, built"): a god can be added as
+data; and F2, Artemis (2026-11-08, "F2, built"): the first god, whole, waiting on her seat (F3) to be reached.**
+Section 8 is the list of decisions that are his;
 every other choice below is a recommendation he can overturn.
 
 Read first: `.ai/world-and-tone.md` (the premise this extends, the enemy palette, why the player is alone),
@@ -475,7 +476,7 @@ less, **M** a few days, **L** a week or more.
 |---|---|---|---|---|
 | F0 | **Far-shore plumbing**: `FarShoreOrder`, `StageGate.FarShore`, six stand-in chapters `IsPlayable = false`, `PreviousChapter` per order, `QuestLog` / `StageRewards` / `ChapterNotes` / `WorldMap` reading both orders, `ValidateFarShore` | L | - | the far shore exists, nobody can enter it, and the Dark Wizard's and The Road Restored's targets have not moved. **Built 2026-11-08** ("F0, built", below) |
 | F1 | **God plumbing**: any recipe as an opener with its own table; `OnStartingConjunction` and `ValidateStartingConjunction` over every opener; the god's card lines; the rekindled reel's far-shore ground in `freed.py` | M | F0 | a god can be added as data. **Built 2026-11-08** ("F1, built", below) |
-| F2 | **Artemis**: Sagittarius's table path, The Hunter's Moon, Far-Shooting, her sheet (`tools/art/player_*.py`, 48 cell, idle / move / hurt / death), icons, reel layer, catalog rows | M | F1 | the first god, playable everywhere |
+| F2 | **Artemis**: Sagittarius's table path, The Hunter's Moon, Far-Shooting, her sheet (`tools/art/player_*.py`, 48 cell, idle / move / hurt / death), icons, reel layer, catalog rows | M | F1 | the first god, playable everywhere. **Built 2026-11-08** ("F2, built", below); reachable once F3 makes her seat playable |
 | F3 | **The White Downs**: chalk tiles and barrows, its cast, the Unstrung Hunter, music, foliage, one side event, two secrets, its difficulty row | L | F0 | the first far chapter |
 | F4 | **The far sky**: `Teaching.FarSky` and its reel, tonight's recipe, the favour, card and pause lines, the Feat, `_BalanceHarness --far-sky` and the section 5 measurement | M | F0, F2 | the half's system, measured |
 | F5 | **Reel E and the map**: `world_map.py` widened east, the crossing, the white cliffs and six places, the motes after Taken Back, the stop order; reel E | L | F0 | the half on the map, and announced |
@@ -716,3 +717,122 @@ gods' pieces appending to it would collide.
 run are F2's to see. `_UiShot` of the character select was not taken, so the dark wizard's "Conjunction" line on a
 save that has learned them is unseen on screen (a build and the validator only prove it compiles and is reached).
 The rekindled ground has been judged with a wizard standing in for a god, not with a god.
+
+### F2, built (2026-11-08, branch `worktree-agent-a86098d68c99af091`, on `main-ff86ni` after F1)
+
+Artemis is in the game as data and code, whole: her card, her run, her form, her passive, her reel. **Nobody can reach
+her yet** - she is rekindled by the White Downs' warden, and the White Downs are F3's and still `IsPlayable = false`, so
+a new save never sees her and a save with everything sees her silhouette only once her seat is played. Nothing on the
+road changed except Sagittarius's level number and every spell's reach for her alone (below). **No save schema step**
+(still 25), and the story epoch is not raised.
+
+**Where it lives** - F1's ten steps, in its slots:
+
+| step | where |
+|---|---|
+| her and her sheet | `CharacterData_Artemis.tres`: Sagittarius, Far-Shooting (`reach_15`), 0.90 health, 1.08 speed (the table's first guesses, kept). `tools/art/player_artemis.py` -> `artemis-{1..4,idle,moving,hurt,death}.png`, `ArtemisFrames.tres`; 1.01 edges/px; `anim_sets.WALK_BOB` gives her the striders' two-row bob |
+| roster | `CharacterRoster`, appended: **index 23** (`--character=23`) |
+| opener | `ComboCatalog`, Sagittarius's block: `StartsFusedFor = "artemis"` |
+| her table | `SpellData_Sagittarius.tres`, levels 1-8; the table path in `Player.FireSagittarius` (`SpellData.ReadsOwnTable`), `Sagittarius.Cloudburst`, `Starfall.Linked` |
+| her form | `ApotheosisCatalog`, the gods' slot: The Hunter's Moon (hunt), Light; its behaviour in `Sagittarius` (`HuntersMoonId`, `Hunt`, `Volley`) and `Starfall` (`Lit.Shots`, `LooseLit`, `FlareLoosed`); the `sagittarius` row of `EvolutionStatReaders` names both paths; icon `assets/bonelight/ui/evolutions/sagittarius_hunters_moon.png` (`evolution_icons.py`, a card of its own and Sagittarius in `SPELLS`; `evolution_catalog.json` regenerated by `_AscensionAudit`) |
+| her unlock | `UnlockCatalog`: `FromGod("artemis", "stage_14", "No moon rises over the White Downs.")` |
+| her words | `QuestLog.Prisoners`: "the huntress", the held line above, "{0} hunts the White Downs again." (36 characters) |
+| her reel | `Freeings.WizardIds` and `freed.py`'s `GODS` (`("artemis", ("artemis", "light", "light"))`) -> `freed-artemis-mid.png`, 0 off-contract pixels; both grounds regenerated byte-identical |
+| her light | `CharacterVisuals.GetStaffTipCell("artemis")` = (27, 6), the crescent's bowl (the generator prints 27.0, 5.7) |
+| her passive | `Player.CharacterPassiveBonusIds` `reach_15` -> `SpellData.ReachScale` 1.15, read through `SpellData.GetReachAtLevel` |
+
+**Sagittarius, opened on.** Her copy carries no parents, so it reads its own table, and the fused path is untouched. The
+**rain is the Conjunction itself**: `FireSagittarius` hands the spell in as the rain, so the stars' hit, the cloudburst,
+the count, the width and each burst are her levels, and her form's x1.25 reaches them through `GetDamageAtLevel`. The
+**lines are on from level 1** (`Starfall.Linked`): the archer's figure is the recipe, not a level. **Each arrow is 0.7
+of one star's hit** (`Sagittarius.TableArrowShare`), scaled by the draw as Hunter's Draw's is (x0.45 to x2.2). The
+**bow is Hunter's Draw down Hunter's Mark at her Sagittarius's level** (`Player.SagittariusTableBow`): its pierce, reach
+and nock grow with her, and Hunter's Mark's own pierce and quicker nock count from her level 8 (an Ascension's numbers
+start at 8); its size and speed are whole from the first second (`GetScaleMultiplier` reads every milestone). The
+draw, the mark and the loose are one code path for both copies.
+
+| level | the line | a star | cloudburst | stars | rain |
+|---|---|---|---|---|---|
+| 1 | the bow, the held stars, the loose, the mark, the lines | 5 | 1.00 s | 4 | 240 |
+| 2 | Damage +20%, Cooldown -6% | 6 | 0.94 | 4 | 240 |
+| 3 | Stars +1, Wider area (+3 px a burst) | 6 | 0.94 | 5 | 240 |
+| 4 | Damage +50%, Cooldown -6%, Range +6% | 9 | 0.88 | 5 | 255 |
+| 5 | Stars +1, Wider area | 9 | 0.88 | 6 | 255 |
+| 6 | Damage +44%, Cooldown -11% | 13 | 0.78 | 6 | 255 |
+| 7 | Stars +1, Range +6%, Wider area | 13 | 0.78 | 7 | 270 |
+| 8 | Damage +69%, Cooldown -13%, Stars +1 - the full figure | 22 | 0.68 | 8 | 270 |
+
+Level 8 is a plain fused copy's numbers (Starfall's level 8 down Constellation: 22, 0.68 s, 8, 270, +9 px; an arrow
+0.7 x 22 = 15.4 against the fused 19 x 0.8 = 15.2), as The Taking's level 8 is its fused copy. The big level 8 is the
+parent's own shape: Constellation doubles Starfall's hit at 8. **A fused copy now arrives at level 8 of 8** (`TryFuse`
+does that for any opener's recipe; `Freeze` still writes its numbers from the frozen rain and clears the table), so the
+HUD shows "8" where it showed "1". Its card noun is "Stars" (`Player.SpellProjectileNoun`).
+
+**The Hunter's Moon (hunt).** *"When your quarry falls, the mark passes to the strongest in reach and every lit star
+looses again."* As built: under the form **every volley marks what it was loosed at** (Vulnerable +25%, 5 s, as Hunter's
+Mark's), and a loose **does not put its stars out**: each stays lit, unheld, for a lit star's linger (2.5 s, with the
+player's Duration) with one shot left. When the marked quarry dies - to her arrows or anything else - while still
+marked, the mark passes to the strongest enemy within the bow's reach of her, and every star with a shot left looses at
+it with the draw its stop was loosed with, then goes out. **Each star looses at most twice a stop**
+(`HuntShotsPerStar`), so a stop is at most 2 x 16 arrows; a star kept from one stop that is still lit at the next looses
+its second shot there. With no star left the mark still passes, so the next stop looses at it - the volley runs quarry
+to quarry. Bosses are marked and struck, never held. `_BalanceHarness` prints `HARNESS HUNT` (volleys, passes,
+re-volleys).
+
+**Far-Shooting** (Homer's word for her). *"Spells find their targets 15% farther off."* `SpellData.ReachScale` is a
+run's (reset in `Player._Ready`, as Bone Fence's scale is) and is read only through `GetReachAtLevel`, at every place a
+range is a **reach**: the 21 casts in `Player` that look for a target within it, and the scripts whose shot must fly as
+far as it found one (`MagicMissile`, `ElementalBolt` - so the bolts and both bows' arrows -, `Fireball`, `ChainLightning`,
+`ScorchingRayBeam`, and the hunting `Familiar` and `SpiritualWeapon`); Sagittarius's mark reach too. Never where a range
+is a **size** - a cone's or a jet's length, a burst's radius, the rain's width, Stormsweep's band, Gloam Veil's walk -
+so it is never an area bonus in disguise, and the cards and validators still read the range as written.
+
+**Her sheet** (`.ai/art-direction.md`, `.ai/world-and-tone.md`). Drawn against the cast, as 3.3 asks: her light is **on
+her**, a crescent lying on its back at her brow, white at the bowl (standing horns read as horns); **no robe** - a short
+bone chiton (the row the contract says the moon is made of), bare legs in laced boots, mid-stride, the only figure but
+the Pyromancer whose legs show and the only one walking out of her cell; **tall and slender**, about eight heads; the
+**gold bow across her back**, its upper limb hooked over her far shoulder and its lower limb out past her near hip, its
+string pale against the sky and dark across her chest, so the two limbs read as one bow; a night-violet mantle swept
+off-axis behind her; dark hair in a knot. Faces right (`SpriteFacesLeft` false). The silhouette survives filling black:
+the stride, the bow's two hooks and the knot.
+
+**Verified.**
+
+- `dotnet build`: 0 errors (no warning in any file F2 touched).
+- The validator (`MainMenu.tscn --quit-after 300 -- --no-save-writes --validate-content`): **0 errors and 1 warning**
+  (`test_wizard`), with `ValidateOpeners`, `ValidateGods` and `ValidateGodsAsData` (16 of 16) passing for her, no
+  exemption; the White Downs' to-do lost "no god seated here" and keeps "no deed frees its god" (F3's `SeatClear`).
+  The one `ObjectDB ... leaked` line at exit is the menu music's stream (`--verbose`), not F2's.
+- `_BalanceHarness --minutes=15 --character=23 --all-unlocked --immortal --seek-apotheosis --seed=1234 --timescale=3`:
+  opens "Equipped spell Sagittarius at level 1 (the Conjunction Artemis opens on, levelling to 8)"; its cards take it to
+  8 at **5.3 minutes** (player level 13), the gate met there; **The Hunter's Moon offered and taken at 8.2 minutes**,
+  over the 7.5 floor; Sagittarius **82.0%** of 27,047 damage a minute; level 31 at 15; 56.6 health lost a minute; the
+  hunt 318 volleys, 293 passes, 157 re-volleys. (The Dark Wizard's run in `.ai/dark-wizard-playable.md` 6, on an older
+  tip: his form at 11.3 minutes, 92%; Seimei's 27,353 a minute.)
+- `_BalanceHarness --minutes=8 --character=23 --all-unlocked --immortal --seed=1234 --timescale=3` (the default bot that
+  spreads its picks, the Dark Wizard's measure): Sagittarius at **level 3, 38.1%** of 11,030 a minute, second to Gloam
+  Veil's 38.5%. His was 29.2% at level 2. The first draft was 58.9% (the bow whole from level 1, 6 a star) and 45.5%
+  with the bow levelling with her; a star of 5 at level 1 is the 38.1%.
+- `_UiShot` (`user://`): `f2-artemis-select-fresh-pc` (a new save: she is not on the screen);
+  `f2-artemis-select-silhouette-{pc,phone}` (`--fresh-save --open-stages=stage_14`, the PC with
+  `--hover-late=CharacterButton24`: her silhouette and "No moon rises over the White Downs." - **taken in a scratch build
+  with the White Downs flipped playable, not committed**, since an unplayable seat reveals nobody);
+  `f2-artemis-select-unlocked-pc` (`--all-unlocked`: "Conjunction - Sagittarius, Apotheosis - The Hunter's Moon,
+  Passive - Spells find their targets 15% farther off"); `f2-artemis-reel-{pc,phone}` (`--reel=freed_artemis
+  --frames=200`, **with `--fixed-fps 60`** - without it the reel's shot never came); `f2-artemis-hunt2-pc-{0..7}`
+  (`--demo-spell-level=8 --demo-evolutions=sagittarius_hunters_moon --spell-stage=14,200,0 --stage-mortal --walk=0,1
+  --walk-until=148 --frames=152 --burst=8,5`: the volley converging on the crowd, the kills, the mark passed);
+  `f2-fused-sagittarius-pc-{0..3}` (`--character=8 --demo-combo=sagittarius:fuse`: a fused copy still fires, at "8").
+
+**Decisions F2 made** (the doc left them open): the rain is the Conjunction itself and the bow levels with her (above);
+an arrow is 0.7 of a star; the lines from level 1; every volley under the form marks; a quarry "falls" to anything; the
+next quarry is the strongest in the bow's reach of her, not of the fallen; the kept stars' window is a lit star's
+linger; Far-Shooting is reach, not size, and lives on `SpellData` as Bone Fence's lives on `Enemy`; the crescent lies on
+its back; her chiton is bone, her mantle violet, her bow gold; her passive's words.
+
+**Needs a person's eyes.** Whether she reads as a god and not one more wizard at game size, beside the cast (the
+crescent could read as a tiara; the bow's two hooks as two things); the Hunter's Moon in play - whether the mark passing
+reads, and that the mark can pass to a quarry off the screen (the bow's reach is 740 at level 8, 851 with Far-Shooting,
+as a fused copy's Hunter's Mark already reaches 740); the icon at 24 px; whether 38% at level 3 is "inside the
+starters' band" (his 29% was at level 2) and whether her level 8 at 5.3 minutes is early for a bot that seeks it; and
+every number above, which the bot has met twice.

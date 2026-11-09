@@ -590,7 +590,7 @@ public partial class SpiritualWeapon : Node2D
 		form = FormOf(spell);
 		damage = Math.Max(1, Mathf.RoundToInt(spell.GetDamageAtLevel(level) * damageMultiplier));
 		critBonus = MathF.Max(0f, spell.GetEffectValueAtLevel(SpellEffect.CritChance, level));
-		huntRange = MathF.Max(80f, spell.GetRangeAtLevel(level));
+		huntRange = MathF.Max(80f, spell.GetReachAtLevel(level));
 		// Every area term once: the player's, every milestone's, and the level table's Area lines (a share).
 		areaMul = MathF.Max(0.25f, playerArea * spell.GetAreaMultiplierAtLevel(level)
 			* (1f + spell.GetEffectValueAtLevel(SpellEffect.AreaSize, level)));

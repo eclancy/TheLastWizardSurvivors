@@ -184,7 +184,7 @@ public partial class Player
 			opening.Name += " \u2605";
 		equippedSpells.Add(opening);
 		spellFireTimers[opening.Id] = 0f;
-		GD.Print($"Equipped spell {opening.Name} at level 1 (a Conjunction he opens on, levelling to {opening.MaxLevel})");
+		GD.Print($"Equipped spell {opening.Name} at level 1 (the Conjunction {selectedCharacter?.Name} opens on, levelling to {opening.MaxLevel})");
 		RefreshElementalMaxHp();
 		RaiseLoadoutChanged();
 		return true;
@@ -326,15 +326,23 @@ public partial class Player
 	// The cooldown is the rain's cloudburst, as Starfall's is: it hands the node the stars for the next
 	// interval, keeps it current, and casts nothing itself. The draw and the loose run in the node, every
 	// physics frame, off the wizard's own movement. Maintained, never Fired: the loose has its own sound.
+	//
+	// TWO PATHS (.ai/second-half.md 3.4, F2). Fused, the frozen parents are the bow and the rain. Opened on - Artemis's
+	// copy, which carries no parents (SpellData.ReadsOwnTable) - the rain is the Conjunction itself, so its own level
+	// table is the stars' hit, cadence, count, width and burst, and the bow is Hunter's Draw down Hunter's Mark at the
+	// Conjunction's level (SagittariusTableBow) for the arrows' pierce, speed, reach, size and nock.
 	private CastOutcome FireSagittarius(SpellData spell, float interval)
 	{
 		if (SagittariusScene == null || GetParent() is not Node2D arena)
 			return CastOutcome.NoTarget;
-		SpellData bow = spell.ComboParent(Sagittarius.BowSpellId);
-		SpellData rain = spell.ComboParent(Sagittarius.RainSpellId);
+		bool table = spell.ReadsOwnTable;
+		SpellData bow = table ? SagittariusTableBow(spell) : spell.ComboParent(Sagittarius.BowSpellId);
+		SpellData rain = table ? spell : spell.ComboParent(Sagittarius.RainSpellId);
 		if (bow == null || rain == null)
 		{
-			GD.PushError("Player: Sagittarius carries no frozen parents (SpellData.ComboParents); it was not made by a fusion.");
+			GD.PushError(table
+				? "Player: Sagittarius's table path has no bow: Hunter's Draw is not in the spell catalog, or offers no Hunter's Mark at level 8."
+				: "Player: Sagittarius carries no frozen parents (SpellData.ComboParents); it was not made by a fusion.");
 			return CastOutcome.NoTarget;
 		}
 		if (sagittarius == null || !IsInstanceValid(sagittarius))
@@ -350,6 +358,34 @@ public partial class Player
 		sagittarius.Cloudburst(spell, bow, rain, stars, interval, nock, GetEffectiveAreaMultiplier(),
 			GetSpellDamageMultiplier(spell), durationMultiplier, GetSpellVisualTint(rain, paintsOwnPath: true));
 		return CastOutcome.Maintained;
+	}
+
+	private SpellData sagittariusTableBow;
+
+	/// <summary>
+	/// The bow Artemis's Sagittarius looses from (the table path): Hunter's Draw down Hunter's Mark, made once a run from
+	/// the catalog's template, AT HER SAGITTARIUS'S LEVEL - so the bow grows with the sky: its pierce (its level 4 and 8
+	/// lines), its reach (its level 8 line) and its nock, and Hunter's Mark's own pierce, size and quicker nock arrive
+	/// with her level 8 (an Ascension's numbers count from level 8, SpellData.CollectActive), where the bow becomes a
+	/// fused copy's frozen one with no level 4 mutation. The arrows' hit is never the bow's: it is the Conjunction's
+	/// own, Sagittarius.TableArrowShare of a star's. Null when the catalog has no Hunter's Draw or it offers no Hunter's
+	/// Mark, which the caller reports.
+	/// </summary>
+	private SpellData SagittariusTableBow(SpellData sagittarius)
+	{
+		if (sagittariusTableBow == null)
+		{
+			if (!spellCatalog.TryGetValue(Sagittarius.BowSpellId, out SpellData template) || template?.Duplicate(true) is not SpellData bow)
+				return null;
+			SpellEvolutionOption huntersMark = bow.GetEvolutionOptionsForLevel(AscensionSpellLevel)
+				.FirstOrDefault(o => o != null && o.Id.Equals(BoltEvolutions.HuntersMarkId, StringComparison.OrdinalIgnoreCase));
+			if (huntersMark == null)
+				return null;
+			bow.ApplyEvolution(huntersMark);
+			sagittariusTableBow = bow;
+		}
+		sagittariusTableBow.CurrentLevel = Math.Clamp(sagittarius.CurrentLevel, 1, sagittariusTableBow.MaxLevel);
+		return sagittariusTableBow;
 	}
 
 	// --- Shadow Bolt (scripts/ShadowBolt.cs) ----------------------------------------------------------------
