@@ -96,6 +96,7 @@ dying** (Overlooked, Avalon, Paint What Is Needed): a new passive should stay of
 - **Väinämöinen** - put the song in *Song of Making*: when he levels up, ordinary enemies near him stop
   for 1.5 s to listen (the Kalevala's kantele, which every creature came to hear; his rescue is already
   the kantele puzzle). Elites and bosses unaffected.
+  **Declined 2026-11-09** (Eric: "keep the area passive.").
 
 **Spells**
 
@@ -151,7 +152,7 @@ Eric's feedback on Imhotep's build, given at Tituba's turn (2026-11-09):
 
 | # | wizard | verdict | Eric's words | status |
 |---|---|---|---|---|
-| 7 | Väinämöinen | keeps Bramble Seed and Song of Making, unchanged. The kantele passive (section 4) stays a proposal | "next" | kept |
+| 7 | Väinämöinen | keeps Bramble Seed and Song of Making (+10% area), unchanged. The kantele passive (section 4) was put to him again and declined | "next" / "keep the area passive." | kept |
 | 8 | John Dee | **opens on a new spell, Folio**, and keeps Scattered Library. **Hollow Star becomes nobody's opener**. His Apotheosis, The Spirit Mirror (*pull*), moves onto Folio | "I don't think hollow star feels like a good spell for him - what spell could feel like his? can we trade hollow star to someone else, like someone who did more with science/stars, and have something that feels more like his?" / "I like your suggestions - how would john dee produce the first orb if he only fires when he picks up an orb? also, can we still keep his spirit mirror finale to work with this?" / "yes" | built `84e24368` (section 6); not yet played |
 | 9 | Laelaps | keeps Cyclone Slash and Fated to Catch, unchanged. (Re-drawing the blades as a hound and fox of wind, the endless chase, stays an unasked idea) | "next" | kept |
 | 10 | Abe no Seimei | keeps Kindled Ward and Exorcist, unchanged | "next" | kept |
