@@ -708,7 +708,7 @@ public partial class Player : CharacterBody2D
 		// The Hunter's Moon's tallies are a run's (the harness reads them).
 		Sagittarius.ResetHuntTallies();
 		// The Eye of Ra's tallies are a run's too (the harness reads them).
-		Fireball.ResetEyeOfRaTallies();
+		ScorchingRayBeam.ResetEyeOfRaTallies();
 		// Nobody is turned at the start of a run, and Dragon's Teeth's tally is the run's (Enemy.Turned.cs).
 		Enemy.ResetTurnedTally();
 		ElementalPulse.ResetTeethTally();
@@ -7276,6 +7276,11 @@ public partial class Player : CharacterBody2D
 
 		scorchNext.Clear();
 		int raysFired = 0;
+		// THE EYE OF RA (Imhotep's Apotheosis, ScorchingRayBeam.EyeOfRaId): one ray a cast flares where it lands, the
+		// hottest - the first of them on a tie, which is the held target, else the nearest.
+		bool eyeOfRa = spell.HasEvolution(ScorchingRayBeam.EyeOfRaId);
+		ScorchingRayBeam? sun = null;
+		int sunStreak = -1;
 		for (int i = 0; i < rayCount; i++)
 		{
 			// More rays than bodies in reach: the spare ones join the beams already on them, as before.
@@ -7300,6 +7305,11 @@ public partial class Player : CharacterBody2D
 				beam.Heat = heat;
 				beam.SetSpellLevel(spell.CurrentLevel);
 				beam.PlayerRef = this;
+				if (eyeOfRa && streak > sunStreak)
+				{
+					sun = beam;
+					sunStreak = streak;
+				}
 			}
 			GetParent().AddChild(TagSpell(ray));
 			ApplyLegendaryVisual(ray, spell);
@@ -7309,6 +7319,9 @@ public partial class Player : CharacterBody2D
 			(ray as ScorchingRayBeam)?.Fire(GlobalPosition, target, target.GlobalPosition);
 			raysFired++;
 		}
+		// Marked once every ray is out, before any can land (a beam strikes on a later frame, in its own _Process).
+		if (sun != null)
+			sun.FlaresEyeOfRa = true;
 		// What this cast burned is what the next one holds; anything it did not is cold again.
 		scorchHeld.Clear();
 		foreach (var pair in scorchNext)

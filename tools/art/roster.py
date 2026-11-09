@@ -180,8 +180,9 @@ ROBES = {
     # only from the waist down: above it is a bare brown chest under a gold-and-lapis collar and a leopard's
     # pelt. NOT ivory or the Sands' sand cloth: his own chapter's dead are wrapped in sand cloth, and a priest in
     # the colour of their wrappings would read as one of them (and as the films' mummy, which he is not).
-    # Fireball is the sun on his palm, not on his clothes.
-    "imhotep": ("l", "L", "e"),         # linen, pale - the kilt; Fireball
+    # The sun is on his palm, not on his clothes. (It was drawn for Fireball; his opener has been Scorching Ray, the
+    # sun focused through his bronze mirror, since 2026-11-09 - .ai/character-fit.md section 1. Not redrawn.)
+    "imhotep": ("l", "L", "e"),         # linen, pale - the kilt; Scorching Ray
     # Medea's peplos: lichen, the sea-green of the water at Colchis, from its middle (base / lit / shade). Her
     # mantle is the red row's deep end and her diadem and sickle bronze (gold's lit and base). Solar Flare is the
     # small sun in her open hand, not on her clothes.
@@ -3241,11 +3242,13 @@ def nostradamus(phase=None):
 
 
 def imhotep(phase=None):
-    """Fireball. Imhotep: chancellor to the pharaoh Djoser, architect of the first pyramid, physician, High
-    Priest of Ra at Heliopolis - a sage and a healer to two thousand years of the people who came after him.
+    """Scorching Ray (since 2026-11-09; drawn when he opened on Fireball - .ai/character-fit.md section 1, and the
+    sun on his palm still fits: the ray is the sun focused through his bronze mirror). Imhotep: chancellor to the
+    pharaoh Djoser, architect of the first pyramid, physician, High Priest of Ra at Heliopolis - a sage and a
+    healer to two thousand years of the people who came after him.
 
     DRAWN SERIOUS, AND NOT THE FILMS' MUMMY. Nothing on him is wrapped: he is a living priest in the dress of
-    his office, upright and calm, the one figure in the cast HOLDING UP A SUN. Fireball is the sun's fire in
+    his office, upright and calm, the one figure in the cast HOLDING UP A SUN. Fireball was the sun's fire in
     one slow, heavy blast, so his near arm is raised high, the hand open and palm up under a ball of fire
     resting on it - the only thing on him that gives off light - and his face is turned up to it. The
     Pyromancer beside him (Aedan) is the opposite figure: pitched forward mid-stride in a red coat, his fire

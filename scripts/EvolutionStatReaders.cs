@@ -326,7 +326,7 @@ public static class EvolutionStatReaders
 			SpellEffect.AreaSize, SpellEffect.RootDuration, SpellEffect.CritDamage),
 		["scorching_ray"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Pierce
 				| EvolutionStat.Speed | EvolutionStat.Rider | EvolutionStat.Amount,
-			"ScorchingRayBeam.RefreshComputedStats and Player.FireScorchingRay (Amount is more rays; Area is the burst; Flashpoint, Handoff, Burn Through, Prism and Sunlance by id)",
+			"ScorchingRayBeam.RefreshComputedStats and Player.FireScorchingRay (Amount is more rays; Area is the burst and the Eye of Ra's flare; Flashpoint, Handoff, Burn Through, Prism, Sunlance and the Eye of Ra by id)",
 			SpellEffect.CritChance, SpellEffect.Pierce, SpellEffect.CritDamage),
 		["cinderbreath"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider,

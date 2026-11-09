@@ -8077,17 +8077,18 @@
       "verb": "foresee"
     },
     {
-      "spell": "fireball",
+      "spell": "scorching_ray",
       "variant": "",
-      "spell_name": "Fireball",
-      "spell_icon": "res://assets/bonelight/ui/spells/fireball-fire.png",
+      "spell_name": "Scorching Ray",
+      "spell_icon": "res://assets/bonelight/ui/spells/scorching-ray-fire.png",
       "spell_elements": {
-        "Fire": 1
+        "Fire": 1,
+        "Arcane": 1
       },
       "milestone": 9,
-      "id": "fireball_eye_of_ra",
+      "id": "scorching_ray_eye_of_ra",
       "name": "Eye of Ra",
-      "description": "The blast flares like the sun. Whatever sees it loses you for two seconds and wanders.",
+      "description": "Each cast, the hottest ray flares like the sun. Whatever sees it loses you for two seconds and wanders. Hotter rays flare wider.",
       "synergy": "Apotheosis",
       "visual_tag": "Apotheosis",
       "gains": {
@@ -8102,7 +8103,7 @@
       "cooldown": 1,
       "projectiles": 0,
       "area": 1,
-      "scale": 1.15,
+      "scale": 1,
       "speed": 1,
       "pierce": 0,
       "arcs": 0,

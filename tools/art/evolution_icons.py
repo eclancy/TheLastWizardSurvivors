@@ -3515,52 +3515,32 @@ def _(sp, c):
     U(sp, seared)
 
 
-@card("fireball_eye_of_ra")
-def _(sp, c):
-    """Eye of Ra (Imhotep's Apotheosis, blind): the ball flaring like the sun - a ring of white light round it and
-    rays running out past it - and under it the eye of Ra itself, its lid line, pupil, tear-mark and curl in the
-    sun's gold: what sees it loses you."""
-    reset(sp)
-    sp.accent = None
-    sp.place = Place(0.58, at=(16.0, 13.0))
+def eye_of_ra(cv):
+    """The eye of Ra in the sun's gold, low in the cell: its lid line, brow, white-hot pupil, tear-mark and curl."""
+    l = E["light"]
+    gold = l[3]
+    # The upper lid, a long shallow arc; the lower, shorter; the brow over it.
+    for (px, py) in ((9, 25), (10, 24), (11, 24), (12, 23), (13, 23), (14, 23), (15, 23), (16, 23), (17, 23),
+                     (18, 23), (19, 24), (20, 24), (21, 25), (22, 25)):
+        cv.set(px, py, gold)
+    for px in range(11, 21):
+        cv.set(px, 26, gold)
+    for px in range(10, 21):
+        cv.set(px, 21, l[2])
+    # The pupil, white-hot: the sun in it.
+    for (px, py) in ((15, 24), (16, 24), (15, 25), (16, 25)):
+        cv.set(px, py, l[0])
+    cv.set(14, 24, l[1])
+    cv.set(17, 25, l[1])
+    # The tear-mark down, and the curl out behind.
+    for (px, py) in ((14, 27), (14, 28), (13, 29), (13, 30)):
+        cv.set(px, py, gold)
+    for (px, py) in ((18, 27), (19, 28), (20, 29), (21, 29), (22, 28), (22, 27)):
+        cv.set(px, py, gold)
 
-    def flare(cv, x):
-        l = E["light"]
-        for k in range(12):
-            a = k * math.pi / 6.0 + 0.26
-            r0, r1 = 7.5, (14.0 if k % 2 == 0 else 11.0)
-            steps = int((r1 - r0) * 2)
-            for t in range(steps + 1):
-                rr = r0 + t / 2.0
-                px, py = 16 + math.cos(a) * rr, 13 + math.sin(a) * rr
-                if py > 21:
-                    continue
-                cv.set(int(round(px)), int(round(py)), l[1] if rr < (r0 + r1) / 2.0 else l[3])
-        cv.ring(16, 13, 7.5, 7.5, l[2], thick=1)
-    U(sp, flare)
 
-    def eye(cv, x):
-        l = E["light"]
-        gold = l[3]
-        # The upper lid, a long shallow arc; the lower, shorter; the brow over it.
-        for (px, py) in ((9, 25), (10, 24), (11, 24), (12, 23), (13, 23), (14, 23), (15, 23), (16, 23), (17, 23),
-                         (18, 23), (19, 24), (20, 24), (21, 25), (22, 25)):
-            cv.set(px, py, gold)
-        for px in range(11, 21):
-            cv.set(px, 26, gold)
-        for px in range(10, 21):
-            cv.set(px, 21, l[2])
-        # The pupil, white-hot: the sun in it.
-        for (px, py) in ((15, 24), (16, 24), (15, 25), (16, 25)):
-            cv.set(px, py, l[0])
-        cv.set(14, 24, l[1])
-        cv.set(17, 25, l[1])
-        # The tear-mark down, and the curl out behind.
-        for (px, py) in ((14, 27), (14, 28), (13, 29), (13, 30)):
-            cv.set(px, py, gold)
-        for (px, py) in ((18, 27), (19, 28), (20, 29), (21, 29), (22, 28), (22, 27)):
-            cv.set(px, py, gold)
-    O(sp, eye)
+# The Eye of Ra moved to Scorching Ray with Imhotep's opener on 2026-11-09 (.ai/character-fit.md section 1); its card
+# is with the ray's, below ("scorching_ray_eye_of_ra"). It was "fireball_eye_of_ra" here, the ball flaring.
 
 
 # --- Frost Shard -----------------------------------------------------------------------------------
@@ -5134,6 +5114,42 @@ def _(sp, c):
             cv.set(gx, gy + 1, f[3])
         m_glint(cv, 6, 5, 4, E["light"])
     O(sp, sweep)
+
+
+@card("scorching_ray_eye_of_ra")
+def _(sp, c):
+    """Eye of Ra (Imhotep's Apotheosis, blind - the ray's since it became his opener, 2026-11-09): the ray come down
+    into the ground and flaring like the sun where it strikes - a ring of white light round the strike and rays
+    running out past it, a white-hot point at its heart - and under it the eye of Ra itself (eye_of_ra): what sees
+    it loses you. Drawn on the strike wherever the placed ray puts it (sc.RAY_STRIKE), as the ray's other cards are."""
+    reset(sp)
+    sp.accent = None
+    anchor = anchor_of(SPELLS["scorching_ray"]["paint"])
+    sp.place = Place(0.62, at=(12.0, 8.0))
+
+    def flare(cv, x):
+        l = E["light"]
+        sx, sy = sp.place.mapper(anchor)(*sc.RAY_STRIKE)
+        for k in range(12):
+            a = k * math.pi / 6.0 + 0.26
+            r0, r1 = 5.5, (12.0 if k % 2 == 0 else 9.5)
+            steps = int((r1 - r0) * 2)
+            for t in range(steps + 1):
+                rr = r0 + t / 2.0
+                px, py = sx + math.cos(a) * rr, sy + math.sin(a) * rr
+                if py > 20 or px < 0 or py < 0:
+                    continue
+                cv.set(int(round(px)), int(round(py)), l[1] if rr < (r0 + r1) / 2.0 else l[3])
+        cv.ring(sx, sy, 5.5, 5.5, l[2], thick=1)
+    U(sp, flare)
+
+    def strike(cv, x):
+        l = E["light"]
+        sx, sy = sp.place.mapper(anchor)(*sc.RAY_STRIKE)
+        cv.disc(sx, sy, 2.6, 2.6, l[1])
+        cv.disc(sx, sy, 1.4, 1.4, l[0])
+        eye_of_ra(cv)
+    O(sp, strike)
 
 
 # --- Shadow Bolt -----------------------------------------------------------------------------------

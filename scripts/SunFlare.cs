@@ -3,12 +3,14 @@ using System;
 
 namespace TheOneHeMissed.scripts;
 
-// The Eye of Ra's flare (Fireball.FlareEyeOfRa, .ai/chapter-wizards.md 4.6): the sun's light going out of the blast
-// past its own reach, once - a white heart, a ring of light running out to exactly the radius it blinds, and rays
-// between - then gone. What it is drawn to is what it blinds, the rule every area in the game keeps.
+// The Eye of Ra's flare (ScorchingRayBeam.FlareEyeOfRa, .ai/chapter-wizards.md 4.6): the sun's light going out of
+// where the cast's hottest ray lands, once - a white heart, a ring of light running out to exactly the radius it
+// blinds, and rays between - then gone. What it is drawn to is what it blinds, the rule every area in the game keeps.
+// (It went out of Fireball's blast until 2026-11-09, when Imhotep's opener became the ray; the `blast` here is the
+// heart's size, which the ray passes in.)
 //
 // One code-created Node2D a flare, on the air layer and additive, so it lights what it falls on and hides nothing. A
-// flare comes on Fireball's own beat (seconds apart), so a node each is no swarm cost.
+// flare comes once a cast on the ray's own beat, so a node each is no swarm cost.
 public partial class SunFlare : Node2D
 {
 	public const float Seconds = 0.5f;

@@ -255,21 +255,25 @@ public static class ApotheosisCatalog
 				new Color(0.84f, 0.80f, 1.0f), NoVisualScale),
 		},
 		// Imhotep, freed by bringing the sun to his dry tomb's door with its bronze mirrors on the Scorched Sands
-		// (.ai/chapter-wizards.md 4.6, .ai/unlock-puzzles.md 3.1).
-		// "Blind" was nobody's: the High Priest of Ra lifts the sun on his palm, and his blast flares like it - whatever sees
-		// it loses him for two seconds and wanders (Fireball.EyeOfRaId, Enemy.ApplyBlind). Not fear (the dark wizard's
-		// Dread): a frightened body runs from him, a blinded one has no idea where he is. Elites are seared by the flare
-		// instead, and bosses never lose him (the crowd-control rule). Fire, Fireball's only element; no card on it trades
-		// Fire away (Iron Comet adds Metal beside it). Scale reaches the ball (EvolutionStatReaders), so the form keeps the
-		// usual lift.
+		// (.ai/chapter-wizards.md 4.6, .ai/unlock-puzzles.md 3.1). He opens on Scorching Ray since 2026-11-09
+		// (.ai/character-fit.md section 1; Eric: "I like your imhotep suggestion, implement that as well"): a ray that
+		// heats up on one target is the sun focused through his bronze mirror, the act that frees him. He opened on
+		// Fireball before, and the form moved with him; Fireball stays the Sands boss's deed spell.
+		// "Blind" was nobody's: the High Priest of Ra focuses the sun, and the hottest ray of each cast flares like it -
+		// whatever sees it loses him for two seconds and wanders, and the hotter the ray the wider the flare
+		// (ScorchingRayBeam.EyeOfRaId, Enemy.ApplyBlind). Not fear (the dark wizard's Dread): a frightened body runs from
+		// him, a blinded one has no idea where he is. Elites are seared by the flare instead, and bosses never lose him
+		// (the crowd-control rule). Fire, the one of Scorching Ray's two the form deepens; no card on it trades Fire away
+		// (Flashpoint deepens Fire, Prism adds Arcane). No visual scale: the ray is drawn out of what it strikes
+		// (Player.FireScorchingRay drops any scale), so a lift there would reach nothing.
 		new()
 		{
-			CharacterId = "imhotep", SpellId = "fireball",
+			CharacterId = "imhotep", SpellId = "scorching_ray",
 			Element = Element.Fire, Verb = "blind",
-			Form = Make(Fireball.EyeOfRaId, "Eye of Ra", Element.Fire,
-				"The blast flares like the sun. Whatever sees it loses you for two seconds and wanders.",
+			Form = Make(ScorchingRayBeam.EyeOfRaId, "Eye of Ra", Element.Fire,
+				"Each cast, the hottest ray flares like the sun. Whatever sees it loses you for two seconds and wanders. Hotter rays flare wider.",
 				"Blind: what sees it forgets you. Elites are seared by the flare instead; bosses never lose you.",
-				new Color(1.0f, 0.93f, 0.62f)),
+				new Color(1.0f, 0.93f, 0.62f), NoVisualScale),
 		},
 		// Medea, freed by paying the Tithe-Reeve's scale in the Fallow Fields (.ai/chapter-wizards.md 4.2). "Turn" was
 		// nobody's: she set the men sown from the dragon's teeth on each other with one thrown stone, and at full growth

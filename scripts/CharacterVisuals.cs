@@ -69,7 +69,9 @@ public static class CharacterVisuals
 			// The star kindled at the heart of the armillary sphere he holds up (roster.py, nostradamus()): where
 			// Starfall's light is, not the brass rings round it.
 			case "nostradamus": return new Vector2(12, 5);
-			// The sun resting on his raised palm (roster.py, imhotep()): Fireball leaves from it.
+			// The sun resting on his raised palm (roster.py, imhotep()): what reads a staff tip leaves from it (Magic Missile,
+			// Cinderbreath). His opener does not - Scorching Ray, his since 2026-11-09, fires from his body's centre as it
+			// does for everyone (Player.FireScorchingRay), and so did Fireball before it.
 			case "imhotep": return new Vector2(38, 5);
 			// The small sun burning over her open palm (roster.py, medea()).
 			case "medea": return new Vector2(39, 12);
