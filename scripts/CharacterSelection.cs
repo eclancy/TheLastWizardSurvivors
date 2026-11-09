@@ -414,12 +414,18 @@ public partial class CharacterSelection : Control
 		return character.StartingForm?.Icon ?? spell.Icon;
 	}
 
-	// And its name, the same way: Nimue's card says "Spirit Sword", the form she opens in, not the spell's own name,
-	// which is the name of a choice she never makes.
+	// And its name: the spell's, and for a wizard fixed to one of its forms, that form too - Nimue's card says
+	// "Spiritual Weapon - Sword" (Eric, 2026-11-09, .ai/character-fit.md: "We can just note on her card that her starting
+	// weapon is specifically spiritual weapon - sword"), so the spell she will meet on level-up cards is named, and so is
+	// the one form of it she holds. It said "Spirit Sword", the form alone, which left the spell's own name unsaid.
 	private static string StartingSpellName(CharacterData character)
 	{
+		string spellName = character?.StartingSpellResource?.Name ?? string.Empty;
 		SpellVariant form = character?.StartingForm;
-		return form != null && !string.IsNullOrWhiteSpace(form.DisplayName) ? form.DisplayName : character?.StartingSpellResource?.Name ?? string.Empty;
+		if (form == null)
+			return spellName;
+		string formName = !string.IsNullOrWhiteSpace(form.ShortName) ? form.ShortName : form.DisplayName;
+		return string.IsNullOrWhiteSpace(formName) ? spellName : $"{spellName} - {formName}";
 	}
 
 	// A wizard's craft under his name ("the Pyromancer"), for a starter who carries his own name (CharacterData.Craft);
