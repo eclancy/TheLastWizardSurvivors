@@ -57,6 +57,10 @@ public static partial class RegressionChecks
 		ValidateSpellVariants(warnings);
 		ValidateSpiritualWeapon(warnings);
 		ValidateFacingFamily(warnings);
+		// John Dee's opener and his Spirit Mirror on it (RegressionChecks.Folio.cs).
+		ValidateFolio(warnings);
+		// Wayland's Wings: every floor trap and the wade ask its one flag (RegressionChecks.Wings.cs).
+		ValidateWings(warnings);
 		ValidateSpawnFormations(warnings);
 		ValidateSwarmPressure(warnings);
 		ValidateQuestsAndNotes(warnings);
@@ -103,6 +107,7 @@ public static partial class RegressionChecks
 		ValidateNoPixelsInText(warnings);
 		ValidateAudio(warnings);
 		ValidateMusic(warnings);
+		ValidateMusicBeats(warnings);
 		ValidateInputMap(warnings);
 		ValidateBlockingTerrain(warnings);
 		ValidateTerrainSeams(warnings);
@@ -131,6 +136,7 @@ public static partial class RegressionChecks
 		ValidateQuatrains(warnings);
 		ValidateTombBeacons(warnings);
 		ValidateEyeOfRa(warnings);
+		ValidateScorchStagger(warnings);
 		ValidateTitheScale(warnings);
 		ValidateOubliette(warnings);
 		ValidateGaolersKey(warnings);
@@ -2491,6 +2497,53 @@ public static partial class RegressionChecks
 		}
 	}
 
+	// THE BEAT MAP (2026-11-09): the Canticle bursts on the music's next counted beat and sings in its key, and
+	// both are read from assets/music/beats.json, which tools/audio/music.py writes from the score (MusicBeats).
+	// A set missing from it plays with no beat the Canticle can see - it bursts at once, which is a fallback, not
+	// a bug anyone would notice - and a piece re-rendered at a new tempo without re-writing the map puts every
+	// burst off the beat. So: every set that can play, the shared boss loop and the menu theme have an entry;
+	// every entry's loop is its rendered file's length; its beats lie inside a bar, in order; and its chord's
+	// first note is its tonic, whatever key it folds into (ArcaneExplosion.NotePitch).
+	private static void ValidateMusicBeats(List<string> warnings)
+	{
+		if (MusicBeats.LoadProblem != null || MusicBeats.All.Count == 0)
+		{
+			warnings.Add($"Music beats: {MusicBeats.LoadProblem ?? "the beat map is empty"} - the Canticle bursts off the beat everywhere.");
+			return;
+		}
+		var wanted = new List<string> { "boss", "menu" };
+		foreach (MusicSet set in MusicCatalog.AllSets())
+			wanted.Add(set.Id);
+		foreach (string id in wanted)
+		{
+			if (MusicBeats.For(id) == null)
+				warnings.Add($"Music beats: '{id}' has no entry in {MusicBeats.Manifest}. Run: python tools/audio/music.py --beats");
+		}
+		foreach (MusicBeats.Piece piece in MusicBeats.All.Values)
+		{
+			string path = MusicCatalog.Directory + piece.File;
+			if (ResourceLoader.Exists(path) && ResourceLoader.Load<AudioStream>(path) is AudioStream stream
+				&& Math.Abs(stream.GetLength() - piece.LoopSeconds) > 0.01)
+			{
+				warnings.Add($"Music beats: '{piece.Id}' is {piece.LoopSeconds:0.000} s in the beat map and {stream.GetLength():0.000} s on disk - "
+					+ "re-rendered without the map? Run: python tools/audio/music.py --beats");
+			}
+			bool inBar = piece.Counted.Length > 0;
+			for (int i = 0; i < piece.Counted.Length; i++)
+			{
+				if (piece.Counted[i] < 0.0 || piece.Counted[i] >= piece.BeatsPerBar || (i > 0 && piece.Counted[i] <= piece.Counted[i - 1]))
+					inBar = false;
+			}
+			if (!inBar || piece.BeatSeconds <= 0.0)
+				warnings.Add($"Music beats: '{piece.Id}' counts its beats at [{string.Join(", ", piece.Counted)}] in a bar of {piece.BeatsPerBar} - not in order inside it.");
+			if (piece.Chord.Length == 0 || piece.Chord[0] != 0)
+				warnings.Add($"Music beats: '{piece.Id}''s chord does not start on its tonic.");
+			float root = ArcaneExplosion.NotePitch(piece, 0);
+			if (root < 0.5f || root > 2f)
+				warnings.Add($"Music beats: '{piece.Id}''s chord root plays at x{root:0.00}, outside the notes' x0.5 to x2.");
+		}
+	}
+
 	// Sound is the one system where a missing asset is not a crash and not a visible glitch - it
 	// is silence, which looks exactly like a design decision. So the whole catalog is checked at
 	// startup rather than discovered one absent hit at a time.
@@ -3828,6 +3881,10 @@ public static partial class RegressionChecks
 			AchievementDefinition deed = AchievementDefinitions.GetById(AchievementDefinitions.TakerTakenId);
 			if (deed == null || !CodexRows.HidesWizard(deed, locked))
 				warnings.Add("The Taker Taken: his deed's row names him while he is locked.");
+			// A mystery until done (Eric, 2026-11-09): the condition shows, the name and the reward read "???".
+			if (deed != null && (deed.SealedName != AchievementDefinitions.MysteryName || deed.SealedReward != AchievementDefinitions.MysteryName
+				|| string.IsNullOrWhiteSpace(deed.Description)))
+				warnings.Add("The Taker Taken: it must be a mystery deed - its condition shown, its name and reward \"???\" until done.");
 			if (!StageRewards.ForStage(throne.Id).Where(r => r.Id.Equals(dark, StringComparison.OrdinalIgnoreCase)).All(r => StageRewards.IsSealed(locked, r)))
 				warnings.Add("The Taker Taken: the Throne's card shows the dark wizard's shape before he is taken.");
 		}

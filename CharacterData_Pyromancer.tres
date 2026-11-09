@@ -7,6 +7,8 @@
 
 ; A starter (UnlockCatalog), on Cinderbreath. Aedan, the Pyromancer: his own name, his craft carried as his title
 ; (Craft; Eric, 2026-11-03: "Let's give names to the four original elemental wizards"). The id never changes.
+; Kindled Focus is +15% damage to whatever is close to him, from any spell, since 2026-11-09 (Eric: "implement your
+; suggestion"); it was +10% spell damage. Close is Player.CharacterCloseDamageRange, a little past Cinderbreath's reach.
 [resource]
 script = ExtResource("1")
 Id = "pyromancer"
@@ -16,9 +18,9 @@ StartingSpellResource = ExtResource("2")
 HealthModifier = 0.9
 SpeedModifier = 1.05
 IsUnlocked = true
-StartingPassiveId = "spell_damage_10"
+StartingPassiveId = "close_damage_15"
 StartingPassiveName = "Kindled Focus"
-StartingPassiveDescription = "+10% spell damage"
+StartingPassiveDescription = "+15% damage to enemies close to you"
 IsLegendaryStart = false
 Portrait = ExtResource("3")
 Frames = ExtResource("4")

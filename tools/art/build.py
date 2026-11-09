@@ -144,7 +144,8 @@ def build_roster():
 
     for name, fn in roster.WIZARDS:
         pose = fn()
-        # One who floats (roster.FLOATERS, Nimue) bobs and drifts instead (anim_sets.hover).
+        # One who floats (roster.FLOATERS: Nimue, Baba Yaga in her mortar) bobs and drifts instead
+        # (anim_sets.hover).
         floating = anim_sets.hover(fn) if name in roster.FLOATERS else None
         idle = floating[0] if floating else roster.idle(pose)
         # Numbered single frames for the idle, because CharacterData.Portrait points at frame one
@@ -156,7 +157,9 @@ def build_roster():
         # `idle` and never switches animation - it flips H and that is all - so moving, hurt and
         # death are drawn and waiting on a code change rather than on art. Shipping the art first
         # means that change is a wiring job with nothing to draw.
-        anims = floating[1] if floating else anim_sets.player_set(pose, idle, fn)
+        # One who flies when he moves (roster.FLYERS: Wayland) stands at rest and flies in his moving frames.
+        flying = anim_sets.flight(fn) if name in roster.FLYERS else None
+        anims = floating[1] if floating else anim_sets.player_set(pose, idle, fn, moving=flying)
         spec = []
         for anim, frames, loop, speed in anims:
             png = "%s-%s.png" % (name, anim)

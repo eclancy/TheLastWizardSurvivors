@@ -216,6 +216,9 @@ public static class UnlockCatalog
 		// minutes is the first good run, so it stays early as a Feat. Survivor paid Frost Shard before;
 		// Frost Shard is the Geode Heart's now (below).
 		FromAchievement("hollow_star", "survivor", "Survive ten minutes in a single run."),
+		// John Dee's opener since 2026-11-09 (.ai/character-fit.md section 6): the collector's book, earned by collecting
+		// as he does. He holds it whatever the save owns; everyone else opens ten chests in one run (the Magpie feat).
+		FromAchievement("folio", "magpie", "Open ten chests in a single run."),
 		FromAchievement("meteor_swarm", "veteran", "Clear a chapter without falling."),
 		FromAchievement("solar_flare", "max_level", "Reach level 20 in a single run."),
 		FromAchievement("cyclone_slash", "elementalist", "Reach 4 instances of any element."),

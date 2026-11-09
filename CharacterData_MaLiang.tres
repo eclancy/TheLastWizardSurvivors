@@ -9,14 +9,16 @@
 ; Gallery's end wall, dot to dot (.ai/chapter-wizards.md 4.8). The boy of the Chinese tale whose brush made real
 ; whatever he painted, kept here to paint the dark wizard's portraits. His passive is Paint What Is Needed, the one
 ; axis no other wizard owns: once a run, below a quarter of his health, a flask is painted at his feet. He opens on
-; the Familiar (Arcane), choosing its form on his run's first screen (Node2DGame.OpeningForm.cs); only the crow has a
-; final form (The Painted Door). Arcane is shared with the Archmage and the Sibyl on other spells (R1).
+; the Familiar (Arcane) as the crow, every run - the form his final form, The Painted Door, belongs to
+; (CharacterData.StartingFormId, from ApotheosisCatalog), as Nimue opens on the Sword. He chose dog, crow or cat on
+; his run's first screen until 2026-11-09 (Eric: "lets just not let him choose a different familiar than the crow
+; then - he automatically starts with a crow familiar", .ai/character-fit.md section 5, row 21). His crow is painted
+; in ink (Familiar.PaintsInInk). Arcane is shared with the Archmage and the Sibyl on other spells (R1).
 [resource]
 script = ExtResource("1")
 Id = "ma_liang"
 Name = "Ma Liang"
 StartingSpellResource = ExtResource("2")
-ChoosesStartingForm = true
 HealthModifier = 1.0
 SpeedModifier = 1.0
 IsUnlocked = true

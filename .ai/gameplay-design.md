@@ -766,8 +766,8 @@ Two consequences worth knowing:
 
 | Character | Element | Starting spell | Shape | Passive |
 |---|---|---|---|---|
-| Aedan, the Pyromancer | Fire | Fireball | Slow lob, explodes on impact | +10% spell damage |
-| Isbrand, the Frostweaver | Ice | Cone of Cold | Cone in front, slows what it touches | +0.5 HP/sec |
+| Aedan, the Pyromancer | Fire | Cinderbreath | Fire breathed in a short arc, then a recharge | +15% damage to enemies close to him (since 2026-11-09, `.ai/character-fit.md`) |
+| Isbrand, the Frostweaver | Ice | Cone of Cold | Cone the way he faces (since 2026-11-09), slows what it touches | +0.5 HP/sec |
 | Levina, the Stormcaller | Lightning | Chain Lightning | Arcs between nearby enemies | -10% cooldowns |
 | Gabbro, the Geomancer | Earth | Obsidian Spike | Erupts under the target, no travel time | -1 damage per hit taken |
 | The Archmage | Arcane | Magic Missile | A homing dart at the nearest enemy, from the light on his staff | Overlooked: once a run, the blow that would end him misses |

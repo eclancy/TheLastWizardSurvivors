@@ -168,6 +168,6 @@ def journey(src_dir, out_dir):
 PIECE = M.Piece(
     "throne", 104.0, 4, 12,
     [("bed", bed, 0.3), ("pulse", pulse, 0.18), ("lead", lead, 0.26)],
-    tail_beats=8, scale=SCALE, room=(0.92, 0.45),
+    tail_beats=8, scale=SCALE, room=(0.92, 0.45), key=M.Key("A", "harmonic minor"),
     describe="The Throne - A minor with bII and V, 4/4 at 104 in half time, A/B of 6 bars")
 PIECE.journey = journey

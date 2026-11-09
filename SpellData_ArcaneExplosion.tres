@@ -34,9 +34,9 @@ EffectValue = 30.0
 
 [resource]
 script = ExtResource("1_43iml")
-Tagline = "Charges as you cast, then bursts."
+Tagline = "Casts build a chord; it sings out."
 Id = "arcane_explosion"
-Name = "Arcane Explosion"
+Name = "Canticle"
 CurrentLevel = 1
 MaxLevel = 8
 BaseDamage = 5
@@ -44,7 +44,7 @@ BaseCooldown = 1.5
 BaseProjectileCount = 1
 BaseRange = 100.0
 LevelUpgrades = Array[ExtResource("2_bbq6j")]([SubResource("Resource_ae_lvl2"), SubResource("Resource_ae_lvl3"), SubResource("Resource_ae_lvl5"), SubResource("Resource_ae_lvl7")])
-Description = "Charges on every other spell you cast, then detonates around you."
+Description = "Every other spell you cast adds a note to a chord. When it is full, it bursts around you on the music's beat."
 Icon = ExtResource("icon_ae")
 ElementWeights = {
 "Arcane": 1

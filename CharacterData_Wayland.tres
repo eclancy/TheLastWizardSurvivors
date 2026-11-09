@@ -8,7 +8,9 @@
 ; Rescued, not a starter: the Emberdeep's chapter wizard, freed at the great anvil (.ai/chapter-wizards.md
 ; 4.7). The master smith of the Germanic tales, who struck every chain in this game and was chained to his
 ; own anvil with them. His passive is Wings - the wings he made to get off the king's island, the one axis
-; no other wizard owns: how fast he moves.
+; no other wizard owns: the ground under his feet. He flies when he moves (roster.wayland, anim_sets.flight),
+; so floor traps never touch him and water never slows him (Player.Wings.cs); it was +10% move speed until
+; 2026-11-09. Collision is unchanged: his Feet collider meets walls and blocking ground as everyone's does.
 [resource]
 script = ExtResource("1")
 Id = "wayland"
@@ -17,9 +19,9 @@ StartingSpellResource = ExtResource("2")
 HealthModifier = 1.0
 SpeedModifier = 1.0
 IsUnlocked = true
-StartingPassiveId = "move_speed_10"
+StartingPassiveId = "over_traps_and_water"
 StartingPassiveName = "Wings"
-StartingPassiveDescription = "+10% move speed"
+StartingPassiveDescription = "Floor traps can't touch you, and water doesn't slow you"
 IsLegendaryStart = false
 Portrait = ExtResource("3")
 Frames = ExtResource("4")

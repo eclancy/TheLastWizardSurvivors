@@ -16,6 +16,12 @@
 // .ai/art-direction.md section 3 names this spell as the example of - an animation, never a ring held.
 // The middle clears behind the front, so the wizard is seen standing in his own spell.
 //
+// THE CANTICLE (2026-11-09): the Cumaean Sibyl's spell is a chord sung on the music's beat, so with `canticle`
+// the blast goes out as sound does rather than as a wall of force - three thin rings a moment apart at one speed,
+// the first landing exactly on the radius and the two behind it a step inside, each with a ripple running round it
+// (inward only) - and then they dissolve. The Sovereign Rite's crowned blast leaves `canticle` off and keeps the
+// front below.
+//
 // THE EVOLUTIONS ARE PAINTED, NOT TINTED: Dual Shockwave throws a second front after the first; Static
 // Nova's front crackles with Lightning; Supernova's front burns, down the Fire ramp behind its white
 // edge; Event Horizon's runs the other way - it starts on the radius and collapses into a dark heart,
@@ -31,6 +37,7 @@ uniform bool static_nova = false;
 uniform bool supernova = false;
 uniform bool event_horizon = false;
 uniform bool gilded = false;
+uniform bool canticle = false;
 // Sympathetic Blast (2h): the blast goes off in the element of the spell that set it off, its four
 // stops handed in from ElementColors (ArcaneExplosion.StartBlast) in place of Arcane's.
 uniform bool mimic = false;
@@ -61,6 +68,9 @@ const vec3 GOLD_BASE = vec3(0.541, 0.416, 0.118);    // gold base #8A6A1E
 const float GRID = 2.0;
 // The share of the blast the front takes to land on the radius.
 const float ARRIVE = 0.6;
+// The Canticle's rings: the share of the blast the first takes to land, and how far behind it each next one leaves.
+const float RING_ARRIVE = 0.45;
+const float RING_GAP = 0.1;
 
 varying vec2 world;
 varying flat vec2 origin;
@@ -152,6 +162,32 @@ void fragment() {
 		}
 	}
 
+	// The Canticle: the rings in place of the front (see the header). Sound travels at one speed, so they do too,
+	// and they stay the same distance apart until each comes to rest.
+	if (canticle && !event_horizon) {
+		hit = false;
+		col = ARC_MID;
+		for (int j = 0; j < 3; j++) {
+			float fj = float(j);
+			if (t < fj * RING_GAP)
+				continue;
+			float kj = clamp((t - fj * RING_GAP) / RING_ARRIVE, 0.0, 1.0);
+			float sj = clamp((t - fj * RING_GAP - RING_ARRIVE) / (1.0 - RING_ARRIVE - 2.0 * RING_GAP), 0.0, 1.0);
+			float ripple = GRID * (0.5 + 0.5 * sin(a * 11.0 + t * 28.0 + fj * 2.1 + seed)) * (0.6 + 0.4 * kj);
+			float rj = (r - fj * GRID * 3.0) * kj - ripple;
+			float w = GRID * (2.0 - fj * 0.5);
+			float x = (rj - d) / w;
+			if (x >= 0.0 && x < 1.0 && b > sj * 1.2) {
+				col = band(x * 0.4 + fj * 0.22, kj * 0.6 + sj * 0.4, b);
+				hit = true;
+				break;
+			}
+		}
+		// The storm's crackle stands off the first ring.
+		k = clamp(t / RING_ARRIVE, 0.0, 1.0);
+		edge = r * k;
+	}
+
 	// Dual Shockwave: a second front a beat behind the first, thinner, and landing on the radius too.
 	if (dual && !event_horizon) {
 		float k2 = run((t - 0.16) / ARRIVE);
@@ -183,7 +219,7 @@ void fragment() {
 
 	// Sparks of the force thrown out ahead of the front, which fall inside the radius: one art pixel,
 	// white-hot, then cooling.
-	if (!hit && !event_horizon && spent < 0.9) {
+	if (!hit && !event_horizon && !canticle && spent < 0.9) {
 		float n = 18.0;
 		float sector = floor((a / TAU + 0.5) * n);
 		float h = hash11(sector * 1.37 + 0.5);
@@ -202,7 +238,7 @@ void fragment() {
 
 	// Behind the front the middle clears, but a few motes of the force hang just inside it and wink out:
 	// only just inside it, so the middle is clear and the motes are the front's wake, not a field of noise.
-	if (!hit && !event_horizon && d < edge - thick && d > edge - thick * 3.0 && hash12(cell + flicker) < 0.05 * (1.0 - t)) {
+	if (!hit && !event_horizon && !canticle && d < edge - thick && d > edge - thick * 3.0 && hash12(cell + flicker) < 0.05 * (1.0 - t)) {
 		col = supernova ? FIRE_EDGE : (mimic ? m_edge : ARC_EDGE);
 		hit = true;
 	}

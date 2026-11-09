@@ -61,7 +61,7 @@ his book is three pages like anyone's, Magic Missile one of them.
 
 *"Once a run, the blow that would end you misses."*
 
-The axis is **one death, refused**, and nobody else stands on it. The thirteen others: spell damage (the
+The axis is **one death, refused**, and nobody else stands on it. The thirteen others: damage close by (the
 Pyromancer), regeneration (the Frostweaver), cooldowns (the Stormcaller), armour (the Geomancer), duration
 (Tituba), area (Väinämöinen), a relic more in chests (John Dee), bolts caught (Laelaps), damage to the strong
 (Seimei), fear (the Dark Wizard), a shove (Merlin), move speed (Wayland), rerolls (the Sibyl). It is not armour
@@ -71,7 +71,8 @@ scarce). It is the premise as a rule: he was missed once, and he is missed once 
 How it works (`Player.TakeDamage`): after armour and the shield, so only a blow that would really kill is turned;
 before any HP leaves, so he keeps the little he had - nothing is healed. Then ten seconds of grace, drawn white
 (`OverlookedGraceSeconds`), because the crowd that landed the blow is still on him and the next touch would end
-the run anyway. Eric extended this escape window from two to ten seconds on 2026-11-05; post-menu grace
+the run anyway. Since 2026-11-09 he is also drawn semi-transparent for those ten seconds, a pale ghost of
+himself (Eric: "to make it clear that he is untouchable"; the shader's `opacity`, 0.45, `.ai/character-fit.md`). Eric extended this escape window from two to ten seconds on 2026-11-05; post-menu grace
 stays two seconds. The dodge's ghosting and sound mark it. It comes before an extra life, which is kept for later.
 The `DamageTaken` signal has already gone out: he was struck at, as a dodge is not. The character select's line
 takes the evasion glyph (`StatIcons.KeyFor`: " misses").

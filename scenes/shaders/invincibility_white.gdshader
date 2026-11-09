@@ -6,10 +6,16 @@ shader_type canvas_item;
 // per-character tint and the Blur dodge flash - overwriting it would clobber both.
 
 uniform float whiten : hint_range(0.0, 1.0) = 1.0;
+// How much of him is there: 1 for every whitened grace but one. Overlooked (the Archmage's passive) draws
+// him a pale ghost for its ten seconds (Player.OverlookedOpacity; Eric, 2026-11-09: "semi-transparent for
+// those 10 seconds, to make it clear that he is untouchable"). Player.SetInvincibilityVisual puts it back
+// to 1 when the white ends, so a later ordinary grace is opaque.
+uniform float opacity : hint_range(0.0, 1.0) = 1.0;
 
 void fragment()
 {
 	// COLOR arrives as texture(TEXTURE, UV) * MODULATE, so mixing only rgb preserves the
 	// sprite's alpha and keeps transparent pixels transparent.
 	COLOR.rgb = mix(COLOR.rgb, vec3(1.0), whiten);
+	COLOR.a *= opacity;
 }

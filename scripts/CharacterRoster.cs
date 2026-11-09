@@ -31,7 +31,8 @@ public static class CharacterRoster
 		// player can pick them is UnlockCatalog's question, not the roster's.
 		"res://CharacterData_Tituba.tres",
 		"res://CharacterData_Vainamoinen.tres",
-		// Freed by collecting (the "mortlake_library" achievement): the collector, on Hollow Star.
+		// Freed by collecting (the "mortlake_library" achievement): the collector, on Folio (Hollow Star until
+		// 2026-11-09, .ai/character-fit.md section 6).
 		// Appended, never inserted - Global.SelectedCharacterIdx and the balance harness's
 		// --character=N both index this list.
 		"res://CharacterData_JohnDee.tres",

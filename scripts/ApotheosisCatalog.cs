@@ -134,18 +134,25 @@ public static class ApotheosisCatalog
 				"Swarm: the ground you stand your crowd on is ground that fights for you.",
 				new Color(0.55f, 0.90f, 0.40f), NoVisualScale),
 		},
-		// John Dee, the collector, freed by opening chests. "Pull" was on the ADR's unclaimed list and
-		// Hollow Star is the one spell in the roster that is ABOUT pulling, so the verb was his to take.
-		// The Spirit Mirror is Dee's obsidian scrying glass (the British Museum's): a well that drags
-		// the swarm from half again as far and, when it closes, draws every orb and flask in its reach
-		// to him.
+		// John Dee, the collector, freed by opening chests. "Pull" was on the ADR's unclaimed list, and it was his when he
+		// opened on Hollow Star, the spell ABOUT pulling. He opens on Folio since 2026-11-09 (.ai/character-fit.md section
+		// 6; Eric: "I don't think hollow star feels like a good spell for him ... can we still keep his spirit mirror
+		// finale to work with this?"): a book paid for by what he gathers, a page for every orb. The verb and the form moved
+		// with him; Hollow Star is nobody's opener now and has no form. The Spirit Mirror is Dee's obsidian scrying glass
+		// (the British Museum's): every tenth page it opens over the thickest pack and draws every orb and flask in its
+		// reach to him, and every orb it brings turns a page through the same pickup hook (Folio.SpiritMirrorId). What it
+		// pulls is what the dead dropped, never a body, so no boss is touched. Darkness, the one of Folio's two the form
+		// deepens; no card on Folio trades it away (Inkblot deepens it, Bound Volume adds Arcane beside it). No visual
+		// scale: the pages are drawn at one size. A save that saw the form on Hollow Star still has it seen
+		// (SaveData.MovedAscensions). The card's last sentence ("Every orb it brings turns a page") is its second line:
+		// with it the first ran past the card's 130 characters.
 		new()
 		{
-			CharacterId = "john_dee", SpellId = "hollow_star",
+			CharacterId = "john_dee", SpellId = Folio.SpellId,
 			Element = Element.Darkness, Verb = "pull",
-			Form = Make("hollow_star_spirit_mirror", "The Spirit Mirror", Element.Darkness,
-				"The well opens half again as wide and drags harder. Its collapse pulls every orb, potion and flask in reach to you.",
-				"Pull: the knot comes to your spells, and what it drops comes to your hands.",
+			Form = Make(Folio.SpiritMirrorId, "The Spirit Mirror", Element.Darkness,
+				"Every tenth page, your black mirror opens over the thickest pack and draws every orb and flask in its reach to you.",
+				"Pull: every orb it brings turns a page. Fight where they fall thickest.",
 				new Color(0.62f, 0.42f, 0.92f), NoVisualScale),
 		},
 		// Laelaps, the hound fated to catch whatever it hunted, freed by the coursing deed. "Reflect" was on
@@ -194,7 +201,8 @@ public static class ApotheosisCatalog
 		// The Cumaean Sibyl, freed at the nine mouths in the Sunken Cave (.ai/chapter-wizards.md 4.3). "Echo" was
 		// nobody's: her cave had a hundred mouths and spoke with a hundred voices, and Arcane Explosion is the
 		// one spell set off by the others - so each burst sounds them again, from where she stands, at 40%
-		// (ArcaneExplosion.HundredMouthsId, Player.Echo.cs). Nothing is pulled, linked or doubled behind her:
+		// (ArcaneExplosion.HundredMouthsId, Player.Echo.cs) - since the Canticle (2026-11-09), on the beats of the
+		// music that follow the burst. Nothing is pulled, linked or doubled behind her:
 		// it is her own loadout, heard twice. Arcane, the spell's only element; no card on it trades Arcane
 		// away (Static Nova adds Lightning beside it). No visual scale: the blast is drawn from its range.
 		new()
@@ -202,7 +210,7 @@ public static class ApotheosisCatalog
 			CharacterId = "sibyl", SpellId = "arcane_explosion",
 			Element = Element.Arcane, Verb = "echo",
 			Form = Make(ArcaneExplosion.HundredMouthsId, "The Hundred Mouths", Element.Arcane,
-				"Each burst sounds your other spells again from where you stand, at 40% strength.",
+				"Each burst sounds your other spells again on the beats that follow, at 40% strength.",
 				"Echo: everything you cast, twice. An echo is never echoed, and never charges the burst.",
 				new Color(0.91f, 0.75f, 1.0f), NoVisualScale),
 		},
@@ -255,21 +263,25 @@ public static class ApotheosisCatalog
 				new Color(0.84f, 0.80f, 1.0f), NoVisualScale),
 		},
 		// Imhotep, freed by bringing the sun to his dry tomb's door with its bronze mirrors on the Scorched Sands
-		// (.ai/chapter-wizards.md 4.6, .ai/unlock-puzzles.md 3.1).
-		// "Blind" was nobody's: the High Priest of Ra lifts the sun on his palm, and his blast flares like it - whatever sees
-		// it loses him for two seconds and wanders (Fireball.EyeOfRaId, Enemy.ApplyBlind). Not fear (the dark wizard's
-		// Dread): a frightened body runs from him, a blinded one has no idea where he is. Elites are seared by the flare
-		// instead, and bosses never lose him (the crowd-control rule). Fire, Fireball's only element; no card on it trades
-		// Fire away (Iron Comet adds Metal beside it). Scale reaches the ball (EvolutionStatReaders), so the form keeps the
-		// usual lift.
+		// (.ai/chapter-wizards.md 4.6, .ai/unlock-puzzles.md 3.1). He opens on Scorching Ray since 2026-11-09
+		// (.ai/character-fit.md section 1; Eric: "I like your imhotep suggestion, implement that as well"): a ray that
+		// heats up on one target is the sun focused through his bronze mirror, the act that frees him. He opened on
+		// Fireball before, and the form moved with him; Fireball stays the Sands boss's deed spell.
+		// "Blind" was nobody's: the High Priest of Ra focuses the sun, and the hottest ray of each cast flares like it -
+		// whatever sees it loses him for two seconds and wanders, and the hotter the ray the wider the flare
+		// (ScorchingRayBeam.EyeOfRaId, Enemy.ApplyBlind). Not fear (the dark wizard's Dread): a frightened body runs from
+		// him, a blinded one has no idea where he is. Elites are seared by the flare instead, and bosses never lose him
+		// (the crowd-control rule). Fire, the one of Scorching Ray's two the form deepens; no card on it trades Fire away
+		// (Flashpoint deepens Fire, Prism adds Arcane). No visual scale: the ray is drawn out of what it strikes
+		// (Player.FireScorchingRay drops any scale), so a lift there would reach nothing.
 		new()
 		{
-			CharacterId = "imhotep", SpellId = "fireball",
+			CharacterId = "imhotep", SpellId = "scorching_ray",
 			Element = Element.Fire, Verb = "blind",
-			Form = Make(Fireball.EyeOfRaId, "Eye of Ra", Element.Fire,
-				"The blast flares like the sun. Whatever sees it loses you for two seconds and wanders.",
+			Form = Make(ScorchingRayBeam.EyeOfRaId, "Eye of Ra", Element.Fire,
+				"Each cast, the hottest ray flares like the sun. Whatever sees it loses you for two seconds and wanders. Hotter rays flare wider.",
 				"Blind: what sees it forgets you. Elites are seared by the flare instead; bosses never lose you.",
-				new Color(1.0f, 0.93f, 0.62f)),
+				new Color(1.0f, 0.93f, 0.62f), NoVisualScale),
 		},
 		// Medea, freed by paying the Tithe-Reeve's scale in the Fallow Fields (.ai/chapter-wizards.md 4.2). "Turn" was
 		// nobody's: she set the men sown from the dragon's teeth on each other with one thrown stone, and at full growth
@@ -371,9 +383,10 @@ public static class ApotheosisCatalog
 		// it strikes - whatever ordinary body stands on it steps out of a second door far across the field
 		// (Familiar.PaintedDoorId, Familiar.PaintedDoor.cs). Nothing is pulled (pull), drowned in a current (flood), held
 		// (hold) or lured (double): the knot is moved, and it deals nothing of its own. Elites, minibosses and bosses are
-		// never moved. ONE FORM'S: he opens on the Familiar and chooses its form each run (Node2DGame.OpeningForm.cs), and
-		// only the crow - the tale's painted birds - has a final form; as the dog or the cat he has none, and his card says
-		// so. Arcane, the Familiar's only element; no card on the crow trades it away (Stormcrow adds Lightning beside it).
+		// never moved. ONE FORM'S: only the crow - the tale's painted birds - has a final form, and he opens on the Familiar
+		// as the crow every run (CharacterData.StartingFormId reads this VariantId, as Nimue's Sword does), painted in ink
+		// (Familiar.PaintsInInk). He chose dog, crow or cat until 2026-11-09 (.ai/character-fit.md section 5, row 21).
+		// Arcane, the Familiar's only element; no card on the crow trades it away (Stormcrow adds Lightning beside it).
 		// No visual scale: the doors are drawn at one size.
 		new()
 		{
@@ -422,6 +435,8 @@ public static class ApotheosisCatalog
 	// Hollow Star and Obsidian Spike (since 2026-10-28) draw themselves out of the radius they hit and
 	// drop any scale, so on those five the 1.15 reached nothing (EvolutionStatReaders: no Scale) and is
 	// left off.
+	// Folio (John Dee's since 2026-11-09, when the Spirit Mirror left Hollow Star) draws its pages at one size, so its
+	// form is left off too.
 	private const float FormVisualScale = 1.15f;
 	private const float NoVisualScale = 1.0f;
 

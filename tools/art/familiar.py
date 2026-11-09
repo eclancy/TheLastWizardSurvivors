@@ -164,6 +164,10 @@ class Fig(object):
         # The lay of the coat (render): broken darker strokes through the lit stops. Off on a card icon, where
         # at its size they were the speckle that made a fawn head read as a brown smudge.
         self.lay = True
+        # THE DRY BRUSH (Ma Liang's ink crow, INK below): the ramps (by id) that are ink laid with a brush. Where the
+        # brush ran dry the paper shows through in streaks along the stroke, and the stroke's far edge breaks up -
+        # both keyed to the part's own coordinates, like the lay, so they ride with the body. Empty: no brush.
+        self.dry = set()
 
     # --- painting ------------------------------------------------------------------------------
     def _put(self, x, y, ramp, tone, lx, ly, kind, far=False):
@@ -291,6 +295,7 @@ class Fig(object):
         cells = self.cells
         out = {}
         stops = {}
+        frayed = set()
         for (x, y), (ramp, tone, part, lx, ly, kind) in cells.items():
             if ramp is None:
                 out[(x, y)] = tone
@@ -329,6 +334,15 @@ class Fig(object):
                     ramp = self.pattern[2]
                 elif v < 0.5:
                     ramp = self.pattern[3]
+            if self.dry and id(ramp) in self.dry and kind not in ("detail", "glow"):
+                # The dry brush. Streaks of the paper's pale wash through the wet ink, running with the stroke
+                # (down and back, the way a feather is laid), broken - feibai, the "flying white" of a dry brush.
+                if t >= 2 and (lx * 2 - ly * 3) % 6 == 0 and hsh(lx, ly, 17) < 0.7:
+                    t = 0
+                # And the stroke's far edge, away from the key, frays: a pixel of it left as bare paper.
+                if t >= 2 and (x + 1, y) not in cells and (x, y + 1) not in cells and hsh(lx, ly, 19) < 0.45:
+                    frayed.add((x, y))
+                    continue
             t = min(4, max(0, t))
             out[(x, y)] = ramp[t]
             if kind != "glow":
@@ -351,7 +365,7 @@ class Fig(object):
         for (x, y), (ramp, tone, part, lx, ly, kind) in cells.items():
             # Only the near side, and only where the form faces the key: a rim down the back edge of
             # every leg was a white comb, and the far legs are in the body's own shadow.
-            if ramp is None or kind in ("glow", "norim", "far") or tone > 2:
+            if ramp is None or kind in ("glow", "norim", "far") or tone > 2 or (x, y) in frayed:
                 continue
             if (x - 1, y) not in cells or ((x, y - 1) not in cells and (x - 1, y - 1) not in cells):
                 if (x, y + 1) in cells or (x + 1, y) in cells:
@@ -782,8 +796,9 @@ def _outfit(outfit):
     return outfit or (WOOL, GOLD, LIGHT_E[1])
 
 
-def _hat(g, H, R, p, outfit=None):
-    """The wizard's own hat, small: indigo wool, a gold band, a gold star, the tip swept back."""
+def _hat(g, H, R, p, outfit=None, seal=None):
+    """The wizard's own hat, small: indigo wool, a gold band, a gold star, the tip swept back. `seal` (two colours)
+    stamps a painter's red seal where the star is, for Ma Liang's ink crow (INK below)."""
     cloth, trim, glint = _outfit(outfit)
     tilt = p["hat"]
 
@@ -803,6 +818,11 @@ def _hat(g, H, R, p, outfit=None):
     # The band and the star.
     g.limb([Hh(-2.2, -0.5), Hh(2.0, -0.5)], [R(0.55), R(0.55)], trim, -0.4, "norim")
     sx, sy = Hh(-0.4, -2.4)
+    if seal is not None:
+        # The seal: a little square of vermilion, its lower corner a stop darker where the paste sat thick.
+        g.block(sx, sy - 1, seal[0], 2)
+        g.dot(sx + 1, sy, seal[1])
+        return
     g.dot(sx, sy, trim[0])
     g.dot(sx + 1, sy, glint)
     g.dot(sx, sy - 1, trim[1])
@@ -1024,8 +1044,8 @@ def _gpose(**kw):
     return p
 
 
-def _wing(g, root, ang, length, chord, ramp, bias, edge_bias):
-    """A wing seen side on: a gold leading edge, primaries splayed at the tip, coverts at the root."""
+def _wing(g, root, ang, length, chord, ramp, bias, edge_bias, edge=GOLD):
+    """A wing seen side on: a gold leading edge (or `edge`'s), primaries splayed at the tip, coverts at the root."""
     dx, dy = math.cos(ang), math.sin(ang)
     px, py = -dy, dx
     if px > 0:
@@ -1049,7 +1069,7 @@ def _wing(g, root, ang, length, chord, ramp, bias, edge_bias):
         tip = (base[0] + math.cos(a) * ln, base[1] + math.sin(a) * ln)
         mid = (base[0] + math.cos(a) * ln * 0.55, base[1] + math.sin(a) * ln * 0.55)
         g.limb([base, mid, tip], [2.1, 1.6, 0.5], ramp, bias + 0.15 * (k % 2), "cloth")
-    g.limb([root, wrist, (wrist[0] + dx * length * 0.2, wrist[1] + dy * length * 0.2)], [0.9, 0.8, 0.5], GOLD, edge_bias, "norim")
+    g.limb([root, wrist, (wrist[0] + dx * length * 0.2, wrist[1] + dy * length * 0.2)], [0.9, 0.8, 0.5], edge, edge_bias, "norim")
 
 
 def griffin(look, p):
@@ -1057,6 +1077,15 @@ def griffin(look, p):
     g = Fig(cell)
     fur, feather, wingm = look["fur"], look["feather"], look["wing"]
     g.deeper[id(fur)] = FUR_DEPTH
+    # Ma Liang's griffin, painted in ink (GRIFF_INK below): the lion's half in the wash, the eagle's in the strokes.
+    ink = look.get("ink")
+    beakm = ink.strokes if ink else AMBER
+    edge = ink.wash if ink else GOLD
+    if ink:
+        g.dry = {id(ink.strokes)}
+        g.dither = ink.dither
+        g.deeper[id(ink.strokes)] = ink.depth
+        g.deeper[id(ink.wash)] = 0.1
     alt = p["alt"]
     tilt = p["tilt"]
     pivot = (31.0, 30.0)
@@ -1067,7 +1096,7 @@ def griffin(look, p):
 
     wf = p["wing_far"] if p["wing_far"] is not None else p["wing"] + 0.18
     # Far wing, far legs, tail: behind the body and a stop darker.
-    _wing(g, T(34.0, 26.0), wf + tilt, 26.0, 10.0, wingm, 1.0, 0.8)
+    _wing(g, T(34.0, 26.0), wf + tilt, 26.0, 10.0, wingm, 1.0, 0.8, edge)
     ta = p["tail"]
     tp = [T(15.0, 31.0)]
     for i, (dx, dy) in enumerate(((-4.0, 1.5), (-4.0, 1.0), (-3.0, -1.0), (-1.5, -2.5))):
@@ -1115,9 +1144,9 @@ def griffin(look, p):
     g.blob(*H(0.0, 0.0), rx=4.6, ry=4.0, ramp=feather, bias=-0.15, kind="fur", angle=ha + tilt)
     beak = p["beak"]
     by = beak * 2.2
-    g.poly([H(2.6, 1.8 + by * 0.2), H(6.6, 2.2 + by), H(5.6, 3.6 + by), H(3.0, 3.0 + by * 0.6)], AMBER, 0.6, "body")
-    g.poly([H(2.6, -1.0), H(6.6, -0.4), H(8.6, 1.0), H(8.4, 3.0), H(7.2, 2.0), H(3.0, 1.8)], AMBER, -0.1, "body")
-    g.dot(*H(8.2, 3.2), colour=AMBER[3])
+    g.poly([H(2.6, 1.8 + by * 0.2), H(6.6, 2.2 + by), H(5.6, 3.6 + by), H(3.0, 3.0 + by * 0.6)], beakm, 0.6, "body")
+    g.poly([H(2.6, -1.0), H(6.6, -0.4), H(8.6, 1.0), H(8.4, 3.0), H(7.2, 2.0), H(3.0, 1.8)], beakm, -0.1, "body")
+    g.dot(*H(8.2, 3.2), colour=beakm[3])
     if beak > 0.3:
         g.dot(*H(5.0, 2.6 + by * 0.7), colour=EMBER[1])
     g.dot(*H(1.2, -2.2), colour=OCC)
@@ -1126,17 +1155,25 @@ def griffin(look, p):
     g.dot(*H(1.6, -1.0), colour=AMBER[1])
     g.dot(*H(2.4, -1.0), colour=AMBER[0])
     g.dot(*H(1.6, -0.2), colour=OCC)
-    # The collar and its star, on the gold of the neck.
-    g.limb([T(37.6, 24.6), T(40.6, 26.4)], [1.1, 1.0], WOOL, -0.1, "body")
-    g.dot(*T(40.0, 28.4), colour=GOLD[0])
-    g.dot(*T(40.0, 29.4), colour=LIGHT_E[0] if not look["frost"] else ICE[0])
+    if not ink:
+        # The collar and its star, on the gold of the neck. (The ink griffin's mark is the seal on its hat.)
+        g.limb([T(37.6, 24.6), T(40.6, 26.4)], [1.1, 1.0], WOOL, -0.1, "body")
+        g.dot(*T(40.0, 28.4), colour=GOLD[0])
+        g.dot(*T(40.0, 29.4), colour=LIGHT_E[0] if not look["frost"] else ICE[0])
     # The near wing, over everything but the head.
-    _wing(g, T(32.0, 26.5), p["wing"] + tilt, 29.0, 11.0, wingm, 0.0, -0.2)
+    _wing(g, T(32.0, 26.5), p["wing"] + tilt, 29.0, 11.0, wingm, 0.0, -0.2, edge)
+    if ink and look.get("storm_edge"):
+        # The Stormcrow's path: its lightning laid along the near wing's leading edge, as on the ink Stormcrow.
+        dx, dy = math.cos(p["wing"] + tilt), math.sin(p["wing"] + tilt)
+        r0 = T(32.0, 26.5)
+        g.limb([r0, (r0[0] + dx * 29.0 * 0.46, r0[1] + dy * 29.0 * 0.46), (r0[0] + dx * 29.0 * 0.66, r0[1] + dy * 29.0 * 0.66)],
+               [1.0, 0.9, 0.6], look["storm_edge"], -0.3, "norim")
 
     def Hh(dx, dy):
         return H(dx * 1.25 - 0.8, dy * 1.25 - 3.4)
 
-    _hat(g, Hh, lambda r: r * 1.3, dict(hat=p["hat"], flap=p["flap"]))
+    _hat(g, Hh, lambda r: r * 1.3, dict(hat=p["hat"], flap=p["flap"]),
+         outfit=(ink.strokes, ink.wash, ink.wash[0]) if ink else None, seal=ink.seal if ink else None)
     if look["frost"] and p["beak"] > 0.3:
         for i, (dx, dy) in enumerate(((9.6, 2.0), (11.0, 1.4), (12.2, 2.6))):
             g.dot(*H(dx, dy), colour=ICE[i % 2], kind="glow")
@@ -1206,7 +1243,7 @@ class Bird(object):
     """What a crow is made of: its plumage, the edge its wings are lit along, its eye, and its size."""
 
     def __init__(self, feather, edge=GOLD, eye=(AMBER[0], AMBER[1]), glow_eye=False, s=1.0, ruff=False,
-                 crest=False, storm=False, beak=AMBER, depth=0.3):
+                 crest=False, storm=False, beak=AMBER, depth=0.3, ink=None):
         self.feather = feather
         self.edge = edge
         self.eye = eye
@@ -1219,6 +1256,8 @@ class Bird(object):
         self.storm = storm
         self.beak = beak
         self.depth = depth
+        # Painted in ink (Ma Liang's, inked() below): an Ink, or None for a creature of light.
+        self.ink = ink
 
 
 # How much lower than its design a crow flies in its cell (crow()): enough that the biggest keeps its hat in.
@@ -1229,6 +1268,68 @@ RAVEN = Bird(CROW_FEATHER, s=1.45, ruff=True, depth=0.12)
 MORRIGAN = Bird(MORRIGAN_FEATHER, eye=(EMBER[0], EMBER[1]), glow_eye=True, s=1.6, ruff=True, crest=True, depth=0.05)
 MORRIGAN_STORM = Bird(STORM_FEATHER, edge=STORM_EDGE, eye=(LT[0], LT[1]), glow_eye=True, s=1.6, ruff=True, crest=True,
                       storm=True, depth=0.05)
+
+
+# =============================================================================================
+# MA LIANG'S CROW: AN INK PAINTING COME ALIVE (Eric, 2026-11-09, .ai/character-fit.md section 5, row 21: "redoing the
+# crow familiar to be brush paintings"). He is the boy of the Chinese tale whose brush made real whatever he painted,
+# and his painted birds flew off the paper - so when HE casts the Familiar his crow is a brush painting, and every other
+# wizard's stays the creature of light above. Same poses, same size, same cell, the same strike: only the look
+# (Familiar.cs picks these sheets by the caster, InkLook).
+#
+#   - BLACK INK for the strokes: the wings, the tail, the head, the hat - the stone row's two darkest stops, the
+#     indigo-black Bonelight's ink is (never occlusion, which is the contact line's alone), lit up through bone's deep
+#     and shade where the key catches a stroke, so a wet stroke still turns.
+#   - A PALE WASH for the body: the breast and back in the bone row from its light end, thin grey ink over paper. On a
+#     dark floor the wash is what reads; on a pale one (the Frozen Waste's snow) the strokes are. Both are always there.
+#   - THE DRY BRUSH (Fig.dry): streaks of bare paper through the wet black along each stroke, and the far edges frayed.
+#   - The leading edge of each wing is not gold but the wash: the brush's dry first touch.
+#   - THE PAINTER'S SEAL: one small square of vermilion (the ember row, the player's own red) on the hat where the gold
+#     star is - the chop a painter signs with, and the only colour on it. The hat stays, painted in the same ink: filled
+#     black, the crow in a hat is still the wizard's, and no rook of the Fallow Fields wears one. The beak is ink, not
+#     the Harvest Rook's pale bone. The eye keeps its warm amber point: what his brush made is alive.
+# Its element paths keep their light: the Stormcrow's lightning edge and sparks, the Morrigan's ember eyes - the ink is
+# the creature, the element is the spell.
+# =============================================================================================
+
+SKIN = M["skin"]
+# Wet ink to dry: the bulk stone's shade and deep, lifted through bone's deep and shade where the key catches a
+# stroke. Its top stop is the paper itself, bone's lit: what a dry brush leaves bare (Fig.dry's streaks).
+INK = [SKIN[1], SKIN[3], SKIN[4], STONE[3], STONE[4]]
+# The wash: thin grey ink over the paper on the lit planes of the body, going to the same black underneath.
+INK_WASH = [SKIN[1], SKIN[2], SKIN[3], STONE[3], STONE[4]]
+# The seal's vermilion, and the paste where it sat thick.
+SEAL = (EMBER[2], EMBER[3])
+
+
+class Ink(object):
+    """How a crow is painted in ink: the strokes' ramp, the wash's, and the seal."""
+
+    def __init__(self, strokes=INK, wash=INK_WASH, seal=SEAL, depth=0.4, dither=0.08):
+        self.strokes = strokes
+        self.wash = wash
+        self.seal = seal
+        # Deeper than the crow of light: a brush painting is mostly its blacks.
+        self.depth = depth
+        # Flatter than the sprites' turning forms: a brush lays a plane of one tone, not a dithered gradient.
+        self.dither = dither
+
+
+INKED = Ink()
+
+
+def inked(bird):
+    """The same crow painted in ink: its size, ruff, crest, eyes and element light kept, its plumage and gold turned
+    to the brush (MA LIANG'S CROW above)."""
+    return Bird(INKED.strokes, edge=bird.edge, eye=bird.eye, glow_eye=bird.glow_eye, s=bird.s, ruff=bird.ruff,
+                crest=bird.crest, storm=bird.storm, beak=INKED.strokes, depth=INKED.depth, ink=INKED)
+
+
+CROW_INK = inked(CROW)
+STORMCROW_INK = inked(STORMCROW)
+RAVEN_INK = inked(RAVEN)
+MORRIGAN_INK = inked(MORRIGAN)
+MORRIGAN_STORM_INK = inked(MORRIGAN_STORM)
 
 
 def _cpose(**kw):
@@ -1243,6 +1344,13 @@ def crow(cell, bird, p):
     stands it), so its shadow is drawn there and the bird well above."""
     g = Fig(cell)
     g.deeper[id(bird.feather)] = bird.depth
+    ink = bird.ink
+    # The body's ramp: the plumage, or for an ink crow the pale wash under the strokes.
+    body = ink.wash if ink else bird.feather
+    if ink:
+        g.dry = {id(ink.strokes)}
+        g.dither = ink.dither
+        g.deeper[id(ink.wash)] = 0.1
     s = bird.s
     alt = p["alt"]
     tilt = p["tilt"]
@@ -1263,9 +1371,10 @@ def crow(cell, bird, p):
     wf = p["wing_far"] if p["wing_far"] is not None else p["wing"] + 0.2
     fold = p["fold"]
     # The far wing, a stop darker, behind everything. Folded for the stoop, it lies back along the body.
-    _wing(g, T(23.0, 16.5), wf + tilt, R(18.0 - fold * 7.0), R(7.2 - fold * 2.4), fe, 1.0, 0.8)
-    if bird.edge is not GOLD:
-        pass
+    # The leading edge: gold on a crow of light, the wash on an ink one (the brush's dry first touch). The
+    # Stormcrow's lightning is laid over the near wing's below, either way.
+    wing_edge = ink.wash if ink else GOLD
+    _wing(g, T(23.0, 16.5), wf + tilt, R(18.0 - fold * 7.0), R(7.2 - fold * 2.4), fe, 1.0, 0.8, wing_edge)
     # The tail: a wedge of long feathers fanned behind, lifting with `tail`.
     ta = p["tail"]
     root = (15.5, 20.0)
@@ -1280,20 +1389,22 @@ def crow(cell, bird, p):
         foot = (22.5 + ox + talon * 3.0, 23.6 + talon * 4.0)
         g.limb([T(*hip), T(*foot)], [R(1.0), R(0.7)], STONE, bias, "body")
         fx, fy = T(*foot)
-        g.dot(fx + 1, fy + 1, AMBER[2] if bias < 0.5 else AMBER[3])
+        claw = (fe[1], fe[2]) if ink else (AMBER[2], AMBER[3])
+        g.dot(fx + 1, fy + 1, claw[0] if bias < 0.5 else claw[1])
         g.dot(fx - 1, fy + 1, OCC)
-    # The body: a long tapered back, the breast deep and forward.
-    g.limb([T(15.5, 19.6), T(20.0, 19.4), T(25.5, 18.6)], [R(3.0), R(4.2), R(4.4)], fe, 0.0, "fur")
-    g.blob(*T(26.5, 19.0), rx=R(4.4), ry=R(4.0), ramp=fe, bias=-0.1, kind="fur")
+    # The body: a long tapered back, the breast deep and forward - on an ink crow, the wash.
+    g.limb([T(15.5, 19.6), T(20.0, 19.4), T(25.5, 18.6)], [R(3.0), R(4.2), R(4.4)], body, 0.0, "fur")
+    g.blob(*T(26.5, 19.0), rx=R(4.4), ry=R(4.0), ramp=body, bias=-0.1, kind="fur")
     if bird.ruff:
         # A raven's shaggy throat: hackles standing off the breast under the beak.
         for (bx, by, ln) in ((29.0, 17.0, 2.6), (28.0, 19.5, 2.2), (26.6, 21.4, 1.8)):
             g.poly([T(bx - 1.0, by - 0.8), T(bx + 0.6, by - 0.6), T(bx + ln * 0.4, by + ln)], fe, 0.1, "fur", lean=(-0.2, -0.4))
-    # The collar, and its star.
-    g.limb([T(27.4, 15.4), T(29.6, 17.6)], [R(0.85), R(0.8)], GOLD, -0.2, "body")
-    sx, sy = T(29.4, 19.0)
-    g.dot(sx, sy, GOLD[0])
-    g.dot(sx, sy + 1, LIGHT_E[0] if not bird.storm else LT[0])
+    if not ink:
+        # The collar, and its star. (An ink crow wears none: its mark is the painter's seal on its hat.)
+        g.limb([T(27.4, 15.4), T(29.6, 17.6)], [R(0.85), R(0.8)], GOLD, -0.2, "body")
+        sx, sy = T(29.4, 19.0)
+        g.dot(sx, sy, GOLD[0])
+        g.dot(sx, sy + 1, LIGHT_E[0] if not bird.storm else LT[0])
     # The head, carried forward of the breast, turned by `head`.
     hdx, hdy, ha = p["head"]
     hc = (30.6 + hdx, 14.2 + hdy)
@@ -1327,7 +1438,7 @@ def crow(cell, bird, p):
         g.dot(*H(1.8, -0.6), colour=bird.eye[1])
         g.dot(*H(1.8, 0.3), colour=calm_eye(bird.eye)[0])
     # The near wing over everything but the head.
-    _wing(g, T(22.6, 16.6), p["wing"] + tilt, R(20.0 - fold * 8.0), R(8.0 - fold * 2.8), fe, 0.0, -0.2)
+    _wing(g, T(22.6, 16.6), p["wing"] + tilt, R(20.0 - fold * 8.0), R(8.0 - fold * 2.8), fe, 0.0, -0.2, wing_edge)
     if bird.edge is not GOLD:
         # The Stormcrow's leading edge is lightning, not gold: laid over the gold the wing drew.
         dx, dy = math.cos(p["wing"] + tilt), math.sin(p["wing"] + tilt)
@@ -1341,7 +1452,9 @@ def crow(cell, bird, p):
     def Hh(dx, dy):
         return H(dx * 0.95 - 0.5, dy * 0.95 + 0.4)
 
-    _hat(g, Hh, lambda r: r * 0.95 * s, dict(hat=p["hat"], flap=p["flap"]))
+    # An ink crow's hat is painted in the same ink, its band the wash, and the seal stamped where the star was.
+    _hat(g, Hh, lambda r: r * 0.95 * s, dict(hat=p["hat"], flap=p["flap"]),
+         outfit=(ink.strokes, ink.wash, ink.wash[0]) if ink else None, seal=ink.seal if ink else None)
     if bird.storm and p["sparks"]:
         # Lightning thrown off it: a few hot points off the wingtip and the beak.
         for i, (dx, dy) in enumerate(((7.8, 0.2), (9.0, -1.0), (8.4, 1.8))[:p["sparks"]]):
@@ -1393,6 +1506,11 @@ CROW_ANIMS = [
 
 # The griffin after the crow's Lightning path: its eagle half lit in storm, its wings the storm's blue.
 GRIFF_STORM = dict(fur=FAWN, feather=[LT[0], LT[1], AMBER[1], AMBER[2], AMBER[3]], wing=STORM_FEATHER, frost=False)
+# Ma Liang's griffin, painted in ink (MA LIANG'S CROW above): the lion's half in the wash, the eagle's and the wings in
+# the strokes, the beak ink, the seal on the hat; after the Lightning path its near wing's edge keeps the storm.
+GRIFF_INK = dict(fur=INKED.wash, feather=INKED.strokes, wing=INKED.strokes, frost=False, ink=INKED)
+GRIFF_STORM_INK = dict(fur=INKED.wash, feather=INKED.strokes, wing=INKED.strokes, frost=False, ink=INKED,
+                       storm_edge=STORM_EDGE)
 
 
 # =============================================================================================
@@ -1834,6 +1952,14 @@ FORMS = [
     ("morrigan-storm", 64, MORRIGAN_STORM, 1.0),
     ("griffin", 64, GRIFF, 1.0),
     ("griffin-storm", 64, GRIFF_STORM, 1.0),
+    # Ma Liang's crow, every look of it, painted in ink (MA LIANG'S CROW above; Familiar.cs, InkLook)
+    ("crow-ink", 48, CROW_INK, 1.0),
+    ("stormcrow-ink", 48, STORMCROW_INK, 1.0),
+    ("raven-ink", 64, RAVEN_INK, 1.0),
+    ("morrigan-ink", 64, MORRIGAN_INK, 1.0),
+    ("morrigan-storm-ink", 64, MORRIGAN_STORM_INK, 1.0),
+    ("griffin-ink", 64, GRIFF_INK, 1.0),
+    ("griffin-storm-ink", 64, GRIFF_STORM_INK, 1.0),
     # the cat's
     ("cat", 48, CAT, 1.3),
     ("cait-sith", 48, CAIT_SITH, 1.3),

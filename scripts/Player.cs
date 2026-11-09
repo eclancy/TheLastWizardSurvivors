@@ -53,6 +53,9 @@ public partial class Player : CharacterBody2D
 	[Export] public PackedScene TheTakingScene { get; set; }
 	// Merlin's own spell (.ai/merlin.md): the ward and the orb that ricochets in it (scripts/OrbOfAges.cs).
 	[Export] public PackedScene OrbOfAgesScene { get; set; }
+	// John Dee's opener (.ai/character-fit.md section 6): one node in the arena that carries the book and every page
+	// it throws (scripts/Folio.cs, Player.Folio.cs).
+	[Export] public PackedScene FolioScene { get; set; }
 	// The three found spells (.ai/side-events.md): each is a Discovery unlock from a side event.
 	[Export] public PackedScene IronPalisadeScene { get; set; }
 	[Export] public PackedScene ContagionScene { get; set; }
@@ -211,8 +214,12 @@ public partial class Player : CharacterBody2D
 	private float invincibilityTimeRemaining = 0f;
 	// How much longer he is drawn white: only a grace that asked for it (GrantInvincibility's whiten).
 	private float whiteTimeRemaining = 0f;
+	// How much of him is drawn while he is white (the shader's opacity): 1 but for Overlooked's ghost, and 1 again
+	// the moment the white ends (SetInvincibilityVisual).
+	private float whiteOpacity = 1f;
 	private static readonly Shader InvincibilityShader =
 		ResourceLoader.Load<Shader>("res://scenes/shaders/invincibility_white.gdshader");
+	private static readonly StringName ParamOpacity = "opacity";
 	private ShaderMaterial? invincibilityMaterial;
 	// The sprite's material before the grace period started, restored when it ends.
 	private Material? materialBeforeInvincibility;
@@ -654,6 +661,14 @@ public partial class Player : CharacterBody2D
 	// Exorcist (Abe no Seimei): the share added to every hit on an elite, a miniboss or a boss.
 	public const float CharacterEliteDamageBonus = 0.15f;
 	private float characterEliteDamageBonus = 0f;
+	// Kindled Focus (Aedan, the Pyromancer): the share added to every hit on an enemy close to him, whatever spell lands
+	// it (Eric, 2026-11-09: "implement your suggestion"). It was +10% to every spell, a plain stat; now it pays for what
+	// his Cinderbreath asks - standing in the pack. Close is CharacterCloseDamageRange of him: a little past the level 1
+	// jet's 230 px reach (SpellData_Cinderbreath.tres, raised from 170 on 2026-11-04), so all of the jet he opens with
+	// counts and the bolts' range (340-420) does not; the grown jet's far end (300 at level 8) is past it. First guesses.
+	public const float CharacterCloseDamageBonus = 0.15f;
+	public const float CharacterCloseDamageRange = 250f;
+	private float characterCloseDamageBonus = 0f;
 	// Dread (the dark wizard): how many times as often his Darkness hits frighten (Player.TryFrighten). The
 	// horde is his own making, and it knows him.
 	public const float CharacterDreadFearScale = 2f;
@@ -663,12 +678,17 @@ public partial class Player : CharacterBody2D
 	// as they resist every shove. Protection by holding them off - no heal, no armour.
 	public const float CharacterWardingHandThrow = 220f;
 	private float characterWardingHandThrow = 0f;
-	// Wings (Wayland the Smith): the share added to his walking speed - the wings he made to get off the island.
-	public const float CharacterWingsSpeedBonus = 0.10f;
+	// Wings (Wayland the Smith): floor traps never touch him and water never slows him (Player.Wings.cs, Winged). It was
+	// +10% walking speed until 2026-11-09.
 	// Overlooked (The Archmage, .ai/protagonist.md): once a run, the blow that would end him misses (TakeDamage). The
 	// ten-second escape window is independent of post-menu grace. He is drawn white through it:
 	// the crowd that landed the blow is still on him, so he needs time to get clear.
 	public const float OverlookedGraceSeconds = 10.0f;
+	// And a pale ghost of him through it, not only white (Eric, 2026-11-09: "his passive should also make him
+	// semi-transparent for those 10 seconds, to make it clear that he is untouchable"): the body sprite at this
+	// opacity, on the white's own clock (GrantInvincibility's opacity). The body sprite only: nothing else drawn round
+	// him changes. A first guess.
+	public const float OverlookedOpacity = 0.45f;
 	private bool characterOverlooked = false;
 	private bool overlookedSpent = false;
 
@@ -687,10 +707,11 @@ public partial class Player : CharacterBody2D
 	// Far-Shooting (Artemis, .ai/second-half.md 3.2): the share added to every spell's reach - how far it finds its
 	// target and how far its shot flies to it (SpellData.ReachScale, read through GetReachAtLevel).
 	public const float CharacterFarShootingReachBonus = 0.15f;
-	// Rejuvenation (Medea): the share added to every heal (Heal), and the carry that keeps a one-point heal's share.
-	public const float CharacterRejuvenationBonus = 0.20f;
-	private float characterHealingBonus = 0f;
-	private float rejuvenationCarry = 0f;
+	// The Salve (Medea, since 2026-11-09): the share taken off every enemy bolt that lands on her (TakeBoltDamage, read
+	// in TakeDamage after the signal). incomingIsBolt is true only while TakeBoltDamage is inside TakeDamage.
+	public const float CharacterSalveBoltReduction = 0.30f;
+	private bool characterSalve = false;
+	private bool incomingIsBolt = false;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -708,7 +729,7 @@ public partial class Player : CharacterBody2D
 		// The Hunter's Moon's tallies are a run's (the harness reads them).
 		Sagittarius.ResetHuntTallies();
 		// The Eye of Ra's tallies are a run's too (the harness reads them).
-		Fireball.ResetEyeOfRaTallies();
+		ScorchingRayBeam.ResetEyeOfRaTallies();
 		// Nobody is turned at the start of a run, and Dragon's Teeth's tally is the run's (Enemy.Turned.cs).
 		Enemy.ResetTurnedTally();
 		ElementalPulse.ResetTeethTally();
@@ -873,8 +894,9 @@ public partial class Player : CharacterBody2D
 		// never fused for him (Player.Combinations.cs, AddStartingConjunction).
 		if (!toolOpener && ComboCatalog.ForId(startingSpellId) is ComboDefinition opening && ComboCatalog.StartsFused(opening, selectedCharacter.Id))
 			AddStartingConjunction(opening, selectedCharacter.IsLegendaryStart);
-		// A wizard who opens on a spell with forms chooses the form on the run's first screen (Ma Liang's Familiar,
-		// Player.MaLiang.cs): the spell is owed until then, and Node2DGame opens the page before anything moves.
+		// A wizard marked to choose the form of his spell chooses it on the run's first screen (Player.MaLiang.cs): the
+		// spell is owed until then, and Node2DGame opens the page before anything moves. None is marked since Ma Liang
+		// opens on the crow (2026-11-09); every wizard on a spell with forms opens in his Apotheosis's form below.
 		else if (!toolOpener && ChoosesOpeningForm(selectedCharacter) && string.IsNullOrEmpty(SpellVariants.Split(startingSelection).VariantId))
 			OweOpeningForm(startingSpellId, selectedCharacter.IsLegendaryStart);
 		else if (!string.IsNullOrWhiteSpace(startingSpellId))
@@ -931,7 +953,9 @@ public partial class Player : CharacterBody2D
 	public static readonly IReadOnlySet<string> CharacterPassiveBonusIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 	{
 		"cooldown_reduction_10",
-		"spell_damage_10",
+		// Aedan (the Pyromancer): Kindled Focus - more damage to what is close to him, from any spell (it was
+		// "spell_damage_10", +10% to everything, until 2026-11-09). Fighting up close is what Cinderbreath asks.
+		"close_damage_15",
 		"health_regen_0_5",
 		"armor_10",
 		// The two rescued wizards (.ai/side-events.md). Each is a scaling axis no starter owns.
@@ -951,9 +975,11 @@ public partial class Player : CharacterBody2D
 		// Merlin (.ai/merlin.md): Warding Hand - whatever touches him is thrown back. Holding the dark off as a
 		// passive, an axis no other wizard owns: not armour (the Geomancer), not a heal (.ai/difficulty-curve.md).
 		"repel_on_hit",
-		// Wayland the Smith (.ai/chapter-wizards.md 4.7): Wings, +10% move speed. Every other wizard's passive is
-		// about his spells or his skin; this one is the only one about his feet.
-		"move_speed_10",
+		// Wayland the Smith (.ai/chapter-wizards.md 4.7): Wings - he flies when he moves, so floor traps never touch him and
+		// water never slows him (Player.Wings.cs). Still the only passive about his feet: not his speed, the ground under
+		// them. It was "move_speed_10", +10% move speed, until 2026-11-09 (Eric: "instead of extra speed, make him immune
+		// to floor traps / water slowing", .ai/character-fit.md).
+		"over_traps_and_water",
 		// The Cumaean Sibyl (.ai/chapter-wizards.md 4.3): Prophecy - she sees what is coming, so she may ask
 		// the cards again. Three more rerolls in the run's pool, on top of Fate Fracture's. An axis no other
 		// wizard owns: it touches no number in the fight, only the choices.
@@ -964,12 +990,13 @@ public partial class Player : CharacterBody2D
 		"missed_once",
 		// Baba Yaga (.ai/chapter-wizards.md 4.1): Bone Fence - her hut stands behind a fence of bone, and whatever her
 		// spells shove or drag is thrown that much harder (Enemy.PlayerKnockbackScale). An axis no other wizard owns:
-		// not damage, not speed, the strength of every push. Her own vine pushes nothing; it is a build's passive.
+		// not damage, not speed, the strength of every push. Her own vine throws what it cuts aside since 2026-11-09
+		// (ThornVine.VineShoveSpeed; Eric chose it over a new passive, .ai/character-fit.md), so it works from her first cast.
 		"knockback_20",
-		// Morgan le Fay (.ai/chapter-wizards.md 4.9): Avalon - the first extra life a run spends heals to full, not
-		// half, as the isle she carried the dying king to healed him. An axis no other wizard owns: not a heal over
-		// time (the Frostweaver), not a death refused (the Archmage) - what an extra life is worth, once.
-		"first_fall_full",
+		// Morgan le Fay (.ai/chapter-wizards.md 4.9): Glamour since 2026-11-09 - one blow in ten strikes a mirage of her
+		// instead (Player.Mirage.cs). An axis no other wizard owns: a dodge of her own, where Overlooked refuses one death
+		// and the Scabbard slows the bites. It replaced Avalon, "first_fall_full", which needed a revive she rarely held.
+		"glamour_evasion_10",
 		// Paracelsus (.ai/chapter-wizards.md 4.4): Sola Dosis - "the dose alone makes the poison". Every poison tick on
 		// an enemy bites a quarter harder (Enemy.PlayerPoisonScale), whichever spell or item laid it. Damage over time is
 		// poison in this game: no other status takes health on a clock. An axis no other wizard owns: not the hit
@@ -985,10 +1012,12 @@ public partial class Player : CharacterBody2D
 		// (PickupReach). An axis no other wizard owns: not his speed (Wings), not a pull of the swarm (Hollow Star),
 		// only how far his hands reach for what the fight drops.
 		"pickup_reach_20",
-		// Medea (.ai/chapter-wizards.md 4.2): Rejuvenation - the sorceress who made old Aeson young again in her
-		// cauldron, and every heal she takes is a fifth more (Heal). An axis no other wizard owns: not a heal of its
-		// own (the healing budget, .ai/difficulty-curve.md section 5, gives her none), the worth of every other one.
-		"healing_20",
+		// Medea (.ai/chapter-wizards.md 4.2): the Salve since 2026-11-09 - the charm she gave Jason against the bulls'
+		// fire, and enemy bolts deal her 30% less (TakeBoltDamage). It helps the stand her Solar Flare asks for, where a
+		// shooter is what punishes standing still (Eric: "maybe just that ranged attacks deal 30% less, because it helps
+		// with the standing still theme she has"). It replaced Rejuvenation, "healing_20", +20% of every heal, worth 2-5
+		// HP a minute once healing was made scarce (.ai/character-fit.md).
+		"bolt_damage_30",
 		// Nimue (.ai/endgame-castle.md decision 11): the Scabbard - "ye shall lose no blood, be ye never so sore
 		// wounded" - a body pressed against her bites a quarter less often (Player.Scabbard.cs). An axis no other
 		// wizard owns: not a share of every hit (the Geomancer), not a chance of none (evasion), not a death refused
@@ -1018,8 +1047,8 @@ public partial class Player : CharacterBody2D
 			case "cooldown_reduction_10":
 				cooldownMultiplier *= 0.90f;
 				return true;
-			case "spell_damage_10":
-				damageMultiplier *= 1.10f;
+			case "close_damage_15":
+				characterCloseDamageBonus = CharacterCloseDamageBonus;
 				return true;
 			case "health_regen_0_5":
 				// The id is the save's and the character file's; the amount is the healing budget's.
@@ -1049,8 +1078,8 @@ public partial class Player : CharacterBody2D
 			case "repel_on_hit":
 				characterWardingHandThrow = CharacterWardingHandThrow;
 				return true;
-			case "move_speed_10":
-				Speed *= 1f + CharacterWingsSpeedBonus;
+			case "over_traps_and_water":
+				Winged = true;
 				return true;
 			case "rerolls_3":
 				// ApplyArcaneUpgrades has already filled the pool from the shop; this goes on top, once.
@@ -1062,8 +1091,8 @@ public partial class Player : CharacterBody2D
 			case "knockback_20":
 				Enemy.PlayerKnockbackScale = 1f + CharacterBoneFenceKnockbackBonus;
 				return true;
-			case "first_fall_full":
-				characterAvalon = true;
+			case "glamour_evasion_10":
+				characterGlamourEvasion = CharacterGlamourEvasion;
 				return true;
 			case "dot_25":
 				Enemy.PlayerPoisonScale = 1f + CharacterSolaDosisBonus;
@@ -1074,8 +1103,8 @@ public partial class Player : CharacterBody2D
 			case "pickup_reach_20":
 				characterPickupReachScale = 1f + CharacterSurveyorReachBonus;
 				return true;
-			case "healing_20":
-				characterHealingBonus = CharacterRejuvenationBonus;
+			case "bolt_damage_30":
+				characterSalve = true;
 				return true;
 			case "bite_interval_25":
 				characterScabbard = true;
@@ -1247,7 +1276,7 @@ public partial class Player : CharacterBody2D
 
 		if (!spellCatalog.ContainsKey("arcane_explosion"))
 		{
-			AddSpellToCatalog(CreateFallbackSpellData("arcane_explosion", "Arcane Explosion", 5, 1.5f, 1, 100f, "Creates a blast around the caster that damages nearby enemies."));
+			AddSpellToCatalog(CreateFallbackSpellData("arcane_explosion", "Canticle", 5, 1.5f, 1, 100f, "Creates a blast around the caster that damages nearby enemies."));
 		}
 
 		if (!spellCatalog.ContainsKey("spiritual_weapon"))
@@ -1277,6 +1306,8 @@ public partial class Player : CharacterBody2D
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_SleetRunes.tres"));
 		if (!spellCatalog.ContainsKey(OrbOfAges.SpellId))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_OrbOfAges.tres"));
+		if (!spellCatalog.ContainsKey(Folio.SpellId))
+			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Folio.tres"));
 		if (!spellCatalog.ContainsKey("iron_palisade"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_IronPalisade.tres"));
 		if (!spellCatalog.ContainsKey("contagion"))
@@ -1558,7 +1589,8 @@ public partial class Player : CharacterBody2D
 				tags |= SpellScalingTag.Area | SpellScalingTag.Slow | SpellScalingTag.ProjectileCount;
 				break;
 			case "cone_of_cold":
-				targeting = SpellTargetingMode.DirectionalCone;
+				// The facing family since 2026-11-09 (FireConeBlast): aimed the way he faces, never at an enemy.
+				targeting = SpellTargetingMode.Facing;
 				shape = SpellDamageShape.RadiusBurst;
 				tags |= SpellScalingTag.Area | SpellScalingTag.Slow;
 				break;
@@ -2565,6 +2597,23 @@ public partial class Player : CharacterBody2D
 	/// no DamageTaken and no reaction. Asked by EnemyProjectile before it calls TakeDamage. Always false
 	/// for a character without the passive, and for a dead one.
 	/// </summary>
+	/// <summary>
+	/// An enemy bolt landing on him (EnemyProjectile): TakeDamage, told the blow is a bolt so Medea's Salve can lighten
+	/// it. Everything else - the dodge, the signal, armour, the shield - is TakeDamage's as for any blow.
+	/// </summary>
+	public void TakeBoltDamage(int amount)
+	{
+		incomingIsBolt = true;
+		try
+		{
+			TakeDamage(amount);
+		}
+		finally
+		{
+			incomingIsBolt = false;
+		}
+	}
+
 	public bool TryCatchBolt()
 	{
 		if (characterBoltCatchChance <= 0f || IsDead || combatRng.Randf() >= characterBoltCatchChance)
@@ -2651,6 +2700,10 @@ public partial class Player : CharacterBody2D
 			// Exorcist: the strong ones take more from him. Not an execute, so bosses are not spared it.
 			if (characterEliteDamageBonus > 0f && targetEnemy.IsMiniBoss)
 				finalDamage = Mathf.RoundToInt(finalDamage * (1f + characterEliteDamageBonus));
+			// Kindled Focus: what stands close to him burns hotter, whichever spell struck it.
+			if (characterCloseDamageBonus > 0f
+				&& GlobalPosition.DistanceSquaredTo(targetEnemy.GlobalPosition) <= CharacterCloseDamageRange * CharacterCloseDamageRange)
+				finalDamage = Mathf.RoundToInt(finalDamage * (1f + characterCloseDamageBonus));
 			// Never a boss (Eric, 2026-11-01: "Bosses should be excluded from execution abilities"): the
 			// boss work made every fight minutes long on purpose, and a Reaper's Scythe cut the last 30%
 			// off all of them. Elites still fall to it; the Morrigan's peck already spares both.
@@ -2825,7 +2878,11 @@ public partial class Player : CharacterBody2D
 	// and a white figure on every pick read as something happening to him. The boss's fall still
 	// whitens him: there it says the fight is over and nothing can touch him. The white has its own
 	// clock, so a quiet grace that outlasts a white one does not keep him white.
-	public void GrantInvincibility(float seconds, bool whiten = true)
+	//
+	// opacity: how much of him is drawn while he is white - Overlooked's pale ghost (OverlookedOpacity), 1 for
+	// every other grace. It rides the white's clock: while two whitened graces overlap the paler one holds until the
+	// white ends, and then he is whole again, so a later ordinary whitened grace is opaque.
+	public void GrantInvincibility(float seconds, bool whiten = true, float opacity = 1f)
 	{
 		if (IsDead || seconds <= 0f)
 			return;
@@ -2833,8 +2890,12 @@ public partial class Player : CharacterBody2D
 		invincibilityTimeRemaining = Mathf.Max(invincibilityTimeRemaining, seconds);
 		if (!whiten)
 			return;
+		float wanted = Mathf.Clamp(opacity, 0f, 1f);
+		whiteOpacity = whiteTimeRemaining > 0f ? MathF.Min(whiteOpacity, wanted) : wanted;
 		whiteTimeRemaining = Mathf.Max(whiteTimeRemaining, seconds);
 		SetInvincibilityVisual(true);
+		// Set after, too: an already-white sprite returns early from SetInvincibilityVisual.
+		invincibilityMaterial?.SetShaderParameter(ParamOpacity, whiteOpacity);
 	}
 
 	public bool IsInvincible => invincibilityTimeRemaining > 0f;
@@ -2895,6 +2956,7 @@ public partial class Player : CharacterBody2D
 
 			invincibilityMaterial ??= new ShaderMaterial { Shader = InvincibilityShader };
 			invincibilityMaterial.SetShaderParameter("whiten", 1.0f);
+			invincibilityMaterial.SetShaderParameter(ParamOpacity, whiteOpacity);
 			materialBeforeInvincibility = bodySprite.Material;
 			bodySprite.Material = invincibilityMaterial;
 		}
@@ -2902,6 +2964,9 @@ public partial class Player : CharacterBody2D
 		{
 			bodySprite.Material = materialBeforeInvincibility;
 			materialBeforeInvincibility = null;
+			// Whole again with the white: the next whitened grace is opaque unless it asks otherwise.
+			whiteOpacity = 1f;
+			invincibilityMaterial?.SetShaderParameter(ParamOpacity, 1f);
 		}
 
 		invincibilityVisualActive = active;
@@ -2929,13 +2994,14 @@ public partial class Player : CharacterBody2D
 	/// </summary>
 	public AnimatedSprite2D? BodySprite => bodySprite;
 
-	// Walk while moving, idle while still. Never interrupts a hurt or death in progress.
+	// Walk while moving, idle while still. Never interrupts a hurt or death in progress. Wings (Wayland, whose moving
+	// frames are his flight) keeps the flight while he stands over water or a floor trap: HoldsFlight, Player.Wings.cs.
 	private void UpdateBodyAnimation()
 	{
 		if (bodySprite?.SpriteFrames == null || bodyOneShotPlaying || IsDead)
 			return;
-		string want = Velocity.Length() > WalkAnimationSpeedFloor && bodySprite.SpriteFrames.HasAnimation("moving")
-			? "moving" : "idle";
+		bool moving = Velocity.Length() > WalkAnimationSpeedFloor || HoldsFlight;
+		string want = moving && bodySprite.SpriteFrames.HasAnimation("moving") ? "moving" : "idle";
 		if (bodySprite.Animation != want && bodySprite.SpriteFrames.HasAnimation(want))
 			bodySprite.Play(want);
 	}
@@ -2972,7 +3038,8 @@ public partial class Player : CharacterBody2D
 
 		if (amount > 0)
 		{
-			float dodgeChance = Math.Min(0.75f, GetDarknessEvasionPercent() + boonEvasionPercent + familiarGrants.Evasion);
+			float dodgeChance = Math.Min(0.75f, GetDarknessEvasionPercent() + boonEvasionPercent + familiarGrants.Evasion
+				+ characterGlamourEvasion);
 			if (dodgeChance > 0.0f && combatRng.Randf() < dodgeChance)
 			{
 				PlayBlurDodgeEffect();
@@ -3020,6 +3087,10 @@ public partial class Player : CharacterBody2D
 			NotifyStormguardStruck();
 
 		int mitigated = Math.Max(0, amount);
+		// The Salve (Medea): an enemy bolt lands 30% lighter. After the signal, as every reduction is (a reactive boon
+		// answers being struck), and floored at 1 as armour is: it lightens a bolt, it never deletes one.
+		if (incomingIsBolt && characterSalve && mitigated > 0)
+			mitigated = Math.Max(1, Mathf.RoundToInt(mitigated * (1f - CharacterSalveBoltReduction)));
 		// One reduction step, not three. Applied before the shield pool so a shield absorbs what
 		// actually would have landed.
 		float armor = GetArmorPercent();
@@ -3041,7 +3112,7 @@ public partial class Player : CharacterBody2D
 			OverlookedAtSeconds = Node2DGame.Current?.RunSeconds ?? 0f;
 			PlayBlurDodgeEffect();
 			SfxPlayer.Global(SfxCatalog.PlayerDodge, 0.05f);
-			GrantInvincibility(OverlookedGraceSeconds);
+			GrantInvincibility(OverlookedGraceSeconds, opacity: OverlookedOpacity);
 			GD.Print($"Overlooked: a blow of {mitigated} against {CurrentHP} HP missed at {OverlookedAtSeconds:0.0} s.");
 			return;
 		}
@@ -3085,9 +3156,9 @@ public partial class Player : CharacterBody2D
 			{
 				RunEvents.RecordRevive();
 				extraLives--;
-				// Spending an extra life is a heal, not a death. Only the branch below is a death. Half the bar -
-				// or, the first time a run spends one under Avalon (Morgan le Fay, Player.Mirage.cs), the whole of
-				// it. After Overlooked's step on purpose: a blow the Archmage's passive turned aside never gets here.
+				// Spending an extra life is a heal, not a death. Only the branch below is a death. Half the bar
+				// (ExtraLifeHeal). After Overlooked's step on purpose: a blow the Archmage's passive turned aside never
+				// gets here.
 				SfxPlayer.Global(SfxCatalog.PlayerHeal);
 				CurrentHP = ExtraLifeHeal();
 				return;
@@ -3402,18 +3473,6 @@ public partial class Player : CharacterBody2D
 	public void Heal(int amount)
 	{
 		int adjustedAmount = Math.Max(0, Mathf.RoundToInt(amount * (1.0f + chestHealingBonusPercent)));
-		// Rejuvenation (Medea): a fifth more of every heal, from every source that heals through here - the flask, the
-		// Light tier's banked share, the Grass tier, every regeneration line (RegenPerSecondNow, a point at a time), the
-		// relics, the boons, the cat's purr, the events' heals. The fraction is CARRIED, as AddXp carries XP: a one-point
-		// regeneration tick is most of what heals a run now, and rounding 1.2 per tick would round the passive away.
-		// Not a revive (TakeDamage sets the bar to half itself): a life is not a heal. Nobody else reaches the carry, so
-		// every other wizard's healing is exactly what it was.
-		if (characterHealingBonus > 0f && adjustedAmount > 0)
-		{
-			rejuvenationCarry += adjustedAmount * (1f + characterHealingBonus);
-			adjustedAmount = (int)rejuvenationCarry;
-			rejuvenationCarry -= adjustedAmount;
-		}
 		if (GameStats.TrackHealing)
 			GameStats.RecordHealing(HealCallerName(), adjustedAmount);
 		int headroom = Math.Max(0, MaxHP - CurrentHP);
@@ -4742,9 +4801,10 @@ public partial class Player : CharacterBody2D
 					// starting spell to set it off. She has only it until her first level-up, so with nothing
 					// else held that can charge it, its own cooldown sets it off - the old timed pulse - and
 					// the moment a second spell is held it is charge-driven again.
+					// The Canticle (2026-11-09): alone, it still goes off on the music's next beat (RequestBurst).
 					if (!HasArcaneCharger())
 					{
-						existing.TriggerNow(null);
+						existing.RequestBurst();
 						outcome = CastOutcome.Fired;
 					}
 				}
@@ -4807,6 +4867,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals("sleet_runes", StringComparison.OrdinalIgnoreCase)) outcome = FireSleetRunes(spell, SleetRunesScene);
 		else if (spell.Id.Equals(TheTaking.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireTheTaking(spell, TheTakingScene);
 		else if (spell.Id.Equals(OrbOfAges.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireOrbOfAges(spell, OrbOfAgesScene);
+		else if (spell.Id.Equals(Folio.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireFolio(spell, FolioScene);
 		else if (spell.Id.Equals("gravewell", StringComparison.OrdinalIgnoreCase)) outcome = FireGravewellTrap(spell, GravewellScene);
 		else if (spell.Id.Equals("hollow_star", StringComparison.OrdinalIgnoreCase)) outcome = FireHollowStar(spell, HollowStarScene);
 		else if (spell.Id.Equals("iron_palisade", StringComparison.OrdinalIgnoreCase)) outcome = FireIronPalisade(spell, IronPalisadeScene);
@@ -4828,7 +4889,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals("cyclone_slash", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshOrbitingBlade(spell, CycloneSlashScene);
 		else if (spell.Id.Equals("black_tentacles", StringComparison.OrdinalIgnoreCase)) outcome = FireBlackTentacles(spell, BlackTentaclesScene, interval);
 		else if (spell.Id.Equals("cone_of_cold", StringComparison.OrdinalIgnoreCase)) outcome = FireConeBlast(spell, ConeOfColdScene);
-		else if (spell.Id.Equals("scorching_ray", StringComparison.OrdinalIgnoreCase)) outcome = FireScorchingRay(spell, ScorchingRayScene);
+		else if (spell.Id.Equals("scorching_ray", StringComparison.OrdinalIgnoreCase)) outcome = FireScorchingRay(spell, ScorchingRayScene, interval);
 		else if (spell.Id.Equals("meteor_swarm", StringComparison.OrdinalIgnoreCase)) outcome = FireMeteorSwarm(spell, MeteorImpactScene);
 		else if (spell.Id.Equals("hunters_draw", StringComparison.OrdinalIgnoreCase))
 		{
@@ -5294,6 +5355,8 @@ public partial class Player : CharacterBody2D
 					GrowLength = (bolt as ElementalBolt)?.Range ?? 0f,
 					// The water fills behind the crest at the crest's own pace, not ahead of it.
 					FloodSpeed = (bolt as ElementalBolt)?.Speed ?? 0f,
+					// The current runs the way her wave moves what it strikes: toward her after Undertow, out otherwise.
+					Inward = spell.HasEvolution(BoltEvolutions.UndertowId),
 				};
 				GetParent().AddChild(TagSpell(lane));
 				lane.GlobalPosition = GlobalPosition;
@@ -5478,13 +5541,37 @@ public partial class Player : CharacterBody2D
 			return;
 
 		arcaneCharge++;
-		if (arcaneCharge < GetArcaneChargeRequired(arcane))
+		int required = GetArcaneChargeRequired(arcane);
+		// THE CANTICLE (2026-11-09, .ai/character-fit.md section 5, row 19): each charge is a note of a chord, in the
+		// voice of the spell that cast it, and the full chord bursts on the music's next beat (ArcaneExplosion). The
+		// charge is the chord's size, unchanged; Harmony's element is the next slot's now, not this caster's.
+		ArcaneExplosion live = LiveCanticle();
+		live?.AddNote(caster, required);
+		if (arcaneCharge < required)
 			return;
 
 		arcaneCharge = 0;
-		ArcaneExplosion live = GetChildren().OfType<ArcaneExplosion>().FirstOrDefault();
-		// The cast that filled the charge: Sympathetic Blast goes off in its element.
-		live?.TriggerNow(caster);
+		live?.RequestBurst();
+	}
+
+	// The Canticle's node, found once rather than on every cast that now adds a note to it.
+	private ArcaneExplosion canticleNode;
+
+	private ArcaneExplosion LiveCanticle()
+	{
+		if (canticleNode == null || !IsInstanceValid(canticleNode) || canticleNode.IsQueuedForDeletion())
+			canticleNode = GetChildren().OfType<ArcaneExplosion>().FirstOrDefault();
+		return canticleNode;
+	}
+
+	/// <summary>
+	/// The spell in the slot right after <paramref name="spell"/>'s, or null when that slot is empty or there is
+	/// none. Harmony takes its element from it (ArcaneExplosion.HarmonyElementOf), and the strip marks it.
+	/// </summary>
+	public SpellData SpellInSlotAfter(SpellData spell)
+	{
+		int index = spell == null ? -1 : equippedSpells.IndexOf(spell);
+		return index >= 0 && index + 1 < equippedSpells.Count ? equippedSpells[index + 1] : null;
 	}
 
 	// Whether anything else held can set Arcane Explosion off: any other equipped spell that is not
@@ -6146,7 +6233,7 @@ public partial class Player : CharacterBody2D
 		bool twins = spell.HasEvolution(HollowStar.TwinStarsId);
 		int wells = Math.Clamp(spell.GetProjectileCountAtLevel(spell.CurrentLevel), 1, HollowStar.MaxPerCast);
 		// Every well of the cast pulls at this reach, so it is what each is cleared of the wizard by and
-		// spaced by (it was the area alone, without the level 3 reach or the Spirit Mirror's).
+		// spaced by (it was the area alone, without the level 3 reach).
 		float reach = HollowStarReach(spell);
 		sporeSpots[0] = HollowStar.OpenSpot(GlobalPosition, centre.GlobalPosition, reach);
 		int opened = 1;
@@ -6202,12 +6289,10 @@ public partial class Player : CharacterBody2D
 			script.CollapseRadius *= reach / MathF.Max(1f, script.PullRadius);
 			script.PullRadius = reach;
 			// 120 px/s (0.9.3, halved) brings the rim of a Black Sun well (about 260 px) within its
-			// collapse in about a second, so only the Spirit Mirror - half as wide again - drags harder.
-			// Twin Stars' Speed drags harder too: the knot it closes on is tighter, which is the spell's
-			// whole payload.
+			// collapse in about a second. Only Twin Stars' Speed drags harder: the knot it closes on is
+			// tighter, which is the spell's whole payload. (The Spirit Mirror, half as wide again, dragged
+			// harder too until it moved to Folio with John Dee, 2026-11-09.)
 			script.PullSpeed *= MathF.Max(0.25f, spell.GetSpeedMultiplier());
-			if (spell.IsApotheosis)
-				script.PullSpeed *= HollowStar.SpiritMirrorPullSpeed;
 			script.PullSeconds = (script.PullSeconds
 				+ spell.GetEffectValueAtLevel(SpellEffect.ZoneDuration, spell.CurrentLevel)) * durationMultiplier;
 			// A knot held where it closed, for the area spells beside it: read, though since Infinite
@@ -6226,14 +6311,12 @@ public partial class Player : CharacterBody2D
 	// The reach a Hollow Star well of this spell pulls at. The evolutions' area belongs in it - Bramble
 	// Seed's bug again (.ai/gameplay-design.md): Amplified Impact's +30% and Titan Cataclysm's +100% once
 	// grew nothing, while Titan's x2 visual scale drew the well twice as wide as it pulled (found putting
-	// John Dee's Apotheosis path through Titan Cataclysm). The level 3 reach is pixels on the scene's 150,
-	// and the Spirit Mirror opens half again as wide. FireHollowStar clears the wizard by this before any
-	// well exists; OpenHollowStar sizes the well by it.
+	// John Dee's Apotheosis path through Titan Cataclysm, when he still opened on it). The level 3 reach is
+	// pixels on the scene's 150. FireHollowStar clears the wizard by this before any well exists;
+	// OpenHollowStar sizes the well by it.
 	private float HollowStarReach(SpellData spell)
 	{
 		float area = GetEffectiveAreaMultiplier() * spell.GetAreaMultiplierAtLevel(spell.CurrentLevel);
-		if (spell.IsApotheosis)
-			area *= HollowStar.SpiritMirrorReach;
 		float reachBonus = spell.GetEffectValueAtLevel(SpellEffect.AreaSize, spell.CurrentLevel);
 		return (HollowStar.DefaultPullRadius + reachBonus) * area;
 	}
@@ -7190,8 +7273,13 @@ public partial class Player : CharacterBody2D
 	private CastOutcome FireConeBlast(SpellData spell, PackedScene scene)
 	{
 		if (scene == null) return CastOutcome.NoTarget;
-		FindNearestEnemy(out var nearest, out _);
-		Vector2 direction = nearest != null ? (nearest.GlobalPosition - GlobalPosition) : Vector2.Right;
+		// THE WAY HE FACES, NEVER AT AN ENEMY (Eric, 2026-11-09, on Isbrand: "implement your suggestion"; .ai/spell-variety.md
+		// phase 1). It joins the facing family (Stormsweep, Sleet Runes): FacingDirection, the way he last walked - every
+		// wizard who holds it, not only Isbrand. It always fired on its cooldown, at the nearest enemy or to the right with
+		// none; it still fires every cooldown, now where he faces. Every cone of the cast takes this one direction
+		// (ConeBlast.Fire): Arctic Blast's half-moon is centred on it and Zero Point's relay is thrown on along it. The
+		// Long Winter's ring has no front, so only its relay is aimed.
+		Vector2 direction = FacingDirection;
 
 		var cone = scene.Instantiate<Node2D>();
 		var script = cone as ConeBlast;
@@ -7234,7 +7322,76 @@ public partial class Player : CharacterBody2D
 	private readonly Dictionary<ulong, int> scorchNext = new();
 	private readonly List<Node2D> scorchTargets = new();
 
-	private CastOutcome FireScorchingRay(SpellData spell, PackedScene scene)
+	// THE RAYS OF A CAST LEAVE ONE AFTER ANOTHER (Eric, 2026-11-09: "Scorching ray, as you get more rays, should stagger
+	// the timing of the rays (with a slight randomness to that staggered timing), instead of all firing at once, giving a
+	// more chaotic feel"). The first leaves at once and each after it ScorchRayGap later, give or take ScorchRayGapJitter
+	// of that gap (combatRng). However many rays and however short the cooldown, the whole cast's spread is at most
+	// ScorchStaggerShare of its cooldown even with every gap at its longest, so a cast is always done before the next one
+	// begins and its heat bookkeeping never overlaps another's. The count is unchanged - "scorching ray can start with 3
+	// rays, we balance it on damage". A ray waits in the arena as an idle beam (ScorchingRayBeam.Fire's delay), in the
+	// spell group, so a boss's arrival freezes it with everything else (Node2DGame.FreezePlayerSpells) and it leaves after.
+	public const float ScorchRayGap = 0.095f;
+	public const float ScorchRayGapJitter = 0.3f;
+	public const float ScorchStaggerShare = 0.5f;
+
+	/// <summary>The mean gap between the rays of a cast of <paramref name="rays"/> on a cooldown of <paramref name="interval"/>
+	/// seconds: ScorchRayGap, shrunk so the cast's spread with every gap at its longest stays inside ScorchStaggerShare of it.</summary>
+	public static float ScorchStaggerGap(int rays, float interval) => rays > 1
+		? MathF.Min(ScorchRayGap, MathF.Max(0f, interval) * ScorchStaggerShare / ((rays - 1) * (1f + ScorchRayGapJitter)))
+		: 0f;
+
+	/// <summary>
+	/// A staggered ray (ScorchRayGap) whose target fell before its turn picks again, as its cast would have: the nearest
+	/// living enemy in reach that the cast is not already burning, else the nearest one it is (a spare ray joins a beam,
+	/// as the cast's spare rays do). It takes that enemy's heat - the cast's, if a ray of the cast is on it, else cold,
+	/// since the cast burned it not - and a fresh one is held into the next cast at that heat, as the cast's own targets
+	/// are. Null with nothing in reach: the ray goes where its target fell and strikes what stands there.
+	/// </summary>
+	public Node2D? RetargetScorchingRay(ScorchingRayBeam beam)
+	{
+		SpellData spell = beam?.SpellData;
+		if (spell == null)
+			return null;
+		float reach = spell.GetReachAtLevel(spell.CurrentLevel);
+		float reachSq = reach * reach;
+		Enemy? fresh = null, joined = null;
+		float freshSq = float.MaxValue, joinedSq = float.MaxValue;
+		foreach (Enemy e in EnemyRegistry.Snapshot)
+		{
+			if (!IsInstanceValid(e) || e.IsDying)
+				continue;
+			float d = GlobalPosition.DistanceSquaredTo(e.GlobalPosition);
+			if (d > reachSq)
+				continue;
+			if (scorchHeld.ContainsKey(e.GetInstanceId()))
+			{
+				if (d < joinedSq)
+				{
+					joined = e;
+					joinedSq = d;
+				}
+			}
+			else if (d < freshSq)
+			{
+				fresh = e;
+				freshSq = d;
+			}
+		}
+		Enemy? target = fresh ?? joined;
+		if (target == null)
+			return null;
+		ulong id = target.GetInstanceId();
+		int struck = scorchHeld.TryGetValue(id, out int held) ? held : 1;
+		if (target == fresh)
+			scorchHeld[id] = struck;
+		int streak = struck - 1;
+		beam.Heat = streak / (float)ScorchRampCasts;
+		beam.DamageMultiplier = beam.CastDamageMultiplier * (1f + ScorchRampPerCast * streak);
+		beam.SetSpellLevel(spell.CurrentLevel);
+		return target;
+	}
+
+	private CastOutcome FireScorchingRay(SpellData spell, PackedScene scene, float interval)
 	{
 		if (scene == null) return CastOutcome.NoTarget;
 		// The nearest-in-range check comes before the sort. A spell with nothing in reach is now
@@ -7277,8 +7434,19 @@ public partial class Player : CharacterBody2D
 
 		scorchNext.Clear();
 		int raysFired = 0;
+		// THE EYE OF RA (Imhotep's Apotheosis, ScorchingRayBeam.EyeOfRaId): one ray a cast flares where it lands, the
+		// hottest - the first of them on a tie, which is the held target, else the nearest.
+		bool eyeOfRa = spell.HasEvolution(ScorchingRayBeam.EyeOfRaId);
+		ScorchingRayBeam? sun = null;
+		int sunStreak = -1;
+		// The stagger (ScorchRayGap): the gap shrinks when rays x the longest gap would pass ScorchStaggerShare of the cooldown.
+		float castMultiplier = GetSpellDamageMultiplier(spell);
+		float gap = ScorchStaggerGap(rayCount, interval);
+		float delay = 0f;
 		for (int i = 0; i < rayCount; i++)
 		{
+			if (i > 0)
+				delay += gap * (1f + combatRng.RandfRange(-ScorchRayGapJitter, ScorchRayGapJitter));
 			// More rays than bodies in reach: the spare ones join the beams already on them, as before.
 			var target = scorchTargets[i % scorchTargets.Count];
 			ulong id = target.GetInstanceId();
@@ -7296,20 +7464,31 @@ public partial class Player : CharacterBody2D
 			if (ray is ScorchingRayBeam beam)
 			{
 				beam.SpellData = spell;
-				beam.DamageMultiplier = GetSpellDamageMultiplier(spell) * (1f + ScorchRampPerCast * streak);
+				beam.CastDamageMultiplier = castMultiplier;
+				beam.DamageMultiplier = castMultiplier * (1f + ScorchRampPerCast * streak);
 				beam.AreaMultiplier = areaMultiplier;
 				beam.Heat = heat;
 				beam.SetSpellLevel(spell.CurrentLevel);
 				beam.PlayerRef = this;
+				if (eyeOfRa && streak > sunStreak)
+				{
+					sun = beam;
+					sunStreak = streak;
+				}
 			}
 			GetParent().AddChild(TagSpell(ray));
 			ApplyLegendaryVisual(ray, spell);
 			// The beam strikes one point and its burst is drawn out of the radius it hits, so a visual
 			// scale would only thicken the line past anything it does.
 			ray.Scale = Vector2.One;
-			(ray as ScorchingRayBeam)?.Fire(GlobalPosition, target, target.GlobalPosition);
+			// Out of the light he holds (StaffTipLocal), as Magic Missile and Cinderbreath are: Imhotep's rays leave the sun
+			// on his raised palm, so the sun he holds is seen to become the beam (Eric, 2026-11-09, .ai/character-fit.md).
+			(ray as ScorchingRayBeam)?.Fire(GlobalPosition + StaffTipLocal(), target, target.GlobalPosition, delay);
 			raysFired++;
 		}
+		// Marked once every ray is out, before any can land (a beam strikes on a later frame, in its own _Process).
+		if (sun != null)
+			sun.FlaresEyeOfRa = true;
 		// What this cast burned is what the next one holds; anything it did not is cold again.
 		scorchHeld.Clear();
 		foreach (var pair in scorchNext)
@@ -7543,7 +7722,8 @@ public partial class Player : CharacterBody2D
 		};
 		wadeQuery.Position = FootPosition;
 		IsWading = GetWorld2D().DirectSpaceState.IntersectPoint(wadeQuery, 1).Count > 0;
-		float wadeSpeedMultiplier = IsWading ? WaterWadeSpeedMultiplier : 1.0f;
+		// Wings (Player.Wings.cs): water never slows him. He is still wading - his boots are over it - at full speed.
+		float wadeSpeedMultiplier = IsWading && !Winged ? WaterWadeSpeedMultiplier : 1.0f;
 
 		_velocity = input * Speed * GetWindSpeedMultiplier() * GetStormboundSpeedMultiplier() * crowdSpeedMultiplier * wadeSpeedMultiplier * boonMoveSpeedMultiplier;
 		Velocity = _velocity;
@@ -7941,6 +8121,8 @@ public partial class Player : CharacterBody2D
 		// Fata Morgana's mirage goes with the runes it casts.
 		if (spell.Id.Equals("sleet_runes", StringComparison.OrdinalIgnoreCase))
 			ReleaseFataMorgana();
+		// The book lives in the arena too, with every page it has thrown (Player.Folio.cs).
+		ReleaseFolio(spell);
 	}
 
 	// --- Level-up charges ---
@@ -9044,6 +9226,8 @@ public partial class Player : CharacterBody2D
 		"sagittarius" => "Stars",
 		"stormsweep" => "Sweeps",
 		"sleet_runes" => "Runes",
+		// Folio's projectiles are the pages a turn of the book throws (scripts/Folio.cs).
+		"folio" => "Pages",
 		// The Familiar counts in its form's noun (Hounds, Crows, Cats - SpellVariant.CountNoun); this is the
 		// template's, which no run plays.
 		"familiar" => "Hounds",

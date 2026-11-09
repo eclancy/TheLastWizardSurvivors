@@ -166,6 +166,13 @@ Casts were at −9 and impacts at −13 until 2026-10-15, both above their own r
 down to the table when the persistent emitters (Solar Flare, Toxic Spore Burst, Cinderbreath)
 started cueing every pulse, which put more casts in a minute than the table was drawn for.
 
+**The Canticle's notes (2026-11-09)** sit below this table on purpose: a note alone is -26 dBFS peak and is only
+ever heard summed into a chord, which lands level with a chapter's bed and pulse (`.ai/audio-manifest.md`,
+"Canticle's notes"). Every music `Piece` now carries a `key=`; `tools/audio/music.py` writes each piece's key,
+counted beats, loop length and chord to `assets/music/beats.json` on every render (`--beats` rewrites it without
+one), `MusicBeats` reads it, `MusicPlayer` reports where the sounding music is in its beat, and
+`RegressionChecks.ValidateMusicBeats` holds each entry's loop length to its rendered file.
+
 ## 6. The frequency budget
 
 Only one thing may own each band at a time, or a dense screen turns to mud:

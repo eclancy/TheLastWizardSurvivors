@@ -66,6 +66,19 @@ public static class BoltEvolutions
 	/// <summary>Breaker: the wave throws what it breaks over (the card's KnockbackBonus). Tituba's level 4.</summary>
 	public const string BreakerId = "riptide_amplified_impact";
 
+	/// <summary>
+	/// Undertow: the DRAG IN card, against Breaker's push out (Eric, 2026-11-09, on Tituba: "her spell upgrade options
+	/// should include ways that the tide can drag enemies in OR push them out"). The wave's backwash drags what it strikes
+	/// back toward the caster, at Breaker's strength (the same KnockbackBonus, through the same Enemy.ApplyKnockback, so
+	/// an elite goes as far as Breaker would throw it and a boss leans and comes on), never past arm's length of her
+	/// (UndertowStopShort). Not a boomerang - the wave does not come back; that is Gale Blade's. The ReactiveCatalyst
+	/// slot, which Riptide never used (a pure spell's third card is its element path): no element, so nothing trades
+	/// Water away and Spring Tide still opens down every branch. Under Spring Tide its current runs toward her too.
+	/// </summary>
+	public const string UndertowId = "riptide_reactive_catalyst";
+	/// <summary>How close to the caster the backwash will bring a body: a body's width short of her.</summary>
+	public const float UndertowStopShort = 48f;
+
 	/// <summary>Groundswell: the wave builds as it runs - narrow off your hand, wide by the end of its run.</summary>
 	public const string GroundswellId = "riptide_hyper_acceleration";
 	public const float GroundswellStart = 0.6f;

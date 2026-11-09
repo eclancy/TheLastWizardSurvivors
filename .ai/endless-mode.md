@@ -736,6 +736,9 @@ strength: two to four levels a minute, each +2%. Cutting Marginalia's damage in 
 named lever, 1.7), or letting the night's XP multiplier fall, would let the strength curve be gentler and make the
 nights a slower climb rather than a wall at an hour. Neither is in the design, so neither was done.
 
+**Kept as built** (Eric, 2026-11-09, shown the two misses above: "Keep as built"). The two missed targets stand
+as the measured behaviour, not as faults to chase; the levers stay where they are until play says otherwise.
+
 **The purse** (3.2), from these runs' minutes (the harness ends a run without paying it): every later night pays 8 a
 minute and half each returning warden's bonus, so a Forest run to the wall pays its 600 cap by about 1:15 (75 minutes
 x 8 already 600), about 7 Arcane a minute of night against 25-40 a minute for an ordinary clear. The cap binds

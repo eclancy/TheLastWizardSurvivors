@@ -238,5 +238,5 @@ def lead():
 PIECE = M.Piece(
     "downs", 140.0, 4, 16,
     [("bed", bed, 0.3), ("pulse", pulse, 0.14), ("lead", lead, 0.26), ("boss", boss, 0.14)],
-    tail_beats=4, scale=SCALE, room=(0.78, 0.5),
+    tail_beats=4, scale=SCALE, room=(0.78, 0.5), key=M.Key("E", "hexatonic minor"),
     describe="The White Downs - E hexatonic minor (no F), 12/8 at dotted quarter 140, A/B of 8 bars")

@@ -4,8 +4,9 @@ namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// The ground a blast leaves hurting, drawn as pixel art: Pyroclasm's pool of magma under a Fireball's
-/// blast (scenes/shaders/magma_pool.gdshader) and Lingering Rift's tear under an Arcane Explosion
-/// (scenes/shaders/arcane_rift.gdshader). A child of the LingeringZone that does the hurting.
+/// blast (scenes/shaders/magma_pool.gdshader) and Sustain's ringing ground under the Canticle (Lingering Rift's
+/// zone; scenes/shaders/arcane_rift.gdshader, a standing wave since 2026-11-09). A child of the LingeringZone that
+/// does the hurting.
 /// </summary>
 /// <remarks>
 /// Both zones used to draw themselves (LingeringZone._Draw): a translucent polygon, a darker one inside

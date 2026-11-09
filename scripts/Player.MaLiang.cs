@@ -14,12 +14,16 @@ using TheOneHeMissed.scripts;
 // (after the shield, on the HP that actually left, step 8 of TakeDamage), never a blow that kills: a single hit
 // from above a quarter to nothing paints nothing, as no flask would have saved him.
 //
-// THE FORM HE OPENS IN IS HIS TO CHOOSE. He opens on the Familiar, a spell with forms (SpellData.Variants), and the
-// form is chosen on a page of its own as it is when anyone takes the spell (.ai/decisions/2026-10-28-spell-variants.md).
-// A starting spell used to get its first form, the dog, without a word; for him the choice is the run's first screen
-// (Node2DGame.OpeningForm.cs) - the painter deciding what to paint. Only the crow has an Apotheosis (The Painted Door,
-// ApotheosisCatalog.VariantId), so the character select says so. The spell is OWED until he takes it: nothing is
-// equipped before the page answers, and the tree is paused while it is up.
+// HE OPENS ON THE CROW. He opens on the Familiar, a spell with forms (SpellData.Variants), in the crow's form every run:
+// the form his Apotheosis, The Painted Door, belongs to (CharacterData.StartingFormId, from ApotheosisCatalog), as Nimue
+// opens on the Sword - and his crow is painted in ink (Familiar.PaintsInInk). Until 2026-11-09 he chose dog, crow or cat
+// on the run's first screen, and as the dog or the cat never met his final form (Eric: "lets just not let him choose a
+// different familiar than the crow then - he automatically starts with a crow familiar", .ai/character-fit.md section
+// 5, row 21).
+//
+// THE OPENING PAGE below (OwesOpeningForm and the rest, and Node2DGame.OpeningForm.cs) was built for that choice and is
+// kept: it still works for any wizard whose CharacterData.ChoosesStartingForm is set, and none is now. The spell is
+// OWED until such a wizard takes it: nothing is equipped before the page answers, and the tree is paused while it is up.
 public partial class Player
 {
 	/// <summary>Paint What Is Needed paints its flask once a run, below this share of his health.</summary>
@@ -35,8 +39,8 @@ public partial class Player
 	public float FlaskPaintedAtSeconds { get; private set; } = -1f;
 
 	/// <summary>
-	/// The spell this run's wizard opens on whose form is still to be chosen (Ma Liang's Familiar), or empty once it is
-	/// held. Node2DGame opens the page while this is set.
+	/// The spell this run's wizard opens on whose form is still to be chosen (a wizard with ChoosesStartingForm; none
+	/// since Ma Liang opens on the crow), or empty once it is held. Node2DGame opens the page while this is set.
 	/// </summary>
 	public string OpeningFormSpellId { get; private set; } = string.Empty;
 

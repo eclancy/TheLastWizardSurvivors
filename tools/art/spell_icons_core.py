@@ -804,8 +804,10 @@ def spore_burst():
 
 
 def arcane_explosion():
-    """A ring going out from a point. The only spell in the roster with no aim at all - it goes
-    off around you - so the icon is drawn concentric rather than pointing anywhere."""
+    """The Canticle (Arcane Explosion's id; .ai/character-fit.md section 5, row 19, 2026-11-09): rings going
+    out from a point - the only spell in the roster with no aim at all, it goes off around you, so the icon
+    is drawn concentric rather than pointing anywhere - and at their heart, where the flash was, a note:
+    what goes out is a chord, sung on the music's beat."""
     c = raster.Canvas(CELL, CELL, None)
     a = E("arcane")
     for (r, tone) in ((14.0, a[3]), (10.5, a[2]), (7.0, a[3])):
@@ -813,10 +815,19 @@ def arcane_explosion():
             ang = math.radians(d)
             c.set(16 + math.cos(ang) * r, 16 + math.sin(ang) * r, tone)
             c.set(16 + math.cos(ang) * (r - 1), 16 + math.sin(ang) * (r - 1), tone)
-    burst(c, 16, 16, 5.0, a)
     for d in range(0, 360, 60):
         ang = math.radians(d + 15)
         c.set(16 + math.cos(ang) * 15.5, 16 + math.sin(ang) * 15.5, a[0])
+    # The quaver, inside the inner ring: a head leaning left of centre, its stem up the right side and the
+    # flag off the stem's top, white-hot down the lit side (light from the upper left).
+    c.disc(14.5, 18.5, 2.6, 2.0, a[2])
+    c.disc(14.0, 18.0, 1.7, 1.3, a[1])
+    c.set(13, 17, a[0])
+    c.vline(17, 10, 18, a[1])
+    c.vline(16, 11, 17, a[2])
+    c.set(17, 10, a[0])
+    c.line(18, 11, 20, 13, a[1])
+    c.line(18, 12, 19, 14, a[2])
     return c
 
 

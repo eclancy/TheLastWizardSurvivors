@@ -46,36 +46,23 @@ public partial class Player
 		fataMorgana = null;
 	}
 
-	// --- Avalon -----------------------------------------------------------------------------------------
+	// --- Glamour ----------------------------------------------------------------------------------------
 
-	// Avalon (Morgan le Fay): the first extra life a run spends heals to full, not half - the isle she carried the
-	// dying king to, to be healed. Read in TakeDamage's step 10.
-	private bool characterAvalon = false;
-	private bool avalonSpent = false;
+	// Glamour (Morgan le Fay, since 2026-11-09): one blow in ten strikes a mirage of her instead - the enchantress's
+	// glamour, and her Fata Morgana in small. Added to the dodge roll in TakeDamage's step 2, so a blow it turns is
+	// what any dodge is: no signal, no HP lost, the Blur's ghosts and the dodge's sound. It replaced Avalon (the first
+	// extra life heals to full), which did nothing unless she happened to hold a revive (Phoenix Oath, the cat's Nine
+	// Lives); Eric chose it over making Avalon a revive of her own, which would have blurred into the Archmage's
+	// Overlooked (.ai/character-fit.md section 5).
+	public const float CharacterGlamourEvasion = 0.10f;
+	private float characterGlamourEvasion = 0f;
 
-	/// <summary>Run seconds at which Avalon turned a fall into a full heal, or -1 while it has not. For the harness.</summary>
-	public float AvalonAtSeconds { get; private set; } = -1f;
-
-	// What an extra life gives back: half the bar, or the whole of it for the first fall of a run under Avalon.
-	// Spent here, so call it once per fall.
+	// What an extra life gives back: half the bar. Called once per fall (TakeDamage step 10).
 	private int ExtraLifeHeal()
 	{
 		int half = System.Math.Max(1, MaxHP / 2);
-		if (!characterAvalon || avalonSpent)
-		{
-			if (GameStats.TrackHealing)
-				GameStats.RecordHealing("Player.TakeDamage (an extra life)", half);
-			return half;
-		}
-		avalonSpent = true;
-		AvalonAtSeconds = Node2DGame.Current?.RunSeconds ?? 0f;
-		// The healing ledger names the extra half on its own line, so a report shows what Avalon gave and when.
 		if (GameStats.TrackHealing)
-		{
 			GameStats.RecordHealing("Player.TakeDamage (an extra life)", half);
-			GameStats.RecordHealing("Avalon (the first fall heals to full)", MaxHP - half);
-		}
-		GD.Print($"Avalon: the first fall healed to full ({MaxHP} HP) at {AvalonAtSeconds:0.0} s.");
-		return MaxHP;
+		return half;
 	}
 }

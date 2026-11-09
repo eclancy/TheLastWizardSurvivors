@@ -26,7 +26,8 @@ namespace TheOneHeMissed.scripts;
 // them, and it cuts through pierce + 1 of them (BasePierce plus the spell's Pierce) before it SNAGS on
 // the last one and stops there. That keeps the pierce the bolt had meaningful - "Pierce +1" is still
 // one more enemy a cast - and keeps the payload what it was: the bolt hit up to that many in its line,
-// the lash hits up to that many in its arc. Every one of them is poisoned as before.
+// the lash hits up to that many in its arc. Every one of them is poisoned as before, and since 2026-11-09 thrown aside
+// along the stroke (VineShoveSpeed; Eric chose it so Baba Yaga's Bone Fence works with her own vine).
 //
 // **Drawn where it hurts.** An enemy is struck when the vine's front (WhipStroke.Front: where the vine
 // lies, at the enemy's distance from the root, this frame) has swept past it, plus BodyTolerance for
@@ -66,8 +67,8 @@ namespace TheOneHeMissed.scripts;
 // **The Hungry Hedge** (Baba Yaga's Apotheosis, the verb FEED; .ai/chapter-wizards.md 4.1): every enemy the vine kills
 // feeds it, and every cast after is longer and sweeps a wider arc by what it has eaten, to HedgeReach and HedgeSweep
 // (Feed, reading Player.HungryHedgeGrowth). The vine is drawn out of its own length and arc, so a fed vine is SEEN to
-// be bigger - thicker too, since its width follows its length. Nothing moves or stops anything, so a boss is cut as by
-// any vine.
+// be bigger - thicker too, since its width follows its length. The form itself moves or stops nothing, so a boss is cut
+// as by any vine (the lash's own light shove, since 2026-11-09, is every vine's: Strike, VineShoveSpeed).
 public partial class ThornVine : Node2D
 {
 	public const string BarbedLashId = "thorn_vine_amplified_impact";
@@ -86,6 +87,11 @@ public partial class ThornVine : Node2D
 
 	/// <summary>Entangle: how long what the vine cuts is rooted.</summary>
 	public const float EntangleSeconds = 0.6f;
+	/// <summary>
+	/// The lash throws what it cuts aside along its stroke (Strike): a light shove, about half the Sundering ring's 340, so
+	/// it moves a body out of the pack without scattering the pack the next lash wants. First guess, unmeasured.
+	/// </summary>
+	public const float VineShoveSpeed = 180f;
 	/// <summary>Hydra Vine: heads a root splits into, and the share of the ring each one lashes.</summary>
 	public const int HydraHeads = 3;
 	private const float HydraHeadSweepDegrees = 130f;
@@ -812,6 +818,17 @@ public partial class ThornVine : Node2D
 		if (!IsInstanceValid(enemy) || enemy.IsDying)
 			return;
 		enemy.ApplyPoison(poisonTick, poisonSeconds);
+		// THROWN ASIDE (Eric, 2026-11-09, .ai/character-fit.md section 5, Baba Yaga): the lash carries what it cuts
+		// along the way it is sweeping - the tangent of the arc at the body, so Snapback's return stroke throws back the
+		// other way. A light shove, VineShoveSpeed, through ApplyKnockback so Baba Yaga's Bone Fence (+20% to every shove
+		// her spells give) works from her first cast; it did nothing for her until a card or another spell shoved.
+		// Not under Entangle, which roots what it cuts where it was cut.
+		if (!entangle)
+		{
+			Vector2 offset = enemy.GlobalPosition - GlobalPosition;
+			Vector2 along = offset.LengthSquared() > 1f ? offset.Normalized().Rotated(side * Mathf.Pi * 0.5f) : Vector2.Right;
+			enemy.ApplyKnockback(along * VineShoveSpeed);
+		}
 		// Barbed Lash: a thorn breaks off in the wound, and tears it as the enemy walks on.
 		if (barbed && GetParent() is Node2D arena)
 			ThornBarbs.For(arena).Barb(enemy, damage, SpellData, PlayerRef);

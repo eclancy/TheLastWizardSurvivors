@@ -8,8 +8,9 @@
 ; Rescued, not a starter: the Last Bridge's chapter wizard, freed from her barge under the span
 ; (.ai/chapter-wizards.md 4.9). The enchantress of Avalon, the queen in the barge who carried the dying king
 ; over the water to be healed; she opens on Sleet Runes, the cold off the strait cast the way she faces (R2: a
-; freed wizard may open on a two-element spell). Her passive is Avalon - the first extra life a run spends heals
-; to full, not half - the one axis no other wizard owns: what an extra life is worth.
+; freed wizard may open on a two-element spell). Her passive is Glamour since 2026-11-09 - one blow in ten strikes
+; a mirage of her instead, a dodge of her own (Player.Mirage.cs; .ai/character-fit.md). It was Avalon, the first
+; extra life healed to full, which did nothing unless she held a revive.
 [resource]
 script = ExtResource("1")
 Id = "morgan"
@@ -18,9 +19,9 @@ StartingSpellResource = ExtResource("2")
 HealthModifier = 1.0
 SpeedModifier = 1.0
 IsUnlocked = true
-StartingPassiveId = "first_fall_full"
-StartingPassiveName = "Avalon"
-StartingPassiveDescription = "First revive of a run heals to full"
+StartingPassiveId = "glamour_evasion_10"
+StartingPassiveName = "Glamour"
+StartingPassiveDescription = "1 in 10 blows strike a mirage of you instead"
 IsLegendaryStart = false
 Portrait = ExtResource("3")
 Frames = ExtResource("4")

@@ -151,5 +151,5 @@ def lead():
 PIECE = M.Piece(
     "court", 112.0, 3, 16,
     [("bed", bed, 0.3), ("pulse", pulse, 0.18), ("lead", lead, 0.26)],
-    tail_beats=6, scale=SCALE, room=(0.86, 0.5),
+    tail_beats=6, scale=SCALE, room=(0.86, 0.5), key=M.Key("A", "harmonic minor"),
     describe="The Court - A minor with its leading note, a 3/4 minuet at 112, A/B of 8 bars")

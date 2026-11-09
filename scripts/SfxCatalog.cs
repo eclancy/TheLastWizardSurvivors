@@ -221,11 +221,16 @@ public static class SfxCatalog
 
 	public static string ImpactFor(Element element) => "impact_" + element.ToString().ToLowerInvariant();
 
+	// THE CANTICLE'S NOTES (2026-11-09; tools/audio/palette.py, note()): one per element, at A4, pitched at play
+	// time to its degree of the chord in the music's key (ArcaneExplosion.NotePitch, SfxPlayer.CanticleNote).
+	// Derived from the enum like the casts, so a thirteenth element is a missing file at startup, not silence.
+	public static string NoteFor(Element element) => "note_" + element.ToString().ToLowerInvariant();
+
 	private static string[] allNames;
 
 	// Every sound the game expects to exist: the 64 named above, the three hurt variants, and
-	// the twelve casts and twelve impacts derived from the element enum. tools/audio/build.py reports
-	// writing 112 (counted 2026-11-08, with the dry tomb's mirror_turn and sun_arrive).
+	// the twelve casts, twelve impacts and twelve Canticle notes derived from the element enum.
+	// tools/audio/build.py reports writing 129 (counted 2026-11-09, with the twelve notes).
 	public static string[] AllNames
 	{
 		get
@@ -238,6 +243,7 @@ public static class SfxCatalog
 				{
 					names.Add(CastFor(element));
 					names.Add(ImpactFor(element));
+					names.Add(NoteFor(element));
 				}
 				allNames = names.Distinct().ToArray();
 			}

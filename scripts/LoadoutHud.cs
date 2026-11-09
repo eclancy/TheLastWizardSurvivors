@@ -112,6 +112,10 @@ public partial class LoadoutHud : BoxContainer
 		// wax under the band drains with it: 1 full, 0 gone, -1 for no drain (the Rite's, or held until the orb).
 		public float SealDrain = -1f;
 		public bool WasSealed;
+		// Harmony's slot (the Canticle's level 4, ArcaneExplosion.HarmonyElementOf): the slot after the Canticle's,
+		// whose spell lends the burst its element, marked with a note in that element's colour and tied to the
+		// Canticle's slot. Transparent when the slot is not Harmony's.
+		public Color HarmonyInk = Colors.Transparent;
 	}
 
 	private enum SlotMark { None, Sovereign, Silenced, Locked }
@@ -341,7 +345,12 @@ public partial class LoadoutHud : BoxContainer
 			MouseFilter = MouseFilterEnum.Ignore,
 		};
 		mark.SetAnchorsPreset(LayoutPreset.FullRect);
-		mark.Draw += () => DrawMark(mark, view.MarkKind, view.SealDrain);
+		mark.Draw += () =>
+		{
+			DrawMark(mark, view.MarkKind, view.SealDrain);
+			if (view.HarmonyInk.A > 0f)
+				DrawHarmony(mark, view.HarmonyInk);
+		};
 		frame.AddChild(mark);
 		// Under the numeral, so the level (or the fuel) still reads over the seal.
 		frame.MoveChild(mark, level.GetIndex());
@@ -392,6 +401,40 @@ public partial class LoadoutHud : BoxContainer
 			mark.DrawRect(new Rect2(c.X + 2f, c.Y - 5f, 1f, 4f), LockedInk);
 			mark.DrawRect(new Rect2(c.X - 2f, c.Y - 6f, 4f, 1f), LockedInk);
 			mark.DrawRect(new Rect2(c.X - 4f, c.Y - 1f, 8f, 6f), LockedInk);
+		}
+	}
+
+	// HARMONY'S SLOT (2026-11-09; .ai/in-flight.md 9a, a slot effect reads on the strip with the slot it touches
+	// highlighted). Eric: "i want the player to be able to purposefully select the element" - so the strip says which
+	// slot it is and what it lends: a quaver standing on the slot's top left corner in the element's colour, and a
+	// tie under the two slots from the Canticle's to this one. An empty slot after the Canticle wears it in the ghost
+	// ink (the burst stays Arcane until a spell is taken into it). Whole canvas units, two to an art pixel, every
+	// stroke outlined in the occlusion ink so it reads over any icon and on the Sketchbook's paper.
+	private static readonly Color HarmonyOutline = new(0.020f, 0.027f, 0.047f, 1f);   // OCC #05070C
+	private static readonly Color HarmonyGhost = new(0.604f, 0.643f, 0.722f, 0.75f);  // bone base #9AA4B8
+
+	private static void DrawHarmony(Control mark, Color ink)
+	{
+		Vector2 size = mark.Size;
+		// The quaver: head, stem, flag - each drawn first two units larger in the outline, then in its ink.
+		Rect2 head = new(2f, 2f, 4f, 4f);
+		Rect2 stem = new(6f, -8f, 2f, 12f);
+		Rect2 flag = new(8f, -8f, 2f, 4f);
+		foreach (Rect2 r in new[] { head, stem, flag })
+			mark.DrawRect(r.Grow(2f), HarmonyOutline);
+		mark.DrawRect(head, ink);
+		mark.DrawRect(stem, ink);
+		mark.DrawRect(flag, ink);
+		// The tie: from the middle of the Canticle's slot, the one before, to the middle of this one, bowed under
+		// both - two units thick on a dark line.
+		float from = size.X / 2f - (SlotSize + SlotGap);
+		float to = size.X / 2f;
+		for (float x = from; x <= to; x += 2f)
+		{
+			float t = (x - from) / Mathf.Max(1f, to - from);
+			float y = size.Y + 2f + Mathf.Round(Mathf.Sin(t * Mathf.Pi) * 2f) * 2f;
+			mark.DrawRect(new Rect2(x, y, 2f, 4f), HarmonyOutline);
+			mark.DrawRect(new Rect2(x, y, 2f, 2f), ink);
 		}
 	}
 
@@ -482,6 +525,18 @@ public partial class LoadoutHud : BoxContainer
 		int open = Mathf.Clamp(Holder.SpellSlots, 0, MaxSlots);
 		SpellData? sovereign = Holder.SovereignSpell;
 		int anointedSlot = -1;
+		// Harmony's slot: the one after a Canticle that holds the card (ArcaneExplosion.SympathyElement's rule).
+		int harmonySlot = -1;
+		for (int i = 0; i < spells.Count; i++)
+		{
+			SpellData? held = spells[i];
+			if (held != null && held.Id.Equals("arcane_explosion", StringComparison.OrdinalIgnoreCase)
+				&& held.HasEvolution(ArcaneExplosion.SympatheticBlastId))
+			{
+				harmonySlot = i + 1 < MaxSlots ? i + 1 : -1;
+				break;
+			}
+		}
 		for (int i = 0; i < MaxSlots; i++)
 		{
 			SpellData? spell = i < spells.Count ? spells[i] : null;
@@ -507,6 +562,16 @@ public partial class LoadoutHud : BoxContainer
 			// The moment his hand closes on it: the slot flares his wax red and settles under the seal.
 			if (sealedByHim && !slots[i].WasSealed)
 				FlareSealed(slots[i]);
+			Color harmony = Colors.Transparent;
+			if (i == harmonySlot && !locked && slots[i].Frame.Visible)
+				harmony = spell != null && ArcaneExplosion.HarmonyElementOf(spell) is Element lent
+					? ElementColors.GetColor(lent)
+					: HarmonyGhost;
+			if (slots[i].HarmonyInk != harmony)
+			{
+				slots[i].HarmonyInk = harmony;
+				slots[i].Mark.QueueRedraw();
+			}
 			slots[i].WasSealed = sealedByHim;
 			if (kind == SlotMark.Sovereign)
 				anointedSlot = i;

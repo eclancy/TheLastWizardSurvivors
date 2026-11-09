@@ -141,5 +141,5 @@ def lead():
 PIECE = M.Piece(
     "heath", 138.0, 5, 12,
     [("bed", bed, 0.3), ("pulse", pulse, 0.16), ("lead", lead, 0.26), ("boss", boss, 0.14)],
-    tail_beats=5, scale=M.SEVEN,
+    tail_beats=5, scale=M.SEVEN, key=M.Key("D", "dorian"),
     describe="The Broken Circle - D Dorian, 5/4 (3+2) at 138, A/B of 6 bars")
