@@ -5,8 +5,8 @@ using TheOneHeMissed.scripts;
 
 // THE LESSONS (.ai/slow-start.md, "The lessons"). Eric, 2026-11-02: "new systems should be unlocked in a
 // post-run cutscene, after fulfilling an achievement, like finding a landmark. The cutscene can then explain
-// the new system." A run whose end finds a lesson owed (Teachings.Owed: a teacher found, or the Sovereign Rite
-// newly owned) plays that lesson's reel over the paused run once the run has ended - after the defeat's own
+// the new system." A run whose end finds a lesson owed (Teachings.Owed: a teacher found, or the far sky's god
+// rekindled) plays that lesson's reel over the paused run once the run has ended - after the defeat's own
 // sequence, before the results - and the save learns the system when the reel ends, played through or
 // skipped. One lesson in all but a contrived save, since each chapter holds one teacher; several play in
 // ladder order.

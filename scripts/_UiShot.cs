@@ -1051,11 +1051,11 @@ public partial class _UiShot : Node
 	// through the same entry point the strip uses (Player.TryAddOrLevelSpell), for a photograph of it firing.
 	private string demoCombo;
 	private bool demoComboFuse;
-	// --demo-sovereign[=SPELL]: the Sovereign Rite's gate met (.ai/sovereign-spell.md section 3) - the Rite
-	// owned in the in-memory save, the player at its level, and every held spell raised to
-	// --demo-spell-level (6 if unset) - so a level-up offers it on the strip; with =SPELL, that held spell is
-	// anointed at once through the strip's own entry point ("sovereign_rite:SPELL"), for the HUD and the
-	// crowned casts. Hold the spells with --demo-spells.
+	// --demo-sovereign[=fuse]: the Sovereign Rite's recipe and late gate met (.ai/sovereign-spell.md section 9) - the
+	// player at its level, every held spell raised to --demo-spell-level (8 if unset) for the fuel, and its two parents
+	// put in the book as --demo-combo=sovereign_rite puts them - so a level-up offers it on the strip; with =fuse, made
+	// at once through the strip's own entry point, for the moment it is made, the crown and the sealed slots. Hold the
+	// other spells with --demo-spells (leave the book two pages for the parents), and pass --learned=all.
 	private string demoSovereign;
 	private bool demoApplied;
 	// --seen-ascensions=a,b,...: which ascension paths the in-memory save has SEEN (AscensionSightings),
@@ -1301,7 +1301,7 @@ public partial class _UiShot : Node
 			}
 			// THE SLOW START (.ai/slow-start.md), in memory only:
 			//   --learned=a,b    : those lessons taught (Teachings ids: ascension, apotheosis, conjunctions,
-			//                      sovereign_rite, or "all"), so the one-at-a-time sealing can be shot per rung.
+			//                      far_sky, or "all"), so the one-at-a-time sealing can be shot per rung.
 			//   --reel=<id>      : the lesson Prologue.tscn plays (with --scene=res://scenes/Prologue.tscn).
 			//   --find-secret=id : that secret found a quarter of the way in, as its site would find it - the
 			//                      toast, and for a teacher the lesson's line on it; --force-victory then plays
@@ -4735,15 +4735,16 @@ public partial class _UiShot : Node
 
 	private void ApplyDemoSovereign(Player player)
 	{
-		if (GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is SaveData save)
-			GlobalStatsManager.UnlockSpell(save, SovereignRite.SpellId);
 		player.CurrentLevel = System.Math.Max(player.CurrentLevel, SovereignRite.MinimumPlayerLevel);
-		int level = demoSpellLevel > 0 ? demoSpellLevel : 6;
+		player.XPToNextLevel = player.CalculateXPForLevel(player.CurrentLevel);
+		int level = demoSpellLevel > 0 ? demoSpellLevel : 8;
 		foreach (SpellData spell in player.GetEquippedSpells())
 			spell.CurrentLevel = System.Math.Min(spell.MaxLevel, System.Math.Max(spell.CurrentLevel, level));
 		GD.Print($"_UiShot: Sovereign Rite gate - player level {player.CurrentLevel}, {player.GetEquippedSpells().Count} spells at level {level}");
-		if (!string.IsNullOrEmpty(demoSovereign))
-			GD.Print($"_UiShot: Sovereign Rite on {demoSovereign} {(player.TryAddOrLevelSpell($"{SovereignRite.SpellId}:{demoSovereign}") ? "taken" : "REFUSED")}");
+		// The two parents, as --demo-combo=sovereign_rite[:fuse] puts them, made at once with =fuse.
+		demoCombo = SovereignRite.SpellId;
+		demoComboFuse = demoSovereign == "fuse";
+		ApplyDemoCombo(player);
 	}
 
 	private void ApplyDemoCombo(Player player)

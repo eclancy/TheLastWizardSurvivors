@@ -117,7 +117,7 @@ public static class ContentValidator
 		"res://SpellData_OrbOfAges.tres",
 		// The combinations (ComboCatalog): never in the level-up pool, made only by fusing two ascended spells.
 		"res://SpellData_Sagittarius.tres",
-		// The Sovereign Rite (ComboCatalog's rite, SovereignRite): never held, never a card; its name, line and picture.
+		// The Sovereign Rite (ComboCatalog's capstone, SovereignRite): a combination like the one above since 2026-11-08.
 		"res://SpellData_SovereignRite.tres"
 	};
 
@@ -214,8 +214,7 @@ public static class ContentValidator
 					iconsByPath[iconPath] = spell.Id;
 			}
 
-			// The Sovereign Rite names no element: it is held by no slot, and the spell it anoints keeps its own.
-			if ((spell.ElementWeights == null || spell.ElementWeights.Count == 0) && ComboCatalog.ForId(spell.Id)?.IsRite != true)
+			if (spell.ElementWeights == null || spell.ElementWeights.Count == 0)
 				summary.Warnings.Add($"Spell '{spell.Id}' has no element weights.");
 			else
 			{

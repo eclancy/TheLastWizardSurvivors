@@ -297,6 +297,11 @@ public enum AscensionRequirementKind
 	OwnSpell,
 	/// <summary>A combination whose parents name four elements between them: never offered. Always Closed.</summary>
 	ElementCeiling,
+	/// <summary>
+	/// The Sovereign Rite's fuel gate (SovereignRite.MinimumFuel): the levels every active spell but its two parents
+	/// holds, which fall silent and feed it once it is made.
+	/// </summary>
+	Fuel,
 }
 
 /// <summary>One gate on an ascension, with how far along the player is.</summary>

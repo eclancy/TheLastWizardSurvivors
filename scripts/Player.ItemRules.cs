@@ -327,13 +327,13 @@ public partial class Player
 		return unavailable;
 	}
 
-	// What this run was taught, by the flags read at its start (the Rite by ownership, live, as its offer is).
+	// What this run was taught, by the flags read at its start (the Sovereign Rite is a Conjunction since 2026-11-08).
 	private bool HasLearnedForRun(Teaching system) => system switch
 	{
 		Teaching.Ascension => AscensionLearned,
 		Teaching.Apotheosis => ApotheosisLearned,
 		Teaching.Conjunctions => ConjunctionsLearned,
-		// The Rite by ownership, live, as its offer is; the far sky (F4) by the save, as nothing reads it mid-run.
+		// The far sky (F4) by the save, as nothing reads it mid-run.
 		_ => Teachings.HasLearned(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data, system),
 	};
 

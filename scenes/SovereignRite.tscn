@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/SovereignRiteCaster.cs" id="1"]
+
+; The Sovereign Rite, the capstone combination (scripts/SovereignRiteCaster.cs, .ai/sovereign-spell.md section 9):
+; one node in the arena at its origin that lets the crowned blasts fall, opens the great graves (Gravewell's own
+; scene, Player.GravewellScene) and watches them to echo the blast inside each as it springs. No sprite and no
+; collision shape: the blasts measure their reach against EnemyRegistry.Snapshot, and what is drawn is what hits.
+;
+; BlastShare, EchoShare and GraveShare are the combination's own multipliers on its parents' numbers: the blast on
+; the frozen Arcane Explosion's hit, the echo on the blast's, the grave on the frozen Gravewell's.
+[node name="SovereignRite" type="Node2D"]
+script = ExtResource("1")
+BlastShare = 1.0
+EchoShare = 1.0
+GraveShare = 1.0

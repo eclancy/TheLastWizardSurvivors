@@ -137,7 +137,7 @@ public partial class MainMenu
 		prologue.Pressed += () => Prologue.Play(this, Prologue.After.Menu);
 		var story = new List<Control> { SettingsRows.BuildButtonRow(prologue) };
 		// And every lesson this save has been taught (Teachings, .ai/slow-start.md), in the order it learns them,
-		// each back to this menu. One a row: "The Sovereign Rite" does not share a phone's width with another.
+		// each back to this menu. One a row: "Lesson: The Apotheosis" does not share a phone's width with another.
 		// A lesson not yet taught is not listed - its name alone would be a system shown before its time.
 		foreach (Teachings.Lesson lesson in Teachings.All.Where(l => Teachings.HasBeenTaught(save, l) && save != null))
 		{

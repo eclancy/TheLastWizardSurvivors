@@ -153,6 +153,9 @@ public partial class GravewellTrap : Node2D
 	public Player PlayerRef { get; private set; }
 	public float BlastRadius => setup.BlastRadius;
 
+	/// <summary>True once the grave has caved in on something: the Sovereign Rite's echo waits for it (SovereignRiteCaster).</summary>
+	public bool HasSprung => phase == Phase.Collapsing;
+
 	// The frame counts are tools/art/gravewell.py's PHASES and GRASP_FRAMES: change both.
 	public const int OpenFrames = 4;
 	public const int ArmedFrames = 4;

@@ -262,13 +262,9 @@ public partial class Prologue : Control
 		new("conjunctions-one", 6.0f, "Linked rings mark a path with a partner.", new Vector2(0f, 3f), new Vector2(0f, -10f), new Vector2(0f, 12f)),
 	};
 
-	private static readonly Beat[] RiteBeats =
-	{
-		// One spell crowned, the others' light pouring into it.
-		new("rite-crown", 5.0f, "One spell may take the others' strength.", new Vector2(0f, 3f), new Vector2(0f, -12f), new Vector2(0f, 12f)),
-		// The rest sealed for the run.
-		new("rite-seal", 5.6f, "The rest fall silent; their levels feed it.", new Vector2(-3f, 0f), new Vector2(-8f, 0f), new Vector2(-18f, 0f)),
-	};
+	// (The Sovereign Rite had a reel of its own here until 2026-11-08, rite-crown and rite-seal. It is a Conjunction
+	// since, and Eric: "soveriegn rite also doesn't need an animation to learn. it just unlocks with combination
+	// spells" - .ai/sovereign-spell.md section 9.)
 
 	// REEL E, THE LIGHT GOES ON (.ai/second-half.md 6.3; tools/art/light_goes_on.py; LightGoesOn). After the Throne is
 	// won: the light going home, and some of it going on east over the dark sea to the far shore. Two panels, the
@@ -301,7 +297,7 @@ public partial class Prologue : Control
 			},
 			wizardId);
 
-	/// <summary>Every reel, by id: the prologue, the five lessons (Teachings.All's ids) and the freeings (Freeings).</summary>
+	/// <summary>Every reel, by id: the prologue, the four lessons (Teachings.All's ids) and the freeings (Freeings).</summary>
 	public static readonly System.Collections.Generic.IReadOnlyDictionary<string, Reel> Reels = BuildReels();
 
 	private static System.Collections.Generic.Dictionary<string, Reel> BuildReels()
@@ -312,7 +308,6 @@ public partial class Prologue : Control
 			["ascension"] = new Reel("ascension", LessonFolder, AscensionBeats),
 			["apotheosis"] = new Reel("apotheosis", LessonFolder, ApotheosisBeats),
 			["conjunctions"] = new Reel("conjunctions", LessonFolder, ConjunctionBeats),
-			["sovereign_rite"] = new Reel("sovereign_rite", LessonFolder, RiteBeats),
 			[LightGoesOn.ReelId] = new Reel(LightGoesOn.ReelId, StoryFolder, LightGoesOnBeats),
 		};
 		foreach (string wizardId in Freeings.WizardIds)
