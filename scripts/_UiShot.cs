@@ -401,7 +401,7 @@ public partial class _UiShot : Node
 	// --hint-preview=STAGE_ID[,DEG]: that chapter's hint - sound, cue and line - played fxLead frames
 	// before the shutter on whatever stage is running, from a point 3000 px away at DEG degrees
 	// (0 = east, 90 = south; default 20), so its line can be photographed on grounds no hint plays on:
-	// the Fallow Fields' pale field (--stage=9), the Sketchbook's paper (--stage=8). StageHintDirector.Preview.
+	// the Fallow Fields' pale field (--stage=9). StageHintDirector.Preview.
 	private string hintPreview;
 	private float hintPreviewBearing = 20f;
 	private bool hintPreviewed;
@@ -504,16 +504,8 @@ public partial class _UiShot : Node
 	private bool shove;
 	private bool shovePlaced;
 
-	// --ghost: clears the arena and stands the Sketchbook's ghost (Elim's Boo, scripts/BooEnemy.cs)
-	// beside the player, who stands still and cannot die, so the miniboss can be judged against him
-	// at the game scale. --ghost-wail spawns it close to the shutter with its wail primed, so
-	// the shot lands mid wind-up: the attack frames and the ring together. Pair with --stage=8.
-	private bool ghost;
-	private bool ghostWail;
-	// --ghost-phase: placed 420 px off, beyond the phase's 260 px floor, so after its first 5 s it
-	// crosses to the player. --frames=480 catches it mid-crossing, thinned, over its mark.
-	private bool ghostPhase;
-	private Enemy ghostEnemy;
+	// (--ghost, --ghost-wail and --ghost-phase stood the Sketchbook's ghost beside him; they went with the
+	// chapter on 2026-11-09.)
 	private readonly System.Collections.Generic.List<Enemy> shoveBlock = new();
 
 	// --tender[=strikes|oil|dark|rekindle]: the Blighted Swamp's lantern-tender (LanternTenderEnemy),
@@ -595,8 +587,10 @@ public partial class _UiShot : Node
 	//                                   Player.FireBrambleSeed, so the patch has the radius a real cast has.
 	//   --walk=DX,DY                  : walks the player that way instead of kiting (a trail needs motion).
 	//   --fx-lead=N                   : frames between the trigger and the first shot (default 3).
-	//   --start-spell=ID              : the Test Wizard's opening spell (Global.TestWizardStartingSpellId);
-	//                                   pair with --character=0.
+	//   --start-spell=ID              : the run opens on that spell in place of the wizard's own
+	//                                   (Global.ToolStartingSpellId), for any --character=N. It was the
+	//                                   Test Wizard's at --character=0 until 2026-11-09; 0 now falls to
+	//                                   the Pyromancer, so say --character=1.
 	//   --spell-stage=N[,DX,DY]       : a spell photographed against a known crowd. The arena is kept
 	//                                   empty until fxLead frames before the shutter, then N skeletons
 	//                                   are stood in a loose knot DX,DY from the player (default 230,0),
@@ -766,38 +760,6 @@ public partial class _UiShot : Node
 					other.QueueFree();
 		Press("move_right", "move_left", shovePlaced ? 1f : 0f);
 		Press("move_down", "move_up", 0f);
-	}
-
-	// --ghost: stand still, immortal, with the ghost and nothing else on the field.
-	private void DriveGhost()
-	{
-		foreach (string a in MoveActions)
-			Input.ActionRelease(a);
-		if (FindNodeOfType<Player>(GetTree().Root) is not Player p)
-			return;
-		p.MaxHP = System.Math.Max(p.MaxHP, 100000);
-		p.CurrentHP = p.MaxHP;
-		// Wail: placed 46 frames before the shutter with the cooldown nearly spent, so the wind-up
-		// (one second, 60 frames) is about three quarters through when the picture is taken.
-		int at = ghostWail ? System.Math.Max(1, WarmupFrames - 46) : WarmupFrames / 3;
-		if (ghostEnemy == null && frames >= at
-			&& GD.Load<PackedScene>("res://scenes/BooEnemy.tscn")?.Instantiate() is BooEnemy boo)
-		{
-			// Held in place, so the picture is of the two side by side rather than of it on top of
-			// him: 220 is outside both the wail's engage reach (195) and inside the phase's floor
-			// (260), so the idle shot shows it doing neither.
-			boo.Health = 1000000;
-			boo.Speed = 0f;
-			if (ghostWail)
-				boo.WailIntervalSeconds = 0.05f;
-			boo.Position = p.GlobalPosition + new Vector2(ghostWail ? 150f : ghostPhase ? 420f : 220f, -20f);
-			p.GetParent().AddChild(boo);
-			ghostEnemy = boo;
-			GD.Print($"_UiShot: ghost placed at {boo.Position}, player at {p.GlobalPosition}");
-		}
-		foreach (Node n in GetTree().GetNodesInGroup("enemies"))
-			if (n is Enemy other && IsInstanceValid(other) && other != ghostEnemy)
-				other.QueueFree();
 	}
 
 	// --tells: stand still, immortal, with the telegraphed cast (or one boss) round him and nothing else.
@@ -1716,11 +1678,7 @@ public partial class _UiShot : Node
 			// --pad=right and a short --frames, at rest with a long one.
 			else if (arg.StartsWith("--map-at="))
 				WorldMap.StartOverride = arg.Substring("--map-at=".Length);
-			// --map-page: opens the map on the Sketchbook's page (WorldMap.OnPage), as turning to it does.
-			// Honoured only where the page is open - pair with --campaign-complete; without it the world
-			// opens, with no Sketchbook button, which is the other half of the check.
-			else if (arg == "--map-page")
-				WorldMap.OnPage = true;
+			// (--map-page, the Sketchbook's page, went with the chapter on 2026-11-09.)
 			else if (arg.StartsWith("--character="))
 				Global.SelectedCharacterIdx = int.Parse(arg.Substring("--character=".Length));
 			else if (arg == "--all-unlocked")
@@ -1832,12 +1790,6 @@ public partial class _UiShot : Node
 				hold = true;
 			else if (arg == "--shove")
 				shove = true;
-			else if (arg == "--ghost")
-				ghost = true;
-			else if (arg == "--ghost-wail")
-				ghost = ghostWail = true;
-			else if (arg == "--ghost-phase")
-				ghost = ghostPhase = true;
 			else if (arg == "--tells")
 				tellsShot = true;
 			else if (arg.StartsWith("--tells-boss="))
@@ -1906,7 +1858,7 @@ public partial class _UiShot : Node
 			else if (arg == "--cast-bramble")
 				castBramble = true;
 			else if (arg.StartsWith("--start-spell="))
-				Global.TestWizardStartingSpellId = arg.Substring("--start-spell=".Length).Trim();
+				Global.ToolStartingSpellId = arg.Substring("--start-spell=".Length).Trim();
 			else if (arg.StartsWith("--spell-stage="))
 			{
 				string[] parts = arg.Substring("--spell-stage=".Length).Split(',');
@@ -2021,7 +1973,7 @@ public partial class _UiShot : Node
 
 		// Status shots keep the player alive from the first frame. A death would end the run and pay
 		// its Arcane Energy into the real save, so writes are off too.
-		if (statusShowcase || statusCrowd || shove || ghost || tenderShot || tellsShot || pinHeat != null || pinStillFor != null)
+		if (statusShowcase || statusCrowd || shove || tenderShot || tellsShot || pinHeat != null || pinStillFor != null)
 			SaveManager.WritesDisabled = true;
 		if (dropPotion || dropHealth || winEvent || castBramble || stageCount > 0 || demoEvolutions.Length > 0)
 			SaveManager.WritesDisabled = true;
@@ -3176,8 +3128,6 @@ public partial class _UiShot : Node
 				HoldForGleaning();
 			else if (shove)
 				DriveShove();
-			else if (ghost)
-				DriveGhost();
 			else if (tellsShot)
 				DriveTells();
 			else if (tenderShot)

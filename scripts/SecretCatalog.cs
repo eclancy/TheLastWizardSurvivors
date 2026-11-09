@@ -220,7 +220,6 @@ public static partial class SecretCatalog
 		FrozenWaste.Build(),
 		ScorchedSands.Build(),
 		Emberdeep.Build(),
-		Sketchbook.Build(),
 		FallowFields.Build(),
 		BrokenCircle.Build(),
 		// The castle (.ai/endgame-castle.md); the Cursed Dungeon keeps its own file when it moves in.

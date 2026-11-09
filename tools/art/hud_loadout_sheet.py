@@ -8,8 +8,8 @@ time. The strip is scripts/LoadoutHud.cs; .ai/technical-architecture.md, "The in
       --scene=res://scenes/node_2d_game.tscn --stage=1 --frames=600 --timescale=3 \
       --give-relics=blank_folio --hud-milestones \
       --grant-boons=lantern_oil,mossgrown_charm,thornseed,iron_rivets --shot=hudload-pc-dungeon
-  ... --resolution 1920x1080 ... --stage=8 --fill-book --grant-boons=lantern_oil,mossgrown_charm \
-      --shot=hudload-pc-sketch
+  ... --resolution 1920x1080 ... --stage=9 --fill-book --grant-boons=lantern_oil,mossgrown_charm \
+      --shot=hudload-pc-fields
   ... --resolution 540x1212 --portrait --safe-area --touch-controls ... --stage=3 \
       --give-relics=blank_folio --hud-milestones --grant-boons=... --shot=hudload-phone-swamp
   ... --resolution 1280x720 ... --stage=3 --shot=hudload-pc-early        (a fresh book: one spell)
@@ -43,7 +43,9 @@ GAP = 12
 # touch band's floor (176 canvas units + the safe-area top, at 0.75 screen px per unit).
 SHOTS = [
     ("hudload-pc-dungeon", "Cursed Dungeon, 1280x720 - full book, 3 milestones, 9 tags", (0, 0, 270, 200)),
-    ("hudload-pc-sketch", "The Sketchbook, 1920x1080 - full book on white paper", (0, 0, 405, 300)),
+    # The pale-ground shot was the Sketchbook's white paper until that chapter was removed (2026-11-09);
+    # the Fallow Fields' stubble is the palest ground now.
+    ("hudload-pc-fields", "The Fallow Fields, 1920x1080 - full book on pale ground", (0, 0, 405, 300)),
     ("hudload-pc-early", "Blighted Swamp, 1280x720 - a fresh book, one spell", (0, 0, 270, 200)),
     ("hudload-phone-swamp", "Blighted Swamp, Pixel 9 - full book, 3 milestones, touch band", (0, 0, 540, 215)),
     ("hudload-phone-dungeon", "Cursed Dungeon, Pixel 9 - full book, touch band", (0, 0, 540, 215)),

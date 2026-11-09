@@ -39,7 +39,10 @@ public class SaveData
 	// 27 is the Conjunction ladder's (.ai/conjunction-progression.md, rung I): PinnedRecipeId, the one recipe the
 	// player has pinned. A save from before has pinned nothing, so the step only makes that explicit. (Built as 26 in
 	// parallel with the Rite's; the Rite reached the trunk first, so the pin is 27.)
-	public const int CurrentSchemaVersion = 27;
+	// 28 removes the Sketchbook (stage_8) and the Test Wizard (test_wizard), at Eric's request on 2026-11-09: every
+	// list, record and stored id that names either is taken out. Nothing earned changes hands - the Sketchbook held no
+	// deed, secret or unlock (2026-11-02), and the Test Wizard was a development starter.
+	public const int CurrentSchemaVersion = 28;
 	public const int CampaignSchemaVersion = 8;
 	private const int MaxTelemetryHistory = 25;
 
@@ -526,6 +529,11 @@ public class SaveData
 		if (SchemaVersion < 27)
 			MigrateToPinnedRecipe();
 
+		// 28: the Sketchbook and the Test Wizard removed (2026-11-09). After every older step on purpose: step 21's
+		// frozen rules still write the Sketchbook open for a save that finished the old campaign, and this takes it out.
+		if (SchemaVersion < 28)
+			MigrateRemoveSketchbookAndTestWizard();
+
 		if (log)
 			GD.Print($"SaveData: migrated schema {from} -> {CurrentSchemaVersion}; " +
 				$"{UnlockedSpellIds.Count} spells, {UnlockedBoonIds.Count} boons, {UnlockedCharacterIds.Count} wizards, " +
@@ -888,6 +896,64 @@ public class SaveData
 	{
 		PinnedRecipeId = string.Empty;
 	}
+
+	/// <summary>
+	/// Schema 28 (Eric, 2026-11-09: "remove the sketchbook level and all enemies in it, and the test wizard"). Neither
+	/// is in the game any more, so neither may be named by a save: every id that points at one is taken out.
+	///   - the Sketchbook (stage_8): from the opened, grandfathered and seen-note lists; its key in MaxDifficultyCleared
+	///     and in the lifetime best times; every endless record and every run in the telemetry ring played there; and
+	///     its boss, Elim ("kid_wizard"), from the lifetime record of bosses beaten;
+	///   - the Test Wizard (test_wizard): from the unlocked wizards, the wizards played, the freeing reels owed, and
+	///     every endless record he set.
+	/// Nothing earned changes hands: the Sketchbook held no deed, secret, spell, wizard or boon (Eric, 2026-11-02, held
+	/// by the validator until now), so no achievement is touched and no Arcane Energy moves; the Test Wizard was a
+	/// development starter nobody earned. Lifetime totals (runs, kills, playtime, kills by creature) are kept: they are
+	/// what was played, not where.
+	/// A STORED SELECTION: the save keeps none (Global.SelectedStageIdx and SelectedCharacterIdx live for the session).
+	/// The one place a save points at a chapter on its own is its last run, which the world map opens on
+	/// (RunTelemetryHistory[0], WorldMap.ResolveStartIndex) - stripped with the rest of the ring, so the map opens on
+	/// the next run back, or on the furthest open chapter.
+	/// Frozen ids below, never the live catalogs. Returns how many entries it took out, for the validator
+	/// (RegressionChecks.ValidateSketchbookAndTestWizardRemoval); a second pass takes out nothing.
+	/// </summary>
+	internal int MigrateRemoveSketchbookAndTestWizard()
+	{
+		static bool Is(string id, string wanted) =>
+			id != null && id.Trim().Equals(wanted, System.StringComparison.OrdinalIgnoreCase);
+		static int RemoveKeys<T>(Dictionary<string, T> map, string wanted)
+		{
+			if (map == null)
+				return 0;
+			List<string> keys = map.Keys.Where(k => Is(k, wanted)).ToList();
+			foreach (string key in keys)
+				map.Remove(key);
+			return keys.Count;
+		}
+
+		int removed = 0;
+		removed += UnlockedStageIds?.RemoveAll(id => Is(id, RemovedSketchbookStageId)) ?? 0;
+		removed += GrandfatheredStageIds?.RemoveAll(id => Is(id, RemovedSketchbookStageId)) ?? 0;
+		removed += SeenChapterNoteIds?.RemoveAll(id => Is(id, RemovedSketchbookStageId)) ?? 0;
+		removed += RemoveKeys(MaxDifficultyCleared, RemovedSketchbookStageId);
+		removed += RunTelemetryHistory?.RemoveAll(r => r != null && Is(r.StageId, RemovedSketchbookStageId)) ?? 0;
+		removed += EndlessRecords?.RemoveAll(r => r != null
+			&& (Is(r.StageId, RemovedSketchbookStageId) || Is(r.CharacterId, RemovedTestWizardId))) ?? 0;
+		removed += UnlockedCharacterIds?.RemoveAll(id => Is(id, RemovedTestWizardId)) ?? 0;
+		removed += FreeingsOwed?.RemoveAll(id => Is(id, RemovedTestWizardId)) ?? 0;
+		if (Lifetime != null)
+		{
+			removed += RemoveKeys(Lifetime.BestTimeByStage, RemovedSketchbookStageId);
+			removed += Lifetime.BossesDefeated?.RemoveAll(id => Is(id, RemovedSketchbookBossId)) ?? 0;
+			removed += Lifetime.CharactersPlayed?.RemoveAll(id => Is(id, RemovedTestWizardId)) ?? 0;
+		}
+		return removed;
+	}
+
+	// Schema 28's frozen ids: the chapter, its boss, and the wizard. Never read from the live catalogs, which no longer
+	// name any of them.
+	internal const string RemovedSketchbookStageId = "stage_8";
+	internal const string RemovedSketchbookBossId = "kid_wizard";
+	internal const string RemovedTestWizardId = "test_wizard";
 
 	internal int MigrateToBoonRework()
 	{

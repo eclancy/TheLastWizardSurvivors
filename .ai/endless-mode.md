@@ -1,5 +1,7 @@
 # Endless: the night goes on
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 Eric, 2026-11-08:
 
 > "we want to also unlock endless mode once you beat the original campaign"
@@ -80,7 +82,7 @@ In a run that can go on, that moment gains one thing:
 **Why here and not on the map.** The first night of a run that can go on is an ordinary run, by
 construction (1.4). A toggle chosen before it would decide nothing the vigil does not decide better and
 later: at the fall the player knows whether his build is worth keeping. It also costs the world-map card
-nothing (its focus stops are Start, Journal, Sketchbook and Back, with left and right taken by the map,
+nothing (its focus stops are Start, Journal and Back, with left and right taken by the map,
 `.ai/world-map.md` 10, and the phone's card has no room for a toggle row), and there is no forgotten
 toggle. The card still advertises it and carries the records (3.4). The alternative, a card button that
 commits before the run, is question 1.
@@ -94,7 +96,7 @@ commits before the run, is question 1.
 | The Last Bridge (`stage_11`) | no | a band that ends at the gate yard, and a front that collapses on the pace clock |
 | The Court (`stage_12`) | no | one fixed building, explored and finished; a second night has nothing left to find |
 | The Throne (`stage_13`) | no | not a map: the Muster, the procession, the story's end |
-| The Sketchbook (`stage_8`) | **yes, records only** | the kids' page can be held all night; nothing there counts toward a Feat (Eric: no achievements there) |
+| ~~The Sketchbook (`stage_8`)~~ | removed 2026-11-09 | it was endless for its records only (`EndlessCatalog.SketchbookId`, `IsRecordsOnly`, both gone); schema 28 takes its records out of every save |
 | The far shore | **not now** | its own half, still being built, with its own system (question 5) |
 
 **A chapter is endless on a save when** the Throne is taken back (2.1) **and** the chapter's warden is
@@ -191,8 +193,8 @@ reader of the pace clock was checked:
 - **Read as raw `PaceSeconds`, and meant to keep running**: the elite schedule (`ShouldSpawnElite`), the
   Warden's first arrival. Pinning the pace clock instead, as the Throne does, would stall the elites,
   whose next arrival is a pace time that a pinned clock never reaches.
-- **One-shot by pace, done in the first night**: the Sketchbook's ghost (4:00, 9:30), stage hints (last at
-  13:30). Nothing to do.
+- **One-shot by pace, done in the first night**: stage hints (last at 13:30); the Sketchbook's ghost was the
+  other until the chapter was removed (2026-11-09). Nothing to do.
 
 The night's strength is the only thing that grows. That is the point of holding the three: one number
 to tune, one number the pause screen can state.
@@ -240,8 +242,9 @@ to tune, one number the pause screen can state.
 **`GlobalStatsManager.HasTakenBackTheThrone(save)`**: the deed *Taken Back* (`throne_taken_back`) is done,
 or the dark wizard (`throne_dark_wizard`) is in the lifetime record. It is the same fact that opens the
 far shore's reveal and owes reel E, so the game has one meaning for "the campaign is beaten" in everything
-that comes after it. (`HasFinishedCampaign`, which opens the Sketchbook's page, is nearly the same; it
-also asks that the Throne be earned on the road. Endless reads the deed's fact, as the far shore does.)
+that comes after it. (`HasFinishedCampaign`, which opened the Sketchbook's page until that chapter was
+removed on 2026-11-09, is nearly the same; it also asks that the Throne be earned on the road. Endless reads
+the deed's fact, as the far shore does.)
 
 ### 2.2 Before: nothing on show
 
@@ -257,8 +260,8 @@ That run already ends on the most the game ever plays in a row: the ending's row
 of the one he kept (Nimue), **reel E** (*The Light Goes On*, `Node2DGame.PlayOwedReelsThen`), then any
 lesson owed, then the results. A fifth beat would bury the story's end under a menu feature.
 
-- **Its results list one more opened thing**, after the Sketchbook's page (*"The road is finished"*,
-  `ApplyBossVictoryUnlocks`): **Endless** - *"Every chapter whose warden you have beaten can be held
+- **Its results list one more opened thing** (after the Sketchbook's page, *"The road is finished"*, until
+  that chapter's removal on 2026-11-09): **Endless** - *"Every chapter whose warden you have beaten can be held
   through the night."* A new `RunUnlockKind.Mode`, so it wears its own glyph rather than a chapter's.
 - **No reel, and no `Teaching`.** The slow start's rule is that a *system used inside a run* is explained
   by a post-run cutscene. Endless is a way a run can go on, and it is explained where it is used: the
@@ -341,7 +344,7 @@ the portal or lost to the swarm pays the same: the minutes it lasted and the war
 
 Arcane Energy only, never an unlock: endless is the far shore's *"achievements welcome, unlocks not
 required"*, and a Feat that paid a spell or a wizard would put a gate behind a mode. Counted on Default
-or harder, never in the Sketchbook. Listed only once endless is open (a new `AchievementVisibility.Endless`,
+or harder, on the road's endless chapters only. Listed only once endless is open (a new `AchievementVisibility.Endless`,
 as the far sky's Feats wait for the far sky).
 
 | Feat | asks | pays |
@@ -446,7 +449,7 @@ E3 and E4 can run in parallel once E2 lands.
 - `scripts/Node2DGame.cs`: `PaceMinutes` clamped to `ReferenceRunSeconds / 60`.
 - `scripts/Player.cs`: `TakeMarginalia` adds rather than compounds.
 - `scripts/RegressionChecks.Endless.cs` (new) and its line in `RunAll`: **`ValidateEndless`** - every
-  endless chapter is playable, on the road or the Sketchbook, never the Bridge, Court, Throne or far
+  endless chapter is playable, on the road (the Sketchbook too, until its removal on 2026-11-09), never the Bridge, Court, Throne or far
   shore, and has a warden with a scene; both strength curves start at 1, never fall, and damage never
   goes under 1; the wall comes after the linear part; the cap is positive.
 - **Verify**: `dotnet build`; the validator (`MainMenu.tscn --quit-after 300 -- --no-save-writes

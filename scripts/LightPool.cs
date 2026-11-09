@@ -40,7 +40,7 @@ using TheOneHeMissed.scripts;
 //
 // Off on every chapter whose profile says Darkness 0; lifted to ReducedDarknessScale by the Reduce
 // Darkness switch (DisplaySettings); off entirely with the user argument --no-light-pool, for before and
-// after screenshots, and on at --light-pool=X in any chapter but the Sketchbook, to try one.
+// after screenshots, and on at --light-pool=X in any chapter, to try one.
 // _UiShot --light-probe measures what it does to the swarm's readability (_UiShot.LightPool.cs).
 public partial class LightPool : Node2D
 {
@@ -51,7 +51,7 @@ public partial class LightPool : Node2D
 
 	/// <summary>
 	/// --light-pool=X: the pool at darkness X in any chapter, for trying it where the profile says 0 (the
-	/// proposals in .ai/light-pool.md were shot with it). Never on the Sketchbook, which is the kids'.
+	/// proposals in .ai/light-pool.md were shot with it).
 	/// </summary>
 	public const string ForceLightPoolArg = "--light-pool=";
 
@@ -272,18 +272,17 @@ public partial class LightPool : Node2D
 	}
 
 	// The chapters that are lit under open sky (Eric, 2026-11-03: the light pool is for "certain levels ...
-	// like the dungeons"), and the Sketchbook, which is the kids' and is never touched.
+	// like the dungeons").
 	private static readonly StageEnvironmentKind[] LitEvenly =
 	{
 		StageEnvironmentKind.Forest, StageEnvironmentKind.Fields, StageEnvironmentKind.Heath, StageEnvironmentKind.Swamp,
 		StageEnvironmentKind.Ruins, StageEnvironmentKind.Ice, StageEnvironmentKind.Desert, StageEnvironmentKind.Bridge,
-		StageEnvironmentKind.Sketchbook,
 	};
 
 	/// <summary>
-	/// What dotnet build cannot see (RegressionChecks.RunAll): the shader is there, no open-air chapter and
-	/// never the Sketchbook is dark, every darkness is 0 to 1, and the bodies' floor stays above the room's -
-	/// the order the readability rests on.
+	/// What dotnet build cannot see (RegressionChecks.RunAll): the shader is there, no open-air chapter is
+	/// dark, every darkness is 0 to 1, and the bodies' floor stays above the room's - the order the
+	/// readability rests on.
 	/// </summary>
 	public static void Validate(System.Collections.Generic.List<string> warnings)
 	{
@@ -295,8 +294,7 @@ public partial class LightPool : Node2D
 			if (darkness < 0f || darkness > 1f)
 				warnings.Add($"LightPool: the {kind} environment's Darkness is {darkness}; it must be 0 to 1.");
 			if (darkness > 0f && Array.IndexOf(LitEvenly, kind) >= 0)
-				warnings.Add($"LightPool: the {kind} environment is dark ({darkness}), but it is "
-					+ (kind == StageEnvironmentKind.Sketchbook ? "the kids' chapter, which is never touched." : "under open sky, which stays lit evenly."));
+				warnings.Add($"LightPool: the {kind} environment is dark ({darkness}), but it is under open sky, which stays lit evenly.");
 		}
 		if (!(RoomFloor < BodyFloor) || BodyFloor < 0.5f)
 			warnings.Add($"LightPool: the bodies' floor ({BodyFloor}) must stay above the room's ({RoomFloor}) and at 0.5 or more, or a body at the edge sinks into the dark.");
@@ -314,7 +312,7 @@ public partial class LightPool : Node2D
 		float darkness = profile.Darkness;
 		foreach (string arg in args)
 		{
-			if (arg.StartsWith(ForceLightPoolArg, StringComparison.Ordinal) && profile.Kind != StageEnvironmentKind.Sketchbook
+			if (arg.StartsWith(ForceLightPoolArg, StringComparison.Ordinal)
 				&& float.TryParse(arg.Substring(ForceLightPoolArg.Length), System.Globalization.NumberStyles.Float,
 					System.Globalization.CultureInfo.InvariantCulture, out float forced))
 				darkness = forced;

@@ -46,7 +46,6 @@ public static partial class RegressionChecks
 		ValidateFear(warnings);
 		ValidateSecretCatalog(warnings);
 		ValidateStageRewards(warnings);
-		ValidateSketchbookHoldsNothing(warnings);
 		LightPool.Validate(warnings);
 		HudBand.Validate(warnings);
 		ValidateWorldMap(warnings);
@@ -98,6 +97,9 @@ public static partial class RegressionChecks
 		ValidateSlowStartMigration(warnings);
 		ValidateShadowBoltMigration(warnings);
 		ValidateRiteMigration(warnings);
+		// Schema 28: the Sketchbook and the Test Wizard removed (2026-11-09).
+		ValidateCharacterRoster(warnings);
+		ValidateSketchbookAndTestWizardRemoval(warnings);
 		ValidateStoryReset(warnings);
 		ValidateSaveTransfer(warnings);
 		ValidateUserDataCarryOver(warnings);
@@ -660,8 +662,6 @@ public static partial class RegressionChecks
 			if (secret.MetaReward == SecretMetaReward.ArcaneEnergy
 				&& (secret.MetaAmount <= 0 || secret.MetaAmount > SecretCatalog.MaxKeepsakeArcane))
 				warnings.Add($"Secrets: '{secret.Id}' pays {secret.MetaAmount} Arcane Energy; a keepsake pays 1 to {SecretCatalog.MaxKeepsakeArcane}.");
-			if (secret.StageId.Equals(SketchbookStageId, StringComparison.OrdinalIgnoreCase))
-				warnings.Add($"Secrets: '{secret.Id}' is in the Sketchbook, which holds no secrets (every secret is a deed; ValidateSketchbookHoldsNothing).");
 		}
 		foreach (var (stageId, count) in keepsakesByStage)
 			if (count > 1)
@@ -678,31 +678,7 @@ public static partial class RegressionChecks
 	// Then the prose net: an unlock whose hint (or whose deed's description) NAMES a chapter must be on
 	// that chapter's card. That is the check that would catch a new deed tied to a place in words but
 	// not in data - the Coursing without its RevealStageId, say - which every other rule here would miss.
-	private const string SketchbookStageId = "stage_8";
-
-	/// <summary>
-	/// The Sketchbook holds nothing to earn (Eric, 2026-11-02: "the sketchbook should not have any unlocks or
-	/// any achievements. move that to other maps"): no deed of any kind names it or its boss, and its world
-	/// map card is empty - StageRewards reads every source a chapter can pay from (warden, side event, a
-	/// deed done there, secrets), so an empty card means nothing anywhere points at it. Its boss's
-	/// ArcaneVictoryBonus stays: that is every boss's win purse, not an unlock.
-	/// </summary>
-	private static void ValidateSketchbookHoldsNothing(List<string> warnings)
-	{
-		StageDefinition sketchbook = StageCatalog.GetById(SketchbookStageId);
-		BossDefinition boss = sketchbook != null ? BossCatalog.ForStageIndex(sketchbook.Index) : null;
-		foreach (AchievementDefinition deed in AchievementDefinitions.All)
-		{
-			if (deed.StageId.Equals(SketchbookStageId, StringComparison.OrdinalIgnoreCase)
-				|| (boss != null && deed.BossId.Equals(boss.Id, StringComparison.OrdinalIgnoreCase)))
-				warnings.Add($"Sketchbook: the deed '{deed.Id}' is tied to the Sketchbook, which holds no achievements.");
-		}
-		foreach (StageReward reward in StageRewards.ForStage(SketchbookStageId))
-			warnings.Add($"Sketchbook: its card pays {reward}; the Sketchbook holds no unlocks.");
-		if (SideEventDirector.EventsFor(SketchbookStageId).Count > 0)
-			warnings.Add("Sketchbook: it has a side event; the Sketchbook holds no unlocks.");
-	}
-
+	// (ValidateSketchbookHoldsNothing stood here until the Sketchbook was removed on 2026-11-09.)
 	private static void ValidateStageRewards(List<string> warnings)
 	{
 		IReadOnlyList<StageReward> all = StageRewards.All;
@@ -787,9 +763,7 @@ public static partial class RegressionChecks
 			if (!seen.Add(reward.ToString()))
 				warnings.Add($"Stage rewards: {reward} is listed twice.");
 		}
-		// The Sketchbook is the one chapter meant to hold nothing (ValidateSketchbookHoldsNothing); the map
-		// card simply has no "What he keeps here" there.
-		foreach (StageDefinition stage in StageCatalog.All.Where(s => s.IsPlayable && !s.Id.Equals(SketchbookStageId, StringComparison.OrdinalIgnoreCase)))
+		foreach (StageDefinition stage in StageCatalog.All.Where(s => s.IsPlayable))
 		{
 			if (!all.Any(r => r.StageId.Equals(stage.Id, StringComparison.OrdinalIgnoreCase)))
 				warnings.Add($"Stage rewards: {stage.DisplayName} holds nothing, so its card has no row - give its boss a deed.");
@@ -813,9 +787,9 @@ public static partial class RegressionChecks
 	// THE WORLD MAP'S GEOMETRY is generated (tools/art/world_map.py -> worldmap.json), so a chapter
 	// added to StageCatalog is on no map until somebody places it - and the screen would quietly leave
 	// it out. Every chapter and the Boss Rush must have a stop; the road must visit the campaign in its
-	// order and the seat after the last chapter; a chapter held until the campaign is finished (the
-	// Sketchbook) is on its own page and never on the road (.ai/world-map.md, section 4); and every
-	// picture the screen draws must exist.
+	// order and the seat after the last chapter; and every picture the screen draws must exist. (The
+	// Sketchbook's page, a sheet apart from the road, was checked here until the chapter was removed on
+	// 2026-11-09; no stop or page in worldmap.json may name it now.)
 	private static void ValidateWorldMap(List<string> warnings)
 	{
 		WorldMapLayout map = WorldMapLayout.Load(out string problem);
@@ -828,11 +802,10 @@ public static partial class RegressionChecks
 		// is its own piece (C8), and drawing the castle waits on the Dungeon's move. Its missing stop is
 		// then an item on that chapter's campaign to-do line (ValidateCampaignToDo), and the screen leaves
 		// it out quietly (WorldMap.BuildStops). A PLAYABLE chapter with no stop is a fault, as always, so
-		// none can flip with its place undrawn - except one held until the campaign is finished, whose
-		// place is the page.
+		// none can flip with its place undrawn.
 		foreach (StageDefinition stage in StageCatalog.All)
 		{
-			if (map.Get(stage.Id) == null && stage.IsPlayable && !stage.AfterCampaign)
+			if (map.Get(stage.Id) == null && stage.IsPlayable)
 				warnings.Add($"World map: {stage.DisplayName} ({stage.Id}) has no place on the map - add it to PLACES in tools/art/world_map.py and draw its landmark.");
 		}
 		WorldMapStop rush = map.Get(WorldMapLayout.BossRushId);
@@ -859,12 +832,12 @@ public static partial class RegressionChecks
 				&& (!stop.OnMap || stop.Focus.X < 0 || stop.Focus.Y < 0 || stop.Focus.X > map.Size.X || stop.Focus.Y > map.Size.Y))
 				warnings.Add($"World map: {stage.DisplayName} is a chapter of the road or the far shore but stands off the world picture.");
 		}
-		// Eric, 2026-10-30: "sketchbook level should not be attached to the map ... it shows up as its own
-		// separate map". A stop for it would put it back in the road's flow and on the compass.
-		foreach (StageDefinition stage in StageCatalog.All.Where(s => !StageCatalog.IsInCampaign(s) && s.AfterCampaign))
+		// Every stop is a chapter StageCatalog still lists, or the seat: a stop for a removed chapter (the Sketchbook's
+		// stage_8, 2026-11-09) would be a place on the road nothing can start.
+		foreach (WorldMapStop stop in map.Stops)
 		{
-			if (map.Get(stage.Id) != null)
-				warnings.Add($"World map: {stage.DisplayName} is held until the campaign is finished and belongs on its own page, but it stands on the road (remove it from PLACES in tools/art/world_map.py).");
+			if (!stop.Id.Equals(WorldMapLayout.BossRushId, StringComparison.OrdinalIgnoreCase) && StageCatalog.GetById(stop.Id) == null)
+				warnings.Add($"World map: worldmap.json has a stop '{stop.Id}', which is not a chapter - remove it from PLACES in tools/art/world_map.py.");
 		}
 
 		// The map unrolls as the campaign is won (GlobalStatsManager.IsChapterRevealed): a new save is shown
@@ -886,16 +859,7 @@ public static partial class RegressionChecks
 			}
 		}
 
-		// The page: its sheet drawn, the wizard's stand on the paper, the kids' drawings on the sheet.
-		if (StageCatalog.All.Any(s => s.AfterCampaign && s.IsPlayable))
-		{
-			if (string.IsNullOrEmpty(map.PageImage) || map.PageSize.X <= 0f || map.PageSize.Y <= 0f)
-				warnings.Add("World map: a chapter is held for the page, but worldmap.json has no page to show it on.");
-			else if (!map.PageRect.HasPoint(map.PageStand))
-				warnings.Add($"World map: the wizard's stand on the page ({map.PageStand}) is off the paper ({map.PageRect}).");
-		}
-
-		var pictures = new List<string> { "world.png", map.PageImage, "ring-open.png", "ring-locked.png", "ring-current.png",
+		var pictures = new List<string> { "world.png", "ring-open.png", "ring-locked.png", "ring-current.png",
 			"shadow.png", "secret.png", "keepsake.png", "arrow-left.png", "arrow-right.png" };
 		foreach (WorldMapCompass.MarkKind kind in Enum.GetValues(typeof(WorldMapCompass.MarkKind)))
 			pictures.Add("mark-" + kind.ToString().ToLowerInvariant() + ".png");
@@ -908,13 +872,6 @@ public static partial class RegressionChecks
 		{
 			if (!ResourceLoader.Exists(WorldMapLayout.Directory + picture))
 				warnings.Add($"World map: {WorldMapLayout.Directory + picture} is missing or not imported.");
-		}
-		foreach (var (texture, at) in map.PageDrawings)
-		{
-			if (!ResourceLoader.Exists(texture))
-				warnings.Add($"World map: the page's drawing {texture} is missing.");
-			else if (!map.PageRect.HasPoint(at))
-				warnings.Add($"World map: the page's drawing {texture} is placed off the paper, at {at}.");
 		}
 		ValidateWorldMapFarShore(map, warnings);
 	}
@@ -1937,8 +1894,7 @@ public static partial class RegressionChecks
 
 	private static void ValidateGroundArt(List<string> warnings)
 	{
-		CuratedTileCatalog catalog = CuratedTileCatalog.LoadMany(
-			"res://assets/bonelight/tiles/tiles.json", "res://assets/kidsart/tiles.json");
+		CuratedTileCatalog catalog = CuratedTileCatalog.LoadMany("res://assets/bonelight/tiles/tiles.json");
 		var generator = new LevelGenerator();
 		foreach (StageEnvironmentKind kind in Enum.GetValues<StageEnvironmentKind>())
 		{
@@ -2652,21 +2608,31 @@ public static partial class RegressionChecks
 
 	// The stage list is the only screen that says what a chapter is and what the dark wizard has
 	// done to it, and a blank string there is invisible to the compiler: the card simply renders
-	// one line shorter. Index/id agreement matters more - Global.SelectedStageIdx is an index into
-	// this array, while unlocks are recorded against the id, so a mismatch unlocks the wrong place.
+	// one line shorter. Index/id agreement matters more - Global.SelectedStageIdx holds the index
+	// (StageCatalog.GetByIndex looks it up), while unlocks are recorded against the id, so a mismatch
+	// unlocks the wrong place. Since the Sketchbook went (2026-11-09) the index is a chapter's number,
+	// not its position: 8 is retired (StageCatalog.RetiredIndices) and never taken again.
 	private static void ValidateStageCatalog(List<string> warnings)
 	{
 		var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+		int previousIndex = -1;
 		for (int i = 0; i < StageCatalog.All.Count; i++)
 		{
 			StageDefinition stage = StageCatalog.All[i];
 
-			if (stage.Index != i)
-				warnings.Add($"Stage '{stage.Id}' sits at position {i} but declares Index {stage.Index}; a selection would enter a different chapter than the card clicked.");
+			if (stage.Index <= previousIndex)
+				warnings.Add($"Stage '{stage.Id}' declares Index {stage.Index}, not above the chapter before it ({previousIndex}); indices are appended, never reused or reordered.");
+			previousIndex = stage.Index;
 
-			if (!string.Equals(stage.Id, $"stage_{i}", StringComparison.OrdinalIgnoreCase))
-				warnings.Add($"Stage at position {i} has id '{stage.Id}', not 'stage_{i}'; boss unlocks and save entries match on that id.");
+			if (StageCatalog.RetiredIndices.Contains(stage.Index))
+				warnings.Add($"Stage '{stage.Id}' takes the retired index {stage.Index}; a harness flag or a doc naming --stage={stage.Index} meant a removed chapter.");
+
+			if (StageCatalog.GetByIndex(stage.Index) != stage)
+				warnings.Add($"Stage '{stage.Id}' is not what StageCatalog.GetByIndex({stage.Index}) returns; a selection would enter a different chapter than the card clicked.");
+
+			if (!string.Equals(stage.Id, $"stage_{stage.Index}", StringComparison.OrdinalIgnoreCase))
+				warnings.Add($"Stage '{stage.Id}' declares Index {stage.Index}, not its id's 'stage_{stage.Index}'; boss unlocks and save entries match on that id.");
 
 			if (!seenIds.Add(stage.Id))
 				warnings.Add($"Stage id '{stage.Id}' appears more than once, so one of the two can never be unlocked.");
@@ -2677,14 +2643,10 @@ public static partial class RegressionChecks
 			if (string.IsNullOrWhiteSpace(stage.FlavorText))
 				warnings.Add($"Stage '{stage.Id}' has no FlavorText, so its card and the in-run intro banner say nothing about the place.");
 
-			// Exempt the one chapter that is not somewhere he has been. CorruptionText exists to
-			// say what the dark wizard has done to a place, and demanding it of a chapter outside
-			// the campaign would mean inventing fiction to satisfy a check.
-			if (string.IsNullOrWhiteSpace(stage.CorruptionText)
-				&& stage.EnvironmentKind != StageEnvironmentKind.Sketchbook)
-			{
+			// Every chapter is somewhere he has been (the Sketchbook, the one that was not, was exempt
+			// until it was removed on 2026-11-09).
+			if (string.IsNullOrWhiteSpace(stage.CorruptionText))
 				warnings.Add($"Stage '{stage.Id}' has no CorruptionText, so its card never says how the dark wizard holds it.");
-			}
 
 			if (!stage.IsPlayable && string.IsNullOrWhiteSpace(stage.LockedHint) && stage.Gate != StageGate.PreviousBossAndWizards)
 				warnings.Add($"Stage '{stage.Id}' is not playable and has no LockedHint, so its card locks with no explanation.");
@@ -2743,10 +2705,6 @@ public static partial class RegressionChecks
 				warnings.Add($"Campaign: {stage.DisplayName} is on the campaign's road but gated FarShore, which only the far shore's first chapter is.");
 			if (inCampaign && stage.Gate == StageGate.Open && StageCatalog.CampaignPositionOf(stage.Id) > 0)
 				warnings.Add($"Campaign: {stage.DisplayName} is in the middle of the order but always open, so the chapters before it gate nothing.");
-			// Reached once the campaign is finished (the Sketchbook's page, .ai/world-map.md section 4): it
-			// must stand outside the road, or the road would have to be finished to walk it.
-			if (stage.AfterCampaign && (inCampaign || stage.Gate != StageGate.Open))
-				warnings.Add($"Campaign: {stage.DisplayName} is held until the campaign is finished, so it must be outside the order and gated Open.");
 		}
 
 		for (int i = 0; i < campaign.Count; i++)
@@ -3433,9 +3391,10 @@ public static partial class RegressionChecks
 	//     enter after; the Dungeon is kept grandfathered, out of the opened list, exactly when it had it;
 	//   - a save short of the Emberdeep earns nothing past the gate - not the castle, not the Dungeon;
 	//   - a win in a grandfathered Dungeon writes nothing to the opened list, and still pays the deed;
-	//   - a save that finished the old campaign keeps the Sketchbook and the Boss Rush, and its Dungeon joins
-	//     the road when its previous chapter's boss is down (the Warden today, the Constable once the bridge
-	//     is built), the Court with it;
+	//   - a save that finished the old campaign keeps the Boss Rush, and its Dungeon joins the road when its
+	//     previous chapter's boss is down (the Warden today, the Constable once the bridge is built), the
+	//     Court with it. (Step 21 also wrote the Sketchbook open for it; step 28 takes that out again, the
+	//     chapter having been removed on 2026-11-09.)
 	//   - a second migration changes nothing.
 	private static void ValidateDungeonMove(List<string> warnings)
 	{
@@ -3488,9 +3447,11 @@ public static partial class RegressionChecks
 			}
 			check(save);
 
-			// Twice: the step again on the migrated save, and Migrate, change nothing.
+			// Twice: the step again on the migrated save, and Migrate, change nothing. Step 28 follows it, as the chain
+			// runs them: 21's frozen rules still write the Sketchbook a finished campaign could enter, and 28 takes it out.
 			string once = Json.Stringify(save.ToGodotDictionary());
 			save.MigrateDungeonIntoCastle();
+			save.MigrateRemoveSketchbookAndTestWizard();
 			if (save.Migrate(log: false) || Json.Stringify(save.ToGodotDictionary()) != once)
 				warnings.Add($"Dungeon move ({label}): migrating twice changed the save again.");
 			return save;
@@ -3505,7 +3466,6 @@ public static partial class RegressionChecks
 			StageDefinition opened = GlobalStatsManager.ChapterOpenedByVictory(save, gaoler);
 			if (opened != null)
 				GlobalStatsManager.UnlockStage(save, opened.Id);
-			GlobalStatsManager.RecordFinishedCampaign(save);
 			if (!save.UnlockedStageIds.SequenceEqual(before))
 				warnings.Add($"Dungeon move ({label}): a win in the grandfathered Dungeon wrote [{string.Join(", ", save.UnlockedStageIds.Except(before))}] into the opened list.");
 			if (!save.Lifetime.HasDefeatedBoss(gaoler.Id))
@@ -3574,8 +3534,9 @@ public static partial class RegressionChecks
 			beaten: allTen, wizards: new[] { "tituba", "vainamoinen", "john_dee" },
 			couldEnter: new[] { "stage_0", "stage_9", "stage_10", "stage_2", "stage_1", "stage_3", "stage_4", "stage_5", "stage_6", "stage_7", "stage_8" }, s =>
 		{
-			if (!s.UnlockedStageIds.Contains("stage_8"))
-				warnings.Add("Dungeon move (finished the old campaign): the Sketchbook was not written down, so it would close until the castle is finished.");
+			// The frozen rules above still count the Sketchbook it could enter (couldEnter); the chain's step 28 removes it.
+			if (s.UnlockedStageIds.Contains("stage_8", StringComparer.OrdinalIgnoreCase))
+				warnings.Add("Dungeon move (finished the old campaign): the removed Sketchbook (stage_8) is still in the opened list after the whole chain; step 28 takes it out.");
 			if (!BossRushCatalog.IsOpen(s) || !s.BossRushGrandfathered)
 				warnings.Add("Dungeon move (finished the old campaign): the Boss Rush is not kept open.");
 			StageDefinition bridge = StageCatalog.GetById("stage_11");
@@ -3844,8 +3805,8 @@ public static partial class RegressionChecks
 		Expect("every chapter on Hardcore but the last, never won", Walk(i => i == road.Count - 1 ? null : H), merlinFree: false, darkFree: false);
 		Expect("every chapter on Hardcore but the first, never won", Walk(i => i == 0 ? null : H), merlinFree: false, darkFree: false);
 		Expect("one chapter on Default and the rest on Hardcore", Walk(i => i == road.Count / 2 ? D : H), merlinFree: true, darkFree: false);
-		// NO SKETCHBOOK (Eric, 2026-11-02: it has no unlocks and no achievements). Only the campaign's chapters are
-		// counted: a chapter outside it is never asked for, and a win there counts toward neither deed.
+		// Only the campaign's chapters are counted: a chapter outside it (the far shore's; the Sketchbook's until it was
+		// removed on 2026-11-09) is never asked for, and a win there counts toward neither deed.
 		foreach (StageDefinition outside in StageCatalog.All.Where(s => !StageCatalog.IsInCampaign(s)))
 		{
 			BossDefinition outsideBoss = BossCatalog.ForStageIndex(outside.Index);
@@ -3859,8 +3820,6 @@ public static partial class RegressionChecks
 			if (GlobalStatsManager.ChaptersClearedAt(only, GlobalStatsManager.PresetRankCasual) > 0)
 				warnings.Add($"The whole road: a win in {outside.DisplayName}, outside the campaign, counts toward Merlin and the Dark Wizard.");
 		}
-		if (StageCatalog.Campaign.Any(s => s.Id.Equals("stage_8", StringComparison.OrdinalIgnoreCase)))
-			warnings.Add("The whole road: the Sketchbook is in the campaign, so Merlin and the Dark Wizard would ask for it; it has no unlocks.");
 		SaveData orbOwned = Walk(_ => D);
 		if (GlobalStatsManager.IsSpellUnlockedForLevelUp(orbOwned, OrbOfAges.SpellId))
 			warnings.Add("The whole road: completing the campaign grants Orb of Ages before Merlin's Circle rescue.");
@@ -4240,8 +4199,6 @@ public static partial class RegressionChecks
 		// The Still Warden guard is a SlammerEnemy with the telegraph shape flipped to a cone,
 		// so it validates through exactly the same path and needs no case of its own.
 		"res://scenes/RimeGuard.tscn",
-		// The Sketchbook's ghost (Elim's Boo): a wail ring and a phase that marks where it re-forms.
-		"res://scenes/BooEnemy.tscn",
 		// The Blighted Swamp event's lantern-tender: strikes, spilt oil, the dark, the rekindle.
 		BogLanternsEvent.TenderScenePath,
 	};
@@ -4277,9 +4234,6 @@ public static partial class RegressionChecks
 					break;
 				case SummonerEnemy summoner:
 					ValidateSummoner(warnings, path, summoner);
-					break;
-				case BooEnemy ghost:
-					ValidateGhost(warnings, path, ghost);
 					break;
 				case LanternTenderEnemy tender:
 					ValidateLanternTender(warnings, path, tender);
@@ -4347,28 +4301,6 @@ public static partial class RegressionChecks
 
 		if (exploder.BlastDamage <= 0)
 			warnings.Add($"Exploder '{path}' deals {exploder.BlastDamage} blast damage, so nothing is at stake in letting it reach you.");
-	}
-
-	private static void ValidateGhost(List<string> warnings, string path, BooEnemy ghost)
-	{
-		if (ghost.WailWindUpSeconds <= 0f)
-			warnings.Add($"Ghost '{path}' has no wail wind-up, so its ring lands with no warning.");
-		if (ghost.PhaseTellSeconds <= 0f)
-			warnings.Add($"Ghost '{path}' has no phase tell, so the ring it places where it re-forms lands unseen.");
-		if (ghost.WailRadius <= 0f || ghost.WailDamage <= 0)
-			warnings.Add($"Ghost '{path}' wails at radius {ghost.WailRadius} for {ghost.WailDamage}, so the wail is decorative.");
-		if (ghost.PhaseRadius <= 0f || ghost.PhaseDamage <= 0)
-			warnings.Add($"Ghost '{path}' phases at radius {ghost.PhaseRadius} for {ghost.PhaseDamage}, so its mark hits nothing.");
-		if (ghost.WailEngageRadiusMultiplier < 1f)
-			warnings.Add($"Ghost '{path}' engages at {ghost.WailEngageRadiusMultiplier}x its wail radius; below 1 the player is inside the ring before the tell begins.");
-		// The same rule as the bosses' burrows: the mark must land before the ghost re-forms on it,
-		// or its arrival is itself an untelegraphed hit and the ring a lie about when it is safe.
-		if (ghost.PhaseTravelSeconds <= ghost.PhaseTellSeconds)
-			warnings.Add($"Ghost '{path}' crosses in {ghost.PhaseTravelSeconds}s but its mark takes {ghost.PhaseTellSeconds}s; it would re-form before its own warning lands.");
-		if (ghost.PhaseMinDistance >= ghost.PhaseMaxDistance)
-			warnings.Add($"Ghost '{path}' can never phase: PhaseMinDistance {ghost.PhaseMinDistance} is not below PhaseMaxDistance {ghost.PhaseMaxDistance}.");
-		if (!ghost.IsMiniBoss)
-			warnings.Add($"Ghost '{path}' is not IsMiniBoss, so it would be recycled to the spawn ring mid-fight, shoved by the player and pay ordinary XP.");
 	}
 
 	// The player walks 220 px a second (Player.Speed) and loses some of it to every body he pushes, so
@@ -4761,20 +4693,17 @@ public static partial class RegressionChecks
 		// A table body flagged IsMiniBoss would block the player and pay the miniboss's 50 XP on every
 		// spawn. Node2DGame.SpawnEnemy clears the flag on everything the table rolls, so this is the
 		// scene's own mistake caught early, and the side events' fallback to the table (which keeps
-		// the scene's flag) is still covered. The kids' Rockem is both the Sketchbook's heavy and its
-		// miniboss, as drawn, so its scene carries the flag for the miniboss and is exempt here.
+		// the scene's flag) is still covered. (The Sketchbook's Rockem, both its heavy and its miniboss
+		// as the kids drew it, was the one exemption until the chapter was removed on 2026-11-09.)
 		bool body = role is BestiaryRole.Bulk or BestiaryRole.Fast or BestiaryRole.Heavy or BestiaryRole.Wall or BestiaryRole.Extra;
-		if (body && probe.IsMiniBoss && !IsArtContractExempt(creature))
+		if (body && probe.IsMiniBoss)
 			warnings.Add($"Bestiary: {name}'s {role} is {creature}, which has IsMiniBoss set, so every one the table rolls blocks the player and pays 50 XP.");
 	}
 
-	private static bool IsArtContractExempt(BestiaryCreature creature) =>
-		StageBestiary.ForStageId(creature.HomeStageId)?.ArtContractExempt == true;
-
 	// The animations a behaviour plays, held to .ai/art-direction.md section 5. Every one of these
 	// falls back silently in a run (Enemy.StartDeath frees a sheet with no death, PlayAttackAnimation
-	// skips a sheet with no attack), which is right for the kids' drawings and wrong for anything drawn
-	// to the contract.
+	// skips a sheet with no attack), which is wrong for anything drawn to the contract - every
+	// creature now, since the kids' drawings (the one exemption) went with the Sketchbook.
 	private static void ValidateBestiaryArt(List<string> warnings, BestiaryCreature creature, Enemy probe)
 	{
 		var sprite = probe.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
@@ -4785,7 +4714,6 @@ public static partial class RegressionChecks
 			return;
 		}
 
-		bool exempt = IsArtContractExempt(creature);
 		if (!frames.HasAnimation("moving"))
 			warnings.Add($"Bestiary: {creature} has no 'moving' animation, so it stands still while it chases.");
 		else
@@ -4803,16 +4731,16 @@ public static partial class RegressionChecks
 			if (frames.GetAnimationLoop("death"))
 				warnings.Add($"Bestiary: {creature}'s 'death' loops, so it never finishes and the corpse never frees.");
 		}
-		else if (!exempt)
+		else
 			warnings.Add($"Bestiary: {creature} has no 'death' animation, so it vanishes on its last hit; the art contract makes one mandatory.");
 
-		bool telegraphs = probe is RangedEnemy or LungerEnemy or SlammerEnemy or ExploderEnemy or SummonerEnemy or BooEnemy;
+		bool telegraphs = probe is RangedEnemy or LungerEnemy or SlammerEnemy or ExploderEnemy or SummonerEnemy;
 		if (frames.HasAnimation("attack"))
 		{
 			if (frames.GetAnimationLoop("attack"))
 				warnings.Add($"Bestiary: {creature}'s 'attack' loops, so its wind-up pose never hands back to 'moving'.");
 		}
-		else if (telegraphs && !exempt)
+		else if (telegraphs)
 			warnings.Add($"Bestiary: {creature} telegraphs but has no 'attack' animation, so its body does nothing while it winds up.");
 
 		if (frames.HasAnimation("hurt") && frames.GetAnimationLoop("hurt"))
@@ -4840,7 +4768,6 @@ public static partial class RegressionChecks
 			case SlammerEnemy slammer: ValidateSlammer(warnings, path, slammer); break;
 			case ExploderEnemy exploder: ValidateExploder(warnings, path, exploder); break;
 			case SummonerEnemy summoner: ValidateSummoner(warnings, path, summoner); break;
-			case BooEnemy ghost: ValidateGhost(warnings, path, ghost); break;
 		}
 	}
 
@@ -5001,8 +4928,7 @@ public static partial class RegressionChecks
 			// save's lifetime stats, which is the same path a real victory takes.
 			// A boon counts, and so does currency. The check is "does beating this pay out",
 			// not "does it pay out a spell": two chapter clears pay in a boon because the shop
-			// and the achievement track draw on one finite pool, and the Sketchbook pays in
-			// Arcane Energy because it is a bonus chapter and must not hold campaign content.
+			// and the achievement track draw on one finite pool, and some pay only Arcane Energy.
 			if (!string.IsNullOrWhiteSpace(boss.Id)
 				&& !AchievementDefinitions.All.Any(a =>
 					(!string.IsNullOrWhiteSpace(a.SpellUnlockId)
@@ -5471,8 +5397,6 @@ public static partial class RegressionChecks
 			if (definition.Form == null || definition.Form.MilestoneLevel != ApotheosisCatalog.MilestoneLevel)
 				warnings.Add($"{label} has no form, or a form whose MilestoneLevel is not {ApotheosisCatalog.MilestoneLevel}, so SpellData.ApplyEvolution would refuse it.");
 
-			if (definition.CharacterId.Equals("test_wizard", StringComparison.OrdinalIgnoreCase))
-				warnings.Add($"{label} is given to the Test Wizard, which picks its own loadout and is exempt from the covenant.");
 			// One per wizard - or, for a wizard whose starting spell is taken in a form, one per form.
 			if (!seenCharacters.Add($"{definition.CharacterId}:{definition.VariantId}"))
 				warnings.Add($"{label}: character '{definition.CharacterId}' has more than one Apotheosis{(string.IsNullOrEmpty(definition.VariantId) ? "" : $" for '{definition.VariantId}'")}.");
@@ -6106,6 +6030,186 @@ public static partial class RegressionChecks
 			warnings.Add("Rite migration: a save that never owned the Rite was handed it or its Feat.");
 		if (GlobalStatsManager.IsSpellUnlockedForLevelUp(beaten, "gravewell") && !GlobalStatsManager.IsSpellUnlockedForLevelUp(At25(_ => { }), "gravewell"))
 			warnings.Add("Rite migration: the step granted a parent; it keeps the Rite and grants nothing else.");
+	}
+
+	// A ROSTER INDEX IS A WIZARD'S NUMBER (CharacterRoster): Global.SelectedCharacterIdx, every tool's --character=N and
+	// every doc that records a run name one. Removing the Test Wizard (2026-11-09) retired index 0 rather than sliding
+	// everyone after it down a place - so a retired index names nobody, nobody is the Test Wizard, the anchors the
+	// roster's own comments state keep their wizards, and an index that names nobody still resolves to a wizard.
+	private static void ValidateCharacterRoster(List<string> warnings)
+	{
+		List<CharacterData> slots = CharacterRoster.GetAllByIndex();
+		foreach (int retired in CharacterRoster.RetiredIndices)
+		{
+			if (retired >= 0 && retired < slots.Count && slots[retired] != null)
+				warnings.Add($"Roster: index {retired} is retired but names '{slots[retired].Id}'; a retired index is never reused.");
+		}
+		if (CharacterRoster.SelectionOrder().Any(i => CharacterRoster.RetiredIndices.Contains(i)))
+			warnings.Add("Roster: the character select's order lists a retired index.");
+		if (CharacterRoster.IndexOf(SaveData.RemovedTestWizardId) >= 0 || UnlockCatalog.GetCharacter(SaveData.RemovedTestWizardId) != null)
+			warnings.Add("Roster: the Test Wizard is still on the roster or in UnlockCatalog; he was removed on 2026-11-09.");
+		var anchors = new (int Index, string Id)[] { (1, "pyromancer"), (10, "dark_wizard"), (14, "archmage"), (23, "artemis") };
+		foreach (var (index, id) in anchors)
+		{
+			if (CharacterRoster.IndexOf(id) != index)
+				warnings.Add($"Roster: '{id}' is at index {CharacterRoster.IndexOf(id)}, not {index}; a saved index or --character={index} now plays someone else.");
+		}
+		if (CharacterRoster.GetByIndex(0) == null || CharacterRoster.GetByIndex(-1) == null || CharacterRoster.GetByIndex(slots.Count) == null)
+			warnings.Add("Roster: an index that names nobody resolves to no wizard, so a run started on one has no character.");
+		if (CharacterRoster.GetAll().Count != slots.Count(c => c != null))
+			warnings.Add("Roster: GetAll and GetAllByIndex disagree about who is on the roster.");
+	}
+
+	// SCHEMA 28 (SaveData.MigrateRemoveSketchbookAndTestWizard): the Sketchbook (stage_8) and the Test Wizard removed at
+	// Eric's request on 2026-11-09. Held here: nothing in the catalogs names either any more, and nothing the game
+	// reads a save with crashes or misbehaves on a save that still does; a save that names both comes out of the step
+	// naming neither, with everything else as it was, nothing earned moved, and a second migration changing nothing;
+	// and a save that names neither is untouched.
+	private static void ValidateSketchbookAndTestWizardRemoval(List<string> warnings)
+	{
+		const string stage = SaveData.RemovedSketchbookStageId;
+		const string boss = SaveData.RemovedSketchbookBossId;
+		const string wizard = SaveData.RemovedTestWizardId;
+		int retired = StageCatalog.RetiredIndices.FirstOrDefault();
+
+		// THE CATALOGS. The chapter, its boss, cast, secrets, note, music and endless rule, and the wizard, all gone.
+		if (StageCatalog.GetById(stage) != null || StageCatalog.All.Any(s => s.Index == retired))
+			warnings.Add("Removal: StageCatalog still lists the Sketchbook (stage_8).");
+		if (StageCatalog.GetByIndex(retired) == null)
+			warnings.Add($"Removal: StageCatalog.GetByIndex({retired}), the retired index, returns nothing; a stale Global.SelectedStageIdx would start a run with no chapter.");
+		if (BossCatalog.ForStageIndex(retired) != null || BossCatalog.GetById(boss) != null)
+			warnings.Add("Removal: BossCatalog still has the Sketchbook's boss.");
+		if (StageBestiary.ForStageId(stage) != null || StageBestiary.AllCreatures().Any(c => c.HomeStageId.Equals(stage, StringComparison.OrdinalIgnoreCase)))
+			warnings.Add("Removal: the bestiary still has the Sketchbook's cast.");
+		if (SecretCatalog.Defined.Any(s => s.StageId.Equals(stage, StringComparison.OrdinalIgnoreCase)))
+			warnings.Add("Removal: a secret is still placed in the Sketchbook.");
+		if (ChapterNotes.Has(stage) || MusicCatalog.HasSetForStage(retired) || SideEventDirector.EventsFor(stage).Count > 0)
+			warnings.Add("Removal: a chapter note, a music set or a side event still names the Sketchbook.");
+		if (EndlessCatalog.RoadChapterIds.Contains(stage, StringComparer.OrdinalIgnoreCase))
+			warnings.Add("Removal: endless still lists the Sketchbook.");
+		if (AchievementDefinitions.All.Any(d => d.StageId.Equals(stage, StringComparison.OrdinalIgnoreCase) || d.BossId.Equals(boss, StringComparison.OrdinalIgnoreCase)
+			|| d.CharacterUnlockId.Equals(wizard, StringComparison.OrdinalIgnoreCase)))
+			warnings.Add("Removal: a deed still names the Sketchbook, its boss or the Test Wizard.");
+
+		// THE STEP. A schema-27 save that names both everywhere a save can.
+		SaveData named = SaveNamingTheRemoved();
+		int taken = SaveNamingTheRemoved().MigrateRemoveSketchbookAndTestWizard();
+		if (taken != RemovedEntriesInSample)
+			warnings.Add($"Removal migration: the step took {taken} entries out of the sample save, which names the removed in {RemovedEntriesInSample} places.");
+		// Before the step: nothing the game reads a save with may throw on ids the catalogs no longer know.
+		ReadsWithoutCrashing("a save still naming them, unmigrated", named, warnings);
+
+		if (!named.Migrate(log: false) || named.SchemaVersion != SaveData.CurrentSchemaVersion)
+			warnings.Add("Removal migration: a schema-27 save was not migrated to the current schema.");
+		bool Names(IEnumerable<string> ids, string id) => ids.Any(x => x.Equals(id, StringComparison.OrdinalIgnoreCase));
+		if (Names(named.UnlockedStageIds, stage) || Names(named.GrandfatheredStageIds, stage) || Names(named.SeenChapterNoteIds, stage)
+			|| Names(named.MaxDifficultyCleared.Keys, stage) || Names(named.Lifetime.BestTimeByStage.Keys, stage)
+			|| named.RunTelemetryHistory.Any(r => r.StageId.Equals(stage, StringComparison.OrdinalIgnoreCase))
+			|| named.EndlessRecords.Any(r => r.StageId.Equals(stage, StringComparison.OrdinalIgnoreCase)))
+			warnings.Add("Removal migration: the Sketchbook (stage_8) is still named in the migrated save.");
+		if (Names(named.Lifetime.BossesDefeated, boss))
+			warnings.Add("Removal migration: the Sketchbook's boss is still in the lifetime record.");
+		if (Names(named.UnlockedCharacterIds, wizard) || Names(named.FreeingsOwed, wizard) || Names(named.Lifetime.CharactersPlayed, wizard)
+			|| named.EndlessRecords.Any(r => r.CharacterId.Equals(wizard, StringComparison.OrdinalIgnoreCase)))
+			warnings.Add("Removal migration: the Test Wizard is still named in the migrated save.");
+		// Everything else as it was: the other chapters' entries, the other wizards, the deed, the purse, the totals.
+		if (!Names(named.UnlockedStageIds, "stage_9") || !Names(named.GrandfatheredStageIds, "stage_1") || !Names(named.SeenChapterNoteIds, "stage_0")
+			|| !named.MaxDifficultyCleared.TryGetValue("stage_0", out int kept) || kept != 2
+			|| named.Lifetime.BestTimeOnStage("stage_0") != 640f || named.RunTelemetryHistory.Count != 1
+			|| named.EndlessRecords.Count != 1 || named.EndlessRecords[0].WardensFelled != 4
+			|| !Names(named.UnlockedCharacterIds, "tituba") || !Names(named.Lifetime.CharactersPlayed, "pyromancer")
+			|| !named.Lifetime.HasDefeatedBoss("forest_treant") || named.Lifetime.TotalRuns != 9)
+			warnings.Add("Removal migration: the step took out more than the Sketchbook and the Test Wizard.");
+		if (named.TotalCurrency != 321 || !named.UnlockedAchievementIds.SequenceEqual(new[] { "survivor" }))
+			warnings.Add("Removal migration: Arcane Energy or a deed changed hands; the step only takes out what names the removed.");
+		// The map opens on the last run's chapter: after the step that is one that still exists.
+		string lastRun = named.RunTelemetryHistory.FirstOrDefault()?.StageId;
+		if (lastRun != null && StageCatalog.GetById(lastRun) == null)
+			warnings.Add($"Removal migration: the last run on record names '{lastRun}', which is no chapter, so the map has nowhere to open on it.");
+
+		// Twice: the step again, and Migrate, change nothing.
+		string once = Json.Stringify(named.ToGodotDictionary());
+		if (named.MigrateRemoveSketchbookAndTestWizard() != 0 || named.Migrate(log: false) || Json.Stringify(named.ToGodotDictionary()) != once)
+			warnings.Add("Removal migration: migrating twice changed the save again.");
+		ReadsWithoutCrashing("the same save, migrated", named, warnings);
+
+		// A save that never named either is untouched.
+		var plain = new SaveData { SchemaVersion = 27 };
+		plain.UnlockedStageIds.Add("stage_9");
+		plain.Lifetime.BossesDefeated.Add("forest_treant");
+		plain.Lifetime.CharactersPlayed.Add("archmage");
+		string before = Json.Stringify(plain.ToGodotDictionary());
+		if (plain.MigrateRemoveSketchbookAndTestWizard() != 0 || Json.Stringify(plain.ToGodotDictionary()) != before)
+			warnings.Add("Removal migration: a save that never named the Sketchbook or the Test Wizard was changed.");
+
+		GD.Print($"RegressionChecks: the Sketchbook and the Test Wizard removed (schema 28) - {taken} entries taken out of a sample save "
+			+ $"naming both, everything else kept; a second pass and a save naming neither unchanged; stage index {retired} and roster index "
+			+ $"{CharacterRoster.RetiredIndices.FirstOrDefault()} retired, resolving to {StageCatalog.GetByIndex(retired)?.DisplayName} and "
+			+ $"{CharacterRoster.GetByIndex(CharacterRoster.RetiredIndices.FirstOrDefault())?.Name}.");
+	}
+
+	// A schema-27 save that names the Sketchbook (stage_8), its boss and the Test Wizard everywhere a save can - 12
+	// entries (RemovedEntriesInSample) - beside entries for chapters and wizards that remain, which the step must keep.
+	private const int RemovedEntriesInSample = 12;
+	private static SaveData SaveNamingTheRemoved()
+	{
+		const string stage = SaveData.RemovedSketchbookStageId;
+		const string boss = SaveData.RemovedSketchbookBossId;
+		const string wizard = SaveData.RemovedTestWizardId;
+		var named = new SaveData { SchemaVersion = 27, TotalCurrency = 321 };
+		named.UnlockedStageIds.AddRange(new[] { "stage_9", stage });
+		named.GrandfatheredStageIds.AddRange(new[] { "stage_1", "STAGE_8" });
+		named.SeenChapterNoteIds.AddRange(new[] { "stage_0", stage });
+		named.MaxDifficultyCleared["stage_0"] = 2;
+		named.MaxDifficultyCleared[stage] = 3;
+		named.UnlockedCharacterIds.AddRange(new[] { "tituba", wizard });
+		named.FreeingsOwed.Add(wizard);
+		named.UnlockedAchievementIds.Add("survivor");
+		named.RunTelemetryHistory.Add(new RunTelemetryRecord { StageId = stage, Outcome = "Victory" });
+		named.RunTelemetryHistory.Add(new RunTelemetryRecord { StageId = "stage_0", Outcome = "Defeat" });
+		named.EndlessRecords.Add(new EndlessRecord { StageId = stage, CharacterId = "pyromancer", WardensFelled = 3 });
+		named.EndlessRecords.Add(new EndlessRecord { StageId = "stage_0", CharacterId = wizard, WardensFelled = 2 });
+		named.EndlessRecords.Add(new EndlessRecord { StageId = "stage_0", CharacterId = "pyromancer", WardensFelled = 4 });
+		named.Lifetime.TotalRuns = 9;
+		named.Lifetime.BestTimeByStage[stage] = 700f;
+		named.Lifetime.BestTimeByStage["stage_0"] = 640f;
+		named.Lifetime.BossesDefeated.AddRange(new[] { "forest_treant", boss });
+		named.Lifetime.CharactersPlayed.AddRange(new[] { "pyromancer", wizard });
+		return named;
+	}
+
+	// Every reader a run, the map and the results put a save through that takes a stage or character id - asked of a
+	// save that may name a chapter or a wizard the catalogs no longer have. A throw is reported, never let through:
+	// one would stop every check after it.
+	private static void ReadsWithoutCrashing(string label, SaveData save, List<string> warnings)
+	{
+		try
+		{
+			foreach (StageDefinition chapter in StageCatalog.All)
+			{
+				GlobalStatsManager.IsStageAvailable(save, chapter);
+				GlobalStatsManager.IsChapterRevealed(save, chapter);
+				StageCatalog.LockedHintFor(chapter, save);
+				StageRewards.ForStage(chapter.Id);
+			}
+			GlobalStatsManager.ChaptersClearedAt(save, GlobalStatsManager.PresetRankCasual);
+			GlobalStatsManager.HasFinishedCampaign(save);
+			EndlessCatalog.MostWardensFelled(save);
+			EndlessCatalog.ChaptersHeldThroughTheNight(save);
+			AchievementContext context = AchievementContext.ForSave(save);
+			foreach (AchievementDefinition deed in AchievementDefinitions.All)
+				deed.IsComplete(context);
+			foreach (EndlessRecord record in save.EndlessRecords)
+				StageCatalog.DisplayNameFor(record.StageId);
+			foreach (RunTelemetryRecord run in save.RunTelemetryHistory)
+				StageCatalog.ChapterPlace(StageCatalog.GetById(run.StageId));
+			StageEnvironmentCatalog.GetForStageIndex(StageCatalog.RetiredIndices.FirstOrDefault());
+			MusicCatalog.RunSetForStage(StageCatalog.RetiredIndices.FirstOrDefault());
+		}
+		catch (Exception e)
+		{
+			warnings.Add($"Removal ({label}): reading the save threw {e.GetType().Name}: {e.Message}");
+		}
 	}
 
 	private static void ValidateSpellEvolutionCoverage(List<string> warnings)
@@ -6783,7 +6887,7 @@ public static partial class RegressionChecks
 	//
 	// Options are flattened to plain data first, for the reason ValidateElementTags gives.
 	// The damage numbers' inks (DamageNumberInk, .ai/art-direction.md "Damage numbers wear the element"). A
-	// number is read for 0.7 s, moving and fading, over whatever it rose from - the Sketchbook's paper, a
+	// number is read for 0.7 s, moving and fading, over whatever it rose from - the Fallow Fields' pale stubble, a
 	// skeleton's bone, the Dungeon's black - so every ink must clear the body-text floor against the outline that
 	// separates it from all of them. A crit is written in its element's own ink (Eric, 2026-11-08: told apart by
 	// its "!" and size alone), and no two elements may share one, or the number stops saying which spell struck.
@@ -7236,9 +7340,7 @@ public static partial class RegressionChecks
 
 		foreach (CharacterData character in CharacterRoster.GetAll())
 		{
-			// The Test Wizard picks its loadout on the selection screen, so it has no fixed
-			// starting element to check and is exempt by design.
-			if (character == null || character.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase))
+			if (character == null)
 				continue;
 
 			if (!string.IsNullOrWhiteSpace(character.StartingPassiveId)

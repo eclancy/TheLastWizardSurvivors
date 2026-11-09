@@ -314,7 +314,8 @@ public static class UnlockCatalog
 		// (GlobalStatsManager.IsCharacterUnlocked asks this catalog), so an old save has him the moment it loads and
 		// no schema step is needed. Every gate counts a starter and every save holds him, so no gate moves.
 		Starter("archmage", UnlockKind.Character),
-		Starter("test_wizard", UnlockKind.Character),
+		// (The Test Wizard, a starter for development, was removed at Eric's request on 2026-11-09; the schema 28 step
+		// takes him out of every save.)
 
 		// FOUND IN THE WORLD (.ai/side-events.md). Each chapter's side event is a place where the
 		// dark wizard keeps something he took; winning it carries the thing out. The site id is the
@@ -647,7 +648,7 @@ public static class UnlockCatalog
 	}
 
 	/// <summary>
-	/// Every wizard, excluding the development sandbox entry and anyone outside the campaign gate (a
+	/// Every wizard, excluding anyone outside the campaign gate (a
 	/// character who is not a wizard - <see cref="UnlockDefinition.OutsideCampaignGate"/>). Each
 	/// wizard-gated chapter counts the ones whose rescue comes before it
 	/// (<see cref="GlobalStatsManager.GateWizardIds"/>). The save migrations read frozen copies, never
@@ -656,11 +657,9 @@ public static class UnlockCatalog
 	public static IEnumerable<string> AllWizardIds =>
 		AllCharacterIds.Where(id => Get(id, UnlockKind.Character)?.OutsideCampaignGate != true);
 
-	/// <summary>Every playable character but the sandbox, wizard or not - what "own everything" means to a tool.</summary>
+	/// <summary>Every playable character, wizard or not - what "own everything" means to a tool.</summary>
 	public static IEnumerable<string> AllCharacterIds =>
-		Definitions.Where(d => d.Kind == UnlockKind.Character
-			&& !d.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase))
-			.Select(d => d.Id);
+		Definitions.Where(d => d.Kind == UnlockKind.Character).Select(d => d.Id);
 
 	/// <summary>True for a god of the far shore (<see cref="UnlockDefinition.IsGod"/>): the one place that is asked.</summary>
 	public static bool IsGod(string characterId) => GetCharacter(characterId)?.IsGod == true;

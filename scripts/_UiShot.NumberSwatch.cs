@@ -17,9 +17,10 @@ using TheOneHeMissed.scripts;
 //   rows 3 and 4  the same, every hit a crit (no crit for the turned blow, which never has one)
 //
 // Each number rises from the body it struck, so it is read over a body and the chapter's ground both.
-// Prints SWATCH lines naming what stood where. Run it on a dark, a bright and the paper chapter:
-//   "$GODOT_BIN" --path . scenes/_UiShot.tscn -- --scene=res://scenes/node_2d_game.tscn --stage=8
-//       --number-swatch --shot=swatch-sketchbook --resolution 1280x720
+// Prints SWATCH lines naming what stood where. Run it on a dark and a bright chapter (the palest ground is the
+// Fallow Fields' since the Sketchbook's paper went, 2026-11-09):
+//   "$GODOT_BIN" --path . scenes/_UiShot.tscn -- --scene=res://scenes/node_2d_game.tscn --stage=9
+//       --number-swatch --shot=swatch-fields --resolution 1280x720
 public partial class _UiShot
 {
 	private bool numberSwatch;

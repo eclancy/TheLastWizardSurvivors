@@ -12,7 +12,7 @@ using TheOneHeMissed.scripts;
 // no tail - the cue in the world says where it came from, and does it better.
 //
 // WHY A PLATE AT ALL. Outline-only text was tried on the onboarding tip and Eric found it unreadable
-// on the Fallow Fields' pale ground; the Sketchbook's paper is paler still. The plate is what holds
+// on the Fallow Fields' pale ground. The plate is what holds
 // the contrast floor (.ai/level-up-screen.md 4a, 4.5:1 for anything read as text) on every ground:
 // the ink is measured against the plate, and the plate is 86% occlusion over whatever is under it.
 // The outline stays too, for the glyph edges.

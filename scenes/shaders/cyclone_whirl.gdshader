@@ -106,7 +106,7 @@ bool ring(vec2 p, float pr, float pa, float r_ring, float b, int n, float a0, fl
 			float cut = b * 0.86;
 			if (back >= cut) {
 				// Outlined in the ramp's edge, then white-hot: Wind is cold, and on a pale floor (the
-				// Sketchbook's paper, the Frozen Waste's snow) a white rim alone is the floor's own colour.
+				// Frozen Waste's snow) a white rim alone is the floor's own colour.
 				// The outline is the hit circle's own boundary, so it never draws past what is struck.
 				float rim = b - d;
 				float s = rim < GRID ? 3.0 : (rim < GRID * 2.0 ? 0.0 : (rim < GRID * 3.0 ? 1.0 : 2.0));

@@ -64,11 +64,8 @@ public static class FarSky
 	/// <summary>Which night it is: the save's run count. Turns once every run ends.</summary>
 	public static int Night(SaveData save) => Math.Max(0, save?.Lifetime?.TotalRuns ?? 0);
 
-	/// <summary>The wizard's own starting spell, never a parent for him (the Test Wizard has none to protect).</summary>
-	public static string OwnSpellOf(CharacterData character) =>
-		character == null || character.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase)
-			? null
-			: character.StartingSpellResource?.Id;
+	/// <summary>The wizard's own starting spell, never a parent for him.</summary>
+	public static string OwnSpellOf(CharacterData character) => character?.StartingSpellResource?.Id;
 
 	/// <summary>
 	/// Whether the sky may name <paramref name="recipe"/> for this wizard on this save, and if not, why: the rules of

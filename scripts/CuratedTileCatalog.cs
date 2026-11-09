@@ -57,10 +57,10 @@ public sealed class CuratedTileCatalog
 	/// Loads several manifests into one catalog, later files adding to earlier ones.
 	/// </summary>
 	/// <remarks>
-	/// The project has one bought tile pack and, since the Sketchbook, one manifest of its own.
-	/// Merging rather than editing the pack's file is deliberate: a manifest is an inventory of
-	/// what somebody else shipped, and appending our tiles to it is how an asset update quietly
-	/// deletes them.
+	/// One manifest today (assets/bonelight/tiles/tiles.json); the Sketchbook's paper had one of its
+	/// own until the chapter was removed on 2026-11-09. Merging rather than editing one file is
+	/// deliberate: a manifest is an inventory of what one generator ships, and appending another's
+	/// tiles to it is how a re-run quietly deletes them.
 	/// </remarks>
 	public static CuratedTileCatalog LoadMany(params string[] metadataResPaths)
 	{

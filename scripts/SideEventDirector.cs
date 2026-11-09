@@ -28,8 +28,8 @@ public sealed class ChapterEvents
 // The table below is the whole mapping. Each entry is a chapter, the events that live there - each with
 // the Discovery site it pays out - and the wayfinder that reveals them; UnlockCatalog says what a site
 // gives. A chapter that is not listed has no event - and so no wayfinder, since there would be nothing
-// for it to point at - which is true of three of the fourteen today: the Sketchbook, which holds nothing,
-// and the Court and the Throne, whose null lines are already here waiting.
+// for it to point at - which is true of two of the road's thirteen today: the Court and the Throne, whose
+// null lines are already here waiting. (The Sketchbook, which held nothing, was removed on 2026-11-09.)
 //
 // TWO EVENTS IN ONE CHAPTER (P2, .ai/chapter-wizards.md 6.3). Five chapter wizards are held in chapters
 // that already had an event, so a chapter's line is a LIST: the first is the chapter's original event,

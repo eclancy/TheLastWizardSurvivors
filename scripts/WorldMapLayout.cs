@@ -19,8 +19,8 @@ public sealed class WorldMapStop
 	/// <summary>The fog's radii over a locked place; zero for a stop that is never fogged.</summary>
 	public Vector2 Shroud { get; init; }
 	public string ShroudImage { get; init; } = string.Empty;
-	/// <summary>Whether the stand point is on the world picture. Every stop's is: the Sketchbook, which
-	/// once stood off the world's edge, is on a page of its own now (<see cref="WorldMapLayout.PageImage"/>).</summary>
+	/// <summary>Whether the stand point is on the world picture. Every stop's is (the Sketchbook once stood
+	/// off the world's edge, then on a page of its own; the chapter was removed on 2026-11-09).</summary>
 	public bool OnMap { get; init; }
 	/// <summary>Distance along the route to the stand point.</summary>
 	public float ArcLength { get; set; }
@@ -42,18 +42,6 @@ public sealed class WorldMapLayout
 	/// <summary>Cumulative arc length at each route sample.</summary>
 	public float[] Arc { get; private set; } = Array.Empty<float>();
 	public List<WorldMapStop> Stops { get; } = new();
-
-	// THE SKETCHBOOK'S PAGE, a sheet of its own (.ai/world-map.md, section 4): not on the world and not
-	// on the road. Everything below is in the page image's own pixels.
-	public string PageImage { get; private set; } = string.Empty;
-	/// <summary>The page image's size.</summary>
-	public Vector2 PageSize { get; private set; }
-	/// <summary>The sheet of paper inside the image (the rest is its shadow and the tape).</summary>
-	public Rect2 PageRect { get; private set; }
-	/// <summary>Where the wizard's feet are on the page, at the end of its pencil road.</summary>
-	public Vector2 PageStand { get; private set; }
-	/// <summary>The kids' drawings laid on it from their own files, and where.</summary>
-	public List<(string Texture, Vector2 At)> PageDrawings { get; } = new();
 
 	// THE LIGHT GOING HOME (.ai/second-half.md 6.2, piece F5): what the map lays over the world once the Throne is
 	// taken back - his tower unlit, and the path the warm motes stream east along off its crown. Art pixels.
@@ -122,22 +110,6 @@ public sealed class WorldMapLayout
 					OnMap = s.GetProperty("on_map").GetBoolean(),
 					ArcLength = index >= 0 && index < layout.Arc.Length ? layout.Arc[index] : 0f,
 				});
-			}
-
-			JsonElement page = root.GetProperty("page");
-			layout.PageImage = page.GetProperty("image").GetString() ?? string.Empty;
-			JsonElement pageSize = page.GetProperty("size");
-			layout.PageSize = new Vector2(pageSize[0].GetSingle(), pageSize[1].GetSingle());
-			JsonElement pageStand = page.GetProperty("stand");
-			layout.PageStand = new Vector2(pageStand[0].GetSingle(), pageStand[1].GetSingle());
-			JsonElement rect = page.GetProperty("rect");
-			layout.PageRect = new Rect2(rect[0].GetSingle(), rect[1].GetSingle(),
-				rect[2].GetSingle() - rect[0].GetSingle(), rect[3].GetSingle() - rect[1].GetSingle());
-			foreach (JsonElement d in page.GetProperty("drawings").EnumerateArray())
-			{
-				JsonElement at = d.GetProperty("at");
-				layout.PageDrawings.Add((d.GetProperty("texture").GetString() ?? string.Empty,
-					new Vector2(at[0].GetSingle(), at[1].GetSingle())));
 			}
 
 			// Optional, so a manifest from before the far shore still loads (it shows the tower lit, always).

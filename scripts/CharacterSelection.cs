@@ -10,65 +10,12 @@ using TheOneHeMissed.scripts;
 // passive so the player can make an informed pick before a run.
 public partial class CharacterSelection : Control
 {
-	private static readonly (string Id, string Path)[] TestWizardSpellOptions = new[]
-	{
-		("magic_missile", "res://SpellData.tres"),
-		("arcane_explosion", "res://SpellData_ArcaneExplosion.tres"),
-		("spiritual_weapon", "res://SpellData_SpiritualWeapon.tres"),
-		("fireball", "res://SpellData_Fireball.tres"),
-		("cinderbreath", "res://SpellData_Cinderbreath.tres"),
-		("mirefoot", "res://SpellData_Mirefoot.tres"),
-		("kindled_ward", "res://SpellData_KindledWard.tres"),
-		("stormguard", "res://SpellData_Stormguard.tres"),
-		("gloam_veil", "res://SpellData_GloamVeil.tres"),
-		("gravewell", "res://SpellData_Gravewell.tres"),
-		("hollow_star", "res://SpellData_HollowStar.tres"),
-		("starfall", "res://SpellData_Starfall.tres"),
-		("familiar", "res://SpellData_Familiar.tres"),
-		("stormsweep", "res://SpellData_Stormsweep.tres"),
-		("sleet_runes", "res://SpellData_SleetRunes.tres"),
-		("folio", "res://SpellData_Folio.tres"),
-		("iron_palisade", "res://SpellData_IronPalisade.tres"),
-		("contagion", "res://SpellData_Contagion.tres"),
-		("bramble_seed", "res://SpellData_BrambleSeed.tres"),
-		("frost_shard", "res://SpellData_FrostShard.tres"),
-		("riptide", "res://SpellData_Riptide.tres"),
-		// shadow_bolt left this list on 2026-11-07: a Conjunction cannot open a run (no frozen parents).
-		("thorn_vine", "res://SpellData_ThornVine.tres"),
-		("gale_blade", "res://SpellData_GaleBlade.tres"),
-		("solar_flare", "res://SpellData_SolarFlare.tres"),
-		("molten_shard", "res://SpellData_MoltenShard.tres"),
-		("chain_lightning", "res://SpellData_ChainLightning.tres"),
-		("toxic_spore_burst", "res://SpellData_ToxicSporeBurst.tres"),
-		("obsidian_spike", "res://SpellData_ObsidianSpike.tres"),
-		("cyclone_slash", "res://SpellData_CycloneSlash.tres"),
-		("void_lance", "res://SpellData_VoidLance.tres"),
-		("glacial_spike", "res://SpellData_GlacialSpike.tres"),
-		("black_tentacles", "res://SpellData_BlackTentacles.tres"),
-		("cone_of_cold", "res://SpellData_ConeOfCold.tres"),
-		("scorching_ray", "res://SpellData_ScorchingRay.tres"),
-		("meteor_swarm", "res://SpellData_MeteorSwarm.tres"),
-		("hunters_draw", "res://SpellData_HuntersDraw.tres"),
-	};
+	// (The Test Wizard's starting-spell picker lived here until he was removed at Eric's request on 2026-11-09;
+	// a tool scene that wants a run to open on any spell says --spell / --start-spell, Global.ToolStartingSpellId.)
 
-	private static readonly (string Id, string Name)[] TestWizardPassiveOptions = new[]
-	{
-		("aegis_ward", "Aegis Ward"),
-		("thornmail_barrier", "Thornmail Barrier"),
-		("frozen_bulwark", "Frozen Bulwark"),
-		("stormguard_aura", "Stormguard Aura"),
-		("venom_cloak", "Venom Cloak"),
-		("guardian_vines", "Guardian Vines"),
-		("tidal_barrier", "Tidal Barrier"),
-		("stone_bulwark", "Stone Bulwark"),
-		("blur", "Blur"),
-		("fortunes_favor", "Fortune's Favor"),
-		("haste", "Haste"),
-	};
-
+	// By ROSTER INDEX (CharacterRoster.GetAllByIndex): entry i is the wizard Global.SelectedCharacterIdx = i plays,
+	// null at a retired index (0, the Test Wizard's), which is never a card.
 	private List<CharacterData> characters = new List<CharacterData>();
-	private readonly List<string> testWizardSpellIds = new List<string>();
-	private OptionButton testWizardSpellPicker = null!;
 
 	// The PC layout (landscape, not ResponsiveLayout.IsNarrow): a roster of compact portrait cards on
 	// the left and a detail pane on the right that follows whatever card is hovered or focused. On a
@@ -86,7 +33,6 @@ public partial class CharacterSelection : Control
 
 	private readonly List<CardState> cardStates = new();
 	private VBoxContainer detailBox;
-	private Control testWizardPickerHost;
 	private int detailIdx = -1;
 	private const float CompactCardWidth = 160f;
 	// Three rows of compact cards in the roster's height on a 1280x720 canvas (2026-10-28: Laelaps made
@@ -103,11 +49,10 @@ public partial class CharacterSelection : Control
 	private const float BackWidth = 124f;
 	private const float RosterTop = 80f;
 	private const float RosterFraction = 0.6f;
-	private string defaultTestWizardSpellId = "magic_missile";
 
 	public override void _Ready()
 	{
-		characters = CharacterRoster.GetAll();
+		characters = CharacterRoster.GetAllByIndex();
 		var grid = GetNode<GridContainer>("CardScroll/CardGrid");
 		wideLayout = !ResponsiveLayout.IsNarrow(this);
 
@@ -153,6 +98,14 @@ public partial class CharacterSelection : Control
 		for (int i = 0; i < characters.Count; i++)
 		{
 			var character = characters[i];
+			// A retired roster index: no wizard, no card, never selectable. Its state is kept so cardStates stays
+			// indexed by roster index.
+			if (character == null)
+			{
+				cardStates.Add(CardState.Secret);
+				hiddenUntilFreed.Add(i);
+				continue;
+			}
 			// UnlockCatalog plus the save is the whole answer now. CharacterData.IsUnlocked is
 			// deliberately NOT consulted: it is an [Export] that defaults to true, so honouring it
 			// would mean every wizard added from here on ships unlocked unless someone remembered to
@@ -190,9 +143,9 @@ public partial class CharacterSelection : Control
 			grid.AddChild(wideLayout ? BuildCompactCard(characters[i], i, cardStates[i]) : BuildCard(characters[i], i, cardStates[i]));
 		}
 
-		// Global.SelectedCharacterIdx starts at 0, which is the Test Wizard, so a fresh launch would open
-		// the detail pane on a wizard who has no card. It falls to the first playable card in the screen's
-		// order - The Archmage on every save, a starter drawn first.
+		// Global.SelectedCharacterIdx may name a wizard with no card here (one still hidden, or a retired index),
+		// and the detail pane would open on him. It falls to the first playable card in the screen's order -
+		// The Archmage on every save, a starter drawn first.
 		if (!IsSelectable(Global.SelectedCharacterIdx))
 			Global.SelectedCharacterIdx = FirstSelectableIndex();
 
@@ -217,78 +170,6 @@ public partial class CharacterSelection : Control
 		// Clear of the phone's rounded corners and camera hole; nothing on desktop (SafeArea).
 		SafeArea.Apply(this);
 		MenuNavigator.Attach(this);
-	}
-
-	public override void _ExitTree()
-	{
-		// The test wizard's picker is lifted out of the detail pane, not freed, while another wizard
-		// is shown there (ShowDetail), so on leaving the screen with someone else in the pane it is
-		// in no tree and nothing frees it - and an OptionButton owns a popup window, so the leak at
-		// exit was a whole viewport, its render target and its text.
-		if (testWizardPickerHost != null && IsInstanceValid(testWizardPickerHost) && !testWizardPickerHost.IsInsideTree())
-			testWizardPickerHost.Free();
-		testWizardPickerHost = null;
-	}
-
-	private void PopulateTestWizardSpellOptions()
-	{
-		if (testWizardSpellPicker == null)
-			return;
-
-		testWizardSpellIds.Clear();
-		testWizardSpellPicker.Clear();
-
-		foreach (var (id, path) in TestWizardSpellOptions)
-		{
-			var data = ResourceLoader.Load<SpellData>(path);
-			if (data == null)
-				continue;
-
-			// A spell taken in a form (SpellData.Variants) is listed once per form, so the Test Wizard can
-			// open on any of them: the selection names the form ("spell:form", SpellVariants.Selection).
-			if (data.HasVariants)
-			{
-				foreach (SpellVariant variant in data.Variants)
-				{
-					if (variant == null)
-						continue;
-					testWizardSpellPicker.AddItem(string.IsNullOrWhiteSpace(variant.DisplayName) ? $"{data.Name} ({variant.Id})" : variant.DisplayName);
-					testWizardSpellIds.Add(SpellVariants.Selection(id, variant.Id));
-				}
-				continue;
-			}
-
-			testWizardSpellPicker.AddItem(data.Name);
-			testWizardSpellIds.Add(id);
-		}
-
-		foreach (var (id, name) in TestWizardPassiveOptions)
-		{
-			testWizardSpellPicker.AddItem($"{name} (Passive)");
-			testWizardSpellIds.Add(id);
-		}
-
-		if (testWizardSpellIds.Count == 0)
-			return;
-
-		string selectedId = string.IsNullOrWhiteSpace(Global.TestWizardStartingSpellId)
-			? defaultTestWizardSpellId
-			: Global.TestWizardStartingSpellId;
-
-		int selectedIndex = testWizardSpellIds.FindIndex(id => id.Equals(selectedId, StringComparison.OrdinalIgnoreCase));
-		if (selectedIndex < 0)
-			selectedIndex = 0;
-
-		testWizardSpellPicker.Select(selectedIndex);
-		Global.TestWizardStartingSpellId = testWizardSpellIds[selectedIndex];
-	}
-
-	private void OnTestWizardSpellSelected(long index)
-	{
-		if (index < 0 || index >= testWizardSpellIds.Count)
-			return;
-
-		Global.TestWizardStartingSpellId = testWizardSpellIds[(int)index];
 	}
 
 	private void ApplyMenuSkin()
@@ -496,7 +377,7 @@ public partial class CharacterSelection : Control
 		// The wizard's final form, named where he is chosen (Eric's playtest, 2026-11-01: "make it clearer
 		// that apotheosis is an option"), in the ember register the strip's button and the ascension
 		// browser's entry wear. The name only: what the form does stays sealed until a run first offers
-		// it (.ai/level-up-screen.md 4e). None for a wizard without one - the Test Wizard.
+		// it (.ai/level-up-screen.md 4e). None for a wizard without one.
 		// Not before the Ascension is learned (Teachings.IsShown, Eric's Q8 - one locked thing on show at a time):
 		// a final form named to a save that has not met the Ascension it needs is two systems at once.
 		ApotheosisDefinition apotheosis = ApotheosisCatalog.ForCharacter(character.Id);
@@ -682,17 +563,8 @@ public partial class CharacterSelection : Control
 		}
 		text.AddChild(BuildFacts(character, state));
 
-		Control testWizardPicker = null;
-		if (unlocked && character.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase))
-		{
-			testWizardPickerHost ??= BuildTestWizardPicker();
-			text.AddChild(testWizardPickerHost);
-			testWizardPicker = testWizardPickerHost;
-		}
-
-		// The test wizard's spell dropdown is the one thing on a card that must keep its own input;
-		// everything else lets the click fall through to the overlay button underneath.
-		BonelightSkin.MakeSubtreeClickThrough(margin, testWizardPicker);
+		// Everything on the card lets the click fall through to the overlay button underneath.
+		BonelightSkin.MakeSubtreeClickThrough(margin, null);
 		return card;
 	}
 
@@ -797,17 +669,13 @@ public partial class CharacterSelection : Control
 	// rebuilds cannot leave one wizard's line behind under the next.
 	private void ShowDetail(int idx)
 	{
-		if (detailBox == null || idx < 0 || idx >= characters.Count || idx == detailIdx)
+		if (detailBox == null || idx < 0 || idx >= characters.Count || characters[idx] == null || idx == detailIdx)
 			return;
 		detailIdx = idx;
 		CharacterData character = characters[idx];
 		CardState state = idx < cardStates.Count ? cardStates[idx] : CardState.Secret;
 		bool unlocked = state == CardState.Unlocked;
 
-		// The test wizard's picker is created once and only moved in and out, so a hover never
-		// resets the spell the player picked.
-		if (testWizardPickerHost != null && testWizardPickerHost.GetParent() == detailBox)
-			detailBox.RemoveChild(testWizardPickerHost);
 		foreach (Node child in detailBox.GetChildren())
 			child.QueueFree();
 
@@ -853,12 +721,6 @@ public partial class CharacterSelection : Control
 
 		detailBox.AddChild(new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill });
 
-		if (unlocked && character.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase))
-		{
-			testWizardPickerHost ??= BuildTestWizardPicker();
-			detailBox.AddChild(testWizardPickerHost);
-		}
-
 		if (unlocked)
 		{
 			var choose = new Button
@@ -874,20 +736,6 @@ public partial class CharacterSelection : Control
 			choose.Pressed += () => OnCharButtonPressed(capturedIdx);
 			detailBox.AddChild(choose);
 		}
-	}
-
-	private Control BuildTestWizardPicker()
-	{
-		var host = new VBoxContainer();
-		host.AddThemeConstantOverride("separation", 6);
-		var pickerLabel = new Label { Text = "Start Spell", HorizontalAlignment = HorizontalAlignment.Center };
-		ResponsiveLayout.SetFont(pickerLabel, ResponsiveLayout.TextRole.Label);
-		host.AddChild(pickerLabel);
-		testWizardSpellPicker = new OptionButton { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-		PopulateTestWizardSpellOptions();
-		testWizardSpellPicker.ItemSelected += OnTestWizardSpellSelected;
-		host.AddChild(testWizardSpellPicker);
-		return host;
 	}
 
 	private static Control BuildPortraitDisplay(CharacterData character, CardState state, int scale = 3, int box = 0)
@@ -921,14 +769,8 @@ public partial class CharacterSelection : Control
 		};
 	}
 
-	// The Test Wizard is a developer's tool, not a wizard (Eric, 2026-11-01: "Remove the test wizard from
-	// character selection"). He stays first in CharacterRoster, so every tool that asks for --character=0
-	// still gets him; only this screen leaves him out.
-	private static bool IsHiddenFromSelection(CharacterData character) =>
-		string.Equals(character?.Id, "test_wizard", System.StringComparison.OrdinalIgnoreCase);
-
 	// Roster indices held off the screen until they are free (the dark wizard) or revealed (a god whose seat is not
-	// open): never selectable either.
+	// open), and the retired ones that name nobody: never selectable either.
 	private readonly HashSet<int> hiddenUntilFreed = new();
 
 	/// <summary>
@@ -943,7 +785,7 @@ public partial class CharacterSelection : Control
 	}
 
 	private bool IsSelectable(int idx) =>
-		idx >= 0 && idx < characters.Count && !IsHiddenFromSelection(characters[idx]) && !hiddenUntilFreed.Contains(idx);
+		idx >= 0 && idx < characters.Count && characters[idx] != null && !hiddenUntilFreed.Contains(idx);
 
 	// The first wizard on the screen the save can play; the first on the screen at all if it can play none. In the
 	// screen's order (CharacterRoster.SelectionOrder), so a fresh launch opens on the card drawn first.
@@ -965,7 +807,7 @@ public partial class CharacterSelection : Control
 	private void OnCharButtonPressed(int idx)
 	{
 		Global.SelectedCharacterIdx = idx;
-		string chosen = idx >= 0 && idx < characters.Count ? characters[idx].Name : string.Empty;
+		string chosen = idx >= 0 && idx < characters.Count ? characters[idx]?.Name ?? string.Empty : string.Empty;
 		// To the world map (.ai/world-map.md), where the chosen wizard walks to a chapter. The stage
 		// list (StageSelection) is still in the tree, and is what the map falls back to if its art
 		// is missing.

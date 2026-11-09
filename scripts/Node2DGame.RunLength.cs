@@ -25,7 +25,7 @@ using TheOneHeMissed.scripts;
 //      or the Throne's 0 never touches it; and on the road, where the scale is exactly 1, the curve is never written.
 //
 // What does NOT follow, and is left so on purpose: the carriers that come a fixed number of times a run (elites,
-// Wardens, chests, the ghost) pay the same count across the longer run, so in levels each is worth 3/4 of what it is
+// Wardens, chests) pay the same count across the longer run, so in levels each is worth 3/4 of what it is
 // on the road - a few percent of a run's XP; the Arcane Energy a minute pays the four extra minutes; and the
 // achievements that name real minutes (Survivor's ten, Untouchable's three) mean the same minutes everywhere.
 public partial class Node2DGame

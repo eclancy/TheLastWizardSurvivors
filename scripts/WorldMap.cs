@@ -16,30 +16,18 @@ using TheOneHeMissed.scripts;
 /// (.ai/world-map.md, section 2). A locked stop can never be started: <see cref="TryStart"/> asks the
 /// save again at the moment of starting.
 ///
-/// TWO SHEETS. The Sketchbook is not on the road (Eric, 2026-10-30: "sketchbook level should not be
-/// attached to the map ... it shows up as its own separate map that doesn't mix in with the flow of the
-/// actual world map"). Once the campaign is finished a "Sketchbook" button joins the top bar; it turns
-/// the screen to the page - <see cref="WorldMapPage"/> in the map's place, the same card, no compass and
-/// nothing to step to - and Back turns it back to the world where he was standing. Each turn is a reload
-/// of this scene with <see cref="OnPage"/> set, so a sheet is always built whole, the same way.
+/// (Until 2026-11-09 the map had a second sheet, the Sketchbook's page, turned to from a button in the top
+/// bar once the campaign was finished. The chapter was removed at Eric's request; git history holds it.)
 /// </remarks>
 public partial class WorldMap : Control
 {
 	/// <summary>
-	/// The stop on the WORLD a run was last started from, for the session: returning puts him back there.
-	/// Also where he was standing when he turned to the page, so turning back finds him there.
+	/// The stop on the world a run was last started from, for the session: returning puts him back there.
 	/// </summary>
 	public static string LastStopId { get; set; }
 
 	/// <summary>Where the harness wants him to open (_UiShot --map-at). Read once, then cleared.</summary>
 	public static string StartOverride { get; set; }
-
-	/// <summary>
-	/// The sheet the map opens on, for the session: the Sketchbook's page rather than the world. Set by
-	/// turning to the page and cleared by turning back, so a run started from the page returns to it.
-	/// Honoured only while the page is open to the save (<see cref="GlobalStatsManager.IsStageAvailable"/>).
-	/// </summary>
-	public static bool OnPage { get; set; }
 
 	// The world's stops shown at its last opening this session, for the reveal of a new one. Null on a
 	// cold start: then nothing is animated, the map simply opens as far as it reaches.
@@ -69,17 +57,11 @@ public partial class WorldMap : Control
 	private readonly List<Stop> stops = new();
 	private WorldMapLayout layout;
 	private WorldMapView view;
-	private WorldMapPage pageView;
 	private WorldMapCompass compass;
 	private Button backButton;
 	private Button startButton;
-	// The world's way to the page: in the top bar once the page is open to the save, never before.
-	private Button pageButton;
 	// The journal: the quest log and the chapter notes (JournalScreen, .ai/quests-and-notes.md).
 	private Button journalButton;
-	// This screen's sheet, and whether the page is open to the save at all.
-	private bool onPage;
-	private bool pageOpen;
 	private Button leftArrow;
 	private Button rightArrow;
 	// TEMPORARY, for Eric's testing - remove before the game ships for good (Eric, 2026-11-01: "Add a
@@ -115,13 +97,6 @@ public partial class WorldMap : Control
 		save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
 		character = CharacterRoster.GetByIndex(Global.SelectedCharacterIdx);
 		narrow = ResponsiveLayout.IsNarrow(this);
-		// A save that finished the campaign before the page was held back for it has it written open here,
-		// quietly (the run that finishes it now announces it), so it stays open when the castle's chapters
-		// make the campaign longer (GlobalStatsManager.RecordFinishedCampaign). Saved with the next save.
-		GlobalStatsManager.RecordFinishedCampaign(save);
-		pageOpen = PageStages().Any(s => GlobalStatsManager.IsStageAvailable(save, s));
-		onPage = OnPage && pageOpen;
-		OnPage = onPage;
 		BuildStops();
 
 		var ground = new ColorRect { Name = "Ground", Color = new Color("#05070C"), MouseFilter = MouseFilterEnum.Ignore };
@@ -133,44 +108,34 @@ public partial class WorldMap : Control
 		// a world that has been told what the far shore is. The stops it showed before the light went home are its
 		// last visit's, so the far shore's first stop is drawn out of the dark on the way back (the reveal), as it is
 		// after the run that wins the Throne. Nothing else of the screen is built: the reel's scene replaces it.
-		if (!onPage && LightGoesOn.IsOwed(save))
+		if (LightGoesOn.IsOwed(save))
 		{
 			LastShownStops = new HashSet<string>(stops.Where(s => s.IsBossRush || !StageCatalog.IsOnFarShore(s.Stage)).Select(s => s.Id));
 			CallDeferred(nameof(PlayLightGoesOn));
 			return;
 		}
 
-		if (onPage)
-			BuildPageView();
-		else
-			BuildMapView();
+		BuildMapView();
 		BuildTopBar();
 		BuildCard();
 
 		selected = ResolveStartIndex();
-		if (onPage)
-		{
-			pageView.Setup(layout, character);
-		}
-		else
-		{
-			// The stops shown last time the world was open this session: a stop new since then is
-			// revealed with the dark drawing back to it (WorldMapView), once.
-			float revealFrom = -1f;
-			if (LastShownStops != null && stops.Any(s => !LastShownStops.Contains(s.Id)))
-				revealFrom = stops.Where(s => !s.OffRoad && LastShownStops.Contains(s.Id)).Select(s => s.Layout.ArcLength).DefaultIfEmpty(0f).Max();
-			LastShownStops = new HashSet<string>(stops.Select(s => s.Id));
-			view.Setup(layout, stops.Select(s => new WorldMapView.ViewStop { Layout = s.Layout, Look = s.Look, OffRoad = s.OffRoad }).ToList(),
-				character, selected, revealFrom);
-			// Once the Throne is taken back his tower's dark light is out and the light streams east off it over the
-			// dark sea (.ai/second-half.md 6.2) - on every visit after, not only the first.
-			if (GlobalStatsManager.HasTakenBackTheThrone(save))
-				view.ShowLightGoneHome();
-			compass.SetMarks(stops.Select(MarkFor));
-			// A fresh save has one place shown and nowhere to step to.
-			leftArrow.Visible = rightArrow.Visible = stops.Count > 1;
-			compass.SetState(selected, selected);
-		}
+		// The stops shown last time the world was open this session: a stop new since then is
+		// revealed with the dark drawing back to it (WorldMapView), once.
+		float revealFrom = -1f;
+		if (LastShownStops != null && stops.Any(s => !LastShownStops.Contains(s.Id)))
+			revealFrom = stops.Where(s => !s.OffRoad && LastShownStops.Contains(s.Id)).Select(s => s.Layout.ArcLength).DefaultIfEmpty(0f).Max();
+		LastShownStops = new HashSet<string>(stops.Select(s => s.Id));
+		view.Setup(layout, stops.Select(s => new WorldMapView.ViewStop { Layout = s.Layout, Look = s.Look, OffRoad = s.OffRoad }).ToList(),
+			character, selected, revealFrom);
+		// Once the Throne is taken back his tower's dark light is out and the light streams east off it over the
+		// dark sea (.ai/second-half.md 6.2) - on every visit after, not only the first.
+		if (GlobalStatsManager.HasTakenBackTheThrone(save))
+			view.ShowLightGoneHome();
+		compass.SetMarks(stops.Select(MarkFor));
+		// A fresh save has one place shown and nowhere to step to.
+		leftArrow.Visible = rightArrow.Visible = stops.Count > 1;
+		compass.SetState(selected, selected);
 		RebuildCard();
 
 		heldAtOpen = AnyDirectionHeld();
@@ -181,8 +146,7 @@ public partial class WorldMap : Control
 	}
 
 	// The Journal button: the quest log and the notes over the map (Eric, 2026-10-31: "User should be able
-	// to track specific quests"). In the top bar, by Back, on the world and on the page alike; the selection
-	// comes back to it when the journal closes.
+	// to track specific quests"). In the top bar, by Back; the selection comes back to it when the journal closes.
 	private Button BuildJournalButton()
 	{
 		journalButton = new Button
@@ -215,28 +179,8 @@ public partial class WorldMap : Control
 
 	// --- the stops -------------------------------------------------------------------------------
 
-	/// <summary>The chapters on the page rather than the world: held until the campaign is finished.</summary>
-	private static IEnumerable<StageDefinition> PageStages() =>
-		StageCatalog.All.Where(s => s.AfterCampaign && s.IsPlayable);
-
 	private void BuildStops()
 	{
-		if (onPage)
-		{
-			// One place on the page, and he is standing at it: nothing to step to, nothing on a road.
-			foreach (StageDefinition stage in PageStages().Where(s => GlobalStatsManager.IsStageAvailable(save, s)))
-			{
-				stops.Add(new Stop
-				{
-					Layout = new WorldMapStop { Id = stage.Id, OnMap = false },
-					Stage = stage,
-					Look = WorldMapView.StopLook.Open,
-					Cleared = IsCleared(stage),
-				});
-			}
-			return;
-		}
-
 		foreach (var (stage, rush) in RoadOrder(save != null && BossRushCatalog.IsOpen(save)))
 		{
 			// The map unrolls as the campaign is won (Eric, 2026-10-31: "you should only unlock the map as
@@ -278,8 +222,7 @@ public partial class WorldMap : Control
 	/// Boss Rush, whose seat is on the gate chapter's summit (<paramref name="withRush"/>: only once it is a
 	/// stop); the rest of the campaign, the castle across the water; the far shore past his rock, in its own
 	/// order (.ai/second-half.md 7: "+ [far shore] before [outside]"); and last any chapter outside both
-	/// orders that is open from the start (none today - one held until the campaign is finished is on
-	/// the page instead). Read by <see cref="BuildStops"/> and by RegressionChecks.ValidateWorldMap, which
+	/// orders (none today). Read by <see cref="BuildStops"/> and by RegressionChecks.ValidateWorldMap, which
 	/// holds tools/art/world_map.py's PLACES to it - otherwise the road would run back from the tower to
 	/// the summit. A campaign with no gate chapter puts the rush after its last chapter, as before. The far
 	/// shore's places are drawn across the dark sea east of his rock (piece F5); none is a stop until
@@ -303,7 +246,7 @@ public partial class WorldMap : Control
 			order.Add((BossRushCatalog.Arena, true));
 		foreach (StageDefinition stage in StageCatalog.FarShore)
 			order.Add((stage, false));
-		foreach (StageDefinition stage in StageCatalog.All.Where(s => !StageCatalog.IsInEitherOrder(s) && !s.AfterCampaign))
+		foreach (StageDefinition stage in StageCatalog.All.Where(s => !StageCatalog.IsInEitherOrder(s)))
 			order.Add((stage, false));
 		return order;
 	}
@@ -343,8 +286,6 @@ public partial class WorldMap : Control
 	{
 		string want = StartOverride ?? LastStopId;
 		StartOverride = null;
-		if (onPage)
-			return 0;
 		if (string.IsNullOrEmpty(want))
 			want = save?.RunTelemetryHistory?.FirstOrDefault()?.StageId;
 		int found = stops.FindIndex(s => s.Id.Equals(want ?? string.Empty, StringComparison.OrdinalIgnoreCase));
@@ -411,26 +352,6 @@ public partial class WorldMap : Control
 		view.AddChild(replayIntroButton);
 	}
 
-	// The page in the map's place: the same rectangle, so the card sits where it does on the world.
-	private void BuildPageView()
-	{
-		pageView = new WorldMapPage { Name = "PageView" };
-		pageView.SetAnchorsPreset(LayoutPreset.FullRect);
-		if (narrow)
-		{
-			pageView.OffsetTop = TopBarHeight() + 16f;
-			pageView.OffsetBottom = -(NarrowCardHeight + 24f);
-		}
-		else
-		{
-			pageView.OffsetLeft = 16f;
-			pageView.OffsetTop = TopBarHeight() + 20f;
-			pageView.OffsetRight = -(CardWidth + 32f);
-			pageView.OffsetBottom = -16f;
-		}
-		AddChild(pageView);
-	}
-
 	private Button MakeArrow(string side, int direction)
 	{
 		var arrow = new Button
@@ -483,8 +404,7 @@ public partial class WorldMap : Control
 		backButton = new Button
 		{
 			Name = "BackButton",
-			// On the page, Back turns back to the world, and says so: it does not leave the map.
-			Text = onPage ? (narrow ? "World" : "Back to the world") : "Back",
+			Text = "Back",
 			CustomMinimumSize = new Vector2(narrow ? 112f : 140f, 0f),
 			SizeFlagsVertical = SizeFlags.Fill,
 		};
@@ -492,27 +412,6 @@ public partial class WorldMap : Control
 		BonelightSkin.StyleButton(backButton, BonelightSkin.Emphasis.Normal);
 		backButton.Pressed += OnBack;
 		bar.AddChild(backButton);
-
-		if (onPage)
-		{
-			// No compass: there is nowhere on the page to step to. The strip's place says where this is.
-			var caption = new Label
-			{
-				Name = "PageCaption",
-				Text = "A loose page, apart from the world",
-				HorizontalAlignment = HorizontalAlignment.Center,
-				VerticalAlignment = VerticalAlignment.Center,
-				SizeFlagsHorizontal = SizeFlags.ExpandFill,
-				SizeFlagsVertical = SizeFlags.Fill,
-				AutowrapMode = TextServer.AutowrapMode.WordSmart,
-				MouseFilter = MouseFilterEnum.Ignore,
-			};
-			ResponsiveLayout.SetBodyText(caption, ResponsiveLayout.TextRole.Label);
-			caption.AddThemeColorOverride("font_color", InkPlace);
-			bar.AddChild(caption);
-			bar.AddChild(BuildJournalButton());
-			return;
-		}
 
 		compass = new WorldMapCompass
 		{
@@ -523,26 +422,6 @@ public partial class WorldMap : Control
 		compass.MarkPressed += SelectStop;
 		bar.AddChild(compass);
 		bar.AddChild(BuildJournalButton());
-
-		// The way to the page, at the far end of the road's strip and apart from it: only once the
-		// campaign is finished (or the save has been there), so it never sits in the road's flow and
-		// never names a place the player cannot reach. The page's own compass mark is its picture.
-		if (!pageOpen)
-			return;
-		pageButton = new Button
-		{
-			Name = "SketchbookButton",
-			Text = "Sketchbook",
-			Icon = BonelightSkin.LoadTextureSafe(WorldMapLayout.Directory + "mark-page.png"),
-			ExpandIcon = false,
-			TooltipText = "Turn to the Sketchbook: a page apart from the world",
-			CustomMinimumSize = new Vector2(narrow ? 0f : 168f, 0f),
-			SizeFlagsVertical = SizeFlags.Fill,
-		};
-		ResponsiveLayout.SetFont(pageButton, narrow ? ResponsiveLayout.TextRole.Label : ResponsiveLayout.TextRole.Body);
-		BonelightSkin.StyleButton(pageButton, BonelightSkin.Emphasis.Normal);
-		pageButton.Pressed += TurnToPage;
-		bar.AddChild(pageButton);
 	}
 
 	private void BuildCard()
@@ -601,13 +480,11 @@ public partial class WorldMap : Control
 
 		// Left and right move the map, never the selection: every focus stop's sideways neighbour is
 		// itself, so neither Godot's step nor MenuNavigator's held-stick repeat can walk it off. Up and
-		// down go round the stops: Start, then the Sketchbook (once there is one), then Back.
+		// down go round the stops: Start, the foretelling when shown, the Journal, then Back.
 		var ring = new List<Button> { startButton };
 		// The foretelling, when shown; hidden, Godot passes over it to the next stop.
 		if (foretellButton != null)
 			ring.Add(foretellButton);
-		if (pageButton != null)
-			ring.Add(pageButton);
 		if (journalButton != null)
 			ring.Add(journalButton);
 		// TEMPORARY (see the field).
@@ -959,7 +836,7 @@ public partial class WorldMap : Control
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		if ((view != null || pageView != null) && !JournalScreen.IsOpen && @event.IsActionPressed("ui_cancel"))
+		if (view != null && !JournalScreen.IsOpen && @event.IsActionPressed("ui_cancel"))
 		{
 			GetViewport().SetInputAsHandled();
 			OnBack();
@@ -974,7 +851,7 @@ public partial class WorldMap : Control
 			ElementTagPopover.Close();
 			return;
 		}
-		if (what == NotificationWMGoBackRequest && (view != null || pageView != null) && !JournalScreen.IsOpen)
+		if (what == NotificationWMGoBackRequest && view != null && !JournalScreen.IsOpen)
 			OnBack();
 	}
 
@@ -1072,9 +949,7 @@ public partial class WorldMap : Control
 			Refuse();
 			return;
 		}
-		// From the page, the world keeps where he stood on the road; OnPage brings him back to the page.
-		if (!onPage)
-			LastStopId = stop.Id;
+		LastStopId = stop.Id;
 		Global.SelectedStageIdx = stop.Stage.Index;
 		Global.BossRush = false;
 		SceneTransition.ChangeScene(this, "res://scenes/node_2d_game.tscn", stop.Stage.DisplayName);
@@ -1084,25 +959,17 @@ public partial class WorldMap : Control
 	{
 		SfxPlayer.Global(SfxCatalog.UiDenied);
 		view?.Refuse();
-		pageView?.Refuse();
 	}
 
-	// Back leaves the map from the world; from the page it turns back to the world, where he stood.
+	// Back leaves the map.
 	private void OnBack()
 	{
-		if (onPage)
-		{
-			OnPage = false;
-			SfxPlayer.Global(SfxCatalog.UiBack);
-			SceneTransition.ChangeScene(this, "res://scenes/WorldMap.tscn");
-			return;
-		}
 		SceneTransition.ChangeScene(this, "res://scenes/CharacterSelection.tscn");
 	}
 
 	/// <summary>
 	/// TEMPORARY (see the field): replays the prologue, which comes back to the map with him where he
-	/// stands, remembered as TurnToPage remembers him. Never marks the prologue seen or unseen.
+	/// stands (<see cref="LastStopId"/>). Never marks the prologue seen or unseen.
 	/// </summary>
 	private void ReplayIntro()
 	{
@@ -1110,21 +977,6 @@ public partial class WorldMap : Control
 			LastStopId = SelectedStopId;
 		SfxPlayer.Global(SfxCatalog.UiClick);
 		Prologue.Play(this, Prologue.After.Map);
-	}
-
-	/// <summary>Turns the map to the Sketchbook's page. He is remembered where he stands on the road.</summary>
-	private void TurnToPage()
-	{
-		if (!pageOpen)
-		{
-			Refuse();
-			return;
-		}
-		if (SelectedStopId.Length > 0)
-			LastStopId = SelectedStopId;
-		OnPage = true;
-		SfxPlayer.Global(SfxCatalog.UiClick);
-		SceneTransition.ChangeScene(this, "res://scenes/WorldMap.tscn", "The Sketchbook");
 	}
 
 	// --- for the harness -------------------------------------------------------------------------

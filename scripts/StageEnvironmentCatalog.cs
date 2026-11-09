@@ -13,8 +13,8 @@ public enum StageEnvironmentKind
 	Volcanic,
 	Swamp,
 	Cave,
-	/// <summary>The kids' chapter. Squared paper, and the only pale ground in the game.</summary>
-	Sketchbook,
+	// (Sketchbook, the kids' squared paper, stood here until the chapter was removed on 2026-11-09. Nothing
+	// stores a kind by its number - a chapter names it in StageCatalog - so the values after it moved freely.)
 	/// <summary>The Fallow Fields (stage_9): stubble, hedgerow and millpond. Its own ground is Phase 2 (.ai/campaign.md).</summary>
 	Fields,
 	/// <summary>The Broken Circle (stage_10): heather, granite and standing stone. Its own ground is Phase 2.</summary>
@@ -180,7 +180,7 @@ public sealed class StageEnvironmentProfile
 	/// How dark the chapter is outside the wizard's own light (LightPool, .ai/light-pool.md): 0 lit evenly,
 	/// 1 the full dark. Only where nothing else gives light - under ground and indoors (Eric, 2026-11-03:
 	/// "The light pool can possibly be used in certain levels? like the dungeons"). Every open-air chapter
-	/// leaves it at 0, and the Sketchbook is never given one.
+	/// leaves it at 0.
 	/// </summary>
 	public float Darkness { get; init; }
 }
@@ -229,32 +229,6 @@ public static class StageEnvironmentCatalog
 			WaterStyle = "forest",
 			HasLandmarks = true,
 		}
-		,
-		// THE ONE CHAPTER THAT IS NOT A PLACE. Every other profile here is somewhere the dark
-		// wizard holds; this is a page of squared paper with drawings on it, and it is deliberately
-		// the only pale ground in the game so that the chapter announces itself as outside the
-		// campaign before a word of it is read.
-		//
-		// No bushes, no trees and no ruins: its decor is the kids' own dog and message drawings,
-		// scattered by Node2DGame.BuildDecorProps rather than drawn from the shared prop sets.
-		[StageEnvironmentKind.Sketchbook] = new StageEnvironmentProfile(
-			StageEnvironmentKind.Sketchbook,
-			"sketchbook",
-			"Sketchbook",
-			"res://assets/kidsart/paper-tile.png",
-			new Rect2(),
-			string.Empty,
-			new Rect2(),
-			1.0f,
-			0.0f,
-			new Color(1.0f, 1.0f, 1.0f, 1.0f),
-			new Color(1.0f, 1.0f, 1.0f, 0.0f),
-			0.0f,
-			0,
-			0,
-			0,
-			new[] { "res://assets/kidsart/paper-tile.png" },
-			48f)
 		,
 		[StageEnvironmentKind.Castle] = new StageEnvironmentProfile(
 			StageEnvironmentKind.Castle,

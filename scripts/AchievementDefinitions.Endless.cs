@@ -4,7 +4,7 @@ namespace TheOneHeMissed.scripts;
 
 // ENDLESS'S THREE FEATS (.ai/endless-mode.md 3.3; EndlessCatalog). Arcane Energy only, never an unlock: endless is the
 // far shore's "achievements welcome, unlocks not required", and a Feat that paid a spell or a wizard would put a gate
-// behind a mode. Counted on Default or harder, never in the Sketchbook (EndlessCatalog.CountsForFeats). Listed only
+// behind a mode. Counted on Default or harder, on the road's endless chapters (EndlessCatalog.CountsForFeats). Listed only
 // once endless is open (AchievementVisibility.Endless), as the far sky's wait for the far sky.
 //
 // Measured from the records (SaveData.EndlessRecords), which a night writes and saves at every warden's fall - so each

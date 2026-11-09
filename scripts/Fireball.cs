@@ -241,7 +241,8 @@ public partial class Fireball : Area2D
 				}
 				else if (enemy2D.HasMethod("TakeDamage"))
 				{
-					// Two arguments - see the note in KidDog.TickBite.
+					// Two arguments: Godot matches Enemy.TakeDamage(int, bool = false) on name and
+					// argument count, so one argument throws and deals nothing (CLAUDE.md, Conventions).
 					enemy2D.Call("TakeDamage", damage, false);
 				}
 			}

@@ -74,8 +74,9 @@ public partial class LoadoutHud : BoxContainer
 	private const float BandFloorGap = 4f;
 
 	// Inks and rims, from the palette in .ai/art-direction.md. The slot backing is floor stone deep at
-	// 0.85: the icons are drawn for the Bonelight dark ground, and on the Sketchbook's white paper a
-	// thinner backing (0.62 was tried) left the steel rim at 1.3:1 and every milestone rim under 3:1.
+	// 0.85: the icons are drawn for the Bonelight dark ground, and on white ground (measured on the
+	// Sketchbook's paper, the palest the game has had) a thinner backing (0.62 was tried) left the steel
+	// rim at 1.3:1 and every milestone rim under 3:1.
 	// At 0.85 the weakest, the plain held rim, is 3.0:1 on white paper (tools/art/ui_contrast.py).
 	private static readonly Color SlotBacking = new(0.043f, 0.059f, 0.094f, 0.85f);
 	private static readonly Color HeldRim = new(0.416f, 0.494f, 0.596f, 1f);          // steel base #6A7E98
@@ -408,7 +409,7 @@ public partial class LoadoutHud : BoxContainer
 	// slot it is and what it lends: a quaver standing on the slot's top left corner in the element's colour, and a
 	// tie under the two slots from the Canticle's to this one. An empty slot after the Canticle wears it in the ghost
 	// ink (the burst stays Arcane until a spell is taken into it). Whole canvas units, two to an art pixel, every
-	// stroke outlined in the occlusion ink so it reads over any icon and on the Sketchbook's paper.
+	// stroke outlined in the occlusion ink so it reads over any icon and on the palest ground.
 	private static readonly Color HarmonyOutline = new(0.020f, 0.027f, 0.047f, 1f);   // OCC #05070C
 	private static readonly Color HarmonyGhost = new(0.604f, 0.643f, 0.722f, 0.75f);  // bone base #9AA4B8
 

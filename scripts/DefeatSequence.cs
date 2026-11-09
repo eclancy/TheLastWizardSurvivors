@@ -22,9 +22,10 @@ using TheOneHeMissed.scripts;
 ///         above centre, so the word can sit below him.
 ///   1.45  THE FALL, after a held beat on the close-up. His own death row (every generated wizard has one,
 ///         tools/art/anim_sets.py: six frames folding to the ground), slowed to take 0.9 s; when its last
-///         frame lands, player_fall, a puff of dust at his feet and a second jolt. The Test Wizard, Eric's own
-///         drawing, has no death row and is never derived (CLAUDE.md), so he falls in code on whole pixels: a
-///         two-pixel buckle, then one quarter turn onto the ground - no fractional rotation of pixel art.
+///         frame lands, player_fall, a puff of dust at his feet and a second jolt. A wizard with no death row
+///         (none today; the Test Wizard, Eric's own drawing, was the one until his removal on 2026-11-09) falls
+///         in code on whole pixels: a two-pixel buckle, then one quarter turn onto the ground - no fractional
+///         rotation of pixel art.
 ///   2.95  DEFEAT, a beat after he lands. A band opens across the screen below him (the results band's stone
 ///         deep and gold rule, full bleed like the letterbox), the field dims behind it, and "Defeat" slams
 ///         onto it in the heading face - large, cloth red - with game_over and a third jolt.
@@ -138,7 +139,7 @@ public partial class DefeatSequence : CanvasLayer
 	private bool slamStarted;
 	private bool slamLanded;
 	private bool continued;
-	// The Test Wizard's fall in code: where the sprite stood, and the two steps of it.
+	// The fall in code, for a wizard with no death row: where the sprite stood, and the two steps of it.
 	private Vector2 bodyRest;
 	private bool buckled;
 
@@ -270,7 +271,7 @@ public partial class DefeatSequence : CanvasLayer
 				Land();
 			return;
 		}
-		// No death row (the Test Wizard): a buckle of two art pixels, then a quarter turn to the ground,
+		// No death row: a buckle of two art pixels, then a quarter turn to the ground,
 		// landing when the drawn row would have.
 		float landAt = FallAt + FallSeconds * 5f / 6f;
 		if (!buckled && t >= FallAt + 0.35f)
@@ -308,7 +309,7 @@ public partial class DefeatSequence : CanvasLayer
 		return bodyRest.Y + half * body.Scale.Y - 2f * body.Scale.Y;
 	}
 
-	// The Test Wizard laid on the ground: a quarter turn toward the way he faces, about the cell's centre,
+	// A wizard with no death row laid on the ground: a quarter turn toward the way he faces, about the cell's centre,
 	// then dropped so the bottom of the turned figure sits on the line his feet stood on. Whole art pixels
 	// throughout - a quarter turn of a nearest-filtered sprite keeps every pixel square.
 	private void LayDown()

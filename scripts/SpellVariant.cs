@@ -37,7 +37,7 @@ public partial class SpellVariant : Resource
 	/// <summary>The spell's name once this form is chosen ("Spirit Axe"). Shown everywhere the spell is.</summary>
 	[Export] public string DisplayName { get; set; } = string.Empty;
 
-	/// <summary>The one word the choice turns on ("Axe"): the Test Wizard's picker, the bots' logs.</summary>
+	/// <summary>The one word the choice turns on ("Axe"): the bots' logs.</summary>
 	[Export] public string ShortName { get; set; } = string.Empty;
 
 	/// <summary>The spell's description once this form is chosen (the pause screen, the results).</summary>

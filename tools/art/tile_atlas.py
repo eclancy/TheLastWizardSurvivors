@@ -22,8 +22,8 @@ atlas cannot fall behind them; or on its own:
 A tile missing from the atlas is not an error at runtime - LevelTilePainter falls back to the old
 one-texture source for it - but RegressionChecks warns, because that tile then costs a draw call.
 
-Only the manifests under assets/bonelight are packed. The Sketchbook's paper (assets/kidsart)
-stays in its own directory, as everything there does.
+Only the manifests under assets/bonelight are packed. (The Sketchbook's paper had a manifest of its
+own outside them until the chapter was removed on 2026-11-09.)
 """
 from __future__ import print_function
 

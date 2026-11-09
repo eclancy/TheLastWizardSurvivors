@@ -18,7 +18,7 @@ namespace TheOneHeMissed.scripts;
 /// - **The XP orb half of the bonus table is unchanged.** It is part of the XP economy the level
 ///   gates were measured on (.ai/run-pacing.md, "2.16 XP a kill"), so only the consumables moved.
 /// - **Chests come from things the player kills on purpose**, never from a clock. A chest is the
-///   reward for an elite, a Warden, the Sketchbook's ghost or a side event.
+///   reward for an elite, a Warden or a side event.
 /// </remarks>
 public static class DropTable
 {
@@ -119,7 +119,7 @@ public static class DropTable
 	// .ai/passives-and-items.md section 8i has the measured counts.
 
 	/// <summary>
-	/// The chance the first carrier killed (an elite, a Warden, the Sketchbook's ghost) drops a bell.
+	/// The chance the first carrier killed (an elite or a Warden) drops a bell.
 	/// Every carrier killed without one adds <see cref="GleaningBellChanceStep"/>, and a bell resets it:
 	/// a rising chance rather than a flat one, so a run sees one or two and almost never none. At a flat
 	/// 7.5% the twenty-odd carriers of a run would drop none about one run in five and three or more

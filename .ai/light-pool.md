@@ -1,5 +1,7 @@
 # The light pool: the wizard is the lamp, in the chapters with no other light
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 Eric, 2026-11-03, after studying the genre (`.ai/genre-lessons.md` section 1, "the lesson that matters
 most"): a warm pool of light on the wizard that falls off into the dark at the screen's edges, with the
 enemies walking out of the dark into it. Then:
@@ -27,10 +29,12 @@ Eric's eyes.
 | Cursed Dungeon (`stage_1`) | `Castle` | **1** | the pilot: a gaol under his house, and nobody has lit it |
 | Sunken Cave (`stage_2`) | `Cave` | **1** | its chapter note already says *"my light the only light"* |
 | Forest, Fields, Heath, Swamp, Ruins, Frozen Waste, Sands, Bridge | | 0 | under open sky; they stay as they are |
-| The Sketchbook (`stage_8`) | `Sketchbook` | 0 | the kids' chapter; never touched (`--light-pool=X` refuses it too) |
 | The Emberdeep, the Court, the Throne | | 0 | proposed in section 7, and declined: the pool stays in two chapters (Eric, 2026-11-03: *"Keep to two"*) |
 
-`LightPool.Validate` (run by `RegressionChecks.RunAll`) reports an open-air chapter or the Sketchbook given
+(The Sketchbook, `stage_8`, was the one other chapter held at 0 - the kids' chapter, never touched, refused
+by `--light-pool=X` too - until it was removed on 2026-11-09.)
+
+`LightPool.Validate` (run by `RegressionChecks.RunAll`) reports an open-air chapter given
 any darkness, a darkness outside 0 to 1, a missing shader, and the bodies' floor falling below the room's.
 
 ## 2. How it works
@@ -281,7 +285,7 @@ Not proposed: the Bridge (the open sky over the abyss), and every open-air chapt
 | Flag | Where | What |
 |---|---|---|
 | `--no-light-pool` | any run | the pool kept out: the "before" of every comparison |
-| `--light-pool=X` | any run | the pool at darkness X in any chapter but the Sketchbook |
+| `--light-pool=X` | any run | the pool at darkness X in any chapter |
 | `--light-probe` | `_UiShot` | section 4's measurement, printed as `LIGHT` lines; also a `lo dL*` per body, and `LIGHT layer` lines for the detail layer, the bushes and the trees, peeled one at a time and measured the same way (the foliage pass, `.ai/terrain.md` section 13). After a `--teleport` it waits for the ground there |
 | `--light-probe-low-health` | `_UiShot` | the probe, the wizard pinned at a fifth of his health |
 | `--reduce-darkness` | `_UiShot` | the Reduce Darkness switch on, in memory |

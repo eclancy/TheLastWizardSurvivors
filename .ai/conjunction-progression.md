@@ -1,5 +1,7 @@
 # Conjunction progression: working toward a recipe through the campaign
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 Eric, 2026-11-08: *"start brainstorming ways to help combination spells happen in a way that the player
 can naturally work towards in the campaign through unlocks, etc."*
 

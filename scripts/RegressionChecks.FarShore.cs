@@ -23,7 +23,7 @@ public static partial class RegressionChecks
 		}
 
 		// THE ORDER. Every id a stage, none twice, none on the campaign's road - one far chapter in CampaignOrder
-		// would add a chapter to both whole-road deeds and hold the Sketchbook shut behind it (section 7).
+		// would add a chapter to both whole-road deeds (section 7).
 		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (string id in StageCatalog.FarShoreOrderIds)
 		{
@@ -43,8 +43,6 @@ public static partial class RegressionChecks
 			StageGate want = i == 0 ? StageGate.FarShore : StageGate.PreviousBoss;
 			if (stage.Gate != want)
 				warnings.Add($"Far shore: {stage.DisplayName} is gated {stage.Gate}; as far chapter {i + 1} it must be {want}.");
-			if (stage.AfterCampaign)
-				warnings.Add($"Far shore: {stage.DisplayName} is held for the Sketchbook's page (AfterCampaign); a far chapter is on the map.");
 		}
 		foreach (StageDefinition stage in StageCatalog.All.Where(s => s.Gate == StageGate.FarShore && !StageCatalog.IsOnFarShore(s)))
 			warnings.Add($"Far shore: {stage.DisplayName} is gated FarShore but is not on the far shore.");
@@ -76,7 +74,7 @@ public static partial class RegressionChecks
 		}
 
 		// THE WHOLE-ROAD DEEDS HAVE NOT MOVED: both count the campaign as CampaignOrder writes it (thirteen chapters
-		// today), never a far one, and the chapters that end the road and open the Sketchbook are the road's. A
+		// today), never a far one, and the chapters that end the road are the road's. A
 		// far chapter won counts toward neither: ValidateTakerTaken holds every chapter outside the campaign to that.
 		int road = StageCatalog.CampaignOrderIds.Count;
 		if (StageCatalog.Campaign.Count != road || AchievementDefinitions.CampaignChapterCount != road)

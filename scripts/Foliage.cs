@@ -103,8 +103,8 @@ public static partial class Foliage
 	/// <summary>
 	/// Every chapter's foliage. THIS LIST IS WRITTEN ONCE: every open-air chapter is already named, each by a
 	/// nested class in its own file that starts as a stand-in returning null, so a chapter's builder edits
-	/// only Foliage.&lt;Chapter&gt;.cs and never this line. A chapter not listed here (the Cave, the Sketchbook,
-	/// the castle) is one line to add, by the integrator.
+	/// only Foliage.&lt;Chapter&gt;.cs and never this line. A chapter not listed here (the Cave, the castle) is
+	/// one line to add, by the integrator.
 	/// </summary>
 	public static IReadOnlyList<ChapterFoliage> All => chapters ??= new ChapterFoliage?[]
 	{

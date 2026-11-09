@@ -240,7 +240,7 @@ public partial class BridgeConstableBoss : BossEnemy
 	}
 
 	// Untargetable, but seen: SetTargetable hides the sprite, which is right for a burrower under the
-	// floor and wrong for a man on a wall (BooEnemy does the same for its phase).
+	// floor and wrong for a man on a wall.
 	private void KeepOutOfReach()
 	{
 		SetTargetable(false);

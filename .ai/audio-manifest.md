@@ -1,5 +1,7 @@
 # Audio manifest — what exists, and where each sound belongs
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 Companion to `.ai/audio-direction.md`, which holds the contract and the reasoning. This file
 is the inventory and the wiring backlog: seventy-one generated `.wav` files in `assets/sfx/`,
 what each one is for, and where in the code it is meant to be triggered. The music - a menu

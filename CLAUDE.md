@@ -163,7 +163,7 @@ Whether or not you are in your own worktree:
 Two different things share the name `Global`:
 
 - `Global.gd` (repo root) is the **registered autoload** in `project.godot` — a 4-line GDScript that **nothing reads**.
-- `scripts/Global.cs` is a plain `public static class Global` (not a Node, not an autoload). **All real code uses this one**: `SelectedCharacterIdx`, `SelectedStageIdx`, `TestWizardStartingSpellId`.
+- `scripts/Global.cs` is a plain `public static class Global` (not a Node, not an autoload). **All real code uses this one**: `SelectedCharacterIdx` (a roster index), `SelectedStageIdx` (a stage index - a chapter's number, looked up by `StageCatalog.GetByIndex`, never a list position), and `ToolStartingSpellId` (tool scenes only: `_BalanceHarness --spell`, `_UiShot`/`_BossProbe --start-spell` open any wizard on that spell).
 
 Access it as `Global.SelectedCharacterIdx`. Never `GetNode("/root/Global")` — that returns the dead GDScript.
 
@@ -179,7 +179,7 @@ Scene flow: TitleScreen (**hosts MainMenu as a child** — pressing a key adds t
 
 `scripts/Enemy.cs` (`CharacterBody2D`): `TakeDamage`, `ApplyKnockback`, `ApplySlow` (0 = freeze/root), `ApplyPoison`, `ApplyVulnerable`, `ApplyWeaken`, `ApplyWither`. Every debuff is **stacking-resistant** — max magnitude + max remaining duration, not additive (Wither is permanent and only ever takes the difference to a stronger one). **Any damage an enemy deals the player must pass through `ScaleOutgoingDamage`** or Weaken does nothing there; `.ai/gameplay-design.md` "Status effects" lists the sites. Always joins group `"enemies"` in `_Ready()`.
 
-**Death is animated, not instant.** At 0 HP, `StartDeath()` drops rewards immediately, then leaves the `"enemies"` group and zeroes collision *in the same frame* so a corpse can never be targeted, damaged, or bump the player — only then does it play the `death` animation and `QueueFree` on finish. An enemy whose `SpriteFrames` has no `death` animation (e.g. `BooEnemy`) frees immediately instead. The `isDying` flag guards `TakeDamage` and all four `Apply*` status methods. If you add an enemy type, either give its `SpriteFrames` a non-looping `death` animation or rely on that fallback.
+**Death is animated, not instant.** At 0 HP, `StartDeath()` drops rewards immediately, then leaves the `"enemies"` group and zeroes collision *in the same frame* so a corpse can never be targeted, damaged, or bump the player — only then does it play the `death` animation and `QueueFree` on finish. An enemy whose `SpriteFrames` has no `death` animation frees immediately instead. The `isDying` flag guards `TakeDamage` and all four `Apply*` status methods. If you add an enemy type, either give its `SpriteFrames` a non-looping `death` animation or rely on that fallback.
 
 **Enemy attack patterns.** An enemy with behaviour is an `Enemy` subclass, not a state-machine framework. Four shared pieces carry all of them:
 
@@ -232,7 +232,7 @@ Order matters, and passive-spell work depends on it:
 - **Layer 2**: all enemies. **Their masks are set at runtime** (`Enemy.ConfigureEntityCollision`), not by the `.tscn` (which still says `collision_mask = 3`): layers 1, 4 and 5, **not 2** - ordinary enemies do not collide with each other (the soft crowd; personal space is the separation push, `EnemySpacingStrength`) and slide round blockers on layer 5. See `.ai/enemy-behaviour.md` section 8, item 12.
 - **Layer 3** (`collision_layer = 3`): player body + HurtBox (`player.tscn`). **The body's mask is 17 (layers 1 and 5), not 3**: it meets decor and the blockers but not ordinary enemies, which it shoves aside instead (`Enemy.ComputePlayerShove`, `.ai/enemy-behaviour.md`). The HurtBox still finds every enemy for contact damage.
 - Weapon `Area2D` scenes (`MagicMissile.tscn`, `ArcaneExplosion.tscn`) use `collision_mask = 2` to detect enemies.
-- **Layer 5** (bit value 16): blockers - every enemy with `IsMiniBoss` (elites, minibosses, bosses, and the Boo) also sits here, so the player's body still stops at them. Weapons find them on layer 2 as before.
+- **Layer 5** (bit value 16): blockers - every enemy with `IsMiniBoss` (elites, minibosses and bosses) also sits here, so the player's body still stops at them. Weapons find them on layer 2 as before.
 - **Layer 4** (bit value 8, `LevelTilePainter.TerrainCollisionLayer`): blocking ground - maze walls, tree-trunk footprints, the flower pen's fence rails, and the Bridge's abyss. Bushes have no collision; the old decor props still on layer 1 meet the body. Masked by enemies (`Enemy.ConfigureEntityCollision`) and by the player's `Feet` collider only: the player meets the ground with his boots and everything else with his body, in two movement passes (`Player.MovePlayer`). Enemy bolts do not use physics for walls (`MazeNavigation.IsSolidAt`). See `.ai/terrain.md`.
 - **Layer 6** (bit value 32, `LevelTilePainter.WaterCollisionLayer`): wadeable water. Masked by enemies, **not** by the player's `Feet` - that is how he wades (heavy slow, `Player.WaterWadeSpeedMultiplier`, `IsWading`). A chapter whose "water" must stop him too (the Bridge's abyss) sets `StageEnvironmentProfile.WaterWalkable = false`, which keeps its polygons on layer 4. Anything new that must stop at water but not walls masks this layer.
 - **Layer 7** (bit value 64, `LevelTilePainter.EnemyOnlyCollisionLayer`): walls only the swarm meets - Ma Liang's inked lines (`DottedDoorEvent`, `.ai/unlock-puzzles.md` 3.2). Masked by enemies; the player's body and feet never mask it, so he walks the lines he inks. Deliberately not layer 6: the wade check point-queries 6 at his boots, so an ink wall there would slow him on every line he traced.
@@ -262,7 +262,7 @@ four disagreeing copies (`StageSelection`, `GameOverScreen`, two switches in `No
 `StageEnvironmentCatalog.GetForStageIndex`). Chapters with `IsPlayable = false` are listed but not
 enterable; flipping that is the last step of building one, not the first.
 
-`SaveData.CurrentSchemaVersion` is 22 and **`SaveData.Migrate()` is now real** — it runs from
+`SaveData.CurrentSchemaVersion` is 28 and **`SaveData.Migrate()` is now real** — it runs from
 `SaveManager.LoadGame`. Before 8 there was no migration at all. Any change that narrows what a save
 implicitly grants must add a migration step, or it silently confiscates content from existing
 players. Schema 11 added `SeenAscensionIds` — the ascension paths whose requirements the player
@@ -287,7 +287,9 @@ Tempest Rhythm (`MigrateChronoweaveIntoTempestRhythm`: cooldown levels become at
 for one at the frozen prices, overflow refunded dearest-first, `ValidateChronoweaveMerge`); 24 moves
 Shadow Bolt onto its Conjunction's Feat (`MigrateShadowBoltToConjunction`, `ValidateShadowBoltMigration` -
 **built as "23" on a parallel branch and renumbered at the merge: two branches bumping the schema at once
-WILL collide, so check `CurrentSchemaVersion` on main before numbering a migration**). Steps 8-16 read frozen
+WILL collide, so check `CurrentSchemaVersion` on main before numbering a migration**); 28 takes the removed
+Sketchbook (stage_8, its boss) and Test Wizard out of every save (`MigrateRemoveSketchbookAndTestWizard`,
+`ValidateSketchbookAndTestWizardRemoval`). Steps 8-16 read frozen
 schema-18 lists, never the live catalog, and `ValidateAchievementMigration` runs sample saves through all of it.
 
 **A branch with a schema bump migrates the developer's REAL save the moment any Godot run in it
@@ -315,7 +317,7 @@ session**, the validator run below included.
 
 **New rescuable wizard or playable chapter:** a wizard needs an epithet in `QuestLog.Prisoners` (a locked wizard is never named anywhere - quest log, HUD, notes), and a chapter needs a note in `ChapterNotes`; the validator reports both (`.ai/quests-and-notes.md`). Anything shown over a run leaves the **lower-left corner** to `QuestTracker`.
 
-**New enemy:** every chapter has its own cast (Eric: "each stage should have it's unique set of creatures"), so an enemy belongs to one chapter's roster in `scripts/StageBestiary.<Chapter>.cs`, never to a shared table, and every spawn site (trickle, elites, Wardens, side events, swarm folding) asks the roster for a role. Follow the recipe in `.ai/bestiary.md`: the scene lives at the path the roster already names, keeps its stand-in's numbers, and `RegressionChecks.ValidateBestiary` reports what is still shared. The Sketchbook's cast is the kids' art and is never redrawn.
+**New enemy:** every chapter has its own cast (Eric: "each stage should have it's unique set of creatures"), so an enemy belongs to one chapter's roster in `scripts/StageBestiary.<Chapter>.cs`, never to a shared table, and every spawn site (trickle, elites, Wardens, side events, swarm folding) asks the roster for a role. Follow the recipe in `.ai/bestiary.md`: the scene lives at the path the roster already names, keeps its stand-in's numbers, and `RegressionChecks.ValidateBestiary` reports what is still shared.
 
 ## Validation
 
@@ -382,20 +384,7 @@ session**, the validator run below included.
   the title screen, which the phone's mask cut the staff and ward out of.
 - Worktrees are **siblings of the repo root**, named `ws-<branch with slashes as dashes>` (`../ws-art-beards`). `git worktree list` is the truth about what exists; don't assume either one checkout or a fleet. See "Working alongside other sessions" above.
 - **Only Python 2.7 is installed**, with PIL. The art generators under `tools/art/` and the audio generators under `tools/audio/` are written for it. There is no `python3`, no numpy, no ImageMagick, no audio encoder, and no virtualenv.
-- **The kids' art is the one exception to everything below, and it is never regenerated.**
-  Eric's kids drew the twelve sheets in `assets/kidsart/source/`, and they are the entire cast of
-  chapter 8 (The Sketchbook). `tools/art/kids_art.py` only ever *moves* those pixels - crop,
-  repack into square cells, key white out of the one JPEG. **Do not repalettise them, redraw them
-  to `.ai/art-direction.md`, list them in the replacement backlog, or derive hurt/death frames for
-  them**: a derived frame is art they did not draw going on screen under their name, and
-  `Enemy.StartDeath` already frees an enemy whose `SpriteFrames` has no `death`. Anything in that
-  directory that IS generated - the squared-paper ground - says so in a comment. Same reasoning as
-  `assets/testwizard/`, which keeps Eric's own drawing outside `assets/bonelight/`.
-  **The one approved exception is the ghost (Boo), Elim's drawing** (`assets/enemies/booscaryspritesheet.png`,
-  never edited). On 2026-10-20 Eric asked for it to be tuned up to the game's art, made bigger and
-  scarier and made a miniboss, so `tools/art/sprite_boo.py` redraws it on the Bonelight model with
-  derived frames, credited to Elim in its header. That request covers that sprite only - it is not
-  a precedent for the other sheets.
+- **The Sketchbook (stage_8, its whole cast and the Boo) and the kids' art, and the Test Wizard (Eric's own drawing), were removed at Eric's request on 2026-11-09; git history holds them.** Stage index 8 and roster index 0 are retired, never reused (`StageCatalog.RetiredIndices`, `CharacterRoster.RetiredIndices`), and schema 28 takes both out of saves.
 - **Art and audio are generated, not authored.** `python tools/art/build.py` writes the sprites; `python tools/audio/build.py` writes `assets/sfx/` (~90 s) and `python tools/audio/analyse.py --confuse` audits how distinguishable the sounds are. Edit the generator and re-run — never hand-edit a generated `.png` or `.wav`.
 - **Do not put backticks or apostrophes inside a Bash heredoc here.** The shell substitutes and mis-parses them even inside a quoted delimiter, which silently mangles Markdown and Python. Use the Write/Edit tools for any file containing them.
 - Assets are **plain Git objects, not LFS** — `git lfs ls-files` returns nothing, so a missing or malformed image is never a "run `git lfs pull`" problem. `.gitattributes` explains why LFS is deliberately off and what to check before turning it on.

@@ -1,5 +1,7 @@
 # World and tone
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 `.ai/project-overview.md` describes a system — auto-firing spells, XP, waves, meta progression —
 and says nothing about what any of it *is*. That gap has been filled ad hoc, one asset at a time:
 the title screen decided the wizard stands in a warded circle, `sprite_basic_enemies.py` decided
@@ -167,9 +169,9 @@ back at him.
   (grey, ×3.4), Exploder (acid green, ×3.0), Summoner (mint green, ×4.4). Every one of those hues
   claims an origin that does not exist, on top of a non-integer scale. Highest-value redraw left.
 - **Four sheets predate the contract entirely** — Orc, Soldier, Boo, Cultist — from three different
-  asset packs. (The Boo was never a pack sheet - it is Elim's drawing - and on 2026-10-20 it was
-  redrawn to the contract at Eric's request, with the arcane mark in its eyes; see
-  `art-replacement-manifest.md`.)
+  asset packs. (The Boo was never a pack sheet - it was Elim's drawing - and on 2026-10-20 it was
+  redrawn to the contract at Eric's request, with the arcane mark in its eyes; it was removed with the
+  Sketchbook on 2026-11-09.)
 - **"Cultist" is now a naming problem as well as an art one.** Nothing in this premise is a cult:
   there are no willing followers, only the taken. Either it becomes a taken caster, or the idea of
   people who *chose* him needs adding to the fiction deliberately rather than by leftover.

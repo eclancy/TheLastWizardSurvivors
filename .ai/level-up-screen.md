@@ -1,5 +1,7 @@
 # The level-up screen
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 The screen a player looks at more than any other in the game: three choices, a footer, and two
 overlays reached from it. This is what it is made of and the three traps in it. The results screen
 at the end of a run follows the same rules and is section 6.
@@ -442,8 +444,8 @@ A missing icon is never an error on screen: the card falls back to the old tinte
 mutation page with the longest descriptions (Great Hound, Ember Caps) still fits at 1280x720 with the
 64 icon: the card report measures 444 of 451.
 
-**Photographing them**: `_UiShot --show-mutation` / `--show-ascension` with `--character=0
---start-spell=familiar` (Rimehound, Eric's example), `--fill-book --hud-milestones` for the loadout
+**Photographing them**: `_UiShot --show-mutation` / `--show-ascension` with `--character=1
+--start-spell=familiar` (Rimehound, Eric's example; `--character=0` was the Test Wizard until 2026-11-09), `--fill-book --hud-milestones` for the loadout
 strip, with `--force-death` for the results screen and `--open-pause --scroll=330` for the pause list.
 
 ## 3. The cards fill the screen
@@ -600,8 +602,8 @@ spell**:
   thing: the form's **name** always shows (the character select names it, "✶ Apotheosis: Cataclysm");
   its line and picture wait for the first offer (`spell:form`, as `Record` writes it). Only a fusion
   closes it - never, today, since a wizard's own spell is never an ingredient - and then the chip is a
-  lock and the plate says "Out of reach this run". No wizard with none (the Test Wizard),
-  no entry. The pause screen's Run tab lists the same form as the spell's last milestone, its mark
+  lock and the plate says "Out of reach this run". No wizard with none (the Test Wizard was the one,
+  until 2026-11-09), no entry. The pause screen's Run tab lists the same form as the spell's last milestone, its mark
   outlined while it is still ahead (`GameOverScreen.Milestone`, `pending`). Photograph it with
   `--character=1 --press-late=AscensionsButton --seen-ascensions=none`, adding `--demo-level`,
   `--demo-spell-level` and `--demo-evolutions=cinderbreath_amplified_impact,...` for the states.

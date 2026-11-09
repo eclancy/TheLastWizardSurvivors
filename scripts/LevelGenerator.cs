@@ -150,17 +150,6 @@ public sealed partial class LevelGenerator
 			// happened to fall, so the ground itself says "wood" and "clearing" before a trunk does. The
 			// canopy that decides it is the Forest's foliage's (Foliage.EnchantedForest.cs).
 		},
-		// The kids' chapter: a page, and nothing on it but paper. No blobs at all, which is the
-		// only palette here with none - water, moss and lava are things that happen to a PLACE,
-		// and this one is a sheet of squared paper.
-		[StageEnvironmentKind.Sketchbook] = new Palette
-		{
-			GroundMaterial = "paper",
-			Blobs = Array.Empty<BlobSpec>(),
-			Density = 0f,
-			PropThemes = Array.Empty<string>(),
-			Topology = StageTopology.Open,
-		},
 		[StageEnvironmentKind.Castle] = new Palette
 		{
 			GroundMaterial = "stonetile",

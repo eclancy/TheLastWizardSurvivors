@@ -1,5 +1,7 @@
 # Boss levels
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 A run can now end in victory, not only in death. At `Node2DGame.TimerVictorySeconds` (30:00 since 2026-10-11; it was 15:00) the
 survival clock stops and the stage's boss arrives; killing it clears the level, pays a currency
 bonus, unlocks the next stage, and shows the victory screen. Related GitHub issues: #8 (Base Boss

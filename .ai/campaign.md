@@ -1,5 +1,7 @@
 # The campaign: its order, two early chapters, and the Dungeon in the middle
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 Eric, 2026-10-24: *"cursed dungeon should be a later level. there should be another few levels that
 open up earlier."* Asked to clarify, he chose to **build new chapters that open early** and to move
 **the Cursed Dungeon to the middle of the campaign**, after the open-field chapters - a maze is a
@@ -38,7 +40,7 @@ line in the order (section 9, decision 1).
 | 8 | Frozen Waste | `stage_5` | the Still Warden | hold ground | 1.13 | 7800 | the Scorched Sands | Rimebriar (boon) |
 | 9 | Scorched Sands | `stage_6` | the Long Coil | burst a window | 1.09 | 8200 | - | Sunsteel Filament (boon) |
 | 10 | The Emberdeep | `stage_7` | the Warden of the Deep | all of it, in sequence | 1.28 | 11000 | - | Fireball |
-| - | The Sketchbook | `stage_8` | Wizard Dude | leave the wedge | (the kids') | 4600 | - | nothing (2026-11-02: no unlocks or achievements) |
+| - | ~~The Sketchbook~~ | `stage_8` | Wizard Dude | leave the wedge | (the kids') | 4600 | - | removed 2026-11-09 (nothing since 2026-11-02: no unlocks or achievements) |
 
 \* While the two new chapters are not playable, Elderbark opens the Sunken Cave.
 
@@ -49,8 +51,8 @@ the save (schema 21) and section 13 what was built. The table above is the order
 The Emberdeep is still gated on **every spell recovered and every wizard freed**, not on a boss,
 and is still last. (Since schema 19 it is a gate chapter instead, `StageGate.PreviousBossAndWizards`:
 the Long Coil beaten and every wizard whose rescue comes before it - `.ai/achievements-and-secrets.md`
-2.5 and section 11.) The Sketchbook is still outside the campaign: open from the first run, in no
-order, gating nothing. The table mean is the spawn table's shares times their health multipliers
+2.5 and section 11.) The Sketchbook, which stood outside the campaign gating nothing, was removed at
+Eric's request on 2026-11-09; its index 8 is retired and never reused, and no other id or index moved. The table mean is the spawn table's shares times their health multipliers
 (the Forest's wolves and wisps included), the measure `.ai/run-pacing.md` section 10.1 uses.
 
 ## 2. What moving the Dungeon does
@@ -144,7 +146,7 @@ A boss-gated chapter is earned by any one of three things, and each only ever ad
    old order wrote down.
 
 `IsStageAvailable` is `IsPlayable && IsStageEarned`. The finale stays `CampaignComplete` (every spell
-recovered and every wizard freed, live); the Sketchbook stays `Open`. **Since schema 19** the finale is
+recovered and every wizard freed, live); the Sketchbook stays `Open` (until its removal, 2026-11-09). **Since schema 19** the finale is
 `PreviousBossAndWizards`: rules 1 and 2 as above, and in place of rule 3 its previous boss beaten AND
 every wizard whose rescue comes before it (`GlobalStatsManager.IsGateMet`).
 

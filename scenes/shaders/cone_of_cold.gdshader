@@ -5,7 +5,7 @@
 // WHY IT EXISTS (2026-11-01). Eric, playing 0.10.0: Cone of Cold "is very hard to see". All it drew was
 // the shared ImpactDebris spray - a few dozen single art pixels of ice thrown out along the cone - and at
 // the game's zoom an art pixel of ice is a speck: in a crowd the cast read as nothing at all, and on the
-// pale floors (the Frozen Waste's snow, the Sketchbook's paper) Ice's white core and pale hot are the
+// pale floors (the Frozen Waste's snow) Ice's white core and pale hot are the
 // floor's own colour, so most of the spray vanished there (.ai/art-direction.md, the Bonelight caution:
 // "a pale blue effect on a deep blue floor is the one place this tone can fail"). Now the cast has MASS:
 //

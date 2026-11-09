@@ -14,7 +14,7 @@ makes the spell's cooldown come due the frame the crowd appears, and --timescale
 enough that its frames are a sweep's beats rather than whatever the PNG writes let through:
 
   "$GODOT_BIN" --path . --resolution 1280x720 scenes/_UiShot.tscn -- --no-save-writes \\
-      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=0 --start-spell=stormsweep \\
+      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=1 --start-spell=stormsweep \\
       --spell-stage=30,150,0 --walk=1,0 --walk-until=40 --cast-on-stage --fx-lead=3 \\
       --frames=200 --burst=12,1 --timescale=0.15 --shot=sweep-right-pc
   (phone: --resolution 540x1212 ... --portrait --safe-area --shot=sweep-right-phone)

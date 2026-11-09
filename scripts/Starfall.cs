@@ -1152,7 +1152,7 @@ public partial class Starfall : Node2D, IPaintsElementPath
 	// lines and the Constellation's web were DrawLine - smooth quads at the slant every star falls at -
 	// and are now SpellStrokes (scenes/shaders/spell_strokes.gdshader): staircases of square art pixels,
 	// white-hot at a star's head and cooling down the ramp behind it, the web's glow a dither of the
-	// ramp's edge (gold, so it holds even on the Sketchbook's paper) out to exactly the width LinkReach
+	// ramp's edge (gold, so it holds even on pale ground) out to exactly the width LinkReach
 	// tests. Each kind of line is on a child drawn behind the squares it belongs with, so a head is always
 	// over its own trail and a lit star over its lines.
 

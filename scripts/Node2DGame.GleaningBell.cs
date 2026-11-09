@@ -3,11 +3,10 @@ using TheOneHeMissed.scripts;
 
 // WHO DROPS THE GLEANING BELL, AND WHERE IT LANDS (GleaningBell.cs; .ai/passives-and-items.md 8i).
 //
-// It rides on the chest carriers - an elite, a Warden, the Sketchbook's ghost - because those are the
-// bodies the player kills on purpose (DropTable's rule for chests), and it is rolled on its own, whether
-// or not the carrier's chest pays. Not on IsMiniBoss: the Sketchbook's ordinary table sends Rockem
-// wearing it, and Elim's ghost used to come one kill in forty there, which would have made the bell a
-// stream in that chapter alone.
+// It rides on the chest carriers - an elite or a Warden - because those are the bodies the player kills on
+// purpose (DropTable's rule for chests), and it is rolled on its own, whether or not the carrier's chest
+// pays. Not on IsMiniBoss: a flag a scene carries is not a body sent as a set-piece (the Sketchbook's
+// table, removed 2026-11-09, sent its Rockem wearing it, which would have made the bell a stream there).
 //
 // The chance rises with every carrier that paid none and resets when one does (DropTable gives the
 // numbers and why), and two rules keep it a find rather than a habit: never two lying on the field at

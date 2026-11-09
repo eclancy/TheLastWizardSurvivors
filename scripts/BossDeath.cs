@@ -481,7 +481,7 @@ public partial class BossDeath : Node2D
 		Cut(new Vector2I((int)(FrameSize.X * 0.5f), (int)GroundRow),
 			new Rect2I(0, 0, (int)FrameSize.X, (int)FrameSize.Y));
 
-	/// <summary>The boss's own sprite, for a fall that only fades it (the kids' Wizard Dude).</summary>
+	/// <summary>The boss's own sprite, for a fall that only fades it.</summary>
 	public AnimatedSprite2D BodySprite => sprite;
 
 	/// <summary>

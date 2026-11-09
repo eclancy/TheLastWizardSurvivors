@@ -39,7 +39,7 @@ public sealed class ChapterDifficulty
 /// <summary>The one table of how hard each chapter is. Read once per run by Node2DGame.ApplyChapterDifficulty.</summary>
 public static class ChapterDifficultyCatalog
 {
-	/// <summary>What a chapter without an entry plays at: the game as it was tuned (the Sketchbook).</summary>
+	/// <summary>What a chapter without an entry plays at: the game as it was tuned.</summary>
 	public static readonly ChapterDifficulty Neutral = new();
 
 	// In CAMPAIGN order (StageCatalog.CampaignOrder), the order the curve is read in. The spawn tables

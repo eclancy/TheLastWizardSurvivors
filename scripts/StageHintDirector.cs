@@ -109,7 +109,7 @@ public partial class StageHintDirector : Node
 	/// Plays a chapter's hint presentation - its sound, its cue and its line - toward
 	/// <paramref name="source"/>, on whatever stage is running, and frees it after. For _UiShot
 	/// --hint-preview, which photographs a hint's line on grounds no hint plays on (the Fallow Fields'
-	/// pale field, the Sketchbook's paper). It touches no schedule and no save.
+	/// pale field). It touches no schedule and no save.
 	/// </summary>
 	public static void Preview(Node2DGame game, StageHint hint, Vector2 source, Color tell)
 	{

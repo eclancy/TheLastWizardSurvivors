@@ -1,5 +1,7 @@
 # Terrain: how the ground is painted, and what stops you
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 Three layers (four, with the ground detail of section 8, and the water of section 3 drawn on its
 own), fifteen autotile terrains, and two independent properties a terrain can have. This is the part of the game a player looks at for
 fifteen minutes at a stretch without ever noticing it, which is the standard it has to meet.
@@ -1479,7 +1481,7 @@ look like cracked volcanic earth." Every playable chapter was photographed mid-r
 | **Frozen Waste** | **no** - the darkest floor in the game (`graystone`) under a snowfield; it read "night" before "frozen" |
 | Scorched Sands | yes - sand, dry grass, scree |
 | **The Emberdeep** | **no** - a calm navy slate (`basalt` was the `natural` floor with violet in it), and its lava was black crust with thin orange cracks: the hazard had the look the floor wanted |
-| The Sketchbook | yes - ruled paper (generated, but it sits with the kids' art: not touched) |
+| ~~The Sketchbook~~ | removed 2026-11-09 (it was ruled paper, generated, kept with the kids' art) |
 | The Fallow Fields | yes - stubble, furrows, sheaves |
 | The Broken Circle | yes - heather on peat, granite |
 

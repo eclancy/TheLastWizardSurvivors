@@ -19,7 +19,7 @@ using TheOneHeMissed.scripts;
 /// along their side of the ring off it.
 ///
 /// No plate behind it. The words are outlined in occlusion black, the LoadoutHud numerals' treatment, so
-/// they read on every ground including the Sketchbook's white paper, and the corner stays open play field.
+/// they read on every ground including the palest, and the corner stays open play field.
 ///
 /// LIVE. Node2DGame calls <see cref="Refresh"/> once a second with the run folded into the save
 /// (AchievementContext.Projected - the achievement moment's reading), so a count moves during the run, a

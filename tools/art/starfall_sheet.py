@@ -12,7 +12,7 @@ after the save has loaded - and a load that migrates writes straight back - so p
 which disables writes before the load:
 
   "$GODOT_BIN" --path . --resolution 1280x720 scenes/_UiShot.tscn -- --no-save-writes \\
-      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=0 --start-spell=starfall \\
+      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=1 --start-spell=starfall \\
       --demo-spell-level=4 --demo-evolutions=starfall_frostfall \\
       --spell-stage=36,40,20 --fx-lead=150 --frames=400 --burst=3,25 --shot=starfall-frostfall-pc
   (phone: --resolution 540x1212 ... --portrait --safe-area --shot=starfall-frostfall-phone)

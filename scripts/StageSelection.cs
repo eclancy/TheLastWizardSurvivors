@@ -118,8 +118,8 @@ public partial class StageSelection : Control
 			if (!IsUnlocked(i))
 				continue;
 
-			// The Sketchbook is the one chapter he has never been to, so it falls back to its
-			// scenery line. See StageDefinition.CorruptionText and .ai/world-and-tone.md.
+			// A chapter with no corruption line falls back to its scenery line (none today; the
+			// Sketchbook was the one). See StageDefinition.CorruptionText and .ai/world-and-tone.md.
 			string line = string.IsNullOrWhiteSpace(stage.CorruptionText) ? stage.FlavorText : stage.CorruptionText;
 			int idx = i;
 			// Named for the chapter's stage index, not its place in the list, so a harness that

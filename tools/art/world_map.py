@@ -8,8 +8,6 @@ Writes, under assets/bonelight/ui/worldmap/:
                       road's land, his castle on its rock, and across the dark sea the far shore
     tower-unlit.png   his tower once he has fallen, cut to where it differs, laid over the world after
                       Taken Back (the light going home, .ai/world-map.md section 19)
-    sketchbook.png    the Sketchbook's page: its own sheet, a map apart from the world, with a short
-                      pencil road on it to where the wizard stands
     shroud-<stop>.png the bank of his fog laid over a locked place, one per stop, sized to it
     shadow.png        the wizard's contact shadow on the map
     ring-open.png, ring-locked.png, ring-current.png   the mark under each stop's stand point
@@ -26,9 +24,8 @@ Writes, under assets/bonelight/ui/worldmap/:
 The design is .ai/world-map.md. The geometry the screen uses comes from worldmap.json and nowhere
 else, so moving a place is a line in PLACES or WAYPOINTS below and a re-run.
 
-THE KIDS' ART IS NEVER OPENED HERE. The Sketchbook's page is drawn by this file; the drawings on it
-are theirs, laid on the page at runtime from their own files (WorldMapView), untouched. The page's
-JSON names those files; this generator does not read a pixel of them.
+The Sketchbook's page (sketchbook.png, a sheet apart from the world) was drawn here until the chapter
+was removed at Eric's request on 2026-11-09; git history holds it.
 
 Python 2.7 and 3 both. Every random choice comes from rng.random() on a seeded Random, so a re-run
 writes the same bytes.
@@ -115,9 +112,6 @@ PLACES = [
     ("stage_17", (2800, 560), (2852, 624), 86, 52), # The Twelfth Hour - the avenue by the still river
     ("stage_18", (2930, 300), (2976, 228), 80, 52), # The Thunder Fell - granite under the storm
     ("stage_19", (3196, 432), (3268, 414), 64, 46), # The Bronze Isle - the god's cold forge
-    # The Sketchbook is not a stop on this road (Eric, 2026-10-30: "sketchbook level should not be
-    # attached to the map ... it shows up as its own separate map"). It is the page below, its own
-    # sheet, reached from the world map once the campaign is finished (.ai/world-map.md, section 4).
 ]
 
 # The road between the stand points, in order. Each list runs from one stand point to the next
@@ -178,21 +172,6 @@ ISLE_TOP = [(1864, 410), (1858, 384), (1866, 346), (1884, 306), (1910, 270), (19
             (1972, 414), (1918, 416)]
 ISLE_CLIFF = 30             # how far the rock's south face drops to the water, in map pixels
 DECK_HEIGHT = 15            # how far the bridge's deck stands above the water
-
-# THE PAGE: the Sketchbook's own sheet, a map of its own with nothing of the world on it. Every
-# coordinate below is in the page image's own pixels (it used to be placed in map space, off the
-# world's east edge, with the road running onto it as a pencil line).
-PAGE_SIZE = (204, 246)
-# The sheet inside that image; the margin round it holds its shadow and the tape.
-PAGE_RECT = (8, 8, 192, 236)
-# Where the wizard stands on it (his feet), at the end of its own short pencil road.
-PAGE_STAND = (82, 142)
-# The kids' drawings laid on the page at runtime, unmodified, from their own files.
-PAGE_DRAWINGS = [
-    # file, top-left in PAGE space
-    ("res://assets/kidsart/doodle-sun.png", (90, 16)),
-    ("res://assets/kidsart/kid-wizard-moving.png", (28, 60)),
-]
 
 
 def rng_for(seed):
@@ -3290,72 +3269,6 @@ def edge_falloff(g):
 
 
 # ---------------------------------------------------------------------------------------------
-# THE PAGE: the Sketchbook's own sheet. Nothing joins it to the world any more - no road runs off
-# the world's edge onto it - so its pencil road starts at its own torn edge.
-# ---------------------------------------------------------------------------------------------
-def page():
-    pw, ph = PAGE_SIZE
-    g = Grid(pw, ph)
-    x0, y0, x1, y1 = PAGE_RECT
-    # Its shadow on the dark, offset down and right.
-    g.rect(x0 + 4, y0 + 5, x1 + 4, y1 + 5, OCC)
-    paper = T("skin", "lit")
-    for y in range(y0, y1 + 1):
-        for x in range(x0, x1 + 1):
-            # A sheet lit from the upper left: the far corner falls a step.
-            t = ((x - x0) / float(x1 - x0) + (y - y0) / float(y1 - y0)) / 2.0
-            c = paper if not dith(x, y, (t - 0.72) * 1.6) else T("skin", "base")
-            # Squared ruling, faint: grey-blue on the white, a step darker where the page turns away.
-            if (x - x0) % 8 == 0 or (y - y0) % 8 == 0:
-                c = T("skin", "base") if c == paper else T("skin", "shade")
-            g.set(x, y, c)
-    # The margin, in red.
-    g.rect(x0 + 18, y0, x0 + 18, y1, T("red", "hi"))
-    # Torn left edge: the page came out of a workbook.
-    r = rng_for(1001)
-    for y in range(y0, y1 + 1):
-        bite = int(r.random() * 3)
-        for x in range(x0, x0 + bite):
-            g.set(x, y, None)
-    # The curl at the lower right corner, and the tape at the top.
-    for k in range(10):
-        for j in range(10 - k):
-            g.set(x1 - j, y1 - k, None if j < 10 - k - 1 else T("skin", "shade"))
-    g.poly([(x1 - 10, y1), (x1, y1 - 10), (x1 - 9, y1 - 9)], T("skin", "base"))
-    for (tx, ty) in ((x0 + 60, y0 - 4), (x1 - 40, y0 - 3)):
-        g.rect(tx, ty, tx + 18, ty + 7, T("gold", "lit"))
-        g.rect(tx, ty, tx + 18, ty, T("gold", "hi"))
-        g.rect(tx, ty + 7, tx + 18, ty + 7, T("gold", "base"))
-    # The pencil road: in from the torn edge, a little downhill, to where the wizard stands - a road
-    # somebody drew on the paper. Graphite, hand-wobbled.
-    sx, sy = PAGE_STAND
-    pts = [(x0 + 2, sy + 22), (x0 + 30, sy + 16), (sx - 26, sy + 6), (sx, sy)]
-    for i in range(len(pts) - 1):
-        ax, ay = pts[i]
-        bx, by = pts[i + 1]
-        steps = int(max(1, math.hypot(bx - ax, by - ay)))
-        for s in range(steps):
-            t = s / float(steps)
-            x = ax + (bx - ax) * t
-            y = ay + (by - ay) * t + math.sin((x) / 9.0) * 0.6
-            on_paper = x0 <= x <= x1 and y0 <= y <= y1
-            ink = T("stone", "shade") if on_paper else T("skin", "shade")
-            g.set(x, y, ink)
-            if int(x) % 5 != 0:
-                g.set(x, y + 1, ink)
-    # A little pencil lying on the page, sharpened.
-    px, py = x0 + 120, y1 - 30
-    for k in range(26):
-        g.set(px + k, py - k // 3, T("gold", "base"))
-        g.set(px + k, py - k // 3 + 1, T("gold", "shade"))
-        g.set(px + k + 1, py - k // 3 + 2, OCC)
-    g.set(px - 1, py + 1, T("stone", "deep"))
-    g.set(px - 2, py + 1, T("stone", "deep"))
-    g.set(px, py, T("flesh", "lit"))
-    return g
-
-
-# ---------------------------------------------------------------------------------------------
 # THE SMALL SPRITES
 # ---------------------------------------------------------------------------------------------
 def shroud(rx, ry, seed):
@@ -3423,7 +3336,8 @@ def shadow():
 
 
 def mark(kind):
-    """The compass marks, 16x16: a lozenge in the stop's state, or the seat and the page."""
+    """The compass marks, 16x16: a lozenge in the stop's state, or the seat; and the page, which no
+    stop wears since the Sketchbook went (2026-11-09) and the Codex still draws for a secret's reward."""
     g = Grid(16, 16)
     if kind in ("open", "cleared", "locked"):
         fill = {"open": T("gold", "base"), "cleared": T("gold", "lit"), "locked": T("stone", "base")}[kind]
@@ -3584,14 +3498,6 @@ def write_json(tower_at=None, tower_size=None):
         "size": [W, H],
         "route": [[round(p[0], 1), round(p[1], 1)] for p in ROUTE],
         "stops": stops,
-        # The Sketchbook's page, its own sheet: every coordinate in the page image's own pixels.
-        "page": {
-            "image": "sketchbook.png",
-            "size": [PAGE_SIZE[0], PAGE_SIZE[1]],
-            "rect": [PAGE_RECT[0], PAGE_RECT[1], PAGE_RECT[2], PAGE_RECT[3]],
-            "stand": [PAGE_STAND[0], PAGE_STAND[1]],
-            "drawings": [{"texture": f, "at": [p[0], p[1]]} for (f, p) in PAGE_DRAWINGS],
-        },
         # The light going home (.ai/second-half.md 6.2), laid over the world after Taken Back: the tower unlit, at
         # its top-left in world pixels, and the path the warm motes stream east along off his crown.
         "light_home": {
@@ -3742,10 +3648,6 @@ def main(argv=()):
         return
     save(g, "world.png")
     save(tower, "tower-unlit.png")
-
-    p = page()
-    audit(p, "sketchbook")
-    save(p, "sketchbook.png")
 
     for (sid, stand, focus, rx, ry) in PLACES:
         if rx <= 0:

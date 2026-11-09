@@ -11,7 +11,7 @@ The captures (one Godot at a time; each is --burst frames of one cast against a 
 is named <prefix>-<spell>-<pc|phone>, prefix aoeB taken before the change and aoeA after, e.g.
 
   "$GODOT_BIN" --path . --resolution 1280x720 scenes/_UiShot.tscn -- \\
-      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=0 --start-spell=gravewell \\
+      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=1 --start-spell=gravewell \\
       --spell-stage=24,170,0 --frames=420 --burst=14,10 --shot=aoeA-gravewell-pc
   (phone: --resolution 540x1212 ... --portrait --safe-area --spell-stage=24,0,170 --shot=aoeA-gravewell-phone)
 

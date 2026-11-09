@@ -129,7 +129,7 @@ def shard(angle, size=CELL):
                 colour = METAL_HOT if lit else METAL_EDGE
             filled[(px, py)] = colour
 
-    # Occlusion round the iron, one pixel, so it holds on the Sketchbook's paper as on the dungeon's
+    # Occlusion round the iron, one pixel, so it holds on pale ground as on the dungeon's
     # stone. Not round the streak behind it (sleet_runes.py says why).
     for (px, py) in list(filled):
         for dy in (-1, 0, 1):

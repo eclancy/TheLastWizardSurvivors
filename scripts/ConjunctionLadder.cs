@@ -154,8 +154,7 @@ public static class ConjunctionLadder
 	{
 		var suits = new List<ComboDefinition>();
 		SpellData own = character?.StartingSpellResource;
-		if (own == null || save == null || !Teachings.HasLearned(save, Teaching.Conjunctions)
-			|| character.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase))
+		if (own == null || save == null || !Teachings.HasLearned(save, Teaching.Conjunctions))
 			return suits;
 		var ownElements = new HashSet<Element>();
 		foreach (var pair in own.ElementWeights)

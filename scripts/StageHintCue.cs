@@ -43,7 +43,7 @@ using TheOneHeMissed.scripts;
 // under the line whenever the player walked toward the sound (the line is fixed to the screen, and the
 // band they come in on is the edge beside it). Each wears its event's far-tell colour
 // (tools/art/hint_cues.py draws them in the matching emissive ramp, with an occlusion outline that
-// keeps them readable on the Fallow Fields and the Sketchbook's paper) over a soft glow of it.
+// keeps them readable on the Fallow Fields' pale ground) over a soft glow of it.
 //
 // They come in along a band at the edge of the same safe rectangle the line keeps to
 // (StageHintCaption.SafeRect: under the HUD, out of a phone's thumb zone), spread along it either side

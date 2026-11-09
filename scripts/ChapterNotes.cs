@@ -129,12 +129,7 @@ public static class ChapterNotes
 			"One hall of black stone. The doors shut behind me.",
 			"Nothing to smell, nothing to hear. He is here.",
 		},
-		// The Sketchbook - outside the campaign; nothing here is his doing (StageCatalog).
-		["stage_8"] = new[]
-		{
-			"Squared paper underfoot. It smells of pencil.",
-			"He has never been here.",
-		},
+		// (stage_8, the Sketchbook, had a note here until the chapter was removed on 2026-11-09.)
 		// THE FAR SHORE (.ai/second-half.md 4.2). Written by F0 from each chapter's ground and corruption line, so
 		// the note is there the day the chapter flips; each block is its chapter's piece's to rewrite. The god held
 		// there adds his held line from QuestLog.Prisoners, as a wizard does.

@@ -24,7 +24,7 @@ namespace TheOneHeMissed.scripts;
 ///
 /// Pixel art on the world's 2-unit grid since 2026-10-29 (PixelInk; .ai/art-replacement-manifest.md
 /// section 9): every spark and bolt is stamped cell by cell in the Lightning ramp - a gold edge under a
-/// white-hot seam, which holds on the Sketchbook's paper as well as on a dark floor - and fades by
+/// white-hot seam, which holds on pale ground as well as on a dark floor - and fades by
 /// dissolving, where they were antialiased DrawLines under a translucent outline, fading by alpha.
 /// </remarks>
 public partial class StaticCharges : Node2D

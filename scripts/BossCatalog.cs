@@ -155,20 +155,9 @@ public static class BossCatalog
 			Health = 500000, // 200000 before the fights were lengthened, 11000 before the difficulty curve
 			ArcaneVictoryBonus = 400
 		},
-		[8] = new BossDefinition
-		{
-			Id = "kid_wizard",
-			// Named for Elim, who drew him (Eric, 2026-11-01: "Wizard dude is elims drawing. The boss can be
-			// named after elim").
-			// Only the name changed: the id, the scene and every save key are the Wizard Dude's still.
-			DisplayName = "Elim",
-			Tagline = "Throws a fan of missiles down the wedge he shows you. Leave the wedge.",
-			ScenePath = "res://scenes/KidWizardBoss.tscn",
-			Health = 9000, // 4600 before the fights were lengthened
-			// Opens nothing: the Sketchbook is outside the campaign order (StageCatalog), so
-			// ChapterOpenedBy has no next chapter for it - beating it is never on the critical path.
-			ArcaneVictoryBonus = 200
-		},
+		// [8] was Elim, the Sketchbook's boss ("kid_wizard"), removed with the chapter on 2026-11-09. The index is
+		// retired (StageCatalog.RetiredIndices); a save that beat him keeps "kid_wizard" in its lifetime record,
+		// which names no boss now and is read as nothing.
 		// THE TWO EARLY CHAPTERS' BOSSES (.ai/campaign.md). Designed, not built: each fights as
 		// Elderbark under its own id and name until Phase 2 creates the scene at ScenePath, at which
 		// point the chapter switches to it with no edit here. Health and bonus sit between the

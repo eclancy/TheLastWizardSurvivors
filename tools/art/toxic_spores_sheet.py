@@ -8,7 +8,7 @@ size, then four at phone size. Missing captures are skipped, not faked.
 The captures (one Godot at a time; each set is --burst frames of a single cast against a held crowd):
 
   "$GODOT_BIN" --path . --resolution 1280x720 scenes/_UiShot.tscn -- \\
-      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=0 --start-spell=toxic_spore_burst \\
+      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=1 --start-spell=toxic_spore_burst \\
       --demo-spell-level=4 --demo-evolutions=toxic_spore_ember_caps \\
       --spell-stage=30,230,0 --frames=240 --burst=16,6 --shot=spores-ember-pc
   (phone: --resolution 540x1212 ... --portrait --safe-area --spell-stage=30,0,230 --shot=spores-ember-phone)

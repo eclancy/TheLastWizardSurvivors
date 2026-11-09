@@ -21,12 +21,10 @@ public partial class LevelTilePainter : Node2D
 		"res://assets/bonelight/tiles/tiles.json";
 
 	/// <summary>
-	/// Extra manifests merged on top of <see cref="MetadataPath"/>. Ours rather than a pack's.
+	/// Extra manifests merged on top of <see cref="MetadataPath"/>. None today: the Sketchbook's paper
+	/// (assets/kidsart/tiles.json) was the one until the chapter was removed on 2026-11-09.
 	/// </summary>
-	[Export] public string[] ExtraMetadataPaths { get; set; } =
-	{
-		"res://assets/kidsart/tiles.json",
-	};
+	[Export] public string[] ExtraMetadataPaths { get; set; } = System.Array.Empty<string>();
 
 	[Export] public int TileSize { get; set; } = 48;
 
@@ -381,7 +379,7 @@ public partial class LevelTilePainter : Node2D
 				if (overlay == null)
 				{
 					// See _Ready: collision on, but only blocking terrains carry a polygon. Created only
-					// when a chunk has any overlay at all - a page of the Sketchbook has none.
+					// when a chunk has any overlay at all.
 					overlay = new TileMapLayer { Name = "Overlay", TileSet = _tileSet, CollisionEnabled = true };
 					root.AddChild(overlay);
 					if (walls != null)
@@ -1014,7 +1012,7 @@ public partial class LevelTilePainter : Node2D
 	// cell carries a one-pixel extruded border that the source's margins and separation step over, so
 	// nearest sampling never bleeds a neighbour in, and Godot's own texture padding - which read every
 	// source back from the GPU at load to build a padded copy - is off. A tile the atlas lacks (a
-	// manifest newer than its atlas, or the Sketchbook's paper) still gets a source of its own.
+	// manifest newer than its atlas) still gets a source of its own.
 	[Export] public string AtlasMetadataPath { get; set; } = "res://assets/bonelight/tiles/atlas.json";
 	[Export] public string AtlasTexturePath { get; set; } = "res://assets/bonelight/tiles/atlas.png";
 

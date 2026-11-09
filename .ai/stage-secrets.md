@@ -1,5 +1,7 @@
 # Stage secrets: what he missed
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 A plan, and since 2026-10-28 partly a record. It sets out what a secret is in this game, how one is
 placed in a stage that has no edge, what it may pay, and three to five concrete secrets for every
 chapter, then names the shared systems and the order to build them in. **Built so far (issue #20):
@@ -91,8 +93,8 @@ things make it unmistakable:
 Draw it at the contract's integer x2 scale, as a 2 x 2 art-pixel core with a one-pixel soft halo
 at most. It must not grow into a bloom effect: a glint the size of a spell reads as a spell.
 
-**The Sketchbook is the exception.** It is outside the fiction and has no warm light to spend.
-Its tells are pencil marks: a circled spot, an X, a doodle left uncoloured. See section 6.9.
+(The Sketchbook was the exception - outside the fiction, its tells pencil marks - until the chapter was
+removed on 2026-11-09. See section 6.9 for what was planned.)
 
 ### What signposting must never be
 
@@ -667,11 +669,13 @@ fewer, quieter and about who came before.
   found.
 - **Art:** the wall, marks unlit and lit. No writing: marks, not names.
 
-### 6.9 The Sketchbook (`stage_8`)
+### 6.9 The Sketchbook (`stage_8`) - removed 2026-11-09
 
-**Shelved, 2026-11-02.** Eric: "the sketchbook should not have any unlocks or any achievements". A secret
-is a deed, so the Sketchbook has none; K1 to K3 below are kept only as the record of what was planned,
-and `RegressionChecks.ValidateSketchbookHoldsNothing` reports any secret placed here.
+**The chapter itself was removed on 2026-11-09**, with `SecretCatalog.Sketchbook.cs` and
+`ValidateSketchbookHoldsNothing`; `RegressionChecks.ValidateSketchbookAndTestWizardRemoval` reports any secret
+placed in `stage_8`. Before that: **shelved, 2026-11-02.** Eric: "the sketchbook should not have any unlocks or
+any achievements". A secret is a deed, so the Sketchbook had none; K1 to K3 below are only the record of
+what was planned.
 
 Outside the campaign and outside the fiction; it has no corruption line because he has never been
 here. Three rules, from `CLAUDE.md` and `art-replacement-manifest.md`, that bind every secret in it:
@@ -714,7 +718,7 @@ Tells here are pencil marks, not warm glints.
 | Frozen Waste | fight near | Footprints (follow, linger), Settled Snow (stillness), **Watch-Fire** (guarded) | 150 AE |
 | Scorched Sands | catch | Buried Cart (strike), Milestones (sequence), **Hidden Water** (linger), Mirage (stillness) | Recovery |
 | The Emberdeep | none | Last Ward (touch), Sleeping Sentry (guarded), **The Marks** (touch) | page only |
-| The Sketchbook | none | Dog's Find (follow), Colour It In (circle), Kids' Page (reserved) | page only |
+| ~~The Sketchbook~~ | removed 2026-11-09 | (planned and shelved: Dog's Find, Colour It In, Kids' Page) | - |
 
 The Dungeon's carry is its side event's, so its carry-shaped secret was dropped for chalk marks.
 The Frozen Waste has no *strike*, which is the thaw's. The Forest's long hold belongs to the grove,
@@ -779,7 +783,7 @@ id), keepsake flag, the ledger's hint line, the landmark kind. `RegressionChecks
 - **no meta reward is a spell, a wizard or a boon** (section 1, section 3);
 - found levels name only Vitality, Recovery, Magnet or Movespeed, and each at most once;
 - no run reward is XP, a level, a tag, a charge or Growth;
-- Sketchbook secrets carry no meta reward;
+- no secret is placed in the removed Sketchbook (`stage_8`, `ValidateSketchbookAndTestWizardRemoval`);
 - ids are unique, and every keepsake has a hint line.
 
 `SecretRewards` pays them, as `DiscoveryRewards` pays sites: granted and saved at once, recorded
@@ -897,7 +901,7 @@ Tree (5). The Fairy Ring, the Buried Cart and everything after are still the pla
 
 | piece | where |
 |---|---|
-| the catalog, the single authority | `SecretCatalog` - two entries; `RegressionChecks.ValidateSecretCatalog` holds sections 1, 3 and 7.5's rules (no meta reward but the page, a found level of the four comfort stats, or Arcane up to 150; one found level of each stat ever; one keepsake a chapter; the Sketchbook's page only) |
+| the catalog, the single authority | `SecretCatalog` - two entries; `RegressionChecks.ValidateSecretCatalog` holds sections 1, 3 and 7.5's rules (no meta reward but the page, a found level of the four comfort stats, or Arcane up to 150; one found level of each stat ever; one keepsake a chapter) |
 | the run's half | `SecretDirector`, added beside the `SideEventDirector` before the first chunk is furnished: the run state (`StateOf(key)`), the landmark hook, the keepsake's placement, the seeds, finding |
 | the Fenced Bloom | `FencedBloom`, attached to every flower pen as it streams in (`Landmark.Spawned`, deferred a frame because a child added inside a parent's enter-tree is refused) |
 | the seed | `SecretSeed`: carried over the head, three hits knock it loose (the Gaoler's key's rule) |

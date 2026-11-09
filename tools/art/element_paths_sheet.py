@@ -6,11 +6,12 @@ branch that adds a second element on the right, two moments of each (in flight /
 Take the captures first, one Godot at a time, PC canvas. For every SPELL / PATH pair in ROWS below:
 
   "$GODOT_BIN" --path . --resolution 1280x720 scenes/_UiShot.tscn -- \
-      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=0 --start-spell=SPELL \
+      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=1 --start-spell=SPELL \
       --demo-spell-level=4 --spell-stage=12 --frames=360 --burst=8,2 --shot=elempath-NAME-base
   ... the same with --demo-evolutions=PATH and --shot=elempath-NAME-path
 
-(--character=0 is the Test Wizard, who opens on --start-spell; --spell-stage holds a knot of
+(--character=1 is the Pyromancer, who opens on --start-spell in place of his own - it was the Test
+Wizard at --character=0 until he was removed on 2026-11-09; --spell-stage holds a knot of
 unkillable skeletons 230 px to his right; _UiShot never writes the real save.) Chain Lightning's arc
 lasts 0.09 s, so take it with --fx-lead=1 --burst=8,1; Hollow Star with --burst=8,14 to reach its
 collapse; Bramble Seed with --burst=6,40 to watch it grow. Then:
