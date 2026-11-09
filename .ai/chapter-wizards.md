@@ -971,7 +971,10 @@ and the stumble are the only tells); Surveyor, which the bot's builds never feel
 - **Form: The Tempered Line (temper).** *"Every blow the stakes take hardens the line. Struck enough,
   it rings and cuts everything along it."* Tagline: *"The more they strike, the harder."* First guess:
   +5% per contact to +100%, then one cut along the whole line and a reset.
-- **Passive: Wings**, +10% move speed.
+- **Passive: Wings**, +10% move speed - since 2026-11-09 **floor traps can't touch him, and water doesn't slow him**
+  (`over_traps_and_water`, `Player.Winged`), and **he flies when he moves**: the iron wings open and beat and he skims
+  over a narrowing shadow, folded again when he stands (Eric: "I like A, but instead of extra speed, make him immune to
+  floor traps / water slowing"; `.ai/character-fit.md`).
 - **Freed by: bait.** He is chained to the great anvil by four chains staked in the floor. No spell
   breaks his own iron; only his forge's hammers can. On arrival the bellows wake four Trip-Hammers (the
   chapter's Slammer). Stand by a stake as one winds up, step out of the tell, and a slam that lands on
@@ -1060,7 +1063,10 @@ He is the Court's second event, so he waits on P2 and the Court's flip, with Nos
   was never let finish it.
 - **Spell.** **Familiar** (Arcane): painted creatures that come alive. The catalog gives one Apotheosis
   per form, each with its own verb, so he gets one, on the **crow** (the tale's painted birds). Taken
-  as the dog or the cat, he has none; the character card should say so.
+  as the dog or the cat, he has none; the character card should say so. **Since 2026-11-09 he always opens on
+  the crow** - no choice of form (Eric: "he automatically starts with a crow familiar"; his card reads "Familiar -
+  Crow") - and **his crow is an ink brush-painting come alive**, through every form it grows into, while every
+  other wizard's crow stays light (`Familiar.PaintsInInk`, `tools/art/familiar.py`; `.ai/character-fit.md`).
 - **Form: The Painted Door (displace).** *"Where the crow strikes it paints a door, and whatever stands
   on it steps out of a second door far across the field."* Tagline: *"Move the knot, not the kill."*
 - **Passive: Paint What Is Needed**, once a run, below a quarter of his health, a flask is painted at
