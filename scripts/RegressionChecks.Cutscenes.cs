@@ -33,6 +33,51 @@ public static partial class RegressionChecks
 		int lines = reel.Beats.Count(b => !string.IsNullOrEmpty(b.Caption));
 		if (lines > 6)
 			warnings.Add($"Prologue: {lines} panels carry a line; it was written for six at most.");
+		ValidateLightGoesOn(warnings);
+	}
+
+	// REEL E, THE LIGHT GOES ON (LightGoesOn, .ai/second-half.md 6.3). Its panels on disk, one line that fits a PC's one
+	// line (the doc: "one line or none"); and the debt on sample saves: a new save and a save short of the Throne owe
+	// nothing, a save that won the Throne owes it, the reel ending pays it once, a save and a load keep it paid, and a
+	// save written before the flag existed - no key at all - reads as unseen, which is why no schema step is needed.
+	private static void ValidateLightGoesOn(List<string> warnings)
+	{
+		if (!Prologue.Reels.TryGetValue(LightGoesOn.ReelId, out Prologue.Reel reel))
+		{
+			warnings.Add($"Light goes on: reel '{LightGoesOn.ReelId}' is not in Prologue.Reels.");
+			return;
+		}
+		foreach (Prologue.Beat beat in reel.Beats)
+		{
+			foreach (string layer in new[] { "back", "mid", "fore" })
+			{
+				string path = Prologue.LayerPathFor(reel, beat, layer);
+				if (!ResourceLoader.Exists(path))
+					warnings.Add($"Light goes on: panel {path} is missing or not imported (python tools/art/light_goes_on.py, then import).");
+			}
+			if (!string.IsNullOrEmpty(beat.Caption) && beat.Caption.Length > 46)
+				warnings.Add($"Light goes on: '{beat.Name}' says more than one line on a PC (46 characters).");
+		}
+		if (reel.Beats.Count(b => !string.IsNullOrEmpty(b.Caption)) > 1)
+			warnings.Add("Light goes on: more than one panel carries a line; the reel was written for one at most.");
+
+		var fresh = new SaveData();
+		var won = new SaveData();
+		won.Lifetime.BossesDefeated.Add(AchievementDefinitions.ThroneBossId);
+		if (LightGoesOn.IsOwed(fresh))
+			warnings.Add("Light goes on: a new save owes reel E; only a save that has taken back the Throne may.");
+		if (!LightGoesOn.IsOwed(won))
+			warnings.Add("Light goes on: a save that has taken back the Throne does not owe reel E.");
+		if (LightGoesOn.IsWatchable(won))
+			warnings.Add("Light goes on: Options lists reel E before it has been shown.");
+		if (!LightGoesOn.MarkSeen(won) || LightGoesOn.IsOwed(won) || LightGoesOn.MarkSeen(won) || !LightGoesOn.IsWatchable(won))
+			warnings.Add("Light goes on: the reel ending does not pay its debt exactly once.");
+		if (LightGoesOn.IsOwed(SaveData.FromVariant(won.ToGodotDictionary())))
+			warnings.Add("Light goes on: a save and a load forget that reel E was shown.");
+		Godot.Collections.Dictionary older = won.ToGodotDictionary();
+		older.Remove("HasSeenLightGoesOn");
+		if (!LightGoesOn.IsOwed(SaveData.FromVariant(older)))
+			warnings.Add("Light goes on: a save from before the flag existed, that won the Throne, does not owe reel E.");
 	}
 
 	// THE FREEINGS (Freeings). Every wizard with a reel is a real, freeable character with a freed line that fits one

@@ -154,6 +154,16 @@ public class SaveData
 	public bool HasSeenPrologue { get; set; } = false;
 
 	/// <summary>
+	/// Reel E, "The light goes on", has been shown (LightGoesOn, .ai/second-half.md 6.3): the light going east over
+	/// the dark sea after the Throne is won. Owed only to a save that has taken back the Throne, so the default
+	/// (unseen) is the quiet state for everyone else and NO SCHEMA STEP is needed: it only adds, a missing key reads as
+	/// false, and a save that won the Throne before the reel existed meets it once, the first time the world map
+	/// opens. Written when the reel ends, played through or skipped; set in memory but never saved by a tool scene
+	/// or a --no-save-writes run (SaveManager.SaveGame).
+	/// </summary>
+	public bool HasSeenLightGoesOn { get; set; } = false;
+
+	/// <summary>
 	/// The quests the player has chosen to see on screen during a run (QuestLog, .ai/quests-and-notes.md):
 	/// achievement ids, and <see cref="QuestLog.NextWizardId"/> for "free the next wizard", which resolves to
 	/// whoever is next each time it is read. No schema bump: it only adds, and a save without the key keeps
@@ -1393,6 +1403,7 @@ public class SaveData
 			["Lifetime"] = Lifetime.ToGodotDictionary(),
 			["HasSeenGameplayOnboarding"] = HasSeenGameplayOnboarding,
 			["HasSeenPrologue"] = HasSeenPrologue,
+			["HasSeenLightGoesOn"] = HasSeenLightGoesOn,
 			["TrackedQuestIds"] = trackedQuestIds,
 			["SeenChapterNoteIds"] = seenChapterNoteIds,
 			["SeenItemIds"] = seenItemIds,
@@ -1643,6 +1654,9 @@ public class SaveData
 
 		if (root.ContainsKey("HasSeenPrologue"))
 			result.HasSeenPrologue = root["HasSeenPrologue"].AsBool();
+
+		if (root.ContainsKey("HasSeenLightGoesOn"))
+			result.HasSeenLightGoesOn = root["HasSeenLightGoesOn"].AsBool();
 
 		// Both additive (no schema bump): a save without the key keeps the defaults - the next wizard
 		// tracked, no note seen. A present key replaces the default, so an empty list stays empty.

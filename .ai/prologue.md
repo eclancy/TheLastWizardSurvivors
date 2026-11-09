@@ -191,6 +191,10 @@ when it ends - and from Options > Story ("Lesson: <name>", `Prologue.Play` with 
 prologue's reel is ever marked seen by this scene. `_UiShot --scene=res://scenes/Prologue.tscn
 --reel=<id> --frames=480` photographs a lesson's second panel mid-hold, line up; `--frames=170` its first.
 
+Story reels that are neither the prologue nor a freeing live in `assets/bonelight/ui/story/`: today reel E, *the
+light goes on* (`light_goes_on`, `tools/art/light_goes_on.py`, `LightGoesOn`; `.ai/cutscenes.md` E), which marks
+its own flag when it ends, however it was reached.
+
 ## When it plays
 
 - **Start Run, the first time.** `MainMenu.OnStartRunPressed` asks `Prologue.IsUnseen`; if so it plays
