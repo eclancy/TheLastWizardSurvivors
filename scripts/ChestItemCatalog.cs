@@ -823,9 +823,8 @@ public static class ChestItemCatalog
 			text.Append(' ').Append(set.Name).Append(' ').Append(set.Description);
 		string words = text.ToString();
 		bool Names(string stem) => words.Contains(stem, StringComparison.OrdinalIgnoreCase);
-		if (Names("Sovereign"))
-			return Teaching.SovereignRite;
-		if (Names("Conjunction"))
+		// The Sovereign Rite is a Conjunction since 2026-11-08, taught with them (no lesson of its own).
+		if (Names("Sovereign") || Names("Conjunction"))
 			return Teaching.Conjunctions;
 		if (Names("Apotheos") || Names("final form"))
 			return Teaching.Apotheosis;

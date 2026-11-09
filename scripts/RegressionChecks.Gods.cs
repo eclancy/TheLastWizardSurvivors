@@ -70,7 +70,7 @@ public static partial class RegressionChecks
 	{
 		string who = recipe.StartsFusedFor;
 		if (recipe.IsRite)
-			warnings.Add($"{label} is the Sovereign Rite, which anoints a spell and is never held made; nobody may open on it.");
+			warnings.Add($"{label} is the Sovereign Rite, the capstone that silences every other spell; it is made late, and nobody may open on it.");
 		if (opener == null || opener.StartingSpellResource == null
 			|| !opener.StartingSpellResource.Id.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase))
 			warnings.Add($"{label} is opened on by '{who}', who does not start with it.");

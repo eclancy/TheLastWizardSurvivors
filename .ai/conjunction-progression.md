@@ -389,7 +389,8 @@ like a chore; whether the Sibyl's reel lands; whether a recipe made on the road 
 ## 6. Built
 
 Built 2026-11-08/09 on the branch `worktree-agent-a68bd101e5d22e3c4`, cut from `main-ff86ni`, rung by rung; the trunk
-was merged in (the far sky's element waiver) before rungs III and IV. **One save schema step: 26** (the pin).
+was merged in twice - the far sky's element waiver before rungs III and IV, the Sovereign Rite as a two-spell Conjunction
+at the end. **One save schema step: 27** (the pin).
 `scripts/ConjunctionLadder.cs` is the one authority on what each rung shows and allows, as `ComboCatalog` is on the
 recipes; nothing here changes `ComboCatalog.Evaluate`, the Ascension's gates' own numbers, XP, rerolls, bans or a tag.
 
@@ -399,7 +400,7 @@ recipes; nothing here changes `ComboCatalog.Evaluate`, the Ascension's gates' ow
 |---|---|
 | **known from one half** | `ConjunctionLadder.IsShown`: today's rule (`ComboCatalog.IsKnown`, both halves owned, shown from the Apotheosis on) or, once the Conjunctions lesson is learned, either half. Read by the browser (`Player.BuildComboPreviews`), the Codex's Recipes and its level 8 "Joins" note (`CodexModel`), and the Feat's Achievements row (`AchievementVisibility.Recipe`; the Rite keeps its own rule). The missing half is its own locked hint (`ConjunctionLadder.MissingHalfLine`, the Codex ingredient's note). |
 | **the result stays sealed** | `ConjunctionLadder.ShownName`: a recipe is called by its two parents ("Hunter's Draw + Starfall") until made, its name after - the existing rule of the browser and the Codex, kept on every ladder surface (decision 1 below). |
-| **the pin** | `SaveData.PinnedRecipeId` (**schema 26**, `MigrateToPinnedRecipe`: pins nothing; `ValidatePinnedRecipeMigration`). One at a time; refused before the lesson, for the Rite and for a recipe the save knows nothing of (`ConjunctionLadder.MayPin`). Pinned from the Codex's recipe page, **Pin / Unpin** in its head (`EvolutionCodex.Detail.PinToggle`), on the main menu and over a run alike. |
+| **the pin** | `SaveData.PinnedRecipeId` (**schema 27** - built as 26, renumbered at the merge when the Sovereign Rite's branch reached the trunk with 26 first; `MigrateToPinnedRecipe`: pins nothing; `ValidatePinnedRecipeMigration`). One at a time; refused before the lesson, for the Rite and for a recipe the save knows nothing of (`ConjunctionLadder.MayPin`). Pinned from the Codex's recipe page, **Pin / Unpin** in its head (`EvolutionCodex.Detail.PinToggle`), on the main menu and over a run alike. |
 | **the checklist** | `Player.BuildRecipeChecklist` (`Player.Ladder.cs`): each parent in the book and its level against 7, each named path's element count ("Pandemic: Poison 1 of 4", from `EvaluateElementGate`, the one authority), your level against 17, the level 4 path that would seal it, or why it is sealed; and the one next step. The pause screen's Run tab shows it as **Pinned Conjunction**, after the far sky's section (`Node2DGame.Ladder.cs`, one marked line in `ShowEscapeRunOverview`). |
 | **the corner's one line** | `QuestTracker.SetRecipeLine`: the two linked rings and the next step ("Void Lance to level 7 · 1/7"), the last row of the tracker, on its one-second reading; "Shadow Bolt made" once made. Hidden while nothing is pinned. |
 | **the level 4 mark** | `Player.NoteRecipeSeals` fills `LevelUpOption.RecipeSeals`; the level 4 card (both shapes) carries the rings and "Seals the Conjunction with Starfall" (the recipe's name once made) in the page's rubric (`LevelUpMenu.BuildRecipeSealMark`). `ConjunctionLadder.WouldSealByElement` is checked against `ComboCatalog.Evaluate`'s own fourth-element seal on every parent's every level 4 path; today two paths mark (Starfall's Frostfall, Contagion's Marsh Fever). |
@@ -593,9 +594,9 @@ three bans will be slower than the bot.
 10. **What may be foretold is exactly the far sky's candidates** (`FarSky.Candidates`), so the two never disagree on what a
     wizard can make; and the foretold run pays nothing (no Arcane Energy, no Feat, no waiver) - those read `FarSkyRecipe`.
 11. **No schema step for rungs II-IV**: Kindred Draw is an `ArcaneUpgradeLevels` key like every Power, the lesson rides
-    `LessonsLearned`, and the foretelling is not saved. **One for rung I: schema 26**, `PinnedRecipeId`
-    (`MigrateToPinnedRecipe` pins nothing; `ValidatePinnedRecipeMigration`). The trunk was still at 25 when it was numbered;
-    if the Sovereign Rite's branch takes 26 first, this renumbers at the merge.
+    `LessonsLearned`, and the foretelling is not saved. **One for rung I: schema 27**, `PinnedRecipeId`
+    (`MigrateToPinnedRecipe` pins nothing; `ValidatePinnedRecipeMigration`). Numbered 26 while the trunk was at 25; the
+    Sovereign Rite's branch reached the trunk with 26 first (`MigrateRiteToConjunction`), so the pin runs as 27.
 12. **The harness:** `--planner` (the farmed save with the lessons its road taught, and the rerolls and bans a planner buys),
     `--curate=N` (the last N spells in book order that are not the target's parents or his own - a stable, seedless pick;
     a real planner would choose better), `--kindred=N`, `--pair-shares[=half|full|off]`, `--foretell=ID|off`, and a `met=`

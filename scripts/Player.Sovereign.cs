@@ -4,37 +4,40 @@ using System.Collections.Generic;
 using System.Linq;
 using TheOneHeMissed.scripts;
 
-// THE SOVEREIGN RITE (.ai/sovereign-spell.md, approved by Eric 2026-11-02; SovereignRite holds the numbers).
+// THE SOVEREIGN RITE (.ai/sovereign-spell.md; SovereignRite holds the numbers, SovereignRiteCaster the payload).
 //
-// A Conjunction whose second ingredient is whichever active spell the player points it at. It waits on the
-// conjunction plate in the Ascension strip (GetAscensionOffers -> TryBuildSovereignOffer) once the save owns it
-// (the Warden of the Deep's deed) and the run meets its gate; taking the plate opens the conjunction page with
-// one card per active spell, each showing the fuel and what it would buy, and choosing one spends the pick.
+// Since 2026-11-08 an ordinary two-spell Conjunction (Eric: "the soverign rite should be a combination spell
+// itself"): Arcane Explosion down Resonance and Gravewell down Mass Grave, offered in the Ascension strip like
+// every recipe (TryBuildComboOffer) and made by TryFuse - once the run also meets its late gate (RiteGateMet: the
+// player's level, and the fuel the other active spells would pour in). No lesson of its own ("it just unlocks with
+// combination spells"): ConjunctionsLearned is its gate as it is every recipe's.
 //
-// From then on, for the rest of the run:
+// Fusing it crowns it (Crown). From then on, for the rest of the run:
 //   - every other active spell is SILENCED: the fire loop skips it, its standing nodes are taken out of the
-//     arena, Frost Shard's shatter and the Black Cat leave it alone, and it is never fused (IsSilenced);
-//   - the anointed spell carries a milestone of its own, SpellData.SovereignBoon, which every stat reader
-//     walks (SpellData.CollectActive), so the fuel reaches it through the one path the milestones use;
+//     arena, Frost Shard's shatter and the Black Cat leave it alone, and nothing fuses again (IsSilenced);
+//   - the Rite carries a milestone of its own, SpellData.SovereignBoon, shared with its two frozen parents, which
+//     every stat reader walks (SpellData.CollectActive), so the fuel reaches it through the one path the
+//     milestones use;
 //   - the fuel is every silenced spell's level, live: they keep levelling, a card for one reads "+1 fuel to
-//     Sovereign X" (GetLevelUpOptions), it levels straight to 8 with no mutation page or Ascension strip of
-//     its own (CardLevelCap), and RefreshSovereignFuel rewrites the boon in place.
+//     Sovereign Rite" (GetLevelUpOptions), it levels straight to 8 with no mutation page or Ascension strip of its
+//     own (CardLevelCap), and RefreshSovereignFuel rewrites the boon in place.
 // Passives - today the one shield, Aegis Ward (SovereignRite.IsPassiveForRite) - are untouched.
 public partial class Player
 {
 	private SpellData sovereignSpell;
 	private int sovereignFuel;
-	// The anointed spell's next cast flashes (.ai/sovereign-spell.md section 5, "the moment it is taken").
+	// The Rite's first cast flashes (.ai/sovereign-spell.md section 5, "the moment it is made").
 	private bool sovereignFlashPending;
 	private SovereignCrown sovereignCrown;
+	private SovereignRiteCaster sovereignRiteCaster;
 
-	/// <summary>The spell the Sovereign Rite anointed this run, or null.</summary>
+	/// <summary>The Sovereign Rite, once made this run; otherwise null.</summary>
 	public SpellData SovereignSpell => sovereignSpell;
 
-	/// <summary>The anointed spell's fuel now: every silenced spell's level, summed. 0 before the Rite.</summary>
+	/// <summary>The Rite's fuel now: every silenced spell's level, summed. 0 before the Rite.</summary>
 	public int SovereignFuel => sovereignFuel;
 
-	/// <summary>The player level the Rite was taken at, or -1. Read by the balance harness.</summary>
+	/// <summary>The player level the Rite was made at, or -1. Read by the balance harness.</summary>
 	public int SovereignTakenAtLevel { get; private set; } = -1;
 
 	/// <summary>
@@ -45,108 +48,42 @@ public partial class Player
 		sovereignSpell != null && spell != null && !ReferenceEquals(spell, sovereignSpell) && !SovereignRite.IsPassiveForRite(spell);
 
 	/// <summary>
-	/// The strip's Rite, or null: the save owns it, it is not taken, and the run meets the gate. One card on its
-	/// page per active spell, in slot order, each naming the fuel it would be poured and what that buys now; a
-	/// spell the Rite will not anoint, or one with less than the fuel the gate asks behind it, is shown locked.
+	/// The fuel the Rite would be made with now: every active spell's levels but its two parents', which become it.
 	/// </summary>
-	private LevelUpOption TryBuildSovereignOffer()
+	private int RiteFuelAtFusion(ComboStanding standing) =>
+		SovereignRite.FuelFrom(equippedSpells, standing?.FirstHeld, standing?.SecondHeld);
+
+	/// <summary>The Rite's own gate on top of its recipe: the player's level and the fuel (SovereignRite.MeetsGate).</summary>
+	private bool RiteGateMet(ComboStanding standing) =>
+		SovereignRite.MeetsGate(CurrentLevel, RiteFuelAtFusion(standing));
+
+	/// <summary>
+	/// Whether the strip offers this recipe now - its standing, the lesson, the Rite's gate and "nothing fuses after
+	/// the Rite" - without building the offer. Read by the balance harness, which asks every frame.
+	/// </summary>
+	public bool IsComboOffered(ComboDefinition recipe)
 	{
-		if (sovereignSpell != null)
-			return null;
-		SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
-		if (!GlobalStatsManager.IsSpellUnlockedForLevelUp(save, SovereignRite.SpellId))
-			return null;
-		if (!SovereignRite.MeetsGate(CurrentLevel, equippedSpells))
-			return null;
-		ComboDefinition recipe = ComboCatalog.Rite;
-		SpellData template = ComboCatalog.Template(recipe);
-		if (template == null)
-		{
-			GD.PushError($"Player: the Sovereign Rite has no SpellData in ContentValidator.SpellResourcePaths ({recipe?.ResourcePath}); it cannot be offered.");
-			return null;
-		}
-
-		var choices = new List<SpellEvolutionOption>();
-		var locks = new Dictionary<string, string>();
-		foreach (SpellData spell in SovereignRite.ActiveSpells(equippedSpells))
-		{
-			int fuel = SovereignRite.FuelFor(spell, equippedSpells);
-			SovereignGains gains = SovereignRite.GainsFor(spell, fuel);
-			choices.Add(new SpellEvolutionOption
-			{
-				// The anointed spell's id: the selection is "sovereign_rite:<spell id>".
-				Id = spell.Id,
-				DisplayName = SovereignRite.SovereignName(spell.Name),
-				Description = SovereignRite.GainLine(gains),
-				MilestoneLevel = ComboCatalog.MilestoneLevel,
-				SynergyTag = $"+{fuel} fuel",
-				// The spell as it is now (its newest milestone's picture), so the row reads as the loadout.
-				Icon = EvolutionIcons.Current(spell) ?? spell.Icon,
-				VisualTag = "Conjunction",
-			});
-			string refusal = SovereignRite.RefusalFor(spell)
-				?? (fuel < SovereignRite.MinimumFuel ? $"Needs {SovereignRite.MinimumFuel} fuel" : null);
-			if (refusal != null)
-				locks[spell.Id] = refusal;
-		}
-
-		return new LevelUpOption
-		{
-			SpellId = SovereignRite.SpellId,
-			ComboId = SovereignRite.SpellId,
-			DisplayName = template.Name,
-			Description = template.Description,
-			UpgradeSummary = "✶ CONJUNCTION - one spell takes every other spell's power",
-			NextLevel = 1,
-			MaxLevel = 1,
-			IsNewUnlock = false,
-			IsPassive = false,
-			Icon = template.Icon,
-			IsEvolutionMilestone = true,
-			MilestoneLevel = ComboCatalog.MilestoneLevel,
-			EvolutionChoices = choices,
-			EvolutionLockReason = locks,
-		};
+		if (recipe == null || SovereignSpell != null || !ConjunctionsLearned)
+			return false;
+		ComboStanding standing = EvaluateCombo(recipe);
+		return standing.Ready && (!recipe.IsRite || RiteGateMet(standing));
 	}
 
 	/// <summary>
-	/// The Rite taken: <paramref name="targetId"/> is anointed and every other active spell silenced. Refused
-	/// unless the offer stands right now and the target is one the page would let the player choose - the
-	/// selection is never trusted on its own.
+	/// The Rite made: it is crowned, its fuel poured in, and every other active spell silenced. Called by TryFuse
+	/// once the fusion has put the Rite in its first parent's slot.
 	/// </summary>
-	private bool TryAnoint(string targetId)
+	private void Crown(SpellData rite)
 	{
-		if (sovereignSpell != null)
-		{
-			GD.PrintErr($"Cannot take the Sovereign Rite again: {sovereignSpell.Name} is already anointed.");
-			return false;
-		}
-		if (TryBuildSovereignOffer() is not LevelUpOption offer)
-		{
-			GD.PrintErr("Cannot take the Sovereign Rite: the save does not own it or the run does not meet its gate.");
-			return false;
-		}
-		SpellData target = equippedSpells.FirstOrDefault(s => s != null && s.Id.Equals(targetId ?? string.Empty, StringComparison.OrdinalIgnoreCase));
-		if (target == null || offer.EvolutionLockReason.ContainsKey(target.Id) || offer.EvolutionChoices.All(c => c.Id != target.Id))
-		{
-			GD.PrintErr($"Cannot anoint '{targetId}': {(target == null ? "not held" : offer.EvolutionLockReason.TryGetValue(target.Id, out string why) ? why : "not on the page")}.");
-			return false;
-		}
-
-		sovereignSpell = target;
-		sovereignElement = SfxCatalog.DominantElement(target);
-		target.Name = SovereignRite.SovereignName(target.Name);
-		target.SovereignBoon = SovereignRite.BuildBoon(target, 0);
-		// The crown's second gift (Eric, 2026-11-07, in-flight 50): the crowned spell gains its
-		// unchosen Ascension too - both level-8 paths at once. If it has not ascended yet, the twin
-		// arrives with the pick instead (SpellData.ApplyEvolution calls this again).
-		target.RefreshSovereignTwin();
-		// A Conjunction's script reads its frozen parents' numbers (Sagittarius: the arrows from the bow's, the
-		// stars from the rain's), so they carry the same boon - one object, rewritten in place with the fuel.
-		foreach (SpellData parent in target.ComboParents ?? Array.Empty<SpellData>())
+		sovereignSpell = rite;
+		sovereignElement = SfxCatalog.DominantElement(rite);
+		rite.SovereignBoon = SovereignRite.BuildBoon(rite, 0);
+		// The caster reads the frozen parents' numbers (the blast's hit and reach from Arcane Explosion, the grave's
+		// from Gravewell), so they carry the same boon - one object, rewritten in place with the fuel.
+		foreach (SpellData parent in rite.ComboParents ?? Array.Empty<SpellData>())
 		{
 			if (parent != null)
-				parent.SovereignBoon = target.SovereignBoon;
+				parent.SovereignBoon = rite.SovereignBoon;
 		}
 
 		var silenced = new List<string>();
@@ -157,19 +94,13 @@ public partial class Player
 			Silence(spell);
 			silenced.Add(spell.Name);
 		}
-		// Its own standing nodes go too, and are made again on its next cast - crowned, and that cast flashes.
-		DropStandingNodes(target);
-		spellFireTimers[target.Id] = 1e6f;
+		// Its first cast goes off at once, crowned, and flashes.
+		spellFireTimers[rite.Id] = 1e6f;
 		sovereignFlashPending = true;
 		SovereignTakenAtLevel = CurrentLevel;
 		RefreshSovereignFuel();
 		AttachSovereignCrown();
-
-		RunEvents.RecordSpellEvolved(target.Id);
-		SfxPlayer.Global(SfxCatalog.SpellEvolve);
-		GD.Print($"SOVEREIGN RITE: {target.Name} anointed with {sovereignFuel} fuel at player level {CurrentLevel}; silenced {string.Join(", ", silenced)}");
-		RaiseLoadoutChanged();
-		return true;
+		GD.Print($"SOVEREIGN RITE: made with {sovereignFuel} fuel at player level {CurrentLevel}; silenced {string.Join(", ", silenced)}");
 	}
 
 	// One spell falls silent: flagged (CardLevelCap and the cards read it), its timer held at zero, and every
@@ -215,7 +146,7 @@ public partial class Player
 	{
 		if (sovereignSpell == null)
 			return;
-		sovereignFuel = SovereignRite.FuelFor(sovereignSpell, equippedSpells);
+		sovereignFuel = SovereignRite.FuelFrom(equippedSpells, sovereignSpell);
 		SovereignRite.Refresh(sovereignSpell.SovereignBoon, sovereignSpell, sovereignFuel);
 	}
 
@@ -246,12 +177,38 @@ public partial class Player
 			option.UpgradeSummary = line;
 	}
 
+	// --- the cast (SovereignRiteCaster) ----------------------------------------------------------------------
+
+	// The cooldown is the grave's: each cast lets the crowned blasts fall on the thickest packs in reach, a great
+	// grave opening under each; the echoes in the graves run in the node. Amount (the fuel's +1 per 20, and the
+	// player's own) is more blasts a cast.
+	private CastOutcome FireSovereignRite(SpellData spell)
+	{
+		if (SovereignRiteScene == null || GetParent() is not Node2D arena)
+			return CastOutcome.NoTarget;
+		SpellData blast = spell.ComboParent(SovereignRiteCaster.BlastSpellId);
+		SpellData grave = spell.ComboParent(SovereignRiteCaster.GraveSpellId);
+		if (blast == null || grave == null)
+		{
+			GD.PushError("Player: the Sovereign Rite carries no frozen parents (SpellData.ComboParents); it was not made by a fusion.");
+			return CastOutcome.NoTarget;
+		}
+		if (sovereignRiteCaster == null || !IsInstanceValid(sovereignRiteCaster))
+		{
+			sovereignRiteCaster = SovereignRiteScene.Instantiate<SovereignRiteCaster>();
+			sovereignRiteCaster.PlayerRef = this;
+			arena.AddChild(TagSpell(sovereignRiteCaster));
+		}
+		int blasts = Math.Max(1, spell.GetProjectileCountAtLevel(spell.CurrentLevel) + AmountFor(spell));
+		return sovereignRiteCaster.Cast(spell, blast, grave, GravewellScene, blasts, spell.GetRangeAtLevel(spell.CurrentLevel),
+			GetEffectiveAreaMultiplier(), GetSpellDamageMultiplier(spell), durationMultiplier)
+			? CastOutcome.Fired : CastOutcome.NoTarget;
+	}
+
 	// --- how it looks (section 5) -------------------------------------------------------------------------
 
-	/// <summary>
-	/// True for the anointed spell, or one of the frozen parents a Conjunction reads (Sagittarius's arrows are
-	/// handed the bow's SpellData for their look).
-	/// </summary>
+	/// <summary>True for the Rite, or one of its frozen parents (the caster hands their SpellData to nothing, but a
+	/// strike credited to one is still the Rite's).</summary>
 	private bool IsSovereignSource(SpellData spell)
 	{
 		if (sovereignSpell == null || spell == null)
@@ -274,13 +231,13 @@ public partial class Player
 	{
 		if (sovereignHits == null || !IsInstanceValid(sovereignHits))
 			sovereignHits = SovereignHits.For(GetParent(), sovereignElement);
-		// A spell whose casts are not nodes flashes on its first strike instead (CrownIfSovereign takes it otherwise).
+		// A cast that makes no node of its own flashes on its first strike instead (CrownIfSovereign takes it otherwise).
 		bool flash = sovereignFlashPending;
 		sovereignFlashPending = false;
 		sovereignHits?.Mark(where, flash);
 	}
 
-	/// <summary>Whether a node a cast just made belongs to the anointed spell, and so is crowned.</summary>
+	/// <summary>Whether a node a cast just made belongs to the Rite, and so is crowned.</summary>
 	private void CrownIfSovereign(CanvasItem visual, SpellData spell)
 	{
 		if (!IsSovereignSource(spell) || visual is not Node2D node)
@@ -297,7 +254,7 @@ public partial class Player
 		SovereignCorona.ClearCache();
 	}
 
-	// The small turning crown-ring of the anointed spell's element over the wizard's head.
+	// The small turning crown-ring of the Rite's element over the wizard's head.
 	private void AttachSovereignCrown()
 	{
 		if (sovereignCrown != null && IsInstanceValid(sovereignCrown))

@@ -50,11 +50,12 @@ public static class ConjunctionLadder
 	/// Whether a recipe may be shown to this save (the browser, the Codex's Recipes, the Achievements row): today's
 	/// rule - the save owns both parents (<see cref="ComboCatalog.IsKnown"/>, shown from the Apotheosis learned on) - or,
 	/// once the Conjunctions lesson is learned, either parent (rung I, idea 1). The missing half reads by its locked
-	/// hint (<see cref="MissingHalfLine"/>). Never the Rite, which has its own rule. A null save shows nothing extra.
+	/// hint (<see cref="MissingHalfLine"/>). The Sovereign Rite is a recipe like any since 2026-11-08 (its two spells,
+	/// .ai/sovereign-spell.md 9), so the same rule. A null save shows nothing extra.
 	/// </summary>
 	public static bool IsShown(ComboDefinition recipe, SaveData save)
 	{
-		if (recipe == null || recipe.IsRite || save == null)
+		if (recipe == null || save == null)
 			return false;
 		if (ComboCatalog.IsKnown(recipe, save))
 			return true;
@@ -63,8 +64,7 @@ public static class ConjunctionLadder
 
 	/// <summary>Whether the save owns this parent: it can be dealt it.</summary>
 	public static bool Owns(SaveData save, ComboIngredient ingredient) =>
-		save != null && ingredient != null && !ingredient.AnyActiveSpell
-		&& GlobalStatsManager.IsSpellUnlockedForLevelUp(save, ingredient.SpellId);
+		save != null && ingredient != null && GlobalStatsManager.IsSpellUnlockedForLevelUp(save, ingredient.SpellId);
 
 	/// <summary>
 	/// What the ladder calls a recipe on this save: its name once made (its Feat done), else its two parents - "Hunter's
@@ -102,8 +102,8 @@ public static class ConjunctionLadder
 	public static bool MayPin(ComboDefinition recipe, SaveData save, out string why)
 	{
 		why = string.Empty;
-		if (recipe == null || recipe.IsRite)
-			why = "not a recipe of two spells";
+		if (recipe == null)
+			why = "not a recipe";
 		else if (save == null || !Teachings.HasLearned(save, Teaching.Conjunctions))
 			why = "Conjunctions are not learned yet";
 		else if (!IsShown(recipe, save))
@@ -136,7 +136,7 @@ public static class ConjunctionLadder
 	/// </summary>
 	public static IReadOnlyCollection<Element> NamedPathGateElements(ComboIngredient ingredient)
 	{
-		if (ingredient == null || ingredient.AnyActiveSpell)
+		if (ingredient == null)
 			return Array.Empty<Element>();
 		SpellData template = ContentValidator.LoadAllSpells().FirstOrDefault(s => s != null && s.Id.Equals(ingredient.SpellId, StringComparison.OrdinalIgnoreCase));
 		SpellEvolutionOption named = ComboCatalog.Level8OptionsOf(template, ingredient)
@@ -248,7 +248,7 @@ public static class ConjunctionLadder
 		var leanUpgrade = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (ComboDefinition recipe in recipes)
 		{
-			if (recipe == null || recipe.IsRite)
+			if (recipe == null)
 				continue;
 			bool first = isHeld(recipe.First.SpellId);
 			bool second = isHeld(recipe.Second.SpellId);
@@ -312,8 +312,6 @@ public static class ConjunctionLadder
 		string by = string.Empty;
 		foreach (ComboDefinition recipe in ComboCatalog.Naming(spellId, ascensionId))
 		{
-			if (recipe.IsRite)
-				continue;
 			ComboStanding standing = ComboCatalog.Evaluate(recipe, held, ownSpellId);
 			if (standing.Taken || standing.Sealed)
 				continue;

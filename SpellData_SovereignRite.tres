@@ -3,24 +3,40 @@
 [ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
 [ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/sovereign-rite-light.png" id="2_icon"]
 
-; The Sovereign Rite (.ai/sovereign-spell.md, SovereignRite, ComboCatalog's one rite).
+; The Sovereign Rite - Arcane Explosion + Gravewell, the capstone COMBINATION (.ai/sovereign-spell.md section 9,
+; ComboCatalog, SovereignRite). Until 2026-11-08 it was no spell at all but a rite pointed at one of yours; Eric
+; made it a Conjunction of its own ("the soverign rite should be a combination spell itself").
 ;
-; Not a spell that is held: it takes no slot and casts nothing. It is a Conjunction whose second ingredient
-; is whichever active spell the player points it at (Player.TryAnoint), offered in the Ascension strip once
-; the save owns it - the Warden of the Deep's deed - and the run meets its gate. This resource is its name,
-; its line and its picture, for the strip, the Spell Index, the world map card and the results screen.
+; Never a level-up card and never in the spell catalog: it is made only in the Ascension strip, from Arcane
+; Explosion at level 8 down Resonance and Gravewell at level 8 down Mass Grave (Player.TryFuse), once the run has
+; also met its late gate (level 28, and 16 levels across the other active spells). Making it silences every other
+; active spell for the rest of the run; their levels are its fuel. It is terminal, so it has one level and no
+; milestones.
 ;
-; No element: the anointed spell keeps its own, and nothing the Rite does moves a tier. The numbers below are
-; placeholders the validator asks every SpellData for; nothing reads them.
+; The numbers below are a stand-in for the card and the Spell Index. A run's copy carries its two parents frozen
+; as they were at the fusion (SpellData.ComboParents), and SovereignRiteCaster.Freeze sets the cooldown and the
+; reach from the frozen Gravewell and one blast's hit from the frozen Arcane Explosion; the blast, the grave and
+; the echo are read from both parents as it fires (scripts/SovereignRiteCaster.cs).
+;
+; ElementWeights are the two parents' base tags summed. A run's copy carries the two parents' CURRENT weights
+; summed instead (ComboCatalog.SumWeights): Arcane 1, Earth 1, Darkness 2 once Mass Grave has deepened it. Three
+; elements, the ceiling; Static Nova (+Lightning) refuses the fusion.
 [resource]
 script = ExtResource("1")
-Tagline = "Pour every spell into one."
+Tagline = "The rest fall silent and feed it."
 Id = "sovereign_rite"
 Name = "Sovereign Rite"
 CurrentLevel = 1
 MaxLevel = 1
-BaseDamage = 1
-BaseCooldown = 1.0
+BaseDamage = 36
+BaseCooldown = 2.58
 BaseProjectileCount = 1
-Description = "Choose one spell. Every other spell falls silent for the run and pours its levels into it as fuel."
+BaseRange = 320.0
+TargetingMode = 3
+Description = "A crowned blast opens a great grave under the swarm and goes off again inside it. Every other spell falls silent and feeds it."
 Icon = ExtResource("2_icon")
+ElementWeights = {
+"Arcane": 1,
+"Earth": 1,
+"Darkness": 1
+}

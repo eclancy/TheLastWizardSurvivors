@@ -51,6 +51,10 @@ public partial class Player
 		ComboStanding standing = EvaluateCombo(recipe);
 		if (!standing.Ready)
 			return null;
+		// The Sovereign Rite waits for its late gate as well (Player.Sovereign.cs): the player's level, and the
+		// fuel the other active spells would pour in, so it is never taken onto an empty book.
+		if (recipe.IsRite && !RiteGateMet(standing))
+			return null;
 		SpellData template = ComboCatalog.Template(recipe);
 		if (template == null)
 		{
@@ -67,7 +71,9 @@ public partial class Player
 			ComboId = recipe.Id,
 			DisplayName = template.Name,
 			Description = template.Description,
-			UpgradeSummary = $"✶ CONJUNCTION - {standing.FirstHeld.Name} and {standing.SecondHeld.Name} become {template.Name}",
+			UpgradeSummary = recipe.IsRite
+				? $"✶ CONJUNCTION - {standing.FirstHeld.Name} and {standing.SecondHeld.Name} become {template.Name}; the rest fall silent (+{RiteFuelAtFusion(standing)} fuel)"
+				: $"✶ CONJUNCTION - {standing.FirstHeld.Name} and {standing.SecondHeld.Name} become {template.Name}",
 			NextLevel = 1,
 			MaxLevel = 1,
 			IsNewUnlock = false,
@@ -108,6 +114,11 @@ public partial class Player
 			GD.PrintErr($"Cannot make '{recipe.Id}': the recipe is not met ({(standing.Taken ? "already made" : standing.Seal != ComboSeal.None ? standing.Seal.ToString() : "a parent is not at level 8 down its named Ascension")}).");
 			return false;
 		}
+		if (recipe.IsRite && !RiteGateMet(standing))
+		{
+			GD.PrintErr($"Cannot make '{recipe.Id}': the Rite waits for level {SovereignRite.MinimumPlayerLevel} and {SovereignRite.MinimumFuel} fuel (level {CurrentLevel}, {RiteFuelAtFusion(standing)} fuel).");
+			return false;
+		}
 		SpellData template = ComboCatalog.Template(recipe);
 		if (template?.Duplicate(true) is not SpellData combo)
 		{
@@ -134,6 +145,8 @@ public partial class Player
 			Sagittarius.Freeze(combo);
 		else if (recipe.Id.Equals(ShadowBolt.SpellId, StringComparison.OrdinalIgnoreCase))
 			ShadowBolt.Freeze(combo);
+		else if (recipe.IsRite)
+			SovereignRiteCaster.Freeze(combo);
 
 		int slot = equippedSpells.IndexOf(first);
 		DropForFusion(first);
@@ -147,6 +160,9 @@ public partial class Player
 		RunEvents.RecordSpellEvolved(combo.Id);
 		SfxPlayer.Global(SfxCatalog.SpellEvolve);
 		GD.Print($"CONJUNCTION: {first.Name} and {second.Name} became {combo.Name} (slot {slot + 1}; {equippedSpells.Count} of {SpellSlots} held)");
+		// The Sovereign Rite: crowned, and every other active spell falls silent and feeds it (Player.Sovereign.cs).
+		if (recipe.IsRite)
+			Crown(combo);
 		NoteFarSkyFusion(recipe);
 		RefreshElementalMaxHp();
 		RaiseLoadoutChanged();
@@ -257,6 +273,8 @@ public partial class Player
 				continue;
 			SpellData template = ComboCatalog.Template(recipe);
 			SpellData firstTemplate = ContentValidator.LoadAllSpells().FirstOrDefault(s => s.Id.Equals(recipe.First.SpellId, StringComparison.OrdinalIgnoreCase));
+			// The Rite is offered once its late gate holds too (RiteGateMet), as the strip offers it.
+			bool offered = standing.Ready && (!recipe.IsRite || RiteGateMet(standing));
 			var preview = new ComboPreview
 			{
 				Id = recipe.Id,
@@ -266,8 +284,8 @@ public partial class Player
 				Description = template?.Description ?? string.Empty,
 				Icon = template?.Icon,
 				// Met now - offered - reveals it too, as the Apotheosis is revealed by its first offer.
-				Revealed = standing.Taken || standing.Ready || ComboCatalog.IsMet(recipe, save),
-				Offered = standing.Ready,
+				Revealed = standing.Taken || offered || ComboCatalog.IsMet(recipe, save),
+				Offered = offered,
 				Taken = standing.Taken,
 				Sealed = standing.Sealed,
 			};
@@ -279,6 +297,18 @@ public partial class Player
 					Line = TeachingSealedLine(Teaching.Conjunctions) });
 			preview.Requirements.Add(Ingredient(recipe.First, standing.Taken || standing.FirstMet, standing.FirstClosed));
 			preview.Requirements.Add(Ingredient(recipe.Second, standing.Taken || standing.SecondMet, standing.SecondClosed));
+			// The Rite's late gate: your level, and the levels the other active spells would pour in.
+			if (recipe.IsRite && !standing.Taken)
+			{
+				preview.Requirements.Add(new AscensionRequirement
+				{
+					Kind = AscensionRequirementKind.PlayerLevel, Have = CurrentLevel, Need = SovereignRite.MinimumPlayerLevel,
+				});
+				preview.Requirements.Add(new AscensionRequirement
+				{
+					Kind = AscensionRequirementKind.Fuel, Have = RiteFuelAtFusion(standing), Need = SovereignRite.MinimumFuel,
+				});
+			}
 			if (!standing.Taken && (standing.FirstOwn || standing.SecondOwn))
 			{
 				preview.Requirements.Add(new AscensionRequirement

@@ -83,9 +83,6 @@ public static partial class RegressionChecks
 				&& !recipe.Name.Contains(recipe.First.SpellName) && !recipe.Name.Contains(recipe.Second.SpellName))
 				warnings.Add($"Ladder I: '{recipe.Id}' is named before it is made (ConjunctionLadder.ShownName).");
 		}
-		ComboDefinition rite = ComboCatalog.Rite;
-		if (rite != null && ConjunctionLadder.IsShown(rite, LadderSave(Teaching.Conjunctions, rite.First.SpellId)))
-			warnings.Add("Ladder I: the Sovereign Rite is shown by the ladder's rule; it keeps its own.");
 	}
 
 	private static void ValidateLadderPin(List<string> warnings)
@@ -101,8 +98,6 @@ public static partial class RegressionChecks
 			warnings.Add("Ladder I: a pin is read on a save that has not learned Conjunctions.");
 
 		SaveData learned = LadderSave(Teaching.Conjunctions, recipe.First.SpellId);
-		if (ComboCatalog.Rite != null && ConjunctionLadder.Pin(learned, ComboCatalog.Rite.Id))
-			warnings.Add("Ladder I: the Sovereign Rite was pinned.");
 		if (ConjunctionLadder.Pin(LadderSave(Teaching.Conjunctions), recipe.Id))
 			warnings.Add($"Ladder I: '{recipe.Id}' was pinned on a save that owns neither half.");
 		if (!ConjunctionLadder.Pin(learned, recipe.Id) || ConjunctionLadder.Pinned(learned) != recipe)
@@ -433,18 +428,18 @@ public static partial class RegressionChecks
 		return spell;
 	}
 
-	// Schema 26 (SaveData.MigrateToPinnedRecipe): a save from before pins nothing, and the step changes nothing else.
+	// Schema 27 (SaveData.MigrateToPinnedRecipe): a save from before pins nothing, and the step changes nothing else.
 	private static void ValidatePinnedRecipeMigration(List<string> warnings)
 	{
-		var old = new SaveData { SchemaVersion = 25 };
+		var old = new SaveData { SchemaVersion = 26 };
 		GlobalStatsManager.UnlockSpell(old, "hollow_star");
 		old.PinnedRecipeId = "stray";
 		int spells = old.UnlockedSpellIds.Count;
 		old.Migrate(log: false);
 		if (!string.IsNullOrEmpty(old.PinnedRecipeId))
-			warnings.Add("Pinned recipe migration: a schema-25 save came out of schema 26 with a pin.");
+			warnings.Add("Pinned recipe migration: a schema-26 save came out of schema 27 with a pin.");
 		if (old.SchemaVersion != SaveData.CurrentSchemaVersion || old.UnlockedSpellIds.Count != spells)
-			warnings.Add("Pinned recipe migration: schema 26 changed more than the pin.");
+			warnings.Add("Pinned recipe migration: schema 27 changed more than the pin.");
 		var current = new SaveData { PinnedRecipeId = ComboCatalog.Fusions.FirstOrDefault()?.Id ?? string.Empty };
 		current.Migrate(log: false);
 		if (current.PinnedRecipeId != (ComboCatalog.Fusions.FirstOrDefault()?.Id ?? string.Empty))

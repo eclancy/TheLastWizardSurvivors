@@ -98,10 +98,6 @@ public static partial class RegressionChecks
 			}
 		}
 
-		AchievementDefinition warden = AchievementDefinitions.GetById("emberdeep_ended");
-		if (warden == null || !SovereignRite.SpellId.Equals(warden.SpellUnlockId, StringComparison.OrdinalIgnoreCase))
-			warnings.Add("Teachings: the Sovereign Rite is no longer the Warden of the Deep's deed; its lesson is owed by owning it.");
-
 		var fresh = new SaveData();
 		foreach (Teachings.Lesson teacher in Teachings.Ladder)
 			if (Teachings.LessonAt(fresh, teacher.TeacherSecretId)?.System != Teaching.Ascension
@@ -182,9 +178,10 @@ public static partial class RegressionChecks
 		if (!AllLearned(beatHayward) || !AllLearned(pastFields))
 			warnings.Add("Slow start migration: a save that had the Ascension through the Hayward or a chapter past the Fields lost it.");
 
+		// The Rite's own lesson is retired (2026-11-08): a save that owns it is owed nothing for it.
 		SaveData rite = At21(s => { s.Lifetime.TotalRuns = 9; s.AscensionLearned = true; s.UnlockedSpellIds.Add(SovereignRite.SpellId); });
-		if (!Teachings.HasBeenTaught(rite, Teachings.Rite) || Teachings.Owed(rite).Count > 0)
-			warnings.Add("Slow start migration: a save that owns the Sovereign Rite should not be owed its lesson.");
+		if (Teachings.Owed(rite).Count > 0)
+			warnings.Add("Slow start migration: a save that owns the Sovereign Rite should be owed no lesson.");
 
 		SaveData unplayed = At21(_ => { });
 		if (unplayed.FullBookKept || SpellBook.PagesFor(unplayed) != SpellBook.NewSavePages || !NoneLearned(unplayed))

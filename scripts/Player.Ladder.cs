@@ -175,7 +175,7 @@ public partial class Player
 		SaveData save = LadderSave;
 		foreach (ComboDefinition recipe in ComboCatalog.WithParent(spell.Id))
 		{
-			if (recipe.IsRite || !ConjunctionLadder.IsShown(recipe, save) || ComboCatalog.StartsFused(recipe, selectedCharacter?.Id))
+			if (!ConjunctionLadder.IsShown(recipe, save) || ComboCatalog.StartsFused(recipe, selectedCharacter?.Id))
 				continue;
 			ComboStanding standing = EvaluateCombo(recipe);
 			if (standing.Taken || standing.Sealed)
@@ -204,7 +204,7 @@ public partial class Player
 	public RecipeChecklist BuildRecipeChecklist(ComboDefinition recipe, SaveData save)
 	{
 		var list = new RecipeChecklist { Recipe = recipe };
-		if (recipe == null || recipe.IsRite)
+		if (recipe == null)
 			return list;
 		ComboStanding standing = EvaluateCombo(recipe);
 		if (standing.Taken)

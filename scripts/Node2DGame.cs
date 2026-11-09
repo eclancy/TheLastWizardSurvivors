@@ -43,7 +43,11 @@ public partial class Node2DGame : Node2D
 	// 15 minutes since 2026-10-16 (30, briefly 20, before that) - the reference run itself, so RunPace
 	// is 1 and every paced number plays exactly as it was tuned. The XP curve was rebalanced alongside
 	// (Player.XpCostPerLevel), because levels are paid by kills, not by the clock (.ai/run-pacing.md).
-	[Export] public float TimerVictorySeconds { get; set; } = 900.0f;
+	// THE CHAPTER'S OWN since 2026-11-09 (Eric: "still make the far shore longer"): left at ChapterRunLength,
+	// it is read from StageCatalog.VictorySecondsFor as the run starts (ResolveRunLength, Node2DGame.RunLength.cs)
+	// - 900 on the road, 1200 on the far shore. A tool that wants its own clock (_BossProbe's six seconds) sets
+	// it before the add and is left alone; a chapter's rules may set 0 (the Throne: no clocked boss).
+	[Export] public float TimerVictorySeconds { get; set; } = ChapterRunLength;
 
 	// The run every pacing number in this file was tuned against. They keep their meaning as
 	// positions on THAT run - "the Lunger arrives at 90 s" means 10% of the way in - and the pace
@@ -481,6 +485,8 @@ public partial class Node2DGame : Node2D
 		bestiary = LoadBestiaryForStage();
 		player = GetNode<Player>("CharacterBody2D"); // Strongly typed YES
 		stageOrigin = player?.GlobalPosition ?? Vector2.Zero;
+		// The chapter's run length, and the XP curve that follows it, before anything reads the pace (Node2DGame.RunLength.cs).
+		ResolveRunLength();
 		// A wizard who opens on a spell with forms chooses it first (Node2DGame.OpeningForm.cs). Deferred so the run is
 		// built under it, and asked before anything a chapter defers here (the Throne's Muster) so it is the first screen.
 		Callable.From(() => OpenOpeningFormIfOwed()).CallDeferred();
