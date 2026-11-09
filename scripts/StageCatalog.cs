@@ -297,7 +297,9 @@ public static class StageCatalog
 			// Its own ground (F3): cropped turf on chalk, flint, and the barrows standing on it as walls.
 			EnvironmentKind = StageEnvironmentKind.WhiteDowns,
 			Gate = StageGate.FarShore,
-			IsPlayable = false,
+			// Playable 2026-11-08, its to-do line gone once F2 (Artemis) and F5 (its place on the map) merged; the far
+			// shore's gate still keeps it shut to any save that has not taken the Throne back.
+			IsPlayable = true,
 		},
 		new()
 		{

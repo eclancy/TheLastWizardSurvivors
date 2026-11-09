@@ -12,8 +12,9 @@ starting power, passive and unlock around that later story.
 
 **Status: design for Eric's review, 2026-11-07; accepted 2026-11-07/08 (section 8). F0, the plumbing, is built
 (2026-11-08, section 9, "F0, built"), F1, the god plumbing (2026-11-08, "F1, built"): a god can be added as
-data; F2, Artemis (2026-11-08, "F2, built"): the first god, whole, waiting on her seat (F3) to be reached; and
-F5, reel E and the map (2026-11-08, "F5, built"): the far shore is drawn across the dark sea and announced.**
+data; F2, Artemis (2026-11-08, "F2, built"): the first god, whole; F3, the White Downs (2026-11-08, "F3,
+built"): the first far chapter, playable behind the far shore's gate; and F5, reel E and the map (2026-11-08,
+"F5, built"): the far shore is drawn across the dark sea and announced.**
 Section 8 is the list of decisions that are his;
 every other choice below is a recommendation he can overturn.
 
@@ -478,7 +479,7 @@ less, **M** a few days, **L** a week or more.
 | F0 | **Far-shore plumbing**: `FarShoreOrder`, `StageGate.FarShore`, six stand-in chapters `IsPlayable = false`, `PreviousChapter` per order, `QuestLog` / `StageRewards` / `ChapterNotes` / `WorldMap` reading both orders, `ValidateFarShore` | L | - | the far shore exists, nobody can enter it, and the Dark Wizard's and The Road Restored's targets have not moved. **Built 2026-11-08** ("F0, built", below) |
 | F1 | **God plumbing**: any recipe as an opener with its own table; `OnStartingConjunction` and `ValidateStartingConjunction` over every opener; the god's card lines; the rekindled reel's far-shore ground in `freed.py` | M | F0 | a god can be added as data. **Built 2026-11-08** ("F1, built", below) |
 | F2 | **Artemis**: Sagittarius's table path, The Hunter's Moon, Far-Shooting, her sheet (`tools/art/player_*.py`, 48 cell, idle / move / hurt / death), icons, reel layer, catalog rows | M | F1 | the first god, playable everywhere. **Built 2026-11-08** ("F2, built", below); reachable once F3 makes her seat playable |
-| F3 | **The White Downs**: chalk tiles and barrows, its cast, the Unstrung Hunter, music, foliage, one side event, two secrets, its difficulty row | L | F0 | the first far chapter. **Built 2026-11-08** ("F3, built", below) - all but its flag, which waits on F2's god and F5's map place |
+| F3 | **The White Downs**: chalk tiles and barrows, its cast, the Unstrung Hunter, music, foliage, one side event, two secrets, its difficulty row | L | F0 | the first far chapter. **Built 2026-11-08** ("F3, built", below), **playable** the same day once F2 and F5 merged (the far shore's gate still keeps it shut) |
 | F4 | **The far sky**: `Teaching.FarSky` and its reel, tonight's recipe, the favour, card and pause lines, the Feat, `_BalanceHarness --far-sky` and the section 5 measurement | M | F0, F2 | the half's system, measured |
 | F5 | **Reel E and the map**: `world_map.py` widened east, the crossing, the white cliffs and six places, the motes after Taken Back, the stop order; reel E | L | F0 | the half on the map, and announced. **Built 2026-11-08** ("F5, built", below) |
 | F6 | **Manannán, Maelstrom and the Drowned Shore** | Maelstrom M-L, god M, chapter L | F1; the lattice-as-water look | the second slice |
