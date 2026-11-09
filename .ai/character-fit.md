@@ -124,3 +124,7 @@ Poison carry four spells each, Arcane seven), none on a verb or shape a Conjunct
 Eric, 2026-11-09: *"Let's now go through every wizard one by one, listing their starting spell and
 passive, the reasoning behind the choices, any suggestions that you would make, and give me the
 opportunity for feedback."* His feedback on each is recorded here as it comes.
+
+| # | wizard | verdict | Eric's words | status |
+|---|---|---|---|---|
+| 1 | The Archmage | keeps Magic Missile and Overlooked; **Overlooked's 10 s grace also makes him semi-transparent** (on top of the white he already turns), so it reads that he cannot be touched | "his passive should also make him semi-transparent for those 10 seconds, to make it clear that he is untouchable. with that small change, go ahead and move onto the next wizard" | building |
