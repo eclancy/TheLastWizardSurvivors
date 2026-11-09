@@ -177,17 +177,18 @@ public partial class Prologue : Control
 		// stage_10), so the player who reaches the stones has heard it before.
 		new("moot", 4.6f, "The stones where we used to meet.", new Vector2(-4f, 0f), new Vector2(-10f, 0f), new Vector2(-26f, 0f)),
 		// HE LIFTS THEM, ONE BY ONE (Eric, 2026-11-08, of the panel as it was - his silhouette filling the frame and
-		// the five dark specks at his feet: "it's hard to see what he's doing in the background, it should show him
-		// lifting each of the wizards into the air to capture them"). Its box animates (tools/art/prologue.py,
-		// THRONE_BOX, 12 frames a second): the moot's five round its cold ward, him at the back of the circle; from
-		// 1.25 s, one every 0.6 s, his reach leaves his hand, a hoop of his violet closes on one and lifts it into
-		// the air, where it hangs while its light streams into his hand; the last, the Pyromancer, lifted past him
-		// to hang over his sun and at rest by 6.0 s. HELD 7.0 s, not 5.2: five lifts the eye can follow one after
-		// another (each under 150 art px/s), a still beat before the first and a third of a second after the last
-		// before the dissolve - at 5.2 they had to overlap into one rush or move faster than the eye. No impact
-		// (rule 1): the tide's burst, a few seconds on, is the one that is his. Back and mid drift as ONE, so a
-		// wizard standing on the ground never slides on it; the slow tilt up follows the rise.
-		new("throne", 7.0f, "He came here first.", new Vector2(0f, 4f), new Vector2(0f, 4f), new Vector2(0f, 10f)),
+		// the wizards dark specks at his feet: "it's hard to see what he's doing in the background, it should show him
+		// lifting each of the wizards into the air to capture them"; then, of the first answer: "the silhouette of 4
+		// wizards, cast in shadow, in the background, with the dark wizard in the foreground. remove the purple wizard,
+		// since he is the wizard that you are"). Its box animates (tools/art/prologue.py, THRONE_BOX, 12 frames a
+		// second): him in the foreground with his back to us, his black sun behind his head, and beyond him the four
+		// disciplines on the far crest of the circle, cast in shadow against the sky; from 1.25 s, one every 0.65 s,
+		// his reach leaves his hand, a hoop of his violet closes on one and lifts it into the sky, where it hangs while
+		// its light streams back into his hand. All four at rest by 4.8 s. HELD 5.9 s, not 5.2: four lifts the eye can
+		// follow one after another (each under 120 art px/s), a still beat before the first and 0.4 s after the last
+		// before the dissolve. No impact (rule 1): the tide's burst, a few seconds on, is the one that is his. Back and
+		// mid drift as ONE, so a wizard standing on the crest never slides on it; the slow tilt up follows the rise.
+		new("throne", 5.9f, "He came here first.", new Vector2(0f, 4f), new Vector2(0f, 4f), new Vector2(0f, 10f)),
 		// His shadows over the land, coming down on a village that is still lit. THE RUSH (Eric, 2026-11-05: the
 		// army must rush over the horizon; the old beat slid the whole crowd across a still picture as one layer):
 		// its box animates (tools/art/prologue.py, TIDE_BOX) - the slope empty for a breath, heads behind the
