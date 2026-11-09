@@ -16,8 +16,10 @@ public static partial class RegressionChecks
 	// gap at its longest, from 2 to 16 rays, on cooldowns from 0.05 s to 4 s.
 	private static void ValidateScorchStagger(List<string> warnings)
 	{
-		if (Player.ScorchRayGapJitter < 0f || Player.ScorchRayGapJitter >= 1f)
-			warnings.Add($"Scorching Ray: a stagger jitter of {Player.ScorchRayGapJitter} could make a gap negative or double it.");
+		// Through a local, so the guard on a constant is not folded away as unreachable (CS0162).
+		float jitter = Player.ScorchRayGapJitter;
+		if (jitter < 0f || jitter >= 1f)
+			warnings.Add($"Scorching Ray: a stagger jitter of {jitter} could make a gap negative or double it.");
 		foreach (float interval in new[] { 0.05f, 0.3f, 0.6f, 1.12f, 1.6f, 4f })
 		{
 			for (int rays = 2; rays <= 16; rays++)
