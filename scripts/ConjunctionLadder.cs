@@ -269,6 +269,71 @@ public static class ConjunctionLadder
 		return leaned;
 	}
 
+	// --- rung III: the pair shares its light ----------------------------------------------------------------
+
+	/// <summary>
+	/// The deed that teaches it: the Archivist's, the keeper of the books (the Mystic Ruins, chapter 6), who "teaches how two
+	/// pages are bound". Its card says it teaches a lesson; the lesson (Teachings.PairSharesLesson) is owed once the
+	/// deed is done and the Conjunctions lesson learned, and played after the run as every lesson is.
+	/// </summary>
+	public const string PairShareDeedId = "ruins_delver";
+
+	/// <summary>
+	/// Tools only (_BalanceHarness <c>--pair-shares[=half|off]</c>): true plays the rule whatever the save has learned,
+	/// false never; null plays by the save.
+	/// </summary>
+	public static bool? PairShareToolOverride { get; set; }
+
+	/// <summary>
+	/// The doc's fallback (section 4, decision rule 3): the partner counts at most 1 toward each named path. Off - the
+	/// rule ships at full strength (Eric's question 1, as recommended) - unless the measurement says recipes land before
+	/// pace 10. The harness's <c>--pair-shares=half</c> turns it on for one run.
+	/// </summary>
+	public static bool PairShareHalf { get; set; }
+
+	/// <summary>
+	/// What the partner adds to a named path's element gate (rung III, idea 8): while both parents of a recipe are held,
+	/// each named Ascension's "four of its element" also counts the OTHER parent's tags - its current weight in every
+	/// element the gate does not already count (so a shared element is never counted twice). Zero unless the rule is
+	/// <paramref name="earned"/>, the path is one a fusion names on this very spell (never a third Ascension), the
+	/// partner is in the loadout, and the recipe is live - not made, not sealed (a parent down its other path, a fourth
+	/// element, the wizard's own spell). At half strength the partner counts at most 1. The largest share if two recipes
+	/// name the same path. It moves no tag: the element tiers, attunement and every other gate read the counts as they
+	/// were.
+	/// </summary>
+	public static (int Weight, string Partner) PairShareFor(bool earned, string spellId, string ascensionId,
+		IEnumerable<SpellData> loadout, string ownSpellId, IReadOnlyCollection<Element> gateElements, bool half)
+	{
+		if (!earned || string.IsNullOrEmpty(spellId) || string.IsNullOrEmpty(ascensionId) || loadout == null)
+			return (0, string.Empty);
+		List<SpellData> held = loadout.Where(s => s != null).ToList();
+		int best = 0;
+		string by = string.Empty;
+		foreach (ComboDefinition recipe in ComboCatalog.Naming(spellId, ascensionId))
+		{
+			if (recipe.IsRite)
+				continue;
+			ComboStanding standing = ComboCatalog.Evaluate(recipe, held, ownSpellId);
+			if (standing.Taken || standing.Sealed)
+				continue;
+			bool first = recipe.First.SpellId.Equals(spellId, StringComparison.OrdinalIgnoreCase);
+			SpellData partner = first ? standing.SecondHeld : standing.FirstHeld;
+			if (partner == null)
+				continue;
+			int weight = partner.GetElementWeights()
+				.Where(p => gateElements == null || !gateElements.Contains(p.Key))
+				.Sum(p => Math.Max(0, p.Value));
+			if (half)
+				weight = Math.Min(1, weight);
+			if (weight > best)
+			{
+				best = weight;
+				by = (first ? recipe.Second : recipe.First).SpellName;
+			}
+		}
+		return (best, by);
+	}
+
 	private static int Lean(List<LevelUpOption> pool, List<float> weights, HashSet<string> spellIds, float multiplier)
 	{
 		if (pool == null || weights == null || spellIds.Count == 0)

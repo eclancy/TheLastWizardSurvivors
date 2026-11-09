@@ -344,6 +344,14 @@ public sealed class AscensionRequirement
 	/// </summary>
 	public bool Waived { get; set; }
 
-	public bool Met => Waived || Have >= Need;
-	public int Missing => Waived ? 0 : System.Math.Max(0, Need - Have);
+	/// <summary>
+	/// An element gate's share from the recipe's other parent (rung III of .ai/conjunction-progression.md, "the pair shares
+	/// its light"; ConjunctionLadder.PairShareFor): counted toward <see cref="Need"/> beside <see cref="Have"/>, which stays
+	/// the player's own count. Zero, and <see cref="SharedBy"/> empty, everywhere the rule does not apply.
+	/// </summary>
+	public int Shared { get; set; }
+	public string SharedBy { get; set; } = string.Empty;
+
+	public bool Met => Waived || Have + Shared >= Need;
+	public int Missing => Waived ? 0 : System.Math.Max(0, Need - Have - Shared);
 }

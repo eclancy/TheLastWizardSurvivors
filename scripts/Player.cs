@@ -1149,6 +1149,8 @@ public partial class Player : CharacterBody2D
 		ConjunctionsLearned = Teachings.HasLearned(saveManager.Data, Teaching.Conjunctions);
 		// Kindred Draw, rung II of the Conjunction ladder (Player.Ladder.cs): a shop Power, read once here.
 		ReadKindredDraw(GetLevel(ConjunctionLadder.KindredDrawId));
+		// Rung III, the pair shares its light: the Archivist's lesson, read once here (Player.Ladder.cs).
+		ReadPairShares(saveManager.Data);
 		bookPages = SpellBook.PagesFor(saveManager.Data);
 		// The run's boon slots: the base two plus the shop's Reliquary Shelf levels, capped at four
 		// (the boon rework, in-flight item 41). A found level would stack through GetLevel like any
@@ -8848,13 +8850,14 @@ public partial class Player : CharacterBody2D
 
 			// Measured once and worded from the measurement, so the checklist the browser draws and
 			// the sentence the locked level 8 card is stamped with cannot disagree.
-			AscensionRequirement elementGate = EvaluateElementGate(evo, spell, counts);
+			// With the pair's share beside the player's own count (rung III, Player.Ladder.cs).
+			AscensionRequirement elementGate = EvaluateElementGateInRun(evo, spell, counts);
 			if (elementGate != null)
 			{
 				// Waived by the far sky (Player.FarSky.cs) only where it would otherwise stand unmet, so the row says so.
 				elementGate.Waived = !elementGate.Met && FarSkyWaivesElementGate(spell.Id, evo.Id);
 				info.Requirements.Add(elementGate);
-				string gate = elementGate.Waived ? null : DescribeUnmetElementGate(evo, spell, counts);
+				string gate = elementGate.Waived ? null : DescribeUnmetGate(elementGate);
 				if (gate != null)
 					info.UnmetRequirements.Add(gate);
 			}
@@ -8897,9 +8900,16 @@ public partial class Player : CharacterBody2D
 			if (gates.Count == 0)
 				continue; // Nothing to be deep in; leave it available.
 
-			string unmet = DescribeUnmetElementGate(evo, spell, currentCounts);
+			// The pair's share counts beside the player's own tags (rung III, Player.Ladder.cs); the far sky's waiver
+			// below applies only where the gate still stands unmet, so the two never stack.
+			AscensionRequirement measured = EvaluateElementGateInRun(evo, spell, currentCounts);
+			string unmet = DescribeUnmetGate(measured);
 			if (unmet == null)
+			{
+				if (measured != null && measured.Shared > 0 && measured.Have < measured.Need)
+					NotePairShareOpened(spell, evo);
 				continue;
+			}
 
 			// Tonight's recipe's named path on a far-shore run (Player.FarSky.cs): open, and the page says why.
 			if (FarSkyWaivesElementGate(spell?.Id, evo.Id))

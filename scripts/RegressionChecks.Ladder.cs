@@ -25,6 +25,7 @@ public static partial class RegressionChecks
 		ValidateLadderSuits(warnings);
 		ValidateLadderSealMark(warnings);
 		ValidateKindredDraw(warnings);
+		ValidatePairShares(warnings);
 		if (warnings.Count == before)
 			GD.Print($"ContentValidator: the Conjunction ladder, rungs I-II - {ComboCatalog.Fusions.Count()} recipes shown from one half only once learned, the pin, Suits and the level 4 seal mark agree, Kindred Draw leans and never adds.");
 	}
@@ -249,6 +250,113 @@ public static partial class RegressionChecks
 			warnings.Add("Ladder II: Kindred Draw dealt a card the save does not own.");
 		if (poolWeights.Any(w => Math.Abs(w - 1f) > 0.001f) && !pool.Any(o => o.SpellId == b))
 			warnings.Add($"Ladder II: Kindred Draw leaned a card although {b} is not in the pool.");
+	}
+
+	// RUNG III, the pair shares its light (ConjunctionLadder.PairShareFor; Teachings.PairSharesLesson):
+	//   - it never applies off its deed (not earned: nothing), to a third Ascension (the parent's other level 8 path),
+	//     with the partner not held, to a sealed recipe (the partner down its other path; the wizard's own spell);
+	//   - earned, both parents held at 7, it shares on every built recipe's named paths, and at half never more than 1;
+	//   - with the far sky's waiver it never stacks: the waiver is set only where the share leaves the gate unmet;
+	//   - its lesson: owed by the Archivist's deed and only once Conjunctions are learned, not shown before it is learned.
+	private static void ValidatePairShares(List<string> warnings)
+	{
+		int before = warnings.Count;
+		var table = new List<string>();
+		foreach (ComboDefinition recipe in ComboCatalog.Fusions)
+		{
+			SpellData first = LadderParent(recipe.First, 7);
+			SpellData second = LadderParent(recipe.Second, 7);
+			if (first == null || second == null)
+				continue;
+			var both = new List<SpellData> { first, second };
+			foreach ((ComboIngredient part, SpellData spell) in new[] { (recipe.First, first), (recipe.Second, second) })
+			{
+				SpellEvolutionOption named = spell.GetEvolutionOptionsForLevel(8)?.FirstOrDefault(o => o?.Id == part.AscensionId);
+				var gateElements = named == null ? new List<Element>()
+					: Player.EvaluateElementGate(named, spell, new Dictionary<Element, int>())?.AnyOf ?? new List<Element>();
+				int Share(bool earned, IEnumerable<SpellData> held, string ascension, string own = null, bool half = false) =>
+					ConjunctionLadder.PairShareFor(earned, part.SpellId, ascension, held, own, gateElements, half).Weight;
+				string where = $"{part.SpellName} - {part.AscensionName} ('{recipe.Id}')";
+				int full = Share(true, both, part.AscensionId);
+				table.Add($"{part.AscensionName}+{full}");
+				if (full <= 0)
+					warnings.Add($"Ladder III: {where} gets no share from its partner held at 7 - the rung does nothing for it.");
+				if (Share(false, both, part.AscensionId) != 0)
+					warnings.Add($"Ladder III: {where} is shared on a save that has not earned the rung.");
+				if (Share(true, both, part.AscensionId, half: true) > 1)
+					warnings.Add($"Ladder III: {where} shares more than 1 at half strength.");
+				if (Share(true, new[] { spell }, part.AscensionId) != 0)
+					warnings.Add($"Ladder III: {where} is shared with its partner not held.");
+				if (Share(true, both, part.AscensionId, own: part.SpellId) != 0)
+					warnings.Add($"Ladder III: {where} is shared for a wizard whose own spell it is.");
+				foreach (SpellEvolutionOption third in spell.GetEvolutionOptionsForLevel(8) ?? Array.Empty<SpellEvolutionOption>())
+				{
+					if (third == null || third.Id == part.AscensionId || ComboCatalog.Naming(part.SpellId, third.Id).Any())
+						continue;
+					if (Share(true, both, third.Id) != 0)
+						warnings.Add($"Ladder III: {part.SpellName}'s '{third.DisplayName}', which no recipe names, is shared - a third Ascension.");
+				}
+				// The partner down its other path seals the recipe, and the share ends with it.
+				ComboIngredient otherPart = ComboCatalog.PartnerOf(recipe, part.SpellId);
+				SpellData partnerSealed = LadderParent(otherPart, 8, otherPath: true);
+				if (partnerSealed != null && Share(true, new[] { spell, partnerSealed }, part.AscensionId) != 0)
+					warnings.Add($"Ladder III: {where} is shared after its partner took its other path (the recipe is sealed).");
+			}
+		}
+
+		// Never stacked with the far sky's waiver: the caller waives only where the share leaves the gate unmet.
+		foreach ((int have, int shared) in new[] { (1, 2), (2, 2), (0, 0), (3, 1) })
+		{
+			var gate = new AscensionRequirement { Kind = AscensionRequirementKind.Element, Have = have, Shared = shared, Need = Player.AscensionElementRequirement };
+			bool metByShare = gate.Met;
+			gate.Waived = !gate.Met && true;
+			if (metByShare && gate.Waived)
+				warnings.Add("Ladder III: a gate the share already meets is also waived.");
+			if (gate.Missing < 0 || (gate.Met && gate.Missing != 0))
+				warnings.Add($"Ladder III: a gate at {have} + {shared} of 4 reads {gate.Missing} missing.");
+		}
+
+		// The lesson: owed by the Archivist's deed only once Conjunctions are learned, and nothing shown before.
+		SaveData early = LadderSave(Teaching.Apotheosis);
+		early.UnlockedAchievementIds.Add(ConjunctionLadder.PairShareDeedId);
+		if (Teachings.Owed(early).Contains(Teachings.PairSharesLesson))
+			warnings.Add("Ladder III: its lesson is owed before Conjunctions are learned.");
+		SaveData ready = LadderSave(Teaching.Conjunctions);
+		if (Teachings.Owed(ready).Contains(Teachings.PairSharesLesson))
+			warnings.Add("Ladder III: its lesson is owed without the Archivist's deed.");
+		ready.UnlockedAchievementIds.Add(ConjunctionLadder.PairShareDeedId);
+		if (!Teachings.Owed(ready).Contains(Teachings.PairSharesLesson))
+			warnings.Add("Ladder III: its lesson is not owed once the Archivist is beaten and Conjunctions are learned.");
+		if (Teachings.IsShown(ready, Teaching.PairShares) || Teachings.HasLearned(ready, Teaching.PairShares))
+			warnings.Add("Ladder III: it is shown or learned before its lesson has played.");
+		Teachings.Teach(ready, Teachings.PairSharesLesson);
+		if (!Teachings.HasLearned(ready, Teaching.PairShares) || Teachings.Owed(ready).Contains(Teachings.PairSharesLesson))
+			warnings.Add("Ladder III: its lesson, once taught, is not learned (or is still owed).");
+		AchievementDefinition deed = AchievementDefinitions.All.FirstOrDefault(d => d.Id == ConjunctionLadder.PairShareDeedId);
+		if (deed == null || deed.BossId != "ruins_sentinel" || !deed.RewardText.Contains("teaches a lesson"))
+			warnings.Add($"Ladder III: '{ConjunctionLadder.PairShareDeedId}' should be the Archivist's deed and say it teaches a lesson.");
+		if (warnings.Count == before)
+			GD.Print($"ContentValidator: ladder III, the pair's share at level 7 - {string.Join(", ", table)}; never off its deed, a third Ascension, an unheld partner or a sealed recipe; never stacked with the far sky's waiver.");
+	}
+
+	// A recipe's parent from its resource at <paramref name="level"/>; at 8 down the named path, or its other one.
+	private static SpellData LadderParent(ComboIngredient part, int level, bool otherPath = false)
+	{
+		SpellData template = ContentValidator.LoadAllSpells().FirstOrDefault(s => s != null && s.Id == part?.SpellId);
+		if (template == null)
+			return null;
+		var spell = (SpellData)template.Duplicate(true);
+		SpellEvolutionCatalog.EnsureEvolutionCoverage(spell);
+		spell.CurrentLevel = Math.Min(level, spell.MaxLevel);
+		if (level >= 8)
+		{
+			SpellEvolutionOption path = (spell.GetEvolutionOptionsForLevel(8) ?? Array.Empty<SpellEvolutionOption>())
+				.FirstOrDefault(o => o != null && (otherPath ? o.Id != part.AscensionId : o.Id == part.AscensionId));
+			if (path == null)
+				return null;
+			spell.ApplyEvolution(path);
+		}
+		return spell;
 	}
 
 	// Schema 26 (SaveData.MigrateToPinnedRecipe): a save from before pins nothing, and the step changes nothing else.

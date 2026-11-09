@@ -13,6 +13,8 @@ public enum Teaching
 	SovereignRite,
 	// The far shore's one system (.ai/second-half.md 5, 6.2): taught by its first god, not a vault.
 	FarSky,
+	// Rung III of the Conjunction ladder (.ai/conjunction-progression.md): taught by the Archivist's deed.
+	PairShares,
 }
 
 /// <summary>
@@ -85,8 +87,18 @@ public static class Teachings
 	public static readonly Lesson FarSkyLesson = new(Teaching.FarSky, "far_sky", "The Far Sky", string.Empty,
 		"Each night the far sky names a Conjunction");
 
-	/// <summary>Every lesson, the ladder first, then the Rite, then the far sky.</summary>
-	public static IEnumerable<Lesson> All => Ladder.Append(Rite).Append(FarSkyLesson);
+	/// <summary>
+	/// THE PAIR SHARES ITS LIGHT (rung III of .ai/conjunction-progression.md; ConjunctionLadder.PairShareFor): while both
+	/// parents of a recipe are held, each named Ascension's element gate also counts the other parent's tags. Taught by
+	/// the Archivist's deed (ConjunctionLadder.PairShareDeedId, chapter 6), owed only once Conjunctions are learned - so
+	/// nobody is taught it before the system it eases - and played after the run, as every lesson is. Its reel is the
+	/// Conjunctions lesson's own two panels with lines of its own (Prologue.Ladder.cs): no new art.
+	/// </summary>
+	public static readonly Lesson PairSharesLesson = new(Teaching.PairShares, "pair_shares", "The Pair Shares Its Light", string.Empty,
+		"A Conjunction's two spells share their light");
+
+	/// <summary>Every lesson: the ladder first, then the pair's share (chapter 6), the Rite, the far sky.</summary>
+	public static IEnumerable<Lesson> All => Ladder.Append(PairSharesLesson).Append(Rite).Append(FarSkyLesson);
 
 	/// <summary>
 	/// The god whose rekindling teaches the far sky: whoever is seated at the far shore's first chapter (UnlockCatalog
@@ -94,6 +106,13 @@ public static class Teachings
 	/// </summary>
 	public static string FarSkyTeacherId =>
 		StageCatalog.FarShore.Count == 0 ? null : UnlockCatalog.GodSeatedAt(StageCatalog.FarShore[0].Id)?.Id;
+
+	/// <summary>Whether the Archivist's deed - rung III's teacher - is done on this save.</summary>
+	public static bool PairSharesTeacherBeaten(SaveData data) =>
+		data != null && GlobalStatsManager.IsAchievementUnlocked(data, ConjunctionLadder.PairShareDeedId);
+
+	// Conjunctions already taught before this evening (a lesson owed alongside it waits a run).
+	private static bool HasBeenTaughtOrNull(SaveData data, Teaching system) => HasBeenTaught(data, Get(system));
 
 	/// <summary>Whether the far sky's teacher is rekindled on this save: her character is the save's.</summary>
 	public static bool FarSkyTeacherRekindled(SaveData data) =>
@@ -153,6 +172,9 @@ public static class Teachings
 		// owned-but-unexplained state as the Rite has.
 		if (system == Teaching.FarSky)
 			return HasBeenTaught(data, FarSkyLesson);
+		// Rung III: usable once its reel has played, as the far sky's (nothing of it is shown before).
+		if (system == Teaching.PairShares)
+			return HasBeenTaught(data, PairSharesLesson);
 		// The Ascension's schema 20 flag still counts: a save that had it kept it (SaveData.AscensionLearned).
 		if (system == Teaching.Ascension && data.AscensionLearned)
 			return true;
@@ -177,6 +199,8 @@ public static class Teachings
 		Teaching.Apotheosis => HasLearned(data, Teaching.Ascension),
 		Teaching.Conjunctions => HasLearned(data, Teaching.Apotheosis),
 		Teaching.FarSky => HasLearned(data, Teaching.FarSky),
+		// Only once learned: before, the Archivist's card saying it "teaches a lesson" is all that is on show.
+		Teaching.PairShares => HasLearned(data, Teaching.PairShares),
 		_ => HasLearned(data, Teaching.SovereignRite) || HasLearned(data, Teaching.Conjunctions),
 	};
 
@@ -205,6 +229,9 @@ public static class Teachings
 			owed.Add(rung);
 			credit--;
 		}
+		// Rung III, once the Archivist is beaten - and only after Conjunctions are learned, never on the same evening.
+		if (PairSharesTeacherBeaten(data) && HasBeenTaughtOrNull(data, Teaching.Conjunctions) && !HasBeenTaught(data, PairSharesLesson))
+			owed.Add(PairSharesLesson);
 		if (HasLearned(data, Teaching.SovereignRite) && !HasBeenTaught(data, Rite))
 			owed.Add(Rite);
 		// The far sky, once its god is rekindled - after her freeing reel, which PlayOwedLessonsThen plays first.
@@ -234,6 +261,8 @@ public static class Teachings
 			return "Learned by defeating the Warden of the Deep";
 		if (system == Teaching.FarSky)
 			return "Learned on the far shore";
+		if (system == Teaching.PairShares)
+			return "Learned by defeating the Archivist";
 		// Found this run: it is taught when the run ends, and the line says so rather than send him back out.
 		if (Owed(data).Any(l => l.System == system))
 			return "Learned at the end of a run";

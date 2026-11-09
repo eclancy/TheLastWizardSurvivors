@@ -92,6 +92,9 @@ public partial class _BalanceHarness : Node
 	//                   bans a planner buys (Fate Fracture 5, Proscription 3, as --all-unlocked holds them).
 	//   --curate=N      N spells set aside in the Spell Index, as N Redactions allow - never one of --seek-combo's
 	//                   parents or the wizard's own, never below the pool's floor (GlobalStatsManager.MinimumOfferablePool).
+	//   --pair-shares[=half|off]  rung III: the pair shares its light this run whatever the save has learned (=half: the
+	//                   doc's fallback, the partner counting at most 1; =off: never). Each Ascension the share opened is
+	//                   logged as a PAIR SHARES line.
 	// The summary's ladder= says what was on (kindred level and cards leaned, curated count).
 	private bool planner;
 	private int curate;
@@ -427,6 +430,13 @@ public partial class _BalanceHarness : Node
 			else if (arg == "--planner") { planner = true; Farmed = true; }
 			else if (arg.StartsWith("--curate=")) curate = Math.Max(0, int.Parse(arg.Substring(9)));
 			else if (arg.StartsWith("--kindred=")) ConjunctionLadder.KindredToolLevel = Math.Clamp(int.Parse(arg.Substring(10)), 0, ConjunctionLadder.KindredDrawLevels);
+			else if (arg == "--pair-shares") ConjunctionLadder.PairShareToolOverride = true;
+			else if (arg.StartsWith("--pair-shares="))
+			{
+				string how = arg.Substring(14).Trim();
+				ConjunctionLadder.PairShareToolOverride = !how.Equals("off", StringComparison.OrdinalIgnoreCase);
+				ConjunctionLadder.PairShareHalf = how.Equals("half", StringComparison.OrdinalIgnoreCase);
+			}
 			else if (arg.StartsWith("--arcane=")) FarmedArcane = int.Parse(arg.Substring(9));
 			else if (arg.StartsWith("--stop-need=")) StopNeed = float.Parse(arg.Substring(12), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg.StartsWith("--stop-overrun=")) StopOverrunSeconds = float.Parse(arg.Substring(15), System.Globalization.CultureInfo.InvariantCulture);
@@ -3655,7 +3665,8 @@ public partial class _BalanceHarness : Node
 
 	// " ladder=kindred2,leaned14,curated8"
 	private string LadderSummary() =>
-		$" ladder=kindred{player?.KindredDrawLevel ?? 0},leaned{player?.KindredLeanedCards ?? 0},curated{curated}{(planner ? ",planner" : "")}";
+		$" ladder=kindred{player?.KindredDrawLevel ?? 0},leaned{player?.KindredLeanedCards ?? 0},curated{curated}{(planner ? ",planner" : "")}"
+		+ $",pairShares{(player?.PairSharesLearned == true ? (ConjunctionLadder.PairShareHalf ? "Half" : "On") : "Off")},opened{player?.PairSharesOpened ?? 0}";
 
 	private void TrackFarSky()
 	{

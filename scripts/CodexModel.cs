@@ -902,7 +902,12 @@ public sealed class CodexModel
 					if (gate.Waived)
 						chips.Add(new CodexChip { Text = FarSky.WaiverLine, Met = true });
 					else
+					{
 						chips.AddRange(ElementChips(gate, measured: true));
+						// The partner's share beside the player's own count (rung III of .ai/conjunction-progression.md).
+						if (gate.Shared > 0)
+							chips.Add(new CodexChip { Text = $"{gate.SharedBy} +{gate.Shared}", Met = gate.Met, Have = gate.Shared, Need = gate.Need });
+					}
 					break;
 				case AscensionRequirementKind.Learned:
 					// Where it is learned (Teachings.SealedLine), when the gate says.

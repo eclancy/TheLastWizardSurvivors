@@ -28,6 +28,58 @@ public partial class Player
 
 	private SaveData LadderSave => GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
 
+	// --- rung III: the pair shares its light ----------------------------------------------------------------
+
+	/// <summary>
+	/// Whether this run plays rung III (the Archivist's lesson learned; a tool's --pair-shares wins). Read once at the
+	/// start, as every lesson is, so a lesson found in the run changes nothing until it ends. Needs Conjunctions too.
+	/// </summary>
+	public bool PairSharesLearned { get; private set; }
+
+	private void ReadPairShares(SaveData save) =>
+		PairSharesLearned = ConjunctionLadder.PairShareToolOverride ?? Teachings.HasLearned(save, Teaching.PairShares);
+
+	/// <summary>
+	/// The element gate on one Ascension as this run reads it: the one authority (EvaluateElementGate) with the pair's
+	/// share beside it (ConjunctionLadder.PairShareFor) - so the level 8 page's lock, the strip, the browser and the
+	/// pinned checklist all read one measurement. The far sky's waiver is applied on top by its callers and only where
+	/// this still stands unmet, so the two never stack: on the far shore tonight's two paths are open anyway, and the
+	/// share only shows how close the player is; everywhere else the share is all there is.
+	/// </summary>
+	private AscensionRequirement EvaluateElementGateInRun(SpellEvolutionOption evo, SpellData spell, Dictionary<Element, int> counts)
+	{
+		AscensionRequirement gate = EvaluateElementGate(evo, spell, counts);
+		if (gate == null || !ConjunctionsLearned || SovereignSpell != null)
+			return gate;
+		(int weight, string partner) = ConjunctionLadder.PairShareFor(PairSharesLearned, spell?.Id, evo?.Id, equippedSpells,
+			OwnSpellForCombos, gate.AnyOf, ConjunctionLadder.PairShareHalf);
+		gate.Shared = weight;
+		gate.SharedBy = weight > 0 ? partner : string.Empty;
+		return gate;
+	}
+
+	/// <summary>How many Ascensions the pair's share has opened this run that the player's own tags had not: for the harness.</summary>
+	public int PairSharesOpened => pairShareOpened.Count;
+
+	private readonly HashSet<string> pairShareOpened = new(StringComparer.OrdinalIgnoreCase);
+
+	// A path offered only because of the share: logged once a run, so a harness log says when the rung did its work.
+	private void NotePairShareOpened(SpellData spell, SpellEvolutionOption evo)
+	{
+		if (spell != null && evo != null && pairShareOpened.Add($"{spell.Id}:{evo.Id}"))
+			GD.Print($"PAIR SHARES: {spell.Name}'s {evo.DisplayName} is open on its partner's light, at player level {CurrentLevel}");
+	}
+
+	/// <summary>"Requires 4 Light (Light 2, Hollow Star 1: 3/4)", or null when met: the unmet gate in the player's words.</summary>
+	private static string DescribeUnmetGate(AscensionRequirement gate)
+	{
+		if (gate == null || gate.Met)
+			return null;
+		if (gate.Shared <= 0)
+			return $"Requires {AscensionElementRequirement} {gate.Element} ({gate.Have}/{AscensionElementRequirement})";
+		return $"Requires {AscensionElementRequirement} {gate.Element} ({gate.Element} {gate.Have}, {gate.SharedBy} {gate.Shared}: {gate.Have + gate.Shared}/{AscensionElementRequirement})";
+	}
+
 	/// <summary>
 	/// The recipes Kindred Draw leans toward this run: every fusion the save knows (it owns both parents - a parent it
 	/// does not own is never in the deal to lean toward), not the one this wizard opens on, not one naming his own
@@ -125,6 +177,8 @@ public partial class Player
 
 		Dictionary<Element, int> counts = GetElementInstanceCounts();
 		string next = null;
+		// The first element gate short, in the corner's shape ("Light 3/4 for Pyre"): named only once the levels are in hand.
+		string elementShort = null;
 		bool anyPathToTake = false;
 		foreach ((ComboIngredient part, SpellData held, bool met) in new[]
 		{
@@ -162,13 +216,20 @@ public partial class Player
 			// The named path's own gate, measured by the one authority, against what he holds now.
 			SpellData gateSpell = held ?? (spellCatalog.TryGetValue(part.SpellId, out SpellData template) ? template : null);
 			SpellEvolutionOption named = NamedPathOf(part, held, gateSpell);
-			AscensionRequirement gate = named == null ? null : EvaluateElementGate(named, gateSpell, counts);
+			AscensionRequirement gate = named == null ? null
+				: held != null ? EvaluateElementGateInRun(named, held, counts) : EvaluateElementGate(named, gateSpell, counts);
 			if (gate != null && gate.Element is Element element)
 			{
-				int have = Math.Min(gate.Have, gate.Need);
+				gate.Waived = !gate.Met && FarSkyWaivesElementGate(part.SpellId, part.AscensionId);
+				int have = Math.Min(gate.Have + gate.Shared, gate.Need);
+				// "Pyre: Light 2, Hollow Star 2 of 4" once the partner shares (rung III); the far sky's words where it waives.
+				string count = gate.Waived ? FarSky.WaiverLine
+					: gate.Shared > 0 ? $"{ElementWords(gate)} {gate.Have}, {gate.SharedBy} {gate.Shared}: {have} of {gate.Need}"
+					: $"{ElementWords(gate)} {have} of {gate.Need}";
 				list.Lines.Add(new RecipeCheck { Glyph = gate.Met ? "done" : "todo", Met = gate.Met,
-					Text = $"{part.AscensionName}: {ElementWords(gate)} {have} of {gate.Need}" });
-				// The corner names an element short only once the levels are in hand (FirstElementShort, below).
+					Text = $"{part.AscensionName}: {count}" });
+				if (!gate.Met)
+					elementShort ??= $"{ElementWords(gate)} {have}/{gate.Need} for {part.AscensionName}";
 			}
 		}
 
@@ -199,30 +260,10 @@ public partial class Player
 		if (list.Ready)
 			next = "Ready above the cards";
 		// The element gates are the last brake: once the levels are in hand, the first one short.
-		next ??= FirstElementShort(list);
+		next ??= elementShort;
 		next ??= anyPathToTake ? "Take the named paths at level 8" : "Ready above the cards";
 		list.NextStep = next;
 		return list;
-	}
-
-	// "Constellation: Light 2 of 4" -> "Light 2/4 for Constellation", the corner's shape.
-	private static string FirstElementShort(RecipeChecklist list)
-	{
-		foreach (RecipeCheck check in list.Lines)
-		{
-			if (check.Met || check.Closed || !check.Text.Contains(" of ") || check.Text.StartsWith("Your level"))
-				continue;
-			int colon = check.Text.IndexOf(": ", StringComparison.Ordinal);
-			if (colon <= 0)
-				continue;
-			string path = check.Text.Substring(0, colon);
-			string rest = check.Text.Substring(colon + 2);
-			// Only the element lines: "Light 2 of 4" (a parent's level line reads "level 3 of 7").
-			if (rest.StartsWith("level "))
-				continue;
-			return $"{rest.Replace(" of ", "/")} for {path}";
-		}
-		return null;
 	}
 
 	// "Light", or "Metal or Wind" for a path any of two may open.

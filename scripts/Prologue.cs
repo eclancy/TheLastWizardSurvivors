@@ -322,6 +322,8 @@ public partial class Prologue : Control
 			reels[Freeings.ReelIdFor(wizardId)] = FreedReel(wizardId);
 		// F4, the far sky's lesson (Teachings.FarSkyLesson; its beats in Prologue.FarSky.cs).
 		reels[Teachings.FarSkyLesson.Id] = new Reel(Teachings.FarSkyLesson.Id, LessonFolder, FarSkyBeats());
+		// Rung III of the Conjunction ladder (Teachings.PairSharesLesson; its beats in Prologue.Ladder.cs).
+		reels[Teachings.PairSharesLesson.Id] = new Reel(Teachings.PairSharesLesson.Id, LessonFolder, PairSharesBeats());
 		return reels;
 	}
 
