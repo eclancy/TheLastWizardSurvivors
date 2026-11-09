@@ -128,6 +128,18 @@ public partial class WorldMap : Control
 		ground.SetAnchorsPreset(LayoutPreset.FullRect);
 		AddChild(ground);
 
+		// REEL E, THE LIGHT GOES ON (LightGoesOn, .ai/second-half.md 6.3): a save that took back the Throne before the
+		// reel existed - or quit before it played - meets it here, the first time the world opens, and comes back to
+		// a world that has been told what the far shore is. The stops it showed before the light went home are its
+		// last visit's, so the far shore's first stop is drawn out of the dark on the way back (the reveal), as it is
+		// after the run that wins the Throne. Nothing else of the screen is built: the reel's scene replaces it.
+		if (!onPage && LightGoesOn.IsOwed(save))
+		{
+			LastShownStops = new HashSet<string>(stops.Where(s => s.IsBossRush || !StageCatalog.IsOnFarShore(s.Stage)).Select(s => s.Id));
+			CallDeferred(nameof(PlayLightGoesOn));
+			return;
+		}
+
 		if (onPage)
 			BuildPageView();
 		else
@@ -150,6 +162,10 @@ public partial class WorldMap : Control
 			LastShownStops = new HashSet<string>(stops.Select(s => s.Id));
 			view.Setup(layout, stops.Select(s => new WorldMapView.ViewStop { Layout = s.Layout, Look = s.Look, OffRoad = s.OffRoad }).ToList(),
 				character, selected, revealFrom);
+			// Once the Throne is taken back his tower's dark light is out and the light streams east off it over the
+			// dark sea (.ai/second-half.md 6.2) - on every visit after, not only the first.
+			if (GlobalStatsManager.HasTakenBackTheThrone(save))
+				view.ShowLightGoneHome();
 			compass.SetMarks(stops.Select(MarkFor));
 			// A fresh save has one place shown and nowhere to step to.
 			leftArrow.Visible = rightArrow.Visible = stops.Count > 1;
@@ -193,6 +209,9 @@ public partial class WorldMap : Control
 	}
 
 	private void FallBack() => SceneTransition.ChangeScene(this, "res://scenes/StageSelection.tscn");
+
+	// Reel E, then back to this screen (Prologue.After.Map), which finds it seen.
+	private void PlayLightGoesOn() => Prologue.Play(this, Prologue.After.Map, LightGoesOn.ReelId);
 
 	// --- the stops -------------------------------------------------------------------------------
 
@@ -263,7 +282,8 @@ public partial class WorldMap : Control
 	/// the page instead). Read by <see cref="BuildStops"/> and by RegressionChecks.ValidateWorldMap, which
 	/// holds tools/art/world_map.py's PLACES to it - otherwise the road would run back from the tower to
 	/// the summit. A campaign with no gate chapter puts the rush after its last chapter, as before. The far
-	/// shore has no PLACES yet (piece F5 draws it), so its chapters are left off quietly until then.
+	/// shore's places are drawn across the dark sea east of his rock (piece F5); none is a stop until
+	/// GlobalStatsManager.IsChapterRevealed shows it - nothing before Taken Back, then the first.
 	/// </summary>
 	public static List<(StageDefinition Stage, bool Rush)> RoadOrder(bool withRush)
 	{
@@ -298,7 +318,7 @@ public partial class WorldMap : Control
 	{
 		int position = stop.IsBossRush ? -1 : StageCatalog.CampaignPositionOf(stop.Stage.Id);
 		// A far chapter is numbered in its own order, and the crossing of the dark sea is a break on the strip
-		// as the stops outside both orders are (.ai/second-half.md 7; the look is piece F5's).
+		// as the stops outside both orders are (.ai/second-half.md 7), drawn as waves (piece F5).
 		int far = stop.IsBossRush || position >= 0 ? -1 : StageCatalog.FarShorePositionOf(stop.Stage.Id);
 		bool outside = IsOutside(stop);
 		return new WorldMapCompass.Mark
@@ -311,6 +331,7 @@ public partial class WorldMap : Control
 			Caption = position >= 0 ? (position + 1).ToString() : far >= 0 ? (far + 1).ToString() : string.Empty,
 			BreakBefore = index > 0
 				&& ((outside && !IsOutside(stops[index - 1])) || (far >= 0 && !IsFarShore(stops[index - 1]))),
+			SeaBefore = index > 0 && far >= 0 && !IsFarShore(stops[index - 1]),
 		};
 	}
 

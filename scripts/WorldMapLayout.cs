@@ -55,6 +55,15 @@ public sealed class WorldMapLayout
 	/// <summary>The kids' drawings laid on it from their own files, and where.</summary>
 	public List<(string Texture, Vector2 At)> PageDrawings { get; } = new();
 
+	// THE LIGHT GOING HOME (.ai/second-half.md 6.2, piece F5): what the map lays over the world once the Throne is
+	// taken back - his tower unlit, and the path the warm motes stream east along off its crown. Art pixels.
+	/// <summary>The unlit tower's picture (in <see cref="Directory"/>), drawn over the world after Taken Back; empty if none.</summary>
+	public string TowerUnlitImage { get; private set; } = string.Empty;
+	/// <summary>Where the unlit tower's picture sits on the world (its top-left), and its size.</summary>
+	public Rect2 TowerUnlitRect { get; private set; }
+	/// <summary>The motes' path, west to east: off his crown, over the dark sea and on over the far shore.</summary>
+	public Vector2[] MotePath { get; private set; } = Array.Empty<Vector2>();
+
 	public float Length => Arc.Length > 0 ? Arc[^1] : 0f;
 
 	/// <summary>How far east the world is drawn, so the camera knows where it ends.</summary>
@@ -129,6 +138,20 @@ public sealed class WorldMapLayout
 				JsonElement at = d.GetProperty("at");
 				layout.PageDrawings.Add((d.GetProperty("texture").GetString() ?? string.Empty,
 					new Vector2(at[0].GetSingle(), at[1].GetSingle())));
+			}
+
+			// Optional, so a manifest from before the far shore still loads (it shows the tower lit, always).
+			if (root.TryGetProperty("light_home", out JsonElement light))
+			{
+				layout.TowerUnlitImage = light.GetProperty("tower_image").GetString() ?? string.Empty;
+				JsonElement towerAt = light.GetProperty("tower_at");
+				JsonElement towerSize = light.GetProperty("tower_size");
+				layout.TowerUnlitRect = new Rect2(towerAt[0].GetSingle(), towerAt[1].GetSingle(),
+					towerSize[0].GetSingle(), towerSize[1].GetSingle());
+				var motes = new List<Vector2>();
+				foreach (JsonElement p in light.GetProperty("motes").EnumerateArray())
+					motes.Add(new Vector2(p[0].GetSingle(), p[1].GetSingle()));
+				layout.MotePath = motes.ToArray();
 			}
 			return layout;
 		}

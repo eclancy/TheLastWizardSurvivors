@@ -205,6 +205,106 @@ public partial class WorldMapView : Control
 			stops[index].Look = look;
 	}
 
+	// --- the light going home ----------------------------------------------------------------------
+	// .ai/second-half.md 6.2: once the Throne is taken back, "the tower's dark light is out and warm motes stream
+	// east off it over the dark sea". The picture has the tower burning; the generator also draws it unlit, cut
+	// down to where the two differ (tower-unlit.png, WorldMapLayout.TowerUnlitRect), and that is laid over the
+	// world here - the light going out is a picture, never a tint. The motes are the ending's, the light going
+	// home: single art pixels of the light ramp, opaque, on the art grid, streaming along the path the generator
+	// wrote (WorldMapLayout.MotePath) from his crown out over the sea and on east over the far shore - over the
+	// dark too, past whatever the save has been shown, because that is where the light is going. No allocation per
+	// frame: every mote is a few numbers fixed when the map opens.
+	private const int MoteCount = 120;
+	private const float MoteSpeed = 30f;
+	private Texture2D towerUnlit;
+	private bool lightGoneHome;
+	private float[] motePathArc = Array.Empty<float>();
+	private readonly float[] motePhase = new float[MoteCount];
+	private readonly float[] moteReach = new float[MoteCount];
+	private readonly float[] moteRate = new float[MoteCount];
+	private readonly float[] moteSway = new float[MoteCount];
+	private Color[] moteColors = Array.Empty<Color>();
+	private double moteClock;
+
+	/// <summary>True once the light going home is drawn (a save that has taken back the Throne). For the harness.</summary>
+	public bool LightGoneHome => lightGoneHome;
+
+	/// <summary>
+	/// After Taken Back: his tower unlit and the light streaming east off it (.ai/second-half.md 6.2). Call after
+	/// <see cref="Setup"/>; a layout from before the far shore, with no unlit tower in it, keeps the tower as drawn.
+	/// </summary>
+	public void ShowLightGoneHome()
+	{
+		if (layout == null || string.IsNullOrEmpty(layout.TowerUnlitImage) || layout.MotePath.Length < 2)
+			return;
+		towerUnlit = Load(WorldMapLayout.Directory + layout.TowerUnlitImage);
+		Vector2[] path = layout.MotePath;
+		motePathArc = new float[path.Length];
+		for (int i = 1; i < path.Length; i++)
+			motePathArc[i] = motePathArc[i - 1] + path[i].DistanceTo(path[i - 1]);
+		// Seeded, so the stream is the same every time the map opens (and in every photograph of it).
+		var rng = new Random(6200);
+		for (int i = 0; i < MoteCount; i++)
+		{
+			motePhase[i] = (float)rng.NextDouble();
+			// Most go out over the sea and the first cliffs; a few go on to the far end of the shore.
+			float reach = (float)rng.NextDouble();
+			moteReach[i] = 0.18f + 0.82f * reach * reach;
+			moteRate[i] = 0.75f + 0.5f * (float)rng.NextDouble();
+			moteSway[i] = ((float)rng.NextDouble() - 0.5f) * 2f;
+		}
+		ElementColors.Ramp ramp = ElementColors.GetRamp(Element.Light);
+		moteColors = new[] { ramp.Core, ramp.Hot, ramp.Mid, ramp.Edge };
+		lightGoneHome = true;
+	}
+
+	private Vector2 MotePoint(float s, out Vector2 normal)
+	{
+		Vector2[] path = layout.MotePath;
+		int i = 0;
+		while (i < path.Length - 2 && motePathArc[i + 1] < s)
+			i++;
+		float span = Mathf.Max(0.001f, motePathArc[i + 1] - motePathArc[i]);
+		Vector2 along = (path[i + 1] - path[i]) / span;
+		normal = new Vector2(-along.Y, along.X);
+		return path[i] + along * Mathf.Clamp(s - motePathArc[i], 0f, span);
+	}
+
+	// The stream, from the crown east: each mote runs out to its own reach and starts again at the crown, swaying off
+	// the path a little more the further it has gone, cooling down the ramp as it goes - white-hot off the tower,
+	// the gold of the light's edge far out over the shore.
+	private void DrawMotes(Vector2 origin, float u, Transform2D toScreen, Transform2D fromScreen)
+	{
+		if (!lightGoneHome || motePathArc.Length < 2)
+			return;
+		float length = motePathArc[^1];
+		for (int i = 0; i < MoteCount; i++)
+		{
+			float reach = moteReach[i] * length;
+			float s = (float)((moteClock * MoteSpeed * moteRate[i] + motePhase[i] * reach) % reach);
+			float t = s / length;
+			Vector2 at = MotePoint(s, out Vector2 normal);
+			float spread = 2f + t * 18f;
+			Vector2 sway = normal * (moteSway[i] * spread + Mathf.Sin((float)moteClock * 0.8f + i * 1.7f) * (1f + t * 3f));
+			at = (at + sway).Floor();
+			int shade = Mathf.Clamp((int)(t * 4.2f + (i % 3) * 0.6f), 0, 3);
+			// Its streak, the way it came: one or two art pixels behind it on the path, the ramp's gold edge - so the
+			// stream reads as going, not as a dotted line of stars.
+			int streak = t < 0.5f ? 2 : 1;
+			for (int k = 1; k <= streak; k++)
+			{
+				Vector2 behind = (MotePoint(Mathf.Max(0f, s - k * 2f), out _) + sway).Floor();
+				if (behind == at)
+					continue;
+				Vector2 tail = fromScreen * (toScreen * (origin + behind * u)).Round();
+				DrawRect(new Rect2(tail, new Vector2(u, u)), moteColors[3]);
+			}
+			Vector2 topLeft = fromScreen * (toScreen * (origin + at * u)).Round();
+			float side = i % 3 == 0 && t < 0.3f ? 2f : 1f;
+			DrawRect(new Rect2(topLeft, new Vector2(u * side, u * side)), moteColors[shade]);
+		}
+	}
+
 	/// <summary>Makes <paramref name="index"/> the selected stop. The wizard walks to it.</summary>
 	public void Select(int index)
 	{
@@ -268,6 +368,7 @@ public partial class WorldMapView : Control
 			facingLeft = dx < 0f;
 		lastWizardPosition = position;
 		animClock += delta * (IsWalking ? Mathf.Clamp(WizardSpeed / MinSpeed, 1f, 2.5f) : 1f);
+		moteClock += delta;
 
 		// THE CAMERA: toward the selected place, inside the drawn world, and never without him.
 		if (stops.Length > 0)
@@ -363,6 +464,9 @@ public partial class WorldMapView : Control
 		}
 
 		DrawTextureRect(world, new Rect2(origin, world.GetSize() * u), false);
+		// After Taken Back, his tower as it stands now: unlit (ShowLightGoneHome).
+		if (lightGoneHome && towerUnlit != null)
+			Blit(towerUnlit, layout.TowerUnlitRect.Position);
 		// The dark over everything past the revealed road; during a reveal, the old dark fading off it.
 		if (mask != null)
 			DrawTextureRect(mask, new Rect2(origin, world.GetSize() * u), false);
@@ -396,6 +500,9 @@ public partial class WorldMapView : Control
 			if (ring != null)
 				Blit(ring, stops[i].Layout.Stand - ring.GetSize() / 2f + new Vector2(0f, 1f));
 		}
+
+		// The light going home, over the land and the dark alike, under the wizard.
+		DrawMotes(origin, u, toScreen, fromScreen);
 
 		// The wizard: his shadow, then him, feet on the road.
 		Vector2 feet = layout.PointAt(wizardS);
@@ -521,15 +628,15 @@ public partial class WorldMapView : Control
 		if (darkRoad.Count == 0 && darkPlaces.Count == 0)
 			return null;
 
-		// How much nearer the unrevealed is than the revealed, at each coarse node, in art pixels.
+		// How much nearer the unrevealed is than the revealed, at each coarse node, in art pixels (RoadSearch: the
+		// same distances as a search of every sample, at about a third of the cost).
+		var litSearch = new RoadSearch(litRoad, litPlaces);
+		var darkSearch = new RoadSearch(darkRoad, darkPlaces);
 		var field = new float[gw * gh];
 		for (int y = 0; y < gh; y++)
 		{
 			for (int x = 0; x < gw; x++)
-			{
-				var p = new Vector2(x * cell, y * cell);
-				field[y * gw + x] = Nearest(p, litRoad, litPlaces) - Nearest(p, darkRoad, darkPlaces);
-			}
+				field[y * gw + x] = litSearch.Nearest(x * cell, y * cell) - darkSearch.Nearest(x * cell, y * cell);
 		}
 
 		// The mask at half the art's resolution: each texel is two art pixels, the map's grain.
@@ -562,20 +669,120 @@ public partial class WorldMapView : Control
 		return ImageTexture.CreateFromImage(Image.CreateFromData(mw, mh, false, Image.Format.Rgba8, bytes));
 	}
 
-	// The distance from p to the nearest of a road's samples or a place's ring (negative inside it).
-	private static float Nearest(Vector2 p, List<Vector2> road, List<(Vector2 At, float Radius)> places)
+	/// <summary>
+	/// The distance from a point to the nearest of a road's samples or a place's ring (negative inside it), as the
+	/// reveal's field reads it: <c>lit.Nearest(p) - dark.Nearest(p)</c>. The samples are kept in runs of
+	/// <see cref="RunLength"/> along the road with the circle that holds each, and a run is skipped whole when its circle
+	/// cannot hold a nearer sample - the run nearest the point searched first for a tight bound. The answer is exactly
+	/// a search of every sample's; the work is a fraction of it, which matters since the far shore made the road half
+	/// again as long and a phone builds the mask as the map opens. Flat arrays and plain arithmetic, so it stays quick
+	/// in a debug build too.
+	/// </summary>
+	private sealed class RoadSearch
 	{
-		float best = float.MaxValue;
-		foreach (Vector2 r in road)
+		private const int RunLength = 16;
+		private readonly float[] sx, sy;
+		private readonly float[] runX, runY, runR;
+		private readonly int[] runStart, runEnd;
+		private readonly float[] placeX, placeY, placeR;
+
+		public RoadSearch(List<Vector2> road, List<(Vector2 At, float Radius)> places)
 		{
-			float d = p.DistanceSquaredTo(r);
-			if (d < best)
-				best = d;
+			sx = new float[road.Count];
+			sy = new float[road.Count];
+			for (int i = 0; i < road.Count; i++)
+			{
+				sx[i] = road[i].X;
+				sy[i] = road[i].Y;
+			}
+			int runs = (road.Count + RunLength - 1) / RunLength;
+			runX = new float[runs];
+			runY = new float[runs];
+			runR = new float[runs];
+			runStart = new int[runs];
+			runEnd = new int[runs];
+			for (int r = 0; r < runs; r++)
+			{
+				int start = r * RunLength;
+				int end = Math.Min(road.Count, start + RunLength);
+				float cx = 0f, cy = 0f;
+				for (int i = start; i < end; i++)
+				{
+					cx += sx[i];
+					cy += sy[i];
+				}
+				cx /= end - start;
+				cy /= end - start;
+				float radius = 0f;
+				for (int i = start; i < end; i++)
+					radius = MathF.Max(radius, MathF.Sqrt((sx[i] - cx) * (sx[i] - cx) + (sy[i] - cy) * (sy[i] - cy)));
+				runX[r] = cx;
+				runY[r] = cy;
+				runR[r] = radius;
+				runStart[r] = start;
+				runEnd[r] = end;
+			}
+			placeX = new float[places.Count];
+			placeY = new float[places.Count];
+			placeR = new float[places.Count];
+			for (int i = 0; i < places.Count; i++)
+			{
+				placeX[i] = places[i].At.X;
+				placeY[i] = places[i].At.Y;
+				placeR[i] = places[i].Radius;
+			}
 		}
-		best = best == float.MaxValue ? 1e6f : Mathf.Sqrt(best);
-		foreach (var (at, radius) in places)
-			best = Mathf.Min(best, p.DistanceTo(at) - radius);
-		return best;
+
+		public float Nearest(float px, float py)
+		{
+			float best = 1e6f;
+			int runs = runX.Length;
+			if (runs > 0)
+			{
+				int first = 0;
+				float firstBound = float.MaxValue;
+				for (int r = 0; r < runs; r++)
+				{
+					float dx = px - runX[r], dy = py - runY[r];
+					float bound = MathF.Sqrt(dx * dx + dy * dy) - runR[r];
+					if (bound < firstBound)
+					{
+						firstBound = bound;
+						first = r;
+					}
+				}
+				float best2 = Scan(first, px, py, float.MaxValue);
+				for (int r = 0; r < runs; r++)
+				{
+					if (r == first)
+						continue;
+					float dx = px - runX[r], dy = py - runY[r];
+					float bound = MathF.Sqrt(dx * dx + dy * dy) - runR[r];
+					if (bound > 0f && bound * bound >= best2)
+						continue;
+					best2 = Scan(r, px, py, best2);
+				}
+				best = MathF.Sqrt(best2);
+			}
+			for (int i = 0; i < placeX.Length; i++)
+			{
+				float dx = px - placeX[i], dy = py - placeY[i];
+				best = MathF.Min(best, MathF.Sqrt(dx * dx + dy * dy) - placeR[i]);
+			}
+			return best;
+		}
+
+		private float Scan(int run, float px, float py, float best2)
+		{
+			for (int i = runStart[run]; i < runEnd[run]; i++)
+			{
+				float dx = px - sx[i], dy = py - sy[i];
+				float d2 = dx * dx + dy * dy;
+				if (d2 < best2)
+					best2 = d2;
+			}
+			return best2;
+		}
 	}
 
 	/// <summary>The stop under a point of this control, or -1.</summary>

@@ -900,6 +900,64 @@ public static partial class RegressionChecks
 			else if (!map.PageRect.HasPoint(at))
 				warnings.Add($"World map: the page's drawing {texture} is placed off the paper, at {at}.");
 		}
+		ValidateWorldMapFarShore(map, warnings);
+	}
+
+	// THE FAR SHORE ON THE MAP (piece F5, .ai/second-half.md 4.1 and 6.2). Every far chapter has a place, east of the
+	// Throne's, so the road crosses the dark sea to reach it; the light going home (the unlit tower and the motes'
+	// path) is in the manifest and on disk, the tower's patch sits on the tower and the motes leave its crown going
+	// east; and the reveal shows nothing of the far shore before Taken Back, its first stop after, and no other.
+	private static void ValidateWorldMapFarShore(WorldMapLayout map, List<string> warnings)
+	{
+		WorldMapStop throne = map.Get(StageCatalog.FinalChapter?.Id ?? "stage_13");
+		foreach (StageDefinition stage in StageCatalog.FarShore)
+		{
+			WorldMapStop stop = map.Get(stage.Id);
+			if (stop == null)
+				warnings.Add($"World map: {stage.DisplayName} ({stage.Id}) has no place on the map - the far shore is drawn whole (PLACES in tools/art/world_map.py).");
+			else if (throne != null && (stop.Stand.X <= throne.Stand.X + 120f || stop.ArcLength <= throne.ArcLength))
+				warnings.Add($"World map: {stage.DisplayName} stands at {stop.Stand}, not across the dark sea east of the Throne ({throne.Stand}).");
+		}
+
+		if (string.IsNullOrEmpty(map.TowerUnlitImage) || map.MotePath.Length < 2)
+		{
+			warnings.Add("World map: worldmap.json has no light_home (the unlit tower and the motes' path) - re-run python tools/art/world_map.py.");
+			return;
+		}
+		if (!ResourceLoader.Exists(WorldMapLayout.Directory + map.TowerUnlitImage))
+			warnings.Add($"World map: {WorldMapLayout.Directory + map.TowerUnlitImage} is missing or not imported.");
+		Rect2 world = new(Vector2.Zero, map.Size);
+		if (!world.Encloses(map.TowerUnlitRect) || map.TowerUnlitRect.Size.X <= 0f)
+			warnings.Add($"World map: the unlit tower's patch {map.TowerUnlitRect} is not on the world picture.");
+		if (throne != null)
+		{
+			if (!map.TowerUnlitRect.Grow(12f).HasPoint(new Vector2(throne.Focus.X, map.TowerUnlitRect.Position.Y + 1f)))
+				warnings.Add($"World map: the unlit tower's patch {map.TowerUnlitRect} is not over the Throne's tower ({throne.Focus}).");
+			if (map.MotePath[0].DistanceTo(throne.Focus) > 90f)
+				warnings.Add($"World map: the light's motes start at {map.MotePath[0]}, not off the tower's crown ({throne.Focus}).");
+		}
+		for (int i = 1; i < map.MotePath.Length; i++)
+		{
+			if (map.MotePath[i].X <= map.MotePath[i - 1].X)
+			{
+				warnings.Add($"World map: the light's motes turn back west at {map.MotePath[i]}; the light goes east.");
+				break;
+			}
+		}
+
+		// The reveal (GlobalStatsManager.IsChapterRevealed), as the map reads it: a save at the Throne that has not
+		// won it is shown nothing of the far shore; once it has, the first stop and only that.
+		var standing = new SaveData();
+		var crossed = new SaveData();
+		crossed.Lifetime.BossesDefeated.Add(AchievementDefinitions.ThroneBossId);
+		foreach (StageDefinition stage in StageCatalog.FarShore)
+		{
+			bool first = stage.Gate == StageGate.FarShore;
+			if (GlobalStatsManager.IsChapterRevealed(standing, stage))
+				warnings.Add($"World map: {stage.DisplayName} is on the map before the Throne is taken back.");
+			if (GlobalStatsManager.IsChapterRevealed(crossed, stage) != first)
+				warnings.Add($"World map: after Taken Back {stage.DisplayName} is {(first ? "hidden" : "shown")}; only the far shore's first stop should be.");
+		}
 	}
 
 	// Cyclone Slash's running whirlwind (issue #68) reads its one Ascension by id: Typhoon Core is the

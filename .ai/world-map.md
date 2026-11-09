@@ -28,7 +28,8 @@ teaching landmark gives only its environmental clue: no "Teaches your next lesso
 instruction to follow golden lights. See `.ai/slow-start.md` 10.2 for the Familiar's ground tracks.
 
 **One picture, generated** (`tools/art/world_map.py`, never a hand-edited PNG): an overworld seen from
-above, 2112x840 art pixels drawn at x2 (1680 until the castle grew it east, section 18), in the Bonelight palette and under the same key from the upper
+above, 3424x840 art pixels drawn at x2 (1680 until the castle grew it east, section 18, and 2112 until the far
+shore did, section 19), in the Bonelight palette and under the same key from the upper
 left as everything else. Every chapter is a *place* in it - a wood, a field system, a ring of stones,
 a cave mouth, a castle on a rock - and what lies between them is drawn land: the road, a river, a scarp, a
 mountain range, a coast. Nothing is a node on a blank ground.
@@ -55,10 +56,19 @@ south between places, so the map is a world rather than a strip, and the camera 
 | 12 | The Court (`stage_12`) | inside the walls: the great hall's slate roof across the yard, and the west range | *"A court with no one left in it"* - so no window in it is lit |
 | 13 | The Throne (`stage_13`) | his tower at the rock's north-east, the tallest thing in the world | *"He is here."* The one place on the map lit by the `darkness` ramp as emission: the throne room's windows at its top, a halo, and motes going up off the spire (`world-and-tone.md`: he is the only source of dark light) |
 
+| far 1 | The White Downs (`stage_14`) | the far shore's west end, on top of the white chalk cliffs that face the Emberdeep's black ones across the dark sea: barrows round the seat, a hound and a hart cut in the turf | *No moon has risen here since he came.* The road lands in a cove under the cliffs and climbs a coombe onto the downs (section 19) |
+| far 2 | The Drowned Shore (`stage_15`) | south, below the downs' chalk scarp: the seabed the tide left, ribbed sand, channels, wrecks, a whale's ribs | *The sea was told to stay out.* The Weir holds it off across the bay's mouth, the water standing in a ridge behind it |
+| far 3 | The Three Ways (`stage_16`) | north-east, dry country: hedged lanes forking in three and three again, a three-faced pillar where they meet | *Every torch at every crossing is out.* A cold torch-stand at every fork |
+| far 4 | The Twelfth Hour (`stage_17`) | south-east, black sand by a still river: an avenue of sphinxes to a pylon gate, an obelisk either side | *The sun did not rise.* The river carries no glint but the stars' |
+| far 5 | The Thunder Fell (`stage_18`) | the far north-east, granite under the far north's peaks: tors, cairns, split pines, rune-poles | *The storm was told never to break.* A cloud bank sits on it, no rain and no lightning out of it |
+| far 6 | The Bronze Isle (`stage_19`) | an island off the far shore's east coast, over a bronze bridge: walled yards in verdigris, anvils, his tripods, Talos on the rim | *The god's forge is cold.* No fire anywhere: a god's forge put out, not his |
+
 The Emberdeep's summit is where the **Boss Rush** stands (section 5). Past it the road runs down to the
 headland under the black cliffs, over the Last Bridge to his rock, and up through the gate, the yard and
-the hall door to the tower. Past the rock the dark sea runs to the world's edge. **The Sketchbook is not
-in the world, nor on the road** (section 4).
+the hall door to the tower. **Past the rock the far shore** (section 19, piece F5): the road leaves the tower
+east, out of his postern and down to the east sea-gate, over the old causeway to the white cliffs, and on
+through the six seats in the far shore's own order (`StageCatalog.FarShoreOrder`). None of it is shown before
+the Throne is taken back. **The Sketchbook is not in the world, nor on the road** (section 4).
 
 **Lighting and palette.** Ground from the deep half of each material's ramp, features lit on their
 top and left, `occ` for contact and cliff shadow, no colour outside `bonelight.py`. The places' colours
@@ -345,7 +355,7 @@ at the world stop he left.
 
 | What | Where |
 |---|---|
-| the generator | `tools/art/world_map.py` - the world, the page, the fog, the markers, the compass glyphs, the secret and keepsake icons, and `worldmap.json` |
+| the generator | `tools/art/world_map.py` - the world, the page, the fog, the markers, the compass glyphs, the secret and keepsake icons, the unlit tower (`tower-unlit.png`, section 19) and `worldmap.json`; `--preview-far` renders only the east (columns 1800 on) to `tools/art/_worldmap/far.png` in about a minute, writing nothing |
 | the art | `assets/bonelight/ui/worldmap/*.png` + `.import` |
 | the screen | `scenes/WorldMap.tscn`, `scripts/WorldMap.cs` (layout, input, card, the two sheets), `scripts/WorldMapView.cs` (the drawn world, wizard and camera), `scripts/WorldMapPage.cs` (the Sketchbook's page), `scripts/WorldMapCompass.cs`, `scripts/WorldMapLayout.cs` (reads the JSON) |
 | the authority | `scripts/StageRewards.cs`; `RegressionChecks.ValidateStageRewards`, `ValidateWorldMap` |
@@ -469,3 +479,63 @@ the record of both pieces).
   light is hidden; it shows once the Throne is built and open. Whether the rock reads as a rock (it is
   smooth for one), whether the bridge's piers read at x2 on a phone, and whether the island-lit Dungeon
   on an old save reads as a place the road reaches or as a hole in the dark.
+
+## 19. The far shore, drawn (2026-11-08, piece F5)
+
+`.ai/second-half.md` 4.1-4.2 and 6.2 are the design; its section 9, "F5, built", is the record. Eric's question
+12: *widen the one world east across the dark sea, one contiguous drawing*.
+
+- **The world is 3424 wide** (`W`; `CASTLE_W` = 2112 is where it ended). Everything west of the castle is the
+  picture it was, pixel for pixel: the far shore's ground is grown from its own seeds east of `FAR_X0` only, and
+  its trees are drawn after every tree on the land, because `crown()` draws its lobes from one shared stream and a
+  far tree drawn earlier reshaped the whole west wood (the first run did exactly that). What changed west of 2112 is
+  the castle's east side (the postern, the stair) and the strip where the old east edge fell into the dark. 3424 is
+  inside 4096, the floor any GLES3 phone reports.
+- **The crossing.** The road leaves the tower door **east**, across the yard to his postern in the east wall (his
+  cold flame either side, as at the gatehouse), down a stair cut in the rock's south-east face to the east
+  sea-gate's quay, and over **the old causeway** - low, pale dressed stone, older than his castle, the sea washing
+  over it where blocks have gone - to a shingle cove under the white cliffs, then up a coombe onto the downs. It
+  never doubles back through the yard: a road lying under the castle's own lit road would have let the reveal's
+  dark onto the castle. The castle as a door he sat down in (the doc's section 2) is what the causeway draws: one
+  road, land - bridge - his rock - causeway - far shore.
+- **The white cliffs** (`far_west_edge`, `white_cliffs`): headlands of chalk, each reaching further west as it runs
+  south and ending in a face where the coast steps back east - seen from the south, as `black_cliffs` draws his;
+  where the coast runs north-south it faces the key and shows a lit chalk edge. The downs end in the south on a
+  chalk scarp (`DOWNS_SCARP`), cut where the road goes down.
+- **The six places**, in `PLACES` after the Throne in `FarShoreOrder`: the table in section 1 says what each is.
+  Each has its own ground (`downs`, `flats`, `ways`, `blacksand`, `fell` in `GROUND`), its landmark function, and
+  his mark (two points of cold arcane eye-light) somewhere in it. No light anywhere: no window, torch or fire burns
+  on the far shore. On the downs the road is a chalk track, not a dark one.
+- **What the map shows when** (the reveal, `GlobalStatsManager.IsChapterRevealed`, unchanged): before Taken Back,
+  nothing past his rock - the dark begins at the castle's east wall, the stair to the sea-gate is in it, and the
+  Throne is the end of the road. After Taken Back, the crossing and **the White Downs, and only that place**, drawn
+  out of the dark under its mist with its lock line; the other five stay dark until each is earned. **The far
+  shore's places are drawn in `world.png` whatever the save** - the reveal covers them, as it covers the road's -
+  so nothing of the far shore is a stop, a compass mark or visible before its time.
+- **The light going home** (6.2), from Taken Back on: `tower-unlit.png` (the tower as `keep_tower(lit=False)` draws
+  it, cut to where it differs from the lit one, its place in `worldmap.json`'s `light_home`) laid over the world, so
+  his dark light is out; and a stream of warm motes off the spire east over the sea and on over the far shore along
+  `light_home.motes` (`WorldMapView.ShowLightGoneHome`, `DrawMotes`): 120 single art pixels of the light ramp with a
+  streak behind each, opaque, on the art grid, over the dark too. Seeded, so every opening and photograph agrees.
+- **The compass** draws the crossing as three stacked waves (`Mark.SeaBefore`), where the stops outside the
+  campaign get a dashed rule.
+- **The reveal's cost.** The wider world and longer road made `BuildMask` about 2.6 times the work, and a phone
+  builds it as the map opens. `WorldMapView.RoadSearch` keeps the road's samples in runs of 16 with a bounding
+  circle and skips a run that cannot hold a nearer sample: exactly the old distances, about a third of the time
+  (measured on this PC, debug build: field 60-70 ms against about 200 for a search of every sample at this size).
+  The mask's texture upload swung between 30 and 500 ms from run to run with no change in code; that is the
+  driver's, not the search's.
+- **Reel E plays from here** for a save that took back the Throne before it existed (`LightGoesOn`, `.ai/cutscenes.md`
+  E): `WorldMap._Ready` leaves for the reel before building, with `LastShownStops` set to the road's stops, so the
+  map it comes back to draws the White Downs out of the dark.
+- **Checked:** `ValidateWorldMap` (every far chapter placed across the sea east of the Throne, the light-home data and
+  patch on disk and over the tower, the motes leaving the crown eastward, and the reveal showing nothing of the far
+  shore before Taken Back and only its first stop after) and the rest of the validator: 0 errors, the one known
+  warning. `_UiShot` at 1280x720 and 540x1212 `--portrait --safe-area`: `--campaign-complete --unbeaten=stage_13
+  --map-at=stage_13` (not crossed), `--campaign-complete --map-at=stage_13` and `stage_14` (crossed, the gate met), and
+  `--all-unlocked --map-at=stage_15` to `stage_19` (every far place, all under the unbuilt mist). `_PrologueProbe` walks
+  the map-open reel and its return.
+- **Needs eyes:** the far shore has been judged in photographs and generator previews only, and today every far place
+  sits under the unbuilt double mist, so its landmarks will first be seen properly as each chapter is built. The motes
+  were seen still; whether the stream reads as light going home in motion, and at the phone's 1.5 pixels per unit.
+  Whether the causeway reads as a road over water and not a pier, and whether the white cliffs read as cliffs at x2.

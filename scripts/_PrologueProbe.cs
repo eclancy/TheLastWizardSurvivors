@@ -15,7 +15,9 @@ using TheOneHeMissed.scripts;
 /// it plays through the freeing - the chain breaking, the five standing - into the character select;
 /// (8, temporary, with the button) the world map's Replay
 /// intro plays it, and Escape held returns to the map; (9) once a wizard is free, Options lists his
-/// freeing (.ai/cutscenes.md) and plays it. It starts from a brand-new save, in memory.
+/// freeing (.ai/cutscenes.md) and plays it; (10) once the Throne is taken back, the world map plays reel E, the light
+/// going on (LightGoesOn), first, comes back to the map when it ends and does not play it again, and Options lists it.
+/// It starts from a brand-new save, in memory.
 /// The driver hangs off the root, so it outlives the scene changes it is watching.
 /// </remarks>
 public partial class _PrologueProbe : Node
@@ -204,6 +206,47 @@ public partial class _PrologueProbe : Node
 				case 22 when at == 30:
 					Check("Escape held returns to the main menu", Scene == "res://scenes/TitleScreen.tscn");
 					Check("watching it again owes nothing", Freeings.Owed(save.Data).Count == 0);
+					// REEL E (LightGoesOn, .ai/second-half.md 6.3): a save that won the Throne before the reel existed meets
+					// it the first time the world map opens, and comes back to the map.
+					Check("a save short of the Throne does not owe reel E", !LightGoesOn.IsOwed(save.Data));
+					save.Data.Lifetime.BossesDefeated.Add(AchievementDefinitions.ThroneBossId);
+					save.Data.HasSeenLightGoesOn = false;
+					Check("a save that has taken back the Throne owes reel E", LightGoesOn.IsOwed(save.Data));
+					GetTree().ChangeSceneToFile("res://scenes/WorldMap.tscn");
+					Next();
+					break;
+				case 23 when at == 40:
+					Check("the world map plays reel E first", Scene == Prologue.ScenePath && HasPanel("Panel_lightgoes-gate"));
+					Next();
+					break;
+				// Left alone it plays through (about 12 s) and comes back to the map, which does not play it again.
+				case 24 when at == (int)(Prologue.ReelSeconds(LightGoesOn.ReelId) * 60f) + 60:
+					Check("played through, reel E goes back to the world map", Scene == "res://scenes/WorldMap.tscn");
+					Check("reel E is seen once it has played (in memory: writes are off)", save.Data.HasSeenLightGoesOn
+						&& !LightGoesOn.IsOwed(save.Data));
+					Check("the map shows the light gone home", GetTree().CurrentScene?.FindChild("MapView", true, false) is WorldMapView { LightGoneHome: true });
+					Next();
+					break;
+				case 25 when at == 120:
+					Check("the map does not play reel E a second time", Scene == "res://scenes/WorldMap.tscn");
+					ToMenu();
+					Next();
+					break;
+				case 26 when at == 60:
+					Check("Options lists The Light Goes On once seen", PressButton("WatchLightGoesOn"));
+					Next();
+					break;
+				case 27 when at == 30:
+					Check("it plays reel E", Scene == Prologue.ScenePath && HasPanel("Panel_lightgoes-gate"));
+					Press(Key.Escape, true);
+					Next();
+					break;
+				case 28 when at == 75:
+					Press(Key.Escape, false);
+					Next();
+					break;
+				case 29 when at == 30:
+					Check("Escape held returns to the main menu", Scene == "res://scenes/TitleScreen.tscn");
 					GD.Print($"_PrologueProbe: done, {failures} failure(s)");
 					GetTree().Quit(failures == 0 ? 0 : 1);
 					Next();
