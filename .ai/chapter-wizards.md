@@ -181,10 +181,19 @@ hut is the Forest's second event, after the grove, through P2's API exactly as 6
   head at the top, a thorned vine climbing it with its living tip curling over. The tip and the shoot are grass's ramp,
   one bead of poison on a thorn: the only light on her. Bone-Leg, as the tales call her: the far foot under the hem is
   bone. Face set and level, never a grin. 0.88 edges/px. Sheets written by `build.py`'s wizard loop for this name only.
+  **Since 2026-11-09 she flies in her mortar** (Eric: "Her typical movement can be flying in a mortar holding a broom";
+  `084cc285`, `.ai/character-fit.md`): a mortar carved from one log hides her from the hips down, two rows above a shadow
+  that narrows as she rises, and she joins Nimue among the floaters (`FLOATERS`, `anim_sets.hover`: a hover idle, a drift
+  for a walk; her Feet collider is unchanged). The pestle became a broom whose twigs stream back as she moves; the vine
+  climbs its handle, its tip and poison bead her only light (`CharacterVisuals` staff tip (14, 4)); the shoot from the
+  earth went (a floater has no ground under her hand) and Bone-Leg is hidden in the mortar. Her wood is the gold row from
+  its deep end, on her own palette bytes (`WOOD_RAMP`): no new colours. 0.94 edges/px. `WalkingHutEvent` still says she
+  "steps out" of the door; she now comes out in her mortar.
 - **Her passive, Bone Fence** (`knockback_20`): +20% to every shove and pull the player's side gives -
   `Enemy.PlayerKnockbackScale`, read by `Enemy.ApplyKnockback` and set back to 1 by every `Player._Ready`. The two shoves
   that are the place's, not his (the Broken Ward pushing the swarm out of its ring, the Court's rooms), now go through
-  `Enemy.ApplyWorldShove`, which it never touches. Her own vine pushes nothing: it is a build's passive.
+  `Enemy.ApplyWorldShove`, which it never touches. Her own vine pushed nothing, so it was a build's passive - until
+  2026-11-09, when Thorned Vine began throwing what it cuts aside (`ThornVine.VineShoveSpeed`; Eric chose it, `.ai/character-fit.md`).
 - **The event** (`WalkingHutEvent`, `tools/art/walking_hut.py`, `world/hut/`). The hut stands on a 280 px open disc swept
   for through the band (`EventSiteInBand`, dense) and walks a 200 px circle round it at 45 px/s whenever someone is
   within 3200 px - "round and round". It begins when he comes within 480 px of the HUT (or of the circle's middle).
