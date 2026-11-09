@@ -356,7 +356,9 @@ public partial class ScorchingRayBeam : Node2D
 				phase = BeamPhase.Idle;
 				return;
 			}
-			origin = PlayerRef.GlobalPosition;
+			// A staggered ray leaves from where his light is when its turn comes (Player.StaffTipLocal - the sun on
+			// Imhotep's palm), as the cast's first ray did.
+			origin = PlayerRef.GlobalPosition + PlayerRef.StaffTipLocal();
 			bool lost = targetNode == null || !IsInstanceValid(targetNode)
 				|| (targetNode is Enemy enemy && (enemy.IsDying || !enemy.InEnemyRegistry));
 			if (lost && PlayerRef.RetargetScorchingRay(this) is Node2D next)

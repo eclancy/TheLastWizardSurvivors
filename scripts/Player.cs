@@ -7439,7 +7439,9 @@ public partial class Player : CharacterBody2D
 			// The beam strikes one point and its burst is drawn out of the radius it hits, so a visual
 			// scale would only thicken the line past anything it does.
 			ray.Scale = Vector2.One;
-			(ray as ScorchingRayBeam)?.Fire(GlobalPosition, target, target.GlobalPosition, delay);
+			// Out of the light he holds (StaffTipLocal), as Magic Missile and Cinderbreath are: Imhotep's rays leave the sun
+			// on his raised palm, so the sun he holds is seen to become the beam (Eric, 2026-11-09, .ai/character-fit.md).
+			(ray as ScorchingRayBeam)?.Fire(GlobalPosition + StaffTipLocal(), target, target.GlobalPosition, delay);
 			raysFired++;
 		}
 		// Marked once every ray is out, before any can land (a beam strikes on a later frame, in its own _Process).
