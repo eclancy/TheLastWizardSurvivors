@@ -658,6 +658,14 @@ public partial class Player : CharacterBody2D
 	// Exorcist (Abe no Seimei): the share added to every hit on an elite, a miniboss or a boss.
 	public const float CharacterEliteDamageBonus = 0.15f;
 	private float characterEliteDamageBonus = 0f;
+	// Kindled Focus (Aedan, the Pyromancer): the share added to every hit on an enemy close to him, whatever spell lands
+	// it (Eric, 2026-11-09: "implement your suggestion"). It was +10% to every spell, a plain stat; now it pays for what
+	// his Cinderbreath asks - standing in the pack. Close is CharacterCloseDamageRange of him: a little past the level 1
+	// jet's 230 px reach (SpellData_Cinderbreath.tres, raised from 170 on 2026-11-04), so all of the jet he opens with
+	// counts and the bolts' range (340-420) does not; the grown jet's far end (300 at level 8) is past it. First guesses.
+	public const float CharacterCloseDamageBonus = 0.15f;
+	public const float CharacterCloseDamageRange = 250f;
+	private float characterCloseDamageBonus = 0f;
 	// Dread (the dark wizard): how many times as often his Darkness hits frighten (Player.TryFrighten). The
 	// horde is his own making, and it knows him.
 	public const float CharacterDreadFearScale = 2f;
@@ -939,7 +947,9 @@ public partial class Player : CharacterBody2D
 	public static readonly IReadOnlySet<string> CharacterPassiveBonusIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 	{
 		"cooldown_reduction_10",
-		"spell_damage_10",
+		// Aedan (the Pyromancer): Kindled Focus - more damage to what is close to him, from any spell (it was
+		// "spell_damage_10", +10% to everything, until 2026-11-09). Fighting up close is what Cinderbreath asks.
+		"close_damage_15",
 		"health_regen_0_5",
 		"armor_10",
 		// The two rescued wizards (.ai/side-events.md). Each is a scaling axis no starter owns.
@@ -1026,8 +1036,8 @@ public partial class Player : CharacterBody2D
 			case "cooldown_reduction_10":
 				cooldownMultiplier *= 0.90f;
 				return true;
-			case "spell_damage_10":
-				damageMultiplier *= 1.10f;
+			case "close_damage_15":
+				characterCloseDamageBonus = CharacterCloseDamageBonus;
 				return true;
 			case "health_regen_0_5":
 				// The id is the save's and the character file's; the amount is the healing budget's.
@@ -2659,6 +2669,10 @@ public partial class Player : CharacterBody2D
 			// Exorcist: the strong ones take more from him. Not an execute, so bosses are not spared it.
 			if (characterEliteDamageBonus > 0f && targetEnemy.IsMiniBoss)
 				finalDamage = Mathf.RoundToInt(finalDamage * (1f + characterEliteDamageBonus));
+			// Kindled Focus: what stands close to him burns hotter, whichever spell struck it.
+			if (characterCloseDamageBonus > 0f
+				&& GlobalPosition.DistanceSquaredTo(targetEnemy.GlobalPosition) <= CharacterCloseDamageRange * CharacterCloseDamageRange)
+				finalDamage = Mathf.RoundToInt(finalDamage * (1f + characterCloseDamageBonus));
 			// Never a boss (Eric, 2026-11-01: "Bosses should be excluded from execution abilities"): the
 			// boss work made every fight minutes long on purpose, and a Reaper's Scythe cut the last 30%
 			// off all of them. Elites still fall to it; the Morrigan's peck already spares both.
