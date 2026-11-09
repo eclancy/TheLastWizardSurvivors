@@ -75,6 +75,7 @@ Three things, and each beat below uses at least one:
 | B | **Freed** | after the run that frees a wizard a place holds, before the results | one panel, a template: the Archmage beside the wizard he just freed, that wizard's light coming back to him | **built** |
 | C | **The doors** | before the first run of the Throne | the freed wizards at his back at the castle door; he goes in alone | planned |
 | D | **The homecoming** | after the dark wizard falls, before `ThroneEnding`'s row | the Broken Circle re-lit: the moot of panel 1 again, with him in it | planned |
+| E | **The light goes on** | after the ending's row on the run that wins the Throne, after the freeing of the one he kept; or the first time the world map opens for a save that won it before | two panels: the Archmage on his sea-gate's steps as the light streams out over him, then the light going on east over the dark sea to a line of white cliffs | **built** (`.ai/second-half.md` 6.3, piece F5; below) |
 
 ---
 
@@ -226,6 +227,33 @@ prologue's first picture, answered.
 **Why not built now:** it belongs to the ending, which is `ThroneEnding`'s and still moving; and the cast
 depends on the save (who was freed), so it is a template like B, with a variable number of figures, which
 wants its own layout pass. Gate: none - it plays every time the dark wizard falls, as the row does.
+
+## E. The light goes on (built, 2026-11-08, piece F5)
+
+The far shore's announcement (`.ai/second-half.md` 6.3). When he falls the light he took goes home - most of it down
+onto the land - and some of it goes on, east over the dark sea, because it was never a wizard's.
+
+| # | panel | line | what |
+|---|---|---|---|
+| 1 | His sea-gate (`lightgoes-gate`, 5.6 s) | - | The east sea-gate on his rock, from inside the passage: his black arch framing the night, the Archmage on the threshold with his back to us (`player_back`, the road's figure), his own light up and its gold on the floor, and the light streaming out over him from behind and above, away over the dark water to the horizon, its gold landing on the sea under it. The PC sees the jambs, the phone the arch's crown and the floor. |
+| 2 | The far sea (`lightgoes-sea`, 6.4 s) | *Some of it was older than any of them.* | Wide and low over the water from the quay at the rock's foot: the stream running on east, smaller and smaller, down toward a long low line of white cliffs on the horizon and on past the edge of the picture (past the phone's column 660 and the PC's 800). The Archmage small on the quay, watching it go, his feet above row 552. |
+
+**The art:** `tools/art/light_goes_on.py` into `assets/bonelight/ui/story/` (`python tools/art/light_goes_on.py
+--preview` also writes `tools/art/_story/`), the prologue's frame, layers and audit. The motes are the light ramp
+with streaks behind them the way they came (`stream()`), so they read as light going and not as stars; where they
+land, on stone and water, it is gold pigment. Nothing sheds dark light: he has fallen. The motes ride the mid layer,
+which drifts east against the back. Calm: no impact beat.
+
+**When:** owed to a save that has taken back the Throne and has not seen it (`LightGoesOn.IsOwed`,
+`SaveData.HasSeenLightGoesOn`, additive, no schema step). On the run that wins the Throne it plays after the ending,
+after the freeing of the one he kept and before any lesson (`Node2DGame.PlayOwedReelsThen`); a save that won before
+this shipped meets it the first time the world map opens, which then comes back with the far shore's first stop
+drawn out of the dark (`WorldMap`, `LastShownStops`). Marked seen when it ends, played or skipped (in memory always,
+on disk when writes are on). Options > Story lists "The Light Goes On" once seen. `RegressionChecks.ValidateLightGoesOn`
+holds its panels, its one line and its debt on sample saves.
+
+**Photographing it:** `_UiShot --scene=res://scenes/Prologue.tscn --reel=light_goes_on --frames=180` (the gate,
+mid-hold) and `--frames=480` (the sea, line up).
 
 ## Not built, and why
 

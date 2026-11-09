@@ -3,8 +3,11 @@
 
 Writes, under assets/bonelight/ui/worldmap/:
 
-    world.png         the world, 2112x840 at 1:1 (the screen draws it at a whole number of screen
-                      pixels per art pixel, x2 on a 1:1 canvas - .ai/art-direction.md section 6a)
+    world.png         the world, 3424x840 at 1:1 (the screen draws it at a whole number of screen
+                      pixels per art pixel, x2 on a 1:1 canvas - .ai/art-direction.md section 6a): the
+                      road's land, his castle on its rock, and across the dark sea the far shore
+    tower-unlit.png   his tower once he has fallen, cut to where it differs, laid over the world after
+                      Taken Back (the light going home, .ai/world-map.md section 19)
     sketchbook.png    the Sketchbook's page: its own sheet, a map apart from the world, with a short
                       pencil road on it to where the wizard stands
     shroud-<stop>.png the bank of his fog laid over a locked place, one per stop, sized to it
@@ -13,7 +16,12 @@ Writes, under assets/bonelight/ui/worldmap/:
     mark-*.png        the compass strip's marks (16x16 art, saved x2 like every UI icon)
     secret.png, keepsake.png   the card's icons for a stage secret and a keepsake (32x32, saved x2)
     arrow-left.png, arrow-right.png   the step plates' chevrons (saved x2)
-    worldmap.json     the stops, their stand points, focus points and shrouds, and the route
+    worldmap.json     the stops, their stand points, focus points and shrouds, the route, and the light
+                      going home (the unlit tower's place, the motes' path)
+
+    python tools/art/world_map.py --preview-far   only the east (columns 1800 on), to
+                                                  tools/art/_worldmap/far.png, in about a minute;
+                                                  writes none of the game's art
 
 The design is .ai/world-map.md. The geometry the screen uses comes from worldmap.json and nowhere
 else, so moving a place is a line in PLACES or WAYPOINTS below and a re-run.
@@ -45,11 +53,21 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 OUT_DIR = os.path.join(ROOT, "assets", "bonelight", "ui", "worldmap")
 PREVIEW_DIR = os.path.join(ROOT, "tools", "art", "_worldmap")
 
-W, H = 2112, 840
+W, H = 3424, 840
 # The land's width before the castle: the road's world ended here, at the Emberdeep's cliffs, until the
 # castle grew it east across the dark sea (.ai/endgame-castle.md 8). The seeded scatters that spread over
 # the land read this, not W, so widening the world moved none of their trees.
 LAND_W = 1680
+# The world's width before the far shore (piece F5, .ai/second-half.md 4.1): his rock stood at the east edge and
+# the dark sea ran off the picture. Everything west of here is drawn exactly as it was; past it the dark sea goes
+# on east to the white cliffs, and the far shore runs west to east from them. 3424 stays well inside a phone's
+# texture limit (4096 is the floor any GLES3 device reports).
+CASTLE_W = 2112
+# West of here nothing of the far shore's ground is grown (its seeds are searched only east of it).
+FAR_X0 = 2170
+# Per-pixel passes start here. 0 for the art; --preview-far sets it so a far-shore change can be judged in a
+# fraction of the run, writing only tools/art/_worldmap/far.png (never the game's art).
+X_FROM = 0
 OCC = bl.OCC
 E = bl.ELEMENTS
 DITHER = raster.BAYER8
@@ -87,6 +105,16 @@ PLACES = [
     ("stage_1",  (1874, 404), (1934, 428), 46, 18), # Cursed Dungeon - the cells in the rock, under his walls
     ("stage_12", (1926, 364), (1978, 334), 50, 28), # The Court - the halls inside the walls
     ("stage_13", (1999, 298), (2000, 236), 30, 58), # The Throne - his tower, and the dark light at its top
+    # THE FAR SHORE (.ai/second-half.md 4.1-4.2, piece F5), in its own order (StageCatalog.FarShoreOrder): the road
+    # goes on past the Throne - out of his east postern, down the rock to the sea-gate, over the old causeway to
+    # the cove under the white cliffs - and runs west to east from them. Nothing of it is shown before Taken Back
+    # (GlobalStatsManager.IsChapterRevealed); then the first stop, and each later one once it is earned.
+    ("stage_14", (2268, 350), (2320, 292), 74, 50), # The White Downs - the barrows, the hound and the hart
+    ("stage_15", (2440, 560), (2478, 644), 90, 56), # The Drowned Shore - the seabed the tide left
+    ("stage_16", (2600, 430), (2642, 370), 72, 48), # The Three Ways - roads that fork in three
+    ("stage_17", (2800, 560), (2852, 624), 86, 52), # The Twelfth Hour - the avenue by the still river
+    ("stage_18", (2930, 300), (2976, 228), 80, 52), # The Thunder Fell - granite under the storm
+    ("stage_19", (3196, 432), (3268, 414), 64, 46), # The Bronze Isle - the god's cold forge
     # The Sketchbook is not a stop on this road (Eric, 2026-10-30: "sketchbook level should not be
     # attached to the map ... it shows up as its own separate map"). It is the page below, its own
     # sheet, reached from the world map once the campaign is finished (.ai/world-map.md, section 4).
@@ -111,7 +139,32 @@ WAYPOINTS = [
     [(1760, 443), (1800, 429), (1840, 415)],                # over the Last Bridge -> the gate on his rock
     [(1888, 396), (1902, 384), (1914, 374)],                # the gate -> up the yard to the hall door
     [(1926, 346), (1936, 322), (1952, 308), (1972, 300), (1988, 298)],  # round the hall -> the tower door
+    # THE CROSSING (piece F5): from the tower door east across the yard to his postern in the east wall, down a
+    # stair cut in the rock's south-east face to the sea-gate's quay, over the old causeway to the cove under the
+    # white cliffs, and up the coombe onto the downs. It leaves the tower EAST, never back through the yard: a road
+    # that doubled back would lie under the castle's lit road and the reveal's dark would fall on the castle.
+    [(2014, 304), (2028, 312), (2040, 322), (2048, 334), (2053, 346), (2058, 356), (2068, 363), (2094, 370),
+     (2122, 377), (2150, 384), (2178, 392), (2204, 400), (2222, 394), (2236, 381), (2248, 368), (2258, 358)],
+    # the downs -> east along the top, down the cutting in the scarp to the flats
+    [(2300, 368), (2336, 390), (2370, 416), (2396, 448), (2410, 480), (2418, 512), (2428, 540)],
+    # the flats -> east across the sand, up into the country of the three ways
+    [(2470, 560), (2500, 550), (2530, 530), (2556, 500), (2576, 470), (2590, 446)],
+    # the three ways -> down onto the black sand by the river
+    [(2640, 446), (2680, 466), (2716, 490), (2748, 516), (2774, 540)],
+    # the black sand -> north, up onto the fell
+    [(2830, 528), (2850, 488), (2866, 446), (2884, 404), (2900, 364), (2916, 330)],
+    # the fell -> east, down to the coast and over the bronze bridge to the isle
+    [(2966, 318), (3006, 340), (3046, 366), (3080, 392), (3108, 412), (3132, 424), (3160, 428), (3182, 431)],
 ]
+
+# THE CROSSING'S PIECES (castle_crossing(), causeway()): his postern in the east wall, the stair's foot on the
+# sea-gate's quay, and the beach in the cove where the causeway lands.
+POSTERN = (2040, 322)
+QUAY = (2066, 363)
+COVE = (2206, 400)
+# The bronze bridge to the isle: from the far shore's east coast to the isle's landing (the Bronze Isle's stand).
+BRONZE_FROM = (3132, 424)
+BRONZE_TO = (3196, 432)
 
 # THE CASTLE (.ai/endgame-castle.md 8), drawn by castle() below. The black cliffs end the land a little
 # east of where the world used to end; the Last Bridge leaves them at the headland, where the road comes
@@ -436,6 +489,34 @@ for _name, _pts in SEEDS:
     for _p in _pts:
         SEED_LIST.append((_p[0], _p[1], _name))
 
+# THE FAR SHORE'S GROUND (.ai/second-half.md 4.2), searched only east of FAR_X0 (far_biome_pair), so the land's
+# borders are exactly what they were. Chalk downland on top of the white cliffs; the seabed the tide left, south of
+# the downs' scarp; the dry country of the three ways; black sand by the still river; the granite fell under the far
+# north's peaks; and plain hill country between them. The Bronze Isle is drawn, not grown, as his rock is.
+FAR_SEEDS = [
+    ("downs", [(2260, 120), (2330, 180), (2290, 260), (2380, 250), (2340, 340), (2270, 420), (2410, 400),
+               (2430, 150), (2470, 300), (2250, 330)]),
+    ("flats", [(2300, 560), (2380, 620), (2460, 700), (2540, 640), (2330, 720), (2470, 560), (2580, 740),
+               (2400, 780), (2280, 640)]),
+    ("ways", [(2580, 360), (2650, 320), (2700, 400), (2620, 450), (2560, 290), (2690, 260), (2540, 430)]),
+    ("blacksand", [(2780, 620), (2860, 660), (2920, 600), (2800, 700), (2950, 710), (2760, 560), (2880, 560)]),
+    ("fell", [(2920, 230), (2990, 170), (3060, 250), (2950, 320), (3040, 330), (2880, 160), (3090, 180),
+              (2860, 280)]),
+    ("hills", [(2520, 200), (2510, 470), (2740, 460), (2820, 470), (3010, 450), (3080, 560), (2740, 180),
+               (3020, 620), (2660, 540), (2600, 180), (3090, 680), (2680, 700)]),
+    ("rock", [(2800, 60), (2960, 50), (3100, 70), (2650, 60), (2500, 60)]),
+]
+
+FAR_SEED_LIST = []
+for _name, _pts in FAR_SEEDS:
+    for _p in _pts:
+        FAR_SEED_LIST.append((_p[0], _p[1], _name))
+
+# The downs end in the south on a chalk scarp; below it lies the seabed the tide left (the flats). The scarp is the
+# border between the two, so it is drawn on the line rather than wherever the seeds happen to meet.
+DOWNS_SCARP = [(2214, 490), (2250, 494), (2290, 488), (2330, 492), (2370, 486), (2400, 482), (2428, 490),
+               (2452, 502), (2476, 518), (2500, 532)]
+
 
 def coast_y(x):
     """The south coast: sea below this line. The forest runs to the bottom edge in the west."""
@@ -459,12 +540,82 @@ def east_edge(y):
 
 
 def is_sea(x, y):
+    if x >= FAR_X0:
+        return not far_land(x, y)
     if y > coast_y(x):
         return True
     return x > east_edge(y)
 
 
-def biome_pair(x, y):
+# THE FAR SHORE'S COASTS (.ai/second-half.md 4.1): "white chalk cliffs facing the Emberdeep's black ones". The west
+# coast is headlands of chalk, each reaching further west as it runs south and ending in a face where the coast
+# steps back east - a face seen from the south, which is how this map shows a cliff (black_cliffs' rule). The cove
+# where the causeway lands is the notch between the fourth and fifth. South of the downs the coast is the flats'
+# edge, where the sea stands off; east of the flats an ordinary coast; and the east coast looks over a strait to
+# the Bronze Isle.
+# (the row a headland starts at, its x there, its x at its south end)
+WHITE_HEADS = [(0, 2238, 2214), (110, 2248, 2206), (230, 2246, 2200), (330, 2238, 2206), (386, 2224, 2223),
+               (420, 2223, 2210)]
+FLATS_TOP = 490     # below this row the far shore's west edge is the standing sea's, not the cliffs'
+FLATS_EAST = 2600   # east of this the south coast is an ordinary shore, not the held-off sea
+
+
+def far_west_edge(y):
+    if y >= FLATS_TOP:
+        # The bay's mouth, where the Weir holds the sea out: an arc bowing out south-east from the downs' corner.
+        t = (y - FLATS_TOP) / 310.0
+        return 2236 + t * t * 120 + (WARP_Y.at(9100, y * 2) - 0.5) * 6
+    for i in range(len(WHITE_HEADS) - 1, -1, -1):
+        y0, xa, xb = WHITE_HEADS[i]
+        if y >= y0:
+            y1 = WHITE_HEADS[i + 1][0] if i + 1 < len(WHITE_HEADS) else FLATS_TOP
+            t = (y - y0) / float(y1 - y0)
+            return xa + (xb - xa) * t + (WARP_Y.at(9200, y * 3) - 0.5) * 5
+    return WHITE_HEADS[0][1]
+
+
+def far_east_edge(y):
+    """The far shore's east coast: bays and points, looking over the strait to the Bronze Isle."""
+    return (3104 + math.sin(y / 88.0 + 1.0) * 26 + math.sin(y / 29.0) * 9
+            + (WARP_Y.at(9300, y * 2) - 0.5) * 30)
+
+
+def far_south_edge(x):
+    """The south coast: the flats run off the picture under the held-off sea; east of them an ordinary shore in
+    bays and points, rising a little to the east."""
+    flats = 860.0
+    coast = (754 - (x - FLATS_EAST) * 0.04 + math.sin(x / 64.0) * 22 + math.sin(x / 23.0 + 2.0) * 6
+             + (WARP_X.at(x * 2, 9500) - 0.5) * 24)
+    if x < FLATS_EAST - 60:
+        return flats
+    if x > FLATS_EAST + 60:
+        return coast
+    t = (x - (FLATS_EAST - 60)) / 120.0
+    return flats + (coast - flats) * t * t * (3 - 2 * t)
+
+
+def far_land(x, y):
+    return far_west_edge(y) < x < far_east_edge(y) and y < far_south_edge(x)
+
+
+def scarp_y(x):
+    """The downs' south scarp at column x (DOWNS_SCARP), or None off its ends."""
+    return _y_on(DOWNS_SCARP, x)
+
+
+def far_biome_pair(x, y):
+    """biome_pair on the far shore's own seeds; the downs and the flats meet on the scarp, not where the seeds say."""
+    b, o, m = biome_pair(x, y, FAR_SEED_LIST)
+    edge = scarp_y(x)
+    if edge is not None:
+        if b == "downs" and y > edge:
+            b, o, m = "flats", "downs", 0.0
+        elif b == "flats" and y <= edge:
+            b, o, m = "downs", "flats", 0.0
+    return b, o, m
+
+
+def biome_pair(x, y, seeds=None):
     """(nearest biome, the next nearest OTHER biome, how far toward it 0..0.5): the second lets a
     border be a dithered band rather than a ruled line between two territories."""
     wx = x + (WARP_X.at(x, y) - 0.5) * 70
@@ -472,7 +623,7 @@ def biome_pair(x, y):
     best = None
     bd = 1e18
     near = {}
-    for sx, sy, name in SEED_LIST:
+    for sx, sy, name in (seeds or SEED_LIST):
         d = (sx - wx) * (sx - wx) + (sy - wy) * (sy - wy)
         if d < near.get(name, 1e18):
             near[name] = d
@@ -517,6 +668,14 @@ GROUND = {
     "desert": [T("flesh", "deep"), T("gold", "deep"), T("gold", "shade"), T("gold", "base")],
     "basalt": [OCC, T("stone", "deep"), T("violet", "deep"), T("violet", "shade")],
     "sea": [T("stone", "deep"), T("wool", "deep"), T("wool", "deep"), T("wool", "shade")],
+    # THE FAR SHORE (piece F5), all night and no moon. The downs are pale - grey-green turf with the chalk under
+    # it - so the White Downs read white beside the hill country; the flats are wet sand the sea left; the three
+    # ways' country is dry; the black sand is the darkest ground in the world but the basalt; the fell is granite.
+    "downs": [T("linen", "shade"), T("skin", "deep"), T("linen", "base"), T("skin", "shade")],
+    "flats": [T("stone", "deep"), T("gold", "deep"), T("linen", "shade"), T("linen", "base")],
+    "ways": [T("stone", "deep"), T("gold", "deep"), T("linen", "shade"), T("gold", "shade")],
+    "blacksand": [OCC, T("stone", "deep"), T("stone", "shade"), T("stone", "base")],
+    "fell": [T("stone", "shade"), T("stone", "base"), T("steel", "deep"), T("steel", "shade")],
 }
 
 # base height, relief amplitude, and where on its ramp flat ground of the biome sits (0..1)
@@ -534,6 +693,11 @@ RELIEF = {
     "basalt": (0.40, 0.18, 0.40),
     "snow": (0.72, 0.16, 0.55),
     "rock": (0.85, 0.40, 0.42),
+    "downs": (0.52, 0.16, 0.50),
+    "flats": (0.06, 0.02, 0.48),
+    "ways": (0.36, 0.08, 0.48),
+    "blacksand": (0.16, 0.05, 0.42),
+    "fell": (0.70, 0.30, 0.48),
 }
 
 HILL = Fbm(53, 46, 3)
@@ -583,7 +747,7 @@ def paint_ground(g, biomes, others, mixes):
     hgt, cols, rows = height_field(biomes)
     for y in range(H):
         row = y * W
-        for x in range(W):
+        for x in range(X_FROM, W):
             b = biomes[row + x]
             # Near a border, some pixels take the neighbour's ramp: a dithered band, not a line.
             if mixes[row + x] > 0 and others[row + x] is not None and dith(x + 3, y + 5, mixes[row + x]):
@@ -610,7 +774,7 @@ def paint_ground(g, biomes, others, mixes):
 def shore(g, biomes):
     """A dark line where land meets sea, and a paler lip on the land side lit from above."""
     for y in range(1, H - 1):
-        for x in range(1, W - 1):
+        for x in range(max(1, X_FROM), W - 1):
             if biomes[y * W + x] != "sea":
                 continue
             up = biomes[(y - 1) * W + x]
@@ -700,6 +864,12 @@ def draw_road(g, biomes):
                 # On snow the road is the trodden dark of it, not a pale line on a pale field.
                 core = T("stone", "base") if bright else T("linen", "base")
                 edge = T("steel", "shade") if bright else T("linen", "shade")
+                if b == "downs":
+                    # On the downs a chalk track: the turf worn through to the white under it, as such roads are.
+                    core, edge = T("skin", "shade"), T("linen", "shade")
+                    if d <= 0.7 and dith(xx, yy, 0.4):
+                        g.set(xx, yy, T("skin", "base"))
+                        continue
                 if d <= 0.7 and not bright and dith(xx, yy, 0.45):
                     g.set(xx, yy, T("linen", "lit"))
                 elif d <= 1.5:
@@ -710,9 +880,12 @@ def draw_road(g, biomes):
     road_tones = set(rgba(c) for c in (T("linen", "lit"), T("linen", "base"), T("linen", "shade"),
                                        T("steel", "shade"), T("stone", "base"), T("gold", "shade"),
                                        T("gold", "deep")))
+    chalk = set(rgba(c) for c in (T("skin", "shade"), T("skin", "base")))
     for (x, y) in on_map:
         sx, sy = int(round(x + 1.8)), int(round(y + 3.0))
         cur = g.get(sx, sy)
+        if cur in chalk and biomes[min(H - 1, sy) * W + min(W - 1, sx)] == "downs" and road_distance(sx, sy) < 2.7:
+            continue
         if cur not in road_tones and lum(cur) > lum(T("stone", "deep")):
             g.set(sx, sy, T("stone", "deep"))
     # Dust in the ruts: a lit fleck now and then, never a dashed line.
@@ -1927,9 +2100,10 @@ def last_bridge(g):
             g.set(x, yi - 5, T("stone", "base"))
 
 
-def castle(g):
+def castle(g, tower_lit=True):
     """The castle on the rock: the curtain wall with its towers and the gate the bridge comes to, the
-    cells under the south wall with one window lit, the Court's halls, and his tower."""
+    cells under the south wall with one window lit, the Court's halls, and his tower - and, since the far
+    shore, his postern in the east wall and the stair down to the sea-gate (castle_crossing)."""
     flag = [T("stone", "deep"), T("stone", "shade")]
     # The yard inside the walls: laid flags, a step lighter than the rock.
     inner = [(1874, 398), (1872, 380), (1878, 350), (1894, 316), (1918, 284), (1948, 258), (1982, 238),
@@ -1945,8 +2119,12 @@ def castle(g):
                 g.set(x, y, OCC)
             elif dith(x + 2, y + 1, 0.22):
                 g.set(x, y, flag[1])
-    # The yard's way, from the gate up to the hall door and round to the tower: worn flags, lit.
-    for (px, py) in ROUTE[ROUTE_STOPS["stage_1"]:ROUTE_STOPS["stage_13"] + 1]:
+    # The yard's way, from the gate up to the hall door and round to the tower: worn flags, lit. Since the far
+    # shore it goes on past the tower door, east across the yard to his postern (castle_crossing) - drawn here, under
+    # the walls and the tower, so neither is painted over.
+    yard_way = ROUTE[ROUTE_STOPS["stage_1"]:ROUTE_STOPS["stage_13"] + 1]
+    yard_way += ROUTE[ROUTE_STOPS["stage_13"] + 1:_route_index_near(POSTERN) + 1]
+    for (px, py) in yard_way:
         for yy in range(int(py) - 2, int(py) + 3):
             for xx in range(int(px) - 2, int(px) + 3):
                 if (xx - px) ** 2 + (yy - py) ** 2 <= 4.2:
@@ -1975,7 +2153,7 @@ def castle(g):
     for (tx, ty) in ((1888, 318), (1942, 248), (2028, 222), (2040, 300)):
         tower(g, tx, ty, 9, 16)
 
-    keep_tower(g)
+    keep_tower(g, tower_lit)
     halls(g)
 
     # THE SOUTH WALL, in front: its face toward the viewer standing on the rock's south edge, the walk
@@ -2016,6 +2194,7 @@ def castle(g):
         g.set(sx, gy - 17, E["arcane"][3])
 
     cells(g)
+    castle_crossing(g)
 
 
 def cells(g):
@@ -2121,10 +2300,11 @@ def halls(g):
     g.set(1960, 343, T("stone", "lit"))
 
 
-def keep_tower(g):
+def keep_tower(g, lit=True):
     """The Throne: his tower, the tallest thing in the world, black stone lit on its left from the key,
     and at its top the throne room's windows burning with the one dark light there is - his - with its
-    motes going up off the spire."""
+    motes going up off the spire. Unlit (lit=False, the tower once he has fallen: tower-unlit.png, laid over
+    the world at runtime after Taken Back) the windows are dark glass and nothing burns round the top."""
     x0, x1, foot, top = 1990, 2009, 300, 190
     # Its shadow over the yard and the wall behind it, to the lower right.
     for y in range(top + 12, foot + 4):
@@ -2153,9 +2333,14 @@ def keep_tower(g):
     g.set(1997, foot - 10, T("stone", "lit"))
     g.set(1998, foot - 10, T("stone", "lit"))
     g.set(2002, foot - 10, T("stone", "base"))
-    # The throne room: a belt of tall windows under the battlements, burning with his light.
+    # The throne room: a belt of tall windows under the battlements, burning with his light - or, once he has
+    # fallen, dark glass with the key's last catch on the sill.
     for wx in (x0 + 3, x0 + 8, x0 + 13):
         for wy in range(top + 9, top + 21):
+            if not lit:
+                g.set(wx, wy, OCC)
+                g.set(wx + 1, wy, OCC if wy < top + 19 else T("stone", "deep"))
+                continue
             c = E["darkness"][2] if dith(wx, wy, 0.75) else E["darkness"][3]
             if top + 12 <= wy <= top + 15:
                 c = E["darkness"][1]
@@ -2165,6 +2350,8 @@ def keep_tower(g):
             g.set(wx + 1, wy, E["darkness"][2] if top + 11 < wy < top + 18 else E["darkness"][3])
         g.set(wx, top + 8, OCC)
         g.set(wx + 1, top + 8, OCC)
+        if not lit:
+            g.set(wx, top + 21, T("stone", "base"))
     # Machicolations and battlements, a little wider than the shaft.
     g.rect(x0 - 2, top + 4, x1 + 2, top + 6, T("stone", "shade"))
     for x in range(x0 - 2, x1 + 3, 2):
@@ -2187,6 +2374,8 @@ def keep_tower(g):
     # His light round the top, and going up off it: the world's one dark light (it was on the Emberdeep's
     # summit until the castle was drawn). A halo dithered out from the windows over whatever is darker
     # than it - the sea, the night - and motes rising off the spire.
+    if not lit:
+        return
     for y in range(top - 46, top + 34):
         for x in range(x0 - 22, x1 + 23):
             d = math.hypot((x - cx) / 26.0, (y - top - 14) / 30.0)
@@ -2206,6 +2395,875 @@ def keep_tower(g):
 
 
 # ---------------------------------------------------------------------------------------------
+# THE FAR SHORE (.ai/second-half.md 4.1-4.2, piece F5). Across the dark sea east of his rock: the road goes on
+# past the Throne out of his east postern, down to the sea-gate, over the old causeway - the way across that was
+# here before his castle, which he sat down in the middle of - and lands in a cove under white chalk cliffs facing
+# the Emberdeep's black ones. Six seats run west to east from there, each a god's, each held by his shadow: no
+# window lit, no fire, no light anywhere on the far shore. His mark (arcane eye-light) is in each, as in every
+# place he holds. All of it is under the dark until Taken Back, and each seat after the first until it is earned
+# (WorldMapView's reveal), so nothing here is a spoiler on the map before its time.
+# ---------------------------------------------------------------------------------------------
+def _route_index_near(pt, after="stage_13"):
+    """The index of the road's sample nearest pt, past stop `after`: where a piece of the crossing sits on it."""
+    best, at = 1e18, ROUTE_STOPS[after]
+    for i in range(ROUTE_STOPS[after], len(ROUTE)):
+        d = (ROUTE[i][0] - pt[0]) ** 2 + (ROUTE[i][1] - pt[1]) ** 2
+        if d < best:
+            best, at = d, i
+    return at
+
+
+def _eyes(g, x, y):
+    """His mark: two points of cold arcane light in the dark of something he holds (Elderbark's, the lanterns')."""
+    g.set(x, y, T("arcane", "lit"))
+    g.set(x + 2, y, T("arcane", "lit"))
+
+
+def castle_crossing(g):
+    """His postern in the east wall and the way down to the water: the road leaves the tower east, out through a
+    low door in the curtain wall - his cold flame either side, as at the gatehouse, so the door says whose it is -
+    and down a stair cut into the rock's south-east face to the east sea-gate's quay, where the old causeway
+    begins. Drawn last, over the wall and the face."""
+    px, py = POSTERN
+    g.rect(px - 2, py - 5, px + 2, py + 3, OCC)
+    for x in range(px - 2, px + 3):
+        g.set(x, py - 6 - (1 if x == px else 0), T("stone", "lit") if x <= px else T("stone", "base"))
+    g.set(px - 3, py - 5, T("stone", "lit"))
+    g.set(px + 3, py - 4, T("stone", "deep"))
+    for sx in (px - 4, px + 4):
+        g.set(sx, py - 3, E["arcane"][1])
+        g.set(sx, py - 2, E["arcane"][2])
+        g.set(sx, py - 4, E["arcane"][3])
+    # The stair: treads cut down the face, each lit on its top, the cut's shadow on its east side.
+    first = _route_index_near(POSTERN) + 3
+    last = _route_index_near(QUAY)
+    for (sx, sy) in ROUTE[first:last]:
+        tread = int(sy) % 3 == 0
+        for k in range(-2, 3):
+            c = (T("stone", "lit") if k < 1 else T("stone", "base")) if tread else T("stone", "shade")
+            g.set(sx + k, sy, c)
+        g.set(sx + 3, sy, OCC)
+        g.set(sx + 3, sy + 1, OCC if dith(sx, sy, 0.6) else T("stone", "deep"))
+    # The sea-gate: an arch in the face at the stair's foot, its grating up, and the quay in front of it.
+    qx, qy = QUAY
+    ax, ay = qx - 6, qy - 4
+    for yy in range(ay - 7, ay + 1):
+        for xx in range(ax - 4, ax + 5):
+            nx = (xx - ax) / 4.0
+            ny = (yy - ay + 3) / 4.0
+            if ny < 0 and nx * nx + ny * ny > 1:
+                continue
+            g.set(xx, yy, OCC)
+    for xx in range(ax - 5, ax + 6):
+        ny = -math.sqrt(max(0.0, 1 - ((xx - ax) / 5.0) ** 2))
+        g.set(xx, int(ay - 3 + ny * 5) - 1, T("stone", "lit") if xx < ax else T("stone", "base"))
+    for bx in range(ax - 3, ax + 4, 2):
+        g.set(bx, ay - 7 + abs(bx - ax) // 2, T("steel", "shade"))
+    g.rect(qx - 7, qy - 1, qx + 7, qy + 2, T("stone", "base"))
+    g.rect(qx - 7, qy - 2, qx + 7, qy - 2, T("stone", "lit"))
+    g.rect(qx - 7, qy + 3, qx + 8, qy + 3, OCC)
+    g.rect(qx + 8, qy - 1, qx + 8, qy + 2, OCC)
+    for xx in range(qx - 8, qx + 10, 2):
+        if dith(xx, qy, 0.5):
+            g.set(xx, qy + 4, T("wool", "shade"))
+
+
+def causeway(g):
+    """The old way across the strait, from his sea-gate's quay to the cove under the white cliffs: a low causeway of
+    pale dressed stone - the far shore's chalk-stone, not his black - older than his castle and lower than the Last
+    Bridge, the sea washing over it where blocks have gone. Its deck is the road; surf on both sides, its shadow
+    on the water to the lower right."""
+    path = ROUTE[_route_index_near(QUAY):_route_index_near(COVE) + 1]
+    x0, x1 = int(QUAY[0]) + 8, int(COVE[0]) + 14
+    r = rng_for(2207)
+    washed = [(2104, 2112), (2146, 2151), (2183, 2190)]
+    for x in range(x0, x1 + 1):
+        y = _y_on(path, x)
+        if y is None or not is_sea(x, int(round(y))):
+            continue
+        for k in range(4, 6):
+            if dith(x + 5, y + k, 0.7):
+                g.set(x + 5, int(y + k), OCC)
+    for x in range(x0, x1 + 1):
+        y = _y_on(path, x)
+        if y is None or not is_sea(x, int(round(y))):
+            continue
+        yi = int(round(y))
+        wash = any(a <= x <= b for (a, b) in washed)
+        joint = (x + yi) % 6 == 0
+        for k in range(-2, 3):
+            if wash:
+                c = T("wool", "shade") if dith(x, yi + k, 0.45) else T("skin", "deep")
+            elif k == -2:
+                c = T("skin", "base") if dith(x, yi, 0.5) else T("skin", "shade")
+            else:
+                c = T("skin", "shade") if dith(x, yi + k, 0.6 - k * 0.12) else T("skin", "deep")
+                if joint:
+                    c = T("stone", "base")
+            g.set(x, yi + k, c)
+        g.set(x, yi + 3, T("skin", "deep") if not wash else T("wool", "deep"))
+        g.set(x, yi + 4, OCC)
+        if r.random() < (0.55 if wash else 0.3):
+            g.set(x, yi - 3, T("wool", "shade"))
+        if r.random() < 0.35:
+            g.set(x, yi + 5, T("wool", "shade"))
+
+
+WHITE_FACE = 22   # how far the white cliffs drop to the water where the coast steps east
+
+
+def white_cliffs(g, biomes):
+    """The far shore's west coast (far_west_edge): white chalk, facing the Emberdeep's black cliffs across the dark
+    sea (black_cliffs' rule, in chalk). Where the coast steps east it is seen from the south - a chalk face dropping
+    to the water in pale courses with flint bands, lit toward the headland's tip where it turns to the key, a turf
+    lip on top and surf at its foot. Where it runs north and south it faces the key and shows as a lit chalk edge.
+    The cove where the causeway lands is a shingle beach instead. Chalk is the skin ramp, the palette's bone."""
+    r = rng_for(2219)
+    for y in range(40, FLATS_TOP + WHITE_FACE + 2):
+        for x in range(FAR_X0, 2300):
+            i = y * W + x
+            if biomes[i] != "sea":
+                continue
+            north = biomes[i - W] != "sea" and y <= FLATS_TOP + 1
+            east = biomes[i + 1] != "sea"
+            cove = 386 <= y <= 420
+            if north:
+                g.set(x, y - 1, T("linen", "base") if dith(x, y, 0.5) else T("skin", "shade"))
+                face = WHITE_FACE + int((GRAIN.at(x * 4, 61) - 0.5) * 6)
+                tip = 1.0 - min(1.0, max(0.0, (x - far_west_edge(y - 1)) / 22.0))
+                for k in range(face):
+                    yy = y + k
+                    if biomes[min(H - 1, yy) * W + x] != "sea":
+                        break
+                    t = k / float(face)
+                    band = (k + int(GRAIN.at(x * 3, 13) * 3)) % 5 == 0
+                    if t > 0.88:
+                        c = OCC
+                    elif t > 0.72:
+                        c = T("skin", "deep") if dith(x, yy, 0.6) else OCC
+                    elif band:
+                        c = T("stone", "base") if dith(x, yy, 0.55) else T("skin", "deep")
+                    elif t < 0.15:
+                        c = T("skin", "lit") if dith(x, yy, 0.45 + tip * 0.4) else T("skin", "base")
+                    else:
+                        c = T("skin", "base") if dith(x, yy, 0.25 + tip * 0.5 - t * 0.35) else T("skin", "shade")
+                    g.set(x, yy, c)
+                if r.random() < 0.45:
+                    g.set(x, y + face, T("wool", "shade"))
+            elif east and y >= FLATS_TOP:
+                continue
+            elif east and cove:
+                # The shingle beach: pale stones running down to the water, a line of surf on it.
+                for k in range(1, 9):
+                    if dith(x + k, y, 0.55 - k * 0.05):
+                        g.set(x + k, y, T("skin", "shade") if (x + k + y) % 3 else T("skin", "base"))
+                g.set(x, y, T("wool", "shade") if dith(x, y, 0.6) else T("skin", "deep"))
+            elif east:
+                # Seen a little from the west: the face's top lit, chalk down to the water, a flint band in it.
+                g.set(x + 1, y, T("linen", "base") if dith(x, y, 0.5) else T("skin", "shade"))
+                g.set(x, y, T("skin", "lit") if dith(x, y, 0.5) else T("skin", "base"))
+                g.set(x - 1, y, T("skin", "base") if dith(x, y, 0.55) else T("skin", "shade"))
+                g.set(x - 2, y, T("skin", "shade") if (y + int(GRAIN.at(31, y * 3) * 4)) % 5 else T("stone", "base"))
+                g.set(x - 3, y, T("skin", "deep") if dith(x, y, 0.5) else OCC)
+                g.set(x - 4, y, OCC)
+                if r.random() < 0.3:
+                    g.set(x - 5, y, T("wool", "shade"))
+
+
+def downs_scarp(g):
+    """The downs' south edge: a chalk scarp dropping to the seabed the tide left, cut where the road goes down."""
+    pts = spline(DOWNS_SCARP, 1.0)
+    cols = {}
+    for (x, y) in pts:
+        xi = int(round(x))
+        if xi not in cols or y < cols[xi]:
+            cols[xi] = y
+    for xi in sorted(cols):
+        top = cols[xi] + (GRAIN.at(xi * 6, 70) - 0.5) * 2
+        height = 13 + (GRAIN.at(xi * 2, 95) - 0.5) * 8
+        if road_distance(xi, top + height / 2.0) < 5:
+            continue
+        g.set(xi, top - 1, T("linen", "base") if dith(xi, 0, 0.5) else T("skin", "shade"))
+        for k in range(int(height) + 1):
+            y = top + k
+            t = k / height
+            band = (xi * 5 + int(GRAIN.at(xi * 9, y * 0.5) * 9)) % 6 == 0
+            if t < 0.15:
+                c = T("skin", "lit") if dith(xi, y, 0.4) else T("skin", "base")
+            elif band:
+                c = T("skin", "deep")
+            elif t < 0.6:
+                c = T("skin", "base") if dith(xi, y, 0.6 - t) else T("skin", "shade")
+            else:
+                c = T("skin", "shade") if dith(xi, y, 1.0 - t) else T("skin", "deep")
+            g.set(xi, y, c)
+        g.set(xi, top + height + 1, OCC)
+        g.set(xi, top + height + 2, OCC if dith(xi, 0, 0.5) else T("stone", "deep"))
+
+
+def barrow(g, cx, cy, rx, ry):
+    """A burial mound on the downs, turfed over: its ditch round it, its own shadow lower right, its crown lit on
+    the upper left where the turf is thin and the chalk shows."""
+    for yy in range(int(cy - ry) - 4, int(cy + ry) + 5):
+        for xx in range(int(cx - rx) - 4, int(cx + rx) + 5):
+            nx = (xx - cx) / float(rx + 2.5)
+            ny = (yy - cy - 0.5) / float(ry + 2)
+            d = nx * nx + ny * ny
+            if 0.62 < d <= 1.0:
+                g.set(xx, yy, T("linen", "shade") if dith(xx, yy, 0.55) else T("stone", "base"))
+    g.disc(cx + 2, cy + 2, rx, ry, OCC)
+    for yy in range(int(cy - ry) - 1, int(cy + ry) + 2):
+        for xx in range(int(cx - rx) - 1, int(cx + rx) + 2):
+            nx = (xx - cx) / float(rx)
+            ny = (yy - cy) / float(ry)
+            d = nx * nx + ny * ny
+            if d > 1.0:
+                continue
+            k = -(nx + ny * 1.3)
+            if k > 0.75 and d > 0.1:
+                c = T("skin", "shade") if dith(xx, yy, 0.55) else T("skin", "base")
+            elif k > 0.0:
+                c = T("linen", "base") if dith(xx, yy, 0.6 - k * 0.4) else T("skin", "shade")
+            elif k > -0.7:
+                c = T("linen", "base") if dith(xx, yy, 0.6 + k * 0.5) else T("linen", "shade")
+            else:
+                c = T("linen", "shade") if dith(xx, yy, 0.5) else T("stone", "base")
+            g.set(xx, yy, c)
+
+
+# The hill figures cut in the downs' turf (.ai/second-half.md 4.2, "a hound and a hart cut in the hillsides"): chalk
+# lines, drawn as the old figures are - long, few strokes, a running thing. Segments from the figure's origin.
+HOUND = [((0, 4), (16, 3)), ((1, 5), (15, 4)), ((16, 3), (21, 1)), ((21, 1), (25, 2)), ((19, 1), (18, -2)),
+         ((0, 4), (-5, 1)), ((-5, 1), (-6, 2)), ((15, 5), (20, 9)), ((13, 5), (14, 9)), ((3, 5), (-1, 9)),
+         ((5, 5), (7, 9))]
+HART = [((4, 8), (14, 8)), ((4, 9), (14, 9)), ((4, 8), (2, 4)), ((2, 4), (0, 5)), ((2, 4), (1, 0)), ((1, 1), (-1, 0)),
+        ((2, 3), (4, 0)), ((3, 1), (5, -1)), ((5, 10), (5, 14)), ((7, 10), (8, 14)), ((12, 10), (12, 14)),
+        ((14, 10), (15, 14)), ((14, 8), (16, 7))]
+
+
+def hill_figure(g, ox, oy, segments, flip=False):
+    for ((ax, ay), (bx, by)) in segments:
+        if flip:
+            ax, bx = -ax, -bx
+        g.line(ox + ax + 1, oy + ay + 1, ox + bx + 1, oy + by + 1, T("linen", "shade"))
+    for ((ax, ay), (bx, by)) in segments:
+        if flip:
+            ax, bx = -ax, -bx
+        g.line(ox + ax, oy + ay, ox + bx, oy + by, T("skin", "lit"))
+
+
+def downs(g, biomes):
+    """The White Downs (stage_14): chalk downland on top of the white cliffs, its turf pale, chalk and flint showing
+    through it; the barrows, round and long, around the seat; and the hound and the hart cut in the hillside. His
+    mark is in the long barrow's mouth."""
+    r = rng_for(2314)
+    for _ in range(900):
+        x = 2210 + r.random() * 300
+        y = 60 + r.random() * 440
+        if biomes[int(y) * W + int(x)] != "downs" or road_distance(x, y) < 5:
+            continue
+        if r.random() < 0.7:
+            g.set(x, y, T("skin", "shade") if r.random() < 0.8 else T("skin", "base"))
+        else:
+            g.set(x, y, OCC)
+            g.set(x - 1, y - 1, T("skin", "shade"))
+    hill_figure(g, 2266, 236, HOUND)
+    hill_figure(g, 2362, 324, HART, flip=True)
+    for (bx, by, rx, ry) in ((2282, 270, 5, 3), (2372, 264, 6, 4), (2330, 268, 10, 6), (2304, 282, 8, 5),
+                             (2354, 288, 8, 5), (2340, 308, 6, 4)):
+        barrow(g, bx, by, rx, ry)
+    # The long barrow, its mouth to the east: two stones either side of a dark door, and his eyes in the dark.
+    barrow(g, 2296, 310, 16, 5)
+    g.rect(2310, 308, 2314, 312, OCC)
+    g.rect(2309, 306, 2309, 312, T("skin", "base"))
+    g.rect(2315, 307, 2315, 312, T("skin", "deep"))
+    _eyes(g, 2311, 310)
+
+
+def far_water(g, biomes):
+    """The far shore's water, before the road: the tide channels across the flats, standing pools left by the
+    tide, and the still river by the avenue - still, so it carries no glint but the stars'."""
+    # Each channel runs in from a sluice in the Weir (drowned()), where the sea would come down it if let in.
+    for pts, w0, w1 in (([(2290, 572), (2330, 566), (2370, 584), (2404, 600), (2430, 614)], 4, 1),
+                        ([(2306, 680), (2350, 700), (2398, 712), (2446, 700), (2498, 716), (2552, 706)], 5, 1),
+                        ([(2360, 760), (2400, 770), (2440, 762), (2480, 772)], 4, 1),
+                        ([(2290, 634), (2320, 624), (2346, 630)], 3, 1)):
+        y0 = pts[0][1] - 4
+        draw_water_path(g, [(int(far_west_edge(y0)) + 3, y0)] + pts, w0, w1)
+    for (lx, ly, rx, ry, seed) in ((2362, 644, 7, 3, 2401), (2524, 604, 6, 3, 2402), (2566, 760, 8, 3, 2403),
+                                   (2300, 606, 4, 2, 2404), (2420, 740, 5, 2, 2405), (2586, 662, 4, 2, 2406)):
+        lake(g, lx, ly, rx, ry, seed)
+    still = T("wool", "deep")
+    draw_water_path(g, [(3014, 462), (2994, 512), (2966, 566), (2950, 616), (2956, 676), (2944, 726), (2934, 800)],
+                    5, 10, water=still, lit=still, bank=OCC)
+    r = rng_for(2409)
+    for _ in range(26):
+        t = r.random()
+        y = 470 + t * 320
+        x = 3010 - t * 70 + (r.random() - 0.5) * 6
+        if g.get(x, y) == rgba(still):
+            g.set(x, y, T("wool", "shade") if r.random() < 0.7 else T("skin", "shade"))
+
+
+def wreck(g, cx, cy, ln, facing, seed):
+    """A ship the sea left on the sand: a hull on its side, planks gone between its ribs, its mast snapped."""
+    r = rng_for(seed)
+    half = ln / 2.0
+    g.disc(cx + 2, cy + 2, half + 1, 3, OCC)
+    for xx in range(int(cx - half), int(cx + half) + 1):
+        u = (xx - cx) / half
+        depth = int(round(4 * math.sqrt(max(0.0, 1 - u * u))))
+        for k in range(depth + 1):
+            yy = cy - k
+            rib = (xx - int(cx)) % 3 == 0
+            if k == depth:
+                c = T("gold", "shade") if u * facing < 0.4 else T("gold", "deep")
+            elif rib:
+                c = T("flesh", "shade")
+            else:
+                c = OCC if r.random() < 0.35 else T("gold", "deep")
+            g.set(xx, yy, c)
+    mx = int(cx + facing * 2)
+    g.line(mx, cy - 4, mx + facing * 7, cy - 10, T("gold", "shade"))
+    g.set(mx + facing * 7, cy - 10, T("gold", "base"))
+    g.line(mx + 1, cy - 3, mx + facing * 7 + 1, cy - 9, OCC)
+
+
+def drowned(g, biomes):
+    """The Drowned Shore (stage_15): the seabed the tide left, south of the downs' scarp - wet sand ribbed by the
+    sea that is gone, the channels it ran in, wrecks and a whale's ribs on the sand - and the sea standing off at
+    the bay's mouth, held out by the Weir: a line of stakes and sluice gates along the flats' edge, and past it the
+    water standing up in a ridge it cannot come over. His mark on a wreck."""
+    r = rng_for(2475)
+    for y in range(FLATS_TOP + 6, 800):
+        for x in range(2236, FLATS_EAST + 40):
+            if biomes[y * W + x] != "flats":
+                continue
+            if (y + int(GRAIN.at(x * 2, y * 2) * 5)) % 4 != 0 or (x + (y // 4) * 3) % 9 > 5:
+                continue
+            if road_distance(x, y) < 4 or g.get(x, y) in (rgba(WATER), rgba(WATER_LIT)):
+                continue
+            # A ridge of the sand the sea ribbed, wet, catching what light there is; its trough under it.
+            g.set(x, y, T("skin", "deep") if dith(x, y, 0.6) else T("gold", "deep"))
+            if g.get(x, y + 1) not in (rgba(WATER), rgba(WATER_LIT)):
+                g.set(x, y + 1, T("stone", "deep"))
+    wreck(g, 2474, 642, 22, 1, 2471)
+    wreck(g, 2392, 726, 15, -1, 2472)
+    wreck(g, 2550, 690, 11, 1, 2473)
+    _eyes(g, 2470, 639)
+    # The whale's ribs: a spine along the sand and the ribs standing up off it, bone white, lit on their tops.
+    sx, sy = 2506, 676
+    g.line(sx, sy, sx + 34, sy + 3, T("skin", "shade"))
+    g.line(sx + 1, sy + 1, sx + 35, sy + 4, OCC)
+    for k in range(7):
+        bx = sx + 3 + k * 5
+        by = sy + int(k * 0.4)
+        h = 8 - abs(k - 2)
+        for j in range(h):
+            g.set(bx - j // 3, by - j, T("skin", "base") if j < h - 1 else T("skin", "lit"))
+        g.set(bx + 1, by + 1, OCC)
+    # The sea held off: across the bay's mouth, from the downs' corner off the bottom of the picture, the Weir - a
+    # wall of stakes and dressed stone on the sand side with a sluice gate in it every so often - and on the sea
+    # side the water standing up in a ridge it cannot come over, a crest of foam along its top.
+    for i, y in enumerate(range(FLATS_TOP + 2, H)):
+        ex = int(far_west_edge(y))
+        gate = i % 46 < 5
+        if not gate:
+            g.set(ex + 1, y, T("stone", "lit") if y % 3 == 0 else T("stone", "base"))
+            g.set(ex + 2, y, T("stone", "base") if y % 3 else T("stone", "shade"))
+            g.set(ex + 3, y, OCC if y % 3 == 0 else T("stone", "deep"))
+        elif i % 46 in (1, 3):
+            g.set(ex + 1, y, T("steel", "shade"))
+            g.set(ex + 2, y, T("steel", "base"))
+        for k in range(0, 7):
+            c = T("wool", "base") if k in (1, 2) else (T("wool", "shade") if k < 5 else T("wool", "deep"))
+            if k == 0 and dith(ex, y, 0.6):
+                c = T("skin", "shade")
+            if k == 3 and dith(ex, y * 3, 0.3):
+                c = T("skin", "deep")
+            g.set(ex - k, y, c)
+
+
+def _lane_track(g, path):
+    """One of the three ways' roads: a pale dry track, two pixels wide, its ruts darker."""
+    for (x, y) in path:
+        g.set(x, y, T("linen", "base") if dith(x, y, 0.55) else T("gold", "shade"))
+        g.set(x + 1, y, T("gold", "shade") if dith(x + 1, y, 0.5) else T("gold", "deep"))
+        g.set(x, y + 1, T("gold", "deep"))
+
+
+def _lane_hedges(g, path, open_at):
+    """Yew hedge along both sides of a lane: dark, clipped and close, lit a little on top, open at every fork."""
+    crowns = []
+    for i in range(2, len(path) - 2, 3):
+        (x0, y0), (x1, y1) = path[i - 2], path[i + 2]
+        dx, dy = x1 - x0, y1 - y0
+        n = math.hypot(dx, dy) or 1.0
+        px_, py_ = -dy / n, dx / n
+        for side in (-1, 1):
+            hx, hy = path[i][0] + px_ * 4.5 * side, path[i][1] + py_ * 4.0 * side
+            if road_distance(hx, hy) < 5.5 or any(math.hypot(hx - fx, hy - fy) < 8 for (fx, fy) in open_at):
+                continue
+            crowns.append((hy, hx))
+    return crowns
+
+
+def torch_stand(g, x, y):
+    """A cold torch-stand at a fork: a post and its cup, unlit."""
+    g.line(x, y, x, y - 5, T("stone", "lit"))
+    g.set(x + 1, y + 1, OCC)
+    g.set(x + 1, y, OCC)
+    g.rect(x - 1, y - 6, x + 1, y - 6, T("skin", "deep"))
+    g.set(x, y - 7, T("stone", "deep"))
+
+
+def three_ways(g, biomes):
+    """The Three Ways (stage_16): a dry night country of roads that fork in three, yew hedge between them, a
+    three-faced pillar where they meet and a cold torch-stand at every fork - the hedged lanes branching three and
+    three again, which is the chapter's own maze. His mark: the black dogs' eyes in a hedge."""
+    r = rng_for(2642)
+    for _ in range(700):
+        x = 2520 + r.random() * 240
+        y = 240 + r.random() * 260
+        if biomes[int(y) * W + int(x)] != "ways" or road_distance(x, y) < 4:
+            continue
+        g.set(x, y, T("gold", "shade") if r.random() < 0.6 else T("stone", "base"))
+    cx, cy = 2642, 370
+    lanes = [spline([(2622, 433), (2627, 414), (2634, 392), (cx, cy + 3)], 1.0)]
+    forks = [(cx, cy)]
+
+    def branch(x, y, ang, ln, depth):
+        bend = (r.random() - 0.5) * 0.5
+        mx = x + math.cos(ang + bend) * ln * 0.5
+        my = y + math.sin(ang + bend) * ln * 0.5 * 0.72
+        ex = x + math.cos(ang) * ln
+        ey = y + math.sin(ang) * ln * 0.72
+        lanes.append(spline([(x, y), (mx, my), (ex, ey)], 1.0))
+        if depth > 0:
+            forks.append((ex, ey))
+            for d in (-0.8, 0.0, 0.8):
+                branch(ex, ey, ang + d, ln * 0.62, depth - 1)
+
+    for ang in (-2.45, -0.72, 0.42):
+        branch(cx, cy, ang, 50, 1)
+    crowns = []
+    for path in lanes:
+        crowns += _lane_hedges(g, path, forks)
+    # A hedge never stands on another lane's track: near a fork two lanes' hedges would close each other's way.
+    track = set((int(round(x)), int(round(y))) for path in lanes for (x, y) in path)
+    crowns = sorted(c for c in crowns
+                    if not any((int(round(c[1])) + dx, int(round(c[0])) + dy) in track
+                               for dx in (-2, -1, 0, 1, 2) for dy in (-2, -1, 0, 1, 2)))
+    for path in lanes:
+        _lane_track(g, path)
+    for (hy, hx) in crowns:
+        g.disc(hx + 1, hy + 1.5, 2.6, 2.0, OCC)
+    for (hy, hx) in crowns:
+        g.disc(hx, hy, 2.6, 2.1, T("lichen", "deep"))
+        g.set(hx - 1, hy - 1, T("lichen", "shade"))
+        g.set(hx, hy - 2, T("lichen", "shade") if dith(hx, hy, 0.5) else T("lichen", "deep"))
+    for (fx, fy) in forks[1:]:
+        torch_stand(g, int(fx) + 3, int(fy) + 1)
+    # The pillar: three faces under one cap, pale stone, lit on the left, on a plinth.
+    g.rect(cx - 3, cy + 1, cx + 3, cy + 2, T("skin", "deep"))
+    g.rect(cx - 2, cy + 3, cx + 4, cy + 3, OCC)
+    g.rect(cx - 1, cy - 9, cx + 1, cy, T("skin", "shade"))
+    g.rect(cx - 1, cy - 9, cx - 1, cy, T("skin", "base"))
+    g.rect(cx + 1, cy - 8, cx + 1, cy, T("skin", "deep"))
+    g.rect(cx - 2, cy - 10, cx + 2, cy - 10, T("skin", "base"))
+    for fy in (cy - 7, cy - 4):
+        g.set(cx, fy, OCC)
+    torch_stand(g, cx - 5, cy + 1)
+    torch_stand(g, cx + 6, cy + 1)
+    _eyes(g, 2667, 351)
+
+
+def sphinx(g, x, y, facing):
+    """A small crouched sphinx on the avenue: its body along the way, its head up, turned in to the way."""
+    g.rect(x + 1, y + 1, x + 5, y + 1, OCC)
+    g.rect(x, y - 1, x + 4, y, T("gold", "deep"))
+    g.set(x, y - 1, T("gold", "shade"))
+    hx = x if facing < 0 else x + 4
+    g.rect(hx, y - 3, hx + (1 if facing > 0 else 1), y - 2, T("gold", "shade"))
+    g.set(hx, y - 3, T("gold", "base"))
+
+
+def obelisk(g, x, y, h):
+    g.rect(x + 1, y + 1, x + 4, y + 1, OCC)
+    for k in range(h):
+        w = 1 if k > h - 4 else 2
+        g.set(x, y - k, T("gold", "shade"))
+        if w > 1:
+            g.set(x + 1, y - k, T("gold", "deep"))
+    g.set(x, y - h, T("gold", "base"))
+
+
+def pylon(g, x, y):
+    """A pylon gate, facing west down the avenue: two tapered towers and the dark door between them."""
+    for (tx, w) in ((x, 9), (x + 14, 9)):
+        for k in range(18):
+            inset = k // 6
+            for xx in range(tx + inset, tx + w - inset):
+                c = T("gold", "shade") if xx <= tx + inset + 1 else T("gold", "deep")
+                if k % 4 == 3 and xx > tx + inset + 1:
+                    c = T("flesh", "deep")
+                g.set(xx, y - k, c)
+        g.rect(tx + 3, y - 18, tx + w - 4, y - 18, T("gold", "base"))
+        g.rect(tx + w - 1, y - 14, tx + w, y + 1, OCC)
+    g.rect(x + 9, y - 12, x + 13, y, OCC)
+    g.rect(x + 8, y - 14, x + 14, y - 13, T("gold", "shade"))
+    _eyes(g, x + 10, y - 6)
+
+
+def twelfth_hour(g, biomes):
+    """The Twelfth Hour (stage_17): black sand by the still river, an avenue of sphinxes running east to a pylon gate
+    with an obelisk either side of it - in the dark: the sun did not rise. His mark is in the gate's door."""
+    r = rng_for(2846)
+    for _ in range(700):
+        x = 2740 + r.random() * 230
+        y = 530 + r.random() * 230
+        if biomes[int(y) * W + int(x)] != "blacksand" or road_distance(x, y) < 4:
+            continue
+        g.set(x, y, T("stone", "shade") if r.random() < 0.8 else T("gold", "deep"))
+    ax0, ax1, ay = 2818, 2900, 624
+    for x in range(ax0, ax1):
+        y = ay + (x - ax0) * 0.02
+        g.set(x, y - 2, T("gold", "shade") if x % 4 else T("gold", "deep"))
+        for k in (-1, 0, 1):
+            g.set(x, y + k, T("flesh", "deep") if (x + k) % 5 == 0 else T("gold", "deep"))
+        g.set(x, y + 2, OCC)
+    for k, x in enumerate(range(ax0 + 4, ax1 - 6, 9)):
+        y = ay + (x - ax0) * 0.02
+        sphinx(g, x, int(y) - 5, 1)
+        sphinx(g, x, int(y) + 7, 1)
+    obelisk(g, 2898, 614, 18)
+    obelisk(g, 2898, 640, 18)
+    pylon(g, 2904, 630)
+
+
+def cairn(g, x, y):
+    g.disc(x + 2, y + 1, 4, 2, OCC)
+    for (k, rr) in enumerate((3.4, 2.6, 1.8, 1.0)):
+        g.disc(x, y - k * 2.5, rr, rr * 0.65, T("steel", "deep") if k % 2 == 0 else T("stone", "lit"))
+        g.set(x - rr * 0.5, y - k * 2.5 - 1, T("steel", "shade"))
+    g.set(x, y - 9, T("steel", "base"))
+
+
+def tor(g, x, y, s, seed):
+    """A granite tor: weathered blocks piled on the fell, the biggest at the back, each lit on its upper left with
+    its shadow lower right (the crag's tor, in the fell's granite)."""
+    r = rng_for(seed)
+    blocks = [(x - 4 * s, y - 6 * s, 7 * s, 5 * s), (x + 5 * s, y - 2 * s, 6 * s, 4 * s), (x - 9 * s, y, 5 * s, 3.5 * s),
+              (x + 1 * s, y + 2 * s, 5 * s, 3 * s)]
+    for (bx, by, rw, rh) in blocks:
+        bx += (r.random() - 0.5) * 2
+        g.disc(bx + 2, by + 2, rw, rh, OCC)
+        for yy in range(int(by - rh), int(by + rh) + 1):
+            for xx in range(int(bx - rw), int(bx + rw) + 1):
+                nx = (xx - bx) / float(rw)
+                ny = (yy - by) / float(rh)
+                d = nx * nx + ny * ny
+                if d > 1.0:
+                    continue
+                k = -(nx + ny * 1.2)
+                if k > 0.9 and dith(xx, yy, 0.6):
+                    c = T("steel", "base")
+                elif k > 0.2:
+                    c = T("steel", "shade") if dith(xx, yy, 0.4 + k * 0.4) else T("steel", "deep")
+                elif k > -0.8:
+                    c = T("steel", "deep") if dith(xx, yy, 0.6 + k * 0.4) else T("stone", "lit")
+                else:
+                    c = T("stone", "base")
+                if (int(yy - by + rh) % 4 == 0) and k < 0.6:
+                    c = T("stone", "base")
+                g.set(xx, yy, c)
+        g.line(bx + rw * 0.3, by - rh * 0.6, bx + rw * 0.3 + 1, by + rh * 0.6, T("stone", "base"))
+
+
+def split_pine(g, x, y, h):
+    """A pine the lightning found: a bare trunk riven at the top into two, the wound pale."""
+    g.line(x + 1, y + 1, x + 5, y + 1, OCC)
+    g.line(x + 1, y, x + 1, y - h + 2, T("stone", "base"))
+    g.line(x, y, x, y - h, T("linen", "base"))
+    g.line(x, y - h, x - 3, y - h - 5, T("linen", "base"))
+    g.line(x + 1, y - h, x + 3, y - h - 6, T("linen", "shade"))
+    g.set(x, y - h + 1, T("skin", "shade"))
+    g.set(x, y - h + 2, T("skin", "deep"))
+    for k in range(3, h - 2, 3):
+        g.line(x - 1, y - k, x - 3, y - k - 2, T("linen", "shade"))
+
+
+def rune_pole(g, x, y):
+    g.line(x, y, x, y - 8, T("linen", "base"))
+    g.line(x - 2, y - 7, x + 2, y - 7, T("linen", "shade"))
+    for k in (2, 4, 5):
+        g.set(x, y - k, OCC)
+    g.set(x + 1, y + 1, OCC)
+
+
+def thunder_fell(g, biomes):
+    """The Thunder Fell (stage_18): bare granite above the treeline under the far north's peaks, lichen on it,
+    cairns, pines the lightning split, rune-poles; and over it the storm he told never to break - a cloud bank
+    sitting on the fell, its shadow on the stone, and no rain and no lightning out of it. His mark by a cairn."""
+    r = rng_for(2976)
+    for _ in range(600):
+        x = 2850 + r.random() * 260
+        y = 110 + r.random() * 240
+        if biomes[int(y) * W + int(x)] != "fell" or road_distance(x, y) < 4:
+            continue
+        g.set(x, y, T("lichen", "base") if r.random() < 0.6 else T("steel", "base"))
+    for (x, y, s, seed) in ((2950, 232, 1.0, 2981), (3016, 214, 1.3, 2982), (3052, 278, 0.9, 2983),
+                            (2902, 216, 0.8, 2984)):
+        tor(g, x, y, s, seed)
+    for (x, y) in ((2976, 252), (2992, 206), (3030, 246), (2924, 248), (3074, 230), (2962, 290)):
+        cairn(g, x, y)
+    _eyes(g, 2990, 220)
+    for (x, y, h) in ((2940, 270, 13), (3038, 296, 15), (2898, 256, 12), (3080, 266, 14), (2986, 306, 11),
+                      (3006, 270, 12)):
+        split_pine(g, x, y, h)
+    for (x, y) in ((2962, 224), (3000, 238), (2932, 236)):
+        rune_pole(g, x, y)
+    # The storm that will not break: a bank of cloud sitting on the fell's north side, under the peaks. Its shadow
+    # first, on the stone.
+    lobes = [(2944, 160, 20, 9), (2972, 150, 26, 11), (3004, 154, 24, 10), (3034, 160, 20, 9), (2988, 166, 28, 8),
+             (2918, 168, 14, 7), (3060, 170, 16, 7), (2958, 172, 18, 6), (3020, 174, 20, 6)]
+    for (lx, ly, rx, ry) in lobes:
+        for yy in range(int(ly + 14), int(ly + 14 + ry * 1.2)):
+            for xx in range(int(lx - rx), int(lx + rx)):
+                if dith(xx, yy, 0.5) and ((xx - lx) / float(rx)) ** 2 + ((yy - ly - 14) / (ry * 1.2)) ** 2 < 1:
+                    g.set(xx, yy, OCC)
+    for (lx, ly, rx, ry) in sorted(lobes, key=lambda l: l[1]):
+        for yy in range(int(ly - ry), int(ly + ry) + 1):
+            for xx in range(int(lx - rx), int(lx + rx) + 1):
+                nx = (xx - lx) / float(rx)
+                ny = (yy - ly) / float(ry)
+                d = nx * nx + ny * ny
+                if d > 1.0:
+                    continue
+                k = -(nx * 0.6 + ny)
+                if k > 0.7:
+                    c = T("steel", "shade") if dith(xx, yy, 0.6) else T("stone", "lit")
+                elif k > 0.0:
+                    c = T("stone", "lit") if dith(xx, yy, 0.4 + k * 0.4) else T("stone", "base")
+                elif ny > 0.55:
+                    c = T("stone", "deep") if dith(xx, yy, 0.5) else OCC
+                else:
+                    c = T("stone", "base") if dith(xx, yy, 0.5 + k * 0.5) else T("stone", "shade")
+                g.set(xx, yy, c)
+
+
+def far_mountains(g, biomes):
+    """The far north's peaks behind the fell and the downs, as the land's north wall is drawn."""
+    r = rng_for(2707)
+    peaks = []
+    x = 2420 + r.random() * 20
+    while x < 3110:
+        for rank in range(2):
+            by = 64 + math.sin(x / 80.0) * 12 + rank * 16 + (r.random() - 0.5) * 18
+            h = 34 + r.random() * 40 - rank * 8 + (16 if 2880 < x < 3080 else 0)
+            peaks.append((by, x + rank * 9, h * (1.0 + r.random() * 0.7), h))
+        x += 18 + r.random() * 30
+    peaks.sort()
+    for by, px_, w, h in peaks:
+        if road_distance(px_, by) < 22 or by > 140:
+            continue
+        peak(g, px_, by, w, h, 0.28, seed=int(px_ * 7 + by))
+
+
+def far_groves(g, biomes):
+    """Woods in the far shore's hill country, so the land between the seats has things standing on it."""
+    r = rng_for(2717)
+    trees = []
+    for _ in range(24):
+        cx = 2440 + r.random() * 680
+        cy = 160 + r.random() * 600
+        if biomes[int(cy) * W + int(cx)] != "hills" or road_distance(cx, cy) < 24:
+            continue
+        rad = 8 + r.random() * 16
+        for _ in range(int(rad * rad / 9)):
+            a = r.random() * 2 * math.pi
+            d = math.sqrt(r.random()) * rad
+            x = cx + math.cos(a) * d
+            y = cy + math.sin(a) * d * 0.7
+            if 0 <= x < W and 0 <= y < H and biomes[int(y) * W + int(x)] == "hills" and road_distance(x, y) > 7:
+                trees.append((y, x, 3 + r.random() * 2.5))
+    trees.sort()
+    for (y, x, rad) in trees:
+        crown(g, x, y, rad, "lichen", dark=r.random() < 0.6)
+
+
+# THE BRONZE ISLE (stage_19): an island off the far shore's east coast, drawn as his rock is (an outline, a south
+# face, the plateau), a god's workshop gone cold on it.
+BRONZE_TOP = [(3200, 428), (3204, 404), (3220, 384), (3246, 372), (3276, 370), (3304, 378), (3326, 394),
+              (3334, 418), (3328, 444), (3306, 458), (3272, 462), (3236, 458), (3210, 446)]
+BRONZE_CLIFF = 16
+
+
+def bronze_isle(g):
+    """The Bronze Isle (stage_19): the god's workshop island gone cold - walled yards of bronze gone to verdigris,
+    anvils as tall as houses, dead bellows, a row of his wheeled tripods, and Talos on the rim, a bronze giant with
+    the cold mark in his eye (taken, as everything here is: the art ruling of .ai/second-half.md 4.2). No fire: this
+    is a god's forge put out, not his. And the bronze bridge over the strait, its deck the road."""
+    outline = _jagged(BRONZE_TOP, 3191, 5.0)
+    xs = [p[0] for p in outline]
+    x0, x1 = int(min(xs)), int(max(xs))
+    for x in range(x0, x1 + 1):
+        span = _poly_span(outline, x)
+        if span is None:
+            continue
+        top, bottom = span
+        for y in range(int(top) + 6, int(bottom) + BRONZE_CLIFF + 6):
+            if dith(x + 6, y, 0.8):
+                g.set(x + 6, y, OCC)
+    for x in range(x0, x1 + 1):
+        span = _poly_span(outline, x)
+        if span is None:
+            continue
+        top, bottom = span
+        drop = BRONZE_CLIFF + int((GRAIN.at(x * 3, 500) - 0.5) * 6)
+        west = 1.0 - min(1.0, (x - x0) / 60.0)
+        for k in range(drop):
+            y = int(bottom) + k
+            t = k / float(drop)
+            streak = (x * 7 + int(GRAIN.at(x * 5, 3) * 7)) % 9 == 0
+            if t > 0.86:
+                c = OCC
+            elif streak and t < 0.7:
+                c = T("lichen", "shade") if dith(x, y, 0.6) else T("lichen", "base")
+            else:
+                c = T("stone", "lit") if dith(x, y, 0.3 + west * 0.4 - t * 0.4) else T("stone", "base")
+            g.set(x, y, c)
+        g.set(x, int(bottom) + drop, T("wool", "shade") if dith(x, 3, 0.45) else T("wool", "deep"))
+    g.poly(outline, T("stone", "base"))
+    for x in range(x0, x1 + 1):
+        span = _poly_span(outline, x)
+        if span is None:
+            continue
+        top, bottom = span
+        for y in range(int(top), int(bottom) + 1):
+            if dith(x * 3, y * 5, 0.3 + (GRAIN.at(x * 4, y * 4) - 0.5)):
+                g.set(x, y, T("lichen", "deep"))
+        g.set(x, int(top), T("stone", "lit") if x < (x0 + x1) // 2 else T("stone", "base"))
+    # The yards' floors: bronze plates laid like flags, gone dark and green, between the walls.
+    for x in range(3214, 3324):
+        for y in range(392, 442):
+            span = _poly_span(outline, x)
+            if span is None or not (span[0] + 3 < y < span[1] - 2):
+                continue
+            if (x % 7 == 0 or y % 5 == 0) and dith(x, y, 0.6):
+                g.set(x, y, T("stone", "shade"))
+            elif dith(x * 3, y * 7, 0.22):
+                g.set(x, y, T("gold", "deep"))
+    # The yards' walls: bronze gone green on its top, its face toward us, a door gap in each.
+    def wall(ax, ay, bx, by):
+        steps = int(max(abs(bx - ax), abs(by - ay)))
+        upright = abs(bx - ax) < abs(by - ay)
+        for s in range(steps + 1):
+            x = ax + (bx - ax) * s / float(max(1, steps))
+            y = ay + (by - ay) * s / float(max(1, steps))
+            if 0.42 < s / float(max(1, steps)) < 0.54:
+                continue
+            if upright:
+                g.set(x, y, T("lichen", "lit") if int(y) % 4 else T("lichen", "base"))
+                g.set(x + 1, y, T("lichen", "shade"))
+                g.set(x + 2, y, OCC)
+                continue
+            g.set(x, y - 3, T("lichen", "lit") if int(x) % 3 else T("lichen", "base"))
+            g.set(x, y - 2, T("lichen", "base") if dith(x, y, 0.5) else T("lichen", "shade"))
+            g.set(x, y - 1, T("lichen", "shade"))
+            g.set(x, y, T("gold", "deep") if dith(x, y, 0.5) else T("lichen", "deep"))
+            g.set(x, y + 1, OCC)
+    wall(3256, 394, 3256, 440)
+    wall(3292, 394, 3292, 438)
+    wall(3214, 444, 3322, 440)
+    wall(3220, 392, 3316, 390)
+    # Anvils, as tall as houses: an iron block on a waist, its horn to the west, lit along its face.
+    for (ax, ay) in ((3236, 420), (3272, 416), (3306, 424)):
+        g.rect(ax + 1, ay + 1, ax + 12, ay + 2, OCC)
+        g.rect(ax + 3, ay - 3, ax + 8, ay, T("stone", "shade"))
+        g.rect(ax, ay - 7, ax + 11, ay - 4, T("stone", "base"))
+        g.rect(ax, ay - 7, ax + 11, ay - 7, T("stone", "lit"))
+        g.line(ax - 3, ay - 6, ax, ay - 6, T("stone", "base"))
+        g.set(ax - 3, ay - 7, T("stone", "lit"))
+    # Dead bellows, and the row of his wheeled tripods by the north wall.
+    for (bx, by) in ((3246, 404), (3300, 404)):
+        g.poly([(bx, by), (bx + 7, by - 2), (bx + 7, by + 2)], T("flesh", "deep"))
+        g.line(bx + 7, by - 2, bx + 10, by - 3, T("gold", "deep"))
+    for k in range(6):
+        tx, ty = 3262 + k * 7, 386
+        g.line(tx, ty, tx - 2, ty + 4, T("gold", "deep"))
+        g.line(tx, ty, tx + 2, ty + 4, T("gold", "deep"))
+        g.line(tx, ty, tx, ty + 4, T("gold", "deep"))
+        g.rect(tx - 2, ty - 2, tx + 2, ty - 1, T("gold", "shade") if k % 2 else T("lichen", "base"))
+        g.set(tx - 2, ty - 2, T("gold", "base"))
+        g.set(tx + 3, ty + 5, OCC)
+    # Talos on the south-east rim: legs apart, the bronze lit on his left, green in his joints, his eye taken.
+    tx, ty = 3318, 452
+    g.line(tx + 2, ty + 1, tx + 9, ty + 1, OCC)
+    g.line(tx, ty, tx, ty - 6, T("gold", "shade"))
+    g.line(tx + 4, ty, tx + 4, ty - 6, T("gold", "deep"))
+    g.rect(tx - 1, ty - 13, tx + 5, ty - 7, T("gold", "deep"))
+    g.rect(tx - 1, ty - 13, tx, ty - 7, T("gold", "shade"))
+    g.set(tx + 2, ty - 10, T("lichen", "base"))
+    g.rect(tx + 1, ty - 17, tx + 3, ty - 14, T("gold", "shade"))
+    g.set(tx + 3, ty - 16, T("arcane", "lit"))
+    g.line(tx - 2, ty - 12, tx - 3, ty - 6, T("gold", "shade"))
+    g.line(tx + 6, ty - 12, tx + 7, ty - 6, T("gold", "deep"))
+    bronze_bridge(g)
+
+
+def bronze_bridge(g):
+    """The bridge to the isle: bronze girders gone green on squat piers, a lit rail on its north side, its deck the
+    road; its shadow on the strait."""
+    path = ROUTE[_route_index_near(BRONZE_FROM, "stage_18"):ROUTE_STOPS["stage_19"] + 1]
+    for x in range(int(BRONZE_FROM[0]) - 4, int(BRONZE_TO[0]) + 4):
+        y = _y_on(path, x)
+        if y is None or not is_sea(x, int(round(y))):
+            continue
+        yi = int(round(y))
+        pier = (x - int(BRONZE_FROM[0])) % 14 < 3
+        for k in range(3, 6):
+            if dith(x + 5, yi + k + 4, 0.7):
+                g.set(x + 5, yi + k + 4, OCC)
+        if pier:
+            for k in range(3, 11):
+                g.set(x, yi + k, T("lichen", "deep") if k < 10 else OCC)
+            g.set(x, yi + 3, T("lichen", "base"))
+        g.set(x, yi - 3, T("gold", "shade") if x % 2 else T("lichen", "lit"))
+        g.set(x, yi - 2, T("lichen", "base"))
+        for k in range(-1, 2):
+            g.set(x, yi + k, T("gold", "deep") if (x + k) % 4 else T("lichen", "shade"))
+        g.set(x, yi + 2, T("lichen", "shade"))
+        g.set(x, yi + 3, OCC if not pier else T("lichen", "deep"))
+
+
+# THE LIGHT GOING HOME (.ai/second-half.md 6.2): after Taken Back his tower's dark light is out and warm motes stream
+# east off it over the dark sea. Both are the screen's, laid over the world at runtime for a save that has won the
+# Throne (WorldMapView): tower-unlit.png, the tower as keep_tower(lit=False) draws it, cropped to what differs; and
+# this path, which the motes follow from his crown out over the sea, over the white cliffs and on east over the seats
+# his shadow still holds - into the dark past whatever the save has seen.
+LIGHT_PATH = [(2000, 168), (2036, 146), (2090, 136), (2150, 142), (2206, 164), (2256, 196), (2300, 226),
+              (2352, 236), (2420, 222), (2520, 210), (2640, 236), (2760, 250), (2880, 236), (3000, 200),
+              (3120, 228), (3240, 300), (3330, 340)]
+
+
+def tower_patch(lit, dark):
+    """The box where the unlit tower differs from the lit one, and that box cut from the unlit picture."""
+    xs, ys = [], []
+    for y in range(100, 340):
+        for x in range(1940, 2080):
+            if lit.pix[y * W + x] != dark.pix[y * W + x]:
+                xs.append(x)
+                ys.append(y)
+    x0, y0, x1, y1 = min(xs), min(ys), max(xs), max(ys)
+    patch = Grid(x1 - x0 + 1, y1 - y0 + 1)
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            patch.pix[(y - y0) * patch.w + (x - x0)] = dark.pix[y * W + x]
+    return patch, (x0, y0)
+
+
+# ---------------------------------------------------------------------------------------------
 # THE EDGE OF THE WORLD: every side falls into the dark, by the vignette's darken-only rule.
 # ---------------------------------------------------------------------------------------------
 FALL = [T("stone", "deep"), OCC]
@@ -2214,7 +3272,7 @@ FALL = [T("stone", "deep"), OCC]
 def edge_falloff(g):
     band = 40
     for y in range(H):
-        for x in range(W):
+        for x in range(X_FROM, W):
             d = min(x, y, W - 1 - x, H - 1 - y)
             if d >= band:
                 continue
@@ -2509,7 +3567,7 @@ def arc_lengths(points):
     return out
 
 
-def write_json():
+def write_json(tower_at=None, tower_size=None):
     stops = []
     for (sid, stand, focus, rx, ry) in PLACES:
         stops.append({
@@ -2534,6 +3592,14 @@ def write_json():
             "stand": [PAGE_STAND[0], PAGE_STAND[1]],
             "drawings": [{"texture": f, "at": [p[0], p[1]]} for (f, p) in PAGE_DRAWINGS],
         },
+        # The light going home (.ai/second-half.md 6.2), laid over the world after Taken Back: the tower unlit, at
+        # its top-left in world pixels, and the path the warm motes stream east along off his crown.
+        "light_home": {
+            "tower_image": "tower-unlit.png",
+            "tower_at": [tower_at[0], tower_at[1]] if tower_at else [0, 0],
+            "tower_size": [tower_size[0], tower_size[1]] if tower_size else [0, 0],
+            "motes": [[p[0], p[1]] for p in LIGHT_PATH],
+        },
     }
     # One key per line and one stop per line, the route on one line of its own: readable in a diff
     # where it matters (the stops) and not 2500 lines of coordinates where it does not.
@@ -2550,8 +3616,9 @@ def write_json():
         else:
             lines.append(" " + json.dumps(k) + ": " + json.dumps(v, sort_keys=True, separators=(",", ":")) + tail)
     lines.append("}")
-    with open(os.path.join(OUT_DIR, "worldmap.json"), "w") as fh:
-        fh.write("\n".join(lines) + "\n")
+    # Binary, so it is LF on Windows too (the repo's line endings), whichever Python writes it.
+    with open(os.path.join(OUT_DIR, "worldmap.json"), "wb") as fh:
+        fh.write(("\n".join(lines) + "\n").encode("ascii"))
 
 
 def check_places():
@@ -2568,20 +3635,27 @@ def check_places():
         sys.exit(1)
 
 
-def main():
+def main(argv=()):
+    global X_FROM
+    preview_far = "--preview-far" in argv
+    if preview_far:
+        X_FROM = 1800
     check_places()
     if not os.path.isdir(OUT_DIR):
         os.makedirs(OUT_DIR)
     print("world_map: land")
     # Decided on a 2-pixel grid: the nearest-seed search is the slow part, and a border that steps
     # in pairs of pixels is still a border drawn at the art's own grain.
-    biomes = [None] * (W * H)
+    biomes = ["sea"] * (W * H) if preview_far else [None] * (W * H)
     others = [None] * (W * H)
     mixes = [0.0] * (W * H)
     for y in range(0, H, 2):
-        for x in range(0, W, 2):
-            # Past the cliffs it is all sea (the rock is drawn, not grown from seeds): no search there.
-            if x > LAND_W + 90:
+        for x in range(X_FROM, W, 2):
+            # Past the cliffs it is all sea (the rock is drawn, not grown from seeds): no search there, until
+            # the far shore, whose ground is grown from its own seeds.
+            if x >= FAR_X0 and far_land(x, y):
+                b, o, m = far_biome_pair(x, y)
+            elif x > LAND_W + 90:
                 b, o, m = "sea", None, 0.0
             else:
                 b, o, m = biome_pair(x, y)
@@ -2593,10 +3667,16 @@ def main():
                         mixes[yy * W + xx] = m
     # The sea's line is cheap, so it is exact.
     for y in range(H):
-        for x in range(W):
+        for x in range(X_FROM, W):
             if is_sea(x, y):
                 biomes[y * W + x] = "sea"
                 mixes[y * W + x] = 0.0
+            elif biomes[y * W + x] == "sea":
+                # Land the 2-pixel search called sea at a coast: the far shore's own ground there.
+                b, o, m = far_biome_pair(x, y) if x >= FAR_X0 else biome_pair(x, y)
+                biomes[y * W + x] = b
+                others[y * W + x] = o
+                mixes[y * W + x] = m
     g = Grid(W, H, OCC)
     paint_ground(g, biomes, others, mixes)
     shore(g, biomes)
@@ -2605,6 +3685,7 @@ def main():
     draw_water_path(g, RIVER, 4, 8)
     # Where the river comes up: a spring pool under the scarp, the cave's water returning.
     lake(g, 758, 468, 8, 4, 99)
+    far_water(g, biomes)
     print("world_map: mountains")
     mountains(g, biomes)
     groves(g, biomes)
@@ -2622,15 +3703,45 @@ def main():
     frozen(g, biomes)
     sands(g, biomes)
     emberdeep(g, biomes)
+    print("world_map: the far shore")
+    # After every place on the land: crown() draws its lobes from one shared stream (_LOBE_RNG), so a far tree drawn
+    # earlier would reshape every tree in the west wood. Drawn here, the land is the picture it was, pixel for pixel.
+    far_mountains(g, biomes)
+    far_groves(g, biomes)
+    white_cliffs(g, biomes)
+    downs_scarp(g)
+    downs(g, biomes)
+    drowned(g, biomes)
+    three_ways(g, biomes)
+    twelfth_hour(g, biomes)
+    thunder_fell(g, biomes)
+    bronze_isle(g)
     print("world_map: the castle")
     black_cliffs(g, biomes)
     east_boulders(g, biomes)
     isle(g)
     last_bridge(g)
+    causeway(g)
+    # The castle twice: as it stands, his tower burning, and as it stands after Taken Back, his tower unlit. The
+    # second is cut down to where the two differ (tower_patch) and laid over the first at runtime for a save that
+    # has won the Throne (WorldMapView), so one picture serves both and the light going out is a picture, not a tint.
+    dark = Grid(W, H)
+    dark.pix = list(g.pix)
     castle(g)
+    castle(dark, tower_lit=False)
+    tower, tower_at = tower_patch(g, dark)
+    dark = None
     edge_falloff(g)
     audit(g, "world")
+    audit(tower, "tower-unlit")
+    if preview_far:
+        if not os.path.isdir(PREVIEW_DIR):
+            os.makedirs(PREVIEW_DIR)
+        g.image().crop((X_FROM, 0, W, H)).save(os.path.join(PREVIEW_DIR, "far.png"))
+        print("world_map: preview only, tools/art/_worldmap/far.png (columns %d-%d); nothing written" % (X_FROM, W))
+        return
     save(g, "world.png")
+    save(tower, "tower-unlit.png")
 
     p = page()
     audit(p, "sketchbook")
@@ -2655,7 +3766,7 @@ def main():
         save(icon, "keepsake.png" if keep_ else "secret.png", 2)
     for d in ("left", "right"):
         save(arrow(d), "arrow-%s.png" % d, 2)
-    write_json()
+    write_json(tower_at, (tower.w, tower.h))
 
     if not os.path.isdir(PREVIEW_DIR):
         os.makedirs(PREVIEW_DIR)
@@ -2666,4 +3777,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

@@ -43,6 +43,8 @@ public partial class Prologue : Control
 	private const string PrologueFolder = "res://assets/bonelight/ui/prologue/";
 	private const string LessonFolder = "res://assets/bonelight/ui/lessons/";
 	private const string FreedFolder = "res://assets/bonelight/ui/freed/";
+	// The story's reels that are neither the prologue nor a freeing: reel E, the light going on (LightGoesOn).
+	private const string StoryFolder = "res://assets/bonelight/ui/story/";
 	public const string PrologueReelId = "prologue";
 	private const string CharacterSelectionPath = "res://scenes/CharacterSelection.tscn";
 	private const string TitleScreenPath = "res://scenes/TitleScreen.tscn";
@@ -61,8 +63,9 @@ public partial class Prologue : Control
 		/// <summary>Back to the main menu it was opened from (Options, Watch the Prologue).</summary>
 		Menu,
 		/// <summary>
-		/// Back to the world map. TEMPORARY, for Eric's testing: only WorldMap's replay button opens it, and
-		/// both go before the game ships for good. Never marks the prologue seen (<see cref="Finish"/>).
+		/// Back to the world map. Two callers: WorldMap's replay-intro button (TEMPORARY, for Eric's testing, to go
+		/// before the game ships for good - the button, not this value), and reel E, which the map plays for a save
+		/// that owes it (LightGoesOn) and which stays. Never marks the prologue seen (<see cref="Finish"/>).
 		/// </summary>
 		Map,
 	}
@@ -254,6 +257,23 @@ public partial class Prologue : Control
 		new("rite-seal", 5.6f, "The rest fall silent; their levels feed it.", new Vector2(-3f, 0f), new Vector2(-8f, 0f), new Vector2(-18f, 0f)),
 	};
 
+	// REEL E, THE LIGHT GOES ON (.ai/second-half.md 6.3; tools/art/light_goes_on.py; LightGoesOn). After the Throne is
+	// won: the light going home, and some of it going on east over the dark sea to the far shore. Two panels, the
+	// Archmage at the centre of both, one line. Calm (no impact): the storm of motes was the dark wizard's fall, and
+	// this is what came after it. The light's motes ride the mid layer and drift east against the back, so the stream
+	// is seen to go.
+	private static readonly Beat[] LightGoesOnBeats =
+	{
+		// His sea-gate on the rock's east side, from inside: the Archmage on its steps, his back to us, and the light
+		// streaming out over him through the arch and away over the dark water. No line: the picture says it.
+		new("lightgoes-gate", 5.6f, null, new Vector2(-2f, 0f), new Vector2(16f, 4f), new Vector2(-10f, 0f)),
+		// Wide and low over the water: the stream running on east toward a line of white cliffs on the horizon and on
+		// past the edge of the picture, the Archmage small on the quay below his rock. The line says the one thing the
+		// picture cannot - why the light did not stop: it was never a wizard's (the doc's premise, section 2).
+		new("lightgoes-sea", 6.4f, "Some of it was older than any of them.", new Vector2(4f, 0f), new Vector2(22f, -2f),
+			new Vector2(-12f, 0f)),
+	};
+
 	// THE FREEINGS (.ai/cutscenes.md; tools/art/freed.py; Freeings). One panel each, made once as a template: the
 	// shared ground, and a mid layer per wizard - the Archmage beside the one he has freed, that wizard's own light
 	// coming back to him. Its line is the wizard's freed line from QuestLog.Prisoners, with his name in it. A god's
@@ -280,6 +300,7 @@ public partial class Prologue : Control
 			["apotheosis"] = new Reel("apotheosis", LessonFolder, ApotheosisBeats),
 			["conjunctions"] = new Reel("conjunctions", LessonFolder, ConjunctionBeats),
 			["sovereign_rite"] = new Reel("sovereign_rite", LessonFolder, RiteBeats),
+			[LightGoesOn.ReelId] = new Reel(LightGoesOn.ReelId, StoryFolder, LightGoesOnBeats),
 		};
 		foreach (string wizardId in Freeings.WizardIds)
 			reels[Freeings.ReelIdFor(wizardId)] = FreedReel(wizardId);
@@ -959,6 +980,9 @@ void fragment() {
 		if (finished)
 			return;
 		finished = true;
+		// Reel E is seen once it has ended, however it was reached (the map, the Throne's end, Options).
+		if (reel.Id == LightGoesOn.ReelId)
+			MarkLightGoesOnSeen();
 		if (Embedded)
 		{
 			// Over a run: the caller teaches the lesson and goes on to the results. This player goes with it.
@@ -987,6 +1011,14 @@ void fragment() {
 		{
 			GetTree().ChangeSceneToFile(CharacterSelectionPath);
 		}
+	}
+
+	// In memory always - a tool run's map must not play it a second time - and saved when writes are on.
+	private void MarkLightGoesOnSeen()
+	{
+		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (LightGoesOn.MarkSeen(saveManager?.Data))
+			saveManager.SaveGame();
 	}
 
 	private void MarkSeen()

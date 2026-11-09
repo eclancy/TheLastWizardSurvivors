@@ -155,6 +155,14 @@ public partial class MainMenu
 			replay.Pressed += () => Prologue.Play(this, Prologue.After.Menu, reel);
 			story.Add(SettingsRows.BuildButtonRow(replay));
 		}
+		// And reel E, the light going on east after the Throne (LightGoesOn), once this save has seen it: last, as
+		// it comes last in the story so far.
+		if (LightGoesOn.IsWatchable(save))
+		{
+			Button replay = SettingsRows.BuildActionButton(LightGoesOn.ReplayLabel, "WatchLightGoesOn");
+			replay.Pressed += () => Prologue.Play(this, Prologue.After.Menu, LightGoesOn.ReelId);
+			story.Add(SettingsRows.BuildButtonRow(replay));
+		}
 		CodexRows.AddSection(right, SettingsRows.Story, null, ink, 1, story);
 
 		// TESTING: the tester's knobs, below everything a player sets. Playtest Mode was "Enable Playtest

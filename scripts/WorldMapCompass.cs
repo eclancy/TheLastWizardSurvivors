@@ -38,6 +38,8 @@ public partial class WorldMapCompass : Control
 		public string Caption { get; set; } = string.Empty;
 		/// <summary>Draws a break before this mark: the stops outside the campaign sit apart.</summary>
 		public bool BreakBefore { get; set; }
+		/// <summary>The break is the dark sea (the far shore's first stop, .ai/second-half.md 7): drawn as waves, not a rule.</summary>
+		public bool SeaBefore { get; set; }
 	}
 
 	// The band: stone deep with a gold rule at its foot, the level-up heading band's materials.
@@ -151,7 +153,19 @@ public partial class WorldMapCompass : Control
 			float edge = Mathf.Min(x, size.X - x) / Mathf.Max(1f, size.X * 0.18f);
 			float alpha = Mathf.Clamp(edge, 0.15f, 1f);
 
-			if (marks[i].BreakBefore)
+			if (marks[i].BreakBefore && marks[i].SeaBefore)
+			{
+				// The crossing: three short waves stacked where the rule would be, the sea between the road and the
+				// far shore. Whole canvas units in 2-unit steps, the rule's own grain.
+				float bx = Mathf.Round((XOf(i - 1) + x) / 2f);
+				for (float y = 12f; y < size.Y - 12f; y += 8f)
+				{
+					DrawRect(new Rect2(bx - 6f, y + 2f, 4f, 2f), new Color(Rule, alpha));
+					DrawRect(new Rect2(bx - 2f, y, 4f, 2f), new Color(Rule, alpha));
+					DrawRect(new Rect2(bx + 2f, y + 2f, 4f, 2f), new Color(Rule, alpha));
+				}
+			}
+			else if (marks[i].BreakBefore)
 			{
 				float bx = (XOf(i - 1) + x) / 2f;
 				for (float y = 10f; y < size.Y - 10f; y += 6f)

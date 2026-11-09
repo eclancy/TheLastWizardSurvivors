@@ -12,7 +12,8 @@ starting power, passive and unlock around that later story.
 
 **Status: design for Eric's review, 2026-11-07; accepted 2026-11-07/08 (section 8). F0, the plumbing, is built
 (2026-11-08, section 9, "F0, built"), F1, the god plumbing (2026-11-08, "F1, built"): a god can be added as
-data; and F2, Artemis (2026-11-08, "F2, built"): the first god, whole, waiting on her seat (F3) to be reached.**
+data; F2, Artemis (2026-11-08, "F2, built"): the first god, whole, waiting on her seat (F3) to be reached; and
+F5, reel E and the map (2026-11-08, "F5, built"): the far shore is drawn across the dark sea and announced.**
 Section 8 is the list of decisions that are his;
 every other choice below is a recommendation he can overturn.
 
@@ -479,7 +480,7 @@ less, **M** a few days, **L** a week or more.
 | F2 | **Artemis**: Sagittarius's table path, The Hunter's Moon, Far-Shooting, her sheet (`tools/art/player_*.py`, 48 cell, idle / move / hurt / death), icons, reel layer, catalog rows | M | F1 | the first god, playable everywhere. **Built 2026-11-08** ("F2, built", below); reachable once F3 makes her seat playable |
 | F3 | **The White Downs**: chalk tiles and barrows, its cast, the Unstrung Hunter, music, foliage, one side event, two secrets, its difficulty row | L | F0 | the first far chapter |
 | F4 | **The far sky**: `Teaching.FarSky` and its reel, tonight's recipe, the favour, card and pause lines, the Feat, `_BalanceHarness --far-sky` and the section 5 measurement | M | F0, F2 | the half's system, measured |
-| F5 | **Reel E and the map**: `world_map.py` widened east, the crossing, the white cliffs and six places, the motes after Taken Back, the stop order; reel E | L | F0 | the half on the map, and announced |
+| F5 | **Reel E and the map**: `world_map.py` widened east, the crossing, the white cliffs and six places, the motes after Taken Back, the stop order; reel E | L | F0 | the half on the map, and announced. **Built 2026-11-08** ("F5, built", below) |
 | F6 | **Manannán, Maelstrom and the Drowned Shore** | Maelstrom M-L, god M, chapter L | F1; the lattice-as-water look | the second slice |
 | F7 | **Hecate, Dark Lens and the Three Ways** | Dark Lens M, god M, chapter L | F1 | |
 | F8 | **Ra, Orrery and the Twelfth Hour** | Orrery M, god M, chapter L (the dawn S-M) | F1 | |
@@ -836,3 +837,99 @@ reads, and that the mark can pass to a quarry off the screen (the bow's reach is
 as a fused copy's Hunter's Mark already reaches 740); the icon at 24 px; whether 38% at level 3 is "inside the
 starters' band" (his 29% was at level 2) and whether her level 8 at 5.3 minutes is early for a bot that seeks it; and
 every number above, which the bot has met twice.
+
+### F5, built (2026-11-08, branch `worktree-agent-a0ae452ba0fa3fe7c`, on `main-ff86ni` after F1)
+
+The far shore is on the map, across the dark sea, and announced by reel E. Nothing is playable that was not, every
+far stop is still `IsPlayable = false` and under the unbuilt mist, the Throne is the end of the road for any save that
+has not taken it back, and the Dark Wizard's and The Road Restored's targets are untouched (nothing here reads or
+writes the campaign). **No save schema step** (still 25): reel E's flag is additive and owed only with Taken Back. The
+story epoch is not raised.
+
+**The map** (`tools/art/world_map.py`; `.ai/world-map.md` section 19 is the full record). The world is 3424 wide, one
+picture; west of the castle it is byte-for-byte what it was. The road goes on past the Throne east out of his postern,
+down to his east sea-gate, over an old causeway of pale stone to a cove under the white cliffs, and through the six
+seats in `FarShoreOrder` (`RoadOrder` already placed them; `PLACES` and `WAYPOINTS` now draw them). Each seat has its
+ground, its landmark and his mark: the White Downs' barrows and the hound and the hart cut in the turf; the Drowned
+Shore's ribbed seabed, channels, wrecks and whale ribs behind the Weir; the Three Ways' hedged lanes forking three and
+three again round a three-faced pillar; the Twelfth Hour's avenue of sphinxes to a pylon by the still river; the
+Thunder Fell's tors, cairns and split pines under a storm that does not break; the Bronze Isle's verdigris yards,
+anvils, tripods and Talos, over a bronze bridge. No light burns anywhere on the far shore.
+
+**What a save sees** (the reveal, F0's `IsChapterRevealed`, unchanged): before Taken Back nothing past the rock - the
+dark begins at the castle's east wall, with the tower's dark light burning; after it, the tower unlit, the light
+streaming east off its spire, the crossing and the White Downs drawn out of the dark under the mist with its lock line,
+and nothing more until each later seat is earned. **Decided: the far shore's places are drawn in the picture whatever
+the save**, as the road's are, and the reveal covers them; 6.2's "the far shore is drawn past the water, fogged" is the
+first stop under its mist, the rest under the dark. The compass marks the crossing with three waves.
+
+**Reel E** (`tools/art/light_goes_on.py` into `assets/bonelight/ui/story/`; `Prologue.Reels["light_goes_on"]`;
+`.ai/cutscenes.md` E). Two panels, the Archmage at the centre of both, calm:
+
+1. `lightgoes-gate`, 5.6 s, no line: his east sea-gate from inside, the Archmage on the threshold with his back to us
+   and his own light up, the light streaming out over him through the arch and away over the dark water, its gold on
+   the sea.
+2. `lightgoes-sea`, 6.4 s, *"Some of it was older than any of them."*: wide and low from the quay at the rock's foot,
+   the stream running on east to a line of white cliffs on the horizon and past the edge of the picture, the Archmage
+   small on the quay.
+
+It plays after the ending on the run that wins the Throne - after the freeing of the one he kept and before any lesson
+(`Node2DGame.PlayOwedReelsThen`, `PlayOwedLightGoesOnThen`) - and, for a save that won the Throne before it existed (or
+quit before it played), the first time the world map opens (`WorldMap._Ready`), which comes back with the White Downs
+drawn out of the dark. Options > Story lists "The Light Goes On" once seen.
+
+**Where it lives.**
+
+| piece | where |
+|---|---|
+| the map's generator and art | `tools/art/world_map.py` (`CASTLE_W`, `FAR_X0`, `FAR_SEEDS`, the far coasts, `castle_crossing`, `causeway`, `white_cliffs`, `downs_scarp`, `downs`, `far_water`, `drowned`, `three_ways`, `twelfth_hour`, `thunder_fell`, `far_mountains`, `far_groves`, `bronze_isle`, `LIGHT_PATH`, `tower_patch`, `--preview-far`); `world.png`, `tower-unlit.png`, `shroud-stage_14..19.png`, `worldmap.json`'s `light_home` |
+| reading it | `WorldMapLayout` (`TowerUnlitImage`, `TowerUnlitRect`, `MotePath`); `WorldMapView.ShowLightGoneHome`, `DrawMotes`, `RoadSearch` (the reveal's search, exact and about three times quicker); `WorldMap` (the light after Taken Back, the map-open reel, `RoadOrder`'s comment); `WorldMapCompass.Mark.SeaBefore` |
+| the reel | `tools/art/light_goes_on.py`; `scripts/LightGoesOn.cs` (`IsOwed`, `IsWatchable`, `MarkSeen`); `SaveData.HasSeenLightGoesOn`; `Prologue` (`StoryFolder`, `LightGoesOnBeats`, marks it seen when it ends); `Node2DGame.Lessons.cs`; `MainMenu.Options.cs` |
+| the validators | `RegressionChecks.ValidateWorldMapFarShore` (in `ValidateWorldMap`: every far chapter placed across the sea east of the Throne, the light-home data and patch, the motes leaving the crown eastward, the reveal before and after Taken Back); `ValidateLightGoesOn` (in `ValidatePrologueReel`: its panels, one line, and its debt on sample saves including one written before the flag existed) |
+| the harness | `_UiShot --unbeaten=<stage,...>` (a boss not beaten, Taken Back undone with the Throne's) and `--light-goes-on=owed|seen`; `--all-unlocked` and `--campaign-complete` mark reel E seen so the map opens as the map; `_PrologueProbe` steps 22-29 |
+
+**Decisions F5 made** (the doc left them open).
+
+1. **The crossing leaves the tower east**, by a postern and a second sea-gate on the rock's east side, rather than back
+   down through the yard to the cells' sea-gate in the south face: a road doubled under the castle's own would have
+   let the reveal's dark onto the castle. "His sea-gate" in 6.3 is this one.
+2. **The way over the water is an old causeway**, pale and low and older than him, not a ferry or a dotted line: the
+   wizard walks the road, and the castle as a door he sat down in (section 2) wants a road through it.
+3. **The far shore is drawn whole and the reveal covers it** (above).
+4. **Reel E's light is the light ramp with streaks behind it**, so a still panel reads as light going and not as a
+   field of stars; where it lands it is gold pigment. Two panels, close then wide, one line on the second.
+5. **Reel E plays after the freeing of the one he kept**, which is the road's last beat, and before any lesson.
+6. **Its flag is marked in memory even when writes are off**, as a freeing's debt is, so a tool run's map cannot loop
+   on it; `--all-unlocked` and `--campaign-complete` start it seen.
+7. **The motes are runtime, the unlit tower is art**: the tower going dark is a picture swap (one generated patch), and
+   the stream is 120 seeded single pixels the view draws over the map and the dark alike.
+8. **The reveal's search was rewritten** (`RoadSearch`) because the wider world made it 2.6 times the work; it returns
+   the same distances.
+
+**Verified.**
+
+- `dotnet build`: 0 errors, 53 warnings, none of them in a file this piece touched.
+- The validator (`MainMenu.tscn --quit-after 300 -- --no-save-writes --validate-content`): **0 errors and 1 warning**
+  (`test_wizard`), with `ValidateWorldMap` passing for all 19 chapters of both orders and the six far-shore to-do lines
+  no longer listing "no place on the world map". One run of three printed Godot's "1 resources still in use at exit";
+  a verbose rerun did not, so it is GC timing at quit, not a validator.
+- `world_map.py`: 0 off-contract pixels (world, tower patch, shrouds, marks); compared with the committed picture, every
+  pixel west of x 1984 is identical. `light_goes_on.py`: 0 off-contract pixels on both panels.
+- `_UiShot` at 1280x720 and 540x1212 `--portrait --safe-area`, looked at: the map at the Throne before Taken Back
+  (`--fresh-save --campaign-complete --unbeaten=stage_13`), after it at the Throne and at the White Downs
+  (`--campaign-complete`: Taken Back, every spell and wizard, so the gate is met - the Downs still show "still being
+  built", being a stand-in), every far place on `--all-unlocked` (PC), and reel E's two panels mid-hold, line up.
+- `_PrologueProbe`: every new step passes - the map plays reel E first on a save that won the Throne, it returns to the
+  map with the light gone home, owes nothing, does not play again, and Options lists and plays it. Seven failures in
+  the probe's older Start Run steps (1-14) are a timing of the title's Start Run, which this piece did not touch.
+- The run that wins the Throne (`_UiShot --scene=res://scenes/node_2d_game.tscn --stage=13 --campaign-complete
+  --unbeaten=stage_13 --light-goes-on=owed --dismiss-levelups=99 --force-victory --ending-through=120`, windowed): the
+  ending's row and credits, then the freeing of the one he kept (`freed_nimue`), then reel E played to its end, then
+  the lesson that save owed (`sovereign_rite`), then the results - story before systems, E after the road's last beat.
+
+**Not run, and for whom.** No phone. No far chapter, since none is playable. The reel and the motes were seen still,
+never in motion at speed on a real screen; whether the stream reads as the light going home moving, and whether reel
+E's line lands, is Eric's call. The far places' landmarks are under the unbuilt mist on every save today, so each
+chapter's piece (F3, F6-F10) is the first to see its own place uncovered: if the place on the map does not match the
+chapter it became, the landmark function is that chapter's to adjust in `world_map.py` (its own function and its
+`PLACES`/`WAYPOINTS` line).

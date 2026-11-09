@@ -1745,7 +1745,30 @@ public partial class _UiShot : Node
 					if (boss != null && !all.Lifetime.HasDefeatedBoss(boss.Id))
 						all.Lifetime.BossesDefeated.Add(boss.Id);
 				}
+				// The Throne among them, so reel E would be owed; seen, so the map opens as the map.
+				all.HasSeenLightGoesOn = true;
 			}
+			// THE FAR SHORE ON THE MAP (piece F5, .ai/second-half.md 6.2), in memory only:
+			//   --unbeaten=a,b         : those chapters' bosses NOT beaten (stage ids), and Taken Back undone with the
+			//                            Throne's - --campaign-complete --unbeaten=stage_13 is a save at the Throne that
+			//                            has not crossed: the tower burning, nothing of the far shore on show.
+			//   --light-goes-on=owed   : reel E not yet seen (LightGoesOn), so the map plays it before it opens and
+			//                            comes back with the far shore's first stop drawn out of the dark. =seen marks it.
+			else if (arg.StartsWith("--unbeaten="))
+			{
+				foreach (string id in arg.Substring("--unbeaten=".Length).Split(',', System.StringSplitOptions.RemoveEmptyEntries))
+				{
+					StageDefinition held = StageCatalog.GetById(id.Trim());
+					BossDefinition boss = held != null ? BossCatalog.ForStageIndex(held.Index) : null;
+					if (boss == null)
+						continue;
+					CurrentSave().Lifetime.BossesDefeated.RemoveAll(b => b == boss.Id);
+					if (boss.Id == AchievementDefinitions.ThroneBossId)
+						CurrentSave().UnlockedAchievementIds.Remove(AchievementDefinitions.TakenBackId);
+				}
+			}
+			else if (arg.StartsWith("--light-goes-on="))
+				CurrentSave().HasSeenLightGoesOn = arg.Substring("--light-goes-on=".Length) == "seen";
 			// --map-shown-before=stop,stop: the world's stops as an earlier visit this session showed them,
 			// so a stop revealed since is drawn back out of the dark (WorldMap.LastShownStops).
 			else if (arg.StartsWith("--map-shown-before="))
@@ -2082,6 +2105,9 @@ public partial class _UiShot : Node
 		foreach (Teachings.Lesson lesson in Teachings.All)
 			Teachings.Teach(data, lesson);
 		data.FullBookKept = true;
+		// And reel E seen, as a save that won the Throne has seen it: owning everything owes no reel, so the map opens
+		// as the map (--light-goes-on=owed asks for it).
+		data.HasSeenLightGoesOn = true;
 		return data;
 	}
 

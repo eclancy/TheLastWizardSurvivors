@@ -123,8 +123,43 @@ public partial class Node2DGame
 	/// </summary>
 	private void PlayOwedReelsThen(Action done)
 	{
+		// The freeing of the one he kept is the road's last beat; then the light going on east (reel E, LightGoesOn),
+		// which opens the far shore; then any lesson. Only this run - the one that ends the story - plays reel E at its
+		// end: a save that won the Throne before the reel existed meets it on the world map instead (WorldMap).
+		if (PlayOwedFreeingThen(() => PlayOwedReelsThen(done)))
+			return;
+		if (PlayOwedLightGoesOnThen(() => PlayOwedReelsThen(done)))
+			return;
 		if (!PlayOwedLessonsThen(() => PlayOwedReelsThen(done)))
 			done?.Invoke();
+	}
+
+	// REEL E (LightGoesOn, .ai/second-half.md 6.3): on the layer and in the way a freeing plays, after the ending. The
+	// reel marks itself seen when it ends (Prologue.Finish); a headless run marks it without the reel.
+	private bool PlayOwedLightGoesOnThen(Action then)
+	{
+		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+		if (!LightGoesOn.IsOwed(saveManager?.Data))
+			return false;
+		if (DisplayServer.GetName() == "headless")
+		{
+			GD.Print("Node2DGame: the light goes on (reel E) passed without its reel (headless)");
+			if (LightGoesOn.MarkSeen(saveManager.Data))
+				saveManager.SaveGame();
+			then();
+			return true;
+		}
+		var layer = new CanvasLayer { Name = "LightGoesOnLayer", Layer = LessonLayer, ProcessMode = ProcessModeEnum.Always };
+		AddChild(layer);
+		Prologue reel = Prologue.CreateEmbedded(LightGoesOn.ReelId, () =>
+		{
+			layer.QueueFree();
+			then();
+		});
+		reel.ProcessMode = ProcessModeEnum.Always;
+		layer.AddChild(reel);
+		GD.Print("Node2DGame: the light goes on (reel E) playing after the ending");
+		return true;
 	}
 
 	// The save learns it now. A --no-save-writes run or a tool scene learns it in memory only (SaveManager).
