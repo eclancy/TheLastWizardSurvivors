@@ -178,7 +178,9 @@ def build_roster():
         # `idle` and never switches animation - it flips H and that is all - so moving, hurt and
         # death are drawn and waiting on a code change rather than on art. Shipping the art first
         # means that change is a wiring job with nothing to draw.
-        anims = floating[1] if floating else anim_sets.player_set(pose, idle, fn)
+        # One who flies when he moves (roster.FLYERS: Wayland) stands at rest and flies in his moving frames.
+        flying = anim_sets.flight(fn) if name in roster.FLYERS else None
+        anims = floating[1] if floating else anim_sets.player_set(pose, idle, fn, moving=flying)
         spec = []
         for anim, frames, loop, speed in anims:
             png = "%s-%s.png" % (name, anim)

@@ -678,8 +678,8 @@ public partial class Player : CharacterBody2D
 	// as they resist every shove. Protection by holding them off - no heal, no armour.
 	public const float CharacterWardingHandThrow = 220f;
 	private float characterWardingHandThrow = 0f;
-	// Wings (Wayland the Smith): the share added to his walking speed - the wings he made to get off the island.
-	public const float CharacterWingsSpeedBonus = 0.10f;
+	// Wings (Wayland the Smith): floor traps never touch him and water never slows him (Player.Wings.cs, Winged). It was
+	// +10% walking speed until 2026-11-09.
 	// Overlooked (The Archmage, .ai/protagonist.md): once a run, the blow that would end him misses (TakeDamage). The
 	// ten-second escape window is independent of post-menu grace. He is drawn white through it:
 	// the crowd that landed the blow is still on him, so he needs time to get clear.
@@ -973,9 +973,11 @@ public partial class Player : CharacterBody2D
 		// Merlin (.ai/merlin.md): Warding Hand - whatever touches him is thrown back. Holding the dark off as a
 		// passive, an axis no other wizard owns: not armour (the Geomancer), not a heal (.ai/difficulty-curve.md).
 		"repel_on_hit",
-		// Wayland the Smith (.ai/chapter-wizards.md 4.7): Wings, +10% move speed. Every other wizard's passive is
-		// about his spells or his skin; this one is the only one about his feet.
-		"move_speed_10",
+		// Wayland the Smith (.ai/chapter-wizards.md 4.7): Wings - he flies when he moves, so floor traps never touch him and
+		// water never slows him (Player.Wings.cs). Still the only passive about his feet: not his speed, the ground under
+		// them. It was "move_speed_10", +10% move speed, until 2026-11-09 (Eric: "instead of extra speed, make him immune
+		// to floor traps / water slowing", .ai/character-fit.md).
+		"over_traps_and_water",
 		// The Cumaean Sibyl (.ai/chapter-wizards.md 4.3): Prophecy - she sees what is coming, so she may ask
 		// the cards again. Three more rerolls in the run's pool, on top of Fate Fracture's. An axis no other
 		// wizard owns: it touches no number in the fight, only the choices.
@@ -1074,8 +1076,8 @@ public partial class Player : CharacterBody2D
 			case "repel_on_hit":
 				characterWardingHandThrow = CharacterWardingHandThrow;
 				return true;
-			case "move_speed_10":
-				Speed *= 1f + CharacterWingsSpeedBonus;
+			case "over_traps_and_water":
+				Winged = true;
 				return true;
 			case "rerolls_3":
 				// ApplyArcaneUpgrades has already filled the pool from the shop; this goes on top, once.
@@ -2990,13 +2992,14 @@ public partial class Player : CharacterBody2D
 	/// </summary>
 	public AnimatedSprite2D? BodySprite => bodySprite;
 
-	// Walk while moving, idle while still. Never interrupts a hurt or death in progress.
+	// Walk while moving, idle while still. Never interrupts a hurt or death in progress. Wings (Wayland, whose moving
+	// frames are his flight) keeps the flight while he stands over water or a floor trap: HoldsFlight, Player.Wings.cs.
 	private void UpdateBodyAnimation()
 	{
 		if (bodySprite?.SpriteFrames == null || bodyOneShotPlaying || IsDead)
 			return;
-		string want = Velocity.Length() > WalkAnimationSpeedFloor && bodySprite.SpriteFrames.HasAnimation("moving")
-			? "moving" : "idle";
+		bool moving = Velocity.Length() > WalkAnimationSpeedFloor || HoldsFlight;
+		string want = moving && bodySprite.SpriteFrames.HasAnimation("moving") ? "moving" : "idle";
 		if (bodySprite.Animation != want && bodySprite.SpriteFrames.HasAnimation(want))
 			bodySprite.Play(want);
 	}
@@ -7717,7 +7720,8 @@ public partial class Player : CharacterBody2D
 		};
 		wadeQuery.Position = FootPosition;
 		IsWading = GetWorld2D().DirectSpaceState.IntersectPoint(wadeQuery, 1).Count > 0;
-		float wadeSpeedMultiplier = IsWading ? WaterWadeSpeedMultiplier : 1.0f;
+		// Wings (Player.Wings.cs): water never slows him. He is still wading - his boots are over it - at full speed.
+		float wadeSpeedMultiplier = IsWading && !Winged ? WaterWadeSpeedMultiplier : 1.0f;
 
 		_velocity = input * Speed * GetWindSpeedMultiplier() * GetStormboundSpeedMultiplier() * crowdSpeedMultiplier * wadeSpeedMultiplier * boonMoveSpeedMultiplier;
 		Velocity = _velocity;

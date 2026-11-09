@@ -16,7 +16,7 @@ namespace TheOneHeMissed.scripts;
 /// chaser is and how fast he walks, and draws whatever it likes from <see cref="Position"/>, <see cref="Heading"/>
 /// and <see cref="Speed"/>. So the same rules run in the game and in RegressionChecks, which chases it on paper.</para>
 /// <para>Every speed that matters is a SHARE of the chaser's own walking speed, read each step: "quicker than his
-/// walk" stays true for a wizard with Wings or a speed boon. Only the tread (its own pace, unhurried) and the circle
+/// walk" stays true for a wizard with a speed boon. Only the tread (its own pace, unhurried) and the circle
 /// it walks before anyone has come are in pixels.</para>
 /// <para>What is blocked is the owner's to say (<see cref="IsBlocked"/>): the terrain, the stage's edge, trunks.
 /// Nothing here is a body; nothing here joins "enemies".</para>

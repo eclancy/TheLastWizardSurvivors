@@ -2285,7 +2285,146 @@ def seimei(phase=None):
     return g.rows()
 
 
-def wayland(phase=None):
+def _fill_polygon(g, pts, ch):
+    """Every cell whose centre is inside the polygon `pts`, set to `ch`; the cells it set, as a set of (x, y)."""
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    done = set()
+    for y in range(max(0, int(math.floor(min(ys)))), min(g.cell, int(math.ceil(max(ys))) + 1)):
+        for x in range(max(0, int(math.floor(min(xs)))), min(g.cell, int(math.ceil(max(xs))) + 1)):
+            inside = False
+            j = len(pts) - 1
+            for i in range(len(pts)):
+                (xi, yi), (xj, yj) = pts[i], pts[j]
+                if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / float(yj - yi) + xi:
+                    inside = not inside
+                j = i
+            if inside:
+                g.set(x, y, ch)
+                done.add((x, y))
+    return done
+
+
+# Each feather's length, a cell or so more or less than its neighbours': the wing's lower edge is their ends, ragged.
+_FEATHER_JITTER = (0.0, 1.4, -0.8, 1.0, -0.4, 1.6, 0.3)
+
+
+def _iron_wing(g, root, out, theta, length, feathers, fall, fold=1.0):
+    """One of Wayland's wings OPEN: hammered iron feathers hung from a leading edge, for the flight frames.
+
+    `root` is the shoulder it grows from, `out` -1 for the far wing (spreading left) and +1 for the near one,
+    `theta` the leading edge's angle above the level in degrees (high at the top of the beat, below the level at
+    the bottom), `length` the edge's, `feathers` how many hang from it and `fall` how long the longest one is.
+    `fold` under 1 draws the wing in on the upstroke: a shorter edge and shorter feathers.
+
+    Drawn as the folded pair are, in steel's DARK END so they never outshine the hammer (art-direction.md 4c, his
+    one light), and as a MASS with a few long feathers in it, not a comb of them: a band of coverts along the edge
+    in steel's shade, the flight feathers below it in steel's deep, and only the outer half of each feather drawn
+    apart from the next - a lit edge (steel's base) with occlusion beside it, down to a point of its own. The leading
+    edge is lit along its top, two coverts at the wrist catch the light (the brightest the iron gets), and the rim
+    is laid only where the wing faces the key across empty air. Lengths are irregular on purpose: evenly spaced
+    plates read as a radiator (section 4b).
+    """
+    rx, ry = root
+    a = math.radians(theta)
+    ux, uy = out * math.cos(a), -math.sin(a)                       # along the leading edge, outward
+    # Which way the feathers hang: down, and a little out from him - a touch more while the wing is raised. Much
+    # more and a raised wing fans out sideways into a flag.
+    fx, fy = out * (0.12 + 0.18 * max(0.0, math.sin(a))), 1.0
+    fn = math.hypot(fx, fy)
+    fx, fy = fx / fn, fy / fn
+    # The normal on the feathers' side of the edge, for the covert band's depth.
+    nx, ny = (-uy, ux) if (-uy * fx + ux * fy) > 0 else (uy, -ux)
+    edge = length * fold
+    tx, ty = rx + ux * edge, ry + uy * edge
+    roots, tips = [], []
+    for i in range(feathers):
+        k = i / float(max(1, feathers - 1))
+        s = 0.2 + 0.8 * k
+        ex, ey = rx + ux * edge * s, ry + uy * edge * s
+        # The outermost primary swings toward the edge's own line, so the wing ends in a point, not a comb.
+        w = 0.45 * k ** 3
+        dx, dy = fx * (1.0 - w) + ux * w, fy * (1.0 - w) + uy * w
+        dn = math.hypot(dx, dy)
+        dx, dy = dx / dn, dy / dn
+        ln = (fall * (0.62 + 0.38 * k) + _FEATHER_JITTER[i % len(_FEATHER_JITTER)]) * (0.7 + 0.3 * fold)
+        roots.append((ex, ey))
+        tips.append((ex + dx * ln, ey + dy * ln))
+    # The body of the wing: the edge out to its tip, back along the feathers' ends, and in under the shoulder.
+    body = [(rx, ry), (tx, ty)] + list(reversed(tips)) + [(rx + fx * fall * 0.5, ry + fy * fall * 0.5)]
+    cells = _fill_polygon(g, body, "q")
+
+    def on_wing(x, y):
+        return (int(round(x)), int(round(y))) in cells
+
+    # Lit as `mass` lights the folded pair (mid steel's deep, lit steel's shade, dark occlusion): the two cells on
+    # the key side of every row a stop up, the far one in occlusion. Without it an open wing on a dark floor was
+    # nothing but its rim.
+    by_row = {}
+    for (x, y) in cells:
+        lo, hi = by_row.get(y, (x, x))
+        by_row[y] = (min(lo, x), max(hi, x))
+    for y, (lo, hi) in by_row.items():
+        g.set(lo, y, "R")
+        if hi - lo >= 4:
+            g.set(lo + 1, y, "R")
+        if hi - lo >= 3:
+            g.set(hi, y, "o")
+
+    # The coverts: a row of short scallops under the edge, each a lit lip with occlusion under it - the iron of the
+    # wing round them stays steel's deep, so the wing never reads as more of his sleeve (the shirt is steel's shade).
+    for j in range(1, int(edge)):
+        t = j / float(edge)
+        x, y = rx + ux * edge * t + nx * 2.6, ry + uy * edge * t + ny * 2.6
+        if not on_wing(x, y):
+            continue
+        if j % 3 == 0:
+            g.set(x, y, "o")
+        elif j % 3 == 1:
+            g.set(x, y, "R")
+    # The ragged trailing edge: a notch between every two feathers' ends, so each ends on a point of its own.
+    for (ax, ay), (bx, by) in zip(tips, tips[1:]):
+        mx, my = (ax + bx) / 2.0 - fx * 1.2, (ay + by) / 2.0 - fy * 1.2
+        if on_wing(mx, my):
+            cut(g, (mx, my))
+            cells.discard((int(round(mx)), int(round(my))))
+    # The flight feathers drawn apart over their outer half: a lit edge, occlusion beside it on the far side, and a
+    # tip a stop lighter than the iron round it. The innermost lies under the next and shows no edge.
+    for i, ((ex, ey), (px, py)) in enumerate(zip(roots, tips)):
+        steep = abs(py - ey) >= abs(px - ex)
+        ox, oy = (out, 0) if steep else (0, 1)
+        nn = int(max(abs(px - ex), abs(py - ey)))
+        for j in range(nn + 1):
+            t = j / float(max(1, nn))
+            if t < 0.45 or i == 0:
+                continue
+            x, y = ex + (px - ex) * t, ey + (py - ey) * t
+            if on_wing(x, y):
+                g.set(x, y, "r")
+            if on_wing(x + ox, y + oy) and t < 0.95:
+                g.set(x + ox, y + oy, "o")
+        if on_wing(px, py):
+            g.set(px, py, "R")
+    # The leading edge, the bone of the wing: steel's shade, lit along its top where the key falls on it.
+    nn = int(max(abs(tx - rx), abs(ty - ry)))
+    for j in range(nn + 1):
+        t = j / float(max(1, nn))
+        x, y = rx + (tx - rx) * t, ry + (ty - ry) * t
+        g.set(x, y, "R")
+        if g.get(x, y - 1) in (".", "q", "R", "o"):
+            g.set(x, y - 1, "r")
+        cells.add((int(round(x)), int(round(y))))
+        cells.add((int(round(x)), int(round(y - 1))))
+    # Two coverts catching the light at the wrist: the brightest the iron gets.
+    g.set(rx + ux * edge * 0.55, ry + uy * edge * 0.55 - 1, "t")
+    g.set(rx + ux * edge * 0.85, ry + uy * edge * 0.85 - 1, "t")
+    # The rim, on the edges that face the key across empty air.
+    for (x, y) in sorted(cells):
+        if g.get(x, y) != "." and g.get(x - 1, y) == "." and (x - 1, y) not in cells:
+            g.set(x - 1, y, "W")
+
+
+def wayland(phase=None, beat=None, lift=0):
     """Iron Palisade. Wayland the Smith (Volundr), the master smith of the Germanic tales: lamed by a
     king and set on an island to forge for him, who made himself wings and flew.
 
@@ -2304,75 +2443,102 @@ def wayland(phase=None):
 
     The lameness is the far leg: an iron brace at the knee and a shackle at the ankle with its chain
     broken off - he is the man who made every chain in this game, and the one that held him did not.
+
+    HE FLIES WHEN HE MOVES (Eric, 2026-11-09: "is his movement animation a flying animation?" - "I like A";
+    .ai/character-fit.md section 5, row 20). Standing, he is the pose above: wings folded, weight on the good
+    leg. `beat` (0..1) draws him in flight instead, for his moving frames (anim_sets.flight, FLYERS): the wings
+    OPEN and beat - raised high over his head at 0, spread wide on the way down, low at 0.5, drawn in and half
+    closed on the way back up - his legs hang together and trail behind him, the broken chain hangs straight down
+    from the shackle, and every row of him is risen `lift` rows over a soft shadow that narrows as he rises. He
+    skims; he does not float, so his idle is the standing pose and only his moving frames change. Whatever is
+    above the waist - the shirt, the apron, the arms, the hammer and its lit face, the head - is the same drawing
+    in both. `phase` is accepted for the walk's signature and ignored: he no longer steps.
     """
     mid, lit, dark = ROBES["wayland"]
     g = G(48)
     CX = 23
+    flying = beat is not None
 
-    # THE WINGS, first: everything else is in front of them. The far wing tall behind his head and
-    # down his back; the near one a narrow blade rising between his head and the hammer.
-    mass(g, [(3, 9, 10), (5, 7, 11), (8, 6, 13), (12, 6, 15), (17, 6, 15), (23, 7, 15),
-             (29, 8, 14), (33, 9, 13)], "q", "R", "o")
-    mass(g, [(4, 31, 32), (6, 30, 33), (9, 29, 33), (13, 29, 33), (16, 30, 32)], "q", "R", "o")
-    # The feathers. Folded, so the long ones run DOWN the wing from the shoulder, each a lit edge with
-    # occlusion beside it, ending in a tip of its own at a different height - the wing's lower edge is
-    # their ends, ragged, not a cut line. Over them at the top, two short rows of coverts. Irregular in
-    # length and spacing on purpose: evenly spaced plates read as a radiator.
-    for (x0, y0, x1, y1) in ((13, 10, 11, 31), (11, 8, 8, 27), (9, 6, 7, 20), (14, 16, 13, 33)):
-        g.line(x0, y0, x1, y1, "r")
-        g.line(x0 + 1, y0 + 1, x1 + 1, y1, "o")
-    for (x, y) in ((10, 32), (8, 28), (7, 21), (12, 34), (9, 31)):
-        g.set(x, y, "q")
-    cut(g, (8, 33), (8, 32), (9, 33), (7, 29), (6, 22), (6, 23))
-    for (y, x0, x1) in ((6, 8, 10), (9, 7, 12), (12, 9, 14)):
-        g.line(x0, y, x1, y - 1, "r")
-        g.set(x0, y + 1, "o")
-    g.set(9, 3, "t")
-    g.set(7, 8, "t")
-    g.set(6, 13, "t")
-    # The near wing: a blade of the same iron, its coverts and one long edge.
-    g.line(30, 8, 31, 16, "r")
-    g.line(31, 8, 32, 15, "o")
-    g.line(30, 6, 32, 5, "r")
-    g.set(31, 4, "t")
+    if not flying:
+        # THE WINGS, first: everything else is in front of them. The far wing tall behind his head and
+        # down his back; the near one a narrow blade rising between his head and the hammer.
+        mass(g, [(3, 9, 10), (5, 7, 11), (8, 6, 13), (12, 6, 15), (17, 6, 15), (23, 7, 15),
+                 (29, 8, 14), (33, 9, 13)], "q", "R", "o")
+        mass(g, [(4, 31, 32), (6, 30, 33), (9, 29, 33), (13, 29, 33), (16, 30, 32)], "q", "R", "o")
+        # The feathers. Folded, so the long ones run DOWN the wing from the shoulder, each a lit edge with
+        # occlusion beside it, ending in a tip of its own at a different height - the wing's lower edge is
+        # their ends, ragged, not a cut line. Over them at the top, two short rows of coverts. Irregular in
+        # length and spacing on purpose: evenly spaced plates read as a radiator.
+        for (x0, y0, x1, y1) in ((13, 10, 11, 31), (11, 8, 8, 27), (9, 6, 7, 20), (14, 16, 13, 33)):
+            g.line(x0, y0, x1, y1, "r")
+            g.line(x0 + 1, y0 + 1, x1 + 1, y1, "o")
+        for (x, y) in ((10, 32), (8, 28), (7, 21), (12, 34), (9, 31)):
+            g.set(x, y, "q")
+        cut(g, (8, 33), (8, 32), (9, 33), (7, 29), (6, 22), (6, 23))
+        for (y, x0, x1) in ((6, 8, 10), (9, 7, 12), (12, 9, 14)):
+            g.line(x0, y, x1, y - 1, "r")
+            g.set(x0, y + 1, "o")
+        g.set(9, 3, "t")
+        g.set(7, 8, "t")
+        g.set(6, 13, "t")
+        # The near wing: a blade of the same iron, its coverts and one long edge.
+        g.line(30, 8, 31, 16, "r")
+        g.line(31, 8, 32, 15, "o")
+        g.line(30, 6, 32, 5, "r")
+        g.set(31, 4, "t")
+    else:
+        # THE WINGS OPEN, beating. The edge sweeps from high over his head (65 degrees above the level at the top
+        # of the beat) to below the level at the bottom, and on the way back up the wing is drawn in, half closed,
+        # as a bird's is - so the downstroke is the big shape and the upstroke a smaller one. The far wing spreads
+        # out to the left, the bigger of the two; the near one opens behind the hammer, foreshortened.
+        tau = 2.0 * math.pi
+        theta = 20.0 + 45.0 * math.cos(tau * beat)
+        fold_in = 1.0 - 0.3 * max(0.0, -math.sin(tau * beat))
+        _iron_wing(g, (14, 17), -1, theta, 13.0, 5, 14.0, fold_in)
+        _iron_wing(g, (31, 16), 1, 0.6 * theta - 6.0, 11.0, 4, 11.0, fold_in)
 
     # THE LEGS, under the apron: dark breeches and heavy boots, the near leg set forward.
-    if phase is None:
+    if not flying:
         mass(g, [(34, 17, 21), (38, 16, 20), (43, 16, 20)], "N", "p", "J")
         mass(g, [(43, 14, 20), (46, 13, 20)], "J", "j", "o")
         mass(g, [(34, 25, 29), (38, 26, 30), (43, 27, 31)], "N", "p", "J", rim=False)
         mass(g, [(43, 26, 32), (46, 26, 33)], "J", "j", "o", rim=False)
-        far_x, near_x, far_lift = 0, 0, 0
         g.set(14, 44, "N")
         g.set(27, 44, "N")
+        # The brace on the far leg: two iron bands and the bar between them down the outside of the knee,
+        # and the shackle at the ankle with a broken link hanging off it.
+        g.span(40, 16, 20, "R")
+        g.set(16, 40, "t")
+        g.set(20, 40, "q")
+        g.line(16, 39, 16, 41, "r")
+        g.span(42, 15, 20, "r")
+        g.set(15, 42, "t")
+        g.set(20, 42, "q")
+        g.set(13, 43, "R")
+        g.set(12, 44, "r")
+        g.set(12, 45, "q")
     else:
-        # A lame man's walk: the near leg does the striding and the far one, braced straight, is
-        # swung after it and set down - it moves half as far and barely leaves the ground.
-        c, lift_near, lift_far = stride(phase)
-        far_x = int(round(-1.0 * c))
-        near_x = int(round(2.0 * c))
-        far_lift = int(round(1 * lift_far))
-        near_lift = int(round(2 * lift_near))
-        mass(g, [(34, 17, 21), (43 - far_lift, 16 + far_x, 20 + far_x)], "N", "p", "J")
-        mass(g, [(43 - far_lift, 14 + far_x, 20 + far_x), (46 - far_lift, 13 + far_x, 20 + far_x)], "J", "j", "o")
-        mass(g, [(34, 25, 29), (38, 26 + near_x // 2, 30 + near_x // 2), (43 - near_lift, 27 + near_x, 31 + near_x)],
-             "N", "p", "J", rim=False)
-        mass(g, [(43 - near_lift, 26 + near_x, 32 + near_x), (46 - near_lift, 26 + near_x, 33 + near_x)], "J", "j", "o",
-             rim=False)
-        g.set(14 + far_x, 44 - far_lift, "N")
-        g.set(27 + near_x, 44 - near_lift, "N")
-    # The brace on the far leg: two iron bands and the bar between them down the outside of the knee,
-    # and the shackle at the ankle with a broken link hanging off it.
-    g.span(40, 16 + far_x, 20 + far_x, "R")
-    g.set(16 + far_x, 40, "t")
-    g.set(20 + far_x, 40, "q")
-    g.line(16 + far_x, 39, 16 + far_x, 41, "r")
-    g.span(42 - far_lift, 15 + far_x, 20 + far_x, "r")
-    g.set(15 + far_x, 42 - far_lift, "t")
-    g.set(20 + far_x, 42 - far_lift, "q")
-    g.set(13 + far_x, 43 - far_lift, "R")
-    g.set(12 + far_x, 44 - far_lift, "r")
-    g.set(12 + far_x, 45 - far_lift, "q")
+        # In the air: both legs hang together and trail back from the hips, the toes pointed down. The far leg
+        # is still the braced one, straight; the near one bends a little at the knee. Nothing stands on them.
+        mass(g, [(34, 17, 21), (38, 16, 20), (42, 14, 18)], "N", "p", "J")
+        mass(g, [(42, 13, 18), (44, 13, 17), (45, 14, 16)], "J", "j", "o")
+        mass(g, [(34, 25, 29), (38, 25, 29), (41, 22, 26)], "N", "p", "J", rim=False)
+        mass(g, [(41, 21, 26), (43, 21, 25), (44, 22, 24)], "J", "j", "o", rim=False)
+        g.set(13, 43, "N")
+        g.set(21, 42, "N")
+        g.line(26, 38, 24, 41, "o")                                  # the near shin's crease, into the trail
+        # The brace, moved with the leg, and the shackle; its broken chain hangs straight down off it in the air.
+        g.span(39, 15, 19, "R")
+        g.set(15, 39, "t")
+        g.set(19, 39, "q")
+        g.line(15, 38, 15, 40, "r")
+        g.span(41, 14, 18, "r")
+        g.set(14, 41, "t")
+        g.set(18, 41, "q")
+        g.set(12, 42, "R")
+        g.set(12, 43, "r")
+        g.set(12, 44, "q")
+        g.set(12, 45, "R")
 
     # THE SHIRT: broad at the shoulders - the broadest in the cast after the Geomancer - and in to
     # the waist under the apron.
@@ -2465,7 +2631,22 @@ def wayland(phase=None):
     moustache(g, CX, 12, 2.4, "N", "p", "J")
     hair(g, CX, 13, 16, 3.2, 1.6, "N", "p", "J")
     g.set(CX, 14, "J")
-    contact(g, 11, 35)
+    if not flying:
+        contact(g, 11, 35)
+        return g.rows()
+    # Risen: every row of him up by `lift`. The shadow is laid after, so it stays on the ground: soft, under where
+    # he hangs and never touching him - the occlusion line on the contract's row, its ends broken by the dither,
+    # and a dithered row over its middle; narrower the higher he is (Nimue's and Baba Yaga's shadow).
+    if lift:
+        g.g = g.g[lift:] + [["."] * g.cell for _ in range(lift)]
+    sx = 22
+    half = 11 - lift
+    for x in range(sx - half, sx + half + 1):
+        d = abs(x - sx)
+        if d < half - 1 or (x + lift) % 2 == 0:
+            g.set(x, 47, "o")
+        if d <= half - 3 and x % 2 == 1:
+            g.set(x, 46, "o")
     return g.rows()
 
 
@@ -4143,6 +4324,11 @@ WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
 # walk drifts instead of breathing and stepping. Nimue (.ai/endgame-castle.md decision 11), and Baba Yaga in her
 # flying mortar (Eric, 2026-11-09).
 FLOATERS = {"nimue", "yaga"}
+# The one who flies when he moves (anim_sets.flight): he stands on the ground at rest and breathes like the cast, and
+# only his moving frames are drawn from the pose function in flight - wings open and beating, a little off the ground.
+# Wayland the Smith (Eric, 2026-11-09, .ai/character-fit.md section 5, row 20). In Player.UpdateBodyAnimation he also
+# keeps the flight while he stands still over water or a floor trap, which his Wings carry him over.
+FLYERS = {"wayland"}
 ENEMIES = [("swarmer", swarmer), ("runner", runner), ("bruiser", bruiser),
            ("shielder", shielder), ("skullsentry", skullsentry), ("lunger", lunger),
            ("slammer", slammer), ("exploder", exploder), ("summoner", summoner),

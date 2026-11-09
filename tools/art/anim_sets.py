@@ -367,14 +367,42 @@ def hover(pose_fn):
     ]
 
 
-def player_set(pose, idle_frames, pose_fn=None):
+# --- the one who flies when he moves ----------------------------------------------------------
+# Wayland the Smith (Eric, 2026-11-09: "is his movement animation a flying animation?" - option A; .ai/character-fit.md
+# section 5, row 20). Not a floater: standing he stands, wings folded and his weight on his good leg, and his idle is
+# the cast's breath (roster.idle). Only his moving frames change: the wings open and beat and he skims a little over
+# the ground. His pose function draws the whole flight at any point of the beat - pose_fn(beat=, lift=), roster.wayland.
+FLIGHT_FRAMES = 8
+
+
+def flight(pose_fn):
+    """The moving frames of one who flies when he moves (roster.FLYERS): eight frames of one wing beat at 10 a
+    second, the cast's walk rate - a heavy beat, 1.25 a second, for iron wings.
+
+    The beat starts with the wings high. He is lowest there (one row up) and highest at the bottom of the
+    downstroke (three rows), because the downstroke is what lifts him: two rows on average, over a shadow the pose
+    function narrows as he rises. Hurt and death stay derived from the standing pose (player_set), so a flinch in
+    the air reads the same as one on the ground.
+    """
+    tau = 2.0 * math.pi
+    out = []
+    for i in range(FLIGHT_FRAMES):
+        t = i / float(FLIGHT_FRAMES)
+        lift = int(round(2.0 - math.cos(tau * t)))
+        out.append(pose_fn(beat=t, lift=lift))
+    return out
+
+
+def player_set(pose, idle_frames, pose_fn=None, moving=None):
     """The player has no `attack` - spells fire on a timer, so there is nothing to swing.
 
     With `pose_fn`, `moving` is a real walk drawn from the pose function's stride phases. Without
     one it falls back to the derived bob-and-lean, which is what every pose without legs to move
-    still gets.
+    still gets. `moving` given (the frames of `flight`, for one who flies when he moves) is used as it is.
     """
-    if pose_fn is not None:
+    if moving is not None:
+        mv = moving
+    elif pose_fn is not None:
         name = pose_fn.__name__
         mv = walk(pose_fn, WALK_BOB.get(name, 1), WALK_ANCHORS.get(name, WALK_ANCHOR))
     else:

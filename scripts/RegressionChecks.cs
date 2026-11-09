@@ -58,6 +58,8 @@ public static partial class RegressionChecks
 		ValidateFacingFamily(warnings);
 		// John Dee's opener and his Spirit Mirror on it (RegressionChecks.Folio.cs).
 		ValidateFolio(warnings);
+		// Wayland's Wings: every floor trap and the wade ask its one flag (RegressionChecks.Wings.cs).
+		ValidateWings(warnings);
 		ValidateSpawnFormations(warnings);
 		ValidateSwarmPressure(warnings);
 		ValidateQuestsAndNotes(warnings);

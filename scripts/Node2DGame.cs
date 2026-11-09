@@ -1286,7 +1286,8 @@ public partial class Node2DGame : Node2D
 		// At his feet, not GlobalPosition: that is the middle of the sprite, about 36 px above his
 		// boots, so lava used to burn a wizard standing on the grass below it. Same footprint the
 		// water stops (Player.FootPosition).
-		if (!terrainStreamer.IsHazardAtWorld(player.FootPosition))
+		// Wings (Wayland the Smith, Player.Wings.cs): the lava never touches him; he flies over it.
+		if (!terrainStreamer.IsHazardAtWorld(player.FootPosition) || player.FliesOverTrap())
 		{
 			hazardTickTimer = 0f;
 			return;

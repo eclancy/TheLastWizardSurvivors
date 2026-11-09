@@ -235,15 +235,18 @@ public partial class SwallowHole : SecretVault
 		// Wading: his feet in the mud. It holds his step back to a crawl and stings once a second. Gone once
 		// it has been sated - a full hole is only a black pool.
 		bool wading = !IsSated && player.FootPosition.DistanceTo(GlobalPosition) < HoleRadius - WadeInset;
+		// Wings (Wayland the Smith, Player.Wings.cs): the mud neither holds his step nor stings; he flies over it. He
+		// still counts as wading (IsWading, for the probe) - his boots are over the mud - it simply costs him nothing.
+		bool held = wading && !player.FliesOverTrap();
 		Vector2 now = player.GlobalPosition;
 		Vector2 step = now - lastHeroPosition;
 		// Only an ordinary step is held back: a teleport (a probe, a respawn) is left alone.
-		if (wading && heroWasWading && step.LengthSquared() < 60f * 60f)
+		if (held && heroWasWading && step.LengthSquared() < 60f * 60f)
 			player.GlobalPosition = lastHeroPosition + step * WadeSpeedShare;
 		lastHeroPosition = player.GlobalPosition;
 		heroWasWading = wading;
 
-		if (wading && !player.IsDead)
+		if (held && !player.IsDead)
 		{
 			wadeClock += (float)delta;
 			if (wadeClock >= WadeDamageSeconds)
