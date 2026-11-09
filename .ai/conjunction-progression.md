@@ -403,7 +403,7 @@ recipes; nothing here changes `ComboCatalog.Evaluate`, the Ascension's gates' ow
 | **the pin** | `SaveData.PinnedRecipeId` (**schema 27** - built as 26, renumbered at the merge when the Sovereign Rite's branch reached the trunk with 26 first; `MigrateToPinnedRecipe`: pins nothing; `ValidatePinnedRecipeMigration`). One at a time; refused before the lesson, for the Rite and for a recipe the save knows nothing of (`ConjunctionLadder.MayPin`). Pinned from the Codex's recipe page, **Pin / Unpin** in its head (`EvolutionCodex.Detail.PinToggle`), on the main menu and over a run alike. |
 | **the checklist** | `Player.BuildRecipeChecklist` (`Player.Ladder.cs`): each parent in the book and its level against 7, each named path's element count ("Pandemic: Poison 1 of 4", from `EvaluateElementGate`, the one authority), your level against 17, the level 4 path that would seal it, or why it is sealed; and the one next step. The pause screen's Run tab shows it as **Pinned Conjunction**, after the far sky's section (`Node2DGame.Ladder.cs`, one marked line in `ShowEscapeRunOverview`). |
 | **the corner's one line** | `QuestTracker.SetRecipeLine`: the two linked rings and the next step ("Void Lance to level 7 · 1/7"), the last row of the tracker, on its one-second reading; "Shadow Bolt made" once made. Hidden while nothing is pinned. |
-| **the level 4 mark** | `Player.NoteRecipeSeals` fills `LevelUpOption.RecipeSeals`; the level 4 card (both shapes) carries the rings and "Seals the Conjunction with Starfall" (the recipe's name once made) in the page's rubric (`LevelUpMenu.BuildRecipeSealMark`). `ConjunctionLadder.WouldSealByElement` is checked against `ComboCatalog.Evaluate`'s own fourth-element seal on every parent's every level 4 path; today two paths mark (Starfall's Frostfall, Contagion's Marsh Fever). |
+| **the level 4 mark** | `Player.NoteRecipeSeals` fills `LevelUpOption.RecipeSeals`; the level 4 card (both shapes) carries the rings and "Seals the Conjunction with Starfall" (the recipe's name once made) in the page's rubric (`LevelUpMenu.BuildRecipeSealMark`). `ConjunctionLadder.WouldSealByElement` is checked against `ComboCatalog.Evaluate`'s own fourth-element seal on every parent's every level 4 path; today three paths mark (Starfall's Frostfall, Contagion's Marsh Fever, and since the Rite became a recipe Arcane Explosion's Static Nova). |
 | **a wizard's recipe** | `ConjunctionLadder.Suits`, the character select's **Suits** row (`CharacterSelection.BuildFacts`): shown recipes with a named path gated on an element his own spell carries, neither parent his own (his starting spell or one that is his alone), never the one he opens on. Derived; on a save with every spell: Merlin and Nimue all three; Medea Sagittarius and The Taking; the Dark Wizard Sagittarius and Shadow Bolt; the Archmage, the Sibyl, John Dee, Baba Yaga and Ma Liang Shadow Bolt; Laelaps, Seimei, Wayland and Morgan Sagittarius; Nostradamus and Artemis The Taking. |
 
 ### Rung II, Kindred Draw (built)
@@ -525,6 +525,12 @@ planner having beaten the Archivist); **E** C's flags, `--policy=ordinary`, no `
 | The Taking | the Court | 1234 | **D** | 0.3 / 0.5 | 5.4 / 5.2 | **5.9** |
 | Sagittarius | the Court | 1234 | C½ | 2.3 / 0.6 | 7.7 / 6.2 | **8.2** |
 | Sagittarius | the Court | 1234 | **D** | 0.3 / 0.5 | 6.5 / 5.2 | **6.8** |
+| The Taking | Frozen Waste | 1234 | C½, after the Rite's merge | - | - | **8.5** |
+| Shadow Bolt | the Court | 1234 | **D**, after the Rite's merge | 0.2 / 0.4 | 5.0 / 13.9 (Pandemic's Poison) | **14.3** |
+
+The last two rows were run on the tree merged with the Sovereign Rite, as a smoke test of the merge: the favour and the
+share behave as before (The Taking 8.5 against 8.3), and the foretold Shadow Bolt shows how wide one recipe's spread is
+at half strength - Pandemic's four Poison held it to 13.9 where the run before the merge had it at 5.3.
 
 **E, the guard rail: 0 of 5.** Ordinary bot with C's flags (Kindred Draw III, the share at full, the set-aside, the
 hoop): the Ruins (the Archmage, 1234; Laelaps, 7), the Frozen Waste (Medea, 1234; the Archmage, 7) and the Swamp (Medea,
@@ -601,21 +607,29 @@ three bans will be slower than the bot.
     `--curate=N` (the last N spells in book order that are not the target's parents or his own - a stable, seedless pick;
     a real planner would choose better), `--kindred=N`, `--pair-shares[=half|full|off]`, `--foretell=ID|off`, and a `met=`
     field listing every fusion the strip offered (the guard rail).
+13. **The Sovereign Rite, a recipe since 2026-11-08** (Arcane Explosion down Resonance and Gravewell down Mass Grave,
+    merged into the trunk at the end of this build): the ladder treats it as any recipe - shown from one half, pinnable,
+    its checklist on the pause screen, leaned on by Kindred Draw, its named paths sharing (Resonance +2, Mass Grave +1 at
+    level 7), on a wizard's Suits row (John Dee, the Dark Wizard, Merlin, Nimue) - **except Nostradamus, who never
+    foretells it**: what he may foretell is the far sky's candidates, which never name the capstone (`FarSky.MayName`), and
+    `ValidateForetell` says so. The coordinator recommended the same split. The checklist does not list the Rite's own late
+    gate (`SovereignRite.MeetsGate`: the player's level and the fuel the other spells would pour in); its "Ready above the
+    cards" is the recipe's, and the strip still waits for the gate.
 
 ### Verified
 
 - `dotnet build`: 0 errors.
 - The validator (`MainMenu.tscn --quit-after 300 -- --no-save-writes --validate-content`): **0 errors and 1 warning**
   (`test_wizard`). New checks, each a warning when broken: `ValidateConjunctionLadder` (rung I: a recipe shown from one
-  half only once Conjunctions are learned, never from neither half, never the Rite; the Feat row follows; the pin refused
-  before the lesson, for the Rite and for an unknown recipe, one at a time, through the save's round trip, cleared by a
+  half only once Conjunctions are learned, never from neither half; the Feat row follows; the pin refused before the
+  lesson and for an unknown recipe, one at a time, through the save's round trip, cleared by a
   story reset; Suits derived by its rule; the level 4 mark agrees with `ComboCatalog.Evaluate`'s own seal on every
-  parent's every level 4 path - two paths mark today, Frostfall and Marsh Fever; rung II: the shelf hidden before the
+  parent's every level 4 path - three paths mark today, Frostfall, Marsh Fever and the Rite's Static Nova; rung II: the shelf hidden before the
   lesson, 100 / 160 / 220, x2-x4, re-weighs only the recipe's own cards and never adds one; rung III, `ValidatePairShares`:
   never off its deed, never a third Ascension, never an unheld partner, never a sealed recipe or the wizard's own spell,
   never more than 1 at half, never stacked with the far sky's waiver, its lesson owed and shown as section 3 says; rung IV,
   `ValidateForetell`: nothing before Nostradamus is freed or the lesson learned, exactly the far sky's candidates, never
-  on the far shore or a Boss Rush, the pin standing in, a press walking every recipe and nothing) and
+  on the far shore or a Boss Rush, never the Rite, the pin standing in, a press walking every recipe and nothing) and
   `ValidatePinnedRecipeMigration`.
 - `_UiShot` at 1280x720 and 540x1212 `--portrait --safe-area`, looked at (`user://ladder-*.png`): the pause screen's
   Pinned and Foretold Conjunction sections, the quest corner's line in a run, the shop's Kindred Draw card, the character
@@ -635,5 +649,8 @@ three bans will be slower than the bot.
   recipe (idea 1's last line), a recipe chapter 4 completes (question 5, F6's), the map card's "Completes Shadow Bolt"
   (idea 3), the share in the Codex's collection-mode tree (it reads `Player.EvaluateElementGate` without a run; the in-run
   browser and the checklist show it).
-- **The Sovereign Rite's two-spell Conjunction** was not on the trunk when this was built; the ladder's code treats the Rite
-  by `IsRite` throughout, and needs re-validating once that branch merges.
+- **The Sovereign Rite's two-spell Conjunction** reached the trunk at the end of this build and was merged in (decision 13);
+  the validator and a post-merge smoke run passed on the merged tree, and the measurement above predates it (its recipes
+  are the three built before it; the Rite's own pace on the ladder is unmeasured).
+- **A trunk merge regression, fixed on the trunk:** with the Rite in `ComboCatalog.Fusions`, the far sky's waiver check
+  warned that the Rite's paths are not waived (they never are); the trunk's 03ac8c05 fixed it while this was merging.

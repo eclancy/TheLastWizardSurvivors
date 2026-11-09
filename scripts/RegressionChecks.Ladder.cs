@@ -395,6 +395,9 @@ public static partial class RegressionChecks
 				{
 					if (ComboCatalog.StartsFused(recipe, character.Id) || (!string.IsNullOrEmpty(own) && recipe.Ingredients.Any(i => i.SpellId == own)))
 						warnings.Add($"Ladder IV: '{character.Id}' may be foretold '{recipe.Id}', which he opens on or which names his own spell.");
+					// The Sovereign Rite is a recipe since 2026-11-08, but the capstone: the far sky never names it, nor does he.
+					if (recipe.IsRite)
+						warnings.Add($"Ladder IV: '{character.Id}' may be foretold the Sovereign Rite.");
 				}
 			}
 			earned.PinnedRecipeId = string.Empty;
