@@ -413,9 +413,10 @@ def downs(back, horizon, seed):
     long barrow on its shoulder, and short turf flecked with chalk and flint down to the camera."""
     pr.sky(back, 0, horizon, [OCC, S[4], V[4], V[3], V[2]])
     pr.stars(back, (0, 0, FW, horizon - 70), 460, seed)
-    # The moon she put back, high on the left, its light lying pale along the ridges.
-    sk.moon(back, 330, 262, 11)
-    back.radial(330, horizon - 6, 360, 40, [V[3], V[3], V[4], None])
+    # The moon she put back, high on the left - inside the phone's columns (300 on), whole - its light lying pale
+    # along the ridges.
+    sk.moon(back, 342, 258, 10)
+    back.radial(342, horizon - 6, 360, 40, [V[3], V[3], V[4], None])
     far = pr.ridge_fn(horizon - 16, 22, seed + 1, 0.55)
     pr.hills(back, far, [V[3], V[4], S[4]], 40, lit=K[3])
     moonlit(back, far, 7, [V[2], V[3]])
