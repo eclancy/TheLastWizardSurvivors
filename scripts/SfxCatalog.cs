@@ -230,7 +230,7 @@ public static class SfxCatalog
 
 	// Every sound the game expects to exist: the 64 named above, the three hurt variants, and
 	// the twelve casts, twelve impacts and twelve Canticle notes derived from the element enum.
-	// tools/audio/build.py reports writing 124 (counted 2026-11-09, with the notes).
+	// tools/audio/build.py reports writing 129 (counted 2026-11-09, with the twelve notes).
 	public static string[] AllNames
 	{
 		get
